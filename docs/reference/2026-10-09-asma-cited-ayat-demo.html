@@ -1,0 +1,217 @@
+<title>Asma Āyāt in Explore</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Amiri+Quran&display=swap">
+<style>
+/* Layout: the app's own Explore panel (dark navy, gold), two columns that stack on a phone; pop-ups are sheets on a phone and cards on a desktop. One look, as in the app. */
+:root {
+  color-scheme: dark;
+  --bg: #0f1a2e; --panel: #15233d; --card: #1b2b48; --card-2: #22355a; --line: #2e4570;
+  --fg: #e9eef7; --muted: #a8b5cc; --gold: #d8b25a; --gold-soft: rgba(216,178,90,0.16);
+  --blue: #a9c3ec; --blue-soft: rgba(91,132,196,0.22); --green: #1d5c3c; --cream: #fbf6e8; --ink: #1b2430;
+  --ar: "Amiri Quran", "Amiri", "Traditional Arabic", serif; --ar2: "Amiri", "Traditional Arabic", serif;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+body { background: var(--bg); color: var(--fg); font: 15px/1.5 var(--sans); margin: 0; }
+[hidden] { display: none !important; }
+.page { max-width: 1240px; margin: 0 auto; padding: 16px; display: grid; gap: 14px; }
+.demo-note { background: var(--gold-soft); border: 1px solid var(--gold); border-radius: 8px; padding: 10px 14px; color: var(--fg); }
+.demo-note b { color: var(--gold); }
+.bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.bar h1 { font: 700 1.05rem var(--sans); color: var(--gold); margin: 0 auto 0 0; }
+.btn { font: 600 0.85rem var(--sans); min-height: 40px; padding: 0 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--fg); cursor: pointer; }
+.btn:hover { background: var(--card-2); }
+.btn.gold { background: var(--gold); color: var(--ink); border-color: var(--gold); }
+.btn[aria-pressed="true"] { background: var(--cream); color: var(--ink); }
+.btn:focus-visible, .w:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr); }
+@media (max-width: 820px) { .panel { grid-template-columns: 1fr; } }
+.left { padding: 14px; display: grid; gap: 12px; align-content: start; min-width: 0; border-right: 1px solid var(--line); }
+@media (max-width: 820px) { .left { border-right: 0; border-bottom: 1px solid var(--line); } }
+.right { padding: 14px; display: grid; place-items: start center; }
+.name-card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: grid; gap: 4px; }
+.name-ar { font: 400 2rem var(--ar2); color: var(--gold); direction: rtl; text-align: left; }
+.name-lat { font-style: italic; font-size: 1.05rem; } .name-mean { color: var(--muted); }
+.lab { font: 600 0.72rem var(--sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-top: 6px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font: 0.85rem var(--sans); padding: 4px 12px; border-radius: 999px; border: 1px solid rgba(91,132,196,0.5); background: var(--blue-soft); color: var(--blue); cursor: pointer; min-height: 32px; }
+.chip.grp { border-color: rgba(216,178,90,0.5); background: var(--gold-soft); color: var(--gold); cursor: default; }
+/* NEW: the cited text, in the space that was empty */
+.new { border: 2px dashed var(--gold); border-radius: 12px; padding: 12px; display: grid; gap: 12px; position: relative; }
+.new-tag { position: absolute; top: -11px; left: 14px; background: var(--gold); color: var(--ink); font: 700 0.7rem var(--sans); letter-spacing: 0.06em; text-transform: uppercase; padding: 2px 8px; border-radius: 4px; }
+.new h2 { font: 700 1rem var(--sans); color: var(--gold); margin: 4px 0 0; }
+.ayah { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px; display: grid; gap: 10px; min-width: 0; scroll-margin-top: 16px; }
+.ayah.flash { box-shadow: 0 0 0 2px var(--gold); }
+.ref { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px; }
+.ref b { color: var(--blue); } .ref span { color: var(--muted); font-size: 0.85rem; }
+.words { direction: rtl; display: flex; flex-wrap: wrap; gap: 4px 6px; line-height: 2.2; }
+.w { font: 1.65rem/1.6 var(--ar); color: var(--fg); background: none; border: 0; border-radius: 6px; padding: 0 4px; cursor: pointer; }
+.w:hover { background: var(--card-2); }
+.w.hit { color: var(--gold); background: var(--gold-soft); box-shadow: inset 0 -2px 0 var(--gold); }
+.end { font: 1.3rem var(--ar); color: var(--muted); align-self: center; }
+.tr { color: var(--fg); } .tr.bn { font-family: "Noto Sans Bengali", var(--sans); }
+.hint { color: var(--muted); font-size: 0.85rem; }
+.acts { display: flex; flex-wrap: wrap; gap: 8px; }
+.hadith-ar { font: 1.35rem/1.9 var(--ar2); direction: rtl; }
+.grade { font: 600 0.75rem var(--sans); color: #8fd3a7; border: 1px solid #8fd3a7; border-radius: 999px; padding: 1px 8px; }
+.none { color: var(--muted); font-style: italic; }
+.poster { width: min(100%, 360px); aspect-ratio: 3 / 4.2; background: var(--cream); color: var(--green); border: 6px solid var(--green); border-radius: 6px; display: grid; place-items: center; text-align: center; padding: 16px; }
+.poster .pa { font: 700 3rem var(--ar2); } .poster small { color: #6b5a2c; display: block; margin-top: 8px; }
+.cost { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: grid; gap: 8px; }
+.cost h2 { margin: 0; font: 700 1.05rem var(--sans); color: var(--gold); }
+.cost table { border-collapse: collapse; width: 100%; } .cost td, .cost th { text-align: left; vertical-align: top; padding: 8px; border-bottom: 1px solid var(--line); }
+.cost th { font: 600 0.72rem var(--sans); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.cost .scroll { overflow-x: auto; }
+.easy { color: #8fd3a7; font-weight: 700; } .mid { color: var(--gold); font-weight: 700; }
+/* Pop-ups: a sheet from the bottom on a phone, a card at the side on a desktop */
+.scrim { position: fixed; inset: 0; background: rgba(4,8,16,0.55); z-index: 30; }
+.pop { position: fixed; z-index: 31; background: var(--cream); color: var(--ink); border-radius: 14px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); display: grid; gap: 10px; padding: 14px 16px calc(14px + env(safe-area-inset-bottom, 0px)); overflow: auto;
+  right: 24px; top: 24px; width: min(420px, calc(100vw - 48px)); max-height: calc(100vh - 48px); }
+@media (max-width: 640px) { .pop { left: 0; right: 0; top: auto; bottom: 0; width: auto; max-height: 82vh; border-radius: 14px 14px 0 0; } }
+.pop .back { justify-self: start; font: 600 0.85rem var(--sans); min-height: 40px; padding: 0 12px; border-radius: 999px; background: var(--ink); color: var(--cream); border: 0; cursor: pointer; }
+.pop .big { font: 2.6rem/1.5 var(--ar); text-align: center; color: var(--green); direction: rtl; }
+.pop .ar-full { font: 1.6rem/2 var(--ar); direction: rtl; color: var(--green); }
+.pop dl { display: grid; grid-template-columns: 8.5rem 1fr; gap: 6px 10px; margin: 0; }
+.pop dt { font: 600 0.75rem var(--sans); color: #6b5a2c; text-transform: uppercase; letter-spacing: 0.05em; padding-top: 2px; }
+.pop dd { margin: 0; min-width: 0; } .pop .rt { font: 1.3rem var(--ar2); direction: rtl; display: inline-block; }
+.pop .tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+.pop .tab { font: 600 0.8rem var(--sans); padding: 6px 10px; border-radius: 6px; background: #efe6cc; border: 1px solid #d9c99a; color: var(--ink); }
+.pop .tab.on { background: var(--green); color: var(--cream); border-color: var(--green); }
+.pop .note { font-size: 0.85rem; color: #5b5240; background: #f3ead2; border-radius: 8px; padding: 8px 10px; }
+.pop .row { display: flex; flex-wrap: wrap; gap: 8px; }
+.pop .pbtn { font: 600 0.85rem var(--sans); min-height: 40px; padding: 0 12px; border-radius: 8px; border: 1px solid #c9b88a; background: #fff8e6; color: var(--ink); }
+.pill { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); z-index: 40; background: var(--gold); color: var(--ink); font: 700 0.9rem var(--sans); border: 0; border-radius: 999px; padding: 10px 18px; min-height: 44px; box-shadow: 0 4px 16px rgba(0,0,0,0.5); cursor: pointer; }
+.reader { background: var(--card); border: 1px solid var(--gold); border-radius: 12px; padding: 14px; display: grid; gap: 8px; }
+@media (prefers-reduced-motion: no-preference) { .pop { animation: up 0.18s ease-out; } @keyframes up { from { transform: translateY(12px); opacity: 0.6; } } }
+</style>
+
+<div class="page">
+  <div class="demo-note"><b>Demo, not the app.</b> This shows Explore → Asma ul Husna → <b>Al-Wakil</b> with the āyāt it cites written out in the empty space (the box with the gold dashed edge). The āyāt, their words, meanings and roots are the app's own data. Tap any word, or a button. The cards here are simplified copies of the real ones.</div>
+  <div class="bar">
+    <h1>Explore · Asma ul Husna</h1>
+    <span class="hint">Translation:</span>
+    <button class="btn" id="langEn" aria-pressed="true">English</button>
+    <button class="btn" id="langBn" aria-pressed="false">বাংলা</button>
+  </div>
+  <div class="panel">
+    <div class="left">
+      <div class="name-card">
+        <div class="name-ar">الْوَكِيل</div>
+        <div class="name-lat">Al-Wakil</div>
+        <div class="name-mean">The Trustee</div>
+        <div class="lab">Related āyāt &amp; hadith</div>
+        <div class="chips" id="refChips"></div>
+        <div class="lab">Belongs to</div>
+        <div class="chips"><span class="chip grp">Group: About His Acts, Ways, Operations, Management</span></div>
+      </div>
+      <section class="new" aria-labelledby="newH">
+        <span class="new-tag">New</span>
+        <h2 id="newH">The āyāt Al-Wakil is named in</h2>
+        <p class="hint" style="margin:0">The words from the same root as the Name (و ك ل) are marked in gold. Tap any word for its Word card; <b>Āyah card</b> opens the āyah's own card. Both close back to Al-Wakil.</p>
+        <div id="ayat" style="display:grid;gap:12px"></div>
+        <h2>Hadith</h2>
+        <p class="none" style="margin:0">No hadith is cited for Al-Wakil yet. Here is how a cited hadith would show (an example, from another Name's kind of reference):</p>
+        <div class="ayah" id="hadith">
+          <div class="ref"><b>Ṣaḥīḥ al-Bukhārī 2736</b> <span class="grade">Ṣaḥīḥ</span> <span>example only</span></div>
+          <div class="hadith-ar">إِنَّ لِلَّهِ تِسْعَةً وَتِسْعِينَ اسْمًا مِائَةً إِلاَّ وَاحِدًا مَنْ أَحْصَاهَا دَخَلَ الْجَنَّةَ</div>
+          <div class="tr" data-l="en">Allah's Messenger (ﷺ) said, "Allah has ninety-nine names, one hundred minus one, and whoever knows them will go to Paradise."</div>
+          <div class="tr bn" data-l="bn" hidden>আল্লাহর রাসূল (সাল্লাল্লাহু আলাইহি ওয়াসাল্লাম) বলেছেন, আল্লাহর নিরানব্বই অর্থাৎ এক কম একশ’টি নাম রয়েছে, যে ব্যক্তি তা মনে রাখবে সে জান্নাতে প্রবেশ করবে।</div>
+          <div class="acts"><button class="btn" id="openHadith">Open in Hadith →</button></div>
+        </div>
+      </section>
+    </div>
+    <div class="right">
+      <div class="poster"><div><div class="pa">الْوَكِيل</div><div><b>Al-Wakil</b></div><small>The poster stays where it is today.</small></div></div>
+    </div>
+  </div>
+  <div id="reader" hidden></div>
+  <div class="cost">
+    <h2>Possible, or hard work?</h2>
+    <p style="margin:0">Possible. Every piece already exists in the app; this joins them in one place.</p>
+    <div class="scroll"><table>
+      <thead><tr><th>Piece</th><th>What it takes</th><th>Effort</th></tr></thead>
+      <tbody>
+        <tr><td>The āyāt written out under the Name</td><td>The Name card already reads its references (3:173, 33:3). The app already has every āyah's Arabic, both translations and every word. Load that surah's file when a Name opens, never at start-up.</td><td class="easy">Small</td></tr>
+        <tr><td>Tap a word → the Word card</td><td>The Word card opens for any word of the Qur'an by its place (3:173:17). The same card as in Read view.</td><td class="easy">Small</td></tr>
+        <tr><td>Āyah card button</td><td>The Āyah card opens for any āyah (record progress, notes, bookmarks, related āyāt). It needs a "Back to Al-Wakil" so closing returns here (decision 86).</td><td class="easy">Small</td></tr>
+        <tr><td>Marking the Name's own word</td><td>Words share a root in the data (و ك ل), so the Name's word is found without hand-marking.</td><td class="easy">Small</td></tr>
+        <tr><td>Hadith written out</td><td>The hadith pages already fetch hadith by book and number. One snag: the source sometimes joins a chapter's notes onto a hadith (Bukhari 2736 arrives with two extra reports in front), so the text needs trimming before it is shown.</td><td class="mid">Medium</td></tr>
+        <tr><td>Hadith words → Word card</td><td>Only for words that also occur in the Qur'an, as the Dua cards already do.</td><td class="mid">Medium</td></tr>
+      </tbody>
+    </table></div>
+    <p style="margin:0">In all: <b>one Builder round</b> for the āyāt, with both cards and the way back. <b>A second round</b> for the hadith. No new data and no Rules change.</p>
+  </div>
+</div>
+<div class="scrim" id="scrim" hidden></div>
+<div class="pop" id="pop" role="dialog" aria-modal="true" hidden></div>
+<button class="pill" id="pill" hidden>← Back to Al-Wakil</button>
+<script type="application/json" id="data">[{"s": 3, "a": 173, "surah": "Āl ʿImrān", "ar": "سُورَةُ آلِ عِمۡرَانَ", "en": "Those to whom hypocrites said, \"Indeed, the people have gathered against you, so fear them.\" But it [merely] increased them in faith, and they said, \"Sufficient for us is Allah, and [He is] the best Disposer of affairs.\"", "bn": "যাদেরকে লোকেরা বলেছে যে, তোমাদের সাথে মোকাবেলা করার জন্য লোকেরা সমাবেশ করেছে বহু সাজ-সরঞ্জাম; তাদের ভয় কর। তখন তাদের বিশ্বাস আরও দৃঢ়তর হয়ে যায় এবং তারা বলে, আমাদের জন্য আল্লাহই যথেষ্ট; কতই না চমৎকার কামিয়াবীদানকারী।", "page": 72, "juz": 4, "words": [{"p": 1, "ar": "ٱلَّذِينَ", "tr": "alladhīna", "en": "Those who", "bn": "(এমন) যারা", "root": "", "lemma": "ٱلَّذِى", "pos": "Relative Pronoun", "rc": 0}, {"p": 2, "ar": "قَالَ", "tr": "qāla", "en": "said", "bn": "বলেছিল", "root": "قول", "lemma": "قَالَ", "pos": "Verb", "rc": 1722}, {"p": 3, "ar": "لَهُمُ", "tr": "lahumu", "en": "to them", "bn": "তাদেরকে", "root": "", "lemma": "", "pos": "Preposition + Pronoun", "rc": 0}, {"p": 4, "ar": "ٱلنَّاسُ", "tr": "l-nāsu", "en": "[the people]", "bn": "লোকেরা", "root": "نوس", "lemma": "نَّاس", "pos": "Determiner + Noun", "rc": 241}, {"p": 5, "ar": "إِنَّ", "tr": "inna", "en": "Indeed", "bn": "''নিশ্চয়", "root": "", "lemma": "إِنّ", "pos": "Accusative Particle", "rc": 0}, {"p": 6, "ar": "ٱلنَّاسَ", "tr": "l-nāsa", "en": "the people", "bn": "সব লোক (অর্থাৎ বড় বাহিনী)", "root": "نوس", "lemma": "نَّاس", "pos": "Determiner + Noun", "rc": 241}, {"p": 7, "ar": "قَدْ", "tr": "qad", "en": "(have) certainly", "bn": "অবশ্যই", "root": "", "lemma": "قَد", "pos": "Particle of Certainty", "rc": 0}, {"p": 8, "ar": "جَمَعُوا۟", "tr": "jamaʿū", "en": "gathered", "bn": "জমা হয়েছে", "root": "جمع", "lemma": "جَمَعَ", "pos": "Verb + Pronoun", "rc": 129}, {"p": 9, "ar": "لَكُمْ", "tr": "lakum", "en": "against you", "bn": "তোমাদের জন্য", "root": "", "lemma": "", "pos": "Preposition + Pronoun", "rc": 0}, {"p": 10, "ar": "فَٱخْشَوْهُمْ", "tr": "fa-ikh'shawhum", "en": "so fear them", "bn": "তাই ভয় কর তাদেরকে''", "root": "خشي", "lemma": "خَشِىَ", "pos": "Resumption Particle + Verb + Pronoun + Pronoun", "rc": 48}, {"p": 11, "ar": "فَزَادَهُمْ", "tr": "fazādahum", "en": "But it increased them", "bn": "কিন্তু তাদের বেড়ে গেল", "root": "زيد", "lemma": "زَادَ", "pos": "Conjunction + Verb + Pronoun", "rc": 61}, {"p": 12, "ar": "إِيمَـٰنًۭا", "tr": "īmānan", "en": "(in) faith", "bn": "ঈমান", "root": "امن", "lemma": "إِيمَٰن", "pos": "Noun", "rc": 879}, {"p": 13, "ar": "وَقَالُوا۟", "tr": "waqālū", "en": "and they said", "bn": "এবং তারা বলেছিল", "root": "قول", "lemma": "قَالَ", "pos": "Conjunction + Verb + Pronoun", "rc": 1722}, {"p": 14, "ar": "حَسْبُنَا", "tr": "ḥasbunā", "en": "Sufficient for us", "bn": "''আমাদের জন্য যথেষ্ট", "root": "حسب", "lemma": "حَسْب", "pos": "Noun + Pronoun", "rc": 109}, {"p": 15, "ar": "ٱللَّهُ", "tr": "l-lahu", "en": "(is) Allah", "bn": "আল্লাহই", "root": "اله", "lemma": "ٱللَّه", "pos": "Proper Noun", "rc": 2851}, {"p": 16, "ar": "وَنِعْمَ", "tr": "waniʿ'ma", "en": "and (He is the) best", "bn": "এবং (তিনিই) উত্তম", "root": "نعم", "lemma": "نِعْمَ", "pos": "Resumption Particle + Verb", "rc": 140}, {"p": 17, "ar": "ٱلْوَكِيلُ", "tr": "l-wakīlu", "en": "[the] Disposer of affairs", "bn": "অভিভাবক''", "root": "وكل", "lemma": "وَكِيل", "pos": "Determiner + Noun", "rc": 70}]}, {"s": 33, "a": 3, "surah": "Al-Aḥzāb", "ar": "سُورَةُ الأَحۡزَابِ", "en": "And rely upon Allah; and sufficient is Allah as Disposer of affairs.", "bn": "আপনি আল্লাহর উপর ভরসা করুন। কার্যনির্বাহীরূপে আল্লাহই যথেষ্ট।", "page": 418, "juz": 21, "words": [{"p": 1, "ar": "وَتَوَكَّلْ", "tr": "watawakkal", "en": "And put your trust", "bn": "এবং নির্ভর করো", "root": "وكل", "lemma": "تَوَكَّلْ", "pos": "Conjunction + Verb", "rc": 70}, {"p": 2, "ar": "عَلَى", "tr": "ʿalā", "en": "in", "bn": "উপর", "root": "", "lemma": "عَلَىٰ", "pos": "Preposition", "rc": 0}, {"p": 3, "ar": "ٱللَّهِ ۚ", "tr": "l-lahi", "en": "Allah", "bn": "আল্লাহর", "root": "اله", "lemma": "ٱللَّه", "pos": "Proper Noun", "rc": 2851}, {"p": 4, "ar": "وَكَفَىٰ", "tr": "wakafā", "en": "And Allah is sufficient", "bn": "এবং যথেষ্ট", "root": "كفي", "lemma": "كَفَىٰ", "pos": "Conjunction + Verb", "rc": 33}, {"p": 5, "ar": "بِٱللَّهِ", "tr": "bil-lahi", "en": "And Allah is sufficient", "bn": "আল্লাহই", "root": "اله", "lemma": "ٱللَّه", "pos": "Preposition + Proper Noun", "rc": 2851}, {"p": 6, "ar": "وَكِيلًۭا", "tr": "wakīlan", "en": "(as) Disposer of affairs", "bn": "(দায়িত্বশীল বা) কর্মবিধায়করূপে", "root": "وكل", "lemma": "وَكِيل", "pos": "Noun", "rc": 70}]}]</script>
+<script>
+(function () {
+  const A = JSON.parse(document.getElementById("data").textContent);
+  const $ = (s) => document.querySelector(s);
+  const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const AR = (n) => String(n).replace(/\d/g, (d) => "٠١٢٣٤٥٦٧٨٩"[d]);
+  let lang = "en", lastFocus = null;
+  const ROOT = "وكل";
+  function renderAyat() {
+    $("#refChips").innerHTML = A.map((x, i) => `<button class="chip" data-go="${i}">📖 Qur'an ${x.s}:${x.a}</button>`).join("");
+    $("#ayat").innerHTML = A.map((x, i) => `
+      <article class="ayah" id="ay${i}">
+        <div class="ref"><b>${esc(x.surah)} ${x.s}:${x.a}</b><span>Juz ${x.juz} · page ${x.page}</span></div>
+        <div class="words">${x.words.map((w, j) => `<button class="w${w.root === ROOT ? " hit" : ""}" data-a="${i}" data-w="${j}" aria-label="${esc(w.tr)}: ${esc(w.en)}">${esc(w.ar)}</button>`).join("")}<span class="end">﴿${AR(x.a)}﴾</span></div>
+        <div class="tr${lang === "bn" ? " bn" : ""}">${esc(lang === "bn" ? x.bn : x.en)}</div>
+        <div class="acts"><button class="btn gold" data-card="${i}">Āyah card</button><button class="btn" data-read="${i}">Read it in the Qur'an →</button></div>
+      </article>`).join("");
+    document.querySelectorAll("#hadith [data-l]").forEach((el) => { el.hidden = el.dataset.l !== lang; });
+  }
+  function open(html) { lastFocus = document.activeElement; const p = $("#pop"); p.innerHTML = `<button class="back" data-close>← Back to Al-Wakil</button>` + html; p.hidden = false; $("#scrim").hidden = false; p.querySelector("[data-close]").focus(); }
+  function close() { $("#pop").hidden = true; $("#scrim").hidden = true; if (lastFocus) lastFocus.focus(); }
+  function wordCard(i, j) {
+    const x = A[i], w = x.words[j];
+    open(`<div class="tabs"><span class="tab on">Word by word</span><span class="tab">Basic Arabic</span><span class="tab">Deeper Arabic</span></div>
+      <div class="big">${esc(w.ar)}</div>
+      <dl><dt>Sounds like</dt><dd>${esc(w.tr)}</dd>
+      <dt>Means</dt><dd>${esc(lang === "bn" ? w.bn : w.en)}</dd>
+      <dt>Root</dt><dd>${w.root ? `<span class="rt">${esc(w.root.split("").join(" "))}</span> · in the Qur'an ${w.rc.toLocaleString()} times` : "none (a particle)"}</dd>
+      <dt>Dictionary word</dt><dd><span class="rt">${esc(w.lemma)}</span></dd>
+      <dt>Kind of word</dt><dd>${esc(w.pos)}</dd>
+      <dt>Place</dt><dd>${x.s}:${x.a}:${w.p}</dd></dl>
+      ${w.root === ROOT ? `<div class="note">Same root as the Name <b>al-Wakīl</b>.</div>` : ""}
+      <div class="note">The real Word card has all three tabs: every form of the root, how often each occurs, your progress, and ‹ › to the next word.</div>`);
+  }
+  function ayahCard(i) {
+    const x = A[i];
+    open(`<div style="font:700 1rem var(--sans)">${esc(x.surah)} ${x.s}:${x.a}</div>
+      <div class="ar-full">${x.words.map((w) => esc(w.ar)).join(" ")} ﴿${AR(x.a)}﴾</div>
+      <div>${esc(x.en)}</div><div class="bn">${esc(x.bn)}</div>
+      <div class="row"><span class="pbtn">Take an Approach</span><span class="pbtn">Record Your Progress</span><span class="pbtn">Know Your Status</span></div>
+      <div class="row"><span class="pbtn">📝 My Notes</span><span class="pbtn">🔖 Bookmark</span><span class="pbtn">Related āyāt</span></div>
+      <div class="note">In the app this is the real Āyah card: recording, notes, bookmarks and related āyāt all work as they do in Read view.</div>`);
+  }
+  function readIt(i) {
+    const x = A[i]; const r = $("#reader");
+    r.innerHTML = `<div class="reader"><b style="color:var(--gold)">Read view (simplified): ${esc(x.surah)} ${x.s}:${x.a}</b><div class="words">${x.words.map((w) => `<span class="w" style="cursor:default">${esc(w.ar)}</span>`).join("")}</div><div class="hint">In the app this opens the Qur'an page at this āyah. The gold pill brings you back to Al-Wakil (decision 86).</div></div>`;
+    r.hidden = false; $(".panel").hidden = true; $("#pill").hidden = false; $("#pill").focus(); window.scrollTo(0, 0); backTo = "ay" + i;
+  }
+  let backTo = null;
+  $("#pill").onclick = () => { $("#reader").hidden = true; $(".panel").hidden = false; $("#pill").hidden = true; const el = document.getElementById(backTo); if (el) { el.scrollIntoView({ block: "center" }); el.classList.add("flash"); setTimeout(() => el.classList.remove("flash"), 1400); } };
+  document.addEventListener("click", (e) => {
+    const t = e.target.closest("button"); if (!t) { if (e.target.id === "scrim") close(); return; }
+    if (t.dataset.close != null) return close();
+    if (t.dataset.w != null) return wordCard(+t.dataset.a, +t.dataset.w);
+    if (t.dataset.card != null) return ayahCard(+t.dataset.card);
+    if (t.dataset.read != null) return readIt(+t.dataset.read);
+    if (t.dataset.go != null) { const el = document.getElementById("ay" + t.dataset.go); el.scrollIntoView({ block: "center", behavior: "smooth" }); el.classList.add("flash"); setTimeout(() => el.classList.remove("flash"), 1400); return; }
+    if (t.id === "openHadith") { readItHadith(); }
+  });
+  function readItHadith() {
+    const r = $("#reader");
+    r.innerHTML = `<div class="reader"><b style="color:var(--gold)">Hadith page (simplified): Ṣaḥīḥ al-Bukhārī 2736</b><div class="hint">In the app this opens the hadith in the Hadith module, where it can be marked Studied, noted and bookmarked. The gold pill brings you back.</div></div>`;
+    r.hidden = false; $(".panel").hidden = true; $("#pill").hidden = false; backTo = "hadith"; window.scrollTo(0, 0);
+  }
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("#pop").hidden) close(); });
+  $("#langEn").onclick = () => { lang = "en"; $("#langEn").setAttribute("aria-pressed", "true"); $("#langBn").setAttribute("aria-pressed", "false"); renderAyat(); };
+  $("#langBn").onclick = () => { lang = "bn"; $("#langBn").setAttribute("aria-pressed", "true"); $("#langEn").setAttribute("aria-pressed", "false"); renderAyat(); };
+  renderAyat();
+})();
+</script>
