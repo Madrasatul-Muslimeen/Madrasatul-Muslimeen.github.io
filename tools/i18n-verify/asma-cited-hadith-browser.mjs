@@ -30,6 +30,8 @@ const MUT = {
   nolang: [MOD, "const want = loaded.translations[lang] ? lang :", "const want = loaded.translations.en ? \"en\" :"],
   nofallback: [MOD, ": loaded.translations[other] ? other : null;", ": null;"],
   nograde: [MOD, "const grade = cite.grade ?", "const grade = false ?"],
+  cap99: [HTML, "      if (!Number.isInteger(number) || number < 1) return;", "      if (!Number.isInteger(number) || number < 1 || number > 99) return;"],
+  noclear: [HTML, '      try { const u = new URL(location.href); u.searchParams.delete("asmaName"); u.searchParams.delete("asmaGroup"); history.replaceState(history.state, "", u); } catch { /* ignore */ }\n', "\n"],
   noback: [HTML, '          u.searchParams.set("asmaName", String(number));\n', "\n"],
   nojoin: [MOD, "if (link.words && !plainArabic(arabic)", "if (false && !plainArabic(arabic)"],
   guess: [MOD, "if (!cite.link) {", "if (false) {"],
@@ -160,6 +162,16 @@ for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 1280]]) {
   await openName(P, "104", "muslim:487");
   v = await read(P, "muslim:487");
   check(`${tag} As-Subbuh: reference ${bn ? "সহীহ মুসলিম ৪৮৭" : "Sahih Muslim 487"} and the Arabic holds "سبوح قدوس رب الملائكة والروح"`, v.ref === (bn ? "সহীহ মুসলিম ৪৮৭" : "Sahih Muslim 487") && strip(v.arabic).includes(strip("سبوح قدوس رب الملائكة والروح")), JSON.stringify([v.ref, v.arabic.slice(0, 40)]));
+  // Architect review: the way back for a Name beyond the 99 (the first version capped the reopen at 99), and the address
+  // is cleared once used (a later reload must not reopen the Name).
+  await P.evaluate(() => document.querySelector('[data-asmax-hadith-open="muslim:487"]')?.click());
+  await P.waitForFunction(() => location.pathname.endsWith("hadith-collections.html"), null, { timeout: 15000 }).catch(() => {});
+  await P.waitForFunction(() => { const b = document.getElementById("hadithBackBtn"); return b && !b.hidden; }, null, { timeout: 15000 }).catch(() => {});
+  await P.evaluate(() => document.getElementById("hadithBackBtn")?.click());
+  await P.waitForFunction(() => location.pathname.endsWith("quranrevival.html"), null, { timeout: 15000 }).catch(() => {});
+  await P.waitForFunction(() => !!document.querySelector('#asmaXCitedHadith [data-asmax-hadith="muslim:487"]'), null, { timeout: 20000 }).catch(() => {});
+  const back104 = await P.evaluate(() => ({ hadith: !!document.querySelector('#asmaXCitedHadith [data-asmax-hadith="muslim:487"]'), search: location.search }));
+  check(`${tag} As-Subbuh (104, beyond the 99): ← Back from the library lands on it again, and the address is cleared`, back104.hadith && !/asmaName/.test(back104.search), JSON.stringify(back104));
 
   // --- Name 120: not in the library ---
   await openName(P, "120", "sahihjami:1824");

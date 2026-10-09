@@ -14554,7 +14554,10 @@
     async function openAsmaNameFromQueryString() {
       const params = new URLSearchParams(location.search);
       const number = Number(params.get("asmaName"));
-      if (!Number.isInteger(number) || number < 1 || number > 99) return;
+      // Architect review of #690: no "> 99" cap -- extra Names (beyond the 99, e.g. As-Subbuh, 104) cite hadith too.
+      if (!Number.isInteger(number) || number < 1) return;
+      // Used once: cleared, so a later reload opens the page as usual rather than this Name again.
+      try { const u = new URL(location.href); u.searchParams.delete("asmaName"); u.searchParams.delete("asmaGroup"); history.replaceState(history.state, "", u); } catch { /* ignore */ }
       await ensureAsmaXDataLoaded();
       if (!asmaXResolve(number)) return;
       await returnToAsmaName(number, params.get("asmaGroup") || null, false);
