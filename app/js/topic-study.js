@@ -420,7 +420,7 @@ export function initTopicStudyPage({ moduleId, trackableId, rootSubjectId }) {
     const entry = currentChunk?.entries?.[entryKey] ?? null;
     const statusLine = entry
       ? `Status: <strong>${entry.claimedStatus.replace(/_/g, " ")}</strong> &middot; ${entry.confirmState}`
-      : "Not started yet.";
+      : t("Not started yet.");
 
     const isBookmarked = !!findSavedBookmark(bookmarksDoc, { moduleId, subjectId: node.id, position: node.id });
     detailContainer.innerHTML = `<div class="topic-detail">

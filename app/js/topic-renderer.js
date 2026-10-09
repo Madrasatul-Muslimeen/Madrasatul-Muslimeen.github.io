@@ -66,7 +66,7 @@ export function renderTopicChildList(children, statusByNodeId = new Map(), logge
     const chip = statusId
       ? `<span class="topic-status-chip" style="background:${STATUS_COLORS[statusId] ?? STATUS_COLORS.not_started}">${statusLabel(statusId)}</span>`
       : hasResource
-        ? `<span class="topic-status-chip topic-status-unclaimed">Not started</span>`
+        ? `<span class="topic-status-chip topic-status-unclaimed">${t("Not started")}</span>`
         : `<span class="topic-status-chip topic-status-noresource">${t("No resource yet")}</span>`;
     // loggedTodayByNodeId only carries entries when the caller is the
     // routine renderer (routine-study.js sets true/false for every
@@ -89,7 +89,7 @@ export function renderTopicChildList(children, statusByNodeId = new Map(), logge
 export function renderTopicResource(resource) {
   if (!resource) {
     return `<div class="topic-resource topic-resource-empty">
-      <p>No resource added yet for this topic. Add one from the Catalogue page before studying it here.</p>
+      <p>${t("No resource added yet for this topic. Add one from the Catalogue page before studying it here.")}</p>
     </div>`;
   }
   if (resource.type === "link") {

@@ -3870,4 +3870,11 @@ export const BN = {
   // The "বাংলা translation" tick (its old key above was never reached: translateStatic() skips any string that already
   // holds Bangla script) is now <span>বাংলা</span> + this word.
   "translation": "অনুবাদ",
+  // Sweep part 3 (#684): the other pages. Each key was searched for first; none existed.
+  "Show archived people": "সংরক্ষণাগারে রাখা ব্যক্তিদের দেখান",
+  "No resource added yet for this topic. Add one from the Catalogue page before studying it here.": "এই বিষয়ের জন্য এখনো কোনো উপকরণ যোগ করা হয়নি। এখানে পড়ার আগে ক্যাটালগ পাতা থেকে একটি যোগ করুন।",
+  "{count} routine here not logged today yet.": "এখানকার {count}টি রুটিন আজ এখনো লগ করা হয়নি।",
+  "{count} routines here not logged today yet.": "এখানকার {count}টি রুটিন আজ এখনো লগ করা হয়নি।",
+  "built": "তৈরি হয়েছে",
+  "planned": "পরিকল্পিত",
 };

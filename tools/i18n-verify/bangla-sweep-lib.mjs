@@ -38,7 +38,7 @@ export const SCAN = () => {
       if (lang && lang !== "bn") return "lang=" + lang;
       if (e.getAttribute?.("dir") === "rtl") return "rtl";
       if (e.hasAttribute?.("data-i18n-skip")) return "skip";
-      if (e.matches?.("[data-standard-translation-text], .hadith-arabic, .dua-word-arabic, .ayah-translation, .note-english, .qcr-list-title, .qcr-way-snippet, #qcrLevelSelect, .wbw-translit, .wbw-gloss, .word-card-transliteration, .dua-word-translit .dua-word-value")) return "data";
+      if (e.matches?.("[data-standard-translation-text], .hadith-arabic, .dua-word-arabic, .ayah-translation, .registry-text,.note-english, .qcr-list-title, .qcr-way-snippet, #qcrLevelSelect, .wbw-translit, .wbw-gloss, .word-card-transliteration, .dua-word-translit .dua-word-value")) return "data";
     }
     return null;
   };
