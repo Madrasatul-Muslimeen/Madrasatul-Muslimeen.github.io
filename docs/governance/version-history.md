@@ -785,3 +785,4 @@ total). Allocated by the MMSA Architect.
 09.139: Mushaf view follows the chosen unit. Allocated by the MMSA Architect.
 09.140: the way back from Notes on the Qur'an page. Allocated by the MMSA Architect.
 09.141: the newer screens checked in Bangla. Allocated by the MMSA Architect.
+09.142: the most-used screens checked in Bangla. Allocated by the MMSA Architect.
