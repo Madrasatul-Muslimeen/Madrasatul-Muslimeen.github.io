@@ -149,6 +149,7 @@ export function renderQuickMenu(unitKey, {
         <button type="button" class="qm-item" data-qm-play>▶ ${t("Play this āyah")}</button>
         ${showBookmark ? `<button type="button" class="qm-item" data-qm-bookmark>${isBookmarked ? "★" : "🔖"} ${isBookmarked ? t("Remove bookmark") : t("Bookmark this āyah")}</button>` : ""}
         <button type="button" class="qm-item" data-qm-note>📝 ${t("Note & more…")}</button>
+        <button type="button" class="qm-item" data-qm-qcr>📚 ${t("QCR collection(s)…")}</button>
         ${showTextTools ? `
         <div class="qm-divider"></div>
         <button type="button" class="qm-item${isWbwOn ? " is-on" : ""}" data-qm-wbw aria-pressed="${isWbwOn ? "true" : "false"}">${t("Word by Word")} <span class="qm-caret">${isWbwOn ? "✓" : ""}</span></button>
@@ -179,7 +180,7 @@ function closeAllQuickMenus(container) {
  * listeners below are cheap to re-attach to fresh nodes; only the outside-
  * click listener is guarded against being bound twice on the same container.
  */
-export function attachQuickMenuHandlers(container, { buildText, onPlay, onOpenNote, onToggleBookmark, onToggleWbw, onToggleRoots, onToggleDerivatives }) {
+export function attachQuickMenuHandlers(container, { buildText, onPlay, onOpenNote, onToggleBookmark, onToggleWbw, onToggleRoots, onToggleDerivatives, onQcr }) {
   container.querySelectorAll(".ayah-quick-wrap").forEach((wrap) => {
     const unitKey = wrap.dataset.unitKey;
     const btn = wrap.querySelector("[data-qm-toggle]");
@@ -226,6 +227,10 @@ export function attachQuickMenuHandlers(container, { buildText, onPlay, onOpenNo
     wrap.querySelector("[data-qm-note]")?.addEventListener("click", () => {
       closeAllQuickMenus(container);
       onOpenNote?.(unitKey);
+    });
+    wrap.querySelector("[data-qm-qcr]")?.addEventListener("click", () => {
+      closeAllQuickMenus(container);
+      onQcr?.(unitKey);
     });
     wrap.querySelector("[data-qm-bookmark]")?.addEventListener("click", () => {
       closeAllQuickMenus(container);

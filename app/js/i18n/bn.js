@@ -3888,5 +3888,4 @@ export const BN = {
   "Couldn't load this āyah. Check the connection and open the Name again.": "এই আয়াতটি লোড করা যায়নি। সংযোগ দেখে নামটি আবার খুলুন।",
   // --- 9 Oct 2026: a listening bookmark resumes; the Āyah card's 🗂 QCR fold
   "Continue listening": "শোনা চালিয়ে যান",
-  "QCR collections": "QCR সংকলনসমূহ",
 };

@@ -1941,11 +1941,6 @@
   /* Owner, 9 Oct 2026: a listening bookmark whose sound the browser would not start without a tap. */
   .continue-listening-btn { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(96px + env(safe-area-inset-bottom, 0px)); z-index: 1300; min-height: 52px; padding: 0 26px; border-radius: 999px; border: 0; background: #1d6b4a; color: #fff; font-size: 18px; font-weight: 700; box-shadow: 0 6px 22px rgba(0,0,0,0.35); cursor: pointer; }
   .continue-listening-btn[hidden] { display: none; }
-  /* The Āyah card's 🗂 QCR fold (the Note view's collection ticks, reused). */
-  .ayah-sheet-qcr { margin: 6px 0 10px; border: 1px solid var(--card-line, #d6ddd9); border-radius: 10px; padding: 0 12px; }
-  .ayah-sheet-qcr > summary { min-height: 44px; display: flex; align-items: center; font-weight: 700; cursor: pointer; }
-  .ayah-sheet-qcr-body { display: grid; gap: 2px; padding-bottom: 10px; }
-  .ayah-sheet-qcr-body .note-collection-row { display: flex; align-items: center; gap: 10px; min-height: 40px; }
   /* Owner, 9 Oct 2026: a Name's cited āyāt under its card (asma-cited-ayat.js), on Explore's dark panel. */
   .asmax-cited { display: grid; gap: 10px; margin-top: 12px; }
   .asmax-cited[hidden] { display: none; }
@@ -18403,6 +18398,14 @@
         onPlay: quickPlayAyah,
         onOpenNote: openNoteView,
         onToggleBookmark: toggleAyahBookmark,
+        // The Owner, 9 Oct 2026 (Read view): "there's no button for attaching this Ayah to QCR." The same route as the
+        // Āyah card's 📚 QCR: the Note view's QCR panel opened on Attach, with "Back" to where the reader was.
+        onQcr: (unitKey) => {
+          const { surah: s, ayah: a } = parseAyahUnitKey(unitKey), view = stageView === "note" ? "note" : "read";
+          ayahSheetPendingQcrOpen = true;
+          setAppReturn(t("Back"), ayahRefLabel(s, a).replace(/^.*?(\S+:\S+).*$/, "$1"), () => navigateToAyah(s, a, view));
+          openNoteView(unitKey);
+        },
         // Text-tools round -- the SAME three functions the Note view's own
         // ⋮ menu calls, which flip the canonical Study-options ticks and
         // re-render whichever screen is open (onReadingTickChanged). One
@@ -19427,10 +19430,6 @@
         related: ayahSheetRelated,
         connected: ayahSheetConnected,
         ladderHtml,
-        // The Owner, 9 Oct 2026 ("there's no button for attaching this Ayah to QCR"): the Note view's 🗂 ticks, here
-        // too, so the Read view, the Mushaf and Explore reach them. null until the collections are loaded.
-        qcrHtml: qcrCollections ? renderQcrMembershipPopoverHtml(ayahSheetUnitKey) : null,
-        qcrOpen: ayahActionSheetMountEl.querySelector("[data-ayah-sheet-qcr]")?.open ?? false, // a re-render keeps the fold as it was
         canPrev: !!ayahCardNeighbour(ayahSheetUnitKey, -1),
         canNext: !!ayahCardNeighbour(ayahSheetUnitKey, 1),
       });
@@ -19746,19 +19745,7 @@
       ensureAyahNoteDataLoaded().then(() => { if (ayahSheetUnitKey === unitKey) renderAyahActionSheetNow(); });
       ensureAyahSheetWordStatusLoaded(unitKey, surahNum, ayahNum);
       ensureAyahSheetPosterNoteLoaded(unitKey);
-      if (!qcrCollections) ensureQcrDataLoaded().then(() => { if (ayahSheetUnitKey === unitKey && ayahActionSheetOverlayEl.classList.contains("open")) renderAyahActionSheetNow(); }).catch(() => {});
     }
-    // A tick in the Āyah card's 🗂 QCR fold files (or unfiles) this āyah, exactly as the Note view's popover does:
-    // owner/prime only (the boxes are not drawn for anyone else), one write per tick, rolled back if it fails (I15).
-    ayahActionSheetMountEl.addEventListener("change", async (e) => {
-      const cb = e.target?.closest?.("[data-ayah-sheet-qcr] [data-note-collection-toggle]");
-      if (!cb || !ayahSheetUnitKey) return;
-      const unitKey = ayahSheetUnitKey, prev = qcrCollections;
-      qcrCollections = cb.checked
-        ? qcrAddItemLocal(qcrCollections, cb.dataset.noteCollectionToggle, unitKey)
-        : qcrRemoveItemLocal(qcrCollections, cb.dataset.noteCollectionToggle, unitKey);
-      if (!(await qcrPersist())) { qcrCollections = prev; renderAyahActionSheetNow(); }
-    });
 
     /** Owner, 7 Oct 2026 -- the Āyah card's ‹ ›: the āyah before or after this one, across a
         surah's edge, Al-Fātiḥah's two displayed halves of 1:7 included. null at either end. */

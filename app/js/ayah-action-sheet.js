@@ -427,7 +427,7 @@ export function renderAyahActionSheetHtml({
   unitKey, ref = "", hasNote = false, isBookmarked = false, isSelf = true,
   approachOptionsHtml = "", selectedApproachId = null, selectedApproachStatusId = "not_started", hasPosterNote = null, approachSummary = null, canConfirm = false,
   approachStatuses = [], wordStatus = null, hifzStatus = null, related = null,
-  connected = null, ladderHtml = "", canPrev = true, canNext = true, qcrHtml = null, qcrOpen = false,
+  connected = null, ladderHtml = "", canPrev = true, canNext = true
 } = {}) {
   void hasNote; // kept for callers that already pass it (icon/wording decisions belong to isBookmarked/isSelf above, not this flag)
   const noteWhy = t("Only your own record can create or file a Note.");
@@ -449,10 +449,6 @@ export function renderAyahActionSheetHtml({
         <button type="button" class="ayah-sheet-close" data-ayah-sheet-close aria-label="${escapeHtml(t("Close"))}">×</button>
       </div>
       ${actionRow}
-      ${qcrHtml === null ? "" : `<details class="ayah-sheet-qcr" data-ayah-sheet-qcr${qcrOpen ? " open" : ""}>
-        <summary>🗂 ${escapeHtml(t("QCR collections"))}</summary>
-        <div class="ayah-sheet-qcr-body">${qcrHtml}</div>
-      </details>`}
       <div class="ayah-sheet-status" data-ayah-sheet-status>
         <h3 class="ayah-sheet-section-title">${escapeHtml(t("Status of this āyah"))}</h3>
         <div class="ayah-status-block">

@@ -4,14 +4,14 @@
 // (1) A bookmark made while listening carries `listening: true`; opening it starts the recitation at its āyah. Where the
 //     browser refuses sound without a tap on this page (a phone, as a rule), one "▶ Continue listening" button is
 //     offered instead of an error, and pressing it plays. A bookmark NOT made while listening plays nothing.
-// (2) The Āyah card has a 🗂 QCR fold with the Note view's collection ticks; a tick files the āyah (the write is read
-//     back from the stub), a second tick unfiles it.
+// (2) The Read view's ⋮ menu has "📚 QCR collection(s)…" (the Āyah card already had it): the attach ticks open, a tick
+//     files the āyah (the write is read back from the stub), and Back returns to the āyah.
 // Audio is a generated silent WAV served for every recitation file (this sandbox reaches no audio host).
 // Run from the repository root, serve.js on :8080.
 //   --mutate=noresume   opening a listening bookmark does not resume   -> the autoplay check fails
 //   --mutate=nobutton   a blocked start shows no button                -> the blocked-start checks fail
 //   --mutate=noflag     the bookmark does not remember listening       -> the capture check fails
-//   --mutate=noqcr      the Āyah card has no QCR fold                  -> the QCR checks fail
+//   --mutate=noqcr      the ⋮ menu's QCR item does nothing             -> the QCR checks fail
 //   --mutate=nows       the writing sheet has no 🔖                       -> the writing-sheet bookmark checks fail
 //   --mutate=wsreopen   a "writing" bookmark does not reopen the sheet  -> the reopen check fails
 // (3) The Owner, 9 Oct 2026, on the writing sheet: "Need a bookmark button here." 🔖 saves a bookmark (the usual naming
@@ -31,7 +31,7 @@ const MUT = {
   noflag: ["quranrevival.html", ', listening: isPlaying() || isPaused() };', " };"],
   nows: ["quranrevival.html", "          onBookmark: () => toggleAyahBookmark(", "          onBookmarkOff: () => toggleAyahBookmark("],
   wsreopen: ["quranrevival.html", '      else if (position && settings?.view === "writing") { openReadingScreen(); await openWritingSheetForCurrentUnit(); }\n', "\n"],
-  noqcr: ["quranrevival.html", "        qcrHtml: qcrCollections ? renderQcrMembershipPopoverHtml(ayahSheetUnitKey) : null,\n", "\n"],
+  noqcr: ["js/ayah-note-renderer.js", "      onQcr?.(unitKey);", "      void unitKey;"],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
 
@@ -147,45 +147,52 @@ const quiet = (errors) => errors.filter((e) => !/ERR_CERT|net::|archive\.org|api
   await browser.close();
 }
 
-// --- (2) the Āyah card's 🗂 QCR fold ------------------------------------------------------------------------------------
+// --- (2) QCR from the Read view's ⋮ menu ----------------------------------------------------------------------------
+// The Āyah card already had 📚 QCR (it opens the Note view's QCR panel on Attach); the Read view's ⋮ menu had none. It
+// now has the same item: the attach ticks open, a tick files the āyah (the write read back), Back returns to 83:4.
 {
   const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
   for (const [lang, width] of [["en", 390], ["bn", 1280]]) {
-    const tag = `[QCR, ${lang} ${width}]`;
+    const tag = `[QCR ⋮, ${lang} ${width}]`;
     const ctx = await newContext(browser, { appLang: lang === "bn" ? "bn" : null, banner: false, viewport: { width, height: 844 } });
     await ctx.route("**/archive.org/**", (r) => r.abort());
     if (MUTATE) {
       const [file, a, b] = MUT[MUTATE];
-      await ctx.route(`**/app/${file}*`, async (r) => { const src = fs.readFileSync(`app/${file}`, "utf8"); if (!src.includes(a)) throw new Error(`mutation anchor missing`); await r.fulfill({ status: 200, contentType: "text/html; charset=utf-8", body: src.split(a).join(b) }); });
+      await ctx.route(`**/app/${file}*`, async (r) => { const src = fs.readFileSync(`app/${file}`, "utf8"); if (!src.includes(a)) throw new Error(`mutation anchor missing`); await r.fulfill({ status: 200, contentType: file.endsWith(".js") ? "text/javascript; charset=utf-8" : "text/html; charset=utf-8", body: src.split(a).join(b) }); });
     }
     const { page: P, errors } = await openPage(ctx, "/app/quranrevival.html");
     await P.evaluate(() => document.querySelectorAll('[id*="splash"], .app-splash-overlay').forEach((e) => e.remove()));
     if (!(await P.evaluate(() => document.getElementById("tabReadBtn")?.getBoundingClientRect().width > 0))) { await P.click("#tabStudyBtn"); await P.waitForTimeout(150); }
     await P.click("#tabReadBtn"); await P.waitForTimeout(400);
     await P.evaluate(() => { const s = document.getElementById("surahSelect"); s.value = "83"; s.dispatchEvent(new Event("change", { bubbles: true })); });
-    await P.waitForFunction(() => document.querySelector('[data-ayah-num-badge="83:4"]'), null, { timeout: 15000 }).catch(() => {});
-    await P.evaluate(() => document.querySelector('[data-ayah-num-badge="83:4"]')?.click());
-    await P.waitForFunction(() => document.querySelector("[data-ayah-sheet] [data-ayah-sheet-qcr] [data-note-collection-toggle]"), null, { timeout: 10000 }).catch(() => {});
-    const fold = await P.evaluate(() => { const d = document.querySelector("[data-ayah-sheet] [data-ayah-sheet-qcr]"); return d ? { summary: d.querySelector("summary").textContent.trim(), boxes: d.querySelectorAll("[data-note-collection-toggle]").length, h: Math.round(d.querySelector("summary").getBoundingClientRect().height) } : null; });
-    check(`${tag} the Āyah card (83:4) has a 🗂 ${lang === "bn" ? "QCR সংকলনসমূহ" : "QCR collections"} fold, with a tick per collection`, !!fold && fold.summary.includes(lang === "bn" ? "QCR সংকলনসমূহ" : "QCR collections") && fold.boxes >= 10 && fold.h >= 44, JSON.stringify(fold));
-    await P.evaluate(() => { document.querySelector("[data-ayah-sheet] [data-ayah-sheet-qcr]").open = true; window.__stubWriteData = []; });
-    const id = await P.evaluate(() => { const cb = [...document.querySelectorAll("[data-ayah-sheet-qcr] [data-note-collection-toggle]")].find((c) => !c.checked); if (!cb) return null; cb.click(); return cb.dataset.noteCollectionToggle; });
-    await P.waitForFunction(() => (window.__stubWriteData || []).some((w) => /ayahCollections/.test(w.col ?? "")), null, { timeout: 8000 }).catch(() => {});
-    const w1 = await P.evaluate((id) => (window.__stubWriteData || []).filter((w) => /ayahCollections/.test(w.col ?? "")).map((w) => JSON.stringify(w.data)).join("|"), id);
-    check(`${tag} ticking a collection files ayah:83:4 into it (the write is read back)`, !!id && w1.includes("ayah:83:4") && w1.includes(id), w1.slice(0, 200));
-    const keptOpen = await P.evaluate(() => document.querySelector("[data-ayah-sheet] [data-ayah-sheet-qcr]")?.open);
-    check(`${tag} ...and the fold stays open`, keptOpen === true);
+    await P.waitForFunction(() => document.querySelector('[data-ayah-num-badge="83:1"]'), null, { timeout: 15000 }).catch(() => {});
+    await P.evaluate(() => { const el = document.getElementById("ayahSelect"); el.value = "4"; el.dispatchEvent(new Event("change", { bubbles: true })); });
+    await P.waitForFunction(() => document.querySelector('#readView .ayah-quick-wrap[data-unit-key="ayah:83:4"]'), null, { timeout: 15000 }).catch(() => {});
+    await P.evaluate(() => document.querySelector('#readView .ayah-quick-wrap[data-unit-key="ayah:83:4"] [data-qm-toggle]')?.click());
+    await P.waitForTimeout(300);
+    const item = await P.evaluate(() => { const b = document.querySelector('#readView .ayah-quick-wrap[data-unit-key="ayah:83:4"] [data-qm-qcr]'); if (!b) return null; const r = b.getBoundingClientRect(); return { text: b.textContent.trim(), shown: r.width > 0 && r.height > 0 }; });
+    check(`${tag} the Read view's ⋮ on 83:4 has "📚 ${lang === "bn" ? "QCR সংকলন(সমূহ)…" : "QCR collection(s)…"}"`, !!item && item.shown && item.text.includes(lang === "bn" ? "QCR সংকলন(সমূহ)…" : "QCR collection(s)…"), JSON.stringify(item));
+    await P.evaluate(() => document.querySelector('#readView .ayah-quick-wrap[data-unit-key="ayah:83:4"] [data-qm-qcr]')?.click());
+    await P.waitForFunction(() => [...document.querySelectorAll("#noteView [data-note-collection-toggle]")].some((c) => c.getClientRects().length), null, { timeout: 12000 }).catch(() => {});
+    const panel = await P.evaluate(() => ({ boxes: [...document.querySelectorAll("#noteView [data-note-collection-toggle]")].filter((c) => c.getClientRects().length).length }));
+    check(`${tag} ...it opens the QCR attach ticks for 83:4`, panel.boxes >= 10, JSON.stringify(panel));
     await P.evaluate(() => { window.__stubWriteData = []; });
-    await P.evaluate((id) => document.querySelector(`[data-ayah-sheet-qcr] [data-note-collection-toggle="${id}"]`)?.click(), id);
+    const id = await P.evaluate(() => { const cb = [...document.querySelectorAll("#noteView [data-note-collection-toggle]")].find((c) => c.getClientRects().length && !c.checked); if (!cb) return null; cb.click(); return cb.dataset.noteCollectionToggle; });
     await P.waitForFunction(() => (window.__stubWriteData || []).some((w) => /ayahCollections/.test(w.col ?? "")), null, { timeout: 8000 }).catch(() => {});
-    const w2 = await P.evaluate((id) => { const col = (window.__stubWriteData || []).filter((w) => /ayahCollections/.test(w.col ?? "")).map((w) => w.data).pop(); const c = (col?.collections ?? []).find((x) => x.id === id); return c ? c.items.includes("ayah:83:4") : null; }, id);
-    check(`${tag} unticking it takes ayah:83:4 out again`, w2 === false, String(w2));
-    if (width === 390) await P.screenshot({ path: `/tmp/qcr-card-${lang}-${width}.png` });
+    const w1 = await P.evaluate(() => (window.__stubWriteData || []).filter((w) => /ayahCollections/.test(w.col ?? "")).map((w) => JSON.stringify(w.data)).join("|"));
+    check(`${tag} ticking a collection files ayah:83:4 into it (the write is read back)`, !!id && w1.includes("ayah:83:4") && w1.includes(id), w1.slice(0, 160));
+    if (width === 390) await P.screenshot({ path: `/tmp/qcr-menu-${lang}-${width}.png` });
+    const back = await P.evaluate(() => { const p = document.getElementById("ayahCardBackPill"); return p && !p.hidden ? p.querySelector("[data-ayah-card-back]")?.textContent.trim() : null; });
+    check(`${tag} a way back is shown`, !!back, String(back));
+    if (back) { await P.click("#ayahCardBackPill [data-ayah-card-back]"); await P.waitForTimeout(1200); }
+    const landed = await P.evaluate(() => ({ view: !!document.querySelector('#readView [data-ayah-num-badge="83:4"]')?.getClientRects().length, ayah: document.getElementById("ayahSelect")?.value }));
+    check(`${tag} ...and Back returns to 83:4 in the Read view`, landed.view && landed.ayah === "4", JSON.stringify(landed));
     check(`${tag} no page errors`, quiet(errors).length === 0, quiet(errors).slice(0, 2).join(" | "));
     await ctx.close();
   }
   await browser.close();
 }
+
 // --- (3) the writing sheet's 🔖 ------------------------------------------------------------------------------------
 {
   const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
@@ -245,5 +252,5 @@ DATA.bookmarks = [{ _id: TENANT_ID + "__p1", tenantId: TENANT_ID, personId: "p1"
   await ctx.close();
   await browser.close();
 }
-console.log(`\n==== Listening bookmark, and QCR on the Āyah card: ${pass} passed, ${fail} failed ====`);
+console.log(`\n==== Listening bookmark, QCR from the ⋮ menu, the writing sheet 🔖: ${pass} passed, ${fail} failed ====`);
 process.exit(fail ? 1 : 0);
