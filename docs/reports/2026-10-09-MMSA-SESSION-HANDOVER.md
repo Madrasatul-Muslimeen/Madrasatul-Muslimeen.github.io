@@ -1,0 +1,99 @@
+# MMSA session handover, 9 Oct 2026
+
+Written by the MMSA Architect, session `session_01J6tdKAiaMqQEPd6xFJoZ2J` (took over at v09.135 from
+`session_0116koLYBSQ7JHAmhYUWAkBX`). It supersedes `docs/reports/2026-10-08-MMSA-SESSION-HANDOVER.md`, which is kept as
+history. Read `CLAUDE.md` first; the prompt that starts the next session is `docs/governance/NEW-SESSION-PROMPT-2026-10-09.md`.
+
+## 0. Where things stand
+
+**`main` is at v09.150** when written. Read the live number off `app/js/version.js`.
+
+**Nothing is in flight.** No Builder round is running and no pull request is open. The last three rounds (#697, #701
+and #705) are merged.
+
+**THE OPEN QUESTION (the Owner's, asked 9 Oct; nothing built):** make the Read view and the Note view one, with the
+Mapping My Journey note pane as THE note.
+- Demo: https://claude.ai/artifact/FjAMty9fWUaGnjZmhgCKEo (three screens: tablet, phone, desktop).
+- The finding that drives it: **two note stores.** The Note view's notes box saves to `ayahNotes` (one overwritten
+  HTML entry per unit: `app/js/ayah-notes.js`, `saveAyahNote`). The Journey pane (`app/js/note-window.js` on
+  `journey-map.html` and `notes.html`) uses the Foundation `notes` (with revisions, `noteSources`, `noteFolders`,
+  `notePlacements`). So a Note-view note never appears in Mapping My Journey.
+- `promoteQuickNoteToStudyNote` (`study-note-service.js:91`) exists but nothing calls it.
+- The Āyah card's 📝 Note (decision 94) decides "no note yet" from the Foundation store (`notesForStudyUnit`), but
+  opens the `ayahNotes` editor. That mismatch was inherited from the old ✍ Take Note, and the plan dissolves it.
+- The Note view also moves the Read view's place in four spots, against its own comment (`quranrevival.html`
+  ~20900, ~22325, ~21599, ~21584).
+- **The plan, if the Owner says yes:**
+  1. the Read view gains 📝 Notes, opening the Journey pane on the āyah, with notes started on or mentioning it,
+     "+ New note on 6:99" and "Open in Mapping My Journey";
+  2. Track this āyah becomes a tab of the pane;
+  3. QCR stays on the Āyah card and ⋮;
+  4. the Note tab retires, and old `view:"note"` bookmarks open Read with the pane;
+  5. existing `ayahNotes` entries are **copied** (never deleted, I4) into Foundation notes. That touches live records,
+     so it is an **Owner Control Gate needing its own yes**.
+- **Do not build any of it until the Owner answers.**
+
+**Possible next, if the Owner sends nothing else:**
+- the dua review screen (demo first);
+- Hadith "Studied"/Notes on OpenITI passages (needs the Owner's yes to the key `hadith:openiti:<book>:<n>`).
+
+## 1. What waits on the Owner
+
+1. **Read + Note as one** (above): yes or no, and separately whether to copy old Note-view notes.
+2. **The Ten Steps file v06** (https://claude.ai/artifact/BJUwQ8hfgnu4FJFo7stqY1, copy in
+   `docs/reports/2026-10-09-quran-critical-reasoning-ten-steps-and-qr-levels.html`):
+   - the references for the three "basis" points;
+   - the section 9 questions.
+   - Nothing in the app changes until the file is final (Owner, 9 Oct).
+   - A monthly routine (`trig_01FyKvK48rrBqL8JoonizNcH`, 1st of each month) reads its PLANS section back.
+3. HadeethEnc permission (decision 90).
+4. Yes or no to `hadith:openiti:<book>:<n>`.
+5. Google Cloud **Upgrade** before about 6 Jan 2027. Al-Munshi' Arabic. Letters, later. The family sign-up step (v09.87).
+6. Listening bookmarks saved before v09.146 must be saved once more, while playing, to carry `listening: true`.
+
+## 2. What this session learned (beyond `CLAUDE.md`'s standing lessons)
+
+- **The unattended Architect merges test-only and docs-only Builder PRs within minutes** (#698, #703 and #706 were
+  all merged before the session's check-in). "No open PR" does not mean "the round did nothing". Always list PRs with
+  `state=all` and read `origin/main`'s first-parent log.
+- **`git fetch origin <branch>` does not update `refs/remotes/origin/<branch>`.** A later
+  `git log origin/main..origin/<branch>` reads a stale or missing ref and shows nothing. Use an explicit refspec
+  (`git fetch origin 'refs/heads/X:refs/remotes/origin/X'`). This produced a false "the round pushed nothing" report
+  this session, which was corrected.
+- **Every Arabic word in the Read view is a button**, and a gesture that starts on a button is ignored (correctly).
+  A gesture test aimed at the Arabic never reaches the scroll code, so its "stays put" checks pass for nothing.
+  Start gestures over plain text, and prove the suite with a mutation restoring the old behaviour.
+- **A pop-up sized `100vh` and centred hides its own top on a phone or tablet while the address bar shows.** Hang it
+  from the top and size it to `100%` of a fixed, inset-0 overlay (v09.148).
+- **The harness stub never adds a write to its own data**, so "after writing a Note the card shows it" cannot be
+  proven on the note just typed. Seed a note instead (v09.149's suite seeds one on 2:256).
+- A capture check that matched a seeded bookmark's flag was passing for the wrong reason (v09.146). Read only the
+  NEW entry.
+
+## 3. The handover guard
+
+`allocate-version.py` appends every release to the handover that `CLAUDE.md`'s "READ THIS SECOND" block names, and
+`brief-integrity.mjs` fails when that handover does not name the version in `app/js/version.js`.
+
+## Releases by this session
+
+| Version | What changed |
+|---|---|
+| v09.136 | Notes and bookmarks on a dua |
+| v09.137 | `bn.js` hidden duplicates removed (Builder #668) |
+| v09.138 | A hadith card's 📝 My Notes has ← Back |
+| v09.139 | Mushaf view follows the chosen unit (decision 93) |
+| v09.140 | ← Back from Notes on the Qur'an page and Import Notes (Builder #672) |
+| v09.141 | Newer screens checked in Bangla; Dawah ← Back (Builder #677) |
+| v09.142 | Most-used screens checked in Bangla (Builder #680) |
+| v09.143 | A Name's cited āyāt in Explore → Asma |
+| v09.144 | Every remaining page checked in Bangla (Builder #684) |
+| v09.145 | A Name's cited hadith in Explore (Builder #690) |
+| v09.146 | Listening bookmark, ⋮ → QCR, 🔖 on the writing sheet, full-screen pop-out, Word from an end mark |
+| v09.147 | About page's feature registry in Bangla (Builder #693) |
+| v09.148 | The end of an āyah stays put; a new āyah opens at its top; the Note view pop-up keeps its way back |
+| v09.149 | One 📝 Note on the Āyah card; 📖 is Full text (decision 94) |
+| v09.150 | The Journey tray at desktop width (Builder #701) |
+
+Test-only, no version: Builder #697 (PRs #698 and #703), a Bangla sweep of the v09.143–v09.149 surfaces, 82/0, no
+English found. Builder #705 (PR #706), `bn-duplicate-keys` made meaningful again, 6/0.

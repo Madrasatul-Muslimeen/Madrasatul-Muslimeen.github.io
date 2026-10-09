@@ -138,7 +138,19 @@ Read this first, every session. It is the standing brief.
 > "do not translate" and is a different contract. **That contract is NOT
 > invented here**; the Stage B exclusion stands for this candidate.
 
-> ## ⇢ SESSION HANDOVER, 8 Oct 2026 — READ THIS SECOND
+> ## ⇢ SESSION HANDOVER, 9 Oct 2026 — READ THIS SECOND
+>
+> **`docs/reports/2026-10-09-MMSA-SESSION-HANDOVER.md`** is the current
+> continuation point, and **`docs/governance/NEW-SESSION-PROMPT-2026-10-09.md`**
+> is the prompt that starts a new session. `main` reached **v09.150** (v09.136–v09.150 this session; decisions 93–94).
+> **Nothing is in flight. The open question is the Owner's:** make the Read view and the Note view one, with the
+> Mapping My Journey note pane as THE note (demo in handover section 0). The Note view's notes live in a separate
+> store (`ayahNotes`) and never reach Mapping My Journey. **Build nothing of it until the Owner answers**; copying old
+> Note-view notes is a separate Owner Control Gate.
+>
+> **The 8 Oct block below is kept as history**, superseded by it.
+>
+> ## ⇢ SESSION HANDOVER, 8 Oct 2026 (superseded 9 Oct 2026)
 >
 > **`docs/reports/2026-10-08-MMSA-SESSION-HANDOVER.md`** is the current
 > continuation point, and **`docs/governance/NEW-SESSION-PROMPT-2026-10-08.md`**
