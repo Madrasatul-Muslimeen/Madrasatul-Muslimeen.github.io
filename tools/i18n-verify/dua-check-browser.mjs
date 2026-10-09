@@ -69,6 +69,15 @@ for (const [lang, width] of [["bn", 390], ["en", 1280]]) {
   check(`${tag} 23 members listed`, order.length === 23, String(order.length));
   check(`${tag} the first five are Tirmidhi 3434, Abu Dawud 1516, 'Amal al-Yawm 458, Ibn al-Sunni 370 and 448, each with ⚠`,
     ["3434", "1516", "458", "370", "448"].every((s) => first5.some((m) => latin(m.src).includes(s))) && first5.every((m) => m.diff), JSON.stringify(first5));
+  // Architect review (PR #717): a narration is named by its STANDARD number, as on the card (Bukhari 6306, not the
+  // edition's own 5947), in the reader's digits.
+  const bukhari = order.filter((m) => /Bukhari|বুখারী/.test(m.src)).map((m) => latin(m.src));
+  check(`${tag} Bukhari's two narrations are named 6306 and 6323, as on the card (never the edition's 5947)`, bukhari.some((s) => s.includes("6306")) && bukhari.some((s) => s.includes("6323")) && !bukhari.some((s) => s.includes("5947")), JSON.stringify(bukhari));
+  if (lang === "bn") check(`${tag} ...in Bengali digits`, order.every((m) => !/[0-9]/.test(m.src)), JSON.stringify(order.slice(0, 3)));
+  // Architect review (PR #717): a link matched without a leading «و» is not "spelt differently" (وَوَعْدِكَ -> وَعْدَكَ),
+  // while a real difference still is: checked on the module's own function with hand-written words.
+  const doubts = await P.evaluate(async () => { const m = await import("/app/js/dua-check.js"); return [m.wordDoubt("وَوَعْدِكَ", [0, 0, "وَعْدَكَ"], null), m.wordDoubt("وَأَنَا", [0, 0, "وَإِنَّآ"], null)]; });
+  check(`${tag} «و» alone is not a spelling doubt; أنا against إنا still is`, doubts[0] === null && doubts[1] === "spelling", JSON.stringify(doubts));
   const bigBack = await P.evaluate(() => !!document.querySelector("[data-dua-check-back]"));
   check(`${tag} the panel has ← Back to Dua 2 (way-back law)`, bigBack);
 
@@ -136,12 +145,16 @@ for (const [lang, width] of [["bn", 390], ["en", 1280]]) {
   const budget = await P.evaluate(async () => {
     const m = await import("/app/js/dua-check.js");
     const books = ["0256Bukhari.Sahih.JK000110-ara1", "0279Tirmidhi.Sunan.JK000140-ara1", "0303Nasai.CamalYawmWaLayla.JK000735-ara1", "0364IbnSunniDinawari.CamalYawmWaLayl.JK000943-ara1"];
-    const members = Array.from({ length: 24 }, (_, i) => ({ key: m.memberKey(books[i % 4], 100000 + i), v: i === 0 ? "unsure" : "cut" }));
+    // The anchor cannot be cut (it is the dua), so "all decided" keeps it as "same"; the other 23 are all cut.
+    const members = Array.from({ length: 24 }, (_, i) => ({ key: m.memberKey(books[i % 4], 100000 + i), v: i === 0 ? "same" : "cut" }));
     const words = Array.from({ length: 31 }, (_, i) => ({ i, v: "fix", fix: "وَبِنِعْمَتِكَ", unlink: true }));
     const c = { ...m.buildCheck({ members, words, together: true, originals: {} }), by: "p1700000000000", byName: "Ahsan", at: new Date().toISOString() };
     return { bytes: new TextEncoder().encode(JSON.stringify(c)).length, done: c.done };
   });
-  check(`${tag} worst case (24 members, 31 words, all decided) serialises under 1.5 KB: ${budget.bytes} bytes`, budget.bytes < 1500, JSON.stringify(budget));
+  // Budget raised from 1.5 KB to 2 KB by the Architect's review (PR #717), reason recorded: the worst case fixes ALL 31
+  // words with 14-letter vowelled Arabic (2 bytes a letter in UTF-8, as Firestore counts), about 1.2 KB of it alone.
+  // A real check fixes a few words (about 150 bytes). The check still fails a stored form that grows by a third.
+  check(`${tag} worst case (24 members, 31 words, all decided) serialises under 2 KB, and counts as done: ${budget.bytes} bytes`, budget.bytes < 2048 && budget.done === true, JSON.stringify(budget));
   await ctx.close();
 }
 await browser.close();

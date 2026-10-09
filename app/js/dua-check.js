@@ -39,7 +39,10 @@ export const looksDifferent = (fitEntry) => fitEntry?.[1] === "low" || fitEntry?
 /** Why the computer is unsure about a word, or null: no link, or a link whose spelling differs from the word. */
 export function wordDoubt(vowelled, linkEntry, grammar) {
   if (!linkEntry) return grammar ? "guess" : "none";
-  return bare(linkEntry[2]) !== bare(vowelled) ? "spelling" : null;
+  // A leading «و» / «ف» ("and", "so") the link was matched without is not a different spelling (round 2's own rule).
+  const noAnd = (s) => bare(s).replace(/^[وف]/, "");
+  const q = bare(linkEntry[2]), d = bare(vowelled);
+  return q !== d && q !== noAnd(vowelled) && noAnd(linkEntry[2]) !== d ? "spelling" : null;
 }
 
 /** The panel's words in the order a check shows them: doubtful first, then the card's order. */
@@ -235,7 +238,7 @@ export function buildCheckPanel({ card, books, fit, words, existing, textsPromis
       row.dataset.duaCheckMember = m.key;
       if (m.v) row.dataset.v = m.v;
       const head = el("div", "dua-check-mhead");
-      head.appendChild(el("span", "dua-check-src", `${books[m.b].short?.[getAppLang()] ?? books[m.b].short?.en ?? books[m.b].titleEn} ${m.number ?? m.std ?? m.n}`));
+      head.appendChild(el("span", "dua-check-src", `${books[m.b].short?.[getAppLang()] ?? books[m.b].short?.en ?? books[m.b].titleEn} ${m.std != null && m.std !== "" ? num(String(m.std)) : num(m.number ?? m.n)}`));
       const share = Number.isFinite(m.fit?.[0]) ? m.fit[0] : null;
       if (share != null) {
         const f = el("span", "dua-check-fit");
