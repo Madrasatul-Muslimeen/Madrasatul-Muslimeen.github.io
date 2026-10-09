@@ -215,3 +215,4 @@ that handover does not name the version in `app/js/version.js`.
 - **v09.144** (2026-10-09): every remaining page checked in Bangla.
 - **v09.145** (2026-10-09): a Name's cited hadith written out in Explore.
 - **v09.146** (2026-10-09): the listening bookmark, QCR from the ⋮ menu, the writing sheet 🔖 and the full-screen pop-out.
+- **v09.147** (2026-10-09): the About page's feature registry in Bangla (Builder #693).
