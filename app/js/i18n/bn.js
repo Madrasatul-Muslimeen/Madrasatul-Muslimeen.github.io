@@ -3865,12 +3865,9 @@ export const BN = {
   "Dua {n} was not found.": "দুআ {n} পাওয়া যায়নি।",
   // --- 9 Oct 2026: Bangla sweep of the newer screens (issue #677)
   "View": "দৃশ্য", // ?
-  // --- 9 Oct 2026: Bangla sweep, part 2 (issue #680). Reciter names stay as names; only the bracketed language is Bangla.
+  // --- 9 Oct 2026: Bangla sweep, part 2 (issue #680). The reciter labels already have keys (near the top); the Word
+  // card's reciter ticks now pass through t() so those keys are reached.
   // The "বাংলা translation" tick (its old key above was never reached: translateStatic() skips any string that already
   // holds Bangla script) is now <span>বাংলা</span> + this word.
   "translation": "অনুবাদ",
-  "Abdullah Basfar (Arabic)": "Abdullah Basfar (আরবি)",
-  "Ibraheem Walk (English)": "Ibraheem Walk (ইংরেজি)",
-  "Kevan Brighting (English, whole surah only)": "Kevan Brighting (ইংরেজি, শুধু পুরো সূরা)",
-  "Shareef Bayezid Mahmud (Bangla)": "Shareef Bayezid Mahmud (বাংলা)",
 };
