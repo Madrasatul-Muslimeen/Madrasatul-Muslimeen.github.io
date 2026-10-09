@@ -144,7 +144,14 @@ check("POSITIVE CONTROL: the reachability walker really does find a wired module
 // on both (see hadith-browser.js's own header comment); neither writes a
 // Note directly -- creation is still only ever notes.html's own, unchanged
 // `createStudyNote()` call, reached the same way it always was.
-const KNOWN_WIRED_PAGES = ["app/notes.html", "app/quranrevival.html", "app/hadith-collections.html", "app/hadith-study.html"];
+//
+// UPDATED for decision 95 (the Owner, 9 Oct 2026: "NotePane: Build the demo"), reason recorded rather than the check
+// weakened: `app/journey-map.html` is a page of its own here now. Opened by the Read view's 📝 Notes as the Note pane
+// of one āyah (?embed=1&unit=ayah:S:A), it lists that āyah's Notes with notesForStudyUnit() and makes a Note started
+// on it with createStudyNote() -- the same two accepted functions quranrevival.html's "File in folder(s)" uses (I2),
+// not a copy. It imports the SERVICE directly and never the binding (it checks the āyah key's shape itself), so the
+// binding check below still holds as written.
+const KNOWN_WIRED_PAGES = ["app/notes.html", "app/quranrevival.html", "app/hadith-collections.html", "app/hadith-study.html", "app/journey-map.html"];
 
 check("EXACTLY the audited pages reach the service, and nothing else does, by any chain of any length", () => {
   const reachable = chainsToTarget("study-note-service.js");
@@ -182,7 +189,7 @@ check("the binding is reached ONLY through the service -- never directly by any 
 // hadith-browser.js's dynamic import of hadith-study-actions.js, which is
 // what actually, literally imports the service. That file is the one new
 // entry here, not the two pages.
-const KNOWN_DIRECT_SERVICE_IMPORTERS = ["app/notes.html", "app/quranrevival.html", "app/js/hadith-study-actions.js"];
+const KNOWN_DIRECT_SERVICE_IMPORTERS = ["app/notes.html", "app/quranrevival.html", "app/js/hadith-study-actions.js", "app/journey-map.html"]; // journey-map.html: decision 95, above
 
 check("no app source imports the binding or the service, except the audited direct importers", () => {
   const importers = [];

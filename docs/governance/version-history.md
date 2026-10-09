@@ -795,3 +795,4 @@ total). Allocated by the MMSA Architect.
 09.149: one Note on the Āyah card (decision 94). Allocated by the MMSA Architect.
 09.150: the Journey tray's 1440px checks (Builder #701). Allocated by the MMSA Architect.
 09.151: dua words link only to a Qur'an word that agrees with their vowels (Builder #712). Allocated by the MMSA Architect.
+10.01: the Read view's 📝 Notes pane (decision 95, round 1; opens the v10 line, decision 97). Allocated by the MMSA Architect.

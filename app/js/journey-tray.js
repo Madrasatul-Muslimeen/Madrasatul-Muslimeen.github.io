@@ -100,10 +100,12 @@ function build() {
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !tray.hidden) closeJourneyTray(); });
 }
 
-export function openJourneyTray() {
+/** `noteId` (decision 95: "Open in Mapping My Journey" from the Read view's Notes pane) opens that Note in the tray. */
+export function openJourneyTray({ noteId = null } = {}) {
   if (!tray) build();
   rect = load() || defaultRect();
-  if (!frame.getAttribute("src")) frame.setAttribute("src", SRC);
+  if (noteId) frame.setAttribute("src", `journey-map.html?embed=1&note=${encodeURIComponent(noteId)}#folders`);
+  else if (!frame.getAttribute("src")) frame.setAttribute("src", SRC);
   tray.hidden = false;
   apply();
 }
