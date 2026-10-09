@@ -793,3 +793,4 @@ total). Allocated by the MMSA Architect.
 09.147: the About page's feature registry in Bangla (Builder #693). Allocated by the MMSA Architect.
 09.148: the end of an āyah stays put; the Note view pop-up's way back on a tablet. Allocated by the MMSA Architect.
 09.149: one Note on the Āyah card (decision 94). Allocated by the MMSA Architect.
+09.150: the Journey tray's 1440px checks (Builder #701). Allocated by the MMSA Architect.

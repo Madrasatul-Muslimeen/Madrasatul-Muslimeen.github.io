@@ -278,12 +278,18 @@
   .note-open-btn { background: none; border: none; color: #1F3A6E; text-align: left; padding: 0.3rem 0; min-height: 40px; cursor: pointer; font-family: inherit; overflow-wrap: anywhere; }
   .note-more-btn { min-width: 40px; min-height: 40px; }
   /* S9: on a phone the ▾ stays on the TITLE's line (title, then ▾), and the date takes the line below. */
+  /* The list column (#folderNotes) is just as narrow in the tray/pop-up's three-panel layout at ANY screen width, and
+     the viewport query cannot see that: the title's 8rem minimum then pushed the ▾ onto a line of its own. */
   @media (max-width: 640px) {
     .note-card-head .note-card-title { order: 0; flex: 1 1 0; min-width: 0; }
     .note-card-head .note-more-btn { order: 1; flex: 0 0 auto; }
     .note-card-head .note-card-meta { order: 3; flex: 1 0 100%; }
     .note-card-head .note-in-folders { order: 2; }
   }
+  html.embed #folderNotes .note-card-head .note-card-title { order: 0; flex: 1 1 0; min-width: 0; }
+  html.embed #folderNotes .note-card-head .note-more-btn { order: 1; flex: 0 0 auto; }
+  html.embed #folderNotes .note-card-head .note-card-meta { order: 3; flex: 1 0 100%; }
+  html.embed #folderNotes .note-card-head .note-in-folders { order: 2; }
   /* S9: a touch press holds still (no text-selection / callout) and a dragged Note or folder is dimmed. */
   .folder-row, .fn-card { -webkit-touch-callout: none; }
   @media (pointer: coarse) { .folder-row, .fn-card { -webkit-user-select: none; user-select: none; } }

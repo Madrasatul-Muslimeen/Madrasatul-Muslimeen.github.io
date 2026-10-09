@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "09.149",
+    "version": "09.150",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -2969,8 +2969,20 @@
     {
       "version": "09.149",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Decision 94: the Āyah card has one 📝 Note (with no Note yet it opens the Note view ready to write, as ✍ Take Note did), and its 📖 Note view is renamed Full text.",
+      "integration": {
+        "authorizedOn": "2026-10-09",
+        "integratedOn": "2026-10-09",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "09.150",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Builder #701 (PR #702): journey-s9's five failing tray checks at 1440px; four were a stale width rule in the test (the tray goes three-panel at 900px), one was real (the ▾ wrapped under the title in the tray's narrow list column).",
       "integration": {
         "authorizedOn": "2026-10-09",
         "integratedOn": "2026-10-09",
@@ -2979,8 +2991,9 @@
       }
     }
   ],
-  "nextUnallocated": "09.150",
+  "nextUnallocated": "09.151",
   "nextUnallocatedNote": [
+    "v09.150 was allocated to the Journey tray's 1440px checks (Builder #701), 2026-10-09.",
     "v09.149 was allocated to one Note on the Āyah card (decision 94), 2026-10-09.",
     "v09.148 was allocated to the end of an āyah stays put; the Note view pop-up's way back on a tablet, 2026-10-09.",
     "v09.147 was allocated to the About page's feature registry in Bangla (Builder #693), 2026-10-09.",

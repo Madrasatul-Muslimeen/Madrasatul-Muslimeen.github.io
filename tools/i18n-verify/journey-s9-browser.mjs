@@ -7,7 +7,9 @@
 //   --mutate-longpress-short  the long-press fires at once, so a short tap opens the menu
 //   --mutate-depth-back       the old depth limit of 8 is put back
 //   --mutate-no-recursive     closing a folder leaves its sub-folders open
-//   --mutate-no-tagsearch     the tree search ignores tags
+//   --mutate-no-embed-card-rule  the tray's list column loses its title/▾ rule (the ▾ wraps below the title)
+//   --mutate-embed-tier-1200     the tray's wide tier starts at 1200px again (the test expects 900)
+//   --mutate-no-tagsearch    the tree search ignores tags
 import { chromium, newContext, openPage } from "./harness.mjs";
 
 const MUTATE = process.argv.find((a) => a.startsWith("--mutate-"))?.slice(9) ?? null;
@@ -89,6 +91,8 @@ async function run(lang, width, embedFrame = false) {
       const res = await route.fetch();
       let body = await res.text();
       if (isPage && MUTATE === "drop-replaces") body = body.replace("() => copyNoteToFolder(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, ownerUid: auth.currentUser.uid, noteId, toFolderId,", "() => moveNote(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, ownerUid: auth.currentUser.uid, noteId, fromFolderId: [...activeFilingFolderIds(note)][0], toFolderId,");
+      if (isPage && MUTATE === "no-embed-card-rule") body = body.replace(/^ *html\.embed #folderNotes .*\n/gm, "");
+      if (isPage && MUTATE === "embed-tier-1200") body = body.replace("NOTE_PANE_WIDE_FROM_EMBED = 900", "NOTE_PANE_WIDE_FROM_EMBED = 1200");
       if (isPage && MUTATE === "longpress-short") body = body.replace("const LONG_PRESS_MS = 500;", "const LONG_PRESS_MS = 0;");
       if (isPage && MUTATE === "no-recursive") body = body.replace("closeBelow(node);", "");
       if (isPage && MUTATE === "no-tagsearch") body = body.replace("|| tagNoteIds.has(n.noteId)", "");
@@ -111,7 +115,10 @@ async function run(lang, width, embedFrame = false) {
   cdp = await ctx.newCDPSession(page);
   mainPage = page; curP = P;
   await waitTree(P);
-  const wide = (await P.evaluate(() => document.documentElement.clientWidth)) >= 1200;
+  // The page's own tier rule (journey-map.html noteLayoutTier): the wide, three-panel layout starts at 1200px on the full
+  // page but at 900px inside the tray/pop-up (NOTE_PANE_WIDE_FROM_EMBED, Owner 8 Oct 2026). The tray's iframe at a 1440px
+  // screen is ~1000px, so a fixed 1200 here mis-read it as the narrow, one-panel layout.
+  const wide = (await P.evaluate(() => document.documentElement.clientWidth)) >= (embedFrame ? 900 : 1200);
 
   // ---- 1. Right-click and long-press open the right menu; a tap and a scroll do not ----------------
   await resetWrites(P);
@@ -236,14 +243,14 @@ async function run(lang, width, embedFrame = false) {
     await resetWrites(P);
     const card = '#folderNotes [data-note-id="n1"]';
     // The tree may have moved on after the steps above; pick a plain target.
-    await page.dragAndDrop(card, `${rowSel("fBg")}`, { sourcePosition: { x: 40, y: 10 } }).catch(() => {});
+    await P.dragAndDrop(card, `${rowSel("fBg")}`, { sourcePosition: { x: 40, y: 10 } }).catch(() => {});
     await wait(1000);
     w = await writes(P);
     const placements = (await dataOf(P, "notePlacements")).filter((p) => p.noteId === "n1" && p.status === "active");
     check(`${tag}: dropping Note One on BetaGrand adds a placement there`, w.some((x) => x.col === "notePlacements" && x.data?.noteId === "n1" && x.data?.folderId === "fBg"), JSON.stringify(w.map((x) => `${x.col}:${x.data?.folderId}`)));
     check(`${tag}: ...and it STAYS in its other folders (Alpha and Beta placements untouched)`, ["fA", "fB", "fBg"].every((f) => placements.some((p) => p.folderId === f)) && !w.some((x) => x.col === "notePlacements" && x.data?.status === "retired"), JSON.stringify(placements.map((p) => p.folderId)));
     await resetWrites(P);
-    await page.dragAndDrop(card, rowSel("fA"), { sourcePosition: { x: 40, y: 10 } }).catch(() => {});
+    await P.dragAndDrop(card, rowSel("fA"), { sourcePosition: { x: 40, y: 10 } }).catch(() => {});
     await wait(700);
     w = await writes(P);
     check(`${tag}: dropping it on a folder that already holds it is refused, in words, with no write`, !w.some((x) => x.col === "notePlacements") && (lang === "bn" ? hasBn(await status(P)) : /already in/.test(await status(P))), await status(P));
