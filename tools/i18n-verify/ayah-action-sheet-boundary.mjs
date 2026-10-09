@@ -185,9 +185,11 @@ check("Make a poster: hasPosterNote=false shows the sheet's own hint and a Take 
   assert.ok(noNote.includes("You don't have a Note on this āyah yet."));
   assert.ok(noNote.includes("Take Note"));
   // Updated in place 8 Oct 2026 (the Owner: "Take note button can be place on the above space"): Take Note is now a
-  // button INSIDE the action row, after Share, and there is no separate hint line under the row any more.
+  // button INSIDE the action row, and there is no separate hint line under the row any more. Updated again 9 Oct 2026
+  // (decision 94, "we got 3 notes. It's confusing"): it is the ONE 📝 Note button itself, named "Take Note".
   const row = noNote.slice(noNote.indexOf("data-ayah-sheet-actions"), noNote.indexOf("</div>", noNote.indexOf("data-ayah-sheet-actions")));
-  assert.ok(/data-ayah-sheet-share[\s\S]*Take Note/.test(row), "Take Note is not in the row after Share");
+  assert.ok(/data-ayah-sheet-note data-ayah-sheet-note-new aria-label="Take Note"/.test(row), "the one Note button is not named Take Note");
+  assert.ok(!row.includes("✍"), "a separate ✍ Take Note is still in the row");
   assert.ok(!noNote.includes("ayah-sheet-hint-btn"), "the old separate Take Note line is still drawn");
   for (const val of [true, null, undefined]) {
     const html = renderAyahActionSheetHtml({ unitKey: "ayah:1:1", hasPosterNote: val });
@@ -475,21 +477,29 @@ check("Make a poster and See on the wheel both fire with onClose first", () => {
 });
 
 // Updated in place 8 Oct 2026 -- the Owner: "Note n Take Note both takes to the same view, Isn't it? Fix." Take Note
-// has its own door now (data-ayah-sheet-takenote -> onTakeNote: the Note view ready to write); Note keeps onNote.
-check("Take Note has its own door (onTakeNote), distinct from the main Note & more item (onNote)", () => {
+// had its own door (onTakeNote: the Note view ready to write). Updated again 9 Oct 2026 (decision 94): ONE 📝 Note,
+// which takes that door when there is no Note yet (onTakeNote) and opens the view as it is when there is (onNote).
+check("one 📝 Note: no Note yet -> onTakeNote (ready to write); a Note already -> onNote", () => {
   const html = renderAyahActionSheetHtml({ unitKey: "ayah:1:1", isSelf: true, hasPosterNote: false });
   const container = fakeContainer(html);
   const calls = [];
   attachAyahActionSheetHandlers(container, { onNote: (k) => calls.push(`note:${k}`), onTakeNote: (k) => calls.push(`take:${k}`) });
   const sheet = container.querySelector("[data-ayah-sheet]");
-  assert.equal(sheet.querySelectorAll("[data-ayah-sheet-note]").length, 1, "only the main Note & more button carries data-ayah-sheet-note");
-  const take = sheet.querySelector("[data-ayah-sheet-takenote]");
-  assert.ok(take, "Take Note is drawn when there is no Note on this āyah yet");
-  take._fire();
+  assert.equal(sheet.querySelectorAll("[data-ayah-sheet-note]").length, 1, "exactly one Note button");
+  assert.ok(!html.includes("data-ayah-sheet-takenote"), "a separate Take Note button is still drawn");
   sheet.querySelector("[data-ayah-sheet-note]")._fire();
-  assert.deepEqual(calls, ["take:ayah:1:1", "note:ayah:1:1"]);
   const withNote = renderAyahActionSheetHtml({ unitKey: "ayah:1:1", isSelf: true, hasPosterNote: true });
-  assert.ok(!withNote.includes("data-ayah-sheet-takenote"), "with a Note already there, Take Note is not offered");
+  const c2 = fakeContainer(withNote);
+  attachAyahActionSheetHandlers(c2, { onNote: (k) => calls.push(`note:${k}`), onTakeNote: (k) => calls.push(`take:${k}`) });
+  c2.querySelector("[data-ayah-sheet]").querySelector("[data-ayah-sheet-note]")._fire();
+  assert.deepEqual(calls, ["take:ayah:1:1", "note:ayah:1:1"]);
+  assert.equal(c2.querySelector("[data-ayah-sheet]").querySelectorAll("[data-ayah-sheet-note]").length, 1);
+});
+check("the header's 📖 is named Full text, not Note view (decision 94)", () => {
+  const html = renderAyahActionSheetHtml({ unitKey: "ayah:1:1", isSelf: true });
+  const tag = findAllTags(html, "data-ayah-sheet-noteview")[0] ?? "";
+  const btn = html.slice(html.indexOf(tag), html.indexOf("</button>", html.indexOf(tag)));
+  assert.ok(btn.includes("Full text") && !btn.includes("Note view"), btn);
 });
 
 check("tapping a Word by Word chip closes the sheet and opens that word's occurrence, without touching any other button", () => {

@@ -3,10 +3,12 @@
 //    members progress recording. Enable."
 // (1) ✍ Take Note opens the Note view READY TO WRITE (its Notes box open, in sight, the cursor in it); 📝 Note opens the
 // Note view as it is (no cursor put anywhere). Both leave "Back to Āyah card".
+// Updated in place 9 Oct 2026 (decision 94, the Owner: "we got 3 notes. It's confusing"): ONE 📝 Note. With no Note on
+// the āyah yet it is the ready-to-write door; once the āyah has a Note it opens the Note view as it is.
 // (2) The Āyah card's "✅ Record Your Progress" carries 👥: ticking Maryam too writes the claim for BOTH (read back from
 // the stub's records writes), as the Track card does. Expected values written by hand (fixture p1 Ahsan, p2 Maryam).
 // Run from the repository root, serve.js on :8080.
-//   --mutate=samedoor   Take Note goes back to Note's own door        -> the "ready to write" checks fail
+//   --mutate=samedoor   with no Note yet, 📝 Note takes the plain door  -> the "ready to write" checks fail
 //   --mutate=self-only  claimApproachStatus writes only for the Student -> the two-person check fails
 import { chromium, newContext, openPage } from "./harness.mjs";
 import fs from "node:fs";
@@ -18,12 +20,19 @@ const check = (name, ok, detail = "") => {
 };
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
 const MUT = {
-  samedoor: ["js/ayah-action-sheet.js", 'callbacks.onTakeNote ?? callbacks.onNote);', "callbacks.onNote);"],
+  samedoor: ["js/ayah-action-sheet.js", '? (callbacks.onTakeNote ?? callbacks.onNote) : callbacks.onNote);', "? callbacks.onNote : callbacks.onNote);"],
   "self-only": ["quranrevival.html", "      const targets = claimTargetIds();\n", "      const targets = [selectedPersonId];\n"],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
 const TENANT_ID = "t1";
+// A Note already on 2:256 (the stub never adds what the app writes to its own data, so the Note typed on 2:255 below
+// cannot be read back; the "has a Note" door is proven on this seeded one). Row shapes as ayah-connected-browser.mjs.
+const TS = "2026-01-01T00:00:00.000Z";
+const NOTE_256 = { _id: "t1__n256", noteId: "n256", tenantId: "t1", ownerPersonId: "p1", ownerUid: "test-uid", title: "On 2:256", bodyHtml: "<p>On 2:256</p>", status: "active", visibility: "private", currentRevisionId: "n256-r1", schemaVersion: 1, createdAt: TS, updatedAt: TS, createdBy: "test-uid" };
+const SOURCE_256 = { _id: "t1__s256", sourceLinkId: "s256", tenantId: "t1", ownerPersonId: "p1", ownerUid: "test-uid", noteId: "n256", sourceKey: "ayah:2:256", sourceKind: "quran-unit", relationshipKind: "origin", approachId: null, provenanceKind: "study-note", status: "active", schemaVersion: 1, createdAt: TS, updatedAt: TS, createdBy: "test-uid" };
 const SEED = `
+DATA.notes = [...(DATA.notes ?? []), ${JSON.stringify(NOTE_256)}];
+DATA.noteSources = [...(DATA.noteSources ?? []), ${JSON.stringify(SOURCE_256)}];
 DATA.records.push(
   { _id: TENANT_ID + "__p1__surah_2", tenantId: "t1", personId: "p1", entries: {} },
   { _id: TENANT_ID + "__p2__surah_2", tenantId: "t1", personId: "p2", entries: {} }
@@ -55,11 +64,11 @@ for (const lang of ["en", "bn"]) for (const [width, height] of [[390, 844], [128
   await P.waitForTimeout(900);
   await ev(() => document.querySelectorAll('[id*="splash"], .app-splash-overlay').forEach((e) => e.remove()));
 
-  // 1. Two doors: ✍ Take Note -> ready to write; 📝 Note -> the view as it is.
+  // 1. One 📝 Note (decision 94): no Note yet -> ready to write; a Note already -> the view as it is.
   await openCard(P, 255);
-  const doors = await ev(() => ({ note: document.querySelectorAll("[data-ayah-sheet] [data-ayah-sheet-note]").length, take: !!document.querySelector("[data-ayah-sheet] [data-ayah-sheet-takenote]") }));
-  check(`${tag} the card has one 📝 Note and one ✍ Take Note, each its own button`, doors.note === 1 && doors.take, JSON.stringify(doors));
-  await P.click("[data-ayah-sheet] [data-ayah-sheet-takenote]");
+  const doors = await ev(() => ({ note: document.querySelectorAll("[data-ayah-sheet] [data-ayah-sheet-note]").length, isNew: !!document.querySelector("[data-ayah-sheet] [data-ayah-sheet-note-new]"), take: !!document.querySelector("[data-ayah-sheet] [data-ayah-sheet-takenote]"), pen: [...document.querySelectorAll("[data-ayah-sheet] [data-ayah-sheet-actions] button")].some((b) => b.textContent.includes("✍")) }));
+  check(`${tag} the card has ONE 📝 Note (no separate ✍ Take Note), and with no Note yet it is the take-a-note door`, doors.note === 1 && doors.isNew && !doors.take && !doors.pen, JSON.stringify(doors));
+  await P.click("[data-ayah-sheet] [data-ayah-sheet-note]");
   await P.waitForFunction(() => !document.getElementById("noteView")?.hidden && document.querySelector("#noteView [data-note-editor]"), null, { timeout: 10000 }).catch(() => {});
   await P.waitForTimeout(400);
   const take = await ev(() => {
@@ -67,7 +76,7 @@ for (const lang of ["en", "bn"]) for (const [width, height] of [[390, 844], [128
     return { view: !document.getElementById("noteView").hidden, open: !!ed && ed.closest(".note-field-body")?.style.display !== "none", focused: document.activeElement === ed,
       inSight: !!r && r.height > 0 && r.top >= 0 && r.top < innerHeight - 20, back: !!document.querySelector("#ayahCardBackPill:not([hidden])") };
   });
-  check(`${tag} ✍ Take Note opens the Note view with its Notes box open`, take.view && take.open, JSON.stringify(take));
+  check(`${tag} 📝 Note (no Note yet) opens the Note view with its Notes box open`, take.view && take.open, JSON.stringify(take));
   check(`${tag} ...the box in sight and the cursor in it, ready to type`, take.focused && take.inSight, JSON.stringify(take));
   await P.keyboard.type("Bismillah");
   check(`${tag} ...typing goes straight into the Note`, (await ev(() => document.querySelector("#noteView [data-note-editor]")?.textContent ?? "")).includes("Bismillah"));
@@ -76,14 +85,24 @@ for (const lang of ["en", "bn"]) for (const [width, height] of [[390, 844], [128
   await P.waitForFunction(() => document.getElementById("ayahActionSheetOverlay")?.classList.contains("open"), null, { timeout: 8000 }).catch(() => {});
   await P.waitForTimeout(300);
   await ev(() => document.activeElement?.blur?.());
+  // 2:256 has a Note (seeded): the card's one 📝 Note there is the plain door.
+  await P.click('[data-ayah-sheet] [data-ayah-sheet-step="1"]');
+  await P.waitForFunction(() => /2:256|২:২৫৬/.test(document.querySelector("[data-ayah-sheet] .ayah-sheet-ref")?.textContent ?? "") && document.querySelector("[data-ayah-sheet] [data-ayah-sheet-note]")?.getAttribute("aria-label") !== null, null, { timeout: 8000 }).catch(() => {});
+  await P.waitForTimeout(700);
+  const nowHas = await ev(() => ({ isNew: !!document.querySelector("[data-ayah-sheet] [data-ayah-sheet-note-new]"), label: document.querySelector("[data-ayah-sheet] [data-ayah-sheet-note]")?.getAttribute("aria-label") }));
+  check(`${tag} on 2:256, which has a Note, the card's one 📝 Note is "Note & more…", not the take-a-note door`, !nowHas.isNew && nowHas.label === (lang === "bn" ? "নোট ও আরও…" : "Note & more…"), JSON.stringify(nowHas));
   await P.click("[data-ayah-sheet] [data-ayah-sheet-note]");
   await P.waitForFunction(() => !document.getElementById("noteView")?.hidden, null, { timeout: 10000 }).catch(() => {});
   await P.waitForTimeout(400);
   const plain = await ev(() => ({ view: !document.getElementById("noteView").hidden, focused: document.activeElement?.matches?.("[data-note-editor]") ?? false, back: !!document.querySelector("#ayahCardBackPill:not([hidden])") }));
-  check(`${tag} 📝 Note opens the Note view as it is (no cursor put in the box) -- a different door`, plain.view && !plain.focused && plain.back, JSON.stringify(plain));
+  check(`${tag} ...and it opens the Note view as it is (no cursor put in the box) -- a different door`, plain.view && !plain.focused && plain.back, JSON.stringify(plain));
   await P.click("[data-ayah-card-back]").catch(() => {});
   await P.waitForFunction(() => document.getElementById("ayahActionSheetOverlay")?.classList.contains("open"), null, { timeout: 8000 }).catch(() => {});
   await P.waitForTimeout(400);
+  // Back to 2:255, where the 👥 checks below are written.
+  await P.click('[data-ayah-sheet] [data-ayah-sheet-step="-1"]');
+  await P.waitForFunction(() => /2:255|২:২৫৫/.test(document.querySelector("[data-ayah-sheet] .ayah-sheet-ref")?.textContent ?? ""), null, { timeout: 8000 }).catch(() => {});
+  await P.waitForTimeout(500);
 
   // 2. 👥 on the Āyah card: tick Maryam too, press Learning, both are recorded.
   const picker = await ev(() => { const r = document.querySelector("[data-ayah-sheet] [data-claim-for]"), b = r?.querySelector("[data-assign-trigger]")?.getBoundingClientRect(); return r ? { label: r.querySelector("[data-assign-trigger-label]")?.textContent, h: b?.height ?? 0, beside: !!r.closest(".claim-for-line") } : null; });

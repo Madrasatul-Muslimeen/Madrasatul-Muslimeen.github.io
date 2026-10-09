@@ -3953,4 +3953,7 @@ export const BN = {
   "4A calendar, 4B timetable, 4C sessions (classId optional), 4D attendance (students and teachers), 4E availability and cover, 4F notices, 4G admissions, 4H staff records": "৪A ক্যালেন্ডার, ৪B সময়সূচি, ৪C সেশন (classId ঐচ্ছিক), ৪D উপস্থিতি (শিক্ষার্থী ও শিক্ষক), ৪E প্রাপ্যতা ও বদলি, ৪F নোটিশ, ৪G ভর্তি, ৪H কর্মী রেকর্ড", // ?
   // --- 9 Oct 2026: a listening bookmark resumes (v09.146)
   "Continue listening": "শোনা চালিয়ে যান",
+  // --- 9 Oct 2026: the Āyah card's 📖 button renamed (decision 94)
+  "Full text": "পূর্ণ পাঠ",
+  "See this āyah's full text": "এই আয়াতের পূর্ণ পাঠ দেখুন",
 };

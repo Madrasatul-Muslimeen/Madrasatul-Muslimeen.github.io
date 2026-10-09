@@ -166,13 +166,15 @@ for (const [lang, width, height] of [["en", 390, 844], ["bn", 390, 844], ["en", 
     const status = document.querySelector("[data-ayah-sheet] [data-ayah-sheet-status]").getBoundingClientRect();
     const btns = [...row.querySelectorAll("button")]; const rs = btns.map((b) => b.getBoundingClientRect());
     const sheet = document.querySelector("[data-ayah-sheet]").getBoundingClientRect();
-    return { n: btns.length, lastIsTakeNote: btns.at(-1)?.matches("[data-ayah-sheet-takenote]") /* its own door since 8 Oct 2026 */ && btns.at(-1)?.textContent.includes("✍"), rows: new Set(rs.map((r) => Math.round(r.top))).size, underHead: rs.every((r) => r.top >= head.bottom - 1 && r.bottom <= status.top + 1),
+    return { n: btns.length, oneNote: row.querySelectorAll("[data-ayah-sheet-note]").length === 1 && !row.querySelector("[data-ayah-sheet-takenote]") && !btns.some((b) => b.textContent.includes("✍")),
+      noteview: document.querySelector("[data-ayah-sheet] [data-ayah-sheet-noteview]")?.textContent.trim(), rows: new Set(rs.map((r) => Math.round(r.top))).size, underHead: rs.every((r) => r.top >= head.bottom - 1 && r.bottom <= status.top + 1),
       inside: rs.every((r) => r.left >= sheet.left - 1 && r.right <= sheet.right + 1), tap: rs.every((r) => r.height >= 44 && r.width >= 40),
       named: btns.every((b) => (b.getAttribute("aria-label") || "").length > 2), labelsFit: btns.every((b) => { const l = b.querySelector(".ayah-sheet-act-label"); return l && l.scrollWidth <= l.clientWidth + 1; }) };
   });
   // Updated in place 8 Oct 2026 (the Owner: "Take note button can be place on the above space (free current space)"):
-  // this āyah has no Note in the fixture, so Take Note is a tenth button, last in the row, not a line under it.
-  check(`${tag} the nine actions and Take Note sit in a row under the header (at most two rows on a phone), each named, each label whole`, !!acts && acts.n === 10 && acts.lastIsTakeNote && acts.rows <= 2 && acts.underHead && acts.inside && acts.tap && acts.named && acts.labelsFit, JSON.stringify(acts));
+  // this āyah has no Note in the fixture, so Take Note was a tenth button. Updated again 9 Oct 2026 (decision 94, "we
+  // got 3 notes. It's confusing"): ONE 📝 Note, so nine buttons, and the header's 📖 reads "Full text".
+  check(`${tag} the nine actions (one 📝 Note, no ✍ Take Note) sit in a row under the header (at most two rows on a phone), each named, each label whole; 📖 reads Full text`, !!acts && acts.n === 9 && acts.oneNote && acts.noteview === (lang === "bn" ? "📖 পূর্ণ পাঠ" : "📖 Full text") && acts.rows <= 2 && acts.underHead && acts.inside && acts.tap && acts.named && acts.labelsFit, JSON.stringify(acts));
   const ref = () => page.evaluate(() => document.querySelector("[data-ayah-sheet] .ayah-sheet-ref")?.textContent ?? "");
   const ref0 = await ref();
   await page.click('[data-ayah-sheet-step="1"]'); await page.waitForTimeout(500);

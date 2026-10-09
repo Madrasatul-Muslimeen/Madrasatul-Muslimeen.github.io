@@ -263,7 +263,12 @@ export function openApproachList(select) {
 function actionRowDefs({ isBookmarked, isSelf, noteWhy, hasPosterNote = null }) {
   const defs = [
     { attr: "data-ayah-sheet-bookmark", icon: isBookmarked ? "★" : "🔖", short: isBookmarked ? t("Bookmarked") : t("Bookmark"), label: isBookmarked ? t("Remove bookmark") : t("Bookmark this āyah") },
-    { attr: "data-ayah-sheet-note", icon: "📝", short: t("Note"), label: t("Note & more…"), disabled: !isSelf, hint: isSelf ? "" : noteWhy },
+    // The Owner, 9 Oct 2026 (decision 94; a photo with 📝 Note, ✍ Take Note and 📖 Note view circled: "we got 3
+    // notes. It's confusing"): ONE 📝 Note. With no Note on this āyah yet it is the "take a note" door (the Note view
+    // ready to write: data-ayah-sheet-note-new -> onTakeNote); with one, it opens the Note view as it is (onNote).
+    hasPosterNote === false
+      ? { attr: "data-ayah-sheet-note data-ayah-sheet-note-new", icon: "📝", short: t("Note"), label: t("Take Note"), title: t("You don't have a Note on this āyah yet."), disabled: !isSelf, hint: isSelf ? "" : noteWhy }
+      : { attr: "data-ayah-sheet-note", icon: "📝", short: t("Note"), label: t("Note & more…"), disabled: !isSelf, hint: isSelf ? "" : noteWhy },
     { attr: "data-ayah-sheet-poster", icon: "🖨", short: t("Poster"), label: t("Make a poster") },
     { attr: "data-ayah-sheet-asma", icon: "✦", short: t("Asma"), label: t("Asma ul Husna Name(s)…") },
     { attr: "data-ayah-sheet-qcr", icon: "📚", short: t("QCR"), label: t("QCR collection(s)…") },
@@ -272,12 +277,8 @@ function actionRowDefs({ isBookmarked, isSelf, noteWhy, hasPosterNote = null }) 
     { attr: "data-ayah-sheet-copy", icon: "📋", short: t("Copy"), label: t("Copy") },
     { attr: "data-ayah-sheet-share", icon: "📤", short: t("Share"), label: t("Share") },
   ];
-  // The Owner, 8 Oct 2026 (a photo of this card, "Take Note" circled and arrowed into the row's empty places): "Take
-  // note button can be place on the above space (free current space)". With no Note on this āyah yet, Take Note is
-  // a button in the row, after Share, instead of a line of its own under it. Same door as Note (data-ayah-sheet-note).
-  // The Owner, 8 Oct 2026: "Note n Take Note both takes to the same view, Isn't it? Fix." Take Note now has its own
-  // door: the Note view opens with its Notes box open and the cursor in it, ready to write; 📝 Note opens the view as is.
-  if (hasPosterNote === false) defs.push({ attr: "data-ayah-sheet-takenote", icon: "✍", short: t("Take Note"), label: t("Take Note"), title: t("You don't have a Note on this āyah yet.") });
+  // History: 8 Oct 2026 a separate ✍ Take Note joined the row when there was no Note yet, with its own door (the Note
+  // view ready to write). 9 Oct 2026 (decision 94) it merged into 📝 Note above, which keeps that door.
   return defs;
 }
 
@@ -444,7 +445,7 @@ export function renderAyahActionSheetHtml({
             <button type="button" class="ayah-sheet-nav" data-ayah-sheet-step="-1" aria-label="${escapeHtml(t("Previous āyah"))}" title="${escapeHtml(t("Previous āyah"))}"${canPrev ? "" : " disabled"}>‹</button>
             <button type="button" class="ayah-sheet-nav" data-ayah-sheet-step="1" aria-label="${escapeHtml(t("Next āyah"))}" title="${escapeHtml(t("Next āyah"))}"${canNext ? "" : " disabled"}>›</button>
           </span>
-          <button type="button" class="ayah-sheet-noteview" data-ayah-sheet-noteview aria-label="${escapeHtml(t("See this āyah as in Note view"))}" title="${escapeHtml(t("See this āyah as in Note view"))}"><span aria-hidden="true">📖</span> ${escapeHtml(t("Note view"))}</button>
+          <button type="button" class="ayah-sheet-noteview" data-ayah-sheet-noteview aria-label="${escapeHtml(t("See this āyah's full text"))}" title="${escapeHtml(t("See this āyah's full text"))}"><span aria-hidden="true">📖</span> ${escapeHtml(t("Full text"))}</button>
         </span>
         <button type="button" class="ayah-sheet-close" data-ayah-sheet-close aria-label="${escapeHtml(t("Close"))}">×</button>
       </div>
@@ -533,8 +534,9 @@ export function attachAyahActionSheetHandlers(container, callbacks = {}) {
     });
   });
   sheet.querySelector("[data-ayah-sheet-bookmark]")?.addEventListener("click", () => fire(callbacks.onBookmark));
-  fireUnlessDisabled(sheet.querySelector("[data-ayah-sheet-note]"), callbacks.onNote);
-  fireUnlessDisabled(sheet.querySelector("[data-ayah-sheet-takenote]"), callbacks.onTakeNote ?? callbacks.onNote);
+  // Decision 94: one 📝 Note; with no Note yet it opens the Note view ready to write.
+  const noteBtn = sheet.querySelector("[data-ayah-sheet-note]");
+  fireUnlessDisabled(noteBtn, noteBtn?.getAttribute("data-ayah-sheet-note-new") != null ? (callbacks.onTakeNote ?? callbacks.onNote) : callbacks.onNote);
   sheet.querySelector("[data-ayah-sheet-asma]")?.addEventListener("click", () => fire(callbacks.onAsma));
   sheet.querySelector("[data-ayah-sheet-qcr]")?.addEventListener("click", () => fire(callbacks.onQcr));
   fireUnlessDisabled(sheet.querySelector("[data-ayah-sheet-file-folder]"), callbacks.onFileInFolder);
