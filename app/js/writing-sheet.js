@@ -293,7 +293,7 @@ const CSS = `
  *   initial       { type, surah, from, to, page } of the current unit
  *   unitLabel     what the sheet holds now, in words
  */
-export async function openWritingSheet({ fatihaCount = false, pages, range = null, surahArabicName = null, onClose = null, onChooseUnit = null, surahs = [], initial = null, unitLabel = "" } = {}) {
+export async function openWritingSheet({ fatihaCount = false, pages, range = null, surahArabicName = null, onClose = null, onChooseUnit = null, surahs = [], initial = null, unitLabel = "", onBookmark = null } = {}) {
   if (openSheet) openSheet.destroy();
   const inUnit = (s, a) => {
     if (!range) return true;
@@ -323,6 +323,7 @@ export async function openWritingSheet({ fatihaCount = false, pages, range = nul
       <div class="ws-row ws-row2">
         <button type="button" class="ws-unit" data-ws="unit" aria-expanded="false"${onChooseUnit ? "" : " disabled"}></button>
         <button type="button" data-ws="popout" aria-pressed="false" aria-label="${t("Pop out")}" title="${t("Pop out")}">🔍<span class="ws-tx"> ${t("Pop out")}</span></button>
+        ${onBookmark ? `<button type="button" data-ws="bookmark" aria-pressed="false" aria-label="${t("Bookmark this")}" title="${t("Bookmark this")}">🔖<span class="ws-tx"> ${t("Bookmark")}</span></button>` : ""}
         <select class="ws-shade" data-ws-shade-select aria-label="${t("Letter style")}" title="${t("Letter style")}">
           <option value="light">${t("Light")}</option>
           <option value="lighter">${t("Lighter")}</option>
@@ -842,6 +843,9 @@ export async function openWritingSheet({ fatihaCount = false, pages, range = nul
           if (p) { p.strokes.length = 0; paintInk(p); st.dirty.delete(p.n); }
           break;
         }
+        // The Owner, 9 Oct 2026: "Need a bookmark button here." The page saves the bookmark (its usual naming box);
+        // a saved one shows pressed, so the reader can see it worked.
+        case "bookmark": Promise.resolve(onBookmark?.()).then((saved) => { if (saved) { b.setAttribute("aria-pressed", "true"); b.title = t("Bookmarked"); b.setAttribute("aria-label", t("Bookmarked")); } }); break;
         case "save": closeMenu(); savePicture(); break;
         case "print": closeMenu(); printA4(); break;
         case "more": { const open = menuEl.hidden; menuEl.hidden = !open; b.setAttribute("aria-expanded", String(open)); break; }

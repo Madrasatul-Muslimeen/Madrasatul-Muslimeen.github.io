@@ -3886,4 +3886,6 @@ export const BN = {
   "The hadith text could not be loaded right now.": "হাদিসের পাঠ এখন লোড করা যায়নি।",
   "No translation of this hadith is in the app yet.": "এই হাদিসের কোনো অনুবাদ এখনও অ্যাপে নেই।",
   "Couldn't load this āyah. Check the connection and open the Name again.": "এই আয়াতটি লোড করা যায়নি। সংযোগ দেখে নামটি আবার খুলুন।",
+  // --- 9 Oct 2026: a listening bookmark resumes; the Āyah card's 🗂 QCR fold
+  "Continue listening": "শোনা চালিয়ে যান",
 };

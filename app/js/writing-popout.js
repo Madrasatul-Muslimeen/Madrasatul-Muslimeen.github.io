@@ -122,7 +122,9 @@ export function openWordPopout({ host, word, ayahWords, unitWords, ensureFont, p
   const st = {
     mode: mode === "ayah" ? "ayah" : "word",
     cw: word,                                       // the word the pop-out is on now
-    idx: 3, tool: "pen", move: false, full: false, destroyed: false,
+    // The Owner, 9 Oct 2026: the pop-out "should take the whole screen with its buttons" -- it opens full screen;
+    // ⛶ still makes it a window.
+    idx: 3, tool: "pen", move: false, full: true, destroyed: false,
     lines: "trace", extra: 0,                       // extra = fresh blocks added with ⬆ More paper
     strokes: new Map(),                             // one list of strokes per word / per Ayah
     drawing: null, geom: null, shade, fit: 0,
@@ -473,7 +475,13 @@ export function openWordPopout({ host, word, ayahWords, unitWords, ensureFont, p
   root.addEventListener("click", (e) => {
     const b = e.target.closest("button");
     if (!b || !root.contains(b)) return;
-    if (b.dataset.wpMode) { st.mode = b.dataset.wpMode; st.extra = 0; paintBar(); render(); return; }
+    if (b.dataset.wpMode) {
+      st.mode = b.dataset.wpMode; st.extra = 0;
+      // The Owner, 9 Oct 2026: an Ayah opened from its end mark, then Word, showed the end mark as "the word". A mark
+      // is never a word to write: Word starts on that Ayah's first word.
+      if (st.mode === "word" && st.cw.marker) st.cw = ayahOf(st.cw.loc).find((w) => !w.marker) ?? unitList().find((w) => !w.marker && w.loc.split(":").slice(0, 2).join(":") === st.cw.loc.split(":").slice(0, 2).join(":")) ?? st.cw;
+      paintBar(); render(); return;
+    }
     if (b.dataset.wpTool) { st.tool = b.dataset.wpTool; paintBar(); return; }
     switch (b.dataset.wp) {
       case "smaller": if (st.idx > 0) { st.idx--; paintBar(); render(); } break;

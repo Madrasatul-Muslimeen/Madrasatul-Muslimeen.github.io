@@ -62,7 +62,7 @@ function ensureStyles() {
     .bm-popover-overlay {
       position: fixed; inset: 0; background: rgba(0,0,0,0.4);
       display: flex; align-items: center; justify-content: center;
-      z-index: 80; padding: 1rem;
+      z-index: 9700; padding: 1rem; /* above the writing sheet (9500) and its pop-out (9600): a bookmark can be made there */
     }
     .bm-popover {
       background: white; color: #222; border-radius: 0.6rem; padding: 1rem 1.1rem;

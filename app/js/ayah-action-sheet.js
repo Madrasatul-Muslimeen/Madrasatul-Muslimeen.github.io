@@ -427,7 +427,7 @@ export function renderAyahActionSheetHtml({
   unitKey, ref = "", hasNote = false, isBookmarked = false, isSelf = true,
   approachOptionsHtml = "", selectedApproachId = null, selectedApproachStatusId = "not_started", hasPosterNote = null, approachSummary = null, canConfirm = false,
   approachStatuses = [], wordStatus = null, hifzStatus = null, related = null,
-  connected = null, ladderHtml = "", canPrev = true, canNext = true,
+  connected = null, ladderHtml = "", canPrev = true, canNext = true
 } = {}) {
   void hasNote; // kept for callers that already pass it (icon/wording decisions belong to isBookmarked/isSelf above, not this flag)
   const noteWhy = t("Only your own record can create or file a Note.");
