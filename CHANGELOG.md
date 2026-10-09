@@ -20284,3 +20284,14 @@ The Owner, decision 88, on the Dua demo (https://claude.ai/artifact/LxHMM7PhPAKQ
   - new bangla-sweep-core-screens-browser 122/0 (mutations "Know Your Status", "translation", "Abdullah Basfar (Arabic)" caught by name)
   - green: bangla-sweep-newer-screens-browser 23/0, palette-contrast-browser 20/0, phone-width-overflow 217/0, stub-parity 4/0
   - behaviour 1004/3: 22g × 3 (archive.org, intermittent in this sandbox)
+
+## v09.143 — 2026-10-09 — A Name's cited āyāt written out in Explore
+
+- **Asked:** the Owner, 9 Oct: "How about the ayat or the Hadith that reference mentioned appear here with Ayah and word card functions" → demo `docs/reference/2026-10-09-asma-cited-ayat-demo.html` → "build it"
+- **What:**
+  - `app/js/asma-cited-ayat.js` (new, pure): `nameRootsInAyat()` finds the Name's root from the cited āyāt' own words; `renderCitedAyatHtml()` draws them
+  - `app/quranrevival.html`: `renderAsmaXCitedAyat()` under the Name card (loads each āyah with `getAyah()`); a word → `openWordOccurrenceAt()` with the way back inside the Word card; Āyah card → `navigateToAyah()` + `openAyahActionSheet()` with the pill; both return through `returnToAsmaName()`
+  - `app/js/i18n/bn.js`: three phrases appended
+- **Checks:**
+  - new asma-cited-ayat-browser 45/0 (mutations nocited, noroots, noback, pillonly, bnfont each caught)
+  - green: behaviour 1007/0, bangla-sweep-core-screens 122/0, asma suites (poster 96, name-nav-poster 140, explore-name-poster 36, file-under 52, descriptions 26, classification-rename 20, classifications-boundary 36), explore-phone-card 146/0, phone-width-overflow 217/0, palette-contrast 20/0, stub-parity 4/0

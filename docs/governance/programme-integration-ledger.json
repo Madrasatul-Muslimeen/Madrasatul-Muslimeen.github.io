@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "09.142",
+    "version": "09.143",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -2885,8 +2885,20 @@
     {
       "version": "09.142",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Builder #680: Bangla sweep of the most-used screens, finished at review.",
+      "integration": {
+        "authorizedOn": "2026-10-09",
+        "integratedOn": "2026-10-09",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "09.143",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "The Architect's round: Asma in Explore writes out a Name's cited āyāt with the Word and Āyah cards.",
       "integration": {
         "authorizedOn": "2026-10-09",
         "integratedOn": "2026-10-09",
@@ -2895,8 +2907,9 @@
       }
     }
   ],
-  "nextUnallocated": "09.143",
+  "nextUnallocated": "09.144",
   "nextUnallocatedNote": [
+    "v09.143 was allocated to a Name's cited āyāt written out in Explore, 2026-10-09.",
     "v09.142 was allocated to the most-used screens checked in Bangla, 2026-10-09.",
     "v09.141 was allocated to the newer screens checked in Bangla, 2026-10-09.",
     "v09.140 was allocated to the way back from Notes on the Qur'an page, 2026-10-09.",
