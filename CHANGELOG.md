@@ -20351,3 +20351,12 @@ Built by the Architect, from the Owner's two reports of 9 Oct.
 - **A new āyah opens at its top.** `#ayahPanels` kept its scroll across āyahs (2:283 opened 957px down); it is reset when the āyah shown changes, not when the same āyah is redrawn.
 - **Note view pop-up.** `.ayah-nv-pop` aligns its box to the top, and `.ayah-nv-box` is at most 100% of the pop-up (fixed to the visible area) instead of `100vh - 32px`, so "← Āyah card" is never under the browser's address bar.
 - **Tests.** New `read-scroll-end-stays-browser.mjs` (10/0; mutations burst, touch, keep). `word-card-ayah-card-ways-back-browser.mjs` gains an address-bar check (mutation nvcentre). journey-s9 275/5 fails the same on unchanged `main`: recorded, not this change.
+
+## v09.149 — 2026-10-09 — One Note on the Āyah card (decision 94)
+
+Built by the Architect. The Owner: "we got 3 notes. It's confusing."
+
+- `app/js/ayah-action-sheet.js`: one 📝 Note. With no Note on the āyah yet it carries `data-ayah-sheet-note-new` and opens the Note view ready to write (`onTakeNote`); with a Note it opens the view as it is (`onNote`). The separate ✍ Take Note is removed. The header's 📖 "Note view" is renamed "Full text".
+- `bn.js`: "Full text", "See this āyah's full text" appended.
+- `docs/governance/2026-09-27-owner-decisions.md`: decision 94.
+- Tests updated in place: ayah-action-sheet-boundary (56/0), ayah-card-takenote-family (44/0; the "has a Note" door proven on a seeded Note, since the stub cannot read back a Note just typed), word-card-ayah-card-ways-back (74/0).
