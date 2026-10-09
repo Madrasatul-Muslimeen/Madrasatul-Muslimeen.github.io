@@ -46,6 +46,9 @@ const MUTATIONS = {
   "phone-no-ayah": ["@media (max-width:599.98px){.wp-tx{display:none}}", "@media (max-width:599.98px){.wp-tx{display:none}[data-wp-mode=ayah]{display:none}}"],
   "no-end-disable": ["nx.disabled = !neighbour(1);", "nx.disabled = false;"],
   "faint-model": ['w.marker, "model");', 'w.marker, "book");'],
+  // 9 Oct 2026 (the Owner): Word from an Ayah opened on its end mark, and the pop-out opening full screen.
+  "mark-word": ["if (st.mode === \"word\" && st.cw.marker) st.cw =", "if (false) st.cw ="],
+  "opens-window": ["move: false, full: true, destroyed: false,", "move: false, full: false, destroyed: false,"],
 };
 if (MUTATE && !MUTATIONS[MUTATE]) throw new Error("unknown mutation " + MUTATE);
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
@@ -265,11 +268,17 @@ for (const [width, height] of ONLY ? [] : [[390, 800], [820, 1000], [1280, 800]]
   check(`${tag} the pop-out bar is at most three rows (decision 83), every control >= 40px, all inside the window`, lay.rows <= 3 && lay.minW >= 39.5 && lay.minH >= 39.5 && lay.inside && lay.n >= 14, JSON.stringify(lay));
   check(`${tag} the page never scrolls sideways, and the window is on screen`, lay.overflow <= 0 && lay.winInside, JSON.stringify(lay));
 
-  // ---- window size (PC): the size button makes the window bigger
-  const wBefore = (await page.evaluate(() => document.querySelector("#writingSheet .wp-win").getBoundingClientRect().width));
+  // ---- window size. Updated in place 9 Oct 2026 (the Owner: the pop-out "should take the whole screen with its
+  // buttons"): it now OPENS full screen; ⛶ makes it a window, and ⛶ again takes the whole screen back.
+  const rWin = () => page.evaluate(() => { const r = document.querySelector("#writingSheet .wp-win").getBoundingClientRect(); return { w: r.width, h: r.height, ox: document.documentElement.scrollWidth - document.documentElement.clientWidth }; });
+  const wOpen = await rWin();
+  check(`${tag} the pop-out opens taking the whole screen`, Math.abs(wOpen.w - width) < 1 && Math.abs(wOpen.h - height) < 1 && wOpen.ox <= 0, JSON.stringify(wOpen));
   await wp(page, '[data-wp="win"]'); await page.waitForTimeout(300);
-  const wAfter = await page.evaluate(() => { const r = document.querySelector("#writingSheet .wp-win").getBoundingClientRect(); return { w: r.width, h: r.height, ox: document.documentElement.scrollWidth - document.documentElement.clientWidth }; });
-  check(`${tag} the window-size button enlarges the window (to almost the full screen) with no sideways scroll`, wAfter.w >= wBefore - 0.5 && wAfter.w >= width * 0.9 && wAfter.h >= height * 0.9 && wAfter.ox <= 0, `${wBefore} -> ${JSON.stringify(wAfter)}`);
+  const wSmall = await rWin();
+  check(`${tag} ⛶ makes it a window (smaller than the screen)`, wSmall.w < width - 2 || wSmall.h < height - 2, JSON.stringify(wSmall));
+  await wp(page, '[data-wp="win"]'); await page.waitForTimeout(300);
+  const wAfter = await rWin();
+  check(`${tag} the window-size button enlarges the window (to almost the full screen) with no sideways scroll`, wAfter.w >= width * 0.9 && wAfter.h >= height * 0.9 && wAfter.ox <= 0, JSON.stringify(wAfter));
   check(`${tag} ...and the Ayah is still drawn and the writing kept after the window resize`, (await bbox(page, "paper")).n > 500 && (await bbox(page, "ink")).n > 30);
 
   // ---- Bangla labels
@@ -409,18 +418,34 @@ if (ONLY || !MUTATE) {
     await pickSurah1(page);
     await popFromWord(page, 1, "1:2:3");
 
-    // full screen on / off
+    // full screen on / off. Updated in place 9 Oct 2026: it OPENS full screen (the Owner), so the first ⛶ makes it a
+    // window and the second takes the whole screen back.
     const win0 = await rectOf(page, ".wp-win");
+    const vp = await page.evaluate(() => ({ w: innerWidth, h: innerHeight }));
+    check(`${tag} it opens full screen (the window equals the viewport)`, Math.abs(win0.w - vp.w) < 1 && Math.abs(win0.h - vp.h) < 1 && win0.x < 1 && win0.y < 1, `${JSON.stringify(win0)} vs ${JSON.stringify(vp)}`);
+    await wp(page, '[data-wp="win"]'); await settle(page);
+    const small = await rectOf(page, ".wp-win");
+    check(`${tag} ⛶ makes it a window (smaller than the viewport)`, small.w < vp.w - 2 || small.h < vp.h - 2, JSON.stringify(small));
     await wp(page, '[data-wp="win"]'); await settle(page);
     const fsr = await rectOf(page, ".wp-win");
-    const vp = await page.evaluate(() => ({ w: innerWidth, h: innerHeight }));
     check(`${tag} ⛶ Full screen: the window equals the viewport`, Math.abs(fsr.w - vp.w) < 1 && Math.abs(fsr.h - vp.h) < 1 && fsr.x < 1 && fsr.y < 1, `${JSON.stringify(fsr)} vs ${JSON.stringify(vp)}`);
     check(`${tag} ...and the button says it is on`, await page.evaluate(() => document.querySelector("#writingSheet .wp [data-wp=win]").getAttribute("aria-pressed") === "true"));
     check(`${tag} ...with no sideways scroll`, (await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)) <= 0);
-    await wp(page, '[data-wp="win"]'); await settle(page);
-    const back = await rectOf(page, ".wp-win");
-    check(`${tag} ⛶ again puts the window back (smaller than the viewport)`, back.w < vp.w - 2 || back.h < vp.h - 2, JSON.stringify(back));
-    await wp(page, '[data-wp="win"]'); await settle(page);   // stay full screen from here
+    // (the window-and-back round trip is proven above; it stays full screen from here)
+
+    // The Owner, 9 Oct 2026: an Ayah opened from its END MARK, then Word, showed the mark as "the word". Word now starts
+    // on that Ayah's first word. Expected by hand: 1:2's mark is its 5th glyph (4 words, then the mark), word 1 is 1:2:1.
+    {
+      const mark = DATA["1"].flatMap((l) => l.words || []).filter((w) => w.loc.startsWith("1:2:")).pop();
+      await wp(page, '[data-wp="close"]'); await settle(page);
+      await page.evaluate(() => document.querySelector("#writingSheet [data-wp=close-anyway]")?.click());
+      await popFromWord(page, 1, mark.loc);
+      const a = await pop(page);
+      check(`${tag} tapping 1:2's end mark (${mark.loc}) opens the Ayah`, a && a.mode === "ayah", JSON.stringify(a));
+      await wp(page, '[data-wp-mode="word"]'); await settle(page);
+      const w = await pop(page);
+      check(`${tag} ...and Word then shows 1:2:1, the Ayah's first word, not the mark`, w && w.mode === "word" && w.loc === "1:2:1" && w.glyphs[0] === firstWord("1:2:1").g && w.glyphs[0] !== mark.g, JSON.stringify(w));
+    }
 
     // More paper
     const s0 = await stageNums(page);

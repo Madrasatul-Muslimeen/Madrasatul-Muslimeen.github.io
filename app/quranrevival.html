@@ -10676,6 +10676,8 @@
           surahs: surahIndex.map((s) => ({ n: s.surahNumber, name: surahName(s.surahNumber, s.nameEnglish), ayahCount: s.ayahCount })),
           initial: { type: sheetType, surah: currentSurahNum, from: uFrom, to: uTo, page: info.unitType === "page" ? currentUnitNumber() : (pages[0] ?? 1) },
           // Architect review (#603): name the Surah, not "Whole Surah 1" -- "Al-Faatiha", "Yaseen 1–12", "Page 50".
+          // The Owner, 9 Oct 2026: "Need a bookmark button here." It reopens on this writing sheet (view "writing").
+          onBookmark: () => toggleAyahBookmark(info.unitKey, `✍ ${surahName(currentSurahNum, surahIndex.find((x) => x.surahNumber === currentSurahNum)?.nameEnglish)} ${num(uFrom)}`, { ...captureQuranBookmarkSettings(), view: "writing" }, { toggle: false }),
           unitLabel: (() => {
             const sm = surahIndex.find((s) => s.surahNumber === currentSurahNum);
             const nm = sm ? surahName(currentSurahNum, sm.nameEnglish) : String(currentSurahNum);
@@ -20291,6 +20293,7 @@
         // default from the Mushaf tick, so the saved state wins after it.
         if (typeof settings?.readChrome === "number" && readChromeStates().includes(settings.readChrome)) setReadChrome(settings.readChrome);
       }
+      else if (position && settings?.view === "writing") { openReadingScreen(); await openWritingSheetForCurrentUnit(); }
       else if (position && (settings?.view === "study" || settings?.view === "landing")) { closeAllPanels(); setStageView("wheel"); renderWheel(); }
       else if (position) await openNoteView(position);
       if (position && settings?.listening) await resumeListeningFromBookmark(settings);
@@ -20575,10 +20578,11 @@
       else if (stageView === "read") renderStudyScreen();
     }
 
-    async function toggleAyahBookmark(unitKey, defaultNameOverride, settingsOverride) {
-      if (!auth.currentUser || !selectedPersonId) return;
+    async function toggleAyahBookmark(unitKey, defaultNameOverride, settingsOverride, { toggle = true } = {}) {
+      if (!auth.currentUser || !selectedPersonId) return false;
       const existing = findSavedBookmark(bookmarksDoc, { moduleId: "quranrevival", subjectId: "quran", position: unitKey });
-      if (existing) {
+      // toggle: false (the writing sheet's 🔖) always ADDS: a second bookmark on the same unit must never remove the first.
+      if (existing && toggle) {
         const outcome = await safeWrite(
           () => removeSavedBookmark(db, activeTenantId, selectedPersonId, existing.id),
           { collection: TENANT.BOOKMARKS, action: "removeSavedBookmark" }
@@ -20614,7 +20618,7 @@
         roster: assignableRoster(),
         selectedPersonId,
       });
-      if (!choice) return; // cancelled -- no write, no re-render
+      if (!choice) return false; // cancelled -- no write, no re-render
       // Save the SAME bookmark into every ticked assignee's own document.
       // Safe in parallel: each write lands on a different bookmarks/
       // {tenantId}__{personId} document (same reasoning "Assign to"'s own
@@ -20657,6 +20661,7 @@
         }
       }));
       refreshBookmarkDisplay(unitKey);
+      return true;
     }
 
     /**

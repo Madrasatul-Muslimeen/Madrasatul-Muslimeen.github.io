@@ -12,6 +12,10 @@
 //   --mutate=nobutton   a blocked start shows no button                -> the blocked-start checks fail
 //   --mutate=noflag     the bookmark does not remember listening       -> the capture check fails
 //   --mutate=noqcr      the Āyah card has no QCR fold                  -> the QCR checks fail
+//   --mutate=nows       the writing sheet has no 🔖                       -> the writing-sheet bookmark checks fail
+//   --mutate=wsreopen   a "writing" bookmark does not reopen the sheet  -> the reopen check fails
+// (3) The Owner, 9 Oct 2026, on the writing sheet: "Need a bookmark button here." 🔖 saves a bookmark (the usual naming
+//     box, shown ON TOP of the sheet) with view "writing", and opening such a bookmark reopens the writing sheet.
 import fs from "node:fs";
 import { chromium, newContext, openPage } from "./harness.mjs";
 
@@ -25,6 +29,8 @@ const MUT = {
   noresume: ["quranrevival.html", "      if (position && settings?.listening) await resumeListeningFromBookmark(settings);\n", "\n"],
   nobutton: ["quranrevival.html", '      if (meta.name === "NotAllowedError") { showContinueListening(); return; }', '      if (meta.name === "NotAllowedError") { return; }'],
   noflag: ["quranrevival.html", ', listening: isPlaying() || isPaused() };', " };"],
+  nows: ["quranrevival.html", "          onBookmark: () => toggleAyahBookmark(", "          onBookmarkOff: () => toggleAyahBookmark("],
+  wsreopen: ["quranrevival.html", '      else if (position && settings?.view === "writing") { openReadingScreen(); await openWritingSheetForCurrentUnit(); }\n', "\n"],
   noqcr: ["quranrevival.html", "        qcrHtml: qcrCollections ? renderQcrMembershipPopoverHtml(ayahSheetUnitKey) : null,\n", "\n"],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
@@ -178,6 +184,65 @@ const quiet = (errors) => errors.filter((e) => !/ERR_CERT|net::|archive\.org|api
     check(`${tag} no page errors`, quiet(errors).length === 0, quiet(errors).slice(0, 2).join(" | "));
     await ctx.close();
   }
+  await browser.close();
+}
+// --- (3) the writing sheet's 🔖 ------------------------------------------------------------------------------------
+{
+  const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
+  const REAL = fs.readFileSync("mushaf/mushaf-madani-v2.json");
+  const FONT_BASE = "https://verses.quran.foundation/fonts/quran/hafs/v2/woff2/";
+  const mushafRoutes = async (ctx) => {
+    await ctx.route("https://raw.githubusercontent.com/**/mushaf/**", (r) => {
+      const u = r.request().url();
+      if (u.endsWith("mushaf-madani-v2.json")) return r.fulfill({ status: 200, contentType: "application/json", body: REAL });
+      if (u.endsWith("QCF_SurahHeader_COLOR-Regular.woff2")) return r.fulfill({ status: 200, contentType: "font/woff2", body: fs.readFileSync("mushaf/QCF_SurahHeader_COLOR-Regular.woff2") });
+      return r.abort();
+    });
+    await ctx.route(`${FONT_BASE}**`, (r) => r.fulfill({ status: 200, contentType: "font/woff2", body: fs.readFileSync("mushaf/fonts/" + r.request().url().split("/").pop()) }));
+    await ctx.route("**/archive.org/**", (r) => r.abort());
+  };
+  const mut = async (ctx) => { if (!MUTATE) return; const [file, a, b] = MUT[MUTATE]; await ctx.route(`**/app/${file}*`, async (r) => { const src = fs.readFileSync(`app/${file}`, "utf8"); if (!src.includes(a)) throw new Error("mutation anchor missing"); await r.fulfill({ status: 200, contentType: "text/html; charset=utf-8", body: src.split(a).join(b) }); }); };
+  for (const [lang, width] of [["en", 390], ["bn", 1280]]) {
+    const tag = `[writing sheet, ${lang} ${width}]`;
+    const ctx = await newContext(browser, { appLang: lang === "bn" ? "bn" : null, banner: false, viewport: { width, height: 844 } });
+    await mushafRoutes(ctx); await mut(ctx);
+    const { page: P, errors } = await openPage(ctx, "/app/quranrevival.html");
+    await P.evaluate(() => document.querySelectorAll('[id*="splash"], .app-splash-overlay').forEach((e) => e.remove()));
+    await P.evaluate(() => { const s = document.getElementById("surahSelect"); s.value = "83"; s.dispatchEvent(new Event("change", { bubbles: true })); });
+    await P.waitForTimeout(1500);
+    if (!(await P.evaluate(() => document.getElementById("tabWritingBtn")?.getBoundingClientRect().width > 0))) { await P.click("#tabStudyBtn").catch(() => {}); await P.waitForTimeout(200); }
+    await P.evaluate(() => document.getElementById("tabWritingBtn")?.click());
+    await P.waitForFunction(() => !!document.querySelector("#writingSheet .ws-page"), null, { timeout: 15000 }).catch(() => {});
+    const b = await P.evaluate(() => { const x = document.querySelector('#writingSheet [data-ws="bookmark"]'); if (!x) return null; const r = x.getBoundingClientRect(); const row2 = document.querySelector("#writingSheet .ws-row2").getBoundingClientRect(); return { w: Math.round(r.width), h: Math.round(r.height), inRow2: r.top >= row2.top - 1 && r.bottom <= row2.bottom + 1, inside: r.right <= innerWidth + 0.5 && r.left >= -0.5, ox: document.documentElement.scrollWidth - document.documentElement.clientWidth }; });
+    check(`${tag} the writing sheet has a 🔖, in its second row, at least 40px, on screen`, !!b && b.inRow2 && b.w >= 39.5 && b.h >= 39.5 && b.inside && b.ox <= 0, JSON.stringify(b));
+    if (b) {
+      await P.evaluate(() => { window.__stubWriteData = []; });
+      await P.click('#writingSheet [data-ws="bookmark"]');
+      await P.waitForFunction(() => !!document.querySelector(".bm-popover [data-bm-pop-save]"), null, { timeout: 8000 }).catch(() => {});
+      const onTop = await P.evaluate(() => { const s = document.querySelector(".bm-popover [data-bm-pop-save]"); if (!s) return false; const r = s.getBoundingClientRect(); const el = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return el === s || s.contains(el); });
+      check(`${tag} 🔖 opens the naming box ON TOP of the sheet`, onTop);
+      if (onTop) await P.click(".bm-popover [data-bm-pop-save]");
+      await P.waitForFunction(() => (window.__stubWriteData || []).some((w) => w.col === "bookmarks"), null, { timeout: 8000 }).catch(() => {});
+      const wr = await P.evaluate(() => JSON.stringify((window.__stubWriteData || []).filter((w) => w.col === "bookmarks").map((w) => w.data)));
+      check(`${tag} ...Save writes a bookmark that reopens on the writing sheet (view "writing")`, /"view":"writing"/.test(wr), wr.slice(0, 200));
+      const pressed = await P.evaluate(() => document.querySelector('#writingSheet [data-ws="bookmark"]')?.getAttribute("aria-pressed"));
+      check(`${tag} ...and the 🔖 shows it is saved`, pressed === "true", String(pressed));
+      if (width === 390) await P.screenshot({ path: `/tmp/ws-bookmark-${lang}-${width}.png` });
+    }
+    check(`${tag} no page errors`, quiet(errors).length === 0, quiet(errors).slice(0, 2).join(" | "));
+    await ctx.close();
+  }
+  // Opening a "writing" bookmark reopens the writing sheet.
+  const ctx = await newContext(browser, { appLang: null, banner: false, viewport: { width: 390, height: 844 }, extraSeedJs: `
+DATA.bookmarks = [{ _id: TENANT_ID + "__p1", tenantId: TENANT_ID, personId: "p1", resume: {}, folders: [],
+  saved: [{ id: "bw", programId: "none", moduleId: "quranrevival", subjectId: "quran", name: "✍ Al-Mutaffifin", position: "surah:83", folderId: null, removed: false,
+    settings: { view: "writing", unitType: "surah", surahNum: 83, ayahNum: 1, trackableId: "tafsir" }, createdAt: "2026-10-09T00:00:00.000Z" }] }];` });
+  await mushafRoutes(ctx); await mut(ctx);
+  const { page: P } = await openPage(ctx, "/app/quranrevival.html?bookmark=bw");
+  await P.waitForFunction(() => !!document.querySelector("#writingSheet .ws-page"), null, { timeout: 15000 }).catch(() => {});
+  const reopened = await P.evaluate(() => ({ sheet: !!document.querySelector("#writingSheet .ws-page"), unit: document.querySelector('#writingSheet [data-ws="unit"]')?.textContent ?? "" }));
+  check("[writing sheet] opening a writing bookmark reopens the writing sheet on Al-Mutaffifin", reopened.sheet && /Mutaffifin/.test(reopened.unit), JSON.stringify(reopened));
+  await ctx.close();
   await browser.close();
 }
 console.log(`\n==== Listening bookmark, and QCR on the Āyah card: ${pass} passed, ${fail} failed ====`);
