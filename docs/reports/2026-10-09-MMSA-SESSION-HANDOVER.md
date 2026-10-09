@@ -126,3 +126,4 @@ Test-only, no version: Builder #697 (PRs #698 and #703), a Bangla sweep of the v
 English found. Builder #705 (PR #706), `bn-duplicate-keys` made meaningful again, 6/0.
 - **v09.151** (2026-10-09): dua words link only to a Qur'an word that agrees with their vowels (Builder #712).
 - **v10.01** (2026-10-09): the Read view's 📝 Notes pane (decision 95, round 1; opens the v10 line, decision 97).
+- **v10.02** (2026-10-09): Check a dua, the review screen on the Dua card (decision 96, Builder #716).
