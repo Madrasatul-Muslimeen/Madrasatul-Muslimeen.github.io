@@ -124,3 +124,4 @@ Mapping My Journey note pane as THE note.
 
 Test-only, no version: Builder #697 (PRs #698 and #703), a Bangla sweep of the v09.143–v09.149 surfaces, 82/0, no
 English found. Builder #705 (PR #706), `bn-duplicate-keys` made meaningful again, 6/0.
+- **v09.151** (2026-10-09): dua words link only to a Qur'an word that agrees with their vowels (Builder #712).

@@ -53,12 +53,12 @@ for (const p of pages) {
 }
 check("every dua with picked words has its links, built from these very words (fingerprint and word count match)", duas === 1091 && misaligned === 0, `${duas} ${misaligned}`);
 // Round 2 (decision 90) added the Qur'an's own spellings and a leading «و»/«ف»: 13,517 (74.9%) in round 1, updated in place.
-check("18,040 dua words, 14,060 linked to a Qur'an word (77.9%; 13,517 before round 2)", toks === 18040 && linked === 14060, `${toks} ${linked}`);
+check("18,040 dua words, 14,036 linked to a Qur'an word (77.8%; 14,060 before the vowel check of issue 712, 13,517 before round 2)", toks === 18040 && linked === 14036, `${toks} ${linked}`);
 check("every link points at a real Qur'an word spelled the same way (vowels and marks aside, a leading «و»/«ف» or the Qur'an's own spelling as recorded), with that word's own spelling and its Word-by-Word progress key", wrongPlace === 0, String(wrongPlace));
 check("ROUND 3: every link lists up to 8 of the spelling's places, in Qur'an order, starting at its own count's first place, each a real word spelled that way",
   [...files.values()].every((f) => f.entries.every((e) => Array.isArray(e[10]) && e[10].length === Math.min(8, e[1]) && e[10].every((n, i, a) => (i === 0 || n > a[i - 1]) && wordAt.has(`${Math.floor(n / 1e6)}:${Math.floor(n / 1e3) % 1000}:${n % 1000}`)))));
 check("INDEPENDENT -- «أسلمت»'s places: 2:131:7 and 3:20:4 (its two times in the Qur'an)", JSON.stringify(files.get(1).entries[files.get(1).duas[1].w[1]][10]) === JSON.stringify([2131007, 3020004]), JSON.stringify(files.get(1).entries[files.get(1).duas[1].w[1]][10]));
-check("ROUND 2: 522 words matched without a leading «و»/«ف», 26 through the Qur'an's own spelling", prefixed.length === 522 && spelled.length === 26, `${prefixed.length} ${spelled.length}`);
+check("ROUND 2: 520 words matched without a leading «و»/«ف» (522 before the vowel check), 26 through the Qur'an's own spelling", prefixed.length === 520 && spelled.length === 26, `${prefixed.length} ${spelled.length}`);
 check("ROUND 2: «وبحمده», «وأتوب» and «الصلاة» are linked; «فلان», «فاجر» and «فجأة» are not", ["وبحمده", "وأتوب"].every((x) => prefixed.includes(x)) && spelled.includes("الصلاة") && !prefixed.includes("فلان") && !prefixed.includes("فاجر") && !spelled.includes("فجأة"));
 check("ROUND 2: duaWordCandidates -- «والصلاة» tries itself, then «الصلوه» without «و»; «فيك» keeps its «ف» (it is «في»)",
   JSON.stringify(duaWordCandidates(duaWordKey("والصلاة")).map((c) => c.key)) === JSON.stringify(["والصلاه", "الصلاه", "الصلوه"]) && duaWordCandidates(duaWordKey("فيك")).length === 1);
@@ -75,5 +75,38 @@ const many = forms.get(duaWordKey("من"));
 check("a spelling with several dictionary words («من»: min / man) gives the most frequent one and says how many there are", !!many && linkRow(many)[8] >= 2 && linkRow(many)[7] === "مِن", JSON.stringify(many && linkRow(many)));
 check("duaWordKey: vowels, marks, alef shapes, ya and ta marbuta unified; the small alef tried both ways",
   duaWordKey("ٱلْعَٰلَمِينَ") === "العلمين" && duaWordKey("ٱلْعَٰلَمِينَ", "ا") === "العالمين" && duaWordKey("رَحْمَةً") === "رحمه" && duaWordKey("عَلَىٰ") === "علي");
+// ---- Issue 712: a word with vowels links only to a Qur'an word that agrees with its hamza seat and shadda. Expected values by hand.
+const { linkWord } = await import("../hadith-data-pull/dua-word-links.mjs");
+const F1 = files.get(1), D2 = F1.duas[2], at2 = (i) => F1.entries[D2.w[i]];
+check("ISSUE 712 -- Dua 2 «وأنا» (words 9 and 11) link to 2:160:9 وَأَنَا, never to وَإِنَّآ at 2:70:13", [8, 10].every((i) => at2(i)?.[0] === "2:160:9" && at2(i)[2] === "وَأَنَا") && !JSON.stringify(F1).includes("2:70:13"), JSON.stringify([at2(8), at2(10)]));
+check("ISSUE 712 -- no dua word in any page links to the Qur'an's وَإِنَّآ", ![...files.values()].some((f) => f.entries.some((e) => e[2] === "وَإِنَّآ")));
+check("ISSUE 712 -- Dua 2 «إلا» is still linked, to 2:9:7 إِلَّآ (the madda sign is plain spelling)", at2(5)?.[0] === "2:9:7" && at2(5)[2].replace(/[^ء-ي]/gu, "").replace("آ", "ا") === "إلا", JSON.stringify(at2(5)));
+check("ISSUE 712 -- «إِلَّا», «سُبْحَانَ» and «السَّلَامُ» are still linked (dagger alef, madda sign, ٱ are plain spelling)",
+  linkWord("إلا", "إِلَّا", forms) && linkWord("إلا", "إِلاَّ", forms) && linkWord("سبحان", "سُبْحَانَ", forms) && linkWord("السلام", "السَّلَامُ", forms));
+check("ISSUE 712 -- «كُفُوًا» links to 112:4:4 كُفُوًا and not to كُفُّوٓا۟ (which has a shadda)",
+  (() => { const r = linkWord("كفوا", "كُفُوًا", forms); return r && r.form.words.length === 1 && r.form.words[0].place === "112:4:4"; })());
+check("ISSUE 712 -- «إِنْ» links only to Qur'an words seated on إ; «أَنْ» only to أ", (() => {
+  const a = linkWord("إن", "إِنْ", forms), b = linkWord("أن", "أَنْ", forms);
+  return a && b && a.form.words.length > 0 && a.form.words.every((x) => x.w.arabic.includes("إ")) && b.form.words.every((x) => x.w.arabic.includes("أ"));
+})());
+check("ISSUE 712 -- a word without vowels keeps its old link: «أسلمت» -> 2:131:7 and «اللهم» -> 3:26:2", linkWord("أسلمت", "", forms)?.form.places[0] === 2131007 && linkWord("اللهم", "", forms)?.form.places[0] === 3026002);
+check("ISSUE 712 -- «الله», «اللهم», «الذي», «لله» typed without their sun-letter shadda stay linked", ["الله|اللهِ", "اللهم|اللهُمَّ", "الذي|الذِي", "لله|لِلهِ"].every((p) => { const [k, v] = p.split("|"); return !!linkWord(k, v, forms); }));
+// Mutations: the same tool, run with one rule broken, must fail the check written for it.
+const SRC = "tools/hadith-data-pull/dua-word-links.mjs";
+const src = fs.readFileSync(SRC, "utf8");
+async function mutant(name, from, to) {
+  if (src.split(from).length !== 2) throw new Error(`mutation ${name}: expected exactly one occurrence of the line to break`);
+  const file = `tools/hadith-data-pull/_mutant-${name}.mjs`;
+  fs.writeFileSync(file, src.replace(from, to));
+  try { return await import(`../../${file}`); } finally { fs.unlinkSync(file); }
+}
+const noHamza = await mutant("hamza", 't = t.replace(/[^ء-ي\\u0651]/gu, "");', 't = t.replace(/[أإآ]/gu, "ا").replace(/[^ء-ي\\u0651]/gu, "");');
+const { duaWordSkeleton } = await import("../hadith-data-pull/dua-word-links.mjs");
+check("hamza seats stay apart: «وَأَنَا» and «وَإِنَا» have different skeletons", duaWordSkeleton("وَأَنَا") !== duaWordSkeleton("وَإِنَا"));
+check("MUTATION -- hamza seats collapsed again: «وَأَنَا» and «وَإِنَا» get one skeleton, and the check above would FAIL", noHamza.duaWordSkeleton("وَأَنَا") === noHamza.duaWordSkeleton("وَإِنَا"));
+const noShadda = await mutant("shadda", 't = t.replace(/[^ء-ي\\u0651]/gu, "");', 't = t.replace(/[^ء-ي]/gu, "");');
+const ms = noShadda.buildQuranForms(surahs);
+check("shadda is compared: «كُفُوًا» and «كُفُّوٓا۟» have different skeletons", duaWordSkeleton("كُفُوًا") !== duaWordSkeleton("كُفُّوٓا۟"));
+check("MUTATION -- shadda ignored: «كُفُوًا» and «كُفُّوٓا۟» get one skeleton, and the check above would FAIL", noShadda.duaWordSkeleton("كُفُوًا") === noShadda.duaWordSkeleton("كُفُّوٓا۟") && ms.size > 0);
 console.log(`\n==== Dua words linked to Qur'an words: ${pass} passed, ${fail} failed ====`);
 process.exit(fail ? 1 : 0);
