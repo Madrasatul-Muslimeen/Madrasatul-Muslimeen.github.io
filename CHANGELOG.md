@@ -20342,3 +20342,12 @@ PR #694, reviewed by the Architect.
 - `app/js/i18n/bn.js`: 64 phrases appended, each `// ?` for the Owner's review. No existing key repeated or changed.
 - `tools/i18n-verify/bangla-sweep-lib.mjs`: the `.registry-text` known-gap exception deleted; file names, Firebase, CRUD/CSV/LDOG and code identifiers allowed as name tokens inside Bangla lines.
 - Review: merged with `main` (bn.js append conflict, both kept); a second mutation on a whole "delivers" line proves the allowance cannot hide an untranslated line. Checks: bangla-sweep-other-pages 224/0, core 122/0, newer 23/0, phone-width-overflow 217/0, stub-parity 4/0.
+
+## v09.148 — 2026-10-09 — The end of an āyah stays put; the Note view pop-up keeps its way back
+
+Built by the Architect, from the Owner's two reports of 9 Oct.
+
+- **Scroll to the end stays there.** `wireScrollSwipeAyahNav()`: a wheel burst (events under 350ms apart) and a swipe read whether the text was at an end when they STARTED; only then do they move to the next/previous āyah. Reaching an end only stops there.
+- **A new āyah opens at its top.** `#ayahPanels` kept its scroll across āyahs (2:283 opened 957px down); it is reset when the āyah shown changes, not when the same āyah is redrawn.
+- **Note view pop-up.** `.ayah-nv-pop` aligns its box to the top, and `.ayah-nv-box` is at most 100% of the pop-up (fixed to the visible area) instead of `100vh - 32px`, so "← Āyah card" is never under the browser's address bar.
+- **Tests.** New `read-scroll-end-stays-browser.mjs` (10/0; mutations burst, touch, keep). `word-card-ayah-card-ways-back-browser.mjs` gains an address-bar check (mutation nvcentre). journey-s9 275/5 fails the same on unchanged `main`: recorded, not this change.

@@ -3708,9 +3708,13 @@
   .ayah-card-back-ref { color: #c9a24b; margin-left: 0.3rem; }
   .ayah-card-back-x { width: 40px; height: 40px; flex: 0 0 auto; padding: 0; border: 0; border-radius: 50%; background: rgba(255, 255, 255, 0.08); color: #f2e8d5; font-size: 1.2rem; cursor: pointer; }
   /* 📖 Note view pop-up: the āyah as the Note view shows it, over the card. */
-  .ayah-nv-pop { position: fixed; inset: 0; z-index: 1300; background: rgba(8, 14, 26, 0.6); display: flex; align-items: center; justify-content: center; padding: 16px; }
+  /* The Owner, 9 Oct 2026 (a tablet): "no way back or it is covered". 100vh is the screen with the browser's bars
+     HIDDEN, so while they show, a centred box that tall overflowed upwards and its "← Āyah card" sat under the
+     address bar. The box now hangs from the top of the pop-up, which is fixed to the VISIBLE area, and is never
+     taller than it (100% of the pop-up, not 100vh). */
+  .ayah-nv-pop { position: fixed; inset: 0; z-index: 1300; background: rgba(8, 14, 26, 0.6); display: flex; align-items: flex-start; justify-content: center; padding: 16px; }
   .ayah-nv-pop[hidden] { display: none; }
-  .ayah-nv-box { width: min(46rem, 100%); max-height: calc(100vh - 32px); overflow-y: auto; background: #fffdf6; color: #1b1b16; border-radius: 1rem; box-shadow: 0 18px 44px rgba(0, 0, 0, 0.45); padding: 0 1rem 1rem; }
+  .ayah-nv-box { width: min(46rem, 100%); max-height: 100%; overflow-y: auto; background: #fffdf6; color: #1b1b16; border-radius: 1rem; box-shadow: 0 18px 44px rgba(0, 0, 0, 0.45); padding: 0 1rem 1rem; }
   .ayah-nv-head { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; gap: 0.6rem; padding: 0.6rem 0; background: #fffdf6; border-bottom: 1px solid #eadfc3; }
   .ayah-nv-back { flex: 0 0 auto; white-space: nowrap; min-height: 40px; padding: 0 0.8rem; border: 1px solid #c9a24b; border-radius: 0.6rem; background: #1F3A6E; color: #fff; font-size: 0.88rem; font-weight: 600; cursor: pointer; }
   .ayah-nv-ref { font-weight: 700; color: #1F3A6E; min-width: 0; overflow-wrap: anywhere; }
@@ -21151,14 +21155,27 @@
         setTimeout(() => { el.style.transition = ""; }, animate ? 200 : 0);
       }
 
+      // The Owner, 9 Oct 2026: "moving to end of the Ayah up or down jumps to next Ayah even though i don't intend
+      // it ... Moving to the end should not meant to move to next/ previous Ayah." So reaching an end only STOPS
+      // there: a scroll moves to the next/previous āyah only when it STARTS with the text already at that end. A
+      // wheel "burst" (events under WHEEL_GAP ms apart, a trackpad's glide included) is one scroll, its edge state
+      // read from its first event; a swipe's is read at touchstart.
+      const WHEEL_GAP = 350;
+      let wheelLastAt = 0, wheelBurstAtBottom = false, wheelBurstAtTop = false;
       document.addEventListener("wheel", (e) => {
         if (e.target.closest?.(INTERACTIVE)) return;
         const boundary = scrollBoundary(e.target);
         if (!boundary) return;
-        if (Math.abs(e.deltaY) < 12) return;
         const scroller = nearestScroller(e.target, boundary);
-        if (e.deltaY > 0 && (!scroller || nearBottom(scroller))) advance(1);
-        else if (e.deltaY < 0 && (!scroller || nearTop(scroller))) advance(-1);
+        const now = Date.now();
+        if (now - wheelLastAt > WHEEL_GAP) {
+          wheelBurstAtBottom = !scroller || nearBottom(scroller);
+          wheelBurstAtTop = !scroller || nearTop(scroller);
+        }
+        wheelLastAt = now;
+        if (Math.abs(e.deltaY) < 12) return;
+        if (e.deltaY > 0 && wheelBurstAtBottom) advance(1);
+        else if (e.deltaY < 0 && wheelBurstAtTop) advance(-1);
       }, { passive: true, capture: true });
 
       // Smooth-swipe round -- the āyah text follows the finger while the
@@ -21171,7 +21188,7 @@
       // owner's own "swiping right should bring next Ayah"). This reverses
       // the earlier reading, which advanced on a left swipe.
       const SWIPE = 55;
-      let touchStartX = null, touchStartY = null, touchBoundary = null;
+      let touchStartX = null, touchStartY = null, touchBoundary = null, touchStartAtBottom = false, touchStartAtTop = false;
       let dragEl = null, dragging = false, dragWidth = 0;
 
       document.addEventListener("touchstart", (e) => {
@@ -21180,6 +21197,9 @@
         if (!touchBoundary) return;
         touchStartX = e.touches[0].clientX;
         touchStartY = e.touches[0].clientY;
+        const startScroller = nearestScroller(e.target, touchBoundary);
+        touchStartAtBottom = !startScroller || nearBottom(startScroller);
+        touchStartAtTop = !startScroller || nearTop(startScroller);
         dragging = false;
         // Never drag the flow view's own native strip (swipeDragEl returns
         // null there), and never a gesture that started inside it.
@@ -21257,9 +21277,9 @@
           if (e.target.closest?.("#pageViewContainer") && flowStripPages() >= 2) return;
           advance(dx > 0 ? 1 : -1);
         } else if (Math.abs(dy) > SWIPE) {
-          const scroller = nearestScroller(e.target, boundary);
-          if (dy < 0 && (!scroller || nearBottom(scroller))) advance(1);
-          else if (dy > 0 && (!scroller || nearTop(scroller))) advance(-1);
+          // Only a swipe that STARTED at that end moves on (the Owner, 9 Oct 2026; see the wheel listener).
+          if (dy < 0 && touchStartAtBottom) advance(1);
+          else if (dy > 0 && touchStartAtTop) advance(-1);
         }
       }, { passive: true, capture: true });
     })();
@@ -22688,6 +22708,11 @@
         // same as the Note view's own master toggle.
         ayahPanels.dataset.ayahCollapsibleFor = buildUnitKey.ayah(currentSurahNum, currentAyahNum);
         ayahPanels.classList.remove("collapsed");
+        // The Owner, 9 Oct 2026 (the end of an āyah moving on by itself): a NEW āyah opens at its top. #ayahPanels
+        // survives every render, so its scroll used to carry over -- 2:283 opened 957px down, at its own end, from
+        // 2:282's end. Only when the āyah shown changes: a toggle that redraws the same āyah keeps its place.
+        const shownAyah = `${currentSurahNum}:${currentAyahNum}:${currentHalf() ?? ""}`;
+        if (ayahPanels.dataset.shownAyah !== shownAyah) { ayahPanels.scrollTop = 0; ayahPanels.dataset.shownAyah = shownAyah; }
         // Review of issue #348 -- a Ruku'/Juz/Hizb/Page (and a Single Ayah)
         // is read one āyah at a time here, not as a flow, so the boundary
         // markers and the end-of-unit prompt belong on this view too.

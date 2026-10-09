@@ -791,3 +791,4 @@ total). Allocated by the MMSA Architect.
 09.145: a Name's cited hadith written out in Explore. Allocated by the MMSA Architect.
 09.146: the listening bookmark, QCR from the ⋮ menu, the writing sheet 🔖 and the full-screen pop-out. Allocated by the MMSA Architect.
 09.147: the About page's feature registry in Bangla (Builder #693). Allocated by the MMSA Architect.
+09.148: the end of an āyah stays put; the Note view pop-up's way back on a tablet. Allocated by the MMSA Architect.
