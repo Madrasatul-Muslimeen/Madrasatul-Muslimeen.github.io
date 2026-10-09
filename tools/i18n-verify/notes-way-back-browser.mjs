@@ -140,11 +140,14 @@ for (const [lang, width, look] of [["en", 390, "light"], ["bn", 390, "night"], [
     check(`${tag} (3) it opens Import Notes`, went);
     if (went) {
       await P.waitForTimeout(500);
-      const b = await backState(P);
-      check(`${tag} (3) Import Notes shows ${BACK(bn)}, 40px tall`, b?.text === BACK(bn) && b.h >= 40, JSON.stringify(b));
+      // UPDATED IN PLACE (Architect review of #672): Import Notes already had a ← back link in its title; the round's
+      // second Back button beside it was folded into that one link, which with back=1 goes back by history. One
+      // back control on the page, 40px, on screen.
+      const b = await P.evaluate(() => { const a = document.getElementById("backLink"); const r = a?.getBoundingClientRect(); return a && r.width > 0 ? { h: r.height, w: r.width, top: r.top, buttons: document.querySelectorAll("#notesBackBtn").length } : null; });
+      check(`${tag} (3) Import Notes shows its one ← back link, 40px, on screen`, !!b && b.h >= 40 && b.top >= 0 && b.buttons === 0, JSON.stringify(b));
       if (b) {
         let back = true;
-        await Promise.all([P.waitForURL(/journey-map\.html/, { timeout: 15000 }), P.click("#notesBackBtn")]).catch(() => { back = false; });
+        await Promise.all([P.waitForURL(/journey-map\.html/, { timeout: 15000 }), P.click("#backLink")]).catch(() => { back = false; });
         await P.waitForSelector("#viewToggle", { timeout: 15000 }).catch(() => {});
         check(`${tag} (3) ← Back lands on Mapping My Journey`, back && (await P.evaluate(() => !!document.getElementById("viewToggle") && document.getElementById("viewToggle").getBoundingClientRect().height > 0)));
       }

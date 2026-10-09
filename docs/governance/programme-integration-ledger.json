@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "09.139",
+    "version": "09.140",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -2849,8 +2849,20 @@
     {
       "version": "09.139",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Decision 93: in Mushaf view the Read bar's reference and Record Your Progress follow the chosen unit unless it is a Page.",
+      "integration": {
+        "authorizedOn": "2026-10-09",
+        "integratedOn": "2026-10-09",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "09.140",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Builder #672 / PR #675: My Notes for this unit, Make a poster and Import Notes get a way back to the exact place.",
       "integration": {
         "authorizedOn": "2026-10-09",
         "integratedOn": "2026-10-09",
@@ -2859,8 +2871,9 @@
       }
     }
   ],
-  "nextUnallocated": "09.140",
+  "nextUnallocated": "09.141",
   "nextUnallocatedNote": [
+    "v09.140 was allocated to the way back from Notes on the Qur'an page, 2026-10-09.",
     "v09.139 was allocated to Mushaf view follows the chosen unit, 2026-10-09.",
     "v09.138 was allocated to a hadith's Notes have a way back, 2026-10-09.",
     "v09.137 was allocated to the Bangla file's shadowed duplicates removed, 2026-10-09.",
