@@ -140,8 +140,6 @@ export const BN = {
   "Approach": "পদ্ধতি", // ?
   "Notes": "নোট",
   "Date": "তারিখ",
-  "Previous": "পূর্ববর্তী",
-  "Next": "পরবর্তী",
 
   // --- Onboarding: creating an account ---------------------------------
   "QuranRevival — Create your account (F-011)": "কুরআনরিভাইভাল — আপনার অ্যাকাউন্ট তৈরি করুন",
@@ -245,7 +243,6 @@ export const BN = {
   // (the two other new tabs) reuse existing keys elsewhere in this file --
   // both already mean the same thing in this screen's own context.
   "Options": "বিকল্প", // ?
-  "Explore": "অন্বেষণ",
   "Study": "অধ্যয়ন",
     "Loading this surah…": "এই সূরা লোড হচ্ছে…",
   "No Approaches yet.": "এখনো কোনো পদ্ধতি নেই।",
@@ -254,7 +251,6 @@ export const BN = {
     "ভেতরে যেতে যেকোনো অংশে চাপ দিন — কুরআন → জুয → সূরা → রুকু' → অধ্যয়নে একটি আয়াত। রঙগুলো এই পদ্ধতিতে আয়াতভিত্তিক প্রকৃত অগ্রগতি একত্র করে দেখায় — ভেতরের প্রতিটি আয়াতে পূর্ণ দক্ষতা অর্জিত হলেই কেবল এটি সম্পূর্ণ সবুজ হয়।",
 
   // --- Choosing what to study -------------------------------------------
-  "Study Unit": "অধ্যয়নের একক",
   "Single Ayah": "একটি আয়াত",
   "Range of Ayahs": "আয়াতের পরিসর",
   "Whole Surah": "সম্পূর্ণ সূরা",
@@ -308,7 +304,6 @@ export const BN = {
   // the wheel's hub.
   "Track the Status of Approaches": "পদ্ধতির অবস্থা পর্যবেক্ষণ করুন", // ?
   "◂ Previous": "◂ পূর্ববর্তী",
-  "Next ▸": "পরবর্তী ▸",
 
   // --- The Approach picker (Study options bar 4), and the Ayah Note
   //     screen's own Approach toggle sharing the same options (round 32) ---
@@ -316,8 +311,6 @@ export const BN = {
   "Choose an Approach": "একটি পদ্ধতি বেছে নিন",
 
   // --- The Study Unit number pickers and the reading transport (round 18) ---
-  "Hizb": "হিযব",
-  "Number": "নম্বর",
   "Hizb {hizb}": "হিযব {hizb}",
   "Ruku' №": "রুকু' নং",
   "Juz №": "জুয নং",
@@ -335,12 +328,10 @@ export const BN = {
   "Reciters": "ক্বারীগণ",
   "Listening": "শ্রবণ",
   "Loop": "পুনরাবৃত্তি চক্র",
-  "Play": "চালান",
   "Mushaf view": "মুসহাফ দৃশ্য",
   "(whole surah only)": "(কেবল পুরো সূরা)",
   "Mushaf view shows the printed page, so the other reading choices do not apply while it is on.":
     "মুসহাফ দৃশ্যে ছাপা পৃষ্ঠাই দেখানো হয়, তাই এটি চালু থাকলে পাঠের অন্য পছন্দগুলো প্রযোজ্য নয়।",
-  "Reading view": "পাঠের ধরন",
   "Word by Word language": "শব্দে শব্দে ভাষা",
   "English translation": "ইংরেজি অনুবাদ",
   "বাংলা translation": "বাংলা অনুবাদ",
@@ -400,40 +391,8 @@ export const BN = {
   //     built from -- posLabel() in labels.js splits on " + " and rejoins, so
   //     translating the atoms covers every combination. Standard Bangla
   //     grammatical vocabulary (ব্যাকরণ) throughout.
-  "Noun": "বিশেষ্য",
-  "Pronoun": "সর্বনাম",
-  "Verb": "ক্রিয়া",
-  "Preposition": "অব্যয়",
-  "Conjunction": "সংযোজক অব্যয়",
-  "Determiner": "নির্ধারক",
-  "Proper Noun": "নামবাচক বিশেষ্য",
-  "Relative Pronoun": "সম্বন্ধবাচক সর্বনাম",
-  "Resumption Particle": "পুনরারম্ভসূচক অব্যয়", // ?
-  "Negative Particle": "নেতিবাচক অব্যয়",
-  "Accusative Particle": "কর্মকারকসূচক অব্যয়", // ?
-  "Adjective": "বিশেষণ",
-  "Emphatic Particle": "জোরবাচক অব্যয়",
-  "Time Adverb": "কালবাচক ক্রিয়াবিশেষণ",
-  "Conditional": "শর্তবাচক",
-  "Demonstrative Pronoun": "নির্দেশক সর্বনাম",
-  "Interrogative Particle": "প্রশ্নবাচক অব্যয়",
   "Subordinating Conjunction": "অধীনতাসূচক সংযোজক", // ?
-  "Location Adverb": "স্থানবাচক ক্রিয়াবিশেষণ",
-  "Particle of Certainty": "নিশ্চয়তাসূচক অব্যয়",
-  "Vocative Particle": "সম্বোধনসূচক অব্যয়",
-  "Result Particle": "ফলবাচক অব্যয়",
   "Purpose Particle": "উদ্দেশ্যবাচক অব্যয়",
-  "Circumstantial": "অবস্থাবাচক",
-  "Supplemental": "সম্পূরক",
-  "Future Particle": "ভবিষ্যৎসূচক অব্যয়",
-  "Retraction Particle": "প্রত্যাহারসূচক অব্যয়", // ?
-  "Exceptive Particle": "ব্যতিক্রমসূচক অব্যয়",
-  "Inceptive Particle": "সূচনাসূচক অব্যয়", // ?
-  "Causative Particle": "কারণবাচক অব্যয়",
-  "Amendment Particle": "সংশোধনসূচক অব্যয়", // ?
-  "Answer Particle": "উত্তরসূচক অব্যয়",
-  "Quranic Initials": "হুরুফুল মুকাত্তাআত",
-  "Imperative Verb": "আদেশসূচক ক্রিয়া",
   "Restriction Particle": "সীমাবদ্ধতাসূচক অব্যয়", // ?
   "Prohibition Particle": "নিষেধসূচক অব্যয়",
   "Preventive Particle": "প্রতিরোধসূচক অব্যয়", // ?
@@ -632,11 +591,9 @@ export const BN = {
   // 1, and translating an abbreviation into a different alphabet defeats
   // the point of it being a compact glyph. The real, translated name lives
   // in the title/aria-pressed pair, via "Word by Word" below.
-  "WbW": "WbW",
   // Enhancement round -- bar 2's Root (Roots & derivatives) toggle. Unlike
   // "WbW" this is a real word, not an abbreviation-as-icon, so it gets a
   // real Bangla word rather than being mapped to itself.
-  "Root": "মূল",
   "Mapping My Journey": "আমার যাত্রার মানচিত্র", // ? -- placeholder feature name, not yet designed
   "Previous āyah": "পূর্ববর্তী আয়াত",
   "Next āyah": "পরবর্তী আয়াত",
@@ -740,7 +697,6 @@ export const BN = {
   "QuranRevival — Asma ul Husna": "কুরআনরিভাইভাল — আসমাউল হুসনা",
 
   // --- Shared module-page furniture --------------------------------------
-  "No resource yet": "এখনো কোনো উপকরণ নেই",
   "Nothing under here yet.": "এখানে এখনো কিছু নেই।",
   "Track my progress": "আমার অগ্রগতি চিহ্নিত করুন",
   // Enhancement round -- the Bookmark Manager's own star, now on every
@@ -748,7 +704,6 @@ export const BN = {
   "Bookmark this": "এটি বুকমার্ক করুন",
   "Name this bookmark:": "এই বুকমার্কের নাম দিন:",
   "Studied": "অধ্যয়ন করা হয়েছে",
-  "Practised": "অনুশীলন করা হয়েছে",
   "Logged today": "আজ লিপিবদ্ধ",
   "Due today": "আজ করণীয়",
   "Screensaver": "স্ক্রিনসেভার",
@@ -1138,7 +1093,6 @@ export const BN = {
   "Hizb": "হিযব",
   "Rub": "রুব",
   "Manzil": "মানযিল",
-  "Topic": "বিষয়বস্তু", // ? distinct from "Subject" (বিষয়) on purpose
 
   // --- Page titles and headings -----------------------------------------
   "QuranRevival — Records": "কুরআনরিভাইভাল — রেকর্ড",
@@ -1256,7 +1210,6 @@ export const BN = {
   "still counting the words known elsewhere in the Qur'an…": "কুরআনের অন্য জায়গায় জানা শব্দগুলো এখনও গোনা হচ্ছে…",
   // Issue #303 -- the whole-Qur'an running total and "mark this word known
   // everywhere" on the Word Card.
-  "Known {known} of {total} words": "মোট {total}টি শব্দের মধ্যে {known}টি জানা",
   "{percent}% of the Qur'an": "কুরআনের {percent}%",
   "You know {known} of {total} words of the Qur'an": "আপনি কুরআনের {total}টি শব্দের মধ্যে {known}টি জানেন",
   "You know {percent}% of the words of the Qur'an": "আপনি কুরআনের {percent}% শব্দ জানেন",
@@ -1299,7 +1252,6 @@ export const BN = {
   "Return": "ফেরত পাঠান",
   "Confirm anyway": "তবুও নিশ্চিত করুন",
   "Note for the return (optional):": "ফেরত পাঠানোর কারণ (ঐচ্ছিক):",
-  "Nothing here yet.": "এখানে এখনো কিছু নেই।",
   "Nothing logged this week yet.": "এই সপ্তাহে এখনো কিছু লিপিবদ্ধ হয়নি।",
   "Confirmed {count} entry in this chunk.": "এই খণ্ডের {count}টি এন্ট্রি নিশ্চিত করা হয়েছে।",
   "Confirmed {count} entries in this chunk.": "এই খণ্ডের {count}টি এন্ট্রি নিশ্চিত করা হয়েছে।",
@@ -1326,7 +1278,6 @@ export const BN = {
   "Distinct units": "স্বতন্ত্র একক",
   "No students in scope.": "পরিধির মধ্যে কোনো শিক্ষার্থী নেই।",
   "Nothing logged in this range.": "এই সময়সীমায় কিছু লিপিবদ্ধ হয়নি।",
-  "Pick a student first.": "আগে একজন শিক্ষার্থী বেছে নিন।",
   "Couldn't load the report:": "প্রতিবেদন লোড করা যায়নি:",
   "Couldn't load the breakdown:": "বিশ্লেষণ লোড করা যায়নি:",
   // MAP v4 Phase 4 (P4-F, issue #230/#238) -- Study activity this week.
@@ -1356,7 +1307,6 @@ export const BN = {
   "Class / Course Offer": "ক্লাস / কোর্স অফার",
   "Class": "ক্লাস",
   "Course Offer": "কোর্স অফার",
-  "Assign to": "যাকে দেওয়া হবে",
   "Subject (optional)": "বিষয় (ঐচ্ছিক)",
   "(none)": "(কিছু নয়)",
   "(none — any visible person)": "(কিছু নয় — দৃশ্যমান যেকোনো ব্যক্তি)",
@@ -1416,7 +1366,6 @@ export const BN = {
   "{name}'s enrolments": "{name}-এর ভর্তিসমূহ",
   "Enrol {name}": "{name}-কে ভর্তি করুন",
   "End": "শেষ করুন",
-  "Active": "সক্রিয়",
   "Ended": "শেষ হয়েছে",
   "Archived": "সংরক্ষণাগারে",
   "Teacher": "শিক্ষক",
@@ -1518,7 +1467,6 @@ export const BN = {
   "Move": "সরান",
   "Move up": "উপরে সরান",
   "Move down": "নিচে সরান",
-  "Move to…": "যেখানে সরাবেন…",
   "Move to a different parent": "অন্য কোনো মূল বিষয়ের নিচে সরান",
   "Move here": "এখানে সরান",
   "Expand": "খুলুন",
@@ -1592,7 +1540,6 @@ export const BN = {
   "Position in section": "বিভাগের ভেতরে অবস্থান",
   "Save sections": "বিভাগগুলো সংরক্ষণ করুন",
   "Saved.": "সংরক্ষিত হয়েছে।",
-  "{n} Approaches": "{n}টি পদ্ধতি",
   "A section needs a name in at least one language.":
     "একটি বিভাগের অন্তত একটি ভাষায় নাম থাকা দরকার।",
   "Other trackables": "অন্যান্য ট্র্যাকযোগ্য বিষয়",
@@ -2061,7 +2008,6 @@ export const BN = {
   "Bookmarks": "বুকমার্ক",
   "Every bookmark you have saved, from any module, in one place. Open one to jump straight back to where it was made. Group them into folders however you like.":
     "আপনার সংরক্ষণ করা প্রতিটি বুকমার্ক, যেকোনো মডিউল থেকে, একই জায়গায়। একটি খুললেই সরাসরি যেখানে তৈরি হয়েছিল সেখানে চলে যাবেন। ইচ্ছেমতো ফোল্ডারে ভাগ করে রাখুন।",
-  "+ New folder": "+ নতুন ফোল্ডার",
   "No bookmarks saved yet. Look for the ☆/🔖 button on a study screen.": "এখনো কোনো বুকমার্ক সংরক্ষণ করা হয়নি। অধ্যয়ন পাতায় ☆/🔖 বোতামটি খুঁজুন।",
   "QuranRevival — Bookmarks": "কুরআনরিভাইভাল — বুকমার্ক",
 
@@ -2211,8 +2157,6 @@ export const BN = {
   "No Names in this group yet.": "এই গ্রুপে এখনো কোনো নাম নেই।", // ?
   "New group name:": "নতুন গ্রুপের নাম:", // ?
   "Rename group:": "গ্রুপের নাম পরিবর্তন করুন:", // ?
-  "No groups yet.": "এখনো কোনো গ্রুপ নেই।", // ?
-  "{count} Names": "{count}টি নাম", // ?
   "+ Add to this group": "+ এই গ্রুপে যোগ করুন", // ?
   "Already in this group, or no Names left to add.": "ইতিমধ্যে এই গ্রুপে আছে, অথবা যোগ করার মতো আর কোনো নাম নেই।", // ?
   "Tap a segment or a row to open that Name — the wheel closes and lands you on its own detail screen.": "কোনো অংশ বা সারিতে চাপ দিন সেই নামটি খুলতে — চাকাটি বন্ধ হয়ে তার নিজস্ব বিস্তারিত পাতায় নিয়ে যাবে।", // ?
@@ -2506,9 +2450,9 @@ export const BN = {
   "Determiner": "নির্দেশক",
   "Proper Noun": "নামবাচক বিশেষ্য",
   "Relative Pronoun": "সম্বন্ধবাচক সর্বনাম",
-  "Resumption Particle": "পুনরারম্ভবাচক অব্যয়",
+  "Resumption Particle": "পুনরারম্ভবাচক অব্যয়", // ?
   "Negative Particle": "নেতিবাচক অব্যয়",
-  "Accusative Particle": "কর্মকারকবাচক অব্যয়",
+  "Accusative Particle": "কর্মকারকবাচক অব্যয়", // ?
   "Adjective": "বিশেষণ",
   "Emphatic Particle": "জোরবাচক অব্যয়",
   "Time Adverb": "কালবাচক ক্রিয়াবিশেষণ",
@@ -2524,11 +2468,11 @@ export const BN = {
   "Circumstantial": "অবস্থাবাচক অব্যয়",
   "Supplemental": "সম্পূরক অব্যয়",
   "Future Particle": "ভবিষ্যৎবাচক অব্যয়",
-  "Retraction Particle": "প্রত্যাহারবাচক অব্যয়",
+  "Retraction Particle": "প্রত্যাহারবাচক অব্যয়", // ?
   "Exceptive Particle": "ব্যতিক্রমবাচক অব্যয়",
-  "Inceptive Particle": "সূচনাবাচক অব্যয়",
+  "Inceptive Particle": "সূচনাবাচক অব্যয়", // ?
   "Causative Particle": "কারণবাচক অব্যয়",
-  "Amendment Particle": "সংশোধনবাচক অব্যয়",
+  "Amendment Particle": "সংশোধনবাচক অব্যয়", // ?
   "Answer Particle": "উত্তরবাচক অব্যয়",
   "Quranic Initials": "হুরূফে মুকাত্তাআত",
   "Imperative Verb": "আদেশসূচক ক্রিয়া",
@@ -2828,8 +2772,6 @@ export const BN = {
   "Timeline": "টাইমলাইন",
   "Path": "পথ",
   "All folders": "সব ফোল্ডার",
-  "+ New folder": "+ নতুন ফোল্ডার",
-  "Folder name": "ফোল্ডারের নাম",
   "+ File a Note here…": "+ এখানে একটি নোট ফাইল করুন…",
   "File in a folder…": "একটি ফোল্ডারে ফাইল করুন…",
   "Move to…": "সরান…",
@@ -3314,7 +3256,6 @@ export const BN = {
   "Al-Fātiḥah: Bismillah unnumbered (": "আল-ফাতিহা: বিসমিল্লাহ নম্বরবিহীন (",
   "is āyah 1)": "হলো আয়াত ১)",
   "Bismillah": "বিসমিল্লাহ",
-  "Surah {surah} — Bismillah": "সূরা {surah} — বিসমিল্লাহ",
   "Approach: {name}": "পদ্ধতি: {name}", // ?
   "Surah {n}": "সূরা {n}",
   "from {place}": "{place} থেকে", // the wheel centre's second line for a Page/Juz/Hizb: where the unit starts (decision 63)
@@ -3390,13 +3331,10 @@ export const BN = {
   "Choose what to practise": "কী অনুশীলন করবেন বেছে নিন",
   "Change what you practise? Your writing on this sheet will be cleared.": "অনুশীলনের অংশ বদলাবেন? এই পাতায় আপনার লেখা মুছে যাবে।",
   "Change": "বদলান",
-  "This folder still holds {n} notes. Move or delete them first.": "এই ফোল্ডারে এখনও {n}টি নোট আছে। আগে সেগুলো সরান বা মুছুন।",
   "System folders cannot be moved to Trash.": "সিস্টেম ফোল্ডার ট্র্যাশে পাঠানো যায় না।",
   "System folders cannot be copied.": "সিস্টেম ফোল্ডার কপি করা যায় না।",
   "Folder is not in Trash.": "ফোল্ডারটি ট্র্যাশে নেই।",
-  "This note is already filed in that folder.": "এই নোটটি ইতিমধ্যে সেই ফোল্ডারে আছে।",
   "This note is not filed in that folder.": "এই নোটটি সেই ফোল্ডারে নেই।",
-  "That folder does not exist or is in Trash.": "সেই ফোল্ডারটি নেই বা ট্র্যাশে আছে।",
   "Loading the writing sheet…": "লিখন অনুশীলনের পাতা লোড হচ্ছে…",
   "Couldn't open the writing sheet.": "লিখন অনুশীলনের পাতা খোলা যায়নি।",
   "My account": "আমার অ্যাকাউন্ট",
@@ -3447,7 +3385,6 @@ export const BN = {
   "Details": "বিবরণ",
   "Created {date}": "তৈরি: {date}",
   "Last changed {date}": "সর্বশেষ বদল: {date}",
-  "(untitled section)": "(শিরোনামহীন অংশ)",
   "\"{title}\" moved to Trash. Open 🗑 Trash from the ⋯ menu to restore it.": "\"{title}\" ট্র্যাশে গেছে। ফিরিয়ে আনতে ⋯ মেনু থেকে 🗑 ট্র্যাশ খুলুন।",
   "Done": "সম্পন্ন",
   "Saved on this device": "এই ডিভাইসে সংরক্ষিত",
@@ -3655,7 +3592,6 @@ export const BN = {
   "This Note is finalised, so it can't be edited. Un-finalise it from the ⋯ menu first.": "এই নোট চূড়ান্ত করা হয়েছে, তাই সম্পাদনা করা যাবে না। আগে ⋯ মেনু থেকে চূড়ান্ত অবস্থা তুলুন।",
   "This Note is finalised. Un-finalise it from the ⋯ menu first.": "এই নোট চূড়ান্ত করা হয়েছে। আগে ⋯ মেনু থেকে চূড়ান্ত অবস্থা তুলুন।",
   '"{title}" is back in its folders.': "\"{title}\" আবার তার ফোল্ডারে ফিরেছে।",
-  "Open in its own window": "নিজস্ব জানালায় খুলুন",
   "Pinned Notes": "পিন করা নোট",
   "Close the pinned Notes": "পিন করা নোট বন্ধ করুন",
   "Nothing pinned yet. Pin a Note from its ⋯ menu.": "এখনো কিছু পিন করা হয়নি। নোটের ⋯ মেনু থেকে পিন করুন।",
@@ -3747,8 +3683,6 @@ export const BN = {
   // Architect review (7 Oct 2026): the short forms fit a 320px phone; "Lines" stays the box's spoken name.
   "Trace over": "উপর দিয়ে লিখতে",
   "Blank lines": "খালি লাইন",
-  "Previous Ayah": "আগের আয়াত",
-  "Next Ayah": "পরের আয়াত",
   "Smaller window": "উইন্ডো ছোট করুন",
   "Word or Ayah": "শব্দ বা আয়াত",
   // Note-pane Part C1 (6 Oct 2026): annotations and heading status badges.

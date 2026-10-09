@@ -20216,3 +20216,13 @@ The Owner, decision 88, on the Dua demo (https://claude.ai/artifact/LxHMM7PhPAKQ
   - green: dua-tab-browser 57/0, dua-word-progress-browser 31/0, dua-word-card-browser 45/0, hadeethenc-browser 82/0, hadith-gate-contracts 12/0, notes-note-windows-browser 218/0, bookmark-open-browser 77/0, claim-for-family-word-hadith-browser 158/0, stub-parity 4/0, rules-authorisation-executable 63/0, phone-width-overflow 217/0, palette-contrast-browser 20/0, behaviour 1004/3 (22g×3, archive.org, the known baseline)
   - red on `main` before this round and unchanged: study-note-boundary 17/1 (P5-C Rules diff), study-note-service (a stale import-rewrite assertion)
 - **No Rules change.** `noteSources` accepts any non-empty `sourceKind`; bookmarks are the person's own document.
+
+## v09.137 — 2026-10-09 — The Bangla file's shadowed duplicates removed
+
+- **Asked:** the 8 Oct handover's tidy-up queue item (Builder #668, PR #670)
+- **What:**
+  - `app/js/i18n/bn.js`: the 66 earlier copies of 65 phrases written more than once removed (only the last copy ever showed); 5 kept lines carry the `// ?` marker of their removed copy
+- **Checks:**
+  - new bn-duplicate-keys 6/0 (0 duplicates; deep-equal to the base `BN`; positive control 65 on the base; two mutations caught)
+  - the Architect's own comparison: 2,839 keys before and after, 0 differing values; only key lines removed
+- **Nothing on screen changes.**
