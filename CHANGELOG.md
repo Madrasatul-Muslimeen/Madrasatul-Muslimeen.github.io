@@ -20309,3 +20309,16 @@ The Owner, decision 88, on the Dua demo (https://claude.ai/artifact/LxHMM7PhPAKQ
   - green: bangla-sweep-core-screens 122/0, bangla-sweep-newer-screens 23/0, asma-cited-ayat 45/0, palette-contrast 20/0, phone-width-overflow 217/0, stub-parity 4/0
   - behaviour 1004/3: 22g × 3 (archive.org, intermittent in this sandbox)
 - **Open:** the About page's feature registry (~100 English lines) is untranslated, named as a known gap
+
+## v09.145 — 2026-10-09 — A Name's cited hadith written out in Explore
+
+- **Asked:** the Owner's "build it" on the Asma demo; part 2 (Builder #690, PR #691)
+- **What:**
+  - `app/js/asma-cited-hadith.js` (new): the library passage (joining Muslim's page-split passages only when the narration's words then appear), translations by standard number, the renderer
+  - `app/js/asma-poster.js`: `asmaCitedHadith(entry)`
+  - `app/quranrevival.html`: the section under the āyāt; Open in Hadith → remembers the Name; `openAsmaNameFromQueryString()` reopens it (review: no 1–99 cap; the address cleared once used)
+  - `app/js/i18n/bn.js`: five phrases appended
+- **Checks:**
+  - new asma-cited-hadith-browser 66/0 (13 mutations each caught)
+  - green: asma-cited-ayat 45/0, asma-poster 96/0, asma-name-nav-poster 140/0, bangla-sweep-core-screens 122/0, palette-contrast 20/0, phone-width-overflow 217/0, stub-parity 4/0
+  - behaviour 1004/3: 22g × 3 (archive.org, intermittent in this sandbox)

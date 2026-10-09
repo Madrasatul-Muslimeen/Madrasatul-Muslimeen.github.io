@@ -3880,5 +3880,10 @@ export const BN = {
   // --- 9 Oct 2026: a Name's cited āyāt written out in Explore (asma-cited-ayat.js)
   "The āyāt {name} is named in": "যে আয়াতগুলোতে {name} নামটি এসেছে",
   "Tap a word for its Word card. Words from the Name's root are marked.": "শব্দ কার্ড দেখতে একটি শব্দে চাপুন। নামটির মূল ধাতুর শব্দগুলো চিহ্নিত।",
+  "The hadith {name} is named in": "যে হাদিসগুলোতে {name} নামটি এসেছে",
+  "Open in Hadith →": "হাদিসে খুলুন →",
+  "This hadith's text is not in the app's Hadith library yet.": "এই হাদিসের পাঠ এখনও অ্যাপের হাদিস লাইব্রেরিতে নেই।",
+  "The hadith text could not be loaded right now.": "হাদিসের পাঠ এখন লোড করা যায়নি।",
+  "No translation of this hadith is in the app yet.": "এই হাদিসের কোনো অনুবাদ এখনও অ্যাপে নেই।",
   "Couldn't load this āyah. Check the connection and open the Name again.": "এই আয়াতটি লোড করা যায়নি। সংযোগ দেখে নামটি আবার খুলুন।",
 };
