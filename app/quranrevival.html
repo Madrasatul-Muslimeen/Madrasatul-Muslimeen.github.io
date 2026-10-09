@@ -2131,6 +2131,12 @@
      reciter's name is deliberately left as plain text beside them, so the row
      always has one thing that reads as words. */
   #readBar .qr-ico { font-size: 0.95rem; line-height: 1; padding: 0.3rem 0.5rem; flex: 0 0 auto; }
+  /* Decision 95: 📝 Notes, with the āyah's Note count once the pane has read it this session. */
+  #readNotesBtn { position: relative; }
+  #readNotesBtn[aria-expanded="true"] { outline: 2px solid #c9a24b; outline-offset: 1px; }
+  .read-notes-count { position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px; padding: 0 4px; box-sizing: border-box;
+    border-radius: 9px; background: #c9a24b; color: #1F3A6E; font-size: 11px; font-weight: 700; line-height: 18px; text-align: center; }
+  .read-notes-count[hidden] { display: none; }
   /* Issue #421: fitBarButton() adds this when the ✍ button would make its bar
      a line taller. A class with !important, because [hidden] loses to the
      buttons' own display rules (the [hidden] trap). */
@@ -5249,6 +5255,10 @@
                two are independent, same as a Note can exist on both an
                āyah and a wider unit ("Also noted at:"). -->
           <button type="button" class="secondary qr-ico" id="readBookmarkBtn" aria-label="Bookmark this āyah" title="Bookmark this āyah" hidden>🔖</button>
+          <!-- Decision 95 (the Owner, 9 Oct 2026: "NotePane: Build the demo") -- the Notes of the āyah being read, in
+               Mapping My Journey's own Note pane (js/read-note-pane.js). Beside the reading on a computer, under it on
+               a tablet, over it on a phone; closing it leaves the reading exactly where it was. -->
+          <button type="button" class="secondary qr-ico" id="readNotesBtn" aria-label="Notes on this āyah" title="Notes on this āyah" aria-expanded="false">📝<span class="read-notes-count" hidden></span></button>
           <!-- MAP Phase 4 (P4-D1) -- the EXPLICIT Reading completion ADR-008
                requires. "Merely opening or scrolling a passage does not
                complete Reading. v1 requires an explicit completion action so
@@ -7001,6 +7011,7 @@
     const readTextSizeSlot = document.getElementById("readTextSizeSlot");
     const hideChromeBtn = document.getElementById("hideChromeBtn");
     const readBookmarkBtn = document.getElementById("readBookmarkBtn");
+    const readNotesBtn = document.getElementById("readNotesBtn");
     const readUnitChip = document.getElementById("readUnitChip"); // issue #348, Owner decision 18
     /** The Unit Card for the chosen unit (the Ayah Card when it is one āyah).
         Shared by the Read bar's unit chip and the Read contents list's Track button. */
@@ -22754,7 +22765,53 @@
       renderUnitSpanReadout();
       renderUnitNav(); // shell round 21 -- the read bar's own Prev/Next ends
       syncReadPickers(); // shell round 22 -- the reading screen's own copies
+      syncReadNotes(); // decision 95 -- the 📝 Notes pane follows the āyah being read
     }
+
+    // -----------------------------------------------------------------------
+    // Decision 95 (the Owner, 9 Oct 2026) -- 📝 Notes on the Read bar: the āyah being read, in Mapping My Journey's own
+    // Note pane (js/read-note-pane.js, loaded on the first press, never at start-up: I9). The pane is the āyah's, so
+    // it follows ‹ › and the pickers; its count comes only from what the pane itself has read (no read of its own).
+    // -----------------------------------------------------------------------
+    let readNotePaneMod = null;
+    function readNotesUnit() {
+      if (!currentSurahData) return null;
+      const half = currentHalf();
+      const label = isUnnumberedBismillah(currentSurahNum, currentAyahNum)
+        ? t("Surah {surah}, Bismillah", { surah: num(currentSurahNum) })
+        : `${num(currentSurahNum)}:${ayahLabelFor(currentSurahNum, currentAyahNum, half)}`;
+      return { unitKey: ayahRecordKey(currentSurahNum, currentAyahNum, half), label };
+    }
+    function paintReadNotesBtn() {
+      const u = readNotesUnit();
+      const n = u && readNotePaneMod ? readNotePaneMod.readNotePaneCount(u.unitKey) : null;
+      const badge = readNotesBtn.querySelector(".read-notes-count");
+      badge.hidden = !n;
+      badge.textContent = n ? num(n) : "";
+      const name = u ? t("Notes on {unit}", { unit: u.label }) : t("Notes");
+      readNotesBtn.setAttribute("aria-label", n ? `${name} (${num(n)})` : name);
+      readNotesBtn.setAttribute("title", name);
+      readNotesBtn.setAttribute("aria-expanded", String(!!readNotePaneMod?.isReadNotePaneOpen()));
+    }
+    function syncReadNotes() {
+      const u = readNotesUnit();
+      if (u && readNotePaneMod) readNotePaneMod.setReadNotePaneUnit(u);
+      paintReadNotesBtn();
+    }
+    readNotesBtn.addEventListener("click", async () => {
+      const u = readNotesUnit();
+      if (!u) return;
+      try {
+        readNotePaneMod ??= await import("./js/read-note-pane.js");
+      } catch (error) {
+        reportWriteFailure(error, { what: "open the Notes pane" }); // I15
+        return;
+      }
+      readNotePaneMod.setReadNotePaneCountListener(() => paintReadNotesBtn());
+      if (readNotePaneMod.isReadNotePaneOpen()) { readNotePaneMod.closeReadNotePane(); return; }
+      readNotePaneMod.openReadNotePane(u, () => { paintReadNotesBtn(); readNotesBtn.focus(); });
+      paintReadNotesBtn();
+    });
 
     /** Shell round 22 -- bring the reading screen's pickers into line with the
         Study options controls they mirror. Options are only rebuilt when they

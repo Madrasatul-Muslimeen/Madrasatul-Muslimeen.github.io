@@ -3998,4 +3998,17 @@ export const BN = {
   "Save my check": "আমার যাচাই সংরক্ষণ করুন",
   "Save what I have so far": "এ পর্যন্ত যা করেছি তা সংরক্ষণ করুন",
   "This narration could not be loaded.": "এই বর্ণনাটি লোড করা যায়নি।",
+  // --- 9 Oct 2026: the Read view's 📝 Notes pane (decision 95)
+  "Notes on {unit}": "{unit}-এর নোট",
+  "New note on {unit}": "{unit}-এ নতুন নোট",
+  "Open in Mapping My Journey": "আমার যাত্রার মানচিত্রে খুলুন",
+  "started here": "এখানে শুরু",
+  "mentions it": "এর উল্লেখ আছে",
+  "No notes on {unit} yet. Press ✚ New note to write one.": "{unit}-এ এখনো কোনো নোট নেই। লিখতে ✚ নতুন নোট চাপুন।",
+  "No notes on {unit} yet.": "{unit}-এ এখনো কোনো নোট নেই।",
+  "Your Notes on {unit} could not be read. Please try again.": "{unit}-এর নোটগুলো পড়া গেল না। আবার চেষ্টা করুন।",
+  "Your note from the Note view (kept as it was)": "নোট ভিউ থেকে আপনার নোট (যেমন ছিল তেমনই রাখা)",
+  "Back to {unit}": "{unit}-এ ফিরে যান",
+  "Notes on this āyah": "এই আয়াতের নোট",
+  "Loading your folders…": "আপনার ফোল্ডারগুলো আসছে…",
 };
