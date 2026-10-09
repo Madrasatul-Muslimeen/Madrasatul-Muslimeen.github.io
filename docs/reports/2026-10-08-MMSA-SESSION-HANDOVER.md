@@ -213,3 +213,4 @@ that handover does not name the version in `app/js/version.js`.
 - **v09.142** (2026-10-09): the most-used screens checked in Bangla.
 - **v09.143** (2026-10-09): a Name's cited āyāt written out in Explore.
 - **v09.144** (2026-10-09): every remaining page checked in Bangla.
+- **v09.145** (2026-10-09): a Name's cited hadith written out in Explore.
