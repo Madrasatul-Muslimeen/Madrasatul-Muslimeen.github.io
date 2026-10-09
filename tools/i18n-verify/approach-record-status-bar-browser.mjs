@@ -159,10 +159,20 @@ for (const lang of ["en", "bn"]) {
   await openRead(page, true);
   const pageNum = await page.evaluate(() => document.getElementById("mushafPageRef").dataset.page);
   check("Mushaf: the page on screen is 50 (hand-written fixture)", pageNum === "50", pageNum);
+  // UPDATED IN PLACE, 9 Oct 2026 (the Owner: "Range is chosen but the indication shows page. Fix."): with Whole
+  // Surah chosen, Mushaf view's Record Your Progress opens the SURAH's card, as text view does; the page card is
+  // for a chosen Page, checked next.
+  await click(page, "#readBarRecordBtn");
+  await page.waitForTimeout(800);
+  const mu = await page.evaluate(() => { const cards = [...document.querySelectorAll("#ayahActionSheetMount [data-unit-card]")].filter((e) => e.getBoundingClientRect().width > 0); return { n: cards.length, page: !!document.querySelector(".page-approach-card"), text: cards.map((c) => c.textContent).join(" ").slice(0, 160) }; });
+  check("Mushaf, Whole Surah chosen: Record Your Progress opens the Surah's Unit Card, not the page card", mu.n > 0 && !mu.page && /Imraan|Imran|3/.test(mu.text), JSON.stringify(mu));
+  await page.keyboard.press("Escape"); await page.evaluate(() => document.getElementById("ayahActionSheetOverlay")?.click()); await page.waitForTimeout(300);
+  await page.evaluate(() => { const s = document.getElementById("unitTypeSelect"); s.value = "page"; s.dispatchEvent(new Event("change", { bubbles: true })); });
+  await page.waitForTimeout(1200);
   await click(page, "#readBarRecordBtn");
   await page.waitForFunction(() => !!document.querySelector(".page-approach-card"), null, { timeout: 8000 }).catch(() => {});
   const card = await page.evaluate(() => { const c = document.querySelector(".page-approach-card"); return c ? { w: c.getBoundingClientRect().width, text: c.textContent } : null; });
-  check("Mushaf: Record Your Progress opens the page card for page 50", !!card && card.w > 0 && /50/.test(card.text), JSON.stringify(card && card.text.slice(0, 120)));
+  check("Mushaf, Page chosen: Record Your Progress opens the page card for page 50", !!card && card.w > 0 && /50/.test(card.text), JSON.stringify(card && card.text.slice(0, 120)));
   const title = await page.evaluate(() => document.getElementById("readBarRecordBtn").title);
   check("Mushaf: the Record button's title carries the chosen-Approach text (\"Choose an Approach\" before one is chosen)", title === "Choose an Approach", title);
   await page.keyboard.press("Escape"); await page.evaluate(() => document.getElementById("ayahActionSheetOverlay")?.click()); await page.waitForTimeout(300);

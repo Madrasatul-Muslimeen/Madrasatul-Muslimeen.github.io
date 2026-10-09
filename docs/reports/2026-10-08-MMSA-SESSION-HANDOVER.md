@@ -207,3 +207,4 @@ that handover does not name the version in `app/js/version.js`.
 - **v09.136** (2026-10-09): Notes and bookmarks on a dua.
 - **v09.137** (2026-10-09): the Bangla file's shadowed duplicates removed.
 - **v09.138** (2026-10-09): a hadith's Notes have a way back.
+- **v09.139** (2026-10-09): Mushaf view follows the chosen unit.

@@ -20239,3 +20239,15 @@ The Owner, decision 88, on the Dua demo (https://claude.ai/artifact/LxHMM7PhPAKQ
   - new hadeethenc-note-back-browser 12/0 (mutations noback, noremember, noresume, noscroll caught)
   - study-note-service 35/0 (was throwing), study-note-boundary 18/0 (v09.136 recorded it red: that was the sandbox's shallow clone, corrected here), study-note-binding 16/0
   - green: hadeethenc-browser 82/0, openiti-browser 76/0, hadith-source-navigation-browser 50/0, dua-note-bookmark-browser 35/0, dua-tab-browser 57/0, bookmark-open-browser 77/0, claim-for-family-word-hadith-browser 158/0, stub-parity 4/0, behaviour 1007/0, phone-width-overflow 217/0
+
+## v09.139 — 2026-10-09 — Mushaf view follows the chosen unit
+
+- **Asked:** the Owner, two screenshots: "Range is chosen but the indication shows page … the card shows page number again here too. Fix." (decision 93)
+- **Found:** a data fault as well as a label: in Mushaf view, Record Your Progress recorded `page:madani:<n>` while a Range was chosen
+- **What:**
+  - `app/quranrevival.html`: `readBarUnitInfo()` (the chosen unit, unless it is a Page) and `mushafUnitRefText()`; the Read bar's reference, its tap, Record Your Progress and the Record button's title all follow the chosen unit; with Page chosen, unchanged (decisions 3, 37)
+  - `docs/governance/2026-09-27-owner-decisions.md`: decision 93
+- **Checks:**
+  - new mushaf-chosen-unit-browser 25/0 (mutation pagewins: 12 fail, the old build's `page:madani:50` write in its log)
+  - updated in place with the reason: mushaf-page-ref-browser 129/0, approach-record-status-bar-browser 432/0, mushaf-approach-cards-browser 114/0, claim-for-family-browser 56/0, global-approach-card-browser 109/0, approach-list-dots-browser 66/0
+  - green: unit-card-browser 116/0, read-quick-buttons-browser 204/0, phone-width-overflow 217/0, stub-parity 4/0, behaviour 1004/3 (22g×3, archive.org baseline)

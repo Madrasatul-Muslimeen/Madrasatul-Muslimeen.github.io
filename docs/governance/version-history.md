@@ -782,3 +782,4 @@ total). Allocated by the MMSA Architect.
 09.136: Notes and bookmarks on a dua. Allocated by the MMSA Architect.
 09.137: the Bangla file's shadowed duplicates removed. Allocated by the MMSA Architect.
 09.138: a hadith's Notes have a way back. Allocated by the MMSA Architect.
+09.139: Mushaf view follows the chosen unit. Allocated by the MMSA Architect.
