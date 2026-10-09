@@ -155,6 +155,13 @@
     translateStatic();
     registerServiceWorker();
 
+    // The way-back law (decision 86): the title's own ← already leads back to Mapping My Journey. With ?back=1
+    // (its Import Notes… link) it returns to exactly where the reader was, by history, rather than reopening the page.
+    // Architect review of #672: one back control, not a second button beside the first.
+    if (new URLSearchParams(location.search).get("back") === "1") {
+      document.getElementById("backLink").addEventListener("click", (e) => { if (history.length > 1) { e.preventDefault(); history.back(); } });
+    }
+
     const whoEl = document.getElementById("who");
     const signInBtn = document.getElementById("signInBtn");
     const signOutBtn = document.getElementById("signOutBtn");

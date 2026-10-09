@@ -20251,3 +20251,13 @@ The Owner, decision 88, on the Dua demo (https://claude.ai/artifact/LxHMM7PhPAKQ
   - new mushaf-chosen-unit-browser 25/0 (mutation pagewins: 12 fail, the old build's `page:madani:50` write in its log)
   - updated in place with the reason: mushaf-page-ref-browser 129/0, approach-record-status-bar-browser 432/0, mushaf-approach-cards-browser 114/0, claim-for-family-browser 56/0, global-approach-card-browser 109/0, approach-list-dots-browser 66/0
   - green: unit-card-browser 116/0, read-quick-buttons-browser 204/0, phone-width-overflow 217/0, stub-parity 4/0, behaviour 1004/3 (22g×3, archive.org baseline)
+
+## v09.140 — 2026-10-09 — The way back from Notes on the Qur'an page and from Import Notes
+
+- **Asked:** the way-back law (decision 86), swept (Builder #672, PR #675; reviewed and adjusted by the Architect)
+- **What:**
+  - `app/quranrevival.html`: My Notes for this unit and Make a poster pass `back=1`; `rememberQuranPlace()` writes the place (and the open Note view) into the page's address before leaving, `openPlaceFromQueryString()` reopens it
+  - `app/journey-map.html`: Import Notes… passes `back=1`; `app/import-notes.html`: with it, the title's existing ← goes back by history (the round's second Back button was folded into that link at review)
+- **Checks:**
+  - new notes-way-back-browser 42/0 (mutations noback1, noback3, noplace1 caught)
+  - green: notes-note-windows-browser 218/0, ayah-card-takenote-family-browser 40/0, dua-note-bookmark-browser 35/0, hadeethenc-note-back-browser 12/0, mushaf-chosen-unit-browser 25/0, bookmark-open-browser 77/0, stub-parity 4/0, phone-width-overflow 217/0, behaviour 1004/3 (22g×3)

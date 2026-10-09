@@ -10332,7 +10332,7 @@
         exactly where it opened before this existed. */
     async function restoreLastSession() {
       const params = new URLSearchParams(location.search);
-      if (params.get("bookmark") || params.get("goto") || params.get("word") || params.get("resume") || params.get("last")) return;
+      if (params.get("bookmark") || params.get("goto") || params.get("word") || params.get("resume") || params.get("last") || params.get("qpSurah")) return;
       const saved = getQuranLastSession();
       if (!saved) return;
       // The app ALWAYS opens on the wheel -- the owner's own call, once the
@@ -19241,7 +19241,21 @@
       if (hasPosterNote === false) { openNoteView(unitKey); return; }
       const { surah, ayah: ayahNum, half } = parseAyahUnitKey(unitKey);
       const ref = ayahRefLabel(surah, ayahNum, { half });
-      location.href = `notes.html?unit=${encodeURIComponent(unitKey)}&label=${encodeURIComponent(ref)}&dawah=1`;
+      rememberQuranPlace(unitKey);
+      location.href = `notes.html?unit=${encodeURIComponent(unitKey)}&label=${encodeURIComponent(ref)}&dawah=1&back=1`;
+    }
+
+    /** The way-back law (decision 86): before leaving for notes.html, write the place into THIS page's own address
+        (the rememberDuaPlace() pattern), so ← Back (history.back()) reopens the same surah and āyah -- and the Note
+        view, if that is what was open. Read by openPlaceFromQueryString() on load. */
+    function rememberQuranPlace(unitKey) {
+      try {
+        const u = new URL(location.href);
+        u.searchParams.set("qpSurah", String(currentSurahNum)); u.searchParams.set("qpAyah", String(currentAyahNum));
+        if (stageView === "note" && unitKey) { u.searchParams.set("qpView", "note"); u.searchParams.set("qpUnit", unitKey); }
+        else { u.searchParams.set("qpView", "read"); u.searchParams.delete("qpUnit"); }
+        history.replaceState(history.state, "", u);
+      } catch { /* the link still opens the Notes page */ }
     }
 
     function renderAyahActionSheetNow() {
@@ -21350,7 +21364,7 @@
         // MODULE_PAGES) -- notes.html resolves its own sign-in/tenant/person
         // context on load exactly as bookmarks.html does, so nothing about
         // WHO is acting needs to travel in the URL, only WHICH unit.
-        notesScreenHref: `notes.html?unit=${encodeURIComponent(unitKey)}&label=${encodeURIComponent(ref)}`,
+        notesScreenHref: `notes.html?unit=${encodeURIComponent(unitKey)}&label=${encodeURIComponent(ref)}&back=1`,
       });
       if (showApproach && quranTrackables.some((tr) => tr.id === currentTrackableId)) {
         noteView.querySelectorAll("[data-note-approach-select]").forEach((sel) => { sel.value = currentTrackableId; });
@@ -22225,6 +22239,27 @@
       await openNoteView(buildUnitKey.ayah(parsed.surah, from));
       // The way-back law (decision 86): a link from another page (the Asma study page's poster) carries back=1.
       if (new URLSearchParams(location.search).get("back") === "1" && history.length > 1) setAppReturn(t("Back"), "", () => history.back());
+    }
+
+    // The Note view's ⋯ menu "📔 My Notes for this unit" link (notesScreenHref): remember the place first.
+    noteView.addEventListener("click", (e) => {
+      const a = e.target?.closest?.('a[href^="notes.html?"]');
+      if (a) rememberQuranPlace(new URL(a.href, location.href).searchParams.get("unit"));
+    }, true); // capture: the ⋯ menu stops its clicks from bubbling
+
+    /** The way-back law: ?qpSurah=&qpAyah=&qpView=note&qpUnit= (written by rememberQuranPlace() just before leaving for
+        notes.html) reopens the same surah and āyah, and the Note view when that was open. Malformed values do nothing. */
+    async function openPlaceFromQueryString() {
+      const params = new URLSearchParams(location.search);
+      const surah = Number(params.get("qpSurah")), ayah = Number(params.get("qpAyah"));
+      const surahMeta = surahIndex.find((s) => s.surahNumber === surah);
+      if (!surahMeta || !Number.isInteger(ayah) || ayah < 1 || ayah > surahMeta.ayahCount) return;
+      await goToReference(surah, ayah, null);
+      const unit = params.get("qpUnit");
+      if (params.get("qpView") === "note" && unit) {
+        try { parseUnitKey(unit); } catch { return; }
+        await openNoteView(unit);
+      }
     }
 
     /** Decision 90, round 1: "?word=S:A:W" opens the Word card at that Qur'an word in the Read view (a Dua card's
@@ -23412,6 +23447,7 @@
         await step("open bookmark", openBookmarkFromQueryString);
         await step("open goto link", openGotoFromQueryString);
         await step("open word link", openWordFromQueryString);
+        await step("open remembered place", openPlaceFromQueryString);
         await step("open last place", openLastFromQueryString);
         window.__bmCoverDone?.(false); // issue #468 -- target is open; remove the cover in one step
         // Last: "the app opens in the last settings/options in all view."
