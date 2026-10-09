@@ -20226,3 +20226,16 @@ The Owner, decision 88, on the Dua demo (https://claude.ai/artifact/LxHMM7PhPAKQ
   - new bn-duplicate-keys 6/0 (0 duplicates; deep-equal to the base `BN`; positive control 65 on the base; two mutations caught)
   - the Architect's own comparison: 2,839 keys before and after, 0 differing values; only key lines removed
 - **Nothing on screen changes.**
+
+## v09.138 — 2026-10-09 — A hadith's Notes have a way back; two Notes suites run again
+
+- **Asked:** the way-back law (decision 86), found missing while building v09.136; decision 91 ("keep working")
+- **What:**
+  - `app/js/hadith-study-actions.js`: the HadeethEnc Note link carries `back=1`
+  - `app/js/hadith-browser.js`: before leaving for Notes, the page's address is set to `?resume=hadith:hadeethenc:<id>`; a card reopened that way is scrolled on screen
+  - `app/hadith-collections.html`: reads `?resume=hadith:hadeethenc:<id>`, as `hadith-study.html` does
+  - `tools/i18n-verify/study-note-service.mjs`: loads `fatiha-count.js` real (added to `study-event-wiring.js` by #606); the suite had stopped before its first case
+- **Checks:**
+  - new hadeethenc-note-back-browser 12/0 (mutations noback, noremember, noresume, noscroll caught)
+  - study-note-service 35/0 (was throwing), study-note-boundary 18/0 (v09.136 recorded it red: that was the sandbox's shallow clone, corrected here), study-note-binding 16/0
+  - green: hadeethenc-browser 82/0, openiti-browser 76/0, hadith-source-navigation-browser 50/0, dua-note-bookmark-browser 35/0, dua-tab-browser 57/0, bookmark-open-browser 77/0, claim-for-family-word-hadith-browser 158/0, stub-parity 4/0, behaviour 1007/0, phone-width-overflow 217/0
