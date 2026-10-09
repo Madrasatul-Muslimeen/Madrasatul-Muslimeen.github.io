@@ -206,7 +206,7 @@ check("every version the brief names is also in CHANGELOG.md -- nothing lives on
   // having only ever lived here: a round leaving the brief is appended to
   // CHANGELOG.md FIRST, so trimming the brief can never destroy one.
   const current = read("app/js/version.js").match(/APP_VERSION\s*=\s*"([\d.]+)"/)[1];
-  const versions = new Set([...briefAndHistory.matchAll(/\bv(0[789]\.\d{2,3})\b/g)].map((m) => m[1]));
+  const versions = new Set([...briefAndHistory.matchAll(/\bv(0[789]\.\d{2,3}|10\.\d{2,3})\b/g)].map((m) => m[1]));
   assert.ok(versions.size >= 10, `found only ${versions.size} version references; the scanner has stopped working`);
   // A version AHEAD of the current one is a forward reference ("the next
   // feature round is v08.03"), not a round that has gone missing.
