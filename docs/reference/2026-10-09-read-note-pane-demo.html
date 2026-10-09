@@ -1,0 +1,298 @@
+<title>Read with Note Pane</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;700&family=Noto+Sans+Bengali:wght@400;600&family=Scheherazade+New:wght@400;700&display=swap">
+<style>
+/* Layout: a size switch above one framed mock of the app; the Note pane docks below (tablet), over (phone) or beside (desktop). */
+:root {
+  --navy: #1F3A6E; --navy-2: #26457f; --gold: #c9a24b; --gold-ink: #6b4e10;
+  --cream: #fffdf6; --paper: #f4efe2; --line: #e3d7b8; --ink: #1b1b16; --muted: #55554c; --chip: #eef2fa;
+  --font-ui: "Noto Sans", system-ui, sans-serif; --font-ar: "Scheherazade New", "Amiri", serif; --font-bn: "Noto Sans Bengali", "Noto Sans", sans-serif;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--paper); color: var(--ink); font-family: var(--font-ui); padding: 16px; font-size: 15px; }
+.wrap { max-width: 1200px; margin: 0 auto; display: grid; gap: 16px; }
+h1 { margin: 0; font-size: 1.5rem; color: var(--navy); text-wrap: balance; }
+.lede { margin: 0; color: var(--muted); max-width: 65ch; line-height: 1.5; }
+.sizes { display: flex; gap: 8px; flex-wrap: wrap; }
+.sizes button { min-height: 44px; padding: 0 18px; border-radius: 22px; border: 1px solid var(--navy); background: #fff; color: var(--navy); font: 600 15px var(--font-ui); cursor: pointer; }
+.sizes button[aria-pressed="true"] { background: var(--navy); color: #fff; }
+button:focus-visible, a:focus-visible, [contenteditable]:focus-visible, select:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+
+/* the device frame */
+.stage { overflow-x: auto; }
+.device { margin: 0 auto; border: 10px solid #2b2b2b; border-radius: 26px; background: var(--paper); overflow: hidden; position: relative; display: flex; flex-direction: column; max-width: 100%; }
+.device[data-size="tablet"] { width: 820px; height: 1000px; }
+.device[data-size="phone"] { width: 390px; height: 780px; }
+.device[data-size="desktop"] { width: 1180px; max-width: none; height: 720px; border-radius: 12px; }
+
+.bar { background: var(--navy); margin: 10px; border-radius: 12px; padding: 8px; display: flex; flex-direction: column; gap: 8px; }
+.pickers { display: grid; grid-template-columns: 2fr 2fr 1fr; gap: 6px; }
+.pickers select { min-width: 0; height: 40px; border-radius: 8px; border: 0; padding: 0 8px; font: 15px var(--font-ui); background: #fff; color: var(--ink); }
+.tools { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.tool { width: 44px; height: 44px; border-radius: 8px; border: 1px solid #5b74a6; background: var(--navy-2); color: #fff; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; font-size: 20px; }
+.tool:disabled { opacity: 0.45; cursor: default; }
+.spacer { flex: 1 1 auto; }
+.notes-btn { min-height: 44px; padding: 0 14px; border-radius: 22px; border: 2px solid var(--gold); background: var(--cream); color: var(--navy); font: 700 15px var(--font-ui); display: inline-flex; gap: 8px; align-items: center; cursor: pointer; }
+.notes-btn[aria-pressed="true"] { background: var(--gold); color: var(--ink); }
+.count { background: var(--navy); color: #fff; border-radius: 10px; padding: 1px 7px; font-size: 13px; font-variant-numeric: tabular-nums; }
+
+.body { flex: 1 1 auto; min-height: 0; display: flex; gap: 10px; padding: 0 10px 10px; position: relative; }
+.reading { flex: 1 1 auto; min-width: 0; overflow-y: auto; background: var(--cream); border-radius: 12px; padding: 16px 20px; }
+.ref { text-align: center; color: var(--muted); font-size: 14px; margin: 0 0 6px; }
+.ar { font-family: var(--font-ar); font-size: 32px; line-height: 2.05; margin: 0 0 10px; direction: rtl; }
+.en { font-size: 16px; line-height: 1.6; margin: 0 0 10px; }
+.bn { font-family: var(--font-bn); font-size: 15px; line-height: 1.7; margin: 0; color: #333; }
+.device[data-size="phone"] .ar { font-size: 26px; }
+
+/* the Note pane */
+.pane { background: var(--cream); display: flex; flex-direction: column; overflow: hidden; }
+.device[data-size="tablet"] .body { flex-direction: column; }
+.device[data-size="tablet"] .pane { height: 52%; flex-shrink: 0; border-top: 3px solid var(--gold); border-radius: 18px 18px 0 0; box-shadow: 0 -8px 22px rgba(20,30,50,0.16); }
+.device[data-size="desktop"] .pane { width: 430px; flex-shrink: 0; border-left: 4px solid var(--gold); border-radius: 12px; }
+.device[data-size="phone"] .pane { position: absolute; inset: 0; z-index: 5; }
+.grip { display: none; justify-content: center; padding-top: 6px; }
+.grip span { width: 56px; height: 5px; border-radius: 3px; background: #d9cfb6; }
+.device[data-size="tablet"] .grip { display: flex; }
+.pane-head { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.device[data-size="phone"] .pane-head { background: var(--navy); border-bottom: 3px solid var(--gold); }
+.pane-title { font-weight: 700; color: var(--navy); font-size: 17px; }
+.device[data-size="phone"] .pane-title { color: #fff; }
+.back { display: none; min-height: 44px; padding: 0 14px; border-radius: 22px; border: 0; background: var(--cream); color: var(--navy); font: 700 15px var(--font-ui); cursor: pointer; }
+.device[data-size="phone"] .back { display: inline-flex; align-items: center; }
+.close { width: 44px; height: 44px; border-radius: 10px; border: 1px solid #d9cfb6; background: #fff; color: var(--navy); font-size: 20px; cursor: pointer; }
+.device[data-size="phone"] .close { display: none; }
+.tabs { display: flex; gap: 6px; }
+.tab { min-height: 40px; padding: 0 14px; border-radius: 20px; border: 1px solid var(--gold); background: #fff; color: var(--gold-ink); font: 600 14px var(--font-ui); cursor: pointer; }
+.tab[aria-selected="true"] { background: var(--gold); color: var(--ink); }
+.list { display: flex; gap: 6px; padding: 10px 12px; overflow-x: auto; flex-shrink: 0; }
+.list > * { flex-shrink: 0; }
+.pill { min-height: 44px; padding: 4px 14px; border-radius: 22px; border: 1px solid var(--navy); background: #fff; color: var(--navy); font: 600 14px var(--font-ui); display: flex; flex-direction: column; align-items: flex-start; justify-content: center; text-align: left; cursor: pointer; }
+.pill small { font-weight: 400; font-size: 12px; opacity: 0.85; }
+.pill[aria-pressed="true"] { background: var(--navy); color: #fff; }
+.new { min-height: 44px; padding: 0 14px; border-radius: 22px; border: 1px dashed var(--navy); background: #fff; color: var(--navy); font: 600 14px var(--font-ui); cursor: pointer; }
+.editor { flex: 1 0 auto; min-height: 260px; margin: 0 12px; border: 1px solid var(--line); border-radius: 12px; background: #fff; display: flex; flex-direction: column; overflow: hidden; }
+.fmt { display: flex; gap: 2px; padding: 4px 6px; border-bottom: 1px solid var(--line); background: #fbf7ec; flex-wrap: wrap; align-items: center; }
+.fmt button { min-width: 40px; height: 40px; border: 0; border-radius: 6px; background: transparent; font: 600 15px var(--font-ui); color: var(--ink); cursor: pointer; }
+.fmt button:hover { background: #f1e8d2; }
+.saved { margin-left: auto; font-size: 12px; color: var(--muted); padding-right: 6px; }
+.doc { padding: 12px 14px; flex: 1 0 auto; }
+.doc h3 { margin: 0 0 6px; font-size: 18px; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+.chip { font-size: 13px; padding: 4px 10px; border-radius: 12px; background: var(--chip); color: var(--navy); }
+.chip.src { background: #fbf3df; color: var(--gold-ink); }
+.text { font-size: 16px; line-height: 1.6; outline: none; min-height: 3em; }
+.text:empty::before { content: "Start typing your note…"; color: var(--muted); }
+.empty { margin: 0 12px; padding: 18px; border: 1px dashed var(--line); border-radius: 12px; color: var(--muted); line-height: 1.5; }
+.foot { flex-shrink: 0; display: flex; gap: 10px; align-items: center; padding: 10px 12px 12px; flex-wrap: wrap; }
+.journey { min-height: 44px; border: 0; background: none; color: var(--navy); font: 600 15px var(--font-ui); text-decoration: underline; cursor: pointer; padding: 0; }
+.foot small { color: var(--muted); }
+.track { padding: 12px; display: grid; gap: 10px; overflow-y: auto; flex: 1 1 auto; min-height: 0; align-content: start; }
+.track label { display: grid; gap: 6px; font-weight: 600; }
+.track select { height: 44px; border-radius: 8px; border: 1px solid #c9b98f; padding: 0 10px; font: 16px var(--font-ui); }
+.stages { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.stages button { min-height: 48px; border-radius: 8px; border: 1px solid #c9b98f; background: #fff; font: 15px var(--font-ui); cursor: pointer; }
+.stages button[aria-pressed="true"] { border: 2px solid var(--navy); background: var(--chip); font-weight: 700; }
+.toast { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 10px 16px; border-radius: 10px; font-size: 14px; max-width: 90%; z-index: 10; }
+
+.plan { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 16px 20px; }
+.plan h2 { margin: 0 0 8px; font-size: 1.1rem; color: var(--navy); }
+.plan ol { margin: 0; padding-left: 1.3em; display: grid; gap: 6px; line-height: 1.5; max-width: 75ch; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <h1>Read view with the Note pane</h1>
+  <p class="lede">A demo only; nothing in the app has changed. Press <b>Notes</b> on the bar to open or close the pane, tap a note to open it, type in it, try <b>+ New note</b>, the <b>Track this āyah</b> tab, and ‹ › to move between āyāt. Switch the size to see it on a tablet, a phone and a computer.</p>
+  <div class="sizes" role="group" aria-label="Screen size">
+    <button type="button" data-size="tablet" aria-pressed="true">Tablet</button>
+    <button type="button" data-size="phone" aria-pressed="false">Phone</button>
+    <button type="button" data-size="desktop" aria-pressed="false">Computer</button>
+  </div>
+
+  <div class="stage">
+    <div class="device" id="device" data-size="tablet">
+      <div class="bar">
+        <div class="pickers">
+          <select id="unitPick" aria-label="Unit"><option>Single Ayah</option></select>
+          <select id="surahPick" aria-label="Surah"><option>6. Al-An'aam</option></select>
+          <select id="ayahPick" aria-label="Āyah"><option>98</option><option selected>99</option><option>100</option></select>
+        </div>
+        <div class="tools">
+          <button type="button" class="tool" id="prev" aria-label="Previous āyah">‹</button>
+          <button type="button" class="tool" id="next" aria-label="Next āyah">›</button>
+          <button type="button" class="tool" aria-label="Play"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 5l12 7-12 7z"/></svg></button>
+          <button type="button" class="tool" aria-label="Bookmark"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z"/></svg></button>
+          <span class="spacer"></span>
+          <button type="button" class="notes-btn" id="notesBtn" aria-pressed="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 3h10l4 4v14H5z"/><path d="M9 12h6M9 16h6"/></svg>Notes <span class="count" id="count">2</span></button>
+        </div>
+      </div>
+
+      <div class="body">
+        <div class="reading" id="reading">
+          <p class="ref" id="ref">Surah 6 — Ayah 99 of 165</p>
+          <p class="ar" lang="ar" id="ar"></p>
+          <p class="en" id="en"></p>
+          <p class="bn" lang="bn" id="bn"></p>
+        </div>
+
+        <section class="pane" id="pane" aria-label="Notes on this āyah">
+          <div class="grip" aria-hidden="true"><span></span></div>
+          <div class="pane-head">
+            <button type="button" class="back" id="back">← Back to&nbsp;<span id="backRef">6:99</span></button>
+            <span class="pane-title" id="paneTitle">Notes on 6:99</span>
+            <div class="tabs" role="tablist">
+              <button type="button" class="tab" role="tab" id="tabNotes" aria-selected="true">Notes</button>
+              <button type="button" class="tab" role="tab" id="tabTrack" aria-selected="false">Track this āyah</button>
+            </div>
+            <span class="spacer"></span>
+            <button type="button" class="close" id="close" aria-label="Close the Note pane">×</button>
+          </div>
+
+          <div id="notesPanel" style="display:flex; flex-direction:column; flex:1 1 auto; min-height:0; overflow-y:auto">
+            <div class="list" id="list"></div>
+            <div id="editorWrap" style="display:flex; flex-direction:column; flex:1 0 auto"></div>
+            <div class="foot">
+              <button type="button" class="journey" id="journey">Open in Mapping My Journey ↗</button>
+              <small>The same note, folders and versions as in Mapping My Journey.</small>
+            </div>
+          </div>
+
+          <div class="track" id="trackPanel" hidden>
+            <label for="approachPick">Take an Approach
+              <select id="approachPick"><option>Tafsir</option><option>Memorisation</option><option>Word study</option></select>
+            </label>
+            <div style="font-weight:600">Record Your Progress</div>
+            <div class="stages" id="stages"></div>
+            <small style="color:var(--muted)">This is what the Note view's "Track this āyah" does today, moved into the pane so nothing is lost.</small>
+          </div>
+        </section>
+      </div>
+      <div class="toast" id="toast" hidden></div>
+    </div>
+  </div>
+
+  <section class="plan">
+    <h2>What would change in the app</h2>
+    <ol>
+      <li>The Read bar gets one <b>Notes</b> button. It opens this pane on the āyah you are reading.</li>
+      <li>The pane is the Mapping My Journey note editor: folders, versions, tags and the full toolbar. A note written here is in your folders straight away.</li>
+      <li>It lists every note started on this āyah or mentioning it, with <b>+ New note</b> and <b>Open in Mapping My Journey</b>.</li>
+      <li><b>Track this āyah</b> becomes a tab of the pane. QCR stays on the Āyah card and the ⋮ menu.</li>
+      <li>The separate Note view retires. Old bookmarks that opened it open Read with the pane instead.</li>
+      <li>Notes you already wrote in the Note view are copied into your folders, only if you say yes. Nothing is deleted.</li>
+    </ol>
+  </section>
+</div>
+
+<script>
+const AYAT = {"98": {"ar": "وَهُوَ ٱلَّذِىٓ أَنشَأَكُم مِّن نَّفْسٍۢ وَٰحِدَةٍۢ فَمُسْتَقَرٌّۭ وَمُسْتَوْدَعٌۭ ۗ قَدْ فَصَّلْنَا ٱلْءَايَٰتِ لِقَوْمٍۢ يَفْقَهُونَ", "en": "And it is He who produced you from one soul and [gave you] a place of dwelling and of storage. We have detailed the signs for a people who understand.", "bn": "তিনিই তোমাদের কে এক ব্যক্তি থেকে সৃষ্টি করেছেন। অনন্তর একটি হচ্ছে তোমাদের স্থায়ী ঠিকানা ও একটি হচ্ছে গচ্ছিত স্থল। নিশ্চয় আমি প্রমাণাদি বিস্তারিত ভাবে বর্ণনা করে দিয়েছি তাদের জন্যে, যারা চিন্তা করে।"}, "99": {"ar": "وَهُوَ ٱلَّذِىٓ أَنزَلَ مِنَ ٱلسَّمَآءِ مَآءًۭ فَأَخْرَجْنَا بِهِۦ نَبَاتَ كُلِّ شَىْءٍۢ فَأَخْرَجْنَا مِنْهُ خَضِرًۭا نُّخْرِجُ مِنْهُ حَبًّۭا مُّتَرَاكِبًۭا وَمِنَ ٱلنَّخْلِ مِن طَلْعِهَا قِنْوَانٌۭ دَانِيَةٌۭ وَجَنَّٰتٍۢ مِّنْ أَعْنَابٍۢ وَٱلزَّيْتُونَ وَٱلرُّمَّانَ مُشْتَبِهًۭا وَغَيْرَ مُتَشَٰبِهٍ ۗ ٱنظُرُوٓا۟ إِلَىٰ ثَمَرِهِۦٓ إِذَآ أَثْمَرَ وَيَنْعِهِۦٓ ۚ إِنَّ فِى ذَٰلِكُمْ لَءَايَٰتٍۢ لِّقَوْمٍۢ يُؤْمِنُونَ", "en": "And it is He who sends down rain from the sky, and We produce thereby the growth of all things. We produce from it greenery from which We produce grains arranged in layers. And from the palm trees - of its emerging fruit are clusters hanging low. And [We produce] gardens of grapevines and olives and pomegranates, similar yet varied. Look at [each of] its fruit when it yields and [at] its ripening. Indeed in that are signs for a people who believe.", "bn": "তিনিই আকাশ থেকে পানি বর্ষণ করেছেন অতঃপর আমি এর দ্বারা সর্বপ্রকার উদ্ভিদ উৎপন্ন করেছি, অতঃপর আমি এ থেকে সবুজ ফসল নির্গত করেছি, যা থেকে যুগ্ম বীজ উৎপন্ন করি। খেজুরের কাঁদি থেকে গুচ্ছ বের করি, যা নুয়ে থাকে এবং আঙ্গুরের বাগান, যয়তুন, আনার পরস্পর সাদৃশ্যযুক্ত এবং সাদৃশ্যহীন। বিভিন্ন গাছের ফলের প্রতি লক্ষ্য কর যখন সেুগুলো ফলন্ত হয় এবং তার পরিপক্কতার প্রতি লক্ষ্য কর। নিশ্চয় এ গুলোতে নিদর্শন রয়েছে ঈমানদারদের জন্যে।"}, "100": {"ar": "وَجَعَلُوا۟ لِلَّهِ شُرَكَآءَ ٱلْجِنَّ وَخَلَقَهُمْ ۖ وَخَرَقُوا۟ لَهُۥ بَنِينَ وَبَنَٰتٍۭ بِغَيْرِ عِلْمٍۢ ۚ سُبْحَٰنَهُۥ وَتَعَٰلَىٰ عَمَّا يَصِفُونَ", "en": "But they have attributed to Allah partners - the jinn, while He has created them - and have fabricated for Him sons and daughters. Exalted is He and high above what they describe", "bn": "তারা জিনদেরকে আল্লাহর অংশীদার স্থির করে; অথচ তাদেরকে তিনিই সৃস্টি করেছেন। তারা অজ্ঞতাবশতঃ আল্লাহর জন্যে পুত্র ও কন্যা সাব্যস্ত করে নিয়েছে। তিনি পবিত্র ও সমুন্নত, তাদের বর্ননা থেকে।"}};
+const STAGES = ["Not started", "Learning", "Practising", "Achieved", "Mastered", "Not Applicable"];
+const state = {
+  ayah: 99, open: true, tab: "notes", made: 0, stage: "Learning",
+  notes: {
+    98: [],
+    99: [
+      { id: "n1", title: "Rain and gardens", kind: "started here", folder: "Signs in nature", source: "Started on 6:99", saved: "Saved · 3 versions",
+        html: "<p>[Example note] What I noticed: water, then greenery, then grain.</p><ul><li>Ask at the halaqa: what does “look at its fruit” ask of me?</li></ul>" },
+      { id: "n2", title: "Water in the Qur'an", kind: "mentions 6:99", folder: "Themes", source: "Started on 21:30, mentions 6:99", saved: "Saved · 7 versions",
+        html: "<p>[Example note] A running list of āyāt about rain and water.</p>" }
+    ],
+    100: []
+  },
+  sel: { 99: "n1" }
+};
+const $ = (id) => document.getElementById(id);
+const device = $("device");
+let toastTimer = null;
+function toast(msg) {
+  const t = $("toast"); t.textContent = msg; t.hidden = false;
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 2600);
+}
+function esc(s) { return String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+
+function renderAyah() {
+  const a = AYAT[state.ayah];
+  $("ref").textContent = `Surah 6 — Ayah ${state.ayah} of 165`;
+  $("ar").textContent = a.ar; $("en").textContent = a.en; $("bn").textContent = a.bn;
+  $("ayahPick").value = String(state.ayah);
+  $("prev").disabled = state.ayah <= 98; $("next").disabled = state.ayah >= 100;
+  $("paneTitle").textContent = `Notes on 6:${state.ayah}`;
+  $("backRef").textContent = `6:${state.ayah}`;
+  $("count").textContent = state.notes[state.ayah].length;
+}
+function renderPane() {
+  $("pane").hidden = !state.open;
+  $("notesBtn").setAttribute("aria-pressed", String(state.open));
+  $("tabNotes").setAttribute("aria-selected", String(state.tab === "notes"));
+  $("tabTrack").setAttribute("aria-selected", String(state.tab === "track"));
+  $("notesPanel").style.display = state.tab === "notes" ? "flex" : "none";
+  $("trackPanel").hidden = state.tab !== "track";
+  const notes = state.notes[state.ayah];
+  const selId = state.sel[state.ayah];
+  $("list").innerHTML = notes.map((n) => `<button type="button" class="pill" data-id="${n.id}" aria-pressed="${n.id === selId}">${esc(n.title)}<small>${esc(n.kind)} · ${esc(n.folder)}</small></button>`).join("")
+    + `<button type="button" class="new" id="newNote">+ New note on 6:${state.ayah}</button>`;
+  const sel = notes.find((n) => n.id === selId);
+  $("editorWrap").innerHTML = sel
+    ? `<div class="editor"><div class="fmt" role="toolbar" aria-label="Formatting">
+        <button type="button" data-cmd="bold" aria-label="Bold"><b>B</b></button>
+        <button type="button" data-cmd="italic" aria-label="Italic"><i>I</i></button>
+        <button type="button" data-cmd="underline" aria-label="Underline"><u>U</u></button>
+        <button type="button" data-cmd="formatBlock" data-arg="h3" aria-label="Heading">H</button>
+        <button type="button" data-cmd="insertUnorderedList" aria-label="List">• —</button>
+        <span class="saved" id="saved">${esc(sel.saved)}</span></div>
+        <div class="doc"><h3>${esc(sel.title)}</h3>
+        <div class="chips"><span class="chip">Folder: ${esc(sel.folder)}</span><span class="chip src">${esc(sel.source)}</span></div>
+        <div class="text" id="text" contenteditable="true" aria-label="Note text">${sel.html}</div></div></div>`
+    : `<p class="empty">No note on 6:${state.ayah} yet. Press <b>+ New note on 6:${state.ayah}</b> to start one; it goes straight into your folders.</p>`;
+  $("stages").innerHTML = STAGES.map((s) => `<button type="button" data-stage="${s}" aria-pressed="${s === state.stage}">${s}</button>`).join("");
+}
+function render() { renderAyah(); renderPane(); }
+function saveText() {
+  const sel = state.notes[state.ayah].find((n) => n.id === state.sel[state.ayah]);
+  const t = $("text");
+  if (sel && t) { sel.html = t.innerHTML; sel.saved = "Saved just now"; const s = $("saved"); if (s) s.textContent = sel.saved; }
+}
+function go(n) { saveText(); state.ayah = n; render(); }
+
+document.querySelector(".sizes").addEventListener("click", (e) => {
+  const b = e.target.closest("button[data-size]"); if (!b) return;
+  saveText();
+  device.dataset.size = b.dataset.size;
+  document.querySelectorAll(".sizes button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+  if (b.dataset.size === "phone") state.open = false;
+  else state.open = true;
+  render();
+});
+$("notesBtn").addEventListener("click", () => { saveText(); state.open = !state.open; render(); });
+$("close").addEventListener("click", () => { saveText(); state.open = false; render(); });
+$("back").addEventListener("click", () => { saveText(); state.open = false; render(); });
+$("prev").addEventListener("click", () => go(state.ayah - 1));
+$("next").addEventListener("click", () => go(state.ayah + 1));
+$("ayahPick").addEventListener("change", (e) => go(Number(e.target.value)));
+$("tabNotes").addEventListener("click", () => { state.tab = "notes"; render(); });
+$("tabTrack").addEventListener("click", () => { saveText(); state.tab = "track"; render(); });
+$("journey").addEventListener("click", () => toast("In the app this opens Mapping My Journey on this note, with ← Back to the āyah."));
+$("pane").addEventListener("click", (e) => {
+  const pill = e.target.closest(".pill");
+  if (pill) { saveText(); state.sel[state.ayah] = pill.dataset.id; render(); return; }
+  if (e.target.closest("#newNote")) {
+    saveText();
+    state.made++;
+    const id = "new" + state.made;
+    state.notes[state.ayah].push({ id, title: `New note on 6:${state.ayah}`, kind: "started here", folder: "not in a folder yet", source: `Started on 6:${state.ayah}`, saved: "Not saved yet", html: "" });
+    state.sel[state.ayah] = id;
+    render();
+    $("text")?.focus();
+    return;
+  }
+  const f = e.target.closest(".fmt button");
+  if (f) { $("text")?.focus(); document.execCommand(f.dataset.cmd, false, f.dataset.arg ? `<${f.dataset.arg}>` : null); return; }
+  const st = e.target.closest("[data-stage]");
+  if (st) { state.stage = st.dataset.stage; renderPane(); toast(`Recorded: ${state.stage} (in the demo only).`); }
+});
+$("pane").addEventListener("input", (e) => { if (e.target.id === "text") { const s = $("saved"); if (s) s.textContent = "Saving…"; } });
+$("pane").addEventListener("focusout", (e) => { if (e.target.id === "text") saveText(); });
+render();
+</script>

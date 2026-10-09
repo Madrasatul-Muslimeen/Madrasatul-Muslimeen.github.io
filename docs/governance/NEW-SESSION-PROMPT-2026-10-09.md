@@ -1,8 +1,16 @@
 # Prompt for the next MMSA Architect session
 
 Written 9 Oct 2026 by the MMSA Architect for the Owner, to start a fresh session with nothing lost and nothing for
-the Owner to repeat. It supersedes `NEW-SESSION-PROMPT-2026-10-08.md`. Paste everything between the two lines as the
-first message of the new session, or attach this file.
+the Owner to repeat. It supersedes `NEW-SESSION-PROMPT-2026-10-08.md`.
+
+**How a new session starts (the Owner does nothing else):** the Owner's whole first message is one line,
+
+> Read docs/governance/NEW-SESSION-PROMPT-2026-10-09.md in the repository and follow it.
+
+The new session reads this file itself, from the repository, and everything between the two lines below is its brief.
+The Owner pastes nothing and attaches nothing (Owner, 9 Oct 2026: *"let NS read the file. Don't give me job."*). When a
+later session writes the next prompt file, it gives the Owner the same one line with the new file name, and nothing
+more.
 
 ---
 
@@ -174,7 +182,7 @@ refspec (handover section 2).
 
 ## Step 7. What waits on me (remind me in one line per report)
 
-1. **Read + Note as one, with the Journey note pane** (demo https://claude.ai/artifact/FjAMty9fWUaGnjZmhgCKEo), and
+1. **Read + Note as one, with the Journey note pane** (demo https://claude.ai/artifact/PyZqqoKMVRBWnc6icgbrfR (copy: `docs/reference/2026-10-09-read-note-pane-demo.html`)), and
    separately whether to copy my old Note-view notes into my folders.
 2. **The Ten Steps file v06** (https://claude.ai/artifact/BJUwQ8hfgnu4FJFo7stqY1): the references for my three
    "basis" points, and the section 9 questions. Nothing in the app changes until the file is final.
