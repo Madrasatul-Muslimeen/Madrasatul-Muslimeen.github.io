@@ -25,6 +25,12 @@ session" line on #159).
 - **Sandbox:** `ln -s "$(npm root -g)/playwright" node_modules/playwright` (and `playwright-core`) before any browser
   suite; `git fetch --unshallow origin main`, `origin claude/pensive-knuth-2pu3jj` and `origin claude/phase4-wiring`
   before `brief-integrity`/`programme-ledger`, or they fail on missing history.
+- **The Owner's "MOST IMPORTANT" research (9 Oct):** the article "Quran for Critical Reasoning" (10 steps in 4 levels)
+  mapped onto Approaches 14–27, the QCR collections and the year bands:
+  `docs/reports/2026-10-09-quran-critical-reasoning-ten-steps-and-qr-levels.html`, published at
+  https://claude.ai/artifact/BJUwQ8hfgnu4FJFo7stqY1 . **Four questions wait on the Owner** (the names of their 10 added
+  Approaches; whether Discussion and "Understanding of the Scholars" move before Judgement / Authority; Tadabbur Y5 vs
+  Tafakkur Y6–12; which of the five proposals first, recommended: the Approach guides, then a question card demo).
 - **Still possible next:** the dua review screen (demo first); Hadith Studied/Notes on OpenITI passages (needs the
   Owner's yes to the key).
 
