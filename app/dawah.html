@@ -14,6 +14,9 @@
 <script src="vendor/purify.min.js"></script>
 <style>
   body { font-family: system-ui, sans-serif; max-width: 46rem; margin: 2rem auto; padding: 0 1rem 4rem; color: #222; }
+  /* The way-back law (decision 86): ?back=1 shows ← Back to exactly where the reader came from. Same look as notes.html. */
+  .notes-back-btn { min-height: 40px; padding: 0 0.9rem; margin: 0.6rem 0 0; border: 1px solid #c9a24b; border-radius: 0.6rem; background: #1F3A6E; color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+  .notes-back-btn[hidden] { display: none; }
   h1 { font-size: 1.4rem; margin-bottom: 0.2rem; }
   p.intro { color: #555; font-size: 0.94rem; }
   #who { margin: 1rem 0; font-size: 0.95rem; color: #555; }
@@ -78,6 +81,7 @@
 </style>
 </head>
 <body>
+  <button type="button" id="notesBackBtn" class="notes-back-btn" hidden></button>
   <h1>Dawah</h1>
   <p class="intro">Turn one of your own permanent Notes into a printable page — shared inside this Madrasah once it's ready.</p>
 
@@ -147,6 +151,14 @@
 
     translateStatic();
     registerServiceWorker();
+
+    // The way-back law (decision 86): notes.html sends the reader here with back=1 after "Make a printable page".
+    if (new URLSearchParams(location.search).get("back") === "1") {
+      const backBtn = document.getElementById("notesBackBtn");
+      backBtn.textContent = `← ${t("Back")}`;
+      backBtn.hidden = false;
+      backBtn.addEventListener("click", () => { if (history.length > 1) history.back(); else location.href = "./quranrevival.html"; });
+    }
 
     // ---------------------------------------------------------------------
     // No person selector on this screen, deliberately (unlike notes.html /

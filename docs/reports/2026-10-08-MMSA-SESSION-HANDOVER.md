@@ -209,3 +209,4 @@ that handover does not name the version in `app/js/version.js`.
 - **v09.138** (2026-10-09): a hadith's Notes have a way back.
 - **v09.139** (2026-10-09): Mushaf view follows the chosen unit.
 - **v09.140** (2026-10-09): the way back from Notes on the Qur'an page.
+- **v09.141** (2026-10-09): the newer screens checked in Bangla.

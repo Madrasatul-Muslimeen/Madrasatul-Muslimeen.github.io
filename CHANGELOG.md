@@ -20261,3 +20261,14 @@ The Owner, decision 88, on the Dua demo (https://claude.ai/artifact/LxHMM7PhPAKQ
 - **Checks:**
   - new notes-way-back-browser 42/0 (mutations noback1, noback3, noplace1 caught)
   - green: notes-note-windows-browser 218/0, ayah-card-takenote-family-browser 40/0, dua-note-bookmark-browser 35/0, hadeethenc-note-back-browser 12/0, mushaf-chosen-unit-browser 25/0, bookmark-open-browser 77/0, stub-parity 4/0, phone-width-overflow 217/0, behaviour 1004/3 (22g×3)
+
+## v09.141 — 2026-10-09 — The newer screens checked in Bangla; a way back from the Dawah page
+
+- **Asked:** the Architect's round (Builder #677, PR #678): Bangla sweep of the screens added since 1 Oct, and the way-back law for Make a printable page
+- **What:**
+  - `app/js/hadith-browser.js`: the translation folds name English through `t()` (ইংরেজি)
+  - `app/js/i18n/bn.js`: "View" (appended; the BN object otherwise unchanged)
+  - `app/notes.html` → `dawah.html?back=1`; `app/dawah.html`: ← Back by history
+- **Checks:**
+  - new bangla-sweep-newer-screens-browser 23/0 (mutations "View" and "My Notes" caught by name; its header's mutation flag corrected at review)
+  - green: dua-tab 57/0, dua-word-card 45/0, dua-word-progress 31/0, dua-note-bookmark 35/0 (wait raised to 40s, state-based), hadith-translations 33/0, openiti 76/0, hadeethenc 82/0, notes-note-windows 218/0, stub-parity 4/0, phone-width-overflow 217/0, behaviour 1007/0

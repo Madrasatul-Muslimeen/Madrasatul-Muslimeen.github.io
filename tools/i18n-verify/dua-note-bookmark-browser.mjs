@@ -97,7 +97,9 @@ for (const [lang, width, look] of [["en", 390, "light"], ["bn", 390, "night"], [
       // Either the page is re-drawn from its address (Dua 20's card focused) or the browser restores it exactly as it
       // was left (its back-forward cache: no focus mark, same scroll). What the reader needs either way: card 1 on screen.
       const onScreen = () => { const r = document.querySelector('[data-dua-card="20"]')?.getBoundingClientRect(); return !!r && r.bottom > 0 && r.top < innerHeight; };
-      await P.waitForFunction(onScreen, null, { timeout: 15000 }).catch(() => {});
+      // 40s, not 15s: under load (behaviour running beside it) the Duas page re-draws from its address slowly; this
+      // failed twice that way (9 Oct), card not yet drawn, address already right. Still a state wait, never a sleep.
+      await P.waitForFunction(onScreen, null, { timeout: 40000 }).catch(() => {});
       await P.waitForTimeout(3000); // ...and STAYS on screen once the cards above have filled in (found in this round)
       const there = await P.evaluate((f) => ({ url: location.search, onScreen: eval(f)(), focused: !!document.querySelector('[data-dua-card="20"].hadith-card-focused') }), `(${onScreen})`);
       check(`${tag} ← Back lands on the Duas page again, with Dua 20's card on screen`, back && /view=dua/.test(there.url) && /dua=20\b/.test(there.url) && there.onScreen, JSON.stringify(there));
