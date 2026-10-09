@@ -151,11 +151,11 @@ const savedBookmarks = new Map(); // `${tenant}__${person}__${unitKey}` -> bookm
 const savedStudied = new Map();   // same key -> claimed status id
 const memoKey = (session, unitKey) => `${session.tenantId}__${session.personId}__${unitKey}`;
 
-async function findHadeethEncBookmark(session, unitKey) {
+async function findHadeethEncBookmark(session, unitKey, subjectId = BOOKMARK_SUBJECT_ID) {
   const k = memoKey(session, unitKey);
   if (savedBookmarks.has(k)) return savedBookmarks.get(k);
   const bookmarksDoc = await getBookmarks(db, session.tenantId, session.personId);
-  return findSavedBookmark(bookmarksDoc, { moduleId: HADITH_MODULE_ID, subjectId: BOOKMARK_SUBJECT_ID, position: unitKey }) ?? null;
+  return findSavedBookmark(bookmarksDoc, { moduleId: HADITH_MODULE_ID, subjectId, position: unitKey }) ?? null;
 }
 
 export async function isHadeethEncBookmarked(session, id) {
@@ -328,4 +328,58 @@ export async function claimDuaWord(session, number, position, statusId) {
   });
   savedStudied.set(memoKey(session, unitKey), statusId);
   return result;
+}
+
+// ---------------------------------------------------------------------------
+// Notes and bookmarks on a dua (9 Oct 2026, the "possible next" of the 8 Oct handover): the dua's permanent key
+// dua:<n> (decision 88), through the SAME shared functions a HadeethEnc hadith uses -- notes.html for Notes
+// (ADR-009 §9: sourceKind dua-unit) and bookmarks.js for the bookmark, in a "dua" bucket whose position is the key, so
+// bookmarks.html's ?resume=dua:<n> reopens the card. No new collection, field or Rule.
+// ---------------------------------------------------------------------------
+const DUA_BOOKMARK_SUBJECT_ID = "dua";
+
+/** notes.html for this dua; back=1 gives that page its ← Back to this card (the way-back law, decision 86). */
+export function duaNoteHrefFor(number, label) {
+  const params = new URLSearchParams({ unit: duaUnitKey(number) });
+  if (label) params.set("label", label);
+  params.set("back", "1");
+  return `notes.html?${params.toString()}`;
+}
+
+/** How many active Notes the reader has on this dua (read-only; only self ever creates one). */
+export async function duaNoteCount(session, number) {
+  const { rows } = await notesForStudyUnit(db, { tenantId: session.tenantId, ownerPersonId: session.personId, unitKey: duaUnitKey(number) });
+  return rows.length;
+}
+
+/** The duas this person has bookmarked: Set(number), from ONE read of their bookmarks document (a page holds 40 cards). */
+export async function duaBookmarkedSet(session) {
+  const doc = await getBookmarks(db, session.tenantId, session.personId);
+  const out = new Set();
+  for (const b of doc?.saved ?? []) {
+    const m = /^dua:(\d+)$/.exec(b?.position ?? "");
+    if (m && b.moduleId === HADITH_MODULE_ID && b.subjectId === DUA_BOOKMARK_SUBJECT_ID && !b.removed) out.add(Number(m[1]));
+  }
+  for (const [k, v] of savedBookmarks) {
+    const m = new RegExp(`^${session.tenantId}__${session.personId}__dua:(\\d+)$`).exec(k);
+    if (m) { if (v) out.add(Number(m[1])); else out.delete(Number(m[1])); }
+  }
+  return out;
+}
+
+/** Toggles the dua's bookmark and returns the new state (true = now bookmarked). A failed write throws (I15). */
+export async function toggleDuaBookmark(session, number, name) {
+  const unitKey = duaUnitKey(number);
+  const existing = await findHadeethEncBookmark(session, unitKey, DUA_BOOKMARK_SUBJECT_ID);
+  if (existing) {
+    await removeSavedBookmark(db, session.tenantId, session.personId, existing.id);
+    savedBookmarks.set(memoKey(session, unitKey), null);
+    return false;
+  }
+  const saved = await saveBookmark(db, {
+    tenantId: session.tenantId, personId: session.personId, moduleId: HADITH_MODULE_ID,
+    subjectId: DUA_BOOKMARK_SUBJECT_ID, name, position: unitKey, uid: session.uid,
+  });
+  savedBookmarks.set(memoKey(session, unitKey), saved);
+  return true;
 }

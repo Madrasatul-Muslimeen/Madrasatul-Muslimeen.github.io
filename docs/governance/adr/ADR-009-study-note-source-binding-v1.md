@@ -51,6 +51,7 @@ unit key's own leading segment:
 | `hadith` | `hadith-unit` |
 | `topic` | `topic-unit` |
 | `name` | `name-unit` |
+| `dua` | `dua-unit` (added 9 Oct 2026, §9) |
 
 A caller cannot pass `sourceKind` at all. This is the whole fix for the drift
 above: a field nobody types is a field nobody can spell two ways. It also
@@ -180,6 +181,16 @@ reachability guard is unaffected by this: it asserts `study-note-binding.js`
 is reached only through `study-note-service.js`, which remains true, because
 the import service reaches `noteSources` a different way, not through a
 second, unaudited route to the binding.
+
+### 9. A dua is a Note source of its own (9 Oct 2026)
+
+Decision 88 (8 Oct 2026) made `dua:<n>` a permanent Study Unit key: one dua, however many books narrate it, numbered
+once by `tools/hadith-data-pull/output/dua/registry.json`. Notes on a dua therefore bind to that key, verbatim (§1),
+and its `sourceKind` is **`dua-unit`**, derived from the key's leading segment exactly as §2 says. It is not
+`hadith-unit`: a dua is not one narration of one edition, and a Note written on it belongs to the dua whichever book
+the reader came through. This is the vocabulary addition the Consequences below anticipate, so it needs no Rules
+change (`noteSources` checks only that `sourceKind` is a non-empty string). The word key `duaword:<dua>:<position>`
+(decision 92) is **not** bindable: Notes are on the dua, not on each of its words.
 
 ## Consequences
 

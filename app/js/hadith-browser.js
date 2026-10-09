@@ -84,7 +84,8 @@ export function mountHadithBrowser(root, { mount = "standalone", initialHadeethE
   // Duas on that card (the way-back law, decision 86).
   if (initialDua && Number.isInteger(initialDua.page) && initialDua.page > 0) {
     state.view = "dua";
-    state.dua = { bookUri: null, mode: "duas", page: initialDua.page, focusDua: Number.isInteger(initialDua.dua) ? initialDua.dua : null };
+    state.dua = { bookUri: null, mode: "duas", page: initialDua.page, focusDua: Number.isInteger(initialDua.dua) ? initialDua.dua : null,
+      findPage: !!initialDua.findPage && Number.isInteger(initialDua.dua) };
   }
 
   function render() {
@@ -1219,11 +1220,47 @@ function renderDua(body, state, render) {
  * translation where it has the hadith, every place it is narrated (each opening in the library with a way back to
  * this page), and the reader's progress, saved ONCE per dua (dua:<n>).
  */
+/**
+ * The way back (decision 86) lands ON the card, and stays there: after the jump, the cards above it keep growing (their
+ * progress rows fill in, the Quranic font arrives) and would push it off the screen. For a few seconds, whenever the
+ * list changes size the card is centred again -- until the reader scrolls, taps or types themselves.
+ */
+function keepCardInView(target, list, ms = 5000) {
+  if (typeof ResizeObserver !== "function") return;
+  let done = false;
+  const stop = () => { if (done) return; done = true; ro.disconnect(); for (const ev of ["wheel", "touchstart", "keydown", "pointerdown"]) window.removeEventListener(ev, stop, true); };
+  const ro = new ResizeObserver(() => { if (!done && target.isConnected) target.scrollIntoView({ block: "center" }); });
+  ro.observe(list);
+  for (const ev of ["wheel", "touchstart", "keydown", "pointerdown"]) window.addEventListener(ev, stop, true);
+  setTimeout(stop, ms);
+}
+
+/**
+ * A bookmark knows a dua by its permanent number, not its page. Pages hold cardsPerFile cards "most narrated first", so
+ * the number's own page is tried first, then every page in turn (a re-run of the index can reorder them); null if none.
+ */
+async function findDuaPage(dua) {
+  const summary = await loadDuaCardsSummary();
+  const guess = Math.min(Math.max(1, Math.ceil(dua / summary.cardsPerFile)), summary.files);
+  const order = [guess, ...Array.from({ length: summary.files }, (_, i) => i + 1).filter((p) => p !== guess)];
+  for (const p of order) if ((await loadDuaCardsPage(p)).some((c) => c.dua === dua)) return p;
+  return null;
+}
+
 function renderDuaCards(body, state, render) {
   const section = el("section", "dua-section dua-cards");
   section.id = "duaCards";
   body.appendChild(section);
   section.appendChild(el("p", "hadith-note", t("Loading…")));
+  if (state.dua.findPage) {
+    state.dua.findPage = false;
+    findDuaPage(state.dua.focusDua).then((p) => {
+      if (p) { state.dua.page = p; render(); return; }
+      section.textContent = "";
+      section.appendChild(el("p", "hadith-note", t("Dua {n} was not found.", { n: num(state.dua.focusDua) })));
+    }).catch((err) => { section.textContent = ""; section.appendChild(el("p", "hadith-note", String(err?.message ?? err))); });
+    return;
+  }
   Promise.all([loadDuaCardsSummary(), loadDuaCardsPage(state.dua.page || 1), loadDuaWordLinks(state.dua.page || 1).catch(() => null),
     loadDuaVowels(state.dua.page || 1).catch(() => null), loadDuaWordGrammar(state.dua.page || 1).catch(() => null)]).then(([summary, cards, wordLinks, vowels, wordGrammar]) => {
     section.textContent = "";
@@ -1248,12 +1285,14 @@ function renderDuaCards(body, state, render) {
     const progressRows = [];
     for (const c of cards) list.appendChild(duaCard(c, summary, state, render, progressRows, wordLinks, page, vowels, wordGrammar));
     section.appendChild(pager());
-    fillDuaProgress(progressRows);
+    let target = null;
     if (state.dua.focusDua != null) {
-      const target = list.querySelector(`[data-dua-card="${state.dua.focusDua}"]`);
+      target = list.querySelector(`[data-dua-card="${state.dua.focusDua}"]`);
       state.dua.focusDua = null;
       if (target) { target.classList.add("hadith-card-focused"); target.scrollIntoView({ block: "center" }); }
     }
+    fillDuaProgress(progressRows);
+    if (target) keepCardInView(target, list);
   }).catch((err) => { section.textContent = ""; section.appendChild(el("p", "hadith-note", String(err?.message ?? err))); });
 }
 
@@ -1399,7 +1438,7 @@ function duaCard(c, summary, state, render, progressRows, wordLinks = null, page
   prog.appendChild(el("p", "dua-also-head", t("My progress on this dua")));
   prog.appendChild(el("p", "hadith-note", t("Loading…")));
   card.appendChild(prog);
-  progressRows.push({ dua: c.dua, el: prog });
+  progressRows.push({ dua: c.dua, el: prog, page });
   return card;
 }
 
@@ -1624,8 +1663,10 @@ async function fillDuaProgress(rows) {
   if (!session.canRecordFor) { say(t("You can view this, but only the person's own record can record progress.")); return; }
   let statuses = new Map();
   try { statuses = await actions.duaStatuses(session); } catch (err) { say(String(err?.message ?? err)); return; }
+  let bookmarked = new Set();
+  try { bookmarked = await actions.duaBookmarkedSet(session); } catch { /* the buttons still toggle; a read hiccup is not a write (I15) */ }
   const onRamp = STATUSES.filter((s) => s.onRamp);
-  for (const { dua, el: p } of rows) {
+  for (const { dua, el: p, page } of rows) {
     p.lastChild.remove();
     const row = el("div", "dua-progress-row");
     row.setAttribute("role", "group");
@@ -1647,8 +1688,50 @@ async function fillDuaProgress(rows) {
       row.appendChild(b);
     }
     paint();
-    p.append(row, msg);
+    p.append(row, msg, duaNoteBookmarkRow(actions, session, dua, page, bookmarked.has(dua)));
   }
+}
+
+/**
+ * 9 Oct 2026: 📝 My Notes and 🔖 Bookmark on a dua card, the same pair (and look) a HadeethEnc hadith card has. Notes
+ * open notes.html for dua:<n> with ← Back (this page's address is first set to reopen this card); the bookmark reopens
+ * this card from the Bookmarks page (?resume=dua:<n>). Only the person's own record writes a Note.
+ */
+function duaNoteBookmarkRow(actions, session, dua, page, isBookmarked) {
+  const box = el("div", "hadeethenc-study-row dua-note-bookmark");
+  box.dataset.duaNoteBookmark = String(dua);
+  const name = t("Dua {n}", { n: num(dua) });
+  const noteItem = el("div", "hadeethenc-study-item");
+  const note = document.createElement("a");
+  note.className = "hadeethenc-study-btn";
+  note.href = actions.duaNoteHrefFor(dua, name);
+  note.dataset.duaNoteLink = String(dua);
+  note.textContent = `📝 ${t("My Notes")}`;
+  note.setAttribute("aria-disabled", session.isSelf ? "false" : "true");
+  note.addEventListener("click", (e) => { if (!session.isSelf) { e.preventDefault(); return; } rememberDuaPlace(page, dua); });
+  noteItem.appendChild(note);
+  if (!session.isSelf) noteItem.appendChild(el("p", "hadeethenc-study-reason", t("Only your own record can create or file a Note.")));
+  const markItem = el("div", "hadeethenc-study-item");
+  const mark = el("button", "hadeethenc-study-btn");
+  mark.type = "button";
+  mark.dataset.duaBookmark = String(dua);
+  const msg = el("p", "hadeethenc-study-reason");
+  msg.setAttribute("role", "status");
+  let on = isBookmarked;
+  const paint = () => { mark.textContent = on ? `★ ${t("Remove bookmark")}` : `🔖 ${t("Bookmark this")}`; mark.setAttribute("aria-pressed", String(on)); };
+  paint();
+  mark.addEventListener("click", async () => {
+    if (mark.getAttribute("aria-disabled") === "true") return;
+    mark.setAttribute("aria-disabled", "true");
+    msg.textContent = "";
+    try { on = await actions.toggleDuaBookmark(session, dua, name); }
+    catch (err) { msg.textContent = t("Not saved: {why}", { why: String(err?.message ?? err) }); }
+    mark.setAttribute("aria-disabled", "false");
+    paint();
+  });
+  markItem.append(mark, msg);
+  box.append(noteItem, markItem);
+  return box;
 }
 
 /**
