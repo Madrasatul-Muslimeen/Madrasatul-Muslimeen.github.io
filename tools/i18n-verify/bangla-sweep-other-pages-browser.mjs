@@ -116,6 +116,10 @@ for (const width of [390, 1280]) {
     const { page: P, errors } = await openPage(ctx, "/app/" + path);
     await settle(P, 1000);
     await sweep(P, name, width);
+    // Architect review of #684: the routine reminder's count printed "2টি" (a Latin digit in Bangla text, which the
+    // Latin-letter scan cannot see). It now goes through num(): Bangla digits, no Latin digit.
+    const reminder = await P.evaluate(() => document.querySelector(".routine-reminder")?.textContent ?? null);
+    if (reminder !== null) check(`bn ${width}: "${name}" reminder counts in Bangla digits`, /[০-৯]/.test(reminder) && !/[0-9]/.test(reminder), reminder);
     if (mod) {
       // Open one topic (or routine) of each kind: without and with a resource.
       for (const [suffix, label] of [["_a", "no resource"], ["_b", "with a resource"]]) {

@@ -29,7 +29,7 @@ import { langText } from "./lang.js";
 import { roleListLabel } from "./labels.js";
 import { getAppLang, mountCardLookControl } from "./prefs.js";
 import { adoptAppLangFromUserIndex, mountSyncedAppLangControl } from "./lang-sync.js";
-import { t, translateStatic } from "./i18n.js";
+import { t, translateStatic, num } from "./i18n.js";
 import { safeWrite } from "./errors.js";
 import {
   getMyMembershipRoles, hydrateMemberships, pickContext, getActiveContext, setActiveContext,
@@ -334,7 +334,7 @@ export function initRoutineStudyPage({ moduleId, trackableId, rootSubjectId }) {
     if (reminderBanner) {
       const dueCount = [...loggedTodayByNodeId.values()].filter((logged) => !logged).length;
       reminderBanner.innerHTML = dueCount > 0
-        ? `<p class="routine-reminder">${dueCount === 1 ? t("{count} routine here not logged today yet.", { count: dueCount }) : t("{count} routines here not logged today yet.", { count: dueCount })}</p>`
+        ? `<p class="routine-reminder">${dueCount === 1 ? t("{count} routine here not logged today yet.", { count: num(dueCount) }) : t("{count} routines here not logged today yet.", { count: num(dueCount) })}</p>`
         : "";
     }
 
