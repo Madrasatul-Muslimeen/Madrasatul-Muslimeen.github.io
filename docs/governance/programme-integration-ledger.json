@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "10.01",
+    "version": "10.02",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -3005,8 +3005,20 @@
     {
       "version": "10.01",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Decision 95 round 1: the Read bar's 📝 opens Mapping My Journey's own Note pane on the āyah being read; the first v10 release (decision 97).",
+      "integration": {
+        "authorizedOn": "2026-10-09",
+        "integratedOn": "2026-10-09",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "10.02",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Builder #716, PR #717, reviewed and fixed by the Architect: Owner and Prime check a dua's narrations and words; kept as duaChecks.<n> in ayahCollections/{tenantId}.",
       "integration": {
         "authorizedOn": "2026-10-09",
         "integratedOn": "2026-10-09",
@@ -3015,8 +3027,9 @@
       }
     }
   ],
-  "nextUnallocated": "10.02",
+  "nextUnallocated": "10.03",
   "nextUnallocatedNote": [
+    "v10.02 was allocated to Check a dua, the review screen on the Dua card (decision 96, Builder #716), 2026-10-09.",
     "v10.01 was allocated to the Read view's 📝 Notes pane (decision 95, round 1; opens the v10 line, decision 97), 2026-10-09.",
     "v09.151 was allocated to dua words link only to a Qur'an word that agrees with their vowels (Builder #712), 2026-10-09.",
     "v09.150 was allocated to the Journey tray's 1440px checks (Builder #701), 2026-10-09.",
