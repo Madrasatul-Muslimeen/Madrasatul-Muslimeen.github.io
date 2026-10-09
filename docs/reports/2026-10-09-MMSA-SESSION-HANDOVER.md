@@ -37,26 +37,30 @@ Mapping My Journey note pane as THE note.
 
 **Update, 9 Oct 2026 late, session `session_018zBksiX4zzcrLCxBRGwU8y` (took over at v09.150):**
 - **The dua review screen demo is with the Owner:** https://claude.ai/artifact/PdHH7pVfLuKKiKmB3Uq9pW (copy:
-  `docs/reference/2026-10-09-dua-check-demo.html`), built from the real Dua 2 and checked in a browser (33/0 at 390px
-  and 1280px, light and dark). It asks three questions, each with a recommendation: who may check (Owner and Prime);
+  `docs/reference/2026-10-09-dua-check-demo.html`), built from the real Dua 2 and checked in a browser (36/0 at 390px
+  and 1280px, light and dark; it flags the same five narrations as #710's tool). It asks three questions, each with a recommendation: who may check (Owner and Prime);
   where a check is kept (the madrasah's own document, like the Asma descriptions, no Firebase step); when a narration
   moved out gets its own number (at the next data rebuild, by `dua-index.mjs`; numbers are never reused).
-- **What the demo found in the real data:** Dua 2 (Sayyid al-Istighfar, 23 narrations) holds **six narrations of a
+- **What the demo found in the real data:** Dua 2 (Sayyid al-Istighfar, 23 narrations) holds **five narrations of a
   different dua**, "رب اغفر لي وتب علي إنك أنت التواب الرحيم" said 100 times (Tirmidhi 3434, Abu Dawud 1516, al-Nasa'i's
-  'Amal al-Yawm 458, Ibn al-Sunni 370 and 448, al-Adhkar 1222): the 3-gram grouping chains. A simple "share of the
-  dua's own words" score puts exactly those six first. Also: `وَأَنَا` is linked to the Qur'an's `وَإِنَّآ` ("and indeed
-  we"), a wrong link the word check would catch.
-- **Builder #709 in flight** (dispatched ~20:52 UTC): `dua-group-fit.mjs`, that score for every member of every dua,
-  data and suite only, no app change, no version. Its trap: al-Nasa'i's 'Amal al-Yawm 467 (`[8,485]`) has its `*` in a
-  page note at the end, so "the text after `*`" is not always the matn.
+  'Amal al-Yawm 458, Ibn al-Sunni 370 and 448): the 3-gram grouping chains. (The Architect first said six, counting
+  al-Adhkar 1222; wrong: that OpenITI passage holds 1222, Sayyid al-Istighfar, and then 1223, the other dua. The
+  Builder's tool scored it right.) `وَأَنَا` ("and I") is linked to the Qur'an's `وَإِنَّآ` ("and indeed we"), a wrong
+  link: `duaWordKey` merges hamza seats and the links were never re-checked against round 5a's vowels.
+- **Builder #709 → PR #710, merged (no version, data and suite only):** `dua-group-fit.mjs` writes
+  `output/dua/fit-<page>.json`, each member's share of the dua's own words, `low` below 0.5, `short` under 5 words:
+  105 duas have a `low` member (183 members), 148 a `short` one. 17/0; Architect mutation caught.
+- **Builder #712 in flight** (dispatched ~21:00 UTC): dua words with vowels link only to a Qur'an word that agrees
+  with them (hamza seat, shadda); else unlinked. Changes what the cards show, so it needs a version at merge.
 
 **Possible next, if the Owner sends nothing else:**
-- the dua review screen, once the Owner answers the demo's three questions (it then reads #709's fit files);
+- the dua review screen, once the Owner answers the demo's three questions (it then reads the fit files from #710);
 - Hadith "Studied"/Notes on OpenITI passages (needs the Owner's yes to the key `hadith:openiti:<book>:<n>`).
 
 ## 1. What waits on the Owner
 
 1. **Read + Note as one** (above): yes or no, and separately whether to copy old Note-view notes.
+1a. **Checking a dua** (demo https://claude.ai/artifact/PdHH7pVfLuKKiKmB3Uq9pW): its three questions.
 2. **The Ten Steps file v06** (https://claude.ai/artifact/BJUwQ8hfgnu4FJFo7stqY1, copy in
    `docs/reports/2026-10-09-quran-critical-reasoning-ten-steps-and-qr-levels.html`):
    - the references for the three "basis" points;
