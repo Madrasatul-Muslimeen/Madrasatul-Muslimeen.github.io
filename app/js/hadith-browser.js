@@ -1750,6 +1750,8 @@ function duaNoteBookmarkRow(actions, session, dua, page, isBookmarked) {
  * each closed and loaded only when opened. `resolveStd` gives the standard number (or null) when first needed.
  */
 const STANDARD_TRANSLATION_LABELS = { en: "English", bn: "বাংলা" };
+// "English" goes through t() so a Bangla reader sees ইংরেজি, not a Latin word in the middle of a Bangla label.
+const standardLangLabel = (lang) => (lang === "en" ? t("English") : STANDARD_TRANSLATION_LABELS[lang]);
 function standardTranslationFolds(versionUri, resolveStd) {
   const frag = document.createDocumentFragment();
   const langs = getAppLang() === "bn" ? ["bn", "en"] : ["en", "bn"];
@@ -1758,7 +1760,7 @@ function standardTranslationFolds(versionUri, resolveStd) {
     details.className = "hadeethenc-explanation standard-translation";
     details.dataset.standardTranslation = lang;
     const summary = document.createElement("summary");
-    summary.textContent = t("{lang} translation", { lang: STANDARD_TRANSLATION_LABELS[lang] });
+    summary.textContent = t("{lang} translation", { lang: standardLangLabel(lang) });
     details.appendChild(summary);
     let loaded = false;
     details.addEventListener("toggle", () => {
@@ -1768,7 +1770,7 @@ function standardTranslationFolds(versionUri, resolveStd) {
       details.appendChild(wait);
       Promise.resolve(resolveStd()).then((std) => (std ? loadHadithTranslation(versionUri, std, lang) : null)).then((tr) => {
         wait.remove();
-        if (!tr) { details.appendChild(el("p", "hadith-note", t("No {lang} translation was found for this narration.", { lang: STANDARD_TRANSLATION_LABELS[lang] }))); return; }
+        if (!tr) { details.appendChild(el("p", "hadith-note", t("No {lang} translation was found for this narration.", { lang: standardLangLabel(lang) }))); return; }
         const text = el("p", "hadith-translation-text standard-translation-text", tr.text);
         text.lang = lang;
         text.dataset.standardTranslationText = lang;

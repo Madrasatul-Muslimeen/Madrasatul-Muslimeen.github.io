@@ -645,7 +645,7 @@
         { collection: TENANT.DAWAH_PAGES, action: "createDawahPage" }
       );
       if (!outcome.ok) return;
-      location.href = "dawah.html";
+      location.href = "dawah.html?back=1";
     }
 
     // Issue #295 -- see autoDawahRequested's own comment above. Reuses

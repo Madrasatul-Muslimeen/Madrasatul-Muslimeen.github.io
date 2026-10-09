@@ -3863,4 +3863,6 @@ export const BN = {
   "Interjection": "আবেগসূচক অব্যয়", // ?
   // --- 9 Oct 2026: Notes and bookmarks on a dua card
   "Dua {n} was not found.": "দুআ {n} পাওয়া যায়নি।",
+  // --- 9 Oct 2026: Bangla sweep of the newer screens (issue #677)
+  "View": "দৃশ্য", // ?
 };
