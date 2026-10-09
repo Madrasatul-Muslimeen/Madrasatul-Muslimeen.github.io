@@ -132,6 +132,8 @@ for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 1280]]) {
   check(`${tag} ...Open in Hadith → links to passage 1331 of the Tirmidhi, with back=1`, v.href === "./hadith-collections.html?openiti=0279Tirmidhi.Sunan.JK000140-ara1&passage=1331&back=1", v.href);
   check(`${tag} ...no sideways scroll; every button and link at least 40px tall; ${"Open in Hadith →"} is ${v.openH}px`, v.over <= 0 && v.small === 0 && v.openH >= 40, JSON.stringify([v.over, v.small, v.openH]));
   check(`${tag} ...the Arabic and the translation are light on the dark panel`, v.trSum > 180 && v.arSum > 180, JSON.stringify([v.trSum, v.arSum]));
+  await P.evaluate(() => document.querySelector("#asmaXCitedHadith .asmax-cited-hadith-label")?.scrollIntoView({ block: "start" }));
+  await settle(P, 300);
   await P.screenshot({ path: `/tmp/asma-cited-hadith-${lang}-${width}.png` });
 
   // --- Open in Hadith →, then ← Back ---
