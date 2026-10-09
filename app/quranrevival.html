@@ -1938,6 +1938,9 @@
   }
   .asma-xref-chip.quran { background: rgba(91,132,196,0.2); border-color: rgba(91,132,196,0.5); color: #a9c3ec; cursor: pointer; }
   .asma-xref-chip.quran:hover { background: rgba(91,132,196,0.34); }
+  /* Owner, 9 Oct 2026: a listening bookmark whose sound the browser would not start without a tap. */
+  .continue-listening-btn { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(96px + env(safe-area-inset-bottom, 0px)); z-index: 1300; min-height: 52px; padding: 0 26px; border-radius: 999px; border: 0; background: #1d6b4a; color: #fff; font-size: 18px; font-weight: 700; box-shadow: 0 6px 22px rgba(0,0,0,0.35); cursor: pointer; }
+  .continue-listening-btn[hidden] { display: none; }
   /* Owner, 9 Oct 2026: a Name's cited āyāt under its card (asma-cited-ayat.js), on Explore's dark panel. */
   .asmax-cited { display: grid; gap: 10px; margin-top: 12px; }
   .asmax-cited[hidden] { display: none; }
@@ -6576,12 +6579,15 @@
     // Async playback failures (network drop mid-file, a source that turns
     // out not to exist, etc.) never reject play()'s own promise -- without
     // this they'd fail silently. Registered once; not tied to auth state.
-    setPlaybackErrorHandler((message) => {
+    setPlaybackErrorHandler((message, meta = {}) => {
       // P4-D2 -- the player surfaces some failures through this channel without
       // rejecting the promise playCurrentSelection() is awaiting, so the listen
       // is failed here too. Both paths are idempotent: whichever runs first
       // settles the session and the other finds nothing.
       settleListeningSession("failed");
+      // The Owner, 9 Oct 2026 (a listening bookmark that did not play): a phone will not start sound the reader did
+      // not tap for. That is not a failure to report -- it is one tap missing, so the tap is offered instead.
+      if (meta.name === "NotAllowedError") { showContinueListening(); return; }
       alert(message);
     });
 
@@ -10672,6 +10678,8 @@
           surahs: surahIndex.map((s) => ({ n: s.surahNumber, name: surahName(s.surahNumber, s.nameEnglish), ayahCount: s.ayahCount })),
           initial: { type: sheetType, surah: currentSurahNum, from: uFrom, to: uTo, page: info.unitType === "page" ? currentUnitNumber() : (pages[0] ?? 1) },
           // Architect review (#603): name the Surah, not "Whole Surah 1" -- "Al-Faatiha", "Yaseen 1–12", "Page 50".
+          // The Owner, 9 Oct 2026: "Need a bookmark button here." It reopens on this writing sheet (view "writing").
+          onBookmark: () => toggleAyahBookmark(info.unitKey, `✍ ${surahName(currentSurahNum, surahIndex.find((x) => x.surahNumber === currentSurahNum)?.nameEnglish)} ${num(uFrom)}`, { ...captureQuranBookmarkSettings(), view: "writing" }, { toggle: false }),
           unitLabel: (() => {
             const sm = surahIndex.find((s) => s.surahNumber === currentSurahNum);
             const nm = sm ? surahName(currentSurahNum, sm.nameEnglish) : String(currentSurahNum);
@@ -18390,6 +18398,14 @@
         onPlay: quickPlayAyah,
         onOpenNote: openNoteView,
         onToggleBookmark: toggleAyahBookmark,
+        // The Owner, 9 Oct 2026 (Read view): "there's no button for attaching this Ayah to QCR." The same route as the
+        // Āyah card's 📚 QCR: the Note view's QCR panel opened on Attach, with "Back" to where the reader was.
+        onQcr: (unitKey) => {
+          const { surah: s, ayah: a } = parseAyahUnitKey(unitKey), view = stageView === "note" ? "note" : "read";
+          ayahSheetPendingQcrOpen = true;
+          setAppReturn(t("Back"), ayahRefLabel(s, a).replace(/^.*?(\S+:\S+).*$/, "$1"), () => navigateToAyah(s, a, view));
+          openNoteView(unitKey);
+        },
         // Text-tools round -- the SAME three functions the Note view's own
         // ⋮ menu calls, which flip the canonical Study-options ticks and
         // re-render whichever screen is open (onReadingTickChanged). One
@@ -20216,7 +20232,8 @@
         its Note scope, not the Read view's). */
     function bookmarkReadingExtras() {
       const { unit, unitType, ...reading } = capturePresetSettings(false);
-      return { reading, readChrome: stageView === "read" ? readChromeState : 0 };
+      // The Owner, 9 Oct 2026: a bookmark made while listening reopens listening (playing or paused both count).
+      return { reading, readChrome: stageView === "read" ? readChromeState : 0, listening: isPlaying() || isPaused() };
     }
 
     /** Note view's own equivalent -- reads noteScope instead of the
@@ -20312,9 +20329,40 @@
         // default from the Mushaf tick, so the saved state wins after it.
         if (typeof settings?.readChrome === "number" && readChromeStates().includes(settings.readChrome)) setReadChrome(settings.readChrome);
       }
+      else if (position && settings?.view === "writing") { openReadingScreen(); await openWritingSheetForCurrentUnit(); }
       else if (position && (settings?.view === "study" || settings?.view === "landing")) { closeAllPanels(); setStageView("wheel"); renderWheel(); }
       else if (position) await openNoteView(position);
+      if (position && settings?.listening) await resumeListeningFromBookmark(settings);
     }
+
+    /** The Owner, 9 Oct 2026: "This screen came from bookmark. It was a listening bookmark. Expected it will auto play,
+        but it didn't." The recitation starts again at the bookmarked āyah. A browser that will not start sound without
+        a tap on THIS page (phones, as a rule) gets one big "▶ Continue listening" button instead of an error. */
+    let continueListeningAyah = null;
+    async function resumeListeningFromBookmark(settings) {
+      continueListeningAyah = typeof settings.ayahNum === "number" ? settings.ayahNum : null;
+      try { await playCurrentSelection({ fresh: true, startAyah: continueListeningAyah }); } catch (err) { console.warn(err); }
+      // play() is refused at once or not at all; a beat later the answer is known either way.
+      setTimeout(() => { if (!isPlaying()) showContinueListening(); }, 900);
+    }
+    function showContinueListening() {
+      let btn = document.getElementById("continueListeningBtn");
+      if (!btn) {
+        btn = document.createElement("button");
+        btn.type = "button";
+        btn.id = "continueListeningBtn";
+        btn.className = "continue-listening-btn";
+        btn.addEventListener("click", async () => {
+          btn.hidden = true;
+          await playCurrentSelection({ fresh: true, startAyah: continueListeningAyah ?? currentAyahNum });
+        });
+        document.body.appendChild(btn);
+      }
+      btn.innerHTML = `<span aria-hidden="true">▶</span> ${escapeHtml(t("Continue listening"))}`;
+      btn.hidden = false;
+      btn.focus({ preventScroll: true });
+    }
+    function hideContinueListening() { const b = document.getElementById("continueListeningBtn"); if (b) b.hidden = true; }
 
     // -----------------------------------------------------------------------
     // Issue #410 -- SAVED SETTINGS (named presets) for Study options.
@@ -20566,10 +20614,11 @@
       else if (stageView === "read") renderStudyScreen();
     }
 
-    async function toggleAyahBookmark(unitKey, defaultNameOverride, settingsOverride) {
-      if (!auth.currentUser || !selectedPersonId) return;
+    async function toggleAyahBookmark(unitKey, defaultNameOverride, settingsOverride, { toggle = true } = {}) {
+      if (!auth.currentUser || !selectedPersonId) return false;
       const existing = findSavedBookmark(bookmarksDoc, { moduleId: "quranrevival", subjectId: "quran", position: unitKey });
-      if (existing) {
+      // toggle: false (the writing sheet's 🔖) always ADDS: a second bookmark on the same unit must never remove the first.
+      if (existing && toggle) {
         const outcome = await safeWrite(
           () => removeSavedBookmark(db, activeTenantId, selectedPersonId, existing.id),
           { collection: TENANT.BOOKMARKS, action: "removeSavedBookmark" }
@@ -20605,7 +20654,7 @@
         roster: assignableRoster(),
         selectedPersonId,
       });
-      if (!choice) return; // cancelled -- no write, no re-render
+      if (!choice) return false; // cancelled -- no write, no re-render
       // Save the SAME bookmark into every ticked assignee's own document.
       // Safe in parallel: each write lands on a different bookmarks/
       // {tenantId}__{personId} document (same reasoning "Assign to"'s own
@@ -20648,6 +20697,7 @@
         }
       }));
       refreshBookmarkDisplay(unitKey);
+      return true;
     }
 
     /**
@@ -22857,6 +22907,7 @@
       // touches the shared element to claim the gesture, which would undo the
       // pause we are here to perform.
       if (isPlaying()) { pauseAudio(); renderReadTransport(); return; }
+      hideContinueListening(); // a tap that reached Play is the tap the button was offering
       // SYNCHRONOUS, before any await: marks the shared <audio> element as
       // user-activated so the timing-map fetch below cannot cost us the
       // gesture. The owner's own case for this: arriving at the reading screen

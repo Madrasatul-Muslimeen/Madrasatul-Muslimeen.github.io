@@ -3951,4 +3951,6 @@ export const BN = {
   "Threads, per-person inbox, unread counts, resolved/open, Asma ul Husna screensaver + study units, About screen reading the feature registry": "থ্রেড, প্রতি-ব্যক্তি ইনবক্স, অপঠিত সংখ্যা, সমাধান/খোলা, আসমাউল হুসনা স্ক্রিনসেভার + অধ্যয়ন ইউনিট, ফিচার রেজিস্ট্রি পড়া পরিচিতি পর্দা", // ?
   "Operations": "কার্যক্রম পরিচালনা", // ?
   "4A calendar, 4B timetable, 4C sessions (classId optional), 4D attendance (students and teachers), 4E availability and cover, 4F notices, 4G admissions, 4H staff records": "৪A ক্যালেন্ডার, ৪B সময়সূচি, ৪C সেশন (classId ঐচ্ছিক), ৪D উপস্থিতি (শিক্ষার্থী ও শিক্ষক), ৪E প্রাপ্যতা ও বদলি, ৪F নোটিশ, ৪G ভর্তি, ৪H কর্মী রেকর্ড", // ?
+  // --- 9 Oct 2026: a listening bookmark resumes; the Āyah card's 🗂 QCR fold
+  "Continue listening": "শোনা চালিয়ে যান",
 };
