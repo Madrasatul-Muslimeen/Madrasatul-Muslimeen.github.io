@@ -1938,6 +1938,23 @@
   }
   .asma-xref-chip.quran { background: rgba(91,132,196,0.2); border-color: rgba(91,132,196,0.5); color: #a9c3ec; cursor: pointer; }
   .asma-xref-chip.quran:hover { background: rgba(91,132,196,0.34); }
+  /* Owner, 9 Oct 2026: a Name's cited āyāt under its card (asma-cited-ayat.js), on Explore's dark panel. */
+  .asmax-cited { display: grid; gap: 10px; margin-top: 12px; }
+  .asmax-cited[hidden] { display: none; }
+  .asmax-cited-label { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--card-text-muted); }
+  .asmax-cited-hint { margin: 0; }
+  .asmax-cited-ayah { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.14); border-radius: 10px; padding: 10px 12px; display: grid; gap: 8px; min-width: 0; }
+  .asmax-cited-ref { font-weight: 700; color: #a9c3ec; }
+  .asmax-cited-words { display: flex; flex-wrap: wrap; gap: 2px 4px; line-height: 2.1; }
+  /* The id outranks shell.css's html[lang="bn"] button font, which would set the Qur'an in a Bangla face. */
+  #asmaXCitedAyat .asmax-cited-word { font-family: var(--quran-font, serif); font-size: 1.55rem; line-height: 1.6; color: inherit; background: none; border: 0; border-radius: 6px; padding: 0 4px; min-height: 40px; cursor: pointer; }
+  .asmax-cited-word:hover, .asmax-cited-word:focus-visible { background: rgba(255,255,255,0.1); }
+  .asmax-cited-word.hit { color: #e3c06a; background: rgba(216,178,90,0.16); box-shadow: inset 0 -2px 0 #d8b25a; }
+  .asmax-cited-end { font-size: 1.2rem; color: var(--card-text-muted); align-self: center; }
+  .asmax-cited-tr { font-size: 14px; line-height: 1.55; color: #e9eef7; }
+  .asmax-cited-tr.bn { font-family: 'Noto Sans Bengali', sans-serif; }
+  .asmax-cited-acts { display: flex; flex-wrap: wrap; gap: 8px; }
+  .asmax-cited-card { min-height: 40px; padding: 0 14px; border-radius: 8px; border: 0; background: #d8b25a; color: #1b2430; font-weight: 700; cursor: pointer; }
   .asma-xref-chip.hadith { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.14); color: var(--card-text-muted); }
   #asmaXRefCard { background: var(--card-bg-inset); border: 1px solid var(--card-line); border-radius: 10px; padding: 0.9rem 1rem; }
   #asmaXRefCard .asma-ref-arabic { font-family: 'Amiri', serif; font-size: 1.9rem; color: var(--card-heading); }
@@ -6410,7 +6427,8 @@
     import { wireDragReorder } from "./js/drag-reorder.js";
     import { parseAsmaRef } from "./js/asma-ref-parser.js";
     import { listEnrollmentsForPerson, programSubjectMapFromEnrollments } from "./js/course-offers.js";
-    import { getSurah, getSurahIndex, getJuzIndex, getPageIndex, getHizbIndex, getRukuIndex, getJuzWordTotalsIndex, getSurahWordTotalsIndex } from "./js/quran-data.js";
+    import { getSurah, getAyah, getSurahIndex, getJuzIndex, getPageIndex, getHizbIndex, getRukuIndex, getJuzWordTotalsIndex, getSurahWordTotalsIndex } from "./js/quran-data.js";
+    import { nameRootsInAyat, renderCitedAyatHtml } from "./js/asma-cited-ayat.js";
     // Shell round 14 -- word/phrase search. Importing the module costs
     // nothing at load: it fetches its index only when a search actually runs.
     import { searchQuran, searchTransliteration } from "./js/quran-search.js";
@@ -14427,7 +14445,9 @@
           ${renderAsmaXrefBlock(entry, { inPage: true })}
           ${renderAsmaBelongsToHtml(memberships)}
           <button type="button" class="secondary asma-ref-poster-btn" id="asmaXRefPosterBtn">🖼 ${escapeHtml(t("Poster"))}</button>
-        </div>`;
+        </div>
+        <section id="asmaXCitedAyat" class="asmax-cited" hidden></section>`;
+      renderAsmaXCitedAyat(entry, asmaXGroupId, asmaXNumber);
       asmaXWaysListContainer.querySelectorAll("[data-asma-xref-jump]").forEach((btn) => {
         const [surah, ayah] = btn.dataset.asmaXrefJump.split(":").map(Number);
         btn.addEventListener("click", () => goToAyahFromAsmaX(surah, ayah, asmaXGroupId, asmaXNumber));
@@ -14457,6 +14477,41 @@
       // The way-back law (decision 86; the Owner's own example): a Name's reference leaves a way back to that Name.
       const entry = number != null ? asmaXResolve(number) : null;
       if (entry) setAppReturn(t("Back to {name}", { name: asmaEntryDisplayName(entry) }), "", () => returnToAsmaName(number, groupId, fromPoster));
+    }
+    /** Owner, 9 Oct 2026 ("build it", after the demo docs/reference/2026-10-09-asma-cited-ayat-demo.html): the āyāt a
+        Name cites, written out under its card. Each āyah is one static-file read through getAyah() (cached; never at
+        start-up, I9). A word opens its Word card and "Āyah card" its Āyah card, at that āyah in Read view, with
+        "Back to <Name>" (decision 86). Hadith citations stay chips for now (a second round). */
+    async function renderAsmaXCitedAyat(entry, groupId, number) {
+      const section = document.getElementById("asmaXCitedAyat");
+      const cites = (entry?.ref ? parseAsmaRef(entry.ref) : []).filter((c) => c.kind === "quran");
+      if (!section || !cites.length) return;
+      section.hidden = false;
+      section.innerHTML = `<p class="hint">${escapeHtml(t("Loading…"))}</p>`;
+      const ayat = await Promise.all(cites.map(async ({ surah, ayah }) => {
+        try { return { surah, ayah, data: await getAyah(surah, ayah) }; } catch (err) { console.warn(err); return { surah, ayah, data: null }; }
+      }));
+      if (document.getElementById("asmaXCitedAyat") !== section) return; // the reader moved on while it loaded
+      const name = asmaEntryDisplayName(entry);
+      section.innerHTML = renderCitedAyatHtml({
+        ayat, roots: nameRootsInAyat(entry.arabic, ayat), heading: t("The āyāt {name} is named in", { name }),
+        t, escapeHtml, num, refLabel: relatedRefLabel, lang: getAppLang() === "bn" ? "bn" : "en",
+      });
+      // In the Word card the way back sits INSIDE the card (decision 90's shape): on a phone the card covers the pill.
+      const backToName = (inWordCard = false) => setAppReturn(t("Back to {name}", { name }), "", () => returnToAsmaName(number, groupId, false), { inWordCard });
+      section.querySelectorAll("[data-asmax-cited-word]").forEach((btn) => btn.addEventListener("click", async () => {
+        const [s, a, p] = btn.dataset.asmaxCitedWord.split(":").map(Number);
+        closeAllPanels();
+        await openWordOccurrenceAt(s, a, p, "read");
+        backToName(true);
+      }));
+      section.querySelectorAll("[data-asmax-cited-card]").forEach((btn) => btn.addEventListener("click", async () => {
+        const [s, a] = btn.dataset.asmaxCitedCard.split(":").map(Number);
+        closeAllPanels();
+        await navigateToAyah(s, a, "read");
+        openAyahActionSheet(`${s}:${a}`);
+        backToName(); // after opening: opening the card clears any earlier way back
+      }));
     }
     /** Explore → Asma ul Husna, at that Name again (and its full-size poster, when the reference was tapped there). */
     async function returnToAsmaName(number, groupId, poster) {
