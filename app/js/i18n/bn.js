@@ -3881,4 +3881,7 @@ export const BN = {
   "The āyāt {name} is named in": "যে আয়াতগুলোতে {name} নামটি এসেছে",
   "Tap a word for its Word card. Words from the Name's root are marked.": "শব্দ কার্ড দেখতে একটি শব্দে চাপুন। নামটির মূল ধাতুর শব্দগুলো চিহ্নিত।",
   "Couldn't load this āyah. Check the connection and open the Name again.": "এই আয়াতটি লোড করা যায়নি। সংযোগ দেখে নামটি আবার খুলুন।",
+  // --- 9 Oct 2026: a listening bookmark resumes; the Āyah card's 🗂 QCR fold
+  "Continue listening": "শোনা চালিয়ে যান",
+  "QCR collections": "QCR সংকলনসমূহ",
 };

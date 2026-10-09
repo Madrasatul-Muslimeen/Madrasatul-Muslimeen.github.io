@@ -1938,6 +1938,14 @@
   }
   .asma-xref-chip.quran { background: rgba(91,132,196,0.2); border-color: rgba(91,132,196,0.5); color: #a9c3ec; cursor: pointer; }
   .asma-xref-chip.quran:hover { background: rgba(91,132,196,0.34); }
+  /* Owner, 9 Oct 2026: a listening bookmark whose sound the browser would not start without a tap. */
+  .continue-listening-btn { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(96px + env(safe-area-inset-bottom, 0px)); z-index: 1300; min-height: 52px; padding: 0 26px; border-radius: 999px; border: 0; background: #1d6b4a; color: #fff; font-size: 18px; font-weight: 700; box-shadow: 0 6px 22px rgba(0,0,0,0.35); cursor: pointer; }
+  .continue-listening-btn[hidden] { display: none; }
+  /* The Āyah card's 🗂 QCR fold (the Note view's collection ticks, reused). */
+  .ayah-sheet-qcr { margin: 6px 0 10px; border: 1px solid var(--card-line, #d6ddd9); border-radius: 10px; padding: 0 12px; }
+  .ayah-sheet-qcr > summary { min-height: 44px; display: flex; align-items: center; font-weight: 700; cursor: pointer; }
+  .ayah-sheet-qcr-body { display: grid; gap: 2px; padding-bottom: 10px; }
+  .ayah-sheet-qcr-body .note-collection-row { display: flex; align-items: center; gap: 10px; min-height: 40px; }
   /* Owner, 9 Oct 2026: a Name's cited āyāt under its card (asma-cited-ayat.js), on Explore's dark panel. */
   .asmax-cited { display: grid; gap: 10px; margin-top: 12px; }
   .asmax-cited[hidden] { display: none; }
@@ -6569,12 +6577,15 @@
     // Async playback failures (network drop mid-file, a source that turns
     // out not to exist, etc.) never reject play()'s own promise -- without
     // this they'd fail silently. Registered once; not tied to auth state.
-    setPlaybackErrorHandler((message) => {
+    setPlaybackErrorHandler((message, meta = {}) => {
       // P4-D2 -- the player surfaces some failures through this channel without
       // rejecting the promise playCurrentSelection() is awaiting, so the listen
       // is failed here too. Both paths are idempotent: whichever runs first
       // settles the session and the other finds nothing.
       settleListeningSession("failed");
+      // The Owner, 9 Oct 2026 (a listening bookmark that did not play): a phone will not start sound the reader did
+      // not tap for. That is not a failure to report -- it is one tap missing, so the tap is offered instead.
+      if (meta.name === "NotAllowedError") { showContinueListening(); return; }
       alert(message);
     });
 
@@ -19365,6 +19376,10 @@
         related: ayahSheetRelated,
         connected: ayahSheetConnected,
         ladderHtml,
+        // The Owner, 9 Oct 2026 ("there's no button for attaching this Ayah to QCR"): the Note view's 🗂 ticks, here
+        // too, so the Read view, the Mushaf and Explore reach them. null until the collections are loaded.
+        qcrHtml: qcrCollections ? renderQcrMembershipPopoverHtml(ayahSheetUnitKey) : null,
+        qcrOpen: ayahActionSheetMountEl.querySelector("[data-ayah-sheet-qcr]")?.open ?? false, // a re-render keeps the fold as it was
         canPrev: !!ayahCardNeighbour(ayahSheetUnitKey, -1),
         canNext: !!ayahCardNeighbour(ayahSheetUnitKey, 1),
       });
@@ -19680,7 +19695,19 @@
       ensureAyahNoteDataLoaded().then(() => { if (ayahSheetUnitKey === unitKey) renderAyahActionSheetNow(); });
       ensureAyahSheetWordStatusLoaded(unitKey, surahNum, ayahNum);
       ensureAyahSheetPosterNoteLoaded(unitKey);
+      if (!qcrCollections) ensureQcrDataLoaded().then(() => { if (ayahSheetUnitKey === unitKey && ayahActionSheetOverlayEl.classList.contains("open")) renderAyahActionSheetNow(); }).catch(() => {});
     }
+    // A tick in the Āyah card's 🗂 QCR fold files (or unfiles) this āyah, exactly as the Note view's popover does:
+    // owner/prime only (the boxes are not drawn for anyone else), one write per tick, rolled back if it fails (I15).
+    ayahActionSheetMountEl.addEventListener("change", async (e) => {
+      const cb = e.target?.closest?.("[data-ayah-sheet-qcr] [data-note-collection-toggle]");
+      if (!cb || !ayahSheetUnitKey) return;
+      const unitKey = ayahSheetUnitKey, prev = qcrCollections;
+      qcrCollections = cb.checked
+        ? qcrAddItemLocal(qcrCollections, cb.dataset.noteCollectionToggle, unitKey)
+        : qcrRemoveItemLocal(qcrCollections, cb.dataset.noteCollectionToggle, unitKey);
+      if (!(await qcrPersist())) { qcrCollections = prev; renderAyahActionSheetNow(); }
+    });
 
     /** Owner, 7 Oct 2026 -- the Āyah card's ‹ ›: the āyah before or after this one, across a
         surah's edge, Al-Fātiḥah's two displayed halves of 1:7 included. null at either end. */
@@ -20167,7 +20194,8 @@
         its Note scope, not the Read view's). */
     function bookmarkReadingExtras() {
       const { unit, unitType, ...reading } = capturePresetSettings(false);
-      return { reading, readChrome: stageView === "read" ? readChromeState : 0 };
+      // The Owner, 9 Oct 2026: a bookmark made while listening reopens listening (playing or paused both count).
+      return { reading, readChrome: stageView === "read" ? readChromeState : 0, listening: isPlaying() || isPaused() };
     }
 
     /** Note view's own equivalent -- reads noteScope instead of the
@@ -20265,7 +20293,37 @@
       }
       else if (position && (settings?.view === "study" || settings?.view === "landing")) { closeAllPanels(); setStageView("wheel"); renderWheel(); }
       else if (position) await openNoteView(position);
+      if (position && settings?.listening) await resumeListeningFromBookmark(settings);
     }
+
+    /** The Owner, 9 Oct 2026: "This screen came from bookmark. It was a listening bookmark. Expected it will auto play,
+        but it didn't." The recitation starts again at the bookmarked āyah. A browser that will not start sound without
+        a tap on THIS page (phones, as a rule) gets one big "▶ Continue listening" button instead of an error. */
+    let continueListeningAyah = null;
+    async function resumeListeningFromBookmark(settings) {
+      continueListeningAyah = typeof settings.ayahNum === "number" ? settings.ayahNum : null;
+      try { await playCurrentSelection({ fresh: true, startAyah: continueListeningAyah }); } catch (err) { console.warn(err); }
+      // play() is refused at once or not at all; a beat later the answer is known either way.
+      setTimeout(() => { if (!isPlaying()) showContinueListening(); }, 900);
+    }
+    function showContinueListening() {
+      let btn = document.getElementById("continueListeningBtn");
+      if (!btn) {
+        btn = document.createElement("button");
+        btn.type = "button";
+        btn.id = "continueListeningBtn";
+        btn.className = "continue-listening-btn";
+        btn.addEventListener("click", async () => {
+          btn.hidden = true;
+          await playCurrentSelection({ fresh: true, startAyah: continueListeningAyah ?? currentAyahNum });
+        });
+        document.body.appendChild(btn);
+      }
+      btn.innerHTML = `<span aria-hidden="true">▶</span> ${escapeHtml(t("Continue listening"))}`;
+      btn.hidden = false;
+      btn.focus({ preventScroll: true });
+    }
+    function hideContinueListening() { const b = document.getElementById("continueListeningBtn"); if (b) b.hidden = true; }
 
     // -----------------------------------------------------------------------
     // Issue #410 -- SAVED SETTINGS (named presets) for Study options.
@@ -22808,6 +22866,7 @@
       // touches the shared element to claim the gesture, which would undo the
       // pause we are here to perform.
       if (isPlaying()) { pauseAudio(); renderReadTransport(); return; }
+      hideContinueListening(); // a tap that reached Play is the tap the button was offering
       // SYNCHRONOUS, before any await: marks the shared <audio> element as
       // user-activated so the timing-map fetch below cannot cost us the
       // gesture. The owner's own case for this: arriving at the reading screen
