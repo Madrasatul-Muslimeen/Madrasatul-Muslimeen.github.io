@@ -117,7 +117,9 @@ wiringSource = wiringSource
   // import nothing at all, so they are loaded REAL, by absolute file URL --
   // not replaced by a stand-in that could quietly stop matching them. The
   // leftover guard is unchanged and still refuses any other relative import.
-  .replace(/from "\.\/(study-activity-evidence-id|study-reading-units-readiness)\.js";/g,
+  // UPDATED IN PLACE, 9 Oct 2026: #606 added a third, `fatiha-count.js` (Al-Fatiha's record keys), which
+  // imports nothing either -- the guard below threw on it and this whole suite had stopped running. Loaded REAL the same way.
+  .replace(/from "\.\/(study-activity-evidence-id|study-reading-units-readiness|fatiha-count)\.js";/g,
     (_, name) => `from "${new URL(`../../app/js/${name}.js`, import.meta.url).href}";`);
 for (const leftover of [/from "\.\//, /gstatic\.com/]) {
   assert.ok(!leftover.test(wiringSource), `a wiring import was not rewritten: ${leftover}`);

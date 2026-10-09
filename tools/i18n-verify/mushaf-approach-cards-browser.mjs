@@ -110,7 +110,8 @@ async function openMushafSurah3(page) {
   await page.waitForTimeout(500);
   await page.evaluate(() => { const s = document.getElementById("surahSelect"); s.value = "3"; s.dispatchEvent(new Event("change", { bubbles: true })); });
   await page.waitForTimeout(2000);
-  await page.evaluate(() => { const sel = document.getElementById("unitTypeSelect"); sel.value = "surah"; sel.dispatchEvent(new Event("change", { bubbles: true })); });
+  // UPDATED IN PLACE, 9 Oct 2026: this suite tests the PAGE card, which Mushaf view now opens only when the chosen unit is a Page (the Owner: "Range is chosen but the indication shows page. Fix."); a non-Page unit opens its own card (mushaf-chosen-unit-browser.mjs).
+  await page.evaluate(() => { const sel = document.getElementById("unitTypeSelect"); sel.value = "page"; sel.dispatchEvent(new Event("change", { bubbles: true })); });
   await page.waitForTimeout(1000);
   await page.evaluate(() => {
     const m = document.getElementById("mushafToggle");

@@ -47,7 +47,8 @@ for (const lang of ["en", "bn"]) for (const width of [390, 1100]) {
   if (!(await ev(() => { const b = document.getElementById("tabReadBtn"); return !!b && b.getBoundingClientRect().width > 0; }))) { await P.click("#tabStudyBtn"); await P.waitForTimeout(150); }
   await P.click("#tabReadBtn"); await P.waitForTimeout(500);
   await ev(() => { const s = document.getElementById("surahSelect"); s.value = "3"; s.dispatchEvent(new Event("change", { bubbles: true })); }); await P.waitForTimeout(2000);
-  await ev(() => { const s = document.getElementById("unitTypeSelect"); s.value = "surah"; s.dispatchEvent(new Event("change", { bubbles: true })); }); await P.waitForTimeout(1000);
+  // UPDATED IN PLACE, 9 Oct 2026: this suite tests the PAGE card, which Mushaf view now opens only when the chosen unit is a Page (the Owner: "Range is chosen but the indication shows page. Fix."); a non-Page unit opens its own card (mushaf-chosen-unit-browser.mjs).
+  await ev(() => { const s = document.getElementById("unitTypeSelect"); s.value = "page"; s.dispatchEvent(new Event("change", { bubbles: true })); }); await P.waitForTimeout(1000);
   await ev(() => { const m = document.getElementById("mushafToggle"); if (m && !m.checked) { m.checked = true; m.dispatchEvent(new Event("change", { bubbles: true })); } }); await P.waitForTimeout(800);
   await P.waitForFunction(() => Number.isFinite(Number(document.getElementById("mushafPageRef")?.dataset.page)), null, { timeout: 15000 }).catch(() => {});
   await P.click("#readBarRecordBtn");

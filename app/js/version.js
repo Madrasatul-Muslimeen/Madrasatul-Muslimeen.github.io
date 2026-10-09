@@ -1,3 +1,3 @@
 // Single source of truth for the app version -- every place that shows it
 // imports this. Full round-by-round history: docs/governance/version-history.md.
-export const APP_VERSION = "09.137";
+export const APP_VERSION = "09.139";
