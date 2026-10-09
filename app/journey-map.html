@@ -375,10 +375,22 @@
      each below its own minimum, so the drag handles had no room to move. */
   html.embed body { max-width: none; }
   html.embed body.note-pane-wide { max-width: none; }
+  /* Decision 95 (9 Oct 2026): opened by the Read view's 📝 Notes as the Note pane of one āyah. The view toggle and the
+     tenant/person row are the Read view's own; the Notes listed are that āyah's, the editor is this page's own. */
+  html.unit-mode #viewToggle, html.unit-mode #contextBar { display: none !important; }
+  .unit-head { display: flex; flex-direction: column; gap: 0.5rem; margin: 0.2rem 0 0.4rem; }
+  .unit-title { margin: 0; font-size: 1.05rem; color: #1F3A6E; }
+  .unit-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .unit-actions button { min-height: 40px; }
+  .unit-actions button[aria-disabled="true"] { opacity: 0.55; cursor: progress; }
+  .unit-kind { font-size: 0.72rem; padding: 0.1rem 0.5rem; border-radius: 999px; background: #eef2ff; color: #1F3A6E; white-space: nowrap; }
+  .unit-old-note { border: 1px dashed #c9a24b; border-radius: 0.6rem; padding: 0.6rem 0.8rem; margin: 0.6rem 0; background: #fffdf6; }
+  .unit-old-note h3 { margin: 0 0 0.3rem; font-size: 0.9rem; color: #6b4e10; }
+  .unit-old-note .unit-old-body { font-size: 0.92rem; line-height: 1.5; max-height: 14rem; overflow: auto; }
 </style>
 </head>
 <body>
-  <script>(function(){try{if(new URLSearchParams(location.search).get('embed')==='1')document.documentElement.classList.add('embed');}catch(e){}})();</script>
+  <script>(function(){try{var q=new URLSearchParams(location.search);if(q.get('embed')==='1'){document.documentElement.classList.add('embed');if(q.get('unit'))document.documentElement.classList.add('unit-mode');}}catch(e){}})();</script>
   <script>/* In the tray, a link that leaves this screen (Import Notes, a note) opens as a full page, not inside the tray. */
   document.addEventListener('click',function(e){if(!document.documentElement.classList.contains('embed'))return;var a=e.target.closest&&e.target.closest('a[href]');if(!a)return;var h=a.getAttribute('href');if(!h||h.charAt(0)==='#'||/journey-map\.html/.test(h))return;a.setAttribute('target','_top');},true);</script>
   <h1>Mapping My Journey</h1>
@@ -435,6 +447,7 @@
     <div id="viewTimeline" style="display:none;"></div>
     <div id="viewPath" style="display:none;"></div>
     <div id="viewTrash" style="display:none;"></div>
+    <div id="viewUnit" style="display:none;"></div><!-- Decision 95: the Read view's 📝 Notes pane, one Study Unit's Notes -->
     </div>
     <section id="folderNotes" aria-label="Notes in this folder" hidden></section><!-- S8: panel 2, drawn by renderFolderNotes() -->
     <div id="notePlaceholder" class="note" hidden>Choose a Note to read it here.</div>
@@ -463,6 +476,8 @@
     import { sanitizeNoteHtml } from "./js/note-sanitize.js";
     import { closeAllBarPalettes } from "./js/bar-palette.js";
     import { createNoteViews } from "./js/note-window.js";
+    import { createStudyNote, notesForStudyUnit } from "./js/study-note-service.js";
+    import { getAyahNotes, ayahNoteHtml } from "./js/ayah-notes.js";
     import { createFirestoreSettingsStore } from "./js/note-user-settings-fs.js";
     import { NOTE_STATUS, FINALISED_REFUSAL, createNoteFolder, createNotePlacement, createPermanentNote, listNoteRevisions, restoreNote, retirePermanentNote, updatePermanentNoteContent } from "./js/note-foundation.js";
     import {
@@ -703,6 +718,7 @@
     const viewTimeline = document.getElementById("viewTimeline");
     const viewPath = document.getElementById("viewPath");
     const viewTrash = document.getElementById("viewTrash");
+    const viewUnit = document.getElementById("viewUnit");
 
     mountAccountCard({
       tenantRow: tenantSelect.closest("label"),
@@ -752,7 +768,20 @@
       const raw = (location.hash || "").slice(1);
       return VALID_VIEWS.includes(raw) ? raw : null;
     }
-    let currentView = viewFromHash()
+    // Decision 95 (the Owner, 9 Oct 2026: the Read view and the Note view as one): the Read view's 📝 Notes opens this
+    // page in its pane as journey-map.html?embed=1&unit=<Study Unit key>&unitLabel=<"6:99">. It shows that unit's Notes
+    // (every Note started on it or mentioning it) with this page's own Note editor, so a Note written there is the same
+    // Note, folders and versions as here. The unit can change without a reload (‹ › in the Read view): see "mmsa-unit".
+    // An āyah's permanent key, the one shape the Read view sends (the binding's own shape for "ayah"). Checked here by
+    // its shape alone: a page reaches the binding only through the service (study-note-boundary.mjs).
+    const isPaneUnitKey = (k) => typeof k === "string" && /^ayah:\d{1,3}:\d{1,3}$/.test(k);
+    let unitKeyParam = null, unitLabelParam = "";
+    try {
+      const q = new URLSearchParams(location.search);
+      if (q.get("embed") === "1" && isPaneUnitKey(q.get("unit"))) { unitKeyParam = q.get("unit"); unitLabelParam = q.get("unitLabel") || ""; }
+    } catch { /* no unit: the ordinary page */ }
+    const unitMode = unitKeyParam !== null;
+    let currentView = unitMode ? "unit" : viewFromHash()
       ?? (VALID_VIEWS.includes(localStorage.getItem(VIEW_KEY)) ? localStorage.getItem(VIEW_KEY) : "folders");
 
     // Loaded once per refresh, shared by all three views over the SAME data
@@ -869,6 +898,7 @@
       viewTimeline.style.display = currentView === "timeline" ? "block" : "none";
       viewPath.style.display = currentView === "path" ? "block" : "none";
       viewTrash.style.display = currentView === "trash" ? "block" : "none";
+      viewUnit.style.display = currentView === "unit" ? "block" : "none";
       applyNoteTier();
     }
     viewToggle.querySelectorAll(".view-toggle-btn").forEach((btn) => {
@@ -965,6 +995,7 @@
       const [notesPage, placementsPage] = await notesAndPlacementsPromise;
       if (myRefresh !== refreshToken) return; // superseded while notes/placements were still loading
       allNotes = notesPage.rows;
+      for (const n of unitMadeHere) if (!allNotes.some((x) => x.noteId === n.noteId)) allNotes.push(n); // decision 95: a Note just made in the unit pane
       notesTruncated = notesPage.truncated;
       allPlacements = placementsPage.rows;
       placementsTruncated = placementsPage.truncated;
@@ -986,6 +1017,7 @@
       if (currentView === "folders") renderFoldersView();
       else if (currentView === "timeline") renderTimelineView();
       else if (currentView === "trash") renderTrashView();
+      else if (currentView === "unit") renderUnitView();
       else renderPathView();
     }
 
@@ -1389,7 +1421,7 @@
       const leaf = el.closest("[data-note-leaf]");
       let scope, sel;
       if (leaf) { scope = el.closest("#folderNotes") || viewFolders; sel = `[data-note-leaf][data-in-folder="${CSS.escape(leaf.dataset.inFolder)}"]`; }
-      else { scope = el.closest("[data-path-stops]") || el.closest("#viewTimeline, #viewPath") || document; sel = ".note-card[data-note-id]"; }
+      else { scope = el.closest("[data-path-stops]") || el.closest("#viewTimeline, #viewPath, #viewUnit") || document; sel = ".note-card[data-note-id]"; }
       return [...new Set([...scope.querySelectorAll(sel)].map((n) => n.dataset.noteId))];
     }
     function paneFolderFrom(el) {
@@ -3782,6 +3814,127 @@
       body.innerHTML = html;
       wireNoteCards(body, sorted);
     }
+
+    // =====================================================================
+    // Decision 95 -- the Read view's 📝 Notes pane: one Study Unit's Notes
+    // =====================================================================
+    // Every Note linked to the unit (noteSources: "started here" for an origin, "mentions it" for a reference), read
+    // with notesForStudyUnit() when the pane opens, never at start-up (I9). Tapping one opens it in this page's own
+    // Note view. ✚ New note on <unit> makes a Note started on the unit (createStudyNote, the same write the Āyah
+    // card's "File in folder(s)" makes) and files it in the folder chosen last in Mapping My Journey, else in
+    // "Mapping My Journey" itself, so it is in the reader's folders at once. The folder is the reader's own last
+    // choice, never derived from the unit (ADR-010). The note the Note view kept for this āyah (ayahNotes) is shown
+    // read-only below: nothing is copied and nothing is deleted (the Owner: "no old notes copy needed").
+    let unitRenderToken = 0, unitRowsCache = null;
+    const unitMadeHere = []; // Notes made in this pane, kept until a full load carries them (the page patches its own copy)
+    const unitLabel = () => unitLabelParam || unitKeyParam;
+    async function renderUnitView() {
+      const my = ++unitRenderToken;
+      const label = unitLabel(), own = isSelfSelected();
+      viewUnit.innerHTML = `<div class="unit-head">
+          <h2 class="unit-title" data-unit-title>${escapeHtml(t("Notes on {unit}", { unit: label }))}</h2>
+          <div class="unit-actions">
+            ${own ? `<button type="button" class="fn-btn" data-unit-new${notesAndPlacementsLoaded ? "" : ` aria-disabled="true" title="${escapeHtml(t("Loading your folders…"))}"`}>✚ ${escapeHtml(t("New note on {unit}", { unit: label }))}</button>` : ""}
+            <button type="button" class="secondary" data-unit-journey>${escapeHtml(t("Open in Mapping My Journey"))} ↗</button>
+          </div>
+        </div>
+        <div data-unit-body><p class="note">${escapeHtml(t("Loading…"))}</p></div>
+        <div data-unit-old></div>`;
+      viewUnit.querySelector("[data-unit-new]")?.addEventListener("click", (e) => newNoteOnUnit(e.currentTarget));
+      viewUnit.querySelector("[data-unit-journey]").addEventListener("click", openUnitInJourney);
+      if (!activeTenantId || !selectedPersonId) return;
+      const body = viewUnit.querySelector("[data-unit-body]");
+      let rows;
+      const cacheKey = `${activeTenantId}|${selectedPersonId}|${unitKeyParam}`;
+      try {
+        // Read once per unit and person: the page redraws its view after the folder tree and again after the Notes load.
+        if (unitRowsCache?.key !== cacheKey) unitRowsCache = { key: cacheKey, promise: notesForStudyUnit(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, unitKey: unitKeyParam }) };
+        ({ rows } = await unitRowsCache.promise);
+      } catch (error) {
+        unitRowsCache = null;
+        if (my !== unitRenderToken) return;
+        reportWriteFailure(error, { collection: TENANT.NOTE_SOURCES, action: "notesForStudyUnit" });
+        body.innerHTML = `<p class="note">${escapeHtml(t("Your Notes on {unit} could not be read. Please try again.", { unit: label }))}</p>`;
+        return;
+      }
+      if (my !== unitRenderToken) return;
+      const kindOf = new Map();
+      for (const { source, note } of rows) if (!kindOf.has(note.noteId) || source.relationshipKind === "origin") kindOf.set(note.noteId, source.relationshipKind);
+      for (const n of unitMadeHere) if (n.unitKey === unitKeyParam && !kindOf.has(n.noteId)) kindOf.set(n.noteId, "origin");
+      const notes = [...kindOf.keys()]
+        .map((id) => allNotes.find((n) => n.noteId === id) ?? rows.find((r) => r.note.noteId === id)?.note ?? unitMadeHere.find((n) => n.noteId === id))
+        .filter((n) => n && n.status !== NOTE_STATUS.RETIRED);
+      // Every listed Note must be openable before the full load arrives: the Note view reads from allNotes.
+      for (const n of notes) if (!allNotes.some((x) => x.noteId === n.noteId)) allNotes.push(n);
+      body.innerHTML = notes.length
+        ? notes.map((n) => noteCardHtml(n, { extraHead: `<span class="unit-kind" data-unit-kind="${escapeHtml(kindOf.get(n.noteId))}">${escapeHtml(kindOf.get(n.noteId) === "origin" ? t("started here") : t("mentions it"))}</span>` })).join("")
+        : `<p class="note" data-unit-empty>${escapeHtml(own ? t("No notes on {unit} yet. Press ✚ New note to write one.", { unit: label }) : t("No notes on {unit} yet.", { unit: label }))}</p>`;
+      wireNoteCards(body, notes);
+      // The Read view's 📝 shows how many Notes this āyah has, once they have been read here (no read of its own).
+      try { window.parent?.postMessage({ type: "mmsa-unit-count", unit: unitKeyParam, count: notes.length }, location.origin); } catch { /* not embedded */ }
+      renderUnitOldNote(my);
+    }
+    async function renderUnitOldNote(my) {
+      const box = viewUnit.querySelector("[data-unit-old]");
+      if (!box || !unitKeyParam.startsWith("ayah:")) return;
+      let html = "";
+      try { html = ayahNoteHtml(await getAyahNotes(db, activeTenantId, selectedPersonId), unitKeyParam) || ""; } catch { html = ""; }
+      if (my !== unitRenderToken || !html.trim()) return;
+      box.innerHTML = `<div class="unit-old-note" data-unit-old-note><h3>${escapeHtml(t("Your note from the Note view (kept as it was)"))}</h3><div class="unit-old-body">${sanitizeNoteHtml(html)}</div></div>`;
+    }
+    async function newNoteOnUnit(btn) {
+      if (!isSelfSelected() || !unitKeyParam) return;
+      // Not before the folders are loaded: a still-virtual "Mapping My Journey" would otherwise be created a second time.
+      if (!notesAndPlacementsLoaded) { showPageStatus(t("Loading your folders…")); return; }
+      const node = selectedFolderNode() ?? mergedRoots()[0];
+      btn.disabled = true;
+      const folderId = node ? await ensureRealFolder(node) : null;
+      if (!folderId) { btn.disabled = false; return; }
+      const ownerArgs = { tenantId: activeTenantId, ownerPersonId: selectedPersonId, ownerUid: auth.currentUser.uid, actorUid: auth.currentUser.uid };
+      const label = unitLabel();
+      const outcome = await safeWrite(async () => {
+        const { note } = await createStudyNote(db, { ...ownerArgs, unitKey: unitKeyParam, title: label });
+        try {
+          await createNotePlacement(db, { ...ownerArgs, noteId: note.noteId, folderId, order: nextOrder(notesInFolder(node).map((r) => r.placement)) });
+        } catch (error) {
+          const wrapped = new Error(`The Note was saved, but filing it in this folder failed: ${error?.message ?? error}`);
+          wrapped.cause = error; wrapped.code = error?.code;
+          throw wrapped;
+        }
+        return note;
+      }, { collection: TENANT.NOTE_PLACEMENTS, action: "createStudyNote+createNotePlacement" });
+      btn.disabled = false;
+      if (!outcome.ok) return;
+      // The page's own copy of what was just written (createPermanentNote()'s fields), until a full load reads it back.
+      const made = { noteId: outcome.result.noteId, tenantId: activeTenantId, ownerPersonId: selectedPersonId, ownerUid: auth.currentUser.uid,
+        title: label, bodyHtml: "", status: NOTE_STATUS.ACTIVE, currentRevisionId: outcome.result.revisionId, unitKey: unitKeyParam };
+      unitMadeHere.push(made);
+      if (!allNotes.some((n) => n.noteId === made.noteId)) allNotes.push(made);
+      showPageStatus(t('New note created in {folder}.', { folder: folderDisplayName(node) }));
+      await renderUnitView();
+      openNotePane(made.noteId, viewUnit.querySelector(`[data-note-id="${CSS.escape(made.noteId)}"] [data-note-open]`));
+      // Ready to write at once, as the demo shows: the same ✏️ Edit the reader would press.
+      if (paneView.noteId === made.noteId) notePaneEl.querySelector("[data-pane-edit-toggle]:not([hidden])")?.click();
+    }
+    // The Read view opens Mapping My Journey as its tray, over the reading, on the Note open here (if any); closing the
+    // tray comes straight back (the way-back law, decision 86). Asked from the list's button or the pane's own ↗.
+    function openUnitInJourney() {
+      try { endEdit(paneView); } catch { /* nothing being edited */ }
+      window.parent?.postMessage({ type: "mmsa-open-journey", noteId: paneView.noteId ?? null }, location.origin);
+    }
+    window.addEventListener("message", (ev) => {
+      if (ev.origin === location.origin && ev.data?.type === "mmsa-open-journey-request" && unitMode) openUnitInJourney();
+    });
+    // The Read view moved to another āyah (‹ ›) with the pane open: show that āyah's Notes without reloading the page.
+    // A Note being edited is saved first (the same flush the tray asks for when it closes).
+    window.addEventListener("message", (ev) => {
+      if (ev.origin !== location.origin || ev.data?.type !== "mmsa-unit" || !unitMode) return;
+      if (!isPaneUnitKey(ev.data.unit) || ev.data.unit === unitKeyParam) return;
+      try { endEdit(paneView); } catch { /* nothing being edited */ }
+      if (paneView.noteId !== null) closeNotePane();
+      unitKeyParam = ev.data.unit; unitLabelParam = ev.data.label || "";
+      if (currentView === "unit") renderUnitView();
+    });
 
     // =====================================================================
     // OPTION C -- Path: a BRANCHING tree with links (issue #267)
