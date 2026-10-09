@@ -13,7 +13,9 @@ and #705) are merged.
 
 **THE OPEN QUESTION (the Owner's, asked 9 Oct; nothing built):** make the Read view and the Note view one, with the
 Mapping My Journey note pane as THE note.
-- Demo: https://claude.ai/artifact/FjAMty9fWUaGnjZmhgCKEo (three screens: tablet, phone, desktop).
+- Demo: https://claude.ai/artifact/PyZqqoKMVRBWnc6icgbrfR (copy: `docs/reference/2026-10-09-read-note-pane-demo.html`;
+  one page, switch Tablet / Phone / Computer). It replaced the first demo (a design canvas), which the Owner reported
+  did not work; the new one was checked in a browser at three widths, 126 checks, before it was sent.
 - The finding that drives it: **two note stores.** The Note view's notes box saves to `ayahNotes` (one overwritten
   HTML entry per unit: `app/js/ayah-notes.js`, `saveAyahNote`). The Journey pane (`app/js/note-window.js` on
   `journey-map.html` and `notes.html`) uses the Foundation `notes` (with revisions, `noteSources`, `noteFolders`,
@@ -69,6 +71,12 @@ Mapping My Journey note pane as THE note.
   proven on the note just typed. Seed a note instead (v09.149's suite seeds one on 2:256).
 - A capture check that matched a seeded bookmark's flag was passing for the wrong reason (v09.146). Read only the
   NEW entry.
+
+- **Send a demo only after opening it in a browser yourself.** The first Read+Note demo was not tested and did not
+  work for the Owner; the rebuilt one had two real faults the test found at once (a pane that would not close because
+  a class rule beat `[hidden]`, and a writing area squashed to nothing on a tablet).
+- **A new session starts from one line the Owner types:** "Read docs/governance/NEW-SESSION-PROMPT-<date>.md in the
+  repository and follow it." Never ask the Owner to paste or attach the prompt.
 
 ## 3. The handover guard
 
