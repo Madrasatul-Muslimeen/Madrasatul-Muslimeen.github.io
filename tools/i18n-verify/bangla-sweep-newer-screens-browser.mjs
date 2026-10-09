@@ -11,7 +11,7 @@
 // dawah.html shows ← Back (going back by history), in English and in Bangla.
 //
 // Run from the repository root with node serve.js on 8080:  node tools/i18n-verify/bangla-sweep-newer-screens-browser.mjs
-// Mutation: --strip="<English phrase>" makes the page's bn lookup miss that phrase (proves the sweep names it).
+// Mutation: --mutate="<English phrase>" makes the page's bn lookup miss that phrase (proves the sweep names it).
 import fs from "node:fs";
 import { chromium, newContext, openPage } from "./harness.mjs";
 
