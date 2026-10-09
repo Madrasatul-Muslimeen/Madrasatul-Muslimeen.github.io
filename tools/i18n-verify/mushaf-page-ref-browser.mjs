@@ -52,8 +52,10 @@ const MUSHAF_FONT_BASE = "https://verses.quran.foundation/fonts/quran/hafs/v2/wo
 const SURAH_HEADER_FONT_URL = "https://raw.githubusercontent.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/main/mushaf/QCF_SurahHeader_COLOR-Regular.woff2";
 
 const SYNTHETIC_MUSHAF_DATA = {
-  "10": [{ type: "ayah", words: [{ g: "IB1", loc: "14:1:1" }, { g: "IB5", loc: "14:5:1" }] }],
-  "12": [{ type: "ayah", words: [{ g: "IB6", loc: "14:6:1" }, { g: "IB52", loc: "14:52:1" }] }],
+  // 9 Oct 2026: moved from pages 10 and 12 to Ibrahim's REAL pages, 255 and 256 -- with Page chosen (see
+  // openMushafOnSurah) the app opens the page by its real number, and 14:1 really is on page 255.
+  "255": [{ type: "ayah", words: [{ g: "IB1", loc: "14:1:1" }, { g: "IB5", loc: "14:5:1" }] }],
+  "256": [{ type: "ayah", words: [{ g: "IB6", loc: "14:6:1" }, { g: "IB52", loc: "14:52:1" }] }],
   "20": [
     { type: "ayah", words: [{ g: "BQ286", loc: "2:286:1" }] },
     { type: "ayah", words: [{ g: "IM1", loc: "3:1:1" }, { g: "IM9", loc: "3:9:1" }] },
@@ -86,16 +88,24 @@ async function enterReadView(page) {
 
 /** Opens Mushaf view on Whole Surah `surahNum`, and waits for at least one
  *  real (mocked) Mushaf page to render. */
-async function openMushafOnSurah(page, surahNum) {
+async function openMushafOnSurah(page, surahNum, unit = "page") {
   await page.evaluate((s) => {
     const sel = document.getElementById("surahSelect");
     sel.value = String(s); sel.dispatchEvent(new Event("change", { bubbles: true }));
   }, surahNum);
   await page.waitForTimeout(1200);
-  await page.evaluate(() => {
+  // UPDATED IN PLACE, 9 Oct 2026 (the Owner: "Range is chosen but the indication shows page. Fix."): the reference
+  // now names the CHOSEN Study Unit, and shows the page on screen only when the chosen unit is a Page. This suite
+  // tests the page reference, so it chooses Page -- and the fixture's own page number for that surah (14 -> 255,
+  // 2 -> 20), since the fixture's pages are not the real ones. What the chosen-unit reference shows is
+  // mushaf-chosen-unit-browser.mjs's.
+  const fixturePage = { 14: 255, 2: 20, 3: 20 }[surahNum];
+  await page.evaluate(([pg, u]) => {
     const sel = document.getElementById("unitTypeSelect");
-    sel.value = "surah"; sel.dispatchEvent(new Event("change", { bubbles: true }));
-  });
+    sel.value = u; sel.dispatchEvent(new Event("change", { bubbles: true }));
+    const n = document.getElementById("unitNumSelect");
+    if (u === "page" && n && pg) { n.value = String(pg); n.dispatchEvent(new Event("change", { bubbles: true })); }
+  }, [fixturePage, unit]);
   await page.waitForTimeout(400);
   await page.evaluate(() => {
     const m = document.getElementById("mushafToggle");
@@ -195,9 +205,15 @@ console.log(`\n=== Mushaf page ref: swipe updates the text; visible in full scre
   await installSyntheticMushafFixture(ctx);
   const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
   await enterReadView(page);
-  await openMushafOnSurah(page, 14); // pages 10 (1-5) and 12 (6-52), both Ibrahim
+  // UPDATED IN PLACE, 9 Oct 2026 (the Owner: "Range is chosen but the indication shows page. Fix."): with a unit
+  // that spans pages chosen (Whole Surah Ibrahim, pages 255 and 256), the reference names THAT unit and stays on it
+  // while the reader swipes; it still knows the page underneath (dataset.page), which the page card uses when Page
+  // is chosen. Before 9 Oct these checks expected the reference to switch to each page's own āyāt.
+  await openMushafOnSurah(page, 14, "surah"); // pages 255 (1-5) and 256 (6-52), both Ibrahim
+  const pageOn = () => page.evaluate(() => document.getElementById("mushafPageRef")?.dataset.page);
   const before = await readPageRef(page);
-  check("[swipe] before scrolling, the FIRST page's own range shows (1-5)", /1.*5|5.*1/.test(before?.text ?? ""), before?.text);
+  const p0 = await pageOn();
+  check("[swipe] Whole Surah chosen: the reference names the Surah (Ibrahim), not the first page's āyāt (1-5)", /^Ibrahim/.test(before?.text ?? "") && !/1.?5/.test(before?.text ?? "") && p0 === "255", `${before?.text} page=${p0}`);
 
   // Scroll the strip to bring the SECOND real page into view -- the same
   // horizontal, RTL-aware container every other Mushaf/flow suite here
@@ -208,26 +224,24 @@ console.log(`\n=== Mushaf page ref: swipe updates the text; visible in full scre
   });
   await page.waitForTimeout(500);
   const after = await readPageRef(page);
-  check("[swipe] after scrolling to the second page, the reference updates to its OWN range (6-52)",
-    /6.*52|52.*6/.test(after?.text ?? ""), after?.text);
-  check("[swipe] and it no longer reads the first page's range", !/^Ibrahim · 1[^0-9]/.test(after?.text ?? ""), after?.text);
+  const p1 = await pageOn();
+  check("[swipe] after scrolling to the second page, the page underneath is followed (256)", p1 === "256", p1);
+  check("[swipe] ...and the reference still names the chosen Surah, not that page's āyāt (6-52)", /^Ibrahim/.test(after?.text ?? "") && !/6.*52/.test(after?.text ?? ""), after?.text);
 
-  // Issue #325 -- a light smoke check that tapping the reference (now a real
-  // button) opens the "This page" card; the exhaustive write/claim coverage
-  // for that card lives in its own dedicated suite
-  // (mushaf-approach-cards-browser.mjs), not duplicated here.
+  // Tapping the reference opens the CHOSEN unit's card (here the Surah's Unit Card); the page card for a chosen
+  // Page is covered by mushaf-approach-cards-browser.mjs and mushaf-chosen-unit-browser.mjs.
   await page.click("#mushafPageRef");
-  await page.waitForTimeout(300);
+  await page.waitForTimeout(500);
   const pageCardOpen = await page.evaluate(() => {
     const overlay = document.getElementById("ayahActionSheetOverlay");
-    const card = document.querySelector("[data-page-approach-card]");
-    return !!overlay?.classList.contains("open") && !!card;
+    const card = document.querySelector("#ayahActionSheetMount [data-unit-card]");
+    return !!overlay?.classList.contains("open") && !!card && !document.querySelector("[data-page-approach-card]");
   });
-  check("[tap] tapping the top-bar reference opens the This page card", pageCardOpen);
+  check("[tap] tapping the top-bar reference opens the chosen Surah's Unit Card", pageCardOpen);
   await page.keyboard.press("Escape");
   await page.waitForTimeout(200);
   const closedAgain = await page.evaluate(() => !document.getElementById("ayahActionSheetOverlay")?.classList.contains("open"));
-  check("[tap] Escape closes the This page card, back to plain Mushaf view", closedAgain);
+  check("[tap] Escape closes the card, back to plain Mushaf view", closedAgain);
 
   // Full screen's BARE state: two presses of the same cycle button reach it
   // (NORMAL -> READING -> BARE), per app/quranrevival.html's own

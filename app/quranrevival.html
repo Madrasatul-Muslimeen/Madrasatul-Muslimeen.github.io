@@ -17938,15 +17938,34 @@
       const label = t("Record Your Progress");
       if (mushafPageRef?.hidden || !Number.isFinite(pageNum)) { readBarRecordBtn.title = label; readBarRecordBtn.setAttribute("aria-label", label); return; }
       const trackable = quranTrackables.find((tr) => tr.id === mushafRingApproachId) ?? null;
+      // The chosen unit when it is not a page (the Owner, 9 Oct 2026); otherwise the page on screen, as before.
+      const unitInfo = readBarUnitInfo();
       let text = t("Choose an Approach");
       if (trackable) {
         const name = langText(trackable.name, getAppLang(), trackable.id);
-        const chunk = chunkForUnitInfo({ chunkKey: "subject_quran" });
-        const statusId = chunk ? (chunk.entries?.[`${buildUnitKey.page(PAGE_EDITION, pageNum)}::${trackable.id}`]?.claimedStatus ?? "not_started") : null;
+        const chunk = chunkForUnitInfo(unitInfo ?? { chunkKey: "subject_quran" });
+        const key = unitInfo ? unitInfo.unitKey : buildUnitKey.page(PAGE_EDITION, pageNum);
+        const statusId = chunk ? (chunk.entries?.[`${key}::${trackable.id}`]?.claimedStatus ?? "not_started") : null;
         text = statusId ? `${name} · ${statusLabel(statusId)}` : name;
       }
       readBarRecordBtn.title = text;
-      readBarRecordBtn.setAttribute("aria-label", trackable ? `${label} — ${text} — ${t("This page")}` : `${label} — ${text}`);
+      readBarRecordBtn.setAttribute("aria-label", trackable ? `${label} — ${text} — ${unitInfo ? unitInfo.label : t("This page")}` : `${label} — ${text}`);
+    }
+
+    /** The Read bar's unit in Mushaf view (the Owner, 9 Oct 2026): the chosen Study Unit, unless that is a page --
+        then null, and the page on screen keeps the reference and the page card (decisions 3 and 37). */
+    function readBarUnitInfo() {
+      const info = currentUnitInfo();
+      return info.unitType === "page" ? null : info;
+    }
+    /** The chosen unit in the reference's own style: "Al-Kahf · 1–15" for a Range, the āyah's name, the Surah's name,
+        or "Ruku' 2", "Juz 15", "Hizb 30". */
+    function mushafUnitRefText(info) {
+      if (info.unitType === "range") {
+        const from = Math.min(rangeFrom, rangeTo), to = Math.max(rangeFrom, rangeTo);
+        return formatMushafPageRef([{ surah: currentSurahNum, firstAyah: from, lastAyah: to }]);
+      }
+      return unitChipText(info);
     }
 
     function clearMushafPageRef() {
@@ -17954,6 +17973,7 @@
       mushafPageRef.innerHTML = "";
       mushafPageRef.removeAttribute("aria-label");
       delete mushafPageRef.dataset.page;
+      delete mushafPageRef.dataset.unit;
     }
 
     /** Safe to call at any time -- hides/empties the reference outside Mushaf
@@ -17986,11 +18006,15 @@
       if (!groups.length) { clearMushafPageRef(); return; }
       mushafPageRef.hidden = false;
       mushafPageRef.dataset.page = String(pageNum);
-      const refText = formatMushafPageRef(groups);
+      // The Owner, 9 Oct 2026: "Range is chosen but the indication shows page. Fix." The chosen Study Unit wins:
+      // unless it IS a page, the reference names that unit (e.g. "Al-Kahf · 1–15") and opens its card.
+      const unitInfo = readBarUnitInfo();
+      const refText = unitInfo ? mushafUnitRefText(unitInfo) : formatMushafPageRef(groups);
+      if (unitInfo) mushafPageRef.dataset.unit = unitInfo.unitKey; else delete mushafPageRef.dataset.unit;
       // Issue #325 -- now a real button opening the "This page" card: a
       // visible ▾ (decorative -- aria-hidden) plus a proper accessible name,
       // rather than letting a screen reader read "▾" as a literal character.
-      mushafPageRef.setAttribute("aria-label", `${refText} — ${t("This page")}`);
+      mushafPageRef.setAttribute("aria-label", `${refText} — ${unitInfo ? unitInfo.label : t("This page")}`);
       mushafPageRef.title = refText;
       mushafPageRef.innerHTML = `<span class="mushaf-page-ref-text">${escapeHtml(refText)}</span><span class="mushaf-page-ref-caret" aria-hidden="true">▾</span>`;
       updateReadApproachCapsule();
@@ -23043,12 +23067,14 @@
     document.getElementById("readBarTakeBtn")?.addEventListener("click", () => openApproachWheel());
     document.getElementById("readBarStatusBtn")?.addEventListener("click", () => openMyStatus());
     readBarRecordBtn?.addEventListener("click", () => {
-      // Mushaf view: the page on screen; text view: the chosen unit's card.
+      // The chosen unit's card (the Owner, 9 Oct 2026: a chosen Range records the Range, in Mushaf view too); only
+      // when the chosen unit is a page does Mushaf view record the page on screen (decision 37).
       const pageNum = Number(mushafPageRef.dataset.page);
-      if (!mushafPageRef.hidden && Number.isFinite(pageNum)) openPageApproachCard(pageNum);
+      if (!mushafPageRef.hidden && Number.isFinite(pageNum) && !readBarUnitInfo()) openPageApproachCard(pageNum);
       else openChosenUnitCard();
     });
     mushafPageRef.addEventListener("click", () => {
+      if (readBarUnitInfo()) { openChosenUnitCard(); return; }
       const pageNum = Number(mushafPageRef.dataset.page);
       if (Number.isFinite(pageNum)) openPageApproachCard(pageNum);
     });
