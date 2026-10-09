@@ -72,7 +72,7 @@ export function mountHadithBrowser(root, { mount = "standalone", initialHadeethE
   // renderHadeethEncSource() only ever seeds state.hc when it is still
   // unset, so this survives that lazy init untouched.
   if (initialHadeethEncId) {
-    state.hc = { path: [], hadithId: String(initialHadeethEncId), catsByLang: {} };
+    state.hc = { path: [], hadithId: String(initialHadeethEncId), catsByLang: {}, scrollToCard: true };
   }
   // Decision 85 (7 Oct 2026): an Asmaul Husna poster's Hadith reference opens that narration here --
   // { versionUri, n } = the OpenITI book and the passage's permanent position (asma-poster.js's POSTER_HADITH).
@@ -541,6 +541,12 @@ async function renderHadeethEncStudyActions(container, id, title) {
   noteLink.setAttribute("aria-disabled", session.isSelf ? "false" : "true");
   if (!session.isSelf) {
     noteLink.addEventListener("click", (e) => e.preventDefault());
+  } else {
+    // The way back (decision 86): this page's address is first set to reopen this hadith (the same ?resume= a
+    // bookmark uses), so notes.html's ← Back lands on this card rather than at the top of the library.
+    noteLink.addEventListener("click", () => {
+      try { const u = new URL(location.href); u.searchParams.set("resume", `hadith:hadeethenc:${id}`); history.replaceState(history.state, "", u); } catch { /* the link still opens */ }
+    });
   }
   noteItem.appendChild(noteLink);
   if (!session.isSelf) {
@@ -689,7 +695,11 @@ async function renderHadeethEncBody(body, state, localRefresh, opts) {
   if (state.hc.hadithId) {
     const map = await loadHadithRecords([state.hc.hadithId], contentLang, opts);
     const resolved = map.get(String(state.hc.hadithId));
-    body.appendChild(hadeethEncCard(state.hc.hadithId, resolved, state, localRefresh));
+    const card = hadeethEncCard(state.hc.hadithId, resolved, state, localRefresh);
+    body.appendChild(card);
+    // Reopened by its address (a bookmark, or ← Back from its Notes): the card sits below the library's header, so it
+    // is brought on screen once (the way-back law, decision 86).
+    if (state.hc.scrollToCard) { state.hc.scrollToCard = false; card.scrollIntoView({ block: "start" }); }
     return;
   }
 

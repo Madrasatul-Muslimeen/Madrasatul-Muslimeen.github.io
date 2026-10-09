@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "09.137",
+    "version": "09.138",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -2825,8 +2825,20 @@
     {
       "version": "09.137",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Builder #668 / PR #670: bn.js's 66 shadowed duplicate lines removed, BN deep-equal before and after.",
+      "integration": {
+        "authorizedOn": "2026-10-09",
+        "integratedOn": "2026-10-09",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "09.138",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "HadeethEnc Note link back=1 and resume on both hadith pages; study-note-service runs again.",
       "integration": {
         "authorizedOn": "2026-10-09",
         "integratedOn": "2026-10-09",
@@ -2835,8 +2847,9 @@
       }
     }
   ],
-  "nextUnallocated": "09.138",
+  "nextUnallocated": "09.139",
   "nextUnallocatedNote": [
+    "v09.138 was allocated to a hadith's Notes have a way back, 2026-10-09.",
     "v09.137 was allocated to the Bangla file's shadowed duplicates removed, 2026-10-09.",
     "v09.136 was allocated to Notes and bookmarks on a dua, 2026-10-09.",
     "v09.135 was allocated to Dua words, round 6: progress on every word, 2026-10-08.",

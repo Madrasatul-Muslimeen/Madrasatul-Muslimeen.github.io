@@ -119,6 +119,7 @@ export async function getHadeethEncSession() {
 export function noteHrefFor(id, title) {
   const params = new URLSearchParams({ unit: hadeethEncUnitKey(id) });
   if (title) params.set("label", title);
+  params.set("back", "1"); // ← Back on notes.html, to this hadith (the way-back law, decision 86)
   return `notes.html?${params.toString()}`;
 }
 

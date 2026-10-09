@@ -15,9 +15,13 @@ session" line on #159).
   a reopened Dua card now stays on screen). Queue item "Notes and bookmarks on a dua" is DONE.
 - **Builder #668 in flight:** remove the 65 shadowed duplicate keys from `bn.js` (34 identical, 31 different; the last
   copy wins and stays). Review per the prompt's Step 5; check that the `BN` object is deep-equal before/after.
-- **Found red on `main`, not yet fixed** (good small rounds): `study-note-boundary.mjs` 17/1 (its P5-C "no Rules
-  change" diff), `study-note-service.mjs` (throws: "a wiring import was not rewritten"). The HadeethEnc card's
-  📝 My Notes link does not pass `back=1` yet, so `notes.html` shows no ← Back from it (way-back law).
+- **v09.137 (Builder #668, PR #670):** `bn.js`'s 66 shadowed duplicate lines removed; `BN` deep-equal before/after.
+- **v09.138:** the HadeethEnc card's Notes link has ← Back to the same hadith; `study-note-service.mjs` runs again
+  (35/0). `study-note-boundary.mjs` was never red on `main`: its failure here was the shallow clone.
+- **Builder #672 in flight:** way-back sweep (the Qur'an page's two links into Notes; Import Notes). Review check-in armed.
+- **Watch:** `dua-note-bookmark-browser`'s Bangla "Back lands on Dua 20" failed ONCE while behaviour ran beside it
+  (card neither focused nor on screen: probably the page restored from the back-forward cache under load); 0 of 9
+  runs alone. If it recurs, look at `pageshow` (persisted) in `hadith-browser.js`.
 - **Sandbox:** `ln -s "$(npm root -g)/playwright" node_modules/playwright` (and `playwright-core`) before any browser
   suite; `git fetch --unshallow origin main`, `origin claude/pensive-knuth-2pu3jj` and `origin claude/phase4-wiring`
   before `brief-integrity`/`programme-ledger`, or they fail on missing history.
@@ -196,3 +200,4 @@ that handover does not name the version in `app/js/version.js`.
 - **v09.135** (2026-10-08): Dua words, round 6: progress on every word.
 - **v09.136** (2026-10-09): Notes and bookmarks on a dua.
 - **v09.137** (2026-10-09): the Bangla file's shadowed duplicates removed.
+- **v09.138** (2026-10-09): a hadith's Notes have a way back.
