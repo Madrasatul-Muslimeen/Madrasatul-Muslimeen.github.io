@@ -8,8 +8,8 @@ history. Read `CLAUDE.md` first; the prompt that starts the next session is `doc
 
 **`main` is at v09.150** when written. Read the live number off `app/js/version.js`.
 
-**Nothing is in flight.** No Builder round is running and no pull request is open. The last three rounds (#697, #701
-and #705) are merged.
+**When written, nothing was in flight** (see the update below: Builder #709 was dispatched later). The last three rounds
+(#697, #701 and #705) are merged.
 
 **THE OPEN QUESTION (the Owner's, asked 9 Oct; nothing built):** make the Read view and the Note view one, with the
 Mapping My Journey note pane as THE note.
@@ -35,8 +35,23 @@ Mapping My Journey note pane as THE note.
      so it is an **Owner Control Gate needing its own yes**.
 - **Do not build any of it until the Owner answers.**
 
+**Update, 9 Oct 2026 late, session `session_018zBksiX4zzcrLCxBRGwU8y` (took over at v09.150):**
+- **The dua review screen demo is with the Owner:** https://claude.ai/artifact/PdHH7pVfLuKKiKmB3Uq9pW (copy:
+  `docs/reference/2026-10-09-dua-check-demo.html`), built from the real Dua 2 and checked in a browser (33/0 at 390px
+  and 1280px, light and dark). It asks three questions, each with a recommendation: who may check (Owner and Prime);
+  where a check is kept (the madrasah's own document, like the Asma descriptions, no Firebase step); when a narration
+  moved out gets its own number (at the next data rebuild, by `dua-index.mjs`; numbers are never reused).
+- **What the demo found in the real data:** Dua 2 (Sayyid al-Istighfar, 23 narrations) holds **six narrations of a
+  different dua**, "رب اغفر لي وتب علي إنك أنت التواب الرحيم" said 100 times (Tirmidhi 3434, Abu Dawud 1516, al-Nasa'i's
+  'Amal al-Yawm 458, Ibn al-Sunni 370 and 448, al-Adhkar 1222): the 3-gram grouping chains. A simple "share of the
+  dua's own words" score puts exactly those six first. Also: `وَأَنَا` is linked to the Qur'an's `وَإِنَّآ` ("and indeed
+  we"), a wrong link the word check would catch.
+- **Builder #709 in flight** (dispatched ~20:52 UTC): `dua-group-fit.mjs`, that score for every member of every dua,
+  data and suite only, no app change, no version. Its trap: al-Nasa'i's 'Amal al-Yawm 467 (`[8,485]`) has its `*` in a
+  page note at the end, so "the text after `*`" is not always the matn.
+
 **Possible next, if the Owner sends nothing else:**
-- the dua review screen (demo first);
+- the dua review screen, once the Owner answers the demo's three questions (it then reads #709's fit files);
 - Hadith "Studied"/Notes on OpenITI passages (needs the Owner's yes to the key `hadith:openiti:<book>:<n>`).
 
 ## 1. What waits on the Owner
