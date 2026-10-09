@@ -20322,3 +20322,14 @@ The Owner, decision 88, on the Dua demo (https://claude.ai/artifact/LxHMM7PhPAKQ
   - new asma-cited-hadith-browser 66/0 (13 mutations each caught)
   - green: asma-cited-ayat 45/0, asma-poster 96/0, asma-name-nav-poster 140/0, bangla-sweep-core-screens 122/0, palette-contrast 20/0, phone-width-overflow 217/0, stub-parity 4/0
   - behaviour 1004/3: 22g × 3 (archive.org, intermittent in this sandbox)
+
+## v09.146 — 2026-10-09 — The listening bookmark, QCR from ⋮, the writing sheet 🔖, the full-screen pop-out
+
+The Owner's five reports of 9 Oct, built by the Architect.
+
+- **Listening bookmark.** `bookmarkReadingExtras()` records `listening: isPlaying() || isPaused()`; `applyQuranBookmarkSettings` ends with `resumeListeningFromBookmark()`, which plays from the bookmarked āyah. A refused start (`NotAllowedError`) shows `#continueListeningBtn` "▶ Continue listening" instead of an alert; a 900ms fallback shows it too. `bn.js`: "Continue listening" appended.
+- **QCR from the Read view.** `renderQuickMenu` gains `[data-qm-qcr]` "📚 QCR collection(s)…"; `onQcr` sets the way back (`setAppReturn`, "← Back 83:4") and opens the Note view's QCR ticks. A fold added to the Āyah card in this round duplicated the card's existing 📚 button and was removed.
+- **Writing sheet 🔖.** `openWritingSheet({ onBookmark })` adds a row-2 button; `toggleAyahBookmark(..., { toggle: false })` always saves, with `view: "writing"`; `applyQuranBookmarkSettings` reopens the sheet for such a bookmark. `.bm-popover-overlay` z-index 80 → 9700, above the sheet and the pop-out.
+- **Pop-out.** Opens full screen (`full: true`); ⛶ makes it a window. Word mode from an end mark moves to the Ayah's first word.
+- **Tests.** New `listen-bookmark-qcr-card-browser.mjs` (48/0, six mutations caught; its capture check was corrected at review, it had been removing the seeded bookmark and matching its flag). `writing-sheet-popout-browser.mjs` updated in place for full screen (A+ measures the first copybook copy; the end-mark block reopens 1:2:3), 342/0. `writing-sheet-browser.mjs` 11 → 12 controls, 206/0.
+- **Docs.** `docs/reports/2026-10-09-quran-critical-reasoning-ten-steps-and-qr-levels.html` is v06 (the PLANS section).
