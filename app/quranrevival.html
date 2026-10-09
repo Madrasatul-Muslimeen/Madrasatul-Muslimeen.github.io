@@ -5981,7 +5981,7 @@
                  tick is the way back for anyone who prefers scrolling. -->
             <label id="sidewaysControl"><input type="checkbox" id="sidewaysToggle" checked /> Page by page</label>
             <label id="trEnControl"><input type="checkbox" id="trEnToggle" checked /> English translation</label>
-            <label id="trBnControl"><input type="checkbox" id="trBnToggle" /> বাংলা translation</label>
+            <label id="trBnControl"><input type="checkbox" id="trBnToggle" /> <span>বাংলা</span> translation</label>
             <!-- Mushaf is the one choice that cannot share the screen: it is a
                  photograph of a printed page, not a stack of panels. So it is a
                  tick like the others (never hidden, never blocked -- it works on
@@ -22652,7 +22652,7 @@
         <div id="drillReciterChecks" class="reciter-ticks">
           ${reciters.map((r) => {
             const note = reciterSupportsSingleAyah(r.id) ? "" : ` <span style="color:#888;">${t("(whole surah only)")}</span>`;
-            return `<label><input type="checkbox" class="drill-reciter-check" value="${r.id}" ${drillSelectedReciterIds.includes(r.id) ? "checked" : ""}/> ${r.label}${note}</label>`;
+            return `<label><input type="checkbox" class="drill-reciter-check" value="${r.id}" ${drillSelectedReciterIds.includes(r.id) ? "checked" : ""}/> ${t(r.label)}${note}</label>`;
           }).join("")}
         </div>`;
 

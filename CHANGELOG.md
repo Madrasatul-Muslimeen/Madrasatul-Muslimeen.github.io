@@ -20272,3 +20272,15 @@ The Owner, decision 88, on the Dua demo (https://claude.ai/artifact/LxHMM7PhPAKQ
 - **Checks:**
   - new bangla-sweep-newer-screens-browser 23/0 (mutations "View" and "My Notes" caught by name; its header's mutation flag corrected at review)
   - green: dua-tab 57/0, dua-word-card 45/0, dua-word-progress 31/0, dua-note-bookmark 35/0 (wait raised to 40s, state-based), hadith-translations 33/0, openiti 76/0, hadeethenc 82/0, notes-note-windows 218/0, stub-parity 4/0, phone-width-overflow 217/0, behaviour 1007/0
+
+## v09.142 — 2026-10-09 — The most-used screens checked in Bangla
+
+- **Asked:** the Architect's round (Builder #680; the Builder opened no PR, the Architect finished it): Bangla sweep, part 2
+- **What:**
+  - `app/quranrevival.html`: the Word card's reciter ticks pass their labels through `t()`; the "বাংলা translation" tick splits into `<span>বাংলা</span> translation` so its English word is reached
+  - `app/js/i18n/bn.js`: "translation" (appended; the Builder's four repeated reciter keys removed at review, so every old key keeps its value)
+  - `tools/i18n-verify/bangla-sweep-lib.mjs`: the shared scanner; `bangla-sweep-core-screens-browser.mjs`: the new suite
+- **Checks:**
+  - new bangla-sweep-core-screens-browser 122/0 (mutations "Know Your Status", "translation", "Abdullah Basfar (Arabic)" caught by name)
+  - green: bangla-sweep-newer-screens-browser 23/0, palette-contrast-browser 20/0, phone-width-overflow 217/0, stub-parity 4/0
+  - behaviour 1004/3: 22g × 3 (archive.org, intermittent in this sandbox)
