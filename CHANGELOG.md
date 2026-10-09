@@ -20360,3 +20360,11 @@ Built by the Architect. The Owner: "we got 3 notes. It's confusing."
 - `bn.js`: "Full text", "See this āyah's full text" appended.
 - `docs/governance/2026-09-27-owner-decisions.md`: decision 94.
 - Tests updated in place: ayah-action-sheet-boundary (56/0), ayah-card-takenote-family (44/0; the "has a Note" door proven on a seeded Note, since the stub cannot read back a Note just typed), word-card-ayah-card-ways-back (74/0).
+
+## v09.150 — 2026-10-09 — The Journey tray at desktop width (Builder #701)
+
+PR #702, reviewed by the Architect.
+
+- `app/journey-map.html`: the "▾ on the title's line, date below" rule also applies to `html.embed #folderNotes` (the tray's list column is phone-narrow at any screen width).
+- `tools/i18n-verify/journey-s9-browser.mjs`: the wide tier is 900px inside the tray (the page's `NOTE_PANE_WIDE_FROM_EMBED`), not a fixed 1200; drag checks run on the tray's frame. Two new mutations.
+- Checks: journey-s9 288/0 (was 275/5), behaviour 1007/0, phone-width-overflow 217/0, stub-parity 4/0.
