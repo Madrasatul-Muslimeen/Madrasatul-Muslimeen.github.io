@@ -3969,4 +3969,6 @@ export const BN = {
   "Back to {unit}": "{unit}-এ ফিরে যান",
   "Notes on this āyah": "এই আয়াতের নোট",
   "Loading your folders…": "আপনার ফোল্ডারগুলো আসছে…",
+  "Back to the writing sheet": "লেখার শিটে ফিরুন",
+  "Record progress": "অগ্রগতি লিখুন",
 };
