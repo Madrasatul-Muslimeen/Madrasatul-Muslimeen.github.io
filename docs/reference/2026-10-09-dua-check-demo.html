@@ -1,0 +1,331 @@
+<title>Check a Dua</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;700&family=Scheherazade+New:wght@400;700&display=swap">
+<style>
+/* Layout: one column like the app's Dua tab; the dua card on top, the check panel under it in three steps. */
+:root {
+  --navy: #1F3A6E; --gold: #c9a24b; --gold-ink: #6b4e10;
+  --card: #fffdf6; --paper: #f4efe2; --line: #e3d7b8; --ink: #1b1b16; --muted: #55554c; --chip: #eef2fa;
+  --ok: #1e7a45; --ok-bg: #e6f4ec; --warn: #9a5b00; --warn-bg: #fff2d9; --cut: #a3302a; --cut-bg: #fbe8e6;
+  --hl: #fbe7a8; --btn-bg: #ffffff;
+  --font-ui: "Noto Sans", system-ui, sans-serif; --font-ar: "Scheherazade New", "Amiri", serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --navy: #9db8ea; --gold: #d9b45f; --gold-ink: #e6c77a;
+  --card: #1d2230; --paper: #141822; --line: #343b4d; --ink: #ecebe4; --muted: #aeb0b8; --chip: #26304a;
+  --ok: #6fd39a; --ok-bg: #173527; --warn: #f0b860; --warn-bg: #3a2c12; --cut: #f08a82; --cut-bg: #3d1d1b;
+  --hl: #5a4a17; --btn-bg: #222838; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --navy: #9db8ea; --gold: #d9b45f; --gold-ink: #e6c77a;
+  --card: #1d2230; --paper: #141822; --line: #343b4d; --ink: #ecebe4; --muted: #aeb0b8; --chip: #26304a;
+  --ok: #6fd39a; --ok-bg: #173527; --warn: #f0b860; --warn-bg: #3a2c12; --cut: #f08a82; --cut-bg: #3d1d1b;
+  --hl: #5a4a17; --btn-bg: #222838; color-scheme: dark }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--paper); color: var(--ink); font-family: var(--font-ui); font-size: 15px; padding-inline: 16px; padding-block: 16px 40px; }
+.wrap { max-width: 860px; margin: 0 auto; display: grid; gap: 14px; }
+h1 { margin: 0; font-size: 1.45rem; color: var(--navy); text-wrap: balance; }
+h2 { margin: 0; font-size: 1.1rem; color: var(--navy); text-wrap: balance; }
+p { margin: 0; line-height: 1.5; }
+.lede { color: var(--muted); max-width: 65ch; }
+.demo-tag { display: inline-block; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--gold-ink); font-weight: 700; }
+button { font: 600 14px var(--font-ui); min-height: 40px; padding: 0 14px; border-radius: 20px; border: 1px solid var(--navy); background: var(--btn-bg); color: var(--navy); cursor: pointer; }
+button:focus-visible, input:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+button.primary { background: var(--navy); color: var(--card); }
+.ar { font-family: var(--font-ar); direction: rtl; font-size: 1.35rem; line-height: 1.9; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px; display: grid; gap: 10px; min-width: 0; }
+.chip { display: inline-flex; align-items: center; gap: 4px; font-size: 12.5px; font-weight: 600; border-radius: 12px; padding: 3px 10px; background: var(--chip); color: var(--navy); }
+.chip.warn { background: var(--warn-bg); color: var(--warn); }
+.chip.ok { background: var(--ok-bg); color: var(--ok); }
+.chip.cut { background: var(--cut-bg); color: var(--cut); }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.dua-head { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; align-items: center; }
+.dua-num { font-weight: 700; color: var(--navy); }
+.back { justify-self: start; }
+.steps { display: flex; gap: 6px; flex-wrap: wrap; }
+.steps button[aria-selected="true"] { background: var(--navy); color: var(--card); }
+.summary { color: var(--muted); font-size: 14px; }
+.member { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; display: grid; gap: 6px; background: var(--card); min-width: 0; }
+.member[data-v="same"] { border-color: var(--ok); }
+.member[data-v="cut"] { border-color: var(--cut); background: var(--cut-bg); }
+.member[data-v="unsure"] { border-color: var(--warn); }
+.mhead { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; align-items: center; }
+.src { font-weight: 700; }
+.fit { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.fit .bar { width: 70px; height: 7px; border-radius: 4px; background: var(--line); overflow: hidden; }
+.fit .bar i { display: block; height: 100%; background: var(--navy); }
+.member .ar { font-size: 1.2rem; line-height: 1.85; overflow-wrap: anywhere; }
+mark { background: var(--hl); color: inherit; border-radius: 3px; padding: 0 1px; }
+.verdict { display: flex; gap: 6px; flex-wrap: wrap; }
+.verdict button { min-height: 40px; }
+.verdict button[aria-pressed="true"][data-v="same"] { background: var(--ok); border-color: var(--ok); color: var(--card); }
+.verdict button[aria-pressed="true"][data-v="cut"] { background: var(--cut); border-color: var(--cut); color: var(--card); }
+.verdict button[aria-pressed="true"][data-v="unsure"] { background: var(--warn); border-color: var(--warn); color: var(--card); }
+.split-box { border: 2px dashed var(--cut); border-radius: 12px; padding: 12px; display: grid; gap: 8px; background: var(--card); }
+.words { display: grid; gap: 8px; }
+.word { border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; display: grid; grid-template-columns: minmax(70px, auto) 1fr; gap: 10px; align-items: center; background: var(--card); }
+.word[data-v="ok"] { border-color: var(--ok); }
+.word[data-v="fix"] { border-color: var(--warn); }
+.word .ar { font-size: 1.6rem; text-align: center; }
+.winfo { display: grid; gap: 5px; min-width: 0; font-size: 13.5px; }
+.winfo .q { color: var(--muted); }
+.winfo .q .ar { font-size: 1.1rem; display: inline; }
+.fixbox { display: grid; gap: 6px; }
+.fixbox input { font: 1.3rem var(--font-ar); direction: rtl; padding: 4px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--btn-bg); color: var(--ink); min-width: 0; width: 100%; }
+.questions { border-left: 4px solid var(--gold); }
+.questions ol { margin: 0; padding-left: 20px; display: grid; gap: 8px; line-height: 1.5; }
+.saved { border: 2px solid var(--ok); }
+.list { display: grid; gap: 8px; }
+.muted { color: var(--muted); font-size: 13.5px; }
+@media (max-width: 480px) { .word { grid-template-columns: 1fr; } .word .ar { text-align: right; } }
+</style>
+
+<div class="wrap">
+  <div class="demo-tag">Demo · nothing is saved</div>
+  <h1>Check a dua: the review screen</h1>
+  <p class="lede">Every dua card still says "found by matching words, to be checked". This is the screen where you (or a teacher you trust) check one dua: which narrations really are this dua, and whether its words, vowels and Qur'an links are right. The data below is the real Dua 2 from the app.</p>
+
+  <!-- The dua card as it is in the app today, with one new button -->
+  <section class="card" id="duaCard" aria-label="Dua 2 card">
+    <div class="dua-head">
+      <span class="dua-num">Dua 2 · باب أفضل الاستغفار</span>
+      <span class="chip warn" id="cardStatus">found by matching words, to be checked</span>
+    </div>
+    <p class="ar" id="cardWords"></p>
+    <p class="muted">Narrated in 23 places · Bukhari, Tirmidhi, Nasa'i, Ibn Majah, Abu Dawud and the dhikr books</p>
+    <div class="row">
+      <button type="button" disabled>📝 My Notes</button>
+      <button type="button" disabled>🔖 Bookmark</button>
+      <button type="button" class="primary" id="openCheck">✓ Check this dua</button>
+      <span class="muted">new · only for Owner and Prime</span>
+    </div>
+  </section>
+
+  <!-- The check panel -->
+  <section class="card" id="checkPanel" hidden aria-label="Check Dua 2">
+    <button type="button" class="back" id="backBtn">← Back to Dua 2</button>
+    <h2>Check Dua 2</h2>
+    <div class="steps" role="tablist">
+      <button type="button" role="tab" id="tab1" aria-selected="true" data-step="1">1 · Narrations</button>
+      <button type="button" role="tab" id="tab2" aria-selected="false" data-step="2">2 · Words</button>
+      <button type="button" role="tab" id="tab3" aria-selected="false" data-step="3">3 · Save</button>
+    </div>
+
+    <div id="step1">
+      <div class="list">
+        <p class="summary" id="memberSummary"></p>
+        <p class="muted">The computer put these 23 narrations together because they share words. The ones it is least sure about come first. The dua's own words are <mark>highlighted</mark>.</p>
+        <div class="row"><button type="button" id="restSame">✓ Mark all the unchecked ones "same dua"</button></div>
+        <div id="splitBox" class="split-box" hidden></div>
+        <div id="members" class="list"></div>
+      </div>
+    </div>
+
+    <div id="step2" hidden>
+      <div class="list">
+        <p class="summary" id="wordSummary"></p>
+        <p class="muted">Each word as the dua card shows it, with what the computer linked it to. Words it is unsure about come first.</p>
+        <div class="row"><button type="button" id="restOk">✓ Mark all the unchecked words right</button></div>
+        <div id="words" class="words"></div>
+      </div>
+    </div>
+
+    <div id="step3" hidden>
+      <div class="list">
+        <p class="summary" id="saveSummary"></p>
+        <button type="button" class="primary" id="saveBtn">Save my check</button>
+        <p class="muted" id="saveNote"></p>
+      </div>
+    </div>
+  </section>
+
+  <section class="card questions" aria-label="Questions">
+    <h2>Three questions for you (my recommendation first)</h2>
+    <ol>
+      <li><b>Who may check a dua?</b> Recommended: Owner and Prime only, like editing the Asma descriptions. Others see "✓ checked" but no button.</li>
+      <li><b>Where is a check kept?</b> Recommended: in the madrasah's own document, the way your Asma descriptions are kept. No Firebase step for you. Each check records who checked and when.</li>
+      <li><b>When does a narration you move out get its own dua number?</b> Recommended: it waits until I next rebuild the dua data, which gives it a new permanent number (the numbers are never reused or changed). Until then it shows "moved out, new number coming". Your progress on Dua 2 always stays with Dua 2.</li>
+    </ol>
+  </section>
+</div>
+
+<script>
+const MEMBERS = [{"b": "Bukhari", "bt": "Sahih al-Bukhari", "std": "6306", "text": "سيد الاستغفار أن تقول اللهم أنت ربي لا إله إلا أنت خلقتني وأنا عبدك وأنا على عهدك ووعدك ما استطعت أعوذ بك من شر ما صنعت أبوء لك بنعمتك علي وأبوء لك بذنبي فاغفر لي فإنه لا يغفر الذنوب إلا أنت قال ومن قالها من النهار موقنا بها …"}, {"b": "Bukhari", "bt": "Sahih al-Bukhari", "std": "6323", "text": "الاستغفار اللهم أنت ربي لا اله إلا أنت خلقتني وأنا عبدك وأنا على عهدك ووعدك ما استطعت أبوء لك بنعمتك وأبوء لك بذنبي فاغفر لي فإنه لا يغفر الذنوب إلا أنت أعوذ بك من شر ما صنعت إذا قال حين يمسي فمات دخل الجنة أو كان من أهل …"}, {"b": "Tirmidhi", "bt": "Jami' al-Tirmidhi", "std": "3434", "text": "كان يعد لرسول الله صلى الله عليه وسلم في المجلس الواحد مائة مرة من قبل أن يقوم رب أغفر لي وتب علي إنك التواب الغفور حدثنا بن أبي عمر حدثنا سفيان عن محمد بن سوقة بهذا الإسناد نحوه بمعناه قال هذا حديث حسن صحيح غريب"}, {"b": "Nasa'i", "bt": "Sunan al-Nasa'i", "std": "5522", "text": "إن سيد الاستغفار أن يقول العبد اللهم أنت ربي لا إله إلا أنت خلقتني وأنا عبدك وأنا على عهدك ووعدك ما استطعت أعوذ بك من شر ما صنعت أبوء لك بذنبي وأبوء لك بنعمتك علي فاغفر لي فإنه لا يغفر الذنوب إلا أنت فإن قالها حين يصبح موقنا …"}, {"b": "Ibn Majah", "bt": "Sunan Ibn Majah", "std": "3872", "text": "اللهم أنت ربي لا إله إلا أنت خلقتني وأنا عبدك وأنا على عهدك ووعدك ما استطعت أعوذ بك من شر ما صنعت أبوء بنعمتك وأبوء بذنبي فاغفر لي فإنه لا يغفر الذنوب إلا أنت قال قال رسول الله صلى الله عليه وسلم من قالها في يومه وليلته فمات …"}, {"b": "Abu Dawud", "bt": "Sunan Abi Dawud", "std": "1516", "text": "إن كنا لنعد لرسول الله صلى الله عليه وسلم في المجلس الواحد مائة مرة رب اغفر لي وتب علي إنك أنت التواب الرحيم"}, {"b": "al-Nasa'i's 'Amal al-Yawm wa'l-Layla", "bt": "al-Nasa'i's 'Amal al-Yawm wa'l-Layla", "std": "19", "text": "قال سيد الاستغفار أن يقول العبد اللهم أنت ربي لا إله إلا أنت خلقتني وأنا عبدك و ( أنا ) ب على عهدك ووعدك ما استطعت أعوذ بك من شر ما صنعت أبوء لك بنعمتك وابوء لك بذنبي فاغفر لي فإنه لايغفر الذنوب إلا أنت فإن قالها بعدما …"}, {"b": "al-Nasa'i's 'Amal al-Yawm wa'l-Layla", "bt": "al-Nasa'i's 'Amal al-Yawm wa'l-Layla", "std": "20", "text": "قال من قال اللهم أنت ربي لا إله إلا أنت خلقتني وأنا عبدك وأنا على عهدك ووعدك ما استطعت أعوذ بك من شر ما صنعت أبوء بنعمتك وابوء بذنبي فاغفر لي ( فإنه ) لا يغفر الذنوب إلا أنت فمات من يومه أو ليلته دخل الجنة ( نوع …"}, {"b": "al-Nasa'i's 'Amal al-Yawm wa'l-Layla", "bt": "al-Nasa'i's 'Amal al-Yawm wa'l-Layla", "std": "458", "text": "في المجلس الواحد مائة مرة يقول رب اغفر لي وتب علي إنك أنت التواب الغفور"}, {"b": "al-Nasa'i's 'Amal al-Yawm wa'l-Layla", "bt": "al-Nasa'i's 'Amal al-Yawm wa'l-Layla", "std": "464", "text": "إن سيد الاستغفار أن يقول العبد لا إله إلا أنت ( أنت ) آ ح خلقتني وأنا عبدك ( أنت ) ب أنا على عهدك ووعدك ما استطعت أعوذ بك من شر ما صنعت أبوء بنعمتك علي وأبوء لك بذنبي اغفر لي فإنه لا يغفر الذنوب إلا أنت …"}, {"b": "al-Nasa'i's 'Amal al-Yawm wa'l-Layla", "bt": "al-Nasa'i's 'Amal al-Yawm wa'l-Layla", "std": "465", "text": "يقول من قال إذا أصبح اللهم أنت ربي لا إله إلا أنت خلقتني وأنا عبدك على عهدك ووعدك ما استطعت أعوذ بك من شر ما صنعت أبوء لك بنعمتك علي وأبوء بذنبي فاغفر لي فإنه لا يغفر الذنوب إلا أنت فإن مات من يومه دخل الجنة وإن مات …"}, {"b": "al-Nasa'i's 'Amal al-Yawm wa'l-Layla", "bt": "al-Nasa'i's 'Amal al-Yawm wa'l-Layla", "std": "466", "text": "من قال حين يصبح أو حين يمسي فمات من يومه أو من ليلته دخل الجنة من قال اللهم أنت ربي لا إله إلا أنت خلقتني وأنا عبدك وأنا على عهدك ووعدك ما استطعت أعوذ بك من شر ما صنعت أبوء بنعمتك وابوء بذنبي فاغفر لي إنه لا يغفر …"}, {"b": "al-Nasa'i's 'Amal al-Yawm wa'l-Layla", "bt": "al-Nasa'i's 'Amal al-Yawm wa'l-Layla", "std": "467", "text": "تعلموا سيد الاستغفار اللهم أنت ربي لا إله إلا أنت خلقتني وأنا عبدك على عهدك ووعدك ما استطعت وأعوذ بك من شر ما صنعت أبوء بنعمتك علي وأبوء بذنبي فاغفر لي ذنبي إنه لا يغفر الذنوب إلا أنت"}, {"b": "al-Nasa'i's 'Amal al-Yawm wa'l-Layla", "bt": "al-Nasa'i's 'Amal al-Yawm wa'l-Layla", "std": "468", "text": "649 ح ) صلى الله عليه وسلم قال تعلموا سيد الاستغفار اللهم أنت ربي لا إله إلا أنت خلقتني أنا عبدك أنا على عهدك ووعدك ما استطعت أعوذ بك من شر ما صنعت أبوء بنعمتك وأبوء بذنبي فاغفر لي إنه لا يغفر الذنوب إلا أنت"}, {"b": "al-Nasa'i's 'Amal al-Yawm wa'l-Layla", "bt": "al-Nasa'i's 'Amal al-Yawm wa'l-Layla", "std": "579", "text": "من قال حين يصبح وحين يمسي فمات من يومه أو ليلته دخل الجنة من قال اللهم أنت ربي لا إله إلا أنت خلقتني وأنا عبدك وأنا على عهدك ووعدك ما استطعت أعوذ بك من شر ما صنعت أبوء بنعمتك وأبوء بذنبي فاغفر لي إنه لا يغفر الذنوب إلا …"}, {"b": "al-Nasa'i's 'Amal al-Yawm wa'l-Layla", "bt": "al-Nasa'i's 'Amal al-Yawm wa'l-Layla", "std": "580", "text": "قال سيد الاستغفار أن يقول اللهم ( أنت ) آ ح ربي لا إله إلا أنت خلقتني وأنا عبدك وأنا على عهدك ووعدك ما استطعت أبوء لك بالنعمة وابوء لك بذنبي فاغفر لي إنه لايغفر الذنوب إلا أنت فإن قالها حين يصبح موقنا بها ثم مات كان من …"}, {"b": "al-Nasa'i's 'Amal al-Yawm wa'l-Layla", "bt": "al-Nasa'i's 'Amal al-Yawm wa'l-Layla", "std": "581", "text": "يقول من قال حين يصبح وحين يمسي اللهم أنت ربي لا إله إلا أنت خلقتني وأنا عبدك وأنا على عهدك ووعدك ما استطعت أعوذ بك من شر ما صنعت أبوء لك بالنعمة علي وأبوء لك بذنبي فاغفر لي فإنه لا يغفر الذنوب إلا أنت فإن قالها مصبحا فمات …"}, {"b": "Ibn al-Sunni's 'Amal al-Yawm wa'l-Layla", "bt": "Ibn al-Sunni's 'Amal al-Yawm wa'l-Layla", "std": "43", "text": "من قال إذا أصبح ( اللهم أنت ربي لا إله إلا أنت خلقتني وأنا عبدك وأنا على عهدك ووعدك ما استطعت أعوذ بك من شر ما صنعت أبوء بنعمتك علي وأبوء بذنبي فاغفرلي إنه لا يغفر الذنوب إلا أنت ) فإن مات من يومه مات شهيدا وإن مات …"}, {"b": "Ibn al-Sunni's 'Amal al-Yawm wa'l-Layla", "bt": "Ibn al-Sunni's 'Amal al-Yawm wa'l-Layla", "std": "370", "text": "في المجلس الواحد مائة مرة يقول قبل أن يقول شيئا ( رب إغفر لي وتب علي إنك أنت التواب الرحيم )"}, {"b": "Ibn al-Sunni's 'Amal al-Yawm wa'l-Layla", "bt": "Ibn al-Sunni's 'Amal al-Yawm wa'l-Layla", "std": "372", "text": "قال تعلموا سيد الإستغفار ( اللهم أنت ربي لا إله إلا أنت خلقتني وأنا عبدك وأنا على عهدك ووعدك ما إستطعت أعوذ بك من شر ما صنعت وأبوء بنعمتك علي وأبوء لك بذنبي فاغفر لي فإنه لا يغفر الذنوب إلا أنت )"}, {"b": "Ibn al-Sunni's 'Amal al-Yawm wa'l-Layla", "bt": "Ibn al-Sunni's 'Amal al-Yawm wa'l-Layla", "std": "448", "text": "أخبرنا أبو عبد الرحمن أنبأنا عمرو بن علي ثنا أبو علي الحنفي أنبأنا مالك بن مغول عن محمد بن سوقة عن نافع عن ابن عمر رضي الله عنهما قال إن كنا لنعد لرسول الله في المجلس الواحد مائة مرة يقول ( رب اغفرلي وتب علي إنك أنت التواب …"}, {"b": "al-Nawawi's al-Adhkar", "bt": "al-Nawawi's al-Adhkar", "std": "205", "text": "قال ( سيد الاستغفار اللهم أنت ربي لا إله إلا أنت خلقتني وأنا عبدك وأنا على عهدك ووعدك ما استطعت أعوذ بك من شر ما صنعت أبوء لك بنعمتك على وأبوء بذنبي فاغفر لي فإنه لا يغفر الذنوب إلا أنت إذا قال ذلك حين يمسي فمات من ليلته …"}, {"b": "al-Nawawi's al-Adhkar", "bt": "al-Nawawi's al-Adhkar", "std": "1222", "text": "في المجلس الواحد مائة مرة ( رب اغفر لي وتب علي إنك أنت التواب الرحيم ) قال الترمذي + حديث حسن صحيح +"}];
+const WORDS = {"src": "hadeethenc:5503", "words": [{"vow": "اللَّهُمَّ", "q": ["3:26:2", 5, "ٱللَّهُمَّ", "l-lahuma", "O Allah", "হে আল্লাহ", "اله", "ٱللَّهُمَّ", 1, "ٱللَّهُمَّ", [3026002, 5114005, 8032003, 10010004, 39046002]], "g": null}, {"vow": "أَنْتَ", "q": ["2:32:10", 55, "أَنتَ", "anta", "You", "আপনিই", "", "", 0, "form:أنت", [2032010, 2035004, 2127012, 2128015, 2129014, 2145012, 2286044, 3008014]], "g": null}, {"vow": "رَبِّي", "q": ["2:258:16", 94, "رَبِّىَ", "rabbiya", "My Lord", "আমার রব (হচ্ছেন)", "ربب", "رَبّ", 1, "رَبّ", [2258016, 3051003, 5072017, 5117011, 6015006, 6057006, 6076009, 6077007]], "g": null}, {"vow": "لاَ", "q": ["2:2:3", 812, "لَا", "lā", "no", "নেই", "", "لَا", 1, "لَا", [2002003, 2006010, 2011004, 2012006, 2013018, 2017016, 2018005, 2026003]], "g": null}, {"vow": "إِلَهَ", "q": ["2:163:2", 73, "إِلَـٰهٌۭ", "ilāhun", "(is) God", "ইলাহ", "اله", "إِلَٰه", 1, "إِلَٰه", [2163002, 2163005, 2255003, 3002003, 3006009, 3018005, 3018014, 3062008]], "g": null}, {"vow": "إِلَّا", "q": ["2:9:7", 763, "إِلَّآ", "illā", "except", "ছাড়া", "", "إِلَّا", 7, "إِلَّا", [2009007, 2012001, 2013013, 2026038, 2032006, 2034007, 2045006, 2078006]], "g": null}, {"vow": "أَنْتَ", "q": ["2:32:10", 55, "أَنتَ", "anta", "You", "আপনিই", "", "", 0, "form:أنت", [2032010, 2035004, 2127012, 2128015, 2129014, 2145012, 2286044, 3008014]], "g": null}, {"vow": "خَلَقْتَنِي", "q": ["7:12:12", 2, "خَلَقْتَنِى", "khalaqtanī", "You created me", "আপনি সৃষ্টি করেছেন আমাকে", "خلق", "خَلَقَ", 1, "خَلَقَ", [7012012, 38076005]], "g": null}, {"vow": "وَأَنَا", "q": ["2:70:13", 59, "وَإِنَّآ", "wa-innā", "And indeed we", "এবং নিশ্চয়ই আমরা", "", "إِنّ", 2, "إِنّ", [2070013, 2156008, 2160009, 3081030, 5022007, 6146027, 6163006, 7066011]], "g": null}, {"vow": "عَبْدُكَ", "q": null, "g": ["عَبْد", "عبد", "noun", "عَبْدكَ"]}, {"vow": "وَأَنَا", "q": ["2:70:13", 59, "وَإِنَّآ", "wa-innā", "And indeed we", "এবং নিশ্চয়ই আমরা", "", "إِنّ", 2, "إِنّ", [2070013, 2156008, 2160009, 3081030, 5022007, 6146027, 6163006, 7066011]], "g": null}, {"vow": "عَلَى", "q": ["2:5:2", 686, "عَلَىٰ", "ʿalā", "(are) on", "উপর", "", "عَلَىٰ", 2, "عَلَىٰ", [2005002, 2007003, 2020022, 2023007, 2031007, 2045007, 2047010, 2059010]], "g": null}, {"vow": "عَهْدِكَ", "q": null, "g": ["عَهْد", "عهد", "noun", "عَهْدكَ"]}, {"vow": "وَوَعْدِكَ", "q": ["11:45:11", 1, "وَعْدَكَ", "waʿdaka", "Your promise", "তোমার প্রতিশ্রুতি", "وعد", "وَعْد", 1, "وَعْد", [11045011]], "g": null}, {"vow": "مَا", "q": ["2:17:8", 1010, "مَا", "mā", "what", "যা", "", "مَا", 1, "مَا", [2017008, 2026008, 2027009, 2029005, 2030026, 2032007, 2033018, 2057011]], "g": null}, {"vow": "اسْتَطَعْتُ", "q": ["6:35:7", 3, "ٱسْتَطَعْتَ", "is'taṭaʿta", "you are able", "তুমি সমর্থ হও", "طوع", "ٱسْتَطَاعَ", 1, "ٱسْتَطَاعَ", [6035007, 11088027, 17064003]], "g": null}, {"vow": "أَعُوذُ", "q": ["2:67:15", 6, "أَعُوذُ", "aʿūdhu", "I seek refuge", "আমি আশ্রয় চাই", "عوذ", "عُذْ", 1, "عُذْ", [2067015, 11047004, 19018003, 23097003, 113001002, 114001002]], "g": null}, {"vow": "بِكَ", "q": ["3:36:20", 10, "بِكَ", "bika", "in You", "তোমার(কাছে)", "", "", 0, "form:بك", [3036020, 4041009, 8030003, 11047005, 16089011, 23097004, 23098002, 27047003]], "g": null}, {"vow": "مِنْ", "q": ["2:4:8", 2763, "مِن", "min", "from", "থেকে", "", "مِن", 3, "مِن", [2004008, 2005004, 2008003, 2019003, 2019013, 2021008, 2022009, 2022014]], "g": null}, {"vow": "شَرِّ", "q": ["2:216:19", 15, "شَرٌّۭ", "sharrun", "(is) bad", "অকল্যাণকর", "شرر", "شَرّ", 1, "شَرّ", [2216019, 3180015, 5060022, 8022002, 8055002, 12077019, 19075022, 25034008]], "g": null}, {"vow": "مَا", "q": ["2:17:8", 1010, "مَا", "mā", "what", "যা", "", "مَا", 1, "مَا", [2017008, 2026008, 2027009, 2029005, 2030026, 2032007, 2033018, 2057011]], "g": null}, {"vow": "صَنَعْتُ", "q": null, "g": ["صَنَع", "صنع", "verb", "صَنَعَت"]}, {"vow": "أَبُوءُ", "q": null, "g": ["باء", "", "verb", "أَبُوء"]}, {"vow": "لَكَ", "q": ["2:30:22", 71, "لَكَ ۖ", "laka", "[to] You", "আপনার", "", "", 0, "form:لك", [2030022, 2055006, 2120025, 2128004, 2128009, 3035008, 3037021, 3128002]], "g": null}, {"vow": "بِنِعْمَتِكَ", "q": null, "g": ["نِعْمَة", "نعم", "noun", "بِنِعْمَتكَ"]}, {"vow": "عَلَيَّ", "q": ["2:5:2", 686, "عَلَىٰ", "ʿalā", "(are) on", "উপর", "", "عَلَىٰ", 2, "عَلَىٰ", [2005002, 2007003, 2020022, 2023007, 2031007, 2045007, 2047010, 2059010]], "g": null}, {"vow": "وَأَبُوءُ", "q": null, "g": ["باء", "", "verb", "وَأَبُوء"]}, {"vow": "لَكَ", "q": ["2:30:22", 71, "لَكَ ۖ", "laka", "[to] You", "আপনার", "", "", 0, "form:لك", [2030022, 2055006, 2120025, 2128004, 2128009, 3035008, 3037021, 3128002]], "g": null}, {"vow": "بِذَنْبِي", "q": null, "g": ["ذَنْب", "ذنب", "noun", "بِذَنْبِي"]}, {"vow": "فَاغْفِرْ", "q": ["3:16:6", 6, "فَٱغْفِرْ", "fa-igh'fir", "so forgive", "অতএব ক্ষমা কর", "غفر", "غَفَرَ", 1, "غَفَرَ", [3016006, 3193012, 7155036, 23109009, 28016006, 40007020]], "g": null}, {"vow": "لِي", "q": ["2:152:4", 63, "لِى", "lī", "to Me", "আমার প্রতি", "", "", 0, "form:لى", [2152004, 2186013, 3038008, 3040005, 3041004, 3047005, 3079015, 5116020]], "g": null}]};
+
+// Arabic without vowels, and with the alif forms made one, so two spellings can be compared.
+function bare(s) {
+  return String(s).replace(/[ً-ْٰۖ-ۭـ]/g, "").replace(/[ٱأإآ]/g, "ا").replace(/ى/g, "ي").replace(/ة/g, "ه").replace(/ۭ|ـ/g, "").trim();
+}
+const duaBare = WORDS.words.map(w => bare(w.vow));
+const duaSet = new Set(duaBare);
+
+// How much of the dua's own words a narration holds (0..1): the share of the dua's distinct words found in it.
+function fitOf(text) {
+  const have = new Set(text.split(/\s+/).map(bare));
+  const distinct = [...duaSet];
+  return distinct.filter(w => have.has(w)).length / distinct.length;
+}
+
+const members = MEMBERS.map((m, i) => ({ ...m, i, fit: fitOf(m.text), v: null }));
+members.sort((a, b) => a.fit - b.fit);
+
+const el = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
+
+function arWithMarks(text) {
+  const p = el("p", "ar");
+  text.split(/\s+/).forEach((w, k) => {
+    if (k) p.appendChild(document.createTextNode(" "));
+    if (duaSet.has(bare(w))) p.appendChild(el("mark", null, w)); else p.appendChild(document.createTextNode(w));
+  });
+  return p;
+}
+
+document.getElementById("cardWords").textContent = WORDS.words.map(w => w.vow).join(" ");
+
+const VERDICTS = [["same", "✓ Same dua"], ["cut", "✂ A different dua"], ["unsure", "? Not sure"]];
+
+function renderMembers() {
+  const box = document.getElementById("members");
+  box.replaceChildren();
+  for (const m of members) {
+    const card = el("div", "member"); if (m.v) card.dataset.v = m.v;
+    const head = el("div", "mhead");
+    const src = el("span", "src", `${m.b} ${m.std}`);
+    const fit = el("span", "fit");
+    const bar = el("span", "bar"); const fill = el("i"); fill.style.width = Math.round(m.fit * 100) + "%"; bar.appendChild(fill);
+    fit.append(bar, el("span", null, `${Math.round(m.fit * 100)}% of the dua's words`));
+    head.append(src, fit);
+    if (m.fit < 0.5) head.appendChild(el("span", "chip warn", "⚠ looks different"));
+    if (m.i === 0) head.appendChild(el("span", "chip", "the main narration"));
+    card.append(head, arWithMarks(m.text));
+    const vb = el("div", "verdict");
+    for (const [v, label] of VERDICTS) {
+      if (m.i === 0 && v === "cut") continue; // the main narration is what the dua number belongs to
+      const b = el("button", null, label); b.type = "button"; b.dataset.v = v; b.setAttribute("aria-pressed", String(m.v === v));
+      b.addEventListener("click", () => { m.v = m.v === v ? null : v; renderMembers(); });
+      vb.appendChild(b);
+    }
+    card.appendChild(vb);
+    box.appendChild(card);
+  }
+  const n = k => members.filter(m => m.v === k).length;
+  const open = members.filter(m => !m.v).length;
+  document.getElementById("memberSummary").textContent =
+    `${members.length} narrations · ${n("same")} same dua · ${n("cut")} a different dua · ${n("unsure")} not sure · ${open} not checked yet`;
+  const cut = members.filter(m => m.v === "cut");
+  const sb = document.getElementById("splitBox");
+  sb.hidden = cut.length === 0;
+  if (cut.length) {
+    sb.replaceChildren(
+      el("p", null, `✂ ${cut.length} narration${cut.length > 1 ? "s" : ""} will leave Dua 2: ${cut.map(m => m.b + " " + m.std).join(", ")}.`),
+      el("p", "muted", "Together they become one new dua (they share their own words). Dua 2 keeps its number and everyone's progress on it.")
+    );
+    const r = el("div", "row");
+    const t = el("button", null, "Put them together as one new dua"); t.type = "button"; t.setAttribute("aria-pressed", "true");
+    const s = el("button", null, "Each one on its own"); s.type = "button";
+    t.addEventListener("click", () => { t.setAttribute("aria-pressed", "true"); s.setAttribute("aria-pressed", "false"); t.classList.add("primary"); s.classList.remove("primary"); });
+    s.addEventListener("click", () => { s.setAttribute("aria-pressed", "true"); t.setAttribute("aria-pressed", "false"); s.classList.add("primary"); t.classList.remove("primary"); });
+    t.classList.add("primary");
+    r.append(t, s); sb.appendChild(r);
+  }
+  renderSave();
+}
+
+document.getElementById("restSame").addEventListener("click", () => { members.forEach(m => { if (!m.v) m.v = "same"; }); renderMembers(); });
+
+// Words: the computer is unsure when the Qur'an word it linked has a different spelling, or when there is no Qur'an word and only a grammar guess.
+const words = WORDS.words.map((w, k) => {
+  let doubt = null;
+  if (w.q && bare(w.q[2]) !== bare(w.vow) && bare(w.q[2]).replace(/^و/, "") !== bare(w.vow).replace(/^و/, "")) doubt = "the Qur'an word is spelt differently";
+  else if (w.q && bare(w.q[2]) !== bare(w.vow)) doubt = "the Qur'an word is spelt differently";
+  else if (!w.q && w.g) doubt = "no Qur'an word; a computer grammar guess";
+  else if (!w.q) doubt = "not linked to anything";
+  return { ...w, k, doubt, v: null, fix: "" };
+});
+const wordOrder = [...words].sort((a, b) => (b.doubt ? 1 : 0) - (a.doubt ? 1 : 0) || a.k - b.k);
+
+function renderWords() {
+  const box = document.getElementById("words");
+  box.replaceChildren();
+  for (const w of wordOrder) {
+    const row = el("div", "word"); if (w.v) row.dataset.v = w.v;
+    row.appendChild(el("span", "ar", w.v === "fix" && w.fix ? w.fix : w.vow));
+    const info = el("div", "winfo");
+    const top = el("div", "row");
+    top.appendChild(el("span", "muted", `Word ${w.k + 1}`));
+    if (w.doubt) top.appendChild(el("span", "chip warn", "⚠ " + w.doubt));
+    info.appendChild(top);
+    if (w.q) {
+      const q = el("p", "q"); q.append("Linked to Qur'an ", el("span", null, w.q[0]), " · ");
+      q.appendChild(el("span", "ar", w.q[2])); q.append(` · "${w.q[4]}" · ${w.q[1]} times in the Qur'an`);
+      info.appendChild(q);
+    } else if (w.g) {
+      info.appendChild(el("p", "q", `Grammar guess: ${w.g[2]}, dictionary form ${w.g[0]}${w.g[1] ? ", root " + w.g[1] : ""}`));
+    }
+    info.appendChild(el("p", "q", `Vowels from ${WORDS.src.replace("hadeethenc:", "HadeethEnc ")}`));
+    const vb = el("div", "verdict");
+    const ok = el("button", null, "✓ Right"); ok.type = "button"; ok.dataset.v = "same"; ok.setAttribute("aria-pressed", String(w.v === "ok"));
+    ok.addEventListener("click", () => { w.v = w.v === "ok" ? null : "ok"; renderWords(); });
+    const fx = el("button", null, "✎ Fix"); fx.type = "button"; fx.dataset.v = "unsure"; fx.setAttribute("aria-pressed", String(w.v === "fix"));
+    fx.addEventListener("click", () => { w.v = w.v === "fix" ? null : "fix"; if (w.v === "fix" && !w.fix) w.fix = w.vow; renderWords(); });
+    vb.append(ok, fx);
+    info.appendChild(vb);
+    if (w.v === "fix") {
+      const fb = el("div", "fixbox");
+      const lab = el("label", "muted", "The word with its right vowels"); lab.htmlFor = "fix" + w.k;
+      const inp = el("input"); inp.id = "fix" + w.k; inp.value = w.fix; inp.addEventListener("input", () => { w.fix = inp.value; renderSave(); });
+      const r = el("div", "row");
+      if (w.q) { const nl = el("button", null, "Not this Qur'an word"); nl.type = "button"; nl.addEventListener("click", () => { w.unlink = !w.unlink; nl.classList.toggle("primary", w.unlink); renderSave(); }); if (w.unlink) nl.classList.add("primary"); r.appendChild(nl); }
+      fb.append(lab, inp, r);
+      info.appendChild(fb);
+    }
+    row.appendChild(info);
+    box.appendChild(row);
+  }
+  const ok = words.filter(w => w.v === "ok").length, fx = words.filter(w => w.v === "fix").length;
+  document.getElementById("wordSummary").textContent = `${words.length} words · ${ok} right · ${fx} to fix · ${words.length - ok - fx} not checked yet · ${words.filter(w => w.doubt).length} the computer is unsure about`;
+  renderSave();
+}
+document.getElementById("restOk").addEventListener("click", () => { words.forEach(w => { if (!w.v) w.v = "ok"; }); renderWords(); });
+
+function renderSave() {
+  const openM = members.filter(m => !m.v || m.v === "unsure").length;
+  const openW = words.filter(w => !w.v).length;
+  const cut = members.filter(m => m.v === "cut").length;
+  const fixes = words.filter(w => w.v === "fix").length;
+  const done = openM === 0 && openW === 0;
+  document.getElementById("saveSummary").textContent = done
+    ? `Ready. ${members.length - cut} narrations stay in Dua 2, ${cut} move out, ${fixes} word${fixes === 1 ? "" : "s"} fixed.`
+    : `Not finished: ${openM} narration${openM === 1 ? "" : "s"} and ${openW} word${openW === 1 ? "" : "s"} still open. You can save part of a check and come back.`;
+  document.getElementById("saveBtn").textContent = done ? "Save my check" : "Save what I have so far";
+}
+
+document.getElementById("saveBtn").addEventListener("click", () => {
+  const openM = members.filter(m => !m.v || m.v === "unsure").length, openW = words.filter(w => !w.v).length;
+  const done = openM === 0 && openW === 0;
+  const st = document.getElementById("cardStatus");
+  st.className = done ? "chip ok" : "chip warn";
+  st.textContent = done ? "✓ checked by Owner · 9 Oct 2026" : "partly checked by Owner · 9 Oct 2026";
+  const fixes = words.filter(w => w.v === "fix" && w.fix);
+  document.getElementById("cardWords").textContent = WORDS.words.map((w, k) => { const f = fixes.find(x => x.k === k); return f ? f.fix : w.vow; }).join(" ");
+  document.getElementById("saveNote").textContent = "Saved (in the demo, only on this page). The card above now shows it. In the app this is kept for the whole madrasah.";
+  document.getElementById("duaCard").classList.toggle("saved", done);
+  closeCheck();
+});
+
+function show(step) {
+  for (const n of [1, 2, 3]) {
+    document.getElementById("step" + n).hidden = n !== step;
+    document.getElementById("tab" + n).setAttribute("aria-selected", String(n === step));
+  }
+}
+document.querySelectorAll(".steps button").forEach(b => b.addEventListener("click", () => show(Number(b.dataset.step))));
+function openCheck() { document.getElementById("checkPanel").hidden = false; document.getElementById("checkPanel").scrollIntoView({ behavior: "smooth", block: "start" }); }
+function closeCheck() { document.getElementById("checkPanel").hidden = true; document.getElementById("duaCard").scrollIntoView({ behavior: "smooth", block: "start" }); }
+document.getElementById("openCheck").addEventListener("click", openCheck);
+document.getElementById("backBtn").addEventListener("click", closeCheck);
+
+renderMembers(); renderWords();
+document.getElementById("checkPanel").hidden = false;
+</script>
