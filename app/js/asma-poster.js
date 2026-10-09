@@ -61,6 +61,17 @@ export function posterHadithHref(link, base = "./hadith-collections.html") {
   return `${base}?openiti=${encodeURIComponent(link.openiti.versionUri)}&passage=${link.openiti.n}&back=1`;
 }
 
+/** A Name's cited hadith, one per citation, for the section written out in Explore (asma-cited-hadith.js): the
+ *  collection's English title (the reference text itself is Bangla), the number, the grade, and the library passage
+ *  (null when the collection or number is not in POSTER_HADITH -- never guessed). */
+export function asmaCitedHadith(entry) {
+  return parseAsmaRef(entry?.ref ?? "").filter((c) => c.kind === "hadith").map((c) => {
+    const col = COLLECTIONS[c.collection] ?? { key: null, title: c.collection };
+    const key = col.key ? `${col.key}:${c.number}` : null;
+    return { key, titleEn: col.title, titleBn: c.collection, number: c.number, grade: c.grade, link: key ? POSTER_HADITH[key] ?? null : null };
+  });
+}
+
 const esc = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
 /** What a poster shows, worked out from the Name (pure). */

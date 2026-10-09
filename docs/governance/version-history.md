@@ -788,3 +788,4 @@ total). Allocated by the MMSA Architect.
 09.142: the most-used screens checked in Bangla. Allocated by the MMSA Architect.
 09.143: a Name's cited āyāt written out in Explore. Allocated by the MMSA Architect.
 09.144: every remaining page checked in Bangla. Allocated by the MMSA Architect.
+09.145: a Name's cited hadith written out in Explore. Allocated by the MMSA Architect.

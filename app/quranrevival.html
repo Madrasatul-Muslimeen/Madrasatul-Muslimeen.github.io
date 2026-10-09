@@ -1959,6 +1959,12 @@
   .asmax-cited-word:hover, .asmax-cited-word:focus-visible { background: rgba(255,255,255,0.1); }
   .asmax-cited-word.hit { color: #e3c06a; background: rgba(216,178,90,0.16); box-shadow: inset 0 -2px 0 #d8b25a; }
   .asmax-cited-end { font-size: 1.2rem; color: var(--card-text-muted); align-self: center; }
+  .asmax-cited-hadith { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.14); border-radius: 10px; padding: 10px 12px; display: grid; gap: 8px; min-width: 0; }
+  .asmax-cited-grade { font-weight: 400; font-size: 12.5px; color: var(--card-text-muted); }
+  /* The id outranks any button/Bangla face rule; the Arabic keeps the Quranic font chosen in Options. */
+  #asmaXCitedHadith .asmax-cited-hadith-ar { font-family: var(--quran-font, serif); font-size: 1.45rem; line-height: 2; text-align: right; overflow-wrap: anywhere; color: #e9eef7; }
+  .asmax-cited-credit { display: inline-flex; align-items: center; min-height: 40px; font-size: 12.5px; color: #a9c3ec; overflow-wrap: anywhere; }
+  .asmax-cited-open { display: inline-flex; align-items: center; min-height: 40px; padding: 0 14px; border-radius: 8px; background: #d8b25a; color: #1b2430; font-weight: 700; text-decoration: none; }
   .asmax-cited-tr { font-size: 14px; line-height: 1.55; color: #e9eef7; }
   .asmax-cited-tr.bn { font-family: 'Noto Sans Bengali', sans-serif; }
   .asmax-cited-acts { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -6431,12 +6437,13 @@
     } from "./js/asma-collections.js";
     import { mountPosterWithDescriptions } from "./js/asma-descriptions.js";
     import { asmaEntryDisplayName, asmaEntryMeaningText, renderAsmaCollectionListHtml, renderAsmaXrefBlock, renderAsmaPosterHtml, renderAsmaBelongsToHtml } from "./js/asma-renderer.js";
-    import { fitAsmaPosters, wireAsmaPosterRefs } from "./js/asma-poster.js";
+    import { fitAsmaPosters, wireAsmaPosterRefs, asmaCitedHadith } from "./js/asma-poster.js";
     import { wireDragReorder } from "./js/drag-reorder.js";
     import { parseAsmaRef } from "./js/asma-ref-parser.js";
     import { listEnrollmentsForPerson, programSubjectMapFromEnrollments } from "./js/course-offers.js";
     import { getSurah, getAyah, getSurahIndex, getJuzIndex, getPageIndex, getHizbIndex, getRukuIndex, getJuzWordTotalsIndex, getSurahWordTotalsIndex } from "./js/quran-data.js";
     import { nameRootsInAyat, renderCitedAyatHtml } from "./js/asma-cited-ayat.js";
+    import { loadCitedHadith, renderCitedHadithHtml } from "./js/asma-cited-hadith.js";
     // Shell round 14 -- word/phrase search. Importing the module costs
     // nothing at load: it fetches its index only when a search actually runs.
     import { searchQuran, searchTransliteration } from "./js/quran-search.js";
@@ -14459,8 +14466,10 @@
           ${renderAsmaBelongsToHtml(memberships)}
           <button type="button" class="secondary asma-ref-poster-btn" id="asmaXRefPosterBtn">🖼 ${escapeHtml(t("Poster"))}</button>
         </div>
-        <section id="asmaXCitedAyat" class="asmax-cited" hidden></section>`;
+        <section id="asmaXCitedAyat" class="asmax-cited" hidden></section>
+        <section id="asmaXCitedHadith" class="asmax-cited" hidden></section>`;
       renderAsmaXCitedAyat(entry, asmaXGroupId, asmaXNumber);
+      renderAsmaXCitedHadith(entry, asmaXGroupId, asmaXNumber);
       asmaXWaysListContainer.querySelectorAll("[data-asma-xref-jump]").forEach((btn) => {
         const [surah, ayah] = btn.dataset.asmaXrefJump.split(":").map(Number);
         btn.addEventListener("click", () => goToAyahFromAsmaX(surah, ayah, asmaXGroupId, asmaXNumber));
@@ -14525,6 +14534,46 @@
         openAyahActionSheet(`${s}:${a}`);
         backToName(); // after opening: opening the card clears any earlier way back
       }));
+    }
+    /** Asma part 2 (Owner, 9 Oct 2026): the hadith a Name cites, written out under its āyāt. Its library text and
+        translations load only now, when a Name with a hadith citation is open (I9). "Open in Hadith →" first writes
+        the Name into THIS page's address (the rememberQuranPlace() pattern), so the library's ← Back (history.back())
+        reopens Explore on that Name -- read by openAsmaNameFromQueryString() on load (decision 86). */
+    async function renderAsmaXCitedHadith(entry, groupId, number) {
+      const section = document.getElementById("asmaXCitedHadith");
+      const cites = asmaCitedHadith(entry);
+      if (!section || !cites.length) return;
+      section.hidden = false;
+      section.innerHTML = `<p class="hint">${escapeHtml(t("Loading…"))}</p>`;
+      const items = await Promise.all(cites.map(async (cite) => {
+        if (!cite.link) return { cite, loaded: null, failed: false };
+        try { return { cite, loaded: await loadCitedHadith(cite.link), failed: false }; } catch (err) { console.warn(err); return { cite, loaded: null, failed: true }; }
+      }));
+      if (document.getElementById("asmaXCitedHadith") !== section) return; // the reader moved on while it loaded
+      section.innerHTML = renderCitedHadithHtml({
+        items, heading: t("The hadith {name} is named in", { name: asmaEntryDisplayName(entry) }),
+        t, escapeHtml, num, lang: getAppLang() === "bn" ? "bn" : "en",
+      });
+      section.querySelectorAll("[data-asmax-hadith-open]").forEach((a) => a.addEventListener("click", () => {
+        try {
+          const u = new URL(location.href);
+          u.searchParams.set("asmaName", String(number));
+          if (groupId) u.searchParams.set("asmaGroup", groupId); else u.searchParams.delete("asmaGroup");
+          history.replaceState(history.state, "", u);
+        } catch { /* the link still opens the library */ }
+      }));
+    }
+    /** ?asmaName=<n>&asmaGroup=<id> (written just before leaving for the Hadith library) reopens that Name in Explore. */
+    async function openAsmaNameFromQueryString() {
+      const params = new URLSearchParams(location.search);
+      const number = Number(params.get("asmaName"));
+      // Architect review of #690: no "> 99" cap -- extra Names (beyond the 99, e.g. As-Subbuh, 104) cite hadith too.
+      if (!Number.isInteger(number) || number < 1) return;
+      // Used once: cleared, so a later reload opens the page as usual rather than this Name again.
+      try { const u = new URL(location.href); u.searchParams.delete("asmaName"); u.searchParams.delete("asmaGroup"); history.replaceState(history.state, "", u); } catch { /* ignore */ }
+      await ensureAsmaXDataLoaded();
+      if (!asmaXResolve(number)) return;
+      await returnToAsmaName(number, params.get("asmaGroup") || null, false);
     }
     /** Explore → Asma ul Husna, at that Name again (and its full-size poster, when the reference was tapped there). */
     async function returnToAsmaName(number, groupId, poster) {
@@ -23567,6 +23616,7 @@
         await step("open goto link", openGotoFromQueryString);
         await step("open word link", openWordFromQueryString);
         await step("open remembered place", openPlaceFromQueryString);
+        await step("open remembered Asma Name", openAsmaNameFromQueryString);
         await step("open last place", openLastFromQueryString);
         window.__bmCoverDone?.(false); // issue #468 -- target is open; remove the cover in one step
         // Last: "the app opens in the last settings/options in all view."
