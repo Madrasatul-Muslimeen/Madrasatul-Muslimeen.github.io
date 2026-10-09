@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "09.146",
+    "version": "09.147",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -2933,8 +2933,20 @@
     {
       "version": "09.146",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "The Owner's five reports of 9 Oct: a listening bookmark resumes the recitation, QCR from the Read view's ⋮, a 🔖 on the writing sheet, the pop-out opens full screen, and Word from an end mark starts on the Ayah's first word.",
+      "integration": {
+        "authorizedOn": "2026-10-09",
+        "integratedOn": "2026-10-09",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "09.147",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Builder #693 (PR #694): the About page's feature list, phase names and delivers lines go through t(), with 64 Bangla phrases appended; the sweep's known-gap exception for it is deleted.",
       "integration": {
         "authorizedOn": "2026-10-09",
         "integratedOn": "2026-10-09",
@@ -2943,8 +2955,9 @@
       }
     }
   ],
-  "nextUnallocated": "09.147",
+  "nextUnallocated": "09.148",
   "nextUnallocatedNote": [
+    "v09.147 was allocated to the About page's feature registry in Bangla (Builder #693), 2026-10-09.",
     "v09.146 was allocated to the listening bookmark, QCR from the ⋮ menu, the writing sheet 🔖 and the full-screen pop-out, 2026-10-09.",
     "v09.145 was allocated to a Name's cited hadith written out in Explore, 2026-10-09.",
     "v09.144 was allocated to every remaining page checked in Bangla, 2026-10-09.",

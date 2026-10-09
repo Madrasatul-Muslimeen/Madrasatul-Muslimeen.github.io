@@ -20333,3 +20333,12 @@ The Owner's five reports of 9 Oct, built by the Architect.
 - **Pop-out.** Opens full screen (`full: true`); ⛶ makes it a window. Word mode from an end mark moves to the Ayah's first word.
 - **Tests.** New `listen-bookmark-qcr-card-browser.mjs` (48/0, six mutations caught; its capture check was corrected at review, it had been removing the seeded bookmark and matching its flag). `writing-sheet-popout-browser.mjs` updated in place for full screen (A+ measures the first copybook copy; the end-mark block reopens 1:2:3), 342/0. `writing-sheet-browser.mjs` 11 → 12 controls, 206/0.
 - **Docs.** `docs/reports/2026-10-09-quran-critical-reasoning-ten-steps-and-qr-levels.html` is v06 (the PLANS section).
+
+## v09.147 — 2026-10-09 — The About page's feature registry in Bangla (Builder #693)
+
+PR #694, reviewed by the Architect.
+
+- `app/about.html`: feature names, phase names and "delivers" lines go through `t()`; the `registry-text` class is gone.
+- `app/js/i18n/bn.js`: 64 phrases appended, each `// ?` for the Owner's review. No existing key repeated or changed.
+- `tools/i18n-verify/bangla-sweep-lib.mjs`: the `.registry-text` known-gap exception deleted; file names, Firebase, CRUD/CSV/LDOG and code identifiers allowed as name tokens inside Bangla lines.
+- Review: merged with `main` (bn.js append conflict, both kept); a second mutation on a whole "delivers" line proves the allowance cannot hide an untranslated line. Checks: bangla-sweep-other-pages 224/0, core 122/0, newer 23/0, phone-width-overflow 217/0, stub-parity 4/0.
