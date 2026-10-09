@@ -35,8 +35,9 @@ import {
 import {
   OPENITI_CREDIT_URL,
   loadOpenitiBookSummaries, loadOpenitiBookIndex, loadOpenitiChapter, chapterForHadithNumber,
-  loadOpenitiConcordance, loadOpenitiHadeethEncLinks, loadDuaIndex, loadDuaCardsSummary, loadDuaCardsPage, loadDuaWordLinks, loadDuaVowels, loadDuaWordGrammar,
+  loadOpenitiConcordance, loadOpenitiHadeethEncLinks, loadDuaIndex, loadDuaCardsSummary, loadDuaCardsPage, loadDuaWordLinks, loadDuaVowels, loadDuaWordGrammar, loadDuaFit,
 } from "./openiti-corpus.js";
+import { buildCheckPanel, loadMemberTexts, applyMembers, checkChipText, checkState } from "./dua-check.js";
 
 const CONTENT_LANG_LABELS = { ar: "العربية", en: "English", bn: "বাংলা" };
 
@@ -1272,7 +1273,8 @@ function renderDuaCards(body, state, render) {
     return;
   }
   Promise.all([loadDuaCardsSummary(), loadDuaCardsPage(state.dua.page || 1), loadDuaWordLinks(state.dua.page || 1).catch(() => null),
-    loadDuaVowels(state.dua.page || 1).catch(() => null), loadDuaWordGrammar(state.dua.page || 1).catch(() => null)]).then(([summary, cards, wordLinks, vowels, wordGrammar]) => {
+    loadDuaVowels(state.dua.page || 1).catch(() => null), loadDuaWordGrammar(state.dua.page || 1).catch(() => null),
+    loadDuaCheckEnv(state)]).then(([summary, cards, wordLinks, vowels, wordGrammar, checkEnv]) => {
     section.textContent = "";
     const page = state.dua.page || 1;
     const first = (page - 1) * summary.cardsPerFile + 1;
@@ -1293,20 +1295,38 @@ function renderDuaCards(body, state, render) {
     const list = el("div", "hadith-occurrences");
     section.appendChild(list);
     const progressRows = [];
-    for (const c of cards) list.appendChild(duaCard(c, summary, state, render, progressRows, wordLinks, page, vowels, wordGrammar));
+    for (const c of cards) list.appendChild(duaCard(c, summary, state, render, progressRows, wordLinks, page, vowels, wordGrammar, checkEnv));
     section.appendChild(pager());
     let target = null;
     if (state.dua.focusDua != null) {
       target = list.querySelector(`[data-dua-card="${state.dua.focusDua}"]`);
       state.dua.focusDua = null;
-      if (target) { target.classList.add("hadith-card-focused"); target.scrollIntoView({ block: "center" }); }
+      if (target) { target.classList.add("hadith-card-focused"); target.scrollIntoView({ block: "center" }); target.tabIndex = -1; target.focus({ preventScroll: true }); }
     }
     fillDuaProgress(progressRows);
     if (target) keepCardInView(target, list);
   }).catch((err) => { section.textContent = ""; section.appendChild(el("p", "hadith-note", String(err?.message ?? err))); });
 }
 
-function duaCard(c, summary, state, render, progressRows, wordLinks = null, page = 1, vowels = null, wordGrammar = null) {
+/**
+ * Decision 96 (Check a dua): the madrasah's checks and who may make one, read ONCE when the Dua tab first opens (never
+ * at startup, I9) and kept on state.dua. null when nobody is signed in or the read failed -- the cards then show as
+ * before, nothing breaks. env = { data, session, exists, checks }.
+ */
+async function loadDuaCheckEnv(state) {
+  if (state.dua.checkEnv !== undefined) return state.dua.checkEnv;
+  try {
+    const data = await import("./dua-check-data.js");
+    const session = data.getDuaCheckSession();
+    if (!session) return (state.dua.checkEnv = null);
+    const { exists, checks } = await data.loadDuaChecks(session);
+    return (state.dua.checkEnv = { data, session, exists, checks });
+  } catch { return (state.dua.checkEnv = null); }
+}
+
+function duaCard(c, summary, state, render, progressRows, wordLinks = null, page = 1, vowels = null, wordGrammar = null, checkEnv = null) {
+  const check = checkEnv?.checks?.[c.dua] ?? null;
+  const baseWords = [];
   const card = el("article", "hadith-card dua-card");
   card.dataset.duaCard = String(c.dua);
   const head = el("p", "hadith-card-head", t("Dua {n}", { n: num(c.dua) }));
@@ -1343,12 +1363,18 @@ function duaCard(c, summary, state, render, progressRows, wordLinks = null, page
     panel.dataset.duaWordPanel = String(c.dua);
     duaWordTokens(picked.words).forEach((tok, i) => {
       if (i) words.appendChild(document.createTextNode(" "));
-      const span = el("span", "dua-word", vowelled ? vowelled.v[i] : tok);
+      // Decision 96: a word fixed in a check shows its fixed vowels; "not this Qur'an word" shows it unlinked.
+      const fixedTxt = typeof check?.fix?.[i] === "string" ? check.fix[i] : null;
+      const unlinked = Array.isArray(check?.unlink) && check.unlink.includes(i);
+      baseWords.push({ i, text: vowelled ? vowelled.v[i] : tok, link: linked && (links.w[i] ?? -1) >= 0 ? wordLinks.entries[links.w[i]] : null,
+        grammar: linked && gram?.f === links.f ? gram?.g?.[i] ?? null : null });
+      const span = el("span", "dua-word", fixedTxt ?? (vowelled ? vowelled.v[i] : tok));
       span.dataset.duaWord = String(i);
       span.dataset.plain = tok;
-      if (vowelled) span.dataset.vowelled = vowelled.v[i];
+      if (fixedTxt) span.dataset.duaWordFixed = "true";
+      if (vowelled || fixedTxt) span.dataset.vowelled = fixedTxt ?? vowelled.v[i];
       if (linked) {
-        const idx = links.w[i] ?? -1;
+        const idx = unlinked ? -1 : (links.w[i] ?? -1);
         span.setAttribute("role", "button");
         span.tabIndex = 0;
         span.setAttribute("aria-pressed", "false");
@@ -1406,8 +1432,14 @@ function duaCard(c, summary, state, render, progressRows, wordLinks = null, page
   if (TRANSLATED_BOOKS.has(anchorUri)) card.appendChild(standardTranslationFolds(anchorUri, () => loadOpenitiConcordance(anchorUri).then((cc) => cc?.stdByN?.get(an) ?? null).catch(() => null)));
 
   const box = el("div", "dua-also");
-  const headP = el("p", "dua-also-head", t("Narrated in {n} places", { n: num(c.members.length) }));
-  headP.appendChild(el("span", "dua-proposed", t("found by matching words, to be checked")));
+  // Decision 96: members a check moved out are left out of the count and listed below it.
+  const { kept, movedOut } = applyMembers(c.members, c.anchor, summary.books, check);
+  const headP = el("p", "dua-also-head", t("Narrated in {n} places", { n: num(kept.length) }));
+  headP.dataset.duaNarratedCount = String(kept.length);
+  const chipText = checkChipText(check);
+  const chip = el("span", chipText ? `dua-check-chip dua-check-${checkState(check)}` : "dua-proposed", chipText ?? t("found by matching words, to be checked"));
+  chip.dataset.duaCheckStatus = checkState(check);
+  headP.appendChild(chip);
   box.appendChild(headP);
   const mainRow = el("div", "dua-also-refs");
   const restRow = el("div", "dua-also-refs");
@@ -1426,8 +1458,8 @@ function duaCard(c, summary, state, render, progressRows, wordLinks = null, page
     });
     return r;
   };
-  const withStd = c.members.filter((m) => m[2] != null && m[2] !== "");
-  const rest = c.members.filter((m) => !(m[2] != null && m[2] !== ""));
+  const withStd = kept.filter((m) => m[2] != null && m[2] !== "");
+  const rest = kept.filter((m) => !(m[2] != null && m[2] !== ""));
   for (const m of withStd) mainRow.appendChild(btn(m));
   if (withStd.length) box.appendChild(mainRow);
   if (rest.length && !withStd.length) { for (const m of rest) mainRow.appendChild(btn(m)); box.appendChild(mainRow); }
@@ -1441,7 +1473,17 @@ function duaCard(c, summary, state, render, progressRows, wordLinks = null, page
     more.appendChild(restRow);
     box.appendChild(more);
   }
+  if (movedOut.length) {
+    const mv = el("div", "dua-also dua-check-moved");
+    mv.dataset.duaMovedOut = String(movedOut.length);
+    mv.appendChild(el("p", "dua-also-head", t("Moved out, new number coming ({n})", { n: num(movedOut.length) })));
+    const mvRow = el("div", "dua-also-refs");
+    for (const m of movedOut) mvRow.appendChild(btn(m));
+    mv.appendChild(mvRow);
+    box.appendChild(mv);
+  }
   card.appendChild(box);
+  if (checkEnv?.session?.canCheck) card.appendChild(duaCheckButton(card, c, summary, state, render, page, checkEnv, check, baseWords));
 
   const prog = el("div", "dua-progress");
   prog.dataset.duaProgress = String(c.dua);
@@ -1450,6 +1492,40 @@ function duaCard(c, summary, state, render, progressRows, wordLinks = null, page
   card.appendChild(prog);
   progressRows.push({ dua: c.dua, el: prog, page });
   return card;
+}
+
+/**
+ * Decision 96: "✓ Check this dua" -- only for Owner and Prime (a non-admin preview gets no button, the status chip
+ * still shows). It opens the check panel under the card; ← Back closes it and returns focus to the card. Saving writes
+ * duaChecks.<dua> alone, patches the in-memory copy and redraws the page on this card.
+ */
+function duaCheckButton(card, c, summary, state, render, page, env, check, baseWords) {
+  const open = el("button", "dua-ref dua-check-open", check ? t("✓ Check this dua again") : t("✓ Check this dua"));
+  open.type = "button";
+  open.dataset.duaCheckOpen = String(c.dua);
+  open.addEventListener("click", () => {
+    if (card.nextElementSibling?.classList.contains("dua-check-host")) return;
+    const fit = loadDuaFit(page).then((f) => f?.duas?.[c.dua] ?? null).catch(() => null);
+    const panelHost = el("div", "dua-check-host");
+    card.after(panelHost);
+    const close = () => { panelHost.remove(); card.tabIndex = -1; card.focus({ preventScroll: true }); card.scrollIntoView({ block: "center" }); };
+    fit.then((fitRows) => {
+      const texts = loadMemberTexts(c, summary.books);
+      panelHost.appendChild(buildCheckPanel({
+        card: c, books: summary.books, fit: fitRows, words: baseWords, existing: check, textsPromise: texts, onBack: close,
+        onSave: async (made) => {
+          const stored = await env.data.saveDuaCheck(env.session, c.dua, made, env.exists);
+          env.exists = true; env.checks[c.dua] = stored;
+          state.dua.focusDua = c.dua;
+          render();
+        },
+      }));
+      panelHost.firstChild.scrollIntoView({ block: "start" });
+    });
+  });
+  const row = el("div", "dua-check-row");
+  row.appendChild(open);
+  return row;
 }
 
 /** Decision 90, rounds 3-4: "S:A:W" from a packed place (surah*1000000 + ayah*1000 + word). */
