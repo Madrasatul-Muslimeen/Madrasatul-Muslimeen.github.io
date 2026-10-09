@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "09.150",
+    "version": "09.151",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -2981,8 +2981,20 @@
     {
       "version": "09.150",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Builder #701 (PR #702): journey-s9's five failing tray checks at 1440px; four were a stale width rule in the test (the tray goes three-panel at 900px), one was real (the ▾ wrapped under the title in the tray's narrow list column).",
+      "integration": {
+        "authorizedOn": "2026-10-09",
+        "integratedOn": "2026-10-09",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "09.151",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Builder #712, PR #714: a vowelled dua word links only to a Qur'an word with the same hamza seat and shadda; else unlinked.",
       "integration": {
         "authorizedOn": "2026-10-09",
         "integratedOn": "2026-10-09",
@@ -2991,8 +3003,9 @@
       }
     }
   ],
-  "nextUnallocated": "09.151",
+  "nextUnallocated": "10.01",
   "nextUnallocatedNote": [
+    "v09.151 was allocated to dua words link only to a Qur'an word that agrees with their vowels (Builder #712), 2026-10-09.",
     "v09.150 was allocated to the Journey tray's 1440px checks (Builder #701), 2026-10-09.",
     "v09.149 was allocated to one Note on the Āyah card (decision 94), 2026-10-09.",
     "v09.148 was allocated to the end of an āyah stays put; the Note view pop-up's way back on a tablet, 2026-10-09.",

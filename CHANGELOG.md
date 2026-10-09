@@ -20368,3 +20368,10 @@ PR #702, reviewed by the Architect.
 - `app/journey-map.html`: the "▾ on the title's line, date below" rule also applies to `html.embed #folderNotes` (the tray's list column is phone-narrow at any screen width).
 - `tools/i18n-verify/journey-s9-browser.mjs`: the wide tier is 900px inside the tray (the page's `NOTE_PANE_WIDE_FROM_EMBED`), not a fixed 1200; drag checks run on the tray's frame. Two new mutations.
 - Checks: journey-s9 288/0 (was 275/5), behaviour 1007/0, phone-width-overflow 217/0, stub-parity 4/0.
+
+## v09.151 — 2026-10-09 — Dua words link only to a Qur'an word that agrees with their vowels (Builder #712, PR #714)
+
+- `tools/hadith-data-pull/dua-word-links.mjs` reads `vowels-<page>.json`: a dua word with vowels links only to a Qur'an word with the same hamza seat and the same consonants including shadda, preferring one whose short vowels agree; when none agrees the word is left unlinked. A word without vowels keeps its link. Script marks (dagger alif, madda sign, small high marks, tatweel, ٱ) count as plain spelling; the sun-letter shadda after «ال» and on «لله» is not compared (the vowelled sources often omit it).
+- `words-<page>.json` regenerated (62 pages): 14,036 of 18,040 linked (was 14,060); 402 links changed, 24 dropped; 85 changed links move a word to a different `wbwKey` (existing records untouched).
+- Found by the dua review demo: Dua 2's وَأَنَا ("and I") was linked to وَإِنَّآ at 2:70:13 ("and indeed we"); it now links to 2:160:9 وَأَنَا. كُفُوًا now links to 112:4:4.
+- Checks: dua-word-links 29/0 with hand-written Dua 2, script-mark and no-vowel cases and two built-in mutations; Architect mutation (old `words-1.json` put back) fails 3 checks. Neighbouring dua suites, phone-width-overflow 217/0, behaviour 1004/3 (22g×3, archive.org, known).
