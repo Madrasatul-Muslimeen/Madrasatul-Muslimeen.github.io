@@ -27,7 +27,9 @@ const check = (name, ok, detail = "") => {
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
 const MUT = {
   noresume: ["quranrevival.html", "      if (position && settings?.listening) await resumeListeningFromBookmark(settings);\n", "\n"],
-  nobutton: ["quranrevival.html", '      if (meta.name === "NotAllowedError") { showContinueListening(); return; }', '      if (meta.name === "NotAllowedError") { return; }'],
+  // The button has two ways in (the refusal handler, and a fallback a beat later): the mutation empties the one function
+  // both call, so neither can show it.
+  nobutton: ["quranrevival.html", "    function showContinueListening() {\n", "    function showContinueListening() { return;\n"],
   noflag: ["quranrevival.html", ', listening: isPlaying() || isPaused() };', " };"],
   nows: ["quranrevival.html", "          onBookmark: () => toggleAyahBookmark(", "          onBookmarkOff: () => toggleAyahBookmark("],
   wsreopen: ["quranrevival.html", '      else if (position && settings?.view === "writing") { openReadingScreen(); await openWritingSheetForCurrentUnit(); }\n', "\n"],
@@ -70,7 +72,7 @@ async function start(browser, { lang, width, listening }) {
     await ctx.route(`**/app/${file}*`, async (r) => {
       const src = fs.readFileSync(`app/${file}`, "utf8");
       if (!src.includes(a)) throw new Error(`mutation anchor missing in ${file}`);
-      await r.fulfill({ status: 200, contentType: "text/html; charset=utf-8", body: src.split(a).join(b) });
+      await r.fulfill({ status: 200, contentType: file.endsWith(".js") ? "text/javascript; charset=utf-8" : "text/html; charset=utf-8", body: src.split(a).join(b) });
     });
   }
   const { page: P, errors } = await openPage(ctx, "/app/quranrevival.html?bookmark=b1");
@@ -130,7 +132,12 @@ const quiet = (errors) => errors.filter((e) => !/ERR_CERT|net::|archive\.org|api
   const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined, args: ["--autoplay-policy=no-user-gesture-required"] });
   const { ctx, P } = await start(browser, { lang: "en", width: 1280, listening: true });
   await P.waitForFunction(() => !!window.__media && !window.__media.paused, null, { timeout: 15000 }).catch(() => {});
-  // Save a new bookmark through the app's own ★ while it plays, then read the write.
+  // Corrected at review: the ★ on 1:2 is b1's own, so pressing it REMOVED b1, and the old regex matched b1's flag in
+  // that write. Move to 1:3 (not bookmarked), play it, and save a NEW bookmark there while it plays.
+  await P.evaluate(() => { const el = document.getElementById("ayahSelect"); el.value = "3"; el.dispatchEvent(new Event("change", { bubbles: true })); });
+  await P.waitForTimeout(800);
+  await P.click("#readPlayBtn").catch(() => {});
+  await P.waitForFunction(() => !!window.__media && !window.__media.paused, null, { timeout: 8000 }).catch(() => {});
   await P.evaluate(() => { window.__stubWriteData = []; });
   const saved = await P.evaluate(async () => {
     const btn = [...document.querySelectorAll("button")].find((b) => b.getClientRects().length && /★|Bookmark this/.test(b.textContent + (b.title || "") + (b.getAttribute("aria-label") || "")));
@@ -141,8 +148,9 @@ const quiet = (errors) => errors.filter((e) => !/ERR_CERT|net::|archive\.org|api
   // A bookmark form may ask for a name: confirm it with whatever save button it shows.
   await P.evaluate(() => { const s = [...document.querySelectorAll("button")].find((b) => b.getClientRects().length && /^(Save|Save bookmark|Add bookmark)$/i.test(b.textContent.trim())); s?.click(); });
   await P.waitForTimeout(1500);
-  const writes = await P.evaluate(() => JSON.stringify(window.__stubWriteData ?? []));
-  check("[capture] a bookmark saved while listening carries listening: true", saved && /"listening":true/.test(writes), writes.slice(0, 300));
+  // Only the NEW entry counts: the write carries the whole saved list, and the seeded b1 already says listening: true.
+  const fresh = await P.evaluate(() => (window.__stubWriteData ?? []).flatMap((w) => w.data?.saved ?? []).filter((e) => e && e.id !== "b1"));
+  check("[capture] a bookmark saved while listening carries listening: true", saved && fresh.length > 0 && fresh.every((e) => e.position === "ayah:1:3" && e.settings?.listening === true), JSON.stringify(fresh).slice(0, 300));
   await ctx.close();
   await browser.close();
 }
@@ -208,7 +216,7 @@ const quiet = (errors) => errors.filter((e) => !/ERR_CERT|net::|archive\.org|api
     await ctx.route(`${FONT_BASE}**`, (r) => r.fulfill({ status: 200, contentType: "font/woff2", body: fs.readFileSync("mushaf/fonts/" + r.request().url().split("/").pop()) }));
     await ctx.route("**/archive.org/**", (r) => r.abort());
   };
-  const mut = async (ctx) => { if (!MUTATE) return; const [file, a, b] = MUT[MUTATE]; await ctx.route(`**/app/${file}*`, async (r) => { const src = fs.readFileSync(`app/${file}`, "utf8"); if (!src.includes(a)) throw new Error("mutation anchor missing"); await r.fulfill({ status: 200, contentType: "text/html; charset=utf-8", body: src.split(a).join(b) }); }); };
+  const mut = async (ctx) => { if (!MUTATE) return; const [file, a, b] = MUT[MUTATE]; await ctx.route(`**/app/${file}*`, async (r) => { const src = fs.readFileSync(`app/${file}`, "utf8"); if (!src.includes(a)) throw new Error("mutation anchor missing"); await r.fulfill({ status: 200, contentType: file.endsWith(".js") ? "text/javascript; charset=utf-8" : "text/html; charset=utf-8", body: src.split(a).join(b) }); }); };
   for (const [lang, width] of [["en", 390], ["bn", 1280]]) {
     const tag = `[writing sheet, ${lang} ${width}]`;
     const ctx = await newContext(browser, { appLang: lang === "bn" ? "bn" : null, banner: false, viewport: { width, height: 844 } });
