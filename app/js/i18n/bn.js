@@ -3877,4 +3877,8 @@ export const BN = {
   "{count} routines here not logged today yet.": "এখানকার {count}টি রুটিন আজ এখনো লগ করা হয়নি।",
   "built": "তৈরি হয়েছে",
   "planned": "পরিকল্পিত",
+  // --- 9 Oct 2026: a Name's cited āyāt written out in Explore (asma-cited-ayat.js)
+  "The āyāt {name} is named in": "যে আয়াতগুলোতে {name} নামটি এসেছে",
+  "Tap a word for its Word card. Words from the Name's root are marked.": "শব্দ কার্ড দেখতে একটি শব্দে চাপুন। নামটির মূল ধাতুর শব্দগুলো চিহ্নিত।",
+  "Couldn't load this āyah. Check the connection and open the Name again.": "এই আয়াতটি লোড করা যায়নি। সংযোগ দেখে নামটি আবার খুলুন।",
 };

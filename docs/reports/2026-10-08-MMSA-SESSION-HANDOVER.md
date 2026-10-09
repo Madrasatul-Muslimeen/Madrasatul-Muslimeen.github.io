@@ -211,3 +211,4 @@ that handover does not name the version in `app/js/version.js`.
 - **v09.140** (2026-10-09): the way back from Notes on the Qur'an page.
 - **v09.141** (2026-10-09): the newer screens checked in Bangla.
 - **v09.142** (2026-10-09): the most-used screens checked in Bangla.
+- **v09.143** (2026-10-09): a Name's cited āyāt written out in Explore.
