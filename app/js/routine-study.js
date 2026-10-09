@@ -29,7 +29,7 @@ import { langText } from "./lang.js";
 import { roleListLabel } from "./labels.js";
 import { getAppLang, mountCardLookControl } from "./prefs.js";
 import { adoptAppLangFromUserIndex, mountSyncedAppLangControl } from "./lang-sync.js";
-import { t, translateStatic } from "./i18n.js";
+import { t, translateStatic, num } from "./i18n.js";
 import { safeWrite } from "./errors.js";
 import {
   getMyMembershipRoles, hydrateMemberships, pickContext, getActiveContext, setActiveContext,
@@ -334,7 +334,7 @@ export function initRoutineStudyPage({ moduleId, trackableId, rootSubjectId }) {
     if (reminderBanner) {
       const dueCount = [...loggedTodayByNodeId.values()].filter((logged) => !logged).length;
       reminderBanner.innerHTML = dueCount > 0
-        ? `<p class="routine-reminder">${dueCount} routine${dueCount === 1 ? "" : "s"} here not logged today yet.</p>`
+        ? `<p class="routine-reminder">${dueCount === 1 ? t("{count} routine here not logged today yet.", { count: num(dueCount) }) : t("{count} routines here not logged today yet.", { count: num(dueCount) })}</p>`
         : "";
     }
 
@@ -383,7 +383,7 @@ export function initRoutineStudyPage({ moduleId, trackableId, rootSubjectId }) {
     const entry = currentChunk?.entries?.[entryKey] ?? null;
     const statusLine = entry
       ? `Status: <strong>${entry.claimedStatus.replace(/_/g, " ")}</strong> &middot; ${entry.confirmState}`
-      : "Not started yet.";
+      : t("Not started yet.");
     const loggedToday = hasLoggedOn(currentWeekActivity, node.id, todayIso());
     const isBookmarked = !!findSavedBookmark(bookmarksDoc, { moduleId, subjectId: node.id, position: node.id });
 

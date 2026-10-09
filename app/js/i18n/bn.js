@@ -3870,6 +3870,13 @@ export const BN = {
   // The "বাংলা translation" tick (its old key above was never reached: translateStatic() skips any string that already
   // holds Bangla script) is now <span>বাংলা</span> + this word.
   "translation": "অনুবাদ",
+  // Sweep part 3 (#684): the other pages. Each key was searched for first; none existed.
+  "Show archived people": "সংরক্ষণাগারে রাখা ব্যক্তিদের দেখান",
+  "No resource added yet for this topic. Add one from the Catalogue page before studying it here.": "এই বিষয়ের জন্য এখনো কোনো উপকরণ যোগ করা হয়নি। এখানে পড়ার আগে ক্যাটালগ পাতা থেকে একটি যোগ করুন।",
+  "{count} routine here not logged today yet.": "এখানকার {count}টি রুটিন আজ এখনো লগ করা হয়নি।",
+  "{count} routines here not logged today yet.": "এখানকার {count}টি রুটিন আজ এখনো লগ করা হয়নি।",
+  "built": "তৈরি হয়েছে",
+  "planned": "পরিকল্পিত",
   // --- 9 Oct 2026: a Name's cited āyāt written out in Explore (asma-cited-ayat.js)
   "The āyāt {name} is named in": "যে আয়াতগুলোতে {name} নামটি এসেছে",
   "Tap a word for its Word card. Words from the Name's root are marked.": "শব্দ কার্ড দেখতে একটি শব্দে চাপুন। নামটির মূল ধাতুর শব্দগুলো চিহ্নিত।",

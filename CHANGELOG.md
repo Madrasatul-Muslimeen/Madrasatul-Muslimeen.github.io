@@ -20295,3 +20295,17 @@ The Owner, decision 88, on the Dua demo (https://claude.ai/artifact/LxHMM7PhPAKQ
 - **Checks:**
   - new asma-cited-ayat-browser 45/0 (mutations nocited, noroots, noback, pillonly, bnfont each caught)
   - green: behaviour 1007/0, bangla-sweep-core-screens 122/0, asma suites (poster 96, name-nav-poster 140, explore-name-poster 36, file-under 52, descriptions 26, classification-rename 20, classifications-boundary 36), explore-phone-card 146/0, phone-width-overflow 217/0, palette-contrast 20/0, stub-parity 4/0
+
+## v09.144 — 2026-10-09 — Every remaining page checked in Bangla
+
+- **Asked:** the Architect's round (Builder #684, PR #686): Bangla sweep, part 3
+- **What:**
+  - `app/js/topic-renderer.js`, `topic-study.js`, `routine-study.js`, `app/about.html`, `app/people.html` (via bn): the leaks through `t()`; the routine reminder's count through `num()` (review)
+  - `app/js/i18n/bn.js`: six phrases appended
+  - `tools/i18n-verify/bangla-sweep-other-pages-browser.mjs` (new), `bangla-sweep-lib.mjs`: the About registry named a known gap, not data (review)
+  - 23 Bangla screenshots in `docs/reports/2026-10-09-bangla-sweep-part3-shots/`
+- **Checks:**
+  - new bangla-sweep-other-pages 222/0 (mutations "Show archived people", "planned"; the Bangla-digit check fails with the fix stashed)
+  - green: bangla-sweep-core-screens 122/0, bangla-sweep-newer-screens 23/0, asma-cited-ayat 45/0, palette-contrast 20/0, phone-width-overflow 217/0, stub-parity 4/0
+  - behaviour 1004/3: 22g × 3 (archive.org, intermittent in this sandbox)
+- **Open:** the About page's feature registry (~100 English lines) is untranslated, named as a known gap

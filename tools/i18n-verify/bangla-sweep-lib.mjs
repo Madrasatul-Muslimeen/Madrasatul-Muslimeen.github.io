@@ -38,6 +38,10 @@ export const SCAN = () => {
       if (lang && lang !== "bn") return "lang=" + lang;
       if (e.getAttribute?.("dir") === "rtl") return "rtl";
       if (e.hasAttribute?.("data-i18n-skip")) return "skip";
+      // NOT data: the About page's feature registry (names and "delivers" lines from feature-registry.js, ~100 English
+      // interface sentences) is a KNOWN GAP, skipped by name so the sweep can pass while it waits (Architect review of
+      // #684, v09.144). Translating it is its own round; when it is done, delete this line.
+      if (e.matches?.(".registry-text")) return "known-gap";
       if (e.matches?.("[data-standard-translation-text], .hadith-arabic, .dua-word-arabic, .ayah-translation, .note-english, .qcr-list-title, .qcr-way-snippet, #qcrLevelSelect, .wbw-translit, .wbw-gloss, .word-card-transliteration, .dua-word-translit .dua-word-value")) return "data";
     }
     return null;
