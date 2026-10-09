@@ -38,6 +38,7 @@ check("A3 the three non-Quran unit types each derive their own namespace", () =>
   assert.equal(sourceKindForUnitKey(buildUnitKey.hadith("bukhari", 1)), "hadith-unit");
   assert.equal(sourceKindForUnitKey(buildUnitKey.topic("t42")), "topic-unit");
   assert.equal(sourceKindForUnitKey(buildUnitKey.name(99)), "name-unit");
+  assert.equal(sourceKindForUnitKey(buildUnitKey.dua(3126)), "dua-unit");
 });
 check("A4 EVERY unit type buildUnitKey produces is bindable -- none silently missing", () => {
   const sample = {
@@ -45,9 +46,15 @@ check("A4 EVERY unit type buildUnitKey produces is bindable -- none silently mis
     page: buildUnitKey.page("hafs", 604), ruku: buildUnitKey.ruku(2, 1), juz: buildUnitKey.juz(30),
     hizb: buildUnitKey.hizb(60), rub: buildUnitKey.rub(240), manzil: buildUnitKey.manzil(7),
     hadith: buildUnitKey.hadith("muslim", 2564), topic: buildUnitKey.topic("t1"), name: buildUnitKey.name(1),
+    dua: buildUnitKey.dua(12),
   };
-  assert.deepEqual(Object.keys(sample).sort(), Object.keys(buildUnitKey).sort(),
+  // UPDATED 9 Oct 2026, reason recorded: decisions 88 and 92 added dua and duaWord to buildUnitKey and this check was
+  // red on main from then (it threw, so the suite stopped here). dua is bindable (ADR-009 §9). duaWord is deliberately
+  // NOT: Notes are on the dua, not on each word -- so it is named here as the one exception, and still checked refused.
+  const NOT_BINDABLE = { duaWord: buildUnitKey.duaWord(12, 3) };
+  assert.deepEqual([...Object.keys(sample), ...Object.keys(NOT_BINDABLE)].sort(), Object.keys(buildUnitKey).sort(),
     "this check must cover buildUnitKey's own set, not a stale copy of it");
+  for (const key of Object.values(NOT_BINDABLE)) assert.equal(bindableUnitType(key), null, `${key} must stay unbindable`);
   for (const [unitType, key] of Object.entries(sample)) {
     assert.equal(bindableUnitType(key), unitType, key);
     assert.ok(sourceKindForUnitKey(key), `${key} must derive a sourceKind`);

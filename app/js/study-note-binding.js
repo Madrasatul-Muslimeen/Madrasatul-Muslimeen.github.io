@@ -52,6 +52,8 @@ const SOURCE_KIND_BY_UNIT_TYPE = Object.freeze({
   hadith: "hadith-unit",
   topic: "topic-unit",
   name: "name-unit",
+  // ADR-009 §9 (9 Oct 2026): a dua (decision 88's permanent key dua:<n>) is its own namespace, not a hadith.
+  dua: "dua-unit",
 });
 
 /** The exact shapes `buildUnitKey` produces (I5). A key that does not match one of these is not a permanent unit key and is refused rather than stored. */
@@ -68,6 +70,7 @@ const UNIT_KEY_SHAPES = Object.freeze({
   hadith: /^hadith:[A-Za-z0-9_-]+:\d{1,6}$/,
   topic: /^topic:[A-Za-z0-9_-]+$/,
   name: /^name:\d{1,2}$/,
+  dua: /^dua:\d{1,5}$/,
 });
 
 const APPROACH_ID = /^approach_\d{2}$/;

@@ -199,7 +199,10 @@
         : null;
       // Decision 90: ?view=dua&duaPage=<p>&dua=<n> reopens a page of Duas on one card (the way back from a dua word's Word card).
       const duaQs = new URLSearchParams(location.search), duaPageParam = Number(duaQs.get("duaPage")), duaParam = Number(duaQs.get("dua"));
-      const initialDua = duaQs.get("view") === "dua" && Number.isInteger(duaPageParam) && duaPageParam > 0 ? { page: duaPageParam, dua: Number.isInteger(duaParam) ? duaParam : null } : null;
+      // 9 Oct 2026: a dua's bookmark (?resume=dua:<n>, bookmarks.html) reopens that dua's card; the browser finds its page.
+      const resumeDua = /^dua:(\d{1,5})$/.exec(resumeParam ?? "");
+      const initialDua = duaQs.get("view") === "dua" && Number.isInteger(duaPageParam) && duaPageParam > 0 ? { page: duaPageParam, dua: Number.isInteger(duaParam) ? duaParam : null }
+        : resumeDua ? { page: 1, dua: Number(resumeDua[1]), findPage: true } : null;
       const corpus = mountHadithBrowser(document.getElementById("hadithCorpusRoot"), { mount: "hadith-module", initialHadeethEncId, initialDua });
       // The corpus's own study actions (Note/bookmark/Studied, issue #311)
       // read the signed-in session fresh on every render, but nothing tells

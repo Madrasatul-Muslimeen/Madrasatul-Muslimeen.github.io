@@ -20200,3 +20200,19 @@ The Owner, decision 88, on the Dua demo (https://claude.ai/artifact/LxHMM7PhPAKQ
 - **Checks:**
   - new dua-word-progress-browser 31/0 (mutations wrongpos, nosave, nofollow; an I15 case)
   - green: dua-word-grammar-browser 33/0, dua-vowels-browser 33/0, dua-word-links-browser 48/0, dua-words-browser 37/0, dua-tab-browser 57/0, claim-for-family-word-hadith-browser 158/0, hadeethenc-browser 82/0, monitor-study-activity 12/0, phone-width-overflow 217/0, palette-contrast-browser 20/0, stub-parity 4/0, rules-authorisation-executable 63/0, behaviour 1007/0
+
+## v09.136 — 2026-10-09 — Notes and bookmarks on a dua
+
+- **Asked:** the 8 Oct handover's "possible next" (Notes and bookmarks on a dua), taken under decision 91 ("keep working")
+- **What:**
+  - `app/js/hadith-browser.js`: 📝 My Notes and 🔖 Bookmark this on every Dua card (`duaNoteBookmarkRow()`); `findDuaPage()` for `?resume=dua:<n>`; `keepCardInView()` keeps a reopened card on screen while the cards above fill in
+  - `app/js/hadith-study-actions.js`: `duaNoteHrefFor()`, `duaNoteCount()`, `duaBookmarkedSet()`, `toggleDuaBookmark()` (bookmarks.js, subjectId `dua`, position `dua:<n>`)
+  - `app/js/study-note-binding.js` and ADR-009 §9: `dua:<n>` is a Note source, `sourceKind` `dua-unit`; `duaword` is not
+  - `app/notes.html`: ← Back when the link carries `back=1` (decision 86); `app/hadith-study.html`: `?resume=dua:<n>`
+  - `app/css/hadith.css`: `.hadeethenc-study-btn` border-box (a My Notes link was 55px beside a 40px button); `app/js/i18n/bn.js`: one phrase
+- **Checks:**
+  - new dua-note-bookmark-browser 35/0 (mutations noback, wrongkey, noresume, contentbox, noplace; nokeep fails intermittently, as the defect it guards did)
+  - study-note-binding 16/0 (A4 was red on `main` since `dua`/`duaWord` joined `buildUnitKey`; updated in place, reason recorded); study-note-boundary's vocabulary check now includes `dua-unit`
+  - green: dua-tab-browser 57/0, dua-word-progress-browser 31/0, dua-word-card-browser 45/0, hadeethenc-browser 82/0, hadith-gate-contracts 12/0, notes-note-windows-browser 218/0, bookmark-open-browser 77/0, claim-for-family-word-hadith-browser 158/0, stub-parity 4/0, rules-authorisation-executable 63/0, phone-width-overflow 217/0, palette-contrast-browser 20/0, behaviour 1004/3 (22g×3, archive.org, the known baseline)
+  - red on `main` before this round and unchanged: study-note-boundary 17/1 (P5-C Rules diff), study-note-service (a stale import-rewrite assertion)
+- **No Rules change.** `noteSources` accepts any non-empty `sourceKind`; bookmarks are the person's own document.
