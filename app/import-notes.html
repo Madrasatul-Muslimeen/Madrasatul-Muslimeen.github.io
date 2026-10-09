@@ -13,6 +13,9 @@
   #backLink { flex: 0 0 40px; box-sizing: border-box; width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center;
     border: 1px solid #c9d3e6; border-radius: 999px; background: #fff; color: #1f3a6e; font-weight: 600; font-size: 1.1rem; text-decoration: none; }
   #backLink:focus-visible { outline: 2px solid #1f3a6e; outline-offset: 2px; }
+  /* The way-back law (decision 86): ?back=1 shows ← Back to exactly where the reader came from. */
+  .notes-back-btn { min-height: 40px; padding: 0 0.9rem; margin: 0.6rem 0 0; border: 1px solid #c9a24b; border-radius: 0.6rem; background: #1F3A6E; color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+  .notes-back-btn[hidden] { display: none; }
   #contextBar[hidden] { display: none; }
   h2 { font-size: 1.05rem; margin: 1.2rem 0 0.4rem; }
   p.intro { color: #555; font-size: 0.94rem; }
@@ -48,6 +51,7 @@
 </head>
 <body>
   <h1 id="pageTitle"><a id="backLink" href="journey-map.html#folders" title="Back to Mapping My Journey" aria-label="Back to Mapping My Journey"><span aria-hidden="true">←</span></a> <span>Import Notes</span></h1>
+  <button type="button" id="notesBackBtn" class="notes-back-btn" hidden></button>
   <p class="intro">Bring Notes from another app into Mapping My Journey — folders and Notes, each linked to its āyah where its title or text names one. This never touches your existing folders or Notes, and never deletes anything.</p>
 
   <nav class="app-nav" id="topNav">
@@ -154,6 +158,14 @@
 
     translateStatic();
     registerServiceWorker();
+
+    // The way-back law (decision 86): ?back=1 (Mapping My Journey's Import Notes… link) gives ← Back to that page.
+    if (new URLSearchParams(location.search).get("back") === "1") {
+      const backBtn = document.getElementById("notesBackBtn");
+      backBtn.textContent = `← ${t("Back")}`;
+      backBtn.hidden = false;
+      backBtn.addEventListener("click", () => { if (history.length > 1) history.back(); else location.href = "./journey-map.html#folders"; });
+    }
 
     const whoEl = document.getElementById("who");
     const signInBtn = document.getElementById("signInBtn");
