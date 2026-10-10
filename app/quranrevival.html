@@ -7119,17 +7119,6 @@
     let ayahNotesDoc = { notes: {} };
     let bookmarksDoc = { resume: {}, saved: [] };
     let ayahNoteDataLoadedFor = null;
-    // Enhancement round -- the Note view's OWN scope, independent of the
-    // canonical Read-view position (currentUnitType/currentAyahNum/...) on
-    // purpose: opening "Note & more" on one āyah of a flow must never
-    // silently move the Read screen out from under the reader. Starts null
-    // (nothing open yet); openNoteView() seeds it from whichever āyah was
-    // tapped. Bar 1's own pickers then let the reader change what's being
-    // noted, entirely within this state, never touching
-    // currentUnitType/currentSurahNum/currentAyahNum. Always reads within
-    // currentSurahData: Note view never loads a different surah than
-    // whatever's already open (see noteScopeUnitInfo()'s own comment).
-    let noteScope = null; // { unitType, ayahNum, rangeFrom, rangeTo, unitNumber }
     // Fix round -- WbW/Root/Derivatives no longer keep their own separate
     // noteWbwOn/noteRootsOn/noteDerivativesOn flags here; bar 2's own
     // toggle buttons now flip the SAME canonical wbwShowToggle/rootsToggle/
@@ -7171,18 +7160,6 @@
     // that bookmark is removed via its own star, or when the person picker
     // changes (bookmarks are per-person documents).
     let openedBookmarkId = null;
-    // Whether Notes is open, tracked the same way -- renderNoteViewNow()
-    // rebuilds the whole view's innerHTML on every re-render (a claim, a
-    // bookmark toggle, a Prev/Next), which would otherwise snap a
-    // deliberately-opened Notes field shut again mid-write. Notes now
-    // starts closed (the owner's own ask), but once a reader opens it, it
-    // stays open through whatever else happens on this screen until they
-    // close it again.
-    let noteNotesOpen = false;
-    // Note view enhancement round -- the Track/Guide/Breakdown/Coverage card
-    // collapses the same way (default closed, "like the languages"), and
-    // needs the identical survive-a-rebuild fix Notes already has above.
-    let noteApproachCardOpen = false;
     let tenantWeekStartsOn = 6;
     let currentTenantDoc = null;
     // v08.112 -- the Owner: "40 ways should reflect Everywhere." The landing
@@ -7477,15 +7454,10 @@
 
     // Issue #286 -- "This āyah" action sheet. `ayahSheetUnitKey` null means
     // closed; the mount is rendered fresh on every open/close, same pattern
-    // as the Asma attach popover's own overlay. `ayahSheetPendingQcrOpen` is
-    // a one-shot flag: the "QCR collection(s)…" action navigates into the
-    // existing Note view and asks it to open its own 🗂 Attach panel on the
-    // very next render, the same shape a real tenant tap would have left the
-    // live DOM in, then clears itself so a later, unrelated Note-view render
-    // doesn't reopen it.
+    // as the Asma attach popover's own overlay. (Its QCR action opens the QCR
+    // pop-up directly since decision 95; the old one-shot Note-view flag is gone.)
     let ayahSheetUnitKey = null;
     let ayahSheetHalf = null; // issue #606 -- "a"/"b" for Al-Fātiḥah's displayed 6/7 (the sheet's key is ayah:1:7 / ayah:1:8)
-    let ayahSheetPendingQcrOpen = false;
     // Issue #325 -- which Approach's four-stage row is currently showing on
     // the open Ayah Card. Null means the select still reads its own
     // placeholder and no stage row is drawn. Reset on every open/close so a
@@ -8262,10 +8234,6 @@
     }
 
     const UNIT_NUM_LABELS = { ruku: "Ruku' №", juz: "Juz №", hizb: "Hizb №", page: "Page №" };
-    // Enhancement round -- the Note view's own bar 1 picker offers the same
-    // seven Study Unit choices #unitTypeSelect does, in the same wording, so
-    // switching between the two feels like the same control.
-    const NOTE_UNIT_TYPE_LABELS = { ayah: "Single Ayah", range: "Range of Ayahs", surah: "Whole Surah", ruku: "Ruku'", juz: "Juz", hizb: "Hizb", page: "Page" };
 
     function renderUnitNumberPicker() {
       const numbered = NUMBERED_UNITS.includes(currentUnitType);
@@ -20633,109 +20601,6 @@
       return true;
     }
 
-    /** Same shape as currentUnitInfo() ({unitType, unitKey, chunkKey, label})
-        but built from noteScope instead of the canonical Read-view position
-        -- kept as its own small function rather than parametrizing
-        currentUnitInfo() itself, so nothing about the Read screen's own,
-        already-correct position logic is touched by this round. Always
-        reads within currentSurahData (Note view never loads a different
-        surah than whatever's already open -- see noteScope's own comment). */
-    function noteScopeUnitInfo() {
-      const ayah = currentSurahData.ayahs.find((a) => a.ayah === noteScope.ayahNum) ?? currentSurahData.ayahs[0];
-      const surahChunkKey = `surah_${currentSurahNum}`;
-      if (noteScope.unitType === "range") {
-        const from = Math.min(noteScope.rangeFrom, noteScope.rangeTo), to = Math.max(noteScope.rangeFrom, noteScope.rangeTo);
-        return { unitType: "range", unitKey: buildUnitKey.range(currentSurahNum, from, to), chunkKey: surahChunkKey, label: t("Ayahs {from}–{to} of Surah {surah}", { from: num(from), to: num(to), surah: num(currentSurahNum) }), fromAyah: from, toAyah: to };
-      }
-      if (noteScope.unitType === "surah") {
-        return { unitType: "surah", unitKey: buildUnitKey.surah(currentSurahNum), chunkKey: surahChunkKey, label: t("Whole Surah {surah}", { surah: num(currentSurahNum) }), fromAyah: 1, toAyah: currentSurahData.ayahCount };
-      }
-      if (noteScope.unitType === "ruku") {
-        const idx = rukuIndexInSurah(currentSurahData.ayahs, ayah.ruku);
-        const inRuku = currentSurahData.ayahs.filter((a) => a.ruku === ayah.ruku).map((a) => a.ayah);
-        return { unitType: "ruku", unitKey: buildUnitKey.ruku(currentSurahNum, idx), chunkKey: surahChunkKey, label: t("Ruku' {ruku} of Surah {surah} (ayahs {from}–{to})", { ruku: num(idx), surah: num(currentSurahNum), from: num(Math.min(...inRuku)), to: num(Math.max(...inRuku)) }), fromAyah: Math.min(...inRuku), toAyah: Math.max(...inRuku) };
-      }
-      if (noteScope.unitType === "juz") {
-        const inJuz = currentSurahData.ayahs.filter((a) => a.juz === ayah.juz).map((a) => a.ayah);
-        return { unitType: "juz", unitKey: buildUnitKey.juz(ayah.juz), chunkKey: "subject_quran", label: t("Juz {juz}", { juz: num(ayah.juz) }), fromAyah: Math.min(...inJuz), toAyah: Math.max(...inJuz) };
-      }
-      if (noteScope.unitType === "hizb") {
-        const hizbNow = Math.ceil(ayah.hizbQuarter / 4);
-        const inHizb = currentSurahData.ayahs.filter((a) => Math.ceil(a.hizbQuarter / 4) === hizbNow).map((a) => a.ayah);
-        return { unitType: "hizb", unitKey: buildUnitKey.hizb(hizbNow), chunkKey: "subject_quran", label: t("Hizb {hizb}", { hizb: num(hizbNow) }), fromAyah: Math.min(...inHizb), toAyah: Math.max(...inHizb) };
-      }
-      if (noteScope.unitType === "page") {
-        const inPage = currentSurahData.ayahs.filter((a) => a.page === ayah.page).map((a) => a.ayah);
-        return { unitType: "page", unitKey: buildUnitKey.page(PAGE_EDITION, ayah.page), chunkKey: "subject_quran", label: t("Page {page}", { page: num(ayah.page) }), fromAyah: Math.min(...inPage), toAyah: Math.max(...inPage) };
-      }
-      const half = noteHalfNow();
-      return { unitType: "ayah", unitKey: ayahRecordKey(currentSurahNum, noteScope.ayahNum, half), half, chunkKey: surahChunkKey, label: ayahRefLabel(currentSurahNum, noteScope.ayahNum, { half }), fromAyah: noteScope.ayahNum, toAyah: noteScope.ayahNum };
-    }
-    /** Issue #606 -- which displayed Ayat the Note view's single-Ayah scope is on, while the
-        count is on and it sits on internal 1:7: "a" (6) or "b" (7); null otherwise. */
-    function noteHalfNow() {
-      if (!noteScope || noteScope.unitType !== "ayah" || noteScope.ayahNum !== 7 || !fatihaCountApplies(currentSurahNum, fatihaOn())) return null;
-      return noteScope.half === "b" ? "b" : "a";
-    }
-
-    /** The unit key the Note view is showing right now -- the one thing every caller that needs to compare "is this the note that's open" should call rather than re-deriving it. */
-    function noteScopeCurrentUnitKey() {
-      if (!noteScope) return null;
-      return noteScopeUnitInfo().unitKey;
-    }
-
-    /** Which number (of whichever unit type) a given āyah of the CURRENTLY LOADED surah belongs to -- ruku/juz/hizb/page all read straight off fields the pulled data already carries, so this never needs the boundary-table fetch (getJuzIndex()/etc.) the canonical Study Unit picker uses. That is the trade this round makes deliberately: Note view's own unit-number picker only offers numbers that appear WITHIN the open surah, not every valid number in the whole Qur'an -- picking a different Juz/Hizb/Page entirely still means Study options or the Read screen. */
-    function noteScopeNumberOfAyah(unitType, ayah) {
-      if (unitType === "ruku") return rukuIndexInSurah(currentSurahData.ayahs, ayah.ruku);
-      if (unitType === "juz") return ayah.juz;
-      if (unitType === "hizb") return Math.ceil(ayah.hizbQuarter / 4);
-      if (unitType === "page") return ayah.page;
-      return null;
-    }
-    function noteScopeNumbersInSurah(unitType) {
-      return [...new Set(currentSurahData.ayahs.map((a) => noteScopeNumberOfAyah(unitType, a)))].sort((a, b) => a - b);
-    }
-
-    /** "the study contents (Ayat)... is only important to display here for single, a Range and a small Surah that is less than a half page size. Anything above than that a user can read from the READ view" (the owner's own words). "Small" reads real data already in memory (every loaded āyah carries its own real Mushaf `.page` number) rather than fetching the full 2.8MB page-layout file just to decide this: a surah that fits on exactly one real printed page counts as small. That is a deliberately looser proxy than literal line-counted "half a page" -- flagged, not hidden, in the build report. */
-    function noteScopeShowAyatText() {
-      if (noteScope.unitType === "ayah" || noteScope.unitType === "range") return true;
-      if (noteScope.unitType === "surah") return new Set(currentSurahData.ayahs.map((a) => a.page)).size === 1;
-      return false;
-    }
-
-    /** Word by Word / Root / Derivatives (and the Collapse toggle that hides
-        the text they annotate) used to be single-āyah only, because
-        ayah-renderer.js's panels each take ONE āyah object rather than a
-        span. The owner's own report: that took them off every unit but
-        Single Ayah -- "bring these back in the appropriate Unit choices."
-        The appropriate ones are exactly the units whose text is on screen
-        here at all (Single Ayah, a Range, a surah that fits one real Mushaf
-        page); a unit too big for that shows the "read it on the Read screen"
-        link instead, so there is no text here for these panels to annotate.
-        Multi-āyah scopes get one panel per āyah, built by the caller below --
-        the same "loop the single-āyah renderer over every āyah in scope"
-        shape the Read screen's own flow view has always used. */
-    function noteScopeCanWbwRoot() {
-      return noteScopeShowAyatText();
-    }
-
-    /** "every Ayah or any unit should have a way to recognise it contains a note in a different unit" (the owner's own words) -- for a single-āyah scope only (the concept only means something when there IS one specific āyah to ask "which wider units cover this"), lists whichever ancestor scope already has its own real note, so the reader can jump straight to it rather than stumbling on it by chance. Every candidate key is derived from data already loaded, and ayahHasNote() is a plain in-memory check (no fetch) -- this costs nothing extra to compute on every render. */
-    function noteScopeWiderNotes() {
-      if (noteScope.unitType !== "ayah") return [];
-      const ayah = currentSurahData.ayahs.find((a) => a.ayah === noteScope.ayahNum);
-      if (!ayah) return [];
-      const rukuIdx = rukuIndexInSurah(currentSurahData.ayahs, ayah.ruku);
-      const hizbNow = Math.ceil(ayah.hizbQuarter / 4);
-      const candidates = [
-        { unitType: "ruku", unitKey: buildUnitKey.ruku(currentSurahNum, rukuIdx), label: t("Ruku' {ruku}", { ruku: num(rukuIdx) }) },
-        { unitType: "surah", unitKey: buildUnitKey.surah(currentSurahNum), label: t("Surah {surah}", { surah: num(currentSurahNum) }) },
-        { unitType: "juz", unitKey: buildUnitKey.juz(ayah.juz), label: t("Juz {juz}", { juz: num(ayah.juz) }) },
-        { unitType: "hizb", unitKey: buildUnitKey.hizb(hizbNow), label: t("Hizb {hizb}", { hizb: num(hizbNow) }) },
-        { unitType: "page", unitKey: buildUnitKey.page(PAGE_EDITION, ayah.page), label: t("Page {page}", { page: num(ayah.page) }) },
-      ];
-      return candidates.filter((c) => ayahHasNote(ayahNotesDoc, c.unitKey));
-    }
-
     /** Fix round -- "enable moving to the next Ayah both scrolling down and
         sideways in both read and note view in all settings." Before this,
         the ONLY way to move in a non-flow unit (Single Ayah, Ruku', Juz',
@@ -20803,8 +20668,7 @@
           stepper return a boolean, which would have meant changing what
           five existing call sites mean. */
       function positionSignature() {
-        const note = noteScope ? `${noteScope.unitType}/${noteScope.ayahNum}/${noteScope.rangeFrom}/${noteScope.rangeTo}/${noteScope.unitNumber}` : "-";
-        return `${stageView}|${currentSurahNum}|${currentAyahNum}|${currentUnitType}|${rangeFrom}|${rangeTo}|${note}`;
+        return `${stageView}|${currentSurahNum}|${currentAyahNum}|${currentUnitType}|${rangeFrom}|${rangeTo}`;
       }
 
       function advance(dir) {
