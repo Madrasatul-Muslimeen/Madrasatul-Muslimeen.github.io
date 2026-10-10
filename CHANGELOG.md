@@ -20401,3 +20401,10 @@ The first release of the v10 line (decision 97; v10.00 is unused). The Owner, 9 
 - Fixed on the way, both found by the new checks: messages held for the page inside were released by the empty frame's own about:blank load; the Track tab's way back was cleared by opening the Āyah card (now set after it).
 - Not yet: the Note view itself (its Study-menu tab, QCR's drawer from the Āyah card, Note-view bookmarks); round 2b.
 - Checks: read-note-pane-browser 192/0 with five mutations caught; ayah-card-takenote-family, notes-way-back, read-quick-buttons and word-card-ayah-card-ways-back updated in place (reasons recorded) and green; Journey, Read, Āyah card and dua suites green; phone-width-overflow 217/0; behaviour 1007/0.
+
+## v10.04 — 2026-10-10 — The writing sheet's ✅ Record, for every family member (Builder #719, PR #720)
+
+The Owner, 9 Oct 2026, with a photo of the sheet on Yaseen 8: "The writing view should have a progress record button for All family".
+- ✅ Record on the sheet's second row (`js/writing-sheet.js`, `onRecord`): the sheet is hidden, never destroyed (its writing is stored nowhere); the chosen unit's card opens (`openChosenUnitCard()`) with its Record Your Progress and the 👥 picker (decision 71); "Back to the writing sheet" (`setAppReturn`, set after the card opens) closes the card and shows the sheet again with its ink and scroll. Escape does nothing while the sheet is hidden.
+- Architect review: below 360px the unit's name keeps 64px and the letter-style picker shrinks instead (measured: 27px at 320px English before); the suite closes the card before tapping the docked pill and checks nothing covers it; the scroll check is explicit where one page fits.
+- Checks: writing-sheet-record-browser 28/0 with three mutations caught; writing-sheet 206/0 (13 controls, updated in place), popout 342/0, fatiha-count 30/0, unit-toolbar 54/0; ayah-card-takenote-family 44/0; read-note-pane 192/0; phone-width-overflow 217/0; behaviour 1007/0.
