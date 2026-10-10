@@ -4011,4 +4011,7 @@ export const BN = {
   "Back to {unit}": "{unit}-এ ফিরে যান",
   "Notes on this āyah": "এই আয়াতের নোট",
   "Loading your folders…": "আপনার ফোল্ডারগুলো আসছে…",
+  // --- 9 Oct 2026: the Notes pane's Track tab (decision 95, round 2a)
+  "Back to Notes on {unit}": "{unit}-এর নোটে ফিরে যান",
+  "Choose an Approach for {unit}, record your progress (for your family too, with 👥), or see your status.": "{unit}-এর জন্য একটি পদ্ধতি বেছে নিন, আপনার অগ্রগতি লিখে রাখুন (👥 দিয়ে পরিবারের জন্যও), অথবা আপনার অবস্থা দেখুন।",
 };

@@ -74,10 +74,9 @@ for (const [lang, width, look] of [["en", 390, "light"], ["bn", 390, "night"], [
   {
     const { page: P, errors } = await openPage(ctx, "/app/quranrevival.html");
     await toAyah255(P);
-    await P.evaluate(() => document.querySelector('[data-ayah-num-badge="2:255"]')?.click());
-    await P.waitForSelector("[data-ayah-sheet] [data-ayah-sheet-note]", { timeout: 8000 });
-    await P.waitForTimeout(400);
-    await P.click("[data-ayah-sheet] [data-ayah-sheet-note]");
+    // UPDATED IN PLACE (decision 95, v10.03): the Āyah card's 📝 Note opens the Notes pane now, so the Note view (whose
+    // ⋯ menu this section checks) is opened by its own Study-menu Note tab, on the same āyah.
+    await P.evaluate(() => document.getElementById("tabNoteBtn")?.click());
     await P.waitForFunction(() => !document.getElementById("noteView")?.hidden && document.querySelector('#noteView [data-note-menu-toggle="more"]'), null, { timeout: 10000 });
     const before = await place(P);
     check(`${tag} (1) the Note view is open on 2:255 before leaving`, before.noteOpen && before.surah === "2" && before.ayah === "255", JSON.stringify({ ...before, noteText: "" }));

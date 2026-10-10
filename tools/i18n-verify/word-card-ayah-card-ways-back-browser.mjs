@@ -219,13 +219,14 @@ for (const [lang, width, height] of [["en", 390, 844], ["bn", 390, 844], ["en", 
     const again = await page.evaluate(() => ({ card: document.getElementById("ayahActionSheetOverlay")?.classList.contains("open"), ref: document.querySelector("[data-ayah-sheet] .ayah-sheet-ref")?.textContent, word: !!document.querySelector(".quran-word-card"), pill: !!document.querySelector("#ayahCardBackPill:not([hidden])") }));
     check(`${tag} it closes the Word card and reopens the same Āyah card; the pill goes`, again.card && again.ref === ref0 && !again.word && !again.pill, JSON.stringify(again));
   }
-  // Note & more… leaves for the Note view; the way back returns to the Read view and the card.
+  // Note & more… leaves for the Notes pane (UPDATED IN PLACE, decision 95, v10.03: it left for the Note view); the
+  // pane's own "← Back to Āyah card" returns to the Read view and the card.
   await page.evaluate(() => document.querySelector("[data-ayah-sheet] [data-ayah-sheet-note]")?.click());
   await page.waitForTimeout(1200);
-  const inNote = await page.evaluate(() => !!document.querySelector("#ayahCardBackPill:not([hidden])"));
+  const inNote = await page.evaluate(() => /Āyah card|আয়াত কার্ড/.test(document.querySelector("#readNotePane:not([hidden]) [data-rnp-back]")?.textContent ?? ""));
   check(`${tag} Note & more… also leaves "Back to Āyah card"`, inNote);
   if (inNote) {
-    await page.click("[data-ayah-card-back]");
+    await page.click("#readNotePane [data-rnp-back]");
     await page.waitForFunction(() => document.getElementById("ayahActionSheetOverlay")?.classList.contains("open"), null, { timeout: 8000 }).catch(() => {});
     const r = await page.evaluate(() => ({ card: document.getElementById("ayahActionSheetOverlay")?.classList.contains("open"), ref: document.querySelector("[data-ayah-sheet] .ayah-sheet-ref")?.textContent, readShown: !!document.getElementById("readView")?.getClientRects().length }));
     check(`${tag} …and it brings back the Read view with the same Āyah card`, r.card && r.ref === ref0 && r.readShown, JSON.stringify(r));

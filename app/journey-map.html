@@ -383,6 +383,7 @@
   .unit-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
   .unit-actions button { min-height: 40px; }
   .unit-actions button[aria-disabled="true"] { opacity: 0.55; cursor: progress; }
+  .unit-actions button.unit-new-ready { outline: 3px solid #c9a24b; outline-offset: 2px; }
   .unit-kind { font-size: 0.72rem; padding: 0.1rem 0.5rem; border-radius: 999px; background: #eef2ff; color: #1F3A6E; white-space: nowrap; }
   .unit-old-note { border: 1px dashed #c9a24b; border-radius: 0.6rem; padding: 0.6rem 0.8rem; margin: 0.6rem 0; background: #fffdf6; }
   .unit-old-note h3 { margin: 0 0 0.3rem; font-size: 0.9rem; color: #6b4e10; }
@@ -3924,7 +3925,21 @@
     }
     window.addEventListener("message", (ev) => {
       if (ev.origin === location.origin && ev.data?.type === "mmsa-open-journey-request" && unitMode) openUnitInJourney();
+      if (ev.origin === location.origin && ev.data?.type === "mmsa-focus-new" && unitMode) focusNewWhenReady();
     });
+    // The Āyah card's 📝 Note on an āyah with no Note yet (decision 94): ✚ New note is put in focus, marked, ready to
+    // press as soon as the folders are loaded. Nothing is created until the reader presses it. Asked by a message
+    // (the pane already open) or by ?focusNew=1 (its first opening).
+    function focusNewWhenReady() {
+      let tries = 0;
+      const go = () => {
+        const b = viewUnit.querySelector("[data-unit-new]");
+        if (b && !b.hasAttribute("aria-disabled")) { b.classList.add("unit-new-ready"); b.focus(); b.scrollIntoView({ block: "nearest" }); return; }
+        if (++tries < 200) setTimeout(go, 150);
+      };
+      go();
+    }
+    if (unitMode && new URLSearchParams(location.search).get("focusNew") === "1") focusNewWhenReady();
     // The Read view moved to another āyah (‹ ›) with the pane open: show that āyah's Notes without reloading the page.
     // A Note being edited is saved first (the same flush the tray asks for when it closes).
     window.addEventListener("message", (ev) => {
