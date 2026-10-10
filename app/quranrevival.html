@@ -4186,7 +4186,6 @@
      what stop a mid-drag offset from becoming a real horizontal scrollbar
      on the page behind it. */
   #readScroll { overflow-x: hidden; }
-  .note-view { overflow-x: hidden; }
 
   /* =========================================================================
      Ayah Note panel -- the ⋮ quick-actions menu on every āyah, and the
@@ -4244,43 +4243,17 @@
   .ayah-note-flash { color: #2e6b4f; font-weight: 700; }
 
   /* ---- Note & more: full-stage view, dock stays visible underneath ---- */
-  .note-view { display: flex; flex-direction: column; height: 100%; min-height: 0; }
 
   /* Enhancement round -- bar 1 stops being a button rack ("we would make
      this Ayah view eventually as a deep study view, therefore we need to
      place all types of reading views to enable here too" -- the owner's own
      words) and becomes the reading-unit picker, the same shape as
      #readPickers on the Read screen. */
-  .note-pickerbar {
-    display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem;
-    background: #142c58; padding: 0.4rem 0.6rem; flex: 0 0 auto;
-    border-radius: 0.4rem 0.4rem 0 0;
-  }
-  .note-pickerbar select {
-    background: #fff; border: 1px solid rgba(255,255,255,0.5); border-radius: 0.35rem;
-    padding: 0.22rem 0.28rem; font-size: 0.78rem; font-family: inherit; min-width: 0; flex: 1 1 0; color: #1c2333;
-  }
-  .note-pickerbar select[hidden] { display: none; }
-  .note-pickerbar select:disabled { background: #e4e4e4; color: #666; }
-  .note-pickerbar select[data-note-picker="ayah"],
-  .note-pickerbar select[data-note-picker="num"],
-  .note-pickerbar select[data-note-picker="from"],
-  .note-pickerbar select[data-note-picker="to"] { flex: 0 0 3.9rem; }
 
   /* Enhancement round -- "a note can increase gradually... for the entire
      Qur'an" and "every Ayah or any unit should have a way to recognise it
      contains a note in a different unit" (the owner's own words): a small
      row of pills naming whichever wider unit already has its own note. */
-  .note-wide-notes {
-    background: #f5f0e2; border-bottom: 1px solid #e0d8bd; padding: 0.35rem 0.6rem;
-    font-size: 0.74rem; color: #7a6a3c; flex: 0 0 auto;
-    display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center;
-  }
-  .note-wide-pill {
-    background: #fff; border: 1px dashed #b8862f; color: #7a6a3c; border-radius: 999px;
-    padding: 0.14rem 0.55rem; font-size: 0.72rem; cursor: pointer; font-family: inherit;
-  }
-  .note-wide-pill:hover { background: #fbf3e0; }
 
   .note-icon-btn {
     flex: 0 0 auto;
@@ -4301,40 +4274,8 @@
      everything else folds into ⋮ and ⋯, which reuse the Read screen's own
      `.quick-menu`/`.qm-item` dropdown styling (`readPickers`' one bar, this
      bar -- same visual language). */
-  .note-bar2 {
-    display: flex; flex-wrap: wrap; align-items: center; gap: 0.32rem;
-    background: #1F3A6E; padding: 0.4rem 0.6rem; flex: 0 0 auto;
-    border-top: 1px solid rgba(255,255,255,0.15); border-radius: 0 0 0.4rem 0.4rem;
-    /* Fixes round 3 -- the ⋮/⋯ dropdowns anchor to THIS bar's own right
-       edge now, not to the small dot-wrap button that opens them (see
-       below). The bar's own right edge is always inside the viewport
-       (every layout check already proves the bar itself never overflows);
-       the button that opens the dropdown is not -- whatever sits before it
-       on the row (the nav cluster, in particular, which vanishes entirely
-       for the whole-Qur'an note) can leave it sitting close enough to the
-       LEFT edge that a 15rem-wide, right-anchored dropdown ran off the
-       screen (the owner's own report: Share "shows beyond the left
-       screen"). */
-    position: relative;
-  }
-  .note-nav-cluster { display: flex; gap: 0.32rem; flex: 0 0 auto; }
-  .note-dot-wrap { flex: 0 0 auto; }
-  .note-bar2 .quick-menu { top: 2.6rem; right: 0; left: auto; width: 15rem; }
-  .note-sub-wrap { position: relative; flex: 0 0 auto; }
-  .note-sub-popover {
-    display: none; position: absolute; top: 2.3rem; left: 0; z-index: 8;
-    background: #fff; border: 1px solid #ddd; border-radius: 0.5rem;
-    box-shadow: 0 10px 26px rgba(20,30,60,0.2); width: 11rem; padding: 0.5rem;
-    max-width: calc(100vw - 2rem); max-height: 70vh; overflow-y: auto;
-  }
-  .note-sub-popover.open { display: block; }
-  .note-sub-popover label { display: flex; align-items: center; gap: 0.3rem; font-size: 0.73rem; color: #555; padding: 0.15rem 0; }
-  .note-sub-popover label input:disabled + span { color: #aaa; }
   /* Nested inside the ⋮/⋯ dropdown now (round: Share and Aa fold in), so
      its own popover needs to sit clear of the dropdown it lives inside. */
-  .quick-menu .note-sub-popover { position: static; box-shadow: none; border: none; padding: 0.2rem 0 0.3rem 1rem; width: auto; }
-  .quick-menu .note-sub-wrap > [data-note-sub-toggle] { width: 100%; text-align: left; background: none; border: none; color: #222; padding: 0.42rem 0.5rem; font-size: 0.8rem; }
-  .quick-menu .note-sub-wrap > [data-note-sub-toggle]:hover { background: #f5f0e2; }
 
   /* Note-view enhancement round 3 -- text-size.js's own popover, the same
      white-card shape .note-sub-popover already uses, so it looks native
@@ -4373,6 +4314,10 @@
   }
   .text-size-reset:hover { background: #f5f0e2; }
 
+  /* (retired v10.17: the Note view's bar 2, its .note-sub-popover and the
+     collections popover described in the next three comments no longer
+     exist and their rules were removed; the comments are kept as history
+     of why the .note-qcr-* rules below are shaped as they are.) */
   /* Ayah Collections round 2 -- the way back to a collection's own list+wheel
      (a text button, not an icon-only one, so it needs room rather than the
      square .note-icon-btn footprint), and the 🗂 popover's own bodies:
@@ -4384,7 +4329,6 @@
      the base .note-sub-popover rule's own max-height/overflow-y/max-width
      already cover scrolling and narrow-screen safety; this only needs the
      extra width. */
-  .note-back-btn { white-space: nowrap; font-size: 0.78rem; }
   /* TOPIC bar round -- at 17rem (three fields wide) this popover can run off
      the right edge of a phone if the 🗂 button sits mid-row (whatever comes
      before it in bar2 -- the nav cluster, Play, Bookmark, Full screen --
@@ -4412,7 +4356,6 @@
      whole height, crowding out Group/Attach/Yr Level's own selects above
      it -- not attempted; a much bigger box that occasionally still scrolls
      a little beats a redesign for the last few rows.) */
-  .note-sub-popover[data-note-sub="collections"] { width: min(94vw, 30rem); max-height: 85vh; box-sizing: border-box; }
   /* 5 Sep 2026 -- the owner's own "In TAB you can wide the palette to the
      entire screen": the 30rem cap was what held this card to half a tablet,
      and with four cells on row 2 it now has something to spend the width on.
@@ -4423,9 +4366,6 @@
      x=-46, and at 1920px far worse. 100% of the bar is exactly the width of
      the reading screen itself, which IS the whole screen on a tablet, and
      it cannot overflow either edge at any width by construction. */
-  @media (min-width: 721px) {
-    .note-sub-popover[data-note-sub="collections"] { width: 100%; }
-  }
   /* round 3's own `right: 0` on this popover was, in practice, anchored to
      .note-sub-wrap's own right edge -- the NEAREST positioned ancestor for
      an absolutely-positioned child, not .note-bar2 -- which happened to
@@ -4436,8 +4376,6 @@
      of a 390px phone. Fixed at the real cause -- making this one wrap
      position:static so the popover's containing block really is .note-bar2
      (still position:relative), not the small button that opens it. */
-  .note-bar2 [data-note-sub-wrap="collections"] { position: static; }
-  .note-bar2 .note-sub-popover[data-note-sub="collections"] { left: auto; right: 0; }
   .note-qcr-topic-row { display: flex; margin-bottom: 0.5rem; }
   .note-qcr-topic-row .note-qcr-field { flex: 1 1 auto; }
   /* Alignment-fix round -- Group/Attach/Yr Level are a real 3-column GRID
@@ -4542,29 +4480,9 @@
     padding: 0.28rem 0.4rem; font-size: 0.8rem; color: #222; font-family: inherit;
   }
 
-  .note-readlink {
-    display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; flex-wrap: wrap;
-    background: #f5f0e2; border: 1px dashed #999; border-radius: 0.4rem;
-    padding: 0.7rem 0.8rem; font-size: 0.86rem; margin-bottom: 0.6rem; color: #444;
-  }
-  .note-readlink button {
-    background: #1F3A6E; color: #fff; border: none; border-radius: 0.35rem; padding: 0.35rem 0.7rem;
-    font-size: 0.78rem; cursor: pointer; font-family: inherit; white-space: nowrap;
-  }
 
-  .note-palette {
-    display: none; flex-wrap: wrap; gap: 0.35rem; align-items: center;
-    background: #f5f0e2; border-bottom: 1px solid #e0d8bd; padding: 0.5rem 0.7rem; flex: 0 0 auto;
-  }
-  .note-palette.open { display: flex; }
-  .note-palette-label { width: 100%; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.05em; color: #999; }
-  .note-palette button, .note-palette select {
-    background: #fff; color: #222; border: 1px solid #ddd; border-radius: 0.3rem; min-width: 1.7rem; height: 1.7rem;
-    font-size: 0.8rem; cursor: pointer; padding: 0 0.4rem;
-  }
-  .note-palette button:hover { background: #eee; }
 
-  /* ---- PC popup (28 Aug 2026): the Note view floats as a real, resizable,
+  /* ---- PC popup (28 Aug 2026; the Note view, #noteView, is retired v10.17 -- its side pane, rows and bars lost their CSS afterwards, the title bar and resize handles below are shared with #wheelPopupView/#exploreView): the Note view floats as a real, resizable,
      draggable window on desktop widths instead of taking over #stage, with
      a side pane of adjacent/related āyāt beside it. #noteView is still the
      SAME element setStageView() hides/shows -- #stage > [hidden] keeps
@@ -4575,7 +4493,7 @@
      #notePopupBody/#noteViewMount just pass height through to .note-view
      exactly as #noteView used to do directly -- the phone/tablet Note view
      is unchanged, pixel for pixel. */
-  .note-popup-titlebar, .note-popup-side, .note-popup-splitter, .note-popup-resize { display: none; }
+  .note-popup-titlebar, .note-popup-resize { display: none; }
   /* Same "hidden below 900px, real popup chrome only above it" rule as the
      four classes above -- shared by the Approach/Explore popups (2 Sep
      2026) rather than declared a second time. */
@@ -4611,27 +4529,6 @@
     }
     .note-popup-titlebar-actions button:hover { background: var(--card-bg-inset); }
     .note-popup-titlebar-actions button[aria-pressed="true"] { background: var(--card-button-pressed-bg); border-color: var(--card-button-pressed-bg); color: var(--card-button-pressed-text); }
-
-    .note-popup-side {
-      display: flex; flex-direction: column; flex: 0 0 auto; width: 260px; min-width: 180px;
-      border-right: 1px solid #e0d8bd; background: #faf7ee; overflow: hidden;
-    }
-    .note-popup-side-nav {
-      display: flex; align-items: center; justify-content: space-between; gap: 0.4rem;
-      padding: 0.4rem 0.55rem; border-bottom: 1px solid #e0d8bd; flex: 0 0 auto;
-    }
-    .note-popup-side-nav button { background: #1F3A6E; color: #fff; border: none; border-radius: 0.3rem; width: 1.7rem; height: 1.7rem; cursor: pointer; font-size: 0.8rem; }
-    .note-popup-side-nav button:disabled { opacity: 0.35; cursor: default; }
-    /* #8a6420, not #B8862F: white on the lighter gold measured 3.24:1 (v08.109). */
-    .note-popup-side-nav button[aria-pressed="true"] { background: #8a6420; }
-    .note-popup-side-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 0.35rem; }
-    .note-popup-side-list .hint { font-size: 0.78rem; color: #888; padding: 0.4rem 0.3rem; margin: 0; }
-
-
-    .note-popup-splitter {
-      display: block; flex: 0 0 auto; width: 6px; cursor: col-resize; background: transparent; touch-action: none;
-    }
-    .note-popup-splitter:hover, .note-popup-splitter:active { background: rgba(184,134,47,0.35); }
 
     .note-popup-resize { display: block; position: absolute; z-index: 2; touch-action: none; }
     .note-popup-resize[data-note-resize="n"] { top: -3px; left: 8px; right: 8px; height: 6px; cursor: ns-resize; }
@@ -4702,33 +4599,12 @@
      and always shows the translation snippet, matching each other's own
      expand/collapse state for the Arabic line and any saved note (both
      independent of which of the two this is -- the owner's own two asks). */
-  .note-popup-row {
-    border: 1px solid transparent; border-radius: 0.35rem; margin-bottom: 0.2rem;
-    display: flex; flex-wrap: wrap; align-items: center; cursor: grab;
-  }
-  .note-popup-row:hover { background: #f0ead8; }
-  .note-popup-row.current { border-color: #B8862F; background: #fbf3e0; }
-  .note-popup-row-main {
-    flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: 0.35rem;
-    background: none; border: none; text-align: left; cursor: pointer; padding: 0.32rem 0.3rem; font-family: inherit;
-  }
-  .note-popup-row-dot { flex: 0 0 auto; width: 0.6rem; height: 0.6rem; border-radius: 50%; background: #bbb; }
-  .note-popup-row-ref { flex: 0 0 auto; font-weight: 700; font-size: 0.78rem; color: #142c58; }
-  .note-popup-row-surah { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.74rem; color: #555; }
-  .note-popup-row-noteflag { flex: 0 0 auto; font-size: 0.7rem; }
-  .note-popup-row-toggle {
-    flex: 0 0 auto; background: none; border: none; color: #7a6a3c; font-size: 0.7rem; cursor: pointer; padding: 0.2rem 0.35rem;
-  }
   /* .note-popup-row-body wraps the full Arabic line only now -- present in
      the DOM (and therefore visible) purely when the row's own expand
      toggle is on, in EITHER view. The short translation snippet lives
      outside it (see below): always in the DOM, and it's the ONE thing that
      differs between List and Card -- List hides it until expanded too,
      Card always shows it. */
-  .note-popup-row-body { flex: 1 1 100%; padding: 0 0.3rem 0.4rem; }
-  .note-popup-row-arabic { font-family: var(--quran-font); direction: rtl; text-align: right; font-size: calc(1rem * var(--qr-ar-scale, 1)); line-height: 1.7; color: #1b1b16; }
-  .note-popup-row-snippet { display: none; margin: 0 0.3rem 0.3rem; font-size: calc(0.72rem * var(--qr-en-scale, 1)); color: #555; line-height: 1.4; }
-  .note-popup-row-note { flex: 1 1 100%; margin: 0 0.3rem 0.4rem; padding: 0.3rem 0.4rem; background: #fff; border: 1px dashed #b8862f; border-radius: 0.3rem; font-size: 0.72rem; color: #444; }
 
   /* List view (default): only the reference/surah/status line shows until
      the row's own toggle is used. Card view: every row gets more room and
@@ -4736,25 +4612,15 @@
      small cards rather than a plain list -- the expand toggle still governs
      the full Arabic line (and any note) the same way in both views; only
      the short snippet's own visibility differs by view. */
-  .note-popup-row.expanded .note-popup-row-snippet,
-  .note-popup-side-list.view-card .note-popup-row-snippet { display: block; }
-  .note-popup-side-list.view-card .note-popup-row { display: block; padding: 0.3rem; background: #fff; border-color: #e0d8bd; box-shadow: 0 1px 3px rgba(20,30,60,0.08); }
-  .note-popup-side-list.view-card .note-popup-row-main { padding-bottom: 0.15rem; }
 
   .note-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 0.8rem 0.9rem 1.2rem; }
 
-  .note-field { margin-bottom: 0.55rem; }
-  .note-field-label-row { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.15rem; }
-  .note-field-toggle { background: none; border: none; color: #1F3A6E; font-size: 0.75rem; cursor: pointer; padding: 0.1rem 0.2rem; width: 1.1rem; }
-  .note-field-label { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.05em; color: #999; }
   .note-arabic { font-family: var(--quran-font); direction: rtl; text-align: right; font-size: calc(1.35rem * var(--qr-ar-scale, 1)); line-height: 1.9; color: #1b1b16; margin: 0.15rem 0; }
   .note-english { font-size: calc(0.86rem * var(--qr-en-scale, 1)); color: #222; margin: 0.15rem 0; line-height: 1.5; }
   .note-bangla { font-size: calc(0.84rem * var(--qr-bn-scale, 1)); color: #222; margin: 0.15rem 0; line-height: 1.6; }
   /* Fix round -- "byAyah" mode's own combined field: one āyah's own
      Arabic/English/Bangla grouped together, then a divider before the
      next āyah -- same shape the Read screen's flow view already uses. */
-  .note-ayah-block { padding-bottom: 0.6rem; margin-bottom: 0.6rem; border-bottom: 1px solid #e7e0cc; }
-  .note-ayah-block:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
   .note-notes-editor {
     min-height: 80px; max-height: 260px; overflow-y: auto;
     border: 1px solid #e0d8bd; border-radius: 0.4rem; padding: 0.55rem 0.65rem;
@@ -4766,8 +4632,6 @@
   .note-notes-editor h2 { font-size: 1.1em; margin: 0.3em 0; }
   .note-notes-editor h3 { font-size: 1.05em; margin: 0.3em 0; }
   .note-notes-editor ul, .note-notes-editor ol { margin: 0.3em 0 0.3em 1.1em; }
-  .note-save-status { font-size: 0.7rem; color: #9c3b2e; margin: 0.3rem 0 0; }
-  .note-approach { margin: 0.9rem 0 0.2rem; padding-top: 0.8rem; border-top: 1px dashed #ddd; }
 
   /* Note view's own full screen -- two states only (not the reading
      screen's three), and a separate mechanism from it on purpose (so
