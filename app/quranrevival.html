@@ -2173,6 +2173,51 @@
      always has one thing that reads as words. */
   #readBar .qr-ico { font-size: 0.95rem; line-height: 1; padding: 0.3rem 0.5rem; flex: 0 0 auto; }
   /* Decision 95: 📝 Notes, with the āyah's Note count once the pane has read it this session. */
+  /* 10 Oct 2026 (the Owner: "all these buttons along with bookmark can be organised under one button so that a row
+     space is saved"): #readToolsMenu holds Text size, Bookmark, Notes, Mark complete, Writing sheet and Attach to Asma.
+     From 900px it is display:contents -- its buttons sit on the bar exactly as before and ⋯ is not shown. Below 900px
+     ⋯ opens it as a panel of labelled tiles under the button (placed by placeReadTools()); each tile's word is the
+     button's own (translated) spoken name. The 📝 count rides on ⋯ so "this āyah has a note" still shows. */
+  #readBarEnd { display: flex; align-items: center; gap: inherit; margin-left: auto; flex: 0 0 auto; }
+  #readToolsBtn { position: relative; }
+  #readToolsBtn .read-tools-count { position: absolute; top: -7px; right: -7px; min-width: 18px; height: 18px; padding: 0 4px; box-sizing: border-box; border-radius: 9px; border: 2px solid #fff; background: #B8862F; color: #fff; font-size: 0.66rem; font-weight: 700; line-height: 14px; text-align: center; }
+  #readToolsBtn .read-tools-count[hidden] { display: none; }
+  #readToolsMenu [hidden] { display: none !important; }
+  @media (min-width: 900px) {
+    #readToolsBtn { display: none; }
+    #readToolsMenu { display: contents; }
+  }
+  @media (max-width: 899.98px) {
+    #readToolsMenu { display: none; }
+    #readToolsMenu.open {
+      display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.45rem;
+      position: fixed; z-index: 70; width: min(21rem, calc(100vw - 1rem)); box-sizing: border-box; padding: 0.6rem;
+      background: #fff; border: 1px solid #d9dee8; border-radius: 0.9rem; box-shadow: 0 10px 28px rgba(19, 25, 42, 0.22);
+    }
+    #readToolsMenu.open #readTextSizeSlot { display: contents; }
+    #readToolsMenu.open .text-size-wrap { display: flex; min-width: 0; }
+    #readToolsMenu.open .qr-ico {
+      width: 100%; height: auto; min-height: 64px; margin: 0; padding: 0.45rem 0.2rem 0.4rem;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.25rem;
+      font-size: 1.25rem; line-height: 1; border-radius: 0.7rem; white-space: normal;
+    }
+    #readToolsMenu.open .qr-ico::after {
+      content: attr(aria-label); font-size: 0.7rem; font-weight: 600; line-height: 1.2; color: #1F3A6E;
+      text-align: center; overflow-wrap: anywhere; max-width: 100%;
+    }
+    #readToolsMenu.open #readNotesBtn .read-notes-count { top: 4px; right: 6px; }
+  }
+  /* The three study buttons (Take an Approach | Record Your Progress | Know Your Status), the Owner: "How about moving
+     three buttons at the bottom of the screen?" On a phone they are one slim row just above the four bottom buttons
+     (--rq-bottom is the dock's measured height, positionReadQuickRow()); the reading gets that much room at its foot.
+     From 600px they stay the bar's last line, where there is room. Hidden in the bare full-screen state, as before. */
+  @media (max-width: 599.98px) {
+    #readBar #readApproachBar {
+      position: fixed; left: 0.5rem; right: 0.5rem; bottom: calc(var(--rq-bottom, 0px) + 6px); z-index: 60;
+      order: 0; flex: none; width: auto; box-shadow: 0 2px 10px rgba(19, 25, 42, 0.16);
+    }
+    body:not(.fs-hide-readbar) #readScroll { padding-bottom: calc(52px + env(safe-area-inset-bottom, 0px)); }
+  }
   #readNotesBtn { position: relative; }
   #readNotesBtn[aria-expanded="true"] { outline: 2px solid #c9a24b; outline-offset: 1px; }
   .read-notes-count { position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px; padding: 0 4px; box-sizing: border-box;
@@ -2518,7 +2563,8 @@
      top-bar reference is to still say which Surah/āyāt this is in the BARE
      full-screen state, where the strip is otherwise empty apart from the
      full-screen icon. */
-  body.immersive-read.fs-hide-readbar.fs-hide-transport #readBar > *:not(#hideChromeBtn):not(#mushafPageRef):not(#readQuickRow):not(#readListBtn):not(#readMeaningBtn) { display: none; }
+  body.immersive-read.fs-hide-readbar.fs-hide-transport #readBar > *:not(#readBarEnd):not(#mushafPageRef):not(#readQuickRow):not(#readListBtn) { display: none; }
+  body.immersive-read.fs-hide-readbar.fs-hide-transport #readBarEnd > *:not(#hideChromeBtn):not(#readMeaningBtn) { display: none; }
   /* 10 Oct 2026: 📖 Meaning stays in the bare full-screen state too (the Owner: "visible even in full screen Mushaf
      view"), beside ⤢. */
   #readMeaningBtn {
@@ -5314,67 +5360,81 @@
             <button type="button" class="rq-btn" id="readQuickTrackBtn">Record</button>
             <button type="button" class="rq-btn" id="readQuickApproachBtn">Approach</button>
           </div>
-          <!-- 10 Oct 2026, the Owner: "I want a reading flow with meaning, translations, word meaning that should appear
-               by pressing a button. Then, pressing same button should collapse back to Mushaf view. That button should
-               be visible even in full screen Mushaf view." 📖 Meaning, just before ⤢ (renderMeaningFlow()). -->
-          <button type="button" class="read-meaning-btn" id="readMeaningBtn" aria-pressed="false"><span aria-hidden="true">📖</span><span class="read-meaning-word">Meaning</span></button>
-          <button type="button" class="secondary qr-ico" id="hideChromeBtn" aria-label="Full screen" title="Full screen">⤢</button>
-          <button type="button" class="secondary qr-ico" id="readWindowBtn" aria-label="Open as a window" title="Open as a window" aria-pressed="false">🗗</button>
-          <!-- Note-view enhancement round 3 -- "same resizing at the READ
-               view too". Filled in by JS (renderTextSizeButtonHtml()) once
-               at init, same as every other static-markup slot on this
-               page -- see that function's own docstring for why one shared
-               module drives all three of this app's text-size buttons. -->
-          <div id="readTextSizeSlot"></div>
-          <!-- Multi-student round -- "enable READ view to have a bookmark
-               button too", matching the Note view's own bar 2 (v07.64: a
-               direct button, not buried in the ⋮ menu). Owner's own
-               follow-up correction ("did I ask for only one Study unit?
-               ... make it for all units") -- this button is visible on
-               EVERY unit type, single ayah or a flow view alike, and always
-               bookmarks whichever Study Unit is currently selected
-               (currentUnitInfo(), the same thing "Track this unit" claims
-               against), not just one ayah. The flow view's own per-āyah ⋮
-               badge (renderQuickMenu()'s own Bookmark item) still lets a
-               reader bookmark one specific āyah within a wider unit; the
-               two are independent, same as a Note can exist on both an
-               āyah and a wider unit ("Also noted at:"). -->
-          <button type="button" class="secondary qr-ico" id="readBookmarkBtn" aria-label="Bookmark this āyah" title="Bookmark this āyah" hidden>🔖</button>
-          <!-- Decision 95 (the Owner, 9 Oct 2026: "NotePane: Build the demo") -- the Notes of the āyah being read, in
-               Mapping My Journey's own Note pane (js/read-note-pane.js). Beside the reading on a computer, under it on
-               a tablet, over it on a phone; closing it leaves the reading exactly where it was. -->
-          <button type="button" class="secondary qr-ico" id="readNotesBtn" aria-label="Notes on this āyah" title="Notes on this āyah" aria-expanded="false">📝<span class="read-notes-count" hidden></span></button>
-          <!-- MAP Phase 4 (P4-D1) -- the EXPLICIT Reading completion ADR-008
-               requires. "Merely opening or scrolling a passage does not
-               complete Reading. v1 requires an explicit completion action so
-               intent is auditable" -- so this is a deliberate press and there
-               is no passive trigger anywhere. It records ACTIVITY only; the
-               Mastery claim remains the Note view's own Track card, untouched.
-               Direct on the bar rather than inside the ⋮ menu, matching the
-               bookmark button's own precedent, because it applies to every
-               unit type and to flow views as well as a single āyah. -->
-          <!-- The Owner, 8 Oct 2026: "May be beside the tick button." The way back (a bookmark's "← Back to …", or
-               "Back to Āyah card" / a Name) sits here while this bar is on screen, instead of floating over the
-               Study menu; js/back-dock.js. -->
+          <!-- 10 Oct 2026: 📖 Meaning, ⤢, 🗗 and ⋯ (with its tools) are ONE group at the bar's right end, so on a phone they
+               wrap to their own line together (the demo's shape) instead of ⤢ and ⋯ falling onto a line by themselves.
+               The bare full-screen state keeps this group and, inside it, only 📖 and ⤢. The way back (#readBackSlot)
+               sits just before it. -->
           <span id="readBackSlot" class="read-back-slot" data-back-dock></span>
-          <button type="button" class="secondary qr-ico" id="readCompleteBtn" aria-label="Mark this reading complete" title="Mark this reading complete">✓</button>
-          <!-- Issue #421 -- the Writing sheet: this unit's Mushaf pages as an A4
-               tracing sheet. Every reader, every unit type. Nothing is loaded
-               until it is pressed (the module is imported on the press). -->
-          <button type="button" class="secondary qr-ico" id="readWritingBtn" aria-label="Writing sheet" title="Writing sheet">✍</button>
-          <!-- Announcement only. `position:absolute` with a 1px clip keeps it
-               OUT of the layout entirely -- #readBar is this app's densest row
-               and a message that took width could wrap it -- while still being
-               announced by a screen reader. The sighted confirmation is the
-               button's own state, which persists rather than flashing past. -->
+          <div id="readBarEnd" class="read-bar-end">
+            <!-- 10 Oct 2026, the Owner: "I want a reading flow with meaning, translations, word meaning that should appear
+                 by pressing a button. Then, pressing same button should collapse back to Mushaf view. That button should
+                 be visible even in full screen Mushaf view." 📖 Meaning, just before ⤢ (renderMeaningFlow()). -->
+            <button type="button" class="read-meaning-btn" id="readMeaningBtn" aria-pressed="false"><span aria-hidden="true">📖</span><span class="read-meaning-word">Meaning</span></button>
+            <button type="button" class="secondary qr-ico" id="hideChromeBtn" aria-label="Full screen" title="Full screen">⤢</button>
+            <button type="button" class="secondary qr-ico" id="readWindowBtn" aria-label="Open as a window" title="Open as a window" aria-pressed="false">🗗</button>
+            <!-- 10 Oct 2026, the Owner (a phone screenshot of the Read bar's second row circled): "I think all these
+                 buttons along with bookmark can be organised under one button so that a row space is saved." Text
+                 size, Bookmark, Notes, Mark complete, Writing sheet and Attach to Asma sit in #readToolsMenu: behind ⋯
+                 below 900px (a panel of labelled tiles), in a line on the bar from 900px. Every button keeps its id and
+                 handler. The way back (#readBackSlot) and the status line stay on the bar itself, never inside ⋯. -->
+            <button type="button" class="secondary qr-ico read-tools-btn" id="readToolsBtn" aria-haspopup="true" aria-expanded="false" aria-controls="readToolsMenu" aria-label="More tools" title="More tools">⋯<span class="read-tools-count" hidden></span></button>
+            <div id="readToolsMenu" class="read-tools" role="group" aria-label="More tools">
+              <!-- Note-view enhancement round 3 -- "same resizing at the READ
+                   view too". Filled in by JS (renderTextSizeButtonHtml()) once
+                   at init, same as every other static-markup slot on this
+                   page -- see that function's own docstring for why one shared
+                   module drives all three of this app's text-size buttons. -->
+              <div id="readTextSizeSlot"></div>
+              <!-- Multi-student round -- "enable READ view to have a bookmark
+                   button too", matching the Note view's own bar 2 (v07.64: a
+                   direct button, not buried in the ⋮ menu). Owner's own
+                   follow-up correction ("did I ask for only one Study unit?
+                   ... make it for all units") -- this button is visible on
+                   EVERY unit type, single ayah or a flow view alike, and always
+                   bookmarks whichever Study Unit is currently selected
+                   (currentUnitInfo(), the same thing "Track this unit" claims
+                   against), not just one ayah. The flow view's own per-āyah ⋮
+                   badge (renderQuickMenu()'s own Bookmark item) still lets a
+                   reader bookmark one specific āyah within a wider unit; the
+                   two are independent, same as a Note can exist on both an
+                   āyah and a wider unit ("Also noted at:"). -->
+              <button type="button" class="secondary qr-ico" id="readBookmarkBtn" aria-label="Bookmark this āyah" title="Bookmark this āyah" hidden>🔖</button>
+              <!-- Decision 95 (the Owner, 9 Oct 2026: "NotePane: Build the demo") -- the Notes of the āyah being read, in
+                   Mapping My Journey's own Note pane (js/read-note-pane.js). Beside the reading on a computer, under it on
+                   a tablet, over it on a phone; closing it leaves the reading exactly where it was. -->
+              <button type="button" class="secondary qr-ico" id="readNotesBtn" aria-label="Notes on this āyah" title="Notes on this āyah" aria-expanded="false">📝<span class="read-notes-count" hidden></span></button>
+              <!-- MAP Phase 4 (P4-D1) -- the EXPLICIT Reading completion ADR-008
+                   requires. "Merely opening or scrolling a passage does not
+                   complete Reading. v1 requires an explicit completion action so
+                   intent is auditable" -- so this is a deliberate press and there
+                   is no passive trigger anywhere. It records ACTIVITY only; the
+                   Mastery claim remains the Note view's own Track card, untouched.
+                   Direct on the bar rather than inside the ⋮ menu, matching the
+                   bookmark button's own precedent, because it applies to every
+                   unit type and to flow views as well as a single āyah. -->
+              <!-- The Owner, 8 Oct 2026: "May be beside the tick button." The way back (a bookmark's "← Back to …", or
+                   "Back to Āyah card" / a Name) sits here while this bar is on screen, instead of floating over the
+                   Study menu; js/back-dock.js. -->
+              <button type="button" class="secondary qr-ico" id="readCompleteBtn" aria-label="Mark this reading complete" title="Mark this reading complete">✓</button>
+              <!-- Issue #421 -- the Writing sheet: this unit's Mushaf pages as an A4
+                   tracing sheet. Every reader, every unit type. Nothing is loaded
+                   until it is pressed (the module is imported on the press). -->
+              <button type="button" class="secondary qr-ico" id="readWritingBtn" aria-label="Writing sheet" title="Writing sheet">✍</button>
+              <!-- Announcement only. `position:absolute` with a 1px clip keeps it
+                   OUT of the layout entirely -- #readBar is this app's densest row
+                   and a message that took width could wrap it -- while still being
+                   announced by a screen reader. The sighted confirmation is the
+                   button's own state, which persists rather than flashing past. -->
+              <!-- 30 Aug 2026 round -- "enable adding/attaching an Ayah... to
+                   an existing GROUP, LIST, DUAL AH" -- owner/prime only (it
+                   writes to asmaCollections/{tenantId}, the same Manage-mode
+                   write every Explore Asma edit already makes), shown/hidden
+                   by JS alongside every other role-gated control on this page. -->
+              <button type="button" class="secondary qr-ico" id="readAttachAsmaBtn" aria-label="Attach to Asma ul Husna" title="Attach to Asma ul Husna" hidden>🔗</button>
+            </div>
+          </div>
           <span id="readCompleteMsg" role="status" aria-live="polite"
                 style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap"></span>
-          <!-- 30 Aug 2026 round -- "enable adding/attaching an Ayah... to
-               an existing GROUP, LIST, DUAL AH" -- owner/prime only (it
-               writes to asmaCollections/{tenantId}, the same Manage-mode
-               write every Explore Asma edit already makes), shown/hidden
-               by JS alongside every other role-gated control on this page. -->
-          <button type="button" class="secondary qr-ico" id="readAttachAsmaBtn" aria-label="Attach to Asma ul Husna" title="Attach to Asma ul Husna" hidden>🔗</button>
           <!-- Round 31 -- the owner's own question: "why should the three dot
                take space over the Ayah? put the dots on the Bar, where there
                are lots of empty spaces." Mounted here for the single-ayah
@@ -7007,6 +7067,8 @@
     const readTextSizeSlot = document.getElementById("readTextSizeSlot");
     const hideChromeBtn = document.getElementById("hideChromeBtn");
     const readMeaningBtn = document.getElementById("readMeaningBtn");
+    const readToolsBtn = document.getElementById("readToolsBtn");
+    const readToolsMenu = document.getElementById("readToolsMenu");
     const readBookmarkBtn = document.getElementById("readBookmarkBtn");
     const readNotesBtn = document.getElementById("readNotesBtn");
     const readUnitChip = document.getElementById("readUnitChip"); // issue #348, Owner decision 18
@@ -10197,6 +10259,8 @@
       // three can leak into a screen the reader didn't ask to see hidden
       // chrome on.
       if (!reading) setImmersive(false);
+      if (!reading) closeReadTools();
+      else positionReadQuickRow();
       if (!reading) document.body.classList.remove("read-from-contents"); // issue #419
       // Issue #348 review (I9): the unit markers' tables load on first Read.
       if (reading && !unitCardTablesCache) {
@@ -17778,6 +17842,52 @@
       return `<button type="button" class="unit-flow-surah-heading" data-unit-marker="${escapeHtml(buildUnitKey.surah(surahNum))}">${escapeHtml(surahName(surahNum, meta?.nameEnglish))}</button>`;
     }
 
+    // ===================== ⋯ More tools on the Read bar (the Owner, 10 Oct 2026) =====================
+    // Below 900px #readToolsMenu is a panel under ⋯ (see its CSS). Tapping a tool runs it and closes the panel, except
+    // Text size, whose own panel hangs from its button; a tap outside, or Escape, closes it and gives ⋯ its focus back.
+    function placeReadTools() {
+      if (!readToolsMenu?.classList.contains("open")) return;
+      const r = readToolsBtn.getBoundingClientRect();
+      readToolsMenu.style.top = `${Math.round(r.bottom + 6)}px`;
+      readToolsMenu.style.right = `${Math.max(8, Math.round(window.innerWidth - r.right))}px`;
+    }
+    function closeReadTools({ focus = false } = {}) {
+      if (!readToolsMenu?.classList.contains("open")) return;
+      readToolsMenu.classList.remove("open");
+      readToolsBtn.setAttribute("aria-expanded", "false");
+      if (focus) readToolsBtn.focus({ preventScroll: true });
+    }
+    function paintReadToolsBtn() {
+      if (!readToolsBtn) return;
+      readToolsBtn.setAttribute("aria-label", t("More tools"));
+      readToolsBtn.title = t("More tools");
+      readToolsMenu.setAttribute("aria-label", t("More tools"));
+      // A± carried only a title; its tile's word is its spoken name, so it gets one.
+      readTextSizeSlot?.querySelector(".text-size-toggle")?.setAttribute("aria-label", t("Text size"));
+    }
+    readToolsBtn?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (readToolsMenu.classList.contains("open")) { closeReadTools(); return; }
+      readToolsMenu.classList.add("open");
+      readToolsBtn.setAttribute("aria-expanded", "true");
+      placeReadTools();
+    });
+    readToolsMenu?.addEventListener("click", (e) => {
+      const b = e.target.closest("button");
+      if (!b || b.closest("#readTextSizeSlot")) return;
+      setTimeout(() => closeReadTools(), 0);
+    });
+    document.addEventListener("click", (e) => {
+      if (!readToolsMenu?.classList.contains("open") || e.target.closest?.("#readToolsMenu, #readToolsBtn, .text-size-popover")) return;
+      closeReadTools();
+    });
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && readToolsMenu?.classList.contains("open")) closeReadTools({ focus: true }); });
+    window.addEventListener("resize", placeReadTools);
+    // The study buttons' bottom row sits on the dock's measured height; keep it right whenever the dock moves.
+    if (typeof ResizeObserver === "function" && document.getElementById("dock")) new ResizeObserver(() => positionReadQuickRow()).observe(document.getElementById("dock"));
+    positionReadQuickRow();
+    paintReadToolsBtn();
+
     // ===================== 📖 Meaning (the Owner, 10 Oct 2026) =====================
     // "Read view is now Mushaf view, but I want a reading flow with meaning, translations, word meaning that should
     // appear by pressing a button. Then, pressing same button should collapse back to Mushaf view." -- and "not only
@@ -21972,6 +22082,9 @@
       const badge = readNotesBtn.querySelector(".read-notes-count");
       badge.hidden = !n;
       badge.textContent = n ? num(n) : "";
+      // 10 Oct 2026: 📝 sits inside ⋯ below 900px, so its count rides on ⋯ too.
+      const toolsBadge = readToolsBtn?.querySelector(".read-tools-count");
+      if (toolsBadge) { toolsBadge.hidden = !n; toolsBadge.textContent = n ? num(n) : ""; }
       const name = u ? t("Notes on {unit}", { unit: u.label }) : t("Notes");
       readNotesBtn.setAttribute("aria-label", n ? `${name} (${num(n)})` : name);
       readNotesBtn.setAttribute("title", name);

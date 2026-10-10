@@ -4092,4 +4092,6 @@ export const BN = {
   "Back to the Mushaf": "মুসহাফে ফিরে যান",
   "Back to the reading": "পড়ায় ফিরে যান",
   "Show the meaning: translations and word by word": "অর্থ দেখুন: অনুবাদ ও শব্দে শব্দে",
+  // 10 Oct 2026: the Read bar's ⋯ (Text size, Bookmark, Notes, Mark complete, Writing sheet, Attach to Asma).
+  "More tools": "আরও সরঞ্জাম",
 };
