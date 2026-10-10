@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "10.07",
+    "version": "10.08",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -3077,8 +3077,20 @@
     {
       "version": "10.07",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "legacy-v09/ is app/ as released at v09.151 (f027a24e), with the service worker off; Home menu links it; sw.js keeps it out of the cache.",
+      "integration": {
+        "authorizedOn": "2026-10-10",
+        "integratedOn": "2026-10-10",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "10.08",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "The Asma screensaver starts by itself on every page after the time chosen untouched, with its settings in every Home menu; per device.",
       "integration": {
         "authorizedOn": "2026-10-10",
         "integratedOn": "2026-10-10",
@@ -3087,8 +3099,9 @@
       }
     }
   ],
-  "nextUnallocated": "10.08",
+  "nextUnallocated": "10.09",
   "nextUnallocatedNote": [
+    "v10.08 was allocated to the Asma ul Husna screensaver on every page, 2026-10-10.",
     "v10.07 was allocated to Legacy App - v09: v09.151 archived (decision 98), 2026-10-10.",
     "v10.06 was allocated to QCR / Asma attach as its own pop-up, without the Note view (Builder #722), 2026-10-10.",
     "v10.05 was allocated to the Notes pane round 2b: the Note view's notes doors open the pane (decision 95), 2026-10-10.",

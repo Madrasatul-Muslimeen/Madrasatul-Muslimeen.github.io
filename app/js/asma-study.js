@@ -35,8 +35,8 @@ import { logActivity } from "./activity.js";
 import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./nav.js";
 import { mountBookmarkMenu } from "./bookmark-nav.js";
 import { ASMA_NAMES } from "./asma-data.js";
-import { ASMA_POSTERS } from "./asma-posters.js";
-import { renderAsmaGrid, renderAsmaDetail, renderAsmaScreensaverSlide, renderAsmaCollectionListHtml, renderAsmaPosterHtml, asmaEntryDisplayName } from "./asma-renderer.js";
+import { startScreensaver } from "./screensaver-idle.js";
+import { renderAsmaGrid, renderAsmaDetail, renderAsmaCollectionListHtml, renderAsmaPosterHtml, asmaEntryDisplayName } from "./asma-renderer.js";
 import { fitAsmaPosters, wireAsmaPosterRefs } from "./asma-poster.js";
 import { mountPosterWithDescriptions } from "./asma-descriptions.js";
 import { renderScopedWheel, renderWheelLegend, attachScopedWheelClickHandler } from "./mastery-wheel.js";
@@ -59,7 +59,6 @@ import { listEnrollmentsForPerson, programSubjectMapFromEnrollments } from "./co
 const MODULE_ID = "asma";
 const TRACKABLE_ID = "studied_asma";
 const SUBJECT_ID = "asma_ul_husna";
-const SCREENSAVER_INTERVAL_MS = 6000;
 
 export function initAsmaStudyPage() {
   const whoEl = document.getElementById("who");
@@ -94,9 +93,6 @@ export function initAsmaStudyPage() {
   const wayModalMount = document.getElementById("wayModalMount");
   const continueStripContainer = document.getElementById("continueStrip");
   const screensaverBtn = document.getElementById("screensaverBtn");
-  const screensaverOverlay = document.getElementById("screensaverOverlay");
-  const screensaverMount = document.getElementById("screensaverMount");
-  const screensaverCloseBtn = document.getElementById("screensaverCloseBtn");
   // Round 3 -- the standalone A4 poster view.
   const posterOverlay = document.getElementById("posterOverlay");
   const posterMount = document.getElementById("posterMount");
@@ -823,65 +819,23 @@ export function initAsmaStudyPage() {
   }
 
   // ---------------------------------------------------------------------
-  // Screensaver -- purely decorative, cycles ASMA_POSTERS (asma-posters.js,
-  // the 93 existing photo-posters) TOGETHER with a live-rendered A4 poster
-  // per Name/phrase (round 3, both rotations run together per the owner's
-  // own "Both" answer -- neither replaces the other). Never opened
-  // automatically -- load-speed contract: "Screensaver -- on first use,
-  // never at startup." Opening it now also costs ensureAsmaCollectionsLoaded()
-  // if nothing else has already triggered it this session (I9's own
-  // on-first-use exemption, same as opening the category browser or a
-  // Name's own detail screen already do).
   // ---------------------------------------------------------------------
-  let screensaverTimer = null;
-  let screensaverIndex = 0;
-  let screensaverDeck = null; // built once per open -- [{kind:"photo",poster}] and [{kind:"name",entry}]
-
-  /** Every Name/phrase (canonical + active extras) as a poster slide,
-      after the 93 existing photo-poster slides -- deliberately photos
-      first, so the existing rotation's own feel is unchanged for anyone
-      who watches it start-to-finish, with the new content simply added
-      after it rather than interleaved. */
-  function buildScreensaverDeck() {
-    const photoSlides = ASMA_POSTERS.map((poster) => ({ kind: "photo", poster }));
-    const nameSlides = [];
-    for (const n of ASMA_NAMES) {
-      const entry = resolveNumber(n.number);
-      if (entry) nameSlides.push({ kind: "name", entry });
-    }
-    for (const e of activeExtraNames(asmaExtraNames ?? [])) {
-      const entry = resolveNumber(e.number);
-      if (entry) nameSlides.push({ kind: "name", entry });
-    }
-    return [...photoSlides, ...nameSlides];
-  }
-
-  function showScreensaverSlide() {
-    const slide = screensaverDeck[screensaverIndex % screensaverDeck.length];
-    screensaverMount.innerHTML = slide.kind === "photo"
-      ? renderAsmaScreensaverSlide(slide.poster, null)
-      : renderAsmaPosterHtml(slide.entry, "screensaver");
-    fitAsmaPosters(screensaverMount);
-    screensaverIndex += 1;
+  // 10 Oct 2026 (Owner, master file tab 3): the screensaver is one, shared by every page (screensaver-idle.js and
+  // asma-screensaver.js), with its own settings. This page hands in its own Names, so the Owner's corrections and
+  // added Names show here as they always did.
+  function screensaverEntries() {
+    const out = [];
+    for (const n of ASMA_NAMES) { const e = resolveNumber(n.number); if (e) out.push(e); }
+    for (const x of activeExtraNames(asmaExtraNames ?? [])) { const e = resolveNumber(x.number); if (e) out.push(e); }
+    return out;
   }
 
   async function openScreensaver() {
     await ensureAsmaCollectionsLoaded();
-    screensaverDeck = buildScreensaverDeck();
-    screensaverIndex = Math.floor(Math.random() * screensaverDeck.length);
-    showScreensaverSlide();
-    screensaverOverlay.classList.add("open");
-    screensaverTimer = setInterval(showScreensaverSlide, SCREENSAVER_INTERVAL_MS);
-  }
-
-  function closeScreensaver() {
-    screensaverOverlay.classList.remove("open");
-    if (screensaverTimer) { clearInterval(screensaverTimer); screensaverTimer = null; }
+    startScreensaver({ entries: screensaverEntries() });
   }
 
   if (screensaverBtn) screensaverBtn.addEventListener("click", openScreensaver);
-  if (screensaverCloseBtn) screensaverCloseBtn.addEventListener("click", closeScreensaver);
-  if (screensaverOverlay) screensaverOverlay.addEventListener("click", (e) => { if (e.target === screensaverOverlay) closeScreensaver(); });
 
   // ---------------------------------------------------------------------
   // Round 3 -- the standalone A4 poster view, one Name at a time, with a

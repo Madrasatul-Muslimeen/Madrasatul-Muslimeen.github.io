@@ -77,6 +77,7 @@
     <details class="nav-cat nav-cat-home">
       <summary>Home</summary>
       <div class="nav-cat-links">
+        <button type="button" class="nav-legacy-link nav-screensaver-link" data-screensaver-settings>🌙 Screensaver</button>
         <a href="https://madrasatul-muslimeen.github.io/legacy/index.html" class="nav-legacy-link" target="_blank" rel="noopener">Legacy App - v06 ↗</a>
         <a href="https://madrasatul-muslimeen.github.io/legacy-v07/index.html" class="nav-legacy-link" target="_blank" rel="noopener">Legacy App - v07 ↗</a>
         <a href="https://madrasatul-muslimeen.github.io/legacy-v08/index.html" class="nav-legacy-link" target="_blank" rel="noopener">Legacy App - v08 ↗</a>
@@ -146,6 +147,7 @@
     import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
     import { translateStatic, t } from "./js/i18n.js";
     import { registerServiceWorker } from "./js/sw-register.js";
+    import { armScreensaver } from "./js/screensaver-idle.js";
     import { roleListLabel } from "./js/labels.js";
     import { unitKeyLabel } from "./js/unit-keys.js";
     import { sanitizeNoteHtml } from "./js/note-sanitize.js";
@@ -161,6 +163,7 @@
 
     translateStatic();
     registerServiceWorker();
+    armScreensaver();
 
     // ---------------------------------------------------------------------
     // The one Study Unit this screen is scoped to (issue #195 -- "for the

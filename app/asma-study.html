@@ -89,15 +89,6 @@
   .assign-row .who-name { flex: 1; }
   .assign-row .who-tag { font-size: 0.66rem; color: #777; background: #f6f7fb; border: 1px solid #eee; border-radius: 0.6rem; padding: 0.02rem 0.4rem; }
 
-  /* ---------- Screensaver ---------- */
-  #screensaverOverlay { display: none; position: fixed; inset: 0; background: #000; align-items: center; justify-content: center; z-index: 60; cursor: pointer; }
-  #screensaverOverlay.open { display: flex; }
-  .asma-screensaver-slide { text-align: center; color: white; max-width: 90vw; }
-  .asma-screensaver-img { max-width: 90vw; max-height: 80vh; border-radius: 0.5rem; }
-  .asma-screensaver-caption { margin-top: 1rem; font-size: 1.1rem; }
-  .asma-screensaver-arabic { font-size: 3rem; margin-bottom: 1rem; }
-  #screensaverCloseBtn { position: fixed; top: 1rem; right: 1.2rem; background: rgba(255,255,255,0.15); color: white; border: none; font-size: 1.6rem; padding: 0.2rem 0.7rem; border-radius: 0.4rem; z-index: 61; }
-
   /* ---------- Round 3: the A4 poster (standalone view + screensaver slide) ---------- */
   #posterOverlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); align-items: center; justify-content: center; z-index: 65; }
   #posterOverlay.open { display: flex; }
@@ -206,6 +197,7 @@
     <details class="nav-cat nav-cat-home">
       <summary>Home</summary>
       <div class="nav-cat-links">
+        <button type="button" class="nav-legacy-link nav-screensaver-link" data-screensaver-settings>🌙 Screensaver</button>
         <a href="https://madrasatul-muslimeen.github.io/legacy/index.html" class="nav-legacy-link" target="_blank" rel="noopener">Legacy App - v06 ↗</a>
         <a href="https://madrasatul-muslimeen.github.io/legacy-v07/index.html" class="nav-legacy-link" target="_blank" rel="noopener">Legacy App - v07 ↗</a>
         <a href="https://madrasatul-muslimeen.github.io/legacy-v08/index.html" class="nav-legacy-link" target="_blank" rel="noopener">Legacy App - v08 ↗</a>
@@ -269,10 +261,6 @@
 
   <div id="wayModalOverlay"><div id="wayModalMount"></div></div>
 
-  <div id="screensaverOverlay">
-    <button type="button" id="screensaverCloseBtn" aria-label="Close screensaver">&times;</button>
-    <div id="screensaverMount"></div>
-  </div>
 
   <!-- Round 3 -- the standalone A4 poster view, one Name at a time. -->
   <div id="posterOverlay">
@@ -285,12 +273,14 @@
     import { initAsmaStudyPage } from "./js/asma-study.js";
     import { translateStatic } from "./js/i18n.js";
     import { registerServiceWorker } from "./js/sw-register.js";
+    import { armScreensaver } from "./js/screensaver-idle.js";
 
     // Phase 1 of the full translation: turn this page's own static markup
     // (headings, labels, buttons) into the chosen language before anything
     // else runs, so a Bangla reader never sees an English frame first.
     translateStatic();
     registerServiceWorker();
+    armScreensaver();
     initAsmaStudyPage();
   </script>
   <script type="module">
