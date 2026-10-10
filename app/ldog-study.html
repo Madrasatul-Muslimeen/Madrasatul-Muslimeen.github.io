@@ -112,6 +112,7 @@
     <details class="nav-cat nav-cat-home">
       <summary>Home</summary>
       <div class="nav-cat-links">
+        <button type="button" class="nav-legacy-link nav-screensaver-link" data-screensaver-settings>🌙 Screensaver</button>
         <a href="https://madrasatul-muslimeen.github.io/legacy/index.html" class="nav-legacy-link" target="_blank" rel="noopener">Legacy App - v06 ↗</a>
         <a href="https://madrasatul-muslimeen.github.io/legacy-v07/index.html" class="nav-legacy-link" target="_blank" rel="noopener">Legacy App - v07 ↗</a>
         <a href="https://madrasatul-muslimeen.github.io/legacy-v08/index.html" class="nav-legacy-link" target="_blank" rel="noopener">Legacy App - v08 ↗</a>
@@ -148,12 +149,14 @@
     import { initRoutineStudyPage } from "./js/routine-study.js";
     import { translateStatic } from "./js/i18n.js";
     import { registerServiceWorker } from "./js/sw-register.js";
+    import { armScreensaver } from "./js/screensaver-idle.js";
 
     // Phase 1 of the full translation: turn this page's own static markup
     // (headings, labels, buttons) into the chosen language before anything
     // else runs, so a Bangla reader never sees an English frame first.
     translateStatic();
     registerServiceWorker();
+    armScreensaver();
     initRoutineStudyPage({ moduleId: "ldog", trackableId: "practised_ldog", rootSubjectId: "ldog" });
   </script>
   <script type="module">

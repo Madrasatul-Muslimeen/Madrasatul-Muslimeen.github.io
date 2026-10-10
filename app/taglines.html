@@ -75,6 +75,7 @@
     <details class="nav-cat nav-cat-home">
       <summary>Home</summary>
       <div class="nav-cat-links">
+        <button type="button" class="nav-legacy-link nav-screensaver-link" data-screensaver-settings>🌙 Screensaver</button>
         <a href="https://madrasatul-muslimeen.github.io/legacy/index.html" class="nav-legacy-link" target="_blank" rel="noopener">Legacy App - v06 ↗</a>
         <a href="https://madrasatul-muslimeen.github.io/legacy-v07/index.html" class="nav-legacy-link" target="_blank" rel="noopener">Legacy App - v07 ↗</a>
         <a href="https://madrasatul-muslimeen.github.io/legacy-v08/index.html" class="nav-legacy-link" target="_blank" rel="noopener">Legacy App - v08 ↗</a>
@@ -187,6 +188,7 @@
     import { safeWrite } from "./js/errors.js";
     import { translateStatic, t, num, parseNum } from "./js/i18n.js";
     import { registerServiceWorker } from "./js/sw-register.js";
+    import { armScreensaver } from "./js/screensaver-idle.js";
     import {
       TAGLINE_MOTIONS, TAGLINE_HOLDS, taglinesFrom, taglineSettingsFrom, taglineText,
       isUsingDefaultTaglines, addTagline, updateTagline, setTaglineStatus, moveTagline,
@@ -196,6 +198,7 @@
 
     translateStatic();
     registerServiceWorker();
+    armScreensaver();
 
     const whoEl = document.getElementById("who");
     const signInBtn = document.getElementById("signInBtn");
