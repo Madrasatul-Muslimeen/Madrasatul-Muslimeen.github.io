@@ -16,7 +16,7 @@ const check = (name, ok, detail = "") => {
 };
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
 const MUT = {
-  asmanote: ["quranrevival.html", 'await openNotesPaneForKey(buildUnitKey.ayah(surah, ayah), { backLabel: t("Back to {name}", { name: t("Asma ul Husna") }) }, () => {', 'await openNoteView(buildUnitKey.ayah(surah, ayah)); void ((a, b, c) => c)(0, 0, () => {'],
+  asmanote: ["quranrevival.html", 'await openNotesPaneForKey(buildUnitKey.ayah(surah, ayah), { backLabel: t("Back to {name}", { name: entry ? asmaEntryDisplayName(entry) : t("Asma ul Husna") }) }, () => {', 'await openNoteView(buildUnitKey.ayah(surah, ayah)); void ((a, b, c) => c)(0, 0, () => {'],
   qcrnote: ["quranrevival.html", "await openNotesPaneForKey(unitKey, { backLabel: t(\"Back to {name}\", { name: t(\"QCR\") }) }, backToQcrCollection(qcrCurrentId));", "await openNoteView(unitKey, { fromCollectionId: qcrCurrentId });"],
   gotonote: ["quranrevival.html", "await openNotesPaneForKey(buildUnitKey.ayah(parsed.surah, from));", "await openNoteView(buildUnitKey.ayah(parsed.surah, from));"],
   noback: ["quranrevival.html", '{ backLabel: t("Back to {name}", { name: t("QCR") }) }, backToQcrCollection(qcrCurrentId));', '{}, () => { paintReadNotesBtn(); });'],
@@ -59,12 +59,15 @@ for (const [lang, width, height] of [["bn", 390, 844], ["en", 1280, 800]]) {
     await P.waitForFunction(() => document.querySelector("[data-asma-xref-jump]"), null, { timeout: 10000 }).catch(() => {});
     const key = await P.evaluate(() => document.querySelector("[data-asma-xref-jump]")?.dataset.asmaXrefJump ?? null);
     check(`${tag} POSITIVE CONTROL: Name 52 shows an āyah reference to tap`, !!key, String(key));
+    const nm52 = await P.evaluate(() => document.querySelector("#asmaXListHeader .qcr-list-title")?.textContent?.trim() ?? "");
     await P.evaluate(() => document.querySelector("[data-asma-xref-jump]")?.click());
     await waitPane(P);
     const s = await state(P);
     const [su, ay] = (key ?? "0:0").split(":");
     check(`${tag} the reference opens the Read view on ${key} with the pane, Note view hidden`, s.read && !s.note && s.pane && s.surah === su && s.ayah === ay, JSON.stringify(s));
-    check(`${tag} the pane's way back names Asma ul Husna`, !!s.back && s.back.includes(bn ? "আসমাউল হুসনা" : "Asma ul Husna"), JSON.stringify(s.back));
+    // UPDATED in place by the Architect's review (#731): the back names the Name itself, as it did before R3b
+    // ("← Back to <Name 52>"), not only "Asma ul Husna". The Name's own heading on the refs level is the expected text.
+    check(`${tag} the pane's way back names the Name (${nm52})`, !!s.back && !!nm52 && s.back.includes(nm52), JSON.stringify({ back: s.back, nm52 }));
     await P.evaluate(() => document.querySelector("#readNotePane [data-rnp-back]")?.click());
     await P.waitForFunction(() => document.getElementById("asmaXSingleSelect")?.getClientRects().length, null, { timeout: 12000 }).catch(() => {});
     const b = await P.evaluate(() => ({ pane: document.getElementById("readNotePane")?.hidden === false, name: document.getElementById("asmaXSingleSelect")?.value, shown: !!document.getElementById("asmaXSingleSelect")?.getClientRects().length }));

@@ -14531,7 +14531,9 @@
       await goToReference(surah, ayah, null);
       // R3b (decision 95): the Notes pane in the Read view, not the Note view. The way-back law (decision 86): the pane's
       // back goes to Explore on the same Name/Group. (The Note view's Topic pre-set is lost: the pane has no Topic field.)
-      await openNotesPaneForKey(buildUnitKey.ayah(surah, ayah), { backLabel: t("Back to {name}", { name: t("Asma ul Husna") }) }, () => {
+      // Review of #731: the back names the Name, as it did before ("← Back to Ar-Rahman").
+      const entry = number != null ? asmaXResolve(number) : null;
+      await openNotesPaneForKey(buildUnitKey.ayah(surah, ayah), { backLabel: t("Back to {name}", { name: entry ? asmaEntryDisplayName(entry) : t("Asma ul Husna") }) }, () => {
         paintReadNotesBtn();
         returnToAsmaName(number, groupId, fromPoster);
       });
@@ -21894,7 +21896,8 @@
       const fromCollection = noteOriginCollectionId, fromAsmaGroup = noteOriginAsmaGroupId, fromAsmaNumber = noteOriginAsmaNumber;
       noteOriginCollectionId = null; noteOriginAsmaGroupId = null; noteOriginAsmaNumber = null;
       if (fromAsmaNumber != null) {
-        await openNotesPaneForKey(unitKey, { backLabel: t("Back to {name}", { name: t("Asma ul Husna") }) }, () => { paintReadNotesBtn(); returnToAsmaName(fromAsmaNumber, fromAsmaGroup, false); });
+        const entry = asmaXResolve(fromAsmaNumber);
+        await openNotesPaneForKey(unitKey, { backLabel: t("Back to {name}", { name: entry ? asmaEntryDisplayName(entry) : t("Asma ul Husna") }) }, () => { paintReadNotesBtn(); returnToAsmaName(fromAsmaNumber, fromAsmaGroup, false); });
       } else if (fromCollection != null) {
         await openNotesPaneForKey(unitKey, { backLabel: t("Back to {name}", { name: t("QCR") }) }, backToQcrCollection(fromCollection));
       } else {
