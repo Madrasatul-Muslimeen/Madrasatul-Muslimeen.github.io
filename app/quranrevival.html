@@ -5229,7 +5229,7 @@
           <!-- Issue #419 -- see the #readQuickRow CSS for when it shows. Each
                button calls the same named function as the control it mirrors. -->
           <div id="readQuickRow">
-            <button type="button" class="rq-btn" id="readQuickNoteBtn">Note View</button>
+            <button type="button" class="rq-btn" id="readQuickNoteBtn">Notes</button>
             <button type="button" class="rq-btn" id="readQuickTrackBtn">Record</button>
             <button type="button" class="rq-btn" id="readQuickApproachBtn">Approach</button>
           </div>
@@ -10601,7 +10601,8 @@
       openApproachWheel();
     });
     // Issue #419 -- the Read contents list's three quick buttons, same routes.
-    document.getElementById("readQuickNoteBtn").addEventListener("click", openNoteForCurrentAyah);
+    // Decision 95: the Read bar's quick "Notes" opens the Notes pane (it opened the Note view).
+    document.getElementById("readQuickNoteBtn").addEventListener("click", () => openReadNotesPane());
     document.getElementById("readQuickTrackBtn").addEventListener("click", openChosenUnitCard);
     document.getElementById("readQuickApproachBtn").addEventListener("click", openApproachWheel);
 
@@ -19474,22 +19475,11 @@
           openUnitCard(rungUnitKey, { surah, ayah: ayahNum });
         },
         onBookmark: (unitKey) => toggleAyahBookmark(unitKey),
-        onNote: (unitKey) => { rememberAyahCardReturn(unitKey); openNoteView(unitKey); },
+        // Decision 95: the Note is the Notes pane now (Mapping My Journey's own Note), on the Read view.
+        onNote: (unitKey) => { openNotesPaneFromAyahCard(unitKey); },
         // ✍ Take Note: the same view, ready to write -- its Notes box open, in sight, the cursor in it (a phone's
         // keyboard comes up). The Owner, 8 Oct 2026: "Note n Take Note both takes to the same view ... Fix."
-        onTakeNote: async (unitKey) => {
-          rememberAyahCardReturn(unitKey);
-          noteNotesOpen = true;
-          await openNoteView(unitKey);
-          const ed = noteView.querySelector("[data-note-editor]");
-          if (!ed) return;
-          const body = ed.closest(".note-field-body");
-          if (body && body.style.display === "none") { body.style.display = ""; noteNotesOpen = true; }
-          ed.scrollIntoView({ block: "center" });
-          ed.focus();
-          const sel = window.getSelection(), range = document.createRange();
-          range.selectNodeContents(ed); range.collapse(false); sel.removeAllRanges(); sel.addRange(range);
-        },
+        onTakeNote: (unitKey) => { openNotesPaneFromAyahCard(unitKey, { fresh: true }); },
         onAsma: (unitKey) => {
           const { surah: s, ayah: a } = parseAyahUnitKey(unitKey);
           openAsmaXAttachPopover({ prefillRef: ayahRefLabel(s, a, { internal: true }) });
@@ -22815,11 +22805,47 @@
         reportWriteFailure(error, { what: "open the Notes pane" }); // I15
         return;
       }
-      readNotePaneMod.setReadNotePaneCountListener(() => paintReadNotesBtn());
       if (readNotePaneMod.isReadNotePaneOpen()) { readNotePaneMod.closeReadNotePane(); return; }
-      readNotePaneMod.openReadNotePane(u, () => { paintReadNotesBtn(); readNotesBtn.focus(); });
-      paintReadNotesBtn();
+      openReadNotesPane(u);
     });
+    async function loadReadNotePane() {
+      readNotePaneMod ??= await import("./js/read-note-pane.js");
+      readNotePaneMod.setReadNotePaneCountListener(() => paintReadNotesBtn());
+      readNotePaneMod.setReadNotePaneHost(readNotePaneTrackHost);
+      return readNotePaneMod;
+    }
+    /** Opens the pane on the Read view's āyah. `opts` as openReadNotePane()'s; `whenClosed` defaults to the focus back on 📝. */
+    async function openReadNotesPane(u = readNotesUnit(), opts = {}, whenClosed = null) {
+      if (!u) return;
+      try { await loadReadNotePane(); } catch (error) { reportWriteFailure(error, { what: "open the Notes pane" }); return; } // I15
+      readNotePaneMod.openReadNotePane(u, whenClosed ?? (() => { paintReadNotesBtn(); readNotesBtn.focus(); }), opts);
+      paintReadNotesBtn();
+    }
+    // Decision 95: "Track this āyah becomes a tab of the pane." Its three actions are the Read bar's own (the same cards,
+    // the same records, 👥 included), each for the pane's āyah; each leaves "Back to Notes on S:A" (decision 86).
+    function backToReadNotes(u, tab) {
+      const { surah, ayah, half } = parseAyahUnitKey(u.unitKey);
+      setAppReturn(t("Back to Notes on {unit}", { unit: u.label }), "", async () => {
+        if (stageView !== "read" || currentSurahNum !== surah || currentAyahNum !== ayah) await navigateToAyah(surah, ayah, "read", half);
+        openReadNotesPane(readNotesUnit(), { tab });
+      });
+      return { surah, ayah, half };
+    }
+    const readNotePaneTrackHost = {
+      take: (u) => { backToReadNotes(u, "track"); openApproachWheel(); },
+      // The card first: opening it clears any way back ("the card is open again"), so the way back is set after it.
+      record: (u) => { const { surah, ayah, half } = parseAyahUnitKey(u.unitKey); openAyahActionSheet(`${surah}:${ayah}`, half); backToReadNotes(u, "track"); },
+      status: (u) => { backToReadNotes(u, "track"); openMyStatus(); },
+    };
+    /** The Āyah card's 📝 Note (decisions 94, 95): the Notes pane on that āyah, in the Read view, with "← Back to Āyah
+        card". With no Note yet (`fresh`), ✚ New note is put in focus, ready to press. */
+    async function openNotesPaneFromAyahCard(unitKey, { fresh = false } = {}) {
+      const { surah, ayah, half } = parseAyahUnitKey(unitKey);
+      const r = { surah, ayah, half, view: "read", scrollY: stageView === "read" ? readViewScrollTop() : null };
+      closeAyahActionSheet();
+      if (stageView !== "read" || currentSurahNum !== surah || currentAyahNum !== ayah) await navigateToAyah(surah, ayah, "read", half);
+      await openReadNotesPane(readNotesUnit(), { backLabel: t("Back to Āyah card"), focusNew: fresh }, () => { paintReadNotesBtn(); returnToAyahCard(r); });
+    }
 
     /** Shell round 22 -- bring the reading screen's pickers into line with the
         Study options controls they mirror. Options are only rebuilt when they

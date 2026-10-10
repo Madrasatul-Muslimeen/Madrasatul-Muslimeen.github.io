@@ -6,6 +6,8 @@
 // Run from the repository root, serve.js on :8080.
 //   --mutate=reload     ‹ › reloads the page inside instead of telling it the new āyah -> "no reload" fails
 //   --mutate=noback     the pane's ← Back does nothing                                  -> the way-back checks fail
+//   --mutate=cardnote    the Āyah card's 📝 Note opens the Note view again        -> the "opens the Notes pane" checks fail
+//   --mutate=notrackback a Track action leaves no way back to the pane          -> the Track way-back checks fail
 //   --mutate=nosource   ✚ New note makes a Note with no link to the āyah                 -> the noteSources check fails
 import { chromium, newContext, openPage } from "./harness.mjs";
 import fs from "node:fs";
@@ -17,8 +19,10 @@ const check = (name, ok, detail = "") => {
 };
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
 const MUT = {
-  reload: ["js/read-note-pane.js", "  if (!pane || pane.hidden || !u || u.unitKey === unit?.unitKey) return;\n  frame.contentWindow?.postMessage(", "  if (!pane || pane.hidden || !u || u.unitKey === unit?.unitKey) return;\n  frame.setAttribute(\"src\", srcFor(u)); (0, void "],
+  reload: ["js/read-note-pane.js", "  if (!pane || pane.hidden || !u || u.unitKey === unit?.unitKey) return;\n  toFrame(", "  if (!pane || pane.hidden || !u || u.unitKey === unit?.unitKey) return;\n  frame.setAttribute(\"src\", srcFor(u)); (0, void "],
   noback: ["js/read-note-pane.js", "  back.addEventListener(\"click\", closeReadNotePane);\n", "\n"],
+  cardnote: ["quranrevival.html", "        onNote: (unitKey) => { openNotesPaneFromAyahCard(unitKey); },", "        onNote: (unitKey) => { rememberAyahCardReturn(unitKey); openNoteView(unitKey); },"],
+  notrackback: ["quranrevival.html", "      setAppReturn(t(\"Back to Notes on {unit}\", { unit: u.label }), \"\", async () => {", "      (() => {})(t(\"Back to Notes on {unit}\", { unit: u.label }), \"\", async () => {"],
   nosource: ["journey-map.html", "const { note } = await createStudyNote(db, { ...ownerArgs, unitKey: unitKeyParam, title: label });", "const note = await createPermanentNote(db, { ...ownerArgs, title: label, bodyHtml: \"\" });"],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
@@ -41,8 +45,8 @@ DATA.noteSources = [...(DATA.noteSources ?? []), ...${JSON.stringify(SOURCES)}];
 (DATA.ayahNotes.find((d) => d._id === "t1__p1") || {}).notes = { "ayah:2:256": { html: "<p>My old quick note on 2:256</p>" } };`;
 
 const L = {
-  en: { title256: "Notes on 2:256", title257: "Notes on 2:257", back: "← Back to 2:256", started: "started here", mentions: "mentions it", old: "Your note from the Note view", empty257: "No notes on 2:257 yet", newBtn: "New note on 2:257" },
-  bn: { title256: "২:২৫৬-এর নোট", title257: "২:২৫৭-এর নোট", back: "← ২:২৫৬-এ ফিরে যান", started: "এখানে শুরু", mentions: "এর উল্লেখ আছে", old: "নোট ভিউ থেকে আপনার নোট", empty257: "২:২৫৭-এ এখনো কোনো নোট নেই", newBtn: "২:২৫৭-এ নতুন নোট" },
+  en: { backNotes: "Back to Notes on 2:257", backCard: "← Back to Āyah card", title258: "Notes on 2:258", title256: "Notes on 2:256", title257: "Notes on 2:257", back: "← Back to 2:256", started: "started here", mentions: "mentions it", old: "Your note from the Note view", empty257: "No notes on 2:257 yet", newBtn: "New note on 2:257" },
+  bn: { backNotes: "২:২৫৭-এর নোটে ফিরে যান", backCard: "← আয়াত কার্ডে ফিরুন", title258: "২:২৫৮-এর নোট", title256: "২:২৫৬-এর নোট", title257: "২:২৫৭-এর নোট", back: "← ২:২৫৬-এ ফিরে যান", started: "এখানে শুরু", mentions: "এর উল্লেখ আছে", old: "নোট ভিউ থেকে আপনার নোট", empty257: "২:২৫৭-এ এখনো কোনো নোট নেই", newBtn: "২:২৫৭-এ নতুন নোট" },
 };
 
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
@@ -161,6 +165,60 @@ for (const lang of ["en", "bn"]) for (const [width, height, mode] of [[390, 844,
   await P.click("#journeyTray .jt-close");
   await P.waitForTimeout(300);
   check(`${tag} ...closing the tray leaves the Notes pane and the reading as they were`, await ev(() => document.getElementById("journeyTray").hidden && !document.getElementById("readNotePane").hidden && document.getElementById("ayahSelect").value === "257"));
+  // 8. Round 2a: "Track this āyah" is a tab of the pane; Record Your Progress opens the Āyah card (its 👥 included) and
+  // leaves "Back to Notes on 2:257", which brings the pane back on its Track tab.
+  await P.click('#readNotePane [data-rnp-tab="track"]');
+  await P.waitForTimeout(300);
+  const tr = await ev(() => ({ frame: document.querySelector("#readNotePane .rnp-frame").hidden, track: document.querySelector("#readNotePane .rnp-track").hidden,
+    btns: [...document.querySelectorAll("#readNotePane [data-rnp-track]")].map((b) => b.dataset.rnpTrack), sel: document.querySelector('#readNotePane [data-rnp-tab="track"]').getAttribute("aria-selected"),
+    hs: [...document.querySelectorAll("#readNotePane [data-rnp-track]")].map((b) => b.getBoundingClientRect().height) }));
+  check(`${tag} the Track tab shows Take an Approach, Record Your Progress and Know Your Status, each >= 40px`, tr.frame && !tr.track && tr.sel === "true" && tr.btns.join() === "take,record,status" && tr.hs.every((h) => h >= 40), JSON.stringify(tr));
+  await P.click('#readNotePane [data-rnp-track="record"]');
+  await P.waitForFunction(() => document.getElementById("ayahActionSheetOverlay")?.classList.contains("open"), null, { timeout: 8000 }).catch(() => {});
+  await P.waitForTimeout(400);
+  const rec = await ev(() => ({ paneHidden: document.getElementById("readNotePane").hidden, ref: document.querySelector("[data-ayah-sheet] .ayah-sheet-ref")?.textContent ?? "", pill: document.querySelector("#ayahCardBackPill:not([hidden]) [data-ayah-card-back]")?.textContent ?? "" }));
+  check(`${tag} Record Your Progress closes the pane and opens 2:257's Āyah card, with "${W.backNotes}"`, rec.paneHidden && /2:257|২:২৫৭/.test(rec.ref) && rec.pill.includes(W.backNotes), JSON.stringify(rec));
+  await ev(() => document.querySelector("#ayahCardBackPill [data-ayah-card-back]")?.click());
+  await P.waitForTimeout(600);
+  const backT = await ev(() => ({ shown: !document.getElementById("readNotePane").hidden, sel: document.querySelector('#readNotePane [data-rnp-tab="track"]')?.getAttribute("aria-selected"), title: document.querySelector("#readNotePane .rnp-title")?.textContent }));
+  check(`${tag} ...and that way back reopens the pane on its Track tab, on 2:257`, backT.shown && backT.sel === "true" && backT.title === W.title257, JSON.stringify(backT));
+  await P.click('#readNotePane [data-rnp-back]');
+  await P.waitForTimeout(300);
+
+  // 9. The Āyah card's 📝 Note opens the pane on that āyah, with "← Back to Āyah card" (decisions 94, 95).
+  const openCard = async (a) => {
+    await ev((x) => { const el = document.getElementById("ayahSelect"); el.value = String(x); el.dispatchEvent(new Event("change", { bubbles: true })); }, a);
+    await P.waitForTimeout(600);
+    await ev((x) => document.querySelector(`[data-ayah-num-badge="2:${x}"]`)?.click(), a);
+    await P.waitForFunction(() => document.querySelector("[data-ayah-sheet] .ayah-sheet-ref"), null, { timeout: 8000 }).catch(() => {});
+    await P.waitForTimeout(500);
+  };
+  await openCard(256);
+  await P.waitForFunction(() => document.querySelector("[data-ayah-sheet] [data-ayah-sheet-note]") && !document.querySelector("[data-ayah-sheet] [data-ayah-sheet-note-new]"), null, { timeout: 8000 }).catch(() => {});
+  await P.click("[data-ayah-sheet] [data-ayah-sheet-note]");
+  await P.waitForFunction(() => !document.getElementById("readNotePane")?.hidden, null, { timeout: 8000 }).catch(() => {});
+  await P.waitForTimeout(600);
+  const fromCard = await ev(() => ({ pane: !document.getElementById("readNotePane").hidden, card: document.getElementById("ayahActionSheetOverlay")?.classList.contains("open"), title: document.querySelector("#readNotePane .rnp-title")?.textContent,
+    back: document.querySelector("#readNotePane [data-rnp-back]")?.textContent, noteView: !document.getElementById("noteView")?.hidden && document.getElementById("noteView")?.getBoundingClientRect().height > 0 }));
+  check(`${tag} the Āyah card's 📝 Note opens the Notes pane on 2:256 (not the Note view), the card closed`, fromCard.pane && !fromCard.card && fromCard.title === W.title256 && !fromCard.noteView, JSON.stringify(fromCard));
+  check(`${tag} ...with "${W.backCard}" on its bar`, fromCard.back === W.backCard, fromCard.back);
+  await P.click('#readNotePane [data-rnp-back]');
+  await P.waitForFunction(() => document.getElementById("ayahActionSheetOverlay")?.classList.contains("open"), null, { timeout: 8000 }).catch(() => {});
+  await P.waitForTimeout(300);
+  const reCard = await ev(() => ({ open: document.getElementById("ayahActionSheetOverlay")?.classList.contains("open"), ref: document.querySelector("[data-ayah-sheet] .ayah-sheet-ref")?.textContent ?? "", pane: document.getElementById("readNotePane").hidden }));
+  check(`${tag} ...which closes the pane and reopens 2:256's Āyah card`, reCard.open && reCard.pane && /2:256|২:২৫৬/.test(reCard.ref), JSON.stringify(reCard));
+  await ev(() => document.querySelector("[data-ayah-sheet] [data-ayah-sheet-close], [data-ayah-sheet-close]")?.click());
+  await P.keyboard.press("Escape");
+  await P.waitForTimeout(300);
+  // 10. On an āyah with no Note yet, the card's 📝 Note opens the pane with ✚ New note in focus (nothing is created).
+  await openCard(258);
+  await P.waitForFunction(() => document.querySelector("[data-ayah-sheet] [data-ayah-sheet-note-new]"), null, { timeout: 8000 }).catch(() => {});
+  await P.click("[data-ayah-sheet] [data-ayah-sheet-note]");
+  const F2 = await (async () => { for (let i = 0; i < 60; i++) { const f = P.frames().find((x) => /journey-map\.html\?embed=1&unit=/.test(x.url())); if (f) return f; await P.waitForTimeout(100); } return null; })();
+  await F2?.waitForFunction(() => document.activeElement?.matches?.("[data-unit-new].unit-new-ready"), null, { timeout: 15000 }).catch(() => {});
+  const ready = F2 ? await F2.evaluate(() => ({ title: document.querySelector("[data-unit-title]")?.textContent, focus: !!document.activeElement?.matches?.("[data-unit-new].unit-new-ready") })) : null;
+  check(`${tag} on 2:258 (no Note yet) the card's 📝 Note opens the pane with ✚ New note in focus, ready to press`, ready?.focus && ready.title === W.title258, JSON.stringify(ready));
+  check(`${tag} ...and nothing was written just by opening it`, F2 ? await F2.evaluate(() => !(window.__stubWriteData || []).some((x) => x.col === "noteSources" && /2:258/.test(JSON.stringify(x.data)))) : false);
   const errs = errors.filter((e) => !/ERR_CERT|archive\.org|net::ERR/.test(e));
   check(`${tag} no page errors`, errs.length === 0, errs.join(" | ").slice(0, 400));
   if (width === 390 && lang === "bn" || width === 1280 && lang === "en") {

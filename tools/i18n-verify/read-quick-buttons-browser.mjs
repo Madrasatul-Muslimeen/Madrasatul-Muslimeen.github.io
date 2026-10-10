@@ -49,8 +49,9 @@ const audioWrites = (page) => page.evaluate(() => ({
 }));
 
 // UPDATED IN PLACE (Owner, 2 Oct 2026): "Track (pls name it as Record)".
-const EN = ["Note View", "Record", "Approach"];
-const BN = ["নোট ভিউ", "লিপিবদ্ধ করুন", "পদ্ধতি"];
+// UPDATED IN PLACE (decision 95, v10.03): "Note View" is "Notes" now -- it opens the Notes pane, not the Note view.
+const EN = ["Notes", "Record", "Approach"];
+const BN = ["নোট", "লিপিবদ্ধ করুন", "পদ্ধতি"];
 
 // ---- placement, both languages
 const measure = (page) => page.evaluate(() => {
@@ -172,8 +173,10 @@ for(const [name, tab, n] of [["surah 67", "surah", 67], ["page 50", "page", 50]]
     const tag = `[${name}] ${which}`;
     if (which === "Note") {
       if (tab === "surah") {
-        const s = await page.evaluate(() => ({ view: document.getElementById("noteView") && !document.getElementById("noteView").hidden, cur: document.getElementById("ayahSelect").value }));
-        check(`${tag}: opens the Note view on the āyah on screen`, s.view && s.cur === ayah, JSON.stringify(s));
+        // UPDATED IN PLACE (decision 95, v10.03): the quick Notes opens the Notes pane on the āyah on screen.
+        await page.waitForFunction(() => !document.getElementById("readNotePane")?.hidden, null, { timeout: 8000 }).catch(() => {});
+        const s = await page.evaluate(() => ({ pane: !!document.getElementById("readNotePane") && !document.getElementById("readNotePane").hidden, src: document.querySelector("#readNotePane iframe")?.getAttribute("src") ?? "", cur: document.getElementById("ayahSelect").value }));
+        check(`${tag}: opens the Notes pane on the āyah on screen`, s.pane && s.src.includes(`unit=ayah%3A67%3A${s.cur}`) && s.cur === ayah, JSON.stringify(s));
       }
     } else if (which === "Track") {
       const t = await page.evaluate(() => {
@@ -190,7 +193,9 @@ for(const [name, tab, n] of [["surah 67", "surah", 67], ["page 50", "page", 50]]
     // The Note view itself records one ayahNotes update when it opens (its own
     // behaviour, identical from the Study menu's Note item -- proven below);
     // the button adds nothing of its own.
-    const allowed = which === "Note" ? noteBaselineWrites : 0;
+    // UPDATED IN PLACE (decision 95, v10.03): the quick Notes opens the Notes pane, which writes nothing on opening (the
+    // Note view's own ayahNotes update on opening was the reason for the baseline). So it is 0 for all three now.
+    const allowed = 0;
     check(`${tag}: no Firestore write beyond what the existing route does (${allowed})`, after.writes - before.writes === allowed, JSON.stringify({ before, after }));
     await ctx.close();
   }
