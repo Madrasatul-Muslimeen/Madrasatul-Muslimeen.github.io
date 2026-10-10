@@ -231,6 +231,9 @@ const CSS = `
 #writingSheet .ws-toolbar .ws-unit{flex:1 1 0;min-width:0;white-space:normal;text-align:start;overflow-wrap:anywhere;font-size:0.85rem}
 #writingSheet .ws-toolbar .ws-shade{min-height:40px;padding:0.3rem 1.6rem 0.3rem 0.7rem;border:1px solid rgba(255,255,255,0.35);border-radius:8px;background:rgba(255,255,255,0.12) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23fff'/%3E%3C/svg%3E") no-repeat right 0.55rem center;color:#fff;font:inherit;font-size:0.9rem;-webkit-appearance:none;appearance:none;cursor:pointer;flex:0 0 auto;max-width:42%}
 #writingSheet .ws-toolbar .ws-shade option{color:#1b1b16;background:#fff}
+/* Architect review of #720 (✅ Record joined row 2): below 360px the unit's name keeps 64px and the letter-style picker
+   gives way instead -- measured at 320px English the unit fell to 27px ("Yaseen 8" cut) while the picker held 110px. */
+@media (max-width:359px){#writingSheet .ws-toolbar .ws-unit{min-width:64px}#writingSheet .ws-toolbar .ws-shade{flex:0 1 auto;min-width:0}}
 #writingSheet .ws-ic-narrow{display:none}
 #writingSheet .ws-menu{position:absolute;right:8px;top:100%;margin-top:2px;z-index:6;display:flex;flex-direction:column;gap:4px;padding:6px;background:#1F3A6E;border:1px solid rgba(255,255,255,0.35);border-radius:8px;box-shadow:0 4px 14px rgba(0,0,0,0.35)}
 #writingSheet .ws-menu[hidden]{display:none}
@@ -293,7 +296,7 @@ const CSS = `
  *   initial       { type, surah, from, to, page } of the current unit
  *   unitLabel     what the sheet holds now, in words
  */
-export async function openWritingSheet({ fatihaCount = false, pages, range = null, surahArabicName = null, onClose = null, onChooseUnit = null, surahs = [], initial = null, unitLabel = "", onBookmark = null } = {}) {
+export async function openWritingSheet({ fatihaCount = false, pages, range = null, surahArabicName = null, onClose = null, onChooseUnit = null, surahs = [], initial = null, unitLabel = "", onBookmark = null, onRecord = null } = {}) {
   if (openSheet) openSheet.destroy();
   const inUnit = (s, a) => {
     if (!range) return true;
@@ -323,6 +326,7 @@ export async function openWritingSheet({ fatihaCount = false, pages, range = nul
       <div class="ws-row ws-row2">
         <button type="button" class="ws-unit" data-ws="unit" aria-expanded="false"${onChooseUnit ? "" : " disabled"}></button>
         <button type="button" data-ws="popout" aria-pressed="false" aria-label="${t("Pop out")}" title="${t("Pop out")}">🔍<span class="ws-tx"> ${t("Pop out")}</span></button>
+        ${onRecord ? `<button type="button" data-ws="record" aria-label="${t("Record progress")}" title="${t("Record progress")}">✅<span class="ws-tx"> ${t("Record")}</span></button>` : ""}
         ${onBookmark ? `<button type="button" data-ws="bookmark" aria-pressed="false" aria-label="${t("Bookmark this")}" title="${t("Bookmark this")}">🔖<span class="ws-tx"> ${t("Bookmark")}</span></button>` : ""}
         <select class="ws-shade" data-ws-shade-select aria-label="${t("Letter style")}" title="${t("Letter style")}">
           <option value="light">${t("Light")}</option>
@@ -430,7 +434,7 @@ export async function openWritingSheet({ fatihaCount = false, pages, range = nul
     destroy();
     onClose?.();
   }
-  function onKey(e) { if (e.key === "Escape") { e.preventDefault(); requestClose(); } }
+  function onKey(e) { if (root.hidden) return; if (e.key === "Escape") { e.preventDefault(); requestClose(); } }
   document.addEventListener("keydown", onKey);
   openSheet = { root, destroy };
 
@@ -845,6 +849,13 @@ export async function openWritingSheet({ fatihaCount = false, pages, range = nul
         }
         // The Owner, 9 Oct 2026: "Need a bookmark button here." The page saves the bookmark (its usual naming box);
         // a saved one shows pressed, so the reader can see it worked.
+        case "record": {
+          // Hide, never destroy: the writing on the canvases is stored nowhere. display:none resets a scroller, so the scroll is put back on show.
+          const top = scrollEl.scrollTop;
+          root.hidden = true;
+          onRecord?.(() => { root.hidden = false; scrollEl.scrollTop = top; });
+          break;
+        }
         case "bookmark": Promise.resolve(onBookmark?.()).then((saved) => { if (saved) { b.setAttribute("aria-pressed", "true"); b.title = t("Bookmarked"); b.setAttribute("aria-label", t("Bookmarked")); } }); break;
         case "save": closeMenu(); savePicture(); break;
         case "print": closeMenu(); printA4(); break;
