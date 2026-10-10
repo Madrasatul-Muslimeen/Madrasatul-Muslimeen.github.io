@@ -815,3 +815,4 @@ total). Allocated by the MMSA Architect.
 10.18: Asma ways back, Prime beside Search, the Āyah card's Full text full screen. Allocated by the MMSA Architect.
 10.19: The Note ⋯ menu in six groups (Builder #747). Allocated by the MMSA Architect.
 10.20: bookmark-marks-back made true (Builder #750). Allocated by the MMSA Architect.
+10.21: 📖 Meaning, the Read bar's tools under ⋯, the study buttons at a phone's foot. Allocated by the MMSA Architect.

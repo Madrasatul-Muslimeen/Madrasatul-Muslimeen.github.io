@@ -10,7 +10,7 @@
 //   --mutate=noearly     the pane waits for the folder tree again   -> tree-slow fails
 //   --mutate=nocatch     a failed folder tree is not caught         -> tree-fails fails
 //   --mutate=nomessage   no person: back to returning silently      -> no-person fails
-import { chromium, newContext, openPage } from "./harness.mjs";
+import { chromium, newContext, openPage, clickReadTool } from "./harness.mjs";
 import fs from "node:fs";
 
 let pass = 0, fail = 0;
@@ -58,7 +58,7 @@ for (const [lang, width] of [["bn", 390], ["en", 1280]]) {
     await ev(() => { const el = document.getElementById("ayahSelect"); el.value = "256"; el.dispatchEvent(new Event("change", { bubbles: true })); });
     await P.waitForTimeout(900);
     await ev(() => document.querySelectorAll('[id*="splash"], .app-splash-overlay').forEach((e) => e.remove()));
-    await P.click("#readNotesBtn");
+    await clickReadTool(P, "#readNotesBtn");
     let F = null;
     for (let i = 0; i < 60 && !F; i++) { F = P.frames().find((x) => /journey-map\.html\?embed=1/.test(x.url())); if (!F) await P.waitForTimeout(100); }
     if (!F) { check(`${tag} the pane opens its page`, false); await ctx.close(); continue; }
