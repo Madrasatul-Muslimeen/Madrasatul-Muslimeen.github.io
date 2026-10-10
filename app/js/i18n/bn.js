@@ -4011,6 +4011,8 @@ export const BN = {
   "Back to {unit}": "{unit}-এ ফিরে যান",
   "Notes on this āyah": "এই আয়াতের নোট",
   "Loading your folders…": "আপনার ফোল্ডারগুলো আসছে…",
+  "Back to the writing sheet": "লেখার শিটে ফিরুন",
+  "Record progress": "অগ্রগতি লিখুন",
   // --- 9 Oct 2026: the Notes pane's Track tab (decision 95, round 2a)
   "Back to Notes on {unit}": "{unit}-এর নোটে ফিরে যান",
   "Back to the unit card": "ইউনিট কার্ডে ফিরে যান",

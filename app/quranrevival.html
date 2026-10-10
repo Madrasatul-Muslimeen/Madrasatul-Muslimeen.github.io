@@ -10696,6 +10696,14 @@
           // Architect review (#603): name the Surah, not "Whole Surah 1" -- "Al-Faatiha", "Yaseen 1–12", "Page 50".
           // The Owner, 9 Oct 2026: "Need a bookmark button here." It reopens on this writing sheet (view "writing").
           onBookmark: () => toggleAyahBookmark(info.unitKey, `✍ ${surahName(currentSurahNum, surahIndex.find((x) => x.surahNumber === currentSurahNum)?.nameEnglish)} ${num(uFrom)}`, { ...captureQuranBookmarkSettings(), view: "writing" }, { toggle: false }),
+          // The Owner, 9 Oct 2026: "a progress record button for All family". The sheet hides itself (the writing is kept) and hands back how to show it again.
+          onRecord: (showSheet) => {
+            const sm = surahIndex.find((x) => x.surahNumber === currentSurahNum);
+            const nm = sm ? surahName(currentSurahNum, sm.nameEnglish) : String(currentSurahNum);
+            const label = info.unitType === "ayah" ? `${nm} ${num(uFrom)}` : info.unitType === "range" ? `${nm} ${num(uFrom)}–${num(uTo)}` : info.unitType === "page" ? t("Page {page}", { page: num(currentUnitNumber()) }) : info.unitType === "surah" ? nm : info.label;
+            openChosenUnitCard(); // opening the Āyah card clears any return, so the way back is set after it
+            setAppReturn(t("Back to the writing sheet"), label, () => { closeAyahActionSheet(); closeUnitCard(); showSheet(); });
+          },
           unitLabel: (() => {
             const sm = surahIndex.find((s) => s.surahNumber === currentSurahNum);
             const nm = sm ? surahName(currentSurahNum, sm.nameEnglish) : String(currentSurahNum);
