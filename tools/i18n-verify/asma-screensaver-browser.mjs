@@ -11,6 +11,7 @@
 //   --mutate=nogroup   a group choice shows every Name                  -> 5b fails
 //   --mutate=nocorr    other pages use the bundled 99, no corrections   -> 5c fails
 //   --mutate=noopen    "Open this Name" drops the way back (back=1)     -> 5e fails
+//   --mutate=nohide    the settings' [hidden] rule is dropped      -> the tick list shows under "All"
 //   --mutate=earlyread the watcher reads the madrasah's data at startup -> 5f fails
 import { chromium, newContext, openPage } from "./harness.mjs";
 import fs from "node:fs";
@@ -29,6 +30,7 @@ const MUT = {
   nogroup: ["js/asma-screensaver.js", 'if (settings.which === "group") {', "if (false) {"],
   nocorr: ["js/asma-screensaver.js", "entries = entries || data.entries;", "entries = entries || null;"],
   noopen: ["js/asma-screensaver.js", "&back=1`;", "`;"],
+  nohide: ["js/asma-screensaver.js", "\n#mmSaverSettings [hidden]{display:none!important}", ""],
   earlyread: ["js/screensaver-idle.js", "  if (armed) return;\n  armed = true;\n", '  if (armed) return;\n  armed = true;\n  import("./asma-screensaver.js").then((m) => m.loadScreensaverData());\n'],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
@@ -221,6 +223,10 @@ for (const [lang, width] of [["bn", 390], ["en", 1280]]) {
     await P.waitForFunction(() => document.querySelectorAll("#mmSaverSettings [data-group] option").length >= 2, null, { timeout: 8000 }).catch(() => {});
     const opts = await P.evaluate(() => [...document.querySelectorAll("#mmSaverSettings [data-group] option")].map((o) => o.textContent));
     const offered = await P.evaluate(() => [...document.querySelectorAll('#mmSaverSettings [data-k="which"] button')].map((b) => b.dataset.v));
+    // The [hidden] trap (CLAUDE.md): .mmss-names sets display:flex, so only an explicit rule keeps the tick list off
+    // screen while "All" is chosen. Rendered boxes, not the attribute.
+    const shown = await P.evaluate(() => ({ names: document.querySelector("#mmSaverSettings [data-names]")?.getClientRects().length ?? -1, group: document.querySelector("#mmSaverSettings [data-group]")?.getClientRects().length ?? -1 }));
+    check("[5b] with \"All\" chosen, neither the tick list of Names nor the group picker is on screen", shown.names === 0 && shown.group === 0, JSON.stringify(shown));
     check("[5b] the settings offer \"studying\" and \"group\", and every active list (Group and ACT)", offered.includes("studying") && offered.includes("group") && opts.length === 2 && opts.some((o) => /Mercy group/.test(o)) && opts.some((o) => /ACT/.test(o)), JSON.stringify({ offered, opts }));
     await ctx.close();
   }

@@ -63,6 +63,7 @@ const CSS = `
 #mmSaver button{min-width:44px;min-height:44px;border-radius:10px;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.14);color:#fff;font:inherit;font-size:1rem;cursor:pointer;padding:0 12px}
 #mmSaverSettings{position:fixed;inset:0;z-index:19999;background:rgba(15,20,30,.55);display:flex;align-items:center;justify-content:center;padding:16px}
 #mmSaverSettings[hidden]{display:none}
+#mmSaverSettings [hidden]{display:none!important}
 #mmSaverSettings .mmss-card{background:#fffdf8;color:#1d2a3a;border-radius:14px;max-width:560px;width:100%;max-height:92vh;overflow:auto;padding:14px 16px;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;box-shadow:0 10px 40px rgba(0,0,0,.35)}
 #mmSaverSettings h2{font-size:1.1rem;margin:0 0 4px;color:#1f3a5f}
 #mmSaverSettings .mmss-sub{font-size:.85rem;color:#5b6675;margin:0 0 8px}
