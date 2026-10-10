@@ -860,6 +860,11 @@ export function initAsmaStudyPage() {
   function openPosterView(entry) {
     if (!posterOverlay || !posterMount) return;
     posterOverlay.classList.add("open");
+    posterOverlay.scrollTop = 0;
+    const backBtn = document.getElementById("posterBackBtn");
+    if (backBtn) backBtn.textContent = `← ${t("Back to {name}", { name: asmaEntryDisplayName(entry) })}`;
+    posterCloseBtn?.setAttribute("aria-label", t("Close"));
+    if (posterCloseBtn) posterCloseBtn.title = t("Close");
     // Decision 87 (8 Oct 2026): a strip above the poster picks whose description it shows; owner/prime edit the
     // madrasah's own, saved for everyone (asma-descriptions.js).
     mountPosterWithDescriptions(posterMount, {
@@ -889,6 +894,7 @@ export function initAsmaStudyPage() {
   }
 
   if (posterCloseBtn) posterCloseBtn.addEventListener("click", closePosterView);
+  document.getElementById("posterBackBtn")?.addEventListener("click", closePosterView);
   if (posterPrintBtn) posterPrintBtn.addEventListener("click", () => window.print());
   if (posterOverlay) posterOverlay.addEventListener("click", (e) => { if (e.target === posterOverlay) closePosterView(); });
 

@@ -4084,4 +4084,6 @@ export const BN = {
   "Organise": "সাজান",
   "This note": "এই নোট",
   "Choose an Approach for {unit}, record your progress (for your family too, with 👥), or see your status.": "{unit}-এর জন্য একটি পদ্ধতি বেছে নিন, আপনার অগ্রগতি লিখে রাখুন (👥 দিয়ে পরিবারের জন্যও), অথবা আপনার অবস্থা দেখুন।",
+  // 10 Oct 2026: Asma ul Husna's way back above a Name's poster; the full-size poster's way back.
+  "Back to the wheel": "চাকায় ফিরে যান",
 };

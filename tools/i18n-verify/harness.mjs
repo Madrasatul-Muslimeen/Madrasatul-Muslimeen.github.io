@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 
 const DOMPURIFY_SOURCE = readFileSync(new URL("./vendor/purify.min.js", import.meta.url), "utf8");
 
-export const BASE = "http://localhost:8080";
+export const BASE = process.env.QR_BASE || "http://localhost:8080"; // QR_BASE=http://localhost:8081 for a second serve.js
 
 // appLang seeds THIS DEVICE (localStorage); accountLang seeds the ACCOUNT
 // (userIndex/{uid}.appLang) -- v07.37. Setting them differently is what

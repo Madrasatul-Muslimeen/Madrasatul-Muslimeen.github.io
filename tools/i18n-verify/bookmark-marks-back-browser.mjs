@@ -79,6 +79,17 @@ for (const lang of ["en", "bn"]) for (const width of [390, 1280]) {
   await P.waitForTimeout(1200);
   const writes = await P.evaluate(() => JSON.parse(sessionStorage.getItem("__stubWrites") || "[]"));
   check(`${tag}: opening the bookmark stamps usedAt.bm1, and only that`, writes.some((w) => w.col === "bookmarks" && w.data.includes("usedAt.bm1") && w.data.every((k) => k === "usedAt.bm1" || k === "updatedAt")), JSON.stringify(writes));
+  // UPDATED IN PLACE 10 Oct 2026: since v10.11 this Note-view bookmark opens the Read view WITH the Notes pane, and on a
+  // phone the pane fills the screen (decision 99 made it so on a tablet too). The chip, docked on the Read bar, is then
+  // under the pane -- the Owner's own rule of 6 Oct (a sheet that fills the screen: the chip steps aside and comes back
+  // when it closes). So the way back is two steps: the pane's own "← Back" (on screen, tappable), then the chip.
+  // Stale on main since v10.11; measured failing there too.
+  const paneFull = await P.evaluate(() => { const p = document.getElementById("readNotePane"); if (!p || p.hidden) return null; const r = p.getBoundingClientRect(); const b = p.querySelector("[data-rnp-back]")?.getBoundingClientRect(); const h = b && document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2); return { full: r.width >= innerWidth - 1 && r.height >= innerHeight * 0.9, backTappable: !!h && !!p.querySelector("[data-rnp-back]")?.contains(h) }; });
+  if (paneFull?.full) {
+    check(`${tag}: the Notes pane it opened fills the screen with its own ← Back on top`, paneFull.backTappable, JSON.stringify(paneFull));
+    await P.click("#readNotePane [data-rnp-back]");
+    await P.waitForTimeout(700);
+  }
   const back = await P.evaluate(() => { const r = document.querySelector("[data-bm-back]"); const a = r?.querySelector("[data-bm-back-link]"); const b = a?.getBoundingClientRect(); return r ? { text: a.textContent, href: a.getAttribute("href"), visible: !!b && b.width > 0 && b.height >= 40, inside: !!b && b.left >= 0 && b.right <= innerWidth + 1 && b.bottom <= innerHeight, top: document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2)?.closest("[data-bm-back-link]") === a } : null; });
   check(`${tag}: the page it opened shows "← Back to <page>"`, !!back && back.text.startsWith("←") && back.visible && back.inside, JSON.stringify(back));
   check(`${tag}: ...on top of everything (nothing covers it)`, !!back?.top, JSON.stringify(back));

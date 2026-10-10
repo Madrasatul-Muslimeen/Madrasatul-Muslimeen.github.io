@@ -51,6 +51,20 @@
     flex: 0 1 auto; margin: 0; font-size: 0.68rem; font-weight: 600;
     text-align: right; max-width: 100%;
   }
+  /* 10 Oct 2026: the role word alone, left of Search on the title's line (relocatePreviewNotice()). Search keeps
+     margin-left:auto, so the badge rides against it; the badge itself never shrinks or wraps. */
+  h1 .nav-preview-notice.nav-preview-role {
+    flex: 0 0 auto; margin-left: auto; align-self: center; white-space: nowrap;
+    font-size: 0.78rem; padding: 0.3rem 0.6rem; border-radius: 999px;
+  }
+  h1 .nav-preview-role + .head-search-btn { margin-left: 0; }
+  /* Measured: at 360px "QuranRevival v10.18" + "Prime" + the worded Search button needs more than the line, and
+     Search broke onto a line of its own. With a preview on, below 400px Search is its magnifier alone (as it already
+     is below 360px without one); its spoken name stays "Search". */
+  @media (max-width: 399px) {
+    h1.has-preview-role .head-search-btn { width: 36px; padding: 0; }
+    h1.has-preview-role .head-search-label { display: none; }
+  }
   /* 30 Sep 2026, Owner (decision 38, option A of four mocked in the real
      page): "There should be a visible SEARCH button on the landing page" --
      top right of the banner, beside the title, where people look for it.
@@ -1980,9 +1994,17 @@
 
   /* The A4 poster overlay -- reuses Round 3's own asma-study.html card
      styling verbatim (a poster's own look is fixed, not theme-adapted). */
-  #asmaXPosterOverlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 900; align-items: center; justify-content: center; padding: 1rem; }
+  /* 10 Oct 2026, the Owner (a screenshot of the full-size poster): "How to go back to where it came from?" The ×
+     floated top right in 15% white, so over the description strip's cream it was white on cream and could not be
+     seen. The overlay is a column now: a solid bar first (← Back to {Name}, and ×), the strip and poster under it,
+     scrolling if they must; the backdrop still closes it. */
+  #asmaXPosterOverlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 900; flex-direction: column; align-items: center; justify-content: flex-start; overflow-y: auto; padding: 0 1rem 1rem; }
   #asmaXPosterOverlay.open { display: flex; }
-  #asmaXPosterCloseBtn { position: fixed; top: 1rem; right: 1.2rem; background: rgba(255,255,255,0.15); color: white; border: none; font-size: 1.6rem; padding: 0.2rem 0.7rem; border-radius: 0.4rem; z-index: 901; cursor: pointer; }
+  #asmaXPosterBar { position: sticky; top: 0; z-index: 2; align-self: stretch; margin: 0 -1rem 0.6rem; display: flex; align-items: center; gap: 0.6rem; padding: 0.55rem 1rem; background: #1F3A6E; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+  #asmaXPosterBackBtn { display: inline-flex; align-items: center; gap: 0.35rem; min-height: 40px; padding: 0 0.9rem; border-radius: 999px; border: 2px solid #B8862F; background: #fff; color: #1F3A6E; font-weight: 700; font-size: 0.9rem; cursor: pointer; max-width: calc(100% - 56px); white-space: normal; text-align: left; }
+  #asmaXPosterCloseBtn { margin-left: auto; flex: 0 0 auto; width: 40px; height: 40px; display: grid; place-items: center; background: transparent; color: #fff; border: 1px solid rgba(255,255,255,0.55); font-size: 1.4rem; line-height: 1; padding: 0; border-radius: 0.5rem; cursor: pointer; }
+  #asmaXPosterBackBtn:focus-visible, #asmaXPosterCloseBtn:focus-visible { outline: 3px solid #B8862F; outline-offset: 2px; }
+  #asmaXPosterMount .asma-desc-strip ~ .ahp-standalone { width: min(94vw, calc((94vh - 290px) * 1055 / 1491)); } /* the bar's 60px off the height asma-descriptions.js budgets */
 
   /* 30 Aug 2026 round -- Add/Edit-Name and multi-Name attach-reference
      overlays. Same dark card-on-scrim idiom as the poster overlay above,
@@ -2089,6 +2111,18 @@
      sized to the space (never wider than the wheel's own area), centred. */
   .asmax-poster-panel { display: block; margin: 0.5rem auto; padding: 0; border: 0; background: none; cursor: zoom-in; width: min(320px, 86vw); } /* vw, not %: the wheel's space sizes to its content, and the true-copy poster (decision 85) has none in flow */
   .asmax-poster-panel .asma-poster-explore { width: 100%; box-sizing: border-box; }
+  /* 10 Oct 2026: the labelled way back to the wheel, above a Name's poster (renderAsmaXRefsLevel()). */
+  .asmax-back-wheel { display: flex; align-items: center; gap: 0.35rem; margin: 0 auto 0.5rem 0; min-height: 40px; padding: 0 0.9rem; border-radius: 999px; border: 2px solid #B8862F; background: #fff; color: #1F3A6E; font-weight: 700; font-size: 0.9rem; cursor: pointer; }
+  .asmax-back-wheel:focus-visible { outline: 3px solid #B8862F; outline-offset: 2px; }
+  /* From 900px the Name's column sits beside the poster and its bar (◂ ✎ 🔗 …) is at the top of the screen, so the
+     words go on ◂ there and the poster keeps its full height (the Owner, 8 Oct: "the poster to be taken entire
+     space"). Below 900px the bar is under the poster, so the labelled button above it is the way back. */
+  .asmax-back-word { display: none; }
+  @media (min-width: 900px) {
+    .asmax-back-wheel { display: none; }
+    #asmaXBackFromRefsBtn { width: auto; height: 40px; padding: 0 0.7rem; gap: 0.35rem; white-space: nowrap; }
+    #asmaXBackFromRefsBtn .asmax-back-word { display: inline; font-size: 0.85rem; font-weight: 600; }
+  }
   /* The Owner, 8 Oct 2026: "I want the poster to be taken entire space." At the Name level the right panel
      holds the poster alone: no wheel resize handles, no legend, and the wheel's stored width does not apply.
      sizeAsmaXPoster() sets the poster's width to the largest that fits the panel's width AND height. */
@@ -3725,7 +3759,9 @@
      HIDDEN, so while they show, a centred box that tall overflowed upwards and its "← Āyah card" sat under the
      address bar. The box now hangs from the top of the pop-up, which is fixed to the VISIBLE area, and is never
      taller than it (100% of the pop-up, not 100vh). */
-  .ayah-nv-pop { position: fixed; inset: 0; z-index: 1300; background: rgba(8, 14, 26, 0.6); display: flex; align-items: flex-start; justify-content: center; padding: 16px; }
+  /* 10 Oct 2026, the Owner: the Āyah card's Full text "Make it full screen." It fills the screen at every width; the
+     reading inside keeps a comfortable line (max 46rem, centred). ← Āyah card stays at the top, ‹ › at the bottom. */
+  .ayah-nv-pop { position: fixed; inset: 0; z-index: 1300; background: #fffdf6; display: flex; align-items: stretch; justify-content: stretch; padding: 0; }
   .ayah-nv-pop[hidden] { display: none; }
   /* QCR / Asma pop-up (decision 95). Below the Asma attach/edit overlays (950) so the forms it opens show above it. */
   .qcr-pop { position: fixed; inset: 0; z-index: 940; background: rgba(8, 14, 26, 0.6); display: flex; align-items: center; justify-content: center; padding: 16px; }
@@ -3741,8 +3777,13 @@
     .qcr-pop { padding: 0; align-items: stretch; }
     .qcr-pop-box { width: 100%; max-height: none; height: 100%; border-radius: 0; box-shadow: none; }
   }
-  .ayah-nv-box { width: min(46rem, 100%); max-height: 100%; overflow-y: auto; background: #fffdf6; color: #1b1b16; border-radius: 1rem; box-shadow: 0 18px 44px rgba(0, 0, 0, 0.45); padding: 0 1rem 1rem; }
+  .ayah-nv-box { width: 100%; height: 100%; overflow-y: auto; background: #fffdf6; color: #1b1b16; padding: 0 max(1rem, calc((100% - 46rem) / 2)) 0; box-sizing: border-box; display: flex; flex-direction: column; }
   .ayah-nv-head { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; gap: 0.6rem; padding: 0.6rem 0; background: #fffdf6; border-bottom: 1px solid #eadfc3; }
+  .ayah-nv-content { flex: 1 0 auto; padding-bottom: 1rem; }
+  .ayah-nv-nav { position: sticky; bottom: 0; z-index: 1; display: flex; gap: 0.6rem; padding: 0.6rem 0; background: #fffdf6; border-top: 1px solid #eadfc3; }
+  .ayah-nv-nav button { flex: 1 1 0; min-width: 0; min-height: 44px; border: 1px solid #c9ccd3; border-radius: 0.6rem; background: #fff; color: #1F3A6E; font-weight: 700; font-size: 0.92rem; cursor: pointer; }
+  .ayah-nv-nav button:disabled { opacity: 0.4; cursor: default; }
+  .ayah-nv-nav button:focus-visible, .ayah-nv-back:focus-visible { outline: 3px solid #c9a24b; outline-offset: 2px; }
   .ayah-nv-back { flex: 0 0 auto; white-space: nowrap; min-height: 40px; padding: 0 0.8rem; border: 1px solid #c9a24b; border-radius: 0.6rem; background: #1F3A6E; color: #fff; font-size: 0.88rem; font-weight: 600; cursor: pointer; }
   .ayah-nv-ref { font-weight: 700; color: #1F3A6E; min-width: 0; overflow-wrap: anywhere; }
   .ayah-nv-sec { margin-top: 0.6rem; }
@@ -6150,7 +6191,7 @@
        (renderAsmaPosterHtml, Round 3) reachable from Explore's References
        level and the Note view's Asma ul Husna Topic. -->
   <div id="asmaXPosterOverlay">
-    <button type="button" id="asmaXPosterCloseBtn" aria-label="Close poster">&times;</button>
+    <div id="asmaXPosterBar"><button type="button" id="asmaXPosterBackBtn">← Back</button><button type="button" id="asmaXPosterCloseBtn" aria-label="Close poster">&times;</button></div>
     <div id="asmaXPosterMount"></div>
   </div>
 
@@ -6651,8 +6692,21 @@
       const h1 = document.querySelector("h1");
       if (!h1) return;
       h1.querySelector(".nav-preview-notice")?.remove();
+      h1.classList.remove("has-preview-role");
       const notice = navBar.querySelector(".nav-preview-notice");
-      if (notice) h1.appendChild(notice);
+      if (!notice) return;
+      // 10 Oct 2026, the Owner: "Prime now takes another bar space. Place it left to search as only 'Prime' (meaning
+      // the role)". Appended after Search it wrapped onto a line of its own; before Search, as the role word alone,
+      // it shares the title's line. The whole sentence stays as its spoken name and its hover text.
+      if (notice.dataset.roleLabel) {
+        notice.textContent = notice.dataset.roleLabel;
+        notice.setAttribute("aria-label", notice.dataset.sentence);
+        notice.title = notice.dataset.sentence;
+        notice.classList.add("nav-preview-role");
+      }
+      const searchBtn = document.getElementById("headSearchBtn");
+      if (searchBtn) h1.insertBefore(notice, searchBtn); else h1.appendChild(notice);
+      h1.classList.toggle("has-preview-role", notice.classList.contains("nav-preview-role"));
     }
 
     function renderNav(roles, viewAsRole) {
@@ -14260,9 +14314,12 @@
       const padY = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
       const gap = parseFloat(cs.rowGap) || 0;
       const hintH = asmaXHintEl.textContent ? asmaXHintEl.getBoundingClientRect().height + gap : 0;
+      const backEl = document.getElementById("asmaXBackToWheelBtn");
+      const backBox = backEl?.getBoundingClientRect();
+      const backH = backBox?.height ? backBox.height + parseFloat(getComputedStyle(backEl).marginBottom || "0") : 0; // 0 when hidden (from 900px)
       const availW = asmaXWheelPaneEl.clientWidth - padX;
       const tall = window.innerWidth >= 900 ? asmaXWheelPaneEl.clientHeight : window.innerHeight * 0.85;
-      const availH = tall - padY - hintH;
+      const availH = tall - padY - hintH - backH;
       const w = Math.floor(Math.max(200, Math.min(availW, availH / ASMA_POSTER_RATIO)));
       panel.style.width = `${w}px`;
       fitAsmaPosters(asmaXWheelContainerEl);
@@ -14303,7 +14360,7 @@
       const navPrev = navAt > 0 ? navOrder[navAt - 1] : null;
       const navNext = navAt >= 0 && navAt < navOrder.length - 1 ? navOrder[navAt + 1] : null;
       asmaXListHeaderEl.innerHTML = `
-        <button type="button" class="qcr-icon-btn" id="asmaXBackFromRefsBtn" title="${escapeHtml(t("Back"))}" aria-label="${escapeHtml(t("Back"))}">◂</button>
+        <button type="button" class="qcr-icon-btn" id="asmaXBackFromRefsBtn" title="${escapeHtml(t("Back to the wheel"))}" aria-label="${escapeHtml(t("Back to the wheel"))}">◂<span class="asmax-back-word"> ${escapeHtml(t("Back to the wheel"))}</span></button>
         <span class="qcr-list-title">${escapeHtml(asmaEntryDisplayName(entry))}</span>
         ${canManage ? `<button type="button" class="qcr-icon-btn" id="asmaXEditThisNameBtn" title="${escapeHtml(t("Edit"))}" aria-label="${escapeHtml(t("Edit"))}">✎</button>` : ""}
         ${canManage ? `<button type="button" class="qcr-icon-btn" id="asmaXAttachRefThisNameBtn" title="${escapeHtml(t("Attach a reference to several Names"))}" aria-label="${escapeHtml(t("Attach a reference to several Names"))}">🔗</button>` : ""}
@@ -14313,11 +14370,12 @@
         <button type="button" class="qcr-icon-btn asmax-name-nav" id="asmaXNextNameBtn" title="${escapeHtml(t("Next Name"))}" aria-label="${escapeHtml(t("Next Name"))}"${navNext == null ? " disabled" : ""}>›</button></span>`;
       document.getElementById("asmaXPrevNameBtn")?.addEventListener("click", () => { if (navPrev != null) openAsmaXName(navPrev); });
       document.getElementById("asmaXNextNameBtn")?.addEventListener("click", () => { if (navNext != null) openAsmaXName(navNext); });
-      document.getElementById("asmaXBackFromRefsBtn")?.addEventListener("click", () => {
+      const backToWheel = () => {
         asmaXNumber = null;
         asmaXLevel = asmaXGroupId ? "names" : "groups";
         renderAsmaXPanel();
-      });
+      };
+      document.getElementById("asmaXBackFromRefsBtn")?.addEventListener("click", backToWheel);
       document.getElementById("asmaXEditThisNameBtn")?.addEventListener("click", () => openAsmaXEditOverlay({ mode: "edit", number: entry.number }));
       document.getElementById("asmaXAttachRefThisNameBtn")?.addEventListener("click", () => openAsmaXAttachPopover({ prefillNumbers: [entry.number] }));
       // 4 Sep 2026 -- the owner's own marked-up empty space on this bar:
@@ -14355,8 +14413,12 @@
       // selection of individual name" -- the space the wheel takes at the
       // Group and Names levels shows this Name's poster; a tap opens it full
       // size (the same overlay as the card's own 🖼 Poster button).
-      asmaXWheelContainerEl.innerHTML = `<button type="button" class="asmax-poster-panel" id="asmaXPosterPanel" aria-label="${escapeHtml(t("Poster"))}: ${escapeHtml(asmaEntryDisplayName(entry))}">${renderAsmaPosterHtml(entry, "explore")}</button>`;
+      // 10 Oct 2026, the Owner (a phone screenshot of a Name's poster): "There should be a back button to go back to
+      // the wheel it came from." The bar's ◂ does it, but it sits under the poster with no word on it. A labelled
+      // ← Back to the wheel now leads the space the wheel gave up (the way-back law, decision 86); same action as ◂.
+      asmaXWheelContainerEl.innerHTML = `<button type="button" class="asmax-back-wheel" id="asmaXBackToWheelBtn">← ${escapeHtml(t("Back to the wheel"))}</button><button type="button" class="asmax-poster-panel" id="asmaXPosterPanel" aria-label="${escapeHtml(t("Poster"))}: ${escapeHtml(asmaEntryDisplayName(entry))}">${renderAsmaPosterHtml(entry, "explore")}</button>`;
       document.getElementById("asmaXPosterPanel").addEventListener("click", () => openAsmaXPoster(entry));
+      document.getElementById("asmaXBackToWheelBtn").addEventListener("click", backToWheel);
       asmaXLegendContainerEl.innerHTML = "";
       asmaXHintEl.textContent = t("Tap the poster to see it full size.");
       sizeAsmaXPoster();
@@ -14472,6 +14534,11 @@
       // Decision 85: full size, each reference opens its Ayah here or its Hadith in the Hadith library.
       // Decision 87 (8 Oct 2026): a strip above it picks whose description it shows; owner/prime edit the madrasah's.
       asmaXPosterOverlayEl.classList.add("open");
+      const backBtn = document.getElementById("asmaXPosterBackBtn");
+      backBtn.textContent = `← ${t("Back to {name}", { name: asmaEntryDisplayName(entry) })}`;
+      asmaXPosterCloseBtn.setAttribute("aria-label", t("Close"));
+      asmaXPosterCloseBtn.title = t("Close");
+      asmaXPosterOverlayEl.scrollTop = 0;
       mountPosterWithDescriptions(asmaXPosterMountEl, {
         entry,
         madrasahDescriptions: asmaXDescriptions,
@@ -14497,6 +14564,7 @@
       asmaXPosterOverlayEl.classList.remove("open");
     }
     asmaXPosterCloseBtn.addEventListener("click", closeAsmaXPoster);
+    document.getElementById("asmaXPosterBackBtn").addEventListener("click", closeAsmaXPoster);
     asmaXPosterOverlayEl.addEventListener("click", (e) => { if (e.target === asmaXPosterOverlayEl) closeAsmaXPoster(); });
 
     /** Every manage action writes the whole document back immediately (no
@@ -19751,7 +19819,7 @@
     /** Owner, 7 Oct 2026 -- the Āyah card's 📖: this āyah as the Note view shows it (Arabic, English,
         Bangla, Word by Word), in a pop-up over the card, built from the same shared renderers the Read
         and Note views use (I2). Its ← goes back to the card exactly where it was. */
-    async function openAyahNoteViewPopup(unitKey) {
+    async function openAyahNoteViewPopup(unitKey, opts = {}) {
       const { surah, ayah, half } = parseAyahUnitKey(unitKey);
       let pop = document.getElementById("ayahNoteViewPopup");
       if (!pop) {
@@ -19778,12 +19846,22 @@
       const box = pop.querySelector(".ayah-nv-box");
       if (!a) { box.innerHTML = `${head}<p role="status">${escapeHtml(t("Could not load this āyah."))}</p>`; return; }
       const section = (title, body, lang = "") => body ? `<details class="ayah-nv-sec" open><summary>${escapeHtml(title)}</summary><div class="ayah-nv-body"${lang ? ` lang="${lang}"` : ""}>${body}</div></details>` : "";
-      box.innerHTML = head +
+      // 10 Oct 2026: ‹ › step to the āyah before or after without leaving full screen (the Āyah card's own
+      // ayahCardNeighbour(), so a surah's edge and Al-Fātiḥah's 6/7 behave exactly as on the card). ← Āyah card
+      // still returns to the card the reader came from, as it was.
+      const prev = ayahCardNeighbour(unitKey, -1), next = ayahCardNeighbour(unitKey, 1);
+      const navKey = (n) => n ? (() => { const [ns, na] = n.key.split(":").map(Number); return ayahRecordKey(ns, na, n.half); })() : "";
+      const nav = `<div class="ayah-nv-nav"><button type="button" data-ayah-nv-step="${navKey(prev)}"${prev ? "" : " disabled"}>‹ ${escapeHtml(t("Previous āyah"))}</button><button type="button" data-ayah-nv-step="${navKey(next)}"${next ? "" : " disabled"}>${escapeHtml(t("Next āyah"))} ›</button></div>`;
+      box.innerHTML = head + `<div class="ayah-nv-content">` +
         section(t("Arabic"), renderArabicPanel(a, { tajweedOn: false, wordCardInteractive: false, surahNumber: surah, langs: ["en", "bn"] })) +
         section(t("English"), renderTranslationPanel(a, ["en"])) +
         section(t("Bangla"), renderTranslationPanel(a, ["bn"])) +
-        section(t("Word by Word"), renderWordByWordPanel(a, { langs: ["en", "bn"] }));
-      box.querySelector("[data-ayah-nv-back]")?.focus({ preventScroll: true });
+        section(t("Word by Word"), renderWordByWordPanel(a, { langs: ["en", "bn"] })) + `</div>` + nav;
+      box.scrollTop = 0;
+      box.querySelectorAll("[data-ayah-nv-step]").forEach((b) => b.addEventListener("click", () => {
+        if (b.dataset.ayahNvStep) openAyahNoteViewPopup(b.dataset.ayahNvStep, { keepReturn: true });
+      }));
+      if (!opts.keepReturn) box.querySelector("[data-ayah-nv-back]")?.focus({ preventScroll: true });
     }
     function closeAyahNoteViewPopup() {
       const pop = document.getElementById("ayahNoteViewPopup");
