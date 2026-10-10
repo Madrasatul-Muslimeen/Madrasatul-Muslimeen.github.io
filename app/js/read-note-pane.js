@@ -169,6 +169,15 @@ function paintTrack() {
   const p = document.createElement("p");
   p.textContent = t("Choose an Approach for {unit}, record your progress (for your family too, with 👥), or see your status.", { unit: unit?.label ?? "" });
   track.appendChild(p);
+  // R3a: the Approach card itself (Track / Guide / Breakdown / Coverage, the picker, Claim with 👥), drawn and wired by
+  // the Read view's page for this unit; the pane only gives it a place.
+  if (host.trackCard && unit) {
+    const card = document.createElement("div");
+    card.className = "rnp-approach-card";
+    card.dataset.rnpApproachCard = "";
+    track.appendChild(card);
+    host.trackCard(unit, card);
+  }
   for (const [key, icon, label] of TRACK_ACTIONS) {
     const b = document.createElement("button");
     b.type = "button";

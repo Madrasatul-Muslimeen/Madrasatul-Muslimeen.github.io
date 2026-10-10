@@ -9479,10 +9479,8 @@
         // THIS unit, so its Track card opens already unfolded, the tapped
         // Approach chosen, and scrolled into view -- no second click. Reading
         // the unit stays one tap away ("Open in Read"), as before.
-        noteApproachCardOpen = true;
-        openNoteView(unitInfo.unitKey).then(() => {
-          noteView.querySelector('[data-note-field="approach"]')?.scrollIntoView({ block: "nearest" });
-        });
+        // Decision 95 (R3a): the card is the Notes pane's Track tab now, not the Note view.
+        openApproachCardInPane(key, t("Back to the Approach wheel"), openApproachWheel);
       };
       if (show !== "all") attachScopedWheelClickHandler(wheelContainer, jumpToApproach);
 
@@ -9778,10 +9776,7 @@
       }
       host.innerHTML = landingRingPanelHtml;
       host.querySelector('[data-ring-action="take"]')?.addEventListener("click", () => {
-        const id = landingRingPickedId;
-        currentTrackableId = id;
-        trackableSelect.value = id;
-        openNoteView(currentUnitInfo().unitKey);
+        openApproachCardInPane(landingRingPickedId, t("Back to the Approach wheel"), openApproachWheel);
       });
       host.querySelector('[data-ring-action="explore"]')?.addEventListener("click", async () => {
         changeCurrentTrackable(landingRingPickedId);
@@ -13133,9 +13128,8 @@
       else if (act === "write") await openWritingSheetForCurrentUnit();
       else if (act === "guide") {
         closeAllPanels();
-        noteApproachCardOpen = true; // the Track/Guide card opens unfolded, as the landing wheel's slice opens it
-        await openNoteView(currentUnitInfo().unitKey);
-        noteView.querySelector('[data-note-field="approach"]')?.scrollIntoView({ block: "nearest" });
+        // Decision 95 (R3a): the Track/Guide card is the Notes pane's Track tab; the way back is Explore.
+        await openApproachCardInPane(take.approachId, t("Back to Explore"), async () => { closeAllPanels(); setStageView("explore"); await openExplore(); });
       }
     }
 
@@ -22074,13 +22068,14 @@
         does NOT live-update the way Arabic/English/Bangla/Notes do above it
         -- it only changes when the reader taps Claim right here, same as it
         always has. */
-    function wireApproachEmbed(info) {
+    function wireApproachEmbed(info, root = noteView, rerender = renderNoteViewNow) {
       const unitKey = info.unitKey;
       // Scoped to the Approach field itself: Asma ul Husna's own Track card
       // (#asmaTrackEmbedWrap) uses the same .way-embed class and can be on
       // screen at the same time, so a bare query could bind this claim
-      // handler to the wrong card.
-      const embedEl = noteView.querySelector('[data-note-field="approach"] .way-embed');
+      // handler to the wrong card. In the Notes pane (R3a) the root holds
+      // only this card.
+      const embedEl = root === noteView ? root.querySelector('[data-note-field="approach"] .way-embed') : root.querySelector(".way-embed");
       const trackable = currentTrackable();
       if (!embedEl || !trackable) return;
       attachWayEmbedHandlers(embedEl);
@@ -22124,8 +22119,8 @@
           // wheel itself), subject_quran for a Juz/Hizb/Page claim.
           if (info.chunkKey === "subject_quran") { await ensureQuranSubjectChunk({ force: true }); renderWheel(); }
           else await refreshChunkAndWheel();
-          renderNoteViewNow(); // rebuilds the whole Note view, including this card, against the fresh chunk
-          const freshResultEl = noteView.querySelector(".way-claim-result");
+          rerender(); // rebuilds the whole Note view (or just the pane's card), including this card, against the fresh chunk
+          const freshResultEl = root.querySelector(".way-claim-result");
           if (freshResultEl) freshResultEl.textContent = message;
         } else {
           resultEl.textContent = message;
@@ -22971,7 +22966,38 @@
       });
       return { surah, ayah, half };
     }
+    // R3a (decision 95): the Approach card inside the pane's Track tab. The same renderApproachEmbedHtml() /
+    // wireApproachEmbed() the Note view uses (I2), bound under `el`; a claim or a change of Approach redraws only this card.
+    function paneApproachInfo(u) {
+      const cur = currentUnitInfo();
+      if (cur.unitKey === u.unitKey) return cur;
+      // The pane can sit on a unit other than the Read view's (a Unit card's 📝 Note): read its type off its own key, and
+      // chunk it by D12 -- an āyah, Range, Surah or Ruku' in its Surah's chunk, a Juz, Hizb or Page in subject_quran.
+      const { unitType, parts } = parseUnitKey(u.unitKey);
+      const bySurah = ["ayah", "range", "surah", "ruku"].includes(unitType);
+      const info = { unitType, unitKey: u.unitKey, chunkKey: bySurah ? `surah_${Number(parts[0])}` : "subject_quran", label: u.label };
+      if (unitType === "ayah") info.half = parseAyahUnitKey(u.unitKey).half;
+      return info;
+    }
+    function paintPaneApproachCard(u, el) {
+      const info = paneApproachInfo(u);
+      el.innerHTML = renderApproachEmbedHtml(info);
+      el.querySelectorAll("[data-note-approach-select]").forEach((sel) => {
+        sel.value = currentTrackableId;
+        sel.addEventListener("change", () => { changeCurrentTrackable(sel.value); paintPaneApproachCard(u, el); });
+      });
+      wireApproachEmbed(info, el, () => paintPaneApproachCard(u, el));
+    }
+    /** A route that used to open the Note view just to show the Approach card (the landing wheel's slice, the ring panel's
+        Take, Explore's 🧭 Guide): the Read view on the unit, the pane on its Track tab with `approachId` chosen, and a
+        way back to `backLabel` (decision 86). */
+    async function openApproachCardInPane(approachId, backLabel, back) {
+      currentTrackableId = approachId;
+      trackableSelect.value = approachId;
+      await openNotesPaneForKey(currentUnitInfo().unitKey, { tab: "track", backLabel }, () => { paintReadNotesBtn(); back(); });
+    }
     const readNotePaneTrackHost = {
+      trackCard: (u, el) => paintPaneApproachCard(u, el),
       take: (u) => { backToReadNotes(u, "track"); openApproachWheel(); },
       // The card first: opening it clears any way back ("the card is open again"), so the way back is set after it.
       record: (u) => { const { surah, ayah, half } = parseAyahUnitKey(u.unitKey); openAyahActionSheet(`${surah}:${ayah}`, half); backToReadNotes(u, "track"); },
