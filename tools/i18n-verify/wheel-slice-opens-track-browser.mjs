@@ -30,22 +30,24 @@ for (const lang of ["en", "bn"]) for (const unit of ["ayah", "surah"]) for (cons
     const ok = await page.evaluate(() => { const r = document.querySelector('.wheel-sidebar [data-key="memorise"]'); if (!r) return false; r.dispatchEvent(new MouseEvent("click", { bubbles: true })); return true; });
     if (!ok) { check(`${lang} ${unit} ${width}px list: the Approach row exists`, false); await ctx.close(); continue; }
   }
-  await page.waitForFunction(() => !document.getElementById("noteView").hidden && document.querySelector('#noteView [data-note-field="approach"] .note-field-body'), null, { timeout: 8000 }).catch(() => {});
+  // UPDATED in place (decision 95, R3a): the card is the Notes pane's Track tab in the Read view; the Note view stays hidden.
+  await page.waitForFunction(() => document.querySelector('.rnp-track:not([hidden]) [data-note-approach-select]'), null, { timeout: 8000 }).catch(() => {});
   await page.waitForTimeout(400);
   const m = await page.evaluate(() => {
-    const b = document.querySelector('#noteView [data-note-field="approach"] .note-field-body');
+    const b = document.querySelector('.rnp-track:not([hidden]) .way-embed');
     const r = b ? b.getBoundingClientRect() : null;
     return {
       note: !document.getElementById("noteView").hidden,
+      pane: !!b,
       open: b ? getComputedStyle(b).display !== "none" && r.height > 0 : false,
       onScreen: r ? r.top < innerHeight && r.bottom > 0 : false,
-      chosen: document.querySelector("#noteView [data-note-approach-select]")?.value ?? null,
+      chosen: document.querySelector(".rnp-track [data-note-approach-select]")?.value ?? null,
       writes: (window.__stubWriteData || []).map((x) => ({ kind: x.kind, col: x.col, keys: Object.keys(x.data || {}).sort() })),
     };
   });
   const tag = `${lang} ${unit} ${width}px ${via}`;
   check(`${tag}: starts on the wheel, Note view closed`, before.noteHidden === true);
-  check(`${tag}: one tap opens the Note view`, m.note, JSON.stringify(m));
+  check(`${tag}: one tap opens the Notes pane's Track tab, not the Note view`, m.pane && !m.note, JSON.stringify(m));
   check(`${tag}: its Track card is already unfolded`, m.open, JSON.stringify(m));
   check(`${tag}: the Track card is on screen`, m.onScreen, JSON.stringify(m));
   check(`${tag}: the tapped Approach is the one chosen`, m.chosen === "memorise", JSON.stringify(m));
