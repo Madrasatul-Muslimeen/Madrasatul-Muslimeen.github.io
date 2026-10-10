@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "10.13",
+    "version": "10.14",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -3149,8 +3149,20 @@
     {
       "version": "10.13",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Builder #736, PR #737: the screensaver can show the Names being studied or one of the madrasah's groups, uses the madrasah's corrected Names on every page, and opens a Name with ← Back; the settings' [hidden] fix.",
+      "integration": {
+        "authorizedOn": "2026-10-10",
+        "integratedOn": "2026-10-10",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "10.14",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Builder #740: behaviour-neutral; refreshQcrDrawerSummaries, wireApproachEmbed, wireAsmaTrackEmbed and wireAsmaXNoteFields take their root explicitly; new guard note-view-decoupled.",
       "integration": {
         "authorizedOn": "2026-10-10",
         "integratedOn": "2026-10-10",
@@ -3159,8 +3171,9 @@
       }
     }
   ],
-  "nextUnallocated": "10.14",
+  "nextUnallocated": "10.15",
   "nextUnallocatedNote": [
+    "v10.14 was allocated to Note view retirement (a): the shared helpers no longer depend on the Note view (Builder #740), 2026-10-10.",
     "v10.13 was allocated to Asma screensaver round 2: studying, groups, Open this Name (Builder #736), 2026-10-10.",
     "v10.12 was allocated to the Study menu's Notes opens the Notes pane; the Note view retires (R3c), 2026-10-10.",
     "v10.11 was allocated to QCR, Asma and jump links open the Read view with the Notes pane (R3b), 2026-10-10.",

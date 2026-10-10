@@ -15879,7 +15879,8 @@
         silently close the very drawer the reader is mid-edit in. Neither
         button's checkbox popover needs touching -- checkboxes are native
         and already show their own correct state. */
-    function refreshQcrDrawerSummaries(unitKey, root = noteView) {
+    function refreshQcrDrawerSummaries(unitKey, root) {
+      if (!root) throw new Error("refreshQcrDrawerSummaries: a root element is required");
       const attachBtn = root.querySelector('[data-note-qcr-dd-toggle="attach"]');
       if (attachBtn) {
         const memberOf = qcrCollectionsContainingUnitKey(unitKey);
@@ -17704,6 +17705,7 @@
     // Neither is named inside them: every lookup goes through
     // activeWordCardMount(), so the card behaves identically in both.
     ["readView", "noteView"].forEach((viewId) => {
+    if (!document.getElementById(viewId)) return; // step (b) deletes #noteView; readView alone is still wired
     // Issue #294 -- the tajweed words are focusable inline spans with
     // role="button" (a real <button> would reflow the Qur'an text); Enter and
     // Space open them exactly as a click does, as a native button would.
@@ -21750,7 +21752,7 @@
             ? qcrAddItemLocal(qcrCollections, collectionId, unitKey)
             : qcrRemoveItemLocal(qcrCollections, collectionId, unitKey);
           if (!(await qcrPersist())) { qcrCollections = prev; renderNoteViewNow(); return; }
-          refreshQcrDrawerSummaries(unitKey);
+          refreshQcrDrawerSummaries(unitKey, noteView);
         },
         // TOPIC bar round -- the same 🗂 drawer, rebuilt as TOPIC then
         // Group/Attach/Yr Level. Group is exactly what the old row-list of
@@ -21786,7 +21788,7 @@
           const prev = qcrCollections;
           qcrCollections = setCollectionYrLevels(qcrCollections, noteOriginCollectionId, next);
           if (!(await qcrPersist())) { qcrCollections = prev; renderNoteViewNow(); return; }
-          refreshQcrDrawerSummaries(unitKey);
+          refreshQcrDrawerSummaries(unitKey, noteView);
         },
       });
       // Notes' own toggle isn't wired by attachNoteViewHandlers above (that
@@ -21806,8 +21808,8 @@
       });
       wireNotePickerBar();
       fitNoteWriting(); // issue #421 -- the ✍ button only where the bar can hold it
-      if (showApproach) wireApproachEmbed(info);
-      wireAsmaXNoteFields(unitKey);
+      if (showApproach) wireApproachEmbed(info, noteView, renderNoteViewNow, { fieldScoped: true });
+      wireAsmaXNoteFields(unitKey, noteView, renderNoteViewNow, noteScope.ayahNum);
       // PC popup: title bar text + side pane, every render/nav step. A no-op
       // below 900px (renderNotePopupSide() checks isPcNotePopup() itself).
       notePopupTitleEl.textContent = originCollection ? `${ref} — ${langText(originCollection.title, getAppLang())}` : ref;
@@ -22157,14 +22159,16 @@
         does NOT live-update the way Arabic/English/Bangla/Notes do above it
         -- it only changes when the reader taps Claim right here, same as it
         always has. */
-    function wireApproachEmbed(info, root = noteView, rerender = renderNoteViewNow) {
+    function wireApproachEmbed(info, root, rerender, { fieldScoped = false } = {}) {
+      if (!root) throw new Error("wireApproachEmbed: a root element is required");
+      if (typeof rerender !== "function") throw new Error("wireApproachEmbed: a rerender function is required");
       const unitKey = info.unitKey;
       // Scoped to the Approach field itself: Asma ul Husna's own Track card
       // (#asmaTrackEmbedWrap) uses the same .way-embed class and can be on
       // screen at the same time, so a bare query could bind this claim
       // handler to the wrong card. In the Notes pane (R3a) the root holds
       // only this card.
-      const embedEl = root === noteView ? root.querySelector('[data-note-field="approach"] .way-embed') : root.querySelector(".way-embed");
+      const embedEl = fieldScoped ? root.querySelector('[data-note-field="approach"] .way-embed') : root.querySelector(".way-embed");
       const trackable = currentTrackable();
       if (!embedEl || !trackable) return;
       attachWayEmbedHandlers(embedEl);
@@ -22251,7 +22255,9 @@
       )}</div>`;
     }
 
-    function wireAsmaTrackEmbed(number, root = noteView, rerender = renderNoteViewNow) {
+    function wireAsmaTrackEmbed(number, root, rerender) {
+      if (!root) throw new Error("wireAsmaTrackEmbed: a root element is required");
+      if (typeof rerender !== "function") throw new Error("wireAsmaTrackEmbed: a rerender function is required");
       const wrap = root.querySelector("#asmaTrackEmbedWrap");
       const embedEl = wrap?.querySelector(".way-embed");
       if (!embedEl || !asmaTrackable) return;
@@ -22309,7 +22315,10 @@
         shape wireApproachEmbed() already uses for things that function
         doesn't know about (I2 -- it's QCR/Asma-blind on purpose). A no-op
         when Topic isn't "asma" or there's nothing to wire. */
-    function wireAsmaXNoteFields(unitKey, root = noteView, rerender = renderNoteViewNow, ayahNum = noteScope.ayahNum, surahNum = currentSurahNum) {
+    function wireAsmaXNoteFields(unitKey, root, rerender, ayahNum, surahNum = currentSurahNum, { closePopupOnJump = false } = {}) {
+      if (!root) throw new Error("wireAsmaXNoteFields: a root element is required");
+      if (typeof rerender !== "function") throw new Error("wireAsmaXNoteFields: a rerender function is required");
+      if (ayahNum == null) throw new Error("wireAsmaXNoteFields: ayahNum is required");
       const topicSelect = root.querySelector("#noteTopicSelect");
       if (topicSelect) {
         topicSelect.addEventListener("change", async () => {
@@ -22359,7 +22368,7 @@
       });
       root.querySelectorAll("[data-asma-xref-jump]").forEach((btn) => {
         const [surah, ayah] = btn.dataset.asmaXrefJump.split(":").map(Number);
-        btn.addEventListener("click", () => { if (root !== noteView) closeQcrPopup(); goToAyahFromAsmaX(surah, ayah, noteOriginAsmaGroupId, noteOriginAsmaNumber); });
+        btn.addEventListener("click", () => { if (closePopupOnJump) closeQcrPopup(); goToAyahFromAsmaX(surah, ayah, noteOriginAsmaGroupId, noteOriginAsmaNumber); });
       });
       const posterBtn = root.querySelector("#noteAsmaXPosterBtn");
       if (posterBtn && noteOriginAsmaNumber != null) {
@@ -22481,7 +22490,7 @@
         },
       });
       const at = parseAyahUnitKey(unitKey);
-      wireAsmaXNoteFields(unitKey, body, rerender, at.ayah, at.surah);
+      wireAsmaXNoteFields(unitKey, body, rerender, at.ayah, at.surah, { closePopupOnJump: true });
       const box = pop.querySelector(".qcr-pop-box");
       if (box && keepScroll) box.scrollTop = keepScroll;
     }

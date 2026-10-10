@@ -808,3 +808,4 @@ total). Allocated by the MMSA Architect.
 10.11: QCR, Asma and jump links open the Read view with the Notes pane (R3b). Allocated by the MMSA Architect.
 10.12: the Study menu's Notes opens the Notes pane; the Note view retires (R3c). Allocated by the MMSA Architect.
 10.13: Asma screensaver round 2: studying, groups, Open this Name (Builder #736). Allocated by the MMSA Architect.
+10.14: Note view retirement (a): the shared helpers no longer depend on the Note view (Builder #740). Allocated by the MMSA Architect.
