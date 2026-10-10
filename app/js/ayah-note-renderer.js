@@ -834,6 +834,18 @@ export function attachNoteViewHandlers(container, callbacks) {
     sel.addEventListener("change", () => { callbacks.onApproachChange?.(sel.value); closeAllDotMenus(null); });
   });
   view.querySelector("[data-note-back-to-collection]")?.addEventListener("click", () => callbacks.onBackToCollection?.());
+  attachQcrDrawerHandlers(view, callbacks);
+  attachNoteViewRest(container, view, callbacks);
+}
+
+/** The QCR drawer's own handlers -- Attach ticks, the Group radios, the
+ *  Group/Attach/Yr Level dropdown toggles and the Yr Level ticks -- bound
+ *  under `view`. Split out of attachNoteViewHandlers so the QCR pop-up (which
+ *  has no Note view around it) binds the very same code (I2: reuse, not a
+ *  copy). attachNoteViewHandlers passes the Note view, as it always did.
+ *  Callbacks used: onToggleCollectionMembership, onSwitchCollection,
+ *  onToggleGroupYrLevel. */
+export function attachQcrDrawerHandlers(view, callbacks) {
   view.querySelectorAll("[data-note-collection-toggle]").forEach((cb) => {
     cb.addEventListener("change", () => callbacks.onToggleCollectionMembership?.(cb.dataset.noteCollectionToggle, cb.checked));
   });
@@ -889,6 +901,10 @@ export function attachNoteViewHandlers(container, callbacks) {
   view.querySelectorAll("[data-note-qcr-yrlevel-toggle]").forEach((cb) => {
     cb.addEventListener("change", () => callbacks.onToggleGroupYrLevel?.(cb.dataset.noteQcrYrlevelToggle, cb.checked));
   });
+}
+
+/** The rest of attachNoteViewHandlers (the bar, the unit nav, the outside-click closer). */
+function attachNoteViewRest(container, view, callbacks) {
   view.querySelector("[data-note-play]")?.addEventListener("click", () => callbacks.onPlay?.());
   view.querySelector("[data-note-prev-unit]")?.addEventListener("click", () => callbacks.onPrevUnit?.());
   view.querySelector("[data-note-next-unit]")?.addEventListener("click", () => callbacks.onNextUnit?.());
