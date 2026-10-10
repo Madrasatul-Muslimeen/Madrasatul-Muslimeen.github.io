@@ -194,7 +194,8 @@ for (const lang of ["en", "bn"]) {
       return { top: !!hit && m.contains(hit), inside: r.left >= 0 && r.right <= innerWidth && r.top >= 0 && r.bottom <= innerHeight, r: [r.left, r.right, r.top, r.bottom] };
     });
     check(`${tag}: the ⋯ menu is topmost at its own centre and inside the viewport`, menuHit.top && menuHit.inside, JSON.stringify(menuHit));
-    const menuWords = await page.$$eval("[data-pane-menu] button", (b) => b.filter((x) => getComputedStyle(x).display !== "none").map((x) => x.textContent.trim()));
+    // UPDATED IN PLACE (issue 747): the menu now carries the phone sheet's own × (a close button, not an action), so it is left out of "every item has a word".
+    const menuWords = await page.$$eval("[data-pane-menu] button:not(.pane-menu-x)", (b) => b.filter((x) => getComputedStyle(x).display !== "none").map((x) => x.textContent.trim()));
     check(`${tag}: every ⋯ item has a word (Copy to…, Move to…, Delete)`, menuWords.length >= 3 && menuWords.every((w) => /[\p{L}\p{M}]{3,}/u.test(w)), JSON.stringify(menuWords));
     check(`${tag}: no "Open full page" item on the full page (tray only)`, !menuWords.some((w) => /full page|পূর্ণ পৃষ্ঠা/.test(w)));
     // Updated in place 5 Oct 2026 (note-pane round 2): ⋯ now carries "✏️ Rename" (item 14), which is not the Edit
@@ -322,7 +323,8 @@ for (const lang of ["en", "bn"]) {
     check(`${tag}: the header has FOLDED — ‹ › left the row`, m.folded && !m.prevInBar, JSON.stringify(m));
     check(`${tag}: and the row is one line with nothing cut`, m.h <= m.menuH + 2 && m.sw <= m.cw + 1 && !m.cut, JSON.stringify(m));
     await openMenu(page);
-    const items = await page.$$eval("[data-pane-menu] .pane-fold-item", (b) => b.filter((x) => getComputedStyle(x).display !== "none").map((x) => x.textContent.trim()));
+    // UPDATED IN PLACE (issue 747): the "Move between notes" group wrapper also carries pane-fold-item; only the buttons are items.
+    const items = await page.$$eval("[data-pane-menu] button.pane-fold-item",(b) => b.filter((x) => getComputedStyle(x).display !== "none").map((x) => x.textContent.trim()));
     check(`${tag}: ‹ › are in the ⋯ menu with words${lang === "bn" ? " (in Bangla)" : ""}`, items.length === 2 && items.every((x) => (lang === "bn" ? /[ঀ-৿]/.test(x) : /note/i.test(x))), JSON.stringify(items));
     await page.click('[data-pane-menu] [data-pane-next]');
     check(`${tag}: the folded › still walks to the next Note`, (await paneTitle(page)) === "Note Two");

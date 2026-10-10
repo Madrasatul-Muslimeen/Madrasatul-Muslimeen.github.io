@@ -93,7 +93,8 @@ for (const lang of ["en", "bn"]) {
     check(`${tag}: the window's ⋯ menu is topmost at its own centre`, await topmostAtCentre(page, `${W("n1")} [data-pane-menu]`));
     const menuText = await page.textContent(`${W("n1")} [data-pane-menu]`);
     check(`${tag}: ⋯ offers Delete (Notes page's own item), and no folder items`, /Delete|মুছ|ডিলিট|🗑/.test(menuText) && !(await count(page, `${W("n1")} [data-pane-copy], ${W("n1")} [data-pane-move]`)), menuText);
-    await page.click(`${W("n1")} [data-pane-menu-btn]`);
+    // UPDATED IN PLACE (issue 747): at phone width the menu is a modal sheet whose backdrop covers ⋯, so it is closed with Escape.
+    await page.keyboard.press("Escape");
     check(`${tag}: no sideways scroll with a window open`, await noSideways(page));
     await page.click(`${W("n1")} [data-win-close]`);
     check(`${tag}: ✕ closes the window`, (await count(page, ".note-win")) === 0);
