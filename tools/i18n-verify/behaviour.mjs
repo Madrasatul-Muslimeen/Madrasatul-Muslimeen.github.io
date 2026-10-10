@@ -1,6 +1,6 @@
 // Full app translation, phase 1 (the shell) — behaviour suite.
 import fs from "fs";
-import { chromium, newContext, openPage } from "./harness.mjs";
+import { chromium, newContext, openPage, BASE } from "./harness.mjs";
 
 // Chromium: use whatever this machine has. CHROMIUM_PATH overrides;
 // otherwise Playwright finds its own download, which is the normal case.
@@ -1051,7 +1051,7 @@ console.log("\n=== 24. PHASE 6: the claim message every module shows ===");
   // sentence naming who got what. This check now reads that one function
   // instead of five duplicated copies of the same pattern -- there is only
   // one place left for it to go bare.
-  const wayModal = await (await fetch("http://localhost:8080/app/js/way-modal.js")).text();
+  const wayModal = await (await fetch(`${BASE}/app/js/way-modal.js`)).text();
   const bare = /(?<!t\()(?:^|[^(])o\.needsConfirmation \? "Claimed/;
   check("24 every claim-confirmation message goes through t()",
         !bare.test(wayModal) && (wayModal.match(/t\(o\.needsConfirmation \? "Claimed/g) || []).length === 1,
@@ -1151,11 +1151,11 @@ console.log("\n=== 25. v07.37: the language follows the ACCOUNT, not the browser
   // files legitimately discuss Firebase in their own headers, and matching
   // prose would fail on the explanation rather than on the code.
   const stripped = (s) => s.replace(/^\s*\/\/.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "");
-  const prefs = stripped(await (await fetch("http://localhost:8080/app/js/prefs.js")).text());
+  const prefs = stripped(await (await fetch(`${BASE}/app/js/prefs.js`)).text());
   check("25f prefs.js still imports nothing at all",
         !/^\s*import\s/m.test(prefs) && !/firebase|firestore/i.test(prefs),
         "prefs.js gained an import");
-  const renderer = stripped(await (await fetch("http://localhost:8080/app/js/asma-renderer.js")).text());
+  const renderer = stripped(await (await fetch(`${BASE}/app/js/asma-renderer.js`)).text());
   check("25f the pure renderer still has no Firebase dependency",
         !/firebase|firestore|lang-sync/i.test(renderer), "asma-renderer.js gained one");
 }
@@ -1175,7 +1175,7 @@ console.log("\n=== 26. v07.39: the 460KB reciter timing map is not on the load p
     timingRequests.push(route.request().url());
     return route.fulfill({ status: 200, contentType: "application/json", body: "{}" });
   });
-  await page.goto("http://localhost:8080/app/quranrevival.html", { waitUntil: "networkidle" });
+  await page.goto(`${BASE}/app/quranrevival.html`, { waitUntil: "networkidle" });
   await page.waitForTimeout(900);
   check("26a nothing fetches the timing map on load", timingRequests.length === 0,
         `${timingRequests.length} request(s) during load`);
@@ -1197,7 +1197,7 @@ console.log("\n=== 27. Shell round 14: the Study options bars, and Search ===");
   const page = await ctx.newPage();
   const searchRequests = [];
   page.on("request", (r) => { if (/\/search-(en|bn|ar|tr)\.json/.test(r.url())) searchRequests.push(r.url()); });
-  await page.goto("http://localhost:8080/app/quranrevival.html", { waitUntil: "networkidle" });
+  await page.goto(`${BASE}/app/quranrevival.html`, { waitUntil: "networkidle" });
   await page.waitForTimeout(700);
 
   // The whole point of fetching the index on first use: a visit that never

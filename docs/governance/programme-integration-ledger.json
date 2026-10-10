@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "10.17",
+    "version": "10.18",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -3197,8 +3197,20 @@
     {
       "version": "10.17",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Note view retirement step (b): about 2,000 lines of the retired Note view deleted from quranrevival.html and ayah-note-renderer.js, with what the deletion orphaned; nothing on screen changes (Builder #742, finished and reviewed by the Architect).",
+      "integration": {
+        "authorizedOn": "2026-10-10",
+        "integratedOn": "2026-10-10",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "10.18",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "The Owner's 10 Oct requests: a worded way back to the Asma wheel and from the full-size poster (on Explore and the Asma page), the preview badge as the role word beside Search, and Full text filling the screen with ‹ ›.",
       "integration": {
         "authorizedOn": "2026-10-10",
         "integratedOn": "2026-10-10",
@@ -3207,8 +3219,9 @@
       }
     }
   ],
-  "nextUnallocated": "10.18",
+  "nextUnallocated": "10.19",
   "nextUnallocatedNote": [
+    "v10.18 was allocated to Asma ways back, Prime beside Search, the Āyah card's Full text full screen, 2026-10-10.",
     "v10.17 was allocated to Note view retirement (b): the dead Note view code deleted (Builder #742, finished by the Architect), 2026-10-10.",
     "v10.16 was allocated to Notes pane fills the screen on a tablet (decision 99), 2026-10-10.",
     "v10.15 was allocated to Notes pane: never \"Loading…\" forever (the Owner's screenshot), 2026-10-10.",

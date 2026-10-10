@@ -16,7 +16,7 @@
 //   nostep       the Āyah card's ‹ › do nothing                             -> the step checks fail
 //   nopill       nothing remembers the way back to the Āyah card            -> the "back to the card" checks fail
 //   nvcentre     the Note view pop-up centred at 100vh again                -> the "browser bar showing" check fails
-import { chromium, newContext, openPage } from "./harness.mjs";
+import { chromium, newContext, openPage, BASE } from "./harness.mjs";
 
 let pass = 0, fail = 0;
 const check = (name, ok, detail = "") => {
@@ -30,7 +30,11 @@ const MUTATIONS = {
   nopop: ["js/quran-word-card.js", "    ${pop}\n  </section>", "\n  </section>"],
   nohighlight: ["quranrevival.html", "      paintWordCardTarget(origin ? quranWordCardTarget : null);", "      paintWordCardTarget(null);"],
   // The pop-up centred and sized to 100vh again, as before 9 Oct 2026 -> the "browser bar showing" check fails.
-  nvcentre: ["quranrevival.html", "display: flex; align-items: flex-start; justify-content: center; padding: 16px; }\n  .ayah-nv-pop[hidden] { display: none; }\n  .ayah-nv-box { width: min(46rem, 100%); max-height: 100%;", "display: flex; align-items: center; justify-content: center; padding: 16px; }\n  .ayah-nv-pop[hidden] { display: none; }\n  .ayah-nv-box { width: min(46rem, 100%); max-height: calc(100vh - 32px);"],
+  // Re-anchored 10 Oct 2026 (Full text is full screen now): the pop-up back to a centred box sized to 100vh, as before
+  // 9 Oct 2026 -> the "browser bar showing" and the new "fills the screen" checks fail.
+  nvcentre: ["quranrevival.html", "display: flex; align-items: stretch; justify-content: stretch; padding: 0; }\n  .ayah-nv-pop[hidden] { display: none; }", "display: flex; align-items: center; justify-content: center; padding: 16px; }\n  .ayah-nv-pop[hidden] { display: none; }\n  #ayahNoteViewPopup .ayah-nv-box { width: min(46rem, 100%); height: auto; max-height: calc(100vh - 32px); }"],
+  // ‹ › inside Full text do nothing -> the step checks fail.
+  nonvstep: ["quranrevival.html", "if (b.dataset.ayahNvStep) openAyahNoteViewPopup(b.dataset.ayahNvStep, { keepReturn: true });", "void 0;"],
   nostep: ["js/ayah-action-sheet.js", "callbacks.onStep?.(unitKey, Number(btn.dataset.ayahSheetStep))", "void 0"],
   nopill: ["quranrevival.html", "    function setAppReturn(title, label, back) { ayahCardReturn = { title, label, back }; renderAyahCardBackPill(); }", "    function setAppReturn() {}"],
 };
@@ -204,6 +208,27 @@ for (const [lang, width, height] of [["en", 390, 844], ["bn", 390, 844], ["en", 
     return out;
   });
   check(`${tag} with the browser's address bar showing, "← Āyah card" stays on screen and pressable, the box inside the visible area`, barShowing.btnTop >= 0 && barShowing.pressable && barShowing.boxBottom <= barShowing.visibleBottom + 1, JSON.stringify(barShowing));
+  // 10 Oct 2026, the Owner: Full text "Make it full screen." -- and ‹ › step through the āyāt without leaving it.
+  const fs = await page.evaluate(() => { const r = document.querySelector("#ayahNoteViewPopup .ayah-nv-box").getBoundingClientRect(); return { l: Math.round(r.left), t: Math.round(r.top), w: Math.round(r.width), h: Math.round(r.height), iw: innerWidth, ih: innerHeight }; });
+  check(`${tag} Full text fills the screen`, fs.l === 0 && fs.t === 0 && fs.w === fs.iw && fs.h === fs.ih, JSON.stringify(fs));
+  const nvRef = () => page.evaluate(() => document.querySelector("#ayahNoteViewPopup .ayah-nv-ref")?.textContent ?? "");
+  const nvNav = await page.evaluate(() => { const bs = [...document.querySelectorAll("#ayahNoteViewPopup [data-ayah-nv-step]")]; return bs.map((b) => { const r = b.getBoundingClientRect(); const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return { text: b.textContent.trim(), h: Math.round(r.height), inView: r.bottom <= innerHeight + 1 && r.top >= 0, hit: !!hit && b.contains(hit) }; }); });
+  check(`${tag} ...‹ Previous āyah and Next āyah › sit on screen at the bottom, at least 40px, tappable, ${lang === "bn" ? "in Bangla" : "in English"}`, nvNav.length === 2 && nvNav.every((b) => b.h >= 40 && b.inView && b.hit) && (lang === "bn" ? /আয়াত/.test(nvNav[0].text) : /Previous āyah/.test(nvNav[0].text) && /Next āyah/.test(nvNav[1].text)), JSON.stringify(nvNav));
+  const nv0 = await nvRef();
+  await page.click('#ayahNoteViewPopup [data-ayah-nv-step]:not(:first-child)');
+  await page.waitForFunction((r) => (document.querySelector("#ayahNoteViewPopup .ayah-nv-ref")?.textContent ?? "") !== r && document.querySelectorAll("#ayahNoteViewPopup .ayah-nv-sec").length === 4, nv0, { timeout: 8000 }).catch(() => {});
+  const nv1 = await nvRef();
+  await page.click('#ayahNoteViewPopup [data-ayah-nv-step]:first-child');
+  await page.waitForFunction((r) => (document.querySelector("#ayahNoteViewPopup .ayah-nv-ref")?.textContent ?? "") === r, nv0, { timeout: 8000 }).catch(() => {});
+  const nv2 = await nvRef();
+  check(`${tag} ...› shows 14:15 in full, ‹ 14:14 again, still full screen`, /14:15|১৪:১৫/.test(nv1) && nv2 === nv0 && /14:14|১৪:১৪/.test(nv0), `${nv0} → ${nv1} → ${nv2}`);
+  await page.click('#ayahNoteViewPopup [data-ayah-nv-step]:not(:first-child)');
+  await page.waitForTimeout(600);
+  await page.click("[data-ayah-nv-back]");
+  const afterStep = await page.evaluate(() => ({ pop: !!document.querySelector("#ayahNoteViewPopup:not([hidden])"), ref: document.querySelector("[data-ayah-sheet] .ayah-sheet-ref")?.textContent }));
+  check(`${tag} ...after stepping on, ← Āyah card still returns to the card the reader came from (14:14), as it was`, !afterStep.pop && afterStep.ref === ref0, JSON.stringify(afterStep));
+  await page.click("[data-ayah-sheet-noteview]");
+  await page.waitForFunction(() => document.querySelectorAll("#ayahNoteViewPopup .ayah-nv-sec").length === 4, null, { timeout: 8000 }).catch(() => {});
   await page.click("[data-ayah-nv-back]");
   const afterNv = await page.evaluate(() => ({ pop: !!document.querySelector("#ayahNoteViewPopup:not([hidden])"), card: document.getElementById("ayahActionSheetOverlay")?.classList.contains("open"), ref: document.querySelector("[data-ayah-sheet] .ayah-sheet-ref")?.textContent }));
   check(`${tag} the pop-up's ← goes back to the same Āyah card`, !afterNv.pop && afterNv.card && afterNv.ref === ref0, JSON.stringify(afterNv));
@@ -248,20 +273,23 @@ for (const [lang, width, height] of [["en", 390, 844], ["bn", 390, 844], ["en", 
   await page.click("#asmaXPosterPanel");
   await page.waitForFunction(() => document.querySelector('#asmaXPosterOverlay.open [data-poster-quran="55:1"]'), null, { timeout: 5000 }).catch(() => {});
   await page.click('#asmaXPosterOverlay [data-poster-quran="55:1"]');
-  await page.waitForFunction(() => document.querySelector("#ayahCardBackPill:not([hidden])"), null, { timeout: 8000 }).catch(() => {});
-  const pill = await page.evaluate(() => document.querySelector("#ayahCardBackPill:not([hidden]) [data-ayah-card-back]")?.textContent.trim() ?? null);
-  check("a poster's reference (55:1) leaves \"Back to Ar-Rahman\" on screen", /Back to Ar-Rahman/.test(pill ?? ""), String(pill));
+  // UPDATED IN PLACE 10 Oct 2026: since v10.11 (decision 95, R3b) a poster's āyah opens the Read view WITH the Notes
+  // pane, and the way back is the pane's own "← Back to Ar-Rahman" (it replaced the floating pill there); stale since.
+  const BACK = "#ayahCardBackPill:not([hidden]) [data-ayah-card-back], #readNotePane:not([hidden]) [data-rnp-back]";
+  await page.waitForFunction((sel) => [...document.querySelectorAll(sel)].some((b) => /Back to Ar-Rahman/.test(b.textContent)), BACK, { timeout: 8000 }).catch(() => {});
+  const pill = await page.evaluate((sel) => { const b = [...document.querySelectorAll(sel)].find((x) => /Back to Ar-Rahman/.test(x.textContent)); if (!b) return null; const r = b.getBoundingClientRect(); const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return { text: b.textContent.trim(), tappable: !!hit && b.contains(hit) }; }, BACK);
+  check("a poster's reference (55:1) leaves \"Back to Ar-Rahman\" on screen, tappable", !!pill && pill.tappable, JSON.stringify(pill));
   if (pill) {
-    await page.click("[data-ayah-card-back]");
+    await page.evaluate((sel) => [...document.querySelectorAll(sel)].find((x) => /Back to Ar-Rahman/.test(x.textContent))?.click(), BACK);
     await page.waitForFunction(() => document.querySelector("#asmaXPosterOverlay.open .ahp-standalone"), null, { timeout: 10000 }).catch(() => {});
-    const back = await page.evaluate(() => ({ poster: !!document.querySelector('#asmaXPosterOverlay.open [data-asma-poster="1"]'), panel: !!document.querySelector('#asmaXPosterPanel [data-asma-poster="1"]'), pill: !!document.querySelector("#ayahCardBackPill:not([hidden])") }));
-    check("…and it reopens Explore at Ar-Rahman with its full-size poster, the pill gone", back.poster && back.panel && !back.pill, JSON.stringify(back));
+    const back = await page.evaluate(() => ({ poster: !!document.querySelector('#asmaXPosterOverlay.open [data-asma-poster="1"]'), panel: !!document.querySelector('#asmaXPosterPanel [data-asma-poster="1"]'), pill: !!document.querySelector("#ayahCardBackPill:not([hidden])"), pane: document.getElementById("readNotePane")?.hidden === false }));
+    check("…and it reopens Explore at Ar-Rahman with its full-size poster, the way back gone", back.poster && back.panel && !back.pill && !back.pane, JSON.stringify(back));
   }
   // The Hadith library, opened from a poster, offers ← Back.
   const href = await page.evaluate(() => document.querySelector("#asmaXPosterOverlay [data-poster-hadith]")?.getAttribute("href") ?? (async () => { const { posterHadithHref, POSTER_HADITH } = await import("/app/js/asma-poster.js"); return posterHadithHref(POSTER_HADITH["bukhari:6410"]); })());
   check("a poster's Hadith link carries back=1", /[?&]back=1\b/.test(href ?? ""), String(href));
   const lib = await ctx.newPage();
-  await lib.goto(`http://localhost:8080/app/${String(href).replace(/^\.\//, "")}`);
+  await lib.goto(`${BASE}/app/${String(href).replace(/^\.\//, "")}`);
   await lib.waitForTimeout(1200);
   check("the Hadith library opened that way shows \"← Back\"", await lib.evaluate(() => { const b = document.getElementById("hadithBackBtn"); return !!b && !b.hidden && /Back/.test(b.textContent) && b.getBoundingClientRect().height >= 40; }));
   await ctx.close();

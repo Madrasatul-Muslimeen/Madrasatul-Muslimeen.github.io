@@ -7,7 +7,7 @@ const http = require("node:http");
 const fs = require("node:fs");
 const path = require("node:path");
 
-const PORT = 8080;
+const PORT = Number(process.env.PORT) || 8080; // PORT=8081 for a second copy while suites run on 8080
 const ROOT = __dirname;
 
 const MIME = {
