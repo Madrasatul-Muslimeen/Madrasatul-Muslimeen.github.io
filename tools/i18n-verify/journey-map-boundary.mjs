@@ -163,8 +163,15 @@ check("journey-map-contract.js is reachable ONLY via note-foundation.js, journey
   // UPDATED AGAIN for issue #271: `evernote-import-service.js` is a FOURTH
   // accepted intermediary, for the identical reason and the identical two
   // functions, from the same one page.
-  assert.ok(chains.every((c) => c.includes("note-foundation.js") || c.includes("journey-map-service.js") || c.includes("wordpress-import-service.js") || c.includes("evernote-import-service.js")),
-    `journey-map-contract.js is reached by a route that does not pass through note-foundation.js, journey-map-service.js, wordpress-import-service.js or evernote-import-service.js: ${chains.join(" | ")}`);
+  // UPDATED for issue #752, reason recorded: `ayah-folder-filing-renderer.js`
+  // (added by #286) is a FIFTH accepted intermediary. It imports ONLY the
+  // pure vocabulary helper `isSystemFolderRole` (to hide system folders in
+  // the "File in folder(s)" chooser); it holds no writer, no Firestore and no
+  // Note data, and is reached only from quranrevival.html, already an
+  // audited page. #286 added it without updating this pin, so the suite was
+  // red on main -- a stale pin, not a wiring that must not exist.
+  assert.ok(chains.every((c) => c.includes("note-foundation.js") || c.includes("journey-map-service.js") || c.includes("wordpress-import-service.js") || c.includes("evernote-import-service.js") || c.includes("ayah-folder-filing-renderer.js")),
+    `journey-map-contract.js is reached by a route that does not pass through note-foundation.js, journey-map-service.js, wordpress-import-service.js, evernote-import-service.js or ayah-folder-filing-renderer.js:${chains.join(" | ")}`);
 });
 
 check("every importer of the journey modules is exactly the pinned set, and each is reachable only as accepted above", () => {
@@ -207,7 +214,7 @@ check("every importer of the journey modules is exactly the pinned set, and each
   // directly, and a further importer of `note-foundation.js` too -- see the
   // header comment above `CONTRACT_WIRED_PAGES`.
   assert.deepEqual([...new Set(importers)].sort(),
-    ["app/journey-map.html", "app/js/evernote-import-service.js", "app/js/journey-map-service.js", "app/js/note-foundation.js", "app/js/wordpress-import-service.js", "app/quranrevival.html"].sort(),
+    ["app/journey-map.html", "app/js/ayah-folder-filing-renderer.js", "app/js/evernote-import-service.js", "app/js/journey-map-service.js", "app/js/note-foundation.js", "app/js/wordpress-import-service.js", "app/quranrevival.html"].sort(),
     `the set of modules importing the journey contract/service has changed: ${importers.join(", ")}`);
   // chainsToTarget() only ever resolves a TARGET named "*.js" (it walks
   // app/*.html pages through js/ imports) -- app/journey-map.html is a page,
@@ -218,6 +225,7 @@ check("every importer of the journey modules is exactly the pinned set, and each
     "note-foundation.js": CONTRACT_WIRED_PAGES,      // reachable from every audited page (notes.html since P5-D, journey-map.html since P6-F, import-notes.html for #265, quranrevival.html for #286)
     "journey-map-service.js": SERVICE_WIRED_PAGES,   // reachable only from the pages that import it directly (journey-map.html, and quranrevival.html since #286)
     "wordpress-import-service.js": ["app/import-notes.html"], // reachable only from the one page that imports it directly
+    "ayah-folder-filing-renderer.js": ["app/quranrevival.html"], // issue #752 -- via ayah-action-sheet.js, reachable only from quranrevival.html
     "evernote-import-service.js": ["app/import-notes.html"], // issue #271 -- reachable only from the same one page, alongside its WordPress sibling
   };
   for (const importer of importers) {
