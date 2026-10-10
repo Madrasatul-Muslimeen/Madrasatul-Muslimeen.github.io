@@ -171,3 +171,4 @@ English found. Builder #705 (PR #706), `bn-duplicate-keys` made meaningful again
 - **v10.04** (2026-10-10): the writing sheet's ✅ Record, for every family member (Builder #719).
 - **v10.05** (2026-10-10): the Notes pane round 2b: the Note view's notes doors open the pane (decision 95).
 - **v10.06** (2026-10-10): QCR / Asma attach as its own pop-up, without the Note view (Builder #722).
+- **v10.07** (2026-10-10): Legacy App - v09: v09.151 archived (decision 98).

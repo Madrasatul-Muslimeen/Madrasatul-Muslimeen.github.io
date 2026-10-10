@@ -79,6 +79,7 @@ export const BN = {
   "Legacy App - v06 ↗": "পুরাতন অ্যাপ - v06 ↗",
   "Legacy App - v07 ↗": "পুরাতন অ্যাপ - v07 ↗",
   "Legacy App - v08 ↗": "পুরাতন অ্যাপ - v08 ↗",
+  "Legacy App - v09 ↗": "পুরাতন অ্যাপ - v09 ↗",
   "Previewing as: {role}": "যেভাবে দেখছেন: {role}",
   "Previewing as: {role} — change this on the People page":
     "যেভাবে দেখছেন: {role} — এটি ব্যক্তিবর্গ পাতা থেকে পরিবর্তন করুন",

@@ -1,0 +1,337 @@
+/* ---------- Shared shell (shell round 3, 11 Aug 2026; revised shell round 4,
+   12 Aug 2026) ----------
+   One nav bar, everywhere: four main buttons -- Home / Study / Operation /
+   Bookmark -- sized to fit a single line on a phone. Study/Operation/
+   Bookmark are rendered by js/nav.js's renderNavBar() into `#navBar`, which
+   sits as a flex sibling of Home (`display:contents` below makes its
+   <details> children lay out as if they were direct children of `.app-nav`,
+   without another wrapping box). Home itself is the one category that isn't
+   JS-rendered from scratch -- it's each page's own static `.nav-cat-home`
+   <details>, present before any script runs (sign-in status, Sign In/Out,
+   the Legacy App link), with its role-gated contents (Admin, About,
+   Settings) injected by js/nav.js's renderHomeExtras() into the
+   `#navHomeExtra` container inside it once roles are known -- see nav.js's
+   own comment for why that split exists (the v07.08 sign-in-flash fix).
+   Pulled out of every page's own <style> block, where this was copy-pasted
+   15x since shell round 1. Linked from every page that renders the nav bar;
+   no other page-specific CSS lives here. */
+
+/* ---------- Bengali text (full app translation, phase 1) ----------
+   Every page's body font was `system-ui, sans-serif`. That is fine while
+   the interface is English, but once the whole app can be Bangla it is a
+   real risk: system-ui resolves to a font with no Bengali glyphs on some
+   machines, and the reader gets empty boxes -- which for the person this
+   translation is FOR ("he only reads Bangla") means the app is unusable,
+   not merely ugly.
+
+   So a Bengali family is appended to the stack app-wide. It only ever
+   applies to characters the earlier fonts cannot draw, so English text is
+   rendered exactly as before -- this is additive, not a restyle.
+   `Noto Sans Bengali` was already used for the Bangla ayah translation
+   (css/ayah.css), so a device that has it is already relying on it;
+   `Nirmala UI` is Windows' own, and `Kalpurush` is the one most commonly
+   installed in Bangladesh. `document.documentElement.lang` is set to the
+   chosen language by translateStatic(), which is what lets a browser pick
+   the right glyph shapes where a font serves several scripts. */
+html[lang="bn"] body,
+html[lang="bn"] button,
+html[lang="bn"] select,
+html[lang="bn"] input,
+html[lang="bn"] textarea {
+  font-family: system-ui, "Noto Sans Bengali", "Nirmala UI", "Kalpurush", "Vrinda", sans-serif;
+}
+/* Bengali glyphs carry marks above AND below the line, so they crowd at the
+   browser's default leading. A little more room fixes that -- but leading
+   costs vertical space, and vertical space on the landing page is exactly
+   what shell rounds 9, 10 and 12 spent themselves reclaiming.
+
+   So the value was MEASURED rather than chosen by eye, counting how many
+   Approach rows survive above the dock at 320/360/390/412/768px:
+     1.55 -> 6 / 5 / 4 / 4 / 10   (costs a row at 390 and 412 vs English)
+     1.35 -> 7 / 5 / 5 / 4 / 10   (still costs a row at 412)
+     1.30 -> 7 / 6 / 5 / 5 / 10   (exact parity with English at every width)
+   1.3 it is: Bangla now costs the layout nothing at all. */
+html[lang="bn"] body { line-height: 1.3; }
+
+.nav-legacy-link {
+  /* #666, not #888: #888 on white measured 3.54:1 (v08.109). */
+  font-size: 0.78rem; color: #666; text-decoration: none;
+  border: 1px solid #ddd; border-radius: 0.7rem; padding: 0.15rem 0.6rem;
+}
+.nav-legacy-link:hover { color: #1F3A6E; border-color: #1F3A6E; }
+
+.app-nav {
+  display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: flex-start;
+  margin-bottom: 1rem; padding-bottom: 0.6rem; border-bottom: 1px solid #e5e5e5;
+}
+/* Lets renderNavBar()'s <details> categories sit as direct flex items of
+   .app-nav even though they're actually children of the #navBar div -- so
+   Home (outside #navBar) and Study/Operation/Bookmark (inside it) form one
+   even row instead of Home sitting apart from a nested sub-row. */
+#navBar { display: contents; }
+
+.nav-cat {
+  border: 1px solid #ddd; border-radius: 0.5rem; background: white;
+  flex: 1 1 0; min-width: 0; position: relative;
+}
+/* v08.26 -- the 320px English nav truncation this project has carried as a
+   named baseline ("Operation"/"Bookmark", 73px of label in a 65px cell).
+   MEASURED before choosing a remedy, and the measurement changed the
+   diagnosis: the ROW is not short of space. At 320px the four labels need
+   282.3px of a 288px row and fit with 5.7px to spare. What cuts them is
+   `flex: 1 1 0` above -- a flex-basis of ZERO makes the four cells an EQUAL
+   quarter each, so Home takes 65px to say a word that needs 48 while
+   Bookmark is cut at 65 needing 75. The space Operation and Bookmark want is
+   already on the row, sitting under Home and Modules.
+
+   So the fix is to let the basis be the CONTENT rather than zero. `grow` and
+   `shrink` are untouched, so the cells still fill the row and can still
+   shrink (and `min-width: 0` above still lets the ellipsis do its job as a
+   last resort) -- only the starting size changes, from "an equal quarter" to
+   "what this label actually needs".
+
+   Scoped to <=340px deliberately, NOT applied everywhere. Equal-width tabs
+   are the design at every width where they hold the label, and they are
+   byte-identical from 360px up (measured: 77.2/77.2/77.2/77.2 at 360, and
+   the same at 390/412/768 in both languages). 340px is in the query because
+   it was cut too (73>70) -- navcheck.mjs does not measure 340 and so had
+   never seen it; it does now.
+
+   Nothing shrinks to pay for this: font-size, padding, the caret and the
+   26px/28px button height are all unchanged, in both languages. Bangla was
+   never truncated and still is not; its cells simply re-proportion. */
+@media (max-width: 340px) {
+  .nav-cat { flex-basis: auto; }
+}
+.nav-cat > summary {
+  cursor: pointer; padding: 0.42rem 0.1rem; font-weight: 700; font-size: 0.7rem;
+  color: #1F3A6E; list-style: none; user-select: none; text-align: center;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.nav-cat > summary::-webkit-details-marker { display: none; }
+.nav-cat > summary::after { content: " \25BE"; font-size: 0.7em; color: #888; }
+.nav-cat[open] > summary::after { content: " \25B4"; }
+/* PC/tablet/phone layout fix: these used to be a plain block, in normal
+   document flow -- opening one pushed every category's own links AND
+   everything on the page below the nav bar (banner, wheel, etc.) further
+   down the screen, more the more categories were open at once (nothing
+   closed a sibling automatically, since native <details> doesn't do that).
+   Absolutely positioned as a real dropdown instead: it now overlays
+   whatever is below the nav bar rather than shoving it down, and .nav-cat's
+   own new `position: relative` above is what anchors it under its own
+   button rather than the page's top-left corner. Paired with the
+   accordion listener in nav.js, which is what actually closes a sibling
+   when another opens -- position alone doesn't do that part. */
+.nav-cat-links {
+  position: absolute; top: 100%; left: 0; z-index: 100;
+  display: flex; flex-direction: column; gap: 0.25rem;
+  padding: 0.3rem 0.9rem 0.7rem; min-width: 10rem;
+  background: white; border: 1px solid #ddd; border-top: none;
+  border-radius: 0 0 0.6rem 0.6rem; box-shadow: 0 10px 26px rgba(20,30,55,0.18);
+  /* Fixes round -- the dropdown itself must never run off either screen
+     edge, whatever content it grows to fit (a real cap, not a guess: the
+     same calc(100vw - Npx) shape this project's own popovers already use
+     for exactly this reason). box-sizing so the padding above counts
+     toward it, not on top of it. */
+  max-width: calc(100vw - 2rem); box-sizing: border-box;
+}
+/* The rightmost category's dropdown would otherwise run off the right edge
+   of the screen on a narrow phone, left-aligned under a button that's
+   itself hard against the right edge -- measured at 320-412px. Flip it to
+   hang from its own right edge instead, which keeps it fully on-screen at
+   every width tested (320-1920px) without needing to know each button's
+   pixel position. */
+.nav-cat-end .nav-cat-links { left: auto; right: 0; }
+.nav-link { color: #1F3A6E; text-decoration: none; font-size: 0.88rem; font-weight: 600; padding: 0.1rem 0; }
+.nav-link:hover { text-decoration: underline; }
+/* Home -> 👤 My account is a <button> (the page wires it, nav.js only renders
+   it), so it is dressed as a .nav-link rather than as the page's buttons. */
+button.nav-account-btn { background: none; border: none; text-align: left; cursor: pointer; font-family: inherit; min-height: 36px; padding: 0.1rem 0; color: #1F3A6E; }
+.nav-current { color: #888; cursor: default; pointer-events: none; }
+.nav-link-disabled { color: #aaa; font-size: 0.84rem; font-style: italic; padding: 0.1rem 0; }
+/* Sharing the four-button row with this notice used to squeeze the tabs
+   themselves -- .nav-cat is `flex: 1 1 0; min-width: 0`, so any extra flex
+   item on the same line (this one, whenever a "Previewing as" role is
+   active) just ate into the categories' own share, and a longer role name
+   (or its Bangla translation) shrank Home/Modules/Operation/Bookmark's own
+   labels down toward unreadable ellipsis. `flex-basis: 100%` forces it onto
+   its OWN line instead -- a flex item that big can never fit alongside the
+   four tabs already on the line above it, so it wraps below them instead of
+   sharing space with them. The tabs are never touched by how long this text
+   gets, in any language. */
+.nav-preview-notice {
+  flex: 1 1 100%; margin: 0.4rem 0 0; font-size: 0.82rem; color: #8a6220;
+  background: #f5ebd6; padding: 0.3rem 0.6rem; border-radius: 0.5rem;
+  text-align: center;
+}
+
+/* ---------- Home (the one static category) ---------- */
+.nav-cat-home .nav-cat-links { gap: 0.4rem; }
+.nav-cat-home #who { color: #555; font-size: 0.85rem; }
+.nav-cat-home button { font-size: 0.82rem; padding: 0.3rem 0.7rem; }
+.nav-cat-group { display: flex; flex-direction: column; gap: 0.25rem; }
+.nav-cat-group + .nav-cat-group { margin-top: 0.4rem; padding-top: 0.5rem; border-top: 1px dashed #e5e5e5; }
+.nav-cat-group-label {
+  font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+  color: #999; margin-bottom: 0.2rem;
+}
+
+/* Settings -> Language (shell round 13). A real control among links, so it
+   needs to read as one: label above, full-width select, sized to match the
+   0.88rem .nav-link next to it rather than the browser's own default. */
+.nav-setting { display: flex; flex-direction: column; gap: 0.15rem; padding: 0.1rem 0; }
+.nav-setting label { font-size: 0.88rem; font-weight: 600; color: #1F3A6E; }
+.nav-setting select { font-size: 0.85rem; padding: 0.2rem 0.3rem; max-width: 100%; }
+
+/* Issue #354 -- Card look: Night / Light, beside Language. Two buttons
+   rather than a select (the issue's own spec), each >=40px so the change is
+   a real tap target, not a fiddly one. Sized to the settings column's own
+   width (max 10rem, the .nav-cat-links min-width) -- `flex: 1 1 0` so a
+   longer Bangla label shrinks its own button rather than the pair
+   overflowing the dropdown. */
+.nav-card-look-btns { display: flex; gap: 0.4rem; }
+.nav-card-look-btns button {
+  flex: 1 1 0; min-width: 0; min-height: 40px; font-size: 0.82rem; font-weight: 600;
+  padding: 0.3rem 0.4rem; border: 1px solid #ccc; border-radius: 0.4rem;
+  background: white; color: #1F3A6E; cursor: pointer;
+}
+.nav-card-look-btns button[aria-pressed="true"] {
+  background: #1F3A6E; color: white; border-color: #1F3A6E;
+}
+
+/* Fixes round (23 Aug 2026), items 2/3 -- the Bookmark category's own live
+   dropdown (js/bookmark-nav.js). Unfiled bookmarks and folder summaries share
+   .nav-link's own look (they ARE navigation links/toggles); a folder's own
+   contents nest visually via the inline left-margin bookmark-nav.js already
+   sets per depth, capped so the dropdown never grows wider than the page can
+   show at 320px. */
+/* Fixes round -- the owner's own report (tablet screenshot): a bookmark's
+   or folder's own name was wrapping onto a second line well before it ran
+   out of real room, because this list was capped at a flat 16rem
+   regardless of how wide the dropdown itself (.nav-cat-links, above) had
+   room to grow. Sized to its own content now (width: max-content) rather
+   than a guessed fixed cap -- a short name stays one line, and the only
+   thing that still bounds it is the SAME viewport-wide safety net
+   .nav-cat-links already carries (max-width: 100% of this list's own
+   parent, which is itself already clamped to calc(100vw - 2rem)). */
+.nav-bm-list { display: flex; flex-direction: column; gap: 0.2rem; width: max-content; max-width: 100%; max-height: 60vh; overflow-y: auto; }
+/* Owner, 5 Oct 2026: "Enlarge bookmark to take the entire screen so other
+   screen below won't distract eyes." Open, the Bookmark menu is a full-screen
+   sheet at every width: an opaque fixed layer over the whole page, its list
+   in one readable column (at most 40rem, centred on a wide screen), scrolling
+   inside itself while the page behind stays still. It closes with its own
+   Close button or Escape (nav.js); it covers its own tab. The other three
+   categories keep the ordinary dropdown. */
+.nav-bm-sheet-head { display: none; }
+.nav-cat-bookmark[open] > .nav-cat-links {
+  position: fixed; inset: 0; z-index: 3000;
+  max-width: none; min-width: 0; width: auto; height: auto;
+  border: none; border-radius: 0; box-shadow: none;
+  padding: 0.6rem max(1rem, calc((100vw - 40rem) / 2)) 1.5rem;
+  overflow-y: auto; overscroll-behavior: contain; gap: 0.4rem;
+}
+.nav-cat-bookmark[open] .nav-bm-sheet-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.6rem;
+  position: sticky; top: -0.6rem; z-index: 1; background: white;
+  padding: 0.4rem 0; margin-bottom: 0.2rem; border-bottom: 1px solid #e5e5e5;
+}
+.nav-bm-sheet-title { font-size: 1.05rem; font-weight: 700; color: #1F3A6E; }
+.nav-bm-close {
+  min-height: 40px; padding: 0.3rem 0.8rem; font-size: 0.9rem; font-weight: 600;
+  border: 1px solid #ccc; border-radius: 0.4rem; background: white; color: #1F3A6E;
+  cursor: pointer; flex-shrink: 0;
+}
+.nav-cat-bookmark[open] .nav-bm-list { width: auto; max-height: none; overflow: visible; }
+body:has(.nav-cat-bookmark[open]) { overflow: hidden; }
+/* Fixes round 2 -- the two options above the list ("Open as" expanded/
+   collapsed, "Group by" folder/person). Two cells sharing one line, each
+   minmax(0,1fr) so a long translated label shrinks its own cell rather than
+   pushing the row wider than the dropdown. */
+.nav-bm-controls {
+  display: grid; grid-template-columns: minmax(0,1fr) auto minmax(0,1fr); gap: 0.4rem;
+  padding-bottom: 0.4rem; margin-bottom: 0.3rem; border-bottom: 1px dashed #e5e5e5;
+}
+.nav-bm-control { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
+.nav-bm-control span { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #999; }
+.nav-bm-control select { font-size: 0.8rem; padding: 0.15rem 0.2rem; max-width: 100%; box-sizing: border-box; }
+/* Fixes round -- a real one-tap Expand-all/Collapse-all toggle, replacing
+   the old "Open as" two-option <select> (picking an OPTION from a native
+   select is genuinely two taps on a touchscreen -- open the picker, then
+   choose -- which is exactly the "double tap" the owner reported). Sized
+   and aligned to sit in the same grid cell that select used to occupy. */
+.nav-bm-expand-toggle {
+  align-self: end; font-size: 0.8rem; padding: 0.2rem 0.4rem;
+  border: 1px solid #ccc; border-radius: 0.3rem; background: white;
+  color: #1F3A6E; font-weight: 600; cursor: pointer; text-align: left;
+  min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.nav-bm-expand-toggle:hover { background: #f5f5f5; }
+.nav-bm-link { color: #1F3A6E; text-decoration: none; font-size: 0.86rem; padding: 0.1rem 0; }
+.nav-bm-link:hover { text-decoration: underline; }
+/* The Owner, 5 Oct 2026: 🔖 on every bookmark (folders keep 📁), and the time of
+   its last act after the name, smaller and grey; 🕘 shows or hides the times. */
+.nav-bm-item { display: flex; align-items: baseline; flex-wrap: wrap; column-gap: 0.4rem; min-height: 36px; box-sizing: border-box; padding: 0.35rem 0; }
+.nav-bm-mark { flex: 0 0 auto; }
+.nav-bm-name { min-width: 0; overflow-wrap: anywhere; }
+.nav-bm-when { color: #5f6b7d; font-size: 0.74rem; font-weight: 400; white-space: nowrap; }
+.nav-bm-folder .nav-bm-link.nav-bm-item { display: flex; }
+/* "← Back to <page>": under the menu bar on the page a bookmark opened. */
+/* Fixed, above every window: on the Qur'an page a bookmark opens a floating window that would cover a row under the bar. */
+.bm-back-row { position: fixed; left: max(12px, env(safe-area-inset-left)); bottom: max(12px, env(safe-area-inset-bottom)); z-index: 12000; display: flex; align-items: center; gap: 0.4rem; max-width: calc(100vw - 24px); padding: 0.3rem; border-radius: 999px; background: rgba(255,255,255,0.96); box-shadow: 0 4px 16px rgba(20,30,60,0.25); box-sizing: border-box; }
+.bm-back-row .bm-back-x { border-radius: 999px; }
+.bm-back { display: inline-flex; align-items: center; min-height: 40px; padding: 0.3rem 0.8rem; border: 1px solid #c9d3e6; border-radius: 999px; background: #f4f7fc; color: #1F3A6E; font-weight: 600; font-size: 0.9rem; text-decoration: none; min-width: 0; overflow-wrap: anywhere; box-sizing: border-box; }
+.bm-back:hover { background: #e8eef9; }
+.bm-back-row.bm-back-docked { position: static; z-index: auto; max-width: 100%; min-width: 0; flex: 0 1 auto; padding: 0; gap: 0.3rem; background: transparent; box-shadow: none; }
+.bm-back-row.bm-back-docked .bm-back { min-height: 40px; padding: 0 0.7rem; font-size: 0.82rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; line-height: 38px; }
+.bm-back-row.bm-back-docked .bm-back-x { width: 40px; height: 40px; }
+.bm-back-x { flex: 0 0 auto; width: 40px; height: 40px; padding: 0; border: 1px solid #ddd; border-radius: 0.4rem; background: white; color: #1F3A6E; cursor: pointer; }
+/* Issue #410 -- a saved-settings row is a button that looks like the links around it, but is a real 40px tap target. */
+button.nav-bm-preset { background: none; border: 0; font: inherit; font-size: 0.86rem; text-align: left; cursor: pointer; min-height: 40px; padding: 0.1rem 0; max-width: 100%; overflow-wrap: anywhere; }
+.nav-bm-folder summary { color: #1F3A6E; font-size: 0.86rem; font-weight: 600; cursor: pointer; padding: 0.1rem 0; }
+.nav-bm-folder .nav-bm-link { display: block; margin-left: 1.1rem; }
+/* The Owner, 5 Oct 2026: "Enable a quick folder edit n handler to move
+   folders here." Each folder row: a drag handle (⠿) first, the name, and a
+   rename pencil (✎) last. Inline-flex INSIDE the <summary>, so its own ▶
+   marker stays. Both buttons are 36px tall, a real tap target; the handle
+   takes `touch-action: none` so dragging it does not scroll the sheet. */
+.nav-bm-folder-head { display: inline-flex; align-items: center; gap: 0.3rem; width: calc(100% - 1.3em); vertical-align: middle; }
+.nav-bm-folder-name { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.nav-bm-handle, .nav-bm-rename {
+  flex: 0 0 auto; width: 2.2rem; height: 2.25rem; padding: 0; border-radius: 0.4rem;
+  font-size: 1.05rem; line-height: 1; color: #6b7487; background: transparent; cursor: pointer;
+}
+.nav-bm-handle { border: none; cursor: grab; touch-action: none; }
+.nav-bm-rename { border: 1px solid #ddd; background: white; color: #1F3A6E; }
+/* The Owner, 7 Oct 2026: "Enable bookmark n folder delete here". 🗑 on every folder (after ✎) and every bookmark; the
+   bookmark row keeps its link filling the line and the 🗑 a fixed square at its end. Nothing is erased: Undo, and
+   Manage bookmarks restores. */
+.nav-bm-del {
+  flex: 0 0 auto; width: 2.5rem; height: 2.5rem; padding: 0; border-radius: 0.4rem; font-size: 1rem; line-height: 1;
+  border: 1px solid #e5c9c9; background: white; color: #9b2c2c; cursor: pointer;
+}
+.nav-bm-folder-head .nav-bm-del { width: 2.2rem; height: 2.25rem; }
+.nav-bm-row { display: flex; align-items: center; gap: 0.4rem; min-width: 0; }
+.nav-bm-folder .nav-bm-row { margin-left: 1.1rem; }
+.nav-bm-row > .nav-bm-link.nav-bm-item { flex: 1 1 auto; min-width: 0; margin-left: 0; }
+.nav-bm-undo { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; margin: 0 0 0.5rem; padding: 0.4rem 0.6rem; border-radius: 0.6rem; background: #1F3A6E; color: #fff; font-size: 0.86rem; }
+.nav-bm-undo button { flex: 0 0 auto; min-height: 40px; padding: 0 0.9rem; border: 1px solid rgba(255,255,255,0.6); border-radius: 0.5rem; background: transparent; color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+.nav-bm-rename-input { flex: 1 1 auto; min-width: 0; font: inherit; padding: 0.3rem 0.4rem; border: 1px solid #1F3A6E; border-radius: 0.3rem; }
+.nav-bm-dragging > summary { background: #eef3fb; border-radius: 0.4rem; box-shadow: 0 2px 10px rgba(20,30,55,0.18); }
+.nav-bm-dragging .nav-bm-handle { cursor: grabbing; }
+/* The Owner, 5 Oct 2026: 📖 Last read and ▶ Last played, side by side at the
+   top of the Bookmark menu; each a full 48px tap target naming the place. */
+.nav-bm-lasts { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0.5rem; margin: 0 0 0.6rem; }
+.nav-bm-last {
+  display: flex; align-items: center; gap: 0.5rem; min-height: 48px; padding: 0.4rem 0.6rem;
+  border: 1px solid #c9d3e6; border-radius: 0.6rem; background: #f4f7fc; color: #1F3A6E;
+  text-decoration: none; text-align: left; cursor: pointer; font: inherit; min-width: 0; box-sizing: border-box;
+}
+.nav-bm-last:hover { background: #e8eef9; }
+.nav-bm-last[disabled] { cursor: default; opacity: 0.6; }
+.nav-bm-last-icon { font-size: 1.15rem; flex: 0 0 auto; }
+.nav-bm-last-text { display: flex; flex-direction: column; min-width: 0; }
+.nav-bm-last-text b { font-size: 0.86rem; }
+.nav-bm-last-text small { font-size: 0.78rem; color: #4a5568; overflow-wrap: anywhere; }
+.nav-bm-error { margin: 0 0 0.4rem; padding: 0.4rem 0.6rem; border-radius: 0.4rem; background: #fbe9e7; color: #8a1c0f; font-size: 0.85rem; }
+.nav-bm-error[hidden] { display: none; }
+.nav-bm-empty { color: #888; font-size: 0.84rem; margin: 0; }
