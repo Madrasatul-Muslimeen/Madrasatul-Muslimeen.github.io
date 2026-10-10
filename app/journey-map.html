@@ -370,6 +370,7 @@
      job; Folders | Timeline | Path stay as its tabs. */
   html.embed h1, html.embed .intro, html.embed #topNav, html.embed #backLink, html.embed #accountCardOverlay { display: none !important; }
   html.embed body { margin: 0; padding: 0.4rem 0.6rem; overflow-x: hidden; }
+  [data-unit-retry] { min-height: 40px; padding: 0 1rem; } /* the Notes pane's Try again: a finger-sized target */
   /* The Owner, 8 Oct 2026: in the pop-up, the panels use the window's whole width. The page's
      46rem reading cap had squeezed tree | list | Note into the left 755px of a 1340px window,
      each below its own minimum, so the drag handles had no room to move. */
@@ -875,7 +876,9 @@
       roster = rosterSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
       renderNav(myMemberships.find((m) => m.tenantId === activeTenantId)?.roles ?? [], null);
       renderPersonSelectOptions();
-      selectedPersonId = personSelect.value || null;
+      // The reader's own person when the roster came back empty (a phone answering from its saved copy while the
+      // signal dropped): without it the Notes pane said "Loading…" forever (the Owner's screenshot, 11 Oct 2026).
+      selectedPersonId = personSelect.value || myPersonIdInActiveTenant() || null;
       await refreshAll();
     }
 
@@ -924,7 +927,7 @@
       if (typeof paneView !== "undefined" && paneView.noteId !== null) pageStatusMsg.scrollIntoView?.({ block: "nearest" });
     }
     function renderReadOnlyBanner() {
-      if (isSelfSelected()) { readOnlyMsg.style.display = "none"; return; }
+      if (isSelfSelected() || !selectedPersonId) { readOnlyMsg.style.display = "none"; return; } // no person: nobody else's Journey either
       readOnlyMsg.style.display = "block";
       const name = roster.find((p) => p.id === selectedPersonId);
       const shownName = name ? langText(name.name, getAppLang(), name.id) : selectedPersonId;
@@ -958,6 +961,9 @@
       // while the new load is still in flight.
       allNotes = []; allPlacements = []; folderCounts = {};
       notesTruncated = false; placementsTruncated = false;
+      // Decision 95's Notes pane reads only this unit's Notes (notesForStudyUnit); it never waited on the tree
+      // below, which for a large Journey is the slow part. Its ✚ New note stays disabled until the folders arrive.
+      if (currentView === "unit") renderUnitView();
       // Notes and placements start loading NOW, in the background, across
       // several parallel shards each (journey-map-service.js) -- but nothing
       // here awaits them yet. The Owner's real numbers (issue #282): the
@@ -983,7 +989,15 @@
         ? loadAllOwnerNoteLinks(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, status: NOTE_STATUS.ACTIVE })
           .then((r) => r.rows, (err) => { console.error("[note links load]", err); return []; })
         : Promise.resolve([]);
-      const tree = await ownerFolderTreePagedSharded(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId });
+      let tree;
+      try {
+        tree = await ownerFolderTreePagedSharded(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId });
+      } catch (error) {
+        if (myRefresh !== refreshToken) return;
+        reportWriteFailure(error, { collection: TENANT.NOTE_FOLDERS, action: "ownerFolderTree" });
+        showPageStatus(t("Your folders could not be read. Please try again."));
+        return;
+      }
       const loadedSections = await sectionsPromise;
       const loadedLinks = await linksPromise;
       const loadedTags = await tagsPromise;
@@ -3849,8 +3863,8 @@
         <div data-unit-old></div>`;
       viewUnit.querySelector("[data-unit-new]")?.addEventListener("click", (e) => newNoteOnUnit(e.currentTarget));
       viewUnit.querySelector("[data-unit-journey]").addEventListener("click", openUnitInJourney);
-      if (!activeTenantId || !selectedPersonId) return;
       const body = viewUnit.querySelector("[data-unit-body]");
+      if (!activeTenantId || !selectedPersonId) { unitCannotLoad(body, label); return; }
       let rows;
       const cacheKey = `${activeTenantId}|${selectedPersonId}|${unitKeyParam}`;
       try {
@@ -3880,6 +3894,18 @@
       // The Read view's 📝 shows how many Notes this āyah has, once they have been read here (no read of its own).
       try { window.parent?.postMessage({ type: "mmsa-unit-count", unit: unitKeyParam, count: notes.length }, location.origin); } catch { /* not embedded */ }
       renderUnitOldNote(my);
+    }
+    /** The pane could not start (no person or tenant, or the page failed to load): words and a way to try again. */
+    function unitCannotLoad(body, label) {
+      if (!body) return;
+      body.innerHTML = `<p class="note" data-unit-cannot-load>${escapeHtml(t("Your Notes on {unit} could not be read. Please try again.", { unit: label }))}</p>
+        <button type="button" class="secondary" data-unit-retry>${escapeHtml(t("Try again"))}</button>`;
+      body.querySelector("[data-unit-retry]").addEventListener("click", async (e) => {
+        e.currentTarget.disabled = true;
+        if (!activeTenantId) { location.reload(); return; } // start-up itself failed: start again
+        body.innerHTML = `<p class="note">${escapeHtml(t("Loading…"))}</p>`;
+        try { await loadContextData(); } catch (err) { reportWriteFailure(err, { collection: TENANT.TENANT_PEOPLE, action: "notesPaneRetry" }); unitCannotLoad(viewUnit.querySelector("[data-unit-body]"), label); }
+      });
     }
     async function renderUnitOldNote(my) {
       const box = viewUnit.querySelector("[data-unit-old]");
@@ -4249,6 +4275,7 @@
       } catch (err) {
         console.error(err);
         whoEl.textContent += ` — ${err.message}`;
+        if (unitMode) { renderToggle(); appEl.style.display = "block"; renderUnitView(); unitCannotLoad(viewUnit.querySelector("[data-unit-body]"), unitLabel()); }
       }
     });
   </script>
