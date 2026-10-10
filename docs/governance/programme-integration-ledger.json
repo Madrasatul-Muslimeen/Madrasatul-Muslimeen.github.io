@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "10.05",
+    "version": "10.06",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -3053,8 +3053,20 @@
     {
       "version": "10.05",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Decision 95 round 2b: ⋮ Note & more, a Unit card's 📝 Note, Make a poster with no Note and Note-view bookmarks open the Notes pane in the Read view.",
+      "integration": {
+        "authorizedOn": "2026-10-10",
+        "integratedOn": "2026-10-10",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "10.06",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Builder #722, PR #723: the Āyah card's 📚 QCR and ⋮ → QCR open a QCR/Asma pop-up of their own; the Note view is no longer opened for QCR.",
       "integration": {
         "authorizedOn": "2026-10-10",
         "integratedOn": "2026-10-10",
@@ -3063,8 +3075,9 @@
       }
     }
   ],
-  "nextUnallocated": "10.06",
+  "nextUnallocated": "10.07",
   "nextUnallocatedNote": [
+    "v10.06 was allocated to QCR / Asma attach as its own pop-up, without the Note view (Builder #722), 2026-10-10.",
     "v10.05 was allocated to the Notes pane round 2b: the Note view's notes doors open the pane (decision 95), 2026-10-10.",
     "v10.04 was allocated to the writing sheet's ✅ Record, for every family member (Builder #719), 2026-10-10.",
     "v10.03 was allocated to the Notes pane's Track this āyah tab; the Āyah card's 📝 Note opens the pane (decision 95, round 2a), 2026-10-10.",

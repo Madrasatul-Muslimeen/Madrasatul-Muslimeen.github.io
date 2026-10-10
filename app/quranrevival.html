@@ -3720,6 +3720,20 @@
      taller than it (100% of the pop-up, not 100vh). */
   .ayah-nv-pop { position: fixed; inset: 0; z-index: 1300; background: rgba(8, 14, 26, 0.6); display: flex; align-items: flex-start; justify-content: center; padding: 16px; }
   .ayah-nv-pop[hidden] { display: none; }
+  /* QCR / Asma pop-up (decision 95). Below the Asma attach/edit overlays (950) so the forms it opens show above it. */
+  .qcr-pop { position: fixed; inset: 0; z-index: 940; background: rgba(8, 14, 26, 0.6); display: flex; align-items: center; justify-content: center; padding: 16px; }
+  .qcr-pop[hidden] { display: none; }
+  .qcr-pop-box { width: min(34rem, 100%); max-height: 100%; overflow-y: auto; background: #fffdf6; color: #1b1b16; border-radius: 1rem; box-shadow: 0 18px 44px rgba(0, 0, 0, 0.45); padding: 0 1rem 1rem; box-sizing: border-box; }
+  .qcr-pop-head { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 0.6rem; padding: 0.6rem 0; margin-bottom: 0.6rem; background: #fffdf6; border-bottom: 1px solid #eadfc3; }
+  .qcr-pop-back { flex: 0 0 auto; white-space: nowrap; min-height: 40px; padding: 0 0.8rem; border: 1px solid #c9a24b; border-radius: 0.6rem; background: #1F3A6E; color: #fff; font-size: 0.88rem; font-weight: 600; cursor: pointer; }
+  .qcr-pop-title { flex: 1 1 auto; font-weight: 700; color: #1F3A6E; min-width: 0; overflow-wrap: anywhere; }
+  .qcr-pop-x { flex: 0 0 auto; min-width: 40px; min-height: 40px; border: 1px solid #ddd; border-radius: 0.6rem; background: #fff; color: #24283a; font-size: 1rem; cursor: pointer; }
+  .qcr-pop button, .qcr-pop select { min-height: 40px; }
+  .qcr-pop .note-sub-popover label, .qcr-pop .note-collection-row, .qcr-pop-body label { min-height: 40px; display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; }
+  @media (max-width: 640px) {
+    .qcr-pop { padding: 0; align-items: stretch; }
+    .qcr-pop-box { width: 100%; max-height: none; height: 100%; border-radius: 0; box-shadow: none; }
+  }
   .ayah-nv-box { width: min(46rem, 100%); max-height: 100%; overflow-y: auto; background: #fffdf6; color: #1b1b16; border-radius: 1rem; box-shadow: 0 18px 44px rgba(0, 0, 0, 0.45); padding: 0 1rem 1rem; }
   .ayah-nv-head { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; gap: 0.6rem; padding: 0.6rem 0; background: #fffdf6; border-bottom: 1px solid #eadfc3; }
   .ayah-nv-back { flex: 0 0 auto; white-space: nowrap; min-height: 40px; padding: 0 0.8rem; border: 1px solid #c9a24b; border-radius: 0.6rem; background: #1F3A6E; color: #fff; font-size: 0.88rem; font-weight: 600; cursor: pointer; }
@@ -6406,7 +6420,7 @@
     import { getBookmarks, saveBookmark, removeSavedBookmark, updateSavedBookmarkFields, findSavedBookmark, createFolder, flattenFolderTree, livePresets, saveSettingsPreset, renameSettingsPreset, removeSettingsPreset, setLastPlace, lastPlaceOf } from "./js/bookmarks.js";
     import { openBookmarkNamePopover } from "./js/bookmark-popover.js";
     import { getAyahNotes, ayahNoteHtml, ayahHasNote, saveAyahNote, ensureAyahNotesWritable } from "./js/ayah-notes.js";
-    import { renderQuickMenu, attachQuickMenuHandlers, renderNoteView, attachNoteViewHandlers, notesToPlainText, copyToClipboard, shareText } from "./js/ayah-note-renderer.js";
+    import { renderQuickMenu, attachQuickMenuHandlers, renderNoteView, attachNoteViewHandlers, attachQcrDrawerHandlers, notesToPlainText, copyToClipboard, shareText } from "./js/ayah-note-renderer.js";
     import { initReadWindow } from "./js/read-window.js";
     import { initPopupWindow, initSideSplitter, initListCollapse, loadSideViewMode, saveSideViewMode } from "./js/note-popup.js";
     import {
@@ -15799,15 +15813,15 @@
         silently close the very drawer the reader is mid-edit in. Neither
         button's checkbox popover needs touching -- checkboxes are native
         and already show their own correct state. */
-    function refreshQcrDrawerSummaries(unitKey) {
-      const attachBtn = noteView.querySelector('[data-note-qcr-dd-toggle="attach"]');
+    function refreshQcrDrawerSummaries(unitKey, root = noteView) {
+      const attachBtn = root.querySelector('[data-note-qcr-dd-toggle="attach"]');
       if (attachBtn) {
         const memberOf = qcrCollectionsContainingUnitKey(unitKey);
         attachBtn.title = memberOf.map((c) => langText(c.title, getAppLang())).join(", ");
         const summary = attachBtn.querySelector(".note-qcr-dd-summary");
         if (summary) summary.textContent = memberOf.length ? num(memberOf.length) : t("None");
       }
-      const yrBtn = noteView.querySelector('[data-note-qcr-dd-toggle="yrlevel"]');
+      const yrBtn = root.querySelector('[data-note-qcr-dd-toggle="yrlevel"]');
       const group = noteOriginCollectionId ? (qcrCollections ?? []).find((c) => c.id === noteOriginCollectionId) : null;
       if (yrBtn && group) {
         yrBtn.title = group.yrLevels.map((id) => yrLevelLabel(id)).join(", ");
@@ -18426,13 +18440,9 @@
         onOpenNote: (unitKey) => openNotesPaneForKey(unitKey), // decision 95: the Notes pane, not the Note view
         onToggleBookmark: toggleAyahBookmark,
         // The Owner, 9 Oct 2026 (Read view): "there's no button for attaching this Ayah to QCR." The same route as the
-        // Āyah card's 📚 QCR: the Note view's QCR panel opened on Attach, with "Back" to where the reader was.
-        onQcr: (unitKey) => {
-          const { surah: s, ayah: a } = parseAyahUnitKey(unitKey), view = stageView === "note" ? "note" : "read";
-          ayahSheetPendingQcrOpen = true;
-          setAppReturn(t("Back"), ayahRefLabel(s, a).replace(/^.*?(\S+:\S+).*$/, "$1"), () => navigateToAyah(s, a, view));
-          openNoteView(unitKey);
-        },
+        // Āyah card's 📚 QCR: the QCR pop-up (decision 95) opened on Attach, over the view the reader is on. ← Back
+        // closes it, and the reader is exactly where they were (nothing was navigated, so nothing needs restoring).
+        onQcr: (unitKey) => { openQcrPopup(unitKey, { backLabel: t("Back") }); },
         // Text-tools round -- the SAME three functions the Note view's own
         // ⋮ menu calls, which flip the canonical Study-options ticks and
         // re-render whichever screen is open (onReadingTickChanged). One
@@ -19491,15 +19501,10 @@
           openAsmaXAttachPopover({ prefillRef: ayahRefLabel(s, a, { internal: true }) });
         },
         onQcr: (unitKey) => {
-          // Navigate into the existing Note view's own QCR 🗂 drawer rather
-          // than duplicating renderQcrDrawerHtml() -- I2: one shared
-          // component, reached from a second place. The flag opens the
-          // Attach panel on the very next render only (see its own
-          // declaration comment) -- exactly the state a real tap on 🗂 then
-          // Attach would have left, without adding a second drawer.
-          ayahSheetPendingQcrOpen = true;
-          rememberAyahCardReturn(unitKey);
-          openNoteView(unitKey);
+          // Decision 95: the same QCR / Asma panel the Note view's 🗂 drawer shows (I2), in a pop-up of its own, on
+          // Attach. The Note view is not opened. ← goes back to this very Āyah card.
+          const { surah: s, ayah: a, half: h } = parseAyahUnitKey(unitKey);
+          openQcrPopup(unitKey, { backLabel: t("Āyah card"), onBack: () => openAyahActionSheet(`${s}:${a}`, h) });
         },
         onFileInFolder: (unitKey) => openAyahFolderFiling(unitKey),
         onPlay: (unitKey) => quickPlayAyah(unitKey),
@@ -22158,8 +22163,8 @@
       )}</div>`;
     }
 
-    function wireAsmaTrackEmbed(number) {
-      const wrap = noteView.querySelector("#asmaTrackEmbedWrap");
+    function wireAsmaTrackEmbed(number, root = noteView, rerender = renderNoteViewNow) {
+      const wrap = root.querySelector("#asmaTrackEmbedWrap");
       const embedEl = wrap?.querySelector(".way-embed");
       if (!embedEl || !asmaTrackable) return;
       attachWayEmbedHandlers(embedEl);
@@ -22201,8 +22206,8 @@
         if (outcomes.some((o) => o.ok)) {
           asmaXChunkPersonId = null; // forces a real re-fetch, not the stale cache
           await ensureAsmaXChunkLoaded();
-          renderNoteViewNow(); // rebuilds the whole Note view, including this card, against the fresh chunk
-          const freshResultEl = noteView.querySelector("#asmaTrackEmbedWrap .way-claim-result");
+          rerender(); // rebuilds the whole Note view (or the pop-up), including this card, against the fresh chunk
+          const freshResultEl = root.querySelector("#asmaTrackEmbedWrap .way-claim-result");
           if (freshResultEl) freshResultEl.textContent = message;
         } else {
           resultEl.textContent = message;
@@ -22216,8 +22221,8 @@
         shape wireApproachEmbed() already uses for things that function
         doesn't know about (I2 -- it's QCR/Asma-blind on purpose). A no-op
         when Topic isn't "asma" or there's nothing to wire. */
-    function wireAsmaXNoteFields(unitKey) {
-      const topicSelect = noteView.querySelector("#noteTopicSelect");
+    function wireAsmaXNoteFields(unitKey, root = noteView, rerender = renderNoteViewNow, ayahNum = noteScope.ayahNum, surahNum = currentSurahNum) {
+      const topicSelect = root.querySelector("#noteTopicSelect");
       if (topicSelect) {
         topicSelect.addEventListener("change", async () => {
           noteTopic = topicSelect.value === "asma" ? "asma" : "qcr";
@@ -22229,46 +22234,46 @@
             await ensureAsmaXDataLoaded();
             await ensureAsmaXChunkLoaded();
           }
-          renderNoteViewNow();
+          rerender();
         });
       }
       if (noteTopic !== "asma") return;
-      wireAsmaTrackEmbed(noteOriginAsmaNumber);
-      noteView.querySelectorAll("[data-asmax-group-radio]").forEach((radio) => {
+      wireAsmaTrackEmbed(noteOriginAsmaNumber, root, rerender);
+      root.querySelectorAll("[data-asmax-group-radio]").forEach((radio) => {
         radio.addEventListener("change", () => {
           if (!radio.checked) return;
           noteOriginAsmaGroupId = radio.value || null;
           noteOriginAsmaNumber = null;
-          renderNoteViewNow();
+          rerender();
         });
       });
-      noteView.querySelectorAll("[data-asmax-name-radio]").forEach((radio) => {
+      root.querySelectorAll("[data-asmax-name-radio]").forEach((radio) => {
         radio.addEventListener("change", () => {
           if (!radio.checked) return;
           noteOriginAsmaNumber = Number(radio.value);
-          renderNoteViewNow();
+          rerender();
         });
       });
       function closeAsmaXDropdowns(exceptKey) {
-        noteView.querySelectorAll("[data-asmax-dd-pop]").forEach((pop) => { if (pop.dataset.asmaxDdPop !== exceptKey) pop.classList.remove("on"); });
-        noteView.querySelectorAll("[data-asmax-dd-toggle]").forEach((btn) => { if (btn.dataset.asmaxDdToggle !== exceptKey) btn.classList.remove("active"); });
+        root.querySelectorAll("[data-asmax-dd-pop]").forEach((pop) => { if (pop.dataset.asmaxDdPop !== exceptKey) pop.classList.remove("on"); });
+        root.querySelectorAll("[data-asmax-dd-toggle]").forEach((btn) => { if (btn.dataset.asmaxDdToggle !== exceptKey) btn.classList.remove("active"); });
       }
-      noteView.querySelectorAll("[data-asmax-dd-toggle]").forEach((btn) => {
+      root.querySelectorAll("[data-asmax-dd-toggle]").forEach((btn) => {
         btn.addEventListener("click", (e) => {
           e.stopPropagation();
           const key = btn.dataset.asmaxDdToggle;
-          const pop = noteView.querySelector(`[data-asmax-dd-pop="${key}"]`);
+          const pop = root.querySelector(`[data-asmax-dd-pop="${key}"]`);
           if (!pop) return;
           const willOpen = !pop.classList.contains("on");
           closeAsmaXDropdowns(null);
           if (willOpen) { pop.classList.add("on"); btn.classList.add("active"); }
         });
       });
-      noteView.querySelectorAll("[data-asma-xref-jump]").forEach((btn) => {
+      root.querySelectorAll("[data-asma-xref-jump]").forEach((btn) => {
         const [surah, ayah] = btn.dataset.asmaXrefJump.split(":").map(Number);
-        btn.addEventListener("click", () => goToAyahFromAsmaX(surah, ayah, noteOriginAsmaGroupId, noteOriginAsmaNumber));
+        btn.addEventListener("click", () => { if (root !== noteView) closeQcrPopup(); goToAyahFromAsmaX(surah, ayah, noteOriginAsmaGroupId, noteOriginAsmaNumber); });
       });
-      const posterBtn = noteView.querySelector("#noteAsmaXPosterBtn");
+      const posterBtn = root.querySelector("#noteAsmaXPosterBtn");
       if (posterBtn && noteOriginAsmaNumber != null) {
         const entry = asmaXResolve(noteOriginAsmaNumber);
         if (entry) posterBtn.addEventListener("click", () => openAsmaXPoster(entry));
@@ -22277,18 +22282,120 @@
       // popover the ⋯ menu already opens, pre-filled with whichever āyah
       // this Note view is currently anchored to (noteScope.ayahNum, module
       // state -- this function has no local "info" to read fromAyah off).
-      noteView.querySelector("#noteAsmaXAttachBtn")?.addEventListener("click", () => {
-        openAsmaXAttachPopover({ prefillRef: asmaRefTextFor(currentSurahNum, noteScope.ayahNum) });
+      root.querySelector("#noteAsmaXAttachBtn")?.addEventListener("click", () => {
+        openAsmaXAttachPopover({ prefillRef: asmaRefTextFor(surahNum, ayahNum) });
       });
       // 5 Sep 2026 -- create a Name (or a Dual Name) straight from the āyah
       // being read, with that āyah already its Reference. Same overlay, same
       // single write; only which list it is filed under differs.
-      noteView.querySelector("#noteAsmaXNewNameBtn")?.addEventListener("click", () => {
-        openAsmaXEditOverlay({ mode: "create", prefillRef: asmaRefTextFor(currentSurahNum, noteScope.ayahNum), fileInto: { kind: "group" } });
+      root.querySelector("#noteAsmaXNewNameBtn")?.addEventListener("click", () => {
+        openAsmaXEditOverlay({ mode: "create", prefillRef: asmaRefTextFor(surahNum, ayahNum), fileInto: { kind: "group" } });
       });
-      noteView.querySelector("#noteAsmaXNewDualBtn")?.addEventListener("click", () => {
-        openAsmaXEditOverlay({ mode: "create", prefillRef: asmaRefTextFor(currentSurahNum, noteScope.ayahNum), fileInto: { kind: "dual" } });
+      root.querySelector("#noteAsmaXNewDualBtn")?.addEventListener("click", () => {
+        openAsmaXEditOverlay({ mode: "create", prefillRef: asmaRefTextFor(surahNum, ayahNum), fileInto: { kind: "dual" } });
       });
+    }
+
+    // ===================== QCR / Asma pop-up (decision 95) =====================
+    // "QCR stays on the Āyah card and ⋮" -- the same Topic / Group / Attach / Yr Level panel the Note view's 🗂 drawer
+    // shows (renderQcrDrawerHtml + wireAsmaXNoteFields + attachQcrDrawerHandlers, reused, I2), in a pop-up of its own
+    // over whatever the reader is on. The Note view is not opened, so it can retire. No new write path: the ticks call
+    // the same qcrPersist() the drawer does.
+    let qcrPopupUnitKey = null;
+    let qcrPopupBack = null;
+    function qcrPopupEl() {
+      let pop = document.getElementById("qcrPopup");
+      if (pop) return pop;
+      pop = document.createElement("div");
+      pop.id = "qcrPopup";
+      pop.className = "qcr-pop";
+      pop.hidden = true;
+      document.body.appendChild(pop);
+      pop.addEventListener("click", (e) => {
+        if (e.target === pop || e.target.closest("[data-qcr-pop-close]")) closeQcrPopup();
+        else if (e.target.closest("[data-qcr-pop-back]")) { const back = qcrPopupBack; closeQcrPopup(); back?.(); }
+      });
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && !pop.hidden) { e.stopImmediatePropagation(); closeQcrPopup(); }
+      }, true);
+      return pop;
+    }
+    function closeQcrPopup() {
+      const pop = document.getElementById("qcrPopup");
+      if (!pop || pop.hidden) return;
+      pop.hidden = true;
+      pop.innerHTML = "";
+      qcrPopupUnitKey = null;
+      qcrPopupBack = null;
+    }
+    /** Opens the pop-up on Attach. `backLabel`/`onBack` are the way back (decision 86): the Āyah card, or just the
+        screen underneath (the pop-up opens over it and navigates nowhere, so closing IS going back to the same place). */
+    async function openQcrPopup(unitKey, { backLabel = t("Back"), onBack = null } = {}) {
+      await ensureQcrDataLoaded();
+      noteTopic = "qcr";
+      noteOriginCollectionId = null;
+      noteOriginAsmaGroupId = null;
+      noteOriginAsmaNumber = null;
+      qcrPopupUnitKey = unitKey;
+      qcrPopupBack = onBack;
+      const { surah, ayah, half } = parseAyahUnitKey(unitKey);
+      const ref = ayahRefLabel(surah, ayah, { half }).replace(/^.*?(\S+:\S+).*$/, "$1");
+      const title = `${t("QCR")} · ${ref}`;
+      const pop = qcrPopupEl();
+      pop.innerHTML = `<div class="qcr-pop-box" role="dialog" aria-modal="true" aria-label="${escapeHtml(title)}">
+        <div class="qcr-pop-head">
+          <button type="button" class="qcr-pop-back" data-qcr-pop-back><span aria-hidden="true">←</span> ${escapeHtml(backLabel)}</button>
+          <span class="qcr-pop-title">${escapeHtml(title)}</span>
+          <button type="button" class="qcr-pop-x" data-qcr-pop-close aria-label="${escapeHtml(t("Close"))}">✕</button>
+        </div>
+        <div class="qcr-pop-body" data-qcr-pop-first></div>
+      </div>`;
+      pop.hidden = false;
+      renderQcrPopupNow();
+      pop.querySelector("[data-qcr-pop-back]")?.focus({ preventScroll: true });
+    }
+    /** Re-renders only the pop-up's body; keeps whichever dropdown was open (Attach, the first time). */
+    function renderQcrPopupNow() {
+      const pop = document.getElementById("qcrPopup");
+      const unitKey = qcrPopupUnitKey;
+      if (!pop || pop.hidden || !unitKey) return;
+      const body = pop.querySelector(".qcr-pop-body");
+      const first = body.hasAttribute("data-qcr-pop-first");
+      const openKey = first ? "attach"
+        : (body.querySelector("[data-note-qcr-dd-pop].on")?.dataset.noteQcrDdPop ?? body.querySelector("[data-asmax-dd-pop].on")?.dataset.asmaxDdPop ?? null);
+      const keepScroll = pop.querySelector(".qcr-pop-box")?.scrollTop ?? 0;
+      body.removeAttribute("data-qcr-pop-first");
+      body.innerHTML = renderQcrDrawerHtml(unitKey, openKey);
+      const rerender = renderQcrPopupNow;
+      attachQcrDrawerHandlers(body, {
+        onToggleCollectionMembership: async (collectionId, checked) => {
+          const prev = qcrCollections;
+          qcrCollections = checked
+            ? qcrAddItemLocal(qcrCollections, collectionId, unitKey)
+            : qcrRemoveItemLocal(qcrCollections, collectionId, unitKey);
+          if (!(await qcrPersist())) qcrCollections = prev;
+          rerender();
+        },
+        onSwitchCollection: (collectionId) => {
+          noteOriginCollectionId = collectionId || null;
+          if (noteOriginCollectionId) qcrCurrentId = noteOriginCollectionId;
+          rerender();
+        },
+        onToggleGroupYrLevel: async (yrLevelId, checked) => {
+          if (!noteOriginCollectionId) return;
+          const group = (qcrCollections ?? []).find((c) => c.id === noteOriginCollectionId);
+          if (!group) return;
+          const next = checked ? [...group.yrLevels, yrLevelId] : group.yrLevels.filter((id) => id !== yrLevelId);
+          const prev = qcrCollections;
+          qcrCollections = setCollectionYrLevels(qcrCollections, noteOriginCollectionId, next);
+          if (!(await qcrPersist())) qcrCollections = prev;
+          rerender();
+        },
+      });
+      const at = parseAyahUnitKey(unitKey);
+      wireAsmaXNoteFields(unitKey, body, rerender, at.ayah, at.surah);
+      const box = pop.querySelector(".qcr-pop-box");
+      if (box && keepScroll) box.scrollTop = keepScroll;
     }
 
     /** Entry point from the ⋮ menu's "Note & more…" (and from a bookmark's

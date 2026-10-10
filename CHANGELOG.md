@@ -20415,3 +20415,10 @@ The Owner, 9 Oct 2026, with a photo of the sheet on Yaseen 8: "The writing view 
 - The Journey page's unit view accepts every Qur'an Study Unit key shape the Read view sends (āyah, Range, Surah, Ruku', Juz, Hizb, Page), checked by shape alone; an open pane on a wider unit follows that unit.
 - Not moved, on purpose: the Study menu's Note tab and the Note view's other roles (the Approach Track/Guide card, QCR/Asma references, `?goto=` links); they retire with the Note view once their parts live elsewhere.
 - Checks: read-note-pane-browser 210/0; bookmark-open-browser 77/0 (updated in place, reasons recorded); behaviour 1004/3 (22g×3, archive.org; section 42 and 46a updated in place); the neighbouring Read, Āyah card, wheel, writing and Bangla-sweep suites green; word-card-stem-mark-browser 32/8 is the same on `main` (pre-existing).
+
+## v10.06 — 2026-10-10 — QCR / Asma attach as its own pop-up, without the Note view (decision 95, Builder #722, PR #723)
+
+- The Āyah card's 📚 QCR and ⋮ → QCR open a pop-up of their own (`#qcrPopup`, "QCR · S:A", on Attach) over the screen the reader is on. The Note view is not opened.
+- The panel is reused, not copied (I2): `renderQcrDrawerHtml` and the Asma fields; `attachQcrDrawerHandlers(view, callbacks)` split out of `attachNoteViewHandlers`; `wireAsmaXNoteFields`, `wireAsmaTrackEmbed` and `refreshQcrDrawerSummaries` take a root and a re-render function (defaults: the Note view). The writes are unchanged.
+- ← Back goes to the Āyah card (from the card) or closes to the Read view (from ⋮); ✕ and Escape close; full screen at 640px and below, centred above.
+- Checks: qcr-popup-browser 34/0 with three mutations caught; listen-bookmark-qcr-card 48/0 and bangla-sweep-v09146-surfaces 82/0 (updated in place); ayah-card-takenote-family 44/0; read-note-pane 210/0; quran-ayah-action-sheet 144/0; phone-width-overflow 217/0; behaviour 1007/0.

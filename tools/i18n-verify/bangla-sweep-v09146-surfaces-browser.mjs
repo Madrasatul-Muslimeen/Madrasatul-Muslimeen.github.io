@@ -28,7 +28,7 @@ DATA_ALLOWED.push(/^Aa$/);
 async function sweep(P, screen, width) {
   // The QCR collection titles on the Note view's ticks are the catalogue's own names (qcr-data.js, scholarly
   // transliterations), data and not interface: marked lang="en" so the scanner treats them as data, like .qcr-list-title.
-  await P.evaluate(() => document.querySelectorAll("#noteView [data-note-collection-toggle]").forEach((c) => c.parentElement?.querySelectorAll("span").forEach((s) => s.setAttribute("lang", "en"))));
+  await P.evaluate(() => document.querySelectorAll("#noteView [data-note-collection-toggle], #qcrPopup [data-note-collection-toggle]").forEach((c) => c.parentElement?.querySelectorAll("span").forEach((s) => s.setAttribute("lang", "en"))));
   const bnChars = await P.evaluate(() => (document.body.innerText.match(/[ঀ-৿]/g) || []).length);
   check(`bn ${width}: "${screen}" is rendered in Bangla (positive control)`, bnChars >= 10, `Bangla characters: ${bnChars}`);
   const leaks = leaksOf(await P.evaluate(SCAN));
@@ -146,10 +146,11 @@ for (const width of [390, 1280]) {
     await P.evaluate(() => document.querySelector('#readView .ayah-quick-wrap[data-unit-key="ayah:83:4"] [data-qm-toggle]')?.click()); await settle(P);
     await sweep(P, "the Read view menu", width);
     await P.evaluate(() => document.querySelector('#readView .ayah-quick-wrap[data-unit-key="ayah:83:4"] [data-qm-qcr]')?.click());
-    await P.waitForFunction(() => [...document.querySelectorAll("#noteView [data-note-collection-toggle]")].some((c) => c.getClientRects().length), null, { timeout: 12000 }).catch(() => {});
+    // Updated in place (decision 95, issue #722): the ⋮ QCR item opens the QCR pop-up (#qcrPopup), not the Note view.
+    await P.waitForFunction(() => [...document.querySelectorAll("#qcrPopup [data-note-collection-toggle]")].some((c) => c.getClientRects().length), null, { timeout: 12000 }).catch(() => {});
     await settle(P, 500);
-    check(`bn ${width}: the QCR ticks are open`, await P.evaluate(() => [...document.querySelectorAll("#noteView [data-note-collection-toggle]")].some((c) => c.getClientRects().length)));
-    await sweep(P, "the Note view QCR ticks, with the Back pill", width);
+    check(`bn ${width}: the QCR ticks are open`, await P.evaluate(() => [...document.querySelectorAll("#qcrPopup [data-note-collection-toggle]")].some((c) => c.getClientRects().length)));
+    await sweep(P, "the QCR pop-up, with its Back", width);
     await ctx.close();
   }
   // ---- 4. The writing sheet: bookmark button, the naming popover, the pop-out ----
