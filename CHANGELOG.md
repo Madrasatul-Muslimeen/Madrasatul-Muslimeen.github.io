@@ -20529,3 +20529,21 @@ The Owner, 9 Oct 2026, with a photo of the sheet on Yaseen 8: "The writing view 
 - The `["readView", "noteView"]` listener loop skips an element that is not there, so step (b) can delete `#noteView`.
 - New guard `tools/i18n-verify/note-view-decoupled.mjs` (12 checks, with a positive control per helper); two mutations caught.
 - Checks: every Notes-pane, QCR pop-up, Approach card and action-sheet suite green; phone-width-overflow 217/0; behaviour 1007/0 (the old Note-view checks, run through the test seam, unchanged).
+
+## v10.15 — 2026-10-11 — Notes pane: never "Loading…" forever (Architect fix)
+
+- The Owner's screenshot (3:26 on a phone): the Read view's 📝 Notes pane said "Loading…" forever, with no ✚ New note. Reproduced: the page inside the pane (`journey-map.html?embed=1`) had no person when its roster came back empty, and returned silently.
+- An empty roster falls back to the reader's own person (`myPersonIdInActiveTenant()`).
+- The unit view is drawn before the folder tree is awaited: a slow tree (20 s in the test) no longer holds back the āyah's Notes.
+- A folder tree that cannot be read is reported (`reportWriteFailure`) and said in words (I15), instead of an unhandled rejection.
+- No person, or a start-up failure inside the pane: "Your Notes on {unit} could not be read. Please try again." with a 40px Try again; no "viewing null's Journey" line.
+- Bangla: "Try again" and "Your folders could not be read. Please try again." added.
+- New suite `notes-pane-loading-browser` (26 checks; four mutations caught). journey-map-screen's 2 failures are pre-existing on v10.14, recorded.
+
+## v10.16 — 2026-10-11 — Notes pane fills the screen on a tablet (decision 99)
+
+- The Owner, a tablet screenshot of v10.15: "Still note is showing half screen." The Read view's 📝 Notes pane docked under the reading at about 55% of the height between 600 and 1100px (decision 95's demo).
+- `read-note-pane.js` `layout()` returns `side` (>= 1100px) or `phone` (full screen) only; `rnp-dock` is kept, unused.
+- `read-note-pane-browser` 820px case updated in place: "the pane sits over the whole screen" (fails 2 against v10.15).
+- Same release: the 11 Oct session handover and new-session prompt; `CLAUDE.md` points at them; decision 99 recorded.
+- Checks: read-note-pane 210/0; notes-pane-loading 26/0; read-pane-routes 30/0; read-note-menu 24/0; notes-way-back 42/0; pane-approach-card 29/0; wheel-slice-opens-track 96/0; phone-width-overflow 217/0; behaviour 1007/0.

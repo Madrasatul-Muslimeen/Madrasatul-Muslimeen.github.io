@@ -138,7 +138,19 @@ Read this first, every session. It is the standing brief.
 > "do not translate" and is a different contract. **That contract is NOT
 > invented here**; the Stage B exclusion stands for this candidate.
 
-> ## ⇢ SESSION HANDOVER, 9 Oct 2026 — READ THIS SECOND
+> ## ⇢ SESSION HANDOVER, 11 Oct 2026 — READ THIS SECOND
+>
+> **`docs/reports/2026-10-11-MMSA-SESSION-HANDOVER.md`** is the current
+> continuation point, and **`docs/governance/NEW-SESSION-PROMPT-2026-10-11.md`**
+> is the prompt that starts a new session. `main` reached **v10.16** (v09.151 and v10.01–v10.16 that session;
+> decisions 95–99). **Decision 95 (Read + Note as one) is complete.** **In flight: Builder #742, the deletion of the
+> dead Note view code, UNFINISHED on branch `builder/issue-742-run-1136` with no PR** — the handover's section 0 lists
+> exactly what remains. The Owner's master feature-discussions file is https://claude.ai/artifact/BJUwQ8hfgnu4FJFo7stqY1
+> (v13); three scholar questions (T20–T22) wait on the Owner there.
+>
+> **The 9 Oct block below is kept as history**, superseded by it.
+>
+> ## ⇢ SESSION HANDOVER, 9 Oct 2026 (superseded 11 Oct 2026)
 >
 > **`docs/reports/2026-10-09-MMSA-SESSION-HANDOVER.md`** is the current
 > continuation point, and **`docs/governance/NEW-SESSION-PROMPT-2026-10-09.md`**
@@ -310,7 +322,7 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v10.14 on `main`** (10 Oct 2026 — **Note view retirement, step (a)**, Builder #740, reviewed by the Architect; step (b), deleting the dead Note view code, follows). Behaviour-neutral: the four helpers shared with the QCR pop-up and the Approach card (`refreshQcrDrawerSummaries`, `wireApproachEmbed`, `wireAsmaTrackEmbed`, `wireAsmaXNoteFields`) take their root and re-render function explicitly and throw by name without them; the `root === noteView` branches became the options `fieldScoped` and `closePopupOnJump`; the `["readView","noteView"]` listener loop skips a missing element. Inventory: `docs/reports/2026-10-10-note-view-retirement-inventory.md` (#738). **Checks (Architect, from the branch):** note-view-decoupled 12/0 (two mutations restoring a Note-view default caught; the pre-change source fails 8), qcr-popup 34/0, pane-approach-card 29/0, read-note-pane 210/0, read-pane-routes 30/0, read-note-menu 24/0, asma-quick-class 27/0, notes-way-back 42/0, ayah-card-takenote-family 44/0, quran-ayah-action-sheet 144/0, stub-parity 4/0, phone-width-overflow 217/0, behaviour 1007/0. **With the Owner:** nothing to check; nothing on screen changed.
+**Current milestone: v10.16 on `main`** (11 Oct 2026 — **the Notes pane fills the screen on a tablet**, decision 99, built and reviewed by the Architect). The Owner, with a tablet screenshot of v10.15: *"Still note is showing half screen."* `read-note-pane.js` `layout()` is now `side` (1100px and wider, beside the reading) or `phone` (over the whole screen); the tablet dock of decision 95's demo (`rnp-dock`, about 55% of the height) is no longer used, its style kept. Same commit: the 11 Oct handover (`docs/reports/2026-10-11-MMSA-SESSION-HANDOVER.md`) and new-session prompt; **Builder #742 (deleting the dead Note view code) is unfinished on its branch, with the list of what remains in the handover.** **Checks (Architect):** read-note-pane 210/0 (its 820px case updated in place; it fails 2 against v10.15), measured full screen at 800×1280 and 1024×768, notes-pane-loading 26/0, read-pane-routes 30/0, read-note-menu 24/0, notes-way-back 42/0, pane-approach-card 29/0, wheel-slice-opens-track 96/0, phone-width-overflow 217/0, behaviour 1007/0. **With the Owner:** on the tablet, an āyah's 📝: the pane fills the screen; ← Back returns to the reading.
 
 **Earlier milestones, v08.111 back to v07.139, and the long notes around them**
 (the held Phase 4 wiring, the four deployment states, the Programme Integration
