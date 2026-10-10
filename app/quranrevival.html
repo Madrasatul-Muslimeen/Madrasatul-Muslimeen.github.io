@@ -2114,6 +2114,15 @@
   /* 10 Oct 2026: the labelled way back to the wheel, above a Name's poster (renderAsmaXRefsLevel()). */
   .asmax-back-wheel { display: flex; align-items: center; gap: 0.35rem; margin: 0 auto 0.5rem 0; min-height: 40px; padding: 0 0.9rem; border-radius: 999px; border: 2px solid #B8862F; background: #fff; color: #1F3A6E; font-weight: 700; font-size: 0.9rem; cursor: pointer; }
   .asmax-back-wheel:focus-visible { outline: 3px solid #B8862F; outline-offset: 2px; }
+  /* From 900px the Name's column sits beside the poster and its bar (◂ ✎ 🔗 …) is at the top of the screen, so the
+     words go on ◂ there and the poster keeps its full height (the Owner, 8 Oct: "the poster to be taken entire
+     space"). Below 900px the bar is under the poster, so the labelled button above it is the way back. */
+  .asmax-back-word { display: none; }
+  @media (min-width: 900px) {
+    .asmax-back-wheel { display: none; }
+    #asmaXBackFromRefsBtn { width: auto; height: 40px; padding: 0 0.7rem; gap: 0.35rem; white-space: nowrap; }
+    #asmaXBackFromRefsBtn .asmax-back-word { display: inline; font-size: 0.85rem; font-weight: 600; }
+  }
   /* The Owner, 8 Oct 2026: "I want the poster to be taken entire space." At the Name level the right panel
      holds the poster alone: no wheel resize handles, no legend, and the wheel's stored width does not apply.
      sizeAsmaXPoster() sets the poster's width to the largest that fits the panel's width AND height. */
@@ -14306,7 +14315,8 @@
       const gap = parseFloat(cs.rowGap) || 0;
       const hintH = asmaXHintEl.textContent ? asmaXHintEl.getBoundingClientRect().height + gap : 0;
       const backEl = document.getElementById("asmaXBackToWheelBtn");
-      const backH = backEl ? backEl.getBoundingClientRect().height + parseFloat(getComputedStyle(backEl).marginBottom || "0") : 0;
+      const backBox = backEl?.getBoundingClientRect();
+      const backH = backBox?.height ? backBox.height + parseFloat(getComputedStyle(backEl).marginBottom || "0") : 0; // 0 when hidden (from 900px)
       const availW = asmaXWheelPaneEl.clientWidth - padX;
       const tall = window.innerWidth >= 900 ? asmaXWheelPaneEl.clientHeight : window.innerHeight * 0.85;
       const availH = tall - padY - hintH - backH;
@@ -14350,7 +14360,7 @@
       const navPrev = navAt > 0 ? navOrder[navAt - 1] : null;
       const navNext = navAt >= 0 && navAt < navOrder.length - 1 ? navOrder[navAt + 1] : null;
       asmaXListHeaderEl.innerHTML = `
-        <button type="button" class="qcr-icon-btn" id="asmaXBackFromRefsBtn" title="${escapeHtml(t("Back to the wheel"))}" aria-label="${escapeHtml(t("Back to the wheel"))}">◂</button>
+        <button type="button" class="qcr-icon-btn" id="asmaXBackFromRefsBtn" title="${escapeHtml(t("Back to the wheel"))}" aria-label="${escapeHtml(t("Back to the wheel"))}">◂<span class="asmax-back-word"> ${escapeHtml(t("Back to the wheel"))}</span></button>
         <span class="qcr-list-title">${escapeHtml(asmaEntryDisplayName(entry))}</span>
         ${canManage ? `<button type="button" class="qcr-icon-btn" id="asmaXEditThisNameBtn" title="${escapeHtml(t("Edit"))}" aria-label="${escapeHtml(t("Edit"))}">✎</button>` : ""}
         ${canManage ? `<button type="button" class="qcr-icon-btn" id="asmaXAttachRefThisNameBtn" title="${escapeHtml(t("Attach a reference to several Names"))}" aria-label="${escapeHtml(t("Attach a reference to several Names"))}">🔗</button>` : ""}
