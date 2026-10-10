@@ -57,6 +57,27 @@ Mapping My Journey note pane as THE note.
 - the dua review screen, once the Owner answers the demo's three questions (it then reads the fit files from #710);
 - Hadith "Studied"/Notes on OpenITI passages (needs the Owner's yes to the key `hadith:openiti:<book>:<n>`).
 
+**Update, 10 Oct 2026, session `session_018zBksiX4zzcrLCxBRGwU8y` (`main` at v10.06 when written):**
+- Released v09.151, v10.01 to v10.06 (each in `CHANGELOG.md`). Decisions 95, 96 and 97 are recorded.
+- **Decision 95 (Read + Note as one) so far:**
+  - **v10.01:** the 📝 Notes pane.
+  - **v10.03:** the Track tab; the Āyah card's 📝 Note and the quick Notes open the pane.
+  - **v10.05:** ⋮ Note & more, the Unit card's 📝 Note, Make a poster (no Note) and Note-view bookmarks open the pane.
+  - **v10.06:** QCR/Asma in a pop-up of its own (Builder #722).
+- **Still on the Note view, on purpose:**
+  - the Study-menu Note tab;
+  - the Approach Track/Guide card (landing wheel slice, ring Take, Explore 🧭 Guide);
+  - QCR collection / Asma reference navigation;
+  - `?goto=` / `qpView=note` links.
+  - About ten suites test the Note view's own features through its tab.
+- **In flight:** Builder **#725 (R3a)**, the Approach card in the pane's Track tab, with those three Approach routes moved to it.
+- **Then R3b (Architect):**
+  - move the QCR/Asma navigation and jump links to the Read view;
+  - retire the Study-menu Note tab and the Note view itself;
+  - update the Note-view suites in place.
+- **With the Owner:** the "Keys to understanding" demo (https://claude.ai/artifact/XeV3WUjEEg4PbGJsafz9Pj, copy `docs/reference/2026-10-10-keys-to-understanding-demo.html`). It marks on the Word and Āyah cards what a text needs (Gharīb, Hadith, scholars, other āyāt, Siyāq, Asbāb an-Nuzūl), with four questions. Build nothing until the Owner answers; each reader's own marks need a Rules change.
+- **Also with the Owner:** whether to freeze `legacy-v09/` (recommended: at v09.151). The Owner said another separate issue is coming.
+
 ## 1. What waits on the Owner
 
 1. **Read + Note as one** (above): yes or no, and separately whether to copy old Note-view notes.
