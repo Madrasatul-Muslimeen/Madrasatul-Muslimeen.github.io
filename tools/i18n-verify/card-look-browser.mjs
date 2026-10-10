@@ -175,7 +175,7 @@ async function checkContrast(page, label, selector, { minRatio = 4.5, gradientHo
     return !!b && b.getBoundingClientRect().width > 0;
   });
   if (!noteReachable) { await clickSafely(page, "#tabStudyBtn"); await page.waitForTimeout(150); }
-  await clickSafely(page, "#tabNoteBtn");
+  await page.evaluate(() => window.__dormantOpenNoteView()); // R3c: the dormant Note view, by its test seam
   await page.waitForTimeout(400);
   const noteOpen = await page.evaluate(() => !document.getElementById("noteView")?.hidden);
   check("en/1100: the Note view popup opened for measurement", noteOpen);
@@ -596,7 +596,7 @@ for (const lang of ["en", "bn"]) {
   const { page: q } = await openPage(ctx, "/app/quranrevival.html");
   const noteReachable = await q.evaluate(() => { const b = document.getElementById("tabNoteBtn"); return !!b && b.getBoundingClientRect().width > 0; });
   if (!noteReachable) { await clickSafely(q, "#tabStudyBtn"); await q.waitForTimeout(150); }
-  await clickSafely(q, "#tabNoteBtn");
+  await q.evaluate(() => window.__dormantOpenNoteView()); // R3c: the dormant Note view, by its test seam
   await q.waitForTimeout(500);
   const pressed = await q.evaluate(() => !!document.querySelector('#noteView .note-popup-side-nav button[aria-pressed="true"]'));
   check(`${lang}: precondition -- the Note pop-up's side pane has a pressed button`, pressed);

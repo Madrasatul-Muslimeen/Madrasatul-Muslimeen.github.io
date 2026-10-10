@@ -422,7 +422,7 @@ console.log(`\n=== Ayah Card -- number badge, Take an Approach, Status B (issue 
   // moved into a menu still RESOLVES but is 0x0 until the menu opens).
   const noteReachable = await page.evaluate(() => (document.getElementById("tabNoteBtn")?.getBoundingClientRect().width ?? 0) > 0);
   if (!noteReachable) { await page.click("#tabStudyBtn"); await page.waitForTimeout(150); }
-  await page.click("#tabNoteBtn");
+  await page.evaluate(() => window.__dormantOpenNoteView()); // R3c: the dormant Note view, by its test seam
   await page.waitForTimeout(1200);
   const noteBadge = await page.$('#noteView [data-ayah-num-badge="1:1"]');
   check("the Note view's own locally-built number badge exists for 1:1, as a real element", !!noteBadge);

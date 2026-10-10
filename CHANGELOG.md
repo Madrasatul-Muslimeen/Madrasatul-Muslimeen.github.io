@@ -20490,3 +20490,26 @@ The Owner, 9 Oct 2026, with a photo of the sheet on Yaseen 8: "The writing view 
   - notes-way-back 42/0 and bookmark-open 77/0 (both updated in place);
   - pane-approach-card 29/0; asma-screensaver 51/0; asma-quick-class 27/0;
   - phone-width-overflow 217/0; behaviour 1007/0.
+
+## v10.12 — 2026-10-10 — The Study menu's Notes opens the Notes pane; the Note view retires (decision 95 R3c, Builder #734, PR #735)
+
+- The Study menu's Note is now **Notes**. It opens the Read view with the Notes pane on the current unit, the way the Unit card's 📝 Note does; pressed again, it closes the pane.
+- **No reader action reaches the Note view any more.** `read-note-menu-browser` presses every Study-menu tab, every Read-bar button and every Āyah-card button, and `#noteView` stays hidden. Its code and markup stay, dormant, for a later cleanup.
+- **The Approach card's tab names are translated** (`way-modal.js`, shell and embed): Track, Guide, Breakdown and Coverage are Bangla on a Bangla page. `data-tab` and the tab keys stay English.
+- **A test seam,** `window.__dormantOpenNoteView()`: suites that test the Note view's own features open it here. Nothing in the UI calls it.
+- **The Architect's decision on the Note-view-only checks the Builder listed** (the approach bar, ⋮ menu, Arabic block, number badge, ✍ on its bar, the Word Card's return into it, its "My Notes for this unit" link): they keep running against the dormant Note view and go with its code when it is removed. Nothing a reader can reach depends on them.
+- **Decision 95 is complete:**
+  - R1: v10.01
+  - R2a: v10.03
+  - R2b: v10.05
+  - the QCR pop-up: v10.06
+  - R3a: v10.09
+  - R3b: v10.11
+  - R3c: v10.12
+- **Checks:**
+  - read-note-menu-browser 24/0 (new; mutations oldnote and nobn each caught)
+  - updated in place to the seam: approach-record-status-bar 432/0, bangla-sweep-core-screens 122/0, bismillah-label 34/0, card-look 96/0, quran-word-card-note-origin-return 51/0, read-quick-buttons 204/0, tajweed-word-tap 68/0, text-size-wbw 88/0, writing-sheet 206/0
+  - read-note-pane 210/0, pane-approach-card 29/0, read-pane-routes 30/0, qcr-popup 34/0
+  - ayah-card-takenote-family 44/0, notes-way-back 42/0, bookmark-open 77/0, quran-ayah-action-sheet 144/0
+  - asma-quick-class 27/0, asma-screensaver 51/0
+  - phone-width-overflow 217/0, behaviour 1007/0, stub-parity 4/0, bn-duplicate-keys 6/0

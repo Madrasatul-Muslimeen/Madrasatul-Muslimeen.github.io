@@ -48,7 +48,7 @@ for (const lang of ["en", "bn"]) for (const width of [390, 1280]) {
   check(`${tag}: the centre names the Bismillah`, h1.includes(W[lang].b), h1);
   check(`${tag}: ...and never as an āyah`, !/Ayah Bismillah|আয়াত বিসমিল্লাহ|1:Bismillah|১:বিসমিল্লাহ/.test(h1), h1);
   check(`${tag}: the Study options āyah picker reads Bismillah`, (await P.evaluate(() => { const s = document.getElementById("ayahSelect"); return s.options[s.selectedIndex]?.textContent; })) === W[lang].b);
-  await P.evaluate(() => document.getElementById("tabNoteBtn").click());
+  await P.evaluate(() => window.__dormantOpenNoteView());
   await P.waitForFunction(() => !document.getElementById("noteView")?.hidden, null, { timeout: 8000 }).catch(() => {});
   await P.waitForTimeout(1200);
   const nv = await P.evaluate(() => { const v = document.getElementById("noteView"); const pick = v.querySelector('[data-note-picker="ayah"]'); return { text: v.innerText, title: [document.getElementById("notePopupTitle")?.textContent.trim() ?? ""], pick: pick ? pick.options[pick.selectedIndex]?.textContent : null }; });

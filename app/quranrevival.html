@@ -6192,7 +6192,7 @@
           <button type="button" class="qr-tab" id="tabStudyBtn" aria-haspopup="menu" aria-controls="studyPillarMenu" aria-expanded="false" aria-pressed="false">Study</button>
           <div id="studyPillarMenu" role="menu" aria-labelledby="tabStudyBtn" hidden>
             <button type="button" class="study-pillar-action" id="tabReadBtn" data-study-action="read" role="menuitem" aria-controls="readView">Read</button>
-            <button type="button" class="study-pillar-action" id="tabNoteBtn" data-study-action="note" role="menuitem" aria-controls="noteView">Note</button>
+            <button type="button" class="study-pillar-action" id="tabNoteBtn" data-study-action="note" role="menuitem" aria-controls="readView">Notes</button>
             <!-- Issue #421, Owner's answer 30 Sep 2026 ("Both"): the Writing sheet
                  lives here for every reader at every width, and ALSO on the Read
                  and Note bars wherever the bar can hold it without a new line
@@ -10597,15 +10597,18 @@
     // audio-warming call here -- every Play button this screen has already
     // warms at the moment it is actually pressed (quickPlayAyah()), same as
     // every other route into this same screen.
-    // Decision 95: the Study menu's Note still opens the Note view, which is also the āyah study screen behind the
-    // Approach Track/Guide card, QCR/Asma references and jump links; it retires with the Note view itself, once those
-    // have moved (the handover's next job), not before.
-    function openNoteForCurrentAyah() {
+    // R3c (decision 95): the Study menu's Note is "Notes" and opens the Read view with the Notes pane on the current
+    // unit, as the Unit card's 📝 Note does; pressed again it closes the pane. The Note view's code stays, dormant: no
+    // reader action reaches openNoteView() any more.
+    async function openNoteForCurrentAyah() {
       closeAllPanels();
-      openNoteView(ayahRecordKey(currentSurahNum, currentAyahNum, currentHalf()));
+      await openNotesPaneForKey(currentUnitInfo().unitKey);
     }
+    // TEST SEAM, not a reader route: the dormant Note view's own suites open it here (they used to press the Study menu's
+    // Note). Nothing in the UI calls this; "no click path reaches #noteView" is checked by note-view-unreachable-browser.
+    window.__dormantOpenNoteView = () => { closeAllPanels(); return openNoteView(ayahRecordKey(currentSurahNum, currentAyahNum, currentHalf())); };
     tabNoteBtn.addEventListener("click", () => {
-      if (stageView === "note") { setStageView("wheel"); renderWheel(); return; } // same close idiom as Read/Approach
+      if (stageView === "read" && readNotePaneMod?.isReadNotePaneOpen()) { readNotePaneMod.closeReadNotePane(); return; } // the old close idiom
       openNoteForCurrentAyah();
     });
 

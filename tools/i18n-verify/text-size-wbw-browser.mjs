@@ -30,7 +30,7 @@ async function open(lang, width, view) {
   }
   const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
   await page.evaluate(() => { const t = document.getElementById("wbwShowToggle"); if (!t.checked) { t.checked = true; t.dispatchEvent(new Event("change", { bubbles: true })); } });
-  await page.evaluate((v) => document.getElementById(v === "read" ? "tabReadBtn" : "tabNoteBtn").click(), view);
+  await page.evaluate((v) => v === "read" ? document.getElementById("tabReadBtn").click() : window.__dormantOpenNoteView(), view);
   await page.waitForFunction(() => [...document.querySelectorAll(".wbw-arabic")].some((e) => e.getBoundingClientRect().height > 0), null, { timeout: 15000 });
   return { ctx, page, errors };
 }

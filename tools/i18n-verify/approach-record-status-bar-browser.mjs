@@ -63,7 +63,7 @@ async function openRead(page, mushaf) {
   if (mushaf) await page.waitForFunction(() => Number.isFinite(Number(document.getElementById("mushafPageRef")?.dataset.page)), null, { timeout: 10000 }).catch(() => {});
 }
 async function openNote(page) {
-  await page.evaluate(() => document.getElementById("tabNoteBtn").click());
+  await page.evaluate(() => window.__dormantOpenNoteView());
   await page.waitForFunction(() => { const v = document.getElementById("noteView"); return v && !v.hidden && v.querySelector("[data-note-approach-bar]"); }, null, { timeout: 10000 });
   await page.waitForTimeout(300);
 }
