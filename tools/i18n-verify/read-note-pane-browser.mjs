@@ -45,8 +45,8 @@ DATA.noteSources = [...(DATA.noteSources ?? []), ...${JSON.stringify(SOURCES)}];
 (DATA.ayahNotes.find((d) => d._id === "t1__p1") || {}).notes = { "ayah:2:256": { html: "<p>My old quick note on 2:256</p>" } };`;
 
 const L = {
-  en: { backNotes: "Back to Notes on 2:257", backCard: "← Back to Āyah card", title258: "Notes on 2:258", title256: "Notes on 2:256", title257: "Notes on 2:257", back: "← Back to 2:256", started: "started here", mentions: "mentions it", old: "Your note from the Note view", empty257: "No notes on 2:257 yet", newBtn: "New note on 2:257" },
-  bn: { backNotes: "২:২৫৭-এর নোটে ফিরে যান", backCard: "← আয়াত কার্ডে ফিরুন", title258: "২:২৫৮-এর নোট", title256: "২:২৫৬-এর নোট", title257: "২:২৫৭-এর নোট", back: "← ২:২৫৬-এ ফিরে যান", started: "এখানে শুরু", mentions: "এর উল্লেখ আছে", old: "নোট ভিউ থেকে আপনার নোট", empty257: "২:২৫৭-এ এখনো কোনো নোট নেই", newBtn: "২:২৫৭-এ নতুন নোট" },
+  en: { backUnit: "← Back to the unit card", backNotes: "Back to Notes on 2:257", backCard: "← Back to Āyah card", title258: "Notes on 2:258", title256: "Notes on 2:256", title257: "Notes on 2:257", back: "← Back to 2:256", started: "started here", mentions: "mentions it", old: "Your note from the Note view", empty257: "No notes on 2:257 yet", newBtn: "New note on 2:257" },
+  bn: { backUnit: "← ইউনিট কার্ডে ফিরে যান", backNotes: "২:২৫৭-এর নোটে ফিরে যান", backCard: "← আয়াত কার্ডে ফিরুন", title258: "২:২৫৮-এর নোট", title256: "২:২৫৬-এর নোট", title257: "২:২৫৭-এর নোট", back: "← ২:২৫৬-এ ফিরে যান", started: "এখানে শুরু", mentions: "এর উল্লেখ আছে", old: "নোট ভিউ থেকে আপনার নোট", empty257: "২:২৫৭-এ এখনো কোনো নোট নেই", newBtn: "২:২৫৭-এ নতুন নোট" },
 };
 
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
@@ -219,6 +219,40 @@ for (const lang of ["en", "bn"]) for (const [width, height, mode] of [[390, 844,
   const ready = F2 ? await F2.evaluate(() => ({ title: document.querySelector("[data-unit-title]")?.textContent, focus: !!document.activeElement?.matches?.("[data-unit-new].unit-new-ready") })) : null;
   check(`${tag} on 2:258 (no Note yet) the card's 📝 Note opens the pane with ✚ New note in focus, ready to press`, ready?.focus && ready.title === W.title258, JSON.stringify(ready));
   check(`${tag} ...and nothing was written just by opening it`, F2 ? await F2.evaluate(() => !(window.__stubWriteData || []).some((x) => x.col === "noteSources" && /2:258/.test(JSON.stringify(x.data)))) : false);
+  // 11. Round 2b (decision 95): the Note view's other doors for notes open the pane instead.
+  await ev(() => { if (!document.getElementById("readNotePane").hidden) document.querySelector("#readNotePane [data-rnp-back]").click(); });
+  await ev(() => document.getElementById("ayahActionSheetOverlay")?.classList.remove("open"));
+  //   ⋮ Note & more (single-āyah view) opens the pane on that āyah, not the Note view.
+  await ev(() => { const s = document.getElementById("unitTypeSelect"); s.value = "ayah"; s.dispatchEvent(new Event("change", { bubbles: true })); });
+  await ev(() => { const el = document.getElementById("ayahSelect"); el.value = "256"; el.dispatchEvent(new Event("change", { bubbles: true })); });
+  await P.waitForTimeout(600);
+  await ev(() => document.querySelector("#readQuickMenuSlot [data-qm-toggle]")?.click());
+  await P.waitForTimeout(200);
+  await ev(() => document.querySelector("#readQuickMenuSlot [data-qm-note]")?.click());
+  await P.waitForFunction(() => !document.getElementById("readNotePane")?.hidden, null, { timeout: 8000 }).catch(() => {});
+  await P.waitForTimeout(300);
+  const qm = await ev(() => ({ pane: !document.getElementById("readNotePane").hidden, title: document.querySelector("#readNotePane .rnp-title")?.textContent, note: !document.getElementById("noteView").hidden }));
+  check(`${tag} ⋮ Note & more opens the Notes pane on 2:256, not the Note view`, qm.pane && qm.title === W.title256 && !qm.note, JSON.stringify(qm));
+  await P.click("#readNotePane [data-rnp-back]");
+  //   a Unit card's 📝 Note on this Surah: the pane on surah:2, "← Back to the unit card" reopens the card.
+  await ev(() => { const s = document.getElementById("unitTypeSelect"); s.value = "surah"; s.dispatchEvent(new Event("change", { bubbles: true })); });
+  await P.waitForTimeout(800);
+  await ev(() => document.getElementById("readUnitChip")?.click());
+  await P.waitForFunction(() => document.querySelector("[data-unit-card-note]"), null, { timeout: 8000 }).catch(() => {});
+  await ev(() => document.querySelector("[data-unit-card-note]")?.click());
+  await P.waitForFunction(() => !document.getElementById("readNotePane")?.hidden, null, { timeout: 8000 }).catch(() => {});
+  await P.waitForTimeout(500);
+  const unitPane = await ev(() => ({ pane: !document.getElementById("readNotePane").hidden, src: decodeURIComponent(document.querySelector("#readNotePane iframe")?.getAttribute("src") ?? ""), unitNow: document.querySelector("#readNotePane .rnp-title")?.textContent, back: document.querySelector("#readNotePane [data-rnp-back]")?.textContent, note: !document.getElementById("noteView").hidden }));
+  const Fu = P.frames().find((x) => /journey-map\.html\?embed=1&unit=/.test(x.url()));
+  await Fu?.waitForFunction(() => /surah|সূরা/i.test(document.querySelector("[data-unit-title]")?.textContent ?? ""), null, { timeout: 8000 }).catch(() => {});
+  const unitTitle = Fu ? await Fu.evaluate(() => document.querySelector("[data-unit-title]")?.textContent ?? "") : "";
+  check(`${tag} a Unit card's 📝 Note opens the Notes pane on the whole Surah (not the Note view), "${W.backUnit}"`, unitPane.pane && !unitPane.note && unitPane.back === W.backUnit && /surah|সূরা/i.test(unitTitle), JSON.stringify({ ...unitPane, unitTitle }));
+  await P.click("#readNotePane [data-rnp-back]");
+  await P.waitForFunction(() => document.querySelector("[data-unit-card-note]"), null, { timeout: 8000 }).catch(() => {});
+  check(`${tag} ...and ← Back reopens the unit card`, await ev(() => !!document.querySelector("[data-unit-card-note]") && document.getElementById("readNotePane").hidden));
+  await P.keyboard.press("Escape");
+  await ev(() => { const s = document.getElementById("unitTypeSelect"); s.value = "ayah"; s.dispatchEvent(new Event("change", { bubbles: true })); });
+  await P.waitForTimeout(500);
   const errs = errors.filter((e) => !/ERR_CERT|archive\.org|net::ERR/.test(e));
   check(`${tag} no page errors`, errs.length === 0, errs.join(" | ").slice(0, 400));
   if (width === 390 && lang === "bn" || width === 1280 && lang === "en") {

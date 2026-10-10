@@ -6403,7 +6403,7 @@
     import { getMyMembershipRoles, hydrateMemberships, pickContext, getActiveContext, setActiveContext, effectiveRoles, scopedRoster, getSelectedPersonId, setSelectedPersonId } from "./js/session-context.js";
     import { getTrackables, syncUnneditedTrackableNames, tenantOwnsSections, sectionsFromTenantDoc, approachListTitleFromTenantDoc } from "./js/catalogue.js";
     import { groupApproachesBySection } from "./js/approach-sections.js";
-    import { buildUnitKey, parseUnitKey, STATUSES, rukuIndexInSurah, localRukuIndexFromTable, statusLabelsById, statusLabel } from "./js/unit-keys.js";
+    import { buildUnitKey, parseUnitKey, unitKeyLabel, STATUSES, rukuIndexInSurah, localRukuIndexFromTable, statusLabelsById, statusLabel } from "./js/unit-keys.js";
     import { chunkKeyFor, getRecordsChunk, claimStatus, copyFatihaSeventhRecords,getSubjectConfirmationOverride, computeConfirmationRequired, listAllRecordsForPerson } from "./js/records.js";
     import { weekKeyFor, logActivity } from "./js/activity.js";
     // MAP Phase 4 (P4-D) -- Study interactions to ADR-008 Activity evidence.
@@ -10591,6 +10591,9 @@
     // audio-warming call here -- every Play button this screen has already
     // warms at the moment it is actually pressed (quickPlayAyah()), same as
     // every other route into this same screen.
+    // Decision 95: the Study menu's Note still opens the Note view, which is also the āyah study screen behind the
+    // Approach Track/Guide card, QCR/Asma references and jump links; it retires with the Note view itself, once those
+    // have moved (the handover's next job), not before.
     function openNoteForCurrentAyah() {
       closeAllPanels();
       openNoteView(ayahRecordKey(currentSurahNum, currentAyahNum, currentHalf()));
@@ -18434,7 +18437,7 @@
       attachQuickMenuHandlers(el, {
         buildText: buildAyahText,
         onPlay: quickPlayAyah,
-        onOpenNote: openNoteView,
+        onOpenNote: (unitKey) => openNotesPaneForKey(unitKey), // decision 95: the Notes pane, not the Note view
         onToggleBookmark: toggleAyahBookmark,
         // The Owner, 9 Oct 2026 (Read view): "there's no button for attaching this Ayah to QCR." The same route as the
         // Āyah card's 📚 QCR: the QCR pop-up (decision 95) opened on Attach, over the view the reader is on. ← Back
@@ -19219,9 +19222,12 @@
         card was opened from or the ladder's own current position), so
         setting it first is what makes this reliable for a ladder rung that
         is not the āyah currently on screen. */
+    // Decision 95, round 2b: a Unit card's 📝 Note opens the Notes pane on that unit, and ← Back reopens the card.
     function unitCardOpenNote(unitKey) {
       if (unitCardOpenedFromAyah && unitCardOpenedFromAyah.surah === currentSurahNum) currentAyahNum = unitCardOpenedFromAyah.ayah;
-      openNoteView(unitKey);
+      const from = unitCardOpenedFromAyah ? { surah: unitCardOpenedFromAyah.surah, ayah: unitCardOpenedFromAyah.ayah } : { surah: currentSurahNum, ayah: currentAyahNum };
+      closeUnitCard();
+      openNotesPaneForKey(unitKey, { backLabel: t("Back to the unit card") }, () => { paintReadNotesBtn(); openUnitCard(unitKey, from); });
     }
 
     function unitCardToggleBookmark(unitKey, label) {
@@ -19392,7 +19398,7 @@
         (captured at render time, BEFORE onClose wipes ayahSheetHasPosterNote
         back to null) rather than read off that module variable here. */
     function openAyahPoster(unitKey, hasPosterNote) {
-      if (hasPosterNote === false) { openNoteView(unitKey); return; }
+      if (hasPosterNote === false) { openNotesPaneFromAyahCard(unitKey, { fresh: true }); return; } // decision 95: write the Note first, in the pane
       const { surah, ayah: ayahNum, half } = parseAyahUnitKey(unitKey);
       const ref = ayahRefLabel(surah, ayahNum, { half });
       rememberQuranPlace(unitKey);
@@ -20349,7 +20355,8 @@
       }
       else if (position && settings?.view === "writing") { openReadingScreen(); await openWritingSheetForCurrentUnit(); }
       else if (position && (settings?.view === "study" || settings?.view === "landing")) { closeAllPanels(); setStageView("wheel"); renderWheel(); }
-      else if (position) await openNoteView(position);
+      // Decision 95: a Note-view bookmark (or an older one with no view) opens the Read view with the Notes pane.
+      else if (position) { openReadingScreen(); try { parseUnitKey(position); await openNotesPaneForKey(position); } catch { /* not a unit key: the Read view alone */ } }
       if (position && settings?.listening) await resumeListeningFromBookmark(settings);
     }
 
@@ -22899,9 +22906,31 @@
       readNotesBtn.setAttribute("aria-expanded", String(!!readNotePaneMod?.isReadNotePaneOpen()));
     }
     function syncReadNotes() {
-      const u = readNotesUnit();
+      // An open pane follows the āyah when it is on an āyah; on a wider unit (round 2b: a Range, Surah, Page…) it
+      // follows that unit as the reader moves through them, and stays put otherwise.
+      const on = readNotePaneMod?.readNotePaneUnit();
+      let u = readNotesUnit();
+      if (on && !on.unitKey.startsWith("ayah:")) {
+        const info = currentUnitInfo();
+        u = parseUnitKey(info.unitKey).unitType === parseUnitKey(on.unitKey).unitType ? { unitKey: info.unitKey, label: info.label } : null;
+      }
       if (u && readNotePaneMod) readNotePaneMod.setReadNotePaneUnit(u);
       paintReadNotesBtn();
+    }
+    // Decision 95, round 2b: the Note view's other doors open the Notes pane in the Read view instead -- the Study
+    // menu's Note, ⋮ Open note, a Unit card's 📝 Note and a Note-view bookmark. `unitKey` may be any Qur'an Study Unit.
+    function readNotesLabelFor(unitKey) {
+      const { unitType, parts } = parseUnitKey(unitKey);
+      if (unitType === "ayah") {
+        const s = Number(parts[0]), a = Number(parts[1]);
+        return isUnnumberedBismillah(s, a) ? t("Surah {surah}, Bismillah", { surah: num(s) }) : `${num(s)}:${ayahLabelFor(s, a)}`;
+      }
+      const info = currentUnitInfo();
+      return info.unitKey === unitKey ? info.label : unitKeyLabel(unitKey);
+    }
+    async function openNotesPaneForKey(unitKey, opts = {}, whenClosed = null) {
+      if (stageView !== "read") openReadingScreen();
+      await openReadNotesPane({ unitKey, label: readNotesLabelFor(unitKey) }, opts, whenClosed);
     }
     readNotesBtn.addEventListener("click", async () => {
       const u = readNotesUnit();
