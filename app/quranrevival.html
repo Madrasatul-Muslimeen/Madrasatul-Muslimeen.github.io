@@ -5438,17 +5438,19 @@
                    by JS alongside every other role-gated control on this page. -->
               <button type="button" class="secondary qr-ico" id="readAttachAsmaBtn" aria-label="Attach to Asma ul Husna" title="Attach to Asma ul Husna" hidden>🔗</button>
             </div>
+            <!-- Round 31 -- the owner's own question: "why should the three dot
+                 take space over the Ayah? put the dots on the Bar, where there
+                 are lots of empty spaces." Mounted here for the single-ayah
+                 view only (renderStudyScreen() fills this and empties it again
+                 for flow views, where several āyahs are on screen at once and
+                 one bar-level button can't say which one it means -- those
+                 keep their own per-āyah badge). -->
+            <!-- v10.21 -- the ⋮ slot moved inside #readBarEnd, after ⋯, so it wraps WITH 📖 ⤢ ⋯ at a narrow width
+                 instead of taking a line of its own (measured at 390px: it did). Same id, same handlers. -->
+            <div id="readQuickMenuSlot"></div>
           </div>
           <span id="readCompleteMsg" role="status" aria-live="polite"
                 style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap"></span>
-          <!-- Round 31 -- the owner's own question: "why should the three dot
-               take space over the Ayah? put the dots on the Bar, where there
-               are lots of empty spaces." Mounted here for the single-ayah
-               view only (renderStudyScreen() fills this and empties it again
-               for flow views, where several āyahs are on screen at once and
-               one bar-level button can't say which one it means -- those
-               keep their own per-āyah badge). -->
-          <div id="readQuickMenuSlot"></div>
         </div>
         <div id="readScroll">
           <div id="studyScreen">

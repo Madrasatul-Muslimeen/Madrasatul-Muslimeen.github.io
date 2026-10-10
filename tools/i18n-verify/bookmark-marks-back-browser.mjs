@@ -149,15 +149,22 @@ for (const lang of ["en", "bn"]) for (const width of [390, 1280]) {
   check(`${tag}: the Word Card really closed`, await P.evaluate(() => document.querySelectorAll(".quran-word-card").length === 0));
   // Updated in place 8 Oct 2026: when the card closes the chip is where the Owner asked for it -- in the Read bar,
   // right before ✓, on the same line, at least 40px tall, nothing covering it.
+  // Updated in place again, v10.21 (the Owner, 10 Oct 2026: the Read bar's tools "under one button"): ✓ moved into the
+  // ⋯ More tools group (#readToolsMenu, folded behind ⋯ below 900px), so the bar's last visible group is #readBarEnd
+  // (📖 ⤢ 🗗 ⋯ and, from 900px, the tools in a line). The chip's place is right before that group. "On the same line"
+  // was the way of saying "it costs the bar no extra line": measured at 390px, 📖 ⤢ ⋯ is on the bar's second line
+  // with or without the chip, and the chip fills the room left on the first. So what is asserted is the Owner's
+  // intent, measured: the chip sits on a line the bar already has -- the transport's (▶ ■) or 📖 ⤢ ⋯'s. Proven: a slot
+  // that does not grow (flex: 0 0 auto) puts the chip on a third line of its own at 360-600px, and this fails.
   const after = await P.evaluate(() => {
-    const row = document.querySelector("[data-bm-back]"), r = row?.getBoundingClientRect(), tick = document.getElementById("readCompleteBtn").getBoundingClientRect();
+    const row = document.querySelector("[data-bm-back]"), r = row?.getBoundingClientRect(), tick = document.getElementById("readBarEnd").getBoundingClientRect();
     const a = row?.querySelector("[data-bm-back-link]"), b = a?.getBoundingClientRect();
     return { shown: !!row && getComputedStyle(row).display !== "none" && r.width > 0, inBar: !!row && row.parentElement?.id === "readBackSlot" && !!row.closest("#readBar"),
-      beforeTick: !!row && row.parentElement?.nextElementSibling?.id === "readCompleteBtn", sameLine: !!r && Math.abs((r.top + r.bottom) / 2 - (tick.top + tick.bottom) / 2) < 6,
+      beforeTick: !!row && row.parentElement?.nextElementSibling?.id === "readBarEnd", sameLine: !!r && Math.abs((r.top + r.bottom) / 2 - (tick.top + tick.bottom) / 2) < 6,
       h: b ? Math.round(b.height) : 0, top: !!b && document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2)?.closest("[data-bm-back-link]") === a,
-      inside: !!r && r.left >= 0 && r.right <= innerWidth + 1 };
+      inside: !!r && r.left >= 0 && r.right <= innerWidth + 1, noExtraLine: (() => { if (!r) return false; const mid = (r.top + r.bottom) / 2; return ["readPlayBtn", "readBarEnd"].some((id) => { const e = document.getElementById(id)?.getBoundingClientRect(); return !!e && e.width > 0 && mid >= e.top - 6 && mid <= e.bottom + 6; }); })() };
   });
-  check(`${tag}: ...and when the card closes it is in the Read bar, right before ✓, on the same line`, after.shown && after.inBar && after.beforeTick && after.sameLine && after.inside, JSON.stringify(after));
+  check(`${tag}: ...and when the card closes it is in the Read bar, right before 📖 ⤢ ⋯ (✓ is among the tools), adding no line to the bar`, after.shown && after.inBar && after.beforeTick && after.noExtraLine && after.inside, JSON.stringify(after));
   check(`${tag}: ...at least 40px tall, with nothing covering it`, after.h >= 40 && after.top, JSON.stringify(after));
   // The Study menu (Read / Note / Writing sheet) opens without the chip lying over it (the Owner's screenshot).
   await P.click("#tabStudyBtn"); await P.waitForTimeout(250);
