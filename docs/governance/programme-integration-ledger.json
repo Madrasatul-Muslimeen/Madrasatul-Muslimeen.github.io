@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "10.20",
+    "version": "10.21",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -3233,8 +3233,20 @@
     {
       "version": "10.20",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Builder #750: bookmark-marks-back's three failures were the test (it toggled the Read view off; at 1280 the side Notes pane covered the Word Card's ×); the way-back slot on the Read bar takes the room left beside ✓.",
+      "integration": {
+        "authorizedOn": "2026-10-10",
+        "integratedOn": "2026-10-10",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "10.21",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "The Owner's 10 Oct batch, tasks 5, 6 and 7b (demo approved): the Read view's 📖 Meaning reading flow, the Read bar's tools behind one ⋯ below 900px, and the three study buttons as one slim row above the bottom buttons on a phone.",
       "integration": {
         "authorizedOn": "2026-10-10",
         "integratedOn": "2026-10-10",
@@ -3243,8 +3255,9 @@
       }
     }
   ],
-  "nextUnallocated": "10.21",
+  "nextUnallocated": "10.22",
   "nextUnallocatedNote": [
+    "v10.21 was allocated to 📖 Meaning, the Read bar's tools under ⋯, the study buttons at a phone's foot, 2026-10-10.",
     "v10.20 was allocated to bookmark-marks-back made true (Builder #750), 2026-10-10.",
     "v10.19 was allocated to The Note ⋯ menu in six groups (Builder #747), 2026-10-10.",
     "v10.18 was allocated to Asma ways back, Prime beside Search, the Āyah card's Full text full screen, 2026-10-10.",
