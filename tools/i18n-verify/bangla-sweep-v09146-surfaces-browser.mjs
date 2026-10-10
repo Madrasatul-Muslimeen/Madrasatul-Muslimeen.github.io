@@ -146,10 +146,11 @@ for (const width of [390, 1280]) {
     await P.evaluate(() => document.querySelector('#readView .ayah-quick-wrap[data-unit-key="ayah:83:4"] [data-qm-toggle]')?.click()); await settle(P);
     await sweep(P, "the Read view menu", width);
     await P.evaluate(() => document.querySelector('#readView .ayah-quick-wrap[data-unit-key="ayah:83:4"] [data-qm-qcr]')?.click());
-    await P.waitForFunction(() => [...document.querySelectorAll("#noteView [data-note-collection-toggle]")].some((c) => c.getClientRects().length), null, { timeout: 12000 }).catch(() => {});
+    // Updated in place (decision 95, issue #722): the ⋮ QCR item opens the QCR pop-up (#qcrPopup), not the Note view.
+    await P.waitForFunction(() => [...document.querySelectorAll("#qcrPopup [data-note-collection-toggle]")].some((c) => c.getClientRects().length), null, { timeout: 12000 }).catch(() => {});
     await settle(P, 500);
-    check(`bn ${width}: the QCR ticks are open`, await P.evaluate(() => [...document.querySelectorAll("#noteView [data-note-collection-toggle]")].some((c) => c.getClientRects().length)));
-    await sweep(P, "the Note view QCR ticks, with the Back pill", width);
+    check(`bn ${width}: the QCR ticks are open`, await P.evaluate(() => [...document.querySelectorAll("#qcrPopup [data-note-collection-toggle]")].some((c) => c.getClientRects().length)));
+    await sweep(P, "the QCR pop-up, with its Back", width);
     await ctx.close();
   }
   // ---- 4. The writing sheet: bookmark button, the naming popover, the pop-out ----

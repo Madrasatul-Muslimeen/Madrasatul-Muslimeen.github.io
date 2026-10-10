@@ -181,18 +181,20 @@ const quiet = (errors) => errors.filter((e) => !/ERR_CERT|net::|archive\.org|api
     const item = await P.evaluate(() => { const b = document.querySelector('#readView .ayah-quick-wrap[data-unit-key="ayah:83:4"] [data-qm-qcr]'); if (!b) return null; const r = b.getBoundingClientRect(); return { text: b.textContent.trim(), shown: r.width > 0 && r.height > 0 }; });
     check(`${tag} the Read view's ⋮ on 83:4 has "📚 ${lang === "bn" ? "QCR সংকলন(সমূহ)…" : "QCR collection(s)…"}"`, !!item && item.shown && item.text.includes(lang === "bn" ? "QCR সংকলন(সমূহ)…" : "QCR collection(s)…"), JSON.stringify(item));
     await P.evaluate(() => document.querySelector('#readView .ayah-quick-wrap[data-unit-key="ayah:83:4"] [data-qm-qcr]')?.click());
-    await P.waitForFunction(() => [...document.querySelectorAll("#noteView [data-note-collection-toggle]")].some((c) => c.getClientRects().length), null, { timeout: 12000 }).catch(() => {});
-    const panel = await P.evaluate(() => ({ boxes: [...document.querySelectorAll("#noteView [data-note-collection-toggle]")].filter((c) => c.getClientRects().length).length }));
+    // Updated in place (decision 95, issue #722): the ⋮ QCR item opens the QCR pop-up (#qcrPopup), not the Note view; its
+    // way back is the pop-up's own ← Back (nothing was navigated, so closing it IS being back on 83:4).
+    await P.waitForFunction(() => [...document.querySelectorAll("#qcrPopup [data-note-collection-toggle]")].some((c) => c.getClientRects().length), null, { timeout: 12000 }).catch(() => {});
+    const panel = await P.evaluate(() => ({ boxes: [...document.querySelectorAll("#qcrPopup [data-note-collection-toggle]")].filter((c) => c.getClientRects().length).length }));
     check(`${tag} ...it opens the QCR attach ticks for 83:4`, panel.boxes >= 10, JSON.stringify(panel));
     await P.evaluate(() => { window.__stubWriteData = []; });
-    const id = await P.evaluate(() => { const cb = [...document.querySelectorAll("#noteView [data-note-collection-toggle]")].find((c) => c.getClientRects().length && !c.checked); if (!cb) return null; cb.click(); return cb.dataset.noteCollectionToggle; });
+    const id = await P.evaluate(() => { const cb = [...document.querySelectorAll("#qcrPopup [data-note-collection-toggle]")].find((c) => c.getClientRects().length && !c.checked); if (!cb) return null; cb.click(); return cb.dataset.noteCollectionToggle; });
     await P.waitForFunction(() => (window.__stubWriteData || []).some((w) => /ayahCollections/.test(w.col ?? "")), null, { timeout: 8000 }).catch(() => {});
     const w1 = await P.evaluate(() => (window.__stubWriteData || []).filter((w) => /ayahCollections/.test(w.col ?? "")).map((w) => JSON.stringify(w.data)).join("|"));
     check(`${tag} ticking a collection files ayah:83:4 into it (the write is read back)`, !!id && w1.includes("ayah:83:4") && w1.includes(id), w1.slice(0, 160));
     if (width === 390) await P.screenshot({ path: `/tmp/qcr-menu-${lang}-${width}.png` });
-    const back = await P.evaluate(() => { const p = document.getElementById("ayahCardBackPill"); return p && !p.hidden ? p.querySelector("[data-ayah-card-back]")?.textContent.trim() : null; });
+    const back = await P.evaluate(() => document.querySelector("#qcrPopup [data-qcr-pop-back]")?.textContent.trim() ?? null);
     check(`${tag} a way back is shown`, !!back, String(back));
-    if (back) { await P.click("#ayahCardBackPill [data-ayah-card-back]"); await P.waitForTimeout(1200); }
+    if (back) { await P.click("#qcrPopup [data-qcr-pop-back]"); await P.waitForTimeout(1200); }
     const landed = await P.evaluate(() => ({ view: !!document.querySelector('#readView [data-ayah-num-badge="83:4"]')?.getClientRects().length, ayah: document.getElementById("ayahSelect")?.value }));
     check(`${tag} ...and Back returns to 83:4 in the Read view`, landed.view && landed.ayah === "4", JSON.stringify(landed));
     check(`${tag} no page errors`, quiet(errors).length === 0, quiet(errors).slice(0, 2).join(" | "));
