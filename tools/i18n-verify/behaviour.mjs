@@ -4505,7 +4505,7 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   check("42c ...and \"My note\" is greyed out -- nothing saved for this ayah yet", copySub.notesDisabled === true);
 
   // Note & more -- opens the full-stage view, not a floating modal.
-  await page.click("#readQuickMenuSlot [data-qm-note]");
+  await page.evaluate(() => document.getElementById("tabNoteBtn").click()); // v10.05 (decision 95, round 2b): ⋮ Note & more opens the Notes pane now; the Note view these checks describe is opened by its own Study-menu Note tab. Updated in place.
   await page.waitForTimeout(250);
   const opened = await page.evaluate(() => ({
     noteShown: !document.getElementById("noteView").hidden,
@@ -4728,7 +4728,7 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   await page.waitForTimeout(400);
   await page.click("#readQuickMenuSlot [data-qm-toggle]");
   await page.waitForTimeout(150);
-  await page.click("#readQuickMenuSlot [data-qm-note]");
+  await page.evaluate(() => document.getElementById("tabNoteBtn").click()); // v10.05 (decision 95, round 2b): ⋮ Note & more opens the Notes pane now; the Note view these checks describe is opened by its own Study-menu Note tab. Updated in place.
   await page.waitForTimeout(300);
   // RECONCILED 2026-09-17, with the evidence, rather than deleted.
   //
@@ -4816,7 +4816,7 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
     await page.waitForTimeout(400);
     await page.click("#readQuickMenuSlot [data-qm-toggle]");
     await page.waitForTimeout(150);
-    await page.click("#readQuickMenuSlot [data-qm-note]");
+    await page.evaluate(() => document.getElementById("tabNoteBtn").click()); // v10.05 (decision 95, round 2b): ⋮ Note & more opens the Notes pane now; the Note view these checks describe is opened by its own Study-menu Note tab. Updated in place.
     await page.waitForTimeout(300);
     const info = await page.evaluate(() => {
       const visible = (el) => !!el && getComputedStyle(el).display !== "none";
@@ -4908,7 +4908,7 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   await page.waitForTimeout(400);
   await page.click("#readQuickMenuSlot [data-qm-toggle]");
   await page.waitForTimeout(150);
-  await page.click("#readQuickMenuSlot [data-qm-note]");
+  await page.evaluate(() => document.getElementById("tabNoteBtn").click()); // v10.05 (decision 95, round 2b): ⋮ Note & more opens the Notes pane now; the Note view these checks describe is opened by its own Study-menu Note tab. Updated in place.
   await page.waitForTimeout(300);
 
   await clickInNoteTools(page, '[data-note-sub-toggle="copy"]');
@@ -4967,7 +4967,7 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   await page.waitForTimeout(400);
   await page.click("#readQuickMenuSlot [data-qm-toggle]");
   await page.waitForTimeout(150);
-  await page.click("#readQuickMenuSlot [data-qm-note]");
+  await page.evaluate(() => document.getElementById("tabNoteBtn").click()); // v10.05 (decision 95, round 2b): ⋮ Note & more opens the Notes pane now; the Note view these checks describe is opened by its own Study-menu Note tab. Updated in place.
   await page.waitForTimeout(300);
   const before = await page.evaluate(() => ({
     fieldPresent: !!document.querySelector('[data-note-field="wbw"]'),
@@ -5043,7 +5043,7 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   await page.waitForTimeout(400);
   await page.click("#readQuickMenuSlot [data-qm-toggle]");
   await page.waitForTimeout(150);
-  await page.click("#readQuickMenuSlot [data-qm-note]");
+  await page.evaluate(() => document.getElementById("tabNoteBtn").click()); // v10.05 (decision 95, round 2b): ⋮ Note & more opens the Notes pane now; the Note view these checks describe is opened by its own Study-menu Note tab. Updated in place.
   await page.waitForTimeout(300);
 
   // Open the Track card -- its body is `display:none` until the field toggle
@@ -5129,7 +5129,7 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   await page.waitForTimeout(400);
   await page.click("#readQuickMenuSlot [data-qm-toggle]");
   await page.waitForTimeout(150);
-  await page.click("#readQuickMenuSlot [data-qm-note]");
+  await page.evaluate(() => document.getElementById("tabNoteBtn").click()); // v10.05 (decision 95, round 2b): ⋮ Note & more opens the Notes pane now; the Note view these checks describe is opened by its own Study-menu Note tab. Updated in place.
   await page.waitForTimeout(300);
 
   const before = await page.evaluate(() => {
@@ -5240,7 +5240,7 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   await page.waitForTimeout(400);
   await page.click("#readQuickMenuSlot [data-qm-toggle]");
   await page.waitForTimeout(150);
-  await page.click("#readQuickMenuSlot [data-qm-note]");
+  await page.evaluate(() => document.getElementById("tabNoteBtn").click()); // v10.05 (decision 95, round 2b): ⋮ Note & more opens the Notes pane now; the Note view these checks describe is opened by its own Study-menu Note tab. Updated in place.
   await page.waitForTimeout(300);
 
   const before = await page.evaluate(() => ({
@@ -5290,7 +5290,7 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   await page.waitForTimeout(300);
   await page.click("#readQuickMenuSlot [data-qm-toggle]");
   await page.waitForTimeout(150);
-  await page.click("#readQuickMenuSlot [data-qm-note]");
+  await page.evaluate(() => document.getElementById("tabNoteBtn").click()); // v10.05 (decision 95, round 2b): ⋮ Note & more opens the Notes pane now; the Note view these checks describe is opened by its own Study-menu Note tab. Updated in place.
   await page.waitForTimeout(300);
   const reopened = await page.evaluate(() => ({
     bodyClass: document.body.className,
@@ -5328,7 +5328,7 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   check("42k the quick menu's own items render in Bangla", menuBn.items.every((t) => BANGLA.test(t)), JSON.stringify(menuBn.items));
   check("42k ...while the checkbox values stay plain ids", JSON.stringify(menuBn.langValues) === JSON.stringify(["ar", "en", "bn", "notes"]));
 
-  await page.click("#readQuickMenuSlot [data-qm-note]");
+  await page.evaluate(() => document.getElementById("tabNoteBtn").click()); // v10.05 (decision 95, round 2b): ⋮ Note & more opens the Notes pane now; the Note view these checks describe is opened by its own Study-menu Note tab. Updated in place.
   await page.waitForTimeout(300);
   const noteBn = await page.evaluate(() => {
     const view = document.querySelector(".note-view");
@@ -5864,13 +5864,16 @@ console.log("\n=== 46. Quran's own ?bookmark= deep link restores the full study 
   await page.waitForTimeout(1200);
   const restored = await page.evaluate(() => ({
     noteVisible: document.getElementById("noteView")?.hidden === false,
+    paneVisible: !!document.getElementById("readNotePane") && document.getElementById("readNotePane").hidden === false,
     surah: document.getElementById("surahSelect")?.value,
     ayah: document.getElementById("ayahSelect")?.value,
     trackable: document.getElementById("trackableSelect")?.value,
     tajweed: document.getElementById("tajweedToggle")?.checked,
   }));
-  check("46a a Quran bookmark's own surah/ayah are restored, landing on the Note view",
-        restored.noteVisible && restored.surah === "2" && restored.ayah === "255",
+  // v10.05 (decision 95, round 2b): an older bookmark (no view) lands on the Read view with the Notes pane, not the Note
+  // view, which retires as the place for notes. Updated in place, reason recorded.
+  check("46a a Quran bookmark's own surah/ayah are restored, landing on the Read view with the Notes pane",
+        !restored.noteVisible && restored.paneVisible && restored.surah === "2" && restored.ayah === "255",
         JSON.stringify(restored));
   check("46b ...the Approach it was claimed under is restored too", restored.trackable === "tafsir", restored.trackable);
   check("46c ...and a reading tick (Tajweed) that would otherwise reset comes back on", restored.tajweed === true, restored.tajweed);

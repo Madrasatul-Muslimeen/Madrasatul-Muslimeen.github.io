@@ -220,18 +220,21 @@ for (const lang of ["en", "bn"]) for (const [width, height, mode] of [[390, 844,
   check(`${tag} on 2:258 (no Note yet) the card's 📝 Note opens the pane with ✚ New note in focus, ready to press`, ready?.focus && ready.title === W.title258, JSON.stringify(ready));
   check(`${tag} ...and nothing was written just by opening it`, F2 ? await F2.evaluate(() => !(window.__stubWriteData || []).some((x) => x.col === "noteSources" && /2:258/.test(JSON.stringify(x.data)))) : false);
   // 11. Round 2b (decision 95): the Note view's other doors for notes open the pane instead.
-  //   (a) the Study menu's Note: the Read view with the pane on the āyah (the Note view stays shut);
   await ev(() => { if (!document.getElementById("readNotePane").hidden) document.querySelector("#readNotePane [data-rnp-back]").click(); });
   await ev(() => document.getElementById("ayahActionSheetOverlay")?.classList.remove("open"));
+  //   ⋮ Note & more (single-āyah view) opens the pane on that āyah, not the Note view.
+  await ev(() => { const s = document.getElementById("unitTypeSelect"); s.value = "ayah"; s.dispatchEvent(new Event("change", { bubbles: true })); });
   await ev(() => { const el = document.getElementById("ayahSelect"); el.value = "256"; el.dispatchEvent(new Event("change", { bubbles: true })); });
-  await P.waitForTimeout(500);
-  await ev(() => document.getElementById("tabNoteBtn").click());
+  await P.waitForTimeout(600);
+  await ev(() => document.querySelector("#readQuickMenuSlot [data-qm-toggle]")?.click());
+  await P.waitForTimeout(200);
+  await ev(() => document.querySelector("#readQuickMenuSlot [data-qm-note]")?.click());
   await P.waitForFunction(() => !document.getElementById("readNotePane")?.hidden, null, { timeout: 8000 }).catch(() => {});
   await P.waitForTimeout(300);
-  const tab = await ev(() => ({ pane: !document.getElementById("readNotePane").hidden, title: document.querySelector("#readNotePane .rnp-title")?.textContent, note: !document.getElementById("noteView").hidden }));
-  check(`${tag} the Study menu's Note opens the Notes pane on 2:256, not the Note view`, tab.pane && tab.title === W.title256 && !tab.note, JSON.stringify(tab));
-  //   (b) a Unit card's 📝 Note on this Surah: the pane on surah:2, "← Back to the unit card" reopens the card.
+  const qm = await ev(() => ({ pane: !document.getElementById("readNotePane").hidden, title: document.querySelector("#readNotePane .rnp-title")?.textContent, note: !document.getElementById("noteView").hidden }));
+  check(`${tag} ⋮ Note & more opens the Notes pane on 2:256, not the Note view`, qm.pane && qm.title === W.title256 && !qm.note, JSON.stringify(qm));
   await P.click("#readNotePane [data-rnp-back]");
+  //   a Unit card's 📝 Note on this Surah: the pane on surah:2, "← Back to the unit card" reopens the card.
   await ev(() => { const s = document.getElementById("unitTypeSelect"); s.value = "surah"; s.dispatchEvent(new Event("change", { bubbles: true })); });
   await P.waitForTimeout(800);
   await ev(() => document.getElementById("readUnitChip")?.click());

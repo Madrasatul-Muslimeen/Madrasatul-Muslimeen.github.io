@@ -10577,13 +10577,16 @@
     // audio-warming call here -- every Play button this screen has already
     // warms at the moment it is actually pressed (quickPlayAyah()), same as
     // every other route into this same screen.
-    // Decision 95, round 2b: the Study menu's Note opens the Read view with the Notes pane on the āyah (it opened the
-    // separate Note view, which retires). Pressed again, it closes the pane.
-    tabNoteBtn.addEventListener("click", async () => {
-      if (stageView === "read" && readNotePaneMod?.isReadNotePaneOpen()) { readNotePaneMod.closeReadNotePane(); return; }
+    // Decision 95: the Study menu's Note still opens the Note view, which is also the āyah study screen behind the
+    // Approach Track/Guide card, QCR/Asma references and jump links; it retires with the Note view itself, once those
+    // have moved (the handover's next job), not before.
+    function openNoteForCurrentAyah() {
       closeAllPanels();
-      openReadingScreen();
-      await openReadNotesPane();
+      openNoteView(ayahRecordKey(currentSurahNum, currentAyahNum, currentHalf()));
+    }
+    tabNoteBtn.addEventListener("click", () => {
+      if (stageView === "note") { setStageView("wheel"); renderWheel(); return; } // same close idiom as Read/Approach
+      openNoteForCurrentAyah();
     });
 
     // Enhancement round -- Approach as its own dock tab: the same Mastery
