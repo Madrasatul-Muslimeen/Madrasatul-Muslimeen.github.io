@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "10.03",
+    "version": "10.04",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -3029,8 +3029,20 @@
     {
       "version": "10.03",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Decision 95 round 2a: Track this āyah is a tab of the Notes pane; the Āyah card's 📝 Note and the Read bar's quick Notes open the pane.",
+      "integration": {
+        "authorizedOn": "2026-10-10",
+        "integratedOn": "2026-10-10",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "10.04",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Builder #719, PR #720, reviewed and fixed by the Architect: ✅ Record on the writing sheet opens the unit's Record Your Progress (👥) and comes back to the sheet with its writing.",
       "integration": {
         "authorizedOn": "2026-10-10",
         "integratedOn": "2026-10-10",
@@ -3039,8 +3051,9 @@
       }
     }
   ],
-  "nextUnallocated": "10.04",
+  "nextUnallocated": "10.05",
   "nextUnallocatedNote": [
+    "v10.04 was allocated to the writing sheet's ✅ Record, for every family member (Builder #719), 2026-10-10.",
     "v10.03 was allocated to the Notes pane's Track this āyah tab; the Āyah card's 📝 Note opens the pane (decision 95, round 2a), 2026-10-10.",
     "v10.02 was allocated to Check a dua, the review screen on the Dua card (decision 96, Builder #716), 2026-10-09.",
     "v10.01 was allocated to the Read view's 📝 Notes pane (decision 95, round 1; opens the v10 line, decision 97), 2026-10-09.",
