@@ -3750,7 +3750,9 @@
      HIDDEN, so while they show, a centred box that tall overflowed upwards and its "← Āyah card" sat under the
      address bar. The box now hangs from the top of the pop-up, which is fixed to the VISIBLE area, and is never
      taller than it (100% of the pop-up, not 100vh). */
-  .ayah-nv-pop { position: fixed; inset: 0; z-index: 1300; background: rgba(8, 14, 26, 0.6); display: flex; align-items: flex-start; justify-content: center; padding: 16px; }
+  /* 10 Oct 2026, the Owner: the Āyah card's Full text "Make it full screen." It fills the screen at every width; the
+     reading inside keeps a comfortable line (max 46rem, centred). ← Āyah card stays at the top, ‹ › at the bottom. */
+  .ayah-nv-pop { position: fixed; inset: 0; z-index: 1300; background: #fffdf6; display: flex; align-items: stretch; justify-content: stretch; padding: 0; }
   .ayah-nv-pop[hidden] { display: none; }
   /* QCR / Asma pop-up (decision 95). Below the Asma attach/edit overlays (950) so the forms it opens show above it. */
   .qcr-pop { position: fixed; inset: 0; z-index: 940; background: rgba(8, 14, 26, 0.6); display: flex; align-items: center; justify-content: center; padding: 16px; }
@@ -3766,8 +3768,13 @@
     .qcr-pop { padding: 0; align-items: stretch; }
     .qcr-pop-box { width: 100%; max-height: none; height: 100%; border-radius: 0; box-shadow: none; }
   }
-  .ayah-nv-box { width: min(46rem, 100%); max-height: 100%; overflow-y: auto; background: #fffdf6; color: #1b1b16; border-radius: 1rem; box-shadow: 0 18px 44px rgba(0, 0, 0, 0.45); padding: 0 1rem 1rem; }
+  .ayah-nv-box { width: 100%; height: 100%; overflow-y: auto; background: #fffdf6; color: #1b1b16; padding: 0 max(1rem, calc((100% - 46rem) / 2)) 0; box-sizing: border-box; display: flex; flex-direction: column; }
   .ayah-nv-head { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; gap: 0.6rem; padding: 0.6rem 0; background: #fffdf6; border-bottom: 1px solid #eadfc3; }
+  .ayah-nv-content { flex: 1 0 auto; padding-bottom: 1rem; }
+  .ayah-nv-nav { position: sticky; bottom: 0; z-index: 1; display: flex; gap: 0.6rem; padding: 0.6rem 0; background: #fffdf6; border-top: 1px solid #eadfc3; }
+  .ayah-nv-nav button { flex: 1 1 0; min-width: 0; min-height: 44px; border: 1px solid #c9ccd3; border-radius: 0.6rem; background: #fff; color: #1F3A6E; font-weight: 700; font-size: 0.92rem; cursor: pointer; }
+  .ayah-nv-nav button:disabled { opacity: 0.4; cursor: default; }
+  .ayah-nv-nav button:focus-visible, .ayah-nv-back:focus-visible { outline: 3px solid #c9a24b; outline-offset: 2px; }
   .ayah-nv-back { flex: 0 0 auto; white-space: nowrap; min-height: 40px; padding: 0 0.8rem; border: 1px solid #c9a24b; border-radius: 0.6rem; background: #1F3A6E; color: #fff; font-size: 0.88rem; font-weight: 600; cursor: pointer; }
   .ayah-nv-ref { font-weight: 700; color: #1F3A6E; min-width: 0; overflow-wrap: anywhere; }
   .ayah-nv-sec { margin-top: 0.6rem; }
@@ -19802,7 +19809,7 @@
     /** Owner, 7 Oct 2026 -- the Āyah card's 📖: this āyah as the Note view shows it (Arabic, English,
         Bangla, Word by Word), in a pop-up over the card, built from the same shared renderers the Read
         and Note views use (I2). Its ← goes back to the card exactly where it was. */
-    async function openAyahNoteViewPopup(unitKey) {
+    async function openAyahNoteViewPopup(unitKey, opts = {}) {
       const { surah, ayah, half } = parseAyahUnitKey(unitKey);
       let pop = document.getElementById("ayahNoteViewPopup");
       if (!pop) {
@@ -19829,12 +19836,22 @@
       const box = pop.querySelector(".ayah-nv-box");
       if (!a) { box.innerHTML = `${head}<p role="status">${escapeHtml(t("Could not load this āyah."))}</p>`; return; }
       const section = (title, body, lang = "") => body ? `<details class="ayah-nv-sec" open><summary>${escapeHtml(title)}</summary><div class="ayah-nv-body"${lang ? ` lang="${lang}"` : ""}>${body}</div></details>` : "";
-      box.innerHTML = head +
+      // 10 Oct 2026: ‹ › step to the āyah before or after without leaving full screen (the Āyah card's own
+      // ayahCardNeighbour(), so a surah's edge and Al-Fātiḥah's 6/7 behave exactly as on the card). ← Āyah card
+      // still returns to the card the reader came from, as it was.
+      const prev = ayahCardNeighbour(unitKey, -1), next = ayahCardNeighbour(unitKey, 1);
+      const navKey = (n) => n ? (() => { const [ns, na] = n.key.split(":").map(Number); return ayahRecordKey(ns, na, n.half); })() : "";
+      const nav = `<div class="ayah-nv-nav"><button type="button" data-ayah-nv-step="${navKey(prev)}"${prev ? "" : " disabled"}>‹ ${escapeHtml(t("Previous āyah"))}</button><button type="button" data-ayah-nv-step="${navKey(next)}"${next ? "" : " disabled"}>${escapeHtml(t("Next āyah"))} ›</button></div>`;
+      box.innerHTML = head + `<div class="ayah-nv-content">` +
         section(t("Arabic"), renderArabicPanel(a, { tajweedOn: false, wordCardInteractive: false, surahNumber: surah, langs: ["en", "bn"] })) +
         section(t("English"), renderTranslationPanel(a, ["en"])) +
         section(t("Bangla"), renderTranslationPanel(a, ["bn"])) +
-        section(t("Word by Word"), renderWordByWordPanel(a, { langs: ["en", "bn"] }));
-      box.querySelector("[data-ayah-nv-back]")?.focus({ preventScroll: true });
+        section(t("Word by Word"), renderWordByWordPanel(a, { langs: ["en", "bn"] })) + `</div>` + nav;
+      box.scrollTop = 0;
+      box.querySelectorAll("[data-ayah-nv-step]").forEach((b) => b.addEventListener("click", () => {
+        if (b.dataset.ayahNvStep) openAyahNoteViewPopup(b.dataset.ayahNvStep, { keepReturn: true });
+      }));
+      if (!opts.keepReturn) box.querySelector("[data-ayah-nv-back]")?.focus({ preventScroll: true });
     }
     function closeAyahNoteViewPopup() {
       const pop = document.getElementById("ayahNoteViewPopup");
