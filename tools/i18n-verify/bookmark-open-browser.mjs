@@ -167,7 +167,8 @@ for (const width of [390, 1280]) {
     check(`${tag} exact settings: still at 3:10 in the Read view`, ex.readOpen && !ex.noteOpen && ex.surah === "3" && ex.ayah === "10", JSON.stringify(ex));
 
     const gt = await run({ lang, width, query: "?goto=2:255" });
-    check(`${tag} ?goto= opens the Note view with no landing flash`, noFlash(gt, "note") && gt.noteOpen && !gt.coverOn, JSON.stringify(gt));
+    // UPDATED IN PLACE (decision 95, R3b): ?goto= opens the Read view with the Notes pane, not the Note view.
+    check(`${tag} ?goto= opens the Read view with the Notes pane on ayah:2:255, no Note view, no landing flash`, noFlash(gt, "read") && gt.readOpen && !gt.noteOpen && gt.paneOpen && gt.paneUnit === "ayah:2:255" && !gt.coverOn, JSON.stringify(gt));
 
     const miss = await run({ lang, width, query: "?bookmark=nope" });
     const missing = lang === "bn" ? "সেই বুকমার্কটি পাওয়া যায়নি।" : "That bookmark could not be found.";

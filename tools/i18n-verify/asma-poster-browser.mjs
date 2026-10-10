@@ -135,9 +135,14 @@ for (const [lang, width, height] of [["en", 390, 844], ["bn", 390, 844], ["en", 
   check(`${tag} full size: Ar-Rahman's two Ayat are buttons (1:1, 55:1), tappable, the poster fully on screen`, !!big && big.q.join() === "1:1,55:1" && big.qHit && big.inView, JSON.stringify(big));
   if (big?.q.length) {
     await page.click('#asmaXPosterOverlay [data-poster-quran="55:1"]');
-    await page.waitForFunction(() => !document.querySelector("#asmaXPosterOverlay.open") && document.querySelector("#noteView:not([hidden])"), null, { timeout: 8000 }).catch(() => {});
+    // UPDATED IN PLACE (decision 95, R3b): the reference opens the Read view with the Notes pane, not the Note view.
+    await page.waitForFunction(() => !document.querySelector("#asmaXPosterOverlay.open") && document.getElementById("readNotePane")?.hidden === false, null, { timeout: 8000 }).catch(() => {});
     const went = await page.evaluate(() => ({ closed: !document.querySelector("#asmaXPosterOverlay.open"), surah: document.getElementById("surahSelect")?.value, ayah: document.getElementById("ayahSelect")?.value }));
     check(`${tag} tapping "· 55:1" closes the poster and opens Ar-Rahman 55:1 here`, went.closed && went.surah === "55" && went.ayah === "1", JSON.stringify(went));
+    await page.click("#readNotePane [data-rnp-back]").catch(() => {}); // the pane covers the page on a phone: its way back returns to Explore
+    await page.waitForFunction(() => document.querySelector("#asmaXPosterOverlay.open"), null, { timeout: 8000 }).catch(() => {});
+    check(`${tag} ...and the pane's ← Back reopens the poster on Ar-Rahman in Explore, the pane closed`, await page.evaluate(() => !!document.querySelector("#asmaXPosterOverlay.open") && document.getElementById("readNotePane")?.hidden !== false));
+    await page.evaluate(() => document.getElementById("asmaXPosterOverlay")?.click()); // a tap on the backdrop closes it
   } else check(`${tag} tapping "· 55:1" closes the poster and opens Ar-Rahman 55:1 here`, false, "no button");
   if (width === 390) { await openName(page, 102); await page.screenshot({ path: `${process.env.SHOT_DIR || "/tmp"}/asma-poster-${lang}-${width}.png` }); }
   // Al-Witr full size: its Hadith is a link to the library, at that narration.

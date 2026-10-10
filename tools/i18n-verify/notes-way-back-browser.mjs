@@ -93,9 +93,11 @@ for (const [lang, width, look] of [["en", 390, "light"], ["bn", 390, "night"], [
       if (b) {
         let back = true;
         await Promise.all([P.waitForURL(/quranrevival\.html/, { timeout: 15000 }), P.click("#notesBackBtn")]).catch(() => { back = false; });
-        await P.waitForFunction(() => { const n = document.getElementById("noteView"); return n && !n.hidden && n.getBoundingClientRect().height > 0 && n.textContent.trim().length > 20; }, null, { timeout: 25000 }).catch(() => {});
+        // UPDATED IN PLACE (decision 95, R3b): qpView=note now reopens the Read view with the Notes pane on the same unit.
+        await P.waitForFunction(() => document.getElementById("readNotePane")?.hidden === false, null, { timeout: 25000 }).catch(() => {});
         const after = await place(P);
-        check(`${tag} (1) ← Back lands on the Qur'an page, 2:255, the Note view open as it was`, back && after.surah === "2" && after.ayah === "255" && after.noteOpen && after.noteText.includes(bn ? "২:২৫৫" : "2:255"), JSON.stringify({ ...after, noteText: after.noteText.trim().slice(0, 40), url: P.url() }));
+        const paneOn = await P.evaluate(() => document.getElementById("readNotePane")?.hidden === false);
+        check(`${tag} (1) ← Back lands on the Qur'an page, 2:255, the Notes pane open on it (the Note view stays hidden)`, back && after.surah === "2" && after.ayah === "255" && after.readOpen && !after.noteOpen && paneOn, JSON.stringify({ ...after, noteText: "", paneOn, url: P.url() }));
       }
     }
     check(`${tag} (1) no page errors`, errors.filter((e) => !/ERR_CERT|net::|archive\.org|api\.quran|Failed to load resource/i.test(e)).length === 0, errors.slice(0, 2).join(" | "));
