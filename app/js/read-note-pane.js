@@ -3,8 +3,9 @@
 // mode (journey-map.html?embed=1&unit=<key>&unitLabel=<label>): the āyah's Notes, the same Note editor, folders and
 // versions as Mapping My Journey, ✚ New note on the āyah, and Open in Mapping My Journey.
 //
-// Where it sits: beside the reading on a computer (>= SIDE_FROM px), docked under it on a tablet, over it on a phone
-// (< PHONE px). The reading underneath is never moved: closing the pane leaves the reader exactly where they were
+// Where it sits: beside the reading on a computer (>= SIDE_FROM px); over the whole screen on a tablet and a phone.
+// (The tablet dock, about half the height, was retired on the Owner's word, 11 Oct 2026, with a tablet screenshot:
+// "Still note is showing half screen." The rnp-dock style is kept, unused, so a later choice can bring it back.) The reading underneath is never moved: closing the pane leaves the reader exactly where they were
 // (the way-back law, decision 86). The page inside is loaded on the first open, never at start-up (I9), and kept
 // while the pane is closed so it reopens at once; moving to another āyah tells it the new unit instead of reloading.
 //
@@ -49,7 +50,7 @@ const counts = new Map(); // unitKey -> number of Notes, for the āyāt whose No
 
 function layout() {
   const w = window.innerWidth;
-  return w < PHONE ? "phone" : w >= SIDE_FROM ? "side" : "dock";
+  return w >= SIDE_FROM ? "side" : "phone"; // a tablet too: the Owner, 11 Oct 2026 (no more half screen)
 }
 
 function apply() {
