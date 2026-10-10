@@ -336,9 +336,11 @@ for (const vp of [[390, 844], [1280, 800]]) {
   });
   check(`taps ${vp[0]}: elementFromPoint at the nearest slices' centres never lands on the hub overlay`, hit.every((h) => h.ok && !/wheelHub/.test(h.id || "")), JSON.stringify(hit.filter((h) => !h.ok)));
   await page.click(".wheel-seg");
-  await page.waitForTimeout(400);
-  const opened = await page.evaluate(() => !!document.getElementById("noteView"));
-  check(`taps ${vp[0]}: a slice tap still opens its slice`, opened);
+  // UPDATED IN PLACE 10 Oct 2026 (#742, the Note view deleted): a slice opens the Notes pane's Track tab
+  // (decision 95, R3a), so that is what is asserted -- the Builder's first rewrite asked for #noteView, which can never pass.
+  await page.waitForFunction(() => document.querySelector(".rnp-track:not([hidden]) [data-note-approach-select]"), null, { timeout: 8000 }).catch(() => {});
+  const opened = await page.evaluate(() => !!document.querySelector(".rnp-track:not([hidden]) .way-embed") && !document.getElementById("noteView"));
+  check(`taps ${vp[0]}: a slice tap still opens its slice (the Notes pane's Track tab)`, opened);
   await ctx.close();
 }
 

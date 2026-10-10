@@ -4,8 +4,10 @@
 // way back (decision 86). Run from the repository root, serve.js on :8080, at 390px Bangla and 1280px English.
 // Expected values are written by hand from the fixture: the first Approach slice is "memorise"; its Guide is the
 // fixture's guide ("What it is" / "How to do it" / "How to measure"); the people are p1 Ahsan and p2 Maryam.
-//   --mutate=routenote  the wheel slice opens the Note view again          -> the pane / Note-view-hidden checks fail
-//   --mutate=noroot     the card is wired only under #noteView             -> Claim in the pane writes nothing
+//   --mutate=routenote  the wheel slice opens the Read view without the pane -> the pane checks fail
+//   --mutate=noroot     the card is wired only by the field-scoped query    -> Claim in the pane writes nothing
+// (routenote / noroot re-anchored 10 Oct 2026, #742: they named openNoteView / noteView, deleted code; noroot's anchor
+//  was gone, so it threw "anchor missing" and the suite had lost that proof.)
 //   --mutate=noback     the route sets no way back                         -> the way-back checks fail
 import { chromium, newContext, openPage } from "./harness.mjs";
 import fs from "node:fs";
@@ -17,8 +19,8 @@ const check = (name, ok, detail = "") => {
 };
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
 const MUT = {
-  routenote: ["quranrevival.html", 'openApproachCardInPane(key, t("Back to the Approach wheel"), openApproachWheel);', "noteApproachCardOpen = true; openNoteView(unitInfo.unitKey);"],
-  noroot: ["quranrevival.html", 'const embedEl = root === noteView ? root.querySelector(\'[data-note-field="approach"] .way-embed\') : root.querySelector(".way-embed");', "const embedEl = noteView.querySelector('[data-note-field=\"approach\"] .way-embed');"],
+  routenote: ["quranrevival.html", 'openApproachCardInPane(key, t("Back to the Approach wheel"), openApproachWheel);', 'setStageView("read");'],
+  noroot: ["quranrevival.html", 'const embedEl = fieldScoped ? root.querySelector(\'[data-note-field="approach"] .way-embed\') : root.querySelector(".way-embed");', "const embedEl = root.querySelector('[data-note-field=\"approach\"] .way-embed');"],
   // The pane on a unit other than the Read view's (a Unit card's 📝 Note on a Juz) took its card for an āyah and read
   // its status from a Surah's chunk. Architect's review of #728: the type comes from the key, chunked by D12.
   ayahonly: ["quranrevival.html", 'const { unitType, parts } = parseUnitKey(u.unitKey);\n      const bySurah = ["ayah", "range", "surah", "ruku"].includes(unitType);', 'const unitType = "ayah", parts = [String(parseAyahUnitKey(u.unitKey).surah)];\n      const bySurah = true;'],
