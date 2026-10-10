@@ -14529,10 +14529,12 @@
     async function goToAyahFromAsmaX(surah, ayah, groupId, number, { fromPoster = false } = {}) {
       closeAllPanels();
       await goToReference(surah, ayah, null);
-      await openNoteView(buildUnitKey.ayah(surah, ayah), { fromAsma: { groupId, number } });
-      // The way-back law (decision 86; the Owner's own example): a Name's reference leaves a way back to that Name.
-      const entry = number != null ? asmaXResolve(number) : null;
-      if (entry) setAppReturn(t("Back to {name}", { name: asmaEntryDisplayName(entry) }), "", () => returnToAsmaName(number, groupId, fromPoster));
+      // R3b (decision 95): the Notes pane in the Read view, not the Note view. The way-back law (decision 86): the pane's
+      // back goes to Explore on the same Name/Group. (The Note view's Topic pre-set is lost: the pane has no Topic field.)
+      await openNotesPaneForKey(buildUnitKey.ayah(surah, ayah), { backLabel: t("Back to {name}", { name: t("Asma ul Husna") }) }, () => {
+        paintReadNotesBtn();
+        returnToAsmaName(number, groupId, fromPoster);
+      });
     }
     /** Owner, 9 Oct 2026 ("build it", after the demo docs/reference/2026-10-09-asma-cited-ayat-demo.html): the āyāt a
         Name cites, written out under its card. Each āyah is one static-file read through getAyah() (cached; never at
@@ -15966,7 +15968,18 @@
       } else {
         await goToReference(surahNum, Number(parts[1]), null);
       }
-      await openNoteView(unitKey, { fromCollectionId: qcrCurrentId });
+      await openNotesPaneForKey(unitKey, { backLabel: t("Back to {name}", { name: t("QCR") }) }, backToQcrCollection(qcrCurrentId));
+    }
+    /** R3b (decision 95): the pane's way back to QCR, on the same collection. */
+    function backToQcrCollection(collectionId) {
+      return async () => {
+        paintReadNotesBtn();
+        closeAllPanels();
+        qcrCurrentId = (qcrCollections ?? []).some((c) => c.id === collectionId) ? collectionId : qcrDefaultCollectionId();
+        setStageView("explore");
+        setExplorePalette("qcr");
+        await renderQcrPanel();
+      };
     }
 
     /** Ayah translation panel: additive when Bangla is chosen (English stays visible alongside it), per the F-060 design note in ayah-renderer.js. */
@@ -21877,7 +21890,16 @@
       } else {
         await goToReference(surahNum, Number(parts[1]), null);
       }
-      await openNoteView(unitKey, { fromCollectionId: noteOriginCollectionId });
+      // R3b (decision 95): the Read view with the pane; the way back is the place the pop-up came from.
+      const fromCollection = noteOriginCollectionId, fromAsmaGroup = noteOriginAsmaGroupId, fromAsmaNumber = noteOriginAsmaNumber;
+      noteOriginCollectionId = null; noteOriginAsmaGroupId = null; noteOriginAsmaNumber = null;
+      if (fromAsmaNumber != null) {
+        await openNotesPaneForKey(unitKey, { backLabel: t("Back to {name}", { name: t("Asma ul Husna") }) }, () => { paintReadNotesBtn(); returnToAsmaName(fromAsmaNumber, fromAsmaGroup, false); });
+      } else if (fromCollection != null) {
+        await openNotesPaneForKey(unitKey, { backLabel: t("Back to {name}", { name: t("QCR") }) }, backToQcrCollection(fromCollection));
+      } else {
+        await openNotesPaneForKey(unitKey);
+      }
     }
 
     /** The new group nav (separate from the Surah-level prevAyahBtn/
@@ -22532,7 +22554,7 @@
       const { from, to } = parsed;
       if (from < 1 || from > surahMeta.ayahCount || (to !== null && (to < 1 || to > surahMeta.ayahCount))) { bookmarkNotFound(); return; }
       await goToReference(parsed.surah, from, to);
-      await openNoteView(buildUnitKey.ayah(parsed.surah, from));
+      await openNotesPaneForKey(buildUnitKey.ayah(parsed.surah, from)); // R3b (decision 95): the pane, not the Note view
       // The way-back law (decision 86): a link from another page (the Asma study page's poster) carries back=1.
       if (new URLSearchParams(location.search).get("back") === "1" && history.length > 1) setAppReturn(t("Back"), "", () => history.back());
     }
@@ -22554,7 +22576,7 @@
       const unit = params.get("qpUnit");
       if (params.get("qpView") === "note" && unit) {
         try { parseUnitKey(unit); } catch { return; }
-        await openNoteView(unit);
+        await openNotesPaneForKey(unit); // R3b (decision 95): the pane, not the Note view
       }
     }
 
