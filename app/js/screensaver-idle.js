@@ -18,7 +18,7 @@ const KILL_SWITCH_KEY = "mm_disable_screensaver"; // set by the test harness, li
 /** Every setting, with the defaults the Owner was offered (master file tab 3, questions 1-4). Posters: both kinds,
     the Owner's own earlier "Both" answer for the Asma page's screensaver (Phase 13 round 3). */
 export const SCREENSAVER_DEFAULTS = Object.freeze({
-  on: true, idleMin: 3, eachSec: 15, kind: "both", which: "all", fav: [], order: "carry", move: "fade",
+  on: true, idleMin: 3, eachSec: 15, kind: "both", which: "all", fav: [], group: "", order: "carry", move: "fade",
   clock: true, night: "dim", wake: true, where: "any", pos: 0,
 });
 

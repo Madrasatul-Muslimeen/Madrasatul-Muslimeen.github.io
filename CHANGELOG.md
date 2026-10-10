@@ -20513,3 +20513,11 @@ The Owner, 9 Oct 2026, with a photo of the sheet on Yaseen 8: "The writing view 
   - ayah-card-takenote-family 44/0, notes-way-back 42/0, bookmark-open 77/0, quran-ayah-action-sheet 144/0
   - asma-quick-class 27/0, asma-screensaver 51/0
   - phone-width-overflow 217/0, behaviour 1007/0, stub-parity 4/0, bn-duplicate-keys 6/0
+
+## v10.13 — 2026-10-10 — Asma screensaver round 2 (Builder #736, PR #737)
+
+- *Which Names* gains **Ones I'm studying** (Names with an Asma record for the signed-in person) and **A group or list** (any active Asma list of the madrasah). Both are read when the screensaver starts, never at startup (load-speed contract).
+- The madrasah's corrected Names and meanings show on every page's screensaver.
+- **Open this Name** on a template poster opens `asma-study.html?name=N&back=1`; ← Back returns to the page the reader was on (the way-back law).
+- Review fix: `#mmSaverSettings [hidden]{display:none!important}`. `.mmss-names{display:flex}` overruled `hidden`, so the tick list of Names showed whatever was chosen, from v10.08. New check 5b reads rendered boxes; mutation nohide caught.
+- Checks: asma-screensaver 61/0 with nine mutations caught; asma-poster 100/0; asma-descriptions 26/0; asma-quick-class 27/0; service-worker 18/0; phone-width-overflow 217/0; behaviour 1007/0.

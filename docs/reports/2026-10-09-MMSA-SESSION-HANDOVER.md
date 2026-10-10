@@ -182,3 +182,4 @@ English found. Builder #705 (PR #706), `bn-duplicate-keys` made meaningful again
 - **v10.10** (2026-10-10): Asma: Essence | Act and Unique | Shared on the Name bar.
 - **v10.11** (2026-10-10): QCR, Asma and jump links open the Read view with the Notes pane (R3b).
 - **v10.12** (2026-10-10): the Study menu's Notes opens the Notes pane; the Note view retires (R3c).
+- **v10.13** (2026-10-10): Asma screensaver round 2: studying, groups, Open this Name (Builder #736).

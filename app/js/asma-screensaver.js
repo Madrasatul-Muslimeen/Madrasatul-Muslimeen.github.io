@@ -9,6 +9,11 @@
 // Closing it changes nothing underneath: it is an overlay over the page the reader was on, so ✕ (or Esc) returns
 // them exactly where they were, with focus back where it was (the way-back law, decision 86).
 //
+// Round 2 (10 Oct 2026): "Ones I'm studying" and the madrasah's own groups and lists need the madrasah's saved Names
+// document and this person's records, so loadScreensaverData() reads them ONCE, when the screensaver starts or its
+// settings open (never at page startup), and every page then shows the Owner's own corrections and added Names. A
+// failed read falls back to all the Names and says so in the settings (I15).
+//
 // I2: a renderer and a timer. It reads the Names it is handed (the Asma page hands in its own, with the Owner's
 // corrections and added Names) or the bundled 99, and it writes nothing except this device's settings.
 
@@ -18,12 +23,15 @@ import { renderAsmaPoster, fitAsmaPosters } from "./asma-poster.js";
 import { renderAsmaScreensaverSlide } from "./asma-renderer.js";
 import { t } from "./i18n.js";
 import { getScreensaverSettings, setScreensaverSettings } from "./screensaver-idle.js";
+import { langText } from "./lang.js";
+import { getAppLang } from "./prefs.js";
+import { getActiveContext } from "./session-context.js";
 
 export const SCREENSAVER_OPTIONS = Object.freeze({
   idleMin: [[1, "1 min"], [3, "3 min"], [5, "5 min"], [10, "10 min"], [30, "30 min"]],
   eachSec: [[5, "5 sec"], [10, "10 sec"], [15, "15 sec"], [30, "30 sec"], [60, "1 min"], [300, "5 min"]],
   kind: [["tpl", "My template posters"], ["photo", "Photo posters"], ["both", "Both"]],
-  which: [["all", "All the Names"], ["fav", "Names I choose"]],
+  which: [["all", "All the Names"], ["fav", "Names I choose"], ["studying", "Ones I'm studying"], ["group", "A group or list"]],
   order: [["seq", "In order"], ["rand", "Random"], ["carry", "Carry on"]],
   move: [["fade", "Fade"], ["kb", "Fade and slow zoom"]],
   night: [["dim", "Dim at night"], ["same", "Same all day"]],
@@ -55,6 +63,7 @@ const CSS = `
 #mmSaver button{min-width:44px;min-height:44px;border-radius:10px;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.14);color:#fff;font:inherit;font-size:1rem;cursor:pointer;padding:0 12px}
 #mmSaverSettings{position:fixed;inset:0;z-index:19999;background:rgba(15,20,30,.55);display:flex;align-items:center;justify-content:center;padding:16px}
 #mmSaverSettings[hidden]{display:none}
+#mmSaverSettings [hidden]{display:none!important}
 #mmSaverSettings .mmss-card{background:#fffdf8;color:#1d2a3a;border-radius:14px;max-width:560px;width:100%;max-height:92vh;overflow:auto;padding:14px 16px;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;box-shadow:0 10px 40px rgba(0,0,0,.35)}
 #mmSaverSettings h2{font-size:1.1rem;margin:0 0 4px;color:#1f3a5f}
 #mmSaverSettings .mmss-sub{font-size:.85rem;color:#5b6675;margin:0 0 8px}
@@ -83,9 +92,59 @@ function ensureCss() {
 /** The Names the deck draws from: the caller's (the Asma page's, with the Owner's own edits) or the bundled 99. */
 function namesFrom(entries) { return (entries && entries.length ? entries : ASMA_NAMES).filter(Boolean); }
 
+let dataCache = null;
+
+/** Reads, once per tenant and person, the madrasah's Names document (its added Names, corrections and groups) and this
+    person's Asma records. Never throws: `failed` says a read did not work, and the callers fall back to all the Names. */
+export function loadScreensaverData() {
+  const ctx = getActiveContext();
+  const key = `${ctx?.tenantId}|${ctx?.selectedPersonId ?? ctx?.personId}`;
+  if (dataCache?.key === key) return dataCache.promise;
+  const promise = (async () => {
+    const out = { entries: null, groups: [], studied: null, failed: false };
+    try {
+      if (!ctx?.tenantId) throw new Error("no active tenant");
+      const [{ auth, db }, C, R, U] = await Promise.all([import("./firebase-init.js"), import("./asma-collections.js"), import("./records.js"), import("./unit-keys.js")]);
+      try { await auth.authStateReady?.(); } catch {}
+      const docData = await C.getAsmaCollectionsDoc(db, ctx.tenantId);
+      const extraNames = C.extraNamesFrom(docData), overrides = C.overridesFrom(docData), overridesEn = C.overridesEnFrom(docData), refOverrides = C.refOverridesFrom(docData);
+      const resolve = (n) => C.resolveAsmaEntry(n, { extraNames, overrides, overridesEn, refOverrides });
+      out.entries = [...ASMA_NAMES.map((n) => resolve(n.number)), ...C.activeExtraNames(extraNames).map((x) => resolve(x.number))].filter(Boolean);
+      out.groups = C.activeCollections(C.collectionsFrom(docData)).map((c) => ({
+        id: c.id, title: langText(c.title, getAppLang(), c.id),
+        numbers: c.items.map((k) => /^name:(\d+)$/.exec(k)?.[1]).filter(Boolean).map(Number),
+      }));
+      const personId = ctx.selectedPersonId ?? ctx.personId;
+      if (personId) {
+        const chunk = await R.getRecordsChunk(db, ctx.tenantId, personId, R.chunkKeyFor(U.buildUnitKey.name(1), "asma_ul_husna"));
+        out.studied = new Set();
+        for (const [k, v] of Object.entries(chunk?.entries ?? {})) {
+          const m = /^name:(\d+)::/.exec(k);
+          if (m && v?.claimedStatus && v.claimedStatus !== "not_started") out.studied.add(Number(m[1]));
+        }
+      }
+    } catch (err) {
+      console.warn("screensaver: could not read the madrasah's Names or progress (showing all the Names instead):", err?.message || err);
+      out.failed = true;
+    }
+    return out;
+  })();
+  dataCache = { key, promise };
+  return promise;
+}
+
 /** The slides, in the order the settings ask for. Exported for its own checks. */
-export function buildScreensaverDeck(settings, { entries = null, online = true, random = Math.random } = {}) {
+export function buildScreensaverDeck(settings, { entries = null, online = true, random = Math.random, studied = null, groups = [] } = {}) {
   let names = namesFrom(entries);
+  if (settings.which === "studying" && studied) {
+    const chosen = names.filter((n) => studied.has(Number(n.number)));
+    if (chosen.length) names = chosen; // nothing studied yet: all the Names, rather than a screensaver that never shows
+  }
+  if (settings.which === "group") {
+    const g = groups.find((x) => x.id === settings.group);
+    const chosen = g ? names.filter((n) => g.numbers.includes(Number(n.number))) : [];
+    if (chosen.length) names = chosen; // the group is gone or empty: all the Names
+  }
   if (settings.which === "fav") {
     const fav = new Set((settings.fav || []).map(Number));
     const chosen = names.filter((n) => fav.has(Number(n.number)));
@@ -119,7 +178,10 @@ export async function runAsmaScreensaver({ entries = null, onClose = () => {} } 
   if (live) return;
   ensureCss();
   const settings = getScreensaverSettings();
-  const deck = buildScreensaverDeck(settings, { entries, online: navigator.onLine !== false }).slice();
+  const data = await loadScreensaverData();
+  entries = entries || data.entries; // the Asma page hands in its own; every other page gets the madrasah's, read once
+  const deckOpts = { studied: data.studied, groups: data.groups };
+  const deck = buildScreensaverDeck(settings, { entries, online: navigator.onLine !== false, ...deckOpts }).slice();
   if (!deck.length) { onClose(); return; }
   const returnFocus = document.activeElement;
   const root = document.createElement("div");
@@ -128,7 +190,7 @@ export async function runAsmaScreensaver({ entries = null, onClose = () => {} } 
   root.setAttribute("aria-label", t("Asma ul Husna screensaver"));
   root.innerHTML = `<div class="mms-top"><button type="button" data-mms="settings">⚙ ${esc(t("Settings"))}</button></div>
     <div class="mms-clock" aria-hidden="true"></div><div class="mms-stage"></div><div class="mms-bar"></div>
-    <div class="mms-ctl"><button type="button" data-mms="prev" aria-label="${esc(t("Previous"))}">‹</button><button type="button" data-mms="pause" aria-label="${esc(t("Pause"))}">❚❚</button><button type="button" data-mms="next" aria-label="${esc(t("Next"))}">›</button><button type="button" data-mms="close">✕ ${esc(t("Close"))}</button></div>`;
+    <div class="mms-ctl"><button type="button" data-mms="prev" aria-label="${esc(t("Previous"))}">‹</button><button type="button" data-mms="pause" aria-label="${esc(t("Pause"))}">❚❚</button><button type="button" data-mms="next" aria-label="${esc(t("Next"))}">›</button><button type="button" data-mms="open">${esc(t("Open this Name"))}</button><button type="button" data-mms="close">✕ ${esc(t("Close"))}</button></div>`;
   document.body.appendChild(root);
   const stage = root.querySelector(".mms-stage"), bar = root.querySelector(".mms-bar"), clock = root.querySelector(".mms-clock");
   let i = 0, t0 = 0, paused = false, raf = 0, ctlTimer = 0, wake = null, photoFails = 0;
@@ -150,7 +212,7 @@ export async function runAsmaScreensaver({ entries = null, onClose = () => {} } 
       photoFails += 1;
       if (photoFails >= 3) {
         const tpl = deck.filter((x) => x.kind === "tpl");
-        deck.splice(0, deck.length, ...(tpl.length ? tpl : buildScreensaverDeck({ ...settings, kind: "tpl" }, { entries })));
+        deck.splice(0, deck.length, ...(tpl.length ? tpl : buildScreensaverDeck({ ...settings, kind: "tpl" }, { entries, ...deckOpts })));
         show(0);
       } else show(i + 1);
     }, 1500), { once: true });
@@ -159,6 +221,7 @@ export async function runAsmaScreensaver({ entries = null, onClose = () => {} } 
     requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add("on")));
     [...stage.children].slice(0, -1).forEach((o) => { o.classList.remove("on"); setTimeout(() => o.remove(), 1300); });
     if (s.kind === "tpl" && Number(s.entry.number) <= 99) setScreensaverSettings({ pos: Number(s.entry.number) });
+    root.querySelector('[data-mms="open"]').hidden = s.kind !== "tpl"; // only a template poster is one Name of ours
     t0 = performance.now();
   }
   function tick() {
@@ -211,6 +274,13 @@ export async function runAsmaScreensaver({ entries = null, onClose = () => {} } 
     else if (a === "next") { show(i + 1); showCtl(); }
     else if (a === "pause") togglePause();
     else if (a === "close") close();
+    else if (a === "open") {
+      // Way back (decision 86): the Name's own page opens with back=1, which shows ← Back to where the reader was.
+      const s = deck[i];
+      if (s?.kind !== "tpl") return;
+      close();
+      location.href = `./asma-study.html?name=${Number(s.entry.number)}&back=1`;
+    }
     else if (a === "settings") { close(); openAsmaScreensaverSettings({ entries, start: (o) => import("./screensaver-idle.js").then((m) => m.startScreensaver({ entries, ...o })) }); }
   });
   document.addEventListener("keydown", onKey, true);
@@ -246,7 +316,9 @@ export function openAsmaScreensaverSettings({ start = null, onChange = () => {},
     ${row("Start after", seg("idleMin"), "How long nothing is touched before it starts.")}
     ${row("Each poster shows for", seg("eachSec"))}
     ${row("Which posters", seg("kind"), "The photo posters need the internet; without it, your template posters show.")}
-    ${row("Which Names", seg("which") + `<div class="mmss-names" data-names ${s.which === "fav" ? "" : "hidden"}>${names.map((n) => `<label><input type="checkbox" value="${esc(n.number)}" ${(s.fav || []).map(Number).includes(Number(n.number)) ? "checked" : ""}>${esc(n.number)}. ${esc(n.transliteration)}</label>`).join("")}</div>`)}
+    ${row("Which Names", seg("which") + `<div class="mmss-names" data-names ${s.which === "fav" ? "" : "hidden"}>${names.map((n) => `<label><input type="checkbox" value="${esc(n.number)}" ${(s.fav || []).map(Number).includes(Number(n.number)) ? "checked" : ""}>${esc(n.number)}. ${esc(n.transliteration)}</label>`).join("")}</div>
+      <select class="mmss-btn" data-group aria-label="${esc(t("A group or list"))}" ${s.which === "group" ? "" : "hidden"}></select>
+      <div class="mmss-help" data-which-note hidden></div>`)}
     ${row("Order", seg("order"), "Carry on starts from the Name after the last one shown.")}
     ${row("Moving", seg("move"))}
     ${row("Show the time", sw("clock", "A clock in the corner"))}
@@ -270,7 +342,7 @@ export function openAsmaScreensaverSettings({ start = null, onChange = () => {},
       const v = typeof SCREENSAVER_OPTIONS[k][0][0] === "number" ? Number(b.dataset.v) : b.dataset.v;
       save({ [k]: v });
       segEl.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
-      if (k === "which") box.querySelector("[data-names]").hidden = v !== "fav";
+      if (k === "which") { box.querySelector("[data-names]").hidden = v !== "fav"; box.querySelector("[data-group]").hidden = v !== "group"; showNote(); }
       return;
     }
     if (b.dataset.mmss === "close") close();
@@ -278,8 +350,30 @@ export function openAsmaScreensaverSettings({ start = null, onChange = () => {},
   });
   box.addEventListener("change", (e) => {
     const el = e.target;
-    if (el.dataset.sw) save({ [el.dataset.sw]: el.checked });
+    if (el.matches("[data-group]")) { save({ group: el.value }); showNote(); }
+    else if (el.dataset.sw) save({ [el.dataset.sw]: el.checked });
     else if (el.closest("[data-names]")) save({ fav: [...box.querySelectorAll("[data-names] input:checked")].map((x) => Number(x.value)) });
   });
   box.querySelector("button[aria-pressed='true']")?.focus({ preventScroll: true });
+
+  // First use of the madrasah's data: the group list and the studied Names are read now, not at page startup.
+  let data = null;
+  function showNote() {
+    const note = box.querySelector("[data-which-note]");
+    let msg = "";
+    if (data && (s.which === "studying" || s.which === "group")) {
+      if (data.failed) msg = "Could not read your madrasah's groups or your progress, so all the Names show.";
+      else if (s.which === "studying" && !data.studied?.size) msg = "You have not started studying any Name yet, so all the Names show.";
+    }
+    note.textContent = msg ? t(msg) : "";
+    note.hidden = !msg;
+  }
+  loadScreensaverData().then((d) => {
+    data = d;
+    if (!box.isConnected) return;
+    const sel = box.querySelector("[data-group]");
+    sel.innerHTML = d.groups.map((g) => `<option value="${esc(g.id)}" ${g.id === s.group ? "selected" : ""}>${esc(g.title)} (${g.numbers.length})</option>`).join("");
+    if (d.groups.length && !d.groups.some((g) => g.id === s.group)) save({ group: d.groups[0].id });
+    showNote();
+  });
 }
