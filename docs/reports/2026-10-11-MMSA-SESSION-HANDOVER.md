@@ -161,3 +161,4 @@ Carried from the 9 Oct handover, still true:
 | v10.15 | Notes pane: never "Loading…" forever (the Owner's screenshot) |
 - **v10.16** (2026-10-10): Notes pane fills the screen on a tablet (decision 99).
 - **v10.17** (2026-10-10): Note view retirement (b): the dead Note view code deleted (Builder #742, finished by the Architect).
+- **v10.18** (2026-10-10): Asma ways back, Prime beside Search, the Āyah card's Full text full screen.

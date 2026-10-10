@@ -812,3 +812,4 @@ total). Allocated by the MMSA Architect.
 10.15: Notes pane: never "Loading…" forever (the Owner's screenshot). Allocated by the MMSA Architect.
 10.16: Notes pane fills the screen on a tablet (decision 99). Allocated by the MMSA Architect.
 10.17: Note view retirement (b): the dead Note view code deleted (Builder #742, finished by the Architect). Allocated by the MMSA Architect.
+10.18: Asma ways back, Prime beside Search, the Āyah card's Full text full screen. Allocated by the MMSA Architect.
