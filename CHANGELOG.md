@@ -20575,3 +20575,9 @@ The Owner, 9 Oct 2026, with a photo of the sheet on Yaseen 8: "The writing view 
 - Below 600px a bottom sheet (title "This note", ×, backdrop, 82% high); wider, a two-column drop-down.
 - Architect's review: the drop-down hung below the Notes pane, which scrolls, so Change and Delete were reached only by scrolling the pane behind it; it is now held to the pane's bottom and scrolls itself. The sheet's title row was white in the navy sheet (pale gold on white); it takes the sheet's colours. `harness.mjs`'s `chromium.launch()` uses `CHROMIUM_PATH` when a suite names no browser (four Notes suites never started in this sandbox).
 - Checks: note-menu-groups 92/0 (new, Builder; two review checks, 4 failures without their fixes); journey-note-pane 327/0; journey-note-windows 254/0; notes-note-windows 218/0; journey-editor-siyagah 98/0; read-note-pane 210/0; notes-pane-loading 26/0; phone-width-overflow 217/0; behaviour 971/0.
+
+## v10.20 — 2026-10-10 — bookmark-marks-back made true (Builder #750)
+
+- The three bookmark-marks-back failures recorded in v10.18 were the test, not the app: the bookmark already opens the Read view, and the suite then pressed the Read tab (a toggle) and landed on the landing view; at 1280px the side Notes pane, left open, took the click meant for the Word Card's ×. Both updated in place with the reason; new checks that the bookmark opens the Read view itself and that the Word Card really closes.
+- `#readBackSlot`: `flex: 1 1 7rem`, so a long way back shares the Read bar's line with ✓ and ellipsises. The Architect ran the suite with main's CSS and it stayed green: a sound tidy-up, not proven by a check.
+- Checks: bookmark-marks-back 126/0; bookmark-open 77/0; notes-way-back 33/0; read-note-pane 210/0; word-card-ayah-card-ways-back 86/0; phone-width-overflow 217/0; behaviour 971/0.
