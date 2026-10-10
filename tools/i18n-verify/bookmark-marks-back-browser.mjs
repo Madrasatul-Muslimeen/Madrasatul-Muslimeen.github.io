@@ -85,8 +85,11 @@ for (const lang of ["en", "bn"]) for (const width of [390, 1280]) {
   // when it closes). So the way back is two steps: the pane's own "← Back" (on screen, tappable), then the chip.
   // Stale on main since v10.11; measured failing there too.
   const paneFull = await P.evaluate(() => { const p = document.getElementById("readNotePane"); if (!p || p.hidden) return null; const r = p.getBoundingClientRect(); const b = p.querySelector("[data-rnp-back]")?.getBoundingClientRect(); const h = b && document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2); return { full: r.width >= innerWidth - 1 && r.height >= innerHeight * 0.9, backTappable: !!h && !!p.querySelector("[data-rnp-back]")?.contains(h) }; });
-  if (paneFull?.full) {
-    check(`${tag}: the Notes pane it opened fills the screen with its own ← Back on top`, paneFull.backTappable, JSON.stringify(paneFull));
+  if (paneFull?.full) check(`${tag}: the Notes pane it opened fills the screen with its own ← Back on top`, paneFull.backTappable, JSON.stringify(paneFull));
+  // Close the pane at EVERY width (issue #750): at 1280 it is a side pane, not a full sheet, and left open it sits over the
+  // Word Card's × (measured: the Notes iframe intercepts the click on `[data-word-card-close]`), so the card never closed.
+  if (paneFull) {
+    check(`${tag}: the Notes pane it opened has its own ← Back, tappable`, paneFull.backTappable, JSON.stringify(paneFull));
     await P.click("#readNotePane [data-rnp-back]");
     await P.waitForTimeout(700);
   }
@@ -143,6 +146,7 @@ for (const lang of ["en", "bn"]) for (const width of [390, 1280]) {
   if (SHOTS) await P.screenshot({ path: `${SHOTS}/bm-${tag.replace("/", "-")}-wordcard.png` });
   await P.click(".quran-word-card [data-word-card-close]").catch(() => {});
   await P.waitForTimeout(400);
+  check(`${tag}: the Word Card really closed`, await P.evaluate(() => document.querySelectorAll(".quran-word-card").length === 0));
   // Updated in place 8 Oct 2026: when the card closes the chip is where the Owner asked for it -- in the Read bar,
   // right before ✓, on the same line, at least 40px tall, nothing covering it.
   const after = await P.evaluate(() => {
