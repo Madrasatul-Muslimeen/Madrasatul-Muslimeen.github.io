@@ -715,7 +715,7 @@
       afterRevise: () => { if (!editingNoteId) renderNotesList(); },
       status: showPageStatus,
       refresh: () => refreshView(),
-      menuMid: () => `<button type="button" class="danger tiny" data-pane-delete>🗑 ${escapeHtml(t("Delete"))}</button>`,
+      menuMid: () => `<button type="button" class="danger tiny" data-pane-group="danger" data-pane-delete>🗑 ${escapeHtml(t("Delete"))}</button>`,
       onMenu: (v, note, on) => {
         if (!on("[data-pane-delete]")) return false;
         (async () => {
