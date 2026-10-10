@@ -1500,11 +1500,11 @@
       },
       menuMid: (v, note) => {
         const fromId = paneFromFolderId(v, note);
-        return `<button type="button" class="secondary tiny" data-pane-copy>${escapeHtml(t("Folders…"))}</button>
-          <button type="button" class="secondary tiny" data-pane-move ${fromId ? "" : "disabled"}>${escapeHtml(t("Move to…"))}</button>
-          <button type="button" class="danger tiny" data-pane-delete>🗑 ${escapeHtml(t("Delete"))}</button>`;
+        return `<button type="button" class="secondary tiny" data-pane-group="organise" data-pane-copy>${escapeHtml(t("Folders…"))}</button>
+          <button type="button" class="secondary tiny" data-pane-group="organise" data-pane-move ${fromId ? "" : "disabled"}>${escapeHtml(t("Move to…"))}</button>
+          <button type="button" class="danger tiny" data-pane-group="danger" data-pane-delete>🗑 ${escapeHtml(t("Delete"))}</button>`;
       },
-      menuEnd: () => (isEmbedded ? `<button type="button" class="secondary tiny" data-pane-fullpage>${escapeHtml(t("Open full page"))}</button>` : ""),
+      menuEnd: () => (isEmbedded ? `<button type="button" class="secondary tiny" data-pane-group="read" data-pane-full data-pane-fullpage>${escapeHtml(t("Open full page"))}</button>` : ""),
       onEditStart: (v, note) => { stagedFilings.delete(note.noteId); },
       onEditDone: (v, note) => applyStagedFilings(note),
       onMenu: (v, note, on) => {

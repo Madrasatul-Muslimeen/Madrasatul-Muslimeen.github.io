@@ -50,7 +50,8 @@ export const NOTE_VIEW_HTML = `
         <button type="button" class="secondary pane-btn" data-pane-edit-toggle hidden></button>
         <span class="bar-palette-wrap folder-menu-wrap" data-bar-palette-wrap="paneMenu" data-pane-menu-wrap>
           <button type="button" class="folder-menu-btn bar-palette-toggle" data-bar-palette-toggle="paneMenu" aria-haspopup="true" aria-expanded="false" data-pane-menu-btn>⋯</button>
-          <div class="bar-palette" data-bar-palette="paneMenu" data-pane-menu></div>
+          <div class="bar-palette pane-menu" data-bar-palette="paneMenu" data-pane-menu></div>
+          <div class="pane-menu-backdrop" data-pane-menu-backdrop></div>
         </span>
       </div>
       <div class="note-find-bar" data-find-bar role="search" hidden>
@@ -1171,33 +1172,58 @@ export function createNoteViews(host) {
     for (const [sel, text] of [["[data-find-prev]", t("Previous match")], ["[data-find-next]", t("Next match")], ["[data-find-close]", t("Close")]]) {
       const b = findBar.querySelector(sel); b.setAttribute("aria-label", text); b.title = text;
     }
-    let menu = `<button type="button" class="secondary tiny pane-fold-item" data-pane-prev ${prev ? "" : "disabled"}>‹ ${escapeHtml(t("Previous note"))}</button>
-      <button type="button" class="secondary tiny pane-fold-item" data-pane-next ${next ? "" : "disabled"}>${escapeHtml(t("Next note"))} ›</button>`;
-    if (!v.ed) menu += `<button type="button" class="secondary tiny pane-toolfold-item" data-pane-find-toggle>🔍 ${escapeHtml(t("Find in this Note"))}</button>`;
-    if (headings.length || v.ed) menu += `<button type="button" class="secondary tiny pane-toolfold-item" data-pane-foldall>⇅ ${escapeHtml(foldLabel)}</button>`;
-    if (canAttach) menu += `<button type="button" class="secondary tiny pane-attachfold-item" data-pane-attach>📎 ${escapeHtml(t("Folders and tags"))}</button>`;
-    if (host.versions) menu += `<button type="button" class="secondary tiny" data-pane-versions>🕘 ${escapeHtml(t("Versions…"))}</button>`;
+    // The Owner, 10 Oct 2026 (issue 747): the same actions, sorted under six headings. ORDER, GROUPING and LOOK only --
+    // every data-pane-* attribute and handler is unchanged. A host's own buttons say where they belong with
+    // data-pane-group="organise" | "danger" | "read" (default organise); data-pane-full makes one span a whole row.
+    const G = { move: [], read: [], mark: [], organise: [], change: [], settings: [], danger: [] };
+    const hostItems = (html, fallback) => {
+      const tpl = document.createElement("template");
+      tpl.innerHTML = html || "";
+      for (const el of [...tpl.content.children]) {
+        const g = G[el.dataset.paneGroup] ? el.dataset.paneGroup : fallback;
+        if (g === "danger" || "paneFull" in el.dataset) el.classList.add("pane-menu-full");
+        G[g].push(el.outerHTML);
+      }
+    };
+    G.move.push(`<button type="button" class="secondary tiny" data-pane-prev ${prev ? "" : "disabled"}>‹ ${escapeHtml(t("Previous note"))}</button>`,
+      `<button type="button" class="secondary tiny" data-pane-next ${next ? "" : "disabled"}>${escapeHtml(t("Next note"))} ›</button>`);
+    if (!v.ed) G.read.push(`<button type="button" class="secondary tiny pane-toolfold-item" data-pane-find-toggle>🔍 ${escapeHtml(t("Find in this Note"))}</button>`);
+    if (headings.length || v.ed) G.read.push(`<button type="button" class="secondary tiny pane-toolfold-item" data-pane-foldall>⇅ ${escapeHtml(foldLabel)}</button>`);
+    if (host.versions) G.read.push(`<button type="button" class="secondary tiny" data-pane-versions>🕘 ${escapeHtml(t("Versions…"))}</button>`);
+    if (v.kind === "pane") G.read.push(`<button type="button" class="secondary tiny" data-pane-popout>⧉ ${escapeHtml(t("Pop out"))}</button>`);
+    if (canAttach) G.organise.push(`<button type="button" class="secondary tiny pane-attachfold-item pane-menu-full" data-pane-attach>📎 ${escapeHtml(t("Folders and tags"))}</button>`);
     if (own) {
-      menu = `<button type="button" class="secondary tiny pane-editfold-item" data-pane-edit-toggle>${escapeHtml(editLabel)}</button>` + menu;
-      // Note-pane round 2 (items 14, 15).
-      menu += `<button type="button" class="secondary tiny" data-pane-rename>✏️ ${escapeHtml(t("Rename"))}</button>`;
-      if (host.copyNote) menu += `<button type="button" class="secondary tiny" data-pane-duplicate>🗐 ${escapeHtml(t("Make a copy"))}</button>`;
-      menu += host.menuMid?.(v, note) ?? "";
-      if (host.tagging) menu += `<button type="button" class="secondary tiny" data-pane-tags>🏷 ${escapeHtml(t("Tags…"))}</button>`;
       if (host.flags) {
         const f = host.flags;
-        const item = (key, icon, onLabel, offLabel) => `<button type="button" class="secondary tiny" data-pane-flag="${key}" aria-pressed="${f.on(note, key)}">${icon} ${escapeHtml(f.on(note, key) ? offLabel : onLabel)}</button>`;
-        menu += item("pinned", "📌", t("Pin"), t("Unpin"));
-        menu += item("favourite", "⭐", t("Favourite"), t("Remove from Favourites"));
-        menu += item("archived", "📦", t("Archive"), t("Bring back from Archive"));
-        menu += item("finalised", "🔒", t("Finalise"), t("Un-finalise"));
-        menu += `<button type="button" class="secondary tiny" data-pane-link>🔗 ${escapeHtml(t("Link to a Note…"))}</button>`;
+        const tile = (key, icon, word, offLabel) => {
+          const on = f.on(note, key), full = on ? offLabel : word;
+          return `<button type="button" class="secondary tiny pane-tile" data-pane-flag="${key}" aria-pressed="${on}" aria-label="${escapeHtml(full)}" title="${escapeHtml(full)}"><span class="pane-tile-ic" aria-hidden="true">${icon}</span><span class="pane-tile-lb">${escapeHtml(word)}</span></button>`;
+        };
+        G.mark.push(tile("pinned", "📌", t("Pin"), t("Unpin")), tile("favourite", "⭐", t("Favourite"), t("Remove from Favourites")),
+          tile("archived", "📦", t("Archive"), t("Bring back from Archive")), tile("finalised", "🔒", t("Finalise"), t("Un-finalise")));
       }
+      hostItems(host.menuMid?.(v, note), "organise");
+      if (host.tagging) G.organise.push(`<button type="button" class="secondary tiny" data-pane-tags>🏷 ${escapeHtml(t("Tags…"))}</button>`);
+      if (host.flags) G.organise.push(`<button type="button" class="secondary tiny" data-pane-link>🔗 ${escapeHtml(t("Link to a Note…"))}</button>`);
+      G.change.push(`<button type="button" class="secondary tiny" data-pane-rename>✏️ ${escapeHtml(t("Rename"))}</button>`);
+      if (host.copyNote) G.change.push(`<button type="button" class="secondary tiny" data-pane-duplicate>🗐 ${escapeHtml(t("Make a copy"))}</button>`);
     }
-    if (S()) menu += `<button type="button" class="secondary tiny" data-pane-mytools>🧰 ${escapeHtml(t("My Note tools…"))}</button>`;
-    if (v.kind === "pane") menu += `<button type="button" class="secondary tiny" data-pane-popout>⧉ ${escapeHtml(t("Pop out"))}</button>`;
-    menu += `<button type="button" class="secondary tiny" data-pane-previews aria-pressed="${previewsOn(localStorage)}">🖼 ${escapeHtml(t("Show link previews"))}: ${escapeHtml(previewsOn(localStorage) ? t("On") : t("Off"))}</button>`;
-    menu += host.menuEnd?.(v, note) ?? "";
+    hostItems(host.menuEnd?.(v, note), "read");
+    if (S()) G.settings.push(`<button type="button" class="secondary tiny pane-menu-full" data-pane-mytools>🧰 ${escapeHtml(t("My Note tools…"))}</button>`);
+    const pv = previewsOn(localStorage);
+    G.settings.push(`<button type="button" class="secondary tiny pane-menu-full pane-switch-row" data-pane-previews aria-pressed="${pv}"><span class="pane-switch-lb">🖼 ${escapeHtml(t("Show link previews"))}</span><span class="pane-switch" aria-hidden="true"></span><span class="pane-sr">${escapeHtml(pv ? t("On") : t("Off"))}</span></button>`);
+    const GROUPS = [["move", "Move between notes", "pane-fold-item"], ["read", "Read", ""], ["mark", "Mark", ""], ["organise", "Organise", ""], ["change", "Change", ""], ["settings", "Settings", ""]];
+    // A group holding only items that fold into the menu (the bar shows them itself until it is tight) hides with them.
+    const foldKind = (items) => (items.length && items.every((h) => h.includes("pane-toolfold-item")) ? "pane-toolfold-item" : items.length && items.every((h) => h.includes("pane-attachfold-item")) ? "pane-attachfold-item" : "");
+    let menu = `<div class="pane-menu-head"><span>${escapeHtml(t("This note"))}</span><button type="button" class="secondary tiny pane-menu-x" data-bar-palette-toggle="paneMenu" aria-label="${escapeHtml(t("Close"))}" title="${escapeHtml(t("Close"))}">×</button></div>`;
+    if (own) menu += `<button type="button" class="secondary tiny pane-editfold-item pane-menu-full" data-pane-edit-toggle>${escapeHtml(editLabel)}</button>`;
+    menu += `<div class="pane-menu-cols">`;
+    for (const [key, label, cls] of GROUPS) {
+      if (!G[key].length) continue;
+      menu += `<div class="pane-menu-g ${cls || foldKind(G[key])}" data-pane-menu-group="${key}"><div class="pane-menu-gl">${escapeHtml(t(label))}</div><div class="pane-menu-grid${key === "mark" ? " pane-menu-tiles" : ""}">${G[key].join("")}</div></div>`;
+    }
+    menu += `</div>`;
+    if (G.danger.length) menu += `<div class="pane-menu-g pane-menu-danger" data-pane-menu-group="danger"><div class="pane-menu-grid">${G.danger.join("")}</div></div>`;
     const menuWrap = v.el.querySelector("[data-pane-menu-wrap]");
     menuWrap.hidden = !menu.trim();
     v.el.querySelector("[data-pane-menu]").innerHTML = menu;

@@ -4078,5 +4078,10 @@ export const BN = {
   "Back to the unit card": "ইউনিট কার্ডে ফিরে যান",
   "Back to the Approach wheel": "পদ্ধতির চাকায় ফিরে যান",
   "Back to Explore": "অন্বেষণে ফিরে যান",
+  // Note ⋯ menu headings (issue 747); "Read", "Change", "Settings", "On", "Off", "Open full page" already exist.
+  "Move between notes": "নোটের মধ্যে যান",
+  "Mark": "চিহ্নিত করুন",
+  "Organise": "সাজান",
+  "This note": "এই নোট",
   "Choose an Approach for {unit}, record your progress (for your family too, with 👥), or see your status.": "{unit}-এর জন্য একটি পদ্ধতি বেছে নিন, আপনার অগ্রগতি লিখে রাখুন (👥 দিয়ে পরিবারের জন্যও), অথবা আপনার অবস্থা দেখুন।",
 };
