@@ -1,0 +1,207 @@
+<title>Keys to Understanding</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;700&family=Scheherazade+New:wght@400;700&display=swap">
+<style>
+/* Layout: one column; the Word card, then the Āyah card, each with its "Keys to understanding" row; my list at the end. */
+:root {
+  --navy: #1F3A6E; --gold: #c9a24b; --gold-ink: #6b4e10;
+  --card: #fffdf6; --paper: #f4efe2; --line: #e3d7b8; --ink: #1b1b16; --muted: #55554c; --chip: #eef2fa;
+  --on: #1F3A6E; --on-ink: #ffffff; --sug-bg: #fff2d9; --sug-ink: #8a5300; --mine-bg: #fbe8e6; --mine-ink: #a3302a; --btn: #ffffff;
+  --font-ui: "Noto Sans", system-ui, sans-serif; --font-ar: "Scheherazade New", "Amiri", serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --navy: #9db8ea; --gold: #d9b45f; --gold-ink: #e6c77a; --card: #1d2230; --paper: #141822; --line: #343b4d; --ink: #ecebe4; --muted: #aeb0b8; --chip: #26304a;
+  --on: #9db8ea; --on-ink: #141822; --sug-bg: #3a2c12; --sug-ink: #f0b860; --mine-bg: #3d1d1b; --mine-ink: #f08a82; --btn: #222838; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --navy: #9db8ea; --gold: #d9b45f; --gold-ink: #e6c77a; --card: #1d2230; --paper: #141822; --line: #343b4d; --ink: #ecebe4; --muted: #aeb0b8; --chip: #26304a;
+  --on: #9db8ea; --on-ink: #141822; --sug-bg: #3a2c12; --sug-ink: #f0b860; --mine-bg: #3d1d1b; --mine-ink: #f08a82; --btn: #222838; color-scheme: dark }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--paper); color: var(--ink); font-family: var(--font-ui); font-size: 15px; padding-inline: 16px; padding-block: 16px 40px; margin: 0; }
+.wrap { max-width: 760px; margin: 0 auto; display: grid; gap: 16px; }
+h1 { margin: 0; font-size: 1.45rem; color: var(--navy); text-wrap: balance; }
+h2 { margin: 0; font-size: 1.1rem; color: var(--navy); }
+h3 { margin: 0; font-size: 0.95rem; color: var(--gold-ink); letter-spacing: .02em; }
+p { margin: 0; line-height: 1.55; }
+.lede { color: var(--muted); max-width: 65ch; }
+.tag { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--gold-ink); font-weight: 700; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px; display: grid; gap: 12px; min-width: 0; }
+.ar { font-family: var(--font-ar); direction: rtl; line-height: 1.9; }
+.word-ar { font-size: 2.6rem; text-align: center; }
+.ayah-ar { font-size: 1.6rem; }
+.meta { color: var(--muted); font-size: 14px; }
+.keys { display: grid; gap: 8px; border-top: 1px dashed var(--line); padding-top: 10px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.key { min-height: 40px; padding: 0 14px; border-radius: 20px; border: 1px solid var(--navy); background: var(--btn); color: var(--navy); font: 600 14px var(--font-ui); cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.key[aria-pressed="true"] { background: var(--on); color: var(--on-ink); }
+.key.sug:not([aria-pressed="true"]) { border-style: dashed; background: var(--sug-bg); color: var(--sug-ink); border-color: var(--sug-ink); }
+.key.mine[aria-pressed="true"] { background: var(--mine-ink); border-color: var(--mine-ink); color: var(--on-ink); }
+.key small { font-weight: 400; opacity: .85; }
+button:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+.why { font-size: 13.5px; color: var(--muted); }
+.next { display: grid; gap: 6px; }
+.next-item { border-left: 3px solid var(--gold); padding: 6px 10px; background: var(--chip); border-radius: 0 8px 8px 0; font-size: 14px; display: flex; justify-content: space-between; gap: 10px; align-items: center; flex-wrap: wrap; }
+.next-item .go { min-height: 36px; padding: 0 12px; border-radius: 18px; border: 1px solid var(--navy); background: var(--btn); color: var(--navy); font: 600 13px var(--font-ui); cursor: pointer; }
+.legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 13px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 14px; height: 14px; border-radius: 7px; display: inline-block; border: 1px solid var(--navy); }
+.sw.sug { background: var(--sug-bg); border: 1px dashed var(--sug-ink); }
+.sw.on { background: var(--on); }
+.sw.mine { background: var(--mine-ink); border-color: var(--mine-ink); }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { color: var(--muted); font-weight: 600; }
+.tbl { overflow-x: auto; }
+.empty { color: var(--muted); font-style: italic; }
+.opinion ol, .opinion ul { margin: 0; padding-left: 20px; display: grid; gap: 8px; line-height: 1.55; }
+.q { border-left: 4px solid var(--gold); }
+.term { font-family: var(--font-ar); font-size: 1.15em; }
+</style>
+
+<div class="wrap">
+  <div class="tag">Demo · nothing is saved · tap the chips</div>
+  <h1>Keys to understanding: Word card and Āyah card</h1>
+  <p class="lede">A row of marks under each card that says what this word or āyah <b>needs</b> before it is truly understood. The marks do not change your progress. They say what to do next, and they give you a list of everything you marked. The example is Yaseen 8 from your writing sheet.</p>
+  <div class="legend">
+    <span><i class="sw on"></i>marked</span>
+    <span><i class="sw sug"></i>suggested by the computer (to be checked)</span>
+    <span><i class="sw mine"></i>"Hard for me": yours alone</span>
+  </div>
+
+  <section class="card" id="wordCard" aria-label="Word card">
+    <div class="tag">Word card · 36:8:10</div>
+    <div class="ar word-ar">مُّقْمَحُونَ</div>
+    <p class="meta">muqmaḥūn · "(are with) heads raised up" · root ق م ح · <b>once in the whole Qur'an</b></p>
+    <div class="keys">
+      <h3>🔑 Keys to understanding this word</h3>
+      <div class="chips" data-keys="word"></div>
+      <div class="next" data-next="word"></div>
+    </div>
+  </section>
+
+  <section class="card" id="ayahCard" aria-label="Āyah card">
+    <div class="tag">Āyah card · Yaseen 36:8</div>
+    <div class="ar ayah-ar">إِنَّا جَعَلْنَا فِىٓ أَعْنَـٰقِهِمْ أَغْلَـٰلًۭا فَهِىَ إِلَى ٱلْأَذْقَانِ فَهُم مُّقْمَحُونَ</div>
+    <p class="meta">"Indeed, We have put shackles on their necks, and they are to their chins, so they are with heads kept aloft."</p>
+    <div class="keys">
+      <h3>🔑 Keys to understanding this āyah</h3>
+      <div class="chips" data-keys="ayah"></div>
+      <div class="next" data-next="ayah"></div>
+    </div>
+  </section>
+
+  <section class="card" aria-label="My keys">
+    <h2>📋 My list: everything marked</h2>
+    <p class="why">One place that collects every mark, to plan study: "my hard āyāt", "words to look up", "āyāt to read with Hadith".</p>
+    <div class="tbl"><table><thead><tr><th>Where</th><th>Marked</th></tr></thead><tbody id="list"></tbody></table></div>
+  </section>
+
+  <section class="card opinion" aria-label="My opinion">
+    <h2>My opinion</h2>
+    <ol>
+      <li><b>Yes, it is worth building, and it is different from progress.</b> Progress (Learning, Practising, Achieved…) says <i>how far I have studied</i>. These marks say <i>what this text needs</i>. Kept apart, neither muddies the other.</li>
+      <li><b>Use the names our scholars already use</b>, with plain words beside them:
+        <ul>
+          <li>a word that needs the dictionary is <b>Gharīb</b> <span class="term">(غريب)</span>, the science of <i>Gharīb al-Qur'ān</i>;</li>
+          <li>a word with several meanings in the Qur'an is <b>Wujūh</b> <span class="term">(وجوه)</span>;</li>
+          <li>an āyah explained by other āyāt is <b>Tafsīr al-Qur'ān bil-Qur'ān</b>;</li>
+          <li>an āyah explained by Hadith is <b>bis-Sunnah</b>;</li>
+          <li>one where the scholars' views across the eras matter is <b>Aqwāl al-Mufassirīn</b>;</li>
+          <li>one that is not complete on its own but belongs to its passage is <b>Siyāq</b> <span class="term">(سياق)</span>, "context";</li>
+          <li>one that needs the reason it was revealed is <b>Asbāb an-Nuzūl</b>.</li>
+        </ul>
+        Your wording becomes the plain line; the term is the short label. The umbrella name I suggest is <b>"Keys to understanding"</b> (Bangla "বোঝার চাবি").</li>
+      <li><b>Two kinds of mark, kept apart.</b>
+        <ul>
+          <li><b>"Hard for me"</b> is personal. Each reader marks their own, like progress.</li>
+          <li><b>The other keys are facts about the text.</b> Owner and Prime set them for the madrasah, like the Asma descriptions. Everyone sees them, and each reader can add their own on top.</li>
+        </ul></li>
+      <li><b>Let the computer suggest, never decide.</b> 1,995 of the Qur'an's 4,832 dictionary words occur only once (مُّقْمَحُونَ here is one), so <b>Gharīb</b> can be suggested automatically, dashed and marked "to be checked", just as the dua words are. The passage for <b>Siyāq</b> can be suggested from the Ruku' (here 36:1–12).</li>
+      <li><b>Every key should lead somewhere</b> (the "what next" lines in the demo):
+        <ul>
+          <li>Gharīb opens Lane / Hans Wehr, already on the Word card;</li>
+          <li>Hadith opens the Hadith tab searched for this āyah;</li>
+          <li>other āyāt opens the Āyah card's "Connected āyāt";</li>
+          <li>Siyāq opens the passage as a Range;</li>
+          <li>scholars and Hadith findings are written in a Note, which the Notes pane already holds.</li>
+        </ul></li>
+      <li><b>It fits the Ten Steps file:</b> these keys are the doorways to its later steps (Hadith, scholars, context). That file can later say which key belongs to which step.</li>
+    </ol>
+  </section>
+
+  <section class="card q" aria-label="Questions">
+    <h2>Questions for you (my recommendation in each)</h2>
+    <ol>
+      <li><b>The list of keys.</b> Words: Hard for me · Gharīb (needs the dictionary) · Wujūh (several meanings). Āyāt: Hard for me · needs Hadith · needs the scholars across the eras · explained by other āyāt · Siyāq (read with its passage) · Asbāb an-Nuzūl. Add, remove or rename freely.</li>
+      <li><b>Who sets them.</b> Recommended: "Hard for me" by each reader; the others by Owner/Prime for the madrasah, with readers able to add their own.</li>
+      <li><b>Where they are kept.</b> The madrasah's keys can go in the madrasah's own document (no Firebase step), as the dua checks do. <b>Each reader's own marks need a new place in Firebase: a Rules change you publish once.</b> Recommended: yes, the same kind of step as the pictures were.</li>
+      <li><b>Computer suggestions.</b> Recommended: yes for Gharīb (a word used only once in the Qur'an) and the passage (its Ruku'), always shown dashed as "to be checked".</li>
+    </ol>
+  </section>
+</div>
+
+<script>
+const KEYS = {
+  word: [
+    { id: "hard", icon: "😓", label: "Hard for me", mine: true, why: "Only you see this. It goes on your list of hard words." },
+    { id: "gharib", icon: "📖", label: "Gharīb", plain: "needs the dictionary", sug: true, sugWhy: "Suggested: this word is used only once in the whole Qur'an.", why: "A rare word: its meaning comes from the dictionary and the early scholars of language.", next: [["Lane's Lexicon / Hans Wehr at root ق م ح", "Open"], ["Write what you found in a Note", "📝 Note"]] },
+    { id: "wujuh", icon: "🧩", label: "Wujūh", plain: "several meanings", why: "The same word carries different meanings in different places.", next: [["See every place it occurs (Word card ▸ places)", "Open"]] },
+  ],
+  ayah: [
+    { id: "hard", icon: "😓", label: "Hard for me", mine: true, why: "Only you see this. It goes on your list of hard āyāt." },
+    { id: "hadith", icon: "📜", label: "Needs Hadith", plain: "bis-Sunnah", why: "The Prophet's explanation (ﷺ) or a related narration is needed.", next: [["Search the Hadith tab for this āyah", "Open"], ["Keep what you found in a Note", "📝 Note"]] },
+    { id: "scholars", icon: "🎓", label: "Scholars across the eras", plain: "Aqwāl al-Mufassirīn", why: "The understanding comes from the mufassirūn, early and later; their views may differ.", next: [["Add the views you read, era by era, in a Note", "📝 Note"]] },
+    { id: "quran", icon: "🔗", label: "Explained by other āyāt", plain: "al-Qur'ān bil-Qur'ān", why: "Other āyāt explain this one.", next: [["Connect the āyāt (Āyah card ▸ Connected āyāt)", "Open"]] },
+    { id: "siyaq", icon: "🧱", label: "Read with its passage", plain: "Siyāq", sug: true, sugWhy: "Suggested: its Ruku' is 36:1–12.", why: "Not a complete meaning on its own: it belongs to the passage around it.", next: [["Read 36:1–12 as one Range", "Open"]] },
+    { id: "asbab", icon: "⏳", label: "Asbāb an-Nuzūl", plain: "why it was revealed", why: "The event it was revealed about is needed to understand it.", next: [["Keep the account in a Note", "📝 Note"]] },
+  ],
+};
+const state = { word: new Set(), ayah: new Set() };
+const el = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
+
+function render(kind) {
+  const chips = document.querySelector(`[data-keys="${kind}"]`), next = document.querySelector(`[data-next="${kind}"]`);
+  chips.replaceChildren(); next.replaceChildren();
+  for (const k of KEYS[kind]) {
+    const b = el("button", "key" + (k.sug ? " sug" : "") + (k.mine ? " mine" : ""));
+    b.type = "button";
+    b.dataset.key = k.id;
+    b.setAttribute("aria-pressed", String(state[kind].has(k.id)));
+    b.append(`${k.icon} ${k.label}`);
+    if (k.plain) b.appendChild(el("small", null, `· ${k.plain}`));
+    b.title = k.why;
+    b.addEventListener("click", () => { state[kind].has(k.id) ? state[kind].delete(k.id) : state[kind].add(k.id); render(kind); renderList(); });
+    chips.appendChild(b);
+  }
+  const sugs = KEYS[kind].filter((k) => k.sug && !state[kind].has(k.id));
+  for (const k of sugs) next.appendChild(el("p", "why", `💡 ${k.sugWhy} Tap the dashed key to accept it.`));
+  for (const k of KEYS[kind].filter((x) => state[kind].has(x.id))) {
+    next.appendChild(el("p", "why", `${k.icon} ${k.why}`));
+    for (const [what, go] of k.next ?? []) {
+      const row = el("div", "next-item");
+      row.appendChild(el("span", null, what));
+      const g = el("button", "go", go); g.type = "button"; g.addEventListener("click", () => { g.textContent = "(would open)"; });
+      row.appendChild(g);
+      next.appendChild(row);
+    }
+  }
+}
+function renderList() {
+  const body = document.getElementById("list");
+  body.replaceChildren();
+  const rows = [["Word مُّقْمَحُونَ (36:8:10)", "word"], ["Āyah 36:8", "ayah"]];
+  let any = false;
+  for (const [where, kind] of rows) {
+    if (!state[kind].size) continue;
+    any = true;
+    const tr = el("tr");
+    tr.appendChild(el("td", null, where));
+    tr.appendChild(el("td", null, KEYS[kind].filter((k) => state[kind].has(k.id)).map((k) => `${k.icon} ${k.label}`).join(" · ")));
+    body.appendChild(tr);
+  }
+  if (!any) { const tr = el("tr"); const td = el("td", "empty", "Nothing marked yet. Tap a key above."); td.colSpan = 2; tr.appendChild(td); body.appendChild(tr); }
+}
+// A realistic starting state: the computer's two suggestions shown, one personal mark made.
+state.ayah.add("hard");
+render("word"); render("ayah"); renderList();
+</script>

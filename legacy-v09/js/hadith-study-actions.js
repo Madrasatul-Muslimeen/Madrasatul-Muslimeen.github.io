@@ -1,0 +1,386 @@
+// Hadith H2 -- HadeethEnc study actions (issue #311, Owner decision 7,
+// docs/governance/2026-09-26-owner-decisions.md row 7).
+//
+// v08.84 built the HadeethEnc browsing surface but deliberately stopped at
+// Gate C2 -- see hadith-browser.js's own header comment on that section for
+// the full history. The Owner has now decided C2 FOR HADEETHENC ONLY: a
+// HadeethEnc hadith is keyed `hadith:hadeethenc:<id>`, built with
+// `buildUnitKey.hadith("hadeethenc", id)`. This file is the ONE caller of
+// that shape, and `tools/i18n-verify/hadith-gate-contracts.mjs`'s C2 check
+// admits it BY NAME, and only when the first argument is the literal
+// "hadeethenc" -- a call naming any other edition here still fails that
+// check, because the gate is decided for HadeethEnc, not for Hadith keys in
+// general.
+//
+// EVERY WRITE GOES THROUGH AN EXISTING SHARED FUNCTION -- no new collection,
+// no new field, no new Rule: study-note-service.js/note-foundation.js for
+// Notes, bookmarks.js for the star, records.js's claimStatus() for the
+// module's existing `studied_hadith` trackable (the same claim path
+// hadith-study.html/topic-study.js already uses for every other Hadith
+// topic).
+//
+// LOADED LAZILY, ON PURPOSE. hadith-browser.js stays Firebase-free by
+// design (see hadith-study.html's own comment on why the corpus mounts from
+// its own <script> tag, separate from topic-study.js -- a CDN/Firebase
+// failure must never take Collections/Topics/Search/Explore down with it).
+// This module is the one place that boundary is deliberately crossed for
+// the three study actions, imported with a dynamic `import()` so a failure
+// to load it degrades to "not available right now" instead of breaking the
+// whole corpus.
+import { auth, db } from "./firebase-init.js";
+import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { TENANT } from "./collections.js";
+import { getActiveContext, getSelectedPersonId, effectiveRoles, scopedRoster } from "./session-context.js";
+import { langText } from "./lang.js";
+import { getAppLang } from "./prefs.js";
+import { buildUnitKey } from "./unit-keys.js";
+import { chunkKeyFor, getRecordsChunk, claimStatus } from "./records.js";
+import { getBookmarks, saveBookmark, removeSavedBookmark, findSavedBookmark } from "./bookmarks.js";
+import { notesForStudyUnit } from "./study-note-service.js";
+import { listEnrollmentsForPerson } from "./course-offers.js";
+
+const HADITH_MODULE_ID = "hadith";
+const HADITH_ROOT_SUBJECT_ID = "hadith"; // matches hadith-study.html's own initTopicStudyPage({ rootSubjectId: "hadith" })
+const STUDIED_TRACKABLE_ID = "studied_hadith";
+const BOOKMARK_SUBJECT_ID = "hadeethenc";
+
+/** The ONE call this repository authorises to build a HadeethEnc key (Owner decision 7). Never call buildUnitKey.hadith() from here with anything but the literal "hadeethenc". */
+export function hadeethEncUnitKey(id) {
+  return buildUnitKey.hadith("hadeethenc", String(id));
+}
+
+/**
+ * A conservative client-side mirror of firestore.rules' own canRecordFor():
+ * admin (owner/prime/platformAdmin) OR a guardian of this specific child OR
+ * a teacher actually co-enrolled with this specific student, in THIS
+ * tenant. Self is handled by the caller (getHadeethEncSession() below) --
+ * this is only reached for a DIFFERENT selected person. Never throws: any
+ * read failure here means "cannot confirm the standing to record for them",
+ * which is the safe reading (never invites a write that would only be
+ * denied).
+ */
+async function canRecordForSelected(tenantId, effRoles, myPersonId, selectedPersonId) {
+  try {
+    if (effRoles.some((r) => r === "owner" || r === "prime" || r === "platformAdmin")) return true;
+    if (effRoles.includes("guardian")) {
+      const rosterSnap = await getDocs(query(collection(db, TENANT.TENANT_PEOPLE), where("tenantId", "==", tenantId)));
+      const person = rosterSnap.docs.map((d) => ({ id: d.id, ...d.data() })).find((p) => p.id === selectedPersonId);
+      if (person?.managedByPersonId === myPersonId) return true;
+    }
+    if (effRoles.includes("teacher") && myPersonId) {
+      const [teacherEnrollments, studentEnrollments] = await Promise.all([
+        listEnrollmentsForPerson(db, tenantId, myPersonId),
+        listEnrollmentsForPerson(db, tenantId, selectedPersonId),
+      ]);
+      const teacherContextIds = new Set(
+        teacherEnrollments.filter((e) => e.roleInClass === "teacher" && e.status === "active").map((e) => e.contextId)
+      );
+      if (studentEnrollments.some((e) => e.roleInClass === "student" && e.status === "active" && teacherContextIds.has(e.contextId))) {
+        return true;
+      }
+    }
+  } catch {
+    return false;
+  }
+  return false;
+}
+
+/**
+ * The session this card needs to act, or `null` when there is none to act
+ * with (not signed in, or no tenant/person chosen yet) -- every caller
+ * treats `null` as "show why, offer nothing", never as a reason to guess.
+ *
+ * `isSelf`: only the reader's own record may create/file a Note
+ * (isNoteOwner() in firestore.rules is deliberately stricter than
+ * canRecordFor() -- a Note is a person's own private writing).
+ * `canRecordFor`: the broader set that may bookmark and claim "Studied" for
+ * the selected person (mirrors firestore.rules' own canRecordFor()).
+ */
+export async function getHadeethEncSession() {
+  const uid = auth.currentUser?.uid ?? null;
+  if (!uid) return null;
+  const ctx = getActiveContext();
+  if (!ctx?.tenantId) return null;
+  const myPersonId = ctx.personId ?? null;
+  const personId = getSelectedPersonId() ?? myPersonId;
+  if (!personId) return null;
+  const isSelf = personId === myPersonId;
+  const effRoles = effectiveRoles(ctx.roles ?? [], ctx.viewAsRole ?? null);
+  const canRecordFor = isSelf || (await canRecordForSelected(ctx.tenantId, effRoles, myPersonId, personId));
+  return { uid, tenantId: ctx.tenantId, personId, myPersonId, isSelf, canRecordFor };
+}
+
+// ---------------------------------------------------------------------------
+// Note -- a link into notes.html, which already supports `?unit=&label=` and
+// already does the actual create/revise/retire work (createStudyNote(),
+// study-note-binding.js's accepted hadith key shape). No second editor.
+// ---------------------------------------------------------------------------
+
+export function noteHrefFor(id, title) {
+  const params = new URLSearchParams({ unit: hadeethEncUnitKey(id) });
+  if (title) params.set("label", title);
+  params.set("back", "1"); // ← Back on notes.html, to this hadith (the way-back law, decision 86)
+  return `notes.html?${params.toString()}`;
+}
+
+/** How many active Notes the reader already has on this hadith -- read-only, shown only for isSelf (only self can ever create one anyway). */
+export async function noteCountFor(session, id) {
+  const { rows } = await notesForStudyUnit(db, {
+    tenantId: session.tenantId, ownerPersonId: session.personId, unitKey: hadeethEncUnitKey(id),
+  });
+  return rows.length;
+}
+
+// ---------------------------------------------------------------------------
+// Bookmark -- the same bookmarks.js an āyah uses. subjectId is a fixed
+// "hadeethenc" bucket; `position` (the unit key) is what actually
+// distinguishes one hadith's bookmark from another's, the same shape
+// topic-study.js's own toggleTopicBookmark() uses (subjectId/position both
+// the node's own id there; here position alone carries the identity).
+// `position` doubles as the resume value bookmarks.html already builds
+// (`${page}?resume=${position}`) -- hadith-study.html's own corpus-mounting
+// script reads it back to reopen this exact hadith (issue #311's "the
+// bookmark must reopen the Hadith page on this hadith").
+// ---------------------------------------------------------------------------
+
+// Architect review (#311): what this page has just SAVED is remembered here
+// and preferred over a re-read, so reopening a card shows the saved state
+// at once (the standing rule: patch the in-memory copy after a successful
+// write rather than trust the next read). Keyed per person, so switching
+// the selected person never shows another person's state.
+const savedBookmarks = new Map(); // `${tenant}__${person}__${unitKey}` -> bookmark object | null
+const savedStudied = new Map();   // same key -> claimed status id
+const memoKey = (session, unitKey) => `${session.tenantId}__${session.personId}__${unitKey}`;
+
+async function findHadeethEncBookmark(session, unitKey, subjectId = BOOKMARK_SUBJECT_ID) {
+  const k = memoKey(session, unitKey);
+  if (savedBookmarks.has(k)) return savedBookmarks.get(k);
+  const bookmarksDoc = await getBookmarks(db, session.tenantId, session.personId);
+  return findSavedBookmark(bookmarksDoc, { moduleId: HADITH_MODULE_ID, subjectId, position: unitKey }) ?? null;
+}
+
+export async function isHadeethEncBookmarked(session, id) {
+  return !!(await findHadeethEncBookmark(session, hadeethEncUnitKey(id)));
+}
+
+/** Toggles the bookmark and returns the new state (true = now bookmarked). */
+export async function toggleHadeethEncBookmark(session, id, name) {
+  const unitKey = hadeethEncUnitKey(id);
+  const existing = await findHadeethEncBookmark(session, unitKey);
+  if (existing) {
+    await removeSavedBookmark(db, session.tenantId, session.personId, existing.id);
+    savedBookmarks.set(memoKey(session, unitKey), null);
+    return false;
+  }
+  const saved = await saveBookmark(db, {
+    tenantId: session.tenantId, personId: session.personId, moduleId: HADITH_MODULE_ID,
+    subjectId: BOOKMARK_SUBJECT_ID, name, position: unitKey, uid: session.uid,
+  });
+  savedBookmarks.set(memoKey(session, unitKey), saved);
+  return true;
+}
+
+// ---------------------------------------------------------------------------
+// Studied -- the module's existing `studied_hadith` trackable, via the same
+// claim path hadith-study.html/topic-study.js uses: claimStatus() against
+// subjectId "hadith" (the module's root subject, exactly what
+// initTopicStudyPage({ rootSubjectId: "hadith" }) chunks every other Hadith
+// topic claim under -- chunkKeyFor() only ever looks at the subjectId
+// argument for a unit type outside SURAH_CHUNKED_TYPES, so this lands in
+// the SAME `subject_hadith` records chunk, not a new one).
+// ---------------------------------------------------------------------------
+
+export async function hadeethEncStudiedStatus(session, id) {
+  const unitKey = hadeethEncUnitKey(id);
+  if (savedStudied.has(memoKey(session, unitKey))) return savedStudied.get(memoKey(session, unitKey));
+  const chunkKey = chunkKeyFor(unitKey, HADITH_ROOT_SUBJECT_ID);
+  const chunk = await getRecordsChunk(db, session.tenantId, session.personId, chunkKey);
+  const entry = chunk?.entries?.[`${unitKey}::${STUDIED_TRACKABLE_ID}`] ?? null;
+  return entry?.claimedStatus ?? null;
+}
+
+/**
+ * 👥 Who the signed-in person may record for -- the same rule the Qur'an
+ * page's assignableRoster() uses (scopedRoster over the tenant's people,
+ * non-archived). Read on FIRST USE only, when a card with Studied opens;
+ * never on the startup path (I9).
+ */
+export async function getHadeethEncRoster(session) {
+  const ctx = getActiveContext();
+  const snap = await getDocs(query(collection(db, TENANT.TENANT_PEOPLE), where("tenantId", "==", session.tenantId)));
+  const everyone = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  const effRoles = effectiveRoles(ctx?.roles ?? [], ctx?.viewAsRole ?? null);
+  return scopedRoster(everyone, effRoles, session.myPersonId)
+    .filter((p) => p.status !== "archived")
+    .map((p) => ({ id: p.id, name: langText(p.name, getAppLang(), p.id), isSelf: p.id === session.myPersonId }));
+}
+
+/**
+ * Claims "Studied" for the page's person, or -- when `personIds` is given --
+ * for each person in it (the 👥 picker), in the order given. The claimant is
+ * always the person acting. Each person's memo is keyed by that person, so a
+ * status shown later is never another person's.
+ */
+export async function claimHadeethEncStudied(session, id, statusId, personIds = null) {
+  const unitKey = hadeethEncUnitKey(id);
+  const targets = personIds?.length ? personIds : [session.personId];
+  let result = null;
+  for (const personId of targets) {
+    result = await claimStatus(db, {
+      tenantId: session.tenantId, personId, subjectId: HADITH_ROOT_SUBJECT_ID,
+      unitKey, trackableId: STUDIED_TRACKABLE_ID, statusId, notes: "", domainIds: [],
+      // Architect review: the CLAIMANT is the person acting, not the person
+      // being recorded for -- topic-study.js uses currentActingPersonId() the
+      // same way. A teacher's claim must not read as the student's own.
+      claimedByPersonId: session.myPersonId ?? session.personId, claimedByUid: session.uid,
+    });
+    savedStudied.set(memoKey({ ...session, personId }, unitKey), statusId);
+  }
+  return result;
+}
+
+// ---------------------------------------------------------------------------
+// Dua progress (decision 88, 8 Oct 2026): "Go ahead with the DUA". One dua, keyed dua:<n> (its permanent number from
+// output/dua/registry.json), counted ONCE however many books narrate it. Saved exactly as "Studied" above is: the
+// module's existing studied_hadith trackable, claimStatus() against the hadith root subject, so it lands in the same
+// subject_hadith records chunk. No new collection, field or Rule.
+// ---------------------------------------------------------------------------
+
+export function duaUnitKey(number) {
+  return buildUnitKey.dua(String(number));
+}
+
+export async function duaStatus(session, number) {
+  const unitKey = duaUnitKey(number);
+  if (savedStudied.has(memoKey(session, unitKey))) return savedStudied.get(memoKey(session, unitKey));
+  const chunk = await getRecordsChunk(db, session.tenantId, session.personId, chunkKeyFor(unitKey, HADITH_ROOT_SUBJECT_ID));
+  return chunk?.entries?.[`${unitKey}::${STUDIED_TRACKABLE_ID}`]?.claimedStatus ?? null;
+}
+
+/** Every dua status the page's person has, read from the one chunk: Map(number -> statusId). */
+export async function duaStatuses(session) {
+  const chunk = await getRecordsChunk(db, session.tenantId, session.personId, chunkKeyFor(duaUnitKey(1), HADITH_ROOT_SUBJECT_ID));
+  const out = new Map();
+  for (const [key, entry] of Object.entries(chunk?.entries ?? {})) {
+    const m = /^dua:(\d+)::/.exec(key);
+    if (m && key.endsWith(`::${STUDIED_TRACKABLE_ID}`)) out.set(Number(m[1]), entry?.claimedStatus ?? null);
+  }
+  for (const [k, v] of savedStudied) {
+    const m = new RegExp(`^${session.tenantId}__${session.personId}__dua:(\\d+)$`).exec(k);
+    if (m) out.set(Number(m[1]), v);
+  }
+  return out;
+}
+
+export async function claimDua(session, number, statusId) {
+  const unitKey = duaUnitKey(number);
+  const result = await claimStatus(db, {
+    tenantId: session.tenantId, personId: session.personId, subjectId: HADITH_ROOT_SUBJECT_ID,
+    unitKey, trackableId: STUDIED_TRACKABLE_ID, statusId, notes: "", domainIds: [],
+    claimedByPersonId: session.myPersonId ?? session.personId, claimedByUid: session.uid,
+  });
+  savedStudied.set(memoKey(session, unitKey), statusId);
+  return result;
+}
+
+
+// ---------------------------------------------------------------------------
+// Decision 90, round 4: a dua word's Word-by-Word progress is the SAME record as the Qur'an word's (Q1 answered yes:
+// "since its about knowing and understanding the word"), keyed as the Word card keys it (the dictionary word, or a
+// stand-in key). Read here; recorded through the Word card's own saving. Loaded on first use only (I9).
+// ---------------------------------------------------------------------------
+export async function duaWordProgress(session, wbwKey) {
+  const { getLemmaProgress } = await import("./quran-lemma-progress-data.js");
+  const p = await getLemmaProgress(db, { tenantId: session.tenantId, personId: session.personId, level: "wbw", lemmaId: wbwKey });
+  return p?.state ?? "not_started";
+}
+
+// ---------------------------------------------------------------------------
+// Decision 92, round 6 of "Dua words" (the Owner: "Go ahead with round 6"): progress on EVERY word of every dua, each
+// its own record, duaword:<dua>:<position>. Saved exactly as the dua's own progress is (claimStatus, the module's
+// studied_hadith trackable, the hadith subject), in one records chunk per dua (duawords_<dua>). No new collection,
+// field or Rule: records already accepts any chunk of the person's own.
+// ---------------------------------------------------------------------------
+export function duaWordUnitKey(number, position) {
+  return buildUnitKey.duaWord(String(number), String(position));
+}
+
+/** Every word status the page's person has in one dua: Map(position -> statusId). One read. */
+export async function duaWordStatuses(session, number) {
+  const chunk = await getRecordsChunk(db, session.tenantId, session.personId, chunkKeyFor(duaWordUnitKey(number, 1), HADITH_ROOT_SUBJECT_ID));
+  const out = new Map();
+  for (const [key, entry] of Object.entries(chunk?.entries ?? {})) {
+    const m = new RegExp(`^duaword:${number}:(\\d+)::${STUDIED_TRACKABLE_ID}$`).exec(key);
+    if (m) out.set(Number(m[1]), entry?.claimedStatus ?? null);
+  }
+  for (const [k, v] of savedStudied) {
+    const m = new RegExp(`^${session.tenantId}__${session.personId}__duaword:${number}:(\\d+)$`).exec(k);
+    if (m) out.set(Number(m[1]), v);
+  }
+  return out;
+}
+
+export async function claimDuaWord(session, number, position, statusId) {
+  const unitKey = duaWordUnitKey(number, position);
+  const result = await claimStatus(db, {
+    tenantId: session.tenantId, personId: session.personId, subjectId: HADITH_ROOT_SUBJECT_ID,
+    unitKey, trackableId: STUDIED_TRACKABLE_ID, statusId, notes: "", domainIds: [],
+    claimedByPersonId: session.myPersonId ?? session.personId, claimedByUid: session.uid,
+  });
+  savedStudied.set(memoKey(session, unitKey), statusId);
+  return result;
+}
+
+// ---------------------------------------------------------------------------
+// Notes and bookmarks on a dua (9 Oct 2026, the "possible next" of the 8 Oct handover): the dua's permanent key
+// dua:<n> (decision 88), through the SAME shared functions a HadeethEnc hadith uses -- notes.html for Notes
+// (ADR-009 §9: sourceKind dua-unit) and bookmarks.js for the bookmark, in a "dua" bucket whose position is the key, so
+// bookmarks.html's ?resume=dua:<n> reopens the card. No new collection, field or Rule.
+// ---------------------------------------------------------------------------
+const DUA_BOOKMARK_SUBJECT_ID = "dua";
+
+/** notes.html for this dua; back=1 gives that page its ← Back to this card (the way-back law, decision 86). */
+export function duaNoteHrefFor(number, label) {
+  const params = new URLSearchParams({ unit: duaUnitKey(number) });
+  if (label) params.set("label", label);
+  params.set("back", "1");
+  return `notes.html?${params.toString()}`;
+}
+
+/** How many active Notes the reader has on this dua (read-only; only self ever creates one). */
+export async function duaNoteCount(session, number) {
+  const { rows } = await notesForStudyUnit(db, { tenantId: session.tenantId, ownerPersonId: session.personId, unitKey: duaUnitKey(number) });
+  return rows.length;
+}
+
+/** The duas this person has bookmarked: Set(number), from ONE read of their bookmarks document (a page holds 40 cards). */
+export async function duaBookmarkedSet(session) {
+  const doc = await getBookmarks(db, session.tenantId, session.personId);
+  const out = new Set();
+  for (const b of doc?.saved ?? []) {
+    const m = /^dua:(\d+)$/.exec(b?.position ?? "");
+    if (m && b.moduleId === HADITH_MODULE_ID && b.subjectId === DUA_BOOKMARK_SUBJECT_ID && !b.removed) out.add(Number(m[1]));
+  }
+  for (const [k, v] of savedBookmarks) {
+    const m = new RegExp(`^${session.tenantId}__${session.personId}__dua:(\\d+)$`).exec(k);
+    if (m) { if (v) out.add(Number(m[1])); else out.delete(Number(m[1])); }
+  }
+  return out;
+}
+
+/** Toggles the dua's bookmark and returns the new state (true = now bookmarked). A failed write throws (I15). */
+export async function toggleDuaBookmark(session, number, name) {
+  const unitKey = duaUnitKey(number);
+  const existing = await findHadeethEncBookmark(session, unitKey, DUA_BOOKMARK_SUBJECT_ID);
+  if (existing) {
+    await removeSavedBookmark(db, session.tenantId, session.personId, existing.id);
+    savedBookmarks.set(memoKey(session, unitKey), null);
+    return false;
+  }
+  const saved = await saveBookmark(db, {
+    tenantId: session.tenantId, personId: session.personId, moduleId: HADITH_MODULE_ID,
+    subjectId: DUA_BOOKMARK_SUBJECT_ID, name, position: unitKey, uid: session.uid,
+  });
+  savedBookmarks.set(memoKey(session, unitKey), saved);
+  return true;
+}

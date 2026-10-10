@@ -1,0 +1,3959 @@
+// Bangla catalogue — the app's own words (বাংলা).
+//
+// Read js/i18n.js first for how this is used. In short: the KEY is the
+// English text exactly as it appears on screen, and anything not listed
+// here simply stays English. There is no such thing as a broken key.
+//
+// ---------------------------------------------------------------------
+// FOR THE OWNER — how to correct a translation
+// ---------------------------------------------------------------------
+// Every line below reads:      "English text": "বাংলা লেখা",
+// To fix one, change ONLY the Bangla on the right of the colon. Never
+// change the English on the left — that is the app's own wiring, and
+// editing it would silently switch that string back to English.
+//
+// Lines marked  // ?  are ones Claude was least sure of — religious,
+// technical or Madrasah-specific wording where a wrong Bangla word is
+// worse than English. Those are the ones worth your eye first.
+//
+// ---------------------------------------------------------------------
+// Phase 1 of 6 — THE SHELL (13 Aug 2026)
+// ---------------------------------------------------------------------
+// Everything a person meets before they study anything: the navigation
+// menu, the Home/sign-in strip, Settings, the About page, the opener
+// splashes, and the six progress statuses that every module shares.
+// Later phases add the Quran screen, the other nine modules, records and
+// reports, the admin screens, and the 99 Names.
+//
+// Conventions used throughout, so later phases stay consistent:
+//   - Arabic religious terms are transliterated into Bangla script the way
+//     they are actually said in a Bangladeshi Madrasah (কুরআন, হাদীস,
+//     তাজবীদ, হিফয), not translated into Sanskritised Bangla.
+//   - Interface verbs are the plain forms people see in Bangla apps
+//     (সংরক্ষণ করুন, বাতিল), not literary forms.
+
+export const BN = {
+  // --- Navigation: the four main buttons and what is inside them -------
+  "Home": "হোম",
+  "Modules": "মডিউল",
+  "Operation": "পরিচালনা",
+  "Bookmark": "বুকমার্ক",
+  "Settings": "সেটিংস",
+  "Admin": "প্রশাসন",
+  "About": "পরিচিতি",
+  "Language": "ভাষা",
+  "Appearance": "চেহারা",
+  "(coming soon)": "(শীঘ্রই আসছে)",
+
+  // --- The ten study modules -------------------------------------------
+  "Quran Study": "কুরআন অধ্যয়ন",
+  "Deen Study": "দ্বীন শিক্ষা", // ?
+  "Arabic": "আরবি",
+  "Hadith": "হাদীস",
+  "General Study": "সাধারণ শিক্ষা",
+  "Nature-Life": "প্রকৃতি ও জীবন", // ?
+  "Life Skill": "জীবন দক্ষতা",
+  "Health": "স্বাস্থ্য",
+  "Learn Deen On-the-Go": "চলার পথে দ্বীন শিক্ষা", // ?
+  "Asma ul Husna": "আসমাউল হুসনা",
+
+  // --- Operation and Admin destinations --------------------------------
+  "Classes": "ক্লাস",
+  "Curriculum": "পাঠ্যক্রম",
+  "Course Offers": "কোর্স অফার",
+  "Homework": "বাড়ির কাজ",
+  "Records": "রেকর্ড",
+  "Monitor": "পর্যবেক্ষণ",
+  "People": "ব্যক্তিবর্গ",
+  "Catalogue": "তালিকা", // ?
+
+  // --- Home: sign-in strip ---------------------------------------------
+  "Checking sign-in…": "সাইন-ইন যাচাই করা হচ্ছে…",
+  "Sign in with Google": "গুগল দিয়ে সাইন ইন করুন",
+  "Sign out": "সাইন আউট",
+  "Opening your bookmark…": "আপনার বুকমার্ক খোলা হচ্ছে…",
+  "That bookmark could not be found.": "সেই বুকমার্কটি পাওয়া যায়নি।",
+  "Not signed in.": "সাইন ইন করা হয়নি।",
+  "Signed in as {email}": "{email} হিসেবে সাইন ইন করা আছে",
+  "Sign-in failed: {message}": "সাইন ইন ব্যর্থ হয়েছে: {message}",
+  "Legacy App - v06 ↗": "পুরাতন অ্যাপ - v06 ↗",
+  "Legacy App - v07 ↗": "পুরাতন অ্যাপ - v07 ↗",
+  "Legacy App - v08 ↗": "পুরাতন অ্যাপ - v08 ↗",
+  "Previewing as: {role}": "যেভাবে দেখছেন: {role}",
+  "Previewing as: {role} — change this on the People page":
+    "যেভাবে দেখছেন: {role} — এটি ব্যক্তিবর্গ পাতা থেকে পরিবর্তন করুন",
+
+  // --- The six progress statuses, shared by every module ----------------
+  // These are the on-ramp every renderer uses (unit-keys.js STATUSES).
+  "Not Applicable": "প্রযোজ্য নয়",
+  "Not started": "শুরু হয়নি",
+  "Learning": "শিখছি",
+  "Practising": "অনুশীলন করছি",
+  "Achieved": "অর্জিত হয়েছে",
+  "Mastered": "পূর্ণ দক্ষতা", // ?
+
+  // --- The opener splashes ---------------------------------------------
+  "Opener settings": "সূচনা পর্দার সেটিংস",
+  "Every time": "প্রতিবার",
+  "Once a day": "দিনে একবার",
+  "Tap to skip": "এড়িয়ে যেতে ট্যাপ করুন",
+  "Once a week": "সপ্তাহে একবার",
+  "Show this opener": "এই সূচনা পর্দা দেখান",
+
+  // --- About page -------------------------------------------------------
+  "QuranRevival — About": "কুরআনরিভাইভাল — পরিচিতি",
+  "About QuranRevival": "কুরআনরিভাইভাল সম্পর্কে",
+  "Phase 0 & 1 — individually tracked features":
+    "পর্যায় ০ ও ১ — আলাদাভাবে চিহ্নিত বৈশিষ্ট্যসমূহ",
+  "Every build phase": "সবগুলো নির্মাণ পর্যায়",
+  "ID": "আইডি",
+  "Feature": "বৈশিষ্ট্য",
+  "Status": "অবস্থা",
+  "Phase": "পর্যায়",
+  "Name": "নাম",
+  "Delivers": "যা দেয়",
+
+  // --- Words that recur on many screens ---------------------------------
+  // Translated once here in Phase 1 so later phases inherit them rather
+  // than each inventing their own wording for the same button.
+  "Save": "সংরক্ষণ করুন",
+  "Cancel": "বাতিল",
+  "Close": "বন্ধ করুন",
+  "Add": "যোগ করুন",
+  "Edit": "সম্পাদনা",
+  "Archive": "সংরক্ষণাগারে রাখুন", // ?
+  "Loading…": "লোড হচ্ছে…",
+  "Loading your study…": "আপনার পড়াশোনা লোড হচ্ছে…",
+  "Still loading… The internet connection is slow, or the database is not answering yet.": "এখনো লোড হচ্ছে… ইন্টারনেট সংযোগ ধীর, অথবা ডেটাবেস এখনো সাড়া দিচ্ছে না।",
+  "You are signed out.": "আপনি সাইন আউট অবস্থায় আছেন।",
+  "This Google account is not a member of any madrasah yet.": "এই গুগল অ্যাকাউন্টটি এখনো কোনো মাদ্রাসার সদস্য নয়।",
+  "The app could not finish loading: {detail}": "অ্যাপটি লোড শেষ করতে পারেনি: {detail}",
+  "Reload": "আবার লোড করুন",
+  "Person": "ব্যক্তি",
+  "Tenant": "প্রতিষ্ঠান", // ?
+  // The owner's own word for the tenant picker on the Quran screen, where its
+  // options read "Madrasatul Muslimeen (Owner, Prime)" -- what they see there
+  // is the role they hold, not an abstract "tenant". "Tenant" above is kept:
+  // other screens still use it, and this is a second label, not a rename.
+  "User Role": "ব্যবহারকারীর ভূমিকা", // ?
+  "Subject": "বিষয়",
+  "Approach": "পদ্ধতি", // ?
+  "Notes": "নোট",
+  "Date": "তারিখ",
+
+  // --- Onboarding: creating an account ---------------------------------
+  "QuranRevival — Create your account (F-011)": "কুরআনরিভাইভাল — আপনার অ্যাকাউন্ট তৈরি করুন",
+  "Create your account (F-011)": "আপনার অ্যাকাউন্ট তৈরি করুন",
+  "Sets up a brand-new account: your account, your own person record, and\n     your owner role, all created together. Nothing existing is touched.":
+    "একদম নতুন অ্যাকাউন্ট তৈরি করে: আপনার অ্যাকাউন্ট, আপনার নিজের ব্যক্তি-রেকর্ড এবং আপনার মালিকানার ভূমিকা — সবই একসাথে। বিদ্যমান কিছুই পরিবর্তন করা হয় না।",
+  "What is this account for?": "এই অ্যাকাউন্টটি কীসের জন্য?",
+  "My own learning": "আমার নিজের শেখার জন্য",
+  "My family": "আমার পরিবারের জন্য",
+  "A madrasah / tuition group": "একটি মাদরাসা / টিউশন গ্রুপ",
+  // 5 Oct 2026 (the Owner): family members with year of birth at sign-up, and on the People page.
+  "Step 2 of 2": "ধাপ ২ / ২",
+  "Who is in your family?": "আপনার পরিবারে কারা আছেন?",
+  "Add the people you will record progress for. You can add or change them later on the People page.": "যাদের অগ্রগতি আপনি লিপিবদ্ধ করবেন, তাদের যোগ করুন। পরে মানুষ পৃষ্ঠায় যোগ বা পরিবর্তন করতে পারবেন।",
+  "+ Add another": "+ আরেকজন যোগ করুন",
+  "Save and continue": "সংরক্ষণ করে এগিয়ে যান",
+  "Skip for now": "এখন বাদ দিন",
+  "Year of birth": "জন্মসাল",
+  "Age": "বয়স",
+  "Year of birth (optional)": "জন্মসাল (ঐচ্ছিক)",
+  "A child I look after": "আমার দেখাশোনায় থাকা শিশু",
+  "Open the app": "অ্যাপ খুলুন",
+  "You can add family members any time on the People page.": "মানুষ পৃষ্ঠায় যেকোনো সময় পরিবারের সদস্য যোগ করতে পারবেন।",
+  "Type a name first, or choose Skip for now.": "আগে একটি নাম লিখুন, অথবা এখন বাদ দিন বেছে নিন।",
+  "Added {n}. Not saved: {names}. Try those again.": "{n} জন যোগ হয়েছে। সংরক্ষণ হয়নি: {names}। আবার চেষ্টা করুন।",
+  "Added {n} to your family.": "আপনার পরিবারে {n} জন যোগ হয়েছে।",
+  "Your name": "আপনার নাম",
+  "How many people can you invite?": "আপনি কতজনকে আমন্ত্রণ জানাতে পারবেন?",
+  "Week starts on": "সপ্তাহ শুরু হয়",
+  "Saturday": "শনিবার",
+  "Sunday": "রবিবার",
+  "Monday": "সোমবার",
+  "Create": "তৈরি করুন",
+  "Creating…": "তৈরি করা হচ্ছে…",
+  "Account created.": "অ্যাকাউন্ট তৈরি হয়েছে।",
+  "Account ID:": "অ্যাকাউন্ট আইডি:",
+  "Your person ID:": "আপনার ব্যক্তি আইডি:",
+  "Write these down.": "এগুলো লিখে রাখুন।",
+
+  // --- Accepting an invite ----------------------------------------------
+  // Often the FIRST screen a new person ever sees, and the one place a
+  // Bangla-only reader is most likely to give up if it is in English.
+  "QuranRevival — Accept invite (F-014)": "কুরআনরিভাইভাল — আমন্ত্রণ গ্রহণ",
+  "Accept invite": "আমন্ত্রণ গ্রহণ করুন",
+  "Accept": "গ্রহণ করুন",
+  "Checking your invite link…": "আপনার আমন্ত্রণ লিংক যাচাই করা হচ্ছে…",
+  "This link is missing its invite code. Ask whoever invited you to send it again.":
+    "এই লিংকে আমন্ত্রণ কোড নেই। যিনি আপনাকে আমন্ত্রণ জানিয়েছেন, তাঁকে আবার পাঠাতে বলুন।",
+  "This invite link is no longer valid — it may have already been used.":
+    "এই আমন্ত্রণ লিংকটি আর কার্যকর নয় — সম্ভবত এটি ইতিমধ্যে ব্যবহার করা হয়েছে।",
+  "This invite is no longer valid — it may have already been used.":
+    "এই আমন্ত্রণটি আর কার্যকর নয় — সম্ভবত এটি ইতিমধ্যে ব্যবহার করা হয়েছে।",
+  "This invite is for {email}. Please sign in with that account to continue.":
+    "এই আমন্ত্রণটি {email}-এর জন্য। চালিয়ে যেতে ঐ অ্যাকাউন্ট দিয়ে সাইন ইন করুন।",
+  "This invite was sent to {invited}, but you are signed in as {current}. Sign out below and sign in with the invited email instead.":
+    "আমন্ত্রণটি পাঠানো হয়েছিল {invited}-এ, কিন্তু আপনি সাইন ইন করেছেন {current} হিসেবে। নিচে সাইন আউট করে আমন্ত্রিত ইমেইল দিয়ে সাইন ইন করুন।",
+  "Welcome! You have joined as {role}. Your person ID: {personId}.":
+    "স্বাগতম! আপনি {role} হিসেবে যুক্ত হয়েছেন। আপনার ব্যক্তি আইডি: {personId}।",
+  "You are invited to join {tenant} as {role}.": "আপনাকে {tenant}-এ {role} হিসেবে যোগ দিতে আমন্ত্রণ জানানো হয়েছে।",
+  "Continue to QuranRevival": "কুরআনরিভাইভালে যান",
+  "JavaScript is required.": "জাভাস্ক্রিপ্ট চালু থাকা আবশ্যক।",
+
+  // --- The opening splash ------------------------------------------------
+  // The Arabic itself is never translated. What follows below is the
+  // MEANING line the old app already showed underneath it in English.
+  "I seek refuge with Allah from shaitwan, the rejected, accursed.":
+    "আমি বিতাড়িত শয়তান থেকে আল্লাহর আশ্রয় প্রার্থনা করছি।", // ?
+  "In the name of Allah, the Most Gracious, the Most Merciful.":
+    "পরম করুণাময় ও অসীম দয়ালু আল্লাহর নামে।", // ?
+  "Reviving the Quran, abandoned.": "পরিত্যক্ত কুরআনকে পুনর্জীবিত করা।", // ?
+  "Building Muslim-Mindset, reviving the Quran, reviving the Ummah!":
+    "মুসলিম-মানসিকতা গঠন, কুরআনের পুনর্জাগরণ, উম্মাহর পুনর্জাগরণ!", // ?
+
+  // --- Deliberately NOT translated --------------------------------------
+  // Listed here on purpose, each mapped to itself, so the coverage report
+  // counts them as decided rather than forgotten -- and so nobody in a
+  // later phase "fixes" them by translating them.
+  //   - QuranRevival is the app's name. A name is not translated.
+  //   - The Ta'awwudh/Basmala transliteration is Arabic, not English.
+  //   - Madrasatul Muslimeen is the organisation's own name.
+  //   - The five-word motto is Arabic terminology already.
+  "QuranRevival": "QuranRevival",
+  "Quran Revival": "QuranRevival",
+  "A'udhu billahi min ash-shaytwaner Rajeem": "A'udhu billahi min ash-shaytwaner Rajeem",
+  "A project of Madrasatul Muslimeen": "মাদরাসাতুল মুসলিমীন-এর একটি প্রকল্প",
+  "Akhlaq &bull; Ilm &bull; Tawheed &bull; Dawah &bull; Hukm": "Akhlaq &bull; Ilm &bull; Tawheed &bull; Dawah &bull; Hukm",
+
+  // =====================================================================
+  // Phase 2 of 6 — THE QURAN MODULE (13 Aug 2026)
+  // =====================================================================
+  // The module the app is named after. Surah NAMES are not here -- all 114
+  // live in their own file, js/i18n/surah-names-bn.js, because they are
+  // data, not interface wording.
+
+  // --- The landing screen and its dock tabs ------------------------------
+  "QuranRevival — Phase 4/5": "কুরআনরিভাইভাল",
+  "Mastery Wheel": "দক্ষতার চাকা", // ?
+  "Study options": "অধ্যয়নের সেটিংস",
+  // Enhancement round -- the dock's own tab label ("Options"), a shorter
+  // name for the same "Study options" panel above. "Note" and "Approach"
+  // (the two other new tabs) reuse existing keys elsewhere in this file --
+  // both already mean the same thing in this screen's own context.
+  "Options": "বিকল্প", // ?
+  "Study": "অধ্যয়ন",
+    "Loading this surah…": "এই সূরা লোড হচ্ছে…",
+  "No Approaches yet.": "এখনো কোনো পদ্ধতি নেই।",
+  "Pick an Approach first.": "প্রথমে একটি পদ্ধতি বেছে নিন।",
+  "Click a segment to drill in — Quran → Juz → Surah → Ruku' → an ayah in Study. Colours pool this Approach's real ayah-by-ayah progress across whatever's inside each segment — it only turns fully green once every ayah inside it is Mastered.":
+    "ভেতরে যেতে যেকোনো অংশে চাপ দিন — কুরআন → জুয → সূরা → রুকু' → অধ্যয়নে একটি আয়াত। রঙগুলো এই পদ্ধতিতে আয়াতভিত্তিক প্রকৃত অগ্রগতি একত্র করে দেখায় — ভেতরের প্রতিটি আয়াতে পূর্ণ দক্ষতা অর্জিত হলেই কেবল এটি সম্পূর্ণ সবুজ হয়।",
+
+  // --- Choosing what to study -------------------------------------------
+  "Single Ayah": "একটি আয়াত",
+  "Range of Ayahs": "আয়াতের পরিসর",
+  "Whole Surah": "সম্পূর্ণ সূরা",
+  "Ruku'": "রুকু'",
+  "Ruku": "রুকু",
+  "Juz": "জুয",
+  "Page": "পৃষ্ঠা",
+  "Surah": "সূরা",
+  "Ayah": "আয়াত",
+  "Go to": "যেখানে যাবেন",
+  "Go": "যান",
+  "From ayah": "যে আয়াত থেকে",
+  "To ayah": "যে আয়াত পর্যন্ত",
+  // Shortened in shell round 14 so both range fields fit on one line beside
+  // Study Unit and Surah. The two above are kept: they are still correct
+  // wording, and nothing in this file is deleted just because one screen
+  // stopped asking for it.
+  "From": "থেকে",
+  "To": "পর্যন্ত",
+  "Whole Quran": "সম্পূর্ণ কুরআন",
+
+  // --- What is being tracked, and where you are -------------------------
+  "Tracking: {unit}": "চিহ্নিত করা হচ্ছে: {unit}",
+  "Surah {surah}, Ayah {ayah}": "সূরা {surah}, আয়াত {ayah}",
+  "Surah {surah}": "সূরা {surah}",
+  "Surah {surah} — Ayah {ayah} of {total}": "সূরা {surah} — আয়াত {ayah} / {total}",
+  "SURAH {surah} · AYAH {ayah}": "সূরা {surah} · আয়াত {ayah}",
+  "Ayahs {from}–{to} of Surah {surah}": "সূরা {surah}-এর {from}–{to} নং আয়াত",
+  "Whole Surah {surah}": "সম্পূর্ণ সূরা {surah}",
+  "Ruku' {ruku} of Surah {surah} (ayahs {from}–{to})":
+    "সূরা {surah}-এর {ruku} নং রুকু' ({from}–{to} নং আয়াত)",
+  "Juz {juz}": "জুয {juz}",
+  "Page {page}": "পৃষ্ঠা {page}",
+  // Explore's own wheel/sidebar/trail labels (5 Sep 2026). Everything else
+  // they need -- "Whole Quran", "Juz {juz}", "Page {page}", "Surah {surah}" --
+  // was already here and simply never called.
+  "Ayah {ayah}": "আয়াত {ayah}",
+  "Ruku' {ruku}": "রুকু' {ruku}",
+  "ayahs {from}–{to} in this Juz": "এই জুযে {from}–{to} নং আয়াত", // ?
+  // Explore's Juz level -- the Pages/Surahs switch (5 Sep 2026). Plurals, and
+  // they label a view rather than one item, so they are their own keys rather
+  // than reusing "Page {page}"/"Surah {surah}" above.
+  "Pages": "পৃষ্ঠাসমূহ", // ?
+  "Surahs": "সূরাসমূহ", // ?
+  // Issue #342 -- Explore's Quran-level Hizb view, the same shape as the Juz
+  // level's own Surahs sub-view above. "Hizb" and "Hizb {hizb}" already
+  // existed (the Study Unit picker's own Hizb option).
+  "ayahs {from}–{to} in this Hizb": "এই হিযবে {from}–{to} নং আয়াত", // ?
+  // The Explore wheel's own Approach capsule (5 Sep 2026) -- the owner's own
+  // wording. The pill says only this; WHICH Approach is in force is read off
+  // the wheel's hub.
+  "Track the Status of Approaches": "পদ্ধতির অবস্থা পর্যবেক্ষণ করুন", // ?
+  "◂ Previous": "◂ পূর্ববর্তী",
+
+  // --- The Approach picker (Study options bar 4), and the Ayah Note
+  //     screen's own Approach toggle sharing the same options (round 32) ---
+  "(no Quran Approaches yet)": "(এখনো কোনো কুরআন পদ্ধতি নেই)",
+  "Choose an Approach": "একটি পদ্ধতি বেছে নিন",
+
+  // --- The Study Unit number pickers and the reading transport (round 18) ---
+  "Hizb {hizb}": "হিযব {hizb}",
+  "Ruku' №": "রুকু' নং",
+  "Juz №": "জুয নং",
+  "Hizb №": "হিযব নং",
+  "Page №": "পৃষ্ঠা নং",
+  "Surah {n} {name}": "সূরা {n} {name}",
+  "{surah} · Ayahs {from}–{to}": "{surah} · আয়াত {from}–{to}",
+  "{fromSurah} {fromAyah} → {toSurah} {toAyah}": "{fromSurah} {fromAyah} → {toSurah} {toAyah}",
+  "▶ Play": "▶ চালান",
+  "⏸ Pause": "⏸ থামান",
+  "■ Stop": "■ বন্ধ",
+  "▶ Whole surah": "▶ পুরো সূরা",
+  "{reciter} only has whole-surah audio — use Whole surah instead.":
+    "{reciter}-এর কেবল পুরো সূরার অডিও আছে — এর বদলে 'পুরো সূরা' ব্যবহার করুন।",
+  "Reciters": "ক্বারীগণ",
+  "Listening": "শ্রবণ",
+  "Loop": "পুনরাবৃত্তি চক্র",
+  "Mushaf view": "মুসহাফ দৃশ্য",
+  "(whole surah only)": "(কেবল পুরো সূরা)",
+  "Mushaf view shows the printed page, so the other reading choices do not apply while it is on.":
+    "মুসহাফ দৃশ্যে ছাপা পৃষ্ঠাই দেখানো হয়, তাই এটি চালু থাকলে পাঠের অন্য পছন্দগুলো প্রযোজ্য নয়।",
+  "Word by Word language": "শব্দে শব্দে ভাষা",
+  "English translation": "ইংরেজি অনুবাদ",
+  "বাংলা translation": "বাংলা অনুবাদ",
+  "Translator": "অনুবাদক",
+  "Two translations are packaged with the app, one English and one Bangla, and both can be shown at once. Choosing BETWEEN translators by name needs their texts packaged first — it is on the list.":
+    "অ্যাপের সাথে দুটি অনুবাদ দেওয়া আছে — একটি ইংরেজি, একটি বাংলা — এবং দুটিই একসাথে দেখানো যায়। অনুবাদকের নাম ধরে বেছে নিতে হলে আগে সেই অনুবাদগুলো যুক্ত করতে হবে — সেটি তালিকায় আছে।",
+
+  // --- The reading screen (shell round 17) ---
+  "Read": "পড়ুন",
+  "◂ Mastery Wheel": "◂ দক্ষতার চাকা",
+  "⤢ Full screen": "⤢ পূর্ণ স্ক্রিন",
+  // Fix round -- the whole-screen tap is gone (the owner: "the button should
+  // be enough for full screen view"), so these two hints name the button now.
+  // The two "Tap ..." keys below/above are kept, unused, per this project's
+  // own rule for a string that stops being called rather than being wrong.
+  "Press the ⤢ button to bring the menus back.": "মেনু ফিরিয়ে আনতে ⤢ বোতামে চাপুন।",
+  "Press ⤢ again to hide more.": "আরও লুকাতে আবার ⤢ চাপুন।",
+  "Tap the text to bring the menus back.": "মেনু ফিরিয়ে আনতে লেখায় স্পর্শ করুন।",
+
+  // --- Shell round 21: Prev/Next move the whole unit, and Full screen is a
+  //     set of choices rather than one fixed behaviour. "◂ Mastery Wheel"
+  //     above is kept although nothing renders it any more (I4): the button
+  //     left the read bar, the words are not deleted.
+  "◂ Prev": "◂ আগের",
+  "Next ▸": "পরের ▸",
+  "⤢ Exit full screen": "⤢ পূর্ণ স্ক্রিন বন্ধ",
+  "Full screen hides": "পূর্ণ স্ক্রিনে লুকাবে",
+  "Banner": "ব্যানার",
+  "Top menu": "উপরের মেনু",
+  "Bottom menu": "নিচের মেনু",
+  "Prev and Next": "আগের ও পরের",
+  "Play controls": "বাজানোর বোতাম",
+  "Nothing is ticked, so Full screen will leave the screen as it is.":
+    "কিছুই চিহ্নিত নেই, তাই পূর্ণ স্ক্রিন পর্দাটি যেমন আছে তেমনই রাখবে।",
+
+  // --- Shell round 22: three full-screen states, and the pickers moved onto
+  //     the reading screen. "Prev and Next" above became "Pickers, Prev and
+  //     Next" when the two control rows merged; the old key stays (I4).
+  "Pickers, Prev and Next": "পিকার, আগের ও পরের",
+  "Tap again to hide more.": "আরও লুকাতে আবার স্পর্শ করুন।",
+  "Show the menus": "মেনু দেখান",
+  "Full screen": "পূর্ণ স্ক্রিন",
+  "Hide everything": "সব লুকান",
+  "Previous": "আগের",
+  "Next": "পরের",
+  "Play": "চালান",
+  "Stop": "বন্ধ",
+  "Study Unit": "অধ্যয়নের একক",
+  "Number": "সংখ্যা",
+
+  // --- Shell round 23: the Qur'an's own typeface, bundled and choosable.
+  //     The face NAMES are proper nouns and are not translated, exactly like
+  //     the reciters' names -- only "your device's own" is wording.
+  // --- Shell round 25: the grammar terms in the root & derivatives panel.
+  //     The owner: "in Bangla means everything should be Bangla." These are
+  //     the 46 ATOMS every one of the data's 359 part-of-speech strings is
+  //     built from -- posLabel() in labels.js splits on " + " and rejoins, so
+  //     translating the atoms covers every combination. Standard Bangla
+  //     grammatical vocabulary (ব্যাকরণ) throughout.
+  "Subordinating Conjunction": "অধীনতাসূচক সংযোজক", // ?
+  "Purpose Particle": "উদ্দেশ্যবাচক অব্যয়",
+  "Restriction Particle": "সীমাবদ্ধতাসূচক অব্যয়", // ?
+  "Prohibition Particle": "নিষেধসূচক অব্যয়",
+  "Preventive Particle": "প্রতিরোধসূচক অব্যয়", // ?
+  "Explanation Particle": "ব্যাখ্যাসূচক অব্যয়",
+  "Interpretation Particle": "তাৎপর্যসূচক অব্যয়", // ?
+  "Exhortation Particle": "উৎসাহসূচক অব্যয়", // ?
+  "Surprise Particle": "বিস্ময়সূচক অব্যয়",
+  "Aversion Particle": "প্রত্যাখ্যানসূচক অব্যয়", // ?
+  "Equalization Particle": "সমতাসূচক অব্যয়", // ?
+  "Comitative Particle": "সঙ্গবাচক অব্যয়", // ?
+
+  "Arabic font": "আরবি ফন্ট",
+  // Typeface names are proper nouns, like the reciters' names -- mapped to
+  // themselves on purpose so the coverage report counts them as DECIDED
+  // rather than forgotten (the convention phase 6 set).
+  "Scheherazade": "Scheherazade",
+  "Noto Naskh": "Noto Naskh",
+  "Amiri Quran": "Amiri Quran",
+  "Your device's own": "আপনার ডিভাইসের নিজস্ব",
+  "Indo-Pak script is not here yet: it is written differently, not only drawn differently, so it needs its own copy of the Qur'an text.":
+    "ইন্দো-পাক লিপি এখনও যুক্ত হয়নি: এটি কেবল আলাদা করে আঁকা নয়, আলাদা করে লেখাও — তাই এর জন্য কুরআনের পাঠের আলাদা একটি অনুলিপি প্রয়োজন।",
+
+  // --- The "Go to" box, including what it says when it cannot read you ---
+  "Couldn't read \"{text}\". Try 2:255 for one ayah, or 2:255-260 for a range.":
+    "\"{text}\" বোঝা গেল না। একটি আয়াতের জন্য ২:২৫৫, বা পরিসরের জন্য ২:২৫৫-২৬০ লিখুন।",
+  "There is no Surah {surah}. Surah numbers run 1–114.":
+    "{surah} নম্বর কোনো সূরা নেই। সূরার নম্বর ১ থেকে ১১৪ পর্যন্ত।",
+  "Surah {surah} has {count} ayahs.": "সূরা {surah}-এ {count}টি আয়াত আছে।",
+  "2:255 or a word": "২:২৫৫ বা একটি শব্দ",
+
+  // --- Search (shell round 14) -------------------------------------------
+  // The box now takes words as well as references, so its own wording has to
+  // teach that in Bangla too -- a Bangla-only reader who is only ever told
+  // "২:২৫৫" will never discover that a word works.
+  "Search": "খুঁজুন",
+  "Search the Qur'an": "কুরআনে খুঁজুন",
+  "Type a word or phrase in the box above, then press Search.":
+    "উপরের ঘরে একটি শব্দ বা বাক্যাংশ লিখুন, তারপর খুঁজুন চাপুন।",
+  "Searching for \"{query}\"…": "\"{query}\" খোঁজা হচ্ছে…",
+  "Nothing found for \"{query}\".": "\"{query}\"-এর কিছু পাওয়া যায়নি।",
+  "1 ayah found.": "১টি আয়াত পাওয়া গেছে।",
+  "{total} ayahs found.": "{total}টি আয়াত পাওয়া গেছে।",
+  // 5 Oct 2026 -- search by sound (transliteration).
+  "In the English translation": "ইংরেজি অনুবাদে",
+  "By sound (transliteration)": "উচ্চারণ অনুযায়ী (প্রতিবর্ণীকরণ)",
+  "Found in the English translation and by sound.": "ইংরেজি অনুবাদে ও উচ্চারণ অনুযায়ী পাওয়া গেছে।",
+  "Found by sound (transliteration).": "উচ্চারণ অনুযায়ী (প্রতিবর্ণীকরণ) পাওয়া গেছে।",
+  "{total} ayahs found — showing the first {shown}.":
+    "{total}টি আয়াত পাওয়া গেছে — প্রথম {shown}টি দেখানো হচ্ছে।",
+  "Couldn't load the search index. Check your connection and try again.":
+    "খোঁজার তালিকা লোড করা যায়নি। ইন্টারনেট সংযোগ দেখে আবার চেষ্টা করুন।",
+
+  // --- Reading view ------------------------------------------------------
+  "Reading view": "পড়ার ধরন",
+  "Page display (Whole Surah / Range)": "পৃষ্ঠা প্রদর্শন (সম্পূর্ণ সূরা / পরিসর)",
+  "Mushaf (real page)": "মুসহাফ (প্রকৃত পৃষ্ঠা)",
+  "Tajweed": "তাজবীদ",
+  "Tajweed colours": "তাজবীদের রঙ",
+  "Word by Word": "শব্দে শব্দে",
+  "Translation": "অনুবাদ",
+  "Translation language": "অনুবাদের ভাষা",
+  "Default translation": "সাধারণ অনুবাদ",
+  "Follow translation language": "অনুবাদের ভাষা অনুসরণ করুন",
+  "English": "ইংরেজি",
+  "English only": "শুধু ইংরেজি",
+  // These three already contain Bangla, because they NAME Bangla -- they are
+  // how a Bangla reader spots the option. Only the English half is
+  // translated; "বাংলা" stays exactly as it is.
+  "English + বাংলা (Bangla)": "ইংরেজি + বাংলা",
+  "English + বাংলা": "ইংরেজি + বাংলা",
+  "বাংলা only": "শুধু বাংলা",
+  "Choosing a translation by translator's name is not built yet — it is on the list.":
+    "অনুবাদকের নাম দেখে অনুবাদ বেছে নেওয়ার সুবিধা এখনো তৈরি হয়নি — এটি তালিকায় আছে।",
+  "Loading Mushaf page…": "মুসহাফের পৃষ্ঠা লোড হচ্ছে…",
+  // Failure messages matter as much as anything else here (I15): an error a
+  // Bangla-only reader cannot read is nearly as useless as no error at all.
+  // The {reason} inside is the browser's own technical detail and stays as
+  // it comes -- it is for whoever is helping them, not for them.
+  "Couldn't load Mushaf page data ({reason}).": "মুসহাফের পৃষ্ঠার তথ্য লোড করা যায়নি ({reason})।",
+  "Couldn't load this page's data.": "এই পৃষ্ঠার তথ্য লোড করা যায়নি।",
+  "Couldn't play this audio: {reason}.": "এই অডিওটি বাজানো যায়নি: {reason}।",
+  // Shell round 26 -- a failure now NAMES what failed (which reciter, which
+  // ayah), so "it didn't play" becomes something that can be acted on rather
+  // than looking like the whole app is broken. The reciter's own name inside
+  // is a person's name and stays exactly as it is.
+  "Couldn't play {what}: {reason}.": "{what} বাজানো যায়নি: {reason}।",
+  "{reciter}, Surah {surah}, Ayah {ayah}": "{reciter}, সূরা {surah}, আয়াত {ayah}",
+  "{reciter}, Surah {surah}": "{reciter}, সূরা {surah}",
+  // The reasons themselves. Until this round they were English literals dropped
+  // into a translated sentence, so a Bangla reader got half a message (I15).
+  "playback was aborted": "বাজানো বন্ধ করে দেওয়া হয়েছে",
+  "a network error interrupted the download": "নেটওয়ার্কের সমস্যায় ডাউনলোড থেমে গেছে",
+  "the file could not be decoded — it may be corrupt or an unsupported format":
+    "ফাইলটি পড়া যায়নি — এটি নষ্ট হতে পারে, বা এই ধরনের ফাইল সমর্থিত নয়",
+  "the audio source isn't available — the file may not exist at that address":
+    "অডিও ফাইলটি পাওয়া যায়নি — ওই ঠিকানায় ফাইলটি না-ও থাকতে পারে",
+  "an unknown playback error occurred": "অজানা একটি সমস্যায় বাজানো যায়নি",
+  "the browser blocked playback until you press play again":
+    "ব্রাউজার বাজানো আটকে দিয়েছে — আবার play চাপুন", // ?
+  "Couldn't find a Mushaf page for this selection.":
+    "এই নির্বাচনের জন্য মুসহাফের পৃষ্ঠা পাওয়া যায়নি।",
+  "No word-by-word data for this ayah.": "এই আয়াতের জন্য শব্দে-শব্দে তথ্য নেই।",
+  // Round 27 -- its own reading choice now, split out of Word by Word. The key
+  // is the DECODED text (&amp; -> &), because translateStatic() reads text
+  // nodes from the live DOM, not the HTML source (phase 3's own lesson).
+  // Kept, unused: the tick was renamed "Root" and this string stopped being
+  // called the round Derivatives split out of it, same "never delete a
+  // string that stops being called" rule this file follows throughout.
+  "Roots & derivatives": "শব্দমূল ও গঠন", // ?
+  // Enhancement round -- Derivatives split out of Root the same way Root
+  // split out of Word by Word (round 27): the owner's own report that the
+  // two still "appeared together, merged" in one panel/one tick.
+  "Derivatives": "উদ্ভূত শব্দ", // ?
+  // Round 28 -- the reading moves sideways, one page at a time.
+  "Page by page": "পাতায় পাতায়", // ?
+  "No morphology data for this ayah.": "এই আয়াতের জন্য শব্দগঠনের তথ্য নেই।",
+  "Reflection": "চিন্তা-ভাবনা", // ?
+  "Write it out here": "এখানে লিখুন",
+
+  // --- Listening ---------------------------------------------------------
+  "Listening settings": "শোনার সেটিংস",
+  "Recitation": "তিলাওয়াত",
+  "This Approach has no listening panel, so there is nothing to set here.":
+    "এই পদ্ধতিতে শোনার কোনো অংশ নেই, তাই এখানে সেট করার কিছু নেই।",
+  "Drill reciters": "অনুশীলনের ক্বারী",
+  "Repeat": "পুনরাবৃত্তি",
+  "Mode": "ধরন",
+  "Each Ayah": "প্রতিটি আয়াত",
+  "Whole Unit": "সম্পূর্ণ একক",
+  "Pick at least one reciter to drill.": "অনুশীলনের জন্য অন্তত একজন ক্বারী বেছে নিন।",
+  // Reciters are PEOPLE. A person's name is not translated -- only the
+  // language note in brackets, which is what actually helps someone choose.
+  "Abdullah Basfar (Arabic)": "Abdullah Basfar (আরবি)",
+  "Ibraheem Walk (English)": "Ibraheem Walk (ইংরেজি)",
+  "Kevan Brighting (English, whole surah only)": "Kevan Brighting (ইংরেজি, শুধু সম্পূর্ণ সূরা)",
+  "Shareef Bayezid Mahmud (Bangla)": "শরীফ বায়েজিদ মাহমুদ (বাংলা)",
+
+  // --- The wheel's own one-time intro button + settled caption -----------
+  "Study Quran": "কুরআন অধ্যয়ন করুন", // ?
+  "ONE Ayah a Day": "প্রতিদিন একটি আয়াত", // ?
+  // 6 Sep 2026 -- the capsule beside the caption, which is what makes every
+  // Study Unit approachable from the Approach view rather than only an ayah.
+  "Choose a Unit": "একটি একক বাছুন", // ?
+
+  // --- Claiming, and the Approach modal ----------------------------------
+  "Track this unit": "এই এককটি চিহ্নিত করুন",
+  // The Coverage tab, for a Juz/Hizb/Page: ayah-by-ayah colouring is drawn
+  // from one surah's own chunk, so a Qur'an-wide unit says so in words.
+  "Ayah-by-ayah coverage isn't available at this granularity — switch Study Unit to Ayah, Range, Whole Surah or Ruku' to see it.":
+    "এই স্তরে আয়াত-ভিত্তিক অগ্রগতি দেখানো যায় না — দেখতে হলে অধ্যয়নের একক আয়াত, পরিসর, পূর্ণ সূরা বা রুকু' বাছুন।", // ?
+  // Shortened to one word in shell round 14, so the Approach name beside it
+  // gets the room instead. The longer wording above is kept, unused here.
+  "Track": "চিহ্নিত করুন",
+  "Claim": "দাবি করুন", // ?
+  "Claim a status": "একটি অবস্থা দাবি করুন", // ?
+  "Confirmed:": "নিশ্চিত করা হয়েছে:",
+  "Not claimed yet.": "এখনো দাবি করা হয়নি।",
+  "Nothing claimed yet for this Approach here.": "এখানে এই পদ্ধতিতে এখনো কিছু দাবি করা হয়নি।",
+  "What": "কী",
+  "How": "কীভাবে",
+  "How to measure your progress": "আপনার অগ্রগতি কীভাবে মাপবেন",
+  // The confirm-state pills (records.js writes these values).
+  "pending": "অপেক্ষমাণ",
+  "confirmed": "নিশ্চিত",
+  "rejected": "প্রত্যাখ্যাত",
+
+  // --- The routine renderer's streak line (shared with Health/LDOG) ------
+  "Logged today ✓": "আজ লিপিবদ্ধ হয়েছে ✓",
+  "Not logged today yet.": "আজ এখনো লিপিবদ্ধ হয়নি।",
+  "No streak yet — log it to start one.": "এখনো কোনো ধারা নেই — শুরু করতে লিপিবদ্ধ করুন।",
+
+  // --- Signed out / no account (shown by every study page) --------------
+  "Starting fresh instead?": "নতুন করে শুরু করতে চান?",
+  "Create a new account\n      on the onboarding page": "নতুন অ্যাকাউন্ট তৈরি করুন",
+
+  // --- The Ayah Note panel: the ⋮ quick menu and "Note & more" view ------
+  "Quick actions": "দ্রুত কাজ",
+  "Copy": "কপি করুন",
+  "Share": "শেয়ার করুন",
+  "Play this āyah": "এই আয়াতটি চালান",
+  "Note & more…": "নোট ও আরও…",
+  "Copy failed": "কপি ব্যর্থ হয়েছে",
+  "✓ Copied": "✓ কপি হয়েছে",
+  "My note": "আমার নোট",
+  "My note (none saved)": "আমার নোট (এখনো সংরক্ষিত নেই)",
+  "Notes:": "নোট:",
+  "Pick a reciter in Listening settings first.": "প্রথমে শোনার সেটিংসে একজন ক্বারী বেছে নিন।",
+  "Quran {surah}:{ayah} — Surah {name}": "কুরআন {surah}:{ayah} — সূরা {name}",
+  // The Note view's own top bar and body.
+  "Notes formatting": "নোট ফরম্যাটিং",
+  "Coming later": "শীঘ্রই আসছে",
+  // Round 31 -- bar 2's Word-by-word toggle. Deliberately NOT translated,
+  // mapped to itself so the report counts it as decided rather than
+  // forgotten (same treatment "বাংলা (Bangla)" gets above): "WbW" is a
+  // Latin-abbreviation icon, the same convention "Aa" already uses on bar
+  // 1, and translating an abbreviation into a different alphabet defeats
+  // the point of it being a compact glyph. The real, translated name lives
+  // in the title/aria-pressed pair, via "Word by Word" below.
+  // Enhancement round -- bar 2's Root (Roots & derivatives) toggle. Unlike
+  // "WbW" this is a real word, not an abbreviation-as-icon, so it gets a
+  // real Bangla word rather than being mapped to itself.
+  "Mapping My Journey": "আমার যাত্রার মানচিত্র", // ? -- placeholder feature name, not yet designed
+  "Previous āyah": "পূর্ববর্তী আয়াত",
+  "Next āyah": "পরবর্তী আয়াত",
+  "Bookmark this āyah": "এই আয়াতটি বুকমার্ক করুন",
+  // MAP Phase 4 (P4-D1) -- the explicit Reading completion. I11: the button's
+  // own accessible name and all three of its status messages are user-visible
+  // text and are translated like any other. Additive only -- none of these
+  // keys existed before, and none belongs to another module.
+  "Mark this reading complete": "এই তিলাওয়াত সম্পন্ন হিসেবে চিহ্নিত করুন",
+  "Reading recorded.": "তিলাওয়াত রেকর্ড করা হয়েছে।",
+  "Already recorded for today.": "আজকের জন্য ইতিমধ্যে রেকর্ড করা হয়েছে।",
+  "Reading is recorded for an āyah, a range or a whole surah.": "তিলাওয়াত রেকর্ড হয় একটি আয়াত, একটি পরিসর বা একটি পূর্ণ সূরার জন্য।",
+  // v08.31 -- the persistence-readiness gate's own words. I11: an
+  // unavailability message is user-visible text like any other, and a
+  // Bangla-only reader meeting a dimmed control with an English tooltip has
+  // been told nothing. Two lengths, deliberately: the short one is the
+  // control's resting tooltip and its live-region announcement, the long one
+  // is the notice, which has room to say that nothing was lost.
+  "Recording study activity is not available yet.": "স্টাডি কার্যক্রম রেকর্ড করা এখনও চালু হয়নি।",
+  "Recording study activity is not available yet. Nothing was saved and nothing was lost — this will be switched on once the database is ready.": "স্টাডি কার্যক্রম রেকর্ড করা এখনও চালু হয়নি। কিছুই সংরক্ষণ করা হয়নি এবং কিছুই হারায়নি — ডেটাবেস প্রস্তুত হলে এটি চালু করা হবে।",
+  "Recording a Ruku' or Page as read is not switched on yet.": "রুকু' বা পৃষ্ঠা পড়া হয়েছে বলে রেকর্ড করা এখনও চালু হয়নি।",
+  "Recording a Ruku' or Page as read is not switched on yet. It is built and waiting on a small Rules update from the Owner. Nothing was saved and nothing was lost.": "রুকু' বা পৃষ্ঠা পড়া হয়েছে বলে রেকর্ড করা এখনও চালু হয়নি। এটি তৈরি হয়ে গেছে এবং মালিকের একটি ছোট Rules আপডেটের অপেক্ষায় আছে। কিছুই সংরক্ষণ করা হয়নি এবং কিছুই হারায়নি।",
+  "Remove bookmark": "বুকমার্ক সরান",
+  // Bookmark creation/update round -- the ⋯ menu's own action, only shown
+  // once a bookmark opened this session is the one still open here.
+  "Update bookmark": "বুকমার্ক আপডেট করুন", // ?
+  // Round 30 moved Copy/Share to the Ayah bar itself; round 31 moved them
+  // again, to their own bar-2 popovers with their own language checkboxes
+  // -- so the 🔖 toggle now holds only Bookmark and Play. Both earlier keys
+  // are kept, unused, rather than deleted -- same rule this project has
+  // followed every time a string stopped being called.
+  "Bookmark & play": "বুকমার্ক ও চালান",
+  "Bookmark, play & language options": "বুকমার্ক, চালান ও ভাষা অপশন",
+  "Bookmark, copy & share": "বুকমার্ক, কপি ও শেয়ার",
+  "Collapse āyah text": "আয়াতের লেখা সংক্ষিপ্ত করুন",
+  "Expand āyah text": "আয়াতের লেখা বড় করুন",
+  "Show ayah by ayah": "আয়াত অনুযায়ী দেখান", // ?
+  "Notes always stays open": "নোট সবসময় খোলা থাকে",
+  // PC popup (28 Aug 2026) -- the Note view's own floating window on
+  // desktop widths, with a side pane of the current collection's (or this
+  // Surah's) own ayat.
+  "List view": "তালিকা দৃশ্য", // ?
+  "Card view": "কার্ড দৃশ্য", // ?
+  "Maximize": "বড় করুন", // ?
+  "Previous in this group": "এই দলের পূর্ববর্তী", // ?
+  "Next in this group": "এই দলের পরবর্তী", // ?
+  "Drag to resize": "আকার পরিবর্তনে টেনে আনুন", // ?
+  "Drag onto the side pane to add this āyah there": "এই আয়াতটি যোগ করতে পাশের প্যানেলে টেনে আনুন", // ?
+  "Has a note": "একটি নোট আছে",
+  "Collapse note": "নোট সংক্ষিপ্ত করুন",
+  "Expand note": "নোট বড় করুন",
+  "{current} of {total}": "{total}-এর মধ্যে {current}", // ?
+  "Nothing to show here yet.": "এখানে দেখানোর মতো কিছু নেই এখনো।",
+  "Bangla": "বাংলা",
+  "Type notes here…": "এখানে নোট লিখুন…",
+  "Couldn't save — will try again.": "সংরক্ষণ করা যায়নি — আবার চেষ্টা করা হবে।",
+  "Changes aren't reaching the server right now — notes will save once the connection is back.":
+    "এখন পরিবর্তনগুলো সার্ভারে পৌঁছাচ্ছে না — সংযোগ ফিরে এলে নোট সংরক্ষিত হবে।",
+  // The Notes formatting toolbar (execCommand's own vocabulary).
+  "Edit palette — formats the Notes field only": "সম্পাদনা প্যালেট — শুধু নোট ঘরটি ফরম্যাট করে",
+  "Bold": "গাঢ়",
+  "Italic": "তির্যক",
+  "Underline": "আন্ডারলাইন",
+  "Strikethrough": "কাটাকাটি রেখা", // ?
+  "Heading style": "শিরোনামের ধরন",
+  "Normal": "স্বাভাবিক",
+  "Heading 1": "শিরোনাম ১",
+  "Heading 2": "শিরোনাম ২",
+  "Heading 3": "শিরোনাম ৩",
+  "Bullet list": "বুলেট তালিকা",
+  "Numbered list": "নম্বরযুক্ত তালিকা",
+  "List": "তালিকা",
+  "Clear": "মুছুন",
+  "Clear formatting": "ফরম্যাটিং মুছুন",
+
+  // =====================================================================
+  // Phase 3 of 6 — THE NINE OTHER MODULES (13 Aug 2026)
+  // =====================================================================
+  // Two different kinds of text live here:
+  //   1. The nine module pages' own words (headings, buttons, empty states).
+  //   2. PLATFORM DATA -- the subject-tree names, their glosses, and the 30
+  //      Approach Guide paragraphs. Those are seeded into each tenant's
+  //      Firestore documents in English, and langText() now falls back
+  //      through this catalogue for them (see js/lang.js). That is what
+  //      makes them translate for the owner's EXISTING tenant without any
+  //      data migration.
+  //
+  // The Guide paragraphs are the heaviest religious/technical writing in the
+  // app. Almost every line below is worth the owner's eye; the `// ?` marks
+  // are where a wrong word would do the most damage.
+
+  // --- The nine module pages ---------------------------------------------
+  "QuranRevival — Deen Study": "কুরআনরিভাইভাল — দ্বীন শিক্ষা",
+  "QuranRevival — Arabic Language": "কুরআনরিভাইভাল — আরবি ভাষা",
+  "QuranRevival — Hadith": "কুরআনরিভাইভাল — হাদীস",
+  "QuranRevival — General Study": "কুরআনরিভাইভাল — সাধারণ শিক্ষা",
+  "QuranRevival — Nature-Life": "কুরআনরিভাইভাল — প্রকৃতি ও জীবন",
+  "QuranRevival — Life Skill": "কুরআনরিভাইভাল — জীবন দক্ষতা",
+  "QuranRevival — Health": "কুরআনরিভাইভাল — স্বাস্থ্য",
+  "QuranRevival — Learn Deen On-the-Go": "কুরআনরিভাইভাল — চলার পথে দ্বীন শিক্ষা",
+  "QuranRevival — Asma ul Husna": "কুরআনরিভাইভাল — আসমাউল হুসনা",
+
+  // --- Shared module-page furniture --------------------------------------
+  "Nothing under here yet.": "এখানে এখনো কিছু নেই।",
+  "Track my progress": "আমার অগ্রগতি চিহ্নিত করুন",
+  // Enhancement round -- the Bookmark Manager's own star, now on every
+  // topic/routine/Asma detail screen as well as the Quran Note view.
+  "Bookmark this": "এটি বুকমার্ক করুন",
+  "Name this bookmark:": "এই বুকমার্কের নাম দিন:",
+  "Studied": "অধ্যয়ন করা হয়েছে",
+  "Logged today": "আজ লিপিবদ্ধ",
+  "Due today": "আজ করণীয়",
+  "Screensaver": "স্ক্রিনসেভার",
+  "Close screensaver": "স্ক্রিনসেভার বন্ধ করুন",
+  "Create a new account\n    on the onboarding page": "নতুন অ্যাকাউন্ট তৈরি করুন",
+  "You're not assigned to teach this subject for this student.":
+    "এই শিক্ষার্থীর এই বিষয়টি পড়ানোর দায়িত্ব আপনাকে দেওয়া হয়নি।",
+  "You're not assigned to teach this routine for this student.":
+    "এই শিক্ষার্থীর এই রুটিনটি পড়ানোর দায়িত্ব আপনাকে দেওয়া হয়নি।",
+
+  // --- Each module page's own introduction --------------------------------
+  "Ethics, Akhlaq, Aqeedah, Ebadah, Sharia, Fiqh, Islamic History & Story,\n     and Enhancement topics — each topic only appears here once it has a real\n     resource attached, added subject by subject from the Catalogue page.":
+    "নৈতিকতা, আখলাক, আকীদা, ইবাদাত, শরীয়াহ, ফিকহ, ইসলামের ইতিহাস ও কাহিনী এবং উন্নয়নমূলক বিষয় — প্রতিটি বিষয় কেবল তখনই এখানে দেখা যাবে যখন তালিকা পাতা থেকে তাতে প্রকৃত উপকরণ যুক্ত করা হবে।",
+  "Advanced grammar, speaking, and daily-use Arabic — each topic only\n     appears here once it has a real resource attached, added subject by\n     subject from the Catalogue page.":
+    "উচ্চতর ব্যাকরণ, কথা বলা এবং দৈনন্দিন আরবি — প্রতিটি বিষয় কেবল তখনই এখানে দেখা যাবে যখন তালিকা পাতা থেকে তাতে প্রকৃত উপকরণ যুক্ত করা হবে।",
+  "Adab Al-Mufrad, Shamayyl Muhammadiya, Al-Ghayb, Hadith Reading, and\n     Stories — each topic only appears here once it has a real resource\n     attached, added subject by subject from the Catalogue page.":
+    "আদাবুল মুফরাদ, শামায়িলে মুহাম্মাদিয়া, আল-গায়ব, হাদীস পাঠ এবং কাহিনী — প্রতিটি বিষয় কেবল তখনই এখানে দেখা যাবে যখন তালিকা পাতা থেকে তাতে প্রকৃত উপকরণ যুক্ত করা হবে।",
+  "Mathematics, English, Science, Geography, World History, Life Skill and\n     Creativity — each topic only appears here once it has a real resource\n     attached, added subject by subject from the Catalogue page. (Health\n     Study lives on its own separate Health page — a scheduled-habit screen,\n     not a topic-and-resource one.)":
+    "গণিত, ইংরেজি, বিজ্ঞান, ভূগোল, বিশ্ব ইতিহাস, জীবন দক্ষতা এবং সৃজনশীলতা — প্রতিটি বিষয় কেবল তখনই এখানে দেখা যাবে যখন তালিকা পাতা থেকে তাতে প্রকৃত উপকরণ যুক্ত করা হবে। (স্বাস্থ্য শিক্ষা তার নিজস্ব আলাদা স্বাস্থ্য পাতায় আছে — সেটি অভ্যাস-ভিত্তিক পর্দা, বিষয়-ও-উপকরণের নয়।)",
+  "Nature Studies and Agro-Farming — each topic only appears here once it\n     has a real resource attached, added subject by subject from the\n     Catalogue page.":
+    "প্রকৃতি অধ্যয়ন এবং কৃষি-খামার — প্রতিটি বিষয় কেবল তখনই এখানে দেখা যাবে যখন তালিকা পাতা থেকে তাতে প্রকৃত উপকরণ যুক্ত করা হবে।",
+  "Technology & Cognition and Trading — its own module now, independent\n     of General Study, same as Health. Add topics from the Catalogue page,\n     each with its own resource, and they'll show up here.":
+    "প্রযুক্তি ও চিন্তাশক্তি এবং ব্যবসা — এখন এটি সাধারণ শিক্ষা থেকে স্বাধীন নিজস্ব মডিউল, স্বাস্থ্যের মতোই। তালিকা পাতা থেকে বিষয় যোগ করুন, প্রতিটির নিজস্ব উপকরণসহ, তাহলে সেগুলো এখানে দেখা যাবে।",
+  "Know Your Body, Know Your Food, and Physical Activities — each routine only\n     appears here once it has a real resource attached, added subject by subject\n     from the Catalogue page. Log a routine each time it's done to build a streak;\n     claim an overall status once it's genuinely become a habit.":
+    "নিজের শরীর জানুন, নিজের খাবার জানুন এবং শারীরিক কার্যক্রম — প্রতিটি রুটিন কেবল তখনই এখানে দেখা যাবে যখন তালিকা পাতা থেকে তাতে প্রকৃত উপকরণ যুক্ত করা হবে। ধারা গড়তে প্রতিবার করার পর রুটিনটি লিপিবদ্ধ করুন; সত্যিই অভ্যাসে পরিণত হলে সামগ্রিক অবস্থা দাবি করুন।",
+  "A daily Deen learning habit for life — log it each time it's done to build a\n     streak; claim an overall status once it's genuinely become a habit. Only\n     appears here once it has a real resource attached, added from the Catalogue\n     page.":
+    "সারাজীবনের জন্য প্রতিদিনের দ্বীন শেখার অভ্যাস — ধারা গড়তে প্রতিবার করার পর লিপিবদ্ধ করুন; সত্যিই অভ্যাসে পরিণত হলে সামগ্রিক অবস্থা দাবি করুন। তালিকা পাতা থেকে প্রকৃত উপকরণ যুক্ত করা হলেই কেবল এটি এখানে দেখা যাবে।",
+  "The 99 Names of Allah — read the meaning of each, then track your own\n     progress through them. Open the screensaver to slowly cycle through the\n     Names for reflection.":
+    "আল্লাহর ৯৯টি নাম — প্রতিটির অর্থ পড়ুন, তারপর নিজের অগ্রগতি চিহ্নিত করুন। চিন্তা-ভাবনার জন্য নামগুলো ধীরে ধীরে দেখতে স্ক্রিনসেভার খুলুন।",
+
+  // --- The subject tree: top-level and module roots -----------------------
+  "Quran": "কুরআন",
+  "Arabic Language": "আরবি ভাষা",
+  "General": "সাধারণ",
+  "Health Study": "স্বাস্থ্য শিক্ষা",
+  "Daily Deen Learning Habit for Life": "সারাজীবনের দৈনন্দিন দ্বীন শেখার অভ্যাস",
+
+  // --- Deen Study subjects -------------------------------------------------
+  "Ethics": "নৈতিকতা",
+  "Social conduct": "সামাজিক আচরণ",
+  "Akhlaq": "আখলাক",
+  "Behaviour — personal character": "আচরণ — ব্যক্তিগত চরিত্র",
+  "Aqeedah": "আকীদা",
+  "Ebadah": "ইবাদাত",
+  "Sharia": "শরীয়াহ",
+  "Fiqh": "ফিকহ",
+  "Islamic History & Story": "ইসলামের ইতিহাস ও কাহিনী",
+  "Enhancement": "উন্নয়ন", // ?
+  "Islamic Lifestyle": "ইসলামী জীবনধারা",
+  "Islamic Mindset": "ইসলামী মানসিকতা",
+  "Islamic Sports & Entertainment": "ইসলামী খেলাধুলা ও বিনোদন",
+
+  // --- Hadith subjects -----------------------------------------------------
+  "Adab Al-Mufrad": "আদাবুল মুফরাদ",
+  "Learning Akhlaq before knowledge": "জ্ঞানের আগে আখলাক শেখা",
+  "Shamayyl Muhammadiya": "শামায়িলে মুহাম্মাদিয়া",
+  "Learning to love Rasulullah △": "রাসূলুল্লাহ ﷺ-কে ভালোবাসতে শেখা",
+  "Hadith — Al-Ghayb": "হাদীস — আল-গায়ব",
+  "Knowledge of Allah, Malaikah, Jannah, Jahannam, Qiyamah, Qabr, Shaitan — awareness of the unseen, for mindfulness and focus on Akhirah":
+    "আল্লাহ, মালাইকা, জান্নাত, জাহান্নাম, কিয়ামত, কবর, শয়তান সম্পর্কে জ্ঞান — অদৃশ্য সম্পর্কে সচেতনতা, মনোযোগ ও আখিরাতমুখিতার জন্য", // ?
+  "Hadith Reading": "হাদীস পাঠ",
+  "Hadith — Stories": "হাদীস — কাহিনী",
+
+  // --- Arabic subjects -----------------------------------------------------
+  "Detailed Arabic language study. Basic Grammar is NOT here -- it lives in QuranRevival as Approach #6.":
+    "বিস্তারিত আরবি ভাষা অধ্যয়ন। মৌলিক ব্যাকরণ এখানে নেই — সেটি কুরআনরিভাইভালে ৬ নং পদ্ধতি হিসেবে আছে।",
+  "Arabic Speaking": "আরবি বলা",
+  "Arabic Writing": "আরবি লেখা",
+  "Arabic Daily Uses": "দৈনন্দিন আরবি ব্যবহার",
+  "Names of things, numbers, etc.": "জিনিসের নাম, সংখ্যা ইত্যাদি",
+  "Calligraphy": "ক্যালিগ্রাফি",
+
+  // --- General Study subjects ----------------------------------------------
+  "Mathematics": "গণিত",
+  "Science": "বিজ্ঞান",
+  "Geography": "ভূগোল",
+  "World History": "বিশ্ব ইতিহাস",
+  "Creativity": "সৃজনশীলতা",
+  "Technology & Cognition": "প্রযুক্তি ও চিন্তাশক্তি",
+  "Trading": "ব্যবসা",
+  "moved from General Study ▸ Enhancement": "সাধারণ শিক্ষা ▸ উন্নয়ন থেকে সরানো হয়েছে",
+  "moved up from General Study ▸ Enhancement": "সাধারণ শিক্ষা ▸ উন্নয়ন থেকে উপরে আনা হয়েছে",
+
+  // --- Nature-Life subjects -------------------------------------------------
+  "Nature Studies": "প্রকৃতি অধ্যয়ন",
+  "Agro-Farming": "কৃষি-খামার",
+
+  // --- Health subjects and routines ------------------------------------------
+  "Know Your Body": "নিজের শরীর জানুন",
+  "Know Your Food": "নিজের খাবার জানুন",
+  "Physical Activities": "শারীরিক কার্যক্রম",
+  "Breathing Exercise": "শ্বাস-প্রশ্বাসের ব্যায়াম",
+  "Standing Movements": "দাঁড়ানো অবস্থার ব্যায়াম",
+  "Sitting Movements": "বসা অবস্থার ব্যায়াম",
+  "Lying Movements": "শোয়া অবস্থার ব্যায়াম",
+  "Walking": "হাঁটা",
+  "Squatting": "স্কোয়াট",
+  "HIIT": "HIIT",
+  "Fasting": "রোযা",
+
+  // --- The 30 Approaches: their seven section names --------------------------
+  "Core": "মূল",
+  "Building Foundation / Learning Tools": "ভিত্তি গঠন / শেখার উপকরণ",
+  "Engagement / Attachment": "সম্পৃক্ততা / সংযোগ",
+  "Critical Reasoning: Nazar / 'Aql": "সূক্ষ্ম চিন্তা: নাযার / আকল", // ?
+  "Critical Reasoning: Tafakkur / Tadabbur": "সূক্ষ্ম চিন্তা: তাফাক্কুর / তাদাব্বুর", // ?
+  "Critical Reasoning: Judgement / Authority": "সূক্ষ্ম চিন্তা: বিচার / কর্তৃত্ব", // ?
+  "Critical Reasoning: Applied Threads": "সূক্ষ্ম চিন্তা: প্রয়োগমূলক ধারা", // ?
+  "A'mal / Application": "আমল / প্রয়োগ",
+
+  // --- Approach names not already carrying their own Bangla ------------------
+  "Hifz / Memorising": "হিফয / মুখস্থকরণ",
+  "Reading (with Tajweed)": "পাঠ (তাজবীদসহ)",
+  "Reading (with Meaning)": "পাঠ (অর্থসহ)",
+  "Reading — Word-by-Word Meaning": "পাঠ — শব্দে শব্দে অর্থ",
+  "Reading in Arabic": "আরবিতে পাঠ",
+  "Listening Attentively (Arabic only)": "মনোযোগ দিয়ে শোনা (শুধু আরবি)",
+  "Listening Attentively (Arabic with meaning)": "মনোযোগ দিয়ে শোনা (আরবি ও অর্থসহ)",
+  "Ruqyah Listening": "রুকইয়াহ শ্রবণ",
+  "Language Learning (Basic Grammar)": "ভাষা শিক্ষা (মৌলিক ব্যাকরণ)",
+  "Language Learning (Advanced)": "ভাষা শিক্ষা (উচ্চতর)",
+  "Dua Memorising": "দুআ মুখস্থকরণ",
+  "Deriving Dua": "দুআ উদ্ঘাটন", // ?
+  "Deriving Names & Attributes of Allah": "আল্লাহর নাম ও গুণাবলি উদ্ঘাটন", // ?
+  "Deriving Understanding of the Prophets": "নবীগণ সম্পর্কে উপলব্ধি অর্জন", // ?
+  "Reflecting on the Miracles": "মুজিযা নিয়ে চিন্তা",
+  "Story Learning": "কাহিনী শিক্ষা",
+  "Journaling": "নিজের ভাবনা লেখা",
+  "Group / Class Discussion": "দলগত / শ্রেণি আলোচনা",
+  "Teaching Others": "অন্যকে শেখানো",
+  "Living by it (Self-Assessment)": "সে অনুযায়ী জীবনযাপন (আত্মমূল্যায়ন)",
+  "Judgment (Fahm)": "বিচারবুদ্ধি (ফাহম)", // ?
+  "Beginner's Level — Observation (Nazar)": "প্রাথমিক স্তর — পর্যবেক্ষণ (নাযার)", // ?
+  "Primary Level — Common Sense ('Aql / Ta'aqqul)": "প্রথম স্তর — সাধারণ বিবেচনা (আকল / তাআক্কুল)", // ?
+  "Intermediate Level — Reflecting / Pondering (Tafakkur)": "মধ্যম স্তর — চিন্তা / অনুধাবন (তাফাক্কুর)", // ?
+  "Advanced Level — Deep Contemplation (Tadabbur)": "উন্নত স্তর — গভীর অনুধাবন (তাদাব্বুর)", // ?
+  "Higher Level — Understanding / Fiqh (Tafaqquh)": "উচ্চতর স্তর — উপলব্ধি / ফিকহ (তাফাক্কুহ)", // ?
+  "Upper Higher Level — Dhikr / Tadhakkur": "সর্বোচ্চ স্তর — যিকর / তাযাক্কুর", // ?
+  "Authority — Hukm / Tahakum": "কর্তৃত্ব — হুকম / তাহাকুম", // ?
+  "Mastery Level — Where Fiqh turns to Ruling (9:122 pivot)":
+    "পূর্ণতার স্তর — যেখানে ফিকহ হুকমে পরিণত হয় (৯:১২২ কেন্দ্রবিন্দু)", // ?
+  "Da'wah — Sharing Knowledge / Calling Others": "দাওয়াহ — জ্ঞান ভাগ করা / অন্যকে আহ্বান",
+
+  // --- Approach Guide: "What it is" -------------------------------------------
+  "Committing ayahs to memory so they can be recited without looking at the text.":
+    "আয়াতগুলো মুখস্থ করা, যাতে লেখার দিকে না তাকিয়েই তিলাওয়াত করা যায়।",
+  "Reciting the Arabic text accurately, applying the rules of tajweed.":
+    "তাজবীদের নিয়ম প্রয়োগ করে আরবি পাঠ সঠিকভাবে তিলাওয়াত করা।",
+  "Reading the Arabic text alongside its translation to understand what is being read.":
+    "যা পড়া হচ্ছে তা বোঝার জন্য আরবি পাঠের পাশাপাশি তার অনুবাদ পড়া।",
+  "Learning the meaning of each individual Arabic word in a passage.":
+    "একটি অংশের প্রতিটি আরবি শব্দের অর্থ আলাদাভাবে শেখা।",
+  "Listening to the Arabic recitation with full attention, without reading along.":
+    "সাথে না পড়ে, পূর্ণ মনোযোগ দিয়ে আরবি তিলাওয়াত শোনা।",
+  "Listening to the recitation while also taking in its meaning.":
+    "তিলাওয়াত শোনার সাথে সাথে তার অর্থও গ্রহণ করা।",
+  "Listening to ruqyah recitation for protection and comfort.":
+    "সুরক্ষা ও প্রশান্তির জন্য রুকইয়াহ তিলাওয়াত শোনা।",
+  "Learning the basic Arabic grammar needed to read and understand Quranic text.":
+    "কুরআনের পাঠ পড়তে ও বুঝতে প্রয়োজনীয় মৌলিক আরবি ব্যাকরণ শেখা।",
+  "Practising writing the Arabic letters and words of the text by hand.":
+    "পাঠের আরবি অক্ষর ও শব্দ হাতে লেখার অনুশীলন করা।",
+  "Practising the artistic writing of Arabic script.": "আরবি লিপির শৈল্পিক লেখার অনুশীলন করা।",
+  "Memorising a specific dua, in Arabic, with its meaning.":
+    "একটি নির্দিষ্ট দুআ আরবিতে, তার অর্থসহ মুখস্থ করা।",
+  "Finding duas embedded in or suggested by the ayah.":
+    "আয়াতের ভেতরে থাকা বা আয়াত থেকে বোঝা যায় এমন দুআ খুঁজে বের করা।",
+  "Identifying the Names and Attributes of Allah mentioned or implied in the ayah.":
+    "আয়াতে উল্লিখিত বা ইঙ্গিতে থাকা আল্লাহর নাম ও গুণাবলি চিহ্নিত করা।",
+  "Learning about the Prophets (peace be upon them) through what the ayah says about them.":
+    "আয়াত নবীগণ (আলাইহিমুস সালাম) সম্পর্কে যা বলে, তার মাধ্যমে তাঁদের সম্পর্কে জানা।",
+  "Reflecting on the miracles mentioned in the Quran and what they point to.":
+    "কুরআনে উল্লিখিত মুজিযা এবং সেগুলো কীসের দিকে ইঙ্গিত করে, তা নিয়ে চিন্তা করা।",
+  "Learning the stories connected to the ayah or surah being studied.":
+    "যে আয়াত বা সূরা পড়া হচ্ছে তার সাথে সম্পৃক্ত কাহিনীগুলো শেখা।",
+  "Writing personal notes and reflections about what has been studied.":
+    "যা অধ্যয়ন করা হয়েছে সে সম্পর্কে ব্যক্তিগত নোট ও ভাবনা লেখা।",
+  "Discussing what has been learned with others.": "যা শেখা হয়েছে তা অন্যদের সাথে আলোচনা করা।",
+  "Teaching what has been learned to someone else in a structured way.":
+    "যা শেখা হয়েছে তা সুবিন্যস্তভাবে অন্য কাউকে শেখানো।",
+  "Honestly assessing whether you are living by what you have learned.":
+    "আপনি যা শিখেছেন সে অনুযায়ী চলছেন কি না, তা সততার সাথে মূল্যায়ন করা।",
+  "Noticing what the text actually says, plainly, before interpreting it.":
+    "ব্যাখ্যা করার আগে পাঠটি প্রকৃতপক্ষে কী বলছে, তা স্পষ্টভাবে লক্ষ করা।",
+  "Applying ordinary reasoning to what has been observed in the text.":
+    "পাঠে যা পর্যবেক্ষণ করা হয়েছে তাতে সাধারণ যুক্তি প্রয়োগ করা।",
+  "Pondering the meaning of the ayah beyond its surface reading.":
+    "আয়াতের বাহ্যিক পাঠের বাইরে গিয়ে তার অর্থ নিয়ে চিন্তা করা।",
+  "Going deeper than reflection — contemplating connections, causes, and implications.":
+    "চিন্তার চেয়েও গভীরে যাওয়া — সংযোগ, কারণ ও ফলাফল নিয়ে অনুধাবন করা।",
+  "Building a structured understanding of what the ayah requires or teaches.":
+    "আয়াত কী দাবি করে বা কী শেখায়, সে সম্পর্কে সুবিন্যস্ত উপলব্ধি গড়ে তোলা।",
+  "Letting the understanding turn into active remembrance of Allah.":
+    "উপলব্ধিকে আল্লাহর সক্রিয় স্মরণে রূপান্তরিত হতে দেওয়া।",
+  "Exercising sound judgement in applying what has been understood.":
+    "যা বোঝা হয়েছে তা প্রয়োগে সুষ্ঠু বিচারবুদ্ধি কাজে লাগানো।",
+  "Recognising the authority of a ruling once soundly reached.":
+    "সঠিকভাবে পৌঁছানো একটি হুকমের কর্তৃত্ব স্বীকার করা।",
+  "Reaching the point where understanding becomes a basis for a considered ruling.":
+    "সেই পর্যায়ে পৌঁছানো যেখানে উপলব্ধি একটি বিবেচিত হুকমের ভিত্তি হয়ে ওঠে।",
+  "Sharing what has been learned with someone else, inviting them toward it.":
+    "যা শেখা হয়েছে তা অন্য কারো সাথে ভাগ করা এবং তার দিকে আহ্বান করা।",
+
+  // --- Approach Guide: "How to do it" ------------------------------------------
+  "Repeat a short portion aloud in a loop until it is secure, then recite it from memory and check against the text.":
+    "একটি ছোট অংশ বারবার শব্দ করে পড়ুন যতক্ষণ না তা পাকা হয়, তারপর মুখস্থ থেকে তিলাওয়াত করে পাঠের সাথে মিলিয়ে দেখুন।",
+  "Read aloud from the mushaf, applying each tajweed rule as it appears; use the audio and repeat/loop tools to match a reciter.":
+    "মুসহাফ থেকে শব্দ করে পড়ুন, প্রতিটি তাজবীদের নিয়ম যেখানে আসে সেখানে প্রয়োগ করুন; ক্বারীর সাথে মেলাতে অডিও ও পুনরাবৃত্তির সুবিধা ব্যবহার করুন।",
+  "Read a passage, then read its meaning; go back and forth until the meaning is clear.":
+    "একটি অংশ পড়ুন, তারপর তার অর্থ পড়ুন; অর্থ স্পষ্ট না হওয়া পর্যন্ত দুয়ের মধ্যে যাওয়া-আসা করুন।",
+  "Use the word-by-word panel to see each word's meaning underneath it while reading.":
+    "পড়ার সময় প্রতিটি শব্দের নিচে তার অর্থ দেখতে শব্দে-শব্দে অংশটি ব্যবহার করুন।",
+  "Play the audio and listen without looking at the text; use loop for a shorter passage.":
+    "অডিও চালিয়ে পাঠের দিকে না তাকিয়ে শুনুন; ছোট অংশের জন্য পুনরাবৃত্তি ব্যবহার করুন।",
+  "Listen to the audio with the translation visible or read alongside it.":
+    "অনুবাদ সামনে রেখে, বা পাশাপাশি পড়তে পড়তে অডিও শুনুন।",
+  "Play the ruqyah audio in a quiet setting and listen attentively, using loop as needed.":
+    "নিরিবিলি পরিবেশে রুকইয়াহর অডিও চালিয়ে মনোযোগ দিয়ে শুনুন, প্রয়োজনে পুনরাবৃত্তি ব্যবহার করুন।",
+  "Study one grammar point at a time and find examples of it in the text being studied.":
+    "একবারে একটি ব্যাকরণের বিষয় পড়ুন এবং যে পাঠ পড়ছেন তাতে তার উদাহরণ খুঁজুন।",
+  "Copy the assigned text by hand, letter by letter, checking each word against the original.":
+    "নির্ধারিত পাঠটি হাতে অক্ষরে অক্ষরে লিখুন, প্রতিটি শব্দ মূলের সাথে মিলিয়ে দেখুন।",
+  "Copy a short phrase or ayah using calligraphy strokes, following a model.":
+    "একটি নমুনা অনুসরণ করে ক্যালিগ্রাফির টানে একটি ছোট বাক্য বা আয়াত লিখুন।",
+  "Repeat the dua aloud in short phrases, building up to the whole dua, checking the meaning as you go.":
+    "দুআটি ছোট ছোট অংশে শব্দ করে বারবার পড়ুন, ধীরে ধীরে পুরো দুআ পর্যন্ত যান, সাথে সাথে অর্থ মিলিয়ে নিন।",
+  "Look for language of asking, praising, or turning to Allah, and draw out the dua in it.":
+    "চাওয়া, প্রশংসা বা আল্লাহর দিকে ফেরার ভাষা খুঁজুন, এবং তার ভেতর থেকে দুআটি বের করুন।",
+  "Look for a Name or Attribute in the text, and explain what it means here.":
+    "পাঠে একটি নাম বা গুণ খুঁজুন, এবং এখানে তার অর্থ কী তা ব্যাখ্যা করুন।",
+  "Identify what the ayah teaches about a Prophet's character, trial, or example.":
+    "আয়াতটি কোনো নবীর চরিত্র, পরীক্ষা বা আদর্শ সম্পর্কে কী শেখায় তা চিহ্নিত করুন।",
+  "Identify the miracle in the text and consider what it demonstrates about Allah's power.":
+    "পাঠে মুজিযাটি চিহ্নিত করুন এবং তা আল্লাহর কুদরত সম্পর্কে কী প্রমাণ করে তা ভাবুন।",
+  "Read or listen to the story, then retell it in your own words.":
+    "কাহিনীটি পড়ুন বা শুনুন, তারপর নিজের ভাষায় তা বলুন।",
+  "After a study session, write a few lines about what stood out and why.":
+    "অধ্যয়নের পর কী বিশেষভাবে মনে ধরল এবং কেন, তা নিয়ে কয়েক লাইন লিখুন।",
+  "Share what you learned in a group or class setting and listen to others' points.":
+    "যা শিখেছেন তা দলে বা শ্রেণিতে ভাগ করুন এবং অন্যদের কথা শুনুন।",
+  "Prepare a short explanation of the topic and teach it to another person.":
+    "বিষয়টির একটি সংক্ষিপ্ত ব্যাখ্যা তৈরি করুন এবং অন্য একজনকে শেখান।",
+  "Reflect on a recent situation and ask whether it matched what was learned.":
+    "সাম্প্রতিক কোনো ঘটনা নিয়ে ভাবুন এবং দেখুন তা শেখা বিষয়ের সাথে মিলেছিল কি না।",
+  "Read the ayah slowly and list what it literally describes or states.":
+    "আয়াতটি ধীরে পড়ুন এবং তা আক্ষরিকভাবে কী বর্ণনা করে বা বলে তার তালিকা করুন।",
+  "Ask what the observation means in plain, common-sense terms.":
+    "পর্যবেক্ষণটির অর্থ সহজ, সাধারণ বিবেচনায় কী দাঁড়ায় তা জিজ্ঞেস করুন।",
+  "Sit with the ayah and ask what it means for life, without rushing to an answer.":
+    "আয়াতটি নিয়ে স্থির হয়ে বসুন এবং তাড়াহুড়ো না করে ভাবুন জীবনের জন্য এর অর্থ কী।",
+  "Consider how the ayah connects to other ayahs, to life, and to one's own state.":
+    "আয়াতটি অন্য আয়াতের সাথে, জীবনের সাথে এবং নিজের অবস্থার সাথে কীভাবে যুক্ত তা বিবেচনা করুন।",
+  "Work out the practical understanding the ayah leads to, referring to established knowledge where needed.":
+    "আয়াতটি যে ব্যবহারিক উপলব্ধির দিকে নিয়ে যায় তা বের করুন, প্রয়োজনে স্বীকৃত জ্ঞানের সাহায্য নিন।",
+  "Return to the ayah's meaning in moments of daily life, as a reminder.":
+    "দৈনন্দিন জীবনের নানা মুহূর্তে স্মারক হিসেবে আয়াতটির অর্থে ফিরে আসুন।",
+  "Apply the understanding to a real situation and judge what it calls for.":
+    "উপলব্ধিটি একটি বাস্তব পরিস্থিতিতে প্রয়োগ করুন এবং তা কী দাবি করে তা বিচার করুন।",
+  "Identify what ruling or authority the understanding leads to, and why it holds.":
+    "উপলব্ধিটি কোন হুকম বা কর্তৃত্বের দিকে নিয়ে যায় এবং কেন তা টিকে থাকে, তা চিহ্নিত করুন।",
+  "Work from the understanding gathered so far toward a reasoned conclusion, under guidance.":
+    "এ পর্যন্ত অর্জিত উপলব্ধি থেকে, পথনির্দেশনার অধীনে, একটি যুক্তিসঙ্গত সিদ্ধান্তের দিকে এগোন।",
+  "Explain a point you have learned to someone else, in your own words.":
+    "আপনি শিখেছেন এমন একটি বিষয় নিজের ভাষায় অন্য কাউকে ব্যাখ্যা করুন।",
+  "Go through the topic's resource, then claim a status once it has actually been covered.":
+    "বিষয়টির উপকরণটি সম্পূর্ণ দেখুন, তারপর সত্যিই শেষ হলে একটি অবস্থা দাবি করুন।",
+  "Log it from the routine's page each time it's done, then claim an overall status once it's genuinely a habit.":
+    "প্রতিবার করার পর রুটিনের পাতা থেকে লিপিবদ্ধ করুন, তারপর সত্যিই অভ্যাসে পরিণত হলে সামগ্রিক অবস্থা দাবি করুন।",
+
+  // --- Approach Guide: "How to measure your progress" ---------------------------
+  "How much can be recited from memory, start to finish, without a mistake.":
+    "শুরু থেকে শেষ পর্যন্ত কতটুকু ভুল ছাড়া মুখস্থ থেকে তিলাওয়াত করা যায়।",
+  "How much of the assigned portion you can read correctly, with tajweed rules applied, without correction.":
+    "নির্ধারিত অংশের কতটুকু তাজবীদের নিয়মসহ, সংশোধন ছাড়া সঠিকভাবে পড়া যায়।",
+  "Whether you can explain in your own words what the passage you read means.":
+    "আপনি যে অংশটি পড়েছেন তার অর্থ নিজের ভাষায় ব্যাখ্যা করতে পারেন কি না।",
+  "How many of the words in the assigned portion you can translate without the panel.":
+    "নির্ধারিত অংশের কতগুলো শব্দ সাহায্য ছাড়াই অনুবাদ করতে পারেন।",
+  "Whether you can follow along and recognise where you are in the recitation.":
+    "তিলাওয়াতের সাথে চলতে এবং কোথায় আছেন তা বুঝতে পারেন কি না।",
+  "Whether you can explain the meaning of what was just heard.":
+    "এইমাত্র যা শুনলেন তার অর্থ ব্যাখ্যা করতে পারেন কি না।",
+  "Whether you can identify the grammar point being studied in a new, unseen ayah.":
+    "যে ব্যাকরণের বিষয়টি পড়ছেন তা নতুন, অদেখা কোনো আয়াতে চিহ্নিত করতে পারেন কি না।",
+  "Whether the written copy matches the original accurately.":
+    "হাতে লেখা অনুলিপিটি মূলের সাথে হুবহু মেলে কি না।",
+  "Whether the calligraphy piece is complete and legible.":
+    "ক্যালিগ্রাফির কাজটি সম্পূর্ণ ও পাঠযোগ্য কি না।",
+  "Whether the dua can be recited from memory, correctly, with its meaning known.":
+    "দুআটি অর্থ জেনে, সঠিকভাবে, মুখস্থ থেকে পড়া যায় কি না।",
+  "Whether a dua has been correctly identified and articulated from the text.":
+    "পাঠ থেকে একটি দুআ সঠিকভাবে চিহ্নিত ও প্রকাশ করা হয়েছে কি না।",
+  "Whether the Name or Attribute has been correctly identified and explained.":
+    "নাম বা গুণটি সঠিকভাবে চিহ্নিত ও ব্যাখ্যা করা হয়েছে কি না।",
+  "Whether a clear lesson about a Prophet has been drawn from the text.":
+    "পাঠ থেকে কোনো নবী সম্পর্কে স্পষ্ট শিক্ষা নেওয়া হয়েছে কি না।",
+  "Whether the miracle and its significance have been clearly identified.":
+    "মুজিযা এবং তার তাৎপর্য স্পষ্টভাবে চিহ্নিত হয়েছে কি না।",
+  "Whether the story can be retold accurately, in the right order.":
+    "কাহিনীটি সঠিক ক্রমে, নির্ভুলভাবে আবার বলা যায় কি না।",
+  "Whether a journal entry has been written for the session.":
+    "এই অধ্যয়নের জন্য নিজের ভাবনা লেখা হয়েছে কি না।",
+  "Whether you took part in a discussion about the material.":
+    "বিষয়টি নিয়ে আলোচনায় অংশ নিয়েছেন কি না।",
+  "Whether the topic was taught, and whether the learner understood it.":
+    "বিষয়টি শেখানো হয়েছে কি না, এবং শিক্ষার্থী তা বুঝেছে কি না।",
+  "Whether an honest self-assessment has been recorded.":
+    "একটি সৎ আত্মমূল্যায়ন লিপিবদ্ধ হয়েছে কি না।",
+  "Whether the plain content of the ayah can be described accurately.":
+    "আয়াতের সরল বক্তব্য নির্ভুলভাবে বর্ণনা করা যায় কি না।",
+  "Whether a sensible, reasoned point can be drawn from the observation.":
+    "পর্যবেক্ষণ থেকে একটি যুক্তিসঙ্গত, বিবেচিত কথা বের করা যায় কি না।",
+  "Whether a genuine reflection has been recorded, not just a restatement.":
+    "কেবল পুনরাবৃত্তি নয়, প্রকৃত চিন্তা লিপিবদ্ধ হয়েছে কি না।",
+  "Whether the contemplation shows a connection made, not only an observation.":
+    "অনুধাবনে কেবল পর্যবেক্ষণ নয়, একটি সংযোগ ধরা পড়েছে কি না।",
+  "Whether a sound, structured understanding has been reached.":
+    "একটি সুষ্ঠু, সুবিন্যস্ত উপলব্ধিতে পৌঁছানো গেছে কি না।",
+  "Whether it happens without being reminded, most of the time.":
+    "মনে করিয়ে না দিলেও অধিকাংশ সময় তা হয় কি না।",
+  "Whether the judgement made is sound and well-explained.":
+    "যে বিচার করা হয়েছে তা সুষ্ঠু ও সুব্যাখ্যাত কি না।",
+  "Whether a reasoned, sound conclusion has been reached and can be explained.":
+    "একটি যুক্তিসঙ্গত, সুষ্ঠু সিদ্ধান্তে পৌঁছানো গেছে এবং তা ব্যাখ্যা করা যায় কি না।",
+  "Whether the knowledge was shared with at least one other person.":
+    "জ্ঞানটি অন্তত একজনের সাথে ভাগ করা হয়েছে কি না।",
+  "Whether this topic has been studied, at a level worth recording.":
+    "বিষয়টি লিপিবদ্ধ করার মতো পর্যায়ে অধ্যয়ন করা হয়েছে কি না।",
+  "Whether this routine has become a habit worth recording, on top of logging it day to day.":
+    "দৈনন্দিন লিপিবদ্ধ করার পাশাপাশি রুটিনটি লিপিবদ্ধ করার মতো অভ্যাসে পরিণত হয়েছে কি না।",
+  "Whether you can explain the topic's content back, in your own words.":
+    "বিষয়টির বক্তব্য নিজের ভাষায় ফিরে বলতে পারেন কি না।",
+  "This approach is about the practice itself -- a specific measure is not required to make progress here.":
+    "এই পদ্ধতিটি অনুশীলনের নিজেরই বিষয় — এখানে অগ্রগতির জন্য নির্দিষ্ট কোনো মাপকাঠি প্রয়োজন নেই।",
+
+  // --- About page, the long blurb ---------------------------------------
+  "What's actually built versus only planned — read directly from this\n     app's own feature registry, never restated by hand, so this page can't\n     drift out of sync with the real code.":
+    "কী কী সত্যিই তৈরি হয়েছে আর কী কেবল পরিকল্পনায় আছে — সরাসরি অ্যাপের নিজস্ব বৈশিষ্ট্য-নথি থেকে পড়া, হাতে লেখা নয়, তাই এই পাতাটি কখনো প্রকৃত কোড থেকে আলাদা হয়ে যেতে পারে না।",
+  "Phase 0 & 1 — individually tracked features":
+    "পর্যায় ০ ও ১ — আলাদাভাবে চিহ্নিত বৈশিষ্ট্যসমূহ",
+
+  // =====================================================================
+  // PHASE 4 — TRACKING & FEEDBACK
+  // Records, Monitor, Homework, Course Offers, the Continue strip, and the
+  // shared write-failure sentences every screen in the app can show.
+  // =====================================================================
+
+  // --- Shell strings phases 1-3 missed, found by reading a real page -----
+  // The "no account yet" dead end (12 pages carried their own English copy)
+  // and errors.js's eight plain-language write-failure sentences, which no
+  // area of the coverage report counted at all.
+  "no account found yet.": "এখনো কোনো অ্যাকাউন্ট পাওয়া যায়নি।",
+  "If someone invited you to join an existing madrasah, use the invite link they sent you (check your email) — don't create a new one here.":
+    "কেউ যদি আপনাকে বিদ্যমান কোনো মাদরাসায় যোগ দিতে আমন্ত্রণ জানিয়ে থাকেন, তবে তাঁদের পাঠানো আমন্ত্রণ-লিংকটি ব্যবহার করুন (আপনার ইমেইল দেখুন) — এখানে নতুন করে অ্যাকাউন্ট তৈরি করবেন না।",
+  "Create a new account on the onboarding page": "সূচনা পাতায় নতুন অ্যাকাউন্ট তৈরি করুন",
+
+  "That save was blocked by a permissions rule. Nothing was lost, but it did not save — please tell the admin.":
+    "অনুমতির নিয়মে সংরক্ষণটি আটকে গেছে। কিছুই হারায়নি, তবে সংরক্ষণ হয়নি — অনুগ্রহ করে প্রশাসককে জানান।",
+  "Could not reach the server. This will save automatically once the connection is back.":
+    "সার্ভারে পৌঁছানো যায়নি। সংযোগ ফিরে এলে এটি নিজে থেকেই সংরক্ষিত হবে।",
+  "You're signed out, so that could not be saved. Please sign in again.":
+    "আপনি সাইন আউট অবস্থায় আছেন, তাই এটি সংরক্ষণ করা যায়নি। অনুগ্রহ করে আবার সাইন ইন করুন।",
+  "That record could not be found to update. Please refresh and try again.":
+    "হালনাগাদ করার মতো রেকর্ডটি খুঁজে পাওয়া যায়নি। অনুগ্রহ করে পাতাটি রিফ্রেশ করে আবার চেষ্টা করুন।",
+  "That save took too long and was stopped. Please try again.":
+    "সংরক্ষণে অনেক বেশি সময় লাগায় তা থামিয়ে দেওয়া হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।",
+  "That save was interrupted before it finished. Please try again.":
+    "সংরক্ষণটি শেষ হওয়ার আগেই বাধাগ্রস্ত হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।",
+  "The server is too busy right now. Please try again in a moment.":
+    "সার্ভার এই মুহূর্তে অত্যন্ত ব্যস্ত। অনুগ্রহ করে একটু পরে আবার চেষ্টা করুন।",
+  "You've used all the invites allowed for this account. Ask the admin to raise the limit if you need more.":
+    "এই অ্যাকাউন্টের জন্য অনুমোদিত সব আমন্ত্রণ ব্যবহার হয়ে গেছে। আরও প্রয়োজন হলে প্রশাসককে সীমা বাড়াতে বলুন।",
+  "That save did not go through ({code}). Please try again, and tell the admin if it keeps happening.":
+    "সংরক্ষণটি সম্পন্ন হয়নি ({code})। অনুগ্রহ করে আবার চেষ্টা করুন, এবং বারবার হতে থাকলে প্রশাসককে জানান।",
+
+  // --- Role names (js/labels.js) -----------------------------------------
+  // Shown in every page's tenant picker -- "Madrasatul Muslimeen (Owner,
+  // Prime)" -- and in the nav's "Previewing as" notice.
+  "Owner": "মালিক", // ?
+  "Prime": "প্রাইম", // ? no settled Bangla term; kept as the app's own coined role name
+  "Guardian": "অভিভাবক",
+  "Platform admin": "প্ল্যাটফর্ম প্রশাসক",
+
+  // --- Unit types (unit-keys.js) ----------------------------------------
+  // Ayah / Surah / Juz / Page / Ruku already have their Bangla from phase 2.
+  "Range": "পরিসর",
+  "Hizb": "হিযব",
+  "Rub": "রুব",
+  "Manzil": "মানযিল",
+
+  // --- Page titles and headings -----------------------------------------
+  "QuranRevival — Records": "কুরআনরিভাইভাল — রেকর্ড",
+  "QuranRevival — Monitor": "কুরআনরিভাইভাল — পর্যবেক্ষণ",
+  "QuranRevival — Homework": "কুরআনরিভাইভাল — বাড়ির কাজ",
+  "QuranRevival — Course Offers": "কুরআনরিভাইভাল — কোর্স অফার",
+  "Claim a status against a unit of study, see it confirmed or returned, and\n     confirm a whole surah, subject or week in one go.":
+    "অধ্যয়নের কোনো একটি এককের বিপরীতে একটি অবস্থা দাবি করুন, তা নিশ্চিত হলো নাকি ফেরত এলো দেখুন, এবং একটি পূর্ণ সূরা, বিষয় বা সপ্তাহ একসাথে নিশ্চিত করুন।",
+  "One report covering every module — whatever has actually been claimed or\n     logged. Quran gets an extra Approach-status section below, since it is\n     the only subject with structured progress data today.":
+    "সব মডিউল মিলিয়ে একটি প্রতিবেদন — যা কিছু সত্যিই দাবি করা বা লিপিবদ্ধ হয়েছে। নিচে কুরআনের জন্য পদ্ধতি-ভিত্তিক একটি বাড়তি অংশ আছে, কারণ আজ কেবল এই বিষয়টিরই সুবিন্যস্ত অগ্রগতির তথ্য আছে।",
+  "Assign to a person, mark with a score and comment, and keep a private\n     note about a student for yourself. A teacher must assign through a\n     class or course offer they actively teach.":
+    "একজন ব্যক্তিকে কাজ দিন, নম্বর ও মন্তব্যসহ মূল্যায়ন করুন, এবং কোনো শিক্ষার্থী সম্পর্কে নিজের জন্য ব্যক্তিগত নোট রাখুন। একজন শিক্ষককে অবশ্যই তিনি সক্রিয়ভাবে পড়ান এমন কোনো ক্লাস বা কোর্স অফারের মাধ্যমে কাজ দিতে হবে।",
+  "A shared schedule several people follow together: create an offer, enrol\n     people, and see who is in it.":
+    "একটি যৌথ সময়সূচি যা কয়েকজন একসাথে অনুসরণ করেন: একটি অফার তৈরি করুন, লোক ভর্তি করুন, এবং কারা আছেন দেখুন।",
+
+  // --- Records: the claim form ------------------------------------------
+  "Unit type": "এককের ধরন", // ?
+  "Unit": "একক", // ?
+  "Reference": "সূত্র", // ?
+  "Domain tags": "ক্ষেত্রের ট্যাগ", // ?
+  "Domains": "ক্ষেত্রসমূহ", // ?
+  "New domain tag": "নতুন ক্ষেত্রের ট্যাগ", // ?
+  "+ Add": "+ যোগ করুন",
+  "Notes (optional)": "নোট (ঐচ্ছিক)",
+  "No domain tags yet.": "এখনো কোনো ক্ষেত্রের ট্যাগ নেই।",
+  "(no Approaches for this subject yet)": "(এই বিষয়ের জন্য এখনো কোনো পদ্ধতি নেই)",
+  "Add a person first.": "আগে একজন ব্যক্তি যোগ করুন।",
+  "Enter a reference first.": "আগে একটি সূত্র লিখুন।",
+  "Couldn't read that reference: {message}": "সূত্রটি পড়া যায়নি: {message}",
+  "No Approach selected — pick a subject that has Approaches (Quran, for now).":
+    "কোনো পদ্ধতি নির্বাচন করা হয়নি — এমন একটি বিষয় বেছে নিন যাতে পদ্ধতি আছে (আপাতত কুরআন)।",
+  "Claimed — waiting for confirmation.": "দাবি করা হয়েছে — নিশ্চিতকরণের অপেক্ষায়।",
+  "Claimed and confirmed (self-confirmed).": "দাবি করা হয়েছে এবং নিশ্চিত হয়েছে (নিজেই নিশ্চিত করেছেন)।",
+
+  // The reference hints. The example itself is filled in by num(), so a
+  // Bangla reader is shown Bengali digits -- which the box accepts back.
+  "surah:ayah — e.g. {example}": "সূরা:আয়াত — যেমন {example}",
+  "surah:from-to — e.g. {example}": "সূরা:শুরু-শেষ — যেমন {example}",
+  "surah — e.g. {example}": "সূরা — যেমন {example}",
+  "edition:page — e.g. {example}": "সংস্করণ:পৃষ্ঠা — যেমন {example}",
+  "surah:ruku — e.g. {example}": "সূরা:রুকু — যেমন {example}",
+  "juz — e.g. {example}": "জুয — যেমন {example}",
+  "hizb — e.g. {example}": "হিযব — যেমন {example}",
+  "rub — e.g. {example}": "রুব — যেমন {example}",
+  "manzil — e.g. {example}": "মানযিল — যেমন {example}",
+  "collection:number — e.g. {example}": "সংকলন:নম্বর — যেমন {example}",
+  "topicId — e.g. {example}": "বিষয়বস্তুর আইডি — যেমন {example}",
+  "number — e.g. {example}": "নম্বর — যেমন {example}",
+
+  // --- Records: the two tables ------------------------------------------
+  "Entries in this chunk": "এই খণ্ডের এন্ট্রিসমূহ", // ?
+  "Chunk: {chunkKey}": "খণ্ড: {chunkKey}", // ?
+  "Pending only": "শুধু অপেক্ষমাণ",
+  "Bulk confirm all pending here": "এখানকার সব অপেক্ষমাণ একসাথে নিশ্চিত করুন",
+  "Bulk confirm all pending this week": "এই সপ্তাহের সব অপেক্ষমাণ একসাথে নিশ্চিত করুন",
+  "This week's activity": "এই সপ্তাহের কার্যকলাপ",
+  "Week starting: {weekKey}": "সপ্তাহ শুরু: {weekKey}",
+  "Claimed": "দাবি করা হয়েছে",
+  "Practised": "অনুশীলন করা হয়েছে",
+  "Confirmed": "নিশ্চিত",
+  "Awaiting confirmation": "নিশ্চিতকরণের অপেক্ষায়",
+  "Returned": "ফেরত পাঠানো হয়েছে",
+  "State": "নিশ্চিতকরণ", // ? the column showing pending/confirmed/returned
+  "Action": "কার্যক্রম", // ?
+  "Actions": "কার্যক্রম", // ?
+  // MAP Phase 3 -- Arabic word coverage in Explore.
+  "Arabic word coverage isn't available at this granularity — open a Surah or a Ruku' to see it.":
+    "এই স্তরে আরবি শব্দের অগ্রগতি দেখানো যায় না — দেখতে হলে একটি সূরা বা রুকু খুলুন।",
+  "{known} of {total} Arabic words known": "{total}টি আরবি শব্দের মধ্যে {known}টি জানা",
+  // Issue #206 (gold running-total ring) originally also added an
+  // "Approach | Word by Word" wedge-colouring toggle to the Quran tab, whose
+  // key here was "Colour the wheel by". Issue #261 removed that toggle --
+  // the Owner could not find it -- and moved Word-by-Word colouring into its
+  // own Explore tab (below), so that key is gone rather than left unused.
+  //
+  // Issue #261 -- Word by Word's own Explore tab (Qur'an -> Juz -> Surah).
+  // The palette button reuses the existing "Word by Word" key below.
+  "Juz {juz}: {known} of {total} words ({percent}%)":
+    "জুয {juz}: {total}টি শব্দের মধ্যে {known}টি জানা ({percent}%)",
+  "{percent}% known": "{percent}% জানা",
+  "{known} of {total} words known — {percent}%":
+    "{total}টি শব্দের মধ্যে {known}টি জানা — {percent}%",
+  "Tap a Juz to see its Surahs.": "এর সূরাগুলো দেখতে একটি জুযে চাপ দিন।",
+  "{surah}: {total} words": "{surah}: {total}টি শব্দ",
+  "{known} of {total} words known in this Juz — {percent}%":
+    "এই জুযের {total}টি শব্দের মধ্যে {known}টি জানা — {percent}%",
+  "Open a Surah to see which of its words you know.":
+    "কোন কোন শব্দ জানেন তা দেখতে একটি সূরা খুলুন।",
+  "Ruku' {ruku}: {known} of {total} words ({percent}%)":
+    "রুকু' {ruku}: {total}টি শব্দের মধ্যে {known}টি জানা ({percent}%)",
+  "Word-by-Word coverage by Ruku'.": "রুকু' অনুযায়ী শব্দে শব্দে অগ্রগতি।",
+  "Word-by-Word totals aren't switched on yet — check back once they are.":
+    "শব্দে শব্দে মোট সংখ্যা এখনও চালু করা হয়নি — চালু হলে পরে দেখুন।",
+  "Study this Surah": "এই সূরাটি অধ্যয়ন করুন",
+  "Pick a Student first.": "প্রথমে একজন শিক্ষার্থী বেছে নিন।",
+  // MAP Phase 3 -- WbW word progress on the Quran Word Card.
+  "Word progress": "শব্দের অগ্রগতি",
+  // Word card round 7 (#525) -- the two PC boxes and the percentage ring. "Know Your Status" is already translated further down.
+  "Record your Progress": "আপনার অগ্রগতি লিখুন",
+  "word {n}": "শব্দ {n}",
+  "{percent} of the words of the Qur'an known": "কুরআনের {percent} শব্দ জানা",
+  "Share of the words of the Qur'an known: not loaded yet": "কুরআনের কত শতাংশ শব্দ জানা: এখনও লোড হয়নি",
+  "of the Qur'an": "কুরআনের",
+  "Waiting to be checked": "যাচাইয়ের অপেক্ষায়",
+  "Known: marked Achieved at another place of this word": "জানা: এই শব্দের অন্য স্থানে অর্জিত হিসেবে চিহ্নিত",
+  "Checked and confirmed": "যাচাই করে নিশ্চিত করা হয়েছে",
+  "Sent back: {note}": "ফেরত পাঠানো হয়েছে: {note}",
+  "Sent back to look at again": "আবার দেখার জন্য ফেরত পাঠানো হয়েছে",
+  "Send back": "ফেরত পাঠান",
+  "Loading progress…": "অগ্রগতি লোড হচ্ছে…",
+  "Progress not loaded yet": "অগ্রগতি এখনও লোড হয়নি",
+  "You are not able to record Arabic progress for this person.": "এই ব্যক্তির আরবি অগ্রগতি রেকর্ড করার অনুমতি আপনার নেই।",
+  "{known} of {total} words known in this ayah": "এই আয়াতের {total}টি শব্দের মধ্যে {known}টি জানা",
+  "{unknown} not loaded yet": "{unknown}টি এখনও লোড হয়নি",
+  "still counting the words known elsewhere in the Qur'an…": "কুরআনের অন্য জায়গায় জানা শব্দগুলো এখনও গোনা হচ্ছে…",
+  // Issue #303 -- the whole-Qur'an running total and "mark this word known
+  // everywhere" on the Word Card.
+  "{percent}% of the Qur'an": "কুরআনের {percent}%",
+  "You know {known} of {total} words of the Qur'an": "আপনি কুরআনের {total}টি শব্দের মধ্যে {known}টি জানেন",
+  "You know {percent}% of the words of the Qur'an": "আপনি কুরআনের {percent}% শব্দ জানেন",
+  "Knows {known} of {total} words of the Qur'an": "কুরআনের {total}টি শব্দের মধ্যে {known}টি জানা",
+  "Knows {percent}% of the words of the Qur'an": "কুরআনের {percent}% শব্দ জানা",
+  "If you learn this word: +{words} words (+{percent}%)": "এই শব্দটি শিখলে: +{words}টি শব্দ (+{percent}%)",
+  "If you learn this word here: +{words} word (+{percent}%) — this occurrence only": "এখানে এই শব্দটি শিখলে: +{words}টি শব্দ (+{percent}%) — শুধু এই ব্যবহারের জন্য",
+  "Known through {word} (same meaning)": "{word}-এর মাধ্যমে জানা (একই অর্থ)",
+  "You know ({level}) {known} of {total} words of the Qur'an": "আপনি কুরআনের {total}টি শব্দের মধ্যে {known}টি জানেন ({level})",
+  "You know ({level}) {percent}% of the words of the Qur'an": "আপনি কুরআনের {percent}% শব্দ জানেন ({level})",
+  "Knows ({level}) {known} of {total} words of the Qur'an": "কুরআনের {total}টি শব্দের মধ্যে {known}টি জানা ({level})",
+  "Knows ({level}) {percent}% of the words of the Qur'an": "কুরআনের {percent}% শব্দ জানা ({level})",
+  // The Owner, 8 Oct 2026: "Erase 'of the Quran' from all except the bottom one." (কুরআনের dropped.)
+  "You know {known} of {total} words": "আপনি {total}টি শব্দের মধ্যে {known}টি জানেন",
+  "Knows {known} of {total} words": "{total}টি শব্দের মধ্যে {known}টি জানা",
+  "You know ({level}) {known} of {total} words": "আপনি {total}টি শব্দের মধ্যে {known}টি জানেন ({level})",
+  "You know ({level}) {percent}% of the words": "আপনি {percent}% শব্দ জানেন ({level})",
+  "Knows ({level}) {known} of {total} words": "{total}টি শব্দের মধ্যে {known}টি জানা ({level})",
+  "Knows ({level}) {percent}% of the words": "{percent}% শব্দ জানা ({level})",
+  "Basic": "প্রাথমিক",
+  "Depth": "গভীরতা",
+  "Known through its meaning group (Basic: same meaning)": "একই অর্থের শব্দগুচ্ছের মাধ্যমে জানা (প্রাথমিক: একই অর্থ)",
+  "Known through the root {root} (Depth: same root)": "{root} মূলের মাধ্যমে জানা (গভীরতা: একই মূল)",
+  "Search for a word": "শব্দ খুঁজুন",
+  "Find a word: type it in Arabic (with or without vowel marks), its meaning, or a place like 2:42:8": "শব্দ খুঁজুন: আরবিতে (হরকতসহ বা হরকত ছাড়া), এর অর্থ, অথবা ২:৪২:৮-এর মতো স্থান লিখুন",
+  "Try:": "চেষ্টা করুন:",
+  "Loading the word list…": "শব্দতালিকা লোড হচ্ছে…",
+  "The word list could not be loaded: {error}": "শব্দতালিকা লোড করা যায়নি: {error}",
+  "Opened {ref}.": "{ref} খোলা হয়েছে।",
+  "There is no word at {ref}.": "{ref}-এ কোনো শব্দ নেই।",
+  "{k} forms found. Tap one to see where it is.": "{k}টি রূপ পাওয়া গেছে। কোথায় আছে দেখতে একটিতে চাপুন।",
+  "{total} forms match; the {k} most frequent are shown. Tap one to see where it is.": "{total}টি রূপ মিলেছে; সবচেয়ে বেশি ব্যবহৃত {k}টি দেখানো হলো। কোথায় আছে দেখতে একটিতে চাপুন।",
+  "No word found. Check the spelling, or try without vowel marks.": "কোনো শব্দ পাওয়া যায়নি। বানান দেখুন, অথবা হরকত ছাড়া চেষ্টা করুন।",
+  "{form}: {n} places. Tap one to open it.": "{form}: {n}টি স্থান। খুলতে একটিতে চাপুন।",
+  "{n} ×": "{n} ×",
+  "Places of this form": "এই রূপের স্থানসমূহ",
+  "Mark this word known everywhere":"এই শব্দটি সর্বত্র জানা হিসেবে চিহ্নিত করুন",
+  "What should they look at again?": "তাকে আবার কী দেখতে হবে?",
+  "Confirm": "নিশ্চিত করুন",
+  "Return": "ফেরত পাঠান",
+  "Confirm anyway": "তবুও নিশ্চিত করুন",
+  "Note for the return (optional):": "ফেরত পাঠানোর কারণ (ঐচ্ছিক):",
+  "Nothing logged this week yet.": "এই সপ্তাহে এখনো কিছু লিপিবদ্ধ হয়নি।",
+  "Confirmed {count} entry in this chunk.": "এই খণ্ডের {count}টি এন্ট্রি নিশ্চিত করা হয়েছে।",
+  "Confirmed {count} entries in this chunk.": "এই খণ্ডের {count}টি এন্ট্রি নিশ্চিত করা হয়েছে।",
+  "Confirmed {count} entry touched this week.": "এই সপ্তাহে ছোঁয়া {count}টি এন্ট্রি নিশ্চিত করা হয়েছে।",
+  "Confirmed {count} entries touched this week.": "এই সপ্তাহে ছোঁয়া {count}টি এন্ট্রি নিশ্চিত করা হয়েছে।",
+
+  // --- Monitor -----------------------------------------------------------
+  "Student": "শিক্ষার্থী",
+  "Students": "শিক্ষার্থী",
+  "Whole roster (weekly/monthly report only)": "সম্পূর্ণ তালিকা (কেবল সাপ্তাহিক/মাসিক প্রতিবেদনে)",
+  "Weekly / monthly report": "সাপ্তাহিক / মাসিক প্রতিবেদন",
+  "Week": "সপ্তাহ",
+  "Month": "মাস",
+  "Week of {weekKey} — {start} to {end}": "{weekKey} তারিখের সপ্তাহ — {start} থেকে {end}",
+  "📥 Download CSV": "📥 CSV ডাউনলোড করুন",
+  "🖨 Print report": "🖨 প্রতিবেদন প্রিন্ট করুন",
+  "Monitor report": "পর্যবেক্ষণ প্রতিবেদন",
+  "Per student": "শিক্ষার্থীভিত্তিক",
+  "Per subject": "বিষয়ভিত্তিক",
+  "Raw entries": "মূল এন্ট্রিসমূহ",
+  "Entries": "এন্ট্রি", // ?
+  "Days active": "সক্রিয় দিন",
+  "By subject": "বিষয় অনুযায়ী",
+  "Distinct units": "স্বতন্ত্র একক",
+  "No students in scope.": "পরিধির মধ্যে কোনো শিক্ষার্থী নেই।",
+  "Nothing logged in this range.": "এই সময়সীমায় কিছু লিপিবদ্ধ হয়নি।",
+  "Couldn't load the report:": "প্রতিবেদন লোড করা যায়নি:",
+  "Couldn't load the breakdown:": "বিশ্লেষণ লোড করা যায়নি:",
+  // MAP v4 Phase 4 (P4-F, issue #230/#238) -- Study activity this week.
+  "Study activity this week —": "এই সপ্তাহের অধ্যয়ন কার্যক্রম —",
+  "Read-only. This is what was actually studied, never a claim or confirmation — see the Quran Approach breakdown below for status.":
+    "শুধুমাত্র দেখার জন্য। এখানে প্রকৃতপক্ষে যা অধ্যয়ন করা হয়েছে তা দেখানো হয়েছে, কোনো দাবি বা নিশ্চিতকরণ নয় — অবস্থা জানতে নিচের কুরআন পদ্ধতির বিশ্লেষণ দেখুন।",
+  "Couldn't load study activity:": "অধ্যয়ন কার্যক্রম লোড করা যায়নি:",
+  "No study activity recorded this week.": "এই সপ্তাহে কোনো অধ্যয়ন কার্যক্রম লিপিবদ্ধ হয়নি।",
+  "More study activity was recorded this week than is shown here.": "এই সপ্তাহে এখানে দেখানোর চেয়ে বেশি অধ্যয়ন কার্যক্রম লিপিবদ্ধ হয়েছে।",
+  "Reading": "পড়া",
+  "Quran Approach breakdown —": "কুরআন পদ্ধতির বিশ্লেষণ —",
+  "Current claimed status per Approach, across every ayah/juz/page this student has ever touched — not scoped to the week/month above (this is a status snapshot, not an activity log).":
+    "এই শিক্ষার্থী আজ পর্যন্ত যত আয়াত/জুয/পৃষ্ঠা ছুঁয়েছেন, তার সবটিতে প্রতিটি পদ্ধতির বর্তমান দাবিকৃত অবস্থা — উপরের সপ্তাহ/মাসের সীমায় আবদ্ধ নয় (এটি অবস্থার একটি চিত্র, কার্যকলাপের তালিকা নয়)।",
+  "Section": "বিভাগ",
+  "Achieved+": "অর্জিত+",
+  "{count} ({percent}%) of {total}": "{total}-এর মধ্যে {count} ({percent}%)",
+  "{count} of {total}": "{total}-এর মধ্যে {count}",
+  "No Quran Approaches set up for this tenant yet.": "এই প্রতিষ্ঠানের জন্য এখনো কোনো কুরআন পদ্ধতি নির্ধারণ করা হয়নি।",
+  "Print pop-up blocked. Allow pop-ups for this site, then try again.":
+    "প্রিন্ট পপ-আপ আটকে দেওয়া হয়েছে। এই সাইটের জন্য পপ-আপ চালু করে আবার চেষ্টা করুন।",
+
+  // --- Homework ----------------------------------------------------------
+  "New assignment": "নতুন নির্ধারিত কাজ", // ?
+  "Create assignment": "কাজ তৈরি করুন",
+  "Assignments for {name}": "{name}-এর কাজসমূহ",
+  "Assignments": "কাজসমূহ",
+  "Class / Course Offer": "ক্লাস / কোর্স অফার",
+  "Class": "ক্লাস",
+  "Course Offer": "কোর্স অফার",
+  "Subject (optional)": "বিষয় (ঐচ্ছিক)",
+  "(none)": "(কিছু নয়)",
+  "(none — any visible person)": "(কিছু নয় — দৃশ্যমান যেকোনো ব্যক্তি)",
+  "Due date (optional)": "জমা দেওয়ার তারিখ (ঐচ্ছিক)",
+  "Max score (optional)": "সর্বোচ্চ নম্বর (ঐচ্ছিক)",
+  "Instructions": "নির্দেশনা",
+  "(no instructions)": "(কোনো নির্দেশনা নেই)",
+  "Subject:": "বিষয়:",
+  "Due:": "জমার তারিখ:",
+  "Max score:": "সর্বোচ্চ নম্বর:",
+  "Score": "নম্বর",
+  "Score:": "নম্বর:",
+  "Save score": "নম্বর সংরক্ষণ করুন",
+  "Comment (optional)": "মন্তব্য (ঐচ্ছিক)",
+  "Optional note": "ঐচ্ছিক নোট",
+  "Mark as submitted": "জমা দেওয়া হয়েছে চিহ্নিত করুন",
+  "Not submitted": "জমা দেওয়া হয়নি",
+  "Submitted": "জমা দেওয়া হয়েছে",
+  "Marked": "মূল্যায়ন করা হয়েছে",
+  "No assignments yet.": "এখনো কোনো কাজ নেই।",
+  "Couldn't load assignments:": "কাজগুলো লোড করা যায়নি:",
+  "No students in this context yet.": "এই প্রসঙ্গে এখনো কোনো শিক্ষার্থী নেই।",
+  "Pick at least one student.": "অন্তত একজন শিক্ষার্থী বেছে নিন।",
+  "Enter instructions first.": "আগে নির্দেশনা লিখুন।",
+  "Pick a class or course offer first — required for a teacher-created assignment.":
+    "আগে একটি ক্লাস বা কোর্স অফার বেছে নিন — শিক্ষকের দেওয়া কাজের জন্য এটি আবশ্যক।",
+  "Required — pick the class/course offer you're assigning this through.":
+    "আবশ্যক — যে ক্লাস/কোর্স অফারের মাধ্যমে এটি দিচ্ছেন তা বেছে নিন।",
+  "You have no active class/course offer to assign homework through yet — ask an admin to enrol you as a teacher first.":
+    "বাড়ির কাজ দেওয়ার মতো সক্রিয় কোনো ক্লাস/কোর্স অফার এখনো আপনার নেই — প্রশাসককে বলুন আগে আপনাকে শিক্ষক হিসেবে যুক্ত করতে।",
+  "Assigned to {count} student.": "{count} জন শিক্ষার্থীকে দেওয়া হয়েছে।",
+  "Assigned to {count} students.": "{count} জন শিক্ষার্থীকে দেওয়া হয়েছে।",
+  "My private teaching notes": "আমার ব্যক্তিগত শিক্ষণ-নোট",
+  "Only you can ever see these — never shown to the student, guardian, or anyone else.":
+    "এগুলো কেবল আপনিই দেখতে পাবেন — শিক্ষার্থী, অভিভাবক বা অন্য কাউকে কখনোই দেখানো হয় না।",
+  "New note": "নতুন নোট",
+  // "About" alone is the nav's own About PAGE (পরিচিতি). Here it labels
+  // "about WHICH student", so it carries a context suffix -- the first real
+  // use of the mechanism i18n.js reserved for exactly this collision.
+  "About|person": "কার সম্পর্কে",
+  "Note": "নোট",
+  "Note View": "নোট ভিউ",
+  "Save note": "নোট সংরক্ষণ করুন",
+  "No notes yet.": "এখনো কোনো নোট নেই।",
+  "Couldn't load notes:": "নোটগুলো লোড করা যায়নি:",
+  "Write a note first.": "আগে একটি নোট লিখুন।",
+
+  // --- Course offers -----------------------------------------------------
+  "New course offer": "নতুন কোর্স অফার",
+  "Subjects (optional)": "বিষয়সমূহ (ঐচ্ছিক)",
+  "Runs on": "যেসব দিনে চলে",
+  "Start date (optional)": "শুরুর তারিখ (ঐচ্ছিক)",
+  "End date (optional)": "শেষের তারিখ (ঐচ্ছিক)",
+  "Create offer": "অফার তৈরি করুন",
+  "Course offers": "কোর্স অফারসমূহ",
+  "Enrolments": "ভর্তিসমূহ",
+  "{name}'s enrolments": "{name}-এর ভর্তিসমূহ",
+  "Enrol {name}": "{name}-কে ভর্তি করুন",
+  "End": "শেষ করুন",
+  "Ended": "শেষ হয়েছে",
+  "Archived": "সংরক্ষণাগারে",
+  "Teacher": "শিক্ষক",
+  "No schedule set": "কোনো সময়সূচি নির্ধারিত নেই",
+  "(no subjects set)": "(কোনো বিষয় নির্ধারিত নেই)",
+  "No one enrolled yet.": "এখনো কেউ ভর্তি হয়নি।",
+  "No course offers yet.": "এখনো কোনো কোর্স অফার নেই।",
+  "Not enrolled in anything yet.": "এখনো কোথাও ভর্তি হননি।",
+  "No subjects yet.": "এখনো কোনো বিষয় নেই।",
+  "Enter a name first.": "আগে একটি নাম লিখুন।",
+  "Course offer created.": "কোর্স অফার তৈরি হয়েছে।",
+  "Pick a person first.": "আগে একজন ব্যক্তি বেছে নিন।",
+  "Couldn't load course offers:": "কোর্স অফারগুলো লোড করা যায়নি:",
+  "Couldn't load enrolments:": "ভর্তির তথ্য লোড করা যায়নি:",
+
+  // Short day names, as a weekday checkbox row shows them.
+  "Sun": "রবি",
+  "Mon": "সোম",
+  "Tue": "মঙ্গল",
+  "Wed": "বুধ",
+  "Thu": "বৃহঃ",
+  "Fri": "শুক্র",
+  "Sat": "শনি",
+
+  // --- Continue strip (every study page) ---------------------------------
+  "Continue: {what}": "চালিয়ে যান: {what}",
+
+  // --- Deliberately NOT translated, mapped to itself so the report counts
+  //     it as decided rather than forgotten (same treatment phase 1 gave
+  //     the app's own name and the Ta'awwudh transliteration).
+  //     Every language picker names Bangla in Bangla, in every language --
+  //     it is how a Bangla-only reader finds the setting at all.
+  "বাংলা (Bangla)": "বাংলা (Bangla)",
+
+  // =====================================================================
+  // PHASE 5 — ADMIN
+  // People, Catalogue, Curriculum, Classes: the screens that let someone
+  // RUN a madrasah in Bangla, not only study in one.
+  // =====================================================================
+
+  // --- Entity status (js/labels.js), shared by everything archivable ----
+  // Active / Archived / Ended already have their Bangla from phase 4.
+  "Pending": "অপেক্ষমাণ",
+  "Planned": "পরিকল্পিত",
+  "Accepted": "গৃহীত",
+  "Revoked": "বাতিল করা হয়েছে",
+  "Draft": "খসড়া",
+
+  // --- Page titles, headings and intros ---------------------------------
+  "QuranRevival — People": "কুরআনরিভাইভাল — ব্যক্তিবর্গ",
+  "QuranRevival — Catalogue": "কুরআনরিভাইভাল — তালিকা",
+  "QuranRevival — Curriculum": "কুরআনরিভাইভাল — পাঠ্যক্রম",
+  "QuranRevival — Classes": "কুরআনরিভাইভাল — ক্লাস",
+  "Everyone in this madrasah: add a person, invite someone who signs in\n     themselves, and see who looks after whom.":
+    "এই মাদরাসার সবাই: একজন ব্যক্তি যোগ করুন, কাউকে আমন্ত্রণ জানান যিনি নিজেই সাইন ইন করবেন, এবং কে কার দেখাশোনা করেন তা দেখুন।",
+  "Modules, the subject tree, the Quran Approaches, and ladders and levels —\n     the data every study screen reads from. Anyone in the madrasah can look;\n     only the owner and a prime can edit.":
+    "মডিউল, বিষয়ের তালিকা, কুরআনের পদ্ধতিসমূহ এবং ধাপ ও স্তর — প্রতিটি অধ্যয়ন পর্দা যে তথ্য থেকে পড়ে। মাদরাসার যে কেউ দেখতে পারেন; কেবল মালিক ও প্রাইম সম্পাদনা করতে পারেন।",
+  "A curriculum unit is WHAT to study, and it can span several subjects.\n     The plan below is WHEN — which term and week it falls in, for a class or\n     for one person. The two are kept apart, so moving a unit to a different\n     week never changes the unit itself. Resources and grades are managed\n     here too.":
+    "পাঠ্যক্রমের একক হলো কী পড়তে হবে, এবং তা একাধিক বিষয়জুড়ে হতে পারে। নিচের পরিকল্পনা হলো কখন — কোন টার্ম ও সপ্তাহে, কোনো ক্লাসের বা একজন ব্যক্তির জন্য। দুটি আলাদা রাখা হয়েছে, তাই কোনো একককে অন্য সপ্তাহে সরালে এককটি নিজে বদলায় না। উপকরণ ও গ্রেডও এখান থেকেই পরিচালিত হয়।",
+  "Create a class, then enrol students and teachers into it. A teacher\n     enrolled here can record and confirm progress for this class's students\n     — and only them. Class-wide bulk confirm clears every pending entry for\n     every actively-enrolled student in one go.":
+    "একটি ক্লাস তৈরি করুন, তারপর তাতে শিক্ষার্থী ও শিক্ষক ভর্তি করুন। এখানে ভর্তি হওয়া একজন শিক্ষক এই ক্লাসের শিক্ষার্থীদের — এবং কেবল তাদেরই — অগ্রগতি লিপিবদ্ধ ও নিশ্চিত করতে পারেন। ক্লাস-ব্যাপী একসাথে নিশ্চিতকরণ সক্রিয়ভাবে ভর্তি থাকা প্রতিটি শিক্ষার্থীর সব অপেক্ষমাণ এন্ট্রি একবারে সম্পন্ন করে।",
+
+  // --- People ------------------------------------------------------------
+  "Roles": "ভূমিকা",
+  "Role": "ভূমিকা",
+  "Managed by": "যিনি দেখাশোনা করেন",
+  "View as": "যেভাবে দেখছেন",
+  "(your real role)": "(আপনার প্রকৃত ভূমিকা)",
+  "Add a person": "একজন ব্যক্তি যোগ করুন",
+  "Add person": "ব্যক্তি যোগ করুন",
+  "This is a child (no login of their own)": "ইনি একজন শিশু (নিজের কোনো লগইন নেই)",
+  "Added. Person ID: {personId}": "যোগ করা হয়েছে। ব্যক্তি আইডি: {personId}",
+  "Invite someone (they sign in themselves)": "কাউকে আমন্ত্রণ জানান (তিনি নিজেই সাইন ইন করবেন)",
+  "Their email": "তাঁর ইমেইল",
+  "Email": "ইমেইল",
+  "Invite": "আমন্ত্রণ জানান",
+  "Invite created — use \"Copy link\" below to get the link.":
+    "আমন্ত্রণ তৈরি হয়েছে — নিচের \"লিংক কপি করুন\" থেকে লিংকটি নিন।",
+  "Link": "লিংক",
+  "Copy link": "লিংক কপি করুন",
+  "Copied!": "কপি হয়েছে!",
+  "Link not found": "লিংক পাওয়া যায়নি",
+  "Hand the device to a child": "ডিভাইসটি কোনো শিশুর হাতে দিন",
+  "For leaving a child to study on their own on a shared device: pick\n        the child, and the device stays theirs until you end the session.\n        Recording progress for several people yourself, one after another,\n        is not affected — that never needs a session at all.":
+    "একটি ভাগ করা ডিভাইসে কোনো শিশুকে একা পড়তে দেওয়ার জন্য: শিশুটিকে বেছে নিন, আপনি সেশন শেষ না করা পর্যন্ত ডিভাইসটি তারই থাকবে। আপনি নিজে একের পর এক কয়েকজনের অগ্রগতি লিপিবদ্ধ করলে তাতে কোনো প্রভাব পড়ে না — তার জন্য কখনোই কোনো সেশন লাগে না।",
+  "Child": "শিশু",
+  "Start studying": "পড়া শুরু করুন",
+  "End session": "সেশন শেষ করুন",
+  "This device is studying as {name}. It stays with them until you end the session.":
+    "এই ডিভাইসটি এখন {name}-এর জন্য ব্যবহৃত হচ্ছে। আপনি সেশন শেষ না করা পর্যন্ত এটি তারই থাকবে।",
+  "No child in the roster yet — add one above first.":
+    "তালিকায় এখনো কোনো শিশু নেই — আগে উপরে একজন যোগ করুন।",
+  "A study session is in progress for another person. End that session first before switching.":
+    "অন্য একজনের জন্য একটি অধ্যয়ন সেশন চলছে। বদলানোর আগে সেই সেশনটি শেষ করুন।",
+
+  // --- Catalogue: modules, subject tree, Approaches ---------------------
+  "Module": "মডিউল",
+  "Renderer": "যেভাবে দেখানো হয়", // ?
+  "Move": "সরান",
+  "Move up": "উপরে সরান",
+  "Move down": "নিচে সরান",
+  "Move to a different parent": "অন্য কোনো মূল বিষয়ের নিচে সরান",
+  "Move here": "এখানে সরান",
+  "Expand": "খুলুন",
+  "Collapse": "গুটিয়ে নিন",
+  "Click to jump to this module's subjects below": "নিচে এই মডিউলের বিষয়গুলোতে যেতে ক্লিক করুন",
+  "Click to open this module's subjects": "এই মডিউলের বিষয়গুলো খুলতে ক্লিক করুন",
+  "Reading, listening, notes or Word by Word are credited to this Approach automatically; while it is removed, that credit is not shown anywhere.": "তিলাওয়াত, শোনা, নোট বা শব্দে শব্দে অধ্যয়ন এই পদ্ধতিতে স্বয়ংক্রিয়ভাবে যোগ হয়; এটি সরানো থাকলে সেই অগ্রগতি কোথাও দেখা যাবে না।",
+  // The four study-screen renderers a module can use.
+  "Ayah by ayah": "আয়াতভিত্তিক",
+  "Routine": "রুটিন",
+  "Subject tree": "বিষয়ের তালিকা",
+  "Show archived subjects": "সংরক্ষণাগারে রাখা বিষয় দেখান",
+  "Show archived Approaches": "সংরক্ষণাগারে রাখা পদ্ধতি দেখান",
+  "Show archived ladders/levels": "সংরক্ষণাগারে রাখা ধাপ/স্তর দেখান",
+  "Gloss": "সংক্ষিপ্ত পরিচয়", // ?
+  "Gloss (optional)": "সংক্ষিপ্ত পরিচয় (ঐচ্ছিক)", // ?
+  "Level (parent)": "স্তর (মূল বিষয়)",
+  "Parent": "মূল বিষয়",
+  "(top level)": "(সর্বোচ্চ স্তর)",
+  "no module": "কোনো মডিউল নেই",
+  "Confirmation": "নিশ্চিতকরণ",
+  "Always required": "সর্বদা আবশ্যক",
+  "Never required": "কখনো আবশ্যক নয়",
+  "Auto (computed)": "স্বয়ংক্রিয় (নিজে থেকে নির্ধারিত)",
+  "Resource": "উপকরণ",
+  "Resources": "উপকরণসমূহ",
+  "Yes": "হ্যাঁ",
+  "archived": "সংরক্ষণাগারে",
+  "Restore": "ফিরিয়ে আনুন",
+  "Archive \"{name}\"?": "\"{name}\" সংরক্ষণাগারে রাখবেন?",
+  "Restore \"{name}\"?": "\"{name}\" ফিরিয়ে আনবেন?",
+  "It has {count} item(s) underneath it — they stay active, just nested under an archived subject.":
+    "এর নিচে {count}টি বিষয় আছে — সেগুলো সক্রিয়ই থাকবে, কেবল একটি সংরক্ষণাগারে রাখা বিষয়ের নিচে থাকবে।",
+  "Name can't be empty.": "নাম খালি রাখা যাবে না।",
+  "Add a tenant-specific subject": "এই প্রতিষ্ঠানের নিজস্ব একটি বিষয় যোগ করুন",
+  "Add subject": "বিষয় যোগ করুন",
+  "Resource (optional — leave blank to add later, once you have the content ready)":
+    "উপকরণ (ঐচ্ছিক — পরে যোগ করতে চাইলে খালি রাখুন, যখন বিষয়বস্তু প্রস্তুত হবে)",
+  "No resource yet": "এখনো কোনো উপকরণ নেই",
+  "Link (URL)": "লিংক (ইউআরএল)",
+  "Text (typed in directly)": "লেখা (সরাসরি টাইপ করা)",
+  "What this topic actually covers…": "এই বিষয়ে আসলে কী কী আছে…",
+  "The 30 Approaches": "৩০টি পদ্ধতি",
+  "Guide": "নির্দেশিকা",
+  "What:": "কী:",
+  "How:": "কীভাবে:",
+  "Measure:": "মাপকাঠি:",
+  "Section {n}": "বিভাগ {n}",
+  // v08.01 -- the Approach editor (catalogue.html). "Removed" deliberately
+  // renders the stored "archived" status in the owner's own word for the
+  // action; the canonical id is untouched everywhere else.
+  "Removed": "সরানো হয়েছে",
+  "(not set)": "(নির্ধারিত নয়)",
+  // v08.02 -- the Approach Sections editor (catalogue.html) and the section
+  // headings the Mastery Wheel's sidebar now carries.
+  "Approach Sections": "পদ্ধতির বিভাগসমূহ",
+  "The groups the Approaches are organised into. Renaming or adding one here changes it everywhere it appears — the Approach list below, the Approach picker, Explore, and the Mastery Wheel's own list — once you press Save sections.":
+    "পদ্ধতিগুলো যে দলগুলোতে সাজানো, সেগুলো। এখানে কোনো একটির নাম বদলালে বা নতুন যোগ করলে, \"বিভাগগুলো সংরক্ষণ করুন\" চাপার পর যেখানেই এটি দেখা যায় সেখানেই বদলে যাবে — নিচের পদ্ধতির তালিকা, পদ্ধতি নির্বাচক, এক্সপ্লোর, এবং মাস্টারি হুইলের নিজস্ব তালিকা।",
+  // v08.110 -- the Approach list's editable heading, and empty sections.
+  "Quran Approaches - 40 Ways": "কুরআনের পদ্ধতি - ৪০টি উপায়",
+  "✎ Edit heading": "✎ শিরোনাম সম্পাদনা",
+  "Save heading": "শিরোনাম সংরক্ষণ করুন",
+  "The heading needs a name in at least one language.": "শিরোনামের অন্তত একটি ভাষায় নাম থাকা দরকার।",
+  "No Approaches in this section yet.": "এই বিভাগে এখনো কোনো পদ্ধতি নেই।",
+  "Drag to move this section": "এই বিভাগটি সরাতে টেনে আনুন",
+  "Name changes not saved yet.": "নামের পরিবর্তন এখনো সংরক্ষিত হয়নি।",
+  "Order saved.": "ক্রম সংরক্ষিত হয়েছে।",
+  "Add one with the form below, or move one here with Edit.": "নিচের ফর্ম দিয়ে একটি যোগ করুন, অথবা সম্পাদনা দিয়ে একটি এখানে সরিয়ে আনুন।",
+  "Approaches": "পদ্ধতিসমূহ",
+  "Add a section": "একটি বিভাগ যোগ করুন",
+  "Position in section": "বিভাগের ভেতরে অবস্থান",
+  "Save sections": "বিভাগগুলো সংরক্ষণ করুন",
+  "Saved.": "সংরক্ষিত হয়েছে।",
+  "A section needs a name in at least one language.":
+    "একটি বিভাগের অন্তত একটি ভাষায় নাম থাকা দরকার।",
+  "Other trackables": "অন্যান্য ট্র্যাকযোগ্য বিষয়",
+  "one per module, outside the Approaches. Editable, but they have no position among the Approaches.":
+    "প্রতি মডিউলে একটি, পদ্ধতিগুলোর বাইরে। সম্পাদনাযোগ্য, তবে পদ্ধতিগুলোর ক্রমে এদের কোনো অবস্থান নেই।",
+  "Show removed Approaches": "সরানো পদ্ধতিগুলো দেখান",
+  "Approach name": "পদ্ধতির নাম",
+  "Guide — What": "নির্দেশিকা — কী",
+  "Guide — How": "নির্দেশিকা — কীভাবে",
+  "Guide — Measure": "নির্দেশিকা — মাপকাঠি",
+  "An Approach needs a name in at least one language.":
+    "একটি পদ্ধতির অন্তত একটি ভাষায় নাম থাকা দরকার।",
+  "Remove \"{name}\"? It disappears from the Mastery Wheel and every list. Anything already claimed against it is kept, and you can restore it here at any time.":
+    "\"{name}\" সরিয়ে ফেলবেন? এটি মাস্টারি হুইল ও সব তালিকা থেকে অদৃশ্য হয়ে যাবে। এর বিপরীতে আগে দাবি করা সবকিছু রক্ষিত থাকবে, এবং আপনি যেকোনো সময় এখান থেকে ফিরিয়ে আনতে পারবেন।",
+  "Checking catalogue…": "তালিকা যাচাই করা হচ্ছে…",
+  "Catalogue set up: {subjects} subjects and {approaches} Approaches.":
+    "তালিকা তৈরি হয়েছে: {subjects}টি বিষয় ও {approaches}টি পদ্ধতি।",
+  "Catalogue is already set up.": "তালিকা আগে থেকেই তৈরি আছে।",
+  "Could not set up the catalogue:": "তালিকা তৈরি করা যায়নি:",
+  "You're viewing as a role that cannot edit the catalogue (owner/prime only). Everything on this page is read-only for you.":
+    "আপনি এমন একটি ভূমিকায় দেখছেন যা ক্যাটালগ সম্পাদনা করতে পারে না (কেবল মালিক/প্রাইম)। এই পাতার সবকিছু আপনার জন্য শুধু দেখার।",
+  "You're viewing as a role that cannot edit the catalogue (owner/prime\n      only). Everything above is read-only for you.":
+    "আপনি এমন একটি ভূমিকায় দেখছেন যা তালিকা সম্পাদনা করতে পারে না (কেবল মালিক/প্রাইম পারেন)। উপরের সবকিছু আপনার জন্য কেবল পড়ার যোগ্য।",
+
+  // --- Catalogue: ladders and levels ------------------------------------
+  "Ladders & levels": "ধাপ ও স্তর", // ?
+  "Ladder": "ধাপ", // ?
+  "Ladder (optional)": "ধাপ (ঐচ্ছিক)", // ?
+  "Level": "স্তর",
+  "Levels": "স্তরসমূহ",
+  "Level (optional)": "স্তর (ঐচ্ছিক)",
+  "Level name": "স্তরের নাম",
+  "Add a ladder": "একটি ধাপ যোগ করুন",
+  "Add ladder": "ধাপ যোগ করুন",
+  "Add a level to": "যেখানে স্তর যোগ করবেন",
+  "Add level": "স্তর যোগ করুন",
+  "Ladder added.": "ধাপ যোগ করা হয়েছে।",
+  "Level added.": "স্তর যোগ করা হয়েছে।",
+  "Add a ladder first, then name the level.": "আগে একটি ধাপ যোগ করুন, তারপর স্তরের নাম দিন।",
+  "Archive this ladder?": "এই ধাপটি সংরক্ষণাগারে রাখবেন?",
+  "Restore this ladder?": "এই ধাপটি ফিরিয়ে আনবেন?",
+  "Archive this level?": "এই স্তরটি সংরক্ষণাগারে রাখবেন?",
+  "Restore this level?": "এই স্তরটি ফিরিয়ে আনবেন?",
+  "No ladders yet.": "এখনো কোনো ধাপ নেই।",
+  "(no levels yet)": "(এখনো কোনো স্তর নেই)",
+  "e.g. General Grades": "যেমন সাধারণ গ্রেড",
+  "e.g. Year 1": "যেমন ১ম বর্ষ",
+
+  // --- Classes -----------------------------------------------------------
+  "New class": "নতুন ক্লাস",
+  "Enrol": "ভর্তি করুন",
+  "Create class": "ক্লাস তৈরি করুন",
+  "Class created.": "ক্লাস তৈরি হয়েছে।",
+  "Couldn't load classes:": "ক্লাসগুলো লোড করা যায়নি:",
+  "No classes yet.": "এখনো কোনো ক্লাস নেই।",
+  "No classes yet": "এখনো কোনো ক্লাস নেই",
+  "Bulk confirm all pending for this class": "এই ক্লাসের সব অপেক্ষমাণ একসাথে নিশ্চিত করুন",
+  "Confirmed {count} pending entry across {students} students.":
+    "{students} জন শিক্ষার্থীর {count}টি অপেক্ষমাণ এন্ট্রি নিশ্চিত করা হয়েছে।",
+  "Confirmed {count} pending entries across {students} students.":
+    "{students} জন শিক্ষার্থীর {count}টি অপেক্ষমাণ এন্ট্রি নিশ্চিত করা হয়েছে।",
+
+  // --- Curriculum: units, plan, resources, grades -----------------------
+  "Curriculum units": "পাঠ্যক্রমের এককসমূহ",
+  "Curriculum unit": "পাঠ্যক্রমের একক",
+  "Curriculum plan": "পাঠ্যক্রমের পরিকল্পনা",
+  "New unit": "নতুন একক",
+  "Create unit": "একক তৈরি করুন",
+  "Unit created.": "একক তৈরি হয়েছে।",
+  "Archive unit": "একক সংরক্ষণাগারে রাখুন",
+  "Order": "ক্রম",
+  "Subjects (cross-subject — pick as many as apply)":
+    "বিষয়সমূহ (একাধিক বিষয়জুড়ে — যতগুলো প্রযোজ্য বেছে নিন)",
+  "(no subjects)": "(কোনো বিষয় নেই)",
+  "No curriculum units yet.": "এখনো কোনো পাঠ্যক্রমের একক নেই।",
+  "Couldn't load curriculum units:": "পাঠ্যক্রমের এককগুলো লোড করা যায়নি:",
+  "No units yet": "এখনো কোনো একক নেই",
+  "Attach existing resource": "বিদ্যমান উপকরণ যুক্ত করুন",
+  "4 terms × 10 weeks. Pick who the plan is for — a\n         class, or one person on their own — then place a unit into a term\n         and week.":
+    "৪টি টার্ম × ১০টি সপ্তাহ। পরিকল্পনাটি কার জন্য তা বেছে নিন — একটি ক্লাস, নাকি একা একজন ব্যক্তি — তারপর একটি একককে কোনো টার্ম ও সপ্তাহে বসান।",
+  "Context": "যার জন্য", // ?
+  "Which one": "কোনটি",
+  "Term": "টার্ম", // ?
+  "Term {n}": "টার্ম {n}", // ?
+  "Week {n}": "সপ্তাহ {n}",
+  "Add unit to plan": "পরিকল্পনায় একক যোগ করুন",
+  "Pick a context and a unit first.": "আগে কার জন্য এবং কোন একক তা বেছে নিন।",
+  "Pick a context above.": "উপরে কার জন্য তা বেছে নিন।",
+  "No context to plan for yet.": "পরিকল্পনা করার মতো এখনো কিছু নেই।",
+  "Nothing planned yet.": "এখনো কিছু পরিকল্পনা করা হয়নি।",
+  "Couldn't load the plan:": "পরিকল্পনা লোড করা যায়নি:",
+  "Remove": "সরিয়ে ফেলুন",
+  "Added.": "যোগ করা হয়েছে।",
+  "New resource": "নতুন উপকরণ",
+  "Create resource": "উপকরণ তৈরি করুন",
+  "Resource created.": "উপকরণ তৈরি হয়েছে।",
+  "Type": "ধরন",
+  "Text": "লেখা",
+  "URL": "ইউআরএল",
+  "Enter a URL first.": "আগে একটি ইউআরএল লিখুন।",
+  "Enter some text first.": "আগে কিছু লেখা লিখুন।",
+  "No resources yet.": "এখনো কোনো উপকরণ নেই।",
+  "Couldn't load resources:": "উপকরণগুলো লোড করা যায়নি:",
+  "added by {name}": "যোগ করেছেন {name}",
+  "Links and text, written ahead of time and attached to\n         a curriculum unit above, or to a subject from the Catalogue page.":
+    "লিংক ও লেখা, আগেভাগে তৈরি করে উপরের কোনো পাঠ্যক্রমের এককের সাথে, অথবা তালিকা পাতা থেকে কোনো বিষয়ের সাথে যুক্ত করা।",
+  "Grades": "গ্রেড",
+  "A person's level on a ladder, over time. Correcting a\n         mistake never edits an old entry — it adds a new dated one, the same\n         way every other confirmed record in this app works.":
+    "সময়ের সাথে কোনো ধাপে একজন ব্যক্তির স্তর। ভুল সংশোধন করতে পুরোনো কোনো এন্ট্রি বদলানো হয় না — নতুন তারিখসহ একটি এন্ট্রি যোগ হয়, এই অ্যাপের অন্য প্রতিটি নিশ্চিত রেকর্ড যেভাবে কাজ করে ঠিক সেভাবেই।",
+  "Assign a level": "একটি স্তর নির্ধারণ করুন",
+  "Assign": "নির্ধারণ করুন",
+  "Assigned.": "নির্ধারণ করা হয়েছে।",
+  "From date": "যে তারিখ থেকে",
+  "Current": "বর্তমান",
+  "History": "ইতিহাস",
+  "not assigned": "নির্ধারণ করা হয়নি",
+  "from {from} to {to}": "{from} থেকে {to} পর্যন্ত",
+  "from {from} (current)": "{from} থেকে (বর্তমান)",
+  "No level history yet.": "স্তরের এখনো কোনো ইতিহাস নেই।",
+  "No levels yet": "এখনো কোনো স্তর নেই",
+  "No ladders yet — create one on the Catalogue page":
+    "এখনো কোনো ধাপ নেই — তালিকা পাতা থেকে একটি তৈরি করুন",
+  "Pick a person above.": "উপরে একজন ব্যক্তি বেছে নিন।",
+  "Pick a person, ladder and level first.": "আগে একজন ব্যক্তি, একটি ধাপ ও একটি স্তর বেছে নিন।",
+  "Couldn't load grades:": "গ্রেড লোড করা যায়নি:",
+  "Curriculum, resources and grades are written by the owner or a prime — you can browse ladders and levels on the Catalogue page, but this page has nothing to show you yet.":
+    "পাঠ্যক্রম, উপকরণ ও গ্রেড লেখেন মালিক বা প্রাইম — আপনি তালিকা পাতায় ধাপ ও স্তর দেখতে পারেন, তবে এই পাতায় আপনার জন্য এখনো কিছু নেই।",
+
+  // -------------------------------------------------------------------
+  // Phase 6 of 6 — ASMA UL HUSNA (14 Aug 2026). The last phase.
+  // -------------------------------------------------------------------
+  // Three groups below: the 99 MEANINGS, the screensaver's POSTER
+  // CAPTIONS, and the handful of words the Asma screens say themselves.
+  //
+  // The Names in Bangla script (আর-রহমান) are NOT here -- they are data
+  // indexed by number, so they live in js/i18n/asma-names-bn.js, the same
+  // way the 114 surah names do. Read that file's header first; it carries
+  // the owner's decision about which Bangla renderings these follow.
+  //
+  // Owner's decision, 14 Aug 2026: base the meanings on the standard
+  // Bangladeshi wording -- the Islamic Foundation Bangladesh Bangla
+  // Qur'an and the 99-Names lists that circulate from IFB and As-Sunnah
+  // Foundation -- rather than translating this app's own English glosses
+  // afresh. The owner intends to supply their own prepared list later.
+  // Replacing these is a single edit here, one line per Name.
+
+  // --- The 99 meanings (js/asma-data.js) ---
+  "The Most Merciful": "পরম করুণাময়",
+  "The Most Compassionate": "অতি দয়ালু",
+  "The King, The Sovereign": "বাদশাহ, সর্বময় অধিপতি",
+  "The Holy, The Pure": "মহাপবিত্র, নিষ্কলুষ",
+  "The Source of Peace": "শান্তির উৎস",
+  "The Granter of Security": "নিরাপত্তাদানকারী",
+  "The Controller, The Guardian": "নিয়ন্ত্রক, রক্ষণাবেক্ষণকারী",
+  "The Almighty, The Exalted in Might": "মহাপরাক্রমশালী, ক্ষমতায় সুউচ্চ",
+  "The Compeller, The Omnipotent": "দুর্দমনীয়, প্রবল প্রতাপশালী",
+  "The Supreme, The Majestic": "সর্বশ্রেষ্ঠ, মহিমান্বিত",
+  "The Creator": "স্রষ্টা",
+  "The Evolver, The Originator": "সৃজনকর্তা, উদ্ভাবক",
+  "The Fashioner, The Designer": "রূপদাতা, আকৃতিদানকারী",
+  "The Repeatedly Forgiving": "বারবার ক্ষমাকারী",
+  "The Subduer, The Dominant": "দমনকারী, প্রবল আধিপত্যশীল",
+  "The Bestower": "মহাদাতা",
+  "The Provider": "রিযিকদাতা",
+  "The Opener, The Judge": "উন্মুক্তকারী, ফয়সালাকারী",
+  "The All-Knowing": "সর্বজ্ঞ",
+  "The Restrainer, The Constrictor": "সংকোচনকারী, সংযমকারী",
+  "The Extender, The Expander": "সম্প্রসারণকারী, প্রাচুর্যদানকারী",
+  "The Abaser": "অবনতকারী",
+  "The Exalter": "উন্নতকারী",
+  "The Giver of Honour": "সম্মানদাতা",
+  "The Giver of Dishonour": "লাঞ্ছনাদাতা",
+  "The All-Hearing": "সর্বশ্রোতা",
+  "The All-Seeing": "সর্বদ্রষ্টা",
+  "The Judge, The Arbitrator": "বিচারক, মীমাংসাকারী",
+  "The Just": "ন্যায়পরায়ণ",
+  "The Subtle, The Gentle": "সূক্ষ্মদর্শী, কোমল",
+  "The All-Aware": "সর্ববিষয়ে অবহিত",
+  "The Forbearing": "অত্যন্ত সহনশীল",
+  "The Magnificent, The Great": "মহিমাময়, মহান",
+  "The All-Forgiving": "পরম ক্ষমাশীল",
+  "The Grateful, The Appreciative": "গুণগ্রাহী, কৃতজ্ঞতার প্রতিদানদাতা",
+  "The Most High": "সমুন্নত",
+  "The Greatest": "সর্বাপেক্ষা মহান",
+  "The Preserver, The Guardian": "সংরক্ষণকারী, হেফাযতকারী",
+  "The Sustainer, The Nourisher": "শক্তি ও আহার দানকারী",
+  "The Reckoner": "হিসাবগ্রহণকারী",
+  "The Majestic": "মহামহিম",
+  "The Generous, The Noble": "অতিদানশীল, মহানুভব",
+  "The Watchful": "সতর্ক পর্যবেক্ষক",
+  "The Responsive": "দোয়া কবুলকারী",
+  "The All-Encompassing": "সর্বব্যাপী",
+  "The Wise": "প্রজ্ঞাময়",
+  "The Loving": "প্রেমময়",
+  "The All-Glorious": "মহাগৌরবময়",
+  "The Resurrector": "পুনরুত্থানকারী",
+  "The Witness": "সর্বদর্শী সাক্ষী",
+  "The Truth": "পরম সত্য",
+  "The Trustee": "কর্মবিধায়ক",
+  "The Strong": "মহাশক্তিধর",
+  "The Firm, The Steadfast": "সুদৃঢ়, অটল",
+  "The Protecting Friend": "অভিভাবক ও বন্ধু",
+  "The Praiseworthy": "প্রশংসিত",
+  "The Reckoner, The Accounter": "সবকিছুর গণনাকারী",
+  "The Originator": "সূচনাকারী",
+  "The Restorer": "পুনঃসৃষ্টিকারী",
+  "The Giver of Life": "জীবনদাতা",
+  "The Bringer of Death": "মৃত্যুদাতা",
+  "The Ever-Living": "চিরঞ্জীব",
+  "The Self-Subsisting": "স্বনির্ভর, সর্বসত্তার ধারক",
+  "The Perceiver, The Finder": "অভাবমুক্ত, সবকিছুর সন্ধানদাতা",
+  "The Illustrious, The Noble": "গৌরবময়, সম্মানিত",
+  "The One, The Unique": "এক, অদ্বিতীয়",
+  "The One, The Indivisible": "একক, অবিভাজ্য",
+  "The Eternal, The Self-Sufficient": "চিরন্তন, অমুখাপেক্ষী",
+  "The All-Powerful, The Able": "সর্বশক্তিমান, সক্ষম",
+  "The Powerful, The Dominant": "পরাক্রমশালী নিয়ন্তা",
+  "The Expediter": "অগ্রবর্তীকারী",
+  "The Delayer": "পশ্চাদবর্তীকারী",
+  "The First": "অনাদি, সর্বপ্রথম",
+  "The Last": "অনন্ত, সর্বশেষ",
+  "The Manifest, The Evident": "প্রকাশ্য, সুস্পষ্ট",
+  "The Hidden": "অন্তর্নিহিত",
+  "The Governor, The Patron": "কার্যনির্বাহক অভিভাবক",
+  "The Most Exalted": "সর্বোচ্চ মহান",
+  "The Source of Goodness": "কল্যাণের উৎস",
+  "The Ever-Relenting, Acceptor of Repentance": "বারবার ক্ষমাশীল, তওবা কবুলকারী",
+  "The Avenger": "প্রতিশোধ গ্রহণকারী",
+  "The Pardoner": "মার্জনাকারী",
+  "The Compassionate": "পরম স্নেহশীল",
+  "The Owner of All Sovereignty": "সমস্ত রাজত্বের মালিক",
+  "Lord of Majesty and Generosity": "মহিমা ও অনুগ্রহের অধিকারী",
+  "The Equitable": "ইনসাফকারী",
+  "The Gatherer": "একত্রকারী",
+  "The Self-Sufficient, The Rich": "অমুখাপেক্ষী, স্বয়ংসম্পূর্ণ",
+  "The Enricher": "অভাবমোচনকারী",
+  "The Preventer": "প্রতিরোধকারী",
+  // ?  The single most sensitive line in this file. Written as an ability
+  //    held within His wisdom, never as an attribute of doing harm.
+  "The One who allows harm, within His wisdom": "যিনি তাঁর প্রজ্ঞা অনুযায়ী ক্ষতি হতে দেন",
+  "The Benefactor": "কল্যাণদাতা",
+  "The Light": "জ্যোতি",
+  "The Guide": "পথপ্রদর্শক",
+  "The Incomparable, The Originator": "অতুলনীয় স্রষ্টা",
+  "The Everlasting": "চিরস্থায়ী",
+  "The Inheritor": "সর্বস্বের উত্তরাধিকারী",
+  "The Guide to the Right Path": "সঠিক পথের দিশারী",
+  "The Patient, The Timeless": "অত্যন্ত ধৈর্যশীল",
+
+  // --- The screensaver's poster captions (js/asma-posters.js) ---
+  // A WIDER, older list than the 99 above, and on a different
+  // transliteration convention -- these captions come from the poster
+  // filenames, so "Al-Aleem", "Al-Aalim" and "Al-Aliyyu" are three
+  // separate posters where asma-data.js has two Names. Owner's decision,
+  // 14 Aug 2026: caption them in Bangla where the Name is recognisable.
+  // Several here (Ar-Rabb, Al-Ilaah, As-Sayyid, Al-Witr, Al-Khallaq) are
+  // NOT in the 99 at all -- that is deliberate, see asma-posters.js.
+  "Al-A'laa": "আল-আ'লা",
+  "Al-Aleem": "আল-আলীম",
+  "Al-Aalim": "আল-আলিম",
+  "Al-Afuww": "আল-আফুউ",
+  "Al-Ahad": "আল-আহাদ",
+  "Al-Akheer": "আল-আখির",
+  "Al-Akram": "আল-আকরাম",
+  "Al-Aliyyu": "আল-আলিইয়্যু",
+  "Allah-The Proper Name": "আল্লাহ — মহান সত্তার নাম",
+  "Al-Awwal": "আল-আউয়াল",
+  "Al-Azeem": "আল-আযীম",
+  "Al-Azeez": "আল-আযীয",
+  "Al-Baari": "আল-বারী",
+  "Al-Baasit": "আল-বাসিত",
+  "Al-Baatin": "আল-বাতিন",
+  "Al-Barr": "আল-বার্‌র",
+  "Al-Baseer": "আল-বাসীর",
+  "Adh-Dhaahir": "আয-যাহির",
+  "Al-Fattah": "আল-ফাত্তাহ",
+  "Al-Ganiyyu": "আল-গানিইয়্যু",
+  "Al-Ghaffaar": "আল-গাফ্‌ফার",
+  "Al-Ghafoor": "আল-গাফূর",
+  "Al-Hafeedh": "আল-হাফীয",
+  "Al-Hafiyy": "আল-হাফিইয়্যু",
+  "Al-Hakam": "আল-হাকাম",
+  "Al-Hakeem": "আল-হাকীম",
+  "Al-Hameed": "আল-হামীদ",
+  "Al-Haqq": "আল-হাক্ক",
+  "Al-Haseeb": "আল-হাসীব",
+  "Al-Hayy": "আল-হাইয়্যু",
+  "Al-Ilaah": "আল-ইলাহ",
+  "Al-Jabbaar": "আল-জাব্বার",
+  "Al-Jameel": "আল-জামীল",
+  "Al-Jawwaad": "আল-জাউওয়াদ",
+  "Al-Kabeer Al-Mutawaal": "আল-কাবীর আল-মুতাআল",
+  "Al-Kabeer": "আল-কাবীর",
+  "Al-Kareem": "আল-কারীম",
+  "Al-Khaaliq": "আল-খালিক",
+  "Al-Khabeer": "আল-খাবীর",
+  "Al-Khallaq": "আল-খাল্লাক",
+  "Al-Lateef": "আল-লাতীফ",
+  "Al-Maaleek": "আল-মালীক",
+  "Al-Maalik": "আল-মালিক",
+  "Al-Mannan": "আল-মান্নান",
+  "Al-Mateen": "আল-মাতীন",
+  "Al-Mu'mim": "আল-মুমিন",
+  "Al-Mu'tee": "আল-মু'তী",
+  "Al-Muakkhir": "আল-মুআখখির",
+  "Al-Mubeen": "আল-মুবীন",
+  "Al-Muhayimin": "আল-মুহাইমিন",
+  "Al-MuHeet": "আল-মুহীত",
+  "Al-Muhsin": "আল-মুহসিন",
+  "Al-Mujeeb": "আল-মুজীব",
+  "Al-Muqaddimu": "আল-মুকাদ্দিম",
+  "Al-Muqeet": "আল-মুকীত",
+  "Al-Muqtadir": "আল-মুক্তাদির",
+  "Al-Musawwir": "আল-মুসাউইর",
+  "Al-Muta'aalee": "আল-মুতাআলী",
+  "Al-Mutakabbir": "আল-মুতাকাব্বির",
+  "An-Naseer": "আন-নাসীর",
+  "Al-Qaabid": "আল-কাবিদ",
+  "Al-Qaadir": "আল-কাদির",
+  "Al-Qaahir": "আল-কাহির",
+  "Al-Qadeer": "আল-কাদীর",
+  "Al-Qahhaar": "আল-কাহ্‌হার",
+  "Al-Qawiyy": "আল-কাউইয়্যু",
+  "Al-Qayyuum": "আল-কাইয়্যূম",
+  "Al-Quddoos": "আল-কুদ্দূস",
+  "Ar-Ra'oof": "আর-রাউফ",
+  "Ar-Rabb": "আর-রব",
+  "Ar-Rafeeq": "আর-রাফীক",
+  "Ar-Raheem": "আর-রহীম",
+  "Ar-Rahman": "আর-রহমান",
+  "Ar-Raqeeb": "আর-রাকীব",
+  "Ar-Razzaq": "আর-রাযযাক",
+  "As-Salaam": "আস-সালাম",
+  "As-Samee": "আস-সামী",
+  "As-Sayyid": "আস-সাইয়্যিদ",
+  "Ash-Shaafee": "আশ-শাফী",
+  "Ash-Shaakir": "আশ-শাকির",
+  "Ash-Shaheed": "আশ-শাহীদ",
+  "Ash-Shakoor": "আশ-শাকূর",
+  "Al-Subbuhu": "আস-সুব্বূহ",
+  "At-Tawwab": "আত-তাউওয়াব",
+  "At-Tayyib": "আত-তাইয়্যিব",
+  "Al-Waahid": "আল-ওয়াহিদ",
+  "Al-Waarith": "আল-ওয়ারিস",
+  "Al-Waasi": "আল-ওয়াসি",
+  "Al-Wadud": "আল-ওয়াদূদ",
+  "Al-Wahhab": "আল-ওয়াহ্‌হাব",
+  "Al-Wakeel": "আল-ওয়াকীল",
+  "Al-Witr": "আল-উইতর",
+
+  // --- What the Asma screens say themselves (js/asma-renderer.js) ---
+  // "{n} of {total}" reverses in Bangla: English counts up from the item,
+  // Bangla counts down from the total. Same rule phase 4 set for
+  // possessives -- the whole line has to be one translatable sentence,
+  // never a number concatenated onto a word.
+  "{n} of {total}": "{total}টির মধ্যে {n}",
+  "Status: {status} · {confirm}": "অবস্থা: {status} · {confirm}",
+  "Not started yet.": "এখনো শুরু করা হয়নি।",
+  // Shown after a successful claim on EVERY study screen -- the Quran
+  // module, all nine other modules and this one. It reached phase 6 in
+  // English because none of the five call sites ever wrapped it in t().
+  "Claimed and confirmed.": "দাবি করা হয়েছে এবং নিশ্চিত হয়েছে।",
+
+  // --- "Assign to" -- one Claim recorded for several family members/
+  // students at once (way-modal.js's renderAssignDropdown()). First-draft
+  // Bangla, worth the owner's own eye.
+  "you": "আপনি", // ?
+  "Assign to": "যাদের জন্য", // ?
+  "Everyone you can already record for.": "আপনি ইতিমধ্যে যাদের জন্য রেকর্ড করতে পারেন, তারা সবাই।", // ?
+  "Claim for {n}": "{n} জনের জন্য দাবি করুন", // ?
+  "Claimed for {names}.": "{names}-এর জন্য দাবি করা হয়েছে।", // ?
+  "Couldn't claim for {names}.": "{names}-এর জন্য দাবি করা যায়নি।", // ?
+
+  // =====================================================================
+  // Shell round 20 (17 Aug 2026) -- the moving tagline strip and its own
+  // editing screen (taglines.html, js/taglines.js).
+  // =====================================================================
+
+  // --- The six lines the app ships with. These reach the screen through
+  // langText() -> t(value.en), the same read-time path phase 3 built for
+  // seeded subject names, so a tenant that has never opened the editor
+  // still sees them in Bangla. The owner is expected to rewrite these in
+  // their own words -- and once they save their own list, these keys stop
+  // being used at all.
+  "30 Approaches — one Ayah, thirty ways": "৩০টি পদ্ধতি — এক আয়াত, ত্রিশ উপায়", // ? (kept: a tenant that saved its own taglines may still carry it)
+  "Quran Approaches — one Ayah, forty ways": "কুরআনের পদ্ধতি — এক আয়াত, চল্লিশ উপায়",
+  "The 99 Names of Allah": "আল্লাহর ৯৯টি নাম",
+  "Names & Attributes posters on archive.org": "archive.org-এ নাম ও গুণাবলির পোস্টার", // ?
+  "Today's Hadith": "আজকের হাদীস",
+  "Quran (calls) for Critical Reasoning": "কুরআন গভীর চিন্তার আহ্বান জানায়", // ?
+
+  // --- How it moves (js/taglines.js) ------------------------------------
+  "Flip": "উল্টে যাওয়া", // ?
+  "Fade": "মিলিয়ে যাওয়া", // ?
+  "Slide up": "উপরে সরে যাওয়া", // ?
+  "Every visit": "প্রতিবার খোলার সময়",
+  "One day": "এক দিন",
+  "Three days": "তিন দিন",
+  "One week": "এক সপ্তাহ",
+  "One month": "এক মাস",
+
+  // --- The strip itself (quranrevival.html) -----------------------------
+  // The whole sentence, not "opens in a new tab" glued onto a name -- the
+  // same rule phases 4 and 5 set for possessives and confirm() dialogs.
+  "{text} — opens in a new tab": "{text} — নতুন ট্যাবে খোলে",
+
+  // --- The editing screen (taglines.html) -------------------------------
+  "Taglines": "ট্যাগলাইন",
+  "QuranRevival — Taglines": "কুরআনরিভাইভাল — ট্যাগলাইন",
+  "The moving line under the app's name on the Quran Study page. Write the lines, say where each one links, choose the order and how long each one holds the strip. Only you can change these.":
+    "কুরআন অধ্যয়ন পাতায় অ্যাপের নামের নিচের চলমান লাইন। লাইনগুলো লিখুন, কোনটি কোথায় নিয়ে যাবে তা বলুন, ক্রম ঠিক করুন এবং প্রতিটি কত সময় থাকবে তা বেছে নিন। কেবল আপনিই এগুলো বদলাতে পারেন।",
+  "Only the account owner can change the taglines.": "কেবল অ্যাকাউন্টের মালিকই ট্যাগলাইন বদলাতে পারেন।",
+  "These are the lines the app ships with. Change anything and save, and they become yours — after that you can retire any of them.":
+    "এগুলো অ্যাপের সঙ্গে আসা লাইন। যেকোনো কিছু বদলে সংরক্ষণ করলেই এগুলো আপনার হয়ে যাবে — এরপর যেকোনোটিকে অবসরে পাঠাতে পারবেন।",
+  "How it moves": "কীভাবে চলবে",
+  "Movement": "চলন",
+  "Change after (seconds)": "কত সেকেন্ড পরে বদলাবে",
+  "Pause while held": "চেপে ধরে রাখলে থেমে থাকবে",
+  "Scroll long lines": "লম্বা লাইন পাশে সরবে",
+  "Scroll speed": "সরার গতি",
+  "Slow": "ধীর",
+  "Medium": "মাঝারি",
+  "Fast": "দ্রুত",
+  "The line changes at most once each time the app is opened — it is not a carousel. \"Change after\" is how long the line already on screen stays before the next one takes over.":
+    "অ্যাপ একবার খোলার সময় লাইনটি সর্বোচ্চ একবার বদলায় — এটি ঘুরতে থাকা তালিকা নয়। “কত সেকেন্ড পরে বদলাবে” মানে পর্দায় থাকা লাইনটি পরেরটির আগে কতক্ষণ থাকবে।",
+  "Show the movement": "চলন দেখুন",
+  "Preview only — it does not change what anyone sees.": "কেবল দেখানোর জন্য — এতে কারও পর্দা বদলায় না।",
+  "The lines": "লাইনগুলো",
+  "Links to": "যেখানে নিয়ে যাবে",
+  "Opens": "যেভাবে খুলবে",
+  "Holds for": "কত সময় থাকবে",
+  "Only on ayah": "কেবল এই আয়াতে",
+  "Showing": "দেখানো হচ্ছে",
+  "Line": "লাইন",
+  "Leave \"Links to\" empty for a line that is only words. An address starting with http opens in a new tab; anything else is treated as a page inside the app. \"Only on ayah\" (written like 2:255) shows that line only while that ayah is open — for an article about that ayah.":
+    "কেবল কথার লাইনের জন্য “যেখানে নিয়ে যাবে” ফাঁকা রাখুন। http দিয়ে শুরু হওয়া ঠিকানা নতুন ট্যাবে খোলে; অন্য যেকোনো কিছুকে অ্যাপের ভেতরের পাতা ধরা হয়। “কেবল এই আয়াতে” (২:২৫৫ এভাবে লেখা) সেই লাইনটি কেবল ওই আয়াত খোলা থাকা অবস্থায় দেখায় — ওই আয়াত নিয়ে লেখা প্রবন্ধের জন্য।",
+  "Add a line": "নতুন লাইন যোগ করুন",
+  "Add line": "লাইন যোগ করুন",
+  "What it says": "কী লেখা থাকবে",
+  "Leave empty for none": "না থাকলে ফাঁকা রাখুন",
+  "Inside the app": "অ্যাপের ভেতরে",
+  "New tab": "নতুন ট্যাবে",
+  "Retired": "অবসরে",
+  "No changes yet.": "এখনো কিছু বদলানো হয়নি।",
+  "Not saved yet.": "এখনো সংরক্ষণ করা হয়নি।",
+  "Saving…": "সংরক্ষণ করা হচ্ছে…",
+  "Saved. The Quran Study page will show this next time it loads.": "সংরক্ষণ হয়েছে। কুরআন অধ্যয়ন পাতা পরের বার খুললেই এটি দেখাবে।",
+  "Not saved — see the message above.": "সংরক্ষণ হয়নি — উপরের বার্তাটি দেখুন।",
+  "Could not load the taglines.": "ট্যাগলাইনগুলো আনা যায়নি।",
+  "Write an ayah like 2:255.": "২:২৫৫ এভাবে একটি আয়াত লিখুন।",
+  "Write the line first.": "আগে লাইনটি লিখুন।",
+
+  // =====================================================================
+  // Enhancement round -- the Bookmark Manager (bookmarks.html), the real
+  // screen behind nav.js's own long-standing "Bookmark (coming soon)"
+  // placeholder.
+  // =====================================================================
+  "Top level": "সর্বোচ্চ স্তর",
+  "Unfiled": "কোনো ফোল্ডারে নেই",
+  "Open": "খুলুন",
+  "Rename": "নাম বদলান",
+  "Retire": "অবসরে পাঠান",
+  "Rename this bookmark:": "এই বুকমার্কের নাম বদলান:",
+  "Rename this folder:": "এই ফোল্ডারের নাম বদলান:",
+  "Name this folder:": "ফোল্ডারের নাম দিন:",
+  "Bookmarks": "বুকমার্ক",
+  "Every bookmark you have saved, from any module, in one place. Open one to jump straight back to where it was made. Group them into folders however you like.":
+    "আপনার সংরক্ষণ করা প্রতিটি বুকমার্ক, যেকোনো মডিউল থেকে, একই জায়গায়। একটি খুললেই সরাসরি যেখানে তৈরি হয়েছিল সেখানে চলে যাবেন। ইচ্ছেমতো ফোল্ডারে ভাগ করে রাখুন।",
+  "No bookmarks saved yet. Look for the ☆/🔖 button on a study screen.": "এখনো কোনো বুকমার্ক সংরক্ষণ করা হয়নি। অধ্যয়ন পাতায় ☆/🔖 বোতামটি খুঁজুন।",
+  "QuranRevival — Bookmarks": "কুরআনরিভাইভাল — বুকমার্ক",
+
+  // =====================================================================
+  // Fixes round (23 Aug 2026) -- the bookmark-name popover (item 1) and the
+  // nav-bar bookmark dropdown (items 2/3).
+  // =====================================================================
+  "Folder": "ফোল্ডার",
+  "+ New folder…": "+ নতুন ফোল্ডার…",
+  "New folder name": "নতুন ফোল্ডারের নাম",
+  "Manage bookmarks…": "বুকমার্ক পরিচালনা করুন…",
+  "No bookmarks yet.": "এখনো কোনো বুকমার্ক নেই।",
+
+  // =====================================================================
+  // Fixes round 2 (24 Aug 2026) -- the Bookmark dropdown's own two options
+  // (how it opens, what it groups by) and the person tag.
+  // =====================================================================
+  "Open as": "যেভাবে খুলবে",
+  "Collapsed": "গুটানো",
+  "Expanded": "খোলা",
+  "Expand all": "সব খুলুন", // ?
+  "Collapse all": "সব গুটান", // ?
+  "Group by": "যেভাবে সাজানো",
+  // Suffixed keys (i18n.js's own context mechanism): the group-by CHOICE
+  // reads "by folder"/"by person", while the popover's own "Folder" FIELD
+  // label above stays plain "ফোল্ডার". English falls back to the bare word
+  // for both, which is what that dropdown should say in English.
+  "Folder|groupby": "ফোল্ডার অনুযায়ী",
+  "Person|groupby": "ব্যক্তি অনুযায়ী",
+  "For": "যার জন্য",
+  "No one in particular": "নির্দিষ্ট কেউ নয়",
+
+  // =====================================================================
+  // Fixes round 3 (24 Aug 2026) -- the ⋯ menu's own Approach row no longer
+  // vanishes outright when the scope isn't a single āyah (whole-Qur'an note,
+  // or a wider unit); it stays put, disabled, same treatment as "Mapping My
+  // Journey" right beside it.
+  // =====================================================================
+  "Single āyah only": "শুধু একটি আয়াতের জন্য", // ?
+
+  // =====================================================================
+  // Bookmark-issues round (25 Aug 2026) -- retired bookmarks/folders hidden
+  // by default in the Manager (a "Show retired" toggle brings them back),
+  // a third Group-by mode (Module), and the cross-document "someone tagged
+  // this for whoever is selected, but it lives in their own list" section.
+  // =====================================================================
+  "Show retired": "অবসরপ্রাপ্ত দেখান", // ?
+  "Module|groupby": "মডিউল অনুযায়ী",
+  "Bookmarked for {name} by you": "আপনি {name}-এর জন্য বুকমার্ক করেছেন", // ?
+
+  // =====================================================================
+  // Bookmark creation round -- a real "+ New bookmark" flow on the Manager
+  // itself, with a Study Unit picker for the Quran module (see
+  // bookmarks.html's own header comment on this block).
+  // =====================================================================
+  "+ New bookmark": "+ নতুন বুকমার্ক", // ?
+  "Creating a bookmark for this module isn't built yet — open it and use its own ☆ button.":
+    "এই মডিউলের জন্য এখনো বুকমার্ক তৈরি করার ব্যবস্থা নেই — মডিউলটি খুলে এর নিজস্ব ☆ বোতাম ব্যবহার করুন।", // ?
+
+  // =====================================================================
+  // Ayah Collections (QCR) round (26 Aug 2026) -- Explore's own palette,
+  // for named cross-surah āyah collections. "QCR" is the name of the
+  // owner's own first collection set (their own uploaded file's title),
+  // kept as-is rather than translated -- same treatment "WbW"/"Aa" already
+  // get: a real word next to it (below) explains what it is.
+  // =====================================================================
+  "QCR": "QCR",
+  "Manage": "পরিচালনা", // ?
+  "New collection name:": "নতুন সংকলনের নাম:", // ?
+  "Rename collection:": "সংকলনের নাম বদলান:", // ?
+  "Show archived": "সংরক্ষণাগারে থাকাগুলো দেখান", // ?
+  "+ Add collection": "+ সংকলন যোগ করুন", // ?
+  "No collections yet.": "এখনো কোনো সংকলন নেই।", // ?
+  "{count} āyāt": "{count}টি আয়াত",
+  "Named collections of āyāt pulled from across the whole Qur'an — pick one to see it as a wheel.":
+    "কুরআনের বিভিন্ন সূরা থেকে বাছাই করা আয়াতের নামাঙ্কিত সংকলন — একটি বেছে নিন, চাকা হিসেবে দেখতে।", // ?
+  "Remove from this collection": "এই সংকলন থেকে সরান", // ?
+  "Tap a segment or a row to open that āyah — the wheel closes and lands you on QuranRevival's own reading/note screen.":
+    "কোনো অংশ বা সারিতে চাপুন সেই আয়াত খুলতে — চাকাটি বন্ধ হয়ে যাবে এবং আপনি সরাসরি QuranRevival-এর পঠন/নোট স্ক্রিনে পৌঁছাবেন।", // ?
+  "+ Add āyah": "+ আয়াত যোগ করুন", // ?
+  "No āyāt in this collection yet.": "এই সংকলনে এখনো কোনো আয়াত নেই।", // ?
+
+  // -------------------------------------------------------------------
+  // Round 2 (26 Aug 2026) -- full-screen Explore, the rebuilt level-bar
+  // shape, and the Note view's own "back to the collection" / "which
+  // collection(s) is this āyah in" additions.
+  // -------------------------------------------------------------------
+  "Add collection": "সংকলন যোগ করুন", // ?
+  "Back to {name}": "{name}-এ ফিরুন", // ?
+  "List & wheel": "তালিকা ও চাকা", // ?
+  "Collections": "সংকলনসমূহ", // ?
+  "Not in any collection yet.": "এখনো কোনো সংকলনে নেই।", // ?
+
+  // -------------------------------------------------------------------
+  // Round 5 (28 Aug 2026) -- the QCR wheel's own drag-to-resize handle.
+  // -------------------------------------------------------------------
+  "Drag to resize the wheel": "চাকার আকার বদলাতে টেনে আনুন", // ?
+
+  // -------------------------------------------------------------------
+  // Note view enhancement round (28 Aug 2026) -- a Category picker in bar 1,
+  // and the Track/Guide/Breakdown/Coverage card moving its own Approach
+  // picker into its header and becoming collapsible.
+  // -------------------------------------------------------------------
+  "Category": "শ্রেণি", // ?
+  "— none —": "— কোনোটি নয় —", // ?
+  "Track this āyah": "এই আয়াত ট্র্যাক করুন", // ?
+
+  // -------------------------------------------------------------------
+  // Note view enhancement round 3 (28 Aug 2026) -- text-size.js's own
+  // resizable-text popover, offered from the Note view, the PC note-pane
+  // and the Read screen alike.
+  // -------------------------------------------------------------------
+  "Text size": "লেখার আকার", // ?
+  "All": "সব", // ?
+  "Reset": "পুনঃসেট", // ?
+
+  // -------------------------------------------------------------------
+  // TOPIC bar round (28 Aug 2026) -- the 🗂 drawer's own retired-Category
+  // picker rebuilt as TOPIC -> Group/Attach/Yr Level, and a new Yr Level
+  // field on each QCR collection (Yr 1-12, Regular adult).
+  // -------------------------------------------------------------------
+  "Topic": "বিষয়", // ?
+  "Group": "গ্রুপ", // ?
+  "Attach": "সংযুক্তি", // ?
+  "Yr Level": "শ্রেণি স্তর", // ?
+  "Yr {n}": "শ্রেণি {n}", // ?
+  "Regular adult": "সাধারণ প্রাপ্তবয়স্ক", // ?
+  "None": "কোনোটি নেই", // ?
+  "Not set.": "নির্ধারণ করা হয়নি।", // ?
+
+  // -------------------------------------------------------------------
+  // Asma Collections round (29 Aug 2026) -- the "Browse by Category"
+  // panel on the Asma ul Husna page, built to the same template as Ayah
+  // Collections (QCR).
+  // -------------------------------------------------------------------
+  "Browse by Category": "বিষয় অনুযায়ী দেখুন", // ?
+  "All 99 Names": "সব ৯৯টি নাম",
+  "Beyond the 99": "৯৯-এর বাইরে", // ?
+  "Honorific phrase": "সম্মানসূচক বাক্যাংশ", // ?
+  "Weak / disputed hadith": "দুর্বল / বিতর্কিত হাদীস", // ?
+  "beyond 99": "৯৯-এর বাইরে", // ?
+  "phrase": "বাক্যাংশ",
+  "weak": "দুর্বল",
+  "Edit Bangla wording": "বাংলা লেখা সম্পাদনা করুন", // ?
+  "New Bangla wording:": "নতুন বাংলা লেখা:", // ?
+  "Remove from this group": "এই গ্রুপ থেকে সরান", // ?
+  "No Names in this group yet.": "এই গ্রুপে এখনো কোনো নাম নেই।", // ?
+  "New group name:": "নতুন গ্রুপের নাম:", // ?
+  "Rename group:": "গ্রুপের নাম পরিবর্তন করুন:", // ?
+  "+ Add to this group": "+ এই গ্রুপে যোগ করুন", // ?
+  "Already in this group, or no Names left to add.": "ইতিমধ্যে এই গ্রুপে আছে, অথবা যোগ করার মতো আর কোনো নাম নেই।", // ?
+  "Tap a segment or a row to open that Name — the wheel closes and lands you on its own detail screen.": "কোনো অংশ বা সারিতে চাপ দিন সেই নামটি খুলতে — চাকাটি বন্ধ হয়ে তার নিজস্ব বিস্তারিত পাতায় নিয়ে যাবে।", // ?
+
+  // Round 2 -- Qur'an/Hadith reference chips.
+  "Related Ayat & Hadith": "সংশ্লিষ্ট আয়াত ও হাদীস", // ?
+  "Qur'an {ref}": "কুরআন {ref}",
+
+  // Round 3 -- the A4 poster + screensaver.
+  "QuranRevival · Asma ul Husna": "কুরআনরিভাইভাল · আসমাউল হুসনা",
+  "Poster": "পোস্টার",
+  "Print": "প্রিন্ট",
+
+  // Asma-in-Explore round -- AH as a second Explore topic + Note-view Topic.
+  "All Groups": "সব গ্রুপ", // ?
+  "{count} groups": "{count}টি গ্রুপ", // ?
+  "No groups yet.": "এখনো কোনো গ্রুপ নেই।", // ?
+  "Tap a group to see the Names inside it.": "ভিতরের নামগুলো দেখতে একটি গ্রুপে চাপ দিন।", // ?
+  "{count} Names": "{count}টি নাম", // ?
+  "Tap a Name to see the Ayat and Hadith it's linked to.": "এর সাথে যুক্ত আয়াত ও হাদীস দেখতে একটি নামে চাপ দিন।", // ?
+  "References don't need a wheel — usually just 1–3.": "রেফারেন্সের জন্য চাকার প্রয়োজন নেই — সাধারণত মাত্র ১–৩টি।", // ?
+  "Names": "নামসমূহ", // ?
+  "References": "রেফারেন্স", // ?
+  "Pick a Group first": "প্রথমে একটি গ্রুপ বাছুন", // ?
+
+  // Classifications round (23 Sep 2026) -- the open, owner-extensible set
+  // of classifications ("Group"/"Dual Names" are the seeded first two;
+  // {classification} is whichever one the reader is looking at).
+  "Belongs to": "যেসব তালিকায় আছে", // ?
+  "Not filed in any list yet.": "এখনো কোনো তালিকায় রাখা হয়নি।", // ?
+  "Also in:": "আরও যেখানে আছে:", // ?
+  "All {classification}": "সব {classification}", // ?
+  "New {classification} entry:": "নতুন {classification} এন্ট্রি:", // ?
+  "Add to {classification}": "{classification}-এ যোগ করুন", // ?
+  "New classification:": "নতুন শ্রেণিবিভাগ:", // ?
+  "New classification": "নতুন শ্রেণিবিভাগ", // ?
+
+  // Classification rename/archive round (23 Sep 2026, issue #205) -- the
+  // ✎/🗄 pair for the classification tab itself, same shape as "Rename
+  // group:"/"Archive"/"Restore" above, one level up.
+  "Rename classification:": "শ্রেণিবিভাগের নাম পরিবর্তন করুন:", // ?
+  "Archive classification": "শ্রেণিবিভাগ সংরক্ষণাগারে রাখুন", // ?
+  "Restore classification": "শ্রেণিবিভাগ ফিরিয়ে আনুন", // ?
+
+  // Back-button round -- the popup note view's own Back control.
+  "Back": "পেছনে", // ?
+
+  // 30 Aug 2026 round -- three real dropdown fields (Group/Dual/Single)
+  // plus Manage-mode add/edit/archive, over the SAME asmaCollections doc.
+  "All dual Names": "সব জোড়া নাম", // ?
+  "All Names": "সব নাম", // ?
+  "Dual Names": "জোড়া নাম", // ?
+  "Single Names": "একক নাম", // ?
+
+  // 4 Sep 2026 one-bar round -- the QCR/Asma level bars folded every button
+  // behind one ⋯ palette, and the Asma Name screen gained a "which groups
+  // is this Name in" picker. ("Group", "Names" and "Dual Names" -- the three
+  // shortened field names -- and "Save"/"Cancel"/"Archived" are all reused
+  // from their existing entries above; the three "All …" placeholders they
+  // replace stay where they are, unused, per this project's own rule.)
+  "More": "আরও", // ?
+  "Only the owner or prime can manage this.": "শুধু মালিক বা প্রাইম এটি পরিচালনা করতে পারেন।", // ?
+  "You're previewing as {role}, so managing is switched off. Turn the preview off on the People page to manage again.": "আপনি {role} হিসেবে দেখছেন, তাই পরিচালনা বন্ধ আছে। আবার পরিচালনা করতে People পাতায় গিয়ে প্রিভিউ বন্ধ করুন।", // ?
+  "Groups this Name is in": "এই নামটি যেসব গ্রুপে আছে", // ?
+  // The Owner, 8 Oct 2026: ‹ › on a Name's bar in Explore.
+  "Previous Name": "আগের নাম",
+  // The Owner, 8 Oct 2026: one button per folder in "File in folder(s)".
+  "Collapse {name}": "{name} বন্ধ করুন",
+  "Expand {name}": "{name} খুলুন",
+  "({count} ticked inside)": "(ভেতরে {count}টি টিক দেওয়া)",
+  // Siyagah's header in "File in folder(s)" (the Owner, 8 Oct 2026).
+  "All sections": "সব সেকশন",
+  "Not in a section": "কোনো সেকশনে নেই",
+  "Every section at once": "একসাথে সব সেকশন",
+  "Previous section": "আগের সেকশন",
+  "Next section": "পরের সেকশন",
+  "Jump to a section": "একটি সেকশনে যান",
+  "Folder text: size, colour, bold": "ফোল্ডারের লেখা: আকার, রং, মোটা",
+  "Folder text": "ফোল্ডারের লেখা",
+  "Kept on this device only.": "শুধু এই ডিভাইসে রাখা হয়।",
+  "Size": "আকার",
+  "Default": "স্বাভাবিক",
+  "Gold": "সোনালি",
+  "Sky": "আকাশি",
+  "Mint": "পুদিনা সবুজ",
+  "Rose": "গোলাপি",
+  "White": "সাদা",
+  "Next Name": "পরের নাম",
+  "Groups for {name}": "{name}-এর গ্রুপসমূহ", // ?
+  "Tick every group this Name belongs to. Untick one and tick another to move it.": "এই নামটি যেসব গ্রুপে রাখতে চান সবগুলোতে টিক দিন। সরাতে চাইলে একটি থেকে টিক তুলে অন্যটিতে টিক দিন।", // ?
+  "Add Name": "নাম যোগ করুন", // ?
+  "Add dual-name collection": "জোড়া-নামের সংগ্রহ যোগ করুন", // ?
+  "New dual-name collection:": "নতুন জোড়া-নামের সংগ্রহ:", // ?
+  "Add a new Name": "একটি নতুন নাম যোগ করুন", // ?
+  "Edit Name": "নাম সম্পাদনা করুন", // ?
+  "Transliteration": "প্রতিবর্ণীকরণ", // ?
+  "English meaning": "ইংরেজি অর্থ", // ?
+  "Bangla name": "বাংলা নাম", // ?
+  "Bangla meaning": "বাংলা অর্থ", // ?
+  "A transliteration is needed.": "একটি প্রতিবর্ণীকরণ প্রয়োজন।", // ?
+  "Attach a reference to Names": "নামগুলোতে একটি সূত্র যুক্ত করুন", // ?
+  "Attach a reference to several Names": "একাধিক নামে একটি সূত্র যুক্ত করুন", // ?
+  "Reference text": "সূত্রের লেখা", // ?
+  "Filter Names…": "নাম খুঁজুন…", // ?
+  "No Names found.": "কোনো নাম পাওয়া যায়নি।", // ?
+  "Type a reference first.": "প্রথমে একটি সূত্র লিখুন।", // ?
+  "Tick at least one Name.": "অন্তত একটি নাম বাছাই করুন।", // ?
+  "Attach to Asma ul Husna": "আসমাউল হুসনায় যুক্ত করুন", // ?
+
+  // 30 Aug 2026 round -- the Asma drawer's own attach button, and
+  // create-a-new-Name-while-attaching.
+  "Attach this āyah": "এই আয়াতটি যুক্ত করুন", // ?
+  "+ Create a new Name": "+ একটি নতুন নাম তৈরি করুন", // ?
+  // 5 Sep 2026 -- attaching a reference to a Dual Name as well.
+  "+ Create a new Dual Name": "+ একটি নতুন জোড়া নাম তৈরি করুন", // ?
+  "Dual": "জোড়া", // ?
+  "Show": "দেখান", // ?
+  "No Dual Names yet — make one with “+ Create a new Dual Name”.": "এখনো কোনো জোড়া নাম নেই — “+ একটি নতুন জোড়া নাম তৈরি করুন” দিয়ে একটি তৈরি করুন।", // ?
+
+  // 5 Sep 2026 -- creating a Name (or a Dual Name) straight from the āyah
+  // being read in the Note view, with that āyah as its own reference, plus
+  // the "file it under" row that says which list the new Name joins.
+  "New Name from this āyah": "এই আয়াত থেকে নতুন নাম", // ?
+  "New Dual Name from this āyah": "এই আয়াত থেকে নতুন জোড়া নাম", // ?
+  "No Dual Names list yet — make one with the ✚² button.": "এখনো কোনো জোড়া-নামের তালিকা নেই — ✚² বোতাম দিয়ে একটি তৈরি করুন।", // ?
+  "Add a new Dual Name": "একটি নতুন জোড়া নাম যোগ করুন", // ?
+  "File under (Group)": "যে গ্রুপে রাখবেন", // ?
+  "File under (Dual Names)": "যে জোড়া-নামের তালিকায় রাখবেন", // ?
+  "+ New group…": "+ নতুন গ্রুপ…", // ?
+  "+ New Dual Names list…": "+ নতুন জোড়া-নামের তালিকা…", // ?
+  "New group title": "নতুন গ্রুপের শিরোনাম", // ?
+  "New Dual Names list title": "নতুন জোড়া-নামের তালিকার শিরোনাম", // ?
+
+  // Classification round (23 Sep 2026, issue #205) -- the "file it under"
+  // row generalized: a real Classification field alongside the list picker,
+  // so a brand-new Name can be filed under any active classification, not
+  // only the two "File under (Group)"/"File under (Dual Names)" wordings
+  // above (kept, unused, per this project's own rule).
+  "Classification": "শ্রেণিবিভাগ", // ?
+  "File under": "যেখানে রাখবেন", // ?
+  "+ New list…": "+ নতুন তালিকা…", // ?
+  "New list title": "নতুন তালিকার শিরোনাম", // ?
+  "Not filed": "কোথাও রাখা হয়নি",
+
+  // 2 Sep 2026 -- the list-pane splitter/collapse toggle shared by
+  // Approach, Explore, QCR and Asma ul Husna.
+  "Collapse list": "তালিকা সংকুচিত করুন", // ?
+  "Expand list": "তালিকা প্রসারিত করুন", // ?
+
+  // 2 Sep 2026 -- drag-reposition round: dragging a Group or a Name within
+  // a group, with auto-numbering.
+  "Drag to reorder": "সরানোর জন্য টেনে ধরুন", // ?
+
+  // 3 Sep 2026 -- Asma ul Husna wheel resize round: js/asma-wheel-text.js's
+  // own "Wheel labels" slider (a Group's own title, or a Name's own
+  // display-language name, on the Explore -> Asma ul Husna wheel). "Text
+  // size", "Arabic", "All" and "Reset" are all reused verbatim from their
+  // existing entries above.
+  "Wheel labels": "চাকার লেবেল", // ?
+
+  // -------------------------------------------------------------------
+  // 5 Sep 2026 -- the Backup page (backup.html) and the backup FILE it
+  // produces (js/backup-file.js). The file is a snapshot, so it is written
+  // in whatever language the app was in when it was taken (I11) -- these
+  // are its own headings as much as the page's.
+  // -------------------------------------------------------------------
+  "Backup": "ব্যাকআপ",
+  "QuranRevival — Backup": "QuranRevival — ব্যাকআপ",
+  "backup|noun": "ব্যাকআপ",
+  "Save everything this madrasah has written — people, the catalogue, and every claim, note, bookmark and log entry — as one file on your own device. It opens in any browser, needs no internet, and is yours to keep.":
+    "এই মাদরাসার লেখা সবকিছু — মানুষ, ক্যাটালগ, এবং প্রতিটি দাবি, নোট, বুকমার্ক ও লগ এন্ট্রি — আপনার নিজের ডিভাইসে একটি ফাইল হিসেবে সংরক্ষণ করুন। এটি যেকোনো ব্রাউজারে খোলে, ইন্টারনেট লাগে না, এবং এটি আপনারই।",
+  "What gets saved": "কী কী সংরক্ষণ হয়",
+  "Everyone on the roster, their roles and who looks after whom": "তালিকার সবাই, তাদের ভূমিকা এবং কে কার দায়িত্বে",
+  "Every claim and confirmation, for each person you can record for": "প্রতিটি দাবি ও নিশ্চিতকরণ, আপনি যাদের জন্য রেকর্ড করতে পারেন তাদের প্রত্যেকের",
+  "Every āyah note, with its formatting": "প্রতিটি আয়াত-নোট, তার সাজসজ্জাসহ",
+  "Every bookmark and folder": "প্রতিটি বুকমার্ক ও ফোল্ডার",
+  "The whole activity log, week by week": "পুরো কার্যবিবরণী, সপ্তাহ ধরে ধরে",
+  "The subject tree, the Approaches, ladders, levels and domains": "বিষয়-তালিকা, অ্যাপ্রোচসমূহ, ল্যাডার, লেভেল ও ডোমেইন",
+  "Āyah collections (QCR) and Asma ul Husna collections": "আয়াত সংগ্রহ (QCR) ও আসমাউল হুসনা সংগ্রহ",
+  "Classes, course offers, enrolments and curriculum": "ক্লাস, কোর্স অফার, ভর্তি ও পাঠ্যক্রম",
+  "Homework and submissions, and your own teaching notes": "বাড়ির কাজ ও জমা, এবং আপনার নিজের শিক্ষকতার নোট",
+  "This madrasah's own settings, banner and taglines": "এই মাদরাসার নিজস্ব সেটিংস, ব্যানার ও ট্যাগলাইন",
+  "Not saved, because it is not yours to lose:": "সংরক্ষণ হয় না, কারণ এগুলো হারানোর মতো আপনার নিজস্ব কিছু নয়:",
+  "the Qur'an text, the Mushaf pages, the recitations and the app's own program code. Those are the same for everyone and are kept separately.":
+    "কুরআনের মূল পাঠ, মুসহাফের পৃষ্ঠা, তিলাওয়াত এবং অ্যাপের নিজস্ব প্রোগ্রাম কোড। এগুলো সবার জন্য একই এবং আলাদাভাবে রাখা হয়।",
+  "Make the backup": "ব্যাকআপ তৈরি করুন",
+  // MAP Phase 2 -- the persistent Quran Word Card. Every string the card can
+  // print, so a Bangla reader never meets an English panel (I11).
+  "Quran word": "কুরআনের শব্দ",
+  "Quran word card": "কুরআন শব্দ কার্ড",
+  "Arabic learning level": "আরবি শেখার স্তর",
+  "Previous word": "আগের শব্দ",
+  "Next word": "পরের শব্দ",
+  "Close word card": "শব্দ কার্ড বন্ধ করুন",
+  "WbW": "শব্দে শব্দে",
+  "Basic Arabic": "প্রাথমিক আরবি",
+  "Arabic in Depth": "গভীরে আরবি",
+  "Dictionary Word": "অভিধানের শব্দ",
+  "ROOT": "ধাতু",
+  "Dictionary word": "অভিধানের শব্দ",
+  "Form": "রূপ",
+  "Form {n}": "ফর্ম {n}",
+  "{n} forms · {total} times in all": "{n}টি রূপ · মোট {total} বার",
+  "{n}×": "{n} বার",
+  "Root": "ধাতু",
+  "Part of speech": "পদ",
+  "Unknown": "অজানা",
+  "{count} root-linked occurrences": "ধাতু-সম্পর্কিত {count}টি ব্যবহার",
+  "{count} occurrences of this Dictionary Word": "এই অভিধানের শব্দের {count}টি ব্যবহার",
+  "Derived forms of this root": "এই ধাতু থেকে উৎপন্ন রূপসমূহ",
+  // Issue #206 -- the Word Card's own occurrence-share line.
+  "Appears {count} times in the Qur'an — {percent}% of all words": "কুরআনে {count} বার এসেছে — সকল শব্দের {percent}%",
+  // Issue #263 -- word-part colouring switch + legend.
+  "Colour word parts": "শব্দাংশ রঙিন করা",
+  "particle": "অব্যয়",
+  "person": "পুরুষ",
+  "determiner": "নির্দেশক",
+  "stem": "কাণ্ড",
+  // --- Issue #265 -- importing mappingmyjourney.com (a WordPress export)
+  // into Mapping My Journey: app/import-notes.html, its ⋯-menu entry point
+  // in journey-map.html, and the "Originally written" date line on an
+  // imported Note's own card in notes.html.
+  // --- Issue #271 -- Evernote (.enex) added as a second source on the same
+  // page, generalizing several of the strings above from "WordPress" to
+  // "Import Notes" -- both the old and new key forms are listed here so the
+  // rename is visible; the old keys below are gone from the live markup.
+  "Import Notes": "নোট ইমপোর্ট করুন", // ?
+  "Bring Notes from another app into Mapping My Journey — folders and Notes, each linked to its āyah where its title or text names one. This never touches your existing folders or Notes, and never deletes anything.":
+    "অন্য অ্যাপ থেকে নোট আপনার Mapping My Journey-তে আনুন — ফোল্ডার ও নোট, প্রতিটি তার শিরোনাম বা লেখায় উল্লেখিত আয়াতের সাথে যুক্ত। এটি আপনার বিদ্যমান ফোল্ডার বা নোট স্পর্শ করে না, এবং কিছুই মুছে ফেলে না।", // ?
+  "Back to Mapping My Journey": "Mapping My Journey-তে ফিরে যান",
+  "1. Choose your export": "১. আপনার এক্সপোর্ট বেছে নিন",
+  "Source": "উৎস", // ?
+  "WordPress export (.xml)": "ওয়ার্ডপ্রেস এক্সপোর্ট (.xml)", // ?
+  "Evernote export (.enex)": "এভারনোট এক্সপোর্ট (.enex)", // ?
+  "In WordPress: Tools → Export → All content, then download the .xml file. It is read in this browser only — nothing is uploaded anywhere else, and the file itself is never saved to this app.":
+    "ওয়ার্ডপ্রেসে: Tools → Export → All content, তারপর .xml ফাইলটি ডাউনলোড করুন। এটি শুধু এই ব্রাউজারে পড়া হয় — অন্য কোথাও আপলোড করা হয় না, এবং এই ফাইলটি এই অ্যাপে কখনো সংরক্ষিত হয় না।", // ?
+  "In Evernote: File → Export Notes, choose Evernote XML Format (.enex), one file per notebook. You may choose several .enex files at once — each becomes its own folder. Pictures and attachments are not imported this round: each is replaced by a small placeholder in the Note, like [picture: file-name]. It is read in this browser only — nothing is uploaded anywhere else, and the files themselves are never saved to this app.":
+    "এভারনোটে: File → Export Notes থেকে Evernote XML Format (.enex) বেছে নিন, প্রতিটি নোটবুকের জন্য একটি ফাইল। আপনি একসাথে একাধিক .enex ফাইল বেছে নিতে পারেন — প্রতিটি তার নিজস্ব ফোল্ডার হয়ে যাবে। ছবি ও সংযুক্তি এই দফায় ইমপোর্ট করা হয় না: প্রতিটির বদলে নোটে একটি ছোট প্লেসহোল্ডার থাকবে, যেমন [picture: file-name]। এটি শুধু এই ব্রাউজারে পড়া হয় — অন্য কোথাও আপলোড করা হয় না, এবং ফাইলগুলো এই অ্যাপে কখনো সংরক্ষিত হয় না।", // ?
+  "Stack name (optional) — becomes one shared parent folder above the notebooks you choose below":
+    "স্ট্যাক নাম (ঐচ্ছিক) — আপনার বেছে নেওয়া নোটবুকগুলোর উপরে একটি ভাগ করা প্যারেন্ট ফোল্ডার হয়ে যাবে", // ?
+  "e.g. Personal Journal": "যেমন: ব্যক্তিগত জার্নাল", // ?
+  "2. Preview": "২. প্রিভিউ",
+  "Files chosen": "নির্বাচিত ফাইল", // ?
+  "Pictures/attachments not imported": "ছবি/সংযুক্তি ইমপোর্ট হয়নি", // ?
+  "Linked to one āyah": "একটি আয়াতের সাথে যুক্ত",
+  "Linked to a range": "একটি পরিসরের সাথে যুক্ত",
+  "Carry a Hadith reference": "হাদিসের একটি উল্লেখ বহন করে",
+  "No reference found": "কোনো উল্লেখ পাওয়া যায়নি",
+  "3. Import": "৩. ইমপোর্ট",
+  "Import": "ইমপোর্ট",
+  "Reading {name}…": "{name} পড়া হচ্ছে…",
+  "Reading {count} files…": "{count}টি ফাইল পড়া হচ্ছে…", // ?
+  "Could not read that file: {message}": "সেই ফাইলটি পড়া যায়নি: {message}",
+  "Titles with no usable reference (a sample):": "কোনো ব্যবহারযোগ্য উল্লেখ নেই এমন শিরোনাম (একটি নমুনা):",
+  "You can only import into your own Mapping My Journey — choose yourself in the Person picker above.":
+    "আপনি শুধু আপনার নিজের Mapping My Journey-তে ইমপোর্ট করতে পারবেন — উপরে পার্সন পিকার থেকে নিজেকে বেছে নিন।",
+  "Importing is nearly ready, but the governed decision that turns it on is incomplete.":
+    "ইমপোর্ট করা প্রায় প্রস্তুত, কিন্তু এটি চালু করার সিদ্ধান্তটি এখনো সম্পূর্ণ হয়নি।", // ?
+  "Importing is not switched on yet — the Owner needs to publish one Rules update first. The preview above works either way.":
+    "ইমপোর্ট এখনো চালু হয়নি — মালিককে প্রথমে একটি নিয়ম হালনাগাদ প্রকাশ করতে হবে। উপরের প্রিভিউ যেভাবেই হোক কাজ করে।", // ?
+  "Choose a file first.": "প্রথমে একটি ফাইল বেছে নিন।",
+  "Folders: {created} created, {skipped} already there ({done} of {total})…":
+    "ফোল্ডার: {created}টি তৈরি হয়েছে, {skipped}টি আগে থেকেই আছে ({total}-এর মধ্যে {done})…", // ?
+  "Notes: {created} created, {skipped} already there ({done} of {total})…":
+    "নোট: {created}টি তৈরি হয়েছে, {skipped}টি আগে থেকেই আছে ({total}-এর মধ্যে {done})…", // ?
+  "Done. Folders: {fc} created, {fs} already there. Notes: {nc} created, {ns} already there.":
+    "সম্পন্ন। ফোল্ডার: {fc}টি তৈরি হয়েছে, {fs}টি আগে থেকেই ছিল। নোট: {nc}টি তৈরি হয়েছে, {ns}টি আগে থেকেই ছিল।",
+  "The import stopped early: {message}. It is safe to try again — anything already created will be skipped.":
+    "ইমপোর্ট মাঝপথে থেমে গেছে: {message}। আবার চেষ্টা করা নিরাপদ — যা আগে থেকেই তৈরি হয়েছে তা এড়িয়ে যাওয়া হবে।", // ?
+  "Import Notes…": "নোট ইমপোর্ট করুন…", // ?
+  "{notebook}: {count} Notes — {ayah} āyah, {range} range, {hadith} Hadith, {noref} no reference, {res} pictures/attachments not imported":
+    "{notebook}: {count}টি নোট — {ayah}টি আয়াত, {range}টি পরিসর, {hadith}টি হাদিস, {noref}টি কোনো উল্লেখ নেই, {res}টি ছবি/সংযুক্তি ইমপোর্ট হয়নি", // ?
+  "Originally written": "মূলত লেখা হয়েছিল", // ?
+  "{total} occurrences in {forms} derived forms": "{forms}টি উৎপন্ন রূপে {total}টি ব্যবহার",
+  "{count} occurrences": "{count}টি ব্যবহার",
+  "Category not recorded": "শ্রেণি লিপিবদ্ধ নেই",
+  "Each form's category is the one the packaged grammatical analysis records for that written form.": "প্রতিটি রূপের শ্রেণি হলো সংরক্ষিত ব্যাকরণ-বিশ্লেষণে ওই লিখিত রূপের জন্য লিপিবদ্ধ শ্রেণি।",
+  "{count} of these forms are recorded with more than one category; the most frequent is shown.": "এর মধ্যে {count}টি রূপ একাধিক শ্রেণিতে লিপিবদ্ধ; সবচেয়ে বেশি ব্যবহৃতটি দেখানো হয়েছে।",
+  "Also recorded as: {list}": "এভাবেও লিপিবদ্ধ: {list}",
+  // v08.22 -- the grammatical categories the packaged Qur'an data itself
+  // uses. The KEY is the category exactly as the source records it.
+  // Eleven tags the source never spells out (RES, PRO, PREV, IMPV, EXL, INT,
+  // EXH, SUR, AVR, EQ, COM) are deliberately NOT listed: they would have to
+  // be guessed, and a guessed grammatical term is worse than the source's
+  // own letters. They stay as they are on screen, in both languages.
+  "Noun": "বিশেষ্য",
+  "Pronoun": "সর্বনাম",
+  "Verb": "ক্রিয়া",
+  "Preposition": "পূর্বসর্গ অব্যয়",
+  "Conjunction": "সংযোজক অব্যয়",
+  "Determiner": "নির্দেশক",
+  "Proper Noun": "নামবাচক বিশেষ্য",
+  "Relative Pronoun": "সম্বন্ধবাচক সর্বনাম",
+  "Resumption Particle": "পুনরারম্ভবাচক অব্যয়", // ?
+  "Negative Particle": "নেতিবাচক অব্যয়",
+  "Accusative Particle": "কর্মকারকবাচক অব্যয়", // ?
+  "Adjective": "বিশেষণ",
+  "Emphatic Particle": "জোরবাচক অব্যয়",
+  "Time Adverb": "কালবাচক ক্রিয়াবিশেষণ",
+  "Conditional": "শর্তবাচক অব্যয়",
+  "Demonstrative Pronoun": "নির্দেশক সর্বনাম",
+  "Interrogative Particle": "প্রশ্নবাচক অব্যয়",
+  "Subordinating Conj.": "অধীন সংযোজক অব্যয়",
+  "Location Adverb": "স্থানবাচক ক্রিয়াবিশেষণ",
+  "Particle of Certainty": "নিশ্চয়তাবাচক অব্যয়",
+  "Vocative Particle": "সম্বোধনবাচক অব্যয়",
+  "Result Particle": "ফলবাচক অব্যয়",
+  "Purpose/Jussive Particle": "উদ্দেশ্যবাচক অব্যয়",
+  "Circumstantial": "অবস্থাবাচক অব্যয়",
+  "Supplemental": "সম্পূরক অব্যয়",
+  "Future Particle": "ভবিষ্যৎবাচক অব্যয়",
+  "Retraction Particle": "প্রত্যাহারবাচক অব্যয়", // ?
+  "Exceptive Particle": "ব্যতিক্রমবাচক অব্যয়",
+  "Inceptive Particle": "সূচনাবাচক অব্যয়", // ?
+  "Causative Particle": "কারণবাচক অব্যয়",
+  "Amendment Particle": "সংশোধনবাচক অব্যয়", // ?
+  "Answer Particle": "উত্তরবাচক অব্যয়",
+  "Quranic Initials": "হুরূফে মুকাত্তাআত",
+  "Imperative Verb": "আদেশসূচক ক্রিয়া",
+  "{count} occurrences of this root are not assigned to a form in the packaged data.": "সংরক্ষিত তথ্যে এই ধাতুর {count}টি ব্যবহার কোনো রূপের সঙ্গে যুক্ত করা নেই।",
+  "No derived forms are listed for this root in the packaged data.": "সংরক্ষিত তথ্যে এই ধাতুর কোনো উৎপন্ন রূপ তালিকাভুক্ত নেই।",
+  "Loading derived forms…": "উৎপন্ন রূপ লোড হচ্ছে…",
+  "Derived forms unavailable: {error}": "উৎপন্ন রূপ পাওয়া যায়নি: {error}",
+  "Show occurrences": "ব্যবহারগুলো দেখুন",
+  "Hide occurrences": "ব্যবহারগুলো লুকান",
+  // Owner, 7 Oct 2026 -- the Āyah card's header (‹ › 📖) and its ways back.
+  "Note view": "নোট ভিউ",
+  "See this āyah as in Note view": "এই আয়াতটি নোট ভিউয়ের মতো দেখুন",
+  "Āyah card": "আয়াত কার্ড",
+  "Back to Āyah card": "আয়াত কার্ডে ফিরুন",
+  "Bookmarked": "বুকমার্ক করা",
+  "Asma": "আসমা",
+  "Could not load this āyah.": "এই আয়াতটি লোড করা যায়নি।",
+  "Tap one to open that āyah": "যেকোনোটিতে ট্যাপ করে সেই আয়াত খুলুন",
+  "No occurrences are listed for this form.": "এই রূপের কোনো ব্যবহার তালিকাভুক্ত নেই।",
+  "Showing the first {shown} of {total} occurrences.": "মোট {total}টি ব্যবহারের প্রথম {shown}টি দেখানো হচ্ছে।",
+  "Go to {ref}": "{ref} এ যান",
+  "Back to {ref}": "{ref} এ ফিরে যান",
+  "Back to Word Card": "শব্দ কার্ডে ফিরুন",
+  "Back to the word you came from": "আপনি যে শব্দ থেকে এসেছেন সেখানে ফিরে যান",
+  "Visiting from {ref}": "{ref} থেকে এসেছেন",
+  "Root unavailable in the approved dataset": "অনুমোদিত তথ্যভাণ্ডারে ধাতু পাওয়া যায়নি",
+  "Dictionary Word unavailable in the approved dataset": "অনুমোদিত তথ্যভাণ্ডারে অভিধানের শব্দ পাওয়া যায়নি",
+  // Decision 68 (5 Oct 2026) -- a word with no dictionary word is N/A at Basic and Depth.
+  "Not applicable: this word has no dictionary word, so Basic Arabic and Arabic in Depth leave it out of their totals.": "প্রযোজ্য নয়: এই শব্দের কোনো অভিধানের শব্দ নেই, তাই প্রাথমিক আরবি ও গভীরে আরবি এটিকে তাদের মোট হিসাবের বাইরে রাখে।",
+  "Clear the earlier mark": "আগের চিহ্নটি মুছুন",
+  // The Owner, 5 Oct 2026 -- quick folder edits in the Bookmark menu.
+  "Move folder": "ফোল্ডার সরান",
+  // The Owner, 5 Oct 2026 -- Last read / Last played in the Bookmark menu.
+  "Last read": "সর্বশেষ পড়া",
+  "Last played": "সর্বশেষ শোনা",
+  "Nothing read yet": "এখনো কিছু পড়া হয়নি",
+  "Nothing played yet": "এখনো কিছু শোনা হয়নি",
+  "You are editing this Note: tag changes are saved when you press Done.": "আপনি এই নোটটি সম্পাদনা করছেন: ট্যাগের পরিবর্তন সম্পন্ন চাপলে সংরক্ষিত হবে।",
+  "Rename folder": "ফোল্ডারের নাম বদলান",
+  // The Owner, 7 Oct 2026: 🗑 on folders and bookmarks in the Bookmark menu (nothing is erased; Undo).
+  "Remove folder": "ফোল্ডার সরান",
+  "That passage is not in this book.": "এই অংশটি এই বইয়ে নেই।",
+  "Removed “{name}”": "“{name}” সরানো হয়েছে",
+  "Removed the folder “{name}”. Its bookmarks are now at the top.": "“{name}” ফোল্ডারটি সরানো হয়েছে। এর বুকমার্কগুলো এখন উপরে আছে।",
+  "Couldn't save the change: {error}": "পরিবর্তনটি সংরক্ষণ করা যায়নি: {error}",
+  "Couldn't save the folder change: {error}": "ফোল্ডারের পরিবর্তন সংরক্ষণ করা যায়নি: {error}",
+  "Loading occurrences…": "ব্যবহারসমূহ লোড হচ্ছে…",
+  "Occurrence list unavailable: {error}": "ব্যবহারের তালিকা পাওয়া যায়নি: {error}",
+  "Dictionary": "অভিধান",
+  "Dictionary meaning": "অভিধানের অর্থ (ইংরেজি)",
+  "In this āyah (word by word)": "এই আয়াতে (শব্দে শব্দে অর্থ)",
+  "likely match": "সম্ভাব্য মিল",
+  "fixed by us": "নির্ধারিত",
+  "No dictionary meaning yet for this word.": "এই শব্দের অভিধানের অর্থ এখনো নেই।",
+  "Bangla dictionary meaning: will be added once permission is given": "বাংলা অভিধানের অর্থ: অনুমতি পেলে যুক্ত হবে",
+  "Bangla dictionary meaning label": "অভিধানের অর্থ",
+  "No Bangla meaning has been matched for this word yet": "এই শব্দের বাংলা অর্থ এখনও মেলানো যায়নি",
+  "Other entries under this spelling ({n})": "এই বানানের অন্য ভুক্তি ({n})",
+  "Bangla meaning credit: Quraniyo Obhidhan": "বাংলা অর্থ: কুরআনীয় অভিধান, মুহাম্মদ আবু হেনা, সম্পাদনা মুহাম্মদ ইয়াহইয়া, আল কুরআন একাডেমী লন্ডন বাংলাদেশ, ২য় সংস্করণ ২০১৫, পৃ.",
+  "Quranic Corpus ↗": "কুরআনিক করপাস ↗",
+  "Lane · Hans Wehr ↗": "লেন · হান্স ভের ↗",
+  "Meaning:": "অর্থ:",
+  "Wiktionary": "উইকশনারি",
+  "(CC BY-SA 4.0), adapted.": "(CC BY-SA 4.0), অভিযোজিত।",
+  "Links open other websites.": "লিংকগুলো অন্য ওয়েবসাইটে খোলে।",
+  "View only until guardian approval": "অভিভাবকের অনুমোদন না হওয়া পর্যন্ত শুধু দেখা যাবে",
+  "Approve editing for 30 minutes": "৩০ মিনিটের জন্য সম্পাদনার অনুমোদন দিন",
+  "Revoke editing approval": "সম্পাদনার অনুমোদন বাতিল করুন",
+  "This Note changed elsewhere. Reload the latest version? Cancel keeps your text available to copy into a new Note.": "এই নোটটি অন্য কোথাও পরিবর্তিত হয়েছে। সর্বশেষ সংস্করণ পুনরায় লোড করবেন? বাতিল করলে আপনার লেখা নতুন নোটে কপি করার জন্য থাকবে।",
+  "Starting…": "শুরু হচ্ছে…",
+  "Reading {label}… ({done} of {total})": "{label} পড়া হচ্ছে… ({total}টির মধ্যে {done})",
+  "Done. Save the file below.": "সম্পন্ন। নিচের ফাইলটি সংরক্ষণ করুন।",
+  "⤓ Save {filename}": "⤓ {filename} সংরক্ষণ করুন",
+  "{kb} KB": "{kb} কিলোবাইট",
+  "Some things could not be read.": "কিছু জিনিস পড়া যায়নি।",
+  "They are listed in the file too.": "সেগুলোর তালিকা ফাইলেও আছে।",
+  "The backup could not be made: {message}": "ব্যাকআপ তৈরি করা যায়নি: {message}",
+  "Could not work out what to back up: {message}": "কী ব্যাকআপ করতে হবে তা বোঝা যায়নি: {message}",
+  "your account is not allowed to read this": "আপনার অ্যাকাউন্টের এটি পড়ার অনুমতি নেই",
+  "This will save everything for the whole madrasah — {names}.": "এটি পুরো মাদরাসার সবকিছু সংরক্ষণ করবে — {names}।",
+  "This will save what your account can see — {names}.": "আপনার অ্যাকাউন্ট যা দেখতে পায় তা সংরক্ষণ করবে — {names}।",
+  "Where to keep it.": "কোথায় রাখবেন।",
+  "Save it somewhere that is not this computer as well — a phone, a cloud drive, an email to yourself. A backup on the same machine as the thing it backs up is only half a backup. Making a fresh one takes a few seconds, so do it before anything unusual: a big change, a new person, a term ending.":
+    "এই কম্পিউটারের বাইরেও কোথাও রাখুন — একটি ফোন, একটি ক্লাউড ড্রাইভ, নিজেকে পাঠানো একটি ইমেইল। যে জিনিসের ব্যাকআপ, তারই মেশিনে রাখা ব্যাকআপ অর্ধেক ব্যাকআপ মাত্র। নতুন একটি বানাতে কয়েক সেকেন্ড লাগে, তাই অস্বাভাবিক কিছুর আগে করে নিন: বড় কোনো পরিবর্তন, নতুন কেউ যুক্ত হওয়া, টার্ম শেষ হওয়া।",
+  "Reading it later.": "পরে এটি পড়া।",
+  "Double-click the file. It opens as an ordinary page with everything laid out and a filter box at the top. Nothing about it needs this app to still exist.":
+    "ফাইলটিতে ডাবল-ক্লিক করুন। এটি একটি সাধারণ পাতা হিসেবে খোলে, সবকিছু সাজানো অবস্থায় এবং উপরে একটি ফিল্টার বাক্সসহ। এর কোনো কিছুর জন্যই এই অ্যাপটির টিকে থাকা প্রয়োজন নেই।",
+
+  // The backup FILE's own headings and columns.
+  "A complete copy of this account's own data, as it stood at the moment below. This file needs no internet and no app: everything in it is inside it.":
+    "এই অ্যাকাউন্টের নিজস্ব সমস্ত তথ্যের একটি সম্পূর্ণ অনুলিপি, নিচে উল্লিখিত মুহূর্তে যেমন ছিল। এই ফাইলের জন্য ইন্টারনেট বা কোনো অ্যাপ লাগে না: এর ভেতরের সবকিছু এর ভেতরেই আছে।",
+  "Madrasah / tenant": "মাদরাসা / টেন্যান্ট",
+  "Taken": "নেওয়া হয়েছে",
+  "Taken by": "নিয়েছেন",
+  "App version": "অ্যাপ সংস্করণ",
+  "Covers": "যা যা অন্তর্ভুক্ত",
+  "Everything for the whole madrasah": "পুরো মাদরাসার সবকিছু",
+  // The four weekdays onboarding.html's own picker had but bn.js did not --
+  // needed now that "Week starts on" prints a day rather than a bare number.
+  "Tuesday": "মঙ্গলবার",
+  "Wednesday": "বুধবার",
+  "Thursday": "বৃহস্পতিবার",
+  "Friday": "শুক্রবার",
+  "What this account can see": "এই অ্যাকাউন্ট যা দেখতে পায়",
+  "Tenant id": "টেন্যান্ট আইডি",
+  "Not everything could be read into this file.": "সবকিছু এই ফাইলে পড়া যায়নি।",
+  "That is usually correct rather than a fault — an account is only allowed to read what it is allowed to read. What is missing, and why:":
+    "এটি সাধারণত ত্রুটি নয়, বরং সঠিক — একটি অ্যাকাউন্ট কেবল ততটুকুই পড়তে পারে যতটুকু পড়ার অনুমতি তার আছে। কী বাদ পড়েছে, এবং কেন:",
+  "What this file is not.": "এই ফাইলটি যা নয়।",
+  "It does not contain the Qur'an text, the Mushaf pages, the recitations or the app's own program code — those are the same for everybody and are kept separately. It holds only what this madrasah wrote: its people, its catalogue, and everything studied, claimed, noted and bookmarked.":
+    "এতে কুরআনের মূল পাঠ, মুসহাফের পৃষ্ঠা, তিলাওয়াত বা অ্যাপের নিজস্ব প্রোগ্রাম কোড নেই — সেগুলো সবার জন্য একই এবং আলাদাভাবে রাখা। এতে কেবল এই মাদরাসা যা লিখেছে তাই আছে: এর মানুষ, এর ক্যাটালগ, এবং যা কিছু পড়া, দাবি করা, নোট করা ও বুকমার্ক করা হয়েছে।",
+  "Filter the tables — a name, an āyah, a date…": "টেবিলগুলো ফিল্টার করুন — একটি নাম, একটি আয়াত, একটি তারিখ…",
+  "Filter": "ফিল্টার",
+  "S{n}": "বি{n}",
+  "{n} Approaches": "{n}টি পদ্ধতি",
+  "Open all": "সব খুলুন",
+  "Close all": "সব বন্ধ করুন",
+  "Save the data file (JSON)": "ডেটা ফাইল সংরক্ষণ করুন (JSON)",
+  "Nothing recorded.": "কিছুই নথিভুক্ত নেই।",
+  "Empty.": "খালি।",
+  "No notes.": "কোনো নোট নেই।",
+  "No per-person study data was read.": "কোনো ব্যক্তিভিত্তিক অধ্যয়নের তথ্য পড়া হয়নি।",
+  "Study — claims, notes, bookmarks and the activity log": "অধ্যয়ন — দাবি, নোট, বুকমার্ক ও কার্যবিবরণী",
+  "Subjects": "বিষয়সমূহ",
+  // "Approaches" is translated once, above, as "পদ্ধতিসমূহ" -- the app's own
+  // word for an Approach. A second entry here ("অ্যাপ্রোচসমূহ") silently won
+  // (a later key replaces an earlier one), removed 29 Sep 2026.
+  "Āyah collections (QCR)": "আয়াত সংগ্রহ (QCR)",
+  "Asma ul Husna collections": "আসমাউল হুসনা সংগ্রহ",
+  "Classes, course offers and curriculum": "ক্লাস, কোর্স অফার ও পাঠ্যক্রম",
+  "Grade ladders and levels": "গ্রেড ল্যাডার ও লেভেল",
+  "This madrasah's own settings": "এই মাদরাসার নিজস্ব সেটিংস",
+  "Claims and confirmations": "দাবি ও নিশ্চিতকরণ",
+  "Āyah notes": "আয়াত-নোট",
+  "Folders": "ফোল্ডারসমূহ",
+  "Activity log": "কার্যবিবরণী",
+  "Grade levels": "গ্রেড লেভেল",
+  "Names added by this madrasah": "এই মাদরাসার যোগ করা নামসমূহ",
+  "Wording this madrasah changed": "এই মাদরাসার বদলানো শব্দচয়ন",
+  "Your own teaching notes": "আপনার নিজের শিক্ষকতার নোট",
+  "Submissions": "জমাসমূহ",
+  "Invitations": "আমন্ত্রণসমূহ",
+  // The counter pills on the Backup page and at the top of the file. Bangla
+  // nouns take no plural after a number, so these are the bare nouns -- "২ জন",
+  // "৪ দাবি" -- rather than English's own singular/plural pair.
+  "people": "জন",
+  "claims": "দাবি",
+  "āyah notes": "আয়াত-নোট",
+  "bookmarks": "বুকমার্ক",
+  "log entries": "লগ এন্ট্রি",
+  "subjects": "বিষয়",
+  "āyah collections": "আয়াত সংগ্রহ",
+
+  "Chunk": "চাঙ্ক", // ? -- a storage word that leaks into Records too; see the standing note there
+  "Claimed at": "দাবির সময়",
+  "By": "যিনি করেছেন",
+  "Person id": "ব্যক্তি আইডি",
+  "Looked after by": "দায়িত্বে আছেন",
+  "Description": "বিবরণ",
+  "Id": "আইডি",
+  "Position": "অবস্থান",
+  "Inside": "যার ভেতরে",
+  "Offer": "অফার",
+  "Title": "শিরোনাম",
+  "Due": "শেষ তারিখ",
+  "Assigned to": "যাকে দেওয়া হয়েছে",
+  "Assignment": "কাজ",
+  "Comment": "মন্তব্য",
+  "Written": "লেখা হয়েছে",
+  "Setting": "সেটিং",
+  "Value": "মান",
+  "Kind": "ধরন",
+  "Created": "তৈরি হয়েছে",
+  "Banner title": "ব্যানার শিরোনাম",
+  "Banner subtitle": "ব্যানার উপশিরোনাম",
+  "Holds": "যতদিন থাকে",
+  "Only on āyah": "কেবল যে আয়াতে",
+  "Domain": "ডোমেইন",
+  "Where": "কোথায়",
+  "Sent": "পাঠানো হয়েছে",
+  "Wording": "শব্দচয়ন",
+  "yes": "হ্যাঁ",
+  "{claims} claims · {notes} notes · {marks} bookmarks · {logs} log entries":
+    "{claims}টি দাবি · {notes}টি নোট · {marks}টি বুকমার্ক · {logs}টি লগ এন্ট্রি",
+  "{n} āyāt": "{n}টি আয়াত",
+  "QuranRevival backup · format {n} · the complete data is in this file, in the block below this line.":
+    "QuranRevival ব্যাকআপ · ফরম্যাট {n} · সম্পূর্ণ তথ্য এই ফাইলেই আছে, এই লাইনের নিচের ব্লকে।",
+  "To restore from it, keep this file — the \"Save the data file (JSON)\" button above extracts the machine-readable copy.":
+    "এটি থেকে পুনরুদ্ধার করতে ফাইলটি রেখে দিন — উপরের \"ডেটা ফাইল সংরক্ষণ করুন (JSON)\" বোতামটি মেশিন-পাঠযোগ্য অনুলিপিটি বের করে দেয়।",
+
+  // ---------------------------------------------------------------------
+  // Hadith Study -- the synthetic corpus pilot (H2). Real characters only,
+  // never an HTML entity: translateStatic() swaps a TEXT NODE, so an entity
+  // written here would print literally on a Bangla page while the English
+  // side -- real markup -- decoded correctly.
+  // ---------------------------------------------------------------------
+  "QuranRevival — Hadith Collections (synthetic pilot)": "কুরআনরিভাইভাল — হাদিস সংকলনসমূহ (কৃত্রিম পরীক্ষামূলক)",
+  "Hadith Collections": "হাদিস সংকলনসমূহ",
+  "Hadith Corpus": "হাদিস ভাণ্ডার",
+  "Explore": "অন্বেষণ",
+  "Counts across the synthetic corpus. These describe the source and the topic index only.": "কৃত্রিম ভাণ্ডারের গণনা। এগুলি কেবল উৎস ও বিষয়-সূচি বর্ণনা করে।",
+  "Editions": "সংস্করণ",
+  "Narrations": "বর্ণনা",
+  "Of those, repeat occurrences": "এর মধ্যে পুনরাবৃত্ত বর্ণনা",
+  "a repeat is counted as its own narration, never merged by text.": "পুনরাবৃত্ত বর্ণনা নিজস্ব বর্ণনা হিসেবে গণনা করা হয়, লেখা দেখে একত্র করা হয় না।",
+  "Taxonomy revision": "বিষয়-সূচির সংস্করণ",
+  "No progress is counted here. Track is a preview that a reload clears, so there is nothing durable to aggregate.": "এখানে কোনো অগ্রগতি গণনা করা হয় না। ট্র্যাক কেবল একটি প্রিভিউ যা পৃষ্ঠা রিলোড করলে মুছে যায়, তাই স্থায়ীভাবে যোগ করার মতো কিছু নেই।",
+  "Source hierarchy": "উৎসের স্তরবিন্যাস",
+  "Books": "কিতাব",
+  "Chapters": "অধ্যায়",
+  "no chapter level": "অধ্যায় স্তর নেই",
+  "Distinct narrations": "স্বতন্ত্র বর্ণনা",
+  "Topic mappings": "বিষয় সংযোগ",
+  "A mapping may cover a whole book or chapter, so a few mappings can reach many narrations. The two figures are kept apart because one counts curatorial decisions and the other counts narrations.": "একটি সংযোগ পুরো কিতাব বা অধ্যায় জুড়ে হতে পারে, তাই অল্প কয়েকটি সংযোগ অনেক বর্ণনায় পৌঁছাতে পারে। সংখ্যা দুটি আলাদা রাখা হয়েছে কারণ একটি সম্পাদকীয় সিদ্ধান্ত গণনা করে, অন্যটি বর্ণনা গণনা করে।",
+  "Narrations reached by more than one mapping": "একাধিক সংযোগে পৌঁছানো বর্ণনা",
+  "counted once, never twice.": "একবারই গণনা করা হয়, দুইবার নয়।",
+  "No narration here is reached by more than one mapping.": "এখানে কোনো বর্ণনায় একাধিক সংযোগে পৌঁছানো হয়নি।",
+  "Spans collections": "সংকলন জুড়ে বিস্তৃত",
+  "Browse the collections, books and chapters. Every narration below is invented for development and is not a hadith.": "সংকলন, কিতাব ও অধ্যায় ঘুরে দেখুন। নিচের প্রতিটি বর্ণনা ডেভেলপমেন্টের জন্য তৈরি করা, এগুলি হাদিস নয়।",
+  "A pilot of the Hadith corpus browser. Every narration below is invented for development.":
+    "হাদিস কর্পাস ব্রাউজারের একটি পরীক্ষামূলক সংস্করণ। নিচের প্রতিটি বর্ণনা ডেভেলপমেন্টের জন্য তৈরি করা হয়েছে।",
+  "Mounted inside QuranRevival — the same component as the standalone page.":
+    "QuranRevival-এর ভিতরে যুক্ত — স্বতন্ত্র পৃষ্ঠার সঙ্গে একই উপাদান।",
+  "Topics": "বিষয়সমূহ",
+  "Not tracked": "চিহ্নিত করা হয়নি",
+  "Text language": "পাঠের ভাষা",
+  "Synthetic": "কৃত্রিম",
+  "This edition has no chapter level.": "এই সংস্করণে কোনো পরিচ্ছেদ স্তর নেই।",
+  "Nothing here yet.": "এখানে এখনো কিছু নেই।",
+  "Repeat occurrence of {id}": "{id}-এর পুনরাবৃত্ত সংঘটন",
+  "No {lang} translation for this narration. Showing the Arabic source.":
+    "এই বর্ণনার জন্য {lang} অনুবাদ নেই। আরবি মূল পাঠ দেখানো হচ্ছে।",
+  "Translation: {who}": "অনুবাদ: {who}",
+  "unattributed": "সূত্রবিহীন",
+  "Available languages: {langs}": "উপলব্ধ ভাষা: {langs}",
+  "Preview only — nothing is saved. Hadith storage is not enabled yet.":
+    "শুধুমাত্র প্রাকদর্শন — কিছুই সংরক্ষিত হচ্ছে না। হাদিস সংরক্ষণ এখনো চালু হয়নি।",
+  "No classical explanation is linked to this narration, because it is synthetic.":
+    "এই বর্ণনার সঙ্গে কোনো ধ্রুপদী ব্যাখ্যা যুক্ত নেই, কারণ এটি কৃত্রিম।",
+  "This is an index across collections. It does not change any book.":
+    "এটি সংকলনগুলির উপর একটি সূচি। এটি কোনো কিতাব পরিবর্তন করে না।",
+  "{n} distinct narrations, from {m} mappings.": "{m}টি সংযোগ থেকে {n}টি স্বতন্ত্র বর্ণনা।",
+  "Taxonomy revision: {rev}": "শ্রেণিবিন্যাস সংস্করণ: {rev}",
+  "These mappings have not been reviewed by a scholar.":
+    "এই সংযোগগুলি কোনো আলিম দ্বারা পর্যালোচিত হয়নি।",
+  "Search in Arabic, English or Bangla": "আরবি, ইংরেজি বা বাংলায় অনুসন্ধান করুন",
+  "{n} results": "{n}টি ফলাফল",
+  "Showing the first results only.": "শুধুমাত্র প্রথম ফলাফলগুলি দেখানো হচ্ছে।",
+  "in the text ({langs})": "পাঠে ({langs})",
+  "in the source heading ({langs})": "মূল শিরোনামে ({langs})",
+  "These are verified links to real narrations. They are NOT linked to the synthetic narrations above, which are not real.":
+    "এগুলি প্রকৃত বর্ণনার যাচাইকৃত লিঙ্ক। উপরের কৃত্রিম বর্ণনাগুলির সঙ্গে এগুলির কোনো সংযোগ নেই, কারণ সেগুলি প্রকৃত নয়।",
+  "Open the commentary at the source ↗": "মূল সূত্রে ব্যাখ্যাটি খুলুন ↗",
+  "Link only — the commentary text is not reproduced here.":
+    "শুধু লিঙ্ক — ব্যাখ্যার পাঠ এখানে পুনরুৎপাদন করা হয়নি।",
+  "Matched by reference ({scheme} {ref}). No occurrence ID until an edition is approved.":
+    "সূত্র অনুযায়ী মিলিত ({scheme} {ref})। কোনো সংস্করণ অনুমোদিত না হওয়া পর্যন্ত কোনো সংঘটন আইডি নেই।",
+
+  // --- MAP Phase 5 (P5-D, issue #195) -- the permanent Notes screen -----
+  "My Notes": "আমার নোট",
+  "Your own permanent Notes about the Study Unit you're currently on — separate from the quick note on the Read screen, and kept forever with a full history of every revision.":
+    "আপনি এখন যে স্টাডি ইউনিটে আছেন তার সম্পর্কে আপনার নিজের স্থায়ী নোট — পড়া স্ক্রিনের দ্রুত নোট থেকে আলাদা, এবং প্রতিটি সংশোধনের সম্পূর্ণ ইতিহাসসহ চিরকাল সংরক্ষিত থাকে।",
+  "No Study Unit was given to this screen. Open it from the Read screen's ⋯ menu (\"My Notes for this unit\"), which always says which unit it's opening for.":
+    "এই স্ক্রিনে কোনো স্টাডি ইউনিট দেওয়া হয়নি। পড়া স্ক্রিনের ⋯ মেনু (\"এই ইউনিটের আমার নোট\") থেকে এটি খুলুন, যা সবসময় বলে দেয় এটি কোন ইউনিটের জন্য খুলছে।",
+  "Showing Notes about:": "যে বিষয়ে নোট দেখানো হচ্ছে:",
+  "This screen could not read Notes for that unit.": "এই স্ক্রিন সেই ইউনিটের নোট পড়তে পারেনি।",
+  "You're viewing {name}'s Notes. Only {name} can create, edit or remove their own Notes — you can only read them here.":
+    "আপনি {name}-এর নোট দেখছেন। শুধুমাত্র {name} নিজের নোট তৈরি, সম্পাদনা বা অপসারণ করতে পারবেন — আপনি এখানে শুধু সেগুলো পড়তে পারবেন।",
+  "+ New Note about this unit": "+ এই ইউনিট সম্পর্কে নতুন নোট",
+  "New Note": "নতুন নোট",
+  "Title (optional)": "শিরোনাম (ঐচ্ছিক)",
+  "(untitled)": "(শিরোনামহীন)",
+  "Active": "সক্রিয়",
+  "Revision": "সংশোধন",
+  "Show history": "ইতিহাস দেখুন",
+  "Hide history": "ইতিহাস লুকান",
+  "No revision history.": "কোনো সংশোধনের ইতিহাস নেই।",
+  "Save revision": "সংশোধন সংরক্ষণ করুন",
+  "Note saved.": "নোট সংরক্ষিত হয়েছে।",
+  "Saved as a new revision ({revisionId}).": "নতুন সংশোধন হিসেবে সংরক্ষিত হয়েছে ({revisionId})।",
+  "Saved, and recorded as this week's Journaling activity.":
+    "সংরক্ষিত হয়েছে, এবং এই সপ্তাহের নিজের ভাবনা লেখার কার্যক্রম হিসেবে লিপিবদ্ধ হয়েছে।",
+  "Saved. Journaling activity was not recorded ({reason}).":
+    "সংরক্ষিত হয়েছে। নিজের ভাবনা লেখার কার্যক্রম লিপিবদ্ধ হয়নি ({reason})।",
+  "Remove \"{title}\"? This keeps its full history — it can be restored by an administrator, and is never destroyed.":
+    "\"{title}\" অপসারণ করবেন? এর সম্পূর্ণ ইতিহাস রক্ষিত থাকবে — একজন প্রশাসক এটি পুনরুদ্ধার করতে পারবেন, এবং এটি কখনও ধ্বংস করা হয় না।",
+  "Showing the most recent Notes only — there are more on this unit.":
+    "শুধুমাত্র সাম্প্রতিকতম নোটগুলো দেখানো হচ্ছে — এই ইউনিটে আরও আছে।",
+  "No Notes yet on this Study Unit.": "এই স্টাডি ইউনিটে এখনো কোনো নোট নেই।",
+  "My Notes for this unit": "এই ইউনিটের আমার নোট",
+
+  // --- MAP Phase 6 (P6-F, issue #199) -- Mapping My Journey, all three view options + toggle ---
+  "QuranRevival — Mapping My Journey": "কুরআনরিভাইভাল — আমার যাত্রার মানচিত্র",
+  "Every permanent Note you've written, organised your way — folders, a timeline, or a path. Try all three; the app remembers which you picked.":
+    "আপনি যে সব স্থায়ী নোট লিখেছেন, সেগুলো আপনার নিজের পছন্দমতো সাজানো — ফোল্ডার, টাইমলাইন, অথবা পথ। তিনটিই চেষ্টা করে দেখুন; অ্যাপ মনে রাখবে আপনি কোনটি বেছে নিয়েছেন।",
+  "Everything": "সবকিছু",
+  "Timeline": "টাইমলাইন",
+  "Path": "পথ",
+  "All folders": "সব ফোল্ডার",
+  "+ File a Note here…": "+ এখানে একটি নোট ফাইল করুন…",
+  "File in a folder…": "একটি ফোল্ডারে ফাইল করুন…",
+  "Move to…": "সরান…",
+  "(untitled folder)": "(শিরোনামহীন ফোল্ডার)",
+  "Personal Journey Map": "ব্যক্তিগত যাত্রা মানচিত্র",
+  "Reflection Archive": "প্রতিফলন আর্কাইভ",
+  "This folder is empty.": "এই ফোল্ডারটি খালি।",
+  "Your Personal Journey Map is empty so far — Notes you file here will appear as your own journey through what you've studied.":
+    "আপনার ব্যক্তিগত যাত্রা মানচিত্র এখনও খালি — এখানে আপনি যে নোট ফাইল করবেন, তা আপনার পড়াশোনার মধ্য দিয়ে নিজস্ব যাত্রা হিসেবে দেখা যাবে।",
+  "Your Reflection Archive is empty so far — file a Note here to keep it as a longer-term reflection, separate from your day-to-day journey.":
+    "আপনার প্রতিফলন আর্কাইভ এখনও খালি — এখানে একটি নোট ফাইল করে এটিকে আপনার দৈনন্দিন যাত্রা থেকে আলাদা, দীর্ঘমেয়াদী প্রতিফলন হিসেবে রাখুন।",
+  "Your path is empty so far — every Note you write will appear here as a new stop, oldest to newest.":
+    "আপনার পথ এখনও খালি — আপনি যে প্রতিটি নোট লিখবেন তা এখানে একটি নতুন স্টপ হিসেবে দেখা যাবে, পুরনো থেকে নতুন ক্রমে।",
+  "Nothing here yet — Notes you write will appear on your timeline the day you write them.":
+    "এখনও এখানে কিছু নেই — আপনি যে দিন নোট লিখবেন, সেদিনই তা আপনার টাইমলাইনে দেখা যাবে।",
+  "Unknown date": "অজানা তারিখ",
+  "Showing the most recent Notes only — there are more in this folder.":
+    "শুধুমাত্র সাম্প্রতিকতম নোটগুলো দেখানো হচ্ছে — এই ফোল্ডারে আরও আছে।",
+  "You're viewing {name}'s Journey. Only {name} can create folders or file Notes here — you can only read it.":
+    "আপনি {name}-এর যাত্রা দেখছেন। শুধুমাত্র {name} এখানে ফোল্ডার তৈরি বা নোট ফাইল করতে পারবেন — আপনি এটি শুধু পড়তে পারবেন।",
+  "{count} folder(s) could not be shown safely and are not listed below — this needs administrator attention.":
+    "{count}টি ফোল্ডার নিরাপদে দেখানো যায়নি এবং নিচে তালিকাভুক্ত নয় — এতে প্রশাসকের দৃষ্টি প্রয়োজন।",
+  "No folder matched that name — nothing filed.": "সেই নামের কোনো ফোল্ডার পাওয়া যায়নি — কিছুই ফাইল করা হয়নি।",
+  "No folder matched that name — nothing moved.": "সেই নামের কোনো ফোল্ডার পাওয়া যায়নি — কিছুই সরানো হয়নি।",
+  "\"{title}\" filed in {folder}.": "\"{title}\" {folder}-এ ফাইল করা হয়েছে।",
+  "\"{title}\" moved to {folder}.": "\"{title}\" {folder}-এ সরানো হয়েছে।",
+  "File \"{title}\" in which folder? Type the exact name shown, or cancel.":
+    "\"{title}\" কোন ফোল্ডারে ফাইল করবেন? দেখানো নামটি হুবহু লিখুন, অথবা বাতিল করুন।",
+  "Move \"{title}\" to which folder? Type the exact name shown, or cancel.":
+    "\"{title}\" কোন ফোল্ডারে সরাবেন? দেখানো নামটি হুবহু লিখুন, অথবা বাতিল করুন।",
+  "Folder \"{name}\" created.": "ফোল্ডার \"{name}\" তৈরি হয়েছে।",
+
+  // P6-G (issue #229) -- folder editing wired into Mapping My Journey:
+  // rename, reorder, move, remove a folder, and reorder Notes inside one.
+  // Kept alongside this round's own P4-F additions per #230/#238's own
+  // instruction: "if you conflict [in bn.js] with another round, keep both
+  // sides" -- these two rounds touch disjoint keys, so both are kept whole.
+  "A folder needs a name — nothing renamed.": "একটি ফোল্ডারের নাম দরকার — কিছুই নাম পরিবর্তন হয়নি।",
+  "Folder renamed to \"{name}\".": "ফোল্ডারের নাম পরিবর্তন করে \"{name}\" করা হয়েছে।",
+  "Move folder \"{name}\" under which folder? Type the exact name shown, \"{topLevel}\" for the top level, or cancel.":
+    "\"{name}\" ফোল্ডারটি কোন ফোল্ডারের ভেতরে সরাবেন? দেখানো নামটি হুবহু লিখুন, শীর্ষ স্তরের জন্য \"{topLevel}\" লিখুন, অথবা বাতিল করুন।",
+  "(Top level)": "(শীর্ষ স্তর)",
+  "Folder \"{name}\" moved.": "ফোল্ডার \"{name}\" সরানো হয়েছে।",
+  "Remove folder \"{name}\"? This can't be undone from here, but nothing is destroyed — an administrator can restore it. Notes filed in it are not deleted.":
+    "\"{name}\" ফোল্ডারটি সরিয়ে ফেলবেন? এখান থেকে এটি পূর্বাবস্থায় ফেরানো যাবে না, তবে কিছুই মুছে ফেলা হয় না — একজন প্রশাসক এটি পুনরুদ্ধার করতে পারবেন। এতে ফাইল করা নোটগুলো মুছে যায় না।",
+  "\"{name}\" still has folders inside it — remove those first, then this one.":
+    "\"{name}\"-এর ভেতরে এখনও ফোল্ডার আছে — আগে সেগুলো সরান, তারপর এটি।",
+  "Folder \"{name}\" removed.": "ফোল্ডার \"{name}\" সরিয়ে ফেলা হয়েছে।",
+  "This folder still has other folders inside it — remove those first, then this one.":
+    "এই ফোল্ডারের ভেতরে এখনও অন্য ফোল্ডার আছে — আগে সেগুলো সরান, তারপর এটি।",
+  "A folder can't be moved inside itself.": "একটি ফোল্ডারকে নিজের ভেতরে সরানো যায় না।",
+  "That folder no longer exists — please refresh and try again.": "সেই ফোল্ডারটি আর নেই — পাতাটি রিফ্রেশ করে আবার চেষ্টা করুন।",
+  "That isn't your folder to move into.": "সেটি আপনার ফোল্ডার নয়, তাই এর ভেতরে সরানো যাবে না।",
+  "That folder has been removed, so nothing can be moved into it.": "সেই ফোল্ডারটি সরিয়ে ফেলা হয়েছে, তাই এর ভেতরে কিছু সরানো যাবে না।",
+  "Personal Journey Map and Reflection Archive can't hold other folders inside them.":
+    "ব্যক্তিগত যাত্রা মানচিত্র এবং প্রতিফলন আর্কাইভের ভেতরে অন্য ফোল্ডার রাখা যায় না।",
+  "Moving it there would nest folders too deeply. Choose a folder closer to the top.":
+    "সেখানে সরালে ফোল্ডারগুলো অনেক বেশি স্তরে চলে যাবে। শীর্ষের কাছাকাছি একটি ফোল্ডার বেছে নিন।",
+  "Moving it there would put a folder inside one of its own folders. Choose a different folder.":
+    "সেখানে সরালে একটি ফোল্ডার তার নিজেরই ফোল্ডারের ভেতরে চলে যাবে। অন্য একটি ফোল্ডার বেছে নিন।",
+  "That folder's place could not be confirmed — please refresh and try again.":
+    "সেই ফোল্ডারের অবস্থান নিশ্চিত করা যায়নি — পাতাটি রিফ্রেশ করে আবার চেষ্টা করুন।",
+  "That move was refused.": "সেই স্থানান্তর প্রত্যাখ্যান করা হয়েছে।",
+  "That folder has already been removed, so it can't be renamed.": "সেই ফোল্ডারটি ইতিমধ্যে সরিয়ে ফেলা হয়েছে, তাই এর নাম পরিবর্তন করা যাবে না।",
+  "That folder has already been removed, so it can't be reordered.": "সেই ফোল্ডারটি ইতিমধ্যে সরিয়ে ফেলা হয়েছে, তাই এর ক্রম পরিবর্তন করা যাবে না।",
+  "That folder could not be found — please refresh and try again.": "সেই ফোল্ডারটি খুঁজে পাওয়া যায়নি — পাতাটি রিফ্রেশ করে আবার চেষ্টা করুন।",
+  "That Note has already been removed from this folder, so it can't be reordered.":
+    "সেই নোটটি ইতিমধ্যে এই ফোল্ডার থেকে সরিয়ে ফেলা হয়েছে, তাই এর ক্রম পরিবর্তন করা যাবে না।",
+  "That filing could not be found — please refresh and try again.": "সেই ফাইলিং খুঁজে পাওয়া যায়নি — পাতাটি রিফ্রেশ করে আবার চেষ্টা করুন।",
+
+  // --- Issue #259 -- Folders becomes an expandable tree, modelled on the
+  // Owner's own Siyagah app's "My Notebooks" dialog: expand/collapse,
+  // derived numbering, a 📍 new-folder target, inline rename, an in-page
+  // Remove confirmation (never window.confirm()), drag-and-drop, Notes as
+  // leaves, search, and A-/A+ text size.
+  "Showing a large first batch only — there is more than could be loaded at once.":
+    "শুধুমাত্র একটি বড় প্রথম ব্যাচ দেখানো হচ্ছে — একসাথে লোড করা যায়, তার চেয়ে বেশি আছে।",
+  "New folders go here": "নতুন ফোল্ডার এখানে যাবে",
+  "Rename this folder": "এই ফোল্ডারের নাম পরিবর্তন করুন",
+  "Search folders and Notes…": "ফোল্ডার ও নোট খুঁজুন…",
+  "Show numbers": "নম্বর দেখান",
+  "Smaller text": "ছোট লেখা",
+  "Larger text": "বড় লেখা",
+  "New folder in: {target}": "নতুন ফোল্ডার তৈরি হবে: {target}",
+  "Clear target": "লক্ষ্য সরিয়ে দিন",
+  "Remove \"{name}\"? It will be kept, not deleted — an administrator can restore it. Notes filed in it are untouched.":
+    "\"{name}\" সরিয়ে ফেলবেন? এটি রাখা থাকবে, মুছে ফেলা হবে না — একজন প্রশাসক এটি পুনরুদ্ধার করতে পারবেন। এতে ফাইল করা নোটগুলো অপরিবর্তিত থাকবে।",
+  "\"{name}\" moved.": "\"{name}\" সরানো হয়েছে।",
+  "No folders or Notes match \"{query}\".": "\"{query}\"-এর সাথে কোনো ফোল্ডার বা নোট মেলেনি।",
+
+  // --- MAP v4 Phase 7 (P7-B, issue #250) -- the Dawah printable-pages screen,
+  // and the "Make a printable page" entry point on notes.html. "Dawah" is
+  // kept as the transliterated term (দাওয়াহ) -- an English translation would
+  // lose the specific meaning the Owner's own ADR-011 uses throughout.
+  "Dawah": "দাওয়াহ", // ?
+  "QuranRevival — Dawah": "কুরআনরিভাইভাল — দাওয়াহ", // ?
+  "Turn one of your own permanent Notes into a printable page — shared inside this Madrasah once it's ready.":
+    "আপনার নিজের একটি স্থায়ী নোটকে একটি প্রিন্টযোগ্য পাতায় রূপান্তর করুন — এটি প্রস্তুত হলে এই মাদরাসার ভেতরে শেয়ার করা হবে।",
+  "My pages": "আমার পাতাসমূহ",
+  "Waiting for my approval": "আমার অনুমোদনের অপেক্ষায়",
+  "Madrasah pages": "মাদরাসার পাতাসমূহ",
+  "Dawah pages are not switched on yet — waiting for the Madrasah's owner to publish the database rules.":
+    "দাওয়াহ পাতা এখনো চালু হয়নি — মাদরাসার মালিক ডেটাবেসের নিয়ম প্রকাশ করার অপেক্ষায়।",
+  "Awaiting approval": "অনুমোদনের অপেক্ষায়",
+  "Shared": "শেয়ার করা হয়েছে",
+  "You have no Dawah pages yet — open one of your Notes and choose \"Make a printable page\".":
+    "আপনার এখনো কোনো দাওয়াহ পাতা নেই — আপনার কোনো একটি নোট খুলে \"একটি প্রিন্টযোগ্য পাতা তৈরি করুন\" বেছে নিন।",
+  "Send for approval": "অনুমোদনের জন্য পাঠান",
+  "Returned: {reason}": "ফেরত পাঠানো হয়েছে: {reason}",
+  "Remove \"{title}\"? This keeps its full history — nothing is destroyed.":
+    "\"{title}\" সরিয়ে ফেলবেন? এর সম্পূর্ণ ইতিহাস রক্ষিত থাকবে — কিছুই ধ্বংস করা হয় না।",
+  "Sent for approval.": "অনুমোদনের জন্য পাঠানো হয়েছে।",
+  "Shared with the Madrasah.": "মাদরাসার সাথে শেয়ার করা হয়েছে।",
+  "By {name}": "{name} কর্তৃক",
+  "Approve": "অনুমোদন করুন",
+  "Nothing is waiting for your approval.": "আপনার অনুমোদনের অপেক্ষায় কিছু নেই।",
+  "Why is this page being returned? This will be shown to its author.":
+    "এই পাতাটি কেন ফেরত পাঠানো হচ্ছে? এটি এর লেখককে দেখানো হবে।",
+  "A reason is needed — nothing returned.": "একটি কারণ প্রয়োজন — কিছুই ফেরত পাঠানো হয়নি।",
+  "Approved and shared with the Madrasah.": "অনুমোদিত হয়েছে এবং মাদরাসার সাথে শেয়ার করা হয়েছে।",
+  "Returned to the author.": "লেখকের কাছে ফেরত পাঠানো হয়েছে।",
+  "No pages have been shared with this Madrasah yet.": "এই মাদরাসার সাথে এখনো কোনো পাতা শেয়ার করা হয়নি।",
+  "Make a printable page": "একটি প্রিন্টযোগ্য পাতা তৈরি করুন",
+  "Removed.": "সরিয়ে ফেলা হয়েছে।",
+
+  // --- Mapping My Journey: Path view, branching with links (issue #267,
+  // Owner decision) -- each folder is a branch, a folder's own filed Notes
+  // are stops along it, and a Note filed in more than one folder carries a
+  // 🔗 badge linking every appearance.
+  "A Note filed in more than one folder shows a 🔗 badge — tap it to see every place it appears.":
+    "একাধিক ফোল্ডারে ফাইল করা একটি নোটে 🔗 ব্যাজ দেখা যায় — এটি কোথায় কোথায় আছে তা দেখতে ট্যাপ করুন।",
+  "In {count} places": "{count}টি জায়গায় আছে",
+  "+{count} more": "আরও {count}টি",
+
+  // Load speed (issue #272, 25 Sep 2026) -- the service worker's own "a new
+  // version is cached and ready" notice (app/js/sw-register.js).
+  "Updated — tap to reload": "হালনাগাদ হয়েছে — রিলোড করতে ট্যাপ করুন",
+
+  // Speed, part 5 (issue #282, 25 Sep 2026) -- Mapping My Journey draws its
+  // folder tree first and loads Notes/placements afterward, in the
+  // background; these say so in words rather than showing a "0" that would
+  // look like a final, counted answer.
+  "Counting the Notes filed in each folder…": "প্রতিটি ফোল্ডারে ফাইল করা নোট গোনা হচ্ছে…",
+  "Loading your Notes…": "আপনার নোট লোড হচ্ছে…",
+  "Notes are still loading — stops will appear on their branch as they arrive.":
+    "নোট এখনও লোড হচ্ছে — সেগুলো লোড হওয়ার সাথে সাথে নিজ নিজ শাখায় স্টপ হিসেবে দেখা যাবে।",
+
+  // "This āyah" action sheet (issue #286, 25 Sep 2026) -- tap the Mushaf
+  // page's own ayah-end marker, or the Word Card's "This āyah ⋯" button.
+  "This āyah ⋯": "এই আয়াত ⋯",
+  "This āyah": "এই আয়াত",
+  "Asma ul Husna Name(s)…": "আসমাউল হুসনার নাম(সমূহ)…",
+  "QCR collection(s)…": "QCR সংকলন(সমূহ)…",
+  "File in folder(s)…": "ফোল্ডার(সমূহ)-এ ফাইল করুন…",
+  "Only your own record can create or file a Note.":
+    "শুধুমাত্র আপনার নিজের রেকর্ডে একটি নোট তৈরি বা ফাইল করা যায়।",
+  "Files your Note on this āyah (creates one if you have none).":
+    "এই আয়াতের উপর আপনার নোট ফাইল করে (আপনার কোনো নোট না থাকলে একটি তৈরি করে)।",
+
+  // The "File in folder(s)…" folder chooser.
+  "New folder here": "এখানে নতুন ফোল্ডার",
+  "New folder under {name}": "{name}-এর অধীনে নতুন ফোল্ডার",
+  "Folder name": "ফোল্ডারের নাম",
+  "Search folders…": "ফোল্ডার খুঁজুন…",
+  "No folders match your search.": "আপনার খোঁজের সাথে মিলে এমন কোনো ফোল্ডার নেই।",
+  "No folders yet.": "এখনো কোনো ফোল্ডার নেই।",
+  "+ New folder": "+ নতুন ফোল্ডার",
+  "File {ref} in folder(s)": "{ref} ফোল্ডার(সমূহ)-এ ফাইল করুন",
+  "You have more than one Note on this āyah. Which one?":
+    "এই আয়াতে আপনার একাধিক নোট আছে। কোনটি?",
+  "(untitled Note)": "(শিরোনামহীন নোট)",
+  "Couldn't load your folders.": "আপনার ফোল্ডার লোড করা যায়নি।",
+  "Couldn't load this Note's folders.": "এই নোটের ফোল্ডার লোড করা যায়নি।",
+  "Some folders couldn't be saved -- please try again.":
+    "কিছু ফোল্ডার সংরক্ষণ করা যায়নি — দয়া করে আবার চেষ্টা করুন।",
+
+  // Ayah Card, part 1 (issue #295, 25 Sep 2026) -- growing the "This āyah"
+  // sheet above into Actions (A) + Status (B); "Approach"/"Word by Word"/
+  // "No Approaches yet."/"No word-by-word data for this ayah." already
+  // exist above and are reused as-is.
+  "Take an Approach": "একটি পদ্ধতি গ্রহণ করুন",
+  "Record Your Progress": "আপনার অগ্রগতি লিপিবদ্ধ করুন",
+  "Record": "লিপিবদ্ধ করুন",
+  "Surah list": "সূরার তালিকা",
+  "Tap the poster to see it full size.": "পোস্টারটি বড় করে দেখতে ট্যাপ করুন।", // ? (Owner decision 43, 1 Oct 2026)
+  "Approach, progress and status": "পদ্ধতি, অগ্রগতি ও অবস্থা",
+  "Choose an Approach…": "একটি পদ্ধতি বেছে নিন…",
+  "Make a poster": "একটি পোস্টার তৈরি করুন",
+  "You don't have a Note on this āyah yet.": "এই আয়াতে আপনার এখনো কোনো নোট নেই।",
+  "Take Note": "নোট নিন",
+  "Status of this āyah": "এই আয়াতের অবস্থা",
+  "See on the wheel": "চাকায় দেখুন",
+  "Known {known} of {total} words": "{total}-এর মধ্যে {known}টি শব্দ জানা",
+  "known": "জানা",
+  "Hifz": "হিফজ",
+  "No Hifz Approach set up yet.": "হিফজ পদ্ধতি এখনো সেট আপ করা হয়নি।",
+  "Related āyāt": "সম্পর্কিত আয়াত",
+  "Related and connected āyāt — coming next": "সম্পর্কিত ও সংযুক্ত আয়াত — শীঘ্রই আসছে",
+  // Ayah Card section C part 1 -- Related āyāt.
+  "Info": "তথ্য",
+  "Finding related āyāt…": "সম্পর্কিত আয়াত খোঁজা হচ্ছে…",
+  "Couldn't load related āyāt just now.": "এই মুহূর্তে সম্পর্কিত আয়াত আনা গেল না।",
+  "No related āyāt found.": "কোনো সম্পর্কিত আয়াত পাওয়া যায়নি।",
+  "In the same QCR collection or Asma Name": "একই QCR সংকলন বা আসমা নামে",
+  "Share this āyah's rarer words": "এই আয়াতের বিরল শব্দগুলো যেখানে আছে",
+  "Connected āyāt": "সংযুক্ত আয়াত",
+  "QCR: {name}": "QCR: {name}",
+  "Asma: {name}": "আসমা: {name}",
+  "1 shared rare word": "১টি বিরল শব্দ মিল",
+  "{count} shared rare words": "{count}টি বিরল শব্দ মিল",
+  // Ayah Card section C part 2 -- Connected āyāt (issue #318, 26 Sep 2026).
+  "Finding connected āyāt…": "সংযুক্ত আয়াত খোঁজা হচ্ছে…",
+  "Couldn't load connected āyāt just now.": "এই মুহূর্তে সংযুক্ত আয়াত আনা গেল না।",
+  "No connected āyāt found.": "কোনো সংযুক্ত আয়াত পাওয়া যায়নি।",
+  "Connections are shown for your own Notes.": "সংযোগগুলো শুধু আপনার নিজের নোটের জন্য দেখানো হয়।",
+  "Not studied yet": "এখনো অধ্যয়ন করা হয়নি",
+  "Not checked": "যাচাই করা হয়নি",
+  "Note: {title}": "নোট: {title}",
+  "Folder: {name}": "ফোল্ডার: {name}",
+  // Asma classification rename fix (26 Sep 2026).
+  "▸ Open this classification": "▸ এই শ্রেণিবিভাগ খুলুন",
+  "Rename classification “{name}”": "শ্রেণিবিভাগ “{name}”-এর নাম পরিবর্তন করুন",
+  "Archive classification “{name}”": "শ্রেণিবিভাগ “{name}” সংরক্ষণাগারে রাখুন",
+  "Restore classification “{name}”": "শ্রেণিবিভাগ “{name}” ফিরিয়ে আনুন",
+  // HadeethEnc corpus browsing (issue #309).
+  "HadeethEnc": "HadeethEnc", // ?
+  "HadeethEnc — Encyclopedia of Translated Hadiths": "HadeethEnc — অনুবাদিত হাদীসের বিশ্বকোষ", // ?
+  "HadeethEnc hadiths are real, published text. Everything marked Synthetic is invented for development.":
+    "HadeethEnc-এর হাদিসগুলো প্রকৃত, প্রকাশিত পাঠ। \"কৃত্রিম\" চিহ্নিত সবকিছু উন্নয়নের জন্য বানানো।",
+  "Vol. {v}, p. {p}": "খণ্ড {v}, পৃ. {p}",
+  "Synthetic pilot collections": "কৃত্রিম পাইলট সংকলনসমূহ", // ?
+  "Not available in your language here — showing {lang}.": "আপনার ভাষায় এখানে পাওয়া যাচ্ছে না — {lang} দেখানো হচ্ছে।",
+  "Not available in {reqLang} — showing {lang}.": "{reqLang}-এ পাওয়া যাচ্ছে না — {lang} দেখানো হচ্ছে।",
+  "No {lang} translation for this hadith. Showing {shown}.": "এই হাদীসের কোনো {lang} অনুবাদ নেই। {shown} দেখানো হচ্ছে।",
+  "No {lang} translation for this hadith. Showing the Arabic source only.": "এই হাদীসের কোনো {lang} অনুবাদ নেই। শুধু আরবি মূল লেখা দেখানো হচ্ছে।",
+  "Grade: {grade}": "গ্রেড: {grade}",
+  "Show explanation": "ব্যাখ্যা দেখুন",
+  "← Back to the list": "← তালিকায় ফিরুন",
+  "Source: HadeethEnc.com": "সূত্র: HadeethEnc.com",
+  "Notes, bookmarking and marking this hadith as studied are not enabled yet — they need a decision about how a hadith is permanently identified, which the Owner has not made yet.":
+    "নোট, বুকমার্ক এবং এই হাদীসটি অধ্যয়ন করা হয়েছে বলে চিহ্নিত করা এখনো চালু করা হয়নি — একটি হাদীসকে স্থায়ীভাবে কীভাবে চিহ্নিত করা হবে তা নিয়ে একটি সিদ্ধান্ত প্রয়োজন, যা মালিক এখনো নেননি।", // ?
+  // HadeethEnc study actions (issue #311, Owner decision 7): Notes/bookmark/Studied.
+  "{count} Note(s) on this hadith": "এই হাদীসে {count}টি নোট",
+  "Sign in and choose who you're studying as to use Notes, bookmarking and Studied.":
+    "নোট, বুকমার্ক এবং অধ্যয়ন করা হয়েছে ব্যবহার করতে সাইন ইন করুন এবং কার হয়ে অধ্যয়ন করছেন তা বেছে নিন।", // ?
+  "You can view this, but only the person's own record can bookmark or mark it as studied.":
+    "আপনি এটি দেখতে পারেন, তবে শুধু সংশ্লিষ্ট ব্যক্তির নিজের রেকর্ড থেকেই এটি বুকমার্ক করা বা অধ্যয়ন করা হয়েছে বলে চিহ্নিত করা যাবে।", // ?
+  "Notes, bookmarking and Studied could not be loaded right now.":
+    "নোট, বুকমার্ক এবং অধ্যয়ন করা হয়েছে এই মুহূর্তে লোড করা গেল না।", // ?
+  // OpenITI -- 11 real Arabic hadith collections in Collections (issue #316, part 2 of #314).
+  "OpenITI — Arabic Hadith collections": "OpenITI — আরবি হাদীস সংকলনসমূহ", // ?
+  "OpenITI": "OpenITI", // ?
+  "Notes, bookmarking and marking a hadith or passage as studied are not enabled here yet — the Owner has only decided this for HadeethEnc so far.":
+    "নোট, বুকমার্ক এবং কোনো হাদীস বা অংশ অধ্যয়ন করা হয়েছে বলে চিহ্নিত করা এখানে এখনো চালু করা হয়নি — মালিক এখন পর্যন্ত শুধু HadeethEnc-এর জন্য এই সিদ্ধান্ত নিয়েছেন।", // ?
+  "{n} hadith": "{n}টি হাদীস", // ?
+  "{n} passages (this edition has no hadith numbers)": "{n}টি অংশ (এই সংস্করণে হাদীস নম্বর নেই)", // ?
+  "This edition has no hadith numbers to jump to.": "এই সংস্করণে যাওয়ার জন্য কোনো হাদীস নম্বর নেই।", // ?
+  "Go to hadith number": "হাদীস নম্বরে যান", // ?
+  // "Go" and "(untitled)" already exist above with the same translation --
+  // not repeated here (a duplicate object key would just be an unreachable
+  // no-op, since it carries the identical value).
+  "No chapter found for hadith number {n}.": "{n} নম্বর হাদীসের জন্য কোনো অধ্যায় পাওয়া যায়নি।", // ?
+  // Round H-DB2 (8 Oct 2026): the standard hadith numbers in the OpenITI library.
+  "Which numbering": "কোন নম্বর", // ?
+  "Standard number": "প্রচলিত নম্বর", // ?
+  "This edition's number": "এই সংস্করণের নম্বর", // ?
+  "No hadith found with standard number {n}.": "প্রচলিত নম্বর {n}-এর কোনো হাদীস পাওয়া যায়নি।", // ?
+  "Standard number: {ref}": "প্রচলিত নম্বর: {ref}", // ?
+  // Round H-DB3 (8 Oct 2026): HadeethEnc's translation under an OpenITI narration.
+  "{lang} translation (HadeethEnc)": "{lang} অনুবাদ (HadeethEnc)", // ?
+  "HadeethEnc's wording may follow another narration of this hadith.": "HadeethEnc-এর শব্দাবলি এই হাদীসের অন্য কোনো বর্ণনা অনুযায়ী হতে পারে।", // ?
+  // Round H-DB4 (8 Oct 2026): the Dua tab of the Hadith page.
+  "Dua": "দুআ", // ?
+  "Dua — the Dua chapters of the Hadith books": "দুআ — হাদীস গ্রন্থসমূহের দুআ অধ্যায়", // ?
+  "Each narration shows its standard number, a Bangla or English translation where HadeethEnc has one, and the other books that narrate the same dua.": "প্রতিটি বর্ণনায় এর প্রচলিত নম্বর, HadeethEnc-এ থাকলে বাংলা বা ইংরেজি অনুবাদ, এবং একই দুআ বর্ণনা করা অন্যান্য গ্রন্থ দেখানো হয়।", // ?
+  "{n} narrations": "{n}টি বর্ণনা", // ?
+  "← All Dua books": "← সব দুআর গ্রন্থ", // ?
+  "← Back to Dua": "← দুআয় ফিরে যান", // ?
+  "← Back to {ref}": "← {ref}-এ ফিরে যান", // ?
+  "Also narrated in ({n} more)": "আরও যেখানে বর্ণিত ({n}টি)", // ?
+  "found by matching words, to be checked": "শব্দ মিলিয়ে পাওয়া, যাচাই বাকি", // ?
+  "{book}, passage {n}": "{book}, অনুচ্ছেদ {n}", // ?
+  "+{n} more in other books": "+ আরও {n}টি, অন্যান্য গ্রন্থে", // ?
+  // Round H-DB5 (8 Oct 2026, decision 88): one card per dua.
+  "Duas": "দুআসমূহ", // ?
+  "Dua chapters": "দুআর অধ্যায়", // ?
+  "Duas {from}–{to} of {total}, most narrated first. Each dua's narrations were found by matching words and are still to be checked.": "দুআ {from}–{to}, মোট {total}টির মধ্যে, সবচেয়ে বেশি বর্ণিতগুলো আগে। প্রতিটি দুআর বর্ণনাগুলো শব্দ মিলিয়ে পাওয়া, যাচাই এখনও বাকি।", // ?
+  "Dua {n}": "দুআ {n}", // ?
+  "Narrated in {n} places": "{n}টি স্থানে বর্ণিত", // ?
+  "Words picked out by the computer · a person checks them": "কম্পিউটার দোয়ার শব্দগুলো বেছে নিয়েছে · একজন মানুষ তা যাচাই করবেন",
+  "The whole narration": "পুরো বর্ণনা",
+  "Tap a word to see it in the Qur'an's words.": "কোনো শব্দে চাপুন, কুরআনের শব্দে সেটি দেখুন।",
+  "No word of the Qur'an is spelled this way, so it is not linked yet.": "কুরআনের কোনো শব্দের বানান এমন নয়, তাই এখনো যুক্ত করা হয়নি।",
+  "In the Qur'an": "কুরআনে",
+  "Sounds like": "উচ্চারণ",
+  "Meaning (Bangla)": "অর্থ (বাংলা)",
+  "Meaning (English)": "অর্থ (ইংরেজি)",
+  "one of {n} possible, to be checked": "সম্ভাব্য {n}টির একটি, যাচাই করা হবে",
+  "{n} times in the Qur'an, spelled this way": "এই বানানে কুরআনে {n} বার",
+  "Open in the Word card": "শব্দ কার্ডে খুলুন",
+  "Linked by the computer by spelling · to be checked": "কম্পিউটার বানান মিলিয়ে যুক্ত করেছে · যাচাই করা হবে",
+  "Back to Dua {n}": "দুআ {n}-এ ফিরে যান",
+  "Read as «و» (and) + this word": "«و» (এবং) + এই শব্দ হিসেবে পড়া হয়েছে",
+  "Read as «ف» (so) + this word": "«ف» (তাই) + এই শব্দ হিসেবে পড়া হয়েছে",
+  "The Qur'an spells this word its own way": "কুরআন এই শব্দটি নিজস্ব বানানে লেখে",
+  "Quranic Arabic Corpus": "কুরআনিক অ্যারাবিক কর্পাস",
+  "Lane · Hans Wehr": "লেইন · হান্স ভের",
+  "+{n} more in the Word card": "শব্দ কার্ডে আরও {n}টি",
+  "My progress on this word (Word-by-Word)": "এই শব্দে আমার অগ্রগতি (শব্দে শব্দে)",
+  "Counts for this word everywhere in the Qur'an too. The Word card opens to record it.": "কুরআনের সব জায়গায় এই শব্দের জন্যও গণনা হয়। লিখে রাখতে শব্দ কার্ড খুলবে।",
+  "Now: {state}": "এখন: {state}",
+  "Hisn al-Muslim": "হিসনুল মুসলিম",
+  "Vowels from {source}, matched word for word by the computer · a person checks them": "হরকত {source} থেকে, কম্পিউটার শব্দে শব্দে মিলিয়েছে · একজন মানুষ যাচাই করবেন",
+  "Without vowels": "হরকত ছাড়া",
+  "With vowels": "হরকতসহ",
+  "My progress on this word": "এই শব্দে আমার অগ্রগতি",
+  "Dua word": "দুআর শব্দ",
+  "In this dua: {state}": "এই দুআয়: {state}",
+  "The same word in the Qur'an (Word-by-Word): {state}": "কুরআনে একই শব্দ (শব্দে শব্দে): {state}",
+  "Saved for this word in this dua; the Word card then opens to count it for the same word in the Qur'an too.": "এই দুআর এই শব্দের জন্য সংরক্ষিত হয়; তারপর কুরআনে একই শব্দের জন্যও গণনা করতে শব্দ কার্ড খোলে।",
+  "Saved for this word in this dua.": "এই দুআর এই শব্দের জন্য সংরক্ষিত হয়।",
+  "{lang} translation": "{lang} অনুবাদ",
+  "No {lang} translation was found for this narration.": "এই বর্ণনার কোনো {lang} অনুবাদ পাওয়া যায়নি।",
+  "Translation: {who} · from hadith-api (fawazahmed0), matched by the standard number": "অনুবাদ: {who} · hadith-api (fawazahmed0) থেকে, প্রচলিত নম্বর মিলিয়ে",
+  "Translation from hadith-api (fawazahmed0), matched by the standard number": "অনুবাদ hadith-api (fawazahmed0) থেকে, প্রচলিত নম্বর মিলিয়ে",
+  "The translation could not be loaded right now.": "অনুবাদটি এখন লোড করা যায়নি।",
+  "The dua's own words are not picked out of this narration yet.": "এই বর্ণনা থেকে দোয়ার শব্দগুলো এখনো আলাদা করা হয়নি।",
+  "← Back to Dua {n}": "← দুআ {n}-এ ফিরে যান", // ?
+  "My progress on this dua": "এই দুআয় আমার অগ্রগতি", // ?
+  "Progress could not be loaded right now.": "অগ্রগতি এখন আনা যায়নি।", // ?
+  "Sign in and choose who you're studying as to record progress.": "অগ্রগতি লিখতে সাইন ইন করুন এবং কার হয়ে পড়ছেন তা বেছে নিন।", // ?
+  "You can view this, but only the person's own record can record progress.": "আপনি এটি দেখতে পারেন, কিন্তু অগ্রগতি শুধু সেই ব্যক্তির নিজের রেকর্ডে লেখা যায়।", // ?
+  "Not saved: {why}": "সংরক্ষিত হয়নি: {why}", // ?
+  "Page {n} of {total}": "পৃষ্ঠা {n} / {total}", // ?
+  "Show more ({remaining} more)": "আরও দেখুন (আরও {remaining}টি)", // ?
+  "Hadith {n}": "হাদীস {n}", // ?
+  "Passage {n} (position in this edition, not the book's own number)": "অংশ {n} (এই সংস্করণে অবস্থান, বইয়ের নিজস্ব নম্বর নয়)", // ?
+  "Editor's note": "সম্পাদকের নোট", // ?
+  "Source: OpenITI (CC BY-NC-SA 4.0)": "সূত্র: OpenITI (CC BY-NC-SA 4.0)", // ?
+
+  // Issue #325 -- the Mushaf top-bar reference becomes a button opening the
+  // "This page" card (Owner decision 3: the page as one unit). Every other
+  // string the card needs -- "Page {page}", "Take an Approach",
+  // "Choose an Approach…", "Not started"/"Learning"/"Practising"/"Achieved",
+  // "Status", "Close" -- already exists above and is reused as-is.
+  "This page": "এই পৃষ্ঠা",
+  // Issue #370 -- the Global Approach Card.
+  "Mastered is confirmed by a teacher.": "আয়ত্ত হয়েছে কিনা তা একজন শিক্ষক নিশ্চিত করেন।",
+  "Choose an Approach above first, then tap your stage.": "প্রথমে ওপরে একটি পদ্ধতি বেছে নিন, তারপর আপনার ধাপে চাপুন।",
+
+  // Issue #328 -- the per-Approach "counts for each ayah inside" setting
+  // (Owner decision 6, 27 Sep 2026) on catalogue.html, and the "My Status"
+  // whole-Qur'an wheel on the Quran Study landing page.
+  "No": "না",
+  "Counts for each āyah inside": "প্রতিটি আয়াতের জন্য গণনা হয় কিনা", // ?
+  "Counts for each āyah inside: when Yes, claiming a Surah, Juz, Ruku', Hizb, page or Range for this Approach counts for every āyah inside it too, in Explore and in Know Your Status. When No, only an āyah's own claim counts for that āyah — a claim on the whole unit is kept and shown separately as \"studied as a whole\".":
+    "প্রতিটি আয়াতের জন্য গণনা হয়: হ্যাঁ হলে, এই অ্যাপ্রোচের জন্য কোনো সূরা, জুয, রুকু', হিজব, পৃষ্ঠা বা রেঞ্জ দাবি করলে তা ভেতরের প্রতিটি আয়াতের জন্যও গণনা হয়, এক্সপ্লোর এবং মাই স্ট্যাটাস উভয় জায়গায়। না হলে, শুধু আয়াতের নিজস্ব দাবিই সেই আয়াতের জন্য গণনা হয় — পুরো ইউনিটের দাবি রাখা থাকে এবং আলাদাভাবে \"সম্পূর্ণভাবে অধ্যয়ন করা হয়েছে\" হিসেবে দেখানো হয়।", // ?
+  "Know Your Status": "আপনার অবস্থা জানুন", // ? (was "My Status", renamed by the Owner 30 Sep 2026)
+  "Know your status on the whole Qur'an, by Approach.": "সম্পূর্ণ কুরআনে, প্রতিটি অ্যাপ্রোচ অনুযায়ী, নিজের অবস্থা জানুন।", // ?
+  "See in Explore": "এক্সপ্লোরে দেখুন", // ?
+  "studied as a whole": "সম্পূর্ণভাবে অধ্যয়ন করা হয়েছে", // ?
+  "{n} Surahs": "{n}টি সূরা", // ?
+  "{n} Ranges": "{n}টি রেঞ্জ", // ?
+  "{n} Juz": "{n}টি জুয", // ?
+  "{n} Ruku's": "{n}টি রুকু'", // ?
+  "{n} Hizb": "{n}টি হিজব", // ?
+  "{n} Pages": "{n}টি পৃষ্ঠা", // ?
+  "{n} Surah": "{n}টি সূরা", // ?
+  "{n} Range": "{n}টি রেঞ্জ", // ?
+  "{n} Ruku'": "{n}টি রুকু'", // ?
+  "{n} Page": "{n}টি পৃষ্ঠা", // ?
+  "Achieved + Mastered: {n} of {total} āyāt ({percent}%)": "অর্জিত + দক্ষ: {total}টির মধ্যে {n}টি আয়াত ({percent}%)", // ?
+  "Words known: {n} of {total} ({percent}%)": "জানা শব্দ: {total}টির মধ্যে {n}টি ({percent}%)", // ?
+  "Not yet available.": "এখনো উপলব্ধ নয়।", // ?
+  "Loading your status…": "আপনার অবস্থা লোড হচ্ছে…", // ?
+  "Close Know Your Status": "'আপনার অবস্থা জানুন' বন্ধ করুন", // ?
+
+  // Issue #341 -- My Status: an Approach opens as its own card (part 1),
+  // "By unit" Juz/Surah/Ruku'/Hizb figures (part 2), and the slices/rows
+  // that jump straight to Explore (part 3). "Juz"/"Surah"/"Ruku'"/"Hizb"/
+  // "Close"/"Choose an Approach" already exist above and are reused as-is.
+  "By unit": "একক অনুযায়ী", // ?
+  // Issue #425 -- unit tiles and the wheel's unit switch.
+  "Words known": "জানা শব্দ", // ?
+  "by {unit}": "{unit} অনুযায়ী", // ?
+  "Counts whole units only: each tile is the units you claimed as a whole.": "শুধু পুরো ইউনিট গণনা হয়: প্রতিটি ঘর আপনার পুরো হিসেবে দাবি করা ইউনিট।", // ?
+  "Achieved + Mastered: {n} of {total} · Started: {m}": "অর্জিত + দক্ষ: {total}টির মধ্যে {n}টি · শুরু হয়েছে: {m}টি", // ?
+  "{n} of {total} words ({percent}%)": "{total}টির মধ্যে {n}টি শব্দ ({percent}%)", // ?
+  "Surah and Ruku' figures for Word by Word are in Explore's Word by Word tab.":
+    "ওয়ার্ড বাই ওয়ার্ডের সূরা ও রুকু'র হিসাব এক্সপ্লোরের ওয়ার্ড বাই ওয়ার্ড ট্যাবে পাওয়া যাবে।", // ?
+
+  // Issue #332 -- Mushaf fonts from Quran Foundation (Part A) and the
+  // per-page Tajweed colours toggle (Part B).
+  "Couldn't display this page's letters (its font didn't load).": "এই পৃষ্ঠার অক্ষরগুলো দেখানো যায়নি (ফন্ট লোড হয়নি)।", // ?
+  "Tajweed colours (not supported on this browser)": "তাজবীদের রঙ (এই ব্রাউজারে সমর্থিত নয়)", // ?
+  "Tajweed colours couldn't load for this page — showing the plain page.": "এই পৃষ্ঠার জন্য তাজবীদের রঙ লোড হয়নি — সাধারণ পৃষ্ঠা দেখানো হচ্ছে।", // ?
+  "Quran fonts provided by Quran Foundation": "কুরআনের ফন্ট সরবরাহ করেছে Quran Foundation", // ?
+  // 28 Sep 2026 -- about.html's Acknowledgements section, now shown to everyone.
+  "Acknowledgements": "কৃতজ্ঞতা",
+  "These fonts draw every page of the Mushaf view, plain and with Tajweed colours. The app loads them from Quran Foundation and keeps the pages you have opened on your phone, so you can read them offline.": "মুসহাফ ভিউয়ের প্রতিটি পৃষ্ঠা এই ফন্ট দিয়ে আঁকা হয়, সাধারণভাবে ও তাজবীদের রঙসহ। অ্যাপটি এগুলো Quran Foundation থেকে আনে এবং আপনার খোলা পৃষ্ঠাগুলো ফোনে রেখে দেয়, যাতে অফলাইনেও পড়তে পারেন।",
+  // 27 Sep 2026 -- landing page: the chosen unit's name in the wheel's
+  // centre, and the wheel-look switch (Dark / Light / Colour).
+  "Āyāt {from}–{to}": "আয়াত {from}–{to}", // ?
+  "Ruku' {n}": "রুকু' {n}", // ?
+  "Wheel": "চাকা", // ?
+  "Legend": "সংকেত", // drawer name
+  "Wheel look": "চাকার রূপ", // ?
+  "On": "চালু",
+  "Off": "বন্ধ",
+  "Show link previews": "লিংকের প্রিভিউ দেখান",
+  "Each link's address is sent to Microlink (microlink.io) to fetch its title, description and picture. Nothing else from your Note is sent.": "প্রতিটি লিংকের ঠিকানা মাইক্রোলিংকে (microlink.io) পাঠানো হয়, তার শিরোনাম, বিবরণ ও ছবি আনার জন্য। আপনার নোটের আর কিছুই পাঠানো হয় না।",
+  "This is only on this device. Nothing is saved into your Note.": "এটি শুধু এই ডিভাইসে। আপনার নোটে কিছুই সংরক্ষণ করা হয় না।",
+  "Turn on": "চালু করুন",
+  // Part C, item 35 -- pictures in Notes.
+  "Insert a picture": "ছবি যোগ করুন",
+  "Describe the picture (optional)": "ছবিটির বর্ণনা (ঐচ্ছিক)",
+  "Width": "প্রস্থ",
+  "Choose a picture or take a photo": "ছবি বেছে নিন বা ছবি তুলুন",
+  "The picture is made small on this device first, and kept private to you. Its location and camera details are not kept.": "ছবিটি প্রথমে এই ডিভাইসেই ছোট করা হয় এবং শুধু আপনার জন্য গোপন রাখা হয়। এর অবস্থান ও ক্যামেরার তথ্য রাখা হয় না।",
+  "Making the picture small…": "ছবিটি ছোট করা হচ্ছে…",
+  "Uploading the picture…": "ছবিটি আপলোড হচ্ছে…",
+  "The picture was not saved. Your Note is unchanged.": "ছবিটি সংরক্ষণ করা যায়নি। আপনার নোট অপরিবর্তিত আছে।",
+  "This picture could not be loaded.": "এই ছবিটি আনা যায়নি।",
+  "That file is not a picture.": "এই ফাইলটি কোনো ছবি নয়।",
+  "That picture could not be opened.": "ছবিটি খোলা যায়নি।",
+  "This browser cannot make the picture small enough. Try a different picture.": "এই ব্রাউজার ছবিটিকে যথেষ্ট ছোট করতে পারছে না। অন্য একটি ছবি চেষ্টা করুন।",
+  "That picture is still too big after making it small (over 400 KB), so it was not uploaded. Try a simpler picture.": "ছোট করার পরও ছবিটি অনেক বড় (৪০০ কিলোবাইটের বেশি), তাই আপলোড করা হয়নি। একটি সহজ ছবি চেষ্টা করুন।",
+  "Sign in first: a picture is saved to your own private folder.": "আগে সাইন ইন করুন: ছবি আপনার নিজের গোপন ফোল্ডারে রাখা হয়।",
+  "The picture was not saved: picture storage is not switched on yet. The Owner needs to publish the Storage Rules first. Your Note is unchanged.": "ছবিটি সংরক্ষণ করা যায়নি: ছবি রাখার ব্যবস্থা এখনও চালু হয়নি। আগে মালিককে স্টোরেজ নিয়ম প্রকাশ করতে হবে। আপনার নোট অপরিবর্তিত আছে।",
+  "The picture was not saved: no connection, or the service is not reachable. Your Note is unchanged.": "ছবিটি সংরক্ষণ করা যায়নি: সংযোগ নেই, অথবা সেবাটি পাওয়া যাচ্ছে না। আপনার নোট অপরিবর্তিত আছে।",
+  "Loading the preview…": "প্রিভিউ আনা হচ্ছে…",
+  "This link has no preview.": "এই লিংকের কোনো প্রিভিউ নেই।",
+  "The preview could not be fetched: the preview service said no (it allows only a few a day).": "প্রিভিউ আনা যায়নি: প্রিভিউ সেবা অস্বীকার করেছে (এটি দিনে অল্প কয়েকটির অনুমতি দেয়)।",
+  "The preview could not be fetched: no connection.": "প্রিভিউ আনা যায়নি: সংযোগ নেই।",
+  "Approach names on the wheel": "চাকায় পদ্ধতির নাম",
+  "Short name": "সংক্ষিপ্ত নাম",
+  "Short name (shown on the wheel)": "সংক্ষিপ্ত নাম (চাকায় দেখানো হয়)",
+  "Short name (English, optional)": "সংক্ষিপ্ত নাম (ইংরেজি, ঐচ্ছিক)",
+  "Short name (Bangla, optional)": "সংক্ষিপ্ত নাম (বাংলা, ঐচ্ছিক)",
+  "Dark": "গাঢ়", // ?
+  "Light": "হালকা", // ?
+  "Colour": "রঙিন", // ?
+
+  // Issue #354 -- Card look: Night or Light, beside Language in Settings.
+  "Card look": "কার্ডের রূপ", // ?
+  "Night": "রাত", // ?
+
+  // 28 Sep 2026 -- issue #348, the Unit Card: acting on and tracking a
+  // Ruku', Page, Hizb, Juz, Surah or Range from the Read view.
+  "Jump to a containing unit": "একটি অন্তর্ভুক্তকারী ইউনিটে যান", // ?
+  "Ayah {n}": "আয়াত {n}",
+  "Ayahs {from}–{to}": "আয়াত {from}–{to}",
+  "Juz {n}": "জুয {n}",
+  "Hizb {n}": "হিযব {n}",
+  "Page {n}": "পৃষ্ঠা {n}",
+  "Juz {n} begins": "জুয {n} শুরু", // ?
+  "Hizb {n} begins": "হিযব {n} শুরু", // ?
+  "Page {n} ends": "পৃষ্ঠা {n} শেষ", // ?
+  "Ruku' {n} ends": "রুকু' {n} শেষ", // ?
+  "Bookmark this unit": "এই ইউনিটটি বুকমার্ক করুন", // ?
+  "Note on this unit": "এই ইউনিটে নোট", // ?
+  "Play this unit": "এই ইউনিট চালান", // ?
+  "Mark as read": "পঠিত হিসেবে চিহ্নিত করুন", // ?
+  "Status of this unit": "এই ইউনিটের অবস্থা", // ?
+  "This Approach's claims count for each āyah inside.": "এই পদ্ধতির দাবি ভেতরের প্রতিটি আয়াতের জন্য গণনা হয়।", // ?
+  "This Approach's claims count for this unit as a whole.": "এই পদ্ধতির দাবি পুরো ইউনিট হিসেবে গণনা হয়।", // ?
+  "Āyāt Achieved or Mastered: {n} of {total}": "{total} এর মধ্যে {n} আয়াত অর্জিত বা আয়ত্ত", // ?
+  "See Explore's Word by Word tab for this unit.": "এই ইউনিটের জন্য এক্সপ্লোরের Word by Word ট্যাব দেখুন।", // ?
+  "No word-by-word data for this unit.": "এই ইউনিটের জন্য word-by-word তথ্য নেই।", // ?
+  "Ruku's": "রুকু'সমূহ", // ?
+  "Ayahs": "আয়াতসমূহ", // ?
+  "Surah pieces": "সূরার অংশ", // ?
+  "Recording a completed reading here is coming soon.": "এখানে পড়া সম্পন্ন রেকর্ড করার সুবিধা শীঘ্রই আসছে।", // ?
+  "Recording a completed reading here is planned for later.": "এখানে পড়া সম্পন্ন রেকর্ড করার সুবিধা পরে যুক্ত হবে।", // ?
+  "Reading marked complete.": "পড়া সম্পন্ন হিসেবে চিহ্নিত হয়েছে।", // ?
+  "Open {unit}": "{unit} খুলুন", // ?
+  "End of {unit}. How did it go?": "{unit} শেষ। কেমন হলো?", // ?
+  "Saved": "সংরক্ষিত হয়েছে", // ?
+  "End-of-unit prompt": "ইউনিট-শেষের প্রম্পট", // ?
+  // The label wraps the Arabic word in a data-i18n-skip span (a text node
+  // holding two scripts is never translated), so it is three pieces.
+  "Al-Fātiḥah: Bismillah unnumbered (": "আল-ফাতিহা: বিসমিল্লাহ নম্বরবিহীন (",
+  "is āyah 1)": "হলো আয়াত ১)",
+  "Bismillah": "বিসমিল্লাহ",
+  "Approach: {name}": "পদ্ধতি: {name}", // ?
+  "Surah {n}": "সূরা {n}",
+  "from {place}": "{place} থেকে", // the wheel centre's second line for a Page/Juz/Hizb: where the unit starts (decision 63)
+
+  // 28 Sep 2026 -- the Owner's own new Approaches, from the Catalogue page.
+  "Add an Approach": "একটি পদ্ধতি যোগ করুন", // ?
+  "Name (English)": "নাম (ইংরেজি)", // ?
+  "Name (Bangla)": "নাম (বাংলা)", // ?
+  "It is added at the end of its section. You can move it, rename it and write its Guide with Edit.": "এটি তার বিভাগের শেষে যোগ হয়। Edit দিয়ে আপনি এটি সরাতে, নাম বদলাতে এবং এর নির্দেশিকা লিখতে পারবেন।", // ?
+  "Add Approach": "পদ্ধতি যোগ করুন", // ?
+  "Choose a section.": "একটি বিভাগ বেছে নিন।", // ?
+  "Added \"{name}\" to {section}.": "\"{name}\" {section}-এ যোগ হয়েছে।", // ?
+
+  // Issue #352 -- every unit on the wheel (Owner decisions 21-24).
+  "All units": "সব ইউনিট", // ?
+  "Āyah": "আয়াত",
+  "Rings, from the middle out": "বলয়গুলো, মাঝখান থেকে বাইরে", // ?
+  "Rule: Yes. A bigger unit takes the lowest status of its āyāt.": "নিয়ম: হ্যাঁ। বড় ইউনিট তার আয়াতগুলোর সবচেয়ে নিচের অবস্থা নেয়।", // ?
+  "Rule: No ○. Each unit shows only the claim made on it.": "নিয়ম: না ○। প্রতিটি ইউনিট শুধু তার নিজের ওপর করা দাবি দেখায়।", // ?
+  "Take this Approach": "এই পদ্ধতি গ্রহণ করুন", // ?
+  "Open in Explore": "এক্সপ্লোরে খুলুন", // ?
+  "{name} ({n} āyāt)": "{name} ({n} আয়াত)", // ?
+  "Ruku' {n} of {surah}": "{surah}-এর রুকু' {n}", // ?
+  "(part)": "(অংশ)", // ?
+  "This unit": "এই ইউনিট", // ?
+  "Āyāt started: {n}": "শুরু হওয়া আয়াত: {n}", // ?
+  "Study this āyah": "এই আয়াত অধ্যয়ন করুন", // ?
+  "{n} Juz, in the middle": "{n}টি জুয, মাঝখানে", // ?
+  "{n} Surahs, around them": "{n}টি সূরা, চারপাশে", // ?
+  "Hizb: {n} in this Juz": "হিযব: এই জুযে {n}টি", // ?
+  "Ruku': {n}, around them": "রুকু': {n}টি, চারপাশে", // ?
+  "Page: {n} printed pages": "পৃষ্ঠা: {n}টি ছাপা পৃষ্ঠা", // ?
+  "Ruku': {n}, in the middle": "রুকু': {n}টি, মাঝখানে", // ?
+  "Āyah: {n}, around them": "আয়াত: {n}টি, চারপাশে", // ?
+  // Issue #410 -- saved Study-options settings (named presets).
+  "Save these settings": "এই সেটিংস সংরক্ষণ করুন",
+  "Name these settings": "এই সেটিংসের নাম দিন",
+  "Keep this unit": "এই একক রাখুন",
+  "Saved settings": "সংরক্ষিত সেটিংস",
+  "Saved: {name}": "সংরক্ষিত: {name}",
+  "Applied: {name}. Press Read or Play below.": "প্রয়োগ হয়েছে: {name}। নিচে পড়ুন বা চালান চাপুন।",
+  "Rename or remove {name}": "{name} এর নাম বদলান বা সরান",
+  "Pick a student first.": "আগে একজন শিক্ষার্থী বেছে নিন।",
+
+  // Issue #415 -- the Read contents list.
+  "{n} verses": "{n}টি আয়াত",
+  "Verses {from}–{to}": "আয়াত {from}–{to}",
+  "Pages {from}–{to}": "পৃষ্ঠা {from}–{to}",
+  "Search by name or number": "নাম বা নম্বর দিয়ে খুঁজুন",
+  "Nothing matches.": "কিছু মেলেনি।",
+  "{surah} {from}–{to}": "{surah} {from}–{to}",
+  "{fromSurah} {from} → {toSurah} {to}": "{fromSurah} {from} → {toSurah} {to}",
+
+  // --- Writing sheet (issue #421): the Mushaf page as an A4 tracing sheet ---
+  "Writing sheet": "লিখন অনুশীলনের পাতা",
+  "Write": "লিখুন",
+  "Pen": "কলম",
+  "Eraser": "রাবার",
+  "Undo": "ফিরিয়ে নিন",
+  "Lighter": "আরও হালকা",
+  "Like the book": "বইয়ের মতো",
+  "Letter style": "অক্ষরের ধরন",
+  "Save picture": "ছবি সংরক্ষণ করুন",
+  "Print A4": "এ৪-এ প্রিন্ট করুন",
+  "Close without saving your writing?": "লেখা সংরক্ষণ না করেই বন্ধ করবেন?",
+  // 30 Sep 2026 -- the Writing sheet's hide/show toolbar button.
+  "Tools": "সরঞ্জাম",
+  "Hide": "লুকান",
+  "Show the tools": "সরঞ্জাম দেখান",
+  "Hide the tools": "সরঞ্জাম লুকান",
+  "Keep writing": "লিখতে থাকুন",
+  // 6 Oct 2026 (W1) -- choose what to practise on the sheet.
+  "Choose what to practise": "কী অনুশীলন করবেন বেছে নিন",
+  "Change what you practise? Your writing on this sheet will be cleared.": "অনুশীলনের অংশ বদলাবেন? এই পাতায় আপনার লেখা মুছে যাবে।",
+  "Change": "বদলান",
+  "System folders cannot be moved to Trash.": "সিস্টেম ফোল্ডার ট্র্যাশে পাঠানো যায় না।",
+  "System folders cannot be copied.": "সিস্টেম ফোল্ডার কপি করা যায় না।",
+  "Folder is not in Trash.": "ফোল্ডারটি ট্র্যাশে নেই।",
+  "This note is not filed in that folder.": "এই নোটটি সেই ফোল্ডারে নেই।",
+  "Loading the writing sheet…": "লিখন অনুশীলনের পাতা লোড হচ্ছে…",
+  "Couldn't open the writing sheet.": "লিখন অনুশীলনের পাতা খোলা যায়নি।",
+  "My account": "আমার অ্যাকাউন্ট",
+  "More account details will appear here later.": "অ্যাকাউন্টের আরও তথ্য পরে এখানে আসবে।",
+  "Go back": "ফিরে যান",
+  // Siyagah port round 3 -- Copy to…, Move to…, Delete (to Trash) and the Trash view.
+  "Copy to…": "অনুলিপি করুন…",
+  "Delete": "মুছুন",
+  "Trash": "ট্র্যাশ",
+  "This folder still holds {n} notes. Move or delete them first.": "এই ফোল্ডারে এখনও {n}টি নোট আছে। আগে সেগুলো সরান বা মুছুন।",
+  "This note is already filed in that folder.": "এই নোটটি ইতিমধ্যে সেই ফোল্ডারে রাখা আছে।",
+  "This note is not filed in that folder any more — please refresh and try again.": "এই নোটটি আর সেই ফোল্ডারে নেই — পাতাটি নতুন করে খুলে আবার চেষ্টা করুন।",
+  "That folder does not exist or is in Trash.": "সেই ফোল্ডারটি নেই, অথবা ট্র্যাশে আছে।",
+  "Personal Journey Map and Reflection Archive can't be deleted.": "ব্যক্তিগত যাত্রার মানচিত্র ও প্রতিফলন সংরক্ষণাগার মোছা যায় না।",
+  "Personal Journey Map and Reflection Archive can't be copied.": "ব্যক্তিগত যাত্রার মানচিত্র ও প্রতিফলন সংরক্ষণাগারের অনুলিপি করা যায় না।",
+  "That folder is not in Trash.": "সেই ফোল্ডারটি ট্র্যাশে নেই।",
+  "That Note is not in Trash.": "সেই নোটটি ট্র্যাশে নেই।",
+  "That Note has changed — please refresh and try again.": "সেই নোটটি বদলে গেছে — পাতাটি নতুন করে খুলে আবার চেষ্টা করুন।",
+  "A move must change folder.": "সরানোর সময় ফোল্ডার বদলাতে হবে।",
+  "There are too many folders or Notes to judge this safely. Nothing was changed.": "নিরাপদে বিচার করার জন্য ফোল্ডার বা নোট অনেক বেশি। কিছুই বদলানো হয়নি।",
+  "Move folder \"{name}\" to…": "ফোল্ডার \"{name}\" যেখানে সরাবেন…",
+  "Copy folder \"{name}\" to…": "ফোল্ডার \"{name}\" যেখানে অনুলিপি করবেন…",
+  "Folder \"{name}\" moved to {place}.": "ফোল্ডার \"{name}\" {place}-এ সরানো হয়েছে।",
+  "Folder \"{name}\" copied to {place}: {folders} folder(s). Its {notes} Note filing(s) are linked, not duplicated — each Note is still one Note.": "ফোল্ডার \"{name}\" {place}-এ অনুলিপি হয়েছে: {folders}টি ফোল্ডার। এর {notes}টি নোট জোড়া হয়েছে, নকল হয়নি — প্রতিটি নোট এখনও একটিই নোট।",
+  "Folder \"{name}\" moved to Trash. Open 🗑 Trash from the ⋯ menu to restore it.": "ফোল্ডার \"{name}\" ট্র্যাশে গেছে। ফিরিয়ে আনতে ⋯ মেনু থেকে 🗑 ট্র্যাশ খুলুন।",
+  "Copy \"{title}\" to…": "\"{title}\" যেখানে অনুলিপি করবেন…",
+  "\"{title}\" copied to {folder}. It now shows in both folders — still one Note, not a duplicate.": "\"{title}\" {folder}-এ অনুলিপি হয়েছে। এখন দুই ফোল্ডারেই দেখা যাবে — নোট একটিই, নকল নয়।",
+  "Move \"{title}\" to…": "\"{title}\" যেখানে সরাবেন…",
+  "Nothing here is erased. Restore brings a folder or Note back where it was.": "এখানে কিছুই মুছে ফেলা হয় না। ফিরিয়ে আনলে ফোল্ডার বা নোট আগের জায়গায় ফিরে যায়।",
+  "Loading Trash…": "ট্র্যাশ খোলা হচ্ছে…",
+  "Trash is empty.": "ট্র্যাশ খালি।",
+  "Couldn't load Trash — please try again.": "ট্র্যাশ খোলা যায়নি — আবার চেষ্টা করুন।",
+  "Was in: {place}": "আগে ছিল: {place}",
+  "(no folder)": "(কোনো ফোল্ডার নেই)",
+  "Folder \"{name}\" restored.": "ফোল্ডার \"{name}\" ফিরিয়ে আনা হয়েছে।",
+  "\"{title}\" restored.": "\"{title}\" ফিরিয়ে আনা হয়েছে।",
+  // Siyagah round 4 -- the Note pane
+  "Contents": "সূচিপত্র",
+  "Previous note": "আগের নোট",
+  "Next note": "পরের নোট",
+  "Open full page": "পূর্ণ পৃষ্ঠায় খুলুন",
+  "Pop out": "আলাদা উইন্ডোতে খুলুন",
+  "Open in window": "উইন্ডোতে খুলুন",
+  "Open notes": "খোলা নোটসমূহ",
+  "Close {title}": "বন্ধ করুন: {title}",
+  "Version {n} of {m}": "সংস্করণ {n} / {m}",
+  "saved {date}": "সংরক্ষিত: {date}",
+  "Details": "বিবরণ",
+  "Created {date}": "তৈরি: {date}",
+  "Last changed {date}": "সর্বশেষ বদল: {date}",
+  "\"{title}\" moved to Trash. Open 🗑 Trash from the ⋯ menu to restore it.": "\"{title}\" ট্র্যাশে গেছে। ফিরিয়ে আনতে ⋯ মেনু থেকে 🗑 ট্র্যাশ খুলুন।",
+  "Done": "সম্পন্ন",
+  "Saved on this device": "এই ডিভাইসে সংরক্ষিত",
+  "Not saved yet — will try again": "এখনও সংরক্ষিত হয়নি — আবার চেষ্টা করা হবে",
+  "This Note changed on another device. Your text is kept on this device — copy it before reloading.": "এই নোটটি অন্য ডিভাইসে বদলেছে। আপনার লেখা এই ডিভাইসে রাখা আছে — পেজ রিলোড করার আগে এটি কপি করে নিন।",
+  "You have unsaved text on this device, from {date}.": "এই ডিভাইসে {date} তারিখের একটি অসংরক্ষিত লেখা আছে।",
+  "Restore my unsaved text": "আমার অসংরক্ষিত লেখা ফিরিয়ে আনুন",
+  "Discard it": "ফেলে দিন",
+  "Note text": "নোটের লেখা",
+  "Note title": "নোটের শিরোনাম",
+  // 1 Oct 2026 -- Siyagah round 7a (issue #458): sections and folder colour + bold in Mapping My Journey.
+  "Sections and folder colours switch on once the new Firebase Rules are published.": "নতুন ফায়ারবেস নিয়ম প্রকাশিত হলেই সেকশন ও ফোল্ডারের রং চালু হবে।",
+  "Red": "লাল",
+  "Orange": "কমলা",
+  "Amber": "হলুদাভ",
+  "Green": "সবুজ",
+  "Teal": "সবুজাভ নীল",
+  "Blue": "নীল",
+  "Indigo": "ঘন নীল",
+  "Purple": "বেগুনি",
+  "Pink": "গোলাপি",
+  "Grey": "ধূসর",
+  "Apply": "প্রয়োগ করুন",
+  "Colour and bold": "রং ও গাঢ়",
+  "Move to section": "সেকশনে সরান",
+  "No section": "কোনো সেকশন নেই",
+  "+ New section": "+ নতুন সেকশন",
+  "(untitled section)": "(নামহীন সেকশন)",
+  "Rename this section": "এই সেকশনের নাম বদলান",
+  "Colour and bold for section \"{name}\"": "সেকশন \"{name}\"-এর রং ও গাঢ়",
+  "Colour and bold for folder \"{name}\"": "ফোল্ডার \"{name}\"-এর রং ও গাঢ়",
+  "Move folder \"{name}\" to a section": "ফোল্ডার \"{name}\" একটি সেকশনে সরান",
+  "Move section \"{name}\" to Trash? Its folders are not deleted: they go back to the unnamed block above the sections. Restore it later from 🗑 Trash.": "সেকশন \"{name}\" ট্র্যাশে পাঠাবেন? এর ফোল্ডার মুছে যাবে না: সেগুলো সেকশনগুলোর উপরের নামহীন অংশে ফিরে যাবে। পরে 🗑 ট্র্যাশ থেকে ফিরিয়ে আনতে পারবেন।",
+  "Section \"{name}\" moved to Trash. Its folders are back in the unnamed block.": "সেকশন \"{name}\" ট্র্যাশে গেছে। এর ফোল্ডার নামহীন অংশে ফিরে এসেছে।",
+  "Section \"{name}\" created.": "সেকশন \"{name}\" তৈরি হয়েছে।",
+  "Section \"{name}\" restored.": "সেকশন \"{name}\" ফিরিয়ে আনা হয়েছে।",
+  "Folder \"{name}\" moved to section \"{section}\".": "ফোল্ডার \"{name}\" সেকশন \"{section}\"-এ সরানো হয়েছে।",
+  "Folder \"{name}\" is no longer in a section.": "ফোল্ডার \"{name}\" আর কোনো সেকশনে নেই।",
+  "Delete section \"{name}\"?": "সেকশন \"{name}\" মুছবেন?",
+  "Type a name for the section first.": "আগে সেকশনের একটি নাম লিখুন।",
+  "Section — its folders stay in the unnamed block.": "সেকশন — এর ফোল্ডার নামহীন অংশেই থাকে।",
+  "Only your own folders can be put in a section.": "শুধু আপনার নিজের ফোল্ডার সেকশনে রাখা যায়।",
+  "Only a top-level folder can be put in a section.": "শুধু সর্বোচ্চ স্তরের ফোল্ডার সেকশনে রাখা যায়।",
+  "That section could not be found — please refresh and try again.": "সেকশনটি পাওয়া যায়নি — পাতা রিফ্রেশ করে আবার চেষ্টা করুন।",
+  "That section is in Trash, so it can't be changed.": "সেকশনটি ট্র্যাশে আছে, তাই বদলানো যাবে না।",
+  "That folder has already been removed, so it can't be changed.": "ফোল্ডারটি আগেই সরানো হয়েছে, তাই বদলানো যাবে না।",
+  "A section name must be between 1 and 200 characters.": "সেকশনের নাম ১ থেকে ২০০ অক্ষরের মধ্যে হতে হবে।",
+  // Siyagah round 7b (issue #461): Tags. Tags only -- there are no Note Types.
+  "Tags": "ট্যাগ",
+  "Tags…": "ট্যাগ…",
+  "Tags switch on once the new Firebase Rules are published.": "নতুন ফায়ারবেস নিয়ম প্রকাশিত হলেই ট্যাগ চালু হবে।",
+  "Search tags": "ট্যাগ খুঁজুন",
+  "New tag": "নতুন ট্যাগ",
+  "New tag name": "নতুন ট্যাগের নাম",
+  "Tag name": "ট্যাগের নাম",
+  "No tag matches that search.": "এই খোঁজে কোনো ট্যাগ মেলেনি।",
+  "You have no tags yet. Type a name below to make one.": "আপনার এখনো কোনো ট্যাগ নেই। বানাতে নিচে একটি নাম লিখুন।",
+  "Type a name for the tag first.": "আগে ট্যাগের একটি নাম লিখুন।",
+  "That did not save.": "এটি সংরক্ষণ হয়নি।",
+  "Rename this tag": "এই ট্যাগের নাম বদলান",
+  "You already have a tag with that name.": "ওই নামে আপনার একটি ট্যাগ আগেই আছে।",
+  'Tag "{name}" created.': 'ট্যাগ "{name}" বানানো হয়েছে।',
+  'Colour for tag "{name}"': 'ট্যাগ "{name}"-এর রঙ',
+  'Delete tag "{name}"?': 'ট্যাগ "{name}" মুছবেন?',
+  'Move tag "{name}" to Trash? Your Notes are not changed. Restore it later from 🗑 Trash and it comes back with its Notes.': 'ট্যাগ "{name}" ট্র্যাশে সরাবেন? আপনার নোটগুলো বদলাবে না। পরে 🗑 ট্র্যাশ থেকে ফিরিয়ে আনলে এটি নোটসহ ফিরে আসবে।',
+  'Tag "{name}" moved to Trash.': 'ট্যাগ "{name}" ট্র্যাশে সরানো হয়েছে।',
+  'Tag "{name}" restored.': 'ট্যাগ "{name}" ফিরিয়ে আনা হয়েছে।',
+  "Tag — it comes back with its Notes.": "ট্যাগ — এটি নোটসহ ফিরে আসে।",
+  "No Notes carry this tag yet.": "এই ট্যাগে এখনো কোনো নোট নেই।",
+  // Owner, 3 Oct 2026 -- Mark words switch (Study options, Reading view).
+  "Mark words": "শব্দ চিহ্নিত করুন",
+  "Fewer (auto)": "যেগুলো কম (স্বয়ংক্রিয়)",
+  "Known": "জানা",
+  "still to learn": "শেখা বাকি",
+  "Always marks the words you know, in green.": "সবসময় জানা শব্দগুলো সবুজে চিহ্নিত হয়।",
+  "Always marks the words you still have to learn, in amber.": "সবসময় শেখা বাকি শব্দগুলো কমলা রঙে চিহ্নিত হয়।",
+  "Marks whichever is fewer: you know half or more of the Qur'an, so the words still to learn are marked, in amber.": "যেগুলো সংখ্যায় কম সেগুলো চিহ্নিত হয়: আপনি কুরআনের অর্ধেক বা তার বেশি শব্দ জানেন, তাই শেখা বাকি শব্দগুলো কমলা রঙে চিহ্নিত হচ্ছে।",
+  "Marks whichever is fewer: you know less than half of the Qur'an, so the words you know are marked, in green.": "যেগুলো সংখ্যায় কম সেগুলো চিহ্নিত হয়: আপনি কুরআনের অর্ধেকের কম শব্দ জানেন, তাই জানা শব্দগুলো সবুজে চিহ্নিত হচ্ছে।",
+  // S8 (4 Oct 2026) -- Mapping My Journey: three panels (folders, note list, note).
+  "Choose a Note to read it here.": "এখানে পড়তে একটি নোট বেছে নিন।",
+  "Back to folders": "ফোল্ডারে ফিরে যান",
+  "Choose a folder to see its Notes.": "নোট দেখতে একটি ফোল্ডার বেছে নিন।",
+  "Note list style": "নোট তালিকার ধরন",
+  "Compact": "সংক্ষিপ্ত",
+  "Preview": "পূর্বরূপ",
+  "Up to the parent folder": "উপরের ফোল্ডারে যান",
+  "New folder": "নতুন ফোল্ডার",
+  "Type a name for the folder first.": "আগে ফোল্ডারের একটি নাম লিখুন।",
+  "Quick title — press Enter to add a Note": "দ্রুত শিরোনাম — নোট যোগ করতে Enter চাপুন",
+  "Add note": "নোট যোগ করুন",
+  "Add note here": "এখানে নোট যোগ করুন",
+  "Type a title first.": "আগে একটি শিরোনাম লিখুন।",
+  'Note "{title}" created in {folder}.': '"{title}" নোটটি {folder}-এ তৈরি হয়েছে।',
+  "New note created in {folder}.": "{folder}-এ নতুন নোট তৈরি হয়েছে।",
+  "Choose a folder first — then a new Note is made in it.": "আগে একটি ফোল্ডার বেছে নিন — নতুন নোট তাতেই তৈরি হবে।",
+  "in {n} folders": "{n}টি ফোল্ডারে",
+  "Notes in this folder": "এই ফোল্ডারের নোট",
+  // S9 (decision 66): menus by right-click / long-press, drag a Note onto a folder, new folder-menu items.
+  "Add subfolder": "সাবফোল্ডার যোগ করুন",
+  "Name for the new subfolder": "নতুন সাবফোল্ডারের নাম",
+  "Move to top level": "সর্বোচ্চ স্তরে সরান",
+  "Turn into a section": "সেকশনে রূপান্তর করুন",
+  '"{name}" is now a top-level folder.': '"{name}" এখন একটি সর্বোচ্চ স্তরের ফোল্ডার।',
+  "Only a top-level folder can be turned into a section.": "শুধু সর্বোচ্চ স্তরের ফোল্ডারকে সেকশনে রূপান্তর করা যায়।",
+  'Section "{name}" made, and the folder is in it.': '"{name}" সেকশন তৈরি হয়েছে এবং ফোল্ডারটি তাতে রাখা হয়েছে।',
+  'Section "{name}" was made, but the folder could not be put in it.': '"{name}" সেকশন তৈরি হয়েছে, কিন্তু ফোল্ডারটি তাতে রাখা যায়নি।',
+  '"{title}" is already in {folder}.': '"{title}" আগে থেকেই {folder}-এ আছে।',
+  '"{title}" added to {folder}. It also stays in its other folders.': '"{title}" {folder}-এ যোগ হয়েছে। এটি অন্য ফোল্ডারগুলোতেও থাকছে।',
+  // S10 -- the folder picker (tick boxes)
+  "Folders…": "ফোল্ডার…",
+  '"{title}" filed in {folder}.': '"{title}" {folder}-এ রাখা হয়েছে।',
+  'Folders for "{title}"': '"{title}"-এর ফোল্ডার',
+  'Notes filed in "{name}"': '"{name}" ফোল্ডারে রাখা নোট',
+  "Tick a folder to file this Note there; untick to take it out. Each change is saved at once.": "এই নোটটি যে ফোল্ডারে রাখতে চান সেটিতে টিক দিন; সরাতে টিক তুলে নিন। প্রতিটি পরিবর্তন সঙ্গে সঙ্গে সংরক্ষিত হয়।",
+  "Tick the folders this Note belongs in. They are saved when you press Done on the Note.": "এই নোটটি যে ফোল্ডারগুলোতে থাকবে সেগুলোতে টিক দিন। নোটে ‘সম্পন্ন’ চাপলে সংরক্ষিত হবে।",
+  "Tick a Note to file it in this folder; untick to take it out.": "এই ফোল্ডারে রাখতে নোটে টিক দিন; সরাতে টিক তুলে নিন।",
+  "Move to Trash": "ট্র্যাশে সরান",
+  "Highlighted folder: {name}": "নির্বাচিত ফোল্ডার: {name}",
+  "No folder highlighted — a new folder goes at the top level.": "কোনো ফোল্ডার নির্বাচিত নেই — নতুন ফোল্ডার শীর্ষ স্তরে হবে।",
+  "In: {folders}": "আছে: {folders}",
+  "You have no Notes yet.": "আপনার এখনও কোনো নোট নেই।",
+  "Use these folders": "এই ফোল্ডারগুলো ব্যবহার করুন",
+  "Highlight a folder first.": "আগে একটি ফোল্ডার বেছে নিন।",
+  "Still loading your Notes — try again in a moment.": "আপনার নোট এখনও লোড হচ্ছে — একটু পরে আবার চেষ্টা করুন।",
+  "A Note must stay in at least one folder. Tick another folder first, then untick this one.": "একটি নোট অন্তত একটি ফোল্ডারে থাকতেই হবে। আগে অন্য একটি ফোল্ডারে টিক দিন, তারপর এটির টিক তুলুন।",
+  '"{title}" taken out of {folder}.': '"{title}" {folder} থেকে সরানো হয়েছে।',
+  "Folder changes will be saved when you press Done.": "‘সম্পন্ন’ চাপলে ফোল্ডারের পরিবর্তন সংরক্ষিত হবে।",
+  // S11 -- reading tools (find, open/close all headings, versions, folders and tags)
+  "Find in this Note": "এই নোটে খুঁজুন",
+  "{n} of {m}": "{m}টির মধ্যে {n}",
+  "No matches": "কিছু পাওয়া যায়নি",
+  "Previous match": "আগের মিল",
+  "Next match": "পরের মিল",
+  "Open all headings": "সব শিরোনাম খুলুন",
+  "Close all headings": "সব শিরোনাম বন্ধ করুন",
+  "Folders and tags": "ফোল্ডার ও ট্যাগ",
+  'Folders and tags for "{title}"': '"{title}"-এর ফোল্ডার ও ট্যাগ',
+  "Versions…": "সংস্করণ…",
+  "Versions": "সংস্করণ",
+  "(unknown time)": "(সময় অজানা)",
+  "This Note has no earlier versions to show.": "এই নোটের দেখানোর মতো আগের কোনো সংস্করণ নেই।",
+  "All versions": "সব সংস্করণ",
+  "Bring this version back": "এই সংস্করণটি ফিরিয়ে আনুন",
+  "Press Done on the Note first, then bring a version back.": "আগে নোটে ‘সম্পন্ন’ চাপুন, তারপর একটি সংস্করণ ফিরিয়ে আনুন।",
+  "That version was brought back as a new version. The earlier ones are all still in the list.": "সংস্করণটি নতুন সংস্করণ হিসেবে ফিরিয়ে আনা হয়েছে। আগের সংস্করণগুলো তালিকায় আগের মতোই আছে।",
+  "This Note changed on another device. Reload it, then try again.": "এই নোটটি অন্য ডিভাইসে বদলে গেছে। পুনরায় লোড করে আবার চেষ্টা করুন।",
+  "Loading versions…": "সংস্করণ লোড হচ্ছে…",
+  "Could not load the versions. Try again in a moment.": "সংস্করণগুলো লোড করা যায়নি। একটু পরে আবার চেষ্টা করুন।",
+  // S12 (#562): the Note editor's new buttons, panel and heading controls.
+  "Formatting": "ফরম্যাটিং",
+  "Checklist": "চেকলিস্ট",
+  "Quote": "উদ্ধৃতি",
+  "Table": "টেবিল",
+  "Text colour": "লেখার রং",
+  "Highlight": "হাইলাইট",
+  "Align left": "বামে সাজান",
+  "Align centre": "মাঝে সাজান",
+  "Align right": "ডানে সাজান",
+  "Redo": "আবার করুন",
+  "Navy": "গাঢ় নীল",
+  "Brown": "বাদামি",
+  "Yellow": "হলুদ",
+  "Light green": "হালকা সবুজ",
+  "Light blue": "হালকা নীল",
+  "Lavender": "ল্যাভেন্ডার",
+  "Web address": "ওয়েব ঠিকানা",
+  "Remove link": "লিংক সরান",
+  "Rows": "সারি",
+  "Columns": "কলাম",
+  "Insert table": "টেবিল বসান",
+  "Add row": "সারি যোগ করুন",
+  "Remove row": "সারি সরান",
+  "Add column": "কলাম যোগ করুন",
+  "Remove column": "কলাম সরান",
+  "Fold this section": "এই অংশ গুটিয়ে নিন",
+  "Open this section": "এই অংশ খুলুন",
+  "Move this section (drag, or use the up and down arrow keys)": "এই অংশ সরান (টেনে আনুন, বা ওপর-নিচ তীর কী ব্যবহার করুন)",
+  "Use a web address that starts with http://, https:// or mailto:": "http://, https:// বা mailto: দিয়ে শুরু হওয়া ওয়েব ঠিকানা দিন",
+  "Put the cursor inside a link first.": "আগে কার্সার একটি লিংকের ভেতরে রাখুন।",
+  "Choose 1 to 20 rows and 1 to 8 columns.": "১ থেকে ২০টি সারি এবং ১ থেকে ৮টি কলাম বেছে নিন।",
+  // Siyagah round 14 (decision 66, #566): Pin, Favourite, Archive, Finalise and links between Notes.
+  "Pin": "পিন করুন",
+  "Unpin": "পিন সরান",
+  "Pinned": "পিন করা",
+  "Favourite": "প্রিয়",
+  "Favourites": "প্রিয়গুলো",
+  "Remove from Favourites": "প্রিয় থেকে সরান",
+  "Bring back from Archive": "সংরক্ষণাগার থেকে ফিরিয়ে আনুন",
+  "Bring back": "ফিরিয়ে আনুন",
+  "Finalise": "চূড়ান্ত করুন",
+  "Finalised": "চূড়ান্ত",
+  "Un-finalise": "চূড়ান্ত অবস্থা তুলুন",
+  "Link to a Note…": "অন্য নোটের সাথে লিংক করুন…",
+  "Link to a Note": "অন্য নোটের সাথে লিংক",
+  "Links": "লিংক",
+  "Linked from": "যেসব নোট থেকে লিংক",
+  "Remove this link": "এই লিংক সরান",
+  "Search your Notes": "আপনার নোট খুঁজুন",
+  "No Note matches that search.": "এই খোঁজে কোনো নোট মেলেনি।",
+  "No archived Notes.": "কোনো সংরক্ষণাগারের নোট নেই।",
+  "No favourite Notes yet.": "এখনও কোনো প্রিয় নোট নেই।",
+  "A Note can't link to itself.": "একটি নোট নিজের সাথে লিংক করতে পারে না।",
+  "Links switch on once the new Firebase Rules are published.": "নতুন ফায়ারবেস নিয়ম প্রকাশিত হলেই লিংক চালু হবে।",
+  "Pin, Favourite, Archive, Finalise and links switch on once the new Firebase Rules are published.": "নতুন ফায়ারবেস নিয়ম প্রকাশিত হলেই পিন, প্রিয়, সংরক্ষণাগার, চূড়ান্ত করা ও লিংক চালু হবে।",
+  "This Note is finalised, so it can't be edited. Un-finalise it from the ⋯ menu first.": "এই নোট চূড়ান্ত করা হয়েছে, তাই সম্পাদনা করা যাবে না। আগে ⋯ মেনু থেকে চূড়ান্ত অবস্থা তুলুন।",
+  "This Note is finalised. Un-finalise it from the ⋯ menu first.": "এই নোট চূড়ান্ত করা হয়েছে। আগে ⋯ মেনু থেকে চূড়ান্ত অবস্থা তুলুন।",
+  '"{title}" is back in its folders.': "\"{title}\" আবার তার ফোল্ডারে ফিরেছে।",
+  "Pinned Notes": "পিন করা নোট",
+  "Close the pinned Notes": "পিন করা নোট বন্ধ করুন",
+  "Nothing pinned yet. Pin a Note from its ⋯ menu.": "এখনো কিছু পিন করা হয়নি। নোটের ⋯ মেনু থেকে পিন করুন।",
+  "No Notes here yet.": "এখানে এখনো কোনো নোট নেই।",
+  "Open as a window": "জানালা হিসেবে খুলুন",
+  "Smaller": "ছোট করুন",
+  "Fill the screen": "পুরো পর্দা জুড়ে",
+  "Put back in the page": "পাতায় ফিরিয়ে দিন",
+  "Drag to resize the panels": "প্যানেলের মাপ বদলাতে টানুন",
+  "Bigger text": "বড় লেখা",
+  "Mark done": "সম্পন্ন চিহ্ন দিন",
+  "Heading 4": "শিরোনাম ৪",
+  "Normal text": "সাধারণ লেখা",
+  "Raise the heading (Ctrl+[)": "শিরোনাম উপরের স্তরে নিন (Ctrl+[)",
+  "Lower the heading (Ctrl+])": "শিরোনাম নিচের স্তরে নিন (Ctrl+])",
+  "Justify": "দুই পাশে সমান",
+  "Spacing": "ফাঁকা জায়গা",
+  "Divider line": "বিভাজক রেখা",
+  "Box around the paragraph": "অনুচ্ছেদের চারপাশে বাক্স",
+  "Line spacing": "লাইনের মাঝে ফাঁক",
+  "Space after a paragraph": "অনুচ্ছেদের পরে ফাঁক",
+  "Tight": "ঘন",
+  "Roomy": "প্রশস্ত",
+  "Double": "দ্বিগুণ",
+  "Small": "ছোট",
+  "Large": "বড়",
+  "Put the cursor in a heading first.": "আগে কার্সর একটি শিরোনামে রাখুন।",
+  "Select some text first.": "আগে কিছু লেখা বেছে নিন।",
+  "Put the cursor in a paragraph first.": "আগে কার্সর একটি অনুচ্ছেদে রাখুন।",
+  // Note-pane round 2 (5 Oct 2026, items 14-20): Rename, Make a copy, Copy section, tag chips, Delete asks first.
+  "Make a copy": "একটি কপি বানান",
+  "Show every Note with this tag": "এই ট্যাগের সব নোট দেখুন",
+  "Renamed to \"{title}\".": "নতুন নাম \"{title}\"।",
+  "Section copied.": "অংশটি কপি হয়েছে।",
+  "Could not copy. Select the text and copy it yourself.": "কপি করা গেল না। লেখাটি বেছে নিয়ে নিজে কপি করুন।",
+  "Copy section": "অংশটি কপি করুন",
+  "Copy section with heading": "শিরোনামসহ অংশটি কপি করুন",
+  "{title} (copy)": "{title} (কপি)",
+  "A copy was made: \"{title}\".": "একটি কপি তৈরি হয়েছে: \"{title}\"।",
+  "Delete \"{title}\"?": "\"{title}\" মুছবেন?",
+  "Are you sure? \"{title}\" goes to 🗑 Trash, and you can restore it from there.": "আপনি কি নিশ্চিত? \"{title}\" 🗑 ট্র্যাশে যাবে, আর সেখান থেকে ফিরিয়ে আনতে পারবেন।",
+  // 5 Oct 2026: bookmark marks, last-act times, ← Back; the Bismillah never named "Ayah".
+  "Hide times": "সময় লুকান",
+  "Show times": "সময় দেখান",
+  "Hide the times": "বুকমার্কের সময় লুকান",
+  "Show the times": "বুকমার্কের সময় দেখান",
+  "Back to {page}": "ফিরে যান: {page}",
+  "← Back": "← ফিরে যান",
+  "Make the wheel bigger or smaller": "চাকাটি বড় বা ছোট করুন",
+  "the previous page": "আগের পৃষ্ঠা",
+  "The time this bookmark was opened was not saved: {error}": "এই বুকমার্ক খোলার সময় সংরক্ষণ হয়নি: {error}",
+  "Surah {surah}, Bismillah": "সূরা {surah}, বিসমিল্লাহ",
+  "Bismillah — Surah {name}": "বিসমিল্লাহ — সূরা {name}",
+  "Surah {surah} — Bismillah": "সূরা {surah} — বিসমিল্লাহ",
+  "Record for: {names}": "যার জন্য লিপিবদ্ধ: {names}",
+  "Recorded for {names}.": "{names}-এর জন্য লিপিবদ্ধ হয়েছে।",
+  // Note-pane round 3 (items 21-27).
+  "This Note has no headings yet.": "এই নোটে এখনো কোনো শিরোনাম নেই।",
+  "Open in its own window": "আলাদা উইন্ডোতে খুলুন",
+  "Open in its own window (Ctrl+Shift+P)": "আলাদা উইন্ডোতে খুলুন (Ctrl+Shift+P)",
+  "Put back in the pane": "প্যানে ফিরিয়ে আনুন",
+  "Close all windows (Ctrl+Shift+X)": "সব উইন্ডো বন্ধ করুন (Ctrl+Shift+X)",
+  "Close all ({n})": "সব বন্ধ করুন ({n})",
+  // Note-pane round 4 (items 28-33).
+  "Headings": "শিরোনাম",
+  "Paragraph": "অনুচ্ছেদ",
+  "Insert": "যোগ করুন",
+  "No colour": "কোনো রং নয়",
+  "No highlight": "কোনো হাইলাইট নয়",
+  "Paste as": "যেভাবে পেস্ট করবেন",
+  "Paste the web address as": "ওয়েব ঠিকানাটি পেস্ট করুন",
+  "The pasted text has formatting": "পেস্ট করা লেখায় ফরম্যাটিং আছে",
+  "A link": "লিংক হিসেবে",
+  "Keep the formatting": "ফরম্যাটিং রাখুন",
+  "Plain text": "সাধারণ লেখা হিসেবে",
+  "Total of this column": "এই কলামের মোট",
+  "Sort by this column": "এই কলাম অনুযায়ী সাজান",
+  "This column has no numbers to add up.": "এই কলামে যোগ করার মতো কোনো সংখ্যা নেই।",
+  "Linked to \"{title}\".": "\"{title}\"-এর সাথে লিংক হয়েছে।",
+  // 6 Oct 2026 (W2) -- pop out a word or an Ayah on the Writing sheet.
+  "Tap a word to pop it out": "আলাদা করে দেখতে একটি শব্দে ট্যাপ করুন",
+  "Word": "শব্দ",
+  "Smaller letters": "অক্ষর ছোট করুন",
+  "Bigger letters": "অক্ষর বড় করুন",
+  "Bigger window": "উইন্ডো বড় করুন",
+  "Exit full screen": "পূর্ণ স্ক্রিন থেকে বেরিয়ে আসুন",
+  "More paper": "আরও কাগজ",
+  "Lines": "লাইন",
+  // Architect review (7 Oct 2026): the short forms fit a 320px phone; "Lines" stays the box's spoken name.
+  "Trace over": "উপর দিয়ে লিখতে",
+  "Blank lines": "খালি লাইন",
+  "Smaller window": "উইন্ডো ছোট করুন",
+  "Word or Ayah": "শব্দ বা আয়াত",
+  // Note-pane Part C1 (6 Oct 2026): annotations and heading status badges.
+  "Comment on the selected text": "বাছাই করা লেখায় মন্তব্য করুন",
+  "Add comment": "মন্তব্য যোগ করুন",
+  "Type the comment first.": "আগে মন্তব্যটি লিখুন।",
+  "Select text within one paragraph.": "একটি অনুচ্ছেদের ভেতরের লেখা বেছে নিন।",
+  "That text already has a comment.": "এই লেখায় আগেই মন্তব্য আছে।",
+  "Comment [{n}] added.": "মন্তব্য [{n}] যোগ হয়েছে।",
+  "This Note is finalised, so it can't be changed. Un-finalise it from the ⋯ menu first.": "এই নোট চূড়ান্ত করা, তাই বদলানো যাবে না। আগে ⋯ মেনু থেকে চূড়ান্ত করা তুলে নিন।",
+  "Finish editing this Note first.": "আগে এই নোটের সম্পাদনা শেষ করুন।",
+  "Annotations": "মন্তব্যসমূহ",
+  "Edit this comment": "এই মন্তব্য সম্পাদনা করুন",
+  "Remove this comment": "এই মন্তব্য সরিয়ে ফেলুন",
+  "Remove this comment? The text stays.": "এই মন্তব্য সরিয়ে ফেলবেন? লেখাটি থেকে যাবে।",
+  "Insert a spreadsheet": "স্প্রেডশিট যোগ করুন",
+  "Spreadsheet": "স্প্রেডশিট",
+  "Spreadsheet tools": "স্প্রেডশিটের সরঞ্জাম",
+  "Divided by zero": "শূন্য দিয়ে ভাগ করা হয়েছে",
+  "A cell this formula points at is missing": "এই সূত্র যে ঘরের কথা বলছে সেটি নেই",
+  "A word in this formula is not a function or a cell": "এই সূত্রের একটি শব্দ কোনো ফাংশন বা ঘর নয়",
+  "A value here is the wrong kind for this formula": "এখানকার একটি মান এই সূত্রের জন্য ঠিক ধরনের নয়",
+  "This formula depends on itself": "এই সূত্র নিজের উপরই নির্ভর করছে",
+  "Number (2 decimals)": "সংখ্যা (দুই দশমিক)",
+  "Percent": "শতাংশ",
+  "Currency": "মুদ্রা",
+  "Date (dd/mm/yyyy)": "তারিখ (দিন/মাস/বছর)",
+  "Open the Note for editing to change the spreadsheet.": "স্প্রেডশিট বদলাতে নোটটি সম্পাদনার জন্য খুলুন।",
+  "Row": "সারি",
+  "Column": "কলাম",
+  "Add a row below": "নিচে একটি সারি যোগ করুন",
+  "Remove the selected row": "বাছাই করা সারি সরান",
+  "Add a column after": "পরে একটি কলাম যোগ করুন",
+  "Remove the selected column": "বাছাই করা কলাম সরান",
+  "Merge": "মেলান",
+  "Merge the selected cells": "বাছাই করা ঘরগুলো মেলান",
+  "Unmerge": "আলাদা করুন",
+  "Filter this column": "এই কলাম ফিল্টার করুন",
+  "Sort": "সাজান",
+  "Sort by this column, smallest first": "এই কলাম ধরে সাজান, ছোট থেকে বড়",
+  "Sort by this column, largest first": "এই কলাম ধরে সাজান, বড় থেকে ছোট",
+  "Fill down": "নিচে ভরুন",
+  "Fill down from the first cell": "প্রথম ঘর থেকে নিচে ভরুন",
+  "Fill right": "ডানে ভরুন",
+  "Fill right from the first cell": "প্রথম ঘর থেকে ডানে ভরুন",
+  "Totals": "মোট",
+  "Add totals under the selected cells": "বাছাই করা ঘরের নিচে মোট যোগ করুন",
+  "Format": "ধরন",
+  "Number format": "সংখ্যার ধরন",
+  "Symbol": "চিহ্ন",
+  "Currency symbol": "মুদ্রার চিহ্ন",
+  "Header row": "শিরোনামের সারি",
+  "Freeze the header row": "শিরোনামের সারি স্থির রাখুন",
+  "Select block": "ঘরের খণ্ড বাছুন",
+  "Select a block: tap, then tap the far corner": "খণ্ড বাছুন: একটি ঘরে চাপুন, তারপর দূরের কোণের ঘরে চাপুন",
+  "Undo in the spreadsheet": "স্প্রেডশিটে ফিরিয়ে নিন",
+  "Remove the spreadsheet": "স্প্রেডশিট সরান",
+  "Filtered": "ফিল্টার করা",
+  "Cell": "ঘর",
+  "Sorting needs the rows to be un-merged first.": "সাজাতে হলে আগে সারিগুলোর মেলানো ঘর আলাদা করতে হবে।",
+  "A spreadsheet holds at most {n} rows.": "একটি স্প্রেডশিটে সর্বোচ্চ {n}টি সারি থাকতে পারে।",
+  "A spreadsheet holds at most {n} columns.": "একটি স্প্রেডশিটে সর্বোচ্চ {n}টি কলাম থাকতে পারে।",
+  "A spreadsheet needs at least one row.": "স্প্রেডশিটে অন্তত একটি সারি থাকতে হবে।",
+  "A spreadsheet needs at least one column.": "স্প্রেডশিটে অন্তত একটি কলাম থাকতে হবে।",
+  "Remove rows": "সারি সরান",
+  "Remove columns": "কলাম সরান",
+  "Remove the selected row(s) and what is in them?": "বাছাই করা সারি(গুলো) ও তাদের ভেতরের লেখা সরাবেন?",
+  "Remove the selected column(s) and what is in them?": "বাছাই করা কলাম(গুলো) ও তাদের ভেতরের লেখা সরাবেন?",
+  "That could not be removed.": "এটি সরানো গেল না।",
+  "Select two or more cells to merge.": "মেলাতে দুই বা তার বেশি ঘর বাছুন।",
+  "The selected cell is not merged.": "বাছাই করা ঘরটি মেলানো নয়।",
+  "Select the cell to copy from and the empty cells after it, then fill.": "যে ঘর থেকে নকল হবে সেটি এবং তার পরের খালি ঘরগুলো বাছুন, তারপর ভরুন।",
+  "Remove this spreadsheet from the Note? 🕘 Versions can bring it back.": "নোট থেকে এই স্প্রেডশিট সরাবেন? 🕘 সংস্করণ থেকে ফিরিয়ে আনা যাবে।",
+  "Nothing to undo in the spreadsheet.": "স্প্রেডশিটে ফিরিয়ে নেওয়ার মতো কিছু নেই।",
+  "Filter column {col}": "{col} কলাম ফিল্টার",
+  "Untick a value to hide its rows.": "কোনো মানের টিক তুললে তার সারিগুলো লুকোবে।",
+  "Show all": "সব দেখান",
+  "(empty)": "(খালি)",
+  "Some pasted cells did not fit and were left out.": "পেস্ট করা কিছু ঘর জায়গা না পাওয়ায় বাদ পড়েছে।",
+  "Insert a spreadsheet: type in a cell, start a formula with =, for example =SUM(A1:A3).": "স্প্রেডশিট যোগ করুন: একটি ঘরে লিখুন, সূত্র শুরু করুন = দিয়ে, যেমন =SUM(A1:A3)।",
+  "Status of this heading": "এই শিরোনামের অবস্থা",
+  "Ongoing": "চলমান",
+  "Under process": "প্রক্রিয়াধীন",
+  "Custom": "নিজের মতো",
+  "Custom…": "নিজের মতো…",
+  "Status label": "অবস্থার নাম",
+  "Badge colour": "ব্যাজের রং",
+  "Type a short label first.": "আগে একটি ছোট নাম লিখুন।",
+  "Set status": "অবস্থা ঠিক করুন",
+  // Note pane Part C3 (decisions 72, 80): settings that follow the person across devices.
+  "Your folded sections could not be saved to your account: {why}": "ভাঁজ করা অংশগুলো আপনার অ্যাকাউন্টে রাখা গেল না: {why}",
+  "That could not be saved to your account: {why}": "এটি আপনার অ্যাকাউন্টে রাখা গেল না: {why}",
+  "My Note tools": "আমার নোটের সরঞ্জাম",
+  "My Note tools…": "আমার নোটের সরঞ্জাম…",
+  "Tabs": "ট্যাব",
+  "Templates": "টেমপ্লেট",
+  "Phrases": "বাক্যাংশ",
+  "Tab name": "ট্যাবের নাম",
+  "Tab colour": "ট্যাবের রং",
+  "Remove this tab": "এই ট্যাব সরান",
+  "Your tabs are the same on every device you sign in on. Removing a tab never removes the Note.": "আপনার ট্যাবগুলো যে ডিভাইসেই সাইন ইন করুন একই থাকে। ট্যাব সরালে নোট কখনো মোছা হয় না।",
+  "No tabs yet.": "এখনও কোনো ট্যাব নেই।",
+  "Add Tab": "ট্যাব যোগ করুন",
+  "Template name": "টেমপ্লেটের নাম",
+  "New note from this": "এটি থেকে নতুন নোট",
+  "Yes, remove this template": "হ্যাঁ, এই টেমপ্লেট সরান",
+  "Keep it": "রেখে দিন",
+  "Remove this template": "এই টেমপ্লেট সরান",
+  "A template is a copy of a Note's text to start new Notes from. Removing one never removes a Note.": "টেমপ্লেট হলো নতুন নোট শুরু করার জন্য একটি নোটের লেখার কপি। টেমপ্লেট সরালে কোনো নোট মোছা হয় না।",
+  "No templates yet.": "এখনও কোনো টেমপ্লেট নেই।",
+  "Save this Note as a template": "এই নোটটি টেমপ্লেট হিসেবে রাখুন",
+  "Phrase": "বাক্যাংশ",
+  "Remove this phrase": "এই বাক্যাংশ সরান",
+  "Tap 📝 in the editing toolbar to put one of these into a Note.": "এগুলোর একটি নোটে বসাতে সম্পাদনার টুলবারে 📝 চাপুন।",
+  "No phrases yet.": "এখনও কোনো বাক্যাংশ নেই।",
+  "New phrase": "নতুন বাক্যাংশ",
+  "Add phrase": "বাক্যাংশ যোগ করুন",
+  "Border colour": "বর্ডারের রং",
+  "Background colour": "পটভূমির রং",
+  "Border": "বর্ডার",
+  "Background": "পটভূমি",
+  "These show on every Note you read, on every device. They are not saved into any Note.": "এগুলো আপনি যে নোটই পড়েন, যে ডিভাইসেই পড়েন, সেখানে দেখায়। কোনো নোটের ভেতরে রাখা হয় না।",
+  "That Note is not available.": "সেই নোটটি পাওয়া যাচ্ছে না।",
+  "That Note is too long to keep as a template (20 KB at most).": "এই নোটটি টেমপ্লেট হিসেবে রাখার জন্য অনেক বড় (সর্বোচ্চ ২০ কিলোবাইট)।",
+  "Saved \"{title}\" as a template.": "“{title}” টেমপ্লেট হিসেবে রাখা হলো।",
+  "Type a phrase first.": "আগে একটি বাক্যাংশ লিখুন।",
+  "A blank Note": "একটি ফাঁকা নোট",
+  "Manage templates…": "টেমপ্লেট সামলান…",
+  "Quick phrases": "দ্রুত বাক্যাংশ",
+  "Edit phrases": "বাক্যাংশ বদলান",
+  // Owner decision 82 (7 Oct 2026) -- Explore: every Approach at once, tap a slice, Back and Previous/Next, Take.
+  "All Approaches": "সব পদ্ধতি",
+  "One Approach": "একটি পদ্ধতি",
+  // "← Back" is defined once, above ("← ফিরে যান"); a second entry here overrode it everywhere from v09.107 (found 8 Oct 2026).
+  "Back to the Whole Quran": "সম্পূর্ণ কুরআনে ফিরুন",
+  "Back to the Surah": "সূরায় ফিরুন",
+  "Previous Surah": "আগের সূরা",
+  "Next Surah": "পরের সূরা",
+  "Previous Surah: {name}": "আগের সূরা: {name}",
+  "Next Surah: {name}": "পরের সূরা: {name}",
+  "Previous Ayah": "আগের আয়াত",
+  "Next Ayah": "পরের আয়াত",
+  "Previous Ayah: {name}": "আগের আয়াত: {name}",
+  "Next Ayah: {name}": "পরের আয়াত: {name}",
+  "All {n} Approaches": "সব {n}টি পদ্ধতি",
+  "{k} of {n} Achieved+": "{n}টির মধ্যে {k}টি অর্জিত+",
+  "{done} of {total} Ayat Achieved or Mastered": "{total}টি আয়াতের মধ্যে {done}টি অর্জিত বা পূর্ণ দক্ষতা",
+  "Every Approach in {surah}": "{surah}-এর প্রতিটি পদ্ধতি",
+  "This Approach in {surah}": "{surah}-এ এই পদ্ধতি",
+  "Every Approach for {ayah}": "{ayah}-এর প্রতিটি পদ্ধতি",
+  "Each slice is one Ayah. Its colours show how many Approaches are at each stage: Mastered on the inside, Not started on the outside. Tap a slice to open that Ayah.": "প্রতিটি অংশ একটি আয়াত। এর রঙ দেখায় কতগুলো পদ্ধতি কোন ধাপে আছে: ভেতরে পূর্ণ দক্ষতা, বাইরে শুরু হয়নি। সেই আয়াত খুলতে একটি অংশে চাপুন।",
+  "Each slice is one Approach for this Ayah. Tap a slice, or Take below, to start it.": "প্রতিটি অংশ এই আয়াতের একটি পদ্ধতি। শুরু করতে একটি অংশে চাপুন, অথবা নিচের গ্রহণে চাপুন।",
+  "Take ▸": "গ্রহণ ▸",
+  "Take {approach}": "{approach} গ্রহণ করুন",
+  "now {status}": "এখন {status}",
+  "Read it": "পড়ুন",
+  "Listen": "শুনুন",
+  "Write it": "লিখুন",
+  "Record your progress for this Ayah": "এই আয়াতের জন্য আপনার অগ্রগতি লিখে রাখুন",
+  "Record your progress for the whole Surah": "পুরো সূরার জন্য আপনার অগ্রগতি লিখে রাখুন",
+  "Could not record this, so nothing was saved. Please try again.": "এটি লেখা যায়নি, তাই কিছু সংরক্ষিত হয়নি। আবার চেষ্টা করুন।",
+  "{approach} recorded as {status}": "{approach} লেখা হলো: {status}",
+  // 8 Oct 2026 (decision 87): whose description a Name's poster shows (asma-descriptions.js).
+  "Poster's": "পোস্টারের", // ?
+  "Suggested": "প্রস্তাবিত", // ?
+  "Madrasah's": "মাদরাসার", // ?
+  "Whose description": "কার বর্ণনা", // ?
+  "From the poster's creator.": "পোস্টার নির্মাতার লেখা।", // ?
+  "A suggestion, written from this Name's Qur'an and Hadith references.": "একটি প্রস্তাব, এই নামের কুরআন ও হাদীসের সূত্র থেকে লেখা।", // ?
+  "The madrasah's own description, saved for everyone.": "মাদরাসার নিজস্ব বর্ণনা, সবার জন্য সংরক্ষিত।", // ?
+  "Edit the madrasah's description": "মাদরাসার বর্ণনা সম্পাদনা করুন", // ?
+  "Start from the text shown, change it, then save. Everyone in the madrasah will see it.": "দেখানো লেখা থেকে শুরু করুন, বদলান, তারপর সংরক্ষণ করুন। মাদরাসার সবাই এটি দেখবে।", // ?
+  "Save for the madrasah": "মাদরাসার জন্য সংরক্ষণ করুন", // ?
+  "Not saved. Check the connection and try again.": "সংরক্ষিত হয়নি। সংযোগ দেখে আবার চেষ্টা করুন।", // ?
+  "Grammar suggestion (computer, to be checked)": "ব্যাকরণের প্রস্তাব (কম্পিউটারের, যাচাই করা হবে)", // ?
+  "Adverb": "ক্রিয়াবিশেষণ", // ?
+  "Particle": "অব্যয়", // ?
+  "Interjection": "আবেগসূচক অব্যয়", // ?
+  // --- 9 Oct 2026: Notes and bookmarks on a dua card
+  "Dua {n} was not found.": "দুআ {n} পাওয়া যায়নি।",
+  // --- 9 Oct 2026: Bangla sweep of the newer screens (issue #677)
+  "View": "দৃশ্য", // ?
+  // --- 9 Oct 2026: Bangla sweep, part 2 (issue #680). The reciter labels already have keys (near the top); the Word
+  // card's reciter ticks now pass through t() so those keys are reached.
+  // The "বাংলা translation" tick (its old key above was never reached: translateStatic() skips any string that already
+  // holds Bangla script) is now <span>বাংলা</span> + this word.
+  "translation": "অনুবাদ",
+  // Sweep part 3 (#684): the other pages. Each key was searched for first; none existed.
+  "Show archived people": "সংরক্ষণাগারে রাখা ব্যক্তিদের দেখান",
+  "No resource added yet for this topic. Add one from the Catalogue page before studying it here.": "এই বিষয়ের জন্য এখনো কোনো উপকরণ যোগ করা হয়নি। এখানে পড়ার আগে ক্যাটালগ পাতা থেকে একটি যোগ করুন।",
+  "{count} routine here not logged today yet.": "এখানকার {count}টি রুটিন আজ এখনো লগ করা হয়নি।",
+  "{count} routines here not logged today yet.": "এখানকার {count}টি রুটিন আজ এখনো লগ করা হয়নি।",
+  "built": "তৈরি হয়েছে",
+  "planned": "পরিকল্পিত",
+  // --- 9 Oct 2026: a Name's cited āyāt written out in Explore (asma-cited-ayat.js)
+  "The āyāt {name} is named in": "যে আয়াতগুলোতে {name} নামটি এসেছে",
+  "Tap a word for its Word card. Words from the Name's root are marked.": "শব্দ কার্ড দেখতে একটি শব্দে চাপুন। নামটির মূল ধাতুর শব্দগুলো চিহ্নিত।",
+  "The hadith {name} is named in": "যে হাদিসগুলোতে {name} নামটি এসেছে",
+  "Open in Hadith →": "হাদিসে খুলুন →",
+  "This hadith's text is not in the app's Hadith library yet.": "এই হাদিসের পাঠ এখনও অ্যাপের হাদিস লাইব্রেরিতে নেই।",
+  "The hadith text could not be loaded right now.": "হাদিসের পাঠ এখন লোড করা যায়নি।",
+  "No translation of this hadith is in the app yet.": "এই হাদিসের কোনো অনুবাদ এখনও অ্যাপে নেই।",
+  "Couldn't load this āyah. Check the connection and open the Name again.": "এই আয়াতটি লোড করা যায়নি। সংযোগ দেখে নামটি আবার খুলুন।",
+  // --- 9 Oct 2026: the About page's feature registry (feature-registry.js), names and 'delivers' lines
+  "Firebase bootstrap": "Firebase বুটস্ট্র্যাপ", // ?
+  "Collection map": "সংগ্রহ মানচিত্র", // ?
+  "Merged security rules (both generations)": "একত্রিত নিরাপত্তা বিধি (উভয় প্রজন্মের)", // ?
+  "Document envelope": "ডকুমেন্ট খাম", // ?
+  "Language-key helpers": "ভাষা-কী সহায়ক ফাংশন", // ?
+  "Feature registry": "ফিচার রেজিস্ট্রি", // ?
+  "Write-failure surface": "লেখা ব্যর্থ হওয়ার প্রদর্শন", // ?
+  "Admin self-check screen": "অ্যাডমিন স্ব-পরীক্ষা পর্দা", // ?
+  "Batched envelope writes": "ব্যাচে খাম লেখা", // ?
+  "Identity module (tenant + owner bootstrap)": "পরিচয় মডিউল (টেন্যান্ট + মালিক বুটস্ট্র্যাপ)", // ?
+  "Onboarding screen + Layer-0 security rules": "অনবোর্ডিং পর্দা + স্তর-০ নিরাপত্তা বিধি", // ?
+  "Owner adds people (incl. managed/child accounts)": "মালিক মানুষ যোগ করেন (পরিচালিত/শিশু অ্যাকাউন্টসহ)", // ?
+  "Invites with quota": "কোটাসহ আমন্ত্রণ", // ?
+  "Invite acceptance": "আমন্ত্রণ গ্রহণ", // ?
+  "Tenant/role switcher + View as": "টেন্যান্ট/ভূমিকা পরিবর্তক + এভাবে দেখুন", // ?
+  "Study Mode handover lock": "অধ্যয়ন মোড হস্তান্তর তালা", // ?
+  "Self-check extended for Layer 0": "স্তর ০-এর জন্য সম্প্রসারিত স্ব-পরীক্ষা", // ?
+  "Module registry (platform-wide, 7 modules)": "মডিউল রেজিস্ট্রি (প্ল্যাটফর্মজুড়ে, ৭টি মডিউল)", // ?
+  "Subject tree + ancestorIds + subjectTemplates (platform master list)": "বিষয় বৃক্ষ + ancestorIds + subjectTemplates (প্ল্যাটফর্মের মূল তালিকা)", // ?
+  "Subject copy-on-write (tenant seeding from templates, edited flag)": "বিষয় কপি-অন-রাইট (টেমপ্লেট থেকে টেন্যান্ট সিডিং, সম্পাদিত চিহ্ন)", // ?
+  "Trackables — the Quran Approaches in their sections, incl. Guide tab + panels": "ট্র্যাকেবল — কুরআনের পদ্ধতিগুলো তাদের অংশসহ, গাইড ট্যাব + প্যানেলসহ", // ?
+  "Ladders + levels (schema + tenant-authored CRUD)": "সিঁড়ি + স্তর (স্কিমা + টেন্যান্ট-রচিত CRUD)", // ?
+  "Catalogue admin screen (catalogue.html) + Layer 1 security rules": "ক্যাটালগ অ্যাডমিন পর্দা (catalogue.html) + স্তর ১ নিরাপত্তা বিধি", // ?
+  "Self-check extended for Layer 1": "স্তর ১-এর জন্য সম্প্রসারিত স্ব-পরীক্ষা", // ?
+  "Subject re-parenting (move a node's level, cascades ancestorIds)": "বিষয়ের পুনঃঅভিভাবক নির্ধারণ (নোডের স্তর সরানো, ancestorIds ধাপে ধাপে বদলায়)", // ?
+  "Archive/Restore for subjects, trackables, ladders, levels (I4/D6 stand-in for delete)": "বিষয়, ট্র্যাকেবল, সিঁড়ি, স্তরের আর্কাইভ/পুনরুদ্ধার (মুছে ফেলার বদলে — I4/D6)", // ?
+  "Unit keys (all 12 namespaces) + the 6 progress statuses + I7 Not-Applicable exclusion helper": "ইউনিট কী (১২টি নেমস্পেস) + ৬টি অগ্রগতির অবস্থা + I7 প্রযোজ্য নয় বাদ দেওয়ার সহায়ক", // ?
+  "Domain tags (domains collection, D12 — supports records.entries.domainIds[])": "ডোমেইন ট্যাগ (domains সংগ্রহ, D12 — records.entries.domainIds[] সমর্থন করে)", // ?
+  "Records: chunked storage (one doc per surah/subject) + claim a status": "রেকর্ড: খণ্ডিত সংরক্ষণ (প্রতি সূরা/বিষয়ে একটি ডকুমেন্ট) + অবস্থা দাবি করা", // ?
+  "Confirmation rule — computed per person, per-subject override": "নিশ্চিতকরণ নিয়ম — প্রতি ব্যক্তির জন্য গণনা, প্রতি বিষয়ে পরিবর্তনযোগ্য", // ?
+  "Confirm / return an entry (I6 — confirmation state frozen when marked)": "এন্ট্রি নিশ্চিত / ফেরত (I6 — নিশ্চিতকরণের অবস্থা চিহ্নিত করার সময় স্থির হয়ে যায়)", // ?
+  "Bulk confirm — a surah/subject chunk, or a week": "একসঙ্গে নিশ্চিত করা — একটি সূরা/বিষয়ের খণ্ড, বা একটি সপ্তাহ", // ?
+  "Activity — one document per week, append-only, viaProgramId/viaSessionId (I3)": "কার্যক্রম — প্রতি সপ্তাহে একটি ডকুমেন্ট, শুধু যোগ করা যায়, viaProgramId/viaSessionId (I3)", // ?
+  "Records/activity/domains screen (records.html) + Layer 2 security rules": "রেকর্ড/কার্যক্রম/ডোমেইন পর্দা (records.html) + স্তর ২ নিরাপত্তা বিধি", // ?
+  "QuranRevival core -- Quran static data layer (all 114 surahs pulled), ayah renderer, Mastery Wheel, Way modal, quranrevival.html wiring": "QuranRevival মূল অংশ -- কুরআনের স্থির তথ্যস্তর (সব ১১৪ সূরা আনা হয়েছে), আয়াত রেন্ডারার, দক্ষতা চক্র, পদ্ধতি মোডাল, quranrevival.html সংযোগ", // ?
+  "Tajweed colour toggle on the Arabic text panel": "আরবি পাঠ প্যানেলে তাজবিদের রঙ চালু/বন্ধ", // ?
+  "Word-by-word panel + root/derivative panel (two panels, per Architecture)": "শব্দে শব্দে প্যানেল + মূল/উৎপন্ন শব্দ প্যানেল (স্থাপত্য অনুযায়ী দুটি প্যানেল)", // ?
+  "Audio playback + loop -- 3 reciters (Basfar Arabic per-ayah, Ibraheem Walk English per-ayah, Kevan Brighting English whole-surah, Shareef Bayezid Mahmud Bangla segmented)": "অডিও চালানো + পুনরাবৃত্তি -- ৩ জন তিলাওয়াতকারী (বাসফার আরবি প্রতি আয়াত, ইব্রাহীম ওয়াক ইংরেজি প্রতি আয়াত, কেভান ব্রাইটিং ইংরেজি পুরো সূরা, শরিফ বায়েজিদ মাহমুদ বাংলা খণ্ডিত)", // ?
+  "Bangla Quran translation, alongside English, across text + word-by-word panels": "ইংরেজির পাশে বাংলা কুরআন অনুবাদ, পাঠ + শব্দে শব্দে প্যানেলজুড়ে", // ?
+  "Study Unit picker -- Range/Whole Surah/Ruku'/Juz/Page tracking (previously ayah-only), correct per-type chunking and claim/confirm via the existing Way modal shell": "অধ্যয়ন ইউনিট বাছাইকারী -- পরিসর/পুরো সূরা/রুকু/পারা/পৃষ্ঠা ট্র্যাকিং (আগে শুধু আয়াত ছিল), সঠিক খণ্ডায়ন এবং বিদ্যমান পদ্ধতি মোডাল কাঠামোর মাধ্যমে দাবি/নিশ্চিতকরণ", // ?
+  "Explore navigator -- whole-Quran Quran-wheel (30 Juz segments) built on direct Juz-level claims, click-to-jump": "এক্সপ্লোর নেভিগেটর -- সমগ্র কুরআনের চক্র (৩০টি পারা অংশ), সরাসরি পারা-স্তরের দাবির ওপর তৈরি, চাপ দিয়ে যাওয়া যায়", // ?
+  "Multi-reciter drill/repeat playback -- select several reciters, Repeat count (1/2/3/5/10x), Repeat mode (Each Ayah / Whole Unit)": "একাধিক তিলাওয়াতকারীর অনুশীলন/পুনরাবৃত্তি চালানো -- কয়েকজন তিলাওয়াতকারী বাছাই, পুনরাবৃত্তির সংখ্যা (১/২/৩/৫/১০ বার), পুনরাবৃত্তির ধরন (প্রতি আয়াত / পুরো ইউনিট)", // ?
+  "Tenant-scoped global banner (legacy appSettings/global parity), owner/prime-editable": "টেন্যান্ট-নির্দিষ্ট সর্বজনীন ব্যানার (পুরনো appSettings/global সমতা), মালিক/প্রাইম সম্পাদনযোগ্য", // ?
+  "Additive migration tool (app/migrate.html) -- old people/invites/studyProgress -> new schema, preview-before-commit, idempotent re-run, old collections never written to": "সংযোজনমূলক মাইগ্রেশন টুল (app/migrate.html) -- পুরনো people/invites/studyProgress -> নতুন স্কিমা, সংরক্ষণের আগে পূর্বদর্শন, পুনরায় চালালে একই ফল, পুরনো সংগ্রহে কখনো লেখা হয় না", // ?
+  "Migration & parity": "মাইগ্রেশন ও সমতা", // ?
+  "B1 traced (found already resolved, Phase 0); backfill of stranded summaries (B2 -- closed, owner confirmed no real data at risk); parity checklist -- delivered, see PHASE-5-STATUS.md. Remaining: owner click-through verification of F-048/F-052/F-053/F-061/F-062": "B1 খুঁজে দেখা হয়েছে (ইতিমধ্যে সমাধান হয়ে ছিল, ধাপ ০); আটকে থাকা সারাংশের ব্যাকফিল (B2 -- বন্ধ, মালিক নিশ্চিত করেছেন ঝুঁকিতে কোনো আসল তথ্য নেই); সমতা চেকলিস্ট -- সম্পন্ন, PHASE-5-STATUS.md দেখুন। বাকি: F-048/F-052/F-053/F-061/F-062 মালিকের ক্লিক-যাচাই", // ?
+  "Deen Study & topic renderer": "দ্বীন অধ্যয়ন ও বিষয় রেন্ডারার", // ?
+  "Topic renderer, Deen subjects, Monitor data migrated onto Layer 2, old sync bridge deleted": "বিষয় রেন্ডারার, দ্বীনি বিষয়সমূহ, স্তর ২-এ আনা মনিটর তথ্য, পুরনো সিঙ্ক ব্রিজ মুছে ফেলা", // ?
+  "Bookmarks, programs, routines": "বুকমার্ক, প্রোগ্রাম, রুটিন", // ?
+  "Bookmarks (auto-resume + named, grouped by program), Continue strip, course offers with routines, LDOG module, routine renderer, in-app reminders": "বুকমার্ক (স্বয়ংক্রিয় পুনরারম্ভ + নামযুক্ত, প্রোগ্রাম অনুযায়ী সাজানো), চালিয়ে যান স্ট্রিপ, রুটিনসহ কোর্স অফার, LDOG মডিউল, রুটিন রেন্ডারার, অ্যাপের ভেতরে রিমাইন্ডার", // ?
+  "Monitor & reports": "মনিটর ও রিপোর্ট", // ?
+  "Two report shapes -- levels for subjects, streaks for programs. Adaptive tabs, filters computed from data, CSV, print, editable labels, export-everything": "দুই ধরনের রিপোর্ট -- বিষয়ের জন্য স্তর, প্রোগ্রামের জন্য ধারাবাহিকতা। অভিযোজিত ট্যাব, তথ্য থেকে গণনা করা ফিল্টার, CSV, প্রিন্ট, সম্পাদনযোগ্য লেবেল, সবকিছু এক্সপোর্ট", // ?
+  "Homework & feedback": "হোমওয়ার্ক ও মতামত", // ?
+  "Assignments to person or class, numeric scores, confirm-with-comment, parent copy, Admin copy, teaching notes": "ব্যক্তি বা ক্লাসকে কাজ দেওয়া, সংখ্যাসূচক নম্বর, মন্তব্যসহ নিশ্চিতকরণ, অভিভাবকের কপি, অ্যাডমিনের কপি, শিক্ষাদান নোট", // ?
+  "Classes & provider": "ক্লাস ও প্রদানকারী", // ?
+  "Classes, enrolments, prime role (already wired since Phase 1/7/9, audited not rebuilt), real per-student teacher scoping via classes + teacherStudentLinks (replacing blanket tenant-wide teacher access), class-wide bulk confirm. See PHASE-10-STATUS.md -- homework/assignments is a flagged, deliberate exception still tenant-wide for teachers, not full 'safeguarding at scale' yet.": "ক্লাস, ভর্তি, প্রাইম ভূমিকা (ধাপ ১/৭/৯ থেকে ইতিমধ্যে সংযুক্ত, যাচাই করা হয়েছে, নতুন করে বানানো হয়নি), ক্লাস + teacherStudentLinks-এর মাধ্যমে প্রকৃত প্রতি-শিক্ষার্থী শিক্ষক সীমাবদ্ধতা (টেন্যান্ট-জুড়ে শিক্ষকের সাধারণ প্রবেশাধিকারের বদলে), ক্লাসজুড়ে একসঙ্গে নিশ্চিতকরণ। PHASE-10-STATUS.md দেখুন -- হোমওয়ার্ক/কাজ বণ্টন একটি চিহ্নিত, ইচ্ছাকৃত ব্যতিক্রম, শিক্ষকদের জন্য এখনও টেন্যান্ট-জুড়ে, এখনো পূর্ণ 'বড় পরিসরে সুরক্ষা' নয়।", // ?
+  "Curriculum, grades & resources": "পাঠ্যক্রম, গ্রেড ও সম্পদ", // ?
+  "Curriculum units (cross-subject, curriculum.js) + curriculum plan (4 terms x 10 weeks, class or person context, I8 content/schedule separation), grades as dated personLevels history per ladder (never overwritten -- a correction is a new dated row, grades.js), resources browse/create screen wired to curriculum units (resources.js listResources/setResourceStatus, new). New page curriculum.html, owner/prime only. See PHASE-11-STATUS.md.": "পাঠ্যক্রম ইউনিট (বিষয়জুড়ে, curriculum.js) + পাঠ্যক্রম পরিকল্পনা (৪ টার্ম x ১০ সপ্তাহ, ক্লাস বা ব্যক্তির প্রসঙ্গ, I8 বিষয়বস্তু/সময়সূচি পৃথকীকরণ), প্রতি সিঁড়িতে তারিখযুক্ত personLevels ইতিহাস হিসেবে গ্রেড (কখনো ওপরে লেখা হয় না -- সংশোধন মানে নতুন তারিখযুক্ত সারি, grades.js), পাঠ্যক্রম ইউনিটের সাথে যুক্ত সম্পদ ব্রাউজ/তৈরি পর্দা (resources.js listResources/setResourceStatus, নতুন)। নতুন পাতা curriculum.html, শুধু মালিক/প্রাইম। PHASE-11-STATUS.md দেখুন।", // ?
+  "Remaining modules": "অবশিষ্ট মডিউল", // ?
+  "Arabic, General Study, Health, Nature-Life, Hadith -- all as data on existing renderers. Delivered ahead of its own numbering: the topic renderer reached Arabic/Hadith/General Study/Nature-Life in Phase 6 round 2, and Health got its own module + routine renderer in Phase 7 round 1 -- see PHASE-6-STATUS.md and PHASE-7-STATUS.md. This flag was stale (same kind of drift Phase 10's build log already flagged for Phases 6-9's own entries), corrected here, no new code needed.": "আরবি, সাধারণ অধ্যয়ন, স্বাস্থ্য, প্রকৃতি-জীবন, হাদিস -- সবই বিদ্যমান রেন্ডারারের তথ্য হিসেবে। নিজস্ব ক্রমের আগেই সম্পন্ন: ধাপ ৬-এর দ্বিতীয় পর্বে বিষয় রেন্ডারার আরবি/হাদিস/সাধারণ অধ্যয়ন/প্রকৃতি-জীবনে পৌঁছেছে, আর ধাপ ৭-এর প্রথম পর্বে স্বাস্থ্য পেয়েছে নিজস্ব মডিউল + রুটিন রেন্ডারার -- PHASE-6-STATUS.md ও PHASE-7-STATUS.md দেখুন। এই চিহ্নটি পুরনো হয়ে গিয়েছিল (ধাপ ৬-৯-এর নিজস্ব এন্ট্রি নিয়ে ধাপ ১০-এর বিল্ড লগে যেমন চিহ্নিত হয়েছিল, একই ধরনের অমিল), এখানে সংশোধন করা হয়েছে, নতুন কোড লাগেনি।", // ?
+  "Full messaging & extras": "পূর্ণ বার্তা আদান-প্রদান ও অতিরিক্ত", // ?
+  "Threads, per-person inbox, unread counts, resolved/open, Asma ul Husna screensaver + study units, About screen reading the feature registry": "থ্রেড, প্রতি-ব্যক্তি ইনবক্স, অপঠিত সংখ্যা, সমাধান/খোলা, আসমাউল হুসনা স্ক্রিনসেভার + অধ্যয়ন ইউনিট, ফিচার রেজিস্ট্রি পড়া পরিচিতি পর্দা", // ?
+  "Operations": "কার্যক্রম পরিচালনা", // ?
+  "4A calendar, 4B timetable, 4C sessions (classId optional), 4D attendance (students and teachers), 4E availability and cover, 4F notices, 4G admissions, 4H staff records": "৪A ক্যালেন্ডার, ৪B সময়সূচি, ৪C সেশন (classId ঐচ্ছিক), ৪D উপস্থিতি (শিক্ষার্থী ও শিক্ষক), ৪E প্রাপ্যতা ও বদলি, ৪F নোটিশ, ৪G ভর্তি, ৪H কর্মী রেকর্ড", // ?
+  // --- 9 Oct 2026: a listening bookmark resumes (v09.146)
+  "Continue listening": "শোনা চালিয়ে যান",
+  // --- 9 Oct 2026: the Āyah card's 📖 button renamed (decision 94)
+  "Full text": "পূর্ণ পাঠ",
+  "See this āyah's full text": "এই আয়াতের পূর্ণ পাঠ দেখুন",
+};

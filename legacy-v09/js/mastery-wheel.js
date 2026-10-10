@@ -1,0 +1,786 @@
+// F-047 — The Mastery Wheel: QuranRevival's landing page (never the
+// platform's — Architecture s5).
+//
+// I2: pure renderer — takes statuses in, SVG/HTML out, plus click
+// callbacks. Never reads records.js itself.
+//
+// Phase 5 round 12 — restyled to match the old app's (index.html) dark
+// navy/gold "progress-ring" wheel: thin ring (rInner = rOuter*0.5, same
+// ratio index.html's renderProgressRingWheel used), a small number just
+// outside each segment rotated to read radially (index.html's
+// ringNumberRotation, re-derived here since it's plain trig, not copied),
+// and a dark centre disc with a two-line label. index.html itself is
+// reference-only — never imported from directly.
+//
+// Phase 5 round 13 — axis corrected to match the old app's real Mastery
+// Wheel: quranrevival.html's Study-page wheel now uses renderScopedWheel
+// with one segment per APPROACH for the current ayah (old app's actual
+// axis — index.html:4932, `state.ways.map`), Arabic ayah text in the
+// centre disc (index.html's centerArabic). renderMasteryWheel below (one
+// segment per AYAH for one Approach) is kept as-is, still exercised by
+// quranrevival-render-test.html — it's the shape the old app's own
+// Explore/long-surah wheel uses (renderSurahWheelExplore's Progress-ring
+// branch), earmarked for whenever that drill-down gets built, not dead
+// code.
+
+// Six on the ramp, Not Applicable off it entirely (I7, Architecture s5 —
+// "Achieved and Mastered must be visibly distinct: adjacent colours are
+// indistinguishable on a small wheel segment"). Mastered is a different hue
+// (emerald, not a darker blue) rather than one more step up the same ramp,
+// so the two are never confusable on a thin wheel segment.
+//
+// Retinted for the dark navy card this wheel now sits on (index.html's own
+// wheel lived on the same dark background from day one, so this is the
+// wheel catching up to that, not a new design language): the light-grey
+// "not started" that read as "barely there" against a white page would read
+// as a bright, lit-up segment against navy — inverted to a dim slate that
+// recedes into the card instead.
+export const STATUS_COLORS = Object.freeze({
+  not_applicable: "url(#naHatch)",
+  not_started: "#333f5c",
+  learning: "#8a6a35",
+  practising: "#C9A24B",
+  achieved: "#5b84c4",
+  mastered: "#3fae74",
+});
+
+/**
+ * Issue #206 -- linear interpolation between two hex colours, used ONLY for
+ * the Word-by-Word wedge-colouring ramp. Reuses this file's own two real
+ * colours (not_started's slate, mastered's green) as the ramp's ends rather
+ * than inventing new ones, exactly as the Owner's approved demo did. `ratio`
+ * is clamped to [0, 1] so a caller passing an out-of-range figure never
+ * produces an invalid colour.
+ */
+export function wordTotalRampColor(ratio, { from = STATUS_COLORS.not_started, to = STATUS_COLORS.mastered } = {}) {
+  const clamp = Math.max(0, Math.min(1, Number(ratio) || 0));
+  const hex = (c) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16));
+  const [r1, g1, b1] = hex(from);
+  const [r2, g2, b2] = hex(to);
+  const mix = (a, b) => Math.round(a + (b - a) * clamp);
+  const toHex = (n) => n.toString(16).padStart(2, "0");
+  return `#${toHex(mix(r1, r2))}${toHex(mix(g1, g2))}${toHex(mix(b1, b2))}`;
+}
+
+export function polarToCartesian(cx, cy, r, angleDeg) {
+  const rad = ((angleDeg - 90) * Math.PI) / 180;
+  return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+}
+
+export function segmentPath(cx, cy, rInner, rOuter, startAngle, endAngle) {
+  const p1 = polarToCartesian(cx, cy, rOuter, startAngle);
+  const p2 = polarToCartesian(cx, cy, rOuter, endAngle);
+  const p3 = polarToCartesian(cx, cy, rInner, endAngle);
+  const p4 = polarToCartesian(cx, cy, rInner, startAngle);
+  const largeArc = endAngle - startAngle > 180 ? 1 : 0;
+  return [
+    `M ${p1.x} ${p1.y}`,
+    `A ${rOuter} ${rOuter} 0 ${largeArc} 1 ${p2.x} ${p2.y}`,
+    `L ${p3.x} ${p3.y}`,
+    `A ${rInner} ${rInner} 0 ${largeArc} 0 ${p4.x} ${p4.y}`,
+    "Z",
+  ].join(" ");
+}
+
+/** Keeps a segment's outside number reading right-side-up on the left half of the ring instead of upside-down. Same formula as index.html's ringNumberRotation, re-derived against polarToCartesian's own angle convention (0deg = 12 o'clock, clockwise). */
+function ringNumberRotation(angleDeg) {
+  let rot = angleDeg - 90;
+  rot = ((rot % 360) + 360) % 360;
+  if (rot >= 90 && rot <= 270) rot += 180;
+  return rot;
+}
+
+/** Owner decision 84 (7 Oct 2026) -- Explore's Ayah numbers: upright, at least `minPx` on screen, never overlapping.
+ *  Strictly OPT-IN (`uprightNumbers: { minPx }` on a renderer); every caller that omits it renders byte-for-byte as
+ *  before. This only PLACES the labels; fitUprightNumbers(svg) must run once the svg is in the document, because
+ *  the real box of a label (getBBox) and the real screen scale are only known there. */
+export function uprightNumbersMarkup(nums, { cx, cy, r0, minPx }) {
+  const texts = nums
+    .filter(({ text }) => String(text ?? "").trim() !== "") // a unit with no number (the Bismillah slice) prints none
+    .map(({ angle, text }) => {
+      const p = polarToCartesian(cx, cy, r0 + 8, angle);
+      return `<text class="wheel-seg-num wheel-seg-num-up" data-angle="${angle}" x="${p.x}" y="${p.y}" text-anchor="middle" dominant-baseline="central" style="pointer-events:none">${text}</text>`;
+    })
+    .join("");
+  return `<g class="wheel-upright-nums" data-cx="${cx}" data-cy="${cy}" data-r0="${r0}" data-min-px="${minPx}">${texts}</g>`;
+}
+
+/** Sizes, places and thins the upright numbers of every wheel under `root` (an svg or a container). Run once per render. */
+export function fitUprightNumbers(root) {
+  const svgs = root.matches?.("svg") ? [root] : [...root.querySelectorAll("svg")];
+  for (const svg of svgs) {
+    const g = svg.querySelector(".wheel-upright-nums");
+    if (!g) continue;
+    const cx = Number(g.dataset.cx), cy = Number(g.dataset.cy), r0 = Number(g.dataset.r0), minPx = Number(g.dataset.minPx);
+    const all = [...g.querySelectorAll("text")];
+    if (!all.length) continue;
+    const vb0 = svg.viewBox.baseVal;
+    const half0 = Math.max(cx - vb0.x, vb0.x + vb0.width - cx, cy - vb0.y, vb0.y + vb0.height - cy);
+    let half = half0, fs = minPx, boxes = [];
+    for (let pass = 0; pass < 4; pass++) {
+      const px = svg.getBoundingClientRect().width;
+      if (!(px > 0)) return; // not laid out (hidden); a later call will fit it
+      const scale = px / (2 * half); // screen px per svg unit
+      const next = (minPx * 1.02) / scale; // 2% over, so the last viewBox widening can never leave it under minPx
+      if (pass > 0 && Math.abs(next - fs) < 0.05) break;
+      fs = next;
+      for (const el of all) el.style.fontSize = `${fs.toFixed(2)}px`;
+      boxes = all.map((el) => {
+        const b = el.getBBox();
+        const ang = Number(el.dataset.angle) * Math.PI / 180;
+        const w = b.width + 3, h = b.height; // 3 units of air either side
+        const s = Math.abs(Math.sin(ang)), c = Math.abs(Math.cos(ang));
+        const r = r0 + 3 + (s * w) / 2 + (c * h) / 2; // the box's nearest edge clears the rings by 3 units
+        const x = cx + r * Math.sin(ang), y = cy - r * Math.cos(ang);
+        return { el, x, y, w, h };
+      });
+      // The wheel is a circle: the first and the last Ayah sit side by side across 12 o'clock and, on a long Surah,
+      // are closer than their own widths. Both must show, so each steps sideways off the axis (its y is unchanged,
+      // so neither moves onto a slice) until they touch no more.
+      const first = boxes[0], lastBox = boxes[boxes.length - 1];
+      if (boxes.length > 1 && Math.abs(first.x - lastBox.x) < (first.w + lastBox.w) / 2 && Math.abs(first.y - lastBox.y) < (first.h + lastBox.h) / 2) {
+        first.x = Math.max(first.x, cx + first.w / 2 + 1);
+        lastBox.x = Math.min(lastBox.x, cx - lastBox.w / 2 - 1);
+      }
+      let need = half0;
+      for (const b of boxes) need = Math.max(need, Math.abs(b.x - cx) + b.w / 2 + 2, Math.abs(b.y - cy) + b.h / 2 + 2);
+      half = Math.ceil(need);
+    }
+    for (const b of boxes) { b.el.setAttribute("x", b.x.toFixed(2)); b.el.setAttribute("y", b.y.toFixed(2)); }
+    svg.setAttribute("viewBox", `${cx - half} ${cy - half} ${2 * half} ${2 * half}`);
+    const hit = (a, b) => Math.abs(a.x - b.x) < (a.w + b.w) / 2 && Math.abs(a.y - b.y) < (a.h + b.h) / 2;
+    const last = boxes.length - 1;
+    let shown = boxes.map((_, i) => i);
+    for (const k of [1, 2, 5, 10, 20, 50, 100]) {
+      shown = boxes.map((_, i) => i).filter((i) => i % k === 0 || i === last);
+      // The last Ayah always shows; if it lands too near the final multiple of k, that multiple gives way.
+      const prev = shown[shown.length - 2];
+      if (shown.length > 1 && prev !== undefined && hit(boxes[prev], boxes[last])) shown.splice(shown.length - 2, 1);
+      let clear = true;
+      for (let a = 0; a < shown.length && clear; a++) for (let b = a + 1; b < shown.length; b++) if (hit(boxes[shown[a]], boxes[shown[b]])) { clear = false; break; }
+      if (clear) break;
+    }
+    const keep = new Set(shown);
+    boxes.forEach((b, i) => { if (!keep.has(i)) b.el.remove(); });
+    svg.dataset.numbersEvery = String(shown.length > 1 ? shown[1] - shown[0] : 1);
+  }
+}
+
+let sliceNameClipSeq = 0;
+
+/** Issue #385 -- an Approach's short name written ALONG a slice (radially),
+ *  centred in the band r0..r1, upright on both halves of the wheel. It can
+ *  never spill: the font is sized from the slice's own arc width at its inner
+ *  edge, the text is cut with an ellipsis to what the band's depth holds
+ *  (a character-width estimate -- Bangla is wider, so it gets a wider one),
+ *  and, when `clipD` (the slice's own path) is given, a clipPath of the slice
+ *  is the hard stop behind both. The halo (dark stroke behind white fill,
+ *  `paint-order: stroke`) keeps it readable on every status colour and in the
+ *  Dark, Light and Colour looks alike. */
+function sliceNameMarkup({ cx, cy, r0, r1, angle, arcDeg, text, clipD = null }) {
+  const label = String(text ?? "").trim();
+  if (!label) return "";
+  const arcWidth = r0 * (arcDeg * Math.PI / 180);
+  const bangla = /[ঀ-৿]/.test(label);
+  // Bangla reads smaller than Latin at the same size (its letters sit lower
+  // in the em), so it gets a little more of the slice's width (Architect
+  // review of #385, measured on a 40-slice wheel at 390px).
+  const fs = Math.max(4.5, Math.min(bangla ? 11.5 : 10, arcWidth * (bangla ? 0.74 : 0.62)));
+  const charW = fs * (bangla ? 0.78 : 0.6);
+  const avail = Math.max(0, (r1 - r0) - 6);
+  const maxChars = Math.max(1, Math.floor(avail / charW));
+  const chars = Array.from(label);
+  const shown = chars.length > maxChars ? chars.slice(0, Math.max(1, maxChars - 1)).join("").trimEnd() + "…" : label;
+  const p = polarToCartesian(cx, cy, (r0 + r1) / 2, angle);
+  const rot = ringNumberRotation(angle);
+  let clipId = "";
+  let clipDef = "";
+  if (clipD) {
+    clipId = `wsn-clip-${++sliceNameClipSeq}`;
+    clipDef = `<clipPath id="${clipId}"><path d="${clipD}"/></clipPath>`;
+  }
+  const esc = shown.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+  const txt = `<text class="wheel-seg-name" x="${p.x}" y="${p.y}" dy="0.35em" text-anchor="middle" font-size="${fs.toFixed(2)}" transform="rotate(${rot} ${p.x} ${p.y})" style="pointer-events:none">${esc}</text>`;
+  return clipId ? `${clipDef}<g clip-path="url(#${clipId})">${txt}</g>` : txt;
+}
+
+function naHatchDefs() {
+  return `<pattern id="naHatch" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
+    <rect width="6" height="6" fill="#1b2338"/>
+    <line x1="0" y1="0" x2="0" y2="6" stroke="rgba(201,162,75,0.55)" stroke-width="2"/>
+  </pattern>`;
+}
+
+/** Greedy word-wrap of `text` at the given canvas font, shrinking the font
+ *  size one step at a time (from `startSize` down to `minSize`) until the
+ *  wrapped block's own height fits `maxHeight` -- or, failing that even at
+ *  the smallest size, returning the smallest-size wrap anyway rather than
+ *  looping forever. `maxWidth` is deliberately a single flat number, not a
+ *  true per-line circle-chord width -- a slightly conservative
+ *  approximation (this project's own standing rule: when in doubt, err
+ *  toward MORE wrapping/a smaller font, never toward overflow) that avoids
+ *  the chicken-and-egg of "the exact width available depends on how many
+ *  lines there end up being." A single word wider than `maxWidth` is kept
+ *  on its own line rather than sliced mid-word. */
+function wrapTextToFit(ctx, text, { maxWidth, maxHeight, startSize, minSize, family, weight }) {
+  const words = String(text ?? "").trim().split(/\s+/).filter(Boolean);
+  if (!words.length) return { lines: [], fontSize: startSize, lineHeight: startSize * 1.18 };
+  let best = null;
+  for (let size = startSize; size >= minSize; size -= 1) {
+    ctx.font = `${weight} ${size}px ${family}`;
+    const lines = [];
+    let current = "";
+    for (const word of words) {
+      const trial = current ? `${current} ${word}` : word;
+      if (!current || ctx.measureText(trial).width <= maxWidth) {
+        current = trial;
+      } else {
+        lines.push(current);
+        current = word;
+      }
+    }
+    if (current) lines.push(current);
+    const lineHeight = size * 1.18;
+    best = { lines, fontSize: size, lineHeight };
+    if (lines.length * lineHeight <= maxHeight) return best;
+  }
+  return best;
+}
+
+/** The dark centre disc, shared by both wheel styles below, in either of two
+ * modes (index.html's own two centre treatments, re-derived):
+ *  - centerArabic: the actual ayah text (Amiri, RTL) + a small centerRef
+ *    line under it (e.g. "SURAH 1 · AYAH 1") -- what the old app's real
+ *    Mastery Wheel shows, since its centre is always one fixed ayah.
+ *  - centerLabel: a plain-text label (Cormorant Garamond) + optional
+ *    centerSub line -- for wheels with no single ayah to anchor on (the
+ *    Explore/Juz-wheel's "Whole Quran" + Approach name, or an Asma ul
+ *    Husna group's own, often much longer, title).
+ *
+ * Drag-reposition/centre-fit round (3 Sep 2026) -- `centerLabel` used to be
+ * ONE fixed-size line that simply ran past the gold ring for a long title
+ * (Asma ul Husna's own 19 group names are full sentences). It is now
+ * measured with a real canvas 2D context (this project's own "measure,
+ * don't guess" method, the same one the Quran-landing wheel's hub layout
+ * already uses) and wrapped -- shrinking the font only as far as it has to
+ * -- to fit inside the circle. A short label ("All Groups", a QCR
+ * collection's own short name) still measures as one line at the original
+ * 20px, so every existing caller renders byte-for-byte as before. Falls
+ * back to the original single, unwrapped line if no canvas is available
+ * (there always is one in a real browser -- purely a defensive guard).
+ */
+function centerLabelMarkup(cx, cy, rInner, { centerArabic, centerRef, centerLabel, centerSub } = {}) {
+  if (centerArabic === undefined && centerLabel === undefined) return "";
+  const circle = `<circle cx="${cx}" cy="${cy}" r="${rInner - 4}" fill="#13192a" stroke="#C9A24B" stroke-width="1.5"/>`;
+  if (centerArabic !== undefined) {
+    const ref = centerRef
+      ? `<text x="${cx}" y="${cy + 22}" text-anchor="middle" font-family="Inter" font-size="10" fill="#8fa0c2">${centerRef}</text>`
+      : "";
+    return `${circle}
+      <text x="${cx}" y="${cy - 4}" text-anchor="middle" style="font-family: var(--quran-font, serif)" font-size="22" direction="rtl" fill="#fbf3df">${centerArabic}</text>
+      ${ref}`;
+  }
+  const sub = centerSub
+    ? `<text x="${cx}" y="${cy + 20}" text-anchor="middle" font-family="Inter" font-size="10" fill="#8fa0c2">${centerSub}</text>`
+    : "";
+  const baseY = centerSub ? cy - 2 : cy + 6;
+  const family = "'Cormorant Garamond', serif";
+  let fit = null;
+  if (typeof document !== "undefined" && document.createElement) {
+    try {
+      const ctx = document.createElement("canvas").getContext("2d");
+      const usableR = Math.max(20, rInner - 10);
+      fit = wrapTextToFit(ctx, centerLabel, {
+        maxWidth: usableR * 1.7,
+        maxHeight: usableR * 1.5,
+        startSize: 20,
+        minSize: 11,
+        family,
+        weight: 600,
+      });
+    } catch {
+      fit = null;
+    }
+  }
+  const titleMarkup = fit
+    ? (() => {
+        const blockHeight = (fit.lines.length - 1) * fit.lineHeight;
+        const startY = baseY - blockHeight / 2;
+        const tspans = fit.lines.map((line, i) => `<tspan x="${cx}" y="${startY + i * fit.lineHeight}">${line}</tspan>`).join("");
+        return `<text text-anchor="middle" font-family="${family}" font-weight="600" font-size="${fit.fontSize}" fill="#C9A24B">${tspans}</text>`;
+      })()
+    : `<text x="${cx}" y="${baseY}" text-anchor="middle" font-family="${family}" font-weight="600" font-size="20" fill="#C9A24B">${centerLabel}</text>`;
+  return `${circle}
+    ${titleMarkup}
+    ${sub}`;
+}
+
+/**
+ * @param ayahStatuses  array of { ayah, statusId } in ayah order, one per ayah in the surah
+ * @param size          pixel size of the (square) SVG viewport
+ * @param centerArabic  optional ayah text for the centre disc; centerRef is a small line under it
+ * @param centerLabel   optional short plain-text label for the centre disc instead of centerArabic; centerSub is a small line under it
+ */
+export function renderMasteryWheel(ayahStatuses, { size = 360, centerArabic, centerRef, centerLabel, centerSub } = {}) {
+  const cx = size / 2, cy = size / 2;
+  const rOuter = size / 2 - 4;
+  const rInner = rOuter * 0.5;
+  const labelOffset = Math.max(10, rOuter * 0.065);
+  const n = ayahStatuses.length || 1;
+  const anglePer = 360 / n;
+
+  const segments = ayahStatuses
+    .map((entry, i) => {
+      const start = i * anglePer;
+      const end = start + anglePer - Math.min(1.2, anglePer * 0.08); // thin gap between segments
+      const mid = (start + end) / 2;
+      const fill = STATUS_COLORS[entry.statusId] ?? STATUS_COLORS.not_started;
+      const lp = polarToCartesian(cx, cy, rOuter + labelOffset, mid);
+      return `<path class="wheel-seg" data-ayah="${entry.ayah}" d="${segmentPath(cx, cy, rInner, rOuter, start, end)}" fill="${fill}"><title>Ayah ${entry.ayah} — ${entry.statusId.replace(/_/g, " ")}</title></path>
+      <text class="wheel-seg-num" x="${lp.x}" y="${lp.y}" text-anchor="middle" transform="rotate(${ringNumberRotation(mid)} ${lp.x} ${lp.y})" style="pointer-events:none">${entry.ayah}</text>`;
+    })
+    .join("");
+
+  return `<svg class="mastery-wheel" viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">
+    <defs>${naHatchDefs()}</defs>
+    ${segments}
+    ${centerLabelMarkup(cx, cy, rInner, { centerArabic, centerRef, centerLabel, centerSub })}
+  </svg>`;
+}
+
+/** Wires up click handling on a wheel already inserted into the DOM. */
+export function attachWheelClickHandler(containerEl, onAyahClick) {
+  containerEl.querySelectorAll(".wheel-seg").forEach((seg) => {
+    seg.addEventListener("click", () => onAyahClick(Number(seg.dataset.ayah)));
+  });
+}
+
+/**
+ * Phase 5 — Explore navigator's generic wheel: same visual language as the
+ * per-ayah Mastery Wheel above (reuses the same geometry helpers and
+ * STATUS_COLORS), but for any labelled set of segments rather than
+ * assuming "one segment per ayah" — e.g. the whole-Quran Quran-wheel (30
+ * Juz segments). items: [{ key, statusId, title, number }] — number is what
+ * prints outside the segment, defaulting to key. I2: still a pure
+ * renderer — never reads records.js itself.
+ */
+/** Wraps `text` to at most two lines, splitting at whichever SPACE sits
+ *  closest to the middle -- never truncates (a name showing in full is the
+ *  whole point of renderScopedWheel's own `sliceLines` option below). A
+ *  single word longer than `maxLen` is left as one line as-is, since there
+ *  is no space to split it on. Exported so a caller (quranrevival.html's
+ *  Explore -> Asma ul Husna panel, the only one that uses `sliceLines`
+ *  today) doesn't need its own copy of this. */
+export function wrapWheelLabel(text, maxLen = 14) {
+  const s = String(text ?? "").trim();
+  if (!s) return [];
+  if (s.length <= maxLen) return [s];
+  const mid = Math.floor(s.length / 2);
+  let splitAt = -1;
+  for (let d = 0; d < mid; d++) {
+    if (s[mid - d] === " ") { splitAt = mid - d; break; }
+    if (s[mid + d] === " ") { splitAt = mid + d; break; }
+  }
+  if (splitAt === -1) return [s];
+  return [s.slice(0, splitAt).trim(), s.slice(splitAt + 1).trim()];
+}
+
+/**
+ * items: [{ key, statusId, title, number, sliceLines? }] -- `sliceLines`
+ * (2 Sep 2026, Asma-in-Explore drag-reposition round) is a strictly OPT-IN
+ * extra: an array of already-wrapped, already-escaped lines (see
+ * wrapWheelLabel above) drawn INSIDE the slice's own body, at the SAME
+ * angle and rotation the plain outer number already uses ("in the
+ * direction as it shows for the numbers now"). The outer `number` badge is
+ * untouched either way (I5: still the real, permanent id). Every caller
+ * that never sets `sliceLines` (QCR, the plain Explore Quran wheel, the
+ * main Approach wheel, and every existing renderScopedWheel call before
+ * this round) renders byte-for-byte as before.
+ *
+ * 3 Sep 2026 follow-up -- "place each language in a separate line": the
+ * first version placed each line at a DIFFERENT RADIUS along the same
+ * angle, each independently rotated -- which reads as separate rows for
+ * roughly-horizontal/vertical slices, but for anything in between it
+ * doesn't work, because `ringNumberRotation` orients each label to point
+ * OUTWARD along the radius (the same convention a clock's numerals use),
+ * not tangentially. A label rotated to point radially has its own printed
+ * length running ALONG the radius, so two separately-placed radial labels
+ * (say, an Arabic line and its transliteration) reach into each other's
+ * space the moment either one is longer than the gap between their two
+ * radii -- confirmed by measuring real rendered bounding boxes, not
+ * assumed: two lines meant to sit ~30px apart came back with bounding
+ * boxes 34-50px tall, comfortably overlapping. Fixed by drawing the whole
+ * multi-line label as ONE rotated `<text>` with `<tspan dy="…em">` line
+ * stacking instead: every line shares one rotation, and `dy` spacing is
+ * resolved in the text's own local coordinate space BEFORE that rotation
+ * is applied, so consecutive lines can never bleed into each other
+ * regardless of which way the label ends up pointing.
+ *
+ * 3 Sep 2026 resize round — `entry.sliceArabicLines` (a count, default 0) is
+ * a second strictly OPT-IN extra: however many of `sliceLines`' own leading
+ * lines are the Arabic Name (today only the Asma ul Husna Names-level
+ * wheel's own first line) get the separate `.wheel-seg-label-ar` class
+ * instead of the plain `.wheel-seg-label` every other line already used —
+ * two independently CSS-sized classes, so the owner can resize "the Arabic
+ * Names" and "the wrapped title/name text" apart from each other (see
+ * js/asma-wheel-text.js). A tspan's own `dy="…em"` is resolved against ITS
+ * OWN font-size, not the line before it, so the Arabic line getting a
+ * bigger font never throws off the spacing of the lines around it. Every
+ * caller that never sets `sliceArabicLines` renders byte-for-byte as
+ * before (every non-Arabic line, or a caller with no Arabic line at all).
+ */
+/**
+ * Issue #206 -- the gold running-total ring, drawn OUTSIDE the wedge radius
+ * so it never overlaps or recolours them. `ratio` is the reader's own
+ * known/total (0..1); a ratio of exactly 0 draws the track only. Two
+ * semicircle arcs are used for the always-drawn track (a single 360deg arc
+ * with equal start/end points is a degenerate SVG path) and the same
+ * two-semicircle shape is used for the fill only when ratio is close enough
+ * to 1 that a single arc would be degenerate for the same reason.
+ */
+function renderWheelRing(cx, cy, rInner, rOuter, ratio) {
+  const clamp = Math.max(0, Math.min(1, Number(ratio) || 0));
+  const track = `<path class="wheel-ring-track" d="${segmentPath(cx, cy, rInner, rOuter, 0, 180)}" fill="#333f5c"/>` +
+    `<path class="wheel-ring-track" d="${segmentPath(cx, cy, rInner, rOuter, 180, 360)}" fill="#333f5c"/>`;
+  if (clamp <= 0) return track;
+  const fillColor = "#C9A24B"; // the app's own gold, matching the Owner-approved demo's gold ring.
+  const fill = clamp >= 0.999
+    ? `<path class="wheel-ring-fill" d="${segmentPath(cx, cy, rInner, rOuter, 0, 180)}" fill="${fillColor}"/>` +
+      `<path class="wheel-ring-fill" d="${segmentPath(cx, cy, rInner, rOuter, 180, 360)}" fill="${fillColor}"/>`
+    : `<path class="wheel-ring-fill" d="${segmentPath(cx, cy, rInner, rOuter, 0, clamp * 360)}" fill="${fillColor}"/>`;
+  return `${track}${fill}`;
+}
+
+/**
+ * items: [{ key, statusId, title, number, sliceLines?, fill? }] -- `fill`
+ * (Issue #206) is a strictly OPT-IN literal colour override for the
+ * Word-by-Word wedge-colouring toggle: when present it is used INSTEAD OF
+ * `STATUS_COLORS[entry.statusId]`, so every existing caller that never sets
+ * `fill` (QCR, Asma, every Explore level's own Approach colouring, every
+ * call before this round) renders byte-for-byte as before.
+ *
+ * `ring` (Issue #206) is a second strictly OPT-IN extra: `{ ratio }` draws
+ * the gold running-total ring OUTSIDE the wedge radius, which is why the
+ * wedges themselves shrink by a fixed margin ONLY when `ring` is supplied --
+ * every caller that never sets `ring` keeps the exact geometry it always
+ * had (byte-for-byte: `rOuter` is computed identically to before when this
+ * option is absent).
+ */
+export function renderScopedWheel(items, { size = 360, centerArabic, centerRef, centerLabel, centerSub, ring = null, roomForNumbers = false, uprightNumbers = null } = {}) {
+  const cx = size / 2, cy = size / 2;
+  const ringMargin = ring ? 14 : 0;
+  const rOuter = size / 2 - 4 - ringMargin;
+  const rInner = rOuter * 0.5;
+  const labelOffset = Math.max(10, rOuter * 0.065);
+  const upright = [];
+  const n = items.length || 1;
+  const anglePer = 360 / n;
+  const sliceLineHeightEm = 1.2;
+
+  const segments = items
+    .map((entry, i) => {
+      const start = i * anglePer;
+      const end = start + anglePer - Math.min(1.2, anglePer * 0.08);
+      const mid = (start + end) / 2;
+      const fill = entry.fill ?? STATUS_COLORS[entry.statusId] ?? STATUS_COLORS.not_started;
+      const rot = ringNumberRotation(mid);
+      const lp = polarToCartesian(cx, cy, rOuter + labelOffset, mid);
+      if (uprightNumbers) upright.push({ angle: mid, text: entry.number ?? entry.key });
+      const numText = uprightNumbers ? "" : `<text class="wheel-seg-num" x="${lp.x}" y="${lp.y}" text-anchor="middle" transform="rotate(${rot} ${lp.x} ${lp.y})" style="pointer-events:none">${entry.number ?? entry.key}</text>`;
+      const lines = Array.isArray(entry.sliceLines) ? entry.sliceLines.filter(Boolean) : [];
+      const arabicLineCount = Math.max(0, Number(entry.sliceArabicLines) || 0);
+      let bodyText = "";
+      if (lines.length) {
+        const midR = (rInner + rOuter) / 2;
+        const p = polarToCartesian(cx, cy, midR, mid);
+        const firstDy = -((lines.length - 1) / 2) * sliceLineHeightEm;
+        const tspans = lines
+          .map((line, li) => {
+            const cls = li < arabicLineCount ? ` class="wheel-seg-label-ar"` : "";
+            return `<tspan${cls} x="${p.x}" dy="${li === 0 ? firstDy : sliceLineHeightEm}em">${line}</tspan>`;
+          })
+          .join("");
+        bodyText = `<text class="wheel-seg-label" x="${p.x}" y="${p.y}" text-anchor="middle" transform="rotate(${rot} ${p.x} ${p.y})" style="pointer-events:none">${tspans}</text>`;
+      }
+      // Opt-in (issue #328, Architect review): `progress` 0..1 fills the slice
+      // outward from the hub in `progressFill`, so a slice reads as "how much
+      // of it is done". A flat colour ramp could not show 3% against 0% --
+      // every slice looked the same navy. Any progress above zero gets a
+      // visible sliver (6% of the slice's depth) so it is never invisible.
+      let progressPath = "";
+      const progress = Number(entry.progress);
+      if (Number.isFinite(progress) && progress > 0) {
+        const depth = Math.max(0.06, Math.min(1, progress));
+        const rTo = rInner + (rOuter - rInner) * depth;
+        progressPath = `<path class="wheel-seg-progress" d="${segmentPath(cx, cy, rInner, rTo, start, end)}" fill="${entry.progressFill ?? STATUS_COLORS.mastered}" style="pointer-events:none"></path>`;
+      }
+      // Issue #385 -- opt-in short name along the slice (callers pass
+      // `shortLabel` only while the Names toggle is on).
+      const sliceD = segmentPath(cx, cy, rInner, rOuter, start, end);
+      const nameText = entry.shortLabel
+        ? sliceNameMarkup({ cx, cy, r0: rInner, r1: rOuter, angle: mid, arcDeg: end - start, text: entry.shortLabel, clipD: sliceD })
+        : "";
+      return `<path class="wheel-seg" data-key="${entry.key}" d="${sliceD}" fill="${fill}"><title>${entry.title}</title></path>
+      ${progressPath}${numText}${bodyText}${nameText}`;
+    })
+    .join("");
+
+  const ringMarkup = ring ? renderWheelRing(cx, cy, rOuter + 4, rOuter + ringMargin - 2, ring.ratio) : "";
+
+  // Same opt-in as renderRingWheel's roomForNumbers (Know Your Status, 6 Oct 2026).
+  const pad = roomForNumbers && items.some((e) => e.number != null) ? Math.ceil(Math.max(0, rOuter + labelOffset + 7 - size / 2)) : 0;
+  const vb = pad ? `${-pad} ${-pad} ${size + 2 * pad} ${size + 2 * pad}` : `0 0 ${size} ${size}`;
+  return `<svg class="mastery-wheel" viewBox="${vb}" width="${size}" height="${size}" data-number-room="${pad}">
+    <defs>${naHatchDefs()}</defs>
+    ${ringMarkup}
+    ${segments}${uprightNumbers ? uprightNumbersMarkup(upright, { cx, cy, r0: rOuter + ringMargin, minPx: uprightNumbers.minPx ?? 11 }) : ""}
+    ${centerLabelMarkup(cx, cy, rInner, { centerArabic, centerRef, centerLabel, centerSub })}
+  </svg>`;
+}
+
+/**
+ * Issue #352 -- a wheel of concentric RINGS (decisions 21–24). `rings` is an
+ * array, innermost first, of arrays of arcs: [{ key, statusId, title, a0, a1,
+ * selected?, ringKind? }] with a0/a1 in degrees (0 = 12 o'clock, clockwise).
+ * The rings share the band renderScopedWheel's single ring uses (rInner =
+ * rOuter * 0.5), so the landing wheel's hub overlay sits exactly where it
+ * always has. Every arc is a `.wheel-seg` carrying its `data-key`, so
+ * attachScopedWheelClickHandler() works unchanged; `data-ring` says which
+ * ring was tapped. `numbers` ([{ angle, text }]) prints outside the outer
+ * ring the way renderScopedWheel prints its slice numbers.
+ */
+export function renderRingWheel(rings, { size = 360, centerArabic, centerRef, centerLabel, centerSub, ring = null, numbers = null, names = null, roomForNumbers = false, uprightNumbers = null } = {}) {
+  const cx = size / 2, cy = size / 2;
+  const ringMargin = ring ? 14 : 0;
+  const rOuter = size / 2 - 4 - ringMargin;
+  const rInner = rOuter * 0.5;
+  const labelOffset = Math.max(10, rOuter * 0.065);
+  const count = rings.length || 1;
+  const band = (rOuter - rInner) / count;
+  const radialGap = Math.min(0.8, band * 0.08);
+
+  const arcs = rings
+    .map((arcsInRing, k) => {
+      const r0 = rInner + k * band + (k === 0 ? 0 : radialGap);
+      const r1 = rInner + (k + 1) * band - (k === count - 1 ? 0 : radialGap);
+      return arcsInRing
+        .map((entry) => {
+          if (!(entry.a1 > entry.a0)) return "";
+          const fill = entry.fill ?? STATUS_COLORS[entry.statusId] ?? STATUS_COLORS.not_started;
+          const sel = entry.selected ? ` stroke="#ecd49a" stroke-width="1.8"` : "";
+          const kind = entry.ringKind ? ` data-ring-kind="${entry.ringKind}"` : "";
+          return `<path class="wheel-seg wheel-ring-seg" data-key="${entry.key}" data-ring="${k}"${kind} data-status="${entry.statusId}" data-a0="${entry.a0.toFixed(3)}" data-a1="${entry.a1.toFixed(3)}" d="${segmentPath(cx, cy, r0, r1, entry.a0, entry.a1)}" fill="${fill}"${sel}><title>${entry.title ?? ""}</title></path>`;
+        })
+        .join("");
+    })
+    .join("");
+
+  const nums = uprightNumbers ? "" : (numbers ?? [])
+    .map(({ angle, text }) => {
+      const lp = polarToCartesian(cx, cy, rOuter + labelOffset, angle);
+      return `<text class="wheel-seg-num" x="${lp.x}" y="${lp.y}" text-anchor="middle" transform="rotate(${ringNumberRotation(angle)} ${lp.x} ${lp.y})" style="pointer-events:none">${text}</text>`;
+    })
+    .join("");
+
+  // Issue #385 -- `names` ([{ angle, arcDeg, text }]) writes each Approach's
+  // short name across the whole band of rings, halo'd so it reads over them.
+  const nameMarkup = (names ?? [])
+    .map(({ angle, arcDeg, text }) => sliceNameMarkup({ cx, cy, r0: rInner, r1: rOuter, angle, arcDeg, text }))
+    .join("");
+
+  const ringMarkup = ring ? renderWheelRing(cx, cy, rOuter + 4, rOuter + ringMargin - 2, ring.ratio) : "";
+
+  // The Owner, 6 Oct 2026 (Know Your Status: "the numbers are cut below the wheel"): the Approach numbers sit at
+  // rOuter + labelOffset, past the 0..size box, so the row under the wheel covered the bottom ones (with 40
+  // Approaches one sits at 180°). `roomForNumbers` widens the viewBox to hold them, so the layout box includes
+  // them. Opt-in: the landing wheel's measured layout is unchanged.
+  const pad = roomForNumbers && numbers?.length ? Math.ceil(Math.max(0, rOuter + labelOffset + 7 - size / 2)) : 0;
+  const vb = pad ? `${-pad} ${-pad} ${size + 2 * pad} ${size + 2 * pad}` : `0 0 ${size} ${size}`;
+  return `<svg class="mastery-wheel mastery-wheel-rings" viewBox="${vb}" width="${size}" height="${size}" data-number-room="${pad}">
+    <defs>${naHatchDefs()}</defs>
+    ${ringMarkup}
+    ${arcs}
+    ${nameMarkup}
+    ${nums}${uprightNumbers && numbers?.length ? uprightNumbersMarkup(numbers, { cx, cy, r0: rOuter + ringMargin, minPx: uprightNumbers.minPx ?? 11 }) : ""}
+    ${centerLabelMarkup(cx, cy, rInner, { centerArabic, centerRef, centerLabel, centerSub })}
+  </svg>`;
+}
+
+/** Like attachWheelClickHandler, but for renderScopedWheel's generic segments — returns the segment's raw string key rather than assuming it's an ayah number. */
+export function attachScopedWheelClickHandler(containerEl, onSegmentClick) {
+  containerEl.querySelectorAll(".wheel-seg").forEach((seg) => {
+    seg.addEventListener("click", () => onSegmentClick(seg.dataset.key));
+  });
+}
+
+/** Small legend, matching the six statuses + Not Applicable, for the wheel's page. Not Applicable's swatch is a CSS diagonal stripe rather than the SVG url(#naHatch) fill the wheel itself uses — this legend is a plain HTML container, not inside the wheel's own <svg>, so it can't resolve that pattern's id. */
+export function renderWheelLegend(labelsById) {
+  const order = ["not_applicable", "not_started", "learning", "practising", "achieved", "mastered"];
+  return `<div class="wheel-legend">${order
+    .map((id) => {
+      const swatchStyle =
+        id === "not_applicable"
+          ? "background:repeating-linear-gradient(45deg,#1b2338 0 3px,rgba(201,162,75,0.55) 3px 4px)"
+          : `background:${STATUS_COLORS[id]}`;
+      return `<span class="legend-item"><span class="legend-swatch" style="${swatchStyle}"></span>${labelsById[id] ?? id}</span>`;
+    })
+    .join("")}</div>`;
+}
+
+/**
+ * The companion list panel that sits beside the wheel (index.html's
+ * .ways-list / .way-row / .status-chip pattern) — one row per segment,
+ * badge + label + a coloured status chip, so the same data the wheel shows
+ * as colour/position is also readable as text. items: [{ key, number,
+ * label, statusId }]. Chip classes are named by status id (chip-mastered,
+ * chip-not_started, ...) rather than index.html's chip-0..chip-4 — this
+ * build's six statuses are id-keyed, not position-keyed (I5), so a
+ * positional class name would silently break the moment status order ever
+ * changes. Visually equivalent, just not literally the same class names.
+ */
+export function renderWheelSidebar(items, labelsById, options = {}) {
+  // Issue #400 -- `options.collapsible` (OPT-IN, the landing list only; Explore's
+  // six sidebars call with no options and render as before). Each section's
+  // heading becomes a real button carrying a count badge, and that section's
+  // rows (and empty-note) carry `data-group` and are `hidden` unless its
+  // groupKey is in `options.openGroups` (a Set the caller owns, so the open
+  // state survives the caller re-rendering the whole list). The rows stay flat
+  // children of .ways-list on purpose: every existing suite reads them there.
+  const collapsible = !!options.collapsible;
+  const open = options.openGroups ?? new Set();
+  const words = options.labels ?? {};
+  const counts = new Map();
+  if (collapsible) {
+    for (const item of items) {
+      if (item.groupLabel && !item.emptyNote) {
+        const k = item.groupKey ?? item.groupLabel;
+        counts.set(k, (counts.get(k) ?? 0) + 1);
+      }
+    }
+  }
+  const countText = (k) => (options.formatCount ? options.formatCount(counts.get(k) ?? 0) : String(counts.get(k) ?? 0));
+  // v08.02 -- an item may carry `groupLabel`, and a heading is emitted each
+  // time it changes. OPT-IN on purpose: this renderer is shared with all six
+  // of Explore's own sidebars (surahs, juz, pages, ruku', ayahs), which have
+  // no sections and must keep rendering exactly as they did.
+  //
+  // The heading is NOT a `.way-row`. That class is a name with MEANING here --
+  // tools/i18n-verify/layout.mjs counts it to report how many Approach rows
+  // are visible above the dock -- so giving a heading that class would inflate
+  // every historical row measurement this project has recorded.
+  //
+  // v08.110 -- `groupKey` (optional) tells two sections apart even if they
+  // share a name, and an item with `emptyNote` is a section with NO
+  // Approaches yet (one the owner has just added): its heading is drawn with
+  // that note under it, and no row -- the note is not a `.way-row` either.
+  // 29 Sep 2026, Owner: the round badge carries the section's number (S1..),
+  // and the Approach count sits in a small SQUARE box at the END of the name.
+  // The last word and the box share one nowrap span, so a wrapped name never
+  // leaves the box alone on a line.
+  const groupHeading = (item, groupKey, isOpen) => {
+    const label = String(item.groupLabel);
+    const cut = label.trimEnd().lastIndexOf(" ");
+    const head = cut > 0 ? label.slice(0, cut + 1) : "";
+    const last = cut > 0 ? label.slice(cut + 1).trimEnd() : label;
+    const n = counts.get(groupKey) ?? 0;
+    const aria = options.countAriaLabel ? ` aria-label="${options.countAriaLabel(n)}"` : "";
+    const badge = item.groupNumber != null && options.formatBadge
+      ? `<span class="ways-sec-badge">${options.formatBadge(item.groupNumber)}</span>`
+      : "";
+    return `<div class="ways-group"><button type="button" class="ways-group-btn" data-group="${groupKey}" aria-expanded="${isOpen}"><span class="ways-caret" aria-hidden="true">${isOpen ? "▾" : "▸"}</span>${badge}<span class="ways-group-name">${head}<span class="ways-group-tail">${last}<span class="ways-count"${aria}>${countText(groupKey)}</span></span></span></button></div>`;
+  };
+  let lastGroup = null;
+  const rows = items
+    .map((item) => {
+      let heading = "";
+      const groupKey = item.groupKey ?? item.groupLabel;
+      const grouped = collapsible && !!item.groupLabel;
+      const isOpen = grouped && open.has(groupKey);
+      if (item.groupLabel && groupKey !== lastGroup) {
+        lastGroup = groupKey;
+        heading = grouped
+          ? groupHeading(item, groupKey, isOpen)
+          : `<div class="ways-group">${item.groupLabel}</div>`;
+      }
+      const hiddenAttr = grouped ? ` data-group="${groupKey}"${isOpen ? "" : " hidden"}` : "";
+      if (item.emptyNote) return `${heading}<div class="ways-group-empty"${hiddenAttr}>${item.emptyNote}</div>`;
+      return `${heading}<div class="way-row" data-key="${item.key}"${hiddenAttr}>
+        <span class="badge">${item.number ?? item.key}</span>
+        <span class="name">${item.label}</span>
+        <span class="status-chip chip-${item.statusId}">${labelsById[item.statusId] ?? item.statusId}</span>
+      </div>`;
+    })
+    .join("");
+  let toggleAll = "";
+  if (collapsible && words.openAll) {
+    const keys = [...new Set(items.filter((i) => i.groupLabel).map((i) => i.groupKey ?? i.groupLabel))];
+    const allOpen = keys.length > 0 && keys.every((k) => open.has(k));
+    toggleAll = keys.length
+      ? `<button type="button" class="ways-toggle-all" data-open-all="${allOpen ? "0" : "1"}">${allOpen ? words.closeAll : words.openAll}</button>`
+      : "";
+  }
+  return `<div class="ways-list">${toggleAll}${rows}</div>`;
+}
+
+/** Issue #400 -- show or hide one section of a collapsible list, in place. */
+export function setWheelSectionOpen(containerEl, groupKey, isOpen) {
+  containerEl.querySelectorAll("[data-group]").forEach((el) => {
+    if (el.dataset.group !== groupKey) return;
+    if (el.classList.contains("ways-group-btn")) {
+      el.setAttribute("aria-expanded", String(isOpen));
+      const caret = el.querySelector(".ways-caret");
+      if (caret) caret.textContent = isOpen ? "▾" : "▸";
+    } else el.hidden = !isOpen;
+  });
+}
+
+/** Issue #400 -- wires a collapsible list's heading buttons and its Open all /
+    Close all button. `openGroups` is the caller's Set (mutated here). */
+export function attachWheelSectionToggles(containerEl, openGroups, labels = {}) {
+  const keys = () => [...containerEl.querySelectorAll(".ways-group-btn")].map((b) => b.dataset.group);
+  const syncAll = () => {
+    const btn = containerEl.querySelector(".ways-toggle-all");
+    if (!btn) return;
+    const ks = keys();
+    const allOpen = ks.length > 0 && ks.every((k) => openGroups.has(k));
+    btn.dataset.openAll = allOpen ? "0" : "1";
+    btn.textContent = allOpen ? labels.closeAll : labels.openAll;
+  };
+  containerEl.querySelectorAll(".ways-group-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const k = btn.dataset.group;
+      const now = !openGroups.has(k);
+      if (now) openGroups.add(k);
+      else openGroups.delete(k);
+      setWheelSectionOpen(containerEl, k, now);
+      syncAll();
+    });
+  });
+  const all = containerEl.querySelector(".ways-toggle-all");
+  if (all) {
+    all.addEventListener("click", () => {
+      const now = all.dataset.openAll === "1";
+      for (const k of keys()) {
+        if (now) openGroups.add(k);
+        else openGroups.delete(k);
+        setWheelSectionOpen(containerEl, k, now);
+      }
+      syncAll();
+    });
+  }
+}
+
+/** Click handling for renderWheelSidebar's rows — same key contract as attachScopedWheelClickHandler (raw string key; caller converts to a number if it needs one, same as ayah rows do). */
+export function attachWheelSidebarClickHandler(containerEl, onRowClick) {
+  containerEl.querySelectorAll(".way-row").forEach((row) => {
+    row.addEventListener("click", () => onRowClick(row.dataset.key));
+  });
+}
+
+/** Issue #352 -- click handling for renderRingWheel(): the arc's own key and
+    which ring (0 = innermost) it sits in. */
+export function attachRingWheelClickHandler(containerEl, onArcClick) {
+  containerEl.querySelectorAll(".wheel-ring-seg").forEach((seg) => {
+    seg.addEventListener("click", () => onArcClick(seg.dataset.key, Number(seg.dataset.ring)));
+  });
+}

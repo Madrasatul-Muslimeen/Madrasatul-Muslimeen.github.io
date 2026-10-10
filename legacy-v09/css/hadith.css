@@ -1,0 +1,313 @@
+/* The Hadith corpus component's own styles.
+ *
+ * These lived inside hadith-collections.html's <style> block, which meant the
+ * component only looked right on the one page that happened to carry them.
+ * Mounting it into app/hadith-study.html proved the cost: the not-Hadith
+ * notice lost its red panel and every collection row rendered as a dark navy
+ * block with the edition id run into the name -- and EVERY rect and text
+ * assertion passed, because the markup was perfectly correct. It was found by
+ * looking at the screenshot.
+ *
+ * A palette belongs to a SURFACE, not to a feature, and a component rendered
+ * on two surfaces must carry its own. So the component's rules live here and
+ * both pages link this file. Page chrome -- the standalone page's body width
+ * and heading sizes -- deliberately stays behind in that page, because
+ * imposing it on the module page would restyle headings the corpus does not
+ * own.
+ */
+:root { --hadith-ink:#1B2A41; --hadith-gold:#B8862F; --hadith-rule:#e2ddcd; --hadith-muted:#5f6470; }
+
+  /* ---- The notice that is never conditional ---- */
+  .hadith-synthetic-banner {
+    border: 2px solid #b4302f; background: #fdf2f2; border-radius: 0.5rem;
+    padding: 0.7rem 0.9rem; margin: 0.8rem 0 1rem;
+  }
+  .hadith-synthetic-banner p { margin: 0.15rem 0; font-size: 0.9rem; font-weight: 600; color: #7d1f1e; }
+  .hadith-synth-ar { font-size: 1.5rem !important; direction: rtl; text-align: right; font-weight: 700 !important; }
+
+  /* ---- Controls ---- */
+  .hadith-controls { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; justify-content: space-between; margin-bottom: 0.8rem; }
+  .hadith-tabs { display: flex; gap: 0.35rem; flex-wrap: wrap; }
+  .hadith-tab {
+    min-height: 40px; padding: 0.4rem 0.8rem; border: 1px solid var(--hadith-rule); background: #fff;
+    color: var(--hadith-ink); border-radius: 0.4rem; cursor: pointer; font-size: 0.9rem;
+  }
+  .hadith-tab.active { background: var(--hadith-ink); color: #fff; border-color: var(--hadith-ink); }
+  .hadith-lang-wrap { display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; min-width: 0; }
+  .hadith-lang-select { min-height: 40px; min-width: 0; padding: 0.3rem 0.5rem; border-radius: 0.35rem; border: 1px solid var(--hadith-rule); }
+
+  /* ---- Lists ---- */
+  .hadith-list { display: flex; flex-direction: column; gap: 0.4rem; }
+  .hadith-row {
+    display: flex; flex-direction: column; align-items: flex-start; gap: 0.15rem; text-align: left; width: 100%;
+    min-height: 44px; padding: 0.6rem 0.8rem; border: 1px solid var(--hadith-rule); border-radius: 0.5rem;
+    background: #fff; color: var(--hadith-ink); cursor: pointer;
+  }
+  .hadith-row:hover { border-color: var(--hadith-ink); }
+  .hadith-row-name { font-weight: 600; }
+  .hadith-row-meta, .hadith-row-heading { font-size: 0.82rem; color: var(--hadith-muted); }
+  .hadith-row-heading { direction: rtl; }
+  .hadith-crumbs { display: flex; flex-wrap: wrap; gap: 0.3rem; align-items: center; font-size: 0.85rem; margin: 0.6rem 0; }
+  .hadith-crumb { background: none; border: none; color: var(--hadith-ink); text-decoration: underline; cursor: pointer; font: inherit; padding: 0.2rem; }
+  .hadith-crumb-current { font-weight: 600; }
+
+  /* ---- Occurrence card ---- */
+  .hadith-card { border: 1px solid var(--hadith-rule); border-radius: 0.6rem; padding: 0.9rem; margin: 0.7rem 0; background: #fffdf8; }
+  .hadith-card-head { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: baseline; font-size: 0.8rem; color: var(--hadith-muted); }
+  .hadith-card-id { background: #f2efe4; padding: 0.05em 0.4em; border-radius: 0.3em; font-size: 0.78rem; }
+  .hadith-card-repeat { color: #7d1f1e; font-weight: 600; }
+
+  /* "View in source" (Topic/Search -> Collections) and the repeat badge's own
+     "view the original" -- both are real navigation, styled as an inline text
+     link like .hadith-crumb/.hadith-commentary-link already are in this same
+     component, not as chrome buttons. */
+  .hadith-view-source {
+    background: none; border: none; padding: 0.3rem 0; margin: 0; font: inherit;
+    color: var(--hadith-gold); font-weight: 600; font-size: 0.8rem;
+    text-decoration: underline; cursor: pointer;
+  }
+  .hadith-card-repeat.hadith-view-source { color: #7d1f1e; }
+  /* The destination of a jump, briefly outlined so a reader who just
+     navigated can find the exact narration among a whole book/chapter list. */
+  .hadith-card-focused { outline: 3px solid var(--hadith-gold); outline-offset: 2px; }
+
+  /* Arabic source text at about twice the English size (Start Prompt §3). */
+  .hadith-arabic {
+    font-size: 2em; line-height: 1.9; direction: rtl; text-align: right;
+    margin: 0.5rem 0; color: var(--hadith-ink);
+  }
+  .hadith-isnad { font-size: 0.88rem; color: var(--hadith-muted); margin: 0.3rem 0; }
+  .hadith-translation-text { margin: 0.4rem 0 0.2rem; }
+  .hadith-attribution, .hadith-availability { font-size: 0.8rem; color: var(--hadith-muted); margin: 0.15rem 0; }
+  .hadith-fallback {
+    font-size: 0.85rem; color: #7d5a00; background: #fdf6e3; border: 1px solid #e8d9a8;
+    border-radius: 0.35rem; padding: 0.4rem 0.6rem; margin: 0.4rem 0;
+  }
+
+  /* ---- Track (demo only) ---- */
+  .hadith-track { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-top: 0.7rem; padding-top: 0.6rem; border-top: 1px dashed var(--hadith-rule); }
+  .hadith-track-label { font-size: 0.85rem; font-weight: 600; }
+  .hadith-track-select { min-height: 40px; min-width: 0; padding: 0.3rem 0.5rem; border-radius: 0.35rem; border: 1px solid var(--hadith-rule); }
+  .hadith-not-saved { flex-basis: 100%; font-size: 0.8rem; color: #7d1f1e; margin: 0.2rem 0 0; font-weight: 600; }
+
+  /* ---- Topic ---- */
+  .hadith-topic-meta { background: #f6f7fa; border: 1px solid var(--hadith-rule); border-radius: 0.5rem; padding: 0.7rem 0.9rem; font-size: 0.87rem; }
+  .hadith-topic-meta p { margin: 0.18rem 0; }
+  .hadith-unreviewed { color: #7d1f1e; font-weight: 600; }
+  .hadith-topic-heading { font-size: 0.85rem; color: var(--hadith-muted); margin: 0.6rem 0 0; }
+
+  /* ---- Search ---- */
+  .hadith-search-input { width: 100%; min-height: 44px; padding: 0.5rem 0.7rem; border: 1px solid var(--hadith-rule); border-radius: 0.45rem; font-size: 1rem; }
+  .hadith-match-where { font-size: 0.8rem; color: var(--hadith-gold); font-weight: 600; margin: 0.6rem 0 0; }
+
+  /* ---- Commentary ---- */
+  .hadith-commentary-card { border: 1px solid var(--hadith-rule); border-left: 4px solid var(--hadith-gold); border-radius: 0.5rem; padding: 0.8rem; margin: 0.7rem 0; background: #fff; }
+  .hadith-commentary-card p { margin: 0.2rem 0; font-size: 0.9rem; }
+  .hadith-commentary-source { font-weight: 700; }
+  .hadith-commentary-author { color: var(--hadith-ink); font-weight: 600; }
+  .hadith-work-ar { font-size: 1.8em; direction: rtl; margin-inline-start: 0.5rem; display: inline-block; vertical-align: middle; }
+  .hadith-panel-title-ar { font-size: 2em; direction: rtl; text-align: right; margin: 0.2rem 0 0.6rem; }
+  .hadith-commentary-review, .hadith-commentary-rights, .hadith-commentary-binding { font-size: 0.82rem !important; color: var(--hadith-muted); }
+  .hadith-commentary-rights { color: #7d1f1e !important; font-weight: 600; }
+  /* Sized to the card's own text, not to body size: at 16px the label needs
+     345px and the card's CONTENT box is 327px, so it wrapped and orphaned the
+     arrow. Tap target comes from padding, never from a 40px line-height. */
+  /* #7a5a14, not --hadith-gold (#b8862f): the gold measured 3.24:1 on the white
+     commentary card (v08.109); this darker gold is 6.4:1. */
+  .hadith-commentary-link { display: inline-block; padding: 0.6rem 0; font-size: 0.9rem; line-height: 1.45; color: #7a5a14; font-weight: 600; overflow-wrap: break-word; }
+  .hadith-never-do { font-size: 0.82rem; color: var(--hadith-muted); background: #f6f7fa; border-radius: 0.5rem; padding: 0.7rem 0.9rem 0.7rem 1.8rem; }
+  .hadith-note { font-size: 0.87rem; color: var(--hadith-muted); }
+
+  /* ---- The QuranRevival mount preview ---- */
+  #qrShell { display: none; }
+  body[data-mount="quranrevival"] #qrShell { display: block; border-bottom: 2px solid var(--hadith-gold); margin-bottom: 0.8rem; padding-bottom: 0.6rem; }
+  .qr-shell-title { display: flex; align-items: baseline; gap: 0.5rem; flex-wrap: wrap; }
+  .qr-shell-name { font-weight: 700; color: var(--hadith-ink); }
+  .qr-badge { font-size: 0.75rem; background: var(--hadith-ink); color: #fff; padding: 0.1rem 0.45rem; border-radius: 0.6rem; }
+  .qr-mount-note { font-size: 0.8rem; color: var(--hadith-muted); margin: 0.3rem 0 0; }
+
+  /* ---- HadeethEnc (issue #309) -- the real corpus ---- */
+  .hadeethenc-section { margin-bottom: 1.2rem; padding-bottom: 1rem; border-bottom: 2px solid var(--hadith-rule); }
+  .hadeethenc-body { margin-top: 0.4rem; }
+  .hadeethenc-explanation { border: 1px solid var(--hadith-rule); border-radius: 0.4rem; padding: 0.3rem 0.7rem; margin: 0.6rem 0; }
+  .hadeethenc-explanation summary { min-height: 40px; display: flex; align-items: center; cursor: pointer; font-weight: 600; color: var(--hadith-ink); }
+  .hadeethenc-explanation p, .hadeethenc-explanation ul { font-size: 0.9rem; margin: 0.4rem 0; }
+  .hadeethenc-words-meanings p { font-size: 0.88rem; margin: 0.2rem 0; }
+  /* Styled identically to .hadith-crumb/.hadith-crumb-current -- a separate
+     class so hadith-source-navigation-browser.mjs's bare `.hadith-crumb`
+     click can never become ambiguous (see hadith-browser.js's own comment). */
+  .hadeethenc-crumb { background: none; border: none; color: var(--hadith-ink); text-decoration: underline; cursor: pointer; font: inherit; padding: 0.2rem; min-height: 40px; }
+  .hadeethenc-crumb-current { font-weight: 600; }
+
+  @media (max-width: 380px) {
+    .hadith-tab { padding: 0.4rem 0.6rem; font-size: 0.84rem; }
+    .hadith-arabic { font-size: 1.7em; }
+  }
+
+/* Architect review, #309: the HadeethEnc "Source" link reused the gold
+   .hadith-view-source colour, measured 3.18:1 on the card's cream and 24.6px
+   tall. It is the attribution the grant requires, so it must be readable and
+   tappable: a darker gold (>= 4.5:1) and a 40px target. */
+[data-hadeethenc-card] a.hadith-view-source {
+  color: #7a5a12;
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+}
+
+/* ---- OpenITI (issue #316) -- 11 real, untranslated Arabic hadith
+   collections, book -> chapter -> passage. Styled to match the HadeethEnc
+   surface directly above it (same row/card/crumb shapes), since both sit in
+   the same Collections landing. ---- */
+.openiti-section { margin-bottom: 1.2rem; padding-bottom: 1rem; border-bottom: 2px solid var(--hadith-rule); }
+.openiti-body { margin-top: 0.4rem; }
+.openiti-study-soon { font-size: 0.85rem; color: var(--hadith-muted); font-style: italic; margin: 0.3rem 0 0.8rem; }
+.openiti-crumb { background: none; border: none; color: var(--hadith-ink); text-decoration: underline; cursor: pointer; font: inherit; padding: 0.2rem; min-height: 40px; }
+.openiti-crumb-current { font-weight: 600; }
+.openiti-title-ar { font-size: 1.05em; }
+/* A chapter row's own name IS its Arabic heading -- unlike the synthetic
+   pilot's translated .hadith-row-name, there is no separate English title to
+   sit beside it, so this modifier gives the shared class its own
+   direction/alignment rather than changing .hadith-row-name for every caller. */
+.openiti-row-name-ar { direction: rtl; text-align: right; }
+.openiti-goto { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; margin: 0.6rem 0; }
+.openiti-goto-label { display: flex; align-items: center; gap: 0.4rem; font-size: 0.88rem; }
+.openiti-goto-input { min-height: 40px; min-width: 0; width: 7rem; padding: 0.3rem 0.5rem; border-radius: 0.35rem; border: 1px solid var(--hadith-rule); }
+.openiti-goto-btn { min-height: 40px; padding: 0.4rem 0.9rem; border-radius: 0.35rem; border: 1px solid var(--hadith-rule); background: #fff; cursor: pointer; font-weight: 600; }
+.openiti-goto-msg { margin: 0.2rem 0; }
+/* Round H-DB2: the numbering choice beside "Go to hadith number", sized like its input; and each narration's
+   standard number on its card. */
+.openiti-goto-mode { min-height: 40px; min-width: 0; max-width: 100%; padding: 0.3rem 0.4rem; border-radius: 0.35rem; border: 1px solid var(--hadith-rule); background: #fff; font: inherit; font-size: 0.88rem; }
+.openiti-goto-hint { font-size: 0.8rem; color: var(--hadith-muted); }
+.openiti-standard-number { margin: 0.1rem 0 0.3rem; font-size: 0.85rem; font-weight: 600; color: var(--hadith-ink); }
+/* Round H-DB4: "Also narrated in" on a Dua narration, each book a 40px button; the way back above a jump. */
+.dua-also { display: grid; gap: 0.35rem; margin: 0.5rem 0; padding-top: 0.45rem; border-top: 1px dashed var(--hadith-rule); }
+.dua-also-head { margin: 0; font-size: 0.85rem; font-weight: 600; color: var(--hadith-ink); display: flex; flex-wrap: wrap; gap: 0.3rem 0.6rem; align-items: baseline; }
+.dua-proposed { font-size: 0.75rem; font-weight: 400; font-style: italic; color: var(--hadith-muted); }
+.dua-also-refs { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.dua-ref { min-height: 40px; padding: 0.3rem 0.7rem; border-radius: 0.4rem; border: 1px solid var(--hadith-rule); background: #fff; color: var(--hadith-ink); font: inherit; font-size: 0.85rem; cursor: pointer; font-variant-numeric: tabular-nums; }
+.dua-ref:hover { border-color: var(--hadith-gold); }
+.openiti-trail-back { margin-bottom: 0.4rem; }
+.dua-also-more summary { min-height: 40px; display: flex; align-items: center; cursor: pointer; font-size: 0.85rem; font-weight: 600; color: var(--hadith-ink); }
+/* Round H-DB5: the Duas / Dua chapters switch, a dua card's bab heading, the pager and the progress buttons. */
+.dua-modes { display: inline-flex; gap: 4px; padding: 4px; margin: 0.4rem 0 0.6rem; border-radius: 0.6rem; background: #f1ede1; }
+.dua-mode { min-height: 40px; padding: 0 1rem; border: 0; border-radius: 0.45rem; background: transparent; color: var(--hadith-ink); font: inherit; cursor: pointer; }
+.dua-mode[aria-pressed="true"] { background: var(--hadith-ink); color: #fff; font-weight: 600; }
+.dua-card-heading { margin: 0.1rem 0 0.2rem; font-family: 'Amiri', 'Noto Naskh Arabic', serif; font-size: 1.15rem; color: var(--hadith-ink); }
+.dua-pager { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap; margin: 0.5rem 0; }
+.dua-pager .dua-ref:disabled { opacity: 0.45; cursor: default; }
+.dua-progress { display: grid; gap: 0.35rem; margin-top: 0.5rem; padding-top: 0.45rem; border-top: 1px dashed var(--hadith-rule); }
+.dua-progress-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(5.6rem, 1fr)); gap: 0.35rem; }
+/* 9 Oct 2026: 📝 My Notes and 🔖 Bookmark on a dua card, side by side. */
+.dua-note-bookmark { align-items: flex-start; gap: 0.5rem; margin-top: 0.15rem; }
+.dua-note-bookmark [role="status"]:empty { display: none; }
+.dua-status { min-height: 40px; min-width: 0; padding: 0.3rem 0.4rem; border-radius: 0.4rem; border: 1px solid var(--hadith-rule); background: #fff; color: var(--hadith-ink); font: inherit; font-size: 0.85rem; cursor: pointer; }
+.dua-status[aria-pressed="true"] { background: #dcefe3; border-color: #2f7d4f; color: #1f5c38; font-weight: 600; }
+.openiti-show-more { min-height: 40px; padding: 0.4rem 0.9rem; border-radius: 0.35rem; border: 1px solid var(--hadith-rule); background: #fff; cursor: pointer; font-weight: 600; margin: 0.5rem 0; }
+.openiti-editorial-label { color: #7d5a00; font-weight: 700; }
+.openiti-page-refs { font-size: 0.75rem; }
+/* chapter-text -- the book's own words, visually quieter, no number (issue
+   #316 point 3). Only the Arabic text itself is toned down; the card keeps
+   its normal background so the credit link's own measured contrast/tap
+   target (below) is unaffected by a card-level background change. */
+.openiti-chapter-text .hadith-arabic { font-style: italic; color: var(--hadith-muted); }
+
+/* The OpenITI credit link, same measured fix as HadeethEnc's own "Source"
+   link (see the block above): the default .hadith-view-source gold measures
+   short of 4.5:1 on this card's cream background. */
+[data-openiti-passage] a.hadith-view-source {
+  color: #7a5a12;
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+}
+
+/* ---- HadeethEnc study actions (issue #311) -- Note/bookmark/Studied ---- */
+.hadeethenc-study-actions { margin-top: 0.8rem; padding-top: 0.7rem; border-top: 1px dashed var(--hadith-rule); }
+.hadeethenc-study-row { display: flex; flex-wrap: wrap; gap: 0.7rem; align-items: flex-start; }
+.hadeethenc-study-item { display: flex; flex-direction: column; gap: 0.25rem; min-width: 0; }
+.hadeethenc-study-btn {
+  /* border-box (9 Oct 2026): a link is content-box by default, so its 40px minimum came out 55px with the padding,
+     beside a 40px button -- 📝 My Notes stood taller than 🔖 Bookmark this on every hadith and dua card. */
+  box-sizing: border-box;
+  display: inline-flex; align-items: center; min-height: 40px; padding: 0.4rem 0.8rem;
+  border: 1px solid var(--hadith-rule); border-radius: 0.4rem; background: #fff;
+  color: var(--hadith-ink); font-size: 0.88rem; font-weight: 600; cursor: pointer;
+  text-decoration: none;
+}
+a.hadeethenc-study-btn[aria-disabled="true"], button.hadeethenc-study-btn[aria-disabled="true"] {
+  opacity: 0.5; cursor: default;
+}
+.hadeethenc-study-label { font-size: 0.82rem; font-weight: 600; color: var(--hadith-ink); }
+.hadeethenc-study-select { min-height: 40px; min-width: 0; padding: 0.3rem 0.5rem; border-radius: 0.35rem; border: 1px solid var(--hadith-rule); }
+/* 👥 the record-for picker beside "Studied" (decision 71). Architect review (#597): hadith-collections.html carries
+   no copy of the picker's styles (each study page inlines its own), so the list rendered unstyled and always open.
+   The same look as the Qur'an page's, scoped here, with its own dark ink on its white box. */
+.hadeethenc-study-item .claim-for-row { display: flex; align-items: center; position: relative; max-width: 100%; }
+.hadeethenc-study-item .assign-trigger-wrap { position: relative; flex-shrink: 0; }
+.hadeethenc-study-item .assign-trigger {
+  display: flex; align-items: center; gap: 0.3rem; min-height: 40px; max-width: 100%;
+  background: #fff; border: 1.5px solid rgba(31,58,110,0.35); color: #1F3A6E; font-weight: 700; font-size: 0.85rem;
+  padding: 0.28rem 0.7rem; border-radius: 1.2rem; cursor: pointer; white-space: nowrap; font-family: inherit;
+}
+.hadeethenc-study-item .assign-trigger .caret { font-size: 0.65rem; opacity: 0.7; }
+.hadeethenc-study-item .assign-popover {
+  position: absolute; top: calc(100% + 0.35rem); left: 0; right: auto; width: 12.5rem; max-width: calc(100vw - 32px);
+  background: #fff; color: #1F2937; border: 1px solid rgba(31,58,110,0.22); border-radius: 10px;
+  padding: 0.6rem 0.65rem 0.65rem; box-shadow: 0 10px 26px rgba(20,40,80,0.18); z-index: 40; display: none;
+}
+.hadeethenc-study-item .assign-popover.open { display: block; }
+.hadeethenc-study-item .assign-popover-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; color: #555; margin: 0 0 0.4rem; }
+.hadeethenc-study-item .assign-hint { font-size: 0.76rem; color: #555; margin: 0 0 0.55rem; }
+.hadeethenc-study-item .assign-list { display: flex; flex-direction: column; gap: 0.3rem; }
+.hadeethenc-study-item .assign-row { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; cursor: pointer; user-select: none; padding: 0.1rem 0; min-height: 32px; }
+.hadeethenc-study-item .assign-row input[type="checkbox"] { width: 1.05rem; height: 1.05rem; accent-color: #1F3A6E; cursor: pointer; flex-shrink: 0; }
+.hadeethenc-study-item .assign-row .who-name { flex: 1; }
+.hadeethenc-study-item .assign-row .who-tag { font-size: 0.66rem; color: #555; background: #f6f7fb; border: 1px solid #eee; border-radius: 0.6rem; padding: 0.02rem 0.4rem; }
+.hadeethenc-study-reason { flex-basis: 100%; font-size: 0.8rem; color: #7d1f1e; margin: 0.1rem 0 0; font-weight: 600; }
+
+/* The Owner, 8 Oct 2026: a dua's own words, large, in the Quranic font chosen in Options (quranFontStack()). */
+@font-face { font-family: 'QR Scheherazade'; src: url('../fonts/scheherazade.woff2') format('woff2'); font-display: swap; }
+@font-face { font-family: 'QR Noto Naskh';   src: url('../fonts/notonaskh.woff2')   format('woff2'); font-display: swap; }
+@font-face { font-family: 'QR Amiri Quran';  src: url('../fonts/amiriquran.woff2')  format('woff2'); font-display: swap; }
+.dua-words { font-size: 2.1em; line-height: 2; direction: rtl; text-align: right; margin: 0.4rem 0 0.1rem; color: var(--hadith-ink); overflow-wrap: anywhere; }
+.dua-words-note { margin: 0 0 0.3rem; font-size: 0.8rem; color: var(--hadith-muted); }
+.dua-narration summary { min-height: 40px; display: flex; align-items: center; cursor: pointer; font-size: 0.85rem; font-weight: 600; color: var(--hadith-ink); }
+.dua-narration .hadith-arabic { font-size: 1.5em; }
+.dua-words-mark { background: #f6e7b8; color: #2b2208; border-radius: 0.2em; padding: 0 0.1em; }
+
+/* Decision 90, round 1: a dua's words, each tappable; a linked word underlined; the word's panel. */
+.dua-word { border-radius: 0.25em; }
+.dua-word[role="button"] { cursor: pointer; }
+.dua-word-linked { text-decoration: underline dotted 0.06em; text-underline-offset: 0.35em; text-decoration-skip-ink: none; text-decoration-color: var(--hadith-gold, #b8860b); }
+.dua-word[aria-pressed="true"] { background: #f6e7b8; color: #2b2208; }
+.dua-word:focus-visible { outline: 2px solid var(--hadith-gold, #b8860b); outline-offset: 2px; }
+.dua-word-panel { margin: 0.2rem 0 0.5rem; padding: 0.5rem 0.7rem; border: 1px solid var(--hadith-rule); border-radius: 0.6rem; background: #fbf7ea; color: var(--hadith-ink); }
+.dua-word-panel[hidden] { display: none; }
+.dua-word-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.dua-word-panel-ar { font-size: 1.9em; line-height: 1.6; }
+.dua-word-panel-close { min-width: 40px; min-height: 40px; border: 1px solid var(--hadith-rule); border-radius: 0.5rem; background: transparent; color: inherit; font-size: 1.2rem; cursor: pointer; }
+.dua-word-line { display: grid; grid-template-columns: minmax(6.5rem, 8rem) minmax(0, 1fr); align-items: baseline; gap: 0.2rem 0.5rem; margin: 0.15rem 0; }
+.dua-word-line .dua-proposed { grid-column: 2; }
+.dua-word-label { font-size: 0.8rem; color: var(--hadith-muted); }
+.dua-word-value { overflow-wrap: anywhere; }
+.dua-word-quran .dua-word-value, .dua-word-lemma .dua-word-value, .dua-word-root .dua-word-value { font-size: 1.4em; }
+.dua-word-count { margin: 0.3rem 0; font-size: 0.85rem; }
+.dua-word-open { display: inline-flex; align-items: center; min-height: 40px; text-decoration: none; }
+
+/* Decision 90, rounds 2-4: how a word was matched, the dictionaries, its places, its progress. */
+.dua-word-how { margin: 0.1rem 0; font-size: 0.82rem; color: var(--hadith-muted); }
+.dua-word-places { display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0.35rem 0; align-items: center; }
+.dua-word-dicts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.35rem; margin: 0.35rem 0; }
+.dua-word-dict { justify-content: center; text-align: center; }
+.dua-word-progress .dua-progress-row { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 520px) { .dua-word-progress .dua-progress-row { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.dua-word-dict, .dua-word-place { display: inline-flex; align-items: center; min-height: 40px; text-decoration: none; }
+.dua-word-progress { display: grid; gap: 0.3rem; margin-top: 0.5rem; padding-top: 0.45rem; border-top: 1px dashed var(--hadith-rule); }
+.dua-word-progress .dua-status { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; text-decoration: none; }
+.dua-word-progress .dua-status[aria-current="true"] { outline: 2px solid var(--hadith-gold, #b8860b); outline-offset: 1px; font-weight: 600; }
+.dua-word-line .dua-word-value[lang="ar"] { justify-self: start; }
+
+/* Decision 90, round 5a: where the vowels come from, and the switch. */
+.dua-vowels-note { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; }
+.dua-vowels-toggle { display: inline-flex; align-items: center; min-height: 40px; }

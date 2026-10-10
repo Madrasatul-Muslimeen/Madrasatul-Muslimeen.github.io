@@ -1,0 +1,370 @@
+/* The Note view and its pop-up windows (js/note-window.js), shared by
+   journey-map.html and notes.html (Siyagah port round 6b). Moved here from
+   journey-map.html's own <style> unchanged; the rules bound to that page's own
+   ids (#notePane, #noteLayout) stay there. */
+
+/* Base pieces the view uses, which notes.html's own stylesheet does not have.
+   journey-map.html keeps its own identical copies (its page menu uses them). */
+.folder-menu-wrap { position: relative; flex: 0 0 auto; }
+.folder-menu-btn {
+  width: 40px; height: 40px; padding: 0; font-size: 1.15rem; line-height: 1;
+  border-radius: 0.4rem; border: 1px solid #ccc; background: #fff; color: #1F3A6E; cursor: pointer;
+}
+.bar-palette {
+  display: none; position: absolute; top: 2.4rem; right: 0; z-index: 20;
+  background: #fff; border: 1px solid #ddd; border-radius: 0.5rem;
+  box-shadow: 0 10px 26px rgba(20,30,60,0.25);
+  width: 11rem; max-width: calc(100vw - 2rem); box-sizing: border-box;
+  padding: 0.5rem; flex-direction: column; gap: 0.3rem;
+}
+.bar-palette.open { display: flex; }
+.bar-palette button { width: 100%; text-align: left; }
+.folder-chip { display: inline-block; font-size: 0.7rem; padding: 0.1rem 0.5rem; border-radius: 999px; background: #eef2ff; color: #1F3A6E; margin: 0.1rem 0.2rem 0 0; }
+
+.note-pane-bar { display: flex; flex-wrap: nowrap; align-items: center; gap: 0.4rem; min-height: 40px; }
+.note-pane-bar > * { flex: 0 0 auto; }
+.note-pane-bar > .pane-spacer { flex: 1 1 0; min-width: 0; }
+.pane-btn { min-height: 40px; min-width: 40px; white-space: nowrap; }
+.pane-menu-wrap[hidden] { display: none; }
+.note-pane-bar.folded [data-pane-prev], .note-pane-bar.folded [data-pane-next] { display: none; }
+.note-pane-bar.tight [data-pane-contents-label] { display: none; }
+[data-pane-menu] .pane-fold-item { display: none; }
+.note-pane-bar.folded [data-pane-menu] .pane-fold-item { display: block; }
+.pane-contents-menu button { min-height: 40px; }
+.pane-contents-menu { left: 0; right: auto; width: 15rem; max-height: 60vh; overflow-y: auto; }
+.note-pane-title { margin: 0.7rem 0 0.2rem; font-size: 1.25rem; overflow-wrap: anywhere; }
+.note-pane-meta { margin: 0 0 0.4rem; font-size: 0.8rem; color: #777; }
+.note-pane-chips { margin: 0 0 0.6rem; }
+.note-pane-chips .folder-chip { border: 1px solid #c9d3e6; cursor: pointer; font-size: 0.8rem; min-height: 32px; padding: 0.2rem 0.7rem; }
+.note-pane-body { line-height: 1.5; overflow-wrap: anywhere; }
+/* Siyagah round 5 -- edit mode (Owner decision 42.3). Edit is the LAST thing on the header row to fold into the menu. */
+.note-pane-bar.edit-folded > [data-pane-edit-toggle] { display: none; }
+[data-pane-menu] .pane-editfold-item { display: none; }
+.note-pane-bar.edit-folded [data-pane-menu] .pane-editfold-item { display: block; }
+.pane-edit-title { width: 100%; box-sizing: border-box; font: inherit; font-size: 1.15rem; font-weight: 600; min-height: 40px; margin: 0.7rem 0 0.2rem; padding: 0.3rem 0.5rem; border: 1px solid #aab; border-radius: 0.4rem; }
+/* S12 -- the toolbar scrolls sideways INSIDE itself (never the page); every button is at least 40px. */
+.pane-edit-toolbar { display: flex; flex-wrap: nowrap; align-items: center; gap: 0.3rem; margin: 0.4rem 0; overflow-x: auto; overflow-y: hidden; max-width: 100%; box-sizing: border-box; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
+.pane-edit-toolbar > * { flex: 0 0 auto; }
+.pane-edit-toolbar .tb-btn, .pane-edit-panel .tb-btn { min-width: 40px; min-height: 40px; padding: 0 0.4rem; }
+.tb-swatch-a { border-bottom: 3px solid #B3261E; line-height: 1; font-weight: 700; }
+.tb-swatch-hl { background: #FFF59D; color: #222; padding: 0 0.2rem; font-weight: 700; }
+.pane-edit-panel { margin: 0 0 0.4rem; padding: 0.4rem; border: 1px solid #c9d3e6; border-radius: 0.5rem; background: #f6f8ff; max-width: 100%; box-sizing: border-box; }
+.pane-edit-panel[hidden] { display: none; }
+.pane-panel-row { display: flex; flex-wrap: wrap; gap: 0.3rem; align-items: flex-end; margin-bottom: 0.3rem; }
+.pane-panel-field { display: flex; flex-direction: column; gap: 0.15rem; font-size: 0.8rem; color: #1F3A6E; flex: 1 1 10rem; min-width: 0; }
+.pane-panel-field.narrow { flex: 0 0 6rem; }
+.pane-panel-field input { min-height: 40px; box-sizing: border-box; width: 100%; min-width: 0; padding: 0.3rem 0.5rem; font: inherit; border: 1px solid #aab; border-radius: 0.4rem; color: #1F3A6E; background: #fff; }
+.pane-edit-panel .tb-text { padding: 0 0.7rem; white-space: nowrap; }
+.pane-edit-panel .tb-chip { width: 44px; height: 44px; border: 1px solid #889; font-weight: 700; }
+.pane-panel-msg { margin: 0; color: #8a1c1c; font-size: 0.85rem; font-weight: 600; }
+.pane-panel-msg[hidden] { display: none; }
+.ed-wrap { position: relative; }
+.ed-gutter { position: absolute; inset: 0; pointer-events: none; }
+.ed-heading-ctl { position: absolute; inset-inline-end: 0.25rem; display: flex; align-items: center; gap: 0.2rem; pointer-events: none; }
+.ed-ctl-btn { pointer-events: auto; width: 40px; height: 40px; padding: 0; line-height: 1; touch-action: none; }
+.ed-grip { cursor: grab; }
+.ed-grip.dragging { cursor: grabbing; background: #dbe4fb; }
+.ed-drop-line { position: absolute; left: 0; right: 0; height: 3px; margin-top: -2px; background: #1F3A6E; pointer-events: none; }
+.ed-drop-line[hidden] { display: none; }
+.pane-edit-body h1, .pane-edit-body h2, .pane-edit-body h3, .pane-edit-body h4 { min-height: 40px; padding-inline-end: 5.4rem; box-sizing: border-box; }
+.pane-edit-body .ed-folded { display: none; }
+/* what the new buttons produce, in the editor and in the read view */
+.pane-edit-body p, .pane-edit-body h1, .pane-edit-body h2, .pane-edit-body h3, .pane-edit-body li, .pane-edit-body blockquote, .pane-edit-body td, .pane-edit-body th, .pane-edit-body div,
+.note-pane-body p, .note-pane-body h1, .note-pane-body h2, .note-pane-body h3, .note-pane-body li, .note-pane-body blockquote, .note-pane-body td, .note-pane-body th, .note-pane-body div { unicode-bidi: plaintext; }
+.pane-edit-body blockquote, .note-pane-body blockquote, .note-ver-text blockquote { margin: 0.5rem 0; padding: 0.2rem 0.8rem; border-inline-start: 3px solid #8892a8; color: #333; background: #f4f6fb; }
+.pane-edit-body table, .note-pane-body table, .note-ver-text table { border-collapse: collapse; max-width: 100%; margin: 0.4rem 0; }
+.pane-edit-body td, .pane-edit-body th, .note-pane-body td, .note-pane-body th, .note-ver-text td, .note-ver-text th { border: 1px solid #99a; padding: 0.3rem 0.5rem; min-width: 2.5rem; vertical-align: top; }
+.pane-edit-body a, .note-pane-body a, .note-ver-text a { color: #0b4fa8; text-decoration: underline; overflow-wrap: anywhere; }
+.pane-edit-body ul[data-check], .note-pane-body ul[data-check], .note-ver-text ul[data-check] { list-style: none; padding-inline-start: 0; margin: 0.4rem 0; }
+ul[data-check] > li { position: relative; padding-inline-start: 2.2rem; min-height: 1.6rem; }
+ul[data-check] > li::before { content: ""; position: absolute; inset-inline-start: 0.2rem; top: 0.15rem; width: 1.2rem; height: 1.2rem; box-sizing: border-box; border: 2px solid #1F3A6E; border-radius: 0.25rem; background: #fff; }
+ul[data-check] > li[data-checked="true"]::before { background: #1F3A6E; content: "✓"; color: #fff; font-size: 0.95rem; line-height: 1rem; text-align: center; }
+ul[data-check] > li[data-checked="true"] { color: #555; text-decoration: line-through; }
+.pane-edit-body ul[data-check] > li { cursor: text; }
+/* Siyagah round 6a -- Note pop-up windows. Menus inside a window must be above it (§5.3), so the window never clips: only its own scroll area does. */
+.note-win { position: fixed; z-index: 1000; display: flex; flex-direction: column; box-sizing: border-box; background: #fff; color: #222; border: 1px solid #999; border-radius: 8px; box-shadow: 0 8px 30px rgba(0,0,0,0.35); outline: none; }
+.note-win.sheet { inset: 0 0 var(--nw-switch, 0px) 0; width: auto; height: auto; border: 0; border-radius: 0; }
+.note-win.sheet-hidden { display: none; }
+.nw-bar { flex: 0 0 44px; display: flex; align-items: center; justify-content: space-between; gap: 0.4rem; background: #1f3a6e; color: #fff; padding: 0 0 0 0.8rem; border-radius: 7px 7px 0 0; cursor: move; touch-action: none; user-select: none; -webkit-user-select: none; }
+.note-win.sheet .nw-bar { cursor: default; border-radius: 0; }
+.nw-title { font-weight: 600; font-size: 1rem; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nw-close { flex: 0 0 auto; min-width: 44px; min-height: 44px; background: none; border: 0; color: #fff; font-size: 1.4rem; line-height: 1; cursor: pointer; }
+.nw-view { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; padding: 0.3rem 0.6rem 0; }
+.nw-view .note-pane-bar { flex: 0 0 auto; }
+.nw-view [data-pane-back], .nw-view .note-pane-title { display: none; }
+.nw-details-row { flex: 0 0 auto; display: flex; align-items: flex-start; gap: 0.4rem; margin: 0.2rem 0; }
+.nw-details-btn { flex: 0 0 auto; min-height: 40px; white-space: nowrap; }
+.nw-details { flex: 1 1 0; min-width: 0; overflow: hidden; align-self: center; }
+.nw-details.open { max-height: none; overflow: visible; }
+.nw-details .note-pane-meta { margin: 0 0 0.2rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nw-details.open .note-pane-meta { white-space: normal; }
+.nw-details .note-pane-chips { margin: 0; }
+/* Architect review of #453: closed, the Details line is the date alone --
+   the folder chips sat below its one-line clip, half a pill showing. */
+.nw-details:not(.open) .note-pane-chips { display: none; }
+.nw-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden; padding-bottom: 1rem; }
+.nw-view .pane-edit-toolbar { flex: 0 0 auto; }
+/* the eight resize handles' own geometry comes from js/float-window.js (handleCss), injected by note-window.js */
+.note-win.sheet .nw-h { display: none; }
+body.jt-dragging .note-win { user-select: none; -webkit-user-select: none; }
+.nw-switch { position: fixed; left: 0; right: 0; bottom: 0; z-index: 5000; height: 56px; box-sizing: border-box; display: flex; gap: 0.4rem; align-items: center; padding: 0 0.4rem; background: #1f3a6e; }
+.nw-switch-btn { flex: 1 1 0; min-width: 0; min-height: 40px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nw-switch-btn.active { outline: 2px solid #fff; font-weight: 600; }
+/* S13 -- tab strip (640px and up) and the Version line. Tabs are 40px or taller; the strip scrolls INSIDE itself, never the page; a long title is shortened with the full title in its tooltip. */
+.nw-tab { flex: 1 1 0; min-width: 0; display: flex; align-items: stretch; gap: 0.2rem; }
+.nw-tab .nw-switch-btn { flex: 1 1 0; }
+.nw-tab-x { flex: 0 0 auto; min-width: 40px; min-height: 40px; padding: 0; font-size: 1.1rem; line-height: 1; }
+.nw-switch.nw-tabs { height: auto; min-height: 52px; max-width: 100vw; overflow-x: auto; overflow-y: hidden; padding: 6px 0.4rem; justify-content: flex-start; }
+.nw-tabs .nw-tab { flex: 0 0 auto; width: 220px; max-width: 70vw; }
+.nw-ver-btn { display: block; min-height: 40px; max-width: 100%; margin: 0 0 0.2rem; text-align: start; white-space: normal; }
+.nw-ver-btn[hidden] { display: none; }
+.pane-edit-body { min-height: 8rem; padding: 0.5rem; border: 1px solid #aab; border-radius: 0.4rem; outline: none; }
+.pane-edit-body:focus { border-color: #1F3A6E; box-shadow: 0 0 0 2px rgba(31,58,110,0.15); }
+.pane-edit-status { margin: 0.3rem 0; font-size: 0.8rem; color: #555; }
+.pane-edit-status.problem { color: #8a1c1c; font-weight: 600; }
+.pane-draft-offer { margin: 0.5rem 0; padding: 0.5rem 0.6rem; border: 1px solid #e0c37a; background: #fff8e1; border-radius: 0.5rem; font-size: 0.9rem; }
+.pane-draft-offer .note-actions { margin-top: 0.4rem; }
+.pane-draft-offer[hidden], .pane-edit-toolbar[hidden], .pane-edit-status[hidden], .pane-edit-title[hidden], .note-pane-title[hidden], [data-pane-edit-toggle][hidden], [data-pane-new][hidden] { display: none; }
+.note-pane-body img, .note-pane-body table { max-width: 100%; }
+.note-sec-h { margin: 0.6rem 0 0.2rem; font-size: 1.05rem; }
+.note-sec-toggle { display: flex; align-items: flex-start; gap: 0.4rem; width: 100%; min-height: 40px; background: none; border: none; color: #1F3A6E; font: inherit; font-weight: 700; text-align: left; padding: 0.2rem 0; cursor: pointer; }
+.note-sec-arrow { flex: 0 0 1.2rem; }
+.note-sec-text { min-width: 0; overflow-wrap: anywhere; }
+.note-sec .note-sec { margin-left: 0.8rem; }
+.note-sec.collapsed > .note-sec-body { display: none; }
+
+/* Siyagah round 7b -- Tags (Owner decision 42.5). A tag chip is the folder chip's colours (fixed, 4.5:1 in Night and Light); its colour is a dot. */
+.tag-chip { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.8rem; padding: 0.2rem 0.7rem; min-height: 32px; box-sizing: border-box; border-radius: 999px; background: #eef2ff; color: #1F3A6E; border: 1px solid #c9d3e6; margin: 0.1rem 0.2rem 0 0; max-width: 100%; overflow-wrap: anywhere; }
+/* Note-pane round 2 (item 18): a tag chip is a button -- tap it to see every Note with that tag. */
+button.tag-chip-btn { font: inherit; font-size: 0.8rem; min-height: 36px; cursor: pointer; text-align: start; }
+button.tag-chip-btn:hover, button.tag-chip-btn:focus-visible { background: #dde6fb; }
+/* Item 17: the small menu a long press / right-click on a heading opens. */
+.note-sec-menu { position: fixed; z-index: 6100; display: flex; flex-direction: column; gap: 0.25rem; padding: 0.35rem; background: #fff; color: #1F3A6E; border: 1px solid #c9d3e6; border-radius: 0.5rem; box-shadow: 0 8px 24px rgba(20,30,60,0.3); max-width: calc(100vw - 16px); box-sizing: border-box; }
+.note-sec-menu button { min-height: 44px; text-align: start; white-space: normal; }
+.note-pane-title, .note-sec-h { -webkit-touch-callout: none; }
+.tag-dot { flex: 0 0 auto; width: 0.7rem; height: 0.7rem; border-radius: 50%; background: transparent; border: 1px solid #8892a8; box-sizing: border-box; }
+.tag-picker { position: fixed; inset: 0; z-index: 6000; background: rgba(20,30,60,0.45); display: flex; align-items: center; justify-content: center; padding: 0.6rem; box-sizing: border-box; }
+.tag-picker-card { background: #fff; color: #1F3A6E; width: 100%; max-width: 24rem; max-height: calc(100vh - 1.2rem); overflow-y: auto; border-radius: 0.6rem; padding: 0.7rem; box-sizing: border-box; box-shadow: 0 12px 32px rgba(20,30,60,0.4); display: flex; flex-direction: column; gap: 0.5rem; }
+.tag-picker-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.tag-picker-close { width: 40px; height: 40px; padding: 0; }
+.tag-picker-msg { margin: 0; color: #8a1c1c; font-size: 0.85rem; }
+.tag-picker-card .gate-note { margin: 0; color: #4a3b00; background: #fff8e1; border: 1px solid #e0c37a; border-radius: 0.4rem; padding: 0.4rem 0.5rem; font-size: 0.85rem; }
+.tag-picker-card [hidden] { display: none; }
+.tag-picker-search, .tag-picker-new input { min-height: 40px; box-sizing: border-box; width: 100%; min-width: 0; padding: 0.3rem 0.5rem; font: inherit; border: 1px solid #aab; border-radius: 0.4rem; color: #1F3A6E; background: #fff; }
+.tag-picker-list { display: flex; flex-direction: column; max-height: 40vh; overflow-y: auto; }
+.tag-pick-row { display: flex; align-items: center; gap: 0.5rem; min-height: 44px; padding: 0 0.2rem; cursor: pointer; }
+.tag-pick-row input { width: 22px; height: 22px; flex: 0 0 auto; }
+.tag-pick-name { min-width: 0; overflow-wrap: anywhere; }
+.tag-picker-new { display: flex; gap: 0.4rem; align-items: center; }
+.tag-picker-new button { flex: 0 0 auto; min-height: 40px; white-space: nowrap; }
+
+/* S11 -- reading tools. The bar stays on one line: 🔍 and ⇅ fold into ⋯ first, then Edit, then 📎 (js fitPaneBar). */
+.note-pane-bar.tools-folded > .pane-tool { display: none; }
+.note-pane-bar.attach-folded > .pane-attach { display: none; }
+[data-pane-menu] .pane-toolfold-item, [data-pane-menu] .pane-attachfold-item { display: none; }
+.note-pane-bar.tools-folded [data-pane-menu] .pane-toolfold-item { display: block; }
+.note-pane-bar.attach-folded [data-pane-menu] .pane-attachfold-item { display: block; }
+.pane-tool[hidden], .pane-attach[hidden] { display: none; }
+.note-find-bar { display: flex; flex-wrap: nowrap; align-items: center; gap: 0.3rem; margin: 0.4rem 0 0; }
+.note-find-bar[hidden] { display: none; }
+.note-find-bar > * { flex: 0 0 auto; }
+.note-find-bar > .note-find-input { flex: 1 1 0; min-width: 0; min-height: 40px; box-sizing: border-box; padding: 0.3rem 0.5rem; font: inherit; border: 1px solid #aab; border-radius: 0.4rem; color: #1F3A6E; background: #fff; }
+.note-find-count { font-size: 0.8rem; color: #444; min-width: 3.4rem; text-align: center; white-space: nowrap; }
+.note-find-bar .pane-btn { padding: 0; }
+mark.note-find-hit { background: #ffe58a; color: #222; border-radius: 2px; }
+mark.note-find-hit.current { background: #ff9f1c; outline: 2px solid #1F3A6E; }
+.note-ver-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.3rem; max-height: 55vh; overflow-y: auto; }
+.note-ver-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.2rem 0.5rem; width: 100%; min-height: 44px; text-align: left; box-sizing: border-box; }
+.note-ver-when { font-weight: 600; }
+.note-ver-cur { font-size: 0.75rem; border: 1px solid #1F3A6E; border-radius: 999px; padding: 0 0.4rem; }
+.note-ver-title { flex: 1 1 100%; min-width: 0; overflow-wrap: anywhere; font-size: 0.85rem; }
+.note-ver-h { margin: 0.2rem 0; overflow-wrap: anywhere; }
+.note-ver-text { max-height: 40vh; overflow: auto; overflow-wrap: anywhere; border: 1px solid #c9d3e6; border-radius: 0.4rem; padding: 0.4rem 0.6rem; background: #fafbff; }
+.note-ver-text img, .note-ver-text table { max-width: 100%; }
+.note-ver-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.5rem; }
+.note-ver-actions button { min-height: 44px; }
+.note-versions .tag-picker-card { max-width: 32rem; }
+.at-head { margin: 0.6rem 0 0.2rem; font-size: 1rem; }
+.at-list { display: flex; flex-direction: column; max-height: 30vh; overflow-y: auto; }
+/* Architect review of S13 (#564): on a phone the switcher items split the width
+   equally and cut every title to "Note …", so "Note Two" and "Note Three" read
+   the same and a phone has no tooltip to tell them apart. Here each item takes
+   its own width (at least 7.5rem, at most 60% of the screen), the title wraps
+   onto two lines instead of being cut on one, and the strip scrolls sideways. */
+.nw-switch:not(.nw-tabs) { overflow-x: auto; overflow-y: hidden; justify-content: flex-start; }
+.nw-switch:not(.nw-tabs) .nw-tab { flex: 0 0 auto; min-width: 7.5rem; max-width: 60vw; }
+/* Round 14 (decision 66): the pinned Notes strip in a pop-up window; scrolls sideways inside itself, targets 40px. */
+/* The Owner, 5 Oct 2026 -- the pinned Notes as a side panel (it replaced round 14's strip). Beside the Note in a wide window; over it in a narrow one or on a phone. */
+.nw-main { flex: 1 1 auto; min-height: 0; display: flex; position: relative; }
+.nw-main > .nw-view { flex: 1 1 auto; min-width: 0; }
+.nw-pins-btn { flex: 0 0 auto; min-height: 40px; white-space: nowrap; }
+.nw-pins-btn[aria-pressed="true"] { background: #C9A24B; color: #221904; border-color: #C9A24B; }
+.nw-pin-panel { flex: 0 0 220px; display: flex; flex-direction: column; min-height: 0; border-right: 1px solid #dcdcdc; background: #fbfaf6; }
+.nw-pin-panel[hidden] { display: none; }
+.nw-pin-split { flex: 0 0 8px; margin: 0 -4px; position: relative; z-index: 2; cursor: col-resize; touch-action: none; }
+.nw-pin-split::after { content: ""; position: absolute; left: 3px; top: 0; bottom: 0; width: 2px; background: transparent; }
+.nw-pin-split:hover::after, .nw-pin-split:focus-visible::after { background: #C9A24B; }
+.nw-pin-panel[hidden] + .nw-pin-split, .note-win.nw-narrow .nw-pin-split { display: none; }
+.note-win.nw-narrow .nw-pin-panel { position: absolute; z-index: 3; left: 0; top: 0; bottom: 0; width: min(260px, 85%); box-shadow: 8px 0 24px rgba(0, 0, 0, 0.2); }
+.nw-pin-head { display: flex; align-items: center; gap: 0.4rem; padding: 0.3rem 0.4rem 0.3rem 0.7rem; border-bottom: 1px solid #dcdcdc; font-weight: 700; color: #7a5a12; }
+.nw-pin-head span { flex: 1 1 auto; }
+.nw-pin-close { min-width: 40px; min-height: 40px; }
+.nw-pin-list { flex: 1 1 auto; overflow-y: auto; padding: 0.3rem; display: grid; gap: 0.2rem; align-content: start; }
+.nw-pin-list .note { margin: 0.3rem; }
+.nw-pin-item { border: 0; background: none; text-align: left; padding: 0.5rem 0.6rem; border-radius: 0.5rem; cursor: pointer; min-height: 44px; color: #1F3A6E; font: inherit; overflow-wrap: anywhere; }
+.nw-pin-item:hover { background: #eef3fb; }
+.nw-pin-item[aria-current="true"] { background: #eef3fb; outline: 1px solid #b6c6e6; font-weight: 600; }
+/* The Owner, 5 Oct 2026 -- a folder in its own window (same frame as a Note window). */
+.fw-body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+.fw-path { flex: 0 0 auto; display: flex; align-items: center; gap: 0.4rem; padding: 0.4rem 0.6rem; border-bottom: 1px solid #dcdcdc; flex-wrap: wrap; }
+.fw-btn { min-height: 40px; min-width: 40px; white-space: nowrap; }
+.fw-crumbs { flex: 1 1 8rem; min-width: 0; font-size: 0.88rem; color: #555; overflow-wrap: anywhere; }
+.fw-crumb { border: 0; background: none; color: #1F3A6E; text-decoration: underline; cursor: pointer; padding: 0.3rem 0.2rem; font: inherit; min-height: 36px; }
+.fw-crumb-here { color: #1F3A6E; }
+.fw-quick-row { flex: 0 0 auto; display: flex; gap: 0.4rem; padding: 0.4rem 0.6rem 0; align-items: center; }
+.fw-quick { flex: 1 1 auto; display: flex; gap: 0.4rem; min-width: 0; padding: 0 0 0.4rem; }
+.fw-quick-row .fw-quick { padding: 0; }
+form.fw-quick[data-fw-newfolder-form] { padding: 0.4rem 0.6rem; }
+.fw-quick input { flex: 1 1 auto; min-width: 0; min-height: 40px; box-sizing: border-box; }
+.fw-quick button { min-height: 40px; min-width: 40px; }
+.fw-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 0.6rem; display: grid; gap: 0.5rem; align-content: start; border-top: 1px solid #eee; margin-top: 0.4rem; }
+.fw-sub, .fw-note { display: flex; align-items: center; gap: 0.5rem; width: 100%; box-sizing: border-box; border: 1px solid #dcdcdc; border-radius: 0.6rem; padding: 0.6rem 0.8rem; min-height: 48px; background: #fff; color: #1F3A6E; font: inherit; text-align: left; cursor: pointer; }
+.fw-sub { background: #fafbfd; font-weight: 600; }
+.fw-sub-name { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.fw-count { flex: 0 0 auto; color: #777; font-size: 0.82rem; font-weight: 400; }
+.fw-note { flex-direction: column; align-items: flex-start; gap: 0.1rem; }
+.fw-note b { overflow-wrap: anywhere; }
+.fw-note small { color: #666; }
+.fw-sub:hover, .fw-note:hover { outline: 2px solid #b6c6e6; }
+[data-note-links] h3 { font-size: 0.95rem; margin: 0.8rem 0 0.3rem; color: #1F3A6E; }
+[data-note-links] li { display: flex; gap: 0.3rem; align-items: center; margin-bottom: 0.25rem; }
+[data-note-links] li > [data-link-open] { flex: 1 1 auto; min-width: 0; text-align: left; overflow: hidden; text-overflow: ellipsis; }
+.nw-switch:not(.nw-tabs) .nw-switch-btn { white-space: normal; overflow-wrap: anywhere; line-height: 1.15; font-size: 0.85rem; padding: 2px 8px; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; text-overflow: clip; }
+/* The Owner, 5 Oct 2026 ("add all functions of the notepane of Siyagah"): the editor's new marks, the same in
+   read mode, the editor and the Versions viewer. */
+.pane-edit-toolbar .tb-sep { flex: 0 0 1px; align-self: stretch; margin: 4px 2px; background: #c9cfdd; }
+.pane-panel-label { font-size: 0.85rem; color: #444; margin-inline-end: 0.2rem; }
+.pane-edit-body [data-done], .note-pane-body [data-done], .note-ver-text [data-done] { color: #6b7280; text-decoration: line-through; text-decoration-color: #9aa1ad; }
+.pane-edit-body [data-box], .note-pane-body [data-box], .note-ver-text [data-box] { border: 1.5px solid #C9A24B; border-radius: 0.5rem; padding: 0.4rem 0.7rem; margin: 0.5rem 0; background: #fffdf6; }
+.pane-edit-body hr, .note-pane-body hr, .note-ver-text hr { border: 0; border-top: 1.5px solid #c9cfdd; margin: 0.9rem 0; }
+.pane-edit-body h4, .note-pane-body h4, .note-ver-text h4 { font-size: 1rem; margin: 0.6rem 0 0.3rem; }
+
+/* Note-pane round 3 (5 Oct 2026, items 22-27). */
+.note-sec-peek { display: none; margin: -0.1rem 0 0.3rem 1.6rem; color: #5f6b7d; font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.note-sec.collapsed > .note-sec-peek { display: block; }
+.nw-dock { font-size: 1.05rem; margin-inline-start: auto; }
+.nw-dock + .nw-close { margin-inline-start: 0; }
+.nw-closeall { flex: 0 0 auto; min-height: 40px; white-space: nowrap; font-weight: 600; }
+.nw-toc { flex: 0 0 13rem; min-width: 0; overflow-y: auto; border-inline-end: 1px solid #dde3ee; padding: 0.4rem 0.3rem; box-sizing: border-box; display: flex; flex-direction: column; gap: 0.15rem; }
+.nw-toc[hidden] { display: none; }
+.nw-toc-head { margin: 0 0 0.3rem; font-weight: 700; font-size: 0.85rem; color: #1F3A6E; }
+.nw-toc-item { text-align: start; min-height: 36px; background: none; border: 0; border-radius: 0.35rem; color: #1F3A6E; font: inherit; font-size: 0.86rem; cursor: pointer; overflow-wrap: anywhere; }
+.nw-toc-item:hover, .nw-toc-item:focus-visible { background: #eef2ff; }
+.pane-btn[data-pane-multi][hidden], .note-pane-bar.multi-folded > [data-pane-multi], .note-pane-bar.tools-folded > [data-pane-multi] { display: none; }
+
+/* Note-pane round 4 (5 Oct 2026, items 28-33). */
+.pane-edit-toolbar .tb-tabs { display: none; }
+.pane-edit-toolbar.tb-grouped { flex-wrap: wrap; overflow-x: visible; row-gap: 0.35rem; }
+.pane-edit-toolbar.tb-grouped .tb-tabs { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0.25rem; flex: 0 0 100%; }
+.pane-edit-toolbar .tb-tab { min-width: 0; min-height: 40px; padding: 2px 4px; white-space: normal; overflow-wrap: anywhere; line-height: 1.1; font-size: 0.8rem; }
+.pane-edit-toolbar .tb-tab[aria-selected="true"] { background: #1F3A6E; color: #fff; border-color: #1F3A6E; }
+.pane-edit-toolbar.tb-grouped .tb-sep { display: none; }
+.pane-edit-toolbar.tb-grouped [data-tb-g]:not(.tb-on) { display: none; }
+.pane-edit-panel .tb-none { background: #fff; color: #8a1c1c; font-size: 1.2rem; }
+.note-mention { position: fixed; z-index: 6200; min-width: 14rem; max-width: min(22rem, calc(100vw - 16px)); max-height: 16rem; overflow-y: auto; background: #fff; color: #1F3A6E; border: 1px solid #c9d3e6; border-radius: 0.5rem; box-shadow: 0 8px 24px rgba(20,30,60,0.3); padding: 0.25rem; display: flex; flex-direction: column; }
+.note-mention-row { min-height: 40px; text-align: start; background: none; border: 0; border-radius: 0.35rem; color: inherit; font: inherit; cursor: pointer; padding: 0 0.5rem; overflow-wrap: anywhere; }
+.note-mention-row[aria-selected="true"], .note-mention-row:hover { background: #eef2ff; }
+.note-mention-empty { margin: 0.4rem; color: #5f6b7d; font-size: 0.9rem; }
+
+/* Note-pane Part C1 (6 Oct 2026, items 38-39) -- annotations and heading status badges.
+   Colours are FIXED, never inherited, so each reads on the light Note page and on a dark one:
+   the mark is dark text on a pale yellow (about 16:1); a badge is white text on a dark fill (6:1 or better). */
+mark[data-ann] { background: #ffe066; color: #111; border-radius: 0.2rem; padding: 0 0.1rem; cursor: pointer; }
+sup[data-ann-ref] { background: #ffe066; color: #111; border-radius: 0.2rem; font-weight: 700; cursor: pointer; padding: 0 0.15rem; }
+.pane-edit-body sup[data-ann-ref] { cursor: text; }
+.ann-flash { outline: 3px solid #1F3A6E; outline-offset: 2px; }
+.note-annotations { margin-top: 1.2rem; padding-top: 0.5rem; border-top: 1px solid #c9d3e6; }
+.note-annotations h3 { margin: 0 0 0.4rem; font-size: 1rem; }
+.ann-item { display: flex; gap: 0.5rem; align-items: flex-start; padding: 0.35rem 0; border-bottom: 1px solid #e6eaf3; cursor: pointer; }
+.ann-num { flex: 0 0 auto; font-weight: 700; min-width: 2.2rem; }
+.ann-main { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.ann-quote { display: block; font-style: italic; opacity: 0.9; }
+.ann-comment { margin: 0.2rem 0 0; }
+.ann-btns { flex: 0 0 auto; display: flex; gap: 0.25rem; }
+.ann-btns button { min-width: 44px; min-height: 44px; padding: 0; }
+.ann-bubble { position: fixed; z-index: 6200; width: 44px; height: 44px; padding: 0; border-radius: 50%; background: #fff; color: #1F3A6E; border: 1px solid #1F3A6E; box-shadow: 0 4px 14px rgba(20,30,60,0.35); cursor: pointer; }
+.note-sec-h { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+.note-sec-h .note-sec-toggle { flex: 1 1 8rem; width: auto; min-width: 0; }
+.note-status { flex: 0 0 auto; font: inherit; font-size: 0.75rem; font-weight: 600; line-height: 1.2; min-height: 40px; min-width: 40px; padding: 0.2rem 0.7rem; border: 1px solid transparent; border-radius: 999px; background: #374151; color: #fff; cursor: pointer; max-width: 100%; overflow-wrap: anywhere; }
+span.note-status { min-height: 0; min-width: 0; padding: 0.15rem 0.6rem; cursor: default; }
+.note-status.note-status-none { background: #e8eaed; color: #1f2937; border-color: #9aa3b2; font-weight: 500; }
+.status-dot { display: inline-block; flex: 0 0 auto; width: 0.7rem; height: 0.7rem; border-radius: 50%; margin-inline-end: 0.4rem; vertical-align: baseline; }
+.status-presets { display: flex; flex-direction: column; gap: 0.3rem; }
+.status-opt { min-height: 44px; text-align: start; display: flex; align-items: center; }
+.status-custom { display: flex; flex-direction: column; gap: 0.4rem; }
+.status-custom[hidden] { display: none; }
+.status-swatches { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.status-swatch { width: 44px; height: 44px; padding: 0; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px #8892a8; }
+.status-swatch[aria-pressed="true"] { box-shadow: 0 0 0 3px #1F3A6E; }
+
+/* ---- A spreadsheet inside a Note (item 44, Part C2). The snapshot table is what is STORED; the live grid is drawn over it. ---- */
+.mm-sheet { margin: 0.6rem 0; max-width: 100%; min-width: 0; color: #111; }
+.mm-sheet.has-live > .mm-sheet-static { display: none; }
+.mm-sheet .mm-sheet-static { border-collapse: collapse; max-width: 100%; }
+.mm-sheet .mm-sheet-static th { background: #eef1f8; color: #111; }
+.mm-sheet .mm-sheet-static td, .mm-sheet .mm-sheet-static th { color: #111; }
+.sheet-live { display: block; max-width: 100%; min-width: 0; color: #111; }
+.sheet-bar { display: flex; flex-wrap: wrap; gap: 0.3rem; align-items: center; margin-bottom: 0.4rem; }
+.sheet-btn { min-height: 40px; min-width: 40px; padding: 0 0.6rem; white-space: nowrap; }
+.sheet-btn[aria-pressed="true"] { background: #dbe4fb; color: #111; }
+.sheet-fmt, .sheet-sym { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.85rem; color: #111; }
+.sheet-fmt select, .sheet-sym input { min-height: 40px; max-width: 100%; }
+.sheet-sym input { width: 4.5rem; }
+.sheet-fx { margin: 0 0 0.3rem; font: 0.85rem monospace; color: #333; min-height: 1.2em; overflow-wrap: anywhere; }
+.sheet-scroll { overflow: auto; max-width: 100%; max-height: 70vh; border: 1px solid #99a; border-radius: 0.3rem; background: #fff; -webkit-overflow-scrolling: touch; }
+.sheet-scroll:focus-visible { outline: 3px solid #1F3A6E; outline-offset: 1px; }
+.mm-sheet .sheet-grid { border-collapse: separate; border-spacing: 0; table-layout: fixed; margin: 0; max-width: none; }
+.mm-sheet .sheet-grid th, .mm-sheet .sheet-grid td { border: 0; border-inline-end: 1px solid #99a; border-bottom: 1px solid #99a; padding: 0; min-width: 0; height: 40px; box-sizing: border-box; color: #111; font-weight: 400; }
+.mm-sheet .sheet-grid th { background: #eef1f8; text-align: center; position: relative; }
+.mm-sheet .sheet-ch { position: sticky; top: 0; z-index: 3; }
+.mm-sheet .sheet-rh { position: sticky; inset-inline-start: 0; z-index: 2; cursor: pointer; }
+.mm-sheet .sheet-corner { position: sticky; top: 0; inset-inline-start: 0; z-index: 4; }
+.mm-sheet .sheet-grid.sheet-hdr .sheet-hrow td { position: sticky; top: 40px; z-index: 1; background: #f6f8fd; font-weight: 700; }
+.mm-sheet .sheet-grid.sheet-hdr .sheet-hrow th.sheet-rh { top: 40px; z-index: 3; }
+.mm-sheet .sheet-grid td { background: #fff; padding: 0 0.4rem; }
+.mm-sheet .sheet-grid td.sel { background: #dbe4fb; }
+.mm-sheet .sheet-grid td.active { outline: 2px solid #1F3A6E; outline-offset: -2px; }
+.mm-sheet .sheet-grid td.editing { padding: 0; }
+.mm-sheet .sheet-grid td.sheet-num { text-align: end; }
+.mm-sheet .sheet-grid td.sheet-err { color: #8f1d17; font-weight: 700; }
+.sheet-val { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 38px; unicode-bidi: plaintext; }
+.mm-sheet .sheet-input { width: 100%; height: 100%; min-height: 38px; box-sizing: border-box; border: 2px solid #1F3A6E; border-radius: 0; font: inherit; color: #111; background: #fff; padding: 0 0.3rem; margin: 0; }
+.sheet-resize { position: absolute; top: 0; bottom: 0; inset-inline-end: 0; width: 14px; cursor: col-resize; touch-action: none; z-index: 5; }
+.sheet-resize:hover { background: #1F3A6E33; }
+.sheet-fmark { margin-inline-start: 0.2rem; color: #1F3A6E; font-size: 0.8em; }
+.sheet-msg { margin: 0.3rem 0 0; padding: 0.3rem 0.5rem; background: #fff4e5; color: #4a2b00; border-radius: 0.3rem; font-size: 0.9rem; }
+.sheet-msg[hidden], .sheet-filter[hidden] { display: none; }
+.sheet-filter { border: 1px solid #99a; border-radius: 0.3rem; padding: 0.4rem; margin-bottom: 0.4rem; background: #f6f8fd; color: #111; }
+.sheet-filter-head { margin: 0 0 0.3rem; display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
+.sheet-filter-list { max-height: 10rem; overflow: auto; display: flex; flex-wrap: wrap; gap: 0.2rem 0.9rem; }
+.sheet-filter-opt { min-height: 40px; display: inline-flex; align-items: center; gap: 0.3rem; }
+.sheet-filter-opt input { width: 24px; height: 24px; }
+
+/* Note-pane Part C3 (6 Oct 2026) -- 🧰 My Note tools and the ✚ template menu. Targets are 40px or more; nothing is wider than its card. */
+.mt-dialog .tag-picker-card { max-width: 30rem; }
+.mt-nav { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+.mt-nav .mt-sec { flex: 1 1 5rem; min-height: 44px; }
+.mt-nav .mt-sec[aria-selected="true"] { background: #1F3A6E; color: #fff; }
+.mt-body { display: flex; flex-direction: column; gap: 0.45rem; min-width: 0; }
+.mt-body button, .mt-body select, .mt-body input[type="text"] { min-height: 44px; box-sizing: border-box; }
+.mt-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; min-width: 0; }
+.mt-row input[type="text"] { flex: 1 1 8rem; min-width: 0; }
+.mt-row .mt-open { flex: 1 1 100%; text-align: start; white-space: normal; overflow-wrap: anywhere; }
+.mt-row select { flex: 1 1 7rem; min-width: 0; }
+.mt-del { width: 44px; flex: 0 0 44px; padding: 0; }
+.mt-head { display: flex; flex-direction: column; gap: 0.25rem; border-top: 1px solid #ccd; padding-top: 0.4rem; }
+.mt-swatches { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem; }
+.mt-lab { flex: 0 0 100%; font-size: 0.85rem; }
+.mt-chip { width: 40px; height: 40px; min-height: 40px; padding: 0; border: 2px solid #889; border-radius: 0.4rem; }
+.mt-chip[aria-pressed="true"] { outline: 3px solid #1F3A6E; outline-offset: 1px; }
+.pane-edit-panel .mt-phrase { white-space: normal; text-align: start; max-width: 100%; overflow-wrap: anywhere; min-height: 44px; }

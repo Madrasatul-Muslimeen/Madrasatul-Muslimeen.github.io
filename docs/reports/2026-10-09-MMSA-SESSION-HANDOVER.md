@@ -57,6 +57,32 @@ Mapping My Journey note pane as THE note.
 - the dua review screen, once the Owner answers the demo's three questions (it then reads the fit files from #710);
 - Hadith "Studied"/Notes on OpenITI passages (needs the Owner's yes to the key `hadith:openiti:<book>:<n>`).
 
+**Update, 10 Oct 2026, later (`main` at v10.07 when written):**
+- **The Owner's master file for every feature discussion** is the Ten Steps artifact https://claude.ai/artifact/BJUwQ8hfgnu4FJFo7stqY1 (the Owner, 10 Oct: "let's use this file as a master to preserve all feature related discussions always"). From **v07** it has one tab per feature: *Ten Steps & QR Levels* and *🔑 Keys to Understanding*. A new feature discussion is a new tab in it, keeping the one version line; its export name is `<date>-mmsa-feature-discussions-vNN.html`. Copy at `docs/reference/2026-10-10-mmsa-feature-discussions-v07.html`; the Keys wheel demo at `docs/reference/2026-10-10-keys-wheel-demo.html`.
+- **Keys to Understanding: build nothing yet.** The tab answers the Owner's four points (Status wheel views; related hadith fetched automatically, measured at 1,107 of 6,236 āyāt quoted in our 15 books; the Hadith approach; scholars by era from the open tafsir set, mapped to Gen1–Gen6 and the madhabs) and asks 6 questions. Each reader's own marks need a Rules step (Owner gate).
+- **v10.07: Legacy App - v09** (decision 98), the v09.151 release archived at `legacy-v09/`.
+
+**Update, 10 Oct 2026, session `session_018zBksiX4zzcrLCxBRGwU8y` (`main` at v10.06 when written):**
+- Released v09.151, v10.01 to v10.06 (each in `CHANGELOG.md`). Decisions 95, 96 and 97 are recorded.
+- **Decision 95 (Read + Note as one) so far:**
+  - **v10.01:** the 📝 Notes pane.
+  - **v10.03:** the Track tab; the Āyah card's 📝 Note and the quick Notes open the pane.
+  - **v10.05:** ⋮ Note & more, the Unit card's 📝 Note, Make a poster (no Note) and Note-view bookmarks open the pane.
+  - **v10.06:** QCR/Asma in a pop-up of its own (Builder #722).
+- **Still on the Note view, on purpose:**
+  - the Study-menu Note tab;
+  - the Approach Track/Guide card (landing wheel slice, ring Take, Explore 🧭 Guide);
+  - QCR collection / Asma reference navigation;
+  - `?goto=` / `qpView=note` links.
+  - About ten suites test the Note view's own features through its tab.
+- **In flight:** Builder **#725 (R3a)**, the Approach card in the pane's Track tab, with those three Approach routes moved to it.
+- **Then R3b (Architect):**
+  - move the QCR/Asma navigation and jump links to the Read view;
+  - retire the Study-menu Note tab and the Note view itself;
+  - update the Note-view suites in place.
+- **With the Owner:** the "Keys to understanding" demo (https://claude.ai/artifact/XeV3WUjEEg4PbGJsafz9Pj, copy `docs/reference/2026-10-10-keys-to-understanding-demo.html`). It marks on the Word and Āyah cards what a text needs (Gharīb, Hadith, scholars, other āyāt, Siyāq, Asbāb an-Nuzūl), with four questions. Build nothing until the Owner answers; each reader's own marks need a Rules change.
+- **Also with the Owner:** whether to freeze `legacy-v09/` (recommended: at v09.151). The Owner said another separate issue is coming.
+
 ## 1. What waits on the Owner
 
 1. **Read + Note as one** (above): yes or no, and separately whether to copy old Note-view notes.
@@ -150,3 +176,4 @@ English found. Builder #705 (PR #706), `bn-duplicate-keys` made meaningful again
 - **v10.04** (2026-10-10): the writing sheet's ✅ Record, for every family member (Builder #719).
 - **v10.05** (2026-10-10): the Notes pane round 2b: the Note view's notes doors open the pane (decision 95).
 - **v10.06** (2026-10-10): QCR / Asma attach as its own pop-up, without the Note view (Builder #722).
+- **v10.07** (2026-10-10): Legacy App - v09: v09.151 archived (decision 98).
