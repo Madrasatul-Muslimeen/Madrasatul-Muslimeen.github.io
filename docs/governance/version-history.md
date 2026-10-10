@@ -800,3 +800,4 @@ total). Allocated by the MMSA Architect.
 10.03: the Notes pane's Track this āyah tab; the Āyah card's 📝 Note opens the pane (decision 95, round 2a). Allocated by the MMSA Architect.
 10.04: the writing sheet's ✅ Record, for every family member (Builder #719). Allocated by the MMSA Architect.
 10.05: the Notes pane round 2b: the Note view's notes doors open the pane (decision 95). Allocated by the MMSA Architect.
+10.06: QCR / Asma attach as its own pop-up, without the Note view (Builder #722). Allocated by the MMSA Architect.
