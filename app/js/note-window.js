@@ -154,6 +154,28 @@ const noteTitleOf = (note) => note.title?.trim() || t("(untitled)");
  *   paneTier(), paneApply(), scroller()   the inline pane's layout (pane only)
  * }
  */
+// Architect's review of #748: as a drop-down (600px and wider) the grouped menu hung below the Notes pane's own bottom,
+// and the pane scrolls, so Change and Delete could only be reached by scrolling the pane behind it. On opening, the
+// menu is held to the space down to the nearest scrolling ancestor's bottom (or the window's) and scrolls inside
+// itself. The phone sheet is fixed to the bottom and keeps its own 82vh.
+if (typeof document !== "undefined" && !globalThis.__paneMenuFitBound) {
+  globalThis.__paneMenuFitBound = true;
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest?.("[data-pane-menu-btn]")) return;
+    requestAnimationFrame(() => {
+      const m = e.target.closest("[data-pane-menu-wrap]")?.querySelector("[data-pane-menu]");
+      if (!m) return;
+      if (!m.classList.contains("open") || getComputedStyle(m).position === "fixed") { m.style.maxHeight = ""; return; }
+      let bottom = window.innerHeight;
+      for (let el = m.parentElement; el && el !== document.body; el = el.parentElement) {
+        const cs = getComputedStyle(el);
+        if (cs.overflowY !== "visible" || cs.overflow !== "visible") bottom = Math.min(bottom, el.getBoundingClientRect().bottom);
+      }
+      m.style.maxHeight = `${Math.max(180, Math.floor(bottom - m.getBoundingClientRect().top - 8))}px`;
+    });
+  });
+}
+
 export function createNoteViews(host) {
   const getNote = (id) => host.notes().find((n) => n.noteId === id);
   // Part C3 (decisions 72, 80): the folds, heading styles, phrases, templates and tab groups follow the person across devices.

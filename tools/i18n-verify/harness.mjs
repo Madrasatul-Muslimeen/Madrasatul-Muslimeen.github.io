@@ -1,4 +1,9 @@
-import { chromium } from "playwright";
+import { chromium as pwChromium } from "playwright";
+// 10 Oct 2026: a suite that calls chromium.launch() with no executablePath gets CHROMIUM_PATH when it is set, so a
+// sandbox without Playwright's own download still runs it (four Notes suites never started here before).
+const chromium = Object.create(pwChromium, {
+  launch: { value: (opts = {}) => pwChromium.launch({ ...(process.env.CHROMIUM_PATH && !opts.executablePath ? { executablePath: process.env.CHROMIUM_PATH } : {}), ...opts }) },
+});
 import { stubFor } from "./firebase-stub.mjs";
 import { readFileSync } from "node:fs";
 

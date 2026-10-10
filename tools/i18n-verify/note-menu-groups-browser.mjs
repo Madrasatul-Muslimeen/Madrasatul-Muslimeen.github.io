@@ -87,10 +87,32 @@ for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 820], ["bn", 820],
   check(`${tag}: the page does not scroll sideways`, await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
   if (phone) {
     check(`${tag}: the menu is a bottom sheet, full width, at most 82% of the screen high`, info.pos === "fixed" && Math.abs(info.box.w - info.vw) <= 1 && Math.abs(info.box.bottom - info.vh) <= 1 && info.h <= info.vh * 0.82 + 1, JSON.stringify(info));
+    // Architect's review of #748: the title sat pale gold on a white row inside the navy sheet. It must be readable.
+    const headC = await page.evaluate(() => {
+      const h = document.querySelector(".pane-menu-head span"); if (!h) return 0;
+      const rgb = (c) => (c.match(/[\d.]+/g) || []).map(Number);
+      let bgEl = h, bg = "rgba(0, 0, 0, 0)"; while (bgEl && (bg = getComputedStyle(bgEl).backgroundColor).endsWith(", 0)")) bgEl = bgEl.parentElement;
+      const L = ([r, g, b]) => { const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }; return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b); };
+      const a = L(rgb(getComputedStyle(h).color)), b = L(rgb(bg)); return +((Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05)).toFixed(2);
+    });
+    check(`${tag}: the sheet's title can be read (at least 4.5:1 against its row)`, headC >= 4.5, headC);
     check(`${tag}: the sheet has its title row with a ×`, await page.evaluate(() => { const h = document.querySelector(".pane-menu-head"); return !!h && getComputedStyle(h).display !== "none" && !!h.querySelector(".pane-menu-x"); }));
     check(`${tag}: the backdrop is showing`, await page.evaluate(() => { const b = document.querySelector("[data-pane-menu-backdrop]"); return getComputedStyle(b).display === "block"; }));
   } else {
     check(`${tag}: the menu is a drop-down in two columns`, info.pos === "absolute" && await page.evaluate(() => { const c = document.querySelector(".pane-menu-cols"); return getComputedStyle(c).columnCount === "2" && getComputedStyle(document.querySelector(".pane-menu-head")).display === "none" && getComputedStyle(document.querySelector("[data-pane-menu-backdrop]")).display === "none"; }));
+    // Architect's review of #748: the drop-down hung below the Notes pane (which scrolls), so Change and Delete were
+    // reachable only by scrolling the pane behind it. It must end inside its scrolling ancestor and scroll itself.
+    const fit = await page.evaluate(() => {
+      const m = document.querySelector("[data-pane-menu]"), r = m.getBoundingClientRect();
+      let bottom = innerHeight;
+      for (let el = m.parentElement; el && el !== document.body; el = el.parentElement) { const cs = getComputedStyle(el); if (cs.overflowY !== "visible" || cs.overflow !== "visible") bottom = Math.min(bottom, el.getBoundingClientRect().bottom); }
+      const del = m.querySelector("[data-pane-delete]");
+      del?.scrollIntoView({ block: "nearest" });
+      const d = del?.getBoundingClientRect(), mr = m.getBoundingClientRect();
+      const hit = d && document.elementFromPoint(d.left + d.width / 2, d.top + d.height / 2);
+      return { menuBottom: Math.round(r.bottom), clipBottom: Math.round(bottom), delInMenu: !!d && d.top >= mr.top - 1 && d.bottom <= mr.bottom + 1, delHit: !!hit && del.contains(hit) };
+    });
+    check(`${tag}: the drop-down ends inside its pane and scrolls itself; Delete is reachable and tappable inside it`, fit.menuBottom <= fit.clipBottom + 1 && fit.delInMenu && fit.delHit, JSON.stringify(fit));
   }
 
   // A Mark tile still toggles aria-pressed (the real handler, through the real tile).
