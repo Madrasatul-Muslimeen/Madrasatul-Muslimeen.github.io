@@ -106,14 +106,25 @@ for (const [lang, width, height] of [["bn", 390, 844], ["en", 1280, 800]]) {
   const w = await ev(([k, a]) => (window.__stubWriteData || []).slice(k).filter((x) => x.col === "records").map((x) => [x.id, x.data?.[`entries.ayah:2:255::${a}`]?.claimedStatus ?? null]), [n, approach]);
   check(`${tag} Learning is written for BOTH Ahsan (p1) and Maryam (p2)`, !!approach && w.some(([id, s]) => id === "t1__p1__surah_2" && s === "learning") && w.some(([id, s]) => id === "t1__p2__surah_2" && s === "learning"), JSON.stringify(w));
 
-  // 4. Back.
+  // 4. Back. (Architect review, PR #720: the reader closes the card first -- while it is open its backdrop covers the
+  // Read bar where the pill docks, as for every "Back to …" pill -- then taps the pill, which must really be tappable.)
+  await P.keyboard.press("Escape");
+  await P.waitForFunction(() => !document.getElementById("ayahActionSheetOverlay")?.classList.contains("open"), null, { timeout: 5000 }).catch(() => {});
+  const pillAt = await ev(() => { const b = document.querySelector("#ayahCardBackPill:not([hidden]) [data-ayah-card-back]"); if (!b) return null; const r = b.getBoundingClientRect(); const top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return { h: r.height, own: !!top && b.contains(top), text: b.textContent }; });
+  check(`${tag} with the card closed, "Back to the writing sheet" is on screen, tappable (nothing over it), >= 40px`, !!pillAt && pillAt.own && pillAt.h >= 40, JSON.stringify(pillAt));
   await P.click("[data-ayah-card-back]").catch(() => {});
   await P.waitForTimeout(500);
   const after = await ev(() => { const s = document.getElementById("writingSheet"); return { shown: !!s && s.getBoundingClientRect().width > 0, cardClosed: !document.getElementById("ayahActionSheetOverlay")?.classList.contains("open"), pill: !!document.querySelector("#ayahCardBackPill:not([hidden])"), scroll: s?.querySelector("[data-ws-scroll]")?.scrollTop ?? -1 }; });
   check(`${tag} Back shows the sheet again, closes the card and the pill`, after.shown && after.cardClosed && !after.pill, JSON.stringify(after));
   const inkAfter = await ink();
   check(`${tag} the same canvas still has its ink (${inkBefore} pixels)`, inkAfter === inkBefore && inkAfter > 0, `${inkAfter} vs ${inkBefore}`);
-  check(`${tag} the scroll position is the same (${scrollBefore})`, scrollBefore > 0 && Math.abs(after.scroll - scrollBefore) <= 1, `${after.scroll} vs ${scrollBefore}`);
+  // Architect review (PR #720): at 390px this unit's one page fits the screen (scrollHeight == clientHeight, measured),
+  // so there is nothing to scroll; the restore is proven where the sheet does scroll (1280px), and here the sheet is
+  // checked to be really unscrollable rather than the check passing for nothing.
+  const scrollable = await ev(() => { const s = document.querySelector("#writingSheet [data-ws-scroll]"); return s ? s.scrollHeight > s.clientHeight + 1 : null; });
+  if (scrollable === null) check(`${tag} the sheet is still there to scroll`, false, "no #writingSheet");
+  else if (scrollable) check(`${tag} the scroll position is the same (${scrollBefore})`, scrollBefore > 0 && Math.abs(after.scroll - scrollBefore) <= 1, `${after.scroll} vs ${scrollBefore}`);
+  else check(`${tag} the sheet has nothing to scroll here (one page fits), and is still at the top`, scrollBefore === 0 && after.scroll === 0, `${after.scroll} vs ${scrollBefore}`);
   check(`${tag} no sideways scroll`, await ev(() => document.documentElement.scrollWidth <= innerWidth + 1));
   check(`${tag} no page errors`, errors.filter((e) => !/ERR_CERT|net::|archive\.org|api\.quran|Failed to load resource/i.test(e)).length === 0, errors.slice(0, 2).join(" | "));
   await ctx.close();

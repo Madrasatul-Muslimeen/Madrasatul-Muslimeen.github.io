@@ -496,7 +496,9 @@ for (const lang of ["en", "bn"]) {
   const a = await tb();
   // Updated in place (W2): 🔍 Pop out joined row 2, so the toolbar held 11 controls. Updated again 9 Oct 2026: the
   // Owner asked "Need a bookmark button here", so 🔖 Bookmark joined row 2 and the toolbar holds 12.
-  check(`[${lang}] toolbar shown by default: 12 controls, toggle reads ${lang === "bn" ? "▴ লুকান" : "▴ Hide"}`, a.shown === 12 && a.toggle === (lang === "bn" ? "▴ লুকান" : "▴ Hide") && a.expanded === "true", JSON.stringify(a));
+  // UPDATED IN PLACE (the Owner, 9 Oct 2026, "a progress record button for All family"; #719/#720): ✅ Record joined
+  // row 2, so 13 controls now. Reason recorded rather than the count loosened.
+  check(`[${lang}] toolbar shown by default: 13 controls, toggle reads ${lang === "bn" ? "▴ লুকান" : "▴ Hide"}`, a.shown === 13 && a.toggle === (lang === "bn" ? "▴ লুকান" : "▴ Hide") && a.expanded === "true", JSON.stringify(a));
   await page.click('#writingSheet [data-ws="tools"]'); await page.waitForTimeout(150);
   const b = await tb();
   check(`[${lang}] Hide leaves only the Tools button, on screen`, b.shown === 1 && b.toggle === (lang === "bn" ? "▾ সরঞ্জাম" : "▾ Tools") && b.expanded === "false" && b.inView, JSON.stringify(b));
@@ -504,7 +506,7 @@ for (const lang of ["en", "bn"]) {
   const c = await tb();
   check(`[${lang}] the hidden choice is remembered when the sheet opens again`, c.shown === 1, JSON.stringify(c));
   await page.click('#writingSheet [data-ws="tools"]'); await page.waitForTimeout(150);
-  check(`[${lang}] Tools brings all 12 controls back`, (await tb()).shown === 12);
+  check(`[${lang}] Tools brings all 13 controls back`, (await tb()).shown === 13);
   // Zoom the page 2.5x the way a pinch does, then move the view down the page.
   const cdp = await page.context().newCDPSession(page);
   await cdp.send("Emulation.setPageScaleFactor", { pageScaleFactor: 2.5 });
