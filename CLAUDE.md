@@ -138,7 +138,19 @@ Read this first, every session. It is the standing brief.
 > "do not translate" and is a different contract. **That contract is NOT
 > invented here**; the Stage B exclusion stands for this candidate.
 
-> ## ⇢ SESSION HANDOVER, 9 Oct 2026 — READ THIS SECOND
+> ## ⇢ SESSION HANDOVER, 11 Oct 2026 — READ THIS SECOND
+>
+> **`docs/reports/2026-10-11-MMSA-SESSION-HANDOVER.md`** is the current
+> continuation point, and **`docs/governance/NEW-SESSION-PROMPT-2026-10-11.md`**
+> is the prompt that starts a new session. `main` reached **v10.16** (v09.151 and v10.01–v10.16 that session;
+> decisions 95–99). **Decision 95 (Read + Note as one) is complete.** **In flight: Builder #742, the deletion of the
+> dead Note view code, UNFINISHED on branch `builder/issue-742-run-1136` with no PR** — the handover's section 0 lists
+> exactly what remains. The Owner's master feature-discussions file is https://claude.ai/artifact/BJUwQ8hfgnu4FJFo7stqY1
+> (v13); three scholar questions (T20–T22) wait on the Owner there.
+>
+> **The 9 Oct block below is kept as history**, superseded by it.
+>
+> ## ⇢ SESSION HANDOVER, 9 Oct 2026 (superseded 11 Oct 2026)
 >
 > **`docs/reports/2026-10-09-MMSA-SESSION-HANDOVER.md`** is the current
 > continuation point, and **`docs/governance/NEW-SESSION-PROMPT-2026-10-09.md`**
