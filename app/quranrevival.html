@@ -2207,6 +2207,9 @@
       text-align: center; overflow-wrap: anywhere; max-width: 100%;
     }
     #readToolsMenu.open #readNotesBtn .read-notes-count { top: 4px; right: 6px; }
+    /* A±'s sliders are anchored to the RIGHT of their button for the bar (see .text-size-popover); in the panel A± is the
+       first tile, at the left, so a right anchor ran them 125px off a 390px phone. Anchor them to the tile's left. */
+    #readToolsMenu.open .text-size-popover { left: 0; right: auto; }
     /* fitBarButton() hides ✍ where it would cost the BAR a line; inside the panel it costs the bar nothing. */
     #readToolsMenu.open .bar-btn-nofit { display: flex !important; }
   }

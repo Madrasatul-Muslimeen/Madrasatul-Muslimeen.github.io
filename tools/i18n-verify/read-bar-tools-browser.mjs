@@ -4,6 +4,7 @@
 // Expected values written BY HAND. Run from the repository root, serve.js on :8080.
 //   --mutate=nofold    below 900px the tools are not folded behind ⋯ any more   -> the fold checks fail
 //   --mutate=nobottom  the study buttons stay in the bar on a phone           -> the bottom-row checks fail
+//   --mutate=tsleft    the A± sliders keep their right anchor inside the panel        -> the "fully on screen" check fails
 //   --mutate=nogroup   📖 ⤢ ⋯ are not one group                               -> the "wrap together" check fails
 import { chromium, newContext, openPage } from "./harness.mjs";
 import fs from "node:fs";
@@ -17,6 +18,7 @@ const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice
 const MUT = {
   nofold: ["    #readToolsMenu { display: none; }\n    #readToolsMenu.open {", "    #readToolsMenu { display: contents; }\n    #readToolsMenu.open {"],
   nobottom: ["      position: fixed; left: 0.5rem; right: 0.5rem; bottom: calc(var(--rq-bottom, 0px) + 6px); z-index: 60;", "      position: static;"],
+  tsleft: ["    #readToolsMenu.open .text-size-popover { left: 0; right: auto; }", "    #readToolsMenu.open .text-size-popover { }"],
   nogroup: ["  #readBarEnd { display: flex; align-items: center; gap: inherit; margin-left: auto; flex: 0 0 auto; }", "  #readBarEnd { display: contents; }"],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
@@ -71,6 +73,15 @@ for (const [lang, width, height] of [["en", 360, 740], ["en", 390, 844], ["bn", 
     check(`${tag} ⋯ opens a panel of tiles on screen: Text size, Bookmark, Notes, Mark complete, Writing sheet, Attach to Asma`, open.open && open.expanded === "true" && open.inView && open.tiles.length === 6 && ["size", ...TOOL_IDS].every((id) => open.tiles.some((x) => x.id === id)), JSON.stringify(open));
     check(`${tag} ...each tile has its word (${lang === "bn" ? "in Bangla" : "in English"}), is at least 40px high and tappable`, open.tiles.every((x) => x.word && x.word !== "none" && x.h >= 40 && x.hit && (lang === "bn" ? BN.test(x.word) : /[A-Za-z]/.test(x.word))), JSON.stringify(open.tiles));
     if (lang === "bn" || width === 390) await page.screenshot({ path: `${SHOT_DIR}/read-bar-tools-${lang}-${width}.png` });
+    // A± inside the panel opens its sliders fully on screen (measured 10 Oct 2026: right-anchored to its tile, they ran
+    // 125px off the left edge of a 390px phone).
+    await page.click("#readTextSizeSlot [data-text-size-toggle]");
+    await page.waitForTimeout(250);
+    const pop = await page.evaluate(() => { const p = document.querySelector("#readTextSizeSlot .text-size-popover.open"); const r = p?.getBoundingClientRect(); return r ? { l: Math.round(r.left), r: Math.round(r.right), b: Math.round(r.bottom), inView: r.left >= 0 && r.right <= innerWidth && r.bottom <= innerHeight, panelOpen: document.getElementById("readToolsMenu").classList.contains("open") } : null; });
+    check(`${tag} ...A± in the panel opens its sliders fully on screen, the panel staying open`, !!pop && pop.inView && pop.panelOpen, JSON.stringify(pop));
+    await page.click("#readTextSizeSlot [data-text-size-toggle]");
+    await page.waitForTimeout(200);
+    if (!(await page.evaluate(() => document.getElementById("readToolsMenu").classList.contains("open")))) { await page.click("#readToolsBtn"); await page.waitForTimeout(200); }
     await page.keyboard.press("Escape");
     await page.waitForTimeout(150);
     const esc = await page.evaluate(() => ({ open: document.getElementById("readToolsMenu").classList.contains("open"), focus: document.activeElement?.id }));
