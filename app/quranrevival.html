@@ -3746,7 +3746,10 @@
   .ayah-card-back-pill { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(5.2rem + env(safe-area-inset-bottom, 0px)); z-index: 955; display: flex; align-items: center; gap: 0.2rem; padding: 0.2rem; border-radius: 999px; background: #1b2a41; border: 1px solid #c9a24b; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35); max-width: calc(100vw - 32px); }
   .ayah-card-back-pill[hidden] { display: none; }
   /* Docked beside ✓ on the Read bar (js/back-dock.js): part of the row, not floating. */
-  #readBackSlot { display: inline-flex; align-items: center; gap: 0.4rem; min-width: 0; flex: 0 1 auto; max-width: 100%; }
+  /* Issue #750: a long way-back ("← Back to About QuranRevival", 292px) used to make the slot wider than the room left
+     beside ✓, so the wrapping bar put it on a line of its own ABOVE ✓ at 390px. A basis of 7rem lets it share the line
+     and take what is left; the chip's own ellipsis shortens the words, the ✕ and the tap target stay. */
+  #readBackSlot { display: inline-flex; align-items: center; gap: 0.4rem; min-width: 0; flex: 1 1 7rem; max-width: 100%; }
   #readBackSlot:empty { display: none; }
   .ayah-card-back-pill.back-docked { position: static; transform: none; left: auto; bottom: auto; z-index: auto; box-shadow: none; max-width: 100%; min-width: 0; flex: 0 1 auto; }
   .ayah-card-back-pill.back-docked .ayah-card-back-btn { min-height: 40px; font-size: 0.82rem; min-width: 0; }

@@ -100,9 +100,18 @@ for (const lang of ["en", "bn"]) for (const width of [390, 1280]) {
   // sheet that fills the screen (the Word Card) is not a bottom bar -- the chip steps aside and comes back when it closes.
   const label = await P.evaluate(async () => (await import("/app/js/bookmark-nav.js")).pageLabelOf(document));
   check(`${tag}: the Qur'an page's name is just its heading's words ("QuranRevival")`, label === "QuranRevival", JSON.stringify(label));
-  const readReach = await P.evaluate(() => (document.getElementById("tabReadBtn")?.getBoundingClientRect().width ?? 0) > 0);
-  if (!readReach) { await P.click("#tabStudyBtn"); await P.waitForTimeout(150); }
-  await P.click("#tabReadBtn"); await P.waitForTimeout(500);
+  // UPDATED IN PLACE 10 Oct 2026 (issue #750): the bookmark now opens the Read view itself (with the Notes pane), and the
+  // Read tab is a TOGGLE -- the old unconditional click sent the reader back to the landing view (measured: body gains
+  // "landing-view", the chip leaves the dock for <body>, and the floating chip then covered "Options" in the Study menu).
+  // That one stale click caused the Word Card, the dock and the Study-menu failures; the app was right. So: be on the
+  // Read view, pressing the tab only when the landing view is showing.
+  const onLanding = await P.evaluate(() => document.body.classList.contains("landing-view"));
+  check(`${tag}: the bookmark opened the Read view itself (not the landing view)`, !onLanding, `landing-view=${onLanding}`);
+  if (onLanding) {
+    const readReach = await P.evaluate(() => (document.getElementById("tabReadBtn")?.getBoundingClientRect().width ?? 0) > 0);
+    if (!readReach) { await P.click("#tabStudyBtn"); await P.waitForTimeout(150); }
+    await P.click("#tabReadBtn"); await P.waitForTimeout(500);
+  }
   await P.evaluate(() => { const t = document.getElementById("wbwShowToggle"); if (t && !t.checked) { t.checked = true; t.dispatchEvent(new Event("change", { bubbles: true })); } });
   await P.waitForSelector("[data-word-occurrence]", { timeout: 10000 }).catch(() => {});
   await P.locator("[data-word-occurrence]").first().click().catch(() => {});
