@@ -561,20 +561,31 @@ check("VALID_VIEWS names exactly the three views the toggle itself offers, nowhe
   assert.ok(decl, "no VALID_VIEWS constant declaration found");
   assert.deepEqual(JSON.parse(decl[1].replace(/'/g, '"')), ["folders", "timeline", "path"]);
 });
+// UPDATED IN PLACE 10 Oct 2026 (Architect): since decision 95 (v10.01) the page embedded in the Read view's Notes pane
+// starts in unit mode, so the initial value is `unitMode ? "unit" : viewFromHash() ?? (...)`. `?:` binds looser than
+// `??`, so outside unit mode the hash-then-remembered fallback is exactly what it was. Both checks accept that one
+// prefix, and a third asserts the prefix is gated on the embed's own unit parameter and nothing else.
+const CURRENT_VIEW_DECL = /let currentView = (?:unitMode \? "unit" : )?(viewFromHash\(\)[\s\S]*?);\s*\n/;
 check("an unknown or absent hash falls back to today's default -- the remembered view, or \"folders\"", () => {
-  const decl = page.match(/let currentView = (viewFromHash\(\)[\s\S]*?);\s*\n/);
+  const decl = page.match(CURRENT_VIEW_DECL);
   assert.ok(decl, "no `currentView` initial-value expression found, or it no longer starts from viewFromHash()");
   assert.ok(/localStorage\.getItem\(VIEW_KEY\)/.test(decl[1]) && /"folders"/.test(decl[1]),
     "currentView's fallback (when the hash is absent/invalid) no longer reads the remembered view, defaulting to \"folders\"");
 });
 check("the hash wins over the remembered view ONLY when it is actually present -- viewFromHash() is consulted first", () => {
-  const decl = page.match(/let currentView = (viewFromHash\(\)[\s\S]*?);\s*\n/);
+  const decl = page.match(CURRENT_VIEW_DECL);
   assert.ok(decl, "no `currentView` initial-value expression found");
   const hashAt = decl[1].indexOf("viewFromHash()");
   const storedAt = decl[1].indexOf("localStorage.getItem(VIEW_KEY)");
   assert.ok(hashAt !== -1 && storedAt !== -1 && hashAt < storedAt,
     "viewFromHash() must be tried before the remembered localStorage value, via ?? (nullish coalescing), so a present, valid hash wins and an absent/invalid one falls through");
   assert.ok(decl[1].includes("??"), "currentView no longer falls through with ?? -- a present hash must win outright, never be merely preferred");
+});
+check("the only thing that overrides the hash is unit mode, and unit mode means the Notes pane's embed with a valid unit (decision 95)", () => {
+  assert.ok(/let currentView = unitMode \? "unit" : viewFromHash\(\)/.test(page), "currentView no longer starts `unitMode ? \"unit\" : viewFromHash()`");
+  assert.ok(/const unitMode = unitKeyParam !== null;/.test(page), "unitMode is no longer derived from unitKeyParam alone");
+  assert.ok(/if \(q\.get\("embed"\) === "1" && isPaneUnitKey\(q\.get\("unit"\)\)\) \{ unitKeyParam = q\.get\("unit"\);/.test(page),
+    "unitKeyParam is no longer set only by ?embed=1 with a valid pane unit key");
 });
 
 // --- 10. THE TREE ITSELF (issue #259) ---------------------------------------
