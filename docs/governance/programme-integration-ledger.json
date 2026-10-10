@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "10.11",
+    "version": "10.12",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -3125,8 +3125,20 @@
     {
       "version": "10.11",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "R3b, decision 95: QCR and Asma references, the note pop-up's jump, ?goto= and qpView=note open the Read view with the Notes pane, not the Note view.",
+      "integration": {
+        "authorizedOn": "2026-10-10",
+        "integratedOn": "2026-10-10",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "10.12",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "R3c, decision 95: the Study menu's Notes opens the Read view with the Notes pane; no reader action reaches the Note view; the Approach card's tab names in Bangla.",
       "integration": {
         "authorizedOn": "2026-10-10",
         "integratedOn": "2026-10-10",
@@ -3135,8 +3147,9 @@
       }
     }
   ],
-  "nextUnallocated": "10.12",
+  "nextUnallocated": "10.13",
   "nextUnallocatedNote": [
+    "v10.12 was allocated to the Study menu's Notes opens the Notes pane; the Note view retires (R3c), 2026-10-10.",
     "v10.11 was allocated to QCR, Asma and jump links open the Read view with the Notes pane (R3b), 2026-10-10.",
     "v10.10 was allocated to Asma: Essence | Act and Unique | Shared on the Name bar, 2026-10-10.",
     "v10.09 was allocated to the Approach card in the Notes pane's Track tab (R3a), 2026-10-10.",

@@ -806,3 +806,4 @@ total). Allocated by the MMSA Architect.
 10.09: the Approach card in the Notes pane's Track tab (R3a). Allocated by the MMSA Architect.
 10.10: Asma: Essence | Act and Unique | Shared on the Name bar. Allocated by the MMSA Architect.
 10.11: QCR, Asma and jump links open the Read view with the Notes pane (R3b). Allocated by the MMSA Architect.
+10.12: the Study menu's Notes opens the Notes pane; the Note view retires (R3c). Allocated by the MMSA Architect.
