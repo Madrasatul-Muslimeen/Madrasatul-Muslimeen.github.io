@@ -148,3 +148,4 @@ English found. Builder #705 (PR #706), `bn-duplicate-keys` made meaningful again
 - **v10.02** (2026-10-09): Check a dua, the review screen on the Dua card (decision 96, Builder #716).
 - **v10.03** (2026-10-10): the Notes pane's Track this āyah tab; the Āyah card's 📝 Note opens the pane (decision 95, round 2a).
 - **v10.04** (2026-10-10): the writing sheet's ✅ Record, for every family member (Builder #719).
+- **v10.05** (2026-10-10): the Notes pane round 2b: the Note view's notes doors open the pane (decision 95).
