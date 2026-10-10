@@ -5482,40 +5482,27 @@ console.log("\n=== 43. The wheel's one-time intro + in-hub Surah/Ayah pickers, a
   // after Notes, and Notes itself still starting closed even reached this way.
   await page.click(".wheel-seg");
   await page.waitForTimeout(300);
+  // UPDATED IN PLACE, 10 Oct 2026 (decision 95, R3a, #725): a wheel slice now opens the Read view with the Notes pane on
+  // its Track tab, and the Approach card lives THERE; the Note view stays hidden. The facts kept: no old floating pop-up,
+  // the card is present with its Track/Guide/Breakdown/Coverage tabs, and Notes (now the pane's other tab) is not what shows.
   const clicked = await page.evaluate(() => {
-    const body = document.querySelector(".note-body");
-    const children = [...body.children];
-    const notesIdx = children.findIndex((c) => c.dataset?.noteField === "notes");
-    // RECONCILED 2026-09-17. `.note-approach` is no longer a direct child of
-    // `.note-body`: the card became a COLLAPSIBLE FIELD like Notes above it
-    // (`.note-field[data-note-field="approach"] > .note-field-body >
-    // .note-approach`), so indexing `.note-body`'s own children for the class
-    // returned -1. The two fields are still siblings, so "study above,
-    // assessment below" is read off the FIELDS, which is what it always meant.
-    const approachIdx = children.findIndex((c) => c.dataset?.noteField === "approach");
+    const track = document.querySelector(".rnp-track:not([hidden])");
     return {
       noteShown: !document.getElementById("noteView").hidden,
+      paneTrack: !!track,
       modalOpen: document.getElementById("wayModalOverlay").classList.contains("open"),
-      embedPresent: !!document.querySelector(".way-embed"),
-      embedAfterNotes: notesIdx !== -1 && approachIdx !== -1 && approachIdx > notesIdx,
-      notesClosed: getComputedStyle(document.querySelector('[data-note-field="notes"] .note-field-body')).display === "none",
-      trackState: document.querySelector(".way-embed .way-track-state")?.textContent.trim(),
-      // the Confirmed shape always carries a status pill; the not-claimed one never does
-      trackPill: !!document.querySelector(".way-embed .way-track-state .pill"),
+      embedPresent: !!track?.querySelector(".way-embed"),
+      tabs: [...(track?.querySelectorAll(".way-embed .way-tab-btn") ?? [])].map((b) => b.dataset.tab).join(),
+      notesTabHidden: document.querySelector(".rnp-frame")?.hidden === true,
+      trackState: track?.querySelector(".way-embed .way-track-state")?.textContent.trim(),
+      trackPill: !!track?.querySelector(".way-embed .way-track-state .pill"),
     };
   });
-  check("43e clicking a wheel slice opens the Ayah Note screen, not the old floating pop-up",
-        clicked.noteShown && !clicked.modalOpen, JSON.stringify(clicked));
-  check("43f the Approach card (Track/Guide/Breakdown/Coverage) is embedded right after Notes -- study above, assessment below",
-        clicked.embedPresent && clicked.embedAfterNotes, JSON.stringify(clicked));
-  check("43g Notes still starts closed even when the screen is reached from a wheel slice", clicked.notesClosed);
-  // STRENGTHENED 2026-09-18. This asserted only `Boolean(trackState)` while
-  // its name claims it reads "the REAL claim state" -- any string at all
-  // passed, a placeholder or a stray dash included. `way-modal.js` can render
-  // exactly two shapes for this line: "Not claimed yet." when there is no
-  // entry, or "Confirmed: <status> · <pill>" when there is. The check is bound
-  // to those two now, so a card that renders neither fails instead of passing
-  // on the mere presence of text.
+  check("43e clicking a wheel slice opens the Notes pane's Track tab, not the Note view or the old floating pop-up",
+        clicked.paneTrack && !clicked.noteShown && !clicked.modalOpen, JSON.stringify(clicked));
+  check("43f the Approach card (Track/Guide/Breakdown/Coverage) is in the pane's Track tab",
+        clicked.embedPresent && clicked.tabs === "Track,Guide,Breakdown,Coverage", JSON.stringify(clicked));
+  check("43g the pane's Notes tab is not the one showing when reached from a wheel slice", clicked.notesTabHidden);
   check("43h the embedded card shows the real claim state for this āyah/Approach -- one of the two shapes way-modal.js renders",
         Boolean(clicked.trackState)
           && (/Not claimed yet/.test(clicked.trackState)
