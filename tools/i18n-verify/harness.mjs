@@ -81,3 +81,15 @@ export async function openPage(ctx, path) {
 }
 
 export { chromium };
+
+/** 10 Oct 2026 (the Owner: the Read bar's tools "under one button so that a row space is saved"): below 900px Text size,
+ *  Bookmark, Notes, Mark complete, Writing sheet and Attach to Asma sit behind ⋯ (#readToolsBtn). Clicks `sel` the way a
+ *  reader would: opening ⋯ first when the tool is not on screen. From 900px it is a plain click. */
+export async function clickReadTool(page, sel) {
+  const shown = await page.evaluate((s) => (document.querySelector(s)?.getBoundingClientRect().width ?? 0) > 0, sel);
+  if (!shown && await page.evaluate(() => (document.getElementById("readToolsBtn")?.getBoundingClientRect().width ?? 0) > 0)) {
+    await page.click("#readToolsBtn");
+    await page.waitForTimeout(150);
+  }
+  await page.click(sel);
+}

@@ -414,7 +414,10 @@ for (const lang of ["en", "bn"]) {
     // a positive control that ✍ really is on the bar where there is room
     // (at 768px and up), so a fit that always hid it could not pass.
     check(`[${lang} ${width}] Read bar is never taller or longer with ✍ (shown only where it fits)`, r.withBtn.h === r.without.h && r.withBtn.lines === r.without.lines, JSON.stringify(r));
-    if (width >= 768) check(`[${lang} ${width}] positive control: ✍ is on the Read bar where there is room`, r.withBtn.shown, JSON.stringify(r));
+    // Updated in place, v10.21 (the Owner, 10 Oct 2026: the Read bar's tools "under one button"): below 900px ✍ lives
+    // behind ⋯ More tools, so the "on the bar" positive control applies from 900px; below it, ✍ must be in ⋯'s panel.
+    if (width >= 900) check(`[${lang} ${width}] positive control: ✍ is on the Read bar where there is room`, r.withBtn.shown, JSON.stringify(r));
+    else check(`[${lang} ${width}] ✍ is in the ⋯ More tools panel`, await page.evaluate(() => !!document.getElementById("readWritingBtn")?.closest("#readToolsMenu") && (document.getElementById("readToolsBtn")?.getBoundingClientRect().width ?? 0) > 0));
     const menuItem = await page.evaluate(() => { const b = document.getElementById("tabWritingBtn"); return b ? b.textContent.trim() : null; });
     check(`[${lang} ${width}] the Study menu has ✍ Writing sheet`, lang === "bn" ? menuItem === "✍ লিখন অনুশীলনের পাতা" : menuItem === "✍ Writing sheet", menuItem);
     await page.evaluate(() => document.getElementById("readWritingBtn") && void 0);

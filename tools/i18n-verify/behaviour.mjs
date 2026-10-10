@@ -1,6 +1,6 @@
 // Full app translation, phase 1 (the shell) — behaviour suite.
 import fs from "fs";
-import { chromium, newContext, openPage, BASE } from "./harness.mjs";
+import { chromium, newContext, openPage, BASE, clickReadTool } from "./harness.mjs";
 
 // Chromium: use whatever this machine has. CHROMIUM_PATH overrides;
 // otherwise Playwright finds its own download, which is the normal case.
@@ -1934,7 +1934,7 @@ console.log("\n=== 30. Shell round 18: unit numbers, transport, reading view ===
     // reading controls this list records. Updated in place, reason recorded.
     // v08.111 (issue #370) -- #readApproachCapsule, the Mushaf view's own
     // "Choose an Approach" capsule, is excluded for the same reason.
-    buttons: [...document.querySelectorAll("#readBar > button")].filter((b) => b.id !== "mushafPageRef" && b.id !== "readApproachCapsule").map((b) => b.id),
+    buttons: [...document.querySelectorAll("#readBar > button, #readBarEnd > button, #readToolsMenu > button")].filter((b) => b.id !== "mushafPageRef" && b.id !== "readApproachCapsule").map((b) => b.id),
     noWholeSurah: !document.getElementById("readPlaySurahBtn"),
     playLabel: document.getElementById("readPlayBtn").getAttribute("aria-label") || "",
     // Round 25 retired the reciter caption -- its only job was naming which
@@ -1955,8 +1955,9 @@ console.log("\n=== 30. Shell round 18: unit numbers, transport, reading view ===
   // v09.36 (Owner, 2 Oct 2026, "the ☰ Surah list button at the top left. go") -- #readListBtn leads the row (shown only on the Read -> list route, body.read-from-contents). Updated in place, reason recorded.
   // v09.81 (Owner, 5 Oct 2026, the Ayah window: "So go it") -- #readWindowBtn (🗗, PC only) joined the row after #hideChromeBtn. Updated in place, reason recorded.
   // v10.01 (decision 95, the Owner, 9 Oct 2026: "NotePane: Build the demo") -- #readNotesBtn (📝 Notes on the āyah) joined the row right after #readBookmarkBtn. Updated in place, reason recorded.
+  // v10.21 (the Owner, 10 Oct 2026: "all these buttons along with bookmark can be organised under one button"; the Meaning flow) -- #readMeaningBtn (📖) joined before ⤢; 📖 ⤢ 🗗 ⋯ sit in #readBarEnd and the six tools in #readToolsMenu (folded behind ⋯ below 900px). Same controls, two new: the selector reads those two groups too. Updated in place, reason recorded.
   check("30j prev unit, prev āyah, next āyah, next unit, play, stop, full screen, bookmark and reading-complete are on the reading screen",
-        transport.visible && JSON.stringify(transport.buttons) === '["readListBtn","readUnitChip","prevUnitBtn","prevAyahBtn","nextAyahBtn","nextUnitBtn","readPlayBtn","readStopBtn","hideChromeBtn","readWindowBtn","readBookmarkBtn","readNotesBtn","readCompleteBtn","readWritingBtn","readAttachAsmaBtn"]', JSON.stringify(transport));
+        transport.visible && JSON.stringify(transport.buttons) === '["readListBtn","readUnitChip","prevUnitBtn","prevAyahBtn","nextAyahBtn","nextUnitBtn","readPlayBtn","readStopBtn","readMeaningBtn","hideChromeBtn","readWindowBtn","readToolsBtn","readBookmarkBtn","readNotesBtn","readCompleteBtn","readWritingBtn","readAttachAsmaBtn"]', JSON.stringify(transport));
   check("30j the separate 'Whole surah' button is gone (Play follows the unit)", transport.noWholeSurah);
   check("30j the merged button is named Play while nothing is playing",
         /Play|চালান/.test(transport.playLabel) && !/Pause|থামান/.test(transport.playLabel), transport.playLabel);
@@ -1996,7 +1997,7 @@ console.log("\n=== 30l. Round 18's own controls in Bangla ===");
   // Direct children only -- see the enhancement-round comment at 30j above
   // (eight now -- prevAyahBtn/nextAyahBtn joined this row, and the
   // multi-student round's own readBookmarkBtn joined it too).
-  const t18 = await page.evaluate(() => [...document.querySelectorAll("#readBar > button")].filter((b) => b.id !== "mushafPageRef" && b.id !== "readApproachCapsule").map((b) => b.getAttribute("aria-label") || "")); // v08.90 -- see 30j: #mushafPageRef excluded; v08.111 -- #readApproachCapsule too (Mushaf-only)
+  const t18 = await page.evaluate(() => [...document.querySelectorAll("#readBar > button, #readBarEnd > button, #readToolsMenu > button")].filter((b) => b.id !== "mushafPageRef" && b.id !== "readApproachCapsule").map((b) => b.getAttribute("aria-label") || "")); // v08.90 -- see 30j: #mushafPageRef excluded; v08.111 -- #readApproachCapsule too (Mushaf-only)
   // v08.30 -- ten now: #readCompleteBtn joined the row. Its own Bangla name is
   // the I11 evidence for this tranche's four new keys.
   // v08.103 -- eleven: #readUnitChip joined the row (issue #348); its own
@@ -2007,8 +2008,9 @@ console.log("\n=== 30l. Round 18's own controls in Bangla ===");
   // v09.81 (Owner, 5 Oct 2026, the Ayah window: "So go it") -- #readWindowBtn (🗗, PC only) joined the row after #hideChromeBtn. Updated in place, reason recorded.
   // fourteen now; its Bangla name জানালা হিসেবে খুলুন is part of the I11 evidence.
   // v10.01 (decision 95) -- #readNotesBtn joined the row; fifteen now, its Bangla name "{unit}-এর নোট" part of the I11 evidence. Updated in place, reason recorded.
+  // v10.21 -- #readMeaningBtn and #readToolsBtn joined; seventeen now, their Bangla names part of the I11 evidence. Updated in place, reason recorded.
   check("30l every reading-screen control is NAMED in Bangla",
-        t18.length === 15 && t18.every((x) => BANGLA.test(x)), JSON.stringify(t18));
+        t18.length === 17 && t18.every((x) => BANGLA.test(x)), JSON.stringify(t18));
   await page.close();
   await ctx.close();
 }
@@ -5332,7 +5334,7 @@ console.log("\n=== 45. Quran bookmarks -- naming prompt, full settings capture/r
   check("45b the bar's Bookmark button starts unbookmarked -- the positive control the cancel below is measured against",
         beforeCancel.text === "🔖" && /^Bookmark/i.test(beforeCancel.label || ""), JSON.stringify(beforeCancel));
 
-  await page.click("#readBookmarkBtn");
+  await clickReadTool(page, "#readBookmarkBtn");
   await cancelBookmarkPopover(page);
   await page.waitForTimeout(200);
   const afterCancel = await readBmState();
@@ -5352,7 +5354,7 @@ console.log("\n=== 45. Quran bookmarks -- naming prompt, full settings capture/r
   await page.waitForTimeout(150);
   // RECONCILED 2026-09-17: the ⋮ menu was opened here only to reach its
   // Bookmark item, which moved to #readBar as a direct button (see 45a).
-  await page.click("#readBookmarkBtn");
+  await clickReadTool(page, "#readBookmarkBtn");
   await fillBookmarkPopover(page, { name: "My Fatiha bookmark" });
   await page.waitForTimeout(300);
   const writes = await page.evaluate(() => JSON.parse(sessionStorage.getItem("__stubWrites") || "[]"));
@@ -5466,7 +5468,7 @@ console.log("\n=== 48. Fixes round item 1 -- the bookmark popover's own folder p
   // Bookmark #1: name it and create a brand-new folder in the same step.
   // RECONCILED 2026-09-17: the ⋮ menu was opened here only to reach its
   // Bookmark item, which moved to #readBar as a direct button (see 45a).
-  await page.click("#readBookmarkBtn");
+  await clickReadTool(page, "#readBookmarkBtn");
   await fillBookmarkPopover(page, { name: "Ayah One", newFolderName: "Favourites" });
   await page.waitForTimeout(300);
   const writesAfterFirst = await page.evaluate(() => JSON.parse(sessionStorage.getItem("__stubWrites") || "[]"));
@@ -5480,7 +5482,7 @@ console.log("\n=== 48. Fixes round item 1 -- the bookmark popover's own folder p
   await page.waitForTimeout(200);
   // RECONCILED 2026-09-17: the ⋮ menu was opened here only to reach its
   // Bookmark item, which moved to #readBar as a direct button (see 45a).
-  await page.click("#readBookmarkBtn");
+  await clickReadTool(page, "#readBookmarkBtn");
   await page.waitForSelector(".bm-popover-overlay");
   const folderOptions = await page.evaluate(() =>
     [...document.querySelectorAll("[data-bm-pop-folder] option")].map((o) => o.textContent.trim())
@@ -5502,7 +5504,7 @@ console.log("\n=== 48. Fixes round item 1 -- the bookmark popover's own folder p
   const writesBeforeCancel = (await page.evaluate(() => JSON.parse(sessionStorage.getItem("__stubWrites") || "[]"))).filter((w) => w.col === "bookmarks").length;
   // RECONCILED 2026-09-17: the ⋮ menu was opened here only to reach its
   // Bookmark item, which moved to #readBar as a direct button (see 45a).
-  await page.click("#readBookmarkBtn");
+  await clickReadTool(page, "#readBookmarkBtn");
   await cancelBookmarkPopover(page);
   await page.waitForTimeout(200);
   const writesAfterCancel = (await page.evaluate(() => JSON.parse(sessionStorage.getItem("__stubWrites") || "[]"))).filter((w) => w.col === "bookmarks").length;
@@ -5555,7 +5557,7 @@ console.log("\n=== 49. Fixes round items 2/3 -- the nav bar's own live Bookmark 
   await page.waitForTimeout(400);
   // RECONCILED 2026-09-17: the ⋮ menu was opened here only to reach its
   // Bookmark item, which moved to #readBar as a direct button (see 45a).
-  await page.click("#readBookmarkBtn");
+  await clickReadTool(page, "#readBookmarkBtn");
   await fillBookmarkPopover(page, { name: "Fatiha in a folder", newFolderName: "Favourites" });
   await page.waitForTimeout(300);
 
@@ -5636,7 +5638,7 @@ console.log("\n=== 50. Fixes round 2 -- the expanded/collapsed OPTION, and the p
   await page.waitForTimeout(400);
   // RECONCILED 2026-09-17: the ⋮ menu was opened here only to reach its
   // Bookmark item, which moved to #readBar as a direct button (see 45a).
-  await page.click("#readBookmarkBtn");
+  await clickReadTool(page, "#readBookmarkBtn");
   await page.waitForSelector(".bm-popover-overlay");
   const popoverHasPerson = await page.evaluate(() => {
     const sel = document.querySelector("[data-bm-pop-person]");
@@ -5884,7 +5886,7 @@ console.log("\n=== 50h-k. The person tag on the Manager page, and both in Bangla
   await pageBn.waitForTimeout(400);
   // RECONCILED 2026-09-17: the ⋮ menu was opened here only to reach its
   // Bookmark item, which moved to #readBar as a direct button (see 45a).
-  await pageBn.click("#readBookmarkBtn");
+  await clickReadTool(pageBn, "#readBookmarkBtn");
   await pageBn.waitForSelector(".bm-popover-overlay");
   //
   // RECONCILED 2026-09-18, the second clause. It read

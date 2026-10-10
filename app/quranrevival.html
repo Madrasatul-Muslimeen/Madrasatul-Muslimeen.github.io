@@ -22142,7 +22142,8 @@
     async function openReadNotesPane(u = readNotesUnit(), opts = {}, whenClosed = null) {
       if (!u) return;
       try { await loadReadNotePane(); } catch (error) { reportWriteFailure(error, { what: "open the Notes pane" }); return; } // I15
-      readNotePaneMod.openReadNotePane(u, whenClosed ?? (() => { paintReadNotesBtn(); readNotesBtn.focus(); }), opts);
+      // 10 Oct 2026: below 900px 📝 sits behind ⋯, so the focus goes back to ⋯ (which carries the same count).
+      readNotePaneMod.openReadNotePane(u, whenClosed ?? (() => { paintReadNotesBtn(); (readNotesBtn.getBoundingClientRect().width ? readNotesBtn : readToolsBtn).focus(); }), opts);
       paintReadNotesBtn();
     }
     // Decision 95: "Track this āyah becomes a tab of the pane." Its three actions are the Read bar's own (the same cards,
