@@ -61,7 +61,7 @@ async function toAyah255(P) {
   await P.evaluate(() => document.querySelectorAll('[id*="splash"], .app-splash-overlay').forEach((e) => e.remove()));
 }
 const place = (P) => P.evaluate(() => ({ surah: document.getElementById("surahSelect")?.value, ayah: document.getElementById("ayahSelect")?.value,
-  noteOpen: !document.getElementById("noteView")?.hidden && getComputedStyle(document.getElementById("noteView")).display !== "none" && document.getElementById("noteView").getBoundingClientRect().height > 0,
+  noteOpen: !!document.getElementById("noteView"),
   noteText: document.getElementById("noteView")?.textContent ?? "",
   readOpen: !!document.getElementById("readView") && getComputedStyle(document.getElementById("readView")).display !== "none" && document.getElementById("readView").getBoundingClientRect().height > 0 }));
 
@@ -70,36 +70,20 @@ for (const [lang, width, look] of [["en", 390, "light"], ["bn", 390, "night"], [
   const tag = `[${lang} ${width} ${look}]`;
   const ctx = await context(lang, width, look);
 
-  // ---- 1. the Note view's ⋯ menu -> My Notes for this unit
+  // ---- 1. UPDATED IN PLACE (Note view retirement, step b): the Note view and its ⋯ menu's "My Notes for this unit" link are
+  // deleted. The surface that now does the job is the Read view's Notes pane on the same āyah; the link no longer exists.
   {
     const { page: P, errors } = await openPage(ctx, "/app/quranrevival.html");
     await toAyah255(P);
-    // UPDATED IN PLACE (decision 95, v10.03): the Āyah card's 📝 Note opens the Notes pane now, so the Note view (whose
-    // ⋯ menu this section checks) is opened by its own Study-menu Note tab, on the same āyah.
-    await P.evaluate(() => window.__dormantOpenNoteView());
-    await P.waitForFunction(() => !document.getElementById("noteView")?.hidden && document.querySelector('#noteView [data-note-menu-toggle="more"]'), null, { timeout: 10000 });
-    const before = await place(P);
-    check(`${tag} (1) the Note view is open on 2:255 before leaving`, before.noteOpen && before.surah === "2" && before.ayah === "255", JSON.stringify({ ...before, noteText: "" }));
-    await P.click('#noteView [data-note-menu-toggle="more"]');
-    const href = await P.evaluate(() => document.querySelector('#noteView [data-note-menu="more"] a[href^="notes.html?"]')?.getAttribute("href"));
-    check(`${tag} (1) My Notes for this unit: the href carries back=1`, new URLSearchParams((href ?? "").split("?")[1] ?? "").get("back") === "1", String(href));
-    let went = true;
-    await Promise.all([P.waitForURL(/notes\.html\?/, { timeout: 15000 }), P.click('#noteView [data-note-menu="more"] a[href^="notes.html?"]')]).catch(() => { went = false; });
-    check(`${tag} (1) it opens the Notes page`, went);
-    if (went) {
-      await P.waitForFunction(() => document.getElementById("unitBanner")?.textContent.trim().length > 0, null, { timeout: 15000 }).catch(() => {});
-      const b = await backState(P);
-      check(`${tag} (1) the Notes page shows ${BACK(bn)}, 40px tall`, b?.text === BACK(bn) && b.h >= 40, JSON.stringify(b));
-      if (b) {
-        let back = true;
-        await Promise.all([P.waitForURL(/quranrevival\.html/, { timeout: 15000 }), P.click("#notesBackBtn")]).catch(() => { back = false; });
-        // UPDATED IN PLACE (decision 95, R3b): qpView=note now reopens the Read view with the Notes pane on the same unit.
-        await P.waitForFunction(() => document.getElementById("readNotePane")?.hidden === false, null, { timeout: 25000 }).catch(() => {});
-        const after = await place(P);
-        const paneOn = await P.evaluate(() => document.getElementById("readNotePane")?.hidden === false);
-        check(`${tag} (1) ← Back lands on the Qur'an page, 2:255, the Notes pane open on it (the Note view stays hidden)`, back && after.surah === "2" && after.ayah === "255" && after.readOpen && !after.noteOpen && paneOn, JSON.stringify({ ...after, noteText: "", paneOn, url: P.url() }));
-      }
-    }
+    const gone = await P.evaluate(() => ({ noteView: document.getElementById("noteView"), seam: typeof window.__dormantOpenNoteView, link: !!document.querySelector('a[href^="notes.html?"][data-note-menu], [data-note-menu="more"]') }));
+    check(`${tag} (1) #noteView and __dormantOpenNoteView are absent, so no Note view ⋯ menu link exists`, gone.noteView === null && gone.seam === "undefined" && !gone.link, JSON.stringify(gone));
+    await P.evaluate(() => { document.getElementById("tabStudyBtn")?.click(); });
+    await P.waitForTimeout(200);
+    await P.evaluate(() => document.getElementById("tabNoteBtn")?.click());
+    await P.waitForFunction(() => document.getElementById("readNotePane")?.hidden === false, null, { timeout: 15000 }).catch(() => {});
+    const after = await place(P);
+    const paneOn = await P.evaluate(() => document.getElementById("readNotePane")?.hidden === false);
+    check(`${tag} (1) the Study menu's Notes opens the Notes pane on 2:255 in the Read view (no Note view)`, after.surah === "2" && after.ayah === "255" && after.readOpen && !after.noteOpen && paneOn, JSON.stringify({ ...after, noteText: "" }));
     check(`${tag} (1) no page errors`, errors.filter((e) => !/ERR_CERT|net::|archive\.org|api\.quran|Failed to load resource/i.test(e)).length === 0, errors.slice(0, 2).join(" | "));
     await P.close();
   }

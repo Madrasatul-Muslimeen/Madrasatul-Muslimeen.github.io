@@ -417,22 +417,20 @@ console.log(`\n=== Ayah Card -- number badge, Take an Approach, Status B (issue 
   await page.keyboard.press("Escape");
   await page.waitForTimeout(200);
 
-  // --- entry point (c), Note view: the same number badge, built locally there ---
-  // Note lives inside the Study menu; open it first (CLAUDE.md: a control
-  // moved into a menu still RESOLVES but is 0x0 until the menu opens).
-  const noteReachable = await page.evaluate(() => (document.getElementById("tabNoteBtn")?.getBoundingClientRect().width ?? 0) > 0);
-  if (!noteReachable) { await page.click("#tabStudyBtn"); await page.waitForTimeout(150); }
-  await page.evaluate(() => window.__dormantOpenNoteView()); // R3c: the dormant Note view, by its test seam
+  // --- entry point (c): UPDATED IN PLACE (Note view retirement, step b). The Note view and its locally-built number badge are
+  // deleted; the same job (a real number-badge <button> that opens the card for ayah:1:1) is done by the Read view's badge. ---
+  const noteGone = await page.evaluate(() => ({ view: document.getElementById("noteView"), seam: typeof window.__dormantOpenNoteView }));
+  check("#noteView and __dormantOpenNoteView are absent (the Note view's own number badge no longer exists)", noteGone.view === null && noteGone.seam === "undefined", JSON.stringify(noteGone));
   await page.waitForTimeout(1200);
-  const noteBadge = await page.$('#noteView [data-ayah-num-badge="1:1"]');
-  check("the Note view's own locally-built number badge exists for 1:1, as a real element", !!noteBadge);
+  const noteBadge = await page.$('#readView [data-ayah-num-badge="1:1"]');
+  check("the Read view's number badge exists for 1:1, as a real element", !!noteBadge);
   if (noteBadge) {
     const tag = await noteBadge.evaluate((el) => el.tagName);
-    check("the Note view's number badge is a real <button> element too", tag === "BUTTON", tag);
-    await clickSafely(page, '#noteView [data-ayah-num-badge="1:1"]');
+    check("the Read view's number badge is a real <button> element too", tag === "BUTTON", tag);
+    await clickSafely(page, '#readView [data-ayah-num-badge="1:1"]');
     await page.waitForTimeout(400);
     const openedFromNote = await page.evaluate(() => document.querySelector("[data-ayah-sheet]")?.dataset.unitKey === "ayah:1:1");
-    check("tapping the Note view's number badge opens the card for ayah:1:1", openedFromNote);
+    check("tapping the Read view's number badge opens the card for ayah:1:1", openedFromNote);
   }
 
   const real = errors.filter((e) => !/Failed to load resource: net::ERR_(TUNNEL_CONNECTION_FAILED|CERT_AUTHORITY_INVALID|FAILED)/.test(e));

@@ -38,7 +38,7 @@ for (const [lang, width, height] of [["bn", 390, 844], ["en", 1280, 800]]) {
   const state = () => P.evaluate(() => {
     const vis = (id) => { const e = document.getElementById(id); return !!e && !e.hidden && getComputedStyle(e).display !== "none" && e.getBoundingClientRect().height > 0; };
     return { read: vis("readView"), note: vis("noteView"), pane: document.getElementById("readNotePane")?.hidden === false,
-      label: document.getElementById("tabNoteBtn")?.textContent.trim(), noteHiddenAttr: document.getElementById("noteView")?.hidden };
+      label: document.getElementById("tabNoteBtn")?.textContent.trim(), noteGone: document.getElementById("noteView") === null && typeof window.__dormantOpenNoteView === "undefined" };
   });
   const openMenu = async () => {
     const shown = await P.evaluate(() => (document.getElementById("tabNoteBtn")?.getBoundingClientRect().width ?? 0) > 0);
@@ -49,7 +49,7 @@ for (const [lang, width, height] of [["bn", 390, 844], ["en", 1280, 800]]) {
   await P.waitForTimeout(1500);
   await openMenu();
   const s0 = await state();
-  check(`${tag} POSITIVE CONTROL: the menu's tab is there and the Note view starts hidden`, !!s0.label && s0.noteHiddenAttr === true, JSON.stringify(s0));
+  check(`${tag} POSITIVE CONTROL: the menu's tab is there and #noteView and __dormantOpenNoteView are absent`, !!s0.label && s0.noteGone === true, JSON.stringify(s0));
   check(`${tag} the tab is labelled "${bn ? "নোট" : "Notes"}"`, s0.label === (bn ? "নোট" : "Notes"), JSON.stringify(s0.label));
 
   await P.evaluate(() => document.getElementById("tabNoteBtn").click()); await waitPane(true);
@@ -102,7 +102,7 @@ for (const [lang, width, height] of [["bn", 390, 844], ["en", 1280, 800]]) {
     await P.waitForTimeout(300); await probe(`ayah-card button ${i}`);
     await openCard();
   }
-  check(`${tag} #noteView stayed hidden after every Study-menu tab, Read-bar button and Āyah-card button (${menuIds.length}+${barIds.length}+${nCard} pressed)`, reached.length === 0, JSON.stringify(reached));
+  check(`${tag} #noteView stayed absent after every Study-menu tab, Read-bar button and Āyah-card button (${menuIds.length}+${barIds.length}+${nCard} pressed)`, reached.length === 0, JSON.stringify(reached));
   check(`${tag} no page errors`, errors.filter((e) => !ignorable(e)).length === 0, errors.slice(0, 2).join(" | "));
   await ctx.close();
 }

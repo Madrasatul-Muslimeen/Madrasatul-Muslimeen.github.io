@@ -22,7 +22,7 @@ for (const lang of ["en", "bn"]) for (const unit of ["ayah", "surah"]) for (cons
   // documented write-capability probe (touchAyahNotesDoc), which stamps only
   // updatedAt on the person's ayahNotes doc the first time the Note view opens
   // in a session. It predates this change and is on main too.
-  const before = await page.evaluate(() => ({ noteHidden: document.getElementById("noteView").hidden, writes: (window.__stubWriteData || []).length }));
+  const before = await page.evaluate(() => ({ noteHidden: (document.getElementById("noteView") === null), writes: (window.__stubWriteData || []).length }));
   if (via === "slice") {
     await page.$eval('#wheelContainer .wheel-seg[data-key="memorise"]', (e) => e.dispatchEvent(new MouseEvent("click", { bubbles: true })));
   } else {
@@ -37,7 +37,7 @@ for (const lang of ["en", "bn"]) for (const unit of ["ayah", "surah"]) for (cons
     const b = document.querySelector('.rnp-track:not([hidden]) .way-embed');
     const r = b ? b.getBoundingClientRect() : null;
     return {
-      note: !document.getElementById("noteView").hidden,
+      note: !!document.getElementById("noteView"),
       pane: !!b,
       open: b ? getComputedStyle(b).display !== "none" && r.height > 0 : false,
       onScreen: r ? r.top < innerHeight && r.bottom > 0 : false,

@@ -337,7 +337,7 @@ for (const vp of [[390, 844], [1280, 800]]) {
   check(`taps ${vp[0]}: elementFromPoint at the nearest slices' centres never lands on the hub overlay`, hit.every((h) => h.ok && !/wheelHub/.test(h.id || "")), JSON.stringify(hit.filter((h) => !h.ok)));
   await page.click(".wheel-seg");
   await page.waitForTimeout(400);
-  const opened = await page.evaluate(() => !document.getElementById("noteView").hidden);
+  const opened = await page.evaluate(() => !!document.getElementById("noteView"));
   check(`taps ${vp[0]}: a slice tap still opens its slice`, opened);
   await ctx.close();
 }

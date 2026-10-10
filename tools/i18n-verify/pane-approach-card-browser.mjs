@@ -61,7 +61,7 @@ for (const [lang, width, height] of [["bn", 390, 844], ["en", 1280, 800]]) {
     await page.$eval('#wheelContainer .wheel-seg[data-key="memorise"]', (e) => e.dispatchEvent(new MouseEvent("click", { bubbles: true })));
     const got = await onTrack(page);
     await page.waitForTimeout(300);
-    const m = await ev(page, () => ({ noteHidden: document.getElementById("noteView").hidden, read: !document.getElementById("readView")?.hidden, chosen: document.querySelector(".rnp-track [data-note-approach-select]")?.value, card: !!document.querySelector(".rnp-track .way-embed"), tabSel: document.querySelector('[data-rnp-tab="track"]')?.getAttribute("aria-selected"), buttons: document.querySelectorAll(".rnp-track [data-rnp-track]").length }));
+    const m = await ev(page, () => ({ noteHidden: (document.getElementById("noteView") === null), read: !document.getElementById("readView")?.hidden, chosen: document.querySelector(".rnp-track [data-note-approach-select]")?.value, card: !!document.querySelector(".rnp-track .way-embed"), tabSel: document.querySelector('[data-rnp-tab="track"]')?.getAttribute("aria-selected"), buttons: document.querySelectorAll(".rnp-track [data-rnp-track]").length }));
     check(`${tag} the Notes pane opens on its Track tab with the card`, got && m.card && m.tabSel === "true", JSON.stringify(m));
     check(`${tag} #noteView stays hidden, the Read view is the screen`, m.noteHidden === true && m.read === true, JSON.stringify(m));
     check(`${tag} the tapped Approach (memorise) is chosen; the three buttons are kept`, m.chosen === "memorise" && m.buttons === 3, JSON.stringify(m));
@@ -79,7 +79,7 @@ for (const [lang, width, height] of [["bn", 390, 844], ["en", 1280, 800]]) {
     await page.click(".rnp-track .way-claim-btn"); await page.waitForTimeout(1200);
     const w = await ev(page, (k) => (window.__stubWriteData || []).slice(k).filter((x) => x.col === "records").map((x) => [x.id, Object.entries(x.data || {}).filter(([key]) => /::memorise/.test(key)).map(([, v]) => v?.claimedStatus ?? null)]), n0);
     check(`${tag} Claim "Learning" with 👥 p1+p2 writes records for both`, w.some(([id, s]) => id === "t1__p1__surah_1" && s.includes("learning")) && w.some(([id, s]) => id === "t1__p2__surah_1" && s.includes("learning")), JSON.stringify(w));
-    check(`${tag} the card is redrawn in the pane afterwards, Note view still hidden`, await ev(page, () => !!document.querySelector(".rnp-track .way-embed") && document.getElementById("noteView").hidden), "");
+    check(`${tag} the card is redrawn in the pane afterwards, Note view still hidden`, await ev(page, () => !!document.querySelector(".rnp-track .way-embed") && (document.getElementById("noteView") === null)), "");
     // way back
     const back = await ev(page, () => document.querySelector("[data-rnp-back]")?.textContent ?? "");
     check(`${tag} the pane's back says "${W.backWheel}"`, back === W.backWheel, back);
@@ -106,7 +106,7 @@ for (const [lang, width, height] of [["bn", 390, 844], ["en", 1280, 800]]) {
     await page.click('.aa-sheet [data-aa-act="guide"]');
     const got = await onTrack(page);
     await page.waitForTimeout(300);
-    const m = await ev(page, () => ({ noteHidden: document.getElementById("noteView").hidden, chosen: document.querySelector(".rnp-track [data-note-approach-select]")?.value, back: document.querySelector("[data-rnp-back]")?.textContent }));
+    const m = await ev(page, () => ({ noteHidden: (document.getElementById("noteView") === null), chosen: document.querySelector(".rnp-track [data-note-approach-select]")?.value, back: document.querySelector("[data-rnp-back]")?.textContent }));
     check(`${tag} Guide opens the pane's Track tab on memorise; Note view hidden`, got && m.chosen === "memorise" && m.noteHidden === true, JSON.stringify(m));
     await page.click('.rnp-track .way-tab-btn[data-tab="Guide"]'); await page.waitForTimeout(150);
     const guide = await ev(page, () => document.querySelector('.rnp-track .way-tab-panel[data-tab="Guide"]')?.textContent ?? "");

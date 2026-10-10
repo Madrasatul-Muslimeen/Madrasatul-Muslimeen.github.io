@@ -49,5 +49,18 @@ for (const name of HELPERS) {
   check(`${name} names a missing root as an error`, /throw new Error\(`?"?[^)]*root element is required/.test(text));
 }
 
+// Step (b): the Note view is deleted. Its entry points, markup id and renderer must not come back.
+const stripComments = (s) => s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:"'`\\])\/\/[^\n]*/g, "$1");
+const renderer = stripComments(readFileSync("app/js/ayah-note-renderer.js", "utf8"));
+check("positive control: the page still defines openQcrPopup and the renderer still exports attachQcrDrawerHandlers",
+  /function openQcrPopup\(/.test(code) && /export function attachQcrDrawerHandlers\(/.test(renderer));
+const pageCode = code.replace(/<!--[\s\S]*?-->/g, "");
+for (const [label, text] of [["quranrevival.html", pageCode], ["ayah-note-renderer.js", renderer]]) {
+  for (const word of ["openNoteView", "renderNoteViewNow", "attachNoteViewHandlers", "renderNoteView", "noteView", "noteViewMount", "__dormantOpenNoteView"]) {
+    check(`${label}: comment-stripped source has no \`${word}\``, !new RegExp(`\\b${word}\\b`).test(text));
+  }
+}
+check("quranrevival.html: no #noteView element or selector remains", !/["'`#]noteView\b|id="noteView"/.test(pageCode));
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
