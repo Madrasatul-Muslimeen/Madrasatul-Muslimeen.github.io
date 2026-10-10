@@ -18,7 +18,8 @@ const check = (name, ok, detail = "") => {
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
 const MUT = {
   nomeaning: ["      const meaningOn = readMeaningOn;", "      const meaningOn = false;"],
-  fshides: [":not(#readListBtn):not(#readMeaningBtn) { display: none; }", ":not(#readListBtn) { display: none; }"],
+  // Re-anchored 10 Oct 2026: 📖 and ⤢ now sit in #readBarEnd, whose bare-state rule keeps exactly those two.
+  fshides: ["#readBarEnd > *:not(#hideChromeBtn):not(#readMeaningBtn) { display: none; }", "#readBarEnd > *:not(#hideChromeBtn) { display: none; }"],
   // Re-aimed on its first run: cutting the bookkeeping line still left the page inserted, so it proved nothing.
   // What makes the next page join on its own is the observer on the ↓ button.
   nocontinue: ["        meaningObserver.observe(nextBtn);", "        void nextBtn;"],

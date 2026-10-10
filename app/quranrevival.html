@@ -2180,6 +2180,7 @@
      button's own (translated) spoken name. The 📝 count rides on ⋯ so "this āyah has a note" still shows. */
   #readBarEnd { display: flex; align-items: center; gap: inherit; margin-left: auto; flex: 0 0 auto; }
   #readToolsBtn { position: relative; }
+  #readBar #readToolsBtn { box-sizing: border-box; height: 36px; min-width: 36px; font-size: 1.05rem; } /* the same face as ⤢ beside it */
   #readToolsBtn .read-tools-count { position: absolute; top: -7px; right: -7px; min-width: 18px; height: 18px; padding: 0 4px; box-sizing: border-box; border-radius: 9px; border: 2px solid #fff; background: #B8862F; color: #fff; font-size: 0.66rem; font-weight: 700; line-height: 14px; text-align: center; }
   #readToolsBtn .read-tools-count[hidden] { display: none; }
   #readToolsMenu [hidden] { display: none !important; }
@@ -2206,6 +2207,8 @@
       text-align: center; overflow-wrap: anywhere; max-width: 100%;
     }
     #readToolsMenu.open #readNotesBtn .read-notes-count { top: 4px; right: 6px; }
+    /* fitBarButton() hides ✍ where it would cost the BAR a line; inside the panel it costs the bar nothing. */
+    #readToolsMenu.open .bar-btn-nofit { display: flex !important; }
   }
   /* The three study buttons (Take an Approach | Record Your Progress | Know Your Status), the Owner: "How about moving
      three buttons at the bottom of the screen?" On a phone they are one slim row just above the four bottom buttons
