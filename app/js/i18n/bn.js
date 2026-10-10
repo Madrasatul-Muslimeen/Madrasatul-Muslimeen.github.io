@@ -4081,4 +4081,10 @@ export const BN = {
   "Choose an Approach for {unit}, record your progress (for your family too, with 👥), or see your status.": "{unit}-এর জন্য একটি পদ্ধতি বেছে নিন, আপনার অগ্রগতি লিখে রাখুন (👥 দিয়ে পরিবারের জন্যও), অথবা আপনার অবস্থা দেখুন।",
   // 10 Oct 2026: Asma ul Husna's way back above a Name's poster; the full-size poster's way back.
   "Back to the wheel": "চাকায় ফিরে যান",
+  // 10 Oct 2026: the Read view's 📖 Meaning (a reading flow with the meanings, and back to the Mushaf).
+  "Meaning": "অর্থ",
+  "Mushaf": "মুসহাফ",
+  "Back to the Mushaf": "মুসহাফে ফিরে যান",
+  "Back to the reading": "পড়ায় ফিরে যান",
+  "Show the meaning: translations and word by word": "অর্থ দেখুন: অনুবাদ ও শব্দে শব্দে",
 };

@@ -2518,7 +2518,33 @@
      top-bar reference is to still say which Surah/āyāt this is in the BARE
      full-screen state, where the strip is otherwise empty apart from the
      full-screen icon. */
-  body.immersive-read.fs-hide-readbar.fs-hide-transport #readBar > *:not(#hideChromeBtn):not(#mushafPageRef):not(#readQuickRow):not(#readListBtn) { display: none; }
+  body.immersive-read.fs-hide-readbar.fs-hide-transport #readBar > *:not(#hideChromeBtn):not(#mushafPageRef):not(#readQuickRow):not(#readListBtn):not(#readMeaningBtn) { display: none; }
+  /* 10 Oct 2026: 📖 Meaning stays in the bare full-screen state too (the Owner: "visible even in full screen Mushaf
+     view"), beside ⤢. */
+  #readMeaningBtn {
+    box-sizing: border-box; height: 36px; padding: 0 0.7rem; margin: 0; flex: 0 0 auto;
+    display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem;
+    font: inherit; font-size: 0.88rem; font-weight: 700; line-height: 1; white-space: nowrap;
+    border-radius: 0.5rem; border: 1.5px solid #1F3A6E; background: #fff; color: #1F3A6E; cursor: pointer;
+  }
+  #readMeaningBtn[aria-pressed="true"] { background: #1F3A6E; color: #fff; }
+  #readMeaningBtn:focus-visible { outline: 3px solid #B8862F; outline-offset: 2px; }
+  @media (max-width: 359px) { #readMeaningBtn { padding: 0 0.5rem; } }
+  /* The Meaning flow: every āyah of the page(s), with its meanings, one after another. One wrapper, so "Page by
+     page" (which turns each direct child of #pageViewContainer into a sideways page) makes it one page that scrolls
+     down inside itself; otherwise #readScroll scrolls it. */
+  .meaning-flow { display: grid; gap: 0.8rem; padding: 0 0 1rem; }
+  .meaning-layers { position: sticky; top: 0; z-index: 2; display: flex; flex-wrap: wrap; gap: 0.4rem; padding: 0.5rem 0; background: var(--read-bg, #fff); border-bottom: 1px solid #eee; }
+  .meaning-layers label { display: inline-flex; align-items: center; gap: 0.35rem; min-height: 36px; padding: 0 0.7rem; border: 1px solid #ded7c6; border-radius: 999px; background: #fff; font-size: 0.85rem; cursor: pointer; }
+  .meaning-layers input { margin: 0; accent-color: #1F3A6E; }
+  .meaning-page-rule { text-align: center; font-size: 0.8rem; color: #7b6a45; letter-spacing: 0.04em; border-top: 1px dashed #d9cfb6; padding-top: 0.4rem; }
+  .meaning-ayah { border: 1px solid #ece4d0; border-radius: 0.8rem; background: #fffdf7; padding: 0.6rem 0.8rem 0.8rem; scroll-margin-top: 3.4rem; }
+  .meaning-ayah.out { opacity: 0.62; }
+  .meaning-ayah.out:focus-within, .meaning-ayah.out:hover { opacity: 1; }
+  .meaning-ayah-head { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; font-size: 0.8rem; color: #7b6a45; }
+  .meaning-ayah-ref { font-weight: 700; color: #1F3A6E; }
+  .meaning-more { min-height: 44px; border: 1px dashed #c9b98f; border-radius: 0.6rem; background: #fdf8ea; color: #5e4418; font: inherit; font-weight: 600; cursor: pointer; }
+  .meaning-more[disabled] { opacity: 0.5; cursor: default; }
   /* Owner, 2 Oct 2026 -- "☰ Surah list", the way back from a Read view opened
      from the list. Same face as the ⤢ button beside it (36px, gold border);
      only on that route, full screen or not. Below 360px it is the ☰ alone. */
@@ -5286,6 +5312,10 @@
             <button type="button" class="rq-btn" id="readQuickTrackBtn">Record</button>
             <button type="button" class="rq-btn" id="readQuickApproachBtn">Approach</button>
           </div>
+          <!-- 10 Oct 2026, the Owner: "I want a reading flow with meaning, translations, word meaning that should appear
+               by pressing a button. Then, pressing same button should collapse back to Mushaf view. That button should
+               be visible even in full screen Mushaf view." 📖 Meaning, just before ⤢ (renderMeaningFlow()). -->
+          <button type="button" class="read-meaning-btn" id="readMeaningBtn" aria-pressed="false"><span aria-hidden="true">📖</span><span class="read-meaning-word">Meaning</span></button>
           <button type="button" class="secondary qr-ico" id="hideChromeBtn" aria-label="Full screen" title="Full screen">⤢</button>
           <button type="button" class="secondary qr-ico" id="readWindowBtn" aria-label="Open as a window" title="Open as a window" aria-pressed="false">🗗</button>
           <!-- Note-view enhancement round 3 -- "same resizing at the READ
@@ -6974,6 +7004,7 @@
     const readQuickMenuSlot = document.getElementById("readQuickMenuSlot");
     const readTextSizeSlot = document.getElementById("readTextSizeSlot");
     const hideChromeBtn = document.getElementById("hideChromeBtn");
+    const readMeaningBtn = document.getElementById("readMeaningBtn");
     const readBookmarkBtn = document.getElementById("readBookmarkBtn");
     const readNotesBtn = document.getElementById("readNotesBtn");
     const readUnitChip = document.getElementById("readUnitChip"); // issue #348, Owner decision 18
@@ -17745,6 +17776,185 @@
       return `<button type="button" class="unit-flow-surah-heading" data-unit-marker="${escapeHtml(buildUnitKey.surah(surahNum))}">${escapeHtml(surahName(surahNum, meta?.nameEnglish))}</button>`;
     }
 
+    // ===================== 📖 Meaning (the Owner, 10 Oct 2026) =====================
+    // "Read view is now Mushaf view, but I want a reading flow with meaning, translations, word meaning that should
+    // appear by pressing a button. Then, pressing same button should collapse back to Mushaf view." -- and "not only
+    // a single Ayah, rather the entire page and continue". So: every āyah of the page(s) the Mushaf would show, each
+    // with its Arabic, English, Bangla and word-by-word meanings (the same panels the Read view draws, layoutAParts),
+    // crossing a surah's edge where the page does, and carrying on to the next page as the reader scrolls. The āyāt
+    // outside the chosen unit are drawn faint, as the Mushaf draws them. Remembered per device (a reading preference,
+    // like Page by page). Which meanings show is Meaning's own choice (all three at first), so turning it on never
+    // changes the classic Read view's ticks.
+    var READ_MEANING_KEY = "qr.readMeaning";
+    var READ_MEANING_LAYERS_KEY = "qr.readMeaningLayers";
+    var readMeaningOn = (() => { try { return localStorage.getItem(READ_MEANING_KEY) === "1"; } catch { return false; } })();
+    var readMeaningLayers = (() => {
+      try { return { en: true, bn: true, wbw: true, ...JSON.parse(localStorage.getItem(READ_MEANING_LAYERS_KEY) || "{}") }; }
+      catch { return { en: true, bn: true, wbw: true }; }
+    })();
+    var meaningRenderToken = 0;
+    var meaningFocusKey = null;   // "s:a" to bring to the top once the flow is drawn
+    var meaningInUnit = null;     // Set of "s:a" in the chosen unit, or null when the whole page is the unit
+    var meaningPagesShown = [];   // the Mushaf pages the flow holds, in order
+    var meaningObserver = null;
+    const MUSHAF_LAST_PAGE = 604;
+
+    function paintReadMeaningBtn() {
+      if (!readMeaningBtn) return;
+      readMeaningBtn.setAttribute("aria-pressed", String(readMeaningOn));
+      // The button names where it takes you: Meaning, or back to the Mushaf (or the plain reading when Mushaf is off).
+      const word = !readMeaningOn ? t("Meaning") : (mushafToggle.checked ? t("Mushaf") : t("Reading"));
+      readMeaningBtn.querySelector(".read-meaning-word").textContent = word;
+      const tip = readMeaningOn ? (mushafToggle.checked ? t("Back to the Mushaf") : t("Back to the reading")) : t("Show the meaning: translations and word by word");
+      readMeaningBtn.setAttribute("aria-label", tip);
+      readMeaningBtn.title = tip;
+    }
+
+    async function meaningPageHtml(pageNum) {
+      const groups = mushafPageAyahGroups(pageNum);
+      const panels = ["text", ...(readMeaningLayers.wbw ? ["wordByWord"] : [])];
+      const langs = [...(readMeaningLayers.en ? ["en"] : []), ...(readMeaningLayers.bn ? ["bn"] : [])];
+      let html = `<div class="meaning-page-rule" data-meaning-page-rule="${pageNum}">${escapeHtml(t("Page {page}", { page: num(pageNum) }))}</div>`;
+      for (const g of groups) {
+        const surah = await getSurah(g.surah);
+        const meta = surahIndex.find((x) => x.surahNumber === g.surah);
+        for (const a of surah?.ayahs ?? []) {
+          if (a.ayah < g.firstAyah || a.ayah > g.lastAyah) continue;
+          const key = `${g.surah}:${a.ayah}`;
+          const out = meaningInUnit && !meaningInUnit.has(key);
+          html += `<article class="meaning-ayah${out ? " out" : ""}" data-meaning-key="${key}" data-meaning-page="${pageNum}">
+            <div class="meaning-ayah-head"><span class="meaning-ayah-ref">${escapeHtml(surahName(g.surah, meta?.nameEnglish))} ${num(g.surah)}:${escapeHtml(ayahLabelFor(g.surah, a.ayah, null))}</span></div>
+            ${surahFlowHeadingHtml(g.surah, a.ayah)}${bismillahHtmlFor(g.surah, a.ayah)}${layoutAParts(a, panels, {
+              tajweedOn: tajweedToggle.checked, langs, wbwLangs: langs.length ? langs : ["en"], wordCardInteractive: true, surahNumber: g.surah,
+            })}</article>`;
+        }
+      }
+      return html;
+    }
+
+    function meaningScroller() { return pageViewContainer.querySelector(".meaning-flow")?.parentElement === pageViewContainer && document.body.classList.contains("read-sideways") ? pageViewContainer.querySelector(".meaning-flow") : flowScrollRoot(); }
+
+    /** The āyah at the top of what the reader sees in the Meaning flow. */
+    function meaningTopKey() {
+      const root = meaningScroller();
+      const top = root ? root.getBoundingClientRect().top : 0;
+      const items = [...pageViewContainer.querySelectorAll("[data-meaning-key]")];
+      return (items.find((el) => el.getBoundingClientRect().bottom > top + 60) ?? items[0])?.dataset.meaningKey ?? null;
+    }
+
+    function meaningScrollTo(key) {
+      const el = key && pageViewContainer.querySelector(`[data-meaning-key="${key}"]`);
+      if (el) el.scrollIntoView({ block: "start", behavior: "instant" });
+    }
+
+    async function renderMeaningFlow(fromAyah, toAyah) {
+      const token = ++meaningRenderToken;
+      meaningObserver?.disconnect();
+      pageViewContainer.innerHTML = `<p style="color:#888;">${escapeHtml(t("Loading…"))}</p>`;
+      try {
+        await ensureMushafData();
+        const ayahKeys = [];
+        for (let a = fromAyah; a <= toAyah; a++) ayahKeys.push(`${currentSurahNum}:${a}`);
+        const pinnedPage = currentUnitType === "page" ? currentUnitNumber() : null;
+        const pages = pinnedPage ? [pinnedPage] : getMushafPagesForKeys(ayahKeys);
+        meaningInUnit = currentUnitType === "page" ? null : new Set(ayahKeys);
+        let html = "";
+        for (const p of pages) html += await meaningPageHtml(p);
+        if (token !== meaningRenderToken) return;
+        meaningPagesShown = [...pages];
+        const layer = (k, label) => `<label><input type="checkbox" data-meaning-layer="${k}"${readMeaningLayers[k] ? " checked" : ""}> ${escapeHtml(label)}</label>`;
+        const first = pages[0], last = pages[pages.length - 1];
+        pageViewContainer.innerHTML = `<div class="meaning-flow" data-meaning-flow>
+          <div class="meaning-layers" role="group" aria-label="${escapeHtml(t("Show"))}">${layer("en", t("English"))}${layer("bn", t("Bangla"))}${layer("wbw", t("Word by Word"))}</div>
+          <button type="button" class="meaning-more" data-meaning-prev${first > 1 ? "" : " disabled"}>↑ ${escapeHtml(t("Page {page}", { page: num(Math.max(1, first - 1)) }))}</button>
+          <div data-meaning-pages>${html}</div>
+          <button type="button" class="meaning-more" data-meaning-next${last < MUSHAF_LAST_PAGE ? "" : " disabled"}>↓ ${escapeHtml(t("Page {page}", { page: num(Math.min(MUSHAF_LAST_PAGE, last + 1)) }))}</button>
+        </div>`;
+        wireMeaningFlow();
+        const focus = meaningFocusKey ?? (pageViewContainer.querySelector(".meaning-ayah:not(.out)")?.dataset.meaningKey ?? null);
+        meaningFocusKey = null;
+        if (focus) requestAnimationFrame(() => meaningScrollTo(focus));
+      } catch (err) {
+        if (token !== meaningRenderToken) return;
+        pageViewContainer.innerHTML = `<p style="color:#a33;">${escapeHtml(t("Couldn't load Mushaf page data ({reason}).", { reason: err.message }))}</p>`;
+      }
+    }
+
+    /** One more page at either end. Adding above keeps the reader's place (the content grows above what they see). */
+    async function meaningAddPage(dir) {
+      const flow = pageViewContainer.querySelector("[data-meaning-pages]");
+      if (!flow || meaningAddPage.busy) return;
+      const target = dir > 0 ? meaningPagesShown[meaningPagesShown.length - 1] + 1 : meaningPagesShown[0] - 1;
+      if (target < 1 || target > MUSHAF_LAST_PAGE) return;
+      meaningAddPage.busy = true;
+      const token = meaningRenderToken;
+      try {
+        const html = await meaningPageHtml(target);
+        if (token !== meaningRenderToken) return;
+        const root = meaningScroller();
+        const before = root?.scrollHeight ?? 0;
+        flow.insertAdjacentHTML(dir > 0 ? "beforeend" : "afterbegin", html);
+        if (dir > 0) meaningPagesShown.push(target); else meaningPagesShown.unshift(target);
+        if (dir < 0 && root) root.scrollTop += root.scrollHeight - before;
+        const prevBtn = pageViewContainer.querySelector("[data-meaning-prev]"), nextBtn = pageViewContainer.querySelector("[data-meaning-next]");
+        const first = meaningPagesShown[0], last = meaningPagesShown[meaningPagesShown.length - 1];
+        prevBtn.disabled = first <= 1; prevBtn.textContent = `↑ ${t("Page {page}", { page: num(Math.max(1, first - 1)) })}`;
+        nextBtn.disabled = last >= MUSHAF_LAST_PAGE; nextBtn.textContent = `↓ ${t("Page {page}", { page: num(Math.min(MUSHAF_LAST_PAGE, last + 1)) })}`;
+      } finally { meaningAddPage.busy = false; }
+    }
+
+    function wireMeaningFlow() {
+      pageViewContainer.querySelectorAll("[data-meaning-layer]").forEach((box) => box.addEventListener("change", () => {
+        const keep = meaningTopKey();
+        readMeaningLayers = { ...readMeaningLayers, [box.dataset.meaningLayer]: box.checked };
+        try { localStorage.setItem(READ_MEANING_LAYERS_KEY, JSON.stringify(readMeaningLayers)); } catch { /* per device only */ }
+        meaningFocusKey = keep;
+        renderStudyScreen();
+      }));
+      pageViewContainer.querySelector("[data-meaning-prev]")?.addEventListener("click", () => meaningAddPage(-1));
+      const nextBtn = pageViewContainer.querySelector("[data-meaning-next]");
+      nextBtn?.addEventListener("click", () => meaningAddPage(1));
+      // "and continue": the next page joins as the reader nears the end, with the button as the plain way too.
+      if (nextBtn && typeof IntersectionObserver === "function") {
+        meaningObserver = new IntersectionObserver((entries) => { if (entries.some((e) => e.isIntersecting)) meaningAddPage(1); }, { rootMargin: "0px 0px 400px 0px" });
+        meaningObserver.observe(nextBtn);
+      }
+    }
+
+    readMeaningBtn?.addEventListener("click", async () => {
+      const goingOn = !readMeaningOn;
+      let keepKey = null;
+      if (goingOn) {
+        // Start where the reader is: the Mushaf page in view (its first āyah of the unit, else its first āyah), or the
+        // āyah on the Read view.
+        const pageInView = mushafToggle.checked ? Number(mushafPageRef?.dataset.page || 0) : 0;
+        if (pageInView) {
+          const groups = mushafPageAyahGroups(pageInView);
+          const keys = groups.flatMap((g) => Array.from({ length: g.lastAyah - g.firstAyah + 1 }, (_, i) => `${g.surah}:${g.firstAyah + i}`));
+          const unit = new Set(currentUnitAyahBounds().length ? (() => { const [f, l] = currentUnitAyahBounds(); return Array.from({ length: l - f + 1 }, (_, i) => `${currentSurahNum}:${f + i}`); })() : []);
+          keepKey = keys.find((k) => unit.has(k)) ?? keys[0] ?? null;
+        }
+        if (!keepKey && currentSurahNum) keepKey = `${currentSurahNum}:${currentAyahNum}`;
+        meaningFocusKey = keepKey;
+      } else {
+        keepKey = meaningTopKey();
+      }
+      readMeaningOn = goingOn;
+      try { localStorage.setItem(READ_MEANING_KEY, goingOn ? "1" : "0"); } catch { /* per device only */ }
+      paintReadMeaningBtn();
+      renderStudyScreen();
+      if (!goingOn && keepKey && mushafToggle.checked) {
+        // Back to the Mushaf at the page the reader had reached, when that page is one the Mushaf draws.
+        try { await flowRenderPromise; } catch { /* renderFlowView() reports its own failure on-screen. */ }
+        await ensureMushafData();
+        const [s, a] = keepKey.split(":");
+        const pages = getMushafPagesForKeys([`${s}:${a}`]);
+        const target = pages.length && pageViewContainer.querySelector(`.hifz-page[data-mushaf-page="${pages[0]}"]`);
+        if (target) { target.scrollIntoView({ inline: "start", block: "start", behavior: "instant" }); updateMushafPageRef(); }
+      }
+    });
+    paintReadMeaningBtn();
+
     async function renderFlowView(fromAyah, toAyah, panels, isMushaf) {
       const ayahKeys = [];
       for (let a = fromAyah; a <= toAyah; a++) ayahKeys.push(`${currentSurahNum}:${a}`);
@@ -21533,7 +21743,9 @@
       // has been using -- Mushaf is the only thing round 19 adds on top, and
       // it works over any unit including a single ayah.
       const isPageUnit = currentUnitType === "surah" || currentUnitType === "range";
-      const usesFlow = isMushaf || isPageUnit;
+      // 📖 Meaning (10 Oct 2026) draws its own flow of whole pages, over any unit, Mushaf or not.
+      const meaningOn = readMeaningOn;
+      const usesFlow = meaningOn || isMushaf || isPageUnit;
 
       // Shell round 21 -- the owner's answer to "keep both, or bar only?" was
       // keep both: the read bar moves the UNIT, this row moves the AYAH inside
@@ -21567,10 +21779,12 @@
       // waiting for the next scroll, and drops the swipe-listener the last
       // Mushaf render attached. renderFlowView()'s own Mushaf branch re-wires
       // it (wireMushafPageRefScroll()) whenever isMushaf is true.
-      if (!isMushaf) {
+      if (!isMushaf || meaningOn) {
         if (mushafPageRefHandler) { pageViewContainer.removeEventListener("scroll", mushafPageRefHandler); mushafPageRefHandler = null; }
         if (mushafPageRef) clearMushafPageRef();
       }
+      if (!meaningOn) { meaningRenderToken++; meaningObserver?.disconnect(); meaningObserver = null; }
+      paintReadMeaningBtn();
 
       const trackable = currentTrackable();
       // Shell round 19 -- the owner's standing rule: an Approach is one way of
@@ -21661,7 +21875,7 @@
         // own comment above). Still fire-and-forget from THIS function's own
         // point of view: renderStudyScreen() itself awaits nothing and its
         // ~24 other call sites are completely unaffected by this line.
-        flowRenderPromise = renderFlowView(unitFrom, unitTo, panels, isMushaf);
+        flowRenderPromise = meaningOn ? renderMeaningFlow(unitFrom, unitTo) : renderFlowView(unitFrom, unitTo, panels, isMushaf);
       } else {
         const ayah = currentSurahData.ayahs.find((a) => a.ayah === currentAyahNum);
         if (!ayah) return;
