@@ -2155,14 +2155,14 @@
      glyph, at full strength (it used to fade to 40% in the bare Read state,
      where it is the only button left). IDs and an attribute selector, so it
      outranks #readBar button / #readBar .qr-ico / .note-icon-btn. */
-  #readBar #hideChromeBtn, #exploreBar #exploreFullscreenBtn, #noteView .note-icon-btn[data-note-fullscreen] {
+  #readBar #hideChromeBtn, #exploreBar #exploreFullscreenBtn {
     box-sizing: border-box; width: 36px; height: 36px; min-width: 36px; padding: 0; margin: 0; flex: 0 0 auto;
     display: inline-flex; align-items: center; justify-content: center;
     font-size: 1.3rem; font-weight: 700; line-height: 1; border-radius: 0.5rem;
     background: #fff; color: #1F3A6E; border: 2px solid #B8862F; opacity: 1;
     box-shadow: 0 1px 4px rgba(19, 25, 42, 0.28); cursor: pointer;
   }
-  #readBar #hideChromeBtn[aria-pressed="true"], #exploreBar #exploreFullscreenBtn.active, #noteView .note-icon-btn[data-note-fullscreen].active {
+  #readBar #hideChromeBtn[aria-pressed="true"], #exploreBar #exploreFullscreenBtn.active {
     background: #B8862F; color: #fff; border-color: #B8862F;
   }
   #readBar button[disabled] { opacity: 0.45; }
@@ -2653,8 +2653,8 @@
      instead, written as #id[hidden] on purpose: this file's own most-repeated
      trap is a class/ID rule beating the UA's plain [hidden], and the rule
      right below sets display on the same ID. */
-  #quranWordCardMount[hidden], #quranWordCardMountNote[hidden] { display: none !important; }
-  #quranWordCardMount, #quranWordCardMountNote { flex: 0 0 auto; max-height: min(45vh, 24rem); overflow-y: auto; padding: 0.5rem; background: var(--card-bg); border-top: 1px solid var(--card-line); }
+  #quranWordCardMount[hidden] { display: none !important; }
+  #quranWordCardMount { flex: 0 0 auto; max-height: min(45vh, 24rem); overflow-y: auto; padding: 0.5rem; background: var(--card-bg); border-top: 1px solid var(--card-line); }
   /* MAP Phase 3. The progress block made the card taller, and MEASURED at
      320x640 the 45vh cap left it 49px short -- far enough that the three
      state buttons themselves were below the fold, so the control a reader
@@ -2665,7 +2665,7 @@
      reading height ONLY while a word card is open, which is exactly when the
      card is what the reader is looking at. Taller screens are untouched:
      min() already picks 24rem there. */
-  @media (max-height: 720px) { #quranWordCardMount, #quranWordCardMountNote { max-height: min(62vh, 24rem); } }
+  @media (max-height: 720px) { #quranWordCardMount { max-height: min(62vh, 24rem); } }
 
   /* v08.20 -- clickable occurrences (Basic Arabic) and the way back. */
   .word-card-occurrences { display: flex; flex-wrap: wrap; gap: 0.3rem; list-style: none; margin: 0.3rem 0; padding: 0; }
@@ -2831,18 +2831,18 @@
      the ayah action sheet (960) and the Edit/Attach overlays (950) that may
      still open ON TOP of an open Word Card. */
   @media (max-width: 899.98px) {
-    #quranWordCardMount:not([hidden]), #quranWordCardMountNote:not([hidden]) {
+    #quranWordCardMount:not([hidden]) {
       position: fixed; inset: 0; z-index: 900; max-height: none;
       display: flex; flex-direction: column; padding: 0; border-top: none;
       background: var(--card-bg);
     }
-    #quranWordCardMount .word-card-content, #quranWordCardMountNote .word-card-content {
+    #quranWordCardMount .word-card-content {
       flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 0;
     }
-    #quranWordCardMount .quran-word-card, #quranWordCardMountNote .quran-word-card {
+    #quranWordCardMount .quran-word-card {
       max-width: none; margin: 0; min-height: 100%; box-shadow: none; border: none;
     }
-    #quranWordCardMount .quran-word-card header, #quranWordCardMountNote .quran-word-card header {
+    #quranWordCardMount .quran-word-card header {
       position: sticky; top: 0; z-index: 1; background: var(--card-bg);
     }
   }
@@ -2871,7 +2871,7 @@
      and is a real, if narrow, product trade-off, not a Word-Card-only
      bug) -- recorded, not built, see the dated report. */
   @media (min-width: 900px) {
-    #quranWordCardMount, #quranWordCardMountNote {
+    #quranWordCardMount {
       position: fixed; z-index: 55; max-height: none; border: 1px solid var(--card-line); border-top: 1px solid var(--card-line);
       border-radius: 0.6rem; box-shadow: var(--card-shadow); display: flex; flex-direction: column;
       /* The WINDOW must not scroll -- its content does (.word-card-content
@@ -2880,11 +2880,11 @@
          exactly why the south edge would not resize while the corners did. */
       overflow: visible;
     }
-    #quranWordCardMount[hidden], #quranWordCardMountNote[hidden] { display: none !important; }
+    #quranWordCardMount[hidden] { display: none !important; }
     .word-card-content { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
     /* The header is the drag handle (initPopupWindow's dragFromSelector). */
-    #quranWordCardMount .quran-word-card header, #quranWordCardMountNote .quran-word-card header { cursor: move; touch-action: none; }
-    #quranWordCardMount .quran-word-card, #quranWordCardMountNote .quran-word-card { max-width: none; box-shadow: none; border: none; }
+    #quranWordCardMount .quran-word-card header { cursor: move; touch-action: none; }
+    #quranWordCardMount .quran-word-card { max-width: none; box-shadow: none; border: none; }
   }
 
   /* Issue #328 -- "My Status", the whole-Qur'an wheel. Same full-screen
@@ -4120,7 +4120,6 @@
   .ayah-note-flash { color: #2e6b4f; font-weight: 700; }
 
   /* ---- Note & more: full-stage view, dock stays visible underneath ---- */
-  #noteView { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
   .note-view { display: flex; flex-direction: column; height: 100%; min-height: 0; }
 
   /* Enhancement round -- bar 1 stops being a button rack ("we would make
@@ -4457,8 +4456,6 @@
      four classes above -- shared by the Approach/Explore popups (2 Sep
      2026) rather than declared a second time. */
   .popup-title-label { display: none; }
-  #notePopupBody { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
-  #noteViewMount { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
 
   /* Issue #354 part 3 -- the Note pop-up FRAME: the outer box and the
      title bar now follow the reader's card look, on the shared tokens
@@ -4476,11 +4473,6 @@
      exact defect class the part 1-2 review already found and fixed
      elsewhere (a surface moved without re-picking what sits on it). */
   @media (min-width: 900px) {
-    #noteView {
-      position: fixed; z-index: 55; /* below #dock's z-index:60 -- the dock stays reachable even if the popup's own geometry overlaps it */
-      background: var(--card-bg); border-radius: 0.6rem; overflow: hidden;
-      box-shadow: var(--card-shadow); border: 1px solid var(--card-line);
-    }
     .note-popup-titlebar {
       display: flex; align-items: center; gap: 0.4rem; flex: 0 0 auto;
       background: var(--card-bg-inset); color: var(--card-heading); padding: 0.35rem 0.5rem; cursor: grab;
@@ -4496,7 +4488,6 @@
     .note-popup-titlebar-actions button:hover { background: var(--card-bg-inset); }
     .note-popup-titlebar-actions button[aria-pressed="true"] { background: var(--card-button-pressed-bg); border-color: var(--card-button-pressed-bg); color: var(--card-button-pressed-text); }
 
-    #notePopupBody { flex-direction: row; }
     .note-popup-side {
       display: flex; flex-direction: column; flex: 0 0 auto; width: 260px; min-width: 180px;
       border-right: 1px solid #e0d8bd; background: #faf7ee; overflow: hidden;
@@ -4509,11 +4500,9 @@
     .note-popup-side-nav button:disabled { opacity: 0.35; cursor: default; }
     /* #8a6420, not #B8862F: white on the lighter gold measured 3.24:1 (v08.109). */
     .note-popup-side-nav button[aria-pressed="true"] { background: #8a6420; }
-    #notePopupSideCount { font-size: 0.72rem; color: #7a6a3c; flex: 1 1 auto; text-align: center; }
     .note-popup-side-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 0.35rem; }
     .note-popup-side-list .hint { font-size: 0.78rem; color: #888; padding: 0.4rem 0.3rem; margin: 0; }
 
-    #noteViewMount { min-width: 0; }
 
     .note-popup-splitter {
       display: block; flex: 0 0 auto; width: 6px; cursor: col-resize; background: transparent; touch-action: none;
@@ -5361,84 +5350,6 @@
         </div>
         <div id="readHint" hidden>Press the ⤢ button to bring the menus back.</div>
       </div><!-- /#readView -->
-
-      <!-- Ayah Note panel -- "Note & more" from the ⋮ quick menu on any āyah
-           in #readView. A third #stage view, exactly parallel to #readView:
-           #dock stays visible underneath and is the only way out of it (no
-           × button -- settled with the owner: the same navigation model as
-           the rest of the screen, not a second one just for this feature). -->
-      <!-- PC popup (28 Aug 2026): this static chrome sits OUTSIDE
-           #noteViewMount on purpose -- renderNoteViewNow() replaces
-           #noteViewMount's own innerHTML on every render/nav step, so
-           anything that has to survive that (the title bar, the side pane,
-           the resize handles) can never live inside it. Below 900px every
-           piece here is display:none (see the CSS) and #noteView behaves
-           exactly as it always has. -->
-      <div id="noteView" hidden>
-        <div id="notePopupTitleBar" class="note-popup-titlebar">
-          <span id="notePopupTitle" class="note-popup-title" draggable="true" title="Drag onto the side pane to add this āyah there"></span>
-          <div class="note-popup-titlebar-actions">
-            <button type="button" id="notePopupBackBtn" title="Back" aria-label="Back">◂</button>
-            <button type="button" id="notePopupMaximizeBtn" title="Maximize" aria-pressed="false">⬜</button>
-            <button type="button" id="notePopupCloseBtn" title="Close" aria-label="Close">&times;</button>
-          </div>
-        </div>
-        <div id="notePopupBody">
-          <div id="notePopupSide" class="note-popup-side">
-            <div class="note-popup-side-nav">
-              <button type="button" id="notePopupSidePrevBtn" title="Previous in this group" aria-label="Previous in this group">◂</button>
-              <span id="notePopupSideCount"></span>
-              <button type="button" id="notePopupSideNextBtn" title="Next in this group" aria-label="Next in this group">▸</button>
-              <!-- Fixes round (28 Aug 2026, owner's own screenshot): the
-                   text-size button used to sit in the shared title bar
-                   above, crowded next to List/Card/Maximize/Close (window
-                   chrome, not this pane's own content) -- moved into the
-                   pane's OWN bar, right after its own Prev/Next, which is
-                   where a control scoped to THIS pane's content actually
-                   belongs. Arabic + English (the pane's own snippet is
-                   English, not Bangla -- see notePopupSideRowData()). -->
-              <!-- Back-button round -- List/Card view moved OUT of the
-                   shared title bar (window chrome: Back/Maximize/Close)
-                   into this pane's own bar too, same reasoning as the
-                   text-size button beside them: which VIEW the pane's own
-                   list renders in is this pane's own content, not window
-                   chrome. -->
-              <button type="button" id="notePopupListViewBtn" title="List view" aria-pressed="false">☰</button>
-              <button type="button" id="notePopupCardViewBtn" title="Card view" aria-pressed="false">▦</button>
-              <div id="notePopupPaneTextSizeSlot"></div>
-            </div>
-            <div id="notePopupSideList" class="note-popup-side-list view-list"></div>
-          </div>
-          <div id="notePopupSplitter" class="note-popup-splitter" role="separator" aria-orientation="vertical" title="Drag to resize"></div>
-          <div id="noteViewMount" class="card-look-write-surface"></div>
-        </div>
-        <!-- v08.20 -- the Note view's own Word Card. Deliberately a SIBLING
-             of #notePopupBody, so it lives outside #noteViewMount: opening,
-             closing, retabbing or moving the card therefore never re-enters
-             renderNoteViewNow(), and the note's own contenteditable
-             ([data-note-editor]) is never rebuilt under the reader's caret.
-             That is what "preserve note text and editing state" means here --
-             a structural guarantee, not a save-and-restore dance. -->
-        <div id="quranWordCardMountNote" hidden>
-          <div class="word-card-content" data-word-card-content aria-live="polite"></div>
-        <div class="note-popup-resize" data-note-resize="n"></div>
-        <div class="note-popup-resize" data-note-resize="s"></div>
-        <div class="note-popup-resize" data-note-resize="e"></div>
-        <div class="note-popup-resize" data-note-resize="w"></div>
-        <div class="note-popup-resize" data-note-resize="ne"></div>
-        <div class="note-popup-resize" data-note-resize="nw"></div>
-        <div class="note-popup-resize" data-note-resize="se"></div>
-        <div class="note-popup-resize" data-note-resize="sw"></div>
-        </div>
-        <div class="note-popup-resize" data-note-resize="n"></div>
-        <div class="note-popup-resize" data-note-resize="s"></div>
-        <div class="note-popup-resize" data-note-resize="e"></div>
-        <div class="note-popup-resize" data-note-resize="w"></div>
-        <div class="note-popup-resize" data-note-resize="ne"></div>
-        <div class="note-popup-resize" data-note-resize="nw"></div>
-        <div class="note-popup-resize" data-note-resize="se"></div>
-        <div class="note-popup-resize" data-note-resize="sw"></div>
-      </div>
 
       <!-- Ayah Collections round 2 -- Explore, the stage's fourth view. Two
            palette modes share it: the existing Quran-structure drill-down
@@ -6429,7 +6340,7 @@
     import { getBookmarks, saveBookmark, removeSavedBookmark, updateSavedBookmarkFields, findSavedBookmark, createFolder, flattenFolderTree, livePresets, saveSettingsPreset, renameSettingsPreset, removeSettingsPreset, setLastPlace, lastPlaceOf } from "./js/bookmarks.js";
     import { openBookmarkNamePopover } from "./js/bookmark-popover.js";
     import { getAyahNotes, ayahNoteHtml, ayahHasNote, saveAyahNote, ensureAyahNotesWritable } from "./js/ayah-notes.js";
-    import { renderQuickMenu, attachQuickMenuHandlers, renderNoteView, attachNoteViewHandlers, attachQcrDrawerHandlers, notesToPlainText, copyToClipboard, shareText } from "./js/ayah-note-renderer.js";
+    import { renderQuickMenu, attachQuickMenuHandlers, attachQcrDrawerHandlers, notesToPlainText, copyToClipboard, shareText } from "./js/ayah-note-renderer.js";
     import { initReadWindow } from "./js/read-window.js";
     import { initPopupWindow, initSideSplitter, initListCollapse, loadSideViewMode, saveSideViewMode } from "./js/note-popup.js";
     import {
@@ -6943,32 +6854,6 @@
     const tabNoteBtn = document.getElementById("tabNoteBtn");
     const tabApproachBtn = document.getElementById("tabApproachBtn");
     const readView = document.getElementById("readView");
-    const noteView = document.getElementById("noteView");
-    // PC popup -- the static chrome around #noteViewMount (which is what
-    // renderNoteViewNow() actually replaces on every render/nav step; see
-    // that div's own markup comment). All of this is display:none below
-    // 900px, so none of it is reachable or built on phone/tablet.
-    const noteViewMount = document.getElementById("noteViewMount");
-    const notePopupTitleBar = document.getElementById("notePopupTitleBar");
-    const notePopupTitleEl = document.getElementById("notePopupTitle");
-    const notePopupListViewBtn = document.getElementById("notePopupListViewBtn");
-    const notePopupCardViewBtn = document.getElementById("notePopupCardViewBtn");
-    const notePopupPaneTextSizeSlot = document.getElementById("notePopupPaneTextSizeSlot");
-    const notePopupBackBtn = document.getElementById("notePopupBackBtn");
-    const notePopupMaximizeBtn = document.getElementById("notePopupMaximizeBtn");
-    const notePopupCloseBtn = document.getElementById("notePopupCloseBtn");
-    const notePopupSideEl = document.getElementById("notePopupSide");
-    const notePopupSideListEl = document.getElementById("notePopupSideList");
-    const notePopupSideCountEl = document.getElementById("notePopupSideCount");
-    const notePopupSidePrevBtn = document.getElementById("notePopupSidePrevBtn");
-    const notePopupSideNextBtn = document.getElementById("notePopupSideNextBtn");
-    const notePopupSplitter = document.getElementById("notePopupSplitter");
-    // 2 Sep 2026: scoped to #noteView's own DIRECT children specifically --
-    // the Approach/Explore popups (added this round) now carry the same
-    // .note-popup-resize handles for their own windows, and an unscoped
-    // query here would have wired all three popups' worth of handles to
-    // THIS ONE popup's own initPopupWindow() call below.
-    const notePopupResizeHandles = Array.from(noteView.querySelectorAll(":scope > .note-popup-resize"));
     // Shell round 22 -- the reading screen's own pickers. Each one MIRRORS the
     // control of the same name in Study options: it copies that control's
     // options and value, and forwards a change straight back to it, so the
@@ -7245,7 +7130,6 @@
     // currentSurahData: Note view never loads a different surah than
     // whatever's already open (see noteScopeUnitInfo()'s own comment).
     let noteScope = null; // { unitType, ayahNum, rangeFrom, rangeTo, unitNumber }
-    let noteFullscreenOn = false; // the Note view's own full-screen state -- see toggleNoteFullscreen()
     // Fix round -- WbW/Root/Derivatives no longer keep their own separate
     // noteWbwOn/noteRootsOn/noteDerivativesOn flags here; bar 2's own
     // toggle buttons now flip the SAME canonical wbwShowToggle/rootsToggle/
@@ -7531,7 +7415,7 @@
       wordCardSearch.currentId = id;
       if (surah !== currentSurahNum || !currentSurahData?.ayahs?.some((a) => a.ayah === ayah && a.words?.some((w) => w.position === position))) {
         if (surah === currentSurahNum) { wordCardSearch.status = String(wordSearchText().searchUnknownPlace).replace("{ref}", wordRefFor(surah, ayah, position)); renderPersistentWordCard(); return; }
-        await openWordOccurrenceAt(surah, ayah, position, stageView === "note" ? "note" : "read");
+        await openWordOccurrenceAt(surah, ayah, position, "read");
         return;
       }
       quranWordCardState = openWordCard(quranWordCardState, `quran-word-occurrence:v1:${surah}:${ayah}:${position}`);
@@ -9962,7 +9846,6 @@
       trackableSelect.value = id;
       renderWheel();
       if (stageView === "read") renderStudyScreen();
-      else if (stageView === "note" && noteScope) renderNoteViewNow();
       // 28 Aug 2026: the QCR wheel's own Approach mirror -- a fourth reader
       // of this same shared state, alongside Study options/the Note view.
       // Compatible by construction: it just re-pools qcrItemStatus() against
@@ -10233,7 +10116,6 @@
       stageView = view;
       if (view !== "explore") document.getElementById("kysBackRow")?.remove(); // "← Back to Know Your Status" belongs to Explore only
       const reading = view === "read";
-      const noting = view === "note";
       const exploring = view === "explore";
       const onWheel = view === "wheel";
       // 27 Sep 2026: the Approach view is the one screen whose page scrolls on
@@ -10247,11 +10129,10 @@
       // same as every other stage view.
       wheelPopupViewEl.hidden = !onWheel;
       readView.hidden = !reading;
-      noteView.hidden = !noting;
       exploreView.hidden = !exploring;
       tabReadBtn.setAttribute("aria-pressed", reading ? "true" : "false");
-      tabNoteBtn.setAttribute("aria-pressed", noting ? "true" : "false");
-      tabStudyBtn.setAttribute("aria-pressed", reading || noting ? "true" : "false");
+      tabNoteBtn.setAttribute("aria-pressed", "false");
+      tabStudyBtn.setAttribute("aria-pressed", reading ? "true" : "false");
       tabApproachBtn.setAttribute("aria-pressed", onWheel ? "true" : "false");
       tabExploreBtn.setAttribute("aria-pressed", exploring ? "true" : "false");
       // The READING screen's own full screen (immersive-read) is unrelated
@@ -10267,7 +10148,7 @@
         unitCardBoundaryTables().then(() => { if (stageView === "read") renderStudyScreen(); }).catch(() => {});
       }
       readWindowCtl?.sync();
-      if (!noting && noteFullscreenOn) { noteFullscreenOn = false; document.body.classList.remove("note-immersive"); }
+      document.body.classList.remove("note-immersive"); // a stale class from the retired Note view must never hide the chrome
       if (!exploring && exploreFullscreenOn) {
         exploreFullscreenOn = false;
         document.body.classList.remove("explore-immersive");
@@ -10305,18 +10186,14 @@
       if (!lastSessionReady) return;
       clearTimeout(rememberLastSessionTimer);
       rememberLastSessionTimer = setTimeout(() => {
-        // The Note view carries its own scope, independent of the Read
-        // screen's own position (see noteScope's own comment), so it is the
-        // one view whose state is not captureQuranBookmarkSettings()'s.
-        const noting = stageView === "note" && noteScope;
         // The Owner, 5 Oct 2026: 📖 Last read. In the scrolling flow view the
         // row the reader has scrolled to is noted by updateFlowInView(); this
         // covers the one-ayah view, and must not overwrite that row.
         if (stageView === "read" && !isPlaying() && !pageViewContainer.querySelector(".page-flow-ayah.in-view")) noteLastPlace("read");
         setQuranLastSession({
           stageView,
-          settings: noting ? captureNoteBookmarkSettings() : captureQuranBookmarkSettings(),
-          position: noting ? noteScopeCurrentUnitKey() : null,
+          settings: captureQuranBookmarkSettings(),
+          position: null,
         });
       }, 250);
     }
@@ -10598,15 +10475,11 @@
     // warms at the moment it is actually pressed (quickPlayAyah()), same as
     // every other route into this same screen.
     // R3c (decision 95): the Study menu's Note is "Notes" and opens the Read view with the Notes pane on the current
-    // unit, as the Unit card's 📝 Note does; pressed again it closes the pane. The Note view's code stays, dormant: no
-    // reader action reaches openNoteView() any more.
+    // unit, as the Unit card's 📝 Note does; pressed again it closes the pane. The Note view itself is gone (v10 retirement, step b).
     async function openNoteForCurrentAyah() {
       closeAllPanels();
       await openNotesPaneForKey(currentUnitInfo().unitKey);
     }
-    // TEST SEAM, not a reader route: the dormant Note view's own suites open it here (they used to press the Study menu's
-    // Note). Nothing in the UI calls this; "no click path reaches #noteView" is checked by note-view-unreachable-browser.
-    window.__dormantOpenNoteView = () => { closeAllPanels(); return openNoteView(ayahRecordKey(currentSurahNum, currentAyahNum, currentHalf())); };
     tabNoteBtn.addEventListener("click", () => {
       if (stageView === "read" && readNotePaneMod?.isReadNotePaneOpen()) { readNotePaneMod.closeReadNotePane(); return; } // the old close idiom
       openNoteForCurrentAyah();
@@ -10795,18 +10668,6 @@
       new ResizeObserver(() => { if (fitting) return; fitting = true; fitReadWriting(); requestAnimationFrame(() => { fitting = false; }); }).observe(readBarEl);
     }
     window.addEventListener("resize", fitReadWriting);
-    function fitNoteWriting() {
-      const bar = noteView.querySelector(".note-bar2");
-      fitBarButton(bar, bar?.querySelector("[data-note-writing]"));
-    }
-    window.addEventListener("resize", fitNoteWriting);
-    // renderNoteViewNow() rebuilds the whole Note view, bar included, so
-    // re-fit after every rebuild.
-    new MutationObserver(() => requestAnimationFrame(fitNoteWriting)).observe(noteView, { childList: true, subtree: true });
-    // The Note view is often rebuilt while still hidden (nothing measurable),
-    // so also re-fit whenever it changes size -- which includes appearing.
-    if (typeof ResizeObserver === "function") new ResizeObserver(() => fitNoteWriting()).observe(noteView);
-
     // Fix round -- THE WHOLE-SCREEN TAP IS GONE, on both the reading screen
     // and the Note view. The owner's own words: "disable a single tapping for
     // full-screen view (in both read n note view, makes too much quick
@@ -13658,7 +13519,7 @@
     // card never shoves the Note view's one somewhere the reader didn't put
     // it. Below 900px initPopupWindow applies no inline geometry at all and
     // the docked strip is untouched.
-    [["quranWordCardMount", "wordcard"], ["quranWordCardMountNote", "wordcard-note"]].forEach(([mountId, geomId]) => {
+    [["quranWordCardMount", "wordcard"]].forEach(([mountId, geomId]) => {
       const mountEl = document.getElementById(mountId);
       if (!mountEl) return;
       initPopupWindow(mountEl, {
@@ -13727,7 +13588,6 @@
     // never visibly changed the text actually on screen by default -- Bangla
     // stays excluded since that pane never renders it at all.
     readTextSizeSlot.innerHTML = renderTextSizeButtonHtml("read", { btnClass: "secondary qr-ico" });
-    notePopupPaneTextSizeSlot.innerHTML = renderTextSizeButtonHtml("popup", { showBn: false, btnClass: "" });
 
     // 3 Sep 2026 resize round -- the Explore -> Asma ul Husna wheel's own
     // Arabic-Name/label text-size control. Filled in once (its own markup
@@ -15061,12 +14921,10 @@
         // view, so re-render whichever surface the reader is actually
         // looking at -- the same guard the attach popover's own save uses.
         if (!asmaXPanelEl.hidden) renderAsmaXPanel();
-        if (stageView === "note" && noteScope) renderNoteViewNow();
         if (!(await asmaXPersist())) {
           asmaXExtraNames = prevExtra;
           asmaXCollections = prevCollections;
           if (!asmaXPanelEl.hidden) renderAsmaXPanel();
-          if (stageView === "note" && noteScope) renderNoteViewNow();
         }
         return;
       }
@@ -16191,7 +16049,7 @@
     let knownWordMarksRequest = 0;
     const KNOWN_WORD_SELECTOR = ".hifz-word[data-word-occurrence], .wbw-word-clickable[data-word-occurrence], .ayah-word-clickable[data-word-occurrence]";
     function knownWordElements() {
-      return ["readView", "noteView"].map((id) => document.getElementById(id)).filter((r) => r && !r.hidden)
+      return ["readView"].map((id) => document.getElementById(id)).filter((r) => r && !r.hidden)
         .flatMap((r) => [...r.querySelectorAll(KNOWN_WORD_SELECTOR)]);
     }
     // Owner, 3 Oct 2026 -- the Mark words switch: the same reads, but the
@@ -16312,7 +16170,7 @@
       clearTimeout(knownWordMarksTimer);
       knownWordMarksTimer = setTimeout(refreshKnownWordMarks, 60);
     }
-    for (const id of ["readView", "noteView"]) {
+    for (const id of ["readView"]) {
       const root = document.getElementById(id);
       if (root) new MutationObserver((records) => {
         if (records.some((r) => [...r.addedNodes].some((n) => n.nodeType === 1))) scheduleKnownWordMarks();
@@ -17197,10 +17055,10 @@
      *  helpers are the whole of what makes the card view-agnostic: everything
      *  below asks for "the active mount" and never names a view. */
     function wordCardMountEls() {
-      return ["quranWordCardMount", "quranWordCardMountNote"].map((id) => document.getElementById(id)).filter(Boolean);
+      return ["quranWordCardMount"].map((id) => document.getElementById(id)).filter(Boolean);
     }
     function activeWordCardMount() {
-      return document.getElementById(stageView === "note" ? "quranWordCardMountNote" : "quranWordCardMount");
+      return document.getElementById("quranWordCardMount");
     }
     /** Empties the CONTENT of both mounts and hides them. Never touches the
      *  mount's own children beyond that -- the eight resize handles are
@@ -17668,7 +17526,7 @@
       }
       let ref;
       try { ref = parseQuranWordOccurrenceId(origin.occurrenceId); } catch { return; }
-      const returnView = origin.stageView === "note" ? "note" : "read";
+      const returnView = "read";
       await openWordOccurrenceAt(ref.surah, ref.ayah, ref.position, returnView, origin);
       if (returnView === "read" && Number.isFinite(origin.scrollY)) setReadViewScrollTop(origin.scrollY);
       // The expanded form is restored by hydrateWordCardOccurrences() once the
@@ -17704,8 +17562,7 @@
     // v08.20 -- the Read view and the Note view share ONE set of handlers.
     // Neither is named inside them: every lookup goes through
     // activeWordCardMount(), so the card behaves identically in both.
-    ["readView", "noteView"].forEach((viewId) => {
-    if (!document.getElementById(viewId)) return; // step (b) deletes #noteView; readView alone is still wired
+    ["readView"].forEach((viewId) => {
     // Issue #294 -- the tajweed words are focusable inline spans with
     // role="button" (a real <button> would reflow the Qur'an text); Enter and
     // Space open them exactly as a click does, as a native button would.
@@ -18481,7 +18338,6 @@
         bookmarksDoc = { resume: {}, saved: [] };
       }
       if (stageView === "read") renderStudyScreen();
-      else if (stageView === "note" && noteScope) renderNoteViewNow();
     }
 
     /** Ref line + whichever of Arabic/English/Bangla/Notes were checked -- the same shape for the quick menu's Copy/Share and the Note view's own row, so ticking the same boxes in either place produces the same text (spec: "these options also have to be there where they are now for those using the note"). */
@@ -18855,7 +18711,6 @@
         patchClaimedEntry(currentChunk, unitKey, approachId, statusId);
         renderWheel();
       }
-      if (stageView === "note" && noteScope) renderNoteViewNow();
       if (ayahSheetUnitKey === unitKey) renderAyahActionSheetNow();
       applyMushafMarkerRings();
     }
@@ -19491,8 +19346,7 @@
       try {
         const u = new URL(location.href);
         u.searchParams.set("qpSurah", String(currentSurahNum)); u.searchParams.set("qpAyah", String(currentAyahNum));
-        if (stageView === "note" && unitKey) { u.searchParams.set("qpView", "note"); u.searchParams.set("qpUnit", unitKey); }
-        else { u.searchParams.set("qpView", "read"); u.searchParams.delete("qpUnit"); }
+        u.searchParams.set("qpView", "read"); u.searchParams.delete("qpUnit");
         history.replaceState(history.state, "", u);
       } catch { /* the link still opens the Notes page */ }
     }
@@ -19562,7 +19416,7 @@
       attachAyahActionSheetHandlers(ayahActionSheetMountEl, {
         onStep: (unitKey, dir) => { const n = ayahCardNeighbour(unitKey, dir); if (n) openAyahActionSheet(n.key, n.half); },
         onNoteView: (unitKey) => openAyahNoteViewPopup(unitKey),
-        onRelatedJump: (s, a) => { rememberAyahCardReturn(sheetKeyAtRender); navigateToAyah(s, a, stageView === "note" ? "note" : "read"); },
+        onRelatedJump: (s, a) => { rememberAyahCardReturn(sheetKeyAtRender); navigateToAyah(s, a, "read"); },
         onClose: closeAyahActionSheet,
         onRung: (rungUnitKey) => {
           const { unitType: rungType } = parseUnitKey(rungUnitKey);
@@ -19877,7 +19731,7 @@
     function rememberAyahCardReturn(unitKey) {
       if (!unitKey) return;
       const { surah, ayah, half } = parseAyahUnitKey(unitKey);
-      const r = { surah, ayah, half, view: stageView === "note" ? "note" : "read", scrollY: readViewScrollTop() };
+      const r = { surah, ayah, half, view: "read", scrollY: readViewScrollTop() };
       setAppReturn(t("Back to Āyah card"), ayahRefLabel(surah, ayah, { half }).replace(/^.*?(\S+:\S+).*$/, "$1"), () => returnToAyahCard(r));
     }
     function clearAyahCardReturn() { ayahCardReturn = null; renderAyahCardBackPill(); }
@@ -19918,7 +19772,7 @@
       renderWordCardReturnBar();
       quranWordCardState = closeWordCard(quranWordCardState);
       renderPersistentWordCard();
-      const here = currentSurahNum === r.surah && currentAyahNum === r.ayah && (stageView === "note" ? "note" : "read") === r.view;
+      const here = currentSurahNum === r.surah && currentAyahNum === r.ayah && "read" === r.view;
       if (!here) {
         await navigateToAyah(r.surah, r.ayah, r.view, r.half);
         if (r.view === "read" && Number.isFinite(r.scrollY)) setReadViewScrollTop(r.scrollY);
@@ -20308,7 +20162,7 @@
       return {
         // Issue #468 -- the view this was made from, so it reopens there.
         // The Read view's place is the same unit/surah/ayah fields below.
-        view: stageView === "read" || stageView === "note" ? stageView : stageView === "wheel" ? "landing" : "study",
+        view: stageView === "read" ? stageView : stageView === "wheel" ? "landing" : "study",
         unitType: currentUnitType,
         surahNum: currentSurahNum,
         ayahNum: currentAyahNum,
@@ -20337,30 +20191,6 @@
       const { unit, unitType, ...reading } = capturePresetSettings(false);
       // The Owner, 9 Oct 2026: a bookmark made while listening reopens listening (playing or paused both count).
       return { reading, readChrome: stageView === "read" ? readChromeState : 0, listening: isPlaying() || isPaused() };
-    }
-
-    /** Note view's own equivalent -- reads noteScope instead of the
-        canonical Read-view position, since a Note-view bookmark can (this
-        round) describe a different scope than whatever the Read screen is
-        showing at the time (see noteScope's own comment). Reading-view
-        prefs (tajweed/WbW/roots/Mushaf) still come from the shared,
-        canonical toggles -- those aren't scope-specific. */
-    function captureNoteBookmarkSettings() {
-      return {
-        view: "note", // issue #468
-        unitType: noteScope.unitType,
-        surahNum: currentSurahNum,
-        ayahNum: noteScope.ayahNum,
-        rangeFrom: noteScope.unitType === "range" ? noteScope.rangeFrom : null,
-        rangeTo: noteScope.unitType === "range" ? noteScope.rangeTo : null,
-        trackableId: currentTrackableId,
-        tajweedOn: tajweedToggle.checked,
-        wbwOn: wbwShowToggle.checked,
-        rootsOn: rootsToggle.checked,
-        derivativesOn: derivativesToggle.checked,
-        mushafOn: mushafToggle.checked,
-        ...bookmarkReadingExtras(),
-      };
     }
 
     /** The owner, 2 Oct 2026: "Bookmark must open to the exact screen ...
@@ -20714,8 +20544,7 @@
         open on this exact āyah, the ordinary reading screen otherwise. Mirrors
         changeCurrentTrackable()'s own "whichever stage view is open" rule. */
     function refreshBookmarkDisplay(unitKey) {
-      if (stageView === "note" && noteScopeCurrentUnitKey() === unitKey) renderNoteViewNow();
-      else if (stageView === "read") renderStudyScreen();
+      if (stageView === "read") renderStudyScreen();
     }
 
     async function toggleAyahBookmark(unitKey, defaultNameOverride, settingsOverride, { toggle = true } = {}) {
@@ -20802,32 +20631,6 @@
       }));
       refreshBookmarkDisplay(unitKey);
       return true;
-    }
-
-    /**
-     * Bookmark creation/update round -- the Note view's own "Update
-     * bookmark" action (⋯ menu, offered only while canUpdateBookmark is
-     * true -- see openedBookmarkId's own comment for exactly when that is).
-     * Saves whatever is CURRENTLY being studied -- noteScope's own position
-     * and reading state, not whatever the bookmark happened to be captured
-     * with originally -- into the SAME saved[] entry. Name, folder and
-     * personTagId are untouched; those stay the Manager's own job.
-     */
-    async function updateOpenedBookmark() {
-      if (!auth.currentUser || !selectedPersonId || !openedBookmarkId) return;
-      const position = noteScopeCurrentUnitKey();
-      const settings = captureNoteBookmarkSettings();
-      const outcome = await safeWrite(
-        () => updateSavedBookmarkFields(db, activeTenantId, selectedPersonId, openedBookmarkId, { position, settings }),
-        { collection: TENANT.BOOKMARKS, action: "updateSavedBookmarkFields" }
-      );
-      if (!outcome.ok) return;
-      // Patch in memory rather than re-fetch -- same reasoning toggleAyahBookmark() above already uses.
-      bookmarksDoc = {
-        ...bookmarksDoc,
-        saved: (bookmarksDoc.saved ?? []).map((b) => (b.id === openedBookmarkId ? { ...b, position, settings } : b)),
-      };
-      renderNoteViewNow();
     }
 
     /** Same shape as currentUnitInfo() ({unitType, unitKey, chunkKey, label})
@@ -20933,189 +20736,6 @@
       return candidates.filter((c) => ayahHasNote(ayahNotesDoc, c.unitKey));
     }
 
-    /** Bar 1: the reading-unit picker, mirroring #unitTypeSelect's own seven
-        choices ("place all types of reading views to enable here too" --
-        the owner's own words) -- entirely built here (I2: ayah-note-renderer.js
-        never reads surah data), same pattern approachOptionsHtml already
-        uses. Surah is a real, active picker (fixed 22 Aug 2026 -- it used to
-        ship disabled, "close Note & more to read a different one," which the
-        owner reported back as broken rather than as the deliberate
-        simplification it was) -- picking a different surah here loads it the
-        same way the canonical Surah picker does (see wireNotePickerBar()'s
-        own surah handler), still without ever moving the Read screen's own
-        position underneath the reader. */
-    function renderNotePickerBarHtml() {
-      const unitType = noteScope.unitType;
-      const isRange = unitType === "range";
-      const numbered = NUMBERED_UNITS.includes(unitType);
-      const unitOptionsHtml = ["ayah", "range", "surah", "ruku", "juz", "hizb", "page"]
-        .map((v) => `<option value="${v}" ${unitType === v ? "selected" : ""}>${t(NOTE_UNIT_TYPE_LABELS[v])}</option>`).join("");
-      // Same option shape as the canonical #surahSelect (translated names,
-      // Bengali numerals) -- just built fresh here with the current surah
-      // marked `selected`, since this <select> is destroyed and recreated on
-      // every renderNoteViewNow() call.
-      const surahOptionsHtml = surahIndex
-        .map((s) => `<option value="${s.surahNumber}" ${s.surahNumber === currentSurahNum ? "selected" : ""}>${num(s.surahNumber)}. ${surahName(s.surahNumber, s.nameEnglish)}</option>`)
-        .join("");
-      // `split` (issue #606): the single-Ayah picker offers Al-Fātiḥah's 6 and 7 as two options
-      // (values are RECORD ayahs: 7 and 8); the range pickers keep one "6–7".
-      const ayahOptionsHtml = (selected, split = false) => Array.from({ length: currentSurahData.ayahCount }, (_, i) => i + 1)
-        // The Owner, 5 Oct 2026: the reader's own count here too (Bismillah, 1..5, 6–7), the same as #ayahSelect.
-        .flatMap((n) => (split && n === 7 && fatihaCountApplies(currentSurahNum, fatihaOn())
-          ? [{ v: 7, h: "a" }, { v: FATIHA_SEVEN_RECORD_AYAH, h: "b" }]
-          : [{ v: n, h: null }]).map(({ v, h }) => `<option value="${v}" ${v === (split ? selected : n === selected ? n : -1) ? "selected" : ""}>${ayahLabelFor(currentSurahNum, n, h)}</option>`)).join("");
-      const numbers = numbered ? noteScopeNumbersInSurah(unitType) : [];
-      const numOptionsHtml = numbers.map((n) => `<option value="${n}" ${n === noteScope.unitNumber ? "selected" : ""}>${num(n)}</option>`).join("");
-      const ayahCellHidden = isRange || unitType === "surah";
-      // Mobile-overflow round -- the Category picker that used to sit here
-      // (Note view enhancement round: "would be handy to pull the other
-      // category straight away") moved into the 🗂 Collections button's own
-      // drawer instead (renderQcrDrawerHtml()) -- the owner's own report:
-      // it was "shrinking the Ayah/study selector in Mob n Tablet". See
-      // that function for the switching logic, unchanged in behaviour, just
-      // relocated.
-      return `
-        <select data-note-picker="unitType" aria-label="${t("Study Unit")}">${unitOptionsHtml}</select>
-        <select data-note-picker="surah" aria-label="${t("Surah")}">${surahOptionsHtml}</select>
-        <select data-note-picker="ayah" aria-label="${t("Ayah")}" ${ayahCellHidden ? "hidden" : ""}>${ayahOptionsHtml(recordAyahFor(currentSurahNum, noteScope.ayahNum, noteHalfNow(), fatihaOn()), true)}</select>
-        <select data-note-picker="num" aria-label="${t(UNIT_NUM_LABELS[unitType] ?? "Number")}" ${numbered ? "" : "hidden"}>${numOptionsHtml}</select>
-        <select data-note-picker="from" aria-label="${t("From")}" ${isRange ? "" : "hidden"}>${ayahOptionsHtml(noteScope.rangeFrom)}</select>
-        <select data-note-picker="to" aria-label="${t("To")}" ${isRange ? "" : "hidden"}>${ayahOptionsHtml(noteScope.rangeTo)}</select>`;
-    }
-
-    /** Wires bar 1's own <select>s -- freshly looked up every call, since renderNoteViewNow() rebuilds the whole view's innerHTML on every re-render (a claim, a bookmark toggle, Prev/Next), which destroys and recreates these nodes each time; harmless to re-bind fresh listeners to fresh nodes. */
-    function wireNotePickerBar() {
-      const unitSel = noteView.querySelector('[data-note-picker="unitType"]');
-      const surahSel = noteView.querySelector('[data-note-picker="surah"]');
-      const ayahSel = noteView.querySelector('[data-note-picker="ayah"]');
-      const numSel = noteView.querySelector('[data-note-picker="num"]');
-      const fromSel = noteView.querySelector('[data-note-picker="from"]');
-      const toSel = noteView.querySelector('[data-note-picker="to"]');
-      // Same "load a real surah" path the canonical #surahSelect uses
-      // (loadSurah() resets currentAyahNum to 1 and reloads its records
-      // chunk) -- kept in sync with #surahSelect itself (same convention
-      // goToReference()/applyJump() already follow) so leaving Note & more
-      // for the Read screen shows the surah just picked here, not the one
-      // that was open before it.
-      surahSel?.addEventListener("change", async () => {
-        currentSurahNum = Number(surahSel.value);
-        surahSelect.value = String(currentSurahNum);
-        await loadSurah();
-        noteScope.ayahNum = 1;
-        if (noteScope.unitType === "range") {
-          noteScope.rangeFrom = 1;
-          noteScope.rangeTo = Math.min(5, currentSurahData.ayahCount);
-        }
-        if (NUMBERED_UNITS.includes(noteScope.unitType)) {
-          const nums = noteScopeNumbersInSurah(noteScope.unitType);
-          noteScope.unitNumber = nums[0] ?? null;
-          const match = currentSurahData.ayahs.find((a) => noteScopeNumberOfAyah(noteScope.unitType, a) === noteScope.unitNumber);
-          if (match) noteScope.ayahNum = match.ayah;
-        }
-        renderNoteViewNow();
-      });
-      unitSel?.addEventListener("change", () => {
-        noteScope.unitType = unitSel.value;
-        if (noteScope.unitType === "range") {
-          noteScope.rangeFrom = noteScope.ayahNum;
-          noteScope.rangeTo = Math.min(noteScope.ayahNum + 4, currentSurahData.ayahCount);
-        }
-        if (NUMBERED_UNITS.includes(noteScope.unitType)) {
-          const nums = noteScopeNumbersInSurah(noteScope.unitType);
-          const ayah = currentSurahData.ayahs.find((a) => a.ayah === noteScope.ayahNum);
-          const current = ayah ? noteScopeNumberOfAyah(noteScope.unitType, ayah) : null;
-          noteScope.unitNumber = nums.includes(current) ? current : (nums[0] ?? null);
-        }
-        renderNoteViewNow();
-      });
-      ayahSel?.addEventListener("change", () => {
-        const v = Number(ayahSel.value);
-        // Issue #606 -- option value 8 = Al-Fātiḥah's displayed Ayah 7 (content: internal 1:7, half "b").
-        noteScope.ayahNum = internalAyahOfRecord(currentSurahNum, v);
-        noteScope.half = currentSurahNum === 1 && v === FATIHA_SEVEN_RECORD_AYAH ? "b" : "a";
-        renderNoteViewNow();
-      });
-      numSel?.addEventListener("change", () => {
-        noteScope.unitNumber = Number(numSel.value);
-        const match = currentSurahData.ayahs.find((a) => noteScopeNumberOfAyah(noteScope.unitType, a) === noteScope.unitNumber);
-        if (match) noteScope.ayahNum = match.ayah;
-        renderNoteViewNow();
-      });
-      fromSel?.addEventListener("change", () => { noteScope.rangeFrom = Number(fromSel.value); noteScope.ayahNum = noteScope.rangeFrom; renderNoteViewNow(); });
-      toSel?.addEventListener("change", () => { noteScope.rangeTo = Number(toSel.value); renderNoteViewNow(); });
-    }
-
-    /** The nav cluster's own HTML -- "one is for moving the whole unit of
-        choice, another for moving only a single Ayah... these buttons
-        should be in both READ and NOTE view" (the owner's own words), same
-        media-player convention as the Read screen: the OUTER, double-chevron
-        pair moves the whole chosen unit, the INNER, single-chevron pair
-        moves one āyah. The inner pair is left out entirely for Single Ayah
-        (the two would be identical) and for Whole Surah (there is no "next
-        whole surah" within a single loaded surah -- crossing surahs stays a
-        Read-view action, same "stays within the current surah" simplification
-        every other piece of Note view's own navigation makes this round). */
-    function renderNoteNavHtml() {
-      const info = noteScopeUnitInfo();
-      const isAyah = noteScope.unitType === "ayah";
-      const isSurah = noteScope.unitType === "surah";
-      const atStart = isSurah || info.fromAyah <= 1;
-      const atEnd = isSurah || info.toAyah >= currentSurahData.ayahCount;
-      const inner = isAyah || isSurah ? "" : `
-        <button type="button" class="note-icon-btn" data-note-prev-ayah ${noteScope.ayahNum <= 1 ? "disabled" : ""} title="${t("Previous āyah")}">◂</button>
-        <button type="button" class="note-icon-btn" data-note-next-ayah ${noteScope.ayahNum >= currentSurahData.ayahCount ? "disabled" : ""} title="${t("Next āyah")}">▸</button>`;
-      return `
-        <button type="button" class="note-icon-btn" data-note-prev-unit ${atStart ? "disabled" : ""} title="${t("Previous")}">⏮</button>
-        ${inner}
-        <button type="button" class="note-icon-btn" data-note-next-unit ${atEnd ? "disabled" : ""} title="${t("Next")}">⏭</button>`;
-    }
-
-    /** The nav cluster's OUTER pair -- moves the whole chosen unit, within the currently loaded surah only (see renderNoteNavHtml()'s own comment on why Whole Surah has no outer step at all). */
-    function stepNoteUnit(dir) {
-      if (noteScope.unitType === "surah") return;
-      if (noteScope.unitType === "ayah") { stepNoteAyah(dir); return; }
-      const count = currentSurahData.ayahCount;
-      if (noteScope.unitType === "range") {
-        const span = Math.max(1, Math.abs(noteScope.rangeTo - noteScope.rangeFrom) + 1);
-        if (dir > 0) {
-          const to = Math.max(noteScope.rangeFrom, noteScope.rangeTo);
-          if (to >= count) return;
-          noteScope.rangeFrom = to + 1;
-          noteScope.rangeTo = Math.min(to + span, count);
-        } else {
-          const from = Math.min(noteScope.rangeFrom, noteScope.rangeTo);
-          if (from <= 1) return;
-          noteScope.rangeTo = from - 1;
-          noteScope.rangeFrom = Math.max(1, from - span);
-        }
-        noteScope.ayahNum = noteScope.rangeFrom;
-        renderNoteViewNow();
-        return;
-      }
-      // ruku/juz/hizb/page: step to the adjacent number present in this surah.
-      const numbers = noteScopeNumbersInSurah(noteScope.unitType);
-      const at = numbers.indexOf(noteScope.unitNumber);
-      const target = numbers[at + dir];
-      if (target === undefined) return;
-      noteScope.unitNumber = target;
-      const match = currentSurahData.ayahs.find((a) => noteScopeNumberOfAyah(noteScope.unitType, a) === target);
-      if (match) noteScope.ayahNum = match.ayah;
-      renderNoteViewNow();
-    }
-
-    /** The nav cluster's INNER pair -- moves exactly one āyah, bounded by the currently loaded surah (same simple rule the Read screen's own prevAyahBtn/nextAyahBtn already use). */
-    function stepNoteAyah(dir) {
-      // Issue #606 -- with the Al-Fātiḥah count on, internal 1:7 is two stops (6 then 7).
-      const half = noteHalfNow();
-      if (half === "a" && dir > 0) { noteScope.half = "b"; renderNoteViewNow(); return; }
-      if (half === "b" && dir < 0) { noteScope.half = "a"; renderNoteViewNow(); return; }
-      const target = noteScope.ayahNum + dir;
-      if (target < 1 || target > currentSurahData.ayahCount) return;
-      noteScope.ayahNum = target;
-      noteScope.half = target === 7 && dir < 0 ? "b" : "a";
-      renderNoteViewNow();
-    }
-
     /** Fix round -- "enable moving to the next Ayah both scrolling down and
         sideways in both read and note view in all settings." Before this,
         the ONLY way to move in a non-flow unit (Single Ayah, Ruku', Juz',
@@ -21192,11 +20812,7 @@
         if (now < cooldownUntil) return false;
         cooldownUntil = now + 550;
         const before = positionSignature();
-        if (stageView === "note") {
-          if (!noteScope) return false;
-          if (noteScope.unitType !== "ayah" && noteScope.unitType !== "surah") stepNoteAyah(dir);
-          else stepNoteUnit(dir);
-        } else if (stageView === "read") {
+        if (stageView === "read") {
           if (!currentSurahData) return false;
           // Fix round -- a flow view (Whole Surah/Range/Mushaf) moves WITHIN
           // the flow. It used to fall through to the unit-level pair, because
@@ -21239,7 +20855,6 @@
           rebuilt from scratch on each Note-view render while #ayahPanels is
           the same element with new content. */
       function swipeDragEl() {
-        if (stageView === "note") return noteView.querySelector(".note-body");
         if (stageView === "read") {
           if (getComputedStyle(pageViewContainer).display !== "none") return null;
           return ayahPanels;
@@ -21383,719 +20998,6 @@
         }
       }, { passive: true, capture: true });
     })();
-
-    /** Builds and mounts the "Note & more" view against whatever `noteScope`
-        currently says -- does NOT switch stageView (callers decide that:
-        openNoteView() on first open; every nav/toggle callback just
-        re-renders in place). See noteScope's own comment for why this reads
-        local state rather than taking a unitKey parameter the way it used
-        to: opening a note on one āyah of a flow must never silently move
-        the Read screen's own position. */
-    function renderNoteViewNow() {
-      if (!noteScope || !currentSurahData) return;
-      rememberLastSession(); // the Note view's own scope is state worth reopening on (see rememberLastSession)
-      const info = noteScopeUnitInfo();
-      const unitKey = info.unitKey;
-      const ref = info.label;
-      const showAyatText = noteScopeShowAyatText();
-      const canWbwRoot = noteScopeCanWbwRoot();
-      // 6 Sep 2026, the owner's own ask: the Track/Guide/Breakdown/Coverage
-      // card is offered for EVERY unit now, not only a single āyah. It was
-      // ayah-only because the wheel that opens it was ayah-only and a wider
-      // unit had its own separate path ("Track this unit" in Study options);
-      // with the wheel able to show any unit, that split is exactly what the
-      // owner reported. renderApproachEmbedHtml() claims whatever
-      // noteScopeUnitInfo() resolves to, so nothing here decides the scope.
-      const showApproach = true;
-      // A Juz/Hizb/Page scope claims into subject_quran, which may not be in
-      // memory yet -- ask once and redraw when it lands (see
-      // ensureUnitChunkThen()); the card reads "Not claimed yet" until then.
-      ensureUnitChunkThen(info, () => {
-        if (stageView === "note" && noteScope && noteScopeCurrentUnitKey() === unitKey) renderNoteViewNow();
-      });
-
-      let textBlocks = { arabicText: "", englishText: "", banglaText: "" };
-      let arabicHtml = "";
-      let englishHtml = "";
-      let banglaHtml = "";
-      let ayahByAyahHtml = "";
-      let bismillahHtml = "";
-      // Text-tools round -- one panel per āyah in scope, not one panel for a
-      // single āyah. Built here (rather than passed a lone `ayah` as before)
-      // so a Range or a short surah gets Word by Word / Root / Derivatives
-      // too, which is what "bring these back in the appropriate Unit
-      // choices" asked for. Each panel keeps its own leading āyah-number
-      // badge when there is more than one, or the words of āyah 3 and āyah 4
-      // would run together with nothing saying where one ends.
-      let wbwHtml = "";
-      let rootsHtml = "";
-      let derivativesHtml = "";
-      const ayahDisplayMode = getAyahDisplayMode();
-      if (showAyatText) {
-        // Issue #606 -- a single displayed Ayah 6 or 7 of Al-Fātiḥah shows only its own half.
-        const inScope = expandAyahsForDisplay(currentSurahNum, currentSurahData.ayahs.filter((a) => a.ayah >= info.fromAyah && a.ayah <= info.toAyah), fatihaOn())
-          .filter((a) => !info.half || a.half === info.half);
-        textBlocks = {
-          arabicText: inScope.map((a) => a.uthmaniText).join("  "),
-          englishText: inScope.map((a) => a.translations?.en).filter(Boolean).join(" "),
-          banglaText: inScope.map((a) => a.translations?.bn).filter(Boolean).join(" "),
-        };
-        // Fix round -- the Note view never showed an ayah number or tajweed
-        // colouring at all (it joined plain uthmaniText, bypassing
-        // ayah-renderer.js's renderArabicPanel entirely); now built per
-        // ayah the same way the Read screen is, so a setting chosen once
-        // (Tajweed, the ayah number) shows here too, with no separate
-        // switch to remember. arabicOneAyahHtml()/translationLineHtml()
-        // are the same leading-badge shape ayah-renderer.js's own
-        // renderArabicPanel()/renderTranslationPanel() use, just built
-        // locally since this screen reads plain ayah objects, not the
-        // shared renderer's own panel functions.
-        // Fix round -- ayah 1's own uthmaniText embeds the Bismillah phrase
-        // as a literal prefix for every surah except 9 (see
-        // stripLeadingBismillah()'s own comment in ayah-renderer.js); this
-        // Note view builds its Arabic locally rather than calling
-        // renderArabicPanel(), so it needs the same strip applied here too,
-        // or the bismillahHtml heading above and the ayah's own body would
-        // show the same phrase twice.
-        // Issue #189 -- same per-word tap-to-open-Word-Card treatment as
-        // Read view's renderArabicPanel() (ayah-renderer.js), built locally
-        // for the same reason the rest of this block is: this screen reads
-        // plain ayah objects, not that renderer's own panel functions. Since
-        // issue #294 the Tajweed branch is split into words too, without
-        // losing any colour -- see tajweedWordButtonsHtml().
-        const arabicOneAyahHtml = (a) => {
-          let body;
-          if (tajweedToggle.checked && a.tajweedText) {
-            // Issue #294 -- tappable words with Tajweed on (see
-            // tajweedWordButtonsHtml() in ayah-renderer.js); the unsplit
-            // block remains the fall-back.
-            body = tajweedWordButtonsHtml(a, currentSurahNum, translationLangs()) ?? tajweedRawToSafeHtml(a.tajweedText);
-          } else {
-            const plainSource = a.ayah === 1 ? stripLeadingBismillah(a.uthmaniText) : a.uthmaniText;
-            const segments = a.words?.length ? splitPlainArabicWords(plainSource, a.words) : null;
-            body = segments
-              ? segments.map((seg, i) => arabicWordButtonHtml(seg, a.words[i], currentSurahNum, a.ayah, translationLangs())).join(" ")
-              : escapeHtml(plainSource);
-          }
-          // Fix round -- Arabic-Indic digits beside the Arabic, matching
-          // renderArabicPanel()'s own rule (a block's number in that block's
-          // own script). This screen builds its Arabic locally rather than
-          // calling that renderer, so it needs the same call here.
-          // Issue #295 -- the Ayah Card's third entry point: the number
-          // badge is a real <button> here too, the same
-          // data-ayah-num-badge="surah:ayah" shape ayah-renderer.js's own
-          // renderArabicPanel() now stamps for the Read screen.
-          const shownNum = badgeNumber(a);
-          const numBadge = shownNum == null ? "" : `<button type="button" class="ayah-num-badge" data-ayah-num-badge="${currentSurahNum}:${a.ayah}" aria-label="${escapeHtml(t("This āyah"))}">${digitsForLang(shownNum, "ar")}</button>`;
-          return `${numBadge ? `<div class="ayah-num-row">${numBadge}</div>` : ""}<div class="note-arabic" dir="rtl" lang="ar">${body}</div>`;
-        };
-        const translationLineHtml = (ayahNum, text, lang) => {
-          if (!text) return "";
-          const cls = lang === "bn" ? "note-bangla" : "note-english";
-          return `${ayahNum == null ? "" : `<div class="ayah-num-row"><span class="ayah-num-badge">${digitsForLang(ayahNum, lang)}</span></div>`}<div class="${cls}"${lang === "bn" ? ' lang="bn"' : ""}>${escapeHtml(text)}</div>`;
-        };
-        // Fix round -- "an option to choose one from both, in both READ and
-        // NOTE view": BY LANGUAGE keeps the three separate collapsible
-        // Arabic/English/Bangla fields (each now numbered per ayah too, so
-        // item 3 -- "all translations show an ayah number" -- holds in
-        // either mode); BY AYAH bunches one ayah's own Arabic + English +
-        // Bangla together and repeats that, ayah after ayah, matching what
-        // the Read screen's own flow view has always done.
-        if (ayahDisplayMode === "byAyah") {
-          ayahByAyahHtml = inScope.map((a) => `<div class="note-ayah-block">${arabicOneAyahHtml(a)}${translationLineHtml(badgeNumber(a), a.translations?.en, "en")}${translationLineHtml(badgeNumber(a), a.translations?.bn, "bn")}</div>`).join("");
-        } else {
-          arabicHtml = inScope.map(arabicOneAyahHtml).join("");
-          englishHtml = inScope.map((a) => translationLineHtml(badgeNumber(a), a.translations?.en, "en")).join("");
-          banglaHtml = inScope.map((a) => translationLineHtml(badgeNumber(a), a.translations?.bn, "bn")).join("");
-        }
-        bismillahHtml = bismillahHtmlFor(currentSurahNum, info.fromAyah);
-
-        // Word by Word / Root / Derivatives, once per āyah in scope. The
-        // ticks themselves are the canonical Study-options ones (fix round:
-        // "a choice of setting anywhere should work everywhere"), so this
-        // only decides HOW MUCH to draw, never whether the choice is on.
-        const perAyahPanels = (panelFn) => inScope
-          .map((a) => (inScope.length > 1
-            ? (badgeNumber(a) == null ? panelFn(a) : `<div class="ayah-num-row"><span class="ayah-num-badge">${num(badgeNumber(a))}</span></div>${panelFn(a)}`)
-            : panelFn(a)))
-          .join("");
-        // v08.20 -- the Note view's own Word by Word is interactive now, the
-        // same as the Read view's. This one missing pair of options is the
-        // whole of why a word was tappable in READ and inert in NOTE.
-        if (canWbwRoot && wbwShowToggle.checked) wbwHtml = perAyahPanels((a) => renderWordByWordPanel(a, { langs: wbwLangs(), interactive: true, surahNumber: currentSurahNum }));
-        if (canWbwRoot && rootsToggle.checked) rootsHtml = perAyahPanels((a) => renderRootPanel(a));
-        if (canWbwRoot && derivativesToggle.checked) derivativesHtml = perAyahPanels((a) => renderDerivativesPanel(a));
-      }
-
-      const isBookmarked = !!findSavedBookmark(bookmarksDoc, { moduleId: "quranrevival", subjectId: "quran", position: unitKey });
-      const hasNote = ayahHasNote(ayahNotesDoc, unitKey);
-      const wideNotes = noteScopeWiderNotes();
-      const wideNoteHtml = wideNotes.length
-        ? `<div class="note-wide-notes"><span>${t("Also noted at:")}</span>${wideNotes.map((w) => `<button type="button" class="note-wide-pill" data-note-wide-open="${w.unitType}">${w.label} →</button>`).join("")}</div>`
-        : "";
-      const readViewLinkHtml = !showAyatText
-        ? `<span>${info.label} — ${t("read it on the Read screen")}</span><button type="button" data-note-open-read>${t("Open in Read")} ▸</button>`
-        : "";
-
-      // Ayah Collections round 2 -- the collection this āyah was tapped
-      // FROM, if any (noteOriginCollectionId, set by goToAyahFromQcr()).
-      // Looked up by id every render rather than cached as a label, so a
-      // rename picked up mid-session shows immediately; a collection that
-      // no longer exists (shouldn't happen, I4, but a stale id from an old
-      // session is possible) just means no back button, same "nothing to
-      // explain" rule canUpdateBookmark already follows.
-      // Asma enhancement round -- this same "◂ List & wheel" button (the
-      // universal one, mobile AND desktop, unlike the PC popup's own
-      // title-bar Back button which already covered both origins) had only
-      // ever been wired for a QCR origin -- a real, closeable gap, since a
-      // Note view reached via an Asma jump on a PHONE (no popup exists
-      // there at all) had NO way back to that drill state before this.
-      const originCollection = noteOriginCollectionId ? (qcrCollections ?? []).find((c) => c.id === noteOriginCollectionId) : null;
-      const originAsmaEntry = noteOriginAsmaNumber != null ? asmaXResolve(noteOriginAsmaNumber) : null;
-      const backToCollectionLabel = originCollection
-        ? langText(originCollection.title, getAppLang())
-        : (originAsmaEntry ? asmaEntryDisplayName(originAsmaEntry) : null);
-
-      // Sizing-fix round -- the owner's own report: picking a Group closed
-      // the whole 🗂 drawer mid-selection, since renderNoteViewNow() rebuilds
-      // .note-body from scratch on every change and nothing tracked this
-      // drawer's own open state (see the retired comment on
-      // refreshQcrDrawerSummaries, which used to explain why it deliberately
-      // avoided a full rebuild instead of fixing this). Read the LIVE DOM
-      // state right before it's replaced rather than a separately-tracked
-      // flag -- that way it's automatically correct whether the drawer was
-      // closed by its own toggle, an outside click, or another popover
-      // opening in its place, with nothing to keep in sync by hand.
-      let wasQcrDrawerOpen = noteView.querySelector('[data-note-sub-wrap="collections"] .note-sub-popover')?.classList.contains("open") ?? false;
-      let openQcrDdKey = noteView.querySelector('[data-note-qcr-dd-pop].on')?.dataset.noteQcrDdPop
-        ?? noteView.querySelector('[data-asmax-dd-pop].on')?.dataset.asmaxDdPop
-        ?? null;
-      // Issue #286 -- the "This āyah" sheet's "QCR collection(s)…" action
-      // navigated here and asked the 🗂 Attach panel to already be open on
-      // this very first render, the same DOM state a real 🗂 -> Attach tap
-      // would have left. One-shot: cleared immediately so a later,
-      // unrelated re-render never reopens it on its own.
-      if (ayahSheetPendingQcrOpen) {
-        ayahSheetPendingQcrOpen = false;
-        wasQcrDrawerOpen = true;
-        openQcrDdKey = "attach";
-      }
-
-      // PC popup: only #noteViewMount is replaced -- the static title bar/
-      // side pane/resize handles around it (see #noteView's own markup
-      // comment) must survive every one of these re-renders, so nothing
-      // above the mount point is ever written to via innerHTML.
-      noteViewMount.innerHTML = renderNoteView({
-        unitKey,
-        pickerBarHtml: renderNotePickerBarHtml(),
-        navHtml: renderNoteNavHtml(),
-        showAyatText,
-        arabicText: textBlocks.arabicText, englishText: textBlocks.englishText, banglaText: textBlocks.banglaText,
-        arabicHtml, englishHtml, banglaHtml, bismillahHtml,
-        ayahDisplayMode, ayahByAyahHtml,
-        readViewLinkHtml,
-        notesHtml: ayahNoteHtml(ayahNotesDoc, unitKey),
-        // Round 31 -- "this Ayah screen would be the main study screen for a
-        // user, therefore we need to make tools available here" (the
-        // owner's own words). Text-tools round -- no longer single-āyah
-        // only: whichever units show their text here get these too, one
-        // panel per āyah (see the perAyahPanels() builder above).
-        // Fix round -- WbW/Root/Derivatives read the SAME canonical
-        // Study-options ticks the Read screen uses, instead of their own
-        // separate noteWbwOn/noteRootsOn/noteDerivativesOn flags -- ticking
-        // one anywhere now shows up everywhere, with no separate click
-        // needed in the Note view.
-        wbwHtml,
-        isWbwOn: canWbwRoot && wbwShowToggle.checked,
-        rootsHtml,
-        isRootsOn: canWbwRoot && rootsToggle.checked,
-        derivativesHtml,
-        isDerivativesOn: canWbwRoot && derivativesToggle.checked,
-        canWbwRoot,
-        hasNote,
-        isBookmarked,
-        isFullscreen: noteFullscreenOn,
-        // The wheel-slice card -- for whatever unit this view is scoped to
-        // (6 Sep 2026), not only a single āyah. See
-        // renderApproachEmbedHtml()'s own comment.
-        approachHtml: showApproach ? renderApproachEmbedHtml(info) : "",
-        // "Track this āyah" is only true for a single āyah; every other scope
-        // says what it really is.
-        approachLabel: noteScope.unitType === "ayah" ? t("Track this āyah") : t("Track this unit"),
-        isNotesOpen: noteNotesOpen,
-        isApproachOpen: noteApproachCardOpen,
-        wideNoteHtml,
-        canUpdateBookmark: !!openedBookmarkId && (bookmarksDoc.saved ?? []).some((b) => b.id === openedBookmarkId && !b.removed),
-        canAttachAsma: canAdminCatalogueClientSide(),
-        backToCollectionLabel,
-        isCollectionsOpen: wasQcrDrawerOpen,
-        collectionsPopoverHtml: renderQcrDrawerHtml(unitKey, openQcrDdKey),
-        // MAP Phase 5 (P5-D, issue #195) -- the entry point into the real,
-        // permanent Notes screen, scoped to whatever unit THIS Note view is
-        // showing right now (unitKey/ref, the same pair the heading and
-        // Copy/Share already use). A plain relative link, same convention as
-        // every other page-to-page jump in this app (continue-strip.js's own
-        // MODULE_PAGES) -- notes.html resolves its own sign-in/tenant/person
-        // context on load exactly as bookmarks.html does, so nothing about
-        // WHO is acting needs to travel in the URL, only WHICH unit.
-        notesScreenHref: `notes.html?unit=${encodeURIComponent(unitKey)}&label=${encodeURIComponent(ref)}&back=1`,
-      });
-      if (showApproach && quranTrackables.some((tr) => tr.id === currentTrackableId)) {
-        noteView.querySelectorAll("[data-note-approach-select]").forEach((sel) => { sel.value = currentTrackableId; });
-      }
-      attachNoteViewHandlers(noteView, {
-        // Copy/Share build from whatever's actually ON SCREEN (textBlocks,
-        // already joined across the whole scope for a Range/short surah --
-        // buildAyahText() is single-āyah only, which used to be fine when
-        // Copy/Share only ever existed for a single āyah).
-        buildText: (langs) => {
-          const parts = [ref];
-          if (langs.includes("ar") && textBlocks.arabicText) parts.push(textBlocks.arabicText);
-          if (langs.includes("en") && textBlocks.englishText) parts.push(textBlocks.englishText);
-          if (langs.includes("bn") && textBlocks.banglaText) parts.push(textBlocks.banglaText);
-          if (langs.includes("notes")) {
-            const plain = notesToPlainText(ayahNoteHtml(ayahNotesDoc, unitKey));
-            if (plain) parts.push(`${t("Notes:")}\n${plain}`);
-          }
-          return parts.join("\n\n");
-        },
-        onSaveNote: async (html) => {
-          if (!auth.currentUser || !selectedPersonId) {
-            return { ok: false, message: t("You're signed out, so that could not be saved. Please sign in again.") };
-          }
-          const outcome = await safeWrite(
-            () => saveAyahNote(db, { tenantId: activeTenantId, personId: selectedPersonId, unitKey, html, uid: auth.currentUser.uid }),
-            { collection: TENANT.AYAH_NOTES, action: "saveAyahNote" }
-          );
-          if (!outcome.ok) return { ok: false, message: outcome.entry.message };
-          ayahNotesDoc = { ...ayahNotesDoc, notes: { ...(ayahNotesDoc.notes ?? {}), [unitKey]: { html, updatedAt: new Date().toISOString() } } };
-          renderStudyScreen();
-          return { ok: true };
-        },
-        onToggleBookmark: () => toggleAyahBookmark(unitKey, ref, captureNoteBookmarkSettings()),
-        onUpdateBookmark: () => updateOpenedBookmark(),
-        onAttachAsma: () => openAsmaXAttachPopover({ prefillRef: asmaRefTextFor(currentSurahNum, info.fromAyah) }),
-        onPlay: () => quickPlayAyah(buildUnitKey.ayah(currentSurahNum, info.fromAyah)),
-        onPrevUnit: () => stepNoteUnit(-1),
-        onNextUnit: () => stepNoteUnit(1),
-        onPrevAyah: () => stepNoteAyah(-1),
-        onNextAyah: () => stepNoteAyah(1),
-        onToggleFullscreen: toggleNoteFullscreen,
-        onWritingSheet: () => openWritingSheetForCurrentUnit(),
-        onApproachBar: (which) => {
-          if (which === "take") openApproachWheel();
-          else if (which === "status") openMyStatus();
-          else {
-            noteApproachCardOpen = true;
-            renderNoteViewNow();
-            noteView.querySelector('[data-note-field="approach"]')?.scrollIntoView({ block: "nearest" });
-          }
-        },
-        onToggleWbw: toggleNoteWbw,
-        onToggleRoots: toggleNoteRoots,
-        onToggleDerivatives: toggleNoteDerivatives,
-        onToggleAyahDisplayMode: toggleNoteAyahDisplayMode,
-        onApproachChange: (id) => changeCurrentTrackable(id),
-        onOpenInReadView: () => {
-          currentUnitType = noteScope.unitType;
-          currentAyahNum = info.fromAyah;
-          unitTypeSelect.value = currentUnitType;
-          unitTypeSelect.dispatchEvent(new Event("change"));
-          if (ayahSelect.querySelector(`option[value="${currentAyahNum}"]`)) { ayahSelect.value = String(currentAyahNum); ayahSelect.dispatchEvent(new Event("change")); }
-          setStageView("read");
-        },
-        onOpenWideNote: (unitType) => {
-          noteScope.unitType = unitType;
-          if (NUMBERED_UNITS.includes(unitType)) {
-            const ayahNow = currentSurahData.ayahs.find((a) => a.ayah === noteScope.ayahNum);
-            noteScope.unitNumber = ayahNow ? noteScopeNumberOfAyah(unitType, ayahNow) : null;
-          }
-          renderNoteViewNow();
-        },
-        // Ayah Collections round 2 -- the way back to the collection this
-        // āyah was reached from ("There should be a button on the note bar
-        // in note view, to come back to the list and the wheel view").
-        // Lands on that SAME collection's own level-bar selection, in the
-        // Explore stage view, exactly as if the reader had picked it there
-        // themselves.
-        onBackToCollection: async () => {
-          // Asma enhancement round -- same "wherever the reader actually
-          // came from" branch the PC popup's own Back button already used
-          // (v07.105), now reachable from this universal button too.
-          if (noteOriginAsmaNumber != null) {
-            closeAllPanels();
-            setStageView("explore");
-            setExplorePalette("asma");
-            renderAsmaXPanel();
-            return;
-          }
-          if (!noteOriginCollectionId) return;
-          closeAllPanels();
-          qcrCurrentId = (qcrCollections ?? []).some((c) => c.id === noteOriginCollectionId) ? noteOriginCollectionId : qcrDefaultCollectionId();
-          setStageView("explore");
-          setExplorePalette("qcr");
-          await renderQcrPanel();
-        },
-        // "The NOTE view should have a button for moving/placing the Ayah to
-        // multiple level/category (as it is in the wheel view)" -- every
-        // checkbox fires this once, immediately (same shape as every other
-        // QCR manage action -- no batched save). I15: a failed write rolls
-        // the optimistic change back and re-renders so the box's own state
-        // matches what actually got saved. TOPIC bar round -- on SUCCESS,
-        // patches the Attach button's own count badge in place
-        // (refreshQcrDrawerSummaries) rather than a full re-render, which
-        // would otherwise reset the outer 🗂 drawer -- nothing tracks ITS
-        // open state -- back to closed mid-tick.
-        onToggleCollectionMembership: async (collectionId, checked) => {
-          const prev = qcrCollections;
-          qcrCollections = checked
-            ? qcrAddItemLocal(qcrCollections, collectionId, unitKey)
-            : qcrRemoveItemLocal(qcrCollections, collectionId, unitKey);
-          if (!(await qcrPersist())) { qcrCollections = prev; renderNoteViewNow(); return; }
-          refreshQcrDrawerSummaries(unitKey, noteView);
-        },
-        // TOPIC bar round -- the same 🗂 drawer, rebuilt as TOPIC then
-        // Group/Attach/Yr Level. Group is exactly what the old row-list of
-        // collection buttons did ("just switch context, stay put": the
-        // current āyah/unit is left exactly where it is; only
-        // noteOriginCollectionId moves, which the very next
-        // renderNoteViewNow() picks up for the "◂ Back to…" button, the
-        // side pane's own item list, and now Yr Level's own field too,
-        // since Yr Level belongs to whichever Group is selected). A full
-        // re-render is correct here (unlike the two toggles below) -- Group
-        // is a plain <select> whose own "change" already happened, so
-        // there's no in-progress popover interaction a rebuild could cut
-        // off mid-tick.
-        onSwitchCollection: (collectionId) => {
-          noteOriginCollectionId = collectionId || null;
-          if (noteOriginCollectionId) qcrCurrentId = noteOriginCollectionId;
-          renderNoteViewNow();
-        },
-        // Yr Level is a property of the GROUP (the collection), not the
-        // āyah -- so it edits whichever collection noteOriginCollectionId
-        // currently points at, via the pure setCollectionYrLevels helper,
-        // same owner/prime-only write path renaming a collection already
-        // uses. Scoped to QCR only for now (see qcr.js's own header) --
-        // not the bigger, not-yet-scoped "every study item labelled by
-        // year band" idea already sitting in the project's backlog. Same
-        // "patch the summary, don't rebuild" reasoning as
-        // onToggleCollectionMembership above.
-        onToggleGroupYrLevel: async (yrLevelId, checked) => {
-          if (!noteOriginCollectionId) return;
-          const group = (qcrCollections ?? []).find((c) => c.id === noteOriginCollectionId);
-          if (!group) return;
-          const next = checked ? [...group.yrLevels, yrLevelId] : group.yrLevels.filter((id) => id !== yrLevelId);
-          const prev = qcrCollections;
-          qcrCollections = setCollectionYrLevels(qcrCollections, noteOriginCollectionId, next);
-          if (!(await qcrPersist())) { qcrCollections = prev; renderNoteViewNow(); return; }
-          refreshQcrDrawerSummaries(unitKey, noteView);
-        },
-      });
-      // Notes' own toggle isn't wired by attachNoteViewHandlers above (that
-      // click is generic, shared by all four fields) -- this listens for the
-      // SAME click, added AFTER so the generic handler has already flipped
-      // .note-field-body's display, and just remembers which way it landed,
-      // the same way noteWbwOn/noteFullscreenOn already survive a rebuild.
-      noteView.querySelector('[data-note-field="notes"] [data-note-field-toggle]')?.addEventListener("click", () => {
-        noteNotesOpen = noteView.querySelector('[data-note-field="notes"] .note-field-body').style.display !== "none";
-      });
-      // Same fix, same reason, for the Track/Guide/Breakdown/Coverage card's
-      // own toggle -- this rebuild-heavy screen (a claim, a bookmark toggle,
-      // Prev/Next all rebuild .note-body from scratch) would otherwise slam
-      // it shut again the moment anything else on screen changed.
-      noteView.querySelector('[data-note-field="approach"] [data-note-field-toggle]')?.addEventListener("click", () => {
-        noteApproachCardOpen = noteView.querySelector('[data-note-field="approach"] .note-field-body').style.display !== "none";
-      });
-      wireNotePickerBar();
-      fitNoteWriting(); // issue #421 -- the ✍ button only where the bar can hold it
-      if (showApproach) wireApproachEmbed(info, noteView, renderNoteViewNow, { fieldScoped: true });
-      wireAsmaXNoteFields(unitKey, noteView, renderNoteViewNow, noteScope.ayahNum);
-      // PC popup: title bar text + side pane, every render/nav step. A no-op
-      // below 900px (renderNotePopupSide() checks isPcNotePopup() itself).
-      notePopupTitleEl.textContent = originCollection ? `${ref} — ${langText(originCollection.title, getAppLang())}` : ref;
-      renderNotePopupSide();
-    }
-
-    // -----------------------------------------------------------------------
-    // PC popup side pane (28 Aug 2026) -- "relevant and adjacent Ayat",
-    // decided with the owner before building: whichever Ayah Collection this
-    // Note view was opened FROM (noteOriginCollectionId), or -- when it
-    // wasn't reached via one -- the currently loaded Surah's own ayat. The
-    // new group nav buttons (prev/next "in the group") step through this
-    // SAME list, separate from the existing Surah-level prevAyahBtn/
-    // nextAyahBtn on the Read screen and the unit-level nav cluster already
-    // inside the Note view itself.
-    // -----------------------------------------------------------------------
-    function isPcNotePopup() {
-      return window.matchMedia("(min-width: 900px)").matches;
-    }
-
-    /** The ordered list of unit keys the side pane shows right now -- a
-        collection's own (possibly cross-surah, possibly non-contiguous)
-        items, or this Surah's own ayat in order. */
-    function notePopupSideItems() {
-      if (noteOriginCollectionId) {
-        const col = (qcrCollections ?? []).find((c) => c.id === noteOriginCollectionId);
-        if (col) return col.items.slice();
-      }
-      if (!currentSurahData) return [];
-      // Issue #606 -- displayed Ayat 6 and 7 of Al-Fātiḥah are two rows (ayah:1:7 and ayah:1:8).
-      return currentSurahData.ayahs.flatMap((a) => ayahRecordUnits(currentSurahNum, a.ayah).map((u) => buildUnitKey.ayah(currentSurahNum, u.record)));
-    }
-
-    /** Fetches whichever surahs a collection's own items touch that aren't
-        already cached, merging into the SAME qcrSurahDataByNum map
-        renderQcrPanel() populates -- so a surah loaded from either place
-        works for both, and re-opening a collection already browsed in
-        Explore this session costs nothing here. Never wipes the map (unlike
-        renderQcrPanel(), which owns its own full replace) -- this is an
-        addition on top of whatever's already cached. Surah-fallback mode
-        needs no fetch at all: currentSurahData is already loaded for the
-        reading/note screens themselves. */
-    async function ensureNotePopupSideSurahsLoaded(items) {
-      const surahNums = [...new Set(
-        items.map((uk) => Number(parseUnitKey(uk).parts[0])).filter((n) => Number.isFinite(n) && !qcrSurahDataByNum.has(n))
-      )];
-      if (!surahNums.length) return;
-      const results = await Promise.all(surahNums.map(async (n) => {
-        try { return [n, await getSurah(n)]; } catch { return [n, null]; }
-      }));
-      for (const [n, d] of results) if (d) qcrSurahDataByNum.set(n, d);
-    }
-
-    function notePopupSideRowData(unitKey) {
-      const { parts } = parseUnitKey(unitKey);
-      const surahNum = Number(parts[0]);
-      let refLabel, sName, snippet, arabicSnippet;
-      if (noteOriginCollectionId) {
-        const disp = qcrItemDisplay(unitKey); // same helper Explore's own QCR sidebar rows use -- surahNum/ayahNum/refLabel/surahName/snippet(en)
-        refLabel = disp.refLabel; sName = disp.surahName; snippet = disp.snippet;
-        const ayah = qcrSurahDataByNum.get(surahNum)?.ayahs?.find((a) => a.ayah === disp.ayahNum);
-        arabicSnippet = ayah?.uthmaniText ?? "";
-      } else {
-        const { ayah: ayahNum, half: rowHalf } = parseAyahUnitKey(unitKey);
-        const meta = surahIndex.find((s) => s.surahNumber === surahNum);
-        sName = meta ? surahName(surahNum, meta.nameEnglish) : "";
-        refLabel = ayahShortRefFor(surahNum, ayahNum, rowHalf);
-        const ayah = currentSurahData?.ayahs?.find((a) => a.ayah === ayahNum);
-        const full = ayah?.translations?.en ?? "";
-        snippet = full.length > 90 ? `${full.slice(0, 90).trim()}…` : full;
-        arabicSnippet = ayah?.uthmaniText ?? "";
-      }
-      const hasNote = ayahHasNote(ayahNotesDoc, unitKey);
-      const noteText = hasNote ? notesToPlainText(ayahNoteHtml(ayahNotesDoc, unitKey)) : "";
-      return { unitKey, refLabel, surahName: sName, snippet, arabicSnippet, hasNote, noteText, statusId: qcrItemStatus(unitKey) };
-    }
-
-    // Per-row expand state, kept across re-renders for as long as the popup
-    // stays open on this page -- same "reading preference, not per-āyah
-    // state" shape noteWbwOn/noteRootsOn already use, just per unitKey
-    // instead of a single flag.
-    const notePopupExpandedAyah = new Set();
-    const notePopupExpandedNotes = new Set();
-
-    function notePopupSideRowHtml(row, isCurrent) {
-      const ayahOpen = notePopupExpandedAyah.has(row.unitKey);
-      const notesOpen = notePopupExpandedNotes.has(row.unitKey);
-      // The snippet is always in the DOM -- CSS decides whether it shows
-      // (Card view always; List view only once this row is .expanded). The
-      // full Arabic line stays gated by ayahOpen in EITHER view -- the
-      // expand toggle is one control, not two.
-      return `<div class="note-popup-row${isCurrent ? " current" : ""}${ayahOpen ? " expanded" : ""}" draggable="true" data-note-popup-row="${escapeHtml(row.unitKey)}">
-        <button type="button" class="note-popup-row-main" data-note-popup-open="${escapeHtml(row.unitKey)}">
-          <span class="note-popup-row-dot chip-${escapeHtml(row.statusId)}" aria-hidden="true"></span>
-          <span class="note-popup-row-ref">${escapeHtml(row.refLabel)}</span>
-          <span class="note-popup-row-surah">${escapeHtml(row.surahName)}</span>
-          ${row.hasNote ? `<span class="note-popup-row-noteflag" title="${escapeHtml(t("Has a note"))}">📝</span>` : ""}
-        </button>
-        <button type="button" class="note-popup-row-toggle" data-note-popup-ayah-toggle="${escapeHtml(row.unitKey)}" title="${escapeHtml(ayahOpen ? t("Collapse āyah text") : t("Expand āyah text"))}">${ayahOpen ? "▾" : "▸"}</button>
-        <div class="note-popup-row-snippet">${escapeHtml(row.snippet)}</div>
-        ${ayahOpen ? `<div class="note-popup-row-body">
-          <div class="note-popup-row-arabic" dir="rtl" lang="ar">${escapeHtml(row.arabicSnippet)}</div>
-        </div>` : ""}
-        ${row.hasNote ? `<button type="button" class="note-popup-row-toggle" data-note-popup-note-toggle="${escapeHtml(row.unitKey)}" title="${escapeHtml(notesOpen ? t("Collapse note") : t("Expand note"))}">📝 ${notesOpen ? "▾" : "▸"}</button>` : ""}
-        ${notesOpen ? `<div class="note-popup-row-note">${escapeHtml(row.noteText)}</div>` : ""}
-      </div>`;
-    }
-
-    // Guards against a slow ensureNotePopupSideSurahsLoaded() from an OLDER
-    // render overwriting a NEWER one's already-current list -- the same
-    // "ignore a stale async completion" shape this app already needed once
-    // it started letting several things load in the background at once.
-    let notePopupSideRenderToken = 0;
-
-    async function renderNotePopupSide() {
-      if (!isPcNotePopup() || !noteScope) return;
-      const myToken = ++notePopupSideRenderToken;
-      const items = notePopupSideItems();
-      if (noteOriginCollectionId) await ensureNotePopupSideSurahsLoaded(items);
-      if (myToken !== notePopupSideRenderToken) return;
-      const currentKey = noteScopeUnitInfo().unitKey;
-      const idx = items.indexOf(currentKey);
-      notePopupSideCountEl.textContent = items.length ? t("{current} of {total}", { current: num(idx >= 0 ? idx + 1 : 0), total: num(items.length) }) : "";
-      notePopupSidePrevBtn.disabled = idx <= 0;
-      notePopupSideNextBtn.disabled = idx === -1 || idx >= items.length - 1;
-      notePopupSideListEl.innerHTML = items.length
-        ? items.map((uk) => notePopupSideRowHtml(notePopupSideRowData(uk), uk === currentKey)).join("")
-        : `<p class="hint">${escapeHtml(t("Nothing to show here yet."))}</p>`;
-    }
-
-    /** Every entry point into a different āyah from the side pane (a row
-        click, a drag-drop, the group nav buttons) -- the owner's own
-        confirmed answer: it navigates the Note view there, same as tapping
-        it. Reuses goToAyahFromQcr()'s own two-step shape (goToReference()
-        for a cross-surah jump, then openNoteView()) rather than a third
-        mechanism, just carrying noteOriginCollectionId through instead of
-        qcrCurrentId -- this popup's own "back to collection" pill has to
-        keep pointing at whichever collection the Note view was ACTUALLY
-        opened from, not whatever Explore's own level bar happens to show. */
-    async function notePopupGoToAyah(unitKey) {
-      const { unitType, parts } = parseUnitKey(unitKey);
-      const surahNum = Number(parts[0]);
-      if (unitType === "range") {
-        const [from, to] = parts[1].split("-").map(Number);
-        await goToReference(surahNum, from, to);
-      } else {
-        await goToReference(surahNum, Number(parts[1]), null);
-      }
-      // R3b (decision 95): the Read view with the pane; the way back is the place the pop-up came from.
-      const fromCollection = noteOriginCollectionId, fromAsmaGroup = noteOriginAsmaGroupId, fromAsmaNumber = noteOriginAsmaNumber;
-      noteOriginCollectionId = null; noteOriginAsmaGroupId = null; noteOriginAsmaNumber = null;
-      if (fromAsmaNumber != null) {
-        const entry = asmaXResolve(fromAsmaNumber);
-        await openNotesPaneForKey(unitKey, { backLabel: t("Back to {name}", { name: entry ? asmaEntryDisplayName(entry) : t("Asma ul Husna") }) }, () => { paintReadNotesBtn(); returnToAsmaName(fromAsmaNumber, fromAsmaGroup, false); });
-      } else if (fromCollection != null) {
-        await openNotesPaneForKey(unitKey, { backLabel: t("Back to {name}", { name: t("QCR") }) }, backToQcrCollection(fromCollection));
-      } else {
-        await openNotesPaneForKey(unitKey);
-      }
-    }
-
-    /** The new group nav (separate from the Surah-level prevAyahBtn/
-        nextAyahBtn and from the unit-level nav cluster already inside the
-        Note view): steps to the previous/next item in whatever list the
-        side pane is showing right now. */
-    function notePopupStepGroup(dir) {
-      const items = notePopupSideItems();
-      if (!items.length || !noteScope) return;
-      const idx = items.indexOf(noteScopeUnitInfo().unitKey);
-      const target = idx === -1 ? undefined : items[idx + dir];
-      if (target) notePopupGoToAyah(target);
-    }
-
-    function setNotePopupSideViewMode(mode) {
-      saveSideViewMode(mode);
-      notePopupSideListEl.classList.toggle("view-card", mode === "card");
-      notePopupSideListEl.classList.toggle("view-list", mode !== "card");
-      notePopupListViewBtn.setAttribute("aria-pressed", mode !== "card" ? "true" : "false");
-      notePopupCardViewBtn.setAttribute("aria-pressed", mode === "card" ? "true" : "false");
-    }
-    setNotePopupSideViewMode(loadSideViewMode());
-    notePopupListViewBtn.addEventListener("click", () => setNotePopupSideViewMode("list"));
-    notePopupCardViewBtn.addEventListener("click", () => setNotePopupSideViewMode("card"));
-
-    notePopupCloseBtn.addEventListener("click", () => { setStageView("wheel"); renderWheel(); }); // same "tap the open tab to close it" idiom as tabNoteBtn's own second-tap
-    /** Back-button round -- "go back to the wheel", the owner's own follow-
-        up answer: wherever the reader actually came from, not always the
-        plain landing wheel the way Close already does. noteOriginAsmaGroupId/
-        noteOriginCollectionId are only ever ONE of the two set at a time
-        (openNoteView() resets both on every call, only goToAyahFromAsmaX()/
-        goToAyahFromQcr() ever pass one) and neither is touched by anything
-        else while the reader stays on Note view -- so this just re-shows
-        Explore in exactly the state it was left in (same collection/group,
-        same drill level), rather than re-deriving it. Opened any other way
-        (Read screen, a bookmark, the quick menu, a plain dock tap) -- both
-        are null, and this falls back to Close's own plain-wheel behaviour. */
-    notePopupBackBtn.addEventListener("click", async () => {
-      closeAllPanels();
-      if (noteOriginAsmaGroupId != null || noteOriginAsmaNumber != null) {
-        setStageView("explore");
-        setExplorePalette("asma");
-        renderAsmaXPanel();
-        return;
-      }
-      if (noteOriginCollectionId != null) {
-        setStageView("explore");
-        setExplorePalette("qcr");
-        await renderQcrPanel();
-        return;
-      }
-      setStageView("wheel");
-      renderWheel();
-    });
-    notePopupSidePrevBtn.addEventListener("click", () => notePopupStepGroup(-1));
-    notePopupSideNextBtn.addEventListener("click", () => notePopupStepGroup(1));
-
-    initPopupWindow(noteView, {
-      dragHandleEl: notePopupTitleBar,
-      resizeHandleEls: notePopupResizeHandles,
-      maximizeBtn: notePopupMaximizeBtn,
-    });
-    initSideSplitter(notePopupSplitter, notePopupSideEl, { getContainerWidth: () => noteView.getBoundingClientRect().width });
-    window.matchMedia("(min-width: 900px)").addEventListener("change", () => { if (stageView === "note") renderNotePopupSide(); });
-
-    // Row clicks/toggles/drags -- wired ONCE, by delegation on the static
-    // #notePopupSideList container, so re-rendering its innerHTML on every
-    // nav step never needs these re-attached.
-    notePopupSideListEl.addEventListener("click", (e) => {
-      const openBtn = e.target.closest("[data-note-popup-open]");
-      if (openBtn) { notePopupGoToAyah(openBtn.dataset.notePopupOpen); return; }
-      const ayahToggle = e.target.closest("[data-note-popup-ayah-toggle]");
-      if (ayahToggle) {
-        const key = ayahToggle.dataset.notePopupAyahToggle;
-        notePopupExpandedAyah.has(key) ? notePopupExpandedAyah.delete(key) : notePopupExpandedAyah.add(key);
-        renderNotePopupSide();
-        return;
-      }
-      const noteToggle = e.target.closest("[data-note-popup-note-toggle]");
-      if (noteToggle) {
-        const key = noteToggle.dataset.notePopupNoteToggle;
-        notePopupExpandedNotes.has(key) ? notePopupExpandedNotes.delete(key) : notePopupExpandedNotes.add(key);
-        renderNotePopupSide();
-        return;
-      }
-      // Note view enhancement round -- "enable clicking on the Note Pane
-      // Ayah makes it land in the note view (currently only dragging
-      // works)". It already did, but only from the small ref/surah pill
-      // (.note-popup-row-main) -- everywhere else on the row (the snippet
-      // text, the row's own padding) fell through all three checks above and
-      // did nothing, which reads exactly as "only dragging works" if that's
-      // where a reader's tap actually lands. This fallback makes the WHOLE
-      // row clickable, without changing either toggle's own narrower target.
-      const row = e.target.closest("[data-note-popup-row]");
-      if (row) notePopupGoToAyah(row.dataset.notePopupRow);
-    });
-    notePopupSideListEl.addEventListener("dragstart", (e) => {
-      const row = e.target.closest("[data-note-popup-row]");
-      if (row) e.dataTransfer.setData("text/plain", row.dataset.notePopupRow);
-    });
-
-    // Drop a side-pane row onto the note area -> switch to that āyah (the
-    // owner's own confirmed answer). Drop the note view's OWN current-āyah
-    // chip back onto the side pane -> the "vice versa" direction: when a
-    // collection is showing, add the currently-open āyah to it (the exact
-    // same write onToggleCollectionMembership already does from the 🗂
-    // popover, just reached by a drag instead of a checkbox).
-    noteViewMount.addEventListener("dragover", (e) => e.preventDefault());
-    noteViewMount.addEventListener("drop", (e) => {
-      e.preventDefault();
-      const key = e.dataTransfer.getData("text/plain");
-      if (key) notePopupGoToAyah(key);
-    });
-    notePopupTitleEl.addEventListener("dragstart", (e) => {
-      if (noteScope) e.dataTransfer.setData("text/plain", noteScopeUnitInfo().unitKey);
-    });
-    notePopupSideListEl.addEventListener("dragover", (e) => { if (noteOriginCollectionId) e.preventDefault(); });
-    notePopupSideListEl.addEventListener("drop", async (e) => {
-      if (!noteOriginCollectionId) return;
-      e.preventDefault();
-      const key = e.dataTransfer.getData("text/plain");
-      if (!key) return;
-      const prev = qcrCollections;
-      qcrCollections = qcrAddItemLocal(qcrCollections, noteOriginCollectionId, key);
-      renderNotePopupSide();
-      if (!(await qcrPersist())) { qcrCollections = prev; renderNotePopupSide(); }
-    });
 
     /** The wheel-slice card (Track/Guide/Breakdown/Coverage), now built for
         embedding inline in the Note view after Notes rather than a floating
@@ -22495,62 +21397,6 @@
       if (box && keepScroll) box.scrollTop = keepScroll;
     }
 
-    /** Entry point from the ⋮ menu's "Note & more…" (and from a bookmark's
-        own "Open"). Seeds noteScope from whichever unit key was tapped --
-        an āyah-shaped one from the ordinary quick menu (single-ayah scope,
-        as always), or any other shape from a Note-view-created bookmark
-        (bookmarks.html/openBookmarkFromQueryString can now point at a
-        wider-unit note too). Confirms the notes doc is really writable
-        (spec item 8) in the background -- opening the view never waits on
-        it, and a failure surfaces the first time an actual save is
-        attempted, via onSaveNote's own safeWrite above. */
-    async function openNoteView(unitKey, { fromCollectionId = null, fromAsma = null } = {}) {
-      await ensureAyahNoteDataLoaded();
-      // QCR round: the Collections popover needs qcrCollections whichever
-      // way this view was reached (spec item -- "every āyah, everywhere"),
-      // not only via a collection's own wheel -- load it now, same
-      // on-first-use/once-per-tenant shape ensureQcrDataLoaded() already
-      // has, so opening Note view from the Read screen or a bookmark still
-      // shows real membership, not an empty popover.
-      await ensureQcrDataLoaded();
-      noteOriginCollectionId = fromCollectionId;
-      // Asma-in-Explore round -- goToAyahFromAsmaX() is the only caller
-      // that ever passes fromAsma, so both are reset to null (Topic back to
-      // "qcr") on every other open, the same way fromCollectionId already
-      // resets noteOriginCollectionId -- no special-casing needed to keep
-      // the two mechanisms from interfering with each other.
-      noteTopic = fromAsma ? "asma" : "qcr";
-      noteOriginAsmaGroupId = fromAsma?.groupId ?? null;
-      noteOriginAsmaNumber = fromAsma?.number ?? null;
-      if (auth.currentUser && selectedPersonId) {
-        ensureAyahNotesWritable(db, { tenantId: activeTenantId, personId: selectedPersonId, uid: auth.currentUser.uid });
-      }
-      const { unitType, parts } = parseUnitKey(unitKey);
-      if (unitType === "ayah") {
-        // Issue #606 -- ayah:1:8 is Al-Fātiḥah's displayed Ayah 7 (content: internal 1:7, words 5-9).
-        const opened = parseAyahUnitKey(unitKey);
-        noteScope = { unitType: "ayah", ayahNum: opened.ayah, rangeFrom: opened.ayah, rangeTo: opened.ayah, unitNumber: null, half: opened.half };
-      } else if (unitType === "book") {
-        // "book" was the whole-Qur'an note's own unit key, removed from this
-        // build -- a bookmark saved while that feature existed still points
-        // here, and falls back to the current āyah rather than erroring on a
-        // scope this view no longer understands.
-        noteScope = { unitType: "ayah", ayahNum: currentAyahNum, rangeFrom: currentAyahNum, rangeTo: currentAyahNum, unitNumber: null };
-      } else {
-        // A bookmark on a wider unit (range/surah/ruku/juz/hizb/page):
-        // land on that unit's own first āyah in THIS surah (currentSurahNum
-        // is already whatever surah is loaded -- see noteScope's own
-        // "never loads a different surah" rule) and let noteScopeUnitInfo()
-        // resolve the rest from there.
-        noteScope = { unitType, ayahNum: currentAyahNum, rangeFrom: currentAyahNum, rangeTo: currentAyahNum, unitNumber: null };
-        if (unitType === "range") { const [f, tRaw] = parts[1].split("-"); noteScope.rangeFrom = Number(f); noteScope.rangeTo = Number(tRaw); noteScope.ayahNum = noteScope.rangeFrom; }
-      }
-      noteFullscreenOn = false; // always opens in the normal state -- the owner's own description of state one
-      document.body.classList.remove("note-immersive");
-      renderNoteViewNow();
-      setStageView("note");
-    }
-
     /** Enhancement round -- item 6 ("jump to study by only choosing the
         bookmark... open the same place where the bookmark was created
         from"). bookmarks.html links a Quran bookmark to
@@ -22635,12 +21481,6 @@
       if (new URLSearchParams(location.search).get("back") === "1" && history.length > 1) setAppReturn(t("Back"), "", () => history.back());
     }
 
-    // The Note view's ⋯ menu "📔 My Notes for this unit" link (notesScreenHref): remember the place first.
-    noteView.addEventListener("click", (e) => {
-      const a = e.target?.closest?.('a[href^="notes.html?"]');
-      if (a) rememberQuranPlace(new URL(a.href, location.href).searchParams.get("unit"));
-    }, true); // capture: the ⋯ menu stops its clicks from bubbling
-
     /** The way-back law: ?qpSurah=&qpAyah=&qpView=note&qpUnit= (written by rememberQuranPlace() just before leaving for
         notes.html) reopens the same surah and āyah, and the Note view when that was open. Malformed values do nothing. */
     async function openPlaceFromQueryString() {
@@ -22686,19 +21526,6 @@
       if (record) await runWordProgressAction({ kind: "state", state: record });
     }
 
-    /** The Note view's own full screen -- two states, a separate mechanism
-        from the reading screen's own (immersive-read) so the two can never
-        leak into each other. Toggled from the view's own ⤢ button, and (on
-        phone/tablet only -- see the noteView click listener above) a tap
-        anywhere in the view that isn't a control; never resets itself
-        mid-session except when the view is (re)opened or left, both handled
-        by their own callers. */
-    function toggleNoteFullscreen() {
-      noteFullscreenOn = !noteFullscreenOn;
-      document.body.classList.toggle("note-immersive", noteFullscreenOn);
-      if (noteScope) renderNoteViewNow();
-    }
-
     /** Bar 2's Word-by-word toggle (round 31) -- a reading preference, not
         per-āyah state, so it deliberately stays on across Prev/Next within
         the Note view rather than resetting each time (matching how the
@@ -22731,16 +21558,6 @@
     function toggleNoteDerivatives() {
       derivativesToggle.checked = !derivativesToggle.checked;
       onReadingTickChanged();
-    }
-
-    /** Note view's own ⋯-menu "show ayah by ayah" toggle -- a shared,
-        localStorage preference (js/prefs.js), not per-āyah state, since it's
-        "which layout do I read a multi-āyah unit in", the same class of
-        reading preference every other Note-view toggle already is. */
-    function toggleNoteAyahDisplayMode() {
-      const current = getAyahDisplayMode();
-      setAyahDisplayMode(current === "byAyah" ? "byLanguage" : "byAyah");
-      if (noteScope) renderNoteViewNow();
     }
 
     function renderStudyScreen() {
@@ -23657,7 +22474,6 @@
     // is actually open right now, not just the Read screen.
     function onReadingTickChanged() {
       renderStudyScreen();
-      if (stageView === "note" && noteScope) renderNoteViewNow();
     }
     tajweedToggle.addEventListener("change", onReadingTickChanged);
     // Shell round 13 -- the reading half of the old bar-1 "Language" picker;
@@ -23781,7 +22597,7 @@
       // (already fired from tabReadBtn's own click) fetch fresh rather than
       // reusing the previous person's.
       ayahNoteDataLoadedFor = null;
-      if (stageView === "read" || stageView === "note") ensureAyahNoteDataLoaded();
+      if (stageView === "read") ensureAyahNoteDataLoaded();
       scheduleKnownWordMarks(); // issue #472 -- after the switch has settled, for the new person
     });
 
