@@ -1562,6 +1562,8 @@ export const BN = {
   "What this topic actually covers…": "এই বিষয়ে আসলে কী কী আছে…",
   "The 30 Approaches": "৩০টি পদ্ধতি",
   "Guide": "নির্দেশিকা",
+  "Breakdown": "বিশ্লেষণ", // R3c: the Approach card's tab names (way-modal.js)
+  "Coverage": "কভারেজ",
   "What:": "কী:",
   "How:": "কীভাবে:",
   "Measure:": "মাপকাঠি:",

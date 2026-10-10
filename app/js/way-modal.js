@@ -151,6 +151,8 @@ export function renderStreakTab(streakCount, loggedToday) {
 }
 
 const DEFAULT_TABS = ["Track", "Guide", "Breakdown", "Coverage"];
+// R3c: a tab's NAME stays the English key (data-tab, the tabBodies key); only the printed label is translated.
+const tabLabel = (name) => escapeHtml(t(name));
 
 /**
  * Modal shell -- renders each tab body (already-built HTML strings) with a
@@ -160,7 +162,7 @@ const DEFAULT_TABS = ["Track", "Guide", "Breakdown", "Coverage"];
  * touched" isn't a built concept yet, so there's no Coverage tab to show).
  */
 export function renderWayModalShell(title, tabBodies, tabs = DEFAULT_TABS, assignDropdownHtml = "") {
-  const buttons = tabs.map((t, i) => `<button type="button" class="way-tab-btn ${i === 0 ? "active" : ""}" data-tab="${t}">${t}</button>`).join("");
+  const buttons = tabs.map((t, i) => `<button type="button" class="way-tab-btn ${i === 0 ? "active" : ""}" data-tab="${t}">${tabLabel(t)}</button>`).join("");
   const panels = tabs.map((t, i) => `<div class="way-tab-panel ${i === 0 ? "active" : ""}" data-tab="${t}">${tabBodies[t] ?? ""}</div>`).join("");
   return `<div class="way-modal">
     <div class="way-modal-header">
@@ -203,7 +205,7 @@ export function attachWayModalHandlers(modalEl, { onClose } = {}) {
  * phone/tablet with no separate breakpoint needed.
  */
 export function renderWayEmbed(refLabel, tabBodies, tabs = DEFAULT_TABS, assignDropdownHtml = "", approachSelectHtml = "") {
-  const buttons = tabs.map((tb, i) => `<button type="button" class="way-tab-btn ${i === 0 ? "active" : ""}" data-tab="${tb}">${tb}</button>`).join("");
+  const buttons = tabs.map((tb, i) => `<button type="button" class="way-tab-btn ${i === 0 ? "active" : ""}" data-tab="${tb}">${tabLabel(tb)}</button>`).join("");
   const panels = tabs.map((tb, i) => `<div class="way-tab-panel ${i === 0 ? "active" : ""}" data-tab="${tb}">${tabBodies[tb] ?? ""}</div>`).join("");
   return `<div class="way-embed">
     <div class="way-embed-header">
