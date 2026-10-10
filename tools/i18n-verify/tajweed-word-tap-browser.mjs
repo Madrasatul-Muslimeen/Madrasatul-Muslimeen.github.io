@@ -46,7 +46,21 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 1100, height: 800 
     await page.waitForTimeout(900);
 
     for (const [view, scope, tab] of [["Read", "#readView", null], ["Note", "#noteView", "tabNoteBtn"]]) {
-      if (tab) { await page.evaluate(() => window.__dormantOpenNoteView()); await page.waitForTimeout(700); } // R3c: the dormant Note view, by its test seam
+      if (tab) {
+        // UPDATED IN PLACE (Note view retirement, step b): the Note view is deleted; each check made on it keeps its wording and
+        // asserts that #noteView and __dormantOpenNoteView are absent. The Read view's run of the same checks stays as it was.
+        const gone = await page.evaluate(() => document.getElementById("noteView") === null && typeof window.__dormantOpenNoteView === "undefined");
+        for (const n of [
+          "2:2 is on screen with Tajweed on",
+          "all 7 words of 2:2 are tappable, focusable words (role=button) with Tajweed on",
+          "the tajweed colours are still there, inside the buttons",
+          "the āyah lays out exactly as the old unsplit block (same height, same lines)",
+          "tapping word 7 (inside the idgham run) opens the Word Card",
+          "the Word Card is for 2:2 word 7, not a neighbour",
+          "Enter on a focused tajweed word opens its Word Card (keyboard parity with a button)",
+        ]) check(`${label} ${view} view: ${n} -- [Note view retired] #noteView and the test seam are absent`, gone);
+        continue;
+      }
       const state = await page.evaluate(async (scope) => {
         const block = [...document.querySelectorAll(`${scope} .ayah-arabic, ${scope} .note-arabic`)]
           .find((el) => el.querySelector('[data-word-occurrence*=":2:2:"]') || /ذ/.test(el.textContent));

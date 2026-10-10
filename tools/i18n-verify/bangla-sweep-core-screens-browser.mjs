@@ -124,16 +124,13 @@ for (const width of ONLY ? [Number(ONLY)] : [390, 1280]) {
     await P.evaluate(() => { const m = document.getElementById("mushafToggle"); if (m && !m.checked) { m.checked = true; m.dispatchEvent(new Event("change", { bubbles: true })); } });
     await settle(P, 1500);
     await sweep(P, "Read view, Mushaf", width);
-    // 3. Note view and its menu.
-    await P.evaluate(() => window.__dormantOpenNoteView()); await settle(P, 800); // R3c: the dormant Note view, by its test seam
-    await sweep(P, "Note view", width);
-    for (const i of [0, 1]) {
-      const opened = await P.evaluate((k) => { const b = [...document.querySelectorAll(".note-dot-wrap > .note-icon-btn")].filter((x) => x.offsetWidth > 0)[k]; if (b) b.click(); return !!b; }, i);
-      check(`bn ${width}: Note view menu button ${i + 1} exists`, opened);
-      await settle(P, 500);
-      await sweep(P, `Note view, ⋯/⋮ menu ${i + 1} open`, width);
-      await P.keyboard.press("Escape"); await P.evaluate(() => document.body.click()); await settle(P, 200);
-    }
+    // 3. UPDATED IN PLACE (Note view retirement, step b): the Note view and its ⋯/⋮ menus are deleted. The surface that now
+    // does that job is the Read view's Notes pane, swept in Bangla in its place.
+    check(`bn ${width}: #noteView and __dormantOpenNoteView are absent`, await P.evaluate(() => document.getElementById("noteView") === null && typeof window.__dormantOpenNoteView === "undefined"));
+    await P.evaluate(() => { const b = document.getElementById("tabNoteBtn"); if (b && !b.getBoundingClientRect().width) document.getElementById("tabStudyBtn")?.click(); });
+    await P.evaluate(() => document.getElementById("tabNoteBtn")?.click()); await settle(P, 1500);
+    await sweep(P, "Notes pane (replaces the Note view)", width);
+    await P.keyboard.press("Escape"); await P.evaluate(() => { const c = document.querySelector("#readNotePane [data-rnp-close]"); if (c) c.click(); }); await settle(P, 300);
     // The Track card (Study options -> Approach + Track).
     await click(P, "#tabStudyOptionsBtn", 600);
     check(`bn ${width}: Track card is on screen`, await P.evaluate(() => (document.getElementById("trackUnitBtn")?.offsetWidth || 0) > 0));

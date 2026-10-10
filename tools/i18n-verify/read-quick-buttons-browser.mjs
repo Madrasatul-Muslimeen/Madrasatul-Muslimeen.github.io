@@ -155,7 +155,7 @@ let noteBaselineWrites;
   await page.click("#hideChromeBtn");
   const before = await audioWrites(page);
   await page.click("#tabStudyBtn");
-  await page.evaluate(() => window.__dormantOpenNoteView()); // R3c: the dormant Note view, by its test seam
+  await page.evaluate(() => document.getElementById("tabNoteBtn").click()); // UPDATED IN PLACE (Note view retirement, step b): the Study menu's Notes tab opens the Notes pane
   await page.waitForTimeout(700);
   noteBaselineWrites = (await audioWrites(page)).writes - before.writes;
   console.log(`  (Study-menu Note baseline: ${noteBaselineWrites} write(s))`);

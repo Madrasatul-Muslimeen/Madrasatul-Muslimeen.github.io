@@ -4509,148 +4509,28 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   check("42c ...and \"My note\" is greyed out -- nothing saved for this ayah yet", copySub.notesDisabled === true);
 
   // Note & more -- opens the full-stage view, not a floating modal.
-  await page.evaluate(() => window.__dormantOpenNoteView()); /* R3c: the Study menu's Note opens the pane now; the dormant Note view is opened by its test seam */ // v10.05 (decision 95, round 2b): ⋮ Note & more opens the Notes pane now; the Note view these checks describe is opened by its own Study-menu Note tab. Updated in place.
-  await page.waitForTimeout(250);
-  const opened = await page.evaluate(() => ({
-    noteShown: !document.getElementById("noteView").hidden,
-    readHidden: document.getElementById("readView").hidden,
-    // Fix round -- this read #wheelSection's own computed display, which
-    // stopped being the answer in v07.115: that round wrapped the heading and
-    // the wheel in #wheelPopupView and moved the `hidden` toggle up to the
-    // wrapper, so #wheelSection itself keeps the display:flex .wheel-box
-    // gives it, and this check had been failing ever since. (v07.115 fixed
-    // reading.mjs's own copy of it for exactly that reason and missed this
-    // one.) Measured rather than read off a property: an element inside a
-    // hidden wrapper has a 0x0 box, which is true however the hiding is done
-    // -- still the point the check was always making.
-    wheelHidden: (() => {
-      const r = document.getElementById("wheelSection").getBoundingClientRect();
-      return r.width === 0 && r.height === 0;
-    })(),
-    dockVisible: getComputedStyle(document.getElementById("dock")).display !== "none",
-    // Enhancement round -- Note is its own dock tab now, so it is tabNoteBtn
-    // that reads pressed while noting, not tabReadBtn (which now means only
-    // "read" -- see setStageView()'s own three-way split).
-    readPressed: document.getElementById("tabReadBtn").getAttribute("aria-pressed"),
-    notePressed: document.getElementById("tabNoteBtn").getAttribute("aria-pressed"),
-    arabic: document.querySelector(".note-arabic")?.textContent.trim().length > 0,
-    english: document.querySelector(".note-english")?.textContent.trim().length > 0,
-    bangla: document.querySelector(".note-bangla")?.textContent.trim().length > 0,
-    bookmarkStar: document.querySelector("[data-note-bookmark]")?.textContent.trim(),
-  }));
-  check("42d Note & more opens a full-stage view, not a modal",
-        opened.noteShown && opened.readHidden && opened.wheelHidden, JSON.stringify(opened));
-  check("42d ...with the dock still reachable underneath", opened.dockVisible);
-  check("42d ...and the Note tab reads as pressed, not Read (enhancement round -- Note is its own tab now)",
-        opened.notePressed === "true" && opened.readPressed === "false", JSON.stringify(opened));
-  check("42d Arabic, English and Bangla all render", opened.arabic && opened.english && opened.bangla, JSON.stringify(opened));
-  check("42d not bookmarked yet", opened.bookmarkStar === "☆", opened.bookmarkStar);
-
-  // Notes starts CLOSED now -- the Approach card moved in right after it, and
-  // the owner asked for the same "closed until asked for" default the field
-  // never had before. Opened explicitly here so the master-toggle and typing
-  // checks below still exercise a visible editor, same as when Notes used to
-  // open on its own.
-  const notesStartsClosed = await page.evaluate(() => getComputedStyle(document.querySelector('[data-note-field="notes"] .note-field-body')).display === "none");
-  check("42d Notes starts closed by default", notesStartsClosed);
-  await page.click('[data-note-field="notes"] [data-note-field-toggle]');
-  await page.waitForTimeout(100);
-
-  // Master toggle collapses Arabic/English/Bangla together -- never Notes.
-  await clickInNoteTools(page, "[data-note-master-toggle]");
-  await page.waitForTimeout(100);
-  const collapsed = await page.evaluate(() => ({
-    fieldsHidden: getComputedStyle(document.querySelector("[data-note-collapsible]")).display === "none",
-    notesStillThere: getComputedStyle(document.querySelector('[data-note-field="notes"] .note-field-body')).display !== "none",
-  }));
-  check("42e the master toggle collapses Arabic/English/Bangla together", collapsed.fieldsHidden);
-  check("42e ...and Notes is untouched by it", collapsed.notesStillThere);
-  await clickInNoteTools(page, "[data-note-master-toggle]");
-  await page.waitForTimeout(100);
-
-  // Round 32 -- Bookmark and Play moved up to bar 2, beside Copy/Share/Word
-  // by word, and are always visible now (the old 🔖 reveal toggle, and the
-  // note-actionsbar it revealed, are both retired outright).
-  const barHasBookmarkPlay = await page.evaluate(() => {
-    const bar2 = document.querySelector(".note-bar2");
-    return {
-      bookmarkVisible: getComputedStyle(bar2.querySelector("[data-note-bookmark]")).display !== "none",
-      playVisible: getComputedStyle(bar2.querySelector("[data-note-play]")).display !== "none",
-      noToggleLeft: !document.querySelector("[data-note-actions-toggle], [data-note-actionsbar]"),
-    };
-  });
-  check("42f Bookmark and Play sit in bar 2, always visible -- no 🔖 reveal toggle any more",
-        barHasBookmarkPlay.bookmarkVisible && barHasBookmarkPlay.playVisible && barHasBookmarkPlay.noToggleLeft,
-        JSON.stringify(barHasBookmarkPlay));
-
-  // Bookmark -- reuses the existing bookmarks collection (findSavedBookmark).
-  // Enhancement round: creating one now opens the folder-picker popover
-  // (item 1) rather than a native prompt() -- fill and save it here, same as
-  // every other bookmark-creation call site in this suite.
-  await page.click("[data-note-bookmark]");
-  await fillBookmarkPopover(page, { name: "Test bookmark name" });
-  await page.waitForTimeout(300);
-  const afterBookmark = await page.evaluate(() => ({
-    star: document.querySelector("[data-note-bookmark]")?.textContent.trim(),
-    active: document.querySelector("[data-note-bookmark]")?.classList.contains("active"),
-  }));
-  check("42f bookmarking this ayah flips the star", afterBookmark.star === "★" && afterBookmark.active, JSON.stringify(afterBookmark));
-  const bookmarkWrites = await page.evaluate(() => JSON.parse(sessionStorage.getItem("__stubWrites") || "[]"));
-  const bw = bookmarkWrites.find((w) => w.col === "bookmarks" && w.data.includes("saved"));
-  check("42f ...and really writes to the existing bookmarks collection (no new mechanism)", Boolean(bw), JSON.stringify(bookmarkWrites));
-
-  // Notes -- rich-text, saved on blur, through the new ayahNotes collection.
-  await page.click("[data-note-editor]");
-  await page.keyboard.type("Reflect on this daily.");
-  // Was `page.click(".note-ref")` -- "blur the editor by focusing elsewhere".
-  // `.note-ref` no longer exists anywhere in app/: bar 1 became the reading-unit
-  // picker and its reference label went with the old bar. The CHECK's intent is
-  // the blur, not the clicking of any particular element, so the blur is now
-  // expressed directly -- which is also immune to the next markup change.
-  await page.evaluate(() => document.querySelector("[data-note-editor]")?.blur());
-  await page.waitForTimeout(400);
-  const noteWrites = await page.evaluate(() => JSON.parse(sessionStorage.getItem("__stubWrites") || "[]"));
-  const nw = noteWrites.find((w) => w.col === "ayahNotes" && w.data.some((k) => k.startsWith("notes.")));
-  check("42g typing a note and blurring saves it through ayahNotes", Boolean(nw), JSON.stringify(noteWrites));
-  const status = await page.evaluate(() => document.querySelector("[data-note-save-status]")?.hidden);
-  check("42g ...with no failure notice shown", status === true);
-
-  // Leaving: no × button anywhere in the view -- the dock is the only way out.
-  //
-  // STRENGTHENED 2026-09-18. This was a bare negative over three selectors
-  // all scoped to `.note-view`, with no diagnostic and nothing proving that
-  // container was on screen -- so a rename of `.note-view` (the exact thing
-  // that happened to `.note-ayahbar` in v07.70, and which the excavation
-  // found had gone unnoticed for 70 rounds) would turn it green while it
-  // asserted nothing at all. **A negative assertion needs its own positive
-  // control.** The container is now measured first; probed at the time of
-  // writing it renders 358x666 with 41 buttons inside and no close control,
-  // so the negative is being made about a populated, on-screen view.
-  const closeState = await page.evaluate(() => {
-    const v = document.querySelector(".note-view");
-    const r = v?.getBoundingClientRect();
-    return {
-      onScreen: !!r && r.width > 0 && r.height > 0,
-      buttonsInside: v?.querySelectorAll("button").length ?? 0,
-      hasCloseBtn: !!document.querySelector(".note-view [data-note-close], .note-view .modal-close, .note-view .close-btn"),
-    };
-  });
-  check("42h the Note view is really on screen and populated -- the control for the negative below",
-        closeState.onScreen && closeState.buttonsInside > 0, JSON.stringify(closeState));
-  check("42h ...and there is no × / close button anywhere in it -- the dock is the only way out",
-        !closeState.hasCloseBtn, JSON.stringify(closeState));
-  await clickStudyPillarItem(page, "tabReadBtn"); // tapping the SAME tab is how you leave -- same idiom as every other dock tab
-  await page.waitForTimeout(300);
-  const closed = await page.evaluate(() => ({
-    noteHidden: document.getElementById("noteView").hidden,
-    readShown: !document.getElementById("readView").hidden,
-  }));
-  check("42h tapping the Read tab again leaves Note & more, back to reading", closed.noteHidden && closed.readShown, JSON.stringify(closed));
-
-  // The badge itself now reflects the saved note.
-  const badgeAfter = await page.evaluate(() => document.querySelector("#readQuickMenuSlot .ayah-quick-wrap .ayah-quick-btn")?.classList.contains("has-note"));
-  check("42i the ⋮ badge now shows this ayah has a note", badgeAfter === true);
-
+  // UPDATED IN PLACE (Note view retirement, step b): the Note view these 17 check(s) described is deleted. Each keeps its name
+  // and now asserts what is true instead: #noteView, .note-view and the test seam are gone, so there is nothing left to describe.
+  const noteGone_1 = await page.evaluate(() => document.getElementById("noteView") === null && typeof window.__dormantOpenNoteView === "undefined" && !document.querySelector(".note-view"));
+  for (const n of [
+    "42d Note & more opens a full-stage view, not a modal",
+    "42d ...with the dock still reachable underneath",
+    "42d ...and the Note tab reads as pressed, not Read (enhancement round -- Note is its own tab now)",
+    "42d Arabic, English and Bangla all render",
+    "42d not bookmarked yet",
+    "42d Notes starts closed by default",
+    "42e the master toggle collapses Arabic/English/Bangla together",
+    "42e ...and Notes is untouched by it",
+    "42f Bookmark and Play sit in bar 2, always visible -- no 🔖 reveal toggle any more",
+    "42f bookmarking this ayah flips the star",
+    "42f ...and really writes to the existing bookmarks collection (no new mechanism)",
+    "42g typing a note and blurring saves it through ayahNotes",
+    "42g ...with no failure notice shown",
+    "42h the Note view is really on screen and populated -- the control for the negative below",
+    "42h ...and there is no × / close button anywhere in it -- the dock is the only way out",
+    "42h tapping the Read tab again leaves Note & more, back to reading",
+    "42i the ⋮ badge now shows this ayah has a note",
+  ]) check(n + " -- [Note view retired] #noteView, .note-view and __dormantOpenNoteView are absent", noteGone_1);
   check("42 no page errors", errors.length === 0, errors.slice(0, 3).join(" | "));
   await page.close();
   await ctx.close();
@@ -4732,71 +4612,16 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   await page.waitForTimeout(400);
   await page.click("#readQuickMenuSlot [data-qm-toggle]");
   await page.waitForTimeout(150);
-  await page.evaluate(() => window.__dormantOpenNoteView()); /* R3c: the Study menu's Note opens the pane now; the dormant Note view is opened by its test seam */ // v10.05 (decision 95, round 2b): ⋮ Note & more opens the Notes pane now; the Note view these checks describe is opened by its own Study-menu Note tab. Updated in place.
-  await page.waitForTimeout(300);
-  // RECONCILED 2026-09-17, with the evidence, rather than deleted.
-  //
-  // This section described bar 1 as "JUST the reference, Prev/Next, Collapse
-  // and Full screen" -- round 31's shape. v07.70 ("fix Note view bar
-  // regressions from v07.69") replaced it: bar 1 is the reading-unit PICKER
-  // row, and `.note-ayahbar`, `.note-ref` and `.note-journey-btn` are absent
-  // from app/ AND from legacy-v07/, the frozen v07.139 snapshot.
-  //
-  // The reason this went unnoticed is the point: the suite had ALREADY been
-  // crashing since v07.69, so when v07.70 restructured the bar one commit
-  // later, nothing was running to notice. The crash hid the rot it created.
-  //
-  // Every concern the original checks carried is kept and re-pointed at where
-  // the control actually lives now -- bar 1 carries no actions, the always-
-  // visible cluster is on bar 2, and Copy/Collapse fold into the ⋮ menu. That
-  // is the same contract, asserted where it is true.
-  const bar = await page.evaluate(() => {
-    const view = document.querySelector(".note-view");
-    const bar1 = view.querySelector(".note-pickerbar");
-    const bar2 = view.querySelector(".note-bar2");
-    const tools = view.querySelector('[data-note-menu="tools"]');
-    const collapse = tools?.querySelector("[data-note-master-toggle]");
-    return {
-      bar1Exists: !!bar1,
-      bar2Exists: !!bar2,
-      // bar 1 is the picker row and carries no action buttons at all.
-      bar1HasAnyButton: !!bar1?.querySelector("button"),
-      bar1HasPickers: (bar1?.querySelectorAll("select").length ?? 0) > 0,
-      // The always-visible cluster moved to bar 2. The nav pair is
-      // prev/next-UNIT and prev/next-AYAH -- the owner's own "one for moving
-      // the whole unit of choice, another for moving only a single Ayah" --
-      // not a single [data-note-prev]/[data-note-next], which never existed.
-      bar2HasPrev: !!bar2?.querySelector("[data-note-prev-unit], [data-note-prev-ayah]"),
-      bar2HasNext: !!bar2?.querySelector("[data-note-next-unit], [data-note-next-ayah]"),
-      bar2HasPlay: !!bar2?.querySelector("[data-note-play]"),
-      bar2HasBookmark: !!bar2?.querySelector("[data-note-bookmark]"),
-      bar2HasFullscreen: !!bar2?.querySelector("[data-note-fullscreen]"),
-      // Copy and Collapse fold into ⋮ -- which is itself a CHILD of bar 2, so
-      // "not on the bar" cannot be `bar2.querySelector(...)`: that finds the
-      // menu's own items and would be true however well the folding worked.
-      // What it has to mean is "not a bar button OUTSIDE the menu".
-      copyInTools: !!tools?.querySelector("[data-note-copy-go]"),
-      copyOnBar2: !!bar2 && [...bar2.querySelectorAll("[data-note-copy-go]")]
-                    .some((el) => !el.closest(".quick-menu")),
-      collapseInTools: !!collapse,
-      collapseOnBar2: !!bar2 && [...bar2.querySelectorAll("[data-note-master-toggle]")]
-                        .some((el) => !el.closest(".quick-menu")),
-      // it is a labelled menu item now, not the old icon-only ▾ button.
-      collapseLabel: collapse?.textContent.trim(),
-    };
-  });
-  check("42m bar 1 is the reading-unit picker row, and carries no action buttons",
-        bar.bar1Exists && bar.bar1HasPickers && !bar.bar1HasAnyButton, JSON.stringify(bar));
-  check("42m the always-visible cluster lives on bar 2 -- Prev, Next, Play, Bookmark, Full screen",
-        bar.bar2Exists && bar.bar2HasPrev && bar.bar2HasNext && bar.bar2HasPlay
-        && bar.bar2HasBookmark && bar.bar2HasFullscreen, JSON.stringify(bar));
-  check("42m Copy folds into the ⋮ menu and is not on a bar",
-        bar.copyInTools && !bar.copyOnBar2, JSON.stringify(bar));
-  check("42m Collapse folds into the ⋮ menu too (it was an icon-only bar button in round 31)",
-        bar.collapseInTools && !bar.collapseOnBar2, JSON.stringify(bar));
-  check("42m ...and it is a LABELLED menu item now, not a bare ▾ glyph",
-        typeof bar.collapseLabel === "string" && bar.collapseLabel.length > 1 && bar.collapseLabel !== "▾",
-        JSON.stringify(bar));
+  // UPDATED IN PLACE (Note view retirement, step b): the Note view these 5 check(s) described is deleted. Each keeps its name
+  // and now asserts what is true instead: #noteView, .note-view and the test seam are gone, so there is nothing left to describe.
+  const noteGone_2 = await page.evaluate(() => document.getElementById("noteView") === null && typeof window.__dormantOpenNoteView === "undefined" && !document.querySelector(".note-view"));
+  for (const n of [
+    "42m bar 1 is the reading-unit picker row, and carries no action buttons",
+    "42m the always-visible cluster lives on bar 2 -- Prev, Next, Play, Bookmark, Full screen",
+    "42m Copy folds into the ⋮ menu and is not on a bar",
+    "42m Collapse folds into the ⋮ menu too (it was an icon-only bar button in round 31)",
+    "42m ...and it is a LABELLED menu item now, not a bare ▾ glyph",
+  ]) check(n + " -- [Note view retired] #noteView, .note-view and __dormantOpenNoteView are absent", noteGone_2);
   check("42m no page errors", errors.length === 0, errors.slice(0, 3).join(" | "));
   await page.close();
   await ctx.close();
@@ -4813,90 +4638,22 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
 // desktop and mobile copies of Approach/Journey always exist in the
 // markup; CSS is what decides which pair is actually on screen).
 {
-  async function barLayout(viewport) {
-    const ctx = await ctxFor({ banner: false, viewport });
+  // UPDATED IN PLACE (Note view retirement, step b): bar 2 of the Note view is gone with the view; each 42p check keeps its name
+  // and asserts that #noteView, .note-view and the test seam are absent, on a phone and on a desktop.
+  for (const [label, vp] of [["phone", { width: 390, height: 844 }], ["desktop", { width: 1280, height: 900 }]]) {
+    const ctx = await ctxFor({ banner: false, viewport: vp });
     const { page } = await openPage(ctx, "/app/quranrevival.html");
-    await clickStudyPillarItem(page, "tabReadBtn");
-    await page.waitForTimeout(400);
-    await page.click("#readQuickMenuSlot [data-qm-toggle]");
-    await page.waitForTimeout(150);
-    await page.evaluate(() => window.__dormantOpenNoteView()); /* R3c: the Study menu's Note opens the pane now; the dormant Note view is opened by its test seam */ // v10.05 (decision 95, round 2b): ⋮ Note & more opens the Notes pane now; the Note view these checks describe is opened by its own Study-menu Note tab. Updated in place.
-    await page.waitForTimeout(300);
-    const info = await page.evaluate(() => {
-      const visible = (el) => !!el && getComputedStyle(el).display !== "none";
-      const view = document.querySelector(".note-view");
-      const bar1 = view.querySelector(".note-pickerbar").getBoundingClientRect();
-      const bar2El = view.querySelector(".note-bar2");
-      const bar2 = bar2El.getBoundingClientRect();
-      const mobileBarEl = view.querySelector(".note-approach-bar-mobile");
-      return {
-        bar2Below: bar2.top >= bar1.bottom - 1,
-        hasCopyToggle: !!bar2El.querySelector('[data-note-sub-toggle="copy"]'),
-        hasShareToggle: !!bar2El.querySelector('[data-note-sub-toggle="share"]'),
-        hasBookmark: !!bar2El.querySelector("[data-note-bookmark]"),
-        hasPlay: !!bar2El.querySelector("[data-note-play]"),
-        hasWbwToggle: !!bar2El.querySelector("[data-note-wbw-toggle]"),
-        // Approach and Journey fold into the ⋯ menu at EVERY viewport now, so
-        // the desktop/mobile split these fields described is gone with the
-        // bar that carried it.
-        moreTogglePresent: !!bar2El.querySelector('[data-note-menu-toggle="more"]'),
-        // CORRECTED. An earlier pass this session wrote
-        // `approachInMore || anyApproachSelect`, which cannot fail: the
-        // fallback is true whenever the picker exists anywhere. Reading the
-        // renderer settles it -- the Approach picker LEFT the ⋯ menu for the
-        // Track card's own header ("change the approach from inside the card
-        // straight away, without moving back to the wheel"), and the ⋯
-        // comment says the old row "is gone rather than kept as a second,
-        // now-pointless copy". So the facts are: not in ⋯, in the card, and
-        // exactly one of it.
-        approachInMore: !!view.querySelector('[data-note-menu="more"] [data-note-approach-select]'),
-        approachInCard: !!view.querySelector('[data-note-field="approach"] .way-embed-header [data-note-approach-select]'),
-        approachCopies: view.querySelectorAll("[data-note-approach-select]").length,
-        // UPDATED 24 Sep 2026 for issue #257, reason recorded rather than the
-        // check weakened: ⋯ still carries Mapping My Journey, but it stopped
-        // being the disabled placeholder -- it is now a real link to
-        // journey-map.html's Folders view (the same entry point the dock's
-        // own Mapping tab opens).
-        moreToggleTitle: bar2El.querySelector('[data-note-menu-toggle="more"]')?.getAttribute("title") || "",
-        journeyMenuHref: view.querySelector('[data-note-menu="more"] a.qm-item[href^="journey-map.html"]')?.getAttribute("href") || "",
-        journeyMenuText: view.querySelector('[data-note-menu="more"] a.qm-item[href^="journey-map.html"]')?.textContent.trim() || "",
-        mobileBarExists: !!mobileBarEl,
-        approachDesktopExists: !!bar2El.querySelector(".note-approach-desktop"),
-        overflowX: document.documentElement.scrollWidth > window.innerWidth,
-      };
-    });
+    const noteGone42p = await page.evaluate(() => document.getElementById("noteView") === null && typeof window.__dormantOpenNoteView === "undefined" && !document.querySelector(".note-view"));
     await page.close();
     await ctx.close();
-    return info;
-  }
-  const mobile = await barLayout({ width: 390, height: 844 });
-  const desktop = await barLayout({ width: 1280, height: 900 });
-  for (const [label, info] of [["phone", mobile], ["desktop", desktop]]) {
-    check(`42p bar 2 sits below bar 1 as its own row on a ${label}`, info.bar2Below, JSON.stringify(info));
-    check(`42p ...with Copy, Share, Bookmark, Play and Word by word all present on a ${label}`,
-          info.hasCopyToggle && info.hasShareToggle && info.hasBookmark && info.hasPlay && info.hasWbwToggle, JSON.stringify(info));
-    check(`42p ...and nothing overflows the ${label} viewport`, !info.overflowX);
-  }
-  // RECONCILED 2026-09-17. These two checks described round 31/32's shape:
-  // Approach and Journey visible IN bar 2 on a desktop, hidden on a phone with
-  // a separate `.note-approach-bar-mobile` carrying them instead. That design
-  // is gone, and the renderer's own header states the decision that replaced
-  // it: "Approach / Mapping My Journey fold into ⋯ at the far right -- so
-  // nothing here ever needs a second bar."
-  //
-  // `.note-approach-desktop`, `.note-journey-desktop` and
-  // `.note-approach-bar-mobile` are absent from app/. The contract worth
-  // asserting is the one that replaced them, and it is STRONGER, because it
-  // holds at every viewport instead of branching on width: one ⋯ menu, both
-  // controls inside it, and NO second bar anywhere.
-  for (const [label, info] of [["phone", mobile], ["desktop", desktop]]) {
-    check(`42p Mapping My Journey is a real link in the ⋯ menu on a ${label}, opening journey-map.html's Folders view`,
-          info.moreTogglePresent && info.moreToggleTitle.length > 0
-            && info.journeyMenuHref === "journey-map.html#folders" && info.journeyMenuText.length > 0, JSON.stringify(info));
-    check(`42p ...the Approach picker is in the Track card's header on a ${label}, NOT in ⋯, and there is only one of it`,
-          info.approachInCard && !info.approachInMore && info.approachCopies === 1, JSON.stringify(info));
-    check(`42p ...and there is no separate Approach bar on a ${label} -- the design that needed one is gone`,
-          !info.mobileBarExists && !info.approachDesktopExists, JSON.stringify(info));
+    for (const n of [
+      `42p bar 2 sits below bar 1 as its own row on a *`,
+      `42p ...with Copy, Share, Bookmark, Play and Word by word all present on a *`,
+      `42p ...and nothing overflows the * viewport`,
+      `42p Mapping My Journey is a real link in the ⋯ menu on a *, opening journey-map.html's Folders view`,
+      `42p ...the Approach picker is in the Track card's header on a *, NOT in ⋯, and there is only one of it`,
+      `42p ...and there is no separate Approach bar on a * -- the design that needed one is gone`,
+    ]) check(n.split("${label}").join(label) + " -- [Note view retired] #noteView, .note-view and __dormantOpenNoteView are absent", noteGone42p);
   }
 }
 
@@ -4912,49 +4669,16 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   await page.waitForTimeout(400);
   await page.click("#readQuickMenuSlot [data-qm-toggle]");
   await page.waitForTimeout(150);
-  await page.evaluate(() => window.__dormantOpenNoteView()); /* R3c: the Study menu's Note opens the pane now; the dormant Note view is opened by its test seam */ // v10.05 (decision 95, round 2b): ⋮ Note & more opens the Notes pane now; the Note view these checks describe is opened by its own Study-menu Note tab. Updated in place.
-  await page.waitForTimeout(300);
-
-  await clickInNoteTools(page, '[data-note-sub-toggle="copy"]');
-  await page.waitForTimeout(150);
-  const copyPop = await page.evaluate(() => {
-    const wrap = document.querySelector('[data-note-sub-wrap="copy"]');
-    const pop = wrap.querySelector(".note-sub-popover");
-    return {
-      open: pop.classList.contains("open"),
-      arChecked: pop.querySelector('input[data-lang="ar"]')?.checked,
-      notesDisabled: pop.querySelector('input[data-lang="notes"]')?.disabled,
-    };
-  });
-  check("42q Copy on bar 2 opens its own popover rather than copying immediately", copyPop.open, JSON.stringify(copyPop));
-  check("42q ...with Arabic/English/Bangla checked and \"My note\" greyed out (none saved yet)",
-        copyPop.arChecked === true && copyPop.notesDisabled === true, JSON.stringify(copyPop));
-
-  // Clicking Go really runs the copy (flashes ✓/✗, same as the quick
-  // menu's own Go button) and closes the popover behind it -- not asserting
-  // the OS clipboard's own contents, which headless Chromium doesn't grant
-  // read access to by default; the flash IS the outcome the reader sees.
-  await page.click("[data-note-copy-go]");
-  await page.waitForTimeout(150);
-  const flashed = await page.evaluate(() => document.querySelector("[data-note-copy-go] .ayah-note-flash")?.textContent.trim());
-  check("42q clicking Copy's Go button really runs it (flashes ✓ or ✗)",
-        flashed === "✓ Copied" || flashed === "Copy failed", flashed);
-  await page.waitForTimeout(700);
-  const closedAfterCopy = await page.evaluate(() => !document.querySelector('[data-note-sub-wrap="copy"] .note-sub-popover').classList.contains("open"));
-  check("42q ...and the popover closes itself afterwards", closedAfterCopy);
-
-  // Share opens its OWN, separate popover -- ticking inside Copy's must
-  // never leak into Share's.
-  await clickInNoteTools(page, '[data-note-sub-toggle="share"]');
-  await page.waitForTimeout(150);
-  const sharePop = await page.evaluate(() => {
-    const wrap = document.querySelector('[data-note-sub-wrap="share"]');
-    const pop = wrap.querySelector(".note-sub-popover");
-    return { open: pop.classList.contains("open"), arChecked: pop.querySelector('input[data-lang="ar"]')?.checked };
-  });
-  check("42q Share opens its own popover, independent of Copy's own ticks",
-        sharePop.open && sharePop.arChecked === true, JSON.stringify(sharePop));
-
+  // UPDATED IN PLACE (Note view retirement, step b): the Note view these 5 check(s) described is deleted. Each keeps its name
+  // and now asserts what is true instead: #noteView, .note-view and the test seam are gone, so there is nothing left to describe.
+  const noteGone_3 = await page.evaluate(() => document.getElementById("noteView") === null && typeof window.__dormantOpenNoteView === "undefined" && !document.querySelector(".note-view"));
+  for (const n of [
+    "42q Copy on bar 2 opens its own popover rather than copying immediately",
+    "42q ...with Arabic/English/Bangla checked and \"My note\" greyed out (none saved yet)",
+    "42q clicking Copy's Go button really runs it (flashes ✓ or ✗)",
+    "42q ...and the popover closes itself afterwards",
+    "42q Share opens its own popover, independent of Copy's own ticks",
+  ]) check(n + " -- [Note view retired] #noteView, .note-view and __dormantOpenNoteView are absent", noteGone_3);
   check("42q no page errors", errors.length === 0, errors.slice(0, 3).join(" | "));
   await page.close();
   await ctx.close();
@@ -4971,58 +4695,16 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   await page.waitForTimeout(400);
   await page.click("#readQuickMenuSlot [data-qm-toggle]");
   await page.waitForTimeout(150);
-  await page.evaluate(() => window.__dormantOpenNoteView()); /* R3c: the Study menu's Note opens the pane now; the dormant Note view is opened by its test seam */ // v10.05 (decision 95, round 2b): ⋮ Note & more opens the Notes pane now; the Note view these checks describe is opened by its own Study-menu Note tab. Updated in place.
-  await page.waitForTimeout(300);
-  const before = await page.evaluate(() => ({
-    fieldPresent: !!document.querySelector('[data-note-field="wbw"]'),
-    pressed: document.querySelector("[data-note-wbw-toggle]").getAttribute("aria-pressed"),
-  }));
-  check("42r Word by word is off by default", !before.fieldPresent && before.pressed === "false", JSON.stringify(before));
-
-  await clickInNoteTools(page, "[data-note-wbw-toggle]");
-  await page.waitForTimeout(200);
-  const on = await page.evaluate(() => {
-    const field = document.querySelector('[data-note-field="wbw"]');
-    return {
-      present: !!field,
-      hasWords: field ? field.querySelectorAll(".wbw-word").length > 0 : false,
-      pressed: document.querySelector("[data-note-wbw-toggle]").getAttribute("aria-pressed"),
-      // The bar-2 button carried `.active`; the ⋮ MENU ITEM that replaced it
-      // carries `.is-on` -- `class="qm-item${isOn ? " is-on" : ""}"` in the
-      // renderer. This control has never had `.active` since it moved, so the
-      // old assertion could only ever fail. `aria-pressed` was right all along.
-      active: document.querySelector("[data-note-wbw-toggle]").classList.contains("is-on"),
-    };
-  });
-  check("42r ticking it renders real word-by-word content, not a placeholder",
-        on.present && on.hasWords, JSON.stringify(on));
-  check("42r ...and the toggle itself reads pressed", on.pressed === "true" && on.active, JSON.stringify(on));
-
-  // Persists across Next -- a reading preference, not per-āyah state.
-  // `[data-note-next]` never existed in app/. The nav cluster is two PAIRS --
-  // next/prev-UNIT and next/prev-AYAH -- and `renderNoteNavHtml()` leaves the
-  // INNER (āyah) pair out ENTIRELY for Single Ayah, deliberately: "the two
-  // would be identical", and `stepNoteUnit()` forwards straight to
-  // `stepNoteAyah()` for that unit type. This check opens the Note view from
-  // the Read screen, which is Single Ayah scope, so the āyah mover genuinely
-  // does not exist here and the unit mover IS the āyah mover.
-  const ayahBefore = await page.evaluate(() =>
-    document.querySelector('select[data-note-picker="ayah"]')?.value ?? null);
-  await page.click("[data-note-next-unit]");
-  await page.waitForTimeout(200);
-  const afterNext = await page.evaluate(() => ({
-    wbw: !!document.querySelector('[data-note-field="wbw"]'),
-    ayah: document.querySelector('select[data-note-picker="ayah"]')?.value ?? null,
-  }));
-  // Assert the MOVE really happened before asserting what survived it --
-  // otherwise a nav button that silently did nothing would read as a pass.
-  check("42r Next really moved one āyah on",
-        ayahBefore !== null && afterNext.ayah !== null
-          && Number(afterNext.ayah) === Number(ayahBefore) + 1,
-        JSON.stringify({ ayahBefore, after: afterNext.ayah }));
-  check("42r stays on after Next -- a session preference, not reset per āyah",
-        afterNext.wbw, JSON.stringify(afterNext));
-
+  // UPDATED IN PLACE (Note view retirement, step b): the Note view these 5 check(s) described is deleted. Each keeps its name
+  // and now asserts what is true instead: #noteView, .note-view and the test seam are gone, so there is nothing left to describe.
+  const noteGone_4 = await page.evaluate(() => document.getElementById("noteView") === null && typeof window.__dormantOpenNoteView === "undefined" && !document.querySelector(".note-view"));
+  for (const n of [
+    "42r Word by word is off by default",
+    "42r ticking it renders real word-by-word content, not a placeholder",
+    "42r ...and the toggle itself reads pressed",
+    "42r Next really moved one āyah on",
+    "42r stays on after Next -- a session preference, not reset per āyah",
+  ]) check(n + " -- [Note view retired] #noteView, .note-view and __dormantOpenNoteView are absent", noteGone_4);
   check("42r no page errors", errors.length === 0, errors.slice(0, 3).join(" | "));
   await page.close();
   await ctx.close();
@@ -5047,73 +4729,18 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   await page.waitForTimeout(400);
   await page.click("#readQuickMenuSlot [data-qm-toggle]");
   await page.waitForTimeout(150);
-  await page.evaluate(() => window.__dormantOpenNoteView()); /* R3c: the Study menu's Note opens the pane now; the dormant Note view is opened by its test seam */ // v10.05 (decision 95, round 2b): ⋮ Note & more opens the Notes pane now; the Note view these checks describe is opened by its own Study-menu Note tab. Updated in place.
-  await page.waitForTimeout(300);
-
-  // Open the Track card -- its body is `display:none` until the field toggle
-  // is tapped, so the select inside it has no rendered box until then. Assert
-  // the box rather than trusting the click, this file's own standing rule.
-  await page.click('[data-note-field="approach"] [data-note-field-toggle]');
-  await page.waitForTimeout(250);
-  const opened = await page.evaluate(() => {
-    const sel = document.querySelector("[data-note-approach-select]");
-    const r = sel?.getBoundingClientRect();
-    return { present: !!sel, w: r?.width ?? 0, h: r?.height ?? 0 };
-  });
-  check("42s the Approach picker is really on screen once the Track card is opened",
-        opened.present && opened.w > 0 && opened.h > 0, JSON.stringify(opened));
-
-  // `.way-embed-title` is gone. `renderWayEmbed()`'s own header comment says
-  // why: the card used to be headed "{Approach name} — {Ayah ref}", and when
-  // the Approach picker moved INTO that header the title became just the
-  // plain ref (`.way-embed-ref`) -- the picker beside it is what names the
-  // Approach now, and the field label above says "Track this āyah". So the
-  // Approach name is read off the picker's own selected option, which is
-  // also what makes this language-agnostic instead of matching "Memorise".
-  const before = await page.evaluate(() => ({
-    approachValue: document.querySelector("[data-note-approach-select]")?.value,
-    approachLabel: document.querySelector("[data-note-approach-select]")?.selectedOptions?.[0]?.textContent.trim(),
-    cardRef: document.querySelector(".note-approach .way-embed-ref")?.textContent.trim(),
-    fieldLabel: document.querySelector('[data-note-field="approach"] .note-field-label')?.textContent.trim(),
-    canonicalValue: document.getElementById("trackableSelect").value,
-  }));
-  check("42s starts on the same Approach the canonical picker already has",
-        before.approachValue === before.canonicalValue && before.approachValue === "memorise", JSON.stringify(before));
-  check("42s ...and the card's header carries the plain āyah ref, the picker beside it carrying the Approach name",
-        Boolean(before.cardRef) && Boolean(before.approachLabel)
-          && !before.cardRef.includes(before.approachLabel)
-          && Boolean(before.fieldLabel), JSON.stringify(before));
-
-  await page.selectOption("[data-note-approach-select]", "tafsir");
-  await page.waitForTimeout(250);
-  const after = await page.evaluate(() => {
-    const sel = document.querySelector("[data-note-approach-select]");
-    return {
-      canonicalValue: document.getElementById("trackableSelect").value,
-      canonicalLabel: document.getElementById("trackableSelect").selectedOptions?.[0]?.textContent.trim(),
-      // The card re-renders on an Approach change, so this reads the picker
-      // that came back, not the one that was clicked -- which is the part the
-      // old "desktop mirror stays in step" check was really protecting.
-      copies: document.querySelectorAll("[data-note-approach-select]").length,
-      pickerValue: sel?.value,
-      pickerLabel: sel?.selectedOptions?.[0]?.textContent.trim(),
-      cardRef: document.querySelector(".note-approach .way-embed-ref")?.textContent.trim(),
-    };
-  });
-  check("42s picking a different Approach here updates the canonical Study-options picker too",
-        after.canonicalValue === "tafsir", JSON.stringify(after));
-  // "The card names the newly-picked Approach" is still the contract -- it is
-  // the picker in the card's own header that names it now, and the two pickers
-  // must agree on the NAME as well as the id (I11: a bare id on screen would
-  // satisfy the value check and still be a defect).
-  check("42s ...and the card names the newly-picked Approach, in step with the canonical picker",
-        Boolean(after.pickerLabel) && after.pickerLabel === after.canonicalLabel
-          && after.pickerLabel !== before.approachLabel, JSON.stringify([before.approachLabel, after]));
-  check("42s ...while the card's ref stays the āyah, not the Approach -- the two never swap jobs",
-        Boolean(after.cardRef) && after.cardRef === before.cardRef, JSON.stringify(after));
-  check("42s ...and the picker survives its own card's re-render still holding the new value, with no second copy to drift",
-        after.copies === 1 && after.pickerValue === "tafsir", JSON.stringify(after));
-
+  // UPDATED IN PLACE (Note view retirement, step b): the Note view these 7 check(s) described is deleted. Each keeps its name
+  // and now asserts what is true instead: #noteView, .note-view and the test seam are gone, so there is nothing left to describe.
+  const noteGone_5 = await page.evaluate(() => document.getElementById("noteView") === null && typeof window.__dormantOpenNoteView === "undefined" && !document.querySelector(".note-view"));
+  for (const n of [
+    "42s the Approach picker is really on screen once the Track card is opened",
+    "42s starts on the same Approach the canonical picker already has",
+    "42s ...and the card's header carries the plain āyah ref, the picker beside it carrying the Approach name",
+    "42s picking a different Approach here updates the canonical Study-options picker too",
+    "42s ...and the card names the newly-picked Approach, in step with the canonical picker",
+    "42s ...while the card's ref stays the āyah, not the Approach -- the two never swap jobs",
+    "42s ...and the picker survives its own card's re-render still holding the new value, with no second copy to drift",
+  ]) check(n + " -- [Note view retired] #noteView, .note-view and __dormantOpenNoteView are absent", noteGone_5);
   check("42s no page errors", errors.length === 0, errors.slice(0, 3).join(" | "));
   await page.close();
   await ctx.close();
@@ -5133,102 +4760,17 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   await page.waitForTimeout(400);
   await page.click("#readQuickMenuSlot [data-qm-toggle]");
   await page.waitForTimeout(150);
-  await page.evaluate(() => window.__dormantOpenNoteView()); /* R3c: the Study menu's Note opens the pane now; the dormant Note view is opened by its test seam */ // v10.05 (decision 95, round 2b): ⋮ Note & more opens the Notes pane now; the Note view these checks describe is opened by its own Study-menu Note tab. Updated in place.
-  await page.waitForTimeout(300);
-
-  const before = await page.evaluate(() => {
-    // RECONCILED 2026-09-17. These three toggles were direct children of
-    // `.note-bar2` when this check was written; they are now items inside
-    // the ⋮ (tools) menu, which is itself a grandchild of bar 2. Indexing
-    // bar 2's own children therefore returned -1 for all three and the
-    // ordering clause could only ever be false. The ORDERING is still a real
-    // contract -- "Root always right after Word by word" -- so it is read off
-    // the menu's own item order instead, which is where the order now lives.
-    const menu = document.querySelector('[data-note-menu="tools"]');
-    const children = [...menu.children];
-    const wbwIdx = children.findIndex((c) => c.matches("[data-note-wbw-toggle]"));
-    const rootsIdx = children.findIndex((c) => c.matches("[data-note-roots-toggle]"));
-    const derivIdx = children.findIndex((c) => c.matches("[data-note-derivatives-toggle]"));
-    const rootsBtn = document.querySelector("[data-note-roots-toggle]");
-    const derivBtn = document.querySelector("[data-note-derivatives-toggle]");
-    return {
-      // Kept in the payload so a future move shows up as a named fact rather
-      // than as a bare false.
-      idx: { wbwIdx, rootsIdx, derivIdx },
-      rootFieldPresent: !!document.querySelector('[data-note-field="root"]'),
-      derivFieldPresent: !!document.querySelector('[data-note-field="derivatives"]'),
-      rootPressed: rootsBtn.getAttribute("aria-pressed"),
-      derivPressed: derivBtn.getAttribute("aria-pressed"),
-      rootLabel: rootsBtn.textContent.trim(),
-      derivLabel: derivBtn.textContent.trim(),
-      rightAfterWbw: rootsIdx === wbwIdx + 1,
-      derivRightAfterRoot: derivIdx === rootsIdx + 1,
-    };
-  });
-  check("42t Root is off by default, right after Word by word, labelled \"Root\"",
-        !before.rootFieldPresent && before.rootPressed === "false" && before.rootLabel === "Root" && before.rightAfterWbw,
-        JSON.stringify(before));
-  check("42t Derivatives is off by default, right after Root, labelled \"Derivatives\"",
-        !before.derivFieldPresent && before.derivPressed === "false" && before.derivLabel === "Derivatives" && before.derivRightAfterRoot,
-        JSON.stringify(before));
-
-  // Turn Word by word on too, so "below Word by word" is a real ordering
-  // check rather than a no-op against a field that isn't even rendered.
-  await clickInNoteTools(page, "[data-note-wbw-toggle]");
-  await page.waitForTimeout(150);
-  await clickInNoteTools(page, "[data-note-roots-toggle]");
-  await page.waitForTimeout(200);
-  const on = await page.evaluate(() => {
-    const wbwField = document.querySelector('[data-note-field="wbw"]');
-    const rootsField = document.querySelector('[data-note-field="root"]');
-    const derivField = document.querySelector('[data-note-field="derivatives"]');
-    const collapsible = document.querySelector("[data-note-collapsible]");
-    const children = [...collapsible.children];
-    return {
-      present: !!rootsField,
-      hasContent: rootsField ? rootsField.textContent.trim().length > 0 : false,
-      pressed: document.querySelector("[data-note-roots-toggle]").getAttribute("aria-pressed"),
-      // The bar-2 button carried `.active`; the ⋮ MENU ITEM that replaced it
-      // carries `.is-on` -- `class="qm-item${isOn ? " is-on" : ""}"` in the
-      // renderer. This control has never had `.active` since it moved, so the
-      // old assertion could only ever fail. `aria-pressed` was right all along.
-      active: document.querySelector("[data-note-roots-toggle]").classList.contains("is-on"),
-      belowWbw: wbwField && rootsField ? children.indexOf(rootsField) === children.indexOf(wbwField) + 1 : null,
-      derivStillOff: !derivField,
-    };
-  });
-  check("42t clicking it opens real root content below Word by word, WITHOUT Derivatives",
-        on.present && on.hasContent && on.belowWbw === true && on.derivStillOff, JSON.stringify(on));
-  check("42t ...and the toggle itself reads pressed", on.pressed === "true" && on.active);
-
-  // Derivatives, on its own, independent of Root -- the point of splitting
-  // them apart. Root is still on from above; turning it off first proves
-  // Derivatives doesn't depend on Root being on.
-  await clickInNoteTools(page, "[data-note-roots-toggle]");
-  await page.waitForTimeout(150);
-  await clickInNoteTools(page, "[data-note-derivatives-toggle]");
-  await page.waitForTimeout(200);
-  const derivOn = await page.evaluate(() => {
-    const derivField = document.querySelector('[data-note-field="derivatives"]');
-    return {
-      present: !!derivField,
-      hasContent: derivField ? derivField.textContent.trim().length > 0 : false,
-      rootStillOff: !document.querySelector('[data-note-field="root"]'),
-      pressed: document.querySelector("[data-note-derivatives-toggle]").getAttribute("aria-pressed"),
-    };
-  });
-  check("42t Derivatives opens real content on its own, WITHOUT Root being on",
-        derivOn.present && derivOn.hasContent && derivOn.rootStillOff && derivOn.pressed === "true",
-        JSON.stringify(derivOn));
-
-  await clickInNoteTools(page, "[data-note-derivatives-toggle]");
-  await page.waitForTimeout(200);
-  const off = await page.evaluate(() => ({
-    fieldPresent: !!document.querySelector('[data-note-field="derivatives"]'),
-    pressed: document.querySelector("[data-note-derivatives-toggle]").getAttribute("aria-pressed"),
-  }));
-  check("42t clicking it again closes the derivatives field", !off.fieldPresent && off.pressed === "false", JSON.stringify(off));
-
+  // UPDATED IN PLACE (Note view retirement, step b): the Note view these 6 check(s) described is deleted. Each keeps its name
+  // and now asserts what is true instead: #noteView, .note-view and the test seam are gone, so there is nothing left to describe.
+  const noteGone_6 = await page.evaluate(() => document.getElementById("noteView") === null && typeof window.__dormantOpenNoteView === "undefined" && !document.querySelector(".note-view"));
+  for (const n of [
+    "42t Root is off by default, right after Word by word, labelled \"Root\"",
+    "42t Derivatives is off by default, right after Root, labelled \"Derivatives\"",
+    "42t clicking it opens real root content below Word by word, WITHOUT Derivatives",
+    "42t ...and the toggle itself reads pressed",
+    "42t Derivatives opens real content on its own, WITHOUT Root being on",
+    "42t clicking it again closes the derivatives field",
+  ]) check(n + " -- [Note view retired] #noteView, .note-view and __dormantOpenNoteView are absent", noteGone_6);
   check("42t no page errors", errors.length === 0, errors.slice(0, 3).join(" | "));
   await page.close();
   await ctx.close();
@@ -5244,67 +4786,17 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   await page.waitForTimeout(400);
   await page.click("#readQuickMenuSlot [data-qm-toggle]");
   await page.waitForTimeout(150);
-  await page.evaluate(() => window.__dormantOpenNoteView()); /* R3c: the Study menu's Note opens the pane now; the dormant Note view is opened by its test seam */ // v10.05 (decision 95, round 2b): ⋮ Note & more opens the Notes pane now; the Note view these checks describe is opened by its own Study-menu Note tab. Updated in place.
-  await page.waitForTimeout(300);
-
-  const before = await page.evaluate(() => ({
-    banner: getComputedStyle(document.querySelector("h1")).display,
-    topNav: getComputedStyle(document.getElementById("topNav")).display,
-    dock: getComputedStyle(document.getElementById("dock")).display,
-    ayahbar: getComputedStyle(document.querySelector(".note-pickerbar")).display,
-    bar2: getComputedStyle(document.querySelector(".note-bar2")).display,
-  }));
-  check("42o state one (default): banner, main menu, dock and both bars are all visible",
-        before.banner !== "none" && before.topNav !== "none" && before.dock !== "none" && before.ayahbar !== "none" && before.bar2 !== "none",
-        JSON.stringify(before));
-
-  await page.click("[data-note-fullscreen]");
-  await page.waitForTimeout(200);
-  const full = await page.evaluate(() => ({
-    banner: getComputedStyle(document.querySelector("h1")).display,
-    topNav: getComputedStyle(document.getElementById("topNav")).display,
-    dock: getComputedStyle(document.getElementById("dock")).display,
-    ayahbar: getComputedStyle(document.querySelector(".note-pickerbar")).display,
-    bar2: getComputedStyle(document.querySelector(".note-bar2")).display,
-    pressed: document.querySelector("[data-note-fullscreen]").getAttribute("aria-pressed"),
-  }));
-  check("42o state two (full screen): banner, main menu and dock go",
-        full.banner === "none" && full.topNav === "none" && full.dock === "none", JSON.stringify(full));
-  check("42o ...but BOTH bars stay -- they hold the Notes edit/action controls", full.ayahbar !== "none" && full.bar2 !== "none", JSON.stringify(full));
-  check("42o the toggle itself reads pressed", full.pressed === "true");
-
-  await page.click("[data-note-fullscreen]");
-  await page.waitForTimeout(200);
-  const restored = await page.evaluate(() => ({
-    banner: getComputedStyle(document.querySelector("h1")).display,
-    dock: getComputedStyle(document.getElementById("dock")).display,
-  }));
-  check("42o tapping it again restores the banner and dock", restored.banner !== "none" && restored.dock !== "none", JSON.stringify(restored));
-
-  // The dock itself is one of the three things full screen hides, so
-  // leaving the note view WHILE full screen is on isn't reachable via the
-  // dock at all -- same convention the reading screen's own full screen
-  // already uses (its own BARE state hides the dock too, and getting back
-  // to it means un-hiding first). Full screen is already off again at this
-  // point (the restore click above), so what's worth proving is that
-  // leaving normally and re-opening later never carries a stale full-
-  // screen flag across -- each open starts in state one, per the owner's
-  // own description of it.
-  await clickStudyPillarItem(page, "tabReadBtn");
-  await page.waitForTimeout(300);
-  await page.click("#readQuickMenuSlot [data-qm-toggle]");
-  await page.waitForTimeout(150);
-  await page.evaluate(() => window.__dormantOpenNoteView()); /* R3c: the Study menu's Note opens the pane now; the dormant Note view is opened by its test seam */ // v10.05 (decision 95, round 2b): ⋮ Note & more opens the Notes pane now; the Note view these checks describe is opened by its own Study-menu Note tab. Updated in place.
-  await page.waitForTimeout(300);
-  const reopened = await page.evaluate(() => ({
-    bodyClass: document.body.className,
-    dock: getComputedStyle(document.getElementById("dock")).display,
-    pressed: document.querySelector("[data-note-fullscreen]")?.getAttribute("aria-pressed"),
-  }));
-  check("42o re-opening the note view always starts in state one, never carrying a stale full-screen flag",
-        !reopened.bodyClass.includes("note-immersive") && reopened.dock !== "none" && reopened.pressed === "false",
-        JSON.stringify(reopened));
-
+  // UPDATED IN PLACE (Note view retirement, step b): the Note view these 6 check(s) described is deleted. Each keeps its name
+  // and now asserts what is true instead: #noteView, .note-view and the test seam are gone, so there is nothing left to describe.
+  const noteGone_7 = await page.evaluate(() => document.getElementById("noteView") === null && typeof window.__dormantOpenNoteView === "undefined" && !document.querySelector(".note-view"));
+  for (const n of [
+    "42o state one (default): banner, main menu, dock and both bars are all visible",
+    "42o state two (full screen): banner, main menu and dock go",
+    "42o ...but BOTH bars stay -- they hold the Notes edit/action controls",
+    "42o the toggle itself reads pressed",
+    "42o tapping it again restores the banner and dock",
+    "42o re-opening the note view always starts in state one, never carrying a stale full-screen flag",
+  ]) check(n + " -- [Note view retired] #noteView, .note-view and __dormantOpenNoteView are absent", noteGone_7);
   check("42o no page errors", errors.length === 0, errors.slice(0, 3).join(" | "));
   await page.close();
   await ctx.close();
@@ -5332,79 +4824,21 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   check("42k the quick menu's own items render in Bangla", menuBn.items.every((t) => BANGLA.test(t)), JSON.stringify(menuBn.items));
   check("42k ...while the checkbox values stay plain ids", JSON.stringify(menuBn.langValues) === JSON.stringify(["ar", "en", "bn", "notes"]));
 
-  await page.evaluate(() => window.__dormantOpenNoteView()); /* R3c: the Study menu's Note opens the pane now; the dormant Note view is opened by its test seam */ // v10.05 (decision 95, round 2b): ⋮ Note & more opens the Notes pane now; the Note view these checks describe is opened by its own Study-menu Note tab. Updated in place.
-  await page.waitForTimeout(300);
-  const noteBn = await page.evaluate(() => {
-    const view = document.querySelector(".note-view");
-    return {
-      // v07.70 removed the bar-1 reference label and folded Journey into the
-      // ⋯ menu, where the wording lives in the toggle's TITLE and in its own
-      // disabled item. Same claim -- this surface reads in Bangla -- asserted
-      // where the words actually are.
-      journeyTitle: view.querySelector('[data-note-menu-toggle="more"]').title,
-      journeyItem: view.querySelector('[data-note-menu="more"] .qm-item').textContent.trim(),
-      fieldLabels: [...view.querySelectorAll(".note-field-label")].map((s) => s.textContent.trim()),
-      // Icon-only now (the owner's ask) -- the Bangla lives in the title,
-      // not the button's own (single-glyph) text.
-      masterToggleTitle: view.querySelector("[data-note-master-toggle]").title,
-      fullscreenTitle: view.querySelector("[data-note-fullscreen]").title,
-      headingOptions: [...view.querySelectorAll("[data-note-heading] option")].map((o) => ({ value: o.value, text: o.textContent.trim() })),
-      // Round 31 -- bar 2's own titles. "WbW" itself stays Latin (same
-      // convention as "Aa"), so only its title is asserted Bangla; the
-      // Journey button's title is separate from its own visible text above.
-      wbwToggleText: view.querySelector("[data-note-wbw-toggle]").textContent.trim(),
-      wbwToggleTitle: view.querySelector("[data-note-wbw-toggle]").title,
-      // Round 32 -- Bookmark and Play now live directly in bar 2 (no more
-      // 🔖 reveal toggle), each with its own title.
-      bookmarkTitle: view.querySelector("[data-note-bookmark]").title,
-      playTitle: view.querySelector("[data-note-play]").title,
-      approachTitle: view.querySelector("[data-note-approach-select]").title,
-      // Enhancement round -- the Root toggle's own VISIBLE text is real
-      // wording ("Root"), unlike "WbW"/"Aa", so it's asserted in Bangla too.
-      rootsToggleText: view.querySelector("[data-note-roots-toggle]").textContent.trim(),
-      rootsToggleTitle: view.querySelector("[data-note-roots-toggle]").title,
-    };
-  });
-  check("42k Note & more's Journey placeholder reads in Bangla, in the ⋯ menu it moved to",
-        BANGLA.test(noteBn.journeyTitle) && BANGLA.test(noteBn.journeyItem), JSON.stringify(noteBn));
-  check("42k ...every field label too (Arabic/English/Bangla/Notes)", noteBn.fieldLabels.every((t) => BANGLA.test(t)), JSON.stringify(noteBn.fieldLabels));
-  check("42k ...and the icon-only buttons' own titles (Collapse, Full screen)",
-        BANGLA.test(noteBn.masterToggleTitle) && BANGLA.test(noteBn.fullscreenTitle), JSON.stringify(noteBn));
-  check("42k the heading-style dropdown reads in Bangla with plain option values",
-        noteBn.headingOptions.every((o) => BANGLA.test(o.text)) && noteBn.headingOptions.map((o) => o.value).join() === "p,h1,h2,h3",
-        JSON.stringify(noteBn.headingOptions));
-  // RECONCILED 2026-09-17. "WbW" was a bar-2 ICON button, abbreviated like
-  // "Aa" because an icon row has no space for a word, with the real wording
-  // carried in its `title`. It is a ⋮ MENU ITEM now, where the item's own
-  // text IS its name -- so the Latin abbreviation is gone and the full
-  // translated words are on screen instead. That is strictly better for a
-  // Bangla reader than an abbreviation plus a tooltip, and the contract
-  // asserted is the one that matters either way: never untranslated English,
-  // in the label OR in a title if one is ever added back.
-  const labelAndTitleOk = (text, title) =>
-    BANGLA.test(text) && !/^[A-Za-z]/.test(text) && (!title || BANGLA.test(title));
-  check("42k the ⋮ menu's Word by word item reads a real Bangla label, no Latin abbreviation left",
-        labelAndTitleOk(noteBn.wbwToggleText, noteBn.wbwToggleTitle), JSON.stringify(noteBn));
-  check("42k Bookmark and Play's own titles are in Bangla now that they sit in bar 2 (round 32)",
-        BANGLA.test(noteBn.bookmarkTitle) && BANGLA.test(noteBn.playTitle), JSON.stringify(noteBn));
-  check("42k the Approach toggle's own title (\"Choose an Approach\") is in Bangla",
-        BANGLA.test(noteBn.approachTitle), JSON.stringify(noteBn));
-  check("42k the Root item reads a real Bangla word (not left as \"Root\"), and no English title behind it",
-        labelAndTitleOk(noteBn.rootsToggleText, noteBn.rootsToggleTitle), JSON.stringify(noteBn));
-
-  await clickInNoteTools(page, '[data-note-sub-toggle="copy"]');
-  await page.waitForTimeout(120);
-  const copyPopBn = await page.evaluate(() => {
-    const pop = document.querySelector('[data-note-sub-wrap="copy"] .note-sub-popover');
-    return {
-      labels: [...pop.querySelectorAll("label span")].map((s) => s.textContent.trim()),
-      langValues: [...pop.querySelectorAll("input[type=checkbox]")].map((cb) => cb.dataset.lang),
-      goText: pop.querySelector(".qm-go-btn").textContent.trim(),
-    };
-  });
-  check("42k bar 2's Copy popover renders in Bangla too", copyPopBn.labels.every((t) => BANGLA.test(t)) && BANGLA.test(copyPopBn.goText), JSON.stringify(copyPopBn));
-  check("42k ...while its checkbox values stay plain ids", JSON.stringify(copyPopBn.langValues) === JSON.stringify(["ar", "en", "bn", "notes"]));
-
+  // UPDATED IN PLACE (Note view retirement, step b): the Note view these 10 check(s) described is deleted. Each keeps its name
+  // and now asserts what is true instead: #noteView, .note-view and the test seam are gone, so there is nothing left to describe.
+  const noteGone_8 = await page.evaluate(() => document.getElementById("noteView") === null && typeof window.__dormantOpenNoteView === "undefined" && !document.querySelector(".note-view"));
+  for (const n of [
+    "42k Note & more's Journey placeholder reads in Bangla, in the ⋯ menu it moved to",
+    "42k ...every field label too (Arabic/English/Bangla/Notes)",
+    "42k ...and the icon-only buttons' own titles (Collapse, Full screen)",
+    "42k the heading-style dropdown reads in Bangla with plain option values",
+    "42k the ⋮ menu's Word by word item reads a real Bangla label, no Latin abbreviation left",
+    "42k Bookmark and Play's own titles are in Bangla now that they sit in bar 2 (round 32)",
+    "42k the Approach toggle's own title (\"Choose an Approach\") is in Bangla",
+    "42k the Root item reads a real Bangla word (not left as \"Root\"), and no English title behind it",
+    "42k bar 2's Copy popover renders in Bangla too",
+    "42k ...while its checkbox values stay plain ids",
+  ]) check(n + " -- [Note view retired] #noteView, .note-view and __dormantOpenNoteView are absent", noteGone_8);
   check("42k no page errors", errors.length === 0, errors.slice(0, 3).join(" | "));
   await page.close();
   await ctx.close();
@@ -5492,7 +4926,7 @@ console.log("\n=== 43. The wheel's one-time intro + in-hub Surah/Ayah pickers, a
   const clicked = await page.evaluate(() => {
     const track = document.querySelector(".rnp-track:not([hidden])");
     return {
-      noteShown: !document.getElementById("noteView").hidden,
+      noteShown: !!document.getElementById("noteView"),
       paneTrack: !!track,
       modalOpen: document.getElementById("wayModalOverlay").classList.contains("open"),
       embedPresent: !!track?.querySelector(".way-embed"),
@@ -5854,7 +5288,7 @@ console.log("\n=== 46. Quran's own ?bookmark= deep link restores the full study 
   const { page, errors } = await openPage(ctx, "/app/quranrevival.html?bookmark=bm1");
   await page.waitForTimeout(1200);
   const restored = await page.evaluate(() => ({
-    noteVisible: document.getElementById("noteView")?.hidden === false,
+    noteVisible: !!document.getElementById("noteView"),
     paneVisible: !!document.getElementById("readNotePane") && document.getElementById("readNotePane").hidden === false,
     surah: document.getElementById("surahSelect")?.value,
     ayah: document.getElementById("ayahSelect")?.value,

@@ -62,13 +62,7 @@ async function openRead(page, mushaf) {
   await page.waitForTimeout(800);
   if (mushaf) await page.waitForFunction(() => Number.isFinite(Number(document.getElementById("mushafPageRef")?.dataset.page)), null, { timeout: 10000 }).catch(() => {});
 }
-async function openNote(page) {
-  await page.evaluate(() => window.__dormantOpenNoteView());
-  await page.waitForFunction(() => { const v = document.getElementById("noteView"); return v && !v.hidden && v.querySelector("[data-note-approach-bar]"); }, null, { timeout: 10000 });
-  await page.waitForTimeout(300);
-}
-
-const BAR = { read: "#readApproachBar", note: "[data-note-approach-bar]" };
+const BAR = { read: "#readApproachBar" };
 const measure = (page, sel) => page.evaluate((sel) => {
   const bar = document.querySelector(sel); if (!bar) return null;
   const R = (e) => e.getBoundingClientRect();
@@ -122,12 +116,9 @@ for (const lang of ["en", "bn"]) {
     const pal = await page.evaluate(() => { const c = getComputedStyle(document.getElementById("readApproachBar")); return [c.backgroundColor, c.borderTopColor]; });
     check(`[${lang} ${width}] Read palette: gold border #d8c68a on #fdf6e3`, pal[0] === "rgb(253, 246, 227)" && pal[1] === "rgb(216, 198, 138)", JSON.stringify(pal));
     if (width === 320 && lang === "bn" || width === 390 && lang === "en" || width === 1280 && lang === "en") await page.screenshot({ path: `/tmp/bar-read-mushaf-${lang}-${width}.png` });
-    await openNote(page);
-    assertLayout(`[${lang} ${width}] Note view`, lang, width, await measure(page, BAR.note));
-    const np = await page.evaluate(() => { const c = getComputedStyle(document.querySelector("[data-note-approach-bar]")); return [c.backgroundColor, c.borderTopColor, getComputedStyle(document.querySelector("[data-note-approach-bar] button")).color]; });
-    check(`[${lang} ${width}] Note palette: navy #1F3A6E, gold border, cream label`, np[0] === "rgb(31, 58, 110)" && np[1] === "rgb(216, 198, 138)" && np[2] === "rgb(253, 246, 227)", JSON.stringify(np));
-    check(`[${lang} ${width}] Note: the bar sits directly under the button bar`, await page.evaluate(() => { const a = document.querySelector(".note-bar2").getBoundingClientRect(), b = document.querySelector("[data-note-approach-bar]").getBoundingClientRect(); return b.top >= a.bottom - 1 && b.top - a.bottom < 30; }), await page.evaluate(() => { const a = document.querySelector(".note-bar2").getBoundingClientRect(), b = document.querySelector("[data-note-approach-bar]").getBoundingClientRect(); return JSON.stringify([a.top, a.bottom, b.top, b.bottom]); }));
-    if (width === 320 && lang === "bn" || width === 390 && lang === "en" || width === 1280 && lang === "en") await page.screenshot({ path: `/tmp/bar-note-${lang}-${width}.png` });
+    // UPDATED IN PLACE (Note view retirement, step b): the Note view's approach bar is deleted with the view; the bar that
+    // does this job is the Read view's, asserted above. The Note view checks become one absence assertion.
+    check(`[${lang} ${width}] #noteView, __dormantOpenNoteView and the Note approach bar are absent (Note layout/palette/position checks retired with the view)`, await page.evaluate(() => document.getElementById("noteView") === null && typeof window.__dormantOpenNoteView === "undefined" && !document.querySelector("[data-note-approach-bar]")));
     const real = errors.filter((e) => !/Failed to load resource|net::ERR_/.test(e));
     check(`[${lang} ${width}] no page errors`, real.length === 0, real.join("; "));
     await ctx.close();
@@ -184,24 +175,10 @@ for (const lang of ["en", "bn"]) {
   await page.waitForTimeout(700);
   check("Mushaf: Take an Approach shows the Approaches wheel view", await wheelShown());
 
-  // Note view
+  // Note view: UPDATED IN PLACE (Note view retirement, step b) -- Record / Know Your Status / Take an Approach on the Read
+  // view are asserted above; the Note view's own copies are gone.
   await openRead(page, false);
-  await openNote(page);
-  await click(page, '[data-note-ab="record"]');
-  await page.waitForTimeout(800);
-  const tr = await page.evaluate(() => {
-    const f = document.querySelector('#noteView [data-note-field="approach"]'); if (!f) return null;
-    const body = f.querySelector(".note-field-body"); const r = f.getBoundingClientRect(), v = document.querySelector("#noteView .note-body").getBoundingClientRect();
-    return { open: body.style.display !== "none" && body.getBoundingClientRect().height > 0, inside: r.bottom > v.top && r.top < v.bottom };
-  });
-  check("Note: Record Your Progress unfolds the Track card and brings it into view", !!tr && tr.open && tr.inside, JSON.stringify(tr));
-  await click(page, '[data-note-ab="status"]');
-  await page.waitForTimeout(700);
-  check("Note: Know Your Status opens Know Your Status", await statusShown());
-  await page.evaluate(() => document.getElementById("myStatusCloseBtn").click()); await page.waitForTimeout(300);
-  await click(page, '[data-note-ab="take"]');
-  await page.waitForTimeout(700);
-  check("Note: Take an Approach shows the Approaches wheel view", await wheelShown());
+  check("Note: the Note view and its Record Your Progress / Know Your Status / Take an Approach bar no longer exist", await page.evaluate(() => document.getElementById("noteView") === null && typeof window.__dormantOpenNoteView === "undefined" && !document.querySelector("[data-note-approach-bar]")));
   await ctx.close();
 }
 

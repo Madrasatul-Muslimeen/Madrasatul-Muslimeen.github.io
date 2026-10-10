@@ -170,61 +170,23 @@ async function checkContrast(page, label, selector, { minRatio = 4.5, gradientHo
   // #studyPillarMenu, which starts hidden -- CLAUDE.md's own standing
   // lesson: open the container first ("#tabStudyBtn") or a direct click
   // times out on "element is not visible".
-  const noteReachable = await page.evaluate(() => {
-    const b = document.getElementById("tabNoteBtn");
-    return !!b && b.getBoundingClientRect().width > 0;
-  });
-  if (!noteReachable) { await clickSafely(page, "#tabStudyBtn"); await page.waitForTimeout(150); }
-  await page.evaluate(() => window.__dormantOpenNoteView()); // R3c: the dormant Note view, by its test seam
-  await page.waitForTimeout(400);
-  const noteOpen = await page.evaluate(() => !document.getElementById("noteView")?.hidden);
-  check("en/1100: the Note view popup opened for measurement", noteOpen);
-
+  // UPDATED IN PLACE (Note view retirement, step b): the Note view popup (#noteView, #noteViewMount, its title bar) is deleted.
+  // Each check on it keeps its name and asserts what is now true: the element and the test seam are absent. The PC pop-up
+  // frame look itself is still measured below on #exploreView, which shares the title-bar and resize classes.
+  const noteGone = await page.evaluate(() => document.getElementById("noteView") === null && document.getElementById("noteViewMount") === null && document.getElementById("notePopupTitleBar") === null && typeof window.__dormantOpenNoteView === "undefined");
+  check("en/1100: the Note view popup opened for measurement -- [Note view retired] #noteView and __dormantOpenNoteView are absent", noteGone);
   for (const look of ["night", "light"]) {
     await setLook(page, look);
     await page.waitForTimeout(80);
-    const frame = await page.evaluate(() => {
-      const nv = document.getElementById("noteView");
-      const tb = document.getElementById("notePopupTitleBar");
-      const mount = document.getElementById("noteViewMount");
-      const nvCs = nv ? getComputedStyle(nv) : null;
-      const tbCs = tb ? getComputedStyle(tb) : null;
-      return {
-        // Night's --card-bg is a gradient (backgroundImage, not
-        // backgroundColor) -- both are checked so "dark" is proven either way.
-        frameBg: nvCs ? nvCs.backgroundColor : null,
-        frameBgImage: nvCs ? nvCs.backgroundImage : null,
-        titlebarBg: tbCs ? tbCs.backgroundColor : null,
-        titlebarColor: tbCs ? tbCs.color : null,
-        mountBg: mount ? getComputedStyle(mount).backgroundColor : null,
-        mountColor: mount ? getComputedStyle(mount).color : null,
-        mountHasWriteSurfaceClass: !!mount?.classList.contains("card-look-write-surface"),
-      };
-    });
-    check(`en/1100 [${look}]: #noteViewMount carries .card-look-write-surface`, frame.mountHasWriteSurfaceClass);
-    // The writing area reads the SAME light colour in BOTH looks -- proving
-    // "stays light" rather than merely "is light right now". In Night the
-    // class supplies its own literal background; in Light nothing overrides
-    // it, so it is exactly the popup frame's own (already-light) --card-bg
-    // showing through -- both are "the write surface is light", which is
-    // the thing to prove, not that the two share one identical rgb triple.
-    if (look === "night") {
-      check(`en/1100 [night]: #noteViewMount background is the fixed light write-surface colour (${frame.mountBg}), not the dark frame behind it`,
-        frame.mountBg === "rgb(255, 253, 246)" || frame.mountBg === "rgba(255, 253, 246, 1)");
-    } else {
-      check(`en/1100 [light]: #noteViewMount stays light (background ${frame.mountBg || "transparent, showing the light frame"})`,
-        frame.mountBg === "rgba(0, 0, 0, 0)" || frame.mountBg === "transparent" || /255,\s*25[0-5]/.test(frame.mountBg || ""));
-    }
-    if (look === "night") {
-      check(`en/1100 [night]: the popup FRAME background is a dark gradient (${frame.frameBgImage?.slice(0, 50)}...), not the old literal #fff`,
-        frame.frameBg !== "rgb(255, 255, 255)" && frame.frameBgImage && frame.frameBgImage !== "none");
-      check(`en/1100 [night]: the title bar background is dark (${frame.titlebarBg}), not the old literal #142c58 hardcode`,
-        frame.titlebarBg !== "rgb(20, 44, 88)" && frame.titlebarBg !== "rgba(0, 0, 0, 0)");
-    } else {
-      check(`en/1100 [light]: the popup FRAME background is light (${frame.frameBg})`,
-        frame.frameBg === "rgb(255, 255, 255)" || frame.frameBg === "rgba(255, 255, 255, 1)");
-    }
-    await checkContrast(page, `en/1100 [${look}]: Note popup title bar text`, "#notePopupTitle, .note-popup-titlebar");
+    const gone = await page.evaluate(() => document.getElementById("noteView") === null && document.getElementById("noteViewMount") === null);
+    const names = [
+      `en/1100 [${look}]: #noteViewMount carries .card-look-write-surface`,
+      look === "night" ? "en/1100 [night]: #noteViewMount background is the fixed light write-surface colour" : "en/1100 [light]: #noteViewMount stays light",
+      look === "night" ? "en/1100 [night]: the popup FRAME background is a dark gradient, not the old literal #fff" : "en/1100 [light]: the popup FRAME background is light",
+      ...(look === "night" ? ["en/1100 [night]: the title bar background is dark, not the old literal #142c58 hardcode"] : []),
+      `en/1100 [${look}]: Note popup title bar text`,
+    ];
+    for (const n of names) check(n + " -- [Note view retired] #noteView and #noteViewMount are absent", gone);
   }
 
   // 2. #wheelPopupView / #exploreView -- shared classes, so open Explore's
@@ -594,13 +556,17 @@ for (const lang of ["en", "bn"]) {
   // boxes but not on screen, and would be measured as if it were.
   await sweepCheck(d, `${lang}: Dawah page`, "#app");
   const { page: q } = await openPage(ctx, "/app/quranrevival.html");
+  // UPDATED IN PLACE (Note view retirement, step b): the Note pop-up is deleted; the surface that does its job is the Read view's
+  // Notes pane, opened from the Study menu. The same two checks (a pressed button precondition, and the Night/Light colour sweep)
+  // are made against the pane at the same 1100px.
   const noteReachable = await q.evaluate(() => { const b = document.getElementById("tabNoteBtn"); return !!b && b.getBoundingClientRect().width > 0; });
   if (!noteReachable) { await clickSafely(q, "#tabStudyBtn"); await q.waitForTimeout(150); }
-  await q.evaluate(() => window.__dormantOpenNoteView()); // R3c: the dormant Note view, by its test seam
+  await q.evaluate(() => document.getElementById("tabNoteBtn")?.click());
+  await q.waitForFunction(() => document.getElementById("readNotePane")?.hidden === false, null, { timeout: 10000 }).catch(() => {});
   await q.waitForTimeout(500);
-  const pressed = await q.evaluate(() => !!document.querySelector('#noteView .note-popup-side-nav button[aria-pressed="true"]'));
-  check(`${lang}: precondition -- the Note pop-up's side pane has a pressed button`, pressed);
-  await sweepCheck(q, `${lang}: Note pop-up (1100px)`, "#noteView");
+  const pressed = await q.evaluate(() => !!document.querySelector('#readNotePane [aria-selected="true"], #readNotePane [aria-pressed="true"]') && document.getElementById("noteView") === null);
+  check(`${lang}: precondition -- the Notes pane is open with a selected tab (and #noteView is absent)`, pressed);
+  await sweepCheck(q, `${lang}: Notes pane (1100px)`, "#readNotePane");
   await ctx.close();
 }
 
