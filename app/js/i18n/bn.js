@@ -4065,6 +4065,8 @@ export const BN = {
   "No notes on {unit} yet. Press ✚ New note to write one.": "{unit}-এ এখনো কোনো নোট নেই। লিখতে ✚ নতুন নোট চাপুন।",
   "No notes on {unit} yet.": "{unit}-এ এখনো কোনো নোট নেই।",
   "Your Notes on {unit} could not be read. Please try again.": "{unit}-এর নোটগুলো পড়া গেল না। আবার চেষ্টা করুন।",
+  "Try again": "আবার চেষ্টা করুন",
+  "Your folders could not be read. Please try again.": "আপনার ফোল্ডারগুলো পড়া গেল না। আবার চেষ্টা করুন।",
   "Your note from the Note view (kept as it was)": "নোট ভিউ থেকে আপনার নোট (যেমন ছিল তেমনই রাখা)",
   "Back to {unit}": "{unit}-এ ফিরে যান",
   "Notes on this āyah": "এই আয়াতের নোট",
