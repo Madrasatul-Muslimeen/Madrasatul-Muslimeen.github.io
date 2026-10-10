@@ -20521,3 +20521,11 @@ The Owner, 9 Oct 2026, with a photo of the sheet on Yaseen 8: "The writing view 
 - **Open this Name** on a template poster opens `asma-study.html?name=N&back=1`; ← Back returns to the page the reader was on (the way-back law).
 - Review fix: `#mmSaverSettings [hidden]{display:none!important}`. `.mmss-names{display:flex}` overruled `hidden`, so the tick list of Names showed whatever was chosen, from v10.08. New check 5b reads rendered boxes; mutation nohide caught.
 - Checks: asma-screensaver 61/0 with nine mutations caught; asma-poster 100/0; asma-descriptions 26/0; asma-quick-class 27/0; service-worker 18/0; phone-width-overflow 217/0; behaviour 1007/0.
+
+## v10.14 — 2026-10-10 — Note view retirement, step (a) (Builder #740)
+
+- Behaviour-neutral. `refreshQcrDrawerSummaries`, `wireApproachEmbed`, `wireAsmaTrackEmbed` and `wireAsmaXNoteFields` no longer default to the Note view: callers pass the root (and re-render function, and āyah) explicitly; a missing one throws by name.
+- `root === noteView` became `{ fieldScoped }` (wireApproachEmbed) and `root !== noteView` became `{ closePopupOnJump }` (wireAsmaXNoteFields).
+- The `["readView", "noteView"]` listener loop skips an element that is not there, so step (b) can delete `#noteView`.
+- New guard `tools/i18n-verify/note-view-decoupled.mjs` (12 checks, with a positive control per helper); two mutations caught.
+- Checks: every Notes-pane, QCR pop-up, Approach card and action-sheet suite green; phone-width-overflow 217/0; behaviour 1007/0 (the old Note-view checks, run through the test seam, unchanged).
