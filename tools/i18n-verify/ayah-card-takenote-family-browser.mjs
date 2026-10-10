@@ -31,6 +31,7 @@ const TS = "2026-01-01T00:00:00.000Z";
 const NOTE_256 = { _id: "t1__n256", noteId: "n256", tenantId: "t1", ownerPersonId: "p1", ownerUid: "test-uid", title: "On 2:256", bodyHtml: "<p>On 2:256</p>", status: "active", visibility: "private", currentRevisionId: "n256-r1", schemaVersion: 1, createdAt: TS, updatedAt: TS, createdBy: "test-uid" };
 const SOURCE_256 = { _id: "t1__s256", sourceLinkId: "s256", tenantId: "t1", ownerPersonId: "p1", ownerUid: "test-uid", noteId: "n256", sourceKey: "ayah:2:256", sourceKind: "quran-unit", relationshipKind: "origin", approachId: null, provenanceKind: "study-note", status: "active", schemaVersion: 1, createdAt: TS, updatedAt: TS, createdBy: "test-uid" };
 const SEED = `
+window.__stubApplyBatches = true; window.__stubRecordTxData = true;
 DATA.notes = [...(DATA.notes ?? []), ${JSON.stringify(NOTE_256)}];
 DATA.noteSources = [...(DATA.noteSources ?? []), ${JSON.stringify(SOURCE_256)}];
 DATA.records.push(
@@ -64,39 +65,43 @@ for (const lang of ["en", "bn"]) for (const [width, height] of [[390, 844], [128
   await P.waitForTimeout(900);
   await ev(() => document.querySelectorAll('[id*="splash"], .app-splash-overlay').forEach((e) => e.remove()));
 
-  // 1. One 📝 Note (decision 94): no Note yet -> ready to write; a Note already -> the view as it is.
+  // 1. One 📝 Note (decision 94), UPDATED IN PLACE for decision 95 (the Owner, 9 Oct 2026: "NotePane: Build the demo";
+  // v10.03), reason recorded: the Note is Mapping My Journey's own Note pane on the Read view now, not the Note view.
+  // No Note yet -> the pane with ✚ New note in focus, ready to press (pressing it writes the Note, the cursor in it);
+  // a Note already -> the pane listing it. Both carry "← Back to Āyah card" on the pane's bar.
+  const paneFrame = async () => { for (let i = 0; i < 80; i++) { const f = P.frames().find((x) => /journey-map\.html\?embed=1&unit=ayah%3A2%3A/.test(x.url())); if (f) return f; await P.waitForTimeout(100); } return null; };
   await openCard(P, 255);
   const doors = await ev(() => ({ note: document.querySelectorAll("[data-ayah-sheet] [data-ayah-sheet-note]").length, isNew: !!document.querySelector("[data-ayah-sheet] [data-ayah-sheet-note-new]"), take: !!document.querySelector("[data-ayah-sheet] [data-ayah-sheet-takenote]"), pen: [...document.querySelectorAll("[data-ayah-sheet] [data-ayah-sheet-actions] button")].some((b) => b.textContent.includes("✍")) }));
   check(`${tag} the card has ONE 📝 Note (no separate ✍ Take Note), and with no Note yet it is the take-a-note door`, doors.note === 1 && doors.isNew && !doors.take && !doors.pen, JSON.stringify(doors));
   await P.click("[data-ayah-sheet] [data-ayah-sheet-note]");
-  await P.waitForFunction(() => !document.getElementById("noteView")?.hidden && document.querySelector("#noteView [data-note-editor]"), null, { timeout: 10000 }).catch(() => {});
-  await P.waitForTimeout(400);
-  const take = await ev(() => {
-    const ed = document.querySelector("#noteView [data-note-editor]"), r = ed?.getBoundingClientRect();
-    return { view: !document.getElementById("noteView").hidden, open: !!ed && ed.closest(".note-field-body")?.style.display !== "none", focused: document.activeElement === ed,
-      inSight: !!r && r.height > 0 && r.top >= 0 && r.top < innerHeight - 20, back: !!document.querySelector("#ayahCardBackPill:not([hidden])") };
-  });
-  check(`${tag} 📝 Note (no Note yet) opens the Note view with its Notes box open`, take.view && take.open, JSON.stringify(take));
-  check(`${tag} ...the box in sight and the cursor in it, ready to type`, take.focused && take.inSight, JSON.stringify(take));
+  const F = await paneFrame();
+  await F?.waitForFunction(() => document.activeElement?.matches?.("[data-unit-new].unit-new-ready"), null, { timeout: 15000 }).catch(() => {});
+  const take = await ev(() => ({ pane: !document.getElementById("readNotePane")?.hidden, back: document.querySelector("#readNotePane [data-rnp-back]")?.textContent ?? "", title: document.querySelector("#readNotePane .rnp-title")?.textContent ?? "" }));
+  const ready = F ? await F.evaluate(() => !!document.activeElement?.matches?.("[data-unit-new].unit-new-ready")) : false;
+  check(`${tag} 📝 Note (no Note yet) opens the Notes pane on 2:255 with ✚ New note in focus`, take.pane && /2:255|২:২৫৫/.test(take.title) && ready, JSON.stringify({ ...take, ready }));
+  await F?.click("[data-unit-new]");
+  await F?.waitForFunction(() => document.activeElement?.isContentEditable, null, { timeout: 10000 }).catch(() => {});
+  check(`${tag} ...pressing it makes the Note with the cursor in it, ready to type`, F ? await F.evaluate(() => !!document.activeElement?.isContentEditable) : false);
   await P.keyboard.type("Bismillah");
-  check(`${tag} ...typing goes straight into the Note`, (await ev(() => document.querySelector("#noteView [data-note-editor]")?.textContent ?? "")).includes("Bismillah"));
-  check(`${tag} ...and "Back to Āyah card" is there`, take.back);
-  await P.click("[data-ayah-card-back]");
+  check(`${tag} ...typing goes straight into the Note`, F ? (await F.evaluate(() => document.querySelector("#notePane [contenteditable=true]")?.textContent ?? "")).includes("Bismillah") : false);
+  check(`${tag} ...and "Back to Āyah card" is there`, take.back === `← ${lang === "bn" ? "আয়াত কার্ডে ফিরুন" : "Back to Āyah card"}`, take.back);
+  await P.click("#readNotePane [data-rnp-back]");
   await P.waitForFunction(() => document.getElementById("ayahActionSheetOverlay")?.classList.contains("open"), null, { timeout: 8000 }).catch(() => {});
   await P.waitForTimeout(300);
   await ev(() => document.activeElement?.blur?.());
-  // 2:256 has a Note (seeded): the card's one 📝 Note there is the plain door.
+  // 2:256 has a Note (seeded): the card's one 📝 Note there opens the pane listing it, with nothing put in focus.
   await P.click('[data-ayah-sheet] [data-ayah-sheet-step="1"]');
   await P.waitForFunction(() => /2:256|২:২৫৬/.test(document.querySelector("[data-ayah-sheet] .ayah-sheet-ref")?.textContent ?? "") && document.querySelector("[data-ayah-sheet] [data-ayah-sheet-note]")?.getAttribute("aria-label") !== null, null, { timeout: 8000 }).catch(() => {});
   await P.waitForTimeout(700);
   const nowHas = await ev(() => ({ isNew: !!document.querySelector("[data-ayah-sheet] [data-ayah-sheet-note-new]"), label: document.querySelector("[data-ayah-sheet] [data-ayah-sheet-note]")?.getAttribute("aria-label") }));
   check(`${tag} on 2:256, which has a Note, the card's one 📝 Note is "Note & more…", not the take-a-note door`, !nowHas.isNew && nowHas.label === (lang === "bn" ? "নোট ও আরও…" : "Note & more…"), JSON.stringify(nowHas));
   await P.click("[data-ayah-sheet] [data-ayah-sheet-note]");
-  await P.waitForFunction(() => !document.getElementById("noteView")?.hidden, null, { timeout: 10000 }).catch(() => {});
-  await P.waitForTimeout(400);
-  const plain = await ev(() => ({ view: !document.getElementById("noteView").hidden, focused: document.activeElement?.matches?.("[data-note-editor]") ?? false, back: !!document.querySelector("#ayahCardBackPill:not([hidden])") }));
-  check(`${tag} ...and it opens the Note view as it is (no cursor put in the box) -- a different door`, plain.view && !plain.focused && plain.back, JSON.stringify(plain));
-  await P.click("[data-ayah-card-back]").catch(() => {});
+  await P.waitForTimeout(600);
+  const F2 = await paneFrame();
+  await F2?.waitForFunction(() => /2:256|২:২৫৬/.test(document.querySelector("[data-unit-title]")?.textContent ?? "") && document.querySelector('[data-unit-body] [data-note-id="n256"]'), null, { timeout: 15000 }).catch(() => {});
+  const plain = F2 ? await F2.evaluate(() => ({ listed: !!document.querySelector('[data-unit-body] [data-note-id="n256"]'), focused: !!document.activeElement?.matches?.("[data-unit-new].unit-new-ready") })) : null;
+  check(`${tag} ...and it opens the pane listing "On 2:256" (✚ not put in focus) -- a different door`, plain?.listed && !plain.focused, JSON.stringify(plain));
+  await P.click("#readNotePane [data-rnp-back]").catch(() => {});
   await P.waitForFunction(() => document.getElementById("ayahActionSheetOverlay")?.classList.contains("open"), null, { timeout: 8000 }).catch(() => {});
   await P.waitForTimeout(400);
   // Back to 2:255, where the 👥 checks below are written.
