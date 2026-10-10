@@ -67,15 +67,23 @@ for (const lang of ["en", "bn"]) {
     await page.selectOption("#asmaXSingleSelect", "1");
     await page.waitForFunction(() => !!document.getElementById("asmaXPosterPanel"), null, { timeout: 6000 }).catch(() => {});
     await page.waitForTimeout(300);
-    const m = await page.evaluate(() => {
-      const b = document.getElementById("asmaXBackToWheelBtn"), p = document.getElementById("asmaXPosterPanel");
+    // Below 900px the bar sits under the poster, so the way back is the labelled button above it; from 900px the
+    // Name's column (its bar at the top) sits beside the poster, so ◂ there carries the words instead and the poster
+    // keeps its full height.
+    const wide = width >= 900;
+    const BACK_SEL = wide ? "#asmaXBackFromRefsBtn" : "#asmaXBackToWheelBtn";
+    const m = await page.evaluate(([sel, wide]) => {
+      const b = document.querySelector(sel), p = document.getElementById("asmaXPosterPanel");
+      const other = document.getElementById(wide ? "asmaXBackToWheelBtn" : "asmaXBackFromRefsBtn");
       const r = b?.getBoundingClientRect(), pr = p?.getBoundingClientRect();
-      return { has: !!b, text: b?.textContent.trim() ?? "", h: r ? Math.round(r.height) : 0, inView: !!r && r.top >= 0 && r.bottom <= innerHeight,
-        above: !!r && !!pr && r.bottom <= pr.top + 1, posterInside: !!pr && pr.right <= document.getElementById("asmaXWheelContainer").getBoundingClientRect().right + 1,
+      const hit = r && document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      return { has: !!b && r.width > 0, text: b?.textContent.trim() ?? "", h: r ? Math.round(r.height) : 0, inView: !!r && r.top >= 0 && r.bottom <= innerHeight,
+        tappable: !!hit && b.contains(hit), top: r ? Math.round(r.top) : null, posterTop: pr ? Math.round(pr.top) : null, otherHidden: wide ? !other || other.getBoundingClientRect().width === 0 : true,
+        above: !!r && !!pr && (wide ? Math.abs(r.top - pr.top) <= 40 : r.bottom <= pr.top + 1), posterInside: !!pr && pr.right <= document.getElementById("asmaXWheelContainer").getBoundingClientRect().right + 1,
         over: document.documentElement.scrollWidth - document.documentElement.clientWidth };
-    });
-    check(`${tag} a Name's poster has "← Back to the wheel" above it, on screen, at least 40px high`, m.has && m.above && m.inView && m.h >= 40, JSON.stringify(m));
-    check(`${tag} ...its words are ${lang === "bn" ? "Bangla" : "English"}`, lang === "bn" ? BN.test(m.text) && !/[A-Za-z]/.test(m.text) : m.text === "← Back to the wheel", m.text);
+    }, [BACK_SEL, wide]);
+    check(`${tag} a Name's poster has a worded way back to the wheel ${wide ? "on its bar (◂), level with the poster's top" : "above it"}, on screen, tappable, at least 40px high`, m.has && m.above && m.inView && m.tappable && m.h >= 40 && m.otherHidden, JSON.stringify(m));
+    check(`${tag} ...its words are ${lang === "bn" ? "Bangla" : "English"}`, lang === "bn" ? BN.test(m.text) && !/[A-Za-z]/.test(m.text) : m.text === (wide ? "◂ Back to the wheel" : "← Back to the wheel"), m.text);
     check(`${tag} ...the poster still fits its space, no sideways scroll`, m.posterInside && m.over <= 0, JSON.stringify(m));
     if (width === 390 && lang === "bn" || width === 1300 && lang === "en") await page.screenshot({ path: `${SHOT_DIR}/asma-ways-back-${lang}-${width}.png` });
 
@@ -107,12 +115,12 @@ for (const lang of ["en", "bn"]) {
     check(`${tag} ..."← Back to {Name}" closes it, back on the Name exactly where the reader was`, after.closed && after.stillOnName, JSON.stringify(after));
 
     // 1 (cont.). Back to the wheel.
-    await page.click("#asmaXBackToWheelBtn").catch(() => {});
+    await page.click(BACK_SEL).catch(() => {});
     await page.waitForTimeout(500);
     const w = await page.evaluate((g) => ({ poster: !!document.getElementById("asmaXPosterPanel"),
       wheel: document.querySelectorAll("#asmaXWheelContainer svg, #asmaXWheelContainer .wheel-seg, #asmaXWheelContainer path").length,
       group: document.querySelector('select[data-asmax-class-select="group"]')?.value === g }), group);
-    check(`${tag} "← Back to the wheel" returns to the wheel the Name came from (same group, its wheel drawn again)`, !w.poster && w.wheel > 0 && w.wheel === wheelBefore && w.group, JSON.stringify({ ...w, wheelBefore }));
+    check(`${tag} the way back returns to the wheel the Name came from (same group, its wheel drawn again)`, !w.poster && w.wheel > 0 && w.wheel === wheelBefore && w.group, JSON.stringify({ ...w, wheelBefore }));
     check(`${tag} no page errors`, errors.filter((e) => !/ERR_CERT|archive\.org|net::/.test(e)).length === 0, errors.slice(0, 2).join(" | "));
     await ctx.close();
   }
