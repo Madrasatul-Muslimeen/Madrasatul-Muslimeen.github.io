@@ -229,6 +229,14 @@ for (const lang of ["en", "bn"]) for (const width of [390, 1280]) {
     await page.click("#tabExploreBtn");
     await page.waitForSelector('#exploreWheelContainer .wheel-ring-seg[data-ring-kind="surah"]', { timeout: 30000 });
     await page.click('#exploreWheelContainer .wheel-ring-seg[data-ring-kind="surah"][data-key="1"]', { force: true });
+    // UPDATED for issue #752, reason recorded: since decision 82 (v09.107) the
+    // Surah level opens in "All Approaches" mode -- one all-Approach slice
+    // wheel and status strips, with NO ayah ring and NO `.way-row` badges. The
+    // badges this check reads live in "One Approach" mode, so switch to it
+    // (as unit-rings-browser.mjs does) instead of waiting for a ring that the
+    // default mode never draws.
+    await page.waitForSelector('#exploreModeRow [data-v="one"]', { timeout: 20000 });
+    await page.click('#exploreModeRow [data-v="one"]');
     await page.waitForSelector('#exploreWheelContainer .wheel-ring-seg[data-ring-kind="ayah"]', { timeout: 20000 });
     await page.waitForTimeout(500);
     const badges = () => page.evaluate(() => [...document.querySelectorAll("#exploreSidebarContainer .way-row")].map((r) => [r.dataset.key, r.querySelector(".badge").textContent.trim()]));
