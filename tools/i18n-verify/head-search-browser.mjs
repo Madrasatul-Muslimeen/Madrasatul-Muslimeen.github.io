@@ -85,18 +85,33 @@ for (const [lang, width] of [["en", 390], ["bn", 320], ["en", 1280]]) {
   await ctx.close();
 }
 
-// ---- With the "Previewing as" badge in the corner (an owner previewing a role)
-// Search stays on the title's line, the badge after it; nothing cut or scrolled.
-for (const [lang, width] of [["en", 390], ["en", 412], ["en", 1280], ["bn", 390]]) {
+// ---- With the "Previewing as" badge (an owner previewing a role).
+// UPDATED IN PLACE 10 Oct 2026, the Owner: "Prime now takes another bar space. Place it left to search as only 'Prime'".
+// It used to inject a fake badge AFTER Search, so the real relocatePreviewNotice() never ran here. Now a real
+// "View as: Prime" preview (qr.sessionContext.viewAsRole) renders it: the role word alone, left of Search, on the
+// title's line, with the whole sentence as its spoken name.
+for (const [lang, width] of [["en", 360], ["en", 390], ["en", 412], ["en", 1280], ["bn", 390], ["bn", 360]]) {
   const { ctx, page } = await start({ lang, width });
-  await page.evaluate(() => { const s = document.createElement("span"); s.className = "nav-preview-notice"; s.textContent = "Previewing as: Prime"; document.querySelector("h1").appendChild(s); });
-  await page.waitForTimeout(150);
+  await page.evaluate(() => { const c = JSON.parse(localStorage.getItem("qr.sessionContext") || "null"); if (c) { c.viewAsRole = "prime"; localStorage.setItem("qr.sessionContext", JSON.stringify(c)); } });
+  await page.reload();
+  await page.waitForSelector("h1 .nav-preview-notice", { timeout: 15000 }).catch(() => {});
+  await page.waitForTimeout(300);
   const m = await page.evaluate(() => {
-    const R = (e) => e.getBoundingClientRect();
-    const t = R(document.getElementById("appTitleText")), b = R(document.getElementById("headSearchBtn")), n = R(document.querySelector("h1 .nav-preview-notice"));
-    return { searchOnTitleLine: b.top < t.bottom && b.bottom > t.top, badgeAfterOrBelow: n.left >= b.right - 1 || n.top >= b.bottom - 1, over: document.documentElement.scrollWidth > document.documentElement.clientWidth };
+    const R = (e) => e?.getBoundingClientRect();
+    const h1 = document.querySelector("h1");
+    const n = h1.querySelector(".nav-preview-notice");
+    const t = R(document.getElementById("appTitleText")), b = R(document.getElementById("headSearchBtn")), r = R(n);
+    return {
+      badge: !!n, text: n?.textContent.trim(), label: n?.getAttribute("aria-label") ?? "",
+      onTitleLine: !!r && r.top < t.bottom && r.bottom > t.top, searchOnTitleLine: b.top < t.bottom && b.bottom > t.top,
+      leftOfSearch: !!r && r.right <= b.left + 1, overlapTitle: !!r && r.left < t.right - 1,
+      over: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+      inNavBar: !!document.querySelector("#navBar .nav-preview-notice"),
+    };
   });
-  check(`[${lang} ${width}] with the Previewing badge: Search stays on the title's line, badge after it, no sideways scroll`, m.searchOnTitleLine && m.badgeAfterOrBelow && !m.over, JSON.stringify(m));
+  const word = lang === "en" ? m.text === "Prime" : (!!m.text && !/[A-Za-z]/.test(m.text) && m.text.length < 12);
+  check(`[${lang} ${width}] the preview badge is the role word alone (${m.text}), its spoken name the whole sentence`, m.badge && word && m.label.length > m.text.length && m.label.includes(m.text), JSON.stringify(m));
+  check(`[${lang} ${width}] ...left of Search, on the title's line, no overlap, no second copy in the nav, no sideways scroll`, m.onTitleLine && m.searchOnTitleLine && m.leftOfSearch && !m.overlapTitle && !m.inNavBar && !m.over, JSON.stringify(m));
   await ctx.close();
 }
 

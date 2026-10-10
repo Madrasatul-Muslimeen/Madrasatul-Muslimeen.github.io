@@ -232,8 +232,13 @@ export function renderNavBar(roles = [], viewAsRole = null) {
   // <h1>) and move the badge there. phase 4: the role id itself is
   // translated too -- the sentence around it was Bangla while the word
   // inside it stayed "teacher".
+  // 10 Oct 2026 (the Owner: "Prime now takes another bar space. Place it left to search as only 'Prime'"): the role
+  // word and the whole sentence also ride as attributes, so the Quran page's banner can show the word alone beside
+  // Search while a screen reader and a hover still get the sentence. Pages without a banner show the sentence, as before.
+  const attr = (s) => String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+  const previewSentence = viewAsRole ? t("Previewing as: {role}", { role: roleLabel(viewAsRole) }) : "";
   const previewNotice = viewAsRole
-    ? `<span class="nav-preview-notice">${t("Previewing as: {role}", { role: roleLabel(viewAsRole) })}${teacherGapNote}</span>`
+    ? `<span class="nav-preview-notice" data-role-label="${attr(roleLabel(viewAsRole))}" data-sentence="${attr(previewSentence)}">${previewSentence}${teacherGapNote}</span>`
     : "";
   return `${cats.join("")}${previewNotice}`;
 }
