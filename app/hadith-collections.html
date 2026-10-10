@@ -152,6 +152,7 @@
     import { mountHadithBrowser } from "./js/hadith-browser.js";
     import { translateStatic, t } from "./js/i18n.js";
     import { registerServiceWorker } from "./js/sw-register.js";
+    import { armScreensaver } from "./js/screensaver-idle.js";
     import { APP_VERSION } from "./js/version.js";
 
     const params = new URLSearchParams(location.search);
@@ -175,6 +176,7 @@
     }
     translateStatic();
     registerServiceWorker();
+    armScreensaver();
     // Issue #311 -- exposed on `window` so the (deliberately separate,
     // Firebase-touching) session bootstrap script above can ask the corpus
     // to re-render its own study actions after a tenant/person change,

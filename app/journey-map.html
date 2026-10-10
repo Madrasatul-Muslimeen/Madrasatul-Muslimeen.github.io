@@ -401,6 +401,7 @@
     <details class="nav-cat nav-cat-home">
       <summary>Home</summary>
       <div class="nav-cat-links">
+        <button type="button" class="nav-legacy-link nav-screensaver-link" data-screensaver-settings>🌙 Screensaver</button>
         <a href="https://madrasatul-muslimeen.github.io/legacy/index.html" class="nav-legacy-link" target="_blank" rel="noopener">Legacy App - v06 ↗</a>
         <a href="https://madrasatul-muslimeen.github.io/legacy-v07/index.html" class="nav-legacy-link" target="_blank" rel="noopener">Legacy App - v07 ↗</a>
         <a href="https://madrasatul-muslimeen.github.io/legacy-v08/index.html" class="nav-legacy-link" target="_blank" rel="noopener">Legacy App - v08 ↗</a>
@@ -474,6 +475,7 @@
     import { translateStatic, t } from "./js/i18n.js";
     import { mountAccountCard } from "./js/account-card.js";
     import { registerServiceWorker } from "./js/sw-register.js";
+    import { armScreensaver } from "./js/screensaver-idle.js";
     import { roleListLabel } from "./js/labels.js";
     import { sanitizeNoteHtml } from "./js/note-sanitize.js";
     import { closeAllBarPalettes } from "./js/bar-palette.js";
@@ -497,6 +499,7 @@
 
     translateStatic();
     registerServiceWorker();
+    armScreensaver();
 
     // Back: return to wherever the reader came from inside this app (the
     // dock's Mapping tab, the Note view's ⋯ menu, Home ▾), so they land on

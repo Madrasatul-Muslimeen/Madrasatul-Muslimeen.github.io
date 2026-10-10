@@ -54,6 +54,7 @@
     <details class="nav-cat nav-cat-home">
       <summary>Home</summary>
       <div class="nav-cat-links">
+        <button type="button" class="nav-legacy-link nav-screensaver-link" data-screensaver-settings>🌙 Screensaver</button>
         <a href="https://madrasatul-muslimeen.github.io/legacy/index.html" class="nav-legacy-link" target="_blank" rel="noopener">Legacy App - v06 ↗</a>
         <a href="https://madrasatul-muslimeen.github.io/legacy-v07/index.html" class="nav-legacy-link" target="_blank" rel="noopener">Legacy App - v07 ↗</a>
         <a href="https://madrasatul-muslimeen.github.io/legacy-v08/index.html" class="nav-legacy-link" target="_blank" rel="noopener">Legacy App - v08 ↗</a>
@@ -145,6 +146,7 @@
     import { translateStatic, t, num } from "./js/i18n.js";
     import { mountAccountCard } from "./js/account-card.js";
     import { registerServiceWorker } from "./js/sw-register.js";
+    import { armScreensaver } from "./js/screensaver-idle.js";
     import { roleListLabel } from "./js/labels.js";
     import { getSurahIndex } from "./js/quran-data.js";
     import { parseWxrXml, analyzeWxrImport } from "./js/wordpress-import-parser.js";
@@ -155,6 +157,7 @@
 
     translateStatic();
     registerServiceWorker();
+    armScreensaver();
 
     // The way-back law (decision 86): the title's own ← already leads back to Mapping My Journey. With ?back=1
     // (its Import Notes… link) it returns to exactly where the reader was, by history, rather than reopening the page.

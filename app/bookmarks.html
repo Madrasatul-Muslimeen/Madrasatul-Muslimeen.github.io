@@ -65,6 +65,7 @@
     <details class="nav-cat nav-cat-home">
       <summary>Home</summary>
       <div class="nav-cat-links">
+        <button type="button" class="nav-legacy-link nav-screensaver-link" data-screensaver-settings>🌙 Screensaver</button>
         <a href="https://madrasatul-muslimeen.github.io/legacy/index.html" class="nav-legacy-link" target="_blank" rel="noopener">Legacy App - v06 ↗</a>
         <a href="https://madrasatul-muslimeen.github.io/legacy-v07/index.html" class="nav-legacy-link" target="_blank" rel="noopener">Legacy App - v07 ↗</a>
         <a href="https://madrasatul-muslimeen.github.io/legacy-v08/index.html" class="nav-legacy-link" target="_blank" rel="noopener">Legacy App - v08 ↗</a>
@@ -190,6 +191,7 @@
 import { mountBookmarkMenu, noteBookmarkOpened, getBookmarkTimesShown, bookmarkTimeText } from "./js/bookmark-nav.js";
     import { translateStatic, t, num, surahName } from "./js/i18n.js";
     import { registerServiceWorker } from "./js/sw-register.js";
+    import { armScreensaver } from "./js/screensaver-idle.js";
     import { MODULE_PAGES, MODULE_LABELS } from "./js/continue-strip.js";
     import { buildUnitKey, rukuIndexInSurah } from "./js/unit-keys.js";
     import { getSurah, getSurahIndex, getJuzIndex, getHizbIndex, getPageIndex } from "./js/quran-data.js";
@@ -203,6 +205,7 @@ import { mountBookmarkMenu, noteBookmarkOpened, getBookmarkTimesShown, bookmarkT
 
     translateStatic();
     registerServiceWorker();
+    armScreensaver();
 
     const whoEl = document.getElementById("who");
     const signInBtn = document.getElementById("signInBtn");

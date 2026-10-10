@@ -991,8 +991,12 @@ console.log("\n=== 22. PHASE 6: Asma ul Husna reads entirely in Bangla ===");
   // the page itself does rather than clicking through it.
   await page.evaluate(() => document.getElementById("wayModalOverlay")?.classList.remove("open"));
   await page.waitForTimeout(80);
+  // 10 Oct 2026: the screensaver is now the shared one with settings (asma-screensaver.js), and its default deck
+  // opens on a template poster (English, by design: the Owner's true-copy template). These three checks are about the
+  // PHOTO posters' captions, so the device's setting asks for photo posters first. Updated in place, not deleted.
+  await page.evaluate(() => localStorage.setItem("mm_screensaver", JSON.stringify({ kind: "photo", order: "seq" })));
   await page.click("#screensaverBtn");
-  await page.waitForTimeout(200);
+  await page.waitForTimeout(400);
   const saver = await page.evaluate(() => ({
     caption: document.querySelector(".asma-screensaver-caption")?.textContent?.trim(),
     alt: document.querySelector(".asma-screensaver-img")?.getAttribute("alt"),
