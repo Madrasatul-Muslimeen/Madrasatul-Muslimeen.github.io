@@ -125,7 +125,7 @@ for (const width of ONLY ? [Number(ONLY)] : [390, 1280]) {
     await settle(P, 1500);
     await sweep(P, "Read view, Mushaf", width);
     // 3. Note view and its menu.
-    await click(P, "#tabNoteBtn", 800);
+    await P.evaluate(() => window.__dormantOpenNoteView()); await settle(P, 800); // R3c: the dormant Note view, by its test seam
     await sweep(P, "Note view", width);
     for (const i of [0, 1]) {
       const opened = await P.evaluate((k) => { const b = [...document.querySelectorAll(".note-dot-wrap > .note-icon-btn")].filter((x) => x.offsetWidth > 0)[k]; if (b) b.click(); return !!b; }, i);

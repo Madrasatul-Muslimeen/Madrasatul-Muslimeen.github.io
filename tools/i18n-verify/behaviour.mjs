@@ -4509,7 +4509,7 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   check("42c ...and \"My note\" is greyed out -- nothing saved for this ayah yet", copySub.notesDisabled === true);
 
   // Note & more -- opens the full-stage view, not a floating modal.
-  await page.evaluate(() => document.getElementById("tabNoteBtn").click()); // v10.05 (decision 95, round 2b): ⋮ Note & more opens the Notes pane now; the Note view these checks describe is opened by its own Study-menu Note tab. Updated in place.
+  await page.evaluate(() => window.__dormantOpenNoteView()); /* R3c: the Study menu's Note opens the pane now; the dormant Note view is opened by its test seam */ // v10.05 (decision 95, round 2b): ⋮ Note & more opens the Notes pane now; the Note view these checks describe is opened by its own Study-menu Note tab. Updated in place.
   await page.waitForTimeout(250);
   const opened = await page.evaluate(() => ({
     noteShown: !document.getElementById("noteView").hidden,
@@ -4732,7 +4732,7 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   await page.waitForTimeout(400);
   await page.click("#readQuickMenuSlot [data-qm-toggle]");
   await page.waitForTimeout(150);
-  await page.evaluate(() => document.getElementById("tabNoteBtn").click()); // v10.05 (decision 95, round 2b): ⋮ Note & more opens the Notes pane now; the Note view these checks describe is opened by its own Study-menu Note tab. Updated in place.
+  await page.evaluate(() => window.__dormantOpenNoteView()); /* R3c: the Study menu's Note opens the pane now; the dormant Note view is opened by its test seam */ // v10.05 (decision 95, round 2b): ⋮ Note & more opens the Notes pane now; the Note view these checks describe is opened by its own Study-menu Note tab. Updated in place.
   await page.waitForTimeout(300);
   // RECONCILED 2026-09-17, with the evidence, rather than deleted.
   //
@@ -4820,7 +4820,7 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
     await page.waitForTimeout(400);
     await page.click("#readQuickMenuSlot [data-qm-toggle]");
     await page.waitForTimeout(150);
-    await page.evaluate(() => document.getElementById("tabNoteBtn").click()); // v10.05 (decision 95, round 2b): ⋮ Note & more opens the Notes pane now; the Note view these checks describe is opened by its own Study-menu Note tab. Updated in place.
+    await page.evaluate(() => window.__dormantOpenNoteView()); /* R3c: the Study menu's Note opens the pane now; the dormant Note view is opened by its test seam */ // v10.05 (decision 95, round 2b): ⋮ Note & more opens the Notes pane now; the Note view these checks describe is opened by its own Study-menu Note tab. Updated in place.
     await page.waitForTimeout(300);
     const info = await page.evaluate(() => {
       const visible = (el) => !!el && getComputedStyle(el).display !== "none";
@@ -4912,7 +4912,7 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   await page.waitForTimeout(400);
   await page.click("#readQuickMenuSlot [data-qm-toggle]");
   await page.waitForTimeout(150);
-  await page.evaluate(() => document.getElementById("tabNoteBtn").click()); // v10.05 (decision 95, round 2b): ⋮ Note & more opens the Notes pane now; the Note view these checks describe is opened by its own Study-menu Note tab. Updated in place.
+  await page.evaluate(() => window.__dormantOpenNoteView()); /* R3c: the Study menu's Note opens the pane now; the dormant Note view is opened by its test seam */ // v10.05 (decision 95, round 2b): ⋮ Note & more opens the Notes pane now; the Note view these checks describe is opened by its own Study-menu Note tab. Updated in place.
   await page.waitForTimeout(300);
 
   await clickInNoteTools(page, '[data-note-sub-toggle="copy"]');
@@ -4971,7 +4971,7 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   await page.waitForTimeout(400);
   await page.click("#readQuickMenuSlot [data-qm-toggle]");
   await page.waitForTimeout(150);
-  await page.evaluate(() => document.getElementById("tabNoteBtn").click()); // v10.05 (decision 95, round 2b): ⋮ Note & more opens the Notes pane now; the Note view these checks describe is opened by its own Study-menu Note tab. Updated in place.
+  await page.evaluate(() => window.__dormantOpenNoteView()); /* R3c: the Study menu's Note opens the pane now; the dormant Note view is opened by its test seam */ // v10.05 (decision 95, round 2b): ⋮ Note & more opens the Notes pane now; the Note view these checks describe is opened by its own Study-menu Note tab. Updated in place.
   await page.waitForTimeout(300);
   const before = await page.evaluate(() => ({
     fieldPresent: !!document.querySelector('[data-note-field="wbw"]'),
@@ -5047,7 +5047,7 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   await page.waitForTimeout(400);
   await page.click("#readQuickMenuSlot [data-qm-toggle]");
   await page.waitForTimeout(150);
-  await page.evaluate(() => document.getElementById("tabNoteBtn").click()); // v10.05 (decision 95, round 2b): ⋮ Note & more opens the Notes pane now; the Note view these checks describe is opened by its own Study-menu Note tab. Updated in place.
+  await page.evaluate(() => window.__dormantOpenNoteView()); /* R3c: the Study menu's Note opens the pane now; the dormant Note view is opened by its test seam */ // v10.05 (decision 95, round 2b): ⋮ Note & more opens the Notes pane now; the Note view these checks describe is opened by its own Study-menu Note tab. Updated in place.
   await page.waitForTimeout(300);
 
   // Open the Track card -- its body is `display:none` until the field toggle
@@ -5133,7 +5133,7 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   await page.waitForTimeout(400);
   await page.click("#readQuickMenuSlot [data-qm-toggle]");
   await page.waitForTimeout(150);
-  await page.evaluate(() => document.getElementById("tabNoteBtn").click()); // v10.05 (decision 95, round 2b): ⋮ Note & more opens the Notes pane now; the Note view these checks describe is opened by its own Study-menu Note tab. Updated in place.
+  await page.evaluate(() => window.__dormantOpenNoteView()); /* R3c: the Study menu's Note opens the pane now; the dormant Note view is opened by its test seam */ // v10.05 (decision 95, round 2b): ⋮ Note & more opens the Notes pane now; the Note view these checks describe is opened by its own Study-menu Note tab. Updated in place.
   await page.waitForTimeout(300);
 
   const before = await page.evaluate(() => {
@@ -5244,7 +5244,7 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   await page.waitForTimeout(400);
   await page.click("#readQuickMenuSlot [data-qm-toggle]");
   await page.waitForTimeout(150);
-  await page.evaluate(() => document.getElementById("tabNoteBtn").click()); // v10.05 (decision 95, round 2b): ⋮ Note & more opens the Notes pane now; the Note view these checks describe is opened by its own Study-menu Note tab. Updated in place.
+  await page.evaluate(() => window.__dormantOpenNoteView()); /* R3c: the Study menu's Note opens the pane now; the dormant Note view is opened by its test seam */ // v10.05 (decision 95, round 2b): ⋮ Note & more opens the Notes pane now; the Note view these checks describe is opened by its own Study-menu Note tab. Updated in place.
   await page.waitForTimeout(300);
 
   const before = await page.evaluate(() => ({
@@ -5294,7 +5294,7 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   await page.waitForTimeout(300);
   await page.click("#readQuickMenuSlot [data-qm-toggle]");
   await page.waitForTimeout(150);
-  await page.evaluate(() => document.getElementById("tabNoteBtn").click()); // v10.05 (decision 95, round 2b): ⋮ Note & more opens the Notes pane now; the Note view these checks describe is opened by its own Study-menu Note tab. Updated in place.
+  await page.evaluate(() => window.__dormantOpenNoteView()); /* R3c: the Study menu's Note opens the pane now; the dormant Note view is opened by its test seam */ // v10.05 (decision 95, round 2b): ⋮ Note & more opens the Notes pane now; the Note view these checks describe is opened by its own Study-menu Note tab. Updated in place.
   await page.waitForTimeout(300);
   const reopened = await page.evaluate(() => ({
     bodyClass: document.body.className,
@@ -5332,7 +5332,7 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   check("42k the quick menu's own items render in Bangla", menuBn.items.every((t) => BANGLA.test(t)), JSON.stringify(menuBn.items));
   check("42k ...while the checkbox values stay plain ids", JSON.stringify(menuBn.langValues) === JSON.stringify(["ar", "en", "bn", "notes"]));
 
-  await page.evaluate(() => document.getElementById("tabNoteBtn").click()); // v10.05 (decision 95, round 2b): ⋮ Note & more opens the Notes pane now; the Note view these checks describe is opened by its own Study-menu Note tab. Updated in place.
+  await page.evaluate(() => window.__dormantOpenNoteView()); /* R3c: the Study menu's Note opens the pane now; the dormant Note view is opened by its test seam */ // v10.05 (decision 95, round 2b): ⋮ Note & more opens the Notes pane now; the Note view these checks describe is opened by its own Study-menu Note tab. Updated in place.
   await page.waitForTimeout(300);
   const noteBn = await page.evaluate(() => {
     const view = document.querySelector(".note-view");

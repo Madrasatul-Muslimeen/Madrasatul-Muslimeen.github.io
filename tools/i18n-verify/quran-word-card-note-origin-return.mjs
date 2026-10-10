@@ -116,7 +116,7 @@ async function openFixtureWordInNoteView(page) {
     return !!b && b.getBoundingClientRect().width > 0;
   });
   if (!noteReachable) { await page.click("#tabStudyBtn"); await page.waitForTimeout(150); }
-  await page.click("#tabNoteBtn");
+  await page.evaluate(() => window.__dormantOpenNoteView()); // R3c: the dormant Note view, by its test seam
   await page.waitForTimeout(1500);
   await page.evaluate((suffix) => {
     (document.querySelector(`#noteView [data-word-occurrence$="${suffix}"]`) || document.querySelector("#noteView [data-word-occurrence]"))?.click();

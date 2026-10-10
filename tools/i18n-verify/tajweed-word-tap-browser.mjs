@@ -46,7 +46,7 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 1100, height: 800 
     await page.waitForTimeout(900);
 
     for (const [view, scope, tab] of [["Read", "#readView", null], ["Note", "#noteView", "tabNoteBtn"]]) {
-      if (tab) await openStudy(page, tab);
+      if (tab) { await page.evaluate(() => window.__dormantOpenNoteView()); await page.waitForTimeout(700); } // R3c: the dormant Note view, by its test seam
       const state = await page.evaluate(async (scope) => {
         const block = [...document.querySelectorAll(`${scope} .ayah-arabic, ${scope} .note-arabic`)]
           .find((el) => el.querySelector('[data-word-occurrence*=":2:2:"]') || /ذ/.test(el.textContent));

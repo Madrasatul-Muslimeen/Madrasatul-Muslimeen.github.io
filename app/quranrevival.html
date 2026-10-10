@@ -10604,6 +10604,9 @@
       closeAllPanels();
       await openNotesPaneForKey(currentUnitInfo().unitKey);
     }
+    // TEST SEAM, not a reader route: the dormant Note view's own suites open it here (they used to press the Study menu's
+    // Note). Nothing in the UI calls this; "no click path reaches #noteView" is checked by note-view-unreachable-browser.
+    window.__dormantOpenNoteView = () => { closeAllPanels(); return openNoteView(ayahRecordKey(currentSurahNum, currentAyahNum, currentHalf())); };
     tabNoteBtn.addEventListener("click", () => {
       if (stageView === "read" && readNotePaneMod?.isReadNotePaneOpen()) { readNotePaneMod.closeReadNotePane(); return; } // the old close idiom
       openNoteForCurrentAyah();

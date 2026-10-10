@@ -422,8 +422,7 @@ for (const lang of ["en", "bn"]) {
     await page.evaluate(() => document.getElementById("tabStudyBtn").click());
     await page.waitForTimeout(150);
     const noted = await page.evaluate(async () => {
-      const b = [...document.querySelectorAll("#studyPillarMenu button, #tabNoteBtn")].find((x) => /Note/i.test(x.id + x.textContent));
-      if (!b) return false; b.click(); return true;
+      if (!window.__dormantOpenNoteView) return false; window.__dormantOpenNoteView(); return true; // R3c: the dormant Note view, by its test seam
     });
     await page.waitForFunction(() => !!document.querySelector("#noteView .note-bar2 [data-note-writing]"), null, { timeout: 5000 }).catch(() => {});
     if (noted && await page.evaluate(() => !!document.querySelector("#noteView .note-bar2 [data-note-writing]"))) {
@@ -468,7 +467,7 @@ for (const [lang, width] of [["bn", 320], ["en", 390], ["en", 1280]]) {
   await pick(page, "surah", 67);
   await unbare(page);
   await page.click("#tabStudyBtn");
-  await page.evaluate(() => { const b = [...document.querySelectorAll("#studyPillarMenu button")].find((x) => /Note/i.test(x.textContent)); b?.click(); });
+  await page.evaluate(() => window.__dormantOpenNoteView()); // R3c: the dormant Note view, by its test seam
   await page.waitForFunction(() => !!document.querySelector("#noteView [data-note-writing]"), null, { timeout: 8000 }).catch(() => {});
   await page.evaluate(() => document.querySelector("#noteView [data-note-writing]")?.click());
   await page.waitForFunction(() => !!document.querySelector("#writingSheet .ws-page[data-painted]"), null, { timeout: 15000 }).catch(() => {});
