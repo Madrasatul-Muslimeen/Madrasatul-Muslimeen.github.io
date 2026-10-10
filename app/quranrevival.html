@@ -2529,7 +2529,9 @@
   }
   #readMeaningBtn[aria-pressed="true"] { background: #1F3A6E; color: #fff; }
   #readMeaningBtn:focus-visible { outline: 3px solid #B8862F; outline-offset: 2px; }
-  @media (max-width: 359px) { #readMeaningBtn { padding: 0 0.5rem; } }
+  /* Measured at 320px with Mushaf's page reference on the bar: the worded button took a line of its own and moved the
+     page down 42px. Below 360px it is 📖 alone (its spoken name stays the words), the same rule ☰ Surah list follows. */
+  @media (max-width: 359px) { #readMeaningBtn { padding: 0; width: 36px; } #readMeaningBtn .read-meaning-word { display: none; } }
   /* The Meaning flow: every āyah of the page(s), with its meanings, one after another. One wrapper, so "Page by
      page" (which turns each direct child of #pageViewContainer into a sideways page) makes it one page that scrolls
      down inside itself; otherwise #readScroll scrolls it. */
