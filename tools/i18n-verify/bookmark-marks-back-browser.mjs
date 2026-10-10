@@ -85,8 +85,11 @@ for (const lang of ["en", "bn"]) for (const width of [390, 1280]) {
   // when it closes). So the way back is two steps: the pane's own "← Back" (on screen, tappable), then the chip.
   // Stale on main since v10.11; measured failing there too.
   const paneFull = await P.evaluate(() => { const p = document.getElementById("readNotePane"); if (!p || p.hidden) return null; const r = p.getBoundingClientRect(); const b = p.querySelector("[data-rnp-back]")?.getBoundingClientRect(); const h = b && document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2); return { full: r.width >= innerWidth - 1 && r.height >= innerHeight * 0.9, backTappable: !!h && !!p.querySelector("[data-rnp-back]")?.contains(h) }; });
-  if (paneFull?.full) {
-    check(`${tag}: the Notes pane it opened fills the screen with its own ← Back on top`, paneFull.backTappable, JSON.stringify(paneFull));
+  if (paneFull?.full) check(`${tag}: the Notes pane it opened fills the screen with its own ← Back on top`, paneFull.backTappable, JSON.stringify(paneFull));
+  // Close the pane at EVERY width (issue #750): at 1280 it is a side pane, not a full sheet, and left open it sits over the
+  // Word Card's × (measured: the Notes iframe intercepts the click on `[data-word-card-close]`), so the card never closed.
+  if (paneFull) {
+    check(`${tag}: the Notes pane it opened has its own ← Back, tappable`, paneFull.backTappable, JSON.stringify(paneFull));
     await P.click("#readNotePane [data-rnp-back]");
     await P.waitForTimeout(700);
   }
@@ -100,9 +103,18 @@ for (const lang of ["en", "bn"]) for (const width of [390, 1280]) {
   // sheet that fills the screen (the Word Card) is not a bottom bar -- the chip steps aside and comes back when it closes.
   const label = await P.evaluate(async () => (await import("/app/js/bookmark-nav.js")).pageLabelOf(document));
   check(`${tag}: the Qur'an page's name is just its heading's words ("QuranRevival")`, label === "QuranRevival", JSON.stringify(label));
-  const readReach = await P.evaluate(() => (document.getElementById("tabReadBtn")?.getBoundingClientRect().width ?? 0) > 0);
-  if (!readReach) { await P.click("#tabStudyBtn"); await P.waitForTimeout(150); }
-  await P.click("#tabReadBtn"); await P.waitForTimeout(500);
+  // UPDATED IN PLACE 10 Oct 2026 (issue #750): the bookmark now opens the Read view itself (with the Notes pane), and the
+  // Read tab is a TOGGLE -- the old unconditional click sent the reader back to the landing view (measured: body gains
+  // "landing-view", the chip leaves the dock for <body>, and the floating chip then covered "Options" in the Study menu).
+  // That one stale click caused the Word Card, the dock and the Study-menu failures; the app was right. So: be on the
+  // Read view, pressing the tab only when the landing view is showing.
+  const onLanding = await P.evaluate(() => document.body.classList.contains("landing-view"));
+  check(`${tag}: the bookmark opened the Read view itself (not the landing view)`, !onLanding, `landing-view=${onLanding}`);
+  if (onLanding) {
+    const readReach = await P.evaluate(() => (document.getElementById("tabReadBtn")?.getBoundingClientRect().width ?? 0) > 0);
+    if (!readReach) { await P.click("#tabStudyBtn"); await P.waitForTimeout(150); }
+    await P.click("#tabReadBtn"); await P.waitForTimeout(500);
+  }
   await P.evaluate(() => { const t = document.getElementById("wbwShowToggle"); if (t && !t.checked) { t.checked = true; t.dispatchEvent(new Event("change", { bubbles: true })); } });
   await P.waitForSelector("[data-word-occurrence]", { timeout: 10000 }).catch(() => {});
   await P.locator("[data-word-occurrence]").first().click().catch(() => {});
@@ -134,6 +146,7 @@ for (const lang of ["en", "bn"]) for (const width of [390, 1280]) {
   if (SHOTS) await P.screenshot({ path: `${SHOTS}/bm-${tag.replace("/", "-")}-wordcard.png` });
   await P.click(".quran-word-card [data-word-card-close]").catch(() => {});
   await P.waitForTimeout(400);
+  check(`${tag}: the Word Card really closed`, await P.evaluate(() => document.querySelectorAll(".quran-word-card").length === 0));
   // Updated in place 8 Oct 2026: when the card closes the chip is where the Owner asked for it -- in the Read bar,
   // right before ✓, on the same line, at least 40px tall, nothing covering it.
   const after = await P.evaluate(() => {
