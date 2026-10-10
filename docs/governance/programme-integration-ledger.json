@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "10.19",
+    "version": "10.20",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -3221,8 +3221,20 @@
     {
       "version": "10.19",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "The Notes pane's ⋯ menu: the same actions sorted under six headings, Mark as four tiles, Delete alone at the bottom; a bottom sheet on a phone (the Owner, 10 Oct 2026; Builder #747, reviewed by the Architect).",
+      "integration": {
+        "authorizedOn": "2026-10-10",
+        "integratedOn": "2026-10-10",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "10.20",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Builder #750: bookmark-marks-back's three failures were the test (it toggled the Read view off; at 1280 the side Notes pane covered the Word Card's ×); the way-back slot on the Read bar takes the room left beside ✓.",
       "integration": {
         "authorizedOn": "2026-10-10",
         "integratedOn": "2026-10-10",
@@ -3231,8 +3243,9 @@
       }
     }
   ],
-  "nextUnallocated": "10.20",
+  "nextUnallocated": "10.21",
   "nextUnallocatedNote": [
+    "v10.20 was allocated to bookmark-marks-back made true (Builder #750), 2026-10-10.",
     "v10.19 was allocated to The Note ⋯ menu in six groups (Builder #747), 2026-10-10.",
     "v10.18 was allocated to Asma ways back, Prime beside Search, the Āyah card's Full text full screen, 2026-10-10.",
     "v10.17 was allocated to Note view retirement (b): the dead Note view code deleted (Builder #742, finished by the Architect), 2026-10-10.",
