@@ -22971,8 +22971,13 @@
     function paneApproachInfo(u) {
       const cur = currentUnitInfo();
       if (cur.unitKey === u.unitKey) return cur;
-      const { surah } = parseAyahUnitKey(u.unitKey);
-      return { unitType: "ayah", unitKey: u.unitKey, chunkKey: `surah_${surah}`, label: u.label };
+      // The pane can sit on a unit other than the Read view's (a Unit card's 📝 Note): read its type off its own key, and
+      // chunk it by D12 -- an āyah, Range, Surah or Ruku' in its Surah's chunk, a Juz, Hizb or Page in subject_quran.
+      const { unitType, parts } = parseUnitKey(u.unitKey);
+      const bySurah = ["ayah", "range", "surah", "ruku"].includes(unitType);
+      const info = { unitType, unitKey: u.unitKey, chunkKey: bySurah ? `surah_${Number(parts[0])}` : "subject_quran", label: u.label };
+      if (unitType === "ayah") info.half = parseAyahUnitKey(u.unitKey).half;
+      return info;
     }
     function paintPaneApproachCard(u, el) {
       const info = paneApproachInfo(u);

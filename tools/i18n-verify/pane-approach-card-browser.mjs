@@ -19,6 +19,9 @@ const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice
 const MUT = {
   routenote: ["quranrevival.html", 'openApproachCardInPane(key, t("Back to the Approach wheel"), openApproachWheel);', "noteApproachCardOpen = true; openNoteView(unitInfo.unitKey);"],
   noroot: ["quranrevival.html", 'const embedEl = root === noteView ? root.querySelector(\'[data-note-field="approach"] .way-embed\') : root.querySelector(".way-embed");', "const embedEl = noteView.querySelector('[data-note-field=\"approach\"] .way-embed');"],
+  // The pane on a unit other than the Read view's (a Unit card's 📝 Note on a Juz) took its card for an āyah and read
+  // its status from a Surah's chunk. Architect's review of #728: the type comes from the key, chunked by D12.
+  ayahonly: ["quranrevival.html", 'const { unitType, parts } = parseUnitKey(u.unitKey);\n      const bySurah = ["ayah", "range", "surah", "ruku"].includes(unitType);', 'const unitType = "ayah", parts = [String(parseAyahUnitKey(u.unitKey).surah)];\n      const bySurah = true;'],
   noback: ["quranrevival.html", '{ tab: "track", backLabel }, () => { paintReadNotesBtn(); back(); });', '{ tab: "track" }, () => { paintReadNotesBtn(); });'],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
@@ -114,6 +117,46 @@ for (const [lang, width, height] of [["bn", 390, 844], ["en", 1280, 800]]) {
     check(`${tag} the way back returns to Explore`, !after.pane && after.explore, JSON.stringify(after));
     await ctx.close();
   }
+}
+// ---- a Unit card's 📝 Note on a Juz, while the Read view is on an āyah: the card claims for the Juz, in subject_quran ----
+{
+  const tag = "[en 1280 juz]";
+  const ctx = await newContext(browser, { appLang: "en", banner: false, viewport: { width: 1280, height: 800 } });
+  await ctx.route("**/archive.org/**", (r) => r.abort());
+  if (MUTATE) {
+    const [file, a, b] = MUT[MUTATE];
+    await ctx.route(`**/app/${file}*`, async (r) => { const src = fs.readFileSync(`app/${file}`, "utf8"); if (!src.includes(a)) throw new Error(`mutation anchor missing: ${MUTATE}`); await r.fulfill({ status: 200, contentType: "text/html; charset=utf-8", body: src.split(a).join(b) }); });
+  }
+  const { page } = await openPage(ctx, "/app/quranrevival.html");
+  const ev = (f, a) => page.evaluate(f, a);
+  await ev(() => document.querySelectorAll('[id*="splash"], .app-splash-overlay, .mm-splash-overlay').forEach((e) => e.remove()));
+  if (!(await ev(() => document.getElementById("tabReadBtn")?.getBoundingClientRect().width > 0))) { await page.click("#tabStudyBtn"); await page.waitForTimeout(150); }
+  await page.click("#tabReadBtn"); await page.waitForTimeout(600);
+  const unitType = (v) => ev((x) => { const s = document.getElementById("unitTypeSelect"); s.value = x; s.dispatchEvent(new Event("change", { bubbles: true })); }, v);
+  await unitType("juz"); await page.waitForTimeout(800);
+  await ev(() => document.getElementById("readUnitChip")?.click());
+  await page.waitForFunction(() => document.querySelector("[data-unit-card-note]"), null, { timeout: 8000 }).catch(() => {});
+  await unitType("ayah"); await page.waitForTimeout(800); // the Read view moves to an āyah; the card stays on Juz 1
+  await ev(() => document.querySelector("[data-unit-card-note]")?.click());
+  await page.waitForFunction(() => !document.getElementById("readNotePane")?.hidden, null, { timeout: 8000 }).catch(() => {});
+  await page.waitForTimeout(500);
+  await ev(() => document.querySelector('[data-rnp-tab="track"]')?.click());
+  await page.waitForTimeout(600);
+  const src = await ev(() => decodeURIComponent(document.querySelector("#readNotePane iframe")?.getAttribute("src") ?? ""));
+  check(`${tag} the pane is on Juz 1 while the Read view is on an āyah`, /unit=juz:1&/.test(src), src.slice(0, 80));
+  // The stub keeps its data still unless asked: apply writes, so the refreshed chunk carries the claim (harness lesson).
+  await ev(() => { window.__stubApplyBatches = true; window.__stubRecordTxData = true; });
+  const n0 = await ev(() => (window.__stubWriteData || []).length);
+  await page.selectOption(".rnp-track .way-status-select", "learning").catch(() => {});
+  await ev(() => document.querySelector(".rnp-track .way-claim-btn")?.click());
+  await page.waitForTimeout(1500);
+  const w = await ev((k) => (window.__stubWriteData || []).slice(k).filter((x) => x.col === "records").map((x) => x.id), n0);
+  check(`${tag} Claim writes to the Juz's own chunk (subject_quran, D12)`, w.length > 0 && w.every((id) => /__subject_quran$/.test(id)), JSON.stringify(w));
+  // The write path picks its chunk from the key (records.js); the CARD reads and refreshes the chunk it is handed, so a
+  // card handed a Surah's chunk shows "Not claimed yet" after a Juz claim. This is the check the review's fix is for.
+  const state = await ev(() => document.querySelector(".rnp-track .way-embed .way-track-state")?.textContent.trim() ?? "");
+  check(`${tag} the card then shows the claim it just made, not "Not claimed yet"`, !!state && !/Not claimed yet/.test(state), state);
+  await ctx.close();
 }
 await browser.close();
 console.log(`\n${pass} passed, ${fail} failed`);
