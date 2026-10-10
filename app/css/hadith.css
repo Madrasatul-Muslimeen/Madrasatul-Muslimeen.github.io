@@ -311,3 +311,38 @@ a.hadeethenc-study-btn[aria-disabled="true"], button.hadeethenc-study-btn[aria-d
 /* Decision 90, round 5a: where the vowels come from, and the switch. */
 .dua-vowels-note { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; }
 .dua-vowels-toggle { display: inline-flex; align-items: center; min-height: 40px; }
+
+/* Decision 96, "Check a dua": the status chip, the 40px button and the three-step panel under the card. */
+.dua-check-chip { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.78rem; font-weight: 600; border-radius: 0.8rem; padding: 0.15rem 0.6rem; background: #eef2fa; color: var(--hadith-ink); }
+.dua-check-done { background: #e6f4ec; color: #1e7a45; }
+.dua-check-partly, .dua-check-warn { background: #fff2d9; color: #7a4800; }
+.dua-check-row { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.5rem; }
+.dua-check-open, .dua-check-save { font-weight: 600; }
+.dua-check-moved { border-top-color: #a3302a; }
+.dua-check-host { min-width: 0; }
+.dua-check-panel { display: grid; gap: 0.6rem; min-width: 0; border-color: var(--hadith-gold); }
+.dua-check-back { justify-self: start; }
+.dua-check-title { margin: 0; font-size: 1.05rem; color: var(--hadith-ink); }
+.dua-check-steps { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.dua-check-tab[aria-selected="true"] { background: var(--hadith-ink); color: #fff; border-color: var(--hadith-ink); }
+.dua-check-body, .dua-check-list, .dua-check-members, .dua-check-words { display: grid; gap: 0.5rem; min-width: 0; }
+.dua-check-member, .dua-check-word { border: 1px solid var(--hadith-rule); border-radius: 0.6rem; padding: 0.55rem 0.7rem; display: grid; gap: 0.35rem; min-width: 0; }
+.dua-check-member[data-v="same"], .dua-check-word[data-v="ok"] { border-color: #1e7a45; }
+.dua-check-member[data-v="cut"] { border-color: #a3302a; background: rgba(163, 48, 42, 0.07); }
+.dua-check-member[data-v="unsure"], .dua-check-word[data-v="fix"] { border-color: #b8860b; }
+.dua-check-mhead { display: flex; flex-wrap: wrap; gap: 0.3rem 0.6rem; align-items: center; justify-content: space-between; }
+.dua-check-src { font-weight: 700; }
+.dua-check-fit { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; font-variant-numeric: tabular-nums; }
+.dua-check-bar { width: 4.4rem; height: 0.45rem; border-radius: 0.3rem; background: var(--hadith-rule); overflow: hidden; }
+.dua-check-bar i { display: block; height: 100%; background: var(--hadith-ink); }
+.dua-check-text { margin: 0; font-family: 'Amiri', 'Noto Naskh Arabic', serif; font-size: 1.15rem; line-height: 1.9; overflow-wrap: anywhere; }
+.dua-check-text mark { background: #fbe7a8; color: inherit; border-radius: 3px; padding: 0 1px; }
+.dua-check-verdict { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.dua-check-verdict .dua-ref[aria-pressed="true"] { background: var(--hadith-ink); color: #fff; border-color: var(--hadith-ink); }
+.dua-check-verdict .dua-ref[aria-pressed="true"][data-v="cut"] { background: #a3302a; border-color: #a3302a; }
+.dua-check-split { border: 2px dashed #a3302a; border-radius: 0.6rem; padding: 0.6rem; display: grid; gap: 0.4rem; }
+.dua-check-word { grid-template-columns: minmax(4.5rem, auto) minmax(0, 1fr); gap: 0.6rem; align-items: center; }
+.dua-check-ar { font-family: 'Amiri', 'Noto Naskh Arabic', serif; font-size: 1.5rem; text-align: center; overflow-wrap: anywhere; }
+.dua-check-winfo, .dua-check-fixbox { display: grid; gap: 0.35rem; min-width: 0; }
+.dua-check-input { min-height: 40px; min-width: 0; width: 100%; box-sizing: border-box; padding: 0.3rem 0.6rem; font: 1.3rem 'Amiri', 'Noto Naskh Arabic', serif; border-radius: 0.4rem; border: 1px solid var(--hadith-rule); }
+@media (max-width: 480px) { .dua-check-word { grid-template-columns: minmax(0, 1fr); } .dua-check-ar { text-align: right; } }

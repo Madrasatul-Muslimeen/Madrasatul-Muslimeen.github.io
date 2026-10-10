@@ -230,6 +230,18 @@
 [data-card-look="night"] .dua-status { background: var(--card-bg-inset); color: var(--card-text); border-color: var(--card-line); }
 [data-card-look="night"] .dua-status[aria-pressed="true"] { background: #173426; border-color: #7fd3a0; color: #9fe6bb; }
 [data-card-look="night"] .dua-ref { background: var(--card-bg-inset); color: var(--card-text); border-color: var(--card-line); }
+/* Decision 96, "Check a dua": the panel is a .hadith-card, so only its own parts need the Night picks. */
+[data-card-look="night"] .dua-check-chip { background: var(--card-bg-inset); color: var(--card-text); }
+[data-card-look="night"] .dua-check-done { background: #173426; color: #9fe6bb; }
+[data-card-look="night"] .dua-check-partly, [data-card-look="night"] .dua-check-warn { background: #3a2c12; color: #f0b860; }
+[data-card-look="night"] .dua-check-title, [data-card-look="night"] .dua-check-src { color: var(--card-heading); }
+[data-card-look="night"] .dua-check-member, [data-card-look="night"] .dua-check-word { border-color: var(--card-line); }
+[data-card-look="night"] .dua-check-text, [data-card-look="night"] .dua-check-ar { color: var(--card-text); }
+[data-card-look="night"] .dua-check-text mark { background: #5a4a17; color: var(--card-text); }
+[data-card-look="night"] .dua-check-input { background: var(--card-bg-inset); color: var(--card-text); border-color: var(--card-line); }
+[data-card-look="night"] .dua-check-tab[aria-selected="true"], [data-card-look="night"] .dua-check-verdict .dua-ref[aria-pressed="true"] { background: #2c3a5e; color: #fff; border-color: var(--card-heading); }
+[data-card-look="night"] .dua-check-bar { background: var(--card-line); }
+[data-card-look="night"] .dua-check-bar i { background: var(--card-heading); }
 /* .hadith-crumb/-current and its hadeethenc/openiti siblings are
    DELIBERATELY NOT re-picked, found by this round's own measurement: the
    breadcrumb `<nav>` (hadith-browser.js) carries no background of its own

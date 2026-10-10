@@ -284,6 +284,20 @@ export async function loadDuaVowels(page, { fetchImpl = fetch, baseUrl = DUA_BAS
   });
 }
 
+/**
+ * Decision 96 (Check a dua): one page's fit of every member to its dua (dua-group-fit.mjs), read only when a check
+ * panel opens. { duas: { "<dua>": [[share, "low"|"short"?], ...] } }, one entry per member in the card's order; null
+ * when the file is missing.
+ */
+export async function loadDuaFit(page, { fetchImpl = fetch, baseUrl = DUA_BASE_URL } = {}) {
+  return cached(duaCache, `${baseUrl}fit-${page}.json`, async () => {
+    const res = await fetchImpl(`${baseUrl}fit-${page}.json`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data?.duas ? data : null;
+  });
+}
+
 export async function loadDuaCardsPage(page, { fetchImpl = fetch, baseUrl = DUA_BASE_URL } = {}) {
   return cached(duaCache, `${baseUrl}cards-${page}.json`, async () => {
     const res = await fetchImpl(`${baseUrl}cards-${page}.json`);
