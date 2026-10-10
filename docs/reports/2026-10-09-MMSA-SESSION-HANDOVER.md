@@ -184,3 +184,4 @@ English found. Builder #705 (PR #706), `bn-duplicate-keys` made meaningful again
 - **v10.12** (2026-10-10): the Study menu's Notes opens the Notes pane; the Note view retires (R3c).
 - **v10.13** (2026-10-10): Asma screensaver round 2: studying, groups, Open this Name (Builder #736).
 - **v10.14** (2026-10-10): Note view retirement (a): the shared helpers no longer depend on the Note view (Builder #740).
+- **v10.15** (2026-10-10): Notes pane: never "Loading…" forever (the Owner's screenshot).
