@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "10.15",
+    "version": "10.16",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -3173,8 +3173,20 @@
     {
       "version": "10.15",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Architect fix: the Read view's Notes pane showed \"Loading…\" forever when the people list came back empty or the folder tree was slow or failed; now the reader's own Notes show, failures are said in words, and Try again.",
+      "integration": {
+        "authorizedOn": "2026-10-10",
+        "integratedOn": "2026-10-10",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "10.16",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Architect, from the Owner's tablet screenshot: the Read view's Notes pane no longer docks at half the height on a tablet; it fills the screen as on a phone.",
       "integration": {
         "authorizedOn": "2026-10-10",
         "integratedOn": "2026-10-10",
@@ -3183,8 +3195,9 @@
       }
     }
   ],
-  "nextUnallocated": "10.16",
+  "nextUnallocated": "10.17",
   "nextUnallocatedNote": [
+    "v10.16 was allocated to Notes pane fills the screen on a tablet (decision 99), 2026-10-10.",
     "v10.15 was allocated to Notes pane: never \"Loading…\" forever (the Owner's screenshot), 2026-10-10.",
     "v10.14 was allocated to Note view retirement (a): the shared helpers no longer depend on the Note view (Builder #740), 2026-10-10.",
     "v10.13 was allocated to Asma screensaver round 2: studying, groups, Open this Name (Builder #736), 2026-10-10.",
