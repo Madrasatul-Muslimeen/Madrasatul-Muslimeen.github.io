@@ -97,6 +97,25 @@ Mapping My Journey note pane as THE note.
 - **A new session starts from one line the Owner types:** "Read docs/governance/NEW-SESSION-PROMPT-<date>.md in the
   repository and follow it." Never ask the Owner to paste or attach the prompt.
 
+**Learned by session `session_018zBksiX4zzcrLCxBRGwU8y` (10 Oct 2026):**
+- **Never put sandbox instructions in a Builder note.** The Builder's allowlist (`claude.yml`) admits `node …`,
+  `npx playwright …` and a few `git` forms; its workflow already installs Playwright and starts `serve.js`. Notes
+  telling it to `ln -s` playwright or prefix `CHROMIUM_PATH=…` made it try refused forms, and two rounds (#716, #719)
+  ran no check at all. The note now says: plain `node tools/i18n-verify/<name>.mjs`, nothing in front of it.
+- **When the Builder ran nothing, the Architect runs everything** before merging, and finds real faults (#717: the
+  panel's edition numbers; #720: a 27px unit label at 320px).
+- **An empty iframe fires `load` for about:blank first.** Messages held "until the frame loads" must wait for the
+  real page's load (check its location), and a request that must survive a reload (a Bangla page reloads once to adopt
+  the language) goes in the page address, not a message (`read-note-pane.js`, `focusNew=1`).
+- **Opening the Āyah card clears any way back** (`clearAyahCardReturn()` in `openAyahActionSheet`): set a
+  `setAppReturn()` AFTER opening the card. And while a card is open its backdrop covers the docked pill: a test must
+  close the card, then tap the pill, and check with `elementFromPoint` that nothing is over it.
+- **A kill pattern must never match your own command line**: `pgrep -f "r720/run.sh"` in a command containing that
+  text killed the shell running it. Find PIDs with `ps -eo pid,args | grep …` first, then kill by number.
+- **The Note view is two things**: the place for an āyah's notes (retired by decision 95, rounds 1–2b) and the āyah
+  study screen behind the Approach Track/Guide card (landing wheel, Explore → Guide), QCR/Asma references and `?goto=`
+  links. The second still opens it; moving those needs the Guide and QCR's group navigation to live elsewhere first.
+
 ## 3. The handover guard
 
 `allocate-version.py` appends every release to the handover that `CLAUDE.md`'s "READ THIS SECOND" block names, and
@@ -129,3 +148,4 @@ English found. Builder #705 (PR #706), `bn-duplicate-keys` made meaningful again
 - **v10.02** (2026-10-09): Check a dua, the review screen on the Dua card (decision 96, Builder #716).
 - **v10.03** (2026-10-10): the Notes pane's Track this āyah tab; the Āyah card's 📝 Note opens the pane (decision 95, round 2a).
 - **v10.04** (2026-10-10): the writing sheet's ✅ Record, for every family member (Builder #719).
+- **v10.05** (2026-10-10): the Notes pane round 2b: the Note view's notes doors open the pane (decision 95).

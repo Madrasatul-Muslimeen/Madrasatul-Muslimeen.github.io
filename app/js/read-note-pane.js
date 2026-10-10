@@ -201,6 +201,8 @@ export function setReadNotePaneCountListener(fn) { onCount = fn; }
 export function readNotePaneCount(unitKey) { return counts.has(unitKey) ? counts.get(unitKey) : null; }
 
 export function isReadNotePaneOpen() { return !!pane && !pane.hidden; }
+/** The unit the pane is on ({ unitKey, label }), or null before it is first opened. */
+export function readNotePaneUnit() { return unit; }
 
 /** Opens the pane on `u` = { unitKey, label }, on its Notes tab or (`tab: "track"`) its Track tab. `whenClosed` runs
     after it closes (the button takes the focus back). `backLabel` names the way back when it is not the āyah. */

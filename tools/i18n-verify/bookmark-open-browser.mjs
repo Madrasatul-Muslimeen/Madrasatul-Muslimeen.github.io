@@ -98,6 +98,8 @@ async function run({ lang, width, query, mutate = null }) {
     coverOn: document.documentElement.classList.contains("bm-opening"),
     readOpen: document.getElementById("readView")?.hidden === false,
     noteOpen: document.getElementById("noteView")?.hidden === false,
+    paneOpen: !!document.getElementById("readNotePane") && document.getElementById("readNotePane").hidden === false,
+    paneUnit: decodeURIComponent((document.querySelector("#readNotePane iframe")?.getAttribute("src") ?? "").match(/unit=([^&]+)/)?.[1] ?? ""),
     surah: document.getElementById("surahSelect")?.value,
     ayah: document.getElementById("ayahSelect")?.value,
     unitType: document.getElementById("unitTypeSelect")?.value,
@@ -127,20 +129,22 @@ for (const width of [390, 1280]) {
 
     const rd = await run({ lang, width, query: "?bookmark=bmRead" });
     check(`${tag} read bookmark: no landing wheel, no Note view, and the cover was seen`, noFlash(rd, "read"), JSON.stringify(rd.seen));
-    check(`${tag} read bookmark opens the Read view at 3:10 (not the Note view)`, rd.readOpen && !rd.noteOpen && rd.surah === "3" && rd.ayah === "10", JSON.stringify(rd));
+    check(`${tag} read bookmark opens the Read view at 3:10 (not the Note view, no Notes pane)`, rd.readOpen && !rd.noteOpen && !rd.paneOpen && rd.surah === "3" && rd.ayah === "10", JSON.stringify(rd));
     check(`${tag} the cover is gone once it is open`, !rd.coverOn);
     if (lang === "bn") check(`${tag} the cover line is translated`, rd.coverText === "আপনার বুকমার্ক খোলা হচ্ছে…", rd.coverText);
 
+    // UPDATED IN PLACE (decision 95, round 2b, v10.05): the Note view retires as the place for notes, so a Note-view
+    // bookmark (and an older one with no view) opens the Read view with the Notes pane on its unit.
     const nt = await run({ lang, width, query: "?bookmark=bmNote" });
-    check(`${tag} note bookmark: no landing wheel, no Read view, cover seen`, noFlash(nt, "note"), JSON.stringify(nt.seen));
-    check(`${tag} note bookmark opens the Note view at 2:255`, nt.noteOpen && !nt.readOpen && nt.surah === "2" && nt.ayah === "255", JSON.stringify(nt));
+    check(`${tag} note bookmark: no landing wheel, no Note view, cover seen`, noFlash(nt, "read"), JSON.stringify(nt.seen));
+    check(`${tag} note bookmark opens the Read view at 2:255 with the Notes pane on ayah:2:255`, nt.readOpen && !nt.noteOpen && nt.paneOpen && nt.paneUnit === "ayah:2:255" && nt.surah === "2" && nt.ayah === "255", JSON.stringify(nt));
 
     const old = await run({ lang, width, query: "?bookmark=bm1" });
-    check(`${tag} old bookmark (no view) opens the Note view, no flashes`, noFlash(old, "note") && old.noteOpen && old.surah === "2" && old.ayah === "255", JSON.stringify(old));
+    check(`${tag} old bookmark (no view) opens the Read view with the Notes pane, no flashes`, noFlash(old, "read") && old.readOpen && !old.noteOpen && old.paneOpen && old.surah === "2" && old.ayah === "255", JSON.stringify(old));
 
     const pg = await run({ lang, width, query: "?bookmark=bmPageOld" });
-    check(`${tag} old Page 257 bookmark (no view) opens the Read view at page 257, not the stand-in`,
-      pg.readOpen && !pg.noteOpen && !pg.standIn && pg.surah === "14" && pg.unitType === "page" && pg.unitNum === "257" && pg.ayah === "11" && pg.readText > 50, JSON.stringify(pg));
+    check(`${tag} old Page 257 bookmark (no view) opens the Read view at page 257, not the stand-in, no Notes pane`,
+      pg.readOpen && !pg.noteOpen && !pg.standIn && !pg.paneOpen && pg.surah === "14" && pg.unitType === "page" && pg.unitNum === "257" && pg.ayah === "11" && pg.readText > 50, JSON.stringify(pg));
     check(`${tag} ...with no landing wheel and no Note view on the way`, pg.seen.wheel === 0 && pg.seen.note === 0 && pg.seen.cover > 0, JSON.stringify(pg.seen));
 
     const pn = await run({ lang, width, query: "?bookmark=bmPageNote" });
@@ -151,7 +155,8 @@ for (const width of [390, 1280]) {
     check(`${tag} Note-view bookmark on a many-page surah (14) opens the Read view`, sl.readOpen && !sl.noteOpen && !sl.standIn && sl.surah === "14" && sl.unitType === "surah", JSON.stringify(sl));
 
     const ss = await run({ lang, width, query: "?bookmark=bmSurahShort" });
-    check(`${tag} Note-view bookmark on a one-page surah (112) still opens the Note view, with its text`, ss.noteOpen && !ss.readOpen && !ss.standIn && ss.surah === "112", JSON.stringify(ss));
+    // UPDATED IN PLACE (decision 95, round 2b): it opens the Read view with the Notes pane on the whole surah.
+    check(`${tag} Note-view bookmark on a one-page surah (112) opens the Read view with the Notes pane on surah:112`, ss.readOpen && !ss.noteOpen && ss.paneOpen && ss.paneUnit === "surah:112" && ss.surah === "112", JSON.stringify(ss));
 
     // The device starts on the defaults (English translation, Scheherazade,
     // page by page, menus shown); the bookmark says otherwise.
@@ -208,13 +213,17 @@ console.log("\n=== mutation proofs (each must make its check FAIL) ===");
   check("mutation (a) cover removed -> the no-flash check FAILS", !noFlash(a, "read"), JSON.stringify(a.seen));
   // (b) ignore settings.view: the Read bookmark opens the Note view.
   const m = await run({ lang: "en", width: 390, query: "?bookmark=bmRead", mutate: (b) => b.replace('settings?.view === "read"', "false") });
-  check("mutation (b) settings.view ignored -> the Read-view check FAILS", !(m.readOpen && !m.noteOpen), JSON.stringify(m));
+  // Updated in place (decision 95, round 2b): ignoring the view now sends it down the Note-bookmark path, which opens the
+  // Read view WITH the Notes pane, so the read-bookmark check (no pane) fails.
+  check("mutation (b) settings.view ignored -> the Read-view check FAILS", !(m.readOpen && !m.noteOpen && !m.paneOpen), JSON.stringify(m));
   // (c) never send a Note-unshowable bookmark to the Read view: the old Page 257 bookmark lands on the stand-in.
   const c = await run({ lang: "en", width: 390, query: "?bookmark=bmPageOld", mutate: (b) => b.replace('if (settings?.view && settings.view !== "note") return false;', "return false;") });
   // (d) the bookmark's reading settings are not applied: the device's own stay.
   const d = await run({ lang: "en", width: 390, query: "?bookmark=bmExact", mutate: (b) => b.replace("await applyPresetSettings({ ...settings.reading, unit: null, unitType: null });", "") });
   check("mutation (d) reading settings not applied -> the exact-settings check FAILS", !(d.trBn === true && d.trEn === false && d.font === "amiriquran"), JSON.stringify(d));
-  check("mutation (c) Note-view-cannot-show test removed -> the Page 257 check FAILS", !(c.readOpen && !c.noteOpen && !c.standIn) && c.standIn, JSON.stringify(c));
+  // Updated in place (decision 95, round 2b): without that test the old Page bookmark takes the Note-bookmark path,
+  // which is now the Read view WITH the Notes pane (no stand-in exists any more); the plain Page path opens no pane.
+  check("mutation (c) Note-view-cannot-show test removed -> the Page 257 bookmark opens the Notes pane (it must not)", c.readOpen && c.paneOpen, JSON.stringify(c));
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);
