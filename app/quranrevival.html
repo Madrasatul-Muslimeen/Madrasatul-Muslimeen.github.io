@@ -1853,6 +1853,13 @@
   #asmaXListHeader { display: flex; align-items: baseline; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.6rem; }
   #asmaXListHeader .qcr-list-title { font-family: 'Cormorant Garamond', serif; font-weight: 600; color: var(--card-heading); font-size: 1.1rem; }
   #asmaXListHeader .qcr-list-count { font-size: 0.78rem; color: var(--card-text-muted); }
+  /* 10 Oct 2026: Essence | Act and Unique | Shared, one tap each (asmaXQuickFile). A pair reads as one control. */
+  /* Their own line under the Name (one deliberate break, not a ragged wrap); ‹ › stay on the Name's line. */
+  .asmax-quick-row { order: 10; flex: 1 0 100%; display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  .asmax-quick-pair { display: inline-flex; flex: 0 0 auto; border: 1px solid var(--card-line, rgba(201,162,39,0.5)); border-radius: 8px; overflow: hidden; }
+  .asmax-quick-btn { min-height: 36px; padding: 0 0.55rem; border: 0; background: transparent; color: var(--card-text, inherit); font: 600 0.72rem/1 'Inter', system-ui, sans-serif; letter-spacing: 0.02em; cursor: pointer; text-transform: uppercase; }
+  .asmax-quick-btn + .asmax-quick-btn { border-left: 1px solid var(--card-line, rgba(201,162,39,0.5)); }
+  .asmax-quick-btn[aria-pressed="true"] { background: #c9a227; color: #111; }
 
   /* Names-level rows reuse asma-renderer.js's own renderAsmaCollectionListHtml()
      -- its "way-row"/"badge"/"name" classes already fall back to this dark
@@ -14470,6 +14477,7 @@
         ${canManage ? `<button type="button" class="qcr-icon-btn" id="asmaXEditThisNameBtn" title="${escapeHtml(t("Edit"))}" aria-label="${escapeHtml(t("Edit"))}">✎</button>` : ""}
         ${canManage ? `<button type="button" class="qcr-icon-btn" id="asmaXAttachRefThisNameBtn" title="${escapeHtml(t("Attach a reference to several Names"))}" aria-label="${escapeHtml(t("Attach a reference to several Names"))}">🔗</button>` : ""}
         ${canManage ? `<button type="button" class="qcr-icon-btn" id="asmaXGroupsThisNameBtn" title="${escapeHtml(t("Groups this Name is in"))}" aria-label="${escapeHtml(t("Groups this Name is in"))}">📂</button>` : ""}
+        ${canManage ? asmaXQuickClassHtml(entry.number) : ""}
         <span class="asmax-name-nav-pair"><button type="button" class="qcr-icon-btn asmax-name-nav" id="asmaXPrevNameBtn" title="${escapeHtml(t("Previous Name"))}" aria-label="${escapeHtml(t("Previous Name"))}"${navPrev == null ? " disabled" : ""}>‹</button>
         <button type="button" class="qcr-icon-btn asmax-name-nav" id="asmaXNextNameBtn" title="${escapeHtml(t("Next Name"))}" aria-label="${escapeHtml(t("Next Name"))}"${navNext == null ? " disabled" : ""}>›</button></span>`;
       document.getElementById("asmaXPrevNameBtn")?.addEventListener("click", () => { if (navPrev != null) openAsmaXName(navPrev); });
@@ -14485,6 +14493,7 @@
       // "Enable a button at the markup space, to move the Name under a
       // different group or place in multiple group."
       document.getElementById("asmaXGroupsThisNameBtn")?.addEventListener("click", () => openAsmaXGroupsPopover(entry.number));
+      asmaXListHeaderEl.querySelectorAll("[data-asmax-quick]").forEach((b) => b.addEventListener("click", () => asmaXQuickFile(entry.number, b.dataset.asmaxQuick)));
       // Classifications round -- 23 Sep 2026: the owner's own "a name card
       // should show the names of all LISTS it belongs to" -- every
       // classification's own list this Name is filed under, ALL of them
@@ -15293,6 +15302,58 @@
         archive rather than destroy; it does not say keep filing things into
         the archive). A Name already sitting in one is left there untouched
         and shown as such, rather than silently dropped by a save. */
+    // The Owner, 10 Oct 2026 (a screenshot of this Name bar, the space after 📂 marked): "A name need to be attached
+    // with either Essence or Act, Unique or Shared. You can place two buttons for that". Each pair is either/or: one tap
+    // files the Name in that classification's list and takes it out of the other's; a second tap takes it out. The
+    // classifications are the Owner's own (decision 78), found by their titles; a pair shows only when both exist. A
+    // classification with several lists opens 📂 to choose; one with none gets its first list, named after it.
+    const ASMAX_QUICK_PAIRS = [[/essence/i, /\bacts?\b/i], [/uniq/i, /shar(ed|ing)?\b/i]];
+    function asmaXQuickClasses() {
+      const active = (asmaXClassifications ?? []).filter((c) => c.status !== "archived");
+      const find = (re) => active.find((c) => Object.values(c.title ?? {}).some((v) => re.test(String(v ?? ""))) || re.test(c.key));
+      return ASMAX_QUICK_PAIRS.map(([a, b]) => [find(a), find(b)]).filter(([a, b]) => a && b && a.key !== b.key);
+    }
+    const asmaXQuickLists = (cols, key) => (cols ?? []).filter((c) => c.kind === key && c.status !== "archived");
+    function asmaXQuickClassHtml(number) {
+      const uk = buildUnitKey.name(number);
+      const pairs = asmaXQuickClasses();
+      if (!pairs.length) return "";
+      return `<span class="asmax-quick-row">` + pairs.map((pair) => `<span class="asmax-quick-pair" role="group">${pair.map((c) => {
+        const on = asmaXQuickLists(asmaXCollections, c.key).some((l) => (l.items ?? []).includes(uk));
+        const label = asmaXClassificationTitle(c.key);
+        return `<button type="button" class="asmax-quick-btn" data-asmax-quick="${escapeHtml(c.key)}" aria-pressed="${on}" title="${escapeHtml(on ? t("Filed under {classification}. Tap to take it out.", { classification: label }) : t("File under {classification}", { classification: label }))}">${escapeHtml(label)}</button>`;
+      }).join("")}</span>`).join("") + `</span>`;
+    }
+    async function asmaXQuickFile(number, key) {
+      const uk = buildUnitKey.name(number);
+      const pair = asmaXQuickClasses().find((p) => p.some((c) => c.key === key));
+      if (!pair) return;
+      const mine = pair.find((c) => c.key === key), other = pair.find((c) => c.key !== key);
+      const lists = asmaXQuickLists(asmaXCollections, key);
+      const on = lists.some((l) => (l.items ?? []).includes(uk));
+      if (!on && lists.length > 1) { openAsmaXGroupsPopover(number); return; }
+      const prev = asmaXCollections, prevGroupId = asmaXGroupId, prevKind = asmaXKind;
+      let next = asmaXCollections ?? [];
+      if (on) {
+        for (const l of lists) if ((l.items ?? []).includes(uk)) next = asmaRemoveItemLocal(next, l.id, uk);
+      } else {
+        let target = lists[0];
+        if (!target) {
+          next = asmaAddCollectionLocal(next, { title: { ...(mine.title ?? { en: key }) }, badge: "", status: "active", kind: key });
+          target = next[next.length - 1];
+        }
+        next = asmaAddItemLocal(next, target.id, uk);
+        for (const l of asmaXQuickLists(next, other.key)) if ((l.items ?? []).includes(uk)) next = asmaRemoveItemLocal(next, l.id, uk);
+      }
+      asmaXCollections = next;
+      // Browsing a list the Name has just left would be a dead end (the 📂 save's own rule).
+      if (asmaXGroupId && !(next.find((c) => c.id === asmaXGroupId)?.items ?? []).includes(uk)) {
+        const home = next.find((c) => c.status !== "archived" && (c.items ?? []).includes(uk));
+        if (home) { asmaXGroupId = home.id; asmaXKind = home.kind; } else { asmaXGroupId = null; asmaXKind = "group"; }
+      }
+      renderAsmaXPanel();
+      if (!(await asmaXPersist())) { asmaXCollections = prev; asmaXGroupId = prevGroupId; asmaXKind = prevKind; renderAsmaXPanel(); } // I15: safeWrite told the reader
+    }
     async function openAsmaXGroupsPopover(number) {
       await ensureAsmaXDataLoaded();
       const entry = asmaXResolve(number);

@@ -179,3 +179,4 @@ English found. Builder #705 (PR #706), `bn-duplicate-keys` made meaningful again
 - **v10.07** (2026-10-10): Legacy App - v09: v09.151 archived (decision 98).
 - **v10.08** (2026-10-10): the Asma ul Husna screensaver on every page.
 - **v10.09** (2026-10-10): the Approach card in the Notes pane's Track tab (R3a).
+- **v10.10** (2026-10-10): Asma: Essence | Act and Unique | Shared on the Name bar.

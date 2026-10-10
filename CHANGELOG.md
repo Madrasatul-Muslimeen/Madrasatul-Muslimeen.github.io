@@ -20447,3 +20447,23 @@ The Owner, 9 Oct 2026, with a photo of the sheet on Yaseen 8: "The writing view 
 - Architect's review fix: when the pane sits on a unit other than the Read view's (a Unit card's 📝 Note on a Juz, Hizb or Page), the card reads that unit's type and chunk from its key (D12). It had read a Surah's chunk and went on saying "Not claimed yet" after a claim. The write itself was always right, because records.js chunks by key.
 - Checks: pane-approach-card-browser 29/0 (new; mutations routenote, noroot, noback and ayahonly each caught); wheel-slice-opens-track 96/0 and wheel-writing-slice 25/0 (updated in place); approach-record-status-bar 432/0; quran-ayah-action-sheet 144/0; read-note-pane 210/0; ayah-card-takenote-family 44/0; qcr-popup 34/0; asma-screensaver 51/0; phone-width-overflow 217/0; behaviour 1007/0 (43e–43h updated in place).
 - Not done: the card's tab names (Track, Guide, Breakdown, Coverage) are English in Bangla, as they already are in the Note view.
+
+## v10.10 — 2026-10-10 — Asma: Essence | Act and Unique | Shared on the Name bar
+
+- The Owner (a screenshot of Explore's Asma Name bar, the space after 📂 marked): "A name need to be attached with either Essence or Act, Unique or Shared. You can place two buttons for that".
+- **Two either/or pairs** sit under the Name on a line of their own, so ‹ › stay on the Name's line. One tap files the Name in that classification's list and takes it out of the other half of the pair. A second tap takes it out.
+- **The classifications are the Owner's own** (decision 78), found by their titles (essence / act, uniq… / shar…). A pair shows only when both of its classifications exist. Only someone who can manage sees the pairs.
+- **When a classification has no list yet**, the first tap makes one, named after it. When it has several, 📂 opens to choose.
+- **Saving** uses 📂's own path and rollback (`asmaXPersist`; I15: a failed save reaches the reader and the bar goes back). If the Name leaves the list being browsed, the browsing moves to a list that still holds it.
+- **Checks:**
+  - asma-quick-class-browser 27/0 (new; mutations no-pair and no-move each caught)
+  - asma-file-under 52/0
+  - asma-classification-rename 20/0
+  - asma-name-nav-poster 140/0
+  - asma-explore-name-poster 36/0
+  - asma-descriptions 26/0
+  - asma-cited-ayat 45/0
+  - phone-width-overflow 217/0
+  - behaviour 1007/0
+  - stub-parity 4/0
+  - bn-duplicate-keys 6/0

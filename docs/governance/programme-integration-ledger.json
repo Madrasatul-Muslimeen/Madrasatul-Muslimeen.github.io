@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "10.09",
+    "version": "10.10",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -3101,8 +3101,20 @@
     {
       "version": "10.09",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "R3a, decision 95: the landing wheel's slice, the ring's Take and Explore's Guide open the Approach card in the Notes pane's Track tab, not the Note view.",
+      "integration": {
+        "authorizedOn": "2026-10-10",
+        "integratedOn": "2026-10-10",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "10.10",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Explore's Asma Name bar has two either/or pairs, Essence|Act and Unique|Shared, filing the Name in one tap.",
       "integration": {
         "authorizedOn": "2026-10-10",
         "integratedOn": "2026-10-10",
@@ -3111,8 +3123,9 @@
       }
     }
   ],
-  "nextUnallocated": "10.10",
+  "nextUnallocated": "10.11",
   "nextUnallocatedNote": [
+    "v10.10 was allocated to Asma: Essence | Act and Unique | Shared on the Name bar, 2026-10-10.",
     "v10.09 was allocated to the Approach card in the Notes pane's Track tab (R3a), 2026-10-10.",
     "v10.08 was allocated to the Asma ul Husna screensaver on every page, 2026-10-10.",
     "v10.07 was allocated to Legacy App - v09: v09.151 archived (decision 98), 2026-10-10.",
