@@ -1185,8 +1185,9 @@ export function createNoteViews(host) {
         G[g].push(el.outerHTML);
       }
     };
-    G.move.push(`<button type="button" class="secondary tiny" data-pane-prev ${prev ? "" : "disabled"}>‹ ${escapeHtml(t("Previous note"))}</button>`,
-      `<button type="button" class="secondary tiny" data-pane-next ${next ? "" : "disabled"}>${escapeHtml(t("Next note"))} ›</button>`);
+    // (the buttons keep pane-fold-item too: `.note-pane-bar.folded [data-pane-prev]` hides every such button in the bar)
+    G.move.push(`<button type="button" class="secondary tiny pane-fold-item" data-pane-prev ${prev ? "" : "disabled"}>‹ ${escapeHtml(t("Previous note"))}</button>`,
+      `<button type="button" class="secondary tiny pane-fold-item" data-pane-next ${next ? "" : "disabled"}>${escapeHtml(t("Next note"))} ›</button>`);
     if (!v.ed) G.read.push(`<button type="button" class="secondary tiny pane-toolfold-item" data-pane-find-toggle>🔍 ${escapeHtml(t("Find in this Note"))}</button>`);
     if (headings.length || v.ed) G.read.push(`<button type="button" class="secondary tiny pane-toolfold-item" data-pane-foldall>⇅ ${escapeHtml(foldLabel)}</button>`);
     if (host.versions) G.read.push(`<button type="button" class="secondary tiny" data-pane-versions>🕘 ${escapeHtml(t("Versions…"))}</button>`);
