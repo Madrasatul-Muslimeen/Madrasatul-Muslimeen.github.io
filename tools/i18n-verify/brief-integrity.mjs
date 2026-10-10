@@ -149,8 +149,8 @@ check("the brief's own version claim matches app/js/version.js", () => {
     "the milestone line is claiming a merge state that is not real");
 });
 
-check("the four reachable lines the brief names are all present", () => {
-  for (const p of ["legacy/index.html", "legacy-v07/index.html", "legacy-v08/index.html", "app/index.html"]) {
+check("the five reachable lines the brief names are all present", () => {
+  for (const p of ["legacy/index.html", "legacy-v07/index.html", "legacy-v08/index.html", "legacy-v09/index.html", "app/index.html"]) {
     assert.ok(fs.existsSync(path.join(root, p)), `${p} is named in the brief's own table and is missing`);
   }
 });
@@ -161,19 +161,26 @@ check("the four reachable lines the brief names are all present", () => {
 // by git blob hash, so an edit to the archive (or a file dropped or added)
 // fails here instead of going quiet. The exception is asserted too: the
 // disabled registration must still be disabled.
-const LEGACY_V08_SOURCE = "54f930989cde81317d3c01b2adaaebe66b16f0eb";
-check("legacy-v08/ is still exactly the v08.103 release, apart from its one documented change", () => {
+// 10 Oct 2026: legacy-v09/ is app/ as RELEASED at v09.151 (merge commit f027a24e),
+// archived on the Owner's word (decision 98) with the same one change and the same
+// README. One function checks both archives, so the second cannot be weaker.
+const LEGACY_ARCHIVES = [
+  { dir: "legacy-v08", release: "v08.103", source: "54f930989cde81317d3c01b2adaaebe66b16f0eb" },
+  { dir: "legacy-v09", release: "v09.151", source: "f027a24efa240ace2304c4570cd4885e178eeaad" },
+];
+for (const { dir: archive, release, source } of LEGACY_ARCHIVES) {
+check(`${archive}/ is still exactly the ${release} release, apart from its one documented change`, () => {
   let tree;
-  try { tree = git("ls-tree", "-r", LEGACY_V08_SOURCE, "app"); }
-  catch { console.log("        (commit 54f93098 is not in this clone -- fetch full history to check the archive)"); return; }
+  try { tree = git("ls-tree", "-r", source, "app"); }
+  catch { console.log(`        (commit ${source.slice(0, 8)} is not in this clone -- fetch full history to check the archive)`); return; }
   const expected = new Map(tree.split("\n").map((line) => {
     const [meta, file] = line.split("\t");
     return [file.replace(/^app\//, ""), meta.split(" ")[2]];
   }));
-  assert.ok(expected.size > 150, `only ${expected.size} files read from ${LEGACY_V08_SOURCE} -- the tree parse has stopped working`);
+  assert.ok(expected.size > 150, `only ${expected.size} files read from ${source} -- the tree parse has stopped working`);
   const actual = new Set();
   const walk = (dir) => {
-    for (const e of fs.readdirSync(path.join(root, "legacy-v08", dir), { withFileTypes: true })) {
+    for (const e of fs.readdirSync(path.join(root, archive, dir), { withFileTypes: true })) {
       const rel = dir ? `${dir}/${e.name}` : e.name;
       if (e.isDirectory()) walk(rel); else actual.add(rel);
     }
@@ -183,14 +190,15 @@ check("legacy-v08/ is still exactly the v08.103 release, apart from its one docu
   const missing = [...expected.keys()].filter((f) => !actual.has(f));
   const extra = [...actual].filter((f) => !expected.has(f) && !EXEMPT.has(f));
   const changed = [...expected.keys()].filter((f) => actual.has(f) && !EXEMPT.has(f) &&
-    git("hash-object", path.join("legacy-v08", f)) !== expected.get(f));
+    git("hash-object", path.join(archive, f)) !== expected.get(f));
   assert.deepEqual({ missing, extra, changed }, { missing: [], extra: [], changed: [] },
-    "legacy-v08/ has drifted from the v08.103 release it archives");
-  assert.ok(actual.has("README-ARCHIVE.txt"), "legacy-v08/README-ARCHIVE.txt is missing");
-  const sw = read("legacy-v08/js/sw-register.js");
+    `${archive}/ has drifted from the ${release} release it archives`);
+  assert.ok(actual.has("README-ARCHIVE.txt"), `${archive}/README-ARCHIVE.txt is missing`);
+  const sw = read(`${archive}/js/sw-register.js`);
   assert.match(sw, /export function registerServiceWorker\(\) \{\n(?:\s*\/\/.*\n)*\s*return;\n/,
-    "legacy-v08's registerServiceWorker() no longer returns at once -- the archive could reach the live app's service worker");
+    `${archive}'s registerServiceWorker() no longer returns at once -- the archive could reach the live app's service worker`);
 });
+}
 
 check("the unmerged wiring candidate the brief names still exists at the commit it names", () => {
   const named = briefAndHistory.match(/on\s*\n?`?(claude\/phase4-wiring)`?\s*at\s*\*\*`([0-9a-f]{7,40})`\*\*/);

@@ -20422,3 +20422,10 @@ The Owner, 9 Oct 2026, with a photo of the sheet on Yaseen 8: "The writing view 
 - The panel is reused, not copied (I2): `renderQcrDrawerHtml` and the Asma fields; `attachQcrDrawerHandlers(view, callbacks)` split out of `attachNoteViewHandlers`; `wireAsmaXNoteFields`, `wireAsmaTrackEmbed` and `refreshQcrDrawerSummaries` take a root and a re-render function (defaults: the Note view). The writes are unchanged.
 - ← Back goes to the Āyah card (from the card) or closes to the Read view (from ⋮); ✕ and Escape close; full screen at 640px and below, centred above.
 - Checks: qcr-popup-browser 34/0 with three mutations caught; listen-bookmark-qcr-card 48/0 and bangla-sweep-v09146-surfaces 82/0 (updated in place); ayah-card-takenote-family 44/0; read-note-pane 210/0; quran-ayah-action-sheet 144/0; phone-width-overflow 217/0; behaviour 1007/0.
+
+## v10.07 — 2026-10-10 — Legacy App - v09: the v09.151 release archived (decision 98)
+
+- `legacy-v09/` is `app/` exactly as released at v09.151 (merge commit `f027a24e`, Builder #712), the last v09 build before v10.01 joined the Read view and the Note view. Reachable at `/legacy-v09/`; reference only.
+- One documented change, as in legacy-v08: `js/sw-register.js`'s `registerServiceWorker()` returns at once, because that code registers the LIVE app's worker by absolute path and, under `?nosw`, unregisters every worker on the site. The archive therefore runs online only. `README-ARCHIVE.txt` says what it shares with the live app: the Firestore data, the Qur'an and Hadith data files, and browser storage.
+- Every page with the legacy links (26) adds **Legacy App - v09 ↗**, with its Bangla label; `sw.js` keeps `/legacy-v09/` out of the live offline cache.
+- `brief-integrity.mjs`: one function checks legacy-v08 (against `54f93098`) and legacy-v09 (against `f027a24e`) file by file; the reachable-lines check names five. The source bundle's text names the fourth archive.

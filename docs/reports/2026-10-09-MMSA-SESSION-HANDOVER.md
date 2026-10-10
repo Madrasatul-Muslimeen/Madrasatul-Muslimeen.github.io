@@ -57,6 +57,11 @@ Mapping My Journey note pane as THE note.
 - the dua review screen, once the Owner answers the demo's three questions (it then reads the fit files from #710);
 - Hadith "Studied"/Notes on OpenITI passages (needs the Owner's yes to the key `hadith:openiti:<book>:<n>`).
 
+**Update, 10 Oct 2026, later (`main` at v10.07 when written):**
+- **The Owner's master file for every feature discussion** is the Ten Steps artifact https://claude.ai/artifact/BJUwQ8hfgnu4FJFo7stqY1 (the Owner, 10 Oct: "let's use this file as a master to preserve all feature related discussions always"). From **v07** it has one tab per feature: *Ten Steps & QR Levels* and *🔑 Keys to Understanding*. A new feature discussion is a new tab in it, keeping the one version line; its export name is `<date>-mmsa-feature-discussions-vNN.html`. Copy at `docs/reference/2026-10-10-mmsa-feature-discussions-v07.html`; the Keys wheel demo at `docs/reference/2026-10-10-keys-wheel-demo.html`.
+- **Keys to Understanding: build nothing yet.** The tab answers the Owner's four points (Status wheel views; related hadith fetched automatically, measured at 1,107 of 6,236 āyāt quoted in our 15 books; the Hadith approach; scholars by era from the open tafsir set, mapped to Gen1–Gen6 and the madhabs) and asks 6 questions. Each reader's own marks need a Rules step (Owner gate).
+- **v10.07: Legacy App - v09** (decision 98), the v09.151 release archived at `legacy-v09/`.
+
 **Update, 10 Oct 2026, session `session_018zBksiX4zzcrLCxBRGwU8y` (`main` at v10.06 when written):**
 - Released v09.151, v10.01 to v10.06 (each in `CHANGELOG.md`). Decisions 95, 96 and 97 are recorded.
 - **Decision 95 (Read + Note as one) so far:**
@@ -171,3 +176,4 @@ English found. Builder #705 (PR #706), `bn-duplicate-keys` made meaningful again
 - **v10.04** (2026-10-10): the writing sheet's ✅ Record, for every family member (Builder #719).
 - **v10.05** (2026-10-10): the Notes pane round 2b: the Note view's notes doors open the pane (decision 95).
 - **v10.06** (2026-10-10): QCR / Asma attach as its own pop-up, without the Note view (Builder #722).
+- **v10.07** (2026-10-10): Legacy App - v09: v09.151 archived (decision 98).

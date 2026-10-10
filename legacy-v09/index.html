@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>QuranRevival</title>
+<script>
+  // Shell round 4 (12 Aug 2026, owner's own layout discussion) -- this page
+  // used to render its own banner + sign-in check, then location.replace()
+  // into quranrevival.html once signed in. That produced a visible flash of
+  // this page's own banner followed by quranrevival.html's own banner --
+  // "two banners", per the owner. quranrevival.html already handles the
+  // full sign-in flow independently (not signed in / no account / signed in
+  // -- it has to, since every other page links to it directly), so this
+  // page no longer needs any Firebase logic of its own at all. It is now
+  // purely a redirect stub: synchronous, in <head>, before body paints, so
+  // there is nothing here to flash. location.replace() (not a normal
+  // navigation) keeps this page out of browser history, so the back button
+  // doesn't bounce the user into a redirect loop.
+  location.replace("quranrevival.html");
+</script>
+</head>
+<body>
+  <noscript>
+    <p>JavaScript is required. <a href="quranrevival.html">Continue to QuranRevival</a>.</p>
+  </noscript>
+</body>
+</html>

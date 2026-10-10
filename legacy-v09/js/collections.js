@@ -1,0 +1,95 @@
+// F-002 — Collection map (Phase 0, Foundation)
+//
+// Every Firestore collection name, in one place, as a constant. New code
+// must import from here and never type a collection name as a bare string
+// (this is the whole point: a single typo here breaks a test write
+// immediately, instead of silently inventing the wrong address the way
+// bug B1 did).
+//
+// Two generations coexist on purpose (D1 — one Firebase project, shared
+// users and history):
+//   - LEGACY:  what index.html reads and writes today. Untouched.
+//   - TENANT:  the new schema this rebuild is creating. Named tenantPeople /
+//              tenantInvites instead of people / invites so the two
+//              generations can never collide (D2, approved deviation).
+//
+// Deliberately NOT listed: Operations, Finance, Medical records, or
+// Facilities collections (Architecture layers 3.5, 4, 5, 6). CLAUDE.md is
+// explicit that those are not to be built unless asked — so there are no
+// names to reserve for them yet.
+
+export const LEGACY = Object.freeze({
+  APP_SETTINGS: "appSettings",
+  INVITES: "invites",
+  JUZ_SUMMARIES: "juzSummaries",
+  JUZ_SUMMARIES_PAGE: "juzSummariesPage", // O1 — presence unconfirmed
+  MONITOR_WEEKS: "monitorWeeks", // O1 — presence unconfirmed
+  PEOPLE: "people",
+  ROOMS: "rooms", // O2 — origin unknown, deliberately locked, do not write
+  RUKU_SUMMARIES: "rukuSummaries",
+  STUDY_PROGRESS: "studyProgress",
+  TEACHERS: "teachers",
+  USER_PREFS: "userPrefs",
+  USERS: "users",
+});
+
+export const TENANT = Object.freeze({
+  // Layer 0 — identity
+  TENANTS: "tenants",
+  TENANT_PEOPLE: "tenantPeople", // D2: was "people" in the Architecture doc
+  MEMBERSHIPS: "memberships",
+  USER_INDEX: "userIndex",
+  TENANT_INVITES: "tenantInvites", // D2: was "invites" in the Architecture doc
+  TENANT_MEMBER_UIDS: "tenantMemberUids", // Phase 1 addition (D9): rules-support mirror, keyed by uid so security rules can look up role membership without a query. Never shown in any UI.
+  INVITE_TOKENS: "inviteTokens", // Phase 1 addition (D9): opaque link codes, so invite links never carry a raw email in the URL
+
+  // Layer 1 — catalogue and org
+  MODULES: "modules",
+  SUBJECTS: "subjects",
+  SUBJECT_TEMPLATES: "subjectTemplates",
+  LADDERS: "ladders",
+  LEVELS: "levels",
+  PERSON_LEVELS: "personLevels",
+  CLASSES: "classes",
+  COURSE_OFFERS: "courseOffers",
+  ENROLLMENTS: "enrollments",
+  TEACHER_STUDENT_LINKS: "teacherStudentLinks", // Phase 10 addition (D9-style rules-support mirror): security rules can exists()/get() a fixed doc path but never run a query, so this denormalizes "is teacher T actively co-enrolled with student S in some shared class/courseOffer" for canRecordFor()'s per-student teacher scoping. Never shown in any screen.
+  CURRICULUM_UNITS: "curriculumUnits",
+  CURRICULUM_PLAN: "curriculumPlan",
+  RESOURCES: "resources",
+  AYAH_COLLECTIONS: "ayahCollections", // Ayah Collections (QCR) round: one doc per tenant, tenant-authored named collections of cross-surah āyāt (see js/qcr.js). Same "small tenant-authored content collection, no existing precedent quite fits" shape as D12's domains and the ladders/levels pair.
+  ASMA_COLLECTIONS: "asmaCollections", // Asma Collections round: one doc per tenant, the same shape as ayahCollections above but for Names/phrases about Allah (see js/asma-collections.js) -- named groups, plus the ~33 Names/phrases beyond the fixed 99 in asma-data.js, plus any tenant edit to a canonical Name's own Bangla wording.
+
+  // Layer 2 — tracking core
+  TRACKABLES: "trackables",
+  RECORDS: "records",
+  ACTIVITY: "activity",
+  BOOKMARKS: "bookmarks",
+  AYAH_NOTES: "ayahNotes", // Ayah Note panel, phase 1: one doc per person (resume-shaped, not append-only) holding free per-ayah rich-text notes, keyed by unitKey. Same "small additive collection, no schema precedent to reuse" shape as D12's domains — nothing existing fits a free per-ayah journal entry.
+  QURAN_WORD_PROGRESS: "quranWordProgress", // MAP Phase 3: the learner's own WbW word claims, one doc per (tenant, person, level, ayah). Deliberately NOT `records` -- a WbW word state is not an Approach claim (MAP v4 s3), and its permanent identity is ADR-007's occurrence contract, not a Study Unit key.
+  QURAN_WORD_APPROVALS: "quranWordApprovals", // MAP Phase 3: a supervisor's decisions on those claims, same doc id shape, a SEPARATE collection. Split by actor role on purpose: the whole document then belongs to one (person, role) pair, so a security rule can authorise it at document level and never has to prove which key of a map a writer touched -- the limitation this file's records/subjects/trackables comments already record.
+  QURAN_WORD_TOTALS: "quranWordTotals", // Issue #206: one running whole-Qur'an + per-Juz known/total document per (tenant, person), `{tenantId}__{personId}` -- CANDIDATE Rules only (docs/governance/2026-09-23-wbw-total-counter-rules-candidate.rules), never deployed by this round. Gated by app/js/study-wbw-total-readiness.js; see that module for why.
+  QURAN_LEMMA_PROGRESS: "quranLemmaProgress", // Issue #301: the learner's own lemma-level claims -- "knowing a word marks all its forms known" (the same LEMMA, not the root family). One doc per (tenant, person, level, lemmaId), `{tenantId}__{personId}__{level}__{lemmaId}`. Separate from quranWordProgress (occurrence-level) on purpose: a lemma has no ayah to bundle by. CANDIDATE Rules only (docs/governance/2026-09-26-lemma-progress-rules-candidate.rules), uninvoked this round -- see app/js/quran-lemma-progress.js.
+  QURAN_LEMMA_APPROVALS: "quranLemmaApprovals", // Issue #301: a supervisor's decisions on those lemma claims, same doc id shape, a SEPARATE collection -- same actor-role split as quranWordApprovals, for the identical reason (a Firestore rule cannot cheaply prove which key of a map a writer touched).
+  QURAN_LEMMA_OCCURRENCE_COUNTERS: "quranLemmaOccurrenceCounters", // Issue #303: the bounded-cost answer to "how many of this lemma's occurrences already count as known on their own account" -- one doc per (tenant, person, level, lemmaId), holding `individuallyKnownByJuz` (a sparse map, at most 30 entries, never one per ayah). Seeded ONCE per (person, lemma) from a full walk (documented worst case: up to 4,366 reads for the most frequent lemma), then maintained by cheap ±1 increments from ordinary occurrence-level taps. See app/js/quran-lemma-progress-data.js's own header for why this is what keeps a lemma claim/confirm inside its ≤5-read budget. Gated by app/js/study-lemma-progress-readiness.js, same as quranLemmaProgress/quranLemmaApprovals.
+  NOTES: "notes",
+  NOTE_SOURCES: "noteSources",
+  NOTE_FOLDERS: "noteFolders",
+  NOTE_PLACEMENTS: "notePlacements",
+  NOTE_SECTIONS: "noteSections", // Siyagah round 7a (issue #458): a named group of root folders. CANDIDATE Rules only (docs/governance/2026-10-01-siyagah-round7-DEPLOYMENT-candidate.rules); every control is gated by app/js/siyagah-sections-readiness.js.
+  NOTE_TAGS: "noteTags", // Siyagah round 7b (issue #461): a name (and optional colour) an owner puts on Notes. CANDIDATE Rules only (docs/governance/2026-10-01-siyagah-round7-DEPLOYMENT-candidate.rules); every control is gated by app/js/siyagah-sections-readiness.js.
+  NOTE_TAG_LINKS: "noteTagLinks", // Siyagah round 7b: one Note carrying one tag; noteId/tagId frozen, untagging retires the link. CANDIDATE Rules only, same gate.
+  NOTE_LINKS: "noteLinks", // Siyagah round 14 (issue #566): one Note linking to another Note of the same owner; both ends frozen, unlinking retires. CANDIDATE Rules only (docs/governance/2026-10-04-siyagah-round14-DEPLOYMENT-candidate.rules); every control is gated by app/js/siyagah-flags-readiness.js.
+  NOTE_REVISIONS: "noteRevisions",
+  DAWAH_PAGES: "dawahPages", // MAP v4 Phase 7 (P7-A): one printable page per (tenant, page), derived from a pinned Note revision (ADR-011). Unruled and uninvoked this round -- see app/js/dawah-contract.js and app/js/dawah-data.js.
+  DOMAINS: "domains", // Phase 3 addition (D12): tenant-authored tag registry backing records.entries.domainIds[] — the Architecture doc names the domainIds field but never lists a domains collection. Same "not in the original doc, added to support a named field" shape as D9's tenantMemberUids/inviteTokens. Mirrors ladders: tenant-authored, no platform seed, freeform tags (legacy app's "Domains are optional & user-defined").
+
+  // Layer 2.5 — communication
+  THREADS: "threads",
+  MESSAGES: "messages", // subcollection: threads/{threadId}/messages/{messageId}
+  TEACHING_NOTES: "teachingNotes",
+
+  // Layer 3 — homework
+  ASSIGNMENTS: "assignments",
+  SUBMISSIONS: "submissions",
+});
