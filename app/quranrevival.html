@@ -17544,6 +17544,14 @@
         scrollToAyahIfRendered(`${currentSurahNum}:${currentAyahNum}`);
         return;
       }
+      // Issue #752 -- the non-Mushaf branch of renderFlowView() is ALSO
+      // asynchronous now (it awaits unitBoundaryTablesForReadView() before it
+      // writes the rows), so looking the row up straight away found the OLD
+      // surah's rows: a Range "Next" across a surah boundary scrolled nothing
+      // and left the RTL strip at its far end (measured: surah 2, rows 1-5,
+      // scrollLeft -1424, āyah 5 under the middle). Await the render first.
+      try { await flowRenderPromise; } catch { /* renderFlowView() already reports its own failure on-screen. */ }
+      if (getComputedStyle(pageViewContainer).display === "none") return;
       const row = pageViewContainer.querySelector(`.page-flow-ayah[data-ayah="${currentAyahNum}"]`);
       row?.scrollIntoView({ inline: "start", behavior: "instant" });
     }
