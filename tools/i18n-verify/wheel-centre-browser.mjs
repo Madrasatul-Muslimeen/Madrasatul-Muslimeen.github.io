@@ -34,6 +34,15 @@ const waitWheel = (page) => page.waitForFunction(() => document.querySelectorAll
 async function open(lang, [w, h], { baseline = false, look = null, tap = true } = {}) {
   const ctx = await newContext(browser, { appLang: lang === "bn" ? "bn" : null, viewport: { width: w, height: h } });
   if (baseline) await ctx.route("**/app/_baseline-quranrevival.html", (r) => r.fulfill({ status: 200, contentType: "text/html; charset=utf-8", body: BASE_HTML }));
+  // 10 Oct 2026 (#742): the baseline page must run against its OWN modules. Once a round removes an export (the Note
+  // view's renderer did), the old page importing it from today's module fails to boot and this suite timed out --
+  // the standing "_prev shim" trap. Every app/js module is served from the baseline ref in the baseline context only.
+  if (baseline) await ctx.route("**/app/js/**/*.js*", (r) => {
+    const rel = new URL(r.request().url()).pathname.replace(/^\/app\//, "app/");
+    let body = null;
+    try { body = execFileSync("git", ["show", `${process.env.BASELINE_REF || "main"}:${rel}`], { encoding: "utf8", maxBuffer: 64 << 20 }); } catch { /* not in the baseline: serve today's */ }
+    return body === null ? r.continue() : r.fulfill({ status: 200, contentType: "text/javascript; charset=utf-8", body });
+  });
   if (look) await ctx.addInitScript((l) => { try { localStorage.setItem("mm_wheel_look", l); } catch {} }, look);
   const { page, errors } = await openPage(ctx, baseline ? "/app/_baseline-quranrevival.html" : "/app/quranrevival.html");
   await waitWheel(page);

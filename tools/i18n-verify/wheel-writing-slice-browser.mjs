@@ -78,7 +78,7 @@ for (const lang of ["en", "bn"]) for (const width of [390, 1280]) {
     await tapSlice(page, "tajweed");
     await page.waitForTimeout(1500);
     // UPDATED in place (decision 95, R3a): the Track card is the Notes pane's Track tab now, not the Note view.
-    check(`${tag}: another slice (Tajweed) still opens its Track card, not the sheet`, !(await sheetOpen(page)) && await page.evaluate(() => !!document.querySelector(".rnp-track:not([hidden]) .way-embed") && document.getElementById("noteView").hidden));
+    check(`${tag}: another slice (Tajweed) still opens its Track card, not the sheet`, !(await sheetOpen(page)) && await page.evaluate(() => !!document.querySelector(".rnp-track:not([hidden]) .way-embed") && !document.getElementById("noteView"))); // #742: the Note view is deleted, not just hidden
     await ctx.close();
   }
 }

@@ -211,9 +211,16 @@ for (const lang of ["en", "bn"]) {
   await page.click('#wheelContainer .wheel-ring-seg[data-key="recite"][data-ring-kind="juz"]', { force: true });
   await page.waitForTimeout(200);
   await page.click('#wheelRingDetail [data-ring-action="take"], .wheel-ring-panel [data-ring-action="take"]');
-  await page.waitForTimeout(800);
-  const noteOpen = await page.evaluate(() => ({ note: !!document.querySelector("#noteView:not([hidden])"), approach: document.getElementById("trackableSelect").value }));
-  check(`[${lang}] "Take this Approach" opens the Note view on that Approach`, noteOpen.note && noteOpen.approach === "recite", JSON.stringify(noteOpen));
+  // UPDATED IN PLACE 10 Oct 2026 (#742): since decision 95 (R3a) "Take this Approach" opens the Notes pane's ✅ Track
+  // tab (openApproachCardInPane), not the Note view, which is now deleted. Stale on main since v10.09; the pane is
+  // then closed with its ← Back (the way back, decision 86) so the Explore step below starts from the wheel.
+  await page.waitForFunction(() => document.querySelector(".rnp-track:not([hidden]) [data-note-approach-select]"), null, { timeout: 8000 }).catch(() => {});
+  const noteOpen = await page.evaluate(() => ({ pane: !!document.querySelector(".rnp-track:not([hidden]) .way-embed"), noteView: !!document.getElementById("noteView"), approach: document.getElementById("trackableSelect").value }));
+  check(`[${lang}] "Take this Approach" opens the Notes pane's Track tab on that Approach`, noteOpen.pane && !noteOpen.noteView && noteOpen.approach === "recite", JSON.stringify(noteOpen));
+  if (noteOpen.pane) await page.click("#readNotePane .rnp-back");
+  await page.waitForTimeout(500);
+  const backOnWheel = await page.evaluate(() => document.getElementById("readNotePane")?.hidden !== false && document.querySelectorAll("#wheelContainer .wheel-seg").length > 0 && !document.getElementById("wheelPopupView")?.hidden);
+  check(`[${lang}] ...and its ← Back returns to the Approach wheel`, backOnWheel, backOnWheel);
 
   // ---- Explore ----------------------------------------------------------
   await page.evaluate(() => { const s = document.getElementById("trackableSelect"); s.value = "tajweed"; s.dispatchEvent(new Event("change")); });
