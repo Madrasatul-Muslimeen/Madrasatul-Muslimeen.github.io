@@ -3333,7 +3333,7 @@ console.log("\n=== 37. Shell round 25: grammar labels, and the control row ===")
   // v10.01 (decision 95, the Owner, 9 Oct 2026: "NotePane: Build the demo") -- #readNotesBtn (📝 Notes on the āyah) joined the row right after #readBookmarkBtn. Updated in place, reason recorded.
   // v10.21 (the Owner, 10 Oct 2026: the Read bar's tools "under one button") -- see the 33a note; the controls are read through #readBarEnd and #readToolsMenu. Updated in place.
   check("37a the row is Prev unit · Prev āyah · Next āyah · Next unit · Play · Stop · Full screen · Bookmark · Reading complete · ⋮ slot",
-        m.barKids.join() === "readListBtn,mushafPageRef,readApproachBar,readUnitChip,prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,readQuickRow,readBackSlot,readBarEnd,readMeaningBtn,hideChromeBtn,readWindowBtn,readToolsBtn,readToolsMenu,readTextSizeSlot,readBookmarkBtn,readNotesBtn,readCompleteBtn,readWritingBtn,readAttachAsmaBtn,readQuickMenuSlot,readCompleteMsg", JSON.stringify(m.barKids));
+        m.barKids.join() === "readListBtn,mushafPageRef,readApproachBar,readUnitChip,prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,readQuickRow,readBackSlot,readMeaningBtn,hideChromeBtn,readWindowBtn,readToolsBtn,readTextSizeSlot,readBookmarkBtn,readNotesBtn,readCompleteBtn,readWritingBtn,readAttachAsmaBtn,readQuickMenuSlot,readCompleteMsg", JSON.stringify(m.barKids));
   // `space-between` would leave large, uneven gaps between controls, which
   // is exactly how a stale `space-between` survived this round's first
   // attempt -- checking the gaps directly catches that regardless of how
