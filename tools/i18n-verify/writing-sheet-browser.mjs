@@ -418,21 +418,12 @@ for (const lang of ["en", "bn"]) {
     const menuItem = await page.evaluate(() => { const b = document.getElementById("tabWritingBtn"); return b ? b.textContent.trim() : null; });
     check(`[${lang} ${width}] the Study menu has ✍ Writing sheet`, lang === "bn" ? menuItem === "✍ লিখন অনুশীলনের পাতা" : menuItem === "✍ Writing sheet", menuItem);
     await page.evaluate(() => document.getElementById("readWritingBtn") && void 0);
-    // Note view bar
+    // Note view bar: UPDATED IN PLACE (Note view retirement, step b). The Note view and its bar are deleted; the same
+    // question (is ✍ reachable without growing a bar) is answered above for the Read bar, and the Note bar is now absent.
     await page.evaluate(() => document.getElementById("tabStudyBtn").click());
     await page.waitForTimeout(150);
-    const noted = await page.evaluate(async () => {
-      if (!window.__dormantOpenNoteView) return false; window.__dormantOpenNoteView(); return true; // R3c: the dormant Note view, by its test seam
-    });
-    await page.waitForFunction(() => !!document.querySelector("#noteView .note-bar2 [data-note-writing]"), null, { timeout: 5000 }).catch(() => {});
-    if (noted && await page.evaluate(() => !!document.querySelector("#noteView .note-bar2 [data-note-writing]"))) {
-      await page.waitForTimeout(250); // the fit runs after the Note view's own rebuild
-      const n = await measureBar(page, "#noteView .note-bar2", "#noteView [data-note-writing]");
-      check(`[${lang} ${width}] Note bar is never taller or longer with ✍ (shown only where it fits)`, n.withBtn.h === n.without.h && n.withBtn.lines === n.without.lines, JSON.stringify(n));
-      if (width >= 768) check(`[${lang} ${width}] positive control: ✍ is on the Note bar where there is room`, n.withBtn.shown, JSON.stringify(n));
-    } else {
-      check(`[${lang} ${width}] Note bar reachable (control)`, false, "note view did not open");
-    }
+    const noteGone = await page.evaluate(() => ({ view: document.getElementById("noteView"), seam: typeof window.__dormantOpenNoteView, bar: !!document.querySelector(".note-bar2") }));
+    check(`[${lang} ${width}] #noteView, __dormantOpenNoteView and the Note bar are absent`, noteGone.view === null && noteGone.seam === "undefined" && !noteGone.bar, JSON.stringify(noteGone));
     await ctx.close();
   }
 }
@@ -467,11 +458,10 @@ for (const [lang, width] of [["bn", 320], ["en", 390], ["en", 1280]]) {
   await pick(page, "surah", 67);
   await unbare(page);
   await page.click("#tabStudyBtn");
-  await page.evaluate(() => window.__dormantOpenNoteView()); // R3c: the dormant Note view, by its test seam
-  await page.waitForFunction(() => !!document.querySelector("#noteView [data-note-writing]"), null, { timeout: 8000 }).catch(() => {});
-  await page.evaluate(() => document.querySelector("#noteView [data-note-writing]")?.click());
+  // UPDATED IN PLACE (Note view retirement, step b): the Note view's ✍ is gone; the Study menu's ✍ Writing sheet opens the sheet.
+  await page.evaluate(() => document.getElementById("tabWritingBtn")?.click());
   await page.waitForFunction(() => !!document.querySelector("#writingSheet .ws-page[data-painted]"), null, { timeout: 15000 }).catch(() => {});
-  check("Note view ✍ opens the sheet (Surah 67 -> 562..564)", JSON.stringify(await sheetPages(page)) === "[562,563,564]", JSON.stringify(await sheetPages(page)));
+  check("Study menu ✍ Writing sheet opens the sheet (Surah 67 -> 562..564)", JSON.stringify(await sheetPages(page)) === "[562,563,564]", JSON.stringify(await sheetPages(page)));
   await ctx.close();
 }
 

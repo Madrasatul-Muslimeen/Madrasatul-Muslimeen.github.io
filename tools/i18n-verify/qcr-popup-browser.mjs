@@ -3,8 +3,10 @@
 // pop-up of its own (renderQcrDrawerHtml + wireAsmaXNoteFields + attachQcrDrawerHandlers, reused), over the screen the
 // reader is on, with ← Back (decision 86), ✕ and Escape, no Note view opened and no new write path.
 // Run from the repository root, serve.js on :8080. 390px Bangla and 1280px English.
-//   --mutate=routenote  the Āyah card's 📚 QCR opens the Note view again   -> the pop-up / #noteView checks fail
-//   --mutate=noteonly   the pop-up's handlers are bound under #noteView    -> the tick writes nothing
+//   --mutate=routenote  the Āyah card's 📚 QCR opens the Notes pane, not the pop-up -> the pop-up checks fail
+//   --mutate=noteonly   the pop-up's handlers are bound to a node not in the pop-up  -> the tick writes nothing
+// (routenote / noteonly re-anchored 10 Oct 2026, #742: they used to name openNoteView / noteView, deleted code, so they
+//  failed by a ReferenceError rather than by the regression they model.)
 //   --mutate=noback     the pop-up has no ← Back                           -> the Back checks fail
 import { chromium, newContext, openPage } from "./harness.mjs";
 import fs from "node:fs";
@@ -16,8 +18,8 @@ const check = (name, ok, detail = "") => {
 };
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
 const MUT = {
-  routenote: ["quranrevival.html", "openQcrPopup(unitKey, { backLabel: t(\"Āyah card\"), onBack: () => openAyahActionSheet(`${s}:${a}`, h) });", "ayahSheetPendingQcrOpen = true; openNoteView(unitKey);"],
-  noteonly: ["quranrevival.html", "attachQcrDrawerHandlers(body, {", "attachQcrDrawerHandlers(noteView, {"],
+  routenote: ["quranrevival.html", "openQcrPopup(unitKey, { backLabel: t(\"Āyah card\"), onBack: () => openAyahActionSheet(`${s}:${a}`, h) });", "openNotesPaneForKey(unitKey);"],
+  noteonly: ["quranrevival.html", "attachQcrDrawerHandlers(body, {", "attachQcrDrawerHandlers(document.createElement(\"div\"), {"],
   noback: ["quranrevival.html", "data-qcr-pop-back><span", "data-qcr-pop-x><span"],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);

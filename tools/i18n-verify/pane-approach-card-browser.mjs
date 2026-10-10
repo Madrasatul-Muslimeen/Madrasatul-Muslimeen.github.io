@@ -4,8 +4,10 @@
 // way back (decision 86). Run from the repository root, serve.js on :8080, at 390px Bangla and 1280px English.
 // Expected values are written by hand from the fixture: the first Approach slice is "memorise"; its Guide is the
 // fixture's guide ("What it is" / "How to do it" / "How to measure"); the people are p1 Ahsan and p2 Maryam.
-//   --mutate=routenote  the wheel slice opens the Note view again          -> the pane / Note-view-hidden checks fail
-//   --mutate=noroot     the card is wired only under #noteView             -> Claim in the pane writes nothing
+//   --mutate=routenote  the wheel slice opens the Read view without the pane -> the pane checks fail
+//   --mutate=noroot     the card is wired only by the field-scoped query    -> Claim in the pane writes nothing
+// (routenote / noroot re-anchored 10 Oct 2026, #742: they named openNoteView / noteView, deleted code; noroot's anchor
+//  was gone, so it threw "anchor missing" and the suite had lost that proof.)
 //   --mutate=noback     the route sets no way back                         -> the way-back checks fail
 import { chromium, newContext, openPage } from "./harness.mjs";
 import fs from "node:fs";
@@ -17,8 +19,8 @@ const check = (name, ok, detail = "") => {
 };
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
 const MUT = {
-  routenote: ["quranrevival.html", 'openApproachCardInPane(key, t("Back to the Approach wheel"), openApproachWheel);', "noteApproachCardOpen = true; openNoteView(unitInfo.unitKey);"],
-  noroot: ["quranrevival.html", 'const embedEl = root === noteView ? root.querySelector(\'[data-note-field="approach"] .way-embed\') : root.querySelector(".way-embed");', "const embedEl = noteView.querySelector('[data-note-field=\"approach\"] .way-embed');"],
+  routenote: ["quranrevival.html", 'openApproachCardInPane(key, t("Back to the Approach wheel"), openApproachWheel);', 'setStageView("read");'],
+  noroot: ["quranrevival.html", 'const embedEl = fieldScoped ? root.querySelector(\'[data-note-field="approach"] .way-embed\') : root.querySelector(".way-embed");', "const embedEl = root.querySelector('[data-note-field=\"approach\"] .way-embed');"],
   // The pane on a unit other than the Read view's (a Unit card's 📝 Note on a Juz) took its card for an āyah and read
   // its status from a Surah's chunk. Architect's review of #728: the type comes from the key, chunked by D12.
   ayahonly: ["quranrevival.html", 'const { unitType, parts } = parseUnitKey(u.unitKey);\n      const bySurah = ["ayah", "range", "surah", "ruku"].includes(unitType);', 'const unitType = "ayah", parts = [String(parseAyahUnitKey(u.unitKey).surah)];\n      const bySurah = true;'],
@@ -61,7 +63,7 @@ for (const [lang, width, height] of [["bn", 390, 844], ["en", 1280, 800]]) {
     await page.$eval('#wheelContainer .wheel-seg[data-key="memorise"]', (e) => e.dispatchEvent(new MouseEvent("click", { bubbles: true })));
     const got = await onTrack(page);
     await page.waitForTimeout(300);
-    const m = await ev(page, () => ({ noteHidden: document.getElementById("noteView").hidden, read: !document.getElementById("readView")?.hidden, chosen: document.querySelector(".rnp-track [data-note-approach-select]")?.value, card: !!document.querySelector(".rnp-track .way-embed"), tabSel: document.querySelector('[data-rnp-tab="track"]')?.getAttribute("aria-selected"), buttons: document.querySelectorAll(".rnp-track [data-rnp-track]").length }));
+    const m = await ev(page, () => ({ noteHidden: (document.getElementById("noteView") === null), read: !document.getElementById("readView")?.hidden, chosen: document.querySelector(".rnp-track [data-note-approach-select]")?.value, card: !!document.querySelector(".rnp-track .way-embed"), tabSel: document.querySelector('[data-rnp-tab="track"]')?.getAttribute("aria-selected"), buttons: document.querySelectorAll(".rnp-track [data-rnp-track]").length }));
     check(`${tag} the Notes pane opens on its Track tab with the card`, got && m.card && m.tabSel === "true", JSON.stringify(m));
     check(`${tag} #noteView stays hidden, the Read view is the screen`, m.noteHidden === true && m.read === true, JSON.stringify(m));
     check(`${tag} the tapped Approach (memorise) is chosen; the three buttons are kept`, m.chosen === "memorise" && m.buttons === 3, JSON.stringify(m));
@@ -79,7 +81,7 @@ for (const [lang, width, height] of [["bn", 390, 844], ["en", 1280, 800]]) {
     await page.click(".rnp-track .way-claim-btn"); await page.waitForTimeout(1200);
     const w = await ev(page, (k) => (window.__stubWriteData || []).slice(k).filter((x) => x.col === "records").map((x) => [x.id, Object.entries(x.data || {}).filter(([key]) => /::memorise/.test(key)).map(([, v]) => v?.claimedStatus ?? null)]), n0);
     check(`${tag} Claim "Learning" with 👥 p1+p2 writes records for both`, w.some(([id, s]) => id === "t1__p1__surah_1" && s.includes("learning")) && w.some(([id, s]) => id === "t1__p2__surah_1" && s.includes("learning")), JSON.stringify(w));
-    check(`${tag} the card is redrawn in the pane afterwards, Note view still hidden`, await ev(page, () => !!document.querySelector(".rnp-track .way-embed") && document.getElementById("noteView").hidden), "");
+    check(`${tag} the card is redrawn in the pane afterwards, Note view still hidden`, await ev(page, () => !!document.querySelector(".rnp-track .way-embed") && (document.getElementById("noteView") === null)), "");
     // way back
     const back = await ev(page, () => document.querySelector("[data-rnp-back]")?.textContent ?? "");
     check(`${tag} the pane's back says "${W.backWheel}"`, back === W.backWheel, back);
@@ -106,7 +108,7 @@ for (const [lang, width, height] of [["bn", 390, 844], ["en", 1280, 800]]) {
     await page.click('.aa-sheet [data-aa-act="guide"]');
     const got = await onTrack(page);
     await page.waitForTimeout(300);
-    const m = await ev(page, () => ({ noteHidden: document.getElementById("noteView").hidden, chosen: document.querySelector(".rnp-track [data-note-approach-select]")?.value, back: document.querySelector("[data-rnp-back]")?.textContent }));
+    const m = await ev(page, () => ({ noteHidden: (document.getElementById("noteView") === null), chosen: document.querySelector(".rnp-track [data-note-approach-select]")?.value, back: document.querySelector("[data-rnp-back]")?.textContent }));
     check(`${tag} Guide opens the pane's Track tab on memorise; Note view hidden`, got && m.chosen === "memorise" && m.noteHidden === true, JSON.stringify(m));
     await page.click('.rnp-track .way-tab-btn[data-tab="Guide"]'); await page.waitForTimeout(150);
     const guide = await ev(page, () => document.querySelector('.rnp-track .way-tab-panel[data-tab="Guide"]')?.textContent ?? "");

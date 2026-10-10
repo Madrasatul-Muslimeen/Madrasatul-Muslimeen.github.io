@@ -28,7 +28,7 @@ DATA_ALLOWED.push(/^Aa$/);
 async function sweep(P, screen, width) {
   // The QCR collection titles on the Note view's ticks are the catalogue's own names (qcr-data.js, scholarly
   // transliterations), data and not interface: marked lang="en" so the scanner treats them as data, like .qcr-list-title.
-  await P.evaluate(() => document.querySelectorAll("#noteView [data-note-collection-toggle], #qcrPopup [data-note-collection-toggle]").forEach((c) => c.parentElement?.querySelectorAll("span").forEach((s) => s.setAttribute("lang", "en"))));
+  await P.evaluate(() => document.querySelectorAll("#qcrPopup [data-note-collection-toggle]").forEach((c) => c.parentElement?.querySelectorAll("span").forEach((s) => s.setAttribute("lang", "en"))));
   const bnChars = await P.evaluate(() => (document.body.innerText.match(/[ঀ-৿]/g) || []).length);
   check(`bn ${width}: "${screen}" is rendered in Bangla (positive control)`, bnChars >= 10, `Bangla characters: ${bnChars}`);
   const leaks = leaksOf(await P.evaluate(SCAN));

@@ -691,10 +691,13 @@ check("ayah-renderer.js's Arabic panel stamps the number badge as a real button,
   assert.ok(/const numBadge = (?:shown == null \? ""\s*:\s*)?clickable/.test(text), "the badge's own button-vs-span choice is not gated on the same `clickable` precondition the word buttons already require");
 });
 
-check("quranrevival.html's Note view stamps the same number-badge button locally, and both wire to openAyahActionSheet", () => {
+// Updated in place (10 Oct 2026, #742): the Note view's locally-built Arabic block -- the second place that stamped
+// this badge -- is deleted with the Note view, so ayah-renderer.js (checked above) is now the ONLY stamper. Asserted
+// both ways: no local stamp is left in quranrevival.html, and the tap is still wired to the Āyah card.
+check("quranrevival.html stamps no number badge of its own any more (ayah-renderer.js is the one stamper), and the badge tap wires to openAyahActionSheet", () => {
   const text = read("app/quranrevival.html");
-  assert.ok(/data-ayah-num-badge="\$\{currentSurahNum\}:\$\{a\.ayah\}"/.test(text),
-    "the Note view's own locally-built Arabic block does not stamp a matching number badge");
+  assert.ok(!/data-ayah-num-badge="\$\{/.test(text),
+    "quranrevival.html builds its own number badge again -- a second stamper that can drift from ayah-renderer.js's shape");
   assert.ok(/data-ayah-num-badge[\s\S]{0,120}openAyahActionSheet\(ayahNumBadge\.dataset\.ayahNumBadge[,)]/.test(text),
     "the number badge tap is not wired to openAyahActionSheet");
 });

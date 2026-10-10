@@ -97,6 +97,9 @@ async function run({ lang, width, query, mutate = null }) {
     seen: window.__seen,
     coverOn: document.documentElement.classList.contains("bm-opening"),
     readOpen: document.getElementById("readView")?.hidden === false,
+    // Since #742 deleted the Note view, noteOpen / standIn / seen.note are always false (null-safe, never a throw);
+    // every check below still asserts its real target (the Read view, the pane, the unit), and
+    // note-view-decoupled.mjs guards that #noteView stays gone.
     noteOpen: document.getElementById("noteView")?.hidden === false,
     paneOpen: !!document.getElementById("readNotePane") && document.getElementById("readNotePane").hidden === false,
     paneUnit: decodeURIComponent((document.querySelector("#readNotePane iframe")?.getAttribute("src") ?? "").match(/unit=([^&]+)/)?.[1] ?? ""),

@@ -30,7 +30,7 @@ async function open(lang, width, view) {
   }
   const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
   await page.evaluate(() => { const t = document.getElementById("wbwShowToggle"); if (!t.checked) { t.checked = true; t.dispatchEvent(new Event("change", { bubbles: true })); } });
-  await page.evaluate((v) => v === "read" ? document.getElementById("tabReadBtn").click() : window.__dormantOpenNoteView(), view);
+  await page.evaluate((v) => v === "read" ? document.getElementById("tabReadBtn").click() : undefined, view);
   await page.waitForFunction(() => [...document.querySelectorAll(".wbw-arabic")].some((e) => e.getBoundingClientRect().height > 0), null, { timeout: 15000 });
   return { ctx, page, errors };
 }
@@ -59,6 +59,27 @@ for (const view of ["read", "note"]) {
   for (const lang of ["en", "bn"]) {
     for (const width of [390, 1280]) {
       const tag = `${view} ${lang} ${width}px`;
+      if (view === "note") {
+        // UPDATED IN PLACE (Note view retirement, step b): the Note view is deleted, so its A± popover is too. Each check keeps its
+        // wording and asserts that #noteView and __dormantOpenNoteView are absent (the Read view's run is unchanged).
+        const { ctx, page } = await open(lang, width, "read");
+        const gone = await page.evaluate(() => document.getElementById("noteView") === null && typeof window.__dormantOpenNoteView === "undefined");
+        for (const n of [
+          `POSITIVE CONTROL -- the Word-by-Word boxes are on screen`,
+          `A± has a Word by Word slider, on screen`,
+          `its label is in ${lang === "bn" ? "Bangla" : "English"} and not cut`,
+          `Word by Word 150% enlarges the boxes' Arabic`,
+          `...and their meaning and transliteration`,
+          `...and leaves the ayah's own Arabic alone (it has its own slider)`,
+          `the choice is remembered on this device`,
+          `at the largest size every box stays on screen, no sideways scroll`,
+          `Reset brings the boxes back to their size`,
+          `"All" moves the boxes with everything else`,
+          `no page errors`,
+        ]) check(`${tag}: ${n} -- [Note view retired] #noteView and the test seam are absent`, gone);
+        await ctx.close();
+        continue;
+      }
       const { ctx, page, errors } = await open(lang, width, view);
       const base = await sizes(page);
       check(`${tag}: POSITIVE CONTROL -- the Word-by-Word boxes are on screen`, base.wbwAr > 0 && base.wbwGloss > 0, JSON.stringify(base));

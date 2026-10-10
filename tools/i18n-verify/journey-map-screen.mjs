@@ -511,10 +511,16 @@ check("reordering, moving, renaming and removing a folder each refresh from the 
   }
 });
 
-check("the Notes screen's own contextual entry point (Read screen's ⋯ menu, wired by ayah-note-renderer.js) is untouched by this round", () => {
+// UPDATED IN PLACE 10 Oct 2026 (#742): "My Notes for this unit" (notes.html) lived only in the Note view's ⋯ menu,
+// which is deleted. Decision 95 made the Read view's 📝 Notes pane the unit's notes: it embeds THIS page in unit mode.
+// So the contextual entry point checked is the pane's own address, and the old link's absence is asserted.
+check("the unit's own contextual entry point is the Read view's Notes pane, embedding this page on that unit (decision 95)", () => {
+  const pane = fs.readFileSync(path.join(root, "app/js/read-note-pane.js"), "utf8");
   const renderer = fs.readFileSync(path.join(root, "app/js/ayah-note-renderer.js"), "utf8");
-  assert.ok(renderer.includes("My Notes for this unit") && renderer.includes("notesScreenHref"),
-    "the existing notes.html entry point regressed");
+  assert.ok(/new URLSearchParams\(\{ embed: "1", unit: u\.unitKey, unitLabel: u\.label \}\)/.test(pane) && pane.includes("return `journey-map.html?${q.toString()}`;"),
+    "read-note-pane.js no longer opens journey-map.html?embed=1&unit=<key> for the unit");
+  assert.ok(!renderer.includes("My Notes for this unit") && !renderer.includes("notesScreenHref"),
+    "the deleted Note view's notes.html link is back in ayah-note-renderer.js");
 });
 // UPDATED 24 Sep 2026 for issue #257, WITH THE REASON RECORDED RATHER THAN
 // THE CHECK WEAKENED. P6-F's own accepted decision was that the entry point
@@ -526,17 +532,18 @@ check("the Notes screen's own contextual entry point (Read screen's ⋯ menu, wi
 // point, so the claim above is narrowed (Notes' own entry point is
 // untouched) rather than kept as "no journey-map.html reference anywhere",
 // and this new check covers the two real entry points that replaced it.
-check("the dock's Mapping tab and the Note view's own ⋯ menu are both real, wired entry points into journey-map.html's Folders view (issue #257)", () => {
-  const renderer = fs.readFileSync(path.join(root, "app/js/ayah-note-renderer.js"), "utf8");
+// UPDATED IN PLACE 10 Oct 2026 (#742): the Note view's ⋯ menu row is deleted with the Note view. The second real
+// entry point is now the Notes pane's own "open Mapping My Journey" message, which opens the Journey tray and falls
+// back to journey-map.html#folders if the tray cannot load.
+check("the dock's Mapping tab and the Notes pane are both real, wired entry points into journey-map.html's Folders view (issue #257, decision 95)", () => {
+  const pane = fs.readFileSync(path.join(root, "app/js/read-note-pane.js"), "utf8");
   const quranShell = fs.readFileSync(path.join(root, "app/quranrevival.html"), "utf8");
   assert.ok(!/id="tabJourneyBtn"[^>]*(?:disabled|aria-disabled="true")/.test(quranShell),
     "the dock's Mapping tab is still disabled");
   assert.ok(quranShell.includes('"journey-map.html#folders"'),
     "the dock's Mapping tab no longer navigates to journey-map.html#folders");
-  assert.ok(!/qm-item"\s*disabled[^>]*>\$\{t\("Mapping My Journey"\)\}/.test(renderer),
-    "the Note view's ⋯ menu Mapping My Journey row is still the disabled placeholder");
-  assert.ok(/<a class="qm-item" href="journey-map\.html#folders">\$\{t\("Mapping My Journey"\)\}<\/a>/.test(renderer),
-    "the Note view's ⋯ menu Mapping My Journey row is not a real link to journey-map.html#folders");
+  assert.ok(/ev\.data\?\.type === "mmsa-open-journey"[\s\S]{0,200}openJourneyTray[\s\S]{0,120}"journey-map\.html#folders"/.test(pane),
+    "the Notes pane no longer opens Mapping My Journey (the tray, falling back to journey-map.html#folders)");
 });
 
 // --- 9. HASH-BASED VIEW SELECTION (issue #257) -------------------------------
@@ -650,7 +657,7 @@ if (!playwrightMod) {
 } else {
   await checkAsync("the ⋯ menu is hit-testable at 390px -- opening it and reading document.elementFromPoint() at its own centre returns the menu or one of its children, not something behind it", async () => {
     const { newContext, openPage } = await import("./harness.mjs");
-    const browser = await playwrightMod.chromium.launch();
+    const browser = await playwrightMod.chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {}); // like every other suite here
     try {
       // Architect's review, 25 Sep 2026: the stub never mutates its own DATA
       // (a standing harness lesson), so creating a folder through the form and

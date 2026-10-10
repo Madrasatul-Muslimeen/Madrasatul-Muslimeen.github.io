@@ -37,6 +37,7 @@ function containsAll(source, values) {
 
 const quranShell = read("app/quranrevival.html");
 const ayahNoteRenderer = read("app/js/ayah-note-renderer.js");
+const readNotePane = read("app/js/read-note-pane.js");
 const unitKeys = read("app/js/unit-keys.js");
 const records = read("app/js/records.js");
 const activity = read("app/js/activity.js");
@@ -50,8 +51,10 @@ for (const pillar of ["APPROACH", "STUDY", "EXPLORE", "MAPPING MY JOURNEY"]) {
 check("Quran shell retains an Approach surface", /Approach/i.test(quranShell));
 check("Quran shell retains a Study surface", /Study/i.test(quranShell));
 check("Quran shell retains an Explore surface", /Explore/i.test(quranShell));
-check("Quran surface retains a Mapping My Journey placeholder",
-  /ayah-note-renderer\.js/.test(quranShell) && /Mapping My Journey/i.test(ayahNoteRenderer));
+// UPDATED IN PLACE 10 Oct 2026 (#742): the Note view's ⋯ menu carried this; it is deleted. The Quran surface's
+// Journey entry is now the Notes pane (read-note-pane.js, loaded on first press) and the dock's Mapping tab.
+check("Quran surface retains a Mapping My Journey entry (the Notes pane, loaded on first press, and the dock's Mapping tab)",
+  /await import\("\.\/js\/read-note-pane\.js"\)/.test(quranShell) && quranShell.includes('"journey-map.html#folders"'));
 
 console.log("\n=== Approved four-pillar shell presentation ===");
 const approachPillarAt = quranShell.indexOf('id="tabApproachBtn"');
@@ -84,13 +87,16 @@ check("Mapping My Journey pillar is switched on, and its tap wires to journey-ma
 // entry point the issue names, and it carried the identical disabled
 // placeholder -- checked here since this file already reads
 // ayahNoteRenderer for the sibling check above.
-check("Note view ⋯ menu carries a real Mapping My Journey link, not the disabled placeholder",
-  !/qm-item"\s*disabled[^>]*>\$\{t\("Mapping My Journey"\)\}/.test(ayahNoteRenderer) &&
-  /<a class="qm-item" href="journey-map\.html#folders">\$\{t\("Mapping My Journey"\)\}<\/a>/.test(ayahNoteRenderer));
+// UPDATED IN PLACE 10 Oct 2026 (#742): the Note view's ⋯ menu is deleted; the Notes pane opens Mapping My Journey.
+check("the Notes pane opens Mapping My Journey for real (the tray, falling back to journey-map.html#folders), and no disabled placeholder is left",
+  /ev\.data\?\.type === "mmsa-open-journey"[\s\S]{0,200}openJourneyTray[\s\S]{0,120}"journey-map\.html#folders"/.test(readNotePane) &&
+  !/qm-item"\s*disabled[^>]*>\$\{t\("Mapping My Journey"\)\}/.test(ayahNoteRenderer));
 check("relocated Options action remains wired to the existing panel controller",
   /querySelectorAll\(['"]#dock \[data-panel=\\?"panelStudyOptions\\?"\]['"]\)/.test(quranShell));
-check("existing internal stage view identifiers remain unchanged",
-  containsAll(quranShell, ['view === "read"', 'view === "note"', 'view === "explore"', 'view === "wheel"']));
+// UPDATED IN PLACE 10 Oct 2026 (#742): the "note" stage view is retired with the Note view (decision 95); the other
+// three identifiers must stay exactly as they were.
+check("existing internal stage view identifiers remain unchanged (read, explore, wheel; the retired \"note\" view is gone)",
+  containsAll(quranShell, ['view === "read"', 'view === "explore"', 'view === "wheel"']) && !quranShell.includes('view === "note"'));
 
 console.log("\n=== Permanent Study Unit identity ===");
 const namespaces = [

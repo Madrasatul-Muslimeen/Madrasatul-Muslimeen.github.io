@@ -233,7 +233,7 @@ for (const lang of ["en", "bn"]) for (const [width, height, mode] of [[390, 844,
   await ev(() => document.querySelector("#readQuickMenuSlot [data-qm-note]")?.click());
   await P.waitForFunction(() => !document.getElementById("readNotePane")?.hidden, null, { timeout: 8000 }).catch(() => {});
   await P.waitForTimeout(300);
-  const qm = await ev(() => ({ pane: !document.getElementById("readNotePane").hidden, title: document.querySelector("#readNotePane .rnp-title")?.textContent, note: !document.getElementById("noteView").hidden }));
+  const qm = await ev(() => ({ pane: !document.getElementById("readNotePane").hidden, title: document.querySelector("#readNotePane .rnp-title")?.textContent, note: !!document.getElementById("noteView") }));
   check(`${tag} ⋮ Note & more opens the Notes pane on 2:256, not the Note view`, qm.pane && qm.title === W.title256 && !qm.note, JSON.stringify(qm));
   await P.click("#readNotePane [data-rnp-back]");
   //   a Unit card's 📝 Note on this Surah: the pane on surah:2, "← Back to the unit card" reopens the card.
@@ -244,7 +244,7 @@ for (const lang of ["en", "bn"]) for (const [width, height, mode] of [[390, 844,
   await ev(() => document.querySelector("[data-unit-card-note]")?.click());
   await P.waitForFunction(() => !document.getElementById("readNotePane")?.hidden, null, { timeout: 8000 }).catch(() => {});
   await P.waitForTimeout(500);
-  const unitPane = await ev(() => ({ pane: !document.getElementById("readNotePane").hidden, src: decodeURIComponent(document.querySelector("#readNotePane iframe")?.getAttribute("src") ?? ""), unitNow: document.querySelector("#readNotePane .rnp-title")?.textContent, back: document.querySelector("#readNotePane [data-rnp-back]")?.textContent, note: !document.getElementById("noteView").hidden }));
+  const unitPane = await ev(() => ({ pane: !document.getElementById("readNotePane").hidden, src: decodeURIComponent(document.querySelector("#readNotePane iframe")?.getAttribute("src") ?? ""), unitNow: document.querySelector("#readNotePane .rnp-title")?.textContent, back: document.querySelector("#readNotePane [data-rnp-back]")?.textContent, note: !!document.getElementById("noteView") }));
   const Fu = P.frames().find((x) => /journey-map\.html\?embed=1&unit=/.test(x.url()));
   await Fu?.waitForFunction(() => /surah|সূরা/i.test(document.querySelector("[data-unit-title]")?.textContent ?? ""), null, { timeout: 8000 }).catch(() => {});
   const unitTitle = Fu ? await Fu.evaluate(() => document.querySelector("[data-unit-title]")?.textContent ?? "") : "";

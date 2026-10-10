@@ -48,14 +48,16 @@ for (const lang of ["en", "bn"]) for (const width of [390, 1280]) {
   check(`${tag}: the centre names the Bismillah`, h1.includes(W[lang].b), h1);
   check(`${tag}: ...and never as an āyah`, !/Ayah Bismillah|আয়াত বিসমিল্লাহ|1:Bismillah|১:বিসমিল্লাহ/.test(h1), h1);
   check(`${tag}: the Study options āyah picker reads Bismillah`, (await P.evaluate(() => { const s = document.getElementById("ayahSelect"); return s.options[s.selectedIndex]?.textContent; })) === W[lang].b);
-  await P.evaluate(() => window.__dormantOpenNoteView());
-  await P.waitForFunction(() => !document.getElementById("noteView")?.hidden, null, { timeout: 8000 }).catch(() => {});
+  // UPDATED IN PLACE (Note view retirement, step b): the Note window is deleted; the Read view's Notes pane is the surface
+  // that now carries the unit's name, so the same Bismillah assertions are made against the pane.
+  check(`${tag}: #noteView and __dormantOpenNoteView are absent`, await P.evaluate(() => document.getElementById("noteView") === null && typeof window.__dormantOpenNoteView === "undefined"));
+  await P.evaluate(() => { const b = document.getElementById("tabNoteBtn"); if (b && !b.getBoundingClientRect().width) document.getElementById("tabStudyBtn")?.click(); });
+  await P.evaluate(() => document.getElementById("tabNoteBtn")?.click());
+  await P.waitForFunction(() => document.getElementById("readNotePane")?.hidden === false, null, { timeout: 8000 }).catch(() => {});
   await P.waitForTimeout(1200);
-  const nv = await P.evaluate(() => { const v = document.getElementById("noteView"); const pick = v.querySelector('[data-note-picker="ayah"]'); return { text: v.innerText, title: [document.getElementById("notePopupTitle")?.textContent.trim() ?? ""], pick: pick ? pick.options[pick.selectedIndex]?.textContent : null }; });
-  // A phone shows the Note full-screen with no title bar, so the title is checked where there is one (a PC).
-  if (width >= 1024) check(`${tag}: the Note window's title is exactly "${W[lang].title}"`, nv.title.some((x) => x === W[lang].title), JSON.stringify(nv.title));
-  check(`${tag}: nothing in the Note window says "1:Bismillah" or "Ayah Bismillah"`, !/1:Bismillah|Ayah Bismillah|১:বিসমিল্লাহ|আয়াত বিসমিল্লাহ|Quran 1:Bismillah/.test(nv.text + nv.title.join(" ")));
-  check(`${tag}: the Note window's own āyah picker reads Bismillah`, nv.pick === W[lang].b, String(nv.pick));
+  const nv = await P.evaluate(() => { const v = document.getElementById("readNotePane"); return { text: v ? v.innerText : "", title: [v?.querySelector(".rnp-title")?.textContent.trim() ?? ""] }; });
+  check(`${tag}: the Notes pane's title names the Bismillah ("${W[lang].title}") and never as an āyah`, nv.title.some((x) => x.includes(W[lang].title) && !/Ayah|আয়াত/.test(x)), JSON.stringify(nv.title));
+  check(`${tag}: nothing in the Notes pane says "1:Bismillah" or "Ayah Bismillah"`, !/1:Bismillah|Ayah Bismillah|১:বিসমিল্লাহ|আয়াত বিসমিল্লাহ|Quran 1:Bismillah/.test(nv.text + nv.title.join(" ")));
   check(`${tag}: no sideways scroll`, await P.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
   check(`${tag}: no page errors`, errors.filter((e) => !/ERR_CERT|net::|archive\.org|api\.quran|Failed to load resource/i.test(e)).length === 0, errors.slice(0, 2).join(" | "));
   await ctx.close();
