@@ -6,6 +6,12 @@
 //   --mutate=noarm   about.html no longer arms the watcher        -> the start-by-itself checks fail
 //   --mutate=nohold  the watcher ignores what the reader is doing -> the "held" checks fail
 //   --mutate=eager   the watcher imports the screensaver at once  -> the load-on-first-use check fails
+// Round 2 (#736):
+//   --mutate=nostudy   "Ones I'm studying" ignores the records          -> 5a fails
+//   --mutate=nogroup   a group choice shows every Name                  -> 5b fails
+//   --mutate=nocorr    other pages use the bundled 99, no corrections   -> 5c fails
+//   --mutate=noopen    "Open this Name" drops the way back (back=1)     -> 5e fails
+//   --mutate=earlyread the watcher reads the madrasah's data at startup -> 5f fails
 import { chromium, newContext, openPage } from "./harness.mjs";
 import fs from "node:fs";
 
@@ -19,6 +25,11 @@ const MUT = {
   noarm: ["about.html", "    armScreensaver();\n", "\n"],
   nohold: ["js/screensaver-idle.js", "export function screensaverHeld(doc = document) {\n", "export function screensaverHeld(doc = document) {\n  return false;\n"],
   eager: ["js/screensaver-idle.js", "const KEY = \"mm_screensaver\";", "import \"./asma-screensaver.js\";\nconst KEY = \"mm_screensaver\";"],
+  nostudy: ["js/asma-screensaver.js", 'if (settings.which === "studying" && studied) {', "if (false) {"],
+  nogroup: ["js/asma-screensaver.js", 'if (settings.which === "group") {', "if (false) {"],
+  nocorr: ["js/asma-screensaver.js", "entries = entries || data.entries;", "entries = entries || null;"],
+  noopen: ["js/asma-screensaver.js", "&back=1`;", "`;"],
+  earlyread: ["js/screensaver-idle.js", "  if (armed) return;\n  armed = true;\n", '  if (armed) return;\n  armed = true;\n  import("./asma-screensaver.js").then((m) => m.loadScreensaverData());\n'],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
 const quiet = (errs) => errs.filter((e) => !/ERR_CERT|net::|archive\.org|api\.quran|fonts\.g|Failed to load resource/i.test(e));
@@ -143,6 +154,96 @@ for (const [lang, width] of [["bn", 390], ["en", 1280]]) {
   check("[asma] 4b the old overlay is gone (one screensaver, not two)", !(await P.evaluate(() => document.getElementById("screensaverOverlay"))));
   check("[asma] 4c no page errors", quiet(errors).length === 0, quiet(errors).slice(0, 2).join(" | "));
   await ctx.close();
+}
+// 5. Round 2: "Ones I'm studying", the madrasah's groups, its corrections on every page, and "Open this Name".
+{
+  const SEED = `
+  DATA.records.find((r) => r._id === "t1__p1__subject_asma_ul_husna").entries["name:3::studied_asma"] = { unitType: "name", subjectId: "asma_ul_husna", trackableId: "studied_asma", claimedStatus: "learning", claimedByPersonId: "p1", confirmedStatus: null, confirmState: "pending", domainIds: [], notes: "" };
+  DATA.asmaCollections = [{ _id: TENANT_ID, tenantId: TENANT_ID, schemaVersion: 1,
+    collections: [
+      { id: "g1", title: { en: "Mercy group" }, kind: "group", badge: "", order: 10, status: "active", items: ["name:2", "name:4"] },
+      { id: "a1", title: { en: "ACT" }, kind: "cls_act", badge: "", order: 20, status: "active", items: ["name:5"] } ],
+    extraNames: [], nameOverrides: {}, nameOverridesEn: { "1": "Zzcorrected Mercy" }, nameRefOverrides: {} }];`;
+  const titles = async (P, n) => {
+    const out = [];
+    for (let k = 0; k < n; k++) {
+      await P.waitForTimeout(150);
+      out.push(await P.evaluate(() => document.querySelector("#mmSaver .mms-stage .mms-slide:last-child [data-poster-title]")?.textContent));
+      await P.keyboard.press("ArrowRight");
+    }
+    return out;
+  };
+  const begin = async (settings) => {
+    const ctx = await newContext(browser, { appLang: "en", banner: false, viewport: { width: 1280, height: 844 }, allowScreensaver: true, extraSeedJs: SEED });
+    await ctx.route("**/archive.org/**", (r) => r.abort());
+    await ctx.addInitScript((st) => { try { localStorage.setItem("mm_screensaver", JSON.stringify({ idleMin: 30, eachSec: 60, kind: "tpl", order: "seq", clock: false, night: "same", ...st })); } catch {} }, settings);
+    if (MUTATE) {
+      const [file, a, b] = MUT[MUTATE];
+      await ctx.route(`**/app/${file}*`, async (r) => {
+        const src = fs.readFileSync(`app/${file}`, "utf8");
+        if (!src.includes(a)) throw new Error(`mutation anchor missing: ${MUTATE}`);
+        await r.fulfill({ status: 200, contentType: "text/javascript; charset=utf-8", body: src.split(a).join(b) });
+      });
+    }
+    const { page: P, errors } = await openPage(ctx, "/app/about.html");
+    await P.waitForTimeout(800);
+    return { ctx, P, errors };
+  };
+  const start = async (P) => { await P.evaluate(() => import("/app/js/screensaver-idle.js").then((m) => m.startScreensaver())); await waitSaver(P, true, 8000); await P.waitForTimeout(500); };
+  const reads = (P) => P.evaluate(() => window.__fsLog.filter((r) => r.col === "asmaCollections").length);
+
+  { // 5f nothing new is read before the screensaver starts
+    const { ctx, P } = await begin({ which: "studying" });
+    const before = await reads(P);
+    check("[5f] no madrasah Names document is read before the screensaver starts", before === 0, String(before));
+    await start(P);
+    const after = await reads(P);
+    check("[5f] it is read once, when the screensaver starts", after === 1, String(after));
+    await ctx.close();
+  }
+  { // 5a studied only
+    const { ctx, P } = await begin({ which: "studying" });
+    await start(P);
+    const got = await titles(P, 4);
+    check("[5a] \"Ones I'm studying\" shows only the studied Names (1 and 3), then round again", JSON.stringify(got) === JSON.stringify(["Ar-Rahman", "Al-Malik", "Ar-Rahman", "Al-Malik"]), JSON.stringify(got));
+    await ctx.close();
+  }
+  { // 5b a group
+    const { ctx, P } = await begin({ which: "group", group: "g1" });
+    await start(P);
+    const got = await titles(P, 3);
+    check("[5b] a group choice shows only that group's Names (2 and 4)", JSON.stringify(got) === JSON.stringify(["Ar-Rahim", "Al-Quddus", "Ar-Rahim"]), JSON.stringify(got));
+    await ctx.close();
+  }
+  { // 5b2 the settings offer the lists
+    const { ctx, P } = await begin({ which: "all" });
+    await P.evaluate(() => document.querySelector("[data-screensaver-settings]")?.click());
+    await P.waitForFunction(() => document.querySelectorAll("#mmSaverSettings [data-group] option").length >= 2, null, { timeout: 8000 }).catch(() => {});
+    const opts = await P.evaluate(() => [...document.querySelectorAll("#mmSaverSettings [data-group] option")].map((o) => o.textContent));
+    const offered = await P.evaluate(() => [...document.querySelectorAll('#mmSaverSettings [data-k="which"] button')].map((b) => b.dataset.v));
+    check("[5b] the settings offer \"studying\" and \"group\", and every active list (Group and ACT)", offered.includes("studying") && offered.includes("group") && opts.length === 2 && opts.some((o) => /Mercy group/.test(o)) && opts.some((o) => /ACT/.test(o)), JSON.stringify({ offered, opts }));
+    await ctx.close();
+  }
+  { // 5c corrected English meaning on a page that is not the Asma page; 5e open this Name
+    const { ctx, P } = await begin({ which: "all" });
+    await start(P);
+    const txt = await P.evaluate(() => document.querySelector("#mmSaver .mms-slide:last-child")?.innerText || "");
+    check("[5c] the madrasah's corrected English meaning shows on another page (about)", /Zzcorrected Mercy/.test(txt), txt.slice(0, 160));
+    await P.keyboard.press("ArrowRight"); await P.keyboard.press("ArrowRight");
+    await P.waitForTimeout(300);
+    await P.evaluate(() => document.getElementById("mmSaver").classList.add("ctl"));
+    await P.evaluate(() => document.querySelector('#mmSaver [data-mms="open"]')?.click());
+    await P.waitForURL(/asma-study\.html/, { timeout: 8000 }).catch(() => {});
+    check("[5e] \"Open this Name\" goes to that Name (3) with back=1", /asma-study\.html\?name=3&back=1/.test(P.url()), P.url());
+    await P.waitForFunction(() => document.getElementById("asmaBackBtn") && getComputedStyle(document.getElementById("app")).display !== "none", null, { timeout: 15000 }).catch(() => {});
+    await P.waitForTimeout(800);
+    const pg = await P.evaluate(() => ({ back: !!document.getElementById("asmaBackBtn")?.getClientRects().length, detail: document.getElementById("detailContainer")?.innerText.slice(0, 200) || "" }));
+    check("[5e] the Name's card is open and a visible ← Back is there", pg.back && /Malik/i.test(pg.detail), JSON.stringify(pg));
+    await P.click("#asmaBackBtn");
+    await P.waitForURL(/about\.html/, { timeout: 8000 }).catch(() => {});
+    check("[5e] ← Back returns to the page the reader was on", /about\.html/.test(P.url()), P.url());
+    await ctx.close();
+  }
 }
 await browser.close();
 console.log(`\n==== Asma screensaver: ${pass} passed, ${fail} failed ====`);

@@ -582,8 +582,18 @@ export function initAsmaStudyPage() {
     // through this exact same param -- bookmarks.html links non-Quran
     // bookmarks straight to ?resume=<position>, so this module needs no
     // second query param of its own to support the Bookmark Manager.
-    const resumeId = new URLSearchParams(location.search).get("resume");
+    // 10 Oct 2026: the screensaver's "Open this Name" arrives as ?name=<n>&back=1 (the way-back law, decision 86:
+    // ← Back returns to exactly the page the reader was on).
+    const qs = new URLSearchParams(location.search);
+    const resumeId = qs.get("resume") || qs.get("name");
     const number = resumeId ? Number(resumeId) : null;
+    if (qs.get("back") === "1" && !document.getElementById("asmaBackBtn")) {
+      const backBtn = document.createElement("button");
+      backBtn.type = "button"; backBtn.id = "asmaBackBtn"; backBtn.className = "secondary";
+      backBtn.textContent = `← ${t("Back")}`;
+      backBtn.addEventListener("click", () => { if (history.length > 1) history.back(); else location.href = "./quranrevival.html"; });
+      appEl.prepend(backBtn);
+    }
     // Asma Collections round: an extra Name's own bookmark (number >= 100)
     // resumes here too now -- openNameDetail() itself resolves both ranges
     // and is a no-op if the number turns out not to exist.
