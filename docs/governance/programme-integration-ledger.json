@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "10.10",
+    "version": "10.11",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -3113,8 +3113,20 @@
     {
       "version": "10.10",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Explore's Asma Name bar has two either/or pairs, Essence|Act and Unique|Shared, filing the Name in one tap.",
+      "integration": {
+        "authorizedOn": "2026-10-10",
+        "integratedOn": "2026-10-10",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "10.11",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "R3b, decision 95: QCR and Asma references, the note pop-up's jump, ?goto= and qpView=note open the Read view with the Notes pane, not the Note view.",
       "integration": {
         "authorizedOn": "2026-10-10",
         "integratedOn": "2026-10-10",
@@ -3123,8 +3135,9 @@
       }
     }
   ],
-  "nextUnallocated": "10.11",
+  "nextUnallocated": "10.12",
   "nextUnallocatedNote": [
+    "v10.11 was allocated to QCR, Asma and jump links open the Read view with the Notes pane (R3b), 2026-10-10.",
     "v10.10 was allocated to Asma: Essence | Act and Unique | Shared on the Name bar, 2026-10-10.",
     "v10.09 was allocated to the Approach card in the Notes pane's Track tab (R3a), 2026-10-10.",
     "v10.08 was allocated to the Asma ul Husna screensaver on every page, 2026-10-10.",

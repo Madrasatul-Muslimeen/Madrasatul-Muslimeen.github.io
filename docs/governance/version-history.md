@@ -805,3 +805,4 @@ total). Allocated by the MMSA Architect.
 10.08: the Asma ul Husna screensaver on every page. Allocated by the MMSA Architect.
 10.09: the Approach card in the Notes pane's Track tab (R3a). Allocated by the MMSA Architect.
 10.10: Asma: Essence | Act and Unique | Shared on the Name bar. Allocated by the MMSA Architect.
+10.11: QCR, Asma and jump links open the Read view with the Notes pane (R3b). Allocated by the MMSA Architect.
