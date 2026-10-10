@@ -804,3 +804,4 @@ total). Allocated by the MMSA Architect.
 10.07: Legacy App - v09: v09.151 archived (decision 98). Allocated by the MMSA Architect.
 10.08: the Asma ul Husna screensaver on every page. Allocated by the MMSA Architect.
 10.09: the Approach card in the Notes pane's Track tab (R3a). Allocated by the MMSA Architect.
+10.10: Asma: Essence | Act and Unique | Shared on the Name bar. Allocated by the MMSA Architect.

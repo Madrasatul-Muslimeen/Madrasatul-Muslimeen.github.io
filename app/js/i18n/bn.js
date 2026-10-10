@@ -80,6 +80,9 @@ export const BN = {
   "Legacy App - v07 ↗": "পুরাতন অ্যাপ - v07 ↗",
   "Legacy App - v08 ↗": "পুরাতন অ্যাপ - v08 ↗",
   "Legacy App - v09 ↗": "পুরাতন অ্যাপ - v09 ↗",
+  // 10 Oct 2026: Essence | Act, Unique | Shared on the Name bar (asmaXQuickFile).
+  "Filed under {classification}. Tap to take it out.": "{classification}-এর অধীনে রাখা আছে। সরাতে চাপুন।",
+  "File under {classification}": "{classification}-এর অধীনে রাখুন",
   // 10 Oct 2026: the Asma ul Husna screensaver (screensaver-idle.js, asma-screensaver.js).
   "🌙 Screensaver": "🌙 স্ক্রিনসেভার",
   "Asma ul Husna screensaver": "আসমাউল হুসনা স্ক্রিনসেভার",
