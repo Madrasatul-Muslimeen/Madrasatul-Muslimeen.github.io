@@ -455,12 +455,14 @@ check("the Mapping My Journey pillar is switched on, and its tap opens journey-m
 // SECOND entry point the issue names, and it was the identical disabled
 // placeholder -- inverted the same way, and checked from here since this
 // file already owns the "is the Mapping pillar still unavailable" claim.
-check("the Note view's own ⋯ menu carries a real Mapping My Journey link to journey-map.html's Folders view, not the disabled placeholder", () => {
+// UPDATED IN PLACE 10 Oct 2026 (#742): the Note view's ⋯ menu is deleted; its Mapping My Journey job is the Notes pane's.
+check("the Notes pane opens Mapping My Journey for real (the tray, falling back to journey-map.html's Folders view), and no disabled placeholder is left", () => {
   const renderer = fs.readFileSync(path.join(appJs, "ayah-note-renderer.js"), "utf8");
+  const pane = fs.readFileSync(path.join(appJs, "read-note-pane.js"), "utf8");
   assert.ok(!/qm-item"\s*disabled[^>]*>\$\{t\("Mapping My Journey"\)\}/.test(renderer),
-    "the ⋯ menu's Mapping My Journey row is still the disabled placeholder");
-  assert.ok(/<a class="qm-item" href="journey-map\.html#folders">\$\{t\("Mapping My Journey"\)\}<\/a>/.test(renderer),
-    "the ⋯ menu's Mapping My Journey row is not a real link to journey-map.html#folders");
+    "a disabled Mapping My Journey placeholder is back in ayah-note-renderer.js");
+  assert.ok(/ev\.data\?\.type === "mmsa-open-journey"[\s\S]{0,200}openJourneyTray[\s\S]{0,120}"journey-map\.html#folders"/.test(pane),
+    "the Notes pane no longer opens Mapping My Journey (the tray, falling back to journey-map.html#folders)");
 });
 
 // --- 2. ORIGIN != DESTINATION, enforced by inability ------------------------
