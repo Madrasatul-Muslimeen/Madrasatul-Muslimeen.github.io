@@ -20467,3 +20467,26 @@ The Owner, 9 Oct 2026, with a photo of the sheet on Yaseen 8: "The writing view 
   - behaviour 1007/0
   - stub-parity 4/0
   - bn-duplicate-keys 6/0
+
+## v10.11 — 2026-10-10 — QCR, Asma and jump links open the Read view with the Notes pane (decision 95 R3b, Builder #730, PR #731)
+
+- These five routes now go to the reference in the Read view and open the Notes pane on it, instead of the Note view:
+  - an Asma Name's āyah reference (`goToAyahFromAsmaX`);
+  - a QCR collection's āyah or Range (`goToAyahFromQcr`);
+  - the note pop-up's jump (`notePopupGoToAyah`);
+  - `?goto=S:A`;
+  - `?qpView=note`.
+- Ways back (decision 86):
+  - ← Back to <the Name>: Explore on the same Name and Group, or its poster;
+  - ← Back to QCR: the same collection (`backToQcrCollection`);
+  - with `back=1`, the ← Back pill.
+- Lost, said plainly: the Note view's Topic pre-set from QCR/Asma (`fromAsma` / `fromCollectionId`). The pane has no Topic field, and no field or write path was added.
+- Architect's review fix: the Asma back names the Name again ("← Back to Al-Wakil"), as it did before; its check was updated in place.
+- Not moved yet (R3c, #734): the Study menu's Note tab, the last route into the Note view.
+- Checks:
+  - read-pane-routes-browser 31/0 (new; mutations asmanote, qcrnote, gotonote and noback each caught);
+  - qcr-popup 34/0; read-note-pane 210/0; asma-poster 100/0;
+  - asma-cited-ayat 45/0; asma-cited-hadith 66/0; quran-ayah-action-sheet 144/0;
+  - notes-way-back 42/0 and bookmark-open 77/0 (both updated in place);
+  - pane-approach-card 29/0; asma-screensaver 51/0; asma-quick-class 27/0;
+  - phone-width-overflow 217/0; behaviour 1007/0.
