@@ -47,6 +47,9 @@ async function openPopover(page, view) {
     const shown = await page.evaluate((p) => { const b = document.querySelector(`[data-text-size-toggle="${p}"]`); return !!b && b.getBoundingClientRect().height > 0; }, p);
     if (!shown) await page.evaluate(() => { [...document.querySelectorAll('[data-note-menu-toggle="tools"]')].find((b) => b.getBoundingClientRect().height > 0)?.click(); });
   }
+  // Updated in place, v10.21 (the Owner, 10 Oct 2026: the Read bar's tools "under one button"): below 900px the Read
+  // bar's A± is a tile behind ⋯ More tools, so open ⋯ first when A± is not on screen.
+  if (view === "read" && await page.evaluate((p) => (document.querySelector(`[data-text-size-toggle="${p}"]`)?.getBoundingClientRect().width ?? 0) === 0 && (document.getElementById("readToolsBtn")?.getBoundingClientRect().width ?? 0) > 0, p)) { await page.click("#readToolsBtn"); await page.waitForTimeout(200); }
   await page.evaluate((p) => document.querySelector(`[data-text-size-toggle="${p}"]`).click(), p);
   return p;
 }

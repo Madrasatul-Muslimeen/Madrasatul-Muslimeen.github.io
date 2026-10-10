@@ -2,7 +2,7 @@
 // sanitiser with the REAL DOMPurify in a browser page (a Note picture is kept; a bad path, a src, an onerror, an http:
 // path and a ../ path are not). Run from the repository root with `node serve.js` running.
 import assert from "node:assert/strict";
-import { chromium } from "./harness.mjs";
+import { chromium, BASE } from "./harness.mjs";
 import { isNoteImagePath, shrinkToTarget, noteImageOwner, NOTE_IMAGE_TARGET_BYTES, NOTE_IMAGE_MAX_BYTES } from "../../app/js/note-image-path.js";
 
 let pass = 0, fail = 0;
@@ -44,7 +44,7 @@ const enc = (sz) => async (q, side) => { calls.push([q, side]); return { size: s
 // ---- the sanitiser, with the real DOMPurify ----
 const browser = await chromium.launch();
 const page = await (await browser.newContext()).newPage();
-await page.goto("http://localhost:8080/app/journey-map.html", { waitUntil: "domcontentloaded" });
+await page.goto(BASE + "/app/journey-map.html", { waitUntil: "domcontentloaded" });
 await page.waitForFunction(() => !!window.DOMPurify);
 const clean = (html) => page.evaluate(async (h) => (await import("/app/js/note-sanitize.js")).sanitizeNoteHtml(h), html);
 const imgs = async (html) => page.evaluate((h) => { const t = document.createElement("template"); t.innerHTML = h; return [...t.content.querySelectorAll("img")].map((i) => ({ attrs: Object.fromEntries([...i.attributes].map((a) => [a.name, a.value])) })); }, await clean(html));

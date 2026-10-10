@@ -164,3 +164,4 @@ Carried from the 9 Oct handover, still true:
 - **v10.18** (2026-10-10): Asma ways back, Prime beside Search, the Āyah card's Full text full screen.
 - **v10.19** (2026-10-10): The Note ⋯ menu in six groups (Builder #747).
 - **v10.20** (2026-10-10): bookmark-marks-back made true (Builder #750).
+- **v10.21** (2026-10-10): 📖 Meaning, the Read bar's tools under ⋯, the study buttons at a phone's foot.

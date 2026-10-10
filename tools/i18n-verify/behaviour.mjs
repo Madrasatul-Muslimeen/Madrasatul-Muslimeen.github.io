@@ -1,6 +1,6 @@
 // Full app translation, phase 1 (the shell) — behaviour suite.
 import fs from "fs";
-import { chromium, newContext, openPage, BASE } from "./harness.mjs";
+import { chromium, newContext, openPage, BASE, clickReadTool } from "./harness.mjs";
 
 // Chromium: use whatever this machine has. CHROMIUM_PATH overrides;
 // otherwise Playwright finds its own download, which is the normal case.
@@ -1934,7 +1934,7 @@ console.log("\n=== 30. Shell round 18: unit numbers, transport, reading view ===
     // reading controls this list records. Updated in place, reason recorded.
     // v08.111 (issue #370) -- #readApproachCapsule, the Mushaf view's own
     // "Choose an Approach" capsule, is excluded for the same reason.
-    buttons: [...document.querySelectorAll("#readBar > button")].filter((b) => b.id !== "mushafPageRef" && b.id !== "readApproachCapsule").map((b) => b.id),
+    buttons: [...document.querySelectorAll("#readBar > button, #readBarEnd > button, #readToolsMenu > button")].filter((b) => b.id !== "mushafPageRef" && b.id !== "readApproachCapsule").map((b) => b.id),
     noWholeSurah: !document.getElementById("readPlaySurahBtn"),
     playLabel: document.getElementById("readPlayBtn").getAttribute("aria-label") || "",
     // Round 25 retired the reciter caption -- its only job was naming which
@@ -1955,8 +1955,9 @@ console.log("\n=== 30. Shell round 18: unit numbers, transport, reading view ===
   // v09.36 (Owner, 2 Oct 2026, "the ☰ Surah list button at the top left. go") -- #readListBtn leads the row (shown only on the Read -> list route, body.read-from-contents). Updated in place, reason recorded.
   // v09.81 (Owner, 5 Oct 2026, the Ayah window: "So go it") -- #readWindowBtn (🗗, PC only) joined the row after #hideChromeBtn. Updated in place, reason recorded.
   // v10.01 (decision 95, the Owner, 9 Oct 2026: "NotePane: Build the demo") -- #readNotesBtn (📝 Notes on the āyah) joined the row right after #readBookmarkBtn. Updated in place, reason recorded.
+  // v10.21 (the Owner, 10 Oct 2026: "all these buttons along with bookmark can be organised under one button"; the Meaning flow) -- #readMeaningBtn (📖) joined before ⤢; 📖 ⤢ 🗗 ⋯ sit in #readBarEnd and the six tools in #readToolsMenu (folded behind ⋯ below 900px). Same controls, two new: the selector reads those two groups too. Updated in place, reason recorded.
   check("30j prev unit, prev āyah, next āyah, next unit, play, stop, full screen, bookmark and reading-complete are on the reading screen",
-        transport.visible && JSON.stringify(transport.buttons) === '["readListBtn","readUnitChip","prevUnitBtn","prevAyahBtn","nextAyahBtn","nextUnitBtn","readPlayBtn","readStopBtn","hideChromeBtn","readWindowBtn","readBookmarkBtn","readNotesBtn","readCompleteBtn","readWritingBtn","readAttachAsmaBtn"]', JSON.stringify(transport));
+        transport.visible && JSON.stringify(transport.buttons) === '["readListBtn","readUnitChip","prevUnitBtn","prevAyahBtn","nextAyahBtn","nextUnitBtn","readPlayBtn","readStopBtn","readMeaningBtn","hideChromeBtn","readWindowBtn","readToolsBtn","readBookmarkBtn","readNotesBtn","readCompleteBtn","readWritingBtn","readAttachAsmaBtn"]', JSON.stringify(transport));
   check("30j the separate 'Whole surah' button is gone (Play follows the unit)", transport.noWholeSurah);
   check("30j the merged button is named Play while nothing is playing",
         /Play|চালান/.test(transport.playLabel) && !/Pause|থামান/.test(transport.playLabel), transport.playLabel);
@@ -1996,7 +1997,7 @@ console.log("\n=== 30l. Round 18's own controls in Bangla ===");
   // Direct children only -- see the enhancement-round comment at 30j above
   // (eight now -- prevAyahBtn/nextAyahBtn joined this row, and the
   // multi-student round's own readBookmarkBtn joined it too).
-  const t18 = await page.evaluate(() => [...document.querySelectorAll("#readBar > button")].filter((b) => b.id !== "mushafPageRef" && b.id !== "readApproachCapsule").map((b) => b.getAttribute("aria-label") || "")); // v08.90 -- see 30j: #mushafPageRef excluded; v08.111 -- #readApproachCapsule too (Mushaf-only)
+  const t18 = await page.evaluate(() => [...document.querySelectorAll("#readBar > button, #readBarEnd > button, #readToolsMenu > button")].filter((b) => b.id !== "mushafPageRef" && b.id !== "readApproachCapsule").map((b) => b.getAttribute("aria-label") || "")); // v08.90 -- see 30j: #mushafPageRef excluded; v08.111 -- #readApproachCapsule too (Mushaf-only)
   // v08.30 -- ten now: #readCompleteBtn joined the row. Its own Bangla name is
   // the I11 evidence for this tranche's four new keys.
   // v08.103 -- eleven: #readUnitChip joined the row (issue #348); its own
@@ -2007,8 +2008,9 @@ console.log("\n=== 30l. Round 18's own controls in Bangla ===");
   // v09.81 (Owner, 5 Oct 2026, the Ayah window: "So go it") -- #readWindowBtn (🗗, PC only) joined the row after #hideChromeBtn. Updated in place, reason recorded.
   // fourteen now; its Bangla name জানালা হিসেবে খুলুন is part of the I11 evidence.
   // v10.01 (decision 95) -- #readNotesBtn joined the row; fifteen now, its Bangla name "{unit}-এর নোট" part of the I11 evidence. Updated in place, reason recorded.
+  // v10.21 -- #readMeaningBtn and #readToolsBtn joined; seventeen now, their Bangla names part of the I11 evidence. Updated in place, reason recorded.
   check("30l every reading-screen control is NAMED in Bangla",
-        t18.length === 15 && t18.every((x) => BANGLA.test(x)), JSON.stringify(t18));
+        t18.length === 17 && t18.every((x) => BANGLA.test(x)), JSON.stringify(t18));
   await page.close();
   await ctx.close();
 }
@@ -2540,7 +2542,7 @@ const readRef = readingRef; // round 22: #readRef is retired, see readingRef abo
   // (they say what is being read AND change it), and Play/Stop/Full screen
   // came up from the retired transport row. All five are icons now.
   const bar = await page.evaluate(() => ({
-    ids: [...document.querySelectorAll("#readBar > *")].map((el) => el.id),
+    ids: (function flat(p) { return [...p.children].flatMap((el) => ["readBarEnd", "readToolsMenu"].includes(el.id) ? [el, ...flat(el)] : [el]); })(document.getElementById("readBar")).map((el) => el.id),
     noBack: !document.getElementById("backToWheelBtn"),
     noSeparatePause: !document.getElementById("readPauseBtn"),
     noRef: !document.getElementById("readRef"),
@@ -2573,8 +2575,11 @@ const readRef = readingRef; // round 22: #readRef is retired, see readingRef abo
   // v09.36 (Owner, 2 Oct 2026, "the ☰ Surah list button at the top left. go") -- #readListBtn leads the row (shown only on the Read -> list route, body.read-from-contents). Updated in place, reason recorded.
   // v09.81 (Owner, 5 Oct 2026, the Ayah window: "So go it") -- #readWindowBtn (🗗, PC only) joined the row after #hideChromeBtn. Updated in place, reason recorded.
   // v10.01 (decision 95, the Owner, 9 Oct 2026: "NotePane: Build the demo") -- #readNotesBtn (📝 Notes on the āyah) joined the row right after #readBookmarkBtn. Updated in place, reason recorded.
+  // v10.21 (the Owner, 10 Oct 2026: the Read bar's tools "under one button") -- 📖 #readMeaningBtn joined before ⤢; 📖 ⤢ 🗗 ⋯ are one group, #readBarEnd, and the six tools sit in #readToolsMenu
+  // inside it (behind ⋯ below 900px); the ⋮ slot moved into the group so it wraps with ⋯ instead of taking a line of
+  // its own. The list reads into both groups, in document order. Updated in place, reason recorded.
   check("33a the read bar is Prev unit · Prev āyah · Next āyah · Next unit · Play · Stop · Full screen · Bookmark · Reading complete · ⋮ slot",
-        bar.ids.join() === "readListBtn,mushafPageRef,readApproachBar,readUnitChip,prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,readQuickRow,hideChromeBtn,readWindowBtn,readTextSizeSlot,readBookmarkBtn,readNotesBtn,readBackSlot,readCompleteBtn,readWritingBtn,readCompleteMsg,readAttachAsmaBtn,readQuickMenuSlot",
+        bar.ids.join() === "readListBtn,mushafPageRef,readApproachBar,readUnitChip,prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,readQuickRow,readBackSlot,readBarEnd,readMeaningBtn,hideChromeBtn,readWindowBtn,readToolsBtn,readToolsMenu,readTextSizeSlot,readBookmarkBtn,readNotesBtn,readCompleteBtn,readWritingBtn,readAttachAsmaBtn,readQuickMenuSlot,readCompleteMsg",
         JSON.stringify(bar.ids));
   check("33a the '◂ Mastery Wheel' button is gone (the Read tab does it)", bar.noBack);
   check("33a the separate Pause button is gone", bar.noSeparatePause);
@@ -3262,7 +3267,7 @@ console.log("\n=== 37. Shell round 25: grammar labels, and the control row ===")
   const m = await page.evaluate(() => {
     const bar = document.getElementById("readBar");
     const barBox = bar.getBoundingClientRect();
-    const kids = [...bar.children];
+    const kids = (function flat(p) { return [...p.children].flatMap((el) => ["readBarEnd", "readToolsMenu"].includes(el.id) ? [el, ...flat(el)] : [el]); })(bar).filter((el) => !["readBarEnd", "readToolsMenu"].includes(el.id));
     // Enhancement round -- prevAyahBtn/nextAyahBtn are real DIRECT children
     // of #readBar now, but `.hidden` for Single Ayah (this test's default
     // unit type), which collapses them to a zero-sized rect at (0,0). Left
@@ -3288,8 +3293,14 @@ console.log("\n=== 37. Shell round 25: grammar labels, and the control row ===")
     // takes no width on the app's densest row, and including it reported a
     // 42px "gap" and two negative ones. The question this check asks is whether
     // the CONTROLS are packed together; measure the ones that occupy the row.
-    const inFlowKids = visibleKids.filter((el) => getComputedStyle(el).position !== "absolute");
-    const gaps = inFlowKids.slice(1).map((el, i) => Math.round(el.getBoundingClientRect().left - inFlowKids[i].getBoundingClientRect().right));
+    // v10.21 -- the same reasoning for a FIXED child: on a phone #readApproachBar is fixed above the bottom buttons
+    // (the Owner: "moving three buttons at the bottom of the screen"), so it is not in this row either. And the bar now
+    // wraps by design (📖 ⤢ ⋯ take a line of their own at a narrow width), so a gap is measured only between two
+    // neighbours on the SAME line; the space before the first control of the end group (📖) is margin-left: auto,
+    // the group being pushed to the right edge on purpose, and is not counted. Updated in place, reason recorded.
+    const inFlowKids = visibleKids.filter((el) => !["absolute", "fixed"].includes(getComputedStyle(el).position) && el.getBoundingClientRect().width > 0);
+    const sameLine = (a, b) => { const x = a.getBoundingClientRect(), y = b.getBoundingClientRect(); return Math.abs((x.top + x.bottom) / 2 - (y.top + y.bottom) / 2) < 8; };
+    const gaps = inFlowKids.slice(1).map((el, i) => (sameLine(el, inFlowKids[i]) && el !== inFlowKids.find((k) => k.closest("#readBarEnd"))) ? Math.round(el.getBoundingClientRect().left - inFlowKids[i].getBoundingClientRect().right) : 0);
     return {
       barKids: kids.map((e) => e.id),
       noReciter: !document.getElementById("readReciterName"),
@@ -3320,8 +3331,9 @@ console.log("\n=== 37. Shell round 25: grammar labels, and the control row ===")
   // v09.36 (Owner, 2 Oct 2026, "the ☰ Surah list button at the top left. go") -- #readListBtn leads the row (shown only on the Read -> list route, body.read-from-contents). Updated in place, reason recorded.
   // v09.81 (Owner, 5 Oct 2026, the Ayah window: "So go it") -- #readWindowBtn (🗗, PC only) joined the row after #hideChromeBtn. Updated in place, reason recorded.
   // v10.01 (decision 95, the Owner, 9 Oct 2026: "NotePane: Build the demo") -- #readNotesBtn (📝 Notes on the āyah) joined the row right after #readBookmarkBtn. Updated in place, reason recorded.
+  // v10.21 (the Owner, 10 Oct 2026: the Read bar's tools "under one button") -- see the 33a note; the controls are read through #readBarEnd and #readToolsMenu. Updated in place.
   check("37a the row is Prev unit · Prev āyah · Next āyah · Next unit · Play · Stop · Full screen · Bookmark · Reading complete · ⋮ slot",
-        m.barKids.join() === "readListBtn,mushafPageRef,readApproachBar,readUnitChip,prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,readQuickRow,hideChromeBtn,readWindowBtn,readTextSizeSlot,readBookmarkBtn,readNotesBtn,readBackSlot,readCompleteBtn,readWritingBtn,readCompleteMsg,readAttachAsmaBtn,readQuickMenuSlot", JSON.stringify(m.barKids));
+        m.barKids.join() === "readListBtn,mushafPageRef,readApproachBar,readUnitChip,prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,readQuickRow,readBackSlot,readMeaningBtn,hideChromeBtn,readWindowBtn,readToolsBtn,readTextSizeSlot,readBookmarkBtn,readNotesBtn,readCompleteBtn,readWritingBtn,readAttachAsmaBtn,readQuickMenuSlot,readCompleteMsg", JSON.stringify(m.barKids));
   // `space-between` would leave large, uneven gaps between controls, which
   // is exactly how a stale `space-between` survived this round's first
   // attempt -- checking the gaps directly catches that regardless of how
@@ -4653,7 +4665,7 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
       const vis = (el) => !!el && el.getClientRects().length > 0 && getComputedStyle(el).visibility !== "hidden";
       return {
         gone: document.getElementById("noteView") === null && typeof window.__dormantOpenNoteView === "undefined" && !document.querySelector(".note-view") && !document.querySelector(".note-bar1, .note-bar2"),
-        bar: ["readPlayBtn", "readBookmarkBtn", "readNotesBtn"].map((id) => vis(document.getElementById(id))),
+        bar: ["readPlayBtn", "readBookmarkBtn", "readNotesBtn"].map((id) => { const el = document.getElementById(id); return vis(el) || (id !== "readPlayBtn" && !!el?.closest("#readToolsMenu") && vis(document.getElementById("readToolsBtn"))); }),
         menu: vis(document.querySelector("#readQuickMenuSlot [data-qm-toggle]")),
         items: ["copy", "share"].every((k) => document.querySelector(`#readQuickMenuSlot [data-qm-sub-toggle="${k}"]`)) && ["wbw", "roots", "derivatives"].every((k) => document.querySelector(`#readQuickMenuSlot [data-qm-${k}]`)),
         overflow: document.documentElement.scrollWidth - innerWidth,
@@ -4662,7 +4674,8 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
     await page.close();
     await ctx.close();
     check(`42p the Note view's bar 2 is gone with it on a ${label} (#742)`, p42.gone, JSON.stringify(p42));
-    check(`42p Play, Bookmark and 📝 Notes sit on the Read bar on a ${label}`, p42.bar.every(Boolean), JSON.stringify(p42.bar));
+    // v10.21 (the Owner, 10 Oct 2026: the Read bar's tools "under one button") -- below 900px Bookmark and 📝 sit behind ⋯ More tools (still in #readBar); Play stays on the bar. Updated in place.
+    check(`42p Play sits on the Read bar, and Bookmark and 📝 Notes are on the bar or behind its ⋯ on a ${label}`, p42.bar.every(Boolean), JSON.stringify(p42.bar));
     check(`42p ...with Copy, Share, Word by word, Root and Derivatives in its ⋮ menu on a ${label}`, p42.menu && p42.items, JSON.stringify(p42));
     check(`42p ...and nothing overflows the ${label} viewport`, p42.overflow <= 0, p42.overflow);
   }
@@ -5293,6 +5306,9 @@ console.log("\n=== 45. Quran bookmarks -- naming prompt, full settings capture/r
   // intercepting the click is this file's own most-repeated trap.
   await page.click("#readQuickMenuSlot [data-qm-toggle]");
   await page.waitForTimeout(150);
+  // v10.21 (the Owner, 10 Oct 2026: the Read bar's tools "under one button") -- below 900px the Bookmark button is behind ⋯ More tools: open ⋯ first, then
+  // measure it really on screen (in the panel). Updated in place, reason recorded.
+  if (await page.evaluate(() => (document.getElementById("readBookmarkBtn")?.getBoundingClientRect().width ?? 0) === 0 && (document.getElementById("readToolsBtn")?.getBoundingClientRect().width ?? 0) > 0)) { await page.click("#readToolsBtn"); await page.waitForTimeout(150); }
   const readBmBtn = await page.evaluate(() => {
     const b = document.getElementById("readBookmarkBtn");
     const r = b?.getBoundingClientRect();
@@ -5332,7 +5348,7 @@ console.log("\n=== 45. Quran bookmarks -- naming prompt, full settings capture/r
   check("45b the bar's Bookmark button starts unbookmarked -- the positive control the cancel below is measured against",
         beforeCancel.text === "🔖" && /^Bookmark/i.test(beforeCancel.label || ""), JSON.stringify(beforeCancel));
 
-  await page.click("#readBookmarkBtn");
+  await clickReadTool(page, "#readBookmarkBtn");
   await cancelBookmarkPopover(page);
   await page.waitForTimeout(200);
   const afterCancel = await readBmState();
@@ -5352,7 +5368,7 @@ console.log("\n=== 45. Quran bookmarks -- naming prompt, full settings capture/r
   await page.waitForTimeout(150);
   // RECONCILED 2026-09-17: the ⋮ menu was opened here only to reach its
   // Bookmark item, which moved to #readBar as a direct button (see 45a).
-  await page.click("#readBookmarkBtn");
+  await clickReadTool(page, "#readBookmarkBtn");
   await fillBookmarkPopover(page, { name: "My Fatiha bookmark" });
   await page.waitForTimeout(300);
   const writes = await page.evaluate(() => JSON.parse(sessionStorage.getItem("__stubWrites") || "[]"));
@@ -5466,7 +5482,7 @@ console.log("\n=== 48. Fixes round item 1 -- the bookmark popover's own folder p
   // Bookmark #1: name it and create a brand-new folder in the same step.
   // RECONCILED 2026-09-17: the ⋮ menu was opened here only to reach its
   // Bookmark item, which moved to #readBar as a direct button (see 45a).
-  await page.click("#readBookmarkBtn");
+  await clickReadTool(page, "#readBookmarkBtn");
   await fillBookmarkPopover(page, { name: "Ayah One", newFolderName: "Favourites" });
   await page.waitForTimeout(300);
   const writesAfterFirst = await page.evaluate(() => JSON.parse(sessionStorage.getItem("__stubWrites") || "[]"));
@@ -5480,7 +5496,7 @@ console.log("\n=== 48. Fixes round item 1 -- the bookmark popover's own folder p
   await page.waitForTimeout(200);
   // RECONCILED 2026-09-17: the ⋮ menu was opened here only to reach its
   // Bookmark item, which moved to #readBar as a direct button (see 45a).
-  await page.click("#readBookmarkBtn");
+  await clickReadTool(page, "#readBookmarkBtn");
   await page.waitForSelector(".bm-popover-overlay");
   const folderOptions = await page.evaluate(() =>
     [...document.querySelectorAll("[data-bm-pop-folder] option")].map((o) => o.textContent.trim())
@@ -5502,7 +5518,7 @@ console.log("\n=== 48. Fixes round item 1 -- the bookmark popover's own folder p
   const writesBeforeCancel = (await page.evaluate(() => JSON.parse(sessionStorage.getItem("__stubWrites") || "[]"))).filter((w) => w.col === "bookmarks").length;
   // RECONCILED 2026-09-17: the ⋮ menu was opened here only to reach its
   // Bookmark item, which moved to #readBar as a direct button (see 45a).
-  await page.click("#readBookmarkBtn");
+  await clickReadTool(page, "#readBookmarkBtn");
   await cancelBookmarkPopover(page);
   await page.waitForTimeout(200);
   const writesAfterCancel = (await page.evaluate(() => JSON.parse(sessionStorage.getItem("__stubWrites") || "[]"))).filter((w) => w.col === "bookmarks").length;
@@ -5555,7 +5571,7 @@ console.log("\n=== 49. Fixes round items 2/3 -- the nav bar's own live Bookmark 
   await page.waitForTimeout(400);
   // RECONCILED 2026-09-17: the ⋮ menu was opened here only to reach its
   // Bookmark item, which moved to #readBar as a direct button (see 45a).
-  await page.click("#readBookmarkBtn");
+  await clickReadTool(page, "#readBookmarkBtn");
   await fillBookmarkPopover(page, { name: "Fatiha in a folder", newFolderName: "Favourites" });
   await page.waitForTimeout(300);
 
@@ -5636,7 +5652,7 @@ console.log("\n=== 50. Fixes round 2 -- the expanded/collapsed OPTION, and the p
   await page.waitForTimeout(400);
   // RECONCILED 2026-09-17: the ⋮ menu was opened here only to reach its
   // Bookmark item, which moved to #readBar as a direct button (see 45a).
-  await page.click("#readBookmarkBtn");
+  await clickReadTool(page, "#readBookmarkBtn");
   await page.waitForSelector(".bm-popover-overlay");
   const popoverHasPerson = await page.evaluate(() => {
     const sel = document.querySelector("[data-bm-pop-person]");
@@ -5884,7 +5900,7 @@ console.log("\n=== 50h-k. The person tag on the Manager page, and both in Bangla
   await pageBn.waitForTimeout(400);
   // RECONCILED 2026-09-17: the ⋮ menu was opened here only to reach its
   // Bookmark item, which moved to #readBar as a direct button (see 45a).
-  await pageBn.click("#readBookmarkBtn");
+  await clickReadTool(pageBn, "#readBookmarkBtn");
   await pageBn.waitForSelector(".bm-popover-overlay");
   //
   // RECONCILED 2026-09-18, the second clause. It read

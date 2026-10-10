@@ -13,7 +13,7 @@
 // Run from the repository root with node serve.js on 8080:  node tools/i18n-verify/bangla-sweep-newer-screens-browser.mjs
 // Mutation: --mutate="<English phrase>" makes the page's bn lookup miss that phrase (proves the sweep names it).
 import fs from "node:fs";
-import { chromium, newContext, openPage } from "./harness.mjs";
+import { chromium, newContext, openPage, BASE } from "./harness.mjs";
 
 let pass = 0, fail = 0;
 const check = (name, ok, detail = "") => {
@@ -203,7 +203,7 @@ for (const [lang, word] of [["en", "← Back"], ["bn", "← পেছনে"]]) 
   const ctx = await mk(lang);
   // history so Back goes somewhere: land on the Hadith page, then go to dawah.html as a link would.
   const { page: P } = await openPage(ctx, "/app/hadith-collections.html");
-  await P.goto("http://localhost:8080/app/dawah.html?back=1", { waitUntil: "networkidle" });
+  await P.goto(BASE + "/app/dawah.html?back=1", { waitUntil: "networkidle" });
   await settle(P, 600);
   const b = await P.evaluate(() => { const e = document.getElementById("notesBackBtn"); if (!e) return null; const cs = getComputedStyle(e); return { text: e.textContent.trim(), shown: !e.hidden && cs.display !== "none", h: e.getBoundingClientRect().height, bg: cs.backgroundColor }; });
   check(`dawah.html?back=1 shows "${word}" (${lang}), 40px tall, in the Notes ← Back look`, !!b && b.shown && b.text === word && b.h >= 40 && b.bg === "rgb(31, 58, 110)", JSON.stringify(b));
@@ -211,7 +211,7 @@ for (const [lang, word] of [["en", "← Back"], ["bn", "← পেছনে"]]) 
   await P.waitForURL(/hadith-collections\.html/, { timeout: 10000 }).catch(() => {});
   check(`...and pressing it goes back by history (${lang})`, /hadith-collections\.html/.test(P.url()), P.url());
   const P2 = await ctx.newPage();
-  await P2.goto("http://localhost:8080/app/dawah.html", { waitUntil: "networkidle" });
+  await P2.goto(BASE + "/app/dawah.html", { waitUntil: "networkidle" });
   await settle(P2, 400);
   const none = await P2.evaluate(() => { const e = document.getElementById("notesBackBtn"); return !e || e.hidden || getComputedStyle(e).display === "none"; });
   check(`dawah.html without back=1 shows no ← Back (${lang})`, none);

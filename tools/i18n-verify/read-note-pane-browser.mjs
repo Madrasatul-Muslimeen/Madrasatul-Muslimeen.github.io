@@ -9,7 +9,7 @@
 //   --mutate=cardnote    the Āyah card's 📝 Note opens the Note view again        -> the "opens the Notes pane" checks fail
 //   --mutate=notrackback a Track action leaves no way back to the pane          -> the Track way-back checks fail
 //   --mutate=nosource   ✚ New note makes a Note with no link to the āyah                 -> the noteSources check fails
-import { chromium, newContext, openPage } from "./harness.mjs";
+import { chromium, newContext, openPage, clickReadTool } from "./harness.mjs";
 import fs from "node:fs";
 
 let pass = 0, fail = 0;
@@ -77,12 +77,23 @@ for (const lang of ["en", "bn"]) for (const [width, height, mode] of [[390, 844,
     return { shown: !!r && r.width > 0, h: r?.height ?? 0, bmH: bm?.getBoundingClientRect().height ?? 0, label: b?.getAttribute("aria-label"), inside: !!r && r.left >= 0 && r.right <= innerWidth + 0.5,
       loaded: !!document.getElementById("readNotePane"), badge: !b?.querySelector(".read-notes-count")?.hidden };
   });
-  check(`${tag} 📝 is on the Read bar, inside the screen, as tall as 🔖 beside it`, btn.shown && btn.inside && Math.abs(btn.h - btn.bmH) <= 1, JSON.stringify(btn));
+  // UPDATED IN PLACE 10 Oct 2026 (the Owner: the bar's tools "under one button"): below 900px 📝 and 🔖 sit behind ⋯,
+  // so there the bar's own control is ⋯, and 📝 is a tile in ⋯'s panel; from 900px 📝 is on the bar beside 🔖, as before.
+  const narrowBar = await ev(() => (document.getElementById("readToolsBtn")?.getBoundingClientRect().width ?? 0) > 0);
+  if (narrowBar) {
+    const tb = await ev(() => { const r = document.getElementById("readToolsBtn").getBoundingClientRect(); return { h: Math.round(r.height), inside: r.left >= 0 && r.right <= innerWidth + 0.5 }; });
+    await P.click("#readToolsBtn"); await P.waitForTimeout(200);
+    const tile = await ev(() => { const r = document.getElementById("readNotesBtn").getBoundingClientRect(); return { shown: r.width > 0, h: Math.round(r.height), inMenu: !!document.getElementById("readNotesBtn").closest("#readToolsMenu.open") }; });
+    await P.keyboard.press("Escape"); await P.waitForTimeout(150);
+    check(`${tag} 📝 is in ⋯ on the Read bar (⋯ inside the screen, 36px), a tile in its panel`, tb.inside && tb.h >= 36 && tile.shown && tile.inMenu && tile.h >= 40, JSON.stringify({ tb, tile }));
+  } else {
+    check(`${tag} 📝 is on the Read bar, inside the screen, as tall as 🔖 beside it`, btn.shown && btn.inside && Math.abs(btn.h - btn.bmH) <= 1, JSON.stringify(btn));
+  }
   check(`${tag} ...named for the āyah ("${W.title256}") and nothing loaded or counted before it is pressed`, btn.label === W.title256 && !btn.loaded && !btn.badge, JSON.stringify(btn));
 
   // 2. Open it: where it sits, and the reading underneath does not move.
   const before = await ev(() => ({ top: document.getElementById("readScroll")?.scrollTop ?? 0, y: scrollY, ayah: document.getElementById("ayahSelect").value }));
-  await P.click("#readNotesBtn");
+  await clickReadTool(P, "#readNotesBtn");
   await P.waitForFunction(() => document.querySelector("#readNotePane:not([hidden]) iframe"), null, { timeout: 8000 }).catch(() => {});
   const F = await (async () => { for (let i = 0; i < 60; i++) { const f = P.frames().find((x) => /journey-map\.html\?embed=1&unit=ayah%3A2%3A256/.test(x.url())); if (f) return f; await P.waitForTimeout(100); } return null; })();
   check(`${tag} pressing 📝 opens the pane on the page inside (journey-map.html?embed=1&unit=ayah:2:256)`, !!F, P.frames().map((f) => f.url()).join(" "));
@@ -121,10 +132,13 @@ for (const lang of ["en", "bn"]) for (const [width, height, mode] of [[390, 844,
   await P.waitForTimeout(400);
   const after = await ev(() => ({ hidden: document.getElementById("readNotePane").hidden, top: document.getElementById("readScroll")?.scrollTop ?? 0, y: scrollY, ayah: document.getElementById("ayahSelect").value, focus: document.activeElement?.id, badge: document.querySelector("#readNotesBtn .read-notes-count")?.textContent, badgeShown: !document.querySelector("#readNotesBtn .read-notes-count")?.hidden, body: document.body.className }));
   check(`${tag} ← Back closes the pane and the reading is exactly where it was (same āyah, same scroll)`, after.hidden && after.ayah === before.ayah && Math.abs(after.top - before.top) <= 2 && Math.abs(after.y - before.y) <= 2 && !/rnp-open/.test(after.body), JSON.stringify({ before, after }));
-  check(`${tag} ...the focus is back on 📝, which now shows 2 Notes`, after.focus === "readNotesBtn" && after.badgeShown && after.badge === (lang === "bn" ? "২" : "2"), JSON.stringify(after));
+  // UPDATED IN PLACE 10 Oct 2026: below 900px the focus returns to ⋯ (📝 is behind it), and ⋯ carries the same count.
+  const toolsCount = await ev(() => { const c = document.querySelector("#readToolsBtn .read-tools-count"); return c && !c.hidden ? c.textContent : null; });
+  const focusOk = narrowBar ? after.focus === "readToolsBtn" && toolsCount === (lang === "bn" ? "২" : "2") : after.focus === "readNotesBtn";
+  check(`${tag} ...the focus is back on ${narrowBar ? "⋯ (📝 is behind it)" : "📝"}, which now shows 2 Notes`, focusOk && after.badgeShown && after.badge === (lang === "bn" ? "২" : "2"), JSON.stringify({ ...after, toolsCount }));
 
   // 5. ‹ › with the pane open: it follows to 2:257 WITHOUT reloading the page inside.
-  await P.click("#readNotesBtn");
+  await clickReadTool(P, "#readNotesBtn");
   await P.waitForTimeout(300);
   await F.evaluate(() => { window.__notReloaded = true; });
   // The āyah changes through the reading screen's own picker (▸ shows only in single-āyah view; on a phone the pane covers the bar).
@@ -258,7 +272,7 @@ for (const lang of ["en", "bn"]) for (const [width, height, mode] of [[390, 844,
   const errs = errors.filter((e) => !/ERR_CERT|archive\.org|net::ERR/.test(e));
   check(`${tag} no page errors`, errs.length === 0, errs.join(" | ").slice(0, 400));
   if (width === 390 && lang === "bn" || width === 1280 && lang === "en") {
-    if (await ev(() => document.getElementById("readNotePane").hidden)) await P.click("#readNotesBtn");
+    if (await ev(() => document.getElementById("readNotePane").hidden)) await clickReadTool(P, "#readNotesBtn");
     await P.waitForTimeout(400);
     await P.screenshot({ path: `${process.env.SHOTS || "/tmp"}/read-note-pane-${lang}-${width}.png` });
   }
