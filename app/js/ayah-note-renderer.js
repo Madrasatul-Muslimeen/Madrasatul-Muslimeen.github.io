@@ -179,7 +179,7 @@ function closeAllQuickMenus(container) {
  * listeners below are cheap to re-attach to fresh nodes; only the outside-
  * click listener is guarded against being bound twice on the same container.
  */
-export function attachQuickMenuHandlers(container, { buildText, onPlay, onOpenNote, onToggleBookmark, onToggleWbw, onToggleRoots, onToggleDerivatives, onQcr }) {
+export function attachQuickMenuHandlers(container, { buildText, onPlay, onOpenNote, onToggleBookmark, onToggleWbw, onToggleRoots, onToggleDerivatives, onQcr, onTextMenuOpen }) {
   container.querySelectorAll(".ayah-quick-wrap").forEach((wrap) => {
     const unitKey = wrap.dataset.unitKey;
     const btn = wrap.querySelector("[data-qm-toggle]");
@@ -198,6 +198,8 @@ export function attachQuickMenuHandlers(container, { buildText, onPlay, onOpenNo
     wrap.querySelectorAll("[data-qm-sub-toggle]").forEach((subBtn) => {
       subBtn.addEventListener("click", () => {
         const key = subBtn.dataset.qmSubToggle;
+        // #758: Copy / Share may carry the Notes pane's text, which the page reads on this tap if it has not yet.
+        if (key === "copy" || key === "share") onTextMenuOpen?.(unitKey);
         wrap.querySelectorAll(".qm-sub").forEach((s) => {
           s.classList.toggle("open", s.dataset.qmSub === key && !s.classList.contains("open"));
         });
@@ -207,7 +209,7 @@ export function attachQuickMenuHandlers(container, { buildText, onPlay, onOpenNo
     const copyGo = wrap.querySelector("[data-qm-copy-go]");
     copyGo?.addEventListener("click", async () => {
       const langs = [...wrap.querySelectorAll(".qm-lang-copy")].filter((cb) => cb.checked).map((cb) => cb.dataset.lang);
-      const ok = await copyToClipboard(buildText(unitKey, langs));
+      const ok = await copyToClipboard(await buildText(unitKey, langs));
       await flashBtn(copyGo, ok ? t("✓ Copied") : t("Copy failed"));
       closeAllQuickMenus(container);
     });
@@ -215,7 +217,7 @@ export function attachQuickMenuHandlers(container, { buildText, onPlay, onOpenNo
     const shareGo = wrap.querySelector("[data-qm-share-go]");
     shareGo?.addEventListener("click", async () => {
       const langs = [...wrap.querySelectorAll(".qm-lang-share")].filter((cb) => cb.checked).map((cb) => cb.dataset.lang);
-      await shareText(buildText(unitKey, langs), unitKey);
+      await shareText(await buildText(unitKey, langs), unitKey);
       closeAllQuickMenus(container);
     });
 

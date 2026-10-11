@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "10.22",
+    "version": "10.23",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -3257,7 +3257,7 @@
     {
       "version": "10.22",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Builder #752: Range Next across a surah boundary scrolled nothing in the flow view (the render was not awaited); fatiha-count and journey-map-boundary updated in place.",
       "integration": {
         "authorizedOn": "2026-10-10",
@@ -3265,10 +3265,23 @@
         "method": "MERGE_PR",
         "reference": "CHANGELOG.md"
       }
+    },
+    {
+      "version": "10.23",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "v10.23: the ⋮ 'has a note' state and Copy / Share's 'My note' follow the Read view's Notes pane notes (decision 95), not only the retired Note-view store; Builder #758, finished by the Architect (PR #759).",
+      "integration": {
+        "authorizedOn": "2026-10-11",
+        "integratedOn": "2026-10-11",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
     }
   ],
-  "nextUnallocated": "10.23",
+  "nextUnallocated": "10.24",
   "nextUnallocatedNote": [
+    "v10.23 was allocated to the has-a-note mark and Copy's My note follow the Notes pane (Builder #758), 2026-10-11.",
     "v10.22 was allocated to the flow strip scrolls after crossing a surah; two stale checks (Builder #752), 2026-10-10.",
     "v10.21 was allocated to 📖 Meaning, the Read bar's tools under ⋯, the study buttons at a phone's foot, 2026-10-10.",
     "v10.20 was allocated to bookmark-marks-back made true (Builder #750), 2026-10-10.",
