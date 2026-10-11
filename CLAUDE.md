@@ -142,10 +142,10 @@ Read this first, every session. It is the standing brief.
 >
 > **`docs/reports/2026-10-11-MMSA-SESSION-HANDOVER.md`** is the current
 > continuation point, and **`docs/governance/NEW-SESSION-PROMPT-2026-10-11.md`**
-> is the prompt that starts a new session. `main` reached **v10.16** (v09.151 and v10.01–v10.16 that session;
-> decisions 95–99). **Decision 95 (Read + Note as one) is complete.** **In flight: Builder #742, the deletion of the
-> dead Note view code, UNFINISHED on branch `builder/issue-742-run-1136` with no PR** — the handover's section 0 lists
-> exactly what remains. The Owner's master feature-discussions file is https://claude.ai/artifact/BJUwQ8hfgnu4FJFo7stqY1
+> is the prompt that starts a new session. **Read the handover's "LATEST UPDATE" block first:** `main` is at **v10.24**
+> (v10.17–v10.22 by session `018o3et5`, v10.23–v10.24 by session `01G4jmGU`); #742 is finished; **nothing is in
+> flight.** The 167-suite browser sweep is green except `asma-quick-class` 5c, which waits on the Owner's choice of
+> three layouts. **Decision 95 (Read + Note as one) is complete.** The Owner's master feature-discussions file is https://claude.ai/artifact/BJUwQ8hfgnu4FJFo7stqY1
 > (v13); three scholar questions (T20–T22) wait on the Owner there.
 >
 > **The 9 Oct block below is kept as history**, superseded by it.

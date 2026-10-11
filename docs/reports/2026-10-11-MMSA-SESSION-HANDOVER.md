@@ -9,6 +9,44 @@ This session was summarised (its context compacted) before it was handed over, w
 
 ## 0. Where things stand
 
+### LATEST UPDATE — 11 Oct 2026, ~07:40 UTC (session `session_01G4jmGUgBeQKxy4cycxQaC1`, v10.22 → v10.24)
+
+**Read this block first. Everything under it, down to the next heading, is the earlier state (v10.16) and is kept as
+history.** #742 and the `journey-map-screen` check were both finished by session `session_018o3et5BkZHp6ycp3v5PgHt`
+(v10.17–v10.22). That session wrote no handover of its own; this block covers it.
+
+- **`main` is at v10.24.** Read the live number off `app/js/version.js`.
+- **Nothing is in flight.** No Builder round is running and no PR is open.
+- **This session's releases:**
+  - **v10.23:** a note written in the 📝 Notes pane lights "My note" in the ⋮ menu, and Copy / Share carry its words
+    (Builder #758; the Architect fixed Copy on the Owner's real path).
+  - **v10.24:** in Mapping My Journey's three-column view, the note's ⋯ menu stays beside the note and every item can
+    be tapped (Builder #763; the Architect made the pane grow while the menu is open).
+- **Test-only merges** (no version): PRs #756, #757, #761, #762.
+- **The 167-suite sweep is done.** Every `tools/i18n-verify/*-browser.mjs` was run on `main`. All are green except one,
+  left red on purpose:
+  - **`asma-quick-class` 5c waits on the Owner.** Since v10.18 the worded "◂ Back to the wheel" (154px) pushes ‹ › onto
+    a line of their own on the Asma Name bar from 900px.
+  - Wrapping the words was measured and is not enough: the row needs ~443px and has 404.
+  - The Owner was offered three choices: (1) ‹ › at the right end of the Essence/Uniqueness line (**recommended**);
+    (2) "◂ Wheel"; (3) a plain ◂ with the words on hover. Build whichever they choose, and update 5c in place.
+- **Sandbox lessons from this session:**
+  - **A fresh clone's local `main` can be weeks old.** Here it was #630. Any `git show main:…` baseline gives a page
+    that never boots. Use `origin/main`.
+  - **The clone is shallow.** `programme-ledger` fails 4 until `git fetch --unshallow origin main`.
+  - **`brief-integrity` fails 2** until `claude/pensive-knuth-2pu3jj` and `claude/phase4-wiring` are fetched with
+    explicit refspecs.
+  - **`playwright` is global** (`/opt/node22/lib/node_modules`). Symlink it into `node_modules/` before any suite.
+  - **The container restarts often.** Re-check `uptime` and restart `node serve.js` at every wake.
+  - **Run the sweep three suites at a time** (`xargs -P 3`). It takes about an hour. A failure under load is re-run
+    alone before it is believed.
+  - **`pgrep -f <name>` matches your own command line** when the name is in it. Read `ps` instead.
+- **Possible next** (none needs the Owner):
+  1. The Owner's Asma choice, once given.
+  2. Anything new the Owner sends.
+  3. The per-row ⋮ "has a note" limit in the reading list (v10.23, by design: no per-row reads).
+
+
 **`main` is at v10.16** when written. Read the live number off `app/js/version.js`.
 
 **Decision 95 (Read + Note as one) is complete.** The Read view's 📝 Notes pane is THE note for an āyah. It holds
