@@ -97,7 +97,11 @@ for (const [lang, width, height] of [["en", 360, 740], ["en", 390, 844], ["bn", 
     await page.evaluate(() => document.querySelector('[data-ws="close-anyway"]')?.click());
     await page.waitForTimeout(300);
   } else {
-    check(`${tag} from 900px there is no ⋯: the six tools sit on the bar in a line`, !closed.toolsBtn && closed.shown.length === TOOL_IDS.length && closed.size, JSON.stringify(closed));
+    // Updated in place 12 Oct 2026 (v10.27, the Owner: "Add bookmark button on the top of the Mushaf page"): this suite reads
+    // the Mushaf view, where the bar's own 🔖 (#readBarBookmarkBtn) is the Bookmark from 900px and ⋯'s copy steps aside, so
+    // the six are Text size, the bar's 🔖 and the four other tools.
+    const barBm = await page.evaluate(() => (document.getElementById("readBarBookmarkBtn")?.getBoundingClientRect().width ?? 0) > 0);
+    check(`${tag} from 900px there is no ⋯: the six tools sit on the bar in a line (Bookmark is the Mushaf bar's own 🔖)`, !closed.toolsBtn && barBm && JSON.stringify(closed.shown) === JSON.stringify(TOOL_IDS.filter((i) => i !== "readBookmarkBtn")) && closed.size, JSON.stringify({ ...closed, barBm }));
   }
   check(`${tag} the way back's slot is on the bar, never inside ⋯`, await page.evaluate(() => { const s = document.getElementById("readBackSlot"); return !!s && !s.closest("#readToolsMenu") && !!s.closest("#readBar"); }));
 

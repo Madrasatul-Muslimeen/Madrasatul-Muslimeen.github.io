@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "10.26",
+    "version": "10.27",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -3305,8 +3305,20 @@
     {
       "version": "10.26",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Every ayah the Ayah card's lookup counted this session keeps its 'has a note' mark on its reading-list row, not only the latest one; no extra read.",
+      "integration": {
+        "authorizedOn": "2026-10-11",
+        "integratedOn": "2026-10-11",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "10.27",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "From the Owner's 12 Oct 2026 screenshots and decision 102: a bookmark button on the Mushaf bar, the Meaning view's switches moved onto the Read bar, and the Asma Name bar's back button reading 'Wheel'.",
       "integration": {
         "authorizedOn": "2026-10-11",
         "integratedOn": "2026-10-11",
@@ -3315,8 +3327,9 @@
       }
     }
   ],
-  "nextUnallocated": "10.27",
+  "nextUnallocated": "10.28",
   "nextUnallocatedNote": [
+    "v10.27 was allocated to 🔖 on the Mushaf bar; the Meaning switches on the Read bar; the Asma Name bar's '◂ Wheel', 2026-10-11.",
     "v10.26 was allocated to the ⋮ 'has a note' mark is kept for every ayah the ⋮ sheet looked up this session, 2026-10-11.",
     "v10.25 was allocated to Al-Fatihah's count in the Ayah card's Full text; مَشْهُود joins the witness meaning group, 2026-10-11.",
     "v10.24 was allocated to the note's ⋯ menu fits and reaches in Mapping My Journey's three-column view (Builder #763), 2026-10-11.",

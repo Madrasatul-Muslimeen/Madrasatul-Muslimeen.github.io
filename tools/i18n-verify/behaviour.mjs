@@ -1956,8 +1956,9 @@ console.log("\n=== 30. Shell round 18: unit numbers, transport, reading view ===
   // v09.81 (Owner, 5 Oct 2026, the Ayah window: "So go it") -- #readWindowBtn (🗗, PC only) joined the row after #hideChromeBtn. Updated in place, reason recorded.
   // v10.01 (decision 95, the Owner, 9 Oct 2026: "NotePane: Build the demo") -- #readNotesBtn (📝 Notes on the āyah) joined the row right after #readBookmarkBtn. Updated in place, reason recorded.
   // v10.21 (the Owner, 10 Oct 2026: "all these buttons along with bookmark can be organised under one button"; the Meaning flow) -- #readMeaningBtn (📖) joined before ⤢; 📖 ⤢ 🗗 ⋯ sit in #readBarEnd and the six tools in #readToolsMenu (folded behind ⋯ below 900px). Same controls, two new: the selector reads those two groups too. Updated in place, reason recorded.
+  // v10.27 (the Owner, 12 Oct 2026: "Move those buttons up" and "Add bookmark button on the top of the Mushaf page") -- #readMeaningLayersSlot (the Meaning switches, on the bar while 📖 is on) joined before #readBackSlot, and #readBarBookmarkBtn (🔖 on the Mushaf bar) before 📖; in Mushaf view ⋯'s #readBookmarkBtn steps aside so 🔖 is shown once. Updated in place, reason recorded.
   check("30j prev unit, prev āyah, next āyah, next unit, play, stop, full screen, bookmark and reading-complete are on the reading screen",
-        transport.visible && JSON.stringify(transport.buttons) === '["readListBtn","readUnitChip","prevUnitBtn","prevAyahBtn","nextAyahBtn","nextUnitBtn","readPlayBtn","readStopBtn","readMeaningBtn","hideChromeBtn","readWindowBtn","readToolsBtn","readBookmarkBtn","readNotesBtn","readCompleteBtn","readWritingBtn","readAttachAsmaBtn"]', JSON.stringify(transport));
+        transport.visible && JSON.stringify(transport.buttons) === '["readListBtn","readUnitChip","prevUnitBtn","prevAyahBtn","nextAyahBtn","nextUnitBtn","readPlayBtn","readStopBtn","readBarBookmarkBtn","readMeaningBtn","hideChromeBtn","readWindowBtn","readToolsBtn","readBookmarkBtn","readNotesBtn","readCompleteBtn","readWritingBtn","readAttachAsmaBtn"]', JSON.stringify(transport));
   check("30j the separate 'Whole surah' button is gone (Play follows the unit)", transport.noWholeSurah);
   check("30j the merged button is named Play while nothing is playing",
         /Play|চালান/.test(transport.playLabel) && !/Pause|থামান/.test(transport.playLabel), transport.playLabel);
@@ -2009,8 +2010,9 @@ console.log("\n=== 30l. Round 18's own controls in Bangla ===");
   // fourteen now; its Bangla name জানালা হিসেবে খুলুন is part of the I11 evidence.
   // v10.01 (decision 95) -- #readNotesBtn joined the row; fifteen now, its Bangla name "{unit}-এর নোট" part of the I11 evidence. Updated in place, reason recorded.
   // v10.21 -- #readMeaningBtn and #readToolsBtn joined; seventeen now, their Bangla names part of the I11 evidence. Updated in place, reason recorded.
+  // v10.27 (the Owner, 12 Oct 2026: "Move those buttons up" and "Add bookmark button on the top of the Mushaf page") -- #readMeaningLayersSlot (the Meaning switches, on the bar while 📖 is on) joined before #readBackSlot, and #readBarBookmarkBtn (🔖 on the Mushaf bar) before 📖; in Mushaf view ⋯'s #readBookmarkBtn steps aside so 🔖 is shown once. Eighteen now, #readBarBookmarkBtn's Bangla name part of the I11 evidence. Updated in place, reason recorded.
   check("30l every reading-screen control is NAMED in Bangla",
-        t18.length === 17 && t18.every((x) => BANGLA.test(x)), JSON.stringify(t18));
+        t18.length === 18 && t18.every((x) => BANGLA.test(x)), JSON.stringify(t18));
   await page.close();
   await ctx.close();
 }
@@ -2578,8 +2580,9 @@ const readRef = readingRef; // round 22: #readRef is retired, see readingRef abo
   // v10.21 (the Owner, 10 Oct 2026: the Read bar's tools "under one button") -- 📖 #readMeaningBtn joined before ⤢; 📖 ⤢ 🗗 ⋯ are one group, #readBarEnd, and the six tools sit in #readToolsMenu
   // inside it (behind ⋯ below 900px); the ⋮ slot moved into the group so it wraps with ⋯ instead of taking a line of
   // its own. The list reads into both groups, in document order. Updated in place, reason recorded.
+  // v10.27 (the Owner, 12 Oct 2026: "Move those buttons up" and "Add bookmark button on the top of the Mushaf page") -- #readMeaningLayersSlot (the Meaning switches, on the bar while 📖 is on) joined before #readBackSlot, and #readBarBookmarkBtn (🔖 on the Mushaf bar) before 📖; in Mushaf view ⋯'s #readBookmarkBtn steps aside so 🔖 is shown once. Updated in place, reason recorded.
   check("33a the read bar is Prev unit · Prev āyah · Next āyah · Next unit · Play · Stop · Full screen · Bookmark · Reading complete · ⋮ slot",
-        bar.ids.join() === "readListBtn,mushafPageRef,readApproachBar,readUnitChip,prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,readQuickRow,readBackSlot,readBarEnd,readMeaningBtn,hideChromeBtn,readWindowBtn,readToolsBtn,readToolsMenu,readTextSizeSlot,readBookmarkBtn,readNotesBtn,readCompleteBtn,readWritingBtn,readAttachAsmaBtn,readQuickMenuSlot,readCompleteMsg",
+        bar.ids.join() === "readListBtn,mushafPageRef,readApproachBar,readUnitChip,prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,readQuickRow,readMeaningLayersSlot,readBackSlot,readBarEnd,readBarBookmarkBtn,readMeaningBtn,hideChromeBtn,readWindowBtn,readToolsBtn,readToolsMenu,readTextSizeSlot,readBookmarkBtn,readNotesBtn,readCompleteBtn,readWritingBtn,readAttachAsmaBtn,readQuickMenuSlot,readCompleteMsg",
         JSON.stringify(bar.ids));
   check("33a the '◂ Mastery Wheel' button is gone (the Read tab does it)", bar.noBack);
   check("33a the separate Pause button is gone", bar.noSeparatePause);
@@ -3332,8 +3335,9 @@ console.log("\n=== 37. Shell round 25: grammar labels, and the control row ===")
   // v09.81 (Owner, 5 Oct 2026, the Ayah window: "So go it") -- #readWindowBtn (🗗, PC only) joined the row after #hideChromeBtn. Updated in place, reason recorded.
   // v10.01 (decision 95, the Owner, 9 Oct 2026: "NotePane: Build the demo") -- #readNotesBtn (📝 Notes on the āyah) joined the row right after #readBookmarkBtn. Updated in place, reason recorded.
   // v10.21 (the Owner, 10 Oct 2026: the Read bar's tools "under one button") -- see the 33a note; the controls are read through #readBarEnd and #readToolsMenu. Updated in place.
+  // v10.27 (the Owner, 12 Oct 2026: "Move those buttons up" and "Add bookmark button on the top of the Mushaf page") -- #readMeaningLayersSlot (the Meaning switches, on the bar while 📖 is on) joined before #readBackSlot, and #readBarBookmarkBtn (🔖 on the Mushaf bar) before 📖; in Mushaf view ⋯'s #readBookmarkBtn steps aside so 🔖 is shown once. Updated in place, reason recorded.
   check("37a the row is Prev unit · Prev āyah · Next āyah · Next unit · Play · Stop · Full screen · Bookmark · Reading complete · ⋮ slot",
-        m.barKids.join() === "readListBtn,mushafPageRef,readApproachBar,readUnitChip,prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,readQuickRow,readBackSlot,readMeaningBtn,hideChromeBtn,readWindowBtn,readToolsBtn,readTextSizeSlot,readBookmarkBtn,readNotesBtn,readCompleteBtn,readWritingBtn,readAttachAsmaBtn,readQuickMenuSlot,readCompleteMsg", JSON.stringify(m.barKids));
+        m.barKids.join() === "readListBtn,mushafPageRef,readApproachBar,readUnitChip,prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,readQuickRow,readMeaningLayersSlot,readBackSlot,readBarBookmarkBtn,readMeaningBtn,hideChromeBtn,readWindowBtn,readToolsBtn,readTextSizeSlot,readBookmarkBtn,readNotesBtn,readCompleteBtn,readWritingBtn,readAttachAsmaBtn,readQuickMenuSlot,readCompleteMsg", JSON.stringify(m.barKids));
   // `space-between` would leave large, uneven gaps between controls, which
   // is exactly how a stale `space-between` survived this round's first
   // attempt -- checking the gaps directly catches that regardless of how
