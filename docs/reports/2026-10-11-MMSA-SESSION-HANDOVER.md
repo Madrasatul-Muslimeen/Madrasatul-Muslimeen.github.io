@@ -211,3 +211,4 @@ Carried from the 9 Oct handover, still true:
 - **v10.24** (2026-10-11): the note's ⋯ menu fits and reaches in Mapping My Journey's three-column view (Builder #763).
 - **v10.25** (2026-10-11): Al-Fatihah's count in the Ayah card's Full text; مَشْهُود joins the witness meaning group.
 - **v10.26** (2026-10-11): the ⋮ 'has a note' mark is kept for every ayah the ⋮ sheet looked up this session.
+- **v10.27** (2026-10-11): 🔖 on the Mushaf bar; the Meaning switches on the Read bar; the Asma Name bar's '◂ Wheel'.

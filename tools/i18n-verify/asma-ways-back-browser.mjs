@@ -83,7 +83,10 @@ for (const lang of ["en", "bn"]) {
         over: document.documentElement.scrollWidth - document.documentElement.clientWidth };
     }, [BACK_SEL, wide]);
     check(`${tag} a Name's poster has a worded way back to the wheel ${wide ? "on its bar (◂), level with the poster's top" : "above it"}, on screen, tappable, at least 40px high`, m.has && m.above && m.inView && m.tappable && m.h >= 40 && m.otherHidden, JSON.stringify(m));
-    check(`${tag} ...its words are ${lang === "bn" ? "Bangla" : "English"}`, lang === "bn" ? BN.test(m.text) && !/[A-Za-z]/.test(m.text) : m.text === (wide ? "◂ Back to the wheel" : "← Back to the wheel"), m.text);
+    // Updated in place 12 Oct 2026 (decision 102, the Owner chose option 2): from 900px the bar's ◂ reads "◂ Wheel" (its
+    // spoken name stays "Back to the wheel"), so ‹ › keep the Name's line; below 900px the button above the poster is unchanged.
+    const wideName = await page.evaluate(() => document.getElementById("asmaXBackFromRefsBtn")?.getAttribute("aria-label") ?? "");
+    check(`${tag} ...its words are ${lang === "bn" ? "Bangla" : "English"}${wide ? " (\"◂ Wheel\", spoken \"Back to the wheel\")" : ""}`, lang === "bn" ? BN.test(m.text) && !/[A-Za-z]/.test(m.text) && (!wide || m.text === "◂ চাকা") : m.text === (wide ? "◂ Wheel" : "← Back to the wheel") && (!wide || wideName === "Back to the wheel"), JSON.stringify({ text: m.text, wideName }));
     check(`${tag} ...the poster still fits its space, no sideways scroll`, m.posterInside && m.over <= 0, JSON.stringify(m));
     if (width === 390 && lang === "bn" || width === 1300 && lang === "en") await page.screenshot({ path: `${SHOT_DIR}/asma-ways-back-${lang}-${width}.png` });
 

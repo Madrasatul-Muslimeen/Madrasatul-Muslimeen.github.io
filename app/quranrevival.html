@@ -2121,6 +2121,8 @@
   @media (min-width: 900px) {
     .asmax-back-wheel { display: none; }
     #asmaXBackFromRefsBtn { width: auto; height: 40px; padding: 0 0.7rem; gap: 0.35rem; white-space: nowrap; }
+    /* The Owner, 12 Oct 2026 (decision 102, option 2 of the demo): the word reads "Wheel" (its spoken name stays "Back to
+       the wheel"), so ‹ › stay on the Name's line from 1100px; the full words had pushed them onto a third line. */
     #asmaXBackFromRefsBtn .asmax-back-word { display: inline; font-size: 0.85rem; font-weight: 600; }
   }
   /* The Owner, 8 Oct 2026: "I want the poster to be taken entire space." At the Name level the right panel
@@ -2569,8 +2571,8 @@
      top-bar reference is to still say which Surah/āyāt this is in the BARE
      full-screen state, where the strip is otherwise empty apart from the
      full-screen icon. */
-  body.immersive-read.fs-hide-readbar.fs-hide-transport #readBar > *:not(#readBarEnd):not(#mushafPageRef):not(#readQuickRow):not(#readListBtn) { display: none; }
-  body.immersive-read.fs-hide-readbar.fs-hide-transport #readBarEnd > *:not(#hideChromeBtn):not(#readMeaningBtn) { display: none; }
+  body.immersive-read.fs-hide-readbar.fs-hide-transport #readBar > *:not(#readBarEnd):not(#mushafPageRef):not(#readQuickRow):not(#readListBtn):not(#readMeaningLayersSlot) { display: none; }
+  body.immersive-read.fs-hide-readbar.fs-hide-transport #readBarEnd > *:not(#hideChromeBtn):not(#readMeaningBtn):not(#readBarBookmarkBtn) { display: none; }
   /* 10 Oct 2026: 📖 Meaning stays in the bare full-screen state too (the Owner: "visible even in full screen Mushaf
      view"), beside ⤢. */
   #readMeaningBtn {
@@ -2588,9 +2590,19 @@
      page" (which turns each direct child of #pageViewContainer into a sideways page) makes it one page that scrolls
      down inside itself; otherwise #readScroll scrolls it. */
   .meaning-flow { display: grid; gap: 0.8rem; padding: 0 0 1rem; }
-  .meaning-layers { position: sticky; top: 0; z-index: 2; display: flex; flex-wrap: wrap; gap: 0.4rem; padding: 0.5rem 0; background: var(--read-bg, #fff); border-bottom: 1px solid #eee; }
-  .meaning-layers label { display: inline-flex; align-items: center; gap: 0.35rem; min-height: 36px; padding: 0 0.7rem; border: 1px solid #ded7c6; border-radius: 999px; background: #fff; font-size: 0.85rem; cursor: pointer; }
-  .meaning-layers input { margin: 0; accent-color: #1F3A6E; }
+  /* 12 Oct 2026: the switches on the Read bar (#readMeaningLayersSlot), in the bar's empty space at the left. */
+  #readMeaningLayersSlot { display: flex; flex-wrap: nowrap; gap: 0.3rem; flex: 0 1 auto; min-width: 0; margin-right: auto; }
+  #readMeaningLayersSlot[hidden], #readBarBookmarkBtn[hidden] { display: none !important; }
+  /* From 900px ⋯'s tools sit on the bar itself (display: contents), so in Mushaf view its 🔖 would stand beside the bar's
+     own: it steps aside there. Below 900px it stays in the ⋯ panel, where the Owner asked for it (v10.21). */
+  @media (min-width: 900px) { #readBar.bar-bm-on #readBookmarkBtn { display: none !important; } }
+  #readBarBookmarkBtn { box-sizing: border-box; width: 36px; height: 36px; padding: 0; margin: 0; flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; font-size: 1.05rem; line-height: 1; }
+  /* A switch is a pill: filled navy when on (the same look as 📖's pressed state), outlined when off. The checkbox stays
+     in the label for keyboards and screen readers, drawn as nothing, so the three fit beside 📖 and ⤢ on a phone. */
+  #readMeaningLayersSlot label { position: relative; display: inline-flex; align-items: center; height: 36px; box-sizing: border-box; padding: 0 0.6rem; border: 1.5px solid #1F3A6E; border-radius: 999px; background: #fff; color: #1F3A6E; font-size: 0.8rem; font-weight: 600; white-space: nowrap; cursor: pointer; }
+  #readMeaningLayersSlot label:has(input:checked) { background: #1F3A6E; color: #fff; }
+  #readMeaningLayersSlot input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+  #readMeaningLayersSlot label:has(input:focus-visible) { outline: 3px solid #B8862F; outline-offset: 2px; }
   .meaning-page-rule { text-align: center; font-size: 0.8rem; color: #7b6a45; letter-spacing: 0.04em; border-top: 1px dashed #d9cfb6; padding-top: 0.4rem; }
   .meaning-ayah { border: 1px solid #ece4d0; border-radius: 0.8rem; background: #fffdf7; padding: 0.6rem 0.8rem 0.8rem; scroll-margin-top: 3.4rem; }
   .meaning-ayah.out { opacity: 0.62; }
@@ -5237,11 +5249,17 @@
                wrap to their own line together (the demo's shape) instead of ⤢ and ⋯ falling onto a line by themselves.
                The bare full-screen state keeps this group and, inside it, only 📖 and ⤢. The way back (#readBackSlot)
                sits just before it. -->
+          <!-- The Owner, 12 Oct 2026 ("Move those buttons up. Save space"): the Meaning flow's English / Bangla / WbW
+               switches sit in the bar's own empty space, not on a line of their own (renderMeaningFlow()). -->
+          <div id="readMeaningLayersSlot" class="meaning-layers-bar" role="group" aria-label="Show" hidden></div>
           <span id="readBackSlot" class="read-back-slot" data-back-dock></span>
           <div id="readBarEnd" class="read-bar-end">
             <!-- 10 Oct 2026, the Owner: "I want a reading flow with meaning, translations, word meaning that should appear
                  by pressing a button. Then, pressing same button should collapse back to Mushaf view. That button should
                  be visible even in full screen Mushaf view." 📖 Meaning, just before ⤢ (renderMeaningFlow()). -->
+            <!-- The Owner, 12 Oct 2026 ("Add bookmark button on the top of the Mushaf page"): 🔖 on the Mushaf bar itself,
+                 kept in the bare full-screen state beside 📖 and ⤢. The same bookmark as #readBookmarkBtn (behind ⋯). -->
+            <button type="button" class="secondary qr-ico" id="readBarBookmarkBtn" aria-label="Bookmark this" title="Bookmark this" hidden>🔖</button>
             <button type="button" class="read-meaning-btn" id="readMeaningBtn" aria-pressed="false"><span aria-hidden="true">📖</span><span class="read-meaning-word">Meaning</span></button>
             <button type="button" class="secondary qr-ico" id="hideChromeBtn" aria-label="Full screen" title="Full screen">⤢</button>
             <button type="button" class="secondary qr-ico" id="readWindowBtn" aria-label="Open as a window" title="Open as a window" aria-pressed="false">🗗</button>
@@ -6945,6 +6963,7 @@
     const readToolsBtn = document.getElementById("readToolsBtn");
     const readToolsMenu = document.getElementById("readToolsMenu");
     const readBookmarkBtn = document.getElementById("readBookmarkBtn");
+    const readBarBookmarkBtn = document.getElementById("readBarBookmarkBtn");
     const readNotesBtn = document.getElementById("readNotesBtn");
     const readUnitChip = document.getElementById("readUnitChip"); // issue #348, Owner decision 18
     /** The Unit Card for the chosen unit (the Ayah Card when it is one āyah).
@@ -14332,7 +14351,7 @@
       const navPrev = navAt > 0 ? navOrder[navAt - 1] : null;
       const navNext = navAt >= 0 && navAt < navOrder.length - 1 ? navOrder[navAt + 1] : null;
       asmaXListHeaderEl.innerHTML = `
-        <button type="button" class="qcr-icon-btn" id="asmaXBackFromRefsBtn" title="${escapeHtml(t("Back to the wheel"))}" aria-label="${escapeHtml(t("Back to the wheel"))}">◂<span class="asmax-back-word"> ${escapeHtml(t("Back to the wheel"))}</span></button>
+        <button type="button" class="qcr-icon-btn" id="asmaXBackFromRefsBtn" title="${escapeHtml(t("Back to the wheel"))}" aria-label="${escapeHtml(t("Back to the wheel"))}">◂<span class="asmax-back-word"> ${escapeHtml(t("Wheel"))}</span></button>
         <span class="qcr-list-title">${escapeHtml(asmaEntryDisplayName(entry))}</span>
         ${canManage ? `<button type="button" class="qcr-icon-btn" id="asmaXEditThisNameBtn" title="${escapeHtml(t("Edit"))}" aria-label="${escapeHtml(t("Edit"))}">✎</button>` : ""}
         ${canManage ? `<button type="button" class="qcr-icon-btn" id="asmaXAttachRefThisNameBtn" title="${escapeHtml(t("Attach a reference to several Names"))}" aria-label="${escapeHtml(t("Attach a reference to several Names"))}">🔗</button>` : ""}
@@ -17859,8 +17878,14 @@
         meaningPagesShown = [...pages];
         const layer = (k, label) => `<label><input type="checkbox" data-meaning-layer="${k}"${readMeaningLayers[k] ? " checked" : ""}> ${escapeHtml(label)}</label>`;
         const first = pages[0], last = pages[pages.length - 1];
+        const layersSlot = document.getElementById("readMeaningLayersSlot");
+        if (layersSlot) {
+          layersSlot.innerHTML = `${layer("en", t("English"))}${layer("bn", t("Bangla"))}${layer("wbw", t("WbW"))}`;
+          layersSlot.querySelector('[data-meaning-layer="wbw"]')?.parentElement.setAttribute("title", t("Word by Word"));
+          layersSlot.setAttribute("aria-label", t("Show"));
+          layersSlot.hidden = false;
+        }
         pageViewContainer.innerHTML = `<div class="meaning-flow" data-meaning-flow>
-          <div class="meaning-layers" role="group" aria-label="${escapeHtml(t("Show"))}">${layer("en", t("English"))}${layer("bn", t("Bangla"))}${layer("wbw", t("Word by Word"))}</div>
           <button type="button" class="meaning-more" data-meaning-prev${first > 1 ? "" : " disabled"}>↑ ${escapeHtml(t("Page {page}", { page: num(Math.max(1, first - 1)) }))}</button>
           <div data-meaning-pages>${html}</div>
           <button type="button" class="meaning-more" data-meaning-next${last < MUSHAF_LAST_PAGE ? "" : " disabled"}>↓ ${escapeHtml(t("Page {page}", { page: num(Math.min(MUSHAF_LAST_PAGE, last + 1)) }))}</button>
@@ -17899,7 +17924,7 @@
     }
 
     function wireMeaningFlow() {
-      pageViewContainer.querySelectorAll("[data-meaning-layer]").forEach((box) => box.addEventListener("change", () => {
+      document.querySelectorAll("#readMeaningLayersSlot [data-meaning-layer]").forEach((box) => box.addEventListener("change", () => {
         const keep = meaningTopKey();
         readMeaningLayers = { ...readMeaningLayers, [box.dataset.meaningLayer]: box.checked };
         try { localStorage.setItem(READ_MEANING_LAYERS_KEY, JSON.stringify(readMeaningLayers)); } catch { /* per device only */ }
@@ -21818,7 +21843,11 @@
         if (mushafPageRefHandler) { pageViewContainer.removeEventListener("scroll", mushafPageRefHandler); mushafPageRefHandler = null; }
         if (mushafPageRef) clearMushafPageRef();
       }
-      if (!meaningOn) { meaningRenderToken++; meaningObserver?.disconnect(); meaningObserver = null; }
+      if (!meaningOn) {
+        meaningRenderToken++; meaningObserver?.disconnect(); meaningObserver = null;
+        const layersSlot = document.getElementById("readMeaningLayersSlot");
+        if (layersSlot && !layersSlot.hidden) { layersSlot.hidden = true; layersSlot.innerHTML = ""; }
+      }
       paintReadMeaningBtn();
 
       const trackable = currentTrackable();
@@ -21860,6 +21889,15 @@
       const unitBmLabel = t(unitIsBookmarked ? "Remove bookmark" : (unitInfo.unitType === "ayah" ? "Bookmark this āyah" : "Bookmark this"));
       readBookmarkBtn.setAttribute("aria-label", unitBmLabel);
       readBookmarkBtn.setAttribute("title", unitBmLabel);
+      // 12 Oct 2026: the same bookmark on the Mushaf bar (the Owner: "Add bookmark button on the top of the Mushaf page").
+      if (readBarBookmarkBtn) {
+        readBarBookmarkBtn.hidden = !mushafToggle.checked;
+        readBarBookmarkBtn.textContent = readBookmarkBtn.textContent;
+        readBarBookmarkBtn.setAttribute("aria-label", unitBmLabel);
+        readBarBookmarkBtn.setAttribute("title", unitBmLabel);
+        readBarBookmarkBtn.setAttribute("aria-pressed", String(unitIsBookmarked));
+        document.getElementById("readBar")?.classList.toggle("bar-bm-on", !readBarBookmarkBtn.hidden);
+      }
 
       // Issue #348, Owner decision 18 -- hidden in Mushaf view (see the
       // button's own HTML comment for why); shown otherwise for every unit
@@ -22417,6 +22455,7 @@
     // unitInfo.label, since parseAyahUnitKey() cannot read a Range/Juz/etc.
     // key as an ayah reference (see toggleAyahBookmark's own comment on
     // this exact point, first solved for the Note view's own bookmark).
+    readBarBookmarkBtn?.addEventListener("click", () => readBookmarkBtn.click());
     readBookmarkBtn.addEventListener("click", () => {
       const info = currentUnitInfo();
       toggleAyahBookmark(info.unitKey, info.unitType === "ayah" ? undefined : info.label);

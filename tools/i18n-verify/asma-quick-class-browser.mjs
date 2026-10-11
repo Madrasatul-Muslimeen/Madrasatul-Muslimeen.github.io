@@ -95,6 +95,8 @@ for (const [lang, width] of [["bn", 390], ["en", 1280]]) {
   check(`${tag} 5a As-Sami' style: a Name in neither half shows neither lit`, (await state()).on.length === 0);
   if (lang === "bn") check(`${tag} 5b the tooltip is Bangla`, /রাখুন/.test(await ev(() => document.querySelector("#asmaXListHeader [data-asmax-quick]")?.title ?? "")));
   const navSameLine = await ev(() => { const n = document.getElementById("asmaXNextNameBtn")?.getBoundingClientRect(), t = document.querySelector("#asmaXListHeader .qcr-list-title")?.getBoundingClientRect(); return !!n && !!t && Math.abs(n.top - t.top) < 24; });
+  // 5c was left red on purpose from v10.18 to v10.26 (the worded "◂ Back to the wheel" pushed ‹ › onto a third line from
+  // 900px) until the Owner chose (12 Oct 2026, decision 102): option 2, "◂ Wheel". The assertion is unchanged.
   check(`${tag} 5c ‹ › stay on the Name's own line; the pairs take a line of their own`, navSameLine);
   await page.locator("#asmaXListHeader").screenshot({ path: `/tmp/asma-quick-${lang}-${width}.png` }).catch(() => {});
   check(`${tag} 6 no page errors`, errors.filter((e) => !/ERR_CERT|net::|archive\.org|api\.quran|Failed to load resource/i.test(e)).length === 0, errors.slice(0, 2).join(" | "));
