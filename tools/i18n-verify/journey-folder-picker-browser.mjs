@@ -5,6 +5,8 @@
 //   --mutate-edit-writes-early  while editing, a tick is written at once instead of staged until Done
 //   --mutate-no-last-guard    the last-folder guard is removed
 //   --mutate-no-trash         "Move to Trash" does nothing
+//   --mutate-menu-width       the ⋯ menu is not held to the Note pane's width (#763) -> the 1440px tray's "every item can be tapped" fails
+//   --mutate-menu-height      the Note pane does not grow while the menu is open (#763) -> the same check fails
 import { chromium, newContext, openPage } from "./harness.mjs";
 
 const MUTATE = process.argv.find((a) => a.startsWith("--mutate-"))?.slice(9) ?? null;
@@ -72,6 +74,12 @@ async function run(lang, width, embedFrame = false) {
   if (MUTATE) {
     await ctx.route("**/*", async (route) => {
       const url = route.request().url();
+      if (MUTATE === "menu-width" && /\/js\/note-window\.js/.test(url)) {
+        const res = await route.fetch(); const src = await res.text();
+        const a = "m.style.maxWidth = `${Math.max(180, Math.floor(m.getBoundingClientRect().right - left - 4))}px`;";
+        if (!src.includes(a)) throw new Error("mutation anchor missing: menu-width");
+        return route.fulfill({ response: res, body: src.split(a).join("") });
+      }
       if (!/journey-map\.html/.test(url)) return route.fallback();
       const res = await route.fetch();
       let body = await res.text();
@@ -79,8 +87,12 @@ async function run(lang, width, embedFrame = false) {
       if (MUTATE === "untick-deletes") body = body.replace("() => retireNoteFiling(db, { tenantId: activeTenantId, placementId: placement.placementId, actorUid: auth.currentUser.uid }),", "() => deleteDoc(doc(db, TENANT.NOTE_PLACEMENTS, activeTenantId + \"__\" + placement.placementId)),");
       if (MUTATE === "edit-writes-early") body = body.replace("if (staged) {\n            const key = box.dataset.fpTick;", "if (false) {\n            const key = box.dataset.fpTick;");
       if (MUTATE === "no-last-guard") body = body.split("if (mine.length <= 1) { showPageStatus(LAST_FOLDER_SENTENCE()); return false; }").join("").split("if (!on && notesAndPlacementsLoaded && mine.length <= 1) say(LAST_FOLDER_SENTENCE());\n            else ok").join("if (false) say(LAST_FOLDER_SENTENCE());\n            else ok").split("if (!on && staged.size <= 1) { box.checked = true; say(LAST_FOLDER_SENTENCE()); return; }").join("");
+      // #763: the two halves of the tray menu fix -- the ⋯ menu held to the Note pane's width, and the pane growing to its
+      // column's height while the menu is open. Without either, items in the 1440px tray are covered or cut off.
+      if (MUTATE === "menu-width") body = body; // applied to note-window.js below
+      if (MUTATE === "menu-height") body = body.replace("#noteLayout.pane-open.tier-wide #notePane:has([data-pane-menu].open) { min-height: calc(100vh - 2rem); }", "");
       if (MUTATE === "no-trash") body = body.replace("() => trashFolder(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, ownerUid: auth.currentUser.uid, folderId: n.folderId, actorUid: auth.currentUser.uid }),", "async () => {},");
-      if (body === before) console.log(`  (mutation ${MUTATE} did not apply)`);
+      if (body === before && MUTATE !== "menu-width") console.log(`  (mutation ${MUTATE} did not apply)`);
       await route.fulfill({ response: res, body });
     });
   }
@@ -103,6 +115,17 @@ async function run(lang, width, embedFrame = false) {
   // ---- 1. A tick files at once; an untick retires that one filing -------------------------------------------------
   await openNote(P, "fA", "n1");
   await openPaneMenu(P);
+  await settle(P, 300);
+  // #763: every item of the open ⋯ menu can be tapped -- it is the element at its own point (not covered by the Notes
+  // list beside it) and inside the Note pane's visible box (not cut off by a short pane). Positive control: items exist.
+  const reach = await P.evaluate(() => {
+    const menu = document.querySelector("[data-pane-menu].open"); if (!menu) return null;
+    const items = [...menu.querySelectorAll("button")].filter((b) => b.getBoundingClientRect().width > 0 && getComputedStyle(b).visibility !== "hidden");
+    const bad = items.filter((b) => { const r = b.getBoundingClientRect(); const e = document.elementFromPoint(r.left + r.width / 2, r.top + Math.min(r.height / 2, 10)); return !(e && (e === b || b.contains(e))); }).map((b) => b.textContent.trim().slice(0, 24));
+    return { n: items.length, bad };
+  });
+  check(`${tag}: the open ⋯ menu has its items (positive control)`, !!reach && reach.n >= 10, JSON.stringify(reach));
+  check(`${tag}: every item of the open ⋯ menu can be tapped (not covered, not cut off)`, !!reach && reach.bad.length === 0, JSON.stringify(reach));
   const itemText = await P.$eval("[data-pane-menu] [data-pane-copy]", (e) => e.textContent.trim());
   check(`${tag}: the ⋯ menu's filing item says Folders…`, en ? itemText === "Folders…" : hasBn(itemText), itemText);
   await P.click("[data-pane-menu] [data-pane-copy]");

@@ -352,6 +352,10 @@
   .note-in-folders { font-size: 0.76rem; color: #5a4a1e; background: #fdf6ea; border: 1px solid #e3d3a8; border-radius: 999px; padding: 0.05rem 0.5rem; white-space: nowrap; }
   .folder-row.selected { border-color: #1F3A6E; box-shadow: 0 0 0 2px #1F3A6E inset; background: #eef2ff; }
   #noteLayout.pane-open.tier-wide #notePane { position: sticky; top: 0.5rem; max-height: calc(100vh - 1rem); overflow-y: auto; margin-top: 1rem; }
+  /* #763: the ⋯ menu opens inside this scrolling pane, which is only as tall as the Note. A short Note cut the menu to a
+     180px scroll box (measured in the 1440px tray: 4 of 17 items reachable). While the menu is open the pane takes its
+     column's full height, so the whole menu shows; closed, nothing changes. */
+  #noteLayout.pane-open.tier-wide #notePane:has([data-pane-menu].open) { min-height: calc(100vh - 2rem); }
   body.note-pane-wide { max-width: 84rem; }
   /* The Note view's own rules (bar, title, edit mode, pop-up windows) are in css/note-window.css, shared with notes.html; only the rules bound to THIS page's ids stay here. */
   #noteLayout.tier-wide [data-pane-back] { display: none; }
