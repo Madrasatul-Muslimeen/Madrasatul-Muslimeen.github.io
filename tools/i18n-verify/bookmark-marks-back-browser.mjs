@@ -10,6 +10,8 @@
 //   --mutate=no-back    the Back row is never mounted        -> the Back checks fail
 //   --mutate=no-aside   the chip no longer steps aside       -> (floating path only; this suite now meets the chip docked)
 //   --mutate=no-dock    the chip never docks beside ✓        -> the dock checks fail (8 Oct 2026)
+//   --mutate=slot-rule|slot-min|slot-basis|slot-max   #readBackSlot's v10.20 width rule (whole / min-width / flex / max-width)
+//                       removed from the SERVED page, routed; app/ is untouched -> the slot checks (issue #760)
 //   --mutate=raw-label  the page name is the heading's whole text -> the name check fails
 import { chromium, newContext, openPage } from "./harness.mjs";
 import fs from "node:fs";
@@ -22,8 +24,20 @@ function check(name, ok, detail = "") {
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
 const SHOTS = (process.argv.find((a) => a.startsWith("--shots=")) || "").slice(8);
 function swap(src, from, to) { if (!src.includes(from)) throw new Error(`mutation anchor missing: ${from.slice(0, 60)}`); return src.split(from).join(to); }
+const SLOT = "#readBackSlot { display: inline-flex; align-items: center; gap: 0.4rem; min-width: 0; flex: 1 1 7rem; max-width: 100%; }";
+const SLOT_MUTANTS = {
+  "slot-rule": "#readBackSlot { display: inline-flex; align-items: center; gap: 0.4rem; }",
+  "slot-min": SLOT.replace(" min-width: 0;", ""),
+  "slot-basis": SLOT.replace(" flex: 1 1 7rem;", ""),
+  "slot-max": SLOT.replace(" max-width: 100%;", ""),
+};
 async function routeMutation(ctx) {
   if (!MUTATE) return;
+  if (SLOT_MUTANTS[MUTATE]) {
+    const html = swap(fs.readFileSync("app/quranrevival.html", "utf8"), SLOT, SLOT_MUTANTS[MUTATE]);
+    await ctx.route(/\/app\/quranrevival\.html(\?.*)?$/, (r) => r.fulfill({ status: 200, contentType: "text/html; charset=utf-8", body: html }));
+    return;
+  }
   const js = "text/javascript; charset=utf-8";
   const f = "app/js/bookmark-nav.js";
   let body = fs.readFileSync(f, "utf8");
@@ -40,7 +54,7 @@ async function routeMutation(ctx) {
 
 const SEED = `DATA.bookmarks[0].usedAt = { bm1: "2026-10-04T09:30:00.000Z" };`;
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH });
-for (const lang of ["en", "bn"]) for (const width of [390, 1280]) {
+for (const lang of ["en", "bn"]) for (const width of [320, 390, 768, 1280]) {
   const tag = `${lang}/${width}`;
   console.log(`\n=== ${tag} ===`);
   const ctx = await newContext(browser, { appLang: lang, banner: false, viewport: { width, height: 900 }, extraSeedJs: SEED });
@@ -186,6 +200,47 @@ for (const lang of ["en", "bn"]) for (const width of [390, 1280]) {
   await P.click("#tabReadBtn").catch(() => {}); await P.waitForTimeout(400);
   const again = await P.evaluate(() => { const row = document.querySelector("[data-bm-back]"), r = row?.getBoundingClientRect(); return { docked: row?.classList.contains("bm-back-docked"), slot: row?.parentElement?.id, shown: !!row && r.width > 0 && getComputedStyle(row).display !== "none" }; });
   check(`${tag}: back on the Read view it is beside ✓ again`, again.docked && again.slot === "readBackSlot" && again.shown, JSON.stringify(again));
+  // ---- #readBackSlot's width rule (v10.20, issue #750; guarded by issue #760) ----
+  // `#readBackSlot { min-width: 0; flex: 1 1 7rem; max-width: 100% }` lets a long way-back share the Read bar's line and
+  // ellipsise inside it. Measured on rendered boxes with a real-length label (the page's own, then a longer one, in the
+  // reader's language): the chip is inside the bar and the screen, the bar keeps its lines, the ✕ keeps its 40px tile,
+  // and the label is cut only by the chip's own ellipsis (never clipped by an ancestor or pushed past the slot).
+  for (const label of [null, lang === "bn" ? "← ফিরে যান: আমার যাত্রার মানচিত্র (ম্যাপিং মাই জার্নি)" : "← Back to Mapping My Journey"]) {
+    const lt = label ? "a long label" : "the page's own label";
+    if (label) await P.evaluate((t) => { const a = document.querySelector("[data-bm-back-link]"); if (a) a.textContent = t; }, label);
+    await P.waitForTimeout(150);
+    const m = await P.evaluate(() => {
+      const bar = document.getElementById("readBar"), slot = document.getElementById("readBackSlot"), row = document.querySelector("[data-bm-back]");
+      const a = row?.querySelector("[data-bm-back-link]"), x = row?.querySelector("[data-bm-back-close]");
+      if (!bar || !slot || !row || !a) return null;
+      const B = bar.getBoundingClientRect(), S = slot.getBoundingClientRect(), R = row.getBoundingClientRect(), A = a.getBoundingClientRect(), X = x?.getBoundingClientRect();
+      const mid = (r) => (r.top + r.bottom) / 2;
+      const lineOf = (id) => { const e = document.getElementById(id)?.getBoundingClientRect(); return e && e.width > 0 ? mid(e) : null; };
+      const tops = new Set(); for (const e of bar.children) { const r = e.getBoundingClientRect(); if (r.width > 0 && r.height > 0) tops.add(Math.round(r.top / 10)); }
+      const cs = getComputedStyle(a);
+      const ends = [...document.querySelectorAll("#readBarEnd > *")].filter((e) => e.getBoundingClientRect().width > 0).map((e) => Math.round(mid(e.getBoundingClientRect())));
+      return {
+        inBar: R.left >= B.left - 1 && R.right <= B.right + 1 && R.top >= B.top - 1 && R.bottom <= B.bottom + 1 && B.left >= -1 && B.right <= innerWidth + 1,
+        slotInBar: S.left >= B.left - 1 && S.right <= B.right + 1, rowInSlot: R.left >= S.left - 1 && R.right <= S.right + 1,
+        slotW: Math.round(S.width), barW: Math.round(B.width), rowW: Math.round(R.width),
+        xTile: !!X && X.width >= 39 && X.height >= 39 && X.left >= R.left - 1 && X.right <= R.right + 1 && X.right <= innerWidth + 1,
+        linkH: Math.round(A.height), linkInRow: A.left >= R.left - 1 && A.right <= R.right + 1,
+        cut: a.scrollWidth > a.clientWidth + 1, ellipsis: cs.textOverflow === "ellipsis" && cs.overflow === "hidden",
+        visibleChars: A.width >= 60,
+        lines: tops.size, backMid: Math.round(mid(R)), endMids: ends, playMid: lineOf("readPlayBtn") === null ? null : Math.round(lineOf("readPlayBtn")),
+        endOneLine: ends.length > 0 && ends.every((t) => Math.abs(t - ends[0]) <= 4),
+        sharesLine: [lineOf("readPlayBtn"), lineOf("readBarEnd") ?? ends[0]].some((l) => l !== null && Math.abs(l - mid(R)) < 30),
+        sideways: document.documentElement.scrollWidth > innerWidth + 1,
+      };
+    });
+    if (process.env.PROBE) console.log(`  PROBE ${tag} ${lt}`, JSON.stringify(m));
+    check(`${tag}: ${lt}: the chip is inside the Read bar and the screen (no overflow, no clipping)`, !!m && m.inBar && m.slotInBar && m.rowInSlot && !m.sideways, JSON.stringify(m));
+    check(`${tag}: ${lt}: the slot is no wider than the bar, and the chip no wider than its slot`, !!m && m.slotW <= m.barW + 1 && m.rowW <= m.slotW + 1, JSON.stringify(m));
+    check(`${tag}: ${lt}: it shares a line the bar already has (▶ ■ or 📖 ⤢ ⋯), and 📖 ⤢ ⋯ stay on one line`, !!m && m.sharesLine && m.endOneLine, JSON.stringify(m));
+    check(`${tag}: ${lt}: the ✕ keeps its 40px tile and the button its 40px height, inside the chip`, !!m && m.xTile && m.linkH >= 40 && m.linkInRow, JSON.stringify(m));
+    check(`${tag}: ${lt}: the label is whole, or cut only by the chip's own ellipsis with room to read`, !!m && (!m.cut || m.ellipsis) && m.visibleChars, JSON.stringify(m));
+    if (width >= 768) check(`${tag}: ${lt}: with room to spare, the chip shares the bar's first line with ▶ ■`, !!m && m.playMid !== null && Math.abs(m.playMid - m.backMid) < 30, JSON.stringify(m));
+  }
   if (SHOTS) await P.screenshot({ path: `${SHOTS}/bm-${tag.replace("/", "-")}-back.png` });
   if (back) { await Promise.all([P.waitForURL(/about\.html$/, { timeout: 15000 }).catch(() => {}), P.click("[data-bm-back-link]")]); }
   check(`${tag}: Back goes there`, /about\.html$/.test(P.url()), P.url());
