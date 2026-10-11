@@ -15,6 +15,9 @@ This session was summarised (its context compacted) before it was handed over, w
 history.** #742 and the `journey-map-screen` check were both finished by session `session_018o3et5BkZHp6ycp3v5PgHt`
 (v10.17–v10.22). That session wrote no handover of its own; this block covers it.
 
+- **The prompt that starts the next session is `docs/governance/NEW-SESSION-PROMPT-2026-10-11b.md`** (it supersedes
+  `NEW-SESSION-PROMPT-2026-10-11.md`). Its first job: a demo of the three Asma options, and the Owner's whole
+  "waiting on you" list.
 - **`main` is at v10.24.** Read the live number off `app/js/version.js`.
 - **Nothing is in flight.** No Builder round is running and no PR is open.
 - **This session's releases:**
