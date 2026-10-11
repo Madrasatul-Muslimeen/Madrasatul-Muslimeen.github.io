@@ -822,3 +822,4 @@ total). Allocated by the MMSA Architect.
 10.25: Al-Fatihah's count in the Ayah card's Full text; مَشْهُود joins the witness meaning group. Allocated by the MMSA Architect.
 10.26: the ⋮ 'has a note' mark is kept for every ayah the ⋮ sheet looked up this session. Allocated by the MMSA Architect.
 10.27: 🔖 on the Mushaf bar; the Meaning switches on the Read bar; the Asma Name bar's '◂ Wheel'. Allocated by the MMSA Architect.
+10.28: the Word card's Intermediate tab (decisions 101 and 103). Allocated by the MMSA Architect.

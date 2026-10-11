@@ -235,8 +235,9 @@ for (const [width, height] of [[390, 844], [1100, 900]]) {
     // and that gate is open, so the box carries ONE pair of lines PER LEVEL
     // (decision 58: WbW, Basic, Depth), three numbers each: 3 x 3 = 9. The
     // per-level wording is proved in lemma-levels-browser.mjs.
-    check(`[${lang} ${width}] both lines are bold (weight >= 700) and the numbers (three per level, three levels) bigger and heavier still`,
-      !!st && st.numCount === 9 && st.lineWeight >= 700 && st.numWeight >= 800 && st.numSize >= st.lineSize * 1.15, JSON.stringify(st));
+    // Updated in place 12 Oct 2026 (decisions 101/103): a fourth level, Intermediate, between Basic and Depth; the tabs read the short level names. 3 x 4 = 12.
+    check(`[${lang} ${width}] both lines are bold (weight >= 700) and the numbers (three per level, four levels) bigger and heavier still`,
+      !!st && st.numCount === 12 && st.lineWeight >= 700 && st.numWeight >= 800 && st.numSize >= st.lineSize * 1.15, JSON.stringify(st));
     check(`[${lang} ${width}] the numbers stand out in the card's accent colour, unlike the sentence`, !!st && st.numColor !== st.lineColor, JSON.stringify(st));
     check(`[${lang} ${width}] Number 3 -- this word's own share-of-Qur'an line renders (unaffected by the lemma gate)`, !!card?.shareOfQuranLine, JSON.stringify(card));
     check(`[${lang} ${width}] Number 3 -- names this lemma's real occurrence count`, toWestern(card?.shareOfQuranLine ?? "").includes(String(LEMMA_OCCURRENCE_COUNT)), card?.shareOfQuranLine);

@@ -36,7 +36,7 @@ export const QURAN_LEMMA_WORD_COUNT = 74122;
 /** The whole-Qur'an denominator for one level: WbW counts every word; Basic
  *  and Depth count only words that have a dictionary word (decision 68). */
 export function levelWordTotal(level) {
-  return level === "basic" || level === "depth" ? QURAN_LEMMA_WORD_COUNT : QURAN_TOTAL_WORD_COUNT;
+  return level === "basic" || level === "intermediate" || level === "depth" ? QURAN_LEMMA_WORD_COUNT : QURAN_TOTAL_WORD_COUNT;
 }
 
 export const QURAN_WORD_TOTAL_CONTRACT = "quran-word-total:v1";
@@ -59,7 +59,7 @@ export function wordTotalDocId({ tenantId, personId, level = "wbw" } = {}) {
   // Decision 58 (#490): one document per (tenant, person, LEVEL). WbW keeps
   // the id it has always had (I5); basic/depth append their level.
   if (level === "wbw") return base;
-  if (level !== "basic" && level !== "depth") throw new TypeError(`Unknown Arabic level: ${level}.`);
+  if (level !== "basic" && level !== "intermediate" && level !== "depth") throw new TypeError(`Unknown Arabic level: ${level}.`);
   return `${base}__${level}`;
 }
 

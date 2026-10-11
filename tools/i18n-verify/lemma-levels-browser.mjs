@@ -190,7 +190,8 @@ for (const [width, height] of [[390, 844], [1280, 900]]) {
         const wide = [...b.querySelectorAll("p")].filter((p) => p.scrollWidth > p.clientWidth + 1).length;
         return { inside: r.left >= m.left - 1 && r.right <= m.right + 1, wide, lines: b.querySelectorAll("p").length };
       });
-      check(`${tag} the bold box holds 6 lines inside the card, none clipped`, !!box && box.inside && box.wide === 0 && box.lines === 6, JSON.stringify(box));
+      // Updated in place 12 Oct 2026 (decision 103): a fourth level, Intermediate, adds its pair of lines (8, was 6).
+      check(`${tag} the bold box holds 8 lines inside the card, none clipped`, !!box && box.inside && box.wide === 0 && box.lines === 8, JSON.stringify(box));
       await page.screenshot({ path: `.builder-round/shot-levels-${lang}-${width}-${level}.png` });
 
       if (level === "basic" && width === 390 && lang === "en") {

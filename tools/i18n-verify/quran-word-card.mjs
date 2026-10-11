@@ -21,7 +21,8 @@ function check(name, fn) {
 check("card starts closed", () => assert.equal(renderQuranWordCard({ state: createWordCardState(), chapter, ayah, word }), ""));
 check("opening preserves permanent identity", () => assert.equal(openWordCard(createWordCardState(), id).occurrenceId, id));
 check("WbW renders Arabic and both meanings", () => { const html = renderQuranWordCard({ state: openWordCard(createWordCardState(), id), chapter, ayah, word }); assert.match(html, /بِسْمِ/); assert.match(html, /In the name/); assert.match(html, /নামে/); });
-check("three level tabs are always present", () => { const html = renderQuranWordCard({ state: openWordCard(createWordCardState(), id), chapter, ayah, word }); assert.equal((html.match(/role="tab"/g) || []).length, 3); });
+// Updated in place 12 Oct 2026 (decisions 101/103): a fourth level, Intermediate, between Basic and Depth.
+check("four level tabs are always present", () => { const html = renderQuranWordCard({ state: openWordCard(createWordCardState(), id), chapter, ayah, word }); assert.equal((html.match(/role="tab"/g) || []).length, 4); });
 check("level selection persists while occurrence stays open", () => { const state = selectWordCardLevel(openWordCard(createWordCardState(), id), "basic"); assert.equal(state.level, "basic"); assert.equal(state.open, true); assert.equal(state.occurrenceId, id); });
 // Updated in place (3 Oct 2026): Word card round 3 (decision 59, the approved
 // demo) prints the root as spaced letters, "س م و", in the header's root box
