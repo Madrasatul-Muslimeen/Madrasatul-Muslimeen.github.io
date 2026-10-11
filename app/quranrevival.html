@@ -18080,7 +18080,7 @@
             : "";
           const afterHtml = unitMarkerRowHtml(markers.after.map(unitFlowMarkerHtml).join("")) + endOfUnitHtml;
           return `<div class="page-flow-ayah" data-ayah="${ayah.ayah}">${beforeHtml}<div class="ayah-quick-header">${renderQuickMenu(unitKey, {
-            hasNote: ayahHasNote(ayahNotesDoc, unitKey), isBookmarked,
+            hasNote: ayahHasAnyNote(unitKey), isBookmarked,
             showTextTools: true,
             isWbwOn: wbwShowToggle.checked, isRootsOn: rootsToggle.checked, isDerivativesOn: derivativesToggle.checked,
           })}</div><div class="ayah-flow-body" data-ayah-collapsible-for="${unitKey}">${bismillahHtmlFor(currentSurahNum, ayah.ayah)}${layoutAParts(ayah, panels, {
@@ -18591,7 +18591,7 @@
       if (langs.includes("en") && ayah.translations?.en) parts.push(ayah.translations.en);
       if (langs.includes("bn") && ayah.translations?.bn) parts.push(ayah.translations.bn);
       if (langs.includes("notes")) {
-        const plain = notesToPlainText(ayahNoteHtml(ayahNotesDoc, unitKey));
+        const plain = [...(panePlainNotesFor(unitKey)?.texts ?? []), notesToPlainText(ayahNoteHtml(ayahNotesDoc, unitKey))].filter(Boolean).join("\n\n");
         if (plain) parts.push(`${t("Notes:")}\n${plain}`);
       }
       return parts.join("\n\n");
@@ -18768,11 +18768,27 @@
       return ayahNoteLookup;
     }
 
+    /** Notes-pane notes already read for one āyah (by the ⋮ sheet's lookup); null until a sheet has opened on it. */
+    let panePlainNotes = null;
+    function panePlainNotesFor(unitKey) {
+      return panePlainNotes && panePlainNotes.key === `${activeTenantId}|${selectedPersonId}|${unitKey}` ? panePlainNotes : null;
+    }
+    /** "Has a note": the Notes pane's notes (this lookup, else its already-known count) or the retired Note-view store. */
+    function ayahHasAnyNote(unitKey) {
+      if (ayahHasNote(ayahNotesDoc, unitKey)) return true;
+      const known = panePlainNotesFor(unitKey);
+      if (known) return known.count > 0;
+      try { return (readNotePaneMod?.readNotePaneCount?.(unitKey) ?? 0) > 0; } catch { return false; }
+    }
+
     async function ensureAyahSheetPosterNoteLoaded(unitKey) {
       if (!selectedPersonId) { ayahSheetHasPosterNote = false; if (ayahSheetUnitKey === unitKey) renderAyahActionSheetNow(); return; }
       try {
         const { rows } = await lookupAyahNotes(unitKey, { fresh: true }).promise;
-        ayahSheetHasPosterNote = rows.some((row) => row.note.status !== NOTE_STATUS.RETIRED);
+        const live = rows.filter((row) => row.note.status !== NOTE_STATUS.RETIRED);
+        ayahSheetHasPosterNote = live.length > 0;
+        // Decision 95: the Notes pane's text, kept from THIS lookup (no second read) for the "has a note" mark and Copy's "My note".
+        panePlainNotes = { key: `${activeTenantId}|${selectedPersonId}|${unitKey}`, texts: live.map((row) => notesToPlainText(row.note.bodyHtml ?? "")).filter(Boolean), count: live.length };
       } catch {
         ayahSheetHasPosterNote = false;
       }
@@ -19626,7 +19642,7 @@
       ayahActionSheetMountEl.innerHTML = renderAyahActionSheetHtml({
         unitKey: ayahSheetUnitKey,
         ref: ayahRefLabel(surah, ayahNum, { half: sheetHalf }),
-        hasNote: ayahHasNote(ayahNotesDoc, ayahSheetUnitKey),
+        hasNote: ayahHasAnyNote(ayahSheetUnitKey),
         isBookmarked,
         isSelf: isSelfSelectedForAyahActions(),
         approachOptionsHtml: (() => {
@@ -21922,7 +21938,7 @@
         // view's own per-āyah ⋮ badge keeps it, since it has no bar-level
         // button of its own to mean one specific āyah.
         readQuickMenuSlot.innerHTML = renderQuickMenu(singleUnitKey, {
-          hasNote: ayahHasNote(ayahNotesDoc, singleUnitKey), isBookmarked: singleIsBookmarked, showBookmark: false,
+          hasNote: ayahHasAnyNote(singleUnitKey), isBookmarked: singleIsBookmarked, showBookmark: false,
           // Text-tools round -- Word by Word / Root / Derivatives / Collapse,
           // the same group the Note view's own ⋮ carries. Not offered in
           // Mushaf mode, which replaces those choices rather than sharing
