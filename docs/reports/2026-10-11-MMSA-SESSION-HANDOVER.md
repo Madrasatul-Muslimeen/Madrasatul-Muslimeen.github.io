@@ -167,3 +167,4 @@ Carried from the 9 Oct handover, still true:
 - **v10.21** (2026-10-10): 📖 Meaning, the Read bar's tools under ⋯, the study buttons at a phone's foot.
 - **v10.22** (2026-10-10): the flow strip scrolls after crossing a surah; two stale checks (Builder #752).
 - **v10.23** (2026-10-11): the has-a-note mark and Copy's My note follow the Notes pane (Builder #758).
+- **v10.24** (2026-10-11): the note's ⋯ menu fits and reaches in Mapping My Journey's three-column view (Builder #763).
