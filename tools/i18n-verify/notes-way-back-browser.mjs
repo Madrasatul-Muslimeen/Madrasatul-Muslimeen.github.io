@@ -26,7 +26,8 @@ const MUT = {
   noplace2: ["quranrevival.html", "      rememberQuranPlace(unitKey);\n      location.href", "      location.href"],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
-const FIXTURE = ["quranrevival.html", "ayahSheetHasPosterNote = rows.some((row) => row.note.status !== NOTE_STATUS.RETIRED);", "ayahSheetHasPosterNote = true;"];
+// The anchor moved in v10.23 (#758), where the poster-note flag is set from the live (non-retired) notes.
+const FIXTURE = ["quranrevival.html", "ayahSheetHasPosterNote = live.length > 0;", "ayahSheetHasPosterNote = true;"];
 
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
 async function context(lang, width, look) {
