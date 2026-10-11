@@ -71,7 +71,10 @@ async function measure(ctx, path) {
         // Only the second is a defect, and this suite had never checked for it.
         const src = [...document.querySelectorAll("script")].map((s) => s.textContent).join("\n");
         const ids = [...new Set([...src.matchAll(/getElementById\("([^"]+)"\)/g)].map((m) => m[1]))];
-        const authored = new Set([...src.matchAll(/id="([^"]+)"/g)].map((m) => m[1]));
+        // Authored three ways: `id="x"` in a template, `el.id = "x"` on a createElement, and `id: "x"` in an
+        // options object (kysBackRow). Until 10 Oct 2026 only the first was read, so seven elements the page
+        // creates in JS (qcrPopup, bmNotFound, continueListeningBtn, …) were reported as dangling.
+        const authored = new Set([...src.matchAll(/\bid="([^"]+)"|\.id\s*=\s*["']([^"']+)["']|\bid:\s*["']([^"']+)["']/g)].map((m) => m[1] || m[2] || m[3]));
         const absent = ids.filter((id) => !document.getElementById(id));
         return {
           total: ids.length,

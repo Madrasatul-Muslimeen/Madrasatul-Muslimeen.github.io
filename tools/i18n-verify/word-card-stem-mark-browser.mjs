@@ -25,7 +25,10 @@ async function openWord(page, position) {
   await page.waitForTimeout(500);
   await page.evaluate(() => { const t = document.getElementById("wbwShowToggle"); if (t && !t.checked) { t.checked = true; t.dispatchEvent(new Event("change", { bubbles: true })); } });
   await page.waitForTimeout(600);
-  await page.evaluate(() => { const s = document.getElementById("ayahSelect"); if (s && s.value !== "7") { s.value = "7"; s.dispatchEvent(new Event("change", { bubbles: true })); } });
+  // Stored 1:7 is shown as two āyāt (decisions 76–77, v09.97): picker value "7" is displayed Āyah 6 (words 1–4)
+  // and "8" is displayed Āyah 7 (words 5–9). Updated in place 10 Oct 2026: the old fixed "7" never showed word 6.
+  const pick = position <= 4 ? "7" : "8";
+  await page.evaluate((v) => { const s = document.getElementById("ayahSelect"); if (s && s.value !== v) { s.value = v; s.dispatchEvent(new Event("change", { bubbles: true })); } }, pick);
   await page.waitForFunction((p) => !!document.querySelector(`[data-word-occurrence$=":1:7:${p}"]`), position, { timeout: 8000 }).catch(() => {});
   await page.evaluate((p) => { document.querySelector(`[data-word-occurrence$=":1:7:${p}"]`)?.click(); }, position);
   await page.waitForFunction((p) => document.querySelector("#quranWordCardMount .quran-word-card")?.dataset.occurrenceId?.endsWith(`:1:7:${p}`) && !!document.querySelector("#quranWordCardMount [data-word-card-parts]"), position, { timeout: 8000 }).catch(() => {});
