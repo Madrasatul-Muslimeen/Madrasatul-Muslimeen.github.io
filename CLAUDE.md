@@ -141,8 +141,9 @@ Read this first, every session. It is the standing brief.
 > ## ⇢ SESSION HANDOVER, 11 Oct 2026 — READ THIS SECOND
 >
 > **`docs/reports/2026-10-11-MMSA-SESSION-HANDOVER.md`** is the current
-> continuation point, and **`docs/governance/NEW-SESSION-PROMPT-2026-10-11.md`**
-> is the prompt that starts a new session. **Read the handover's "LATEST UPDATE" block first:** `main` is at **v10.24**
+> continuation point, and **`docs/governance/NEW-SESSION-PROMPT-2026-10-11b.md`** (written ~08:30 UTC 11 Oct,
+> superseding `NEW-SESSION-PROMPT-2026-10-11.md`) is the prompt that starts a new session; its first job is a demo
+> of the Asma options and the Owner's whole "waiting on you" list. **Read the handover's "LATEST UPDATE" block first:** `main` is at **v10.24**
 > (v10.17–v10.22 by session `018o3et5`, v10.23–v10.24 by session `01G4jmGU`); #742 is finished; **nothing is in
 > flight.** The 167-suite browser sweep is green except `asma-quick-class` 5c, which waits on the Owner's choice of
 > three layouts. **Decision 95 (Read + Note as one) is complete.** The Owner's master feature-discussions file is https://claude.ai/artifact/BJUwQ8hfgnu4FJFo7stqY1
