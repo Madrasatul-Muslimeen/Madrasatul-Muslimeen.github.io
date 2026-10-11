@@ -20078,6 +20078,10 @@
       let a;
       try { a = (await getSurah(surah))?.ayahs?.find((x) => x.ayah === ayah); } catch { a = null; }
       if (pop.hidden || pop.dataset.unitKey !== unitKey) return;
+      // Owner, 11 Oct 2026 (screenshot: the Bismillah wore ١ / 1 / ১): the reader's own Al-Fātiḥah count
+      // (decision 55) applies here as in the Read view -- the Bismillah unnumbered, the numbers one lower,
+      // and only this half of stored 1:7. Display only; the stored āyah is untouched.
+      if (a) { const shown = expandAyahsForDisplay(surah, [a], fatihaOn()); a = shown.find((x) => (x.half ?? null) === (half ?? null)) ?? shown[0]; }
       const box = pop.querySelector(".ayah-nv-box");
       if (!a) { box.innerHTML = `${head}<p role="status">${escapeHtml(t("Could not load this āyah."))}</p>`; return; }
       const section = (title, body, lang = "") => body ? `<details class="ayah-nv-sec" open><summary>${escapeHtml(title)}</summary><div class="ayah-nv-body"${lang ? ` lang="${lang}"` : ""}>${body}</div></details>` : "";
