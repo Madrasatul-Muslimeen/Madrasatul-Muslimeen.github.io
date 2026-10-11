@@ -222,8 +222,13 @@ for (const lang of (process.argv[3] || "en,bn").split(",")) { // argv: [mutation
     check(`${tag}: device 2 sees both phrases, edited text included`, await page2.evaluate(() => document.querySelector('[data-mt-phrasetext="0"]').value === "Bismillah, Alhamdulillah" && document.querySelector('[data-mt-phrasetext="1"]').value === "Second phrase, edited" && !document.querySelector('[data-mt-phrasetext="2"]')));
     await closeDlg(page2);
     // quick phrase: one tap inserts it at the cursor
-    await page2.click(`${W("n1")} [data-pane-menu-btn]`);
-    await page2.click(`${W("n1")} [data-pane-edit-toggle]`);
+    // v10.19 (#747): Edit sits in the bar itself while the bar has room; it moves into the ⋯ menu only when the bar folds it
+    // (`edit-folded`). At 390px the bar shows it, and the phone sheet's backdrop covers the bar once ⋯ is open, so open the
+    // menu only when the bar's own Edit button is not on screen.
+    // (the menu is still open after 🧰 My Note tools closes; on the phone its backdrop covers the bar, so close it first)
+    if (await page2.isVisible(`${W("n1")} [data-pane-menu].open`)) { const x = `${W("n1")} [data-pane-menu].open .pane-menu-x`; if (await page2.isVisible(x)) await page2.click(x); else await page2.click(`${W("n1")} [data-pane-menu-btn]`); }
+    if (await page2.isVisible(`${W("n1")} [data-pane-bar] > [data-pane-edit-toggle]`)) await page2.click(`${W("n1")} [data-pane-bar] > [data-pane-edit-toggle]`);
+    else { await page2.click(`${W("n1")} [data-pane-menu-btn]`); await page2.click(`${W("n1")} [data-pane-menu] [data-pane-edit-toggle]`); }
     await page2.waitForSelector(`${W("n1")} .pane-edit-body`);
     await page2.click(`${W("n1")} .pane-edit-body p`);
     if (!(await page2.isVisible(`${W("n1")} [data-edit-toolbar] [data-cmd="phrases"]`))) await page2.click(`${W("n1")} [data-edit-toolbar] [data-tb-tab="3"]`);
@@ -231,8 +236,9 @@ for (const lang of (process.argv[3] || "en,bn").split(",")) { // argv: [mutation
     await page2.click(`${W("n1")} [data-phrase-insert="0"]`);
     check(`${tag}: one tap on a phrase puts it into the Note being edited`, await page2.evaluate(() => document.querySelector('.note-win[data-note-id="n1"] .pane-edit-body').textContent.includes("Bismillah, Alhamdulillah")));
     check(`${tag}: the phrase panel has no sideways overflow`, await noSideways(page2));
-    await page2.click(`${W("n1")} [data-pane-menu-btn]`);
-    await page2.click(`${W("n1")} [data-pane-edit-toggle]`); // Done: saves the typed phrase as the Note's own new version
+    // v10.19 (#747): Done is the bar's own button while the bar has room; the ⋯ menu carries it only when the bar folds it
+    if (await page2.isVisible(`${W("n1")} [data-pane-bar] > [data-pane-edit-toggle]`)) await page2.click(`${W("n1")} [data-pane-bar] > [data-pane-edit-toggle]`);
+    else { await page2.click(`${W("n1")} [data-pane-menu-btn]`); await page2.click(`${W("n1")} [data-pane-menu] [data-pane-edit-toggle]`); } // Done: saves the typed phrase as the Note's own new version
     await page2.waitForTimeout(500);
     // new from template
     const nBefore = await page2.evaluate(() => window.__DATA.notes.length);
