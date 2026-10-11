@@ -20598,3 +20598,12 @@ The Owner, 9 Oct 2026, with a photo of the sheet on Yaseen 8: "The writing view 
 - `fatiha-count-browser`: switches Explore to One Approach before reading the āyah ring and badges (All Approaches is the Surah level's default since decision 82, v09.107). Updated in place, reason recorded.
 - `journey-map-boundary`: `ayah-folder-filing-renderer.js` (#286) joins the pinned importer set; it imports only the pure `isSystemFolderRole`, holds no writer, and is reached only from `quranrevival.html` via `ayah-action-sheet.js` (the Architect read the import). Updated in place, reason recorded.
 - Checks: quran-flow-step-nav 32/0 (31/1 with the app fix stashed, measured by the Architect); fatiha-count 136/0; journey-map-boundary 19/0; read-contents 248/0; unit-card 116/0; phone-width-overflow 217/0; behaviour 971/0; with v10.21 merged: read-meaning 39/0, read-bar-tools 63/0.
+
+## v10.23 — 2026-10-11 — The ⋮ "has a note" state and Copy's "My note" follow the Notes pane (Builder #758, finished by the Architect)
+
+- `ayahHasAnyNote()` replaces `ayahHasNote(ayahNotesDoc, …)` at the three `hasNote:` sites (reading list rows, the Āyah card, the Read bar's ⋮): the old Note-view store, else the Notes pane's own count (freshest; it re-reports after every Save), else this session's `lookupAyahNotes()` result. Never one read per row.
+- Copy / Share "My note": the Notes pane notes' `bodyHtml` as plain text, in the pane's order, then any old Note-view text. `ensurePanePlainNotes()` reads it once, on the tap that opens Copy / Share (so Safari's clipboard gesture is not lost to a wait), and Copy awaits that same read (`attachQuickMenuHandlers` gains `onTextMenuOpen` and awaits `buildText`).
+- The pane's count listener drops kept text and the kept lookup for that unit, so a note saved after the ⋮ sheet was opened is read again.
+- Architect's finding during review: on the Owner's path (📝 opened and closed, then ⋮ → Copy) the Builder's version lit "My note" from the pane's count but copied only the reference line. Measured, fixed, and pinned by a new case.
+- Old `ayahNotes` notes are not copied or moved into Mapping My Journey (Owner Control Gate).
+- Checks: notes-pane-has-note-browser 32/0 (new, 390/1280 × en/bn; the 2:251 pane-path case fails 4 on the Builder's code; mutations nopane 24/8, nocopy 20/12, noread 28/4); read-note-pane 210/0; qcr-popup 34/0; notes-pane-loading 26/0; read-bar-tools 63/0; note-view-decoupled 28/0; phone-width-overflow 217/0; behaviour 971/0.

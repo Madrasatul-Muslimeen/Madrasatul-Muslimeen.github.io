@@ -817,3 +817,4 @@ total). Allocated by the MMSA Architect.
 10.20: bookmark-marks-back made true (Builder #750). Allocated by the MMSA Architect.
 10.21: 📖 Meaning, the Read bar's tools under ⋯, the study buttons at a phone's foot. Allocated by the MMSA Architect.
 10.22: the flow strip scrolls after crossing a surah; two stale checks (Builder #752). Allocated by the MMSA Architect.
+10.23: the has-a-note mark and Copy's My note follow the Notes pane (Builder #758). Allocated by the MMSA Architect.
