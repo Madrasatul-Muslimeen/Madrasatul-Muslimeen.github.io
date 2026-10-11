@@ -20,7 +20,10 @@ const check = (name, ok, detail = "") => {
 };
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
 const MUT = {
-  nopane: ["return (panePlainNotesFor(unitKey)?.count ?? 0) > 0;", "return false;"],
+  // Updated in place 11 Oct 2026 (v10.26): the sheet's counts are kept per āyah, so the pane half is two lines now.
+  nopane: [["if (kept) return kept.count > 0;", "if (kept) return false;"], ["return (sheetNoteCounts.get(`${activeTenantId}|${selectedPersonId}|${unitKey}`) ?? 0) > 0;", "return false;"]],
+  // v10.26: only the LATEST ⋮ sheet lookup is remembered (the old behaviour) -> the 2:255 row check after 2:252 fails.
+  nomap: ["return (sheetNoteCounts.get(`${activeTenantId}|${selectedPersonId}|${unitKey}`) ?? 0) > 0;", "return false;"],
   // Both halves of the read go (the early one on opening Copy, kept for Safari's clipboard rule, and the wait at Copy):
   // either alone is enough here, so a mutation removing only one rightly survives.
   noread: [["if (langs.includes(\"notes\")) await ensurePanePlainNotes(unitKey); return", "return"], ["onTextMenuOpen: (unitKey) => { ensurePanePlainNotes(unitKey); },", ""]],
@@ -123,6 +126,12 @@ for (const lang of ["en", "bn"]) for (const [width, height] of [[390, 844], [128
   const a252 = await probe(252);
   const c = a252.copied ?? "";
   check(`${tag} 2:252 both: pane text first, old text after`, isMy(a252) && c.includes("Pane words beta") && c.includes("Old words delta") && c.indexOf("Pane words beta") < c.indexOf("Old words delta"), JSON.stringify(a252));
+  // 11 Oct 2026 (v10.26): the ⋮ sheet was last opened on 2:252; 2:255's row must still say it has a note (its count
+  // was kept from its own earlier lookup, with no new read), and 2:254's must not. Read off the ⋮ button itself, so no
+  // Copy menu is opened (opening Copy makes its own read).
+  const rowMark = async (n) => { await goTo(n); return ev(() => document.querySelector("#readQuickMenuSlot [data-qm-toggle]")?.classList.contains("has-note") ?? null); };
+  const m255 = await rowMark(255), m254 = await rowMark(254);
+  check(`${tag} after the ⋮ sheet moved on to 2:252, 2:255's ⋮ still marks "has a note"; 2:254's does not`, m255 === true && m254 === false, JSON.stringify({ m255, m254 }));
   const bad = errors.filter((e) => !/ERR_CERT|net::|archive\.org|api\.quran|Failed to load resource/i.test(e));
   check(`${tag} no page errors`, bad.length === 0, bad.slice(0, 2).join(" | "));
   await ctx.close();
