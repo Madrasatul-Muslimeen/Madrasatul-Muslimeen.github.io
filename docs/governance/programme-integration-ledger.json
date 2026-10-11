@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "10.27",
+    "version": "10.28",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -3317,8 +3317,20 @@
     {
       "version": "10.27",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "From the Owner's 12 Oct 2026 screenshots and decision 102: a bookmark button on the Mushaf bar, the Meaning view's switches moved onto the Read bar, and the Asma Name bar's back button reading 'Wheel'.",
+      "integration": {
+        "authorizedOn": "2026-10-11",
+        "integratedOn": "2026-10-11",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "10.28",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "The fourth word level, Intermediate, on the Word card: the word's meanings and the root's meanings, and an Achieved that reaches every word of the root (decisions 101/103; Rules published by the Owner).",
       "integration": {
         "authorizedOn": "2026-10-11",
         "integratedOn": "2026-10-11",
@@ -3327,8 +3339,9 @@
       }
     }
   ],
-  "nextUnallocated": "10.28",
+  "nextUnallocated": "10.29",
   "nextUnallocatedNote": [
+    "v10.28 was allocated to the Word card's Intermediate tab (decisions 101 and 103), 2026-10-11.",
     "v10.27 was allocated to 🔖 on the Mushaf bar; the Meaning switches on the Read bar; the Asma Name bar's '◂ Wheel', 2026-10-11.",
     "v10.26 was allocated to the ⋮ 'has a note' mark is kept for every ayah the ⋮ sheet looked up this session, 2026-10-11.",
     "v10.25 was allocated to Al-Fatihah's count in the Ayah card's Full text; مَشْهُود joins the witness meaning group, 2026-10-11.",

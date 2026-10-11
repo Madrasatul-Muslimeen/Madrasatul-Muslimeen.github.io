@@ -2824,6 +2824,28 @@
   .word-card-dcard .word-card-form-meaning { font-size: 0.86rem; color: #33463f; line-height: 1.25; }
   .word-card-dcard-count { font-size: 0.78rem; font-weight: 800; color: #8a6a1f; font-variant-numeric: tabular-nums; }
   @media (max-width: 1000px) { .word-card-dcards { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+  /* Decision 103 (12 Oct 2026) -- the Intermediate tab: the word's meanings, then the root's meanings (demo
+     https://claude.ai/artifact/K41de7VCbSUK12fnNA45sq). Light tiles on the card, the current one in the same gold as a
+     current derived-form card. */
+  .word-card-senses, .word-card-root-meanings { margin: 0.6rem 0 0; display: grid; gap: 0.4rem; min-width: 0; }
+  .word-card-senses h4, .word-card-root-meanings h4 { margin: 0; font-size: 0.88rem; color: var(--card-heading); }
+  .word-card-sense-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.4rem; }
+  .word-card-sense, .word-card-meaning-group { background: #f7f8f6; color: #13241f; border: 1px solid #d6ddd9; border-radius: 0.75rem; padding: 0.5rem 0.6rem; display: grid; gap: 0.35rem; min-width: 0; }
+  .word-card-sense-current, .word-card-meaning-group-current { background: #fff4d6; border-color: #c9a24a; box-shadow: 0 0 0 2px rgba(201, 162, 74, 0.45); }
+  .word-card-sense-top, .word-card-meaning-group-top { display: flex; align-items: baseline; gap: 0.4rem; flex-wrap: wrap; min-width: 0; }
+  .word-card-sense-top b { font-size: 0.92rem; overflow-wrap: anywhere; }
+  .word-card-meaning-group-top .word-card-form-meaning { font-weight: 700; font-size: 0.92rem; color: #13241f; }
+  .word-card-sense-count { margin-left: auto; font-weight: 800; color: #8a6a1f; font-variant-numeric: tabular-nums; }
+  .word-card-sense-tag { font-size: 0.7rem; font-weight: 700; color: #1c2a46; background: #e3e9f6; border-radius: 999px; padding: 0.05rem 0.45rem; }
+  .word-card-meaning-group-top .word-card-sense-tag { margin-left: auto; }
+  .word-card-sense-refs { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+  button.word-card-sense-ref { font: inherit; font-size: 0.8rem; min-height: 36px; min-width: 44px; padding: 0 0.6rem; border-radius: 999px; border: 1px solid #c9b98f; background: #fff; color: #1F3A6E; cursor: pointer; font-variant-numeric: tabular-nums; }
+  button.word-card-sense-ref:hover { border-color: #1d6b4a; }
+  .word-card-meaning-words { display: grid; grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr)); gap: 0.4rem; direction: rtl; }
+  .word-card-meaning-words .word-card-dcard { background: #fff; }
+  .word-card-meaning-words .word-card-dcard-current { background: #fff4d6; }
+  .word-card-meaning-words .word-card-dcard-ar { font-size: 1.35rem; line-height: 1.7; }
+  .word-card-intermediate-reach { margin: 0.4rem 0 0; font-size: 0.85rem; color: var(--card-text); }
   /* Owner, 7 Oct 2026: a derived-form card opens its places in a pop-up. The card is a button now, so it
      takes the card look back from the page's global button rule and shows it can be pressed. */
   button.word-card-dcard { font: inherit; cursor: pointer; width: 100%; }
@@ -3283,6 +3305,7 @@
   /* Round 4 (#511) -- Arabic in Depth: a legend and five LIGHT accordions (the demo's .acc), as the facts and part boxes are light on the dark card.
      The old dictionary box and derived-forms list now sit INSIDE the first one, so the card palette is re-pointed to light ink there. */
   [data-word-card-panel="depth"] { display: grid; gap: 0.6rem; margin-top: 0.4rem; min-width: 0; }
+  [data-word-card-panel="intermediate"] { min-width: 0; }
   .word-card-legend { display: flex; flex-wrap: wrap; gap: 6px; font-size: 0.74rem; color: var(--card-text-muted); }
   .word-card-src { display: inline-block; font-size: 0.68rem; font-weight: 700; border-radius: 4px; padding: 1px 6px; vertical-align: middle; white-space: nowrap; }
   .word-card-src-data { background: #1f4d39; color: #bff0d3; }
@@ -6420,6 +6443,7 @@
     import { parseQuranWordOccurrenceId } from "./js/quran-word-identity.js";
     import { loadLemmaDictionary, loadBanglaLemmaDictionary, lemmaDictionaryEntry } from "./js/lemma-dictionary.js";
     import { loadLemmaMeaningGroups, sameMeaningLemmas, meaningGroupOf } from "./js/lemma-meaning-groups.js";
+    import { loadLemmaSenses, lemmaSensesOf, senseKey } from "./js/lemma-senses.js";
     // Decision 58 (#490) -- Basic/Depth lemma-wide claims, behind their own gate (ready:false).
     import { isLemmaLevelsPersistenceReady } from "./js/study-lemma-levels-readiness.js";
     import { claimKeyFor, LEMMA_WIDE_LEVELS } from "./js/quran-lemma-levels.js";
@@ -7348,7 +7372,7 @@
       if (lemmaFormsTable || lemmaFormsLoading) return;
       lemmaFormsLoading = true;
       loadLemmaForms().then((d) => { lemmaFormsTable = d.values; }).catch((e) => console.warn("lemma forms unavailable", e))
-        .finally(() => { lemmaFormsLoading = false; if (lemmaFormsTable && quranWordCardState.open && (quranWordCardState.level === "basic" || quranWordCardState.level === "depth")) renderPersistentWordCard(); });
+        .finally(() => { lemmaFormsLoading = false; if (lemmaFormsTable && quranWordCardState.open && (quranWordCardState.level === "basic" || quranWordCardState.level === "intermediate" || quranWordCardState.level === "depth")) renderPersistentWordCard(); });
     }
     // Round 5 -- the Verb Conjugation section's data, fetched the FIRST time a verb's Depth tab is drawn (I9).
     let verbFormsTable = null;
@@ -15977,8 +16001,24 @@
         close: t("Close word card"),
         ayahActionsButton: t("This āyah ⋯"),
         wbw: t("WbW"),
-        basic: t("Basic Arabic"),
-        depth: t("Arabic in Depth"),
+        basic: t("Basic"),
+        intermediate: t("Intermediate"),
+        depth: t("Depth"),
+        wbwFull: t("Word by word"),
+        basicFull: t("Basic Arabic"),
+        intermediateFull: t("Intermediate Arabic"),
+        depthFull: t("Arabic in Depth"),
+        meaningsOfWord: t("Meanings of this word, {word}"),
+        meaningsOfWordNote: t("How the Qur'an's word-by-word translation renders it, grouped by its main English word."),
+        meaningsOfWordOne: t("The word-by-word translation renders this word one way throughout the Qur'an."),
+        meaningsOfRoot: t("Meanings of this root, {root}"),
+        meaningsOfRootNote: t("{groups} meanings · {words} dictionary words · {total} times. Words with the same meaning are grouped, as Basic counts them."),
+        meaningThisWord: t("this word"),
+        meaningSenseCount: t("{n}×"),
+        meaningMore: t("+{n} more"),
+        intermediateReach: t("Achieved here marks every word of the root {root}, whatever its meaning ({total} words)."),
+        loadingMeanings: t("Loading meanings…"),
+        meaningsUnavailable: t("Meanings unavailable: {error}"),
         meaningUnavailableEn: "Meaning unavailable",
         meaningUnavailableBn: "অর্থ পাওয়া যায়নি",
         lemma: t("Dictionary Word"),
@@ -16024,7 +16064,7 @@
         visitingFrom: t("Visiting from {ref}"),
         rootUnavailable: t("Root unavailable in the approved dataset"),
         lemmaUnavailable: t("Dictionary Word unavailable in the approved dataset"),
-        notApplicable: t("Not applicable: this word has no dictionary word, so Basic Arabic and Arabic in Depth leave it out of their totals."),
+        notApplicable: t("Not applicable: this word has no dictionary word, so Basic, Intermediate and Depth leave it out of their totals."),
         clearEarlierMark: t("Clear the earlier mark"),
         loadingOccurrences: t("Loading occurrences…"),
         occurrencesUnavailable: t("Occurrence list unavailable: {error}"),
@@ -16103,7 +16143,7 @@
     async function knownShareForMarks(tenantId, personId) {
       if (!isWbwTotalPersistenceReady()) return null;
       try {
-        const levels = meaningGroupsLive() ? ["wbw", "basic", "depth"] : ["wbw"];
+        const levels = meaningGroupsLive() ? ["wbw", "basic", "intermediate", "depth"] : ["wbw"];
         const totals = await Promise.all(levels.map((level) => getWordTotals(db, { tenantId, personId, level }).catch(() => null)));
         // Decision 68 -- each level over its own total (Basic/Depth: 74,122).
         return Math.max(0, ...totals.map((x, i) => (Number(x?.known) || 0) / levelWordTotal(levels[i])));
@@ -16292,9 +16332,11 @@
         }),
         levelNameWbw: t("WbW"),
         levelNameBasic: t("Basic"),
+        levelNameIntermediate: t("Intermediate"),
         levelNameDepth: t("Depth"),
         knownThroughBasicGroup: t("Known through its meaning group (Basic: same meaning)"),
         knownThroughDepthRoot: t("Known through the root {root} (Depth: same root)"),
+        knownThroughIntermediateRoot: t("Known through the root {root} (Intermediate: every meaning of the root)"),
         searchButton: t("Search for a word"),
         searchLabel: t("Find a word: type it in Arabic (with or without vowel marks), its meaning, or a place like 2:42:8"),
         searchGo: t("Search"),
@@ -16369,6 +16411,8 @@
       await Promise.all([
         basicKeys.size ? primeAllLemmaProgress(db, { tenantId, personId, level: MEANING_GROUP_LEVEL }) : null,
         rootIds.size ? primeAllLemmaProgress(db, { tenantId, personId, level: ROOT_LEVEL }) : null,
+        // Decision 103: Intermediate's claim is keyed by the root too (one query pair, cached for the visit).
+        rootIds.size ? primeAllLemmaProgress(db, { tenantId, personId, level: INTERMEDIATE_LEVEL }) : null,
       ]);
     }
 
@@ -16376,6 +16420,9 @@
     const MEANING_GROUP_LEVEL = "basic";
     /** Decision 58 -- the level whose Achieved spreads to every word of the root. */
     const ROOT_LEVEL = "depth";
+    /** Decision 103 -- Intermediate: the different meanings of the same root and of the same word. Its Achieved
+        reaches every word of the root, whatever its meaning, so it is keyed by the root as Depth is. */
+    const INTERMEDIATE_LEVEL = "intermediate";
     /** True once Basic/Depth lemma-wide claims exist: the lemma gate AND the lemma-levels gate are both open. */
     function meaningGroupsLive() { return isLemmaProgressPersistenceReady() && isLemmaLevelsPersistenceReady(); }
 
@@ -16400,6 +16447,9 @@
         return { ...own, countsAsKnown: true, knownViaLevel: { level: MEANING_GROUP_LEVEL, key: basicKey } };
       }
       const rootKey = claimKeyFor(ROOT_LEVEL, { root });
+      if (rootKey && lemmaProgressFor({ tenantId, personId, level: INTERMEDIATE_LEVEL, lemmaId: rootKey, confirmationRequired }).countsAsKnown) {
+        return { ...own, countsAsKnown: true, knownViaLevel: { level: INTERMEDIATE_LEVEL, key: rootKey } };
+      }
       if (rootKey && lemmaProgressFor({ tenantId, personId, level: ROOT_LEVEL, lemmaId: rootKey, confirmationRequired }).countsAsKnown) {
         return { ...own, countsAsKnown: true, knownViaLevel: { level: ROOT_LEVEL, key: rootKey } };
       }
@@ -16528,8 +16578,10 @@
       let levelTotals;
       if (meaningGroupsLive() && isWbwTotalPersistenceReady()) {
         try {
-          const [basicT, depthT] = await Promise.all([
+          // Decision 103: Intermediate's own total too (one more single-document read).
+          const [basicT, intermediateT, depthT] = await Promise.all([
             getWordTotals(db, { tenantId, personId: subjectPersonId, level: "basic" }),
+            getWordTotals(db, { tenantId, personId: subjectPersonId, level: "intermediate" }),
             getWordTotals(db, { tenantId, personId: subjectPersonId, level: "depth" }),
           ]);
           const zero = { known: 0, total: QURAN_TOTAL_WORD_COUNT };
@@ -16540,6 +16592,7 @@
           levelTotals = [
             { level: "wbw", total: wholeQuranTotal ?? zero },
             { level: "basic", total: ofLevel("basic", basicT) },
+            { level: "intermediate", total: ofLevel("intermediate", intermediateT) },
             { level: "depth", total: ofLevel("depth", depthT) },
           ];
         } catch { levelTotals = undefined; }
@@ -16658,11 +16711,35 @@
     async function ensureMeaningGroups() {
       try { await loadLemmaMeaningGroups(); } catch (error) { console.warn("meaning groups unavailable", error); }
     }
+    /** Decision 103 -- the Intermediate tab's two first-use files: the meaning groups (its root meanings) and
+        lemma-senses.json (its word meanings). Each re-draws the card once it lands; a failure is shown in the card. */
+    let lemmaSensesError = null;
+    let intermediateGroupsState = null; // null | "loading" | "done"
+    function ensureIntermediateData() {
+      if (intermediateGroupsState === null) {
+        intermediateGroupsState = "loading";
+        ensureMeaningGroups().finally(() => { intermediateGroupsState = "done"; if (quranWordCardState.open && quranWordCardState.level === "intermediate") renderPersistentWordCard(); });
+      }
+      if (lemmaSensesOf("x") === undefined && !ensureIntermediateData.sensesAsked) {
+        ensureIntermediateData.sensesAsked = true;
+        loadLemmaSenses().then(() => { lemmaSensesError = null; }, (error) => { lemmaSensesError = error.message; })
+          .finally(() => { ensureIntermediateData.sensesAsked = false; if (quranWordCardState.open && quranWordCardState.level === "intermediate") renderPersistentWordCard(); });
+      }
+    }
+    function intermediateContext(word) {
+      if (quranWordCardState.level !== "intermediate") return {};
+      const lemma = word?.morphology?.lemma;
+      const senses = lemma ? lemmaSensesOf(lemma) : [];
+      const key = senseKey(word?.translation?.en);
+      const currentSenseIndex = Array.isArray(senses) ? senses.findIndex(([label]) => senseKey(label) === key) : -1;
+      return { lemmaSenses: lemmaSensesError ? [] : senses, lemmaSensesError, currentSenseIndex, meaningGroupOf };
+    }
 
     /** Every occurrence a lemma-wide claim at `level` covers (unpacked refs): the word's own lemma, its meaning group, or its root. */
     async function spreadRefsFor(level, word) {
       const lemmaId = word?.morphology?.lemma;
-      if (level === "depth") return occurrenceRefsFor("root", word?.morphology?.root);
+      // Decision 103: Intermediate reaches the whole root (every meaning), as Depth does.
+      if (level === "depth" || level === "intermediate") return occurrenceRefsFor("root", word?.morphology?.root);
       if (level === "basic") {
         await ensureMeaningGroups();
         const lists = await Promise.all(sameMeaningLemmas(lemmaId).map((lemma) => occurrenceRefsFor("lemma", lemma)));
@@ -17132,14 +17209,15 @@
       // page loads the same first-use file Depth does.
       if (quranWordCardState.level === "depth" || (quranWordCardState.level === "wbw" && getAppLang() !== "bn")) ensureLemmaDictionary();
       if (quranWordCardState.level === "depth") ensureBanglaLemmaDictionary();
-      if (quranWordCardState.level === "basic" || quranWordCardState.level === "depth") ensureLemmaForms();
+      if (quranWordCardState.level === "basic" || quranWordCardState.level === "intermediate" || quranWordCardState.level === "depth") ensureLemmaForms();
+      if (quranWordCardState.level === "intermediate") ensureIntermediateData();
       if (quranWordCardState.level === "depth" && quranWordCardContext.wordFeatures?.tense) ensureVerbForms();
       // Round 4 -- an accordion the reader opened or closed stays that way: read the open state off the DOM before it is replaced.
       content.querySelectorAll("details[data-word-card-sec]").forEach((d) => { wordCardDepthOpen[d.dataset.wordCardSec] = d.open; });
       // Round 6 -- what was typed in the Search row stays, however often the card is redrawn.
       const typed = content.querySelector("[data-word-card-search-input]");
       if (typed) wordCardSearch.value = typed.value;
-      content.innerHTML = renderQuranWordCard({ state: quranWordCardState, chapter: currentSurahData, ayah, word, context: { ...quranWordCardContext, search: wordCardSearch, lemmaForms: lemmaFormsTable, verbForms: verbFormsTable, verbFormsFailed, depthOpen: wordCardDepthOpen, needsSource: needsSourceContext(word, currentSurahData.surahNumber), ...wordCardDictionaryContext(word), ...wordProgressContext(ref), ...quranWordCardLemmaContext, hasPrevious: at > 0, hasNext: at >= 0 && at < ids.length - 1, rootOccurrenceCount: quranWordCardContext.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0, colourWordPartsEnabled: getColourWordParts(), displayRef: wordRefFor }, labels: { ...wordCardLabels(), ...wordProgressLabels() }, formatNumber: num });
+      content.innerHTML = renderQuranWordCard({ state: quranWordCardState, chapter: currentSurahData, ayah, word, context: { ...quranWordCardContext, search: wordCardSearch, lemmaForms: lemmaFormsTable, verbForms: verbFormsTable, verbFormsFailed, depthOpen: wordCardDepthOpen, needsSource: needsSourceContext(word, currentSurahData.surahNumber), ...wordCardDictionaryContext(word), ...intermediateContext(word), ...wordProgressContext(ref), ...quranWordCardLemmaContext, hasPrevious: at > 0, hasNext: at >= 0 && at < ids.length - 1, rootOccurrenceCount: quranWordCardContext.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0, colourWordPartsEnabled: getColourWordParts(), displayRef: wordRefFor }, labels: { ...wordCardLabels(), ...wordProgressLabels() }, formatNumber: num });
       // Decision 61 -- opening a section is what fetches its data.
       content.querySelectorAll("details[data-word-card-sec]").forEach((d) => {
         d.addEventListener("toggle", () => {
@@ -17694,7 +17772,7 @@
       const tab = event.target.closest("[data-word-card-level]");
       if (!tab || !["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
       event.preventDefault();
-      const levels = ["wbw", "basic", "depth"];
+      const levels = ["wbw", "basic", "intermediate", "depth"]; // decision 103: four tabs
       const at = levels.indexOf(tab.dataset.wordCardLevel);
       const next = event.key === "Home" ? 0 : event.key === "End" ? levels.length - 1 : (at + (event.key === "ArrowRight" ? 1 : -1) + levels.length) % levels.length;
       const mountEl = activeWordCardMount();

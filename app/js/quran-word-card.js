@@ -9,7 +9,8 @@ import { depthSectionsHtml } from "./word-card-depth.js";
 import { stageColourStyle } from "./ayah-action-sheet.js";
 import { lemmaText } from "./lemma-text.js";
 
-export const WORD_CARD_LEVELS = Object.freeze(["wbw", "basic", "depth"]);
+// Decisions 101/103 (12 Oct 2026): four levels; Intermediate sits between Basic and Depth.
+export const WORD_CARD_LEVELS = Object.freeze(["wbw", "basic", "intermediate", "depth"]);
 
 /**
  * v08.22 -- every grammatical-category segment the packaged corpus actually
@@ -56,9 +57,28 @@ export const WORD_CARD_DEFAULT_LABELS = Object.freeze({
   // easy to miss; this reaches the same "This āyah" action sheet from
   // whichever word's Word Card is already open.
   ayahActionsButton: "This āyah ⋯",
+  // 12 Oct 2026 (decision 103): four tabs must fit a phone, so the tabs read the short level names; each keeps its
+  // full name as its tooltip and spoken name (basicFull / intermediateFull / depthFull).
   wbw: "WbW",
-  basic: "Basic Arabic",
-  depth: "Arabic in Depth",
+  basic: "Basic",
+  intermediate: "Intermediate",
+  depth: "Depth",
+  wbwFull: "Word by word",
+  basicFull: "Basic Arabic",
+  intermediateFull: "Intermediate Arabic",
+  depthFull: "Arabic in Depth",
+  // The Intermediate tab (decision 103: the different meanings of the same word and of the same root).
+  meaningsOfWord: "Meanings of this word, {word}",
+  meaningsOfWordNote: "How the Qur'an's word-by-word translation renders it, grouped by its main English word.",
+  meaningsOfWordOne: "The word-by-word translation renders this word one way throughout the Qur'an.",
+  meaningsOfRoot: "Meanings of this root, {root}",
+  meaningsOfRootNote: "{groups} meanings · {words} dictionary words · {total} times. Words with the same meaning are grouped, as Basic counts them.",
+  meaningThisWord: "this word",
+  meaningSenseCount: "{n}×",
+  meaningMore: "+{n} more",
+  intermediateReach: "Achieved here marks every word of the root {root}, whatever its meaning ({total} words).",
+  loadingMeanings: "Loading meanings…",
+  meaningsUnavailable: "Meanings unavailable: {error}",
   meaningUnavailableEn: "Meaning unavailable",
   meaningUnavailableBn: "অর্থ পাওয়া যায়নি",
   lemma: "Dictionary Word",
@@ -107,7 +127,7 @@ export const WORD_CARD_DEFAULT_LABELS = Object.freeze({
   visitingFrom: "Visiting from {ref}",
   rootUnavailable: "Root unavailable in the approved dataset",
   lemmaUnavailable: "Dictionary Word unavailable in the approved dataset",
-  notApplicable: "Not applicable: this word has no dictionary word, so Basic Arabic and Arabic in Depth leave it out of their totals.",
+  notApplicable: "Not applicable: this word has no dictionary word, so Basic, Intermediate and Depth leave it out of their totals.",
   clearEarlierMark: "Clear the earlier mark",
   loadingOccurrences: "Loading occurrences…",
   occurrencesUnavailable: "Occurrence list unavailable: {error}",
@@ -195,9 +215,11 @@ export const WORD_CARD_DEFAULT_LABELS = Object.freeze({
   wholeQuranPercentLevelShort: "You know ({level}) {percent}% of the words",
   levelNameWbw: "WbW",
   levelNameBasic: "Basic",
+  levelNameIntermediate: "Intermediate",
   levelNameDepth: "Depth",
   knownThroughBasicGroup: "Known through its meaning group (Basic: same meaning)",
   knownThroughDepthRoot: "Known through the root {root} (Depth: same root)",
+  knownThroughIntermediateRoot: "Known through the root {root} (Intermediate: every meaning of the root)",
   // Round 6 -- the 🔍 Search row (spec "Search (in the header)").
   searchButton: "Search for a word",
   searchLabel: "Find a word: type it in Arabic (with or without vowel marks), its meaning, or a place like 2:42:8",
@@ -341,7 +363,7 @@ function wholeQuranKnownLines(wholeQuranTotal, text, formatNumber, levelTotals) 
   if (Array.isArray(levelTotals) && levelTotals.length) {
     const grouped = (n) => Number(n ?? 0).toLocaleString("en-US");
     const big = (v) => `<strong class="word-progress-whole-quran-num">${escapeHtml(v)}</strong>`;
-    const names = { wbw: text.levelNameWbw, basic: text.levelNameBasic, depth: text.levelNameDepth };
+    const names = { wbw: text.levelNameWbw, basic: text.levelNameBasic, intermediate: text.levelNameIntermediate, depth: text.levelNameDepth };
     const rows = levelTotals.map(({ level, total }, i) => {
       const name = String(names[level] ?? level);
       // Only the box's bottom line (the last level's percent) says "of the Qur'an" (the Owner, 8 Oct 2026).
@@ -397,10 +419,11 @@ function knownThroughLine(lemma, text) {
  */
 function knownThroughLevelLine(via, text) {
   if (!via) return "";
-  if (via.level === "depth") {
+  if (via.level === "depth" || via.level === "intermediate") {
     const root = `<span dir="rtl" lang="ar">${escapeHtml(via.key)}</span>`;
-    const line = escapeHtml(String(text.knownThroughDepthRoot)).replace("{root}", () => root);
-    return `<p class="word-progress-known-through" data-word-known-through data-known-through-level="depth">${line}</p>`;
+    const template = via.level === "intermediate" ? text.knownThroughIntermediateRoot : text.knownThroughDepthRoot;
+    const line = escapeHtml(String(template)).replace("{root}", () => root);
+    return `<p class="word-progress-known-through" data-word-known-through data-known-through-level="${via.level}">${line}</p>`;
   }
   return `<p class="word-progress-known-through" data-word-known-through data-known-through-level="basic">${escapeHtml(String(text.knownThroughBasicGroup))}</p>`;
 }
@@ -823,8 +846,9 @@ function wordShareOfQuranLine(context, text, formatNumber) {
   return `<p class="word-card-share-of-quran">${escapeHtml(line)}</p>`;
 }
 
-function tabButton(level, selected, label) {
-  return `<button type="button" role="tab" data-word-card-level="${level}" aria-selected="${selected}" tabindex="${selected ? "0" : "-1"}">${escapeHtml(label)}</button>`;
+function tabButton(level, selected, label, fullName) {
+  const named = fullName && fullName !== label ? ` title="${escapeHtml(fullName)}" aria-label="${escapeHtml(fullName)}"` : "";
+  return `<button type="button" role="tab" data-word-card-level="${level}" aria-selected="${selected}" tabindex="${selected ? "0" : "-1"}"${named}>${escapeHtml(label)}</button>`;
 }
 
 /**
@@ -960,11 +984,87 @@ export function wordPartsHtml(word, layers, features, segments, context, text) {
   return `<div class="word-card-parts" style="--n:${boxes.length}" data-word-card-parts>${boxes.join("")}</div>`;
 }
 
+/**
+ * Decision 103 -- "Meanings of this word": the dictionary word's senses as the Qur'an's word-by-word translation
+ * renders it (lemma-senses.json, first use). `context.lemmaSenses` is undefined while loading, [] when the
+ * translation renders the word one way only. The sense this occurrence belongs to is marked (context.senseKey).
+ * Each place is a data-word-occurrence-goto link: the same way to an āyah, and back, as every occurrence list.
+ */
+const SENSES_SHOWN = 6;
+function wordSensesSection(word, layers, context, text, formatNumber) {
+  const ar = `<span dir="rtl" lang="ar">${escapeHtml(lemmaText(layers.lemma))}</span>`;
+  const heading = `<h4>${escapeHtml(String(text.meaningsOfWord)).replace("{word}", () => ar)}</h4>`;
+  if (context.lemmaSensesError) return `<section class="word-card-senses" data-word-card-senses>${heading}<p role="status">${escapeHtml(String(text.meaningsUnavailable).replace("{error}", context.lemmaSensesError))}</p></section>`;
+  const senses = context.lemmaSenses;
+  if (senses === undefined) return `<section class="word-card-senses" data-word-card-senses>${heading}<p>${escapeHtml(text.loadingMeanings)}</p></section>`;
+  if (!senses.length) return `<section class="word-card-senses" data-word-card-senses>${heading}<p class="word-card-forms-summary">${escapeHtml(text.meaningsOfWordOne)}</p></section>`;
+  const shown = senses.slice(0, SENSES_SHOWN);
+  const rows = shown.map(([label, count, refs], i) => {
+    const mine = context.currentSenseIndex === i;
+    const links = refs.map((packed) => {
+      const s = Math.floor(packed / 1000000), a = Math.floor(packed / 1000) % 1000, w = packed % 1000;
+      const ref = `${s}:${a}:${w}`;
+      const shownRef = typeof text.displayRef === "function" ? text.displayRef(s, a, w) : `${s}:${a}`;
+      return `<button type="button" class="word-card-sense-ref" data-word-occurrence-goto="${escapeHtml(ref)}" aria-label="${escapeHtml(String(text.goToOccurrence).replace("{ref}", shownRef))}">${escapeHtml(shownRef)}</button>`;
+    }).join("");
+    return `<li class="word-card-sense${mine ? " word-card-sense-current" : ""}"${mine ? ' aria-current="true"' : ""} data-word-card-sense="${i}">` +
+      `<span class="word-card-sense-top"><b lang="en">${escapeHtml(label)}</b>${mine ? `<span class="word-card-sense-tag">${escapeHtml(text.meaningThisWord)}</span>` : ""}<span class="word-card-sense-count">${escapeHtml(String(text.meaningSenseCount).replace("{n}", formatNumber(count)))}</span></span>` +
+      `<span class="word-card-sense-refs">${links}</span></li>`;
+  }).join("");
+  const more = senses.length > SENSES_SHOWN ? `<p class="word-card-forms-note">${escapeHtml(String(text.meaningMore).replace("{n}", formatNumber(senses.length - SENSES_SHOWN)))}</p>` : "";
+  return `<section class="word-card-senses" data-word-card-senses>${heading}<p class="word-card-forms-summary">${escapeHtml(text.meaningsOfWordNote)}</p><ol class="word-card-sense-list">${rows}</ol>${more}</section>`;
+}
+
+/**
+ * Decision 103 -- "Meanings of this root": the root's dictionary words (context.rootForms, the same list Basic's
+ * derived-form cards use) grouped by meaning (context.meaningGroupOf: lemma-meaning-groups.json, the groups Basic
+ * counts by). A word in no group is a meaning of its own. Each word is the same card and pop-up as Basic's.
+ */
+function rootMeaningsSection(layers, context, text, formatNumber) {
+  if (!layers.root) return "";
+  const data = context.rootForms;
+  if (context.rootFormsError || !data || !data.forms?.length) return formsSection(layers, context, text, formatNumber, { expandable: false });
+  const groupOf = typeof context.meaningGroupOf === "function" ? context.meaningGroupOf : () => null;
+  const groups = new Map();
+  for (const f of data.forms) {
+    const id = groupOf(f.lemma) || `solo:${f.lemma}`;
+    if (!groups.has(id)) groups.set(id, []);
+    groups.get(id).push(f);
+  }
+  const list = [...groups.values()].map((forms) => {
+    const sorted = [...forms].sort((x, y) => y.count - x.count);
+    return { forms: sorted, total: sorted.reduce((n, f) => n + f.count, 0), mine: sorted.some((f) => f.lemma === layers.lemma) };
+  }).sort((x, y) => (y.mine - x.mine) || (y.total - x.total));
+  const ar = `<span dir="rtl" lang="ar">${escapeHtml(spacedRoot(layers.root))}</span>`;
+  const note = String(text.meaningsOfRootNote).replace("{groups}", formatNumber(list.length)).replace("{words}", formatNumber(data.forms.length)).replace("{total}", formatNumber(data.totalOccurrences));
+  const cards = list.map((g) => {
+    const head = g.forms[0];
+    const words = g.forms.map((f) => {
+      const current = f.lemma === layers.lemma, open = context.expandedForm === f.lemma;
+      return `<button type="button" class="word-card-dcard word-card-meaning-word${current ? " word-card-dcard-current" : ""}${open ? " word-card-dcard-open" : ""}"${current ? ' data-word-card-form-current aria-current="true"' : ""} data-word-form-toggle="${escapeHtml(f.lemma)}" aria-expanded="${open ? "true" : "false"}" aria-haspopup="dialog">` +
+        `<span class="word-card-dcard-ar" dir="rtl" lang="ar">${escapeHtml(lemmaText(f.lemma))}</span>${formMeaning(f, text)}` +
+        `<span class="word-card-dcard-count">${escapeHtml(String(text.derivedCardCount).replace("{n}", formatNumber(f.count)))}</span></button>`;
+    }).join("");
+    return `<div class="word-card-meaning-group${g.mine ? " word-card-meaning-group-current" : ""}" data-word-card-meaning-group>` +
+      `<div class="word-card-meaning-group-top">${formMeaning(head, text) || `<span dir="rtl" lang="ar">${escapeHtml(lemmaText(head.lemma))}</span>`}` +
+      `<span class="word-card-sense-tag">${g.mine ? `${escapeHtml(text.meaningThisWord)} · ` : ""}${escapeHtml(String(text.meaningSenseCount).replace("{n}", formatNumber(g.total)))}</span></div>` +
+      `<div class="word-card-meaning-words">${words}</div></div>`;
+  }).join("");
+  const openForm = data.forms.find((f) => f.lemma === context.expandedForm);
+  const pop = openForm ? derivedFormPopup(openForm, context, text, formatNumber) : "";
+  return `<section class="word-card-root-meanings" data-word-card-root-meanings>
+    <h4>${escapeHtml(String(text.meaningsOfRoot)).replace("{root}", () => ar)}</h4>
+    <p class="word-card-forms-summary">${escapeHtml(note)}</p>
+    ${cards}
+    ${pop}
+  </section>`;
+}
+
 function levelPanel(level, word, layers, context, text, formatNumber) {
   // Round 7 (#525) -- "WbW · 2:102 · word 35", the small line in Record your
   // Progress. The reference stays in plain digits (an identifier); the word
   // number is a count, in the reader's digits.
-  const levelNames = { wbw: text.levelNameWbw, basic: text.levelNameBasic, depth: text.levelNameDepth };
+  const levelNames = { wbw: text.levelNameWbw, basic: text.levelNameBasic, intermediate: text.levelNameIntermediate, depth: text.levelNameDepth };
   const where = `${levelNames[level] ?? level} · ${context.surahNumber}:${context.ayahNumber} · ${String(text.wordNumberLabel).replace("{n}", formatNumber(word.position))}`;
   if (level === "wbw") {
     // Deliberately bilingual: WbW shows the English and Bangla gloss together
@@ -1016,6 +1116,17 @@ function levelPanel(level, word, layers, context, text, formatNumber) {
       ${context.occurrencesError ? `<p role="status">${escapeHtml(String(text.occurrencesUnavailable).replace("{error}", context.occurrencesError))}</p>` : ""}
       </div><div class="word-card-side">
       ${progressBlock(context.progress, context.authority, null, text, formatNumber, { levelTotals: context.levelTotals, level, where, notApplicable: !layers.lemma })}
+    </div></div>`;
+  }
+  if (level === "intermediate") {
+    return `<div role="tabpanel" data-word-card-panel="intermediate"><div class="word-card-main">
+      ${wordFactsHtml(word, layers, context.wordFeatures ?? null, text, formatNumber)}
+      ${layers.lemma ? wordSensesSection(word, layers, context, text, formatNumber) : ""}
+      ${rootMeaningsSection(layers, context, text, formatNumber)}
+      </div><div class="word-card-side">
+      ${progressBlock(context.progress, context.authority, null, text, formatNumber, { levelTotals: context.levelTotals, level, where, notApplicable: !layers.lemma })}
+      ${layers.root && layers.lemma && context.rootForms?.totalOccurrences ? `<p class="word-card-intermediate-reach" data-word-card-intermediate-reach>${escapeHtml(String(text.intermediateReach)).replace("{root}", () => `<span dir="rtl" lang="ar">${escapeHtml(spacedRoot(layers.root))}</span>`).replace("{total}", () => escapeHtml(formatNumber(context.rootForms.totalOccurrences)))}</p>` : ""}
+      ${knownThroughLevelLine(context.knownViaLevel, text)}
     </div></div>`;
   }
   // v08.21 -- the occurrence section comes FIRST, then the dictionary and the
@@ -1154,7 +1265,7 @@ export function renderQuranWordCard({ state, chapter, ayah, word, context = {}, 
     </div>
     ${segmentControlsHtml(context.wordSegments, context.colourWordPartsEnabled, text)}
     ${originBar(context.origin, text)}
-    <div role="tablist" aria-label="${escapeHtml(text.tablist)}">${tabButton("wbw", state.level === "wbw", text.wbw)}${tabButton("basic", state.level === "basic", text.basic)}${tabButton("depth", state.level === "depth", text.depth)}</div>
+    <div role="tablist" aria-label="${escapeHtml(text.tablist)}">${tabButton("wbw", state.level === "wbw", text.wbw, text.wbwFull)}${tabButton("basic", state.level === "basic", text.basic, text.basicFull)}${tabButton("intermediate", state.level === "intermediate", text.intermediate, text.intermediateFull)}${tabButton("depth", state.level === "depth", text.depth, text.depthFull)}</div>
     ${levelPanel(state.level, word, layers, context, text, formatNumber)}
   </section>`;
 }

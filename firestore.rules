@@ -817,7 +817,7 @@ service cloud.firestore {
       return request.resource.data.get('contractVersion', '') == 'quran-word-progress:v1'
           && request.resource.data.get('identityContract', '') == 'quran-word-occurrence:v1'
           && request.resource.data.get('lane', '') == lane
-          && request.resource.data.get('level', '') in ['wbw', 'basic', 'depth']
+          && request.resource.data.get('level', '') in ['wbw', 'basic', 'intermediate', 'depth']
           && request.resource.data.surah is int && request.resource.data.surah >= 1 && request.resource.data.surah <= 114
           && request.resource.data.ayah  is int && request.resource.data.ayah  >= 1 && request.resource.data.ayah  <= 286;
     }
@@ -983,6 +983,8 @@ service cloud.firestore {
           && request.resource.data.lane     == resource.data.lane;
     }
 
+    // 12 Oct 2026 (decisions 101 and 103): a fourth level, `intermediate` (the different meanings of the
+    // same root and of the same word), may be written wherever the other three may; nothing else changes.
     // 2 Oct 2026 (decision 58): Basic and Depth get their own lemma-wide
     // claims too (Basic spreads to same root + same meaning, Depth to the
     // whole root), so `basic` and `depth` may now be written; any other level
@@ -995,7 +997,7 @@ service cloud.firestore {
     function isLemmaLaneCreate(lane) {
       return request.resource.data.get('contractVersion', '') == 'quran-lemma-progress:v1'
           && request.resource.data.get('lane', '') == lane
-          && request.resource.data.get('level', '') in ['wbw', 'basic', 'depth']
+          && request.resource.data.get('level', '') in ['wbw', 'basic', 'intermediate', 'depth']
           && request.resource.data.lemmaId is string
           && request.resource.data.lemmaId.size() > 0
           && request.resource.data.lemmaId.size() <= 400;
@@ -1075,7 +1077,7 @@ service cloud.firestore {
     // that it IS a map, never a client-invented scalar.
     function isLemmaCounterCreate() {
       return request.resource.data.get('contractVersion', '') == 'quran-lemma-occurrence-counter:v1'
-          && request.resource.data.get('level', '') in ['wbw', 'basic', 'depth']
+          && request.resource.data.get('level', '') in ['wbw', 'basic', 'intermediate', 'depth']
           && request.resource.data.lemmaId is string
           && request.resource.data.lemmaId.size() > 0
           && request.resource.data.lemmaId.size() <= 400

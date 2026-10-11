@@ -114,7 +114,8 @@ for (const lang of ["en", "bn"]) {
         card && card.top >= 0 && reach && reach.sheetTop === 0 && reach.sheetBottom === reach.vh && reach.oy === "auto",
         JSON.stringify({ top: card?.top, reach }));
   check(`${lang} real Arabic is drawn`, /[؀-ۿ]/.test(card?.arabic || ""), card?.arabic);
-  check(`${lang} all three tabs are present`, card?.tabs.length === 3, JSON.stringify(card?.tabs));
+// Updated in place 12 Oct 2026 (decisions 101/103): a fourth level, Intermediate, between Basic and Depth; the tabs read the short level names.
+  check(`${lang} all four tabs are present`, card?.tabs.length === 4, JSON.stringify(card?.tabs));
   check(`${lang} WbW is the tab it opens on`, card?.panel === "wbw", card?.panel);
 
   // Language: read the RENDERED card, not the catalogue.
@@ -123,8 +124,8 @@ for (const lang of ["en", "bn"]) {
     check("bn the tabs are Bangla", card.tabs.every((t) => BANGLA.test(t)), JSON.stringify(card.tabs));
     check("bn the card's own accessible name is Bangla", BANGLA.test(card.region || ""), card.region);
   } else {
-    check("en the tabs read WbW / Basic Arabic / Arabic in Depth",
-          card.tabs.join(",") === "WbW,Basic Arabic,Arabic in Depth", JSON.stringify(card.tabs));
+    check("en the tabs read WbW / Basic / Intermediate / Depth",
+          card.tabs.join(",") === "WbW,Basic,Intermediate,Depth", JSON.stringify(card.tabs));
   }
 
   // Basic Arabic tab, by clicking it as a reader would.

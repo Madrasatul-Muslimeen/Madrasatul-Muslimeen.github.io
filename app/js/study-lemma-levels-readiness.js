@@ -48,7 +48,9 @@ export const LEMMA_LEVELS_PERSISTENCE_DECLARATION = Object.freeze({
   note:
     "Basic / Depth lemma-wide claims and per-level totals (decision 58, issue #490) " +
     "are switched on: the Owner published " +
-    "docs/governance/2026-10-02-lemma-levels-DEPLOYMENT-candidate.rules on 2 Oct 2026.",
+    "docs/governance/2026-10-02-lemma-levels-DEPLOYMENT-candidate.rules on 2 Oct 2026. " +
+    "Intermediate (decisions 101/103) joined on 12 Oct 2026: the Owner published " +
+    "docs/governance/2026-10-12-intermediate-level-DEPLOYMENT-candidate.rules (\"Rules published\"), and firestore.rules was synced to it.",
 });
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;

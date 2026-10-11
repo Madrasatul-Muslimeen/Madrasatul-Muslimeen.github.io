@@ -66,8 +66,9 @@ check("WbW word states and review states are the SAME arrays occurrence progress
   assert.deepEqual(WBW_WORD_STATES, ["not_started", "learning", "practising", "achieved"]);
   assert.deepEqual(WBW_REVIEW_STATES, ["pending", "confirmed", "returned"]);
 });
+// Updated in place 12 Oct 2026 (decisions 101/103): a fourth level, Intermediate, between Basic and Depth.
 check("Arabic levels stay independent: only wbw is implemented", () => {
-  assert.deepEqual(ARABIC_LEVELS, ["wbw", "basic", "depth"]);
+  assert.deepEqual(ARABIC_LEVELS, ["wbw", "basic", "intermediate", "depth"]);
   assert.deepEqual(IMPLEMENTED_ARABIC_LEVELS, ["wbw"]);
 });
 check("Basic Arabic and Arabic in Depth lemma progress are REFUSED, not silently stored as wbw", () => {

@@ -80,10 +80,11 @@ for (const lang of ["en", "bn"]) {
   // level). Still no per-āyah document, and nothing else.
   const readLanes = afterRead.filter((x) => /^quranWord(Progress|Approvals):/.test(x));
   const readTotals = afterRead.filter((x) => /^quranWordTotals:/.test(x));
-  check(`[${lang}] opening Read reads only the surah's lane chunk (one query per lane) and the three level totals, no per-ayah document`,
+// Updated in place 12 Oct 2026 (decisions 101/103): a fourth level, Intermediate, between Basic and Depth; the tabs read the short level names.
+  check(`[${lang}] opening Read reads only the surah's lane chunk (one query per lane) and the four level totals, no per-ayah document`,
     readLanes.length === 2 && readLanes.every((x) => /^quranWord(Progress|Approvals):$/.test(x))
-      && JSON.stringify(readTotals.sort()) === JSON.stringify(["quranWordTotals:t1__p1", "quranWordTotals:t1__p1__basic", "quranWordTotals:t1__p1__depth"])
-      && afterRead.length === 5, JSON.stringify(afterRead));
+      && JSON.stringify(readTotals.sort()) === JSON.stringify(["quranWordTotals:t1__p1", "quranWordTotals:t1__p1__basic", "quranWordTotals:t1__p1__depth", "quranWordTotals:t1__p1__intermediate"])
+      && afterRead.length === 6, JSON.stringify(afterRead));
 
   // --- The block appears, and reads a SEEDED state -------------------------
   await openWord(page, 2);
@@ -112,8 +113,8 @@ for (const lang of ["en", "bn"]) {
   // Each level's total is read ONCE for the page (cached): Read already read
   // all three (above), so opening the word reads none again.
   const allTotals = afterOpenAll.filter((r) => r.col === "quranWordTotals").map((r) => r.id);
-  check(`[${lang}] the "You know" totals are one read per level (WbW, Basic, Depth) for the page, never more`,
-    allTotals.length === 3 && new Set(allTotals).size === 3 && totals.length === 0, JSON.stringify({ allTotals, onOpen: totals }));
+  check(`[${lang}] the "You know" totals are one read per level (WbW, Basic, Intermediate, Depth) for the page, never more`,
+    allTotals.length === 4 && new Set(allTotals).size === 4 && totals.length === 0, JSON.stringify({ allTotals, onOpen: totals }));
 
   const block = await page.evaluate(() => {
     const b = document.querySelector("#quranWordCardMount [data-word-progress]");
