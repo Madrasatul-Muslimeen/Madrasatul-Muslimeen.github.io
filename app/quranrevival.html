@@ -18611,7 +18611,10 @@
     /** Wires every ⋮ badge currently in `el` (there may be several -- the flow view renders one per āyah). Re-call after every re-render; attachQuickMenuHandlers itself guards its own outside-click listener against being bound twice. */
     function attachAyahQuickMenus(el) {
       attachQuickMenuHandlers(el, {
-        buildText: buildAyahText,
+        // #758: "My note" can be lit by the Notes pane's count before its text was read; read it once, on the tap that
+        // opens Copy / Share, and wait for that same read at Copy if it has not landed.
+        buildText: async (unitKey, langs) => { if (langs.includes("notes")) await ensurePanePlainNotes(unitKey); return buildAyahText(unitKey, langs); },
+        onTextMenuOpen: (unitKey) => { ensurePanePlainNotes(unitKey); },
         onPlay: quickPlayAyah,
         onOpenNote: (unitKey) => openNotesPaneForKey(unitKey), // decision 95: the Notes pane, not the Note view
         onToggleBookmark: toggleAyahBookmark,
@@ -18776,9 +18779,20 @@
     /** "Has a note": the Notes pane's notes (this lookup, else its already-known count) or the retired Note-view store. */
     function ayahHasAnyNote(unitKey) {
       if (ayahHasNote(ayahNotesDoc, unitKey)) return true;
-      const known = panePlainNotesFor(unitKey);
-      if (known) return known.count > 0;
-      try { return (readNotePaneMod?.readNotePaneCount?.(unitKey) ?? 0) > 0; } catch { return false; }
+      // The pane's own count is the freshest (it re-reports after every Save); else this session's lookup.
+      const paneCount = readNotePaneMod?.readNotePaneCount?.(unitKey);
+      if (paneCount != null) return paneCount > 0;
+      return (panePlainNotesFor(unitKey)?.count ?? 0) > 0;
+    }
+
+    /** The Notes pane's text for one āyah, read at most once per opening of Copy / Share (lookupAyahNotes keeps it). */
+    function ensurePanePlainNotes(unitKey) {
+      if (!selectedPersonId || panePlainNotesFor(unitKey)) return Promise.resolve();
+      const key = `${activeTenantId}|${selectedPersonId}|${unitKey}`;
+      return lookupAyahNotes(unitKey).promise.then(({ rows }) => {
+        const live = rows.filter((row) => row.note.status !== NOTE_STATUS.RETIRED);
+        if (key === `${activeTenantId}|${selectedPersonId}|${unitKey}`) panePlainNotes = { key, texts: live.map((row) => notesToPlainText(row.note.bodyHtml ?? "")).filter(Boolean), count: live.length };
+      }).catch(() => {}); // Copy then carries what it has; the pane reports its own read failures
     }
 
     async function ensureAyahSheetPosterNoteLoaded(unitKey) {
@@ -22030,7 +22044,13 @@
     });
     async function loadReadNotePane() {
       readNotePaneMod ??= await import("./js/read-note-pane.js");
-      readNotePaneMod.setReadNotePaneCountListener(() => paintReadNotesBtn());
+      readNotePaneMod.setReadNotePaneCountListener((unitKey) => {
+        // #758: the pane has just (re)read this unit's Notes -- after a Save, say -- so text kept for Copy is dropped
+        // and read again on the next Copy / Share.
+        if (panePlainNotes?.key.endsWith(`|${unitKey}`)) panePlainNotes = null;
+        if (ayahNoteLookup?.key.endsWith(`|${unitKey}`)) ayahNoteLookup = null;
+        paintReadNotesBtn();
+      });
       readNotePaneMod.setReadNotePaneHost(readNotePaneTrackHost);
       return readNotePaneMod;
     }
