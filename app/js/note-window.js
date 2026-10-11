@@ -165,12 +165,16 @@ if (typeof document !== "undefined" && !globalThis.__paneMenuFitBound) {
     requestAnimationFrame(() => {
       const m = e.target.closest("[data-pane-menu-wrap]")?.querySelector("[data-pane-menu]");
       if (!m) return;
-      if (!m.classList.contains("open") || getComputedStyle(m).position === "fixed") { m.style.maxHeight = ""; return; }
-      let bottom = window.innerHeight;
+      if (!m.classList.contains("open") || getComputedStyle(m).position === "fixed") { m.style.maxHeight = ""; m.style.maxWidth = ""; return; }
+      let bottom = window.innerHeight, left = 0;
       for (let el = m.parentElement; el && el !== document.body; el = el.parentElement) {
         const cs = getComputedStyle(el);
-        if (cs.overflowY !== "visible" || cs.overflow !== "visible") bottom = Math.min(bottom, el.getBoundingClientRect().bottom);
+        if (cs.overflowY !== "visible" || cs.overflow !== "visible") { const r = el.getBoundingClientRect(); bottom = Math.min(bottom, r.bottom); left = Math.max(left, r.left); }
       }
+      // In the Journey tray the Note pane is a narrow third column: a 27rem menu opened at the right edge of ⋯ reached left
+      // over the Notes list beside it (which paints above it), so its items could not be tapped. Hold it to the pane's width.
+      m.style.maxWidth = "";
+      m.style.maxWidth = `${Math.max(180, Math.floor(m.getBoundingClientRect().right - left - 4))}px`;
       m.style.maxHeight = `${Math.max(180, Math.floor(bottom - m.getBoundingClientRect().top - 8))}px`;
     });
   });

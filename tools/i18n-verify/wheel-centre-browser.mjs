@@ -26,6 +26,10 @@ const MUT_SUNRISE = process.argv.includes("--mutate-sunrise");
 // Architect review of #549: --mutate-cut-pill puts back the one-line ellipsis.
 const MUT_CUTPILL = process.argv.includes("--mutate-cut-pill");
 const WIDTHS = [[320, 640], [360, 740], [390, 844], [600, 900], [768, 1024], [1280, 800]];
+// 11 Oct 2026 (#763): a local `main` can be weeks old in a fresh clone (measured: #630, v09.10x), and its baseline page
+// then never draws a wheel -- every run timed out in waitWheel(). Prefer `origin/main` when it exists.
+const hasRef = (r) => { try { execFileSync("git", ["rev-parse", "--verify", "-q", r], { stdio: "ignore" }); return true; } catch { return false; } };
+if (!process.env.BASELINE_REF) process.env.BASELINE_REF = hasRef("origin/main") ? "origin/main" : "main";
 const BASE_HTML = execFileSync("git", ["show", `${process.env.BASELINE_REF || "main"}:app/quranrevival.html`], { encoding: "utf8", maxBuffer: 64 << 20 });
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH });
 const real = (errors) => errors.filter((e) => !/Failed to load resource: net::ERR_|ERR_CERT/.test(e));

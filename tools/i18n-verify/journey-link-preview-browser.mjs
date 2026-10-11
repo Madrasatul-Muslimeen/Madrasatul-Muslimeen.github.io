@@ -118,7 +118,7 @@ for (const lang of (process.argv[3] || "en,bn").split(",")) { // argv: [mutation
     check(`${tag}: off by default: no card and no request to Microlink`, (await cards(page, "n1")) === 0 && reqs.length === 0, `${await cards(page, "n1")} cards, ${reqs.length} requests`);
     await page.click(`${W("n1")} [data-pane-menu-btn]`);
     const offLabel = await page.textContent(`${W("n1")} [data-pane-previews]`);
-    check(`${tag}: the menu item reads Off${lang === "bn" ? " (in Bangla)" : ""}`, lang === "bn" ? hasBn(offLabel) && offLabel.includes("বন্ধ") : /Show link previews: Off/.test(offLabel), offLabel);
+    check(`${tag}: the menu item reads Off${lang === "bn" ? " (in Bangla)" : ""}`, lang === "bn" ? hasBn(offLabel) && offLabel.includes("বন্ধ") : /Show link previews\s*Off$/.test(offLabel.trim()) /* v10.19 (#747): a switch row; the state is its own word after the label, no colon */, offLabel);
     await page.click(`${W("n1")} [data-pane-previews]`);
     await page.waitForSelector('[data-note-dialog="previews"]');
     const notice = await page.textContent('[data-note-dialog="previews"] p:not([data-dlg-msg])');
@@ -153,7 +153,7 @@ for (const lang of (process.argv[3] || "en,bn").split(",")) { // argv: [mutation
     check(`${tag}: the setting is on this device only`, (await page.evaluate(() => localStorage.getItem("mmsa.linkPreviews.v1"))) === "1");
     await page.click(`${W("n1")} [data-pane-menu-btn]`);
     const onLabel = await page.textContent(`${W("n1")} [data-pane-previews]`);
-    check(`${tag}: the menu item now reads On`, lang === "bn" ? onLabel.includes("চালু") : /: On/.test(onLabel), onLabel);
+    check(`${tag}: the menu item now reads On`, lang === "bn" ? onLabel.includes("চালু") : /Show link previews\s*On$/.test(onLabel.trim()), onLabel);
     await page.click(`${W("n1")} [data-pane-previews]`); // turning OFF is immediate
     await page.waitForTimeout(300);
     check(`${tag}: turning it off removes the cards at once, with no question`, (await cards(page, "n1")) === 0 && !(await page.$('[data-note-dialog="previews"]')));
