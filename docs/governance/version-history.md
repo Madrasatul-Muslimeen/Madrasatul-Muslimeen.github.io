@@ -819,3 +819,4 @@ total). Allocated by the MMSA Architect.
 10.22: the flow strip scrolls after crossing a surah; two stale checks (Builder #752). Allocated by the MMSA Architect.
 10.23: the has-a-note mark and Copy's My note follow the Notes pane (Builder #758). Allocated by the MMSA Architect.
 10.24: the note's ⋯ menu fits and reaches in Mapping My Journey's three-column view (Builder #763). Allocated by the MMSA Architect.
+10.25: Al-Fatihah's count in the Ayah card's Full text; مَشْهُود joins the witness meaning group. Allocated by the MMSA Architect.
