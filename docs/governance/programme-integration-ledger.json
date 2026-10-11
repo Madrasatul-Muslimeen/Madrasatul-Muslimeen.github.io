@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "10.25",
+    "version": "10.26",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -3293,8 +3293,20 @@
     {
       "version": "10.25",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "The Ayah card's Full text pop-up follows the reader's Al-Fatihah count, and مَشْهُود joins the شهد witness meaning group (Owner screenshots, 11 Oct 2026).",
+      "integration": {
+        "authorizedOn": "2026-10-11",
+        "integratedOn": "2026-10-11",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "10.26",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Every ayah the Ayah card's lookup counted this session keeps its 'has a note' mark on its reading-list row, not only the latest one; no extra read.",
       "integration": {
         "authorizedOn": "2026-10-11",
         "integratedOn": "2026-10-11",
@@ -3303,8 +3315,9 @@
       }
     }
   ],
-  "nextUnallocated": "10.26",
+  "nextUnallocated": "10.27",
   "nextUnallocatedNote": [
+    "v10.26 was allocated to the ⋮ 'has a note' mark is kept for every ayah the ⋮ sheet looked up this session, 2026-10-11.",
     "v10.25 was allocated to Al-Fatihah's count in the Ayah card's Full text; مَشْهُود joins the witness meaning group, 2026-10-11.",
     "v10.24 was allocated to the note's ⋯ menu fits and reaches in Mapping My Journey's three-column view (Builder #763), 2026-10-11.",
     "v10.23 was allocated to the has-a-note mark and Copy's My note follow the Notes pane (Builder #758), 2026-10-11.",

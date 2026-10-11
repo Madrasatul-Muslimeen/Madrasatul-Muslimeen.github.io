@@ -18782,8 +18782,14 @@
       // The pane's own count is the freshest (it re-reports after every Save); else this session's lookup.
       const paneCount = readNotePaneMod?.readNotePaneCount?.(unitKey);
       if (paneCount != null) return paneCount > 0;
-      return (panePlainNotesFor(unitKey)?.count ?? 0) > 0;
+      const kept = panePlainNotesFor(unitKey);
+      if (kept) return kept.count > 0;
+      // 11 Oct 2026: every āyah this session's ⋮ sheet looked up keeps its count, not only the latest one, so a
+      // reading-list row stays right after the reader opened another āyah's card. No extra read.
+      return (sheetNoteCounts.get(`${activeTenantId}|${selectedPersonId}|${unitKey}`) ?? 0) > 0;
     }
+    /** tenant|person|unitKey -> live Notes-pane notes counted by a ⋮ sheet lookup this session. */
+    const sheetNoteCounts = new Map();
 
     /** The Notes pane's text for one āyah, read at most once per opening of Copy / Share (lookupAyahNotes keeps it). */
     function ensurePanePlainNotes(unitKey) {
@@ -18791,7 +18797,7 @@
       const key = `${activeTenantId}|${selectedPersonId}|${unitKey}`;
       return lookupAyahNotes(unitKey).promise.then(({ rows }) => {
         const live = rows.filter((row) => row.note.status !== NOTE_STATUS.RETIRED);
-        if (key === `${activeTenantId}|${selectedPersonId}|${unitKey}`) panePlainNotes = { key, texts: live.map((row) => notesToPlainText(row.note.bodyHtml ?? "")).filter(Boolean), count: live.length };
+        if (key === `${activeTenantId}|${selectedPersonId}|${unitKey}`) panePlainNotes = { key, texts: live.map((row) => notesToPlainText(row.note.bodyHtml ?? "")).filter(Boolean), count: live.length }; sheetNoteCounts.set(key, live.length);
       }).catch(() => {}); // Copy then carries what it has; the pane reports its own read failures
     }
 
@@ -18802,7 +18808,7 @@
         const live = rows.filter((row) => row.note.status !== NOTE_STATUS.RETIRED);
         ayahSheetHasPosterNote = live.length > 0;
         // Decision 95: the Notes pane's text, kept from THIS lookup (no second read) for the "has a note" mark and Copy's "My note".
-        panePlainNotes = { key: `${activeTenantId}|${selectedPersonId}|${unitKey}`, texts: live.map((row) => notesToPlainText(row.note.bodyHtml ?? "")).filter(Boolean), count: live.length };
+        panePlainNotes = { key: `${activeTenantId}|${selectedPersonId}|${unitKey}`, texts: live.map((row) => notesToPlainText(row.note.bodyHtml ?? "")).filter(Boolean), count: live.length }; sheetNoteCounts.set(panePlainNotes.key, live.length);
       } catch {
         ayahSheetHasPosterNote = false;
       }
