@@ -50,10 +50,12 @@ builder pushing in work continuously."*
 
 ## Step 3. The queue
 
-1. **Finish Builder #742** (Note view retirement, step b) on its branch `builder/issue-742-run-1136`, using the
-   handover's six-point list. Review it as Step 5 of the 9 Oct prompt says, allocate the next version, and merge.
-   Do it yourself if needed rather than sending the Builder a third time.
-2. **The stale `journey-map-screen` check** (handover section 0). Update it in place and mutation-prove it.
+**Updated 11 Oct ~07:40 UTC: read the handover's "LATEST UPDATE" block first.** Items 1 and 2 of the original queue
+(#742, `journey-map-screen`) are DONE (v10.17–v10.22), and `main` is at v10.24.
+
+1. **The Asma Name bar choice** (handover LATEST UPDATE). If I have answered, build it and update `asma-quick-class`
+   5c in place. If I have not, remind me in one line.
+2. *(was: the stale `journey-map-screen` check: done.)*
 3. Anything new I send. My screenshots from real use come first (D13).
 4. Then the "possible next" in handover section 0. Remind me in one line per report of what waits on me (handover
    section 1).
