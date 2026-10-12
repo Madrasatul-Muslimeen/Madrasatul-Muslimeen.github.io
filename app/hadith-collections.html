@@ -65,6 +65,7 @@
     import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
     import { getDocs, collection, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
     import { TENANT } from "./js/collections.js";
+    import { getTenantRosterSnap } from "./js/roster-access.js";
     import { langText } from "./js/lang.js";
     import { getAppLang } from "./js/prefs.js";
     import { t } from "./js/i18n.js";
@@ -90,7 +91,7 @@
 
     async function loadRoster() {
       const membership = myMemberships.find((m) => m.tenantId === activeTenantId);
-      const rosterSnap = await getDocs(query(collection(db, TENANT.TENANT_PEOPLE), where("tenantId", "==", activeTenantId)));
+      const rosterSnap = await getTenantRosterSnap(db, activeTenantId);
       const fullRoster = rosterSnap.docs.map((d) => ({ id: d.id, ...d.data() })).filter((p) => p.status !== "archived");
       // Same scoping every other Person picker in the app applies (session-
       // context.js's own scopedRoster()) -- a plain guardian/student must not

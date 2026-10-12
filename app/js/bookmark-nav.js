@@ -410,9 +410,8 @@ export function mountBookmarkMenu(navBarEl, { db, getTenantId, getPersonId, getB
     if (getBookmarkMenuGroupBy() !== "person") return []; // folder mode never needs names -- don't spend a read on it
     if (fetchedRoster) return fetchedRoster;
     try {
-      const { collection, query, where, getDocs } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
-      const { TENANT } = await import("./collections.js");
-      const snap = await getDocs(query(collection(db, TENANT.TENANT_PEOPLE), where("tenantId", "==", tenantId)));
+      const { getTenantRosterSnap } = await import("./roster-access.js");
+      const snap = await getTenantRosterSnap(db, tenantId);
       fetchedRoster = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
       return fetchedRoster;
     } catch {

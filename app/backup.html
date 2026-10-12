@@ -108,6 +108,7 @@
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
     import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
     import { TENANT } from "./js/collections.js";
+    import { getTenantRosterSnap } from "./js/roster-access.js";
     import { bootstrapContext } from "./js/session-context.js";
     import { renderNavBar, renderHomeExtras } from "./js/nav.js";
     import { mountBookmarkMenu } from "./js/bookmark-nav.js";
@@ -289,7 +290,7 @@
         // whoever they look after. Asking for more would only collect a list
         // of refusals; asking for less would quietly leave data out.
         const { getDocs, query, collection, where } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
-        const snap = await getDocs(query(collection(db, TENANT.TENANT_PEOPLE), where("tenantId", "==", activeTenantId)));
+        const snap = await getTenantRosterSnap(db, activeTenantId);
         const all = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
         roster = canAdmin ? all : all.filter((p) => p.id === myPersonId || p.managedByPersonId === myPersonId);
 
