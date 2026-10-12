@@ -155,7 +155,18 @@ Read this first, every session. It is the standing brief.
 > "do not translate" and is a different contract. **That contract is NOT
 > invented here**; the Stage B exclusion stands for this candidate.
 
-> ## ⇢ SESSION HANDOVER, 11 Oct 2026 — READ THIS SECOND
+> ## ⇢ SESSION HANDOVER, 12 Oct 2026 — READ THIS SECOND
+>
+> **`docs/reports/2026-10-12-MMSA-SESSION-HANDOVER.md`** is the current
+> continuation point, and **`docs/governance/NEW-SESSION-PROMPT-2026-10-12.md`** is the prompt that starts a new
+> session. `main` is at **v10.28** (v10.25–v10.28 by session `015GBL8a`); **nothing is in flight.** The Owner now
+> reads and answers in the **PCF** (PERMANENT RULE above): read it first, update it last. Decisions 104–106 are
+> recorded. **The next job needs nothing from the Owner:** J02's demo on 2:228 across the 13 scholar Approaches,
+> built on the Owner's Scholars Database (`docs/reference/scholars-database/`).
+>
+> **The 11 Oct block below is kept as history**, superseded by it.
+>
+> ## ⇢ SESSION HANDOVER, 11 Oct 2026 (superseded 12 Oct 2026)
 >
 > **`docs/reports/2026-10-11-MMSA-SESSION-HANDOVER.md`** is the current
 > continuation point, and **`docs/governance/NEW-SESSION-PROMPT-2026-10-11b.md`** (written ~08:30 UTC 11 Oct,
