@@ -1,0 +1,256 @@
+<title>Scholars Database</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Inter:wght@400;500;600;700&display=swap">
+<style id="st">
+/* Layout: the Owner's own grid (v1.1) kept as the spine: one table by century, colour-coded name blocks;
+   a tool bar above it; the table scrolls sideways inside its own box so the page never does. */
+:root {
+  --bg: #f8fafc; --surface: #ffffff; --fg: #1e293b; --muted: #64748b; --rule: #e2e8f0; --rule-strong: #cbd5e1;
+  --head: #1e293b; --head-fg: #ffffff; --century: #f1f5f9;
+  --madhab: #e6f4ea; --madhab-edge: #28a745; --collector: #e8f0fe; --collector-edge: #007bff;
+  --modern: #f3e5f5; --modern-edge: #9c27b0; --mufassir: #fdf3e1; --mufassir-edge: #b7791f;
+  --draft: #fff7d6; --draft-edge: #c99a06; --accent: #2563eb; --danger: #b91c1c; --ok: #15803d;
+  --sans: "Inter", "Segoe UI", system-ui, sans-serif; --ar: "Amiri", "Scheherazade New", "Traditional Arabic", serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f1420; --surface: #161c2b; --fg: #e5e9f0; --muted: #9aa4b5; --rule: #2a3346; --rule-strong: #3a4560;
+  --head: #0b1020; --head-fg: #e5e9f0; --century: #1d2537;
+  --madhab: #16301f; --madhab-edge: #4ade80; --collector: #172540; --collector-edge: #60a5fa;
+  --modern: #2a1a33; --modern-edge: #c084fc; --mufassir: #33280f; --mufassir-edge: #f0b44c;
+  --draft: #3a3210; --draft-edge: #e3b52a; --accent: #7aa7ff; --danger: #f87171; --ok: #4ade80; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0f1420; --surface: #161c2b; --fg: #e5e9f0; --muted: #9aa4b5; --rule: #2a3346; --rule-strong: #3a4560;
+  --head: #0b1020; --head-fg: #e5e9f0; --century: #1d2537;
+  --madhab: #16301f; --madhab-edge: #4ade80; --collector: #172540; --collector-edge: #60a5fa;
+  --modern: #2a1a33; --modern-edge: #c084fc; --mufassir: #33280f; --mufassir-edge: #f0b44c;
+  --draft: #3a3210; --draft-edge: #e3b52a; --accent: #7aa7ff; --danger: #f87171; --ok: #4ade80; color-scheme: dark; }
+body { background: var(--bg); color: var(--fg); font-family: var(--sans); }
+.wrap { padding-inline: 16px; padding-block: 20px 48px; max-width: 1900px; margin: 0 auto; }
+h1 { text-align: center; font-size: 1.6rem; margin: 0 0 4px; text-wrap: balance; }
+.sub { text-align: center; color: var(--muted); font-size: 0.92rem; margin: 0 0 18px; }
+.bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 12px; margin-bottom: 12px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 0.82rem; font-weight: 600; flex: 1 1 26rem; min-width: 0; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 16px; height: 16px; border-radius: 4px; border: 2px solid; display: inline-block; }
+.sw.madhab { background: var(--madhab); border-color: var(--madhab-edge); }
+.sw.collector { background: var(--collector); border-color: var(--collector-edge); }
+.sw.modern { background: var(--modern); border-color: var(--modern-edge); }
+.sw.mufassir { background: var(--mufassir); border-color: var(--mufassir-edge); }
+.sw.draft { background: var(--draft); border-color: var(--draft-edge); border-style: dashed; }
+.tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+button, .btn { font: 600 0.85rem var(--sans); min-height: 40px; padding: 0 14px; border-radius: 8px; border: 1px solid var(--rule-strong); background: var(--surface); color: var(--fg); cursor: pointer; }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+button:disabled { opacity: 0.5; cursor: default; }
+button:focus-visible, input:focus-visible, select:focus-visible, [contenteditable]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+input#find, select#typeSel { font: 0.9rem var(--sans); min-height: 40px; padding: 0 10px; border: 1px solid var(--rule-strong); border-radius: 8px; background: var(--surface); color: var(--fg); min-width: 0; }
+input#find { flex: 1 1 12rem; }
+.status { font-size: 0.84rem; color: var(--muted); width: 100%; min-height: 1.2em; }
+.status.warn { color: var(--danger); font-weight: 600; }
+.status.good { color: var(--ok); font-weight: 600; }
+.count { font-size: 0.84rem; color: var(--muted); margin: 0 0 8px; font-variant-numeric: tabular-nums; }
+.scroll { overflow: auto; max-height: 82vh; border: 1px solid var(--rule); border-radius: 10px; background: var(--surface); }
+table { border-collapse: collapse; width: max-content; min-width: 100%; text-align: left; }
+th { position: sticky; top: 0; z-index: 2; background: var(--head); color: var(--head-fg); font-size: 1.05rem; font-weight: 600; padding: 12px 10px; border: 1px solid var(--rule-strong); vertical-align: bottom; }
+th small { display: block; font-size: 0.7rem; font-weight: 500; opacity: 0.75; letter-spacing: 0.04em; }
+th.new { background: color-mix(in srgb, var(--head) 82%, var(--draft-edge)); }
+td { padding: 10px; border: 1px solid var(--rule); font-size: 0.86rem; vertical-align: top; line-height: 1.5; }
+.c-cent { width: 8rem; } .c-name { width: 19rem; } .c-geo { width: 15rem; } .c-notes { width: 21rem; } .c-life { width: 8.5rem; text-align: center; }
+.c-works { width: 14rem; font-style: italic; } .c-appr { width: 11rem; } .c-madhab { width: 10rem; } .c-qw { width: 14rem; } .c-src { width: 13rem; } .c-act { width: 7rem; }
+tr.century td { background: var(--century); font-weight: 700; font-size: 1.02rem; text-align: left; letter-spacing: 0.08em; text-transform: uppercase; border-color: var(--rule-strong); position: static; }
+td.name { border-left-width: 5px; }
+td.name.madhab { background: var(--madhab); border-left-color: var(--madhab-edge); }
+td.name.collector { background: var(--collector); border-left-color: var(--collector-edge); }
+td.name.modern { background: var(--modern); border-left-color: var(--modern-edge); }
+td.name.mufassir { background: var(--mufassir); border-left-color: var(--mufassir-edge); }
+.en { font-weight: 700; font-size: 0.95rem; display: block; }
+.ar { font-family: var(--ar); font-size: 1.7rem; line-height: 1.7; direction: rtl; text-align: right; display: block; margin-top: 6px; unicode-bidi: isolate; }
+.pl { display: block; margin-bottom: 3px; }
+.pl b { font-size: 0.78rem; color: var(--muted); font-weight: 600; }
+.life-ah { font-weight: 600; display: block; font-variant-numeric: tabular-nums; }
+.life-ce { color: var(--muted); font-size: 0.76rem; display: block; font-variant-numeric: tabular-nums; }
+td.draft, tr.draft td:not(.name) { background: var(--draft); }
+tr.draft td.c-act, td.draft { box-shadow: inset 0 -2px 0 0 var(--draft-edge); }
+.tag { display: inline-block; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; padding: 1px 6px; border-radius: 999px; border: 1px dashed var(--draft-edge); color: var(--fg); margin-top: 6px; }
+.act { display: flex; flex-direction: column; gap: 6px; }
+.act button { min-height: 36px; padding: 0 8px; font-size: 0.78rem; }
+.act button.rm { color: var(--danger); border-color: var(--danger); }
+body:not(.editing) .edit-only { display: none; }
+body.editing [data-k] { background-image: linear-gradient(color-mix(in srgb, var(--accent) 6%, transparent), color-mix(in srgb, var(--accent) 6%, transparent)); border-radius: 3px; }
+.confirm { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 0.78rem; font-weight: 600; color: var(--danger); }
+.hiddenrow { display: none; }
+tr.century td span { position: sticky; left: 10px; }
+@media (max-width: 640px) { h1 { font-size: 1.3rem; } th { font-size: 0.92rem; } .ar { font-size: 1.45rem; } }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+<div id="app"></div>
+<script type="application/json" id="data">__DATA__</script>
+<script id="appjs">
+(() => {
+const DATA = JSON.parse(document.getElementById("data").textContent);
+const COLS_NEW = ["approaches", "madhab", "quranWorks", "source"];
+const TYPES = { madhab: "Madhab scholars / legal codifiers", collector: "Hadith collectors (classical masters)", modern: "Commentators, aggregators & modern authenticators", mufassir: "Mufassirūn (Qurʾān commentators)" };
+let editing = false, dirty = false;
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const cnum = c => parseInt(String(c).match(/\d+/)?.[0] || "0", 10);
+const ord = n => n + ([, "st", "nd", "rd"][(n % 100 > 10 && n % 100 < 14) ? 0 : n % 10] || "th");
+const app = document.getElementById("app");
+
+app.innerHTML = `<div class="wrap">
+  <h1>Scholars Database</h1>
+  <p class="sub">Master chronological grid of scholars, hadith compilers and mufassirūn, by century of death · <span id="ver"></span></p>
+  <div class="bar">
+    <div class="legend">
+      <span><i class="sw madhab"></i>${TYPES.madhab}</span>
+      <span><i class="sw collector"></i>${TYPES.collector}</span>
+      <span><i class="sw modern"></i>${TYPES.modern}</span>
+      <span><i class="sw mufassir"></i>${TYPES.mufassir}</span>
+      <span><i class="sw draft"></i>Claude's draft: check it, then press ✓ Checked</span>
+    </div>
+    <div class="tools">
+      <input id="find" type="search" placeholder="Find a name, place, book or Approach" aria-label="Find">
+      <select id="typeSel" aria-label="Show"><option value="">All rows</option><option value="draft">Drafts to check</option><option value="madhab">Madhab scholars</option><option value="collector">Hadith collectors</option><option value="modern">Commentators &amp; modern</option><option value="mufassir">Mufassirūn</option></select>
+      <button id="editBtn" aria-pressed="false">✎ Edit</button>
+      <button id="addBtn" class="edit-only">+ Add a scholar</button>
+      <button id="saveBtn" class="primary" disabled>Save</button>
+      <button id="dlBtn">Download .html</button>
+    </div>
+    <div class="status" id="status" role="status"></div>
+  </div>
+  <p class="count" id="count"></p>
+  <div class="scroll"><table id="tbl">
+    <thead><tr>
+      <th class="c-cent">Century (A)</th><th class="c-name">Scholar Name Block (B)</th><th class="c-geo">Geographic Matrix (C)</th>
+      <th class="c-notes">Hadith Status &amp; Modern Authenticity Notes (D)</th><th class="c-life">Lifespan (E)</th><th class="c-works">Seminal Works (F)</th>
+      <th class="c-appr new">Approaches (G)<small>new in v1.2</small></th><th class="c-madhab new">Madhab / group (H)<small>new in v1.2</small></th>
+      <th class="c-qw new">Qurʾān works (I)<small>new in v1.2</small></th><th class="c-src new">Open source &amp; rights (J)<small>new in v1.2</small></th>
+      <th class="c-act">Action</th>
+    </tr></thead><tbody id="tb"></tbody></table></div>
+</div>`;
+
+const $ = id => document.getElementById(id);
+const status = (t, cls = "") => { const s = $("status"); s.textContent = t; s.className = "status " + cls; };
+const ed = () => editing ? ' contenteditable="true"' : "";
+const cell = (r, k, cls = "") => `<td class="${cls}${!r.draft && r.draftNew && COLS_NEW.includes(k) ? " draft" : ""}"><div data-k="${k}"${ed()}>${esc(r[k])}</div></td>`;
+
+function render() {
+  $("ver").textContent = `${DATA.version} · ${DATA.date}`;
+  let html = "", last = null;
+  for (const r of DATA.rows) {
+    const c = cnum(r.century);
+    if (c !== last) { html += `<tr class="century" data-c="${c}"><td colspan="11"><span>${ord(c)} century AH</span></td></tr>`; last = c; }
+    const needsCheck = r.draft || r.draftNew;
+    html += `<tr data-id="${esc(r.id)}" class="${r.draft ? "draft" : ""}">
+      <td class="c-cent"><div data-k="century"${ed()}>${esc(r.century)}</div></td>
+      <td class="name ${esc(r.type)}"><span class="en" data-k="en"${ed()}>${esc(r.en)}</span><span class="ar" data-k="ar" lang="ar"${ed()}>${esc(r.ar)}</span>${r.draft ? '<span class="tag">Draft · by Claude</span>' : ""}</td>
+      <td class="c-geo">${["birth", "study", "lived", "death"].map(k => `<span class="pl"><b>${k[0].toUpperCase() + k.slice(1)}:</b> <span data-k="${k}"${ed()}>${esc(r[k])}</span></span>`).join("")}</td>
+      <td class="c-notes"><div data-k="notes"${ed()}>${esc(r.notes)}</div></td>
+      <td class="c-life"><span class="life-ah" data-k="lifeAH"${ed()}>${esc(r.lifeAH)}</span><span class="life-ce" data-k="lifeCE"${ed()}>${esc(r.lifeCE)}</span></td>
+      ${cell(r, "works", "c-works")}${cell(r, "approaches", "c-appr")}${cell(r, "madhab", "c-madhab")}${cell(r, "quranWorks", "c-qw")}${cell(r, "source", "c-src")}
+      <td class="c-act"><div class="act">${needsCheck ? `<button data-act="ok">✓ Checked</button>` : ""}<button class="rm edit-only" data-act="rm">Remove</button></div></td>
+    </tr>`;
+  }
+  $("tb").innerHTML = html;
+  applyFilter();
+}
+
+function readBack() {
+  if (!editing) return;
+  for (const tr of $("tb").querySelectorAll("tr[data-id]")) {
+    const r = DATA.rows.find(x => x.id === tr.dataset.id); if (!r) continue;
+    for (const el of tr.querySelectorAll("[data-k]")) r[el.dataset.k] = el.innerText.replace(/\s+\n/g, "\n").trim();
+  }
+}
+
+function applyFilter() {
+  const q = $("find").value.trim().toLowerCase(), t = $("typeSel").value;
+  let shown = 0, drafts = 0; const seen = new Set();
+  for (const tr of $("tb").querySelectorAll("tr[data-id]")) {
+    const r = DATA.rows.find(x => x.id === tr.dataset.id);
+    if (r.draft || r.draftNew) drafts++;
+    const okT = !t || (t === "draft" ? (r.draft || r.draftNew) : r.type === t);
+    const okQ = !q || Object.values(r).join(" ").toLowerCase().includes(q);
+    tr.classList.toggle("hiddenrow", !(okT && okQ));
+    if (okT && okQ) { shown++; seen.add(cnum(r.century)); }
+  }
+  for (const tr of $("tb").querySelectorAll("tr.century")) tr.classList.toggle("hiddenrow", !seen.has(+tr.dataset.c));
+  $("count").textContent = `${shown} of ${DATA.rows.length} scholars shown · ${drafts} still to check`;
+}
+
+function markDirty() { dirty = true; $("saveBtn").disabled = false; status("Changes not saved yet. Press Save."); }
+
+$("find").addEventListener("input", applyFilter);
+$("typeSel").addEventListener("change", applyFilter);
+$("editBtn").addEventListener("click", () => {
+  readBack(); editing = !editing;
+  document.body.classList.toggle("editing", editing);
+  $("editBtn").setAttribute("aria-pressed", String(editing));
+  $("editBtn").textContent = editing ? "✓ Done editing" : "✎ Edit";
+  render();
+  status(editing ? "Editing: tap any text to change it. Press Save when you finish." : (dirty ? "Changes not saved yet. Press Save." : ""));
+});
+$("tb").addEventListener("input", markDirty);
+$("tb").addEventListener("click", e => {
+  const b = e.target.closest("button[data-act]"); if (!b) return;
+  const tr = b.closest("tr"); const r = DATA.rows.find(x => x.id === tr.dataset.id);
+  readBack();
+  if (b.dataset.act === "ok") { r.draft = false; r.draftNew = false; if (r.by === "Claude") r.checkedBy = "You"; markDirty(); render(); }
+  else if (b.dataset.act === "rm") {
+    b.parentElement.innerHTML = `<span class="confirm">Remove this scholar?</span><button data-act="rmyes" class="rm">Yes, remove</button><button data-act="rmno">Keep</button>`;
+  } else if (b.dataset.act === "rmyes") { DATA.rows = DATA.rows.filter(x => x !== r); markDirty(); render(); }
+  else if (b.dataset.act === "rmno") render();
+});
+$("addBtn").addEventListener("click", () => {
+  readBack();
+  const n = DATA.rows.reduce((m, x) => Math.max(m, parseInt(x.id.slice(1), 10) || 0), 0) + 1;
+  DATA.rows.push({ id: "s" + String(n).padStart(3, "0"), century: "15th Century AH", type: "modern", en: "New scholar name", ar: "الاسم بالتشكيل",
+    birth: "Place (year AH)", study: "Place", lived: "Place", death: "Place (year AH)", notes: "Notes", lifeAH: "AH – AH", lifeCE: "CE – CE",
+    works: "Seminal works", approaches: "", madhab: "", quranWorks: "", source: "", by: "You" });
+  markDirty(); render();
+  $("tb").lastElementChild?.scrollIntoView({ block: "center" });
+  status("Added at the end of its century. Change the century, then Save; the rows re-sort by century on Save.");
+});
+
+function sortRows() {
+  const d = r => { const m = String(r.lifeAH).match(/(\d+)\s*AH/g); return m ? parseInt(m[m.length - 1], 10) : 9999; };
+  DATA.rows.sort((a, b) => cnum(a.century) - cnum(b.century) || d(a) - d(b));
+}
+function buildDoc() {
+  const data = JSON.stringify(DATA).replace(/</g, "\\u003c");
+  const head = '<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>';
+  return head + '<title>Scholars Database</title>\n<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Inter:wght@400;500;600;700&display=swap">\n<style id="st">'
+    + document.getElementById("st").textContent + '</style>\n<div id="app"></div>\n<script type="application/json" id="data">' + data
+    + '</scr' + 'ipt>\n<script id="appjs">' + document.getElementById("appjs").textContent + '</scr' + 'ipt>\n</body></html>';
+}
+function nextVersion() {
+  const m = String(DATA.version).match(/v(\d+)\.(\d+)/); if (!m) return DATA.version;
+  return `v${m[1]}.${+m[2] + 1}`;
+}
+$("saveBtn").addEventListener("click", async () => {
+  readBack(); sortRows();
+  const prev = { version: DATA.version, date: DATA.date };
+  DATA.version = nextVersion(); DATA.date = new Date().toISOString().slice(0, 10);
+  $("saveBtn").disabled = true; status("Saving…");
+  try {
+    const artifact = await window.claude?.use?.("artifact");
+    if (!artifact) throw { code: "unavailable" };
+    await artifact.publish(buildDoc());
+    dirty = false; status(`Saved as ${DATA.version}. Claude can read it now.`, "good");
+  } catch (e) {
+    Object.assign(DATA, prev); $("saveBtn").disabled = false;
+    status(e && e.code === "conflict" ? "Someone saved a newer copy; the page is reloading to it. Make the change again." :
+      "This copy could not be saved here (only the owner can save). Use Download .html and send the file to Claude.", "warn");
+  }
+  render();
+});
+$("dlBtn").addEventListener("click", async () => {
+  readBack(); sortRows();
+  const name = `Scholars Database - ${dirty ? nextVersion() : DATA.version} - ${new Date().toISOString().slice(0, 10)}.html`;
+  try {
+    const dl = await window.claude?.use?.("downloads"); if (!dl) throw 0;
+    await dl.save({ filename: name, data: buildDoc() });
+    status(`Offered as ${name}.`, "good");
+  } catch (e) { status("The download was not completed.", "warn"); }
+});
+render();
+})();
+</script>
