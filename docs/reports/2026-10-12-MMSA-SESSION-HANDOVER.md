@@ -87,3 +87,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v10.29** (2026-10-12): student accounts can open the app (the roster read every page makes).
 - **v10.30** (2026-10-12): the Read bar is one line again at 600-679px.
 - **v10.31** (2026-10-12): a QCR āyah opens in the Read view, with Back to QCR.
+- **v10.32** (2026-10-12): Keys Round 1: related hadith on the Āyah card, and the āyāt a hadith quotes.
