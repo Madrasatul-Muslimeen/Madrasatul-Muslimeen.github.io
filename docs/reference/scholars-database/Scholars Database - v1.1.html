@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Master Chronological Islamic Scholars Database</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+            margin: 20px;
+            padding: 0;
+        }
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);
+        }
+        h1 {
+            text-align: center;
+            color: #0f172a;
+            margin-bottom: 5px;
+            font-size: 1.8rem;
+        }
+        .subtitle {
+            text-align: center;
+            color: #64748b;
+            margin-bottom: 25px;
+            font-size: 0.95rem;
+        }
+        /* Top Action Panel */
+        .control-panel {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f1f5f9;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            gap: 15px;
+        }
+        .legend-box {
+            display: flex;
+            gap: 15px;
+            font-size: 0.85rem;
+            flex-wrap: wrap;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 600;
+        }
+        .badge {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+        .bg-madhab { background-color: #d4edda; border-color: #28a745; }
+        .bg-collector { background-color: #cce5ff; border-color: #007bff; }
+        .bg-modern { background-color: #f3e5f5; border-color: #9c27b0; }
+        
+        .btn-group {
+            display: flex;
+            gap: 10px;
+        }
+        button {
+            padding: 8px 16px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-add { background-color: #0f172a; color: white; }
+        .btn-add:hover { background-color: #334155; }
+        .btn-print { background-color: #2563eb; color: white; }
+        .btn-print:hover { background-color: #1d4ed8; }
+
+        /* Master Table Styling */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            margin-top: 10px;
+            background: white;
+        }
+        /* Column titles 1/3 size bigger */
+        th {
+            background-color: #1e293b;
+            color: #ffffff;
+            font-size: 1.33rem; 
+            font-weight: 600;
+            padding: 14px 10px;
+            border: 1px solid #334155;
+            text-transform: none;
+            letter-spacing: 0.5px;
+        }
+        td {
+            padding: 12px 10px;
+            border: 1px solid #e2e8f0;
+            font-size: 0.88rem;
+            vertical-align: top;
+            line-height: 1.5;
+        }
+        /* Century row background color light */
+        .century-row {
+            background-color: #f1f5f9 !important;
+            font-weight: 700;
+            color: #334155;
+            font-size: 1.1rem;
+            text-align: center;
+            letter-spacing: 1px;
+        }
+        .century-row td {
+            padding: 10px;
+            border: 1px solid #cbd5e1;
+        }
+        /* Distinct Name Block Color Ensembles */
+        .type-madhab {
+            background-color: #e6f4ea !important;
+            border-left: 5px solid #28a745 !important;
+        }
+        .type-collector {
+            background-color: #e8f0fe !important;
+            border-left: 5px solid #007bff !important;
+        }
+        .type-modern {
+            background-color: #f3e5f5 !important;
+            border-left: 5px solid #9c27b0 !important;
+        }
+        /* Arabic font double-sized with Uthmani/Madani aesthetics */
+        .arabic-text {
+            font-family: 'Amiri', 'Scheherazade New', serif;
+            font-size: 1.95rem;
+            line-height: 1.6;
+            direction: rtl;
+            text-align: right;
+            display: block;
+            margin-top: 8px;
+            color: #0f172a;
+            font-weight: 400;
+        }
+        .english-name {
+            font-weight: 700;
+            color: #0f172a;
+            font-size: 0.95rem;
+        }
+        .place-item {
+            margin-bottom: 4px;
+        }
+        .place-label {
+            font-weight: 600;
+            color: #475569;
+            font-size: 0.8rem;
+        }
+        .btn-delete {
+            background-color: #ef4444;
+            color: white;
+            padding: 4px 8px;
+            font-size: 0.75rem;
+            border-radius: 4px;
+        }
+        .btn-delete:hover { background-color: #dc2626; }
+
+        /* A4 Landscape Print Engine Styles */
+        @media print {
+            @page {
+                size: A4 landscape;
+                margin: 8mm;
+            }
+            body {
+                background-color: white;
+                margin: 0;
+                padding: 0;
+            }
+            .container {
+                box-shadow: none;
+                padding: 0;
+                width: 100%;
+            }
+            .control-panel, .btn-delete, th:last-child, td:last-child {
+                display: none !important; /* Hide management tools when printing */
+            }
+            table {
+                width: 100%;
+                page-break-inside: auto;
+            }
+            tr {
+                page-break-inside: avoid;
+                page-break-after: auto;
+            }
+            th {
+                background-color: #1e293b !important;
+                color: white !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                font-size: 1.15rem; /* Slightly balanced for crisp printing */
+            }
+            .century-row {
+                background-color: #e2e8f0 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .type-madhab {
+                background-color: #e6f4ea !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .type-collector {
+                background-color: #e8f0fe !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .type-modern {
+                background-color: #f3e5f5 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Master Chronological Islamic Scholars & Hadith Compilers Grid</h1>
+    <div class="subtitle">Fully Editable Database Workspace &mdash; Calibrated for Seamless Copy-Pasting into Excel and Native A4 Landscape Printing</div>
+
+    <div class="control-panel">
+        <div class="legend-box">
+            <div class="legend-item"><div class="badge bg-madhab"></div> Madhab Scholars / Legal Codifiers</div>
+            <div class="legend-item"><div class="badge bg-collector"></div> Hadith Collectors (Classical Masters)</div>
+            <div class="legend-item"><div class="badge bg-modern"></div> Commentators, Aggregators & Modern Authenticators</div>
+        </div>
+        <div class="btn-group">
+            <button class="btn-add" onclick="addNewRow()">+ Add Custom Record</button>
+            <button class="btn-print" onclick="window.print()">🖨️ Export to Print / PDF</button>
+        </div>
+    </div>
+
+    <table id="scholarsTable">
+        <thead>
+            <tr>
+                <th style="width: 10%;">Century (A)</th>
+                <th style="width: 22%;">Scholar Name Block (B)</th>
+                <th style="width: 18%;">Geographic Matrix (C)</th>
+                <th style="width: 22%;">Hadith Status & Modern Authenticity Notes (D)</th>
+                <th style="width: 10%;">Lifespan (E)</th>
+                <th style="width: 13%;">Seminal Works (F)</th>
+                <th style="width: 5%;">Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr class="century-row"><td colspan="7">--- 2ND CENTURY AH ---</td></tr>
+            <tr>
+                <td contenteditable="true">2nd Century AH</td>
+                <td class="type-madhab">
+                    <span class="english-name" contenteditable="true">Imām Abū Ḥanīfah al-Nuʿmān</span>
+                    <span class="arabic-text" contenteditable="true">الإِمَامُ أَبُو حَنِيفَةَ النُّعْمَانُ بْنُ ثَابِتٍ</span>
+                </td>
+                <td contenteditable="true">
+                    <div class="place-item"><span class="place-label">Birth:</span> Kūfa (80 AH)</div>
+                    <div class="place-item"><span class="place-label">Study:</span> Kūfa, Basra, Makkah, Madīnah</div>
+                    <div class="place-item"><span class="place-label">Lived:</span> Kūfa, Makkah</div>
+                    <div class="place-item"><span class="place-label">Death:</span> Baghdād (150 AH)</div>
+                </td>
+                <td contenteditable="true"> Bedrock legal pioneer of the Hanafi school. Prioritized robust legal frameworks, text-critical local transmissions of Kūfa, and Qiyās (legal analogy). His narrations are heavily evaluated by modern compilers; text-critical analyses underscore his extensive legal mastery and foundational role in preserving early Iraqi traditions (Āthār).</td>
+                <td contenteditable="true" style="font-weight: 600; text-align: center;">80 AH – 150 AH<br><span style="color:#64748b; font-size:0.75rem; font-weight:400;">699 CE – 767 CE</span></td>
+                <td contenteditable="true" style="font-style: italic;">Al-Fiqh al-Akbar, Kitāb al-Āthār (Transmitted via students), Musnad Abī Ḥanīfah</td>
+                <td><button class="btn-delete" onclick="deleteRow(this)">Delete</button></td>
+            </tr>
+            <tr>
+                <td contenteditable="true">2nd Century AH</td>
+                <td class="type-madhab">
+                    <span class="english-name" contenteditable="true">Imām Mālik ibn Anas</span>
+                    <span class="arabic-text" contenteditable="true">الإِمَامُ مَالِكُ بْنُ أَنَسٍ الْأَصْبَحِيُّ</span>
+                </td>
+                <td contenteditable="true">
+                    <div class="place-item"><span class="place-label">Birth:</span> Madīnah (93 AH)</div>
+                    <div class="place-item"><span class="place-label">Study:</span> Madīnah (Nāfiʿ, Ibn Shihāb al-Zuhrī)</div>
+                    <div class="place-item"><span class="place-label">Lived:</span> Madīnah</div>
+                    <div class="place-item"><span class="place-label">Death:</span> Madīnah (179 AH)</div>
+                </td>
+                <td contenteditable="true">Leader of the School of Madīnah (Imām Dār al-Hijrah). His Muwaṭṭaʾ represents the pinnacle of early transmission validity. Universally authenticated by classical and modern critics (including Al-Albani). Strongly prioritized and enforced the foundational rule: "Learn Adab (etiquette) before seeking knowledge."</td>
+                <td contenteditable="true" style="font-weight: 600; text-align: center;">93 AH – 179 AH<br><span style="color:#64748b; font-size:0.75rem; font-weight:400;">711 CE – 795 CE</span></td>
+                <td contenteditable="true" style="font-style: italic;">Al-Muwaṭṭaʾ</td>
+                <td><button class="btn-delete" onclick="deleteRow(this)">Delete</button></td>
+            </tr>
+            <tr>
+                <td contenteditable="true">2nd Century AH</td>
+                <td class="type-madhab">
+                    <span class="english-name" contenteditable="true">Imām Abū Yūsuf al-Anṣārī</span>
+                    <span class="arabic-text" contenteditable="true">الإِمَامُ أَبُو يُوسُفَ يَعْقُوبُ بْنُ إِبْرَاهِيمَ الْأَنْصَارِيُّ</span>
+                </td>
+                <td contenteditable="true">
+                    <div class="place-item"><span class="place-label">Birth:</span> Kūfa (113 AH)</div>
+                    <div class="place-item"><span class="place-label">Study:</span> Kūfa (under Abū Ḥanīfah & Ibn Abī Laylā)</div>
+                    <div class="place-item"><span class="place-label">Lived:</span> Kūfa, Baghdād</div>
+                    <div class="place-item"><span class="place-label">Death:</span> Baghdād (182 AH)</div>
+                </td>
+                <td contenteditable="true">First Chief Justice (Qāḍī al-Quḍāt) in Islamic history. Masterful Hadith memory. His specific recension of Kitāb al-Āthār preserves the earliest layer of Ḥanāfī transmissions, though it lacks a cover-to-cover modern English translation. Critically relied upon by early traditionists.</td>
+                <td contenteditable="true" style="font-weight: 600; text-align: center;">113 AH – 182 AH<br><span style="color:#64748b; font-size:0.75rem; font-weight:400;">731 CE – 798 CE</span></td>
+                <td contenteditable="true" style="font-style: italic;">Kitāb al-Āthār (Abū Yūsuf Recension), Al-Radd ʿalā Siyar al-Awzāʿī, Kitāb al-Kharāj</td>
+                <td><button class="btn-delete" onclick="deleteRow(this)">Delete</button></td>
+            </tr>
+            <tr>
+                <td contenteditable="true">2nd Century AH</td>
+                <td class="type-madhab">
+                    <span class="english-name" contenteditable="true">Imām Muḥammad al-Shaybānī</span>
+                    <span class="arabic-text" contenteditable="true">الإِمَامُ مُحَمَّدُ بْنُ الْحَسَنِ الشَّيْبَانِيُّ</span>
+                </td>
+                <td contenteditable="true">
+                    <div class="place-item"><span class="place-label">Birth:</span> Wāsiṭ (132 AH)</div>
+                    <div class="place-item"><span class="place-label">Study:</span> Kūfa (Abū Ḥanīfah), Madīnah (Imām Mālik)</div>
+                    <div class="place-item"><span class="place-label">Lived:</span> Baghdād, Rayy</div>
+                    <div class="place-item"><span class="place-label">Death:</span> Rayy (189 AH)</div>
+                </td>
+                <td contenteditable="true">Great codifier of Ḥanāfī jurisprudence. His transmissions of Kitāb al-Āthār and his version of Al-Muwaṭṭaʾ are monumental. His recension of the Āthār has been fully translated into English by Turath Publishing. Highly accurate narrator bridging Iraqi and Hijazi systems.</td>
+                <td contenteditable="true" style="font-weight: 600; text-align: center;">132 AH – 189 AH<br><span style="color:#64748b; font-size:0.75rem; font-weight:400;">749 CE – 805 CE</span></td>
+                <td contenteditable="true" style="font-style: italic;">Al-Aṣl (Mabsūṭ), Kitāb al-Āthār (Recension), Al-Siyar al-Kabīr</td>
+                <td><button class="btn-delete" onclick="deleteRow(this)">Delete</button></td>
+            </tr>
+
+            <tr class="century-row"><td colspan="7">--- 3RD CENTURY AH ---</td></tr>
+            <tr>
+                <td contenteditable="true">3rd Century AH</td>
+                <td class="type-madhab">
+                    <span class="english-name" contenteditable="true">Imām Muḥammad ibn Idrīs al-Shāfiʿī</span>
+                    <span class="arabic-text" contenteditable="true">الإِمَامُ مُحَمَّدُ بْنُ إِدْرِيسَ الشَّافِعِيُّ</span>
+                </td>
+                <td contenteditable="true">
+                    <div class="place-item"><span class="place-label">Birth:</span> Gaza, Palestine (150 AH)</div>
+                    <div class="place-item"><span class="place-label">Study:</span> Makkah, Madīnah (Imām Mālik), Yemen, Baghdād</div>
+                    <div class="place-item"><span class="place-label">Lived:</span> Makkah, Baghdād, Cairo</div>
+                    <div class="place-item"><span class="place-label">Death:</span> Fustāṭ, Egypt (204 AH)</div>
+                </td>
+                <td contenteditable="true">Architect of systematic legal theory (Uṣūl al-Fiqh) through his Epistle (Al-Risālah). Highly rigorous Hadith critic and completely trustworthy narrator. Modern scholarly English translations of his legal theory manuals are fully available (Lowry & Khadduri editions).</td>
+                <td contenteditable="true" style="font-weight: 600; text-align: center;">150 AH – 204 AH<br><span style="color:#64748b; font-size:0.75rem; font-weight:400;">767 CE – 820 CE</span></td>
+                <td contenteditable="true" style="font-style: italic;">Al-Risālah, Kitāb al-Umm, Musnad al-Shāfiʿī</td>
+                <td><button class="btn-delete" onclick="deleteRow(this)">Delete</button></td>
+            </tr>
+            <tr>
+                <td contenteditable="true">3rd Century AH</td>
+                <td class="type-collector">
+                    <span class="english-name" contenteditable="true">Imām Isḥāq ibn Rāhawayh</span>
+                    <span class="arabic-text" contenteditable="true">الإِمَامُ إِسْحَاقُ بْنُ رَاهَوَيْهِ الْمَرْوَزِيُّ</span>
+                </td>
+                <td contenteditable="true">
+                    <div class="place-item"><span class="place-label">Birth:</span> Merv (161 AH)</div>
+                    <div class="place-item"><span class="place-label">Study:</span> Khorasān, Iraq, Hijāz, Egypt</div>
+                    <div class="place-item"><span class="place-label">Lived:</span> Nīshāpūr</div>
+                    <div class="place-item"><span class="place-label">Death:</span> Nīshāpūr (238 AH)</div>
+                </td>
+                <td contenteditable="true">Revered as Amīr al-Mu'minīn fī al-Ḥadīth. Stellar teacher/mentor to Imāms al-Bukhārī, Muslim, at-Tirmidhmī, and an-Nasāʾī. His direct request inspired Bukhārī to compile his Sahīh. His massive Musnad was mostly lost; the surviving portion containing exactly 2,425 Hadiths is fully verified, printed, and digitally archived.</td>
+                <td contenteditable="true" style="font-weight: 600; text-align: center;">161 AH – 238 AH<br><span style="color:#64748b; font-size:0.75rem; font-weight:400;">778 CE – 853 CE</span></td>
+                <td contenteditable="true" style="font-style: italic;">Musnad Isḥāq ibn Rāhawayh (Surviving Fragment)</td>
+                <td><button class="btn-delete" onclick="deleteRow(this)">Delete</button></td>
+            </tr>
+            <tr>
+                <td contenteditable="true">3rd Century AH</td>
+                <td class="type-madhab">
+                    <span class="english-name" contenteditable="true">Imām Aḥmad ibn Ḥanbal</span>
+                    <span class="arabic-text" contenteditable="true">الإِمَامُ أَحْمَدُ بْنُ حَنْبَلٍ الشَّيْبَانِيُّ</span>
+                </td>
+                <td contenteditable="true">
+                    <div class="place-item"><span class="place-label">Birth:</span> Baghdād (164 AH)</div>
+                    <div class="place-item"><span class="place-label">Study:</span> Baghdād, Kūfa, Basra, Hijāz, Yemen</div>
+                    <div class="place-item"><span class="place-label">Lived:</span> Baghdād</div>
+                    <div class="place-item"><span class="place-label">Death:</span> Baghdād (241 AH)</div>
+                </td>
+                <td contenteditable="true">Founder of the Hanbali school and legendary traditionist. Collected over 27,000 Hadiths in his Musnad. Modern checking projects directed by contemporary giants (e.g., Sheikh Shu'ayb al-Arna'ut and Ahmad Shakir) meticulously graded and published every single chain across a monumental 50-volume set.</td>
+                <td contenteditable="true" style="font-weight: 600; text-align: center;">164 AH – 241 AH<br><span style="color:#64748b; font-size:0.75rem; font-weight:400;">780 CE – 855 CE</span></td>
+                <td contenteditable="true" style="font-style: italic;">Musnad Aḥmad ibn Ḥanbal, Kitāb al-Zuhd, Al-ʿIlal</td>
+                <td><button class="btn-delete" onclick="deleteRow(this)">Delete</button></td>
+            </tr>
+            <tr>
+                <td contenteditable="true">3rd Century AH</td>
+                <td class="type-collector">
+                    <span class="english-name" contenteditable="true">Imām Muḥammad al-Bukhārī</span>
+                    <span class="arabic-text" contenteditable="true">الإِمَامُ مُحَمَّدُ بْنُ إِسْمَاعِيلَ الْبُخَارِيُّ</span>
+                </td>
+                <td contenteditable="true">
+                    <div class="place-item"><span class="place-label">Birth:</span> Bukhārā (194 AH)</div>
+                    <div class="place-item"><span class="place-label">Study:</span> Khorasān, Iraq, Hijāz, Egypt, Shām</div>
+                    <div class="place-item"><span class="place-label">Lived:</span> Bukhārā, Nīshāpūr</div>
+                    <div class="place-item"><span class="place-label">Death:</span> Khartank near Samarkand (256 AH)</div>
+                </td>
+                <td contenteditable="true">The supreme master of Prophetic traditions. His Ṣaḥīḥ is held by unanimous Sunni consensus as the most authentic text after the Qur'ān. While his primary collection is universally canonical, his historical and ethical side-works (like Al-Adab al-Mufrad) are thoroughly evaluated and graded by modern authenticators like Al-Albani.</td>
+                <td contenteditable="true" style="font-weight: 600; text-align: center;">194 AH – 256 AH<br><span style="color:#64748b; font-size:0.75rem; font-weight:400;">810 CE – 870 CE</span></td>
+                <td contenteditable="true" style="font-style: italic;">Ṣaḥīḥ al-Bukhārī, Al-Adab al-Mufrad, Al-Tārīkh al-Kabīr</td>
+                <td><button class="btn-delete" onclick="deleteRow(this)">Delete</button></td>
+            </tr>
+            <tr>
+                <td contenteditable="true">3rd Century AH</td>
+                <td class="type-collector">
+                    <span class="english-name" contenteditable="true">Imām Muslim ibn al-Ḥajjāj</span>
+                    <span class="arabic-text" contenteditable="true">الإِمَامُ مُسْلِمُ بْنُ الْحَجَّاجِ الْقُشَيْرِيُّ</span>
+                </td>
+                <td contenteditable="true">
+                    <div class="place-item"><span class="place-label">Birth:</span> Nīshāpūr (204 AH)</div>
+                    <div class="place-item"><span class="place-label">Study:</span> Nīshāpūr, Iraq, Hijāz, Egypt, Shām</div>
+                    <div class="place-item"><span class="place-label">Lived:</span> Nīshāpūr</div>
+                    <div class="place-item"><span class="place-label">Death:</span> Nīshāpūr (261 AH)</div>
+                </td>
+                <td contenteditable="true">Celebrated pupil of Bukhārī and Ibn Rāhawayh. His Sahīh stands side-by-side with Bukhārī's in absolute authenticity, praised uniquely for its flawless thematic grouping of transmissions. Universally authenticated without reservation by classical and modern traditionists.</td>
+                <td contenteditable="true" style="font-weight: 600; text-align: center;">204 AH – 261 AH<br><span style="color:#64748b; font-size:0.75rem; font-weight:400;">821 CE – 875 CE</span></td>
+                <td contenteditable="true" style="font-style: italic;">Ṣaḥīḥ Muslim, Al-Tamyīz</td>
+                <td><button class="btn-delete" onclick="deleteRow(this)">Delete</button></td>
+            </tr>
+            <tr>
+                <td contenteditable="true">3rd Century AH</td>
+                <td class="type-collector">
+                    <span class="english-name" contenteditable="true">Imām Ibn Mājah al-Qazwīnī</span>
+                    <span class="arabic-text" contenteditable="true">الإِمَامُ ابْنُ مَاجَهْ مُحَمَّدُ بْنُ يَزِيدَ الْقَزْوِينِيُّ</span>
+                </td>
+                <td contenteditable="true">
+                    <div class="place-item"><span class="place-label">Birth:</span> Qazvīn (209 AH)</div>
+                    <div class="place-item"><span class="place-label">Study:</span> Qazvīn, Iraq, Hijāz, Egypt, Shām</div>
+                    <div class="place-item"><span class="place-label">Lived:</span> Qazvīn</div>
+                    <div class="place-item"><span class="place-label">Death:</span> Qazvīn (273 AH)</div>
+                </td>
+                <td contenteditable="true">Compiler of the sixth canonical Sunan work. Highly valued for its thematic layout, though it contains a greater volume of weak (da'īf) and a few fabricated narrations than the other five. Meticulously parsed and divided into separate Sahīh and Da'īf volumes by Sheikh al-Albani.</td>
+                <td contenteditable="true" style="font-weight: 600; text-align: center;">209 AH – 273 AH<br><span style="color:#64748b; font-size:0.75rem; font-weight:400;">824 CE – 887 CE</span></td>
+                <td contenteditable="true" style="font-style: italic;">Sunan Ibn Mājah</td>
+                <td><button class="btn-delete" onclick="deleteRow(this)">Delete</button></td>
+            </tr>
+            <tr>
+                <td contenteditable="true">3rd Century AH</td>
+                <td class="type-collector">
+                    <span class="english-name" contenteditable="true">Imām Abū Dāwūd al-Sijistānī</span>
+                    <span class="arabic-text" contenteditable="true">الإِمَامُ أَبُو دَاوُدَ سُلَيْمَانُ بْنُ الْأَشْعَثِ السِّجِسْتَانِيُّ</span>
+                </td>
+                <td contenteditable="true">
+                    <div class="place-item"><span class="place-label">Birth:</span> Sijistān (202 AH)</div>
+                    <div class="place-item"><span class="place-label">Study:</span> Khorasān, Iraq, Hijāz, Egypt, Shām</div>
+                    <div class="place-item"><span class="place-label">Lived:</span> Basra, Baghdād</div>
+                    <div class="place-item"><span class="place-label">Death:</span> Basra (275 AH)</div>
+                </td>
+                <td contenteditable="true">Foremost legal-tradition pupil of Imām Aḥmad. His Sunan maps legal rulings (Ahkām). Meticulously evaluated by modern science; Sheikh al-Albani spent years verifying its contents to separate the reliable traditions from the weak ones in his compiled Sahīh wa Da'īf Sunan Abī Dāwūd.</td>
+                <td contenteditable="true" style="font-weight: 600; text-align: center;">202 AH – 275 AH<br><span style="color:#64748b; font-size:0.75rem; font-weight:400;">817 CE – 889 CE</span></td>
+                <td contenteditable="true" style="font-style: italic;">Sunan Abī Dāwūd, Kitāb al-Marāsīl</td>
+                <td><button class="btn-delete" onclick="deleteRow(this)">Delete</button></td>
+            </tr>
+            <tr>
+                <td contenteditable="true">3rd Century AH</td>
+                <td class="type-collector">
+                    <span class="english-name" contenteditable="true">Imām Abū ʿĪsā al-Tirmidhī</span>
+                    <span class="arabic-text" contenteditable="true">الإِمَامُ أَبُو عِيسَى مُحَمَّدُ بْنُ عِيسَى التِّرْمِذِيُّ</span>
+                </td>
+                <td contenteditable="true">
+                    <div class="place-item"><span class="place-label">Birth:</span> Tirmidh (209 AH)</div>
+                    <div class="place-item"><span class="place-label">Study:</span> Khorasān, Iraq, Hijāz (under Bukhārī & Muslim)</div>
+                    <div class="place-item"><span class="place-label">Lived:</span> Tirmidh</div>
+                    <div class="place-item"><span class="place-label">Death:</span> Tirmidh (279 AH)</div>
+                </td>
+                <td contenteditable="true">Established the tripartite taxonomy of Hadith accuracy (Sahīh, Hasan, Da'īf) and comparative law annotations. Sheikh al-Albani critically cross-verified his entire text, dividing it into Sahīh and Da'īf categories, and authenticated his Shama'il.</td>
+                <td contenteditable="true" style="font-weight: 600; text-align: center;">209 AH – 279 AH<br><span style="color:#64748b; font-size:0.75rem; font-weight:400;">824 CE – 892 CE</span></td>
+                <td contenteditable="true" style="font-style: italic;">Sunan al-Tirmidhī (Al-Jāmiʿ), Al-Shamāʾil al-Muḥammadiyyah</td>
+                <td><button class="btn-delete" onclick="deleteRow(this)">Delete</button></td>
+            </tr>
+
+            <tr class="century-row"><td colspan="7">--- 4TH CENTURY AH ---</td></tr>
+            <tr>
+                <td contenteditable="true">4th Century AH</td>
+                <td class="type-collector">
+                    <span class="english-name" contenteditable="true">Imām Abū ʿAbd al-Raḥmān al-Nasāʾī</span>
+                    <span class="arabic-text" contenteditable="true">الإِمَامُ أَبُو عَبْدِ الرَّحْمَنِ أَحْمَدُ بْنُ شُعَيْبٍ النَّسَائِيُّ</span>
+                </td>
+                <td contenteditable="true">
+                    <div class="place-item"><span class="place-label">Birth:</span> Nasā, Turkmenistan (215 AH)</div>
+                    <div class="place-item"><span class="place-label">Study:</span> Khorasān, Iraq, Hijāz, Egypt, Shām</div>
+                    <div class="place-item"><span class="place-label">Lived:</span> Egypt, Damascus</div>
+                    <div class="place-item"><span class="place-label">Death:</span> Makkah or Ramlah, Palestine (303 AH)</div>
+                </td>
+                <td contenteditable="true">Maintained exceptionally stringent narrator scrutiny metrics, second only to Bukhārī and Muslim. His Sunan al-Sughrā contains the lowest ratio of weak entries among the four classical Sunan texts. Fully analyzed and validated by modern verifiers into Sahīh and Da'īf indices.</td>
+                <td contenteditable="true" style="font-weight: 600; text-align: center;">215 AH – 303 AH<br><span style="color:#64748b; font-size:0.75rem; font-weight:400;">829 CE – 915 CE</span></td>
+                <td contenteditable="true" style="font-style: italic;">Sunan al-Nasāʾī (Al-Mujtabā), Al-Sunan al-Kubrā</td>
+                <td><button class="btn-delete" onclick="deleteRow(this)">Delete</button></td>
+            </tr>
+            <tr>
+                <td contenteditable="true">4th Century AH</td>
+                <td class="type-madhab">
+                    <span class="english-name" contenteditable="true">Imām Abū Jaʿfar al-Ṭaḥāwī</span>
+                    <span class="arabic-text" contenteditable="true">الإِمَامُ أَبُو جَعْفَرٍ أَحْمَدُ بْنُ مُحَمَّدٍ الطَّحَاوِيُّ</span>
+                </td>
+                <td contenteditable="true">
+                    <div class="place-item"><span class="place-label">Birth:</span> Ṭāhā, Egypt (239 AH)</div>
+                    <div class="place-item"><span class="place-label">Study:</span> Egypt (Al-Muzanī), Shām (Ibn Abī ʿImrān)</div>
+                    <div class="place-item"><span class="place-label">Lived:</span> Cairo, Egypt</div>
+                    <div class="place-item"><span class="place-label">Death:</span> Cairo, Egypt (321 AH)</div>
+                </td>
+                <td contenteditable="true">Titan of comparative legal jurisprudence and theological creed. His massive comparative text faded into manuscript obscurity but was structurally saved by al-Jassas's abridgement. His standard on creed (Al-ʿAqīdah al-Ṭaḥāwiyyah) is universally accepted; Sheikh al-Albani authored a definitive checking (Tahrīj) confirming its sound traditional metrics.</td>
+                <td contenteditable="true" style="font-weight: 600; text-align: center;">239 AH – 321 AH<br><span style="color:#64748b; font-size:0.75rem; font-weight:400;">853 CE – 933 CE</span></td>
+                <td contenteditable="true" style="font-style: italic;">Al-ʿAqīdah al-Ṭaḥāwiyyah, Sharḥ Maʿānī al-Āthār, Mukhtaṣar Ikhtilāf al-ʿUlamāʾ</td>
+                <td><button class="btn-delete" onclick="deleteRow(this)">Delete</button></td>
+            </tr>
+            <tr>
+                <td contenteditable="true">4th Century AH</td>
+                <td class="type-collector">
+                    <span class="english-name" contenteditable="true">Imām Abū al-Qāsim al-Ṭabarānī</span>
+                    <span class="arabic-text" contenteditable="true">الإِمَامُ أَبُو الْقَاسِمِ سُلَيْمَانُ بْنُ أَحْمَدَ الطَّبَرَانِيُّ</span>
+                </td>
+                <td contenteditable="true">
+                    <div class="place-item"><span class="place-label">Birth:</span> Tiberias, Palestine (260 AH)</div>
+                    <div class="place-item"><span class="place-label">Study:</span> Shām, Hijāz, Egypt, Iraq, Persia</div>
+                    <div class="place-item"><span class="place-label">Lived:</span> Isfahan, Persia</div>
+                    <div class="place-item"><span class="place-label">Death:</span> Isfahan (360 AH)</div>
+                </td>
+                <td contenteditable="true">Compiled three massive encyclopedic Hadith dictionaries. Collected the specific narration instructing parents to teach children three things (Loving the Prophet, the Ahl al-Bayt, and the Qur'ān) under Hadith No. 861. Modern text-critical checks (Al-Albani, Al-Haythami) class this specific chain as Weak (Da'if) due to critics of the narrator Ja'far ibn Muhammad, though valid for moral training.</td>
+                <td contenteditable="true" style="font-weight: 600; text-align: center;">260 AH – 360 AH<br><span style="color:#64748b; font-size:0.75rem; font-weight:400;">873 CE – 971 CE</span></td>
+                <td contenteditable="true" style="font-style: italic;">Al-Muʿjam al-Kabīr (Hadith 861), Al-Muʿjam al-Awsat, Al-Muʿjam al-Ṣaghīr</td>
+                <td><button class="btn-delete" onclick="deleteRow(this)">Delete</button></td>
+            </tr>
+            <tr>
+                <td contenteditable="true">4th Century AH</td>
+                <td class="type-madhab">
+                    <span class="english-name" contenteditable="true">Imām Abū Bakr al-Jaṣṣāṣ</span>
+                    <span class="arabic-text" contenteditable="true">الإِمَامُ أَبُو بَكْرٍ أَحْمَدُ بْنُ عَلِيٍّ الْجَصَّاصُ</span>
+                </td>
+                <td contenteditable="true">
+                    <div class="place-item"><span class="place-label">Birth:</span> Rayy, Iran (305 AH)</div>
+                    <div class="place-item"><span class="place-label">Study:</span> Baghdād, Ahwāz, Nīshāpūr</div>
+                    <div class="place-item"><span class="place-label">Lived:</span> Baghdād, Iraq</div>
+                    <div class="place-item"><span class="place-label">Death:</span> Baghdād (370 AH)</div>
+                </td>
+                <td contenteditable="true">Eminent Ḥanāfī master jurist. His structural abridgement of Imām al-Ṭaḥāwī’s massive comparative manual saved the text from complete historical loss. His Ahkām al-Qurʾān stands as the premier exegesis text for legal derivation in the Ḥanāfī school.</td>
+                <td contenteditable="true" style="font-weight: 600; text-align: center;">305 AH – 370 AH<br><span style="color:#64748b; font-size:0.75rem; font-weight:400;">917 CE – 981 CE</span></td>
+                <td contenteditable="true" style="font-style: italic;">Ahkām al-Qurʾān, Sharḥ Mukhtaṣar al-Ṭaḥāwī, Abridgement of Ikhtilāf al-ʿUlamāʾ</td>
+                <td><button class="btn-delete" onclick="deleteRow(this)">Delete</button></td>
+            </tr>
+
+            <tr class="century-row"><td colspan="7">--- 10TH & 11TH CENTURY AH ---</td></tr>
+            <tr>
+                <td contenteditable="true">10th Century AH</td>
+                <td class="type-modern">
+                    <span class="english-name" contenteditable="true">Imām al-Muttaqī al-Hindī</span>
+                    <span class="arabic-text" contenteditable="true">الإِمَامُ عَلَاءُ الدِّينِ عَلِيُّ بْنُ حِسَامِ الدِّينِ الْمُتَّقِي الْهِنْدِيُّ</span>
+                </td>
+                <td contenteditable="true">
+                    <div class="place-item"><span class="place-label">Birth:</span> Burhanpur, India (885 AH)</div>
+                    <div class="place-item"><span class="place-label">Study:</span> India, Makkah, Madīnah</div>
+                    <div class="place-item"><span class="place-label">Lived:</span> Makkah</div>
+                    <div class="place-item"><span class="place-label">Death:</span> Makkah (975 AH)</div>
+                </td>
+                <td contenteditable="true">Masterful Hadith aggregator. Systematically re-arranged thousands of traditions into his encyclopedia Kanz al-Ummal. Preserved al-Tabarani's "three qualities character training" Hadith as Entry No. 45467. Modern verifiers examine the source texts inside his compilation to evaluate individual transmission lines.</td>
+                <td contenteditable="true" style="font-weight: 600; text-align: center;">885 AH – 975 AH<br><span style="color:#64748b; font-size:0.75rem; font-weight:400;">1480 CE – 1567 CE</span></td>
+                <td contenteditable="true" style="font-style: italic;">Kanz al-ʿUmmāl fī Sunan al-Aqvāl wa-al-Afʿāl (Hadith 45467)</td>
+                <td><button class="btn-delete" onclick="deleteRow(this)">Delete</button></td>
+            </tr>
+            <tr>
+                <td contenteditable="true">11th Century AH</td>
+                <td class="type-modern">
+                    <span class="english-name" contenteditable="true">Imām al-Munāwī al-Shāfiʿī</span>
+                    <span class="arabic-text" contenteditable="true">الإِمَامُ زَيْنُ الدِّينِ مُحَمَّدٌ عَبْدُ الرَّؤُوفِ الْمُنَاوِيُّ</span>
+                </td>
+                <td contenteditable="true">
+                    <div class="place-item"><span class="place-label">Birth:</span> Cairo, Egypt (952 AH)</div>
+                    <div class="place-item"><span class="place-label">Study:</span> Cairo (Al-Azhar University)</div>
+                    <div class="place-item"><span class="place-label">Lived:</span> Cairo, Egypt</div>
+                    <div class="place-item"><span class="place-label">Death:</span> Cairo, Egypt (1031 AH)</div>
+                </td>
+                <td contenteditable="true">Foremost commentator of the late classical era. In his commentary Fayd al-Qadir (Vol 1, Page 225), he meticulously evaluated the "teach your children three things" Hadith, explicitly noting its transmission weaknesses while confirming its sound text for ethical cultivation.</td>
+                <td contenteditable="true" style="font-weight: 600; text-align: center;">952 AH – 1031 AH<br><span style="color:#64748b; font-size:0.75rem; font-weight:400;">1545 CE – 1621 CE</span></td>
+                <td contenteditable="true" style="font-style: italic;">Fayḍ al-Qadīr Sharḥ al-Jāmiʿ al-Ṣaghīr (1/225)</td>
+                <td><button class="btn-delete" onclick="deleteRow(this)">Delete</button></td>
+            </tr>
+
+            <tr class="century-row"><td colspan="7">--- 14TH & 15TH CENTURY AH (MODERN ERA) ---</td></tr>
+            <tr>
+                <td contenteditable="true">14th-15th Century AH</td>
+                <td class="type-modern">
+                    <span class="english-name" contenteditable="true">Sheikh Nāṣir al-Dīn al-Albānī</span>
+                    <span class="arabic-text" contenteditable="true">الشَّيْخُ مُحَمَّدُ نَاصِرُ الدِّينِ الْأَلْبَانِيُّ</span>
+                </td>
+                <td contenteditable="true">
+                    <div class="place-item"><span class="place-label">Birth:</span> Shkodër, Albania (1333 AH)</div>
+                    <div class="place-item"><span class="place-label">Study:</span> Damascus, Syria</div>
+                    <div class="place-item"><span class="place-label">Lived:</span> Syria, Jordan, Saudi Arabia (Univ. of Madīnah)</div>
+                    <div class="place-item"><span class="place-label">Death:</span> Amman, Jordan (1420 AH)</div>
+                </td>
+                <td contenteditable="true">The most influential modern Sunni Hadith verifier. Pioneered systematic digital-era Takhrij (chain analysis). Divided the classical Sunan works into independent Sahīh and Da'īf indices. Evaluated the "teach your children three things" tradition and declared it Weak (Da'if) in Da'īf al-Jāmiʿ, No. 2634.</td>
+                <td contenteditable="true" style="font-weight: 600; text-align: center;">1333 AH – 1420 AH<br><span style="color:#64748b; font-size:0.75rem; font-weight:400;">1914 CE – 1999 CE</span></td>
+                <td contenteditable="true" style="font-style: italic;">Silsilat al-Aḥādīth al-Ṣaḥīḥah, Silsilat al-Aḥādīth al-Ḍaʿīfah, Irwāʾ al-Ghalīl, Ṣaḥīḥ wa Ḍaʿīf al-Jāmiʿ</td>
+                <td><button class="btn-delete" onclick="deleteRow(this)">Delete</button></td>
+            </tr>
+            <tr>
+                <td contenteditable="true">14th-15th Century AH</td>
+                <td class="type-modern">
+                    <span class="english-name" contenteditable="true">Sheikh Shuʿayb al-Arnāʾūṭ</span>
+                    <span class="arabic-text" contenteditable="true">الشَّيْخُ شُعَيْبُ بْنُ مُحَاوَرَ الْأَرْنَاوُوطُ</span>
+                </td>
+                <td contenteditable="true">
+                    <div class="place-item"><span class="place-label">Birth:</span> Damascus, Syria (1355 AH)</div>
+                    <div class="place-item"><span class="place-label">Study:</span> Damascus, Syria</div>
+                    <div class="place-item"><span class="place-label">Lived:</span> Syria, Jordan</div>
+                    <div class="place-item"><span class="place-label">Death:</span> Amman, Jordan (1438 AH)</div>
+                </td>
+                <td contenteditable="true">Monumental modern Albanian-Syrian critical editor and manuscript investigator. Led the encyclopedic 50-volume critical authentication of Imām Aḥmad's Musnad, verifying thousands of narrators. Extensively checked early Hanafi-tradition compilations (such as al-Tahawi's texts).</td>
+                <td contenteditable="true" style="font-weight: 600; text-align: center;">1355 AH – 1438 AH<br><span style="color:#64748b; font-size:0.75rem; font-weight:400;">1936 CE – 2016 CE</span></td>
+                <td contenteditable="true" style="font-style: italic;">Tahqīq of Musnad Aḥmad (50 Vols), Tahqīq of Siyar Aʿlām al-Nubalāʾ, Tahqīq of Sharḥ Maʿānī al-Āthār</td>
+                <td><button class="btn-delete" onclick="deleteRow(this)">Delete</button></td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<script>
+    // Browser Engine Controls for Additions & Deletions
+    function addNewRow() {
+        var table = document.getElementById("scholarsTable").getElementsByTagName('tbody')[0];
+        var newRow = table.insertRow();
+        
+        newRow.innerHTML = `
+            <td contenteditable="true">Custom Century</td>
+            <td class="type-modern">
+                <span class="english-name" contenteditable="true">New Scholar Name</span>
+                <span class="arabic-text" contenteditable="true">الإِسمُ بِالتَّشكِيلِ</span>
+            </td>
+            <td contenteditable="true">
+                <div class="place-item"><span class="place-label">Birth:</span> Place (Yr)</div>
+                <div class="place-item"><span class="place-label">Study:</span> Place</div>
+                <div class="place-item"><span class="place-label">Lived:</span> Place</div>
+                <div class="place-item"><span class="place-label">Death:</span> Place (Yr)</div>
+            </td>
+            <td contenteditable="true">Enter custom Hadith status evaluation, verification details, and modern scholarly grading here.</td>
+            <td contenteditable="true" style="font-weight: 600; text-align: center;">AH – AH<br><span style="color:#64748b; font-size:0.75rem; font-weight:400;">CE – CE</span></td>
+            <td contenteditable="true" style="font-style: italic;">Seminal Manuscripts</td>
+            <td><button class="btn-delete" onclick="deleteRow(this)">Delete</button></td>
+        `;
+    }
+
+    function deleteRow(button) {
+        if(confirm("Are you sure you want to remove this scholar record from the workspace?")) {
+            var row = button.parentNode.parentNode;
+            row.parentNode.removeChild(row);
+        }
+    }
+</script>
+
+</body>
+</html>

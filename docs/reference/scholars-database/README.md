@@ -1,0 +1,21 @@
+# Scholars Database
+
+The Owner's chronological grid of scholars, hadith compilers and mufassirūn. The Owner sent it on 12 Oct 2026 with
+"keep it in the repo and update it with new resources" (PCF job J02; master file T20–T22).
+
+| File | What it is |
+|---|---|
+| `Scholars Database - v1.1.html` | The Owner's file as sent, unchanged. 20 scholars, centuries 2–4, 10–11, 14–15. |
+| `Scholars Database - v1.2.html` | The live page: https://claude.ai/artifact/51ACYVU6hBKs7jx32rpAUi. The Owner's 20 rows unchanged, four new columns (G Approaches, H Madhab / group, I Qurʾān works, J Open source & rights), and 48 scholars added by Claude for the empty centuries, mostly mufassirūn. Every Claude cell is a **draft** until the Owner presses ✓ Checked. |
+| `scholars-database-v1.2.json` | The same rows as data: the source the page is built from, and what the app will read later. |
+| `scholars-database.template.html` | The page with `__DATA__` where the JSON goes. |
+
+**Approaches** use the master file's numbers: 28 Sahaba, 29 Tābiʿīn, 30 Gen1 (to 656 AH / 1258), 31 Gen2 (to about
+1700), Gen3 (to 1924), Gen4 (to 1945), Gen5 (to 2001), Gen6, 32 Maliki, 33 Hanbali, 34 Hanafi, 35 Shafiʿi, 36 Groups
+and sects. A scholar sits in the **century of his death**, as in v1.1.
+
+**Updating.** The Owner edits on the live page (✎ Edit, then Save; each Save adds a version, v1.3, v1.4 …). A session
+reads the saved page with the Artifact tool, takes its `<script id="data">` JSON into `scholars-database-v<x>.json`,
+and rebuilds the HTML from the template. New rows and resources are added to the JSON, marked `"by": "Claude",
+"draft": true`, never written over the Owner's text. Dates and places marked "?" or "some say" are uncertain and need
+checking against a biographical dictionary (al-Dhahabī's Siyar, al-Ziriklī's al-Aʿlām) before anything in the app relies on them.
