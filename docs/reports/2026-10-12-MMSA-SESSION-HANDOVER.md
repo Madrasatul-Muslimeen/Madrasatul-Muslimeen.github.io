@@ -93,3 +93,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v10.35** (2026-10-12): a bookmark save keeps the Mushaf page; QCR + Add āyah follows the Al-Fātiḥah count (issue #786).
 - **v10.36** (2026-10-12): the Mushaf page reference shows from the first page, so a bookmark save no longer grows the Read bar (Builder round #792).
 - **v10.37** (2026-10-12): the Read bar stays one row with the Meaning switches on a phone (Builder round #794).
+- **v10.38** (2026-10-12): bookmarks for several people at once keep their folder, and tapping an existing bookmark asks before removing it (Builder round #797, PCF J22).

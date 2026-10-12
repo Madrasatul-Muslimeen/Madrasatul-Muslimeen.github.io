@@ -63,7 +63,7 @@ export async function saveBookmarkForAssignees(db, { tenantId, uid, selectedPers
     if (choice.newFolderName) {
       folderId = await makeFolder(choice.newFolderName);
       if (!folderId) return out;
-    } else if (!multi && choice.folderId) {
+    } else if (choice.folderId) {
       if (pid === selectedPersonId || !choice.folderName) {
         folderId = choice.folderId;
       } else {

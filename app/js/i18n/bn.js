@@ -4128,5 +4128,8 @@ export const BN = {
   "Saved for {names}": "{names}-এর জন্য সংরক্ষিত হয়েছে",
   "{a} and {b}": "{a} ও {b}",
   "See {name}'s bookmarks": "{name}-এর বুকমার্ক দেখুন",
+  "Already bookmarked": "আগেই বুকমার্ক করা আছে",
+  "Remove my bookmark": "আমার বুকমার্ক সরান",
+  "Add a bookmark…": "বুকমার্ক যোগ করুন…",
   "{name}'s bookmarks": "{name}-এর বুকমার্ক",
 };

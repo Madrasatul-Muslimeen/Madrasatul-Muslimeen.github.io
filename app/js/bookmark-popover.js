@@ -273,13 +273,8 @@ export function openBookmarkNamePopover({ defaultName = "", folders = [], people
         const follow = id === selectedPersonId ? (defaultPersonTagId ?? "") : id;
         if ([...personSelect.options].some((o) => o.value === follow)) personSelect.value = follow;
       }
-      [...folderSelect.options].forEach((opt) => {
-        if (opt.value !== "" && opt.value !== "__new__") opt.disabled = multi;
-      });
-      if (multi && folderSelect.value !== "" && folderSelect.value !== "__new__") {
-        folderSelect.value = "";
-        newFolderRow.style.display = "none";
-      }
+      // An existing folder stays selectable with several people ticked: the
+      // selected person's copy uses its id, every other copy is filed by NAME.
     }
     if (assigneesList) {
       assigneesList.addEventListener("change", updateForAssigneeCount);
@@ -370,5 +365,44 @@ export function announceBookmarkSaved({ savedFor = [], selectedPersonId = null, 
       href: `./bookmarks.html?person=${encodeURIComponent(pid)}&back=1`,
       label: t("See {name}'s bookmarks", { name: nameOf(pid) }),
     })),
+  });
+}
+
+/**
+ * The Owner, 12 Oct 2026 (PCF J22): tapping 🔖/★ on a unit whose own bookmark
+ * already exists used to remove it at once, so "save for everyone" or "This
+ * āyah" inside that unit could never be reached, and a slip deleted a bookmark
+ * silently. This asks instead. Resolves "remove", "add", or null (✕ / Escape /
+ * a tap outside): null writes nothing.
+ */
+export function openBookmarkExistsChoice() {
+  ensureStyles();
+  return new Promise((resolve) => {
+    const overlay = document.createElement("div");
+    overlay.className = "bm-popover-overlay";
+    overlay.innerHTML = `
+      <div class="bm-popover" role="dialog" aria-modal="true" aria-label="${t("Already bookmarked")}" data-bm-exists-choice>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:.5rem;margin-bottom:.7rem">
+          <h3 style="margin:0">${t("Already bookmarked")}</h3>
+          <button type="button" data-bm-exists-close aria-label="${t("Close")}" style="min-width:40px;min-height:40px;border:1px solid #ccc;border-radius:.4rem;background:white;color:#1F3A6E;font-size:1.1rem;cursor:pointer">✕</button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:.5rem">
+          <button type="button" data-bm-exists-remove style="min-height:44px;font-size:.92rem;border:1px solid #c9d0e0;border-radius:.4rem;background:white;color:#1F3A6E;cursor:pointer">${t("Remove my bookmark")}</button>
+          <button type="button" data-bm-exists-add style="min-height:44px;font-size:.92rem;border:1px solid #1F3A6E;border-radius:.4rem;background:#1F3A6E;color:white;cursor:pointer">${t("Add a bookmark…")}</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    function onKeydown(e) { if (e.key === "Escape") close(null); }
+    function close(result) {
+      overlay.remove();
+      document.removeEventListener("keydown", onKeydown);
+      resolve(result);
+    }
+    document.addEventListener("keydown", onKeydown);
+    overlay.addEventListener("click", (e) => { if (e.target === overlay) close(null); });
+    overlay.querySelector("[data-bm-exists-close]").addEventListener("click", () => close(null));
+    overlay.querySelector("[data-bm-exists-remove]").addEventListener("click", () => close("remove"));
+    overlay.querySelector("[data-bm-exists-add]").addEventListener("click", () => close("add"));
+    overlay.querySelector("[data-bm-exists-add]").focus();
   });
 }
