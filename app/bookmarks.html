@@ -55,10 +55,17 @@
   .bm-assignee-row input[type="checkbox"] { width: 1.05rem; height: 1.05rem; accent-color: #1F3A6E; cursor: pointer; flex-shrink: 0; }
   .bm-assignee-row .who-name { flex: 1; }
   .bm-assignee-row .who-tag { font-size: 0.66rem; color: #777; background: #f6f7fb; border: 1px solid #eee; border-radius: 0.6rem; padding: 0.02rem 0.4rem; }
+  /* The way-back law (decision 86): opened from the 🔖 dialog's "See {name}'s bookmarks" with back=1. */
+  .bm-back-btn { min-height: 40px; padding: 0 0.9rem; margin: 0.3rem 0 0.6rem; border: 1px solid #c9a24b; border-radius: 0.6rem; background: #1F3A6E; color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+  .bm-back-btn[hidden] { display: none; }
+  .bm-whose-line { margin: 0.2rem 0 0.6rem; font-weight: 700; color: #1F3A6E; font-size: 1.05rem; }
+  .bm-whose-line[hidden] { display: none; }
 </style>
 </head>
 <body>
   <h1>Bookmarks</h1>
+  <button type="button" id="bmBackBtn" class="bm-back-btn" hidden></button>
+  <p id="bmWhoseLine" class="bm-whose-line" hidden></p>
   <p class="intro">Every bookmark you have saved, from any module, in one place. Open one to jump straight back to where it was made. Group them into folders however you like.</p>
 
   <nav class="app-nav" id="topNav">
@@ -208,6 +215,18 @@ import { mountBookmarkMenu, noteBookmarkOpened, getBookmarkTimesShown, bookmarkT
     registerServiceWorker();
     armScreensaver();
 
+    // The Owner, 12 Oct 2026 (a bookmark for the children "couldn't add"): the 🔖 dialog links here as
+    // ?person=<id>&back=1 to show that child's bookmarks. ?person picks the Person once, on arrival, without
+    // changing the app-wide choice; back=1 shows ← Back to where the reader came from (decision 86).
+    const urlParams = new URLSearchParams(location.search);
+    let askedPersonId = urlParams.get("person");
+    if (urlParams.get("back") === "1") {
+      const backBtn = document.getElementById("bmBackBtn");
+      backBtn.textContent = `← ${t("Back")}`;
+      backBtn.hidden = false;
+      backBtn.addEventListener("click", () => { if (history.length > 1) history.back(); else location.href = "./quranrevival.html"; });
+    }
+
     const whoEl = document.getElementById("who");
     const signInBtn = document.getElementById("signInBtn");
     const signOutBtn = document.getElementById("signOutBtn");
@@ -327,7 +346,10 @@ import { mountBookmarkMenu, noteBookmarkOpened, getBookmarkTimesShown, bookmarkT
       // is a third fallback, below stored -- see quranrevival.html's own
       // copy of this comment.
       const stored = getSelectedPersonId();
-      const candidate = visibleRoster.some((p) => p.id === prev) ? prev
+      const asked = askedPersonId && visibleRoster.some((p) => p.id === askedPersonId) ? askedPersonId : null;
+      if (asked) askedPersonId = null; // once, on arrival
+      const candidate = asked ? asked
+        : visibleRoster.some((p) => p.id === prev) ? prev
         : (visibleRoster.some((p) => p.id === stored) ? stored
         : (visibleRoster.some((p) => p.id === myPersonId) ? myPersonId : null));
       if (candidate) personSelect.value = candidate;
@@ -374,6 +396,12 @@ import { mountBookmarkMenu, noteBookmarkOpened, getBookmarkTimesShown, bookmarkT
       ]);
       bookmarksDoc = mainDoc;
       myBookmarksDocForTagged = myDoc;
+      // The Owner, 12 Oct 2026: the Person picker lives in My account, so say plainly whose bookmarks these are
+      // whenever they are not the signed-in person's own (e.g. arriving from "See Maryam's bookmarks").
+      const whoseLine = document.getElementById("bmWhoseLine");
+      const shownPerson = roster.find((r) => r.id === selectedPersonId);
+      whoseLine.textContent = needsTaggedFor ? t("{name}'s bookmarks", { name: shownPerson ? langText(shownPerson.name, getAppLang(), shownPerson.id) : selectedPersonId }) : "";
+      whoseLine.hidden = !needsTaggedFor;
       taggedForSelected = myDoc ? (myDoc.saved ?? []).filter((b) => !b.removed && b.personTagId === selectedPersonId) : [];
       renderAll();
     }
