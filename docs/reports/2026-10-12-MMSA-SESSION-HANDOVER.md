@@ -85,3 +85,4 @@ OpenITI, and say plainly which passages could not be fetched. Build nothing in t
 
 This session's own MMSA-only PCF check was deleted, with the first PCF, on the Owner's word (J01).
 - **v10.29** (2026-10-12): student accounts can open the app (the roster read every page makes).
+- **v10.30** (2026-10-12): the Read bar is one line again at 600-679px.
