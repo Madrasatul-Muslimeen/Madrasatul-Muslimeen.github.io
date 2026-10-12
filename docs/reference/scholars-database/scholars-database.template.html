@@ -78,7 +78,13 @@ body:not(.editing) .edit-only { display: none; }
 body.editing [data-k] { background-image: linear-gradient(color-mix(in srgb, var(--accent) 6%, transparent), color-mix(in srgb, var(--accent) 6%, transparent)); border-radius: 3px; }
 .confirm { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 0.78rem; font-weight: 600; color: var(--danger); }
 .hiddenrow { display: none; }
-tr.century td span { position: sticky; left: 10px; }
+tr.century td .cwrap { position: sticky; left: 10px; display: flex; flex-wrap: wrap; gap: 4px 18px; align-items: baseline; max-width: min(calc(100vw - 72px), 1100px); }
+tr.century td .cauth { font-weight: 500; font-size: 0.86rem; letter-spacing: normal; text-transform: none; color: var(--fg); }
+tr.century td .cauth b, .life-auth b { font-weight: 600; color: var(--muted); }
+tr.century td .cauth.draft { background: var(--draft); border-radius: 6px; padding: 2px 8px; box-shadow: inset 0 -2px 0 0 var(--draft-edge); }
+tr.century td .cauth button { min-height: 32px; margin-left: 8px; font-size: 0.75rem; text-transform: none; letter-spacing: normal; }
+.life-auth { display: block; margin-top: 8px; font-size: 0.78rem; text-align: left; line-height: 1.4; }
+.life-auth.draft { background: var(--draft); border-radius: 6px; padding: 4px 6px; box-shadow: inset 0 -2px 0 0 var(--draft-edge); }
 @media (max-width: 640px) { h1 { font-size: 1.3rem; } th { font-size: 0.92rem; } .ar { font-size: 1.45rem; } }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
@@ -120,7 +126,7 @@ app.innerHTML = `<div class="wrap">
   <div class="scroll"><table id="tbl">
     <thead><tr>
       <th class="c-cent">Century (A)</th><th class="c-name">Scholar Name Block (B)</th><th class="c-geo">Geographic Matrix (C)</th>
-      <th class="c-notes">Hadith Status &amp; Modern Authenticity Notes (D)</th><th class="c-life">Lifespan (E)</th><th class="c-works">Seminal Works (F)</th>
+      <th class="c-notes">Hadith Status &amp; Modern Authenticity Notes (D)</th><th class="c-life">Lifespan (E)<small>+ political authority, new in v1.3</small></th><th class="c-works">Seminal Works (F)</th>
       <th class="c-appr new">Approaches (G)<small>new in v1.2</small></th><th class="c-madhab new">Madhab / group (H)<small>new in v1.2</small></th>
       <th class="c-qw new">Qurʾān works (I)<small>new in v1.2</small></th><th class="c-src new">Open source &amp; rights (J)<small>new in v1.2</small></th>
       <th class="c-act">Action</th>
@@ -137,14 +143,18 @@ function render() {
   let html = "", last = null;
   for (const r of DATA.rows) {
     const c = cnum(r.century);
-    if (c !== last) { html += `<tr class="century" data-c="${c}"><td colspan="11"><span>${ord(c)} century AH</span></td></tr>`; last = c; }
-    const needsCheck = r.draft || r.draftNew;
+    if (c !== last) {
+      const ca = (DATA.centuries || {})[c];
+      const auth = ca && (ca.authority || editing) ? `<span class="cauth${ca.draft ? " draft" : ""}"><b>Political authority:</b> <span data-ck="${c}"${ed()}>${esc(ca.authority || "")}</span>${ca.draft ? `<button data-act="cok" data-c="${c}">✓ Checked</button>` : ""}</span>` : "";
+      html += `<tr class="century" data-c="${c}"><td colspan="11"><div class="cwrap"><span>${ord(c)} century AH</span>${auth}</div></td></tr>`; last = c;
+    }
+    const needsCheck = r.draft || r.draftNew || r.authorityDraft;
     html += `<tr data-id="${esc(r.id)}" class="${r.draft ? "draft" : ""}">
       <td class="c-cent"><div data-k="century"${ed()}>${esc(r.century)}</div></td>
       <td class="name ${esc(r.type)}"><span class="en" data-k="en"${ed()}>${esc(r.en)}</span><span class="ar" data-k="ar" lang="ar"${ed()}>${esc(r.ar)}</span>${r.draft ? '<span class="tag">Draft · by Claude</span>' : ""}</td>
       <td class="c-geo">${["birth", "study", "lived", "death"].map(k => `<span class="pl"><b>${k[0].toUpperCase() + k.slice(1)}:</b> <span data-k="${k}"${ed()}>${esc(r[k])}</span></span>`).join("")}</td>
       <td class="c-notes"><div data-k="notes"${ed()}>${esc(r.notes)}</div></td>
-      <td class="c-life"><span class="life-ah" data-k="lifeAH"${ed()}>${esc(r.lifeAH)}</span><span class="life-ce" data-k="lifeCE"${ed()}>${esc(r.lifeCE)}</span></td>
+      <td class="c-life"><span class="life-ah" data-k="lifeAH"${ed()}>${esc(r.lifeAH)}</span><span class="life-ce" data-k="lifeCE"${ed()}>${esc(r.lifeCE)}</span>${r.authority || editing ? `<span class="life-auth${r.authorityDraft ? " draft" : ""}"><b>Political authority:</b> <span data-k="authority"${ed()}>${esc(r.authority || "")}</span></span>` : ""}</td>
       ${cell(r, "works", "c-works")}${cell(r, "approaches", "c-appr")}${cell(r, "madhab", "c-madhab")}${cell(r, "quranWorks", "c-qw")}${cell(r, "source", "c-src")}
       <td class="c-act"><div class="act">${needsCheck ? `<button data-act="ok">✓ Checked</button>` : ""}<button class="rm edit-only" data-act="rm">Remove</button></div></td>
     </tr>`;
@@ -159,6 +169,10 @@ function readBack() {
     const r = DATA.rows.find(x => x.id === tr.dataset.id); if (!r) continue;
     for (const el of tr.querySelectorAll("[data-k]")) r[el.dataset.k] = el.innerText.replace(/\s+\n/g, "\n").trim();
   }
+  for (const el of $("tb").querySelectorAll("[data-ck]")) {
+    DATA.centuries = DATA.centuries || {};
+    (DATA.centuries[el.dataset.ck] = DATA.centuries[el.dataset.ck] || {}).authority = el.innerText.replace(/\s+\n/g, "\n").trim();
+  }
 }
 
 function applyFilter() {
@@ -166,8 +180,8 @@ function applyFilter() {
   let shown = 0, drafts = 0; const seen = new Set();
   for (const tr of $("tb").querySelectorAll("tr[data-id]")) {
     const r = DATA.rows.find(x => x.id === tr.dataset.id);
-    if (r.draft || r.draftNew) drafts++;
-    const okT = !t || (t === "draft" ? (r.draft || r.draftNew) : r.type === t);
+    if (r.draft || r.draftNew || r.authorityDraft) drafts++;
+    const okT = !t || (t === "draft" ? (r.draft || r.draftNew || r.authorityDraft) : r.type === t);
     const okQ = !q || Object.values(r).join(" ").toLowerCase().includes(q);
     tr.classList.toggle("hiddenrow", !(okT && okQ));
     if (okT && okQ) { shown++; seen.add(cnum(r.century)); }
@@ -191,9 +205,10 @@ $("editBtn").addEventListener("click", () => {
 $("tb").addEventListener("input", markDirty);
 $("tb").addEventListener("click", e => {
   const b = e.target.closest("button[data-act]"); if (!b) return;
+  if (b.dataset.act === "cok") { readBack(); DATA.centuries[b.dataset.c].draft = false; markDirty(); render(); return; }
   const tr = b.closest("tr"); const r = DATA.rows.find(x => x.id === tr.dataset.id);
   readBack();
-  if (b.dataset.act === "ok") { r.draft = false; r.draftNew = false; if (r.by === "Claude") r.checkedBy = "You"; markDirty(); render(); }
+  if (b.dataset.act === "ok") { r.draft = false; r.draftNew = false; r.authorityDraft = false; if (r.by === "Claude") r.checkedBy = "You"; markDirty(); render(); }
   else if (b.dataset.act === "rm") {
     b.parentElement.innerHTML = `<span class="confirm">Remove this scholar?</span><button data-act="rmyes" class="rm">Yes, remove</button><button data-act="rmno">Keep</button>`;
   } else if (b.dataset.act === "rmyes") { DATA.rows = DATA.rows.filter(x => x !== r); markDirty(); render(); }
