@@ -826,3 +826,4 @@ total). Allocated by the MMSA Architect.
 10.29: student accounts can open the app (the roster read every page makes). Allocated by the MMSA Architect.
 10.30: the Read bar is one line again at 600-679px. Allocated by the MMSA Architect.
 10.31: a QCR āyah opens in the Read view, with Back to QCR. Allocated by the MMSA Architect.
+10.32: Keys Round 1: related hadith on the Āyah card, and the āyāt a hadith quotes. Allocated by the MMSA Architect.

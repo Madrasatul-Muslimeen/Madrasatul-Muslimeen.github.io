@@ -366,6 +366,31 @@ function relatedInfoHtml(related) {
 }
 
 /**
+ * "Related hadith" (Keys to Understanding, Round 1): the hadith in our books that quote this āyah, from the
+ * āyah–hadith index (ayah-hadith.js). `hadith`:
+ *   null                         -> still loading
+ *   { error: true }              -> said in words, never a blank
+ *   { items: [{ label, firstLine }], more } -- label is "book number" in the reader's language
+ * Both tests (the book's own label, the five matching words) are shown with the same plain words. Finding is not
+ * grading: no grade is shown here.
+ */
+function hadithItemHtml(item, i) {
+  return `<button type="button" class="ayah-related-item ayah-hadith-item" data-ayah-hadith-open="${i}">
+            <span class="ayah-related-ref">${escapeHtml(item.label)}</span>
+            ${item.firstLine ? `<span class="ayah-hadith-line" lang="ar" dir="rtl">${escapeHtml(item.firstLine)}</span>` : ""}
+            <span class="ayah-related-why">${escapeHtml(t("quotes this āyah"))}</span>
+          </button>`;
+}
+function hadithInfoHtml(hadith) {
+  if (hadith == null) return `<p class="ayah-status-empty">${escapeHtml(t("Finding hadith that quote this āyah…"))}</p>`;
+  if (hadith.error) return `<p class="ayah-status-empty">${escapeHtml(t("Couldn't load the related hadith just now."))}</p>`;
+  const items = hadith.items ?? [];
+  if (!items.length) return `<p class="ayah-status-empty" data-ayah-hadith-none>${escapeHtml(t("No hadith in our books quotes this āyah word for word."))}</p>`;
+  const more = hadith.more > 0 ? `<p class="ayah-related-sub">${escapeHtml(t("and {count} more", { count: num(hadith.more) }))}</p>` : "";
+  return `<div class="ayah-related-list">${items.map(hadithItemHtml).join("")}</div>${more}`;
+}
+
+/**
  * Section C part 2, "Connected āyāt" (issue #318) -- ayah-related.js's own
  * connectedThroughNotes() decides which āyāt and why; this only labels the
  * studied marker in the reader's language and marks up each row. `studied`
@@ -428,7 +453,7 @@ export function renderAyahActionSheetHtml({
   unitKey, ref = "", hasNote = false, isBookmarked = false, isSelf = true,
   approachOptionsHtml = "", selectedApproachId = null, selectedApproachStatusId = "not_started", hasPosterNote = null, approachSummary = null, canConfirm = false,
   approachStatuses = [], wordStatus = null, hifzStatus = null, related = null,
-  connected = null, ladderHtml = "", canPrev = true, canNext = true
+  connected = null, hadith = null, ladderHtml = "", canPrev = true, canNext = true
 } = {}) {
   void hasNote; // kept for callers that already pass it (icon/wording decisions belong to isBookmarked/isSelf above, not this flag)
   const noteWhy = t("Only your own record can create or file a Note.");
@@ -472,6 +497,10 @@ export function renderAyahActionSheetHtml({
         <div class="ayah-status-block" data-ayah-sheet-related>
           <h4 class="ayah-status-heading">${escapeHtml(t("Related āyāt"))}</h4>
           ${relatedInfoHtml(related)}
+        </div>
+        <div class="ayah-status-block" data-ayah-sheet-hadith>
+          <h4 class="ayah-status-heading">${escapeHtml(t("Related hadith"))}</h4>
+          ${hadithInfoHtml(hadith)}
         </div>
         <div class="ayah-status-block" data-ayah-sheet-connected>
           <h4 class="ayah-status-heading">${escapeHtml(t("Connected āyāt"))}</h4>
@@ -532,6 +561,9 @@ export function attachAyahActionSheetHandlers(container, callbacks = {}) {
       callbacks.onClose?.();
       callbacks.onRelatedJump?.(s, a);
     });
+  });
+  sheet.querySelectorAll("[data-ayah-hadith-open]").forEach((btn) => {
+    btn.addEventListener("click", () => callbacks.onHadithOpen?.(Number(btn.dataset.ayahHadithOpen)));
   });
   sheet.querySelector("[data-ayah-sheet-bookmark]")?.addEventListener("click", () => fire(callbacks.onBookmark));
   // Decision 94: one 📝 Note; with no Note yet it opens the Note view ready to write.

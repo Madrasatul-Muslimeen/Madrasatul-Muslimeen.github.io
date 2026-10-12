@@ -13,6 +13,7 @@
 // every time.
 
 import { t, num } from "./i18n.js";
+import { loadHadithAyat } from "./ayah-hadith.js";
 import { getAppLang, quranFontStack } from "./prefs.js";
 import { duaWords, duaNarration, duaWordTokens, duaWordsFingerprint, duaGrammarPosLabel } from "./dua-words.js";
 import { loadHadithTranslation, TRANSLATED_BOOKS } from "./hadith-translations.js";
@@ -860,7 +861,7 @@ async function renderOpenitiBody(body, oi, localRefresh) {
   body.appendChild(el("p", "hadith-note", t("Loading…")));
   const { hadiths } = await loadOpenitiChapter(versionUri, chapter);
   body.lastChild.remove();
-  renderOpenitiPassages(body, hadiths, conc, heLinks, dua ? { dua, oi, localRefresh, chapterId: chapter.id, versionUri } : null);
+  renderOpenitiPassages(body, hadiths, conc, heLinks, dua ? { dua, oi, localRefresh, chapterId: chapter.id, versionUri } : null, versionUri);
   // Opened from the Dua tab: the library's book shelf sits below HadeethEnc on this page, so bring it into view.
   if (oi.scrollTo && oi.focusPassage == null) { oi.scrollTo = false; body.scrollIntoView({ block: "start" }); }
   if (oi.focusPassage != null) {
@@ -1038,14 +1039,36 @@ function openitiArabicRowName(text) {
   return span;
 }
 
-function renderOpenitiPassages(body, hadiths, conc = null, heLinks = null, duaCtx = null) {
+function renderOpenitiPassages(body, hadiths, conc = null, heLinks = null, duaCtx = null, versionUri = null) {
   if (!hadiths.length) { body.appendChild(el("p", "hadith-note", t("Nothing here yet."))); return; }
   const list = el("div", "hadith-occurrences");
-  for (const h of hadiths) list.appendChild(openitiPassageCard(h, conc, heLinks, duaCtx));
+  for (const h of hadiths) list.appendChild(openitiPassageCard(h, conc, heLinks, duaCtx, versionUri));
   body.appendChild(list);
 }
 
-function openitiPassageCard(h, conc = null, heLinks = null, duaCtx = null) {
+/** Keys Round 1: "Āyāt this hadith quotes" -- only on a narration the āyah–hadith index has hits for (the book's file
+ *  is fetched when a chapter is shown, never at startup). Each āyah opens the Read view there, with ← Back to the hadith. */
+function ayatQuotedSection(versionUri, n) {
+  const box = el("div", "hadith-ayat-quoted");
+  box.hidden = true;
+  loadHadithAyat(versionUri, n).then((hits) => {
+    if (!hits.length) return;
+    box.dataset.ayatQuoted = String(n);
+    box.appendChild(el("p", "hadith-ayat-quoted-head", t("Āyāt this hadith quotes")));
+    const row = el("div", "hadith-ayat-quoted-list");
+    for (const [s, a] of hits) {
+      const link = el("a", "hadith-ayat-quoted-link", `${num(s)}:${num(a)}`);
+      link.href = `./quranrevival.html?goto=${s}:${a}&back=1&backTo=hadith`;
+      link.dataset.ayatQuotedLink = `${s}:${a}`;
+      row.appendChild(link);
+    }
+    box.appendChild(row);
+    box.hidden = false;
+  }).catch(() => { /* no index file: the section simply does not appear */ });
+  return box;
+}
+
+function openitiPassageCard(h, conc = null, heLinks = null, duaCtx = null, versionUri = null) {
   const card = el("article", "hadith-card openiti-passage");
   card.dataset.openitiPassage = String(h.n);
   card.dataset.openitiKind = h.kind;
@@ -1076,6 +1099,8 @@ function openitiPassageCard(h, conc = null, heLinks = null, duaCtx = null) {
   if (h.pageRefs && h.pageRefs.length) {
     card.appendChild(el("p", "hadith-availability openiti-page-refs", h.pageRefs.map(openitiPageRef).join(" · ")));
   }
+
+  if (versionUri && (h.kind === "hadith" || h.kind === "passage")) card.appendChild(ayatQuotedSection(versionUri, h.n));
 
   const heIds = heLinks?.get(h.n);
   if (heIds?.length) card.appendChild(openitiTranslationFold(heIds));
