@@ -18156,6 +18156,9 @@
               // toggle moves it for every page, remembered for next time.
               tajweedOn: getMushafTajweedFontOn(),
               fatihaCount: fatihaOn(),
+              // Issue #792 -- name the page in view once the first page is drawn, not the last, so the Read bar
+              // does not grow a row the first time anything re-renders.
+              onFirstPage: () => wireMushafPageRefScroll(),
               onToggleTajweed: async (nextOn) => {
                 // Architect review, 27 Sep 2026: the re-render rebuilt every
                 // page and left the reader on the unit's FIRST page -- toggled

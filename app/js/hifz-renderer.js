@@ -647,7 +647,7 @@ async function renderPage(pageNum, highlightSet, container, surahArabicName, myG
  * its own (I2).
  */
 export async function renderMushafPages(container, pages, highlightSet, surahArabicName, opts = {}) {
-  const { tajweedOn = false, onToggleTajweed = null, fatihaCount = false } = opts;
+  const { tajweedOn = false, onToggleTajweed = null, fatihaCount = false, onFirstPage = null } = opts;
   const myGeneration = ++renderGeneration;
   container.innerHTML = "";
   pageObservers.forEach((ro) => ro.disconnect());
@@ -665,6 +665,8 @@ export async function renderMushafPages(container, pages, highlightSet, surahAra
     // page whose result nobody will ever see.
     if (myGeneration !== renderGeneration) return;
     await renderPage(p, highlightSet, container, surahArabicName, myGeneration, tajweedOn, onToggleTajweed, fatihaCount);
+    // Issue #792 -- the caller can name the page in view once the first one is drawn, not the last.
+    if (p === pages[0] && onFirstPage && myGeneration === renderGeneration) onFirstPage();
   }
 }
 
