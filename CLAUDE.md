@@ -69,8 +69,8 @@ Read this first, every session. It is the standing brief.
 >   delete the Owner's text. Never spend money without approval. **Never change the page code**; page changes are
 >   the Owner's, made from the Basheera Wa Nazeera session for every project at once.
 > - A shared scheduled check (every 4 hours, Sydney time) acknowledges new items; repo work it defers lands here.
-> - The first, MMSA-only PCF (`RuU5CM459hbcH9q8zWHwY6`, built earlier on 12 Oct) is **superseded**: not updated, its
->   check stopped. The status board (#159) and the handover stay as they are.
+> - The first, MMSA-only PCF (built earlier on 12 Oct) was **deleted** on the Owner's word (J01), with its check.
+>   The status board (#159) and the handover stay as they are.
 
 > ## ⇢ THE OWNER'S STANDING RULE ON WORKING (decision 91, 8 Oct 2026) — BINDING ON EVERY SESSION
 >
