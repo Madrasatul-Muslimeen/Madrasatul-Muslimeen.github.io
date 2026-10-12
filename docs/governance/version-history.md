@@ -831,3 +831,4 @@ total). Allocated by the MMSA Architect.
 10.34: the Bookmarks page's + New bookmark files an Owner's folder by name for a child (Builder round #789). Allocated by the MMSA Architect.
 10.35: a bookmark save keeps the Mushaf page; QCR + Add āyah follows the Al-Fātiḥah count (issue #786). Allocated by the MMSA Architect.
 10.36: the Mushaf page reference shows from the first page, so a bookmark save no longer grows the Read bar (Builder round #792). Allocated by the MMSA Architect.
+10.37: the Read bar stays one row with the Meaning switches on a phone (Builder round #794). Allocated by the MMSA Architect.

@@ -20716,3 +20716,13 @@ Found in v10.35's review: with the Mushaf on, the Read bar grew 13px after a boo
 **Recorded, not changed:** on the Builder's runner `read-bar-bookmark-layers` gives 46/2 ("cover at most 60px": 91, at en 400 and en 390) with and without the round's change, for the second round running; this sandbox gives 48/0 on the same code. A runner difference still to be explained.
 
 Also in this release: decision 109 in `docs/governance/2026-09-27-owner-decisions.md` (the Owner's Q7 answer: keys on the Status wheel in three views, built after the keys).
+
+## v10.37 — 2026-10-12 — The Read bar stays one row with the Meaning switches on a phone (Builder round #794)
+
+`read-bar-bookmark-layers` had given 46/2 on the Builder's runner ("cover at most 60px": 91) and 48/0 in the Architect's sandbox for two rounds. Measured on the runner: real layout, not timing. With its wider `system-ui, sans-serif` the three Meaning switch pills take 213px and `#readBarEnd` (🔖 📖 ⤢) 165px, more than the bar's 358px (390) or 368px (400), so `#readBarEnd` wrapped to a second row (bar 83px). `#mushafPageRef` was not involved. The Architect measured the sandbox too: on `main` the English bar already wrapped to two rows (83px) at 320 and 360px, a width the suite does not run.
+
+`app/quranrevival.html`: below 440px the pills use `padding: 0 .42rem`, `font-size: .74rem` and a `.2rem` gap (the slot 194 → 164px in English and 161 → 134px in Bangla here). Their 36px height is unchanged.
+
+**Measured after:** in the sandbox, one row (47px) at 320, 360, 390, 400 and 440px in English and Bangla (it was 83px at English 320/360). On the runner, one row at 390, 400 and 768px; **at 320/360 still two rows** with that wider font (about 347px needed): one row there needs a layout choice (shorter switch labels, or the switches on their own line), recorded for later.
+
+**Tests:** read-bar-bookmark-layers 48/0 in the sandbox and on the runner (with the CSS reverted the runner gives cover 91 and the 2 failures again); mushaf-page-ref-steady 48/0; mushaf-no-sideways-overflow 648/0; phone-width-overflow 217/0; behaviour 971/0. The 60px limit and the check are untouched.

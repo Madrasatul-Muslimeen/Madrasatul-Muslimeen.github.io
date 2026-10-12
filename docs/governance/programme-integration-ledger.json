@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "10.36",
+    "version": "10.37",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -3425,8 +3425,20 @@
     {
       "version": "10.36",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Builder round #792 (PR #793): renderMushafPages() calls onFirstPage once the first page is drawn, so the Read bar's Mushaf page reference is filled at first paint instead of after the last page or the first re-render.",
+      "integration": {
+        "authorizedOn": "2026-10-12",
+        "integratedOn": "2026-10-12",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "10.37",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Builder round #794 (PR #795): tighter Meaning-switch pills below 440px keep the Read bar one row; it wrapped to two (83px) with a wider phone font at 390/400, and in English at 320/360 everywhere.",
       "integration": {
         "authorizedOn": "2026-10-12",
         "integratedOn": "2026-10-12",
@@ -3435,8 +3447,9 @@
       }
     }
   ],
-  "nextUnallocated": "10.37",
+  "nextUnallocated": "10.38",
   "nextUnallocatedNote": [
+    "v10.37 was allocated to the Read bar stays one row with the Meaning switches on a phone (Builder round #794), 2026-10-12.",
     "v10.36 was allocated to the Mushaf page reference shows from the first page, so a bookmark save no longer grows the Read bar (Builder round #792), 2026-10-12.",
     "v10.35 was allocated to a bookmark save keeps the Mushaf page; QCR + Add āyah follows the Al-Fātiḥah count (issue #786), 2026-10-12.",
     "v10.34 was allocated to the Bookmarks page's + New bookmark files an Owner's folder by name for a child (Builder round #789), 2026-10-12.",
