@@ -25,6 +25,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { TENANT } from "./collections.js";
+import { getTenantRosterSnap } from "./roster-access.js";
 import { langText } from "./lang.js";
 import { roleListLabel } from "./labels.js";
 import { getAppLang, mountCardLookControl } from "./prefs.js";
@@ -174,7 +175,7 @@ export function initRoutineStudyPage({ moduleId, trackableId, rootSubjectId }) {
       ? hydratedMembershipsPromise
       : getDoc(doc(db, TENANT.TENANTS, activeTenantId)).then((snap) => (snap.exists() ? snap.data() : null));
     let [rosterSnap, tenantDataResult, tree, trackables] = await Promise.all([
-      getDocs(query(collection(db, TENANT.TENANT_PEOPLE), where("tenantId", "==", activeTenantId))),
+      getTenantRosterSnap(db, activeTenantId),
       tenantDataPromise,
       getSubjectTree(db, activeTenantId),
       getTrackables(db, activeTenantId),

@@ -183,6 +183,7 @@
       getDocs,
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
     import { TENANT } from "./js/collections.js";
+    import { getTenantRosterSnap } from "./js/roster-access.js";
     import { addPersonToTenant, updatePersonInTenant, setPersonStatus, getRosterRoles, ageFromBirthYear } from "./js/people.js";
     import { createInvite, listInvitesForTenant, getTokenForPendingInvite } from "./js/invites.js";
     import { langText } from "./js/lang.js";
@@ -302,7 +303,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     async function loadRoster(hydratedMembershipsPromise) {
       const hydrationPromise = hydratedMembershipsPromise ?? Promise.resolve(myMemberships);
       const [snap, hydrated] = await Promise.all([
-        getDocs(query(collection(db, TENANT.TENANT_PEOPLE), where("tenantId", "==", activeTenantId))),
+        getTenantRosterSnap(db, activeTenantId),
         hydrationPromise,
       ]);
       roster = snap.docs.map((d) => ({ id: d.id, ...d.data() }));

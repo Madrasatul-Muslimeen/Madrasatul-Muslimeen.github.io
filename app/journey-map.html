@@ -471,6 +471,7 @@
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
     import { doc, getDoc, getDocs, collection, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
     import { TENANT } from "./js/collections.js";
+    import { getTenantRosterSnap } from "./js/roster-access.js";
     import { langText } from "./js/lang.js";
     import { getAppLang, mountCardLookControl } from "./js/prefs.js";
     import { adoptAppLangFromUserIndex, mountSyncedAppLangControl } from "./js/lang-sync.js";
@@ -876,7 +877,7 @@
     }
 
     async function loadContextData() {
-      const rosterSnap = await getDocs(query(collection(db, TENANT.TENANT_PEOPLE), where("tenantId", "==", activeTenantId)));
+      const rosterSnap = await getTenantRosterSnap(db, activeTenantId);
       roster = rosterSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
       renderNav(myMemberships.find((m) => m.tenantId === activeTenantId)?.roles ?? [], null);
       renderPersonSelectOptions();

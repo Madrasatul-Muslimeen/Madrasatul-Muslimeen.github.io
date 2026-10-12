@@ -33,6 +33,7 @@ import {
   collection, doc, getDoc, getDocs, query, where,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { TENANT } from "./collections.js";
+import { getTenantRosterSnap } from "./roster-access.js";
 import { listAllRecordsForPerson } from "./records.js";
 import { weekKeyFor, getWeekActivity } from "./activity.js";
 import { getBookmarks } from "./bookmarks.js";
@@ -156,7 +157,7 @@ export async function collectBackup(db, {
 
   // The roster, read exactly the way every study screen reads it.
   const roster = await attempt(notes, "The list of people", async () => {
-    const snap = await getDocs(query(collection(db, TENANT.TENANT_PEOPLE), where("tenantId", "==", tenantId)));
+    const snap = await getTenantRosterSnap(db, tenantId);
     return snap.docs.map((d) => ({ id: d.id, ...toPlain(d.data()) }));
   }, []);
   step("People");

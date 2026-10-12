@@ -17,6 +17,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { TENANT } from "./collections.js";
+import { getTenantRosterSnap } from "./roster-access.js";
 import { langText, setLangText } from "./lang.js";
 import { roleListLabel } from "./labels.js";
 import { getAppLang, mountCardLookControl } from "./prefs.js";
@@ -528,7 +529,7 @@ export function initAsmaStudyPage() {
     // myMemberships is simply left as whatever the switch handler already
     // set from its own (already-hydrated) membership list.
     let [rosterSnap, trackables, hydratedMemberships] = await Promise.all([
-      getDocs(query(collection(db, TENANT.TENANT_PEOPLE), where("tenantId", "==", activeTenantId))),
+      getTenantRosterSnap(db, activeTenantId),
       getTrackables(db, activeTenantId),
       hydratedMembershipsPromise ?? Promise.resolve(undefined),
     ]);

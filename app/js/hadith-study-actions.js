@@ -30,6 +30,7 @@
 import { auth, db } from "./firebase-init.js";
 import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { TENANT } from "./collections.js";
+import { getTenantRosterSnap } from "./roster-access.js";
 import { getActiveContext, getSelectedPersonId, effectiveRoles, scopedRoster } from "./session-context.js";
 import { langText } from "./lang.js";
 import { getAppLang } from "./prefs.js";
@@ -63,7 +64,7 @@ async function canRecordForSelected(tenantId, effRoles, myPersonId, selectedPers
   try {
     if (effRoles.some((r) => r === "owner" || r === "prime" || r === "platformAdmin")) return true;
     if (effRoles.includes("guardian")) {
-      const rosterSnap = await getDocs(query(collection(db, TENANT.TENANT_PEOPLE), where("tenantId", "==", tenantId)));
+      const rosterSnap = await getTenantRosterSnap(db, tenantId);
       const person = rosterSnap.docs.map((d) => ({ id: d.id, ...d.data() })).find((p) => p.id === selectedPersonId);
       if (person?.managedByPersonId === myPersonId) return true;
     }
@@ -207,7 +208,7 @@ export async function hadeethEncStudiedStatus(session, id) {
  */
 export async function getHadeethEncRoster(session) {
   const ctx = getActiveContext();
-  const snap = await getDocs(query(collection(db, TENANT.TENANT_PEOPLE), where("tenantId", "==", session.tenantId)));
+  const snap = await getTenantRosterSnap(db, session.tenantId);
   const everyone = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
   const effRoles = effectiveRoles(ctx?.roles ?? [], ctx?.viewAsRole ?? null);
   return scopedRoster(everyone, effRoles, session.myPersonId)

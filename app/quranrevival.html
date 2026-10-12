@@ -6366,6 +6366,7 @@
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
     import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
     import { TENANT } from "./js/collections.js";
+    import { getTenantRosterSnap } from "./js/roster-access.js";
     import { langText, setLangText } from "./js/lang.js";
     import { roleListLabel, roleLabel } from "./js/labels.js";
     import { safeWrite, reportWriteFailure } from "./js/errors.js";
@@ -8926,7 +8927,7 @@
         ? hydratedMembershipsPromise
         : getDoc(doc(db, TENANT.TENANTS, activeTenantId)).then((snap) => (snap.exists() ? snap.data() : null));
       const [rosterSnap, tenantDataResult, allTrackables, loadedSurahIndex] = await Promise.all([
-        getDocs(query(collection(db, TENANT.TENANT_PEOPLE), where("tenantId", "==", activeTenantId))),
+        getTenantRosterSnap(db, activeTenantId),
         tenantDataPromise,
         getTrackables(db, activeTenantId),
         getSurahIndex(),

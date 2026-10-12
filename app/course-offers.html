@@ -105,6 +105,7 @@
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
     import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
     import { TENANT } from "./js/collections.js";
+    import { getTenantRosterSnap } from "./js/roster-access.js";
     import { langText } from "./js/lang.js";
     import { roleListLabel } from "./js/labels.js";
     import { getAppLang, mountCardLookControl } from "./js/prefs.js";
@@ -215,7 +216,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     async function loadContextData(hydratedMembershipsPromise) {
       const hydrationPromise = hydratedMembershipsPromise ?? Promise.resolve(myMemberships);
       const [rosterSnap, tree, offersRaw, enrollments, hydrated] = await Promise.all([
-        getDocs(query(collection(db, TENANT.TENANT_PEOPLE), where("tenantId", "==", activeTenantId))),
+        getTenantRosterSnap(db, activeTenantId),
         getSubjectTree(db, activeTenantId),
         listCourseOffers(db, activeTenantId),
         listAllEnrollmentsForTenant(db, activeTenantId),
