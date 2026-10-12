@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "10.28",
+    "version": "10.29",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -3329,7 +3329,7 @@
     {
       "version": "10.28",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "The fourth word level, Intermediate, on the Word card: the word's meanings and the root's meanings, and an Achieved that reaches every word of the root (decisions 101/103; Rules published by the Owner).",
       "integration": {
         "authorizedOn": "2026-10-11",
@@ -3337,10 +3337,23 @@
         "method": "MERGE_PR",
         "reference": "CHANGELOG.md"
       }
+    },
+    {
+      "version": "10.29",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "The Owner's urgent quick task: every roster read now uses queries the Rules can prove for students, teachers and (once the candidate is published) guardians.",
+      "integration": {
+        "authorizedOn": "2026-10-12",
+        "integratedOn": "2026-10-12",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
     }
   ],
-  "nextUnallocated": "10.29",
+  "nextUnallocated": "10.30",
   "nextUnallocatedNote": [
+    "v10.29 was allocated to student accounts can open the app (the roster read every page makes), 2026-10-12.",
     "v10.28 was allocated to the Word card's Intermediate tab (decisions 101 and 103), 2026-10-11.",
     "v10.27 was allocated to 🔖 on the Mushaf bar; the Meaning switches on the Read bar; the Asma Name bar's '◂ Wheel', 2026-10-11.",
     "v10.26 was allocated to the ⋮ 'has a note' mark is kept for every ayah the ⋮ sheet looked up this session, 2026-10-11.",
