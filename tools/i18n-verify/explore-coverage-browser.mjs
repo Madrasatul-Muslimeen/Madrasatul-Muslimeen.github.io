@@ -63,8 +63,10 @@ for (const lang of ["en", "bn"]) for (const width of [390, 1280]) {
   const done = await line();
   check(`${tag}: when they answer, the figure is complete and the note is gone`, W[lang].known.test(done.text) && !done.counting && !done.text.includes(W[lang].loading), JSON.stringify(done));
   // Decision 82: one Surah costs a handful of word-progress reads (two queries per level), never one per word.
+  // Updated in place 12 Oct 2026: v10.28 added a fourth level, Intermediate (decisions 101/103), so two queries per
+  // level is now 8, not 6. Still all lists, still a fixed handful, and one per word would still be 436+.
   const lemmaOps = await page.evaluate(() => (window.__fsLog || []).filter((r) => /^quranLemma(Progress|Approvals)$/.test(r.col)).map((r) => r.kind));
-  check(`${tag}: opening the Surah read word progress in ${lemmaOps.length} requests, all lists (it was 436+ single reads)`, lemmaOps.length > 0 && lemmaOps.length <= 6 && lemmaOps.every((k) => k === "getDocs"), JSON.stringify(lemmaOps.slice(0, 8)));
+  check(`${tag}: opening the Surah read word progress in ${lemmaOps.length} requests, all lists (it was 436+ single reads)`, lemmaOps.length > 0 && lemmaOps.length <= 8 && lemmaOps.every((k) => k === "getDocs"), JSON.stringify(lemmaOps.slice(0, 8)));
 
   // 3. Hold again, open the Surah, then leave for the Whole Qur'an before the reads answer: the late answer must not paint.
   await page.evaluate(() => document.querySelector('#exploreBreadcrumb [data-level="quran"]').click());
