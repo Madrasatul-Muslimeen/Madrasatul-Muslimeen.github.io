@@ -6402,7 +6402,7 @@
       readingUnitsPersistenceReady, readingUnitsPersistenceReason,
     } from "./js/study-event-wiring.js";
     import { getBookmarks, saveBookmark, removeSavedBookmark, updateSavedBookmarkFields, findSavedBookmark, createFolder, flattenFolderTree, livePresets, saveSettingsPreset, renameSettingsPreset, removeSettingsPreset, setLastPlace, lastPlaceOf } from "./js/bookmarks.js";
-    import { openBookmarkNamePopover, announceBookmarkSaved } from "./js/bookmark-popover.js";
+    import { openBookmarkNamePopover, openBookmarkExistsChoice, announceBookmarkSaved } from "./js/bookmark-popover.js";
     import { saveBookmarkForAssignees, patchSelectedDoc } from "./js/bookmark-assign.js";
     import { getAyahNotes, ayahNoteHtml, ayahHasNote, saveAyahNote, ensureAyahNotesWritable } from "./js/ayah-notes.js";
     import { renderQuickMenu, attachQuickMenuHandlers, attachQcrDrawerHandlers, notesToPlainText, copyToClipboard, shareText } from "./js/ayah-note-renderer.js";
@@ -21228,7 +21228,15 @@
       if (!auth.currentUser || !selectedPersonId) return false;
       const existing = findSavedBookmark(bookmarksDoc, { moduleId: "quranrevival", subjectId: "quran", position: unitKey });
       // toggle: false (the writing sheet's 🔖) always ADDS: a second bookmark on the same unit must never remove the first.
+      // The Owner, 12 Oct 2026 (PCF J22): when it exists, ASK -- remove it, or add another (this unit's dialog, for
+      // everyone / This āyah / This page). Nothing is written until a button is pressed.
+      let wantRemove = false;
       if (existing && toggle) {
+        const pick = await openBookmarkExistsChoice();
+        if (pick !== "remove" && pick !== "add") return false;
+        wantRemove = pick === "remove";
+      }
+      if (existing && toggle && wantRemove) {
         const outcome = await safeWrite(
           () => removeSavedBookmark(db, activeTenantId, selectedPersonId, existing.id),
           { collection: TENANT.BOOKMARKS, action: "removeSavedBookmark" }

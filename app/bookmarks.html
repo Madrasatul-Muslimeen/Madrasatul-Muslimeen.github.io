@@ -938,10 +938,6 @@ import { mountBookmarkMenu, noteBookmarkOpened, getBookmarkTimesShown, bookmarkT
         const only = nbAssigneesContainer.querySelector("input:checked").value;
         if ([...nbPersonTagSelect.options].some((o) => o.value === only)) nbPersonTagSelect.value = only;
       }
-      [...nbFolderSelect.options].forEach((opt) => {
-        if (opt.value !== "" && opt.value !== "__new__") opt.disabled = multi;
-      });
-      if (multi && nbFolderSelect.value !== "" && nbFolderSelect.value !== "__new__") nbFolderSelect.value = "";
     }
 
     function nbRenderAssignees() {
