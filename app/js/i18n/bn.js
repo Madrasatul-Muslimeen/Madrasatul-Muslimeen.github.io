@@ -4123,4 +4123,10 @@ export const BN = {
   "Show the meaning: translations and word by word": "অর্থ দেখুন: অনুবাদ ও শব্দে শব্দে",
   // 10 Oct 2026: the Read bar's ⋯ (Text size, Bookmark, Notes, Mark complete, Writing sheet, Attach to Asma).
   "More tools": "আরও সরঞ্জাম",
+  // 12 Oct 2026 (the Owner: a bookmark for the children "couldn't add"): the 🔖 dialog now says who it was saved
+  // for, and links to a child's bookmarks on the Bookmarks page.
+  "Saved for {names}": "{names}-এর জন্য সংরক্ষিত হয়েছে",
+  "{a} and {b}": "{a} ও {b}",
+  "See {name}'s bookmarks": "{name}-এর বুকমার্ক দেখুন",
+  "{name}'s bookmarks": "{name}-এর বুকমার্ক",
 };

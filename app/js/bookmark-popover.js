@@ -38,13 +38,29 @@
 //
 // Resolves with:
 //   null  -- cancelled, no write to make
-//   { name, folderId, newFolderName, personTagId, assigneeIds }
+//   { name, folderId, folderName, newFolderName, personTagId, assigneeIds, unitId }
 // where folderId is an existing folder (or null for Unfiled, or when several
 // assignees are ticked), newFolderName is set only when a brand-new folder
 // was typed, personTagId is the tagged person (or null, forced null when
 // several assignees are ticked), and assigneeIds is the ticked roster ids --
 // always at least one entry (defaults to [selectedPersonId] when no roster
 // was offered at all).
+//
+// The Owner, 12 Oct 2026 -- two fixes from real use:
+//   * "I tried to add bookmark for children but couldn't add". With ONE person
+//     ticked, the For picker now follows the tick (until the reader picks For
+//     by hand): it used to stay on the selected person, so a bookmark saved
+//     into a child's own document was tagged "For" the Owner. An existing
+//     folder stays offered for one child: the caller files it by its NAME in
+//     the child's document (bookmark-assign.js), and `folderName` is handed
+//     back for that. showBookmarkSavedNotice() below is how the caller says
+//     who it was saved for -- the save used to close the dialog in silence.
+//   * "Can you add quick unit choice because this only restrict to whole
+//     Surah." An optional `units` list ([{id, label, defaultName}], the first
+//     is the default) draws a compact "Bookmark" choice -- the current unit,
+//     This āyah, This page. Picking one changes the default Name unless the
+//     reader has typed their own, and `unitId` says which was picked. Only the
+//     Quran Read view passes `units`; every other caller gets no new control.
 
 import { t } from "./i18n.js";
 
@@ -77,7 +93,7 @@ function ensureStyles() {
     }
     .bm-popover-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.4rem; }
     .bm-popover-actions button {
-      font-size: 0.88rem; padding: 0.35rem 0.8rem; border-radius: 0.4rem; border: 1px solid #ccc;
+      font-size: 0.88rem; padding: 0.35rem 0.8rem; min-height: 36px; border-radius: 0.4rem; border: 1px solid #ccc;
       background: #1F3A6E; color: white; cursor: pointer;
     }
     .bm-popover-actions button.secondary { background: white; color: #1F3A6E; }
@@ -86,11 +102,30 @@ function ensureStyles() {
     .bm-pop-assignee-row input[type="checkbox"] { width: 1.05rem; height: 1.05rem; accent-color: #1F3A6E; cursor: pointer; flex-shrink: 0; }
     .bm-pop-assignee-row .who-name { flex: 1; }
     .bm-pop-assignee-row .who-tag { font-size: 0.66rem; color: #777; background: #f6f7fb; border: 1px solid #eee; border-radius: 0.6rem; padding: 0.02rem 0.4rem; }
+    .bm-pop-unit-row { font-size: 0.85rem; margin-bottom: 0.7rem; color: #444; }
+    .bm-pop-units { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 0.35rem; margin-top: 0.25rem; }
+    .bm-pop-units button {
+      min-height: 36px; min-width: 0; padding: 0.25rem 0.35rem; font-size: 0.82rem; line-height: 1.15;
+      border: 1px solid #c9d0e0; border-radius: 0.4rem; background: white; color: #1F3A6E; cursor: pointer;
+      white-space: normal; overflow-wrap: anywhere;
+    }
+    .bm-pop-units button[aria-checked="true"] { background: #1F3A6E; color: white; border-color: #1F3A6E; }
+    .bm-saved-notice {
+      position: fixed; left: 50%; bottom: 1rem; transform: translateX(-50%); z-index: 9800;
+      width: max-content; max-width: calc(100vw - 2rem); box-sizing: border-box;
+      display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
+      background: #1F3A6E; color: white; border-radius: 0.6rem; padding: 0.45rem 0.5rem 0.45rem 0.9rem;
+      box-shadow: 0 6px 24px rgba(0,0,0,0.25); font: 0.9rem/1.3 system-ui, sans-serif;
+    }
+    .bm-saved-notice[hidden] { display: none; }
+    .bm-saved-notice .bm-saved-text { flex: 1 1 12rem; min-width: 0; overflow-wrap: anywhere; }
+    .bm-saved-notice a { color: #ffe08a; display: inline-flex; align-items: center; min-height: 36px; overflow-wrap: anywhere; }
+    .bm-saved-notice button { min-width: 36px; min-height: 36px; border: 0; border-radius: 0.4rem; background: rgba(255,255,255,0.15); color: white; font-size: 1rem; cursor: pointer; }
   `;
   document.head.appendChild(style);
 }
 
-function renderPopoverInner(defaultName, folders, people, defaultPersonTagId, roster, selectedPersonId) {
+function renderPopoverInner(defaultName, folders, people, defaultPersonTagId, roster, selectedPersonId, units) {
   const folderOptions = folders
     .map((f) => `<option value="${f.id}">${"　".repeat(f.depth ?? 0)}${escapeHtml(f.name)}</option>`)
     .join("");
@@ -122,8 +157,18 @@ function renderPopoverInner(defaultName, folders, people, defaultPersonTagId, ro
         <div class="bm-pop-assignees" data-bm-pop-assignees>${assigneeRows}</div>
       </label>`
     : "";
+  // The Owner, 12 Oct 2026 -- "quick unit choice". Two or more units only:
+  // one choice is no choice. Not a .bm-popover-field: those are the labelled
+  // inputs, and a group of buttons is not one.
+  const unitRow = units && units.length >= 2
+    ? `<div class="bm-pop-unit-row" data-bm-pop-unit-row><span id="bmPopUnitLabel">${t("Bookmark")}</span>
+        <div class="bm-pop-units" role="radiogroup" aria-labelledby="bmPopUnitLabel">${units.map((u, i) =>
+          `<button type="button" role="radio" aria-checked="${i === 0 ? "true" : "false"}" data-bm-pop-unit="${escapeHtml(u.id)}">${escapeHtml(u.label)}</button>`).join("")}</div>
+      </div>`
+    : "";
   return `<div class="bm-popover" role="dialog" aria-modal="true" aria-label="${t("Bookmark this")}">
     <h3>${t("Bookmark this")}</h3>
+    ${unitRow}
     <label class="bm-popover-field">${t("Name")}
       <input type="text" data-bm-pop-name value="${escapeHtml(defaultName)}">
     </label>
@@ -156,12 +201,13 @@ function renderPopoverInner(defaultName, folders, people, defaultPersonTagId, ro
  * yesterday's popover, with `assigneeIds` always resolving to
  * `[selectedPersonId]`.
  */
-export function openBookmarkNamePopover({ defaultName = "", folders = [], people = [], defaultPersonTagId = null, roster = [], selectedPersonId = null } = {}) {
+export function openBookmarkNamePopover({ defaultName = "", folders = [], people = [], defaultPersonTagId = null, roster = [], selectedPersonId = null, units = [] } = {}) {
   ensureStyles();
   return new Promise((resolve) => {
     const overlay = document.createElement("div");
     overlay.className = "bm-popover-overlay";
-    overlay.innerHTML = renderPopoverInner(defaultName, folders, people, defaultPersonTagId, roster, selectedPersonId);
+    const unitList = units && units.length >= 2 ? units : [];
+    overlay.innerHTML = renderPopoverInner(unitList[0]?.defaultName ?? defaultName, folders, people, defaultPersonTagId, roster, selectedPersonId, unitList);
     document.body.appendChild(overlay);
 
     function onKeydown(e) {
@@ -186,6 +232,23 @@ export function openBookmarkNamePopover({ defaultName = "", folders = [], people
     const newFolderInput = overlay.querySelector("[data-bm-pop-newfolder]");
     const assigneesList = overlay.querySelector("[data-bm-pop-assignees]"); // absent when roster < 2
 
+    // The unit choice. The Name follows the picked unit until the reader types
+    // a name of their own; after that it is theirs and is never overwritten.
+    let nameTyped = false;
+    nameInput.addEventListener("input", () => { nameTyped = true; });
+    let unitId = unitList[0]?.id ?? null;
+    overlay.querySelectorAll("[data-bm-pop-unit]").forEach((btn) => btn.addEventListener("click", () => {
+      const u = unitList.find((x) => x.id === btn.dataset.bmPopUnit);
+      if (!u) return;
+      unitId = u.id;
+      overlay.querySelectorAll("[data-bm-pop-unit]").forEach((b) => b.setAttribute("aria-checked", b === btn ? "true" : "false"));
+      if (!nameTyped) nameInput.value = u.defaultName;
+    }));
+
+    // For follows the one ticked person until the reader picks For by hand.
+    let personPicked = false;
+    personSelect?.addEventListener("change", () => { personPicked = true; });
+
     folderSelect.addEventListener("change", () => {
       const isNew = folderSelect.value === "__new__";
       newFolderRow.style.display = isNew ? "block" : "none";
@@ -201,9 +264,15 @@ export function openBookmarkNamePopover({ defaultName = "", folders = [], people
     // (toggleAyahBookmark() and its siblings) is what actually loops over.
     function updateForAssigneeCount() {
       if (!assigneesList) return;
-      const n = assigneesList.querySelectorAll("input:checked").length;
+      const ticked = [...assigneesList.querySelectorAll("input:checked")];
+      const n = ticked.length;
       const multi = n > 1;
       if (personRow) personRow.style.display = multi ? "none" : "";
+      if (n === 1 && personSelect && !personPicked) {
+        const id = ticked[0].value;
+        const follow = id === selectedPersonId ? (defaultPersonTagId ?? "") : id;
+        if ([...personSelect.options].some((o) => o.value === follow)) personSelect.value = follow;
+      }
       [...folderSelect.options].forEach((opt) => {
         if (opt.value !== "" && opt.value !== "__new__") opt.disabled = multi;
       });
@@ -235,13 +304,71 @@ export function openBookmarkNamePopover({ defaultName = "", folders = [], people
           newFolderInput.focus();
           return;
         }
-        close({ name, folderId: null, newFolderName, personTagId, assigneeIds: resolvedAssigneeIds });
+        close({ name, folderId: null, folderName: null, newFolderName, personTagId, assigneeIds: resolvedAssigneeIds, unitId });
       } else {
-        close({ name, folderId: folderSelect.value || null, newFolderName: null, personTagId, assigneeIds: resolvedAssigneeIds });
+        const folderId = folderSelect.value || null;
+        const folderName = folderId ? (folders.find((f) => f.id === folderId)?.name ?? null) : null;
+        close({ name, folderId, folderName, newFolderName: null, personTagId, assigneeIds: resolvedAssigneeIds, unitId });
       }
     });
 
     nameInput.focus();
     nameInput.select();
+  });
+}
+
+/** "Maryam", "Maryam and Ahsan", "Zahra, Maryam and Ahsan" -- in the app language. */
+export function formatNameList(names) {
+  const list = (names ?? []).filter(Boolean);
+  if (list.length <= 1) return list[0] ?? "";
+  return t("{a} and {b}", { a: list.slice(0, -1).join(", "), b: list[list.length - 1] });
+}
+
+let noticeTimer = null;
+/**
+ * The Owner, 12 Oct 2026: a bookmark saved for someone else used to close the
+ * dialog in silence, and nothing on the Owner's screen changed -- so it looked
+ * as if it had not been saved. This says who it was saved for ("Saved for
+ * Maryam and Ahsan"), and for anyone whose bookmarks this page does not show,
+ * links to their bookmarks on the Bookmarks page (`links`: [{ href, label }];
+ * each href carries back=1, the way-back law). One notice at a time; it stays
+ * 10 seconds, or until ✕.
+ */
+export function showBookmarkSavedNotice({ names = [], links = [] } = {}) {
+  ensureStyles();
+  if (!names.length) return null;
+  let el = document.getElementById("bmSavedNotice");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "bmSavedNotice";
+    el.className = "bm-saved-notice";
+    el.setAttribute("role", "status");
+    el.setAttribute("aria-live", "polite");
+    document.body.appendChild(el);
+  }
+  el.innerHTML = `<span class="bm-saved-text" data-bm-saved-text>${escapeHtml(t("Saved for {names}", { names: formatNameList(names) }))}</span>`
+    + links.map((l) => `<a href="${escapeHtml(l.href)}" data-bm-saved-link>${escapeHtml(l.label)}</a>`).join("")
+    + `<button type="button" data-bm-saved-close aria-label="${escapeHtml(t("Close"))}">✕</button>`;
+  el.hidden = false;
+  el.querySelector("[data-bm-saved-close]").addEventListener("click", () => { el.hidden = true; });
+  clearTimeout(noticeTimer);
+  noticeTimer = setTimeout(() => { el.hidden = true; }, 10000);
+  return el;
+}
+
+/**
+ * The callers' one line after a save (bookmark-assign.js's `savedFor`): shows
+ * the notice above only when the bookmark went to someone OTHER than the
+ * selected person -- a bookmark for the selected person alone already shows
+ * as its own ★. `nameOf(personId)` is the caller's (it holds the roster).
+ */
+export function announceBookmarkSaved({ savedFor = [], selectedPersonId = null, nameOf = (id) => id } = {}) {
+  if (!savedFor.some((pid) => pid !== selectedPersonId)) return null;
+  return showBookmarkSavedNotice({
+    names: savedFor.map(nameOf),
+    links: savedFor.filter((pid) => pid !== selectedPersonId).map((pid) => ({
+      href: `./bookmarks.html?person=${encodeURIComponent(pid)}&back=1`,
+      label: t("See {name}'s bookmarks", { name: nameOf(pid) }),
+    })),
   });
 }
