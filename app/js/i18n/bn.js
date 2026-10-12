@@ -2145,6 +2145,9 @@ export const BN = {
   "Remove from this collection": "এই সংকলন থেকে সরান", // ?
   "Tap a segment or a row to open that āyah — the wheel closes and lands you on QuranRevival's own reading/note screen.":
     "কোনো অংশ বা সারিতে চাপুন সেই আয়াত খুলতে — চাকাটি বন্ধ হয়ে যাবে এবং আপনি সরাসরি QuranRevival-এর পঠন/নোট স্ক্রিনে পৌঁছাবেন।", // ?
+  // 12 Oct 2026: a QCR āyah opens in the Read view, with ← Back to QCR (the Owner's quick task).
+  "Tap a segment or a row to open that āyah in the Read view; ← Back to QCR brings you back here.":
+    "কোনো অংশ বা সারিতে চাপুন: আয়াতটি পড়ার ভিউতে খুলবে; ← QCR-এ ফিরুন চাপলে এখানে ফিরে আসবেন।", // ?
   "+ Add āyah": "+ আয়াত যোগ করুন", // ?
   "No āyāt in this collection yet.": "এই সংকলনে এখনো কোনো আয়াত নেই।", // ?
 
