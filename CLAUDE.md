@@ -55,19 +55,22 @@ Read this first, every session. It is the standing brief.
 > If you are the Architect, read `ARCHITECT.md` and the pinned status issue
 > `📋 MMSA — what's happening now` next. See **The Architect loop** below.
 
-> ## ⇢ PERMANENT RULE: Project Control File (the Owner, 12 Oct 2026) — READ IT FIRST, UPDATE IT LAST
+> ## ⇢ PERMANENT RULE: Project Control File (the Owner, 12 Oct 2026; PCF Architect Brief v02.01) — READ IT FIRST, UPDATE IT LAST
 >
-> **The MMSA Project Control File (PCF) is https://claude.ai/artifact/RuU5CM459hbcH9q8zWHwY6** — one live page,
-> shared by the Owner and Claude, holding the Project rules, every Job (MMSA `MM-…` and QuranRevival `QR-…`
-> workstreams), **Your turn** (everything waiting on the Owner) and Guides. Its data lives in the artifact's
-> database (`ArtifactData`: collections `jobs`, `guides`, doc `meta/project`).
-> - **Every session reads the PCF first and updates it before finishing.** Nothing is reported as done unless it
->   is recorded there. Reply under each item marked New, clear the marks, and stamp `claudeSeenAt`.
-> - **Pin every write with `if_version`**; on a conflict re-read and redo on top of the Owner's edit. **Never
->   write `meta/project.layout`**, and never hide or delete the Owner's text. Never spend money without approval.
-> - The page code is the Owner's PCF template (v01.17), unchanged apart from its three placeholders; never
->   rewrite it. A scheduled check reads the PCF every 4 hours (Australia/Sydney).
-> - The status board (#159) and the handover stay as they are; the PCF is where the Owner reads and answers.
+> **This project lives in the owner's shared PCF (https://claude.ai/artifact/PhW1KKX28qrqj9dE7Ha8dZ), section
+> `mmsa`.** Every session: read the PCF first (General rules, this project's rules, jobs, What's new) and update
+> this project's section before finishing. Write only to `p/mmsa/…`. File any Quick tasks for this project into the
+> right job, reply under every new owner change (blue "Claude ↳" comment), clear its `new` marks, and stamp
+> `claudeSeenAt`.
+> - Data (`ArtifactData`): `meta/global` (General rules; **read only**, never `layout`), `p/mmsa` (write only
+>   `rules`, `news`, `claudeSeenAt`; never `layout`/`ownLayout`), `p/mmsa/jobs/<Jnn>`, `p/mmsa/guides/<Gnn>`,
+>   `inbox/<id>` (file this project's Quick tasks). Every other `p/<pid>/…` is another project's: read only.
+> - **Pin every write with `if_version`**; on a conflict re-read and redo on top of the Owner's edit. Never hide or
+>   delete the Owner's text. Never spend money without approval. **Never change the page code**; page changes are
+>   the Owner's, made from the Basheera Wa Nazeera session for every project at once.
+> - A shared scheduled check (every 4 hours, Sydney time) acknowledges new items; repo work it defers lands here.
+> - The first, MMSA-only PCF (`RuU5CM459hbcH9q8zWHwY6`, built earlier on 12 Oct) is **superseded**: not updated, its
+>   check stopped. The status board (#159) and the handover stay as they are.
 
 > ## ⇢ THE OWNER'S STANDING RULE ON WORKING (decision 91, 8 Oct 2026) — BINDING ON EVERY SESSION
 >
