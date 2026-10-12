@@ -194,6 +194,8 @@
     import { getAppLang, getBookmarkMenuGroupBy, setBookmarkMenuGroupBy, BOOKMARK_GROUP_BYS, mountCardLookControl } from "./js/prefs.js";
     import { adoptAppLangFromUserIndex, mountSyncedAppLangControl } from "./js/lang-sync.js";
     import { safeWrite } from "./js/errors.js";
+    import { saveBookmarkForAssignees, patchSelectedDoc } from "./js/bookmark-assign.js";
+    import { announceBookmarkSaved } from "./js/bookmark-popover.js";
     import { getMyMembershipRoles, hydrateMemberships, pickContext, getActiveContext, setActiveContext, effectiveRoles, scopedRoster, getSelectedPersonId, setSelectedPersonId } from "./js/session-context.js";
     import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
 import { mountBookmarkMenu, noteBookmarkOpened, getBookmarkTimesShown, bookmarkTimeText } from "./js/bookmark-nav.js";
@@ -932,6 +934,10 @@ import { mountBookmarkMenu, noteBookmarkOpened, getBookmarkTimesShown, bookmarkT
       const n = nbAssigneesContainer.querySelectorAll("input:checked").length;
       const multi = n > 1;
       nbPersonTagField.style.display = multi ? "none" : "";
+      if (n === 1) {
+        const only = nbAssigneesContainer.querySelector("input:checked").value;
+        if ([...nbPersonTagSelect.options].some((o) => o.value === only)) nbPersonTagSelect.value = only;
+      }
       [...nbFolderSelect.options].forEach((opt) => {
         if (opt.value !== "" && opt.value !== "__new__") opt.disabled = multi;
       });
@@ -1002,35 +1008,25 @@ import { mountBookmarkMenu, noteBookmarkOpened, getBookmarkTimesShown, bookmarkT
         rangeFrom: unitType === "range" ? Math.min(Number(nbAyahSelect.value), Number(nbToSelect.value)) : null,
         rangeTo: unitType === "range" ? Math.max(Number(nbAyahSelect.value), Number(nbToSelect.value)) : null,
       };
-      // Multi-student round -- "Assign to": save the SAME bookmark into
-      // every ticked assignee's own document, exactly the same mechanism
-      // every study page's own toggle*Bookmark() now uses (see
-      // quranrevival.html's own toggleAyahBookmark() for the full
-      // reasoning). This form has no "+ New folder…" option of its own
-      // (unlike bookmark-popover.js's), so there's no per-assignee folder
-      // to create -- an existing folder id only ever applies to
-      // selectedPersonId's own document, which nbUpdateForAssigneeCount()
-      // above already disables the moment a second assignee is ticked.
+      // One write per ticked person, on that person's own document -- the
+      // shared loop in bookmark-assign.js (v10.33), which files an existing
+      // folder by NAME in another person's document instead of handing over
+      // the selected person's folder id.
       const assigneeIds = [...nbAssigneesContainer.querySelectorAll("input:checked")].map((c) => c.value);
-      const resolvedAssigneeIds = assigneeIds.length ? assigneeIds : [selectedPersonId];
-      const multi = resolvedAssigneeIds.length > 1;
-      const folderId = multi ? null : (nbFolderSelect.value || null);
-      const personTagId = multi ? null : (nbPersonTagSelect.value || null);
-      await Promise.all(resolvedAssigneeIds.map(async (pid) => {
-        const outcome = await safeWrite(
-          () => saveBookmark(db, {
-            tenantId: activeTenantId, personId: pid, moduleId: "quranrevival", subjectId: "quran",
-            name, position, settings, folderId, personTagId, uid: auth.currentUser.uid,
-          }),
-          { collection: TENANT.BOOKMARKS, action: "saveBookmark" }
-        );
-        // Only selectedPersonId's own document is the one this page holds
-        // in memory -- another assignee's own copy shows the next time
-        // they (or their guardian) load their own bookmarks.
-        if (outcome.ok && pid === selectedPersonId) {
-          bookmarksDoc = { ...bookmarksDoc, saved: [...(bookmarksDoc.saved ?? []), outcome.result] };
-        }
-      }));
+      const folderId = nbFolderSelect.value || null;
+      const outcome = await saveBookmarkForAssignees(db, {
+        tenantId: activeTenantId, uid: auth.currentUser.uid, selectedPersonId,
+        choice: {
+          assigneeIds, folderId, folderName: folderId ? nbFolderSelect.selectedOptions[0].textContent : null,
+          personTagId: nbPersonTagSelect.value || null,
+        },
+        bookmark: { moduleId: "quranrevival", subjectId: "quran", name, position, settings },
+      });
+      bookmarksDoc = patchSelectedDoc(bookmarksDoc, outcome, selectedPersonId);
+      announceBookmarkSaved({
+        savedFor: outcome.savedFor, selectedPersonId,
+        nameOf: (pid) => { const p = roster.find((r) => r.id === pid); return p ? langText(p.name, getAppLang(), p.id) : pid; },
+      });
       newBookmarkForm.style.display = "none";
       renderAll();
     });
