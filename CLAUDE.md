@@ -55,6 +55,20 @@ Read this first, every session. It is the standing brief.
 > If you are the Architect, read `ARCHITECT.md` and the pinned status issue
 > `📋 MMSA — what's happening now` next. See **The Architect loop** below.
 
+> ## ⇢ PERMANENT RULE: Project Control File (the Owner, 12 Oct 2026) — READ IT FIRST, UPDATE IT LAST
+>
+> **The MMSA Project Control File (PCF) is https://claude.ai/artifact/RuU5CM459hbcH9q8zWHwY6** — one live page,
+> shared by the Owner and Claude, holding the Project rules, every Job (MMSA `MM-…` and QuranRevival `QR-…`
+> workstreams), **Your turn** (everything waiting on the Owner) and Guides. Its data lives in the artifact's
+> database (`ArtifactData`: collections `jobs`, `guides`, doc `meta/project`).
+> - **Every session reads the PCF first and updates it before finishing.** Nothing is reported as done unless it
+>   is recorded there. Reply under each item marked New, clear the marks, and stamp `claudeSeenAt`.
+> - **Pin every write with `if_version`**; on a conflict re-read and redo on top of the Owner's edit. **Never
+>   write `meta/project.layout`**, and never hide or delete the Owner's text. Never spend money without approval.
+> - The page code is the Owner's PCF template (v01.17), unchanged apart from its three placeholders; never
+>   rewrite it. A scheduled check reads the PCF every 4 hours (Australia/Sydney).
+> - The status board (#159) and the handover stay as they are; the PCF is where the Owner reads and answers.
+
 > ## ⇢ THE OWNER'S STANDING RULE ON WORKING (decision 91, 8 Oct 2026) — BINDING ON EVERY SESSION
 >
 > The Owner, in their own words: **"Do not wait for my permission except something needs my choice or
