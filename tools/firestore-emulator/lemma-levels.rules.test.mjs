@@ -20,17 +20,21 @@ const HOST = "127.0.0.1";
 const PORT = 8107;
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, "../..");
-const RULES_FILE = process.env.RULES_FILE || "docs/governance/2026-10-02-lemma-levels-DEPLOYMENT-candidate.rules";
+// The 2 Oct candidate was PUBLISHED, and later rounds (Siyagah 14, decisions 101/103) have changed the live file
+// since, so a line-by-line comparison with that candidate can never pass again (J10, 12 Oct 2026). By default this
+// suite now runs its allow/deny cases against the LIVE Rules, which must still carry decision 58. The candidate can
+// still be named: RULES_FILE=docs/governance/2026-10-02-lemma-levels-DEPLOYMENT-candidate.rules.
+const CANDIDATE_FILE = "docs/governance/2026-10-02-lemma-levels-DEPLOYMENT-candidate.rules";
+const RULES_FILE = process.env.RULES_FILE || "firestore.rules";
 const candidate = fs.readFileSync(path.resolve(root, RULES_FILE), "utf8");
 const live = fs.readFileSync(path.join(root, "firestore.rules"), "utf8");
 assert.match(PROJECT, /^demo-/);
 assert.equal(HOST, "127.0.0.1");
 
-// The candidate is the live file with exactly two lines widened (and a
-// comment): every other live line is still there, in order. Either state
-// passes -- before publication (exactly the two `== 'wbw'` lines missing) or
-// after it (the files are the same). A MUTANT run skips this file check.
-if (!process.env.MUTANT) {
+// Before publication the candidate was the live file with exactly two lines widened (and a comment). That check
+// is kept for the candidate itself, and only while it is unpublished; once published it has nothing to compare.
+if (!process.env.MUTANT && RULES_FILE === CANDIDATE_FILE && live.trimEnd() !== candidate.trimEnd()
+    && live.includes("          && request.resource.data.get('level', '') == 'wbw'")) {
   const WIDENED = "          && request.resource.data.get('level', '') == 'wbw'";
   const COMMENT = "    // A created lane must say what it is, and only `wbw` may be written --";
   const candLines = candidate.split("\n");
