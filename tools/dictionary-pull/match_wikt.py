@@ -36,7 +36,13 @@ def resolve_formof(e):
     if not m: return None
     c=[k for k in idx['voc'].get(voc(m.group(1)),[]) if not ents[k]['formOnly']]
     if not c: return None
-    pr=[k for k in c if ents[k]['pos']==e['pos']] or [k for k in c if ents[k]['pos']=='verb'] or c
+    # J23 (12 Oct 2026): a verbal noun / participle points at a VERB; preferring the
+    # noun's own POS let a homograph win (بَوَار -> "bar"). build_app_dictionary.py
+    # also guards the output, since this script is not re-run from the repository.
+    if re.match(r'(verbal noun|active participle|passive participle) of',e['g']):
+        pr=[k for k in c if ents[k]['pos']=='verb'] or c
+    else:
+        pr=[k for k in c if ents[k]['pos']==e['pos']] or [k for k in c if ents[k]['pos']=='verb'] or c
     return ents[pr[0]]['g']
 NOUNISH={'noun','adj','name','num','pron','adv'}
 def compat(cls,p):
