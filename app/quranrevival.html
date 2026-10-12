@@ -6393,7 +6393,8 @@
       readingUnitsPersistenceReady, readingUnitsPersistenceReason,
     } from "./js/study-event-wiring.js";
     import { getBookmarks, saveBookmark, removeSavedBookmark, updateSavedBookmarkFields, findSavedBookmark, createFolder, flattenFolderTree, livePresets, saveSettingsPreset, renameSettingsPreset, removeSettingsPreset, setLastPlace, lastPlaceOf } from "./js/bookmarks.js";
-    import { openBookmarkNamePopover } from "./js/bookmark-popover.js";
+    import { openBookmarkNamePopover, announceBookmarkSaved } from "./js/bookmark-popover.js";
+    import { saveBookmarkForAssignees, patchSelectedDoc } from "./js/bookmark-assign.js";
     import { getAyahNotes, ayahNoteHtml, ayahHasNote, saveAyahNote, ensureAyahNotesWritable } from "./js/ayah-notes.js";
     import { renderQuickMenu, attachQuickMenuHandlers, attachQcrDrawerHandlers, notesToPlainText, copyToClipboard, shareText } from "./js/ayah-note-renderer.js";
     import { initReadWindow } from "./js/read-window.js";
@@ -21008,7 +21009,70 @@
       if (stageView === "read") renderStudyScreen();
     }
 
-    async function toggleAyahBookmark(unitKey, defaultNameOverride, settingsOverride, { toggle = true } = {}) {
+    /** The Owner, 12 Oct 2026: "Can you add quick unit choice because this only restrict to whole Surah." Which āyah
+        the reader is on in the Read view, for the dialog's "This āyah" / "This page": the active āyah
+        (currentAyahNum -- the one tapped, or sounding) while it is on screen; otherwise, in the scrolling flow, the
+        row the reader has scrolled to (updateFlowInView()'s .in-view); in the Mushaf, an āyah of this unit on the
+        page in view (the Mushaf bar's own page reference). `page` is that āyah's Mushaf page. */
+    function bookmarkAyahOnScreen() {
+      const pageOf = (a) => currentSurahData?.ayahs.find((x) => x.ayah === a)?.page ?? null;
+      const cur = { ayah: currentAyahNum, half: currentHalf(), page: pageOf(currentAyahNum) };
+      const halfFor = (a) => (a === 7 && fatihaCountApplies(currentSurahNum, fatihaOn()) ? "a" : null);
+      if (!currentSurahData || getComputedStyle(pageViewContainer).display === "none") return cur;
+      const root = flowScrollRoot();
+      const view = root?.getBoundingClientRect();
+      const overlap = (el) => {
+        const r = el.getBoundingClientRect();
+        return Math.max(0, Math.min(r.right, view.right) - Math.max(r.left, view.left)) * Math.max(0, Math.min(r.bottom, view.bottom) - Math.max(r.top, view.top));
+      };
+      const seen = (el) => overlap(el) > 0;
+      // The Mushaf page in view, measured the way updateMushafPageRef() measures it (most of the visible area).
+      const mushafPages = mushafToggle.checked && root ? [...pageViewContainer.querySelectorAll(".hifz-page[data-mushaf-page]")] : [];
+      const pageEl = mushafPages.reduce((best, p) => (!best || overlap(p) > overlap(best) ? p : best), null);
+      if (pageEl && overlap(pageEl) > 0) {
+        const page = Number(pageEl.dataset.mushafPage);
+        const onPage = currentSurahData.ayahs.filter((a) => a.page === page).map((a) => a.ayah);
+        if (!onPage.length || onPage.includes(currentAyahNum)) return cur;
+        const bounds = currentUnitAyahBounds();
+        const inUnit = bounds?.length ? onPage.find((a) => a >= bounds[0] && a <= bounds[1]) : undefined;
+        const ayah = inUnit ?? onPage[0];
+        return { ayah, half: halfFor(ayah), page };
+      }
+      const rows = [...pageViewContainer.querySelectorAll(".page-flow-ayah")];
+      if (!root || !rows.length) return cur;
+      const curRow = rows.find((r) => Number(r.dataset.ayah) === currentAyahNum);
+      if (curRow && seen(curRow)) return cur;
+      const row = rows.find((r) => r.classList.contains("in-view") && seen(r)) ?? rows.find(seen);
+      if (!row) return cur;
+      const ayah = Number(row.dataset.ayah);
+      return { ayah, half: halfFor(ayah), page: pageOf(ayah) };
+    }
+
+    /** The dialog's "Bookmark" choice, Read view only and only on a unit wider than one āyah: the unit itself (the
+        default, as before), This āyah, and -- unless the unit already IS a page -- This page. Every position is a
+        buildUnitKey() key, and each choice's settings open it the way a bookmark of that kind always opens: an āyah
+        bookmark as the Single Ayah unit at that āyah, a page bookmark as the Page unit at that page. */
+    function readBookmarkUnitChoices(info) {
+      if (stageView !== "read" || !currentSurahData || info.unitType === "ayah") return [];
+      const base = captureQuranBookmarkSettings();
+      const { ayah, half, page } = bookmarkAyahOnScreen();
+      const choices = [{ id: "unit", label: unitChipText(info), defaultName: info.label, position: info.unitKey, settings: base }];
+      choices.push({
+        id: "ayah", label: t("This āyah"), defaultName: ayahRefLabel(currentSurahNum, ayah, { half }),
+        position: ayahRecordKey(currentSurahNum, ayah, half),
+        settings: { ...base, unitType: "ayah", ayahNum: ayah, rangeFrom: null, rangeTo: null },
+      });
+      if (info.unitType !== "page" && page) {
+        choices.push({
+          id: "page", label: t("This page"), defaultName: t("Page {page}", { page: num(page) }),
+          position: buildUnitKey.page(PAGE_EDITION, page),
+          settings: { ...base, unitType: "page", ayahNum: ayah, rangeFrom: null, rangeTo: null },
+        });
+      }
+      return choices;
+    }
+
+    async function toggleAyahBookmark(unitKey, defaultNameOverride, settingsOverride, { toggle = true, unitChoices = [] } = {}) {
       if (!auth.currentUser || !selectedPersonId) return false;
       const existing = findSavedBookmark(bookmarksDoc, { moduleId: "quranrevival", subjectId: "quran", position: unitKey });
       // toggle: false (the writing sheet's 🔖) always ADDS: a second bookmark on the same unit must never remove the first.
@@ -21047,49 +21111,33 @@
         // the Track card's own Claim dropdown already uses.
         roster: assignableRoster(),
         selectedPersonId,
+        // The Owner, 12 Oct 2026 -- "quick unit choice" (Read view only; empty everywhere else).
+        units: unitChoices.map(({ id, label, defaultName: dn }) => ({ id, label, defaultName: dn })),
       });
       if (!choice) return false; // cancelled -- no write, no re-render
-      // Save the SAME bookmark into every ticked assignee's own document.
-      // Safe in parallel: each write lands on a different bookmarks/
-      // {tenantId}__{personId} document (same reasoning "Assign to"'s own
-      // Claim loop already uses). An existing named folder id and a shared
-      // personTagId are only ever passed through for a single assignee --
-      // see bookmark-popover.js's own header comment for why neither
-      // transfers across several people's own separate documents.
-      const assigneeIds = choice.assigneeIds?.length ? choice.assigneeIds : [selectedPersonId];
-      const multi = assigneeIds.length > 1;
-      const settings = settingsOverride ?? captureQuranBookmarkSettings();
-      await Promise.all(assigneeIds.map(async (pid) => {
-        let folderId = multi ? null : choice.folderId;
-        if (choice.newFolderName) {
-          const folderOutcome = await safeWrite(
-            () => createFolder(db, { tenantId: activeTenantId, personId: pid, name: choice.newFolderName, personTagId: multi ? null : choice.personTagId, uid: auth.currentUser.uid }),
-            { collection: TENANT.BOOKMARKS, action: "createFolder" }
-          );
-          if (!folderOutcome.ok) return;
-          folderId = folderOutcome.result.id;
-          if (pid === selectedPersonId) bookmarksDoc = { ...bookmarksDoc, folders: [...(bookmarksDoc.folders ?? []), folderOutcome.result] };
-        }
-        const saveOutcome = await safeWrite(
-          () => saveBookmark(db, {
-            tenantId: activeTenantId, personId: pid, moduleId: "quranrevival", subjectId: "quran",
-            name: choice.name || defaultName, position: unitKey, settings, folderId,
-            personTagId: multi ? null : choice.personTagId, uid: auth.currentUser.uid,
-          }),
-          { collection: TENANT.BOOKMARKS, action: "saveBookmark" }
-        );
-        // Update in-memory rather than re-fetching -- same reasoning as
-        // onSaveNote's own ayahNotesDoc update below: the write already
-        // tells us exactly what changed, so a re-fetch is both an unneeded
-        // round trip and, right after a create, a real race against a
-        // backend that may not have caught up to its own write yet. Only
-        // ONE assignee's own document is the one this page actually holds
-        // in memory -- another assignee's own copy shows the next time
-        // they (or their guardian) load their own bookmarks.
-        if (saveOutcome.ok && pid === selectedPersonId) {
-          bookmarksDoc = { ...bookmarksDoc, saved: [...(bookmarksDoc.saved ?? []), saveOutcome.result] };
-        }
-      }));
+      const picked = unitChoices.find((u) => u.id === choice.unitId) ?? null;
+      // Save the SAME bookmark into every ticked assignee's own document, one
+      // write per person on their own bookmarks/{tenantId}__{personId}
+      // document -- bookmark-assign.js, shared with Asma, Deen Study and the
+      // routines (it also files an existing folder by NAME in a child's
+      // document, where the selected person's folder id means nothing).
+      const outcome = await saveBookmarkForAssignees(db, {
+        tenantId: activeTenantId, uid: auth.currentUser.uid, selectedPersonId, choice,
+        bookmark: {
+          moduleId: "quranrevival", subjectId: "quran",
+          name: choice.name || (picked?.defaultName ?? defaultName),
+          position: picked?.position ?? unitKey,
+          settings: picked?.settings ?? settingsOverride ?? captureQuranBookmarkSettings(),
+        },
+      });
+      // Update in-memory rather than re-fetching -- the write already tells us
+      // exactly what changed, and a re-fetch right after a create races a
+      // backend that may not have caught up. Only the selected person's own
+      // document is held here; another person's copy is announced below.
+      bookmarksDoc = patchSelectedDoc(bookmarksDoc, outcome, selectedPersonId);
+      // The Owner, 12 Oct 2026 ("couldn't add" for the children): it WAS saved, in the child's own document, which
+      // nothing on this screen shows -- so say who it was saved for, with a way to their bookmarks.
+      announceBookmarkSaved({ savedFor: outcome.savedFor, selectedPersonId, nameOf: (pid) => { const p = roster.find((r) => r.id === pid); return p ? langText(p.name, getAppLang(), p.id) : pid; } });
       refreshBookmarkDisplay(unitKey);
       return true;
     }
@@ -22603,7 +22651,8 @@
     readBarBookmarkBtn?.addEventListener("click", () => readBookmarkBtn.click());
     readBookmarkBtn.addEventListener("click", () => {
       const info = currentUnitInfo();
-      toggleAyahBookmark(info.unitKey, info.unitType === "ayah" ? undefined : info.label);
+      // The Owner, 12 Oct 2026: "quick unit choice" -- on a wider unit the dialog also offers This āyah / This page.
+      toggleAyahBookmark(info.unitKey, info.unitType === "ayah" ? undefined : info.label, undefined, { unitChoices: readBookmarkUnitChoices(info) });
     });
 
     // 30 Aug 2026 round -- always the ayah currently on screen, whatever

@@ -54,7 +54,8 @@ import {
   renderAssignDropdown, wireAssignDropdown, checkedAssignees, buildClaimResultMessage,
 } from "./way-modal.js";
 import { getBookmarks, touchResume, recentResumeEntries, saveBookmark, removeSavedBookmark, findSavedBookmark, createFolder, flattenFolderTree } from "./bookmarks.js";
-import { openBookmarkNamePopover } from "./bookmark-popover.js";
+import { openBookmarkNamePopover, announceBookmarkSaved } from "./bookmark-popover.js";
+import { saveBookmarkForAssignees, patchSelectedDoc } from "./bookmark-assign.js";
 import { renderContinueStrip } from "./continue-strip.js";
 
 /**
@@ -489,35 +490,21 @@ export function initTopicStudyPage({ moduleId, trackableId, rootSubjectId }) {
       selectedPersonId,
     });
     if (!choice) return;
-    // Save the SAME bookmark into every ticked assignee's own document --
-    // see quranrevival.html's own toggleAyahBookmark() for the full
-    // reasoning (an existing named folder id and a shared personTagId only
-    // transfer for a single assignee; safe in parallel since each write
-    // lands on a different bookmarks document).
-    const assigneeIds = choice.assigneeIds?.length ? choice.assigneeIds : [selectedPersonId];
-    const multi = assigneeIds.length > 1;
-    await Promise.all(assigneeIds.map(async (pid) => {
-      let folderId = multi ? null : choice.folderId;
-      if (choice.newFolderName) {
-        const folderOutcome = await safeWrite(
-          () => createFolder(db, { tenantId: activeTenantId, personId: pid, name: choice.newFolderName, personTagId: multi ? null : choice.personTagId, uid: auth.currentUser.uid }),
-          { collection: TENANT.BOOKMARKS, action: "createFolder" }
-        );
-        if (!folderOutcome.ok) return;
-        folderId = folderOutcome.result.id;
-        if (pid === selectedPersonId) bookmarksDoc = { ...bookmarksDoc, folders: [...(bookmarksDoc.folders ?? []), folderOutcome.result] };
-      }
-      const outcome = await safeWrite(
-        () => saveBookmark(db, {
-          tenantId: activeTenantId, personId: pid, moduleId, subjectId: node.id,
-          name: choice.name || defaultName, position: node.id, folderId, personTagId: multi ? null : choice.personTagId, uid: auth.currentUser.uid,
-        }),
-        { collection: TENANT.BOOKMARKS, action: "saveBookmark" }
-      );
-      if (outcome.ok && pid === selectedPersonId) {
-        bookmarksDoc = { ...bookmarksDoc, saved: [...(bookmarksDoc.saved ?? []), outcome.result] };
-      }
-    }));
+    // Save the SAME bookmark into every ticked assignee's own document, one
+    // write per person on their own document -- bookmark-assign.js, shared with
+    // the Qur'an Read view (it also files an existing folder by NAME in a
+    // child's document). The Owner, 12 Oct 2026: a bookmark for a child "couldn't
+    // add" -- it was saved, silently, where nothing on this screen shows it; the
+    // notice now says who it was saved for.
+    const outcome = await saveBookmarkForAssignees(db, {
+      tenantId: activeTenantId, uid: auth.currentUser.uid, selectedPersonId, choice,
+      bookmark: {
+        moduleId, subjectId: node.id,
+        name: choice.name || defaultName, position: node.id,
+      },
+    });
+    bookmarksDoc = patchSelectedDoc(bookmarksDoc, outcome, selectedPersonId);
+    announceBookmarkSaved({ savedFor: outcome.savedFor, selectedPersonId, nameOf: (pid) => { const p = roster.find((r) => r.id === pid); return p ? langText(p.name, getAppLang(), p.id) : pid; } });
     refreshTopicBookmarkBtn(node);
   }
 
