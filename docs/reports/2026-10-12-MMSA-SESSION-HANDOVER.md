@@ -91,3 +91,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v10.33** (2026-10-12): bookmarks for children show who they were saved for; a unit choice in Bookmark this.
 - **v10.34** (2026-10-12): the Bookmarks page's + New bookmark files an Owner's folder by name for a child (Builder round #789).
 - **v10.35** (2026-10-12): a bookmark save keeps the Mushaf page; QCR + Add āyah follows the Al-Fātiḥah count (issue #786).
+- **v10.36** (2026-10-12): the Mushaf page reference shows from the first page, so a bookmark save no longer grows the Read bar (Builder round #792).
