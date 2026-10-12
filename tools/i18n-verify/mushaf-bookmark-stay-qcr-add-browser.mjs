@@ -121,10 +121,13 @@ async function readView(page, { unit = "surah", mushaf = false, from, to } = {})
     await page.waitForTimeout(800);
   }
 }
-/** Taps a 🔖 and, when it opens the name dialog, saves; a ★ removes the bookmark straight away. */
+/** Taps a 🔖 and, when it opens the name dialog, saves; a ★ now asks (issue #797) and "Remove my bookmark" removes it. */
 async function tapBookmark(page, sel) {
   if (sel === "#readBarBookmarkBtn") await page.click(sel); else await clickReadTool(page, sel);
-  if (await page.waitForSelector(".bm-popover", { timeout: 2500 }).catch(() => null)) await page.click("[data-bm-pop-save]");
+  if (await page.waitForSelector(".bm-popover", { timeout: 2500 }).catch(() => null)) {
+    if (await page.$("[data-bm-exists-remove]")) await page.click("[data-bm-exists-remove]");
+    else await page.click("[data-bm-pop-save]");
+  }
   // The ⋯ panel stays open over the reading at 390px; close it the way a reader would, without scrolling.
   await page.evaluate(() => { const b = document.getElementById("bmSavedNotice"); if (b) b.hidden = true; });
 }
