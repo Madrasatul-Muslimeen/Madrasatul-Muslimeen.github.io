@@ -8,6 +8,8 @@ The Owner's chronological grid of scholars, hadith compilers and mufassirūn. Th
 | `Scholars Database - v1.1.html` | The Owner's file as sent, unchanged. 20 scholars, centuries 2–4, 10–11, 14–15. |
 | `Scholars Database - v1.2.html` | The live page: https://claude.ai/artifact/51ACYVU6hBKs7jx32rpAUi. The Owner's 20 rows unchanged, four new columns (G Approaches, H Madhab / group, I Qurʾān works, J Open source & rights), and 48 scholars added by Claude for the empty centuries, mostly mufassirūn. Every Claude cell is a **draft** until the Owner presses ✓ Checked. |
 | `scholars-database-v1.2.json` | The same rows as data: the source the page is built from, and what the app will read later. |
+| `Scholars Database - v1.3.html` | Published to the live page 12 Oct 2026 (PCF J17, the Owner: "add the Political authority of the Century beside the century and the political authority under each scholar"). Where the Owner drew it: a **Political authority** line on each century heading row, and one under each scholar's lifespan. All 14 centuries and 68 scholars drafted by Claude (`centuries[c].draft`, `authorityDraft`), each with its own ✓ Checked. |
+| `scholars-database-v1.3.json` | v1.3's data: v1.2 plus `centuries` and each row's `authority`. |
 | `scholars-database.template.html` | The page with `__DATA__` where the JSON goes. |
 
 **Approaches** use the master file's numbers: 28 Sahaba, 29 Tābiʿīn, 30 Gen1 (to 656 AH / 1258), 31 Gen2 (to about
