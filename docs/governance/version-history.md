@@ -828,3 +828,4 @@ total). Allocated by the MMSA Architect.
 10.31: a QCR āyah opens in the Read view, with Back to QCR. Allocated by the MMSA Architect.
 10.32: Keys Round 1: related hadith on the Āyah card, and the āyāt a hadith quotes. Allocated by the MMSA Architect.
 10.33: bookmarks for children show who they were saved for; a unit choice in Bookmark this. Allocated by the MMSA Architect.
+10.34: the Bookmarks page's + New bookmark files an Owner's folder by name for a child (Builder round #789). Allocated by the MMSA Architect.
