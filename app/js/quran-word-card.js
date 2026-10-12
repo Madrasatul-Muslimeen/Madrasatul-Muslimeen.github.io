@@ -167,6 +167,7 @@ export const WORD_CARD_DEFAULT_LABELS = Object.freeze({
   stateAchieved: "Achieved",
   awaitingReview: "Waiting to be checked",
   knownElsewhere: "Known: marked Achieved at another place of this word",
+  knownElsewhereHeld: "Saved here as {state}. It still shows Achieved because this word is known through the other mark this card names; change that mark to change it.",
   reviewConfirmed: "Checked and confirmed",
   reviewReturned: "Sent back: {note}",
   reviewReturnedNoNote: "Sent back to look at again",
@@ -499,7 +500,8 @@ function progressBlock(progress, authority, coverage, text, formatNumber, wbw = 
     ${wbw.notApplicable ? notApplicableHtml(progress, authority, text) : `<div class="word-progress-states" role="group" aria-label="${escapeHtml(text.progressHeading)}">${stateButton("not_started")}${stateButton("learning")}${stateButton("practising")}${stateButton("achieved")}</div>`}
     ${progress.saving ? `<p class="word-progress-state" data-word-progress-saving role="status">${escapeHtml(text.saving ?? "Saving…")}</p>` : ""}
     ${reviewLine ? `<p class="word-progress-state" data-word-progress-review>${escapeHtml(reviewLine)}</p>` : ""}
-    ${progress.knownElsewhere ? `<p class="word-progress-state" data-word-progress-known-elsewhere>${escapeHtml(text.knownElsewhere ?? "Known: marked Achieved at another place of this word")}</p>` : ""}
+    ${progress.knownElsewhere && progress.knownElsewhereVia !== "level" ? `<p class="word-progress-state" data-word-progress-known-elsewhere>${escapeHtml(text.knownElsewhere ?? "Known: marked Achieved at another place of this word")}</p>` : ""}
+    ${progress.knownElsewhere && progress.heldOwnState && stateLabel[progress.heldOwnState] ? `<p class="word-progress-state" data-word-progress-held="${escapeHtml(progress.heldOwnState)}" role="status">${escapeHtml(String(text.knownElsewhereHeld ?? "Saved here as {state}. It still shows Achieved because this word is known through the other mark this card names; change that mark to change it.").replace("{state}", stateLabel[progress.heldOwnState]))}</p>` : ""}
     ${authority && !authority.mayClaim ? `<p class="word-progress-state" data-word-progress-blocked>${escapeHtml(text.progressNotAllowed)}</p>` : ""}
     ${decisions}
     </div>
@@ -964,12 +966,23 @@ export function wordPartsHtml(word, layers, features, segments, context, text) {
     const piece = escapeHtml(token.slice(seg.from, seg.to));
     let arName = name.ar;
     let meaning = null;
+    let meaningFrom = "";
     if (name.kind === "stem") {
       if (id === "stem-V" && !features.deriv) {
         const n = FORM_NAMES[features.form] ? features.form : 1;
         arName = `${STEM_NAMES.V.ar} · ${FORM_NAMES[n].ordinalAr}`;
       }
-      meaning = bn ? (word.translation?.bn || null) : (context.dictionary?.entry?.m || null);
+      // J23 (the Owner, 12 Oct 2026: "the word meaning at the word box doesn't
+      // appear"). About a quarter of the Qur'an's dictionary words have no
+      // English dictionary entry (يَصْلَى, خَبِيثَة), and one that was matched
+      // to a homograph is now left out at source (بَوَار was "bar"). Once the
+      // dictionary HAS loaded and holds nothing for this word, the stem box
+      // falls back to the word's own word-by-word meaning -- what the Bangla
+      // page has always printed here -- rather than nothing. Before it loads,
+      // nothing (no flicker from one meaning to another).
+      if (bn) meaning = word.translation?.bn || null;
+      else if (context.dictionary?.entry?.m) meaning = context.dictionary.entry.m;
+      else if (context.dictionary) { meaning = word.translation?.en || null; meaningFrom = meaning ? "wbw" : ""; }
     } else {
       meaning = partMeaning(id, features.pp?.[i] ?? null, lang);
     }
@@ -978,7 +991,7 @@ export function wordPartsHtml(word, layers, features, segments, context, text) {
     // the word card" -- its box carries word-card-part-stem while the parts
     // are coloured.
     const stemBox = colour && seg.role === "stem" ? " word-card-part-stem" : "";
-    return `<div class="word-card-part${stemBox}" data-word-card-part="${escapeHtml(id)}"><small class="word-card-part-kind">${escapeHtml(kind)}</small><span class="word-card-part-piece${colour ? ` word-card-segment-${seg.role}` : ""}" dir="rtl" lang="ar">${piece}</span><span class="word-card-part-arname" dir="rtl" lang="ar">${escapeHtml(arName)}</span><b class="word-card-part-name">${escapeHtml(name[lang])}</b>${meaning ? `<span class="word-card-part-meaning" lang="${lang}">${escapeHtml(meaning)}</span>` : ""}</div>`;
+    return `<div class="word-card-part${stemBox}" data-word-card-part="${escapeHtml(id)}"><small class="word-card-part-kind">${escapeHtml(kind)}</small><span class="word-card-part-piece${colour ? ` word-card-segment-${seg.role}` : ""}" dir="rtl" lang="ar">${piece}</span><span class="word-card-part-arname" dir="rtl" lang="ar">${escapeHtml(arName)}</span><b class="word-card-part-name">${escapeHtml(name[lang])}</b>${meaning ? `<span class="word-card-part-meaning" lang="${lang}"${meaningFrom ? ` data-word-card-part-meaning-from="${meaningFrom}"` : ""}>${escapeHtml(meaning)}</span>` : ""}</div>`;
   });
   if (boxes.some((b) => !b)) return "";
   return `<div class="word-card-parts" style="--n:${boxes.length}" data-word-card-parts>${boxes.join("")}</div>`;

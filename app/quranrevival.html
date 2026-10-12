@@ -16368,6 +16368,7 @@
         stateAchieved: statusLabel("achieved"),
         awaitingReview: t("Waiting to be checked"),
         knownElsewhere: t("Known: marked Achieved at another place of this word"),
+        knownElsewhereHeld: t("Saved here as {state}. It still shows Achieved because this word is known through the other mark this card names; change that mark to change it."),
         reviewConfirmed: t("Checked and confirmed"),
         reviewReturned: t("Sent back: {note}"),
         reviewReturnedNoNote: t("Sent back to look at again"),
@@ -16584,11 +16585,27 @@
           if (progress.loaded !== false && !progress.countsAsKnown && views.get?.(quranWordCardState.occurrenceId)?.countsAsKnown) knownElsewhere = true;
         } catch { coverage = null; }
       }
+      // J23 (the Owner, 12 Oct 2026, on ٱلْبَوَارِ 14:28:12): WHICH mark makes this place known. "another place of
+      // this word" is true only when the word's own dictionary-word claim is Achieved; a word known through its
+      // meaning group (Basic) or its root (Intermediate, Depth) is another WORD's mark, which the card names
+      // itself (knownThroughLevelLine), so the "another place" line is not printed for it.
+      let knownElsewhereVia = null;
+      if (knownElsewhere) {
+        let viaWord = true;
+        try {
+          const lemmaId = wbwClaimKey(wordOfOccurrence(quranWordCardState.occurrenceId));
+          if (lemmaId && isLemmaProgressPersistenceReady()) viaWord = !!lemmaProgressFor({ tenantId, personId: subjectPersonId, lemmaId, confirmationRequired }).countsAsKnown;
+        } catch { viaWord = true; }
+        knownElsewhereVia = viaWord ? "word" : "level";
+      }
+      // J23 -- "This word doesn't let change the status": a press on a place known through another mark saves this
+      // place's own state, and the card kept showing Achieved with nothing to say why. Say so, in words.
+      const ownHeld = knownElsewhere ? (wordProgressHeldPress && wordProgressHeldPress.occurrenceId === quranWordCardState.occurrenceId && wordProgressHeldPress.level === level ? wordProgressHeldPress.state : (progress.state === "learning" || progress.state === "practising" ? progress.state : null)) : null;
       // The Owner, 5 Oct 2026: "It takes hours to marked achieved from not
       // started." A press shows AT ONCE: the pressed state, locked buttons
       // and "Saving…" (see wordProgressSaving at runWordProgressAction()).
       const saving = wordProgressSaving && wordProgressSaving.occurrenceId === quranWordCardState.occurrenceId && wordProgressSaving.level === level;
-      return { progress: { ...progress, knownElsewhere: knownElsewhere && !saving, loading: wordProgressBusy && !progress.loaded, ...(saving ? { saving: true, state: wordProgressSaving.state ?? progress.state } : {}) }, authority, coverage };
+      return { progress: { ...progress, knownElsewhere: knownElsewhere && !saving, knownElsewhereVia, heldOwnState: saving ? null : ownHeld, loading: wordProgressBusy && !progress.loaded, ...(saving ? { saving: true, state: wordProgressSaving.state ?? progress.state } : {}) }, authority, coverage };
     }
 
     /**
@@ -16952,6 +16969,9 @@
     // also count one word twice. Now the press shows at once, and a second
     // press while one is saving is ignored.
     let wordProgressSaving = null;
+    // J23 -- the last non-Achieved press on a place, so the card can say what was saved there when the place
+    // still shows Achieved through another mark (a Not started press is otherwise indistinguishable from no mark).
+    let wordProgressHeldPress = null;
 
     async function runWordProgressAction(action) {
       if (wordProgressSaving) return;
@@ -16965,6 +16985,7 @@
       const others = targets.filter((id) => id !== subjectPersonId);
       const order = targets.includes(subjectPersonId) ? [...others, subjectPersonId] : others;
       wordProgressSaving = { occurrenceId, level, state: action.kind === "state" ? action.state : null };
+      if (action.kind === "state") wordProgressHeldPress = action.state === "achieved" ? null : { occurrenceId, level, state: action.state };
       renderPersistentWordCard();
       try {
         const { effRoles } = currentPreview();
