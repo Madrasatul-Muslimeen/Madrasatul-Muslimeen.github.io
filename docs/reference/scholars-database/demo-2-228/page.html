@@ -1,0 +1,182 @@
+<title>Scholars on 2:228</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Literata:opsz,wght@7..72,500;7..72,650&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: one reading column; the āyah, then the reader's own understanding (the key), then the 13 Approaches
+   as a wrapping row of chips over one list of passages, each a scholar's own Arabic words with its book and source. */
+:root {
+  --bg: #f5f6f2; --surface: #ffffff; --fg: #1d2420; --muted: #5d6862; --rule: #dde2dc;
+  --ink: #1f5c4a; --ink-soft: #e3efe9; --lock: #8a6d1d; --lock-soft: #f6efd9; --draft: #9a5b12;
+  --display: "Literata", Georgia, "Times New Roman", serif;
+  --body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --ar: "Amiri", "Scheherazade New", "Traditional Arabic", serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #121614; --surface: #1a201d; --fg: #e4ebe6; --muted: #9caaa2; --rule: #2c3530;
+  --ink: #7cc7ab; --ink-soft: #1d3029; --lock: #e0bf62; --lock-soft: #2e2716; --draft: #f0a85a; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #121614; --surface: #1a201d; --fg: #e4ebe6; --muted: #9caaa2; --rule: #2c3530;
+  --ink: #7cc7ab; --ink-soft: #1d3029; --lock: #e0bf62; --lock-soft: #2e2716; --draft: #f0a85a; color-scheme: dark; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--fg); font: 15px/1.6 var(--body); }
+.wrap { max-width: 900px; margin: 0 auto; padding-inline: 16px; padding-block: 24px 64px; display: grid; gap: 22px; }
+h1 { font: 650 1.7rem/1.2 var(--display); margin: 0; text-wrap: balance; }
+h2 { font: 600 1.15rem/1.3 var(--display); margin: 0; text-wrap: balance; }
+.demo { font-size: 0.82rem; color: var(--muted); margin: 6px 0 0; }
+.ayah { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 18px; display: grid; gap: 10px; }
+.ayah .ref { font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.ar { font-family: var(--ar); direction: rtl; text-align: right; unicode-bidi: isolate; }
+.ayah .ar { font-size: 1.75rem; line-height: 2.1; }
+.ayah p { margin: 0; }
+.bnl { font-size: 1rem; }
+.mine { display: grid; gap: 10px; }
+.mine label { font-weight: 600; }
+textarea#mineText { width: 100%; box-sizing: border-box; min-height: 120px; font: 1rem/1.55 var(--body); padding: 12px; border: 1px solid var(--rule); border-radius: 8px; background: var(--surface); color: var(--fg); resize: vertical; }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+button { font: 600 0.9rem var(--body); min-height: 42px; padding: 0 16px; border-radius: 8px; border: 1px solid var(--rule); background: var(--surface); color: var(--fg); cursor: pointer; }
+button.go { background: var(--ink); border-color: var(--ink); color: var(--surface); }
+button:disabled { opacity: 0.45; cursor: default; }
+button:focus-visible, textarea:focus-visible, a:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.hint { font-size: 0.85rem; color: var(--muted); }
+.saved { background: var(--ink-soft); border-radius: 10px; padding: 14px 16px; display: grid; gap: 6px; }
+.saved .t { white-space: pre-wrap; }
+.locked { background: var(--lock-soft); border: 1px dashed var(--lock); border-radius: 10px; padding: 16px; display: grid; gap: 8px; }
+.locked b { color: var(--lock); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { min-height: 40px; padding: 0 12px; border-radius: 999px; font-weight: 500; display: inline-flex; gap: 6px; align-items: center; }
+.chip .n { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 0.8rem; }
+.chip[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--surface); }
+.chip[aria-pressed="true"] .n { color: var(--surface); }
+.chip.empty { opacity: 0.6; }
+.locked .chip { pointer-events: none; }
+.about { color: var(--muted); font-size: 0.9rem; margin: 0; }
+.list { display: grid; gap: 14px; }
+.card { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 16px; display: grid; gap: 10px; min-width: 0; }
+.card header { display: grid; gap: 2px; }
+.card .book { font: 600 1.05rem/1.3 var(--display); }
+.card .who { font-size: 0.9rem; }
+.card .who .ar { font-size: 1.15rem; display: inline; }
+.meta { display: flex; flex-wrap: wrap; gap: 6px; font-size: 0.75rem; }
+.tag { border: 1px solid var(--rule); border-radius: 999px; padding: 1px 8px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.tag.draft { border-color: var(--draft); color: var(--draft); border-style: dashed; }
+.passage { font-size: 1.3rem; line-height: 2; white-space: pre-wrap; max-height: 28rem; overflow: auto; border-block: 1px solid var(--rule); padding-block: 8px; }
+.passage.whole { max-height: 40rem; }
+.src { font-size: 0.78rem; color: var(--muted); overflow-wrap: anywhere; }
+.src a { color: var(--ink); }
+.note { font-size: 0.8rem; color: var(--draft); }
+.back { position: sticky; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); justify-self: end; box-shadow: 0 2px 10px rgba(0,0,0,0.15); }
+footer { font-size: 0.82rem; color: var(--muted); display: grid; gap: 6px; border-top: 1px solid var(--rule); padding-top: 14px; }
+@media (max-width: 480px) { .ayah .ar { font-size: 1.5rem; } .passage { font-size: 1.15rem; } }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+</style>
+<div class="wrap">
+  <div>
+    <h1>The Scholars on al-Baqarah 2:228</h1>
+    <p class="demo">A demo for the Owner (J02, decision 105). Nothing here is saved to an account or written to the app.</p>
+  </div>
+  <section class="ayah" aria-label="The āyah">
+    <span class="ref">Al-Baqarah · 2:228</span>
+    <p class="ar" id="ayahAr" lang="ar"></p>
+    <p id="ayahEn" lang="en"></p>
+    <p class="bnl" id="ayahBn" lang="bn"></p>
+  </section>
+  <section class="mine" id="mine" aria-labelledby="mineH">
+    <h2 id="mineH">1. Your own understanding first</h2>
+    <div id="mineEdit" class="mine">
+      <label for="mineText">What do you understand from this āyah? Write it in your own words, in any language.</label>
+      <textarea id="mineText" placeholder="For example: what “three qurūʾ” might mean, who the āyah speaks to, what it asks of them…"></textarea>
+      <div class="row"><button class="go" id="saveMine" disabled>Save, and open the Scholars</button><span class="hint" id="mineCount"></span></div>
+    </div>
+    <div id="mineSaved" class="saved" hidden>
+      <b>Your understanding</b><span class="hint" id="mineWhen"></span>
+      <div class="t" id="mineShow"></div>
+      <div class="row"><button id="editMine">Edit</button></div>
+    </div>
+  </section>
+  <section aria-labelledby="schH" class="mine">
+    <h2 id="schH">2. The Scholars' Approaches</h2>
+    <div id="lockBox" class="locked">
+      <b>🔒 Locked until you have written your own understanding.</b>
+      <span class="hint">The Scholars stay closed for an āyah until you write what you understand from it yourself (decision 105). Then all 13 Approaches open.</span>
+      <div class="chips" id="chipsLocked"></div>
+    </div>
+    <div id="openBox" hidden class="mine">
+      <div class="chips" id="chips" role="toolbar" aria-label="Approaches"></div>
+      <p class="about" id="about"></p>
+      <div class="list" id="list"></div>
+      <button class="back" id="backMine">↑ Back to my understanding</button>
+    </div>
+  </section>
+  <footer id="foot"></footer>
+</div>
+<script>
+const D = /*DATA*/null;
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const KEY = "scholars-2-228-mine";
+const store = { get() { try { return JSON.parse(localStorage.getItem(KEY) || "null"); } catch { return null; } },
+  set(v) { try { localStorage.setItem(KEY, JSON.stringify(v)); } catch {} } };
+const MIN_WORDS = 12;
+$("ayahAr").textContent = D.ayah; $("ayahEn").textContent = D.en; $("ayahBn").textContent = D.bn;
+
+const byCode = (code) => D.passages.filter((p) => p.codes.includes(code)).sort((a, b) => a.died - b.died);
+function chipHtml(a, pressed) {
+  const n = byCode(a[0]).length;
+  const label = /^\d/.test(a[0]) ? `${a[0]} ${a[2]}` : a[2];
+  return `<button class="chip${n ? "" : " empty"}" data-code="${esc(a[0])}" aria-pressed="${pressed}">${esc(label)} <span class="n">${n}</span></button>`;
+}
+$("chipsLocked").innerHTML = D.approaches.map((a) => chipHtml(a, false)).join("");
+let current = "28";
+function renderChips() { $("chips").innerHTML = D.approaches.map((a) => chipHtml(a, a[0] === current)).join(""); }
+$("chips").addEventListener("click", (e) => { const b = e.target.closest(".chip"); if (!b) return; current = b.dataset.code; renderChips(); renderList(); });
+
+function card(p) {
+  const tags = p.groups.split("·").map((g) => g.trim()).filter(Boolean).map((g) => `<span class="tag">${esc(g)}</span>`).join("");
+  const draft = p.draft ? `<span class="tag draft">Not yet in the Scholars Database: madhab and Approaches are Claude's draft</span>` : "";
+  const ex = p.text.slice(p.s, p.e);
+  return `<article class="card" data-slug="${esc(p.slug)}">
+    <header><span class="book">${esc(p.book)}</span>
+      <span class="who">${esc(p.en)} · <span class="ar" lang="ar">${esc(p.ar)}</span></span></header>
+    <div class="meta"><span class="tag">d. ${p.died} AH</span>${p.madhab ? `<span class="tag">${esc(p.madhab)}</span>` : ""}${tags}${draft}</div>
+    ${p.note ? `<div class="note">${esc(p.note)}</div>` : ""}
+    <div class="hint">${p.s === 0 && p.e === p.text.length ? "The whole passage." : `Where the passage turns to qurūʾ: characters ${p.s.toLocaleString()}–${p.e.toLocaleString()} of ${p.text.length.toLocaleString()}, the scholar's own words, unchanged.`}</div>
+    <div class="passage ar" lang="ar">${esc(ex)}</div>
+    <div class="row">${p.s === 0 && p.e === p.text.length ? "" : `<button data-whole>Show the whole passage</button>`}</div>
+    <div class="src">Source: open tafsir data (spa5k/tafsir_api), fetched ${esc(D.fetched.slice(0, 10))}: <a href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.slug)}/2/228</a></div>
+  </article>`;
+}
+function renderList() {
+  const a = D.approaches.find((x) => x[0] === current);
+  const ps = byCode(current);
+  $("about").textContent = [a[2] + (a[3] ? `: ${a[3]}` : "") + ".", ps.length ? `${ps.length} book${ps.length > 1 ? "s" : ""}, oldest first.` : ""].filter(Boolean).join(" ");
+  $("list").innerHTML = ps.length ? ps.map(card).join("")
+    : `<div class="card"><span>No passage on 2:228 for this Approach in the open data this demo can reach.</span>${current === "36" ? "" : ""}</div>`;
+}
+$("list").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-whole]"); if (!b) return;
+  const c = b.closest(".card"); const p = D.passages.find((x) => x.slug === c.dataset.slug);
+  const box = c.querySelector(".passage"); const whole = !box.classList.contains("whole");
+  box.classList.toggle("whole", whole); box.textContent = whole ? p.text : p.text.slice(p.s, p.e); box.scrollTop = 0;
+  b.textContent = whole ? "Show only the qurūʾ part" : "Show the whole passage";
+});
+
+const words = (t) => (t.trim().match(/\S+/g) || []).length;
+function onType() { const n = words($("mineText").value); $("saveMine").disabled = n < MIN_WORDS;
+  $("mineCount").textContent = n < MIN_WORDS ? `${n} of at least ${MIN_WORDS} words` : `${n} words`; }
+$("mineText").addEventListener("input", onType);
+function show(saved) {
+  const open = !!saved;
+  $("mineEdit").hidden = open; $("mineSaved").hidden = !open; $("lockBox").hidden = open; $("openBox").hidden = !open;
+  if (open) { $("mineShow").textContent = saved.text; $("mineWhen").textContent = `Written ${new Date(saved.at).toLocaleString()}`; renderChips(); renderList(); }
+}
+$("saveMine").addEventListener("click", () => { const v = { text: $("mineText").value.trim(), at: Date.now() }; store.set(v); show(v); });
+$("editMine").addEventListener("click", () => { const v = store.get(); $("mineText").value = v ? v.text : ""; onType();
+  $("mineEdit").hidden = false; $("mineSaved").hidden = true; $("mineText").focus(); });
+$("backMine").addEventListener("click", () => $("mine").scrollIntoView());
+
+const gen = D.passages.length;
+$("foot").innerHTML = `<b>How this was made.</b>
+  <span>${gen} classical tafsir passages on 2:228, each copied unchanged from open data and marked with its book and source. Nothing here is an AI summary. Each book sits under the Approaches its author holds in the Scholars Database v1.2.</span>
+  <span>Not included: ${D.notFetched.filter((n) => !D.passages.some((p) => p.slug === n.slug)).map((n) => esc(n.slug) + " (" + esc(n.reason) + ")").join("; ") || "none"}. al-Ṭabrisī (Shiʿi) and al-Qushayrī (Sufi, Arabic) are not in the open data this demo can reach, and no Gen4–Gen6 work has been chosen yet.</span>
+  <span>In the app, your understanding would be your note on the āyah, and the Scholars panel would open from it.</span>`;
+const saved = store.get(); if (saved) show(saved); else onType();
+</script>
