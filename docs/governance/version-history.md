@@ -825,3 +825,4 @@ total). Allocated by the MMSA Architect.
 10.28: the Word card's Intermediate tab (decisions 101 and 103). Allocated by the MMSA Architect.
 10.29: student accounts can open the app (the roster read every page makes). Allocated by the MMSA Architect.
 10.30: the Read bar is one line again at 600-679px. Allocated by the MMSA Architect.
+10.31: a QCR āyah opens in the Read view, with Back to QCR. Allocated by the MMSA Architect.
