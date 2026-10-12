@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "10.30",
+    "version": "10.31",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -3353,8 +3353,20 @@
     {
       "version": "10.30",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Builder round #779 (PR #780): from 600 to 679px the Surah list button shows its ☰ alone, so the Read bar holds one line.",
+      "integration": {
+        "authorizedOn": "2026-10-12",
+        "integratedOn": "2026-10-12",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "10.31",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "The Owner's quick task (PCF J22): Explore → QCR → a row or wheel slice opens that āyah in the Read view, no Notes pane, with the ← Back to QCR pill.",
       "integration": {
         "authorizedOn": "2026-10-12",
         "integratedOn": "2026-10-12",
@@ -3363,8 +3375,9 @@
       }
     }
   ],
-  "nextUnallocated": "10.31",
+  "nextUnallocated": "10.32",
   "nextUnallocatedNote": [
+    "v10.31 was allocated to a QCR āyah opens in the Read view, with Back to QCR, 2026-10-12.",
     "v10.30 was allocated to the Read bar is one line again at 600-679px, 2026-10-12.",
     "v10.29 was allocated to student accounts can open the app (the roster read every page makes), 2026-10-12.",
     "v10.28 was allocated to the Word card's Intermediate tab (decisions 101 and 103), 2026-10-11.",

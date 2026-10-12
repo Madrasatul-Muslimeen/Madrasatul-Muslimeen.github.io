@@ -3,9 +3,12 @@
 // unit, with #noteView hidden, and each leaves its way back (decision 86). Run from the repository root, serve.js on :8080,
 // at 390px Bangla and 1280px English.
 //   --mutate=asmanote  Asma's reference opens the Note view again    -> the pane / Note-view-hidden checks fail
-//   --mutate=qcrnote   a QCR āyah opens the Note view again          -> the same
+//   --mutate=qcrnote   a QCR āyah opens the Notes pane again (v10.11) -> the QCR "Read view, no pane" check fails
 //   --mutate=gotonote  ?goto= opens the Note view again              -> the same
-//   --mutate=noback    no route sets a way back                      -> the way-back checks fail
+//   --mutate=noback    the QCR route sets no way back                -> the QCR way-back checks fail
+// UPDATED in place, 12 Oct 2026 (the Owner, PCF J22: "Explore.QCR.Slide brings to this screen. It should bring the Ayah,
+// Read view"): a QCR āyah no longer opens the Notes pane. It opens the āyah in the Read view with the floating
+// "← Back to QCR" pill (decision 86). Section 2 asserts that now; the full proof is qcr-bismillah-explore-slide-browser.mjs.
 import { chromium, newContext, openPage } from "./harness.mjs";
 import fs from "node:fs";
 
@@ -17,9 +20,9 @@ const check = (name, ok, detail = "") => {
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
 const MUT = {
   asmanote: ["quranrevival.html", 'await openNotesPaneForKey(buildUnitKey.ayah(surah, ayah), { backLabel: t("Back to {name}", { name: entry ? asmaEntryDisplayName(entry) : t("Asma ul Husna") }) }, () => {', 'await openNoteView(buildUnitKey.ayah(surah, ayah)); void ((a, b, c) => c)(0, 0, () => {'],
-  qcrnote: ["quranrevival.html", "await openNotesPaneForKey(unitKey, { backLabel: t(\"Back to {name}\", { name: t(\"QCR\") }) }, backToQcrCollection(qcrCurrentId));", "await openNoteView(unitKey, { fromCollectionId: qcrCurrentId });"],
+  qcrnote: ["quranrevival.html", "await scrollFlowToCurrentAyah();\n      setAppReturn(t(\"Back to {name}\", { name: t(\"QCR\") }), col ? langText(col.title, getAppLang()) : \"\", backToQcrCollection(collectionId));", "await openNotesPaneForKey(unitKey, { backLabel: t(\"Back to {name}\", { name: t(\"QCR\") }) }, backToQcrCollection(collectionId));"],
   gotonote: ["quranrevival.html", "await openNotesPaneForKey(buildUnitKey.ayah(parsed.surah, from));", "await openNoteView(buildUnitKey.ayah(parsed.surah, from));"],
-  noback: ["quranrevival.html", '{ backLabel: t("Back to {name}", { name: t("QCR") }) }, backToQcrCollection(qcrCurrentId));', '{}, () => { paintReadNotesBtn(); });'],
+  noback: ["quranrevival.html", 'setAppReturn(t("Back to {name}", { name: t("QCR") }), col ? langText(col.title, getAppLang()) : "", backToQcrCollection(collectionId));', "void col;"],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
 
@@ -86,15 +89,17 @@ for (const [lang, width, height] of [["bn", 390, 844], ["en", 1280, 800]]) {
     const info = await P.evaluate(() => ({ key: document.querySelector("[data-qcr-jump]")?.dataset.qcrJump ?? null, col: document.getElementById("qcrLevelSelect")?.value ?? null }));
     check(`${tag} POSITIVE CONTROL: the collection shows an āyah to tap`, !!info.key, JSON.stringify(info));
     await P.evaluate(() => document.querySelector("[data-qcr-jump]")?.click());
-    await waitPane(P);
-    const s = await state(P);
     const want = (info.key ?? "x:0:0").split(":");
-    check(`${tag} the āyah opens the Read view on ${info.key} with the pane, Note view hidden`, s.read && !s.note && s.pane && s.surah === want[1], JSON.stringify(s));
-    check(`${tag} the pane's way back names QCR`, !!s.back && s.back.includes("QCR"), JSON.stringify(s.back));
-    await P.evaluate(() => document.querySelector("#readNotePane [data-rnp-back]")?.click());
+    await P.waitForFunction((s) => document.getElementById("surahSelect")?.value === s && document.getElementById("readView")?.getClientRects().length, want[1], { timeout: 15000 }).catch(() => {});
+    await P.waitForTimeout(1200);
+    const s = await state(P);
+    check(`${tag} the āyah opens the Read view on ${info.key}, no Notes pane, Note view hidden`, s.read && !s.note && !s.pane && s.surah === want[1] && s.ayah === want[2], JSON.stringify(s));
+    const pill = await P.evaluate(() => { const b = [...document.querySelectorAll("#ayahCardBackPill [data-ayah-card-back]")].find((x) => x.getClientRects().length); return b?.textContent.trim() ?? null; });
+    check(`${tag} the way back (the floating pill) names QCR`, !!pill && pill.includes("QCR"), JSON.stringify(pill));
+    await P.evaluate(() => [...document.querySelectorAll("#ayahCardBackPill [data-ayah-card-back]")].find((x) => x.getClientRects().length)?.click());
     await P.waitForFunction(() => document.querySelector("#qcrLevelSelect")?.getClientRects().length, null, { timeout: 12000 }).catch(() => {});
     const b = await P.evaluate(() => ({ pane: document.getElementById("readNotePane")?.hidden === false, col: document.getElementById("qcrLevelSelect")?.value, shown: !!document.getElementById("qcrLevelSelect")?.getClientRects().length }));
-    check(`${tag} ← Back returns to QCR on the same collection (${info.col}), the pane closed`, !b.pane && b.shown && b.col === info.col, JSON.stringify(b));
+    check(`${tag} ← Back returns to QCR on the same collection (${info.col}), no pane`, !b.pane && b.shown && b.col === info.col, JSON.stringify(b));
 
     // ---- 3. the Note view's side list jumps to another unit: the pane, back to where the pop-up came from ----
     await P.evaluate(() => document.querySelector("[data-qcr-jump]")?.click());
