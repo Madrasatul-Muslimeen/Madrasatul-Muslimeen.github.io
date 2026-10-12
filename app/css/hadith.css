@@ -180,6 +180,14 @@
 .openiti-goto-mode { min-height: 40px; min-width: 0; max-width: 100%; padding: 0.3rem 0.4rem; border-radius: 0.35rem; border: 1px solid var(--hadith-rule); background: #fff; font: inherit; font-size: 0.88rem; }
 .openiti-goto-hint { font-size: 0.8rem; color: var(--hadith-muted); }
 .openiti-standard-number { margin: 0.1rem 0 0.3rem; font-size: 0.85rem; font-weight: 600; color: var(--hadith-ink); }
+/* Keys Round 1: "Āyāt this hadith quotes" -- each āyah a 40px link into the Read view. */
+.hadith-ayat-quoted { display: grid; gap: 0.35rem; margin: 0.5rem 0; padding-top: 0.45rem; border-top: 1px dashed var(--hadith-rule); }
+.hadith-ayat-quoted[hidden] { display: none; }
+.hadith-ayat-quoted-head { margin: 0; font-size: 0.85rem; font-weight: 600; color: var(--hadith-ink); }
+.hadith-ayat-quoted-list { display: flex; flex-wrap: wrap; gap: 0.4rem; min-width: 0; }
+.hadith-ayat-quoted-link { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; min-width: 40px; padding: 0 0.7rem; border: 1px solid var(--hadith-gold); border-radius: 0.4rem; background: #fff; color: var(--hadith-ink); font-weight: 600; text-decoration: none; }
+[data-card-look="night"] .hadith-ayat-quoted-head { color: var(--card-heading); }
+[data-card-look="night"] .hadith-ayat-quoted-link { background: transparent; color: var(--card-heading); }
 /* Round H-DB4: "Also narrated in" on a Dua narration, each book a 40px button; the way back above a jump. */
 .dua-also { display: grid; gap: 0.35rem; margin: 0.5rem 0; padding-top: 0.45rem; border-top: 1px dashed var(--hadith-rule); }
 .dua-also-head { margin: 0; font-size: 0.85rem; font-weight: 600; color: var(--hadith-ink); display: flex; flex-wrap: wrap; gap: 0.3rem 0.6rem; align-items: baseline; }

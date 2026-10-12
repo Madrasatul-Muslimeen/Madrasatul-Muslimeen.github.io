@@ -3056,6 +3056,16 @@ export const BN = {
   "Asma: {name}": "আসমা: {name}",
   "1 shared rare word": "১টি বিরল শব্দ মিল",
   "{count} shared rare words": "{count}টি বিরল শব্দ মিল",
+  // Keys to Understanding, Round 1 -- the āyah–hadith index (12 Oct 2026).
+  "Related hadith": "সম্পর্কিত হাদিস",
+  "quotes this āyah": "এই আয়াত উদ্ধৃত করেছে",
+  "Finding hadith that quote this āyah…": "এই আয়াত উদ্ধৃত করা হাদিস খোঁজা হচ্ছে…",
+  "Couldn't load the related hadith just now.": "এই মুহূর্তে সম্পর্কিত হাদিস আনা গেল না।",
+  "No hadith in our books quotes this āyah word for word.": "আমাদের কোনো হাদিসগ্রন্থে এই আয়াত হুবহু উদ্ধৃত হয়নি।",
+  "and {count} more": "আরও {count}টি",
+  "Āyāt this hadith quotes": "এই হাদিস যে আয়াত উদ্ধৃত করেছে",
+  "Back to the āyah": "আয়াতে ফিরুন",
+  "Back to the hadith": "হাদিসে ফিরুন",
   // Ayah Card section C part 2 -- Connected āyāt (issue #318, 26 Sep 2026).
   "Finding connected āyāt…": "সংযুক্ত আয়াত খোঁজা হচ্ছে…",
   "Couldn't load connected āyāt just now.": "এই মুহূর্তে সংযুক্ত আয়াত আনা গেল না।",

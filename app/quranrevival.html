@@ -4019,6 +4019,7 @@
   .ayah-related-item { display: flex; flex-direction: column; align-items: flex-start; gap: 0.1rem; width: 100%; min-height: 40px; padding: 0.35rem 0.6rem; text-align: start; color: var(--card-button-border); background: var(--card-bg-inset); border: 1px solid var(--card-line); border-radius: 0.4rem; cursor: pointer; font: inherit; }
   .ayah-related-item:hover, .ayah-related-item:focus-visible { background: var(--card-bg-inset); filter: brightness(1.15); outline: 2px solid var(--card-button-border); outline-offset: 1px; }
   .ayah-related-ref { font-weight: 600; font-size: 0.92rem; }
+  .ayah-hadith-line { font-family: var(--quran-font, serif); font-size: 1.05rem; line-height: 1.7; text-align: right; align-self: stretch; overflow-wrap: anywhere; }
   .ayah-related-why { font-size: 0.78rem; color: var(--card-text-muted); overflow-wrap: anywhere; }
   /* Ayah Card section C part 2 -- Connected āyāt (issue #318): the same
      40px row, plus a studied marker in one of three explicit colours (never
@@ -6490,6 +6491,7 @@
     // Card "This āyah ⋯") and its one new action, filing this reader's own
     // Note on the āyah into Mapping My Journey folder(s).
     import { renderAyahActionSheetHtml, attachAyahActionSheetHandlers, approachStageIdsFor, stageColourStyle } from "./js/ayah-action-sheet.js";
+    import { loadAyahHadithHits, describeHit, pickHits, hadithHitHref } from "./js/ayah-hadith.js";
     import { renderPageApproachCardHtml, attachPageApproachCardHandlers } from "./js/page-approach-card.js";
     // Issue #348 -- the Unit Card (Ruku'/Page/Hizb/Juz/Surah/Range) and the
     // ladder shared with the Ayah Card, both pure renderers reusing the same
@@ -7565,6 +7567,7 @@
     // openAyahFolderFiling() already uses.
     let ayahSheetWordStatus = null; // { known, total, words: [...] } | null
     let ayahSheetRelated = null; // Ayah Card section C part 1: null (loading) | { error } | { lists, shared }
+    let ayahSheetHadith = null; // Keys Round 1, "Related hadith": null (loading) | { error } | { items: [{ label, firstLine, hit }], more }
     let ayahSheetConnected = null; // Ayah Card section C part 2 (issue #318): null (loading) | { error } | { restricted } | { items }
     let ayahSheetHasPosterNote = null; // true | false | null (unresolved)
     // The "File in folder(s)…" overlay, opened FROM the sheet. Null means
@@ -10317,7 +10320,7 @@
         exactly where it opened before this existed. */
     async function restoreLastSession() {
       const params = new URLSearchParams(location.search);
-      if (params.get("bookmark") || params.get("goto") || params.get("word") || params.get("resume") || params.get("last") || params.get("qpSurah")) return;
+      if (params.get("bookmark") || params.get("goto") || params.get("word") || params.get("resume") || params.get("last") || params.get("qpSurah") || params.get("ayahCard")) return;
       const saved = getQuranLastSession();
       if (!saved) return;
       // The app ALWAYS opens on the wheel -- the owner's own call, once the
@@ -19787,6 +19790,7 @@
         hifzStatus: hifzStatusForAyah(surah, ayahNum, sheetHalf),
         related: ayahSheetRelated,
         connected: ayahSheetConnected,
+        hadith: ayahSheetHadith,
         ladderHtml,
         canPrev: !!ayahCardNeighbour(ayahSheetUnitKey, -1),
         canNext: !!ayahCardNeighbour(ayahSheetUnitKey, 1),
@@ -19802,6 +19806,7 @@
         onStep: (unitKey, dir) => { const n = ayahCardNeighbour(unitKey, dir); if (n) openAyahActionSheet(n.key, n.half); },
         onNoteView: (unitKey) => openAyahNoteViewPopup(unitKey),
         onRelatedJump: (s, a) => { rememberAyahCardReturn(sheetKeyAtRender); navigateToAyah(s, a, "read"); },
+        onHadithOpen: (i) => openRelatedHadith(sheetKeyAtRender, i),
         onClose: closeAyahActionSheet,
         onRung: (rungUnitKey) => {
           const { unitType: rungType } = parseUnitKey(rungUnitKey);
@@ -19894,6 +19899,59 @@
       if (ayahSheetUnitKey !== unitKey || !ayahActionSheetOverlayEl.classList.contains("open")) return;
       ayahSheetRelated = result;
       renderAyahActionSheetNow();
+    }
+
+    /** Keys Round 1, "Related hadith" -- the hadith in our books that quote this āyah (the āyah–hadith index, built
+        once by tools/hadith-data-pull/ayah-hadith-index.mjs). The surah's file is fetched when the card opens, never at
+        start-up (I9); each hit's first line comes from the passage's own chapter shard. */
+    async function ensureAyahSheetHadithLoaded(unitKey, surahNum, ayahNum) {
+      let result;
+      try {
+        const hits = await loadAyahHadithHits(surahNum, ayahNum);
+        const { shown, more } = pickHits(hits);
+        const described = await Promise.all(shown.map((h) => describeHit(h)));
+        const lang = getAppLang();
+        result = {
+          more,
+          items: described.map((d) => {
+            const title = (lang === "bn" ? d.titleAr : d.titleEn) || d.titleEn || d.titleAr || d.book;
+            return { label: `${title} ${num(d.number)}`, firstLine: d.firstLine, hit: d };
+          }),
+        };
+      } catch (err) {
+        console.error(err);
+        result = { error: true };
+      }
+      if (ayahSheetUnitKey !== unitKey || !ayahActionSheetOverlayEl.classList.contains("open")) return;
+      ayahSheetHadith = result;
+      renderAyahActionSheetNow();
+    }
+    /** A hadith on the card opens in the Hadith library. The card is written into THIS page's address first (the
+        Asma pattern), so the library's ← Back (history.back()) reopens this āyah's card -- read by
+        openAyahCardFromQueryString() on load (decision 86). */
+    function openRelatedHadith(unitKey, i) {
+      const item = ayahSheetHadith?.items?.[i];
+      if (!item) return;
+      const { surah, ayah, half } = parseAyahUnitKey(unitKey);
+      try {
+        const u = new URL(location.href);
+        u.searchParams.set("ayahCard", `${surah}:${ayah}${half ? `:${half}` : ""}`);
+        history.replaceState(history.state, "", u);
+      } catch { /* the link still opens the library */ }
+      location.href = hadithHitHref(item.hit);
+    }
+    /** ?ayahCard=<surah>:<ayah> (written just before leaving for the Hadith library) reopens that āyah's card. */
+    async function openAyahCardFromQueryString() {
+      const params = new URLSearchParams(location.search);
+      const raw = params.get("ayahCard");
+      if (!raw) return;
+      try { const u = new URL(location.href); u.searchParams.delete("ayahCard"); history.replaceState(history.state, "", u); } catch { /* ignore */ }
+      const [s, a, h] = raw.split(":");
+      const surah = Number(s), ayah = Number(a);
+      const meta = surahIndex.find((x) => x.surahNumber === surah);
+      if (!meta || !Number.isInteger(ayah) || ayah < 1 || ayah > meta.ayahCount) return;
+      await navigateToAyah(surah, ayah, "read", h || null);
+      openAyahActionSheet(`${surah}:${ayah}`, h || null);
     }
 
     const CONNECTED_AYAH_KEY = /^ayah:(\d+):(\d+)$/;
@@ -20076,6 +20134,7 @@
       ayahSheetHasPosterNote = null;
       ayahSheetRelated = null;
       ayahSheetConnected = null;
+      ayahSheetHadith = null;
       // Architect review of #325: open on the Approach last chosen on either
       // card, so moving from one āyah to the next needs no re-picking.
       ayahSheetSelectedApproachId = mushafRingApproachId;
@@ -20084,6 +20143,7 @@
       ayahActionSheetOverlayEl.classList.add("open");
       ensureAyahSheetRelatedLoaded(unitKey, surahNum, ayahNum);
       ensureAyahSheetConnectedLoaded(unitKey, surahNum, ayahNum);
+      ensureAyahSheetHadithLoaded(unitKey, surahNum, ayahNum);
       ensureAyahNoteDataLoaded().then(() => { if (ayahSheetUnitKey === unitKey) renderAyahActionSheetNow(); });
       ensureAyahSheetWordStatusLoaded(unitKey, surahNum, ayahNum);
       ensureAyahSheetPosterNoteLoaded(unitKey);
@@ -21773,7 +21833,7 @@
       await goToReference(parsed.surah, from, to);
       await openNotesPaneForKey(buildUnitKey.ayah(parsed.surah, from)); // R3b (decision 95): the pane, not the Note view
       // The way-back law (decision 86): a link from another page (the Asma study page's poster) carries back=1.
-      if (new URLSearchParams(location.search).get("back") === "1" && history.length > 1) setAppReturn(t("Back"), "", () => history.back());
+      if (new URLSearchParams(location.search).get("back") === "1" && history.length > 1) setAppReturn(new URLSearchParams(location.search).get("backTo") === "hadith" ? t("Back to the hadith") : t("Back"), "", () => history.back());
     }
 
     /** The way-back law: ?qpSurah=&qpAyah=&qpView=note&qpUnit= (written by rememberQuranPlace() just before leaving for
@@ -23123,6 +23183,7 @@
         await step("open word link", openWordFromQueryString);
         await step("open remembered place", openPlaceFromQueryString);
         await step("open remembered Asma Name", openAsmaNameFromQueryString);
+        await step("open remembered Āyah card", openAyahCardFromQueryString);
         await step("open last place", openLastFromQueryString);
         window.__bmCoverDone?.(false); // issue #468 -- target is open; remove the cover in one step
         // Last: "the app opens in the last settings/options in all view."

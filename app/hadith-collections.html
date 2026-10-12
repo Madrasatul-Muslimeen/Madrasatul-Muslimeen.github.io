@@ -169,7 +169,8 @@
 
     const backBtn = document.getElementById("hadithBackBtn");
     if (params.get("back") === "1") {
-      backBtn.textContent = `← ${t("Back")}`;
+      // Keys Round 1: coming from an āyah's card, the button says where it goes.
+      backBtn.textContent = `← ${params.get("backTo") === "ayah" ? t("Back to the āyah") : t("Back")}`;
       backBtn.hidden = false;
       // Back to exactly where the reader was (the page they came from keeps its own state); with no history (a link
       // opened in a new tab), the app's landing page.
