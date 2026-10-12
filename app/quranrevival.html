@@ -2606,6 +2606,9 @@
   /* A switch is a pill: filled navy when on (the same look as 📖's pressed state), outlined when off. The checkbox stays
      in the label for keyboards and screen readers, drawn as nothing, so the three fit beside 📖 and ⤢ on a phone. */
   #readMeaningLayersSlot label { position: relative; display: inline-flex; align-items: center; height: 36px; box-sizing: border-box; padding: 0 0.6rem; border: 1.5px solid #1F3A6E; border-radius: 999px; background: #fff; color: #1F3A6E; font-size: 0.8rem; font-weight: 600; white-space: nowrap; cursor: pointer; }
+  /* Issue #794: with a wide fallback sans-serif (the Builder's runner's) the three pills plus 🔖 📖 ⤢ need ~384px and the
+     bar wrapped to two rows (91px) at 390/400. Tighter pills below 440px keep it one row with room to spare. */
+  @media (max-width: 439px) { #readMeaningLayersSlot { gap: 0.2rem; } #readMeaningLayersSlot label { padding: 0 0.42rem; font-size: 0.74rem; } }
   #readMeaningLayersSlot label:has(input:checked) { background: #1F3A6E; color: #fff; }
   #readMeaningLayersSlot input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
   #readMeaningLayersSlot label:has(input:focus-visible) { outline: 3px solid #B8862F; outline-offset: 2px; }
