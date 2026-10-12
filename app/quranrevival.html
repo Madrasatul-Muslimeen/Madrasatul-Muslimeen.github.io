@@ -2623,6 +2623,10 @@
   }
   body.read-from-contents #readBar #readListBtn > span[aria-hidden] { font-size: 1.1rem; }
   @media (max-width: 359px) { body.read-from-contents #readBar #readListBtn { padding: 0; width: 36px; } #readListBtn .read-list-word { display: none; } }
+  /* 12 Oct 2026 (issue #779): 600-679px is where the quick buttons (244px) join this row but the bar (568-648px) is
+     still short: at 600px the row held 114+210+244+173 and wrapped to 76px. The ☰ alone (aria-label "Surah list")
+     frees 78px and keeps the page reference and the Meaning switches on the one line. */
+  @media (min-width: 600px) and (max-width: 679px) { body.read-from-contents #readBar #readListBtn { padding: 0; width: 36px; } #readListBtn .read-list-word { display: none; } }
   /* Issue #419 -- Note View / Track / Approach for readers who came in through
      the Read contents list. Shown only when ALL of: opened from that list
      (body.read-from-contents, set in openReadContentsRow and cleared by
