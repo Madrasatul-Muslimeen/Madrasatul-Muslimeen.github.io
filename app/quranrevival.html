@@ -13392,11 +13392,10 @@
     // Reused rather than re-invented: renderScopedWheel/renderWheelLegend
     // (mastery-wheel.js) draw the wheel and legend exactly as every other
     // Explore level already does; goToReference() (the Search/"Go to" box's
-    // own canonical jump) does the surah-loading and range/ayah split;
-    // openNoteView() (the ⋮ menu's own "Note & more…" target) is what a
-    // tapped āyah actually opens -- the owner's own ask ("moving to the Note
-    // view and enable working as regular note"), so Bookmark/Notes/Play/
-    // word-by-word all just work on a QCR āyah, unchanged. Colour reuses the
+    // own canonical jump) does the surah-loading and range/ayah split; a
+    // tapped āyah opens in the Read view (12 Oct 2026, the Owner: "It should
+    // bring the Ayah, Read view"; the Note view is retired, decision 95) with
+    // "← Back to QCR" -- see goToAyahFromQcr(). Colour reuses the
     // SAME exploreChunksBySurah every other Explore wheel already loads on
     // open (Q3's own reversal, 26 Aug 2026: "reflect a gradual increase of
     // deep shades of colour") -- costs nothing extra, since ensureExplore
@@ -15893,7 +15892,7 @@
       });
       attachScopedWheelClickHandler(qcrWheelContainerEl, (key) => goToAyahFromQcr(key));
       qcrLegendContainerEl.innerHTML = renderWheelLegend(labelsById);
-      qcrHintEl.textContent = t("Tap a segment or a row to open that āyah — the wheel closes and lands you on QuranRevival's own reading/note screen.");
+      qcrHintEl.textContent = t("Tap a segment or a row to open that āyah in the Read view; ← Back to QCR brings you back here.");
     }
 
     async function qcrRemoveItemAction(collectionId, unitKey) {
@@ -15933,13 +15932,15 @@
       if (!(await qcrPersist())) { qcrCollections = prev; renderQcrCollectionView(); }
     }
 
-    /** The owner's own ask (26 Aug 2026): a tapped āyah lands on the real,
-        working Ayah Note screen, not a preview -- Bookmark/Notes/Play/
-        word-by-word all just work, unchanged. Reuses goToReference() (the
-        Search/"Go to" box's own canonical jump) for the surah-load/range
-        split, then openNoteView() (the ⋮ menu's own "Note & more…" target)
-        for the rest -- two existing mechanisms, not a third one. */
+    /** A QCR collection's āyah (its row or its wheel slice) opens THAT āyah in the Read view. The Owner, 12 Oct 2026:
+        "Explore.QCR.Slide brings to this screen. It should bring the Ayah, Read view." v10.11 (R3b) opened the 📝 Notes
+        pane on top of it, which on a phone fills the screen and reads as the retired Note view; the pane stays one tap
+        away on the Read bar. goToReference() (the Search/"Go to" box's own jump) does the surah load and the āyah/Range
+        split; scrollFlowToCurrentAyah() brings the āyah into view; the way back (decision 86) is the floating
+        "← Back to QCR" pill (setAppReturn), which reopens Explore on the same collection. */
     async function goToAyahFromQcr(unitKey) {
+      const collectionId = qcrCurrentId;
+      const col = (qcrCollections ?? []).find((c) => c.id === collectionId);
       closeAllPanels();
       const { unitType, parts } = parseUnitKey(unitKey);
       const surahNum = Number(parts[0]);
@@ -15949,7 +15950,8 @@
       } else {
         await goToReference(surahNum, Number(parts[1]), null);
       }
-      await openNotesPaneForKey(unitKey, { backLabel: t("Back to {name}", { name: t("QCR") }) }, backToQcrCollection(qcrCurrentId));
+      await scrollFlowToCurrentAyah();
+      setAppReturn(t("Back to {name}", { name: t("QCR") }), col ? langText(col.title, getAppLang()) : "", backToQcrCollection(collectionId));
     }
     /** R3b (decision 95): the pane's way back to QCR, on the same collection. */
     function backToQcrCollection(collectionId) {
