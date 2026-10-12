@@ -45,16 +45,34 @@ check("POSITIVE CONTROL -- the fixture really loaded", () => {
 // THE CLOSED GATES, enforced mechanically
 // ---------------------------------------------------------------------------
 
-check("GATE -- no Hadith module builds a `hadith:` permanent unit key", () => {
-  // The H2 instruction holds `buildUnitKey.hadith` semantics closed. A key
-  // built anywhere here could reach a durable write, so none is built at all.
-  const offenders = [];
-  for (const m of HADITH_MODULES) {
-    const code = codeOf(m);
-    if (/buildUnitKey/.test(code)) offenders.push(`${m} references buildUnitKey`);
-    if (/["'`]hadith:/.test(code)) offenders.push(`${m} contains a hadith: key literal`);
-  }
+// The H2 instruction held `buildUnitKey.hadith` semantics closed. Owner decision 7 ("Use HadeethEnc number") then
+// opened exactly one key, `hadith:hadeethenc:<id>` (issue #311), and hadith-gate-contracts.mjs's C2 was narrowed to
+// admit exactly that. This GATE was not, so from #311 on it failed against an ACCEPTED decision: hadith-browser.js
+// names `hadith:hadeethenc:<id>` as a bookmark's resume value in the address bar. Aligned 12 Oct 2026 (Architect,
+// v10.37) the same way C2 was: the one decided prefix is admitted, every other `hadith:` literal (an OpenITI passage,
+// a synthetic edition, a bare `hadith:`) still fails, and these modules still may not call buildUnitKey at all --
+// the key itself is built only in hadith-study-actions.js, which C2 guards.
+const DECIDED_HADITH_KEY_PREFIX = "hadith:hadeethenc:";
+function hadithKeyOffenders(name, code) {
+  const out = [];
+  if (/buildUnitKey/.test(code)) out.push(`${name} references buildUnitKey`);
+  const literals = [...code.matchAll(/["'`](hadith:[^"'`]*)/g)].map((m) => m[1]);
+  const undecided = literals.filter((l) => !l.startsWith(DECIDED_HADITH_KEY_PREFIX));
+  if (undecided.length) out.push(`${name} contains an undecided hadith: key literal: ${JSON.stringify(undecided)}`);
+  return out;
+}
+
+check("GATE -- no Hadith module builds a `hadith:` permanent unit key (beyond Owner decision 7's hadeethenc)", () => {
+  const offenders = HADITH_MODULES.flatMap((m) => hadithKeyOffenders(m, codeOf(m)));
   assert.deepEqual(offenders, [], offenders.join(" | "));
+});
+
+check("GATE -- MUTATION: an undecided hadith: literal, a bare one, or a buildUnitKey call is still refused", () => {
+  assert.deepEqual(hadithKeyOffenders("x.js", 'u.set("resume", `hadith:hadeethenc:${id}`)'), [], "positive control: the decided key must pass");
+  assert.equal(hadithKeyOffenders("x.js", 'const k = `hadith:openiti:${uri}:${n}`;').length, 1, "an OpenITI key literal was admitted");
+  assert.equal(hadithKeyOffenders("x.js", 'const k = "hadith:synthetic-bukhari:1";').length, 1, "a synthetic edition key literal was admitted");
+  assert.equal(hadithKeyOffenders("x.js", 'const k = "hadith:" + ed;').length, 1, "a bare hadith: prefix was admitted");
+  assert.equal(hadithKeyOffenders("x.js", 'buildUnitKey.hadith("hadeethenc", id)').length, 1, "a buildUnitKey call in a browsing module was admitted");
 });
 
 check("GATE -- no Hadith module can reach Firestore or a write path", () => {
