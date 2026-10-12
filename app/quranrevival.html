@@ -1757,6 +1757,12 @@
   .way-row.qcr-way-row { flex-wrap: wrap; align-items: flex-start; cursor: default; }
   .way-row .way-click { display: flex; align-items: center; gap: 10px; flex: 1 1 auto; min-width: 0; cursor: pointer; background: none; border: none; padding: 0; text-align: left; font-family: inherit; }
   .qcr-way-snippet { flex-basis: 100%; font-size: 11.5px; color: var(--card-text-muted); margin: 3px 0 0 32px; line-height: 1.4; }
+  /* Issue #786: the āyah "+ Add āyah" will add, shown before it is added. */
+  .qcr-add-preview { display: flex; flex-direction: column; gap: 2px; margin-top: 0.4rem; padding: 6px 8px; border-radius: 6px; border: 1px solid #ddd; font-size: 12px; line-height: 1.45; max-width: 100%; box-sizing: border-box; overflow-wrap: anywhere; }
+  .qcr-add-preview[hidden] { display: none; }
+  .qcr-add-preview-ref { font-weight: 600; }
+  .qcr-add-preview-ar { font-size: 1.25rem; line-height: 1.8; text-align: right; }
+  .qcr-add-preview-tr { color: var(--card-text-muted); }
   .qcr-way-manage { flex-basis: 100%; display: flex; gap: 6px; align-items: center; margin: 6px 0 0 32px; }
   .qcr-way-manage select { font-size: 11px; padding: 2px 4px; border-radius: 5px; border: 1px solid #ddd; max-width: 9rem; }
 
@@ -15440,22 +15446,30 @@
         text has been loaded) a short live English snippet -- never a stored
         copy, always read from QuranRevival's own Qur'an data (Q1, 26 Aug
         2026: "All texts come from the QR's own data source"). */
+    /** A record āyah number -> the internal āyah and its half (issue #786): 1:8 is 1:7 "b"; 1:7 with the count on is "a". */
+    function qcrRecordAyah(surahNum, record) {
+      const ayah = internalAyahOfRecord(surahNum, record);
+      const half = surahNum === 1 && record === FATIHA_SEVEN_RECORD_AYAH ? "b" : (surahNum === 1 && ayah === 7 && fatihaCountApplies(surahNum, fatihaOn()) ? "a" : null);
+      return { ayah, half };
+    }
+
     function qcrItemDisplay(unitKey) {
       const { unitType, parts } = parseUnitKey(unitKey);
       const surahNum = Number(parts[0]);
       const meta = surahIndex.find((s) => s.surahNumber === surahNum);
       const sName = meta ? surahName(surahNum, meta.nameEnglish) : t("Surah {surah}", { surah: num(surahNum) });
-      let ayahNum, refLabel;
+      let ayahNum, refLabel, half = null;
       if (unitType === "range") {
         const [from, to] = parts[1].split("-").map(Number);
         ayahNum = from;
         refLabel = `${num(surahNum)}:${num(from)}–${num(to)}`;
       } else {
-        ayahNum = Number(parts[1]);
-        refLabel = ayahShortRefFor(surahNum, ayahNum);
+        // Issue #786: an item is a progress-RECORD key, so Al-Fātiḥah's displayed 7 is ayah:1:8 -- read it back as
+        // internal 1:7's second half (and record 7, with the count on, as its first), the way the Read view does.
+        ({ ayah: ayahNum, half } = qcrRecordAyah(surahNum, Number(parts[1])));
+        refLabel = ayahShortRefFor(surahNum, ayahNum, half);
       }
-      const surahData = qcrSurahDataByNum.get(surahNum);
-      const ayah = surahData?.ayahs?.find((a) => a.ayah === ayahNum);
+      const ayah = qcrShownAyah(surahNum, ayahNum, half);
       const full = ayah?.translations?.en ?? "";
       const snippet = full.length > 90 ? `${full.slice(0, 90).trim()}…` : full;
       return { surahNum, ayahNum, refLabel, surahName: sName, snippet };
@@ -15872,6 +15886,7 @@
              <input type="number" id="qcrAddAyahInput" min="1" placeholder="${escapeHtml(t("Ayah"))}">
              <button type="button" id="qcrAddItemBtn">${escapeHtml(t("+ Add āyah"))}</button>
            </div>
+           <div class="qcr-add-preview" id="qcrAddPreview" hidden></div>
            <p class="qcr-add-msg hint" id="qcrAddMsg" style="display:none;"></p>`
         : "";
 
@@ -15889,6 +15904,9 @@
         });
       });
       document.getElementById("qcrAddItemBtn")?.addEventListener("click", () => qcrAddItemAction(col.id));
+      // Issue #786: the āyah the box will add, shown before it is added.
+      document.getElementById("qcrAddSurahSelect")?.addEventListener("change", qcrPaintAddPreview);
+      document.getElementById("qcrAddAyahInput")?.addEventListener("input", qcrPaintAddPreview);
 
       qcrWheelContainerEl.innerHTML = renderScopedWheel(items, {
         centerLabel: langText(col.title, getAppLang()),
@@ -15913,20 +15931,64 @@
       if (!(await qcrPersist())) { qcrCollections = prev; renderQcrCollectionView(); }
     }
 
-    async function qcrAddItemAction(collectionId) {
-      const surahSel = document.getElementById("qcrAddSurahSelect");
-      const ayahInput = document.getElementById("qcrAddAyahInput");
-      const msgEl = document.getElementById("qcrAddMsg");
-      const surahNum = Number(surahSel.value);
-      const ayahNum = Number(parseNum(ayahInput.value.trim()));
+    /** Issue #786 (the Owner, 12 Oct 2026): "+ Add āyah" read the typed number as the STORED āyah, so with the
+        Al-Fātiḥah count on (the Bismillah unnumbered, "Al-ḥamdu lillāh" is 1) typing 1 added the Bismillah. The box
+        now reads the number the way the Read view prints it: internalForDisplayedAyah() turns the displayed number
+        into the stored āyah (and the half of 1:7), recordAyahFor() into the progress record -- displayed 1 -> ayah:1:2,
+        displayed 6 -> ayah:1:7, displayed 7 -> ayah:1:8 (FATIHA_SEVEN_RECORD_AYAH) -- and buildUnitKey writes the key.
+        Count off, or any other surah: the number is the āyah, exactly as before. null when nothing valid is typed. */
+    function qcrAddTarget() {
+      const surahNum = Number(document.getElementById("qcrAddSurahSelect")?.value);
+      const typed = Number(parseNum(String(document.getElementById("qcrAddAyahInput")?.value ?? "").trim()));
       const meta = surahIndex.find((s) => s.surahNumber === surahNum);
-      if (!meta || !Number.isInteger(ayahNum) || ayahNum < 1 || ayahNum > meta.ayahCount) {
-        msgEl.textContent = t("Surah {surah} has {count} ayahs.", { surah: num(surahNum), count: num(meta?.ayahCount ?? 0) });
+      if (!meta) return { surahNum, meta: null, target: null };
+      const total = displayAyahCount(surahNum, meta.ayahCount);
+      const internal = Number.isInteger(typed) && typed >= 1 && typed <= total ? internalForDisplayedAyah(surahNum, typed, fatihaOn()) : null;
+      if (!internal || internal.ayah < 1 || internal.ayah > meta.ayahCount) return { surahNum, meta, total, target: null };
+      const record = recordAyahFor(surahNum, internal.ayah, internal.half, fatihaOn());
+      return { surahNum, meta, total, target: { typed, ayah: internal.ayah, half: internal.half, unitKey: buildUnitKey.ayah(surahNum, record) } };
+    }
+
+    /** The āyah as the reader sees it (the half of 1:7 with the count on), for the add preview and a row's snippet. */
+    function qcrShownAyah(surahNum, ayah, half) {
+      const data = qcrSurahDataByNum.get(surahNum);
+      if (!data?.ayahs) return null;
+      return expandAyahsForDisplay(surahNum, data.ayahs, fatihaOn()).find((a) => a.ayah === ayah && (a.half ?? null) === (half ?? null))
+        ?? data.ayahs.find((a) => a.ayah === ayah) ?? null;
+    }
+
+    let qcrAddPreviewToken = 0;
+    /** Paints "1:1 -- الحمد لله ..." under the add box: which āyah "+ Add āyah" will add, before it is added. */
+    async function qcrPaintAddPreview() {
+      const el = document.getElementById("qcrAddPreview");
+      if (!el) return;
+      const token = ++qcrAddPreviewToken;
+      const { surahNum, target } = qcrAddTarget();
+      if (!target) { el.hidden = true; el.innerHTML = ""; return; }
+      if (!qcrSurahDataByNum.has(surahNum)) {
+        try { qcrSurahDataByNum.set(surahNum, await getSurah(surahNum)); } catch { /* the reference alone is shown */ }
+        if (token !== qcrAddPreviewToken) return;
+      }
+      const shown = qcrShownAyah(surahNum, target.ayah, target.half);
+      const lang = getAppLang() === "bn" ? "bn" : "en";
+      const meaning = shown?.translations?.[lang] ?? shown?.translations?.en ?? "";
+      el.dataset.unitKey = target.unitKey;
+      el.innerHTML = `<span class="qcr-add-preview-ref">${escapeHtml(ayahShortRefFor(surahNum, target.ayah, target.half))}</span>
+        ${shown?.uthmaniText ? `<span class="qcr-add-preview-ar" lang="ar" dir="rtl">${escapeHtml(shown.uthmaniText)}</span>` : ""}
+        ${meaning ? `<span class="qcr-add-preview-tr">${escapeHtml(meaning.length > 140 ? `${meaning.slice(0, 140).trim()}…` : meaning)}</span>` : ""}`;
+      el.hidden = false;
+    }
+
+    async function qcrAddItemAction(collectionId) {
+      const msgEl = document.getElementById("qcrAddMsg");
+      const { surahNum, meta, total, target } = qcrAddTarget();
+      if (!target) {
+        msgEl.textContent = t("Surah {surah} has {count} ayahs.", { surah: num(surahNum), count: num(total ?? meta?.ayahCount ?? 0) });
         msgEl.style.display = "block";
         return;
       }
       msgEl.style.display = "none";
-      const unitKey = buildUnitKey.ayah(surahNum, ayahNum);
+      const unitKey = target.unitKey;
       if (!qcrSurahDataByNum.has(surahNum)) {
         try { qcrSurahDataByNum.set(surahNum, await getSurah(surahNum)); } catch { /* snippet just stays empty */ }
       }
@@ -15952,7 +16014,8 @@
         const [from, to] = parts[1].split("-").map(Number);
         await goToReference(surahNum, from, to);
       } else {
-        await goToReference(surahNum, Number(parts[1]), null);
+        const { ayah, half } = qcrRecordAyah(surahNum, Number(parts[1])); // issue #786: ayah:1:8 opens 1:7's second half
+        await goToReference(surahNum, ayah, null, half);
       }
       await scrollFlowToCurrentAyah();
       setAppReturn(t("Back to {name}", { name: t("QCR") }), col ? langText(col.title, getAppLang()) : "", backToQcrCollection(collectionId));
@@ -21006,7 +21069,90 @@
         open on this exact āyah, the ordinary reading screen otherwise. Mirrors
         changeCurrentTrackable()'s own "whichever stage view is open" rule. */
     function refreshBookmarkDisplay(unitKey) {
-      if (stageView === "read") renderStudyScreen();
+      if (stageView !== "read") return;
+      // Issue #786 (the Owner, 12 Oct 2026): saving a bookmark on page 3 of a Whole Surah Mushaf landed the reader
+      // back on the surah's FIRST page. renderStudyScreen() redraws the flow, the emptied container clamps its scroll
+      // to 0, and nothing put it back -- measured at 390px: Mushaf page 4 before the save, page 2 after. A bookmark
+      // save changes only the 🔖, never what is being read, so the reader stays exactly where they were: the scroll
+      // offsets and the Mushaf page in view are recorded first and restored after the redraw -- at once,
+      // again the moment that page is drawn again (the Mushaf draws its pages one at a time, so the whole render
+      // can take seconds while page 4 is back in a fraction of one), once the render settles, and once more on the
+      // next frame. A reader who scrolls, taps or types meanwhile is left where THEY went; so is a newer render.
+      const place = readViewPlace();
+      renderStudyScreen();
+      restoreReadViewPlace(place);
+      const renderNow = flowRenderPromise;
+      if (!renderNow) return;
+      let readerMoved = false;
+      const onReader = () => { readerMoved = true; };
+      const readerEvents = ["wheel", "touchstart", "pointerdown", "keydown"];
+      readerEvents.forEach((e) => window.addEventListener(e, onReader, { capture: true, passive: true }));
+      const live = () => !readerMoved && flowRenderPromise === renderNow && stageView === "read";
+      const watch = new MutationObserver(() => { if (live() && restoreReadViewPlace(place)) watch.disconnect(); });
+      watch.observe(pageViewContainer, { childList: true });
+      const done = () => { watch.disconnect(); readerEvents.forEach((e) => window.removeEventListener(e, onReader, { capture: true })); };
+      Promise.resolve(renderNow).catch(() => {}).then(() => {
+        if (!live()) { done(); return; }
+        restoreReadViewPlace(place);
+        requestAnimationFrame(() => { if (live()) restoreReadViewPlace(place); done(); });
+      });
+    }
+
+    /** Where the reader is in the Read view (issue #786): every scroll offset that can move it, plus, in the Mushaf,
+        the page showing most (as updateMushafPageRef() measures it) with its on-screen position. */
+    function readViewPlace() {
+      const scrollers = [document.getElementById("readScroll"), pageViewContainer, document.scrollingElement].filter(Boolean);
+      const offsets = scrollers.map((el) => ({ el, top: el.scrollTop, left: el.scrollLeft }));
+      // The page to hold on to is a MUSHAF page only. The scrolling flow (Whole Surah or Range without the Mushaf)
+      // was measured keeping its place through the save with no help at all -- its rows are replaced in one step,
+      // so its scroller never empties -- and the offsets above cover it anyway.
+      let anchor = null;
+      const root = flowScrollRoot();
+      if (root && mushafToggle.checked && getComputedStyle(pageViewContainer).display !== "none") {
+        const view = root.getBoundingClientRect();
+        const overlap = (r) => Math.max(0, Math.min(r.right, view.right) - Math.max(r.left, view.left)) * Math.max(0, Math.min(r.bottom, view.bottom) - Math.max(r.top, view.top));
+        const sel = ".hifz-page[data-mushaf-page]";
+        const els = [...pageViewContainer.querySelectorAll(sel)];
+        let best = -1, bestArea = 0;
+        els.forEach((el, i) => { const a = overlap(el.getBoundingClientRect()); if (a > bestArea) { bestArea = a; best = i; } });
+        if (best >= 0) {
+          const r = els[best].getBoundingClientRect();
+          anchor = { sel, index: best, id: els[best].dataset.mushafPage, top: r.top, left: r.left, w: r.width, h: r.height };
+        }
+      }
+      return { offsets, anchor };
+    }
+
+    /** Puts the Read view back where readViewPlace() found it: the offsets first, then -- if the redraw moved the
+        content under them -- the remembered Mushaf page back to the same spot on screen. True once that page is
+        back in place; false while it is not drawn yet (or there is none to hold on to). */
+    function restoreReadViewPlace(place) {
+      if (!place) return false;
+      // INSTANT, always: #pageViewContainer is `scroll-behavior: smooth`, so a plain scrollLeft assignment animates,
+      // and each later correction read a half-way position and compounded it (measured: the reader carried to
+      // page 7, then 14, then 16). And only an offset the redrawn content can already hold, or it is clamped.
+      const jump = (el, top, left) => el.scrollTo({ top, left, behavior: "instant" });
+      for (const { el, top, left } of place.offsets) {
+        const fitsTop = el.scrollHeight - el.clientHeight >= Math.abs(top) - 1, fitsLeft = el.scrollWidth - el.clientWidth >= Math.abs(left) - 1;
+        if ((el.scrollTop !== top && fitsTop) || (el.scrollLeft !== left && fitsLeft)) jump(el, fitsTop ? top : el.scrollTop, fitsLeft ? left : el.scrollLeft);
+      }
+      const a = place.anchor;
+      const root = flowScrollRoot();
+      if (!a || !root) return false;
+      const el = pageViewContainer.querySelectorAll(a.sel)[a.index];
+      if (!el || el.dataset.mushafPage !== a.id) return false;
+      const r = el.getBoundingClientRect();
+      // A Mushaf page is appended before its fonts and justification settle; placing it by a half-drawn box threw
+      // the reader to page 12 (measured). Wait until it is the size it was.
+      if (Math.abs(r.width - a.w) > 2 || Math.abs(r.height - a.h) > 2) return false;
+      const dx = r.left - a.left, dy = r.top - a.top;
+      if (Math.abs(dx) >= 1 || Math.abs(dy) >= 1) jump(root, root.scrollTop + dy, root.scrollLeft + dx);
+      // Where the page itself (not the Read view's scroller) is what scrolls, settle the rest there.
+      const r2 = el.getBoundingClientRect(), page = document.scrollingElement;
+      if (page && page !== root && (Math.abs(r2.top - a.top) >= 1 || Math.abs(r2.left - a.left) >= 1)) {
+        jump(page, page.scrollTop + r2.top - a.top, page.scrollLeft + r2.left - a.left);
+      }
+      return true;
     }
 
     /** The Owner, 12 Oct 2026: "Can you add quick unit choice because this only restrict to whole Surah." Which āyah

@@ -31,9 +31,11 @@ const MUT = {
   noback: ["setAppReturn(t(\"Back to {name}\", { name: t(\"QCR\") }), col ? langText(col.title, getAppLang()) : \"\", backToQcrCollection(collectionId));", "void col;"],
   slice: ["attachScopedWheelClickHandler(qcrWheelContainerEl, (key) => goToAyahFromQcr(key));",
     "attachScopedWheelClickHandler(qcrWheelContainerEl, async (key) => { const id = qcrCurrentId; closeAllPanels(); const p = parseUnitKey(key).parts; await goToReference(Number(p[0]), Number(p[1]), null); await openNotesPaneForKey(key, {}, backToQcrCollection(id)); });"],
-  noread: ["await goToReference(surahNum, Number(parts[1]), null);\n      }\n      await scrollFlowToCurrentAyah();",
-    "await goToReference(surahNum, Number(parts[1]), null);\n      }\n      setStageView(\"explore\");"],
-  bismall: ["refLabel = ayahShortRefFor(surahNum, ayahNum);", "refLabel = ayahShortRefFor(1, 1);"],
+  // Issue #786 moved both anchors below (a QCR item is a RECORD key, so ayah:1:8 is read back as 1:7's second half
+  // before the jump and the label): the same two mutations, re-anchored on the new lines -- not weakened.
+  noread: ["await goToReference(surahNum, ayah, null, half);\n      }\n      await scrollFlowToCurrentAyah();",
+    "await goToReference(surahNum, ayah, null, half);\n      }\n      setStageView(\"explore\");"],
+  bismall: ["refLabel = ayahShortRefFor(surahNum, ayahNum, half);", "refLabel = ayahShortRefFor(1, 1);"],
   nobism: ["function isUnnumberedBismillah(surah, ayah) { return ayah === 1 && fatihaCountApplies(surah, fatihaOn()); }", "function isUnnumberedBismillah(surah, ayah) { return false; }"],
   nocount: ["function isUnnumberedBismillah(surah, ayah) { return ayah === 1 && fatihaCountApplies(surah, fatihaOn()); }", "function isUnnumberedBismillah(surah, ayah) { return ayah === 1 && surah === 1; }"],
 };
