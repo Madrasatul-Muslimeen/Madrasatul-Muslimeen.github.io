@@ -303,8 +303,12 @@ for (const lang of ["en"]) {
   await save(page);
   const pBm = lastSaved(await writes(page), "t1__p1");
   check(`${tag} This page = the Mushaf page in view (page:madani:4)`, pBm?.position === "page:madani:4", JSON.stringify(pBm?.position));
-  // (Info, not a check: saving re-renders the Read view; say where the Mushaf is afterwards, then go back to page 4.)
-  console.log(`  info  ${tag} after the save the Mushaf shows page ${await page.evaluate(() => { const vis = (p) => { const r = p.getBoundingClientRect(); return Math.max(0, Math.min(r.right, innerWidth) - Math.max(r.left, 0)) * Math.max(0, Math.min(r.bottom, innerHeight) - Math.max(r.top, 0)); }; const ps = [...document.querySelectorAll(".hifz-page[data-mushaf-page]")]; return ps.length ? ps.reduce((a, b) => (vis(b) > vis(a) ? b : a)).dataset.mushafPage : "none"; })}`);
+  // Issue #786 turned this line from information into a check, in place: it used to only print where the Mushaf was
+  // after the save, because the save re-rendered the Read view and landed on the surah's first page (it printed 2).
+  // That jump is fixed (refreshBookmarkDisplay keeps the place), so the reader must still be on page 4 now.
+  await page.waitForTimeout(1500);
+  const afterSave = await page.evaluate(() => { const vis = (p) => { const r = p.getBoundingClientRect(); return Math.max(0, Math.min(r.right, innerWidth) - Math.max(r.left, 0)) * Math.max(0, Math.min(r.bottom, innerHeight) - Math.max(r.top, 0)); }; const ps = [...document.querySelectorAll(".hifz-page[data-mushaf-page]")]; return ps.length ? Number(ps.reduce((a, b) => (vis(b) > vis(a) ? b : a)).dataset.mushafPage) : 0; });
+  check(`${tag} after the save the Mushaf is still on page 4 (it used to jump back to the surah's first page)`, afterSave === 4, String(afterSave));
   await page.evaluate(() => document.querySelector('.hifz-page[data-mushaf-page="4"]')?.scrollIntoView({ block: "start", inline: "start", behavior: "instant" }));
   await page.waitForTimeout(800);
   await openDialog(page);

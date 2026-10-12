@@ -90,3 +90,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v10.32** (2026-10-12): Keys Round 1: related hadith on the Āyah card, and the āyāt a hadith quotes.
 - **v10.33** (2026-10-12): bookmarks for children show who they were saved for; a unit choice in Bookmark this.
 - **v10.34** (2026-10-12): the Bookmarks page's + New bookmark files an Owner's folder by name for a child (Builder round #789).
+- **v10.35** (2026-10-12): a bookmark save keeps the Mushaf page; QCR + Add āyah follows the Al-Fātiḥah count (issue #786).
