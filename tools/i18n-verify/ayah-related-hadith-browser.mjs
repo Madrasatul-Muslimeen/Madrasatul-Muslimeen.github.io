@@ -8,7 +8,7 @@
 //   - from a hadith, "Āyāt this hadith quotes" opens the Read view at the āyah with "← Back to the hadith";
 //   - rows are >= 40px, no sideways scroll at 320 / 390 / 768 / 1280, English and Bangla.
 // Run from the repository root with serve.js on :8080.
-import { chromium, newContext, openPage } from "./harness.mjs";
+import { chromium, newContext, openPage, BASE } from "./harness.mjs";
 
 let pass = 0, fail = 0;
 const check = (name, ok, detail = "") => {
@@ -139,7 +139,7 @@ for (const viewport of [{ width: 320, height: 640 }, { width: 390, height: 844 }
 
   const ctx2 = await newContext(browser, { appLang: "en", viewport: { width: 390, height: 844 } });
   const { page: p2 } = await openPage(ctx2, "/app/quranrevival.html");
-  await p2.goto("http://localhost:8080/app/hadith-collections.html?openiti=0261Muslim.Sahih.Shamela0001727-ara1&passage=611&back=1", { waitUntil: "domcontentloaded" });
+  await p2.goto(BASE + "/app/hadith-collections.html?openiti=0261Muslim.Sahih.Shamela0001727-ara1&passage=611&back=1", { waitUntil: "domcontentloaded" });
   await p2.waitForSelector('[data-ayat-quoted-link="36:38"]', { timeout: 20000 }).catch(() => {});
   await p2.click('[data-ayat-quoted-link="36:38"]');
   await p2.waitForURL(/quranrevival\.html/, { timeout: 10000 }).catch(() => {});
