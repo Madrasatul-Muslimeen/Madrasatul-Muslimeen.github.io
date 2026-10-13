@@ -834,3 +834,4 @@ total). Allocated by the MMSA Architect.
 10.37: the Read bar stays one row with the Meaning switches on a phone (Builder round #794). Allocated by the MMSA Architect.
 10.38: bookmarks for several people at once keep their folder, and tapping an existing bookmark asks before removing it (Builder round #797, PCF J22). Allocated by the MMSA Architect.
 10.39: Word card: the stem box always has a meaning and the wrong dictionary meanings are gone; Approach 1's self-learning line, with links in Approach guides (PCF J23, J20). Allocated by the MMSA Architect.
+10.40: a dragged landing wheel no longer hides Wheel / Legend / Unit on a phone (PCF J24). Allocated by the MMSA Architect.

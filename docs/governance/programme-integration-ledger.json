@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "10.39",
+    "version": "10.40",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -3461,7 +3461,7 @@
     {
       "version": "10.39",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "J23 bug 1 (dictionary form-of homographs fixed at source, English stem falls back to the word's own meaning) and the inherited-Achieved press explained; J20: Approach 1's Owner-approved self-learning line in the template, and https addresses in Approach guides as links.",
       "integration": {
         "authorizedOn": "2026-10-12",
@@ -3469,10 +3469,23 @@
         "method": "MERGE_PR",
         "reference": "CHANGELOG.md"
       }
+    },
+    {
+      "version": "10.40",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "PCF J24: below 721px the landing fit's cap limits a dragged wheel too, so the drawer row stays above the dock.",
+      "integration": {
+        "authorizedOn": "2026-10-13",
+        "integratedOn": "2026-10-13",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
     }
   ],
-  "nextUnallocated": "10.40",
+  "nextUnallocated": "10.41",
   "nextUnallocatedNote": [
+    "v10.40 was allocated to a dragged landing wheel no longer hides Wheel / Legend / Unit on a phone (PCF J24), 2026-10-13.",
     "v10.39 was allocated to Word card: the stem box always has a meaning and the wrong dictionary meanings are gone; Approach 1's self-learning line, with links in Approach guides (PCF J23, J20), 2026-10-12.",
     "v10.38 was allocated to bookmarks for several people at once keep their folder, and tapping an existing bookmark asks before removing it (Builder round #797, PCF J22), 2026-10-12.",
     "v10.37 was allocated to the Read bar stays one row with the Meaning switches on a phone (Builder round #794), 2026-10-12.",
