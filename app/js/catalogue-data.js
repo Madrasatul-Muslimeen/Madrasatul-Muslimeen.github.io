@@ -257,7 +257,7 @@ const APPROACH_SHORT_NAMES = {
 
 export const APPROACH_TEMPLATES = [
   { id: "approach_01", order: 1, section: 1, name: nameLang("Reading (with Tajweed)", "তাজবিদসহ তিলাওয়াত"),
-    guide: { what: en("Reciting the Arabic text accurately, applying the rules of tajweed."), how: en("Read aloud from the mushaf, applying each tajweed rule as it appears; use the audio and repeat/loop tools to match a reciter."), measure: en("How much of the assigned portion you can read correctly, with tajweed rules applied, without correction.") },
+    guide: { what: en("Reciting the Arabic text accurately, applying the rules of tajweed."), how: en("Read aloud from the mushaf, applying each tajweed rule as it appears; use the audio and repeat/loop tools to match a reciter. To learn on your own: listen to Shaykh Abdullah Basfar's tartīl, āyah by āyah (the recitation this app plays, from Archive.org: https://archive.org/details/abdullah-ali-basfar.ayahbyayah), then read the same āyah aloud and compare."), measure: en("How much of the assigned portion you can read correctly, with tajweed rules applied, without correction.") },
     panels: ["text", "audio", "loop", "tajweed"] },
   { id: "approach_02", order: 2, section: 1, name: nameLang("Hifz / Memorising", "হিফজ / মুখস্থকরণ"),
     guide: { what: en("Committing ayahs to memory so they can be recited without looking at the text."), how: en("Repeat a short portion aloud in a loop until it is secure, then recite it from memory and check against the text."), measure: en("How much can be recited from memory, start to finish, without a mistake.") },

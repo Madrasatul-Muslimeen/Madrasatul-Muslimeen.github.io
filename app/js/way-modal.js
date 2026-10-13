@@ -21,13 +21,19 @@ function escapeHtml(s) {
   return (s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
+/** Escaped guide text with each https:// address made a link (PCF J20, 12 Oct 2026: Approach 1 points self-learners to
+    the Archive.org recitation). It opens in a new tab, so the Approach card the reader came from stays where it was. */
+function guideText(s) {
+  return escapeHtml(s).replace(/https:\/\/[^\s<>"]+[^\s<>".,;:)]/g, (u) => `<a href="${u}" target="_blank" rel="noopener">${u}</a>`);
+}
+
 /** Guide tab -- three fields per approach (Architecture s5): What / How / Measure. Measure already carries a generic fallback baked in at catalogue-seed time (Phase 2), so this never has to invent one. */
 export function renderGuideTab(trackable, lang = "en") {
   const guide = trackable.guide ?? {};
   return `<div class="way-guide">
-    <h4>${t("What")}</h4><p>${escapeHtml(langText(guide.what, lang))}</p>
-    <h4>${t("How")}</h4><p>${escapeHtml(langText(guide.how, lang))}</p>
-    <h4>${t("How to measure your progress")}</h4><p>${escapeHtml(langText(guide.measure, lang))}</p>
+    <h4>${t("What")}</h4><p>${guideText(langText(guide.what, lang))}</p>
+    <h4>${t("How")}</h4><p>${guideText(langText(guide.how, lang))}</p>
+    <h4>${t("How to measure your progress")}</h4><p>${guideText(langText(guide.measure, lang))}</p>
   </div>`;
 }
 
