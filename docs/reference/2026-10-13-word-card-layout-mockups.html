@@ -1,0 +1,138 @@
+<title>Word Card Layout Choices</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: three phone-width Word cards side by side (stacking on a phone), each under its own option label, with
+   a short "what changes" list. The cards copy the app's own night palette exactly; only the page around them follows
+   the viewer's theme. */
+:root {
+  --page: #f3f5f8; --ink: #1c2638; --muted: #5d6b82; --rule: #d7dde7; --chip: #ffffff;
+  /* the app's Word card (night look), fixed in both themes because it is a picture of the app */
+  --card: #0f1c33; --card-2: #16284a; --card-edge: #2b4170; --card-ink: #eef2f8; --card-muted: #a7b3c8;
+  --gold: #d6a648; --gold-soft: rgba(214,166,72,.18); --tile: #f6f8fb; --tile-ink: #17233a; --green: #3f9d6b; --green-soft: #e3f3ea;
+  --blue: #5b84c9; --red: #c0504d; --purple: #8a5cc2;
+  --ui: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif; --ar: "Amiri", "Traditional Arabic", serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --page: #0b111c; --ink: #e6ebf3; --muted: #9aa6ba; --rule: #26324a; --chip: #141d2e; color-scheme: dark; } }
+:root[data-theme="dark"] { --page: #0b111c; --ink: #e6ebf3; --muted: #9aa6ba; --rule: #26324a; --chip: #141d2e; color-scheme: dark; }
+body { background: var(--page); color: var(--ink); font-family: var(--ui); }
+.wrap { max-width: 1260px; margin: 0 auto; padding-inline: 16px; padding-block: 24px 48px; }
+h1 { font-size: 1.5rem; margin: 0 0 6px; text-wrap: balance; }
+.lede { color: var(--muted); margin: 0 0 6px; max-width: 70ch; line-height: 1.5; }
+.ask { margin: 14px 0 22px; padding: 12px 14px; border: 1px solid var(--rule); border-radius: 10px; background: var(--chip); max-width: 70ch; line-height: 1.5; }
+.ask b { color: var(--ink); }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 22px; align-items: start; }
+.opt { min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+.opt h2 { font-size: 1.05rem; margin: 0; display: flex; gap: 8px; align-items: baseline; }
+.opt h2 .tag { font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.opt ul { margin: 0; padding-left: 1.1rem; color: var(--muted); font-size: .88rem; line-height: 1.45; }
+.rec { font-size: .72rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--green); }
+
+/* ---- the Word card ---- */
+.wc { width: 100%; max-width: 380px; background: var(--card); color: var(--card-ink); border-radius: 14px; padding: 12px; box-sizing: border-box; display: flex; flex-direction: column; gap: 10px; border: 1px solid var(--card-edge); }
+.hd { display: grid; grid-template-columns: auto auto 1fr auto auto auto; gap: 6px; align-items: center; }
+.ib { width: 38px; height: 38px; border-radius: 8px; border: 1px solid var(--card-edge); background: var(--card-2); color: var(--card-ink); display: grid; place-items: center; font-size: 1rem; }
+.ib.gold { border-color: var(--gold); }
+.ayahbtn { height: 38px; padding: 0 9px; border-radius: 8px; border: 1px solid var(--gold); background: var(--card-2); color: var(--gold); font: 600 .74rem var(--ui); white-space: nowrap; }
+.word { text-align: center; line-height: 1.1; }
+.word .ar { font-family: var(--ar); font-size: 1.9rem; color: #7fd1a8; }
+.word .ref { font-size: .72rem; color: var(--card-muted); font-variant-numeric: tabular-nums; }
+.root { background: var(--tile); color: var(--tile-ink); border-radius: 8px; padding: 2px 8px; text-align: center; }
+.root small { display: block; font-size: .55rem; letter-spacing: .1em; color: #6b778c; }
+.root span { font-family: var(--ar); font-size: 1.15rem; }
+.mean { display: flex; align-items: center; gap: 8px; border: 1px solid var(--card-edge); border-radius: 8px; padding: 7px 9px; font-size: .86rem; flex-wrap: wrap; }
+.mean .en { background: var(--gold-soft); padding: 0 4px; border-radius: 4px; }
+.mean .tr { font-style: italic; color: var(--card-muted); }
+.mean .grow { flex: 1 1 auto; min-width: 0; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.colour { display: inline-flex; align-items: center; gap: 5px; font-size: .78rem; color: var(--card-ink); white-space: nowrap; }
+.colour i { width: 15px; height: 15px; border-radius: 3px; background: var(--blue); display: grid; place-items: center; font-style: normal; font-size: .7rem; color: #fff; }
+.tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
+.tabs.withc { grid-template-columns: repeat(4, 1fr) auto; }
+.tab { height: 34px; border-radius: 7px; border: 1px solid var(--card-edge); display: grid; place-items: center; font-size: .78rem; color: var(--card-ink); }
+.tab.on { background: var(--gold); color: #1b1405; border-color: var(--gold); font-weight: 600; }
+.tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.t { background: var(--tile); color: var(--tile-ink); border-radius: 8px; padding: 6px 8px; min-width: 0; }
+.t small { display: block; font-size: .62rem; color: #6b778c; }
+.t b { font-size: .82rem; }
+.t .a { font-family: var(--ar); font-size: 1.15rem; }
+.t.dict { background: var(--green-soft); outline: 2px solid var(--green); }
+.parts { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.p { background: var(--tile); color: var(--tile-ink); border-radius: 8px; padding: 7px; text-align: center; font-size: .74rem; line-height: 1.3; }
+.p small { display: block; letter-spacing: .1em; color: #6b778c; font-size: .58rem; }
+.p .a { font-family: var(--ar); font-size: 1.4rem; display: block; }
+.p.stem { background: var(--green-soft); outline: 2px solid var(--green); }
+.p .a.stem { color: var(--green); } .p .a.det { color: var(--purple); }
+.know { border-left: 3px solid var(--gold); background: var(--card-2); border-radius: 8px; padding: 9px 10px; display: flex; flex-direction: column; gap: 8px; font-size: .84rem; }
+.kl { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; line-height: 1.6; }
+.kl .lv { color: var(--card-muted); }
+/* circle styles */
+.ring { display: inline-grid; place-items: center; min-width: 2.2em; padding: 1px 7px; border: 1.5px solid var(--gold); border-radius: 999px; color: var(--gold); font-weight: 700; font-variant-numeric: tabular-nums; }
+.disc { display: inline-grid; place-items: center; padding: 2px 9px; border-radius: 999px; background: var(--gold); color: #1b1405; font-weight: 700; font-variant-numeric: tabular-nums; }
+.pr { position: relative; width: 46px; height: 46px; display: inline-grid; place-items: center; flex: 0 0 auto; }
+.pr svg { position: absolute; inset: 0; transform: rotate(-90deg); }
+.pr b { font-size: .64rem; color: var(--gold); font-variant-numeric: tabular-nums; }
+.num { color: var(--gold); font-weight: 700; font-variant-numeric: tabular-nums; }
+.note { font-size: .78rem; color: var(--muted); }
+.legend { margin-top: 26px; font-size: .84rem; color: var(--muted); max-width: 70ch; line-height: 1.5; }
+</style>
+
+<div class="wrap">
+  <h1>Word Card: three layouts for your choice</h1>
+  <p class="lede">Your request (PCF J23, 12 Oct): “This āyah” as a small button beside 🔍; the word's meaning above the level boxes; the colour tick at the right edge, showing only “Colour”; and the totals written as one sentence, “You now know (WbW) 42,748 and 55.21% of 77,429 words”, with an elegant circle on the known numbers, for every level.</p>
+  <p class="lede">The three cards differ only in where “Colour” sits and how the numbers are circled. The word is ٱلْبَوَارِ (14:28:12), at phone width.</p>
+  <p class="ask"><b>Your choice:</b> tick A, B or C in PCF J23 (or say “B, but with A's circles”, and so on). Nothing is built until you choose.</p>
+
+  <div class="grid">
+    <!-- A -->
+    <section class="opt" aria-labelledby="oa">
+      <h2 id="oa">A <span class="tag">Colour on the meaning line · gold rings</span></h2>
+      <div class="wc">
+        <div class="hd"><span class="ib">‹</span><span class="ib gold">🔍</span><span class="ayahbtn">This āyah ···</span><span class="word"><span class="ar">ٱلْبَوَارِ</span><br><span class="ref">14:28:12</span></span><span class="root"><small>ROOT</small><span>ب و ر</span></span><span class="ib">×</span></div>
+        <div class="mean"><span class="grow"><span class="en">(of) destruction</span><span>ধ্বংসের</span><span class="tr">l-bawāri</span></span><span class="colour"><i>✓</i>Colour</span></div>
+        <div class="tabs"><span class="tab on">WbW</span><span class="tab">Basic</span><span class="tab">Intermediate</span><span class="tab">Depth</span></div>
+        <div class="tiles"><span class="t"><small>Form</small><b>Noun</b></span><span class="t dict"><small>Dictionary word</small><span class="a">بَوَار</span></span><span class="t"><small>Root</small><span class="a">ب و ر</span></span></div>
+        <div class="parts"><span class="p stem"><small>STEM</small><span class="a stem">بَوَارِ</span>Noun<br>(of) destruction</span><span class="p"><small>PREFIX</small><span class="a det">ٱلْ</span>Definite article<br>the</span></div>
+        <div class="know">
+          <div class="kl"><span class="lv">You now know (WbW)</span><span class="ring">42,748</span><span>and</span><span class="ring">55.21%</span><span>of 77,429 words</span></div>
+          <div class="kl"><span class="lv">You now know (Basic)</span><span class="ring">6,178</span><span>and</span><span class="ring">8.33%</span><span>of 74,122 words</span></div>
+        </div>
+      </div>
+      <ul><li>The meaning line holds the colour tick at its right edge, so no row is spent on it.</li><li>Thin gold rings: quiet, and readable on the dark card.</li></ul>
+    </section>
+
+    <!-- B -->
+    <section class="opt" aria-labelledby="ob">
+      <h2 id="ob">B <span class="tag">Colour at the end of the level boxes · gold discs</span></h2>
+      <div class="wc">
+        <div class="hd"><span class="ib">‹</span><span class="ib gold">🔍</span><span class="ayahbtn">This āyah ···</span><span class="word"><span class="ar">ٱلْبَوَارِ</span><br><span class="ref">14:28:12</span></span><span class="root"><small>ROOT</small><span>ب و ر</span></span><span class="ib">×</span></div>
+        <div class="mean"><span class="grow"><span class="en">(of) destruction</span><span>ধ্বংসের</span><span class="tr">l-bawāri</span></span></div>
+        <div class="tabs withc"><span class="tab on">WbW</span><span class="tab">Basic</span><span class="tab">Interm.</span><span class="tab">Depth</span><span class="colour"><i>✓</i>Colour</span></div>
+        <div class="tiles"><span class="t"><small>Form</small><b>Noun</b></span><span class="t dict"><small>Dictionary word</small><span class="a">بَوَار</span></span><span class="t"><small>Root</small><span class="a">ب و ر</span></span></div>
+        <div class="parts"><span class="p stem"><small>STEM</small><span class="a stem">بَوَارِ</span>Noun<br>(of) destruction</span><span class="p"><small>PREFIX</small><span class="a det">ٱلْ</span>Definite article<br>the</span></div>
+        <div class="know">
+          <div class="kl"><span class="lv">You now know (WbW)</span><span class="disc">42,748</span><span>and</span><span class="disc">55.21%</span><span>of 77,429 words</span></div>
+          <div class="kl"><span class="lv">You now know (Basic)</span><span class="disc">6,178</span><span>and</span><span class="disc">8.33%</span><span>of 74,122 words</span></div>
+        </div>
+      </div>
+      <ul><li>The colour tick sits with the level boxes it colours; “Intermediate” shortens to “Interm.” on a phone to make room.</li><li>Filled gold discs: the numbers stand out most.</li></ul>
+    </section>
+
+    <!-- C -->
+    <section class="opt" aria-labelledby="oc">
+      <h2 id="oc">C <span class="tag">Colour on the meaning line · progress circle</span> <span class="rec">Recommended</span></h2>
+      <div class="wc">
+        <div class="hd"><span class="ib">‹</span><span class="ib gold">🔍</span><span class="ayahbtn">This āyah ···</span><span class="word"><span class="ar">ٱلْبَوَارِ</span><br><span class="ref">14:28:12</span></span><span class="root"><small>ROOT</small><span>ب و ر</span></span><span class="ib">×</span></div>
+        <div class="mean"><span class="grow"><span class="en">(of) destruction</span><span>ধ্বংসের</span><span class="tr">l-bawāri</span></span><span class="colour"><i>✓</i>Colour</span></div>
+        <div class="tabs"><span class="tab on">WbW</span><span class="tab">Basic</span><span class="tab">Intermediate</span><span class="tab">Depth</span></div>
+        <div class="tiles"><span class="t"><small>Form</small><b>Noun</b></span><span class="t dict"><small>Dictionary word</small><span class="a">بَوَار</span></span><span class="t"><small>Root</small><span class="a">ب و ر</span></span></div>
+        <div class="parts"><span class="p stem"><small>STEM</small><span class="a stem">بَوَارِ</span>Noun<br>(of) destruction</span><span class="p"><small>PREFIX</small><span class="a det">ٱلْ</span>Definite article<br>the</span></div>
+        <div class="know">
+          <div class="kl"><span class="pr" aria-hidden="true"><svg viewBox="0 0 46 46"><circle cx="23" cy="23" r="19" fill="none" stroke="#2b4170" stroke-width="4"/><circle cx="23" cy="23" r="19" fill="none" stroke="#d6a648" stroke-width="4" stroke-linecap="round" stroke-dasharray="65.9 119.4"/></svg><b>55%</b></span><span><span class="lv">You now know (WbW)</span> <span class="ring">42,748</span> and <span class="num">55.21%</span> of 77,429 words</span></div>
+          <div class="kl"><span class="pr" aria-hidden="true"><svg viewBox="0 0 46 46"><circle cx="23" cy="23" r="19" fill="none" stroke="#2b4170" stroke-width="4"/><circle cx="23" cy="23" r="19" fill="none" stroke="#d6a648" stroke-width="4" stroke-linecap="round" stroke-dasharray="9.9 119.4"/></svg><b>8%</b></span><span><span class="lv">You now know (Basic)</span> <span class="ring">6,178</span> and <span class="num">8.33%</span> of 74,122 words</span></div>
+        </div>
+      </div>
+      <ul><li>Same top as A.</li><li>The percentage is drawn as a circle that fills as you learn (55.21% of the ring is gold), so progress is seen at a glance; the known number gets a gold ring.</li></ul>
+    </section>
+  </div>
+
+  <p class="legend">In all three: “This āyah ···” no longer takes a row (it sits beside 🔍); the meaning is above the level boxes; “Colour” shows only the word and its tick (the person/stem legend appears in the word parts' own colours); Intermediate and Depth get the same sentence when their totals exist. Buttons stay 38px or more, and every layout is measured at 320–1280px in English and Bangla before it ships.</p>
+</div>

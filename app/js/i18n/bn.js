@@ -1254,6 +1254,7 @@ export const BN = {
   "of the Qur'an": "কুরআনের",
   "Waiting to be checked": "যাচাইয়ের অপেক্ষায়",
   "Known: marked Achieved at another place of this word": "জানা: এই শব্দের অন্য স্থানে অর্জিত হিসেবে চিহ্নিত",
+  "Saved here as {state}. It still shows Achieved because this word is known through the other mark this card names; change that mark to change it.": "এখানে {state} হিসেবে সংরক্ষিত। তবু অর্জিত দেখাচ্ছে, কারণ শব্দটি এই কার্ডে উল্লেখিত অন্য চিহ্নের মাধ্যমে জানা; বদলাতে হলে সেই চিহ্নটি বদলান।",
   "Checked and confirmed": "যাচাই করে নিশ্চিত করা হয়েছে",
   "Sent back: {note}": "ফেরত পাঠানো হয়েছে: {note}",
   "Sent back to look at again": "আবার দেখার জন্য ফেরত পাঠানো হয়েছে",
@@ -4128,5 +4129,8 @@ export const BN = {
   "Saved for {names}": "{names}-এর জন্য সংরক্ষিত হয়েছে",
   "{a} and {b}": "{a} ও {b}",
   "See {name}'s bookmarks": "{name}-এর বুকমার্ক দেখুন",
+  "Already bookmarked": "আগেই বুকমার্ক করা আছে",
+  "Remove my bookmark": "আমার বুকমার্ক সরান",
+  "Add a bookmark…": "বুকমার্ক যোগ করুন…",
   "{name}'s bookmarks": "{name}-এর বুকমার্ক",
 };

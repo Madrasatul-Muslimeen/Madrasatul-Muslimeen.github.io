@@ -24,6 +24,33 @@ def allah_rabb(text):
     text = re.sub(r"\bGod(?='s\b|\b)", "Allah", text)
     text = re.sub(r"\b[Ll]ord\b(?!s)", "Rabb", text)
     return text
+# J23 (12 Oct 2026) -- a "verbal noun of X" / "active participle of X" page
+# points at a VERB, but match_wikt.py's resolve_formof() looked the verb up by
+# its normalised spelling and preferred an entry of the NOUN's own part of
+# speech, so a noun homograph won: بَوَار ("verbal noun of بَارَ") printed "bar
+# (place where alcoholic beverages are sold)", مَكْر a plant's Latin name,
+# كُفُور "cover, case". Such a resolution must be a verb's meaning ("to ...").
+# When it is not, the Qur'an's own matched verb is used if the coverage run has
+# it; otherwise the entry is left out (the Word card then falls back to the
+# word's own word-by-word meaning) -- never a wrong meaning.
+import sys
+sys.path.insert(0, str(here))
+from norm import voc
+VERB_TARGET = re.compile(r"^(verbal noun|active participle|passive participle) of ([ء-ْٰٱ]+)")
+QURAN_VERBS = {}
+for r in src["matches"]:
+    if r.get("matched") and r.get("pos") == "verb" and not r.get("formOfOnly") and r.get("confidence") in ("high", "medium") and (r.get("gloss") or "").lower().startswith("to "):
+        QURAN_VERBS.setdefault(voc(r["lemma"]), r)
+# Read by hand, 12 Oct 2026: this one's own resolution IS its meaning (a noun of the same sense).
+KEEP_RESOLVED = {"عَلَانِيَة"}
+def verb_target_gloss(r):
+    """None = not a verb-targeted form-of (use the usual gloss); "" = mis-resolved and no verb found (leave out)."""
+    m = VERB_TARGET.match(r.get("gloss") or "") if r.get("formOfOnly") else None
+    resolved = (r.get("resolvedGloss") or "").strip()
+    if not m or not resolved or resolved.lower().startswith("to ") or r["lemma"] in KEEP_RESOLVED:
+        return None
+    verb = QURAN_VERBS.get(voc(m.group(2)))
+    return verb["gloss"].strip() if verb else ""
 entries = {}
 for r in src["matches"]:
     lemma = r["lemma"]
@@ -32,7 +59,8 @@ for r in src["matches"]:
         continue
     if not r.get("matched") or r.get("confidence") not in ("high", "medium"):
         continue
-    gloss = (r.get("resolvedGloss") or r.get("gloss") or "").strip()
+    fixed_verb = verb_target_gloss(r)
+    gloss = fixed_verb if fixed_verb is not None else (r.get("resolvedGloss") or r.get("gloss") or "").strip()
     if not gloss:
         continue
     entries[lemma] = {"m": allah_rabb(gloss), "c": r["confidence"], "u": r.get("url")}

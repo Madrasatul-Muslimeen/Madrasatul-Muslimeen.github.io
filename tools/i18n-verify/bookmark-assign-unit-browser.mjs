@@ -89,11 +89,16 @@ async function readView(page, { surah = "2", unit = "surah", mushaf = false } = 
 async function openDialog(page) {
   await page.evaluate(() => { window.__stubWriteData = []; });
   await clickReadTool(page, "#readBookmarkBtn");
-  // A unit already bookmarked shows ★, and tapping it removes that bookmark first (the unchanged toggle): tap again.
-  if (!(await page.waitForSelector(".bm-popover", { timeout: 2500 }).catch(() => null))) {
-    await clickReadTool(page, "#readBookmarkBtn");
-    await page.waitForSelector(".bm-popover", { timeout: 5000 });
-  }
+  // A unit already bookmarked shows ★, and tapping it now ASKS (issue #797): "Add a bookmark…" reaches the dialog.
+  await page.waitForSelector(".bm-popover", { timeout: 5000 });
+  if (await page.$("[data-bm-exists-add]")) { await page.click("[data-bm-exists-add]"); await page.waitForSelector("[data-bm-pop-save]", { timeout: 5000 }); }
+}
+// The ★ tap asks first (issue #797); "Remove my bookmark" is the old instant remove, now one deliberate press.
+async function removeOwn(page) {
+  await page.evaluate(() => document.getElementById("readBookmarkBtn").click());
+  await page.waitForSelector("[data-bm-exists-remove]", { timeout: 5000 });
+  await page.click("[data-bm-exists-remove]");
+  await page.waitForTimeout(500);
 }
 /** Picks a unit choice; when the dialog offers none (a mutation), says so and leaves the default -- the checks then
     fail by name instead of the suite crashing. */
@@ -157,13 +162,11 @@ for (const lang of ["en", "bn"]) {
   await hideNotice(page);
 
   // The Owner alone: no notice (its own ★ says so) -- positive control the other way.
-  await page.evaluate(() => document.getElementById("readBookmarkBtn").click()); // ★ -> removes the Owner's copy (unchanged toggle)
-  await page.waitForTimeout(500);
+  await removeOwn(page); // ★ -> choice -> "Remove my bookmark" (issue #797: was an instant remove)
   await openDialog(page);
   await save(page);
   check(`${tag} Owner alone: saved to the Owner's document, and no notice`, !!lastSaved(await writes(page), "t1__p1") && (await notice(page)) === null);
-  await page.evaluate(() => document.getElementById("readBookmarkBtn").click());
-  await page.waitForTimeout(500);
+  await removeOwn(page);
 
   // One child + one of the Owner's folders, which Maryam's document does not have.
   await openDialog(page);

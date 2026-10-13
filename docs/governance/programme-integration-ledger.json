@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "10.37",
+    "version": "10.39",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -3437,8 +3437,32 @@
     {
       "version": "10.37",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Builder round #794 (PR #795): tighter Meaning-switch pills below 440px keep the Read bar one row; it wrapped to two (83px) with a wider phone font at 390/400, and in English at 320/360 everywhere.",
+      "integration": {
+        "authorizedOn": "2026-10-12",
+        "integratedOn": "2026-10-12",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "10.38",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Builder round #797: an existing folder stays selectable with several people ticked (filed by name in each person's own list), and the Read view's 🔖/★ on an existing bookmark asks Remove my bookmark / Add a bookmark… instead of removing at once.",
+      "integration": {
+        "authorizedOn": "2026-10-12",
+        "integratedOn": "2026-10-12",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "10.39",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "J23 bug 1 (dictionary form-of homographs fixed at source, English stem falls back to the word's own meaning) and the inherited-Achieved press explained; J20: Approach 1's Owner-approved self-learning line in the template, and https addresses in Approach guides as links.",
       "integration": {
         "authorizedOn": "2026-10-12",
         "integratedOn": "2026-10-12",
@@ -3447,8 +3471,10 @@
       }
     }
   ],
-  "nextUnallocated": "10.38",
+  "nextUnallocated": "10.40",
   "nextUnallocatedNote": [
+    "v10.39 was allocated to Word card: the stem box always has a meaning and the wrong dictionary meanings are gone; Approach 1's self-learning line, with links in Approach guides (PCF J23, J20), 2026-10-12.",
+    "v10.38 was allocated to bookmarks for several people at once keep their folder, and tapping an existing bookmark asks before removing it (Builder round #797, PCF J22), 2026-10-12.",
     "v10.37 was allocated to the Read bar stays one row with the Meaning switches on a phone (Builder round #794), 2026-10-12.",
     "v10.36 was allocated to the Mushaf page reference shows from the first page, so a bookmark save no longer grows the Read bar (Builder round #792), 2026-10-12.",
     "v10.35 was allocated to a bookmark save keeps the Mushaf page; QCR + Add āyah follows the Al-Fātiḥah count (issue #786), 2026-10-12.",
