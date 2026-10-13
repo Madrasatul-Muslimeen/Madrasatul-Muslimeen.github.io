@@ -78,11 +78,23 @@ async function run(rulesText, guardianCandidate) {
   }
 }
 
-test("roster reads for every role, against the live Rules", () => run(rules, false));
-test("the guardian candidate: a guardian lists their own children, and nothing else changes", () => {
-  // The candidate is the live file plus exactly one rule (and its comment).
-  const extra = candidate.split("\n").filter((l) => !rules.split("\n").includes(l));
-  assert.ok(extra.length > 0 && extra.length <= 8, `candidate differs by ${extra.length} lines`);
-  assert.ok(rules.split("\n").every((l) => candidate.split("\n").includes(l)), "candidate dropped a live line");
-  return run(candidate, true);
+// 14 Oct 2026 (PCF J15): the Owner published the guardian candidate on 12 Oct and said "yes, copy the rules"
+// (PCF and chat, 14 Oct), so firestore.rules IS the candidate, byte for byte. The live file is tested with the
+// guardian rule, and a mutant with that one rule removed proves it is what lets a guardian list their children.
+const GUARDIAN_RULE_START = "      allow read: if isGuardianIn(resource.data.tenantId)";
+function withoutGuardianRule(text) {
+  const lines = text.split("\n");
+  const i = lines.indexOf(GUARDIAN_RULE_START);
+  if (i < 0) throw new Error("guardian rule not found in the live Rules");
+  lines.splice(i, 3);
+  const out = lines.join("\n");
+  if (out.includes("resource.data.get('managedByPersonId', null) == myPersonIdIn(resource.data.tenantId)")) throw new Error("guardian rule only partly removed");
+  if (out.split("\n").length !== lines.length) throw new Error("unexpected line count after removal");
+  return out;
+}
+
+test("the live Rules are exactly the guardian candidate the Owner published", () => {
+  assert.equal(rules, candidate);
 });
+test("roster reads for every role, against the live Rules (a guardian lists their own children)", () => run(rules, true));
+test("MUTATION: the live Rules without the guardian rule refuse the guardian's children query", () => run(withoutGuardianRule(rules), false));
