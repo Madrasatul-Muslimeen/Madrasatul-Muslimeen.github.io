@@ -214,6 +214,9 @@ export const WORD_CARD_DEFAULT_LABELS = Object.freeze({
   wholeQuranKnownShort: "You know {known} of {total} words",
   wholeQuranKnownLevelShort: "You know ({level}) {known} of {total} words",
   wholeQuranPercentLevelShort: "You know ({level}) {percent}% of the words",
+  // PCF J23 -- one sentence per level; {percent} is drawn as a circle plus the number, the "%" sign follows it.
+  wholeQuranLevelSentence: "{level}: Achieved {known} and {percent}% of {total} words",
+  percentCircleLabel: "{percent}%",
   levelNameWbw: "WbW",
   levelNameBasic: "Basic",
   levelNameIntermediate: "Intermediate",
@@ -351,6 +354,21 @@ export function segmentedGlossHtml(gloss, segments) {
  * needs explaining.
  */
 /**
+ * PCF J23 -- a progress circle: a faint ring with a gold arc whose length is the percentage.
+ * r=8 on a 20px box; `data-percent` and the dash length are what the suite reads.
+ */
+function percentCircle(pct, text, formatNumber) {
+  const n = Math.max(0, Math.min(100, Number(pct) || 0));
+  const r = 8;
+  const c = 2 * Math.PI * r;
+  const label = escapeHtml(String(text.percentCircleLabel ?? WORD_CARD_TEXT.percentCircleLabel).replace("{percent}", formatNumber(pct)));
+  return `<svg class="word-progress-percent-circle" width="20" height="20" viewBox="0 0 20 20" role="img" aria-label="${label}" data-percent="${n}">` +
+    `<circle cx="10" cy="10" r="${r}" fill="none" stroke="currentColor" stroke-opacity="0.3" stroke-width="3"/>` +
+    `<circle class="word-progress-percent-arc" cx="10" cy="10" r="${r}" fill="none" stroke="#e0b341" stroke-width="3" ` +
+    `stroke-dasharray="${(c * n / 100).toFixed(3)} ${c.toFixed(3)}" transform="rotate(-90 10 10)"/></svg>`;
+}
+
+/**
  * Issue #303 -- the whole-Qur'an running total, read straight off
  * quranWordTotals (getWordTotals(), already gated by
  * study-wbw-total-readiness.js and switched on since v08.53 -- no new gate).
@@ -365,17 +383,15 @@ function wholeQuranKnownLines(wholeQuranTotal, text, formatNumber, levelTotals) 
     const grouped = (n) => Number(n ?? 0).toLocaleString("en-US");
     const big = (v) => `<strong class="word-progress-whole-quran-num">${escapeHtml(v)}</strong>`;
     const names = { wbw: text.levelNameWbw, basic: text.levelNameBasic, intermediate: text.levelNameIntermediate, depth: text.levelNameDepth };
-    const rows = levelTotals.map(({ level, total }, i) => {
+    const rows = levelTotals.map(({ level, total }) => {
       const name = String(names[level] ?? level);
-      // Only the box's bottom line (the last level's percent) says "of the Qur'an" (the Owner, 8 Oct 2026).
-      const last = i === levelTotals.length - 1;
-      const known = escapeHtml(String(text.wholeQuranKnownLevelShort ?? text.wholeQuranKnownLevel)).replace("{level}", () => escapeHtml(name))
+      // PCF J23 (the Owner, 13 Oct 2026): ONE sentence per level, "WbW: Achieved 12,345 and (circle) 54% of 77,777 words".
+      const pct = percentRounded(total.known, total.total);
+      const sentence = escapeHtml(String(text.wholeQuranLevelSentence ?? WORD_CARD_TEXT.wholeQuranLevelSentence)).replace("{level}", () => escapeHtml(name))
         .replace("{known}", big(formatNumber(grouped(total.known))))
+        .replace("{percent}", () => percentCircle(pct, text, formatNumber) + big(formatNumber(pct)))
         .replace("{total}", big(formatNumber(grouped(total.total))));
-      const percent = escapeHtml(String(last ? text.wholeQuranPercentLevel : (text.wholeQuranPercentLevelShort ?? text.wholeQuranPercentLevel))).replace("{level}", () => escapeHtml(name))
-        .replace("{percent}", big(formatNumber(percentRounded(total.known, total.total))));
-      return `<p class="word-progress-whole-quran" data-whole-quran-level="${escapeHtml(level)}">${known}</p>` +
-        `<p class="word-progress-whole-quran-percent" data-whole-quran-level-percent="${escapeHtml(level)}">${percent}</p>`;
+      return `<p class="word-progress-whole-quran" data-whole-quran-level="${escapeHtml(level)}">${sentence}</p>`;
     });
     return `<div class="word-progress-whole-quran-box">${rows.join("")}</div>`;
   }

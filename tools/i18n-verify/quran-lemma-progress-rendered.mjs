@@ -163,7 +163,8 @@ function readLemmaCard(page) {
     if (!b) return null;
     return {
       wholeQuranLine: b.querySelector(".word-progress-whole-quran")?.textContent?.trim() ?? null,
-      wholeQuranPercentLine: b.querySelector(".word-progress-whole-quran-percent")?.textContent?.trim() ?? null,
+      // Updated in place 13 Oct 2026 (PCF J23): the separate percent line is retired; the percentage is inside the level's one sentence.
+      wholeQuranPercentLine: b.querySelector(".word-progress-whole-quran")?.textContent?.trim() ?? null,
       shareOfQuranLine: b.querySelector(".word-card-share-of-quran")?.textContent?.trim() ?? null,
       learnDeltaLine: b.querySelector(".word-progress-learn-delta")?.textContent?.trim() ?? null,
       // Issue #322 -- the second row is gone; this is now an ABSENCE check.
@@ -223,13 +224,15 @@ for (const [width, height] of [[390, 844], [1100, 900]]) {
     // 'You know ... of .... words of the Quran'". Expected words hand-written.
     // Updated in place 8 Oct 2026 -- the Owner: "Erase 'of the Quran' from all except the bottom one." The first pair
     // (these two lines) no longer says it; the box's bottom line still does.
-    const YOU = { en: ["You know ", " of ", " words"], bn: ["আপনি ", "টি শব্দের মধ্যে ", "টি জানেন"] }[lang];
-    const YOU_PCT = { en: ["You know ", "% of the words"], bn: ["আপনি ", "% শব্দ জানেন"] }[lang];
+    // Updated in place 13 Oct 2026 (PCF J23): each level is ONE sentence, "WbW: Achieved N and 54% of M words"; no line says
+    // "of the Qur'an" any more, because the separate bottom percent line that carried it is retired.
+    const YOU = { en: ["Achieved ", " and ", " of ", " words"], bn: ["শব্দের মধ্যে ", "টি অর্জিত"] }[lang];
+    const YOU_PCT = { en: ["% of "], bn: ["টি অর্জিত, "] }[lang];
     const QURAN = lang === "en" ? "of the Qur'an" : "কুরআনের";
-    check(`[${lang} ${width}] the total reads "${YOU.join("…")}", without "${QURAN}"`, YOU.every((w) => (card?.wholeQuranLine ?? "").includes(w)) && !(card?.wholeQuranLine ?? QURAN).includes(QURAN), card?.wholeQuranLine);
-    check(`[${lang} ${width}] the percent reads "${YOU_PCT.join("…")}", without "${QURAN}"`, YOU_PCT.every((w) => (card?.wholeQuranPercentLine ?? "").includes(w)) && !(card?.wholeQuranPercentLine ?? QURAN).includes(QURAN), card?.wholeQuranPercentLine);
+    check(`[${lang} ${width}] the level sentence reads "${YOU.join("…")}", without "${QURAN}"`, YOU.every((w) => (card?.wholeQuranLine ?? "").includes(w)) && !(card?.wholeQuranLine ?? QURAN).includes(QURAN), card?.wholeQuranLine);
+    check(`[${lang} ${width}] the same sentence carries the percent "${YOU_PCT.join("…")}"`, YOU_PCT.every((w) => (card?.wholeQuranPercentLine ?? "").includes(w)) && /%/.test(card?.wholeQuranPercentLine ?? ""), card?.wholeQuranPercentLine);
     const boxLines = await page.evaluate(() => [...document.querySelectorAll("#quranWordCardMount .word-progress-whole-quran-box p")].map((p) => p.textContent.trim()));
-    check(`[${lang} ${width}] only the box's bottom line says "${QURAN}" (${boxLines.length} lines)`, boxLines.length >= 2 && boxLines.at(-1).includes(QURAN) && boxLines.slice(0, -1).every((l) => !l.includes(QURAN)), JSON.stringify(boxLines));
+    check(`[${lang} ${width}] the box holds one sentence per level, four lines, none saying "${QURAN}"`, boxLines.length === 4 && boxLines.every((l) => !l.includes(QURAN) && /%/.test(l)), JSON.stringify(boxLines));
     const st = card?.wholeQuranStyle;
     // UPDATED IN PLACE, 2 Oct 2026 -- the Owner published the Basic/Depth Rules
     // and that gate is open, so the box carries ONE pair of lines PER LEVEL

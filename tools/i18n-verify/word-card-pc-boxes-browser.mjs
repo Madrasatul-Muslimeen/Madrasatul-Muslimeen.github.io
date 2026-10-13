@@ -139,7 +139,7 @@ for (const lang of ["en", "bn"].filter((l) => !arg("lang") || arg("lang") === l)
       check(`${T} the ring's aria-label`, m.ringLabel === (lang === "bn" ? `কুরআনের ${digits(RING[level])}% শব্দ জানা` : `${RING[level]}% of the words of the Qur'an known`), String(m.ringLabel));
       const want = (Number(RING[level]) / 100) * CIRC;
       check(`${T} the arc is ${RING[level]}% of the circumference (+-0.5%)`, m.hasArc && Math.abs(m.arcLen - want) <= CIRC * 0.005, `${m.arcLen} vs ${want.toFixed(2)}`);
-      check(`${T} "You know" line for this level says the same number`, new RegExp(`${digits(RING[level]).replace(".", "\\.")}`).test(await page.evaluate((lv) => document.querySelector(`#quranWordCardMount [data-whole-quran-level-percent="${lv}"]`)?.textContent ?? "", level)), "");
+      check(`${T} "You know" line for this level says the same number`, new RegExp(`${digits(RING[level]).replace(".", "\\.")}`).test(await page.evaluate((lv) => document.querySelector(`#quranWordCardMount [data-whole-quran-level="${lv}"]`)?.textContent ?? "", level)), "");
       check(`${T} no sideways scroll`, m.sidewaysScroll <= 0 && m.contentScroll <= 0, JSON.stringify({ d: m.sidewaysScroll, c: m.contentScroll }));
       if (level === "wbw") {
         if (SHOTS) await page.screenshot({ path: `/tmp/pcboxes-${lang}-${width}.png` });

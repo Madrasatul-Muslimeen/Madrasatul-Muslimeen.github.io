@@ -119,7 +119,7 @@ const totalsOf = (page) => page.evaluate(() => {
   for (const level of ["wbw", "basic", "depth"]) {
     out[level] = {
       known: document.querySelector(`#quranWordCardMount [data-whole-quran-level="${level}"]`)?.textContent ?? null,
-      percent: document.querySelector(`#quranWordCardMount [data-whole-quran-level-percent="${level}"]`)?.textContent ?? null,
+      percent: document.querySelector(`#quranWordCardMount [data-whole-quran-level="${level}"]`)?.textContent ?? null,
       // The two <strong> numbers are the total and the known count, in the language's own order.
       knownNum: [...document.querySelectorAll(`#quranWordCardMount [data-whole-quran-level="${level}"] strong`)].map((e) => e.textContent).find((x) => !/^(77,429|৭৭,৪২৯|74,122|৭৪,১২২)$/.test(x)) ?? null, // decision 68: Basic/Depth say 74,122
     };
@@ -191,7 +191,8 @@ for (const [width, height] of [[390, 844], [1280, 900]]) {
         return { inside: r.left >= m.left - 1 && r.right <= m.right + 1, wide, lines: b.querySelectorAll("p").length };
       });
       // Updated in place 12 Oct 2026 (decision 103): a fourth level, Intermediate, adds its pair of lines (8, was 6).
-      check(`${tag} the bold box holds 8 lines inside the card, none clipped`, !!box && box.inside && box.wide === 0 && box.lines === 8, JSON.stringify(box));
+      // Updated in place 13 Oct 2026 (PCF J23): one sentence per level now carries the percentage, so 4 lines (was 8).
+      check(`${tag} the bold box holds 4 lines inside the card, none clipped`, !!box && box.inside && box.wide === 0 && box.lines === 4, JSON.stringify(box));
       await page.screenshot({ path: `.builder-round/shot-levels-${lang}-${width}-${level}.png` });
 
       if (level === "basic" && width === 390 && lang === "en") {
