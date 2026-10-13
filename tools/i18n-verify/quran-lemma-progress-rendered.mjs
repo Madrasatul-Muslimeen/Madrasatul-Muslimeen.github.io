@@ -163,7 +163,8 @@ function readLemmaCard(page) {
     if (!b) return null;
     return {
       wholeQuranLine: b.querySelector(".word-progress-whole-quran")?.textContent?.trim() ?? null,
-      wholeQuranPercentLine: b.querySelector(".word-progress-whole-quran-percent")?.textContent?.trim() ?? null,
+      // Updated in place 13 Oct 2026 (PCF J23): the separate percent line is retired; the percentage is inside the level's one sentence.
+      wholeQuranPercentLine: b.querySelector(".word-progress-whole-quran")?.textContent?.trim() ?? null,
       shareOfQuranLine: b.querySelector(".word-card-share-of-quran")?.textContent?.trim() ?? null,
       learnDeltaLine: b.querySelector(".word-progress-learn-delta")?.textContent?.trim() ?? null,
       // Issue #322 -- the second row is gone; this is now an ABSENCE check.
@@ -223,21 +224,26 @@ for (const [width, height] of [[390, 844], [1100, 900]]) {
     // 'You know ... of .... words of the Quran'". Expected words hand-written.
     // Updated in place 8 Oct 2026 -- the Owner: "Erase 'of the Quran' from all except the bottom one." The first pair
     // (these two lines) no longer says it; the box's bottom line still does.
-    const YOU = { en: ["You know ", " of ", " words"], bn: ["আপনি ", "টি শব্দের মধ্যে ", "টি জানেন"] }[lang];
-    const YOU_PCT = { en: ["You know ", "% of the words"], bn: ["আপনি ", "% শব্দ জানেন"] }[lang];
+    // Updated in place 13 Oct 2026 (PCF J23): each level is ONE sentence, "WbW: Achieved N and 54% of M words"; no line says
+    // "of the Qur'an" any more, because the separate bottom percent line that carried it is retired.
+    const YOU = { en: ["Achieved ", " and ", " of ", " words"], bn: ["শব্দের মধ্যে ", "টি অর্জিত"] }[lang];
+    const YOU_PCT = { en: ["% of "], bn: ["টি অর্জিত, "] }[lang];
     const QURAN = lang === "en" ? "of the Qur'an" : "কুরআনের";
-    check(`[${lang} ${width}] the total reads "${YOU.join("…")}", without "${QURAN}"`, YOU.every((w) => (card?.wholeQuranLine ?? "").includes(w)) && !(card?.wholeQuranLine ?? QURAN).includes(QURAN), card?.wholeQuranLine);
-    check(`[${lang} ${width}] the percent reads "${YOU_PCT.join("…")}", without "${QURAN}"`, YOU_PCT.every((w) => (card?.wholeQuranPercentLine ?? "").includes(w)) && !(card?.wholeQuranPercentLine ?? QURAN).includes(QURAN), card?.wholeQuranPercentLine);
+    check(`[${lang} ${width}] the level sentence reads "${YOU.join("…")}", without "${QURAN}"`, YOU.every((w) => (card?.wholeQuranLine ?? "").includes(w)) && !(card?.wholeQuranLine ?? QURAN).includes(QURAN), card?.wholeQuranLine);
+    check(`[${lang} ${width}] the same sentence carries the percent "${YOU_PCT.join("…")}"`, YOU_PCT.every((w) => (card?.wholeQuranPercentLine ?? "").includes(w)) && /%/.test(card?.wholeQuranPercentLine ?? ""), card?.wholeQuranPercentLine);
     const boxLines = await page.evaluate(() => [...document.querySelectorAll("#quranWordCardMount .word-progress-whole-quran-box p")].map((p) => p.textContent.trim()));
-    check(`[${lang} ${width}] only the box's bottom line says "${QURAN}" (${boxLines.length} lines)`, boxLines.length >= 2 && boxLines.at(-1).includes(QURAN) && boxLines.slice(0, -1).every((l) => !l.includes(QURAN)), JSON.stringify(boxLines));
+    check(`[${lang} ${width}] the box holds one sentence per level, four lines, none saying "${QURAN}"`, boxLines.length === 4 && boxLines.every((l) => !l.includes(QURAN) && /%/.test(l)), JSON.stringify(boxLines));
     const st = card?.wholeQuranStyle;
     // UPDATED IN PLACE, 2 Oct 2026 -- the Owner published the Basic/Depth Rules
     // and that gate is open, so the box carries ONE pair of lines PER LEVEL
     // (decision 58: WbW, Basic, Depth), three numbers each: 3 x 3 = 9. The
     // per-level wording is proved in lemma-levels-browser.mjs.
     // Updated in place 12 Oct 2026 (decisions 101/103): a fourth level, Intermediate, between Basic and Depth; the tabs read the short level names. 3 x 4 = 12.
-    check(`[${lang} ${width}] both lines are bold (weight >= 700) and the numbers (three per level, four levels) bigger and heavier still`,
-      !!st && st.numCount === 12 && st.lineWeight >= 700 && st.numWeight >= 800 && st.numSize >= st.lineSize * 1.15, JSON.stringify(st));
+    // Updated in place 14 Oct 2026 (PCF J23, the Owner chose layout B): the percentage is written INSIDE the progress
+    // circle, not as a bold number, so each level carries TWO bold numbers (known, in a gold disc, and total): 2 x 4 = 8.
+    // The circle and its percentage are proved in word-card-level-sentence-browser.mjs.
+    check(`[${lang} ${width}] both lines are bold (weight >= 700) and the numbers (two per level, four levels) bigger and heavier still`,
+      !!st && st.numCount === 8 && st.lineWeight >= 700 && st.numWeight >= 800 && st.numSize >= st.lineSize * 1.15, JSON.stringify(st));
     check(`[${lang} ${width}] the numbers stand out in the card's accent colour, unlike the sentence`, !!st && st.numColor !== st.lineColor, JSON.stringify(st));
     check(`[${lang} ${width}] Number 3 -- this word's own share-of-Qur'an line renders (unaffected by the lemma gate)`, !!card?.shareOfQuranLine, JSON.stringify(card));
     check(`[${lang} ${width}] Number 3 -- names this lemma's real occurrence count`, toWestern(card?.shareOfQuranLine ?? "").includes(String(LEMMA_OCCURRENCE_COUNT)), card?.shareOfQuranLine);

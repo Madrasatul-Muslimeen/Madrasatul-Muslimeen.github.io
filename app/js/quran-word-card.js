@@ -214,6 +214,10 @@ export const WORD_CARD_DEFAULT_LABELS = Object.freeze({
   wholeQuranKnownShort: "You know {known} of {total} words",
   wholeQuranKnownLevelShort: "You know ({level}) {known} of {total} words",
   wholeQuranPercentLevelShort: "You know ({level}) {percent}% of the words",
+  // PCF J23 -- one sentence per level. {percent} is the progress circle with "54%" written inside it (the Owner,
+  // 14 Oct: option C's circle IN PLACE of the number, never both).
+  wholeQuranLevelSentence: "{level}: Achieved {known} and {percent} of {total} words",
+  percentCircleLabel: "{percent}%",
   levelNameWbw: "WbW",
   levelNameBasic: "Basic",
   levelNameIntermediate: "Intermediate",
@@ -351,6 +355,25 @@ export function segmentedGlossHtml(gloss, segments) {
  * needs explaining.
  */
 /**
+ * PCF J23 -- the percentage drawn as a progress circle (option C of the 13 Oct mock-ups): a faint ring with a gold
+ * arc whose length is the percentage, and the percentage itself written INSIDE it (the Owner, 14 Oct: "in place of
+ * the percentage now, not double separately"). r=15 on a 38px box; `data-percent` and the dash length are what
+ * the suite reads.
+ */
+function percentCircle(pct, text, formatNumber) {
+  const n = Math.max(0, Math.min(100, Number(pct) || 0));
+  const r = 15;
+  const c = 2 * Math.PI * r;
+  const label = escapeHtml(String(text.percentCircleLabel ?? WORD_CARD_TEXT.percentCircleLabel).replace("{percent}", formatNumber(pct)));
+  return `<span class="word-progress-percent-ring">` +
+    `<svg class="word-progress-percent-circle" width="38" height="38" viewBox="0 0 38 38" role="img" aria-label="${label}" data-percent="${n}">` +
+    `<circle cx="19" cy="19" r="${r}" fill="none" stroke="currentColor" stroke-opacity="0.25" stroke-width="3.5"/>` +
+    `<circle class="word-progress-percent-arc" cx="19" cy="19" r="${r}" fill="none" stroke="#e0b341" stroke-width="3.5" stroke-linecap="round" ` +
+    `stroke-dasharray="${(c * n / 100).toFixed(3)} ${c.toFixed(3)}" transform="rotate(-90 19 19)"/></svg>` +
+    `<b class="word-progress-percent-text" aria-hidden="true">${label}</b></span>`;
+}
+
+/**
  * Issue #303 -- the whole-Qur'an running total, read straight off
  * quranWordTotals (getWordTotals(), already gated by
  * study-wbw-total-readiness.js and switched on since v08.53 -- no new gate).
@@ -365,17 +388,17 @@ function wholeQuranKnownLines(wholeQuranTotal, text, formatNumber, levelTotals) 
     const grouped = (n) => Number(n ?? 0).toLocaleString("en-US");
     const big = (v) => `<strong class="word-progress-whole-quran-num">${escapeHtml(v)}</strong>`;
     const names = { wbw: text.levelNameWbw, basic: text.levelNameBasic, intermediate: text.levelNameIntermediate, depth: text.levelNameDepth };
-    const rows = levelTotals.map(({ level, total }, i) => {
+    const rows = levelTotals.map(({ level, total }) => {
       const name = String(names[level] ?? level);
-      // Only the box's bottom line (the last level's percent) says "of the Qur'an" (the Owner, 8 Oct 2026).
-      const last = i === levelTotals.length - 1;
-      const known = escapeHtml(String(text.wholeQuranKnownLevelShort ?? text.wholeQuranKnownLevel)).replace("{level}", () => escapeHtml(name))
-        .replace("{known}", big(formatNumber(grouped(total.known))))
+      // PCF J23 (the Owner, 13 Oct 2026): ONE sentence per level, "WbW: Achieved 12,345 and (circle) 54% of 77,777 words".
+      const pct = percentRounded(total.known, total.total);
+      // Layout B (the Owner, 14 Oct): the known number in a filled gold disc.
+      const disc = (v) => `<strong class="word-progress-whole-quran-num word-progress-known-disc">${escapeHtml(v)}</strong>`;
+      const sentence = escapeHtml(String(text.wholeQuranLevelSentence ?? WORD_CARD_TEXT.wholeQuranLevelSentence)).replace("{level}", () => escapeHtml(name))
+        .replace("{known}", () => disc(formatNumber(grouped(total.known))))
+        .replace("{percent}", () => percentCircle(pct, text, formatNumber))
         .replace("{total}", big(formatNumber(grouped(total.total))));
-      const percent = escapeHtml(String(last ? text.wholeQuranPercentLevel : (text.wholeQuranPercentLevelShort ?? text.wholeQuranPercentLevel))).replace("{level}", () => escapeHtml(name))
-        .replace("{percent}", big(formatNumber(percentRounded(total.known, total.total))));
-      return `<p class="word-progress-whole-quran" data-whole-quran-level="${escapeHtml(level)}">${known}</p>` +
-        `<p class="word-progress-whole-quran-percent" data-whole-quran-level-percent="${escapeHtml(level)}">${percent}</p>`;
+      return `<p class="word-progress-whole-quran" data-whole-quran-level="${escapeHtml(level)}">${sentence}</p>`;
     });
     return `<div class="word-progress-whole-quran-box">${rows.join("")}</div>`;
   }

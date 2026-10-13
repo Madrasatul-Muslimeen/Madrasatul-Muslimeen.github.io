@@ -67,7 +67,7 @@ const card = (page) => page.evaluate(() => {
   const m = document.getElementById("quranWordCardMount");
   const clear = m.querySelector(".word-progress-na-clear");
   const r = clear?.getBoundingClientRect();
-  const lvl = (l) => ({ known: m.querySelector(`[data-whole-quran-level="${l}"]`)?.textContent ?? "", pct: m.querySelector(`[data-whole-quran-level-percent="${l}"]`)?.textContent ?? "" });
+  const lvl = (l) => ({ known: m.querySelector(`[data-whole-quran-level="${l}"]`)?.textContent ?? "", pct: m.querySelector(`[data-whole-quran-level="${l}"]`)?.textContent ?? "" });
   return {
     buttons: m.querySelectorAll(".word-progress-states [data-word-progress-state]").length,
     na: m.querySelector("[data-word-progress-na]")?.textContent.trim() ?? "",
