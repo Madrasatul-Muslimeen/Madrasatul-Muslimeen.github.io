@@ -434,6 +434,13 @@ service cloud.firestore {
       allow read: if isTeacherIn(resource.data.tenantId) && isCoEnrolledTeacherOf(resource.data.tenantId, personId);
       allow read: if signedIn() && resource.data.authUid == myUid();   // own record
       allow read: if isGuardianOf(resource.data.tenantId, personId);
+      // CANDIDATE (12 Oct 2026, the Owner's student-account report): the same fact as isGuardianOf, read off the
+      // document itself rather than through a get(), so a guardian's QUERY
+      // `tenantId == T && managedByPersonId == <me>` can be proven and their children listed. isGuardianOf's get()
+      // cannot be proven for a query, so today a guardian's roster query is refused whole.
+      allow read: if isGuardianIn(resource.data.tenantId)
+                  && myPersonIdIn(resource.data.tenantId) != null
+                  && resource.data.get('managedByPersonId', null) == myPersonIdIn(resource.data.tenantId);
 
       allow create: if canAdminIdentity(request.resource.data.tenantId);
       // Guardians add NEW children only — must name themselves as manager.

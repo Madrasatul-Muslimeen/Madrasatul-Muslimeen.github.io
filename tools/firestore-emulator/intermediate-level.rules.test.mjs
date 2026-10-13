@@ -34,8 +34,19 @@ if (!process.env.MUTANT) {
     if (k < candLines.length) j = k + 1; else missing.push(line);
   }
   const published = live.trimEnd() === candidate.trimEnd();
-  assert.deepEqual(missing, published ? [] : [OLD, OLD, OLD], `live Rules lines missing from the candidate: ${JSON.stringify(missing)}`);
-  assert.equal(candLines.length - live.split("\n").length, published ? 0 : 2, "only a two-line comment is added");
+  // A third state (14 Oct 2026, PCF J15): published, and the live file has since gained another published rule
+  // (the guardian roster rule). Then every candidate line must still be in the live file, in order.
+  const liveLines = live.split("\n");
+  let m = 0; const droppedFromLive = [];
+  for (const line of candLines) {
+    let k = m; while (k < liveLines.length && liveLines[k] !== line) k++;
+    if (k < liveLines.length) m = k + 1; else droppedFromLive.push(line);
+  }
+  const publishedThenExtended = !published && droppedFromLive.length === 0;
+  if (!publishedThenExtended) {
+    assert.deepEqual(missing, published ? [] : [OLD, OLD, OLD], `live Rules lines missing from the candidate: ${JSON.stringify(missing)}`);
+    assert.equal(candLines.length - liveLines.length, published ? 0 : 2, "only a two-line comment is added");
+  }
 }
 
 const T = "t1";
