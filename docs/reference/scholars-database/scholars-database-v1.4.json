@@ -1,0 +1,2874 @@
+{
+ "version": "v1.4",
+ "date": "2026-10-12",
+ "rows": [
+  {
+   "century": "2nd Century AH",
+   "type": "madhab",
+   "en": "Imām Abū Ḥanīfah al-Nuʿmān",
+   "ar": "الإِمَامُ أَبُو حَنِيفَةَ النُّعْمَانُ بْنُ ثَابِتٍ",
+   "birth": "Kūfa (80 AH)",
+   "study": "Kūfa, Basra, Makkah, Madīnah",
+   "lived": "Kūfa, Makkah",
+   "death": "Baghdād (150 AH)",
+   "notes": "Bedrock legal pioneer of the Hanafi school. Prioritized robust legal frameworks, text-critical local transmissions of Kūfa, and Qiyās (legal analogy). His narrations are heavily evaluated by modern compilers; text-critical analyses underscore his extensive legal mastery and foundational role in preserving early Iraqi traditions (Āthār).",
+   "lifeAH": "80 AH – 150 AH",
+   "lifeCE": "699 CE – 767 CE",
+   "works": "Al-Fiqh al-Akbar, Kitāb al-Āthār (Transmitted via students), Musnad Abī Ḥanīfah",
+   "by": "You",
+   "approaches": "34 Hanafi",
+   "madhab": "Hanafi (founder)",
+   "quranWorks": "No tafsir of his own survives; his rulings on āyāt come through his students · When each book was written: Al-Fiqh al-Akbar (est. before 150 AH / 767 CE, from the death year); Kitāb al-Āthār (Transmitted via students) (est. before 150 AH / 767 CE, from the death year); Musnad Abī Ḥanīfah (est. gathered after his death from his narrations, from the 4th century AH (e.g. al-Ḥārithī, d. 340 AH / 951 CE))",
+   "source": "—",
+   "draftNew": true,
+   "id": "s001",
+   "authority": "The Umayyad Caliphate, then the Abbasid Caliphate (al-Manṣūr)",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "Al-Fiqh al-Akbar",
+     "written": "est. before 150 AH / 767 CE, from the death year",
+     "yearAH": 150,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "Kitāb al-Āthār (Transmitted via students)",
+     "written": "est. before 150 AH / 767 CE, from the death year",
+     "yearAH": 150,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "Musnad Abī Ḥanīfah",
+     "written": "est. gathered after his death from his narrations, from the 4th century AH (e.g. al-Ḥārithī, d. 340 AH / 951 CE)",
+     "yearAH": 340,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "2nd Century AH",
+   "type": "madhab",
+   "en": "Imām Mālik ibn Anas",
+   "ar": "الإِمَامُ مَالِكُ بْنُ أَنَسٍ الْأَصْبَحِيُّ",
+   "birth": "Madīnah (93 AH)",
+   "study": "Madīnah (Nāfiʿ, Ibn Shihāb al-Zuhrī)",
+   "lived": "Madīnah",
+   "death": "Madīnah (179 AH)",
+   "notes": "Leader of the School of Madīnah (Imām Dār al-Hijrah). His Muwaṭṭaʾ represents the pinnacle of early transmission validity. Universally authenticated by classical and modern critics (including Al-Albani). Strongly prioritized and enforced the foundational rule: \"Learn Adab (etiquette) before seeking knowledge.\"",
+   "lifeAH": "93 AH – 179 AH",
+   "lifeCE": "711 CE – 795 CE",
+   "works": "Al-Muwaṭṭaʾ",
+   "by": "You",
+   "approaches": "32 Maliki · 29 Tābiʿ al-Tābiʿīn",
+   "madhab": "Maliki (founder)",
+   "quranWorks": "No tafsir; tafsir narrations inside al-Muwaṭṭaʾ · When each book was written: Al-Muwaṭṭaʾ (c. 150–179 AH / c. 767–795 CE, compiled and revised over his life)",
+   "source": "al-Muwaṭṭaʾ: in MMSA's Hadith books",
+   "draftNew": true,
+   "id": "s002",
+   "authority": "The Umayyad Caliphate, then the Abbasid Caliphate (al-Manṣūr, al-Mahdī, Hārūn al-Rashīd)",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "Al-Muwaṭṭaʾ",
+     "written": "c. 150–179 AH / c. 767–795 CE, compiled and revised over his life",
+     "yearAH": 179,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "2nd Century AH",
+   "type": "madhab",
+   "en": "Imām Abū Yūsuf al-Anṣārī",
+   "ar": "الإِمَامُ أَبُو يُوسُفَ يَعْقُوبُ بْنُ إِبْرَاهِيمَ الْأَنْصَارِيُّ",
+   "birth": "Kūfa (113 AH)",
+   "study": "Kūfa (under Abū Ḥanīfah & Ibn Abī Laylā)",
+   "lived": "Kūfa, Baghdād",
+   "death": "Baghdād (182 AH)",
+   "notes": "First Chief Justice (Qāḍī al-Quḍāt) in Islamic history. Masterful Hadith memory. His specific recension of Kitāb al-Āthār preserves the earliest layer of Ḥanāfī transmissions, though it lacks a cover-to-cover modern English translation. Critically relied upon by early traditionists.",
+   "lifeAH": "113 AH – 182 AH",
+   "lifeCE": "731 CE – 798 CE",
+   "works": "Kitāb al-Āthār (Abū Yūsuf Recension), Al-Radd ʿalā Siyar al-Awzāʿī, Kitāb al-Kharāj",
+   "by": "You",
+   "approaches": "34 Hanafi",
+   "madhab": "Hanafi",
+   "quranWorks": "None on the Qurʾān · When each book was written: Kitāb al-Āthār (Abū Yūsuf Recension) (est. before 182 AH / 798 CE, from the death year); Al-Radd ʿalā Siyar al-Awzāʿī (est. 157–182 AH / 774–798 CE, after al-Awzāʿī died); Kitāb al-Kharāj (c. 170–182 AH / c. 786–798 CE, written for Hārūn al-Rashīd)",
+   "source": "—",
+   "draftNew": true,
+   "id": "s003",
+   "authority": "The Abbasid Caliphate (chief judge under al-Mahdī, al-Hādī and Hārūn al-Rashīd)",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "Kitāb al-Āthār (Abū Yūsuf Recension)",
+     "written": "est. before 182 AH / 798 CE, from the death year",
+     "yearAH": 182,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "Al-Radd ʿalā Siyar al-Awzāʿī",
+     "written": "est. 157–182 AH / 774–798 CE, after al-Awzāʿī died",
+     "yearAH": 182,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "Kitāb al-Kharāj",
+     "written": "c. 170–182 AH / c. 786–798 CE, written for Hārūn al-Rashīd",
+     "yearAH": 182,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "2nd Century AH",
+   "type": "madhab",
+   "en": "Imām Muḥammad al-Shaybānī",
+   "ar": "الإِمَامُ مُحَمَّدُ بْنُ الْحَسَنِ الشَّيْبَانِيُّ",
+   "birth": "Wāsiṭ (132 AH)",
+   "study": "Kūfa (Abū Ḥanīfah), Madīnah (Imām Mālik)",
+   "lived": "Baghdād, Rayy",
+   "death": "Rayy (189 AH)",
+   "notes": "Great codifier of Ḥanāfī jurisprudence. His transmissions of Kitāb al-Āthār and his version of Al-Muwaṭṭaʾ are monumental. His recension of the Āthār has been fully translated into English by Turath Publishing. Highly accurate narrator bridging Iraqi and Hijazi systems.",
+   "lifeAH": "132 AH – 189 AH",
+   "lifeCE": "749 CE – 805 CE",
+   "works": "Al-Aṣl (Mabsūṭ), Kitāb al-Āthār (Recension), Al-Siyar al-Kabīr",
+   "by": "You",
+   "approaches": "34 Hanafi",
+   "madhab": "Hanafi",
+   "quranWorks": "None on the Qurʾān · When each book was written: Al-Aṣl (Mabsūṭ) (est. before 189 AH / 805 CE, from the death year); Kitāb al-Āthār (Recension) (est. before 189 AH / 805 CE, from the death year); Al-Siyar al-Kabīr (est. late in his life, before 189 AH / 805 CE (said to be his last book))",
+   "source": "—",
+   "draftNew": true,
+   "id": "s004",
+   "authority": "The Abbasid Caliphate (Hārūn al-Rashīd)",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "Al-Aṣl (Mabsūṭ)",
+     "written": "est. before 189 AH / 805 CE, from the death year",
+     "yearAH": 189,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "Kitāb al-Āthār (Recension)",
+     "written": "est. before 189 AH / 805 CE, from the death year",
+     "yearAH": 189,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "Al-Siyar al-Kabīr",
+     "written": "est. late in his life, before 189 AH / 805 CE (said to be his last book)",
+     "yearAH": 189,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "3rd Century AH",
+   "type": "madhab",
+   "en": "Imām Muḥammad ibn Idrīs al-Shāfiʿī",
+   "ar": "الإِمَامُ مُحَمَّدُ بْنُ إِدْرِيسَ الشَّافِعِيُّ",
+   "birth": "Gaza, Palestine (150 AH)",
+   "study": "Makkah, Madīnah (Imām Mālik), Yemen, Baghdād",
+   "lived": "Makkah, Baghdād, Cairo",
+   "death": "Fustāṭ, Egypt (204 AH)",
+   "notes": "Architect of systematic legal theory (Uṣūl al-Fiqh) through his Epistle (Al-Risālah). Highly rigorous Hadith critic and completely trustworthy narrator. Modern scholarly English translations of his legal theory manuals are fully available (Lowry & Khadduri editions).",
+   "lifeAH": "150 AH – 204 AH",
+   "lifeCE": "767 CE – 820 CE",
+   "works": "Al-Risālah, Kitāb al-Umm, Musnad al-Shāfiʿī",
+   "by": "You",
+   "approaches": "35 Shafiʿi · 30 Gen1",
+   "madhab": "Shafiʿi (founder)",
+   "quranWorks": "Aḥkām al-Qurʾān, gathered from his works by al-Bayhaqī (d. 458) · When each book was written: Al-Risālah (first version Baghdad c. 195 AH / c. 811 CE; the surviving version rewritten in Egypt 199–204 AH / 815–820 CE); Kitāb al-Umm (Egypt, 199–204 AH / 815–820 CE); Musnad al-Shāfiʿī (est. drawn from al-Umm after his death, by Abū al-ʿAbbās al-Aṣamm (d. 346 AH / 957 CE)); Aḥkām al-Qurʾān (gathered by al-Bayhaqī) (est. before 458 AH / 1066 CE, al-Bayhaqī's death year)",
+   "source": "OpenITI full text · free (classical)",
+   "draftNew": true,
+   "id": "s005",
+   "authority": "The Abbasid Caliphate (Hārūn al-Rashīd, al-Amīn, al-Maʾmūn)",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "Al-Risālah",
+     "written": "first version Baghdad c. 195 AH / c. 811 CE; the surviving version rewritten in Egypt 199–204 AH / 815–820 CE",
+     "yearAH": 204,
+     "estimate": false,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "Kitāb al-Umm",
+     "written": "Egypt, 199–204 AH / 815–820 CE",
+     "yearAH": 204,
+     "estimate": false,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "Musnad al-Shāfiʿī",
+     "written": "est. drawn from al-Umm after his death, by Abū al-ʿAbbās al-Aṣamm (d. 346 AH / 957 CE)",
+     "yearAH": 346,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "Aḥkām al-Qurʾān (gathered by al-Bayhaqī)",
+     "written": "est. before 458 AH / 1066 CE, al-Bayhaqī's death year",
+     "yearAH": 458,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "3rd Century AH",
+   "type": "collector",
+   "en": "Imām Isḥāq ibn Rāhawayh",
+   "ar": "الإِمَامُ إِسْحَاقُ بْنُ رَاهَوَيْهِ الْمَرْوَزِيُّ",
+   "birth": "Merv (161 AH)",
+   "study": "Khorasān, Iraq, Hijāz, Egypt",
+   "lived": "Nīshāpūr",
+   "death": "Nīshāpūr (238 AH)",
+   "notes": "Revered as Amīr al-Mu'minīn fī al-Ḥadīth. Stellar teacher/mentor to Imāms al-Bukhārī, Muslim, at-Tirmidhmī, and an-Nasāʾī. His direct request inspired Bukhārī to compile his Sahīh. His massive Musnad was mostly lost; the surviving portion containing exactly 2,425 Hadiths is fully verified, printed, and digitally archived.",
+   "lifeAH": "161 AH – 238 AH",
+   "lifeCE": "778 CE – 853 CE",
+   "works": "Musnad Isḥāq ibn Rāhawayh (Surviving Fragment)",
+   "by": "You",
+   "approaches": "30 Gen1",
+   "madhab": "Independent mujtahid (Ahl al-Ḥadīth)",
+   "quranWorks": "His Tafsīr is lost; narrations survive in later books · When each book was written: Musnad Isḥāq ibn Rāhawayh (Surviving Fragment) (est. before 238 AH / 853 CE, from the death year); Tafsīr (lost) (est. before 238 AH / 853 CE, from the death year)",
+   "source": "—",
+   "draftNew": true,
+   "id": "s006",
+   "authority": "The Abbasid Caliphate; Khurasan under the Tahirids",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "Musnad Isḥāq ibn Rāhawayh (Surviving Fragment)",
+     "written": "est. before 238 AH / 853 CE, from the death year",
+     "yearAH": 238,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "Tafsīr (lost)",
+     "written": "est. before 238 AH / 853 CE, from the death year",
+     "yearAH": 238,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "3rd Century AH",
+   "type": "madhab",
+   "en": "Imām Aḥmad ibn Ḥanbal",
+   "ar": "الإِمَامُ أَحْمَدُ بْنُ حَنْبَلٍ الشَّيْبَانِيُّ",
+   "birth": "Baghdād (164 AH)",
+   "study": "Baghdād, Kūfa, Basra, Hijāz, Yemen",
+   "lived": "Baghdād",
+   "death": "Baghdād (241 AH)",
+   "notes": "Founder of the Hanbali school and legendary traditionist. Collected over 27,000 Hadiths in his Musnad. Modern checking projects directed by contemporary giants (e.g., Sheikh Shu'ayb al-Arna'ut and Ahmad Shakir) meticulously graded and published every single chain across a monumental 50-volume set.",
+   "lifeAH": "164 AH – 241 AH",
+   "lifeCE": "780 CE – 855 CE",
+   "works": "Musnad Aḥmad ibn Ḥanbal, Kitāb al-Zuhd, Al-ʿIlal",
+   "by": "You",
+   "approaches": "33 Hanbali · 30 Gen1",
+   "madhab": "Hanbali (founder)",
+   "quranWorks": "His Tafsīr is lost; his narrations on āyāt are in the Musnad · When each book was written: Musnad Aḥmad ibn Ḥanbal (est. gathered over his life, before 241 AH / 855 CE; put in order by his son ʿAbd Allāh (d. 290 AH / 903 CE)); Kitāb al-Zuhd (est. before 241 AH / 855 CE, from the death year); Al-ʿIlal (est. before 241 AH / 855 CE, from the death year); Tafsīr (lost) (est. before 241 AH / 855 CE, from the death year)",
+   "source": "Musnad: OpenITI full text · free (classical)",
+   "draftNew": true,
+   "id": "s007",
+   "authority": "The Abbasid Caliphate (al-Maʾmūn, al-Muʿtaṣim and al-Wāthiq, the Miḥnah; then al-Mutawakkil)",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "Musnad Aḥmad ibn Ḥanbal",
+     "written": "est. gathered over his life, before 241 AH / 855 CE; put in order by his son ʿAbd Allāh (d. 290 AH / 903 CE)",
+     "yearAH": 241,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "Kitāb al-Zuhd",
+     "written": "est. before 241 AH / 855 CE, from the death year",
+     "yearAH": 241,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "Al-ʿIlal",
+     "written": "est. before 241 AH / 855 CE, from the death year",
+     "yearAH": 241,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "Tafsīr (lost)",
+     "written": "est. before 241 AH / 855 CE, from the death year",
+     "yearAH": 241,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "3rd Century AH",
+   "type": "collector",
+   "en": "Imām Muḥammad al-Bukhārī",
+   "ar": "الإِمَامُ مُحَمَّدُ بْنُ إِسْمَاعِيلَ الْبُخَارِيُّ",
+   "birth": "Bukhārā (194 AH)",
+   "study": "Khorasān, Iraq, Hijāz, Egypt, Shām",
+   "lived": "Bukhārā, Nīshāpūr",
+   "death": "Khartank near Samarkand (256 AH)",
+   "notes": "The supreme master of Prophetic traditions. His Ṣaḥīḥ is held by unanimous Sunni consensus as the most authentic text after the Qur'ān. While his primary collection is universally canonical, his historical and ethical side-works (like Al-Adab al-Mufrad) are thoroughly evaluated and graded by modern authenticators like Al-Albani.",
+   "lifeAH": "194 AH – 256 AH",
+   "lifeCE": "810 CE – 870 CE",
+   "works": "Ṣaḥīḥ al-Bukhārī, Al-Adab al-Mufrad, Al-Tārīkh al-Kabīr",
+   "by": "You",
+   "approaches": "30 Gen1 · 28 Sahaba",
+   "madhab": "Ahl al-Ḥadīth (independent)",
+   "quranWorks": "Kitāb al-Tafsīr, inside Ṣaḥīḥ al-Bukhārī · When each book was written: Ṣaḥīḥ al-Bukhārī (c. 217–232 AH / c. 832–846 CE, sixteen years' work, shown to Ibn Maʿīn (d. 233)); Al-Adab al-Mufrad (est. before 256 AH / 870 CE, from the death year); Al-Tārīkh al-Kabīr (first draft in Madīnah c. 212 AH / c. 827 CE, revised later)",
+   "source": "In MMSA's Hadith books · free (classical)",
+   "draftNew": true,
+   "id": "s008",
+   "authority": "The Abbasid Caliphate; Khurasan and Transoxiana under the Tahirids and the Samanids",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "Ṣaḥīḥ al-Bukhārī",
+     "written": "c. 217–232 AH / c. 832–846 CE, sixteen years' work, shown to Ibn Maʿīn (d. 233)",
+     "yearAH": 232,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "Al-Adab al-Mufrad",
+     "written": "est. before 256 AH / 870 CE, from the death year",
+     "yearAH": 256,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "Al-Tārīkh al-Kabīr",
+     "written": "first draft in Madīnah c. 212 AH / c. 827 CE, revised later",
+     "yearAH": 256,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "3rd Century AH",
+   "type": "collector",
+   "en": "Imām Muslim ibn al-Ḥajjāj",
+   "ar": "الإِمَامُ مُسْلِمُ بْنُ الْحَجَّاجِ الْقُشَيْرِيُّ",
+   "birth": "Nīshāpūr (204 AH)",
+   "study": "Nīshāpūr, Iraq, Hijāz, Egypt, Shām",
+   "lived": "Nīshāpūr",
+   "death": "Nīshāpūr (261 AH)",
+   "notes": "Celebrated pupil of Bukhārī and Ibn Rāhawayh. His Sahīh stands side-by-side with Bukhārī's in absolute authenticity, praised uniquely for its flawless thematic grouping of transmissions. Universally authenticated without reservation by classical and modern traditionists.",
+   "lifeAH": "204 AH – 261 AH",
+   "lifeCE": "821 CE – 875 CE",
+   "works": "Ṣaḥīḥ Muslim, Al-Tamyīz",
+   "by": "You",
+   "approaches": "30 Gen1 · 28 Sahaba",
+   "madhab": "Ahl al-Ḥadīth",
+   "quranWorks": "Kitāb al-Tafsīr, inside Ṣaḥīḥ Muslim · When each book was written: Ṣaḥīḥ Muslim (c. 235–250 AH / c. 850–864 CE, about fifteen years' work); Al-Tamyīz (est. before 261 AH / 875 CE, from the death year)",
+   "source": "In MMSA's Hadith books · free (classical)",
+   "draftNew": true,
+   "id": "s009",
+   "authority": "The Abbasid Caliphate; Nīshāpūr under the Tahirids",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "Ṣaḥīḥ Muslim",
+     "written": "c. 235–250 AH / c. 850–864 CE, about fifteen years' work",
+     "yearAH": 250,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "Al-Tamyīz",
+     "written": "est. before 261 AH / 875 CE, from the death year",
+     "yearAH": 261,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "3rd Century AH",
+   "type": "collector",
+   "en": "Imām Ibn Mājah al-Qazwīnī",
+   "ar": "الإِمَامُ ابْنُ مَاجَهْ مُحَمَّدُ بْنُ يَزِيدَ الْقَزْوِينِيُّ",
+   "birth": "Qazvīn (209 AH)",
+   "study": "Qazvīn, Iraq, Hijāz, Egypt, Shām",
+   "lived": "Qazvīn",
+   "death": "Qazvīn (273 AH)",
+   "notes": "Compiler of the sixth canonical Sunan work. Highly valued for its thematic layout, though it contains a greater volume of weak (da'īf) and a few fabricated narrations than the other five. Meticulously parsed and divided into separate Sahīh and Da'īf volumes by Sheikh al-Albani.",
+   "lifeAH": "209 AH – 273 AH",
+   "lifeCE": "824 CE – 887 CE",
+   "works": "Sunan Ibn Mājah",
+   "by": "You",
+   "approaches": "30 Gen1",
+   "madhab": "Ahl al-Ḥadīth",
+   "quranWorks": "His Tafsīr is lost · When each book was written: Sunan Ibn Mājah (est. before 264 AH / 878 CE, when it was shown to Abū Zurʿah (d. 264)); Tafsīr (lost) (est. before 273 AH / 887 CE, from the death year)",
+   "source": "Sunan: in MMSA's Hadith books",
+   "draftNew": true,
+   "id": "s010",
+   "authority": "The Abbasid Caliphate",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "Sunan Ibn Mājah",
+     "written": "est. before 264 AH / 878 CE, when it was shown to Abū Zurʿah (d. 264)",
+     "yearAH": 264,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "Tafsīr (lost)",
+     "written": "est. before 273 AH / 887 CE, from the death year",
+     "yearAH": 273,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "3rd Century AH",
+   "type": "collector",
+   "en": "Imām Abū Dāwūd al-Sijistānī",
+   "ar": "الإِمَامُ أَبُو دَاوُدَ سُلَيْمَانُ بْنُ الْأَشْعَثِ السِّجِسْتَانِيُّ",
+   "birth": "Sijistān (202 AH)",
+   "study": "Khorasān, Iraq, Hijāz, Egypt, Shām",
+   "lived": "Basra, Baghdād",
+   "death": "Basra (275 AH)",
+   "notes": "Foremost legal-tradition pupil of Imām Aḥmad. His Sunan maps legal rulings (Ahkām). Meticulously evaluated by modern science; Sheikh al-Albani spent years verifying its contents to separate the reliable traditions from the weak ones in his compiled Sahīh wa Da'īf Sunan Abī Dāwūd.",
+   "lifeAH": "202 AH – 275 AH",
+   "lifeCE": "817 CE – 889 CE",
+   "works": "Sunan Abī Dāwūd, Kitāb al-Marāsīl",
+   "by": "You",
+   "approaches": "30 Gen1",
+   "madhab": "Ahl al-Ḥadīth (close to Imām Aḥmad)",
+   "quranWorks": "Kitāb al-Ḥurūf wa al-Qirāʾāt, inside the Sunan · When each book was written: Sunan Abī Dāwūd (est. largely complete before 241 AH / 855 CE, when it was shown to Imām Aḥmad); Kitāb al-Marāsīl (est. before 275 AH / 889 CE, from the death year)",
+   "source": "In MMSA's Hadith books · free (classical)",
+   "draftNew": true,
+   "id": "s011",
+   "authority": "The Abbasid Caliphate",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "Sunan Abī Dāwūd",
+     "written": "est. largely complete before 241 AH / 855 CE, when it was shown to Imām Aḥmad",
+     "yearAH": 241,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "Kitāb al-Marāsīl",
+     "written": "est. before 275 AH / 889 CE, from the death year",
+     "yearAH": 275,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "3rd Century AH",
+   "type": "collector",
+   "en": "Imām Abū ʿĪsā al-Tirmidhī",
+   "ar": "الإِمَامُ أَبُو عِيسَى مُحَمَّدُ بْنُ عِيسَى التِّرْمِذِيُّ",
+   "birth": "Tirmidh (209 AH)",
+   "study": "Khorasān, Iraq, Hijāz (under Bukhārī & Muslim)",
+   "lived": "Tirmidh",
+   "death": "Tirmidh (279 AH)",
+   "notes": "Established the tripartite taxonomy of Hadith accuracy (Sahīh, Hasan, Da'īf) and comparative law annotations. Sheikh al-Albani critically cross-verified his entire text, dividing it into Sahīh and Da'īf categories, and authenticated his Shama'il.",
+   "lifeAH": "209 AH – 279 AH",
+   "lifeCE": "824 CE – 892 CE",
+   "works": "Sunan al-Tirmidhī (Al-Jāmiʿ), Al-Shamāʾil al-Muḥammadiyyah",
+   "by": "You",
+   "approaches": "30 Gen1 · 28 Sahaba",
+   "madhab": "Ahl al-Ḥadīth",
+   "quranWorks": "Abwāb Tafsīr al-Qurʾān, inside al-Jāmiʿ · When each book was written: Sunan al-Tirmidhī (Al-Jāmiʿ) (finished 270 AH / 884 CE, by his own note); Al-Shamāʾil al-Muḥammadiyyah (est. before 279 AH / 892 CE, from the death year)",
+   "source": "In MMSA's Hadith books · free (classical)",
+   "draftNew": true,
+   "id": "s012",
+   "authority": "The Abbasid Caliphate; Transoxiana under the Tahirids, then the Samanids",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "Sunan al-Tirmidhī (Al-Jāmiʿ)",
+     "written": "finished 270 AH / 884 CE, by his own note",
+     "yearAH": 270,
+     "estimate": false,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "Al-Shamāʾil al-Muḥammadiyyah",
+     "written": "est. before 279 AH / 892 CE, from the death year",
+     "yearAH": 279,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "4th Century AH",
+   "type": "collector",
+   "en": "Imām Abū ʿAbd al-Raḥmān al-Nasāʾī",
+   "ar": "الإِمَامُ أَبُو عَبْدِ الرَّحْمَنِ أَحْمَدُ بْنُ شُعَيْبٍ النَّسَائِيُّ",
+   "birth": "Nasā, Turkmenistan (215 AH)",
+   "study": "Khorasān, Iraq, Hijāz, Egypt, Shām",
+   "lived": "Egypt, Damascus",
+   "death": "Makkah or Ramlah, Palestine (303 AH)",
+   "notes": "Maintained exceptionally stringent narrator scrutiny metrics, second only to Bukhārī and Muslim. His Sunan al-Sughrā contains the lowest ratio of weak entries among the four classical Sunan texts. Fully analyzed and validated by modern verifiers into Sahīh and Da'īf indices.",
+   "lifeAH": "215 AH – 303 AH",
+   "lifeCE": "829 CE – 915 CE",
+   "works": "Sunan al-Nasāʾī (Al-Mujtabā), Al-Sunan al-Kubrā",
+   "by": "You",
+   "approaches": "30 Gen1 · 28 Sahaba",
+   "madhab": "Ahl al-Ḥadīth",
+   "quranWorks": "Kitāb al-Tafsīr, inside al-Sunan al-Kubrā · When each book was written: Sunan al-Nasāʾī (Al-Mujtabā) (est. before 303 AH / 915 CE, selected from al-Kubrā (some say the selection is his student Ibn al-Sunnī's)); Al-Sunan al-Kubrā (est. before 303 AH / 915 CE, from the death year)",
+   "source": "OpenITI full text · free (classical)",
+   "draftNew": true,
+   "id": "s013",
+   "authority": "The Abbasid Caliphate; Egypt under the Tulunids, then Abbasid governors",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "Sunan al-Nasāʾī (Al-Mujtabā)",
+     "written": "est. before 303 AH / 915 CE, selected from al-Kubrā (some say the selection is his student Ibn al-Sunnī's)",
+     "yearAH": 303,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "Al-Sunan al-Kubrā",
+     "written": "est. before 303 AH / 915 CE, from the death year",
+     "yearAH": 303,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "4th Century AH",
+   "type": "mufassir",
+   "en": "Imām Abū Jaʿfar Ibn Jarīr al-Ṭabarī",
+   "ar": "الإِمَامُ أَبُو جَعْفَرٍ مُحَمَّدُ بْنُ جَرِيرٍ الطَّبَرِيُّ",
+   "birth": "Āmul, Ṭabaristān (224 AH)",
+   "study": "Rayy, Baghdād, Basra, Kūfa, Egypt, Shām",
+   "lived": "Baghdād",
+   "death": "Baghdād (310 AH)",
+   "notes": "The imām of the mufassirūn. His Jāmiʿ al-Bayān gathers the Companions' and Successors' narrations on every āyah with their chains, then weighs them and gives his own choice. The base book for Approaches 28–30.",
+   "lifeAH": "224 AH – 310 AH",
+   "lifeCE": "839 CE – 923 CE",
+   "works": "Jāmiʿ al-Bayān ʿan Taʾwīl Āy al-Qurʾān (dictated 283–290 AH / 896–903 CE); Tārīkh al-Rusul wa al-Mulūk (completed c. 303 AH / c. 915 CE; its events run to 302 AH)",
+   "approaches": "30 Gen1 · 28 Sahaba · 29 Tābiʿīn",
+   "madhab": "His own school (Jarīrī); earlier Shafiʿi",
+   "quranWorks": "Jāmiʿ al-Bayān (complete)",
+   "source": "Open per āyah · free (classical)",
+   "by": "Claude",
+   "draft": true,
+   "id": "s021",
+   "authority": "The Abbasid Caliphate (Baghdad)",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "Jāmiʿ al-Bayān ʿan Taʾwīl Āy al-Qurʾān",
+     "written": "dictated 283–290 AH / 896–903 CE",
+     "yearAH": 290,
+     "estimate": false,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "Tārīkh al-Rusul wa al-Mulūk",
+     "written": "completed c. 303 AH / c. 915 CE; its events run to 302 AH",
+     "yearAH": 303,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "4th Century AH",
+   "type": "madhab",
+   "en": "Imām Abū Jaʿfar al-Ṭaḥāwī",
+   "ar": "الإِمَامُ أَبُو جَعْفَرٍ أَحْمَدُ بْنُ مُحَمَّدٍ الطَّحَاوِيُّ",
+   "birth": "Ṭāhā, Egypt (239 AH)",
+   "study": "Egypt (Al-Muzanī), Shām (Ibn Abī ʿImrān)",
+   "lived": "Cairo, Egypt",
+   "death": "Cairo, Egypt (321 AH)",
+   "notes": "Titan of comparative legal jurisprudence and theological creed. His massive comparative text faded into manuscript obscurity but was structurally saved by al-Jassas's abridgement. His standard on creed (Al-ʿAqīdah al-Ṭaḥāwiyyah) is universally accepted; Sheikh al-Albani authored a definitive checking (Tahrīj) confirming its sound traditional metrics.",
+   "lifeAH": "239 AH – 321 AH",
+   "lifeCE": "853 CE – 933 CE",
+   "works": "Al-ʿAqīdah al-Ṭaḥāwiyyah, Sharḥ Maʿānī al-Āthār, Mukhtaṣar Ikhtilāf al-ʿUlamāʾ",
+   "by": "You",
+   "approaches": "34 Hanafi · 30 Gen1",
+   "madhab": "Hanafi",
+   "quranWorks": "Aḥkām al-Qurʾān (two volumes survive) · When each book was written: Al-ʿAqīdah al-Ṭaḥāwiyyah (est. before 321 AH / 933 CE, from the death year); Sharḥ Maʿānī al-Āthār (est. before 321 AH / 933 CE, from the death year); Mukhtaṣar Ikhtilāf al-ʿUlamāʾ (est. before 321 AH / 933 CE, from the death year); Aḥkām al-Qurʾān (est. before 321 AH / 933 CE, from the death year)",
+   "source": "OpenITI full text · free (classical)",
+   "draftNew": true,
+   "id": "s014",
+   "authority": "The Abbasid Caliphate; Egypt under the Tulunids, then Abbasid governors",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "Al-ʿAqīdah al-Ṭaḥāwiyyah",
+     "written": "est. before 321 AH / 933 CE, from the death year",
+     "yearAH": 321,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "Sharḥ Maʿānī al-Āthār",
+     "written": "est. before 321 AH / 933 CE, from the death year",
+     "yearAH": 321,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "Mukhtaṣar Ikhtilāf al-ʿUlamāʾ",
+     "written": "est. before 321 AH / 933 CE, from the death year",
+     "yearAH": 321,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "Aḥkām al-Qurʾān",
+     "written": "est. before 321 AH / 933 CE, from the death year",
+     "yearAH": 321,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "4th Century AH",
+   "type": "mufassir",
+   "en": "Imām Ibn Abī Ḥātim al-Rāzī",
+   "ar": "الإِمَامُ عَبْدُ الرَّحْمَنِ بْنُ أَبِي حَاتِمٍ الرَّازِيُّ",
+   "birth": "Rayy (240 AH)",
+   "study": "Rayy, Iraq, Hijāz, Shām, Egypt (with his father Abū Ḥātim)",
+   "lived": "Rayy",
+   "death": "Rayy (327 AH)",
+   "notes": "Hadith critic and son of Abū Ḥātim. His tafsir gives only narrations, each with its chain, from the Prophet ﷺ, the Companions and the Successors, with no opinions of his own.",
+   "lifeAH": "240 AH – 327 AH",
+   "lifeCE": "854 CE – 938 CE",
+   "works": "Tafsīr al-Qurʾān al-ʿAẓīm (musnad) (est. before 327 AH / 938 CE, from the death year); al-Jarḥ wa al-Taʿdīl (est. before 327 AH / 938 CE, from the death year)",
+   "approaches": "28 Sahaba · 29 Tābiʿīn · 30 Gen1",
+   "madhab": "Ahl al-Ḥadīth",
+   "quranWorks": "Tafsīr Ibn Abī Ḥātim (part survives)",
+   "source": "OpenITI full text · free (classical)",
+   "by": "Claude",
+   "draft": true,
+   "id": "s022",
+   "authority": "The Abbasid Caliphate; Rayy under local amirs (Samanids and others)",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "Tafsīr al-Qurʾān al-ʿAẓīm (musnad)",
+     "written": "est. before 327 AH / 938 CE, from the death year",
+     "yearAH": 327,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "al-Jarḥ wa al-Taʿdīl",
+     "written": "est. before 327 AH / 938 CE, from the death year",
+     "yearAH": 327,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "4th Century AH",
+   "type": "mufassir",
+   "en": "Imām Abū Manṣūr al-Māturīdī",
+   "ar": "الإِمَامُ أَبُو مَنْصُورٍ مُحَمَّدُ بْنُ مُحَمَّدٍ الْمَاتُرِيدِيُّ",
+   "birth": "Māturīd, near Samarqand (c. 238 AH; no date in the early sources, an estimate; some say c. 256)",
+   "study": "Samarqand",
+   "lived": "Samarqand",
+   "death": "Samarqand (333 AH)",
+   "notes": "Hanafi theologian of Samarqand; the Māturīdī creed is named after him. His Taʾwīlāt is among the earliest whole tafsirs written by one author.",
+   "lifeAH": "c. 238 AH – 333 AH",
+   "lifeCE": "c. 853 CE – 944 CE",
+   "works": "Taʾwīlāt Ahl al-Sunnah (est. before 333 AH / 944 CE, from the death year); Kitāb al-Tawḥīd (est. before 333 AH / 944 CE, from the death year)",
+   "approaches": "34 Hanafi · 30 Gen1",
+   "madhab": "Hanafi · Māturīdī",
+   "quranWorks": "Taʾwīlāt Ahl al-Sunnah",
+   "source": "OpenITI full text · free (classical)",
+   "by": "Claude",
+   "draft": true,
+   "id": "s023",
+   "authority": "The Samanids (Samarqand), under the Abbasid Caliphate",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "Taʾwīlāt Ahl al-Sunnah",
+     "written": "est. before 333 AH / 944 CE, from the death year",
+     "yearAH": 333,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "Kitāb al-Tawḥīd",
+     "written": "est. before 333 AH / 944 CE, from the death year",
+     "yearAH": 333,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "4th Century AH",
+   "type": "collector",
+   "en": "Imām Abū al-Qāsim al-Ṭabarānī",
+   "ar": "الإِمَامُ أَبُو الْقَاسِمِ سُلَيْمَانُ بْنُ أَحْمَدَ الطَّبَرَانِيُّ",
+   "birth": "Tiberias, Palestine (260 AH)",
+   "study": "Shām, Hijāz, Egypt, Iraq, Persia",
+   "lived": "Isfahan, Persia",
+   "death": "Isfahan (360 AH)",
+   "notes": "Compiled three massive encyclopedic Hadith dictionaries. Collected the specific narration instructing parents to teach children three things (Loving the Prophet, the Ahl al-Bayt, and the Qur'ān) under Hadith No. 861. Modern text-critical checks (Al-Albani, Al-Haythami) class this specific chain as Weak (Da'if) due to critics of the narrator Ja'far ibn Muhammad, though valid for moral training.",
+   "lifeAH": "260 AH – 360 AH",
+   "lifeCE": "873 CE – 971 CE",
+   "works": "Al-Muʿjam al-Kabīr (Hadith 861), Al-Muʿjam al-Awsat, Al-Muʿjam al-Ṣaghīr",
+   "by": "You",
+   "approaches": "30 Gen1 · 28 Sahaba",
+   "madhab": "Ahl al-Ḥadīth",
+   "quranWorks": "Tafsir narrations inside his three Muʿjams · When each book was written: Al-Muʿjam al-Kabīr (Hadith 861) (est. before 360 AH / 971 CE, from the death year); Al-Muʿjam al-Awsat (est. before 360 AH / 971 CE, from the death year); Al-Muʿjam al-Ṣaghīr (est. before 360 AH / 971 CE, from the death year)",
+   "source": "OpenITI full text · free (classical)",
+   "draftNew": true,
+   "id": "s015",
+   "authority": "The Abbasid Caliphate; Isfahan under the Buyids",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "Al-Muʿjam al-Kabīr (Hadith 861)",
+     "written": "est. before 360 AH / 971 CE, from the death year",
+     "yearAH": 360,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "Al-Muʿjam al-Awsat",
+     "written": "est. before 360 AH / 971 CE, from the death year",
+     "yearAH": 360,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "Al-Muʿjam al-Ṣaghīr",
+     "written": "est. before 360 AH / 971 CE, from the death year",
+     "yearAH": 360,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "4th Century AH",
+   "type": "madhab",
+   "en": "Imām Abū Bakr al-Jaṣṣāṣ",
+   "ar": "الإِمَامُ أَبُو بَكْرٍ أَحْمَدُ بْنُ عَلِيٍّ الْجَصَّاصُ",
+   "birth": "Rayy, Iran (305 AH)",
+   "study": "Baghdād, Ahwāz, Nīshāpūr",
+   "lived": "Baghdād, Iraq",
+   "death": "Baghdād (370 AH)",
+   "notes": "Eminent Ḥanāfī master jurist. His structural abridgement of Imām al-Ṭaḥāwī’s massive comparative manual saved the text from complete historical loss. His Ahkām al-Qurʾān stands as the premier exegesis text for legal derivation in the Ḥanāfī school.",
+   "lifeAH": "305 AH – 370 AH",
+   "lifeCE": "917 CE – 981 CE",
+   "works": "Ahkām al-Qurʾān, Sharḥ Mukhtaṣar al-Ṭaḥāwī, Abridgement of Ikhtilāf al-ʿUlamāʾ",
+   "by": "You",
+   "approaches": "34 Hanafi · 30 Gen1",
+   "madhab": "Hanafi",
+   "quranWorks": "Aḥkām al-Qurʾān · When each book was written: Ahkām al-Qurʾān (est. before 370 AH / 981 CE, from the death year); Sharḥ Mukhtaṣar al-Ṭaḥāwī (est. before 370 AH / 981 CE, from the death year); Abridgement of Ikhtilāf al-ʿUlamāʾ (est. before 370 AH / 981 CE, from the death year)",
+   "source": "OpenITI full text · free (classical)",
+   "draftNew": true,
+   "id": "s016",
+   "authority": "The Abbasid Caliphate under the Buyids (Baghdad)",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "Ahkām al-Qurʾān",
+     "written": "est. before 370 AH / 981 CE, from the death year",
+     "yearAH": 370,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "Sharḥ Mukhtaṣar al-Ṭaḥāwī",
+     "written": "est. before 370 AH / 981 CE, from the death year",
+     "yearAH": 370,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "Abridgement of Ikhtilāf al-ʿUlamāʾ",
+     "written": "est. before 370 AH / 981 CE, from the death year",
+     "yearAH": 370,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "4th Century AH",
+   "type": "mufassir",
+   "en": "Imām Abū al-Layth al-Samarqandī",
+   "ar": "الإِمَامُ أَبُو اللَّيْثِ نَصْرُ بْنُ مُحَمَّدٍ السَّمَرْقَنْدِيُّ",
+   "birth": "Samarqand (? AH)",
+   "study": "Samarqand, Balkh",
+   "lived": "Samarqand",
+   "death": "Samarqand (373 AH; some say 375 or 393)",
+   "notes": "Hanafi faqih and preacher, called Imām al-Hudā. His tafsir Baḥr al-ʿUlūm joins narrations with plain explanation.",
+   "lifeAH": "? – 373 AH",
+   "lifeCE": "? – 983 CE",
+   "works": "Baḥr al-ʿUlūm (est. before 373 AH / 983 CE, from the death year); Tanbīh al-Ghāfilīn (est. before 373 AH / 983 CE, from the death year)",
+   "approaches": "34 Hanafi · 30 Gen1",
+   "madhab": "Hanafi",
+   "quranWorks": "Baḥr al-ʿUlūm",
+   "source": "Open per āyah · free (classical)",
+   "by": "Claude",
+   "draft": true,
+   "id": "s024",
+   "authority": "The Samanids (Samarqand)",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "Baḥr al-ʿUlūm",
+     "written": "est. before 373 AH / 983 CE, from the death year",
+     "yearAH": 373,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "Tanbīh al-Ghāfilīn",
+     "written": "est. before 373 AH / 983 CE, from the death year",
+     "yearAH": 373,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "5th Century AH",
+   "type": "mufassir",
+   "en": "Imām Abū Isḥāq al-Thaʿlabī",
+   "ar": "الإِمَامُ أَبُو إِسْحَاقَ أَحْمَدُ بْنُ مُحَمَّدٍ الثَّعْلَبِيُّ",
+   "birth": "Nīshāpūr (? AH)",
+   "study": "Nīshāpūr",
+   "lived": "Nīshāpūr",
+   "death": "Nīshāpūr (427 AH)",
+   "notes": "Master of al-Wāḥidī. A very large tafsir that gathers earlier books; it carries many weak narrations and Isrāʾīliyyāt, so each one needs checking.",
+   "lifeAH": "? – 427 AH",
+   "lifeCE": "? – 1035 CE",
+   "works": "al-Kashf wa al-Bayān ʿan Tafsīr al-Qurʾān (est. before 427 AH / 1035 CE, from the death year)",
+   "approaches": "35 Shafiʿi · 30 Gen1",
+   "madhab": "Shafiʿi",
+   "quranWorks": "al-Kashf wa al-Bayān",
+   "source": "OpenITI full text · free (classical)",
+   "by": "Claude",
+   "draft": true,
+   "id": "s025",
+   "authority": "The Ghaznavids (Nīshāpūr), under the Abbasid Caliphate",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "al-Kashf wa al-Bayān ʿan Tafsīr al-Qurʾān",
+     "written": "est. before 427 AH / 1035 CE, from the death year",
+     "yearAH": 427,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "5th Century AH",
+   "type": "mufassir",
+   "en": "Imām Makkī ibn Abī Ṭālib al-Qaysī",
+   "ar": "الإِمَامُ مَكِّيُّ بْنُ أَبِي طَالِبٍ الْقَيْسِيُّ",
+   "birth": "Qayrawān (355 AH)",
+   "study": "Qayrawān, Egypt, Makkah",
+   "lived": "Cordoba",
+   "death": "Cordoba (437 AH)",
+   "notes": "Andalusian master of the Qirāʾāt and of the grammar of the Qurʾān. His al-Hidāyah is a large tafsir of the Maliki West.",
+   "lifeAH": "355 AH – 437 AH",
+   "lifeCE": "966 CE – 1045 CE",
+   "works": "al-Hidāyah ilā Bulūgh al-Nihāyah (est. before 437 AH / 1045 CE, from the death year); al-Kashf ʿan Wujūh al-Qirāʾāt (est. before 437 AH / 1045 CE, from the death year)",
+   "approaches": "32 Maliki · 30 Gen1",
+   "madhab": "Maliki",
+   "quranWorks": "al-Hidāyah ilā Bulūgh al-Nihāyah",
+   "source": "Check OpenITI · free (classical)",
+   "by": "Claude",
+   "draft": true,
+   "id": "s026",
+   "authority": "The Umayyad Caliphate of Cordoba, then the Taifa kingdoms",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "al-Hidāyah ilā Bulūgh al-Nihāyah",
+     "written": "est. before 437 AH / 1045 CE, from the death year",
+     "yearAH": 437,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "al-Kashf ʿan Wujūh al-Qirāʾāt",
+     "written": "est. before 437 AH / 1045 CE, from the death year",
+     "yearAH": 437,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "5th Century AH",
+   "type": "mufassir",
+   "en": "Imām Abū al-Ḥasan al-Māwardī",
+   "ar": "الإِمَامُ أَبُو الْحَسَنِ عَلِيُّ بْنُ مُحَمَّدٍ الْمَاوَرْدِيُّ",
+   "birth": "Basra (364 AH)",
+   "study": "Basra, Baghdād",
+   "lived": "Baghdād (chief judge)",
+   "death": "Baghdād (450 AH)",
+   "notes": "Shafiʿi jurist and chief judge. His tafsir lists the different readings of each āyah side by side, which suits comparing views.",
+   "lifeAH": "364 AH – 450 AH",
+   "lifeCE": "974 CE – 1058 CE",
+   "works": "al-Nukat wa al-ʿUyūn (est. before 450 AH / 1058 CE, from the death year); al-Aḥkām al-Sulṭāniyyah (est. before 450 AH / 1058 CE, from the death year); al-Ḥāwī al-Kabīr (est. before 450 AH / 1058 CE, from the death year)",
+   "approaches": "35 Shafiʿi · 30 Gen1",
+   "madhab": "Shafiʿi",
+   "quranWorks": "al-Nukat wa al-ʿUyūn",
+   "source": "Open per āyah · free (classical)",
+   "by": "Claude",
+   "draft": true,
+   "id": "s027",
+   "authority": "The Abbasid Caliphate (al-Qādir, al-Qāʾim) under the Buyids, then the Seljuks",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "al-Nukat wa al-ʿUyūn",
+     "written": "est. before 450 AH / 1058 CE, from the death year",
+     "yearAH": 450,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "al-Aḥkām al-Sulṭāniyyah",
+     "written": "est. before 450 AH / 1058 CE, from the death year",
+     "yearAH": 450,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "al-Ḥāwī al-Kabīr",
+     "written": "est. before 450 AH / 1058 CE, from the death year",
+     "yearAH": 450,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "5th Century AH",
+   "type": "collector",
+   "en": "Imām Abū Bakr al-Bayhaqī",
+   "ar": "الإِمَامُ أَبُو بَكْرٍ أَحْمَدُ بْنُ الْحُسَيْنِ الْبَيْهَقِيُّ",
+   "birth": "Khusrawjird, Bayhaq (384 AH)",
+   "study": "Nīshāpūr, Baghdād, Kūfa, Makkah",
+   "lived": "Bayhaq, Nīshāpūr",
+   "death": "Nīshāpūr (458 AH)",
+   "notes": "Great Shafiʿi traditionist. He gathered al-Shāfiʿī's own words on the āyāt of rulings into one book.",
+   "lifeAH": "384 AH – 458 AH",
+   "lifeCE": "994 CE – 1066 CE",
+   "works": "Aḥkām al-Qurʾān lil-Shāfiʿī (gathered) (est. before 458 AH / 1066 CE, from the death year); al-Sunan al-Kubrā (est. before 458 AH / 1066 CE, from the death year); Shuʿab al-Īmān (est. before 458 AH / 1066 CE, from the death year)",
+   "approaches": "35 Shafiʿi · 30 Gen1",
+   "madhab": "Shafiʿi",
+   "quranWorks": "Aḥkām al-Qurʾān lil-Shāfiʿī",
+   "source": "OpenITI full text · free (classical)",
+   "by": "Claude",
+   "draft": true,
+   "id": "s028",
+   "authority": "The Ghaznavids, then the Seljuks",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "Aḥkām al-Qurʾān lil-Shāfiʿī (gathered)",
+     "written": "est. before 458 AH / 1066 CE, from the death year",
+     "yearAH": 458,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "al-Sunan al-Kubrā",
+     "written": "est. before 458 AH / 1066 CE, from the death year",
+     "yearAH": 458,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "Shuʿab al-Īmān",
+     "written": "est. before 458 AH / 1066 CE, from the death year",
+     "yearAH": 458,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "5th Century AH",
+   "type": "mufassir",
+   "en": "Imām Abū al-Qāsim al-Qushayrī",
+   "ar": "الإِمَامُ أَبُو الْقَاسِمِ عَبْدُ الْكَرِيمِ بْنُ هَوَازِنَ الْقُشَيْرِيُّ",
+   "birth": "Ustuwā, near Nīshāpūr (376 AH)",
+   "study": "Nīshāpūr",
+   "lived": "Nīshāpūr",
+   "death": "Nīshāpūr (465 AH)",
+   "notes": "Shafiʿi, Ashʿari and Sufi. His tafsir gives the Sufi 'indications' (ishārāt) of the āyāt, so it belongs with the groups (36), named as Sufi.",
+   "lifeAH": "376 AH – 465 AH",
+   "lifeCE": "986 CE – 1072 CE",
+   "works": "Laṭāʾif al-Ishārāt (est. before 465 AH / 1072 CE, from the death year); al-Risālah al-Qushayriyyah (437 AH / 1045 CE)",
+   "approaches": "36 Groups (Sufi) · 35 Shafiʿi · 30 Gen1",
+   "madhab": "Shafiʿi · Ashʿari · Sufi",
+   "quranWorks": "Laṭāʾif al-Ishārāt",
+   "source": "Check (one per-āyah file is mislabelled) · free (classical)",
+   "by": "Claude",
+   "draft": true,
+   "id": "s029",
+   "authority": "The Ghaznavids, then the Seljuks",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "Laṭāʾif al-Ishārāt",
+     "written": "est. before 465 AH / 1072 CE, from the death year",
+     "yearAH": 465,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "al-Risālah al-Qushayriyyah",
+     "written": "437 AH / 1045 CE",
+     "yearAH": 437,
+     "estimate": false,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "5th Century AH",
+   "type": "mufassir",
+   "en": "Imām Abū al-Ḥasan al-Wāḥidī",
+   "ar": "الإِمَامُ أَبُو الْحَسَنِ عَلِيُّ بْنُ أَحْمَدَ الْوَاحِدِيُّ",
+   "birth": "Nīshāpūr (? AH)",
+   "study": "Nīshāpūr (under al-Thaʿlabī)",
+   "lived": "Nīshāpūr",
+   "death": "Nīshāpūr (468 AH)",
+   "notes": "Student of al-Thaʿlabī. Wrote three tafsirs (long, middle, short) and the best-known book on the reasons for revelation (Asbāb al-Nuzūl).",
+   "lifeAH": "? – 468 AH",
+   "lifeCE": "? – 1076 CE",
+   "works": "al-Basīṭ (est. before 468 AH / 1076 CE, from the death year); al-Wasīṭ (est. before 468 AH / 1076 CE, from the death year); al-Wajīz (est. before 468 AH / 1076 CE, from the death year); Asbāb al-Nuzūl (est. before 468 AH / 1076 CE, from the death year)",
+   "approaches": "35 Shafiʿi · 30 Gen1",
+   "madhab": "Shafiʿi",
+   "quranWorks": "al-Wasīṭ; al-Wajīz; Asbāb al-Nuzūl",
+   "source": "Open per āyah (spot-check: the file for 2:1 holds another book's text) · free (classical)",
+   "by": "Claude",
+   "draft": true,
+   "id": "s030",
+   "authority": "The Ghaznavids, then the Seljuks",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "al-Basīṭ",
+     "written": "est. before 468 AH / 1076 CE, from the death year",
+     "yearAH": 468,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "al-Wasīṭ",
+     "written": "est. before 468 AH / 1076 CE, from the death year",
+     "yearAH": 468,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "al-Wajīz",
+     "written": "est. before 468 AH / 1076 CE, from the death year",
+     "yearAH": 468,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "Asbāb al-Nuzūl",
+     "written": "est. before 468 AH / 1076 CE, from the death year",
+     "yearAH": 468,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "5th Century AH",
+   "type": "mufassir",
+   "en": "Imām Abū al-Muẓaffar al-Samʿānī",
+   "ar": "الإِمَامُ أَبُو الْمُظَفَّرِ مَنْصُورُ بْنُ مُحَمَّدٍ السَّمْعَانِيُّ",
+   "birth": "Merv (426 AH)",
+   "study": "Merv, Baghdād, Hijāz",
+   "lived": "Merv",
+   "death": "Merv (489 AH)",
+   "notes": "Hanafi who became Shafiʿi; a scholar of uṣūl. A clear, moderate tafsir, close to the early narrations.",
+   "lifeAH": "426 AH – 489 AH",
+   "lifeCE": "1035 CE – 1096 CE",
+   "works": "Tafsīr al-Qurʾān (est. before 489 AH / 1096 CE, from the death year); Qawāṭiʿ al-Adillah (est. before 489 AH / 1096 CE, from the death year)",
+   "approaches": "35 Shafiʿi · 30 Gen1",
+   "madhab": "Shafiʿi (earlier Hanafi)",
+   "quranWorks": "Tafsīr al-Samʿānī",
+   "source": "Check · free (classical)",
+   "by": "Claude",
+   "draft": true,
+   "id": "s031",
+   "authority": "The Seljuks (Merv)",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "Tafsīr al-Qurʾān",
+     "written": "est. before 489 AH / 1096 CE, from the death year",
+     "yearAH": 489,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "Qawāṭiʿ al-Adillah",
+     "written": "est. before 489 AH / 1096 CE, from the death year",
+     "yearAH": 489,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "6th Century AH",
+   "type": "mufassir",
+   "en": "Imām al-Ḥusayn ibn Masʿūd al-Baghawī",
+   "ar": "الإِمَامُ أَبُو مُحَمَّدٍ الْحُسَيْنُ بْنُ مَسْعُودٍ الْبَغَوِيُّ",
+   "birth": "Bagh, between Herat and Marw al-Rūdh (c. 436 AH)",
+   "study": "Marw al-Rūdh",
+   "lived": "Marw al-Rūdh",
+   "death": "Marw al-Rūdh (516 AH)",
+   "notes": "Called Muḥyī al-Sunnah. His tafsir is a careful, shorter work drawn from al-Thaʿlabī, keeping the narrations and leaving out much that is weak.",
+   "lifeAH": "c. 436 AH – 516 AH",
+   "lifeCE": "c. 1044 CE – 1122 CE",
+   "works": "Maʿālim al-Tanzīl (est. before 516 AH / 1122 CE, from the death year); Sharḥ al-Sunnah (est. before 516 AH / 1122 CE, from the death year); Maṣābīḥ al-Sunnah (est. before 516 AH / 1122 CE, from the death year)",
+   "approaches": "35 Shafiʿi · 30 Gen1",
+   "madhab": "Shafiʿi",
+   "quranWorks": "Maʿālim al-Tanzīl",
+   "source": "Open per āyah · free (classical)",
+   "by": "Claude",
+   "draft": true,
+   "id": "s032",
+   "authority": "The Seljuks (Sultan Sanjar)",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "Maʿālim al-Tanzīl",
+     "written": "est. before 516 AH / 1122 CE, from the death year",
+     "yearAH": 516,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "Sharḥ al-Sunnah",
+     "written": "est. before 516 AH / 1122 CE, from the death year",
+     "yearAH": 516,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "Maṣābīḥ al-Sunnah",
+     "written": "est. before 516 AH / 1122 CE, from the death year",
+     "yearAH": 516,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "6th Century AH",
+   "type": "mufassir",
+   "en": "Imām Maḥmūd al-Zamakhsharī",
+   "ar": "الإِمَامُ أَبُو الْقَاسِمِ مَحْمُودُ بْنُ عُمَرَ الزَّمَخْشَرِيُّ",
+   "birth": "Zamakhshar, Khwārazm (467 AH)",
+   "study": "Bukhārā, Baghdād, Makkah (lived there: Jār Allāh)",
+   "lived": "Makkah, Khwārazm",
+   "death": "Jurjāniyya, Khwārazm (538 AH)",
+   "notes": "Master of Arabic rhetoric (balāghah). His tafsir is unmatched on language, and Muʿtazili in creed, so it is read as a group's view (36), with later Sunni notes on it.",
+   "lifeAH": "467 AH – 538 AH",
+   "lifeCE": "1075 CE – 1144 CE",
+   "works": "al-Kashshāf (written in Makkah 526–528 AH / 1132–1134 CE, by his own account); Asās al-Balāghah (est. before 538 AH / 1144 CE, from the death year)",
+   "approaches": "36 Groups (Muʿtazili) · 30 Gen1",
+   "madhab": "Hanafi in fiqh · Muʿtazili in creed",
+   "quranWorks": "al-Kashshāf",
+   "source": "Open per āyah · free (classical)",
+   "by": "Claude",
+   "draft": true,
+   "id": "s033",
+   "authority": "The Seljuks and the Khwarazm-shahs; Makkah under its Sharifs",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "al-Kashshāf",
+     "written": "written in Makkah 526–528 AH / 1132–1134 CE, by his own account",
+     "yearAH": 528,
+     "estimate": false,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "Asās al-Balāghah",
+     "written": "est. before 538 AH / 1144 CE, from the death year",
+     "yearAH": 538,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "6th Century AH",
+   "type": "mufassir",
+   "en": "Imām Ibn ʿAṭiyyah al-Andalusī",
+   "ar": "الإِمَامُ أَبُو مُحَمَّدٍ عَبْدُ الْحَقِّ بْنُ غَالِبِ بْنِ عَطِيَّةَ",
+   "birth": "Granada (481 AH)",
+   "study": "Granada, al-Andalus",
+   "lived": "Granada, Almería (judge)",
+   "death": "Lorca (541 AH; some say 542 or 546)",
+   "notes": "Maliki judge of al-Andalus. A careful tafsir on language and narrations; al-Qurṭubī and Abū Ḥayyān drew much from it.",
+   "lifeAH": "481 AH – 541 AH",
+   "lifeCE": "1088 CE – 1147 CE",
+   "works": "al-Muḥarrar al-Wajīz fī Tafsīr al-Kitāb al-ʿAzīz (est. before 541 AH / 1147 CE, from the death year)",
+   "approaches": "32 Maliki · 30 Gen1",
+   "madhab": "Maliki",
+   "quranWorks": "al-Muḥarrar al-Wajīz",
+   "source": "Open per āyah · free (classical)",
+   "by": "Claude",
+   "draft": true,
+   "id": "s034",
+   "authority": "The Almoravids (al-Andalus)",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "al-Muḥarrar al-Wajīz fī Tafsīr al-Kitāb al-ʿAzīz",
+     "written": "est. before 541 AH / 1147 CE, from the death year",
+     "yearAH": 541,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "6th Century AH",
+   "type": "mufassir",
+   "en": "Qāḍī Abū Bakr Ibn al-ʿArabī al-Maʿāfirī",
+   "ar": "الْقَاضِي أَبُو بَكْرٍ مُحَمَّدُ بْنُ عَبْدِ اللهِ ابْنُ الْعَرَبِيِّ",
+   "birth": "Seville (468 AH)",
+   "study": "Seville, Egypt, Shām, Baghdād, Makkah",
+   "lived": "Seville (judge)",
+   "death": "Near Fez (543 AH)",
+   "notes": "Maliki judge. His Aḥkām al-Qurʾān is the Maliki book on the āyāt of rulings. (Not the Sufi Ibn ʿArabī, d. 638.)",
+   "lifeAH": "468 AH – 543 AH",
+   "lifeCE": "1076 CE – 1148 CE",
+   "works": "Aḥkām al-Qurʾān (est. before 543 AH / 1148 CE, from the death year); ʿĀriḍat al-Aḥwadhī (est. before 543 AH / 1148 CE, from the death year); al-ʿAwāṣim min al-Qawāṣim (est. before 543 AH / 1148 CE, from the death year)",
+   "approaches": "32 Maliki · 30 Gen1",
+   "madhab": "Maliki",
+   "quranWorks": "Aḥkām al-Qurʾān",
+   "source": "OpenITI full text · free (classical)",
+   "by": "Claude",
+   "draft": true,
+   "id": "s035",
+   "authority": "The Almoravids, then the Almohads",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "Aḥkām al-Qurʾān",
+     "written": "est. before 543 AH / 1148 CE, from the death year",
+     "yearAH": 543,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "ʿĀriḍat al-Aḥwadhī",
+     "written": "est. before 543 AH / 1148 CE, from the death year",
+     "yearAH": 543,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "al-ʿAwāṣim min al-Qawāṣim",
+     "written": "est. before 543 AH / 1148 CE, from the death year",
+     "yearAH": 543,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "6th Century AH",
+   "type": "mufassir",
+   "en": "al-Faḍl ibn al-Ḥasan al-Ṭabrisī",
+   "ar": "الْفَضْلُ بْنُ الْحَسَنِ الطَّبْرِسِيُّ",
+   "birth": "Ṭabaristān or Mashhad (c. 468 AH)",
+   "study": "Mashhad",
+   "lived": "Mashhad, Sabzevār",
+   "death": "Sabzevār (548 AH)",
+   "notes": "The main classical Shiʿi (Imāmī) tafsir. Read as a group's view (36), named as Shiʿi, never mixed with the madhabs.",
+   "lifeAH": "c. 468 AH – 548 AH",
+   "lifeCE": "c. 1076 CE – 1154 CE",
+   "works": "Majmaʿ al-Bayān fī Tafsīr al-Qurʾān (c. 530–536 AH / c. 1135–1142 CE)",
+   "approaches": "36 Groups (Shiʿi)",
+   "madhab": "Shiʿi Imāmī",
+   "quranWorks": "Majmaʿ al-Bayān",
+   "source": "OpenITI full text · free (classical)",
+   "by": "Claude",
+   "draft": true,
+   "id": "s036",
+   "authority": "The Seljuks (Khurasan, Sultan Sanjar)",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "Majmaʿ al-Bayān fī Tafsīr al-Qurʾān",
+     "written": "c. 530–536 AH / c. 1135–1142 CE",
+     "yearAH": 536,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "6th Century AH",
+   "type": "mufassir",
+   "en": "Imām Abū al-Faraj Ibn al-Jawzī",
+   "ar": "الإِمَامُ أَبُو الْفَرَجِ عَبْدُ الرَّحْمَنِ بْنُ عَلِيٍّ ابْنُ الْجَوْزِيِّ",
+   "birth": "Baghdād (c. 510 AH)",
+   "study": "Baghdād",
+   "lived": "Baghdād",
+   "death": "Baghdād (597 AH)",
+   "notes": "Hanbali preacher and scholar. Zād al-Masīr lists the different sayings on each āyah briefly, with who said them.",
+   "lifeAH": "c. 510 AH – 597 AH",
+   "lifeCE": "c. 1116 CE – 1201 CE",
+   "works": "Zād al-Masīr fī ʿIlm al-Tafsīr (est. before 597 AH / 1201 CE, from the death year); Talbīs Iblīs (est. before 597 AH / 1201 CE, from the death year); Nuzhat al-Aʿyun (est. before 597 AH / 1201 CE, from the death year)",
+   "approaches": "33 Hanbali · 30 Gen1",
+   "madhab": "Hanbali",
+   "quranWorks": "Zād al-Masīr",
+   "source": "Open per āyah · free (classical)",
+   "by": "Claude",
+   "draft": true,
+   "id": "s037",
+   "authority": "The Abbasid Caliphate (al-Mustanjid, al-Mustaḍīʾ, al-Nāṣir), after the Seljuks declined",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "Zād al-Masīr fī ʿIlm al-Tafsīr",
+     "written": "est. before 597 AH / 1201 CE, from the death year",
+     "yearAH": 597,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "Talbīs Iblīs",
+     "written": "est. before 597 AH / 1201 CE, from the death year",
+     "yearAH": 597,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "Nuzhat al-Aʿyun",
+     "written": "est. before 597 AH / 1201 CE, from the death year",
+     "yearAH": 597,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "7th Century AH",
+   "type": "mufassir",
+   "en": "Imām Fakhr al-Dīn al-Rāzī",
+   "ar": "الإِمَامُ فَخْرُ الدِّينِ مُحَمَّدُ بْنُ عُمَرَ الرَّازِيُّ",
+   "birth": "Rayy (544 AH; some say 543)",
+   "study": "Rayy, Marāgha",
+   "lived": "Khwārazm, Transoxiana, Herat",
+   "death": "Herat (606 AH)",
+   "notes": "Shafiʿi and Ashʿari theologian. His great tafsir argues each āyah's meaning with reason and answers the sects of his time.",
+   "lifeAH": "544 AH – 606 AH",
+   "lifeCE": "1150 CE – 1210 CE",
+   "works": "Mafātīḥ al-Ghayb (al-Tafsīr al-Kabīr) (est. his last years, c. 595–606 AH / c. 1199–1210 CE; left unfinished and completed by others)",
+   "approaches": "35 Shafiʿi · 30 Gen1",
+   "madhab": "Shafiʿi · Ashʿari",
+   "quranWorks": "Mafātīḥ al-Ghayb",
+   "source": "Open per āyah · free (classical)",
+   "by": "Claude",
+   "draft": true,
+   "id": "s038",
+   "authority": "The Khwarazm-shahs and the Ghurids (Herat)",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "Mafātīḥ al-Ghayb (al-Tafsīr al-Kabīr)",
+     "written": "est. his last years, c. 595–606 AH / c. 1199–1210 CE; left unfinished and completed by others",
+     "yearAH": 606,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "7th Century AH",
+   "type": "mufassir",
+   "en": "Imām al-ʿIzz ibn ʿAbd al-Salām",
+   "ar": "الإِمَامُ عِزُّ الدِّينِ عَبْدُ الْعَزِيزِ بْنُ عَبْدِ السَّلَامِ",
+   "birth": "Damascus (577 AH)",
+   "study": "Damascus",
+   "lived": "Damascus, Cairo",
+   "death": "Cairo (660 AH)",
+   "notes": "Called Sulṭān al-ʿUlamāʾ; he spoke openly against rulers. Wrote a short tafsir abridged from al-Māwardī.",
+   "lifeAH": "577 AH – 660 AH",
+   "lifeCE": "1181 CE – 1262 CE",
+   "works": "Tafsīr al-Qurʾān (Ikhtiṣār al-Nukat) (est. before 660 AH / 1262 CE, from the death year); Qawāʿid al-Aḥkām (est. before 660 AH / 1262 CE, from the death year)",
+   "approaches": "35 Shafiʿi · 31 Gen2",
+   "madhab": "Shafiʿi",
+   "quranWorks": "Tafsīr al-ʿIzz",
+   "source": "Check · free (classical)",
+   "by": "Claude",
+   "draft": true,
+   "id": "s039",
+   "authority": "The Ayyubids (Damascus), then the Mamluk Sultanate (Cairo)",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "Tafsīr al-Qurʾān (Ikhtiṣār al-Nukat)",
+     "written": "est. before 660 AH / 1262 CE, from the death year",
+     "yearAH": 660,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "Qawāʿid al-Aḥkām",
+     "written": "est. before 660 AH / 1262 CE, from the death year",
+     "yearAH": 660,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "7th Century AH",
+   "type": "mufassir",
+   "en": "Imām Abū ʿAbd Allāh al-Qurṭubī",
+   "ar": "الإِمَامُ أَبُو عَبْدِ اللهِ مُحَمَّدُ بْنُ أَحْمَدَ الْقُرْطُبِيُّ",
+   "birth": "Cordoba (? AH)",
+   "study": "Cordoba, Egypt",
+   "lived": "Munyat Banī Khaṣīb, Upper Egypt",
+   "death": "Munyat Banī Khaṣīb (671 AH)",
+   "notes": "Maliki. His tafsir gathers the rulings of each āyah with the views of all the madhabs; the first book for an āyah of rulings (for example 2:228).",
+   "lifeAH": "? – 671 AH",
+   "lifeCE": "? – 1273 CE",
+   "works": "al-Jāmiʿ li-Aḥkām al-Qurʾān (est. written in Egypt, before 671 AH / 1273 CE, from the death year); al-Tadhkirah (est. before 671 AH / 1273 CE, from the death year)",
+   "approaches": "32 Maliki · 31 Gen2",
+   "madhab": "Maliki",
+   "quranWorks": "al-Jāmiʿ li-Aḥkām al-Qurʾān",
+   "source": "Open per āyah · free (classical)",
+   "by": "Claude",
+   "draft": true,
+   "id": "s040",
+   "authority": "The Almohads (Cordoba), then the Ayyubids and Mamluks (Egypt)",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "al-Jāmiʿ li-Aḥkām al-Qurʾān",
+     "written": "est. written in Egypt, before 671 AH / 1273 CE, from the death year",
+     "yearAH": 671,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "al-Tadhkirah",
+     "written": "est. before 671 AH / 1273 CE, from the death year",
+     "yearAH": 671,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "7th Century AH",
+   "type": "mufassir",
+   "en": "Qāḍī Nāṣir al-Dīn al-Bayḍāwī",
+   "ar": "الْقَاضِي نَاصِرُ الدِّينِ عَبْدُ اللهِ بْنُ عُمَرَ الْبَيْضَاوِيُّ",
+   "birth": "al-Bayḍāʾ, near Shiraz (? AH)",
+   "study": "Shiraz",
+   "lived": "Shiraz (judge)",
+   "death": "Tabriz (685 AH; some say 691)",
+   "notes": "Shafiʿi and Ashʿari. A short, dense tafsir (largely from al-Kashshāf without its Muʿtazili views) that became the teaching text of the madrasahs, with many glosses.",
+   "lifeAH": "? – 685 AH",
+   "lifeCE": "? – 1286 CE",
+   "works": "Anwār al-Tanzīl wa Asrār al-Taʾwīl (est. before 685 AH / 1286 CE, from the death year (before 691 AH / 1292 CE if he died then))",
+   "approaches": "35 Shafiʿi · 31 Gen2",
+   "madhab": "Shafiʿi · Ashʿari",
+   "quranWorks": "Anwār al-Tanzīl",
+   "source": "Open per āyah · free (classical)",
+   "by": "Claude",
+   "draft": true,
+   "id": "s041",
+   "authority": "The Salghurids of Fars, then the Ilkhanids",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "Anwār al-Tanzīl wa Asrār al-Taʾwīl",
+     "written": "est. before 685 AH / 1286 CE, from the death year (before 691 AH / 1292 CE if he died then)",
+     "yearAH": 685,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "8th Century AH",
+   "type": "mufassir",
+   "en": "Imām Abū al-Barakāt al-Nasafī",
+   "ar": "الإِمَامُ أَبُو الْبَرَكَاتِ عَبْدُ اللهِ بْنُ أَحْمَدَ النَّسَفِيُّ",
+   "birth": "Nasaf, Transoxiana (? AH)",
+   "study": "Kirmān, Bukhārā",
+   "lived": "Kirmān, Baghdād",
+   "death": "Īdhaj (710 AH)",
+   "notes": "Hanafi and Māturīdī. A short, clear tafsir, much used in Hanafi lands.",
+   "lifeAH": "? – 710 AH",
+   "lifeCE": "? – 1310 CE",
+   "works": "Madārik al-Tanzīl wa Ḥaqāʾiq al-Taʾwīl (est. before 710 AH / 1310 CE, from the death year); Kanz al-Daqāʾiq (est. before 710 AH / 1310 CE, from the death year)",
+   "approaches": "34 Hanafi · 31 Gen2",
+   "madhab": "Hanafi · Māturīdī",
+   "quranWorks": "Madārik al-Tanzīl",
+   "source": "Open per āyah · free (classical)",
+   "by": "Claude",
+   "draft": true,
+   "id": "s042",
+   "authority": "The Ilkhanids",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "Madārik al-Tanzīl wa Ḥaqāʾiq al-Taʾwīl",
+     "written": "est. before 710 AH / 1310 CE, from the death year",
+     "yearAH": 710,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "Kanz al-Daqāʾiq",
+     "written": "est. before 710 AH / 1310 CE, from the death year",
+     "yearAH": 710,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "8th Century AH",
+   "type": "mufassir",
+   "en": "Shaykh al-Islām Ibn Taymiyyah",
+   "ar": "شَيْخُ الْإِسْلَامِ تَقِيُّ الدِّينِ أَحْمَدُ بْنُ عَبْدِ الْحَلِيمِ ابْنُ تَيْمِيَّةَ",
+   "birth": "Ḥarrān (661 AH)",
+   "study": "Damascus",
+   "lived": "Damascus, Cairo",
+   "death": "Damascus, in prison at the citadel (728 AH)",
+   "notes": "Hanbali. Wrote no complete tafsir, but much on the method of tafsir and on single sūrahs and āyāt; gathered later from his fatwas.",
+   "lifeAH": "661 AH – 728 AH",
+   "lifeCE": "1263 CE – 1328 CE",
+   "works": "Muqaddimah fī Uṣūl al-Tafsīr (est. before 728 AH / 1328 CE, from the death year); tafsir parts of Majmūʿ al-Fatāwā (est. his own writings, before 728 AH / 1328 CE; gathered by ʿAbd al-Raḥmān ibn Qāsim, printed 1381–1386 AH / 1961–1966 CE)",
+   "approaches": "33 Hanbali · 31 Gen2",
+   "madhab": "Hanbali",
+   "quranWorks": "Muqaddimah fī Uṣūl al-Tafsīr; Daqāʾiq al-Tafsīr (gathered)",
+   "source": "OpenITI full text · free (classical)",
+   "by": "Claude",
+   "draft": true,
+   "id": "s043",
+   "authority": "The Mamluk Sultanate",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "Muqaddimah fī Uṣūl al-Tafsīr",
+     "written": "est. before 728 AH / 1328 CE, from the death year",
+     "yearAH": 728,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "tafsir parts of Majmūʿ al-Fatāwā",
+     "written": "est. his own writings, before 728 AH / 1328 CE; gathered by ʿAbd al-Raḥmān ibn Qāsim, printed 1381–1386 AH / 1961–1966 CE",
+     "yearAH": 728,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "8th Century AH",
+   "type": "mufassir",
+   "en": "Imām ʿAlāʾ al-Dīn al-Khāzin",
+   "ar": "الإِمَامُ عَلَاءُ الدِّينِ عَلِيُّ بْنُ مُحَمَّدٍ الْخَازِنُ",
+   "birth": "Baghdād (678 AH)",
+   "study": "Baghdād, Damascus",
+   "lived": "Damascus (keeper of a library: al-Khāzin)",
+   "death": "Aleppo (741 AH)",
+   "notes": "Shafiʿi. His tafsir is drawn mostly from al-Baghawī, with stories added.",
+   "lifeAH": "678 AH – 741 AH",
+   "lifeCE": "1280 CE – 1341 CE",
+   "works": "Lubāb al-Taʾwīl fī Maʿānī al-Tanzīl (c. completed 725 AH / 1325 CE)",
+   "approaches": "35 Shafiʿi · 31 Gen2",
+   "madhab": "Shafiʿi",
+   "quranWorks": "Lubāb al-Taʾwīl",
+   "source": "Check · free (classical)",
+   "by": "Claude",
+   "draft": true,
+   "id": "s044",
+   "authority": "The Mamluk Sultanate",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "Lubāb al-Taʾwīl fī Maʿānī al-Tanzīl",
+     "written": "c. completed 725 AH / 1325 CE",
+     "yearAH": 725,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "8th Century AH",
+   "type": "mufassir",
+   "en": "Imām Ibn Juzayy al-Kalbī",
+   "ar": "الإِمَامُ أَبُو الْقَاسِمِ مُحَمَّدُ بْنُ أَحْمَدَ ابْنُ جُزَيٍّ الْكَلْبِيُّ",
+   "birth": "Granada (693 AH)",
+   "study": "Granada",
+   "lived": "Granada",
+   "death": "Battle of Ṭarīf, al-Andalus (741 AH)",
+   "notes": "Maliki scholar of Granada who died fighting. A short tafsir with a valuable introduction on the sciences of the Qurʾān.",
+   "lifeAH": "693 AH – 741 AH",
+   "lifeCE": "1294 CE – 1340 CE",
+   "works": "al-Tashīl li-ʿUlūm al-Tanzīl (est. before 741 AH / 1340 CE, from the death year); al-Qawānīn al-Fiqhiyyah (est. before 741 AH / 1340 CE, from the death year)",
+   "approaches": "32 Maliki · 31 Gen2",
+   "madhab": "Maliki",
+   "quranWorks": "al-Tashīl",
+   "source": "Open per āyah · free (classical)",
+   "by": "Claude",
+   "draft": true,
+   "id": "s045",
+   "authority": "The Nasrids of Granada",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "al-Tashīl li-ʿUlūm al-Tanzīl",
+     "written": "est. before 741 AH / 1340 CE, from the death year",
+     "yearAH": 741,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "al-Qawānīn al-Fiqhiyyah",
+     "written": "est. before 741 AH / 1340 CE, from the death year",
+     "yearAH": 741,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "8th Century AH",
+   "type": "mufassir",
+   "en": "Imām Abū Ḥayyān al-Andalusī",
+   "ar": "الإِمَامُ أَبُو حَيَّانَ مُحَمَّدُ بْنُ يُوسُفَ الْأَنْدَلُسِيُّ",
+   "birth": "Granada (654 AH)",
+   "study": "Granada, then the East",
+   "lived": "Cairo",
+   "death": "Cairo (745 AH)",
+   "notes": "The great grammarian. His tafsir is the fullest on the grammar and readings of each āyah.",
+   "lifeAH": "654 AH – 745 AH",
+   "lifeCE": "1256 CE – 1344 CE",
+   "works": "al-Baḥr al-Muḥīṭ (est. begun c. 710 AH / c. 1310 CE, when he was about 57, finished before 745 AH / 1344 CE)",
+   "approaches": "31 Gen2 · 35 Shafiʿi",
+   "madhab": "Ẓāhirī, later Shafiʿi",
+   "quranWorks": "al-Baḥr al-Muḥīṭ",
+   "source": "Check · free (classical)",
+   "by": "Claude",
+   "draft": true,
+   "id": "s046",
+   "authority": "The Nasrids (Granada), then the Mamluk Sultanate (Cairo)",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "al-Baḥr al-Muḥīṭ",
+     "written": "est. begun c. 710 AH / c. 1310 CE, when he was about 57, finished before 745 AH / 1344 CE",
+     "yearAH": 745,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "8th Century AH",
+   "type": "mufassir",
+   "en": "Imām Ibn Qayyim al-Jawziyyah",
+   "ar": "الإِمَامُ شَمْسُ الدِّينِ مُحَمَّدُ بْنُ أَبِي بَكْرٍ ابْنُ قَيِّمِ الْجَوْزِيَّةِ",
+   "birth": "Damascus (691 AH)",
+   "study": "Damascus (under Ibn Taymiyyah)",
+   "lived": "Damascus",
+   "death": "Damascus (751 AH)",
+   "notes": "Hanbali, student of Ibn Taymiyyah. No complete tafsir, but long passages on āyāt across his books, gathered later.",
+   "lifeAH": "691 AH – 751 AH",
+   "lifeCE": "1292 CE – 1350 CE",
+   "works": "al-Tafsīr al-Qayyim / Badāʾiʿ al-Tafsīr (gathered) (est. his own writings, before 751 AH / 1350 CE; gathered from his books by modern editors (20th century CE)); Zād al-Maʿād (est. before 751 AH / 1350 CE, from the death year); Iʿlām al-Muwaqqiʿīn (est. before 751 AH / 1350 CE, from the death year)",
+   "approaches": "33 Hanbali · 31 Gen2",
+   "madhab": "Hanbali",
+   "quranWorks": "Badāʾiʿ al-Tafsīr (gathered)",
+   "source": "OpenITI full text · free (classical)",
+   "by": "Claude",
+   "draft": true,
+   "id": "s047",
+   "authority": "The Mamluk Sultanate",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "al-Tafsīr al-Qayyim / Badāʾiʿ al-Tafsīr (gathered)",
+     "written": "est. his own writings, before 751 AH / 1350 CE; gathered from his books by modern editors (20th century CE)",
+     "yearAH": 751,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "Zād al-Maʿād",
+     "written": "est. before 751 AH / 1350 CE, from the death year",
+     "yearAH": 751,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "Iʿlām al-Muwaqqiʿīn",
+     "written": "est. before 751 AH / 1350 CE, from the death year",
+     "yearAH": 751,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "8th Century AH",
+   "type": "mufassir",
+   "en": "Imām Ibn Kathīr al-Dimashqī",
+   "ar": "الإِمَامُ عِمَادُ الدِّينِ إِسْمَاعِيلُ بْنُ عُمَرَ ابْنُ كَثِيرٍ",
+   "birth": "Mijdal, near Buṣrā (c. 700 AH; some say 701)",
+   "study": "Damascus (under Ibn Taymiyyah and al-Mizzī)",
+   "lived": "Damascus",
+   "death": "Damascus (774 AH)",
+   "notes": "Shafiʿi traditionist and historian. Explains the Qurʾān by the Qurʾān, then the Sunnah, then the Companions, with chains; the most read tafsir today.",
+   "lifeAH": "c. 700 AH – 774 AH",
+   "lifeCE": "c. 1300 CE – 1373 CE",
+   "works": "Tafsīr al-Qurʾān al-ʿAẓīm (est. before 774 AH / 1373 CE, from the death year); al-Bidāyah wa al-Nihāyah (est. before 774 AH / 1373 CE, from the death year)",
+   "approaches": "35 Shafiʿi · 31 Gen2",
+   "madhab": "Shafiʿi",
+   "quranWorks": "Tafsīr al-Qurʾān al-ʿAẓīm",
+   "source": "Open per āyah · free (classical)",
+   "by": "Claude",
+   "draft": true,
+   "id": "s048",
+   "authority": "The Mamluk Sultanate",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "Tafsīr al-Qurʾān al-ʿAẓīm",
+     "written": "est. before 774 AH / 1373 CE, from the death year",
+     "yearAH": 774,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "al-Bidāyah wa al-Nihāyah",
+     "written": "est. before 774 AH / 1373 CE, from the death year",
+     "yearAH": 774,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "9th Century AH",
+   "type": "mufassir",
+   "en": "Imām Jalāl al-Dīn al-Maḥallī",
+   "ar": "الإِمَامُ جَلَالُ الدِّينِ مُحَمَّدُ بْنُ أَحْمَدَ الْمَحَلِّيُّ",
+   "birth": "Cairo (791 AH)",
+   "study": "Cairo",
+   "lived": "Cairo",
+   "death": "Cairo (864 AH)",
+   "notes": "Shafiʿi. Wrote the first half of Tafsīr al-Jalālayn (al-Kahf to the end, and al-Fātiḥah); al-Suyūṭī finished it.",
+   "lifeAH": "791 AH – 864 AH",
+   "lifeCE": "1389 CE – 1459 CE",
+   "works": "Tafsīr al-Jalālayn (with al-Suyūṭī) (est. his half (al-Kahf to al-Nās, and al-Fātiḥah) before 864 AH / 1459 CE; al-Suyūṭī finished it in 870 AH / 1465 CE); Sharḥ Jamʿ al-Jawāmiʿ (est. before 864 AH / 1459 CE, from the death year)",
+   "approaches": "35 Shafiʿi · 31 Gen2",
+   "madhab": "Shafiʿi",
+   "quranWorks": "Tafsīr al-Jalālayn",
+   "source": "Open per āyah · free (classical)",
+   "by": "Claude",
+   "draft": true,
+   "id": "s049",
+   "authority": "The Mamluk Sultanate",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "Tafsīr al-Jalālayn (with al-Suyūṭī)",
+     "written": "est. his half (al-Kahf to al-Nās, and al-Fātiḥah) before 864 AH / 1459 CE; al-Suyūṭī finished it in 870 AH / 1465 CE",
+     "yearAH": 864,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "Sharḥ Jamʿ al-Jawāmiʿ",
+     "written": "est. before 864 AH / 1459 CE, from the death year",
+     "yearAH": 864,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "9th Century AH",
+   "type": "mufassir",
+   "en": "Imām ʿAbd al-Raḥmān al-Thaʿālibī",
+   "ar": "الإِمَامُ عَبْدُ الرَّحْمَنِ بْنُ مُحَمَّدٍ الثَّعَالِبِيُّ",
+   "birth": "Wādī Yassar, near Algiers (c. 786 AH)",
+   "study": "Bejaia, Tunis, Cairo",
+   "lived": "Algiers",
+   "death": "Algiers (875 AH)",
+   "notes": "Maliki of North Africa. A tafsir that summarises Ibn ʿAṭiyyah with other sources.",
+   "lifeAH": "c. 786 AH – 875 AH",
+   "lifeCE": "c. 1384 CE – 1471 CE",
+   "works": "al-Jawāhir al-Ḥisān fī Tafsīr al-Qurʾān (est. before 875 AH / 1471 CE, from the death year)",
+   "approaches": "32 Maliki · 31 Gen2",
+   "madhab": "Maliki",
+   "quranWorks": "al-Jawāhir al-Ḥisān",
+   "source": "Check · free (classical)",
+   "by": "Claude",
+   "draft": true,
+   "id": "s050",
+   "authority": "The Zayyanids and the Hafsids (Algiers changed hands)",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "al-Jawāhir al-Ḥisān fī Tafsīr al-Qurʾān",
+     "written": "est. before 875 AH / 1471 CE, from the death year",
+     "yearAH": 875,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "9th Century AH",
+   "type": "mufassir",
+   "en": "Imām Ibn ʿĀdil al-Ḥanbalī",
+   "ar": "الإِمَامُ أَبُو حَفْصٍ عُمَرُ بْنُ عَلِيٍّ ابْنُ عَادِلٍ",
+   "birth": "Damascus (? AH)",
+   "study": "Damascus",
+   "lived": "Damascus",
+   "death": "Damascus (after 880 AH)",
+   "notes": "Hanbali. A very large tafsir on the language, readings and rulings of each āyah. Dates are uncertain.",
+   "lifeAH": "? – after 880 AH",
+   "lifeCE": "? – after 1475 CE",
+   "works": "al-Lubāb fī ʿUlūm al-Kitāb (c. completed 880 AH / 1475 CE, the last date known for him)",
+   "approaches": "33 Hanbali · 31 Gen2",
+   "madhab": "Hanbali",
+   "quranWorks": "al-Lubāb fī ʿUlūm al-Kitāb",
+   "source": "Check · free (classical)",
+   "by": "Claude",
+   "draft": true,
+   "id": "s051",
+   "authority": "The Mamluk Sultanate",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "al-Lubāb fī ʿUlūm al-Kitāb",
+     "written": "c. completed 880 AH / 1475 CE, the last date known for him",
+     "yearAH": 880,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "9th Century AH",
+   "type": "mufassir",
+   "en": "Imām Burhān al-Dīn al-Biqāʿī",
+   "ar": "الإِمَامُ بُرْهَانُ الدِّينِ إِبْرَاهِيمُ بْنُ عُمَرَ الْبِقَاعِيُّ",
+   "birth": "Khirbat Rūḥā, Biqāʿ valley (809 AH)",
+   "study": "Damascus, Cairo (under Ibn Ḥajar)",
+   "lived": "Cairo, Damascus",
+   "death": "Damascus (885 AH)",
+   "notes": "Shafiʿi. His tafsir is on the order and links between āyāt and sūrahs (munāsabāt), which suits Approach 'its passage'.",
+   "lifeAH": "809 AH – 885 AH",
+   "lifeCE": "1406 CE – 1480 CE",
+   "works": "Naẓm al-Durar fī Tanāsub al-Āyāt wa al-Suwar (c. 861–875 AH / c. 1457–1471 CE, about fourteen years' work)",
+   "approaches": "35 Shafiʿi · 31 Gen2",
+   "madhab": "Shafiʿi",
+   "quranWorks": "Naẓm al-Durar",
+   "source": "OpenITI full text · free (classical)",
+   "by": "Claude",
+   "draft": true,
+   "id": "s052",
+   "authority": "The Mamluk Sultanate",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "Naẓm al-Durar fī Tanāsub al-Āyāt wa al-Suwar",
+     "written": "c. 861–875 AH / c. 1457–1471 CE, about fourteen years' work",
+     "yearAH": 875,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "10th Century AH",
+   "type": "mufassir",
+   "en": "Imām Jalāl al-Dīn al-Suyūṭī",
+   "ar": "الإِمَامُ جَلَالُ الدِّينِ عَبْدُ الرَّحْمَنِ بْنُ أَبِي بَكْرٍ السُّيُوطِيُّ",
+   "birth": "Cairo (849 AH)",
+   "study": "Cairo",
+   "lived": "Cairo",
+   "death": "Cairo (911 AH)",
+   "notes": "Shafiʿi; wrote on every science. al-Durr al-Manthūr gathers the narrations on each āyah (useful for 28 and 29, with grades to check); he finished al-Jalālayn.",
+   "lifeAH": "849 AH – 911 AH",
+   "lifeCE": "1445 CE – 1505 CE",
+   "works": "al-Durr al-Manthūr (est. before 911 AH / 1505 CE, from the death year); Tafsīr al-Jalālayn (al-Baqarah to al-Isrāʾ) (870 AH / 1465 CE, his half written in about forty days); al-Itqān (c. 872–878 AH / c. 1467–1473 CE); Lubāb al-Nuqūl (est. before 911 AH / 1505 CE, from the death year)",
+   "approaches": "35 Shafiʿi · 31 Gen2 · 28 Sahaba",
+   "madhab": "Shafiʿi",
+   "quranWorks": "al-Durr al-Manthūr; al-Jalālayn; Lubāb al-Nuqūl",
+   "source": "Jalālayn open per āyah; al-Durr OpenITI · free (classical)",
+   "by": "Claude",
+   "draft": true,
+   "id": "s053",
+   "authority": "The Mamluk Sultanate (he died in 911 AH, before the Uthmanis took Egypt)",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "al-Durr al-Manthūr",
+     "written": "est. before 911 AH / 1505 CE, from the death year",
+     "yearAH": 911,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "Tafsīr al-Jalālayn (al-Baqarah to al-Isrāʾ)",
+     "written": "870 AH / 1465 CE, his half written in about forty days",
+     "yearAH": 870,
+     "estimate": false,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "al-Itqān",
+     "written": "c. 872–878 AH / c. 1467–1473 CE",
+     "yearAH": 878,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "Lubāb al-Nuqūl",
+     "written": "est. before 911 AH / 1505 CE, from the death year",
+     "yearAH": 911,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "10th Century AH",
+   "type": "modern",
+   "en": "Imām al-Muttaqī al-Hindī",
+   "ar": "الإِمَامُ عَلَاءُ الدِّينِ عَلِيُّ بْنُ حِسَامِ الدِّينِ الْمُتَّقِي الْهِنْدِيُّ",
+   "birth": "Burhanpur, India (885 AH)",
+   "study": "India, Makkah, Madīnah",
+   "lived": "Makkah",
+   "death": "Makkah (975 AH)",
+   "notes": "Masterful Hadith aggregator. Systematically re-arranged thousands of traditions into his encyclopedia Kanz al-Ummal. Preserved al-Tabarani's \"three qualities character training\" Hadith as Entry No. 45467. Modern verifiers examine the source texts inside his compilation to evaluate individual transmission lines.",
+   "lifeAH": "885 AH – 975 AH",
+   "lifeCE": "1480 CE – 1567 CE",
+   "works": "Kanz al-ʿUmmāl fī Sunan al-Aqvāl wa-al-Afʿāl (Hadith 45467)",
+   "by": "You",
+   "approaches": "31 Gen2",
+   "madhab": "Hanafi",
+   "quranWorks": "Kanz al-ʿUmmāl has a chapter of tafsir narrations · When each book was written: Kanz al-ʿUmmāl fī Sunan al-Aqvāl wa-al-Afʿāl (Hadith 45467) (est. before 975 AH / 1567 CE, from the death year)",
+   "source": "OpenITI full text · free (classical)",
+   "draftNew": true,
+   "id": "s017",
+   "authority": "The Sultanate of Gujarat, then Makkah under the Mamluks and the Uthmani Khilafah",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "Kanz al-ʿUmmāl fī Sunan al-Aqvāl wa-al-Afʿāl (Hadith 45467)",
+     "written": "est. before 975 AH / 1567 CE, from the death year",
+     "yearAH": 975,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "10th Century AH",
+   "type": "mufassir",
+   "en": "Shaykh al-Islām Abū al-Suʿūd al-ʿImādī",
+   "ar": "شَيْخُ الْإِسْلَامِ أَبُو السُّعُودِ مُحَمَّدُ بْنُ مُحَمَّدٍ الْعِمَادِيُّ",
+   "birth": "Near Istanbul (898 AH)",
+   "study": "Istanbul",
+   "lived": "Istanbul (Shaykh al-Islām of the Uthmani state)",
+   "death": "Istanbul (982 AH)",
+   "notes": "Hanafi; the chief scholar of the Uthmani state under Sulaymān. A tafsir on the eloquence of the āyāt; an example of a scholar under the Khilafah's authority.",
+   "lifeAH": "898 AH – 982 AH",
+   "lifeCE": "1490 CE – 1574 CE",
+   "works": "Irshād al-ʿAql al-Salīm ilā Mazāyā al-Kitāb al-Karīm (c. completed 973 AH / 1565 CE, presented to Sultan Sulaymān)",
+   "approaches": "34 Hanafi · 31 Gen2",
+   "madhab": "Hanafi",
+   "quranWorks": "Irshād al-ʿAql al-Salīm",
+   "source": "Check · free (classical)",
+   "by": "Claude",
+   "draft": true,
+   "id": "s054",
+   "authority": "The Uthmani Khilafah (Sulaymān I, Selim II)",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "Irshād al-ʿAql al-Salīm ilā Mazāyā al-Kitāb al-Karīm",
+     "written": "c. completed 973 AH / 1565 CE, presented to Sultan Sulaymān",
+     "yearAH": 973,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "11th Century AH",
+   "type": "modern",
+   "en": "Imām al-Munāwī al-Shāfiʿī",
+   "ar": "الإِمَامُ زَيْنُ الدِّينِ مُحَمَّدٌ عَبْدُ الرَّؤُوفِ الْمُنَاوِيُّ",
+   "birth": "Cairo, Egypt (952 AH)",
+   "study": "Cairo (Al-Azhar University)",
+   "lived": "Cairo, Egypt",
+   "death": "Cairo, Egypt (1031 AH)",
+   "notes": "Foremost commentator of the late classical era. In his commentary Fayd al-Qadir (Vol 1, Page 225), he meticulously evaluated the \"teach your children three things\" Hadith, explicitly noting its transmission weaknesses while confirming its sound text for ethical cultivation.",
+   "lifeAH": "952 AH – 1031 AH",
+   "lifeCE": "1545 CE – 1621 CE",
+   "works": "Fayḍ al-Qadīr Sharḥ al-Jāmiʿ al-Ṣaghīr (1/225)",
+   "by": "You",
+   "approaches": "31 Gen2",
+   "madhab": "Shafiʿi",
+   "quranWorks": "None on the Qurʾān (his works are on Hadith) · When each book was written: Fayḍ al-Qadīr Sharḥ al-Jāmiʿ al-Ṣaghīr (1/225) (est. before 1031 AH / 1621 CE, from the death year)",
+   "source": "—",
+   "draftNew": true,
+   "id": "s018",
+   "authority": "The Uthmani Khilafah (Egypt)",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "Fayḍ al-Qadīr Sharḥ al-Jāmiʿ al-Ṣaghīr (1/225)",
+     "written": "est. before 1031 AH / 1621 CE, from the death year",
+     "yearAH": 1031,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "11th Century AH",
+   "type": "mufassir",
+   "en": "Shihāb al-Dīn al-Khafājī",
+   "ar": "شِهَابُ الدِّينِ أَحْمَدُ بْنُ مُحَمَّدٍ الْخَفَاجِيُّ",
+   "birth": "Cairo (977 AH)",
+   "study": "Cairo, Istanbul",
+   "lived": "Istanbul, Cairo (judge)",
+   "death": "Cairo (1069 AH)",
+   "notes": "Hanafi. His gloss on al-Bayḍāwī is the largest of its kind.",
+   "lifeAH": "977 AH – 1069 AH",
+   "lifeCE": "1569 CE – 1659 CE",
+   "works": "ʿInāyat al-Qāḍī wa Kifāyat al-Rāḍī (gloss on al-Bayḍāwī) (est. before 1069 AH / 1659 CE, from the death year)",
+   "approaches": "34 Hanafi · 31 Gen2",
+   "madhab": "Hanafi",
+   "quranWorks": "ʿInāyat al-Qāḍī",
+   "source": "OpenITI full text · free (classical)",
+   "by": "Claude",
+   "draft": true,
+   "id": "s055",
+   "authority": "The Uthmani Khilafah",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "ʿInāyat al-Qāḍī wa Kifāyat al-Rāḍī (gloss on al-Bayḍāwī)",
+     "written": "est. before 1069 AH / 1659 CE, from the death year",
+     "yearAH": 1069,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "12th Century AH",
+   "type": "mufassir",
+   "en": "Ismāʿīl Ḥaqqī al-Bursawī",
+   "ar": "إِسْمَاعِيلُ حَقِّي الْبُرُوسَوِيُّ",
+   "birth": "Aydos, Thrace (1063 AH)",
+   "study": "Istanbul, Üsküdar",
+   "lived": "Bursa",
+   "death": "Bursa (1137 AH)",
+   "notes": "Uthmani Hanafi and Sufi (Jalwatī order). A long tafsir full of Sufi counsel; read as a Sufi view (36).",
+   "lifeAH": "1063 AH – 1137 AH",
+   "lifeCE": "1653 CE – 1725 CE",
+   "works": "Rūḥ al-Bayān (c. completed 1117 AH / 1705 CE)",
+   "approaches": "36 Groups (Sufi) · 34 Hanafi · Gen3",
+   "madhab": "Hanafi · Sufi",
+   "quranWorks": "Rūḥ al-Bayān",
+   "source": "Check · free (classical)",
+   "by": "Claude",
+   "draft": true,
+   "id": "s056",
+   "authority": "The Uthmani Khilafah",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "Rūḥ al-Bayān",
+     "written": "c. completed 1117 AH / 1705 CE",
+     "yearAH": 1117,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "12th Century AH",
+   "type": "mufassir",
+   "en": "Shāh Walī Allāh al-Dihlawī",
+   "ar": "الشَّاهُ وَلِيُّ اللهِ أَحْمَدُ بْنُ عَبْدِ الرَّحِيمِ الدِّهْلَوِيُّ",
+   "birth": "Near Delhi (1114 AH)",
+   "study": "Delhi, Makkah, Madīnah",
+   "lived": "Delhi",
+   "death": "Delhi (1176 AH)",
+   "notes": "Reviver of Hadith study in India; translated the Qurʾān into Persian and wrote on the principles of tafsir. A root of the scholarship of the Indian subcontinent.",
+   "lifeAH": "1114 AH – 1176 AH",
+   "lifeCE": "1703 CE – 1762 CE",
+   "works": "al-Fawz al-Kabīr fī Uṣūl al-Tafsīr (est. before 1176 AH / 1762 CE, from the death year); Fatḥ al-Raḥmān (Persian translation) (c. completed 1151 AH / 1738 CE); Ḥujjat Allāh al-Bālighah (est. before 1176 AH / 1762 CE, from the death year)",
+   "approaches": "34 Hanafi · Gen3",
+   "madhab": "Hanafi",
+   "quranWorks": "al-Fawz al-Kabīr; Fatḥ al-Raḥmān",
+   "source": "Check · free (classical)",
+   "by": "Claude",
+   "draft": true,
+   "id": "s057",
+   "authority": "The Mughals, in their decline; the Durrani and Maratha wars",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "al-Fawz al-Kabīr fī Uṣūl al-Tafsīr",
+     "written": "est. before 1176 AH / 1762 CE, from the death year",
+     "yearAH": 1176,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "Fatḥ al-Raḥmān (Persian translation)",
+     "written": "c. completed 1151 AH / 1738 CE",
+     "yearAH": 1151,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "Ḥujjat Allāh al-Bālighah",
+     "written": "est. before 1176 AH / 1762 CE, from the death year",
+     "yearAH": 1176,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "13th Century AH",
+   "type": "mufassir",
+   "en": "Shaykh Sulaymān al-Jamal",
+   "ar": "الشَّيْخُ سُلَيْمَانُ بْنُ عُمَرَ الْجَمَلُ",
+   "birth": "Minyat ʿUjayl, Egypt (? AH)",
+   "study": "Cairo (al-Azhar)",
+   "lived": "Cairo",
+   "death": "Cairo (1204 AH)",
+   "notes": "Shafiʿi of al-Azhar. His gloss on al-Jalālayn is the fullest.",
+   "lifeAH": "? – 1204 AH",
+   "lifeCE": "? – 1790 CE",
+   "works": "al-Futūḥāt al-Ilāhiyyah (gloss on al-Jalālayn) (est. before 1204 AH / 1790 CE, from the death year)",
+   "approaches": "35 Shafiʿi · Gen3",
+   "madhab": "Shafiʿi",
+   "quranWorks": "al-Futūḥāt al-Ilāhiyyah",
+   "source": "Check · free (classical)",
+   "by": "Claude",
+   "draft": true,
+   "id": "s058",
+   "authority": "The Uthmani Khilafah (Egypt under its Mamluk beys)",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "al-Futūḥāt al-Ilāhiyyah (gloss on al-Jalālayn)",
+     "written": "est. before 1204 AH / 1790 CE, from the death year",
+     "yearAH": 1204,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "13th Century AH",
+   "type": "mufassir",
+   "en": "Shāh ʿAbd al-ʿAzīz al-Dihlawī",
+   "ar": "الشَّاهُ عَبْدُ الْعَزِيزِ الدِّهْلَوِيُّ",
+   "birth": "Delhi (1159 AH)",
+   "study": "Delhi (under his father, Shāh Walī Allāh)",
+   "lived": "Delhi",
+   "death": "Delhi (1239 AH)",
+   "notes": "Son of Shāh Walī Allāh. His Persian tafsir was given under British rule in India.",
+   "lifeAH": "1159 AH – 1239 AH",
+   "lifeCE": "1746 CE – 1824 CE",
+   "works": "Tafsīr Fatḥ al-ʿAzīz (Persian) (est. before 1239 AH / 1824 CE, from the death year)",
+   "approaches": "34 Hanafi · Gen3",
+   "madhab": "Hanafi",
+   "quranWorks": "Fatḥ al-ʿAzīz",
+   "source": "Check · free (classical)",
+   "by": "Claude",
+   "draft": true,
+   "id": "s059",
+   "authority": "The late Mughals; the British East India Company (Delhi from 1218 AH)",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "Tafsīr Fatḥ al-ʿAzīz (Persian)",
+     "written": "est. before 1239 AH / 1824 CE, from the death year",
+     "yearAH": 1239,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "13th Century AH",
+   "type": "mufassir",
+   "en": "Shaykh Aḥmad al-Ṣāwī",
+   "ar": "الشَّيْخُ أَحْمَدُ بْنُ مُحَمَّدٍ الصَّاوِيُّ",
+   "birth": "Ṣā al-Ḥajar, Egypt (1175 AH)",
+   "study": "Cairo (al-Azhar)",
+   "lived": "Cairo",
+   "death": "Madīnah (1241 AH)",
+   "notes": "Maliki and Sufi (Khalwatī). A gloss on al-Jalālayn, much read in Egypt and West Africa.",
+   "lifeAH": "1175 AH – 1241 AH",
+   "lifeCE": "1761 CE – 1825 CE",
+   "works": "Ḥāshiyat al-Ṣāwī ʿalā al-Jalālayn (est. before 1241 AH / 1825 CE, from the death year)",
+   "approaches": "32 Maliki · Gen3",
+   "madhab": "Maliki · Sufi",
+   "quranWorks": "Ḥāshiyat al-Ṣāwī",
+   "source": "Check · free (classical)",
+   "by": "Claude",
+   "draft": true,
+   "id": "s060",
+   "authority": "The Uthmani Khilafah; Egypt under Muhammad ʿAlī (from 1220 AH)",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "Ḥāshiyat al-Ṣāwī ʿalā al-Jalālayn",
+     "written": "est. before 1241 AH / 1825 CE, from the death year",
+     "yearAH": 1241,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "13th Century AH",
+   "type": "mufassir",
+   "en": "Imām Muḥammad ibn ʿAlī al-Shawkānī",
+   "ar": "الإِمَامُ مُحَمَّدُ بْنُ عَلِيٍّ الشَّوْكَانِيُّ",
+   "birth": "Hijrat Shawkān, Yemen (1173 AH)",
+   "study": "Ṣanʿāʾ",
+   "lived": "Ṣanʿāʾ (chief judge)",
+   "death": "Ṣanʿāʾ (1250 AH)",
+   "notes": "Born a Zaydi; became an independent mujtahid who called for leaving blind following. Fatḥ al-Qadīr joins narration and reasoning.",
+   "lifeAH": "1173 AH – 1250 AH",
+   "lifeCE": "1759 CE – 1834 CE",
+   "works": "Fatḥ al-Qadīr (c. 1223–1229 AH / c. 1808–1814 CE); Nayl al-Awṭār (c. completed 1222 AH / 1807 CE)",
+   "approaches": "Gen3",
+   "madhab": "Independent (Zaydi origin)",
+   "quranWorks": "Fatḥ al-Qadīr",
+   "source": "Open per āyah · free (classical)",
+   "by": "Claude",
+   "draft": true,
+   "id": "s061",
+   "authority": "The Zaydi Imams of Yemen (Qāsimī state)",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "Fatḥ al-Qadīr",
+     "written": "c. 1223–1229 AH / c. 1808–1814 CE",
+     "yearAH": 1229,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "Nayl al-Awṭār",
+     "written": "c. completed 1222 AH / 1807 CE",
+     "yearAH": 1222,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "13th Century AH",
+   "type": "mufassir",
+   "en": "Imām Maḥmūd al-Ālūsī",
+   "ar": "الإِمَامُ شِهَابُ الدِّينِ مَحْمُودُ بْنُ عَبْدِ اللهِ الْآلُوسِيُّ",
+   "birth": "Baghdād (1217 AH)",
+   "study": "Baghdād",
+   "lived": "Baghdād (mufti)",
+   "death": "Baghdād (1270 AH)",
+   "notes": "Hanafi mufti of Baghdād under the late Uthmani state. A large tafsir that gathers the earlier books, on language, rulings and Sufi meanings.",
+   "lifeAH": "1217 AH – 1270 AH",
+   "lifeCE": "1802 CE – 1854 CE",
+   "works": "Rūḥ al-Maʿānī (1252–1267 AH / 1836–1851 CE)",
+   "approaches": "34 Hanafi · Gen3",
+   "madhab": "Hanafi (earlier Shafiʿi)",
+   "quranWorks": "Rūḥ al-Maʿānī",
+   "source": "Open per āyah · free (classical)",
+   "by": "Claude",
+   "draft": true,
+   "id": "s062",
+   "authority": "The Uthmani Khilafah (Baghdad)",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "Rūḥ al-Maʿānī",
+     "written": "1252–1267 AH / 1836–1851 CE",
+     "yearAH": 1267,
+     "estimate": false,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "14th Century AH",
+   "type": "mufassir",
+   "en": "Shaykh Jamāl al-Dīn al-Qāsimī",
+   "ar": "الشَّيْخُ جَمَالُ الدِّينِ مُحَمَّدُ بْنُ مُحَمَّدٍ الْقَاسِمِيُّ",
+   "birth": "Damascus (1283 AH)",
+   "study": "Damascus",
+   "lived": "Damascus",
+   "death": "Damascus (1332 AH)",
+   "notes": "Reformer of Damascus. His tafsir quotes the earlier scholars at length.",
+   "lifeAH": "1283 AH – 1332 AH",
+   "lifeCE": "1866 CE – 1914 CE",
+   "works": "Maḥāsin al-Taʾwīl (est. before 1332 AH / 1914 CE, from the death year; printed after his death, 1376–1380 AH / 1957–1960 CE)",
+   "approaches": "Gen3",
+   "madhab": "Salafi reformer (Shafiʿi background)",
+   "quranWorks": "Maḥāsin al-Taʾwīl",
+   "source": "Open per āyah · check rights",
+   "by": "Claude",
+   "draft": true,
+   "id": "s063",
+   "authority": "The Uthmani Khilafah (Damascus)",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "Maḥāsin al-Taʾwīl",
+     "written": "est. before 1332 AH / 1914 CE, from the death year; printed after his death, 1376–1380 AH / 1957–1960 CE",
+     "yearAH": 1332,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "14th Century AH",
+   "type": "mufassir",
+   "en": "Shaykh Muḥammad Rashīd Riḍā",
+   "ar": "الشَّيْخُ مُحَمَّدُ رَشِيدُ رِضَا",
+   "birth": "al-Qalamūn, near Tripoli, Lebanon (1282 AH)",
+   "study": "Tripoli, Cairo (with Muḥammad ʿAbduh)",
+   "lived": "Cairo",
+   "death": "Cairo (1354 AH)",
+   "notes": "Reformer, editor of al-Manār. His tafsir, begun from Muḥammad ʿAbduh's lessons, reads the āyāt against the condition of the Ummah after the Khilafah; it stops at 12:101.",
+   "lifeAH": "1282 AH – 1354 AH",
+   "lifeCE": "1865 CE – 1935 CE",
+   "works": "Tafsīr al-Manār (to 12:101) (1318–1354 AH / 1900–1935 CE, in parts in the journal al-Manār)",
+   "approaches": "Gen4",
+   "madhab": "Reformist (Salafi)",
+   "quranWorks": "Tafsīr al-Manār",
+   "source": "OpenITI full text · check rights",
+   "by": "Claude",
+   "draft": true,
+   "id": "s064",
+   "authority": "Egypt under British occupation (from 1299 AH), then the Kingdom of Egypt",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "Tafsīr al-Manār (to 12:101)",
+     "written": "1318–1354 AH / 1900–1935 CE, in parts in the journal al-Manār",
+     "yearAH": 1354,
+     "estimate": false,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "14th Century AH",
+   "type": "mufassir",
+   "en": "Shaykh Aḥmad Muṣṭafā al-Marāghī",
+   "ar": "الشَّيْخُ أَحْمَدُ مُصْطَفَى الْمَرَاغِيُّ",
+   "birth": "al-Marāgha, Sohag, Egypt (1300 AH)",
+   "study": "Cairo (al-Azhar, Dār al-ʿUlūm)",
+   "lived": "Cairo",
+   "death": "Cairo (1371 AH)",
+   "notes": "A complete tafsir in plain modern Arabic, following al-Manār's method.",
+   "lifeAH": "1300 AH – 1371 AH",
+   "lifeCE": "1883 CE – 1952 CE",
+   "works": "Tafsīr al-Marāghī (est. 1360s AH / 1940s CE, printed from c. 1365 AH / 1946 CE)",
+   "approaches": "Gen4",
+   "madhab": "Reformist",
+   "quranWorks": "Tafsīr al-Marāghī",
+   "source": "OpenITI full text · check rights",
+   "by": "Claude",
+   "draft": true,
+   "id": "s065",
+   "authority": "Egypt under British occupation, then the Kingdom of Egypt",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "Tafsīr al-Marāghī",
+     "written": "est. 1360s AH / 1940s CE, printed from c. 1365 AH / 1946 CE",
+     "yearAH": 1365,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "14th Century AH",
+   "type": "mufassir",
+   "en": "Shaykh ʿAbd al-Raḥmān al-Saʿdī",
+   "ar": "الشَّيْخُ عَبْدُ الرَّحْمَنِ بْنُ نَاصِرٍ السَّعْدِيُّ",
+   "birth": "ʿUnayzah, Najd (1307 AH)",
+   "study": "ʿUnayzah",
+   "lived": "ʿUnayzah",
+   "death": "ʿUnayzah (1376 AH)",
+   "notes": "Hanbali. A short, clear tafsir on the guidance and lessons of each āyah; good for students.",
+   "lifeAH": "1307 AH – 1376 AH",
+   "lifeCE": "1889 CE – 1956 CE",
+   "works": "Taysīr al-Karīm al-Raḥmān (c. completed 1344 AH / 1926 CE)",
+   "approaches": "33 Hanbali · Gen5",
+   "madhab": "Hanbali",
+   "quranWorks": "Taysīr al-Karīm al-Raḥmān",
+   "source": "Open per āyah · check rights",
+   "by": "Claude",
+   "draft": true,
+   "id": "s066",
+   "authority": "Najd under Ibn Rashīd, then the Saudi state (the Kingdom of Saudi Arabia from 1351 AH)",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "Taysīr al-Karīm al-Raḥmān",
+     "written": "c. completed 1344 AH / 1926 CE",
+     "yearAH": 1344,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "14th Century AH",
+   "type": "mufassir",
+   "en": "Shaykh Muḥammad al-Amīn al-Shinqīṭī",
+   "ar": "الشَّيْخُ مُحَمَّدٌ الْأَمِينُ الشِّنْقِيطِيُّ",
+   "birth": "Tanbah, Mauritania (1325 AH)",
+   "study": "Mauritania",
+   "lived": "Madīnah, Riyadh",
+   "death": "Makkah (1393 AH)",
+   "notes": "Maliki. His tafsir explains the Qurʾān by the Qurʾān, with long discussions of rulings.",
+   "lifeAH": "1325 AH – 1393 AH",
+   "lifeCE": "1907 CE – 1974 CE",
+   "works": "Aḍwāʾ al-Bayān fī Īḍāḥ al-Qurʾān bil-Qurʾān (est. c. 1380–1393 AH / c. 1960–1974 CE in Madīnah; unfinished at his death, completed by his student ʿAṭiyyah Sālim)",
+   "approaches": "32 Maliki · Gen5",
+   "madhab": "Maliki",
+   "quranWorks": "Aḍwāʾ al-Bayān",
+   "source": "Open per āyah · check rights",
+   "by": "Claude",
+   "draft": true,
+   "id": "s067",
+   "authority": "French colonial Mauritania, then the Kingdom of Saudi Arabia",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "Aḍwāʾ al-Bayān fī Īḍāḥ al-Qurʾān bil-Qurʾān",
+     "written": "est. c. 1380–1393 AH / c. 1960–1974 CE in Madīnah; unfinished at his death, completed by his student ʿAṭiyyah Sālim",
+     "yearAH": 1393,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "14th Century AH",
+   "type": "mufassir",
+   "en": "Shaykh Muḥammad al-Ṭāhir Ibn ʿĀshūr",
+   "ar": "الشَّيْخُ مُحَمَّدٌ الطَّاهِرُ ابْنُ عَاشُورٍ",
+   "birth": "Tunis (1296 AH)",
+   "study": "Tunis (al-Zaytūnah)",
+   "lived": "Tunis",
+   "death": "Tunis (1393 AH)",
+   "notes": "Maliki; master of the aims of the Sharīʿah (maqāṣid). A large tafsir on language, eloquence and purpose.",
+   "lifeAH": "1296 AH – 1393 AH",
+   "lifeCE": "1879 CE – 1973 CE",
+   "works": "al-Taḥrīr wa al-Tanwīr (1341–1380 AH / 1923–1960 CE, by his own note); Maqāṣid al-Sharīʿah al-Islāmiyyah (c. first published 1366 AH / 1946 CE)",
+   "approaches": "32 Maliki · Gen5",
+   "madhab": "Maliki",
+   "quranWorks": "al-Taḥrīr wa al-Tanwīr",
+   "source": "Open per āyah · check rights",
+   "by": "Claude",
+   "draft": true,
+   "id": "s068",
+   "authority": "The French Protectorate of Tunisia (Husaynid beys), then the Republic of Tunisia",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "al-Taḥrīr wa al-Tanwīr",
+     "written": "1341–1380 AH / 1923–1960 CE, by his own note",
+     "yearAH": 1380,
+     "estimate": false,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "Maqāṣid al-Sharīʿah al-Islāmiyyah",
+     "written": "c. first published 1366 AH / 1946 CE",
+     "yearAH": 1366,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "14th-15th Century AH",
+   "type": "modern",
+   "en": "Sheikh Nāṣir al-Dīn al-Albānī",
+   "ar": "الشَّيْخُ مُحَمَّدُ نَاصِرُ الدِّينِ الْأَلْبَانِيُّ",
+   "birth": "Shkodër, Albania (1333 AH)",
+   "study": "Damascus, Syria",
+   "lived": "Syria, Jordan, Saudi Arabia (Univ. of Madīnah)",
+   "death": "Amman, Jordan (1420 AH)",
+   "notes": "The most influential modern Sunni Hadith verifier. Pioneered systematic digital-era Takhrij (chain analysis). Divided the classical Sunan works into independent Sahīh and Da'īf indices. Evaluated the \"teach your children three things\" tradition and declared it Weak (Da'if) in Da'īf al-Jāmiʿ, No. 2634.",
+   "lifeAH": "1333 AH – 1420 AH",
+   "lifeCE": "1914 CE – 1999 CE",
+   "works": "Silsilat al-Aḥādīth al-Ṣaḥīḥah, Silsilat al-Aḥādīth al-Ḍaʿīfah, Irwāʾ al-Ghalīl, Ṣaḥīḥ wa Ḍaʿīf al-Jāmiʿ",
+   "by": "You",
+   "approaches": "Gen5 (grades for 28)",
+   "madhab": "Ahl al-Ḥadīth (no madhab)",
+   "quranWorks": "None on the Qurʾān; his grades are shown beside narrations · When each book was written: Silsilat al-Aḥādīth al-Ṣaḥīḥah (est. volumes published from the 1380s AH / 1960s CE, the last after his death); Silsilat al-Aḥādīth al-Ḍaʿīfah (est. volumes published from the 1370s AH / 1950s CE, the last after his death); Irwāʾ al-Ghalīl (c. first published 1399 AH / 1979 CE); Ṣaḥīḥ wa Ḍaʿīf al-Jāmiʿ (est. first published c. 1388–1389 AH / c. 1969 CE)",
+   "source": "Modern: copyright · ask",
+   "draftNew": true,
+   "id": "s019",
+   "authority": "The French Mandate, then the Syrian Republic; Saudi Arabia; Jordan",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "Silsilat al-Aḥādīth al-Ṣaḥīḥah",
+     "written": "est. volumes published from the 1380s AH / 1960s CE, the last after his death",
+     "yearAH": 1420,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "Silsilat al-Aḥādīth al-Ḍaʿīfah",
+     "written": "est. volumes published from the 1370s AH / 1950s CE, the last after his death",
+     "yearAH": 1420,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "Irwāʾ al-Ghalīl",
+     "written": "c. first published 1399 AH / 1979 CE",
+     "yearAH": 1399,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "Ṣaḥīḥ wa Ḍaʿīf al-Jāmiʿ",
+     "written": "est. first published c. 1388–1389 AH / c. 1969 CE",
+     "yearAH": 1389,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  },
+  {
+   "century": "14th-15th Century AH",
+   "type": "modern",
+   "en": "Sheikh Shuʿayb al-Arnāʾūṭ",
+   "ar": "الشَّيْخُ شُعَيْبُ بْنُ مُحَاوَرَ الْأَرْنَاوُوطُ",
+   "birth": "Damascus, Syria (1355 AH)",
+   "study": "Damascus, Syria",
+   "lived": "Syria, Jordan",
+   "death": "Amman, Jordan (1438 AH)",
+   "notes": "Monumental modern Albanian-Syrian critical editor and manuscript investigator. Led the encyclopedic 50-volume critical authentication of Imām Aḥmad's Musnad, verifying thousands of narrators. Extensively checked early Hanafi-tradition compilations (such as al-Tahawi's texts).",
+   "lifeAH": "1355 AH – 1438 AH",
+   "lifeCE": "1936 CE – 2016 CE",
+   "works": "Tahqīq of Musnad Aḥmad (50 Vols), Tahqīq of Siyar Aʿlām al-Nubalāʾ, Tahqīq of Sharḥ Maʿānī al-Āthār",
+   "by": "You",
+   "approaches": "Gen6 (grades for 28)",
+   "madhab": "Hanafi by training",
+   "quranWorks": "None on the Qurʾān; his grades are shown beside narrations · When each book was written: Tahqīq of Musnad Aḥmad (50 Vols) (1413–1421 AH / 1993–2001 CE, with a team (Muʾassasat al-Risālah)); Tahqīq of Siyar Aʿlām al-Nubalāʾ (c. 1401–1405 AH / c. 1981–1985 CE, with a team) (no date found yet for: Tahqīq of Sharḥ Maʿānī al-Āthār)",
+   "source": "Modern: copyright · ask",
+   "draftNew": true,
+   "id": "s020",
+   "authority": "The French Mandate, then the Syrian Republic; Jordan",
+   "authorityDraft": true,
+   "books": [
+    {
+     "title": "Tahqīq of Musnad Aḥmad (50 Vols)",
+     "written": "1413–1421 AH / 1993–2001 CE, with a team (Muʾassasat al-Risālah)",
+     "yearAH": 1421,
+     "estimate": false,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "Tahqīq of Siyar Aʿlām al-Nubalāʾ",
+     "written": "c. 1401–1405 AH / c. 1981–1985 CE, with a team",
+     "yearAH": 1405,
+     "estimate": true,
+     "by": "Claude",
+     "draft": true
+    },
+    {
+     "title": "Tahqīq of Sharḥ Maʿānī al-Āthār",
+     "written": "",
+     "yearAH": null,
+     "estimate": null,
+     "by": "Claude",
+     "draft": true
+    }
+   ]
+  }
+ ],
+ "centuries": {
+  "2": {
+   "authority": "The Umayyad Caliphate (Damascus) to 132 AH, then the Abbasid Caliphate (Baghdad from 145 AH); in al-Andalus the Umayyad Emirate of Cordoba (from 138 AH)",
+   "draft": true,
+   "by": "Claude"
+  },
+  "3": {
+   "authority": "The Abbasid Caliphate (Baghdad and Samarra), with local dynasties under it: the Tahirids and Saffarids (Khurasan), the Samanids (Transoxiana), the Tulunids (Egypt, 254–292 AH), the Aghlabids (Ifriqiya); in al-Andalus the Umayyad Emirate of Cordoba",
+   "draft": true,
+   "by": "Claude"
+  },
+  "4": {
+   "authority": "The Abbasid Caliphate, under Buyid control from 334 AH; the Samanids (Khurasan and Transoxiana); the Ikhshidids, then the Fatimids (Egypt, from 358 AH); the Hamdanids (Aleppo, Mosul); the Umayyad Caliphate of Cordoba (from 316 AH)",
+   "draft": true,
+   "by": "Claude"
+  },
+  "5": {
+   "authority": "The Abbasid Caliphate, under the Buyids and then the Seljuks (Baghdad, from 447 AH); the Ghaznavids (Khurasan, India); the Fatimids (Egypt); the Taifa kingdoms, then the Almoravids (al-Andalus, Maghrib)",
+   "draft": true,
+   "by": "Claude"
+  },
+  "6": {
+   "authority": "The Abbasid Caliphate with the Seljuks (Sultan Sanjar in Khurasan); the Khwarazm-shahs; the Zengids, then the Ayyubids (Egypt and Syria, from 567 AH); the Almoravids, then the Almohads (Maghrib, al-Andalus)",
+   "draft": true,
+   "by": "Claude"
+  },
+  "7": {
+   "authority": "The Abbasid Caliphate until the Mongols took Baghdad (656 AH); the Ayyubids, then the Mamluk Sultanate (Egypt and Syria, from 648 AH); the Ilkhanids (Iran, Iraq); the Delhi Sultanate; the Nasrids (Granada), the Hafsids, the Marinids",
+   "draft": true,
+   "by": "Claude"
+  },
+  "8": {
+   "authority": "The Mamluk Sultanate (Egypt, Syria, Hijaz; Abbasid caliphs in name only, in Cairo); the Ilkhanids and their successors (Iran); the Delhi Sultanate; the early Uthmani state (Anatolia); the Nasrids (Granada), the Marinids, the Hafsids",
+   "draft": true,
+   "by": "Claude"
+  },
+  "9": {
+   "authority": "The Mamluk Sultanate; the Timurids (Iran, Central Asia); the Uthmani state (Constantinople from 857 AH); the Hafsids and Zayyanids (North Africa); the Nasrids (Granada)",
+   "draft": true,
+   "by": "Claude"
+  },
+  "10": {
+   "authority": "The Uthmani Khilafah (Egypt, Syria and the Hijaz from 922–923 AH); the Safavids (Iran, from 907 AH); the Mughals (India, from 932 AH); the Saʿdians (Morocco)",
+   "draft": true,
+   "by": "Claude"
+  },
+  "11": {
+   "authority": "The Uthmani Khilafah; the Safavids (Iran); the Mughals (India); the Alawite sultans (Morocco, from 1075 AH)",
+   "draft": true,
+   "by": "Claude"
+  },
+  "12": {
+   "authority": "The Uthmani Khilafah; the Mughals, declining after 1118 AH; the Safavids, then the Afsharids and Zands (Iran); the Durranis (Afghanistan)",
+   "draft": true,
+   "by": "Claude"
+  },
+  "13": {
+   "authority": "The Uthmani Khilafah; Muhammad ʿAlī's dynasty in Egypt (from 1220 AH); the British East India Company in India (Delhi from 1218 AH); the Qajars (Iran); the Zaydi Imams (Yemen); the first and second Saudi states (Najd)",
+   "draft": true,
+   "by": "Claude"
+  },
+  "14": {
+   "authority": "The end of the Uthmani Khilafah (abolished 1342 AH / 1924 CE); British and French colonial rule and mandates; then new nation states (Egypt, Syria, Jordan, Saudi Arabia from 1351 AH, Pakistan, Tunisia …)",
+   "draft": true,
+   "by": "Claude"
+  },
+  "15": {
+   "authority": "Nation states across the Muslim world",
+   "draft": true,
+   "by": "Claude"
+  }
+ }
+}
