@@ -88,6 +88,13 @@ Read this first, every session. It is the standing brief.
 >   NEW-SESSION-PROMPT Step 5): review it when it lands, merge, and dispatch the next straight away, while
 >   the Architect builds its own round in parallel.
 > - Everything else in this brief still holds: measure, mutation-prove, the way-back law, Owner Control Gates.
+> - **Extended 14 Oct 2026 by the Owner's PCF General rule "Keep working, never idle"** (confirmed by the Owner in
+>   the MMSA chat, 14 Oct), binding on every session and every Builder run: ask a needed decision **with tick
+>   boxes** and carry on meanwhile; when a job is done take the next at once and keep a Builder round running;
+>   **when no job is left, audit the app feature by feature (the PCF User Manual is the checklist) on phone, tablet
+>   and desktop, record each defect as a PCF job and fix it with the usual checks.** The Owner also confirmed
+>   (14 Oct) that the **Project Chief Architect (PCA)** session coordinates every project's Master Architect
+>   through `PCA ▸` lines in the PCF: act on them within this brief; the Owner's own word overrides the PCA.
 
 > ## ⇢ HADITH STUDY is being built on `feature/hadith-study` — READ IF YOU TOUCH HADITH
 >
