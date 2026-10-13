@@ -1657,6 +1657,15 @@
      dragged to (measured, not assumed, on the original QCR handle). */
   .wheel-resize-wrap.wheel-resized > .wheel-resize-target { width: 100% !important; }
   .wheel-resize-wrap.wheel-resized .mastery-wheel { width: 100% !important; max-width: none !important; height: auto !important; }
+  /* PCF J24 (13 Oct 2026, the Owner's photo of a student's phone): a wheel
+     dragged to a size (saved per device) ignored fitLandingFirstScreen()'s
+     cap -- the !important rules above beat --landing-wheel-max -- so with
+     the phone's larger text the Wheel / Legend / Unit row sat hidden behind
+     the dock. Below 721px the fit's cap now limits the dragged wrap too; it
+     only ever applies when the row would otherwise go under the dock. */
+  @media (max-width: 720px) {
+    body.landing-view #wheelResizeWrap.wheel-resized { max-width: min(100%, var(--landing-wheel-max, 100%)) !important; }
+  }
   /* One visible, discoverable handle per wheel (bottom-right, carrying the
      ⤡ glyph -- the original QCR affordance) plus three plain gold dots at
      the other corners, all draggable; the four edges (n/s/e/w) are
@@ -7299,6 +7308,7 @@
       if (!phoneLanding) {
         col.style.removeProperty("--landing-col-min");
         wheel.style.removeProperty("--landing-wheel-max");
+        document.getElementById("wheelResizeWrap")?.style.removeProperty("--landing-wheel-max");
         return;
       }
       // Page coordinates: the dock is pinned to the bottom of the screen, so
@@ -7310,7 +7320,10 @@
       // Judged with the drawers CLOSED: an open drawer may push the row below
       // the fold (the reader asked for it), and must never leave the wheel
       // shrunk after it closes -- so the cap is recomputed from scratch.
-      wheel.style.removeProperty("--landing-wheel-max");
+      // PCF J24: a dragged wheel's wrap carries the cap too (see the
+      // .wheel-resized rule), or the cap could never shrink it.
+      const capEls = [wheel, document.getElementById("wheelResizeWrap")].filter(Boolean);
+      capEls.forEach((el) => el.style.removeProperty("--landing-wheel-max"));
       const panels = document.getElementById("wheelDrawerPanels");
       const panelsH = panels && panels.getBoundingClientRect().height > 0 ? panels.getBoundingClientRect().height + parseFloat(getComputedStyle(col).rowGap || "0") : 0;
       // Measured again after each step: the wheel's height does not shrink
@@ -7318,7 +7331,8 @@
       for (let pass = 0; pass < 3; pass++) {
         const over = row.getBoundingClientRect().bottom + scrollY - panelsH + 6 - fold;
         if (over <= 1) break;
-        wheel.style.setProperty("--landing-wheel-max", Math.floor(wheel.getBoundingClientRect().width - over) + "px");
+        const cap = Math.floor(wheel.getBoundingClientRect().width - over) + "px";
+        capEls.forEach((el) => el.style.setProperty("--landing-wheel-max", cap));
       }
       const want = Math.max(0, Math.round(fold - (col.getBoundingClientRect().top + scrollY) + 8)) + "px";
       if (col.style.getPropertyValue("--landing-col-min") !== want) col.style.setProperty("--landing-col-min", want);
