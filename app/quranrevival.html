@@ -3556,7 +3556,12 @@
   .word-progress-whole-quran-box { margin: 0.6rem 0 0.2rem; padding: 0.55rem 0.75rem; border: 1px solid var(--card-line); border-left: 4px solid var(--card-heading); border-radius: 0.45rem; background: var(--card-bg-inset); }
   .word-progress-whole-quran-box p { margin: 0; font-size: 0.98rem; font-weight: 700; line-height: 1.45; color: var(--card-text); }
   .word-progress-whole-quran-box p + p { margin-top: 0.2rem; }
-  .word-progress-percent-circle { display: inline-block; vertical-align: -4px; margin-inline: 0.15rem 0.3rem; color: var(--card-text); }
+  /* PCF J23, layout B (the Owner, 14 Oct): the known number in a filled gold disc; the percentage written inside
+     a progress circle that fills (option C's circle, in place of the number). */
+  .word-progress-percent-ring { position: relative; display: inline-grid; place-items: center; width: 38px; height: 38px; vertical-align: middle; margin-inline: 0.1rem; color: var(--card-text); }
+  .word-progress-percent-ring svg { position: absolute; inset: 0; }
+  .word-progress-percent-text { position: relative; font-size: 0.6rem; letter-spacing: -0.02em; font-weight: 800; color: var(--card-heading); font-variant-numeric: tabular-nums; line-height: 1; }
+  .word-progress-whole-quran-num.word-progress-known-disc { display: inline-block; padding: 0.05rem 0.55rem; border-radius: 999px; background: #e0b341; color: #1b1405; font-variant-numeric: tabular-nums; }
   .word-progress-whole-quran-num { font-size: 1.22rem; font-weight: 800; color: var(--card-heading); letter-spacing: 0.01em; }
   @media (max-width: 380px) { .word-card-progress button { padding: 0.5rem 0.25rem; font-size: 0.78rem; } }
   @media (max-width: 340px) { .word-card-progress button { padding: 0.5rem 0.15rem; font-size: 0.72rem; } }
@@ -16423,7 +16428,7 @@
           wholeQuranKnownLevelShort: t("You know ({level}) {known} of {total} words"),
           wholeQuranPercentLevelShort: t("You know ({level}) {percent}% of the words"),
         }),
-        wholeQuranLevelSentence: t("{level}: Achieved {known} and {percent}% of {total} words"),
+        wholeQuranLevelSentence: t("{level}: Achieved {known} and {percent} of {total} words"),
         percentCircleLabel: t("{percent}%"),
         levelNameWbw: t("WbW"),
         levelNameBasic: t("Basic"),

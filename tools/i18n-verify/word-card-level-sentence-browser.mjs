@@ -1,5 +1,9 @@
 // PCF J23 (the Owner, 13 Oct 2026) -- each level's total is ONE sentence with a percentage circle:
 //   "WbW: Achieved 12,345 and (circle) 54% of 77,777 words".
+// 14 Oct (the Owner chose layout B): the known number sits in a filled gold disc, and the percentage is written
+// INSIDE the circle (option C), never as a second number beside it.
+//   MUTATE=double     prints the percentage again outside the circle -> "only inside the circle" must FAIL
+//   MUTATE=nodisc     drops the disc class from the known number      -> disc checks must FAIL
 // Expected values are hand-written: known 0 = 0%, 40026 of 74122 = 54%, 74122 of 74122 = 100%.
 // Run from the repository root with `node serve.js` running.
 //   MUTATE=fullarc    every circle draws a full ring          -> arc checks must FAIL
@@ -25,7 +29,7 @@ const WANT = { wbw: 0, basic: 54, depth: 100 };
 const NAMES = { en: { wbw: "WbW", basic: "Basic", depth: "Depth" }, bn: { wbw: "শব্দে শব্দে", basic: "প্রাথমিক", depth: "গভীরতা" } };
 const BN = "০১২৩৪৫৬৭৮৯";
 const ascii = (s) => s.replace(/[০-৯]/g, (d) => String(BN.indexOf(d)));
-const CIRC = 2 * Math.PI * 8;
+const CIRC = 2 * Math.PI * 15;
 
 async function mutate(ctx) {
   if (!MUTATE) return;
@@ -34,6 +38,8 @@ async function mutate(ctx) {
     let body = await res.text();
     const before = body;
     if (MUTATE === "fullarc") body = body.replace("(c * n / 100).toFixed(3)", "c.toFixed(3)");
+    if (MUTATE === "double") body = body.replace(".replace(\"{percent}\", () => percentCircle(pct, text, formatNumber))", ".replace(\"{percent}\", () => percentCircle(pct, text, formatNumber) + `<strong>${pct}%</strong>`)");
+    if (MUTATE === "nodisc") body = body.replace('class="word-progress-whole-quran-num word-progress-known-disc"', 'class="word-progress-whole-quran-num"');
     if (MUTATE === "twolines") body = body.replace("${sentence}</p>`;", "${sentence}</p><p class=\"word-progress-whole-quran-percent\">${pct}%</p>`;");
     if (MUTATE === "nolevelattr") body = body.replace('data-whole-quran-level="${escapeHtml(level)}">${sentence}', 'data-x="${escapeHtml(level)}">${sentence}');
     if (body === before) throw new Error("mutation did not apply: " + MUTATE);
@@ -64,6 +70,11 @@ const read = (page) => page.evaluate(() => {
   for (const l of ["wbw", "basic", "depth"]) {
     const p = m.querySelector(`[data-whole-quran-level="${l}"]`);
     const svg = p?.querySelector("svg.word-progress-percent-circle");
+    const ring = p?.querySelector(".word-progress-percent-ring");
+    const inRing = ring?.querySelector(".word-progress-percent-text");
+    const disc = p?.querySelector(".word-progress-known-disc");
+    const outside = p ? [...p.childNodes].filter((n) => !(n.nodeType === 1 && n.classList.contains("word-progress-percent-ring"))).map((n) => n.textContent).join("") : "";
+    const rr = ring?.getBoundingClientRect(), tr = inRing?.getBoundingClientRect();
     const arc = svg?.querySelector(".word-progress-percent-arc");
     const r = svg?.getBoundingClientRect();
     levels[l] = {
@@ -73,6 +84,9 @@ const read = (page) => page.evaluate(() => {
       dash: arc ? Number(arc.getAttribute("stroke-dasharray").split(" ")[0]) : null,
       overflow: p ? p.scrollWidth - p.clientWidth : null,
       stroke: arc ? getComputedStyle(arc).stroke : null,
+      ringText: inRing?.textContent ?? null, outside,
+      textInside: !!(rr && tr && tr.left >= rr.left - 0.5 && tr.right <= rr.right + 0.5 && tr.top >= rr.top - 0.5 && tr.bottom <= rr.bottom + 0.5),
+      discBg: disc ? getComputedStyle(disc).backgroundColor : null, discText: disc?.textContent ?? null,
     };
   }
   const gold = levels.basic.stroke, L1 = gold && bg ? lum(gold) : null, L2 = bg ? lum(bg) : null;
@@ -101,6 +115,9 @@ for (const lang of ["en", "bn"]) {
       check(`${tag} ${l}: the sentence starts with the level name "${NAMES[lang][l]}"`, (v.text ?? "").startsWith(NAMES[lang][l]), v.text);
       check(`${tag} ${l}: the percentage ${WANT[l]}% sits in the same sentence`, new RegExp(`(^|\\D)${WANT[l]}%`).test(a), v.text);
       check(`${tag} ${l}: the circle is drawn, at least 20px, labelled "${WANT[l]}%"`, v.circle && v.size[0] >= 20 && v.size[1] >= 20 && ascii(v.label ?? "") === `${WANT[l]}%`, JSON.stringify(v));
+      check(`${tag} ${l}: "${WANT[l]}%" is written inside the circle`, ascii(v.ringText ?? "") === `${WANT[l]}%` && v.textInside, JSON.stringify({ t: v.ringText, inside: v.textInside }));
+      check(`${tag} ${l}: the percentage is NOT printed a second time outside the circle`, !/%/.test(v.outside ?? "%"), v.outside);
+      check(`${tag} ${l}: the known number sits in a filled gold disc`, !!v.discBg && v.discBg !== "rgba(0, 0, 0, 0)" && v.discBg !== "transparent", JSON.stringify({ bg: v.discBg, t: v.discText }));
       check(`${tag} ${l}: the arc is ${WANT[l]}% of the ring (+-0.5%)`, v.dash != null && Math.abs(v.dash - (WANT[l] / 100) * CIRC) <= CIRC * 0.005, `${v.dash} vs ${(WANT[l] / 100 * CIRC).toFixed(2)}`);
       check(`${tag} ${l}: not clipped`, v.overflow <= 0, String(v.overflow));
     }

@@ -1283,7 +1283,7 @@ export const BN = {
   "You know {known} of {total} words": "আপনি {total}টি শব্দের মধ্যে {known}টি জানেন",
   "Knows {known} of {total} words": "{total}টি শব্দের মধ্যে {known}টি জানা",
   "You know ({level}) {known} of {total} words": "আপনি {total}টি শব্দের মধ্যে {known}টি জানেন ({level})",
-  "{level}: Achieved {known} and {percent}% of {total} words": "{level}: {total}টি শব্দের মধ্যে {known}টি অর্জিত, {percent}%",
+  "{level}: Achieved {known} and {percent} of {total} words": "{level}: {total}টি শব্দের মধ্যে {known}টি অর্জিত, {percent}",
   "{percent}%": "{percent}%",
   "You know ({level}) {percent}% of the words":"আপনি {percent}% শব্দ জানেন ({level})",
   "Knows ({level}) {known} of {total} words": "{total}টি শব্দের মধ্যে {known}টি জানা ({level})",
