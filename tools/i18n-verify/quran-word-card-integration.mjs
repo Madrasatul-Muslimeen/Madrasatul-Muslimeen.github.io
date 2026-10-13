@@ -36,7 +36,29 @@ check("Study surface has one persistent card mount", () => assert.equal((page.ma
 // scrolling wrapper before it opens, so it is never inside the scroll body.
 check("card mount is outside the scrolling Study body", () => assert.match(page, /<\/div><!\-\- \/#studyScreen \-\->\s*<\/div>\s*(?:<!\-\-[\s\S]*?\-\->\s*)*<div id="quranWordCardMount"/));
 check("keyboard focus and async response lifecycle are guarded", () => { assert.match(page, /focusSelector/); assert.match(page, /quranWordCardRequest\+\+/); assert.match(page, /event\.key === "Escape"/); });
-check("single and flow render paths enable Word Card identity", () => assert.equal((page.match(/wordCardInteractive: true/g) || []).length, 2));
+// REWRITTEN (issue #800): this was a raw count of `wordCardInteractive: true`
+// (== 2), which crashed the suite when the Read view's Meaning flow added a
+// third site (b981df80) and hid every check after it. What the count means is
+// "only these render paths hand out Word Card identity", so name the
+// enclosing function of every site. A fourth site must be added here on
+// purpose, and a removed one fails too.
+const AUTHORISED_WORD_CARD_SITES = ["meaningPageHtml", "renderFlowView", "renderStudyScreen"];
+function wordCardInteractiveSites(src) {
+  const fns = [...src.matchAll(/^[ \t]*(?:async )?function (\w+)\(/gm)].map((m) => ({ at: m.index, name: m[1] }));
+  return [...src.matchAll(/wordCardInteractive: true/g)].map((m) => {
+    const owner = fns.filter((f) => f.at < m.index).pop();
+    return owner ? owner.name : "(top level)";
+  });
+}
+check("Word Card identity is enabled only at the named render paths", () => {
+  assert.deepEqual(wordCardInteractiveSites(page).sort(), [...AUTHORISED_WORD_CARD_SITES].sort());
+});
+check("the site finder fails on an extra and on a removed site (positive control)", () => {
+  const extra = page + "\nfunction rogueRender() { return { wordCardInteractive: true }; }\n";
+  assert.notDeepEqual(wordCardInteractiveSites(extra).sort(), [...AUTHORISED_WORD_CARD_SITES].sort());
+  const removed = page.replace("wordCardInteractive: true", "wordCardInteractive: false");
+  assert.notDeepEqual(wordCardInteractiveSites(removed).sort(), [...AUTHORISED_WORD_CARD_SITES].sort());
+});
 check("controller delegates occurrence, tab, navigation and close actions", () => {
   for (const marker of ["[data-word-occurrence]", "[data-word-card-level]", "[data-word-card-move]", "[data-word-card-close]"]) assert.ok(page.includes(marker));
 });
