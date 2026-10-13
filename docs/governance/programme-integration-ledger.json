@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "10.40",
+    "version": "10.41",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -3473,8 +3473,20 @@
     {
       "version": "10.40",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "PCF J24: below 721px the landing fit's cap limits a dragged wheel too, so the drawer row stays above the dock.",
+      "integration": {
+        "authorizedOn": "2026-10-13",
+        "integratedOn": "2026-10-13",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "10.41",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "PCF J23: one sentence per level, the known number in a gold disc and the percentage inside a progress circle (layout B).",
       "integration": {
         "authorizedOn": "2026-10-13",
         "integratedOn": "2026-10-13",
@@ -3483,8 +3495,9 @@
       }
     }
   ],
-  "nextUnallocated": "10.41",
+  "nextUnallocated": "10.42",
   "nextUnallocatedNote": [
+    "v10.41 was allocated to the Word card's level totals as one sentence each, layout B (PCF J23), 2026-10-13.",
     "v10.40 was allocated to a dragged landing wheel no longer hides Wheel / Legend / Unit on a phone (PCF J24), 2026-10-13.",
     "v10.39 was allocated to Word card: the stem box always has a meaning and the wrong dictionary meanings are gone; Approach 1's self-learning line, with links in Approach guides (PCF J23, J20), 2026-10-12.",
     "v10.38 was allocated to bookmarks for several people at once keep their folder, and tapping an existing bookmark asks before removing it (Builder round #797, PCF J22), 2026-10-12.",

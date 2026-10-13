@@ -127,3 +127,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v10.38** (2026-10-12): bookmarks for several people at once keep their folder, and tapping an existing bookmark asks before removing it (Builder round #797, PCF J22).
 - **v10.39** (2026-10-12): Word card: the stem box always has a meaning and the wrong dictionary meanings are gone; Approach 1's self-learning line, with links in Approach guides (PCF J23, J20).
 - **v10.40** (2026-10-13): a dragged landing wheel no longer hides Wheel / Legend / Unit on a phone (PCF J24).
+- **v10.41** (2026-10-13): the Word card's level totals as one sentence each, layout B (PCF J23).

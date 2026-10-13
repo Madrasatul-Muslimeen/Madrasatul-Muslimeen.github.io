@@ -20757,3 +20757,26 @@ Fixed at the data source: `tools/dictionary-pull/build_app_dictionary.py` now re
 **The marked line** in the same photo, "Approach the Quran in 40 Ways", is the tenant's own `approachListTitle`, stored with English only. `renderApproachListCapsule()` already shows `bn` when it exists, so the Owner adds the Bangla in the Catalogue (✎ Edit heading → Bangla → Save heading); no code change.
 
 **Tests:** new `tools/i18n-verify/landing-drawer-row-resized-wheel-browser.mjs` 13/0 (student and owner, a dragged wheel, larger text, Whole Surah; each drawer button must be the element at its own centre). Mutations: the old code, the CSS rule removed, and the wrap left out of the JS cap each give 4 failures. landing-drawers 274/0; read-contents 248/0; tablet-wheel 74/0; phone-width-overflow 217/0; behaviour 971/0.
+
+## v10.41 — 14 Oct 2026 — the Word card's level totals as one sentence each, layout B (PCF J23)
+
+**The Owner** (PCF J23, 13 Oct): "WbW: Achieved 12345 and 54% (here show the percentage as circle) of 77777 words", then the same for Basic, Inter and Depth. On 14 Oct (PCF and chat) they chose **layout B** of the 13 Oct mock-ups, with "the percentage as shown in C in place of the percentage now (not double separately)".
+
+**Built.** `wholeQuranKnownLines()` (`app/js/quran-word-card.js`) writes ONE paragraph per level, `data-whole-quran-level` kept, and the separate percent paragraph is retired. Each line reads "Basic: Achieved [40,026] and (54%) of 74,122 words":
+- the known number sits in a filled gold disc (`.word-progress-known-disc`, dark text on #e0b341);
+- the percentage is written inside a 38px progress circle (`percentCircle()`): a faint ring with a gold arc whose length is the percentage, `role="img"` and `aria-label` "{percent}%";
+- the total stays a bold number.
+
+New strings `wholeQuranLevelSentence` ("{level}: Achieved {known} and {percent} of {total} words", where {percent} is the circle) and `percentCircleLabel`, with Bangla in `bn.js`. Builder round #809 (PR #811) built the sentence with the circle beside a second number; the Architect moved the number inside the circle and added the disc after the Owner's choice.
+
+**Not in this release:** the top of the card in layout B (This āyah beside 🔍, the meaning above the level boxes, Colour on the meaning line or a bare tick when there is no room) is Builder round #812. The Owner's mark choice B (pressing a stage also changes the other mark that makes a word Achieved) comes after it.
+
+**Tests:**
+- New `tools/i18n-verify/word-card-level-sentence-browser.mjs`: 228/0 (en/bn × 320/390/768/1280; arc 0/54/100%; the percentage inside the circle and never outside it; the gold disc; gold contrast ≥ 3:1; no overflow). Mutations: double 28, nodisc 24, fullarc 16 and twolines 8 fail.
+- `quran-lemma-progress-rendered` 81/0: the bold-number count was updated in place from 12 to 8, with the reason.
+- word-na 48/0; word-card-pc-boxes 296/0; lemma-levels 240/0; word-card-intermediate 50/0; word-progress-practising 458/0; phone-width-overflow 217/0; behaviour 971/0.
+
+**Also merged since v10.40, without a version:**
+- **J15:** `firestore.rules` now equals the guardian Rules the Owner published on 12 Oct (PR #808; roster-access 3/3, with a mutant that removes the rule).
+- **J15:** a guardian case in `student-roster-access-browser` (30/0, PR #810).
+- **CLAUDE.md:** the Owner's 14 Oct rule "Keep working, never idle".
