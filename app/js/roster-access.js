@@ -14,9 +14,9 @@
 //   2. Only on permission-denied, the reads the Rules CAN prove for anyone else:
 //      - their own record: `tenantId == T && authUid == me`;
 //      - as a teacher, their own teacherStudentLinks, then each actively linked student by id.
-//      - as a guardian, `tenantId == T && managedByPersonId == me`. Today's Rules refuse it (isGuardianOf is a
-//        per-document get, which no query can prove), so a guardian sees only their own record until the Owner
-//        publishes docs/governance/2026-10-12-guardian-roster-candidate.rules (an Owner Control Gate).
+//      - as a guardian, `tenantId == T && managedByPersonId == me`. Allowed since the Owner published the guardian
+//        roster rule (12 Oct 2026; copied into firestore.rules 14 Oct, PCF J15). A denial is still tolerated, so
+//        an older Rules file leaves a guardian with their own record rather than an error.
 //
 // Returns a snapshot-shaped object, `{ docs: [{ id, data() }] }`, so every caller's existing
 // `snap.docs.map((d) => ({ id: d.id, ...d.data() }))` keeps working unchanged.
@@ -39,8 +39,7 @@ export async function getTenantRosterSnap(db, tenantId) {
   const own = await getDocs(query(people, where("tenantId", "==", tenantId), where("authUid", "==", uid)));
   const byId = new Map(own.docs.map((d) => [d.id, d]));
   for (const me of own.docs) {
-    // A guardian's children. Refused by today's Rules (isGuardianOf is a per-document get); allowed once the Owner
-    // publishes the candidate rule that lets a guardian read a person whose managedByPersonId is their own.
+    // A guardian's children: allowed by the guardian roster rule the Owner published (12 Oct 2026, PCF J15).
     try {
       const kids = await getDocs(query(people, where("tenantId", "==", tenantId), where("managedByPersonId", "==", me.id)));
       for (const k of kids.docs) if (!byId.has(k.id)) byId.set(k.id, k);

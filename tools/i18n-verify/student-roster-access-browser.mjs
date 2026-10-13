@@ -85,6 +85,44 @@ for (const path of ["/app/records.html", "/app/notes.html", "/app/journey-map.ht
   check("teacher: the picker holds themself and their linked student", JSON.stringify((opts || []).slice().sort()) === '["p1","p2"]', JSON.stringify(opts));
   await ctx.close(); }
 
+// 4. PCF J15 (14 Oct 2026): the Owner published the guardian rule, so a guardian's query
+// `tenantId == T && managedByPersonId == me` is allowed and their children join the picker. The stub refuses the
+// tenant-wide query as before; `refuseChildren` also refuses the children query, as the Rules did before 12 Oct.
+function guardianStub(base, { refuseChildren }) {
+  let s = base;
+  const ownerMember = 'personId: "p1", roles: ["owner", "prime"] },\n  ],\n  tenants:';
+  if (!s.includes(ownerMember)) throw new Error("stub shape changed: owner tenantMemberUids row not found");
+  s = s.replace(ownerMember, 'personId: "p1", roles: ["guardian"] },\n  ],\n  tenants:');
+  const p1 = '{ _id: "p1", tenantId: TENANT_ID, personId: "p1",';
+  if (!s.includes(p1)) throw new Error("stub shape changed: p1 not found");
+  s = s.replace(p1, p1 + ' authUid: UID,');
+  const p1roles = 'name: lang("Ahsan", "আহসান"), roles: ["owner", "prime"] }';
+  if (!s.includes(p1roles)) throw new Error("stub shape changed: p1 roles not found");
+  s = s.replace(p1roles, 'name: lang("Ahsan", "আহসান"), roles: ["guardian"] }');
+  const head = 'export async function getDocs(q) {\n';
+  return s.replace(head, head + '  { const f = (q.__clauses || []).filter(function (c) { return c && c.field; });\n'
+    + '    var refuse = q.__col === "tenantPeople" && ((f.length === 1 && f[0].field === "tenantId")'
+    + (refuseChildren ? ' || f.some(function (c) { return c.field === "managedByPersonId"; })' : '') + ');\n'
+    + '    if (q.__col === "tenantPeople" && f.some(function (c) { return c.field === "managedByPersonId"; })) { try { window.__childrenAsked = (window.__childrenAsked || 0) + 1; } catch (e) {} }\n'
+    + '    if (refuse) { var e = new Error("Missing or insufficient permissions."); e.code = "permission-denied"; throw e; } }\n');
+}
+for (const refuseChildren of [false, true]) {
+  const ctx = await newContext(browser, { appLang: "en", viewport: { width: 390, height: 844 } });
+  const body = guardianStub(stubFor({ banner: true }), { refuseChildren });
+  await ctx.route("https://www.gstatic.com/firebasejs/**", (route) => route.fulfill({ status: 200, contentType: "text/javascript; charset=utf-8", body }));
+  const { page } = await openPage(ctx, "/app/quranrevival.html");
+  await page.waitForTimeout(3000);
+  const asked = await page.evaluate(() => window.__childrenAsked || 0);
+  const tag = refuseChildren ? "guardian, children query refused (the Rules before 12 Oct)" : "guardian, published Rules";
+  check(`${tag}: the app asked for the guardian's children by managedByPersonId (positive control)`, asked >= 1, `asked=${asked}`);
+  const f = await failedAt(page);
+  check(`${tag}: no permission error anywhere on the page`, f === null, f);
+  const opts = await options(page, "#personSelect");
+  const want = refuseChildren ? '["p1"]' : '["p1","p2"]';
+  check(`${tag}: the picker holds ${refuseChildren ? "only the guardian" : "the guardian and their child"}`, JSON.stringify((opts || []).slice().sort()) === want, JSON.stringify(opts));
+  await ctx.close();
+}
+
 await browser.close();
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
