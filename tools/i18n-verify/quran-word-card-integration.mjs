@@ -6,12 +6,15 @@ import { renderWordByWordPanel } from "../../app/js/ayah-renderer.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "../..");
 const page = readFileSync(join(root, "app/quranrevival.html"), "utf8");
-let passed = 0;
+let passed = 0, failed = 0;
 // A SYNCHRONOUS RUNNER COUNTS AN `async` BODY AS A PASS: the assertion
 // throws inside an uncaught promise, and the case prints PASS. It has
 // happened for real in this repository. Refuse a promise loudly.
+// A failed assertion is COUNTED, not thrown: a throw here used to end the run
+// at the first failure and hide every check after it (the #800 crash).
 function check(name, fn) {
-  const r = fn();
+  let r;
+  try { r = fn(); } catch (e) { failed++; console.log(`  FAIL  ${name}\n        ${String(e && e.message || e).split("\n")[0]}`); return; }
   if (r && typeof r.then === "function") throw new TypeError("check() is synchronous; an async body would hide its own failures.");
   passed++; console.log(`  PASS  ${name}`);
 }
@@ -67,4 +70,5 @@ check("card integration introduces no Firebase write path", () => {
   const module = readFileSync(join(root, "app/js/quran-word-card.js"), "utf8"); assert.doesNotMatch(module, /firebase|setDoc|updateDoc|addDoc/);
 });
 check("occurrence indexes hydrate only from the explicit card controller", () => { assert.match(page, /async function hydrateWordCardOccurrences/); assert.match(page, /occurrenceRefsFor\("root"/); assert.match(page, /occurrenceRefsFor\("lemma"/); assert.doesNotMatch(page.slice(0, page.indexOf("<script type=\"module\">")), /roots-index|lemmas-index/); });
-console.log(`\n==== Quran Word Card Study integration: ${passed} passed, 0 failed ====`);
+console.log(`\n==== Quran Word Card Study integration: ${passed} passed, ${failed} failed ====`);
+process.exit(failed ? 1 : 0);
