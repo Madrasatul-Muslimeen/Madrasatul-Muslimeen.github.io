@@ -7,6 +7,37 @@ v10.28). Read `CLAUDE.md` first. The prompt that starts the next session is
 
 This session was summarised once (its context compacted), which is why it hands over here.
 
+## LATEST UPDATE — 13 Oct 2026, session `session_019dnykSt8zmrCun2mLZKysQ` (v10.28 → v10.39) — READ THIS FIRST
+
+- **`main` is v10.39** (read it off `app/js/version.js`). This session released v10.29–v10.39 and merged PRs #777–#803;
+  decisions 107–110 are recorded. The release list is in section 5 below; `CHANGELOG.md` has every account.
+- **The PCF's General rule "Programme Lead" binds every MMSA session** (the Owner, 12 Oct): read the PCF first, act on
+  any "PL ▸" line before other work and reply under it, clear a 📣 Notify flag. It is also an MMSA project rule.
+- **Anything you need from the Owner goes in the job's "What I need from you" list as a tick box, never only in
+  Comments** (the Owner could not see a J15 request that sat in Comments).
+- **Nothing is in flight.** No Builder round is running and no PR is open.
+- **Waiting on the Owner (tick boxes in the PCF):**
+  - **J15:** "copy the Rules". The Owner published the guardian Rules
+    (`docs/governance/2026-10-12-guardian-roster-candidate.rules` = live file + one rule). Copying them into
+    `firestore.rules` is a protected step: this session's tooling refused it without the Owner's explicit word. On
+    the tick, copy them and update `tools/firestore-emulator/roster-access.rules.test.mjs` to test the live file with
+    the guardian rule (plus a mutation that removes it), then run `npm run roster-access`.
+  - **J23:** the inherited-Achieved press (A this place only, needs a Rules step for the totals counters; B change the
+    other mark; C as now), and the new Word card layout (A/B/C, mock-ups at
+    https://claude.ai/artifact/P872EWyvP3z2Btt2q16Gcp, also `docs/reference/2026-10-13-word-card-layout-mockups.html`).
+  - **J20:** paste Approach 1's line into the Catalogue (the template carries it since v10.39; the tenant's copy does not).
+  - **J22:** Tawakkul's Bismillah row: the Owner removes it with × (choice A). Try saving for everyone (v10.38).
+  - Older: J02 (the 2:228 demo, Scholars drafts), J17, J03 Q1, J05, J06, J07 (Upgrade by about 6 Jan 2027).
+- **Architect's own, ready to do:**
+  - **Scholars Database v1.4** is built on branch `scholars-v14` (commit 6c0b51b5, not merged): all 68 scholars with
+    birth/death AH+CE, political authority, madhab, and a written date for every book (137; 125 estimates, all drafts).
+    To ship: merge it, then publish `docs/reference/scholars-database/Scholars Database - v1.4.html` to
+    https://claude.ai/artifact/51ACYVU6hBKs7jx32rpAUi after reading the WHOLE file (about 60k tokens; read it in
+    parts, it is one long data line). Ask the Owner the one open question in `v1.4-changes.md` (al-Arnāʾūṭ's book).
+  - The Read bar at 320/360px with a wide phone font is still two rows (v10.37); one row there needs a layout choice.
+  - `match_wikt.py` was not re-run (it needs the kaikki download); other "form of" pointers may hide wrong matches.
+  - `quran-word-card-integration.mjs` (fixed in #802) still THROWS on a failed binding instead of counting a FAIL.
+
 ## 0. Where things stand
 
 **The Owner now reads and answers in the Project Control File (PCF):** https://claude.ai/artifact/PhW1KKX28qrqj9dE7Ha8dZ,
