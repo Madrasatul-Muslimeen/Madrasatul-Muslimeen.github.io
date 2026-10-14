@@ -84,6 +84,7 @@ export const TENANT = Object.freeze({
   DAWAH_PAGES: "dawahPages", // MAP v4 Phase 7 (P7-A): one printable page per (tenant, page), derived from a pinned Note revision (ADR-011). Unruled and uninvoked this round -- see app/js/dawah-contract.js and app/js/dawah-data.js.
   ZAB_POCKETS: "zabPockets", // PCF J25 (Z1): the family Zab's pockets, one tenant-shared document each (zabPockets/{tenantId}__{pocketId}). CANDIDATE Rules only (docs/governance/2026-10-14-zab-candidate.rules); app/js/zab-data.js is imported by no page yet.
   ZAB_ITEMS: "zabItems", // PCF J25 (Z1): the family Zab's items (zabItems/{tenantId}__{itemId}). Same candidate, same state.
+  AYAH_KEY_MARKS: "ayahKeyMarks", // PCF J03 (K2): Keys to Understanding, one document per surah per scope (ayahKeyMarks/{tenantId}__{madrasah|personId}__{surah}). CANDIDATE Rules only (docs/governance/2026-10-15-ayah-keys-candidate.rules); app/js/ayah-keys-data.js is imported by no page yet.
   DOMAINS: "domains", // Phase 3 addition (D12): tenant-authored tag registry backing records.entries.domainIds[] — the Architecture doc names the domainIds field but never lists a domains collection. Same "not in the original doc, added to support a named field" shape as D9's tenantMemberUids/inviteTokens. Mirrors ladders: tenant-authored, no platform seed, freeform tags (legacy app's "Domains are optional & user-defined").
 
   // Layer 2.5 — communication
