@@ -548,5 +548,64 @@ await acheck("an ideas/shop item stores stars, topics, qty and shop; empties are
   assert.equal((await zab.addPocket(db, ctx, { name: "I", ztype: "shop" })).ok, true);
 });
 
-console.log(`\n==== zab-data: ${passed} passed, ${failed} failed ====`);
+// ---------- Z6: the pocket tree (pure readers) ----------
+{
+  const P = (pocketId, parentId, order = 0, status = "active") => ({ pocketId, ...(parentId !== undefined ? { parentId } : {}), order, status });
+  const ids = (a) => a.map((p) => p.pocketId);
+  check("zabChildren: active pockets directly inside, in sibling order; trashed ones left out", () => {
+    const ps = [P("a"), P("c1", "a", 2), P("c0", "a", 1), P("gone", "a", 0, "trashed"), P("g", "c1")];
+    assert.deepEqual(ids(zab.zabChildren(ps, "a")), ["c0", "c1"]);
+    assert.deepEqual(ids(zab.zabChildren(ps, "c1")), ["g"]);
+    assert.deepEqual(zab.zabChildren(ps, "g"), []);
+  });
+  check("zabTopLevel: no parentId and parentId null are both top level (no migration); a child is not", () => {
+    const ps = [P("a", undefined, 2), P("b", null, 1), P("c", "a")];
+    assert.deepEqual(ids(zab.zabTopLevel(ps)), ["b", "a"]);
+  });
+  check("ORPHAN: a pocket whose parent is trashed or missing is shown at the top level, parentId kept, and its own children stay under it", () => {
+    const ps = [P("dead", undefined, 1, "trashed"), P("o1", "dead", 2), P("o2", "nowhere", 3), P("k", "o1")];
+    assert.deepEqual(ids(zab.zabTopLevel(ps)), ["o1", "o2"]);
+    assert.equal(ps[1].parentId, "dead");
+    assert.deepEqual(ids(zab.zabTree(ps).map((n) => n.pocket)), ["o1", "k", "o2"]);
+    assert.deepEqual(ids(zab.zabPath(ps, "k")), ["o1", "k"], "the path of a pocket under an orphan starts at the orphan");
+  });
+  check("zabPath: top level down to the pocket itself; [] for an unknown id; survives a parent cycle", () => {
+    const ps = [P("a"), P("b", "a"), P("c", "b")];
+    assert.deepEqual(ids(zab.zabPath(ps, "c")), ["a", "b", "c"]);
+    assert.deepEqual(ids(zab.zabPath(ps, "a")), ["a"]);
+    assert.deepEqual(zab.zabPath(ps, "zz"), []);
+    const cyc = [P("x", "y"), P("y", "x")];
+    assert.ok(zab.zabPath(cyc, "x").length <= 2);
+    assert.deepEqual(ids(zab.zabTopLevel(cyc)).sort(), ["x", "y"], "a corrupt cycle is shown, not hidden");
+    assert.equal(zab.zabTree(cyc).length, 2);
+  });
+  check("zabTree gives depth for every level, parents before children; zabMoveTargets leaves out the pocket and its descendants", () => {
+    const ps = [P("a", undefined, 1), P("b", "a"), P("c", "b"), P("d", undefined, 2)];
+    assert.deepEqual(zab.zabTree(ps).map((n) => `${n.pocket.pocketId}:${n.depth}`), ["a:0", "b:1", "c:2", "d:0"]);
+    assert.deepEqual(ids(zab.zabMoveTargets(ps, "b").map((n) => n.pocket)), ["a", "d"]);
+    assert.deepEqual(ids(zab.zabMoveTargets(ps, "d").map((n) => n.pocket)), ["a", "b", "c"]);
+  });
+  check("zabSiblings: the list a pocket reorders within", () => {
+    const ps = [P("a", undefined, 1), P("b", "a", 1), P("c", "a", 2), P("d", undefined, 2)];
+    assert.deepEqual(ids(zab.zabSiblings(ps, "c")), ["b", "c"]);
+    assert.deepEqual(ids(zab.zabSiblings(ps, "d")), ["a", "d"]);
+  });
+}
+await acheck("a grandchild is stored with its own parentId; a pocket holding a child cannot be trashed; a moved pocket gets updatedAt", async () => {
+  reset();
+  await zab.addPocket(db, ctx, { name: "A", pocketId: "a" });
+  await zab.addPocket(db, ctx, { name: "B", pocketId: "b", parentId: "a" });
+  await zab.addPocket(db, ctx, { name: "C", pocketId: "c", parentId: "b" });
+  assert.equal(doc_("zabPockets", "c").parentId, "b");
+  assert.equal((await zab.trashPocket(db, ctx, "b")).refused, "not-empty");
+  assert.equal(doc_("zabPockets", "b").status, "active");
+  const log = writeLog.length;
+  assert.equal((await zab.movePocket(db, ctx, "b", "c")).refused, "into-itself-or-descendant");
+  assert.equal(writeLog.length, log);
+  assert.equal((await zab.movePocket(db, ctx, "c", "a")).ok, true);
+  assert.equal(doc_("zabPockets", "c").parentId, "a");
+  assert.ok(doc_("zabPockets", "c").updatedAt);
+});
+
+console.log(`\n==== zab-data:${passed} passed, ${failed} failed ====`);
 process.exit(failed === 0 ? 0 : 1);

@@ -152,6 +152,82 @@ export function isSelfOrDescendant(pockets, pocketId, candidateId) {
   return false;
 }
 
+// ---------- the pocket tree (Z6): pure readers over the flat list ----------------
+// `parentId` places a pocket in the tree; absent / null = top level, so every pocket made before Z6 stays where it
+// is. `order` is the order among SIBLINGS. Nothing here reads or writes Firestore.
+
+const byOrder = (a, b) => (a.order ?? 0) - (b.order ?? 0);
+const isActive = (p) => p.status !== "trashed";
+
+/** Active pockets directly inside `id`, in sibling order. */
+export function zabChildren(pockets, id) {
+  return (pockets || []).filter((p) => isActive(p) && p.parentId === id).sort(byOrder);
+}
+
+/** True when this active pocket has no live parent to hang from: no parentId, or the parent is trashed / missing (an ORPHAN), or it sits in a corrupt parent cycle. */
+function isTopLevel(pockets, p) {
+  if (!p.parentId) return true;
+  const byId = new Map(pockets.map((x) => [x.pocketId, x]));
+  const par = byId.get(p.parentId);
+  if (!par || !isActive(par)) return true;
+  const seen = new Set([p.pocketId]);
+  for (let q = par; q; q = byId.get(q.parentId)) {
+    if (seen.has(q.pocketId)) return true; // a cycle: show it at the top rather than hide it
+    seen.add(q.pocketId);
+    if (!q.parentId) break;
+  }
+  return false;
+}
+
+/** The pockets shown at the top level: no parent, or an orphan (its parentId is kept, nothing is hidden). */
+export function zabTopLevel(pockets) {
+  const all = pockets || [];
+  return all.filter((p) => isActive(p) && isTopLevel(all, p)).sort(byOrder);
+}
+
+/** From the top level down to the pocket itself (inclusive). An orphan's path starts at the orphan. [] when the pocket is unknown. */
+export function zabPath(pockets, id) {
+  const all = pockets || [];
+  const byId = new Map(all.map((p) => [p.pocketId, p]));
+  const out = [];
+  const seen = new Set();
+  for (let p = byId.get(id); p && !seen.has(p.pocketId); p = byId.get(p.parentId)) {
+    seen.add(p.pocketId);
+    out.unshift(p);
+    const par = byId.get(p.parentId);
+    if (!par || !isActive(par)) break;
+  }
+  return out;
+}
+
+/** Every active pocket in tree order with its depth: [{ pocket, depth }], parents before their children. */
+export function zabTree(pockets) {
+  const all = pockets || [];
+  const out = [];
+  const seen = new Set();
+  const walk = (p, depth) => {
+    if (seen.has(p.pocketId)) return;
+    seen.add(p.pocketId);
+    out.push({ pocket: p, depth });
+    for (const c of zabChildren(all, p.pocketId)) walk(c, depth + 1);
+  };
+  for (const p of zabTopLevel(all)) walk(p, 0);
+  return out;
+}
+
+/** Where `id` may legally move: every active pocket except itself and its own descendants, in tree order with depth. */
+export function zabMoveTargets(pockets, id) {
+  return zabTree(pockets).filter((n) => !isSelfOrDescendant(pockets, id, n.pocket.pocketId));
+}
+
+/** The pockets that share a list with `id` (its siblings, itself included): the top level for a top-level pocket or an orphan. */
+export function zabSiblings(pockets, id) {
+  const all = pockets || [];
+  const p = all.find((x) => x.pocketId === id);
+  if (!p) return [];
+  return isActive(p) && isTopLevel(all, p) ? zabTopLevel(all) : zabChildren(all, p.parentId);
+}
+
 /** Re-parent a pocket (`newParentId` null = top level). Refuses a move into itself or its own descendant. */
 export async function movePocket(db, ctx, pocketId, newParentId) {
   requireCtx(ctx);
