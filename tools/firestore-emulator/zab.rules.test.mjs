@@ -31,7 +31,10 @@ test("the candidate is firestore.rules plus the Zab blocks and nothing else", ()
   }
   assert.deepEqual(missing, [], "live Rules lines missing from the candidate");
   assert.ok(/match \/zabPockets\//.test(candidate) && /match \/zabItems\//.test(candidate));
-  assert.ok(!/match \/zab/.test(live), "the live Rules already carry Zab: this candidate is superseded");
+  // Updated in place 15 Oct 2026: the Owner PUBLISHED this candidate (PCF J25) and firestore.rules was synced to it.
+  // So the live file either carries no Zab (before publication) or IS this candidate, byte for byte -- never a
+  // third, drifted version.
+  if (/match \/zab/.test(live)) assert.equal(live, fs.readFileSync(path.join(root, "docs/governance/2026-10-14-zab-candidate.rules"), "utf8"), "firestore.rules carries Zab but is not the published candidate");
 });
 
 const T = "t1";
