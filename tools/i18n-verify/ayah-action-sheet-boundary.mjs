@@ -670,13 +670,15 @@ check("quranrevival.html's shared readView/noteView click handler opens the shee
     "the Word Card's \"This āyah ⋯\" button is not wired to openAyahActionSheet");
 });
 
-check("the Word Card renders its own \"This āyah ⋯\" row OUTSIDE <header> -- the drag/resize and layout suites measure the header's own Prev/Arabic/Next/Close row and must see it byte-for-byte unchanged", () => {
-  // Updated in place (3 Oct 2026): Word card round 6 (#518) puts the 🔍 search
-  // row between </header> and this row, when Search is open. Both stay
-  // OUTSIDE the header, which is what this check guards.
+check("the Word Card's \"This āyah ⋯\" is a button INSIDE <header>, beside 🔍 (layout B, v10.42), and no separate row of its own is left", () => {
+  // Updated in place (14 Oct 2026, PCF J23 layout B, v10.42): the Owner asked that "This āyah" stop taking a row and sit
+  // as a small button beside the search button. v10.42 moved the same element into <header>; this check still asserted
+  // the old own-row-after-</header> shape and has failed on main since. The header suites it protected were updated in
+  // the same release (word-card-wbw-rebuild: six header children). It now guards the new shape, both ways.
   const text = read("app/js/quran-word-card.js");
-  assert.ok(/<\/header>\s*(?:\$\{searchOpen \? searchRowHtml\([^}]*\) : ""\}\s*)?<div class="word-card-ayah-action-row">/.test(text),
-    "the ayah-action row is not a sibling placed after </header> (with at most the search row between)");
+  const header = (text.match(/<header>[\s\S]*?<\/header>/) || [""])[0];
+  assert.ok(/class="word-card-ayah-action-btn" data-word-card-ayah-action=/.test(header), "the ayah-action button is not inside the Word Card's <header>");
+  assert.ok(!/<div class="word-card-ayah-action-row">/.test(text), "a separate word-card-ayah-action-row is still rendered");
 });
 
 // --- 6b. ISSUE #295 -- THE THIRD ENTRY POINT: THE ĀYAH NUMBER BADGE --------

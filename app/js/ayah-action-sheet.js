@@ -282,8 +282,10 @@ function actionRowDefs({ isBookmarked, isSelf, noteWhy, hasPosterNote = null }) 
   return defs;
 }
 
-function actionRowHtml({ isBookmarked, isSelf, noteWhy, hasPosterNote }) {
-  const defs = actionRowDefs({ isBookmarked, isSelf, noteWhy, hasPosterNote });
+function actionRowHtml({ isBookmarked, isSelf, noteWhy, hasPosterNote, onlyBookmarkAndNote = false }) {
+  let defs = actionRowDefs({ isBookmarked, isSelf, noteWhy, hasPosterNote });
+  // PCF J26: Aʿūdhu billāh is not an āyah -- no audio, poster, Asma/QCR or folder filing of its own; the Bookmark and the Note stay.
+  if (onlyBookmarkAndNote) defs = defs.filter((d) => /data-ayah-sheet-(bookmark|note)\b/.test(d.attr));
   const buttons = defs.map((d) => `<button type="button" class="ayah-sheet-act${d.disabled ? " is-disabled" : ""}" aria-disabled="${d.disabled ? "true" : "false"}" ${d.attr} aria-label="${escapeHtml(d.label)}" title="${escapeHtml(d.title ? `${d.label} ${d.title}` : d.label)}"><span class="ayah-sheet-act-icon" aria-hidden="true">${d.icon}</span><span class="ayah-sheet-act-label" aria-hidden="true">${escapeHtml(d.short)}</span></button>`).join("");
   // The reasons a dimmed item gives (each printed once), and the poster's own "no Note yet" offer.
   const hints = [...new Set(defs.filter((d) => d.disabled && d.hint).map((d) => d.hint))].map((h) => `<p class="ayah-sheet-hint">${escapeHtml(h)}</p>`).join("");
@@ -453,11 +455,29 @@ export function renderAyahActionSheetHtml({
   unitKey, ref = "", hasNote = false, isBookmarked = false, isSelf = true,
   approachOptionsHtml = "", selectedApproachId = null, selectedApproachStatusId = "not_started", hasPosterNote = null, approachSummary = null, canConfirm = false,
   approachStatuses = [], wordStatus = null, hifzStatus = null, related = null,
-  connected = null, hadith = null, ladderHtml = "", canPrev = true, canNext = true
+  connected = null, hadith = null, ladderHtml = "", canPrev = true, canNext = true,
+  // PCF J26 -- `intro` = { arabic, translation, backLabel, opening } turns this into the card of a "Before Al-Fātiḥah" item:
+  // the full Arabic and a translation under the header, a visible ← Back, and (opening: true) only the parts that fit a non-āyah.
+  intro = null
 } = {}) {
   void hasNote; // kept for callers that already pass it (icon/wording decisions belong to isBookmarked/isSelf above, not this flag)
   const noteWhy = t("Only your own record can create or file a Note.");
-  const actionRow = actionRowHtml({ isBookmarked, isSelf, noteWhy, hasPosterNote });
+  const actionRow = actionRowHtml({ isBookmarked, isSelf, noteWhy, hasPosterNote, onlyBookmarkAndNote: !!intro?.opening });
+  const introHtml = intro ? `
+      <div class="ayah-sheet-intro" data-ayah-sheet-intro>
+        <button type="button" class="ayah-sheet-back" data-ayah-sheet-close data-ayah-sheet-back>← ${escapeHtml(intro.backLabel)}</button>
+        <p class="ayah-sheet-intro-ar" dir="rtl" lang="ar" data-i18n-skip>${escapeHtml(intro.arabic)}</p>
+        <p class="ayah-sheet-intro-tr">${escapeHtml(intro.translation)}</p>
+      </div>` : "";
+  const statusBlocksHtml = intro?.opening ? "" : `
+        <div class="ayah-status-block">
+          <h4 class="ayah-status-heading">${escapeHtml(t("Word by Word"))}</h4>
+          ${wordByWordStatusHtml(wordStatus)}
+        </div>
+        <div class="ayah-status-block">
+          <h4 class="ayah-status-heading">${escapeHtml(t("Hifz"))}</h4>
+          ${hifzStatusHtml(hifzStatus)}
+        </div>`;
   const pickerHtml = renderApproachStagePickerHtml({ approachOptionsHtml, selectedApproachId, selectedApproachStatusId, approachSummary, canConfirm });
   return `
     <div class="ayah-sheet" data-ayah-sheet data-unit-key="${escapeHtml(unitKey)}" role="dialog" aria-modal="true" aria-label="${escapeHtml(ref || t("This āyah"))}">
@@ -465,7 +485,7 @@ export function renderAyahActionSheetHtml({
       ${ladderHtml}
       <div class="ayah-sheet-header">
         <span class="ayah-sheet-ref">${escapeHtml(ref)}</span>
-        <span class="ayah-sheet-head-tools">
+        <span class="ayah-sheet-head-tools"${intro?.opening ? " hidden" : ""}>
           <span class="ayah-sheet-nav-pair">
             <button type="button" class="ayah-sheet-nav" data-ayah-sheet-step="-1" aria-label="${escapeHtml(t("Previous āyah"))}" title="${escapeHtml(t("Previous āyah"))}"${canPrev ? "" : " disabled"}>‹</button>
             <button type="button" class="ayah-sheet-nav" data-ayah-sheet-step="1" aria-label="${escapeHtml(t("Next āyah"))}" title="${escapeHtml(t("Next āyah"))}"${canNext ? "" : " disabled"}>›</button>
@@ -474,25 +494,18 @@ export function renderAyahActionSheetHtml({
         </span>
         <button type="button" class="ayah-sheet-close" data-ayah-sheet-close aria-label="${escapeHtml(t("Close"))}">×</button>
       </div>
+      ${introHtml}
       ${actionRow}
       <div class="ayah-sheet-status" data-ayah-sheet-status>
-        <h3 class="ayah-sheet-section-title">${escapeHtml(t("Status of this āyah"))}</h3>
+        <h3 class="ayah-sheet-section-title">${escapeHtml(intro?.opening ? t("Status") : t("Status of this āyah"))}</h3>
         <div class="ayah-status-block">
           <h4 class="ayah-status-heading">${escapeHtml(t("Approach"))}</h4>
           ${approachStatusRowHtml(approachStatuses)}
-          <button type="button" class="qm-item ayah-sheet-wheel-btn" data-ayah-sheet-see-wheel>${escapeHtml(t("See on the wheel"))}</button>
-        </div>
-        <div class="ayah-status-block">
-          <h4 class="ayah-status-heading">${escapeHtml(t("Word by Word"))}</h4>
-          ${wordByWordStatusHtml(wordStatus)}
-        </div>
-        <div class="ayah-status-block">
-          <h4 class="ayah-status-heading">${escapeHtml(t("Hifz"))}</h4>
-          ${hifzStatusHtml(hifzStatus)}
-        </div>
+          ${intro?.opening ? "" : `<button type="button" class="qm-item ayah-sheet-wheel-btn" data-ayah-sheet-see-wheel>${escapeHtml(t("See on the wheel"))}</button>`}
+        </div>${statusBlocksHtml}
       </div>
       <div class="ayah-sheet-body">${pickerHtml}</div>
-      <div class="ayah-sheet-status ayah-sheet-info" data-ayah-sheet-info>
+      <div class="ayah-sheet-status ayah-sheet-info" data-ayah-sheet-info${intro?.opening ? " hidden" : ""}>
         <h3 class="ayah-sheet-section-title">${escapeHtml(t("Info"))}</h3>
         <div class="ayah-status-block" data-ayah-sheet-related>
           <h4 class="ayah-status-heading">${escapeHtml(t("Related āyāt"))}</h4>
@@ -541,7 +554,7 @@ export function attachAyahActionSheetHandlers(container, callbacks = {}) {
       fire(fn);
     });
   };
-  sheet.querySelector("[data-ayah-sheet-close]")?.addEventListener("click", () => callbacks.onClose?.());
+  sheet.querySelectorAll("[data-ayah-sheet-close]").forEach((b) => b.addEventListener("click", () => callbacks.onClose?.()));
   // Owner, 7 Oct 2026: ‹ › step the card itself to the previous / next āyah, and 📖 shows this āyah
   // as the Note view does, in a pop-up over the card. Neither closes the card (the caller re-renders
   // it for the new āyah, or lays the pop-up over it, so its Back lands on this same card).

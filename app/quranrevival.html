@@ -4060,6 +4060,22 @@
   .ayah-connected-studied.is-not-studied { color: #6b4a00; }
   .ayah-connected-studied.is-unchecked { color: #5b5b5b; font-weight: 500; font-style: italic; }
   .ayah-hifz-chip { display: inline-flex; align-items: center; min-height: 1.6rem; padding: 0.2rem 0.6rem; border-radius: 999px; color: #fff; font-size: 0.8rem; font-weight: 600; text-shadow: 0 0 2px rgba(0,0,0,0.35); }
+  /* PCF J26 -- the "Before Al-Fātiḥah" band on the Read page (layout B): Aʿūdhu billāh LEFT, Bismillah RIGHT (the
+     band is dir=ltr, so the order holds in Bangla too), two columns that shrink (min-width:0) and never push the page wide. */
+  .opening-band { direction: ltr; box-sizing: border-box; max-width: 100%; margin: 0.2rem 0 0.8rem; padding: 0.5rem; border: 1px dashed #b8892c; border-radius: 0.7rem; background: rgba(214,166,72,0.14); display: flex; flex-direction: column; gap: 0.4rem; }
+  .opening-band-title { font-size: 0.78rem; font-weight: 600; color: #7a5a14; letter-spacing: 0.02em; }
+  .opening-chips { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0.4rem; }
+  .opening-chip { min-width: 0; min-height: 44px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.1rem; padding: 0.3rem 0.4rem; border: 1px solid #c9b88a; border-radius: 0.6rem; background: #fffaf0; color: #1b1b16; cursor: pointer; font: inherit; }
+  .opening-chip-ar { font-family: var(--quran-font); direction: rtl; font-size: 1.1rem; line-height: 1.5; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .opening-chip-name { display: inline-flex; align-items: center; gap: 0.3rem; max-width: 100%; font-size: 0.74rem; color: #4a4a40; }
+  .opening-chip-name > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .opening-chip-dot { flex: 0 0 auto; width: 0.6rem; height: 0.6rem; border-radius: 50%; border: 1px solid rgba(0,0,0,0.35); }
+  /* the card of a "Before Al-Fātiḥah" item */
+  .ayah-sheet-head-tools[hidden], .ayah-sheet-info[hidden] { display: none !important; }
+  .ayah-sheet-intro { display: flex; flex-direction: column; gap: 0.35rem; margin: 0.2rem 0 0.6rem; }
+  .ayah-sheet-back { align-self: flex-start; min-height: 44px; padding: 0.3rem 0.8rem; border: 1px solid var(--card-line); border-radius: 0.6rem; background: var(--card-bg-inset); color: var(--card-heading); font: inherit; font-weight: 600; cursor: pointer; }
+  .ayah-sheet-intro-ar { margin: 0; font-family: var(--quran-font); direction: rtl; text-align: center; font-size: 1.5rem; line-height: 1.9; color: var(--card-heading); }
+  .ayah-sheet-intro-tr { margin: 0; text-align: center; font-size: 0.85rem; color: var(--card-text-muted); }
   .ayah-sheet-info-placeholder { font-size: 0.8rem; color: var(--card-text-muted); font-style: italic; margin: 0; }
   .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
 
@@ -7582,6 +7598,7 @@
     // as the Asma attach popover's own overlay. (Its QCR action opens the QCR
     // pop-up directly since decision 95; the old one-shot Note-view flag is gone.)
     let ayahSheetUnitKey = null;
+    let ayahSheetIntro = null; // PCF J26 -- set while the card of a "Before Al-Fātiḥah" item is open (see openOpeningCard)
     let ayahSheetHalf = null; // issue #606 -- "a"/"b" for Al-Fātiḥah's displayed 6/7 (the sheet's key is ayah:1:7 / ayah:1:8)
     // Issue #325 -- which Approach's four-stage row is currently showing on
     // the open Ayah Card. Null means the select still reads its own
@@ -16089,9 +16106,61 @@
         the Read screen (single-ayah and flow) and the Note view. One place
         decides this so all three call sites can never disagree. */
     function bismillahHtmlFor(surahNum, ayahNum) {
+      if (ayahNum === 1 && surahNum === 1) return openingBandHtml();
       if (ayahNum !== 1 || surahNum === 9 || surahNum === 1) return "";
       return `<div class="ayah-bismillah" dir="rtl" lang="ar">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</div>`;
     }
+
+    // -----------------------------------------------------------------------
+    // PCF J26 (Owner, 14 Oct 2026; layout B) -- "Before Al-Fātiḥah": Aʿūdhu billāh and the Bismillah as study items of
+    // their own, NOT counted in Al-Fātiḥah's 7. Aʿūdhu billāh = `opening:taawwudh` (built with buildUnitKey.opening,
+    // kept in chunk surah_1); the Bismillah = its existing `ayah:1:1`. With "Bismillah unnumbered" OFF the Bismillah IS
+    // āyah 1 of the 7, so the band shows Aʿūdhu billāh alone. Nothing here reads anything new: both records live in surah_1.
+    // -----------------------------------------------------------------------
+    const OPENING_TAAWWUDH_KEY = buildUnitKey.opening("taawwudh");
+    const OPENING_TAAWWUDH_AR = "أَعُوذُ بِٱللَّهِ مِنَ ٱلشَّيْطَٰنِ ٱلرَّجِيمِ";
+    const OPENING_TAAWWUDH_EN = "I seek refuge in Allah from Shayṭān, the accursed.";
+    function openingItems() {
+      const items = [{ key: OPENING_TAAWWUDH_KEY, opening: true, ar: "أَعُوذُ بِٱللَّهِ", name: t("Aʿūdhu billāh") }];
+      if (fatihaCountApplies(1, fatihaOn())) items.push({ key: buildUnitKey.ayah(1, 1), opening: false, ar: "بِسْمِ ٱللَّهِ", name: t("Bismillah") });
+      return items;
+    }
+    function openingStatusId(unitKey) {
+      const approachId = endOfUnitApproachId();
+      return (approachId && claimedStatusForKey(currentChunk?.entries, unitKey, approachId)) || "not_started";
+    }
+    function openingBandHtml() {
+      const chips = openingItems().map((it) => {
+        const st = openingStatusId(it.key);
+        return `<button type="button" class="opening-chip" data-opening-open="${escapeHtml(it.key)}" aria-label="${escapeHtml(t("Open {name}", { name: it.name }))} — ${escapeHtml(statusLabel(st))}">` +
+          `<span class="opening-chip-ar" lang="ar" dir="rtl" data-i18n-skip>${it.ar}</span>` +
+          `<span class="opening-chip-name"><span>${escapeHtml(it.name)}</span><i class="opening-chip-dot" data-opening-dot="${st}" style="background:${STATUS_COLORS[st] ?? STATUS_COLORS.not_started}"></i></span></button>`;
+      }).join("");
+      return `<div class="opening-band" data-opening-band><span class="opening-band-title">${escapeHtml(t("Before Al-Fātiḥah"))}</span><div class="opening-chips">${chips}</div></div>`;
+    }
+    /** Repaints the band's dots in place (no re-render of the page) after a stage press. */
+    function paintOpeningBandDots() {
+      document.querySelectorAll("[data-opening-open]").forEach((chip) => {
+        const st = openingStatusId(chip.dataset.openingOpen);
+        const dot = chip.querySelector("[data-opening-dot]");
+        if (dot) { dot.dataset.openingDot = st; dot.style.background = STATUS_COLORS[st] ?? STATUS_COLORS.not_started; }
+      });
+    }
+    /** The card a band button opens: the SAME Āyah card (Approaches, Record Your Progress + 👥, notes, bookmark), with the full Arabic and a translation. */
+    function openOpeningCard(unitKey) {
+      const opening = unitKey === OPENING_TAAWWUDH_KEY;
+      const lang = getAppLang() === "bn" ? "bn" : "en";
+      const a1 = currentSurahData?.ayahs?.find((a) => a.ayah === 1);
+      const intro = opening
+        ? { arabic: OPENING_TAAWWUDH_AR, translation: t(OPENING_TAAWWUDH_EN), opening: true }
+        : { arabic: a1?.uthmaniText ?? "بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ", translation: a1?.translations?.[lang] ?? a1?.translations?.en ?? "", opening: false };
+      intro.backLabel = t("Back");
+      openAyahActionSheet(opening ? unitKey : "1:1", null, intro);
+    }
+    document.addEventListener("click", (e) => {
+      const btn = e.target?.closest?.("[data-opening-open]");
+      if (btn) openOpeningCard(btn.dataset.openingOpen);
+    });
 
     /** Word-by-word panel: "auto" follows the language above; otherwise the owner's explicit choice wins (owner request, 5 Aug 2026 -- an explicit fallback alongside the automatic behaviour, not instead of it). */
     function wbwLangs() {
@@ -18887,6 +18956,8 @@
     // -----------------------------------------------------------------------
 
     function parseAyahUnitKey(unitKey) {
+      // PCF J26 -- opening:taawwudh belongs to Al-Fātiḥah's page but is no āyah of it: ayah 0, record 0.
+      if (unitKey.startsWith("opening:")) return { surah: 1, ayah: 0, record: 0, half: null };
       const [, surah, ayah] = unitKey.split(":");
       // Issue #606 -- ayah:1:8 is the RECORD key of Al-Fātiḥah's displayed Ayah 7;
       // `ayah` stays the CONTENT ayah (7), `record` the number in the key, and
@@ -19002,6 +19073,7 @@
       ayahSheetHasPosterNote = null;
       ayahSheetConnected = null;
       ayahSheetSelectedApproachId = null;
+      ayahSheetIntro = null;
       ayahActionSheetOverlayEl.classList.remove("open");
       ayahActionSheetMountEl.innerHTML = "";
     }
@@ -19023,7 +19095,9 @@
         claims are already in memory (no new read). */
     function approachStatusesForAyah(surahNum, ayahNum, half = null) {
       if (surahNum !== currentSurahNum) return [];
-      const unitKey = ayahRecordKey(surahNum, ayahNum, half);
+      return approachStatusesForKey(ayahRecordKey(surahNum, ayahNum, half));
+    }
+    function approachStatusesForKey(unitKey) {
       const entries = currentChunk?.entries ?? {};
       return quranTrackables.map((trackable) => {
         const statusId = claimedStatusForKey(entries, unitKey, trackable.id) ?? "not_started";
@@ -19333,11 +19407,12 @@
       // in-memory chunk too, so the card and the rings never depend on a
       // read-after-write landing (the harness stub never mutates its data,
       // and a slow network could briefly return the old entry).
-      if (Number(unitKey.split(":")[1]) === currentSurahNum) {
+      if ((unitKey.startsWith("opening:") ? 1 : Number(unitKey.split(":")[1])) === currentSurahNum) { // PCF J26: opening:* lives in surah_1
         if (!currentChunk) currentChunk = { entries: {} };
         patchClaimedEntry(currentChunk, unitKey, approachId, statusId);
         renderWheel();
       }
+      paintOpeningBandDots(); // the band's dots follow the stage
       if (ayahSheetUnitKey === unitKey) renderAyahActionSheetNow();
       applyMushafMarkerRings();
     }
@@ -20002,21 +20077,23 @@
       // ladder and redraws itself once the tables land (same "read on
       // first use, re-render when it lands" shape as ensureAyahSheetRelatedLoaded()
       // just below -- never a second, blocking fetch synchronously here).
-      const ladderHtml = unitCardTablesCache
+      const isOpeningSheet = !!ayahSheetIntro?.opening; // PCF J26 -- no ladder, no āyah neighbours, no āyah lookups
+      const ladderHtml = unitCardTablesCache && !isOpeningSheet
         ? renderUnitLadderHtml(ladderRungsForAyah(surah, ayahNum, unitCardTablesCache, "ayah"))
         : "";
-      if (!unitCardTablesCache) {
+      if (!unitCardTablesCache && !isOpeningSheet) {
         const openedFor = ayahSheetUnitKey;
         unitCardBoundaryTables().then(() => { if (ayahSheetUnitKey === openedFor) renderAyahActionSheetNow(); });
       }
       ayahActionSheetMountEl.innerHTML = renderAyahActionSheetHtml({
         unitKey: ayahSheetUnitKey,
-        ref: ayahRefLabel(surah, ayahNum, { half: sheetHalf }),
+        ref: isOpeningSheet ? `${t("Before Al-Fātiḥah")} — ${t("Aʿūdhu billāh")}` : ayahRefLabel(surah, ayahNum, { half: sheetHalf }),
+        intro: ayahSheetIntro,
         hasNote: ayahHasAnyNote(ayahSheetUnitKey),
         isBookmarked,
         isSelf: isSelfSelectedForAyahActions(),
         approachOptionsHtml: (() => {
-          const known = new Map(approachStatusesForAyah(surah, ayahNum, sheetHalf).map((a) => [a.id, a.statusId]));
+          const known = new Map((isOpeningSheet ? approachStatusesForKey(ayahSheetUnitKey) : approachStatusesForAyah(surah, ayahNum, sheetHalf)).map((a) => [a.id, a.statusId]));
           return buildCardApproachOptionsHtml((id) => known.get(id) ?? null);
         })(),
         approachSummary: cardApproachSummary(ayahSheetSelectedApproachId),
@@ -20024,9 +20101,9 @@
         selectedApproachId: ayahSheetSelectedApproachId,
         selectedApproachStatusId,
         hasPosterNote: hasPosterNoteAtRenderTime,
-        approachStatuses: approachStatusesForAyah(surah, ayahNum, sheetHalf),
+        approachStatuses: isOpeningSheet ? approachStatusesForKey(ayahSheetUnitKey) : approachStatusesForAyah(surah, ayahNum, sheetHalf),
         wordStatus: ayahSheetWordStatus,
-        hifzStatus: hifzStatusForAyah(surah, ayahNum, sheetHalf),
+        hifzStatus: isOpeningSheet ? null : hifzStatusForAyah(surah, ayahNum, sheetHalf),
         related: ayahSheetRelated,
         connected: ayahSheetConnected,
         hadith: ayahSheetHadith,
@@ -20356,9 +20433,11 @@
       renderAyahActionSheetNow();
     }
 
-    function openAyahActionSheet(ayahKey, half = null) {
+    function openAyahActionSheet(ayahKey, half = null, intro = null) {
       closePageApproachCard(); // issue #325 -- mutually exclusive: same shared mount
       prefetchAyahFolderTree(); // "File in folder(s)" then usually opens with the folders already there
+      ayahSheetIntro = intro; // PCF J26
+      if (intro?.opening) { openOpeningSheetCore(ayahKey); return; }
       const [surahStr, ayahStr] = ayahKey.split(":");
       const surahNum = Number(surahStr);
       const ayahNum = Number(ayahStr);
@@ -20388,10 +20467,26 @@
       ensureAyahSheetPosterNoteLoaded(unitKey);
     }
 
+    /** PCF J26 -- opens the Āyah card on `opening:taawwudh`. It is not an āyah: no related āyāt / hadith / words are looked up. */
+    function openOpeningSheetCore(unitKey) {
+      ayahSheetHalf = null;
+      ayahSheetUnitKey = unitKey;
+      ayahSheetWordStatus = null;
+      ayahSheetHasPosterNote = null;
+      ayahSheetRelated = null;
+      ayahSheetConnected = null;
+      ayahSheetHadith = null;
+      ayahSheetSelectedApproachId = mushafRingApproachId || endOfUnitApproachId();
+      clearAyahCardReturn();
+      renderAyahActionSheetNow();
+      ayahActionSheetOverlayEl.classList.add("open");
+      ensureAyahNoteDataLoaded().then(() => { if (ayahSheetUnitKey === unitKey) renderAyahActionSheetNow(); });
+    }
+
     /** Owner, 7 Oct 2026 -- the Āyah card's ‹ ›: the āyah before or after this one, across a
         surah's edge, Al-Fātiḥah's two displayed halves of 1:7 included. null at either end. */
     function ayahCardNeighbour(unitKey, dir) {
-      if (!unitKey) return null;
+      if (!unitKey || unitKey.startsWith("opening:")) return null;
       const { surah, ayah, half } = parseAyahUnitKey(unitKey);
       const split = fatihaCountApplies(1, fatihaOn());
       if (split && surah === 1 && ayah === 7) {
@@ -21423,6 +21518,7 @@
       // hands its own noteScopeUnitInfo().label straight in rather than
       // this function guessing at it.
       const defaultName = defaultNameOverride ?? (() => {
+        if (unitKey.startsWith("opening:")) return `${t("Before Al-Fātiḥah")} — ${t("Aʿūdhu billāh")}`; // PCF J26
         const { surah, ayah: ayahNum, half } = parseAyahUnitKey(unitKey);
         return ayahRefLabel(surah, ayahNum, { half });
       })();
@@ -22633,6 +22729,10 @@
     // Decision 95: "Track this āyah becomes a tab of the pane." Its three actions are the Read bar's own (the same cards,
     // the same records, 👥 included), each for the pane's āyah; each leaves "Back to Notes on S:A" (decision 86).
     function backToReadNotes(u, tab) {
+      if (u.unitKey.startsWith("opening:")) { // PCF J26: no āyah to navigate to; the pane is simply reopened
+        setAppReturn(t("Back to Notes on {unit}", { unit: u.label }), "", () => openReadNotesPane(u, { tab }));
+        return { surah: 1, ayah: 0, half: null };
+      }
       const { surah, ayah, half } = parseAyahUnitKey(u.unitKey);
       setAppReturn(t("Back to Notes on {unit}", { unit: u.label }), "", async () => {
         if (stageView !== "read" || currentSurahNum !== surah || currentAyahNum !== ayah) await navigateToAyah(surah, ayah, "read", half);
@@ -22649,7 +22749,7 @@
       // chunk it by D12 -- an āyah, Range, Surah or Ruku' in its Surah's chunk, a Juz, Hizb or Page in subject_quran.
       const { unitType, parts } = parseUnitKey(u.unitKey);
       const bySurah = ["ayah", "range", "surah", "ruku"].includes(unitType);
-      const info = { unitType, unitKey: u.unitKey, chunkKey: bySurah ? `surah_${Number(parts[0])}` : "subject_quran", label: u.label };
+      const info = { unitType, unitKey: u.unitKey, chunkKey: unitType === "opening" ? "surah_1" : bySurah ? `surah_${Number(parts[0])}` : "subject_quran", label: u.label }; // PCF J26: opening:* is in surah_1
       if (unitType === "ayah") info.half = parseAyahUnitKey(u.unitKey).half;
       return info;
     }
@@ -22680,6 +22780,14 @@
     /** The Āyah card's 📝 Note (decisions 94, 95): the Notes pane on that āyah, in the Read view, with "← Back to Āyah
         card". With no Note yet (`fresh`), ✚ New note is put in focus, ready to press. */
     async function openNotesPaneFromAyahCard(unitKey, { fresh = false } = {}) {
+      if (unitKey.startsWith("opening:")) {
+        // PCF J26 -- Aʿūdhu billāh has no āyah to navigate to: the Notes pane opens on its own key, and Back reopens its card.
+        closeAyahActionSheet();
+        const intro = { arabic: OPENING_TAAWWUDH_AR, translation: t(OPENING_TAAWWUDH_EN), opening: true, backLabel: t("Back") };
+        const unit = { unitKey, label: t("Aʿūdhu billāh") };
+        await openReadNotesPane(unit, { backLabel: t("Back to Āyah card"), focusNew: fresh }, () => { paintReadNotesBtn(); openAyahActionSheet(unitKey, null, intro); });
+        return;
+      }
       const { surah, ayah, half } = parseAyahUnitKey(unitKey);
       const r = { surah, ayah, half, view: "read", scrollY: stageView === "read" ? readViewScrollTop() : null };
       closeAyahActionSheet();
