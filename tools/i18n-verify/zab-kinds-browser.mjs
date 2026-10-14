@@ -12,8 +12,9 @@
 //   a: "tomorrow" is not understood            (zab-data.js parseQuickTask)
 //   b: a past date is not Overdue              (zab-data.js dueGroup)
 //   c: a link opens without rel=noopener       (zab-bar.js)
-//   d: a move strips the task's fields         (zab-data.js moveItem / editItem allow-list)
+//   d: a move strips the task's fields         (zab-data.js moveItem)
 //   e: the kind picker writes nothing          (zab-bar.js savePocket)
+//   f: a squeezed Add button breaks its word   (zab-bar.js)
 // Run from the repository root with `node serve.js` running.
 import fs from "node:fs";
 import { chromium, newContext, BASE } from "./harness.mjs";
@@ -47,8 +48,9 @@ async function routeMutation(ctx) {
   if (MUTATE === "a") await routeText(ctx, "**/js/zab-data.js", (s) => swap(s, `low === "tomorrow"`, `low === "never-tomorrow"`));
   else if (MUTATE === "b") await routeText(ctx, "**/js/zab-data.js", (s) => swap(s, `if (d < today) return "overdue";`, ``));
   else if (MUTATE === "c") await routeText(ctx, "**/js/zab-bar.js", (s) => swap(s, `target="_blank" rel="noopener"`, `target="_blank"`));
-  else if (MUTATE === "d") await routeText(ctx, "**/js/zab-data.js", (s) => swap(s, `const ITEM_KIND_FIELDS = [`, `const ITEM_KIND_FIELDS_UNUSED = [`).replace(`const ARRAY_FIELDS`, `const ITEM_KIND_FIELDS = []; const ARRAY_FIELDS`));
+  else if (MUTATE === "d") await routeText(ctx, "**/js/zab-data.js", (s) => swap(s, "{ pocketId: toPocketId }", "{ pocketId: toPocketId, due: deleteField(), pri: deleteField(), steps: deleteField() }"));
   else if (MUTATE === "e") await routeText(ctx, "**/js/zab-bar.js", (s) => swap(s, `const kind = box.querySelector("[data-zab-f='ztype']").value;`, `const kind = undefined;`));
+  else if (MUTATE === "f") await routeText(ctx, "**/js/zab-bar.js", (s) => swap(s, ".zab-add button { flex: 0 0 auto; white-space: nowrap; }", ".zab-add button { flex: 0 1 1px; }"));
   else throw new Error(`unknown mutation ${MUTATE}`);
 }
 
@@ -130,6 +132,10 @@ for (const lang of ["en", "bn"]) {
       // layout
       const lay = await page.evaluate(() => { const p = document.getElementById("zabPanel"); const t = p.querySelector('[data-zab-item="it-old"] .zab-main'); return { share: t ? t.getBoundingClientRect().width / p.clientWidth : 0, fits: p.scrollWidth <= p.clientWidth + 1 }; });
       check(`${tag}: a task's text keeps >= 70% of the panel, nothing sideways`, lay.share >= 0.7 && lay.fits, JSON.stringify(lay));
+      const addBtns = await page.evaluate(() => [...document.querySelectorAll("#zabPanel .zab-add button")].map((b) => { const r = b.getBoundingClientRect(); const lh = parseFloat(getComputedStyle(b).lineHeight) || 20; return { h: r.height, oneLine: b.scrollHeight <= Math.max(r.height, lh * 1.6) + 1 && (b.textContent.length < 3 || b.getClientRects().length === 1) && r.width >= b.scrollWidth - 1, w: Math.round(r.width), sw: b.scrollWidth, text: b.textContent }; }));
+      const wordFits = await page.evaluate(() => [...document.querySelectorAll("#zabPanel .zab-add button")].every((b) => { const r = document.createRange(); r.selectNodeContents(b); return r.getClientRects().length <= 1; }));
+      check(`${tag}: every Add button keeps its word on one line`, wordFits, JSON.stringify(addBtns));
+      if (w === 390 || w === 1440) await page.screenshot({ path: `/tmp/zab-kinds-${w}-${lang}.png` });
       check(`${tag}: no sideways page scroll`, await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
       // move the task to a plain pocket: its fields are kept
       await page.evaluate(() => { window.__stubWriteData = []; });
@@ -167,7 +173,6 @@ for (const lang of ["en", "bn"]) {
     } catch (err) {
       check(`${tag}: the flow ran to the end`, false, String(err && err.message || err).slice(0, 300));
     }
-    if (w === 390 || w === 1440) await page.screenshot({ path: `/tmp/zab-kinds-${w}-${lang}.png` }).catch(() => {});
     await ctx.close();
   }
 }

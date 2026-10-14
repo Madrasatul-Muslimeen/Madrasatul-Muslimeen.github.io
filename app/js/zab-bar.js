@@ -78,6 +78,7 @@ body:has(.nw-switch) #zabCorner { bottom: 68px; }
 #zabPanel input[type="color"] { padding: 0 2px; width: 44px; }
 #zabPanel input[type="date"] { border: 1px solid #c7d0e0; border-radius: 8px; padding: 0 8px; background: #fff; color: #1b2a41; min-width: 0; flex: 0 1 11rem; }
 .zab-add { display: flex; gap: 6px; margin-bottom: 8px; }
+.zab-add button { flex: 0 0 auto; white-space: nowrap; } /* Z3 review: a squeezed Add broke into "Ad / d" beside a step box */
 .zab-add input { flex: 1 1 auto; }
 /* Architect review (Z2, 14 Oct): the item's text gets the full row; its controls sit in one tidy line beneath it, at
    every width. Side by side, the five controls left the text a column a few letters wide (seen in the 380px panel). */
