@@ -1059,7 +1059,7 @@ function wordSensesSection(word, layers, context, text, formatNumber) {
       spelled.set(lemmaText(layers.lemma), `${Math.floor(p / 1000000)}:${Math.floor(p / 1000) % 1000}:${p % 1000}`);
     }
     const boxes = [...spelled].map(([arabic, ref]) =>
-      `<button type="button" class="word-card-dcard word-card-sense-box" data-word-occurrence-goto="${escapeHtml(ref)}" aria-label="${escapeHtml(String(text.goToOccurrence).replace("{ref}", ref.split(":").slice(0, 2).join(":")))}">` +
+      `<button type="button" class="word-card-dcard word-card-sense-box" data-word-occurrence-goto="${escapeHtml(ref)}" aria-label="${escapeHtml(String(text.goToOccurrence).replace("{ref}", (() => { const [rs, ra, rw] = ref.split(":").map(Number); return typeof text.displayRef === "function" ? text.displayRef(rs, ra, rw) : `${rs}:${ra}`; })()))}">` +
       `<span class="word-card-dcard-ar" dir="rtl" lang="ar">${escapeHtml(arabic)}</span><span class="word-card-sense-box-label" lang="en">${escapeHtml(label)}</span></button>`).join("");
     return `<li class="word-card-sense${mine ? " word-card-sense-current" : ""}"${mine ? ' aria-current="true"' : ""} data-word-card-sense="${i}">` +
       `<span class="word-card-sense-top"><b lang="en">${escapeHtml(label)}</b>${mine ? `<span class="word-card-sense-tag">${escapeHtml(text.meaningThisWord)}</span>` : ""}<span class="word-card-sense-count">${escapeHtml(String(text.meaningSenseCount).replace("{n}", formatNumber(count)))}</span></span>` +

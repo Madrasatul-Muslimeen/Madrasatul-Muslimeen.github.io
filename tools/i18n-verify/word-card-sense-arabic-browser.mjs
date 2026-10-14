@@ -20,7 +20,10 @@ const MUT = {
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
 let pass = 0, fail = 0;
-const check = (n, ok, d = "") => ok ? (pass++, console.log(`  PASS  ${n}`)) : (fail++, console.log(`  FAIL  ${n} ${d}`));
+const check = (n, ok, d = "") => {
+  if (ok && typeof ok.then === "function") throw new Error(`check "${n}" was handed a promise`);
+  return ok ? (pass++, console.log(`  PASS  ${n}`)) : (fail++, console.log(`  FAIL  ${n} ${d}`));
+};
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH });
 
 async function goTo(page, s, a) {
