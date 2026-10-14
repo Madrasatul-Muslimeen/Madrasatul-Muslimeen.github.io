@@ -1,0 +1,139 @@
+<title>Before Al-Fātiḥah Choices</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: three phone-width pictures of the top of Al-Fātiḥah's Read page side by side (stacking on a phone), each
+   under its option label with a short "what it means" list. The pictures copy the app's night palette and stay fixed
+   in both themes because they are pictures of the app; only the page around them follows the viewer's theme. */
+:root {
+  --page: #f3f5f8; --ink: #1c2638; --muted: #5d6b82; --rule: #d7dde7; --chip: #ffffff; --ok: #2e8558;
+  --card: #0f1c33; --card-2: #16284a; --card-edge: #2b4170; --card-ink: #eef2f8; --card-muted: #a7b3c8;
+  --gold: #d6a648; --gold-soft: rgba(214,166,72,.16); --arabic: #f4ead2; --stage: #5b84c9;
+  --ui: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif; --ar: "Amiri", "Traditional Arabic", serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --page: #0b111c; --ink: #e6ebf3; --muted: #9aa6ba; --rule: #26324a; --chip: #141d2e; --ok: #63c08f; color-scheme: dark; } }
+:root[data-theme="dark"] { --page: #0b111c; --ink: #e6ebf3; --muted: #9aa6ba; --rule: #26324a; --chip: #141d2e; --ok: #63c08f; color-scheme: dark; }
+body { background: var(--page); color: var(--ink); font-family: var(--ui); }
+.wrap { max-width: 1260px; margin: 0 auto; padding-inline: 16px; padding-block: 24px 48px; }
+h1 { font-size: 1.5rem; margin: 0 0 6px; text-wrap: balance; }
+.lede { color: var(--muted); margin: 0 0 6px; max-width: 70ch; line-height: 1.5; }
+.ask { margin: 14px 0 22px; padding: 12px 14px; border: 1px solid var(--rule); border-radius: 10px; background: var(--chip); max-width: 70ch; line-height: 1.5; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 22px; align-items: start; }
+.opt { min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+.opt h2 { font-size: 1.05rem; margin: 0; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.opt h2 .tag { font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.rec { font-size: .72rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--ok); }
+.opt ul { margin: 0; padding-left: 1.1rem; color: var(--muted); font-size: .88rem; line-height: 1.45; }
+
+/* ---- the Read page picture ---- */
+.ph { width: 100%; max-width: 380px; background: var(--card); color: var(--card-ink); border-radius: 14px; border: 1px solid var(--card-edge); padding: 10px; box-sizing: border-box; display: flex; flex-direction: column; gap: 8px; }
+.bar { display: flex; align-items: center; gap: 6px; }
+.bar .t { flex: 1; text-align: center; font-weight: 600; font-size: .9rem; }
+.bar .b { width: 38px; height: 38px; border-radius: 8px; border: 1px solid var(--card-edge); background: var(--card-2); display: grid; place-items: center; color: var(--card-ink); font-size: .9rem; flex: 0 0 auto; }
+.sel { height: 38px; border-radius: 8px; border: 1px solid var(--card-edge); background: var(--card-2); display: inline-flex; align-items: center; padding: 0 10px; font-size: .8rem; gap: 6px; }
+.row { border: 1px solid var(--card-edge); border-radius: 10px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px; }
+.row.pre { border-style: dashed; border-color: var(--gold); background: var(--gold-soft); }
+.row .ar { font-family: var(--ar); font-size: 1.45rem; line-height: 1.7; color: var(--arabic); direction: rtl; text-align: right; }
+.row .tr { font-size: .78rem; color: var(--card-muted); }
+.row .meta { display: flex; align-items: center; gap: 8px; font-size: .72rem; color: var(--card-muted); }
+.lab { color: var(--gold); font-weight: 600; letter-spacing: .04em; }
+.num { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; border: 1.5px solid var(--gold); color: var(--gold); font-size: .72rem; font-variant-numeric: tabular-nums; }
+.st { margin-left: auto; display: inline-flex; align-items: center; gap: 5px; }
+.st i { width: 9px; height: 9px; border-radius: 50%; background: var(--stage); }
+.st i.none { background: transparent; border: 1.5px solid var(--card-muted); }
+.band { border: 1px dashed var(--gold); background: var(--gold-soft); border-radius: 10px; padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+.band .h { font-size: .72rem; color: var(--gold); font-weight: 600; letter-spacing: .04em; }
+.chips { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.chip { min-height: 44px; border-radius: 9px; border: 1px solid var(--card-edge); background: var(--card-2); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4px; gap: 1px; }
+.chip .ar { font-family: var(--ar); font-size: 1.05rem; color: var(--arabic); }
+.chip small { font-size: .66rem; color: var(--card-muted); display: inline-flex; gap: 4px; align-items: center; }
+.chip small i { width: 8px; height: 8px; border-radius: 50%; background: var(--stage); display: inline-block; }
+.list { border: 1px solid var(--card-edge); border-radius: 9px; background: var(--card-2); padding: 4px; font-size: .8rem; display: flex; flex-direction: column; }
+.list span { padding: 6px 8px; border-radius: 6px; display: flex; justify-content: space-between; }
+.list span.on { background: var(--gold); color: #1b1405; font-weight: 600; }
+.list span em { font-style: normal; color: var(--card-muted); font-size: .7rem; }
+.list span.on em { color: #4a3a12; }
+.keys { margin-top: 26px; max-width: 70ch; font-size: .88rem; color: var(--muted); line-height: 1.55; border-top: 1px solid var(--rule); padding-top: 14px; }
+.keys code { font-family: ui-monospace, "SFMono-Regular", Consolas, monospace; font-size: .84rem; color: var(--ink); background: var(--chip); border: 1px solid var(--rule); border-radius: 5px; padding: 0 5px; }
+</style>
+
+<div class="wrap">
+  <h1>Aʿūdhu billāh and Bismillah before Al-Fātiḥah</h1>
+  <p class="lede">Your answers in PCF J26 (14 Oct): yes to a new permanent key for Aʿūdhu billāh, and both shown separately, not counted in Al-Fātiḥah's 7 āyāt. Here are three places they can sit on Al-Fātiḥah's Read page, at phone width.</p>
+  <p class="ask"><b>Your choice:</b> tick A, B or C in PCF J26, or mix them (for example “A, and also in the picker like C”). In all three, tapping Aʿūdhu billāh or Bismillah opens the same card an āyah opens: the Approaches, Record Your Progress with 👥, notes and bookmark, with ← Back to where you were.</p>
+
+  <div class="grid">
+    <section class="opt" aria-labelledby="oa">
+      <h2 id="oa">A <span class="tag">Two rows above āyah 1</span> <span class="rec">Recommended</span></h2>
+      <div class="ph" role="img" aria-label="Option A: two dashed gold rows above āyah 1">
+        <div class="bar"><span class="b">‹</span><span class="t">Al-Fātiḥah</span><span class="b">🔍</span><span class="b">🔖</span></div>
+        <div class="row pre">
+          <div class="ar">أَعُوذُ بِٱللَّهِ مِنَ ٱلشَّيْطَٰنِ ٱلرَّجِيمِ</div>
+          <div class="tr">I seek refuge in Allah from Shayṭān, the accursed.</div>
+          <div class="meta"><span class="lab">Before Al-Fātiḥah</span><span class="st"><i></i>Learning</span></div>
+        </div>
+        <div class="row pre">
+          <div class="ar">بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ</div>
+          <div class="tr">In the name of Allah, the Entirely Merciful, the Especially Merciful.</div>
+          <div class="meta"><span class="lab">Before Al-Fātiḥah</span><span class="st"><i class="none"></i>Not started</span></div>
+        </div>
+        <div class="row">
+          <div class="ar">ٱلْحَمْدُ لِلَّهِ رَبِّ ٱلْعَٰلَمِينَ</div>
+          <div class="tr">[All] praise is [due] to Allah, Lord of the worlds.</div>
+          <div class="meta"><span class="num">1</span><span class="st"><i class="none"></i>Not started</span></div>
+        </div>
+      </div>
+      <ul>
+        <li>Each one reads like an āyah, in the order it is recited, so a child studies it in its own place.</li>
+        <li>The dashed gold edge and “Before Al-Fātiḥah” mark them as not part of the 7.</li>
+        <li>Takes the most height: about two rows before āyah 1.</li>
+      </ul>
+    </section>
+
+    <section class="opt" aria-labelledby="ob">
+      <h2 id="ob">B <span class="tag">One band with two buttons</span></h2>
+      <div class="ph" role="img" aria-label="Option B: one gold band with two buttons above āyah 1">
+        <div class="bar"><span class="b">‹</span><span class="t">Al-Fātiḥah</span><span class="b">🔍</span><span class="b">🔖</span></div>
+        <div class="band">
+          <span class="h">Before Al-Fātiḥah</span>
+          <div class="chips">
+            <span class="chip"><span class="ar">أَعُوذُ بِٱللَّهِ</span><small><i></i>Aʿūdhu billāh</small></span>
+            <span class="chip"><span class="ar">بِسْمِ ٱللَّهِ</span><small>Bismillah</small></span>
+          </div>
+        </div>
+        <div class="row">
+          <div class="ar">ٱلْحَمْدُ لِلَّهِ رَبِّ ٱلْعَٰلَمِينَ</div>
+          <div class="tr">[All] praise is [due] to Allah, Lord of the worlds.</div>
+          <div class="meta"><span class="num">1</span><span class="st"><i class="none"></i>Not started</span></div>
+        </div>
+      </div>
+      <ul>
+        <li>Compact: one short band, so āyah 1 stays near the top.</li>
+        <li>The full words are on the card that opens; the band shows their start.</li>
+        <li>A dot on each button shows the stage reached.</li>
+      </ul>
+    </section>
+
+    <section class="opt" aria-labelledby="oc">
+      <h2 id="oc">C <span class="tag">In the āyah picker</span></h2>
+      <div class="ph" role="img" aria-label="Option C: the āyah picker lists Aʿūdhu billāh and Bismillah before 1">
+        <div class="bar"><span class="b">‹</span><span class="t">Al-Fātiḥah</span><span class="sel">Āyah ▾</span></div>
+        <div class="list" aria-hidden="true">
+          <span class="on">Aʿūdhu billāh <em>before</em></span>
+          <span>Bismillah <em>before</em></span>
+          <span>1</span><span>2</span><span>3</span>
+        </div>
+        <div class="row pre">
+          <div class="ar">أَعُوذُ بِٱللَّهِ مِنَ ٱلشَّيْطَٰنِ ٱلرَّجِيمِ</div>
+          <div class="meta"><span class="lab">Before Al-Fātiḥah</span><span class="st"><i></i>Learning</span></div>
+        </div>
+      </div>
+      <ul>
+        <li>The picker and Prev / Next step through them like āyāt: Aʿūdhu billāh, Bismillah, then 1 to 7.</li>
+        <li>Nothing new on the page itself until you pick one.</li>
+        <li>Easy to miss for a child who opens Al-Fātiḥah at āyah 1.</li>
+      </ul>
+    </section>
+  </div>
+
+  <p class="keys">The records, in every option: <b>Bismillah</b> uses its existing permanent record <code>ayah:1:1</code>, which the app already keeps even while it shows the Bismillah unnumbered. <b>Aʿūdhu billāh</b> gets a new permanent key, <code>opening:taawwudh</code>, fixed once it is first used. Records, the Mastery Wheel and Know Your Status show both, outside Al-Fātiḥah's 7.</p>
+</div>
