@@ -3537,6 +3537,10 @@
   .word-progress-heading { margin: 0 0 0.35rem; font-size: 0.82rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; color: var(--card-text-muted); }
   .word-progress-states, .word-progress-decide { display: grid; gap: 0.35rem; }
   .word-progress-states { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .word-progress-ask { display: grid; gap: 0.35rem; margin: 0.35rem 0; padding: 0.5rem; border: 1px solid currentColor; border-radius: 0.5rem; }
+  .word-progress-ask ul { margin: 0; padding-inline-start: 1.1rem; }
+  .word-progress-ask-buttons { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+  .word-progress-ask-buttons button { min-height: 40px; flex: 1 1 6rem; }
   /* Four labels do not fit one row on a narrow phone: a deliberate 2 x 2 grid, never a ragged wrap. */
   @media (max-width: 400px) { .word-progress-states { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   .word-progress-decide { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 0.4rem; }
@@ -16645,7 +16649,7 @@
       // started." A press shows AT ONCE: the pressed state, locked buttons
       // and "Saving…" (see wordProgressSaving at runWordProgressAction()).
       const saving = wordProgressSaving && wordProgressSaving.occurrenceId === quranWordCardState.occurrenceId && wordProgressSaving.level === level;
-      return { progress: { ...progress, knownElsewhere: knownElsewhere && !saving, knownElsewhereVia, heldOwnState: saving ? null : ownHeld, loading: wordProgressBusy && !progress.loaded, ...(saving ? { saving: true, state: wordProgressSaving.state ?? progress.state } : {}) }, authority, coverage };
+      return { progress: { ...progress, ask: wordProgressAskView(), knownElsewhere: knownElsewhere && !saving, knownElsewhereVia, heldOwnState: saving ? null : ownHeld, loading: wordProgressBusy && !progress.loaded, ...(saving ? { saving: true, state: wordProgressSaving.state ?? progress.state } : {}) }, authority, coverage };
     }
 
     /**
@@ -17013,7 +17017,85 @@
     // still shows Achieved through another mark (a Not started press is otherwise indistinguishable from no mark).
     let wordProgressHeldPress = null;
 
-    async function runWordProgressAction(action) {
+    // J23 choice B (the Owner, 14 Oct 2026): a Not started / Learning / Practising press on a place that shows
+    // Achieved only through ANOTHER mark asks, in the card, whether to change that mark too. `wordProgressAsk` is
+    // the open question: { occurrenceId, state, action, items: [{ personId, name, marks: [level], count }] }.
+    let wordProgressAsk = null;
+
+    /** The marks (levels) that make this word known for one person while this place alone is not: the word's own
+        dictionary-word claim, its meaning group (Basic) or its root (Intermediate, Depth). Reads the primed cache. */
+    function otherMarksFor(tenantId, personId, confirmationRequired, occurrenceId) {
+      if (!isLemmaProgressPersistenceReady()) return [];
+      const word = wordOfOccurrence(occurrenceId);
+      const lemmaId = wbwClaimKey(word);
+      if (!lemmaId) return [];
+      if (wordProgressFor({ tenantId, personId, occurrenceId, confirmationRequired }).countsAsKnown) return [];
+      const marks = [];
+      const claim = (level, key) => !!key && lemmaProgressFor({ tenantId, personId, ...(level === "wbw" ? {} : { level }), lemmaId: key, confirmationRequired }).countsAsKnown;
+      if (claim("wbw", lemmaId)) marks.push("wbw");
+      if (meaningGroupsLive() && !isFormKey(lemmaId)) {
+        if (claim(MEANING_GROUP_LEVEL, claimKeyFor(MEANING_GROUP_LEVEL, { lemma: lemmaId }, meaningGroupOf))) marks.push(MEANING_GROUP_LEVEL);
+        const rootKey = claimKeyFor(ROOT_LEVEL, { root: word?.morphology?.root });
+        if (claim(INTERMEDIATE_LEVEL, rootKey)) marks.push(INTERMEDIATE_LEVEL);
+        if (claim(ROOT_LEVEL, rootKey)) marks.push(ROOT_LEVEL);
+      }
+      return marks;
+    }
+
+    /** Works out the question for a lowering press, or null when nobody's place is known through another mark. */
+    async function planOtherMarks(action, { tenantId, subjectPersonId, actorPersonId, targets }) {
+      const occurrenceId = quranWordCardState.occurrenceId;
+      const word = wordOfOccurrence(occurrenceId);
+      let ref;
+      try { ref = parseQuranWordOccurrenceId(occurrenceId); } catch { return null; }
+      await ensureMeaningGroups();
+      const roster = assignableRoster();
+      const items = [];
+      for (const personId of targets) {
+        try {
+          const confirmationRequired = !!(await wordProgressConfirmationRequired(tenantId, personId));
+          await primeAyahProgress(db, { tenantId, personId, level: "wbw", surah: ref.surah, ayah: ref.ayah });
+          await primeLemmaProgressForOccurrenceScope(currentSurahData, [occurrenceId], tenantId, personId);
+          const marks = otherMarksFor(tenantId, personId, confirmationRequired, occurrenceId);
+          if (!marks.length) continue;
+          const seen = new Set();
+          for (const mark of marks) {
+            let refs = [];
+            try { refs = await spreadRefsFor(mark, word); } catch { refs = []; }
+            for (const r of refs) seen.add(JSON.stringify(r));
+          }
+          items.push({ personId, name: roster.find((p) => p.id === personId)?.name ?? "", marks, count: Math.max(seen.size, 1) });
+        } catch (error) {
+          reportWriteFailure(error, { what: "read Arabic word progress", occurrenceId });
+          return null;
+        }
+      }
+      return items.length ? { occurrenceId, state: action.state, action, items } : null;
+    }
+
+    /** The card's question, in words. `what` names the mark: the dictionary word, or the root when only the root is. */
+    function wordProgressAskView() {
+      if (!wordProgressAsk || wordProgressAsk.occurrenceId !== quranWordCardState.occurrenceId) return null;
+      const word = wordOfOccurrence(wordProgressAsk.occurrenceId);
+      const first = wordProgressAsk.items[0];
+      const rootOnly = first.marks.every((m) => m === INTERMEDIATE_LEVEL || m === ROOT_LEVEL);
+      const what = rootOnly ? (word?.morphology?.root ?? "") : (word?.morphology?.lemma ?? word?.text ?? "");
+      const message = t("This also changes ‘{what}’ to {state} in all {n} places it reaches. Change it?", { what, state: statusLabel(wordProgressAsk.state), n: first.count });
+      const lines = wordProgressAsk.items.length > 1
+        ? wordProgressAsk.items.map((it) => t("{name}: {n} places", { name: it.name, n: it.count }))
+        : [];
+      return { message, lines, change: t("Change it"), cancel: t("Cancel") };
+    }
+
+    async function answerWordProgressAsk(change) {
+      const ask = wordProgressAsk;
+      wordProgressAsk = null;
+      if (!ask) return;
+      if (quranWordCardState.occurrenceId !== ask.occurrenceId) { renderPersistentWordCard(); return; }
+      await runWordProgressAction(ask.action, { other: change ? ask.items : false });
+    }
+
+    async function runWordProgressAction(action, opts = {}) {
       if (wordProgressSaving) return;
       const { tenantId, subjectPersonId, actorPersonId } = wordProgressActor();
       if (!tenantId || !subjectPersonId || !actorPersonId || !quranWordCardState.occurrenceId) return;
@@ -17024,6 +17106,14 @@
       const targets = claimTargetIds();
       const others = targets.filter((id) => id !== subjectPersonId);
       const order = targets.includes(subjectPersonId) ? [...others, subjectPersonId] : others;
+      wordProgressAsk = null;
+      if (opts.other === undefined && level === "wbw" && action.kind === "state" && action.state !== "achieved") {
+        wordProgressSaving = { occurrenceId, level, state: null, planning: true };
+        let plan = null;
+        try { plan = await planOtherMarks(action, { tenantId, subjectPersonId, actorPersonId, targets: order }); } finally { wordProgressSaving = null; }
+        if (plan) { wordProgressAsk = plan; renderPersistentWordCard(); return; }
+        opts = { ...opts, other: false };
+      }
       wordProgressSaving = { occurrenceId, level, state: action.kind === "state" ? action.state : null };
       if (action.kind === "state") wordProgressHeldPress = action.state === "achieved" ? null : { occurrenceId, level, state: action.state };
       renderPersistentWordCard();
@@ -17058,6 +17148,14 @@
         for (const p of who) {
           const outcome = await runWordProgressActionNow(action, { tenantId, subjectPersonId: p.personId, actorPersonId, isSupervisor: p.isSupervisor, level, confirmationRequired: p.confirmationRequired, note });
           if (outcome && outcome.ok === false) return; // already shown in words by safeWrite (I15)
+          // J23 choice B: the Owner said Change it -- lower each mark that made this word known for this person,
+          // by the same lemma-wide write (and totals) a press on that mark's own tab makes. Same lane rules.
+          const item = Array.isArray(opts.other) ? opts.other.find((it) => it.personId === p.personId) : null;
+          if (item) {
+            for (const mark of item.marks) {
+              await runLemmaProgressAction({ kind: "state", state: action.state }, mark, { personId: p.personId, confirmationRequired: p.confirmationRequired, isSupervisor: p.isSupervisor });
+            }
+          }
         }
         if (action.kind === "state" && who.length && !targets.includes(subjectPersonId)) {
           const names = assignableRoster().filter((p) => others.includes(p.id)).map((p) => p.name).join(", ");
@@ -17878,6 +17976,8 @@
       // word, moving between words and switching tab are all reads.
       const progressState = event.target.closest("[data-word-progress-state]");
       if (progressState) { runWordProgressAction({ kind: "state", state: progressState.dataset.wordProgressState }); return; }
+      const progressAsk = event.target.closest("[data-word-progress-ask]");
+      if (progressAsk) { answerWordProgressAsk(progressAsk.dataset.wordProgressAsk === "change"); return; }
       const progressDecide = event.target.closest("[data-word-progress-decide]");
       if (progressDecide) { runWordProgressAction({ kind: "decide", review: progressDecide.dataset.wordProgressDecide }); return; }
       // Issue #322 -- the "Mark this word known everywhere" row is gone;
