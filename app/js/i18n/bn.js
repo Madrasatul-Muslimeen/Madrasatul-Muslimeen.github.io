@@ -4163,7 +4163,14 @@ export const BN = {
   "Sign in to use Zab.": "জ়াব ব্যবহার করতে সাইন ইন করুন।",
   "Could not load Zab. Please try again.": "জ়াব লোড করা যায়নি। আবার চেষ্টা করুন।",
   "Could not save. Please try again.": "সংরক্ষণ করা যায়নি। আবার চেষ্টা করুন।",
-  "This pocket still has items. Move or trash them first.": "এই পকেটে এখনও বিষয় আছে। আগে সেগুলো সরান বা ট্র্যাশে দিন।",
+  "This pocket still has items or pockets inside. Move or trash them first.": "এই পকেটে এখনও বিষয় বা পকেট আছে। আগে সেগুলো সরান বা ট্র্যাশে দিন।",
+  // Z6 (PCF J25): pockets inside pockets, and the phone Drawer.
+  "A pocket cannot go inside itself or one of its own pockets.": "একটি পকেট নিজের ভেতরে বা নিজের কোনো পকেটের ভেতরে যেতে পারে না।",
+  "Where you are": "আপনি কোথায় আছেন",
+  "New pocket inside this one": "এর ভেতরে নতুন পকেট",
+  "Move into…": "ভেতরে সরান…",
+  "Show the pockets inside": "ভেতরের পকেটগুলো দেখান",
+  "Hide the pockets inside": "ভেতরের পকেটগুলো লুকান",
   "Please type a name.": "অনুগ্রহ করে একটি নাম লিখুন।",
   "Please type something.": "অনুগ্রহ করে কিছু লিখুন।",
   // Zab round Z3 (PCF J25): pocket kinds, tasks and links.
