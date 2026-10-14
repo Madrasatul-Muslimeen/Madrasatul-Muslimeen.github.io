@@ -75,8 +75,9 @@ const dynamicImportersOf = (target) => fs.readdirSync(appJs).filter((f) => f.end
   && new RegExp("import\\(\\s*[\"\x27\\x60]\\./" + target.replace(".", "\\.") + "[\"\x27\\x60]\\s*\\)").test(fs.readFileSync(path.join(appJs, f), "utf8")));
 const staticImportersOf = (target) => fs.readdirSync(appJs).filter((f) => f.endsWith(".js") && f !== target && localImportsOf(path.join(appJs, f)).includes(target));
 check("zab-data.js exists", () => assert.ok(fs.existsSync(path.join(appJs, "zab-data.js")), "app/js/zab-data.js is missing"));
-check("the ONLY module importing zab-data.js is zab-bar.js (a new importer must be audited deliberately)", () => {
-  assert.deepEqual(staticImportersOf("zab-data.js").concat(dynamicImportersOf("zab-data.js")), ["zab-bar.js"]);
+check("the ONLY modules importing zab-data.js are zab-bar.js and its Z5 helper zab-to-note.js (a new importer must be audited deliberately)", () => {
+  assert.deepEqual(staticImportersOf("zab-data.js").concat(dynamicImportersOf("zab-data.js")), ["zab-bar.js", "zab-to-note.js"]);
+  assert.deepEqual(staticImportersOf("zab-to-note.js"), ["zab-bar.js"]);
 });
 check("POSITIVE CONTROL: the dynamic-import finder really does find the gated hop", () => {
   assert.deepEqual(dynamicImportersOf("zab-bar.js"), ["sw-register.js"]);
@@ -414,6 +415,10 @@ await acheck("the fields the module writes are exactly inside its declared write
   const { itemId } = await zab.addItem(db, ctx, "n", everyKind);
   await zab.editItem(db, ctx, itemId, everyKind);
   await zab.trashItem(db, ctx, itemId); await zab.restoreItem(db, ctx, itemId);
+  assert.equal((await zab.trashItemAsNote(db, ctx, itemId, "")).ok, false, "an empty noteId is refused");
+  assert.equal((await zab.trashItemAsNote(db, ctx, itemId, "note-1")).ok, true);
+  assert.equal(doc_("zabItems", itemId).status, "trashed"); assert.equal(doc_("zabItems", itemId).noteId, "note-1");
+  await zab.restoreItem(db, ctx, itemId);
   assert.deepEqual(Object.keys(doc_("zabItems", itemId)).filter((k) => !env.has(k)).sort(),
     [...zab.ZAB_ITEM_WRITES].filter((k) => k !== "deletedAt").sort(), "every declared item field was exercised");
   for (const w of writeLog) {

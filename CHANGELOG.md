@@ -20959,3 +20959,32 @@ New strings `wholeQuranLevelSentence` ("{level}: Achieved {known} and {percent} 
 - zab-bar-browser 370/0; zab-data 33/0; stub-parity 4/0; rules-authorisation-executable 73/0; phone-width-overflow 217/0; behaviour 971/0.
 
 **Next:** round Z5, → Note into Mapping My Journey. The Owner's step stays the same: publish the Zab Rules (J25).
+
+## v10.49 — 14 Oct 2026 — Zab round Z5: → Note into Mapping My Journey, behind the shut gate (PCF J25)
+
+**The Owner** (PCF J25, answer 2 A): a Zab item can become a Note in Mapping My Journey with → Note.
+
+**Built (Builder round #829, PR #830, branch `builder/issue-829-run-1265`):**
+- **New `app/js/zab-to-note.js`.** No new Note code: it calls `note-foundation.js`'s `createPermanentNote()` and `createNotePlacement()`, the same two calls `journey-map.html`'s `createNoteInFolder()` makes.
+  - The Note belongs to the person pressing → Note.
+  - **Title:** the item's first line. **Body:** escaped HTML holding the text, a link (http/https only), the due date, the steps as ☐/☑, the stars and topics, and the quantity and shop.
+  - The item's free-text tags are not carried over: Notes link tag rows by id, which is Mapping My Journey's own business.
+- **Filing:** in the item's `folderIds`, or a small folder picker with "No folder" allowed.
+- **The item is then trashed, never deleted,** with the new `noteId`. Its Trash row says "Became a Note" and links to it.
+- **No half-done step:** a failure is reported by stage (the Note, its filing, or the trash). The item is left in place unless every step succeeded.
+- **A toast "Saved as a Note" with Open,** a full-page visit with `back=1`.
+- **`noteId`** was added to the item allow-list and to `docs/governance/2026-10-14-zab-candidate.rules` (still an unpublished candidate), with emulator cases.
+- The stub gains `window.__stubFailTx`, so a test can make a transaction fail.
+
+**Architect review:**
+- **The way-back law:** Mapping My Journey had no visible ← Back when opened with `back=1`; the round proved the way back only with the browser's own Back. `journey-map.html` now shows ← Back (`#jmBackBtn`, not inside the tray). The suite presses it, and mutation w removes it.
+- **The Owner's deleted J27** ("Attach button doesn't open for file"): `journey-note-images-browser` now checks that a real tap on "Choose a picture" opens the device's file chooser. It passes on pane and window, en and bn. Which button the Owner meant is asked in J23.
+
+**Tests:**
+- New `zab-to-note-browser`: 196/0. Mutations p 8, q 16, r 24, s 16, t 16, u 8 and w 4 fail.
+- `npm run zab` 26/26.
+- zab-data 39/0; zab-bar-browser 370/0; zab-kinds-browser 324/0.
+- journey-map-back 38, -boundary 19, -counts 9, -path 32, -screen 47, -shard 11; journey-tray-browser 227; journey-tray-panes 56; note-foundation-boundary 30 (all /0). journey-map-contract, journey-map-service, journey-map-trash-copy, note-foundation-data-layer and note-foundation-transaction exit 0.
+- stub-parity 4/0; rules-authorisation-executable 73/0; phone-width-overflow 217/0; behaviour 971/0.
+
+**The Owner's step:** the Zab Rules candidate is now final for Z1–Z5, so it is ready to publish (J25). **Next:** round Z6, pockets inside pockets.

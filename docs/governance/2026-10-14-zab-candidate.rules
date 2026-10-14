@@ -2814,7 +2814,7 @@ service cloud.firestore {
                  'itemId', 'tenantId', 'pocketId', 'addedByPersonId', 'status', 'deletedAt', 'order',
                  'text', 'done', 'folderIds', 'tags', 'kind', 'journal',
                  'url', 'ttl', 'ch', 'th', 'people', 'issues',
-                 'due', 'pri', 'steps', 'stars', 'topics', 'qty', 'shop',
+                 'due', 'pri', 'steps', 'stars', 'topics', 'qty', 'shop', 'noteId',
                  'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
                ])
             && d().keys().hasAll([
@@ -2840,6 +2840,7 @@ service cloud.firestore {
             && zabOptString('url') && zabOptString('ttl')
             && zabOptString('ch') && zabOptString('th')
             && zabOptString('shop')
+            && zabOptString('noteId') // Z5: the Note this item became (set when → Note trashes it)
             && (d().get('due', null) == null
                 || (d().due is string && d().due.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')))
             && (d().get('pri', null) == null || d().pri is number)

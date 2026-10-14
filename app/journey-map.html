@@ -1284,6 +1284,16 @@
     const noteLayoutEl = document.getElementById("noteLayout");
     const notePaneEl = document.getElementById("notePane");
     let pendingOpenNoteId = new URLSearchParams(location.search).get("note"); // "Open full page" from the tray
+    // The way-back law (decision 86): a visit that arrives with back=1 (Zab's "Open" after → Note, Z5) shows a visible
+    // ← Back to exactly where the reader came from. Not inside the tray (embed), which has its own close.
+    if (new URLSearchParams(location.search).get("back") === "1" && !isEmbedded && !document.getElementById("jmBackBtn")) {
+      const backBtn = document.createElement("button");
+      backBtn.type = "button"; backBtn.id = "jmBackBtn"; backBtn.className = "secondary";
+      backBtn.style.cssText = "min-height:40px;margin:0 0 0.5rem";
+      backBtn.textContent = `← ${t("Back")}`;
+      backBtn.addEventListener("click", () => { if (history.length > 1) history.back(); else location.href = "./quranrevival.html"; });
+      document.querySelector("h1")?.before(backBtn);
+    }
 
     const scroller = () => document.scrollingElement || document.documentElement;
 
