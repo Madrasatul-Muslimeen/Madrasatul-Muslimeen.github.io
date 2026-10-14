@@ -21107,3 +21107,24 @@ New strings `wholeQuranLevelSentence` ("{level}: Achieved {known} and {percent} 
 - `journey-map-back` 38/0.
 - `bookmark-folder-edit` 68/0.
 - `bookmarks-page-new-assign` 44/0.
+
+## v10.55 — 15 Oct 2026 — Zab switched on (PCF J25)
+
+**The Owner:** published `docs/governance/2026-10-14-zab-candidate.rules` to `study-monitoring` (PCF J25: "Published", 15 Oct), then said in the MMSA chat: "Yes, switch Zab on".
+
+**Changed:**
+- **`firestore.rules`** is synced to that exact published file: +143 lines (`zabPockets`, `zabItems`), none removed.
+- **`app/js/zab-readiness.js`** reads `ready: true`. The decision is by `master-architect` on 2026-10-15, and its reference is `docs/reports/2026-10-15-zab-enabled.md` (new).
+- **What appears:** the Zab bar (🧰 on a phone) now shows on every MMSA page. It has the family pockets, the pocket kinds (Tasks, Links, Ideas, Shopping), → Note, and pockets inside pockets (rounds Z1–Z6, v10.45–v10.50).
+- **Three checks updated in place, each with its reason recorded:**
+  - `zab-data.mjs` asserts the gate is open by a recorded decision whose reference file exists.
+  - `zab-bar-browser.mjs`'s gate-off half serves the real module with its declaration shut, so "no Zab while shut" stays tested.
+  - `firestore-emulator/zab.rules.test.mjs`'s first case now requires `firestore.rules` to be the published candidate byte for byte once it carries Zab. A deliberate drift makes it fail (proven).
+
+**Tests:**
+- Emulator `npm run zab`: 26/0 against the candidate and 26/0 against `firestore.rules`.
+- Zab suites: zab-data 46/0, zab-bar-browser 370/0, zab-kinds-browser 324/0, zab-to-note-browser 196/0, zab-tree-browser 240/0.
+- Other checks: rules-authorisation-executable 80/0, stub-parity 4/0.
+- With Zab on every page: behaviour 971/0, phone-width-overflow 217/0, navcheck OK, reading OK.
+
+**Not proved here:** this session cannot see Firebase. That the live Rules accept Zab's writes is proved by the Owner's first Try.
