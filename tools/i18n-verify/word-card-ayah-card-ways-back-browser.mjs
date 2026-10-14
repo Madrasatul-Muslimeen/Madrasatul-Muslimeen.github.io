@@ -160,9 +160,19 @@ for (const [lang, width, height] of [["en", 390, 844], ["bn", 390, 844], ["en", 
     const els = ["ayah-sheet-ref", '[data-ayah-sheet-step="-1"]', '[data-ayah-sheet-step="1"]', "[data-ayah-sheet-noteview]", "[data-ayah-sheet-close]"].map((q) => document.querySelector(q.startsWith("[") ? `[data-ayah-sheet] ${q}` : `[data-ayah-sheet] .${q}`));
     const rs = els.map((e) => e?.getBoundingClientRect());
     const sheet = document.querySelector("[data-ayah-sheet]").getBoundingClientRect();
-    return { all: rs.every(Boolean), order: rs.every((r, i) => !i || r.left >= rs[i - 1].right - 1), oneRow: rs.slice(1).every((r) => Math.abs(r.top - rs[1].top) < 2), inside: rs.every((r) => r.left >= sheet.left - 1 && r.right <= sheet.right + 1), tap: rs.slice(1).every((r) => r.height >= 40 && r.width >= 40) };
+    // Updated in place, round #837 (J29 audit fix 7): the header is now two
+    // calm rows -- the reference with ✕ at its end, then ‹ › 📖 beneath it --
+    // instead of five things squeezed into one. Order, inside and 40px stay.
+    if (!rs.every(Boolean)) return { all: false };
+    const [ref, prev, next, nv, close] = rs;
+    const same = (a, b) => Math.abs(a.top - b.top) < 2;
+    return { all: true,
+      row1: Math.abs((ref.top + ref.bottom) / 2 - (close.top + close.bottom) / 2) < 12 && close.left >= ref.right - 1,
+      row2: same(prev, next) && same(next, nv) && prev.top >= Math.min(ref.bottom, close.bottom) - 1,
+      order: next.left >= prev.right - 1 && nv.left >= next.right - 1,
+      inside: rs.every((r) => r.left >= sheet.left - 1 && r.right <= sheet.right + 1), tap: rs.slice(1).every((r) => r.height >= 40 && r.width >= 40) };
   });
-  check(`${tag} the header reads: reference, ‹, ›, 📖 Note view, ✕ -- one row, inside the card, 40px targets`, head.all && head.order && head.oneRow && head.inside && head.tap, JSON.stringify(head));
+  check(`${tag} the header reads: reference … ✕ on row 1, then ‹, ›, 📖 Note view on row 2 -- inside the card, 40px targets`, head.all && head.row1 && head.row2 && head.order && head.inside && head.tap, JSON.stringify(head));
   // The Owner: "all these choices/ actions could be placed below the Ayah name/ number in a row".
   const acts = await page.evaluate(() => {
     const row = document.querySelector("[data-ayah-sheet] [data-ayah-sheet-actions]"); if (!row) return null;

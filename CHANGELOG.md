@@ -21058,3 +21058,33 @@ New strings `wholeQuranLevelSentence` ("{level}: Achieved {known} and {percent} 
 - `ayah-keys` 41/0; rules-authorisation-executable 80/0; stub-parity 4/0; behaviour 971/0.
 
 **Next:** round K3, marking keys on the Āyah card (behind a readiness gate until the Owner publishes the candidate).
+
+## v10.53 — 15 Oct 2026 — Audit part 1, fixes 3–9 (PCF J29)
+
+**Source:** the Architect's feature-by-feature audit (the Owner's "Keep working, never idle" rule; the PCF User Manual is the checklist). Fixes 1–2 shipped in v10.51.
+
+**Built by Builder round #837 (branch `builder/issue-837-run-1276`) and finished by the Architect:**
+- **Fix 3:** the Read bar icons and the pickers are at least 40px, with no ragged wrap.
+- **Fix 4:** the Unit drawer pills sit in an even four-column grid, each at least 40px wide.
+- **Fix 5:** at 1440px the Mastery Wheel and Explore windows open below the nav row and clear of the bottom dock.
+- **Fix 6:** the nav summaries, the bottom tabs (they measured 33–35px) and the Word card header buttons are 40px.
+- **Fix 7:** the Āyah card heading is two rows. Row 1 is the reference, with ✕ at its end; row 2 is ‹ › 📖. A name is kept whole on one line.
+- **Fix 8:** the Āyah card's unit ladder is a wrapping grid, so nothing scrolls sideways.
+- **Fix 9:** in Bangla, the Word card reference and the translation's āyah badge read in Bangla digits.
+- The Qur'an line is checked byte-identical to `main`.
+
+**Tests:** the new `audit-part1-fixes-browser.mjs` passes 210/0, and all 10 mutations fail it. Also green:
+- quran-font-bangla 12/0
+- reading OK
+- phone-width-overflow 217/0
+- word-card-layout-b-top 246/0
+- landing-drawer 13/0
+- fatiha band 132/0
+- behaviour 971/0
+
+**Updated in place**, each with its reason recorded:
+- `quran-ayah-action-sheet-browser`: scroll 2:71 into view before the hit-test, because the 40px bar leaves it just below the visible area at 320×640. Now 145/0.
+- `word-card-ayah-card-ways-back-browser`: checks the two-row header. Now 86/0.
+- `word-card-search-browser`: 🔍 is 40px, and references use Bangla digits. Now 252/0.
+
+**Not changed:** `firestore.rules` and data.

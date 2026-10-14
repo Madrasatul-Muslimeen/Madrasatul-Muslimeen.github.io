@@ -328,7 +328,7 @@ export function renderTranslationPanel(ayah, langs = ["en"]) {
       if (!text) return "";
       const cls = lang === "bn" ? "ayah-translation ayah-translation-bn" : "ayah-translation";
       const shown = badgeNumber(ayah);
-      const badge = shown == null ? "" : `<div class="ayah-num-row"><span class="ayah-num-badge">${digitsForLang(shown, lang)}</span></div>`;
+      const badge = shown == null ? "" : `<div class="ayah-num-row"><span class="ayah-num-badge">${lang === "bn" ? digitsForLang(shown, lang) : num(shown)}</span></div>`; // audit J29 fix 9: the English block follows the app's digits (Bangla app -> ২৫৫); the Bangla block is always Bengali
       return `${badge}<div class="${cls}" ${lang === "bn" ? 'lang="bn"' : ""}>${escapeHtml(text)}</div>`;
     })
     .join("");
