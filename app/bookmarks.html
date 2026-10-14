@@ -60,6 +60,12 @@
   .bm-back-btn[hidden] { display: none; }
   .bm-whose-line { margin: 0.2rem 0 0.6rem; font-weight: 700; color: #1F3A6E; font-size: 1.05rem; }
   .bm-whose-line[hidden] { display: none; }
+  /* Audit part 2 (PCF J29): every bookmark control a finger presses is a 40px target. */
+  #newFolderRow { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+  #newFolderRow > button, #groupBySelect { box-sizing: border-box; min-height: 40px; } /* audit2 bm-toolbar */
+  #newFolderRow label { margin-left: 0 !important; display: inline-flex; align-items: center; gap: 0.4rem; min-height: 40px; }
+  .bm-row button, .bm-folder-header button, .bm-row select, .bm-folder-header select { box-sizing: border-box; min-height: 40px; min-width: 40px; } /* audit2 bm-rows */
+  .bm-row a[data-bm-open-id] { display: inline-flex; }
 </style>
 </head>
 <body>

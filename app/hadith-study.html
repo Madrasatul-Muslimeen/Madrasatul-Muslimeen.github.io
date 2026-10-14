@@ -97,6 +97,8 @@
   .assign-row input[type="checkbox"] { width: 1.05rem; height: 1.05rem; accent-color: #1F3A6E; cursor: pointer; flex-shrink: 0; }
   .assign-row .who-name { flex: 1; }
   .assign-row .who-tag { font-size: 0.66rem; color: #777; background: #f6f7fb; border: 1px solid #eee; border-radius: 0.6rem; padding: 0.02rem 0.4rem; }
+  /* Audit part 2 (PCF J29): the Tenant / Person pickers are finger-sized. */
+  #contextBar select { box-sizing: border-box; min-height: 40px; } /* audit2 hadith-pickers */
 </style>
 </head>
 <body>
