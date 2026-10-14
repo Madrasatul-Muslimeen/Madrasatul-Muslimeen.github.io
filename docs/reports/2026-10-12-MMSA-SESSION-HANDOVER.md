@@ -129,3 +129,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v10.40** (2026-10-13): a dragged landing wheel no longer hides Wheel / Legend / Unit on a phone (PCF J24).
 - **v10.41** (2026-10-13): the Word card's level totals as one sentence each, layout B (PCF J23).
 - **v10.42** (2026-10-14): the top of the Word card in layout B (PCF J23).
+- **v10.43** (2026-10-14): J23 mark choice B: ask before changing the other mark.

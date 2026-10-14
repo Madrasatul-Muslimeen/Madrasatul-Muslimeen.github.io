@@ -837,3 +837,4 @@ total). Allocated by the MMSA Architect.
 10.40: a dragged landing wheel no longer hides Wheel / Legend / Unit on a phone (PCF J24). Allocated by the MMSA Architect.
 10.41: the Word card's level totals as one sentence each, layout B (PCF J23). Allocated by the MMSA Architect.
 10.42: the top of the Word card in layout B (PCF J23). Allocated by the MMSA Architect.
+10.43: J23 mark choice B: ask before changing the other mark. Allocated by the MMSA Architect.

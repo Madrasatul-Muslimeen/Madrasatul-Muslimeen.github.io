@@ -198,7 +198,10 @@ console.log(`\n=== a lower state on ANOTHER form leaves the Dictionary Word alon
     }, null, { timeout: 6000 }).catch(() => {});
     await page.waitForTimeout(300);
   };
-  const press = async (state) => { await page.click(`#quranWordCardMount [data-word-progress-state="${state}"]`); await page.waitForTimeout(500); };
+  // Updated in place 14 Oct 2026 (PCF J23 choice B, round #813): a lowering press on a place known through another
+  // mark now asks first ("This also changes ... Change it?"). These checks describe saving only this place, which is
+  // what Cancel does, so the press answers Cancel; the Change it path is proved in word-card-change-other-mark-browser.
+  const press = async (state) => { await page.click(`#quranWordCardMount [data-word-progress-state="${state}"]`); await page.waitForTimeout(500); const cancel = await page.$('#quranWordCardMount [data-word-progress-ask="cancel"]'); if (cancel) { await cancel.click(); await page.waitForTimeout(500); } };
   const close = async () => { await page.click("#quranWordCardMount [data-word-card-close]").catch(() => {}); await page.waitForTimeout(200); };
 
   await openAt(2, 2); await press("achieved"); await close();

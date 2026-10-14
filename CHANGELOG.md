@@ -20800,3 +20800,19 @@ New strings `wholeQuranLevelSentence` ("{level}: Achieved {known} and {percent} 
 - lemma-levels 240/0; quran-lemma-progress-rendered 81/0; word-progress-practising 458/0; phone-width-overflow 217/0; behaviour 971/0.
 
 **Next:** Builder round #813 (J23 mark choice B: a press also changes the other mark that makes a word Achieved), then #814 (J26: Aʿūdhu billāh and Bismillah before Al-Fātiḥah, layout B).
+
+## v10.43 — 14 Oct 2026 — a lowering press asks before changing the mark that makes a word Achieved (PCF J23, mark choice B)
+
+**The Owner** (PCF J23, 14 Oct): mark choice "B".
+
+**Built (Builder round #813, branch `builder/issue-813-run-1243`):** a word can be Achieved at one place only because another mark reaches it: its root or form, or the same word elsewhere. A press there that would lower it now asks first, inside the Word card: "This also changes ‘{what}’ to {state} in all {n} places it reaches. Change it?". When more than one mark reaches the place, it lists each one by name and count, with **Change it** and **Cancel** buttons. Nothing is written until the reader answers. **Change it** writes through the existing `runLemmaProgressAction`; **Cancel** writes nothing. The new strings are translated into Bangla. No Rules change.
+
+**Architect review:** `quran-word-card-achieved-mirror-browser`'s other-form press now meets the question, so the check answers Cancel and then asserts the old write did not happen. It was updated in place, with the reason recorded (73/0).
+
+**Tests:**
+- New `tools/i18n-verify/word-card-change-other-mark-browser.mjs`: 116/0.
+- Mutations: no-write 32, wrong-count 4 and achieved-asks 8 fail; no-ask and cancel-writes exit 1 on a timeout.
+- Every `*word-card*`, `*word-progress*`, `quran-lemma*` and `dua-word*` suite green, among them word-progress-practising 458/0, lemma-levels 240/0 and word-card-layout-b-top 246/0.
+- phone-width-overflow 217/0; behaviour 971/0; rules-authorisation-executable 63/0; stub-parity 4/0.
+
+**Next:** Builder round #814 (J26: Aʿūdhu billāh and Bismillah before Al-Fātiḥah, layout B), already running.
