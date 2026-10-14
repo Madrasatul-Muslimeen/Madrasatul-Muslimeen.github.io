@@ -137,6 +137,10 @@ async function matrix(rules) {
     await expect("due malformed", "no", setDoc(I(p1, "t4"), item("t4", { due: "20/10/2026" })));
     await expect("done a boolean", "ok", setDoc(I(p1, "t5"), item("t5", { done: true })));
     await expect("done a string", "no", setDoc(I(p1, "t6"), item("t6", { done: "yes" })));
+    // Architect review (14 Oct): G05 calls `journal` "whether it is a journal entry", so Siyagah may store a boolean.
+    await expect("journal a boolean", "ok", setDoc(I(p1, "t8"), item("t8", { journal: true })));
+    await expect("journal a string", "ok", setDoc(I(p1, "t9"), item("t9", { journal: "j" })));
+    await expect("journal a number", "no", setDoc(I(p1, "t10"), item("t10", { journal: 1 })));
     await expect("tags a list", "ok", setDoc(I(p1, "t7"), item("t7", { tags: ["a"] })));
     await expect("tags a string", "no", setDoc(I(p1, "t8"), item("t8", { tags: "a" })));
     await expect("steps a list", "ok", setDoc(I(p1, "t9"), item("t9", { steps: [{ id: "s", t: "x", d: false }] })));
