@@ -26,6 +26,7 @@
     "note-images-storage": "firebase emulators:exec --only storage --project demo-mmsa-note-images --config note-images-storage.firebase.json \"node --test note-images-storage.rules.test.mjs\"",
     "intermediate-level": "firebase emulators:exec --only firestore --project demo-quranrevival-intermediate-level --config intermediate-level.firebase.json \"node --test intermediate-level.rules.test.mjs\"",
     "zab": "firebase emulators:exec --only firestore --project demo-mmsa-zab --config zab.firebase.json \"node --test zab.rules.test.mjs\"",
+    "ayah-keys": "firebase emulators:exec --only firestore --project demo-mmsa-ayah-keys --config ayah-keys.firebase.json \"node --test ayah-keys.rules.test.mjs\"",
     "roster-access":"firebase emulators:exec --only firestore --project demo-quranrevival-roster-access --config roster-access.firebase.json \"node --test roster-access.rules.test.mjs\""
   },
   "devDependencies": {
