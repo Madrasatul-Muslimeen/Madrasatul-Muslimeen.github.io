@@ -173,3 +173,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v10.47** (2026-10-14): Zab Z3: tasks and links (gated).
 - **v10.48** (2026-10-14): Zab Z4: ideas and shopping (gated).
 - **v10.49** (2026-10-14): Zab Z5: to Note (gated).
+- **v10.50** (2026-10-14): Zab Z6: pockets inside pockets (gated).

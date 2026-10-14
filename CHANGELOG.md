@@ -20988,3 +20988,30 @@ New strings `wholeQuranLevelSentence` ("{level}: Achieved {known} and {percent} 
 - stub-parity 4/0; rules-authorisation-executable 73/0; phone-width-overflow 217/0; behaviour 971/0.
 
 **The Owner's step:** the Zab Rules candidate is now final for Z1–Z5, so it is ready to publish (J25). **Next:** round Z6, pockets inside pockets.
+
+## v10.50 — 15 Oct 2026 — Zab round Z6: pockets inside pockets and the phone Drawer, behind the shut gate (PCF J25)
+
+**Built (Builder round #831, PR via branch `builder/issue-831-run-1268`):** following Siyagah's guide G05, "The pocket tree".
+- **The tree in the data:**
+  - `parentId` places a pocket in the tree; absent or `null` means top level, so no migration is needed.
+  - Pure readers `zabChildren()` and `zabPath()`.
+  - Moving a pocket into another sets `parentId`; a move into the pocket itself or its own descendant is refused.
+  - A pocket holding active items or pockets cannot be trashed.
+  - An orphan shows at the top level and keeps its `parentId`, so nothing is hidden.
+- **On screen:**
+  - The bar shows the top-level pockets.
+  - A pocket's panel shows its child pockets as chips and a row of crumbs (the path, each one tappable, the current one highlighted).
+  - "Move into…" lists only legal targets.
+  - On a phone, the Drawer: an indented list with ▸/▾.
+- The gate is still shut; `firestore.rules` and the candidate are unchanged.
+
+**Architect review:**
+- Screenshots at 390 and 1440px, en/bn, with a four-level pocket open: calm, crumbs wrapping tidily, Add buttons on one line.
+- Mutations a, b, d and f crashed the run with an uncaught timeout rather than failing a counted check. The suite now counts a timed-out flow as a failed check for that width, and every mutation reports a number.
+
+**Tests:**
+- New `zab-tree-browser`: 240/0. Mutations: a 20, b 8, c 4, d 36, e 16, f 8, g 8 fail.
+- zab-data 46/0; zab-bar-browser 370/0; zab-kinds-browser 324/0; zab-to-note-browser 196/0.
+- stub-parity 4/0; rules-authorisation-executable 73/0; phone-width-overflow 217/0; behaviour 971/0.
+
+**The Zab plan Z1–Z6 is complete.** It switches on when the Owner publishes `docs/governance/2026-10-14-zab-candidate.rules` (J25) and the Architect enables `zab-readiness.js` with a recorded decision. Rail and Columns, the other two phone layouts, are left for the Owner to ask for.
