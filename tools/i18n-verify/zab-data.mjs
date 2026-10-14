@@ -90,9 +90,14 @@ check("the hop is guarded by isZabReady() on the same statement", () => {
   const line = fs.readFileSync(path.join(appJs, "sw-register.js"), "utf8").split("\n").find((l) => l.includes("import(\"./zab-bar.js\")"));
   assert.ok(line && /isZabReady\(\)/.test(line.split("import(")[0]), "the dynamic import is not behind isZabReady()");
 });
-check("zab-readiness.js ships SHUT (ready: false as a literal) and imports nothing", () => {
+// Updated in place 15 Oct 2026: the Owner published the Zab Rules (PCF J25) and said "Yes, switch Zab on", so the
+// gate is now OPEN by a recorded Master Architect decision -- and still imports nothing.
+check("zab-readiness.js is open by a recorded decision (ready: true, master-architect, dated, with a reference) and imports nothing", () => {
   const src = fs.readFileSync(path.join(appJs, "zab-readiness.js"), "utf8");
-  assert.ok(/ready:\s*false,/.test(src));
+  assert.ok(/ready:\s*true,/.test(src));
+  assert.ok(/by:\s*"master-architect"/.test(src) && /on:\s*"\d{4}-\d{2}-\d{2}"/.test(src));
+  const ref = (src.match(/reference:\s*"([^"]+)"/) || [])[1];
+  assert.ok(ref && fs.existsSync(ref), "the decision's reference file does not exist: " + ref);
   assert.ok(!/^\s*import\s/m.test(src));
 });
 

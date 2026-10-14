@@ -24,14 +24,25 @@
 /** Who may declare deployment readiness. Closed: a module cannot authorise itself. */
 export const ZAB_READINESS_AUTHORITIES = Object.freeze(["master-architect"]);
 
-/** THE DECLARATION. This is the single place the answer lives. */
+/**
+ * THE DECLARATION. This is the single place the answer lives.
+ *
+ * ENABLED 2026-10-15. The Owner published
+ * docs/governance/2026-10-14-zab-candidate.rules to study-monitoring (PCF J25:
+ * "Published") and confirmed in the MMSA chat: "Yes, switch Zab on".
+ * firestore.rules was synced to that exact file in the same change. The record
+ * is the reference below.
+ */
 export const ZAB_DECLARATION = Object.freeze({
-  ready: false,
-  decision: null,
+  ready: true,
+  decision: Object.freeze({
+    by: "master-architect",
+    on: "2026-10-15",
+    reference: "docs/reports/2026-10-15-zab-enabled.md",
+  }),
   gate: "E1",
   note:
-    "The Zab bar and pockets stay off every page until the Owner publishes " +
-    "docs/governance/2026-10-14-zab-candidate.rules and the Architect records the decision here.",
+    "The Zab bar and pockets (zabPockets, zabItems) are authorised by the published Zab Rules.",
 });
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;

@@ -212,3 +212,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v10.52** (2026-10-14): Keys K2: saving layer and Rules candidate.
 - **v10.53** (2026-10-14): Audit part 1, fixes 3-9 (J29).
 - **v10.54** (2026-10-14): Audit part 2 (J29).
+- **v10.55** (2026-10-14): Zab switched on (J25).
