@@ -83,10 +83,14 @@ for (const lang of ["en", "bn"].filter((l) => !only("lang") || only("lang") === 
     const hd = await page.evaluate(() => {
       const h = document.querySelector(".quran-word-card header"); const r = (e) => { const b = e.getBoundingClientRect(); return { l: b.left, r: b.right, w: b.width, h: b.height }; };
       const prev = h.querySelector('[data-word-card-move="previous"]'), s = h.querySelector("[data-word-card-search-toggle]"), w = h.querySelector(".word-card-head-word");
-      return { prev: r(prev), s: s && r(s), w: r(w), pressed: s?.getAttribute("aria-pressed"), label: s?.getAttribute("aria-label"), text: s?.textContent, order: [...h.children].map((c) => c.getAttribute("data-word-card-search-toggle") !== null ? "search" : c.className || c.getAttribute("aria-label")).length,
+      return { prev: r(prev), s: s && r(s), w: r(w), sTop: s && s.getBoundingClientRect().top, sBottom: s && s.getBoundingClientRect().bottom, wTop: w.getBoundingClientRect().top, pressed: s?.getAttribute("aria-pressed"), label: s?.getAttribute("aria-label"), text: s?.textContent, order: [...h.children].map((c) => c.getAttribute("data-word-card-search-toggle") !== null ? "search" : c.className || c.getAttribute("aria-label")).length,
         over: h.scrollWidth - h.clientWidth, doc: document.documentElement.scrollWidth - window.innerWidth, card: (() => { const c = document.querySelector(".quran-word-card"); return c.scrollWidth - c.clientWidth; })() };
     });
-    check(`${L}: 🔍 sits between ‹ and the word`, hd.s && hd.prev.r <= hd.s.l + 0.5 && hd.s.r <= hd.w.l + 0.5, JSON.stringify(hd));
+    // Updated in place 14 Oct 2026 (PCF J23 layout B, round #812): on a narrow card the header wraps, so the word sits on
+    // its own second row under ‹ 🔍 This-āyah (measured: the one-row header needs ~440px). There 🔍 is right of ‹ and the
+    // word is BELOW 🔍; on a card wide enough for one row, 🔍 still sits between ‹ and the word as before.
+    const wrapped = hd.s && hd.wTop >= hd.sBottom - 0.5;
+    check(`${L}: 🔍 sits right of ‹, and before the word (same row) or above it (wrapped header)`, hd.s && hd.prev.r <= hd.s.l + 0.5 && (wrapped || hd.s.r <= hd.w.l + 0.5), JSON.stringify(hd));
     check(`${L}: 🔍 is a square tile the size of ‹ (${width > 520 ? 40 : 36}px)`, hd.s && hd.s.w === hd.prev.w && hd.s.h === hd.prev.h && hd.s.w === hd.s.h && hd.s.w === (width > 520 ? 40 : 36), JSON.stringify(hd.s));
     check(`${L}: 🔍 starts unpressed, with a translated aria-label`, hd.pressed === "false" && hd.label === (lang === "bn" ? "শব্দ খুঁজুন" : "Search for a word") && hd.text === "🔍", `${hd.pressed} ${hd.label}`);
     check(`${L}: the header and page do not overflow`, hd.over <= 0 && hd.doc <= 0 && hd.card <= 0, JSON.stringify([hd.over, hd.doc, hd.card]));
