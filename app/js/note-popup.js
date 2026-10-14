@@ -90,13 +90,16 @@ function insetOf(topInset) {
   return Number.isFinite(n) && n > 0 ? Math.round(n) : 0;
 }
 
-function defaultGeometry(minW = MIN_WIDTH, minH = MIN_HEIGHT, maxW = 920, topInset = 0) {
+function defaultGeometry(minW = MIN_WIDTH, minH = MIN_HEIGHT, maxW = 920, topInset = 0, bottomInset = 0) {
   const inset = insetOf(topInset);
+  // The window also opens clear of the bottom dock (its z-index is below #dock's, so a window dropped lower than the
+  // dock's top edge would be cut by it) -- moving the top down by the nav row's growth must not push the bottom under it.
+  const floor = inset ? window.innerHeight - insetOf(bottomInset) - 8 : window.innerHeight;
   const width = Math.max(minW, Math.min(maxW, Math.round(window.innerWidth * 0.86)));
-  const height = Math.max(minH, Math.min(720, Math.round(window.innerHeight * 0.82), window.innerHeight - inset - 12));
+  const height = Math.max(minH, Math.min(720, Math.round(window.innerHeight * 0.82), floor - inset));
   return {
     width, height,
-    top: Math.max(inset, Math.round((window.innerHeight - height) / 2)),
+    top: Math.max(inset, Math.min(Math.round((window.innerHeight - height) / 2), floor - height)),
     left: Math.max(0, Math.round((window.innerWidth - width) / 2)),
   };
 }
@@ -111,7 +114,7 @@ function clampGeometry(g, minW = MIN_WIDTH, minH = MIN_HEIGHT) {
   return { width, height, top, left };
 }
 
-function loadGeometry(id, minW = MIN_WIDTH, minH = MIN_HEIGHT, maxW = 920, topInset = 0) {
+function loadGeometry(id, minW = MIN_WIDTH, minH = MIN_HEIGHT, maxW = 920, topInset = 0, bottomInset = 0) {
   const saved = readJson(geometryKeyFor(id));
   if (saved && Number.isFinite(saved.width) && Number.isFinite(saved.height)
       && Number.isFinite(saved.top) && Number.isFinite(saved.left)) {
@@ -119,7 +122,7 @@ function loadGeometry(id, minW = MIN_WIDTH, minH = MIN_HEIGHT, maxW = 920, topIn
     const inset = insetOf(topInset);
     return inset && g.top < inset ? clampGeometry({ ...g, top: inset }, minW, minH) : g;
   }
-  return defaultGeometry(minW, minH, maxW, topInset);
+  return defaultGeometry(minW, minH, maxW, topInset, bottomInset);
 }
 function saveGeometry(g, id) { writeJson(geometryKeyFor(id), g); }
 
@@ -261,8 +264,8 @@ function clearGeometry(el) {
  * owner actually asked to drag by. Omitted, the whole handle drags, exactly
  * as the four stage views already do.
  */
-export function initPopupWindow(el, { id = "note", dragHandleEl, resizeHandleEls = [], maximizeBtn, onMaximizeChange, minWidth = MIN_WIDTH, minHeight = MIN_HEIGHT, dragFromSelector = null, defaultMaxWidth = 920, topInset = 0 } = {}) {
-  let geometry = loadGeometry(id, minWidth, minHeight, defaultMaxWidth, topInset);
+export function initPopupWindow(el, { id = "note", dragHandleEl, resizeHandleEls = [], maximizeBtn, onMaximizeChange, minWidth = MIN_WIDTH, minHeight = MIN_HEIGHT, dragFromSelector = null, defaultMaxWidth = 920, topInset = 0, bottomInset = 0 } = {}) {
+  let geometry = loadGeometry(id, minWidth, minHeight, defaultMaxWidth, topInset, bottomInset);
   let wasPopupViewport = isPopupViewport();
   if (wasPopupViewport) applyGeometry(el, geometry); else clearGeometry(el);
   let maximized = false;
@@ -322,7 +325,7 @@ export function initPopupWindow(el, { id = "note", dragHandleEl, resizeHandleEls
 
   maximizeBtn?.addEventListener("click", () => {
     if (maximized) {
-      commit(preMaximizeGeometry ?? loadGeometry(id, minWidth, minHeight, defaultMaxWidth, topInset));
+      commit(preMaximizeGeometry ?? loadGeometry(id, minWidth, minHeight, defaultMaxWidth, topInset, bottomInset));
       maximized = false;
     } else {
       preMaximizeGeometry = { ...geometry };

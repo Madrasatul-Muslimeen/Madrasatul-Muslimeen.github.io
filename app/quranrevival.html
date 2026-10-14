@@ -13639,9 +13639,11 @@
       const nav = document.querySelector(".app-nav");
       return nav ? nav.getBoundingClientRect().bottom + 8 : 0;
     };
+    const popupBottomInset = () => document.getElementById("dock")?.offsetHeight || 0;
     initPopupWindow(wheelPopupViewEl, {
       id: "wheel",
       topInset: popupTopInset,
+      bottomInset: popupBottomInset,
       dragHandleEl: wheelPopupTitleBarEl,
       resizeHandleEls: wheelPopupResizeHandles,
       maximizeBtn: wheelPopupMaximizeBtn,
@@ -13649,6 +13651,7 @@
     initPopupWindow(exploreView, {
       id: "explore",
       topInset: popupTopInset,
+      bottomInset: popupBottomInset,
       dragHandleEl: exploreBarEl,
       resizeHandleEls: explorePopupResizeHandles,
       maximizeBtn: explorePopupMaximizeBtn,
