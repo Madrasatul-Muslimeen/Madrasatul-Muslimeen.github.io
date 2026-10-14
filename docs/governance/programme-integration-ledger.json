@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "10.46",
+    "version": "10.47",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -3545,8 +3545,20 @@
     {
       "version": "10.46",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Zab Z2 bar and plain pockets behind a readiness gate (Builder round #823, PR #824)",
+      "integration": {
+        "authorizedOn": "2026-10-14",
+        "integratedOn": "2026-10-14",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "10.47",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Zab Z3 pocket kinds tasks and links (Builder round #825, PR #826)",
       "integration": {
         "authorizedOn": "2026-10-14",
         "integratedOn": "2026-10-14",
@@ -3555,8 +3567,9 @@
       }
     }
   ],
-  "nextUnallocated": "10.47",
+  "nextUnallocated": "10.48",
   "nextUnallocatedNote": [
+    "v10.47 was allocated to Zab Z3: tasks and links (gated), 2026-10-14.",
     "v10.46 was allocated to Zab Z2: the bar and plain pockets (gated), 2026-10-14.",
     "v10.45 was allocated to Zab Z1: saving layer and Rules candidate, 2026-10-14.",
     "v10.44 was allocated to J26 Before Al-Fatihah band, 2026-10-14.",
