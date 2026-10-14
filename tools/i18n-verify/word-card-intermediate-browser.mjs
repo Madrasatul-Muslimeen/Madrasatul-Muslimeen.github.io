@@ -34,7 +34,7 @@ const panel = (page) => page.evaluate(() => {
   const tabs = [...(card?.querySelectorAll('[role="tab"]') ?? [])];
   const senses = [...(card?.querySelectorAll("[data-word-card-sense]") ?? [])].map((li) => ({
     label: li.querySelector(".word-card-sense-top b")?.textContent.trim(), count: li.querySelector(".word-card-sense-count")?.textContent.trim(),
-    current: li.classList.contains("word-card-sense-current"), refs: [...li.querySelectorAll("[data-word-occurrence-goto]")].map((b) => b.dataset.wordOccurrenceGoto) }));
+    current: li.classList.contains("word-card-sense-current"), refs: [...li.querySelectorAll(".word-card-sense-ref")].map((b) => b.dataset.wordOccurrenceGoto) }));
   const groups = [...(card?.querySelectorAll("[data-word-card-meaning-group]") ?? [])].map((g) => ({
     current: g.classList.contains("word-card-meaning-group-current"), words: [...g.querySelectorAll("[data-word-form-toggle]")].map((b) => b.dataset.wordFormToggle) }));
   const tr = tabs.map((t) => t.getBoundingClientRect());
@@ -92,7 +92,7 @@ for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 1280]]) {
 
   if (lang === "en" && width === 390) {
     // The way-back law: a place opens its āyah, and "Back to Word Card" returns to this tab.
-    await page.click('#quranWordCardMount [data-word-occurrence-goto="40:28:31"]');
+    await page.click('#quranWordCardMount .word-card-sense-ref[data-word-occurrence-goto="40:28:31"]');
     await page.waitForFunction(() => document.querySelector("[data-word-card-origin-back]"), null, { timeout: 10000 }).catch(() => {});
     const there = await page.evaluate(() => ({ surah: document.getElementById("surahSelect").value, ayah: document.getElementById("ayahSelect").value, back: !!document.querySelector("[data-word-card-origin-back]") }));
     check(`${tag} tapping 40:28 opens Ghafir 40:28 with "Back to Word Card"`, there.surah === "40" && there.ayah === "28" && there.back, JSON.stringify(there));
