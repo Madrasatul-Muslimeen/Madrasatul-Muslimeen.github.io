@@ -9,7 +9,7 @@ import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { initializeTestEnvironment, assertFails, assertSucceeds } from "@firebase/rules-unit-testing";
-import { doc, getDoc, setDoc, updateDoc, deleteDoc } from "firebase/firestore";
+import { doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, collection, query, where } from "firebase/firestore";
 
 const PROJECT = "demo-mmsa-ayah-keys";
 const HOST = "127.0.0.1";
@@ -70,6 +70,8 @@ async function matrix(rules) {
       await setDoc(doc(db, "ayahKeyMarks", `${T}__madrasah__1`), mark("madrasah", 1, "uid-o1"));
       await setDoc(doc(db, "ayahKeyMarks", `${T}__s1__1`), mark("s1", 1, "uid-s1"));
       await setDoc(doc(db, "ayahKeyMarks", `${T}__s2__1`), mark("s2", 1, "uid-s2"));
+      // Architect review: a document under THIS tenant naming a person of ANOTHER tenant (seeded past the rules).
+      await setDoc(doc(db, "ayahKeyMarks", `${T}__x1__1`), mark("x1", 1, "uid-x1"));
     });
     const as = (uid) => env.authenticatedContext(uid).firestore();
     const o1 = as("uid-o1"), tc1 = as("uid-tc1"), tc2 = as("uid-tc2"), s1 = as("uid-s1"), s2 = as("uid-s2"), g1 = as("uid-g1"), x1 = as("uid-x1");
@@ -117,6 +119,14 @@ async function matrix(rules) {
     await expect("an unrelated teacher reads it", "no", getDoc(K(tc2, P("s1", 1))));
     await expect("other-tenant owner reads it", "no", getDoc(K(x1, P("s1", 1))));
     await expect("anonymous reads it", "no", getDoc(K(anon, P("s1", 1))));
+
+    // Architect review (isolates "person reads need no personInTenant"): x1 reading a document of THIS tenant that names x1.
+    // canRecordFor alone would let the person read their own scope; only personInTenant refuses it.
+    await expect("a person of ANOTHER tenant reads a this-tenant document naming them", "no", getDoc(K(x1, P("x1", 1))));
+    await expect("the same read of their own scope by a person OF this tenant", "ok", getDoc(K(s2, P("s2", 1))));
+    // Architect review (isolates "list open to any signed-in person"): a LIST query, member vs another tenant's owner.
+    await expect("a member lists the madrasah documents", "ok", getDocs(query(collection(s2, "ayahKeyMarks"), where("tenantId", "==", T), where("scope", "==", "madrasah"))));
+    await expect("OTHER-TENANT owner lists the madrasah documents", "no", getDocs(query(collection(x1, "ayahKeyMarks"), where("tenantId", "==", T), where("scope", "==", "madrasah"))));
 
     // --- a wrong key: scope or surah that does not match the document id
     await expect("right key", "ok", setDoc(K(s1, P("s1", 9)), mark("s1", 9, "uid-s1")));
@@ -184,20 +194,39 @@ const MUTATIONS = [
   ["the scope word is not special (a person scope can be 'madrasah')", /return scope == 'madrasah'/g, "return false"],
   ["key not bound to tenantId__scope__surah", /&& markKey == d\(\)\.tenantId \+ '__' \+ d\(\)\.scope \+ '__' \+ string\(d\(\)\.surah\)\n/g, "\n"],
   ["unknown fields allowed (hasOnly dropped)", /d\(\)\.keys\(\)\.hasOnly\(\[[^\]]*\]\)\n\s+&& d\(\)\.keys\(\)\.hasAll/g, "true\n            && d().keys().hasAll"],
-  ["required fields unchecked (hasAll dropped)", /&& d\(\)\.keys\(\)\.hasAll\(\[[^\]]*\]\)\n/g, "\n"],
   ["surah range unchecked", /&& d\(\)\.surah is int && d\(\)\.surah >= 1 && d\(\)\.surah <= 114\n/g, "\n"],
   ["entries type unchecked", /&& d\(\)\.entries is map\n/g, "\n"],
   ["envelope unchecked", /&& d\(\)\.schemaVersion is number\n\s+&& d\(\)\.createdAt is timestamp[^\n]*\n\s+&& d\(\)\.createdBy is string && d\(\)\.createdBy\.size\(\) > 0;/g, ";"],
   ["createdBy not bound to the writer", /&& d\(\)\.createdBy == myUid\(\);/g, ";"],
   ["delete allowed", /allow delete: if false;/g, "allow delete: if signedIn();"],
-  ["scope not frozen on update", /&& d\(\)\.scope == resource\.data\.scope\n/g, "\n"],
-  ["surah not frozen on update", /&& d\(\)\.surah == resource\.data\.surah\n/g, "\n"],
   ["tenantId not frozen on update, AND the key binding dropped (the key check alone also pins the tenant, so they go together)", /&& (?:d\(\)\.tenantId == resource\.data\.tenantId|markKey == d\(\)\.tenantId \+ '__' \+ d\(\)\.scope \+ '__' \+ string\(d\(\)\.surah\))\n/g, "\n"],
   ["createdBy not frozen on update", /&& d\(\)\.createdBy == resource\.data\.createdBy;/g, ";"],
   ["list open to any signed-in person", /allow list: if ayahKeysMayRead\(resource\.data\.tenantId, resource\.data\.scope\);/g, "allow list: if signedIn();"],
   ["read open to any signed-in person", /allow get: if ayahKeysMayRead\(resource\.data\.tenantId, resource\.data\.scope\);/g, "allow get: if signedIn();"],
   ["nonexistent-document read closed to everyone", /allow get: if signedIn\(\) && !exists\([^;]*\);/g, "allow get: if false;"],
 ];
+
+// Architect review: three checks are REDUNDANT BY DESIGN, so their mutation cannot turn the matrix red, and it must not.
+//  - hasAll: every required field is also tested individually (is string / is int / is map / is timestamp), and a
+//    missing field fails that test, so dropping hasAll alone denies nothing more or less.
+//  - scope / surah frozen on update: the document id is tenantId__scope__surah, and markKey == that triple is checked
+//    on every write, so an update cannot change either without failing the key binding.
+// They stay in the Rules as belt and braces. Each is asserted to stay GREEN here, so a change that makes one of them
+// the ONLY guard (for example dropping the key binding) is noticed: the paired key-binding mutation above goes red.
+const REDUNDANT = [
+  ["required fields unchecked (hasAll dropped)", /&& d\(\)\.keys\(\)\.hasAll\(\[[^\]]*\]\)\n/g, "\n"],
+  ["scope not frozen on update", /&& d\(\)\.scope == resource\.data\.scope\n/g, "\n"],
+  ["surah not frozen on update", /&& d\(\)\.surah == resource\.data\.surah\n/g, "\n"],
+];
+for (const [name, re, replacement] of REDUNDANT) {
+  test(`REDUNDANT BY DESIGN (stays green): ${name}`, async () => {
+    const start = candidate.indexOf("KEYS TO UNDERSTANDING (PCF J03");
+    const head = candidate.slice(0, start), block = candidate.slice(start);
+    assert.ok((block.match(re) || []).length >= 1, "the anchor matched nothing");
+    const bad = await matrix(head + block.replace(re, replacement));
+    assert.deepEqual(bad, [], "expected redundant, but the matrix went red: re-read the comment above");
+  });
+}
 
 test("the candidate behaves exactly as the matrix says", async () => {
   const bad = await matrix(candidate);
