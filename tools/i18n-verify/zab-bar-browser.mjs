@@ -360,13 +360,13 @@ for (const lang of ["en", "bn"]) {
       const fit = await page.evaluate(() => { const p = document.getElementById("zabPanel"); const r = p.getBoundingClientRect(); const wide = [...p.querySelectorAll("*")].filter((e) => { const b = e.getBoundingClientRect(); return b.width > 0 && (b.right > r.right + 1 || b.left < r.left - 1); }).length; return { sw: p.scrollWidth, cw: p.clientWidth, inside: r.left >= -1 && r.right <= window.innerWidth + 1, wide }; });
       check(`${tag}: the panel's inside fits its width, and the panel fits the screen`, fit.sw <= fit.cw + 1 && fit.inside && fit.wide === 0, JSON.stringify(fit));
       if (w < 768) check(`${tag}: phone panel is a bottom sheet`, await page.evaluate(() => { const r = document.getElementById("zabPanel").getBoundingClientRect(); return Math.abs(r.bottom - window.innerHeight) < 2 && r.width >= window.innerWidth - 1; }));
-      check(`${tag}: row shape follows the panel's own width`, await page.evaluate(() => { const p = document.getElementById("zabPanel"); return p.dataset.w === (p.clientWidth < 340 ? "narrow" : "wide"); }));
+      check(`${tag}: row shape follows the panel's own width`, await page.evaluate(() => { const p = document.getElementById("zabPanel"); return p.dataset.w === (p.clientWidth < 560 ? "narrow" : "wide"); }));
       await page.click('#zabPanel [data-zab-pocket="zp-memorise"]');
       await page.waitForSelector("#zabPanel [data-zab-new-item]");
       await page.fill("#zabPanel [data-zab-new-item]", "A rather long item text that has to wrap inside a narrow panel without overflowing it sideways");
       await page.press("#zabPanel [data-zab-new-item]", "Enter");
       await page.waitForSelector("#zabPanel .zab-row");
-      const fit2 = await page.evaluate(() => { const p = document.getElementById("zabPanel"); const r = p.getBoundingClientRect(); const bad = [...p.querySelectorAll("button,select,input")].filter((e) => { const b = e.getBoundingClientRect(); return b.width > 0 && (b.right > r.right + 1 || b.left < r.left - 1); }).length; return { fits: p.scrollWidth <= p.clientWidth + 1, bad }; });
+      const fit2 = await page.evaluate(() => { const p = document.getElementById("zabPanel"); const r = p.getBoundingClientRect(); const bad = [...p.querySelectorAll("button,select,input")].filter((e) => { const b = e.getBoundingClientRect(); return b.width > 0 && (b.right > r.right + 1 || b.left < r.left - 1); }).length; const textW = p.querySelector(".zab-row .zab-main").getBoundingClientRect().width; return { fits: p.scrollWidth <= p.clientWidth + 1, bad, textW: Math.round(textW) }; });
       // Architect review (Z2): the item's TEXT gets the row's width, the controls go beneath it -- never a column a few letters wide.
       const txt = await page.evaluate(() => { const p = document.getElementById("zabPanel"); const t = [...p.querySelectorAll(".zab-row .zab-text")].pop(); const a = t && t.closest(".zab-row").querySelector(".zab-acts"); if (!t || !a) return null; const tr = t.getBoundingClientRect(), ar = a.getBoundingClientRect(); return { share: tr.width / p.clientWidth, below: ar.top >= tr.bottom - 1 }; });
       check(`${tag}: the item's text has at least 70% of the panel's width`, !!txt && txt.share >= 0.7, JSON.stringify(txt));
@@ -374,6 +374,7 @@ for (const lang of ["en", "bn"]) {
       const oneLine = await page.evaluate(() => { const a = [...document.querySelectorAll("#zabPanel .zab-row .zab-acts")].pop(); if (!a) return null; const tops = [...a.children].filter((c) => c.getBoundingClientRect().width > 0).map((c) => Math.round(c.getBoundingClientRect().top)); return { lines: new Set(tops).size, n: tops.length }; });
       check(`${tag}: the item's controls sit on ONE line (calm, nothing ragged)`, !!oneLine && oneLine.n >= 4 && oneLine.lines === 1, JSON.stringify(oneLine));
       check(`${tag}: an item row with long text still fits (every control inside the panel)`, fit2.fits && fit2.bad === 0, JSON.stringify(fit2));
+      check(`${tag}: the item's text column keeps a readable width (>= 150px; a screenshot caught it at 40px)`, fit2.textW >= 150, JSON.stringify(fit2));
       check(`${tag}: no sideways scroll with the panel open`, await noSideways(page));
       if (pg === "records.html" && (w === 390 || w === 1280)) await page.screenshot({ path: `/tmp/zab-${w}-${lang}.png` });
       await page.keyboard.press("Escape");

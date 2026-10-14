@@ -33,6 +33,10 @@ import { getAppLang } from "./prefs.js";
 import * as zab from "./zab-data.js";
 
 const BAR_H = 44;
+// A row keeps its actions beside the text only when the PANEL is this wide (measured, not the window). The 380px
+// side panel and a phone are both narrower: the actions take their own line under the text. (Measured: beside the
+// text at 380px the text column was squeezed to ~40px.)
+const NARROW_BELOW = 560;
 const ICONS = ["📁", "🧠", "🔁", "❓", "🔗", "⭐", "📖", "🕌", "✍️", "💡", "🎯", "🛒"];
 
 const S = {
@@ -133,7 +137,7 @@ export function mountZabBar() {
     document.addEventListener("keydown", (e) => { if (e.key === "Escape" && S.view !== "closed") closePanel(); });
     const panel = root.querySelector("#zabPanel");
     if (typeof ResizeObserver !== "undefined") {
-      ro = new ResizeObserver(() => { panel.dataset.w = panel.clientWidth && panel.clientWidth < 340 ? "narrow" : "wide"; });
+      ro = new ResizeObserver(() => { panel.dataset.w = panel.clientWidth && panel.clientWidth < NARROW_BELOW ? "narrow" : "wide"; });
       ro.observe(panel);
     }
   };
@@ -321,7 +325,7 @@ function render() {
   const hadFocus = keep && document.activeElement === keep;
   p.innerHTML = S.view === "pocket" ? renderPocket() : S.view === "trash" ? renderTrash() : renderList();
   if (typed) { const k = p.querySelector("input[data-zab-new-pocket],input[data-zab-new-item]"); if (k) { k.value = typed; if (hadFocus) k.focus(); } }
-  p.dataset.w = p.clientWidth && p.clientWidth < 340 ? "narrow" : "wide";
+  p.dataset.w = p.clientWidth && p.clientWidth < NARROW_BELOW ? "narrow" : "wide";
 }
 
 // ---------- actions ------------------------------------------------------------
