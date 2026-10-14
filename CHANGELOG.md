@@ -20905,3 +20905,31 @@ New strings `wholeQuranLevelSentence` ("{level}: Achieved {known} and {percent} 
 - zab-data 27/0; stub-parity 4/0; rules-authorisation-executable 73/0; phone-width-overflow 217/0; behaviour 971/0.
 
 **The Owner's step to try it:** publish `docs/governance/2026-10-14-zab-candidate.rules`. Then the Architect enables the gate with a recorded decision. **Next:** round Z3 (tasks and links).
+
+## v10.47 — 14 Oct 2026 — Zab round Z3: pocket kinds, tasks and links, behind the shut gate (PCF J25)
+
+**Built (Builder round #825, PR #826, branch `builder/issue-825-run-1257`):** in `app/js/zab-data.js` and `app/js/zab-bar.js`.
+- `zabType()` is the one reader of a pocket's kind, and a Kind picker (Plain / Tasks / Links) writes `ztype`.
+- **Tasks:**
+  - due date (the device's local day) and priority;
+  - steps with a count (e.g. 1/1);
+  - headings: Overdue, Today, Tomorrow, Later, No date and Done;
+  - quick typing: `!`, `today` and `tomorrow` (and আজ / আগামীকাল), removed from the text.
+- **Links:**
+  - a pasted address becomes `url`;
+  - the site name shows;
+  - the link opens in a new tab with `rel="noopener"`;
+  - no title is fetched.
+- An item keeps its fields when it moves to a pocket of another kind.
+- Bangla strings added. The gate stays shut and `firestore.rules` is unchanged.
+
+**Architect review:** the Builder run stopped after the code and the pure suite, with no browser checks and no PR. The Architect:
+- wrote `tools/i18n-verify/zab-kinds-browser.mjs` (en/bn × 320, 390, 820 and 1440px);
+- fixed a squeezed step "Add" button that broke into "Ad / d" on desktop (Add buttons keep their natural width);
+- made a crude mutation precise.
+
+**Tests:**
+- New `zab-kinds-browser`: 114/0. Mutations: tomorrow 12, overdue 8, noopener 8, a move strips fields 8, the Kind picker writes nothing 2, a squeezed Add 8 fail.
+- zab-bar-browser 370/0; zab-data 33/0; stub-parity 4/0; rules-authorisation-executable 73/0; phone-width-overflow 217/0; behaviour 971/0.
+
+**Next:** round Z4, ideas and shopping. The Owner's step stays the same: publish the Zab Rules (J25).

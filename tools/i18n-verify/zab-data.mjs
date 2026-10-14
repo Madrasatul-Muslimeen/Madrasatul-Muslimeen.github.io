@@ -424,5 +424,73 @@ await acheck("the fields the module writes are exactly inside its declared write
   assert.ok(writeLog.length >= 10, "the control must have exercised the writers");
 });
 
+// --- 3. Z3: pocket kinds, tasks and links -----------------------------------------
+check("zabType: the pocket's ztype, otherwise plain (unknown values are plain too)", () => {
+  assert.equal(zab.zabType({ ztype: "tasks" }), "tasks");
+  assert.equal(zab.zabType({ ztype: "links" }), "links");
+  assert.equal(zab.zabType({}), "plain");
+  assert.equal(zab.zabType(undefined), "plain");
+  assert.equal(zab.zabType({ ztype: "nonsense" }), "plain");
+  assert.equal(zab.zabType(zab.SEED_POCKETS.find((p) => p.pocketId === "zp-links")), "links");
+  assert.equal(zab.zabType(zab.SEED_POCKETS.find((p) => p.pocketId === "zp-memorise")), "plain");
+});
+check("parseQuickTask: ! sets priority, today/tomorrow (English and Bangla) set the due date, and the words go", () => {
+  const now = new Date(2026, 9, 14, 12); // 14 Oct 2026, local
+  assert.deepEqual(zab.parseQuickTask("! pay rent tomorrow", now), { pri: 1, due: "2026-10-15", text: "pay rent" });
+  assert.deepEqual(zab.parseQuickTask("call Today", now), { due: "2026-10-14", text: "call" });
+  assert.deepEqual(zab.parseQuickTask("আজ বাজার", now), { due: "2026-10-14", text: "বাজার" });
+  assert.deepEqual(zab.parseQuickTask("বই আগামীকাল", now), { due: "2026-10-15", text: "বই" });
+  assert.deepEqual(zab.parseQuickTask("!urgent thing", now), { pri: 1, text: "urgent thing" });
+  assert.deepEqual(zab.parseQuickTask("plan for todayish", now), { text: "plan for todayish" }, "only the whole word counts");
+  assert.deepEqual(zab.parseQuickTask("end of month", new Date(2026, 11, 31)), { text: "end of month" });
+  assert.equal(zab.parseQuickTask("tomorrow", new Date(2026, 11, 31)).due, "2027-01-01", "tomorrow crosses a year");
+});
+check("dueGroup: Overdue, Today, Tomorrow, Later, No date -- and a ticked task is Done whatever its date", () => {
+  const now = new Date(2026, 9, 14, 12);
+  const g = (o) => zab.dueGroup(o, now);
+  assert.equal(g({ due: "2026-10-13" }), "overdue");
+  assert.equal(g({ due: "2026-10-14" }), "today");
+  assert.equal(g({ due: "2026-10-15" }), "tomorrow");
+  assert.equal(g({ due: "2026-10-16" }), "later");
+  assert.equal(g({}), "nodate");
+  assert.equal(g({ due: "not a date" }), "nodate");
+  assert.equal(g({ due: "2026-10-13", done: true }), "done");
+});
+check("stepCount, asUrl and siteName", () => {
+  assert.deepEqual(zab.stepCount([{ d: true }, { d: false }, { d: true }]), { done: 2, total: 3 });
+  assert.deepEqual(zab.stepCount(undefined), { done: 0, total: 0 });
+  assert.equal(zab.asUrl("https://www.example.com/a?b=1"), "https://www.example.com/a?b=1");
+  assert.equal(zab.asUrl("javascript:alert(1)"), null);
+  assert.equal(zab.asUrl("two words https://x.com"), null);
+  assert.equal(zab.asUrl("not a link"), null);
+  assert.equal(zab.siteName("https://www.example.com/a"), "example.com");
+});
+await acheck("a task keeps every field through a move to another pocket and back; an emptied kind field is removed", async () => {
+  reset();
+  await zab.addPocket(db, ctx, { name: "T", pocketId: "pt", ztype: "tasks" });
+  await zab.addPocket(db, ctx, { name: "P", pocketId: "pp" });
+  const { itemId } = await zab.addItem(db, ctx, "pt", { text: "x", due: "2026-10-15", pri: 1, steps: [{ id: "s1", t: "one", d: true }], url: "", tags: [] });
+  const before = { ...doc_("zabItems", itemId) };
+  assert.ok(!("url" in before) && !("tags" in before), "empty kind fields are not stored");
+  await zab.moveItem(db, ctx, itemId, "pp");
+  await zab.moveItem(db, ctx, itemId, "pt");
+  const after = doc_("zabItems", itemId);
+  for (const k of ["due", "pri", "steps", "text"]) assert.deepEqual(after[k], before[k], `${k} survives the moves`);
+  await zab.editItem(db, ctx, itemId, { due: "", pri: undefined });
+  assert.ok(!("due" in doc_("zabItems", itemId)) && !("pri" in doc_("zabItems", itemId)), "an emptied field is removed");
+});
+await acheck("a link item stores url, and a pocket's kind can be set and cleared", async () => {
+  reset();
+  const { pocketId } = await zab.addPocket(db, ctx, { name: "L", pocketId: "pl" });
+  await zab.editPocket(db, ctx, "pl", { ztype: "links" });
+  assert.equal(doc_("zabPockets", "pl").ztype, "links");
+  await zab.editPocket(db, ctx, "pl", { ztype: "" });
+  assert.ok(!("ztype" in doc_("zabPockets", "pl")), "plain = no ztype stored");
+  assert.equal((await zab.editPocket(db, ctx, "pl", { ztype: "bogus" })).refused, "bad-ztype");
+  const { itemId } = await zab.addItem(db, ctx, "pl", { text: "https://example.com", url: "https://example.com" });
+  assert.equal(doc_("zabItems", itemId).url, "https://example.com");
+  assert.equal(pocketId, "pl");
+});
+
 console.log(`\n==== zab-data: ${passed} passed, ${failed} failed ====`);
 process.exit(failed === 0 ? 0 : 1);
