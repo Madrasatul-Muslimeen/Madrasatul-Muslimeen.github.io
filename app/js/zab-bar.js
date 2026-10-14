@@ -1,0 +1,475 @@
+// Zab round Z2 (PCF J25, issue #823) -- the Zab bar and plain pockets.
+//
+// MOUNTED FROM ONE PLACE. sw-register.js (which every app page already calls)
+// imports this file ONLY when zab-readiness.js says ready, so while the gate is
+// shut none of this code is even fetched, nothing appears and nothing reads or
+// writes Firestore. Owner answers 1 B (the bar is on every MMSA page), 3 B (one
+// shared family Zab) and 4 B (study pockets).
+//
+// SHAPE. Laptop / tablet (>= 768px): a thin bar along the bottom with a Zab
+// button and, once opened, the top-level pockets; a pocket opens a 380px side
+// panel. Phone: one corner button (48px) opens the pockets as a bottom sheet.
+// A row inside the panel chooses its shape by the PANEL'S OWN measured width
+// (ResizeObserver -> data-w), never the window's (Siyagah guide G05).
+//
+// LOAD (I9). Mounting draws a button and reads NOTHING. Pockets are read the
+// first time the bar is opened, and seeded once (seedPockets) when the tenant
+// has none.
+//
+// I2/I15. Screen code never touches Firestore directly: every read and write
+// goes through zab-data.js, and a failed write shows a message in the panel.
+// Nothing is ever deleted: Trash and Restore (I4).
+//
+// THE WAY BACK. Opening remembers the element that had focus and the scroll
+// position; closing puts both back, so the reader is exactly where they were.
+
+import { db, auth } from "./firebase-init.js";
+import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { TENANT } from "./collections.js";
+import { getActiveContext, getMyMembershipRoles, pickContext } from "./session-context.js";
+import { t } from "./i18n.js";
+import { langText } from "./lang.js";
+import { getAppLang } from "./prefs.js";
+import * as zab from "./zab-data.js";
+
+const BAR_H = 44;
+const ICONS = ["📁", "🧠", "🔁", "❓", "🔗", "⭐", "📖", "🕌", "✍️", "💡", "🎯", "🛒"];
+
+const S = {
+  ctx: null, loaded: false, loading: false,
+  pockets: [], items: [], people: null,
+  trashed: { pockets: [], items: [] },
+  view: "closed", pocketId: null, editingPocket: null, editingItem: null,
+  opener: null, scrollY: 0, msg: "",
+};
+let root = null, ro = null;
+
+const esc = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+const lang = () => getAppLang();
+const pocketName = (p) => (p.names ? langText(p.names, lang(), p.name) : p.name || "");
+const byOrder = (a, b) => (a.order ?? 0) - (b.order ?? 0);
+const ms = (v) => (v && typeof v.toMillis === "function" ? v.toMillis() : v instanceof Date ? v.getTime() : 0);
+const activePockets = () => S.pockets.filter((p) => p.status !== "trashed").sort(byOrder);
+const pocketById = (id) => S.pockets.find((p) => p.pocketId === id);
+
+const CSS = `
+#zabRoot { font: 14px/1.35 system-ui, sans-serif; color: #1b2a41; }
+#zabRoot *, #zabRoot *::before, #zabRoot *::after { box-sizing: border-box; }
+#zabBar { position: fixed; left: 0; right: 0; bottom: 0; height: ${BAR_H}px; z-index: 900; display: none; align-items: center; gap: 4px; padding: 0 6px; background: #1f3a6e; color: #fff; }
+#zabBar .zab-bar-scroll { display: flex; gap: 4px; flex: 1 1 auto; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+#zabBar button { min-height: 40px; min-width: 40px; border: 0; border-radius: 8px; background: rgba(255,255,255,.14); color: #fff; font: inherit; padding: 0 12px; cursor: pointer; white-space: nowrap; flex: 0 0 auto; }
+#zabBar button[aria-pressed="true"] { background: #fff; color: #1f3a6e; }
+#zabSpacer { display: none; height: ${BAR_H}px; }
+#zabCorner { position: fixed; right: 12px; bottom: 12px; width: 48px; height: 48px; border-radius: 50%; border: 0; z-index: 900; background: #1f3a6e; color: #fff; font-size: 22px; box-shadow: 0 2px 10px rgba(0,0,0,.3); cursor: pointer; }
+body:has(.nw-switch) #zabCorner { bottom: 68px; }
+#zabBackdrop { position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 940; }
+#zabPanel { position: fixed; z-index: 950; background: #fff; color: #1b2a41; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 -2px 18px rgba(0,0,0,.28); left: 0; right: 0; bottom: 0; max-height: 78vh; border-radius: 16px 16px 0 0; }
+#zabPanel[hidden], #zabBackdrop[hidden] { display: none; }
+.zab-head { flex: 0 0 auto; display: flex; align-items: center; gap: 6px; padding: 8px 10px; border-bottom: 1px solid #dde3ee; min-width: 0; }
+.zab-head h2 { flex: 1 1 auto; margin: 0; font-size: 1rem; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.zab-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden; padding: 8px 10px 14px; }
+#zabPanel button, #zabPanel select, #zabPanel input { font: inherit; min-height: 40px; max-width: 100%; }
+#zabPanel button { min-width: 40px; border: 1px solid #c7d0e0; border-radius: 8px; background: #f3f6fb; color: #1b2a41; cursor: pointer; padding: 0 10px; }
+#zabPanel input[type="text"], #zabPanel select { border: 1px solid #c7d0e0; border-radius: 8px; padding: 0 8px; background: #fff; color: #1b2a41; min-width: 0; }
+#zabPanel input[type="color"] { padding: 0 2px; width: 44px; }
+.zab-add { display: flex; gap: 6px; margin-bottom: 8px; }
+.zab-add input { flex: 1 1 auto; }
+.zab-row { display: flex; align-items: center; gap: 6px; padding: 6px 0; border-bottom: 1px solid #eef1f6; min-width: 0; }
+.zab-row .zab-main { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.zab-row .zab-by { display: block; font-size: .78rem; color: #5b6b86; }
+.zab-row .zab-acts { display: flex; gap: 4px; flex: 0 0 auto; align-items: center; }
+.zab-row.zab-done .zab-text { text-decoration: line-through; color: #6b778c; }
+.zab-row input[type="checkbox"] { width: 22px; min-height: 22px; flex: 0 0 auto; }
+#zabPanel[data-w="narrow"] .zab-row { flex-wrap: wrap; }
+#zabPanel[data-w="narrow"] .zab-row .zab-main { flex: 1 1 calc(100% - 40px); }
+#zabPanel[data-w="narrow"] .zab-row .zab-acts { flex: 1 1 100%; flex-wrap: wrap; }
+.zab-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-inline-end: 6px; }
+.zab-edit { display: flex; flex-wrap: wrap; gap: 6px; width: 100%; }
+.zab-edit input[type="text"] { flex: 1 1 140px; }
+#zabMsg { margin: 0 0 8px; padding: 6px 8px; border-radius: 8px; background: #fdecea; color: #8a1c14; }
+#zabMsg:empty { display: none; }
+.zab-muted { color: #5b6b86; }
+.zab-foot { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+@media (min-width: 768px) {
+  #zabBar { display: flex; }
+  #zabSpacer { display: block; }
+  #zabCorner { display: none; }
+  #zabBackdrop { display: none; }
+  #zabPanel { left: auto; right: 0; top: 0; bottom: ${BAR_H}px; width: 380px; max-width: 100vw; max-height: none; border-radius: 0; box-shadow: -2px 0 18px rgba(0,0,0,.22); }
+  body.zab-bar-on .nw-switch { bottom: ${BAR_H}px; }
+  body.zab-bar-on #swUpdateNotice { bottom: calc(1rem + ${BAR_H}px) !important; }
+  body.zab-bar-on .aa-toast { bottom: calc(24px + ${BAR_H}px); }
+  body.zab-bar-on #qrStudyNotice { bottom: calc(4.6rem + ${BAR_H}px); }
+  body.zab-bar-on .ayah-sheet { bottom: ${BAR_H}px; }
+}
+`;
+
+// ---------- mount -----------------------------------------------------------
+
+export function mountZabBar() {
+  if (root || typeof document === "undefined") return;
+  const start = () => {
+    if (root) return;
+    const style = document.createElement("style");
+    style.id = "zabStyle";
+    style.textContent = CSS;
+    document.head.appendChild(style);
+    root = document.createElement("div");
+    root.id = "zabRoot";
+    root.setAttribute("data-zab", "");
+    root.innerHTML = `<div id="zabSpacer" aria-hidden="true"></div>
+      <nav id="zabBar" aria-label="${esc(t("Zab"))}"><button type="button" data-zab-open aria-pressed="false">🧰 ${esc(t("Zab"))}</button><div class="zab-bar-scroll" data-zab-barpockets></div></nav>
+      <button type="button" id="zabCorner" data-zab-open aria-label="${esc(t("Open Zab"))}">🧰</button>
+      <div id="zabBackdrop" data-zab-close hidden></div>
+      <aside id="zabPanel" role="dialog" aria-label="${esc(t("Zab"))}" hidden data-w="wide"></aside>`;
+    document.body.appendChild(root);
+    document.body.classList.add("zab-bar-on");
+    root.addEventListener("click", onClick);
+    root.addEventListener("keydown", onKey);
+    root.addEventListener("change", onChange);
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && S.view !== "closed") closePanel(); });
+    const panel = root.querySelector("#zabPanel");
+    if (typeof ResizeObserver !== "undefined") {
+      ro = new ResizeObserver(() => { panel.dataset.w = panel.clientWidth && panel.clientWidth < 340 ? "narrow" : "wide"; });
+      ro.observe(panel);
+    }
+  };
+  if (document.body) start();
+  else document.addEventListener("DOMContentLoaded", start, { once: true });
+}
+
+// ---------- loading (only when first opened) ---------------------------------
+
+async function resolveCtx() {
+  const uid = auth.currentUser?.uid;
+  if (!uid) return null;
+  let c = getActiveContext();
+  if (!c) c = pickContext(await getMyMembershipRoles(db, uid), null);
+  if (!c?.tenantId || !c?.personId) return null;
+  return { tenantId: c.tenantId, personId: c.personId, uid };
+}
+
+async function ensureLoaded() {
+  if (S.loaded || S.loading) return;
+  S.loading = true;
+  try {
+    S.ctx = await resolveCtx();
+    if (!S.ctx) { S.msg = t("Sign in to use Zab."); return; }
+    let all = await zab.listPockets(db, S.ctx.tenantId, { includeTrashed: true });
+    if (!all.length) {
+      const res = await zab.seedPockets(db, S.ctx);
+      if (!res.ok) { S.msg = failText(res); return; }
+      all = await zab.listPockets(db, S.ctx.tenantId, { includeTrashed: true });
+    }
+    S.pockets = all;
+    S.loaded = true;
+  } catch (err) {
+    S.msg = t("Could not load Zab. Please try again.");
+    console.warn("Zab load failed:", err && err.message);
+  } finally {
+    S.loading = false;
+  }
+}
+
+async function ensurePeople() {
+  if (S.people || !S.ctx) return;
+  S.people = {};
+  try {
+    const snap = await getDocs(query(collection(db, TENANT.TENANT_PEOPLE), where("tenantId", "==", S.ctx.tenantId)));
+    snap.docs.forEach((d) => { const v = d.data(); S.people[v.personId ?? d.id] = v; });
+  } catch (err) { console.warn("Zab people load failed:", err && err.message); }
+}
+const personName = (id) => (S.people?.[id] ? langText(S.people[id].name, lang(), id) : "");
+
+async function loadItems(pocketId) {
+  S.items = (await zab.listItems(db, S.ctx.tenantId, pocketId)).sort(byOrder);
+}
+
+// ---------- open / close ------------------------------------------------------
+
+async function openPanel(view = "list", pocketId = null) {
+  if (S.view === "closed") { S.opener = document.activeElement; S.scrollY = window.scrollY; }
+  S.view = "list";
+  S.msg = "";
+  panel().hidden = false;
+  root.querySelector("#zabBackdrop").hidden = false;
+  render();
+  await ensureLoaded();
+  if (S.loaded && pocketId) await openPocket(pocketId);
+  else if (S.loaded && view === "trash") await openTrash();
+  else render();
+}
+
+function closePanel() {
+  S.view = "closed"; S.editingPocket = null; S.editingItem = null; S.msg = "";
+  panel().hidden = true;
+  root.querySelector("#zabBackdrop").hidden = true;
+  root.querySelectorAll("[data-zab-open]").forEach((b) => b.setAttribute("aria-pressed", "false"));
+  // The way back: focus and scroll return to exactly where the reader was.
+  const o = S.opener; S.opener = null;
+  if (o && typeof o.focus === "function" && document.contains(o)) { try { o.focus({ preventScroll: true }); } catch { /* ignore */ } }
+  window.scrollTo(window.scrollX, S.scrollY);
+}
+
+async function openPocket(pocketId) {
+  S.view = "pocket"; S.pocketId = pocketId; S.editingItem = null; S.msg = "";
+  render();
+  try { await Promise.all([loadItems(pocketId), ensurePeople()]); } catch { S.msg = t("Could not load Zab. Please try again."); }
+  render();
+}
+
+async function openTrash() {
+  S.view = "trash"; S.msg = "";
+  render();
+  try {
+    const lists = await Promise.all(S.pockets.map((p) => zab.listItems(db, S.ctx.tenantId, p.pocketId, { includeTrashed: true })));
+    S.trashed.items = lists.flat().filter((i) => i.status === "trashed");
+    await ensurePeople();
+  } catch { S.msg = t("Could not load Zab. Please try again."); }
+  render();
+}
+
+// ---------- rendering --------------------------------------------------------
+
+const panel = () => root.querySelector("#zabPanel");
+const failText = (res) => {
+  if (res && res.refused === "not-empty") return t("This pocket still has items. Move or trash them first.");
+  if (res && res.refused === "name-required") return t("Please type a name.");
+  if (res && res.refused === "text-required") return t("Please type something.");
+  return t("Could not save. Please try again.");
+};
+
+function renderBarPockets() {
+  const host = root.querySelector("[data-zab-barpockets]");
+  host.innerHTML = activePockets().map((p) =>
+    `<button type="button" data-zab-pocket="${esc(p.pocketId)}" aria-pressed="${S.view === "pocket" && S.pocketId === p.pocketId}">${esc(p.icon || "📁")} ${esc(pocketName(p))}</button>`).join("");
+}
+
+function head(title, back) {
+  return `<div class="zab-head">${back ? `<button type="button" data-zab-nav="list" aria-label="${esc(t("Back"))}">←</button>` : ""}<h2>${esc(title)}</h2><button type="button" data-zab-close aria-label="${esc(t("Close"))}">✕</button></div>`;
+}
+const msgBox = () => `<p id="zabMsg" role="status">${esc(S.msg)}</p>`;
+
+function renderList() {
+  const ps = activePockets();
+  const rows = ps.map((p, i) => {
+    if (S.editingPocket === p.pocketId) {
+      return `<div class="zab-row"><div class="zab-edit" data-zab-edit-pocket="${esc(p.pocketId)}">
+        <input type="text" data-zab-f="name" value="${esc(pocketName(p))}" aria-label="${esc(t("Name"))}">
+        <select data-zab-f="icon" aria-label="${esc(t("Icon"))}">${[...new Set([p.icon || "📁", ...ICONS])].map((ic) => `<option${ic === (p.icon || "📁") ? " selected" : ""}>${ic}</option>`).join("")}</select>
+        <input type="color" data-zab-f="color" value="${esc(p.color || "#4a5568")}" aria-label="${esc(t("Pocket colour"))}">
+        <button type="button" data-zab-save-pocket="${esc(p.pocketId)}">${esc(t("Save"))}</button>
+        <button type="button" data-zab-cancel-edit>${esc(t("Cancel"))}</button></div></div>`;
+    }
+    return `<div class="zab-row"><div class="zab-main"><button type="button" data-zab-pocket="${esc(p.pocketId)}" style="border:0;background:none;padding:0;text-align:start;min-height:40px"><span class="zab-dot" style="background:${esc(p.color || "#4a5568")}"></span>${esc(p.icon || "📁")} ${esc(pocketName(p))}</button></div>
+      <div class="zab-acts">
+        <button type="button" data-zab-pup="${esc(p.pocketId)}" aria-label="${esc(t("Move up"))}"${i === 0 ? " disabled" : ""}>↑</button>
+        <button type="button" data-zab-pdown="${esc(p.pocketId)}" aria-label="${esc(t("Move down"))}"${i === ps.length - 1 ? " disabled" : ""}>↓</button>
+        <button type="button" data-zab-pedit="${esc(p.pocketId)}" aria-label="${esc(t("Rename"))}">✎</button>
+        <button type="button" data-zab-ptrash="${esc(p.pocketId)}" aria-label="${esc(t("Trash"))}">🗑</button></div></div>`;
+  }).join("");
+  return `${head(t("Zab"))}<div class="zab-body">${msgBox()}
+    <div class="zab-add"><input type="text" data-zab-new-pocket placeholder="${esc(t("New pocket name"))}" aria-label="${esc(t("New pocket name"))}"><button type="button" data-zab-add-pocket>${esc(t("Add pocket"))}</button></div>
+    ${S.loading ? `<p class="zab-muted">${esc(t("Loading…"))}</p>` : rows || `<p class="zab-muted">${esc(t("Nothing here yet."))}</p>`}
+    <div class="zab-foot"><button type="button" data-zab-nav="trash">🗑 ${esc(t("Trash"))}</button></div></div>`;
+}
+
+function renderPocket() {
+  const p = pocketById(S.pocketId);
+  const others = activePockets().filter((x) => x.pocketId !== S.pocketId);
+  const rows = S.items.map((it, i) => {
+    const by = personName(it.addedByPersonId);
+    const main = S.editingItem === it.itemId
+      ? `<div class="zab-edit"><input type="text" data-zab-item-text value="${esc(it.text)}" aria-label="${esc(t("Edit"))}"><button type="button" data-zab-save-item="${esc(it.itemId)}">${esc(t("Save"))}</button><button type="button" data-zab-cancel-edit>${esc(t("Cancel"))}</button></div>`
+      : `<span class="zab-text">${esc(it.text)}</span>${by ? `<span class="zab-by">${esc(t("Added by {name}", { name: by }))}</span>` : ""}`;
+    return `<div class="zab-row${it.done ? " zab-done" : ""}" data-zab-item="${esc(it.itemId)}">
+      <input type="checkbox" data-zab-tick="${esc(it.itemId)}"${it.done ? " checked" : ""} aria-label="${esc(t("Tick as done"))}">
+      <div class="zab-main">${main}</div>
+      <div class="zab-acts">
+        <button type="button" data-zab-iup="${esc(it.itemId)}" aria-label="${esc(t("Move up"))}"${i === 0 ? " disabled" : ""}>↑</button>
+        <button type="button" data-zab-idown="${esc(it.itemId)}" aria-label="${esc(t("Move down"))}"${i === S.items.length - 1 ? " disabled" : ""}>↓</button>
+        <button type="button" data-zab-iedit="${esc(it.itemId)}" aria-label="${esc(t("Edit"))}">✎</button>
+        ${others.length ? `<select data-zab-imove="${esc(it.itemId)}" aria-label="${esc(t("Move to…"))}"><option value="">${esc(t("Move to…"))}</option>${others.map((o) => `<option value="${esc(o.pocketId)}">${esc(pocketName(o))}</option>`).join("")}</select>` : ""}
+        <button type="button" data-zab-itrash="${esc(it.itemId)}" aria-label="${esc(t("Trash"))}">🗑</button></div></div>`;
+  }).join("");
+  return `${head(`${p?.icon || "📁"} ${p ? pocketName(p) : ""}`, true)}<div class="zab-body">${msgBox()}
+    <div class="zab-add"><input type="text" data-zab-new-item placeholder="${esc(t("Add an item and press Enter"))}" aria-label="${esc(t("Add an item and press Enter"))}"><button type="button" data-zab-add-item>${esc(t("Add"))}</button></div>
+    ${rows || `<p class="zab-muted">${esc(t("Nothing here yet."))}</p>`}
+    <div class="zab-foot"><button type="button" data-zab-clear-done>${esc(t("Clear done"))}</button></div></div>`;
+}
+
+function renderTrash() {
+  const tp = S.pockets.filter((p) => p.status === "trashed").map((p) => ({ kind: "pocket", id: p.pocketId, label: `${p.icon || "📁"} ${pocketName(p)}`, at: ms(p.deletedAt) }));
+  const ti = S.trashed.items.map((i) => ({ kind: "item", id: i.itemId, label: i.text, at: ms(i.deletedAt), by: personName(i.addedByPersonId) }));
+  const all = [...tp, ...ti].sort((a, b) => b.at - a.at);
+  const rows = all.map((r) => `<div class="zab-row"><div class="zab-main"><span class="zab-text">${esc(r.label)}</span>${r.by ? `<span class="zab-by">${esc(t("Added by {name}", { name: r.by }))}</span>` : ""}</div>
+    <div class="zab-acts"><button type="button" data-zab-restore="${r.kind}:${esc(r.id)}">${esc(t("Restore"))}</button></div></div>`).join("");
+  return `${head(t("Trash"), true)}<div class="zab-body">${msgBox()}${rows || `<p class="zab-muted">${esc(t("Trash is empty."))}</p>`}</div>`;
+}
+
+function render() {
+  if (!root) return;
+  renderBarPockets();
+  root.querySelectorAll("[data-zab-open]").forEach((b) => b.setAttribute("aria-pressed", String(S.view !== "closed")));
+  if (S.view === "closed") return;
+  const p = panel();
+  const keep = p.querySelector("input[data-zab-new-pocket],input[data-zab-new-item]");
+  const typed = keep ? keep.value : "";
+  const hadFocus = keep && document.activeElement === keep;
+  p.innerHTML = S.view === "pocket" ? renderPocket() : S.view === "trash" ? renderTrash() : renderList();
+  if (typed) { const k = p.querySelector("input[data-zab-new-pocket],input[data-zab-new-item]"); if (k) { k.value = typed; if (hadFocus) k.focus(); } }
+  p.dataset.w = p.clientWidth && p.clientWidth < 340 ? "narrow" : "wide";
+}
+
+// ---------- actions ------------------------------------------------------------
+
+async function run(fn, onOk) {
+  S.msg = "";
+  let res;
+  try { res = await fn(); } catch (err) { res = { ok: false }; console.warn("Zab action failed:", err && err.message); }
+  if (!res || res.ok === false) { S.msg = failText(res); render(); return false; }
+  if (onOk) await onOk(res);
+  render();
+  return true;
+}
+
+const itemById = (id) => S.items.find((i) => i.itemId === id);
+
+async function swapOrder(list, id, dir, idKey, edit) {
+  const i = list.findIndex((x) => x[idKey] === id), j = i + dir;
+  if (i < 0 || j < 0 || j >= list.length) return;
+  const a = list[i], b = list[j];
+  const ao = a.order ?? i, bo = b.order ?? j;
+  const [r1, r2] = [await edit(a[idKey], { order: bo }), await edit(b[idKey], { order: ao })];
+  if (!r1.ok || !r2.ok) { S.msg = failText(!r1.ok ? r1 : r2); render(); return; }
+  a.order = bo; b.order = ao;
+  list.sort(byOrder);
+  render();
+}
+
+async function onClick(e) {
+  const el = e.target instanceof Element ? e.target : null;
+  if (!el) return;
+  const q = (sel) => el.closest(sel);
+  const c = S.ctx;
+  let h;
+  if (q("[data-zab-close]")) return closePanel();
+  if ((h = q("[data-zab-open]"))) return S.view === "closed" ? openPanel("list") : closePanel();
+  if ((h = q("[data-zab-pocket]"))) {
+    if (S.view === "closed") return openPanel("list", h.dataset.zabPocket);
+    return openPocket(h.dataset.zabPocket);
+  }
+  if (!c) return;
+  if ((h = q("[data-zab-nav]"))) { return h.dataset.zabNav === "trash" ? openTrash() : (S.view = "list", S.msg = "", S.editingPocket = null, render()); }
+  if (q("[data-zab-cancel-edit]")) { S.editingPocket = null; S.editingItem = null; return render(); }
+  // ---- pockets
+  if (q("[data-zab-add-pocket]")) return addPocketFromInput();
+  if ((h = q("[data-zab-pedit]"))) { S.editingPocket = h.dataset.zabPedit; return render(); }
+  if ((h = q("[data-zab-save-pocket]"))) return savePocket(h.dataset.zabSavePocket);
+  if ((h = q("[data-zab-pup]"))) return swapOrder(activePockets(), h.dataset.zabPup, -1, "pocketId", (id, patch) => zab.editPocket(db, c, id, patch));
+  if ((h = q("[data-zab-pdown]"))) return swapOrder(activePockets(), h.dataset.zabPdown, 1, "pocketId", (id, patch) => zab.editPocket(db, c, id, patch));
+  if ((h = q("[data-zab-ptrash]"))) {
+    const id = h.dataset.zabPtrash;
+    return run(() => zab.trashPocket(db, c, id), () => { const p = pocketById(id); if (p) { p.status = "trashed"; p.deletedAt = new Date(); } });
+  }
+  // ---- items
+  if (q("[data-zab-add-item]")) return addItemFromInput();
+  if ((h = q("[data-zab-iedit]"))) { S.editingItem = h.dataset.zabIedit; render(); const f = panel().querySelector("[data-zab-item-text]"); if (f) f.focus(); return; }
+  if ((h = q("[data-zab-save-item]"))) return saveItem(h.dataset.zabSaveItem);
+  if ((h = q("[data-zab-iup]"))) return swapOrder(S.items, h.dataset.zabIup, -1, "itemId", (id, patch) => zab.editItem(db, c, id, patch));
+  if ((h = q("[data-zab-idown]"))) return swapOrder(S.items, h.dataset.zabIdown, 1, "itemId", (id, patch) => zab.editItem(db, c, id, patch));
+  if ((h = q("[data-zab-itrash]"))) {
+    const id = h.dataset.zabItrash;
+    return run(() => zab.trashItem(db, c, id), () => { S.items = S.items.filter((i) => i.itemId !== id); });
+  }
+  if (q("[data-zab-clear-done]")) {
+    const pid = S.pocketId;
+    return run(() => zab.clearDone(db, c, pid), () => { S.items = S.items.filter((i) => i.done !== true); });
+  }
+  // ---- trash
+  if ((h = q("[data-zab-restore]"))) {
+    const [kind, id] = h.dataset.zabRestore.split(/:(.*)/s);
+    if (kind === "pocket") return run(() => zab.restorePocket(db, c, id), () => { const p = pocketById(id); if (p) { p.status = "active"; delete p.deletedAt; } });
+    return run(() => zab.restoreItem(db, c, id), () => { S.trashed.items = S.trashed.items.filter((i) => i.itemId !== id); });
+  }
+}
+
+async function onChange(e) {
+  const el = e.target instanceof Element ? e.target : null;
+  if (!el || !S.ctx) return;
+  const c = S.ctx;
+  if (el.matches("[data-zab-tick]")) {
+    const id = el.dataset.zabTick, done = el.checked;
+    return run(() => zab.toggleDone(db, c, id, done), () => { const it = itemById(id); if (it) it.done = done; });
+  }
+  if (el.matches("[data-zab-imove]") && el.value) {
+    const id = el.dataset.zabImove, to = el.value;
+    return run(() => zab.moveItem(db, c, id, to), () => { S.items = S.items.filter((i) => i.itemId !== id); });
+  }
+}
+
+function onKey(e) {
+  if (e.key !== "Enter") return;
+  const el = e.target instanceof Element ? e.target : null;
+  if (!el) return;
+  if (el.matches("[data-zab-new-item]")) { e.preventDefault(); addItemFromInput(); }
+  else if (el.matches("[data-zab-new-pocket]")) { e.preventDefault(); addPocketFromInput(); }
+  else if (el.matches("[data-zab-item-text]")) { e.preventDefault(); const b = panel().querySelector("[data-zab-save-item]"); if (b) saveItem(b.dataset.zabSaveItem); }
+  else if (el.matches("[data-zab-f='name']")) { e.preventDefault(); const b = panel().querySelector("[data-zab-save-pocket]"); if (b) savePocket(b.dataset.zabSavePocket); }
+}
+
+async function addPocketFromInput() {
+  const input = panel().querySelector("[data-zab-new-pocket]");
+  const name = input ? input.value.trim() : "";
+  if (!name) { S.msg = failText({ refused: "name-required" }); return render(); }
+  const order = Math.max(0, ...S.pockets.map((p) => p.order ?? 0)) + 1;
+  await run(() => zab.addPocket(db, S.ctx, { name, order }), (res) => {
+    S.pockets.push({ pocketId: res.pocketId, tenantId: S.ctx.tenantId, addedByPersonId: S.ctx.personId, status: "active", order, name, icon: "📁", color: "#4a5568" });
+    if (input) input.value = "";
+  });
+}
+
+async function savePocket(id) {
+  const box = panel().querySelector(`[data-zab-edit-pocket="${CSS_ESC(id)}"]`);
+  const p = pocketById(id);
+  if (!box || !p) return;
+  const name = box.querySelector("[data-zab-f='name']").value.trim();
+  const icon = box.querySelector("[data-zab-f='icon']").value;
+  const color = box.querySelector("[data-zab-f='color']").value;
+  const patch = {};
+  if (name !== pocketName(p)) patch.name = name; // a rename writes `name` and removes the seeded `names`
+  if (icon !== (p.icon || "📁")) patch.icon = icon;
+  if (color !== (p.color || "#4a5568")) patch.color = color;
+  if (!Object.keys(patch).length) { S.editingPocket = null; return render(); }
+  await run(() => zab.editPocket(db, S.ctx, id, patch), () => {
+    if (patch.name !== undefined) { p.name = patch.name; delete p.names; }
+    if (patch.icon) p.icon = patch.icon;
+    if (patch.color) p.color = patch.color;
+    S.editingPocket = null;
+  });
+}
+
+const CSS_ESC = (s) => String(s).replace(/["\\]/g, "\\$&");
+
+async function addItemFromInput() {
+  const input = panel().querySelector("[data-zab-new-item]");
+  const text = input ? input.value.trim() : "";
+  if (!text) { S.msg = failText({ refused: "text-required" }); return render(); }
+  const order = Math.max(0, ...S.items.map((i) => i.order ?? 0)) + 1;
+  const pocketId = S.pocketId;
+  await run(() => zab.addItem(db, S.ctx, pocketId, { text, order }), (res) => {
+    S.items.push({ itemId: res.itemId, tenantId: S.ctx.tenantId, pocketId, addedByPersonId: S.ctx.personId, status: "active", order, text, done: false });
+    if (input) input.value = "";
+  });
+  const again = panel().querySelector("[data-zab-new-item]");
+  if (again) again.focus();
+}
+
+async function saveItem(id) {
+  const field = panel().querySelector("[data-zab-item-text]");
+  const it = itemById(id);
+  if (!field || !it) return;
+  const text = field.value.trim();
+  if (text === it.text) { S.editingItem = null; return render(); }
+  await run(() => zab.editItem(db, S.ctx, id, { text }), () => { it.text = text; S.editingItem = null; });
+}
