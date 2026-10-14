@@ -31,6 +31,7 @@ import { t } from "./i18n.js";
 import { langText } from "./lang.js";
 import { getAppLang } from "./prefs.js";
 import * as zab from "./zab-data.js";
+import * as zabNote from "./zab-to-note.js";
 
 const BAR_H = 44;
 // A row keeps its actions beside the text only when the PANEL is this wide (measured, not the window). The 380px
@@ -45,6 +46,7 @@ const S = {
   trashed: { pockets: [], items: [] },
   view: "closed", pocketId: null, editingPocket: null, editingItem: null,
   opener: null, scrollY: 0, msg: "", openSteps: new Set(), openTopics: new Set(), ideaSort: "order",
+  notePick: null, toast: null,
 };
 let root = null, ro = null;
 
@@ -107,6 +109,15 @@ body:has(.nw-switch) #zabCorner { bottom: 68px; }
 .zab-topic { display: inline-flex; align-items: center; gap: 2px; padding-inline-start: 8px; border-radius: 999px; background: #e8eefa; font-size: .8rem; max-width: 100%; }
 .zab-topic span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #zabPanel .zab-topic button { min-height: 32px; min-width: 32px; padding: 0; border: 0; background: none; }
+/* Z5: → Note. The controls stay on ONE line: below 420px the Move-to select gives up width, never a line. */
+@media (max-width: 420px) { .zab-row .zab-acts select { flex-basis: 4rem; min-width: 4rem; } .zab-row .zab-acts { gap: 2px; } }
+.zab-pick { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 6px 8px; border-radius: 8px; background: #eef3fb; }
+.zab-pick label { flex: 1 0 100%; font-size: .85rem; color: #1f3a6e; }
+.zab-pick select { flex: 1 1 10rem; min-width: 0; }
+#zabToast { position: fixed; left: 12px; right: 12px; bottom: 72px; z-index: 960; display: flex; gap: 8px; align-items: center; justify-content: space-between; padding: 10px 12px; border-radius: 10px; background: #1b2a41; color: #fff; box-shadow: 0 2px 12px rgba(0,0,0,.35); font: 14px/1.35 system-ui, sans-serif; }
+#zabToast[hidden] { display: none; }
+#zabToast a { color: #fff; font-weight: 600; text-decoration: underline; padding: 10px 6px; }
+#zabToast button { min-height: 40px; min-width: 40px; border: 0; border-radius: 8px; background: rgba(255,255,255,.16); color: #fff; font: inherit; cursor: pointer; }
 .zab-sort { display: flex; gap: 6px; align-items: center; margin-bottom: 8px; }
 .zab-sort select { flex: 0 1 12rem; }
 .zab-qty { font-weight: 600; color: #1b2a41; }
@@ -128,6 +139,7 @@ body:has(.nw-switch) #zabCorner { bottom: 68px; }
   #zabSpacer { display: block; }
   #zabCorner { display: none; }
   #zabBackdrop { display: none; }
+  #zabToast { left: auto; right: 12px; width: 380px; max-width: calc(100vw - 24px); bottom: ${BAR_H + 12}px; }
   #zabPanel { left: auto; right: 0; top: 0; bottom: ${BAR_H}px; width: 380px; max-width: 100vw; max-height: none; border-radius: 0; box-shadow: -2px 0 18px rgba(0,0,0,.22); }
   body.zab-bar-on .nw-switch { bottom: ${BAR_H}px; }
   body.zab-bar-on #swUpdateNotice { bottom: calc(1rem + ${BAR_H}px) !important; }
@@ -154,7 +166,8 @@ export function mountZabBar() {
       <nav id="zabBar" aria-label="${esc(t("Zab"))}"><button type="button" data-zab-open aria-pressed="false">🧰 ${esc(t("Zab"))}</button><div class="zab-bar-scroll" data-zab-barpockets></div></nav>
       <button type="button" id="zabCorner" data-zab-open aria-label="${esc(t("Open Zab"))}">🧰</button>
       <div id="zabBackdrop" data-zab-close hidden></div>
-      <aside id="zabPanel" role="dialog" aria-label="${esc(t("Zab"))}" hidden data-w="wide"></aside>`;
+      <aside id="zabPanel" role="dialog" aria-label="${esc(t("Zab"))}" hidden data-w="wide"></aside>
+      <div id="zabToast" role="status" hidden></div>`;
     document.body.appendChild(root);
     document.body.classList.add("zab-bar-on");
     root.addEventListener("click", onClick);
@@ -166,6 +179,7 @@ export function mountZabBar() {
       ro = new ResizeObserver(() => { panel.dataset.w = panel.clientWidth && panel.clientWidth < NARROW_BELOW ? "narrow" : "wide"; });
       ro.observe(panel);
     }
+    resumeAfterNote();
   };
   if (document.body) start();
   else document.addEventListener("DOMContentLoaded", start, { once: true });
@@ -318,6 +332,7 @@ function itemControls(it, i, n, others) {
         <button type="button" data-zab-iup="${esc(it.itemId)}" aria-label="${esc(t("Move up"))}"${i === 0 ? " disabled" : ""}>↑</button>
         <button type="button" data-zab-idown="${esc(it.itemId)}" aria-label="${esc(t("Move down"))}"${i === n - 1 ? " disabled" : ""}>↓</button>
         <button type="button" data-zab-iedit="${esc(it.itemId)}" aria-label="${esc(t("Edit"))}">✎</button>
+        <button type="button" data-zab-tonote="${esc(it.itemId)}" aria-label="${esc(t("Save as a Note"))}" title="${esc(t("Save as a Note"))}">→📝</button>
         ${others.length ? `<select data-zab-imove="${esc(it.itemId)}" aria-label="${esc(t("Move to…"))}"><option value="">${esc(t("Move to…"))}</option>${others.map((o) => `<option value="${esc(o.pocketId)}">${esc(pocketName(o))}</option>`).join("")}</select>` : ""}
         <button type="button" data-zab-itrash="${esc(it.itemId)}" aria-label="${esc(t("Trash"))}">🗑</button></div>`;
 }
@@ -371,6 +386,17 @@ function itemEditForm(it, kind) {
   return `<div class="zab-edit"><input type="text" data-zab-item-text value="${esc(it.text)}" aria-label="${esc(t("Edit"))}">${extra}<button type="button" data-zab-save-item="${esc(it.itemId)}">${esc(t("Save"))}</button><button type="button" data-zab-cancel-edit>${esc(t("Cancel"))}</button></div>`;
 }
 
+/** The small folder picker under a row: the reader's Mapping My Journey folders, "No folder" allowed (G05's 📎, one choice). */
+function notePickBlock(it) {
+  const np = S.notePick;
+  if (!np || np.itemId !== it.itemId) return "";
+  if (!np.folders) return `<div class="zab-pick zab-muted" data-zab-pick>${esc(t("Loading…"))}</div>`;
+  return `<div class="zab-pick" data-zab-pick><label for="zabNoteFolder">${esc(t("File the Note in"))}</label>
+    <select id="zabNoteFolder" data-zab-note-folder><option value="">${esc(t("No folder"))}</option>${np.folders.map((f) => `<option value="${esc(f.folderId)}">${esc(f.name)}</option>`).join("")}</select>
+    <button type="button" data-zab-note-go="${esc(it.itemId)}">${esc(t("Save as a Note"))}</button>
+    <button type="button" data-zab-note-cancel>${esc(t("Cancel"))}</button></div>`;
+}
+
 function itemRow(it, i, n, others, kind) {
   const by = personName(it.addedByPersonId);
   const main = S.editingItem === it.itemId
@@ -379,7 +405,7 @@ function itemRow(it, i, n, others, kind) {
   return `<div class="zab-row${it.done ? " zab-done" : ""}" data-zab-item="${esc(it.itemId)}">
       <input type="checkbox" data-zab-tick="${esc(it.itemId)}"${it.done ? " checked" : ""} aria-label="${esc(t("Tick as done"))}">
       <div class="zab-main">${main}</div>
-      ${itemControls(it, i, n, others)}</div>`;
+      ${itemControls(it, i, n, others)}${notePickBlock(it)}</div>`;
 }
 
 /** Tasks are shown under headings; reordering stays inside a heading. */
@@ -419,9 +445,9 @@ function renderPocket() {
 
 function renderTrash() {
   const tp = S.pockets.filter((p) => p.status === "trashed").map((p) => ({ kind: "pocket", id: p.pocketId, label: `${p.icon || "📁"} ${pocketName(p)}`, at: ms(p.deletedAt) }));
-  const ti = S.trashed.items.map((i) => ({ kind: "item", id: i.itemId, label: i.text, at: ms(i.deletedAt), by: personName(i.addedByPersonId) }));
+  const ti = S.trashed.items.map((i) => ({ kind: "item", id: i.itemId, label: i.text, at: ms(i.deletedAt), by: personName(i.addedByPersonId), noteId: typeof i.noteId === "string" ? i.noteId : "" }));
   const all = [...tp, ...ti].sort((a, b) => b.at - a.at);
-  const rows = all.map((r) => `<div class="zab-row"><div class="zab-main"><span class="zab-text">${esc(r.label)}</span>${r.by ? `<span class="zab-by">${esc(t("Added by {name}", { name: r.by }))}</span>` : ""}</div>
+  const rows = all.map((r) => `<div class="zab-row"><div class="zab-main"><span class="zab-text">${esc(r.label)}</span>${r.by ? `<span class="zab-by">${esc(t("Added by {name}", { name: r.by }))}</span>` : ""}${r.noteId ? `<span class="zab-by" data-zab-became>${esc(t("Became a Note"))} · <a href="${esc(zabNote.noteHref(r.noteId))}" data-zab-note-open="${esc(r.noteId)}">${esc(t("Open"))}</a></span>` : ""}</div>
     <div class="zab-acts"><button type="button" data-zab-restore="${r.kind}:${esc(r.id)}">${esc(t("Restore"))}</button></div></div>`).join("");
   return `${head(t("Trash"), true)}<div class="zab-body">${msgBox()}${rows || `<p class="zab-muted">${esc(t("Trash is empty."))}</p>`}</div>`;
 }
@@ -479,6 +505,7 @@ async function onClick(e) {
   const el = e.target instanceof Element ? e.target : null;
   if (!el) return;
   const q = (sel) => el.closest(sel);
+  if (q("[data-zab-note-open]")) { rememberWayBack(); return; } // a real link: the browser follows it
   const c = S.ctx;
   let h;
   if (q("[data-zab-close]")) return closePanel();
@@ -522,6 +549,13 @@ async function onClick(e) {
     const topics = zab.removeTopic(it.topics, name);
     return run(() => zab.editItem(db, c, id, { topics }), () => { if (topics.length) it.topics = topics; else delete it.topics; });
   }
+  if ((h = q("[data-zab-tonote]"))) return startToNote(h.dataset.zabTonote);
+  if (q("[data-zab-note-cancel]")) { S.notePick = null; return render(); }
+  if ((h = q("[data-zab-note-go]"))) {
+    const sel = panel().querySelector("[data-zab-note-folder]");
+    return finishToNote(h.dataset.zabNoteGo, sel && sel.value ? [sel.value] : []);
+  }
+  if (q("[data-zab-toast-close]")) return hideToast();
   if ((h = q("[data-zab-itrash]"))) {
     const id = h.dataset.zabItrash;
     return run(() => zab.trashItem(db, c, id), () => { S.items = S.items.filter((i) => i.itemId !== id); });
@@ -536,6 +570,67 @@ async function onClick(e) {
     if (kind === "pocket") return run(() => zab.restorePocket(db, c, id), () => { const p = pocketById(id); if (p) { p.status = "active"; delete p.deletedAt; } });
     return run(() => zab.restoreItem(db, c, id), () => { S.trashed.items = S.trashed.items.filter((i) => i.itemId !== id); });
   }
+}
+
+// ---------- → Note (Z5) ---------------------------------------------------------------------
+
+/** The way back (decision 86): the history entry we leave carries the pocket, so ← Back reopens Zab on it. */
+function rememberWayBack() {
+  try { history.replaceState({ ...(history.state || {}), zabPocket: S.pocketId || null, zabWasOpen: true }, ""); } catch { /* ignore */ }
+}
+
+/** After ← Back: if this history entry says Zab was open on a pocket, open it there again. */
+async function resumeAfterNote() {
+  const st = history.state;
+  if (!st || !st.zabWasOpen) return;
+  try { await auth.authStateReady?.(); } catch { /* ignore */ }
+  try { history.replaceState({ ...st, zabWasOpen: false }, ""); } catch { /* ignore */ }
+  openPanel("list", st.zabPocket || null);
+}
+
+function showToast(noteId) {
+  S.toast = { noteId };
+  const el = root.querySelector("#zabToast");
+  el.innerHTML = `<span>${esc(t("Saved as a Note"))}</span><a href="${esc(zabNote.noteHref(noteId))}" data-zab-note-open="${esc(noteId)}">${esc(t("Open"))}</a><button type="button" data-zab-toast-close aria-label="${esc(t("Close"))}">✕</button>`;
+  el.hidden = false;
+}
+function hideToast() {
+  S.toast = null;
+  const el = root.querySelector("#zabToast");
+  el.hidden = true; el.innerHTML = "";
+}
+
+/** → Note pressed: if the item already names folders that exist, file there; otherwise ask once. */
+async function startToNote(itemId) {
+  const it = itemById(itemId);
+  if (!it || !S.ctx) return;
+  S.msg = ""; S.notePick = { itemId, folders: null };
+  render();
+  let folders;
+  try { folders = await zabNote.listFoldersForPicker(db, S.ctx); } catch (err) {
+    console.warn("Zab folders load failed:", err && err.message);
+    S.notePick = null; S.msg = t("Could not load your folders. Please try again."); return render();
+  }
+  const own = (Array.isArray(it.folderIds) ? it.folderIds : []).filter((id) => folders.some((f) => f.folderId === id));
+  if (own.length) return finishToNote(itemId, own);
+  S.notePick = { itemId, folders };
+  render();
+}
+
+async function finishToNote(itemId, folderIds) {
+  const it = itemById(itemId);
+  if (!it || !S.ctx) return;
+  S.notePick = null; S.msg = "";
+  const res = await zabNote.itemToNote(db, S.ctx, it, folderIds);
+  if (!res.ok) {
+    S.msg = res.stage === "note" ? t("Could not save the Note. The item is unchanged.")
+      : res.stage === "filing" ? t("The Note was saved, but filing it in the folder failed. The item is still here.")
+        : t("The Note was saved, but the item could not be moved to Trash. It is still here.");
+    return render();
+  }
+  S.items = S.items.filter((i) => i.itemId !== itemId);
+  render();
+  showToast(res.noteId);
 }
 
 async function onChange(e) {

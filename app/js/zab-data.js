@@ -37,7 +37,7 @@ export const ZAB_ITEM_WRITES = Object.freeze([
   "itemId", "tenantId", "pocketId", "addedByPersonId", "status", "deletedAt", "order",
   "text", "done", "folderIds", "tags", "kind", "journal",
   "url", "ttl", "ch", "th", "people", "issues",
-  "due", "pri", "steps", "stars", "topics", "qty", "shop",
+  "due", "pri", "steps", "stars", "topics", "qty", "shop", "noteId",
 ]);
 
 // The fields a caller may set on a pocket / item (allow-listed; everything else is dropped).
@@ -258,6 +258,16 @@ export async function trashItem(db, ctx, itemId) {
   const res = await safeWrite(
     () => updateDocument(db, TENANT.ZAB_ITEMS, docKey(ctx.tenantId, itemId), { status: "trashed", deletedAt: serverTimestamp() }),
     { collection: TENANT.ZAB_ITEMS, docId: docKey(ctx.tenantId, itemId), action: "trash Zab item" });
+  return res.ok ? { ok: true } : res;
+}
+
+/** → Note (Z5): trash the item AND remember which Note it became. Never a delete. */
+export async function trashItemAsNote(db, ctx, itemId, noteId) {
+  requireCtx(ctx);
+  if (typeof noteId !== "string" || !noteId) return { ok: false, refused: "note-id-required" };
+  const res = await safeWrite(
+    () => updateDocument(db, TENANT.ZAB_ITEMS, docKey(ctx.tenantId, itemId), { status: "trashed", deletedAt: serverTimestamp(), noteId }),
+    { collection: TENANT.ZAB_ITEMS, docId: docKey(ctx.tenantId, itemId), action: "trash Zab item as Note" });
   return res.ok ? { ok: true } : res;
 }
 

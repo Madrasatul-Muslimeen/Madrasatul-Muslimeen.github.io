@@ -141,6 +141,8 @@ async function matrix(rules) {
     await expect("journal a boolean", "ok", setDoc(I(p1, "t8"), item("t8", { journal: true })));
     await expect("journal a string", "ok", setDoc(I(p1, "t9"), item("t9", { journal: "j" })));
     await expect("journal a number", "no", setDoc(I(p1, "t10"), item("t10", { journal: 1 })));
+    await expect("noteId a string", "ok", setDoc(I(p1, "n1"), item("n1", { noteId: "note-1" })));
+    await expect("noteId a number", "no", setDoc(I(p1, "n2"), item("n2", { noteId: 5 })));
     await expect("tags a list", "ok", setDoc(I(p1, "t7"), item("t7", { tags: ["a"] })));
     await expect("tags a string", "no", setDoc(I(p1, "t8"), item("t8", { tags: "a" })));
     await expect("steps a list", "ok", setDoc(I(p1, "t9"), item("t9", { steps: [{ id: "s", t: "x", d: false }] })));
@@ -165,6 +167,8 @@ async function matrix(rules) {
     await expect("update changes an item's createdBy", "no", updateDoc(I(p1, "i1"), { createdBy: "uid-p2", updatedAt: new Date() }));
     await expect("update sets stars 4", "no", updateDoc(I(p1, "i1"), { stars: 4, updatedAt: new Date() }));
     await expect("update sets stars 2", "ok", updateDoc(I(p1, "i1"), { stars: 2, updatedAt: new Date() }));
+    await expect("trash an item as a Note (noteId string)", "ok", updateDoc(I(p1, "i1"), { status: "trashed", deletedAt: new Date(), noteId: "note-1", updatedAt: new Date() }));
+    await expect("trash an item with a numeric noteId", "no", updateDoc(I(p1, "i1"), { status: "trashed", deletedAt: new Date(), noteId: 7, updatedAt: new Date() }));
     await expect("tick an item", "ok", updateDoc(I(p2, "i1"), { done: true, updatedAt: new Date() }));
     await expect("other-tenant person ticks an item", "no", updateDoc(I(x1, "i1"), { done: true, updatedAt: new Date() }));
     await expect("trash an item", "ok", updateDoc(I(p1, "i1"), { status: "trashed", deletedAt: new Date(), updatedAt: new Date() }));
@@ -202,6 +206,7 @@ const MUTATIONS = [
   ["addedByPersonId not frozen on update", /&& d\(\)\.addedByPersonId == resource\.data\.addedByPersonId\n/g, "\n"],
   ["createdBy not frozen on update", /&& d\(\)\.createdBy == resource\.data\.createdBy;/g, ";"],
   ["stars range unchecked", /d\(\)\.stars is number && d\(\)\.stars >= 1 && d\(\)\.stars <= 3/g, "true"],
+  ["noteId type unchecked", /&& zabOptString\('noteId'\)[^\n]*\n/g, "\n"],
   ["due format unchecked", /d\(\)\.due is string && d\(\)\.due\.matches\('[^']*'\)/g, "true"],
   ["colour format unchecked", /d\(\)\.color is string && d\(\)\.color\.matches\('[^']*'\)/g, "true"],
   ["done type unchecked", /&& d\(\)\.done is bool\n/g, "\n"],

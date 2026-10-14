@@ -4197,4 +4197,13 @@ export const BN = {
   "No shop": "দোকান নেই",
   "Add an idea": "একটি ভাবনা লিখুন",
   "Add an item — try 2 milk @Coles": "একটি জিনিস লিখুন — যেমন 2 milk @Coles",
+  "Save as a Note": "নোট হিসেবে সংরক্ষণ করুন",
+  "Saved as a Note": "নোট হিসেবে সংরক্ষিত হয়েছে",
+  "Became a Note": "নোট হয়ে গেছে",
+  "File the Note in": "নোটটি যেখানে রাখবেন",
+  "No folder": "কোনো ফোল্ডার নয়",
+  "Could not load your folders. Please try again.": "আপনার ফোল্ডার লোড করা যায়নি। অনুগ্রহ করে আবার চেষ্টা করুন।",
+  "Could not save the Note. The item is unchanged.": "নোট সংরক্ষণ করা যায়নি। জিনিসটি আগের মতোই আছে।",
+  "The Note was saved, but filing it in the folder failed. The item is still here.": "নোট সংরক্ষিত হয়েছে, কিন্তু ফোল্ডারে রাখা যায়নি। জিনিসটি এখনও এখানে আছে।",
+  "The Note was saved, but the item could not be moved to Trash. It is still here.": "নোট সংরক্ষিত হয়েছে, কিন্তু জিনিসটি ট্র্যাশে সরানো যায়নি। এটি এখনও এখানে আছে।",
 };
