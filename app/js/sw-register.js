@@ -29,6 +29,7 @@
 // on an earlier visit -- otherwise turning the switch on would still leave
 // a stale worker serving a stale cache forever.
 import { t } from "./i18n.js";
+import { isZabReady } from "./zab-readiness.js";
 
 const KILL_SWITCH_KEY = "mm_disable_service_worker";
 
@@ -117,6 +118,10 @@ function announceUpdate() {
  * person actually asked for is already usable.
  */
 export function registerServiceWorker() {
+  // Zab round Z2 (PCF J25): this is the one function every page already calls, so it carries the Zab bar's
+  // mount -- ONE place, not pasted into each page. zab-readiness.js is pure and tiny; the bar's own code is
+  // fetched ONLY when the gate is open, so a shut gate costs a page nothing and shows nothing (I9).
+  if (isZabReady()) import("./zab-bar.js").then((m) => m.mountZabBar()).catch((err) => console.warn("Zab bar not mounted:", err.message));
   if (!("serviceWorker" in navigator)) return;
   if (!isSecureEnough() || isDisabled()) {
     if ("serviceWorker" in navigator) unregisterAny();

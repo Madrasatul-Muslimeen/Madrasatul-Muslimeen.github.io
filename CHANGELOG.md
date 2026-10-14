@@ -20876,3 +20876,32 @@ New strings `wholeQuranLevelSentence` ("{level}: Achieved {known} and {percent} 
 - rules-authorisation-executable 73/0 (extended to the candidate); stub-parity 4/0; behaviour 971/0.
 
 **Next:** round Z2, the bar on every page and plain pockets on screen. It saves to the cloud only once the Owner publishes the Rules.
+
+## v10.46 — 14 Oct 2026 — Zab round Z2: the bar on every MMSA page and plain pockets, behind a shut readiness gate (PCF J25)
+
+**The Owner** (PCF J25, 14 Oct): 1 B (the bar on every MMSA page), 3 B (one shared family Zab), 4 B (study pockets).
+
+**Built (Builder round #823, PR #824, branch `builder/issue-823-run-1255`):**
+- **`app/js/zab-readiness.js`**, a copy of `siyagah-flags-readiness.js`'s shape: pure, `ready: false`, and it needs a well-formed decision. **While it is false, no page shows anything of Zab and nothing reads or writes Firestore.**
+- **The mount.** `app/js/sw-register.js`'s `registerServiceWorker()`, which every one of the 32 real `app/*.html` pages already calls, imports `zab-bar.js` **only when the gate is open**. So a shut gate costs a page nothing. `app/index.html` is the redirect stub and `note-editor-prototype-demo.html` a demo.
+- **`app/js/zab-bar.js`:**
+  - Laptop and tablet: a thin bar of top-level pockets along the bottom; a pocket opens a 380px side panel.
+  - Phone: a corner button opens a bottom sheet.
+  - On first open, the four study pockets are seeded once (names in English and Bangla until renamed).
+  - Pockets: add, rename, icon and colour, reorder, and Trash (refused while the pocket holds items).
+  - Items: add (Enter), edit, tick, reorder, move to another pocket, Trash, and Clear done.
+  - A Trash view restores anything, newest first. Each item shows who added it.
+  - Every failed write shows a message (I15). The panel closes back to where the reader was.
+- `zab-data.js`: `order` joins the editable item fields, so items can be reordered.
+- `firebase-stub.mjs`: `doc(collectionRef)` with no id makes a fresh id as the real SDK does, and `__stubFailWrites` lets a test make writes fail.
+
+**Architect review:** the screenshots showed each item's text squeezed into a column a few letters wide beside its five controls, in the 380px panel and on a phone. No check measured it. The Builder found the same independently, and the two fixes were merged:
+- The row is now a grid: the text on its own full-width line, and the controls on **one** line beneath it at every width. The picker has a fixed width, because a page-wide `select { width:100% }` was pushing the other controls onto lines of their own.
+- New checks: the text has at least 70% of the panel's width (the Builder's own check asks for at least 150px), the controls sit below it, and they sit on one line.
+- Mutations g and h restore the original defect in full.
+
+**Tests:**
+- New `zab-bar-browser`: 370/0 (gate on and gate off; 32 pages; 320–1440px; en/bn). Mutations: a 1, b 3, c 2, d 1, e 1, f 12, g 76 and h 24 fail. With the gate off there is no Zab element on any page and zero Zab reads or writes.
+- zab-data 27/0; stub-parity 4/0; rules-authorisation-executable 73/0; phone-width-overflow 217/0; behaviour 971/0.
+
+**The Owner's step to try it:** publish `docs/governance/2026-10-14-zab-candidate.rules`. Then the Architect enables the gate with a recorded decision. **Next:** round Z3 (tasks and links).

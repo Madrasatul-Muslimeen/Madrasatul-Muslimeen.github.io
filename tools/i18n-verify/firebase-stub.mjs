@@ -295,7 +295,10 @@ export async function getBlob(r) {
 }
 
 export function collection(db, name) { return { __col: name }; }
+var __autoIdN = 0;
 export function doc(db, name, id) {
+  // doc(collectionRef) with no id makes a fresh one, as the real SDK does (Zab round Z2: zab-data.js reads .id).
+  if (typeof db === "object" && db && db.__col && name === undefined) { var auto = "auto" + (++__autoIdN) + "x" + Math.random().toString(36).slice(2, 7); return { __col: db.__col, __id: auto, id: auto }; }
   if (typeof db === "object" && db && db.__col) return { __col: db.__col, __id: name };
   return { __col: name, __id: id };
 }
@@ -390,6 +393,7 @@ function __recordWriteData(kind, ref, data, opts) {
 
 export async function setDoc(ref, data, opts) {
   return __trip("setDoc", ref && ref.__col, ref && ref.__id, function () {
+    if (typeof window !== "undefined" && window.__stubFailWrites) throw Object.assign(new Error("denied by the test"), { code: "permission-denied" });
     __recordWriteData("set", ref, data, opts);
     // OPT-IN, same flag as the batch path below (journey-sections-browser.mjs): a
     // create is applied to DATA so a read after it sees the new document.
@@ -421,6 +425,7 @@ export async function setDoc(ref, data, opts) {
 // it -- the write would look as though it never happened.
 export async function updateDoc(ref, data) {
   return __trip("updateDoc", ref && ref.__col, ref && ref.__id, function () {
+    if (typeof window !== "undefined" && window.__stubFailWrites) throw Object.assign(new Error("denied by the test"), { code: "permission-denied" });
     try {
       const prior = JSON.parse(sessionStorage.getItem("__stubWrites") || "[]");
       prior.push({ col: ref && ref.__col, id: ref && ref.__id, data: Object.keys(data).sort(), appLang: data.appLang });

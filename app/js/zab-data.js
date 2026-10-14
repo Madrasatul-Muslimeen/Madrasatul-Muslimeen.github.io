@@ -7,8 +7,8 @@
 // between the two apps -- notably `ztype` for a pocket's type (never `kind`),
 // while `kind` on an ITEM is its Note Type.
 //
-// THIS MODULE IS IMPORTED BY NO PAGE YET, and the Rules it needs are a
-// CANDIDATE only (docs/governance/2026-10-14-zab-candidate.rules), not
+// Z2: THIS MODULE IS IMPORTED ONLY BY zab-bar.js, which sw-register.js loads only
+// when zab-readiness.js says ready. The Rules it needs are a CANDIDATE only (docs/governance/2026-10-14-zab-candidate.rules), not
 // published. Nothing here runs at start-up (I9): every read happens only when
 // a function below is called. Nothing is ever deleted (I4, D6): trashing sets
 // `status: "trashed"` and `deletedAt`; restoring reverses it.
@@ -43,7 +43,7 @@ export const ZAB_ITEM_WRITES = Object.freeze([
 // The fields a caller may set on a pocket / item (allow-listed; everything else is dropped).
 const POCKET_EDITABLE = ["name", "icon", "color", "ztype", "order"];
 const ITEM_KIND_FIELDS = ["folderIds", "tags", "kind", "journal", "url", "ttl", "ch", "th", "people", "issues", "due", "pri", "steps", "stars", "topics", "qty", "shop"];
-const ITEM_EDITABLE = ["text", ...ITEM_KIND_FIELDS];
+const ITEM_EDITABLE = ["text", "order", ...ITEM_KIND_FIELDS]; // `order` so the bar can reorder (Z2)
 const ARRAY_FIELDS = new Set(["folderIds", "tags", "people", "issues", "steps", "topics"]);
 
 /** The four seeded study pockets (Owner answer 4 B). Fixed ids, so a second device cannot make a second set. */

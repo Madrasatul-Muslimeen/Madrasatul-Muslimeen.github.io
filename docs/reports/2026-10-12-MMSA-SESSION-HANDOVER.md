@@ -169,3 +169,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v10.43** (2026-10-14): J23 mark choice B: ask before changing the other mark.
 - **v10.44** (2026-10-14): J26 Before Al-Fatihah band.
 - **v10.45** (2026-10-14): Zab Z1: saving layer and Rules candidate.
+- **v10.46** (2026-10-14): Zab Z2: the bar and plain pockets (gated).
