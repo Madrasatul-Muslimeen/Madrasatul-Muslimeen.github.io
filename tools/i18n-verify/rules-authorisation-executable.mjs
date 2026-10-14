@@ -560,5 +560,40 @@ check("Phase 4 evidence is frozen after create, in the Rules and in the writer",
     "the evidence writer must only ever create -- I4, and I6 in spirit");
 });
 
+// --- ZAB (PCF J25, round Z1): the family Zab candidate vs app/js/zab-data.js -------------
+// The data layer DECLARES every field it can write (ZAB_*_WRITES; zab-data.mjs proves that the declaration is
+// complete by running every writer). Judged here against the candidate, both directions.
+{
+  const zabRules = read("docs/governance/2026-10-14-zab-candidate.rules");
+  const zabSrc = read("app/js/zab-data.js");
+  const declared = (name) => {
+    const m = zabSrc.match(new RegExp(`export const ${name} = Object\\.freeze\\(\\[([\\s\\S]*?)\\]\\)`));
+    assert.ok(m, `${name} not found in zab-data.js`);
+    return new Set(idsIn(m[1].replace(/"/g, "'")));
+  };
+  for (const [coll, writesName] of [["zabPockets/", "ZAB_POCKET_WRITES"], ["zabItems/", "ZAB_ITEM_WRITES"]]) {
+    const writes = declared(writesName);
+    const { permitted, required } = authorisedCreate(zabRules, coll);
+    const own = (set) => [...set].filter((f) => !ENVELOPE.has(f));
+    check(`ZAB POSITIVE CONTROL (${coll}): the parsers read the candidate and the declared writes`, () => {
+      assert.ok(writes.size >= 12 && permitted.has("tenantId") && required.has("tenantId") && writes.has("tenantId"),
+        `parsed writes=${[...writes]} permitted=${[...permitted]}`);
+    });
+    check(`ZAB BACKWARD (${coll}): every field the data layer can write is one the candidate allows`, () => {
+      assert.deepEqual([...writes].filter((f) => !permitted.has(f)), [], "denied in production once published");
+    });
+    check(`ZAB FORWARD (${coll}): every field the candidate allows is written by the data layer`, () => {
+      assert.deepEqual(own(permitted).filter((f) => !writes.has(f)), [], "an authorised field no code can perform");
+    });
+    check(`ZAB REQUIRED (${coll}): every required field is one the data layer writes (or the envelope stamps)`, () => {
+      assert.deepEqual(own(required).filter((f) => !writes.has(f)), []);
+    });
+    check(`ZAB UPDATE (${coll}): the candidate has no delete and the data layer has no delete`, () => {
+      assert.match(matchBlock(zabRules, coll), /allow delete: if false;/);
+      assert.ok(!/\bdeleteDoc\b|\.delete\(/.test(zabSrc), "zab-data.js must never delete");
+    });
+  }
+}
+
 console.log(`\n==== Rules authorisation executable: ${passed} passed, ${failed} failed ====`);
 process.exit(failed === 0 ? 0 : 1);

@@ -20849,3 +20849,30 @@ New strings `wholeQuranLevelSentence` ("{level}: Achieved {known} and {percent} 
 - quran-ayah-action-sheet 145/0; ayah-card-takenote-family 44/0; word-card-ayah-card-ways-back 86/0; approach-record-status-bar 304/0; kys-window 50/0.
 - phone-width-overflow 217/0; behaviour 971/0; rules-authorisation-executable 63/0; stub-parity 4/0.
 - The 390px screenshots in English and Bangla were looked at: calm, aligned, nothing crowded (the work-design rule of 14 Oct).
+
+## v10.45 — 14 Oct 2026 — Zab round Z1: the family Zab's saving layer and a Rules CANDIDATE, nothing on screen (PCF J25)
+
+**The Owner** (PCF J25, 14 Oct): 1 B (the bar on every MMSA page), 2 A (→ Note), 3 B (one shared family Zab), 4 B (study pockets). The model is Siyagah's Zab (guide G05, "How Zab is built"), whose stored field names are kept so data can move between the apps.
+
+**Built (Builder round #821, PR #822, branch `builder/issue-821-run-1252`):**
+- **`app/js/zab-data.js`**, the saving layer. No page imports it yet: a reachability walk from every `app/*.html`, with a positive control, proves it.
+  - It covers pockets and items: add, edit, move (a move into a pocket's own descendant is refused), trash and restore (`status: "trashed"`, `deletedAt`, and always `updatedAt`), tick, clear done, and steps.
+  - `seedPockets` runs once per tenant: To memorise, To revise, Questions and Links, with `names: {en, bn}`.
+  - Every write stamps `updatedAt` and reports a failure to the user (I15). Nothing joins start-up (I9).
+- **Two collection names in `app/js/collections.js`:** `zabPockets` and `zabItems`, one tenant-shared document each (`{tenantId}__{id}`).
+- **The Rules CANDIDATE, `docs/governance/2026-10-14-zab-candidate.rules`.** It is the live `firestore.rules` plus the two blocks:
+  - any member of the tenant may read, create and update;
+  - no one outside the tenant may read or write;
+  - no delete, ever;
+  - G05's field names, with `ztype` limited to the five kinds.
+
+  **`firestore.rules` is unchanged; publishing the Rules is the Owner's Control Gate.**
+
+**Architect review:** G05 calls `journal` "whether it is a journal entry", so Siyagah may store a boolean. The candidate now accepts a boolean or a string, with new emulator cases.
+
+**Tests:**
+- New emulator suite `zab.rules.test.mjs` (`npm run zab`): 25/25. Each denial is paired with an allow, and each rule check is mutated one at a time.
+- New `zab-data`: 23/0.
+- rules-authorisation-executable 73/0 (extended to the candidate); stub-parity 4/0; behaviour 971/0.
+
+**Next:** round Z2, the bar on every page and plain pockets on screen. It saves to the cloud only once the Owner publishes the Rules.
