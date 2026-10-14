@@ -276,7 +276,8 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     // 8 Oct 2026 (decision 88): `dua` joined UNIT_TYPES (and `duaword`, decision 92, the same way), but a dua's progress is recorded from the Hadith page's Dua
     // tab (the studied_hadith trackable, counted once per dua); this hand-entry form keeps its twelve types, so a dua
     // can never be entered here against the wrong subject or trackable.
-    unitTypeSelect.innerHTML = UNIT_TYPES.filter((u) => u !== "dua" && u !== "duaword")
+    // PCF J26: `opening` (Aʿūdhu billāh) is likewise recorded only from Al-Fātiḥah's Read page.
+    unitTypeSelect.innerHTML = UNIT_TYPES.filter((u) => u !== "dua" && u !== "duaword" && u !== "opening")
       .map((u) => `<option value="${u}">${unitTypeLabel(u)}</option>`)
       .join("");
     // ...and the status picker goes through the shared translated helper
