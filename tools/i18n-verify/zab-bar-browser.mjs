@@ -62,8 +62,8 @@ async function routeMutation(ctx) {
     await routeText(ctx, "**/js/zab-bar.js", (s) => swap(swap(s, "if (S.loaded || S.loading) return;", "if (S.loading) return;"), "if (!all.length) {", "if (true) {"));
   }
   else if (MUTATE === "e") await routeText(ctx, "**/js/zab-bar.js", (s) => swap(s, "try { o.focus({ preventScroll: true }); }", "try { /* no focus back */ }"));
-  else if (MUTATE === "g") await routeText(ctx, "**/js/zab-bar.js", (s) => swap(s, ".zab-row .zab-acts { grid-column: 1 / -1;", ".zab-row { display: flex !important; } .zab-row .zab-acts { grid-column: 1 / -1;"));
-  else if (MUTATE === "h") await routeText(ctx, "**/js/zab-bar.js", (s) => swap(s, "width: auto; flex: 0 1 9.5rem;", "width: 100%; flex: 1 1 100%;"));
+  else if (MUTATE === "g") await routeText(ctx, "**/js/zab-bar.js", (s) => s.split(".zab-row { display: grid;").join(".zab-row { display: flex; flex-wrap: nowrap !important;").split("#zabPanel[data-w=\"narrow\"] .zab-row .zab-main {").join(".zab-x {").split(".zab-row .zab-acts { grid-column: 1 / -1;").join(".zab-row .zab-acts { flex: 0 0 auto !important;")); // the ORIGINAL defect: text and controls side by side
+  else if (MUTATE === "h") await routeText(ctx, "**/js/zab-bar.js", (s) => swap(s, "flex-wrap: nowrap; gap: 4px;", "flex-wrap: wrap; gap: 4px;").replace("width: auto; flex: 0 1 9.5rem; min-width: 5.5rem; max-width: 9.5rem;", "width: 100%; flex: 1 1 100%; max-width: none;")); // a full-width picker wrapping the controls onto lines of their own
   else if (MUTATE === "f") await routeText(ctx, "**/js/zab-bar.js", (s) => swap(s, "const pocketName = (p) => (p.names ? langText(p.names, lang(), p.name) : p.name || \"\");", "const pocketName = (p) => p.name || \"\";"));
   else throw new Error(`unknown mutation ${MUTATE}`);
 }
