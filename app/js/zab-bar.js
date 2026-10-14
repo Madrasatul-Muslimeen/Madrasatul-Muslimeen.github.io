@@ -111,6 +111,7 @@ body:has(.nw-switch) #zabCorner { bottom: 68px; }
 #zabPanel .zab-topic button { min-height: 32px; min-width: 32px; padding: 0; border: 0; background: none; }
 /* Z5: → Note. The controls stay on ONE line: below 420px the Move-to select gives up width, never a line. */
 @media (max-width: 420px) { .zab-row .zab-acts select { flex-basis: 4rem; min-width: 4rem; } .zab-row .zab-acts { gap: 2px; } }
+#zabPanel .zab-acts button[data-zab-tonote] { white-space: nowrap; padding: 0 4px; min-width: 48px; flex: 0 0 auto; }
 .zab-pick { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 6px 8px; border-radius: 8px; background: #eef3fb; }
 .zab-pick label { flex: 1 0 100%; font-size: .85rem; color: #1f3a6e; }
 .zab-pick select { flex: 1 1 10rem; min-width: 0; }
