@@ -56,6 +56,8 @@ export function chunkKeyFor(unitKey, subjectId) {
     const surahNum = Number(parts[0]);
     if (Number.isFinite(surahNum)) return `surah_${surahNum}`;
   }
+  // PCF J26: Aʿūdhu billāh (`opening:taawwudh`) is kept with Al-Fātiḥah's records, which the page already loads (no new read, I9).
+  if (unitType === "opening") return "surah_1";
   // Decision 92: a dua's words get one chunk per dua (a few hundred entries at most), never the whole subject's chunk,
   // which 18,040 words would outgrow.
   if (unitType === "duaword") {

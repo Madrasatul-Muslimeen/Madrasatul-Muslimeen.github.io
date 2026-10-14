@@ -3346,6 +3346,12 @@ export const BN = {
   "Al-Fātiḥah: Bismillah unnumbered (": "আল-ফাতিহা: বিসমিল্লাহ নম্বরবিহীন (",
   "is āyah 1)": "হলো আয়াত ১)",
   "Bismillah": "বিসমিল্লাহ",
+  // PCF J26 -- Aʿūdhu billāh and Bismillah as study items before Al-Fātiḥah.
+  "Before Al-Fātiḥah": "আল-ফাতিহার আগে",
+  "Aʿūdhu billāh": "আউযুবিল্লাহ",
+  "I seek refuge in Allah from Shayṭān, the accursed.": "আমি অভিশপ্ত শয়তান থেকে আল্লাহর কাছে আশ্রয় চাই।",
+  "Open {name}": "{name} খুলুন",
+  "Stage: {stage}": "ধাপ: {stage}",
   "Approach: {name}": "পদ্ধতি: {name}", // ?
   "Surah {n}": "সূরা {n}",
   "from {place}": "{place} থেকে", // the wheel centre's second line for a Page/Juz/Hizb: where the unit starts (decision 63)

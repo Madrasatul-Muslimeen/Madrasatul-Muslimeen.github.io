@@ -13,7 +13,7 @@ import { t, num } from "./i18n.js";
 
 export const UNIT_TYPES = Object.freeze([
   "ayah", "range", "surah", "page", "ruku", "juz", "hizb", "rub", "manzil",
-  "hadith", "topic", "name", "dua", "duaword",
+  "hadith", "topic", "name", "dua", "duaword", "opening",
 ]);
 
 export const buildUnitKey = Object.freeze({
@@ -35,6 +35,9 @@ export const buildUnitKey = Object.freeze({
   // Decision 92 (8 Oct 2026, round 6 of "Dua words"): one word of one dua -- the dua's permanent number and the word's
   // position in its picked words, counted from 1 (app/js/dua-words.js duaWordTokens). Permanent once recorded.
   duaWord: (number, position) => `duaword:${number}:${position}`,
+  // PCF J26 (14 Oct 2026, Owner Q2 "Yes"): a study item recited BEFORE a surah's first āyah that is not an āyah of it.
+  // `opening:taawwudh` is Aʿūdhu billāh; fixed once first used. Stored with Al-Fātiḥah's records (chunkKeyFor -> surah_1).
+  opening: (id) => `opening:${id}`,
 });
 
 /** Splits a unit key into { unitType, parts } — parts is everything after the first namespace segment, still colon-joined for types that carry more than one field (e.g. "2:255-257"). */
@@ -99,8 +102,11 @@ export function localRukuIndexFromTable(rukuIndexRows) {
 const UNIT_TYPE_LABELS = Object.freeze({
   ayah: "Ayah", range: "Range", surah: "Surah", page: "Page", ruku: "Ruku",
   juz: "Juz", hizb: "Hizb", rub: "Rub", manzil: "Manzil", hadith: "Hadith",
-  topic: "Topic", name: "Name", book: "Qur'an", dua: "Dua", duaword: "Dua word",
+  topic: "Topic", name: "Name", book: "Qur'an", dua: "Dua", duaword: "Dua word", opening: "Before Al-Fātiḥah",
 });
+
+/** Readable names of the `opening:` ids (J26). The id stays the stored key; this is only what a table prints. */
+const OPENING_LABELS = Object.freeze({ taawwudh: "Aʿūdhu billāh" });
 
 /** A unit type's display name, in the reader's own language. Falls back to the raw id, so an unrecognised type can never render blank. */
 export function unitTypeLabel(unitType) {
@@ -121,6 +127,7 @@ export function unitKeyLabel(unitKey) {
   const { unitType, parts } = parseUnitKey(unitKey);
   const ref = parts.join(":");
   if (!ref) return unitTypeLabel(unitType);
+  if (unitType === "opening" && OPENING_LABELS[ref]) return `${unitTypeLabel(unitType)}: ${t(OPENING_LABELS[ref])}`;
   return `${unitTypeLabel(unitType)} ${/^[0-9:\-]+$/.test(ref) ? num(ref) : ref}`;
 }
 
