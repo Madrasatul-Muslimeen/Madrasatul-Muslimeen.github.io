@@ -15,6 +15,11 @@
 //   d: a move strips the task's fields         (zab-data.js moveItem)
 //   e: the kind picker writes nothing          (zab-bar.js savePocket)
 //   f: a squeezed Add button breaks its word   (zab-bar.js)
+// Z4 (issue #827) adds ideas (stars, topics, sort) and shopping (qty, shop, groups, Done, kept fields):
+//   g: tapping the same star does not clear it   h: a shop name stops at the first space
+//   i: Done is not last                          j: stars sort low first
+//   k: removing a topic does nothing             l: clearing stars stores 0 instead of removing the field
+//   m: a move strips qty and shop                n: a ticked shop item stays in its shop group
 // Run from the repository root with `node serve.js` running.
 import fs from "node:fs";
 import { chromium, newContext, BASE } from "./harness.mjs";
@@ -51,6 +56,14 @@ async function routeMutation(ctx) {
   else if (MUTATE === "d") await routeText(ctx, "**/js/zab-data.js", (s) => swap(s, "{ pocketId: toPocketId }", "{ pocketId: toPocketId, due: deleteField(), pri: deleteField(), steps: deleteField() }"));
   else if (MUTATE === "e") await routeText(ctx, "**/js/zab-bar.js", (s) => swap(s, `const kind = box.querySelector("[data-zab-f='ztype']").value;`, `const kind = undefined;`));
   else if (MUTATE === "f") await routeText(ctx, "**/js/zab-bar.js", (s) => swap(s, ".zab-add button { flex: 0 0 auto; white-space: nowrap; }", ".zab-add button { flex: 0 1 1px; }"));
+  else if (MUTATE === "g") await routeText(ctx, "**/js/zab-data.js", (s) => swap(s, "return current === k ? null : k;", "return k;"));
+  else if (MUTATE === "h") await routeText(ctx, "**/js/zab-data.js", (s) => swap(s, "/(^|\\s)@(.*)$/s", "/(^|\\s)@(\\S*)/"));
+  else if (MUTATE === "i") await routeText(ctx, "**/js/zab-data.js", (s) => swap(s, "if (done.length) groups.push(", "if (done.length) groups.unshift("));
+  else if (MUTATE === "j") await routeText(ctx, "**/js/zab-data.js", (s) => swap(s, "(b.stars || 0) - (a.stars || 0)", "(a.stars || 0) - (b.stars || 0)"));
+  else if (MUTATE === "k") await routeText(ctx, "**/js/zab-data.js", (s) => swap(s, ".filter((x) => x !== text)", ".filter(() => true)"));
+  else if (MUTATE === "l") await routeText(ctx, "**/js/zab-bar.js", (s) => swap(s, "zab.editItem(db, c, id, { stars: next })", "zab.editItem(db, c, id, { stars: next || 0 })"));
+  else if (MUTATE === "m") await routeText(ctx, "**/js/zab-data.js", (s) => swap(s, "{ pocketId: toPocketId }", "{ pocketId: toPocketId, qty: deleteField(), shop: deleteField() }"));
+  else if (MUTATE === "n") await routeText(ctx, "**/js/zab-data.js", (s) => swap(s, "if (it.done === true) { done.push(it); continue; }", ""));
   else throw new Error(`unknown mutation ${MUTATE}`);
 }
 
@@ -63,10 +76,16 @@ const SEED = `
     { _id: "t1__pk-tasks", pocketId: "pk-tasks", order: 0, name: "Tasks", icon: "✅", ztype: "tasks", ${stamp} },
     { _id: "t1__pk-plain", pocketId: "pk-plain", order: 1, name: "Plain", icon: "📁", ${stamp} },
     { _id: "t1__pk-links", pocketId: "pk-links", order: 2, name: "Links", icon: "🔗", ztype: "links", ${stamp} },
+    { _id: "t1__pk-ideas", pocketId: "pk-ideas", order: 3, name: "Ideas", icon: "💡", ztype: "ideas", ${stamp} },
+    { _id: "t1__pk-shop", pocketId: "pk-shop", order: 4, name: "Shopping", icon: "🛒", ztype: "shop", ${stamp} },
   ];
   DATA.zabItems = [
     { _id: "t1__it-old", itemId: "it-old", pocketId: "pk-tasks", order: 0, text: "Revise Juz 30", done: false, due: "${day(-3)}", pri: 1, ${stamp} },
     { _id: "t1__it-link", itemId: "it-link", pocketId: "pk-links", order: 0, text: "https://quran.com/2/255", url: "https://quran.com/2/255", done: false, ${stamp} },
+    { _id: "t1__i-a", itemId: "i-a", pocketId: "pk-ideas", order: 0, text: "A study circle for the neighbours with a rather long title to test wrapping", done: false, ${stamp} },
+    { _id: "t1__i-b", itemId: "i-b", pocketId: "pk-ideas", order: 1, text: "Tajweed games", stars: 3, done: false, ${stamp} },
+    { _id: "t1__s-bread", itemId: "s-bread", pocketId: "pk-shop", order: 0, text: "bread", qty: "3", shop: "Aldi", done: false, ${stamp} },
+    { _id: "t1__s-eggs", itemId: "s-eggs", pocketId: "pk-shop", order: 1, text: "eggs", done: false, ${stamp} },
   ];
 })();`;
 
@@ -158,6 +177,111 @@ for (const lang of ["en", "bn"]) {
       check(`${tag}: no title is fetched for a link`, !!ln && !("ttl" in ln.data) && !("th" in ln.data));
       await page.click("#zabPanel [data-zab-close]").catch(() => {});
 
+      // --- ideas (Z4)
+      const layout = async (label, sel) => {
+        const lay2 = await page.evaluate((s) => { const p = document.getElementById("zabPanel"); const m = p.querySelector(s); return { share: m ? m.getBoundingClientRect().width / p.clientWidth : 0, fits: p.scrollWidth <= p.clientWidth + 1 }; }, sel);
+        check(`${tag}: ${label} text keeps >= 70% of the panel, nothing sideways`, lay2.share >= 0.7 && lay2.fits, JSON.stringify(lay2));
+        check(`${tag}: ${label} every Add button keeps its word on one line`, await page.evaluate(() => [...document.querySelectorAll("#zabPanel .zab-add button")].every((b) => { const r = document.createRange(); r.selectNodeContents(b); return r.getClientRects().length <= 1; })));
+        check(`${tag}: ${label} the row's controls are at least 40px`, await page.evaluate(() => [...document.querySelectorAll("#zabPanel .zab-acts button")].every((b) => { const r = b.getBoundingClientRect(); return r.height >= 39.5 && r.width >= 39.5; })));
+        check(`${tag}: ${label} no sideways page scroll`, await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
+      };
+      await page.evaluate(() => { window.__stubWriteData = []; });
+      await openPocket(page, w, "pk-ideas");
+      const starBtn = (id, n) => `#zabPanel [data-zab-star="${id}:${n}"]`;
+      const sz = await page.evaluate((s) => { const r = document.querySelector(s).getBoundingClientRect(); return [r.width, r.height]; }, starBtn("i-a", 2));
+      check(`${tag}: a star is at least 32px to tap`, sz[0] >= 31.5 && sz[1] >= 31.5, JSON.stringify(sz));
+      await page.click(starBtn("i-a", 2));
+      await page.waitForTimeout(400);
+      const st = (await writes(page)).filter((x) => x.id === "t1__i-a");
+      check(`${tag}: tapping a star sets stars`, st.length === 1 && st[0].data.stars === 2, JSON.stringify(st.map((x) => x.data)));
+      await settle(page);
+      await page.click(starBtn("i-a", 2));
+      await page.waitForTimeout(400);
+      const st2 = (await writes(page)).filter((x) => x.id === "t1__i-a");
+      check(`${tag}: tapping the same star again clears it (field removed)`, st2.length === 2 && !!(st2[1].data.stars && st2[1].data.stars.__deleteField), JSON.stringify(st2.map((x) => x.data)));
+      check(`${tag}: … and the row shows no star set`, await page.evaluate(() => document.querySelectorAll('#zabPanel [data-zab-item="i-a"] .zab-star[aria-pressed="true"]').length === 0));
+      await settle(page);
+      // topics
+      await page.click('#zabPanel [data-zab-topics="i-a"]');
+      await page.fill('#zabPanel [data-zab-new-topic="i-a"]', "Fiqh");
+      await page.press('#zabPanel [data-zab-new-topic="i-a"]', "Enter");
+      await page.waitForTimeout(400);
+      const tp = (await writes(page)).filter((x) => x.id === "t1__i-a" && x.data.topics);
+      check(`${tag}: a topic is added`, tp.length === 1 && Array.isArray(tp[0].data.topics) && tp[0].data.topics.join() === "Fiqh", JSON.stringify(tp.map((x) => x.data)));
+      check(`${tag}: … and shown as a chip`, await page.evaluate(() => [...document.querySelectorAll('#zabPanel [data-zab-item="i-a"] [data-zab-topic]')].some((e) => e.textContent.includes("Fiqh"))));
+      await settle(page);
+      await page.click('#zabPanel [data-zab-rm-topic^="i-a:"]');
+      await page.waitForTimeout(400);
+      const tp2 = (await writes(page)).filter((x) => x.id === "t1__i-a" && x.data.topics);
+      check(`${tag}: removing the last topic removes the field`, tp2.length === 2 && !!(tp2[1].data.topics && tp2[1].data.topics.__deleteField), JSON.stringify(tp2.map((x) => x.data)));
+      check(`${tag}: … and the chip is gone`, await page.evaluate(() => document.querySelectorAll('#zabPanel [data-zab-item="i-a"] [data-zab-topic]').length === 0));
+      // sort
+      const firstIdea = () => page.evaluate(() => (document.querySelector("#zabPanel [data-zab-item]") || {}).dataset.zabItem);
+      check(`${tag}: ideas start in pocket order`, (await firstIdea()) === "i-a");
+      await page.selectOption("#zabPanel [data-zab-idea-sort]", "stars");
+      check(`${tag}: sorted by stars, the highest comes first`, (await firstIdea()) === "i-b");
+      check(`${tag}: the sort is a view setting, not a stored field`, !(await writes(page)).some((x) => x.data && ("sort" in x.data || "ideaSort" in x.data)));
+      await layout("an ideas row", '[data-zab-item="i-b"] .zab-main');
+      if (w === 390 || w === 1440) await page.screenshot({ path: `/tmp/zab-ideas-${w}-${lang}.png` });
+      await page.click("#zabPanel [data-zab-close]").catch(() => {});
+
+      // --- shopping (Z4)
+      await page.evaluate(() => { window.__stubWriteData = []; });
+      await openPocket(page, w, "pk-shop");
+      await page.fill("#zabPanel [data-zab-new-item]", "2 milk @Coles");
+      await page.press("#zabPanel [data-zab-new-item]", "Enter");
+      await page.waitForTimeout(400);
+      const sh = (await writes(page)).find((x) => x.col === "zabItems" && (x.data || {}).text === "milk");
+      check(`${tag}: "2 milk @Coles" saves qty, text and shop`, !!sh && sh.data.qty === "2" && sh.data.shop === "Coles", JSON.stringify(sh && sh.data));
+      await page.fill("#zabPanel [data-zab-new-item]", "1 rice @Big W");
+      await page.press("#zabPanel [data-zab-new-item]", "Enter");
+      await page.waitForTimeout(400);
+      const sh2 = (await writes(page)).find((x) => x.col === "zabItems" && (x.data || {}).text === "rice");
+      check(`${tag}: a shop name may contain spaces`, !!sh2 && sh2.data.shop === "Big W" && sh2.data.qty === "1", JSON.stringify(sh2 && sh2.data));
+      await page.fill("#zabPanel [data-zab-new-item]", "salt");
+      await page.press("#zabPanel [data-zab-new-item]", "Enter");
+      await page.waitForTimeout(400);
+      const sh3 = (await writes(page)).find((x) => x.col === "zabItems" && (x.data || {}).text === "salt");
+      check(`${tag}: a plain item stores no empty qty or shop`, !!sh3 && !("qty" in sh3.data) && !("shop" in sh3.data), JSON.stringify(sh3 && sh3.data));
+      const seq = await page.evaluate(() => [...document.querySelectorAll("#zabPanel [data-zab-group]")].map((g) => g.dataset.zabGroup + (g.dataset.zabShopname ? `:${g.dataset.zabShopname}` : "")));
+      check(`${tag}: items group under each shop (A-Z), then No shop`, seq.join("|") === "shop:Aldi|shop:Big W|shop:Coles|noshop", seq.join("|"));
+      await page.check('#zabPanel [data-zab-tick="s-eggs"]');
+      await page.waitForTimeout(400);
+      const seq2 = await page.evaluate(() => [...document.querySelectorAll("#zabPanel [data-zab-group]")].map((g) => g.dataset.zabGroup));
+      check(`${tag}: a ticked item goes under Done, last`, seq2[seq2.length - 1] === "done" && (await page.evaluate(() => !!document.querySelector('#zabPanel [data-zab-group="done"] [data-zab-item="s-eggs"]'))), seq2.join("|"));
+      await layout("a shopping row", '[data-zab-item="s-bread"] .zab-main');
+      if (w === 390 || w === 1440) await page.screenshot({ path: `/tmp/zab-shop-${w}-${lang}.png` });
+      // a shop item moved to Plain and back keeps its fields
+      await settle(page);
+      await page.evaluate(() => { window.__stubWriteData = []; });
+      await page.selectOption('#zabPanel [data-zab-imove="s-bread"]', "pk-plain");
+      await page.waitForTimeout(400);
+      const m1 = (await writes(page)).find((x) => x.id === "t1__s-bread");
+      await settle(page);
+      await page.click("#zabPanel [data-zab-close]").catch(() => {});
+      await openPocket(page, w, "pk-plain");
+      await page.selectOption('#zabPanel [data-zab-imove="s-bread"]', "pk-shop");
+      await page.waitForTimeout(400);
+      const m2 = (await writes(page)).filter((x) => x.id === "t1__s-bread");
+      const stripped = (x) => ["qty", "shop"].some((k) => k in x.data);
+      check(`${tag}: moving a shop item to Plain and back writes only the pocket`, !!m1 && m2.length === 2 && !stripped(m1) && !stripped(m2[1]) && m2[1].data.pocketId === "pk-shop", JSON.stringify([m1 && m1.data, m2.map((x) => x.data)]));
+      await settle(page);
+      await page.click("#zabPanel [data-zab-close]").catch(() => {});
+      await openPocket(page, w, "pk-shop");
+      check(`${tag}: … and the item still shows its qty and shop`, await page.evaluate(() => { const r = document.querySelector('#zabPanel [data-zab-item="s-bread"]'); return !!r && /Aldi/.test((r.querySelector("[data-zab-shop]") || {}).textContent || "") && /3/.test((r.querySelector("[data-zab-qty]") || {}).textContent || ""); }));
+      await page.click("#zabPanel [data-zab-close]").catch(() => {});
+
+      // --- the Kind picker offers all five (once per language, at one width)
+      if (w === 1440) {
+        await page.click(opener(w));
+        await page.waitForSelector('#zabPanel [data-zab-pedit="pk-plain"]', { timeout: 8000 });
+        await page.click('#zabPanel [data-zab-pedit="pk-plain"]');
+        const opts = await page.$$eval("#zabPanel [data-zab-f='ztype'] option", (o) => o.map((x) => x.value));
+        check(`${tag}: the Kind picker offers Plain, Tasks, Links, Ideas, Shopping`, opts.join() === "plain,tasks,links,ideas,shop", opts.join());
+        await page.click("#zabPanel [data-zab-cancel-edit]");
+        await page.click("#zabPanel [data-zab-close]").catch(() => {});
+      }
+
       // --- the Kind picker (once per language, at one width)
       if (w === 1440) {
         await page.evaluate(() => { window.__stubWriteData = []; });
@@ -177,5 +301,5 @@ for (const lang of ["en", "bn"]) {
   }
 }
 await browser.close();
-console.log(`\n==== Zab kinds, tasks and links (Z3): ${pass} passed, ${fail} failed ====`);
+console.log(`\n==== Zab kinds: tasks, links, ideas, shopping (Z3-Z4): ${pass} passed, ${fail} failed ====`);
 process.exit(fail ? 1 : 0);

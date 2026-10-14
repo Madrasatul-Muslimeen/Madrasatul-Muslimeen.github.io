@@ -492,5 +492,56 @@ await acheck("a link item stores url, and a pocket's kind can be set and cleared
   assert.equal(pocketId, "pl");
 });
 
+// ---- Z4: ideas and shopping
+check("nextStars: tapping sets, the same star clears (null), out-of-range is null", () => {
+  assert.equal(zab.nextStars(undefined, 2), 2);
+  assert.equal(zab.nextStars(2, 2), null);
+  assert.equal(zab.nextStars(2, 3), 3);
+  assert.equal(zab.nextStars(1, 0), null);
+  assert.equal(zab.nextStars(1, 4), null);
+});
+check("sortByStars: high first, unstarred last, ties in pocket order", () => {
+  const out = zab.sortByStars([{ itemId: "a", order: 0 }, { itemId: "b", order: 1, stars: 1 }, { itemId: "c", order: 2, stars: 3 }, { itemId: "d", order: 3, stars: 3 }]);
+  assert.deepEqual(out.map((x) => x.itemId), ["c", "d", "b", "a"]);
+});
+check("addTopic / removeTopic: trimmed, no duplicates, empty ignored", () => {
+  assert.deepEqual(zab.addTopic([], "  Fiqh "), ["Fiqh"]);
+  assert.deepEqual(zab.addTopic(["Fiqh"], "fiqh"), ["Fiqh"]);
+  assert.deepEqual(zab.addTopic(["Fiqh"], "  "), ["Fiqh"]);
+  assert.deepEqual(zab.removeTopic(["Fiqh", "Tajweed"], "Fiqh"), ["Tajweed"]);
+});
+check("parseQuickShop: qty, text and shop; the shop runs to the end and may contain spaces", () => {
+  assert.deepEqual(zab.parseQuickShop("2 milk @Coles"), { qty: "2", text: "milk", shop: "Coles" });
+  assert.deepEqual(zab.parseQuickShop("1 rice @Big W"), { qty: "1", text: "rice", shop: "Big W" });
+  assert.deepEqual(zab.parseQuickShop("salt"), { text: "salt" });
+  assert.deepEqual(zab.parseQuickShop("milk @"), { text: "milk" });
+  assert.deepEqual(zab.parseQuickShop("3"), { text: "3" });
+  assert.deepEqual(zab.parseQuickShop("a@b.com"), { text: "a@b.com" });
+});
+check("shopGroups: shops A-Z, No shop, then Done last", () => {
+  const g = zab.shopGroups([
+    { itemId: "1", order: 0, shop: "Coles" }, { itemId: "2", order: 1 }, { itemId: "3", order: 2, shop: "Aldi" },
+    { itemId: "4", order: 3, shop: "Aldi", done: true }, { itemId: "5", order: 4, shop: "Coles" },
+  ]);
+  assert.deepEqual(g.map((x) => x.key), ["Aldi", "Coles", "", "\u0000done"]);
+  assert.deepEqual(g[1].items.map((x) => x.itemId), ["1", "5"]);
+  assert.equal(g[3].done, true);
+});
+await acheck("an ideas/shop item stores stars, topics, qty and shop; empties are removed; fields survive a move", async () => {
+  reset();
+  await zab.addPocket(db, ctx, { name: "S", pocketId: "ps", ztype: "shop" });
+  await zab.addPocket(db, ctx, { name: "P", pocketId: "pp2" });
+  const { itemId } = await zab.addItem(db, ctx, "ps", { text: "milk", qty: "2", shop: "Coles", stars: 2, topics: ["a"] });
+  await zab.editItem(db, ctx, itemId, { stars: null, topics: [] });
+  const d = doc_("zabItems", itemId);
+  assert.ok(!("stars" in d) && !("topics" in d), "emptied fields removed");
+  await zab.moveItem(db, ctx, itemId, "pp2");
+  await zab.moveItem(db, ctx, itemId, "ps");
+  assert.equal(doc_("zabItems", itemId).qty, "2");
+  assert.equal(doc_("zabItems", itemId).shop, "Coles");
+  assert.equal((await zab.addPocket(db, ctx, { name: "I", ztype: "ideas" })).ok, true);
+  assert.equal((await zab.addPocket(db, ctx, { name: "I", ztype: "shop" })).ok, true);
+});
+
 console.log(`\n==== zab-data: ${passed} passed, ${failed} failed ====`);
 process.exit(failed === 0 ? 0 : 1);

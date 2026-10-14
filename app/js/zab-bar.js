@@ -44,7 +44,7 @@ const S = {
   pockets: [], items: [], people: null,
   trashed: { pockets: [], items: [] },
   view: "closed", pocketId: null, editingPocket: null, editingItem: null,
-  opener: null, scrollY: 0, msg: "", openSteps: new Set(),
+  opener: null, scrollY: 0, msg: "", openSteps: new Set(), openTopics: new Set(), ideaSort: "order",
 };
 let root = null, ro = null;
 
@@ -99,6 +99,17 @@ body:has(.nw-switch) #zabCorner { bottom: 68px; }
 .zab-det .zab-link { white-space: nowrap; color: #1f3a6e; }
 .zab-pri { color: #8a1c14; font-weight: 600; }
 .zab-det button.zab-stepcount { min-height: 32px; min-width: 40px; padding: 0 8px; font-size: .82rem; }
+/* Z4: stars are 32px+ to tap; topics wrap on their own line under the details. */
+.zab-stars { display: inline-flex; gap: 2px; flex: 0 0 auto; }
+#zabPanel .zab-star { min-width: 32px; min-height: 32px; width: 32px; padding: 0; border: 0; background: none; font-size: 1.2rem; line-height: 1; color: #9aa6bd; }
+#zabPanel .zab-star[aria-pressed="true"] { color: #c27c0e; }
+.zab-topics { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; align-items: center; }
+.zab-topic { display: inline-flex; align-items: center; gap: 2px; padding-inline-start: 8px; border-radius: 999px; background: #e8eefa; font-size: .8rem; max-width: 100%; }
+.zab-topic span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#zabPanel .zab-topic button { min-height: 32px; min-width: 32px; padding: 0; border: 0; background: none; }
+.zab-sort { display: flex; gap: 6px; align-items: center; margin-bottom: 8px; }
+.zab-sort select { flex: 0 1 12rem; }
+.zab-qty { font-weight: 600; color: #1b2a41; }
 .zab-group h3 { margin: 10px 0 0; font-size: .85rem; color: #1f3a6e; text-transform: none; }
 .zab-steps { margin-top: 4px; }
 .zab-step { display: flex; align-items: center; gap: 8px; min-height: 32px; min-width: 0; overflow-wrap: anywhere; }
@@ -272,8 +283,8 @@ function head(title, back) {
 }
 const msgBox = () => `<p id="zabMsg" role="status">${esc(S.msg)}</p>`;
 
-const KIND_NAMES = { plain: "Plain", tasks: "Tasks", links: "Links" };
-const KIND_PICKS = ["plain", "tasks", "links"]; // Ideas and Shopping come in Z4
+const KIND_NAMES = { plain: "Plain", tasks: "Tasks", links: "Links", ideas: "Ideas", shop: "Shopping" };
+const KIND_PICKS = ["plain", "tasks", "links", "ideas", "shop"];
 
 function renderList() {
   const ps = activePockets();
@@ -321,10 +332,24 @@ function kindDetails(it, kind) {
     bits.push(`<button type="button" class="zab-stepcount" data-zab-steps="${esc(it.itemId)}" aria-expanded="${S.openSteps.has(it.itemId)}" aria-label="${esc(t("Steps"))}">${sc.total ? `${sc.done}/${sc.total}` : "＋"}</button>`);
     return `<div class="zab-det">${bits.join("")}</div>`;
   }
+  if (kind === "ideas") {
+    const stars = [1, 2, 3].map((n) => `<button type="button" class="zab-star" data-zab-star="${esc(it.itemId)}:${n}" aria-pressed="${it.stars >= n}" aria-label="${esc(t("{n} star", { n }))}">${it.stars >= n ? "★" : "☆"}</button>`).join("");
+    return `<div class="zab-det"><span class="zab-stars" role="group" aria-label="${esc(t("Stars"))}">${stars}</span><button type="button" class="zab-stepcount" data-zab-topics="${esc(it.itemId)}" aria-expanded="${S.openTopics.has(it.itemId)}" aria-label="${esc(t("Topics"))}">＋ ${esc(t("Topics"))}</button></div>${topicsBlock(it)}`;
+  }
+  if (kind === "shop" && (it.qty || it.shop)) {
+    return `<div class="zab-det">${it.qty ? `<span class="zab-qty" data-zab-qty>× ${esc(it.qty)}</span>` : ""}${it.shop ? `<span class="zab-site" data-zab-shop>🛒 ${esc(it.shop)}</span>` : ""}</div>`;
+  }
   if (kind === "links" && it.url) {
     return `<div class="zab-det"><span class="zab-site">${esc(zab.siteName(it.url))}</span><a class="zab-link" href="${esc(it.url)}" target="_blank" rel="noopener">${esc(t("Open link"))} ↗</a></div>`;
   }
   return "";
+}
+
+function topicsBlock(it) {
+  const chips = (it.topics || []).map((x) => `<span class="zab-topic" data-zab-topic><span>${esc(x)}</span><button type="button" data-zab-rm-topic="${esc(it.itemId)}:${esc(x)}" aria-label="${esc(t("Remove topic {name}", { name: x }))}">✕</button></span>`).join("");
+  const add = S.openTopics.has(it.itemId)
+    ? `<div class="zab-add" style="width:100%;margin:0"><input type="text" data-zab-new-topic="${esc(it.itemId)}" placeholder="${esc(t("Add a topic"))}" aria-label="${esc(t("Add a topic"))}"><button type="button" data-zab-add-topic="${esc(it.itemId)}">${esc(t("Add"))}</button></div>` : "";
+  return chips || add ? `<div class="zab-topics">${chips}${add}</div>` : "";
 }
 
 function stepsBlock(it) {
@@ -339,7 +364,10 @@ function itemEditForm(it, kind) {
        <select data-zab-item-pri aria-label="${esc(t("Priority"))}"><option value="">${esc(t("Normal"))}</option><option value="1"${it.pri === 1 ? " selected" : ""}>${esc(t("High"))}</option></select>`
     : kind === "links"
       ? `<input type="text" data-zab-item-url value="${esc(it.url || "")}" placeholder="https://" aria-label="${esc(t("Link"))}">`
-      : "";
+      : kind === "shop"
+        ? `<input type="text" data-zab-item-qty value="${esc(it.qty || "")}" placeholder="${esc(t("Quantity"))}" aria-label="${esc(t("Quantity"))}" style="flex:0 1 6rem">
+           <input type="text" data-zab-item-shop value="${esc(it.shop || "")}" placeholder="${esc(t("Shop"))}" aria-label="${esc(t("Shop"))}">`
+        : "";
   return `<div class="zab-edit"><input type="text" data-zab-item-text value="${esc(it.text)}" aria-label="${esc(t("Edit"))}">${extra}<button type="button" data-zab-save-item="${esc(it.itemId)}">${esc(t("Save"))}</button><button type="button" data-zab-cancel-edit>${esc(t("Cancel"))}</button></div>`;
 }
 
@@ -372,10 +400,17 @@ function renderPocket() {
     const g = taskGroups();
     rows = zab.TASK_GROUPS.filter((name) => g[name].length).map((name) =>
       `<section class="zab-group" data-zab-group="${name}"><h3>${esc(t(GROUP_NAMES[name]))} <span class="zab-muted">${g[name].length}</span></h3>${g[name].map((it, i) => itemRow(it, i, g[name].length, others, kind)).join("")}</section>`).join("");
+  } else if (kind === "shop") {
+    rows = zab.shopGroups(S.items).map((g) =>
+      `<section class="zab-group" data-zab-group="${g.done ? "done" : g.key ? "shop" : "noshop"}"${g.key && !g.done ? ` data-zab-shopname="${esc(g.key)}"` : ""}><h3>${esc(g.done ? t("Done") : g.key || t("No shop"))} <span class="zab-muted">${g.items.length}</span></h3>${g.items.map((it, i) => itemRow(it, i, g.items.length, others, kind)).join("")}</section>`).join("");
+  } else if (kind === "ideas") {
+    const list = S.ideaSort === "stars" ? zab.sortByStars(S.items) : S.items;
+    const sorter = `<div class="zab-sort"><label for="zabIdeaSort">${esc(t("Sort"))}</label><select id="zabIdeaSort" data-zab-idea-sort><option value="order"${S.ideaSort === "order" ? " selected" : ""}>${esc(t("By order"))}</option><option value="stars"${S.ideaSort === "stars" ? " selected" : ""}>${esc(t("By stars"))}</option></select></div>`;
+    rows = sorter + list.map((it, i) => itemRow(it, i, list.length, others, kind)).join("");
   } else {
     rows = S.items.map((it, i) => itemRow(it, i, S.items.length, others, kind)).join("");
   }
-  const hint = kind === "tasks" ? t("Add a task — ! for high priority, today or tomorrow") : kind === "links" ? t("Paste a link or type a note") : t("Add an item and press Enter");
+  const hint = kind === "shop" ? t("Add an item — try 2 milk @Coles") : kind === "ideas" ? t("Add an idea") : kind === "tasks" ? t("Add a task — ! for high priority, today or tomorrow") : kind === "links" ? t("Paste a link or type a note") : t("Add an item and press Enter");
   return `${head(`${p?.icon || "📁"} ${p ? pocketName(p) : ""}`, true)}<div class="zab-body" data-zab-kind="${kind}">${msgBox()}
     <div class="zab-add"><input type="text" data-zab-new-item placeholder="${esc(hint)}" aria-label="${esc(hint)}"><button type="button" data-zab-add-item>${esc(t("Add"))}</button></div>
     ${rows || `<p class="zab-muted">${esc(t("Nothing here yet."))}</p>`}
@@ -420,7 +455,10 @@ async function run(fn, onOk) {
 const itemById = (id) => S.items.find((i) => i.itemId === id);
 /** The list an item reorders within: its heading's items in a Tasks pocket, the whole pocket otherwise. */
 function itemNeighbours(id) {
-  if (zab.zabType(pocketById(S.pocketId)) !== "tasks") return S.items;
+  const kind = zab.zabType(pocketById(S.pocketId));
+  if (kind === "shop") return zab.shopGroups(S.items).map((g) => g.items).find((l) => l.some((i) => i.itemId === id)) || S.items;
+  if (kind === "ideas" && S.ideaSort === "stars") return zab.sortByStars(S.items);
+  if (kind !== "tasks") return S.items;
   const g = taskGroups();
   return zab.TASK_GROUPS.map((n) => g[n]).find((l) => l.some((i) => i.itemId === id)) || S.items;
 }
@@ -470,6 +508,20 @@ async function onClick(e) {
   if ((h = q("[data-zab-idown]"))) return swapOrder(itemNeighbours(h.dataset.zabIdown), h.dataset.zabIdown, 1, "itemId", (id, patch) => zab.editItem(db, c, id, patch));
   if ((h = q("[data-zab-steps]"))) { const id = h.dataset.zabSteps; if (S.openSteps.has(id)) S.openSteps.delete(id); else S.openSteps.add(id); return render(); }
   if ((h = q("[data-zab-add-step]"))) return addStepFromInput(h.dataset.zabAddStep);
+  if ((h = q("[data-zab-star]"))) {
+    const [id, n] = h.dataset.zabStar.split(":"), it = itemById(id);
+    if (!it) return;
+    const next = zab.nextStars(it.stars, n);
+    return run(() => zab.editItem(db, c, id, { stars: next }), () => { if (next) it.stars = next; else delete it.stars; });
+  }
+  if ((h = q("[data-zab-topics]"))) { const id = h.dataset.zabTopics; if (S.openTopics.has(id)) S.openTopics.delete(id); else S.openTopics.add(id); render(); const f = panel().querySelector(`[data-zab-new-topic="${CSS_ESC(id)}"]`); if (f) f.focus(); return; }
+  if ((h = q("[data-zab-add-topic]"))) return addTopicFromInput(h.dataset.zabAddTopic);
+  if ((h = q("[data-zab-rm-topic]"))) {
+    const [id, name] = h.dataset.zabRmTopic.split(/:(.*)/s), it = itemById(id);
+    if (!it) return;
+    const topics = zab.removeTopic(it.topics, name);
+    return run(() => zab.editItem(db, c, id, { topics }), () => { if (topics.length) it.topics = topics; else delete it.topics; });
+  }
   if ((h = q("[data-zab-itrash]"))) {
     const id = h.dataset.zabItrash;
     return run(() => zab.trashItem(db, c, id), () => { S.items = S.items.filter((i) => i.itemId !== id); });
@@ -501,6 +553,7 @@ async function onChange(e) {
     const steps = zab.toggleStep(it.steps, stepId);
     return run(() => zab.editItem(db, c, id, { steps }), () => { it.steps = steps; });
   }
+  if (el.matches("[data-zab-idea-sort]")) { S.ideaSort = el.value === "stars" ? "stars" : "order"; return render(); }
   if (el.matches("[data-zab-imove]") && el.value) {
     const id = el.dataset.zabImove, to = el.value;
     return run(() => zab.moveItem(db, c, id, to), () => { S.items = S.items.filter((i) => i.itemId !== id); });
@@ -514,7 +567,8 @@ function onKey(e) {
   if (el.matches("[data-zab-new-item]")) { e.preventDefault(); addItemFromInput(); }
   else if (el.matches("[data-zab-new-pocket]")) { e.preventDefault(); addPocketFromInput(); }
   else if (el.matches("[data-zab-new-step]")) { e.preventDefault(); addStepFromInput(el.dataset.zabNewStep); }
-  else if (el.matches("[data-zab-item-text],[data-zab-item-url]")) { e.preventDefault(); const b = panel().querySelector("[data-zab-save-item]"); if (b) saveItem(b.dataset.zabSaveItem); }
+  else if (el.matches("[data-zab-new-topic]")) { e.preventDefault(); addTopicFromInput(el.dataset.zabNewTopic); }
+  else if (el.matches("[data-zab-item-text],[data-zab-item-url],[data-zab-item-qty],[data-zab-item-shop]")) { e.preventDefault(); const b = panel().querySelector("[data-zab-save-item]"); if (b) saveItem(b.dataset.zabSaveItem); }
   else if (el.matches("[data-zab-f='name']")) { e.preventDefault(); const b = panel().querySelector("[data-zab-save-pocket]"); if (b) savePocket(b.dataset.zabSavePocket); }
 }
 
@@ -564,6 +618,7 @@ async function addItemFromInput() {
   // What the kind adds to a new item (nothing for a plain pocket). Empty fields are never sent.
   let fields = { text };
   if (kind === "tasks") fields = zab.parseQuickTask(text);
+  else if (kind === "shop") fields = zab.parseQuickShop(text);
   else if (kind === "links" && zab.asUrl(text)) fields = { text: zab.asUrl(text), url: zab.asUrl(text) };
   if (!fields.text) { S.msg = failText({ refused: "text-required" }); return render(); }
   await run(() => zab.addItem(db, S.ctx, pocketId, { ...fields, order }), (res) => {
@@ -587,6 +642,11 @@ async function saveItem(id) {
     const pri = panel().querySelector("[data-zab-item-pri]").value === "1" ? 1 : undefined;
     if ((due || undefined) !== (it.due || undefined)) patch.due = due; // "" removes the field
     if (pri !== (it.pri === 1 ? 1 : undefined)) patch.pri = pri;
+  } else if (kind === "shop") {
+    const qty = panel().querySelector("[data-zab-item-qty]").value.trim();
+    const shop = panel().querySelector("[data-zab-item-shop]").value.trim();
+    if (qty !== (it.qty || "")) patch.qty = qty;
+    if (shop !== (it.shop || "")) patch.shop = shop;
   } else if (kind === "links") {
     const url = panel().querySelector("[data-zab-item-url]").value.trim();
     if (url && !zab.asUrl(url)) { S.msg = t("Please type a full web address, starting with http."); return render(); }
@@ -597,6 +657,17 @@ async function saveItem(id) {
     for (const [k, v] of Object.entries(patch)) { if (v === undefined || v === "") delete it[k]; else it[k] = v; }
     S.editingItem = null;
   });
+}
+
+async function addTopicFromInput(itemId) {
+  const it = itemById(itemId);
+  const input = panel().querySelector(`[data-zab-new-topic="${CSS_ESC(itemId)}"]`);
+  if (!it || !input) return;
+  const topics = zab.addTopic(it.topics, input.value);
+  if (topics.length === (it.topics || []).length) { S.msg = failText({ refused: "text-required" }); return render(); }
+  await run(() => zab.editItem(db, S.ctx, itemId, { topics }), () => { it.topics = topics; });
+  const again = panel().querySelector(`[data-zab-new-topic="${CSS_ESC(itemId)}"]`);
+  if (again) again.focus();
 }
 
 async function addStepFromInput(itemId) {

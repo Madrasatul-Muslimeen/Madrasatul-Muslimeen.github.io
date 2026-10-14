@@ -20933,3 +20933,29 @@ New strings `wholeQuranLevelSentence` ("{level}: Achieved {known} and {percent} 
 - zab-bar-browser 370/0; zab-data 33/0; stub-parity 4/0; rules-authorisation-executable 73/0; phone-width-overflow 217/0; behaviour 971/0.
 
 **Next:** round Z4, ideas and shopping. The Owner's step stays the same: publish the Zab Rules (J25).
+
+## v10.48 — 14 Oct 2026 — Zab round Z4: pocket kinds, ideas and shopping, behind the shut gate (PCF J25)
+
+**Built (Builder round #827, PR #828, branch `builder/issue-827-run-1262`):**
+- The Kind picker offers Plain / Tasks / Links / Ideas / Shopping.
+- **Ideas:**
+  - 1–3 stars (`stars`); tapping the same star again clears it;
+  - topics (`topics[]`), added and removed;
+  - a sort by stars or by order (a view setting, not a stored field).
+- **Shopping:**
+  - quantity (`qty`) and shop (`shop`);
+  - quick typing `2 milk @Coles`;
+  - items grouped by shop, then No shop, then Done;
+  - a tick moves an item to Done.
+- Empty kind fields are removed, and an item keeps every field across kinds. Bangla strings added.
+- The gate stays shut and `firestore.rules` is unchanged.
+
+**Architect review:**
+- The 390 and 1440px screenshots of an Ideas and a Shopping pocket, in en and bn, are calm and aligned: the text has its own line, the details sit on one quiet line, and the controls are on one line.
+- Not done by the Builder: `zab-data.mjs` was not extended for the new fields. They are proved instead through real saves in the browser suite.
+
+**Tests:**
+- `zab-kinds-browser`: 324/0. All 14 mutations fail (2–20 checks each).
+- zab-bar-browser 370/0; zab-data 33/0; stub-parity 4/0; rules-authorisation-executable 73/0; phone-width-overflow 217/0; behaviour 971/0.
+
+**Next:** round Z5, → Note into Mapping My Journey. The Owner's step stays the same: publish the Zab Rules (J25).

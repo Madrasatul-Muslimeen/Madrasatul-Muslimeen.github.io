@@ -376,3 +376,62 @@ export function editStep(steps, stepId, text) {
 export function removeStep(steps, stepId) {
   return (steps || []).filter((s) => s.id !== stepId).map((s) => ({ ...s }));
 }
+
+// ---------- pocket kinds (Z4): ideas and shopping ------------------------------
+
+export const MAX_STARS = 3;
+/** The stars after a tap on star `n`: tapping the star already set clears it (null = remove the field). */
+export function nextStars(current, n) {
+  const k = Math.round(Number(n));
+  if (!(k >= 1 && k <= MAX_STARS)) return null;
+  return current === k ? null : k;
+}
+/** Items sorted by stars, high first (unstarred last), ties kept in pocket order. */
+export function sortByStars(items) {
+  return (items || []).slice().sort((a, b) => ((b.stars || 0) - (a.stars || 0)) || ((a.order ?? 0) - (b.order ?? 0)));
+}
+/** A topic is a short trimmed string; returns the new array (no duplicates, case-insensitive), or a copy of the old one if `text` is empty. */
+export function addTopic(topics, text) {
+  const s = String(text ?? "").trim().slice(0, 40);
+  const cur = Array.isArray(topics) ? topics : [];
+  if (!s || cur.some((x) => String(x).toLowerCase() === s.toLowerCase())) return cur.slice();
+  return [...cur, s];
+}
+export function removeTopic(topics, text) {
+  return (Array.isArray(topics) ? topics : []).filter((x) => x !== text);
+}
+
+/**
+ * Quick typing for a shopping item: a leading number is the quantity, and everything after the first `@` (spaces
+ * allowed, to the end) is the shop. `2 milk @Coles` -> { qty: "2", text: "milk", shop: "Coles" }. Returns { text, qty?, shop? }.
+ */
+export function parseQuickShop(raw) {
+  let s = String(raw ?? "").trim();
+  const out = {};
+  const m = /(^|\s)@(.*)$/s.exec(s);
+  if (m) {
+    const shop = m[2].trim();
+    if (shop) out.shop = shop;
+    s = s.slice(0, m.index).trim();
+  }
+  const q = /^(\d+(?:[.,]\d+)?)(?:\s+|$)/.exec(s);
+  if (q && s.slice(q[0].length).trim()) { out.qty = q[1]; s = s.slice(q[0].length).trim(); }
+  out.text = s;
+  return out;
+}
+/** Shopping groups: one per shop name (A-Z), then "No shop" (key ""), then Done. Each group is { key, items }; empty ones are left out. */
+export function shopGroups(items) {
+  const open = new Map();
+  const done = [];
+  for (const it of (items || []).slice().sort((a, b) => (a.order ?? 0) - (b.order ?? 0))) {
+    if (it.done === true) { done.push(it); continue; }
+    const k = typeof it.shop === "string" ? it.shop.trim() : "";
+    if (!open.has(k)) open.set(k, []);
+    open.get(k).push(it);
+  }
+  const named = [...open.keys()].filter((k) => k).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+  const groups = named.map((k) => ({ key: k, items: open.get(k) }));
+  if (open.has("")) groups.push({ key: "", items: open.get("") });
+  if (done.length) groups.push({ key: "\u0000done", items: done, done: true });
+  return groups;
+}
