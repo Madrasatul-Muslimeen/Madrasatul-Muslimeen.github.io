@@ -7,6 +7,43 @@ v10.28). Read `CLAUDE.md` first. The prompt that starts the next session is
 
 This session was summarised once (its context compacted), which is why it hands over here.
 
+## LATEST UPDATE — 14 Oct 2026, session `session_01EU951Kr2tQxWqNbKLvZjPn` (v10.39 → v10.44) — READ THIS FIRST
+
+The 13 Oct block below is superseded by this one and kept as history.
+
+- **`main` is v10.44** (read it off `app/js/version.js`). This session released:
+  - v10.40 (J24, the dragged wheel no longer hides Wheel / Legend / Unit);
+  - v10.41–v10.43 (J23: level sentences, the top of the card in layout B, the mark choice B question);
+  - v10.44 (J26: the "Before Al-Fātiḥah" band; new permanent key `opening:taawwudh`, stored in chunk `surah_1`).
+
+  It also copied the Owner's published guardian Rules into `firestore.rules` (J15, PRs #808/#810; the Owner confirmed a
+  student works) and published Scholars Database v1.5 (J17, PR #817).
+- **Nothing is in flight.** No Builder round is running and no PR is open.
+- **New General rules in the PCF, binding on every session:**
+  - "Keep working, never idle" (also in `CLAUDE.md`).
+  - URGENT/NOW first, dimmed is not ignored.
+  - An hourly status (monitor) line with Sydney time.
+  - The work-design rule "space and elegance" (14 Oct): calm and tidy, nothing crowded, nothing wasted, lines aligned,
+    extra detail one tap away. Look at the screenshots in review.
+- **The Project Chief Architect (PCA) session** coordinates through `PCA ▸` lines in the PCF and cross-session
+  messages. Act on them within the brief; verify the Owner's own words in the PCF (comments by "You").
+- **Waiting on the Owner (tick boxes in the PCF):**
+  - J26 Q5: should Know Your Status list the two new items (A, one calm line under each Approach's tiles) or not (B)?
+  - J22: remove Tawakkul's Bismillah row with ×, and try saving for everyone.
+  - J24: add the Bangla Approach-list heading in the Catalogue.
+  - J03 Q1: which keys to add.
+  - J20: paste Approach 1's line into the Catalogue.
+  - Older: J02, J05, J06, J07 (Upgrade by about 6 Jan 2027).
+- **Next for the Architect:**
+  - J25, Zab inside QuranRevival: write the plan once the SIY Architect's "how Zab is built" guide (SIY J02) exists;
+    the PCA was asked for it.
+  - Otherwise the standing rule applies: audit the app feature by feature (the PCF User Manual is the checklist, J19;
+    it is current to v10.44) on phone, tablet and desktop, and file each defect as a PCF job.
+- **Review lessons from this session:**
+  - Builder rounds #812–#814 each needed one stale check updated in place. The one in `ayah-action-sheet-boundary`
+    sat red on `main` from v10.42 until v10.44: run the `ayah-*` suites too when the Word Card's header changes.
+  - Re-run the touched suites after merging `main` into a round that touches `quranrevival.html`.
+
 ## LATEST UPDATE — 13 Oct 2026, session `session_019dnykSt8zmrCun2mLZKysQ` (v10.28 → v10.39) — READ THIS FIRST
 
 - **`main` is v10.39** (read it off `app/js/version.js`). This session released v10.29–v10.39 and merged PRs #777–#803;
