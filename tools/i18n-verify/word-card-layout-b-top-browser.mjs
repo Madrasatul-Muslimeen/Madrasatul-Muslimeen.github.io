@@ -106,7 +106,10 @@ for (const lang of ["en", "bn"]) {
       check(`${tag} the tick target is at least 38px`, !!d.tickBox && d.tickBox.h >= 37.5 && d.tickBox.w >= 37.5, JSON.stringify(d.tickBox));
       check(`${tag} the word is visible exactly when the line is not compact`, d.labelShown === !d.compact, JSON.stringify({ shown: d.labelShown, compact: d.compact }));
       check(`${tag} text and tick do not overlap`, !!d.tickBox && d.text.r <= d.tickBox.l + 0.5, JSON.stringify({ t: d.text, k: d.tickBox }));
-      if (long && width <= 320) check(`${tag} a long meaning leaves no room, so only the box shows`, d.compact === true && !d.labelShown, JSON.stringify({ compact: d.compact, shown: d.labelShown }));
+      // Architect review, 14 Oct: Bangla's "রঙিন" is shorter than "Colour" and, measured, fits beside the long meaning at
+      // 320px without making it wrap, so there IS room there and showing it is correct (the Owner: "as long as there is
+      // space"). The no-room case is asserted in English, and the last check below still requires both states to occur.
+      if (long && width <= 320 && lang === "en") check(`${tag} a long meaning leaves no room, so only the box shows`, d.compact === true && !d.labelShown, JSON.stringify({ compact: d.compact, shown: d.labelShown }));
       if (!long && width >= 768) check(`${tag} a short meaning on a wide card shows the word`, d.labelShown, JSON.stringify({ compact: d.compact }));
       saw[d.labelShown ? "shown" : "hidden"]++;
       check(`${tag} nothing clipped past the card, no sideways scroll`, d.clipped === 0 && d.page <= 0 && d.cardScroll <= 0, JSON.stringify({ c: d.clipped, p: d.page, s: d.cardScroll }));
