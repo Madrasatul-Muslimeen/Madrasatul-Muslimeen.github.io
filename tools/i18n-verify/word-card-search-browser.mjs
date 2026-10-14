@@ -16,7 +16,9 @@ const SHOTS = process.argv.includes("--shots");
 const only = (name) => process.argv.find((a) => a.startsWith(`--${name}=`))?.split("=")[1];
 const BN = "০১২৩৪৫৬৭৮৯";
 // Counts are in the reader's digits; a reference (s:a:w) is an identifier and stays plain, as the card's own reference does.
-const bnDigits = (s) => (String(s).includes(":") ? String(s) : String(s).replace(/\d/g, (d) => BN[d]));
+// Updated in place, round #837 (J29 audit fix 9): a word's place now reads in Bangla digits in Bangla
+// (২:৪২:৮), like every other reference in the app, so a reference is converted too.
+const bnDigits = (s) => String(s).replace(/\d/g, (d) => BN[d]);
 
 async function openWord(page, surah, ayah, pos) {
   await page.evaluate(() => document.querySelector("[data-word-card-close]")?.click());
@@ -91,7 +93,8 @@ for (const lang of ["en", "bn"].filter((l) => !only("lang") || only("lang") === 
     // word is BELOW 🔍; on a card wide enough for one row, 🔍 still sits between ‹ and the word as before.
     const wrapped = hd.s && hd.wTop >= hd.sBottom - 0.5;
     check(`${L}: 🔍 sits right of ‹, and before the word (same row) or above it (wrapped header)`, hd.s && hd.prev.r <= hd.s.l + 0.5 && (wrapped || hd.s.r <= hd.w.l + 0.5), JSON.stringify(hd));
-    check(`${L}: 🔍 is a square tile the size of ‹ (${width > 520 ? 40 : 36}px)`, hd.s && hd.s.w === hd.prev.w && hd.s.h === hd.prev.h && hd.s.w === hd.s.h && hd.s.w === (width > 520 ? 40 : 36), JSON.stringify(hd.s));
+    // Updated in place, round #837 (J29 audit fix 8): ‹ and 🔍 are 40px finger targets at every width (they were 36px on a phone).
+    check(`${L}: 🔍 is a square tile the size of ‹ (40px)`, hd.s && hd.s.w === hd.prev.w && hd.s.h === hd.prev.h && hd.s.w === hd.s.h && hd.s.w === 40, JSON.stringify(hd.s));
     check(`${L}: 🔍 starts unpressed, with a translated aria-label`, hd.pressed === "false" && hd.label === (lang === "bn" ? "শব্দ খুঁজুন" : "Search for a word") && hd.text === "🔍", `${hd.pressed} ${hd.label}`);
     check(`${L}: the header and page do not overflow`, hd.over <= 0 && hd.doc <= 0 && hd.card <= 0, JSON.stringify([hd.over, hd.doc, hd.card]));
 

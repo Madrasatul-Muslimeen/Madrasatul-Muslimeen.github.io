@@ -137,6 +137,12 @@ for (const viewport of [
     const markerHandle = await page.$('[data-ayah-marker="2:71"]');
     check(`${lang} ${viewport.label} the marker span exists and carries data-ayah-marker="2:71"`, !!markerHandle);
     if (markerHandle) {
+      // Updated in place, round #837 (J29 audit fix 3): the Read toolbar's
+      // icons became 40px targets, so at 320x640 the reading area is a little
+      // shorter and 2:71's marker starts just below #readScroll's visible box.
+      // A reader scrolls to an ayah before tapping it; so does this check.
+      await markerHandle.evaluate((el) => el.scrollIntoView({ block: "center" }));
+      await page.waitForTimeout(150);
       const box = await markerHandle.boundingBox();
       check(`${lang} ${viewport.label} the marker's own padded tap area is at least 40x40`,
         !!box && box.width >= 40 && box.height >= 40, box ? `got ${box.width}x${box.height}` : "no bounding box");
