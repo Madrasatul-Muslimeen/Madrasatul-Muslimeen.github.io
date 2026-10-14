@@ -21088,3 +21088,22 @@ New strings `wholeQuranLevelSentence` ("{level}: Achieved {known} and {percent} 
 - `word-card-search-browser`: 🔍 is 40px, and references use Bangla digits. Now 252/0.
 
 **Not changed:** `firestore.rules` and data.
+
+## v10.54 — 15 Oct 2026 — Audit part 2: 40px targets on Mapping My Journey, Bookmarks and the Hadith pickers (PCF J29)
+
+**Source:** the Owner's rule "Keep working, never idle". The feature-by-feature audit continues from part 1 (v10.51, v10.53).
+
+**Built by Builder round #839 (PR #840, branch `builder/issue-839-run-1279`), reviewed by the Architect.** The change is CSS only, with no data, Rules or text changes.
+- **`app/journey-map.html`:** the Folders/Timeline/Path view switch, the folder search box, the A− and A+ text-size buttons, the toolbar tick, the new-folder form (input and button) and the page ⋯ menu links (including Trash) are now at least 40px.
+- **`app/bookmarks.html`:** the New folder / Group by toolbar, the "Show times" label and every button or select on a bookmark row or folder header are now at least 40px.
+- **`app/hadith-study.html`:** the Tenant / Person pickers are 40px tall.
+
+**Tests:**
+- The new `audit-part2-fixes-browser.mjs` passes 156/0, and all 11 of its mutations fail it.
+- `behaviour` 971/0.
+- `phone-width-overflow` 217/0.
+- `journey-folder-menus` 148/0.
+- `journey-folder-picker` 310/0.
+- `journey-map-back` 38/0.
+- `bookmark-folder-edit` 68/0.
+- `bookmarks-page-new-assign` 44/0.
