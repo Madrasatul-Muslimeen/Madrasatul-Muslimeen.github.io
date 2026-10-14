@@ -21015,3 +21015,18 @@ New strings `wholeQuranLevelSentence` ("{level}: Achieved {known} and {percent} 
 - stub-parity 4/0; rules-authorisation-executable 73/0; phone-width-overflow 217/0; behaviour 971/0.
 
 **The Zab plan Z1–Z6 is complete.** It switches on when the Owner publishes `docs/governance/2026-10-14-zab-candidate.rules` (J25) and the Architect enables `zab-readiness.js` with a recorded decision. Rail and Columns, the other two phone layouts, are left for the Owner to ask for.
+
+## v10.51 — 15 Oct 2026 — the Qur'an keeps its own face in Bangla, and on the Āyah card's word chips (audit, PCF J29)
+
+**Found by the feature-by-feature audit** (the Owner's rule "Keep working, never idle"), part 1. It covered the landing page, the Read view, the Āyah and Word cards, Know Your Status and Explore, at 390, 820 and 1440px in en/bn, each screen photographed and measured. All 9 findings are recorded in PCF J29.
+
+**Fixed (Architect):**
+- **The Read view in Bangla.** `app/css/shell.css`'s `html[lang="bn"] button` rule (specificity 0,1,2) outranked `button.ayah-word-clickable { font: inherit }` (0,1,1). So in Bangla every clickable Qur'an word was drawn in a Bangla system font instead of QR Scheherazade, and on some devices marks such as the tanwīn of سِنَةٌۭ came out as empty boxes. `html[lang] button.ayah-word-clickable { font: inherit; }` restores it. The same trap was fixed once before for one element (`quranrevival.html` line ~1988).
+- **The Āyah card's "Word by word" chips** (`.ayah-wbw-chip`) set no Qur'an face in either language. Their Arabic now uses `var(--quran-font)`.
+
+**Tests:**
+- New `tools/i18n-verify/quran-font-bangla-browser.mjs`: 12/0. It measures the computed font of a Read-view word and of a chip, en/bn × 390 and 1440px, with a positive control that the page really is in the language.
+- Mutations: word (removing the Read-view fix fails 2, Bangla only) and chip (removing the chip fix fails 4).
+- quran-ayah-action-sheet-browser 145/0; ayah-full-text-fatiha-count 18/0; word-card-ayah-card-ways-back 86/0; reading OK; phone-width-overflow 217/0; behaviour 971/0.
+
+**Not fixed yet (J29, the next round):** under-40px buttons on the Read bar and the shared menus, thin Unit pills on a phone, the 1440px Wheel and Explore windows overlapping the menu row, the Āyah card heading wrapping at 1440px, the unit ladder's hidden scroll, and Latin digits in two Bangla places.
