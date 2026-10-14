@@ -106,7 +106,9 @@ html[lang="bn"] body { line-height: 1.3; }
   .nav-cat { flex-basis: auto; }
 }
 .nav-cat > summary {
-  cursor: pointer; padding: 0.42rem 0.1rem; font-weight: 700; font-size: 0.7rem;
+  /* Audit part 1 (PCF J29 fix 6): 40px, the finger target (was 26-28px). A fixed line-height on a one-line nowrap label
+     keeps the height identical in English and Bangla, and keeps text-overflow working (a flex summary would lose it). */
+  cursor: pointer; padding: 0 0.1rem; line-height: 40px; height: 40px; box-sizing: border-box; font-weight: 700; font-size: 0.7rem;
   color: #1F3A6E; list-style: none; user-select: none; text-align: center;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }

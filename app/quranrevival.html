@@ -62,7 +62,7 @@
      Search broke onto a line of its own. With a preview on, below 400px Search is its magnifier alone (as it already
      is below 360px without one); its spoken name stays "Search". */
   @media (max-width: 399px) {
-    h1.has-preview-role .head-search-btn { width: 36px; padding: 0; }
+    h1.has-preview-role .head-search-btn { width: 40px; padding: 0; }
     h1.has-preview-role .head-search-label { display: none; }
   }
   /* 30 Sep 2026, Owner (decision 38, option A of four mocked in the real
@@ -75,7 +75,7 @@
   h1 .head-search-btn {
     margin-left: auto; align-self: center; flex: 0 0 auto; box-sizing: border-box;
     display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem;
-    min-height: 36px; padding: 0 0.85rem; border-radius: 999px;
+    min-height: 40px; padding: 0 0.85rem; border-radius: 999px;
     border: 2px solid #B8862F; background: #fff; color: #1F3A6E;
     font-size: 0.85rem; font-weight: 700; line-height: 1; letter-spacing: 0;
     box-shadow: 0 1px 4px rgba(19, 25, 42, 0.25);
@@ -89,7 +89,7 @@
     h1 .head-search-btn { padding: 0 0.55rem; gap: 0.25rem; }
   }
   @media (max-width: 359px) {
-    h1 .head-search-btn { width: 36px; padding: 0; }
+    h1 .head-search-btn { width: 40px; padding: 0; }
     h1 .head-search-label { display: none; }
   }
   h2 { font-size: 1.1rem; margin-top: 1.6rem; }
@@ -251,6 +251,7 @@
   .qr-tab {
     flex: 1 1 0; background: white; color: #1F3A6E; border: 1px solid #ddd;
     border-radius: 0.5rem; font-weight: 700; font-size: 0.85rem; padding: 0.5rem 0.3rem;
+    min-height: 40px; /* audit J29 fix 6: the bottom tabs measured 33-35px */
   }
   /* Enhancement round -- a NON-breaking space (\00a0) before the caret, not a
      plain one: with five tabs on the row instead of three, Options/Explore
@@ -627,7 +628,7 @@
   .wheel-unit-capsule {
     display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem;
     max-width: 100%; width: auto; border: none;
-    min-height: 36px; box-sizing: border-box;
+    min-height: 40px; box-sizing: border-box;
     padding: 0.25rem 0.8rem; cursor: pointer;
   }
   .wheel-unit-capsule:hover { filter: brightness(1.06); }
@@ -759,9 +760,13 @@
   /* Phones: one line, not two (measured: two lines cost the first screen
      90px). The group keeps its aria-label; the visible "Show" word goes. */
   @media (max-width: 720px) {
-    .wheel-show-switch { flex-wrap: nowrap; gap: 0.2rem; }
+    /* Audit part 1 (PCF J29 fix 4): the seven pills sat in one flex row at 23-55px wide (Bangla "জুয" 23px), 40px tall.
+       A deliberate 4-column grid instead: every pill is the same width (>=40px at 320px, ~70px), "All units" takes two
+       cells, and the second row is four pills, so the group reads as one block of equal tiles rather than a ragged row. */
+    .wheel-show-switch { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.2rem; }
     .wheel-show-switch .wheel-look-label { display: none; }
-    .wheel-show-btn { flex: 1 1 auto; padding: 0.2rem 0.3rem; font-size: 0.7rem; letter-spacing: -0.01em; }
+    .wheel-show-btn { min-width: 40px; padding: 0.2rem 0.3rem; font-size: 0.7rem; letter-spacing: -0.01em; }
+    .wheel-show-switch > .wheel-show-btn:first-of-type { grid-column: span 2; }
   }
   .wheel-ring-panel { align-self: stretch; display: grid; gap: 0.5rem; margin-top: 0.3rem; text-align: left; }
   .wheel-ring-panel[hidden] { display: none; }
@@ -1747,7 +1752,7 @@
     .tablet-corner-tr { top: 4px; right: calc(4px - var(--tw-r, 0px)); justify-items: end; }
     .tablet-corner-bl { bottom: 4px; left: calc(4px - var(--tw-l, 0px)); }
     .tablet-corner-br { bottom: 4px; right: calc(4px - var(--tw-r, 0px)); justify-items: end; }
-    .tablet-corner .wheel-intro-capsule { display: inline-flex; align-items: center; justify-content: center; min-height: 36px; box-sizing: border-box; white-space: nowrap; margin: 0; }
+    .tablet-corner .wheel-intro-capsule { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; box-sizing: border-box; white-space: nowrap; margin: 0; }
     .tablet-corner .wheel-unit-capsule-word { white-space: nowrap; }
     .tablet-corner-tl { gap: 5px; }
     .tablet-corner-tl .wheel-drawer-btn { flex: none; width: 76px; min-height: 34px; height: 34px; padding: 0 0.4rem; }
@@ -2189,6 +2194,11 @@
      reciter's name is deliberately left as plain text beside them, so the row
      always has one thing that reads as words. */
   #readBar .qr-ico { font-size: 0.95rem; line-height: 1; padding: 0.3rem 0.5rem; flex: 0 0 auto; }
+  /* Audit part 1 (PCF J29 fix 3): every icon on the Read bar is a 40x40 finger target (they measured 30-37 x 27).
+     Prev/Next/Play/Stop and, from 900px where #readToolsMenu is display:contents, Notes/Writing/Complete/Attach. The
+     tools PANEL below 900px sets its own taller tiles, which this min-size does not touch. */
+  #readBar .qr-ico { box-sizing: border-box; min-width: 40px; min-height: 40px; display: inline-flex; align-items: center; justify-content: center; }
+  #readBar .qr-ico[hidden] { display: none; }
   /* Decision 95: 📝 Notes, with the āyah's Note count once the pane has read it this session. */
   /* 10 Oct 2026 (the Owner: "all these buttons along with bookmark can be organised under one button so that a row
      space is saved"): #readToolsMenu holds Text size, Bookmark, Notes, Mark complete, Writing sheet and Attach to Asma.
@@ -2197,7 +2207,7 @@
      button's own (translated) spoken name. The 📝 count rides on ⋯ so "this āyah has a note" still shows. */
   #readBarEnd { display: flex; align-items: center; gap: inherit; margin-left: auto; flex: 0 0 auto; }
   #readToolsBtn { position: relative; }
-  #readBar #readToolsBtn { box-sizing: border-box; height: 36px; min-width: 36px; font-size: 1.05rem; } /* the same face as ⤢ beside it */
+  #readBar #readToolsBtn { box-sizing: border-box; height: 40px; min-width: 40px; font-size: 1.05rem; } /* the same face as ⤢ beside it */
   #readToolsBtn .read-tools-count { position: absolute; top: -7px; right: -7px; min-width: 18px; height: 18px; padding: 0 4px; box-sizing: border-box; border-radius: 9px; border: 2px solid #fff; background: #B8862F; color: #fff; font-size: 0.66rem; font-weight: 700; line-height: 14px; text-align: center; }
   #readToolsBtn .read-tools-count[hidden] { display: none; }
   #readToolsMenu [hidden] { display: none !important; }
@@ -2258,7 +2268,7 @@
      where it is the only button left). IDs and an attribute selector, so it
      outranks #readBar button / #readBar .qr-ico / .note-icon-btn. */
   #readBar #hideChromeBtn, #exploreBar #exploreFullscreenBtn {
-    box-sizing: border-box; width: 36px; height: 36px; min-width: 36px; padding: 0; margin: 0; flex: 0 0 auto;
+    box-sizing: border-box; width: 40px; height: 40px; min-width: 40px; padding: 0; margin: 0; flex: 0 0 auto;
     display: inline-flex; align-items: center; justify-content: center;
     font-size: 1.3rem; font-weight: 700; line-height: 1; border-radius: 0.5rem;
     background: #fff; color: #1F3A6E; border: 2px solid #B8862F; opacity: 1;
@@ -2275,7 +2285,7 @@
   #readBar #readWindowBtn, .read-win-bar, .read-win-h { display: none; }
   @media (min-width: 900px) {
     #readBar #readWindowBtn {
-      box-sizing: border-box; width: 36px; height: 36px; min-width: 36px; padding: 0; margin: 0; flex: 0 0 auto;
+      box-sizing: border-box; width: 40px; height: 40px; min-width: 40px; padding: 0; margin: 0; flex: 0 0 auto;
       display: inline-flex; align-items: center; justify-content: center; font-size: 1.15rem; line-height: 1;
       border-radius: 0.5rem; background: #fff; color: #1F3A6E; border: 2px solid #B8862F; box-shadow: 0 1px 4px rgba(19, 25, 42, 0.28); cursor: pointer;
     }
@@ -2416,7 +2426,7 @@
     display: flex; align-items: center; gap: 0.25rem;
     padding: 0.25rem 0.4rem; border-bottom: 1px solid #eee; flex: none;
   }
-  #readPickers select { margin: 0; font-size: 0.78rem; padding: 0.2rem 0.25rem; min-width: 0; flex: 1 1 0; }
+  #readPickers select { margin: 0; font-size: 0.78rem; padding: 0.2rem 0.25rem; min-width: 0; flex: 1 1 0; box-sizing: border-box; min-height: 40px; } /* audit J29 fix 3: was 24-25px tall */
   #readPickers select[hidden] { display: none; }
   /* A number picker never needs a share of the line -- same rule as the Study
      options bar's own .opt-cell-num. Round 27 widened it 3.1rem -> 3.9rem:
@@ -3300,7 +3310,7 @@
   .word-card-search button:focus-visible, .word-card-search input:focus-visible { outline: 2px solid var(--card-heading); outline-offset: 2px; }
   @media (max-width: 520px) {
     .quran-word-card header { gap: 0.25rem; }
-    .quran-word-card header button { width: 36px; height: 36px; }
+    .quran-word-card header button { width: 40px; height: 40px; } /* audit J29 fix 6: was 36px; 40px is the finger target */
     .word-card-root-box { min-width: 0; padding: 0.1rem 0.35rem 0.2rem; }
     .word-card-root-box small { font-size: 0.55rem; }
     .word-card-root-box span { font-size: 1.1rem; }
@@ -3876,6 +3886,18 @@
      to the previous / next āyah, then 📖 Note view. One tidy cluster beside the reference, 40px targets. */
   .ayah-sheet-header { gap: 0.4rem; }
   .ayah-sheet-ref { flex: 1 1 auto; min-width: 0; }
+  /* Audit part 1 (PCF J29 fix 7): "Quran 2:255 — Surah Al-Baqara" wrapped onto 3 lines and split "Al-/Baqara" at 390px and
+     in the 376px desktop card, squeezed by the ‹ › + Full text cluster (186px) and the close button. A name is kept whole
+     (no hyphen split, no mid-word break), and where the card is narrow (a phone, or the 376px desktop card) the heading
+     gets the line to itself with × beside it and the ‹ › + Full text cluster drops to a line of its own: ref + × on line
+     one, the cluster on line two. From 600 to 899px the card is wide enough to keep everything on one line, as before. */
+  .ayah-sheet-ref { hyphens: none; -webkit-hyphens: none; overflow-wrap: normal; word-break: normal; }
+  @media (max-width: 599.98px), (min-width: 900px) {
+    .ayah-sheet-header { flex-wrap: wrap; }
+    .ayah-sheet-ref { order: 1; flex: 1 1 12rem; }
+    .ayah-sheet-close { order: 2; }
+    .ayah-sheet-header .ayah-sheet-head-tools { order: 3; flex: 1 0 100%; justify-content: flex-end; }
+  }
   .ayah-sheet-head-tools { display: flex; align-items: center; gap: 0.4rem; flex: 0 0 auto; }
   .ayah-sheet-nav-pair { display: inline-flex; border: 1px solid var(--card-line); border-radius: 0.6rem; overflow: hidden; }
   .ayah-sheet-nav { width: 40px; height: 40px; padding: 0; margin: 0; border: 0; border-radius: 0; background: var(--card-bg-inset); color: var(--card-heading); font-size: 1.45rem; line-height: 1; cursor: pointer; }
@@ -4089,8 +4111,9 @@
      itself rather than wrapping (spec), so it never costs the card a
      second line on a narrow phone -- the same choice the Approach picker's
      own select row already makes. */
-  .unit-ladder { display: flex; gap: 0.3rem; overflow-x: auto; padding: 0.3rem 0.2rem 0.5rem; border-bottom: 1px solid #eee; margin-bottom: 0.3rem; -webkit-overflow-scrolling: touch; }
-  .unit-ladder-rung { flex: 0 0 auto; min-height: 40px; padding: 0.3rem 0.7rem; font: inherit; font-size: 0.8rem; color: #1F3A6E; background: #f6f2e4; border: 1px solid #e3d6ab; border-radius: 999px; cursor: pointer; white-space: nowrap; }
+  /* Audit J29 fix 8: the ladder WRAPS (Āyah › Ruku › Juz › Surah ran off the edge at 390 and 1440px with nothing to say it scrolled). */
+  .unit-ladder { display: grid; grid-template-columns: repeat(auto-fill, minmax(5.8rem, 1fr)); gap: 0.3rem; overflow-x: visible; padding: 0.3rem 0.2rem 0.5rem; border-bottom: 1px solid #eee; margin-bottom: 0.3rem; -webkit-overflow-scrolling: touch; }
+  .unit-ladder-rung { min-width: 0; min-height: 40px; padding: 0.3rem 0.7rem; font: inherit; font-size: 0.8rem; color: #1F3A6E; background: #f6f2e4; border: 1px solid #e3d6ab; border-radius: 999px; cursor: pointer; white-space: nowrap; }
   .unit-ladder-rung.is-active { color: #fff; background: #1F3A6E; border-color: #1F3A6E; font-weight: 600; }
 
   /* Issue #348 -- the Unit Card's own "counts for each āyah" line and the
@@ -4222,7 +4245,7 @@
      the drag/resize and layout suites measure) is byte-for-byte unchanged. */
   /* J23 layout B: the button now sits INSIDE the header beside 🔍 (the specificity beats `.quran-word-card header button`). */
   .quran-word-card header button.word-card-ayah-action-btn {
-    width: auto; height: 38px; min-height: 38px; padding: 0 0.5rem; background: var(--card-bg-inset); border: 1px solid #c9a24a; border-radius: 0.4rem;
+    width: auto; height: 40px; min-height: 40px; padding: 0 0.5rem; background: var(--card-bg-inset); border: 1px solid #c9a24a; border-radius: 0.4rem;
     color: var(--card-button-border); font-size: 0.74rem; font-weight: 600; font-family: inherit; white-space: nowrap; cursor: pointer;
   }
   .quran-word-card header button.word-card-ayah-action-btn { color: #c9a24a; }
@@ -4317,14 +4340,14 @@
   .ayah-quick-wrap { position: relative; }
   .ayah-quick-btn {
     background: #fff; border: 1px solid #ddd; color: #666; border-radius: 999px;
-    width: 1.9rem; height: 1.9rem; font-size: 1.05rem; font-weight: 700; line-height: 1;
+    width: 2.5rem; height: 2.5rem; font-size: 1.05rem; font-weight: 700; line-height: 1;
     display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
     box-shadow: 0 1px 4px rgba(0,0,0,0.12);
   }
   .ayah-quick-btn:hover, .ayah-quick-btn.active { background: #f5f0e2; color: #1F3A6E; }
   .ayah-quick-btn.has-note { background: #B8862F; border-color: #B8862F; color: #fff; }
   .quick-menu {
-    display: none; position: absolute; top: 2.15rem; right: 0; z-index: 8;
+    display: none; position: absolute; top: 2.75rem; right: 0; z-index: 8;
     background: #fff; border: 1px solid #ddd; border-radius: 0.5rem;
     box-shadow: 0 10px 26px rgba(20,30,60,0.2); width: 12rem; padding: 0.3rem;
   }
@@ -4631,7 +4654,7 @@
     .note-popup-titlebar-actions { display: flex; gap: 0.25rem; flex: 0 0 auto; }
     .note-popup-titlebar-actions button {
       background: var(--card-bg); border: 1px solid var(--card-line); color: var(--card-text);
-      border-radius: 0.3rem; width: 1.7rem; height: 1.7rem; font-size: 0.8rem; cursor: pointer; padding: 0; line-height: 1;
+      border-radius: 0.3rem; width: 2.5rem; height: 2.5rem; font-size: 0.95rem; cursor: pointer; padding: 0; line-height: 1; /* audit J29 fix 6: was 1.7rem (27px) */
     }
     .note-popup-titlebar-actions button:hover { background: var(--card-bg-inset); }
     .note-popup-titlebar-actions button[aria-pressed="true"] { background: var(--card-button-pressed-bg); border-color: var(--card-button-pressed-bg); color: var(--card-button-pressed-text); }
@@ -13610,14 +13633,21 @@
       getTitle: () => { try { return currentUnitInfo().label; } catch { return ""; } },
       onClose: () => { setStageView("wheel"); renderWheel(); },
     });
+    // Audit part 1 (J29 fix 5): both windows open BELOW the nav row, never over its lower third.
+    const popupTopInset = () => {
+      const nav = document.querySelector(".app-nav");
+      return nav ? nav.getBoundingClientRect().bottom + 8 : 0;
+    };
     initPopupWindow(wheelPopupViewEl, {
       id: "wheel",
+      topInset: popupTopInset,
       dragHandleEl: wheelPopupTitleBarEl,
       resizeHandleEls: wheelPopupResizeHandles,
       maximizeBtn: wheelPopupMaximizeBtn,
     });
     initPopupWindow(exploreView, {
       id: "explore",
+      topInset: popupTopInset,
       dragHandleEl: exploreBarEl,
       resizeHandleEls: explorePopupResizeHandles,
       maximizeBtn: explorePopupMaximizeBtn,
