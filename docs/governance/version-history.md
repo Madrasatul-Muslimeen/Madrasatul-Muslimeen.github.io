@@ -842,3 +842,4 @@ total). Allocated by the MMSA Architect.
 10.45: Zab Z1: saving layer and Rules candidate. Allocated by the MMSA Architect.
 10.46: Zab Z2: the bar and plain pockets (gated). Allocated by the MMSA Architect.
 10.47: Zab Z3: tasks and links (gated). Allocated by the MMSA Architect.
+10.48: Zab Z4: ideas and shopping (gated). Allocated by the MMSA Architect.
