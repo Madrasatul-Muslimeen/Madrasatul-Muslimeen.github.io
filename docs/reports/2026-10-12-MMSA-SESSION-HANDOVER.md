@@ -209,3 +209,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v10.49** (2026-10-14): Zab Z5: to Note (gated).
 - **v10.50** (2026-10-14): Zab Z6: pockets inside pockets (gated).
 - **v10.51** (2026-10-14): Audit: Qur'an face in Bangla and on word chips.
+- **v10.52** (2026-10-14): Keys K2: saving layer and Rules candidate.
