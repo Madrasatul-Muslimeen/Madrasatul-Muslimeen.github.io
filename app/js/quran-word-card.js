@@ -189,6 +189,7 @@ export const WORD_CARD_DEFAULT_LABELS = Object.freeze({
   // script could align exactly -- see that script's own "never guess" rule
   // -- so these strings never appear for a word without segments.
   colourWordPartsToggle: "Colour word parts",
+  colourToggleShort: "Colour",
   segmentLegendParticle: "particle",
   segmentLegendPerson: "person",
   segmentLegendDeterminer: "determiner",
@@ -1111,16 +1112,9 @@ function levelPanel(level, word, layers, context, text, formatNumber) {
     // present; a Bangla cue table was deliberately not built this round
     // (see build-word-segments.mjs and the PR), so the Bangla gloss below
     // stays plain regardless.
-    const showSegmentColour = context.colourWordPartsEnabled && validSegments(context.wordSegments);
-    const enGloss = word.translation?.en || text.meaningUnavailableEn;
-    const enGlossHtml = showSegmentColour ? segmentedGlossHtml(enGloss, context.wordSegments) : escapeHtml(enGloss);
+    // J23 layout B: the meaning bar now sits ABOVE the tabs (meaningBarHtml, called by renderQuranWordCard).
     return `<div role="tabpanel" data-word-card-panel="wbw"><div class="word-card-main">
       ${wordFactsHtml(word, layers, context.wordFeatures ?? null, text, formatNumber)}
-      <div class="word-card-meaning-bar" data-word-card-meaning-bar>
-        <p class="word-card-meaning word-card-meaning-en" lang="en">${enGlossHtml}</p>
-        <p class="word-card-meaning word-card-meaning-bn" lang="bn">${escapeHtml(word.translation?.bn || text.meaningUnavailableBn)}</p>
-        ${word.transliteration ? `<p class="word-card-transliteration">${escapeHtml(word.transliteration)}</p>` : ""}
-      </div>
       ${wordPartsHtml(word, layers, context.wordFeatures ?? null, context.wordSegments, context, text)}
       </div><div class="word-card-side">
       ${progressBlock(context.progress, context.authority, context.coverage, text, formatNumber, {
@@ -1229,15 +1223,59 @@ function originBar(origin, text) {
  * whatever the current on/off state, so a reader can turn colouring back
  * on; the legend only prints while colouring is actually showing.
  */
-function segmentControlsHtml(segments, colourOn, text) {
-  if (!validSegments(segments)) return "";
-  const toggle = `<label class="word-card-segment-toggle"><input type="checkbox" data-word-card-colour-toggle${colourOn ? " checked" : ""}> ${escapeHtml(text.colourWordPartsToggle)}</label>`;
-  if (!colourOn) return `<div class="word-card-segment-controls">${toggle}</div>`;
+/**
+ * J23 layout B -- the WbW meaning line, above the level tabs, with the Colour tick at its right edge. The tick keeps
+ * aria-label "Colour"; the visible word is dropped (data-compact) by fitWordCardColourLabels() when the line has no room.
+ */
+function meaningBarHtml(word, context, text, toggleHtml) {
+  const showSegmentColour = context.colourWordPartsEnabled && validSegments(context.wordSegments);
+  const enGloss = word.translation?.en || text.meaningUnavailableEn;
+  const enGlossHtml = showSegmentColour ? segmentedGlossHtml(enGloss, context.wordSegments) : escapeHtml(enGloss);
+  return `<div class="word-card-meaning-bar" data-word-card-meaning-bar>
+    <div class="word-card-meaning-text">
+      <p class="word-card-meaning word-card-meaning-en" lang="en">${enGlossHtml}</p>
+      <p class="word-card-meaning word-card-meaning-bn" lang="bn">${escapeHtml(word.translation?.bn || text.meaningUnavailableBn)}</p>
+      ${word.transliteration ? `<p class="word-card-transliteration">${escapeHtml(word.transliteration)}</p>` : ""}
+    </div>${toggleHtml}
+  </div>`;
+}
+
+/**
+ * Decides BY MEASURING whether the meaning line has room for the word "Colour": with the word hidden, note the text
+ * block's height; with it shown, if the text needs more height (it wrapped to make room) the word does not fit and only
+ * the tick box stays. No fixed width is involved. The page calls this after each render and on resize.
+ */
+export function fitWordCardColourLabels(root) {
+  for (const bar of root?.querySelectorAll?.("[data-word-card-meaning-bar]") ?? []) {
+    const block = bar.querySelector(".word-card-meaning-text");
+    if (!block || !bar.querySelector(".word-card-segment-toggle")) continue;
+    bar.setAttribute("data-compact", "");
+    const compact = block.getBoundingClientRect().height;
+    bar.removeAttribute("data-compact");
+    if (block.getBoundingClientRect().height > compact + 1) bar.setAttribute("data-compact", "");
+  }
+}
+
+function colourToggleHtml(colourOn, label, short) {
+  const l = escapeHtml(label);
+  return `<label class="word-card-segment-toggle"><input type="checkbox" data-word-card-colour-toggle${colourOn ? " checked" : ""} aria-label="${l}"><span class="word-card-segment-toggle-text">${short ? l : ` ${l}`}</span></label>`;
+}
+
+function segmentLegendHtml(segments, text) {
   const label = { particle: text.segmentLegendParticle, person: text.segmentLegendPerson, determiner: text.segmentLegendDeterminer, stem: text.segmentLegendStem };
   const legend = WORD_SEGMENT_ROLES.filter((r) => segments.some((s) => s.role === r))
     .map((r) => `<span class="word-card-segment-legend-item"><span class="word-card-segment-legend-dot word-card-segment-${r}">●</span>${escapeHtml(label[r])}</span>`)
     .join("");
-  return `<div class="word-card-segment-controls">${toggle}<span class="word-card-segment-legend">${legend}</span></div>`;
+  return `<span class="word-card-segment-legend">${legend}</span>`;
+}
+
+// On the WbW tab the tick lives in the meaning bar and this row holds only the legend (when colour is on); on the other
+// tabs there is no meaning bar, so the row keeps the tick with its full label exactly as before.
+function segmentControlsHtml(segments, colourOn, text, level) {
+  if (!validSegments(segments)) return "";
+  if (level === "wbw") return colourOn ? `<div class="word-card-segment-controls">${segmentLegendHtml(segments, text)}</div>` : "";
+  const toggle = colourToggleHtml(colourOn, text.colourWordPartsToggle, false);
+  return `<div class="word-card-segment-controls">${toggle}${colourOn ? segmentLegendHtml(segments, text) : ""}</div>`;
 }
 
 /**
@@ -1291,15 +1329,14 @@ export function renderQuranWordCard({ state, chapter, ayah, word, context = {}, 
   return `<section class="quran-word-card" role="region" aria-label="${escapeHtml(text.cardRegion)}" data-occurrence-id="${escapeHtml(occurrenceId)}"${showSegmentColour ? " data-stem-mark" : ""}>
     <header><button type="button" data-word-card-move="previous" aria-label="${escapeHtml(text.previous)}"${context.hasPrevious ? "" : " disabled"}>‹</button>
       <button type="button" class="word-card-search-btn" data-word-card-search-toggle aria-pressed="${searchOpen}" aria-label="${escapeHtml(text.searchButton)}">🔍</button>
+      <button type="button" class="word-card-ayah-action-btn" data-word-card-ayah-action="${chapter.surahNumber}:${ayah.ayah}">${escapeHtml(text.ayahActionsButton)}</button>
       <div class="word-card-head-word"><div class="word-card-arabic" dir="rtl" lang="ar">${arabicHtml}</div><div class="word-card-reference">${escapeHtml(refText(chapter.surahNumber, ayah.ayah, word.position))}</div></div>
       ${layers.root ? `<div class="word-card-root-box" data-word-card-root-box><small>${escapeHtml(text.rootBoxLabel)}</small><span dir="rtl" lang="ar">${escapeHtml(spacedRoot(layers.root))}</span></div>` : ""}
       <button type="button" data-word-card-move="next" aria-label="${escapeHtml(text.next)}"${context.hasNext ? "" : " disabled"}>›</button>
       <button type="button" data-word-card-close aria-label="${escapeHtml(text.close)}">×</button></header>
     ${searchOpen ? searchRowHtml(context.search, text, formatNumber, refText) : ""}
-    <div class="word-card-ayah-action-row">
-      <button type="button" class="word-card-ayah-action-btn" data-word-card-ayah-action="${chapter.surahNumber}:${ayah.ayah}">${escapeHtml(text.ayahActionsButton)}</button>
-    </div>
-    ${segmentControlsHtml(context.wordSegments, context.colourWordPartsEnabled, text)}
+    ${state.level === "wbw" ? meaningBarHtml(word, context, text, validSegments(context.wordSegments) ? colourToggleHtml(context.colourWordPartsEnabled, text.colourToggleShort, true) : "") : ""}
+    ${segmentControlsHtml(context.wordSegments, context.colourWordPartsEnabled, text, state.level)}
     ${originBar(context.origin, text)}
     <div role="tablist" aria-label="${escapeHtml(text.tablist)}">${tabButton("wbw", state.level === "wbw", text.wbw, text.wbwFull)}${tabButton("basic", state.level === "basic", text.basic, text.basicFull)}${tabButton("intermediate", state.level === "intermediate", text.intermediate, text.intermediateFull)}${tabButton("depth", state.level === "depth", text.depth, text.depthFull)}</div>
     ${levelPanel(state.level, word, layers, context, text, formatNumber)}

@@ -4195,11 +4195,28 @@
   /* Word Card "This āyah ⋯" (issue #286) -- its own row below the header,
      never inside it, so the header's own Prev/Arabic/Next/Close row (what
      the drag/resize and layout suites measure) is byte-for-byte unchanged. */
-  .word-card-ayah-action-row { padding: 0 0.1rem 0.5rem; }
-  .word-card-ayah-action-btn {
-    width: 100%; min-height: 40px; background: var(--card-bg-inset); border: 1px solid var(--card-line); border-radius: 0.4rem;
-    color: var(--card-button-border); font-size: 0.85rem; font-family: inherit; cursor: pointer;
+  /* J23 layout B: the button now sits INSIDE the header beside 🔍 (the specificity beats `.quran-word-card header button`). */
+  .quran-word-card header button.word-card-ayah-action-btn {
+    width: auto; height: 38px; min-height: 38px; padding: 0 0.5rem; background: var(--card-bg-inset); border: 1px solid #c9a24a; border-radius: 0.4rem;
+    color: var(--card-button-border); font-size: 0.74rem; font-weight: 600; font-family: inherit; white-space: nowrap; cursor: pointer;
   }
+  .quran-word-card header button.word-card-ayah-action-btn { color: #c9a24a; }
+  /* Measured: ‹ 🔍 [This āyah] word ROOT › × needs ~440px of card to leave the Arabic word 70px, so on a narrower card the
+     header takes two rows -- ‹ 🔍 [This āyah] … › × on the first (the button stays beside 🔍), the word and its root centred on
+     the second -- rather than squeezing the word to nothing. */
+  @container wordcard (max-width: 30rem) {
+    .quran-word-card header { flex-wrap: wrap; row-gap: 0.25rem; }
+    .quran-word-card header button.word-card-ayah-action-btn { margin-inline-end: auto; }
+    .quran-word-card header > .word-card-head-word { order: 5; flex: 1 1 calc(100% - 6rem); min-width: 4.5rem; }
+    .quran-word-card header > .word-card-root-box { order: 6; }
+    .quran-word-card header > [data-word-card-move="next"] { order: 3; }
+    .quran-word-card header > [data-word-card-close] { order: 4; }
+  }
+  /* J23: the WbW meaning line carries the Colour tick at its right edge; [data-compact] drops the word, keeps the box. */
+  .word-card-meaning-bar { flex-wrap: nowrap; align-items: center; justify-content: space-between; gap: 0.5rem; }
+  .word-card-meaning-text { flex: 1 1 auto; min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 1.1rem; }
+  .word-card-meaning-bar .word-card-segment-toggle { flex: 0 0 auto; min-height: 38px; min-width: 38px; justify-content: center; font-size: 0.8rem; white-space: nowrap; }
+  .word-card-meaning-bar[data-compact] .word-card-segment-toggle-text { display: none; }
   .word-card-ayah-action-btn:hover { filter: brightness(1.1); }
   .hifz-surah-header { justify-content: center; background: rgba(201,162,75,0.14); border: 1px solid rgba(201,162,75,0.4); border-radius: 6px; font-size: 16px; font-size: 4.5cqw; font-family: system-ui, sans-serif; color: #7a5f1e; padding: 0.3em 0.6em; }
   /* 27 Sep 2026, Owner: the Surah banner was "very tiny". The banner glyph's
@@ -6478,7 +6495,7 @@
     // Decision 58 (#490) -- Basic/Depth lemma-wide claims, behind their own gate (ready:false).
     import { isLemmaLevelsPersistenceReady } from "./js/study-lemma-levels-readiness.js";
     import { claimKeyFor, LEMMA_WIDE_LEVELS } from "./js/quran-lemma-levels.js";
-    import { createWordCardState, openWordCard, closeWordCard, selectWordCardLevel, moveWordCard, renderQuranWordCard, WORD_CARD_POS_SEGMENTS } from "./js/quran-word-card.js";
+    import { createWordCardState, openWordCard, closeWordCard, selectWordCardLevel, moveWordCard, renderQuranWordCard, fitWordCardColourLabels, WORD_CARD_POS_SEGMENTS } from "./js/quran-word-card.js";
     import { occurrenceRefsFor, occurrenceRefsForClaimKey, rootFormsFor, unpackWordIndexRef, loadWordIdentityIndex } from "./js/quran-word-index.js";
     import { wbwClaimKey, isFormKey } from "./js/quran-word-form-key.js";
     import { relatedBySharedWords, relatedThroughLists, connectedThroughNotes } from "./js/ayah-related.js";
@@ -16186,6 +16203,7 @@
         wordShareOfQuran: t("Appears {count} times in the Qur'an — {percent}% of all words"),
         // Issue #263 -- word-part colouring switch + legend.
         colourWordPartsToggle: t("Colour word parts"),
+        colourToggleShort: t("Colour"),
         segmentLegendParticle: t("particle"),
         segmentLegendPerson: t("person"),
         segmentLegendDeterminer: t("determiner"),
@@ -17355,6 +17373,12 @@
         back.innerHTML = `<span aria-hidden="true">←</span> ${escapeHtml(ayahCardReturn.title)}`;
         back.addEventListener("click", () => { const r = ayahCardReturn; clearAyahCardReturn(); r?.back?.(); });
         content.prepend(back);
+      }
+      // J23: show the word "Colour" on the meaning line only where it fits (measured, not a fixed width); re-measured on resize.
+      fitWordCardColourLabels(content);
+      if (typeof ResizeObserver === "function" && !content._colourFitRO) {
+        content._colourFitRO = new ResizeObserver(() => fitWordCardColourLabels(content));
+        content._colourFitRO.observe(content);
       }
       // 👥 the same picker as the other Record cards (shared claimForIds); nothing for a lone person.
       mountClaimForPicker(content, "[data-word-progress-rec] .word-progress-states, [data-word-progress-rec] [data-word-progress-na]");
