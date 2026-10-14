@@ -137,7 +137,7 @@ body:has(.nw-switch) #zabCorner { bottom: 68px; }
 /* Z6: the pocket tree. Crumbs and child chips wrap (never a sideways scroll); the Drawer rows are 40px+ and indent by level. */
 .zab-crumbs { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 4px; margin: 0 0 8px; min-width: 0; }
 .zab-crumbs button { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.zab-crumbs button[aria-current="page"] { background: #1f3a6e; color: #fff; border-color: #1f3a6e; }
+#zabPanel .zab-crumbs button[aria-current="page"] { background: #1f3a6e; color: #fff; border-color: #1f3a6e; }
 .zab-crumbs .zab-sep { color: #5b6b86; }
 .zab-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 8px; min-width: 0; }
 .zab-chips button { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-radius: 999px; }
