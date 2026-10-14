@@ -595,5 +595,47 @@ check("Phase 4 evidence is frozen after create, in the Rules and in the writer",
   }
 }
 
+// --- KEYS TO UNDERSTANDING (PCF J03, round K2): the ayahKeyMarks candidate vs app/js/ayah-keys-data.js ----
+// Same shape as the Zab block: the data layer DECLARES every field it writes (AYAH_KEY_WRITES; ayah-keys.mjs
+// proves the declaration), and the candidate's create lists are DERIVED from the Rules text.
+{
+  const akRules = read("docs/governance/2026-10-15-ayah-keys-candidate.rules");
+  const akSrc = read("app/js/ayah-keys-data.js");
+  const m = akSrc.match(/export const AYAH_KEY_WRITES = Object\.freeze\(\[([\s\S]*?)\]\)/);
+  assert.ok(m, "AYAH_KEY_WRITES not found in ayah-keys-data.js");
+  const writes = new Set(idsIn(m[1].replace(/"/g, "'")));
+  const { permitted, required } = authorisedCreate(akRules, "ayahKeyMarks/");
+  const own = (set) => [...set].filter((f) => !ENVELOPE.has(f));
+  check("AYAH KEYS POSITIVE CONTROL: the parsers read the candidate and the declared writes", () => {
+    assert.ok(writes.size === 4 && permitted.has("tenantId") && required.has("entries") && writes.has("entries"),
+      `parsed writes=${[...writes]} permitted=${[...permitted]}`);
+  });
+  check("AYAH KEYS BACKWARD: every field the data layer can write is one the candidate allows", () => {
+    assert.deepEqual([...writes].filter((f) => !permitted.has(f)), [], "denied in production once published");
+  });
+  check("AYAH KEYS FORWARD: every field the candidate allows is written by the data layer", () => {
+    assert.deepEqual(own(permitted).filter((f) => !writes.has(f)), [], "an authorised field no code can perform");
+  });
+  check("AYAH KEYS REQUIRED: every required field is one the data layer writes (or the envelope stamps)", () => {
+    assert.deepEqual(own(required).filter((f) => !writes.has(f)), []);
+  });
+  check("AYAH KEYS UPDATE: the data layer updates only `entries.<unit key>` paths, and the candidate lets `entries` and the envelope move", () => {
+    const calls = akSrc.match(/updateDocument\(/g) || [];
+    assert.equal(calls.length, 1, `expected one updateDocument call, found ${calls.length}`);
+    assert.ok(akSrc.includes("{ [`entries.${unitKey}`]: keys }"), "the update writes something other than one entries path");
+    const block = matchBlock(akRules, "ayahKeyMarks/");
+    for (const frozen of ["tenantId", "scope", "surah", "createdBy"]) {
+      assert.match(block, new RegExp(`d\\(\\)\\.${frozen} == resource\\.data\\.${frozen}`), `${frozen} is not frozen on update`);
+    }
+  });
+  check("AYAH KEYS DELETE: the candidate has no delete and the data layer has no delete", () => {
+    assert.match(matchBlock(akRules, "ayahKeyMarks/"), /allow delete: if false;/);
+    assert.ok(!/\bdeleteDoc\b|\.delete\(|deleteField/.test(akSrc), "ayah-keys-data.js must never delete");
+  });
+  check("AYAH KEYS: the live firestore.rules is untouched by this round (the candidate is NOT published)", () => {
+    assert.ok(!/ayahKeyMarks/.test(read("firestore.rules")), "firestore.rules already carries ayahKeyMarks");
+  });
+}
+
 console.log(`\n==== Rules authorisation executable: ${passed} passed, ${failed} failed ====`);
 process.exit(failed === 0 ? 0 : 1);

@@ -21030,3 +21030,31 @@ New strings `wholeQuranLevelSentence` ("{level}: Achieved {known} and {percent} 
 - quran-ayah-action-sheet-browser 145/0; ayah-full-text-fatiha-count 18/0; word-card-ayah-card-ways-back 86/0; reading OK; phone-width-overflow 217/0; behaviour 971/0.
 
 **Not fixed yet (J29, the next round):** under-40px buttons on the Read bar and the shared menus, thin Unit pills on a phone, the 1440px Wheel and Explore windows overlapping the menu row, the Āyah card heading wrapping at 1440px, the unit ladder's hidden scroll, and Latin digits in two Bangla places.
+
+## v10.52 — 15 Oct 2026 — Keys to Understanding, round K2: the saving layer and a Rules CANDIDATE, nothing on screen (PCF J03)
+
+**The Owner** (PCF J03, 12–13 Oct): Q2 "Everyone" (each person's marks kept apart from the madrasah's), Q6 "Ok" (one Rules step for the Owner). Round 1, the āyah–hadith index, shipped in v10.32.
+
+**Built (Builder round #834, PR #835, branch `builder/issue-834-run-1272`):**
+- **`app/js/ayah-keys.js`** (pure): the permanent key ids `hard`, `gharib`, `hadith`, `scholars`, `other-ayat`, `passage` and `asbab`, each with an English and a Bangla name. The ids are bound to their names by a check. The list is data in this one module, so the keys the Owner adds (J03 Q1, still open) are a one-line change.
+- **`app/js/ayah-keys-data.js`:**
+  - `loadSurahKeys` returns `{ madrasah, mine }`: at most two document reads per sūrah, only when called (I9).
+  - `setAyahKey` validates the key id, writes a shorter list to remove a key (never a delete), stamps `updatedAt`, and reports a failure to the user (I15).
+  - It is imported by no page yet (a positive-controlled reachability check).
+- **Storage:** `ayahKeyMarks/{tenantId}__madrasah__{surah}` and `ayahKeyMarks/{tenantId}__{personId}__{surah}`.
+- **`docs/governance/2026-10-15-ayah-keys-candidate.rules`:** the live Rules plus one block.
+  - The madrasah's document: every member reads it; Owner, Prime and teachers write it.
+  - A person's document: read and written through `canRecordFor`, and the person must belong to the tenant.
+  - No delete. **`firestore.rules` is unchanged.**
+
+**Architect review:** five of the Builder's 23 Rules mutations stayed green.
+- **Two were real gaps, now isolated:**
+  - a person of another tenant reading a this-tenant document that names them (only `personInTenant` refuses it);
+  - an outsider's list query.
+- **Three are redundant by design.** `hasAll` is backed by the per-field type checks. The scope and sūrah freezes are backed by the key binding `markKey == tenantId__scope__surah`. Each is now asserted to stay green, with the reason written in the suite.
+
+**Tests:**
+- `npm run ayah-keys` 25/25: the matrix, 20 mutations each failing, and 3 redundant checks staying green.
+- `ayah-keys` 41/0; rules-authorisation-executable 80/0; stub-parity 4/0; behaviour 971/0.
+
+**Next:** round K3, marking keys on the Āyah card (behind a readiness gate until the Owner publishes the candidate).
