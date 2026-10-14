@@ -839,3 +839,4 @@ total). Allocated by the MMSA Architect.
 10.42: the top of the Word card in layout B (PCF J23). Allocated by the MMSA Architect.
 10.43: J23 mark choice B: ask before changing the other mark. Allocated by the MMSA Architect.
 10.44: J26 Before Al-Fatihah band. Allocated by the MMSA Architect.
+10.45: Zab Z1: saving layer and Rules candidate. Allocated by the MMSA Architect.
