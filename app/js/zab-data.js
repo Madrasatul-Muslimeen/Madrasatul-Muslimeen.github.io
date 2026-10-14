@@ -1,0 +1,308 @@
+// Zab -- the family's saving layer (PCF J25, Builder round Z1, 14 Oct 2026).
+//
+// ONE shared family Zab per tenant (Owner answer 3 B): pockets and the items
+// inside them are tenant-shared documents, `zabPockets/{tenantId}__{pocketId}`
+// and `zabItems/{tenantId}__{itemId}`, one document per record. The field names
+// are Siyagah's (guide G05: "How Zab is built"), kept exactly so data can move
+// between the two apps -- notably `ztype` for a pocket's type (never `kind`),
+// while `kind` on an ITEM is its Note Type.
+//
+// THIS MODULE IS IMPORTED BY NO PAGE YET, and the Rules it needs are a
+// CANDIDATE only (docs/governance/2026-10-14-zab-candidate.rules), not
+// published. Nothing here runs at start-up (I9): every read happens only when
+// a function below is called. Nothing is ever deleted (I4, D6): trashing sets
+// `status: "trashed"` and `deletedAt`; restoring reverses it.
+//
+// Every function takes `ctx = { tenantId, personId, uid }` -- who is writing,
+// for which Madrasah. Every write goes through envelope.js (which stamps
+// `updatedAt`, I17) inside safeWrite() (I15: a failed save reaches the user).
+// A write returns `{ ok: true, ... }`, or `{ ok: false, entry }` when the
+// save failed, or `{ ok: false, refused }` when the request itself was
+// refused (a move into a descendant, trashing a pocket that is not empty).
+
+import { collection, query, where, getDocs, doc, deleteField, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { TENANT } from "./collections.js";
+import { createDocument, updateDocument, commitEnvelopeBatch } from "./envelope.js";
+import { safeWrite } from "./errors.js";
+
+export const ZTYPES = Object.freeze(["plain", "links", "tasks", "ideas", "shop"]);
+
+/** Every field this module can ever put on a pocket document (the Rules candidate must allow all of them). */
+export const ZAB_POCKET_WRITES = Object.freeze([
+  "pocketId", "tenantId", "addedByPersonId", "status", "deletedAt", "order",
+  "name", "icon", "color", "ztype", "parentId", "names",
+]);
+/** Every field this module can ever put on an item document. */
+export const ZAB_ITEM_WRITES = Object.freeze([
+  "itemId", "tenantId", "pocketId", "addedByPersonId", "status", "deletedAt", "order",
+  "text", "done", "folderIds", "tags", "kind", "journal",
+  "url", "ttl", "ch", "th", "people", "issues",
+  "due", "pri", "steps", "stars", "topics", "qty", "shop",
+]);
+
+// The fields a caller may set on a pocket / item (allow-listed; everything else is dropped).
+const POCKET_EDITABLE = ["name", "icon", "color", "ztype", "order"];
+const ITEM_KIND_FIELDS = ["folderIds", "tags", "kind", "journal", "url", "ttl", "ch", "th", "people", "issues", "due", "pri", "steps", "stars", "topics", "qty", "shop"];
+const ITEM_EDITABLE = ["text", ...ITEM_KIND_FIELDS];
+const ARRAY_FIELDS = new Set(["folderIds", "tags", "people", "issues", "steps", "topics"]);
+
+/** The four seeded study pockets (Owner answer 4 B). Fixed ids, so a second device cannot make a second set. */
+export const SEED_POCKETS = Object.freeze([
+  { pocketId: "zp-memorise", names: { en: "To memorise", bn: "মুখস্থ করতে হবে" }, icon: "🧠", color: "#2f7d5b" },
+  { pocketId: "zp-revise", names: { en: "To revise", bn: "পুনরাবৃত্তি করতে হবে" }, icon: "🔁", color: "#2b6cb0" },
+  { pocketId: "zp-questions", names: { en: "Questions", bn: "প্রশ্ন" }, icon: "❓", color: "#b7791f" },
+  { pocketId: "zp-links", names: { en: "Links", bn: "লিংক" }, icon: "🔗", color: "#6b46c1", ztype: "links" },
+]);
+
+const docKey = (tenantId, id) => `${tenantId}__${id}`;
+const stripKey = (tenantId, docId) => (docId.startsWith(`${tenantId}__`) ? docId.slice(tenantId.length + 2) : docId);
+const isEmpty = (v) => v === undefined || v === null || v === "" || (Array.isArray(v) && v.length === 0);
+
+function requireCtx(ctx) {
+  if (!ctx || !ctx.tenantId || !ctx.personId || !ctx.uid) {
+    throw new Error("zab-data: ctx must carry tenantId, personId and uid.");
+  }
+}
+
+/** Keep only allow-listed fields, copy arrays, drop the empty ones. */
+function cleanFields(patch, allowed) {
+  const out = {};
+  for (const f of allowed) {
+    if (!(f in (patch || {})) || isEmpty(patch[f])) continue;
+    const v = patch[f];
+    out[f] = ARRAY_FIELDS.has(f) ? v.map((x) => (x && typeof x === "object" ? { ...x } : x)) : v;
+  }
+  return out;
+}
+
+/** For an edit: the cleaned fields, plus deleteField() for every allow-listed field the patch names but leaves empty. */
+function editFields(patch, allowed) {
+  const out = cleanFields(patch, allowed);
+  for (const f of allowed) {
+    if (f in (patch || {}) && isEmpty(patch[f])) out[f] = deleteField();
+  }
+  return out;
+}
+
+// ---------- reads (only when called) --------------------------------------
+
+async function listAll(db, collectionName, tenantId, idField, extraWhere) {
+  const clauses = [where("tenantId", "==", tenantId)];
+  if (extraWhere) clauses.push(where(extraWhere[0], "==", extraWhere[1]));
+  const snap = await getDocs(query(collection(db, collectionName), ...clauses));
+  return snap.docs
+    .map((d) => ({ ...d.data(), [idField]: d.data()[idField] ?? stripKey(tenantId, d.id) }))
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+}
+
+/** Pockets of the tenant. Trashed ones are left out unless `includeTrashed`. */
+export async function listPockets(db, tenantId, { includeTrashed = false } = {}) {
+  const rows = await listAll(db, TENANT.ZAB_POCKETS, tenantId, "pocketId");
+  return includeTrashed ? rows : rows.filter((p) => p.status !== "trashed");
+}
+
+/** Items in one pocket. Trashed ones are left out unless `includeTrashed`. */
+export async function listItems(db, tenantId, pocketId, { includeTrashed = false } = {}) {
+  const rows = await listAll(db, TENANT.ZAB_ITEMS, tenantId, "itemId", ["pocketId", pocketId]);
+  return includeTrashed ? rows : rows.filter((i) => i.status !== "trashed");
+}
+
+// ---------- pockets --------------------------------------------------------
+
+export async function addPocket(db, ctx, fields = {}) {
+  requireCtx(ctx);
+  const name = String(fields.name ?? "").trim();
+  if (!name) return { ok: false, refused: "name-required" };
+  if (fields.ztype !== undefined && fields.ztype !== null && !ZTYPES.includes(fields.ztype)) return { ok: false, refused: "bad-ztype" };
+  const pocketId = fields.pocketId || doc(collection(db, TENANT.ZAB_POCKETS)).id;
+  const data = {
+    pocketId, tenantId: ctx.tenantId, addedByPersonId: ctx.personId, status: "active",
+    order: Number.isFinite(fields.order) ? fields.order : Date.now(),
+    name, icon: fields.icon || "📁", color: fields.color || "#4a5568",
+  };
+  if (fields.ztype) data.ztype = fields.ztype;
+  if (fields.parentId) data.parentId = fields.parentId;
+  const res = await safeWrite(
+    () => createDocument(db, TENANT.ZAB_POCKETS, docKey(ctx.tenantId, pocketId), data, ctx.uid),
+    { collection: TENANT.ZAB_POCKETS, docId: docKey(ctx.tenantId, pocketId), action: "add Zab pocket" });
+  return res.ok ? { ok: true, pocketId } : res;
+}
+
+/** Rename / restyle. A rename writes `name` and removes the seeded `names` (I11). */
+export async function editPocket(db, ctx, pocketId, patch = {}) {
+  requireCtx(ctx);
+  if (patch.ztype && !ZTYPES.includes(patch.ztype)) return { ok: false, refused: "bad-ztype" };
+  if ("name" in patch && !String(patch.name ?? "").trim()) return { ok: false, refused: "name-required" };
+  const data = editFields("name" in patch ? { ...patch, name: String(patch.name).trim() } : patch, POCKET_EDITABLE);
+  if ("name" in patch) data.names = deleteField();
+  const res = await safeWrite(
+    () => updateDocument(db, TENANT.ZAB_POCKETS, docKey(ctx.tenantId, pocketId), data),
+    { collection: TENANT.ZAB_POCKETS, docId: docKey(ctx.tenantId, pocketId), action: "edit Zab pocket" });
+  return res.ok ? { ok: true } : res;
+}
+
+/** True when `candidateId` is `pocketId` or sits anywhere beneath it. */
+export function isSelfOrDescendant(pockets, pocketId, candidateId) {
+  const byId = new Map(pockets.map((p) => [p.pocketId, p]));
+  const seen = new Set();
+  for (let id = candidateId; id != null && !seen.has(id); id = byId.get(id)?.parentId ?? null) {
+    if (id === pocketId) return true;
+    seen.add(id);
+  }
+  return false;
+}
+
+/** Re-parent a pocket (`newParentId` null = top level). Refuses a move into itself or its own descendant. */
+export async function movePocket(db, ctx, pocketId, newParentId) {
+  requireCtx(ctx);
+  if (newParentId) {
+    const all = await listPockets(db, ctx.tenantId, { includeTrashed: true });
+    if (isSelfOrDescendant(all, pocketId, newParentId)) return { ok: false, refused: "into-itself-or-descendant" };
+  }
+  const res = await safeWrite(
+    () => updateDocument(db, TENANT.ZAB_POCKETS, docKey(ctx.tenantId, pocketId), { parentId: newParentId || deleteField() }),
+    { collection: TENANT.ZAB_POCKETS, docId: docKey(ctx.tenantId, pocketId), action: "move Zab pocket" });
+  return res.ok ? { ok: true } : res;
+}
+
+/** Trash a pocket -- refused while it still holds an active item or an active pocket. */
+export async function trashPocket(db, ctx, pocketId) {
+  requireCtx(ctx);
+  const [pockets, items] = await Promise.all([
+    listPockets(db, ctx.tenantId),
+    listItems(db, ctx.tenantId, pocketId),
+  ]);
+  if (items.length || pockets.some((p) => p.parentId === pocketId)) return { ok: false, refused: "not-empty" };
+  const res = await safeWrite(
+    () => updateDocument(db, TENANT.ZAB_POCKETS, docKey(ctx.tenantId, pocketId), { status: "trashed", deletedAt: serverTimestamp() }),
+    { collection: TENANT.ZAB_POCKETS, docId: docKey(ctx.tenantId, pocketId), action: "trash Zab pocket" });
+  return res.ok ? { ok: true } : res;
+}
+
+export async function restorePocket(db, ctx, pocketId) {
+  requireCtx(ctx);
+  const res = await safeWrite(
+    () => updateDocument(db, TENANT.ZAB_POCKETS, docKey(ctx.tenantId, pocketId), { status: "active", deletedAt: deleteField() }),
+    { collection: TENANT.ZAB_POCKETS, docId: docKey(ctx.tenantId, pocketId), action: "restore Zab pocket" });
+  return res.ok ? { ok: true } : res;
+}
+
+/** Seed the four study pockets ONCE: only when the tenant has no pocket at all (trashed ones count). */
+export async function seedPockets(db, ctx) {
+  requireCtx(ctx);
+  const existing = await listPockets(db, ctx.tenantId, { includeTrashed: true });
+  if (existing.length) return { ok: true, seeded: false };
+  const base = Date.now();
+  const creates = SEED_POCKETS.map((p, i) => {
+    const data = {
+      pocketId: p.pocketId, tenantId: ctx.tenantId, addedByPersonId: ctx.personId, status: "active",
+      order: base + i, name: p.names.en, names: { ...p.names }, icon: p.icon, color: p.color,
+    };
+    if (p.ztype) data.ztype = p.ztype;
+    return { collectionName: TENANT.ZAB_POCKETS, docId: docKey(ctx.tenantId, p.pocketId), data };
+  });
+  const res = await safeWrite(
+    () => commitEnvelopeBatch(db, { creates }, ctx.uid),
+    { collection: TENANT.ZAB_POCKETS, docId: ctx.tenantId, action: "seed Zab pockets" });
+  return res.ok ? { ok: true, seeded: true } : res;
+}
+
+// ---------- items ----------------------------------------------------------
+
+export async function addItem(db, ctx, pocketId, fields = {}) {
+  requireCtx(ctx);
+  const text = String(fields.text ?? "").trim();
+  if (!text) return { ok: false, refused: "text-required" };
+  const itemId = fields.itemId || doc(collection(db, TENANT.ZAB_ITEMS)).id;
+  const data = {
+    itemId, tenantId: ctx.tenantId, pocketId, addedByPersonId: ctx.personId, status: "active",
+    order: Number.isFinite(fields.order) ? fields.order : Date.now(),
+    text, done: false,
+    ...cleanFields(fields, ITEM_KIND_FIELDS),
+  };
+  const res = await safeWrite(
+    () => createDocument(db, TENANT.ZAB_ITEMS, docKey(ctx.tenantId, itemId), data, ctx.uid),
+    { collection: TENANT.ZAB_ITEMS, docId: docKey(ctx.tenantId, itemId), action: "add Zab item" });
+  return res.ok ? { ok: true, itemId } : res;
+}
+
+/** Allow-listed fields only; arrays are copied; an empty kind field is REMOVED, not stored. */
+export async function editItem(db, ctx, itemId, patch = {}) {
+  requireCtx(ctx);
+  if ("text" in patch && !String(patch.text ?? "").trim()) return { ok: false, refused: "text-required" };
+  const data = editFields("text" in patch ? { ...patch, text: String(patch.text).trim() } : patch, ITEM_EDITABLE);
+  const res = await safeWrite(
+    () => updateDocument(db, TENANT.ZAB_ITEMS, docKey(ctx.tenantId, itemId), data),
+    { collection: TENANT.ZAB_ITEMS, docId: docKey(ctx.tenantId, itemId), action: "edit Zab item" });
+  return res.ok ? { ok: true } : res;
+}
+
+export async function toggleDone(db, ctx, itemId, done) {
+  requireCtx(ctx);
+  const res = await safeWrite(
+    () => updateDocument(db, TENANT.ZAB_ITEMS, docKey(ctx.tenantId, itemId), { done: !!done }),
+    { collection: TENANT.ZAB_ITEMS, docId: docKey(ctx.tenantId, itemId), action: "tick Zab item" });
+  return res.ok ? { ok: true } : res;
+}
+
+export async function moveItem(db, ctx, itemId, toPocketId) {
+  requireCtx(ctx);
+  const res = await safeWrite(
+    () => updateDocument(db, TENANT.ZAB_ITEMS, docKey(ctx.tenantId, itemId), { pocketId: toPocketId }),
+    { collection: TENANT.ZAB_ITEMS, docId: docKey(ctx.tenantId, itemId), action: "move Zab item" });
+  return res.ok ? { ok: true } : res;
+}
+
+export async function trashItem(db, ctx, itemId) {
+  requireCtx(ctx);
+  const res = await safeWrite(
+    () => updateDocument(db, TENANT.ZAB_ITEMS, docKey(ctx.tenantId, itemId), { status: "trashed", deletedAt: serverTimestamp() }),
+    { collection: TENANT.ZAB_ITEMS, docId: docKey(ctx.tenantId, itemId), action: "trash Zab item" });
+  return res.ok ? { ok: true } : res;
+}
+
+export async function restoreItem(db, ctx, itemId) {
+  requireCtx(ctx);
+  const res = await safeWrite(
+    () => updateDocument(db, TENANT.ZAB_ITEMS, docKey(ctx.tenantId, itemId), { status: "active", deletedAt: deleteField() }),
+    { collection: TENANT.ZAB_ITEMS, docId: docKey(ctx.tenantId, itemId), action: "restore Zab item" });
+  return res.ok ? { ok: true } : res;
+}
+
+/** Ticked items in a pocket -> trashed (never deleted). */
+export async function clearDone(db, ctx, pocketId) {
+  requireCtx(ctx);
+  const ticked = (await listItems(db, ctx.tenantId, pocketId)).filter((i) => i.done === true);
+  const BATCH = 400;
+  for (let i = 0; i < ticked.length; i += BATCH) {
+    const updates = ticked.slice(i, i + BATCH).map((it) => ({
+      collectionName: TENANT.ZAB_ITEMS, docId: docKey(ctx.tenantId, it.itemId),
+      data: { status: "trashed", deletedAt: serverTimestamp() },
+    }));
+    const res = await safeWrite(
+      () => commitEnvelopeBatch(db, { updates }, ctx.uid),
+      { collection: TENANT.ZAB_ITEMS, docId: pocketId, action: "clear ticked Zab items" });
+    if (!res.ok) return res;
+  }
+  return { ok: true, cleared: ticked.length };
+}
+
+// ---------- step helpers (pure; persist the result with editItem({ steps })) ----
+
+const newStepId = () => `s${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+
+/** Steps are `{ id, t, d }`: id, text, done. These return a NEW array. */
+export function addStep(steps, text) {
+  const t = String(text ?? "").trim();
+  return t ? [...(steps || []).map((s) => ({ ...s })), { id: newStepId(), t, d: false }] : (steps || []).map((s) => ({ ...s }));
+}
+export function toggleStep(steps, stepId) {
+  return (steps || []).map((s) => (s.id === stepId ? { ...s, d: !s.d } : { ...s }));
+}
+export function editStep(steps, stepId, text) {
+  const t = String(text ?? "").trim();
+  return (steps || []).map((s) => (s.id === stepId && t ? { ...s, t } : { ...s }));
+}
+export function removeStep(steps, stepId) {
+  return (steps || []).filter((s) => s.id !== stepId).map((s) => ({ ...s }));
+}
