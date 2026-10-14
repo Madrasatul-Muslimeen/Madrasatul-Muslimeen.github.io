@@ -13,7 +13,9 @@ The Owner's chronological grid of scholars, hadith compilers and mufassirūn. Th
 | `Scholars Database - v1.4.html` | Built 12 Oct 2026 for PCF J02 (the Owner: "Add the scholars Birth-death both timing, Political Era, Madhab attachement, etc. for all tafsir scholars") and decision 108 Q3. Not yet published to the live page. Every row checked for birth and death in AH and CE, political authority and madhab; one birth filled, one death corrected; a **written date for every book** (136 of 137; mostly estimates from the death year, marked "est." or "c."). All Claude drafts; no Owner value changed. See `v1.4-changes.md`. |
 | `scholars-database-v1.4.json` | v1.4's data: v1.3 plus a `books` list on each row (`title`, `written`, `yearAH` for placing the book in an era, `estimate`, `draft`). |
 | `v1.4-changes.md` | What v1.4 changed, the counts, and every value left empty with the reason. |
-| `check-page-data.py` | `python3 docs/reference/scholars-database/check-page-data.py v1.4`: the page's embedded data equals the JSON file, and the page is the template apart from the data. |
+| `Scholars Database - v1.5.html` | Built 14 Oct 2026 for PCF J17 (the Owner: "You must check the most authentic info about it. other than that, write the limitations."). One row changed, s020 Shuʿayb al-Arnāʾūṭ: his third work read "Tahqīq of Sharḥ Maʿānī al-Āthār", but the book he edited is al-Ṭaḥāwī's **Sharḥ Mushkil al-Āthār** (Muʾassasat al-Risālah, 1st ed. 1415 AH / 1994, 16 vols). The row's notes keep the original wording, give the sources and a short Limitations note. A Claude draft for the Owner to check. Published to the live page. |
+| `scholars-database-v1.5.json` | v1.5's data: v1.4 with that one row corrected. |
+| `check-page-data.py` | `python3 docs/reference/scholars-database/check-page-data.py v1.5`: the page's embedded data equals the JSON file, and the page is the template apart from the data. |
 | `scholars-database.template.html` | The page with `__DATA__` where the JSON goes. |
 
 **Approaches** use the master file's numbers: 28 Sahaba, 29 Tābiʿīn, 30 Gen1 (to 656 AH / 1258), 31 Gen2 (to about
