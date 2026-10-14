@@ -2757,6 +2757,9 @@
      spacing, same line flow" is the round's own requirement, measured by
      `reading.mjs`/`layout.mjs`, not just eyeballed here. */
   button.ayah-word-clickable { background: none; border: none; margin: 0; padding: 0; font: inherit; color: inherit; text-align: inherit; line-height: inherit; cursor: pointer; display: inline; }
+  /* Audit 15 Oct (Architect): shell.css's html[lang="bn"] button (0,1,2) outranked the font: inherit above (0,1,1), so
+     in Bangla every Qur'an word was drawn in a Bangla system face (and some marks came out as empty boxes). */
+  html[lang] button.ayah-word-clickable { font: inherit; }
   button.ayah-word-clickable:hover, button.ayah-word-clickable:focus-visible { background: rgba(31,58,110,0.14); border-radius: 0.2rem; outline: none; }
   /* Issue #294 -- the tajweed words are inline spans (role=button), so they
      sit in the line exactly as the unsplit text did; same look on hover/focus. */
@@ -4039,6 +4042,8 @@
   /* Architect review, #295: an explicit colour -- the app's button rule is
      white text, which printed these words white on cream (invisible). */
   .ayah-wbw-chip { min-width: 40px; min-height: 40px; padding: 0.2rem 0.5rem; color: var(--card-button-border); background: var(--card-bg-inset); border: 1px solid var(--card-line); border-radius: 0.35rem; font-size: 1rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+  /* Audit 15 Oct: the chip's Arabic set no Qur'an face and fell back to a system font (empty boxes for some marks). */
+  .ayah-wbw-chip [lang="ar"] { font-family: var(--quran-font); font-size: 1.2rem; line-height: 1.6; }
   .ayah-wbw-chip.is-known { color: #14532d; background: #e3f3ea; border: 2px solid #3fae74; }
   /* Ayah Card section C -- Related āyāt: one full-width row per āyah, a
      real button (>= 40px), explicit colours on the card's light surface. */
