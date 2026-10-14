@@ -20816,3 +20816,36 @@ New strings `wholeQuranLevelSentence` ("{level}: Achieved {known} and {percent} 
 - phone-width-overflow 217/0; behaviour 971/0; rules-authorisation-executable 63/0; stub-parity 4/0.
 
 **Next:** Builder round #814 (J26: Aʿūdhu billāh and Bismillah before Al-Fātiḥah, layout B), already running.
+
+## v10.44 — 14 Oct 2026 — Aʿūdhu billāh and Bismillah as study items before Al-Fātiḥah (PCF J26, layout B)
+
+**The Owner** (PCF J26, 14 Oct): Q2 "Yes" (Aʿūdhu billāh gets a new permanent key), Q3 "A" (both shown separately and not counted in Al-Fātiḥah's 7), and the layout "B. Put Auju on the left".
+
+**Built (Builder round #814, PR #819, branch `builder/issue-814-run-1247`):**
+- **The band.** "Before Al-Fātiḥah" sits above āyah 1 on Al-Fātiḥah's Read page, in the single-āyah, flow and Meaning views (`bismillahHtmlFor(1, 1)`).
+  - Aʿūdhu billāh is on the left and Bismillah on the right. The band is `dir=ltr`, so the order holds in Bangla.
+  - Each button is 44px or more tall and shows the start of its Arabic, its name, and a dot for the stage reached on the current Approach. The dot repaints in place after a stage press.
+- **The card.** A button opens the Āyah card with the full Arabic, a translation and a visible ← Back to the same place. The card keeps the Approaches, Record Your Progress with 👥, Bookmark and Note. For Aʿūdhu billāh it hides what only fits an āyah: ‹ ›, the ladder, Info, Word by Word, Hifz, the wheel button, audio, poster and folder filing.
+- **Keys.**
+  - New unit type `opening`, built by `buildUnitKey.opening`; Aʿūdhu billāh is `opening:taawwudh`.
+  - `chunkKeyFor()` keeps `opening:*` in `surah_1`, which the page already loads, so there is no new read (I9).
+  - Records and Monitor print it as "Before Al-Fātiḥah: Aʿūdhu billāh". It is kept out of Records' hand-entry form.
+  - The Bismillah keeps `ayah:1:1`.
+- **The two count modes.**
+  - "Bismillah unnumbered" ON (the default): both buttons show, and Al-Fātiḥah's 7, the wheel and "of 7" are unchanged.
+  - OFF: the Bismillah is āyah 1 of the 7 as before, so the band shows only Aʿūdhu billāh.
+- No Rules change.
+
+**Not built:**
+- Know Your Status does not list the two items under "Before Al-Fātiḥah". It shows whole-Qur'an tiles per unit type, so a list needs its own small design, which is offered to the Owner.
+- A bookmark on Aʿūdhu billāh reopens Al-Fātiḥah's page (the saved settings), not the card itself.
+
+**Architect review:** `ayah-action-sheet-boundary` still asserted the old own-row "This āyah ⋯" shape and had failed on `main` since v10.42. It was updated in place to assert the button is inside `<header>` and no separate row is left (56/0). Moving the button out of the header fails it.
+
+**Tests:**
+- New `fatiha-opening-band-browser`: 132/0 (en/bn × 320, 390, 768 and 1280, plus count OFF). Mutations: swap 42, chunk 8, always-bismillah 2, small 8 and nodot 16 fail.
+- New `opening-key`: 8/0.
+- fatiha-count-browser 136/0; fatiha-count 44/0; fatiha-six-seven-records 84/0; ayah-full-text-fatiha-count 18/0; writing-sheet-fatiha-count 30/0; writing-sheet-record 28/0.
+- quran-ayah-action-sheet 145/0; ayah-card-takenote-family 44/0; word-card-ayah-card-ways-back 86/0; approach-record-status-bar 304/0; kys-window 50/0.
+- phone-width-overflow 217/0; behaviour 971/0; rules-authorisation-executable 63/0; stub-parity 4/0.
+- The 390px screenshots in English and Bangla were looked at: calm, aligned, nothing crowded (the work-design rule of 14 Oct).
