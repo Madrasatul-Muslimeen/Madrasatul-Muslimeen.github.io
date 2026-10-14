@@ -7,6 +7,40 @@ v10.28). Read `CLAUDE.md` first. The prompt that starts the next session is
 
 This session was summarised once (its context compacted), which is why it hands over here.
 
+## LATEST UPDATE — 15 Oct 2026, 1:45 am Sydney, session `session_01EU951Kr2tQxWqNbKLvZjPn` (v10.44 → v10.50) — READ THIS FIRST
+
+The 14 Oct block below is kept as history.
+
+- **`main` is v10.50.** **The Zab plan (PCF J25, the Owner's answers 1 B, 2 A, 3 B, 4 B) is complete**, rounds Z1–Z6:
+  - v10.45: saving layer and Rules candidate;
+  - v10.46: the bar on every page;
+  - v10.47: tasks and links;
+  - v10.48: ideas and shopping;
+  - v10.49: → Note into Mapping My Journey, plus a visible ← Back on `journey-map.html` for `back=1`;
+  - v10.50: pockets inside pockets and the phone Drawer.
+- **Zab is behind `app/js/zab-readiness.js` (`ready: false`).** Nothing of it shows or reads until two things happen:
+  - the Owner publishes `docs/governance/2026-10-14-zab-candidate.rules`. It is final: today's live Rules plus 143 Zab lines, nothing removed. J25 "ready to publish".
+  - the Architect then enables the gate with a recorded decision, copying `siyagah-flags-readiness.js`, AND syncs `firestore.rules` to the published file in the same change.
+
+  Then post a Try (phone) line in J25.
+- **Nothing is in flight.** No Builder round is running and no PR is open.
+- **Waiting on the Owner:**
+  - J25: publish the Zab Rules.
+  - J23: the two questions from the Owner's deleted J27:
+    - restore the Arabic word boxes as on Basic, and on which tab;
+    - which "Attach" button. The Note editor's 🖼 picker opens the file chooser on a real tap (new check in `journey-note-images-browser`). If the Owner means the PCF's own attach, that goes to the PCA, who alone changes the PCF page code.
+  - J26: Know Your Status, A or B.
+  - J22: the Owner's tries only.
+- **Possible next, with nothing needed from the Owner:**
+  - The Owner's standing rule says audit the app feature by feature (the PCF User Manual, J19, is the checklist; it is current to v10.44). Add Zab to the manual first.
+  - The J26 polish (cap the band's width on wide screens) is noted in J26's plan.
+- **Lessons from this stretch:**
+  - Builder rounds often stop early (Z3 pushed no browser checks and no PR); write the missing suite yourself.
+  - Look at every screenshot: Z2's item text was squeezed to a few letters wide with every check green.
+  - A mutation that crashes with a timeout is detected but uncounted; wrap each width's flow so it fails by name.
+  - Read every time off the clock (`TZ=Australia/Sydney date`) and keep the PCF monitor line under an hour old.
+  - Cross-check PCA relays against the PCF itself: the Owner had answered 4 Zab choices, not 2.
+
 ## LATEST UPDATE — 14 Oct 2026, session `session_01EU951Kr2tQxWqNbKLvZjPn` (v10.39 → v10.44) — READ THIS FIRST
 
 The 13 Oct block below is superseded by this one and kept as history.
