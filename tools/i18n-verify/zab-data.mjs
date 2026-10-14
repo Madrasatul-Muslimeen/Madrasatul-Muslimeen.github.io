@@ -69,14 +69,30 @@ check("POSITIVE CONTROL: the reachability walker really does find a wired module
   const control = chainsToTarget("records.js");
   assert.ok(control.length > 0, "the walker found no page importing records.js -- it is not working");
 });
-check("zab-data.js exists and is reachable from NO app/*.html page, by any chain of any length", () => {
-  assert.ok(fs.existsSync(path.join(appJs, "zab-data.js")), "app/js/zab-data.js is missing");
-  assert.deepEqual(chainsToTarget("zab-data.js"), []);
+// Z2: zab-data.js is now wired, but ONLY through one gated mount. The static walker above cannot see a
+// dynamic import(), so the gated hop is checked by name and by the guard on the same statement.
+const dynamicImportersOf = (target) => fs.readdirSync(appJs).filter((f) => f.endsWith(".js")
+  && new RegExp("import\\(\\s*[\"\x27\\x60]\\./" + target.replace(".", "\\.") + "[\"\x27\\x60]\\s*\\)").test(fs.readFileSync(path.join(appJs, f), "utf8")));
+const staticImportersOf = (target) => fs.readdirSync(appJs).filter((f) => f.endsWith(".js") && f !== target && localImportsOf(path.join(appJs, f)).includes(target));
+check("zab-data.js exists", () => assert.ok(fs.existsSync(path.join(appJs, "zab-data.js")), "app/js/zab-data.js is missing"));
+check("the ONLY module importing zab-data.js is zab-bar.js (a new importer must be audited deliberately)", () => {
+  assert.deepEqual(staticImportersOf("zab-data.js").concat(dynamicImportersOf("zab-data.js")), ["zab-bar.js"]);
 });
-check("no other app module imports zab-data.js (a new importer must be audited deliberately)", () => {
-  const importers = fs.readdirSync(appJs).filter((f) => f.endsWith(".js") && f !== "zab-data.js"
-    && localImportsOf(path.join(appJs, f)).includes("zab-data.js"));
-  assert.deepEqual(importers, []);
+check("POSITIVE CONTROL: the dynamic-import finder really does find the gated hop", () => {
+  assert.deepEqual(dynamicImportersOf("zab-bar.js"), ["sw-register.js"]);
+});
+check("no module STATICALLY imports zab-bar.js, and no page names it", () => {
+  assert.deepEqual(staticImportersOf("zab-bar.js"), []);
+  for (const f of fs.readdirSync(appDir).filter((x) => x.endsWith(".html"))) assert.ok(!/zab-(bar|data)\.js/.test(fs.readFileSync(path.join(appDir, f), "utf8")), f + " names a Zab module");
+});
+check("the hop is guarded by isZabReady() on the same statement", () => {
+  const line = fs.readFileSync(path.join(appJs, "sw-register.js"), "utf8").split("\n").find((l) => l.includes("import(\"./zab-bar.js\")"));
+  assert.ok(line && /isZabReady\(\)/.test(line.split("import(")[0]), "the dynamic import is not behind isZabReady()");
+});
+check("zab-readiness.js ships SHUT (ready: false as a literal) and imports nothing", () => {
+  const src = fs.readFileSync(path.join(appJs, "zab-readiness.js"), "utf8");
+  assert.ok(/ready:\s*false,/.test(src));
+  assert.ok(!/^\s*import\s/m.test(src));
 });
 
 // --- 2. BEHAVIOUR -----------------------------------------------------------

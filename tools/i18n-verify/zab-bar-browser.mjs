@@ -22,6 +22,11 @@ import fs from "node:fs";
 import { chromium, newContext } from "./harness.mjs";
 import { BASE } from "./harness.mjs";
 
+// Progress is also appended to ZAB_LOG (default /tmp/zab-bar.log) as it happens, so a long run can be watched.
+const LOG = process.env.ZAB_LOG || "/tmp/zab-bar.log";
+fs.writeFileSync(LOG, "");
+const realLog = console.log;
+console.log = (...a) => { realLog(...a); fs.appendFileSync(LOG, a.join(" ") + "\n"); };
 let pass = 0, fail = 0;
 function check(name, ok, detail = "") {
   if (ok && typeof ok.then === "function") throw new Error(`check "${name}" was handed a promise`);
@@ -63,11 +68,12 @@ async function routeMutation(ctx) {
 
 const SEED = `
 (function () {
-  window.__stubApplyBatches = true;
+  window.__stubApplyBatches = true; window.__DATA = DATA;
   DATA.zabPockets = []; DATA.zabItems = [];
 })();`;
 
-const PAGES = fs.readdirSync("app").filter((f) => f.endsWith(".html") && !["index.html", "note-editor-prototype-demo.html"].includes(f)).sort();
+const ONLY = process.argv.filter((a) => a.endsWith(".html")); // optional: node zab-bar-browser.mjs homework.html
+const PAGES = ONLY.length ? ONLY : fs.readdirSync("app").filter((f) => f.endsWith(".html") && !["index.html", "note-editor-prototype-demo.html"].includes(f)).sort();
 const WIDTHS = [320, 390, 768, 820, 1280, 1440];
 const hasBn = (s) => /[ঀ-৿]/.test(s || "");
 
@@ -75,20 +81,35 @@ async function open(ctx, path) {
   const page = await ctx.newPage();
   const errors = [];
   page.on("pageerror", (e) => errors.push(String(e)));
-  await page.goto(`${BASE}/app/${path}`, { waitUntil: "networkidle" });
-  await page.waitForTimeout(300);
+  // "load" + a settle, not "networkidle": several pages keep fetching data files this sandbox cannot reach.
+  const t0 = Date.now();
+  await page.goto(`${BASE}/app/${path}`, { waitUntil: "load" });
+  if (Date.now() - t0 > 3000) console.log(`   (slow load ${path}: ${Date.now() - t0}ms)`);
+  await page.waitForTimeout(1200);
   await page.evaluate(() => { for (const el of document.querySelectorAll('[id*="splash"], .mm-splash-overlay')) el.remove(); });
   return { page, errors };
 }
 async function mk(browser, { gate, lang = "en", width = 1280 }) {
   const ctx = await newContext(browser, { appLang: lang === "bn" ? "bn" : null, viewport: { width, height: 800 }, extraSeedJs: SEED });
+  // Outside hosts are unreachable here and make a page wait on a timeout; fail them at once (fonts, audio, CDNs).
+  await ctx.route((u) => !["localhost", "www.gstatic.com", "cdn.jsdelivr.net"].includes(u.hostname), (r) => r.abort());
   if (gate) await ctx.route("**/js/zab-readiness.js", (route) => route.fulfill({ status: 200, contentType: "text/javascript; charset=utf-8", body: READY_OPEN }));
   await routeMutation(ctx);
   return ctx;
 }
 const visible = (page, sel) => page.evaluate((s) => { const e = document.querySelector(s); if (!e) return false; const r = e.getBoundingClientRect(); return getComputedStyle(e).display !== "none" && r.width > 0 && r.height > 0; }, sel);
 const writes = (page) => page.evaluate(() => (window.__stubWriteData || []).filter((w) => /^zab/.test(w.col || "")));
-const clearWrites = (page) => page.evaluate(() => { window.__stubWriteData = []; });
+// The stub never applies updateDoc to its DATA (its standing rule), so a read after a write would see stale rows.
+// clearWrites() first replays the updates recorded so far onto DATA, as real Firestore would have.
+const clearWrites = (page) => page.evaluate(() => {
+  for (const w of window.__stubWriteData || []) {
+    if (!/^zab/.test(w.col || "") || !/update/.test(w.kind)) continue;
+    const row = (window.__DATA[w.col] || []).find((d) => d._id === w.id);
+    if (!row) continue;
+    for (const [k, v] of Object.entries(w.data)) { if (v && v.__deleteField) delete row[k]; else row[k] = v; }
+  }
+  window.__stubWriteData = [];
+});
 const zabReads = (page) => page.evaluate(() => (window.__fsLog || []).filter((r) => /^zab/.test(r.col || "")).length);
 const noSideways = (page) => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
 const opener = (w) => (w >= 768 ? "#zabBar [data-zab-open]" : "#zabCorner");
@@ -105,38 +126,38 @@ const browser = await chromium.launch();
 // ============================== GATE OFF =====================================
 console.log("\n== gate OFF (as shipped): nothing of Zab on any page ==");
 {
-  const ctx = await mk(browser, { gate: false, width: 1280 });
   let offenders = [], reads = 0, zabRequests = [], dead = [];
-  ctx.on("request", (r) => { if (/\/js\/zab-(bar|data)\.js/.test(r.url())) zabRequests.push(r.url()); });
   for (const p of PAGES) {
+    // A fresh context per page: one context holding 16+ pages stalled this Chromium.
+    const ctx = await mk(browser, { gate: false, width: 1280 });
+    ctx.on("request", (r) => { if (/\/js\/zab-(bar|data)\.js/.test(r.url())) zabRequests.push(r.url()); });
+    console.log("   .", p);
     const { page, errors } = await open(ctx, p);
-    const n = await page.evaluate(() => document.querySelectorAll("#zabRoot, #zabBar, #zabCorner, #zabPanel, #zabStyle, [data-zab]").length);
+    const n =await page.evaluate(() => document.querySelectorAll("#zabRoot, #zabBar, #zabCorner, #zabPanel, #zabStyle, [data-zab]").length);
     if (n) offenders.push(p);
     reads += await zabReads(page);
     reads += (await writes(page)).length;
     if (await page.evaluate(() => document.body.classList.contains("zab-bar-on"))) dead.push(p);
-    await page.close();
+    await ctx.close();
   }
   check(`no Zab element on any of the ${PAGES.length} pages`, offenders.length === 0, offenders.join(", "));
   check("no page carries the zab-bar-on class", dead.length === 0, dead.join(", "));
   check("ZERO Zab reads or writes on any page", reads === 0, `count ${reads}`);
   check("zab-bar.js and zab-data.js are never even requested", zabRequests.length === 0, zabRequests.join(", "));
-  await ctx.close();
 }
 
 // ============================== GATE ON ======================================
 console.log("\n== gate ON: the bar is on every page ==");
 for (const w of [390, 1280]) {
-  const ctx = await mk(browser, { gate: true, width: w });
   const missing = [];
   for (const p of PAGES) {
+    const ctx = await mk(browser, { gate: true, width: w });
     const { page } = await open(ctx, p);
     await page.waitForTimeout(200);
     if (!(await visible(page, w >= 768 ? "#zabBar" : "#zabCorner"))) missing.push(p);
-    await page.close();
+    await ctx.close();
   }
   check(`${w}px: the ${w >= 768 ? "bar" : "corner button"} is on all ${PAGES.length} pages`, missing.length === 0, missing.join(", "));
-  await ctx.close();
 }
 
 console.log("\n== gate ON: no read at start-up (I9) ==");
@@ -360,8 +381,9 @@ console.log("\n== gate ON: things fixed to the bottom leave room for the bar =="
 {
   const ctx = await mk(browser, { gate: true, width: 1280 });
   const { page } = await open(ctx, "quranrevival.html");
+  await page.evaluate(() => new Promise((res) => { const l = document.createElement("link"); l.rel = "stylesheet"; l.href = "css/note-window.css"; l.onload = res; l.onerror = res; document.head.appendChild(l); }));
   const gap = await page.evaluate(() => {
-    const e = document.createElement("div"); e.className = "nw-switch"; e.style.cssText = "height:56px"; document.body.appendChild(e);
+    const e =document.createElement("div"); e.className = "nw-switch"; e.style.cssText = "height:56px"; document.body.appendChild(e);
     const bar = document.getElementById("zabBar").getBoundingClientRect();
     return { switchBottom: e.getBoundingClientRect().bottom, barTop: bar.top };
   });
