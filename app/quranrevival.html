@@ -697,7 +697,7 @@
      at 390px and fit one line from 340px up at the sizes below; the row may
      wrap rather than cut anything at the very narrowest width. */
   .wheel-intro-settled > .wheel-intro-capsule {
-    display: inline-flex; align-items: center; justify-content: center; min-height: 36px; box-sizing: border-box; text-align: center;
+    display: inline-flex; align-items: center; justify-content: center; min-height: 40px; box-sizing: border-box; text-align: center;
   }
   #wheelIntroSettled .wheel-unit-capsule-word { white-space: nowrap; }
   /* The Choose a Unit list opens UPWARD now: the row sits low on the card,
@@ -2601,7 +2601,7 @@
   /* 10 Oct 2026: 📖 Meaning stays in the bare full-screen state too (the Owner: "visible even in full screen Mushaf
      view"), beside ⤢. */
   #readMeaningBtn {
-    box-sizing: border-box; height: 36px; padding: 0 0.7rem; margin: 0; flex: 0 0 auto;
+    box-sizing: border-box; height: 40px; padding: 0 0.7rem; margin: 0; flex: 0 0 auto;
     display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem;
     font: inherit; font-size: 0.88rem; font-weight: 700; line-height: 1; white-space: nowrap;
     border-radius: 0.5rem; border: 1.5px solid #1F3A6E; background: #fff; color: #1F3A6E; cursor: pointer;
@@ -2610,7 +2610,7 @@
   #readMeaningBtn:focus-visible { outline: 3px solid #B8862F; outline-offset: 2px; }
   /* Measured at 320px with Mushaf's page reference on the bar: the worded button took a line of its own and moved the
      page down 42px. Below 360px it is 📖 alone (its spoken name stays the words), the same rule ☰ Surah list follows. */
-  @media (max-width: 359px) { #readMeaningBtn { padding: 0; width: 36px; } #readMeaningBtn .read-meaning-word { display: none; } }
+  @media (max-width: 359px) { #readMeaningBtn { padding: 0; width: 40px; } #readMeaningBtn .read-meaning-word { display: none; } }
   /* The Meaning flow: every āyah of the page(s), with its meanings, one after another. One wrapper, so "Page by
      page" (which turns each direct child of #pageViewContainer into a sideways page) makes it one page that scrolls
      down inside itself; otherwise #readScroll scrolls it. */
@@ -2621,7 +2621,7 @@
   /* From 900px ⋯'s tools sit on the bar itself (display: contents), so in Mushaf view its 🔖 would stand beside the bar's
      own: it steps aside there. Below 900px it stays in the ⋯ panel, where the Owner asked for it (v10.21). */
   @media (min-width: 900px) { #readBar.bar-bm-on #readBookmarkBtn { display: none !important; } }
-  #readBarBookmarkBtn { box-sizing: border-box; width: 36px; height: 36px; padding: 0; margin: 0; flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; font-size: 1.05rem; line-height: 1; }
+  #readBarBookmarkBtn { box-sizing: border-box; width: 40px; height: 40px; padding: 0; margin: 0; flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; font-size: 1.05rem; line-height: 1; }
   /* A switch is a pill: filled navy when on (the same look as 📖's pressed state), outlined when off. The checkbox stays
      in the label for keyboards and screen readers, drawn as nothing, so the three fit beside 📖 and ⤢ on a phone. */
   #readMeaningLayersSlot label { position: relative; display: inline-flex; align-items: center; height: 36px; box-sizing: border-box; padding: 0 0.6rem; border: 1.5px solid #1F3A6E; border-radius: 999px; background: #fff; color: #1F3A6E; font-size: 0.8rem; font-weight: 600; white-space: nowrap; cursor: pointer; }
@@ -2644,17 +2644,17 @@
      only on that route, full screen or not. Below 360px it is the ☰ alone. */
   #readBar #readListBtn { display: none; }
   body.read-from-contents #readBar #readListBtn {
-    box-sizing: border-box; height: 36px; min-width: 36px; padding: 0 0.7rem; margin: 0 auto 0 0; flex: 0 0 auto; order: -1;
+    box-sizing: border-box; height: 40px; min-width: 40px; padding: 0 0.7rem; margin: 0 auto 0 0; flex: 0 0 auto; order: -1;
     display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem;
     font-size: 0.9rem; font-weight: 700; line-height: 1; border-radius: 0.5rem; white-space: nowrap;
     background: #fff; color: #1F3A6E; border: 2px solid #B8862F; box-shadow: 0 1px 4px rgba(19, 25, 42, 0.28); cursor: pointer;
   }
   body.read-from-contents #readBar #readListBtn > span[aria-hidden] { font-size: 1.1rem; }
-  @media (max-width: 359px) { body.read-from-contents #readBar #readListBtn { padding: 0; width: 36px; } #readListBtn .read-list-word { display: none; } }
+  @media (max-width: 359px) { body.read-from-contents #readBar #readListBtn { padding: 0; width: 40px; } #readListBtn .read-list-word { display: none; } }
   /* 12 Oct 2026 (issue #779): 600-679px is where the quick buttons (244px) join this row but the bar (568-648px) is
      still short: at 600px the row held 114+210+244+173 and wrapped to 76px. The ☰ alone (aria-label "Surah list")
      frees 78px and keeps the page reference and the Meaning switches on the one line. */
-  @media (min-width: 600px) and (max-width: 679px) { body.read-from-contents #readBar #readListBtn { padding: 0; width: 36px; } #readListBtn .read-list-word { display: none; } }
+  @media (min-width: 600px) and (max-width: 679px) { body.read-from-contents #readBar #readListBtn { padding: 0; width: 40px; } #readListBtn .read-list-word { display: none; } }
   /* Issue #419 -- Note View / Track / Approach for readers who came in through
      the Read contents list. Shown only when ALL of: opened from that list
      (body.read-from-contents, set in openReadContentsRow and cleared by
@@ -9205,7 +9205,8 @@
       return ayah === 1 ? t("Bismillah") : `${num(surah)}:${ayahLabelFor(surah, ayah)}`;
     }
     function wordRefFor(surah, ayah, position) {
-      return displayWordRef(surah, ayah, position, fatihaOn(), t("Bismillah"));
+      // Audit J29 fix 9: visible text only (the Word card's reference and its status lines), so Bangla digits; every stored key / data attribute is built elsewhere with Latin digits.
+      return num(displayWordRef(surah, ayah, position, fatihaOn(), t("Bismillah")));
     }
     function fillAyahSelect() {
       if (!currentSurahData) return;
