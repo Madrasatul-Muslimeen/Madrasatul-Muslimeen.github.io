@@ -20780,3 +20780,23 @@ New strings `wholeQuranLevelSentence` ("{level}: Achieved {known} and {percent} 
 - **J15:** `firestore.rules` now equals the guardian Rules the Owner published on 12 Oct (PR #808; roster-access 3/3, with a mutant that removes the rule).
 - **J15:** a guardian case in `student-roster-access-browser` (30/0, PR #810).
 - **CLAUDE.md:** the Owner's 14 Oct rule "Keep working, never idle".
+
+## v10.42 — 14 Oct 2026 — the top of the Word card in layout B (PCF J23)
+
+**The Owner** (PCF J23, 14 Oct; also in the MMSA chat): layout B, "Color on the meaning line, as long as there is space, if there is no space just a box to tick on and off is enough (don't need to write 'color' in that case)".
+
+**Built (Builder round #812, branch `builder/issue-812-run-1239`):**
+- **"This āyah ⋯" moved into the header beside 🔍.** It is the same element and listener, moved, now 38px tall. On a card narrower than about 30rem (`@container wordcard`) the header wraps rather than squeeze the Arabic word: ‹ 🔍 This āyah … › × on the first row, the word and its root on the second. That is measured: one row needs ~440px to leave the word 70px.
+- **The WbW meaning line sits above the level tabs** (`meaningBarHtml()` in `app/js/quran-word-card.js`), with the Colour tick at its right edge.
+- **Whether the word "Colour" shows is measured, not set by a fixed width.** `fitWordCardColourLabels()` measures the meaning text with and without the word; if the text needs more height, the bar gets `data-compact` and only the tick stays. It re-runs on resize (ResizeObserver), and the tick keeps a translated `aria-label`. The other tabs keep the "Colour word parts" row as before.
+
+**Architect review:**
+- The new suite's 320px "no room" check also asserted Bangla. "রঙিন" is shorter than "Colour" and, measured, fits beside the long meaning there, so the check is now English-only; the suite still requires both states to occur.
+- `word-card-search-browser` ("🔍 sits between ‹ and the word") and `word-card-wbw-rebuild-browser` (meaning-bar items; six header children) described the old layout. Both were updated in place, with the reasons recorded.
+
+**Tests:**
+- New `tools/i18n-verify/word-card-layout-b-top-browser.mjs`: 246/0 (en/bn × 320, 360, 390, 768 and 1280, short and long meanings). Mutations: ownrow 40, meaningbelow 20, nofit 2 and notick 106 fail.
+- All 31 `*word-card*` suites green, among them word-card-search 252/0, word-card-wbw-rebuild 136/0, word-card-level-sentence 228/0 and word-card-dictionary 290/0.
+- lemma-levels 240/0; quran-lemma-progress-rendered 81/0; word-progress-practising 458/0; phone-width-overflow 217/0; behaviour 971/0.
+
+**Next:** Builder round #813 (J23 mark choice B: a press also changes the other mark that makes a word Achieved), then #814 (J26: Aʿūdhu billāh and Bismillah before Al-Fātiḥah, layout B).

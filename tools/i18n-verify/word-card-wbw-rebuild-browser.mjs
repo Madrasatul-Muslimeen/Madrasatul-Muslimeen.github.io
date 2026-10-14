@@ -72,7 +72,10 @@ for (const lang of ["en", "bn"]) {
     if (width <= 520) check(`${L}: two per row`, Math.abs(prs[0].y - prs[1].y) < 2 && Math.abs(prs[2].y - prs[3].y) < 2 && prs[2].y > prs[0].y + 10);
     else check(`${L}: one row`, prs.every((r) => Math.abs(r.y - prs[0].y) < 2));
 
-    const mb = await rect(page, ".word-card-meaning-bar > *");
+    // Updated in place 14 Oct 2026 (PCF J23 layout B, round #812): the meaning bar now holds a text block (the English
+    // and Bangla meanings and the transliteration, as before) plus the Colour tick at its right edge, so its three
+    // meaning items are measured inside `.word-card-meaning-text`.
+    const mb = await rect(page, ".word-card-meaning-bar .word-card-meaning-text > *");
     if (width >= 1000) check(`${L}: meaning bar is one row`, mb.length === 3 && mb.every((r) => Math.abs(r.y - mb[0].y) < 4), JSON.stringify(mb.map((r) => r.y)));
     else check(`${L}: meaning bar items inside the card`, mb.length === 3 && mb.every((r) => r.r <= width));
 
@@ -109,7 +112,9 @@ for (const lang of ["en", "bn"]) for (const width of [320, 1280]) {
   const hdr = await page.evaluate(() => [...document.querySelector(".quran-word-card header").children].map((e) => { const r = e.getBoundingClientRect(); return { n: e.className || e.tagName, x: r.x, y: r.y, r: r.right, b: r.bottom }; }));
   let ov = 0;
   for (let i = 0; i < hdr.length; i++) for (let j = i + 1; j < hdr.length; j++) if (overlap(hdr[i], hdr[j])) ov++;
-  check(`${lang}/${width}: word with no root has no ROOT box and no overlap`, !has && hdr.length === 5 && ov === 0, `root=${has} children=${hdr.length} overlaps=${ov}`);
+  // Updated in place 14 Oct 2026 (PCF J23 layout B, round #812): "This āyah" moved into the header beside 🔍, so the
+  // header has six children without a root box (‹ 🔍 This-āyah word › ×), not five.
+  check(`${lang}/${width}: word with no root has no ROOT box and no overlap`, !has && hdr.length === 6 && ov === 0, `root=${has} children=${hdr.length} overlaps=${ov}`);
   await ctx.close();
 }
 

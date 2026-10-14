@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "10.41",
+    "version": "10.42",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -3485,7 +3485,7 @@
     {
       "version": "10.41",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "PCF J23: one sentence per level, the known number in a gold disc and the percentage inside a progress circle (layout B).",
       "integration": {
         "authorizedOn": "2026-10-13",
@@ -3493,10 +3493,23 @@
         "method": "MERGE_PR",
         "reference": "CHANGELOG.md"
       }
+    },
+    {
+      "version": "10.42",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "PCF J23: This āyah beside the search button, the meaning above the level tabs, the Colour tick on the meaning line (layout B).",
+      "integration": {
+        "authorizedOn": "2026-10-14",
+        "integratedOn": "2026-10-14",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
     }
   ],
-  "nextUnallocated": "10.42",
+  "nextUnallocated": "10.43",
   "nextUnallocatedNote": [
+    "v10.42 was allocated to the top of the Word card in layout B (PCF J23), 2026-10-14.",
     "v10.41 was allocated to the Word card's level totals as one sentence each, layout B (PCF J23), 2026-10-13.",
     "v10.40 was allocated to a dragged landing wheel no longer hides Wheel / Legend / Unit on a phone (PCF J24), 2026-10-13.",
     "v10.39 was allocated to Word card: the stem box always has a meaning and the wrong dictionary meanings are gone; Approach 1's self-learning line, with links in Approach guides (PCF J23, J20), 2026-10-12.",
