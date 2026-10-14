@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "10.52",
+    "version": "10.53",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -3617,8 +3617,20 @@
     {
       "version": "10.52",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Keys to Understanding K2 saving layer and Rules candidate (Builder round #834, PR #835)",
+      "integration": {
+        "authorizedOn": "2026-10-14",
+        "integratedOn": "2026-10-14",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "10.53",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Audit part 1, fixes 3-9: 40px targets, pill grid, popups clear of the nav, Ayah card heading and ladder, Bangla digits (PCF J29).",
       "integration": {
         "authorizedOn": "2026-10-14",
         "integratedOn": "2026-10-14",
@@ -3627,8 +3639,9 @@
       }
     }
   ],
-  "nextUnallocated": "10.53",
+  "nextUnallocated": "10.54",
   "nextUnallocatedNote": [
+    "v10.53 was allocated to Audit part 1, fixes 3-9 (J29), 2026-10-14.",
     "v10.52 was allocated to Keys K2: saving layer and Rules candidate, 2026-10-14.",
     "v10.51 was allocated to Audit: Qur'an face in Bangla and on word chips, 2026-10-14.",
     "v10.50 was allocated to Zab Z6: pockets inside pockets (gated), 2026-10-14.",
