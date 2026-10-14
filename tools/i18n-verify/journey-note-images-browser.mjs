@@ -154,6 +154,10 @@ export function siyagahFlagsUnavailableReason() { return null; }` }));
       check(`${tag}: the picture panel's controls are 40px or taller and the page does not scroll sideways`, (await smallTargets(page, `${S} [data-edit-panel] button, ${S} [data-edit-panel] input[type=text], ${S} [data-edit-panel] select, ${S} [data-image-pick]`)).length === 0 && (await noSideways(page)), JSON.stringify(await smallTargets(page, `${S} [data-edit-panel] button, ${S} [data-edit-panel] select, ${S} [data-image-pick]`)));
       const note = await page.textContent(`${S} [data-image-note]`);
       check(`${tag}: the panel says it is private and made small, in ${lang}`, lang === "bn" ? hasBn(note) : /made small on this device/.test(note), note);
+      // PCF (14 Oct, the Owner's deleted J27): "Attach button doesn't open for file". A real TAP must open the device's
+      // file chooser -- setInputFiles below never proves that, it fills the input directly.
+      const [chooser] = await Promise.all([page.waitForEvent("filechooser", { timeout: 5000 }).catch(() => null), page.click(`${S} [data-image-pick]`)]);
+      check(`${tag}: tapping "Choose a picture" really opens the device's file chooser`, !!chooser && chooser.isMultiple() === false);
       await page.fill(`${S} [data-edit-panel] [data-image-alt]`, "A map of the river");
       await page.selectOption(`${S} [data-edit-panel] [data-image-width]`, "50");
       await resetWrites(page);
