@@ -108,7 +108,10 @@ const card = (page) => page.evaluate(() => {
     throughLevel: document.querySelector("#quranWordCardMount [data-known-through-level]")?.dataset.knownThroughLevel ?? null,
   };
 });
-const press = async (page, st) => { await page.click(`#quranWordCardMount [data-word-progress-state="${st}"]`); await page.waitForFunction(() => !document.querySelector("#quranWordCardMount [data-word-progress-saving]"), null, { timeout: 10000 }).catch(() => {}); await page.waitForTimeout(600); };
+// J23 choice B (14 Oct 2026): a lowering press on a place known through another mark now asks first; this suite is
+// about the held line, which is what Cancel leaves, so it answers Cancel (the Change it path is
+// word-card-change-other-mark-browser).
+const press = async (page, st) => { await page.click(`#quranWordCardMount [data-word-progress-state="${st}"]`); await page.waitForTimeout(500); const cancel = await page.$('#quranWordCardMount [data-word-progress-ask="cancel"]'); if (cancel) await cancel.click(); await page.waitForFunction(() => !document.querySelector("#quranWordCardMount [data-word-progress-saving]"), null, { timeout: 10000 }).catch(() => {}); await page.waitForTimeout(600); };
 const fitsCard = (page) => page.evaluate(() => [...document.querySelectorAll("#quranWordCardMount .word-card-part-meaning, #quranWordCardMount [data-word-progress-held]")].every((e) => { const r = e.getBoundingClientRect(); return r.right <= innerWidth + 0.5 && r.left >= -0.5; }));
 
 const WBW = {
