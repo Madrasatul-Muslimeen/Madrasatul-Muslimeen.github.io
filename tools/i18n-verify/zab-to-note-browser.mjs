@@ -47,6 +47,7 @@ async function routeMutation(ctx) {
   if (MUTATE === "p") await routeText(ctx, "**/js/zab-to-note.js", (s) => swap(s, "ownerPersonId: ctx.personId, ownerUid", "ownerPersonId: item.addedByPersonId, ownerUid"));
   else if (MUTATE === "q") await routeText(ctx, "**/js/zab-data.js", (s) => swap(s, "deletedAt: serverTimestamp(), noteId }", "deletedAt: serverTimestamp() }"));
   else if (MUTATE === "r") await routeText(ctx, "**/js/zab-to-note.js", (s) => swap(s, "&back=1", ""));
+  else if (MUTATE === "w") await ctx.route("**/journey-map.html*", async (route) => { const r = await route.fetch(); const b = (await r.text()).split('document.getElementById("jmBackBtn")) {').join('document.getElementById("jmBackBtn") && false) {'); await route.fulfill({ response: r, body: b }); }); // no visible ← Back on Mapping My Journey
   else if (MUTATE === "s") await routeText(ctx, "**/js/zab-data.js", (s) => swap(s, `{ status: "trashed", deletedAt: serverTimestamp(), noteId }`, `{ noteId }`));
   else if (MUTATE === "t") await routeText(ctx, "**/js/zab-bar.js", (s) => swap(s, "  if (!res.ok) {\n    S.msg = res.stage", "  S.items = S.items.filter((i) => i.itemId !== itemId);\n  if (!res.ok) {\n    S.msg = res.stage"));
   else if (MUTATE === "u") await routeText(ctx, "**/js/zab-to-note.js", (s) => swap(s, "parts.push(`<p>${esc(l)}</p>`)", "parts.push(`<p>${l}</p>`)"));
@@ -225,7 +226,10 @@ for (const lang of ["en", "bn"]) {
         await page.click("#zabPanel [data-zab-became] a");
         await page.waitForURL(/journey-map\.html/, { timeout: 15000, waitUntil: "commit" });
         check(`${tag}: Open leaves for Mapping My Journey with back=1`, /back=1/.test(page.url()) && /note=/.test(page.url()), page.url());
-        await page.goBack({ waitUntil: "commit" });
+        // Architect review: the way-back law needs a VISIBLE ← Back on Mapping My Journey, not the browser's own Back.
+        const jmBack = await page.waitForSelector("#jmBackBtn", { state: "visible", timeout: 15000 }).catch(() => null);
+        check(`${tag}: Mapping My Journey shows a visible ← Back (back=1)`, !!jmBack);
+        if (jmBack) await jmBack.click(); else await page.goBack({ waitUntil: "commit" });
         await page.waitForSelector("#zabPanel:not([hidden]) [data-zab-new-item]", { timeout: 15000 }).catch(() => {});
         const back = await page.evaluate(() => ({ open: !document.querySelector("#zabPanel")?.hidden, head: document.querySelector("#zabPanel .zab-head h2")?.textContent || "" }));
         check(`${tag}: ← Back reopens Zab on the same pocket`, back.open && back.head.includes("Plain"), JSON.stringify(back));
