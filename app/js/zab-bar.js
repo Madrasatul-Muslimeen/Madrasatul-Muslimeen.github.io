@@ -44,7 +44,7 @@ const S = {
   pockets: [], items: [], people: null,
   trashed: { pockets: [], items: [] },
   view: "closed", pocketId: null, editingPocket: null, editingItem: null,
-  opener: null, scrollY: 0, msg: "",
+  opener: null, scrollY: 0, msg: "", openSteps: new Set(),
 };
 let root = null, ro = null;
 
@@ -76,6 +76,7 @@ body:has(.nw-switch) #zabCorner { bottom: 68px; }
 #zabPanel button { min-width: 40px; border: 1px solid #c7d0e0; border-radius: 8px; background: #f3f6fb; color: #1b2a41; cursor: pointer; padding: 0 10px; }
 #zabPanel input[type="text"], #zabPanel select { border: 1px solid #c7d0e0; border-radius: 8px; padding: 0 8px; background: #fff; color: #1b2a41; min-width: 0; }
 #zabPanel input[type="color"] { padding: 0 2px; width: 44px; }
+#zabPanel input[type="date"] { border: 1px solid #c7d0e0; border-radius: 8px; padding: 0 8px; background: #fff; color: #1b2a41; min-width: 0; flex: 0 1 11rem; }
 .zab-add { display: flex; gap: 6px; margin-bottom: 8px; }
 .zab-add input { flex: 1 1 auto; }
 /* Architect review (Z2, 14 Oct): the item's text gets the full row; its controls sit in one tidy line beneath it, at
@@ -90,6 +91,19 @@ body:has(.nw-switch) #zabCorner { bottom: 68px; }
 #zabPanel[data-w="narrow"] .zab-row { flex-wrap: wrap; }
 #zabPanel[data-w="narrow"] .zab-row .zab-main { flex: 1 1 calc(100% - 40px); }
 #zabPanel[data-w="narrow"] .zab-row .zab-acts { flex: 1 1 100%; }
+/* Z3: the kind details sit on ONE quiet line under the text (never beside it). */
+.zab-det { display: flex; flex-wrap: nowrap; align-items: center; gap: 8px; min-width: 0; margin-top: 2px; font-size: .82rem; color: #5b6b86; }
+.zab-det > * { flex: 0 0 auto; }
+.zab-det .zab-site { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.zab-det .zab-link { white-space: nowrap; color: #1f3a6e; }
+.zab-pri { color: #8a1c14; font-weight: 600; }
+.zab-det button.zab-stepcount { min-height: 32px; min-width: 40px; padding: 0 8px; font-size: .82rem; }
+.zab-group h3 { margin: 10px 0 0; font-size: .85rem; color: #1f3a6e; text-transform: none; }
+.zab-steps { margin-top: 4px; }
+.zab-step { display: flex; align-items: center; gap: 8px; min-height: 32px; min-width: 0; overflow-wrap: anywhere; }
+.zab-step input[type="checkbox"] { width: 20px; min-height: 20px; flex: 0 0 auto; }
+.zab-step-done span { text-decoration: line-through; color: #6b778c; }
+.zab-steps .zab-add { margin: 4px 0 0; }
 .zab-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-inline-end: 6px; }
 .zab-edit { display: flex; flex-wrap: wrap; gap: 6px; width: 100%; }
 .zab-edit input[type="text"] { flex: 1 1 140px; }
@@ -257,6 +271,9 @@ function head(title, back) {
 }
 const msgBox = () => `<p id="zabMsg" role="status">${esc(S.msg)}</p>`;
 
+const KIND_NAMES = { plain: "Plain", tasks: "Tasks", links: "Links" };
+const KIND_PICKS = ["plain", "tasks", "links"]; // Ideas and Shopping come in Z4
+
 function renderList() {
   const ps = activePockets();
   const rows = ps.map((p, i) => {
@@ -265,6 +282,7 @@ function renderList() {
         <input type="text" data-zab-f="name" value="${esc(pocketName(p))}" aria-label="${esc(t("Name"))}">
         <select data-zab-f="icon" aria-label="${esc(t("Icon"))}">${[...new Set([p.icon || "📁", ...ICONS])].map((ic) => `<option${ic === (p.icon || "📁") ? " selected" : ""}>${ic}</option>`).join("")}</select>
         <input type="color" data-zab-f="color" value="${esc(p.color || "#4a5568")}" aria-label="${esc(t("Pocket colour"))}">
+        <select data-zab-f="ztype" aria-label="${esc(t("Kind"))}">${KIND_PICKS.map((k) => `<option value="${k}"${k === zab.zabType(p) ? " selected" : ""}>${esc(t(KIND_NAMES[k]))}</option>`).join("")}</select>
         <button type="button" data-zab-save-pocket="${esc(p.pocketId)}">${esc(t("Save"))}</button>
         <button type="button" data-zab-cancel-edit>${esc(t("Cancel"))}</button></div></div>`;
     }
@@ -281,26 +299,84 @@ function renderList() {
     <div class="zab-foot"><button type="button" data-zab-nav="trash">🗑 ${esc(t("Trash"))}</button></div></div>`;
 }
 
-function renderPocket() {
-  const p = pocketById(S.pocketId);
-  const others = activePockets().filter((x) => x.pocketId !== S.pocketId);
-  const rows = S.items.map((it, i) => {
-    const by = personName(it.addedByPersonId);
-    const main = S.editingItem === it.itemId
-      ? `<div class="zab-edit"><input type="text" data-zab-item-text value="${esc(it.text)}" aria-label="${esc(t("Edit"))}"><button type="button" data-zab-save-item="${esc(it.itemId)}">${esc(t("Save"))}</button><button type="button" data-zab-cancel-edit>${esc(t("Cancel"))}</button></div>`
-      : `<span class="zab-text">${esc(it.text)}</span>${by ? `<span class="zab-by">${esc(t("Added by {name}", { name: by }))}</span>` : ""}`;
-    return `<div class="zab-row${it.done ? " zab-done" : ""}" data-zab-item="${esc(it.itemId)}">
-      <input type="checkbox" data-zab-tick="${esc(it.itemId)}"${it.done ? " checked" : ""} aria-label="${esc(t("Tick as done"))}">
-      <div class="zab-main">${main}</div>
-      <div class="zab-acts">
+const GROUP_NAMES = { overdue: "Overdue", today: "Today", tomorrow: "Tomorrow", later: "Later", nodate: "No date", done: "Done" };
+
+function itemControls(it, i, n, others) {
+  return `<div class="zab-acts">
         <button type="button" data-zab-iup="${esc(it.itemId)}" aria-label="${esc(t("Move up"))}"${i === 0 ? " disabled" : ""}>↑</button>
-        <button type="button" data-zab-idown="${esc(it.itemId)}" aria-label="${esc(t("Move down"))}"${i === S.items.length - 1 ? " disabled" : ""}>↓</button>
+        <button type="button" data-zab-idown="${esc(it.itemId)}" aria-label="${esc(t("Move down"))}"${i === n - 1 ? " disabled" : ""}>↓</button>
         <button type="button" data-zab-iedit="${esc(it.itemId)}" aria-label="${esc(t("Edit"))}">✎</button>
         ${others.length ? `<select data-zab-imove="${esc(it.itemId)}" aria-label="${esc(t("Move to…"))}"><option value="">${esc(t("Move to…"))}</option>${others.map((o) => `<option value="${esc(o.pocketId)}">${esc(pocketName(o))}</option>`).join("")}</select>` : ""}
-        <button type="button" data-zab-itrash="${esc(it.itemId)}" aria-label="${esc(t("Trash"))}">🗑</button></div></div>`;
-  }).join("");
-  return `${head(`${p?.icon || "📁"} ${p ? pocketName(p) : ""}`, true)}<div class="zab-body">${msgBox()}
-    <div class="zab-add"><input type="text" data-zab-new-item placeholder="${esc(t("Add an item and press Enter"))}" aria-label="${esc(t("Add an item and press Enter"))}"><button type="button" data-zab-add-item>${esc(t("Add"))}</button></div>
+        <button type="button" data-zab-itrash="${esc(it.itemId)}" aria-label="${esc(t("Trash"))}">🗑</button></div>`;
+}
+
+/** The quiet line under an item's text. Drawn from the POCKET's kind only: the item keeps every field it has. */
+function kindDetails(it, kind) {
+  if (kind === "tasks") {
+    const sc = zab.stepCount(it.steps);
+    const bits = [];
+    if (it.pri === 1) bits.push(`<span class="zab-pri" data-zab-pri title="${esc(t("High priority"))}">❗ ${esc(t("High"))}</span>`);
+    if (zab.isDay(it.due)) bits.push(`<span class="zab-due" data-zab-due>${esc(it.due)}</span>`);
+    bits.push(`<button type="button" class="zab-stepcount" data-zab-steps="${esc(it.itemId)}" aria-expanded="${S.openSteps.has(it.itemId)}" aria-label="${esc(t("Steps"))}">${sc.total ? `${sc.done}/${sc.total}` : "＋"}</button>`);
+    return `<div class="zab-det">${bits.join("")}</div>`;
+  }
+  if (kind === "links" && it.url) {
+    return `<div class="zab-det"><span class="zab-site">${esc(zab.siteName(it.url))}</span><a class="zab-link" href="${esc(it.url)}" target="_blank" rel="noopener">${esc(t("Open link"))} ↗</a></div>`;
+  }
+  return "";
+}
+
+function stepsBlock(it) {
+  if (!S.openSteps.has(it.itemId)) return "";
+  const rows = (it.steps || []).map((s) => `<label class="zab-step${s.d ? " zab-step-done" : ""}"><input type="checkbox" data-zab-step="${esc(it.itemId)}:${esc(s.id)}"${s.d ? " checked" : ""} aria-label="${esc(t("Tick as done"))}"><span>${esc(s.t)}</span></label>`).join("");
+  return `<div class="zab-steps">${rows}<div class="zab-add"><input type="text" data-zab-new-step="${esc(it.itemId)}" placeholder="${esc(t("Add a step"))}" aria-label="${esc(t("Add a step"))}"><button type="button" data-zab-add-step="${esc(it.itemId)}">${esc(t("Add"))}</button></div></div>`;
+}
+
+function itemEditForm(it, kind) {
+  const extra = kind === "tasks"
+    ? `<input type="date" data-zab-item-due value="${esc(zab.isDay(it.due) ? it.due : "")}" aria-label="${esc(t("Due date"))}">
+       <select data-zab-item-pri aria-label="${esc(t("Priority"))}"><option value="">${esc(t("Normal"))}</option><option value="1"${it.pri === 1 ? " selected" : ""}>${esc(t("High"))}</option></select>`
+    : kind === "links"
+      ? `<input type="text" data-zab-item-url value="${esc(it.url || "")}" placeholder="https://" aria-label="${esc(t("Link"))}">`
+      : "";
+  return `<div class="zab-edit"><input type="text" data-zab-item-text value="${esc(it.text)}" aria-label="${esc(t("Edit"))}">${extra}<button type="button" data-zab-save-item="${esc(it.itemId)}">${esc(t("Save"))}</button><button type="button" data-zab-cancel-edit>${esc(t("Cancel"))}</button></div>`;
+}
+
+function itemRow(it, i, n, others, kind) {
+  const by = personName(it.addedByPersonId);
+  const main = S.editingItem === it.itemId
+    ? itemEditForm(it, kind)
+    : `<span class="zab-text">${esc(it.text)}</span>${by ? `<span class="zab-by">${esc(t("Added by {name}", { name: by }))}</span>` : ""}${kindDetails(it, kind)}${kind === "tasks" ? stepsBlock(it) : ""}`;
+  return `<div class="zab-row${it.done ? " zab-done" : ""}" data-zab-item="${esc(it.itemId)}">
+      <input type="checkbox" data-zab-tick="${esc(it.itemId)}"${it.done ? " checked" : ""} aria-label="${esc(t("Tick as done"))}">
+      <div class="zab-main">${main}</div>
+      ${itemControls(it, i, n, others)}</div>`;
+}
+
+/** Tasks are shown under headings; reordering stays inside a heading. */
+function taskGroups() {
+  const now = new Date();
+  const g = {};
+  for (const name of zab.TASK_GROUPS) g[name] = [];
+  for (const it of S.items.slice().sort(byOrder)) g[zab.dueGroup(it, now)].push(it);
+  return g;
+}
+
+function renderPocket() {
+  const p = pocketById(S.pocketId);
+  const kind = zab.zabType(p);
+  const others = activePockets().filter((x) => x.pocketId !== S.pocketId);
+  let rows;
+  if (kind === "tasks") {
+    const g = taskGroups();
+    rows = zab.TASK_GROUPS.filter((name) => g[name].length).map((name) =>
+      `<section class="zab-group" data-zab-group="${name}"><h3>${esc(t(GROUP_NAMES[name]))} <span class="zab-muted">${g[name].length}</span></h3>${g[name].map((it, i) => itemRow(it, i, g[name].length, others, kind)).join("")}</section>`).join("");
+  } else {
+    rows = S.items.map((it, i) => itemRow(it, i, S.items.length, others, kind)).join("");
+  }
+  const hint = kind === "tasks" ? t("Add a task — ! for high priority, today or tomorrow") : kind === "links" ? t("Paste a link or type a note") : t("Add an item and press Enter");
+  return `${head(`${p?.icon || "📁"} ${p ? pocketName(p) : ""}`, true)}<div class="zab-body" data-zab-kind="${kind}">${msgBox()}
+    <div class="zab-add"><input type="text" data-zab-new-item placeholder="${esc(hint)}" aria-label="${esc(hint)}"><button type="button" data-zab-add-item>${esc(t("Add"))}</button></div>
     ${rows || `<p class="zab-muted">${esc(t("Nothing here yet."))}</p>`}
     <div class="zab-foot"><button type="button" data-zab-clear-done>${esc(t("Clear done"))}</button></div></div>`;
 }
@@ -341,6 +417,12 @@ async function run(fn, onOk) {
 }
 
 const itemById = (id) => S.items.find((i) => i.itemId === id);
+/** The list an item reorders within: its heading's items in a Tasks pocket, the whole pocket otherwise. */
+function itemNeighbours(id) {
+  if (zab.zabType(pocketById(S.pocketId)) !== "tasks") return S.items;
+  const g = taskGroups();
+  return zab.TASK_GROUPS.map((n) => g[n]).find((l) => l.some((i) => i.itemId === id)) || S.items;
+}
 
 async function swapOrder(list, id, dir, idKey, edit) {
   const i = list.findIndex((x) => x[idKey] === id), j = i + dir;
@@ -383,8 +465,10 @@ async function onClick(e) {
   if (q("[data-zab-add-item]")) return addItemFromInput();
   if ((h = q("[data-zab-iedit]"))) { S.editingItem = h.dataset.zabIedit; render(); const f = panel().querySelector("[data-zab-item-text]"); if (f) f.focus(); return; }
   if ((h = q("[data-zab-save-item]"))) return saveItem(h.dataset.zabSaveItem);
-  if ((h = q("[data-zab-iup]"))) return swapOrder(S.items, h.dataset.zabIup, -1, "itemId", (id, patch) => zab.editItem(db, c, id, patch));
-  if ((h = q("[data-zab-idown]"))) return swapOrder(S.items, h.dataset.zabIdown, 1, "itemId", (id, patch) => zab.editItem(db, c, id, patch));
+  if ((h = q("[data-zab-iup]"))) return swapOrder(itemNeighbours(h.dataset.zabIup), h.dataset.zabIup, -1, "itemId", (id, patch) => zab.editItem(db, c, id, patch));
+  if ((h = q("[data-zab-idown]"))) return swapOrder(itemNeighbours(h.dataset.zabIdown), h.dataset.zabIdown, 1, "itemId", (id, patch) => zab.editItem(db, c, id, patch));
+  if ((h = q("[data-zab-steps]"))) { const id = h.dataset.zabSteps; if (S.openSteps.has(id)) S.openSteps.delete(id); else S.openSteps.add(id); return render(); }
+  if ((h = q("[data-zab-add-step]"))) return addStepFromInput(h.dataset.zabAddStep);
   if ((h = q("[data-zab-itrash]"))) {
     const id = h.dataset.zabItrash;
     return run(() => zab.trashItem(db, c, id), () => { S.items = S.items.filter((i) => i.itemId !== id); });
@@ -409,6 +493,13 @@ async function onChange(e) {
     const id = el.dataset.zabTick, done = el.checked;
     return run(() => zab.toggleDone(db, c, id, done), () => { const it = itemById(id); if (it) it.done = done; });
   }
+  if (el.matches("[data-zab-step]")) {
+    const [id, stepId] = el.dataset.zabStep.split(/:(.*)/s);
+    const it = itemById(id);
+    if (!it) return;
+    const steps = zab.toggleStep(it.steps, stepId);
+    return run(() => zab.editItem(db, c, id, { steps }), () => { it.steps = steps; });
+  }
   if (el.matches("[data-zab-imove]") && el.value) {
     const id = el.dataset.zabImove, to = el.value;
     return run(() => zab.moveItem(db, c, id, to), () => { S.items = S.items.filter((i) => i.itemId !== id); });
@@ -421,7 +512,8 @@ function onKey(e) {
   if (!el) return;
   if (el.matches("[data-zab-new-item]")) { e.preventDefault(); addItemFromInput(); }
   else if (el.matches("[data-zab-new-pocket]")) { e.preventDefault(); addPocketFromInput(); }
-  else if (el.matches("[data-zab-item-text]")) { e.preventDefault(); const b = panel().querySelector("[data-zab-save-item]"); if (b) saveItem(b.dataset.zabSaveItem); }
+  else if (el.matches("[data-zab-new-step]")) { e.preventDefault(); addStepFromInput(el.dataset.zabNewStep); }
+  else if (el.matches("[data-zab-item-text],[data-zab-item-url]")) { e.preventDefault(); const b = panel().querySelector("[data-zab-save-item]"); if (b) saveItem(b.dataset.zabSaveItem); }
   else if (el.matches("[data-zab-f='name']")) { e.preventDefault(); const b = panel().querySelector("[data-zab-save-pocket]"); if (b) savePocket(b.dataset.zabSavePocket); }
 }
 
@@ -447,8 +539,11 @@ async function savePocket(id) {
   if (name !== pocketName(p)) patch.name = name; // a rename writes `name` and removes the seeded `names`
   if (icon !== (p.icon || "📁")) patch.icon = icon;
   if (color !== (p.color || "#4a5568")) patch.color = color;
+  const kind = box.querySelector("[data-zab-f='ztype']").value;
+  if (kind !== zab.zabType(p)) patch.ztype = kind === "plain" ? "" : kind; // plain = no `ztype` stored (an empty kind field is removed)
   if (!Object.keys(patch).length) { S.editingPocket = null; return render(); }
   await run(() => zab.editPocket(db, S.ctx, id, patch), () => {
+    if ("ztype" in patch) { if (patch.ztype) p.ztype = patch.ztype; else delete p.ztype; }
     if (patch.name !== undefined) { p.name = patch.name; delete p.names; }
     if (patch.icon) p.icon = patch.icon;
     if (patch.color) p.color = patch.color;
@@ -464,8 +559,14 @@ async function addItemFromInput() {
   if (!text) { S.msg = failText({ refused: "text-required" }); return render(); }
   const order = Math.max(0, ...S.items.map((i) => i.order ?? 0)) + 1;
   const pocketId = S.pocketId;
-  await run(() => zab.addItem(db, S.ctx, pocketId, { text, order }), (res) => {
-    S.items.push({ itemId: res.itemId, tenantId: S.ctx.tenantId, pocketId, addedByPersonId: S.ctx.personId, status: "active", order, text, done: false });
+  const kind = zab.zabType(pocketById(pocketId));
+  // What the kind adds to a new item (nothing for a plain pocket). Empty fields are never sent.
+  let fields = { text };
+  if (kind === "tasks") fields = zab.parseQuickTask(text);
+  else if (kind === "links" && zab.asUrl(text)) fields = { text: zab.asUrl(text), url: zab.asUrl(text) };
+  if (!fields.text) { S.msg = failText({ refused: "text-required" }); return render(); }
+  await run(() => zab.addItem(db, S.ctx, pocketId, { ...fields, order }), (res) => {
+    S.items.push({ ...fields, itemId: res.itemId, tenantId: S.ctx.tenantId, pocketId, addedByPersonId: S.ctx.personId, status: "active", order, done: false });
     if (input) input.value = "";
   });
   const again = panel().querySelector("[data-zab-new-item]");
@@ -477,6 +578,34 @@ async function saveItem(id) {
   const it = itemById(id);
   if (!field || !it) return;
   const text = field.value.trim();
-  if (text === it.text) { S.editingItem = null; return render(); }
-  await run(() => zab.editItem(db, S.ctx, id, { text }), () => { it.text = text; S.editingItem = null; });
+  const kind = zab.zabType(pocketById(S.pocketId));
+  const patch = {};
+  if (text !== it.text) patch.text = text;
+  if (kind === "tasks") {
+    const due = panel().querySelector("[data-zab-item-due]").value;
+    const pri = panel().querySelector("[data-zab-item-pri]").value === "1" ? 1 : undefined;
+    if ((due || undefined) !== (it.due || undefined)) patch.due = due; // "" removes the field
+    if (pri !== (it.pri === 1 ? 1 : undefined)) patch.pri = pri;
+  } else if (kind === "links") {
+    const url = panel().querySelector("[data-zab-item-url]").value.trim();
+    if (url && !zab.asUrl(url)) { S.msg = t("Please type a full web address, starting with http."); return render(); }
+    if ((url || undefined) !== (it.url || undefined)) patch.url = url;
+  }
+  if (!Object.keys(patch).length) { S.editingItem = null; return render(); }
+  await run(() => zab.editItem(db, S.ctx, id, patch), () => {
+    for (const [k, v] of Object.entries(patch)) { if (v === undefined || v === "") delete it[k]; else it[k] = v; }
+    S.editingItem = null;
+  });
+}
+
+async function addStepFromInput(itemId) {
+  const it = itemById(itemId);
+  const input = panel().querySelector(`[data-zab-new-step="${CSS_ESC(itemId)}"]`);
+  const text = input ? input.value.trim() : "";
+  if (!it) return;
+  if (!text) { S.msg = failText({ refused: "text-required" }); return render(); }
+  const steps = zab.addStep(it.steps, text);
+  await run(() => zab.editItem(db, S.ctx, itemId, { steps }), () => { it.steps = steps; });
+  const again = panel().querySelector(`[data-zab-new-step="${CSS_ESC(itemId)}"]`);
+  if (again) again.focus();
 }

@@ -287,6 +287,76 @@ export async function clearDone(db, ctx, pocketId) {
   return { ok: true, cleared: ticked.length };
 }
 
+// ---------- pocket kinds (Z3): tasks and links ---------------------------------
+
+/** THE one reader of a pocket's kind: `ztype` when present, otherwise `plain`. Every drawing branch asks this and nothing else. */
+export function zabType(pocket) {
+  const z = pocket && pocket.ztype;
+  return ZTYPES.includes(z) ? z : "plain";
+}
+
+/** A date as the device's local `YYYY-MM-DD` (never UTC: a task due "today" means the reader's day). */
+export function localDay(date = new Date()) {
+  const p = (n) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${p(date.getMonth() + 1)}-${p(date.getDate())}`;
+}
+export function addDays(day, n) {
+  const [y, m, d] = day.split("-").map(Number);
+  return localDay(new Date(y, m - 1, d + n));
+}
+export const isDay = (v) => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v) && addDays(v, 0) === v;
+
+/**
+ * Quick typing for a task: a lone `!` (or one stuck to a word) sets high priority; the word today / tomorrow
+ * (or the Bangla আজ / আগামীকাল) sets the due date. The words are removed from the text. Returns { text, pri?, due? }.
+ */
+export function parseQuickTask(raw, now = new Date()) {
+  const out = {};
+  const today = localDay(now);
+  const kept = [];
+  for (const tok of String(raw ?? "").split(/\s+/).filter(Boolean)) {
+    const bare = tok.replace(/^!+|!+$/g, "");
+    const low = bare.toLowerCase();
+    if (tok !== bare) out.pri = 1;
+    if (!bare) continue; // a lone "!"
+    if (tok === bare && (low === "today" || bare === "আজ")) { out.due = today; continue; }
+    if (tok === bare && (low === "tomorrow" || bare === "আগামীকাল")) { out.due = addDays(today, 1); continue; }
+    kept.push(bare);
+  }
+  out.text = kept.join(" ");
+  return out;
+}
+
+/** Which heading a task sits under: Overdue, Today, Tomorrow, Later, No date -- or Done, whatever its date. */
+export function dueGroup(item, now = new Date()) {
+  if (item && item.done === true) return "done";
+  const d = item && item.due;
+  if (!isDay(d)) return "nodate";
+  const today = localDay(now);
+  if (d < today) return "overdue";
+  if (d === today) return "today";
+  if (d === addDays(today, 1)) return "tomorrow";
+  return "later";
+}
+export const TASK_GROUPS = Object.freeze(["overdue", "today", "tomorrow", "later", "nodate", "done"]);
+
+/** `{ done, total }` for an item's steps. */
+export function stepCount(steps) {
+  const a = Array.isArray(steps) ? steps : [];
+  return { done: a.filter((s) => s && s.d === true).length, total: a.length };
+}
+
+/** A pasted web address: one token, http or https. Returns it, or null. */
+export function asUrl(text) {
+  const s = String(text ?? "").trim();
+  if (!s || /\s/.test(s)) return null;
+  try { const u = new URL(s); return u.protocol === "http:" || u.protocol === "https:" ? s : null; } catch { return null; }
+}
+/** The site name shown beside a link: the host without a leading www. */
+export function siteName(url) {
+  try { return new URL(url).hostname.replace(/^www\./, ""); } catch { return ""; }
+}
+
 // ---------- step helpers (pure; persist the result with editItem({ steps })) ----
 
 const newStepId = () => `s${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
