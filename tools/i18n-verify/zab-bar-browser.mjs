@@ -62,6 +62,8 @@ async function routeMutation(ctx) {
     await routeText(ctx, "**/js/zab-bar.js", (s) => swap(swap(s, "if (S.loaded || S.loading) return;", "if (S.loading) return;"), "if (!all.length) {", "if (true) {"));
   }
   else if (MUTATE === "e") await routeText(ctx, "**/js/zab-bar.js", (s) => swap(s, "try { o.focus({ preventScroll: true }); }", "try { /* no focus back */ }"));
+  else if (MUTATE === "g") await routeText(ctx, "**/js/zab-bar.js", (s) => swap(s, ".zab-row .zab-acts { grid-column: 1 / -1;", ".zab-row { display: flex !important; } .zab-row .zab-acts { grid-column: 1 / -1;"));
+  else if (MUTATE === "h") await routeText(ctx, "**/js/zab-bar.js", (s) => swap(s, "width: auto; flex: 0 1 9.5rem;", "width: 100%; flex: 1 1 100%;"));
   else if (MUTATE === "f") await routeText(ctx, "**/js/zab-bar.js", (s) => swap(s, "const pocketName = (p) => (p.names ? langText(p.names, lang(), p.name) : p.name || \"\");", "const pocketName = (p) => p.name || \"\";"));
   else throw new Error(`unknown mutation ${MUTATE}`);
 }
@@ -365,6 +367,12 @@ for (const lang of ["en", "bn"]) {
       await page.press("#zabPanel [data-zab-new-item]", "Enter");
       await page.waitForSelector("#zabPanel .zab-row");
       const fit2 = await page.evaluate(() => { const p = document.getElementById("zabPanel"); const r = p.getBoundingClientRect(); const bad = [...p.querySelectorAll("button,select,input")].filter((e) => { const b = e.getBoundingClientRect(); return b.width > 0 && (b.right > r.right + 1 || b.left < r.left - 1); }).length; return { fits: p.scrollWidth <= p.clientWidth + 1, bad }; });
+      // Architect review (Z2): the item's TEXT gets the row's width, the controls go beneath it -- never a column a few letters wide.
+      const txt = await page.evaluate(() => { const p = document.getElementById("zabPanel"); const t = [...p.querySelectorAll(".zab-row .zab-text")].pop(); const a = t && t.closest(".zab-row").querySelector(".zab-acts"); if (!t || !a) return null; const tr = t.getBoundingClientRect(), ar = a.getBoundingClientRect(); return { share: tr.width / p.clientWidth, below: ar.top >= tr.bottom - 1 }; });
+      check(`${tag}: the item's text has at least 70% of the panel's width`, !!txt && txt.share >= 0.7, JSON.stringify(txt));
+      check(`${tag}: the item's controls sit below its text`, !!txt && txt.below, JSON.stringify(txt));
+      const oneLine = await page.evaluate(() => { const a = [...document.querySelectorAll("#zabPanel .zab-row .zab-acts")].pop(); if (!a) return null; const tops = [...a.children].filter((c) => c.getBoundingClientRect().width > 0).map((c) => Math.round(c.getBoundingClientRect().top)); return { lines: new Set(tops).size, n: tops.length }; });
+      check(`${tag}: the item's controls sit on ONE line (calm, nothing ragged)`, !!oneLine && oneLine.n >= 4 && oneLine.lines === 1, JSON.stringify(oneLine));
       check(`${tag}: an item row with long text still fits (every control inside the panel)`, fit2.fits && fit2.bad === 0, JSON.stringify(fit2));
       check(`${tag}: no sideways scroll with the panel open`, await noSideways(page));
       if (pg === "records.html" && (w === 390 || w === 1280)) await page.screenshot({ path: `/tmp/zab-${w}-${lang}.png` });

@@ -74,15 +74,18 @@ body:has(.nw-switch) #zabCorner { bottom: 68px; }
 #zabPanel input[type="color"] { padding: 0 2px; width: 44px; }
 .zab-add { display: flex; gap: 6px; margin-bottom: 8px; }
 .zab-add input { flex: 1 1 auto; }
-.zab-row { display: flex; align-items: center; gap: 6px; padding: 6px 0; border-bottom: 1px solid #eef1f6; min-width: 0; }
-.zab-row .zab-main { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+/* Architect review (Z2, 14 Oct): the item's text gets the full row; its controls sit in one tidy line beneath it, at
+   every width. Side by side, the five controls left the text a column a few letters wide (seen in the 380px panel). */
+.zab-row { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 8px; row-gap: 4px; align-items: start; padding: 8px 0; border-bottom: 1px solid #eef1f6; min-width: 0; }
+.zab-row .zab-main { min-width: 0; overflow-wrap: anywhere; padding-top: 1px; }
 .zab-row .zab-by { display: block; font-size: .78rem; color: #5b6b86; }
-.zab-row .zab-acts { display: flex; gap: 4px; flex: 0 0 auto; align-items: center; }
+.zab-row .zab-acts { grid-column: 1 / -1; display: flex; flex-wrap: nowrap; gap: 4px; align-items: center; justify-content: flex-end; min-width: 0; }
+.zab-row .zab-acts select { width: auto; flex: 0 1 9.5rem; min-width: 5.5rem; max-width: 9.5rem; min-height: 40px; } /* a page-wide "select { width:100% }" would push the other controls onto lines of their own */
 .zab-row.zab-done .zab-text { text-decoration: line-through; color: #6b778c; }
 .zab-row input[type="checkbox"] { width: 22px; min-height: 22px; flex: 0 0 auto; }
 #zabPanel[data-w="narrow"] .zab-row { flex-wrap: wrap; }
 #zabPanel[data-w="narrow"] .zab-row .zab-main { flex: 1 1 calc(100% - 40px); }
-#zabPanel[data-w="narrow"] .zab-row .zab-acts { flex: 1 1 100%; flex-wrap: wrap; }
+#zabPanel[data-w="narrow"] .zab-row .zab-acts { flex: 1 1 100%; }
 .zab-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-inline-end: 6px; }
 .zab-edit { display: flex; flex-wrap: wrap; gap: 6px; width: 100%; }
 .zab-edit input[type="text"] { flex: 1 1 140px; }
