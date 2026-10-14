@@ -494,6 +494,7 @@ export function writeBatch() {
 // against real Firestore. Nothing is applied unless the callback resolves,
 // so a throwing transaction leaves DATA untouched, as a real abort does.
 export async function runTransaction(db, callback) {
+  if (typeof window !== "undefined" && window.__stubFailTx) throw Object.assign(new Error("transaction denied by the test"), { code: "permission-denied" });
   const staged = [];
   const rowFor = (ref) => (DATA[ref && ref.__col] || []).find((d) => d._id === (ref && ref.__id));
   const tx = {
