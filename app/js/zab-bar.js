@@ -33,6 +33,10 @@ import { getAppLang } from "./prefs.js";
 import * as zab from "./zab-data.js";
 
 const BAR_H = 44;
+// A row keeps its actions beside the text only when the PANEL is this wide (measured, not the window). The 380px
+// side panel and a phone are both narrower: the actions take their own line under the text. (Measured: beside the
+// text at 380px the text column was squeezed to ~40px.)
+const NARROW_BELOW = 560;
 const ICONS = ["📁", "🧠", "🔁", "❓", "🔗", "⭐", "📖", "🕌", "✍️", "💡", "🎯", "🛒"];
 
 const S = {
@@ -75,14 +79,15 @@ body:has(.nw-switch) #zabCorner { bottom: 68px; }
 .zab-add { display: flex; gap: 6px; margin-bottom: 8px; }
 .zab-add input { flex: 1 1 auto; }
 .zab-row { display: flex; align-items: center; gap: 6px; padding: 6px 0; border-bottom: 1px solid #eef1f6; min-width: 0; }
-.zab-row .zab-main { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.zab-row .zab-main { flex: 1 1 auto; min-width: 0; overflow-wrap: break-word; word-break: normal; }
 .zab-row .zab-by { display: block; font-size: .78rem; color: #5b6b86; }
 .zab-row .zab-acts { display: flex; gap: 4px; flex: 0 0 auto; align-items: center; }
 .zab-row.zab-done .zab-text { text-decoration: line-through; color: #6b778c; }
 .zab-row input[type="checkbox"] { width: 22px; min-height: 22px; flex: 0 0 auto; }
 #zabPanel[data-w="narrow"] .zab-row { flex-wrap: wrap; }
 #zabPanel[data-w="narrow"] .zab-row .zab-main { flex: 1 1 calc(100% - 40px); }
-#zabPanel[data-w="narrow"] .zab-row .zab-acts { flex: 1 1 100%; flex-wrap: wrap; }
+#zabPanel[data-w="narrow"] .zab-row .zab-acts { flex: 1 1 100%; flex-wrap: wrap; padding-inline-start: 28px; }
+.zab-acts select { max-width: 190px; }
 .zab-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-inline-end: 6px; }
 .zab-edit { display: flex; flex-wrap: wrap; gap: 6px; width: 100%; }
 .zab-edit input[type="text"] { flex: 1 1 140px; }
@@ -130,7 +135,7 @@ export function mountZabBar() {
     document.addEventListener("keydown", (e) => { if (e.key === "Escape" && S.view !== "closed") closePanel(); });
     const panel = root.querySelector("#zabPanel");
     if (typeof ResizeObserver !== "undefined") {
-      ro = new ResizeObserver(() => { panel.dataset.w = panel.clientWidth && panel.clientWidth < 340 ? "narrow" : "wide"; });
+      ro = new ResizeObserver(() => { panel.dataset.w = panel.clientWidth && panel.clientWidth < NARROW_BELOW ? "narrow" : "wide"; });
       ro.observe(panel);
     }
   };
@@ -318,7 +323,7 @@ function render() {
   const hadFocus = keep && document.activeElement === keep;
   p.innerHTML = S.view === "pocket" ? renderPocket() : S.view === "trash" ? renderTrash() : renderList();
   if (typed) { const k = p.querySelector("input[data-zab-new-pocket],input[data-zab-new-item]"); if (k) { k.value = typed; if (hadFocus) k.focus(); } }
-  p.dataset.w = p.clientWidth && p.clientWidth < 340 ? "narrow" : "wide";
+  p.dataset.w = p.clientWidth && p.clientWidth < NARROW_BELOW ? "narrow" : "wide";
 }
 
 // ---------- actions ------------------------------------------------------------
