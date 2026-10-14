@@ -98,6 +98,8 @@ for (const lang of ["en", "bn"]) {
     await ctx.route((u) => !["localhost", "www.gstatic.com", "cdn.jsdelivr.net"].includes(u.hostname), (r) => r.abort());
     await ctx.route("**/js/zab-readiness.js", (route) => route.fulfill({ status: 200, contentType: "text/javascript; charset=utf-8", body: READY_OPEN }));
     await routeMutation(ctx);
+    // Architect review: a flow that times out under a mutation is a FAILED check for this width, not a crash of the run.
+    try {
     const page = await ctx.newPage();
     const errors = [];
     page.on("pageerror", (e) => errors.push(String(e)));
@@ -233,6 +235,9 @@ for (const lang of ["en", "bn"]) {
     check(`${tag}: an item's text still has 70%+ of the panel and its controls sit below (as Z2)`, txt.share >= 0.7 && txt.below, JSON.stringify(txt));
     check(`${tag}: pocket view fits, no sideways scroll`, (await panelFits(page)) && (await noSideways(page)));
     check(`${tag}: no page errors`, errors.length === 0, errors.join(" | "));
+    } catch (err) {
+      check(`${tag}: the flow ran to the end`, false, String(err && err.message || err).split("\n")[0].slice(0, 200));
+    }
     await ctx.close();
   }
 }
