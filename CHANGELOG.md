@@ -21430,3 +21430,13 @@ New strings `wholeQuranLevelSentence` ("{level}: Achieved {known} and {percent} 
 - **Noted, not fixed:** the Monitor week label mixes date formats ("Week of 2026-10-10 — 10/10/2026 to 10/16/2026"). Two checks are weak: Bangla's "status line names the new stage", and "choosing Maryam shows her records" (she has none seeded). The Bangla leak allow-list's `Al-?[A-Za-z]+` also admits English words starting with "Al".
 
 **Tests** (the Architect, on the round's head merged with `main` at v11.01): audit-part13 484/0 (with the Architect's `familyexplore` flow); `--mutate=tabsfit` fails it at en 320px, `--mutate=popleft` at en 320 and 390px, `--mutate=popscroll` at 320/390px in both languages (Read view) and 820/1440px (Explore); phone-width-overflow 217/0; quran-my-status 248/0; audit-part12 500/0; qr-stage1-hidden 110/0; behaviour 971/0.
+
+## v11.03 — 16 Oct 2026 — The Monitor's week label names its days plainly, on the right day everywhere
+
+**Built by the Architect** (branch `architect/monitor-week-label`), from a note in audit part 13 (round #872), while Builder round #875 runs.
+
+- **Was:** "Week of 2026-10-10 — 10/10/2026 to 10/16/2026". It mixed two date styles, and 10/10/2026 reads day-first in Australia and month-first in the US. The week's days are UTC midnights, but `fmtDate` formatted them in the device's own zone, so on any device west of Greenwich every date read a day early. Measured in a Los Angeles clock: "Oct 9, 2026 to Oct 15, 2026" for the week of 10 Oct.
+- **Now:** "Week: 10 Oct 2026 to 16 Oct 2026" (in the device's English order, with the month named) and "সপ্তাহ: … থেকে …" in Bangla, formatted with `timeZone: "UTC"`. The redundant ISO week key is gone from the label; the CSV file name is unchanged.
+- **Files:** `app/monitor.html` (`fmtDate` and the label); `app/js/i18n/bn.js` (the one key, replaced); `tools/i18n-verify/harness.mjs` (`newContext` takes an optional `timezoneId`; the default is unchanged); `tools/i18n-verify/audit-part13-recording-browser.mjs` (the label checked against the week the page actually read, i.e. its activity document id, at every width in en and bn; plus a `monitortz` flow on a Los Angeles clock).
+
+**Tests:** audit-part13 494/0 (with the new Monitor label and Los Angeles flows); `--mutate=weeklabel` fails 9 checks (every width, en and bn, and Los Angeles), `--mutate=weeklabeltz` fails the Los Angeles check alone; monitor-study-activity 12/0; phone-width-overflow 217/0; behaviour 971/0.

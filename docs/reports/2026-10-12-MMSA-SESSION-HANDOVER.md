@@ -348,3 +348,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v11.00** (2026-10-15): the app is now QuranRevival: General Study, Nature-Life, Life Skill and Health hidden, not deleted (J30, QR Stage 1; opens the v11 line).
 - **v11.01** (2026-10-15): the Āyah card fits a phone's screen; the Word card opens below the nav row (J29 audit part 12, round #870).
 - **v11.02** (2026-10-15): audit part 13: the 👥 list and the Approach card's tabs stay on a phone's screen (PCF J29, round #872).
+- **v11.03** (2026-10-15): the Monitor's week label names its days plainly, on the right day everywhere (Architect, from audit part 13).
