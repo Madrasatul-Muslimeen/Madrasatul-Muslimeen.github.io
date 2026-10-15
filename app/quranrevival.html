@@ -3690,6 +3690,9 @@
   .way-tab-bar { display: flex; gap: 0.4rem; border-bottom: 1px solid #eee; margin: 0.6rem 0; }
   .way-tab-btn { background: none; border: none; color: #888; padding: 0.4rem 0.6rem; border-bottom: 2px solid transparent; border-radius: 0; }
   .way-tab-btn.active { color: #1F3A6E; border-bottom-color: #1F3A6E; font-weight: 600; }
+  /* audit13: the four tabs need 302px and a 320px phone's card gave them 262: Coverage ran off the screen. Tighter below 400px, and wrap as the safety. */
+  .way-tab-bar { flex-wrap: wrap; }
+  @media (max-width: 399px) { .way-tab-bar { gap: 0.1rem; } .way-tab-btn { padding: 0.4rem 0.3rem; font-size: 0.85rem; } }
   .way-tab-panel { display: none; }
   .way-tab-panel.active { display: block; }
 
@@ -3751,7 +3754,7 @@
   .claim-for-row { display: flex; align-items: center; margin: 0.15rem 0 0.45rem; position: relative; }
   .claim-for-line { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; column-gap: 0.6rem; }
   .claim-for-line > [data-gac-record-title] { flex: 1 1 auto; min-width: 0; }
-  .claim-for-line > .claim-for-row { margin: 0; }
+  .claim-for-line > .claim-for-row { margin: 0 0 0 auto; } /* audit13: auto, so a row that wraps to its own line stays at the right, under the right-anchored list (it opened 108px off the left edge at 320px) */
   .claim-for-line .claim-for-row .assign-popover { left: auto; right: 0; }
   .claim-for-row .assign-trigger { min-height: 40px; }
   .claim-for-row .assign-popover { left: 0; right: auto; z-index: 40; max-width: calc(100vw - 32px); }

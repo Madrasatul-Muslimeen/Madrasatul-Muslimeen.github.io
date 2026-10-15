@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "11.01",
+    "version": "11.02",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -3833,8 +3833,20 @@
     {
       "version": "11.01",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Builder round #870: the manual's words-and-ayat features checked working; two layout fixes.",
+      "integration": {
+        "authorizedOn": "2026-10-15",
+        "integratedOn": "2026-10-15",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "11.02",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Audit part 13 (round #872, PR #874): the manual's recording-progress features checked working; three phone layout fixes.",
       "integration": {
         "authorizedOn": "2026-10-15",
         "integratedOn": "2026-10-15",
@@ -3843,8 +3855,9 @@
       }
     }
   ],
-  "nextUnallocated": "11.02",
+  "nextUnallocated": "11.03",
   "nextUnallocatedNote": [
+    "v11.02 was allocated to audit part 13: the 👥 list and the Approach card's tabs stay on a phone's screen (PCF J29, round #872), 2026-10-15.",
     "v11.01 was allocated to the Āyah card fits a phone's screen; the Word card opens below the nav row (J29 audit part 12, round #870), 2026-10-15.",
     "v11.00 was allocated to the app is now QuranRevival: General Study, Nature-Life, Life Skill and Health hidden, not deleted (J30, QR Stage 1; opens the v11 line), 2026-10-15.",
     "v10.68 was allocated to the Read view's ⋯ tools panel stays on a small phone's screen (J29 audit part 11, PR #867), 2026-10-15.",
