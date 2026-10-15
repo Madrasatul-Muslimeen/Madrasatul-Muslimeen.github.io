@@ -799,7 +799,7 @@
      >= 15% of the measured diameter; font set by layoutWheelHub(). */
   .wheel-cta-btn {
     position: absolute; left: 50%; top: 49%; transform: translateX(-50%); z-index: 4;
-    width: 60%; min-height: max(15%, 40px); box-sizing: border-box; padding: 2% 3%; /* audit6 cta */
+    width: 60%; min-height: 15%; box-sizing: border-box; padding: 2% 3%;
     display: grid; place-content: center; text-align: center; gap: 0;
     background: linear-gradient(#ecd08e, #c9a24b); color: #1a1406;
     border: 1px solid #a8843c; border-radius: 999px; pointer-events: auto;
@@ -807,6 +807,12 @@
     cursor: pointer; box-shadow: 0 0 14px rgba(233,205,134,.35);
   }
   .wheel-cta-btn:hover { filter: brightness(1.06); }
+  /* J29 item 16 (v10.66): the pill keeps decision 65's DRAWN size, so on a small phone
+     (a 95-140px hub) it stays inside the circle and keeps its full unit name; v10.62's
+     min-height: 40px made the pill itself taller and pushed it out. The 40px a finger
+     needs is an invisible tap area instead, centred on the pill, over the hub's own
+     display (calligraphy and open Qur'an, which take no tap). */
+  .wheel-cta-btn::before { content: ""; position: absolute; left: 0; right: 0; top: min(0px, calc(50% - 20px)); bottom: min(0px, calc(50% - 20px)); } /* audit6 cta */
   /* 6 Oct 2026: "Take an Approach" stays on ONE line; layoutWheelHub() shrinks only this line if it must. */
   .wheel-cta-line1 { display: block; white-space: nowrap; }
   /* Architect review of #549: the unit's name WRAPS to a second line rather than
