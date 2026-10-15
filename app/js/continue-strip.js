@@ -16,6 +16,7 @@
 // cost this file its I2 purity: still HTML in, HTML out, no Firebase.
 
 import { t } from "./i18n.js";
+import { isHiddenFromQr } from "./hidden-modules.js";
 
 // Every module's own study page -- kept here (not in nav.js) since this is
 // the one place that needs to turn a moduleId back into a URL.
@@ -61,6 +62,7 @@ function escapeHtml(s) {
 export function renderContinueStrip(entries) {
   const chips = entries
     .map((e) => {
+      if (isHiddenFromQr(e.moduleId)) return ""; // QR Stage 1, PCF J30
       const href = MODULE_PAGES[e.moduleId];
       const moduleLabel = MODULE_LABELS[e.moduleId];
       if (!href || !moduleLabel) return "";

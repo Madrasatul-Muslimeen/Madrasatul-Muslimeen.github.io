@@ -55,16 +55,18 @@
 import { APP_LANGS } from "./prefs.js";
 import { t } from "./i18n.js";
 import { roleLabel } from "./labels.js";
+import { isHiddenFromQr } from "./hidden-modules.js";
 
 const STUDY_LINKS = [
   { href: "quranrevival.html", label: "Quran Study" }, // renamed from "Study" -- see shell round 4
   { href: "deen-study.html", label: "Deen Study" },
   { href: "arabic-study.html", label: "Arabic" },
   { href: "hadith-study.html", label: "Hadith" },
-  { href: "general-study.html", label: "General Study" },
-  { href: "naturelife-study.html", label: "Nature-Life" },
-  { href: "life-skill.html", label: "Life Skill" },
-  { href: "health-study.html", label: "Health" },
+  // The next four are hidden by the one list in hidden-modules.js (QR Stage 1, PCF J30).
+  { href: "general-study.html", moduleId: "general", label: "General Study" },
+  { href: "naturelife-study.html", moduleId: "naturelife", label: "Nature-Life" },
+  { href: "life-skill.html", moduleId: "lifeskill", label: "Life Skill" },
+  { href: "health-study.html", moduleId: "health", label: "Health" },
   { href: "ldog-study.html", label: "Learn Deen On-the-Go" },
   { href: "asma-study.html", label: "Asma ul Husna" }, // Phase 13 round 1
 ];
@@ -151,6 +153,7 @@ export const LEGACY_APP_URL = "https://madrasatul-muslimeen.github.io/legacy/ind
 function renderLinks(links, currentFile, canAdmin) {
   return links
     .filter((l) => !l.ownerPrimeOnly || canAdmin)
+    .filter((l) => !isHiddenFromQr(l.moduleId))
     .map((l) => {
       const isCurrent = l.href === currentFile;
       return `<a href="${l.href}" class="nav-link${isCurrent ? " nav-current" : ""}"${isCurrent ? ' aria-current="page"' : ""}>${t(l.label)}</a>`;
