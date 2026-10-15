@@ -566,6 +566,54 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     if (width === 390 || width === 1440) await page.screenshot({ path: `/tmp/audit17-catalogue-${lang}-${width}.png`, fullPage: true });
   });
 }
+for (const lang of LANGS) for (const width of WIDTHS) {
+  const bn = lang === "bn";
+  // 9: Backup: Make the backup downloads a file holding the tenant's data.
+  await flow("backup", lang, width, "/app/backup.html", async (t, page, ctx, errors) => {
+    await page.waitForFunction(() => { const b = document.getElementById("makeBtn"); return b && !b.disabled; }, null, { timeout: 15000 });
+    check(`${t}: POSITIVE CONTROL "Make the backup" is on screen and enabled, with the list of what gets saved`, await ev(page, () => document.getElementById("makeBtn").getClientRects().length > 0 && document.querySelectorAll("ul.plain li").length === 10));
+    const f = await frame(page);
+    const h = await tall(page, "#makeBtn");
+    check(`${t}: no sideways scroll and the button is at least 40px`, f.over <= 0 && h >= 40, JSON.stringify({ f, h }));
+    await page.click("#makeBtn");
+    await page.waitForSelector("#result a.download-link", { timeout: 30000 });
+    const link = await ev(page, () => { const a = document.querySelector("#result a.download-link"); const r = a.getBoundingClientRect(); return { text: a.textContent, name: a.getAttribute("download"), h: Math.round(r.height), inside: r.left >= -1 && r.right <= innerWidth + 1 }; });
+    if (PROBE) console.log(t, "link", JSON.stringify(link));
+    check(`${t}: a "Save …" link appears (${bn ? "Bangla" : "English"}) with a .html file name, tappable and inside the screen`, /\.html$/.test(link.name) && link.h >= 36 && link.inside && (bn ? BN.test(link.text) : /^⤓ Save /.test(link.text)), JSON.stringify(link));
+    const [dl] = await Promise.all([page.waitForEvent("download", { timeout: 15000 }), ev(page, () => document.querySelector("#result a.download-link").click())]);
+    const tmp = `/tmp/audit17-backup-${lang}-${width}.html`;
+    await dl.saveAs(tmp);
+    const html = fs.readFileSync(tmp, "utf8");
+    const m = html.match(/<script type="application\/json" id="quranrevival-backup">([\s\S]*?)<\/script>/);
+    const data = m ? JSON.parse(m[1]) : null;
+    check(`${t}: the downloaded file is a page carrying the backup data as JSON`, !!data && dl.suggestedFilename() === link.name, dl.suggestedFilename());
+    const keys = Object.keys(data ?? {}).sort().join();
+    check(`${t}: its top-level keys are exactly the documented set`, keys === "appVersion,catalogue,collections,couldNotRead,exportedAt,exportedBy,format,formatVersion,homework,invites,memberships,org,people,scope,study,tenant,tenantId", keys);
+    check(`${t}: it is this madrasah's whole copy: format, tenant, scope, the two people, the Morning Class, the Evening Quran offer, the subjects and Approaches`, data?.format === "quranrevival-backup" && data.tenantId === "t1" && data.scope === "tenant" && data.people.length === 2 && data.org.classes.length === 1 && data.org.courseOffers.length === 1 && data.catalogue.subjects.length > 0 && data.catalogue.trackables.length > 0 && data.homework.assignments.length === 1, JSON.stringify({ people: data?.people?.length, classes: data?.org?.classes?.length, subjects: data?.catalogue?.subjects?.length }));
+    check(`${t}: nothing in it was left unread, and the page says so`, Array.isArray(data?.couldNotRead) && data.couldNotRead.length === 0 && await ev(page, () => document.querySelector("#result .warn") === null), JSON.stringify(data?.couldNotRead));
+    const stats = await ev(page, () => [...document.querySelectorAll("#result .stat")].map((s) => s.textContent));
+    check(`${t}: the page reports what it saved (people, claims, notes, bookmarks, log entries, size)`, stats.length === 6 && (bn ? stats.every((s) => BN.test(s)) : /^2 people$/.test(stats[0])), JSON.stringify(stats));
+    check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
+    if (width === 390 || width === 1440) await page.screenshot({ path: `/tmp/audit17-backup-${lang}-${width}.png`, fullPage: true });
+  });
+
+  // 10: About: opens and lists what is built; the four hidden modules are named as hidden, not offered.
+  await flow("about", lang, width, "/app/about.html", async (t, page, ctx, errors) => {
+    await page.waitForFunction(() => document.querySelectorAll("#featureRows tr").length > 5, null, { timeout: 15000 });
+    const info = await ev(page, () => ({ intro: document.querySelector("body > p, p")?.textContent ?? "", version: document.getElementById("versionLine").textContent, features: document.querySelectorAll("#featureRows tr").length, phases: document.querySelectorAll("#phaseRows tr").length, over: document.documentElement.scrollWidth - innerWidth, nav: [...document.querySelectorAll("#navBar a, #navBar button, #navBar summary")].map((e) => e.textContent.trim()).join("|") }));
+    if (PROBE) console.log(t, "about", JSON.stringify(info).slice(0, 600));
+    check(`${t}: POSITIVE CONTROL About lists the registry's features and every build phase`, info.features >= 17 && info.phases >= 10, JSON.stringify({ f: info.features, p: info.phases }));
+    check(`${t}: it shows the app's version`, /v\d\d\.\d\d/.test(info.version) || /\d\d\.\d\d/.test(info.version), info.version);
+    const intro = await ev(page, () => document.body.innerText);
+    const names = bn ? null : ["Quran Study", "Deen Study", "Arabic", "Hadith", "Learn Deen On-the-Go", "Asma ul Husna"];
+    check(`${t}: the opening paragraph names the offered modules and says General Study, Nature-Life, Life Skill and Health are hidden for now`, bn ? BN.test(intro) && /General Study|সাধারণ|জেনারেল/.test(intro) || BN.test(intro) : names.every((n) => intro.includes(n)) && /General Study, Nature-Life, Life Skill and Health are hidden for now/.test(intro), intro.slice(0, 400));
+    check(`${t}: the nav offers none of the four hidden modules`, await ev(page, () => !/General Study|Nature-Life|Life Skill|Health/i.test([...document.querySelectorAll("#navBar a")].map((a) => a.textContent).join("|"))));
+    check(`${t}: no sideways scroll`, info.over <= 0, String(info.over));
+    if (bn) { const left = englishLeft((await bodyText(page)).replace(/Quran Foundation|Firebase|LDOG|PHASE-\d+-STATUS\.md|MMSA|CRUD|\b[a-z]+[A-Z][A-Za-z]*\b|\b[a-z]+\.html|\b(records\.entries|domains|global|app|migrate|people|invites|curriculum|grades|resources|html|records|catalogue)\b/g, " ")); check(`${t}: no English left on the Bangla About page, registry tables included (brand and file names excepted)`, left.length === 0, left.join(" ")); }
+    check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
+    if (width === 390 || width === 1440) await page.screenshot({ path: `/tmp/audit17-about-${lang}-${width}.png`, fullPage: true });
+  });
+}
 console.log(`\n${pass} passed, ${fail} failed`);
 await browser.close();
 process.exit(fail ? 1 : 0);
