@@ -41,7 +41,9 @@ const bnDigits = (s) => String(s).replace(/\d/g, (d) => "০১২৩৪৫৬�
 const refText = (lang, s) => (lang === "bn" ? bnDigits(s) : s);
 // English words that may stay on a Bangla page: the app's own names and source names.
 const ALLOWED = /QuranRevival|QCR|MMSA|Qur'?an|Hifz|Tajweed|Tadabbur|CSV|Google|Bukhari|Muslim|Tirmidhi|Abu|Dawud|Nasai|Ibn|Majah|Mushaf|Asma|Hizb|Juz|Ruku|Ayah|Surah|Madrasatul|Muslimeen|Al-?[A-Za-z]+|Faatiha/g;
-const englishLeft = (text) => (String(text).replace(ALLOWED, " ").match(/[A-Za-z]{3,}/g) || []);
+// ...and data, not interface: the chunk key shown on Records (surah_1) and the fixture's own return note ("Try again").
+const DATA_TEXT = /\bsurah_\d+\b|Try again/g;
+const englishLeft = (text) => (String(text).replace(DATA_TEXT, " ").replace(ALLOWED, " ").match(/[A-Za-z]{3,}/g) || []);
 
 async function open(lang, width, pagePath = "/app/quranrevival.html") {
   const ctx = await newContext(browser, { appLang: lang === "bn" ? "bn" : null, banner: false, viewport: { width, height: width > 600 ? 900 : 844 }, extraSeedJs: SEED });
@@ -245,7 +247,8 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     // filter: another person
     await page.fill("#unitRef", "1:1"); await page.dispatchEvent("#unitRef", "change"); await settle(page, 500);
     // The person picker lives in Home > My account on this page (account-card.js moves it there).
-    await page.click("#accountHomeMenu summary"); await settle(page, 200);
+    // The "My account" button sits in the nav's Home group (a <details>): open it the way a reader does, by tapping its summary.
+    if (await ev(page, () => { const d = document.querySelector("[data-open-account-card]").closest("details"); return !!d && !d.open; })) { await page.click("details.nav-cat-home > summary"); await settle(page, 300); }
     await page.click("[data-open-account-card]"); await settle(page, 300);
     const acct = await rectOf(page, "#accountCardOverlay .account-sheet");
     check(`${t}: Home > My account opens the card holding the person picker, inside the screen`, inside(acct, width, width > 600 ? 900 : 844), JSON.stringify(acct));
@@ -312,6 +315,7 @@ if (!LONLY || LONLY === "bn") {
     for (const [k, v] of Object.entries(seen)) {
       const left = englishLeft(v);
       if (PROBE) console.log(t, k, JSON.stringify(left));
+      check(`${t}: ${k}: POSITIVE CONTROL there is Bangla text to scan`, /[ঀ-৿]/.test(v), String(v).slice(0, 80));
       check(`${t}: ${k}: no English left (${left.slice(0, 5).join(", ") || "none"})`, left.length === 0, JSON.stringify(left));
     }
   });
