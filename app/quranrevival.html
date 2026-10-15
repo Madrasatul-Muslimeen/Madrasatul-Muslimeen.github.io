@@ -3751,7 +3751,7 @@
   .claim-for-row { display: flex; align-items: center; margin: 0.15rem 0 0.45rem; position: relative; }
   .claim-for-line { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; column-gap: 0.6rem; }
   .claim-for-line > [data-gac-record-title] { flex: 1 1 auto; min-width: 0; }
-  .claim-for-line > .claim-for-row { margin: 0; }
+  .claim-for-line > .claim-for-row { margin: 0 0 0 auto; } /* audit13: auto, so a row that wraps to its own line stays at the right, under the right-anchored list (it opened 108px off the left edge at 320px) */
   .claim-for-line .claim-for-row .assign-popover { left: auto; right: 0; }
   .claim-for-row .assign-trigger { min-height: 40px; }
   .claim-for-row .assign-popover { left: 0; right: auto; z-index: 40; max-width: calc(100vw - 32px); }

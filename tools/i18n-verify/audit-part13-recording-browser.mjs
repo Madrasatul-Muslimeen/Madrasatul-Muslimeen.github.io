@@ -23,6 +23,8 @@ const ONLY = (process.argv.find((a) => a.startsWith("--only=")) || "").slice(7);
 const WONLY = Number((process.argv.find((a) => a.startsWith("--width=")) || "").slice(8)) || 0;
 const LONLY = (process.argv.find((a) => a.startsWith("--lang=")) || "").slice(7);
 const MUTATIONS = {
+  // The 👥 row wraps to its own line at 320px but its list is anchored to the right edge of the row: it opened off the left of the screen.
+  "popleft": ["app/quranrevival.html", "**/quranrevival.html*", "  .claim-for-line > .claim-for-row { margin: 0 0 0 auto; } /* audit13: auto, so a row that wraps to its own line stays at the right, under the right-anchored list (it opened 108px off the left edge at 320px) */", "  .claim-for-line > .claim-for-row { margin: 0; }"],
   // The 👥 list opens below the fold of the scrolling Āyah card and nothing brings it into view.
   "popscroll": ["app/js/way-modal.js", "**/way-modal.js*", '        if (open) popover.scrollIntoView({ block: "nearest" }); // audit13: bring the opened list into view, it can open below the fold of a scrolling card\n', ""],
 };
