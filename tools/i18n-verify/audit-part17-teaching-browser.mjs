@@ -432,6 +432,140 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     if (width === 390 || width === 1440) await page.screenshot({ path: `/tmp/audit17-curriculum-${lang}-${width}.png`, fullPage: true });
   });
 }
+for (const lang of LANGS) for (const width of WIDTHS) {
+  const bn = lang === "bn";
+  // 8: Catalogue: Add subject; Add Approach; ✎ Edit heading; ▲ ▼ and ⠿ reorder; Add ladder and Add level.
+  await flow("catalogue", lang, width, "/app/catalogue.html", async (t, page, ctx, errors) => {
+    await page.waitForSelector("#addSubjBtn", { state: "attached", timeout: 15000 });
+    await settle(page, 600);
+    const tab = async (name) => { await tap(page, `[data-cat-tab="${name}"]`); await settle(page, 400); };
+    // --- Subjects: Add subject.
+    await tab("subjects");
+    check(`${t}: POSITIVE CONTROL the Subjects tab shows the subject list and the Add form`, await ev(page, () => document.querySelectorAll("#subjectsBody tr").length > 0 && document.getElementById("addSubjBtn").getClientRects().length > 0));
+    let f = await frame(page);
+    let hs = await allTall(page, ["#newSubjName", "#newSubjParent", "#newSubjGloss", "#newSubjResourceType", "#addSubjBtn", ".editSubjBtn", ".archiveSubjBtn"]);
+    if (PROBE) console.log(t, "subj heights", JSON.stringify(hs), JSON.stringify(f));
+    check(`${t}: Subjects tab: no sideways scroll`, f.over <= 0, JSON.stringify(f));
+    check(`${t}: Subjects tab: every control a finger presses is at least 40px`, Object.values(hs).filter((v) => v !== -1).every((v) => v >= 40) && hs["#addSubjBtn"] >= 40, JSON.stringify(hs));
+    let w = await writeCount(page);
+    await fill(page, "#newSubjName", "Audit Subject");
+    await fill(page, "#newSubjGloss", "Added by the audit");
+    await page.click("#addSubjBtn");
+    await settle(page, 800);
+    let ws = await writes(page, w);
+    const subj = ws.find((x) => x.col === "subjects");
+    if (PROBE) console.log(t, "subject", JSON.stringify(ws).slice(0, 700));
+    check(`${t}: Add subject writes ONE subjects document (tenant-prefixed id) with its name, gloss, active, and the I17 stamps`, !!subj && /^t1__.+/.test(subj.id) && subj.data.name?.en === "Audit Subject" && subj.data.status === "active" && STAMPS(subj.data), JSON.stringify(subj)?.slice(0, 500));
+    check(`${t}: the page says "Added." (${bn ? "Bangla" : "English"})`, await ev(page, (b) => { const s = document.getElementById("addSubjResult").textContent; return b ? /[ঀ-৿]/.test(s) : s === "Added."; }, bn));
+    // --- Approaches: Add Approach, ✎ Edit heading, ▲ ▼.
+    await tab("approaches");
+    await page.waitForFunction(() => document.querySelectorAll("#trackablesBody tr").length > 0, null, { timeout: 10000 });
+    await tap(page, "#openAllSectionsBtn"); // sections start folded; a hidden row has no box to measure
+    await settle(page, 400);
+    check(`${t}: POSITIVE CONTROL the Approaches tab lists Approaches with ▲ ▼ and the Add an Approach form`, await ev(page, () => document.querySelectorAll(".trkUpBtn").length > 3 && document.getElementById("addApproachBox").getClientRects().length > 0));
+    f = await frame(page);
+    hs = await allTall(page, ["#editApproachListTitleBtn", "#openAllSectionsBtn", "#closeAllSectionsBtn", ".trkUpBtn:not([disabled])", ".trkDownBtn:not([disabled])", ".editTrkBtn", ".archiveTrkBtn", ".secDragHandle", "#newApproachNameEn", "#newApproachNameBn", "#newApproachSection", "#newApproachCounts", "#addApproachBtn"]);
+    if (PROBE) console.log(t, "approach heights", JSON.stringify(hs), JSON.stringify(f));
+    check(`${t}: Approaches tab: no sideways scroll`, f.over <= 0, JSON.stringify(f));
+    check(`${t}: Approaches tab: every control a finger presses is at least 40px (▲ ▼ ✎ ⠿ included)`, Object.values(hs).every((v) => v >= 40), JSON.stringify(hs));
+    // ✎ Edit heading.
+    await ev(page, () => window.scrollTo(0, 0));
+    w = await writeCount(page);
+    await tap(page, "#editApproachListTitleBtn");
+    await settle(page, 300);
+    check(`${t}: ✎ opens the heading form with an English and a Bangla field, inside the screen`, await ev(page, () => { const f = document.getElementById("approachListTitleForm"); const r = f.getBoundingClientRect(); return !f.hidden && r.left >= -1 && r.right <= innerWidth + 1 && r.height > 0; }));
+    await fill(page, "#approachListTitleEn", "Audit Heading");
+    await fill(page, "#approachListTitleBn", "অডিট শিরোনাম");
+    await page.click("#saveApproachListTitleBtn");
+    await settle(page, 700);
+    ws = await writes(page, w);
+    const head = ws.find((x) => x.col === "tenants");
+    if (PROBE) console.log(t, "heading", JSON.stringify(ws).slice(0, 500));
+    check(`${t}: Save heading writes the tenant's approachListTitle in both languages`, !!head && head.id === "t1" && JSON.stringify(head.data).includes("Audit Heading") && JSON.stringify(head.data).includes("অডিট শিরোনাম"), JSON.stringify(ws).slice(0, 400));
+    check(`${t}: and the page shows the new heading (${bn ? "Bangla" : "English"})`, await ev(page, (b) => document.getElementById("approachListTitle").textContent.includes(b ? "অডিট শিরোনাম" : "Audit Heading"), bn));
+    // ▼ then ▲ on the first movable Approach: the writes swap order values.
+    // The stub never re-serves its own writes, so the RESULT is read from the renumbering batch the page writes
+    // (an order value per Approach), not from the stale list.
+    const ids = await ev(page, () => [...document.querySelectorAll(".trkDownBtn")].map((b) => b.dataset.id));
+    const first = ids[0], second = ids[1];
+    // Only the rows whose number changed are written: the moved one takes 2, the one it passed keeps (or is given) 1.
+    const seqOf = (list) => { const o = {}; for (const x of list) if (x.col === "trackables" && x.data && x.data.order != null) o[x.id.replace("t1__", "")] = x.data.order; return o; };
+    const swapped = (o) => o[first] === 2 && (o[second] === undefined || o[second] === 1);
+    w = await writeCount(page);
+    await tap(page, `.trkDownBtn[data-id="${first}"]`);
+    await settle(page, 900);
+    const down = seqOf(await writes(page, w));
+    if (PROBE) console.log(t, "down", first, second, JSON.stringify(down));
+    check(`${t}: ▼ on the first Approach stores it one place down (${first} takes number 2, ${second} stays 1)`, swapped(down), JSON.stringify(down));
+    w = await writeCount(page);
+    await tap(page, `.trkUpBtn[data-id="${second}"]`);
+    await settle(page, 900);
+    const up = seqOf(await writes(page, w));
+    check(`${t}: ▲ on the second Approach stores the same swap`, swapped(up), JSON.stringify(up));
+    check(`${t}: ▲ is off on the first Approach of its section`, await ev(page, (f) => document.querySelector(`.trkUpBtn[data-id="${f}"]`).disabled === true, first));
+    // ⠿ drag the first section below the second: the section headings change order.
+    const headText = () => ev(page, () => [...document.querySelectorAll("#trackablesBody tr.trk-section-heading")].map((r) => r.textContent.replace(/[⠿▸▾]/g, " ").replace(/\s+/g, " ").trim()));
+    const heads0 = await headText();
+    const handles = await ev(page, () => [...document.querySelectorAll('.secDragHandle[data-scope="list"]')].map((h) => { const r = h.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2, i: h.dataset.i }; }));
+    check(`${t}: POSITIVE CONTROL the Approach list has several sections, each with a ⠿ handle`, handles.length >= 3 && heads0.length >= 3, `${handles.length} handles`);
+    if (handles.length >= 3) {
+      w = await writeCount(page);
+      await ev(page, () => window.scrollTo(0, 0));
+      const h0 = await ev(page, () => { const h = document.querySelector('.secDragHandle[data-scope="list"][data-i="0"]'); h.scrollIntoView({ block: "center" }); const r = h.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; });
+      const target = await ev(page, () => { const rows = [...document.querySelectorAll("#trackablesBody tr.trk-section-heading")]; const r = rows[1].getBoundingClientRect(); return { y: r.top + r.height * 0.8 }; });
+      await page.mouse.move(h0.x, h0.y);
+      await page.mouse.down();
+      await page.mouse.move(h0.x, (h0.y + target.y) / 2, { steps: 4 });
+      await page.mouse.move(h0.x, target.y + 4, { steps: 4 });
+      await page.mouse.up();
+      await settle(page, 1000);
+      const heads1 = await headText();
+      ws = await writes(page, w);
+      if (PROBE) console.log(t, "drag", JSON.stringify(heads0.slice(0, 3)), JSON.stringify(heads1.slice(0, 3)), ws.length);
+      check(`${t}: dragging section 1 by its ⠿ below section 2 swaps them on screen and writes the tenant's sections`, heads0[0] !== heads0[1] && heads1[0] === heads0[1] && heads1[1] === heads0[0] && ws.some((x) => x.col === "tenants"), JSON.stringify({ before: heads0.slice(0, 3), after: heads1.slice(0, 3), ws: ws.map((x) => x.col) }));
+    }
+    // Add Approach last: the stub never re-serves its own writes, so the later list is stale.
+    w = await writeCount(page);
+    await ev(page, () => document.getElementById("addApproachBox").scrollIntoView());
+    await fill(page, "#newApproachNameEn", "Audit Approach");
+    await fill(page, "#newApproachNameBn", "অডিট পদ্ধতি");
+    await page.selectOption("#newApproachSection", "7");
+    await page.selectOption("#newApproachCounts", "yes");
+    await page.click("#addApproachBtn");
+    await settle(page, 900);
+    ws = await writes(page, w);
+    const appr = ws.find((x) => x.col === "trackables" && x.kind === "set");
+    if (PROBE) console.log(t, "approach", JSON.stringify(ws).slice(0, 700));
+    check(`${t}: Add Approach writes ONE new trackables document: both names, section 7, counts-for-each-āyah Yes, active, I17 stamps`, !!appr && appr.data.name?.en === "Audit Approach" && appr.data.name?.bn === "অডিট পদ্ধতি" && appr.data.group === 7 && appr.data.countsForEachAyah === true && appr.data.status === "active" && STAMPS(appr.data), JSON.stringify(appr)?.slice(0, 500));
+    // --- Ladders & levels: Add ladder, Add level.
+    await tab("ladders");
+    await page.waitForSelector("#addLadderBtn", { state: "visible", timeout: 8000 });
+    hs = await allTall(page, ["#newLadderName", "#addLadderBtn", "#levelLadderSelect", "#newLevelName", "#newLevelOrder", "#addLevelBtn"]);
+    f = await frame(page);
+    check(`${t}: Ladders tab: no sideways scroll and every control is at least 40px`, f.over <= 0 && Object.values(hs).every((v) => v >= 40), JSON.stringify({ hs, f }));
+    w = await writeCount(page);
+    await fill(page, "#newLadderName", "Audit Ladder");
+    await page.click("#addLadderBtn");
+    await settle(page, 800);
+    ws = await writes(page, w);
+    const lad = ws.find((x) => x.col === "ladders");
+    if (PROBE) console.log(t, "ladder", JSON.stringify(ws).slice(0, 500));
+    check(`${t}: Add ladder writes ONE ladders document with its name, active, and the I17 stamps`, !!lad && /^t1__.+/.test(lad.id) && lad.data.name?.en === "Audit Ladder" && lad.data.status === "active" && STAMPS(lad.data), JSON.stringify(lad)?.slice(0, 400));
+    w = await writeCount(page);
+    await page.selectOption("#levelLadderSelect", "l1");
+    await fill(page, "#newLevelName", "Audit Level");
+    await fill(page, "#newLevelOrder", "3");
+    await page.click("#addLevelBtn");
+    await settle(page, 800);
+    ws = await writes(page, w);
+    const lev = ws.find((x) => x.col === "levels");
+    if (PROBE) console.log(t, "level", JSON.stringify(ws).slice(0, 500));
+    check(`${t}: Add level writes ONE levels document on ladder l1, order 3, active, with the I17 stamps`, !!lev && lev.data.ladderId === "l1" && lev.data.name?.en === "Audit Level" && Number(lev.data.order) === 3 && lev.data.status === "active" && STAMPS(lev.data), JSON.stringify(lev)?.slice(0, 400));
+    check(`${t}: nothing was deleted`, (await writes(page, 0)).every((x) => x.kind !== "delete"));
+    check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
+    if (width === 390 || width === 1440) await page.screenshot({ path: `/tmp/audit17-catalogue-${lang}-${width}.png`, fullPage: true });
+  });
+}
 console.log(`\n${pass} passed, ${fail} failed`);
 await browser.close();
 process.exit(fail ? 1 : 0);
