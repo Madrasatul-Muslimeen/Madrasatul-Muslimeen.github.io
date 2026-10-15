@@ -7,6 +7,47 @@ v10.28). Read `CLAUDE.md` first. The prompt that starts the next session is
 
 This session was summarised once (its context compacted), which is why it hands over here.
 
+## LATEST UPDATE — 16 Oct 2026, 1:45 am Sydney, session `session_01VugmUfoMMcfxmnW99UmXgm` (v10.63 → v11.01) — READ THIS FIRST
+
+The 15 Oct evening block below is kept as history.
+
+**Released in this stretch** (each has its Try line in its PCF job, and its line in the User Manual's "🆕 What's New"):
+- **v10.64:** audit part 8 (round #858). QCR collection controls and the Trash ← Back are 40px.
+- **v10.65:** audit part 9 (round #860). The QCR āyah-number badge is a pill; the verb table and the Mushaf view were audited clean.
+- **v10.66:** built by the Architect. The wheel's "Take an Approach" pill is its drawn size again, with an invisible 40px tap area. v10.62 had pushed it out of the hub on 320–360px phones (`wheel-centre-browser` failed 14 checks that v10.62's review never ran).
+- **v10.67:** audit part 10 (round #863; the run opened no PR). The QCR and Asma wheels' outer labels are whole (`roomForNumbers`).
+- **Test-only, PR #865:** `tablet-wheel-browser`'s 700px floor went from 650 to 635, updated in place. v10.53's 40px tabs took 6px by design (bisected to 04878941).
+- **v10.68:** audit part 11 (round #866). The first round to check that each User Manual feature WORKS ("Qur'an: reading"). One fix: the ⋯ tools panel ran off a 320–390px screen.
+- **v11.00: QR Stage 1 (PCF J30; the PCA's J50 hand-over; the Owner's three answers, A/A/later).**
+  - The app is now QuranRevival. General Study, Nature-Life, Life Skill and Health are hidden by one list, `HIDDEN_FROM_QR` in `app/js/hidden-modules.js`, read by `nav.js` and `continue-strip.js`. Nothing is deleted, and each page still opens at its own address.
+  - About says so in English and Bangla, and the User Manual is updated.
+  - The Owner asked for the next whole version.
+  - The first allocation sat on a stale base (v10.67); it was reverted and re-done on v10.68.
+- **v11.01:** audit part 12 (round #870; no PR). The full-screen Āyah card was 16px too tall; the floating Word card opened over the nav row.
+
+**In flight:**
+- **Builder round #872**, audit part 13: the manual's "Qur'an: recording progress and status" section, each feature checked working. Dispatched about 1:44 am, 16 Oct. Review it by measurement and release it as **v11.02**.
+- The next manual sections after that: Explore; Asma ul Husna; Notes and Mapping My Journey; Zab; Bookmarks; Writing; Hadith and Dua; teaching pages.
+- **Skip** "Other study modules" except Deen Study, Arabic and LDOG: General Study, Nature-Life, Life Skill and Health are hidden and on hold (PCA).
+
+**Waiting on the Owner** (tick lists in every report):
+- **J30:** v11.00 vs v11.01 for the Stage 1 release (default A, v11.00, as done).
+- **J30:** keep a `legacy-v10/` copy like v07–v09 (default A, yes; **not made yet**. When the Owner ticks, copy `app/` as released at v10.68, merge commit 075bc90c, with `js/sw-register.js` registering no service worker, and add it to `brief-integrity.mjs`'s archive checks, as for legacy-v09).
+- **J03 Q1:** which keys to add.
+- **J29 17b (optional):** a shorter name for the Asma group "All Knowledgeable, All Encompassing, Watches, Hears everything", which is cut on a 1440px wheel in English.
+
+**Holds (PCA J50):**
+- No new work in General Study, Nature-Life, Life Skill or Health; fixes that keep them from breaking are fine.
+- Nothing for Stage 2 (QR on its own site) until the PCA says.
+
+**Lessons from this stretch:**
+- **A round that resizes a control must run the suites that own that control's geometry,** not only its own. v10.62 broke `wheel-centre` silently for four releases.
+- **Read the PR's base before allocating.** A Builder dispatched before the previous release merged branches from the older `main`; `git merge-base --is-ancestor origin/main HEAD` must say yes first.
+- **The Builder often ends without a PR** (#863, #870), and #866 opened one late. Wait until the branch is quiet for about 15 minutes, check the run, and open the PR yourself.
+- **Read a suite's exclusions and its positive-control numbers.** #863 left slice captions out; measuring them found one more cut label.
+- **A screenshot that is not the app is not an app task.** The Owner's "make these bigger" picture was the PCF page, so it went to the PCA (J59).
+- Run browser suites for a branch from a `git worktree` on `PORT=8082` with `QR_BASE`, with `node_modules` symlinked to `/opt/node22/lib/node_modules`. The repository root needs the same symlink; it is gitignored.
+
 ## LATEST UPDATE — 15 Oct 2026, evening, session `session_011ZoZQoxPx6xnm1mzR5hSYn` (v10.56 → v10.63) — READ THIS FIRST
 
 The 12:22 pm block below is kept as history.
