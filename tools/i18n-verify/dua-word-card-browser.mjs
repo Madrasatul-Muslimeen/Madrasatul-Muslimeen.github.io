@@ -103,9 +103,10 @@ for (const [lang, width, look] of [["en", 390, "light"], ["bn", 390, "night"], [
   // Round 4: a bare link (no token from a Dua card) records nothing.
   const ctx2 = await context(lang, width, look);
   const { page: Q } = await openPage(ctx2, "/app/quranrevival.html?word=2:131:7&progress=achieved");
-  await Q.waitForFunction(() => /2:131:7/.test(document.querySelector("[data-word-card-content]")?.innerText ?? ""), null, { timeout: 25000 }).catch(() => {});
+  // Since v10.53 (audit part 1, fix 9) a Bangla page writes the place in Bangla digits (২:১৩১:৭), so accept either.
+  await Q.waitForFunction(() => /2:131:7|২:১৩১:৭/.test(document.querySelector("[data-word-card-content]")?.innerText ?? ""), null, { timeout: 25000 }).catch(() => {});
   await Q.waitForTimeout(2500);
-  const bare = await Q.evaluate(() => ({ open: /2:131:7/.test(document.querySelector("[data-word-card-content]")?.innerText ?? ""), writes: (window.__stubWriteData || []).filter((w) => /quranLemmaProgress|quranWordProgress|quranWordTotals/.test(w.col)).length }));
+  const bare = await Q.evaluate(() => ({ open: /2:131:7|২:১৩১:৭/.test(document.querySelector("[data-word-card-content]")?.innerText ?? ""), writes: (window.__stubWriteData || []).filter((w) => /quranLemmaProgress|quranWordProgress|quranWordTotals/.test(w.col)).length }));
   check(`${tag} ROUND 4: a bare "…&progress=achieved" link opens the Word card and records NOTHING`, bare.open && bare.writes === 0, JSON.stringify(bare));
   await ctx2.close();
 }
