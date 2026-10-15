@@ -7,6 +7,39 @@ v10.28). Read `CLAUDE.md` first. The prompt that starts the next session is
 
 This session was summarised once (its context compacted), which is why it hands over here.
 
+## LATEST UPDATE — 15 Oct 2026, 12:22 pm Sydney, session `session_01EU951Kr2tQxWqNbKLvZjPn` (v10.50 → v10.56) — READ THIS FIRST
+
+**Released in this stretch** (each has its Try line in its PCF job):
+- **v10.51 and v10.53**: audit part 1 (J29). The Qur'an face in Bangla, 40px targets, the Unit pill grid, popups below the nav, the Āyah card heading and ladder, and Bangla digits.
+- **v10.52**: Keys to Understanding K2 (J03). The saving layer and a Rules candidate (`docs/governance/2026-10-15-ayah-keys-candidate.rules`). This is **not** published.
+- **v10.54**: audit part 2 (J29). 40px targets on Mapping My Journey, Bookmarks and the Hadith pickers.
+- **v10.55**: **Zab switched on** (J25).
+  - The Owner published the Zab Rules ("Published") and said in the chat "Yes, switch Zab on".
+  - `firestore.rules` now equals `docs/governance/2026-10-14-zab-candidate.rules`, and `zab-readiness.js` is `ready: true`. See `docs/reports/2026-10-15-zab-enabled.md`.
+  - Not yet proved live: the Owner's first Try will show whether the live Rules accept Zab's writes (add an item in 🧰, reload, and it is still there).
+- **v10.56**: Arabic word boxes in the Word card's Intermediate "Meanings of this word" rows (J23). Also the Owner's **W-T-P-E-O** rule in `CLAUDE.md`.
+
+**In flight:**
+- **Builder round #844**: audit part 3, covering Asma ul Husna, the Writing sheet, Dua cards, Records, Monitor, People, Classes, Homework, Curriculum and Catalogue.
+- Its branch is `builder/issue-844-run-1286`. It was dispatched at 11:25 am, 15 Oct, and had opened no PR at 12:08 pm.
+- **Next:** review it by measurement and run every mutation it lists. Run `behaviour.mjs` and `phone-width-overflow.mjs`. Note that the Zab bar is now on every page, so check it covers no page's bottom controls. Then open the PR yourself if the Builder did not, release it as the next version, and dispatch the next round.
+
+**Waiting on the Owner** (keep these in every report, as tick lists):
+- **J25:** try Zab once, to prove the published Rules work.
+- **J26:** one tick for Know Your Status: A, one small line under each Approach (recommended), or B, leave it.
+- **J03 Q1:** which keys to add.
+
+**The PCF routines now in force:**
+- **PCA J37:** rewrite `p/mmsa.monitor` at every step, and stamp `act {at, by:"MMSA", what}` on every job you write.
+- **PCA J39:** every finished job ends its Done line with a one-line W-T-P-E-O check.
+- **"Important" marks:** check for `important: true` and `imp: true`, and do those first.
+- **PCA J43:** when the session gets long, write this block and send the PCA "PCA ▸ handover ready".
+
+**Lessons from this stretch:**
+- Changing `firestore.rules` or a readiness gate needs the Owner's own word in this chat. The session's safety check refused it on a PCF relay alone.
+- Run browser suites for a second branch on `PORT=8081 node serve.js` with `QR_BASE=http://localhost:8081`, from a `git worktree`. That way the suites running on :8080 are not disturbed.
+- The phone-width suite is `phone-width-overflow.mjs`, not `...-browser.mjs`.
+
 ## LATEST UPDATE — 15 Oct 2026, 1:45 am Sydney, session `session_01EU951Kr2tQxWqNbKLvZjPn` (v10.44 → v10.50) — READ THIS FIRST
 
 The 14 Oct block below is kept as history.
