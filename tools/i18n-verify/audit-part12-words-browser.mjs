@@ -59,7 +59,7 @@ async function open(lang, width) {
 }
 
 async function flow(name, lang, width, fn) {
-  if (ONLY && !name.includes(ONLY)) return;
+  if (ONLY && !ONLY.split(",").some((o) => name.includes(o))) return;
   const tag = `${lang} ${width}px ${name}`;
   let ctx;
   try {
@@ -67,7 +67,7 @@ async function flow(name, lang, width, fn) {
     ctx = o.ctx;
     await Promise.race([fn(tag, o.page, o.ctx, o.errors), new Promise((_, rej) => setTimeout(() => rej(new Error("timeout flow")), 120000))]);
   } catch (e) { check(`${tag}: flow ran`, false, String(e.stack || e).split("\n").slice(0, 3).join(" | ")); }
-  if (ctx) await ctx.close().catch(() => {});
+  if (ctx) await Promise.race([ctx.close().catch(() => {}), new Promise((r) => setTimeout(r, 10000))]);
 }
 
 const ev = (page, f, a) => page.evaluate(f, a);
@@ -319,6 +319,123 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     await settle(page, 1800);
     const w = await writes(page, n);
     check(`${t}: "Change it" writes the lowered mark (quranLemmaProgress, practising/learning)`, w.some((x) => x.col === "quranLemmaProgress" && JSON.stringify(x.data).includes("learning")), JSON.stringify(w.map((x) => [x.col, x.id])));
+  });
+
+  // 9: word search inside the Word card -- a search returns forms and places; opening a place keeps the card open.
+  await flow("search", lang, width, async (t, page, ctx, errors) => {
+    await openWord(page, 2, 42, 8);
+    await page.click("[data-word-card-search-toggle]");
+    await page.waitForSelector("[data-word-card-search-input]", { timeout: 5000 });
+    await page.fill("[data-word-card-search-input]", "تعلمون");
+    await page.click("[data-word-card-search-go]");
+    await page.waitForSelector(".word-card-search-res", { timeout: 15000 }).catch(() => {});
+    const res = await ev(page, () => ({ forms: [...document.querySelectorAll(".word-card-search-res")].map((b) => ({ n: b.querySelector(".word-card-search-res-n")?.textContent, h: b.getBoundingClientRect().height })), status: document.querySelector("[data-word-card-search-status]")?.textContent.trim() }));
+    check(`${t}: POSITIVE CONTROL a search for تعلمون returns forms (with counts, 40px rows)`, res.forms.length >= 2 && res.forms.every((f) => f.h >= 40 && /\d|[০-৯]/.test(f.n)), JSON.stringify(res));
+    await page.click('.word-card-search-res[data-word-card-search-form="0"]');
+    await page.waitForSelector(".word-card-search-place", { timeout: 8000 });
+    const places = await ev(page, () => [...document.querySelectorAll(".word-card-search-place")].map((b) => b.dataset.wordCardSearchPlace));
+    check(`${t}: the chosen form lists its 54 places, including 2:42:8 and 26:49:14`, places.length === 54 && places.includes("2042008") && places.includes("26049014"), `${places.length}`);
+    await page.click('[data-word-card-search-place="26049014"]');
+    await page.waitForFunction((w) => document.querySelector(".quran-word-card .word-card-reference")?.textContent.trim() === w, refText(lang, "26:49:14"), { timeout: 15000 }).catch(() => {});
+    const after = await ev(page, () => { const c = document.querySelector(".quran-word-card"); const x = c.querySelector("[data-word-card-close]").getBoundingClientRect(); const s = c.querySelector("[data-word-card-search]"); return { ref: c.querySelector(".word-card-reference")?.textContent.trim(), id: c.dataset.occurrenceId, searchOpen: !!s, close: x.width > 0 && x.top >= 0 && x.right <= innerWidth + 1, current: document.querySelector('[data-word-card-search-place][aria-current="true"]')?.dataset.wordCardSearchPlace }; });
+    check(`${t}: opening a place (26:49:14) moves the card there, and the card, its search row and a close button stay on screen`, after.id === "quran-word-occurrence:v1:26:49:14" && after.ref === refText(lang, "26:49:14") && after.searchOpen && after.close && after.current === "26049014", JSON.stringify(after));
+    // The place is also reachable from the Read view, and the card's own Previous/Next keep working from there.
+    await ev(page, () => document.querySelector('[data-word-card-move="previous"]').click());
+    await page.waitForFunction(() => document.querySelector(".quran-word-card")?.dataset.occurrenceId !== "quran-word-occurrence:v1:26:49:14", null, { timeout: 8000 }).catch(() => {});
+    check(`${t}: ‹ Previous word still moves the card on from a searched place`, await ev(page, () => document.querySelector(".quran-word-card")?.dataset.occurrenceId !== "quran-word-occurrence:v1:26:49:14"));
+  });
+
+  // 9b: an occurrence opened from the card (Basic derived-form pop-up) keeps a way back to the card.
+  await flow("occback", lang, width, async (t, page) => {
+    await openWord(page, 14, 13, 9);
+    await page.click('#quranWordCardMount [data-word-card-level="basic"]');
+    await page.waitForFunction(() => document.querySelectorAll("[data-word-card-dcard]").length >= 6, null, { timeout: 10000 }).catch(() => {});
+    await ev(page, () => document.querySelector('[data-word-card-dcard][data-word-form-toggle="أُعِيدُ"]').click());
+    await page.waitForFunction(() => document.querySelectorAll(".word-card-dpop [data-word-occurrence-goto]").length > 0, null, { timeout: 8000 }).catch(() => {});
+    const target = await ev(page, () => document.querySelectorAll(".word-card-dpop [data-word-occurrence-goto]")[2]?.getAttribute("data-word-occurrence-goto"));
+    check(`${t}: POSITIVE CONTROL the form's places list opens`, !!target, String(target));
+    await ev(page, (id) => document.querySelector(`.word-card-dpop [data-word-occurrence-goto="${id}"]`).click(), target);
+    await page.waitForFunction(() => document.querySelector("[data-word-card-origin-back]"), null, { timeout: 8000 }).catch(() => {});
+    await settle(page, 500);
+    const b = await ev(page, () => { const x = document.querySelector("[data-word-card-origin-back]"); const r = x?.getBoundingClientRect(); const hit = r ? document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2) : null; return { text: x?.textContent.trim(), tappable: !!hit && x.contains(hit), inView: !!r && r.left >= 0 && r.right <= innerWidth + 1 && r.top >= 0 && r.bottom <= innerHeight + 1 }; });
+    check(`${t}: the opened āyah shows "Back to Word Card", on screen and tappable`, !!b.text && b.tappable && b.inView, JSON.stringify(b));
+    await page.click("[data-word-card-origin-back]");
+    await page.waitForFunction(() => document.querySelectorAll(".word-card-dpop [data-word-occurrence-goto]").length > 0, null, { timeout: 10000 }).catch(() => {});
+    check(`${t}: Back returns to the Word card with the places list open again`, await ev(page, () => !!document.querySelector(".quran-word-card") && !!document.querySelector(".word-card-dpop-box")));
+  });
+
+  // 10: the Dictionary box and its links carry the right word.
+  await flow("dictionary", lang, width, async (t, page) => {
+    await openWord(page, 1, 2, 1);
+    await page.click('#quranWordCardMount [data-word-card-level="depth"]');
+    await page.waitForSelector("[data-word-card-dictionary]", { timeout: 8000 });
+    await page.waitForFunction(() => !!document.querySelector("[data-word-card-dict-meaning], [data-word-card-dict-none]"), null, { timeout: 8000 });
+    const d = await ev(page, () => { const b = document.querySelector("[data-word-card-dictionary]"); const r = b.getBoundingClientRect(); const a = (k) => { const e = b.querySelector(`[data-word-card-dict-link="${k}"]`); return e && { href: e.getAttribute("href"), target: e.getAttribute("target"), rel: e.getAttribute("rel"), h: e.getBoundingClientRect().height }; }; return { meaning: b.querySelector("[data-word-card-dict-meaning]")?.textContent ?? null, corpus: a("corpus"), ejtaal: a("ejtaal"), inView: r.left >= -1 && r.right <= innerWidth + 1 }; });
+    check(`${t}: POSITIVE CONTROL the Dictionary box shows a meaning for الحمد (root Hmd)`, !!d.meaning && d.meaning.length > 2 && d.inView, JSON.stringify(d));
+    check(`${t}: the Corpus link carries the root (q=Hmd), opens in a new tab safely`, d.corpus?.href === "https://corpus.quran.com/qurandictionary.jsp?q=Hmd" && d.corpus.target === "_blank" && /noopener/.test(d.corpus.rel ?? "") && d.corpus.h >= 40, JSON.stringify(d.corpus));
+    check(`${t}: the ejtaal link carries the root (#bwq=Hmd), opens in a new tab safely`, d.ejtaal?.href === "https://ejtaal.net/aa/#bwq=Hmd" && d.ejtaal.target === "_blank" && /noopener/.test(d.ejtaal.rel ?? "") && d.ejtaal.h >= 40, JSON.stringify(d.ejtaal));
+    // A different word: the links follow it (1:3:1 is الرحمن, root rHm).
+    await ev(page, () => document.querySelector("[data-word-card-close]").click());
+    await openWord(page, 1, 3, 1);
+    await page.click('#quranWordCardMount [data-word-card-level="depth"]');
+    await page.waitForFunction(() => document.querySelector('[data-word-card-dict-link="corpus"]'), null, { timeout: 8000 });
+    const h2 = await ev(page, () => document.querySelector('[data-word-card-dict-link="corpus"]').getAttribute("href"));
+    check(`${t}: for the next word the Corpus link follows it (q=rHm)`, h2 === "https://corpus.quran.com/qurandictionary.jsp?q=rHm", h2);
+  });
+
+  // 11: the Verb conjugation table opens for a verb and is absent for a noun.
+  await flow("conj", lang, width, async (t, page) => {
+    await openWord(page, 2, 102, 35);
+    await page.click('#quranWordCardMount [data-word-card-level="depth"]');
+    await page.waitForSelector('[data-word-card-sec="conj"]', { timeout: 10000 }).catch(() => {});
+    const v = await ev(page, () => { const s = document.querySelector('[data-word-card-sec="conj"]'); if (!s) return null; const w0 = s.open; s.querySelector("summary").click(); return { was: w0, now: s.open, tables: s.querySelectorAll("[data-word-card-conj-table]").length, rows: s.querySelectorAll("tr").length }; });
+    check(`${t}: POSITIVE CONTROL a verb (2:102:35) has a Verb conjugation section that opens`, !!v && v.now !== v.was && v.tables >= 2 && v.rows >= 28, JSON.stringify(v));
+    await ev(page, () => document.querySelector("[data-word-card-close]").click());
+    await openWord(page, 1, 3, 1);
+    await page.click('#quranWordCardMount [data-word-card-level="depth"]');
+    await page.waitForSelector("[data-word-card-sec]", { timeout: 8000 });
+    await settle(page, 1200);
+    check(`${t}: a noun (الرحمن) has no Verb conjugation section, while its other Depth sections show`, await ev(page, () => !document.querySelector('[data-word-card-sec="conj"]') && document.querySelectorAll("[data-word-card-sec]").length >= 2));
+  });
+
+  // 13: on the Bangla page, no English is left on these surfaces (the app's own names and source names excepted).
+  if (lang === "bn") await flow("bnleak", lang, width, async (t, page) => {
+    const OK = /^(QCR|QuranRevival|Bukhari|Muslim|Tirmidhi|Abu Dawud|Nasa'i|Ibn Majah|Corpus|ejtaal|Wiktionary|Lane|Hans Wehr|Hmd|Quran|WbW)$/i;
+    const leaks = (sel) => ev(page, ([sel, ok]) => {
+      const okRe = new RegExp(ok, "i");
+      const out = [];
+      for (const root of document.querySelectorAll(sel)) {
+        const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+        for (let n; (n = w.nextNode());) {
+          const p = n.parentElement;
+          if (!p || p.closest("[lang=ar], [dir=rtl], [data-i18n-skip], [lang=en], .word-card-meaning-en, .word-card-transliteration, script, style, option") || !p.getClientRects().length) continue;
+          for (const word of n.textContent.match(/[A-Za-zĀāŪūĪīḥṣṭḍẓʿʾ']{3,}/g) ?? []) if (!okRe.test(word)) out.push(`${word} «${n.textContent.trim().slice(0, 40)}»`);
+        }
+      }
+      return [...new Set(out)];
+    }, [sel, OK.source.replace(/^\^\(|\)\$$/g, "").replace(/^/, "^(").replace(/$/, ")$")]);
+    await openSheet(page, 36, 38);
+    await settle(page, 1200);
+    const l1 = await leaks("[data-ayah-sheet]");
+    if (PROBE) console.log(t, "sheet", JSON.stringify(l1));
+    check(`${t}: POSITIVE CONTROL the leak scan reads the Āyah card (Bangla text present)`, await ev(page, () => /[ঀ-৿]{3,}/.test(document.querySelector("[data-ayah-sheet]").textContent)));
+    check(`${t}: no English left on the Āyah card`, l1.length === 0, l1.slice(0, 8).join(" | "));
+    await ev(page, () => document.querySelector("[data-ayah-sheet-close]").click());
+    await goToAyah(page, 36, 38);
+    await ev(page, () => document.querySelector("#readQuickMenuSlot [data-qm-toggle]").click());
+    await settle(page, 300);
+    const l2 = await leaks("#readQuickMenuSlot .quick-menu");
+    if (PROBE) console.log(t, "menu", JSON.stringify(l2));
+    check(`${t}: no English left on the ⋮ quick menu`, l2.length === 0, l2.slice(0, 8).join(" | "));
+    await ev(page, () => document.querySelector("#readQuickMenuSlot [data-qm-toggle]").click());
+    await openWord(page, 2, 42, 8);
+    for (const level of ["wbw", "basic", "intermediate", "depth"]) {
+      await page.click(`#quranWordCardMount [data-word-card-level="${level}"]`);
+      await settle(page, 1800);
+      const l = await leaks("#quranWordCardMount");
+      if (PROBE) console.log(t, level, JSON.stringify(l));
+      check(`${t}: no English left on the Word card, ${level} tab`, l.length === 0, l.slice(0, 8).join(" | "));
+    }
   });
 
   // 3b: a Related hadith opens the hadith in the library with a way back to the āyah, and Back returns to the open card.
