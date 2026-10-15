@@ -21148,3 +21148,27 @@ New strings `wholeQuranLevelSentence` ("{level}: Achieved {known} and {percent} 
 - New `word-card-sense-arabic-browser.mjs` (en and bn, at 320, 390, 820 and 1440px): 62/0. All 5 mutations fail it: noboxes, emptybox, tiny, nogoto and wide.
 - `word-card-intermediate-browser`: 50/0. It was updated in place: its place list now reads the place chips only, since the boxes also carry a place.
 - `quran-word-card-rendered` 127/0, `word-card-layout-b-top-browser` 246/0, `phone-width-overflow` 217/0 and `behaviour` 971/0.
+
+## v10.57 — 15 Oct 2026 — Audit part 3: 40px touch targets on the admin and study pages (PCF J29)
+
+**Source:** the Owner's PCF General rule "Keep working, never idle": audit the app feature by feature, with the PCF User Manual as the checklist. Parts 1 and 2 were v10.51, v10.53 and v10.54.
+
+**Built by Builder round #844 (PR #845, branch `builder/issue-844-run-1286`) and reviewed by the Architect:**
+- **New `app/css/admin-touch.css`, scoped to `body.admin-touch`.** It gives a 40px minimum to every button, picker, text/number/date field, checkbox and radio label, nav link and the language picker. Buttons are also at least 40px wide.
+  - It is linked from, and `body.admin-touch` set on: `asma-study`, `records`, `monitor`, `people`, `classes`, `homework`, `curriculum`, `catalogue` and `hadith-study`.
+  - Before, almost every control on these pages was 19–37px tall: `button.small` was 23px, and Monitor's week ◀ ▶ were 28px wide.
+  - The Qur'an and study screens, measured in parts 1 and 2, do not carry the class and are unchanged.
+- Measured at 390, 820 and 1440px in English and Bangla: nothing scrolls sideways and no label is cut. The Latin "HadeethEnc" and "OpenITI" on the Bangla Hadith page are source names, not a defect.
+
+**The Architect's review:**
+- Before and after photographs of People, Records, Catalogue, Asma and Hadith (390px en and bn, 1440px en). The pages grow taller (People +198px, Records +129px at 390px) with the rows evenly spaced, and nothing is crowded or cut. The Hadith page is unchanged, since its pickers were already 40px (v10.54).
+- **Two stale checks updated in place:** `dua-word-links-browser` and `dua-word-card-browser` looked for the place `2:131:7` in the Word card's text. Since v10.53 (audit part 1, fix 9), a Bangla page writes it in Bangla digits (২:১৩১:৭), so both failed in Bangla at 390px on `main` as well, while the card was open on the right word. They now accept either form.
+- **Found on `main`, not fixed here:** on Records in Bangla at 390px, the entries table's last column "নোট" is cut at the right edge. This is given to round #847.
+
+**Not reached (said plainly by the round):** the Writing sheet, the Dua cards, the Zab bar cover check and pop-ups below the nav. These are round #847 (audit part 4).
+
+**Tests:**
+- New `audit-part3-fixes-browser.mjs` (9 pages, en and bn, 390/820/1440): 270/0. All 6 mutations fail it: buttons (54 failed), buttonwidth (12), fields (36), checks (36), nav (54) and langpick (54).
+- behaviour 971/0; phone-width-overflow 217/0.
+- `dua-check` 49/0, `dua-note-bookmark` 35/0, `dua-tab` 57/0, `dua-vowels` 33/0, `dua-word-card` 45/0, `dua-word-grammar` 33/0, `dua-word-links` 48/0, `dua-word-progress` 31/0, `dua-words` 37/0, `hadith-search-announcement` 16/0, `hadith-source-navigation` 50/0, `hadith-translations` 33/0, `asma-descriptions` 26/0, `asma-screensaver` 61/0.
+- The 8 governance suites: green.

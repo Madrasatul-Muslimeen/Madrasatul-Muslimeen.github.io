@@ -77,13 +77,14 @@ for (const [lang, width, look] of [["en", 390, "light"], ["bn", 390, "night"], [
   await P.waitForTimeout(150);
   check(`${tag} "Open in the Word card" points at 2:131:7, from Dua 1, with a way back`, panel?.href === "./quranrevival.html?word=2:131:7&back=1&from=dua-1", panel?.href);
   await Promise.all([P.waitForURL(/quranrevival\.html\?word=/, { timeout: 15000 }), P.click('[data-dua-word-panel="1"] [data-dua-word-open]')]).catch(() => {});
-  await P.waitForFunction(() => document.querySelector("[data-word-card-close]") && /2:131:7/.test(document.querySelector("[data-word-card-content]")?.innerText ?? ""), null, { timeout: 25000 }).catch(() => {});
+  // Since v10.53 (audit part 1, fix 9) a Bangla page writes the place in Bangla digits (২:১৩১:৭), so accept either.
+  await P.waitForFunction(() => document.querySelector("[data-word-card-close]") && /2:131:7|২:১৩১:৭/.test(document.querySelector("[data-word-card-content]")?.innerText ?? ""), null, { timeout: 25000 }).catch(() => {});
   await P.waitForTimeout(600);
   const wc = await P.evaluate((l) => {
     const content = document.querySelector("[data-word-card-content]"), b = document.querySelector("[data-word-card-app-back]");
     const r = b?.getBoundingClientRect();
     const reach = r ? document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)?.closest("[data-word-card-app-back]") === b : false;
-    return { open: !!content && /2:131:7/.test(content.innerText), word: content?.innerText.includes("أَسْلَمْتُ"), back: b?.textContent.trim() ?? null, reach, h: r?.height ?? 0 };
+    return { open: !!content && /2:131:7|২:১৩১:৭/.test(content.innerText), word: content?.innerText.includes("أَسْلَمْتُ"), back: b?.textContent.trim() ?? null, reach, h: r?.height ?? 0 };
   }, lang);
   check(`${tag} the Word card opens at 2:131:7 (أَسْلَمْتُ)`, wc.open && wc.word, JSON.stringify(wc));
   check(`${tag} ...with "← ${lang === "bn" ? "দুআ ১-এ ফিরে যান" : "Back to Dua 1"}" inside the card, on top and tappable (40px)`, wc.back === `← ${lang === "bn" ? "দুআ ১-এ ফিরে যান" : "Back to Dua 1"}` && wc.reach && wc.h >= 40, JSON.stringify(wc));
