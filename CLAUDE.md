@@ -103,6 +103,10 @@ Read this first, every session. It is the standing brief.
 >   computer; exact job names and full links); **Elegant** (calm, tidy pages, plain words, short "What I need from
 >   you" tick lists); **Optimal** (the fewest Owner taps, free tools, no credits, no duplicate work). **Every
 >   finished job ends with a one-line W-T-P-E-O check in its Done line.**
+> - **Time on every update (the Owner's PCF General rule, 15 Oct 2026, PCA J45, PCF v02.47)**: every line, comment,
+>   Done line, tick and edit written to the PCF carries its full time, never a bare date. Write `at` as UTC read off
+>   the clock (`date -u +%Y-%m-%dT%H:%M:%SZ`), e.g. `2026-10-15T02:13:00Z`; the PCF shows it in Sydney time beside
+>   the entry, and a job's "Updated" shows the time of its latest act.
 
 > ## ⇢ HADITH STUDY is being built on `feature/hadith-study` — READ IF YOU TOUCH HADITH
 >
