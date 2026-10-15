@@ -1217,6 +1217,7 @@
     display: block; width: 100%; text-align: left; background: none; border: none;
     padding: 0.45rem 0.5rem; border-radius: 0.35rem; cursor: pointer;
     font-family: 'Inter', sans-serif; font-size: 0.82rem; color: #222; line-height: 1.3;
+    min-height: 40px; /* audit14: 31px was too small for a finger */
   }
   .explore-approach-opt:hover { background: #f1efe8; }
   .explore-approach-opt[aria-selected="true"] { background: rgba(201,162,75,0.2); font-weight: 700; }
@@ -7800,6 +7801,7 @@
     // Owner decision 82 -- the Surah level reads "all" (every Approach on each Ayah slice) or "one"
     // (today's view); exploreAyahIdx is the Ayah level's position among the Surah's drawn units.
     let exploreSurahMode = "all"; // "all" | "one"
+    let wheelPopupWin = null, explorePopupWin = null; // initPopupWindow() handles (audit14: refit() once the dock can be measured)
     let exploreAyahIdx = null;
     let exploreUnitsCache = null; // { sn, units } for the Surah on screen -- see exploreSurahUnits()
 
@@ -10313,6 +10315,8 @@
       wheelPopupViewEl.hidden = !onWheel;
       readView.hidden = !reading;
       exploreView.hidden = !exploring;
+      if (onWheel) wheelPopupWin?.refit(); // audit14: a never-moved window is sized clear of the dock now that the dock can be measured
+      if (exploring) explorePopupWin?.refit();
       tabReadBtn.setAttribute("aria-pressed", reading ? "true" : "false");
       tabNoteBtn.setAttribute("aria-pressed", "false");
       tabStudyBtn.setAttribute("aria-pressed", reading ? "true" : "false");
@@ -13185,12 +13189,22 @@
       closeExploreTake();
       currentTrackableId = take.approachId; // the app's Approach becomes this one, as a wheel slice does
       trackableSelect.value = take.approachId;
+      // The way-back law (audit14): Read and Guide leave Explore, so they leave a "Back to Explore" that restores THIS place
+      // (the Surah or Āyah the Take was opened on), not Explore's top level.
+      const here = { level: exploreLevel, juz: exploreJuzNum, hizb: exploreHizbNum, surah: exploreSurahNum, ruku: exploreRukuIndex, ayah: exploreAyahIdx, mode: exploreSurahMode };
+      const backToExplore = async () => {
+        closeAllPanels(); setStageView("explore"); await openExplore();
+        exploreLevel = here.level; exploreJuzNum = here.juz; exploreHizbNum = here.hizb; exploreSurahNum = here.surah; exploreRukuIndex = here.ruku; exploreAyahIdx = here.ayah; exploreSurahMode = here.mode;
+        await renderExplore();
+      };
+      const backLabel = u ? u.name : exploreSurahLabel(take.sn);
       if (act === "read") {
-        if (u) { await goToAyahFromExplore(take.sn, u.ayah, u.half); return; }
+        if (u) { await goToAyahFromExplore(take.sn, u.ayah, u.half); setAppReturn(t("Back to Explore"), backLabel, backToExplore); return; }
         closeAllPanels();
         setStageView("read");
         await exploreApplyUnit(take.sn, "surah");
         renderStudyScreen();
+        setAppReturn(t("Back to Explore"), backLabel, backToExplore);
         return;
       }
       await exploreApplyUnit(take.sn, take.unit, u?.ayah, u?.half);
@@ -13199,7 +13213,7 @@
       else if (act === "guide") {
         closeAllPanels();
         // Decision 95 (R3a): the Track/Guide card is the Notes pane's Track tab; the way back is Explore.
-        await openApproachCardInPane(take.approachId, t("Back to Explore"), async () => { closeAllPanels(); setStageView("explore"); await openExplore(); });
+        await openApproachCardInPane(take.approachId, t("Back to Explore"), backToExplore);
       }
     }
 
@@ -13696,8 +13710,12 @@
       const nav = document.querySelector(".app-nav");
       return nav ? nav.getBoundingClientRect().bottom + 8 : 0;
     };
-    const popupBottomInset = () => document.getElementById("dock")?.offsetHeight || 0;
-    initPopupWindow(wheelPopupViewEl, {
+    // audit14: the dock is not laid out yet when the windows are first sized (offsetHeight 0 here), so a window opened
+    // under it and hid the bottom of its own content (QCR's "+ Add āyah" row at 1440x900). The inset is the space from the
+    // dock's top edge to the bottom of the screen once the dock can be measured (64px until then); setStageView() re-sizes
+    // a window that has never been moved each time it is shown.
+    const popupBottomInset = () => { const d = document.getElementById("dock"); return d && d.offsetHeight ? Math.max(0, innerHeight - d.getBoundingClientRect().top) + 8 : 64; }; /* +8: the window's padding and border sit outside the geometry's height */
+    wheelPopupWin = initPopupWindow(wheelPopupViewEl, {
       id: "wheel",
       topInset: popupTopInset,
       bottomInset: popupBottomInset,
@@ -13705,7 +13723,7 @@
       resizeHandleEls: wheelPopupResizeHandles,
       maximizeBtn: wheelPopupMaximizeBtn,
     });
-    initPopupWindow(exploreView, {
+    explorePopupWin = initPopupWindow(exploreView, {
       id: "explore",
       topInset: popupTopInset,
       bottomInset: popupBottomInset,
@@ -15628,7 +15646,7 @@
         refLabel = ayahShortRefFor(surahNum, ayahNum, half);
       }
       const ayah = qcrShownAyah(surahNum, ayahNum, half);
-      const full = ayah?.translations?.en ?? "";
+      const full = ayah?.translations?.[getAppLang() === "bn" ? "bn" : "en"] ?? ayah?.translations?.en ?? ""; // audit14: the row's meaning follows the app language, as the add preview does
       const snippet = full.length > 90 ? `${full.slice(0, 90).trim()}…` : full;
       return { surahNum, ayahNum, refLabel, surahName: sName, snippet };
     }
@@ -16136,6 +16154,7 @@
         ${shown?.uthmaniText ? `<span class="qcr-add-preview-ar" lang="ar" dir="rtl">${escapeHtml(shown.uthmaniText)}</span>` : ""}
         ${meaning ? `<span class="qcr-add-preview-tr">${escapeHtml(meaning.length > 140 ? `${meaning.slice(0, 140).trim()}…` : meaning)}</span>` : ""}`;
       el.hidden = false;
+      el.scrollIntoView?.({ block: "nearest" }); // audit14: the preview sits under the add box and could open below the fold of the list pane
     }
 
     async function qcrAddItemAction(collectionId) {

@@ -355,6 +355,16 @@ export function initPopupWindow(el, { id = "note", dragHandleEl, resizeHandleEls
     if (maximized) { commit({ width: window.innerWidth - 24, height: window.innerHeight - 24, top: 12, left: 12 }, { persist: false }); return; }
     commit(clampGeometry(geometry, minWidth, minHeight), { persist: false });
   });
+
+  // audit14: the insets can be unmeasurable when the window is first sized (the dock has no height yet), so a window
+  // that has never been moved is sized again, once its insets can be read, each time it is shown. A remembered
+  // (dragged or resized) geometry is the reader's own and is never touched.
+  return {
+    refit() {
+      if (maximized || !isPopupViewport() || readJson(geometryKeyFor(id))) return;
+      commit(defaultGeometry(minWidth, minHeight, defaultMaxWidth, topInset, bottomInset), { persist: false });
+    },
+  };
 }
 
 /** The side-pane/main splitter -- horizontal drag only, clamped between
