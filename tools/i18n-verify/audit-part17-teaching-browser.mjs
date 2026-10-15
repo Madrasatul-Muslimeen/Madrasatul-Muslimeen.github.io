@@ -31,7 +31,7 @@ if (MUTATE && !MUTATIONS[MUTATE]) throw new Error(`no such mutation ${MUTATE}`);
 const browser = await chromium.launch();
 const BN = /[ঀ-৿]/;
 // English words that may stay on a Bangla page: the app's own names, source names and names people typed.
-const ALLOWED = /QuranRevival|QCR|MMSA|Qur'?an|Asma|Husna|Madrasatul|Muslimeen|Hadith|hadith|Google|CSV|JSON|ID|AM|PM|Ahsan|Maryam|Zayd|Aisha|example|com|Audit|Tajweed|Fiqh|Tafsir/g;
+const ALLOWED = /Morning Class|Evening Quran|Audit Class|Audit Offer|QuranRevival|QCR|MMSA|Qur'?an|Asma|Husna|Madrasatul|Muslimeen|Hadith|hadith|Google|CSV|JSON|ID|AM|PM|Ahsan|Maryam|Zayd|Aisha|example|com|Audit|Tajweed|Fiqh|Tafsir/g;
 const englishLeft = (text) => (String(text).replace(ALLOWED, " ").match(/[A-Za-z]{3,}/g) || []);
 
 async function open(lang, width, pagePath, { extraSeed = "", download = false } = {}) {
@@ -187,6 +187,126 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     const back = await state();
     check(`${t}: choosing "(your real role)" turns the preview off: forms back, notice gone`, back.add !== "none" && back.invite !== "none" && back.edit > 0 && back.notice === "", JSON.stringify(back));
     check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
+  });
+}
+// The seeded Morning Class gets one enrolled student whose pending record the bulk confirm can find (the stub seeds p1's pending ayah 1:1).
+const SEED_CLASS = `DATA.enrollments.push({ _id: TENANT_ID + "__c1__p1", tenantId: TENANT_ID, contextType: "class", contextId: "c1", personId: "p1", roleInClass: "student", subjectIds: [], status: "active" });`;
+const frame = (page) => ev(page, () => { const nav = document.getElementById("topNav")?.getBoundingClientRect().bottom ?? 0; return { over: document.documentElement.scrollWidth - innerWidth, nav, vw: innerWidth }; });
+const allTall = async (page, sels) => { const o = {}; for (const s of sels) o[s] = await tall(page, s); return o; };
+
+for (const lang of LANGS) for (const width of WIDTHS) {
+  const bn = lang === "bn";
+  // 4: Classes: Create class, Enrol, Bulk confirm all pending, Archive.
+  await flow("classes", lang, width, "/app/classes.html", async (t, page, ctx, errors) => {
+    await page.waitForSelector("#createClassBtn", { state: "visible", timeout: 10000 });
+    await page.waitForSelector(".enrolBtn", { timeout: 10000 });
+    check(`${t}: POSITIVE CONTROL the New class form and the seeded class card (Enrol, Bulk confirm, Archive) are on screen`, await ev(page, () => !!document.querySelector(".bulkConfirmClassBtn") && !!document.querySelector(".archiveClassBtn") && !!document.getElementById("classNameInput")));
+    const f = await frame(page);
+    const hs = await allTall(page, ["#classNameInput", "#classGlossInput", "#createClassBtn", ".enrolPersonSelect", ".enrolRoleSelect", ".enrolBtn", ".bulkConfirmClassBtn", ".archiveClassBtn", ".endEnrolBtn"]);
+    if (PROBE) console.log(t, "heights", JSON.stringify(hs), JSON.stringify(f));
+    check(`${t}: no sideways scroll`, f.over <= 0, JSON.stringify(f));
+    check(`${t}: every control a finger presses is at least 40px`, Object.values(hs).every((v) => v >= 40), JSON.stringify(hs));
+    // Create class.
+    let w = await writeCount(page);
+    await fill(page, "#classNameInput", "Audit Class");
+    await fill(page, "#classGlossInput", "A gloss");
+    await page.check('#subjectChecks input[type="checkbox"]');
+    await page.click("#createClassBtn");
+    await settle(page, 700);
+    let ws = await writes(page, w);
+    const made = ws.find((x) => x.col === "classes");
+    if (PROBE) console.log(t, "create", JSON.stringify(ws).slice(0, 700));
+    check(`${t}: Create class writes ONE classes document (tenant__id) active, with its subject and the I17 stamps`, !!made && /^t1__.+/.test(made.id) && made.data.status === "active" && made.data.name?.en === "Audit Class" && made.data.subjectIds?.length === 1 && STAMPS(made.data), JSON.stringify(made)?.slice(0, 400));
+    const said = await ev(page, () => document.getElementById("createResult").textContent);
+    check(`${t}: the page says "Class created." (${bn ? "Bangla" : "English"}) and clears the form`, (bn ? BN.test(said) : said === "Class created.") && await ev(page, () => document.getElementById("classNameInput").value === ""), said);
+    // Enrol: the seeded class's person list, role Teacher.
+    w = await writeCount(page);
+    await page.selectOption(".enrolRoleSelect", "teacher");
+    const person = await ev(page, () => document.querySelector(".enrolPersonSelect").value);
+    await page.click(".enrolBtn");
+    await settle(page, 800);
+    ws = await writes(page, w);
+    const enr = ws.find((x) => x.col === "enrollments");
+    if (PROBE) console.log(t, "enrol", JSON.stringify(ws).slice(0, 700));
+    check(`${t}: Enrol writes an enrollments document t1__c1__${person} (class, teacher, active) with the I17 stamps`, !!enr && enr.id === `t1__c1__${person}` && enr.data.contextType === "class" && enr.data.roleInClass === "teacher" && enr.data.status === "active" && STAMPS(enr.data), JSON.stringify(enr)?.slice(0, 400));
+    // Bulk confirm all pending.
+    w = await writeCount(page);
+    await page.click(".bulkConfirmClassBtn");
+    await page.waitForFunction(() => (document.querySelector(".bulkResult")?.textContent ?? "").length > 5, null, { timeout: 8000 }).catch(() => {});
+    ws = await writes(page, w);
+    const rec = ws.find((x) => x.col === "records");
+    const msg = await ev(page, () => document.querySelector(".bulkResult").textContent);
+    if (PROBE) console.log(t, "bulk", JSON.stringify(ws).slice(0, 700), msg);
+    check(`${t}: Bulk confirm writes the enrolled student's pending entry as confirmed (ayah 1:1)`, !!rec && rec.id === "t1__p1__surah_1" && JSON.stringify(rec.data).includes("confirmed"), JSON.stringify(rec)?.slice(0, 400));
+    check(`${t}: and says how many it confirmed (${bn ? "Bangla" : "English"})`, bn ? BN.test(msg) : /^Confirmed 2 pending entries across 1 students\.$/.test(msg), msg);
+    // End an enrolment (the seeded student), then Archive.
+    w = await writeCount(page);
+    await page.click(".endEnrolBtn");
+    await settle(page, 700);
+    ws = await writes(page, w);
+    const ended = ws.find((x) => x.col === "enrollments");
+    check(`${t}: End on an enrolment marks it ended (never deletes: I4)`, !!ended && ended.data.status === "ended" && !!ended.data.endedAt && ws.every((x) => x.kind !== "delete"), JSON.stringify(ws).slice(0, 300));
+    w = await writeCount(page);
+    await page.click(".archiveClassBtn");
+    await settle(page, 700);
+    ws = await writes(page, w);
+    const arch = ws.find((x) => x.col === "classes");
+    check(`${t}: Archive sets the class to archived (never deletes: I4/D6)`, !!arch && arch.id === "t1__c1" && arch.data.status === "archived" && ws.every((x) => x.kind !== "delete"), JSON.stringify(ws).slice(0, 300));
+    check(`${t}: no Delete button exists anywhere on the page`, await ev(page, () => ![...document.querySelectorAll("button")].some((b) => /delete|মুছ/i.test(b.textContent))));
+    if (bn) { const left = englishLeft(await bodyText(page)); check(`${t}: no English left on the Bangla page (names typed by people excepted)`, left.length === 0, left.slice(0, 12).join(" ")); }
+    check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
+    if (width === 390 || width === 1440) await page.screenshot({ path: `/tmp/audit17-classes-${lang}-${width}.png`, fullPage: true });
+  }, { extraSeed: SEED_CLASS });
+
+  // 5: Course Offers: Create offer, enrol, End, Archive.
+  await flow("offers", lang, width, "/app/course-offers.html", async (t, page, ctx, errors) => {
+    await page.waitForSelector("#createOfferBtn", { state: "visible", timeout: 10000 });
+    await page.waitForSelector(".enrolBtn", { timeout: 10000 });
+    check(`${t}: POSITIVE CONTROL the New course offer form and the seeded offer card are on screen`, await ev(page, () => !!document.querySelector(".archiveOfferBtn") && !!document.getElementById("offerNameInput") && document.querySelectorAll("#dayChecks input").length === 7));
+    const f = await frame(page);
+    const hs = await allTall(page, ["#offerNameInput", "#startDateInput", "#endDateInput", "#notesInput", "#dayChecks input", "#subjectChecks input", "#createOfferBtn", ".enrolBtn", ".archiveOfferBtn", ".endEnrolBtn"]);
+    if (PROBE) console.log(t, "heights", JSON.stringify(hs), JSON.stringify(f));
+    check(`${t}: no sideways scroll`, f.over <= 0, JSON.stringify(f));
+    check(`${t}: every control a finger presses is at least 40px`, Object.values(hs).every((v) => v >= 40), JSON.stringify(hs));
+    let w = await writeCount(page);
+    await fill(page, "#offerNameInput", "Audit Offer");
+    await page.check('#subjectChecks input[type="checkbox"]');
+    await page.check('#dayChecks input[value="1"]');
+    await page.check('#dayChecks input[value="3"]');
+    await fill(page, "#startDateInput", "2026-11-01");
+    await fill(page, "#endDateInput", "2026-12-20");
+    await page.click("#createOfferBtn");
+    await settle(page, 700);
+    let ws = await writes(page, w);
+    const made = ws.find((x) => x.col === "courseOffers");
+    if (PROBE) console.log(t, "create", JSON.stringify(ws).slice(0, 700));
+    check(`${t}: Create offer writes ONE courseOffers document with name, subject, days 1 and 3, both dates, active, and the I17 stamps`, !!made && /^t1__.+/.test(made.id) && made.data.name?.en === "Audit Offer" && made.data.subjectIds?.length === 1 && made.data.routine?.daysOfWeek?.join() === "1,3" && made.data.routine?.startDate === "2026-11-01" && made.data.routine?.endDate === "2026-12-20" && made.data.status === "active" && STAMPS(made.data), JSON.stringify(made)?.slice(0, 500));
+    const said = await ev(page, () => document.getElementById("createResult").textContent);
+    check(`${t}: the page says "Course offer created." (${bn ? "Bangla" : "English"}) and clears the form`, (bn ? BN.test(said) : said === "Course offer created.") && await ev(page, () => document.getElementById("offerNameInput").value === "" && document.querySelectorAll("#dayChecks input:checked").length === 0), said);
+    // Enrol: the Person chosen in the context bar, via the card's Enrol button.
+    w = await writeCount(page);
+    const person = await ev(page, () => document.getElementById("personSelect").value);
+    await page.click(".enrolBtn");
+    await settle(page, 800);
+    ws = await writes(page, w);
+    const enr = ws.find((x) => x.col === "enrollments" && x.id === `t1__o1__${person}`);
+    if (PROBE) console.log(t, "enrol", person, JSON.stringify(ws).slice(0, 700));
+    check(`${t}: Enrol writes an enrollments document t1__o1__${person} (courseOffer, active) with the I17 stamps`, !!enr && enr.data.contextType === "courseOffer" && enr.data.status === "active" && STAMPS(enr.data), JSON.stringify(ws).slice(0, 400));
+    w = await writeCount(page);
+    await page.click(".endEnrolBtn");
+    await settle(page, 700);
+    ws = await writes(page, w);
+    const ended = ws.find((x) => x.col === "enrollments");
+    check(`${t}: End marks the enrolment ended (never deletes: I4)`, !!ended && ended.data.status === "ended" && !!ended.data.endedAt && ws.every((x) => x.kind !== "delete"), JSON.stringify(ws).slice(0, 300));
+    w = await writeCount(page);
+    await page.click(".archiveOfferBtn");
+    await settle(page, 700);
+    ws = await writes(page, w);
+    const arch = ws.find((x) => x.col === "courseOffers");
+    check(`${t}: Archive sets the offer to archived (never deletes: I4/D6)`, !!arch && arch.id === "t1__o1" && arch.data.status === "archived" && ws.every((x) => x.kind !== "delete"), JSON.stringify(ws).slice(0, 300));
+    if (bn) { const left = englishLeft(await bodyText(page)); check(`${t}: no English left on the Bangla page (names typed by people excepted)`, left.length === 0, left.slice(0, 12).join(" ")); }
+    check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
+    if (width === 390 || width === 1440) await page.screenshot({ path: `/tmp/audit17-offers-${lang}-${width}.png`, fullPage: true });
   });
 }
 console.log(`\n${pass} passed, ${fail} failed`);
