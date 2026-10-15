@@ -10,3 +10,5 @@ body.admin-touch label:has(> input[type="checkbox"]), body.admin-touch label:has
 body.admin-touch label > input[type="checkbox"], body.admin-touch label > input[type="radio"] { flex: 0 0 auto; width: auto; } /* audit3 checks */
 body.admin-touch .nav-legacy-link, body.admin-touch .nav-link { display: inline-flex; align-items: center; box-sizing: border-box; min-height: 40px; } /* audit3 nav */
 body.admin-touch #navAppLangSelect { min-height: 40px; } /* audit3 nav */
+/* Audit part 5 (#850): the seven study modules keep their own sizes; only the person picker is raised to 40px. */
+body.pick-touch #personSelect { box-sizing: border-box; min-height: 40px; } /* audit5 picker */
