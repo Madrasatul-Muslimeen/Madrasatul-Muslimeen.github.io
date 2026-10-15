@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "10.62",
+    "version": "10.63",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -3737,8 +3737,20 @@
     {
       "version": "10.62",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Audit part 6 (Builder round #853, PR #854): 40px wheel pill, Read bar, Explore and New Note; the Notes window's close button back on a 320px screen.",
+      "integration": {
+        "authorizedOn": "2026-10-15",
+        "integratedOn": "2026-10-15",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "10.63",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "J29 item 12 (Builder round #856, PR #857): the Back pill lifts above [data-zab-lift] bars.",
       "integration": {
         "authorizedOn": "2026-10-15",
         "integratedOn": "2026-10-15",
@@ -3747,8 +3759,9 @@
       }
     }
   ],
-  "nextUnallocated": "10.63",
+  "nextUnallocated": "10.64",
   "nextUnallocatedNote": [
+    "v10.63 was allocated to the Back to Know Your Status pill no longer covers the Approach tab (PCF J29), 2026-10-15.",
     "v10.62 was allocated to audit part 6, finger-sized buttons on the Quran page (PCF J29), 2026-10-15.",
     "v10.61 was allocated to Know Your Status shows Before Al-Fatihah under each Approach (PCF J26), 2026-10-15.",
     "v10.60 was allocated to audit part 5, finger-sized controls on the remaining pages (PCF J29), 2026-10-15.",

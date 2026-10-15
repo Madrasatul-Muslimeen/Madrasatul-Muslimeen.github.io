@@ -21296,3 +21296,19 @@ New strings `wholeQuranLevelSentence` ("{level}: Achieved {known} and {percent} 
 **Tests:**
 - `audit-part6-fixes-browser`: 200/0. All 9 mutations fail it: cta (6 failed), barbtn (18), unitchip (6), capsule (6), palette (8), viewbtn (6), crumb (6), newnote (6) and rnpback (1).
 - `behaviour` 971/0, `phone-width-overflow` 217/0, `audit-part4-fixes` 1302/0, `zab-dock` 74/0, `kys-opening-line` 47/0 and `fatiha-opening-band` 132/0, all on the code merged with v10.61.
+
+## v10.63 — 15 Oct 2026 — The "← Back to Know Your Status" pill no longer covers the Approach tab (PCF J29 item 12)
+
+**Found** in the Architect's v10.60 review: `quran-my-status-browser.mjs` stopped with "kysBackRow intercepts pointer events", the same on v10.57, v10.59 and v10.60. On a phone, after Know Your Status → See in Explore, the floating "← Back to Know Your Status" pill sat over the pinned bottom tabs, so the **Approach** tab could not be pressed while the pill showed.
+
+**Built by Builder round #856 (PR #857, branch `builder/issue-856-run-1306`) and reviewed by the Architect:**
+- **`app/js/bookmark-nav.js` `mountBackRow()`:** the pill's bottom position now also clears any visible `[data-zab-lift]` bar in the lower half of the screen. That is v10.59's marker on `#tabRow`, and in the Read view on `#readQuickRow`.
+- The way back is kept (the way-back law): the pill still shows; it only sits higher.
+- Five lines, local.
+
+**Not reached by the round, and said plainly:** items 2–6 of #856 (the verb table, QCR, the Mushaf view, the Mapping My Journey pop-ups, and English left in Bangla). They are now round #858 (audit part 8).
+
+**Tests** (the Architect, on the code merged with v10.62):
+- New `audit-part7-fixes-browser.mjs`: 18/0. Its mutation `pill-over-tabs` fails it (7 failed).
+- `quran-my-status-browser` runs to the end again: 248/0. No check in it needed changing.
+- `behaviour` 971/0, `phone-width-overflow` 217/0, `audit-part6-fixes` 200/0 and `zab-dock` 74/0.
