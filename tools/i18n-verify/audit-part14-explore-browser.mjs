@@ -23,6 +23,8 @@ const ONLY = (process.argv.find((a) => a.startsWith("--only=")) || "").slice(7);
 const WONLY = Number((process.argv.find((a) => a.startsWith("--width=")) || "").slice(8)) || 0;
 const LONLY = (process.argv.find((a) => a.startsWith("--lang=")) || "").slice(7);
 const MUTATIONS = {
+  // Take ▸ -> Read it left the reader in the reading view with no way back to Explore (the way-back law).
+  "noreadback": ["app/quranrevival.html", "**/quranrevival.html*", 'await goToAyahFromExplore(take.sn, u.ayah, u.half); setAppReturn(t("Back to Explore"), backLabel, backToExplore); return; }', "await goToAyahFromExplore(take.sn, u.ayah, u.half); return; }"],
   // Explore's ▾ Approach list options were 31px tall.
   "optsize": ["app/quranrevival.html", "**/quranrevival.html*", "    min-height: 40px; /* audit14: 31px was too small for a finger */\n", ""],
 };
@@ -32,6 +34,8 @@ if (MUTATE && !MUTATIONS[MUTATE]) throw new Error(`no such mutation ${MUTATE}`);
 const claim = (tid, st) => `{ unitType: "ayah", subjectId: "quran", trackableId: "${tid}", claimedStatus: "${st}", confirmedStatus: null, confirmState: "pending" }`;
 const SEED = `
 window.__stubApplyBatches = true;
+// Tajweed is the writing Approach here (the platform's approach_05), so only its Take sheet offers Write.
+DATA.trackables.find((t) => t._id === TENANT_ID + "__tajweed").sourceTemplateId = "approach_05";
 DATA.records.push({ _id: TENANT_ID + "__p1__surah_81", tenantId: TENANT_ID, personId: "p1", chunkKey: "surah_81", entries: {
   "ayah:81:3::memorise": ${claim("memorise", "achieved")},
   "ayah:81:3::recite": ${claim("recite", "practising")},
@@ -200,6 +204,76 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     // And the whole-Qur'an wheel reflects it too.
     await ev(page, () => document.querySelector('#exploreBreadcrumb .explore-crumb').click()); await settle(page, 700);
     check(`${t}: back at the Whole Quran the wheel is still drawn for the chosen Approach`, (await ev(page, () => document.querySelectorAll("#exploreWheelContainer .wheel-seg").length)) === 144);
+    check(`${t}: no sideways scroll`, await ev(page, () => document.documentElement.scrollWidth <= innerWidth + 1));
+    check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
+  });
+
+  // 3: Take ▸ from Explore -- on a Surah and on an Āyah row.
+  await flow("take", lang, width, async (t, page, ctx, errors) => {
+    await openExplore(page);
+    await gotoSurah(page, 81);
+    // Surah row
+    await ev(page, () => document.querySelector('[data-aa-row="recite"] .aa-take').click());
+    await page.waitForSelector(".aa-sheet [data-aa-act]", { timeout: 8000 });
+    const acts = () => ev(page, () => [...document.querySelectorAll(".aa-sheet [data-aa-act]")].map((b) => b.dataset.aaAct));
+    const sheetBox = await rectOf(page, ".aa-sheet");
+    const navBottom = await ev(page, () => Math.max(0, document.getElementById("topNav")?.getBoundingClientRect().bottom ?? 0));
+    const a1 = await acts();
+    const title = await ev(page, () => document.querySelector("[data-gac-record-title]").textContent);
+    if (PROBE) console.log(t, "surah sheet", JSON.stringify({ a1, sheetBox, navBottom, title }));
+    check(`${t}: POSITIVE CONTROL Take ▸ on a Surah row opens the sheet with Read, Listen, Guide (no Write for a non-writing Approach) and Record, inside the screen`, a1.join() === "read,listen,guide" && inside(sheetBox, width, vh) && sheetBox.top >= navBottom - 1, JSON.stringify({ a1, sheetBox, navBottom }));
+    check(`${t}: the Surah sheet records for the whole Surah`, /Surah|সূরা/i.test(title), title);
+    // a writing Approach gets Write
+    await ev(page, () => document.querySelector("[data-aa-close]").click()); await settle(page, 300);
+    const ids = await ev(page, () => [...document.querySelectorAll("[data-aa-row]")].map((r) => r.dataset.aaRow));
+    const withWrite = [];
+    for (const id of ids) {
+      await ev(page, (i) => document.querySelector(`[data-aa-row="${i}"] .aa-take`).click(), id);
+      await settle(page, 150);
+      if ((await acts()).includes("write")) withWrite.push(id);
+      await ev(page, () => document.querySelector("[data-aa-close]").click()); await settle(page, 100);
+    }
+    if (PROBE) console.log(t, "writing approaches", withWrite.join(), ids.join());
+    check(`${t}: of ten Approaches only the writing one (Tajweed here) adds Write to its Take ▸ sheet`, ids.length === 10 && withWrite.join() === "tajweed", withWrite.join());
+    // Āyah row: open Āyah 3 (the slice is the third one) and Take Memorise
+    await ev(page, () => { const s = document.querySelector(".aa-wheel .wheel-seg, #exploreWheelContainer .wheel-seg"); s.dispatchEvent(new MouseEvent("click", { bubbles: true })); }); await settle(page, 600);
+    for (let i = 0; i < 2; i++) { await ev(page, () => document.querySelector('#exploreNavBar [data-aa="ayah-next"]').click()); await settle(page, 500); }
+    const cr = await crumbs(page);
+    const ayahStatus = () => ev(page, () => document.querySelector('[data-aa-row="memorise"]').dataset.status);
+    const before = await ayahStatus();
+    await ev(page, () => document.querySelector('[data-aa-row="memorise"] .aa-take').click());
+    await page.waitForSelector(".aa-sheet [data-aa-rec]", { timeout: 8000 });
+    const a2 = await acts();
+    const sheetBox2 = await rectOf(page, ".aa-sheet");
+    check(`${t}: POSITIVE CONTROL Take ▸ on an Āyah row (Āyah 3) opens the sheet (Read, Listen, Guide) with the stages, inside the screen`, a2.join() === "read,listen,guide" && inside(sheetBox2, width, vh) && before === "achieved", JSON.stringify({ a2, sheetBox2, before, cr }));
+    // Record: Practising
+    const n = await writeCount(page);
+    await ev(page, () => document.querySelector('.aa-sheet [data-aa-rec="practising"]').click());
+    await page.waitForFunction(() => !document.querySelector(".aa-sheet"), null, { timeout: 8000 }).catch(() => {});
+    await settle(page, 900);
+    const w = await writes(page, n);
+    const rec = w.find((x) => x.col === "records");
+    const ent = rec?.data?.["entries.ayah:81:3::memorise"];
+    check(`${t}: Record writes the right person (p1), chunk (surah_81) and unit key (ayah:81:3) for Memorise as Practising`, !!rec && rec.id.endsWith("__p1__surah_81") && rec.data.personId === "p1" && ent?.claimedStatus === "practising" && ent?.trackableId === "memorise" && ent?.unitType === "ayah", JSON.stringify(w).slice(0, 400));
+    check(`${t}: exactly one records write was made (no stray writes)`, w.filter((x) => x.col === "records").length === 1);
+    const after = await ayahStatus();
+    const sliceNow = await ev(page, () => { const e = document.querySelector('#exploreWheelContainer [data-key="memorise"]'); return e ? { html: e.outerHTML.slice(0, 220), fill: e.getAttribute("fill") ?? e.querySelector("[fill]")?.getAttribute("fill") } : null; });
+    if (PROBE) console.log(t, "repaint", after, JSON.stringify(sliceNow));
+    check(`${t}: the Āyah's Memorise row and its wheel slice repaint with the new stage (Achieved -> Practising, the Practising colour)`, before === "achieved" && after === "practising" && sliceNow?.fill?.toLowerCase() === "#c9a24b", JSON.stringify({ before, after, sliceNow }));
+    check(`${t}: a toast confirms what was recorded`, await ev(page, () => /./.test(document.querySelector(".aa-toast")?.textContent ?? "")) );
+    // Read leaves a visible way back to Explore, to the same Āyah
+    await ev(page, () => document.querySelector('[data-aa-row="recite"] .aa-take').click());
+    await page.waitForSelector('.aa-sheet [data-aa-act="read"]', { timeout: 8000 });
+    await ev(page, () => document.querySelector('.aa-sheet [data-aa-act="read"]').click());
+    await page.waitForFunction(() => !document.getElementById("readView").hidden, null, { timeout: 8000 });
+    await settle(page, 900);
+    const pill = await ev(page, () => { const b = document.querySelector("#ayahCardBackPill [data-ayah-card-back]"); const r = b?.getBoundingClientRect(); return { text: b?.innerText.replace(/\s+/g, " ") ?? null, r: r && { left: r.left, right: r.right, top: r.top, bottom: r.bottom, width: r.width, height: r.height }, shown: !!r && r.width > 0 }; });
+    if (PROBE) console.log(t, "pill", JSON.stringify(pill));
+    check(`${t}: Read opens the reading view and leaves a visible "Back to Explore" pill, on screen`, pill.shown && /Explore|অন্বেষণ/.test(pill.text) && inside(pill.r, width, vh), JSON.stringify(pill));
+    await page.click("#ayahCardBackPill [data-ayah-card-back]"); await settle(page, 1500);
+    const back = await ev(page, () => ({ explore: !document.getElementById("exploreView").hidden, crumbs: [...document.querySelectorAll("#exploreBreadcrumb .explore-crumb")].map((c) => c.textContent.trim()), nav: [...document.querySelectorAll("#exploreNavBar [data-aa]")].map((b) => b.dataset.aa).join(), pill: !document.getElementById("ayahCardBackPill") || document.getElementById("ayahCardBackPill").hidden }));
+    if (PROBE) console.log(t, "back", JSON.stringify(back));
+    check(`${t}: the pill returns to Explore on the same Āyah (breadcrumb ${cr.length} levels deep, ← Surah / ‹ › present) and goes away`, back.explore && back.crumbs.length === cr.length && back.crumbs.join() === cr.join() && back.nav === "up,ayah-prev,ayah-next" && back.pill, JSON.stringify({ back, cr }));
     check(`${t}: no sideways scroll`, await ev(page, () => document.documentElement.scrollWidth <= innerWidth + 1));
     check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
   });

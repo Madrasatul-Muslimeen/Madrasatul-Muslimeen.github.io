@@ -13186,12 +13186,22 @@
       closeExploreTake();
       currentTrackableId = take.approachId; // the app's Approach becomes this one, as a wheel slice does
       trackableSelect.value = take.approachId;
+      // The way-back law (audit14): Read and Guide leave Explore, so they leave a "Back to Explore" that restores THIS place
+      // (the Surah or Āyah the Take was opened on), not Explore's top level.
+      const here = { level: exploreLevel, juz: exploreJuzNum, hizb: exploreHizbNum, surah: exploreSurahNum, ruku: exploreRukuIndex, ayah: exploreAyahIdx, mode: exploreSurahMode };
+      const backToExplore = async () => {
+        closeAllPanels(); setStageView("explore"); await openExplore();
+        exploreLevel = here.level; exploreJuzNum = here.juz; exploreHizbNum = here.hizb; exploreSurahNum = here.surah; exploreRukuIndex = here.ruku; exploreAyahIdx = here.ayah; exploreSurahMode = here.mode;
+        await renderExplore();
+      };
+      const backLabel = u ? u.name : exploreSurahLabel(take.sn);
       if (act === "read") {
-        if (u) { await goToAyahFromExplore(take.sn, u.ayah, u.half); return; }
+        if (u) { await goToAyahFromExplore(take.sn, u.ayah, u.half); setAppReturn(t("Back to Explore"), backLabel, backToExplore); return; }
         closeAllPanels();
         setStageView("read");
         await exploreApplyUnit(take.sn, "surah");
         renderStudyScreen();
+        setAppReturn(t("Back to Explore"), backLabel, backToExplore);
         return;
       }
       await exploreApplyUnit(take.sn, take.unit, u?.ayah, u?.half);
@@ -13200,7 +13210,7 @@
       else if (act === "guide") {
         closeAllPanels();
         // Decision 95 (R3a): the Track/Guide card is the Notes pane's Track tab; the way back is Explore.
-        await openApproachCardInPane(take.approachId, t("Back to Explore"), async () => { closeAllPanels(); setStageView("explore"); await openExplore(); });
+        await openApproachCardInPane(take.approachId, t("Back to Explore"), backToExplore);
       }
     }
 
