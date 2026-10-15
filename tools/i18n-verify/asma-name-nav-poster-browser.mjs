@@ -99,7 +99,7 @@ for (const lang of ["en", "bn"]) {
     check(`${tag} the poster is as large as the panel allows (width ${p.w | 0} of ${q.availW | 0}, height ${p.h | 0} of ${limitH | 0})`, (fitsW && p.h <= limitH + 4) || (fitsH && p.w <= q.availW + 1), JSON.stringify({ p, q }));
     check(`${tag} the poster keeps its own shape (1055 : 1491)`, Math.abs(p.h / p.w - RATIO) < 0.02, (p.h / p.w).toFixed(3));
     if (width >= 900) check(`${tag} the poster sits inside the panel, whole`, p.l >= q.l - 1 && p.r <= q.r + 1 && p.t >= q.t - 1 && p.b <= q.b + 1, JSON.stringify({ p, q }));
-    check(`${tag} the poster is bigger than the old 320px wherever the panel has room for more`, q.availW <= 330 || p.w > 330, `${p.w | 0} in ${q.availW | 0}`);
+    check(`${tag} the poster is bigger than the old 320px wherever the panel has room for more`, q.availW <= 330 || p.w > 330 || (width >= 900 && Math.abs(p.h - q.availH) <= 4) /* audit 15: a panel short of height (the v11.04 window clears the bottom bar) is filled by height, so the width stays under 320 */,`${p.w | 0} in ${q.availW | 0}`);
     check(`${tag} at a Name, the wheel's resize handles and legend are gone from the panel`, s.handles === 0 && !s.legend, JSON.stringify({ h: s.handles, l: s.legend }));
     check(`${tag} no sideways scroll`, s.over <= 0, String(s.over));
     if ((width === 1239 && lang === "en") || (width === 390 && lang === "bn")) await page.screenshot({ path: `/tmp/asma-name-nav-${lang}-${width}.png` });
