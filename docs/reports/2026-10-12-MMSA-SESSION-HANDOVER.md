@@ -252,3 +252,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v10.59** (2026-10-15): the Zab button moves into the Wheel / Legend / Unit row on a phone (PCF J25).
 - **v10.60** (2026-10-15): audit part 5, finger-sized controls on the remaining pages (PCF J29).
 - **v10.61** (2026-10-15): Know Your Status shows Before Al-Fatihah under each Approach (PCF J26).
+- **v10.62** (2026-10-15): audit part 6, finger-sized buttons on the Quran page (PCF J29).
