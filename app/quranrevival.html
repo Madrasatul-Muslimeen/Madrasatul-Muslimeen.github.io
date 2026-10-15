@@ -2168,6 +2168,13 @@
   .poster-ref { font-size: 0.68rem; color: #a8987a; margin-top: auto; padding-top: 0.7rem; }
   .poster-footer { font-size: 0.5rem; letter-spacing: 0.1em; color: #6d6448; text-transform: uppercase; margin-top: 0.3rem; }
   .qcr-add-form button { font-size: 12px; padding: 4px 10px; }
+  /* Audit part 8 (PCF J29): finger-sized targets in the QCR collections view. */
+  #qcrLevelSelect, #qcrApproachSelect { box-sizing: border-box; min-height: 40px; } /* audit8 qcrselects */
+  #qcrPaletteBtn { width: 40px; height: 40px; } /* audit8 qcrpalette */
+  .qcr-way-row .way-click { min-height: 40px; } /* audit8 qcrjump */
+  .qcr-way-manage select { box-sizing: border-box; min-height: 40px; } /* audit8 qcrmove */
+  .qcr-way-manage .qcr-icon-btn { width: 40px; height: 40px; } /* audit8 qcrremove */
+  .qcr-add-form select, .qcr-add-form input[type="number"], .qcr-add-form button { box-sizing: border-box; min-height: 40px; } /* audit8 qcradd */
 
   /* ---------- Reading screen (shell round 17) ----------
      #readView is the stage's second occupant. It fills whatever the header
