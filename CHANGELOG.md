@@ -21193,3 +21193,29 @@ New strings `wholeQuranLevelSentence` ("{level}: Achieved {known} and {percent} 
 **Tests:**
 - New `audit-part4-fixes-browser.mjs` (12 pages, 3 widths, en and bn): 1302/0. All 3 mutations fail it: navlinks (48 failed), navscroll (66) and zab-spacer (24).
 - `audit-part3-fixes` 270/0, `behaviour` 971/0, `phone-width-overflow` 217/0, `dua-tab` 57/0, `dua-word-links` 48/0 and `dua-note-bookmark` 35/0.
+
+## v10.59 — 15 Oct 2026 — The 🧰 moves into the Wheel / Legend / Unit row on a phone (PCF J25)
+
+**The Owner** (J25 Quick task, 15 Oct, 2:30 pm, with a photo of v10.57 on their phone): "Zab button covering the Map. Rather move it as shown." The arrows in the photo shift Wheel, Legend and Unit left, and put the 🧰 at the row's right end.
+
+**Why v10.58 did not already fix it:** the Qur'an page's bottom tabs (`#tabRow`) are `position: sticky; bottom: 0`, so they stay pinned to the screen while the page scrolls. v10.58's 68px spacer only helped at the very end of the page, the one place its review measured. **The lesson:** measure a pinned bar's cover part-way down the page, not only after scrolling to the end.
+
+**Built by the Architect** (branch `zab-dock`):
+- **`app/js/zab-bar.js`:**
+  - **Dock:** a page may give the 🧰 a place of its own with `[data-zab-dock]`. Zab puts a 40px round 🧰 there, with the same open, close and pressed state as the corner. While it is on screen, the floating corner hides (`body.zab-docked`).
+  - **Lift:** a page may mark its pinned bottom bars with `[data-zab-lift]`, and the corner then sits above them (`--zab-lift`).
+  - A ResizeObserver notices when another view hides the dock or a bar, so the corner comes back exactly then.
+  - The pressed state is now set on every `[data-zab-open]` button in the document, not only inside the Zab root.
+- **`app/quranrevival.html`:**
+  - the dock is at the right end of `#wheelDrawerRow`;
+  - below 768px, Wheel, Legend and Unit narrow to 4.6rem, so the row of four fits a 320px phone;
+  - `#tabRow` and the Read view's `#readQuickRow` are lift bars.
+- **A second defect, fixed by the same lift:** in the Read view on a phone, the corner 🧰 sat on the quick "Approach" button (`readQuickApproachBtn`), in v10.58 as well. It now sits above the quick row.
+- **One trade-off, recorded:** while the full-screen Read contents list is open, the docked 🧰 is underneath it, so no 🧰 shows over the list.
+- **Also confirmed:** the Owner wrote "Working" in J25. Zab saves on the live Rules, so the last Zab try is done.
+
+**Tests:**
+- New `zab-dock-browser.mjs` (en and bn at 320, 360, 390, 740 and 820px; tap to open, Esc to close, and the Read view): 74/0. All 4 mutations fail it: dock-hides-corner (12 failed), dock-row-fit (4), lift (2) and no-dock (30).
+- `audit-part4-fixes-browser`: 1302/0. Its "Zab present" positive control was updated in place to count the docked 🧰, because on the Qur'an page the corner is now deliberately hidden.
+- `behaviour` 971/0 and `phone-width-overflow` 217/0.
+- `CLAUDE.md` also gains the Owner's PCF "🆕 What's New" rule (PCA J46).

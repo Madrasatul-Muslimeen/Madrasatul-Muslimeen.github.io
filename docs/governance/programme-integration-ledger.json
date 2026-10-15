@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "10.58",
+    "version": "10.59",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -3689,8 +3689,20 @@
     {
       "version": "10.58",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Audit part 4 (Builder round #847, PR #849): 68px Zab spacer on phones, 40px nav menu controls, menus scroll inside themselves.",
+      "integration": {
+        "authorizedOn": "2026-10-15",
+        "integratedOn": "2026-10-15",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "10.59",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "The Owner's J25 photo: the 🧰 docks in the wheel row on a phone, the corner lifts above pinned bottom bars.",
       "integration": {
         "authorizedOn": "2026-10-15",
         "integratedOn": "2026-10-15",
@@ -3699,8 +3711,9 @@
       }
     }
   ],
-  "nextUnallocated": "10.59",
+  "nextUnallocated": "10.60",
   "nextUnallocatedNote": [
+    "v10.59 was allocated to the Zab button moves into the Wheel / Legend / Unit row on a phone (PCF J25), 2026-10-15.",
     "v10.58 was allocated to audit part 4, room for the Zab button on phones, 40px menu links (PCF J29), 2026-10-15.",
     "v10.57 was allocated to audit part 3, 40px touch targets on the admin and study pages (PCF J29), 2026-10-15.",
     "v10.56 was allocated to Arabic boxes in Meanings of this word (J23), 2026-10-15.",
