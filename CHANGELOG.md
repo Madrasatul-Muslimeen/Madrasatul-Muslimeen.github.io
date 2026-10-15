@@ -21371,3 +21371,16 @@ New strings `wholeQuranLevelSentence` ("{level}: Achieved {known} and {percent} 
 - wheel-centre 645/0; wheel-slice-opens-track 96/0; audit-part8 176/0; audit-part9 64/0; zab-dock 74/0; asma-quick-class 27/0; phone-width-overflow 217/0; behaviour 971/0.
 - `tablet-wheel-browser.mjs` fails 2 (the landing wheel at 700px is 638–644px; it wants 650). The failures are identical on v10.66, so they are older than this round. They are recorded in J29.
 - Screenshots of the QCR wheel at 1440px (en) and 320px (bn): every label whole.
+
+## v10.68 — 15 Oct 2026 — The Read view's ⋯ tools panel stays on a small phone's screen (PCF J29 audit part 11)
+
+**Built by Builder round #866 (PR #867, branch `builder/issue-866-run-1321`) and reviewed by the Architect.** The first round of the User Manual audit that checks each feature WORKS, start to end, not only its size: the manual's 11 "Qur'an: reading" features at 320/390/820/1440px, in English and Bangla. The suite asserts the result (a rendered font size, a stored write, a changed class), not the element.
+
+- **All 11 work:** the Read view, Study options, saved settings (they survive a reload), play/pause/stop (against a silent stub, since the sandbox cannot reach the audio host), the Mushaf view (place kept), 📖 Meaning, full screen and window with the way back, A± (with its limits), marking words (stored, survives reload), the Al-Fātiḥah count, ✓ Mark this reading complete, the Unit card, the end-of-unit prompt and the quick buttons.
+- **Fixed:** `placeReadTools()` in `app/quranrevival.html`. On a 320–390px phone the ⋯ is not at the bar's right edge (the bar wraps), and the tools panel hung from it ran off the LEFT of the screen (−46px at 320, −8px at 390), taking the A± panel with it. The panel's left edge is now held at 8px at the most.
+- **Corrected in review:** the Bangla "no English left" check flagged "QCR" in "📚 QCR সংকলন(সমূহ)…". QCR is the feature's own name (audit part 8 accepted it), so the check now allows it.
+- **Said plainly in the PR:** the text-size "stops at its limits" checks are partly enforced by the browser's range input itself; the quick-button "Notes opens the pane" check accepts either of two signs.
+
+**Tests** (the Architect, on the round's head, based on v10.67):
+- New `audit-part11-reading-browser.mjs`: 506/0. `--mutate=toolsplace` fails it at 320 and 390px, en and bn.
+- behaviour 971/0; phone-width-overflow 217/0; wheel-centre 645/0 (the Builder saw 1 failure once, at 320px en; it did not reproduce here); audit-part6 204/0; zab-dock 74/0; tablet-wheel 74/0.
