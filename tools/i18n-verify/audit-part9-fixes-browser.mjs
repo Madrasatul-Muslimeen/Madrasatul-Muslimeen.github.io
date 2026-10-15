@@ -69,7 +69,7 @@ async function openWord(page, surah, ayah, pos) {
   await page.waitForTimeout(800);
 }
 
-const PROBE = process.env.PROBE === "1";
+const PROBE = process.env.PROBE === "1" || process.argv.includes("--probe");
 for (const lang of ["en", "bn"]) for (const width of [320, 390, 820, 1440]) {
   const tag = `${lang} ${width}px`;
   await flow(`${tag} qcr-badge`, "/app/quranrevival.html", null, async (t, page) => {
@@ -91,6 +91,31 @@ for (const lang of ["en", "bn"]) for (const width of [320, 390, 820, 1440]) {
     check(`${t}: every badge holds its text (scrollWidth <= clientWidth)`, bad.length === 0, bad.map((x) => `${x.t} ${x.sw}>${x.cw}`).join(", "));
     const over = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
     check(`${t}: nothing scrolls sideways (${over})`, over <= 0);
+  });
+  await flow(`${tag} verb-table`, "/app/quranrevival.html", null, async (t, page) => {
+    await openWord(page, 2, 102, 35); // فَيَتَعَلَّمُونَ, Form V of ع ل م
+    if (!(await page.$("[data-word-card-sec]"))) await page.click('[data-word-card-level="depth"]', { timeout: 8000 });
+    await page.waitForSelector("[data-word-card-sec]", { timeout: 8000 });
+    await page.waitForFunction(() => document.querySelector('[data-word-card-sec="root"] [data-word-card-fam]'), null, { timeout: 8000 }).catch(() => {});
+    await page.waitForTimeout(1200);
+    await page.evaluate(() => { const s = document.querySelector('[data-word-card-sec="conj"]'); if (s) s.open = true; });
+    await page.waitForTimeout(600);
+    const m = await page.evaluate(() => {
+      const s = document.querySelector('[data-word-card-sec="conj"]');
+      if (!s) return null;
+      const card = document.querySelector(".quran-word-card");
+      const cb = card.getBoundingClientRect();
+      const cells = [...s.querySelectorAll("td")].map((e) => ({ sw: e.scrollWidth, cw: e.clientWidth, r: e.getBoundingClientRect().right }));
+      const tabs = [...s.querySelectorAll("[data-word-card-conj-table]")].map((e) => { const b = e.getBoundingClientRect(); return { l: b.left, r: b.right, sw: e.scrollWidth, cw: e.clientWidth }; });
+      const wrap = s.querySelector(".word-card-conj-wrap");
+      return { cells, tabs, cardL: cb.left, cardR: cb.right, vw: innerWidth, wrapSw: wrap.scrollWidth, wrapCw: wrap.clientWidth, over: document.documentElement.scrollWidth - innerWidth };
+    });
+    if (PROBE) console.log(t, JSON.stringify({ ...m, cells: m && m.cells.length }));
+    check(`${t}: POSITIVE CONTROL the conjugation tables rendered`, !!m && m.tabs.length === 3 && m.cells.length > 10);
+    if (!m) return;
+    check(`${t}: no table cell clips its text`, m.cells.every((c) => c.sw <= c.cw + 1), JSON.stringify(m.cells.filter((c) => c.sw > c.cw + 1).slice(0, 3)));
+    check(`${t}: each table sits inside the card`, m.tabs.every((x) => x.l >= m.cardL - 1 && x.r <= m.cardR + 1 && x.sw <= x.cw + 1), JSON.stringify({ tabs: m.tabs, cardL: m.cardL, cardR: m.cardR }));
+    check(`${t}: the table area fits (or scrolls inside its own box) and the page does not scroll sideways (${m.over})`, m.over <= 0);
   });
 }
 await browser.close();
