@@ -3254,6 +3254,11 @@
   .ms-tile-bar { display: block; height: 4px; margin-top: 0.2rem; border-radius: 2px; background: var(--card-line); overflow: hidden; }
   .ms-tile-bar > span { display: block; height: 100%; background: #3fae74; }
   .ms-tile-note { display: block; font-size: 0.72rem; color: var(--card-text-muted); }
+  /* PCF J26 (the Owner, 15 Oct 2026: "A") -- one calm line under each Approach's tiles. */
+  .ms-opening-line { display: flex; flex-wrap: wrap; align-items: center; gap: 0.15rem 0.4rem; margin: 0.1rem 0 0.2rem; font-size: 0.74rem; color: var(--card-text-muted); }
+  .ms-opening-title { font-weight: 600; }
+  .ms-opening-item { display: inline-flex; align-items: center; gap: 0.25rem; white-space: nowrap; }
+  .ms-opening-dot { flex: 0 0 auto; width: 0.6rem; height: 0.6rem; border-radius: 50%; border: 1px solid rgba(0,0,0,0.35); }
   @media (max-width: 359px) { .ms-tile-of { display: block; } }
   #myStatusWheelBox { flex: 0 1 auto; max-width: 100%; text-align: center; }
   #myStatusWheelBox svg { max-width: 100%; height: auto; }
@@ -4098,6 +4103,8 @@
   /* PCF J26 -- the "Before Al-Fātiḥah" band on the Read page (layout B): Aʿūdhu billāh LEFT, Bismillah RIGHT (the
      band is dir=ltr, so the order holds in Bangla too), two columns that shrink (min-width:0) and never push the page wide. */
   .opening-band { direction: ltr; box-sizing: border-box; max-width: 100%; margin: 0.2rem 0 0.8rem; padding: 0.5rem; border: 1px dashed #b8892c; border-radius: 0.7rem; background: rgba(214,166,72,0.14); display: flex; flex-direction: column; gap: 0.4rem; }
+  /* PCF J26 audit polish (14 Oct): on a wide screen the band keeps a calm width (about two phone widths), centred. */
+  @media (min-width: 900px) { .opening-band { max-width: 48rem; margin-left: auto; margin-right: auto; } } /* j26 band-cap */
   .opening-band-title { font-size: 0.78rem; font-weight: 600; color: #7a5a14; letter-spacing: 0.02em; }
   .opening-chips { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0.4rem; }
   .opening-chip { min-width: 0; min-height: 44px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.1rem; padding: 0.3rem 0.4rem; border: 1px solid #c9b88a; border-radius: 0.6rem; background: #fffaf0; color: #1b1b16; cursor: pointer; font: inherit; }
@@ -11494,7 +11501,21 @@
       }).join("");
       const note = trackable && !countsForEachAyah(trackable)
         ? `<span class="ms-tile-note">${escapeHtml(t("Counts whole units only: each tile is the units you claimed as a whole."))}</span>` : "";
-      return `<span class="ms-tiles">${tiles}</span>${note}`;
+      return `<span class="ms-tiles">${tiles}</span>${myStatusOpeningLineHtml(trackableId, cache)}${note}`;
+    }
+
+    /** PCF J26 (the Owner, 15 Oct 2026: "A"): one calm line under each Approach's tiles, "Before Al-Fātiḥah:
+     *  Aʿūdhu billāh ● · Bismillah ●". Each dot is that Approach's OWN claim on the item, read off the records this
+     *  sheet already loaded (no new read, I9) -- the same rule as the band on Al-Fātiḥah's page (openingStatusId).
+     *  Bismillah appears only while it is counted apart from the 7 āyāt, exactly as the band shows it. */
+    function myStatusOpeningLineHtml(trackableId, cache) {
+      const items = [{ name: t("Aʿūdhu billāh"), st: cache.directWideStatusByTrackable?.get(trackableId)?.get(buildUnitKey.opening("taawwudh")) }];
+      if (fatihaCountApplies(1, fatihaOn())) items.push({ name: t("Bismillah"), st: cache.ownAyahByTrackable?.get(trackableId)?.get("1:1") });
+      const parts = items.map(({ name, st }) => {
+        const s = st && STATUS_COLORS[st] ? st : "not_started";
+        return `<span class="ms-opening-item" data-ms-opening="${s}">${escapeHtml(name)} <i class="ms-opening-dot" style="background:${STATUS_COLORS[s]}" role="img" aria-label="${escapeHtml(statusLabel(s))}"></i></span>`;
+      }).join('<span class="ms-opening-sep" aria-hidden="true">·</span>');
+      return `<span class="ms-opening-line" data-ms-opening-line><span class="ms-opening-title">${escapeHtml(t("Before Al-Fātiḥah"))}:</span> ${parts}</span>`;
     }
 
     function mixHex(a, b, k) {
