@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "10.66",
+    "version": "10.67",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -3785,8 +3785,20 @@
     {
       "version": "10.66",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Architect fix: the wheel's Take an Approach pill keeps its drawn size with a 40px tap area (regression from v10.62).",
+      "integration": {
+        "authorizedOn": "2026-10-15",
+        "integratedOn": "2026-10-15",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "10.67",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Builder round #863: QCR and Asma wheels keep room for their number labels and fit a 320px pane.",
       "integration": {
         "authorizedOn": "2026-10-15",
         "integratedOn": "2026-10-15",
@@ -3795,8 +3807,9 @@
       }
     }
   ],
-  "nextUnallocated": "10.67",
+  "nextUnallocated": "10.68",
   "nextUnallocatedNote": [
+    "v10.67 was allocated to wheel labels no longer cut at the wheel's edge (J29 audit part 10, round #863), 2026-10-15.",
     "v10.66 was allocated to the wheel pill sits inside the centre circle again on a small phone (J29 item 16), 2026-10-15.",
     "v10.65 was allocated to the QCR āyah-number badge shows the whole reference (J29 audit part 9, PR #861), 2026-10-15.",
     "v10.64 was allocated to finger-sized controls in QCR collections and on the Trash page (J29 audit part 8, PR #859), 2026-10-15.",
