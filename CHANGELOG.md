@@ -21172,3 +21172,24 @@ New strings `wholeQuranLevelSentence` ("{level}: Achieved {known} and {percent} 
 - behaviour 971/0; phone-width-overflow 217/0.
 - `dua-check` 49/0, `dua-note-bookmark` 35/0, `dua-tab` 57/0, `dua-vowels` 33/0, `dua-word-card` 45/0, `dua-word-grammar` 33/0, `dua-word-links` 48/0, `dua-word-progress` 31/0, `dua-words` 37/0, `hadith-search-announcement` 16/0, `hadith-source-navigation` 50/0, `hadith-translations` 33/0, `asma-descriptions` 26/0, `asma-screensaver` 61/0.
 - The 8 governance suites: green.
+
+## v10.58 — 15 Oct 2026 — Audit part 4: room for the Zab button on phones, 40px menu links, menus that scroll inside themselves (PCF J29)
+
+**Source:** the Owner's PCF General rule "Keep working, never idle". Audit part 4 picks up what part 3 (v10.57) did not reach.
+
+**Built by Builder round #847 (PR #849, branch `builder/issue-847-run-1291`) and reviewed by the Architect:**
+- **`app/js/zab-bar.js`:** on phones the `#zabSpacer` was `display:none`, so the floating 🧰 corner button (48px, 12px from the corner) sat over whatever ended the page. It is now a 68px block on phones, and the bar's own height from 768px up.
+- **`app/css/shell.css`:** every link, button and picker in the Home / Modules / Operation menus and the Bookmark sheet is at least 40px tall. The three ordinary menus (not the Bookmark sheet) scroll inside themselves, `max-height: min(max(100vh − 22rem, 14rem), 38rem)`, instead of running past the bottom of a phone screen.
+- **Measured clean, no change:**
+  - the Writing sheet, from both entries, and its full-screen paper;
+  - the Dua cards, both modes, their status buttons and the word card.
+- **Not a defect:** the Records "নোট" column in Bangla at 390px is reachable by a sideways scroll in the table's own box, not clipped.
+
+**The Architect's review:**
+- Before and after photographs at 390px. On the Qur'an page, the 🧰 button covered the "Mapping My Journey" bottom tab before the fix and is clear of it after. An open Home menu in Bangla ran off the bottom of the screen and now ends with a rounded edge, scrolling inside.
+- Page height at 390 and 820px on six pages. Every phone page gains 68px at the bottom. Mapping My Journey, which fit a 390×844 screen exactly, now scrolls 37px. Nothing is cut, so this is accepted. Tablet and desktop are unchanged.
+- **A second, cancelled run** (#1290, started by the issue's own `@claude` line) left branch `claude/issue-847-20261015-0129` with overlapping commits. It is not merged, and it is superseded by this one.
+
+**Tests:**
+- New `audit-part4-fixes-browser.mjs` (12 pages, 3 widths, en and bn): 1302/0. All 3 mutations fail it: navlinks (48 failed), navscroll (66) and zab-spacer (24).
+- `audit-part3-fixes` 270/0, `behaviour` 971/0, `phone-width-overflow` 217/0, `dua-tab` 57/0, `dua-word-links` 48/0 and `dua-note-bookmark` 35/0.
