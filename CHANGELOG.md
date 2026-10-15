@@ -21456,3 +21456,16 @@ New strings `wholeQuranLevelSentence` ("{level}: Achieved {known} and {percent} 
 - **Not covered by a mutation:** Read's way back from a whole Surah, and Guide's improved way back (the Āyah-level Read case is covered by `noreadback`).
 
 **Tests** (the Architect, on the round's head merged with `main` at v11.03): audit-part14 650/0; each of `--mutate=dockinset` (1440px, en and bn), `previewscroll` (320–1440px), `qcrsnippet` (bn 390 and 1440px), `noreadback` (every width, en and bn) and `optsize` (every width) fails the suite where its defect shows; explore-all-approaches 280/0 (red on `main` at 1280px since at least v10.58, cured by `dockinset`); explore-ayah-numbers 294/0; explore-coverage 36/0; explore-hizb-view 80/0; explore-phone-card 146/0; qcr-bismillah-explore-slide 64/0; qcr-popup 34/0; wheel-centre 645/0; wheel-unit-go 254/0; wheel-slice-opens-track 96/0; wheel-writing-slice 25/0; tablet-wheel 74/0; audit-part13 494/0; audit-part12 500/0; qr-stage1-hidden 110/0; phone-width-overflow 217/0; behaviour 971/0.
+
+## v11.05 — 16 Oct 2026 — Legacy App - v10: the v10.68 release archived at /legacy-v10/ (PCF MMSA J32)
+
+**Built by the Architect**, on the Owner's job PCF MMSA J32 "Put QR v10 in Legacy" (which answers PCF J30's second question: keep a v10 copy).
+
+- **`legacy-v10/`** is `app/` exactly as released at **v10.68** (merge commit `075bc90c`, 15 Oct 2026), the last build before v11.00 made the app QuranRevival and hid General Study, Nature-Life, Life Skill and Health. It is reachable at `/legacy-v10/` and is reference only.
+- **The one documented change**, as for v08 and v09: `js/sw-register.js` returns at once. That code reaches the LIVE app's worker by absolute path, so a frozen copy must not run it. The archive therefore works online only.
+- **`README-ARCHIVE.txt`** says what the archive shares with the live app: the Firestore data (real writes), the tenant's Approaches and collections, the Qur'an and Hadith data files, and browser storage. It also lists the later fixes it does not have.
+- **Every page with the legacy links (26)** adds **Legacy App - v10 ↗** to its Home menu, with its Bangla label (`পুরাতন অ্যাপ - v10 ↗`). `sw.js` keeps `/legacy-v10/` out of the live offline cache.
+- **`brief-integrity.mjs`:** `legacy-v10` joins `LEGACY_ARCHIVES` (checked file by file against `075bc90c`), and the reachable-lines check names six. CLAUDE.md's evidence table has a `legacy-v10/` row.
+- **New `tools/i18n-verify/legacy-links-browser.mjs`:** the v10 link is in each Home menu, opens `/legacy-v10/index.html` in a new tab, is labelled in the page's language, is at least 40px, sits inside the screen and is not covered (checked with `elementFromPoint`). A positive control asserts that the v07–v09 links are present.
+
+**Tests:** brief-integrity 12/0 (legacy-v10 checked file by file against 075bc90c; editing an archived file, or re-enabling its worker, each fails it); new legacy-links-browser 97/0 at 320/390/820/1440px, en and bn (`--mutate=nov10` fails 72); a browser probe of /legacy-v10/ (en and bn, 390 and 1440px: badge v10.68, Read view and Explore open, no service worker, nothing loaded from /app/js/, five other pages load clean); phone-width-overflow 217/0; behaviour 971/0; the eight governance suites green.
