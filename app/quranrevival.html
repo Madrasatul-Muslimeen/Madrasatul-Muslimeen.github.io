@@ -799,7 +799,7 @@
      >= 15% of the measured diameter; font set by layoutWheelHub(). */
   .wheel-cta-btn {
     position: absolute; left: 50%; top: 49%; transform: translateX(-50%); z-index: 4;
-    width: 60%; min-height: 15%; box-sizing: border-box; padding: 2% 3%;
+    width: 60%; min-height: max(15%, 40px); box-sizing: border-box; padding: 2% 3%; /* audit6 cta */
     display: grid; place-content: center; text-align: center; gap: 0;
     background: linear-gradient(#ecd08e, #c9a24b); color: #1a1406;
     border: 1px solid #a8843c; border-radius: 999px; pointer-events: auto;
@@ -1084,7 +1084,7 @@
 
   /* Explore's drill-down trail (Phase 5 round 14) -- "Whole Quran › Juz 3 › Al Imran › Ruku' 2". */
   #exploreBreadcrumb { display: flex; align-items: center; flex-wrap: wrap; gap: 2px; font-size: 0.78rem; }
-  .explore-crumb { background: transparent; border: none; color: var(--card-text-muted); padding: 2px 4px; font-size: 0.78rem; font-family: 'Inter', sans-serif; cursor: pointer; border-radius: 4px; }
+  .explore-crumb { background: transparent; border: none; color: var(--card-text-muted); padding: 2px 6px; min-height: 40px; /* audit6 crumb */ font-size: 0.78rem; font-family: 'Inter', sans-serif; cursor: pointer; border-radius: 4px; }
   .explore-crumb:hover { color: var(--card-text); background: rgba(255,255,255,0.06); }
   .explore-crumb.active { color: var(--card-link); font-weight: 600; cursor: default; }
   .explore-crumb.active:hover { background: none; }
@@ -1100,7 +1100,7 @@
   /* ~36px tall, per the standing lesson that a 26px control is too small for
      a finger; these are words rather than icons, so they take their own
      width rather than a fixed square. */
-  .explore-view-btn { min-height: 36px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--card-line); background: rgba(255,255,255,0.04); color: var(--card-text-muted); font-family: 'Inter', sans-serif; font-size: 0.78rem; cursor: pointer; }
+  .explore-view-btn { min-height: 40px; /* audit6 viewbtn */ padding: 0 10px; border-radius: 8px; border: 1px solid var(--card-line); background: rgba(255,255,255,0.04); color: var(--card-text-muted); font-family: 'Inter', sans-serif; font-size: 0.78rem; cursor: pointer; }
   .explore-view-btn:hover { color: var(--card-text); border-color: var(--card-link); }
   .explore-view-btn.on { background: rgba(201,162,75,0.16); border-color: var(--card-link); color: var(--card-link); font-weight: 600; }
   /* 5 Sep 2026, owner: "place the approach selector over the wheel ... place
@@ -1193,7 +1193,7 @@
     border-radius: 999px; padding: 0.25rem 0.85rem;
     /* ~36px, per the standing lesson that a 26px control is too small for a
        finger. The whole pill is the tap target, wording included. */
-    min-height: 36px; box-sizing: border-box;
+    min-height: 40px; box-sizing: border-box; /* audit6 capsule */
     font-family: 'Inter', sans-serif; font-weight: 800; font-size: 0.8rem; line-height: 1.3;
     text-align: center; box-shadow: 0 6px 16px -8px rgba(0,0,0,0.6); cursor: pointer;
   }
@@ -1246,7 +1246,7 @@
   .explore-palette-row { flex: 1 1 auto; display: flex; gap: 0.4rem; }
   .explore-palette-btn {
     flex: 1 1 0; background: white; color: #1F3A6E; border: 1px solid #ddd; border-radius: 0.5rem;
-    font-weight: 700; font-size: 0.78rem; padding: 0.4rem 0.3rem; cursor: pointer;
+    font-weight: 700; font-size: 0.78rem; padding: 0.4rem 0.3rem; min-height: 40px; /* audit6 palette */ cursor: pointer;
   }
   .explore-palette-btn.on { background: #1F3A6E; color: white; border-color: #1F3A6E; }
   /* Issue #261 -- a NEW control is a layout change and gets the same
@@ -2362,7 +2362,7 @@
     background: #fdf6e3; border: 1.5px solid #d8c68a; border-radius: 999px;
   }
   .approach-bar .approach-bar-btn, #readBar .approach-bar .approach-bar-btn {
-    flex: 1 1 0; min-width: 0; min-height: 36px; margin: 0; padding: 0.25rem 0.5rem;
+    flex: 1 1 0; min-width: 0; min-height: 40px; /* audit6 barbtn */ margin: 0; padding: 0.25rem 0.5rem;
     font: inherit; font-size: 0.78rem; font-weight: 700; line-height: 1.15;
     white-space: normal; overflow-wrap: anywhere; text-align: center; cursor: pointer;
     color: #5e4418; background: transparent; border: 0; border-radius: 0;
@@ -2396,7 +2396,7 @@
      size; a taller chip would cost more than this round could measure
      without a real browser (see the PR notes for this issue). */
   .read-unit-chip {
-    flex: 0 0 auto; max-width: 6.5rem; font: inherit; font-size: 0.74rem; font-weight: 600;
+    flex: 0 0 auto; max-width: 6.5rem; min-height: 40px; /* audit6 unitchip */ font: inherit; font-size: 0.74rem; font-weight: 600;
     color: #7a5f1e; background: #fdf6e3; border: 1px solid #d8c68a; border-radius: 0.35rem;
     padding: 0.3rem 0.5rem; cursor: pointer; line-height: 1.15;
   }
