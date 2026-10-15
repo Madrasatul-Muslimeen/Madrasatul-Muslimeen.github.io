@@ -24,7 +24,17 @@ const PROBE = process.env.PROBE === "1" || process.argv.includes("--probe");
 const ONLY = (process.argv.find((a) => a.startsWith("--only=")) || "").slice(7);
 const WONLY = Number((process.argv.find((a) => a.startsWith("--width=")) || "").slice(8)) || 0;
 const LONLY = (process.argv.find((a) => a.startsWith("--lang=")) || "").slice(7);
-const MUTATIONS = {};
+// No defect was found in this audit, so these four are PROOFS THAT THE CHECKS CAN FAIL: each breaks the feature it guards.
+const MUTATIONS = {
+  // › does nothing.
+  "nonext": ["app/quranrevival.html", "**/quranrevival.html*", "if (navNext != null) openAsmaXName(navNext);", ""],
+  // The Essence|Act, Unique|Shared pairs are not drawn for the owner.
+  "noquick": ["app/quranrevival.html", "**/quranrevival.html*", '${canManage ? asmaXQuickClassHtml(entry.number) : ""}', ""],
+  // 🖨 Print on the Asma study page does nothing.
+  "noprint": ["app/js/asma-study.js", "**/js/asma-study.js*", 'if (posterPrintBtn) posterPrintBtn.addEventListener("click", () => window.print());', ""],
+  // The screensaver's "Open this Name" drops the way back (back=1).
+  "noopen": ["app/js/asma-screensaver.js", "**/js/asma-screensaver.js*", "&back=1`;", "`;"],
+};
 if (MUTATE && !MUTATIONS[MUTATE]) throw new Error(`no such mutation ${MUTATE}`);
 
 // The four classifications in the Owner's own shape (decision 78), one Group, and Ar-Rahman already under Essence.
