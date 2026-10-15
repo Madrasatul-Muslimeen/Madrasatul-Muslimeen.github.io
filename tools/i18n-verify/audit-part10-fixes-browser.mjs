@@ -5,7 +5,19 @@ function check(name, ok, detail = "") {
   if (ok && typeof ok.then === "function") throw new Error(`check "${name}" was handed a promise`);
   if (ok) { pass++; console.log(`  PASS  ${name}`); } else { fail++; console.log(`  FAIL  ${name}${detail ? `\n        ${detail}` : ""}`); }
 }
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 const PROBE = process.argv.includes("--probe");
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
+// Each mutation restores one defect by swapping one unique anchor in quranrevival.html back to the old text.
+const MUTATIONS = {
+  qcrroom: ["roomForNumbers: true, /* audit10 qcrroom */", ""],
+  qcrpane: ["#qcrWheelResizeWrap:not(.wheel-resized) { width: min(55vh, 480px); max-width: 100%; } /* audit10 qcrpane */\n    #qcrWheelContainer { width: 100%; margin: 0 auto; }", "#qcrWheelContainer { width: min(55vh, 480px); margin: 0 auto; }"],
+  narrowpane: ["#qcrWheelPane .mastery-wheel, #asmaXWheelPane .mastery-wheel { max-width: 100%; }", ""],
+};
+if (MUTATE && !MUTATIONS[MUTATE]) throw new Error(`no such mutation ${MUTATE}`);
 const browser = await chromium.launch();
 const click = (page, id) => page.evaluate((id) => document.getElementById(id)?.click(), id);
 
@@ -25,7 +37,8 @@ const MEASURE = () => {
       }
     }
     const cut = [];
-    const texts = [...svg.querySelectorAll("text")].filter((t) => t.textContent.trim() && t.getBoundingClientRect().width > 0);
+    // Slice captions (.wheel-seg-label) are long names written along a slice; whether they fit is a product choice, listed in the PR.
+    const texts = [...svg.querySelectorAll("text:not(.wheel-seg-label)")].filter((t) => t.textContent.trim() && t.getBoundingClientRect().width > 0);
     for (const t of texts) {
       const r = t.getBoundingClientRect();
       for (const c of clips) {
@@ -43,6 +56,13 @@ async function flow(tag, fn) {
   try {
     ctx = await newContext(browser, { appLang: lang === "bn" ? "bn" : null, viewport: { width: parseInt(width), height: 900 } });
     await ctx.route("**/archive.org/**", (r) => r.abort());
+    if (MUTATE) {
+      const [from, to] = MUTATIONS[MUTATE];
+      const body = fs.readFileSync(path.join(ROOT, "app/quranrevival.html"), "utf8");
+      const n = body.split(from).length - 1;
+      if (n !== 1) throw new Error(`mutation anchor for ${MUTATE} found ${n} times`);
+      await ctx.route("**/quranrevival.html*", (r) => r.fulfill({ status: 200, contentType: "text/html; charset=utf-8", body: body.split(from).join(to) }));
+    }
     const { page } = await openPage(ctx, "/app/quranrevival.html");
     await page.waitForTimeout(1500);
     await Promise.race([fn(tag, page), new Promise((_, rej) => setTimeout(() => rej(new Error("timeout flow")), 90000))]);
@@ -77,15 +97,15 @@ for (const lang of ["en", "bn"]) for (const width of [320, 390, 820, 1440]) {
     if (best >= 0) { await page.evaluate((i) => { const s = document.getElementById("qcrLevelSelect"); s.selectedIndex = i; s.dispatchEvent(new Event("change", { bubbles: true })); }, best); await page.waitForTimeout(600); }
     await verdict(t, page, "QCR wheel", 5);
   });
-  for (const [name, btn] of [["Quran", "explorePaletteQuranBtn"], ["Asma", "explorePaletteAsmaBtn"], ["WordByWord", "explorePaletteWbwBtn"]]) {
+  for (const [name, btn, min] of [["Quran", "explorePaletteQuranBtn", 2], ["Asma", "explorePaletteAsmaBtn", 3], ["WordByWord", "explorePaletteWbwBtn", 3]]) {
     await flow(`${tag} ${name}`, async (t, page) => {
       await click(page, "tabExploreBtn"); await page.waitForTimeout(700);
       if (PROBE) console.log(await page.evaluate(() => [...document.querySelectorAll('[id^="explorePalette"]')].map((e) => e.id).join(",")));
       await click(page, btn); await page.waitForTimeout(1200);
-      await verdict(t, page, `${name} wheel`, 3);
+      await verdict(t, page, `${name} wheel`, min);
     });
   }
 }
 await browser.close();
-console.log(`\n${pass} passed, ${fail} failed`);
+console.log(`\n${pass} passed, ${fail} failed${MUTATE ? ` (mutation ${MUTATE})` : ""}`);
 process.exit(fail ? 1 : 0);

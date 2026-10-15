@@ -1593,6 +1593,11 @@
     #qcrMain { flex: 0 0 auto; overflow: visible; }
     #qcrListPane { flex: 0 0 auto; overflow: visible; }
     #qcrWheelPane { flex: 0 0 auto; }
+    /* audit10 narrowpane: a 320px wheel in a pane with side padding pokes out of the clipping scroller */
+    #qcrWheelPane, #asmaXWheelPane { min-width: 0; }
+    #qcrWheelResizeWrap:not(.wheel-resized), #asmaXWheelResizeWrap:not(.wheel-resized) { max-width: 100%; }
+    #qcrWheelContainer, #asmaXWheelContainer { max-width: 100%; }
+    #qcrWheelPane .mastery-wheel, #asmaXWheelPane .mastery-wheel { max-width: 100%; }
   }
   /* .ways-list's own generic base rule (below) caps it at 420px with its
      own internal scrollbar -- a second, nested scroll region inside
