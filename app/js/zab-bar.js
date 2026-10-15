@@ -65,7 +65,7 @@ const CSS = `
 #zabBar .zab-bar-scroll { display: flex; gap: 4px; flex: 1 1 auto; min-width: 0; overflow-x: auto; scrollbar-width: none; }
 #zabBar button { min-height: 40px; min-width: 40px; border: 0; border-radius: 8px; background: rgba(255,255,255,.14); color: #fff; font: inherit; padding: 0 12px; cursor: pointer; white-space: nowrap; flex: 0 0 auto; }
 #zabBar button[aria-pressed="true"] { background: #fff; color: #1f3a6e; }
-#zabSpacer { display: none; height: ${BAR_H}px; }
+#zabSpacer { display: block; height: 68px; } /* audit4 zab-spacer: phone, clears the 48px corner button */
 #zabCorner { position: fixed; right: 12px; bottom: 12px; width: 48px; height: 48px; border-radius: 50%; border: 0; z-index: 900; background: #1f3a6e; color: #fff; font-size: 22px; box-shadow: 0 2px 10px rgba(0,0,0,.3); cursor: pointer; }
 body:has(.nw-switch) #zabCorner { bottom: 68px; }
 #zabBackdrop { position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 940; }
@@ -148,7 +148,7 @@ body:has(.nw-switch) #zabCorner { bottom: 68px; }
 .zab-foot { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
 @media (min-width: 768px) {
   #zabBar { display: flex; }
-  #zabSpacer { display: block; }
+  #zabSpacer { display: block; height: ${BAR_H}px; }
   #zabCorner { display: none; }
   #zabBackdrop { display: none; }
   #zabToast { left: auto; right: 12px; width: 380px; max-width: calc(100vw - 24px); bottom: ${BAR_H + 12}px; }
