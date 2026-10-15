@@ -21328,3 +21328,18 @@ New strings `wholeQuranLevelSentence` ("{level}: Achieved {known} and {percent} 
 **Tests** (the Architect, on the code merged with v10.63):
 - New `audit-part8-fixes-browser.mjs`: 176/0. Every mutation fails it, each also at 320px: trashback 8, qcrselects 16, qcrpalette 8, qcrjump 8, qcrmove 8, qcrremove 8, qcradd 24.
 - behaviour 971/0; phone-width-overflow 217/0; audit-part6 200/0; audit-part7 18/0; zab-dock 74/0; quran-my-status 248/0; the 8 governance suites green.
+
+## v10.65 — 15 Oct 2026 — The QCR āyah-number badge shows the whole reference (PCF J29 audit part 9)
+
+**Built by Builder round #860 (PR #861, branch `builder/issue-860-run-1312`) and reviewed by the Architect.** CSS only.
+- **`app/quranrevival.html`:** `.qcr-way-row .badge` is a pill (`width: auto; min-width: 22px; padding: 0 7px; white-space: nowrap`). The shared 22px circle cut "10:101" (27px of text) and 11 other references at every width. The Mastery Wheel's and Asma's badges keep their own rules.
+
+**Audited and clean** (en/bn × 320/390/820/1440): the Word card's verb conjugation table (Read → a verb such as 2:102 فَيَتَعَلَّمُونَ → Depth → Verb Conjugation); the Mushaf view, using the repository's own layout file.
+
+**Found in review, older than this round:**
+- `wheel-centre-browser.mjs` fails 14 checks on `main` since **v10.62** (v10.61: 645/0). At 320 and 360px the 40px "Take an Approach" button from audit part 6 no longer sits inside the wheel's hub circle, and its second line gains the surah name. The v10.62 review did not run this suite. To be fixed next.
+- The QCR wheel's outer āyah labels are cut at its left edge on a wide screen (the same on v10.63).
+
+**Tests** (the Architect, on the round's head, based on v10.64):
+- New `audit-part9-fixes-browser.mjs`: 64/0. Its mutation `qcrbadge` fails it (8 failed, including 320px).
+- behaviour 971/0; phone-width-overflow 217/0; audit-part8 176/0; audit-part6 200/0; zab-dock 74/0; mushaf-no-sideways-overflow 648/0; asma-quick-class 27/0; the 8 governance suites green.
