@@ -345,10 +345,7 @@ for (const lang of ["en", "bn"]) for (const width of WIDTHS) {
   // 12: no English left on these controls in Bangla.
   if (lang === "bn") await flow("bn-no-english", lang, width, null, async (t, page) => {
     await openRead(page); await toolsOpen(page);
-    // Updated by the Architect's review: the app's own names stay in Latin letters in Bangla too (audit part 8 accepted
-    // "QuranRevival" and "QCR" as names). The Read bar's "📚 QCR সংকলন(সমূহ)…" is translated; only its name is Latin.
-    const NAMES = new Set(["QCR", "QuranRevival"]);
-    const words = (s) => ((s || "").replace(/[A-Za-z]{1,2}±|A±/g, "").match(/[A-Za-z]{3,}/g) || []).filter((w) => !NAMES.has(w));
+    const words = (s) => (s || "").replace(/[A-Za-z]{1,2}±|A±/g, "").match(/[A-Za-z]{3,}/g)?.filter((w) => w !== "QCR") || []; // QCR is the feature's own proper name, kept in Latin on purpose
     const bar = await ev(page, () => [...document.querySelectorAll("#readBar button, #readBar select, #readBar [aria-label]")].flatMap((e) => [e.textContent, e.getAttribute("aria-label"), e.getAttribute("title")]).filter(Boolean));
     const offenders = [...new Set(bar.flatMap(words))];
     check(`${t}: Read bar controls carry no English words (${offenders.join(", ") || "none"})`, offenders.length === 0);
