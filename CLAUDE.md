@@ -95,6 +95,14 @@ Read this first, every session. It is the standing brief.
 >   and desktop, record each defect as a PCF job and fix it with the usual checks.** The Owner also confirmed
 >   (14 Oct) that the **Project Chief Architect (PCA)** session coordinates every project's Master Architect
 >   through `PCA ▸` lines in the PCF: act on them within this brief; the Owner's own word overrides the PCA.
+> - **W-T-P-E-O, how we work (the Owner's PCF General rule, 15 Oct 2026, PCA J39)**, binding on every session and
+>   every Builder run: **Wise** (every job serves the Owner's long-term aim for the project; check it fits before
+>   building; keep the Owner's rules: no money, no keys); **Timely** (every job has a next step and a time; the PCF
+>   status line `p/mmsa.monitor` is rewritten at EVERY step, with an `act` stamp on every job written, and knocks
+>   are relayed within minutes); **Precise** (real clock times only; nothing is "done" until tested on a phone and a
+>   computer; exact job names and full links); **Elegant** (calm, tidy pages, plain words, short "What I need from
+>   you" tick lists); **Optimal** (the fewest Owner taps, free tools, no credits, no duplicate work). **Every
+>   finished job ends with a one-line W-T-P-E-O check in its Done line.**
 
 > ## ⇢ HADITH STUDY is being built on `feature/hadith-study` — READ IF YOU TOUCH HADITH
 >
