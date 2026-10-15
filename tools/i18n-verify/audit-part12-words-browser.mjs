@@ -24,10 +24,19 @@ const LONLY = (process.argv.find((a) => a.startsWith("--lang=")) || "").slice(7)
 const QR = ["app/quranrevival.html", "**/quranrevival.html*"];
 const MUTATIONS = {
   // The full-screen Āyah card (below 900px) sized content-box + 100% high: 16px taller than the screen.
+  // The floating Word card (from 900px) given no top inset: it opens over the nav row.
+  "wcinset": [...QR, "        topInset: popupTopInset, // audit12 wcinset: the floating card opened over the nav row\n", ""],
   "sheetbox": [...QR, " box-sizing: border-box; /* audit12 sheetbox: content-box + 100% made the card 16px taller than the screen */", ""],
 };
 if (MUTATE && !MUTATIONS[MUTATE]) throw new Error(`no such mutation ${MUTATE}`);
 
+// ~2 s of silence, so a played clip is still "playing" when read.
+const WAV = (() => {
+  const rate = 8000, n = rate * 2, b = Buffer.alloc(44 + n, 0x80);
+  b.write("RIFF", 0); b.writeUInt32LE(36 + n, 4); b.write("WAVEfmt ", 8); b.writeUInt32LE(16, 16); b.writeUInt16LE(1, 20); b.writeUInt16LE(1, 22);
+  b.writeUInt32LE(rate, 24); b.writeUInt32LE(rate, 28); b.writeUInt16LE(1, 32); b.writeUInt16LE(8, 34); b.write("data", 36); b.writeUInt32LE(n, 40);
+  return b;
+})();
 const browser = await chromium.launch();
 const BN = /[ঀ-৿]/;
 const bnDigits = (s) => String(s).replace(/\d/g, (d) => "০১২৩৪৫৬৭৮৯"[d]);
@@ -66,6 +75,7 @@ const settle = (page, ms = 500) => page.waitForTimeout(ms);
 const clean = (page) => ev(page, () => document.querySelectorAll('[id*="splash"], .app-splash-overlay').forEach((e) => e.remove()));
 async function openRead(page) {
   await clean(page);
+  if (await ev(page, () => !document.getElementById("readView").hidden)) return;
   if (!(await ev(page, () => document.getElementById("tabReadBtn")?.getBoundingClientRect().width > 0))) { await page.click("#tabStudyBtn"); await settle(page, 200); }
   await page.click("#tabReadBtn");
   await page.waitForFunction(() => !document.getElementById("readView").hidden && document.getElementById("ayahPanels").textContent.trim().length > 20, null, { timeout: 8000 });
@@ -101,7 +111,7 @@ async function openSheet(page, surah, ayah) {
 }
 const noErr = (errors) => errors.filter((e) => !/ERR_CERT|ERR_TUNNEL|net::|archive\.org|api\.quran|Failed to load resource/i.test(e));
 const rectOf = (page, sel) => ev(page, (s) => { const e = document.querySelector(s); if (!e) return null; const r = e.getBoundingClientRect(); return { left: r.left, right: r.right, top: r.top, bottom: r.bottom, width: r.width, height: r.height, vw: innerWidth, vh: innerHeight }; }, sel);
-const navBottom = (page) => ev(page, () => Math.max(0, ...[...document.querySelectorAll("nav, #qrNav, .nav-row, #topNav")].map((e) => e.getBoundingClientRect().bottom)));
+const navBottom = (page) => ev(page, () => Math.max(0, ...[document.getElementById("topNav")].filter(Boolean).map((e) => e.getBoundingClientRect().bottom)));
 const writes = (page, from = 0) => ev(page, (k) => (window.__stubWriteData || []).slice(k).map((x) => ({ col: x.col, id: x.id, data: x.data })), from);
 const writeCount = (page) => ev(page, () => (window.__stubWriteData || []).length);
 
@@ -116,6 +126,215 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     check(`${t}: POSITIVE CONTROL the Āyah card is open`, s.overlayOpen && s.unit === "ayah:36:38", JSON.stringify(s));
     check(`${t}: the Āyah card shows that āyah (${refText(lang, "36:38")})`, s.ref.includes(refText(lang, "36:38")), s.ref);
     check(`${t}: the card sits inside the screen (bottom ${Math.round(s.b)} of ${s.vh}) with its close button on screen`, s.l >= -1 && s.r <= s.vw + 1 && s.t >= 0 && s.b <= s.vh + 1 && s.closeOn, JSON.stringify(s));
+    // 3: Related hadith -- the list opens with rows (36:38 is quoted by Bukhari 3199 / 4802 and Muslim 159).
+    await page.waitForFunction(() => document.querySelector("[data-ayah-hadith-open]") || document.querySelector("[data-ayah-hadith-none]"), null, { timeout: 10000 }).catch(() => {});
+    const h = await ev(page, () => [...document.querySelectorAll("[data-ayah-hadith-open]")].map((b) => ({ text: b.textContent.replace(/\s+/g, " ").trim(), h: b.getBoundingClientRect().height })));
+    check(`${t}: POSITIVE CONTROL Related hadith lists rows for 36:38`, h.length >= 3, JSON.stringify(h));
+    check(`${t}: Related hadith names Muslim 159 and Bukhari 3199, each row a 40px tap target`, lang === "bn" ? h.every((r) => r.h >= 40) : /Muslim 159\b/.test(h.map((r) => r.text).join("|")) && /Bukhari 3199/.test(h.map((r) => r.text).join("|")) && h.every((r) => r.h >= 40), JSON.stringify(h));
+    // 5: Related and connected āyāt -- the lists say something (rows or a sentence in words, never blank).
+    const rel = await ev(page, () => ({ rel: document.querySelector("[data-ayah-sheet-related]")?.textContent.trim().length, con: document.querySelector("[data-ayah-sheet-connected]")?.textContent.trim().length, jumps: [...document.querySelectorAll("[data-ayah-related-jump]")].map((b) => b.dataset.ayahRelatedJump) }));
+    if (PROBE) console.log(t, JSON.stringify(rel));
+    check(`${t}: Related and Connected āyāt sections are never blank`, rel.rel > 20 && rel.con > 20, JSON.stringify(rel));
+    // 4: Full text opens and closes.
+    await page.click("[data-ayah-sheet-noteview]");
+    await page.waitForFunction(() => document.querySelectorAll("#ayahNoteViewPopup:not([hidden]) .ayah-nv-sec").length === 4, null, { timeout: 8000 }).catch(() => {});
+    const nv = await ev(page, () => { const p = document.querySelector("#ayahNoteViewPopup:not([hidden])"); if (!p) return null; const r = p.querySelector(".ayah-nv-box").getBoundingClientRect(); const b = p.querySelector("[data-ayah-nv-back]").getBoundingClientRect(); return { secs: p.querySelectorAll(".ayah-nv-sec").length, ref: p.querySelector(".ayah-nv-ref")?.textContent, inView: r.left >= -1 && r.right <= innerWidth + 1 && r.top >= -1 && r.bottom <= innerHeight + 1, back: b.width > 0 && b.top >= 0 && b.bottom <= innerHeight }; });
+    check(`${t}: Full text opens on that āyah, inside the screen, with a visible way back`, !!nv && nv.secs === 4 && nv.ref.includes(refText(lang, "36:38")) && nv.inView && nv.back, JSON.stringify(nv));
+    await page.click("[data-ayah-nv-back]"); await settle(page, 400);
+    const closed = await ev(page, () => ({ pop: !!document.querySelector("#ayahNoteViewPopup:not([hidden])"), card: document.getElementById("ayahActionSheetOverlay")?.classList.contains("open") }));
+    check(`${t}: Full text closes, back to the same Āyah card`, !closed.pop && closed.card, JSON.stringify(closed));
+    check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
+  });
+
+  // 5b: tapping a related āyah goes to it, with the way back (the way-back law) to the same card.
+  await flow("relatedjump", lang, width, async (t, page) => {
+    await openSheet(page, 36, 38);
+    const target = await ev(page, () => document.querySelector("[data-ayah-related-jump]")?.dataset.ayahRelatedJump ?? null);
+    check(`${t}: POSITIVE CONTROL a related āyah is listed`, !!target, String(target));
+    const [ts, ta] = target.split(":");
+    await ev(page, () => document.querySelector("[data-ayah-related-jump]").click());
+    await page.waitForFunction(([s, a]) => document.getElementById("surahSelect").value === s && document.getElementById("ayahSelect").value === a, [ts, ta], { timeout: 10000 }).catch(() => {});
+    await settle(page, 800);
+    const at = await ev(page, () => { const p = document.querySelector("#ayahCardBackPill:not([hidden]) [data-ayah-card-back]"); const r = p?.getBoundingClientRect(); const hit = r ? document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2) : null; return { surah: document.getElementById("surahSelect").value, ayah: document.getElementById("ayahSelect").value, sheet: document.getElementById("ayahActionSheetOverlay")?.classList.contains("open"), pill: p?.textContent.trim() ?? null, tappable: !!hit && p.contains(hit), inView: !!r && r.left >= 0 && r.right <= innerWidth + 1 && r.bottom <= innerHeight + 1 }; });
+    check(`${t}: the related āyah (${target}) opens in the Read view, the card closed`, at.surah === ts && at.ayah === ta && !at.sheet, JSON.stringify(at));
+    check(`${t}: a visible, tappable "Back to Āyah card 36:38" stays on screen`, !!at.pill && at.tappable && at.inView && at.pill.includes(refText(lang, "36:38")), JSON.stringify(at));
+    await page.click("[data-ayah-card-back]");
+    await page.waitForFunction(() => document.getElementById("ayahActionSheetOverlay")?.classList.contains("open"), null, { timeout: 8000 }).catch(() => {});
+    const back = await ev(page, () => ({ open: document.getElementById("ayahActionSheetOverlay")?.classList.contains("open"), unit: document.querySelector("[data-ayah-sheet]")?.dataset.unitKey, pill: !!document.querySelector("#ayahCardBackPill:not([hidden])") }));
+    check(`${t}: the way back reopens the same Āyah card and the pill goes`, back.open && back.unit === "ayah:36:38" && !back.pill, JSON.stringify(back));
+  });
+
+  // 2: Before Al-Fātiḥah -- Aʿūdhu billāh and Bismillah show; a stage can be set (the write is asserted).
+  await flow("opening", lang, width, async (t, page, ctx, errors) => {
+    await goToAyah(page, 1, 1);
+    const band = await ev(page, () => ({ chips: [...document.querySelectorAll("[data-opening-open]")].map((c) => ({ key: c.dataset.openingOpen, text: c.textContent.replace(/\s+/g, " ").trim(), w: c.getBoundingClientRect().width, h: c.getBoundingClientRect().height, r: c.getBoundingClientRect().right })), vw: innerWidth, title: document.querySelector(".opening-band-title")?.textContent }));
+    if (PROBE) console.log(t, JSON.stringify(band));
+    check(`${t}: POSITIVE CONTROL the "Before Al-Fātiḥah" band shows two items (Aʿūdhu billāh, Bismillah)`, band.chips.length === 2 && band.chips[0].key === "opening:taawwudh" && band.chips[1].key === "ayah:1:1", JSON.stringify(band));
+    check(`${t}: both items are tap targets (>=40px) inside the screen`, band.chips.every((c) => c.h >= 40 && c.w > 0 && c.r <= band.vw + 1), JSON.stringify(band));
+    for (const key of ["opening:taawwudh", "ayah:1:1"]) {
+      await ev(page, () => { document.querySelectorAll("#ayahActionSheetOverlay.open [data-ayah-sheet-close]").forEach((b) => b.click()); });
+      await settle(page, 300);
+      await ev(page, (k) => document.querySelector(`[data-opening-open="${k}"]`).click(), key);
+      await page.waitForFunction(() => document.querySelector("[data-ayah-sheet] [data-ayah-sheet-intro]"), null, { timeout: 8000 });
+      await settle(page, 500);
+      const c = await ev(page, () => { const sh = document.querySelector("[data-ayah-sheet]"); const ar = sh.querySelector(".ayah-sheet-intro-ar")?.textContent ?? ""; const stages = [...sh.querySelectorAll("[data-approach-stage-btn]")]; return { unit: sh.dataset.unitKey, ar, tr: sh.querySelector(".ayah-sheet-intro-tr")?.textContent ?? "", back: !!sh.querySelector("[data-ayah-sheet-back]"), stages: stages.map((b) => [b.dataset.approachStageBtn, b.disabled]), sel: sh.querySelector("[data-approach-list-pick], select")?.value ?? null }; });
+      if (PROBE) console.log(t, key, JSON.stringify(c));
+      check(`${t}: ${key} opens its card with the Arabic, a translation and a ← Back`, c.ar.length > 5 && c.tr.length > 5 && c.back, JSON.stringify(c));
+      const enabled = c.stages.find(([, d]) => !d);
+      check(`${t}: ${key} offers stages to set`, c.stages.length >= 3 && !!enabled, JSON.stringify(c.stages));
+      if (enabled) {
+        const stage = "learning";
+        const n = await writeCount(page);
+        await ev(page, (s) => document.querySelector(`[data-ayah-sheet] [data-approach-stage-btn="${s}"]`).click(), stage);
+        await settle(page, 1500);
+        const w = await writes(page, n);
+        if (PROBE) console.log(t, key, stage, JSON.stringify(w).slice(0, 600));
+        const rec = w.find((x) => x.col === "records" && x.data?.[`entries.${key}::memorise`]?.claimedStatus === stage);
+        check(`${t}: setting "${stage}" on ${key} writes that stage to that exact item's record`, !!rec, JSON.stringify(w.map((x) => [x.col, x.id])));
+      }
+    }
+    check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
+  });
+
+  // 6: the ⋮ quick menu -- opens inside the screen, and each item does what its label says.
+  await flow("quickmenu", lang, width, async (t, page, ctx, errors) => {
+    await ctx.route("**/gtaf_bangla_timestamps.json", (r) => r.fulfill({ status: 200, contentType: "application/json", body: "{}" }));
+    await ctx.route("**/archive.org/**", (r) => (r.request().resourceType() === "media" ? r.fulfill({ status: 200, contentType: "audio/wav", body: WAV }) : r.abort()));
+    await goToAyah(page, 36, 38);
+    const menu = () => ev(page, () => { const m = document.querySelector("#readQuickMenuSlot .quick-menu"); const r = m.getBoundingClientRect(); return { open: m.classList.contains("open"), l: r.left, r: r.right, t: r.top, b: r.bottom, vw: innerWidth, vh: innerHeight, items: [...m.querySelectorAll(".qm-item")].map((b) => b.textContent.trim()) }; });
+    const toggle = async () => { await ev(page, () => document.querySelector("#readQuickMenuSlot [data-qm-toggle]").click()); await settle(page, 250); };
+    await toggle();
+    const m = await menu();
+    if (PROBE) console.log(t, JSON.stringify(m));
+    check(`${t}: POSITIVE CONTROL the ⋮ menu opens`, m.open && m.items.length >= 6, JSON.stringify(m));
+    check(`${t}: the open menu sits inside the screen`, m.l >= -1 && m.r <= m.vw + 1 && m.t >= 0 && m.b <= m.vh + 1, JSON.stringify(m));
+    // Copy / Share open their language boxes.
+    for (const k of ["copy", "share"]) {
+      await ev(page, (k) => document.querySelector(`#readQuickMenuSlot [data-qm-sub-toggle="${k}"]`).click(), k);
+      await settle(page, 200);
+      const sub = await ev(page, (k) => { const s = document.querySelector(`#readQuickMenuSlot .qm-sub[data-qm-sub="${k}"]`); return { open: s.classList.contains("open"), boxes: s.querySelectorAll("input[type=checkbox]").length, go: !!s.querySelector(`[data-qm-${k}-go]`) }; }, k);
+      check(`${t}: ${k} opens its language choices and a ${k} button`, sub.open && sub.boxes >= 3 && sub.go, JSON.stringify(sub));
+    }
+    // Copy puts the āyah's text on the clipboard (granted below); fall back to the visible "Copied" flash.
+    await ctx.grantPermissions(["clipboard-read", "clipboard-write"]).catch(() => {});
+    await ev(page, () => document.querySelector("#readQuickMenuSlot [data-qm-copy-go]").click());
+    await settle(page, 600);
+    const clip = await ev(page, () => navigator.clipboard.readText().catch((e) => `ERR ${e.message}`));
+    check(`${t}: Copy puts the āyah's text on the clipboard (1:2 in Arabic)`, /[؀-ۿ]{3,}/.test(clip), String(clip).slice(0, 80));
+    // Play starts a recitation.
+    await toggle();
+    let n = await ev(page, () => document.querySelectorAll("audio").length);
+    await ev(page, () => document.querySelector("#readQuickMenuSlot [data-qm-play]").click());
+    await page.waitForFunction(() => document.getElementById("readPlayBtn").textContent.trim() === "⏸", null, { timeout: 8000 }).catch(() => {});
+    const playing = await ev(page, () => ({ btn: document.getElementById("readPlayBtn").textContent.trim(), closed: !document.querySelector("#readQuickMenuSlot .quick-menu.open") }));
+    check(`${t}: Play starts the recitation (the Read bar shows ⏸) and closes the menu`, playing.btn === "⏸" && playing.closed, JSON.stringify(playing));
+    await ev(page, () => document.getElementById("readPlayBtn").click());
+    await settle(page, 300);
+    // Word by Word flips the reading choice, both ways.
+    const wbw = () => ev(page, () => document.getElementById("wbwShowToggle").checked);
+    const before = await wbw();
+    await toggle();
+    await ev(page, () => document.querySelector("#readQuickMenuSlot [data-qm-wbw]").click());
+    await settle(page, 700);
+    const after = await wbw();
+    check(`${t}: "Word by Word" flips the Word-by-Word setting (${before} -> ${after})`, before !== after);
+    // Root flips Roots.
+    const roots = () => ev(page, () => document.getElementById("rootsToggle")?.checked ?? null);
+    const r0 = await roots();
+    await toggle();
+    await ev(page, () => document.querySelector("#readQuickMenuSlot [data-qm-roots]").click());
+    await settle(page, 700);
+    const r1 = await roots();
+    check(`${t}: "Root" flips the Roots setting (${r0} -> ${r1})`, r0 !== null && r0 !== r1);
+    // QCR opens the QCR pop-up with a way back.
+    await toggle();
+    if (PROBE) console.log(t, "wrap unit", await ev(page, () => [document.querySelector("#readQuickMenuSlot .ayah-quick-wrap").dataset.unitKey, document.getElementById("ayahSelect").value, document.querySelector("#readView .ayah-ref, #readRef")?.textContent]));
+    await ev(page, () => document.querySelector("#readQuickMenuSlot [data-qm-qcr]").click());
+    await page.waitForFunction(() => { const p = document.querySelector(".qcr-pop-box"); return p && p.getClientRects().length; }, null, { timeout: 10000 }).catch(() => {});
+    const q = await ev(page, () => { const b = document.querySelector("[data-qcr-pop-back]"); const r = b?.getBoundingClientRect(); return { title: document.querySelector(".qcr-pop-title")?.textContent, back: !!r && r.width > 0 && r.top >= 0 && r.right <= innerWidth + 1 }; });
+    check(`${t}: "QCR collection(s)…" opens the QCR pop-up for 36:38 with a visible Back`, !!q.title && q.title.includes(refText(lang, "36:38")) && q.back, JSON.stringify(q));
+    await ev(page, () => document.querySelector("[data-qcr-pop-back]")?.click());
+    await settle(page, 500);
+    // Note & more opens the Notes pane on this āyah with a way back.
+    await toggle();
+    await ev(page, () => document.querySelector("#readQuickMenuSlot [data-qm-note]").click());
+    await page.waitForFunction(() => { const p = document.getElementById("readNotePane"); return p && !p.hidden && p.getClientRects().length > 0; }, null, { timeout: 8000 }).catch(() => {});
+    const np = await ev(page, () => { const p = document.getElementById("readNotePane"); const b = p?.querySelector(".rnp-back"); const r = b?.getBoundingClientRect(); return { open: !!p && !p.hidden, unit: decodeURIComponent((p?.querySelector("iframe")?.getAttribute("src") ?? "").match(/unit=([^&]+)/)?.[1] ?? ""), back: !!r && r.width > 0 && r.top >= 0 }; });
+    check(`${t}: "Note & more…" opens the Notes pane on ayah:36:38 with a visible way back`, np.open && np.unit === "ayah:36:38" && np.back, JSON.stringify(np));
+    check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
+  });
+
+  // 7 + 8 + 12: the Word card opens from a word; its top shows word, reference and translation; a mark is written and kept.
+  await flow("wordcard", lang, width, async (t, page, ctx, errors) => {
+    await openWord(page, 2, 42, 8);
+    const top = await ev(page, () => { const m = document.getElementById("quranWordCardMount"); const c = m.querySelector(".quran-word-card"); const r = m.getBoundingClientRect(); const x = c.querySelector("[data-word-card-close]").getBoundingClientRect(); return { id: c.dataset.occurrenceId, ar: c.querySelector(".word-card-arabic")?.textContent.trim(), ref: c.querySelector(".word-card-reference")?.textContent.trim(), en: c.querySelector(".word-card-meaning-en")?.textContent.trim(), bn: c.querySelector(".word-card-meaning-bn")?.textContent.trim(), l: r.left, r: r.right, t: r.top, b: r.bottom, vw: innerWidth, vh: innerHeight, close: x.width > 0 && x.right <= innerWidth + 1 && x.top >= 0 && x.bottom <= innerHeight + 1 }; });
+    const nb = await navBottom(page);
+    if (PROBE) console.log(t, JSON.stringify(top), "nav", nb);
+    check(`${t}: POSITIVE CONTROL the Word card opened for 2:42:8`, top.id === "quran-word-occurrence:v1:2:42:8", JSON.stringify(top));
+    check(`${t}: the top shows the word (Arabic), its reference (${refText(lang, "2:42:8")}) and its translation`, /[؀-ۿ]{2,}/.test(top.ar) && top.ref === refText(lang, "2:42:8") && (lang === "bn" ? BN.test(top.bn) : /know/i.test(top.en)), JSON.stringify(top));
+    // Below 900px the card is the full-screen sheet (issue #322, by design); from 900px it floats BELOW the nav row.
+    check(`${t}: the card sits inside the screen (${top.vw < 900 ? "full-screen sheet" : "floating, below the nav row"}) with its close button on screen`, top.l >= -1 && top.r <= top.vw + 1 && top.b <= top.vh + 1 && top.close && (top.vw < 900 ? top.t === 0 && top.b === top.vh : top.t >= nb - 1), `${JSON.stringify(top)} nav ${nb}`);
+    // 8 + 12: set a mark; the write is asserted, and the mark is still there when the card is closed and opened again.
+    const pressed = () => ev(page, () => [...document.querySelectorAll("#quranWordCardMount [data-word-progress] [data-word-progress-state]")].filter((e) => e.getAttribute("aria-pressed") === "true").map((e) => e.dataset.wordProgressState).join());
+    const n = await writeCount(page);
+    await page.click('#quranWordCardMount [data-word-progress-state="learning"]');
+    await page.waitForFunction(() => !document.querySelector("#quranWordCardMount [data-word-progress-saving]"), null, { timeout: 10000 }).catch(() => {});
+    await settle(page, 1200);
+    const w = await writes(page, n);
+    if (PROBE) console.log(t, JSON.stringify(w).slice(0, 700));
+    const rec = w.find((x) => x.col === "quranWordProgress");
+    check(`${t}: pressing Learning writes quranWordProgress for 2:42 word 8 as learning ("l")`, !!rec && rec.id === "t1__p1__wbw__2_42" && rec.data.entries?.["8"]?.s === "l", JSON.stringify(w.map((x) => [x.col, x.id])));
+    check(`${t}: the card shows Learning pressed`, (await pressed()) === "learning", await pressed());
+    await ev(page, () => document.querySelector("[data-word-card-close]").click());
+    await settle(page, 500);
+    await ev(page, () => document.querySelector('#readView [data-word-occurrence="quran-word-occurrence:v1:2:42:8"]').click());
+    await page.waitForSelector('.quran-word-card[data-occurrence-id="quran-word-occurrence:v1:2:42:8"]', { timeout: 8000 });
+    await settle(page, 1200);
+    check(`${t}: the mark is kept when the card is opened again`, (await pressed()) === "learning", await pressed());
+    // 12: a different stage (Practising) is recorded the same way.
+    const n2 = await writeCount(page);
+    await page.click('#quranWordCardMount [data-word-progress-state="practising"]');
+    await page.waitForFunction(() => !document.querySelector("#quranWordCardMount [data-word-progress-saving]"), null, { timeout: 10000 }).catch(() => {});
+    await settle(page, 1200);
+    const w2 = await writes(page, n2);
+    if (PROBE) console.log(t, "w2", JSON.stringify(w2).slice(0, 500));
+    check(`${t}: recording Practising writes it and replaces Learning on the card`, w2.some((x) => x.col === "quranWordProgress" && x.data["entries.8"]?.s === "p") && (await pressed()) === "practising", `${await pressed()} ${JSON.stringify(w2.map((x) => [x.col, x.id]))}`);
+    check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
+  });
+
+  // 8b: a lowering press on a place that shows Achieved through ANOTHER mark asks before changing (v10.43).
+  await flow("lowerask", lang, width, async (t, page) => {
+    await openWord(page, 14, 3, 3);
+    await page.click('#quranWordCardMount [data-word-progress-state="achieved"]');
+    await page.waitForFunction(() => !document.querySelector("#quranWordCardMount [data-word-progress-saving]"), null, { timeout: 10000 }).catch(() => {});
+    await settle(page, 1200);
+    await openWord(page, 14, 27, 8);
+    const n = await writeCount(page);
+    await page.click('#quranWordCardMount [data-word-progress-state="learning"]');
+    await settle(page, 1500);
+    const q = await ev(page, () => { const e = document.querySelector("#quranWordCardMount [data-word-progress-question]"); if (!e) return null; const r = e.getBoundingClientRect(); return { text: e.querySelector("p").textContent, inView: r.left >= -1 && r.right <= innerWidth + 1 && r.width > 0, btns: [...e.querySelectorAll("button")].map((b) => b.getBoundingClientRect().height) }; });
+    check(`${t}: POSITIVE CONTROL a lowering press asks first (question inside the card, finger-sized buttons)`, !!q && q.inView && q.btns.length === 2 && q.btns.every((h) => h >= 40), JSON.stringify(q));
+    check(`${t}: nothing is written before the answer`, (await writes(page, n)).length === 0, JSON.stringify(await writes(page, n)));
+    await page.click('#quranWordCardMount [data-word-progress-ask="change"]');
+    await settle(page, 1800);
+    const w = await writes(page, n);
+    check(`${t}: "Change it" writes the lowered mark (quranLemmaProgress, practising/learning)`, w.some((x) => x.col === "quranLemmaProgress" && JSON.stringify(x.data).includes("learning")), JSON.stringify(w.map((x) => [x.col, x.id])));
+  });
+
+  // 3b: a Related hadith opens the hadith in the library with a way back to the āyah, and Back returns to the open card.
+  await flow("hadithway", lang, width, async (t, page) => {
+    await openSheet(page, 36, 38);
+    await page.waitForFunction(() => document.querySelector("[data-ayah-hadith-open]"), null, { timeout: 10000 });
+    await ev(page, () => [...document.querySelectorAll("[data-ayah-hadith-open]")].find((b) => /159/.test(b.textContent) || /১৫৯/.test(b.textContent)).click());
+    await page.waitForURL(/hadith-collections\.html/, { timeout: 15000 });
+    await page.waitForSelector("#hadithBackBtn:not([hidden])", { timeout: 15000 });
+    const b = await ev(page, () => { const x = document.getElementById("hadithBackBtn"); const r = x.getBoundingClientRect(); return { text: x.textContent.trim(), h: r.height, on: r.left >= 0 && r.right <= innerWidth + 1 && r.top >= 0 }; });
+    check(`${t}: the opened hadith shows a way back to the āyah (on screen, 40px)`, b.h >= 40 && b.on && (lang === "bn" ? BN.test(b.text) : /Back to the āyah/.test(b.text)), JSON.stringify(b));
+    await page.click("#hadithBackBtn");
+    await page.waitForURL(/quranrevival\.html/, { timeout: 15000 });
+    await page.waitForFunction(() => document.getElementById("ayahActionSheetOverlay")?.classList.contains("open"), null, { timeout: 15000 }).catch(() => {});
+    const back = await ev(page, () => ({ open: document.getElementById("ayahActionSheetOverlay")?.classList.contains("open"), unit: document.querySelector("[data-ayah-sheet]")?.dataset.unitKey }));
+    check(`${t}: Back returns to the same Āyah card (36:38)`, back.open && back.unit === "ayah:36:38", JSON.stringify(back));
   });
 }
 
