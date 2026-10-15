@@ -88,7 +88,7 @@ async function open(lang, width, pagePath, { seed = "" } = {}) {
 }
 
 async function flow(name, lang, width, fn, opts = {}) {
-  if (ONLY && !ONLY.split(",").some((o) => name.includes(o))) return;
+  if (ONLY && !ONLY.split(",").some((o) => name === o)) return;
   const tag = `${lang} ${width}px ${name}`;
   let ctx;
   try {
@@ -115,7 +115,8 @@ const onTop = (page, sel) => ev(page, (s) => { const b = [...document.querySelec
 const inScreen = (page, sel) => ev(page, (s) => { const e = document.querySelector(s); if (!e) return null; const r = e.getBoundingClientRect(); return { l: r.left, r: r.right, t: r.top, b: r.bottom, w: innerWidth, over: document.documentElement.scrollWidth - innerWidth }; }, sel);
 const fits = (r) => !!r && r.l >= -1 && r.r <= r.w + 1 && r.over <= 0;
 const leftIn = (page, sel) => ev(page, (s) => { const e = document.querySelector(s); return e ? e.innerText : ""; }, sel);
-async function bodyOf(page, sel) { return leftIn(page, sel); }
+// The text of a region as the reader reads it, leaving out the Latin "Sounds like" transliteration (data, not a label).
+const bodyOf = (page, sel) => ev(page, (s) => { const e = document.querySelector(s); if (!e) return ""; const c = e.cloneNode(true); c.querySelectorAll(".dua-word-translit").forEach((x) => x.remove()); return c.textContent; }, sel);
 
 async function hadeethencOpen(page, cat, id) {
   await page.click('[data-hadith-tab="collections"]');
@@ -478,7 +479,7 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     await hadeethencOpen(page, "3", "4563");
     await page.click('[data-hadeethenc-card="4563"] [data-hadeethenc-explanation-toggle]');
     await settle(page, 300);
-    await scan("hadeethenc card", "#hadithBody");
+    await scan("hadeethenc card", ".hadeethenc-section"); // the pilot list below it is synthetic development data, a separate, Owner-held question
     await openBukhari(page);
     await scan("openiti chapter list", "#openitiSection .openiti-goto");
     await page.fill("[data-openiti-goto-input]", "6306");
