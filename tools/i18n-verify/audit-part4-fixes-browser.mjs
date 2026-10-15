@@ -25,7 +25,7 @@ async function open(url, lang, width) {
   await ctx.route("**/archive.org/**", (r) => r.abort());
   if (MUTATE) {
     const [file, glob, from, to] = MUTATIONS[MUTATE];
-    const body = fs.readFileSync(file, "utf8");
+    const body = fs.readFileSync(new URL(`../../${file}`, import.meta.url), "utf8");
     if (!body.includes(from)) throw new Error(`mutation anchor missing: ${MUTATE}`);
     const ct = file.endsWith(".css") ? "text/css" : "text/javascript";
     await ctx.route(glob, (r) => r.fulfill({ status: 200, contentType: ct, body: body.split(from).join(to) }));
@@ -77,11 +77,21 @@ async function zabFlow(tag, page) {
       const b = e.getBoundingClientRect();
       const x = Math.min(Math.max(b.left + b.width / 2, 1), innerWidth - 1), y = Math.min(b.top + b.height / 2, innerHeight - 1);
       const hit = document.elementFromPoint(x, y);
-      return !(hit && (hit === e || e.contains(hit) || hit.contains(e)));
+      const hitOk = hit && (hit === e || e.contains(hit) || hit.contains(e));
+      const overlaps = [corner, bar].some((z) => {
+        if (!z || getComputedStyle(z).display === "none") return false;
+        const q = z.getBoundingClientRect();
+        return b.left < q.right && b.right > q.left && b.top < q.bottom && b.bottom > q.top;
+      });
+      return !hitOk || overlaps;
     }).map((e) => `${e.tagName.toLowerCase()}${e.id ? "#" + e.id : ""}`);
-    return { active, n: els.length, covered };
+    const sp = document.getElementById("zabSpacer");
+    const spH = sp ? sp.getBoundingClientRect().height : 0;
+    const need = corner && getComputedStyle(corner).display !== "none" ? 60 : 0;
+    return { active, n: els.length, covered, spH, need };
   });
   check(`${tag}: POSITIVE CONTROL Zab present and ${r.n} controls on screen`, r.active);
+  check(`${tag}: bottom space (${r.spH}px) clears the floating button`, r.spH >= r.need);
   check(`${tag}: last page controls not covered by Zab`, r.covered.length === 0, r.covered.join(", "));
 }
 
