@@ -66,8 +66,14 @@ const CSS = `
 #zabBar button { min-height: 40px; min-width: 40px; border: 0; border-radius: 8px; background: rgba(255,255,255,.14); color: #fff; font: inherit; padding: 0 12px; cursor: pointer; white-space: nowrap; flex: 0 0 auto; }
 #zabBar button[aria-pressed="true"] { background: #fff; color: #1f3a6e; }
 #zabSpacer { display: block; height: 68px; } /* audit4 zab-spacer: phone, clears the 48px corner button */
-#zabCorner { position: fixed; right: 12px; bottom: 12px; width: 48px; height: 48px; border-radius: 50%; border: 0; z-index: 900; background: #1f3a6e; color: #fff; font-size: 22px; box-shadow: 0 2px 10px rgba(0,0,0,.3); cursor: pointer; }
+#zabCorner { position: fixed; right: 12px; bottom: calc(12px + var(--zab-lift, 0px)); width: 48px; height: 48px; border-radius: 50%; border: 0; z-index: 900; background: #1f3a6e; color: #fff; font-size: 22px; box-shadow: 0 2px 10px rgba(0,0,0,.3); cursor: pointer; }
 body:has(.nw-switch) #zabCorner { bottom: 68px; }
+/* The Owner, 15 Oct 2026 (PCF J25, with a photo): the corner 🧰 covered the Qur'an page's "Mapping My Journey" tab.
+   A page may give the 🧰 a place of its own ([data-zab-dock]); while that place is on screen the corner hides.
+   Wherever the corner does show, it sits above a page's pinned bottom bar ([data-zab-lift]). */
+body.zab-docked #zabCorner { display: none; } /* audit-zab dock-hides-corner */
+.zab-dock-btn { flex: 0 0 auto; width: 40px; height: 40px; min-width: 40px; padding: 0; border: 0; border-radius: 50%; background: #1f3a6e; color: #fff; font-size: 19px; line-height: 1; box-shadow: 0 1px 5px rgba(0,0,0,.3); cursor: pointer; }
+.zab-dock-btn[aria-pressed="true"] { background: #fff; color: #1f3a6e; }
 #zabBackdrop { position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 940; }
 #zabPanel { position: fixed; z-index: 950; background: #fff; color: #1b2a41; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 -2px 18px rgba(0,0,0,.28); left: 0; right: 0; bottom: 0; max-height: 78vh; border-radius: 16px 16px 0 0; }
 #zabPanel[hidden], #zabBackdrop[hidden] { display: none; }
@@ -150,6 +156,7 @@ body:has(.nw-switch) #zabCorner { bottom: 68px; }
   #zabBar { display: flex; }
   #zabSpacer { display: block; height: ${BAR_H}px; }
   #zabCorner { display: none; }
+  .zab-dock-btn { display: none; }
   #zabBackdrop { display: none; }
   #zabToast { left: auto; right: 12px; width: 380px; max-width: calc(100vw - 24px); bottom: ${BAR_H + 12}px; }
   #zabPanel { left: auto; right: 0; top: 0; bottom: ${BAR_H}px; width: 380px; max-width: 100vw; max-height: none; border-radius: 0; box-shadow: -2px 0 18px rgba(0,0,0,.22); }
@@ -191,10 +198,38 @@ export function mountZabBar() {
       ro = new ResizeObserver(() => { panel.dataset.w = panel.clientWidth && panel.clientWidth < NARROW_BELOW ? "narrow" : "wide"; });
       ro.observe(panel);
     }
+    dockAndLift();
     resumeAfterNote();
   };
   if (document.body) start();
   else document.addEventListener("DOMContentLoaded", start, { once: true });
+}
+
+// The page's own place for the 🧰 ([data-zab-dock]) and its pinned bottom bar ([data-zab-lift]). A ResizeObserver
+// notices when the dock leaves the screen (another view hides it), so the corner comes back exactly then.
+function dockAndLift() {
+  const docks = [];
+  document.querySelectorAll("[data-zab-dock]").forEach((slot) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "zab-dock-btn";
+    b.setAttribute("data-zab-open", ""); b.setAttribute("aria-pressed", "false"); b.setAttribute("aria-label", t("Open Zab"));
+    b.textContent = "🧰";
+    b.addEventListener("click", (e) => { e.stopPropagation(); if (S.view === "closed") openPanel("list"); else closePanel(); });
+    slot.appendChild(b); docks.push(b);
+  });
+  const lifts = [...document.querySelectorAll("[data-zab-lift]")];
+  const shown = (el) => el.getClientRects().length > 0 && el.getBoundingClientRect().width > 0;
+  const update = () => {
+    document.body.classList.toggle("zab-docked", docks.some(shown));
+    const h = Math.max(0, ...lifts.filter(shown).map((el) => el.getBoundingClientRect().height));
+    document.body.style.setProperty("--zab-lift", `${Math.ceil(h)}px`);
+  };
+  update();
+  if (typeof ResizeObserver !== "undefined" && (docks.length || lifts.length)) {
+    const r = new ResizeObserver(update);
+    docks.forEach((el) => r.observe(el)); lifts.forEach((el) => r.observe(el));
+  }
+  window.addEventListener("resize", update);
 }
 
 // ---------- loading (only when first opened) ---------------------------------
@@ -263,7 +298,7 @@ function closePanel() {
   S.view = "closed"; S.editingPocket = null; S.editingItem = null; S.msg = "";
   panel().hidden = true;
   root.querySelector("#zabBackdrop").hidden = true;
-  root.querySelectorAll("[data-zab-open]").forEach((b) => b.setAttribute("aria-pressed", "false"));
+  document.querySelectorAll("[data-zab-open]").forEach((b) => b.setAttribute("aria-pressed", "false"));
   // The way back: focus and scroll return to exactly where the reader was.
   const o = S.opener; S.opener = null;
   if (o && typeof o.focus === "function" && document.contains(o)) { try { o.focus({ preventScroll: true }); } catch { /* ignore */ } }
@@ -496,7 +531,7 @@ function renderTrash() {
 function render() {
   if (!root) return;
   renderBarPockets();
-  root.querySelectorAll("[data-zab-open]").forEach((b) => b.setAttribute("aria-pressed", String(S.view !== "closed")));
+  document.querySelectorAll("[data-zab-open]").forEach((b) => b.setAttribute("aria-pressed", String(S.view !== "closed")));
   if (S.view === "closed") return;
   const p = panel();
   const keep = p.querySelector("input[data-zab-new-pocket],input[data-zab-new-item]");

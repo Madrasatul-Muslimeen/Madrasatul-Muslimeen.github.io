@@ -107,6 +107,10 @@ Read this first, every session. It is the standing brief.
 >   Done line, tick and edit written to the PCF carries its full time, never a bare date. Write `at` as UTC read off
 >   the clock (`date -u +%Y-%m-%dT%H:%M:%SZ`), e.g. `2026-10-15T02:13:00Z`; the PCF shows it in Sydney time beside
 >   the entry, and a job's "Updated" shows the time of its latest act.
+> - **🆕 What's New in the User Manual (the Owner's PCF General rule, 15 Oct 2026, PCA J46, PCF v02.48)**: every release
+>   adds one line at the TOP of the PCF User Manual (`p/mmsa.manual`), under the heading "🆕 What's New (newest first)"
+>   (`h: true`): "vX.YY · date time (Sydney) · what changed, in plain words, and where to find it (job)", with a full UTC
+>   `at`. Write it in the same step as the release; the PCA checks at every :25/:55 that each release has its line.
 
 > ## ⇢ HADITH STUDY is being built on `feature/hadith-study` — READ IF YOU TOUCH HADITH
 >
@@ -370,7 +374,7 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v10.58 on `main`** (15 Oct 2026 — **audit part 4: room for the 🧰 button on phones, 40px menu links, menus that scroll inside themselves**, PCF J29). Built by Builder round #847 (PR #849) and reviewed by the Architect. On phones the Zab spacer (`app/js/zab-bar.js`) is now 68px instead of hidden, so the floating 🧰 no longer sits on the last control of a page (on the Qur'an page it covered the "Mapping My Journey" tab). Every link, button and picker in the Home / Modules / Operation menus and the Bookmark sheet is 40px (`app/css/shell.css`), and the three ordinary menus scroll inside themselves instead of running off the bottom of the screen. The Writing sheet, its full-screen paper and the Dua cards measured clean; the Records "নোট" column is reachable by a sideways scroll in the table's own box, not clipped. **Tests:** audit-part4-fixes 1302/0, with all 3 mutations failing; audit-part3-fixes 270/0; behaviour 971/0; phone-width-overflow 217/0; the Dua suites green.
+**Current milestone: v10.59 on `main`** (15 Oct 2026 — **the 🧰 moves into the Wheel / Legend / Unit row on a phone**, PCF J25). The Owner (15 Oct, 2:30 pm, with a photo): "Zab button covering the Map. Rather move it as shown." On a phone the Qur'an page's bottom tabs stay pinned while the page scrolls, so the floating 🧰 covered "Mapping My Journey" (v10.58's bottom spacer only helped at the very end of the page). Built by the Architect: `app/js/zab-bar.js` gives any page a place for the 🧰 (`[data-zab-dock]`) and hides the floating corner while that place is on screen, and lifts the corner above a page's pinned bottom bar (`[data-zab-lift]`). `app/quranrevival.html` puts the dock at the right end of `#wheelDrawerRow` (Wheel, Legend and Unit shift left) and marks `#tabRow` and the Read view's `#readQuickRow` as lift bars. The Owner also confirmed Zab works on the live Rules ("Working", J25). **Tests:** zab-dock 74/0, with all 4 mutations failing; behaviour, phone-width-overflow and audit-part4 green.
 
 **Earlier milestones, v08.111 back to v07.139, and the long notes around them**
 (the held Phase 4 wiring, the four deployment states, the Programme Integration

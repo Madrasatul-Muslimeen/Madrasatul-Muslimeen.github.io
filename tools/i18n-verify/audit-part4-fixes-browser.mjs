@@ -66,7 +66,10 @@ async function zabFlow(tag, page) {
   await page.waitForTimeout(300);
   const r = await page.evaluate(() => {
     const corner = document.getElementById("zabCorner"), bar = document.getElementById("zabBar");
-    const active = [corner, bar].some((e) => e && getComputedStyle(e).display !== "none");
+    // v10.59 (the Owner, PCF J25): on a phone the Qur'an page docks the 🧰 in its Wheel / Legend / Unit row and hides
+    // the corner, so Zab counts as present when the docked button is shown too.
+    const dock = document.querySelector(".zab-dock-btn");
+    const active = [corner, bar, dock].some((e) => e && getComputedStyle(e).display !== "none" && e.getClientRects().length > 0);
     const root = document.getElementById("zabSpacer") && document.getElementById("zabSpacer").parentElement;
     const els = [...document.querySelectorAll("button,a[href],select,input:not([type=hidden]),summary")]
       .filter((e) => !(root && root.contains(e)) && !e.closest("#zabBar,#zabCorner,.nav-cat,nav,header"))
