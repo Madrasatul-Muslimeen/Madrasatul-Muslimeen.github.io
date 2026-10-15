@@ -3900,7 +3900,7 @@
      FULL SCREEN, the Owner's own mark on the design, with its header pinned
      while the body scrolls. From 900px it keeps the floating panel below. */
   @media (max-width: 899.98px) {
-    .ayah-sheet { top: 0; max-height: none; height: 100%; border-radius: 0; padding-top: 0; }
+    .ayah-sheet { top: 0; max-height: none; height: 100%; box-sizing: border-box; /* audit12 sheetbox: content-box + 100% made the card 16px taller than the screen */ border-radius: 0; padding-top: 0; }
     .ayah-sheet .ayah-sheet-handle { display: none; }
     .ayah-sheet .ayah-sheet-header { position: sticky; top: 0; z-index: 2; background: var(--card-bg); padding-top: 0.5rem; }
   }
@@ -13738,6 +13738,7 @@
         // boxes fit beside Depth's three conjugation tables (a remembered
         // size the reader chose is still kept).
         defaultMaxWidth: 1120,
+        topInset: popupTopInset, // audit12 wcinset: the floating card opened over the nav row
       });
     });
 

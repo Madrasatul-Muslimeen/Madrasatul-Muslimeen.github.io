@@ -21403,3 +21403,16 @@ New strings `wholeQuranLevelSentence` ("{level}: Achieved {known} and {percent} 
 - behaviour 971/0; phone-width-overflow 217/0; navcheck exit 0; zab-dock 74/0. The About line renders in en and bn at 390 and 1440px with no sideways scroll.
 
 **Open in PCF J30:** the Owner's two ticks. The first is v11.00 (as asked) versus v11.01 (the v09/v10 lines left .00 unused). The second is whether to keep a `legacy-v10/` copy, as for v07–v09; no copy is made until the Owner answers.
+
+## v11.01 — 16 Oct 2026 — The Āyah card fits a phone's screen; the Word card opens below the nav row (PCF J29 audit part 12)
+
+**Built by Builder round #870** (branch `builder/issue-870-run-1327`). The run ended without opening a PR; the Architect opened and reviewed it. This round checks the User Manual's "Qur'an: words and āyāt" section, with each feature checked WORKING, start to end, at 320/390/820/1440px in English and Bangla.
+
+- **All 12 work:** the Āyah card; Before Al-Fātiḥah; related hadith (with a way back); Full text; related and connected āyāt (with a way back); the ⋮ quick menu; the Word card and its top; changing a word's mark (stored, kept on reload); word search; the dictionary box and links (hrefs checked, since the sandbox cannot open external sites); the verb conjugation table; and recording word progress. A Bangla scan found no English left in these features.
+- **Fixed in `app/quranrevival.html`:**
+  - Below 900px the full-screen Āyah card was `height: 100%` with content-box sizing, so its padding made it 16px taller than the screen. It now uses `box-sizing: border-box`.
+  - From 900px the floating Word card opened over the nav row. It now passes `topInset: popupTopInset`, as the other floating cards already do.
+
+**Tests** (the Architect, on the round's head, based on v11.00):
+- New `audit-part12-words-browser.mjs`: 500/0. `--mutate=wcinset` fails it at 1440px, en and bn. `--mutate=sheetbox` fails it at 320, 390 and 820px, en and bn.
+- audit-part11 506/0; qr-stage1-hidden 110/0; phone-width-overflow 217/0; behaviour 971/0.

@@ -864,3 +864,4 @@ total). Allocated by the MMSA Architect.
 10.67: wheel labels no longer cut at the wheel's edge (J29 audit part 10, round #863). Allocated by the MMSA Architect.
 10.68: the Read view's ⋯ tools panel stays on a small phone's screen (J29 audit part 11, PR #867). Allocated by the MMSA Architect.
 11.00: the app is now QuranRevival: General Study, Nature-Life, Life Skill and Health hidden, not deleted (J30, QR Stage 1; opens the v11 line). Allocated by the MMSA Architect.
+11.01: the Āyah card fits a phone's screen; the Word card opens below the nav row (J29 audit part 12, round #870). Allocated by the MMSA Architect.
