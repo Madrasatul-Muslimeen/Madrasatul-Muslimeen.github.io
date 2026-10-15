@@ -857,3 +857,4 @@ total). Allocated by the MMSA Architect.
 10.60: audit part 5, finger-sized controls on the remaining pages (PCF J29). Allocated by the MMSA Architect.
 10.61: Know Your Status shows Before Al-Fatihah under each Approach (PCF J26). Allocated by the MMSA Architect.
 10.62: audit part 6, finger-sized buttons on the Quran page (PCF J29). Allocated by the MMSA Architect.
+10.63: the Back to Know Your Status pill no longer covers the Approach tab (PCF J29). Allocated by the MMSA Architect.
