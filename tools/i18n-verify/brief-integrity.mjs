@@ -149,8 +149,8 @@ check("the brief's own version claim matches app/js/version.js", () => {
     "the milestone line is claiming a merge state that is not real");
 });
 
-check("the five reachable lines the brief names are all present", () => {
-  for (const p of ["legacy/index.html", "legacy-v07/index.html", "legacy-v08/index.html", "legacy-v09/index.html", "app/index.html"]) {
+check("the six reachable lines the brief names are all present", () => {
+  for (const p of ["legacy/index.html", "legacy-v07/index.html", "legacy-v08/index.html", "legacy-v09/index.html", "legacy-v10/index.html", "app/index.html"]) {
     assert.ok(fs.existsSync(path.join(root, p)), `${p} is named in the brief's own table and is missing`);
   }
 });
@@ -167,6 +167,9 @@ check("the five reachable lines the brief names are all present", () => {
 const LEGACY_ARCHIVES = [
   { dir: "legacy-v08", release: "v08.103", source: "54f930989cde81317d3c01b2adaaebe66b16f0eb" },
   { dir: "legacy-v09", release: "v09.151", source: "f027a24efa240ace2304c4570cd4885e178eeaad" },
+  // 16 Oct 2026: legacy-v10/ is app/ as RELEASED at v10.68 (merge commit 075bc90c),
+  // archived on the Owner's job PCF MMSA J32, with the same one change and README.
+  { dir: "legacy-v10", release: "v10.68", source: "075bc90c4e184e42db6f2736904b5649f4e3478b" },
 ];
 for (const { dir: archive, release, source } of LEGACY_ARCHIVES) {
 check(`${archive}/ is still exactly the ${release} release, apart from its one documented change`, () => {
