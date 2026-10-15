@@ -18236,7 +18236,10 @@
       if (!readToolsMenu?.classList.contains("open")) return;
       const r = readToolsBtn.getBoundingClientRect();
       readToolsMenu.style.top = `${Math.round(r.bottom + 6)}px`;
-      readToolsMenu.style.right = `${Math.max(8, Math.round(window.innerWidth - r.right))}px`;
+      // Audit part 11: ⋯ is not always at the bar's right edge (the bar wraps), and a panel hung from a ⋯ near the middle
+      // ran off the LEFT of a 320px screen. Its left edge is held at 8px at the most.
+      const rightMax = Math.max(8, Math.round(window.innerWidth - readToolsMenu.offsetWidth - 8));
+      readToolsMenu.style.right = `${Math.min(rightMax, Math.max(8, Math.round(window.innerWidth - r.right)))}px`; /* audit11 toolsplace */
     }
     function closeReadTools({ focus = false } = {}) {
       if (!readToolsMenu?.classList.contains("open")) return;

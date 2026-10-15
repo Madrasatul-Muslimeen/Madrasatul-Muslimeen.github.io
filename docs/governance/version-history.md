@@ -862,3 +862,4 @@ total). Allocated by the MMSA Architect.
 10.65: the QCR āyah-number badge shows the whole reference (J29 audit part 9, PR #861). Allocated by the MMSA Architect.
 10.66: the wheel pill sits inside the centre circle again on a small phone (J29 item 16). Allocated by the MMSA Architect.
 10.67: wheel labels no longer cut at the wheel's edge (J29 audit part 10, round #863). Allocated by the MMSA Architect.
+10.68: the Read view's ⋯ tools panel stays on a small phone's screen (J29 audit part 11, PR #867). Allocated by the MMSA Architect.
