@@ -305,3 +305,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v10.67** (2026-10-15): wheel labels no longer cut at the wheel's edge (J29 audit part 10, round #863).
 - **v10.68** (2026-10-15): the Read view's ⋯ tools panel stays on a small phone's screen (J29 audit part 11, PR #867).
 - **v11.00** (2026-10-15): the app is now QuranRevival: General Study, Nature-Life, Life Skill and Health hidden, not deleted (J30, QR Stage 1; opens the v11 line).
+- **v11.01** (2026-10-15): the Āyah card fits a phone's screen; the Word card opens below the nav row (J29 audit part 12, round #870).

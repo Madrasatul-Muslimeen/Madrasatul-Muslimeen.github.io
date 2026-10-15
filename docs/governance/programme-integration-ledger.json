@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "11.00",
+    "version": "11.01",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -3821,8 +3821,20 @@
     {
       "version": "11.00",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Builder round #868 (PR #869): QR Stage 1, four modules hidden by one list; the v11 line opens (Owner via PCA J50).",
+      "integration": {
+        "authorizedOn": "2026-10-15",
+        "integratedOn": "2026-10-15",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "11.01",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Builder round #870: the manual's words-and-ayat features checked working; two layout fixes.",
       "integration": {
         "authorizedOn": "2026-10-15",
         "integratedOn": "2026-10-15",
@@ -3831,8 +3843,9 @@
       }
     }
   ],
-  "nextUnallocated": "11.01",
+  "nextUnallocated": "11.02",
   "nextUnallocatedNote": [
+    "v11.01 was allocated to the Āyah card fits a phone's screen; the Word card opens below the nav row (J29 audit part 12, round #870), 2026-10-15.",
     "v11.00 was allocated to the app is now QuranRevival: General Study, Nature-Life, Life Skill and Health hidden, not deleted (J30, QR Stage 1; opens the v11 line), 2026-10-15.",
     "v10.68 was allocated to the Read view's ⋯ tools panel stays on a small phone's screen (J29 audit part 11, PR #867), 2026-10-15.",
     "v10.67 was allocated to wheel labels no longer cut at the wheel's edge (J29 audit part 10, round #863), 2026-10-15.",
