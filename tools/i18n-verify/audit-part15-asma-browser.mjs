@@ -50,7 +50,7 @@ const browser = await chromium.launch();
 const bnDigits = (s) => String(s).replace(/\d/g, (d) => "০১২৩৪৫৬৭৮৯"[d]);
 const BN = /[ঀ-৿]/;
 // English words that may stay on a Bangla page: the app's own names, the Names' transliterations and source names.
-const ALLOWED = /QuranRevival|QCR|MMSA|Qur'?an|Asma|Husna|Madrasatul|Muslimeen|Sahih|Bukhari|Muslim|Tirmidhi|Jami|Hadith|Wakil|Basit|Rahman|Rahim|Malik|Quddus|Salam|Al-?[A-Za-z]+|Ar-?[A-Za-z]+|As-?[A-Za-z]+|An-?[A-Za-z]+|Ash-?[A-Za-z]+|At-?[A-Za-z]+|Az-?[A-Za-z]+|Ad-?[A-Za-z]+|Adh-?[A-Za-z]+|Dh[A-Za-z]+|Gh[A-Za-z]+|Kh[A-Za-z]+|ACT|ESSENCE|UNIQUENESS|SHARED|Mercy|Group|Google|CSV|AM|PM/g;
+const ALLOWED = /QuranRevival|QCR|MMSA|Qur'?an|Asma|Husna|Madrasatul|Muslimeen|Sahih|Bukhari|Muslim|Tirmidhi|Jami|Hadith|hadith|api|fawazahmed0?|Wakil|Basit|Rahman|Rahim|Malik|Quddus|Salam|Al-?[A-Za-z]+|Ar-?[A-Za-z]+|As-?[A-Za-z]+|An-?[A-Za-z]+|Ash-?[A-Za-z]+|At-?[A-Za-z]+|Az-?[A-Za-z]+|Ad-?[A-Za-z]+|Adh-?[A-Za-z]+|Dh[A-Za-z]+|Gh[A-Za-z]+|Kh[A-Za-z]+|ACT|ESSENCE|UNIQUENESS|SHARED|Mercy|Group|Google|CSV|AM|PM/g;
 const englishLeft = (text) => (String(text).replace(ALLOWED, " ").match(/[A-Za-z]{3,}/g) || []);
 
 async function open(lang, width, pagePath, { reader = false, screensaver = false, saver = null } = {}) {
@@ -161,6 +161,252 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
     if (width === 390 || width === 1440) await page.screenshot({ path: `/tmp/audit15-explore-${lang}-${width}.png` });
   });
+
+  // 2: Cited āyāt and hadith of a Name, with their ways back.
+  await flow("cited", lang, width, async (t, page, ctx, errors) => {
+    const NAME = bn ? "আল-ওয়াকীল" : "Al-Wakil";
+    const waitCited = (n) => page.waitForFunction((n) => document.querySelectorAll("#asmaXCitedAyat [data-asmax-cited]").length === n, 2, { timeout: 12000 });
+    await openAsma(page);
+    await pickName(page, 52);
+    await waitCited(2);
+    const v = await ev(page, () => { const s = document.getElementById("asmaXCitedAyat"); return { keys: [...s.querySelectorAll("[data-asmax-cited]")].map((a) => a.dataset.asmaxCited), words: [...s.querySelectorAll("[data-asmax-cited]")].map((a) => a.querySelectorAll("[data-asmax-cited-word]").length), tr: s.querySelector(".asmax-cited-tr")?.textContent ?? "", over: document.documentElement.scrollWidth - innerWidth }; });
+    check(`${t}: POSITIVE CONTROL Al-Wakil writes out its two āyāt in full (3:173 with 17 words, 33:3 with 6), in the reader's language`, v.keys.join() === "3:173,33:3" && v.words.join() === "17,6" && v.tr.length > 20 && v.over <= 0 && (bn ? BN.test(v.tr) : /Disposer/.test(v.tr)), JSON.stringify(v).slice(0, 300));
+    const wayBack = async (sel, label) => {
+      const ok = await onTop(page, sel);
+      const text = await ev(page, (s) => [...document.querySelectorAll(s)].find((x) => x.getClientRects().length)?.textContent.trim() ?? "", sel);
+      check(`${t}: ${label}: "← Back" is on screen, on top and reads "${bn ? "আল-ওয়াকীল-এ ফিরুন" : "Back to Al-Wakil"}"`, ok && text.includes(bn ? "আল-ওয়াকীল-এ ফিরুন" : "Back to Al-Wakil"), text);
+      if (!ok) return;
+      await tap(page, sel);
+      await waitCited(2).catch(() => {});
+      const back = await ev(page, () => ({ poster: !!document.getElementById("asmaXPosterPanel"), sel: document.getElementById("asmaXSingleSelect")?.value, cited: document.querySelectorAll("#asmaXCitedAyat [data-asmax-cited]").length }));
+      check(`${t}: ${label}: ← Back returns to the SAME Name (52) in Explore`, back.poster && back.sel === "52" && back.cited === 2, JSON.stringify(back));
+    };
+    await tap(page, '[data-asmax-cited-word="3:173:17"]');
+    await page.waitForFunction(() => { const m = document.getElementById("quranWordCardMount"); return m && !m.hidden && m.textContent.includes("ٱلْوَكِيلُ"); }, null, { timeout: 15000 });
+    check(`${t}: an āyah word opens the Word card for that word`, true);
+    await wayBack("[data-word-card-app-back]", "Word card");
+    await tap(page, '[data-asmax-cited-card="33:3"]');
+    await page.waitForFunction(() => document.getElementById("ayahActionSheetOverlay")?.classList.contains("open"), null, { timeout: 15000 });
+    const ref = await ev(page, () => document.querySelector("#ayahActionSheetMount .ayah-sheet-ref")?.textContent ?? "");
+    check(`${t}: "Āyah card" opens the Āyah card for 33:3`, ref.includes(bn ? "৩৩:৩" : "33:3"), ref);
+    await tap(page, "#ayahActionSheetMount [data-ayah-sheet-close]"); await settle(page, 400);
+    await wayBack("#ayahCardBackPill [data-ayah-card-back]", "Āyah card");
+    // Hadith: Al-Basit (21) cites Tirmidhi 1314.
+    await pickName(page, 21);
+    await page.waitForFunction(() => !!document.querySelector('#asmaXCitedHadith [data-asmax-hadith="tirmidhi:1314"]') && !document.querySelector("#asmaXCitedHadith > p.hint"), null, { timeout: 15000 });
+    const h = await ev(page, () => { const a = document.querySelector('#asmaXCitedHadith [data-asmax-hadith="tirmidhi:1314"]'); const o = a.querySelector(".asmax-cited-open"); return { ar: a.querySelector(".asmax-cited-hadith-ar")?.textContent.length ?? 0, tr: a.querySelector(".asmax-cited-tr")?.textContent.length ?? 0, href: o?.getAttribute("href") ?? "", openH: o?.getBoundingClientRect().height ?? 0 }; });
+    check(`${t}: Al-Basit's hadith is written out (Arabic and translation) with an Open in Hadith link`, h.ar > 20 && h.tr > 20 && /hadith-collections\.html\?openiti=.*passage=1331&back=1/.test(h.href) && h.openH >= 40, JSON.stringify(h));
+    await tap(page, '[data-asmax-hadith-open="tirmidhi:1314"]');
+    await page.waitForFunction(() => location.pathname.endsWith("hadith-collections.html"), null, { timeout: 20000 });
+    await page.waitForFunction(() => { const b = document.getElementById("hadithBackBtn"); return b && !b.hidden && b.textContent.trim(); }, null, { timeout: 20000 });
+    const lib = await ev(page, () => ({ focused: !!document.querySelector("[data-openiti-focused]"), back: document.getElementById("hadithBackBtn").textContent.trim() }));
+    check(`${t}: Open in Hadith opens the Hadith library with "← Back" showing`, lib.back.includes("←"), JSON.stringify(lib));
+    await tap(page, "#hadithBackBtn");
+    await page.waitForFunction(() => location.pathname.endsWith("quranrevival.html") && !!document.querySelector('#asmaXCitedHadith [data-asmax-hadith="tirmidhi:1314"]'), null, { timeout: 25000 });
+    const back = await ev(page, () => ({ poster: !!document.getElementById("asmaXPosterPanel"), sel: document.getElementById("asmaXSingleSelect")?.value }));
+    check(`${t}: hadith library ← Back returns to Al-Basit (21) in Explore`, back.poster && back.sel === "21", JSON.stringify(back));
+    check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
+  });
+
+  // 3: A Name's description.
+  for (const reader of [false, true]) await flow(reader ? "desc-reader" : "desc", lang, width, async (t, page, ctx, errors) => {
+    await openAsma(page);
+    await pickName(page, 102);
+    await ev(page, () => { try { localStorage.removeItem("mmsa.asmaDescriptionSource"); } catch {} });
+    await tap(page, "#asmaXPosterPanel");
+    await page.waitForSelector("#asmaXPosterOverlay.open [data-asma-desc-strip]", { timeout: 8000 });
+    const o = () => ev(page, () => { const e = document.querySelector("#asmaXPosterOverlay.open"); const strip = e.querySelector("[data-asma-desc-strip]"), poster = e.querySelector(".ahp-standalone"); const sb = strip.getBoundingClientRect(), pb = poster.getBoundingClientRect();
+      return { pressed: e.querySelector('[data-asma-desc-src][aria-pressed="true"]')?.dataset.asmaDescSrc, edit: !!e.querySelector("[data-asma-desc-edit]"), above: sb.bottom <= pb.top + 1, stripIn: sb.left >= -1 && sb.right <= innerWidth + 1, desc: e.querySelector("[data-poster-desc]")?.textContent ?? "", labels: [...strip.querySelectorAll("[data-asma-desc-src]")].map((b) => b.textContent) }; });
+    let s = await o();
+    check(`${t}: POSITIVE CONTROL the source strip sits above the full poster with the poster's own description chosen`, s.pressed === "poster" && s.above && s.stripIn && s.desc.startsWith("The One, the Only"), JSON.stringify(s));
+    check(`${t}: the strip is in the reader's language`, bn ? s.labels.join() === "পোস্টারের,প্রস্তাবিত,মাদরাসার" : s.labels.join() === "Poster's,Suggested,Madrasah's", s.labels.join());
+    await tap(page, '#asmaXPosterOverlay [data-asma-desc-src="suggested"]'); await settle(page, 250);
+    const s2 = await o();
+    check(`${t}: choosing Suggested switches the text shown (and it cites Sahih al-Bukhari - 6410)`, s2.pressed === "suggested" && s2.desc !== s.desc && s2.desc.includes("Sahih al-Bukhari - 6410"), JSON.stringify(s2).slice(0, 250));
+    await tap(page, '#asmaXPosterOverlay [data-asma-desc-src="poster"]'); await settle(page, 250);
+    check(`${t}: choosing the poster's own switches back`, (await o()).desc === s.desc);
+    if (reader) {
+      check(`${t}: a reader who cannot manage sees no ✎ Edit, and the poster and strip are intact`, !s.edit && s.labels.length === 3 && s.desc.length > 20, JSON.stringify(s));
+    } else {
+      check(`${t}: the owner sees ✎ Edit`, s.edit);
+      await tap(page, '#asmaXPosterOverlay [data-asma-desc-src="suggested"]'); await settle(page, 200);
+      await tap(page, "#asmaXPosterOverlay [data-asma-desc-edit]");
+      const pre = await ev(page, () => document.querySelector("#asmaXPosterOverlay [data-asma-desc-text]")?.value ?? "");
+      check(`${t}: ✎ Edit opens a box starting from the text shown`, pre.includes("Sahih al-Bukhari - 6410"), pre.slice(0, 60));
+      const w0 = await writeCount(page);
+      await page.fill("#asmaXPosterOverlay [data-asma-desc-text]", "Al-Witr: our madrasah's own words.");
+      await tap(page, "#asmaXPosterOverlay [data-asma-desc-save]");
+      await page.waitForFunction(() => document.querySelector('#asmaXPosterOverlay [data-asma-desc-src="madrasah"][aria-pressed="true"]'), null, { timeout: 8000 }).catch(() => {});
+      const ws = (await writes(page, w0)).filter((x) => x.col === "asmaCollections");
+      const w = ws[0];
+      const only = !!w && (w.kind === "update" ? Object.keys(w.data).filter((k) => k !== "updatedAt").join() === "nameDescriptions.102" && w.data["nameDescriptions.102"] === "Al-Witr: our madrasah's own words." : w.data.nameDescriptions?.["102"] === "Al-Witr: our madrasah's own words.");
+      check(`${t}: Save writes the madrasah's Asma document, field nameDescriptions.102 only, and the poster shows it`, ws.length === 1 && only && (await o()).desc === "Al-Witr: our madrasah's own words.", JSON.stringify(ws).slice(0, 300));
+    }
+    check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
+  }, { reader });
+
+  // 4: Classifying a Name.
+  for (const reader of [false, true]) await flow(reader ? "class-reader" : "class", lang, width, async (t, page, ctx, errors) => {
+    await openAsma(page);
+    await pickName(page, 1);
+    const state = () => ev(page, () => { const btns = [...document.querySelectorAll("#asmaXListHeader [data-asmax-quick]")]; return { keys: btns.map((b) => b.dataset.asmaxQuick), on: btns.filter((b) => b.getAttribute("aria-pressed") === "true").map((b) => b.dataset.asmaxQuick), fits: btns.every((b) => { const r = b.getBoundingClientRect(); return r.width > 0 && r.right <= innerWidth + 1; }), folder: !!document.getElementById("asmaXGroupsThisNameBtn"), title: document.querySelector("#asmaXListHeader .qcr-list-title")?.textContent.trim() ?? "", poster: !!document.getElementById("asmaXPosterPanel"), over: document.documentElement.scrollWidth - innerWidth }; });
+    const s0 = await state();
+    if (reader) {
+      check(`${t}: a reader who cannot manage sees no Essence|Act, Unique|Shared and no 📂 — the Name's title and poster are still there, nothing blank`, s0.keys.length === 0 && !s0.folder && s0.title.length > 2 && s0.poster && s0.over <= 0, JSON.stringify(s0));
+      return;
+    }
+    check(`${t}: POSITIVE CONTROL the owner sees both pairs (Essence|Act, Unique|Shared) and 📂, Ar-Rahman already under Essence`, s0.keys.join() === "cls_essence,cls_act,cls_unique,cls_shared" && s0.on.join() === "cls_essence" && s0.folder && s0.fits && s0.over <= 0, JSON.stringify(s0));
+    const last = () => ev(page, () => { const w = (window.__stubWriteData || []).filter((x) => x.col === "asmaCollections"); return w.length ? w[w.length - 1].data?.collections?.map((c) => [c.id, c.kind, c.items]) ?? null : null; });
+    const items = (w, id) => (w || []).find((c) => c[0] === id)?.[2] || [];
+    await tap(page, '#asmaXListHeader [data-asmax-quick="cls_act"]'); await settle(page, 800);
+    let w = await last();
+    check(`${t}: tap Act: Name 1 is written into the ACT list and taken out of ESSENCE`, items(w, "a1").includes("name:1") && !items(w, "e1").includes("name:1"), JSON.stringify(w));
+    check(`${t}: ...Act is lit, Essence not; its Group untouched`, (await state()).on.join() === "cls_act" && items(w, "g1").includes("name:1"));
+    await tap(page, '#asmaXListHeader [data-asmax-quick="cls_act"]'); await settle(page, 800);
+    w = await last();
+    check(`${t}: a second tap on Act undoes it (written out of ACT, nothing lit)`, !items(w, "a1").includes("name:1") && (await state()).on.length === 0, JSON.stringify(w));
+    await tap(page, '#asmaXListHeader [data-asmax-quick="cls_shared"]'); await settle(page, 800);
+    w = await last();
+    check(`${t}: tap Shared (no list yet) files the Name under a new SHARED list; a second tap undoes it`, (w || []).some((c) => c[1] === "cls_shared" && c[2].includes("name:1")), JSON.stringify(w));
+    await tap(page, '#asmaXListHeader [data-asmax-quick="cls_shared"]'); await settle(page, 800);
+    w = await last();
+    check(`${t}: ...undone`, !(w || []).some((c) => c[1] === "cls_shared" && c[2].includes("name:1")), JSON.stringify(w));
+    await tap(page, "#asmaXGroupsThisNameBtn"); await settle(page, 500);
+    const pop = await ev(page, () => { const g = document.getElementById("asmaXGroupsThisNameBtn"); const cands = [...document.querySelectorAll("#asmaXGroupsOverlay.open #asmaXGroupsCard")].filter((e) => e.getClientRects().length); const r = cands[0]?.getBoundingClientRect(); return { n: cands.length, inside: !!r && r.left >= -1 && r.right <= innerWidth + 1 && r.top >= -1 && r.bottom <= innerHeight + 1, text: cands[0]?.innerText.replace(/\s+/g, " ").slice(0, 160) ?? "" }; });
+    if (PROBE) console.log(t, "📂", JSON.stringify(pop));
+    check(`${t}: 📂 opens the "Groups this Name is in" popover inside the screen, listing the Name's Group (Mercy)`, pop.n >= 1 && pop.inside && /Mercy/.test(pop.text), JSON.stringify(pop));
+    check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
+  }, { reader });
+}
+
+// 5: the Asma study page (Modules ▾ → Asma ul Husna) and 6: the Screensaver, run on the same widths.
+for (const lang of LANGS) for (const width of WIDTHS) {
+  const bn = lang === "bn";
+  for (const reader of [false, true]) await flow(reader ? "study-reader" : "study", lang, width, async (t, page, ctx, errors) => {
+    await page.waitForFunction(() => document.querySelector(".asma-card") && getComputedStyle(document.getElementById("app")).display !== "none", null, { timeout: 20000 });
+    const cards = await ev(page, () => document.querySelectorAll(".asma-card").length);
+    check(`${t}: POSITIVE CONTROL the page lists the Names as cards`, cards >= 99, String(cards));
+    const manage = await ev(page, () => { const b = document.getElementById("asmaCatManageToggleBtn"); return { present: !!b, hidden: !b || b.hidden }; });
+    // Browse by Category.
+    await tap(page, "#asmaCatToggleBtn"); await settle(page, 700);
+    const cat = await ev(page, () => { const p = document.getElementById("asmaCatPanel"); return { open: !!p && !p.hidden && p.getClientRects().length > 0, groups: document.getElementById("asmaCatLevelSelect")?.options.length ?? 0, segs: document.querySelectorAll("#asmaCatWheelContainer .wheel-seg, #asmaCatWheelContainer path").length, rows: document.querySelectorAll("#asmaCatWaysListContainer button").length, manage: !document.getElementById("asmaCatManageToggleBtn")?.hidden, over: document.documentElement.scrollWidth - innerWidth }; });
+    check(`${t}: Browse by Category opens the groups and a wheel; ${reader ? "a reader sees no Manage" : "the owner sees Manage"}`, cat.open && cat.groups > 1 && cat.segs > 0 && cat.over <= 0 && cat.manage === !reader, JSON.stringify(cat));
+    await tap(page, "#asmaCatBackBtn"); await settle(page, 400);
+    if (reader) return;
+    // A Name opens with its poster.
+    await tap(page, '.asma-card[data-number="1"]');
+    await page.waitForSelector("#trackAsmaBtn", { timeout: 10000 });
+    // The detail page shows the Name's Arabic, transliteration and meaning, and a 🖼 Poster button (the poster itself opens
+    // full size from it): the manual's "a Name opens with its poster" is read as that button.
+    const det = await ev(page, () => ({ ar: /الرَّحْمَٰن/.test(document.getElementById("detailContainer").innerText), posterBtn: document.getElementById("posterAsmaBtn")?.getBoundingClientRect().height > 0, track: !!document.getElementById("trackAsmaBtn") }));
+    check(`${t}: opening a Name shows its Arabic and meaning, with a 🖼 Poster button and Track my progress`, det.ar && det.posterBtn && det.track, JSON.stringify(det));
+    await tap(page, "#trackAsmaBtn"); await settle(page, 600);
+    const wm = await ev(page, () => { const o = document.getElementById("wayModalOverlay"); const r = document.getElementById("wayModalMount").firstElementChild?.getBoundingClientRect(); return { open: o.classList.contains("open"), text: document.getElementById("wayModalMount").innerText.replace(/\s+/g, " ").slice(0, 120), inside: !!r && r.left >= -1 && r.right <= innerWidth + 1 && r.top >= -1 && r.bottom <= innerHeight + 1, opts: [...document.querySelectorAll("#wayModalMount .way-status-select option")].map((x) => x.value) }; });
+    if (PROBE) console.log(t, "way", JSON.stringify(wm));
+    check(`${t}: Track my progress opens "<Name> — Studied", inside the screen`, wm.open && wm.inside && wm.text.includes(bn ? "আর-রহমান — অধ্যয়ন করা হয়েছে" : "Ar-Rahman — Studied"), JSON.stringify(wm));
+    const pick = "learning";
+    await ev(page, (v) => { const s = document.querySelector("#wayModalMount .way-status-select"); s.value = v; s.dispatchEvent(new Event("change", { bubbles: true })); }, pick);
+    const w0 = await writeCount(page);
+    await tap(page, "#wayModalMount .way-claim-btn"); await settle(page, 900);
+    const ws = await writes(page, w0);
+    const rec = ws.find((x) => x.col === "records" && JSON.stringify(x.data).includes("name:1::studied_asma"));
+    if (PROBE) console.log(t, "writes", JSON.stringify(ws).slice(0, 500));
+    check(`${t}: choosing a stage writes person p1, unit key name:1, the studied_asma Approach, status "${pick}"`, !!rec && /__p1__/.test(rec.id) && JSON.stringify(rec.data).includes(pick) && /"personId":"p1"/.test(JSON.stringify(rec.data)), JSON.stringify(rec ?? ws).slice(0, 400));
+    await tap(page, "#wayModalMount [data-way-close], #wayModalMount .way-close").catch(() => {});
+    await ev(page, () => document.getElementById("wayModalOverlay").classList.remove("open"));
+    // Print: one A4 poster, no error.
+    await ev(page, () => { window.__printed = 0; window.print = () => { window.__printed++; }; });
+    await tap(page, "#posterAsmaBtn"); await settle(page, 500);
+    await tap(page, "#posterPrintBtn"); await settle(page, 300);
+    const pr = await ev(page, () => { let a4 = false; for (const ss of document.styleSheets) { try { for (const r of ss.cssRules) if (/@page/.test(r.cssText) && /A4/i.test(r.cssText)) a4 = true; } catch {} } return { printed: window.__printed, a4, open: !!document.querySelector("#posterOverlay.open"), posters: document.querySelectorAll("#posterMount .ahp-standalone").length }; });
+    check(`${t}: 🖨 Print prints the one open poster (A4 page rule present), no error`, pr.printed === 1 && pr.a4 && pr.open && pr.posters === 1, JSON.stringify(pr));
+    check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
+  }, { reader, path: "/app/asma-study.html" });
+
+  // 7: Bangla: no English left on these features (the Names' transliterations, Arabic and source names stay).
+  if (bn) await flow("bnleft", lang, width, async (t, page, ctx, errors) => {
+    const left = (label, text) => { const l = englishLeft(text); check(`${t}: ${label} has no English left`, l.length === 0, JSON.stringify([...new Set(l)].slice(0, 12))); };
+    await openAsma(page);
+    // The poster itself (.ahp) is a true copy of the English template, lang="en" by design (decision 85): its title, meaning,
+    // "None given", "Description to come." and the poster creator's description are English on the Bangla page. Whether it
+    // should speak Bangla is a product choice (listed in the PR), so the poster is cut out here; everything around it is swept.
+    const textWithoutDesc = (sel) => ev(page, (s) => { const c = document.querySelector(s).cloneNode(true); c.querySelectorAll(".ahp").forEach((e) => e.remove()); return c.innerText; }, sel);
+    left("the Asma wheel / groups panel", await textWithoutDesc("#asmaXPanel"));
+    await pickName(page, 102);
+    left("a Name's panel (poster, Name bar, cited hadith)", await textWithoutDesc("#asmaXPanel"));
+    await tap(page, "#asmaXPosterPanel"); await settle(page, 500);
+    left("the full-size poster with its description strip", await textWithoutDesc("#asmaXPosterOverlay.open"));
+    await tap(page, "#asmaXPosterBackBtn");
+    await pickName(page, 52); await page.waitForFunction(() => document.querySelectorAll("#asmaXCitedAyat [data-asmax-cited]").length === 2, null, { timeout: 12000 });
+    left("the cited āyāt", await ev(page, () => document.getElementById("asmaXCitedAyat").innerText));
+    await ev(page, () => document.querySelector("[data-screensaver-settings]")?.closest("details")?.setAttribute("open", ""));
+    await tap(page, "[data-screensaver-settings]");
+    await page.waitForSelector("#mmSaverSettings .mmss-card", { timeout: 10000 });
+    left("the Screensaver settings", await ev(page, () => document.querySelector("#mmSaverSettings .mmss-card").innerText));
+  });
+
+  // 6: Screensaver.
+  await flow("saver", lang, width, async (t, page, ctx, errors) => {
+    await ev(page, () => { document.getElementById("homeMenuBtn")?.click(); });
+    const opened = await ev(page, () => { const b = document.querySelector("[data-screensaver-settings]"); if (!b) return false; b.closest("details")?.setAttribute("open", ""); return b.getClientRects().length > 0; });
+    check(`${t}: POSITIVE CONTROL the Home menu has 🌙 Screensaver`, opened);
+    await tap(page, "[data-screensaver-settings]");
+    await page.waitForSelector("#mmSaverSettings .mmss-card", { timeout: 10000 });
+    const card = await ev(page, () => { const r = document.querySelector("#mmSaverSettings .mmss-card").getBoundingClientRect(); return { inside: r.left >= -1 && r.right <= innerWidth + 1 && r.top >= -1, text: document.querySelector("#mmSaverSettings .mmss-card").innerText, groups: [...document.querySelectorAll("#mmSaverSettings .mmss-seg")].map((s) => s.dataset.k) }; });
+    check(`${t}: the settings open inside the screen with every setting, in the reader's language`, card.inside && ["idleMin", "eachSec", "kind", "which", "order", "move", "night", "where"].every((k) => card.groups.includes(k)) && (bn ? /প্রতিটি পোস্টার দেখাবে/.test(card.text) : /Each poster shows for/.test(card.text)), JSON.stringify(card).slice(0, 300));
+    await tap(page, '#mmSaverSettings [data-k="eachSec"] [data-v="30"]');
+    await tap(page, '#mmSaverSettings [data-k="order"] [data-v="seq"]');
+    await tap(page, '#mmSaverSettings [data-k="kind"] [data-v="tpl"]');
+    const saved = await ev(page, () => JSON.parse(localStorage.getItem("mm_screensaver") || "{}"));
+    await page.reload({ waitUntil: "networkidle" }); await settle(page, 800);
+    const kept = await ev(page, () => JSON.parse(localStorage.getItem("mm_screensaver") || "{}"));
+    check(`${t}: the settings are kept after a reload (on this device)`, saved.eachSec === 30 && kept.eachSec === 30 && kept.order === "seq" && kept.kind === "tpl", JSON.stringify(kept));
+    await ev(page, () => document.querySelector("[data-screensaver-settings]")?.click());
+    await page.waitForSelector("#mmSaverSettings .mmss-card", { timeout: 10000 });
+    const pressed = await ev(page, () => ["eachSec", "order", "kind"].map((k) => document.querySelector(`#mmSaverSettings [data-k="${k}"] [aria-pressed="true"], #mmSaverSettings [data-k="${k}"] .on`)?.dataset.v));
+    check(`${t}: the reopened settings show the kept choices`, pressed.join() === "30,seq,tpl", pressed.join());
+    await tap(page, '#mmSaverSettings [data-mmss="preview"]');
+    await page.waitForFunction(() => !!document.getElementById("mmSaver"), null, { timeout: 10000 });
+    await settle(page, 1800);
+    const sv = await ev(page, () => { const s = document.getElementById("mmSaver"); const p = s.querySelector(".mms-slide.on .ahp")?.getBoundingClientRect(); return { title: s.querySelector(".mms-slide.on [data-poster-title]")?.textContent ?? "", clock: s.querySelector(".mms-clock")?.textContent ?? "", inView: !!p && p.left >= -1 && p.right <= innerWidth + 1 && p.top >= -1 && p.bottom <= innerHeight + 1 }; });
+    check(`${t}: started on purpose it shows a whole poster inside the screen with a clock`, sv.title.length > 2 && /\d/.test(sv.clock) && sv.inView, JSON.stringify(sv));
+    await page.mouse.click(Math.round(width / 2), 200); await settle(page, 250);
+    const ctl = await ev(page, () => ({ on: document.getElementById("mmSaver").classList.contains("ctl"), open: !!document.querySelector('#mmSaver [data-mms="open"]') }));
+    check(`${t}: touching shows its controls (including Open this Name)`, ctl.on && ctl.open, JSON.stringify(ctl));
+    const shownTitle = sv.title;
+    await tap(page, '#mmSaver [data-mms="open"]');
+    await page.waitForURL(/asma-study\.html/, { timeout: 15000 });
+    const url = page.url();
+    await page.waitForFunction(() => document.getElementById("asmaBackBtn") && getComputedStyle(document.getElementById("app")).display !== "none", null, { timeout: 20000 });
+    await settle(page, 800);
+    const nm = await ev(page, () => document.getElementById("detailContainer")?.innerText ?? "");
+    check(`${t}: "Open this Name" opens that Name (${shownTitle}) with ← Back`, /name=\d+&back=1/.test(url) && nm.length > 20, url + " | " + nm.slice(0, 60));
+    await tap(page, "#asmaBackBtn");
+    await page.waitForURL(/quranrevival\.html/, { timeout: 15000 }).catch(() => {});
+    check(`${t}: ← Back returns to the page the reader was on`, /quranrevival\.html/.test(page.url()), page.url());
+    // ✕ and Esc return to where the reader was.
+    await settle(page, 800);
+    for (const how of ["x", "esc"]) {
+      await ev(page, () => import("/app/js/screensaver-idle.js").then((m) => m.startScreensaver()));
+      await page.waitForFunction(() => !!document.getElementById("mmSaver"), null, { timeout: 10000 });
+      await settle(page, 600);
+      const here = page.url();
+      if (how === "x") await ev(page, () => { document.getElementById("mmSaver").classList.add("ctl"); document.querySelector('#mmSaver [data-mms="close"]').click(); });
+      else await page.keyboard.press("Escape");
+      await page.waitForFunction(() => !document.getElementById("mmSaver"), null, { timeout: 5000 }).catch(() => {});
+      check(`${t}: ${how === "x" ? "✕" : "Esc"} closes it, back on the same page`, (await ev(page, () => !document.getElementById("mmSaver"))) && page.url() === here, page.url());
+    }
+    // Held off: a focused field, and the Writing sheet.
+    const held = await ev(page, async () => {
+      const { screensaverHeld } = await import("/app/js/screensaver-idle.js");
+      const base = screensaverHeld();
+      const i = document.createElement("input"); document.body.append(i); i.focus(); const typing = screensaverHeld(); i.remove();
+      const ws = document.createElement("div"); ws.id = "writingSheet"; ws.style.cssText = "position:fixed;left:0;top:0;width:50px;height:50px"; document.body.append(ws); const sheet = screensaverHeld(); ws.remove();
+      return { base, typing, sheet };
+    });
+    check(`${t}: it never starts while a field has focus or the Writing sheet is open (and does when neither)`, held.base === false && held.typing === true && held.sheet === true, JSON.stringify(held));
+    check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
+  }, { screensaver: true });
 }
 
 await browser.close();
