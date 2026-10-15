@@ -2726,5 +2726,148 @@ service cloud.firestore {
 
       allow delete: if false; // I4/D6 — retire, never destroy.
     }
+
+    // =====================================================================
+    // ZAB (PCF J25, Builder round Z1, 14 Oct 2026) -- CANDIDATE, NOT PUBLISHED.
+    //
+    // One FAMILY Zab per tenant (Owner answer 3 B): a pocket / an item is a
+    // tenant-shared record, so every member of the tenant may read, create
+    // and update it, and nobody outside the tenant can see or touch it.
+    // NO delete, ever (I4, D6): a pocket or item is trashed with
+    // status: 'trashed', never removed. Field names are Siyagah's (guide G05),
+    // kept exactly so data can move between the apps.
+    //
+    //   zabPockets/{tenantId}__{pocketId}
+    //   zabItems/{tenantId}__{itemId}
+    //
+    // Reads are by equality on tenantId only (no composite index needed).
+    // =====================================================================
+
+    // Any member of the tenant -- the same membership mirror every other
+    // tenant-shared collection reads (tenantMemberUids, one get()).
+    function zabMember(tenantId) {
+      return signedIn() && myRolesIn(tenantId).size() > 0;
+    }
+
+    function zabOptString(f)  { return d().get(f, null) == null || d()[f] is string; }
+    function zabOptList(f)    { return d().get(f, null) == null || d()[f] is list; }
+    function zabEnvelopeOk() {
+      return d().schemaVersion is number
+          && d().createdAt is timestamp && d().updatedAt is timestamp
+          && d().createdBy is string && d().createdBy.size() > 0;
+    }
+    function zabStatusOk() { return d().status == 'active' || d().status == 'trashed'; }
+
+    match /zabPockets/{pocketKey} {
+
+      function zabPocketShapeOk() {
+        return d().keys().hasOnly([
+                 'pocketId', 'tenantId', 'addedByPersonId', 'status', 'deletedAt', 'order',
+                 'name', 'icon', 'color', 'ztype', 'parentId', 'names',
+                 'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
+               ])
+            && d().keys().hasAll([
+                 'pocketId', 'tenantId', 'addedByPersonId', 'status', 'order', 'name',
+                 'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
+               ])
+            && d().tenantId is string && d().tenantId.size() > 0
+            && d().pocketId is string && d().pocketId.size() > 0
+            && pocketKey == d().tenantId + '__' + d().pocketId
+            && d().addedByPersonId is string && d().addedByPersonId.size() > 0
+            && zabStatusOk()
+            && (d().get('deletedAt', null) == null || d().deletedAt is timestamp)
+            && d().order is number
+            && d().name is string
+            && zabOptString('icon')
+            && (d().get('color', null) == null || (d().color is string && d().color.matches('^#[0-9a-fA-F]{3,8}$')))
+            && (d().get('ztype', null) == null
+                || d().ztype in ['plain', 'links', 'tasks', 'ideas', 'shop'])
+            && (d().get('parentId', null) == null || d().parentId is string)
+            && (d().get('names', null) == null || d().names is map)
+            && zabEnvelopeOk();
+      }
+
+      allow get: if signedIn() && !exists(/databases/$(database)/documents/zabPockets/$(pocketKey));
+      allow get: if zabMember(resource.data.tenantId);
+      allow list: if zabMember(resource.data.tenantId);
+
+      allow create: if zabPocketShapeOk()
+                    && zabMember(d().tenantId)
+                    && d().addedByPersonId == myPersonIdIn(d().tenantId)
+                    && d().createdBy == myUid();
+
+      allow update: if resource != null
+                    && zabPocketShapeOk()
+                    && zabMember(resource.data.tenantId)
+                    && d().tenantId == resource.data.tenantId
+                    && d().pocketId == resource.data.pocketId
+                    && d().addedByPersonId == resource.data.addedByPersonId
+                    && d().createdBy == resource.data.createdBy;
+
+      allow delete: if false; // I4/D6 -- trash, never destroy.
+    }
+
+    match /zabItems/{itemKey} {
+
+      function zabItemShapeOk() {
+        return d().keys().hasOnly([
+                 'itemId', 'tenantId', 'pocketId', 'addedByPersonId', 'status', 'deletedAt', 'order',
+                 'text', 'done', 'folderIds', 'tags', 'kind', 'journal',
+                 'url', 'ttl', 'ch', 'th', 'people', 'issues',
+                 'due', 'pri', 'steps', 'stars', 'topics', 'qty', 'shop', 'noteId',
+                 'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
+               ])
+            && d().keys().hasAll([
+                 'itemId', 'tenantId', 'pocketId', 'addedByPersonId', 'status', 'order',
+                 'text', 'done',
+                 'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
+               ])
+            && d().tenantId is string && d().tenantId.size() > 0
+            && d().itemId is string && d().itemId.size() > 0
+            && itemKey == d().tenantId + '__' + d().itemId
+            && d().pocketId is string && d().pocketId.size() > 0
+            && d().addedByPersonId is string && d().addedByPersonId.size() > 0
+            && zabStatusOk()
+            && (d().get('deletedAt', null) == null || d().deletedAt is timestamp)
+            && d().order is number
+            && d().text is string
+            && d().done is bool
+            && zabOptList('folderIds') && zabOptList('tags')
+            && zabOptList('people') && zabOptList('issues')
+            && zabOptList('steps') && zabOptList('topics')
+            && zabOptString('kind')
+            && (d().get('journal', null) == null || d().journal is bool || d().journal is string) // G05: "whether it is a journal entry" (Siyagah may store a bool)
+            && zabOptString('url') && zabOptString('ttl')
+            && zabOptString('ch') && zabOptString('th')
+            && zabOptString('shop')
+            && zabOptString('noteId') // Z5: the Note this item became (set when → Note trashes it)
+            && (d().get('due', null) == null
+                || (d().due is string && d().due.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')))
+            && (d().get('pri', null) == null || d().pri is number)
+            && (d().get('stars', null) == null
+                || (d().stars is number && d().stars >= 1 && d().stars <= 3))
+            && (d().get('qty', null) == null || d().qty is number || d().qty is string)
+            && zabEnvelopeOk();
+      }
+
+      allow get: if signedIn() && !exists(/databases/$(database)/documents/zabItems/$(itemKey));
+      allow get: if zabMember(resource.data.tenantId);
+      allow list: if zabMember(resource.data.tenantId);
+
+      allow create: if zabItemShapeOk()
+                    && zabMember(d().tenantId)
+                    && d().addedByPersonId == myPersonIdIn(d().tenantId)
+                    && d().createdBy == myUid();
+
+      allow update: if resource != null
+                    && zabItemShapeOk()
+                    && zabMember(resource.data.tenantId)
+                    && d().tenantId == resource.data.tenantId
+                    && d().itemId == resource.data.itemId
+                    && d().addedByPersonId == resource.data.addedByPersonId
+                    && d().createdBy == resource.data.createdBy;
+
+      allow delete: if false; // I4/D6 -- trash, never destroy.
+    }
   }
 }

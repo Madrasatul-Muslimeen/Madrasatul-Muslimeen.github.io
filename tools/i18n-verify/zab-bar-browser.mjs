@@ -96,6 +96,9 @@ async function mk(browser, { gate, lang = "en", width = 1280 }) {
   // Outside hosts are unreachable here and make a page wait on a timeout; fail them at once (fonts, audio, CDNs).
   await ctx.route((u) => !["localhost", "www.gstatic.com", "cdn.jsdelivr.net"].includes(u.hostname), (r) => r.abort());
   if (gate) await ctx.route("**/js/zab-readiness.js", (route) => route.fulfill({ status: 200, contentType: "text/javascript; charset=utf-8", body: READY_OPEN }));
+  // Updated in place 15 Oct 2026: the shipped gate is now OPEN (the Owner published the Zab Rules, PCF J25), so the
+  // gate-OFF half serves the real module with its declaration shut, keeping "no Zab while shut" tested.
+  else await routeText(ctx, "**/js/zab-readiness.js", (src) => swap(src, "ready: true,", "ready: false,"));
   await routeMutation(ctx);
   return ctx;
 }
@@ -126,7 +129,7 @@ const rowFor = (text) => `.zab-row:has(.zab-text:text-is("${text}"))`;
 const browser = await chromium.launch();
 
 // ============================== GATE OFF =====================================
-console.log("\n== gate OFF (as shipped): nothing of Zab on any page ==");
+console.log("\n== gate OFF (declaration shut): nothing of Zab on any page ==");
 {
   let offenders = [], reads = 0, zabRequests = [], dead = [];
   for (const p of PAGES) {
