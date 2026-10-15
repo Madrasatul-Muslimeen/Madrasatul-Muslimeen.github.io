@@ -28,6 +28,10 @@ const MUTATIONS = {
   // The 👥 row wraps to its own line at 320px but its list is anchored to the right edge of the row: it opened off the left of the screen.
   "popleft": ["app/quranrevival.html", "**/quranrevival.html*", "  .claim-for-line > .claim-for-row { margin: 0 0 0 auto; } /* audit13: auto, so a row that wraps to its own line stays at the right, under the right-anchored list (it opened 108px off the left edge at 320px) */", "  .claim-for-line > .claim-for-row { margin: 0; }"],
   // The 👥 list opens below the fold of the scrolling Āyah card and nothing brings it into view.
+  // The Monitor week label: dates in the device's short local style and its own zone (Architect, after audit part 13).
+  "weeklabel": ["app/monitor.html", "**/monitor.html*", 'const fmtDate = (d) => num(d.toLocaleDateString(dateLocale(), { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }));', "const fmtDate = (d) => num(d.toLocaleDateString(dateLocale()));"],
+  // Only the zone: the dates formatted in the device's own zone (a day early west of Greenwich).
+  "weeklabeltz": ["app/monitor.html", "**/monitor.html*", 'year: "numeric", timeZone: "UTC" }));', 'year: "numeric" }));'],
   "popscroll": ["app/js/way-modal.js", "**/way-modal.js*", '        if (open) popover.scrollIntoView({ block: "nearest" }); // audit13: bring the opened list into view, it can open below the fold of a scrolling card\n', ""],
 };
 if (MUTATE && !MUTATIONS[MUTATE]) throw new Error(`no such mutation ${MUTATE}`);
@@ -45,8 +49,8 @@ const ALLOWED = /QuranRevival|QCR|MMSA|Qur'?an|Hifz|Tajweed|Tadabbur|CSV|Google|
 const DATA_TEXT = /\bsurah_\d+\b|Try again/g;
 const englishLeft = (text) => (String(text).replace(DATA_TEXT, " ").replace(ALLOWED, " ").match(/[A-Za-z]{3,}/g) || []);
 
-async function open(lang, width, pagePath = "/app/quranrevival.html") {
-  const ctx = await newContext(browser, { appLang: lang === "bn" ? "bn" : null, banner: false, viewport: { width, height: width > 600 ? 900 : 844 }, extraSeedJs: SEED });
+async function open(lang, width, pagePath = "/app/quranrevival.html", timezoneId = null) {
+  const ctx = await newContext(browser, { appLang: lang === "bn" ? "bn" : null, banner: false, viewport: { width, height: width > 600 ? 900 : 844 }, extraSeedJs: SEED, timezoneId });
   await ctx.route("**/archive.org/**", (r) => r.abort());
   if (MUTATE) {
     const [file, glob, from, to] = MUTATIONS[MUTATE];
@@ -61,12 +65,12 @@ async function open(lang, width, pagePath = "/app/quranrevival.html") {
   return { ctx, page, errors };
 }
 
-async function flow(name, lang, width, fn, pagePath) {
+async function flow(name, lang, width, fn, pagePath, timezoneId = null) {
   if (ONLY && !ONLY.split(",").some((o) => name.includes(o))) return;
   const tag = `${lang} ${width}px ${name}`;
   let ctx;
   try {
-    const o = await Promise.race([open(lang, width, pagePath), new Promise((_, rej) => setTimeout(() => rej(new Error("timeout opening")), 40000))]);
+    const o = await Promise.race([open(lang, width, pagePath, timezoneId), new Promise((_, rej) => setTimeout(() => rej(new Error("timeout opening")), 40000))]);
     ctx = o.ctx;
     await Promise.race([fn(tag, o.page, o.ctx, o.errors), new Promise((_, rej) => setTimeout(() => rej(new Error("timeout flow")), 120000))]);
   } catch (e) { check(`${tag}: flow ran`, false, String(e.stack || e).split("\n").slice(0, 3).join(" | ")); }
@@ -74,6 +78,8 @@ async function flow(name, lang, width, fn, pagePath) {
 }
 
 const ev = (page, f, a) => page.evaluate(f, a);
+// The week the Monitor page actually read: the date at the end of the activity document id it fetched (t1__p1__<weekKey>).
+const weekKeyRead = (page) => ev(page, () => ((window.__fsLog || []).find((x) => x.kind === "getDoc" && x.col === "activity")?.id || "").match(/(\d{4}-\d\d-\d\d)$/)?.[1] ?? null);
 const settle = (page, ms = 500) => page.waitForTimeout(ms);
 async function openRead(page) {
   await ev(page, () => document.querySelectorAll('[id*="splash"], .app-splash-overlay').forEach((e) => e.remove()));
@@ -290,6 +296,10 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     let csv = "";
     if (dl) { const p = await dl.path(); csv = fs.readFileSync(p, "utf8"); }
     check(`${t}: CSV export downloads monitor-week-<date>.csv`, !!dl && /^monitor-week-\d{4}-\d\d-\d\d\.csv$/.test(dl.suggestedFilename()), dl ? dl.suggestedFilename() : "no download");
+    // The week label names its first and last day in one unambiguous style, and the first day IS the week the CSV is for.
+    const wkKey = await weekKeyRead(page);
+    const firstDay = wkKey ? new Date(wkKey + "T00:00:00Z").toLocaleDateString(lang === "bn" ? "bn-BD" : undefined, { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }) : "?";
+    check(`${t}: the week label reads "${lang === "bn" ? "সপ্তাহ: <d> থেকে <d>" : "Week: <d> to <d>"}", with a month name (no 10/10/2026), starting on the week it read (${wkKey})`, (lang === "bn" ? /^সপ্তাহ: .+ থেকে .+$/ : /^Week: .+ to .+$/).test(m.range) && !/\//.test(m.range) && m.range.includes(refText(lang, firstDay)), `${m.range} / first day ${firstDay}`);
     check(`${t}: the CSV has a header row and a data row for Ahsan`, csv.split("\n").length >= 2 && csv.includes(NAMES[lang][0]), csv.slice(0, 200));
     // Monthly
     await page.click("#monthTabBtn"); await settle(page, 700);
@@ -311,6 +321,19 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     check(`${t}: Print raises no error`, pageErrors.length === 0, pageErrors.join(" | "));
     check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
   }, "/app/monitor.html");
+}
+
+// 6b (Architect): Monitor on a device west of Greenwich. The week's days are UTC midnights; formatted in the
+// device's own zone they read a day early, so the label's first day must still be the week the page read.
+if (!LONLY || LONLY === "en") {
+  await flow("monitortz", "en", 390, async (t, page) => {
+    const tz = await ev(page, () => Intl.DateTimeFormat().resolvedOptions().timeZone);
+    check(`${t}: POSITIVE CONTROL the page's clock is in Los Angeles`, tz === "America/Los_Angeles", tz);
+    const range = await ev(page, () => document.getElementById("rangeLabel").textContent);
+    const wkKey = await weekKeyRead(page);
+    const firstDay = wkKey ? new Date(wkKey + "T00:00:00Z").toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }) : "?";
+    check(`${t}: in Los Angeles the week label still starts on the week it read (${wkKey})`, range.startsWith(`Week: ${firstDay} to `), `${range} / first day ${firstDay}`);
+  }, "/app/monitor.html", "America/Los_Angeles");
 }
 
 // 7: Bangla -- no English left on these features (390px).
