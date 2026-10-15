@@ -95,6 +95,14 @@ Read this first, every session. It is the standing brief.
 >   and desktop, record each defect as a PCF job and fix it with the usual checks.** The Owner also confirmed
 >   (14 Oct) that the **Project Chief Architect (PCA)** session coordinates every project's Master Architect
 >   through `PCA ▸` lines in the PCF: act on them within this brief; the Owner's own word overrides the PCA.
+> - **W-T-P-E-O, how we work (the Owner's PCF General rule, 15 Oct 2026, PCA J39)**, binding on every session and
+>   every Builder run: **Wise** (every job serves the Owner's long-term aim for the project; check it fits before
+>   building; keep the Owner's rules: no money, no keys); **Timely** (every job has a next step and a time; the PCF
+>   status line `p/mmsa.monitor` is rewritten at EVERY step, with an `act` stamp on every job written, and knocks
+>   are relayed within minutes); **Precise** (real clock times only; nothing is "done" until tested on a phone and a
+>   computer; exact job names and full links); **Elegant** (calm, tidy pages, plain words, short "What I need from
+>   you" tick lists); **Optimal** (the fewest Owner taps, free tools, no credits, no duplicate work). **Every
+>   finished job ends with a one-line W-T-P-E-O check in its Done line.**
 
 > ## ⇢ HADITH STUDY is being built on `feature/hadith-study` — READ IF YOU TOUCH HADITH
 >
@@ -358,7 +366,7 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v10.55 on `main`** (15 Oct 2026 — **Zab switched on**, PCF J25). The Owner published `docs/governance/2026-10-14-zab-candidate.rules` (J25: "Published") and confirmed in the MMSA chat: "Yes, switch Zab on". `firestore.rules` is synced to that exact file (+143 lines, none removed), and `zab-readiness.js` reads `ready: true` by master-architect on 2026-10-15; the reference is `docs/reports/2026-10-15-zab-enabled.md`. The whole Zab plan, Z1–Z6, is now on every page: the bar, the pockets and their kinds, → Note, and pockets inside pockets. **Tests:** emulator zab 26/0 against both the candidate and `firestore.rules`, with a drift mutation caught; zab-data 46/0; zab-bar 370/0; zab-kinds 324/0; zab-to-note 196/0; zab-tree 240/0; rules-authorisation-executable 80/0. With Zab on, behaviour is 971/0, phone-width-overflow 217/0, and navcheck and reading are OK. Whether the live Rules accept the writes is proved by the Owner's first Try; this session cannot see Firebase.
+**Current milestone: v10.56 on `main`** (15 Oct 2026 — **Arabic word boxes in "Meanings of this word"**, PCF J23). Built by Builder round #841 and reviewed by the Architect. Every row in the Word card's Intermediate "Meanings of this word" now carries small Arabic word boxes, as Basic's do, instead of an empty middle (the Owner: "why these words are not there and kept blank without the Arabic word?"). Each box shows the word as written at that meaning's places when those places are already loaded, and otherwise the dictionary word once, with no new load. Tapping a box opens the word at that place, and "Back to Word Card" returns to the card. The Owner's W-T-P-E-O rule (PCF General rule, PCA J39) is in this brief. **Tests:** word-card-sense-arabic 62/0, with all 5 mutations failing; word-card-intermediate 50/0; quran-word-card-rendered 127/0; word-card-layout-b-top 246/0; phone-width-overflow 217/0; behaviour 971/0.
 
 **Earlier milestones, v08.111 back to v07.139, and the long notes around them**
 (the held Phase 4 wiring, the four deployment states, the Programme Integration

@@ -1037,6 +1037,7 @@ function wordSensesSection(word, layers, context, text, formatNumber) {
   if (senses === undefined) return `<section class="word-card-senses" data-word-card-senses>${heading}<p>${escapeHtml(text.loadingMeanings)}</p></section>`;
   if (!senses.length) return `<section class="word-card-senses" data-word-card-senses>${heading}<p class="word-card-forms-summary">${escapeHtml(text.meaningsOfWordOne)}</p></section>`;
   const shown = senses.slice(0, SENSES_SHOWN);
+  const loadedItems = Array.isArray(context.lemmaOccurrenceItems) ? context.lemmaOccurrenceItems : [];
   const rows = shown.map(([label, count, refs], i) => {
     const mine = context.currentSenseIndex === i;
     const links = refs.map((packed) => {
@@ -1045,8 +1046,24 @@ function wordSensesSection(word, layers, context, text, formatNumber) {
       const shownRef = typeof text.displayRef === "function" ? text.displayRef(s, a, w) : `${s}:${a}`;
       return `<button type="button" class="word-card-sense-ref" data-word-occurrence-goto="${escapeHtml(ref)}" aria-label="${escapeHtml(String(text.goToOccurrence).replace("{ref}", shownRef))}">${escapeHtml(shownRef)}</button>`;
     }).join("");
+    // J23: Arabic word boxes. Distinct spellings at this sense's places when those are already loaded (no new
+    // load); otherwise the dictionary word once. Each box opens the word at the sense's first place of that spelling.
+    const spelled = new Map();
+    for (const packed of refs) {
+      const s = Math.floor(packed / 1000000), a = Math.floor(packed / 1000) % 1000, w = packed % 1000;
+      const found = loadedItems.find((o) => o.surah === s && o.ayah === a && o.position === w);
+      if (found?.arabic && !spelled.has(found.arabic)) spelled.set(found.arabic, `${s}:${a}:${w}`);
+    }
+    if (!spelled.size && refs.length) {
+      const p = refs[0];
+      spelled.set(lemmaText(layers.lemma), `${Math.floor(p / 1000000)}:${Math.floor(p / 1000) % 1000}:${p % 1000}`);
+    }
+    const boxes = [...spelled].map(([arabic, ref]) =>
+      `<button type="button" class="word-card-dcard word-card-sense-box" data-word-occurrence-goto="${escapeHtml(ref)}" aria-label="${escapeHtml(String(text.goToOccurrence).replace("{ref}", (() => { const [rs, ra, rw] = ref.split(":").map(Number); return typeof text.displayRef === "function" ? text.displayRef(rs, ra, rw) : `${rs}:${ra}`; })()))}">` +
+      `<span class="word-card-dcard-ar" dir="rtl" lang="ar">${escapeHtml(arabic)}</span><span class="word-card-sense-box-label" lang="en">${escapeHtml(label)}</span></button>`).join("");
     return `<li class="word-card-sense${mine ? " word-card-sense-current" : ""}"${mine ? ' aria-current="true"' : ""} data-word-card-sense="${i}">` +
       `<span class="word-card-sense-top"><b lang="en">${escapeHtml(label)}</b>${mine ? `<span class="word-card-sense-tag">${escapeHtml(text.meaningThisWord)}</span>` : ""}<span class="word-card-sense-count">${escapeHtml(String(text.meaningSenseCount).replace("{n}", formatNumber(count)))}</span></span>` +
+      (boxes ? `<span class="word-card-sense-boxes" data-word-card-sense-boxes>${boxes}</span>` : "") +
       `<span class="word-card-sense-refs">${links}</span></li>`;
   }).join("");
   const more = senses.length > SENSES_SHOWN ? `<p class="word-card-forms-note">${escapeHtml(String(text.meaningMore).replace("{n}", formatNumber(senses.length - SENSES_SHOWN)))}</p>` : "";
