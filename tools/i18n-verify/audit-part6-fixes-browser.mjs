@@ -112,6 +112,10 @@ for (const lang of ["en", "bn"]) for (const width of [390, 820, 1440]) {
     check(`${t}: every button >= 40px tall`, bad.length === 0, bad.map((x) => `${x.w}x${x.h}`).join(", "));
   });
 }
+// Added by the Architect's review (15 Oct 2026): on main the Notes window's ✕ ends at 359px on a 320px phone (the long
+// "← Back to Surah 1, Bismillah"), while at 390px the title squeezes and the ✕ still fits, so the rnpback mutation could
+// not fail at the three widths above. 320px is where the defect lives; measure it there in both languages.
+for (const lang of ["en", "bn"]) await pageFlow(`${lang} 320px qr-notepane`, "/app/quranrevival.html", FLOWS.notepane);
 await browser.close();
 console.log(`\n${pass} passed, ${fail} failed${MUTATE ? ` (mutation ${MUTATE})` : ""}`);
 process.exit(fail ? 1 : 0);

@@ -21270,3 +21270,29 @@ New strings `wholeQuranLevelSentence` ("{level}: Achieved {known} and {percent} 
 - All 4 mutations fail it: no-line (31 failed), wrong-key (7), bismillah-always (1) and band-cap (1).
 - `fatiha-opening-band-browser` 132/0, `opening-key` 8/0, `behaviour` 971/0 and `phone-width-overflow` 217/0, run on the code merged with v10.60.
 - **Recorded, older than this release:** `quran-my-status-browser.mjs` stops at the same check on v10.57, v10.59 and here. On a phone, the floating "← Back to Know Your Status" pill sits over the Approach tab. It is item 12 in PCF J29, for its own round.
+
+## v10.62 — 15 Oct 2026 — Audit part 6: finger-sized buttons on the Qur'an page, and the Notes window's ✕ back on a small phone screen (PCF J29)
+
+**Source:** the Owner's PCF General rule "Keep working, never idle". This is part 6 of the feature-by-feature audit.
+
+**Built by Builder round #853 (PR #854, branch `builder/issue-853-run-1301`) and reviewed by the Architect:**
+- **`app/quranrevival.html`** gives each of these a 40px minimum height:
+  - `.wheel-cta-btn`, the "Take an Approach" pill in the wheel (`max(15%, 40px)`; was 31px on a phone);
+  - the Read bar's `.approach-bar-btn` (was 37px) and `.read-unit-chip` (was 26px);
+  - Explore's `.explore-palette-btn` (was 29px), `.explore-crumb` (was 18px), `.explore-view-btn` (was 36px) and the Approach capsule (was 36px).
+- **`app/notes.html`:** `#newNoteBtn` is 40px (was 28px).
+- **`app/js/read-note-pane.js`:** `.rnp-back` may shrink and ends in an ellipsis. Its long label "← Back to Surah 1, Bismillah" had pushed the Notes window's ✕ off a 320px phone screen (its right edge at 359px).
+- **Measured clean:** the open Zab panel (an empty pocket, a pocket with an item, the add and edit rows), `bookmarks.html`, and Mapping My Journey's landing state.
+- **Not done, and said plainly by the round:**
+  - single Arabic words in running Qur'an text (inline text, exempt);
+  - the verb table, QCR collections, the Mushaf view, the Mapping My Journey pop-ups, and the full English-left-in-Bangla list. These are round #856 (audit part 7).
+
+**The Architect's review:**
+- **Before and after photographs at 390px**, English and Bangla. The pill sits well inside the wheel's centre disc. The Read bar keeps its 98px height.
+- **An unproven mutation, chased rather than accepted.** After `main` was merged in, `--mutate=rnpback` no longer failed the suite. At 390px the title squeezes to 31px and the ✕ still fits; the defect lives at 320px (✕ at 359 of 320 on `main`, 272–320 with the fix).
+  - The Architect added a 320px Notes window case to `audit-part6-fixes-browser.mjs` in both languages.
+  - The mutation now fails it: "right 359 of 320".
+
+**Tests:**
+- `audit-part6-fixes-browser`: 200/0. All 9 mutations fail it: cta (6 failed), barbtn (18), unitchip (6), capsule (6), palette (8), viewbtn (6), crumb (6), newnote (6) and rnpback (1).
+- `behaviour` 971/0, `phone-width-overflow` 217/0, `audit-part4-fixes` 1302/0, `zab-dock` 74/0, `kys-opening-line` 47/0 and `fatiha-opening-band` 132/0, all on the code merged with v10.61.
