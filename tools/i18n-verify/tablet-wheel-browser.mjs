@@ -61,7 +61,12 @@ const measure = () => {
 };
 
 for (const lang of ["en", "bn"]) {
-  for (const [w, h, minWheel, was] of [[600, 960, 575, 533], [700, 1000, 650, 580]]) {
+  // Updated in place, 15 Oct 2026 (PCF J29 item 17a): at 700x1000 the wheel is capped so the first screen
+  // ends above the dock (fitLandingFirstScreen, the Owner's rule of 1 Oct). v10.53 deliberately made the bottom
+  // tabs and the header controls 40px, which took 6px of that height: the wheel is 644px (en) / 638px (bn), not
+  // 650. Bisected to 04878941. The floor is 635px: still far above the 580px this layout replaced, so
+  // --mutate-off (the tablet layout switched off) still fails it.
+  for (const [w, h, minWheel, was] of [[600, 960, 575, 533], [700, 1000, 635, 580]]) {
     const L = `[${lang} ${w}]`;
     console.log(`\n=== tablet ${L} ===`);
     const { ctx, page } = await open(lang, w, h);
