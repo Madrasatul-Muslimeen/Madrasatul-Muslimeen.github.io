@@ -23,6 +23,8 @@ const ONLY = (process.argv.find((a) => a.startsWith("--only=")) || "").slice(7);
 const WONLY = Number((process.argv.find((a) => a.startsWith("--width=")) || "").slice(8)) || 0;
 const LONLY = (process.argv.find((a) => a.startsWith("--lang=")) || "").slice(7);
 const MUTATIONS = {
+  // The four Approach-card tabs need 302px; a 320px phone's card gives 262: Coverage ran off the end.
+  "tabsfit": ["app/quranrevival.html", "**/quranrevival.html*", "  .way-tab-bar { flex-wrap: wrap; }\n  @media (max-width: 399px) { .way-tab-bar { gap: 0.1rem; } .way-tab-btn { padding: 0.4rem 0.3rem; font-size: 0.85rem; } }", ""],
   // The 👥 row wraps to its own line at 320px but its list is anchored to the right edge of the row: it opened off the left of the screen.
   "popleft": ["app/quranrevival.html", "**/quranrevival.html*", "  .claim-for-line > .claim-for-row { margin: 0 0 0 auto; } /* audit13: auto, so a row that wraps to its own line stays at the right, under the right-anchored list (it opened 108px off the left edge at 320px) */", "  .claim-for-line > .claim-for-row { margin: 0; }"],
   // The 👥 list opens below the fold of the scrolling Āyah card and nothing brings it into view.
@@ -213,7 +215,7 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     for (const tab of ["Track", "Guide", "Breakdown", "Coverage"]) {
       await ev(page, (tb) => document.querySelector(`.rnp-track .way-tab-btn[data-tab="${tb}"]`).click(), tab);
       await settle(page, 250);
-      const p = await ev(page, (tb) => { const pn = document.querySelector(`.rnp-track .way-tab-panel[data-tab="${tb}"]`); const r = pn.getBoundingClientRect(); const b = document.querySelector(`.rnp-track .way-tab-btn[data-tab="${tb}"]`); return { active: pn.classList.contains("active") && b.classList.contains("active"), shown: getComputedStyle(pn).display !== "none" && r.height > 0, textLen: pn.innerText.trim().length, btnOn: b.getBoundingClientRect().right <= innerWidth + 1 && b.getBoundingClientRect().width > 0, others: [...document.querySelectorAll(".rnp-track .way-tab-panel.active")].length }; }, tab);
+      const p = await ev(page, (tb) => { const pn = document.querySelector(`.rnp-track .way-tab-panel[data-tab="${tb}"]`); const r = pn.getBoundingClientRect(); const b = document.querySelector(`.rnp-track .way-tab-btn[data-tab="${tb}"]`); return { active: pn.classList.contains("active") && b.classList.contains("active"), shown: getComputedStyle(pn).display !== "none" && r.height > 0, textLen: pn.innerText.trim().length, btnOn: b.getBoundingClientRect().right <= document.querySelector(".rnp-track .way-tab-bar").getBoundingClientRect().right + 1 && b.getBoundingClientRect().right <= innerWidth + 1 && b.getBoundingClientRect().width > 0, others: [...document.querySelectorAll(".rnp-track .way-tab-panel.active")].length }; }, tab);
       if (PROBE) console.log(t, tab, JSON.stringify(p));
       check(`${t}: the ${tab} tab opens, is the only panel showing, and has content`, p.active && p.shown && p.textLen > 15 && p.btnOn && p.others === 1, JSON.stringify(p));
     }

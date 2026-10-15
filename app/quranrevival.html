@@ -3690,6 +3690,9 @@
   .way-tab-bar { display: flex; gap: 0.4rem; border-bottom: 1px solid #eee; margin: 0.6rem 0; }
   .way-tab-btn { background: none; border: none; color: #888; padding: 0.4rem 0.6rem; border-bottom: 2px solid transparent; border-radius: 0; }
   .way-tab-btn.active { color: #1F3A6E; border-bottom-color: #1F3A6E; font-weight: 600; }
+  /* audit13: the four tabs need 302px and a 320px phone's card gave them 262: Coverage ran off the screen. Tighter below 400px, and wrap as the safety. */
+  .way-tab-bar { flex-wrap: wrap; }
+  @media (max-width: 399px) { .way-tab-bar { gap: 0.1rem; } .way-tab-btn { padding: 0.4rem 0.3rem; font-size: 0.85rem; } }
   .way-tab-panel { display: none; }
   .way-tab-panel.active { display: block; }
 
