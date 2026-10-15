@@ -49,6 +49,10 @@
   .topic-detail { border: 1px solid #e0e0e0; border-radius: 0.6rem; padding: 1rem; margin-top: 1rem; }
   .topic-bookmark-btn { font-size: 0.95rem; vertical-align: middle; background: none; border: 1px solid #ccc; border-radius: 0.35rem; cursor: pointer; color: #B8862F; padding: 0.05rem 0.35rem; }
   .topic-bookmark-btn.active { background: #B8862F; color: #fff; border-color: #B8862F; }
+  /* Audit part 18 (PCF J29): a control a finger presses is at least 40px (the chip, the star, Track my progress, Claim). */
+  .continue-chip { display: inline-flex; align-items: center; min-height: 40px; }
+  .topic-bookmark-btn { min-width: 40px; min-height: 40px; }
+  #trackTopicBtn, #wayModalMount .way-claim-btn { min-height: 40px; }
   .topic-resource-empty { color: #888; }
   .topic-resource-link { word-break: break-all; }
 

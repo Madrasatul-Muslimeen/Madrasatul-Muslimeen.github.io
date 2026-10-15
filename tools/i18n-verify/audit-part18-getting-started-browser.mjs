@@ -33,7 +33,7 @@ if (MUTATE && !MUTATIONS[MUTATE]) throw new Error(`no such mutation ${MUTATE}`);
 const browser = await chromium.launch();
 const BN = /[ঀ-৿]/;
 // English words that may stay on a Bangla page: the app's own names, source names and names people typed.
-const ALLOWED = /QuranRevival|QCR|MMSA|Qur'?an|Asma|Husna|Madrasatul|Muslimeen|Hadith|hadith|Google|Ahsan|Maryam|Zayd|Aisha|Ethics|Akhlaq|Audit|example|org|com|Tajweed|Fiqh|Tafsir|Legacy|App|v\d+|Deen|Arabic|Dawah|English|Bangla|smahk|gmail/g; // English/Bangla: the language picker names both languages; smahk@gmail: the signed-in email
+const ALLOWED = /https?:\/\/\S+|QuranRevival|QCR|MMSA|Qur'?an|Asma|Husna|Madrasatul|Muslimeen|Hadith|hadith|Google|Ahsan|Maryam|Zayd|Aisha|Ethics|Akhlaq|Audit|example|org|com|Tajweed|Fiqh|Tafsir|Legacy|App|v\d+|Deen|Arabic|Dawah|English|Bangla|smahk|gmail/g; // English/Bangla: the language picker names both languages; smahk@gmail: the signed-in email
 const englishLeft = (text) => (String(text).replace(ALLOWED, " ").match(/[A-Za-z]{3,}/g) || []);
 
 async function open(lang, width, pagePath, { extraSeed = "", ctxOpts = {}, mutatePage = pagePath } = {}) {
@@ -82,7 +82,20 @@ const isOpen = (page, label) => ev(page, (l) => [...document.querySelectorAll(".
 
 const WIDTHS = [320, 390, 820, 1440].filter((w) => !WONLY || w === WONLY);
 const LANGS = ["en", "bn"].filter((l) => !LONLY || l === LONLY);
-const L = { en: { modules: "Modules", home: "Home", operation: "Operation" }, bn: {} };
+// The seeded tenant has Deen Study topics but no "Studied" Approach, no resource and no Arabic tree; give each module one trackable
+// topic with a resource, and one saved "where was I" for the Continue line.
+const topicSeed = ({ root, topicId, trackable, mod, en, bn }) => `
+DATA.trackables.push({ _id: TENANT_ID + "__${trackable}", tenantId: TENANT_ID, subjectId: "${root}", order: 0, status: "active", name: lang("Studied", "অধ্যয়ন করা হয়েছে"), groupName: lang("Understanding", "অনুধাবন"), guide: { what: lang("What it is", "এটি কী"), how: lang("How to do it", "কীভাবে করবেন"), measure: lang("How to measure", "কীভাবে মাপবেন") }, panels: ["text"] });
+if (!DATA.subjects.some((s) => s._id === TENANT_ID + "__${topicId}")) {
+  if (!DATA.subjects.some((s) => s._id === TENANT_ID + "__${root}")) DATA.subjects.push({ _id: TENANT_ID + "__${root}", tenantId: TENANT_ID, subjectId: "${root}", parentId: null, name: lang("${root}"), moduleIds: ["${mod}"], ancestorIds: [], status: "active", order: 1 });
+  DATA.subjects.push({ _id: TENANT_ID + "__${topicId}", tenantId: TENANT_ID, subjectId: "${topicId}", parentId: "${root}", name: lang("${en}", "${bn}"), gloss: lang("A topic"), moduleIds: ["${mod}"], ancestorIds: ["${root}"], status: "active", order: 1, isTrackable: true });
+}
+DATA.subjects.find((s) => s._id === TENANT_ID + "__${topicId}").resourceIds = ["r1"];
+DATA.bookmarks[0].resume = { "${mod}::none::${topicId}": { position: "${topicId}", updatedAt: "2026-10-01T00:00:00.000Z" } };`;
+const TOPIC_MODULES = [
+  { id: "deen", root: "deen_study", page: "/app/deen-study.html", topicId: "deen_ethics", topicEn: "Ethics", topicBn: "নৈতিকতা", trackable: "studied_deen", seed: topicSeed({ root: "deen_study", topicId: "deen_ethics", trackable: "studied_deen", mod: "deen", en: "Ethics", bn: "নৈতিকতা" }) },
+  { id: "arabic", root: "arabic_language", page: "/app/arabic-study.html", topicId: "arabic_nahw", topicEn: "Nahw", topicBn: "নাহু", trackable: "studied_arabic", seed: topicSeed({ root: "arabic_language", topicId: "arabic_nahw", trackable: "studied_arabic", mod: "arabic", en: "Nahw", bn: "নাহু" }) },
+];
 
 for (const lang of LANGS) for (const width of WIDTHS) {
   const bn = lang === "bn";
@@ -228,6 +241,127 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     check(`${t}: the pill returns to the exact place (the same QCR collection, ${rowsBefore} rows) and goes away`, back.qcr && back.cur === col && back.rows === rowsBefore && back.pill, JSON.stringify(back));
     check(`${t}: no sideways scroll, no page errors`, (await wide(page)) <= 0 && noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
   });
+
+  // 8a: The tagline strip: holding a finger on it pauses a scrolling line; letting go resumes it.
+  const LONG = ("Have you ever weighed a gold bar (12.4 kg) in your hand? It is heavier than you would think, and the weight of a single line of revelation is heavier still, so read it slowly. ").repeat(4).trim(); // long enough to overflow the strip even at 1440px
+  const LONG_BN = ("আপনি কি কখনো হাতে একটি সোনার বার (১২.৪ কেজি) ওজন করে দেখেছেন? ভাবনার চেয়ে এটি অনেক ভারী, আর ওহির একটি লাইনের ওজন তার চেয়েও ভারী, তাই ধীরে ধীরে পড়ুন। এক একটি শব্দ থেমে থেমে পড়ুন এবং তার অর্থ নিয়ে ভাবুন, তাহলেই হৃদয়ে তার প্রভাব পড়বে। ").repeat(4).trim();
+  await flow("taglinehold", lang, width, "/app/quranrevival.html", async (t, page, ctx, errors) => {
+    const tx = () => ev(page, () => { const tr = document.querySelector("#taglineStrip .tagline-line:not(.tagline-leaving) .tagline-track"); return tr ? Math.round(new DOMMatrix(getComputedStyle(tr).transform).m41) : null; });
+    await page.waitForFunction(() => !!document.querySelector("#taglineStrip .tagline-scrolling .tagline-track"), null, { timeout: 15000 });
+    await page.waitForFunction(() => { const tr = document.querySelector("#taglineStrip .tagline-line:not(.tagline-leaving) .tagline-track"); return tr && new DOMMatrix(getComputedStyle(tr).transform).m41 < -3; }, null, { timeout: 15000 }).catch(() => {});
+    const a = await tx(); await settle(page, 900); const b = await tx();
+    check(`${t}: POSITIVE CONTROL the long line scrolls by itself (${a} → ${b})`, a !== null && b !== null && b < a, JSON.stringify([a, b]));
+    const strip = await rectOf(page, "#taglineStrip");
+    // A held finger: pointerdown on the strip (what a touch becomes), nothing else changes.
+    await ev(page, () => document.getElementById("taglineStrip").dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, pointerType: "touch" })));
+    await settle(page, 150);
+    const h1 = await tx(); await settle(page, 1000); const h2 = await tx();
+    check(`${t}: holding a finger on the strip pauses it (${h1} → ${h2})`, h1 === h2, JSON.stringify([h1, h2]));
+    await ev(page, () => document.getElementById("taglineStrip").dispatchEvent(new PointerEvent("pointerup", { bubbles: true, pointerType: "touch" })));
+    await settle(page, 200); const r1 = await tx(); await settle(page, 900); const r2 = await tx();
+    check(`${t}: letting go resumes it (${r1} → ${r2})`, r2 !== null && r1 !== null && r2 < r1, JSON.stringify([r1, r2]));
+    check(`${t}: the strip sits inside the screen`, !!strip && strip.l >= -1 && strip.r <= width + 1, JSON.stringify(strip));
+    check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
+  }, { ctxOpts: { taglines: { lines: [{ id: "long", text: { en: LONG, bn: LONG_BN }, link: null, order: 10, status: "active", holdDays: 7, ayahRef: null }], settings: { motion: "fade", changeAfterSeconds: 2, pauseOnHold: true, scroll: true, scrollSpeed: 10 } } } });
+
+  // 8b: Settings → Taglines (owner/prime): add a line, movement, Scroll long lines, Scroll speed, Save writes them.
+  await flow("taglinesettings", lang, width, "/app/taglines.html", async (t, page, ctx, errors) => {
+    await page.waitForSelector("#addBtn", { state: "visible", timeout: 10000 });
+    await settle(page, 600);
+    const rows0 = await ev(page, () => document.querySelectorAll("#lineRows tr").length);
+    check(`${t}: POSITIVE CONTROL the lines table and the Save button are on screen, Save disabled until a change`, rows0 > 0 && (await ev(page, () => document.getElementById("saveBtn").disabled)), `rows ${rows0}`);
+    const h = { add: await tall(page, "#addBtn"), save: await tall(page, "#saveBtn"), motion: await tall(page, "#motionSelect"), text: await tall(page, "#newText") };
+    check(`${t}: Add line, Save and the fields are at least 40px`, Object.values(h).every((v) => v >= 40), JSON.stringify(h));
+    const NEW = bn ? "নতুন লাইন অডিট" : "Audit new line";
+    await page.fill("#newText", NEW);
+    await page.click("#addBtn"); await settle(page, 300);
+    check(`${t}: Add line puts the line in the table and enables Save`, (await ev(page, () => document.querySelectorAll("#lineRows tr").length)) === rows0 + 1 && !(await ev(page, () => document.getElementById("saveBtn").disabled)));
+    const motions = await ev(page, () => [...document.querySelectorAll("#motionSelect option")].map((o) => o.value));
+    const motion = motions.find((m) => m !== "fade") ?? motions[0];
+    await page.selectOption("#motionSelect", motion);
+    await page.uncheck("#scrollToggle"); await settle(page, 150);
+    check(`${t}: switching Scroll long lines off disables Scroll speed`, await ev(page, () => document.getElementById("scrollSpeedInput").disabled));
+    await page.check("#scrollToggle"); await settle(page, 150);
+    await ev(page, () => { const s = document.getElementById("scrollSpeedInput"); s.value = "8"; s.dispatchEvent(new Event("input", { bubbles: true })); });
+    const w0 = await writeCount(page);
+    await page.click("#saveBtn");
+    await page.waitForFunction(() => /\S/.test(document.getElementById("saveState").textContent) && document.getElementById("saveState").textContent !== "Not saved yet." , null, { timeout: 8000 }).catch(() => {});
+    await settle(page, 400);
+    const ws = await writes(page, w0);
+    const tw = ws.find((x) => x.col === "tenants");
+    if (PROBE) console.log(t, "writes", JSON.stringify(ws).slice(0, 600));
+    check(`${t}: Save writes the tenant document with the new line, the movement, Scroll long lines and speed 8`, !!tw && (tw.data.taglines ?? []).some((l) => Object.values(l.text ?? {}).includes(NEW)) && tw.data.taglineSettings?.motion === motion && tw.data.taglineSettings?.scroll === true && tw.data.taglineSettings?.scrollSpeed === 8, JSON.stringify(tw)?.slice(0, 500));
+    check(`${t}: and carries updatedAt`, !!tw && tw.data.updatedAt !== undefined, JSON.stringify(tw)?.slice(0, 200));
+    const said = await ev(page, () => document.getElementById("saveState").textContent);
+    check(`${t}: the page says it saved (${bn ? "Bangla" : "English"}) and Save is disabled again`, (bn ? BN.test(said) : /^Saved\./.test(said)) && (await ev(page, () => document.getElementById("saveBtn").disabled)), said);
+    check(`${t}: no sideways scroll, no page errors`, (await wide(page)) <= 0 && noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
+  });
+
+  // 9 + 10: Topic study (Deen Study, Arabic): Track my progress → "— Studied" → a stage writes the right person and unit key;
+  // Bookmark this saves the place; the Continue strip opens the last place.
+  for (const mod of TOPIC_MODULES) {
+    await flow(`topic-${mod.id}`, lang, width, mod.page, async (t, page, ctx, errors) => {
+      await page.waitForSelector(".topic-row-leaf", { timeout: 15000 });
+      const persons = await ev(page, () => [...document.querySelectorAll("#personSelect option")].map((o) => o.value));
+      check(`${t}: POSITIVE CONTROL the page lists the topic and a Person picker (${persons.join(",")})`, persons.length >= 2 && (await ev(page, () => document.querySelectorAll(".topic-row-leaf").length)) >= 1, JSON.stringify(persons));
+      const person = persons.find((p) => p !== persons[0]) ?? persons[0];
+      await page.selectOption("#personSelect", person); await settle(page, 900);
+      await page.click(".topic-row-leaf"); await settle(page, 1200);
+      const det = await ev(page, () => ({ text: document.getElementById("detailContainer").innerText, h: document.getElementById("trackTopicBtn")?.getBoundingClientRect().height ?? 0, dis: document.getElementById("trackTopicBtn")?.disabled }));
+      check(`${t}: opening a topic shows its detail with an enabled Track my progress, finger-sized`, !det.dis && det.h >= 40, JSON.stringify(det));
+      if (bn) check(`${t}: the topic detail has no English left`, englishLeft(det.text.replace(mod.topicEn, " ")).length === 0, englishLeft(det.text).join(", "));
+      await page.click("#trackTopicBtn"); await settle(page, 700);
+      const modal = await ev(page, () => ({ title: document.getElementById("wayModalMount").innerText.split("\n")[0].trim(), open: document.getElementById("wayModalOverlay").classList.contains("open"), r: (() => { const r = document.querySelector("#wayModalMount > *").getBoundingClientRect(); return { l: r.left, r: r.right, t: r.top, b: r.bottom }; })(), claim: document.querySelector(".way-claim-btn")?.getBoundingClientRect().height ?? 0 }));
+      if (PROBE) console.log(t, "modal", JSON.stringify(modal));
+      check(`${t}: Track my progress opens "${bn ? "… — অধ্যয়ন করা হয়েছে" : "… — Studied"}" inside the screen`, modal.open && modal.title.endsWith(bn ? "— অধ্যয়ন করা হয়েছে" : "— Studied") && inside(modal.r, width, vh), JSON.stringify(modal));
+      check(`${t}: the Claim button is at least 40px`, modal.claim >= 40, JSON.stringify(modal));
+      await page.selectOption(".way-status-select", "learning");
+      const w0 = await writeCount(page);
+      await page.click(".way-claim-btn"); await settle(page, 1000);
+      const ws = await writes(page, w0);
+      const rec = ws.find((x) => x.col === "records");
+      if (PROBE) console.log(t, "writes", JSON.stringify(ws).slice(0, 900));
+      const entry = rec?.data?.entries?.[`topic:${mod.topicId}::${mod.trackable}`] ?? null;
+      check(`${t}: choosing a stage writes the right person's records document (${person}) under unit key topic:${mod.topicId}`, !!rec && rec.data.personId === person && rec.id.includes(`__${person}__`) && !!entry && entry.unitType === "topic" && entry.claimedStatus === "learning" && Object.keys(rec.data.entries).length === 1, JSON.stringify(rec)?.slice(0, 500));
+      check(`${t}: the record carries the I17 stamps`, !!rec && STAMPS(rec.data), JSON.stringify(rec?.data ?? {}).slice(0, 300));
+      await page.click(`#wayModalMount button:text-is("×")`); await settle(page, 300);
+      // Bookmark this
+      const w1 = await writeCount(page);
+      check(`${t}: the ☆ bookmark button is at least 40px`, (await tall(page, "#bookmarkTopicBtn")) >= 40, String(await tall(page, "#bookmarkTopicBtn")));
+      await page.click("#bookmarkTopicBtn"); await settle(page, 600);
+      await page.click("[data-bm-pop-save]"); await settle(page, 900);
+      const bw = (await writes(page, w1)).find((x) => x.col === "bookmarks");
+      if (PROBE) console.log(t, "bookmark", JSON.stringify(bw)?.slice(0, 600));
+      check(`${t}: Bookmark this saves the place (a bookmarks write naming ${mod.topicId} in module ${mod.id})`, !!bw && JSON.stringify(bw.data).includes(`"${mod.topicId}"`) && JSON.stringify(bw.data).includes(`"${mod.id}"`), JSON.stringify(bw)?.slice(0, 400));
+      check(`${t}: the star turns filled`, (await ev(page, () => document.getElementById("bookmarkTopicBtn").textContent.trim())) === "★");
+      check(`${t}: no sideways scroll, no page errors`, (await wide(page)) <= 0 && noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
+    }, { extraSeed: mod.seed });
+
+    // A topic that already has a claim says so in the reader's language ("Status: learning · pending").
+    await flow(`topicstatus-${mod.id}`, lang, width, mod.page, async (t, page, ctx, errors) => {
+      await page.waitForSelector(".topic-row-leaf", { timeout: 15000 });
+      await page.click(".topic-row-leaf"); await settle(page, 1200);
+      const text = await ev(page, () => document.querySelector("#detailContainer .topic-detail p:not(.topic-resource-text)")?.parentElement.innerText ?? "");
+      const line = text.split("\n").find((l) => /Status|অবস্থা/.test(l)) ?? "";
+      if (PROBE) console.log(t, "status line", JSON.stringify(line));
+      check(`${t}: POSITIVE CONTROL the topic's own claim is shown as a Status line`, /learning|শিখছি/i.test(line), JSON.stringify(text));
+      check(`${t}: the Status line is ${bn ? "wholly Bangla" : "English: \"Status: Learning · Awaiting confirmation\""}`, bn ? englishLeft(line).length === 0 : line === "Status: Learning · Awaiting confirmation", line);
+    }, { extraSeed: mod.seed + `\nDATA.records.push({ _id: TENANT_ID + "__p1__subject_${mod.root}", tenantId: TENANT_ID, personId: "p1", subjectId: "${mod.root}", entries: { "topic:${mod.topicId}::${mod.trackable}": { unitType: "topic", subjectId: "${mod.root}", trackableId: "${mod.trackable}", claimedStatus: "learning", claimedByPersonId: "p1", confirmedStatus: null, confirmState: "pending", domainIds: [], notes: "" } } });` });
+
+    await flow(`continue-${mod.id}`, lang, width, mod.page, async (t, page, ctx, errors) => {
+      await page.waitForSelector(".continue-chip", { timeout: 15000 }).catch(() => {});
+      const chip = await ev(page, () => { const a = document.querySelector("#continueStrip .continue-chip"); const r = a?.getBoundingClientRect(); return a ? { href: a.getAttribute("href"), text: a.textContent.trim().replace(/\s+/g, " "), h: r.height, l: r.left, r: r.right } : null; });
+      if (PROBE) console.log(t, "chip", JSON.stringify(chip));
+      check(`${t}: POSITIVE CONTROL the Continue line is at the top of the page and names ${mod.topicEn} (${bn ? "Bangla" : "English"})`, !!chip && chip.text.includes(bn ? mod.topicBn : mod.topicEn) && (bn ? chip.text.startsWith("চালিয়ে যান") : chip.text.startsWith("Continue:")), JSON.stringify(chip));
+      check(`${t}: the chip is finger-sized and on screen`, !!chip && chip.h >= 40 && chip.l >= -1 && chip.r <= width + 1, JSON.stringify(chip));
+      await page.click("#continueStrip .continue-chip");
+      await page.waitForURL(`**${mod.page}?resume=${mod.topicId}`, { timeout: 10000 }).catch(() => {});
+      await page.waitForSelector("#trackTopicBtn", { timeout: 15000 }).catch(() => {});
+      const there = await ev(page, () => ({ url: location.search, detail: !!document.getElementById("trackTopicBtn"), name: document.querySelector("#detailContainer h2")?.textContent.replace(/[☆★]/g, "").trim() }));
+      check(`${t}: tapping the Continue line opens the last place (the ${mod.topicEn} topic's detail)`, there.url === `?resume=${mod.topicId}` && there.detail && there.name === (bn ? mod.topicBn : mod.topicEn), JSON.stringify(there));
+      check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
+    }, { extraSeed: mod.seed });
+  }
 }
 await browser.close();
 console.log(`\n${pass} passed, ${fail} failed`);
