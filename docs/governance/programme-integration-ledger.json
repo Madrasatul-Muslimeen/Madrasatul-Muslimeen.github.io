@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "10.59",
+    "version": "10.60",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -3701,8 +3701,20 @@
     {
       "version": "10.59",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "The Owner's J25 photo: the 🧰 docks in the wheel row on a phone, the corner lifts above pinned bottom bars.",
+      "integration": {
+        "authorizedOn": "2026-10-15",
+        "integratedOn": "2026-10-15",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "10.60",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Audit part 5 (Builder round #850, PR #851): admin-touch on six more pages, the study modules' person picker; two stale Dawah checks updated.",
       "integration": {
         "authorizedOn": "2026-10-15",
         "integratedOn": "2026-10-15",
@@ -3711,8 +3723,9 @@
       }
     }
   ],
-  "nextUnallocated": "10.60",
+  "nextUnallocated": "10.61",
   "nextUnallocatedNote": [
+    "v10.60 was allocated to audit part 5, finger-sized controls on the remaining pages (PCF J29), 2026-10-15.",
     "v10.59 was allocated to the Zab button moves into the Wheel / Legend / Unit row on a phone (PCF J25), 2026-10-15.",
     "v10.58 was allocated to audit part 4, room for the Zab button on phones, 40px menu links (PCF J29), 2026-10-15.",
     "v10.57 was allocated to audit part 3, 40px touch targets on the admin and study pages (PCF J29), 2026-10-15.",
