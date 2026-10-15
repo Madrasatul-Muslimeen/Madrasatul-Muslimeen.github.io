@@ -21416,3 +21416,17 @@ New strings `wholeQuranLevelSentence` ("{level}: Achieved {known} and {percent} 
 **Tests** (the Architect, on the round's head, based on v11.00):
 - New `audit-part12-words-browser.mjs`: 500/0. `--mutate=wcinset` fails it at 1440px, en and bn. `--mutate=sheetbox` fails it at 320, 390 and 820px, en and bn.
 - audit-part11 506/0; qr-stage1-hidden 110/0; phone-width-overflow 217/0; behaviour 971/0.
+
+## v11.02 — 16 Oct 2026 — The 👥 list and the Approach card's tabs stay on a phone's screen (PCF J29 audit part 13)
+
+**Built by Builder round #872** (branch `builder/issue-872-run-1331`, PR #874). This round checks the User Manual's "Qur'an: recording progress and status" section, with each feature checked WORKING, start to end, at 320/390/820/1440px in English and Bangla.
+
+- **All six work:** the Take an Approach / Record Your Progress / Know Your Status bar; ✅ Record Your Progress (the write lands on the right person and unit key, and the pressed stage survives a redraw and a reopen); 👥 recording for family members (the write carries the family member's id, and the signed-in person's own record is untouched, D10); the Approach card's Track / Guide / Breakdown / Coverage tabs; the Records page (pending-only, another surah, another person); and Monitor (weekly and monthly views, both CSV downloads, Print).
+- **Fixed:**
+  - `app/quranrevival.html`: `.claim-for-line > .claim-for-row` gets `margin-left: auto`. Where the 👥 row wraps onto its own line (Explore's Take ▸ sheet, whose whole-Surah title is long), it stays at the right, under its right-anchored list. Without it the list opened at left −112px at 320px and 390px in English.
+  - `app/js/way-modal.js`: an opened 👥 list scrolls itself into view; it could open below the fold of the scrolling Āyah card.
+  - `app/quranrevival.html`: below 400px the Approach card's four tabs are tighter and may wrap. At 320px they needed 302px of 262, and Coverage ran off the card.
+- **The Architect's review:** the round's own `--mutate=popleft` passed its suite (124/0 at 320px), because the Read view's sheet never wraps the 👥 row. A new flow, `familyexplore`, measures the list in Explore's Take ▸ sheet; it fails under `popleft` at en 320px and en 390px, and its positive control asserts that the row really wraps.
+- **Noted, not fixed:** the Monitor week label mixes date formats ("Week of 2026-10-10 — 10/10/2026 to 10/16/2026"). Two checks are weak: Bangla's "status line names the new stage", and "choosing Maryam shows her records" (she has none seeded). The Bangla leak allow-list's `Al-?[A-Za-z]+` also admits English words starting with "Al".
+
+**Tests** (the Architect, on the round's head merged with `main` at v11.01): audit-part13 484/0 (with the Architect's `familyexplore` flow); `--mutate=tabsfit` fails it at en 320px, `--mutate=popleft` at en 320 and 390px, `--mutate=popscroll` at 320/390px in both languages (Read view) and 820/1440px (Explore); phone-width-overflow 217/0; quran-my-status 248/0; audit-part12 500/0; qr-stage1-hidden 110/0; behaviour 971/0.
