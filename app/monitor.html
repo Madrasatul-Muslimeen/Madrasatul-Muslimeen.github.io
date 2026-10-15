@@ -243,7 +243,10 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     // type="date"/"month"> values are never touched: the browser parses
     // those back, and they must stay plain.
     const dateLocale = () => (getAppLang() === "bn" ? "bn-BD" : undefined);
-    const fmtDate = (d) => num(d.toLocaleDateString(dateLocale()));
+    // One unambiguous style ("10 Oct 2026"), read in UTC: the week's dates are UTC midnights, so a device west of
+    // Greenwich formatting them in its own zone showed each date a day early, and "10/10/2026" reads differently in
+    // the US and in Australia (audit part 13).
+    const fmtDate = (d) => num(d.toLocaleDateString(dateLocale(), { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }));
 
     // Speed, part 6a (issue #285): this used to be five round trips in a
     // row -- roster+tenant (already parallel), then subjectTree, then
@@ -320,7 +323,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       const end = new Date(start); end.setUTCDate(end.getUTCDate() + 6);
       return {
         weekKey: wk,
-        label: t("Week of {weekKey} — {start} to {end}", { weekKey: num(wk), start: fmtDate(start), end: fmtDate(end) }),
+        label: t("Week: {start} to {end}", { start: fmtDate(start), end: fmtDate(end) }),
       };
     }
 

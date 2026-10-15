@@ -1330,7 +1330,7 @@ export const BN = {
   "Weekly / monthly report": "সাপ্তাহিক / মাসিক প্রতিবেদন",
   "Week": "সপ্তাহ",
   "Month": "মাস",
-  "Week of {weekKey} — {start} to {end}": "{weekKey} তারিখের সপ্তাহ — {start} থেকে {end}",
+  "Week: {start} to {end}": "সপ্তাহ: {start} থেকে {end}",
   "📥 Download CSV": "📥 CSV ডাউনলোড করুন",
   "🖨 Print report": "🖨 প্রতিবেদন প্রিন্ট করুন",
   "Monitor report": "পর্যবেক্ষণ প্রতিবেদন",
