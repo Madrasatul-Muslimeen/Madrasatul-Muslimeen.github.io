@@ -21384,3 +21384,22 @@ New strings `wholeQuranLevelSentence` ("{level}: Achieved {known} and {percent} 
 **Tests** (the Architect, on the round's head, based on v10.67):
 - New `audit-part11-reading-browser.mjs`: 506/0. `--mutate=toolsplace` fails it at 320 and 390px, en and bn.
 - behaviour 971/0; phone-width-overflow 217/0; wheel-centre 645/0 (the Builder saw 1 failure once, at 320px en; it did not reproduce here); audit-part6 204/0; zab-dock 74/0; tablet-wheel 74/0.
+
+## v11.00 — 15 Oct 2026 — The app is now QuranRevival: four modules hidden, not deleted (PCF J30, QR Stage 1)
+
+**The Owner's decisions** (relayed by the Project Chief Architect, PCA J50; all three answered 15 Oct 2026): today's app becomes QuranRevival. It keeps Quran Study, Deen Study, Arabic, Hadith (with the Duas), Learn Deen On-the-Go and Asma ul Husna. General Study, Nature-Life, Life Skill and Health are **hidden, not deleted**; they wait for a future MMSA app (Stage 3). QuranRevival keeps its address, sign-in, database and every saved key. The Owner asked for this release to open the next whole version: **the v11 line opens here.**
+
+**Built by Builder round #868 (PR #869, branch `builder/issue-868-run-1324`) and reviewed by the Architect:**
+- **New `app/js/hidden-modules.js`:** one list, `HIDDEN_FROM_QR = ["general", "naturelife", "lifeskill", "health"]`, and `isHiddenFromQr()`. Emptying the list turns all four back on.
+- **`app/js/nav.js`:** the Modules menu skips the four.
+- **`app/js/continue-strip.js`:** no Continue card for them.
+- **Left alone on purpose:** the four pages (each still opens at its own address, so an old link or home-screen icon keeps working), their module ids, catalogue entries, `MODULE_PAGES` (old bookmarks still resolve), saved data and keys, Firestore and `firestore.rules`.
+- **Added by the Architect:** `app/about.html` says plainly that the app is now QuranRevival and that the four are hidden, with nothing saved lost; its Bangla is in `bn.js`.
+
+**Checked in review:** nothing else in `app/` links to the four pages; outside their own pages they appear only in the feature registry's historical "delivers" sentence on About.
+
+**Tests** (the Architect, on the round's head, based on v10.67, merged with v10.68 before release):
+- New `qr-stage1-hidden-browser.mjs`: 110/0 at 390/820/1440px, en and bn. It covers the menu on the landing page and About, the Continue strip seeded with recents in all four, positive controls for the six kept modules, and each hidden page opening at its address. `--mutate=menu` fails it (48 failed) and `--mutate=continue` fails it (24 failed), at every width.
+- behaviour 971/0; phone-width-overflow 217/0; navcheck exit 0; zab-dock 74/0. The About line renders in en and bn at 390 and 1440px with no sideways scroll.
+
+**Open in PCF J30:** the Owner's two ticks. The first is v11.00 (as asked) versus v11.01 (the v09/v10 lines left .00 unused). The second is whether to keep a `legacy-v10/` copy, as for v07–v09; no copy is made until the Owner answers.

@@ -863,3 +863,4 @@ total). Allocated by the MMSA Architect.
 10.66: the wheel pill sits inside the centre circle again on a small phone (J29 item 16). Allocated by the MMSA Architect.
 10.67: wheel labels no longer cut at the wheel's edge (J29 audit part 10, round #863). Allocated by the MMSA Architect.
 10.68: the Read view's ⋯ tools panel stays on a small phone's screen (J29 audit part 11, PR #867). Allocated by the MMSA Architect.
+11.00: the app is now QuranRevival: General Study, Nature-Life, Life Skill and Health hidden, not deleted (J30, QR Stage 1; opens the v11 line). Allocated by the MMSA Architect.
