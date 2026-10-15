@@ -205,6 +205,25 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
   });
 
+  // 3b (Architect's review): the same 👥 list in Explore's Take ▸ sheet. Its long title ("Record your progress for the
+  // whole Surah") pushes the 👥 row onto its own line, which the Read view's sheet never does: this is where popleft shows.
+  await flow("familyexplore", lang, width, async (t, page, ctx, errors) => {
+    await page.click("#tabExploreBtn");
+    await page.waitForFunction(() => !!document.querySelector("#exploreWheelContainer svg"), null, { timeout: 15000 });
+    await ev(page, () => { const s = [...document.querySelectorAll("#exploreWheelContainer .wheel-seg")].filter((x) => x.dataset.key === "81" && (!x.dataset.ringKind || x.dataset.ringKind === "surah")); s[0]?.dispatchEvent(new MouseEvent("click", { bubbles: true })); });
+    await page.waitForFunction(() => !!document.querySelector(".aa-wheel, #exploreModeRow button"), null, { timeout: 15000 });
+    await settle(page, 400);
+    await page.click('[data-aa-row="recite"] .aa-take');
+    await page.waitForSelector(".aa-sheet [data-claim-for] [data-assign-trigger]", { timeout: 8000 });
+    const wrapped = await ev(page, () => document.querySelector(".aa-sheet [data-claim-for]").getBoundingClientRect().top > document.querySelector(".aa-sheet [data-gac-record-title]").getBoundingClientRect().bottom - 2);
+    if (PROBE) console.log(t, "wrapped", wrapped);
+    check(`${t}: POSITIVE CONTROL Explore's Take ▸ sheet carries the 👥 picker${lang === "en" && width === 320 ? ", and its row wraps onto its own line (the case under test)" : ""}`, lang === "en" && width === 320 ? wrapped : true, `wrapped=${wrapped}`);
+    await page.click(".aa-sheet [data-claim-for] [data-assign-trigger]"); await settle(page, 300);
+    const pop = await rectOf(page, ".aa-sheet [data-claim-for] [data-assign-popover]");
+    check(`${t}: in Explore's Take ▸ sheet the 👥 list opens inside the screen${wrapped ? " (its row wraps here)" : ""}`, inside(pop, width, width > 600 ? 900 : 844), JSON.stringify(pop));
+    check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
+  });
+
   // 4: the Approach card -- Track / Guide / Breakdown / Coverage.
   await flow("approachcard", lang, width, async (t, page, ctx, errors) => {
     await page.waitForFunction(() => document.querySelector('#wheelContainer .wheel-seg[data-key="memorise"]'), null, { timeout: 10000 });
