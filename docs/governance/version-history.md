@@ -869,3 +869,4 @@ total). Allocated by the MMSA Architect.
 11.03: the Monitor's week label names its days plainly, on the right day everywhere (Architect, from audit part 13). Allocated by the MMSA Architect.
 11.04: audit part 14: Explore works end to end; its window clears the bottom bar (PCF J29, round #875). Allocated by the MMSA Architect.
 11.05: Legacy App - v10: the v10.68 release archived at /legacy-v10/ (PCF MMSA J32). Allocated by the MMSA Architect.
+11.06: audit part 16: Hadith and Dua work end to end; a long narration opens at its top; Back to Dua stays on screen (PCF J29, round #881). Allocated by the MMSA Architect.
