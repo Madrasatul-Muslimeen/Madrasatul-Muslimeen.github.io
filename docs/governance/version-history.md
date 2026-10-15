@@ -860,3 +860,4 @@ total). Allocated by the MMSA Architect.
 10.63: the Back to Know Your Status pill no longer covers the Approach tab (PCF J29). Allocated by the MMSA Architect.
 10.64: finger-sized controls in QCR collections and on the Trash page (J29 audit part 8, PR #859). Allocated by the MMSA Architect.
 10.65: the QCR āyah-number badge shows the whole reference (J29 audit part 9, PR #861). Allocated by the MMSA Architect.
+10.66: the wheel pill sits inside the centre circle again on a small phone (J29 item 16). Allocated by the MMSA Architect.

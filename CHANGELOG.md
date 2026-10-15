@@ -21343,3 +21343,17 @@ New strings `wholeQuranLevelSentence` ("{level}: Achieved {known} and {percent} 
 **Tests** (the Architect, on the round's head, based on v10.64):
 - New `audit-part9-fixes-browser.mjs`: 64/0. Its mutation `qcrbadge` fails it (8 failed, including 320px).
 - behaviour 971/0; phone-width-overflow 217/0; audit-part8 176/0; audit-part6 200/0; zab-dock 74/0; mushaf-no-sideways-overflow 648/0; asma-quick-class 27/0; the 8 governance suites green.
+
+## v10.66 — 15 Oct 2026 — The wheel's "Take an Approach" pill sits inside the centre circle again on a small phone (PCF J29 item 16)
+
+**Found** in the Architect's v10.65 review: `wheel-centre-browser.mjs` failed 14 checks on `main`, identically, and passed 645/0 on v10.61. The cause was v10.62 (audit part 6): `.wheel-cta-btn` got `min-height: max(15%, 40px)`. On a 320–360px phone the hub is 95–140px across, so the 40px pill poked out of the circle, and `layoutWheelHub()` (which keeps room for the open Qur'an) cut line 2 to the short unit name ("Bismillah" instead of "Bismillah · Al-Faatiha"). The v10.62 review did not run this suite.
+
+**Built by the Architect** (branch `architect/wheel-cta-hit-area`):
+- **`app/quranrevival.html`:** `.wheel-cta-btn` is decision 65's drawn size again (`min-height: 15%`). A new `.wheel-cta-btn::before` is an invisible tap area, centred on the pill, at least 40px tall (`top`/`bottom: min(0px, calc(50% - 20px))`). It lies over the hub's own display (calligraphy and open Qur'an), which take no tap.
+- **`tools/i18n-verify/audit-part6-fixes-browser.mjs`:** the landing check is updated in place. It measured the pill's drawn height; it now asks the page what answers a tap 19.5px above and below the pill's centre (`elementFromPoint`), with a positive control, and gains a 320px case in both languages. The `cta` mutation now removes the tap area.
+
+**Tests** (the Architect):
+- wheel-centre 645/0 (14 failed on v10.65).
+- audit-part6 204/0; `--mutate=cta` fails it (8 failed: 390/820/1440 and 320px, en and bn).
+- wheel-slice-opens-track 96/0; wheel-unit-go 254/0; zab-dock 74/0; audit-part1 210/0; kys-opening-line 47/0; phone-width-overflow 217/0; behaviour 971/0.
+- Screenshots at 320px (en) and 360px (bn): the pill is inside the circle with the full unit name.

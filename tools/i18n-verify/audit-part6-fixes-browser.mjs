@@ -18,7 +18,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
 const QR = ["app/quranrevival.html", "**/quranrevival.html*"];
 const MUTATIONS = {
-  "cta": [...QR, "min-height: max(15%, 40px);", "min-height: 15%;"],
+  "cta": [...QR, "top: min(0px, calc(50% - 20px)); bottom: min(0px, calc(50% - 20px)); } /* audit6 cta */", "} /* audit6 cta */"],
   "barbtn": [...QR, "min-height: 40px; /* audit6 barbtn */", "min-height: 0; /* audit6 barbtn */"],
   "unitchip": [...QR, "min-height: 40px; /* audit6 unitchip */", "min-height: 0; /* audit6 unitchip */"],
   "capsule": [...QR, "min-height: 40px; box-sizing: border-box; /* audit6 capsule */", "min-height: 0; box-sizing: border-box; /* audit6 capsule */"],
@@ -68,7 +68,20 @@ function tall(tag, r, sels, min = 40) {
 const click = (page, id) => page.evaluate((id) => document.getElementById(id).click(), id);
 
 const FLOWS = {
-  async landing(tag, page) { tall(tag, await sizes(page, ["#wheelCtaBtn"]), ["#wheelCtaBtn"]); },
+  // Updated in place (v10.66, J29 item 16): the pill keeps its drawn size so it stays inside the
+  // hub on a small phone (wheel-centre-browser); the 40px is its TAP AREA. So measure what a finger
+  // gets: the pill is on screen (positive control), and the page answers a tap 19.5px above and
+  // below the pill's centre with the pill itself (elementFromPoint), whatever its drawn height.
+  async landing(tag, page) {
+    const r = await page.evaluate(() => {
+      const b = document.getElementById("wheelCtaBtn"), q = b.getBoundingClientRect();
+      const x = q.left + q.width / 2, y = q.top + q.height / 2;
+      const hit = (yy) => { const e = document.elementFromPoint(x, yy); return !!e && (e === b || b.contains(e)); };
+      return { w: q.width, h: q.height, up: hit(y - 19.5), down: hit(y + 19.5) };
+    });
+    check(`${tag}: POSITIVE CONTROL #wheelCtaBtn is on screen`, r.w > 0 && r.h > 0);
+    check(`${tag}: #wheelCtaBtn answers a tap across 40px (drawn ${Math.round(r.h)}px)`, r.up && r.down, JSON.stringify(r));
+  },
   async read(tag, page) {
     await click(page, "tabStudyBtn"); await click(page, "tabReadBtn"); await page.waitForTimeout(900);
     const S = ["#readBarTakeBtn", "#readBarRecordBtn", "#readBarStatusBtn", "#readUnitChip"];
@@ -116,6 +129,8 @@ for (const lang of ["en", "bn"]) for (const width of [390, 820, 1440]) {
 // "← Back to Surah 1, Bismillah"), while at 390px the title squeezes and the ✕ still fits, so the rnpback mutation could
 // not fail at the three widths above. 320px is where the defect lives; measure it there in both languages.
 for (const lang of ["en", "bn"]) await pageFlow(`${lang} 320px qr-notepane`, "/app/quranrevival.html", FLOWS.notepane);
+// v10.66: the wheel pill is smallest on a 320px phone, where its drawn height is furthest below 40px.
+for (const lang of ["en", "bn"]) await pageFlow(`${lang} 320px landing`, "/app/quranrevival.html", FLOWS.landing);
 await browser.close();
 console.log(`\n${pass} passed, ${fail} failed${MUTATE ? ` (mutation ${MUTATE})` : ""}`);
 process.exit(fail ? 1 : 0);
