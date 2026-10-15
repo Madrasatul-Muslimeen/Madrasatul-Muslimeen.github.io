@@ -249,3 +249,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v10.56** (2026-10-15): Arabic boxes in Meanings of this word (J23).
 - **v10.57** (2026-10-15): audit part 3, 40px touch targets on the admin and study pages (PCF J29).
 - **v10.58** (2026-10-15): audit part 4, room for the Zab button on phones, 40px menu links (PCF J29).
+- **v10.59** (2026-10-15): the Zab button moves into the Wheel / Legend / Unit row on a phone (PCF J25).
