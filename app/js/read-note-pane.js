@@ -23,7 +23,7 @@ const CSS = `
 #readNotePane.rnp-dock { left: 0; right: 0; bottom: 0; height: var(--rnp-h); border-width: 2px 0 0; border-radius: 12px 12px 0 0; }
 #readNotePane.rnp-phone { inset: 0; border: 0; }
 .rnp-bar { flex: 0 0 auto; display: flex; align-items: center; gap: 0.4rem; min-height: 48px; padding: 0 0 0 0.5rem; background: #1F3A6E; color: #fff; }
-.rnp-back { flex: 0 0 auto; min-height: 40px; padding: 0 0.7rem; border: 1px solid #c9a24b; border-radius: 0.6rem; background: transparent; color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+.rnp-back { flex: 0 1 auto; min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; /* audit6 rnpback */ min-height: 40px; padding: 0 0.7rem; border: 1px solid #c9a24b; border-radius: 0.6rem; background: transparent; color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
 .rnp-title { flex: 1 1 auto; min-width: 0; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rnp-journey { flex: 0 0 auto; min-width: 44px; min-height: 40px; padding: 0 0.6rem; border: 1px solid #c9a24b; border-radius: 0.6rem; background: transparent; color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
 .rnp-close { flex: 0 0 auto; min-width: 48px; min-height: 48px; background: none; border: 0; color: #fff; font-size: 1.4rem; line-height: 1; cursor: pointer; }
