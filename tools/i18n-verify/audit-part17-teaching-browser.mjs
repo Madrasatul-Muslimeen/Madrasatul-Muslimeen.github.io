@@ -25,7 +25,26 @@ const PROBE = process.env.PROBE === "1" || process.argv.includes("--probe");
 const ONLY = (process.argv.find((a) => a.startsWith("--only=")) || "").slice(7);
 const WONLY = Number((process.argv.find((a) => a.startsWith("--width=")) || "").slice(8)) || 0;
 const LONLY = (process.argv.find((a) => a.startsWith("--lang=")) || "").slice(7);
-const MUTATIONS = {};
+// No defect was found in this audit, so these are PROOFS THAT THE CHECKS CAN FAIL: each restores a plausible defect in the
+// feature it guards. [file, route glob, anchor (must occur exactly once), replacement, the page the mutation applies to].
+const MUTATIONS = {
+  // Start studying no longer engages the lock.
+  "nolock": ["app/people.html", "**/people.html*", "acquireStudyLock(personId);", "", "/app/people.html"],
+  // Choosing a View as role leaves the Add person form on screen.
+  "viewasstay": ["app/people.html", "**/people.html*", 'addPersonBox.style.display = canAdmin ? "block" : "none";', "", "/app/people.html"],
+  // Copy link carries the raw email in the link (D9).
+  "rawlink": ["app/people.html", "**/people.html*", "accept-invite.html?token=${token}`", "accept-invite.html?token=${token}&email=${btn.dataset.email}`", "/app/people.html"],
+  // Archive a class leaves it active.
+  "noarchive": ["app/classes.html", "**/classes.html*", 'setClassStatus(db, activeTenantId, btn.dataset.class, "archived")', 'setClassStatus(db, activeTenantId, btn.dataset.class, "active")', "/app/classes.html"],
+  // The Bangla page prints "Class created." in English.
+  "bnleak": ["app/classes.html", "**/classes.html*", 'createResult.textContent = t("Class created.");', 'createResult.textContent = "Class created.";', "/app/classes.html"],
+  // Save score forgets the assignment's maximum.
+  "scoremax": ["app/homework.html", "**/homework.html*", 'maxScoreAtMark: btn.dataset.max === "" ? null : Number(btn.dataset.max),', "maxScoreAtMark: null,", "/app/homework.html"],
+  // Dropping a dragged section does nothing.
+  "nodrag": ["app/catalogue.html", "**/catalogue.html*", "if (drag && commit && drag.to !== drag.from) moveSectionTo(drag.from, drag.to);", "", "/app/catalogue.html"],
+  // The backup file loses its homework block.
+  "nohomework": ["app/js/backup.js", "**/js/backup.js*", "    homework: { assignments, submissions, teachingNotes },\n", "", "/app/backup.html"],
+};
 if (MUTATE && !MUTATIONS[MUTATE]) throw new Error(`no such mutation ${MUTATE}`);
 
 const browser = await chromium.launch();
@@ -37,7 +56,7 @@ const englishLeft = (text) => (String(text).replace(ALLOWED, " ").match(/[A-Za-z
 async function open(lang, width, pagePath, { extraSeed = "", download = false } = {}) {
   const ctx = await newContext(browser, { appLang: lang === "bn" ? "bn" : null, banner: false, viewport: { width, height: width > 600 ? 900 : 844 }, extraSeedJs: extraSeed || null });
   await ctx.grantPermissions(["clipboard-read", "clipboard-write"], { origin: "http://localhost:8080" }).catch(() => {});
-  if (MUTATE) {
+  if (MUTATE && MUTATIONS[MUTATE][4] === pagePath) {
     const [file, glob, from, to] = MUTATIONS[MUTATE];
     const body = fs.readFileSync(path.join(ROOT, file), "utf8");
     const n = body.split(from).length - 1;
