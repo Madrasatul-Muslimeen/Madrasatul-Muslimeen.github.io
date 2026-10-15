@@ -7,6 +7,51 @@ v10.28). Read `CLAUDE.md` first. The prompt that starts the next session is
 
 This session was summarised once (its context compacted), which is why it hands over here.
 
+## LATEST UPDATE — 15 Oct 2026, evening, session `session_011ZoZQoxPx6xnm1mzR5hSYn` (v10.56 → v10.63) — READ THIS FIRST
+
+The 12:22 pm block below is kept as history.
+
+**Released in this stretch** (each has its Try line in its PCF job, and its line in the User Manual's "🆕 What's New"):
+- **v10.57:** audit part 3 (J29, round #844). `app/css/admin-touch.css` gives 40px controls on Asma, Records, Monitor, People, Classes, Homework, Curriculum, Catalogue and Hadith.
+- **v10.58:** audit part 4 (J29, round #847). A 68px Zab spacer on phones, 40px nav-menu controls, and menus that scroll inside themselves.
+- **v10.59:** the Owner's photo (J25): **the 🧰 docks in the Wheel / Legend / Unit row on a phone** (`[data-zab-dock]`).
+  - The floating corner hides while the dock is on screen.
+  - Elsewhere the corner sits above pinned bottom bars (`[data-zab-lift]`: `#tabRow`, `#readQuickRow`).
+  - Built by the Architect; suite `zab-dock-browser`.
+  - The Owner also confirmed **Zab works on the live Rules** ("Working", J25).
+- **v10.60:** audit part 5 (J29, round #850). admin-touch on six more pages, plus the study modules' person picker.
+  - Two stale Dawah checks were repaired: the Zab Rules file was missing from `dawah-boundary`'s published list, and `dawah-screen` now accepts `?back=1`.
+- **v10.61:** the Owner's J26 choice **A**. Know Your Status shows "Before Al-Fātiḥah: Aʿūdhu billāh ● · Bismillah ●" under each Approach, and the band is capped on wide screens. Built by the Architect; suite `kys-opening-line-browser`. **J26 is done.**
+- **v10.62:** audit part 6 (J29, round #853). 40px buttons on the Qur'an page's wheel pill, Read bar and Explore, and "+ New Note".
+  - The Notes window's ✕ was off a 320px screen and is back.
+  - The review added a 320px case so the `rnpback` mutation can fail.
+- **v10.63:** audit part 7, item 1 (J29 item 12, round #856). The "← Back to Know Your Status" pill no longer covers the Approach tab (`bookmark-nav.js` respects `[data-zab-lift]`). `quran-my-status-browser` runs to the end again.
+
+**New PCF General rules, both in `CLAUDE.md`:**
+- **Time on every update (PCA J45):** a full UTC `at`, read off the clock. **Read the clock every time** — this session twice wrote a guessed time and had to correct it.
+- **🆕 What's New (PCA J46):** one line per release at the top of `p/mmsa.manual`, written in the same step as the release.
+
+**In flight:**
+- **Builder round #858** (audit part 8): the verb table, QCR, the Mushaf view, the Mapping My Journey pop-ups, and English left in Bangla. Dispatched ~5:15 pm, 15 Oct. Review it by measurement and release it as the next version.
+
+**THE QR SPLIT (PCA J50, the Owner, 15 Oct ~5:30 pm):** QuranRevival becomes its own separate site and app (Qur'an, Hadith, Dua, Asma and "LDOG"); MMSA stays for Madrasah use. The PCA recommends the same Firebase, a start at madrasatul-muslimeen.github.io/quranrevival/, and a new QR Master Architect from 16 Oct; MMSA removes those parts only after QR is live and redirects work. **Until the PCA sends the hand-over list: start NO new work inside the QR modules beyond fixes already in flight** (round #858 is the last such).
+
+**Waiting on the Owner** (tick lists in every report):
+- **J03 Q1:** which keys to add.
+- **J50 (PCA-led):** split QuranRevival from MMSA.
+  - The facts were sent to the PCA, and the PCA now recommends QR 1 (its own home and menu on the same site, one Firebase).
+  - **No split work until the Owner ticks.**
+
+**Lessons from this stretch:**
+- **A pinned bar stays on screen while the page scrolls.** v10.58 measured only at the page's end and missed the 🧰 over the tabs; the Owner's photo found it. Measure covering part-way down the page too.
+- **Measure at 320px.** v10.62's Notes-window defect existed only there, so its mutation could not fail at 390.
+- **An unproven mutation is a finding:** chase it until it fails for the right reason.
+- **Never `pkill -f` a name that appears in your own command line;** it killed the shell and both servers.
+- **A container restart loses background checks.** Write each check's result to a file in the scratchpad as it finishes, so a restart only costs the unfinished ones.
+- **A PCA relay can say a job is filed before it is.** Confirm the write succeeded before replying "filed".
+- **The issue body must not contain `@claude`.** It starts a second, duplicate run (#1290 did). Start rounds only with `workflow_dispatch`.
+- **Old stale checks found on `main`:** `dawah-*` (fixed in v10.60) and `quran-my-status-browser` (fixed in v10.63). Run the suites of the area a round touches, not only the round's own.
+
 ## LATEST UPDATE — 15 Oct 2026, 12:22 pm Sydney, session `session_01EU951Kr2tQxWqNbKLvZjPn` (v10.50 → v10.56) — READ THIS FIRST
 
 **Released in this stretch** (each has its Try line in its PCF job):
@@ -253,3 +298,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v10.60** (2026-10-15): audit part 5, finger-sized controls on the remaining pages (PCF J29).
 - **v10.61** (2026-10-15): Know Your Status shows Before Al-Fatihah under each Approach (PCF J26).
 - **v10.62** (2026-10-15): audit part 6, finger-sized buttons on the Quran page (PCF J29).
+- **v10.63** (2026-10-15): the Back to Know Your Status pill no longer covers the Approach tab (PCF J29).
