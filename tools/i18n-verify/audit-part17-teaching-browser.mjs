@@ -31,7 +31,7 @@ if (MUTATE && !MUTATIONS[MUTATE]) throw new Error(`no such mutation ${MUTATE}`);
 const browser = await chromium.launch();
 const BN = /[ঀ-৿]/;
 // English words that may stay on a Bangla page: the app's own names, source names and names people typed.
-const ALLOWED = /Memorise Surah Al-Fatiha|Doing well on tajweed\.|Morning Class|Evening Quran|Audit Class|Audit Offer|QuranRevival|QCR|MMSA|Qur'?an|Asma|Husna|Madrasatul|Muslimeen|Hadith|hadith|Google|CSV|JSON|ID|AM|PM|Ahsan|Maryam|Zayd|Aisha|example|com|Audit|Tajweed|Fiqh|Tafsir/g;
+const ALLOWED = /General Grades|Year \d|Surah Al-Fatiha|https?:\/\/\S+|Memorise Surah Al-Fatiha|Doing well on tajweed\.|Morning Class|Evening Quran|Audit Class|Audit Offer|QuranRevival|QCR|MMSA|Qur'?an|Asma|Husna|Madrasatul|Muslimeen|Hadith|hadith|Google|CSV|JSON|ID|AM|PM|Ahsan|Maryam|Zayd|Aisha|example|com|Audit|Tajweed|Fiqh|Tafsir/g;
 const englishLeft = (text) => (String(text).replace(ALLOWED, " ").match(/[A-Za-z]{3,}/g) || []);
 
 async function open(lang, width, pagePath, { extraSeed = "", download = false } = {}) {
@@ -359,6 +359,77 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     if (bn) { const left = englishLeft(await bodyText(page)); check(`${t}: no English left on the Bangla page (names typed by people excepted)`, left.length === 0, left.slice(0, 12).join(" ")); }
     check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
     if (width === 390 || width === 1440) await page.screenshot({ path: `/tmp/audit17-homework-${lang}-${width}.png`, fullPage: true });
+  });
+}
+for (const lang of LANGS) for (const width of WIDTHS) {
+  const bn = lang === "bn";
+  // 7: Curriculum: Create unit; add it to the plan for a Term and Week; Create resource; Grades → Assign.
+  await flow("curriculum", lang, width, "/app/curriculum.html", async (t, page, ctx, errors) => {
+    await page.waitForSelector("#createUnitBtn", { state: "visible", timeout: 10000 });
+    await settle(page, 600);
+    check(`${t}: POSITIVE CONTROL the unit, plan, resource and grade forms are on screen`, await ev(page, () => ["createUnitBtn", "addPlanEntryBtn", "createResourceBtn", "assignLevelBtn"].every((id) => document.getElementById(id)?.getClientRects().length > 0)));
+    const f = await frame(page);
+    const hs = await allTall(page, ["#unitNameInput", "#unitSubjectChecks input", "#unitLadderSelect", "#unitLevelSelect", "#unitOrderInput", "#createUnitBtn", "#planContextTypeSelect", "#planContextSelect", "#planUnitSelect", "#planTermSelect", "#planWeekSelect", "#addPlanEntryBtn", "#resourceTypeSelect", "#resourceUrlInput", "#createResourceBtn", "#gradePersonSelect", "#gradeLadderSelect", "#gradeLevelSelect", "#gradeFromDateInput", "#assignLevelBtn"]);
+    if (PROBE) console.log(t, "heights", JSON.stringify(hs), JSON.stringify(f));
+    check(`${t}: no sideways scroll`, f.over <= 0, JSON.stringify(f));
+    check(`${t}: every control a finger presses is at least 40px`, Object.values(hs).every((v) => v >= 40), JSON.stringify(hs));
+    // Create unit.
+    let w = await writeCount(page);
+    await fill(page, "#unitNameInput", "Audit Unit");
+    await page.check('#unitSubjectChecks input[type="checkbox"]');
+    await page.click("#createUnitBtn");
+    await settle(page, 800);
+    let ws = await writes(page, w);
+    const unit = ws.find((x) => x.col === "curriculumUnits");
+    if (PROBE) console.log(t, "unit", JSON.stringify(ws).slice(0, 600));
+    check(`${t}: Create unit writes ONE curriculumUnits document with its name, a subject and the I17 stamps`, !!unit && /^t1__.+/.test(unit.id) && unit.data.name?.en === "Audit Unit" && unit.data.subjectIds?.length === 1 && unit.data.status === "active" && STAMPS(unit.data), JSON.stringify(unit)?.slice(0, 400));
+    const said1 = await ev(page, () => document.getElementById("createUnitResult").textContent);
+    check(`${t}: the page confirms the unit in ${bn ? "Bangla" : "English"} and clears the name`, said1.length > 3 && (!bn || BN.test(said1)) && await ev(page, () => document.getElementById("unitNameInput").value === ""), said1);
+    // Add to the plan: class Morning Class (c1), the seeded unit, Term 2 Week 3.
+    await page.selectOption("#planContextTypeSelect", "class");
+    await settle(page, 400);
+    await page.selectOption("#planContextSelect", { index: 0 });
+    await page.selectOption("#planUnitSelect", { index: 0 });
+    const term = await ev(page, () => [...document.getElementById("planTermSelect").options].map((o) => o.value));
+    const week = await ev(page, () => [...document.getElementById("planWeekSelect").options].map((o) => o.value));
+    check(`${t}: the plan offers 4 terms and 10 weeks`, term.length === 4 && week.length === 10, `${term.length} terms, ${week.length} weeks`);
+    await page.selectOption("#planTermSelect", term[1]);
+    await page.selectOption("#planWeekSelect", week[2]);
+    w = await writeCount(page);
+    await page.click("#addPlanEntryBtn");
+    await settle(page, 800);
+    ws = await writes(page, w);
+    const plan = ws.find((x) => x.col === "curriculumPlan");
+    if (PROBE) console.log(t, "plan", JSON.stringify(ws).slice(0, 600));
+    check(`${t}: Add writes ONE curriculumPlan document: class c1, the unit, Term 2, Week 3, with the I17 stamps`, !!plan && plan.data.contextType === "class" && plan.data.contextId === "c1" && plan.data.curriculumUnitId === "u1" && plan.data.term === 2 && plan.data.week === 3 && STAMPS(plan.data), JSON.stringify(plan)?.slice(0, 400));
+    // Create resource: a link, then check the write.
+    w = await writeCount(page);
+    await page.selectOption("#resourceTypeSelect", "link");
+    await fill(page, "#resourceUrlInput", "https://example.org/audit-lesson");
+    await page.click("#createResourceBtn");
+    await settle(page, 800);
+    ws = await writes(page, w);
+    const res = ws.find((x) => x.col === "resources");
+    if (PROBE) console.log(t, "resource", JSON.stringify(ws).slice(0, 600));
+    check(`${t}: Create resource writes ONE resources document of type link with that URL, with the I17 stamps`, !!res && res.data.type === "link" && res.data.url === "https://example.org/audit-lesson" && res.data.status === "active" && STAMPS(res.data), JSON.stringify(res)?.slice(0, 400));
+    // Grades → Assign: person p2, ladder General Grades, Year 2, from a date.
+    await page.selectOption("#gradePersonSelect", "p2");
+    await settle(page, 600);
+    await page.selectOption("#gradeLadderSelect", { index: 0 });
+    await settle(page, 300);
+    await page.selectOption("#gradeLevelSelect", "lv2");
+    await fill(page, "#gradeFromDateInput", "2026-11-02");
+    w = await writeCount(page);
+    await page.click("#assignLevelBtn");
+    await settle(page, 800);
+    ws = await writes(page, w);
+    const pl = ws.find((x) => x.col === "personLevels");
+    if (PROBE) console.log(t, "grade", JSON.stringify(ws).slice(0, 700));
+    check(`${t}: Assign writes a personLevels document t1__p2__l1__2026-11-02 (Year 2, open-ended) with the I17 stamps`, !!pl && pl.id === "t1__p2__l1__2026-11-02" && pl.data.levelId === "lv2" && pl.data.fromDate === "2026-11-02" && pl.data.toDate === null && STAMPS(pl.data), JSON.stringify(ws).slice(0, 500));
+    check(`${t}: nothing was deleted`, (await writes(page, 0)).every((x) => x.kind !== "delete"));
+    if (bn) { const left = englishLeft(await bodyText(page)); check(`${t}: no English left on the Bangla page (names typed by people excepted)`, left.length === 0, left.slice(0, 12).join(" ")); }
+    check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
+    if (width === 390 || width === 1440) await page.screenshot({ path: `/tmp/audit17-curriculum-${lang}-${width}.png`, fullPage: true });
   });
 }
 console.log(`\n${pass} passed, ${fail} failed`);
