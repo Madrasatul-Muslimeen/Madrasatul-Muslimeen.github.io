@@ -31,7 +31,7 @@ if (MUTATE && !MUTATIONS[MUTATE]) throw new Error(`no such mutation ${MUTATE}`);
 const browser = await chromium.launch();
 const BN = /[ঀ-৿]/;
 // English words that may stay on a Bangla page: the app's own names, source names and names people typed.
-const ALLOWED = /Morning Class|Evening Quran|Audit Class|Audit Offer|QuranRevival|QCR|MMSA|Qur'?an|Asma|Husna|Madrasatul|Muslimeen|Hadith|hadith|Google|CSV|JSON|ID|AM|PM|Ahsan|Maryam|Zayd|Aisha|example|com|Audit|Tajweed|Fiqh|Tafsir/g;
+const ALLOWED = /Memorise Surah Al-Fatiha|Doing well on tajweed\.|Morning Class|Evening Quran|Audit Class|Audit Offer|QuranRevival|QCR|MMSA|Qur'?an|Asma|Husna|Madrasatul|Muslimeen|Hadith|hadith|Google|CSV|JSON|ID|AM|PM|Ahsan|Maryam|Zayd|Aisha|example|com|Audit|Tajweed|Fiqh|Tafsir/g;
 const englishLeft = (text) => (String(text).replace(ALLOWED, " ").match(/[A-Za-z]{3,}/g) || []);
 
 async function open(lang, width, pagePath, { extraSeed = "", download = false } = {}) {
@@ -307,6 +307,58 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     if (bn) { const left = englishLeft(await bodyText(page)); check(`${t}: no English left on the Bangla page (names typed by people excepted)`, left.length === 0, left.slice(0, 12).join(" ")); }
     check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
     if (width === 390 || width === 1440) await page.screenshot({ path: `/tmp/audit17-offers-${lang}-${width}.png`, fullPage: true });
+  });
+}
+for (const lang of LANGS) for (const width of WIDTHS) {
+  const bn = lang === "bn";
+  // 6: Homework: Create assignment for the chosen person, Mark as submitted, Save score.
+  await flow("homework", lang, width, "/app/homework.html", async (t, page, ctx, errors) => {
+    await page.waitForSelector("#createAssignmentBtn", { state: "visible", timeout: 10000 });
+    await page.waitForSelector(".markSubmittedBtn", { timeout: 10000 });
+    check(`${t}: POSITIVE CONTROL the New assignment form and the seeded assignment (Mark as submitted, Save score) are on screen`, await ev(page, () => !!document.querySelector(".markSubmittedBtn") && !!document.querySelector(".saveScoreBtn") && document.querySelectorAll("#assignToChecks input").length >= 1));
+    const f = await frame(page);
+    const hs = await allTall(page, ["#assignToChecks input", "#subjectSelect", "#dueDateInput", "#maxScoreInput", "#instructionsInput", "#createAssignmentBtn", ".markSubmittedBtn", ".saveScoreBtn", ".scoreInput", ".commentInput", "#noteAboutSelect", "#saveNoteBtn"]);
+    if (PROBE) console.log(t, "heights", JSON.stringify(hs), JSON.stringify(f));
+    check(`${t}: no sideways scroll`, f.over <= 0, JSON.stringify(f));
+    check(`${t}: every control a finger presses is at least 40px`, Object.values(hs).every((v) => v >= 40), JSON.stringify(hs));
+    const person = await ev(page, () => document.getElementById("personSelect").value);
+    let w = await writeCount(page);
+    await page.check(`#assignToChecks input[value="${person}"]`);
+    await fill(page, "#instructionsInput", "Revise Surah Al-Ikhlas");
+    await fill(page, "#dueDateInput", "2026-11-10");
+    await fill(page, "#maxScoreInput", "20");
+    await page.click("#createAssignmentBtn");
+    await settle(page, 800);
+    let ws = await writes(page, w);
+    const made = ws.find((x) => x.col === "assignments");
+    if (PROBE) console.log(t, "create", JSON.stringify(ws).slice(0, 700));
+    check(`${t}: Create assignment writes ONE assignments document for the chosen person, with instructions, due date, max score and the I17 stamps`, !!made && /^t1__.+/.test(made.id) && made.data.assignedToPersonIds?.join() === person && made.data.instructions?.en === "Revise Surah Al-Ikhlas" && made.data.dueDate === "2026-11-10" && made.data.maxScore === 20 && STAMPS(made.data), JSON.stringify(made)?.slice(0, 500));
+    const said = await ev(page, () => document.getElementById("createResult").textContent);
+    check(`${t}: the page says "Assigned to 1 student." (${bn ? "Bangla" : "English"}) and clears the form`, (bn ? BN.test(said) : said === "Assigned to 1 student.") && await ev(page, () => document.getElementById("instructionsInput").value === ""), said);
+    // Mark as submitted (the seeded assignment, for p1).
+    w = await writeCount(page);
+    await fill(page, ".submitNote", "Done at home");
+    await page.click(".markSubmittedBtn");
+    await settle(page, 800);
+    ws = await writes(page, w);
+    const sub = ws.find((x) => x.col === "submissions");
+    if (PROBE) console.log(t, "submit", JSON.stringify(ws).slice(0, 600));
+    check(`${t}: Mark as submitted writes submissions t1__a1__${person} as submitted, with the note and a time`, !!sub && sub.id === `t1__a1__${person}` && sub.data.status === "submitted" && sub.data.submittedNote === "Done at home" && !!sub.data.submittedAt, JSON.stringify(ws).slice(0, 400));
+    // Save score.
+    w = await writeCount(page);
+    await page.waitForSelector(".saveScoreBtn", { timeout: 8000 });
+    await fill(page, ".scoreInput", "8");
+    await fill(page, ".commentInput", "Good effort");
+    await page.click(".saveScoreBtn");
+    await settle(page, 800);
+    ws = await writes(page, w);
+    const sc = ws.find((x) => x.col === "submissions");
+    if (PROBE) console.log(t, "score", JSON.stringify(ws).slice(0, 600));
+    check(`${t}: Save score writes the score 8 out of 10, the comment and who marked it, status marked`, !!sc && sc.data.status === "marked" && sc.data.score === 8 && sc.data.maxScoreAtMark === 10 && sc.data.comment === "Good effort" && !!sc.data.markedByPersonId && !!sc.data.markedAt, JSON.stringify(ws).slice(0, 400));
+    check(`${t}: nothing was deleted`, (await writes(page, 0)).every((x) => x.kind !== "delete"));
+    if (bn) { const left = englishLeft(await bodyText(page)); check(`${t}: no English left on the Bangla page (names typed by people excepted)`, left.length === 0, left.slice(0, 12).join(" ")); }
+    check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
+    if (width === 390 || width === 1440) await page.screenshot({ path: `/tmp/audit17-homework-${lang}-${width}.png`, fullPage: true });
   });
 }
 console.log(`\n${pass} passed, ${fail} failed`);
