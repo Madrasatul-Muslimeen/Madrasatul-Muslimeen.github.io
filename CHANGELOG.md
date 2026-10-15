@@ -21249,3 +21249,24 @@ New strings `wholeQuranLevelSentence` ("{level}: Achieved {known} and {percent} 
 **Tests:**
 - New `audit-part5-fixes-browser.mjs`: 234/0. All 3 mutations fail it: picker (42 failed), buttons (33) and fields (18).
 - `behaviour` 971/0, `phone-width-overflow` 217/0, `audit-part3-fixes` 270/0, `tagline-scroll-browser` 67/0, `dawah-screen` 23/0 and `dawah-boundary` 21/0.
+
+## v10.61 — 15 Oct 2026 — Know Your Status shows "Before Al-Fātiḥah" under each Approach (PCF J26)
+
+**The Owner** (J26, 15 Oct, 2:56 pm "yes" under the recommendation "A, Yes, A", and 2:57 pm "YES" under "A or B for Know Your Status"): **A.** Know Your Status shows one calm line under each Approach.
+
+**Built by the Architect** (branch `kys-opening`), in `app/quranrevival.html`:
+- **`myStatusOpeningLineHtml()`**, under every Approach's tiles except Word by Word, which counts words: "Before Al-Fātiḥah: Aʿūdhu billāh ● · Bismillah ●".
+  - Each dot is that Approach's own claim, coloured with the wheel's stage colours. Aʿūdhu billāh is `opening:taawwudh` (read from `directWideStatusByTrackable`); Bismillah is `ayah:1:1` (read from `ownAyahByTrackable`).
+  - These are the records Know Your Status already loads in its one query, so there is no new read (I9). The rule is the same one the band on Al-Fātiḥah's page uses (`openingStatusId`).
+  - Bismillah is listed only while it is counted apart from the 7 āyāt (`fatihaCountApplies`), as the band shows it.
+  - Each dot has a spoken label (the stage's name).
+- **The audit polish of 14 Oct (J26 plan):** at 900px and wider, the "Before Al-Fātiḥah" band on Al-Fātiḥah's page keeps a calm width (48rem), centred. On a phone it still fills its column.
+
+**Tests:**
+- New `kys-opening-line-browser.mjs`, 47/0:
+  - Know Your Status in English and Bangla at 390, 820 and 1440px, with seeded claims: Memorise has Aʿūdhu billāh achieved and Bismillah learning; Recite has neither;
+  - the "Bismillah unnumbered" setting turned off;
+  - the band's width at 390 and 1440px.
+- All 4 mutations fail it: no-line (31 failed), wrong-key (7), bismillah-always (1) and band-cap (1).
+- `fatiha-opening-band-browser` 132/0, `opening-key` 8/0, `behaviour` 971/0 and `phone-width-overflow` 217/0, run on the code merged with v10.60.
+- **Recorded, older than this release:** `quran-my-status-browser.mjs` stops at the same check on v10.57, v10.59 and here. On a phone, the floating "← Back to Know Your Status" pill sits over the Approach tab. It is item 12 in PCF J29, for its own round.
