@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "10.68",
+    "version": "11.00",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -3809,8 +3809,20 @@
     {
       "version": "10.68",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Builder round #866 (PR #867): the manual's reading features checked working; the ⋯ tools panel kept on a 320-390px screen.",
+      "integration": {
+        "authorizedOn": "2026-10-15",
+        "integratedOn": "2026-10-15",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "11.00",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Builder round #868 (PR #869): QR Stage 1, four modules hidden by one list; the v11 line opens (Owner via PCA J50).",
       "integration": {
         "authorizedOn": "2026-10-15",
         "integratedOn": "2026-10-15",
@@ -3819,8 +3831,9 @@
       }
     }
   ],
-  "nextUnallocated": "10.69",
+  "nextUnallocated": "11.01",
   "nextUnallocatedNote": [
+    "v11.00 was allocated to the app is now QuranRevival: General Study, Nature-Life, Life Skill and Health hidden, not deleted (J30, QR Stage 1; opens the v11 line), 2026-10-15.",
     "v10.68 was allocated to the Read view's ⋯ tools panel stays on a small phone's screen (J29 audit part 11, PR #867), 2026-10-15.",
     "v10.67 was allocated to wheel labels no longer cut at the wheel's edge (J29 audit part 10, round #863), 2026-10-15.",
     "v10.66 was allocated to the wheel pill sits inside the centre circle again on a small phone (J29 item 16), 2026-10-15.",
