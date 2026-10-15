@@ -149,6 +149,85 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     check(`${t}: ✕ closes the card`, await ev(page, () => !document.getElementById("accountCardOverlay").classList.contains("open")));
     check(`${t}: no sideways scroll, no page errors`, (await wide(page)) <= 0 && noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
   });
+
+  // 5: Language: Home -> Settings -> Language switches English <-> Bangla; the page reloads and the choice is kept.
+  // The Qur'an page re-renders IN PLACE (issue #272, deliberate: no reload); every other page reloads. Both are measured.
+  for (const [fname, pagePath, reloads] of [["language", "/app/quranrevival.html", false], ["languagereload", "/app/deen-study.html", true]]) await flow(fname, lang, width, pagePath, async (t, page, ctx, errors) => {
+    const target = bn ? "en" : "bn";
+    const homeLabel = await ev(page, () => document.querySelector(".nav-cat-home > summary").textContent.trim());
+    await page.click(summaryOf(homeLabel)); await settle(page, 250);
+    const sel = await rectOf(page, "#navAppLangSelect");
+    check(`${t}: POSITIVE CONTROL Home → Settings shows the Language picker (finger-sized), set to ${lang}`, !!sel && sel.h >= 40 && (await ev(page, () => document.getElementById("navAppLangSelect").value)) === lang, JSON.stringify(sel));
+    await ev(page, () => { window.__noReload = "kept"; });
+    if (reloads) await Promise.all([page.waitForNavigation({ waitUntil: "load", timeout: 15000 }), page.selectOption("#navAppLangSelect", target)]);
+    else await page.selectOption("#navAppLangSelect", target);
+    await settle(page, 1500);
+    const after = await ev(page, () => ({ marker: window.__noReload ?? null, stored: localStorage.getItem("mm_app_lang"), nav: document.querySelector(".nav-cat-home > summary").textContent.trim() }));
+    check(`${t}: choosing ${target} ${reloads ? "reloads the page (its marker is gone)" : "re-renders in place (no reload, the marker stays)"}`, reloads ? after.marker === null : after.marker === "kept", JSON.stringify(after));
+    check(`${t}: the choice is stored on the device (mm_app_lang = ${target})`, after.stored === target, JSON.stringify(after));
+    check(`${t}: the page now reads in ${target === "bn" ? "Bangla" : "English"}`, target === "bn" ? BN.test(after.nav) : after.nav === "Home", JSON.stringify(after));
+    await page.reload({ waitUntil: "networkidle" }); await settle(page, 1000);
+    const kept = await ev(page, () => ({ stored: localStorage.getItem("mm_app_lang"), nav: document.querySelector(".nav-cat-home > summary").textContent.trim() }));
+    check(`${t}: after another reload the choice is kept`, kept.stored === target && (target === "bn" ? BN.test(kept.nav) : kept.nav === "Home"), JSON.stringify(kept));
+    check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
+  });
+
+  // 6: Card look: Night or Light changes the cards' colours and is kept after a reload.
+  await flow("look", lang, width, "/app/quranrevival.html", async (t, page, ctx, errors) => {
+    const homeLabel = await ev(page, () => document.querySelector(".nav-cat-home > summary").textContent.trim());
+    const cardPaint = async () => {
+      await page.click(summaryOf(homeLabel)); await settle(page, 200);
+      await page.click("[data-open-account-card]"); await settle(page, 300);
+      const p = await ev(page, () => { const s = getComputedStyle(document.querySelector(".account-sheet")); return { bg: s.backgroundColor + "|" + s.backgroundImage, text: s.color, look: document.documentElement.getAttribute("data-card-look") }; });
+      await page.click("#accountCardClose"); await settle(page, 200);
+      return p;
+    };
+    const setLook = async (id) => { await page.click(summaryOf(homeLabel)); await settle(page, 200); const b = await rectOf(page, `[data-card-look-btn="${id}"]`); await page.click(`[data-card-look-btn="${id}"]`); await settle(page, 300); await page.keyboard.press("Escape"); return b; };
+    const night = await cardPaint();
+    check(`${t}: POSITIVE CONTROL the default look is Night and the card is painted`, night.look === "night" && night.bg.length > 6, JSON.stringify(night));
+    const btn = await setLook("light");
+    check(`${t}: the Night and Light buttons are finger-sized`, !!btn && btn.h >= 40, JSON.stringify(btn));
+    const light = await cardPaint();
+    check(`${t}: Light changes the card's colours (background and text measured)`, light.look === "light" && light.bg !== night.bg && light.text !== night.text, JSON.stringify({ night, light }));
+    check(`${t}: Light is stored on the device`, (await ev(page, () => localStorage.getItem("mm_card_look"))) === "light");
+    await page.reload({ waitUntil: "networkidle" }); await settle(page, 1000); await clearSplash(page);
+    const kept = await cardPaint();
+    check(`${t}: after a reload the Light look is kept, same colours`, kept.look === "light" && kept.bg === light.bg && kept.text === light.text, JSON.stringify(kept));
+    await setLook("night");
+    const back = await cardPaint();
+    check(`${t}: Night brings the first colours back`, back.look === "night" && back.bg === night.bg && back.text === night.text, JSON.stringify(back));
+    check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
+  });
+
+  // 7: The way back: the pill appears after a jump (QCR → an āyah), sits on the Read bar beside ✓ (floats elsewhere), returns to the exact place.
+  await flow("back", lang, width, "/app/quranrevival.html", async (t, page, ctx, errors) => {
+    await page.click("#tabExploreBtn");
+    await page.waitForFunction(() => !!document.querySelector("#exploreWheelContainer svg"), null, { timeout: 15000 });
+    await ev(page, () => document.getElementById("explorePaletteQcrBtn").click());
+    await page.waitForFunction(() => document.querySelectorAll("#qcrWheelContainer .wheel-seg").length > 0, null, { timeout: 10000 });
+    const opts = await ev(page, () => [...document.querySelectorAll("#qcrLevelSelect option")].map((o) => o.value));
+    let col = null;
+    for (const id of opts) { await page.selectOption("#qcrLevelSelect", id); await settle(page, 300); if (await ev(page, () => document.querySelectorAll("#qcrWaysListContainer [data-qcr-jump]").length)) { col = id; break; } }
+    check(`${t}: POSITIVE CONTROL a QCR collection with āyāt is open (${col})`, !!col);
+    const rowsBefore = await ev(page, () => document.querySelectorAll("#qcrWaysListContainer [data-qcr-jump]").length);
+    check(`${t}: no pill before any jump`, await ev(page, () => { const p = document.getElementById("ayahCardBackPill"); return !p || p.hidden; }));
+    await ev(page, () => document.querySelector("#qcrWaysListContainer [data-qcr-jump]").click());
+    await page.waitForFunction(() => !document.getElementById("readView").hidden, null, { timeout: 10000 });
+    await settle(page, 1200);
+    const PILL = "#ayahCardBackPill [data-ayah-card-back]";
+    const inRead = await ev(page, () => { const p = document.getElementById("ayahCardBackPill"); const b = p?.querySelector("[data-ayah-card-back]"); const r = b?.getBoundingClientRect(); const slot = document.getElementById("readBackSlot"); const tick = document.getElementById("readCompleteBtn")?.getBoundingClientRect(); return { shown: !!r && r.width > 0, text: b?.innerText.replace(/\s+/g, " ") ?? "", docked: p?.parentElement === slot, h: r?.height ?? 0, l: r?.left ?? 0, rt: r?.right ?? 0, cy: r ? (r.top + r.bottom) / 2 : 0, tick: tick && tick.width > 0 ? { l: tick.left, cy: (tick.top + tick.bottom) / 2 } : null, bar: slot?.parentElement.getBoundingClientRect().height > 0 }; });
+    if (PROBE) console.log(t, "pill in read", JSON.stringify(inRead));
+    check(`${t}: after the jump the pill reads "Back to QCR" (${bn ? "Bangla" : "English"}), is finger-sized and on screen`, inRead.shown && inRead.h >= 40 && /QCR/.test(inRead.text) && (bn ? BN.test(inRead.text) : /^← Back to QCR/.test(inRead.text)) && inside(await rectOf(page, PILL), width, vh), JSON.stringify(inRead));
+    check(`${t}: in the Read view it sits in the Read bar's own slot${inRead.tick ? ", on the same row as ✓ and before it" : " (✓ is under ⋯ at this width)"}`, inRead.docked && inRead.bar && (!inRead.tick || (Math.abs(inRead.cy - inRead.tick.cy) <= 24 && inRead.rt <= inRead.tick.l + 1)), JSON.stringify(inRead));
+    await page.click("#tabExploreBtn"); await settle(page, 1200);
+    const floating = await ev(page, () => { const p = document.getElementById("ayahCardBackPill"); const r = p.getBoundingClientRect(); return { hidden: p.hidden, body: p.parentElement === document.body, pos: getComputedStyle(p).position, b: r.bottom, t: r.top, l: r.left, r: r.right, vh: innerHeight, vw: innerWidth }; });
+    if (PROBE) console.log(t, "pill floating", JSON.stringify(floating));
+    check(`${t}: away from the Read view the pill floats near the bottom, on screen`, !floating.hidden && floating.body && floating.pos === "fixed" && floating.b <= floating.vh + 1 && floating.t > floating.vh * 0.5 && floating.l >= -1 && floating.r <= floating.vw + 1, JSON.stringify(floating));
+    await page.click(PILL); await settle(page, 1500);
+    const back = await ev(page, () => ({ qcr: !document.getElementById("qcrPanel").hidden, cur: document.getElementById("qcrLevelSelect").value, rows: document.querySelectorAll("#qcrWaysListContainer [data-qcr-jump]").length, pill: !document.getElementById("ayahCardBackPill") || document.getElementById("ayahCardBackPill").hidden }));
+    check(`${t}: the pill returns to the exact place (the same QCR collection, ${rowsBefore} rows) and goes away`, back.qcr && back.cur === col && back.rows === rowsBefore && back.pill, JSON.stringify(back));
+    check(`${t}: no sideways scroll, no page errors`, (await wide(page)) <= 0 && noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
+  });
 }
 await browser.close();
 console.log(`\n${pass} passed, ${fail} failed`);
