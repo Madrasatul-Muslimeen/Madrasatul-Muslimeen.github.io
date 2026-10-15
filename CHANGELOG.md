@@ -21357,3 +21357,17 @@ New strings `wholeQuranLevelSentence` ("{level}: Achieved {known} and {percent} 
 - audit-part6 204/0; `--mutate=cta` fails it (8 failed: 390/820/1440 and 320px, en and bn).
 - wheel-slice-opens-track 96/0; wheel-unit-go 254/0; zab-dock 74/0; audit-part1 210/0; kys-opening-line 47/0; phone-width-overflow 217/0; behaviour 971/0.
 - Screenshots at 320px (en) and 360px (bn): the pill is inside the circle with the full unit name.
+
+## v10.67 — 15 Oct 2026 — Wheel labels no longer cut at the wheel's edge (PCF J29 item 16b, audit part 10)
+
+**Found** in the Architect's v10.65 review: in Explore → QCR at 1440px, the wheel's outer āyah labels on its left were cut by the wheel's own box ("3:137" read "t:137"). The same on v10.63.
+
+**Built by Builder round #863** (branch `builder/issue-863-run-1316`). The run ended without opening a PR; the Architect opened and reviewed it.
+- **`app/quranrevival.html`:** the QCR and Asma Explore wheels pass `roomForNumbers: true` to `renderScopedWheel()`, so the SVG's viewBox holds the outer number labels (the same opt-in Know Your Status has used since 6 Oct). Their width moves from the container to the resize wrapper (`#qcrWheelResizeWrap` / `#asmaXWheelResizeWrap`, when not resized by hand), with `max-width: 100%`. Below the side-by-side breakpoint the panes take `min-width: 0` and the wheel `max-width: 100%`, so a 320px wheel no longer pokes out of its clipping scroller.
+
+**Tests** (the Architect, on the round's head, based on v10.66):
+- New `audit-part10-fixes-browser.mjs`: 120/0, measuring every wheel label against the SVG and every clipping ancestor, on the landing, QCR, Qur'an, Asma and Word-by-Word wheels, en/bn × 320/390/820/1440. Its mutations each fail it: `qcrroom` (1440px en/bn, 390px en), `qcrpane` (1440px), `narrowpane` (320px).
+- The suite leaves slice captions (`.wheel-seg-label`) out. Measured with them in, one more label is cut: one Asma group's long caption at 1440px in English. That is a wording choice and is recorded in PCF J29.
+- wheel-centre 645/0; wheel-slice-opens-track 96/0; audit-part8 176/0; audit-part9 64/0; zab-dock 74/0; asma-quick-class 27/0; phone-width-overflow 217/0; behaviour 971/0.
+- `tablet-wheel-browser.mjs` fails 2 (the landing wheel at 700px is 638–644px; it wants 650). The failures are identical on v10.66, so they are older than this round. They are recorded in J29.
+- Screenshots of the QCR wheel at 1440px (en) and 320px (bn): every label whole.

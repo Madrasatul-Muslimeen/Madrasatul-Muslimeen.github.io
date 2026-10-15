@@ -1593,6 +1593,11 @@
     #qcrMain { flex: 0 0 auto; overflow: visible; }
     #qcrListPane { flex: 0 0 auto; overflow: visible; }
     #qcrWheelPane { flex: 0 0 auto; }
+    /* audit10 narrowpane: a 320px wheel in a pane with side padding pokes out of the clipping scroller */
+    #qcrWheelPane, #asmaXWheelPane { min-width: 0; }
+    #qcrWheelResizeWrap:not(.wheel-resized), #asmaXWheelResizeWrap:not(.wheel-resized) { max-width: 100%; }
+    #qcrWheelContainer, #asmaXWheelContainer { max-width: 100%; }
+    #qcrWheelPane .mastery-wheel, #asmaXWheelPane .mastery-wheel { max-width: 100%; }
   }
   /* .ways-list's own generic base rule (below) caps it at 420px with its
      own internal scrollbar -- a second, nested scroll region inside
@@ -1625,7 +1630,8 @@
        OWN intrinsic 360px rather than actually stretching to the space
        available, even with a generous max-width sitting right there
        unused. An explicit width sidesteps the whole question. */
-    #qcrWheelContainer { width: min(55vh, 480px); margin: 0 auto; }
+    #qcrWheelResizeWrap:not(.wheel-resized) { width: min(55vh, 480px); max-width: 100%; } /* audit10 qcrpane */
+    #qcrWheelContainer { width: 100%; margin: 0 auto; }
     #qcrWheelPane .mastery-wheel { width: 100%; max-width: none; height: auto; }
   }
   /* 28 Aug 2026: "I want this wheel to be resizable by me" -- a drag handle
@@ -1891,7 +1897,8 @@
     #asmaXMain { flex-direction: row; }
     #asmaXListPane { flex: 0 0 44%; max-width: 44%; border-right: 1px solid var(--card-line); }
     #asmaXWheelPane { flex: 1 1 auto; min-height: 0; overflow-y: auto; border-top: none; justify-content: center; }
-    #asmaXWheelContainer { width: min(55vh, 480px); margin: 0 auto; }
+    #asmaXWheelResizeWrap:not(.wheel-resized) { width: min(55vh, 480px); max-width: 100%; } /* audit10 asmapane */
+    #asmaXWheelContainer { width: 100%; margin: 0 auto; }
     #asmaXWheelPane .mastery-wheel { width: 100%; max-width: none; height: auto; }
   }
   #asmaXListHeader { display: flex; align-items: baseline; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.6rem; }
@@ -14337,7 +14344,7 @@
         // wrapWheelLabel() already caps at 2 lines on its own.
         sliceLines: wrapWheelLabel(escapeHtml(langText(g.title, getAppLang())), maxLen),
       }));
-      asmaXWheelContainerEl.innerHTML = renderScopedWheel(items, { centerLabel: titleText });
+      asmaXWheelContainerEl.innerHTML = renderScopedWheel(items, { centerLabel: titleText, roomForNumbers: true /* audit10 asmaroom */ });
       attachScopedWheelClickHandler(asmaXWheelContainerEl, (key) => openAsmaXGroup(key));
       asmaXLegendContainerEl.innerHTML = "";
       asmaXHintEl.textContent = t("Tap a group to see the Names inside it.");
@@ -14465,7 +14472,7 @@
         // the plain one every other line (and every other wheel) uses.
         sliceArabicLines: 1,
       }));
-      asmaXWheelContainerEl.innerHTML = renderScopedWheel(items, { centerLabel: langText(group.title, getAppLang()) });
+      asmaXWheelContainerEl.innerHTML = renderScopedWheel(items, { centerLabel: langText(group.title, getAppLang()), roomForNumbers: true });
       attachScopedWheelClickHandler(asmaXWheelContainerEl, (key) => openAsmaXName(Number(key.split(":")[1])));
       const labelsById = statusLabelsById();
       asmaXLegendContainerEl.innerHTML = renderWheelLegend(labelsById);
@@ -16058,6 +16065,7 @@
       qcrWheelContainerEl.innerHTML = renderScopedWheel(items, {
         centerLabel: langText(col.title, getAppLang()),
         centerSub: approachName || col.badge || "",
+        roomForNumbers: true, /* audit10 qcrroom */
       });
       attachScopedWheelClickHandler(qcrWheelContainerEl, (key) => goToAyahFromQcr(key));
       qcrLegendContainerEl.innerHTML = renderWheelLegend(labelsById);
