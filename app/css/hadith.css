@@ -195,7 +195,9 @@
 .dua-also-refs { display: flex; flex-wrap: wrap; gap: 0.35rem; }
 .dua-ref { min-height: 40px; padding: 0.3rem 0.7rem; border-radius: 0.4rem; border: 1px solid var(--hadith-rule); background: #fff; color: var(--hadith-ink); font: inherit; font-size: 0.85rem; cursor: pointer; font-variant-numeric: tabular-nums; }
 .dua-ref:hover { border-color: var(--hadith-gold); }
-.openiti-trail-back { margin-bottom: 0.4rem; }
+/* Audit part 16: after a jump to one narration (Go to number, a dua's source) the page is scrolled thousands of pixels
+   down a chapter; the way back (decision 86) stays on screen, so it does not have to be hunted for. */
+.openiti-trail-back { margin-bottom: 0.4rem; position: sticky; top: 0; z-index: 5; background: #fff; border: 1px solid var(--hadith-rule); border-radius: 0.4rem; padding: 0.3rem 0.7rem; }
 .dua-also-more summary { min-height: 40px; display: flex; align-items: center; cursor: pointer; font-size: 0.85rem; font-weight: 600; color: var(--hadith-ink); }
 /* Round H-DB5: the Duas / Dua chapters switch, a dua card's bab heading, the pager and the progress buttons. */
 .dua-modes { display: inline-flex; gap: 4px; padding: 4px; margin: 0.4rem 0 0.6rem; border-radius: 0.6rem; background: #f1ede1; }

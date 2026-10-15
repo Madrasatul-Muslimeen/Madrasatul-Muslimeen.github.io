@@ -870,7 +870,8 @@ async function renderOpenitiBody(body, oi, localRefresh) {
     if (target) {
       target.classList.add("hadith-card-focused");
       target.dataset.openitiFocused = "true";
-      target.scrollIntoView({ block: "center" });
+      // A narration taller than the screen is shown from its top (its number and standard number first), not from its middle.
+      target.scrollIntoView({ block: target.getBoundingClientRect().height > innerHeight ? "start" : "center" });
     }
   }
 }
