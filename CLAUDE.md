@@ -107,6 +107,10 @@ Read this first, every session. It is the standing brief.
 >   Done line, tick and edit written to the PCF carries its full time, never a bare date. Write `at` as UTC read off
 >   the clock (`date -u +%Y-%m-%dT%H:%M:%SZ`), e.g. `2026-10-15T02:13:00Z`; the PCF shows it in Sydney time beside
 >   the entry, and a job's "Updated" shows the time of its latest act.
+> - **🆕 What's New in the User Manual (the Owner's PCF General rule, 15 Oct 2026, PCA J46, PCF v02.48)**: every release
+>   adds one line at the TOP of the PCF User Manual (`p/mmsa.manual`), under the heading "🆕 What's New (newest first)"
+>   (`h: true`): "vX.YY · date time (Sydney) · what changed, in plain words, and where to find it (job)", with a full UTC
+>   `at`. Write it in the same step as the release; the PCA checks at every :25/:55 that each release has its line.
 
 > ## ⇢ HADITH STUDY is being built on `feature/hadith-study` — READ IF YOU TOUCH HADITH
 >
