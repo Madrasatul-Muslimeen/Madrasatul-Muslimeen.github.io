@@ -303,3 +303,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v10.65** (2026-10-15): the QCR āyah-number badge shows the whole reference (J29 audit part 9, PR #861).
 - **v10.66** (2026-10-15): the wheel pill sits inside the centre circle again on a small phone (J29 item 16).
 - **v10.67** (2026-10-15): wheel labels no longer cut at the wheel's edge (J29 audit part 10, round #863).
+- **v11.00** (2026-10-15): the app is now QuranRevival: General Study, Nature-Life, Life Skill and Health hidden, not deleted (J30, QR Stage 1; opens the v11 line).
