@@ -220,6 +220,11 @@ export function mountBackRow(text, { href = null, onBack = null, id = null } = {
     // fixed areas (the Qur'an page's wheel area is one, at the same z-index as the Word Card), so "fixed" alone cannot
     // tell a page from a window: the fixed areas under the chip's spot while the page settles are THE PAGE; one that
     // appears there later is a window opened over it, and the chip steps aside until it goes.
+    // A page's pinned bottom bar ([data-zab-lift], the Qur'an page's Study / Explore / Approach tabs) is never covered.
+    for (const bar of document.querySelectorAll("[data-zab-lift]")) {
+      const b = bar.getBoundingClientRect();
+      if (b.width > 0 && b.height > 0 && b.bottom > window.innerHeight * 0.5 && b.top < window.innerHeight) top = Math.min(top, b.top);
+    }
     row.style.display = "";
     row.style.bottom = top < window.innerHeight ? `${Math.round(window.innerHeight - top + 8)}px` : "";
     let covered = top < window.innerHeight * 0.5;
