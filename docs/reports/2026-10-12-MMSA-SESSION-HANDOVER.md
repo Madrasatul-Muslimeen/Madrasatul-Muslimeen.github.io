@@ -250,3 +250,5 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v10.57** (2026-10-15): audit part 3, 40px touch targets on the admin and study pages (PCF J29).
 - **v10.58** (2026-10-15): audit part 4, room for the Zab button on phones, 40px menu links (PCF J29).
 - **v10.59** (2026-10-15): the Zab button moves into the Wheel / Legend / Unit row on a phone (PCF J25).
+- **v10.60** (2026-10-15): audit part 5, finger-sized controls on the remaining pages (PCF J29).
+- **v10.61** (2026-10-15): Know Your Status shows Before Al-Fatihah under each Approach (PCF J26).

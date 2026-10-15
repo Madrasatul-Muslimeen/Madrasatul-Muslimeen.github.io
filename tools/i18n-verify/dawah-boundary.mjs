@@ -441,6 +441,10 @@ const PUBLISHED_DEPLOYMENTS = [
   // with only unitIdentityOk() widened. Red since then for the same reason as
   // the 28 Sep entry above; the dawahPages-block half is unchanged.
   "docs/governance/2026-09-28-reading-ruku-page-DEPLOYMENT-candidate.rules",
+  // Added 15 Oct 2026 (Architect, review of round #850): the Owner published the Zab Rules ("Published", v10.55,
+  // report docs/reports/2026-10-15-zab-enabled.md) and firestore.rules has been byte-identical to this file since.
+  // Red on main from v10.55 for the same reason as the two entries above; the dawahPages-block half is unchanged.
+  "docs/governance/2026-10-14-zab-candidate.rules",
 ];
 function dawahBlock(text) {
   const start = text.indexOf("match /dawahPages/");

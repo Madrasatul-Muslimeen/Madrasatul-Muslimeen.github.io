@@ -21219,3 +21219,54 @@ New strings `wholeQuranLevelSentence` ("{level}: Achieved {known} and {percent} 
 - `audit-part4-fixes-browser`: 1302/0. Its "Zab present" positive control was updated in place to count the docked 🧰, because on the Qur'an page the corner is now deliberately hidden.
 - `behaviour` 971/0 and `phone-width-overflow` 217/0.
 - `CLAUDE.md` also gains the Owner's PCF "🆕 What's New" rule (PCA J46).
+
+## v10.60 — 15 Oct 2026 — Audit part 5: finger-sized controls on the remaining pages and the study modules' person picker (PCF J29)
+
+**Source:** the Owner's PCF General rule "Keep working, never idle". Part 5 of the feature-by-feature audit.
+
+**Built by Builder round #850 (PR #851, branch `builder/issue-850-run-1296`) and reviewed by the Architect:**
+- **`app/css/admin-touch.css` (`body.admin-touch`) is now linked from six more pages:** `import-notes`, `dawah`, `course-offers`, `backup`, `taglines` and `onboarding`. What it fixed:
+  - Import Notes' source picker was 29px;
+  - Dawah's view buttons were 36px;
+  - Course Offers' fields were 33–36px and its buttons 23–31px;
+  - Backup's button was 38px;
+  - Taglines had 59 controls at 16–31px;
+  - the sign-up fields were 36–39px.
+- **A narrow `body.pick-touch #personSelect` rule** on the seven other study modules (Deen, Arabic, General, Nature-Life, Life Skill, Health and Learn Deen On-the-Go): their person picker was 33–34px. Nothing else on those pages changes.
+- **Not fixed; each reported in the PR as needing a layout decision or not a defect:**
+  - the landing wheel's two small buttons;
+  - one 19px link on About;
+  - the native file input on Import Notes;
+  - wide tables on About and Taglines, which scroll inside their own boxes, so the page itself never scrolls sideways.
+
+**The Architect's review:**
+- **Before and after photographs at 390px**, English and Bangla, of Taglines, Course Offers, Deen Study and the sign-up page. Rows are evenly spaced and nothing is cut. On Taglines the first line's row is no longer half-hidden under the pinned Save bar.
+- **Two checks that had been red on `main` were stale, and were updated in place with the reason recorded:**
+  - `dawah-boundary`'s list of Owner-published Rules files did not include `docs/governance/2026-10-14-zab-candidate.rules`, published for v10.55. `firestore.rules` is byte-identical to it.
+  - `dawah-screen` expected `location.href = "dawah.html"`, but issue #677 (the way-back law) made it `dawah.html?back=1`.
+- **Found, not caused by this round:** `quran-my-status-browser.mjs` stops at the same place on v10.57, v10.59 and this round. On a phone, the floating "← Back to Know Your Status" pill sits over the Approach tab. It is recorded for its own round (PCF J29).
+
+**Tests:**
+- New `audit-part5-fixes-browser.mjs`: 234/0. All 3 mutations fail it: picker (42 failed), buttons (33) and fields (18).
+- `behaviour` 971/0, `phone-width-overflow` 217/0, `audit-part3-fixes` 270/0, `tagline-scroll-browser` 67/0, `dawah-screen` 23/0 and `dawah-boundary` 21/0.
+
+## v10.61 — 15 Oct 2026 — Know Your Status shows "Before Al-Fātiḥah" under each Approach (PCF J26)
+
+**The Owner** (J26, 15 Oct, 2:56 pm "yes" under the recommendation "A, Yes, A", and 2:57 pm "YES" under "A or B for Know Your Status"): **A.** Know Your Status shows one calm line under each Approach.
+
+**Built by the Architect** (branch `kys-opening`), in `app/quranrevival.html`:
+- **`myStatusOpeningLineHtml()`**, under every Approach's tiles except Word by Word, which counts words: "Before Al-Fātiḥah: Aʿūdhu billāh ● · Bismillah ●".
+  - Each dot is that Approach's own claim, coloured with the wheel's stage colours. Aʿūdhu billāh is `opening:taawwudh` (read from `directWideStatusByTrackable`); Bismillah is `ayah:1:1` (read from `ownAyahByTrackable`).
+  - These are the records Know Your Status already loads in its one query, so there is no new read (I9). The rule is the same one the band on Al-Fātiḥah's page uses (`openingStatusId`).
+  - Bismillah is listed only while it is counted apart from the 7 āyāt (`fatihaCountApplies`), as the band shows it.
+  - Each dot has a spoken label (the stage's name).
+- **The audit polish of 14 Oct (J26 plan):** at 900px and wider, the "Before Al-Fātiḥah" band on Al-Fātiḥah's page keeps a calm width (48rem), centred. On a phone it still fills its column.
+
+**Tests:**
+- New `kys-opening-line-browser.mjs`, 47/0:
+  - Know Your Status in English and Bangla at 390, 820 and 1440px, with seeded claims: Memorise has Aʿūdhu billāh achieved and Bismillah learning; Recite has neither;
+  - the "Bismillah unnumbered" setting turned off;
+  - the band's width at 390 and 1440px.
+- All 4 mutations fail it: no-line (31 failed), wrong-key (7), bismillah-always (1) and band-cap (1).
+- `fatiha-opening-band-browser` 132/0, `opening-key` 8/0, `behaviour` 971/0 and `phone-width-overflow` 217/0, run on the code merged with v10.60.
+- **Recorded, older than this release:** `quran-my-status-browser.mjs` stops at the same check on v10.57, v10.59 and here. On a phone, the floating "← Back to Know Your Status" pill sits over the Approach tab. It is item 12 in PCF J29, for its own round.

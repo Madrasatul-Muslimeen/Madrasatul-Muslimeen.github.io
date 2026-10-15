@@ -854,3 +854,5 @@ total). Allocated by the MMSA Architect.
 10.57: audit part 3, 40px touch targets on the admin and study pages (PCF J29). Allocated by the MMSA Architect.
 10.58: audit part 4, room for the Zab button on phones, 40px menu links (PCF J29). Allocated by the MMSA Architect.
 10.59: the Zab button moves into the Wheel / Legend / Unit row on a phone (PCF J25). Allocated by the MMSA Architect.
+10.60: audit part 5, finger-sized controls on the remaining pages (PCF J29). Allocated by the MMSA Architect.
+10.61: Know Your Status shows Before Al-Fatihah under each Approach (PCF J26). Allocated by the MMSA Architect.

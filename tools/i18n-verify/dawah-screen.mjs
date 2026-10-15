@@ -213,7 +213,9 @@ check("nav.js links to dawah.html, gated the same way every other whole-app Home
 check("makeDawahPage() creates from the Note's CURRENT revision and then opens dawah.html", () => {
   const body = functionBody(notesPage, "makeDawahPage");
   assert.ok(/sourceRevisionId:\s*note\.currentRevisionId/.test(body), "makeDawahPage() does not pin the Note's own currentRevisionId");
-  assert.ok(/location\.href\s*=\s*"dawah\.html"/.test(body), "makeDawahPage() does not navigate to dawah.html on success");
+  // Updated in place 15 Oct 2026 (Architect, review of round #850): issue #677 (the way-back law) made this
+  // "dawah.html?back=1" so the Dawah page shows ← Back; the check had stayed red on main since.
+  assert.ok(/location\.href\s*=\s*"dawah\.html(\?back=1)?"/.test(body), "makeDawahPage() does not navigate to dawah.html on success");
 });
 check("the \"Make a printable page\" button is offered only where Edit/Remove already are -- the viewer's own active Notes", () => {
   const cardHtml = functionBody(notesPage, "noteCardHtml");
