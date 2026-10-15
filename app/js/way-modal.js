@@ -249,6 +249,7 @@ if (typeof document !== "undefined") {
       if (popover) {
         const open = popover.classList.toggle("open");
         trigger.setAttribute("aria-expanded", String(open));
+        if (open) popover.scrollIntoView({ block: "nearest" }); // audit13: bring the opened list into view, it can open below the fold of a scrolling card
       }
       return;
     }
