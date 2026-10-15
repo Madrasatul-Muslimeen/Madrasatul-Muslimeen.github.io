@@ -21128,3 +21128,23 @@ New strings `wholeQuranLevelSentence` ("{level}: Achieved {known} and {percent} 
 - With Zab on every page: behaviour 971/0, phone-width-overflow 217/0, navcheck OK, reading OK.
 
 **Not proved here:** this session cannot see Firebase. That the live Rules accept Zab's writes is proved by the Owner's first Try.
+
+## v10.56 — 15 Oct 2026 — Arabic word boxes in "Meanings of this word" (PCF J23)
+
+**The Owner** (J23, 15 Oct, with a picture of حَكِيمٌ at 8:10:18): "why these words are not there and kept blank without the Arabic word?" They circled the rows "most wise" and "full of wisdom": each showed only its place chips, with an empty middle.
+
+**Built by Builder round #841 (branch `builder/issue-841-run-1282`) and reviewed by the Architect:**
+- **`app/js/quran-word-card.js` `wordSensesSection()`:** every sense row now carries small Arabic word boxes (`.word-card-sense-box`).
+  - Each box shows the distinct spellings at that sense's places when those places are already loaded. Otherwise it shows the dictionary word once. No new load is added to the card.
+  - The sense's meaning is written under the Arabic.
+  - Tapping a box opens the word at that place (`data-word-occurrence-goto`). "Back to Word Card" returns to the card.
+- **The Architect's review fixes:**
+  - The box's spoken label uses `text.displayRef`, so it follows the reader's digits.
+  - The new suite's `check()` refuses a promise.
+- **`app/quranrevival.html`:** the boxes' styles. Each box is at least 40px tall and 44px wide, wraps inside its row, and uses the Qur'an font.
+- **`CLAUDE.md`:** the Owner's W-T-P-E-O rule (PCF General rule, 15 Oct, PCA J39).
+
+**Tests:**
+- New `word-card-sense-arabic-browser.mjs` (en and bn, at 320, 390, 820 and 1440px): 62/0. All 5 mutations fail it: noboxes, emptybox, tiny, nogoto and wide.
+- `word-card-intermediate-browser`: 50/0. It was updated in place: its place list now reads the place chips only, since the boxes also carry a place.
+- `quran-word-card-rendered` 127/0, `word-card-layout-b-top-browser` 246/0, `phone-width-overflow` 217/0 and `behaviour` 971/0.
