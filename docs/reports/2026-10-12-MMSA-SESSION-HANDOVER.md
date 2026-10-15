@@ -32,7 +32,7 @@ The 12:22 pm block below is kept as history.
 - **🆕 What's New (PCA J46):** one line per release at the top of `p/mmsa.manual`, written in the same step as the release.
 
 **In flight:**
-- **Builder round #858** (audit part 8): the verb table, QCR, the Mushaf view, the Mapping My Journey pop-ups, and English left in Bangla. Dispatched ~5:15 pm, 15 Oct. Review it by measurement and release it as the next version.
+- ~~Builder round #858~~ **released as v10.64** (6:20 pm, 15 Oct, session `session_01VugmUfoMMcfxmnW99UmXgm`): QCR collection controls and the Trash Back button at 40px. Left in J29: the verb table (not audited), the Mushaf view's rendered pages (not measurable here), and the 22px QCR āyah-number badge (older, found in review). Per J50, these wait for the PCA's hand-over list.
 
 **THE QR SPLIT (PCA J50, the Owner, 15 Oct ~5:30 pm):** QuranRevival becomes its own separate site and app (Qur'an, Hadith, Dua, Asma and "LDOG"); MMSA stays for Madrasah use. The PCA recommends the same Firebase, a start at madrasatul-muslimeen.github.io/quranrevival/, and a new QR Master Architect from 16 Oct; MMSA removes those parts only after QR is live and redirects work. **Until the PCA sends the hand-over list: start NO new work inside the QR modules beyond fixes already in flight** (round #858 is the last such).
 
@@ -299,3 +299,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v10.61** (2026-10-15): Know Your Status shows Before Al-Fatihah under each Approach (PCF J26).
 - **v10.62** (2026-10-15): audit part 6, finger-sized buttons on the Quran page (PCF J29).
 - **v10.63** (2026-10-15): the Back to Know Your Status pill no longer covers the Approach tab (PCF J29).
+- **v10.64** (2026-10-15): finger-sized controls in QCR collections and on the Trash page (J29 audit part 8, PR #859).

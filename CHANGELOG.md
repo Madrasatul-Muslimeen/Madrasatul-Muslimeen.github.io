@@ -21312,3 +21312,19 @@ New strings `wholeQuranLevelSentence` ("{level}: Achieved {known} and {percent} 
 - New `audit-part7-fixes-browser.mjs`: 18/0. Its mutation `pill-over-tabs` fails it (7 failed).
 - `quran-my-status-browser` runs to the end again: 248/0. No check in it needed changing.
 - `behaviour` 971/0, `phone-width-overflow` 217/0, `audit-part6-fixes` 200/0 and `zab-dock` 74/0.
+
+## v10.64 — 15 Oct 2026 — Finger-sized controls in QCR collections and on the Trash page (PCF J29 audit part 8)
+
+**Built by Builder round #858 (PR #859, branch `builder/issue-858-run-1309`) and reviewed by the Architect.** CSS only; no text, Firestore or Rules change.
+- **`app/quranrevival.html`, QCR collections (Explore → QCR):** the collection and Approach pickers (27–30px), the ⋯ button (36px), each āyah jump row (22px), the Move-to picker (20px), the × remove button (36px) and the add-āyah form (24–26px) are now at least 40px.
+- **`app/journey-map.html`, Trash:** the ← Back button, 21px, is now 40px.
+
+**Audited and clean** (en/bn × 320/390/820/1440): the Mapping My Journey folders, open folder, Note window, Favourites and Archived; Records; Hadith collections; the Read bar and the Āyah sheet. English on the Bangla pages is source names and data only; no `bn.js` entry was missing for app chrome.
+
+**Not reached, and said plainly:** the Word card's verb conjugation table (the Builder's probe did not open it); the Mushaf view's rendered pages (the sandbox cannot fetch the page data). **Found in review, older than this round:** the 22px āyah-number badge on each QCR row is narrower than its text ("10:101" needs 27px), the same on v10.63. All three are carried in PCF J29.
+
+**Left for a product choice (from the PR):** Bangla titles for the QCR collections (English-only in `qcr-data.js`); the desktop-only 24px list-collapse buttons and the 38×29 Explore maximise button; the Word card's āyah-number badge (41×24).
+
+**Tests** (the Architect, on the code merged with v10.63):
+- New `audit-part8-fixes-browser.mjs`: 176/0. Every mutation fails it, each also at 320px: trashback 8, qcrselects 16, qcrpalette 8, qcrjump 8, qcrmove 8, qcrremove 8, qcradd 24.
+- behaviour 971/0; phone-width-overflow 217/0; audit-part6 200/0; audit-part7 18/0; zab-dock 74/0; quran-my-status 248/0; the 8 governance suites green.
