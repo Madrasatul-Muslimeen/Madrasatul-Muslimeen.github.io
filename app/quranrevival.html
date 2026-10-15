@@ -15639,7 +15639,7 @@
         refLabel = ayahShortRefFor(surahNum, ayahNum, half);
       }
       const ayah = qcrShownAyah(surahNum, ayahNum, half);
-      const full = ayah?.translations?.en ?? "";
+      const full = ayah?.translations?.[getAppLang() === "bn" ? "bn" : "en"] ?? ayah?.translations?.en ?? ""; // audit14: the row's meaning follows the app language, as the add preview does
       const snippet = full.length > 90 ? `${full.slice(0, 90).trim()}…` : full;
       return { surahNum, ayahNum, refLabel, surahName: sName, snippet };
     }

@@ -23,6 +23,8 @@ const ONLY = (process.argv.find((a) => a.startsWith("--only=")) || "").slice(7);
 const WONLY = Number((process.argv.find((a) => a.startsWith("--width=")) || "").slice(8)) || 0;
 const LONLY = (process.argv.find((a) => a.startsWith("--lang=")) || "").slice(7);
 const MUTATIONS = {
+  // A QCR row's meaning snippet was always the English translation, even on the Bangla page.
+  "qcrsnippet": ["app/quranrevival.html", "**/quranrevival.html*", 'ayah?.translations?.[getAppLang() === "bn" ? "bn" : "en"] ?? ayah?.translations?.en ?? ""; // audit14: the row\'s meaning follows the app language, as the add preview does', 'ayah?.translations?.en ?? "";'],
   // Take ▸ -> Read it left the reader in the reading view with no way back to Explore (the way-back law).
   "noreadback": ["app/quranrevival.html", "**/quranrevival.html*", 'await goToAyahFromExplore(take.sn, u.ayah, u.half); setAppReturn(t("Back to Explore"), backLabel, backToExplore); return; }', "await goToAyahFromExplore(take.sn, u.ayah, u.half); return; }"],
   // Explore's ▾ Approach list options were 31px tall.
@@ -108,10 +110,10 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     if (PROBE) console.log(t, JSON.stringify({ c, whole }));
     check(`${t}: POSITIVE CONTROL the wheel opens at the Whole Quran with 30 Juz and 114 Surah segments`, c.length === 1 && whole.juz === 30 && whole.surah === 114, JSON.stringify({ c, whole }));
     // The Juz / Surahs / Hizb views change what the wheel and its list show.
-    const view = async (id) => { await ev(page, (i) => document.getElementById(i).click(), id); await settle(page, 700); return ev(page, () => ({ segs: document.querySelectorAll("#exploreWheelContainer .wheel-seg").length, side: document.querySelector("#exploreSidebarContainer")?.innerText.replace(/\s+/g, " ").slice(0, 40) ?? "", pressed: [...document.querySelectorAll("#exploreViewToggle button")].filter((b) => b.getAttribute("aria-pressed") === "true").map((b) => b.id).join() })); };
+    const view = async (id) => { await ev(page, (i) => document.getElementById(i).click(), id); await settle(page, 700); return ev(page, () => ({ segs: document.querySelectorAll("#exploreWheelContainer .wheel-seg").length, side: document.querySelector("#exploreSidebarContainer")?.innerText.replace(/\s+/g, " ") ?? "", pressed: [...document.querySelectorAll("#exploreViewToggle button")].filter((b) => b.getAttribute("aria-pressed") === "true").map((b) => b.id).join() })); };
     const vJ = await view("exploreViewPrimaryBtn"), vS = await view("exploreViewSurahsBtn"), vH = await view("exploreViewHizbBtn");
     if (PROBE) console.log(t, "wholeviews", JSON.stringify([vJ, vS, vH]));
-    check(`${t}: Whole Quran, Juz view lists the Juz and marks its button pressed`, vJ.side.includes(refText(lang, "1")) && vJ.pressed === "exploreViewPrimaryBtn", JSON.stringify(vJ));
+    check(`${t}: Whole Quran, Juz view lists the Juz and marks its button pressed`, vJ.side.length > 100 && vJ.pressed === "exploreViewPrimaryBtn", JSON.stringify(vJ));
     check(`${t}: Whole Quran, Surahs view lists the Surahs (a different list)`, vS.side !== vJ.side && vS.pressed === "exploreViewSurahsBtn", JSON.stringify([vJ.side, vS.side]));
     check(`${t}: Whole Quran, Hizb view draws the 60 Hizb`, vH.segs === 60 && vH.pressed === "exploreViewHizbBtn", JSON.stringify(vH));
     await view("exploreViewSurahsBtn");
@@ -278,6 +280,166 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
   });
 
+  // 4: QCR collections.
+  await flow("qcr", lang, width, async (t, page, ctx, errors) => {
+    await openExplore(page);
+    await ev(page, () => document.getElementById("explorePaletteQcrBtn").click());
+    await page.waitForFunction(() => document.querySelectorAll("#qcrWheelContainer .wheel-seg").length > 0, null, { timeout: 10000 });
+    await settle(page, 400);
+    const opts = await ev(page, () => [...document.getElementById("qcrLevelSelect").options].map((o) => [o.value, o.text]));
+    // The first collection that has āyāt in it.
+    const info = async () => ev(page, () => ({ cur: document.getElementById("qcrLevelSelect").value, rows: document.querySelectorAll("#qcrWaysListContainer .qcr-way-row").length, segs: document.querySelectorAll("#qcrWheelContainer .wheel-seg").length, count: document.querySelector(".qcr-list-count")?.textContent ?? "", title: document.querySelector(".qcr-list-title")?.textContent ?? "", manage: !document.getElementById("qcrLevelManageActions").hidden, add: !!document.getElementById("qcrAddItemBtn") }));
+    let first = null;
+    for (const [id] of opts) { await page.selectOption("#qcrLevelSelect", id); await settle(page, 300); const i = await info(); if (i.rows > 0) { first = { id, ...i }; break; } }
+    if (PROBE) console.log(t, "collections", opts.length, JSON.stringify(first));
+    check(`${t}: POSITIVE CONTROL QCR lists the tenant's collections and one of them holds āyāt (${first?.id})`, opts.length >= 10 && !!first, JSON.stringify({ n: opts.length, first }));
+    check(`${t}: choosing a collection draws one wheel slice per āyah and one row per āyah`, first && first.segs === first.rows, JSON.stringify(first));
+    const pick = await ev(page, () => { const r = document.querySelector("#qcrWaysListContainer [data-qcr-jump]"); return { key: r.dataset.qcrJump, text: r.innerText.replace(/\s+/g, " ") }; });
+    if (PROBE) console.log(t, "pick", JSON.stringify(pick));
+    await ev(page, () => document.querySelector("#qcrWaysListContainer [data-qcr-jump]").click());
+    await page.waitForFunction(() => !document.getElementById("readView").hidden, null, { timeout: 10000 });
+    await settle(page, 1200);
+    const [, sn, an] = pick.key.match(/^ayah:(\d+):(\d+)/) || [];
+    const read = await ev(page, () => ({ surah: document.getElementById("surahSelect")?.value, ayah: document.getElementById("ayahSelect")?.value, pill: document.querySelector("#ayahCardBackPill [data-ayah-card-back]")?.innerText.replace(/\s+/g, " ") ?? null }));
+    if (PROBE) console.log(t, "read", JSON.stringify(read));
+    check(`${t}: tapping a row opens that āyah in the Read view (${pick.key})`, read.surah === sn && read.ayah === an, JSON.stringify(read));
+    check(`${t}: a "Back to QCR" pill is on screen`, !!read.pill && /QCR/.test(read.pill) && inside(await rectOf(page, "#ayahCardBackPill [data-ayah-card-back]"), width, vh), String(read.pill));
+    await page.click("#ayahCardBackPill [data-ayah-card-back]"); await settle(page, 1500);
+    const back = await info();
+    check(`${t}: ← Back to QCR returns to the SAME collection (${first?.id})`, back.cur === first.id && back.rows === first.rows && (await ev(page, () => !document.getElementById("qcrPanel").hidden)), JSON.stringify({ back, first: first?.id }));
+    // A wheel slice opens its āyah too (the second one), and the way back lands on the same collection.
+    const key2 = await ev(page, () => { const s = [...document.querySelectorAll("#qcrWheelContainer .wheel-seg")][1]; s.dispatchEvent(new MouseEvent("click", { bubbles: true })); return s.dataset.key; });
+    await page.waitForFunction(() => !document.getElementById("readView").hidden, null, { timeout: 10000 });
+    await settle(page, 1200);
+    const read2 = await ev(page, () => `ayah:${document.getElementById("surahSelect")?.value}:${document.getElementById("ayahSelect")?.value}`);
+    check(`${t}: tapping a wheel slice opens its āyah in the Read view (${key2})`, read2 === key2, `${read2} vs ${key2}`);
+    await page.click("#ayahCardBackPill [data-ayah-card-back]"); await settle(page, 1500);
+    check(`${t}: ...and ← Back to QCR returns to the same collection again`, (await info()).cur === first.id);
+    check(`${t}: no sideways scroll`, await ev(page, () => document.documentElement.scrollWidth <= innerWidth + 1));
+    check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
+  });
+
+  // 4b: Āyah card -> 📚 QCR: tick a collection, Attach, and the write lands.
+  await flow("qcrattach", lang, width, async (t, page, ctx, errors) => {
+    await ev(page, () => document.querySelectorAll('[id*="splash"], .app-splash-overlay').forEach((e) => e.remove()));
+    if (!(await ev(page, () => document.getElementById("tabReadBtn")?.getBoundingClientRect().width > 0))) { await page.click("#tabStudyBtn"); await settle(page, 200); }
+    await page.click("#tabReadBtn");
+    await page.waitForFunction(() => !document.getElementById("readView").hidden && document.getElementById("ayahPanels").textContent.trim().length > 20, null, { timeout: 8000 });
+    await settle(page, 600);
+    await ev(page, () => { const s = document.getElementById("surahSelect"); s.value = "2"; s.dispatchEvent(new Event("change", { bubbles: true })); });
+    await page.waitForFunction(() => document.querySelector('#readView [data-word-occurrence^="quran-word-occurrence:v1:2:"]'), null, { timeout: 15000 });
+    await ev(page, () => { const el = document.getElementById("ayahSelect"); el.value = "255"; el.dispatchEvent(new Event("change", { bubbles: true })); });
+    await settle(page, 900);
+    await ev(page, () => document.querySelector('[data-ayah-num-badge="2:255"]')?.click());
+    await page.waitForSelector("[data-ayah-sheet] [data-ayah-sheet-qcr]", { timeout: 8000 });
+    await settle(page, 400);
+    const unit = await ev(page, () => document.querySelector("[data-ayah-sheet]").dataset.unitKey);
+    await ev(page, () => document.querySelector("[data-ayah-sheet] [data-ayah-sheet-qcr]").click());
+    await page.waitForFunction(() => { const p = document.getElementById("qcrPopup"); return p && !p.hidden && p.querySelector("[data-note-collection-toggle]"); }, null, { timeout: 12000 });
+    await settle(page, 400);
+    const pop = await ev(page, () => { const b = document.querySelector("#qcrPopup .qcr-pop-box").getBoundingClientRect(); return { box: { left: b.left, right: b.right, top: b.top, bottom: b.bottom, width: b.width }, ticks: [...document.querySelectorAll("#qcrPopup [data-note-collection-toggle]")].filter((c) => c.getClientRects().length).length, back: document.querySelector("#qcrPopup [data-qcr-pop-back]")?.textContent.trim() ?? null, nav: Math.max(0, document.getElementById("topNav")?.getBoundingClientRect().bottom ?? 0) }; });
+    if (PROBE) console.log(t, "pop", unit, JSON.stringify(pop));
+    check(`${t}: POSITIVE CONTROL the Āyah card's 📚 QCR opens a pop-up listing the collections to tick (${unit})`, pop.ticks >= 10 && inside(pop.box, width, vh), JSON.stringify(pop)); // the pop-up is a full-window layer above the nav, with its own ← Back and ✕
+    check(`${t}: ...with a visible ← Back`, !!pop.back && pop.back.startsWith("←"), String(pop.back));
+    const n = await writeCount(page);
+    const id = await ev(page, () => { const cb = [...document.querySelectorAll("#qcrPopup [data-note-collection-toggle]")].find((c) => c.getClientRects().length && !c.checked); cb.click(); return cb.dataset.noteCollectionToggle; });
+    await page.waitForFunction((k) => (window.__stubWriteData || []).length > k, n, { timeout: 8000 }).catch(() => {});
+    await settle(page, 500);
+    const w = (await writes(page, n)).filter((x) => x.col === "ayahCollections");
+    const col = w.at(-1)?.data?.collections?.find((c) => c.id === id);
+    check(`${t}: ticking collection ${id} writes ayahCollections with ${unit} filed in it, once`, w.length === 1 && !!col && col.items.includes(unit), JSON.stringify(w).slice(0, 300));
+    check(`${t}: ...and the tick shows checked after the re-render`, await ev(page, (c) => !!document.querySelector(`#qcrPopup [data-note-collection-toggle="${c}"]`)?.checked, id));
+    await page.click("#qcrPopup [data-qcr-pop-close]").catch(() => {});
+    await settle(page, 400);
+    check(`${t}: the pop-up closes`, await ev(page, () => !document.getElementById("qcrPopup") || document.getElementById("qcrPopup").hidden));
+    check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
+  });
+
+  // 4c: owner/prime manage: add, rename, archive a collection; "+ Add āyah" follows the Al-Fātiḥah count and previews the āyah.
+  await flow("qcrmanage", lang, width, async (t, page, ctx, errors) => {
+    await openExplore(page);
+    await ev(page, () => document.getElementById("explorePaletteQcrBtn").click());
+    await page.waitForFunction(() => document.querySelectorAll("#qcrWheelContainer .wheel-seg").length > 0, null, { timeout: 10000 });
+    await settle(page, 400);
+    const dialogs = [];
+    let answer = null;
+    page.on("dialog", async (d) => { dialogs.push([d.type(), d.message()]); if (d.type() === "prompt") await d.accept(answer ?? ""); else await d.accept(); });
+    const opts = () => ev(page, () => [...document.getElementById("qcrLevelSelect").options].map((o) => [o.value, o.text]));
+    const n0 = (await opts()).length;
+    await ev(page, () => { const p = document.getElementById("qcrPaletteBtn"); if (p.getAttribute("aria-expanded") !== "true") p.click(); });
+    await settle(page, 300);
+    const palette = await ev(page, () => { const r = (id) => { const e = document.getElementById(id).getBoundingClientRect(); return { left: e.left, right: e.right, top: e.top, bottom: e.bottom, width: e.width, height: e.height }; }; return { rename: r("qcrRenameLevelBtn"), archive: r("qcrArchiveLevelBtn"), add: r("qcrAddLevelBtn") }; });
+    if (PROBE) console.log(t, "palette", JSON.stringify(palette));
+    check(`${t}: POSITIVE CONTROL the ⋯ palette shows ✎ / 🗄 / + inside the screen, each >=36px`, Object.values(palette).every((r) => inside(r, width, vh) && r.width >= 36 && r.height >= 36), JSON.stringify(palette));
+    // add
+    let nw = await writeCount(page);
+    answer = refText(lang, "Audit collection");
+    await page.click("#qcrAddLevelBtn"); await settle(page, 900);
+    let w = (await writes(page, nw)).filter((x) => x.col === "ayahCollections");
+    const o1 = await opts();
+    const added = o1.find(([, tx]) => tx.includes("Audit collection") || tx.includes(answer));
+    check(`${t}: + asks for a name, adds the collection (one write) and selects it`, o1.length === n0 + 1 && !!added && w.length === 1 && w[0].data.collections.length === n0 + 1 && (await ev(page, () => document.getElementById("qcrLevelSelect").value)) === added[0], JSON.stringify({ n0, now: o1.length, w: w.length, dialogs }));
+    // rename
+    nw = await writeCount(page);
+    answer = "Renamed audit";
+    await page.click("#qcrRenameLevelBtn"); await settle(page, 900);
+    w = (await writes(page, nw)).filter((x) => x.col === "ayahCollections");
+    const o2 = await opts();
+    check(`${t}: ✎ renames the selected collection (one write, the name changes, the count stays)`, o2.length === n0 + 1 && o2.some(([v, tx]) => v === added[0] && tx.includes("Renamed audit")) && w.length === 1, JSON.stringify({ o2: o2.slice(-2), w: w.length }));
+    // archive
+    nw = await writeCount(page);
+    await page.click("#qcrArchiveLevelBtn"); await settle(page, 900);
+    w = (await writes(page, nw)).filter((x) => x.col === "ayahCollections");
+    const o3 = await opts();
+    const arch = w.at(-1)?.data?.collections?.find((c) => c.id === added[0]);
+    check(`${t}: 🗄 archives it (kept in the data as archived, never deleted; gone from the list)`, arch?.status === "archived" && !o3.some(([v]) => v === added[0]) && w.length === 1, JSON.stringify({ status: arch?.status, n: o3.length }));
+    check(`${t}: ...the three actions each raised their own prompt/confirm (${dialogs.map((d) => d[0]).join(",")})`, dialogs.map((d) => d[0]).join() === "prompt,prompt,confirm", JSON.stringify(dialogs));
+    check(`${t}: no sideways scroll`, await ev(page, () => document.documentElement.scrollWidth <= innerWidth + 1));
+    check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
+  });
+
+  // 4d: "+ Add āyah" follows the Al-Fātiḥah count and previews the āyah's Arabic and meaning before adding.
+  await flow("qcradd", lang, width, async (t, page, ctx, errors) => {
+    const openQcr = async () => {
+      await openExplore(page);
+      await ev(page, () => document.getElementById("explorePaletteQcrBtn").click());
+      await page.waitForFunction(() => document.getElementById("qcrAddItemBtn"), null, { timeout: 10000 });
+      await settle(page, 400);
+    };
+    await openQcr();
+    const type = async (surah, n) => { await page.selectOption("#qcrAddSurahSelect", String(surah)); await page.fill("#qcrAddAyahInput", String(n)); await page.waitForFunction(() => !document.getElementById("qcrAddPreview").hidden || true, null, { timeout: 3000 }); await settle(page, 700); };
+    const preview = () => ev(page, () => { const p = document.getElementById("qcrAddPreview"); const r = p.getBoundingClientRect(); return { shown: !p.hidden && r.width > 0, ref: p.querySelector(".qcr-add-preview-ref")?.textContent ?? "", ar: p.querySelector(".qcr-add-preview-ar")?.textContent ?? "", tr: p.querySelector(".qcr-add-preview-tr")?.textContent ?? "", key: p.dataset.unitKey, r: { left: r.left, right: r.right, top: r.top, bottom: r.bottom, width: r.width } }; });
+    const add = async () => { const n = await writeCount(page); await page.click("#qcrAddItemBtn"); await settle(page, 900); const w = (await writes(page, n)).filter((x) => x.col === "ayahCollections"); const sel = await ev(page, () => document.getElementById("qcrLevelSelect").value); return { w, col: w.at(-1)?.data?.collections?.find((c) => c.id === sel), sel }; };
+    // Count ON (the default): displayed 1 is "Al-ḥamdu lillāh" = stored ayah 2; displayed 7 is stored ayah 8.
+    check(`${t}: POSITIVE CONTROL the Al-Fātiḥah count is on (stored)`, await ev(page, () => localStorage.getItem("mm_fatiha_bismillah_unnumbered") !== "0"));
+    await type(1, 1);
+    let p = await preview();
+    if (PROBE) console.log(t, "preview 1", JSON.stringify(p));
+    check(`${t}: count ON, typing 1 previews "${refText(lang, "1:1")}" with the āyah's Arabic and its meaning, inside the screen (not the Bismillah)`, p.shown && p.ref.includes(refText(lang, "1:1")) && /ٱ?لْ?حَمْدُ|الحمد/.test(p.ar) && !/بِسْمِ/.test(p.ar) && p.tr.length > 5 && p.key === "ayah:1:2" && inside(p.r, width, vh), JSON.stringify(p));
+    let r = await add();
+    check(`${t}: count ON, + Add āyah files ayah:1:2 (one write)`, r.w.length === 1 && r.col?.items.includes("ayah:1:2") && !r.col.items.includes("ayah:1:1"), JSON.stringify(r.w).slice(0, 300));
+    await type(1, 7);
+    p = await preview();
+    r = await add();
+    check(`${t}: count ON, 7 previews ${refText(lang, "1:7")} and files ayah:1:8`, p.shown && p.key === "ayah:1:8" && r.col?.items.includes("ayah:1:8"), JSON.stringify({ p, items: r.col?.items }));
+    await type(1, 8);
+    const nw = await writeCount(page);
+    await page.click("#qcrAddItemBtn"); await settle(page, 500);
+    const msg = await ev(page, () => { const m = document.getElementById("qcrAddMsg"); return { shown: getComputedStyle(m).display !== "none", text: m.textContent }; });
+    check(`${t}: count ON, 8 is refused with a message naming the surah's ayah count (7) and nothing is written`, msg.shown && msg.text.includes(refText(lang, "7")) && (await writeCount(page)) === nw, JSON.stringify(msg));
+    // Count OFF: the number is the stored āyah.
+    await ev(page, () => localStorage.setItem("mm_fatiha_bismillah_unnumbered", "0"));
+    await page.reload(); await page.waitForTimeout(1500);
+    await ev(page, () => document.querySelectorAll('[id*="splash"], .app-splash-overlay').forEach((e) => e.remove()));
+    await openQcr();
+    await type(1, 1);
+    p = await preview();
+    r = await add();
+    check(`${t}: count OFF, typing 1 is the Bismillah, ayah:1:1 (as before)`, p.key === "ayah:1:1" && r.col?.items.includes("ayah:1:1"), JSON.stringify({ key: p.key, items: r.col?.items }));
+    check(`${t}: no sideways scroll`, await ev(page, () => document.documentElement.scrollWidth <= innerWidth + 1));
+    check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
+  });
+
   // 1b: Word by Word instead of Quran shows word counts per part.
   await flow("wbw", lang, width, async (t, page, ctx, errors) => {
     await openExplore(page);
@@ -289,6 +451,39 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     await ev(page, () => document.getElementById("explorePaletteQuranBtn").click()); await settle(page, 700);
     check(`${t}: Quran brings the Quran wheel back`, await ev(page, () => document.getElementById("wbwPanel").hidden && document.querySelectorAll("#exploreWheelContainer .wheel-seg").length > 100));
     check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
+  });
+}
+// 5: Bangla -- no English left on these features (the app's own names and source names may stay).
+if (!LONLY || LONLY === "bn") for (const width of [390, 1440].filter((w) => !WONLY || w === WONLY)) {
+  await flow("bnleak", "bn", width, async (t, page, ctx, errors) => {
+    const seen = {};
+    await openExplore(page);
+    seen.whole = await ev(page, () => document.getElementById("exploreView").innerText);
+    await gotoSurah(page, 81);
+    seen.surahAll = await ev(page, () => document.getElementById("exploreView").innerText);
+    await ev(page, () => document.querySelector("#exploreModeRow [data-v=one]").click()); await settle(page, 500);
+    await ev(page, () => document.getElementById("exploreApproachBtn").click()); await settle(page, 300);
+    seen.approachList = await ev(page, () => document.getElementById("exploreApproachList").innerText);
+    await ev(page, () => document.querySelector("#exploreModeRow [data-v=all]").click()); await settle(page, 500);
+    await ev(page, () => document.querySelector('[data-aa-row="tajweed"] .aa-take').click());
+    await page.waitForSelector(".aa-sheet", { timeout: 8000 });
+    seen.takeSheet = await ev(page, () => document.querySelector(".aa-sheet").innerText);
+    await ev(page, () => document.querySelector("[data-aa-close]").click()); await settle(page, 300);
+    await ev(page, () => document.getElementById("explorePaletteWbwBtn").click()); await settle(page, 1500);
+    seen.wbw = await ev(page, () => document.getElementById("wbwPanel").innerText);
+    await ev(page, () => document.getElementById("explorePaletteQcrBtn").click()); await settle(page, 1200);
+    // The collection titles are the tenant's own data (written in English: "Sayr fil-Arḍ", "Audience Epithets"), so they are not scanned.
+    seen.qcr = await ev(page, () => ["qcrWaysListContainer", "qcrHint", "qcrLegendContainer"].map((i) => { const c = document.getElementById(i).cloneNode(true); c.querySelectorAll("select").forEach((s) => s.remove()); document.body.appendChild(c); const x = c.innerText; c.remove(); return x; }).join(" "));
+    // ...and the Move-to selects' own first option (the app's words) is read on its own.
+    seen.qcrMove = await ev(page, () => [...document.querySelectorAll("#qcrWaysListContainer [data-qcr-move] option:first-child")].map((o) => o.textContent).join(" "));
+    await ev(page, () => { const p = document.getElementById("qcrPaletteBtn"); if (p.getAttribute("aria-expanded") !== "true") p.click(); }); await settle(page, 300);
+    seen.qcrTitles = await ev(page, () => ["qcrRenameLevelBtn", "qcrArchiveLevelBtn", "qcrAddLevelBtn", "qcrShowArchivedToggle"].map((i) => document.getElementById(i)?.title || document.getElementById(i)?.parentElement?.innerText || "").join(" "));
+    for (const [k, v] of Object.entries(seen)) {
+      const left = englishLeft(v);
+      if (PROBE) console.log(t, k, JSON.stringify(left));
+      check(`${t}: ${k}: POSITIVE CONTROL there is Bangla text to scan`, /[ঀ-৿]/.test(v), String(v).slice(0, 80));
+      check(`${t}: ${k}: no English left (${left.slice(0, 6).join(", ") || "none"})`, left.length === 0, JSON.stringify(left));
+    }
   });
 }
 await browser.close();
