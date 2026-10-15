@@ -23,6 +23,10 @@ const ONLY = (process.argv.find((a) => a.startsWith("--only=")) || "").slice(7);
 const WONLY = Number((process.argv.find((a) => a.startsWith("--width=")) || "").slice(8)) || 0;
 const LONLY = (process.argv.find((a) => a.startsWith("--lang=")) || "").slice(7);
 const MUTATIONS = {
+  // The Explore window opened under the dock (the dock had no height yet when the window was first sized).
+  "dockinset": ["app/quranrevival.html", "**/quranrevival.html*", "      if (exploring) explorePopupWin?.refit();\n", ""],
+  // The add-āyah preview could open below the fold of the list pane.
+  "previewscroll": ["app/quranrevival.html", "**/quranrevival.html*", '      el.scrollIntoView?.({ block: "nearest" }); // audit14: the preview sits under the add box and could open below the fold of the list pane\n', ""],
   // A QCR row's meaning snippet was always the English translation, even on the Bangla page.
   "qcrsnippet": ["app/quranrevival.html", "**/quranrevival.html*", 'ayah?.translations?.[getAppLang() === "bn" ? "bn" : "en"] ?? ayah?.translations?.en ?? ""; // audit14: the row\'s meaning follows the app language, as the add preview does', 'ayah?.translations?.en ?? "";'],
   // Take ▸ -> Read it left the reader in the reading view with no way back to Explore (the way-back law).
@@ -108,6 +112,9 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     let c = await crumbs(page);
     const whole = await ev(page, () => ({ juz: [...document.querySelectorAll("#exploreWheelContainer .wheel-seg")].filter((s) => s.dataset.ringKind === "juz").length, surah: [...document.querySelectorAll("#exploreWheelContainer .wheel-seg")].filter((s) => s.dataset.ringKind === "surah").length }));
     if (PROBE) console.log(t, JSON.stringify({ c, whole }));
+    const dk = await ev(page, () => ({ dockTop: document.getElementById("dock").getBoundingClientRect().top, winBottom: document.getElementById("exploreView").getBoundingClientRect().bottom, winTop: document.getElementById("exploreView").getBoundingClientRect().top, navBottom: document.getElementById("topNav").getBoundingClientRect().bottom, fixed: getComputedStyle(document.getElementById("exploreView")).position === "fixed" }));
+    if (PROBE) console.log(t, "window", JSON.stringify(dk));
+    if (dk.fixed) check(`${t}: the Explore window opens between the nav row and the dock, not under either`, dk.winTop >= dk.navBottom - 1 && dk.winBottom <= dk.dockTop + 1, JSON.stringify(dk));
     check(`${t}: POSITIVE CONTROL the wheel opens at the Whole Quran with 30 Juz and 114 Surah segments`, c.length === 1 && whole.juz === 30 && whole.surah === 114, JSON.stringify({ c, whole }));
     // The Juz / Surahs / Hizb views change what the wheel and its list show.
     const view = async (id) => { await ev(page, (i) => document.getElementById(i).click(), id); await settle(page, 700); return ev(page, () => ({ segs: document.querySelectorAll("#exploreWheelContainer .wheel-seg").length, side: document.querySelector("#exploreSidebarContainer")?.innerText.replace(/\s+/g, " ") ?? "", pressed: [...document.querySelectorAll("#exploreViewToggle button")].filter((b) => b.getAttribute("aria-pressed") === "true").map((b) => b.id).join() })); };
@@ -407,6 +414,7 @@ for (const lang of LANGS) for (const width of WIDTHS) {
       await settle(page, 400);
     };
     await openQcr();
+    const dockTop = await ev(page, () => document.getElementById("dock").getBoundingClientRect().top);
     const type = async (surah, n) => { await page.selectOption("#qcrAddSurahSelect", String(surah)); await page.fill("#qcrAddAyahInput", String(n)); await page.waitForFunction(() => !document.getElementById("qcrAddPreview").hidden || true, null, { timeout: 3000 }); await settle(page, 700); };
     const preview = () => ev(page, () => { const p = document.getElementById("qcrAddPreview"); const r = p.getBoundingClientRect(); return { shown: !p.hidden && r.width > 0, ref: p.querySelector(".qcr-add-preview-ref")?.textContent ?? "", ar: p.querySelector(".qcr-add-preview-ar")?.textContent ?? "", tr: p.querySelector(".qcr-add-preview-tr")?.textContent ?? "", key: p.dataset.unitKey, r: { left: r.left, right: r.right, top: r.top, bottom: r.bottom, width: r.width } }; });
     const add = async () => { const n = await writeCount(page); await page.click("#qcrAddItemBtn"); await settle(page, 900); const w = (await writes(page, n)).filter((x) => x.col === "ayahCollections"); const sel = await ev(page, () => document.getElementById("qcrLevelSelect").value); return { w, col: w.at(-1)?.data?.collections?.find((c) => c.id === sel), sel }; };
@@ -415,7 +423,7 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     await type(1, 1);
     let p = await preview();
     if (PROBE) console.log(t, "preview 1", JSON.stringify(p));
-    check(`${t}: count ON, typing 1 previews "${refText(lang, "1:1")}" with the āyah's Arabic and its meaning, inside the screen (not the Bismillah)`, p.shown && p.ref.includes(refText(lang, "1:1")) && /ٱ?لْ?حَمْدُ|الحمد/.test(p.ar) && !/بِسْمِ/.test(p.ar) && p.tr.length > 5 && p.key === "ayah:1:2" && inside(p.r, width, vh), JSON.stringify(p));
+    check(`${t}: count ON, typing 1 previews "${refText(lang, "1:1")}" with the āyah's Arabic and its meaning, on screen and clear of the dock (not the Bismillah)`, p.shown && p.ref.includes(refText(lang, "1:1")) && /ٱ?لْ?حَمْدُ|الحمد/.test(p.ar) && !/بِسْمِ/.test(p.ar) && p.tr.length > 5 && p.key === "ayah:1:2" && inside(p.r, width, vh) && p.r.bottom <= dockTop + 1, JSON.stringify({ p, dockTop }));
     let r = await add();
     check(`${t}: count ON, + Add āyah files ayah:1:2 (one write)`, r.w.length === 1 && r.col?.items.includes("ayah:1:2") && !r.col.items.includes("ayah:1:1"), JSON.stringify(r.w).slice(0, 300));
     await type(1, 7);
