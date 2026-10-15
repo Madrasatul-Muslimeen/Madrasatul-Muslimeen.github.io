@@ -866,3 +866,4 @@ total). Allocated by the MMSA Architect.
 11.00: the app is now QuranRevival: General Study, Nature-Life, Life Skill and Health hidden, not deleted (J30, QR Stage 1; opens the v11 line). Allocated by the MMSA Architect.
 11.01: the Āyah card fits a phone's screen; the Word card opens below the nav row (J29 audit part 12, round #870). Allocated by the MMSA Architect.
 11.02: audit part 13: the 👥 list and the Approach card's tabs stay on a phone's screen (PCF J29, round #872). Allocated by the MMSA Architect.
+11.03: the Monitor's week label names its days plainly, on the right day everywhere (Architect, from audit part 13). Allocated by the MMSA Architect.
