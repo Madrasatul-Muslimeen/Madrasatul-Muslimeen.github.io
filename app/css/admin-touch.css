@@ -1,0 +1,12 @@
+/* Audit part 3 (PCF J29 follow-on, #844): the admin pages (Records, Monitor, People, Classes, Homework, Curriculum,
+   Catalogue) drew every button, picker and field 19-37px tall. A finger needs ~40px. Scoped to body.admin-touch so
+   the Qur'an and study screens, whose sizes were measured separately, are untouched. Each block is mutation-proven
+   by tools/i18n-verify/audit-part3-fixes-browser.mjs. */
+body.admin-touch button, body.admin-touch select, body.admin-touch summary { box-sizing: border-box; min-height: 40px; } /* audit3 buttons */
+body.admin-touch button { min-width: 40px; } /* audit3 buttonwidth */
+body.admin-touch input[type="text"], body.admin-touch input[type="number"], body.admin-touch input[type="date"],
+body.admin-touch input[type="email"], body.admin-touch input[type="url"], body.admin-touch input:not([type]) { box-sizing: border-box; min-height: 40px; } /* audit3 fields */
+body.admin-touch label:has(> input[type="checkbox"]), body.admin-touch label:has(> input[type="radio"]) { display: flex; align-items: center; gap: 0.4rem; min-height: 40px; } /* audit3 checks */
+body.admin-touch label > input[type="checkbox"], body.admin-touch label > input[type="radio"] { flex: 0 0 auto; width: auto; } /* audit3 checks */
+body.admin-touch .nav-legacy-link, body.admin-touch .nav-link { display: inline-flex; align-items: center; box-sizing: border-box; min-height: 40px; } /* audit3 nav */
+body.admin-touch #navAppLangSelect { min-height: 40px; } /* audit3 nav */
