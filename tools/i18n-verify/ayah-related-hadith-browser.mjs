@@ -69,6 +69,10 @@ for (const viewport of [{ width: 320, height: 640 }, { width: 390, height: 844 }
       check(`${label} the rows say "এই আয়াত উদ্ধৃত করেছে"`, rows.length > 0 && rows.every((r) => /এই আয়াত উদ্ধৃত করেছে/.test(r.text)), rows[0]?.text);
     }
     check(`${label} every row is a real tap target (>= 40px)`, rows.length > 0 && Math.min(...rows.map((r) => r.h)) >= 40, String(Math.min(...rows.map((r) => r.h))));
+    // PCA, QR J02 S1c: the related hadith are OpenITI text, and its CC BY-NC-SA 4.0 licence requires the credit where it shows.
+    const credit = await page.evaluate(() => { const e = document.querySelector("[data-ayah-sheet-hadith] [data-ayah-hadith-credit]"); return e ? { text: e.textContent, shown: e.offsetParent !== null } : null; });
+    const creditText = lang === "bn" ? "সূত্র: OpenITI (CC BY-NC-SA 4.0)" : "Source: OpenITI (CC BY-NC-SA 4.0)";
+    check(`${label} under the list: "${creditText}"`, !!credit && credit.shown && credit.text === creditText, JSON.stringify(credit));
     const sw = await page.evaluate(() => {
       const sheet = document.querySelector("[data-ayah-sheet]");
       const cut = [...document.querySelectorAll("[data-ayah-sheet-hadith] button")].filter((b) => b.scrollWidth > b.clientWidth + 1).length;
@@ -154,6 +158,19 @@ for (const viewport of [{ width: 320, height: 640 }, { width: 390, height: 844 }
   await ctx2.close();
 }
 
-await browser.close();
+// The About page credits OpenITI (CC BY-NC-SA 4.0) beside the Quran Foundation fonts, in the page's language, before sign-in too.
+for (const lang of ["en", "bn"]) {
+  const ctx = await newContext(browser, { appLang: lang === "bn" ? "bn" : null, banner: false, viewport: { width: 390, height: 844 } });
+  const { page, errors } = await openPage(ctx, "/app/about.html");
+  await page.waitForTimeout(800);
+  const ack = await page.evaluate(() => { const a = [...document.querySelectorAll(".acknowledgements a")].find((x) => /openiti\.org/.test(x.href)); if (!a) return null; const r = a.getBoundingClientRect(); return { text: a.textContent.trim(), href: a.href, target: a.target, w: r.width, h: r.height }; });
+  const want = lang === "bn" ? "আরবি হাদিসের পাঠ OpenITI থেকে (CC BY-NC-SA 4.0)" : "Arabic hadith texts from OpenITI (CC BY-NC-SA 4.0)";
+  check(`${lang} about.html: the Acknowledgements credit "${want}", linking to openiti.org in a new tab`, !!ack && ack.text === want && ack.target === "_blank" && ack.w > 0 && ack.h > 0, JSON.stringify(ack));
+  const para = await page.evaluate(() => [...document.querySelectorAll(".acknowledgements p")].map((p) => p.textContent).find((x) => /Open Islamicate Texts Initiative/.test(x)) || "");
+  check(`${lang} about.html: it says which texts come from OpenITI${lang === "bn" ? ", in Bangla" : ""}`, lang === "bn" ? /হাদিস লাইব্রেরির/.test(para) : /Hadith library/.test(para), para);
+  check(`${lang} about.html: no page errors`, errors.filter((e) => !/CERT|archive\.org|api\.quran/.test(e)).length === 0, errors.join(" | "));
+  await ctx.close();
+}
 console.log(`\n==== Related hadith (Keys Round 1), browser: ${pass} passed, ${fail} failed ====`);
+await browser.close();
 process.exit(fail ? 1 : 0);

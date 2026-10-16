@@ -400,7 +400,7 @@ for (const lang of LANGS) for (const width of WIDTHS) {
 
   // 13: on the Bangla page, no English is left on these surfaces (the app's own names and source names excepted).
   if (lang === "bn") await flow("bnleak", lang, width, async (t, page) => {
-    const OK = /^(QCR|QuranRevival|Bukhari|Muslim|Tirmidhi|Abu Dawud|Nasa'i|Ibn Majah|Corpus|ejtaal|Wiktionary|Lane|Hans Wehr|Hmd|Quran|WbW)$/i;
+    const OK = /^(QCR|QuranRevival|Bukhari|Muslim|Tirmidhi|Abu Dawud|Nasa'i|Ibn Majah|Corpus|ejtaal|Wiktionary|Lane|Hans Wehr|Hmd|Quran|WbW|OpenITI)$/i; // OpenITI: the source credit under the related hadith (its licence requires the name)
     const leaks = (sel) => ev(page, ([sel, ok]) => {
       const okRe = new RegExp(ok, "i");
       const out = [];
