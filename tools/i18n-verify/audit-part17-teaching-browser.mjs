@@ -13,7 +13,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { chromium, newContext, openPage } from "./harness.mjs";
+import { chromium, newContext, openPage, BASE } from "./harness.mjs";
 let pass = 0, fail = 0;
 function check(name, ok, detail = "") {
   if (ok && typeof ok.then === "function") throw new Error(`check "${name}" was handed a promise`);
@@ -55,7 +55,9 @@ const englishLeft = (text) => (String(text).replace(ALLOWED, " ").match(/[A-Za-z
 
 async function open(lang, width, pagePath, { extraSeed = "", download = false } = {}) {
   const ctx = await newContext(browser, { appLang: lang === "bn" ? "bn" : null, banner: false, viewport: { width, height: width > 600 ? 900 : 844 }, extraSeedJs: extraSeed || null });
-  await ctx.grantPermissions(["clipboard-read", "clipboard-write"], { origin: "http://localhost:8080" }).catch(() => {});
+  // Updated in place 17 Oct 2026 (suite-health sweep #912): the origin was hardcoded to :8080, so on any other QR_BASE
+  // port the clipboard was denied and "Copy link" failed; it now follows the harness BASE like every URL in this suite.
+  await ctx.grantPermissions(["clipboard-read", "clipboard-write"], { origin: new URL(BASE).origin }).catch(() => {});
   if (MUTATE && MUTATIONS[MUTATE][4] === pagePath) {
     const [file, glob, from, to] = MUTATIONS[MUTATE];
     const body = fs.readFileSync(path.join(ROOT, file), "utf8");
@@ -149,7 +151,9 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     check(`${t}: POSITIVE CONTROL a pending invite is listed with a Copy link button`, !!row && row.copy, JSON.stringify(row));
     const copyBtn = `#inviteBody tr:has(td:text-is("invited@example.com")) .getLinkBtn`;
     await page.click(copyBtn);
-    await page.waitForFunction((s) => /!|✓|Copied|কপি/.test(document.querySelector(s)?.textContent ?? ""), copyBtn, { timeout: 8000 }).catch(() => {});
+    // Updated in place 17 Oct 2026 (#912): `:text-is()` is a Playwright selector, so document.querySelector threw a
+    // SyntaxError inside the page (caught as a page error at 320px). The wait now finds the row by its text instead.
+    await page.waitForFunction(() => { const r = [...document.querySelectorAll("#inviteBody tr")].find((x) => x.textContent.includes("invited@example.com")); return /!|✓|Copied|কপি/.test(r?.querySelector(".getLinkBtn")?.textContent ?? ""); }, null, { timeout: 8000 }).catch(() => {});
     const clip = await ev(page, () => navigator.clipboard.readText().catch((e) => "ERR " + e.message));
     if (PROBE) console.log(t, "clip", clip);
     check(`${t}: "Copy link" puts an accept-invite link on the clipboard that never carries the email (D9)`, /accept-invite\.html\?token=[A-Za-z0-9_-]{8,}/.test(clip) && !/example\.com|@/.test(clip), clip);
