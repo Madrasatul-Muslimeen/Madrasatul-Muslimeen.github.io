@@ -877,3 +877,4 @@ total). Allocated by the MMSA Architect.
 11.11: Asma: Name 112 Al-Maalik shows its own Arabic, not Al-Maleek's (PCA must-fix). Allocated by the MMSA Architect.
 11.12: the Read bar's way back shares a line on a small phone; journey-s9 and journey-folder-menus green (round #891). Allocated by the MMSA Architect.
 11.13: audit part 20: Favourites, Archived, Trash and the Evernote import work; no dead ⋯ on the Read bar (round #894). Allocated by the MMSA Architect.
+11.14: the bookmark dialog can bookmark a range of ayat (PCA J76, for QR J03). Allocated by the MMSA Architect.
