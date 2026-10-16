@@ -15,6 +15,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium, newContext, openPage } from "./harness.mjs";
+import { stubFor } from "./firebase-stub.mjs";
 let pass = 0, fail = 0;
 function check(name, ok, detail = "") {
   if (ok && typeof ok.then === "function") throw new Error(`check "${name}" was handed a promise`);
@@ -27,7 +28,34 @@ const ONLY = (process.argv.find((a) => a.startsWith("--only=")) || "").slice(7);
 const WONLY = Number((process.argv.find((a) => a.startsWith("--width=")) || "").slice(8)) || 0;
 const LONLY = (process.argv.find((a) => a.startsWith("--lang=")) || "").slice(7);
 // [file, route glob, anchor (must occur exactly once), replacement, the page the mutation applies to].
-const MUTATIONS = {};
+const MUTATIONS = {
+  // FIXES: each restores the defect this audit found and fixed.
+  // The Continue chip is 26px again.
+  "chip26": ["app/deen-study.html", "**/deen-study.html*", "  .continue-chip { display: inline-flex; align-items: center; min-height: 40px; }\n", "", "/app/deen-study.html"],
+  // The ☆ is 22px again.
+  "star22": ["app/arabic-study.html", "**/arabic-study.html*", "  .topic-bookmark-btn { min-width: 40px; min-height: 40px; }\n", "", "/app/arabic-study.html"],
+  // The topic's Status line is raw English again ("Status: learning · pending").
+  "statusraw": ["app/js/topic-study.js", "**/js/topic-study.js*", 't("Status: {status} · {confirm}", { status: `<strong>${statusLabel(entry.claimedStatus)}</strong>`, confirm: confirmStateLabel(entry.confirmState) })', '`Status: <strong>${entry.claimedStatus.replace(/_/g, " ")}</strong> &middot; ${entry.confirmState}`', "/app/deen-study.html"],
+  // The invite page's Accept button and name field are 39px / 36px again.
+  "invite36": ["app/accept-invite.html", "**/accept-invite.html*", "  input, button { min-height: 40px; }\n", "", "/app/accept-invite.html"],
+  // After Create the button goes back to English "Create" on the Bangla page.
+  "createen": ["app/onboarding.html", "**/onboarding.html*", '      createBtn.textContent = t("Create");\n    });', '      createBtn.textContent = "Create";\n    });', "/app/onboarding.html"],
+  // PROOFS THAT THE KEY CHECKS CAN FAIL (no defect was found in these features).
+  // Esc no longer closes a menu.
+  "noesc": ["app/js/nav.js", "**/js/nav.js*", 'if (e.key === "Escape") document.querySelectorAll(".nav-cat[open]")', 'if (false) document.querySelectorAll(".nav-cat[open]")', "/app/quranrevival.html"],
+  // Deen Study drops out of the Modules menu.
+  "nodeen": ["app/js/nav.js", "**/js/nav.js*", '  { href: "deen-study.html", label: "Deen Study" },\n', "", "/app/quranrevival.html"],
+  // The card look is not remembered.
+  "nolookkeep": ["app/js/prefs.js", "**/js/prefs.js*", "  writeStored(CARD_LOOK_KEY, id);\n", "", "/app/quranrevival.html"],
+  // The way-back pill never docks on the Read bar (it floats over the Study menu again).
+  "nodock": ["app/js/back-dock.js", "**/js/back-dock.js*", "  const dock = backDock(el.ownerDocument || document);", "  const dock = null;", "/app/quranrevival.html"],
+  // Holding the strip no longer pauses it.
+  "nopause": ["app/quranrevival.html", "**/quranrevival.html*", "          if (!taglineSettings.pauseOnHold) return;\n", "          return;\n", "/app/quranrevival.html"],
+  // Save forgets the movement settings.
+  "nosettings": ["app/taglines.html", "**/taglines.html*", "{ taglines: lines, taglineSettings: settings }", "{ taglines: lines }", "/app/taglines.html"],
+  // Create ignores the chosen week start.
+  "noweek": ["app/onboarding.html", "**/onboarding.html*", 'const weekStartsOn = Number(document.getElementById("weekStartsOn").value);', "const weekStartsOn = 6;", "/app/onboarding.html"],
+};
 if (MUTATE && !MUTATIONS[MUTATE]) throw new Error(`no such mutation ${MUTATE}`);
 
 const browser = await chromium.launch();
@@ -36,8 +64,12 @@ const BN = /[ঀ-৿]/;
 const ALLOWED = /https?:\/\/\S+|QuranRevival|QCR|MMSA|Qur'?an|Asma|Husna|Madrasatul|Muslimeen|Hadith|hadith|Google|Ahsan|Maryam|Zayd|Aisha|Ethics|Akhlaq|Audit|example|org|com|Tajweed|Fiqh|Tafsir|Legacy|App|v\d+|Deen|Arabic|Dawah|English|Bangla|smahk|gmail/g; // English/Bangla: the language picker names both languages; smahk@gmail: the signed-in email
 const englishLeft = (text) => (String(text).replace(ALLOWED, " ").match(/[A-Za-z]{3,}/g) || []);
 
-async function open(lang, width, pagePath, { extraSeed = "", ctxOpts = {}, mutatePage = pagePath } = {}) {
+async function open(lang, width, pagePath, { extraSeed = "", ctxOpts = {}, signedOut = false, mutatePage = pagePath.split("?")[0] } = {}) {
   const ctx = await newContext(browser, { appLang: lang === "bn" ? "bn" : null, banner: false, viewport: { width, height: width > 600 ? 900 : 844 }, extraSeedJs: extraSeed || null, ...ctxOpts });
+  if (signedOut) { // the stub always signs in; this one signs nobody in and counts the Google sign-in taps
+    const full = stubFor({ banner: false, extraSeedJs: extraSeed || null }).replace('cb({ uid: UID, email: "smahk9@gmail.com", displayName: "Owner" })', "cb(null)").replace("export function signInWithPopup() { return Promise.resolve(); }", "export function signInWithPopup() { window.__signIns = (window.__signIns || 0) + 1; return Promise.resolve(); }");
+    await ctx.route("https://www.gstatic.com/firebasejs/**", (r) => r.fulfill({ status: 200, contentType: "text/javascript; charset=utf-8", body: full }));
+  }
   await ctx.grantPermissions(["clipboard-read", "clipboard-write"], { origin: "http://localhost:8080" }).catch(() => {});
   if (MUTATE && MUTATIONS[MUTATE][4] === mutatePage) {
     const [file, glob, from, to] = MUTATIONS[MUTATE];
@@ -84,7 +116,11 @@ const WIDTHS = [320, 390, 820, 1440].filter((w) => !WONLY || w === WONLY);
 const LANGS = ["en", "bn"].filter((l) => !LONLY || l === LONLY);
 // The seeded tenant has Deen Study topics but no "Studied" Approach, no resource and no Arabic tree; give each module one trackable
 // topic with a resource, and one saved "where was I" for the Continue line.
-const topicSeed = ({ root, topicId, trackable, mod, en, bn }) => `
+// Signed in, but nobody has ever given this login an account.
+const NOACCOUNT = "DATA.userIndex = []; DATA.tenantMemberUids = []; DATA.tenantPeople = []; DATA.memberships = []; DATA.tenants = [];";
+// An invite for the signed-in email (smahk9@gmail.com) into the seeded tenant t1, with its link code.
+const INVITE_SEED = `window.__stubApplyBatches = true; DATA.inviteTokens = [{ _id: "tok-Abc123xyz789", tenantId: TENANT_ID, email: "smahk9@gmail.com" }]; DATA.tenantInvites = [{ _id: TENANT_ID + "__smahk9@gmail.com", tenantId: TENANT_ID, email: "smahk9@gmail.com", role: "teacher", status: "pending" }];`;
+const topicSeed =({ root, topicId, trackable, mod, en, bn }) => `
 DATA.trackables.push({ _id: TENANT_ID + "__${trackable}", tenantId: TENANT_ID, subjectId: "${root}", order: 0, status: "active", name: lang("Studied", "অধ্যয়ন করা হয়েছে"), groupName: lang("Understanding", "অনুধাবন"), guide: { what: lang("What it is", "এটি কী"), how: lang("How to do it", "কীভাবে করবেন"), measure: lang("How to measure", "কীভাবে মাপবেন") }, panels: ["text"] });
 if (!DATA.subjects.some((s) => s._id === TENANT_ID + "__${topicId}")) {
   if (!DATA.subjects.some((s) => s._id === TENANT_ID + "__${root}")) DATA.subjects.push({ _id: TENANT_ID + "__${root}", tenantId: TENANT_ID, subjectId: "${root}", parentId: null, name: lang("${root}"), moduleIds: ["${mod}"], ancestorIds: [], status: "active", order: 1 });
@@ -296,6 +332,93 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     check(`${t}: the page says it saved (${bn ? "Bangla" : "English"}) and Save is disabled again`, (bn ? BN.test(said) : /^Saved\./.test(said)) && (await ev(page, () => document.getElementById("saveBtn").disabled)), said);
     check(`${t}: no sideways scroll, no page errors`, (await wide(page)) <= 0 && noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
   });
+
+  // 1a: Sign in with Google (signed out), and the sign-up link (signed in with no account).
+  await flow("signin", lang, width, "/app/quranrevival.html", async (t, page, ctx, errors) => {
+    await page.waitForSelector("#bootStatusSignIn:not([hidden])", { timeout: 10000 }).catch(() => {});
+    const b = await tall(page, "#bootStatusSignIn");
+    check(`${t}: POSITIVE CONTROL signed out, the page offers Sign in with Google, finger-sized (${b}px)`, b >= 40, String(b));
+    const txt = await ev(page, () => document.getElementById("bootStatusSignIn").textContent.trim());
+    check(`${t}: its words are ${bn ? "Bangla" : "English"}`, bn ? BN.test(txt) : txt === "Sign in with Google", txt);
+    await ev(page, () => { window.__signIns = 0; });
+    await page.click("#bootStatusSignIn"); await settle(page, 400);
+    check(`${t}: tapping it starts the Google sign-in (signInWithPopup called once)`, (await ev(page, () => window.__signIns)) === 1);
+    check(`${t}: no sideways scroll, no page errors`, (await wide(page)) <= 0 && noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
+  }, { signedOut: true });
+  await flow("signup-link", lang, width, "/app/quranrevival.html", async (t, page, ctx, errors) => {
+    await page.waitForSelector("#bootStatusSignIn", { state: "attached" });
+    await settle(page, 1500);
+    // The link sits in the Home menu's sign-in line, so the reader opens Home to see it.
+    await page.click(summaryOf(await ev(page, () => document.querySelector(".nav-cat-home > summary").textContent.trim()))); await settle(page, 300);
+    const a = await ev(page, () => { const e = document.querySelector('a[href="onboarding.html"]'); const r = e?.getBoundingClientRect(); return e ? { text: e.textContent.trim(), vis: r.width > 0, l: r.left, r: r.right } : null; });
+    check(`${t}: with no account, the page offers the sign-up link, on screen`, !!a && a.vis && a.l >= -1 && a.r <= width + 1, JSON.stringify(a));
+    check(`${t}: its words are ${bn ? "Bangla" : "English"}`, !!a && (bn ? BN.test(a.text) : a.text === "Create a new account on the onboarding page"), JSON.stringify(a));
+    await page.click('a[href="onboarding.html"]');
+    await page.waitForURL("**/onboarding.html", { timeout: 10000 }).catch(() => {});
+    await page.waitForSelector("#onboardForm", { state: "visible", timeout: 10000 }).catch(() => {});
+    check(`${t}: the link opens the sign-up form`, await ev(page, () => location.pathname.endsWith("/onboarding.html") && getComputedStyle(document.getElementById("onboardForm")).display !== "none"));
+    check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
+  }, { extraSeed: NOACCOUNT });
+
+  // 1b + 2: Sign-up: purpose, name, week start; Create writes the tenant and the person; the family step.
+  await flow("signup", lang, width, "/app/onboarding.html", async (t, page, ctx, errors) => {
+    await page.waitForSelector("#onboardForm", { state: "visible", timeout: 10000 });
+    const h = { create: await tall(page, "#createBtn"), name: await tall(page, "#name"), week: await tall(page, "#weekStartsOn"), radio: Math.round((await rectOf(page, 'label:has(input[name="tenantType"][value="family"])'))?.h ?? -1) };
+    check(`${t}: POSITIVE CONTROL the form offers three purposes, a name and a week start; controls are at least 40px`, (await ev(page, () => document.querySelectorAll('input[name="tenantType"]').length)) === 3 && Object.values(h).every((v) => v >= 40), JSON.stringify(h));
+    check(`${t}: the form fits the screen`, (await wide(page)) <= 0);
+    await page.check('input[name="tenantType"][value="family"]');
+    await page.fill("#name", "Abu Zayd");
+    await page.selectOption("#weekStartsOn", "1");
+    const w0 = await writeCount(page);
+    await page.click("#createBtn");
+    await page.waitForFunction(() => getComputedStyle(document.getElementById("result")).display !== "none" && document.getElementById("result").className === "ok", null, { timeout: 8000 }).catch(() => {});
+    await settle(page, 400);
+    const ws = await writes(page, w0);
+    if (PROBE) console.log(t, "create writes", JSON.stringify(ws.map((x) => [x.col, x.id, x.data])).slice(0, 1500));
+    const ten = ws.find((x) => x.col === "tenants");
+    const per = ws.find((x) => x.col === "tenantPeople");
+    check(`${t}: Create writes the tenant (family, week starts Monday = 1, 20 invites) with the I17 stamps`, !!ten && ten.data.tenantType === "family" && ten.data.weekStartsOn === 1 && ten.data.maxInvites === 20 && STAMPS(ten.data), JSON.stringify(ten)?.slice(0, 400));
+    check(`${t}: ...and the person (named, 7-digit id, linked to the login) with the I17 stamps`, !!per && /^\d{7}$/.test(per.id.split("__").pop()) && JSON.stringify(per.data.name).includes("Abu Zayd") && !!per.data.authUid && STAMPS(per.data), JSON.stringify(per)?.slice(0, 400));
+    check(`${t}: ...plus the owner's membership`, ws.some((x) => x.col === "memberships" && JSON.stringify(x.data.roles ?? x.data.role).includes("owner")), JSON.stringify(ws.map((x) => x.col)));
+    const res = await ev(page, () => ({ text: document.getElementById("result").textContent, btn: document.getElementById("createBtn").textContent.trim(), dis: document.getElementById("createBtn").disabled, ids: [...document.querySelectorAll("#result code")].map((c) => c.textContent) }));
+    check(`${t}: the page shows the new account id and person id (${bn ? "Bangla" : "English"})`, res.ids.length === 2 && res.ids[0] === ten?.id && (bn ? BN.test(res.text) : /^Account created\./.test(res.text)), JSON.stringify(res));
+    check(`${t}: the Create button is back, enabled and still in ${bn ? "Bangla" : "English"}`, !res.dis && (bn ? BN.test(res.btn) : res.btn === "Create"), JSON.stringify(res));
+    // 2: the family step: Skip for now writes nothing and leads on.
+    const step = await ev(page, () => ({ shown: !document.getElementById("familyStep").hidden, rows: document.querySelectorAll("[data-fam-row]").length }));
+    check(`${t}: "My family" opens the family step with one row to start`, step.shown && step.rows >= 1, JSON.stringify(step));
+    const fh = { name: await tall(page, "#famName0"), year: await tall(page, "#famYear0"), add: await tall(page, "#familyAdd"), save: await tall(page, "#familySave"), skip: await tall(page, "#familySkip") };
+    check(`${t}: the family step's fields and buttons are at least 40px and fit the screen`, Object.values(fh).every((v) => v >= 40) && (await wide(page)) <= 0, JSON.stringify(fh));
+    await page.click("#familyAdd");
+    check(`${t}: + Add another adds a row`, (await ev(page, () => document.querySelectorAll("[data-fam-row]").length)) === step.rows + 1);
+    const w1 = await writeCount(page);
+    await page.fill("#famName0", "Should Not Save");
+    await page.click("#familySkip"); await settle(page, 500);
+    const sk = await ev(page, () => ({ text: document.getElementById("familyResult").textContent, link: !!document.querySelector('#familyResult a[href="index.html"]') }));
+    check(`${t}: Skip for now writes no person and leads on with a way into the app (${bn ? "Bangla" : "English"})`, (await writes(page, w1)).filter((x) => x.col === "tenantPeople").length === 0 && sk.link && (bn ? BN.test(sk.text) : /^You can add family members any time on the People page\./.test(sk.text)), JSON.stringify(sk));
+    check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
+  }, { extraSeed: "window.__stubApplyBatches = true;" });
+
+  // 1c: an invited person's link signs them in to the right tenant.
+  await flow("invite", lang, width, "/app/accept-invite.html?token=tok-Abc123xyz789", async (t, page, ctx, errors) => {
+    await page.waitForSelector("#acceptBtn", { state: "visible", timeout: 10000 }).catch(() => {});
+    const box = await ev(page, () => ({ text: document.getElementById("inviteBox")?.textContent ?? document.querySelector(".info, .ok, .fail")?.textContent ?? "", cls: document.querySelector(".info, .ok, .fail")?.className }));
+    if (PROBE) console.log(t, "invite box", JSON.stringify(box));
+    check(`${t}: POSITIVE CONTROL the link names the account the invite is for and the role (${bn ? "Bangla" : "English"})`, box.cls === "info" && box.text.includes("teacher") === !bn || (bn && BN.test(box.text)), JSON.stringify(box));
+    const ih = { accept: await tall(page, "#acceptBtn"), name: await tall(page, "#name"), over: await wide(page) };
+    check(`${t}: the Accept button and name field are at least 40px, nothing scrolls sideways`, ih.accept >= 40 && ih.name >= 40 && ih.over <= 0, JSON.stringify(ih));
+    await page.fill("#name", "Ahsan Teacher");
+    const w0 = await writeCount(page);
+    await page.click("#acceptBtn"); await settle(page, 1200);
+    const ws = await writes(page, w0);
+    if (PROBE) console.log(t, "accept writes", JSON.stringify(ws.map((x) => [x.col, x.id, x.data])).slice(0, 1500));
+    const per = ws.find((x) => x.col === "tenantPeople");
+    const mem = ws.find((x) => x.col === "memberships");
+    check(`${t}: Accept creates the person in THE INVITING TENANT (t1), named, linked to the login, with the I17 stamps`, !!per && per.data.tenantId === "t1" && JSON.stringify(per.data.name).includes("Ahsan Teacher") && !!per.data.authUid && STAMPS(per.data), JSON.stringify(per)?.slice(0, 400));
+    check(`${t}: ...and a membership with the invited role (teacher) in that tenant`, !!mem && mem.data.tenantId === "t1" && JSON.stringify(mem.data.roles ?? mem.data.role).includes("teacher"), JSON.stringify(mem)?.slice(0, 300));
+    const done = await ev(page, () => document.querySelector(".ok")?.textContent ?? "");
+    check(`${t}: the page welcomes them (${bn ? "Bangla" : "English"})`, bn ? BN.test(done) : /^Welcome! You have joined as teacher\./.test(done), done);
+    check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
+  }, { extraSeed: INVITE_SEED });
 
   // 9 + 10: Topic study (Deen Study, Arabic): Track my progress → "— Studied" → a stage writes the right person and unit key;
   // Bookmark this saves the place; the Continue strip opens the last place.
