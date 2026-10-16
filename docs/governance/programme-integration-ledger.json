@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "11.16",
+    "version": "11.17",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -4013,8 +4013,20 @@
     {
       "version": "11.16",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Audit part 22 (round #900, PR #901): the load-speed tool and tables; one speed fix.",
+      "integration": {
+        "authorizedOn": "2026-10-16",
+        "integratedOn": "2026-10-16",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "11.17",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Audit part 23 (round #902, PR #904): Bookmarks and Zab checked working; one fix.",
       "integration": {
         "authorizedOn": "2026-10-16",
         "integratedOn": "2026-10-16",
@@ -4023,8 +4035,9 @@
       }
     }
   ],
-  "nextUnallocated": "11.17",
+  "nextUnallocated": "11.18",
   "nextUnallocatedNote": [
+    "v11.17 was allocated to audit part 23: Bookmarks and Zab work end to end; New bookmark's Unit picker no longer throws (round #902), 2026-10-16.",
     "v11.16 was allocated to audit part 22: loading speed measured; Hadith collections draws without waiting for sign-in code (round #900), 2026-10-16.",
     "v11.15 was allocated to audit part 21: every Notes feature checked; pop-up windows clear the nav row and bottom bars; My Notes history; the MSA name (round #897), 2026-10-16.",
     "v11.14 was allocated to the bookmark dialog can bookmark a range of ayat (PCA J76, for QR J03), 2026-10-16.",
