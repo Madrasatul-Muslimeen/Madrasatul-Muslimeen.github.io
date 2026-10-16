@@ -122,7 +122,7 @@ export function renderBreakdownTab(statusIds) {
     .join("");
   return `<div class="way-breakdown">
     ${rows}
-    <p class="breakdown-note">${summary.countedTotal} counted${summary.excludedNotApplicable ? ` &middot; ${summary.excludedNotApplicable} Not Applicable (excluded)` : ""}</p>
+    <p class="breakdown-note">${t("{n} counted", { n: num(summary.countedTotal) })}${summary.excludedNotApplicable ? ` · ${t("{n} Not Applicable (excluded)", { n: num(summary.excludedNotApplicable) })}` : ""}</p>
   </div>`;
 }
 

@@ -12,7 +12,8 @@
 //   --mutate=nacounted    Not Applicable entries are counted in the breakdown
 //   --mutate=noresume     a ?resume= link is ignored
 //   --mutate=flatlist     branches show no children when opened
-//   --mutate=notab40      the sheet's tabs lose their 40px (fixed in this round: they were 29px)
+//   --mutate=ennote       the Breakdown note is hard-coded English again (fixed in this round)
+//   --mutate=notab40     the sheet's tabs lose their 40px (fixed in this round: they were 29px)
 //   --mutate=nosave40     the bookmark pop-over's buttons lose their 40px (fixed in this round: they were 36px)
 // Run from the repository root with serve.js on :8080:
 //   node tools/i18n-verify/audit-part26-topic-study-browser.mjs [--only=<flow>] [--width=N] [--lang=en|bn] [--mutate=<name>]
@@ -33,6 +34,7 @@ const MUTATIONS = {
   wrongperson: [TS, "**/js/topic-study.js*", "personId: a.id,\n            subjectId: chunkSubjectId,", "personId: roster[0].id,\n            subjectId: chunkSubjectId,"],
   nacounted: [WM, "**/js/way-modal.js*", 'const counted = statusIds.filter((s) => s !== "not_applicable");', "const counted = statusIds;"],
   noresume: [TS, "**/js/topic-study.js*", 'if (resumeNode) await openTopicDetail(resumeId);', ""],
+  ennote: [WM, "**/js/way-modal.js*", '${t("{n} counted", { n: num(summary.countedTotal) })}${summary.excludedNotApplicable ? ` · ${t("{n} Not Applicable (excluded)", { n: num(summary.excludedNotApplicable) })}` : ""}', '${summary.countedTotal} counted${summary.excludedNotApplicable ? ` · ${summary.excludedNotApplicable} Not Applicable (excluded)` : ""}'],
   notab40: ["@PAGE", "**/@FILE*", "  .way-tab-btn { min-height: 40px; }\n", ""],
   nosave40: ["@PAGE", "**/@FILE*", "  .bm-popover .bm-popover-actions button { min-height: 40px; }\n", ""],
   flatlist: [TS, "**/js/topic-study.js*", '.filter((n) => n.parentId === currentParentId)', '.filter((n) => n.parentId === rootSubjectId)'],
@@ -179,7 +181,8 @@ for (const lang of LANGS) for (const width of WIDTHS) for (const m of MODULES) {
     await page.click('.way-tab-btn:nth-child(3)'); await settle(page, 300);
     const txt = await ev(page, () => document.querySelector(".way-breakdown")?.innerText ?? "");
     check(`${t}: POSITIVE CONTROL the Breakdown tab shows p2's one counted claim`, /\b1\b|১/.test(txt), JSON.stringify(txt));
-    check(`${t}: Not Applicable is left out of the counted total (one counted, one excluded)`, /(^|\D)1 counted|১ গণনা|গণনা[^\n]*১/.test(txt.replace(/\n/g, " ")) && !/2 counted/.test(txt), JSON.stringify(txt));
+    const note = await ev(page, () => document.querySelector(".breakdown-note")?.textContent ?? "");
+    check(`${t}: Not Applicable is left out of the counted total (one counted, one excluded)`, bn ? /^১টি গণনা করা হয়েছে · ১টি প্রযোজ্য নয় \(বাদ\)$/.test(note.trim()) : /^1 counted · 1 Not Applicable \(excluded\)$/.test(note.trim()), JSON.stringify(note));
     if (bn) check(`${t}: the Breakdown note has no English left`, englishLeft(txt).length === 0, englishLeft(txt).join(", "));
   });
 

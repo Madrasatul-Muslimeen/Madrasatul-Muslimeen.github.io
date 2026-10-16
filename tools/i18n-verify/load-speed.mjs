@@ -40,6 +40,7 @@ export const PAGES = [
   { key: "bookmarks", path: "/app/bookmarks.html", ready: has("#app", 20) },
   { key: "records", path: "/app/records.html", ready: has("#app", 20) },
   { key: "deen-study", path: "/app/deen-study.html", ready: has("#listContainer", 10) }, // a study page: where the Continue strip is drawn (audit part 24)
+  { key: "arabic-study", path: "/app/arabic-study.html", ready: has("#listContainer", 10) }, // audit part 26: same shell as deen-study
   { key: "index", path: "/app/index.html", ready: has("#app", 30) },
   { key: "onboarding", path: "/app/onboarding.html", ready: has("#onboardForm", 10) },
   { key: "about", path: "/app/about.html", ready: has("#featureRows", 1) },
