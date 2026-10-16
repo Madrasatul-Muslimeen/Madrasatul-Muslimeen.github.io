@@ -21620,3 +21620,13 @@ New strings `wholeQuranLevelSentence` ("{level}: Achieved {known} and {percent} 
 - **For QR (change request):** `ldog-study.html` (`routine-study.js`, frozen) shows no ← Back when a chip opens it.
 
 **Tests:** audit-part25 112/0; `--mutate=noback` (12/2), `capfirst` (12/2) and `menuwide` (6/6, the "single" flow) each fail it where their defect shows; audit-part24 178/0; load-speed-check 66/0; qr-stage1-hidden 110/0; behaviour 971/0.
+
+## v11.19 — 17 Oct 2026 — Topic study works end to end; 40px sheet tabs and bookmark buttons; the Breakdown note reads in Bangla (PCF MSA J29 audit part 26)
+
+**Built by Builder round #909** (branch `builder/issue-909-run-1406`, PR #911, opened by the Architect because the run opened none), reviewed by the Architect by measurement on a current base.
+
+- **All work**, at 320/390/820/1440px in English and Bangla, on `deen-study.html`, `arabic-study.html` and `hadith-study.html` (`topic-study.js`): reaching each from Modules, the topic tree, opening a topic and its resource, the person picker (D10: no handover lock), Track my progress writing the record for the chosen person under a permanent unit key (I5), Not Applicable left out of totals (I7), Bookmark this, and a Continue `?resume=` link with its ← Back.
+- **Fixed:** `.way-tab-btn` (29px) and `.bm-popover .bm-popover-actions button` (36px) are 40px on the three pages; `app/js/way-modal.js`'s Breakdown note ("N counted · M Not Applicable (excluded)") goes through `t()`/`num()` with two `bn.js` keys. Shared with `quranrevival.html`, whose Breakdown tab now reads in Bangla too (English unchanged); notice sent to the PCA.
+- **Review (Architect):** `arabic-study` was added to `load-speed.mjs` with no recorded number, failing `load-speed-check`'s positive control. Measured: 6.9 s first / 5.2 s return against deen-study's 2.4 s / 0.66 s, all of it the harness tenant running the one-time Arabic catalogue seeding (subjectTemplates + a 55-write batch) on every visit. Left off the list with that reason; deen-study, the same shell, stands for it.
+
+**Tests:** audit-part26 816/0; `--mutate=wrongperson` (192/12), `nacounted` (198/6), `noresume` (186/6), `ennote` (198/6) and `flatlist` (162/20) each fail it where their feature shows; audit-part25 112/0; audit-part13 494/0; pane-approach-card 29/0; load-speed-check 66/0; qr-stage1-hidden 110/0; behaviour 971/0.

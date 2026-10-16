@@ -607,6 +607,8 @@ export const BN = {
   "Claim a status": "একটি অবস্থা দাবি করুন", // ?
   "Confirmed:": "নিশ্চিত করা হয়েছে:",
   "Not claimed yet.": "এখনো দাবি করা হয়নি।",
+  "{n} counted": "{n}টি গণনা করা হয়েছে",
+  "{n} Not Applicable (excluded)": "{n}টি প্রযোজ্য নয় (বাদ)",
   "Nothing claimed yet for this Approach here.": "এখানে এই পদ্ধতিতে এখনো কিছু দাবি করা হয়নি।",
   "What": "কী",
   "How": "কীভাবে",

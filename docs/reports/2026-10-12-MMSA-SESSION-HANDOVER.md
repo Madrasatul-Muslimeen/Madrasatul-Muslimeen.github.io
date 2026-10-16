@@ -407,3 +407,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v11.16** (2026-10-16): audit part 22: loading speed measured; Hadith collections draws without waiting for sign-in code (round #900).
 - **v11.17** (2026-10-16): audit part 23: Bookmarks and Zab work end to end; New bookmark's Unit picker no longer throws (round #902).
 - **v11.18** (2026-10-16): audit part 25: the Continue strip keeps the way back; hidden modules no longer use up its five places (round #907).
+- **v11.19** (2026-10-16): audit part 26: Topic study works end to end; 40px sheet tabs; Breakdown note in Bangla (round #909).

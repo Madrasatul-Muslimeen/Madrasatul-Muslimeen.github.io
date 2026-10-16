@@ -61,6 +61,9 @@
   #wayModalMount { background: white; border-radius: 0.6rem; padding: 1.2rem; max-width: 32rem; width: 92%; max-height: 85vh; overflow-y: auto; }
   .way-tab-bar { display: flex; gap: 0.4rem; margin: 0.8rem 0; }
   .way-tab-btn { background: #eef1f7; color: #1F3A6E; border: none; }
+  /* Audit part 26 (PCF J29): the sheet tabs and the bookmark pop-over buttons are finger-sized (they were 29px and 36px). */
+  .way-tab-btn { min-height: 40px; }
+  .bm-popover .bm-popover-actions button { min-height: 40px; }
   .way-tab-btn.active { background: #1F3A6E; color: white; }
   .way-tab-panel { display: none; }
   .way-tab-panel.active { display: block; }

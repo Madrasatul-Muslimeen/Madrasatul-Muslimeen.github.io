@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "11.18",
+    "version": "11.19",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -4037,8 +4037,20 @@
     {
       "version": "11.18",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Audit part 25 (PCF MSA J29): Continue chips carry back=1 with ← Back on topic-study pages; hidden modules filtered before the cap of five.",
+      "integration": {
+        "authorizedOn": "2026-10-16",
+        "integratedOn": "2026-10-16",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "11.19",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Audit part 26 (PCF MSA J29): Topic study checked on Deen/Arabic/Hadith; 40px tabs and bookmark buttons; Breakdown note translated.",
       "integration": {
         "authorizedOn": "2026-10-16",
         "integratedOn": "2026-10-16",
@@ -4047,8 +4059,9 @@
       }
     }
   ],
-  "nextUnallocated": "11.19",
+  "nextUnallocated": "11.20",
   "nextUnallocatedNote": [
+    "v11.19 was allocated to audit part 26: Topic study works end to end; 40px sheet tabs; Breakdown note in Bangla (round #909), 2026-10-16.",
     "v11.18 was allocated to audit part 25: the Continue strip keeps the way back; hidden modules no longer use up its five places (round #907), 2026-10-16.",
     "v11.17 was allocated to audit part 23: Bookmarks and Zab work end to end; New bookmark's Unit picker no longer throws (round #902), 2026-10-16.",
     "v11.16 was allocated to audit part 22: loading speed measured; Hadith collections draws without waiting for sign-in code (round #900), 2026-10-16.",
