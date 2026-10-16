@@ -312,6 +312,106 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     check(`${t}: no sideways scroll, no page errors besides the deliberate failed save`, (await wide(page)) <= 0 && other.length === 0, other.slice(0, 2).join(" | "));
   });
 }
+for (const lang of LANGS) for (const width of WIDTHS) {
+  const bn = lang === "bn";
+  // 8: Tags on Notes: ⋯ → 🏷 Tags… creates and ticks tags (the writes); tapping a tag in the Tags list shows its Notes.
+  await flow("tags", lang, width, "/app/journey-map.html#folders", async (t, page, ctx, errors) => {
+    await waitTree(page);
+    await openLeaf(page, "n1", "fA");
+    await resetWrites(page);
+    await openPaneMenu(page);
+    await page.waitForSelector("[data-pane-menu] [data-pane-tags]", { state: "visible" });
+    await page.click("[data-pane-menu] [data-pane-tags]");
+    await page.waitForSelector(".tag-picker", { state: "visible" });
+    const pr = await rect(page, ".tag-picker");
+    check(`${t}: POSITIVE CONTROL ⋯ → 🏷 Tags… opens the picker inside the screen`, inside(pr), JSON.stringify(pr));
+    const short = await shortOnes(page, ".tag-picker button, .tag-picker input[type=text], .tag-pick-row");
+    check(`${t}: the picker's controls are at least 40px tall`, short.length === 0, JSON.stringify(short));
+    await page.fill("[data-tag-new-name]", "Prayer");
+    await page.click("[data-tag-new]");
+    await page.waitForFunction(() => document.querySelectorAll(".tag-pick-row input:checked").length === 1, null, { timeout: 8000 }).catch(() => {});
+    const tags = await dataOf(page, "noteTags"), links = await dataOf(page, "noteTagLinks");
+    const w = await writes(page);
+    check(`${t}: creating "Prayer" writes ONE noteTags document and ONE active link to Note One`, tags.length === 1 && tags[0].name === "Prayer" && links.length === 1 && links[0].noteId === "n1" && links[0].tagId === tags[0].tagId && links[0].status === "active", JSON.stringify({ tags: tags.length, links: links.map((l) => [l.noteId, l.status]) }));
+    check(`${t}: ...and wrote no Note and no revision`, w.every((x) => x.col !== "notes" && x.col !== "noteRevisions") && w.some((x) => x.col === "noteTags") && w.some((x) => x.col === "noteTagLinks"), JSON.stringify(w.map((x) => x.col)));
+    await resetWrites(page);
+    await page.uncheck(".tag-pick-row input");
+    await page.waitForFunction(() => !document.querySelector(".tag-pick-row input:checked"), null, { timeout: 8000 }).catch(() => {});
+    const l2 = await dataOf(page, "noteTagLinks");
+    check(`${t}: unticking retires the link (status retired, the document stays)`, l2.length === 1 && l2[0].status === "retired" && !(await writes(page)).some((x) => /delete/.test(x.op)), JSON.stringify(l2.map((l) => l.status)));
+    await page.check(".tag-pick-row input");
+    await page.waitForFunction(() => document.querySelectorAll(".tag-pick-row input:checked").length === 1, null, { timeout: 8000 }).catch(() => {});
+    await page.click("[data-tag-close]");
+    await page.waitForFunction(() => !document.querySelector(".tag-picker"), null, { timeout: 5000 }).catch(() => {});
+    const chips = await ev(page, () => [...document.querySelectorAll("#notePane [data-tag-chip]")].map((e) => e.textContent.trim()));
+    check(`${t}: the Note shows its tag chip`, chips.join().includes("Prayer"), JSON.stringify(chips));
+    // The Tags list in the tray: tap the tag, see its Notes.
+    await page.click("[data-pane-back]").catch(() => {});
+    await backToTree(page);
+    await page.waitForSelector("[data-tags-block] [data-tag-item]", { timeout: 8000 });
+    await page.click("[data-tag-item] [data-tag-open]");
+    await page.waitForSelector("[data-tag-notes] [data-tag-note]", { timeout: 8000 });
+    const listed = await ev(page, () => [...document.querySelectorAll("[data-tag-note]")].map((e) => e.dataset.tagNote));
+    check(`${t}: tapping the tag in the Tags list shows its Notes (Note One)`, listed.join() === "n1", JSON.stringify(listed));
+    const tr = await rect(page, "[data-tag-item]");
+    check(`${t}: the Tags list is inside the screen with no sideways scroll`, inside(tr) && (await wide(page)) <= 0, JSON.stringify(tr));
+    check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
+  });
+}
+for (const lang of LANGS) for (const width of WIDTHS) {
+  const bn = lang === "bn";
+  // 1 and 2: the Notes pane in the Read view, and its Track this āyah tab.
+  await flow("readpane", lang, width, "/app/quranrevival.html", async (t, page, ctx, errors) => {
+    if (!(await ev(page, () => document.getElementById("tabReadBtn")?.getBoundingClientRect().width > 0))) { await page.click("#tabStudyBtn"); await settle(page, 150); }
+    await page.click("#tabReadBtn"); await settle(page, 400);
+    await ev(page, () => { const s = document.getElementById("surahSelect"); if (s.value !== "2") { s.value = "2"; s.dispatchEvent(new Event("change", { bubbles: true })); } });
+    await page.waitForFunction(() => document.querySelector('#readView [data-word-occurrence^="quran-word-occurrence:v1:2:"]'), null, { timeout: 15000 });
+    await ev(page, () => { const el = document.getElementById("ayahSelect"); el.value = "256"; el.dispatchEvent(new Event("change", { bubbles: true })); });
+    await settle(page, 900);
+    await ev(page, () => document.querySelectorAll('[id*="splash"], .app-splash-overlay').forEach((e) => e.remove()));
+    const before = await ev(page, () => ({ ayah: document.getElementById("ayahSelect").value, top: document.getElementById("readScroll")?.scrollTop ?? 0 }));
+    check(`${t}: POSITIVE CONTROL the Read view is on 2:256 with the 📝 control reachable`, before.ayah === "256" && (await ev(page, () => !!document.getElementById("readNotesBtn"))));
+    await clickReadTool(page, "#readNotesBtn");
+    await page.waitForFunction(() => document.querySelector("#readNotePane:not([hidden]) iframe"), null, { timeout: 8000 }).catch(() => {});
+    await settle(page, 700);
+    const pane = await rect(page, "#readNotePane");
+    check(`${t}: 📝 opens the Notes pane inside the screen, no sideways scroll`, inside(pane) && (await wide(page)) <= 0, JSON.stringify(pane));
+    const back = await rect(page, "#readNotePane [data-rnp-back]");
+    const hit = await ev(page, () => { const b = document.querySelector("#readNotePane [data-rnp-back]").getBoundingClientRect(); const e = document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2); return !!e && !!e.closest("#readNotePane"); });
+    check(`${t}: ← Back is finger-sized, on screen and not covered by anything`, !!back && back.h >= 39.5 && inside(back) && hit, JSON.stringify(back));
+    const title = await ev(page, () => document.querySelector("#readNotePane .rnp-title")?.textContent ?? "");
+    check(`${t}: the pane is titled for the āyah (${bn ? "Bangla" : "English"})`, bn ? BN.test(title) && /২৫৬/.test(title) : title === "Notes on 2:256", title);
+    const fr = page.frames().find((x) => /journey-map\.html\?embed=1&unit=ayah%3A2%3A256/.test(x.url()));
+    check(`${t}: the pane lists the Notes on 2:256 (the seeded Note started there)`, !!fr && await fr.waitForSelector('[data-unit-body] [data-note-id="n256"]', { timeout: 15000 }).then(() => true).catch(() => false));
+    // ↗ Open in Mapping My Journey opens the full tray
+    await page.click("#readNotePane [data-rnp-journey]");
+    await page.waitForFunction(() => document.querySelector("#journeyTray:not([hidden]) iframe"), null, { timeout: 8000 }).catch(() => {});
+    const trayShown = await ev(page, () => !!document.querySelector("#journeyTray:not([hidden]) iframe"));
+    check(`${t}: ↗ Open in Mapping My Journey opens the tray`, trayShown);
+    if (trayShown) { await page.click("#journeyTray .jt-close"); await settle(page, 300); }
+    // ← Back closes the pane to the same place
+    await page.click("#readNotePane [data-rnp-back]"); await settle(page, 500);
+    const after = await ev(page, () => ({ hidden: document.getElementById("readNotePane").hidden, ayah: document.getElementById("ayahSelect").value, top: document.getElementById("readScroll")?.scrollTop ?? 0 }));
+    check(`${t}: ← Back closes the pane to the same āyah and the same place`, after.hidden && after.ayah === before.ayah && Math.abs(after.top - before.top) <= 2, JSON.stringify({ before, after }));
+    // 2: Track this āyah
+    await clickReadTool(page, "#readNotesBtn"); await settle(page, 500);
+    await page.click('#readNotePane [data-rnp-tab="track"]'); await settle(page, 300);
+    const tr = await ev(page, () => ({ btns: [...document.querySelectorAll("#readNotePane [data-rnp-track]")].map((b) => b.dataset.rnpTrack), hs: [...document.querySelectorAll("#readNotePane [data-rnp-track]")].map((b) => Math.round(b.getBoundingClientRect().height)), sel: document.querySelector('#readNotePane [data-rnp-tab="track"]').getAttribute("aria-selected") }));
+    check(`${t}: the Track tab offers Take an Approach, Record Your Progress, Know Your Status (each 40px or more)`, tr.sel === "true" && tr.btns.join() === "take,record,status" && tr.hs.every((h) => h >= 40), JSON.stringify(tr));
+    await page.click('#readNotePane [data-rnp-track="record"]');
+    await page.waitForFunction(() => document.getElementById("ayahActionSheetOverlay")?.classList.contains("open"), null, { timeout: 8000 }).catch(() => {});
+    await settle(page, 400);
+    const rec = await ev(page, () => ({ ref: document.querySelector("[data-ayah-sheet] .ayah-sheet-ref")?.textContent ?? "", pill: document.querySelector("#ayahCardBackPill:not([hidden]) [data-ayah-card-back]")?.textContent ?? "" }));
+    check(`${t}: Record Your Progress opens the Āyah card for 2:256 and leaves a "Back to Notes on …" way back`, /2:256|২:২৫৬/.test(rec.ref) && /Back to Notes on|নোটে ফিরে যান/.test(rec.pill), JSON.stringify(rec));
+    const sheet = await rect(page, "[data-ayah-sheet]");
+    check(`${t}: the Āyah card sits inside the screen`, inside(sheet), JSON.stringify(sheet));
+    await ev(page, () => document.querySelector("#ayahCardBackPill [data-ayah-card-back]")?.click());
+    await settle(page, 600);
+    const backT = await ev(page, () => ({ shown: !document.getElementById("readNotePane").hidden, sel: document.querySelector('#readNotePane [data-rnp-tab="track"]')?.getAttribute("aria-selected") }));
+    check(`${t}: "Back to Notes on …" returns to the pane on its Track tab`, backT.shown && backT.sel === "true", JSON.stringify(backT));
+    check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
+  });
+}
 await browser.close();
 console.log(`\naudit-part19-notes-browser: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
