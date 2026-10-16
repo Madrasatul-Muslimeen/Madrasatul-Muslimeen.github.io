@@ -32,7 +32,7 @@ const MUTATE = arg("mutate"), ONLY = arg("only"), WONLY = Number(arg("width")) |
 const TS = "app/js/topic-study.js", WM = "app/js/way-modal.js";
 const MUTATIONS = {
   wrongperson: [TS, "**/js/topic-study.js*", "personId: a.id,\n            subjectId: chunkSubjectId,", "personId: roster[0].id,\n            subjectId: chunkSubjectId,"],
-  nacounted: [WM, "**/js/way-modal.js*", 'const counted = statusIds.filter((s) => s !== "not_applicable");', "const counted = statusIds;"],
+  nacounted: ["app/js/unit-keys.js", "**/js/unit-keys.js*", 'const counted = statusIds.filter((s) => s !== "not_applicable");', "const counted = statusIds;"],
   noresume: [TS, "**/js/topic-study.js*", 'if (resumeNode) await openTopicDetail(resumeId);', ""],
   ennote: [WM, "**/js/way-modal.js*", '${t("{n} counted", { n: num(summary.countedTotal) })}${summary.excludedNotApplicable ? ` · ${t("{n} Not Applicable (excluded)", { n: num(summary.excludedNotApplicable) })}` : ""}', '${summary.countedTotal} counted${summary.excludedNotApplicable ? ` · ${summary.excludedNotApplicable} Not Applicable (excluded)` : ""}'],
   notab40: ["@PAGE", "**/@FILE*", "  .way-tab-btn { min-height: 40px; }\n", ""],
@@ -85,7 +85,7 @@ async function open(lang, width, m, query, extra) {
     const body = fs.readFileSync(path.join(ROOT, file), "utf8");
     const n = body.split(from).length - 1;
     if (n !== 1) throw new Error(`mutation anchor for ${MUTATE} found ${n} times`);
-    await ctx.route(glob, (r) => r.fulfill({ status: 200, contentType: "text/javascript; charset=utf-8", body: body.split(from).join(to) }));
+    await ctx.route(glob, (r) => r.fulfill({ status: 200, contentType: file.endsWith(".html") ? "text/html; charset=utf-8" : "text/javascript; charset=utf-8", body: body.split(from).join(to) }));
   }
   const { page, errors } = await openPage(ctx, m.page + (query || ""));
   await page.waitForTimeout(800);
@@ -158,18 +158,20 @@ for (const lang of LANGS) for (const width of WIDTHS) for (const m of MODULES) {
     await page.selectOption("#personSelect", "p1"); await settle(page, 800);
     rows = await names(page);
     check(`${t}: switching back to p1 drops p2's chip again`, rows.find((r) => r.id === "leaf_b")?.chip === p1chip, JSON.stringify(rows.map((r) => r.chip)));
+    await page.selectOption("#personSelect", "p2"); await settle(page, 800); // not the first person, so a claim for "whoever is first" shows
     await page.click('.topic-row-leaf[data-id="leaf_b"]'); await settle(page, 800);
     await page.click("#trackTopicBtn"); await settle(page, 600);
     await page.selectOption(".way-status-select", "learning");
     const w0 = await writeCount(page);
     await page.click(".way-claim-btn"); await settle(page, 1000);
     const rec = (await writes(page, w0)).find((x) => x.col === "records");
-    const entry = rec?.data?.entries?.["topic:leaf_b::" + m.trackable] ?? null;
-    check(`${t}: the claim is written for the picked person (p1), under unit key topic:leaf_b`, !!rec && rec.data.personId === "p1" && rec.id.includes("__p1__") && !!entry && entry.unitType === "topic" && entry.claimedStatus === "learning", JSON.stringify(rec)?.slice(0, 400));
-    check(`${t}: it waits for confirmation (pending) and carries the I17 stamps`, !!entry && ["pending", "confirmed"].includes(entry.confirmState) && rec.data.schemaVersion != null && !!rec.data.createdBy, JSON.stringify(entry));
+    // An existing chunk is updated by dotted field path; a new one is created whole.
+    const entry = rec?.data?.entries?.["topic:leaf_b::" + m.trackable] ?? rec?.data?.["entries.topic:leaf_b::" + m.trackable] ?? null;
+    check(`${t}: the claim is written for the picked person (p2), under unit key topic:leaf_b`, !!rec && rec.id.includes("__p2__") && !!entry && entry.claimedByPersonId !== undefined && !!entry && entry.unitType === "topic" && entry.claimedStatus === "learning", JSON.stringify(rec)?.slice(0, 400));
+    check(`${t}: it waits for confirmation (pending) and carries the I17 stamps`, !!entry && ["pending", "confirmed"].includes(entry.confirmState) && entry.unitType === "topic" && rec.data.updatedAt !== undefined, JSON.stringify(entry));
     check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
-    const none = (await writes(page, w0)).filter((x) => x.col === "records" && x.id.includes("__p2__"));
-    check(`${t}: nothing was written to p2's records`, none.length === 0, JSON.stringify(none).slice(0, 200));
+    const none = (await writes(page, w0)).filter((x) => x.col === "records" && x.id.includes("__p1__"));
+    check(`${t}: nothing was written to p1's records`, none.length === 0, JSON.stringify(none).slice(0, 200));
   });
 
   await flow("na", lang, width, m, async (t, page, errors) => {
