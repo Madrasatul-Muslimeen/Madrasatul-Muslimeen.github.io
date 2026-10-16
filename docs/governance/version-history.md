@@ -880,3 +880,4 @@ total). Allocated by the MMSA Architect.
 11.14: the bookmark dialog can bookmark a range of ayat (PCA J76, for QR J03). Allocated by the MMSA Architect.
 11.15: audit part 21: every Notes feature checked; pop-up windows clear the nav row and bottom bars; My Notes history; the MSA name (round #897). Allocated by the MMSA Architect.
 11.16: audit part 22: loading speed measured; Hadith collections draws without waiting for sign-in code (round #900). Allocated by the MMSA Architect.
+11.17: audit part 23: Bookmarks and Zab work end to end; New bookmark's Unit picker no longer throws (round #902). Allocated by the MMSA Architect.
