@@ -21529,3 +21529,15 @@ New strings `wholeQuranLevelSentence` ("{level}: Achieved {known} and {percent} 
 - `tools/i18n-verify/ayah-related-hadith-browser.mjs` checks both; `audit-part12-words-browser.mjs`'s Bangla leak scan allows the source name OpenITI.
 
 **Tests:** ayah-related-hadith 96/0 (320/390/768/1280px, en and bn, plus about.html en and bn); without the change 12 of its checks fail (the credit under the list at every width and language, and the About page's credit and line in both languages); audit-part12 500/0 (its Bangla leak scan allows the source name OpenITI, as it does Bukhari and Corpus); behaviour 971/0.
+
+## v11.11 — 16 Oct 2026 — Asma: Name 112 Al-Maalik shows its own Arabic, not Al-Maleek's (PCA must-fix)
+
+**Built by the Architect** (branch `arch/asma-112`), on the PCA's relay of a defect the QR Architect found in `app/js/asma-poster-data.js`.
+
+- `tools/asma-poster/build-poster-data.mjs`: a Name is matched to an archive poster by its Arabic, then by transliteration. "Al-Maalik" (112, المالك) and "Al-Maleek" (113, المليك) both reduce to "malik", so 112 carried 113's Arabic, English meaning and description word for word. The archive (`docs/reference/2026-10-01-asma-poster-descriptions.json`) has no Al-Maalik poster: its "(Maalik) Al-Maalik.jpg" is Al-Malik, #3. The fallback may no longer pair a Name with a poster of a different Arabic word.
+- `app/js/asma-poster-data.js` regenerated: only 112's three lines go. Its poster shows its own المالك from the Name list, "no description yet" (88 Names have one, 44 not) and no English meaning line. Nothing is invented.
+- `tools/i18n-verify/asma-poster-browser.mjs`: no two Names may share a description, and 112 shows المالك; 112 joins the Names without an English meaning (updated in place, with the reason).
+- Noticed, not changed (Asma is frozen, PCA J71): `app/js/asma-posters.js` labels the Al-Maalik screensaver image "(Maalik) Al-Maalik.jpg", which is the Al-Malik poster. Passed to QR.
+- `CLAUDE.md` records the Owner's one-home rule (PCA J71).
+
+**Tests:** asma-poster 102/0 (no two Names share a description; 112 shows المالك, not 113's), and without the fix 3 of its checks fail; asma-explore-name-poster 36/0; asma-name-nav-poster 140/0; behaviour 971/0.

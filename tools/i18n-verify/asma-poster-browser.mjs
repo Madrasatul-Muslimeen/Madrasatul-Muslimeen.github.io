@@ -57,9 +57,17 @@ const models = names.map((n) => asmaPosterModel(n));
 check("every one of the 132 Names has a poster with its Name and its Arabic", models.length === 132 && models.every((m) => m.title && m.arabic), JSON.stringify(models.filter((m) => !(m.title && m.arabic)).map((m) => m.number)));
 // Nine of the Owner's added Names carry only a Bangla meaning, and no archive poster gives an English one: they show
 // no meaning line until the Owner supplies one (nothing is invented). Any OTHER Name without one is a defect.
-const NO_ENGLISH_MEANING = [103, 106, 107, 123, 125, 126, 129, 130, 131];
-check("every Name has its English meaning line, except the nine the Owner has not given one for yet", JSON.stringify(models.filter((m) => !m.meaning).map((m) => m.number)) === JSON.stringify(NO_ENGLISH_MEANING), JSON.stringify(models.filter((m) => !m.meaning).map((m) => m.number)));
+// UPDATED IN PLACE (16 Oct 2026, PCA): 112 Al-Maalik joins them. Its old line, "The Omnipotent Sovereign", was Al-Maleek's (113),
+// given to it by a transliteration match; no archive poster is Al-Maalik's own, so it has none until the Owner gives one.
+const NO_ENGLISH_MEANING = [103, 106, 107, 112, 123, 125, 126, 129, 130, 131];
+check("every Name has its English meaning line, except the ten the Owner has not given one for yet", JSON.stringify(models.filter((m) => !m.meaning).map((m) => m.number)) === JSON.stringify(NO_ENGLISH_MEANING), JSON.stringify(models.filter((m) => !m.meaning).map((m) => m.number)));
 check("decision 49 in the template's form: no poster says Lord or God", models.every((m) => !/\b(Lord|God)\b/.test(`${m.meaning} ${m.description}`)), JSON.stringify(models.filter((m) => /\b(Lord|God)\b/.test(`${m.meaning} ${m.description}`)).map((m) => m.number)));
+// PCA, 16 Oct 2026: 112 Al-Maalik (المالك) was given 113 Al-Maleek's poster word for word (a transliteration match). No two
+// Names may share a description or a poster Arabic, and 112 shows its own word.
+const dupDesc = models.filter((m) => m.description && models.some((o) => o !== m && o.description === m.description)).map((m) => m.number);
+check("no two Names carry the same description", dupDesc.length === 0, JSON.stringify(dupDesc));
+const m112 = models.find((m) => m.number === 112), m113 = models.find((m) => m.number === 113);
+check("Al-Maalik (112) shows المالك, not Al-Maleek's المَلِيكُ, and not Al-Maleek's description", !!m112 && m112.arabic.replace(/[\u064B-\u065F\u0670]/g, "") === "المالك" && m112.description !== m113.description, JSON.stringify({ a: m112?.arabic, d: (m112?.description || "").slice(0, 40) }));
 const hadithCites = models.flatMap((m) => m.hadith);
 check("every Hadith a poster cites opens in the library, except Sahih al-Jami' 1824 (not in it)", hadithCites.every((c) => c.link || c.key === "sahihjami:1824") && hadithCites.some((c) => c.key === "sahihjami:1824" && !c.link), JSON.stringify(hadithCites.filter((c) => !c.link).map((c) => c.key)));
 const witr = models.find((m) => m.number === 102);
