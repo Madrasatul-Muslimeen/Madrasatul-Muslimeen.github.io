@@ -26,6 +26,8 @@ const MUTATIONS = {
   "nocloseall": ["app/js/note-window.js", "**/js/note-window.js*", 'if (e.target.closest("[data-win-closeall]")) { closeAllWindows(); return; }', 'if (e.target.closest("[data-win-closeall]")) { return; }', "/app/journey-map.html"],
   // The FIX of this round taken out: the first window is centred again, 18px up inside the nav row at 1440 x 900.
   "winovernav": ["app/js/note-window.js", "**/js/note-window.js*", "const y = Math.max(Math.round((window.innerHeight - h) / 2), navBottom > 0 ? navBottom + 8 : 0);", "const y = Math.round((window.innerHeight - h) / 2);", "/app/journey-map.html"],
+  // The fix of this round taken out: the first window is tall again, so cascaded windows run under the bottom strip / Zab bar at 820 x 900.
+  "winoverbar": ["app/js/note-window.js", "**/js/note-window.js*", "window.innerHeight - y - 100 - 2 * WIN_OFFSET), 360)", "window.innerHeight - y - 8), 360)", "/app/journey-map.html"],
   // The history fix taken out: the rows are written into the replaced (detached) card, so Show history opens an empty box.
   "emptyhistory": ["app/notes.html", "**/notes.html*", 'if (freshBox) await renderHistoryFor(noteId, freshBox);', 'await renderHistoryFor(noteId, card.querySelector("[data-note-history]"));', "/app/hadith-collections.html"],
   // The card-button size fix taken out: Edit, Show history, Remove... are 21px tall again.
