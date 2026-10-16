@@ -352,3 +352,5 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v11.04** (2026-10-15): audit part 14: Explore works end to end; its window clears the bottom bar (PCF J29, round #875).
 - **v11.05** (2026-10-15): Legacy App - v10: the v10.68 release archived at /legacy-v10/ (PCF MMSA J32).
 - **v11.06** (2026-10-15): audit part 16: Hadith and Dua work end to end; a long narration opens at its top; Back to Dua stays on screen (PCF J29, round #881).
+- **v11.07** (2026-10-16): Explore Word by Word scrolls itself, so Study this Surah is never under the bottom bar (QR J02 S1).
+- **v11.08** (2026-10-16): audit part 18: getting started, Deen Study and Arabic work end to end; finger-sized controls; topic status in Bangla (PCF J29, round #886).

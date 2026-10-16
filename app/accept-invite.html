@@ -21,6 +21,8 @@
     background: #1F3A6E; color: white; cursor: pointer; margin-top: 1.2rem;
   }
   button:disabled { opacity: 0.5; cursor: default; }
+  /* Audit part 18 (PCF J29): a control a finger presses is at least 40px. */
+  input, button { min-height: 40px; }
   #box { margin-top: 1rem; padding: 1rem; border-radius: 0.5rem; }
   #box.info { background: #eef2fb; }
   #box.ok { background: #d7f4d7; }

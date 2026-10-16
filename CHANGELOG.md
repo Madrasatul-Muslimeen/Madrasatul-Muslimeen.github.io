@@ -21481,3 +21481,29 @@ New strings `wholeQuranLevelSentence` ("{level}: Achieved {known} and {percent} 
 - **Noted, not fixed:** the synthetic pilot list below HadeethEnc still prints an English development note on the Bangla page (fixture data, Owner-held); the Latin "Sounds like" transliteration on word panels is data.
 
 **Tests** (the Architect, on the round's head with `main` at v11.04, then re-checked after merging v11.05): audit-part16 69/0 (en) and 72/0 (bn) at 320, 390, 820 and 1440px; `--mutate=nostart` and `--mutate=nosticky` each fail it at 390px (68/1); the Builder's other ten mutations each fail it; dua-check 49/0, dua-note-bookmark 35/0, dua-tab 57/0, dua-vowels 33/0, dua-word-card 45/0, dua-word-links 48/0, dua-words 37/0, hadith-source-navigation 50/0, hadith-translations 33/0, openiti 76/0; behaviour 971/0; after merging v11.05: audit-part16 bn 390 72/0, legacy-links 97/0, openiti 76/0.
+
+## v11.07 — 16 Oct 2026 — Explore → Word by Word scrolls itself; "Study this Surah" is never under the bottom bar
+
+**Built by the Architect** (branch `architect/dock-scroll-padding`). The finding came from the QuranRevival Architect (QR J02 S1), relayed by the PCA: MMSA's own `explore-wbw-tab.mjs` failed on `main` because `#dock` intercepted a click.
+
+- **The cause, measured:** `#wbwPanel` is a sibling of `#exploreScroll` inside `#exploreView`, not a child, and it had no scrolling of its own. With the Word by Word tab open, `#exploreScroll` collapsed to 0px. The panel's content (664px) overflowed `#exploreView` (525px, `overflow: visible`) and ran under the dock. On a page that does not scroll (390×844 with the Zab bar on), "Study this Surah" sat at 701–734px under the dock at 710px, with nothing to scroll. A tap there hit the dock.
+- **Fixed** (`app/quranrevival.html`): `#wbwPanel { flex: 1 1 auto; min-height: 0; overflow-y: auto; }`. It scrolls itself, the way `#exploreScroll` does, and the button now sits at 668–701px inside the view.
+- **First tried and withdrawn:** a `scroll-padding-bottom` measured from the dock. It made no difference (the page itself was not the scroller), so it did not ship.
+- **Check:** `explore-wbw-tab.mjs` gains a named check: "Study this Surah" can be reached, inside the Explore view and not under the dock (checked with `elementFromPoint`). Its click now has an 8s timeout, so a regression fails by name rather than hanging.
+- **`docs/QR-HANDOVER.md`:** the import walk follows `export … from` re-exports. That makes 141 scripts (`quranrevival.html` 135, `asma-study.html` 56, `ldog-study.html` 57) and 101 shared; `assign-picker.js` was the one missed.
+
+**Tests:** explore-wbw-tab 95/0 with its new reachability check (without the rule it fails at en/390: the dock covers the button); audit-part14 650/0; explore-all-approaches 280/0; explore-phone-card 146/0; explore-coverage 36/0; explore-hizb-view 80/0; qcr-popup 34/0; phone-width-overflow 217/0; behaviour 971/0; the eight governance suites green.
+
+## v11.08 — 16 Oct 2026 — Getting started, Deen Study and Arabic work end to end (PCF J29 audit part 18)
+
+**Built by Builder round #886** (branch `builder/issue-886-run-1362`, PR #887). The run ended "success" without opening a PR; the Architect opened it and reviewed it by measurement.
+
+- **All work**, at 320/390/820/1440px in English and Bangla: sign-in and sign-up (the tenant and person writes with I17 stamps), family members at sign-up, the menu bar (Modules ▾ shows exactly the six QR modules), My account, the language switch, card look, the way back, the taglines strip (pause, owner settings), Deen Study and Arabic topic study (the `topic:<id>` write, Bookmark this), and the Continue strip.
+- **Fixed:**
+  - `app/deen-study.html`, `app/arabic-study.html`: the Continue chip, the ★ bookmark, Track my progress and Claim are at least 40px.
+  - `app/accept-invite.html`: inputs and buttons are at least 40px.
+  - `app/js/topic-study.js`: the Status line used the raw ids ("in_progress · pending"). It now uses `statusLabel` and `confirmStateLabel`, in Bangla on the Bangla page, and "Loading…" is translated.
+  - `app/onboarding.html`: after an error the Create button's label goes through `t()`, so it stays in Bangla.
+- **Found, not this round's:** `bookmark-marks-back-browser.mjs` fails 6 checks at 320px, en and bn, identically on `main`: the Read bar's "← Back" pill takes a line of its own. Filed for its own round.
+
+**Tests** (the Architect, on the round's head with `main` at v11.06, re-checked after merging v11.07): audit-part18 1020/0 (320–1440px, en and bn); `--mutate=chip26`, `star22`, `statusraw` and `invite36` each fail it at 390px in en and bn, and `createen` fails it in bn (the English page cannot show that defect); card-look 96/0; family-signup 68/0; journey-map-back 38/0; notes-way-back 33/0; asma-ways-back 66/0; navcheck and tagline-cost exit 0; legacy-links 97/0; qr-stage1-hidden 110/0; phone-width-overflow 217/0; behaviour 971/0; after merging v11.07: audit-part18 bn/390 129/0, explore-wbw-tab 95/0. Not this round's: bookmark-marks-back 336/6 at 320px, identical on `main` (the Read bar's Back pill takes a line of its own), filed for its own round.

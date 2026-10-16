@@ -42,7 +42,8 @@ import {
 } from "./course-offers.js";
 import { listClasses } from "./classes.js";
 import { NO_PROGRAM } from "./bookmarks.js";
-import { buildUnitKey } from "./unit-keys.js";
+import { buildUnitKey, statusLabel } from "./unit-keys.js";
+import { confirmStateLabel } from "./labels.js";
 import { chunkKeyFor, getRecordsChunk, claimStatus } from "./records.js";
 import { logActivity } from "./activity.js";
 import { getResourcesByIds } from "./resources.js";
@@ -414,14 +415,14 @@ export function initTopicStudyPage({ moduleId, trackableId, rootSubjectId }) {
       await refreshContinueStrip();
     }
 
-    detailContainer.innerHTML = `<div class="topic-detail"><p>Loading…</p></div>`;
+    detailContainer.innerHTML = `<div class="topic-detail"><p>${t("Loading…")}</p></div>`;
     const resources = await getResourcesByIds(db, activeTenantId, node.resourceIds ?? []);
     const resource = resources[0] ?? null;
 
     const entryKey = `${buildUnitKey.topic(node.id)}::${trackableId}`;
     const entry = currentChunk?.entries?.[entryKey] ?? null;
     const statusLine = entry
-      ? `Status: <strong>${entry.claimedStatus.replace(/_/g, " ")}</strong> &middot; ${entry.confirmState}`
+      ? t("Status: {status} · {confirm}", { status: `<strong>${statusLabel(entry.claimedStatus)}</strong>`, confirm: confirmStateLabel(entry.confirmState) })
       : t("Not started yet.");
 
     const isBookmarked = !!findSavedBookmark(bookmarksDoc, { moduleId, subjectId: node.id, position: node.id });

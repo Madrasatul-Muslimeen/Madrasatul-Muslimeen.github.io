@@ -69,9 +69,9 @@ The teaching pages (`people`, `classes`, `course-offers`, `homework`, `curriculu
 
 ### The scripts
 
-Measured on 16 Oct 2026 by walking the import graph from the three QR pages.
+Measured on 16 Oct 2026 by walking the import graph (`import` statements, dynamic `import()` and `export … from` re-exports) from the three QR pages.
 
-**140 scripts** are reachable from `quranrevival.html` (134), `asma-study.html` (55) and `ldog-study.html` (56).
+**141 scripts** are reachable from `quranrevival.html` (135), `asma-study.html` (56) and `ldog-study.html` (57). *(Corrected 16 Oct 2026: the first count, 140, missed scripts reached only through `export … from` re-exports; found by the QR Architect, QR J02 S1. The one it missed is `assign-picker.js`.)*
 
 **40 are used ONLY by QR**, so they are safe to take as QR's own:
 
@@ -85,7 +85,7 @@ Measured on 16 Oct 2026 by walking the import graph from the three QR pages.
 `text-size.js` `unit-card.js` `unit-markers.js` `unit-resolve.js` `unit-rings.js` `wheel-resize.js`
 `word-card-search.js` `writing-popout.js` `writing-sheet.js` (all in `app/js/`)
 
-**100 are SHARED with other MMSA pages.** QR needs them and MMSA keeps using them, so after copying, both
+**101 are SHARED with other MMSA pages.** QR needs them and MMSA keeps using them, so after copying, both
 copies will need the same fixes until MMSA catches up. Grouped:
 
 - *Sign-in, data, records:* `firebase-init.js`, `collections.js`, `records.js`, `activity.js`, `unit-keys.js`,
@@ -105,7 +105,7 @@ copies will need the same fixes until MMSA catches up. Grouped:
   `qcr.js`, `qcr-data.js`
 - *Hadith used inside QR* (Hadith stays MMSA's; QR only reads it): `ayah-hadith.js`, `hadith-translations.js`,
   `openiti-corpus.js`
-- *Notes, bookmarks, Zab:* `bookmarks.js`, `bookmark-nav.js`, `bookmark-popover.js`, `bookmark-assign.js`,
+- *Notes, bookmarks, Zab, the 👥 picker:* `assign-picker.js`, `bookmarks.js`, `bookmark-nav.js`, `bookmark-popover.js`, `bookmark-assign.js`,
   `note-foundation.js`, `note-journal-evidence.js`, `journey-map-contract.js`, `journey-map-service.js`,
   `journey-map-shard.js`, `journey-tray.js`, `study-note-binding.js`, `study-note-service.js`, `zab-bar.js`,
   `zab-data.js`, `zab-readiness.js`, `zab-to-note.js`
@@ -229,7 +229,7 @@ GitHub Pages refuses any file over 100 MB and limits a site to about 1 GB; today
 
 ```js
 import fs from "node:fs"; import path from "node:path";
-const re = /(?:import\s[^'"]*?from\s*|import\s*\(\s*|import\s+)["'](\.{1,2}\/[^"']+\.js)["']/g;
+const re = /(?:(?:import|export)\s[^'"]*?from\s*|import\s*\(\s*|import\s+)["'](\.{1,2}\/[^"']+\.js)["']/g;
 function walk(file, seen) {
   if (seen.has(file)) return; seen.add(file);
   for (const m of fs.readFileSync(file, "utf8").matchAll(re)) {
