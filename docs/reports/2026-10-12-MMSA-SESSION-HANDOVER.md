@@ -360,3 +360,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v11.12** (2026-10-16): the Read bar's way back shares a line on a small phone; journey-s9 and journey-folder-menus green (round #891).
 - **v11.13** (2026-10-16): audit part 20: Favourites, Archived, Trash and the Evernote import work; no dead ⋯ on the Read bar (round #894).
 - **v11.14** (2026-10-16): the bookmark dialog can bookmark a range of ayat (PCA J76, for QR J03).
+- **v11.15** (2026-10-16): audit part 21: every Notes feature checked; pop-up windows clear the nav row and bottom bars; My Notes history; the MSA name (round #897).

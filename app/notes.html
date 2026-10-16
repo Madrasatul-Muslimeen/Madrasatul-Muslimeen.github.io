@@ -31,6 +31,8 @@
   button.secondary { background: white; color: #1F3A6E; }
   button.danger { background: white; color: #a3352b; border-color: #d9a49d; }
   button.tiny { padding: 0.12rem 0.5rem; font-size: 0.8rem; }
+  /* Audit part 21: a finger-pressed button on a Note card (Edit, Open in window, Show history, Make a printable page, Remove) was 21-22px tall. ~40px is the target. */
+  .note-actions button.tiny { min-height: 40px; min-width: 40px; }
   button:disabled { opacity: 0.5; cursor: default; }
   /* MAP v4 Phase 7 (P7-B) -- the "Make a printable page" gate, aria-disabled
      NOT disabled (a control that opens and explains itself, this project's
@@ -419,7 +421,9 @@
           openHistoryFor.add(noteId);
           historyEl.style.display = "block";
           renderNotesList();
-          await renderHistoryFor(noteId, card.querySelector("[data-note-history]"));
+          // Audit part 21: renderNotesList() above REPLACED every card, so `card` is detached; fill the NEW card's history box.
+          const freshBox = notesContainer.querySelector(`[data-note-id="${CSS.escape(noteId)}"] [data-note-history]`);
+          if (freshBox) await renderHistoryFor(noteId, freshBox);
         });
       });
       // A re-render (e.g. toggling another Note's history) rebuilds every
