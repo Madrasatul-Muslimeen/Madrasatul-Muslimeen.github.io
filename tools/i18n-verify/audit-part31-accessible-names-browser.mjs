@@ -102,7 +102,7 @@ async function flow(name, lang, width, height, pagePath, seed, fn) {
 }
 const ev = (page, f, a) => page.evaluate(f, a);
 const runScan = (page, bn) => page.evaluate(`(${SCAN_SRC})(${bn})`);
-const WIDTHS = [390, 1280].filter((w) => !WONLY || w === WONLY);
+const WIDTHS = [320, 390, 820, 1280, 1440].filter((w) => !WONLY || w === WONLY);
 const LANGS = ["en", "bn"].filter((l) => !LONLY || l === LONLY);
 
 // Positive control: the detector finds seeded defects.
