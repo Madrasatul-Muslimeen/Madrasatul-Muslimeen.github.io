@@ -358,3 +358,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v11.10** (2026-10-16): OpenITI credited on the About page and under the Ayah card's related hadith (PCA, QR J02 S1c).
 - **v11.11** (2026-10-16): Asma: Name 112 Al-Maalik shows its own Arabic, not Al-Maleek's (PCA must-fix).
 - **v11.12** (2026-10-16): the Read bar's way back shares a line on a small phone; journey-s9 and journey-folder-menus green (round #891).
+- **v11.13** (2026-10-16): audit part 20: Favourites, Archived, Trash and the Evernote import work; no dead ⋯ on the Read bar (round #894).
