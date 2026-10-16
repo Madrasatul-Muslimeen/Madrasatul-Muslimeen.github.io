@@ -285,23 +285,45 @@ check("the display contract never lets an explanation pass as the Hadith's own w
  * source's own grant, and `app/hadith-corpus` stays forbidden outright -- no
  * source's grant authorises a second, undocumented corpus location.
  *
- * Updated in place, 17 Oct 2026 (suite-health sweep, issue #912, PCF MSA J29):
- * this had been RED on main since the Hadith database rounds of 8-12 Oct
- * (f797ee9f translations, ea9f7f49 concordance, 2463e76c/5f8c9a25 dua,
- * 708ead26 hadeethenc-links, 4796bbaa ayah-hadith), which added five output
- * subfolders that are DERIVED from the two approved sources (hadeethenc,
- * openiti-release) rather than being sources of their own. They are named here
- * one by one; a sixth folder, or any source-named folder without a grant, is
- * still an offender.
+ * Updated in place, 17 Oct 2026 (suite-health sweep, issue #912, PCF MSA J29;
+ * corrected in the Architect's review): this had been RED on main since the
+ * Hadith database rounds of 8-12 Oct (f797ee9f translations, ea9f7f49
+ * concordance, 2463e76c/5f8c9a25 dua, 708ead26 hadeethenc-links, 4796bbaa
+ * ayah-hadith), which added five output subfolders that are not sources of
+ * their own. Each is named with the sources its data really comes from (read
+ * off its pull script), and EVERY one of those sources must be granted: either
+ * in `approvedSources`, or by an Owner decision recorded in
+ * OWNER_GRANTS_OUTSIDE_MANIFEST with its decision row, which must exist in
+ * docs/governance/2026-09-27-owner-decisions.md. `hadith-api`
+ * (fawazahmed0/hadith-api) is NOT in the manifest -- its grant is decision 89
+ * (8 Oct 2026: "include the Hadith Eng n Bangla languages from the sources you
+ * have indentified"), which the manifest never recorded. A sixth folder, or a
+ * folder whose source has no grant, is still an offender.
  */
-const DERIVED_OUTPUT_FOLDERS = ["ayah-hadith", "concordance", "dua", "hadeethenc-links", "translations"];
+const OUTPUT_FOLDER_SOURCES = {
+  "ayah-hadith": ["openiti-release", "hadith-api"], // ayah-hadith-index.mjs: OpenITI passages via the concordance
+  "concordance": ["openiti-release", "hadith-api"], // hadith-concordance.mjs: OpenITI matched to hadith-api's numbering
+  "dua": ["hadeethenc", "openiti-release"], // dua-index.mjs
+  "hadeethenc-links": ["hadeethenc", "openiti-release"], // hadeethenc-openiti-links.mjs
+  "translations": ["hadith-api"], // hadith-translations-pull.mjs
+};
+const OWNER_GRANTS_OUTSIDE_MANIFEST = { "hadith-api": 89 };
+const ownerDecisions = fs.readFileSync(path.join(gov, "2026-09-27-owner-decisions.md"), "utf8");
+function folderOffence(entry, approved, grants = OWNER_GRANTS_OUTSIDE_MANIFEST) {
+  if (approved.has(entry)) return null;
+  const sources = OUTPUT_FOLDER_SOURCES[entry];
+  if (!sources) return "no grant and not a named derived folder";
+  const ungranted = sources.filter((src) => !approved.has(src) && !(grants[src] && new RegExp(`^\\| ${grants[src]} \\|`, "m").test(ownerDecisions)));
+  return ungranted.length ? `its source(s) ${ungranted.join(", ")} have no grant` : null;
+}
 check("no Hadith corpus subfolder exists without its own source's grant", () => {
   const approved = new Set(SOURCES.importAuthorisation.approvedSources ?? []);
   const outputDir = path.join(root, "tools", "hadith-data-pull", "output");
   const offenders = [];
   if (fs.existsSync(outputDir)) {
     for (const entry of fs.readdirSync(outputDir)) {
-      if (!approved.has(entry) && !DERIVED_OUTPUT_FOLDERS.includes(entry)) offenders.push(path.join("tools", "hadith-data-pull", "output", entry));
+      const why = folderOffence(entry, approved);
+      if (why) offenders.push(path.join("tools", "hadith-data-pull", "output", entry) + ` (${why})`);
     }
   }
   if (fs.existsSync(path.join(root, "app", "hadith-corpus"))) {
@@ -316,6 +338,15 @@ check("POSITIVE CONTROL -- an unapproved corpus subfolder would be refused", () 
   const present = ["hadeethenc", "sunnah-com"];
   const offenders = present.filter((e) => !approved.has(e));
   assert.deepEqual(offenders, ["sunnah-com"], "an unapproved subfolder must be named as an offender");
+});
+
+check("POSITIVE CONTROL -- a derived folder whose source has no grant is refused, and decision 89 is really on record", () => {
+  const approved = new Set(SOURCES.importAuthorisation.approvedSources ?? []);
+  assert.equal(folderOffence("translations", approved), null, "translations is granted by decision 89");
+  assert.match(String(folderOffence("translations", approved, {})), /hadith-api have no grant/, "without decision 89's grant, translations must be refused");
+  assert.match(String(folderOffence("translations", approved, { "hadith-api": 9999 })), /no grant/, "a grant citing a decision row that does not exist must not count");
+  assert.ok(/^\| 89 \|.*hadith-api/m.test(ownerDecisions), "decision 89 must name hadith-api in the owner-decisions file");
+  assert.match(String(folderOffence("sunnah-com", approved)), /not a named derived folder/);
 });
 
 check("the schema document and the manifests still agree on the vocabulary", () => {
