@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "11.08",
+    "version": "11.09",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -3917,8 +3917,20 @@
     {
       "version": "11.08",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Audit part 18 (round #886, PR #887): the manual's getting started section and Deen Study/Arabic checked working; four small fixes.",
+      "integration": {
+        "authorizedOn": "2026-10-16",
+        "integratedOn": "2026-10-16",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "11.09",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Audit part 19 (round #888, PR #890): the manual's Notes and Mapping My Journey first half checked working; one fix.",
       "integration": {
         "authorizedOn": "2026-10-16",
         "integratedOn": "2026-10-16",
@@ -3927,8 +3939,9 @@
       }
     }
   ],
-  "nextUnallocated": "11.09",
+  "nextUnallocated": "11.10",
   "nextUnallocatedNote": [
+    "v11.09 was allocated to audit part 19: Notes and Mapping My Journey (first half) work end to end; a folder's menu clears the Zab bar (PCF J29, round #888), 2026-10-16.",
     "v11.08 was allocated to audit part 18: getting started, Deen Study and Arabic work end to end; finger-sized controls; topic status in Bangla (PCF J29, round #886), 2026-10-16.",
     "v11.07 was allocated to Explore Word by Word scrolls itself, so Study this Surah is never under the bottom bar (QR J02 S1), 2026-10-16.",
     "v11.06 was allocated to audit part 16: Hadith and Dua work end to end; a long narration opens at its top; Back to Dua stays on screen (PCF J29, round #881), 2026-10-15.",
