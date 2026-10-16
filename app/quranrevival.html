@@ -2651,6 +2651,7 @@
   #readBarBookmarkBtn { box-sizing: border-box; width: 40px; height: 40px; padding: 0; margin: 0; flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; font-size: 1.05rem; line-height: 1; }
   /* A switch is a pill: filled navy when on (the same look as 📖's pressed state), outlined when off. The checkbox stays
      in the label for keyboards and screen readers, drawn as nothing, so the three fit beside 📖 and ⤢ on a phone. */
+  #readMeaningLayersSlot label { margin: 0; } /* QR J03: a page-wide label margin (8px) put the switches 4px below 📖; with none, the bar centres them on its line */
   #readMeaningLayersSlot label { position: relative; display: inline-flex; align-items: center; height: 36px; box-sizing: border-box; padding: 0 0.6rem; border: 1.5px solid #1F3A6E; border-radius: 999px; background: #fff; color: #1F3A6E; font-size: 0.8rem; font-weight: 600; white-space: nowrap; cursor: pointer; }
   /* Issue #794: with a wide fallback sans-serif (the Builder's runner's) the three pills plus 🔖 📖 ⤢ need ~384px and the
      bar wrapped to two rows (91px) at 390/400. Tighter pills below 440px keep it one row with room to spare. */
