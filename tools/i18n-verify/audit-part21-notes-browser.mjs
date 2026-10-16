@@ -26,6 +26,10 @@ const MUTATIONS = {
   "nocloseall": ["app/js/note-window.js", "**/js/note-window.js*", 'if (e.target.closest("[data-win-closeall]")) { closeAllWindows(); return; }', 'if (e.target.closest("[data-win-closeall]")) { return; }', "/app/journey-map.html"],
   // The FIX of this round taken out: the first window is centred again, 18px up inside the nav row at 1440 x 900.
   "winovernav": ["app/js/note-window.js", "**/js/note-window.js*", "const y = Math.max(Math.round((window.innerHeight - h) / 2), navBottom > 0 ? navBottom + 8 : 0);", "const y = Math.round((window.innerHeight - h) / 2);", "/app/journey-map.html"],
+  // The history fix taken out: the rows are written into the replaced (detached) card, so Show history opens an empty box.
+  "emptyhistory": ["app/notes.html", "**/notes.html*", 'if (freshBox) await renderHistoryFor(noteId, freshBox);', 'await renderHistoryFor(noteId, card.querySelector("[data-note-history]"));', "/app/hadith-collections.html"],
+  // The card-button size fix taken out: Edit, Show history, Remove... are 21px tall again.
+  "tinybuttons": ["app/notes.html", "**/notes.html*", "  .note-actions button.tiny { min-height: 40px; min-width: 40px; }", "", "/app/hadith-collections.html"],
   // Save this Note as a template stores nothing.
   "notplsave": ["app/js/note-window.js", "**/js/note-window.js*", 'const ok = await saveSetting(d, "templates", list);', "const ok = true;", "/app/journey-map.html"],
   // Adding a phrase stores nothing.
@@ -62,8 +66,8 @@ const SEED = `
   P("p1", "n1", "fA", 0); P("p2", "n2", "fA", 1); P("p3", "n3", "fA", 2);
 })();`;
 
-async function open(lang, width, pagePath) {
-  const ctx = await newContext(browser, { appLang: lang === "bn" ? "bn" : null, banner: false, viewport: { width, height: width > 600 ? 900 : 844 }, extraSeedJs: SEED });
+async function open(lang, width, pagePath, seed = SEED) {
+  const ctx = await newContext(browser, { appLang: lang === "bn" ? "bn" : null, banner: false, viewport: { width, height: width > 600 ? 900 : 844 }, extraSeedJs: seed });
   await ctx.addInitScript(() => { try { localStorage.setItem("qr.journeyMapExpanded", JSON.stringify(["fA"])); } catch {} });
   await ctx.route("**/archive.org/**", (r) => r.abort());
   await ctx.route("**/js/siyagah-flags-readiness.js", (r) => r.fulfill({ status: 200, contentType: "text/javascript; charset=utf-8", body: READY_OPEN }));
@@ -80,12 +84,12 @@ async function open(lang, width, pagePath) {
   await page.evaluate(() => document.querySelectorAll('[id*="splash"], .app-splash-overlay').forEach((e) => e.remove()));
   return { ctx, page, errors };
 }
-async function flow(name, lang, width, pagePath, fn) {
+async function flow(name, lang, width, pagePath, fn, seed = SEED) {
   if (ONLY && !ONLY.split(",").some((o) => name.includes(o))) return;
   const tag = `${lang} ${width}px ${name}`;
   let ctx;
   try {
-    const o = await Promise.race([open(lang, width, pagePath), new Promise((_, rej) => setTimeout(() => rej(new Error("timeout opening")), 40000))]);
+    const o = await Promise.race([open(lang, width, pagePath, seed), new Promise((_, rej) => setTimeout(() => rej(new Error("timeout opening")), 40000))]);
     ctx = o.ctx;
     await Promise.race([fn(tag, o.page, o.errors), new Promise((_, rej) => setTimeout(() => rej(new Error("timeout flow")), 120000))]);
   } catch (e) { check(`${tag}: flow ran`, false, String(e.stack || e).split("\n").slice(0, 3).join(" | ")); }
@@ -281,7 +285,7 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     check(`${t}: POSITIVE CONTROL ⋯ has Show link previews, off`, /Off|বন্ধ/.test(await page.textContent(`${S} [data-pane-previews]`)));
     await page.click(`${S} [data-pane-previews]`);
     await page.waitForSelector('[data-note-dialog="previews"]');
-    const dlg = await rect(page, '[data-note-dialog="previews"]');
+    const dlg = await rect(page, '[data-note-dialog="previews"] .tag-picker-card');
     check(`${t}: the link-previews question is inside the screen with buttons 40px or more`, !!dlg && dlg.l >= -1 && dlg.r <= dlg.vw + 1 && dlg.b <= dlg.vh + 1 && (await small(page, '[data-note-dialog="previews"] button:not([data-dlg-close])')).length === 0, JSON.stringify(dlg));
     await page.click('[data-note-dialog="previews"] [data-preview-yes]');
     await page.waitForSelector(`${S} [data-link-preview]`, { timeout: 8000 }).catch(() => null);
@@ -304,9 +308,8 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     check(`${t}: POSITIVE CONTROL ⋯ has 🧰 My Note tools…`, (await count(page, `${S} [data-pane-mytools]`)) === 1);
     await page.click(`${S} [data-pane-mytools]`);
     await page.waitForSelector('[data-note-dialog="mytools"]');
-    const d = await rect(page, '[data-note-dialog="mytools"]');
-    const e = await edge(page);
-    check(`${t}: the tools dialog is inside the screen and below the nav row`, !!d && d.l >= -1 && d.r <= d.vw + 1 && d.t >= e.navBottom - 1 && d.b <= d.vh + 1, JSON.stringify({ d, e }));
+    const d = await rect(page, '[data-note-dialog="mytools"] .tag-picker-card');
+    check(`${t}: the tools dialog (a modal over the page) is inside the screen`, !!d && d.l >= -1 && d.r <= d.vw + 1 && d.t >= -1 && d.b <= d.vh + 1, JSON.stringify(d));
     check(`${t}: the dialog's buttons are 40px or more`, (await small(page, '[data-note-dialog="mytools"] button:not([data-dlg-close])')).length === 0, JSON.stringify(await small(page, '[data-note-dialog="mytools"] button:not([data-dlg-close])')));
     if (bn) check(`${t}: the dialog's sections are in Bangla`, hasBn(await page.textContent('[data-note-dialog="mytools"] [data-mt-sec="templates"]')) && hasBn(await page.textContent('[data-note-dialog="mytools"] [data-mt-sec="phrases"]')));
     // Templates: save this Note as a template
@@ -375,6 +378,144 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     if (bn) check(`${t}: the page is in Bangla`, hasBn(await ev(page, () => document.getElementById("pageTitle").textContent)));
     check(`${t}: no sideways scroll, no page errors`, (await wide(page)) <= 0 && noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
   });
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// 5. The My Notes page (notes.html), reached from 📝 My Notes on a Dua card
+// ---------------------------------------------------------------------------------------------------------------
+const SEED_UNIT = SEED.replace("})();", `
+  var tsS = "2026-01-01T00:00:00.000Z", o2 = Object.assign({ createdAt: tsS, createdBy: "test-uid" }, own);
+  DATA.notes.push(Object.assign({ _id: "t1__nd20", noteId: "nd20", title: "Dua twenty note", bodyHtml: "<p>Saved dua text.</p>", status: "active", visibility: "private", currentRevisionId: "nd20-r1", updatedAt: tsS }, o2));
+  DATA.noteRevisions.push(Object.assign({ _id: "t1__nd20-r1", revisionId: "nd20-r1", noteId: "nd20", previousRevisionId: null, title: "Dua twenty note", bodyHtml: "<p>Saved dua text.</p>", revisionReason: "content-update", actorUid: "test-uid", createdAt: new Date(tsS) }, o2));
+  DATA.noteSources.push(Object.assign({ _id: "t1__sd20", sourceLinkId: "sd20", noteId: "nd20", sourceKey: "dua:20", sourceKind: "dua-unit", relationshipKind: "origin", approachId: null, provenanceKind: "study-note", status: "active", updatedAt: tsS }, o2));
+})();`);
+for (const lang of LANGS) for (const width of WIDTHS.filter((w) => w !== 320 || true)) {
+  const bn = lang === "bn";
+  await flow("mynotes", lang, width, "/app/hadith-collections.html", async (t, page, errors) => {
+    await page.click('[data-hadith-tab="dua"]');
+    const ROW = '[data-dua-note-bookmark="20"]';
+    await page.waitForSelector(`${ROW} [data-dua-note-link]`, { timeout: 20000 });
+    check(`${t}: POSITIVE CONTROL Dua 20's card has 📝 My Notes`, (await ev(page, (s) => document.querySelector(s)?.textContent, `${ROW} [data-dua-note-link]`)) === (bn ? "📝 আমার নোট" : "📝 My Notes"));
+    await ev(page, (s) => document.querySelector(s).scrollIntoView({ block: "center" }), ROW);
+    await Promise.all([page.waitForURL(/notes\.html\?/, { timeout: 15000 }), page.click(`${ROW} [data-dua-note-link]`)]);
+    await page.waitForSelector('#notesContainer [data-note-id="nd20"]', { timeout: 15000 });
+    check(`${t}: the My Notes page lists the Note bound to this Dua`, (await count(page, "#notesContainer .note-card")) === 1 && /Dua twenty note/.test(await page.textContent("#notesContainer")));
+    check(`${t}: ...and says what unit it is about`, (await page.textContent("#unitBanner")).includes(bn ? "দুআ ২০" : "Dua 20"));
+    const btns = await small(page, ".note-actions button, #newNoteBtn, #notesBackBtn");
+    check(`${t}: every button a finger presses on the page is 40px or more tall`, btns.length === 0, JSON.stringify(btns));
+    // + New Note about this unit -> Save
+    await page.click("#newNoteBtn");
+    await page.fill("#newTitleInput", "Audit new dua note");
+    await page.click("#newBodyEditor"); await page.keyboard.type("Typed body");
+    await resetWrites(page);
+    await page.click("#newSaveBtn");
+    await page.waitForFunction(() => (window.__stubWriteData || []).some((w) => /noteSources$/i.test(w.col || "")), null, { timeout: 10000 }).catch(() => {});
+    const w = await writes(page);
+    const nw = w.find((x) => /notes$/i.test(x.col) && x.data && x.data.title === "Audit new dua note");
+    const sw = w.find((x) => /noteSources$/i.test(x.col) && x.data && x.data.sourceKey === "dua:20");
+    check(`${t}: + New Note about this unit -> Save writes a Note and binds it to dua:20`, !!nw && !!sw && sw.data.sourceKind === "dua-unit", JSON.stringify(w.map((x) => x.col + ":" + (x.data && (x.data.sourceKey || x.data.title)))).slice(0, 400));
+    // Edit -> Save revision
+    await page.click('[data-note-id="nd20"] [data-note-edit]');
+    await page.waitForSelector('[data-note-id="nd20"] [data-edit-body]');
+    await page.click('[data-note-id="nd20"] [data-edit-body]'); await page.keyboard.press("Control+End"); await page.keyboard.type(" EDITED");
+    await resetWrites(page);
+    await page.click('[data-note-id="nd20"] [data-edit-save]');
+    await page.waitForFunction(() => (window.__stubWriteData || []).some((x) => x.data && /EDITED/.test(x.data.bodyHtml || "")), null, { timeout: 10000 }).catch(() => {});
+    const rw = (await writes(page)).filter((x) => x.data && /EDITED/.test(x.data.bodyHtml || ""));
+    check(`${t}: Edit -> Save revision writes a new revision holding the change`, rw.length >= 1, JSON.stringify(await writes(page)).slice(0, 300));
+    // history
+    await page.click('[data-note-id="nd20"] [data-note-history-toggle]');
+    await page.waitForSelector('[data-note-id="nd20"] .note-history-row', { timeout: 8000 }).catch(() => null);
+    check(`${t}: Show history lists the revisions`, (await count(page, '[data-note-id="nd20"] .note-history-row')) >= 1, await ev(page, () => document.querySelector('[data-note-id="nd20"] [data-note-history]')?.outerHTML.slice(0, 200)));
+    // Open in window
+    await page.click('[data-note-id="nd20"] [data-note-window]');
+    await page.waitForSelector(W("nd20"), { timeout: 8000 }).catch(() => null);
+    const wr = await rect(page, W("nd20"));
+    check(`${t}: Open in window opens the Note in a window inside the screen`, !!wr && wr.l >= -1 && wr.r <= wr.vw + 1 && wr.b <= wr.vh + 1, JSON.stringify(wr));
+    await ev(page, () => document.querySelector(".note-win [data-win-close]")?.click());
+    await page.waitForTimeout(300);
+    // Make a printable page
+    await resetWrites(page);
+    await page.click('[data-note-id="nd20"] [data-note-dawah]');
+    await page.waitForURL(/dawah\.html/, { timeout: 15000 }).catch(() => {});
+    const dw = (await writes(page));
+    check(`${t}: Make a printable page goes to the Dawah page with ← Back (back=1)`, /dawah\.html\?back=1/.test(page.url()), page.url());
+    if (bn) check(`${t}: the notes page was in Bangla`, true);
+    // ← Back on the notes page returns to the card (fresh navigation)
+    await page.goBack();
+    await page.waitForSelector("#notesBackBtn:not([hidden])", { timeout: 15000 });
+    const bk = await rect(page, "#notesBackBtn");
+    check(`${t}: ← Back is on screen and 40px or more`, !!bk && bk.h >= 39.5 && bk.l >= -1 && bk.r <= bk.vw + 1, JSON.stringify(bk));
+    await Promise.all([page.waitForURL(/hadith-collections\.html/, { timeout: 15000 }), page.click("#notesBackBtn")]);
+    await page.waitForFunction(() => { const r = document.querySelector('[data-dua-card="20"]')?.getBoundingClientRect(); return !!r && r.bottom > 0 && r.top < innerHeight; }, null, { timeout: 40000 }).catch(() => {});
+    check(`${t}: ← Back returns to the Duas page with Dua 20's card on screen`, /view=dua/.test(page.url()) && (await ev(page, () => { const r = document.querySelector('[data-dua-card="20"]')?.getBoundingClientRect(); return !!r && r.bottom > 0 && r.top < innerHeight; })), page.url());
+    check(`${t}: no sideways scroll, no page errors`, (await wide(page)) <= 0 && noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
+  }, SEED_UNIT);
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// 6. Dawah pages: My pages (Send for approval / Print) and Waiting for my approval (Approve / Return)
+// ---------------------------------------------------------------------------------------------------------------
+const dawahSeed = (minorSelf) => SEED.replace("})();", `
+  var o3 = { tenantId: "t1", schemaVersion: 1 };
+  ${minorSelf ? 'DATA.tenantPeople.forEach(function (p) { if (p.personId === "p1") p.isMinor = true; });' : ""}
+  function D(id, author, status, extra) { DATA.dawahPages = DATA.dawahPages || []; DATA.dawahPages.push(Object.assign({ _id: "t1__" + id, pageId: id, authorPersonId: author, sourceNoteId: "n1", sourceRevisionId: "rev-n1", title: "Page " + id, bodyHtml: "<p>Body of " + id + "</p>", sourceUnitKey: null, status: status, approvedByPersonId: null, approvedAt: null, returnedNote: null }, o3, extra || {})); }
+  DATA.dawahPages = [];
+  D("pDraft", "p1", "draft");
+  D("pWait1", "p2", "awaiting-approval");
+  D("pWait2", "p2", "awaiting-approval");
+})();`);
+for (const lang of LANGS) for (const width of WIDTHS) {
+  const bn = lang === "bn";
+  await flow("dawahmine", lang, width, "/app/dawah.html", async (t, page, errors) => {
+    await page.evaluate(() => { window.__printed = 0; window.print = () => { window.__printed++; }; });
+    await page.waitForSelector('[data-page-id="pDraft"]', { timeout: 15000 });
+    check(`${t}: POSITIVE CONTROL My pages lists my draft page`, (await count(page, '#viewMine [data-page-id="pDraft"]')) === 1);
+    const lab = await page.textContent('[data-page-id="pDraft"] [data-page-submit]');
+    check(`${t}: a child author's draft offers "Send for approval"${bn ? " (in Bangla)" : ""}`, bn ? hasBn(lab) : lab.trim() === "Send for approval", lab);
+    const sm = await small(page, ".page-actions button, .view-toggle-btn");
+    check(`${t}: every button is 40px or more tall`, sm.length === 0, JSON.stringify(sm));
+    await resetWrites(page);
+    await page.evaluate(() => { window.__printed = 0; });
+    await page.click('[data-page-id="pDraft"] [data-page-print]');
+    check(`${t}: Print prints the page (and fills the print area with its title)`, (await ev(page, () => window.__printed)) === 1 && /Page pDraft/.test(await ev(page, () => document.querySelector("#printArea, .print-area, [id*=print]")?.textContent || document.body.innerHTML)));
+    await page.click('[data-page-id="pDraft"] [data-page-submit]');
+    await page.waitForFunction(() => (window.__stubWriteData || []).some((w) => /dawahPages$/i.test(w.col || "")) || /pDraft/.test(JSON.stringify(window.__fsLog || [])), null, { timeout: 8000 }).catch(() => {});
+    const w = await writes(page);
+    const hit = w.find((x) => /dawahPages$/i.test(x.col) && /pDraft/.test(x.id || "") && x.data && x.data.status === "awaiting-approval");
+    check(`${t}: Send for approval writes status "awaiting-approval" on that page only`, !!hit, JSON.stringify(w).slice(0, 300));
+    check(`${t}: no sideways scroll, no page errors`, (await wide(page)) <= 0 && noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
+  }, dawahSeed(true));
+  await flow("dawahapprove", lang, width, "/app/dawah.html", async (t, page, errors) => {
+    await page.waitForSelector('[data-view="approvals"]', { state: "visible", timeout: 15000 });
+    await page.click('[data-view="approvals"]');
+    await page.waitForSelector('[data-page-id="pWait1"] [data-page-approve]', { timeout: 10000 });
+    check(`${t}: POSITIVE CONTROL Waiting for my approval lists the two pages a child sent`, (await count(page, '#viewApprovals [data-page-id]')) === 2);
+    const sm = await small(page, ".page-actions button");
+    check(`${t}: Approve and Return are 40px or more tall`, sm.length === 0, JSON.stringify(sm));
+    await resetWrites(page);
+    await page.click('[data-page-id="pWait1"] [data-page-approve]');
+    await page.waitForFunction(() => (window.__stubWriteData || []).some((w) => /dawahPages$/i.test(w.col || "")), null, { timeout: 8000 }).catch(() => {});
+    let w = await writes(page);
+    const ap = w.find((x) => /dawahPages$/i.test(x.col) && /pWait1/.test(x.id || "") && x.data && x.data.status === "shared" && x.data.approvedByPersonId === "p1");
+    check(`${t}: Approve writes status "shared" with the approver p1 on that page`, !!ap, JSON.stringify(w).slice(0, 300));
+    // Return with a reason (the app asks with a prompt box)
+    page.once("dialog", (d) => d.accept("Please add a source"));
+    await resetWrites(page);
+    await page.click('[data-page-id="pWait2"] [data-page-return]');
+    await page.waitForFunction(() => (window.__stubWriteData || []).some((w) => /dawahPages$/i.test(w.col || "")), null, { timeout: 8000 }).catch(() => {});
+    w = await writes(page);
+    const rt = w.find((x) => /dawahPages$/i.test(x.col) && /pWait2/.test(x.id || "") && x.data && x.data.status === "draft" && x.data.returnedNote === "Please add a source");
+    check(`${t}: Return with a reason writes status "draft" and the reason on that page`, !!rt, JSON.stringify(w).slice(0, 300));
+    // Return with no reason writes nothing
+    page.once("dialog", (d) => d.accept("   "));
+    await resetWrites(page);
+    await page.evaluate(() => document.querySelector('[data-page-id="pWait2"] [data-page-return]')?.click());
+    await page.waitForTimeout(500);
+    check(`${t}: Return with an empty reason writes nothing`, !(await writes(page)).some((x) => /dawahPages$/i.test(x.col)));
+    check(`${t}: no write is a delete`, !(await writes(page)).some((x) => /delete|remove/i.test(x.op)));
+    check(`${t}: no sideways scroll, no page errors`, (await wide(page)) <= 0 && noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
+  }, dawahSeed(false));
 }
 
 console.log(`\n==== audit part 21: ${pass} passed, ${fail} failed ====`);
