@@ -12,6 +12,7 @@
 //   --mutate=no-dock    the chip never docks beside ✓        -> the dock checks fail (8 Oct 2026)
 //   --mutate=slot-rule|slot-min|slot-basis|slot-max   #readBackSlot's v10.20 width rule (whole / min-width / flex / max-width)
 //                       removed from the SERVED page, routed; app/ is untouched -> the slot checks (issue #760)
+//   --mutate=narrow-basis  the 6.5rem / 5.5rem basis rules for narrow phones (issue #891) removed -> the 320 and 390 en line-sharing checks fail
 //   --mutate=raw-label  the page name is the heading's whole text -> the name check fails
 import { chromium, newContext, openPage } from "./harness.mjs";
 import fs from "node:fs";
@@ -33,6 +34,13 @@ const SLOT_MUTANTS = {
 };
 async function routeMutation(ctx) {
   if (!MUTATE) return;
+  if (MUTATE === "narrow-basis") {
+    let html = fs.readFileSync("app/quranrevival.html", "utf8");
+    html = swap(html, "#readBackSlot { flex-basis: 6.5rem; }", "#readBackSlot { }");
+    html = swap(html, "#readBackSlot { flex-basis: 5.5rem; }", "#readBackSlot { }");
+    await ctx.route(/\/app\/quranrevival\.html(\?.*)?$/, (r) => r.fulfill({ status: 200, contentType: "text/html; charset=utf-8", body: html }));
+    return;
+  }
   if (SLOT_MUTANTS[MUTATE]) {
     const html = swap(fs.readFileSync("app/quranrevival.html", "utf8"), SLOT, SLOT_MUTANTS[MUTATE]);
     await ctx.route(/\/app\/quranrevival\.html(\?.*)?$/, (r) => r.fulfill({ status: 200, contentType: "text/html; charset=utf-8", body: html }));

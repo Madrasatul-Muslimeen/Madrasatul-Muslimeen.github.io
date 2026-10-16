@@ -3969,6 +3969,19 @@
   .ayah-card-back-pill.back-docked { position: static; transform: none; left: auto; bottom: auto; z-index: auto; box-shadow: none; max-width: 100%; min-width: 0; flex: 0 1 auto; }
   .ayah-card-back-pill.back-docked .ayah-card-back-btn { min-height: 40px; font-size: 0.82rem; min-width: 0; }
   .ayah-card-back-pill.back-docked .ayah-card-back-x { width: 40px; height: 40px; }
+  /* 16 Oct 2026 (issue #891): at 320px the bar's first line is full (chip ⏮ ⏭ ▶ ■) and 📖 ⤢ ⋯ ⋮ take 179 of its 288px, leaving
+     102px beside them -- less than the slot's 7rem (112px) basis, so the way back wrapped onto a line of its own (a fifth line).
+     A smaller basis and a tighter label pad let it share the line with 📖 ⤢ ⋯; the ✕ keeps its 40px tile. */
+  /* At 390px with "Meaning" showing, 📖 ⤢ ⋯ ⋮ are 241px of 358, leaving 110.6 -- 1.4px under 7rem -- so a 6.5rem basis shares it. */
+  @media (max-width: 420px) {
+    #readBackSlot { flex-basis: 6.5rem; }
+  }
+  @media (max-width: 340px) {
+    #readBackSlot { flex-basis: 5.5rem; }
+    #readBarEnd { gap: 0.3rem; }
+    .ayah-card-back-pill.back-docked { padding: 0.1rem; gap: 0.1rem; }
+    .ayah-card-back-pill.back-docked .ayah-card-back-btn { padding: 0 0.5rem; }
+  }
   .ayah-card-back-btn { min-height: 40px; padding: 0 0.9rem; border: 0; border-radius: 999px; background: transparent; color: #f2e8d5; font-size: 0.88rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
   .ayah-card-back-ref { color: #c9a24b; margin-left: 0.3rem; }
   .ayah-card-back-x { width: 40px; height: 40px; flex: 0 0 auto; padding: 0; border: 0; border-radius: 50%; background: rgba(255, 255, 255, 0.08); color: #f2e8d5; font-size: 1.2rem; cursor: pointer; }
