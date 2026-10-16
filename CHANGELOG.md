@@ -21630,3 +21630,16 @@ New strings `wholeQuranLevelSentence` ("{level}: Achieved {known} and {percent} 
 - **Review (Architect):** `arabic-study` was added to `load-speed.mjs` with no recorded number, failing `load-speed-check`'s positive control. Measured: 6.9 s first / 5.2 s return against deen-study's 2.4 s / 0.66 s, all of it the harness tenant running the one-time Arabic catalogue seeding (subjectTemplates + a 55-write batch) on every visit. Left off the list with that reason; deen-study, the same shell, stands for it.
 
 **Tests:** audit-part26 816/0; `--mutate=wrongperson` (192/12), `nacounted` (198/6), `noresume` (186/6), `ennote` (198/6) and `flatlist` (162/20) each fail it where their feature shows; audit-part25 112/0; audit-part13 494/0; pane-approach-card 29/0; load-speed-check 66/0; qr-stage1-hidden 110/0; behaviour 971/0.
+
+## v11.20 — 17 Oct 2026 — The smallest phone with real-length names: Notes, Mapping My Journey, Bookmarks and Zab (PCF MSA J29 audit part 27)
+
+**Built by Builder round #913** (branch `builder/issue-913-run-1416`, PR #914), reviewed by the Architect by measurement on a current base. A second pass at 320×640 and 360×740, English and Bangla, with content as long as a real reader's (90-character titles, a 40-letter single word, 4-deep folders, 60-character bookmark names, 30-character Zab pockets, a task with 8 steps).
+
+- `app/notes.html`: `.note-card-title` takes `max-width: 100%; overflow-wrap: anywhere` (a 40-letter title pushed My Notes 118px sideways).
+- `app/journey-map.html`: the folder tree's ▶/▾ `.folder-toggle` is 40×40 (was 28).
+- `app/bookmarks.html`: New bookmark's Create and Cancel, and every field in its form, are at least 40px (were 28–30).
+- `app/js/zab-bar.js`: the panel title, the crumb trail and the child-pocket chips wrap instead of cutting a long name with an ellipsis. **A shared in-page note script:** the PCA has the change notice so QR's pinned copy matches.
+- New suite `tools/i18n-verify/audit-part27-small-phone-browser.mjs` with mutations `notetitle`, `toggle40`, `nbform40`, `nbfield40`, `zabtitle`, `zabchip`.
+- **Not reached, next round:** pop-up note windows and their tabs, folder ⋯ menus and search, Favourites/Archived/Trash, the Bookmark menu and dialog with long names, a person's bookmarks, Zab → Note, menu clearance part-way down a page.
+
+**Tests:** audit-part27 134/0; `--mutate=zabtitle` (31/2) and `toggle40` (32/1) fail it where their defect shows (the Builder ran all six); journey-folder-menus 148/0; journey-folder-picker 310/0; journey-folder-window 144/0; zab-bar 370/0; zab-dock 74/0; bookmark-sheet 176/0; notes-note-windows 218/0; behaviour 971/0.
