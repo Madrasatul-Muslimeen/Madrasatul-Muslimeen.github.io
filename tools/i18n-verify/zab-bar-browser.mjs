@@ -117,7 +117,11 @@ const clearWrites = (page) => page.evaluate(() => {
 });
 const zabReads = (page) => page.evaluate(() => (window.__fsLog || []).filter((r) => /^zab/.test(r.col || "")).length);
 const noSideways = (page) => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
-const opener = (w) => (w >= 768 ? "#zabBar [data-zab-open]" : "#zabCorner");
+// Updated in place 16 Oct 2026 (audit part 24): since v10.59 (commit 5da99079) quranrevival.html on a phone puts the
+// 🧰 in its Wheel/Legend/Unit row ([data-zab-dock]) and HIDES the floating corner while that row is on screen
+// (zab-dock-browser covers the dock itself). Every other page keeps the corner. docked() names that one page.
+const docked = (pg, w) => pg === "quranrevival.html" && w < 768;
+const opener = (w, pg) => (w >= 768 ? "#zabBar [data-zab-open]" : docked(pg, w) ? "[data-zab-dock] .zab-dock-btn" : "#zabCorner");
 async function waitPockets(page, n) {
   await page.waitForFunction((k) => document.querySelectorAll("#zabPanel [data-zab-pocket]").length >= k, n, { timeout: 8000 });
 }
@@ -159,7 +163,7 @@ for (const w of [390, 1280]) {
     const ctx = await mk(browser, { gate: true, width: w });
     const { page } = await open(ctx, p);
     await page.waitForTimeout(200);
-    if (!(await visible(page, w >= 768 ? "#zabBar" : "#zabCorner"))) missing.push(p);
+    if (!(await visible(page, w >= 768 ? "#zabBar" : docked(p, w) ? "[data-zab-dock] .zab-dock-btn" : "#zabCorner"))) missing.push(p);
     await ctx.close();
   }
   check(`${w}px: the ${w >= 768 ? "bar" : "corner button"} is on all ${PAGES.length} pages`, missing.length === 0, missing.join(", "));
@@ -352,10 +356,15 @@ for (const lang of ["en", "bn"]) {
     for (const pg of ["quranrevival.html", "records.html"]) {
       const { page, errors } = await open(ctx, pg);
       const tag = `${pg} ${w}px ${lang}`;
-      check(`${tag}: bar or corner button present`, await visible(page, w >= 768 ? "#zabBar" : "#zabCorner"));
-      if (w < 768) check(`${tag}: corner button is at least 44px`, await page.evaluate(() => { const r = document.getElementById("zabCorner").getBoundingClientRect(); return r.width >= 44 && r.height >= 44; }));
+      if (docked(pg, w)) {
+        check(`${tag}: the 🧰 is docked in the Wheel row, rendered, on screen and at least 40px`, await page.evaluate(() => { const e = document.querySelector("[data-zab-dock] .zab-dock-btn"); if (!e) return false; const r = e.getBoundingClientRect(); return r.width >= 40 && r.height >= 40 && r.left >= 0 && r.right <= window.innerWidth && r.top >= 0 && r.bottom <= window.innerHeight; }));
+        check(`${tag}: the floating corner is hidden while the dock is on screen`, !(await visible(page, "#zabCorner")) && await page.evaluate(() => document.body.classList.contains("zab-docked")));
+      } else {
+        check(`${tag}: bar or corner button present`, await visible(page, w >= 768 ? "#zabBar" : "#zabCorner"));
+        if (w < 768) check(`${tag}: corner button is at least 44px`, await page.evaluate(() => { const r = document.getElementById("zabCorner").getBoundingClientRect(); return r.width >= 44 && r.height >= 44; }));
+      }
       check(`${tag}: no sideways scroll before opening`, await noSideways(page));
-      await page.click(opener(w));
+      await page.click(opener(w, pg));
       await waitPockets(page, 4);
       const names = await page.$$eval("#zabPanel [data-zab-pocket]", (e) => e.map((x) => x.textContent.trim()));
       if (lang === "bn") check(`${tag}: the four seeded names show in Bangla`, names.length === 4 && names.every(hasBn), names.join(" | "));
