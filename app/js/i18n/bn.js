@@ -4227,4 +4227,10 @@ export const BN = {
   "Could not save the Note. The item is unchanged.": "নোট সংরক্ষণ করা যায়নি। জিনিসটি আগের মতোই আছে।",
   "The Note was saved, but filing it in the folder failed. The item is still here.": "নোট সংরক্ষিত হয়েছে, কিন্তু ফোল্ডারে রাখা যায়নি। জিনিসটি এখনও এখানে আছে।",
   "The Note was saved, but the item could not be moved to Trash. It is still here.": "নোট সংরক্ষিত হয়েছে, কিন্তু জিনিসটি ট্র্যাশে সরানো যায়নি। এটি এখনও এখানে আছে।",
+  // Audit part 31 (PCF MSA J29): accessible names for the Monitor date controls and the import file field.
+  "Previous week": "আগের সপ্তাহ",
+  "Next week": "পরের সপ্তাহ",
+  "Previous month": "আগের মাস",
+  "Next month": "পরের মাস",
+  "File": "ফাইল",
 };

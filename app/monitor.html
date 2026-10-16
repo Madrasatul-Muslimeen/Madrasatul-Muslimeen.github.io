@@ -90,14 +90,14 @@
       <button class="tabBtn active" id="weekTabBtn" type="button">Week</button>
       <button class="tabBtn" id="monthTabBtn" type="button">Month</button>
       <span id="weekControls">
-        <button class="small secondary" id="weekPrevBtn" type="button">◀</button>
-        <input type="date" id="weekAnchor" />
-        <button class="small secondary" id="weekNextBtn" type="button">▶</button>
+        <button class="small secondary" id="weekPrevBtn" type="button" aria-label="Previous week">◀</button>
+        <input type="date" id="weekAnchor" aria-label="Date" />
+        <button class="small secondary" id="weekNextBtn" type="button" aria-label="Next week">▶</button>
       </span>
       <span id="monthControls" style="display:none;">
-        <button class="small secondary" id="monthPrevBtn" type="button">◀</button>
-        <input type="month" id="monthAnchor" />
-        <button class="small secondary" id="monthNextBtn" type="button">▶</button>
+        <button class="small secondary" id="monthPrevBtn" type="button" aria-label="Previous month">◀</button>
+        <input type="month" id="monthAnchor" aria-label="Month" />
+        <button class="small secondary" id="monthNextBtn" type="button" aria-label="Next month">▶</button>
       </span>
       <span class="rangeLabel" id="rangeLabel"></span>
     </div>
