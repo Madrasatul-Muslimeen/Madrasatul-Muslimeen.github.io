@@ -172,6 +172,20 @@ export function mountBookmarkBack(navBarEl) {
 }
 
 /**
+ * The way-back law (decision 86) for the Continue strip: a chip opens a study page with back=1, and that page shows
+ * ← Back to the page the chip was on. Nothing is shown without back=1, so a page opened from the menu looks as before.
+ * Called ONLY by the study pages that have no way back of their own (topic-study.js): quranrevival.html, asma-study.html,
+ * bookmarks.html and others already answer back=1 themselves, and calling this from the shared menu drew a second ← Back there.
+ */
+export function mountContinueBack() {
+  if (new URLSearchParams(location.search).get("back") !== "1") return null;
+  if (document.querySelector("[data-bm-back]")) return null;
+  let from = "";
+  try { const u = new URL(document.referrer); if (u.origin === location.origin && u.href !== location.href) from = u.href; } catch { from = ""; }
+  return mountBackRow(`← ${t("Back")}`, from ? { href: from } : { onBack: () => { if (history.length > 1) history.back(); else location.href = "./index.html"; } });
+}
+
+/**
  * The floating "← Back …" chip, shared (6 Oct 2026): a bookmark's return to the page it was opened from (above),
  * and, inside one page, a return to the window something was opened from (e.g. Explore opened from Know Your
  * Status). `href` makes it a link; `onBack` a button that removes the chip and calls back. ✕ only removes it.

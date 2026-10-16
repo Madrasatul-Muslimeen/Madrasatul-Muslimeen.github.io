@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "11.17",
+    "version": "11.18",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -4025,8 +4025,20 @@
     {
       "version": "11.17",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Audit part 23 (round #902, PR #904): Bookmarks and Zab checked working; one fix.",
+      "integration": {
+        "authorizedOn": "2026-10-16",
+        "integratedOn": "2026-10-16",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "11.18",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Audit part 25 (PCF MSA J29): Continue chips carry back=1 with ← Back on topic-study pages; hidden modules filtered before the cap of five.",
       "integration": {
         "authorizedOn": "2026-10-16",
         "integratedOn": "2026-10-16",
@@ -4035,8 +4047,9 @@
       }
     }
   ],
-  "nextUnallocated": "11.18",
+  "nextUnallocated": "11.19",
   "nextUnallocatedNote": [
+    "v11.18 was allocated to audit part 25: the Continue strip keeps the way back; hidden modules no longer use up its five places (round #907), 2026-10-16.",
     "v11.17 was allocated to audit part 23: Bookmarks and Zab work end to end; New bookmark's Unit picker no longer throws (round #902), 2026-10-16.",
     "v11.16 was allocated to audit part 22: loading speed measured; Hadith collections draws without waiting for sign-in code (round #900), 2026-10-16.",
     "v11.15 was allocated to audit part 21: every Notes feature checked; pop-up windows clear the nav row and bottom bars; My Notes history; the MSA name (round #897), 2026-10-16.",

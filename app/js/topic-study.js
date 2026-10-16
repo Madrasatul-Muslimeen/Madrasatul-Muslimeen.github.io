@@ -48,7 +48,7 @@ import { chunkKeyFor, getRecordsChunk, claimStatus } from "./records.js";
 import { logActivity } from "./activity.js";
 import { getResourcesByIds } from "./resources.js";
 import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./nav.js";
-import { mountBookmarkMenu } from "./bookmark-nav.js";
+import { mountBookmarkMenu, mountContinueBack } from "./bookmark-nav.js";
 import { renderTopicBreadcrumb, renderTopicChildList, renderTopicResource } from "./topic-renderer.js";
 import {
   renderGuideTab, renderTrackTab, renderBreakdownTab, renderWayModalShell, attachWayModalHandlers,
@@ -91,6 +91,7 @@ export function initTopicStudyPage({ moduleId, trackableId, rootSubjectId }) {
     mountSyncedAppLangControl(navHomeExtra, { db, uid: auth.currentUser?.uid }); // v07.37 -- Settings -> Language, saved to the account so it follows this person to their other devices
     mountCardLookControl(navHomeExtra);
     mountBookmarkMenu(navBar, { db, getTenantId: () => activeTenantId, getPersonId: () => selectedPersonId, getBookmarksDoc: () => bookmarksDoc, getRoster: () => roster });
+    mountContinueBack(); // a Continue chip opened this page with back=1: ← Back to where it was (decision 86)
   }
   const tenantSelect = document.getElementById("tenantSelect");
   const personSelect = document.getElementById("personSelect");

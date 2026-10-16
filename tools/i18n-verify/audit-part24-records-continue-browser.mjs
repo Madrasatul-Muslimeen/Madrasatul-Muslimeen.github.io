@@ -28,7 +28,7 @@ const MUTATIONS = {
   // The Confirmed column shows what was claimed instead of what was confirmed (I6 broken on screen).
   nofrozen: ["app/records.html", "**/records.html*", 'e.confirmedStatus ? statusLabel(e.confirmedStatus) : "—"', "statusLabel(e.claimedStatus)", "/app/records.html"],
   // The chip no longer carries the subject to resume.
-  noresume: ["app/js/continue-strip.js", "**/continue-strip.js*", '?resume=${encodeURIComponent(e.subjectId ?? "")}', "", "/app/deen-study.html"],
+  noresume: ["app/js/continue-strip.js", "**/continue-strip.js*", '?resume=${encodeURIComponent(e.subjectId ?? "")}&back=1', "?back=1", "/app/deen-study.html"],
 };
 if (MUTATE && !MUTATIONS[MUTATE]) throw new Error(`no such mutation ${MUTATE}`);
 const browser = await chromium.launch();
@@ -153,10 +153,10 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     await page.waitForSelector("#continueStrip .continue-chip", { timeout: 20000 });
     const chips = await ev(page, () => [...document.querySelectorAll("#continueStrip .continue-chip")].map((a) => ({ href: a.getAttribute("href"), text: a.innerText.trim(), h: Math.round(a.getBoundingClientRect().height) })));
     check(`${tag}: positive control: the strip is drawn with chips`, chips.length > 0, JSON.stringify(chips));
-    check(`${tag}: the newest visible places come first (hadith, deen, quranrevival)`, chips.map((c) => c.href.split("?")[0]).join(",") === "hadith-study.html,deen-study.html,quranrevival.html", chips.map((c) => c.href).join(" "));
+    check(`${tag}: the newest visible places come first (hadith, deen, quranrevival)`, chips.map((c) => c.href.split("?")[0]).join(",") === "hadith-study.html,deen-study.html,quranrevival.html,arabic-study.html", chips.map((c) => c.href).join(" "));
     check(`${tag}: the four hidden modules never appear`, chips.every((c) => !HIDDEN.includes(c.href.split("?")[0])), chips.map((c) => c.href).join(" "));
-    check(`${tag}: each chip opens its module page carrying the subject to resume`, chips.every((c) => /\?resume=[A-Za-z_]+$/.test(c.href)) && chips[1].href === "deen-study.html?resume=deen_ethics", chips.map((c) => c.href).join(" "));
-    check(`${tag}: the strip is capped at five places before hiding (arabic, the sixth, is not drawn)`, !chips.some((c) => c.href.startsWith("arabic-study")));
+    check(`${tag}: each chip opens its module page carrying the subject to resume`, chips.every((c) => /\?resume=[A-Za-z_]+&back=1$/.test(c.href)) && chips[1].href === "deen-study.html?resume=deen_ethics&back=1", chips.map((c) => c.href).join(" "));
+    check(`${tag}: hidden modules no longer use up places (arabic, the fourth visible, is drawn; audit part 25)`, chips.some((c) => c.href.startsWith("arabic-study")));
     check(`${tag}: every chip is 40px or taller`, chips.every((c) => c.h >= 39.5), chips.map((c) => c.h).join(","));
     // The page's own topic chunk (records) is the page's, not the strip's; the strip's single source is the bookmarks document.
     const reads = await ev(page, () => (window.__fsLog || []).map((r) => r.col));
@@ -167,7 +167,7 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     const here = page.url();
     await page.click('#continueStrip .continue-chip[href^="hadith-study.html"]');
     await page.waitForURL(/hadith-study\.html\?resume=hsub/, { timeout: 15000 });
-    check(`${tag}: a chip lands on its module page with ?resume= in the address`, /hadith-study\.html\?resume=hsub/.test(page.url()), page.url());
+    check(`${tag}: a chip lands on its module page with ?resume= in the address`, /hadith-study\.html\?resume=hsub&back=1/.test(page.url()), page.url());
     await page.goBack();
     await page.waitForURL(/deen-study\.html/, { timeout: 15000 });
     check(`${tag}: the browser's Back returns to the page the chip was tapped on`, page.url().split("#")[0] === here.split("#")[0], page.url());
