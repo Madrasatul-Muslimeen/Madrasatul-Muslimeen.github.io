@@ -21481,3 +21481,15 @@ New strings `wholeQuranLevelSentence` ("{level}: Achieved {known} and {percent} 
 - **Noted, not fixed:** the synthetic pilot list below HadeethEnc still prints an English development note on the Bangla page (fixture data, Owner-held); the Latin "Sounds like" transliteration on word panels is data.
 
 **Tests** (the Architect, on the round's head with `main` at v11.04, then re-checked after merging v11.05): audit-part16 69/0 (en) and 72/0 (bn) at 320, 390, 820 and 1440px; `--mutate=nostart` and `--mutate=nosticky` each fail it at 390px (68/1); the Builder's other ten mutations each fail it; dua-check 49/0, dua-note-bookmark 35/0, dua-tab 57/0, dua-vowels 33/0, dua-word-card 45/0, dua-word-links 48/0, dua-words 37/0, hadith-source-navigation 50/0, hadith-translations 33/0, openiti 76/0; behaviour 971/0; after merging v11.05: audit-part16 bn 390 72/0, legacy-links 97/0, openiti 76/0.
+
+## v11.07 — 16 Oct 2026 — Explore → Word by Word scrolls itself; "Study this Surah" is never under the bottom bar
+
+**Built by the Architect** (branch `architect/dock-scroll-padding`). The finding came from the QuranRevival Architect (QR J02 S1), relayed by the PCA: MMSA's own `explore-wbw-tab.mjs` failed on `main` because `#dock` intercepted a click.
+
+- **The cause, measured:** `#wbwPanel` is a sibling of `#exploreScroll` inside `#exploreView`, not a child, and it had no scrolling of its own. With the Word by Word tab open, `#exploreScroll` collapsed to 0px. The panel's content (664px) overflowed `#exploreView` (525px, `overflow: visible`) and ran under the dock. On a page that does not scroll (390×844 with the Zab bar on), "Study this Surah" sat at 701–734px under the dock at 710px, with nothing to scroll. A tap there hit the dock.
+- **Fixed** (`app/quranrevival.html`): `#wbwPanel { flex: 1 1 auto; min-height: 0; overflow-y: auto; }`. It scrolls itself, the way `#exploreScroll` does, and the button now sits at 668–701px inside the view.
+- **First tried and withdrawn:** a `scroll-padding-bottom` measured from the dock. It made no difference (the page itself was not the scroller), so it did not ship.
+- **Check:** `explore-wbw-tab.mjs` gains a named check: "Study this Surah" can be reached, inside the Explore view and not under the dock (checked with `elementFromPoint`). Its click now has an 8s timeout, so a regression fails by name rather than hanging.
+- **`docs/QR-HANDOVER.md`:** the import walk follows `export … from` re-exports. That makes 141 scripts (`quranrevival.html` 135, `asma-study.html` 56, `ldog-study.html` 57) and 101 shared; `assign-picker.js` was the one missed.
+
+**Tests:** explore-wbw-tab 95/0 with its new reachability check (without the rule it fails at en/390: the dock covers the button); audit-part14 650/0; explore-all-approaches 280/0; explore-phone-card 146/0; explore-coverage 36/0; explore-hizb-view 80/0; qcr-popup 34/0; phone-width-overflow 217/0; behaviour 971/0; the eight governance suites green.
