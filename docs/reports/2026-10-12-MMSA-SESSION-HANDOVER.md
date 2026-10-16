@@ -459,3 +459,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v11.19** (2026-10-16): audit part 26: Topic study works end to end; 40px sheet tabs; Breakdown note in Bangla (round #909).
 - **v11.20** (2026-10-16): audit part 27: the smallest phone with real-length names (Notes, Journey, Bookmarks, Zab) (round #913).
 - **v11.21** (2026-10-16): audit part 28: Note windows, Bookmark menu and dialog, Zab → Note on the smallest phone; J33 bigger Word card percentage (QR J04) (round #915).
+- **v11.22** (2026-10-16): audit part 29: small-phone pass finished (Note window menu, bookmark dialog on a short phone, menus part-way down) (round #918).
