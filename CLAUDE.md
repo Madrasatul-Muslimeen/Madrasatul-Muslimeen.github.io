@@ -112,6 +112,22 @@ Read this first, every session. It is the standing brief.
 >   (`h: true`): "vX.YY · date time (Sydney) · what changed, in plain words, and where to find it (job)", with a full UTC
 >   `at`. Write it in the same step as the release; the PCA checks at every :25/:55 that each release has its line.
 
+> ## ⇢ ONE HOME FOR EVERY APP PART (the Owner, PCA J71, 16 Oct 2026) — BINDING
+>
+> **Asma, LDOG and Quran Study live in QuranRevival** (repository `QuranRevival/QuranRevival.github.io`, its own
+> Architect). **Hadith, Dua and Seerah live in MMSA**, and so do the shared tools: **Notes / Mapping My Journey**
+> (`notes.html`, `journey-map.html`, `note-window.js`, the note pane), sign-in, Records and Bookmarks. Other apps open a
+> part's home; they never copy it.
+> - **MMSA's Asma, Quran Study and LDOG are FROZEN**: safety fixes only, each reported to the PCA so QR carries it. Any
+>   other need there goes to the PCA as "PCA ▸ change request". (`quranrevival.html` and its Quran-only scripts are
+>   Quran Study.)
+> - **QR reads MMSA's Hadith data** from `/tools/hadith-data-pull/output/…`: keep those paths stable, and send the PCA
+>   a change notice BEFORE any move.
+> - **QR keeps a pinned, byte-for-byte copy of MMSA's in-page note scripts** (the Notes pane beside the Read view, the
+>   Zab bar, "file this note"). Every change to them gets a change notice to the PCA with its commit.
+> - A Hadith tie to an Asma Name is a LINK to QR's Asma; a shared list lives in one data file in its owner's home.
+> - MMSA's audit rounds cover Hadith, Dua, Seerah and the shared tools.
+
 > ## ⇢ HADITH STUDY is being built on `feature/hadith-study` — READ IF YOU TOUCH HADITH
 >
 > **This branch's final application version is `v08.29`, and it is now MERGED TO `main`.** The
@@ -374,7 +390,7 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v11.10 on `main`** (16 Oct 2026 — **OpenITI is credited where its Arabic hadith show: the About page and the Āyah card's related hadith**, PCA ▸ QR J02 S1c). Built by the Architect. The Āyah card's "Related hadith" are OpenITI text (CC BY-NC-SA 4.0), but only the Hadith library credited it. `app/about.html`'s Acknowledgements now credit OpenITI with a line saying which texts it covers, in English and Bangla; the related-hadith list ends with "Source: OpenITI (CC BY-NC-SA 4.0)", the Hadith library's own words. Open: the 320px Read bar Back pill, journey-s9 (Builder round #891); read-note-pane and study-note-binding, both red on `main`. Still open in PCF J30: v11.00 vs v11.01. The handover for the next session is the 16 Oct 1:45 am block of `docs/reports/2026-10-12-MMSA-SESSION-HANDOVER.md`. **Tests:** ayah-related-hadith 96/0 (320/390/768/1280px, en and bn, plus about.html en and bn); without the change 12 of its checks fail (the credit under the list at every width and language, and the About page's credit and line in both languages); audit-part12 500/0 (its Bangla leak scan allows the source name OpenITI, as it does Bukhari and Corpus); behaviour 971/0.
+**Current milestone: v11.11 on `main`** (16 Oct 2026 — **Asma: Name 112 Al-Maalik no longer shows Al-Maleek's (113) Arabic, meaning and description**, a must-fix from the PCA, found by the QR Architect). Built by the Architect. `tools/asma-poster/build-poster-data.mjs` fell back to a transliteration match, and "Al-Maalik" and "Al-Maleek" both reduce to "malik"; the archive has no Al-Maalik poster. The fallback may no longer pair a Name with a poster of a different Arabic word; regenerated, only 112 changes (its own المالك, no description yet, no English meaning line). Also recorded in this brief: **one home for every app part** (the Owner, PCA J71): MMSA's Asma, Quran Study and LDOG are frozen to safety fixes. Open: Builder round #891 (320px Read bar Back pill) in review; #894 (audit part 20) running; read-note-pane, read-bar-tools and study-note-binding red on `main`. The handover for the next session is the 16 Oct 1:45 am block of `docs/reports/2026-10-12-MMSA-SESSION-HANDOVER.md`. **Tests:** asma-poster 102/0 (no two Names share a description; 112 shows المالك, not 113's), and without the fix 3 of its checks fail; asma-explore-name-poster 36/0; asma-name-nav-poster 140/0; behaviour 971/0.
 
 **Earlier milestones, v08.111 back to v07.139, and the long notes around them**
 (the held Phase 4 wiring, the four deployment states, the Programme Integration

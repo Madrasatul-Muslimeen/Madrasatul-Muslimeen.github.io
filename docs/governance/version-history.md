@@ -874,3 +874,4 @@ total). Allocated by the MMSA Architect.
 11.08: audit part 18: getting started, Deen Study and Arabic work end to end; finger-sized controls; topic status in Bangla (PCF J29, round #886). Allocated by the MMSA Architect.
 11.09: audit part 19: Notes and Mapping My Journey (first half) work end to end; a folder's menu clears the Zab bar (PCF J29, round #888). Allocated by the MMSA Architect.
 11.10: OpenITI credited on the About page and under the Ayah card's related hadith (PCA, QR J02 S1c). Allocated by the MMSA Architect.
+11.11: Asma: Name 112 Al-Maalik shows its own Arabic, not Al-Maleek's (PCA must-fix). Allocated by the MMSA Architect.
