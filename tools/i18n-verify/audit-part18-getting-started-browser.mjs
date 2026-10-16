@@ -478,10 +478,12 @@ for (const lang of LANGS) for (const width of WIDTHS) {
       check(`${t}: POSITIVE CONTROL the Continue line is at the top of the page and names ${mod.topicEn} (${bn ? "Bangla" : "English"})`, !!chip && chip.text.includes(bn ? mod.topicBn : mod.topicEn) && (bn ? chip.text.startsWith("চালিয়ে যান") : chip.text.startsWith("Continue:")), JSON.stringify(chip));
       check(`${t}: the chip is finger-sized and on screen`, !!chip && chip.h >= 40 && chip.l >= -1 && chip.r <= width + 1, JSON.stringify(chip));
       await page.click("#continueStrip .continue-chip");
-      await page.waitForURL(`**${mod.page}?resume=${mod.topicId}`, { timeout: 10000 }).catch(() => {});
+      // Updated in place 17 Oct 2026 (suite-health sweep #912): since v11.18 (#908, the way-back law) a Continue chip also
+      // carries back=1, so the destination shows ← Back. The resume target is unchanged; the URL check now expects both.
+      await page.waitForURL(`**${mod.page}?resume=${mod.topicId}&back=1`, { timeout: 10000 }).catch(() => {});
       await page.waitForSelector("#trackTopicBtn", { timeout: 15000 }).catch(() => {});
       const there = await ev(page, () => ({ url: location.search, detail: !!document.getElementById("trackTopicBtn"), name: document.querySelector("#detailContainer h2")?.textContent.replace(/[☆★]/g, "").trim() }));
-      check(`${t}: tapping the Continue line opens the last place (the ${mod.topicEn} topic's detail)`, there.url === `?resume=${mod.topicId}` && there.detail && there.name === (bn ? mod.topicBn : mod.topicEn), JSON.stringify(there));
+      check(`${t}: tapping the Continue line opens the last place (the ${mod.topicEn} topic's detail)`, there.url === `?resume=${mod.topicId}&back=1` && there.detail && there.name === (bn ? mod.topicBn : mod.topicEn), JSON.stringify(there));
       check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
     }, { extraSeed: mod.seed });
   }
