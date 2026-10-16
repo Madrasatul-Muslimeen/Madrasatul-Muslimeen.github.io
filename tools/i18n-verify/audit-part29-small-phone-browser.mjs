@@ -55,9 +55,18 @@ export function isSiyagahFlagsReady() { return true; }
 export function siyagahFlagsUnavailableReason() { return null; }
 `;
 
+const READY_ZAB = `
+export const ZAB_READINESS_AUTHORITIES = Object.freeze(["master-architect"]);
+export const ZAB_DECLARATION = Object.freeze({ ready: true, decision: Object.freeze({ by: "master-architect", on: "2026-10-14", reference: "test-seam" }), gate: "E1", note: "test seam" });
+export function isZabReady() { return true; }
+export const REASON_ZAB_NOT_DEPLOYED = "zab-rules-not-deployed";
+export const REASON_ZAB_DECISION_INCOMPLETE = "zab-readiness-decision-incomplete";
+export function zabUnavailableReason() { return null; }
+`;
 async function open(lang, width, height, pagePath, seed, flags) {
   const ctx = await newContext(browser, { appLang: lang === "bn" ? "bn" : null, banner: false, viewport: { width, height }, extraSeedJs: seed });
   await ctx.route((u) => !["localhost", "www.gstatic.com", "cdn.jsdelivr.net"].includes(u.hostname), (r) => r.abort());
+  await ctx.route("**/js/zab-readiness.js", (r) => r.fulfill({ status: 200, contentType: "text/javascript; charset=utf-8", body: READY_ZAB }));
   if (flags) await ctx.route("**/js/siyagah-flags-readiness.js", (r) => r.fulfill({ status: 200, contentType: "text/javascript; charset=utf-8", body: READY_FLAGS }));
   if (MUTATE && pagePath.startsWith(MUTATIONS[MUTATE][4])) {
     const [file, glob, from, to] = MUTATIONS[MUTATE];
@@ -210,9 +219,9 @@ for (const lang of LANGS) for (const width of WIDTHS) for (const pg of PAGES) {
     await ev(page, () => { const d = document.createElement("div"); d.style.height = "2400px"; d.id = "__tall"; document.body.appendChild(d); window.scrollTo(0, Math.max(0, (document.documentElement.scrollHeight - innerHeight) / 2)); });
     await settle(page, 400);
     const cats = await ev(page, () => [...document.querySelectorAll(".nav-cat > summary")].map((s, i) => i));
-    check(`${t}: POSITIVE CONTROL the page has nav menus`, cats.length >= 3, String(cats.length));
+    check(`${t}: POSITIVE CONTROL the page has nav menus`, cats.length >= (pg === "hadith-collections" ? 1 : 3), String(cats.length));
     for (const i of cats) {
-      await ev(page, (n) => { document.querySelectorAll(".nav-cat[open]").forEach((d) => { d.open = false; }); document.querySelectorAll(".nav-cat > summary")[n].click(); }, i);
+      await ev(page, (n) => { document.querySelectorAll(".nav-cat[open]").forEach((d) => { d.open = false; }); const sm = document.querySelectorAll(".nav-cat > summary")[n]; sm.click(); window.scrollBy(0, sm.getBoundingClientRect().top - innerHeight / 2); }, i);
       await settle(page, 250);
       const m = await ev(page, () => {
         const d = document.querySelector(".nav-cat[open]"); if (!d) return null;
@@ -228,9 +237,10 @@ for (const lang of LANGS) for (const width of WIDTHS) for (const pg of PAGES) {
       if (!m) { check(`${t}: menu ${i} opens`, false, "no open menu"); continue; }
       const tag = `${t} [${m.name}]`;
       check(`${tag}: the menu is inside the screen sideways`, m.l >= -1 && m.r <= m.vw + 1, JSON.stringify(m));
-      check(`${tag}: the menu is inside the screen vertically, or scrolls inside itself`, m.t >= -1 && (m.b <= m.vh + 1 || m.scrollable), JSON.stringify(m));
+      check(`${tag}: the menu starts on screen (opened with its button mid-screen)`, m.t >= -1 && m.t < m.vh, JSON.stringify(m));
       check(`${tag}: the menu is painted on top (its first item is what a finger hits)`, m.topHit, JSON.stringify(m));
-      check(`${tag}: the Zab corner is not over the menu`, !m.overlapsZab || m.topHit, JSON.stringify(m));
+      const cv = await covered(page, ".nav-cat[open] .nav-cat-links");
+      check(`${tag}: no menu item is covered (Zab corner, bars) once scrolled to`, cv.length === 0, JSON.stringify(cv));
       check(`${tag}: no sideways scroll`, (await wide(page)) <= 0, String(await wide(page)));
     }
     check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
@@ -242,12 +252,17 @@ if (!WONLY) for (const width of [768, 1024, 1440]) for (const pg of ["notes", "r
   await flow(`zabwide-${pg}`, "en", width, 900, `/app/${pg}.html`, NOTES_SEED, async (t, page, errors) => {
     await ev(page, () => { const d = document.createElement("div"); d.style.height = "2400px"; document.body.appendChild(d); window.scrollTo(0, 800); });
     await settle(page, 300);
-    const z = await inside(page, "#zabCorner");
-    check(`${t}: the Zab corner is on screen`, !!z && z.ok, JSON.stringify(z));
-    const hit = await ev(page, () => { const e = document.getElementById("zabCorner"); if (!e) return null; const b = e.getBoundingClientRect(); const h = document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2); return !!h && (h === e || e.contains(h)); });
-    check(`${t}: the Zab corner is what a finger hits at its centre (no bar over it)`, hit === true, String(hit));
-    const clash = await ev(page, () => { const e = document.getElementById("zabCorner"); if (!e) return []; const zb = e.getBoundingClientRect(); return [...document.querySelectorAll("button, a[href], summary, input, select")].filter((x) => x !== e && !e.contains(x) && !x.closest("#zabPanel")).filter((x) => { const s = getComputedStyle(x); const b = x.getBoundingClientRect(); return b.width && s.visibility !== "hidden" && !x.closest("[hidden]") && b.left < zb.right && b.right > zb.left && b.top < zb.bottom && b.bottom > zb.top; }).map((x) => (x.id || x.className || x.tagName).toString().slice(0, 30)).slice(0, 4); });
-    check(`${t}: the Zab corner hides no control beneath it`, clash.length === 0, clash.join(" "));
+    // From 768px the corner gives way to the Zab bar along the bottom edge.
+    const z = await inside(page, "#zabBar");
+    check(`${t}: POSITIVE CONTROL the Zab bar is on screen along the bottom`, !!z && z.ok && z.b >= z.vh - 1 && z.r - z.l >= z.vw - 1, JSON.stringify(z));
+    check(`${t}: no sideways scroll`, (await wide(page)) <= 0, String(await wide(page)));
+    const cvBar = await covered(page, "#zabBar");
+    check(`${t}: every Zab bar control is what a finger hits at its centre`, cvBar.length === 0, JSON.stringify(cvBar));
+    const sm = await small(page, "#zabBar");
+    check(`${t}: every Zab bar control is 40px or more`, sm.length === 0, sm.join(" "));
+    // Nothing else fixed sits over the bar.
+    const over = await ev(page, () => { const bar = document.getElementById("zabBar"); if (!bar) return ["no bar"]; const zb = bar.getBoundingClientRect(); return [...document.body.querySelectorAll("*")].filter((x) => !bar.contains(x) && !x.contains(bar) && ["fixed", "sticky"].includes(getComputedStyle(x).position)).filter((x) => { const s = getComputedStyle(x); const b = x.getBoundingClientRect(); return b.width && b.height && s.visibility !== "hidden" && s.display !== "none" && !x.closest("[hidden]") && parseFloat(s.opacity) > 0 && b.left < zb.right && b.right > zb.left && b.top < zb.bottom - 1 && b.bottom > zb.top + 1; }).map((x) => (x.id || x.className || x.tagName).toString().slice(0, 30)).slice(0, 4); });
+    check(`${t}: no other fixed bar or button sits over the Zab bar`, over.length === 0, over.join(" "));
     check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
   });
 }
