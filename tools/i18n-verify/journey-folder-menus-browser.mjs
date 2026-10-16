@@ -29,13 +29,13 @@ const SEED = `
 
 const browser = await chromium.launch();
 const hasBn = (s) => /[ঀ-৿]/.test(s || "");
-// --mutate=no-menu-room (issue #891): the page's extra bottom room while a folder menu is open (beside the Zab bar) is
+// --mutate=no-menu-room (issue #891): the open folder menu's extra bottom room beside the Zab bar (v11.09) is
 // removed from the SERVED page, routed; app/ is untouched -> the Delete click is covered by the Zab bar and times out.
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
 async function routeMutation(ctx) {
   if (!MUTATE) return;
   if (MUTATE !== "no-menu-room") throw new Error(`unknown mutation ${MUTATE}`);
-  const from = "body.zab-bar-on:has(.folder-row-menu.open) { padding-bottom: calc(56px + 14rem); }";
+  const from = "body:has(#zabBar) .folder-row-menu.open { padding-bottom: 56px; }"; // v11.09's rule (audit part 19), which #891 met on merge
   const html = (await import("node:fs")).readFileSync("app/journey-map.html", "utf8");
   if (!html.includes(from)) throw new Error("mutation anchor missing");
   await ctx.route(/\/app\/journey-map\.html(\?.*)?(#.*)?$/, (r) => r.fulfill({ status: 200, contentType: "text/html; charset=utf-8", body: html.split(from).join("") }));
