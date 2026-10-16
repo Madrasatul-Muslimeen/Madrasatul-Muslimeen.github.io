@@ -44,7 +44,7 @@ const MUT = {
   noback: ["app/bookmarks.html", 'if (urlParams.get("back") === "1") {', "if (false) {"],
   nounits: ["app/quranrevival.html", "{ unitChoices: readBookmarkUnitChoices(info) }", "{ unitChoices: [] }"],
   staleayah: ["app/quranrevival.html", "if (curRow && seen(curRow)) return cur;", "return cur;"],
-  nameoverwrite: ["app/js/bookmark-popover.js", "if (!nameTyped) nameInput.value = u.defaultName;", "nameInput.value = u.defaultName;"],
+  nameoverwrite: ["app/js/bookmark-popover.js", "if (!nameTyped) nameInput.value = isRangeUnit(u) ?", "nameInput.value = isRangeUnit(u) ?"], // anchor updated 16 Oct 2026: the line now also names a range (PCA J76)
   unitpos: ["app/quranrevival.html", "position: picked?.position ?? unitKey,", "position: unitKey,"],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);

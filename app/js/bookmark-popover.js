@@ -61,8 +61,31 @@
 //     This āyah, This page. Picking one changes the default Name unless the
 //     reader has typed their own, and `unitId` says which was picked. Only the
 //     Quran Read view passes `units`; every other caller gets no new control.
+//
+// The Owner, 16 Oct 2026 (PCA J76, for QR J03 "Bookmark a range of āyāt") -- a
+// unit may be a RANGE: { id, label, kind: "range", surah, ayahCount, from, to,
+// surahName? }. Picking it shows two āyah fields (From, To), each 1..ayahCount,
+// From not after To; Save refuses an invalid range in words. The result then
+// also carries `range: { surah, from, to }` and `unitKey`, the permanent key
+// range:S:A-B (buildUnitKey.range, I5). A range unit may also be the only one
+// passed. Inert for every caller that passes none: no field, no new key.
 
-import { t } from "./i18n.js";
+import { t, num } from "./i18n.js";
+import { buildUnitKey } from "./unit-keys.js";
+
+const isRangeUnit = (u) => u?.kind === "range";
+/** A range's own default Name: "Al-Baqarah 255–257" (or "2:255–257" without a surah name). */
+function rangeDefaultName(u, from, to) {
+  const span = from === to ? num(from) : `${num(from)}–${num(to)}`;
+  return u.surahName ? `${u.surahName} ${span}` : `${num(u.surah)}:${span}`;
+}
+/** null when valid; otherwise the reason, in words. */
+export function rangeProblem(u, from, to) {
+  const max = Number(u?.ayahCount) || 0;
+  if (!Number.isInteger(from) || !Number.isInteger(to) || from < 1 || to < 1 || from > max || to > max) return t("Choose āyāt from 1 to {max}.", { max: num(max) });
+  if (from > to) return t("The first āyah must not come after the last.");
+  return null;
+}
 
 function escapeHtml(s) {
   return (s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -110,6 +133,12 @@ function ensureStyles() {
       white-space: normal; overflow-wrap: anywhere;
     }
     .bm-pop-units button[aria-checked="true"] { background: #1F3A6E; color: white; border-color: #1F3A6E; }
+    .bm-pop-range { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.4rem; }
+    .bm-pop-range[hidden] { display: none; }
+    .bm-pop-range .bm-popover-field { margin-bottom: 0; }
+    .bm-pop-range input { min-height: 40px; }
+    .bm-pop-range-error { color: #a12; font-size: 0.82rem; margin: 0 0 0.6rem; }
+    .bm-pop-range-error[hidden] { display: none; }
     .bm-saved-notice {
       position: fixed; left: 50%; bottom: 1rem; transform: translateX(-50%); z-index: 9800;
       width: max-content; max-width: calc(100vw - 2rem); box-sizing: border-box;
@@ -160,6 +189,19 @@ function renderPopoverInner(defaultName, folders, people, defaultPersonTagId, ro
   // The Owner, 12 Oct 2026 -- "quick unit choice". Two or more units only:
   // one choice is no choice. Not a .bm-popover-field: those are the labelled
   // inputs, and a group of buttons is not one.
+  const rangeUnit = (units ?? []).find(isRangeUnit) ?? null;
+  // The range's two fields: shown when the range is the first (default) unit, hidden until it is picked otherwise.
+  const rangeRow = rangeUnit
+    ? `<div class="bm-pop-range" data-bm-pop-range ${isRangeUnit(units[0]) ? "" : "hidden"}>
+        <label class="bm-popover-field">${t("From āyah")}
+          <input type="number" inputmode="numeric" min="1" max="${Number(rangeUnit.ayahCount) || 1}" step="1" data-bm-pop-range-from value="${Number(rangeUnit.from) || 1}">
+        </label>
+        <label class="bm-popover-field">${t("To āyah")}
+          <input type="number" inputmode="numeric" min="1" max="${Number(rangeUnit.ayahCount) || 1}" step="1" data-bm-pop-range-to value="${Number(rangeUnit.to) || Number(rangeUnit.from) || 1}">
+        </label>
+      </div>
+      <p class="bm-pop-range-error" data-bm-pop-range-error role="alert" hidden></p>`
+    : "";
   const unitRow = units && units.length >= 2
     ? `<div class="bm-pop-unit-row" data-bm-pop-unit-row><span id="bmPopUnitLabel">${t("Bookmark")}</span>
         <div class="bm-pop-units" role="radiogroup" aria-labelledby="bmPopUnitLabel">${units.map((u, i) =>
@@ -169,6 +211,7 @@ function renderPopoverInner(defaultName, folders, people, defaultPersonTagId, ro
   return `<div class="bm-popover" role="dialog" aria-modal="true" aria-label="${t("Bookmark this")}">
     <h3>${t("Bookmark this")}</h3>
     ${unitRow}
+    ${rangeRow}
     <label class="bm-popover-field">${t("Name")}
       <input type="text" data-bm-pop-name value="${escapeHtml(defaultName)}">
     </label>
@@ -206,7 +249,8 @@ export function openBookmarkNamePopover({ defaultName = "", folders = [], people
   return new Promise((resolve) => {
     const overlay = document.createElement("div");
     overlay.className = "bm-popover-overlay";
-    const unitList = units && units.length >= 2 ? units : [];
+    // Two or more units draw the choice; a lone RANGE unit is still offered (its fields are the choice).
+    const unitList = units && (units.length >= 2 || (units.length === 1 && isRangeUnit(units[0]))) ? units : [];
     overlay.innerHTML = renderPopoverInner(unitList[0]?.defaultName ?? defaultName, folders, people, defaultPersonTagId, roster, selectedPersonId, unitList);
     document.body.appendChild(overlay);
 
@@ -237,12 +281,30 @@ export function openBookmarkNamePopover({ defaultName = "", folders = [], people
     let nameTyped = false;
     nameInput.addEventListener("input", () => { nameTyped = true; });
     let unitId = unitList[0]?.id ?? null;
+    const rangeRow = overlay.querySelector("[data-bm-pop-range]");
+    const rangeFrom = overlay.querySelector("[data-bm-pop-range-from]");
+    const rangeTo = overlay.querySelector("[data-bm-pop-range-to]");
+    const rangeError = overlay.querySelector("[data-bm-pop-range-error]");
+    const rangeUnit = unitList.find(isRangeUnit) ?? null;
+    const readRange = () => ({ from: Number(rangeFrom?.value), to: Number(rangeTo?.value) });
+    function showRangeError(msg) { if (!rangeError) return; rangeError.textContent = msg ?? ""; rangeError.hidden = !msg; }
+    function rangeNameNow() {
+      const { from, to } = readRange();
+      return rangeUnit && !rangeProblem(rangeUnit, from, to) ? rangeDefaultName(rangeUnit, from, to) : null;
+    }
+    if (rangeUnit && isRangeUnit(unitList[0]) && !nameTyped) nameInput.value = rangeNameNow() ?? nameInput.value;
+    [rangeFrom, rangeTo].forEach((el) => el?.addEventListener("input", () => {
+      showRangeError(null);
+      if (!nameTyped && isRangeUnit(unitList.find((x) => x.id === unitId))) { const n = rangeNameNow(); if (n) nameInput.value = n; }
+    }));
     overlay.querySelectorAll("[data-bm-pop-unit]").forEach((btn) => btn.addEventListener("click", () => {
       const u = unitList.find((x) => x.id === btn.dataset.bmPopUnit);
       if (!u) return;
       unitId = u.id;
       overlay.querySelectorAll("[data-bm-pop-unit]").forEach((b) => b.setAttribute("aria-checked", b === btn ? "true" : "false"));
-      if (!nameTyped) nameInput.value = u.defaultName;
+      if (rangeRow) rangeRow.hidden = !isRangeUnit(u);
+      showRangeError(null);
+      if (!nameTyped) nameInput.value = isRangeUnit(u) ? (rangeNameNow() ?? u.defaultName ?? "") : u.defaultName;
     }));
 
     // For follows the one ticked person until the reader picks For by hand.
@@ -283,6 +345,15 @@ export function openBookmarkNamePopover({ defaultName = "", folders = [], people
 
     overlay.querySelector("[data-bm-pop-cancel]").addEventListener("click", () => close(null));
     overlay.querySelector("[data-bm-pop-save]").addEventListener("click", () => {
+      // A picked range must be valid before anything else: it is the key the bookmark is saved under.
+      const pickedUnit = unitList.find((x) => x.id === unitId) ?? null;
+      let rangeOut = {};
+      if (isRangeUnit(pickedUnit)) {
+        const { from, to } = readRange();
+        const problem = rangeProblem(pickedUnit, from, to);
+        if (problem) { showRangeError(problem); (from > to ? rangeTo : rangeFrom)?.focus(); return; }
+        rangeOut = { range: { surah: pickedUnit.surah, from, to }, unitKey: buildUnitKey.range(pickedUnit.surah, from, to) };
+      }
       const name = nameInput.value.trim();
       if (!name) {
         nameInput.focus();
@@ -299,11 +370,11 @@ export function openBookmarkNamePopover({ defaultName = "", folders = [], people
           newFolderInput.focus();
           return;
         }
-        close({ name, folderId: null, folderName: null, newFolderName, personTagId, assigneeIds: resolvedAssigneeIds, unitId });
+        close({ name, folderId: null, folderName: null, newFolderName, personTagId, assigneeIds: resolvedAssigneeIds, unitId, ...rangeOut });
       } else {
         const folderId = folderSelect.value || null;
         const folderName = folderId ? (folders.find((f) => f.id === folderId)?.name ?? null) : null;
-        close({ name, folderId, folderName, newFolderName: null, personTagId, assigneeIds: resolvedAssigneeIds, unitId });
+        close({ name, folderId, folderName, newFolderName: null, personTagId, assigneeIds: resolvedAssigneeIds, unitId, ...rangeOut });
       }
     });
 
