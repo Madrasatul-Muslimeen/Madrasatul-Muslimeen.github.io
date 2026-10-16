@@ -24,6 +24,9 @@ const arg = (n) => (process.argv.find((a) => a.startsWith(`--${n}=`)) || "").sli
 const MUTATE = arg("mutate"), ONLY = arg("only"), WONLY = Number(arg("width")) || 0, LONLY = arg("lang");
 // [file, route glob, anchor (exactly once), replacement, page prefix it applies to]
 const MUTATIONS = {
+  nav40: ["app/css/shell.css", "**/css/shell.css*", ".nav-bm-folder-head .nav-bm-handle, .nav-bm-folder-head .nav-bm-rename, .nav-bm-folder-head .nav-bm-del { width: 40px; height: 40px; }\n", "", "/app/bookmarks.html"],
+  popfield40: ["app/js/bookmark-popover.js", "**/js/bookmark-popover.js*", "      min-height: 40px; /* audit28: a finger-sized field (they were 29-31px) */\n", "", "/app/bookmarks.html"],
+  popbtn40: ["app/js/bookmark-popover.js", "**/js/bookmark-popover.js*", "padding: 0.35rem 0.8rem; min-height: 40px;", "padding: 0.35rem 0.8rem; min-height: 36px;", "/app/bookmarks.html"],
   nwtitle: ["app/css/note-window.css", "**/css/note-window.css*", ".note-win.sheet .nw-title { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; line-height: 1.2; }\n", "", "/app/notes.html"],
 };
 if (MUTATE && !MUTATIONS[MUTATE]) throw new Error(`no such mutation ${MUTATE}`);
@@ -50,6 +53,13 @@ N("n1",${JSON.stringify(T_EN)},1);N("n2",${JSON.stringify(T_WORD)},2,{pinned:tru
 ["n1","n2","n3"].forEach(function(n){DATA.noteSources.push(Object.assign({_id:"t1__s"+n,sourceLinkId:"s"+n,noteId:n,sourceKey:"dua:20",sourceKind:"dua-unit",relationshipKind:"origin",approachId:null,provenanceKind:"study-note",status:"active",updatedAt:"2026-01-01T00:00:00.000Z",createdAt:"2026-01-01T00:00:00.000Z",createdBy:"test-uid"},own))});
 P("p1","n1","f4",0);P("p2","n2","f4",1);P("p3","n3","f4",2);})();`;
 
+const BM_SEED = `(function(){window.__stubApplyBatches=true;window.__DATA=DATA;
+DATA.tenantPeople.push({ _id: "p3", tenantId: TENANT_ID, personId: "p3", name: ${JSON.stringify(PERSON)}, managedByPersonId: "p1", isMinor: true, roles: ["student"] });
+var fl=[],par=null;for(var i=1;i<=4;i++){fl.push({id:"f"+i,name:"Folder level "+i+" with a name about forty chars",parentId:par,personTagId:null,removed:false,createdAt:"2026-09-01T00:00:00.000Z"});par="f"+i;}
+function B(id,name,f,a){return{id:id,programId:"none",moduleId:"quranrevival",subjectId:"quran",name:name,position:"ayah:2:"+a,folderId:f,removed:false,settings:{unitType:"ayah",surahNum:2,ayahNum:a,trackableId:"tafsir"},createdAt:"2026-09-0"+(a%9+1)+"T00:00:00.000Z"}}
+DATA.bookmarks=[{_id:TENANT_ID+"__p1",tenantId:TENANT_ID,personId:"p1",resume:{},folders:fl,saved:[B("b1",${JSON.stringify(BM_NAME)},"f4",255),B("b2","Unfiled "+${JSON.stringify(BM_NAME)},null,102),B("b3","Third "+${JSON.stringify(BM_NAME)},"f1",50)]},
+ {_id:TENANT_ID+"__p3",tenantId:TENANT_ID,personId:"p3",resume:{},folders:[],saved:[B("c1","Child: "+${JSON.stringify(BM_NAME)},null,7)]}];
+})();`;
 // Notes seed plus a favourite and an archived Note, a Note in Trash and a folder in Trash, all with real-length names.
 const J_SEED = NOTES_SEED.replace(/\}\)\(\);$/, "") + `
 N("n4",${JSON.stringify("Favourite: " + T_EN)},4,{favourite:true});N("n5",${JSON.stringify("Archived: " + T_EN)},5,{archived:true});N("n6",${JSON.stringify("In the Trash: " + T_EN)},6,{status:"retired"});
@@ -224,6 +234,65 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     const ctt = await cut(page, "#viewTrash");
     check(`${t}: Trash: no name is cut without a way to read it`, ctt.length === 0, JSON.stringify(ctt));
     if (bn) { const own = (await bnText(page, "#viewTrash")).split(T_EN).join(" ").replace(/A retired folder with a name about forty chars|In the Trash:|Folder level \d with a name about forty chars/g, " "); check(`${t}: Trash: no English left (but what people typed)`, englishLeft(own).length === 0, englishLeft(own).join(", ")); }
+    check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
+  });
+
+  // 3. The Bookmark menu in the nav, and the shared bookmark dialog
+  await flow("bmmenu", lang, width, "/app/bookmarks.html", BM_SEED, async (t, page, errors) => {
+    await page.waitForFunction(() => document.querySelectorAll("[data-bm-id]").length >= 2, null, { timeout: 15000 });
+    await page.evaluate(() => document.querySelector(".nav-cat-bookmark > summary").click()); await settle(page, 800);
+    const rows = await ev(page, () => document.querySelectorAll(".nav-cat-bookmark .nav-bm-row").length);
+    check(`${t}: Bookmark menu: POSITIVE CONTROL the 60-character bookmarks are listed`, rows >= 2, String(rows));
+    probe(t, "menu box", await ev(page, () => { const r = document.querySelector(".nav-cat-bookmark .nav-cat-links").getBoundingClientRect(); return [r.left, r.top, r.right, r.bottom, innerWidth, innerHeight]; }));
+    const menuOut = await ev(page, () => [...document.querySelectorAll(".nav-cat-bookmark .nav-cat-links, .nav-cat-bookmark .nav-cat-links *")].filter((e) => { const b = e.getBoundingClientRect(); return b.width > 0 && getComputedStyle(e).display !== "none" && (b.right > innerWidth + 1 || b.left < -1); }).map((e) => (e.className || e.tagName).toString().slice(0, 30)).slice(0, 6));
+    check(`${t}: Bookmark menu: nothing sits sideways outside the screen, no sideways scroll`, menuOut.length === 0 && (await wide(page)) <= 0, JSON.stringify(menuOut));
+    const smm = await ev(page, () => [...document.querySelectorAll(".nav-cat-bookmark .nav-cat-links button, .nav-cat-bookmark .nav-cat-links a, .nav-cat-bookmark .nav-cat-links select")].filter((e) => { const b = e.getBoundingClientRect(); return b.width > 0 && b.height < 39.5 && getComputedStyle(e).display !== "inline"; }).map((e) => (e.className || e.tagName).toString().slice(0, 28) + ":" + Math.round(e.getBoundingClientRect().width) + "x" + Math.round(e.getBoundingClientRect().height)));
+    check(`${t}: Bookmark menu: every row, folder button and picker is 40px or more`, smm.length === 0, smm.join(" "));
+    const ctm = await cut(page, ".nav-cat-bookmark .nav-cat-links");
+    check(`${t}: Bookmark menu: no name is cut without a way to read it`, ctm.length === 0, JSON.stringify(ctm));
+    // Part-way down the page, the menu must still be reachable: scrolled into reach, no item is covered by a bar.
+    const cov = await ev(page, () => { const l = document.querySelector(".nav-cat-bookmark .nav-cat-links"); l.scrollIntoView({ block: "center" }); return [...l.querySelectorAll(".nav-bm-link, summary, button")].filter((e) => { const q = e.getBoundingClientRect(); if (!q.width || !q.height || q.bottom > innerHeight || q.top < 0) return false; const h = document.elementFromPoint(q.left + q.width / 2, q.top + q.height / 2); return !(h && (e === h || e.contains(h) || h.contains(e))); }).length; });
+    check(`${t}: Bookmark menu: part-way down the page nothing covers an item that is on screen`, cov === 0, String(cov));
+    if (bn) { const own = (await bnText(page, ".nav-cat-bookmark .nav-cat-links")).split(BM_NAME).join(" "); check(`${t}: Bookmark menu: no English left (but what people typed)`, englishLeft(own.replace(/Unfiled|Third|Folder level \d with a name about forty chars/g, " ")).length === 0, englishLeft(own).join(", ")); }
+    await page.evaluate(() => { document.querySelector(".nav-cat-bookmark").open = false; window.scrollTo(0, 0); });
+    // The shared bookmark dialog, with a roster of long names, 4-deep folders and a Range.
+    await page.evaluate(async ({ BM_NAME, PERSON }) => {
+      const m = await import("/app/js/bookmark-popover.js");
+      const folders = [1, 2, 3, 4].map((i) => ({ id: "f" + i, name: "Folder level " + i + " with a name about forty chars", depth: i - 1 }));
+      const people = [{ id: "p1", name: PERSON }, { id: "p3", name: PERSON + " the second" }];
+      const roster = [{ id: "p1", name: PERSON, isSelf: true }, { id: "p3", name: PERSON + " the second", isSelf: false }, { id: "p4", name: PERSON + " the third", isSelf: false }];
+      const units = [{ id: "range", kind: "range", label: "Range of āyahs, a long unit label", from: 255, to: 257, ayahCount: 286, defaultName: BM_NAME }, { id: "ayah", kind: "ayah", label: "This āyah", defaultName: BM_NAME }];
+      window.__popDone = m.openBookmarkNamePopover({ defaultName: BM_NAME, folders, people, defaultPersonTagId: null, roster, selectedPersonId: "p1", units });
+    }, { BM_NAME, PERSON });
+    await page.waitForSelector(".bm-popover", { timeout: 8000 }); await settle(page, 500);
+    const pop = ".bm-popover";
+    const pb = await ev(page, () => { const r = document.querySelector(".bm-popover").getBoundingClientRect(); return { l: r.left, r: r.right, t: r.top, b: r.bottom, vw: innerWidth, vh: innerHeight }; });
+    check(`${t}: Bookmark dialog: POSITIVE CONTROL it shows the Assign to rows and the Range fields`, (await ev(page, () => document.querySelectorAll(".bm-pop-assignee-row").length === 3 && !!document.querySelector("[data-bm-pop-range]:not([hidden])"))));
+    check(`${t}: Bookmark dialog: inside the screen (top and bottom reachable), no sideways scroll`, pb.l >= -1 && pb.r <= pb.vw + 1 && pb.t >= -1 && pb.b <= pb.vh + 1 && (await wide(page)) <= 0, JSON.stringify(pb));
+    const smb = await small(page, pop);
+    check(`${t}: Bookmark dialog: every control is 40px or more`, smb.length === 0, smb.join(" "));
+    const ctb = await cut(page, pop);
+    check(`${t}: Bookmark dialog: no label or name is cut without a way to read it`, ctb.length === 0, JSON.stringify(ctb));
+    const inner = await ev(page, () => [...document.querySelectorAll(".bm-popover *")].filter((e) => { const b = e.getBoundingClientRect(), p = document.querySelector(".bm-popover").getBoundingClientRect(); return b.width > 0 && (b.right > p.right + 1 || b.left < p.left - 1) && !e.closest(".bm-pop-assignees, select"); }).map((e) => (e.className || e.tagName).toString().slice(0, 28)).slice(0, 5));
+    check(`${t}: Bookmark dialog: nothing pokes out of the dialog's own box`, inner.length === 0, JSON.stringify(inner));
+    if (bn) check(`${t}: Bookmark dialog: no English left in the dialog's own words`, englishLeft((await bnText(page, pop)).split(BM_NAME).join(" ").split(PERSON).join(" ").replace(/Folder level \d with a name about forty chars|Range of āyahs, a long unit label|This āyah|the second|the third|āyahs?/g, " ")).length === 0, englishLeft(await bnText(page, pop)).join(", "));
+    await page.keyboard.press("Escape"); await settle(page, 200);
+    check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
+  });
+
+  // 4. A person's bookmarks
+  await flow("person", lang, width, "/app/bookmarks.html?person=p3&back=1", BM_SEED, async (t, page, errors) => {
+    await page.waitForFunction(() => document.querySelectorAll("[data-bm-id]").length >= 1, null, { timeout: 15000 });
+    const body = await bnText(page, "body");
+    check(`${t}: POSITIVE CONTROL the child's bookmark and the 35-character name are on the page`, body.includes("Child: Al-Baqarah") && body.includes(PERSON), body.slice(0, 120));
+    const back = await ev(page, () => { const b = document.getElementById("bmBackBtn"); const r = b.getBoundingClientRect(); return { shown: !b.hidden && r.width > 0, h: r.height, w: r.width }; });
+    check(`${t}: ← Back is shown and 40px or more`, back.shown && back.h >= 39.5, JSON.stringify(back));
+    check(`${t}: no sideways scroll`, (await wide(page)) <= 0, String(await wide(page)));
+    check(`${t}: nothing sits outside the screen sideways`, (await ev(page, () => [...document.querySelectorAll("#app *, #bmBackBtn")].filter((e) => { const b = e.getBoundingClientRect(); return b.width > 0 && getComputedStyle(e).display !== "none" && (b.right > innerWidth + 1 || b.left < -1); }).length)) === 0);
+    const sm = await small(page, "#app");
+    check(`${t}: every button and picker is 40px or more`, sm.length === 0, sm.join(" "));
+    const ct = await cut(page, "#app");
+    check(`${t}: the person's name and the bookmark names are not cut`, ct.length === 0, JSON.stringify(ct));
     check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
   });
 }

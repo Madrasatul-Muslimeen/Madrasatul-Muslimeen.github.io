@@ -314,6 +314,8 @@ button.nav-bm-preset { background: none; border: 0; font: inherit; font-size: 0.
   border: 1px solid #e5c9c9; background: white; color: #9b2c2c; cursor: pointer;
 }
 .nav-bm-folder-head .nav-bm-del { width: 2.2rem; height: 2.25rem; }
+/* audit28: the folder head's three buttons (move, rename, remove) were 35x36 on a phone; a finger needs 40px */
+.nav-bm-folder-head .nav-bm-handle, .nav-bm-folder-head .nav-bm-rename, .nav-bm-folder-head .nav-bm-del { width: 40px; height: 40px; }
 .nav-bm-row { display: flex; align-items: center; gap: 0.4rem; min-width: 0; }
 .nav-bm-folder .nav-bm-row { margin-left: 1.1rem; }
 .nav-bm-row > .nav-bm-link.nav-bm-item { flex: 1 1 auto; min-width: 0; margin-left: 0; }
