@@ -24,6 +24,7 @@ const arg = (n) => (process.argv.find((a) => a.startsWith(`--${n}=`)) || "").sli
 const MUTATE = arg("mutate"), ONLY = arg("only"), WONLY = Number(arg("width")) || 0, LONLY = arg("lang");
 // [file, route glob, anchor (exactly once), replacement, page prefix it applies to]
 const MUTATIONS = {
+  toast40: ["app/js/zab-bar.js", "**/js/zab-bar.js*", "padding: 10px 6px; display: inline-flex; align-items: center; min-height: 40px; box-sizing: border-box; } /* audit28: Open was 39px */", "padding: 10px 6px; }", "/app/records.html"],
   nav40: ["app/css/shell.css", "**/css/shell.css*", ".nav-bm-folder-head .nav-bm-handle, .nav-bm-folder-head .nav-bm-rename, .nav-bm-folder-head .nav-bm-del { width: 40px; height: 40px; }\n", "", "/app/bookmarks.html"],
   popfield40: ["app/js/bookmark-popover.js", "**/js/bookmark-popover.js*", "      min-height: 40px; /* audit28: a finger-sized field (they were 29-31px) */\n", "", "/app/bookmarks.html"],
   popbtn40: ["app/js/bookmark-popover.js", "**/js/bookmark-popover.js*", "padding: 0.35rem 0.8rem; min-height: 40px;", "padding: 0.35rem 0.8rem; min-height: 36px;", "/app/bookmarks.html"],
@@ -65,6 +66,12 @@ const J_SEED = NOTES_SEED.replace(/\}\)\(\);$/, "") + `
 N("n4",${JSON.stringify("Favourite: " + T_EN)},4,{favourite:true});N("n5",${JSON.stringify("Archived: " + T_EN)},5,{archived:true});N("n6",${JSON.stringify("In the Trash: " + T_EN)},6,{status:"retired"});
 P("p4","n4","f4",3);P("p5","n5","f4",4);P("p6","n6","f4",5);
 DATA.noteFolders.push(Object.assign({_id:"t1__f9",folderId:"f9",name:"A retired folder with a name about forty chars",parentFolderId:"f1",semanticRole:"user",order:9,status:"retired",updatedAt:ts()},own));
+})();`;
+const stamp = `createdAt: new Date(), updatedAt: new Date(), createdBy: "uid-1", schemaVersion: 1, addedByPersonId: "p1", tenantId: "t1", status: "active"`;
+const ZAB_SEED = `(function(){window.__stubApplyBatches=true;window.__DATA=DATA;
+DATA.zabPockets=[
+ {_id:"t1__pk-a",pocketId:"pk-a",order:0,name:${JSON.stringify(POCKET)},icon:"✅",ztype:"tasks",${stamp}}];
+DATA.zabItems=[{_id:"t1__it1",itemId:"it1",pocketId:"pk-a",order:0,text:${JSON.stringify(T_EN)},done:false,steps:[],${stamp}}];
 })();`;
 const READY_OPEN = `
 export const ZAB_READINESS_AUTHORITIES = Object.freeze(["master-architect"]);
@@ -277,6 +284,44 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     check(`${t}: Bookmark dialog: nothing pokes out of the dialog's own box`, inner.length === 0, JSON.stringify(inner));
     if (bn) check(`${t}: Bookmark dialog: no English left in the dialog's own words`, englishLeft((await bnText(page, pop)).split(BM_NAME).join(" ").split(PERSON).join(" ").replace(/Folder level \d with a name about forty chars|Range of āyahs, a long unit label|This āyah|the second|the third|āyahs?/g, " ")).length === 0, englishLeft(await bnText(page, pop)).join(", "));
     await page.keyboard.press("Escape"); await settle(page, 200);
+    check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
+  });
+
+  // 5. Zab → Note, into Mapping My Journey, then ← Back
+  await flow("zabnote", lang, width, "/app/records.html", NOTES_SEED + ZAB_SEED, async (t, page, errors) => {
+    await page.click("#zabCorner"); await page.waitForSelector("#zabPanel [data-zab-pocket]", { timeout: 8000 });
+    await page.click('#zabPanel [data-zab-pocket="pk-a"]'); await page.waitForSelector("#zabPanel [data-zab-tonote]", { timeout: 8000 }); await settle(page, 400);
+    await page.click("#zabPanel [data-zab-tonote]"); await page.waitForSelector("#zabPanel [data-zab-pick]", { timeout: 8000 }); await settle(page, 400);
+    check(`${t}: POSITIVE CONTROL the folder picker lists the 40-character folders`, (await ev(page, () => document.querySelectorAll("#zabPanel [data-zab-note-folder] option").length)) >= 5);
+    const inPanel = () => ev(page, () => { const r = document.getElementById("zabPanel").getBoundingClientRect(); return { l: r.left, r: r.right, t: r.top, b: r.bottom, vw: innerWidth, vh: innerHeight }; });
+    const pr = await inPanel();
+    check(`${t}: the picker step sits inside the screen`, pr.l >= -1 && pr.r <= pr.vw + 1 && pr.b <= pr.vh + 1, JSON.stringify(pr));
+    check(`${t}: nothing in the picker step pokes out of the panel`, (await ev(page, () => { const p = document.getElementById("zabPanel"), r = p.getBoundingClientRect(); return [...p.querySelectorAll("*")].filter((e) => { const b = e.getBoundingClientRect(); return b.width > 0 && getComputedStyle(e).display !== "none" && (b.right > r.right + 1 || b.left < r.left - 1); }).length; })) === 0);
+    const sm = await small(page, "#zabPanel");
+    check(`${t}: the picker, Save as a Note and Cancel are 40px or more`, sm.length === 0, sm.join(" "));
+    const ct = await cut(page, "#zabPanel");
+    check(`${t}: no text in the picker step is cut`, ct.length === 0, JSON.stringify(ct));
+    await ev(page, () => { const s = document.querySelector("[data-zab-note-folder]"); s.value = "f4"; s.dispatchEvent(new Event("change", { bubbles: true })); });
+    await page.click("#zabPanel [data-zab-note-go]"); await settle(page, 1200);
+    probe(t, "after go", await ev(page, () => [document.getElementById("zabToast")?.hidden, document.getElementById("zabToast")?.innerText, document.getElementById("zabPanel")?.innerText.slice(0, 160)]));
+    const toastOpen = await ev(page, () => { const e = document.querySelector("#zabToast:not([hidden]) [data-zab-note-open]") || document.querySelector("#zabPanel [data-zab-note-open]"); return !!e; });
+    check(`${t}: POSITIVE CONTROL the Note was saved and an Open link is offered`, toastOpen);
+    const tb = await ev(page, () => { const e = document.querySelector("#zabToast:not([hidden])"); if (!e) return null; const r = e.getBoundingClientRect(); return { l: r.left, r: r.right, t: r.top, b: r.bottom, vw: innerWidth, vh: innerHeight, small: [...e.querySelectorAll("a, button")].filter((x) => x.getBoundingClientRect().height < 39.5).map((x) => x.tagName + Math.round(x.getBoundingClientRect().height)) }; });
+    probe(t, "toast", tb);
+    if (tb) check(`${t}: the "Saved as a Note" toast is inside the screen and its Open / ✕ are 40px or more`, tb.l >= -1 && tb.r <= tb.vw + 1 && tb.b <= tb.vh + 1 && tb.small.length === 0, JSON.stringify(tb));
+    await Promise.all([page.waitForNavigation({ timeout: 15000 }).catch(() => {}), page.evaluate(() => (document.querySelector("#zabToast:not([hidden]) [data-zab-note-open]") || document.querySelector("#zabPanel [data-zab-note-open]")).click())]);
+    await page.waitForTimeout(1500);
+    await page.evaluate(() => document.querySelectorAll('[id*="splash"], .app-splash-overlay, .mm-splash-overlay').forEach((e) => e.remove()));
+    probe(t, "landed on", await ev(page, () => [location.pathname + location.search, [...document.querySelectorAll("button, a")].filter((e) => /^←/.test(e.textContent.trim())).map((e) => e.textContent.trim() + ":" + Math.round(e.getBoundingClientRect().height))]));
+    const back = await ev(page, () => { const b = [...document.querySelectorAll("button, a")].find((e) => /^←/.test(e.textContent.trim()) && e.getBoundingClientRect().width > 0); if (!b) return null; const r = b.getBoundingClientRect(); return { h: r.height, w: r.width, l: r.left, r: r.right, vw: innerWidth }; });
+    check(`${t}: the Note's page shows ← Back, 40px or more and inside the screen`, !!back && back.h >= 39.5 && back.l >= -1 && back.r <= back.vw + 1, JSON.stringify(back));
+    check(`${t}: the Note's page has no sideways scroll`, (await wide(page)) <= 0, String(await wide(page)));
+    if (back) {
+      await page.evaluate(() => [...document.querySelectorAll("button, a")].find((e) => /^←/.test(e.textContent.trim()) && e.getBoundingClientRect().width > 0).click());
+      await page.waitForTimeout(2500);
+      probe(t, "after back", await ev(page, () => [location.pathname, !!document.querySelector("#zabPanel") && getComputedStyle(document.getElementById("zabPanel")).display]));
+      check(`${t}: ← Back returns to the page the reader came from`, (await ev(page, () => location.pathname)).endsWith("/records.html"));
+    }
     check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
   });
 
