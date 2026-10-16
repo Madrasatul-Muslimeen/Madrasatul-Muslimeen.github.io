@@ -21518,3 +21518,14 @@ New strings `wholeQuranLevelSentence` ("{level}: Achieved {known} and {percent} 
 - **Found, not this round's**, identical on `main`: `read-note-pane-browser.mjs` 2 failures at 1280px (the focus after closing the pane) and `study-note-binding.mjs` (its expected unit-type list lacks the newer types). Filed for a round.
 
 **Tests** (the Architect, on the round's head merged with `main` at v11.08): audit-part19 450/10 on the round's head, all 10 in the suite itself and fixed by the Architect (a hardcoded :8080 in the Home-menu check; a tap "outside" the Note's ⋯ popover aimed at the middle of the title, which the popover covers at 820 and 1440px), then edit 120/0 and homemenu 12/0; `--mutate=nozabclear` fails folders at 820 and 1440px (80/8), `nodelete` (80/16), `norename` (32/8), `noback` (48/16) and `notrackback` (80/16) each fail where their feature shows; 56 of 59 note/journey/folder/tag suites green, including journey-folder-menus 148/0 (red on `main` before); qr-stage1-hidden 110/0; phone-width-overflow 217/0; behaviour 971/0. Not this round's, identical on `main`: journey-s9 286/2 at 1440 (Builder round #891), read-note-pane 208/2 at 1280 (focus after closing the pane), study-note-binding (its unit-type list lacks the newer types).
+
+## v11.10 — 16 Oct 2026 — OpenITI credited on the About page and under the Āyah card's related hadith (PCA ▸ QR J02 S1c)
+
+**Built by the Architect** (branch `arch/openiti-credit`), on the PCA's relay of a licence gap the QR Architect found.
+
+- `app/about.html`: the Acknowledgements gain "Arabic hadith texts from OpenITI (CC BY-NC-SA 4.0)", linking to openiti.org, and a line saying the Hadith library's Arabic collections and the Āyah card's related hadith come from the Open Islamicate Texts Initiative. Outside `#app`, so it shows before sign-in too.
+- `app/js/ayah-action-sheet.js`: the related-hadith list ends with "Source: OpenITI (CC BY-NC-SA 4.0)" (`data-ayah-hadith-credit`), the same words and key as the Hadith library's credit. Every related hadith comes from OpenITI: the āyah–hadith index is built from its books.
+- `app/js/i18n/bn.js`: the two About-page strings in Bangla.
+- `tools/i18n-verify/ayah-related-hadith-browser.mjs` checks both; `audit-part12-words-browser.mjs`'s Bangla leak scan allows the source name OpenITI.
+
+**Tests:** ayah-related-hadith 96/0 (320/390/768/1280px, en and bn, plus about.html en and bn); without the change 12 of its checks fail (the credit under the list at every width and language, and the About page's credit and line in both languages); audit-part12 500/0 (its Bangla leak scan allows the source name OpenITI, as it does Bukhari and Corpus); behaviour 971/0.
