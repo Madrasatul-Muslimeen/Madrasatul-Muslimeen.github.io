@@ -21608,3 +21608,15 @@ New strings `wholeQuranLevelSentence` ("{level}: Achieved {known} and {percent} 
 - **Found, not this round's:** `zab-data.mjs` fails one check identically on `main` ("no module statically imports zab-bar.js, and no page names it"); `zab-bar-browser.mjs` expects the corner 🧰 on quranrevival.html at 390px, where since v10.59 it sits in the Wheel row (`zab-dock` passes). Both are stale checks, filed for a round.
 
 **Tests:** audit-part23 185/0; `--mutate=noretire` (179/6), `nofolder` and `noindexwait` (179/6) each fail it where their feature shows; bookmark-assign-unit 93/0; bookmark-folder-edit 68/0; bookmark-last-place 68/0; bookmark-marks-back 342/0; bookmark-multi-save 192/0; bookmark-open 77/0; bookmark-range-popover 158/0; bookmark-remove 60/0; bookmark-sheet 176/0; bookmarks-page-new-assign 44/0; zab-dock 74/0; zab-kinds 324/0; zab-to-note 196/0; zab-tree 240/0; load-speed-check 60/0; behaviour 971/0. Not this round's: zab-data 45/1 identical on `main` ("no module statically imports zab-bar.js"), and zab-bar-browser's 390px corner-button check on quranrevival.html (Quran Study, where the 🧰 sits in the Wheel row since v10.59; zab-dock passes) — both stale checks, filed.
+
+## v11.18 — 16 Oct 2026 — The Continue strip keeps the way back; hidden modules no longer use up its five places (PCF MSA J29 audit part 25)
+
+**Built by Builder round #907** (branch `builder/issue-907-run-1403`, PR #908), reviewed by the Architect by measurement on a current base. The two defects were found by audit part 24 (round #905, PR #906, test-only, merged without a version: Records page and Continue strip checked working; `zab-data.mjs` and `zab-bar-browser.mjs` repaired in place).
+
+- `app/js/continue-strip.js`: every chip carries `back=1` (the way-back law, decision 86) and keeps `resume=`.
+- `app/js/bookmark-nav.js`: `mountContinueBack()` shows "← Back" (to the referring page, or browser Back) only when `back=1` is present; `app/js/topic-study.js` calls it after its Bookmark menu.
+- `app/js/bookmarks.js`: `recentResumeEntries()` filters `HIDDEN_FROM_QR` modules BEFORE the cap, so the strip shows up to five visible places, newest first.
+- **Fixed in review (Architect):** the round first called `mountContinueBack()` from the shared `mountBookmarkMenu()`, which drew a SECOND ← Back on `quranrevival.html`, `bookmarks.html` and `asma-study.html` (each answers `back=1` itself). Measured on `main` vs the branch, moved to `topic-study.js`, and guarded by audit-part25's new "single" flow with `--mutate=menuwide`.
+- **For QR (change request):** `ldog-study.html` (`routine-study.js`, frozen) shows no ← Back when a chip opens it.
+
+**Tests:** audit-part25 112/0; `--mutate=noback` (12/2), `capfirst` (12/2) and `menuwide` (6/6, the "single" flow) each fail it where their defect shows; audit-part24 178/0; load-speed-check 66/0; qr-stage1-hidden 110/0; behaviour 971/0.
