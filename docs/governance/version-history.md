@@ -882,3 +882,4 @@ total). Allocated by the MMSA Architect.
 11.16: audit part 22: loading speed measured; Hadith collections draws without waiting for sign-in code (round #900). Allocated by the MMSA Architect.
 11.17: audit part 23: Bookmarks and Zab work end to end; New bookmark's Unit picker no longer throws (round #902). Allocated by the MMSA Architect.
 11.18: audit part 25: the Continue strip keeps the way back; hidden modules no longer use up its five places (round #907). Allocated by the MMSA Architect.
+11.19: audit part 26: Topic study works end to end; 40px sheet tabs; Breakdown note in Bangla (round #909). Allocated by the MMSA Architect.
