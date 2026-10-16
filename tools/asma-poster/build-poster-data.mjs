@@ -35,7 +35,10 @@ const arabics = {};
 const reworded = [];
 const missing = [];
 for (const n of [...ASMA_NAMES, ...DEFAULT_EXTRA_ASMA_NAMES]) {
-  const e = byAr.get(normAr(n.arabic)) || byTr.get(normTr(n.transliteration));
+  // The transliteration fallback may never pair a Name with a poster of a DIFFERENT Arabic word: "Al-Maalik" (112, المالك)
+  // and "Al-Maleek" (113, المليك) both reduce to "malik", so 112 was given 113's poster word for word (PCA, 16 Oct 2026).
+  const byT = byTr.get(normTr(n.transliteration));
+  const e = byAr.get(normAr(n.arabic)) || (byT && (!n.arabic || !byT.arabic || normAr(byT.arabic) === normAr(n.arabic)) ? byT : null);
   if (!e) { missing.push(`${n.number} ${n.transliteration}`); continue; }
   let text = e.description.replace(/\s+/g, " ").trim();
   if (n.transliteration === "Al-Witr") { if (text !== WITR) reworded.push({ number: n.number, from: text, to: WITR, why: "the Owner's template text" }); text = WITR; }
