@@ -3,7 +3,10 @@
 //          the page the chip was on; a page opened without back=1 shows none
 //   cap    the strip shows up to five VISIBLE places, newest first, however many hidden-module entries are newer
 //   empty  with only hidden entries there is no strip and no error
-// Mutations: --mutate=noback (chip without back=1), --mutate=capfirst (cap before hiding) must each fail the suite.
+//   single pages that answer back=1 themselves (the Qur'an page, Bookmarks, Asma) keep ONE way back: the Continue Back is not added
+//          there (added in the Architect's review: calling it from the shared Bookmark menu drew a second ← Back on all three)
+// Mutations: --mutate=noback (chip without back=1), --mutate=capfirst (cap before hiding), --mutate=menuwide (the Continue Back
+// mounted from the shared Bookmark menu on every page) must each fail the suite.
 // Run from the repository root with serve.js on :8080:
 //   node tools/i18n-verify/audit-part25-continue-back-browser.mjs [--only=<flow>] [--width=N] [--lang=en|bn] [--mutate=<name>]
 import fs from "node:fs";
@@ -20,6 +23,7 @@ const arg = (n) => (process.argv.find((a) => a.startsWith(`--${n}=`)) || "").sli
 const MUTATE = arg("mutate"), ONLY = arg("only"), WONLY = Number(arg("width")) || 0, LONLY = arg("lang");
 const MUTATIONS = {
   noback: ["app/js/continue-strip.js", "**/continue-strip.js*", '&back=1">', '">', "/app/deen-study.html"],
+  menuwide: ["app/js/bookmark-nav.js", "**/bookmark-nav.js*", "  mountBookmarkBack(navBarEl);\n", "  if (!mountBookmarkBack(navBarEl)) mountContinueBack();\n", "/app/quranrevival.html"],
   capfirst: ["app/js/bookmarks.js", "**/bookmarks.js*", '    .filter((e) => !isHiddenFromQr(e.moduleId)) // hidden modules never use up one of the strip\'s places\n', "", "/app/deen-study.html"],
 };
 if (MUTATE && !MUTATIONS[MUTATE]) throw new Error(`no such mutation ${MUTATE}`);
@@ -117,6 +121,22 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     }
     check(`${tag}: no page errors`, errors.length === 0, errors.join(" | ").slice(0, 200));
   });
+}
+
+// single: a page with its own answer to back=1 keeps exactly one way back (390px is enough: this is about presence, not layout).
+for (const lang of LANGS) {
+  if (WONLY && WONLY !== 390) break;
+  for (const [name, url] of [["single-quran", "/app/quranrevival.html?goto=2:255&back=1&backTo=hadith"], ["single-bookmarks", "/app/bookmarks.html?person=p1&back=1"], ["single-asma", "/app/asma-study.html?back=1"]]) {
+    await flow(name, lang, 390, url, MIXED, async (tag, page) => {
+      await page.waitForTimeout(2500);
+      const r = await ev(page, () => {
+        const vis = (e) => { const s = getComputedStyle(e), b = e.getBoundingClientRect(); return s.display !== "none" && s.visibility !== "hidden" && b.width > 0 && b.height > 0; };
+        return { own: [...document.querySelectorAll("a,button")].filter((e) => vis(e) && /^\s*←/.test(e.textContent)).length, extra: document.querySelectorAll("[data-bm-back]").length };
+      });
+      check(`${tag}: positive control: the page shows its own ← Back for back=1`, r.own >= 1, JSON.stringify(r));
+      check(`${tag}: the Continue Back is not added on top of it`, r.extra === 0, JSON.stringify(r));
+    });
+  }
 }
 
 await browser.close();

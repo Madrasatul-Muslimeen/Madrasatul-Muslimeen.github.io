@@ -174,6 +174,8 @@ export function mountBookmarkBack(navBarEl) {
 /**
  * The way-back law (decision 86) for the Continue strip: a chip opens a study page with back=1, and that page shows
  * ← Back to the page the chip was on. Nothing is shown without back=1, so a page opened from the menu looks as before.
+ * Called ONLY by the study pages that have no way back of their own (topic-study.js): quranrevival.html, asma-study.html,
+ * bookmarks.html and others already answer back=1 themselves, and calling this from the shared menu drew a second ← Back there.
  */
 export function mountContinueBack() {
   if (new URLSearchParams(location.search).get("back") !== "1") return null;
@@ -417,7 +419,7 @@ export function mountBookmarkMenu(navBarEl, { db, getTenantId, getPersonId, getB
   const details = navBarEl.querySelector(".nav-cat-bookmark");
   const listEl = navBarEl.querySelector("#navBookmarkList");
   if (!details || !listEl) return;
-  if (!mountBookmarkBack(navBarEl)) mountContinueBack();
+  mountBookmarkBack(navBarEl);
 
   let loading = false;
   let fetchedRoster = null; // only ever populated on the fallback path below
