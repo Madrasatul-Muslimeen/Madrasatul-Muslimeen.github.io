@@ -50,6 +50,12 @@ N("n1",${JSON.stringify(T_EN)},1);N("n2",${JSON.stringify(T_WORD)},2,{pinned:tru
 ["n1","n2","n3"].forEach(function(n){DATA.noteSources.push(Object.assign({_id:"t1__s"+n,sourceLinkId:"s"+n,noteId:n,sourceKey:"dua:20",sourceKind:"dua-unit",relationshipKind:"origin",approachId:null,provenanceKind:"study-note",status:"active",updatedAt:"2026-01-01T00:00:00.000Z",createdAt:"2026-01-01T00:00:00.000Z",createdBy:"test-uid"},own))});
 P("p1","n1","f4",0);P("p2","n2","f4",1);P("p3","n3","f4",2);})();`;
 
+// Notes seed plus a favourite and an archived Note, a Note in Trash and a folder in Trash, all with real-length names.
+const J_SEED = NOTES_SEED.replace(/\}\)\(\);$/, "") + `
+N("n4",${JSON.stringify("Favourite: " + T_EN)},4,{favourite:true});N("n5",${JSON.stringify("Archived: " + T_EN)},5,{archived:true});N("n6",${JSON.stringify("In the Trash: " + T_EN)},6,{status:"retired"});
+P("p4","n4","f4",3);P("p5","n5","f4",4);P("p6","n6","f4",5);
+DATA.noteFolders.push(Object.assign({_id:"t1__f9",folderId:"f9",name:"A retired folder with a name about forty chars",parentFolderId:"f1",semanticRole:"user",order:9,status:"retired",updatedAt:ts()},own));
+})();`;
 const READY_OPEN = `
 export const ZAB_READINESS_AUTHORITIES = Object.freeze(["master-architect"]);
 export const ZAB_DECLARATION = Object.freeze({ ready: true, decision: Object.freeze({ by: "master-architect", on: "2026-10-14", reference: "test-seam" }), gate: "E1", note: "test seam" });
@@ -141,6 +147,83 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     check(`${t}: every control in the window and the tab strip is 40px or more`, sm.length === 0, sm.join(" "));
     const ct = [...(await cut(page, ".note-win:not(.sheet-hidden)")), ...(await cut(page, "#noteWinSwitch"))];
     check(`${t}: no title is cut without a way to read it`, ct.length === 0, JSON.stringify(ct));
+    check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
+  });
+
+  // 2. Mapping My Journey: folder ⋯ menu, search, Favourites / Archived / Trash
+  await flow("jmenus", lang, width, "/app/journey-map.html", J_SEED, async (t, page, errors) => {
+    await page.waitForSelector("[data-folder-toggle], .folder-row", { timeout: 15000 });
+    for (let i = 0; i < 4; i++) { const tg = await page.$("[data-folder-toggle][aria-expanded=false]"); if (!tg) break; await tg.click(); await settle(page, 250); }
+    // Search: a long query that matches the long Note titles, and a 40-letter word.
+    await page.fill("#folderSearchInput", "A very long note title of about ninety characters that a real reader"); await settle(page, 600);
+    const hits = await ev(page, () => document.body.innerText.includes("A very long note title of about ninety"));
+    check(`${t}: Search: POSITIVE CONTROL a long query finds the long-titled Notes`, hits);
+    check(`${t}: Search: no sideways scroll, nothing outside the screen`, (await wide(page)) <= 0 && (await ev(page, () => [...document.querySelectorAll("#viewFolders *")].filter((e) => { const b = e.getBoundingClientRect(); return b.width > 0 && (b.right > innerWidth + 1 || b.left < -1); }).length)) === 0);
+    const sms = await small(page, "#viewFolders");
+    check(`${t}: Search: every control and result is 40px or more`, sms.length === 0, sms.join(" "));
+    const cts = await cut(page, "#viewFolders");
+    check(`${t}: Search: no result is cut without a way to read it`, cts.length === 0, JSON.stringify(cts));
+    await page.fill("#folderSearchInput", ""); await settle(page, 500);
+    const menus = await ev(page, () => [...document.querySelectorAll(".folder-menu-btn[data-bar-palette-toggle]")].map((b) => b.dataset.barPaletteToggle));
+    check(`${t}: POSITIVE CONTROL the tree has folder ⋯ menus`, menus.filter((m) => m.startsWith("folderMenu-")).length >= 4, JSON.stringify(menus));
+    // An open menu hangs off its row and the PAGE scrolls it into reach: scroll it to the middle, then it must sit inside the screen and
+    // every item's centre must hit the item itself (nothing -- nav row, bottom bar, Zab bar -- covers it).
+    const contained = async (what) => {
+      await ev(page, () => { const p = [...document.querySelectorAll(".bar-palette.open")].pop(); if (p) p.scrollIntoView({ block: "center" }); });
+      await settle(page, 200);
+      const r = await ev(page, () => [...document.querySelectorAll(".bar-palette.open")].map((p) => { const b = p.getBoundingClientRect(); const items = [...p.querySelectorAll("button, a")].filter((e) => e.getBoundingClientRect().height > 0); const covered = items.filter((e) => { const q = e.getBoundingClientRect(); const h = document.elementFromPoint(q.left + q.width / 2, q.top + q.height / 2); return !(h && (e === h || e.contains(h))); }).length; return { id: p.id || p.className, l: Math.round(b.left), r: Math.round(b.right), t: Math.round(b.top), b: Math.round(b.bottom), vw: innerWidth, vh: innerHeight, sw: p.scrollWidth - p.clientWidth, items: items.length, covered }; }));
+      probe(t, what, r);
+      check(`${t}: ${what}: a menu is open (positive control)`, r.length >= 1 && r[0].items >= 2, JSON.stringify(r));
+      check(`${t}: ${what}: scrolled into reach, the menu is inside the screen, no sideways scroll of its own, nothing covers an item`, r.length >= 1 && r.every((x) => x.l >= -1 && x.r <= x.vw + 1 && x.t >= -1 && x.b <= x.vh + 1 && x.sw <= 1 && x.covered === 0), JSON.stringify(r));
+      return r;
+    };
+    // The deepest folder's ⋯ (a 40-character name, 4 deep).
+    const deep = menus.filter((m) => m.startsWith("folderMenu-")).pop();
+    await page.evaluate((m) => document.querySelector(`[data-bar-palette-toggle="${m}"]`).scrollIntoView({ block: "center" }), deep);
+    await page.click(`[data-bar-palette-toggle="${deep}"]`); await settle(page, 400);
+    await contained("deep folder ⋯ menu");
+    const smf = await small(page, ".bar-palette");
+    check(`${t}: deep folder ⋯ menu: every item is 40px or more`, smf.length === 0, smf.join(" "));
+    const ctf = await cut(page, ".bar-palette");
+    check(`${t}: deep folder ⋯ menu: no item is cut`, ctf.length === 0, JSON.stringify(ctf));
+    check(`${t}: deep folder ⋯ menu: no sideways scroll`, (await wide(page)) <= 0, String(await wide(page)));
+    await page.keyboard.press("Escape"); await settle(page, 200);
+    await page.evaluate(() => document.querySelectorAll("[data-bar-palette-toggle][aria-expanded=true]").forEach((b) => b.click())); await settle(page, 200);
+    // The page ⋯ menu and the three views behind it.
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.click('[data-bar-palette-toggle="pageMenu"]'); await settle(page, 400);
+    await contained("page ⋯ menu");
+    const smp = await small(page, ".bar-palette");
+    check(`${t}: page ⋯ menu: every item is 40px or more`, smp.length === 0, smp.join(" "));
+    await page.click("#openFavouritesBtn"); await settle(page, 600);
+    probe(t, "fav dialog", await ev(page, () => document.body.innerText.slice(-300)));
+    const dlg = ".siyagah-dialog, [role=dialog]";
+    check(`${t}: Favourites: a dialog is open (positive control)`, (await ev(page, (s) => [...document.querySelectorAll(s)].some((d) => d.getBoundingClientRect().width > 0), dlg)));
+    check(`${t}: Favourites: no sideways scroll, nothing outside the screen`, (await wide(page)) <= 0 && (await outside(page, dlg)).length === 0, JSON.stringify(await outside(page, dlg)));
+    const smd = await small(page, dlg);
+    check(`${t}: Favourites: every control is 40px or more`, smd.length === 0, smd.join(" "));
+    const ctd = await cut(page, dlg);
+    check(`${t}: Favourites: no title is cut without a way to read it`, ctd.length === 0, JSON.stringify(ctd));
+    await page.keyboard.press("Escape"); await settle(page, 300);
+    await page.evaluate(() => { document.querySelectorAll(".siyagah-overlay, [data-dialog-overlay]").forEach((e) => e.remove()); });
+    await page.click('[data-bar-palette-toggle="pageMenu"]'); await settle(page, 300);
+    await page.click("#openArchivedBtn"); await settle(page, 600);
+    check(`${t}: Archived: no sideways scroll, nothing outside the screen`, (await wide(page)) <= 0 && (await outside(page, dlg)).length === 0, JSON.stringify(await outside(page, dlg)));
+    const sma = await small(page, dlg);
+    check(`${t}: Archived: every control is 40px or more`, sma.length === 0, sma.join(" "));
+    const cta = await cut(page, dlg);
+    check(`${t}: Archived: no title is cut without a way to read it`, cta.length === 0, JSON.stringify(cta));
+    await page.keyboard.press("Escape"); await settle(page, 300);
+    await page.evaluate(() => { document.querySelectorAll(".siyagah-overlay, [data-dialog-overlay]").forEach((e) => e.remove()); });
+    await page.click('[data-bar-palette-toggle="pageMenu"]'); await settle(page, 300);
+    await page.click("#openTrashBtn"); await page.waitForSelector("#viewTrash [data-trash-list], #trashEmpty", { timeout: 8000 }); await settle(page, 500);
+    check(`${t}: Trash: POSITIVE CONTROL the Note and the folder in Trash are listed`, (await ev(page, () => document.querySelectorAll("#viewTrash .trash-row").length)) >= 2, String(await ev(page, () => document.getElementById("viewTrash").innerText.slice(0, 120))));
+    check(`${t}: Trash: no sideways scroll, nothing outside the screen`, (await wide(page)) <= 0 && (await outside(page, "#viewTrash")).length === 0, JSON.stringify(await outside(page, "#viewTrash")));
+    const smt = await small(page, "#viewTrash");
+    check(`${t}: Trash: every Restore and Back is 40px or more`, smt.length === 0, smt.join(" "));
+    const ctt = await cut(page, "#viewTrash");
+    check(`${t}: Trash: no name is cut without a way to read it`, ctt.length === 0, JSON.stringify(ctt));
+    if (bn) { const own = (await bnText(page, "#viewTrash")).split(T_EN).join(" ").replace(/A retired folder with a name about forty chars|In the Trash:|Folder level \d with a name about forty chars/g, " "); check(`${t}: Trash: no English left (but what people typed)`, englishLeft(own).length === 0, englishLeft(own).join(", ")); }
     check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
   });
 }
