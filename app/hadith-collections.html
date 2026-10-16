@@ -149,7 +149,10 @@
     });
   </script>
 
-  <script type="module">
+  <!-- async (audit part 22): a plain module script waits for every EARLIER module script's whole graph, the Firebase SDK
+       included, so the corpus drew only after sign-in code had loaded. It needs none of it; async runs it the moment its
+       own imports are in. refreshCorpusActions() above already tolerates the corpus not being mounted yet. -->
+  <script type="module" async>
     import { mountHadithBrowser } from "./js/hadith-browser.js";
     import { translateStatic, t } from "./js/i18n.js";
     import { registerServiceWorker } from "./js/sw-register.js";

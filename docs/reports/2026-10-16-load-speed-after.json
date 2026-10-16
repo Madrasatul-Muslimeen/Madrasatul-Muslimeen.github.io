@@ -1,0 +1,373 @@
+{
+  "measured": "16 Oct 2026",
+  "network": {
+    "offline": false,
+    "downloadThroughput": 209715.2,
+    "uploadThroughput": 96000,
+    "latency": 150
+  },
+  "stubLatencyMs": 150,
+  "runsPerCell": 3,
+  "rows": [
+    {
+      "page": "hadith-collections",
+      "width": 390,
+      "visit": "first",
+      "firstPaintMs": 452,
+      "readyMs": 1558,
+      "bytes": 225584,
+      "requests": 36
+    },
+    {
+      "page": "hadith-collections",
+      "width": 390,
+      "visit": "second",
+      "firstPaintMs": 28,
+      "readyMs": 64,
+      "bytes": 75259,
+      "requests": 41
+    },
+    {
+      "page": "hadith-collections",
+      "width": 1400,
+      "visit": "first",
+      "firstPaintMs": 452,
+      "readyMs": 1559,
+      "bytes": 225584,
+      "requests": 36
+    },
+    {
+      "page": "hadith-collections",
+      "width": 1400,
+      "visit": "second",
+      "firstPaintMs": 28,
+      "readyMs": 83,
+      "bytes": 75259,
+      "requests": 41
+    },
+    {
+      "page": "hadith-study",
+      "width": 390,
+      "visit": "first",
+      "firstPaintMs": 464,
+      "readyMs": 2517,
+      "bytes": 384017,
+      "requests": 63
+    },
+    {
+      "page": "hadith-study",
+      "width": 390,
+      "visit": "second",
+      "firstPaintMs": 32,
+      "readyMs": 370,
+      "bytes": 90311,
+      "requests": 65
+    },
+    {
+      "page": "hadith-study",
+      "width": 1400,
+      "visit": "first",
+      "firstPaintMs": 464,
+      "readyMs": 2511,
+      "bytes": 384017,
+      "requests": 63
+    },
+    {
+      "page": "hadith-study",
+      "width": 1400,
+      "visit": "second",
+      "firstPaintMs": 28,
+      "readyMs": 371,
+      "bytes": 90311,
+      "requests": 65
+    },
+    {
+      "page": "notes",
+      "width": 390,
+      "visit": "first",
+      "firstPaintMs": 532,
+      "readyMs": 2591,
+      "bytes": 387706,
+      "requests": 55
+    },
+    {
+      "page": "notes",
+      "width": 390,
+      "visit": "second",
+      "firstPaintMs": 32,
+      "readyMs": 503,
+      "bytes": 64959,
+      "requests": 55
+    },
+    {
+      "page": "notes",
+      "width": 1400,
+      "visit": "first",
+      "firstPaintMs": 532,
+      "readyMs": 2598,
+      "bytes": 387706,
+      "requests": 55
+    },
+    {
+      "page": "notes",
+      "width": 1400,
+      "visit": "second",
+      "firstPaintMs": 32,
+      "readyMs": 507,
+      "bytes": 64959,
+      "requests": 55
+    },
+    {
+      "page": "journey-map",
+      "width": 390,
+      "visit": "first",
+      "firstPaintMs": 588,
+      "readyMs": 591,
+      "bytes": 174363,
+      "requests": 31
+    },
+    {
+      "page": "journey-map",
+      "width": 390,
+      "visit": "second",
+      "firstPaintMs": 40,
+      "readyMs": 52,
+      "bytes": 83219,
+      "requests": 35
+    },
+    {
+      "page": "journey-map",
+      "width": 1400,
+      "visit": "first",
+      "firstPaintMs": 588,
+      "readyMs": 589,
+      "bytes": 174363,
+      "requests": 31
+    },
+    {
+      "page": "journey-map",
+      "width": 1400,
+      "visit": "second",
+      "firstPaintMs": 52,
+      "readyMs": 44,
+      "bytes": 83532,
+      "requests": 36
+    },
+    {
+      "page": "import-notes",
+      "width": 390,
+      "visit": "first",
+      "firstPaintMs": 432,
+      "readyMs": 2061,
+      "bytes": 248739,
+      "requests": 38
+    },
+    {
+      "page": "import-notes",
+      "width": 390,
+      "visit": "second",
+      "firstPaintMs": 36,
+      "readyMs": 642,
+      "bytes": 64959,
+      "requests": 38
+    },
+    {
+      "page": "import-notes",
+      "width": 1400,
+      "visit": "first",
+      "firstPaintMs": 432,
+      "readyMs": 2056,
+      "bytes": 248739,
+      "requests": 38
+    },
+    {
+      "page": "import-notes",
+      "width": 1400,
+      "visit": "second",
+      "firstPaintMs": 36,
+      "readyMs": 642,
+      "bytes": 64959,
+      "requests": 38
+    },
+    {
+      "page": "bookmarks",
+      "width": 390,
+      "visit": "first",
+      "firstPaintMs": 424,
+      "readyMs": 1537,
+      "bytes": 242298,
+      "requests": 36
+    },
+    {
+      "page": "bookmarks",
+      "width": 390,
+      "visit": "second",
+      "firstPaintMs": 36,
+      "readyMs": 350,
+      "bytes": 70817,
+      "requests": 37
+    },
+    {
+      "page": "bookmarks",
+      "width": 1400,
+      "visit": "first",
+      "firstPaintMs": 424,
+      "readyMs": 1536,
+      "bytes": 242298,
+      "requests": 36
+    },
+    {
+      "page": "bookmarks",
+      "width": 1400,
+      "visit": "second",
+      "firstPaintMs": 36,
+      "readyMs": 346,
+      "bytes": 70817,
+      "requests": 37
+    },
+    {
+      "page": "records",
+      "width": 390,
+      "visit": "first",
+      "firstPaintMs": 428,
+      "readyMs": 1779,
+      "bytes": 265111,
+      "requests": 41
+    },
+    {
+      "page": "records",
+      "width": 390,
+      "visit": "second",
+      "firstPaintMs": 32,
+      "readyMs": 348,
+      "bytes": 70817,
+      "requests": 42
+    },
+    {
+      "page": "records",
+      "width": 1400,
+      "visit": "first",
+      "firstPaintMs": 432,
+      "readyMs": 1717,
+      "bytes": 265111,
+      "requests": 41
+    },
+    {
+      "page": "records",
+      "width": 1400,
+      "visit": "second",
+      "firstPaintMs": 36,
+      "readyMs": 345,
+      "bytes": 70817,
+      "requests": 42
+    },
+    {
+      "page": "index",
+      "width": 390,
+      "visit": "first",
+      "firstPaintMs": 764,
+      "readyMs": 7220,
+      "bytes": 1210555,
+      "requests": 136
+    },
+    {
+      "page": "index",
+      "width": 390,
+      "visit": "second",
+      "firstPaintMs": 80,
+      "readyMs": 438,
+      "bytes": 64959,
+      "requests": 136
+    },
+    {
+      "page": "index",
+      "width": 1400,
+      "visit": "first",
+      "firstPaintMs": 768,
+      "readyMs": 7230,
+      "bytes": 1210555,
+      "requests": 136
+    },
+    {
+      "page": "index",
+      "width": 1400,
+      "visit": "second",
+      "firstPaintMs": 96,
+      "readyMs": 447,
+      "bytes": 64959,
+      "requests": 136
+    },
+    {
+      "page": "onboarding",
+      "width": 390,
+      "visit": "first",
+      "firstPaintMs": 428,
+      "readyMs": 982,
+      "bytes": 149853,
+      "requests": 22
+    },
+    {
+      "page": "onboarding",
+      "width": 390,
+      "visit": "second",
+      "firstPaintMs": 28,
+      "readyMs": 201,
+      "bytes": 84453,
+      "requests": 24
+    },
+    {
+      "page": "onboarding",
+      "width": 1400,
+      "visit": "first",
+      "firstPaintMs": 428,
+      "readyMs": 976,
+      "bytes": 149853,
+      "requests": 22
+    },
+    {
+      "page": "onboarding",
+      "width": 1400,
+      "visit": "second",
+      "firstPaintMs": 32,
+      "readyMs": 202,
+      "bytes": 84453,
+      "requests": 24
+    },
+    {
+      "page": "about",
+      "width": 390,
+      "visit": "first",
+      "firstPaintMs": 424,
+      "readyMs": 1261,
+      "bytes": 194699,
+      "requests": 29
+    },
+    {
+      "page": "about",
+      "width": 390,
+      "visit": "second",
+      "firstPaintMs": 32,
+      "readyMs": 191,
+      "bytes": 84453,
+      "requests": 31
+    },
+    {
+      "page": "about",
+      "width": 1400,
+      "visit": "first",
+      "firstPaintMs": 428,
+      "readyMs": 1250,
+      "bytes": 194699,
+      "requests": 29
+    },
+    {
+      "page": "about",
+      "width": 1400,
+      "visit": "second",
+      "firstPaintMs": 36,
+      "readyMs": 188,
+      "bytes": 84453,
+      "requests": 31
+    }
+  ]
+}
