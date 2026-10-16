@@ -871,3 +871,4 @@ total). Allocated by the MMSA Architect.
 11.05: Legacy App - v10: the v10.68 release archived at /legacy-v10/ (PCF MMSA J32). Allocated by the MMSA Architect.
 11.06: audit part 16: Hadith and Dua work end to end; a long narration opens at its top; Back to Dua stays on screen (PCF J29, round #881). Allocated by the MMSA Architect.
 11.07: Explore Word by Word scrolls itself, so Study this Surah is never under the bottom bar (QR J02 S1). Allocated by the MMSA Architect.
+11.08: audit part 18: getting started, Deen Study and Arabic work end to end; finger-sized controls; topic status in Bangla (PCF J29, round #886). Allocated by the MMSA Architect.

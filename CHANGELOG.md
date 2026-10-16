@@ -21493,3 +21493,17 @@ New strings `wholeQuranLevelSentence` ("{level}: Achieved {known} and {percent} 
 - **`docs/QR-HANDOVER.md`:** the import walk follows `export … from` re-exports. That makes 141 scripts (`quranrevival.html` 135, `asma-study.html` 56, `ldog-study.html` 57) and 101 shared; `assign-picker.js` was the one missed.
 
 **Tests:** explore-wbw-tab 95/0 with its new reachability check (without the rule it fails at en/390: the dock covers the button); audit-part14 650/0; explore-all-approaches 280/0; explore-phone-card 146/0; explore-coverage 36/0; explore-hizb-view 80/0; qcr-popup 34/0; phone-width-overflow 217/0; behaviour 971/0; the eight governance suites green.
+
+## v11.08 — 16 Oct 2026 — Getting started, Deen Study and Arabic work end to end (PCF J29 audit part 18)
+
+**Built by Builder round #886** (branch `builder/issue-886-run-1362`, PR #887). The run ended "success" without opening a PR; the Architect opened it and reviewed it by measurement.
+
+- **All work**, at 320/390/820/1440px in English and Bangla: sign-in and sign-up (the tenant and person writes with I17 stamps), family members at sign-up, the menu bar (Modules ▾ shows exactly the six QR modules), My account, the language switch, card look, the way back, the taglines strip (pause, owner settings), Deen Study and Arabic topic study (the `topic:<id>` write, Bookmark this), and the Continue strip.
+- **Fixed:**
+  - `app/deen-study.html`, `app/arabic-study.html`: the Continue chip, the ★ bookmark, Track my progress and Claim are at least 40px.
+  - `app/accept-invite.html`: inputs and buttons are at least 40px.
+  - `app/js/topic-study.js`: the Status line used the raw ids ("in_progress · pending"). It now uses `statusLabel` and `confirmStateLabel`, in Bangla on the Bangla page, and "Loading…" is translated.
+  - `app/onboarding.html`: after an error the Create button's label goes through `t()`, so it stays in Bangla.
+- **Found, not this round's:** `bookmark-marks-back-browser.mjs` fails 6 checks at 320px, en and bn, identically on `main`: the Read bar's "← Back" pill takes a line of its own. Filed for its own round.
+
+**Tests** (the Architect, on the round's head with `main` at v11.06, re-checked after merging v11.07): audit-part18 1020/0 (320–1440px, en and bn); `--mutate=chip26`, `star22`, `statusraw` and `invite36` each fail it at 390px in en and bn, and `createen` fails it in bn (the English page cannot show that defect); card-look 96/0; family-signup 68/0; journey-map-back 38/0; notes-way-back 33/0; asma-ways-back 66/0; navcheck and tagline-cost exit 0; legacy-links 97/0; qr-stage1-hidden 110/0; phone-width-overflow 217/0; behaviour 971/0; after merging v11.07: audit-part18 bn/390 129/0, explore-wbw-tab 95/0. Not this round's: bookmark-marks-back 336/6 at 320px, identical on `main` (the Read bar's Back pill takes a line of its own), filed for its own round.
