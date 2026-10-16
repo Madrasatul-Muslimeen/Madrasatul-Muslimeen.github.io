@@ -896,6 +896,7 @@ import { mountBookmarkMenu, noteBookmarkOpened, getBookmarkTimesShown, bookmarkT
     async function nbOnUnitTypeChange() {
       nbUpdateFieldVisibility();
       if (["ayah", "range"].includes(nbUnitTypeSelect.value)) {
+        await ensureNbSurahIndex(); // a quick tap on the Unit picker can come before the surah list has arrived
         const meta = nbSurahIndex.find((s) => s.surahNumber === Number(nbSurahSelect.value));
         const options = nbOptionsForCount(meta?.ayahCount ?? 1);
         nbAyahSelect.innerHTML = options;
