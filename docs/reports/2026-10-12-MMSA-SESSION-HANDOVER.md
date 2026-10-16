@@ -357,3 +357,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v11.09** (2026-10-16): audit part 19: Notes and Mapping My Journey (first half) work end to end; a folder's menu clears the Zab bar (PCF J29, round #888).
 - **v11.10** (2026-10-16): OpenITI credited on the About page and under the Ayah card's related hadith (PCA, QR J02 S1c).
 - **v11.11** (2026-10-16): Asma: Name 112 Al-Maalik shows its own Arabic, not Al-Maleek's (PCA must-fix).
+- **v11.12** (2026-10-16): the Read bar's way back shares a line on a small phone; journey-s9 and journey-folder-menus green (round #891).
