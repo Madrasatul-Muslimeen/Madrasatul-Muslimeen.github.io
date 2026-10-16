@@ -2751,7 +2751,10 @@ export function createNoteViews(host) {
   function saveWinRect(r) { try { localStorage.setItem(host.winKey, JSON.stringify(r)); } catch { /* private mode */ } }
   function defaultWinRect() {
     const w = Math.min(520, window.innerWidth - 40), h = Math.min(620, window.innerHeight - 60);
-    return { x: Math.round((window.innerWidth - w) / 2), y: Math.round((window.innerHeight - h) / 2), w, h };
+    // Centred, but never over the nav row (audit part 21: at 1440 x 900 the first window used to start 18px up inside it).
+    const nav = document.getElementById("topNav"), navBottom = nav && nav.getClientRects().length ? Math.ceil(nav.getBoundingClientRect().bottom) : 0;
+    const y = Math.max(Math.round((window.innerHeight - h) / 2), navBottom > 0 ? navBottom + 8 : 0);
+    return { x: Math.round((window.innerWidth - w) / 2), y, w, h: Math.max(Math.min(h, window.innerHeight - y - 8), 360) };
   }
   function applyWindowGeometry(v) {
     const sheet = windowTier() === "sheet";
