@@ -200,11 +200,8 @@
   .bar-palette.open { display: flex; }
   .bar-palette button { width: 100%; text-align: left; }
   .folder-row-menu button { min-height: 40px; } /* S9: every menu item is a 40px target */
-  /* 16 Oct 2026 (issue #891): a folder's ⋯ menu is absolutely placed, so it hangs below the last row and adds nothing to
-     the page's height. Beside the Zab bar (fixed, 44px, shown from 768px) the page then cannot scroll far enough to lift
-     the menu's last item (🗑 Delete) clear of the bar -- measured at 1280px: Delete 1310-1350, bar 1315-1359 at full scroll.
-     While a menu is open the page gets room for the menu and the bar. */
-  @media (min-width: 768px) { body.zab-bar-on:has(.folder-row-menu.open) { padding-bottom: calc(56px + 14rem); } }
+  /* Audit part 19 (PCF J29): from 768px the fixed Zab bar (44px) sits on the bottom of the screen. A folder's ⋯ menu hangs below its row, so for a row near the end of the page the menu IS the end of the page and its last item (Delete) could never be scrolled clear of the bar. The menu's own bottom padding gives the page room to scroll it above the bar. */
+  @media (min-width: 768px) { body:has(#zabBar) .folder-row-menu.open { padding-bottom: 56px; } } /* audit19 zabclear */
   .note-order-btn { min-width: 2.4rem; }
   .folder-search-breadcrumb { display: block; font-size: 0.76rem; color: #888; }
   .folder-search-result { padding: 0.4rem 0.55rem; border: 1px solid #ddd; border-radius: 0.5rem; margin: 0.3rem 0; cursor: pointer; background: #fff; }

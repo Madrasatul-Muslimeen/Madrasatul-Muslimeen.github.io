@@ -389,7 +389,10 @@ function hadithInfoHtml(hadith) {
   const items = hadith.items ?? [];
   if (!items.length) return `<p class="ayah-status-empty" data-ayah-hadith-none>${escapeHtml(t("No hadith in our books quotes this āyah word for word."))}</p>`;
   const more = hadith.more > 0 ? `<p class="ayah-related-sub">${escapeHtml(t("and {count} more", { count: num(hadith.more) }))}</p>` : "";
-  return `<div class="ayah-related-list">${items.map(hadithItemHtml).join("")}</div>${more}`;
+  // The related hadith all come from OpenITI (the āyah–hadith index is built from its books), whose CC BY-NC-SA 4.0 licence
+  // requires the credit wherever its text shows (PCA, QR J02 S1c). The same words as the Hadith library's credit line.
+  const credit = `<p class="ayah-related-sub" data-ayah-hadith-credit>${escapeHtml(t("Source: OpenITI (CC BY-NC-SA 4.0)"))}</p>`;
+  return `<div class="ayah-related-list">${items.map(hadithItemHtml).join("")}</div>${more}${credit}`;
 }
 
 /**

@@ -872,3 +872,5 @@ total). Allocated by the MMSA Architect.
 11.06: audit part 16: Hadith and Dua work end to end; a long narration opens at its top; Back to Dua stays on screen (PCF J29, round #881). Allocated by the MMSA Architect.
 11.07: Explore Word by Word scrolls itself, so Study this Surah is never under the bottom bar (QR J02 S1). Allocated by the MMSA Architect.
 11.08: audit part 18: getting started, Deen Study and Arabic work end to end; finger-sized controls; topic status in Bangla (PCF J29, round #886). Allocated by the MMSA Architect.
+11.09: audit part 19: Notes and Mapping My Journey (first half) work end to end; a folder's menu clears the Zab bar (PCF J29, round #888). Allocated by the MMSA Architect.
+11.10: OpenITI credited on the About page and under the Ayah card's related hadith (PCA, QR J02 S1c). Allocated by the MMSA Architect.

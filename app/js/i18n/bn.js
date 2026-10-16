@@ -3268,6 +3268,9 @@ export const BN = {
   "Quran fonts provided by Quran Foundation": "কুরআনের ফন্ট সরবরাহ করেছে Quran Foundation", // ?
   // 28 Sep 2026 -- about.html's Acknowledgements section, now shown to everyone.
   "Acknowledgements": "কৃতজ্ঞতা",
+  // 16 Oct 2026 -- about.html: the OpenITI credit (PCA, QR J02 S1c; CC BY-NC-SA 4.0 requires it).
+  "Arabic hadith texts from OpenITI (CC BY-NC-SA 4.0)": "আরবি হাদিসের পাঠ OpenITI থেকে (CC BY-NC-SA 4.0)",
+  "The Arabic hadith collections in the Hadith library, and the hadith shown under \"Related hadith\" on the Āyah card, come from the Open Islamicate Texts Initiative (OpenITI).": "হাদিস লাইব্রেরির আরবি হাদিস সংকলনগুলো, এবং আয়াত কার্ডে \"সম্পর্কিত হাদিস\"-এর নিচে দেখানো হাদিসগুলো, Open Islamicate Texts Initiative (OpenITI) থেকে নেওয়া।",
   "These fonts draw every page of the Mushaf view, plain and with Tajweed colours. The app loads them from Quran Foundation and keeps the pages you have opened on your phone, so you can read them offline.": "মুসহাফ ভিউয়ের প্রতিটি পৃষ্ঠা এই ফন্ট দিয়ে আঁকা হয়, সাধারণভাবে ও তাজবীদের রঙসহ। অ্যাপটি এগুলো Quran Foundation থেকে আনে এবং আপনার খোলা পৃষ্ঠাগুলো ফোনে রেখে দেয়, যাতে অফলাইনেও পড়তে পারেন।",
   // 27 Sep 2026 -- landing page: the chosen unit's name in the wheel's
   // centre, and the wheel-look switch (Dark / Light / Colour).
