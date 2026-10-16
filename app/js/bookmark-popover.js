@@ -105,7 +105,7 @@ function ensureStyles() {
     }
     .bm-popover {
       background: white; color: #222; border-radius: 0.6rem; padding: 1rem 1.1rem;
-      width: min(24rem, 100%); box-shadow: 0 6px 24px rgba(0,0,0,0.25);
+      width: min(24rem, 100%); max-height: 100%; overflow-y: auto; box-shadow: 0 6px 24px rgba(0,0,0,0.25);
       font-family: system-ui, sans-serif;
     }
     .bm-popover h3 { margin: 0 0 0.7rem; font-size: 1.05rem; }
@@ -113,10 +113,11 @@ function ensureStyles() {
     .bm-popover-field input, .bm-popover-field select {
       display: block; width: 100%; margin-top: 0.25rem; font-size: 0.92rem;
       padding: 0.35rem 0.45rem; border: 1px solid #ccc; border-radius: 0.35rem; box-sizing: border-box;
+      min-height: 40px; /* audit28: a finger-sized field (they were 29-31px) */
     }
     .bm-popover-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.4rem; }
     .bm-popover-actions button {
-      font-size: 0.88rem; padding: 0.35rem 0.8rem; min-height: 36px; border-radius: 0.4rem; border: 1px solid #ccc;
+      font-size: 0.88rem; padding: 0.35rem 0.8rem; min-height: 40px; border-radius: 0.4rem; border: 1px solid #ccc;
       background: #1F3A6E; color: white; cursor: pointer;
     }
     .bm-popover-actions button.secondary { background: white; color: #1F3A6E; }
