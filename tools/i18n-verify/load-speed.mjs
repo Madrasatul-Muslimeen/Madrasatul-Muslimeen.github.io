@@ -18,6 +18,7 @@
 import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
+import zlib from "node:zlib";
 import { chromium } from "./harness.mjs";
 import { stubFor } from "./firebase-stub.mjs";
 
@@ -55,6 +56,8 @@ export function startPagesServer() {
         const etag = `"${data.length}-${fs.statSync(file).mtimeMs}"`;
         const headers = { "Content-Type": MIME[path.extname(file)] || "application/octet-stream", ETag: etag, "Cache-Control": "max-age=600" };
         if (req.headers["if-none-match"] === etag) { res.writeHead(304, headers); return res.end(); }
+        // GitHub Pages gzips text; without this every byte count and every transfer time here is about 3x too big.
+        if (/^(text|application\/json|image\/svg)/.test(headers["Content-Type"]) && /gzip/.test(req.headers["accept-encoding"] || "")) { headers["Content-Encoding"] = "gzip"; headers.Vary = "Accept-Encoding"; data = zlib.gzipSync(data); }
         res.writeHead(200, headers); res.end(data);
       });
     });
@@ -96,8 +99,9 @@ export async function measurePage(browser, base, def, width, { mutate = null } =
     await cdp.send("Network.emulateNetworkConditions", NETWORK);
     if (process.argv.includes("--debug")) { page.on("pageerror", (e) => console.log("pageerror", String(e).slice(0, 200))); page.on("requestfailed", (r) => console.log("failed", r.url(), r.failure()?.errorText)); }
     let bytes = 0, requests = 0;
-    cdp.on("Network.loadingFinished", (e) => { bytes += e.encodedDataLength || 0; });
-    cdp.on("Network.requestWillBeSent", () => { requests++; });
+    const urls = new Map();
+    cdp.on("Network.loadingFinished", (e) => { bytes += e.encodedDataLength || 0; if (process.argv.includes("--list") && visit === "first") console.log("  ", String(e.encodedDataLength).padStart(8), urls.get(e.requestId)); });
+    cdp.on("Network.requestWillBeSent", (e) => { requests++; urls.set(e.requestId, e.request.url.replace(base, "")); });
     await page.addInitScript(() => { window.__t0 = performance.now(); });
     const start = Date.now();
     await page.goto(base + def.path, { waitUntil: "commit" });
