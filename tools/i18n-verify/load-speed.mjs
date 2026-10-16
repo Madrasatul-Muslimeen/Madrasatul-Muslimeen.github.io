@@ -40,7 +40,9 @@ export const PAGES = [
   { key: "bookmarks", path: "/app/bookmarks.html", ready: has("#app", 20) },
   { key: "records", path: "/app/records.html", ready: has("#app", 20) },
   { key: "deen-study", path: "/app/deen-study.html", ready: has("#listContainer", 10) }, // a study page: where the Continue strip is drawn (audit part 24)
-  { key: "arabic-study", path: "/app/arabic-study.html", ready: has("#listContainer", 10) }, // audit part 26: same shell as deen-study
+  // arabic-study is NOT measured (Architect review of audit part 26, 17 Oct 2026): the harness tenant has no Arabic subjects, so
+  // EVERY visit runs the one-time catalogue seeding (subjectTemplates + a 55-write batch, ~4.5 s on the slowed stub) before the
+  // list draws "Nothing under here yet." A real tenant seeds once. deen-study (same shell, topic-study.js) stands for it.
   { key: "index", path: "/app/index.html", ready: has("#app", 30) },
   { key: "onboarding", path: "/app/onboarding.html", ready: has("#onboardForm", 10) },
   { key: "about", path: "/app/about.html", ready: has("#featureRows", 1) },
