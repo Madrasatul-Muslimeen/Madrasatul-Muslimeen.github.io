@@ -8,7 +8,8 @@
 //   --mutate-depth-back       the old depth limit of 8 is put back
 //   --mutate-no-recursive     closing a folder leaves its sub-folders open
 //   --mutate-no-embed-card-rule  the tray's list column loses its title/▾ rule (the ▾ wraps below the title)
-//   --mutate-embed-tier-1200     the tray's wide tier starts at 1200px again (the test expects 900)
+//   --mutate-no-centre           the drop-target row is not centred before the touch drag (issue #891) -> the 1440px tray touch drag fails
+//   --mutate-embed-tier-1200    the tray's wide tier starts at 1200px again (the test expects 900)
 //   --mutate-no-tagsearch    the tree search ignores tags
 import { chromium, newContext, openPage } from "./harness.mjs";
 
@@ -257,6 +258,10 @@ async function run(lang, width, embedFrame = false) {
     // by touch: long-press, then drag
     await tapFolder(P, "fA");
     await resetWrites(P);
+    // UPDATED IN PLACE (issue #891): centre() only scrolls the folder row "if needed", which in the 1440px tray leaves it flush
+    // with the tray's bottom edge, where the tray's own resize handle (.jt-h) is what a finger lands on -- measured:
+    // elementFromPoint at the drop point was "jt-h", so the drop never reached the row. Put the row mid-pane first.
+    if (!process.argv.includes("--mutate-no-centre")) await curP.locator(`${rowSel("fd2")} [data-folder-name]`).first().evaluate((e) => e.scrollIntoView({ block: "center" }));
     const from = await centre(page, '#folderNotes [data-note-id="n2"] .note-card-meta');
     const to = await centre(page, `${rowSel("fd2")} [data-folder-name]`);
     await touch("touchStart", from.x, from.y); await wait(700);

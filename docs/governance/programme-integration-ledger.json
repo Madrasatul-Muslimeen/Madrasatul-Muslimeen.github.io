@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "11.10",
+    "version": "11.12",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -3941,8 +3941,32 @@
     {
       "version": "11.10",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "The OpenITI licence credit (CC BY-NC-SA 4.0) on the About page and the Ayah card's related hadith.",
+      "integration": {
+        "authorizedOn": "2026-10-16",
+        "integratedOn": "2026-10-16",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "11.11",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Asma poster data: 112 no longer carries 113's poster (a transliteration match).",
+      "integration": {
+        "authorizedOn": "2026-10-16",
+        "integratedOn": "2026-10-16",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "11.12",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Round #891, PR #892: the 320px Read bar Back pill; two journey suites green.",
       "integration": {
         "authorizedOn": "2026-10-16",
         "integratedOn": "2026-10-16",
@@ -3951,8 +3975,10 @@
       }
     }
   ],
-  "nextUnallocated": "11.11",
+  "nextUnallocated": "11.13",
   "nextUnallocatedNote": [
+    "v11.12 was allocated to the Read bar's way back shares a line on a small phone; journey-s9 and journey-folder-menus green (round #891), 2026-10-16.",
+    "v11.11 was allocated to Asma: Name 112 Al-Maalik shows its own Arabic, not Al-Maleek's (PCA must-fix), 2026-10-16.",
     "v11.10 was allocated to OpenITI credited on the About page and under the Ayah card's related hadith (PCA, QR J02 S1c), 2026-10-16.",
     "v11.09 was allocated to audit part 19: Notes and Mapping My Journey (first half) work end to end; a folder's menu clears the Zab bar (PCF J29, round #888), 2026-10-16.",
     "v11.08 was allocated to audit part 18: getting started, Deen Study and Arabic work end to end; finger-sized controls; topic status in Bangla (PCF J29, round #886), 2026-10-16.",

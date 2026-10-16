@@ -112,6 +112,22 @@ Read this first, every session. It is the standing brief.
 >   (`h: true`): "vX.YY · date time (Sydney) · what changed, in plain words, and where to find it (job)", with a full UTC
 >   `at`. Write it in the same step as the release; the PCA checks at every :25/:55 that each release has its line.
 
+> ## ⇢ ONE HOME FOR EVERY APP PART (the Owner, PCA J71, 16 Oct 2026) — BINDING
+>
+> **Asma, LDOG and Quran Study live in QuranRevival** (repository `QuranRevival/QuranRevival.github.io`, its own
+> Architect). **Hadith, Dua and Seerah live in MMSA**, and so do the shared tools: **Notes / Mapping My Journey**
+> (`notes.html`, `journey-map.html`, `note-window.js`, the note pane), sign-in, Records and Bookmarks. Other apps open a
+> part's home; they never copy it.
+> - **MMSA's Asma, Quran Study and LDOG are FROZEN**: safety fixes only, each reported to the PCA so QR carries it. Any
+>   other need there goes to the PCA as "PCA ▸ change request". (`quranrevival.html` and its Quran-only scripts are
+>   Quran Study.)
+> - **QR reads MMSA's Hadith data** from `/tools/hadith-data-pull/output/…`: keep those paths stable, and send the PCA
+>   a change notice BEFORE any move.
+> - **QR keeps a pinned, byte-for-byte copy of MMSA's in-page note scripts** (the Notes pane beside the Read view, the
+>   Zab bar, "file this note"). Every change to them gets a change notice to the PCA with its commit.
+> - A Hadith tie to an Asma Name is a LINK to QR's Asma; a shared list lives in one data file in its owner's home.
+> - MMSA's audit rounds cover Hadith, Dua, Seerah and the shared tools.
+
 > ## ⇢ HADITH STUDY is being built on `feature/hadith-study` — READ IF YOU TOUCH HADITH
 >
 > **This branch's final application version is `v08.29`, and it is now MERGED TO `main`.** The
@@ -374,7 +390,7 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v11.10 on `main`** (16 Oct 2026 — **OpenITI is credited where its Arabic hadith show: the About page and the Āyah card's related hadith**, PCA ▸ QR J02 S1c). Built by the Architect. The Āyah card's "Related hadith" are OpenITI text (CC BY-NC-SA 4.0), but only the Hadith library credited it. `app/about.html`'s Acknowledgements now credit OpenITI with a line saying which texts it covers, in English and Bangla; the related-hadith list ends with "Source: OpenITI (CC BY-NC-SA 4.0)", the Hadith library's own words. Open: the 320px Read bar Back pill, journey-s9 (Builder round #891); read-note-pane and study-note-binding, both red on `main`. Still open in PCF J30: v11.00 vs v11.01. The handover for the next session is the 16 Oct 1:45 am block of `docs/reports/2026-10-12-MMSA-SESSION-HANDOVER.md`. **Tests:** ayah-related-hadith 96/0 (320/390/768/1280px, en and bn, plus about.html en and bn); without the change 12 of its checks fail (the credit under the list at every width and language, and the About page's credit and line in both languages); audit-part12 500/0 (its Bangla leak scan allows the source name OpenITI, as it does Bukhari and Corpus); behaviour 971/0.
+**Current milestone: v11.12 on `main`** (16 Oct 2026 — **on a small phone the Read bar's way back shares a line with the tools; three suites red on `main` are green**, PCA ▸ QR J02 S1b). Built by Builder round #891 (branch `builder/issue-891-run-1374`, PR #892). `app/quranrevival.html`: below 420px `#readBackSlot` takes a 6.5rem basis, and below 340px a 5.5rem basis with a tighter pad, so the way back shares the line with 📖 ⤢ ⋯ instead of taking a fifth line. Its folder-menu fix duplicated v11.09's and was dropped on merge; journey-s9's touch drag now centres its target first (a test defect: the drop landed on the tray's resize handle). Under the one-home rule (PCA J71) this was the last non-safety Quran Study change: it was asked for before the freeze. Open: Builder round #894 (audit part 20); read-note-pane, read-bar-tools and study-note-binding red on `main`. The handover for the next session is the 16 Oct 1:45 am block of `docs/reports/2026-10-12-MMSA-SESSION-HANDOVER.md`. **Tests:** bookmark-marks-back 342/0 (336/6 on `main`), and `--mutate=narrow-basis` brings the 6 back at 320px; journey-s9 288/0 (286/2 on `main`), `--mutate-no-centre` brings the 2 back at 1440px; journey-folder-menus 148/0, `--mutate=no-menu-room` (v11.09's rule removed) stops it at the Delete tap; read-meaning 39/0; audit-part18 1020/0; audit-part11 506/0; navcheck exit 0; phone-width-overflow 217/0; qr-stage1-hidden 110/0; behaviour 971/0; re-checked after merging v11.11: bookmark-marks-back 342/0. Not this round's, identical on `main`: read-bar-tools 61/2 at 1280px (⋯ shows from 900px), with read-note-pane's 2 (Builder round #894).
 
 **Earlier milestones, v08.111 back to v07.139, and the long notes around them**
 (the held Phase 4 wiring, the four deployment states, the Programme Integration
