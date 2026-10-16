@@ -27,7 +27,7 @@ const MUTATE = arg("mutate"), ONLY = arg("only"), WONLY = Number(arg("width")) |
 const MUTATIONS = {
   // Anchors updated in the Architect's merge review (17 Oct): v11.21 (#916) already carried these two fixes in its own form, which the merge kept.
   bmscroll: ["app/js/bookmark-popover.js", "**/js/bookmark-popover.js*", "width: min(24rem, 100%); max-height: 100%; overflow-y: auto;", "width: min(24rem, 100%);", "/app/"],
-  nwtitle: ["app/css/note-window.css", "**/css/note-window.css*", ".note-win.sheet .nw-title { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; line-height: 1.2; }", "", "/app/"],
+  nwtitle: ["app/css/note-window.css", "**/css/note-window.css*", ".note-win .nw-title { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; line-height: 1.2; }", "", "/app/"],
   nwmenu: ["app/css/note-window.css", "**/css/note-window.css*", "  .note-win .bar-palette.pane-menu { bottom: var(--nw-switch, 0px);", "  .note-win .bar-palette.pane-menu-off { bottom: var(--nw-switch, 0px);", "/app/"],
   bmbtn40: ["app/js/bookmark-popover.js", "**/js/bookmark-popover.js*", "padding: 0.35rem 0.8rem; min-height: 40px; min-width: 40px;", "padding: 0.35rem 0.8rem; min-height: 36px;", "/app/"],
 };

@@ -87,9 +87,9 @@ ul[data-check] > li[data-checked="true"] { color: #555; text-decoration: line-th
 .note-win.sheet-hidden { display: none; }
 .nw-bar { flex: 0 0 44px; display: flex; align-items: center; justify-content: space-between; gap: 0.4rem; background: #1f3a6e; color: #fff; padding: 0 0 0 0.8rem; border-radius: 7px 7px 0 0; cursor: move; touch-action: none; user-select: none; -webkit-user-select: none; }
 .note-win.sheet .nw-bar { cursor: default; border-radius: 0; }
-/* audit28: on a phone sheet a long title wraps (a 90-character one was cut with an ellipsis and no way to read it); the bar grows to fit */
-.note-win.sheet .nw-bar { flex: 0 0 auto; min-height: 44px; padding-block: 2px; }
-.note-win.sheet .nw-title { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; line-height: 1.2; }
+/* audit28/30: a long title wraps in every window, sheet or floating (a 90-character one was cut with an ellipsis and no way to read it); the bar grows to fit */
+.note-win .nw-bar { flex: 0 0 auto; min-height: 44px; padding-block: 2px; }
+.note-win .nw-title { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; line-height: 1.2; }
 .nw-title { font-weight: 600; font-size: 1rem; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .nw-close { flex: 0 0 auto; min-width: 44px; min-height: 44px; background: none; border: 0; color: #fff; font-size: 1.4rem; line-height: 1; cursor: pointer; }
 .nw-view { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; padding: 0.3rem 0.6rem 0; }
