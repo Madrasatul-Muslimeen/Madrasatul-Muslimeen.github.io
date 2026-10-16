@@ -7,6 +7,49 @@ v10.28). Read `CLAUDE.md` first. The prompt that starts the next session is
 
 This session was summarised once (its context compacted), which is why it hands over here.
 
+## LATEST UPDATE — 16 Oct 2026, 8:35 pm Sydney, session `session_01QrqatzKibuMLUrZsW4AgCr` (v11.02 → v11.16) — READ THIS FIRST
+
+The MSA Master Architect (MMSA was renamed **MSA, Madrasah Study App**, by the Owner at 5:36 pm; the project id,
+repository and database paths stay `mmsa`). This session was summarised once and has run long; a fresh session
+should take over from here.
+
+**Where things stand.** `main` is at **v11.16** (read it off `app/js/version.js`). The release lines v11.02–v11.16 are
+appended below this block by `allocate-version.py`. **In flight: Builder round #902** (issue #902, dispatched 09:16 UTC):
+the User Manual's Bookmarks and Zab features checked end to end, plus their loading speed. When its run completes, open
+its PR if the Builder did not, review by measurement (its suite at 320/390/820/1440 in en and bn, each mutation, the
+`bookmark*`/`zab*` suites, `load-speed-check.mjs`, `phone-width-overflow`, `qr-stage1-hidden`, `behaviour` once),
+allocate the next version, merge, and update the PCF (J29 Done line with W-T-P-E-O, What's New, `p/mmsa.monitor`).
+
+**New rules from the Owner and the PCA today — all binding:**
+- **One home for every app part (PCA J71)**, recorded in `CLAUDE.md`: Asma, LDOG and Quran Study live in QuranRevival
+  (its own repository and Architect); MSA keeps Hadith, Dua, Seerah and the shared tools (Notes / Mapping My Journey,
+  sign-in, Records, Bookmarks, Zab). **MSA's Quran Study, Asma and LDOG are frozen** (safety fixes only; the PCA has
+  made two one-line exceptions, v11.13 and v11.15). Every change to a shared in-page note script (`note-window.js`,
+  the Notes pane, the Zab bar, "file this note") gets a change notice to the PCA with its commit; if the PCA session is
+  inactive, write the notice into the PCF (as done in J29 for v11.15). Keep `/tools/hadith-data-pull/output/…` paths
+  stable: QR reads them.
+- **Ask only what changes what you do (PCA J70).** MSA has no open Owner questions now: J30 Q1 closed, J03 Q1 and
+  J29 17(b) passed to QR.
+- **No stale "working" labels (PCA J74):** a job may show "working" only with a line or act stamp from the last 3 hours.
+  J17, J19, J23, J25, J30 were marked Done and J03 Parked today.
+- **Work cost-effectively (cost76):** run only the tests that cover a change, the full behaviour suite once before a
+  release; no padding rounds; short messages.
+- **Loading speed in every audit (J29, the Owner's idea):** `tools/i18n-verify/load-speed.mjs` (v11.16) measures a page
+  on a slowed phone connection, first and return visit, 390 and 1400px; `load-speed-check.mjs` fails a page more than
+  20% slower than `docs/reports/2026-10-16-load-speed-after.json`. Each audit round measures its pages and fixes the
+  slowest first.
+
+**Parked, unpublished:** QR's Asma wheel-label fix (QR commit 67bb95b) is in this container's `git stash` only; the
+PCA said park it (Asma moves to QR). A safety check blocks committing code copied from another repository: do not
+work around it.
+
+**Next rounds, after #902:** the remaining shared-tool sections of the manual not yet audited (Records page, the
+Continue strip if not covered), each with its speed check; then Hadith/Dua again only when something changed.
+Seerah has no module yet.
+
+**Routines:** the PCA keep-alive (every 3 hours) and the shared 4-hourly check stay. This session's one-shot
+wake-ups have all fired.
+
 ## LATEST UPDATE — 16 Oct 2026, 1:45 am Sydney, session `session_01VugmUfoMMcfxmnW99UmXgm` (v10.63 → v11.01) — READ THIS FIRST
 
 The 15 Oct evening block below is kept as history.
