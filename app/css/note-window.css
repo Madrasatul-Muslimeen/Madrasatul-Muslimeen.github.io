@@ -85,9 +85,9 @@ ul[data-check] > li[data-checked="true"] { color: #555; text-decoration: line-th
 .note-win { position: fixed; z-index: 1000; display: flex; flex-direction: column; box-sizing: border-box; background: #fff; color: #222; border: 1px solid #999; border-radius: 8px; box-shadow: 0 8px 30px rgba(0,0,0,0.35); outline: none; }
 .note-win.sheet { inset: 0 0 var(--nw-switch, 0px) 0; width: auto; height: auto; border: 0; border-radius: 0; }
 .note-win.sheet-hidden { display: none; }
-.nw-bar { flex: 0 0 44px; display: flex; align-items: center; justify-content: space-between; gap: 0.4rem; background: #1f3a6e; color: #fff; padding: 0 0 0 0.8rem; border-radius: 7px 7px 0 0; cursor: move; touch-action: none; user-select: none; -webkit-user-select: none; }
+.nw-bar { flex: 0 0 auto; min-height: 44px; display: flex; align-items: center; justify-content: space-between; gap: 0.4rem; background: #1f3a6e; color: #fff; padding: 0 0 0 0.8rem; border-radius: 7px 7px 0 0; cursor: move; touch-action: none; user-select: none; -webkit-user-select: none; }
 .note-win.sheet .nw-bar { cursor: default; border-radius: 0; }
-.nw-title { font-weight: 600; font-size: 1rem; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nw-title { font-weight: 600; font-size: 1rem; min-width: 0; overflow-wrap: anywhere; line-height: 1.2; padding: 0.15rem 0; } /* audit29: a 90-character title wraps (the bar grows) instead of an ellipsis nobody can open */
 .nw-close { flex: 0 0 auto; min-width: 44px; min-height: 44px; background: none; border: 0; color: #fff; font-size: 1.4rem; line-height: 1; cursor: pointer; }
 .nw-view { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; padding: 0.3rem 0.6rem 0; }
 .nw-view .note-pane-bar { flex: 0 0 auto; }
@@ -197,6 +197,7 @@ button.tag-chip-btn:hover, button.tag-chip-btn:focus-visible { background: #dde6
 .pane-menu-danger button { color: #B3261E; border-color: #e5b4b0; }
 @media (max-width: 599px) {
   .bar-palette.pane-menu { position: fixed; left: 0; right: 0; bottom: 0; top: auto; width: 100%; max-width: none; max-height: 82vh; border-radius: 16px 16px 0 0; border-width: 1px 0 0; padding: 0 0.8rem 1rem; z-index: 21; }
+  .note-win .bar-palette.pane-menu { bottom: var(--nw-switch, 0px); max-height: calc(82vh - var(--nw-switch, 0px)); } /* audit29: the window switcher bar (56px) covered the sheet's last item, Move to Trash */
   /* Architect's review of #748: the sheet is the palette's own navy, so a white title row left "This note" pale gold
      on white, barely readable. The row takes the sheet's own colours, the title in white. */
   .pane-menu-head { display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 1; background: inherit; color: #fff; padding: 0.7rem 0 0.4rem; font-weight: 700; }
