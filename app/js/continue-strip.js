@@ -69,7 +69,7 @@ export function renderContinueStrip(entries) {
       // subjectLabel is already tenant-authored text the caller resolved
       // through langText(), so it is in the reader's language already.
       const label = e.subjectLabel ? `${t(moduleLabel)} — ${e.subjectLabel}` : t(moduleLabel);
-      return `<a class="continue-chip" href="${href}?resume=${encodeURIComponent(e.subjectId ?? "")}">
+      return `<a class="continue-chip" href="${href}?resume=${encodeURIComponent(e.subjectId ?? "")}&back=1">
         <span class="continue-chip-label">${escapeHtml(t("Continue: {what}", { what: label }))}</span>
       </a>`;
     })

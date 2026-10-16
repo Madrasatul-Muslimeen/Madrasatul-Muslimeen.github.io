@@ -45,6 +45,7 @@
 
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { TENANT } from "./collections.js";
+import { isHiddenFromQr } from "./hidden-modules.js";
 import { createDocument, updateDocument } from "./envelope.js";
 
 export const NO_PROGRAM = "none";
@@ -132,6 +133,7 @@ export function recentResumeEntries(bookmarksDoc, limit = 5) {
       const [moduleId, programId, subjectId] = key.split("::");
       return { moduleId, programId, subjectId, ...entry };
     })
+    .filter((e) => !isHiddenFromQr(e.moduleId)) // hidden modules never use up one of the strip's places
     .sort((a, b) => (b.updatedAt ?? "").localeCompare(a.updatedAt ?? ""))
     .slice(0, limit);
 }
