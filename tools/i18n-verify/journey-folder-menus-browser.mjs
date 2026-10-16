@@ -29,6 +29,17 @@ const SEED = `
 
 const browser = await chromium.launch();
 const hasBn = (s) => /[ঀ-৿]/.test(s || "");
+// --mutate=no-menu-room (issue #891): the page's extra bottom room while a folder menu is open (beside the Zab bar) is
+// removed from the SERVED page, routed; app/ is untouched -> the Delete click is covered by the Zab bar and times out.
+const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
+async function routeMutation(ctx) {
+  if (!MUTATE) return;
+  if (MUTATE !== "no-menu-room") throw new Error(`unknown mutation ${MUTATE}`);
+  const from = "body.zab-bar-on:has(.folder-row-menu.open) { padding-bottom: calc(56px + 14rem); }";
+  const html = (await import("node:fs")).readFileSync("app/journey-map.html", "utf8");
+  if (!html.includes(from)) throw new Error("mutation anchor missing");
+  await ctx.route(/\/app\/journey-map\.html(\?.*)?(#.*)?$/, (r) => r.fulfill({ status: 200, contentType: "text/html; charset=utf-8", body: html.split(from).join("") }));
+}
 
 async function resetWrites(page) {
   await page.evaluate(() => { window.__stubWriteData = []; sessionStorage.setItem("__stubWrites", "[]"); });
@@ -89,6 +100,7 @@ for (const lang of ["en", "bn"]) {
     const tag = `${lang} ${width}px`;
     const ctx = await newContext(browser, { appLang: lang, viewport: { width, height: 900 }, extraSeedJs: SEED });
     await ctx.addInitScript(() => { try { if (!localStorage.getItem("qr.journeyMapExpanded")) localStorage.setItem("qr.journeyMapExpanded", JSON.stringify(["fA", "fB", "fBk", "fG", "fD", "fE"])); } catch {} });
+    await routeMutation(ctx);
     const { page, errors } = await openPage(ctx, "/app/journey-map.html#folders");
     await waitTree(page);
     // UPDATED IN PLACE (S8): the tree holds folders only; the Notes are in panel 2 once a folder is chosen.
