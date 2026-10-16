@@ -39,6 +39,7 @@ export const PAGES = [
   { key: "import-notes", path: "/app/import-notes.html", ready: has("#app", 20) },
   { key: "bookmarks", path: "/app/bookmarks.html", ready: has("#app", 20) },
   { key: "records", path: "/app/records.html", ready: has("#app", 20) },
+  { key: "deen-study", path: "/app/deen-study.html", ready: has("#listContainer", 10) }, // a study page: where the Continue strip is drawn (audit part 24)
   { key: "index", path: "/app/index.html", ready: has("#app", 30) },
   { key: "onboarding", path: "/app/onboarding.html", ready: has("#onboardForm", 10) },
   { key: "about", path: "/app/about.html", ready: has("#featureRows", 1) },

@@ -297,6 +297,10 @@
       "bytes": 64959,
       "requests": 136
     },
+    { "page": "deen-study", "width": 390, "visit": "first", "firstPaintMs": 428, "readyMs": 2396, "bytes": 329390, "requests": 51 },
+    { "page": "deen-study", "width": 390, "visit": "second", "firstPaintMs": 24, "readyMs": 649, "bytes": 64959, "requests": 51 },
+    { "page": "deen-study", "width": 1400, "visit": "first", "firstPaintMs": 420, "readyMs": 2413, "bytes": 329390, "requests": 51 },
+    { "page": "deen-study", "width": 1400, "visit": "second", "firstPaintMs": 28, "readyMs": 650, "bytes": 64959, "requests": 51 },
     {
       "page": "onboarding",
       "width": 390,
