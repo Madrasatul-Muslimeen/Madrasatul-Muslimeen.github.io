@@ -84,7 +84,14 @@ check("POSITIVE CONTROL: the dynamic-import finder really does find the gated ho
 });
 check("no module STATICALLY imports zab-bar.js, and no page names it", () => {
   assert.deepEqual(staticImportersOf("zab-bar.js"), []);
-  for (const f of fs.readdirSync(appDir).filter((x) => x.endsWith(".html"))) assert.ok(!/zab-(bar|data)\.js/.test(fs.readFileSync(path.join(appDir, f), "utf8")), f + " names a Zab module");
+  // Updated in place 16 Oct 2026 (audit part 24): commit 5da99079 (v10.59, the Zab dock) put a Zab sentence in an HTML
+  // COMMENT in quranrevival.html ("zab-bar.js fills it on a phone when Zab is on"). That is documentation, not wiring, so
+  // the set of pages naming a Zab module is PINNED EXACTLY (a new page naming one fails) and none may name it outside a comment.
+  const htmls = fs.readdirSync(appDir).filter((x) => x.endsWith(".html"));
+  const raw = (f) => fs.readFileSync(path.join(appDir, f), "utf8");
+  const naming = htmls.filter((f) => /zab-(bar|data)\.js/.test(raw(f)));
+  assert.deepEqual(naming, ["quranrevival.html"], "pages naming a Zab module: " + naming.join(", "));
+  for (const f of htmls) assert.ok(!/zab-(bar|data)\.js/.test(raw(f).replace(/<!--[\s\S]*?-->/g, "")), f + " names a Zab module outside a comment");
 });
 check("the hop is guarded by isZabReady() on the same statement", () => {
   const line = fs.readFileSync(path.join(appJs, "sw-register.js"), "utf8").split("\n").find((l) => l.includes("import(\"./zab-bar.js\")"));
