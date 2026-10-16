@@ -45,7 +45,8 @@ export const PAGES = [
 ];
 
 const MIME = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".json": "application/json; charset=utf-8", ".svg": "image/svg+xml", ".png": "image/png", ".woff2": "font/woff2" };
-export function startPagesServer() {
+// transformHtml(html, urlPath) lets a --mutate serve the SLOW version of a page without editing it on disk.
+export function startPagesServer({ transformHtml = null } = {}) {
   return new Promise((resolve) => {
     const server = http.createServer((req, res) => {
       const urlPath = decodeURIComponent(req.url.split("?")[0]);
@@ -53,6 +54,7 @@ export function startPagesServer() {
       if (!file.startsWith(ROOT)) { res.writeHead(403); return res.end(); }
       fs.readFile(file, (err, data) => {
         if (err) { res.writeHead(404); return res.end("Not found"); }
+        if (transformHtml && file.endsWith(".html")) data = Buffer.from(transformHtml(data.toString("utf8"), urlPath));
         const etag = `"${data.length}-${fs.statSync(file).mtimeMs}"`;
         const headers = { "Content-Type": MIME[path.extname(file)] || "application/octet-stream", ETag: etag, "Cache-Control": "max-age=600" };
         if (req.headers["if-none-match"] === etag) { res.writeHead(304, headers); return res.end(); }
@@ -63,6 +65,14 @@ export function startPagesServer() {
     });
     server.listen(0, () => resolve({ server, base: `http://localhost:${server.address().port}` }));
   });
+}
+
+// --mutate=<name>: serve the SLOW version a fix replaced, so a speed check must fail on it.
+//   noasync: hadith-collections' corpus script back to a plain module script (waits for the Firebase graph first).
+export function htmlMutation(name) {
+  if (name === "noasync") return (h) => h.replace('<script type="module" async>', '<script type="module">');
+  if (name) throw new Error(`unknown --mutate=${name}`);
+  return null;
 }
 
 export const median = (xs) => { const s = [...xs].sort((a, b) => a - b); return s[Math.floor(s.length / 2)]; };
@@ -136,7 +146,8 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const only = (process.argv.find((a) => a.startsWith("--pages=")) || "").slice(8).split(",").filter(Boolean);
   const runs = Number((process.argv.find((a) => a.startsWith("--runs=")) || "--runs=3").slice(7));
   const defs = PAGES.filter((p) => !only.length || only.includes(p.key));
-  const { server, base } = await startPagesServer();
+  const mutateName = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
+  const { server, base } = await startPagesServer({ transformHtml: htmlMutation(mutateName) });
   const browser = await chromium.launch();
   const rows = [];
   for (const def of defs) {
@@ -151,7 +162,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   }
   await browser.close(); server.close();
   if (process.argv.includes("--write")) {
-    const file = "docs/reports/2026-10-16-load-speed-baseline.json";
+    const file = (process.argv.find((a) => a.startsWith("--out=")) || "").slice(6) || "docs/reports/2026-10-16-load-speed-baseline.json";
     fs.writeFileSync(file, JSON.stringify({ measured: "16 Oct 2026", network: NETWORK, stubLatencyMs: LATENCY_MS, runsPerCell: runs, rows }, null, 2) + "\n");
     console.log("wrote " + file);
   }

@@ -30,6 +30,10 @@ export function closure(pageFile) {
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   const levels = closure(process.argv[2]);
+  if (process.argv.includes("--preload")) { // the <link rel="modulepreload"> lines for everything deeper than the page's own imports
+    for (const f of levels.slice(1).flat().sort()) console.log(`<link rel="modulepreload" href="./${path.relative(path.dirname(process.argv[2]), f).replace(/\\/g, "/")}" />`);
+    process.exit(0);
+  }
   levels.forEach((l, i) => console.log(`depth ${i + 1}: ${l.length} files, ${l.reduce((n, f) => n + fs.statSync(f).size, 0)} B\n  ` + l.join("\n  ")));
   console.log(`${levels.flat().length} files in ${levels.length} levels`);
 }
