@@ -2239,7 +2239,7 @@
   #readToolsBtn .read-tools-count[hidden] { display: none; }
   #readToolsMenu [hidden] { display: none !important; }
   @media (min-width: 900px) {
-    #readToolsBtn { display: none; }
+    #readBar #readToolsBtn { display: none; } /* audit part 20: the id rule `#readBar .qr-ico` had been beating the bare `#readToolsBtn`, so ⋯ stayed on the bar beside the tools it replaces */
     #readToolsMenu { display: contents; }
   }
   @media (max-width: 899.98px) {
