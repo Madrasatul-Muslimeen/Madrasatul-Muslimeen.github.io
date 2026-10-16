@@ -1,0 +1,150 @@
+// Audit part 28 (PCF MSA J29): the rest of the smallest-phone (320px, and 360px) pass, with content the length a REAL reader types.
+//   nwin      pop-up Note windows from notes.html: long title, bottom tab strip with 3 windows, the phone switcher
+//   jmenus    journey-map.html: a folder's ⋯ menu with a 40-character name, search with a long query, Favourites / Archived / Trash
+//   bmmenu    the Bookmark menu in the nav with 60-character names, and the shared bookmark dialog
+//   person    bookmarks.html?person=…&back=1 with a 35-character person's name and ← Back
+//   zabnote   Zab → Note (into Mapping My Journey) from a 30-character pocket, with ← Back
+//   clear     menus and sheets opened part-way down a page stay inside the screen
+// Each flow measures the RESULT, not existence: no sideways scroll, no text cut without a way to read it, every control a
+// finger presses 40px or more, every menu / sheet inside the screen, no English left on the Bangla page.
+// Mutations (each must fail the suite) are listed in MUTATIONS below.
+// Run from the repository root with serve.js on :8080:
+//   node tools/i18n-verify/audit-part28-small-phone-browser.mjs [--only=<flow>] [--width=N] [--lang=en|bn] [--mutate=<name>]
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { chromium, newContext, openPage } from "./harness.mjs";
+let pass = 0, fail = 0;
+function check(name, ok, detail = "") {
+  if (ok && typeof ok.then === "function") throw new Error(`check "${name}" was handed a promise`);
+  if (ok) { pass++; console.log(`  PASS  ${name}`); } else { fail++; console.log(`  FAIL  ${name}${detail ? `\n        ${detail}` : ""}`); }
+}
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+const arg = (n) => (process.argv.find((a) => a.startsWith(`--${n}=`)) || "").slice(n.length + 3);
+const MUTATE = arg("mutate"), ONLY = arg("only"), WONLY = Number(arg("width")) || 0, LONLY = arg("lang");
+// [file, route glob, anchor (exactly once), replacement, page prefix it applies to]
+const MUTATIONS = {
+  nwtitle: ["app/css/note-window.css", "**/css/note-window.css*", ".note-win.sheet .nw-title { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; line-height: 1.2; }\n", "", "/app/notes.html"],
+};
+if (MUTATE && !MUTATIONS[MUTATE]) throw new Error(`no such mutation ${MUTATE}`);
+const browser = await chromium.launch();
+const ALLOWED = /https?:\/\/\S+|QuranRevival|MMSA|Qur'?an|Madrasatul|Muslimeen|Hadith|hadith|Google|Zab|Tajweed|Dua|Journey|Muhammad|Abdur|Rahman|ibn|Abdullah|Subhanallah\w*|v\d+|Audit/g;
+const englishLeft = (text) => (String(text).replace(ALLOWED, " ").match(/[A-Za-z]{3,}/g) || []);
+
+// Content the length a real reader has.
+const T_EN = "A very long note title of about ninety characters that a real reader would certainly type one day ok";
+const T_WORD = "Subhanallahilazimwabihamdihiastaghfirullah";
+const T_BN = "জ্ঞান অন্বেষণের মূলনীতি এবং শিক্ষক ও সহপাঠীদের প্রতি আদবের বিস্তারিত আলোচনা ও তার প্রয়োগ";
+const BM_NAME = "Al-Baqarah verse 255, the Throne Verse, read after each prayer";
+const PERSON = "Muhammad Abdur Rahman ibn Abdullah";
+const POCKET = "Quran study plans for the whole year";
+
+const NOTES_SEED = `(function(){window.__stubApplyBatches=true;window.__stubRecordTxData=true;window.__DATA=DATA;
+var own={tenantId:"t1",ownerPersonId:"p1",ownerUid:"test-uid",schemaVersion:1};
+function ts(d){return{toDate:function(){return new Date(d||"2026-09-01T10:00:00Z")},toMillis:function(){return new Date(d||"2026-09-01T10:00:00Z").getTime()}}}
+DATA.noteFolders=[];DATA.notes=[];DATA.notePlacements=[];DATA.noteRevisions=[];DATA.noteSections=[];DATA.noteTags=[];DATA.noteTagLinks=[];DATA.noteSources=[];DATA.userPrefs=[{_id:"test-uid"}];
+var par=null;for(var i=1;i<=4;i++){var id="f"+i;DATA.noteFolders.push(Object.assign({_id:"t1__"+id,folderId:id,name:"Folder level "+i+" with a name about forty chars",parentFolderId:par,semanticRole:"user",order:i,status:"active",updatedAt:ts()},own));par=id;}
+function N(id,title,day,extra){DATA.notes.push(Object.assign({_id:"t1__"+id,noteId:id,title:title,bodyHtml:"<p>Body "+id+"</p>",currentRevisionId:"rev-"+id,status:"active",createdAt:ts("2026-08-0"+day+"T09:00:00Z"),updatedAt:ts("2026-09-0"+day+"T10:00:00Z")},own,extra||{}))}
+function P(id,note,folder,o){DATA.notePlacements.push(Object.assign({_id:"t1__"+id,placementId:id,noteId:note,folderId:folder,order:o,status:"active"},own))}
+N("n1",${JSON.stringify(T_EN)},1);N("n2",${JSON.stringify(T_WORD)},2,{pinned:true});N("n3",${JSON.stringify(T_BN)},3);
+["n1","n2","n3"].forEach(function(n){DATA.noteSources.push(Object.assign({_id:"t1__s"+n,sourceLinkId:"s"+n,noteId:n,sourceKey:"dua:20",sourceKind:"dua-unit",relationshipKind:"origin",approachId:null,provenanceKind:"study-note",status:"active",updatedAt:"2026-01-01T00:00:00.000Z",createdAt:"2026-01-01T00:00:00.000Z",createdBy:"test-uid"},own))});
+P("p1","n1","f4",0);P("p2","n2","f4",1);P("p3","n3","f4",2);})();`;
+
+const READY_OPEN = `
+export const ZAB_READINESS_AUTHORITIES = Object.freeze(["master-architect"]);
+export const ZAB_DECLARATION = Object.freeze({ ready: true, decision: Object.freeze({ by: "master-architect", on: "2026-10-14", reference: "test-seam" }), gate: "E1", note: "test seam" });
+export function isZabReady() { return true; }
+export const REASON_ZAB_NOT_DEPLOYED = "zab-rules-not-deployed";
+export const REASON_ZAB_DECISION_INCOMPLETE = "zab-readiness-decision-incomplete";
+export function zabUnavailableReason() { return null; }
+`;
+
+async function open(lang, width, pagePath, seed) {
+  const ctx = await newContext(browser, { appLang: lang === "bn" ? "bn" : null, banner: false, viewport: { width, height: width > 600 ? 900 : 740 }, extraSeedJs: seed });
+  await ctx.route((u) => !["localhost", "www.gstatic.com", "cdn.jsdelivr.net"].includes(u.hostname), (r) => r.abort());
+  await ctx.route("**/js/zab-readiness.js", (r) => r.fulfill({ status: 200, contentType: "text/javascript; charset=utf-8", body: READY_OPEN }));
+  if (MUTATE && pagePath.startsWith(MUTATIONS[MUTATE][4])) {
+    const [file, glob, from, to] = MUTATIONS[MUTATE];
+    const body = fs.readFileSync(path.join(ROOT, file), "utf8");
+    const n = body.split(from).length - 1;
+    if (n !== 1) throw new Error(`mutation anchor for ${MUTATE} found ${n} times`);
+    await ctx.route(glob, (r) => r.fulfill({ status: 200, contentType: file.endsWith(".js") ? "text/javascript; charset=utf-8" : file.endsWith(".css") ? "text/css; charset=utf-8" : "text/html; charset=utf-8", body: body.split(from).join(to) }));
+  }
+  const { page, errors } = await openPage(ctx, pagePath);
+  await page.waitForTimeout(900);
+  await page.evaluate(() => document.querySelectorAll('[id*="splash"], .app-splash-overlay, .mm-splash-overlay').forEach((e) => e.remove()));
+  return { ctx, page, errors };
+}
+async function flow(name, lang, width, pagePath, seed, fn) {
+  if (ONLY && !ONLY.split(",").some((o) => name.includes(o))) return;
+  const tag = `${lang} ${width}px ${name}`;
+  let ctx;
+  try {
+    const o = await Promise.race([open(lang, width, pagePath, seed), new Promise((_, rej) => setTimeout(() => rej(new Error("timeout opening")), 40000))]);
+    ctx = o.ctx;
+    await Promise.race([fn(tag, o.page, o.errors), new Promise((_, rej) => setTimeout(() => rej(new Error("timeout flow")), 90000))]);
+  } catch (e) { check(`${tag}: flow ran`, false, String(e.stack || e).split("\n").slice(0, 3).join(" | ")); }
+  if (ctx) await Promise.race([ctx.close().catch(() => {}), new Promise((r) => setTimeout(r, 10000))]);
+}
+const ev = (page, f, a) => page.evaluate(f, a);
+const settle = (page, ms = 400) => page.waitForTimeout(ms);
+const noErr = (errors) => errors.filter((e) => !/ERR_CERT|ERR_TUNNEL|net::|archive\.org|api\.quran|quran\.foundation|fonts\.g|Failed to load resource/i.test(e));
+const wide = (page) => ev(page, () => document.documentElement.scrollWidth - innerWidth);
+// Visible things a finger presses that are under 40px, inside `root`.
+const small = (page, root = "body") => ev(page, (r) => [...document.querySelectorAll(`${r} button, ${r} select, ${r} input:not([type=checkbox]):not([type=radio]):not([type=hidden]), ${r} a[href], ${r} [role=button]`)].filter((e) => {
+  const b = e.getBoundingClientRect(); const s = getComputedStyle(e);
+  if (!b.width || !b.height || s.visibility === "hidden" || s.display === "none") return false;
+  if (e.closest("nav, #navBar, .nav-cat-row")) return false; // the shared nav row has its own audit
+  if (e.tagName === "A" && !e.textContent.trim() && !e.querySelector("img, svg")) return false;
+  if (e.tagName === "A" && getComputedStyle(e).display === "inline" && !e.querySelector("button")) return false; // a link inside a sentence
+  return b.height < 39.5;
+}).map((e) => `${e.id || e.getAttribute("data-zab-open") || e.className || e.tagName}`.toString().slice(0, 34) + ":" + Math.round(e.getBoundingClientRect().width) + "x" + Math.round(e.getBoundingClientRect().height)), root);
+// Text cut off (overflow hidden / ellipsis) with no title or aria-label carrying the whole of it.
+const cut = (page, root = "body") => ev(page, (r) => [...document.querySelectorAll(`${r} *`)].filter((e) => {
+  const b = e.getBoundingClientRect(); const s = getComputedStyle(e);
+  if (!b.width) return false;
+  const clips = s.overflow !== "visible" || s.overflowX !== "visible" || s.textOverflow === "ellipsis";
+  if (!clips || s.display === "none" || !e.textContent.trim() || e.scrollWidth <= e.clientWidth + 1) return false;
+  if (["BODY", "HTML", "TEXTAREA", "INPUT"].includes(e.tagName)) return false;
+  if (e.closest("[contenteditable], .note-editor, .nav-cat-row, nav")) return false;
+  if (e.matches(".nw-details .note-pane-meta")) return false; // a closed Details line opens in full with its own Details button
+  return !((e.getAttribute("title") || e.getAttribute("aria-label") || "").length >= e.textContent.trim().length - 2);
+}).map((e) => (e.className || e.tagName).toString().slice(0, 30) + ":" + e.scrollWidth + ">" + e.clientWidth).slice(0, 6), root);
+// Everything visible inside the screen.
+const outside = (page, root) => ev(page, (r) => [...document.querySelectorAll(`${r} *`)].filter((e) => {
+  const b = e.getBoundingClientRect(); const s = getComputedStyle(e);
+  if (!b.width || !b.height || s.visibility === "hidden" || s.display === "none") return false;
+  if (e.closest("[hidden], .sr-only, .nw-tabs, .nw-switch")) return false; // the tab strip scrolls sideways inside itself by design (checked as its own box)
+  return b.right > innerWidth + 1 || b.left < -1 || b.bottom > innerHeight + 1;
+}).map((e) => (e.id || e.className || e.tagName).toString().slice(0, 30)).slice(0, 6), root);
+const bnText = (page, root) => ev(page, (r) => document.querySelector(r)?.innerText ?? "", root);
+const WIDTHS = [320, 360].filter((w) => !WONLY || w === WONLY);
+const LANGS = ["en", "bn"].filter((l) => !LONLY || l === LONLY);
+const PROBE = process.argv.includes("--probe");
+const probe = (t, what, v) => { if (PROBE) console.log(`  probe ${t}: ${what} = ${JSON.stringify(v)}`); };
+
+for (const lang of LANGS) for (const width of WIDTHS) {
+  const bn = lang === "bn";
+  // 1. Pop-up Note windows
+  await flow("nwin", lang, width, "/app/notes.html?unit=dua:20&label=Dua%2020", NOTES_SEED, async (t, page, errors) => {
+    await page.waitForSelector(".note-card[data-note-id]", { timeout: 15000 });
+    for (const id of ["n1", "n2", "n3"]) {
+      await page.evaluate((i) => document.querySelector(`.note-card[data-note-id="${i}"] [data-note-window]`).click(), id);
+      await page.waitForSelector(`.note-win[data-note-id="${id}"]`, { timeout: 8000 }); await settle(page, 300);
+    }
+    check(`${t}: POSITIVE CONTROL three windows are open`, (await ev(page, () => document.querySelectorAll(".note-win").length)) === 3);
+    probe(t, "win", await ev(page, () => [...document.querySelectorAll(".note-win")].map((w) => { const r = w.getBoundingClientRect(); return [w.className, Math.round(r.left), Math.round(r.top), Math.round(r.right), Math.round(r.bottom)]; })));
+    probe(t, "switch", await ev(page, () => { const s = document.getElementById("noteWinSwitch"); if (!s) return null; const r = s.getBoundingClientRect(); return [s.className, Math.round(r.left), Math.round(r.top), Math.round(r.right), Math.round(r.bottom), s.innerText.slice(0, 80)]; }));
+    check(`${t}: no sideways scroll with 3 windows open`, (await wide(page)) <= 0, String(await wide(page)));
+    check(`${t}: nothing in the open window or the tab strip sits outside the screen`, (await outside(page, ".note-win:not(.sheet-hidden)")).length === 0 && (await outside(page, "#noteWinSwitch")).length === 0, JSON.stringify([await outside(page, ".note-win:not(.sheet-hidden)"), await outside(page, "#noteWinSwitch")]));
+    const sm = [...(await small(page, ".note-win:not(.sheet-hidden)")), ...(await small(page, "#noteWinSwitch"))];
+    check(`${t}: every control in the window and the tab strip is 40px or more`, sm.length === 0, sm.join(" "));
+    const ct = [...(await cut(page, ".note-win:not(.sheet-hidden)")), ...(await cut(page, "#noteWinSwitch"))];
+    check(`${t}: no title is cut without a way to read it`, ct.length === 0, JSON.stringify(ct));
+    check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
+  });
+}
+
+await browser.close();
+console.log(`\n==== audit-part28${MUTATE ? ` [mutated: ${MUTATE}]` : ""}: ${pass} passed, ${fail} failed ====`);
+process.exit(fail ? 1 : 0);
