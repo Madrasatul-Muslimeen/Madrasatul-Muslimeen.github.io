@@ -51,7 +51,9 @@ check("A4 EVERY unit type buildUnitKey produces is bindable -- none silently mis
   // UPDATED 9 Oct 2026, reason recorded: decisions 88 and 92 added dua and duaWord to buildUnitKey and this check was
   // red on main from then (it threw, so the suite stopped here). dua is bindable (ADR-009 §9). duaWord is deliberately
   // NOT: Notes are on the dua, not on each word -- so it is named here as the one exception, and still checked refused.
-  const NOT_BINDABLE = { duaWord: buildUnitKey.duaWord(12, 3) };
+  // UPDATED 16 Oct 2026 (audit part 20): `opening` (Aʿūdhu billāh, J26, commit e8b95083) was added to buildUnitKey and this
+  // check was never told. It is not bindable either: bindableUnitType() has no case for it, so it joins duaWord here.
+  const NOT_BINDABLE = { duaWord: buildUnitKey.duaWord(12, 3), opening: buildUnitKey.opening("taawwudh") };
   assert.deepEqual([...Object.keys(sample), ...Object.keys(NOT_BINDABLE)].sort(), Object.keys(buildUnitKey).sort(),
     "this check must cover buildUnitKey's own set, not a stale copy of it");
   for (const key of Object.values(NOT_BINDABLE)) assert.equal(bindableUnitType(key), null, `${key} must stay unbindable`);

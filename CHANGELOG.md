@@ -21552,3 +21552,14 @@ New strings `wholeQuranLevelSentence` ("{level}: Achieved {known} and {percent} 
 - Under the one-home rule (PCA J71) Quran Study is frozen in MMSA; this change was asked for by the QR Architect before the freeze, and its commit goes to the PCA for QR to carry.
 
 **Tests:** bookmark-marks-back 342/0 (336/6 on `main`), and `--mutate=narrow-basis` brings the 6 back at 320px; journey-s9 288/0 (286/2 on `main`), `--mutate-no-centre` brings the 2 back at 1440px; journey-folder-menus 148/0, `--mutate=no-menu-room` (v11.09's rule removed) stops it at the Delete tap; read-meaning 39/0; audit-part18 1020/0; audit-part11 506/0; navcheck exit 0; phone-width-overflow 217/0; qr-stage1-hidden 110/0; behaviour 971/0; re-checked after merging v11.11: bookmark-marks-back 342/0. Not this round's, identical on `main`: read-bar-tools 61/2 at 1280px (⋯ shows from 900px), with read-note-pane's 2 (Builder round #894).
+
+## v11.13 — 16 Oct 2026 — Favourites, Archived, Trash and the Evernote import work end to end; no dead ⋯ on the Read bar (PCF J29 audit part 20)
+
+**Built by Builder round #894** (branch `builder/issue-894-run-1380`, PR #895), reviewed by the Architect by measurement on the round's head merged with `main` at v11.12.
+
+- **All work**, at 320/390/820/1440px in English and Bangla: Mapping My Journey's ⭐ Favourites, 📦 Archived and 🗑 Trash list the right Notes, and Restore writes `status: active` with no delete call (I4/D6); Import Notes from an Evernote `.enex` shows the preview and writes the Notes into the named Stack.
+- **Fixed:** `app/quranrevival.html`: from 900px the Read bar's ⋯ (More tools) is meant to give way to the tools themselves, but `#readBar .qr-ico` (an id rule) beat the bare `#readToolsBtn { display: none; }`, so a dead ⋯ sat on the bar. The rule is now `#readBar #readToolsBtn`. Quran Study is frozen in MMSA (PCA J71); the PCA made this one line an exception (answer A, 16 Oct 3:38 pm), and QR copies it.
+- **Checks corrected:** `study-note-binding.mjs` now lists the `opening` unit type (J26, commit e8b95083) among those that cannot be bound, as `duaWord` is.
+- **Not reached** (the round ran out of turns): pop-up Note windows, pictures/tables/link previews, My Note tools, the My Notes page, Dawah pages and the WordPress import. Builder round #897 takes them.
+
+**Tests:** audit-part20 132/0; `--mutate=readbardots` fails it at 1440px en and bn, `norestore` at every width (124/8); read-note-pane 210/0 (208/2 on `main`); read-bar-tools 63/0 (61/2 on `main`); study-note-binding exit 0 (red on `main`); read-note-menu 24/0; notes-way-back 33/0; notes-pane-has-note 36/0; zab-to-note 196/0; journey-map-trash-copy exit 0; journey-folder-menus 148/0; evernote-import-parser 41/0; bookmark-marks-back 342/0; phone-width-overflow 217/0; qr-stage1-hidden 110/0; behaviour 971/0.
