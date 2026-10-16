@@ -30,8 +30,10 @@ const LONLY = arg("lang");
 // No defect was found in this audit, so these are PROOFS THAT THE CHECKS CAN FAIL: each restores a plausible defect in the feature it
 // guards. [file, route glob, anchor (must occur exactly once), replacement, the page it applies to (a prefix of the opened path)].
 const MUTATIONS = {
-  // Delete on a folder erases its document instead of retiring it (I4/D6).
-  "harddelete": ["app/journey-map.html", "**/journey-map.html*", null, null, "/app/journey-map.html"],
+  // Delete on a folder does nothing (no retire to Trash).
+  "nodelete": ["app/journey-map.html", "**/journey-map.html*", "    async function deleteFolder(node) {\n", "    async function deleteFolder(node) {\n      return;\n", "/app/journey-map.html"],
+  // The FIX of this audit is taken out: the last row's menu again ends the page under the bottom Zab bar (shows at 820 and 1440px).
+  "nozabclear": ["app/journey-map.html", "**/journey-map.html*", "body:has(#zabBar) .folder-row-menu.open { padding-bottom: 56px; }", "body:has(#zabBar) .folder-row-menu.open { padding-bottom: 0; }", "/app/journey-map.html"],
   // Rename stores nothing.
   "norename": ["app/journey-map.html", "**/journey-map.html*", "row.querySelector(\"[data-folder-rename]\")?.addEventListener(\"click\", (e) => {\n          e.stopPropagation(); closeAllBarPalettes(null);\n          beginInlineRename(node);", "row.querySelector(\"[data-folder-rename]\")?.addEventListener(\"click\", (e) => {\n          e.stopPropagation(); closeAllBarPalettes(null);", "/app/journey-map.html"],
   // The Read view's Notes pane ← Back does nothing.
@@ -70,13 +72,8 @@ async function open(lang, width, pagePath, { seed = SEED } = {}) {
   if (MUTATE && pagePath.startsWith(MUTATIONS[MUTATE][4])) {
     let [file, glob, from, to] = MUTATIONS[MUTATE];
     let body = fs.readFileSync(path.join(ROOT, file), "utf8");
-    if (MUTATE === "harddelete") {
-      // retireFolder -> the folder's status write is dropped, so Delete leaves it active.
-      from = 'status: "retired"'; const n = body.split(from).length - 1; if (n < 1) throw new Error("harddelete anchor missing");
-      to = 'status: "active"';
-    }
     const n = body.split(from).length - 1;
-    if (MUTATE !== "harddelete" && n !== 1) throw new Error(`mutation anchor for ${MUTATE} found ${n} times`);
+    if (n !== 1) throw new Error(`mutation anchor for ${MUTATE} found ${n} times`);
     await ctx.route(glob, (r) => r.fulfill({ status: 200, contentType: file.endsWith(".js") ? "text/javascript; charset=utf-8" : "text/html; charset=utf-8", body: body.split(from).join(to) }));
   }
   const { page, errors } = await openPage(ctx, pagePath);
@@ -190,9 +187,9 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     const have = await ev(page, () => [...document.querySelectorAll('.folder-row[data-folder-id="fB"] .folder-menu [data-folder-addnote], .folder-row[data-folder-id="fB"] [data-folder-addnote]')].length);
     const present = await ev(page, (items) => items.filter((i) => document.querySelector(`.folder-row[data-folder-id="fB"] [data-folder-${i}]`)), ITEMS);
     check(`${t}: POSITIVE CONTROL the folder ⋯ menu opens with the manual's items (${present.length} of ${ITEMS.length})`, have > 0 && ["addnote", "addsub", "rename", "up", "down", "copy", "move", "look", "section", "window", "delete"].every((i) => present.includes(i)), JSON.stringify(present));
-    const mr = await rect(page, `.folder-row[data-folder-id="fB"] .folder-menu`);
+    const mr = await rect(page, `.folder-row[data-folder-id="fB"] .folder-row-menu`);
     check(`${t}: the menu opens inside the screen`, !!mr && mr.l >= -1 && mr.r <= mr.vw + 1, JSON.stringify(mr));
-    const short = await shortOnes(page, `.folder-row[data-folder-id="fB"] .folder-menu button`);
+    const short = await shortOnes(page, `.folder-row[data-folder-id="fB"] .folder-row-menu button`);
     check(`${t}: every menu item is at least 40px tall`, short.length === 0, JSON.stringify(short));
     // Add subfolder
     await resetWrites(page);
@@ -237,6 +234,9 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     // Delete an empty folder: a retire, never an erase (I4/D6)
     await resetWrites(page);
     await openFolderMenu(page, "fE");
+    // REACHABLE: scrolled as far as it goes, the last row's Delete is the topmost thing at its own centre (not under the bottom Zab bar).
+    const reach = await ev(page, () => { const x = document.querySelector('.folder-row[data-folder-id="fE"] [data-folder-delete]'); window.scrollTo(0, document.documentElement.scrollHeight); const q = x.getBoundingClientRect(); const h = document.elementFromPoint(q.left + q.width / 2, q.top + q.height / 2); return { same: h === x || x.contains(h), bottom: Math.round(q.bottom), vh: innerHeight, bar: !!document.getElementById("zabBar") && getComputedStyle(document.getElementById("zabBar")).display !== "none" }; });
+    check(`${t}: the last folder's menu can be scrolled clear of the bottom bar, so Delete can be pressed`, reach.same && reach.bottom <= reach.vh, JSON.stringify(reach));
     await page.click(`.folder-row[data-folder-id="fE"] [data-folder-delete]`);
     await settle(page, 800);
     w = await writes(page);
@@ -265,12 +265,16 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     check(`${t}: the Note's ⋯ menu opens inside the screen${width < 600 ? " (from the bottom on a phone)" : ""}`, inside(mr) && (width >= 600 || mr.b >= mr.vh - 80), JSON.stringify(mr));
     const short = await shortOnes(page, "[data-pane-menu] button");
     check(`${t}: its items are at least 40px tall`, short.length === 0, JSON.stringify(short));
+    // Below 600px the menu is a bottom sheet with a × and a dimmed backdrop; from 600px it is a popover closed by a tap outside.
     const xr = await rect(page, "[data-pane-menu] .pane-menu-x");
-    check(`${t}: the menu has a × (finger-sized, inside the screen) that closes it`, !!xr && xr.w >= 39.5 && xr.h >= 39.5 && inside(xr), JSON.stringify(xr));
-    if (xr) { await page.click("[data-pane-menu] .pane-menu-x"); await settle(page, 300); }
-    check(`${t}: × closes the menu`, !(await vis(page, "[data-pane-menu]")));
-    await openPaneMenu(page);
+    if (width < 600) {
+      check(`${t}: the sheet has a × (finger-sized, inside the screen) that closes it`, !!xr && xr.w >= 39.5 && xr.h >= 39.5 && inside(xr), JSON.stringify(xr));
+      if (xr) { await page.click("[data-pane-menu] .pane-menu-x"); await settle(page, 300); }
+      check(`${t}: × closes the menu`, !(await vis(page, "[data-pane-menu]")));
+      await openPaneMenu(page);
+    }
     const bd = await rect(page, "[data-pane-menu-backdrop]");
+    check(`${t}: ${width < 600 ? "a dimmed backdrop covers the page behind the sheet" : "the popover has no backdrop (a tap on the page closes it)"}`, width < 600 ? !!bd && bd.w >= bd.vw - 1 : !bd);
     if (bd) await page.mouse.click(Math.min(bd.vw - 3, bd.l + 3), Math.max(3, bd.t + 3));
     else await page.click("[data-pane-title]");
     await settle(page, 300);
