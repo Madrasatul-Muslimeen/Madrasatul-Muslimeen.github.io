@@ -3616,9 +3616,12 @@
   .word-progress-whole-quran-box p + p { margin-top: 0.2rem; }
   /* PCF J23, layout B (the Owner, 14 Oct): the known number in a filled gold disc; the percentage written inside
      a progress circle that fills (option C's circle, in place of the number). */
-  .word-progress-percent-ring { position: relative; display: inline-grid; place-items: center; width: 38px; height: 38px; vertical-align: middle; margin-inline: 0.1rem; color: var(--card-text); }
-  .word-progress-percent-ring svg { position: absolute; inset: 0; }
-  .word-progress-percent-text { position: relative; font-size: 0.6rem; letter-spacing: -0.02em; font-weight: 800; color: var(--card-heading); font-variant-numeric: tabular-nums; line-height: 1; }
+  /* QR J04 (the Owner, 17 Oct: "Make Percentage Numbers bigger"): a 60px circle and its percentage at 0.82rem (50px and 0.7rem
+     on a phone; was 38px and 0.6rem); the drawing scales with the circle, so "61.7%" sits inside the ring, not on it. */
+  .word-progress-percent-ring { position: relative; display: inline-grid; place-items: center; width: 60px; height: 60px; vertical-align: middle; margin-inline: 0.1rem; color: var(--card-text); }
+  .word-progress-percent-ring svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .word-progress-percent-text { position: relative; font-size: 0.82rem; letter-spacing: -0.02em; font-weight: 800; color: var(--card-heading); font-variant-numeric: tabular-nums; line-height: 1; }
+  @media (max-width: 600px) { .word-progress-percent-ring { width: 50px; height: 50px; } .word-progress-percent-text { font-size: 0.7rem; } } /* QR J04: a phone keeps each sentence on fewer lines */
   .word-progress-whole-quran-num.word-progress-known-disc { display: inline-block; padding: 0.05rem 0.55rem; border-radius: 999px; background: #e0b341; color: #1b1405; font-variant-numeric: tabular-nums; }
   .word-progress-whole-quran-num { font-size: 1.22rem; font-weight: 800; color: var(--card-heading); letter-spacing: 0.01em; }
   @media (max-width: 380px) { .word-card-progress button { padding: 0.5rem 0.25rem; font-size: 0.78rem; } }

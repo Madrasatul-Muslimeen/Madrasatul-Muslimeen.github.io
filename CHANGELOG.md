@@ -21643,3 +21643,18 @@ New strings `wholeQuranLevelSentence` ("{level}: Achieved {known} and {percent} 
 - **Not reached, next round:** pop-up note windows and their tabs, folder ⋯ menus and search, Favourites/Archived/Trash, the Bookmark menu and dialog with long names, a person's bookmarks, Zab → Note, menu clearance part-way down a page.
 
 **Tests:** audit-part27 134/0; `--mutate=zabtitle` (31/2) and `toggle40` (32/1) fail it where their defect shows (the Builder ran all six); journey-folder-menus 148/0; journey-folder-picker 310/0; journey-folder-window 144/0; zab-bar 370/0; zab-dock 74/0; bookmark-sheet 176/0; notes-note-windows 218/0; behaviour 971/0.
+
+## v11.21 — 17 Oct 2026 — Note windows, the Bookmark menu and dialog, and Zab → Note on the smallest phone; the Word card's bigger percentage circle (PCF MSA J29 audit part 28; MSA J33 = QR J04)
+
+**Built by Builder round #915** (branch `builder/issue-915-run-1419`, PR #916), reviewed by the Architect by measurement on a current base, with **MSA J33** built by the Architect (branch `arch/qr-j04-percent`).
+
+- `app/css/note-window.css`: on a phone sheet a pop-up Note window's long title wraps and the bar grows to fit (a 90-character title was cut with no way to read it). **A shared note style:** the PCA has the change notice for QR.
+- `app/css/shell.css`: the Bookmark menu's folder-head buttons (move, rename, remove) are 40×40 (were 35×36).
+- `app/js/bookmark-popover.js`: the shared bookmark dialog's Name, For and Folder fields and its Cancel/Save are 40px (were 29–36), and the dialog scrolls inside itself when taller than the screen.
+- `app/js/zab-bar.js`: the "Saved as a Note" toast's Open link is 40px (was 39). **A shared note script:** PCA notified.
+- Checked clean at 320/360px: Mapping My Journey's folder ⋯ menus with a 40-character name, search with a long query, Favourites, Archived and Trash, a person's bookmarks with ← Back, Zab → Note with ← Back.
+- New suite `tools/i18n-verify/audit-part28-small-phone-browser.mjs` (flows nwin, jmenus, bmmenu, person, zabnote; mutations nwtitle, nav40, popfield40, popbtn40, toast40).
+- **MSA J33 (the Owner's QR J04, "Make Percentage Numbers bigger", via the PCA):** `app/quranrevival.html`'s three `.word-progress-percent-*` rules replaced byte for byte with QR's (QR commit 5b5c051): a 60px circle with its percentage at 0.82rem, 50px and 0.7rem under 600px (was 38px and 0.6rem); the SVG scales with the circle through its viewBox.
+- **Not reached, next round (#918):** a scroll-halfway pass over every MSA page's menus, folder windows and the Note window's ⋯ menu, Favourites/Archived rows with long titles, the bookmark dialog on a 568px-tall phone.
+
+**Tests:** audit-part28 246/0; `--mutate=nav40` (59/1) and `popfield40` (59/1) fail it where their defect shows (the Builder ran all five); bookmark-range-popover 158/0; bookmark-sheet 176/0; bookmark-folder-edit 68/0; bookmark-marks-back 342/0; journey-note-windows 254/0; zab-to-note 196/0; navcheck fits in both languages at every width; word-card-level-sentence 228/0 (with J33); behaviour 971/0 (on the merged branch).

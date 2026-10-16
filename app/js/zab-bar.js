@@ -123,7 +123,7 @@ body.zab-docked #zabCorner { display: none; } /* audit-zab dock-hides-corner */
 .zab-pick select { flex: 1 1 10rem; min-width: 0; }
 #zabToast { position: fixed; left: 12px; right: 12px; bottom: 72px; z-index: 960; display: flex; gap: 8px; align-items: center; justify-content: space-between; padding: 10px 12px; border-radius: 10px; background: #1b2a41; color: #fff; box-shadow: 0 2px 12px rgba(0,0,0,.35); font: 14px/1.35 system-ui, sans-serif; }
 #zabToast[hidden] { display: none; }
-#zabToast a { color: #fff; font-weight: 600; text-decoration: underline; padding: 10px 6px; }
+#zabToast a { color: #fff; font-weight: 600; text-decoration: underline; padding: 10px 6px; display: inline-flex; align-items: center; min-height: 40px; box-sizing: border-box; } /* audit28: Open was 39px */
 #zabToast button { min-height: 40px; min-width: 40px; border: 0; border-radius: 8px; background: rgba(255,255,255,.16); color: #fff; font: inherit; cursor: pointer; }
 .zab-sort { display: flex; gap: 6px; align-items: center; margin-bottom: 8px; }
 .zab-sort select { flex: 0 1 12rem; }
