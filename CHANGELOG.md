@@ -21541,3 +21541,14 @@ New strings `wholeQuranLevelSentence` ("{level}: Achieved {known} and {percent} 
 - `CLAUDE.md` records the Owner's one-home rule (PCA J71).
 
 **Tests:** asma-poster 102/0 (no two Names share a description; 112 shows المالك, not 113's), and without the fix 3 of its checks fail; asma-explore-name-poster 36/0; asma-name-nav-poster 140/0; behaviour 971/0.
+
+## v11.12 — 16 Oct 2026 — On a small phone the Read bar's way back shares a line; three suites red on `main` are green (PCA ▸ QR J02 S1b)
+
+**Built by Builder round #891** (branch `builder/issue-891-run-1374`, PR #892), reviewed by the Architect by measurement on the round's head merged with `main`.
+
+- `app/quranrevival.html`: at 320px the bar's first line is full and 📖 ⤢ ⋯ ⋮ leave 102px, less than the way back's 7rem (112px) basis, so it wrapped onto a fifth line; at 390px with Meaning on, 110.6px, 1.4px short. Below 420px `#readBackSlot` takes 6.5rem; below 340px 5.5rem, with a smaller gap and label pad. The ✕ keeps its 40px tile.
+- `journey-s9-browser.mjs` (test only): in the 1440px tray the drop point fell on the tray's own resize handle (`elementFromPoint` said `jt-h`), so the touch drag never reached the folder row. The row is centred first; `--mutate-no-centre` restores the defect.
+- `journey-folder-menus-browser.mjs`: the round's own fix for the Delete item under the Zab bar duplicated v11.09's and conflicted on merge; v11.09's rule (56px of padding on the open menu) was kept, since journey-folder-menus passes with it (148/0), and the round's `--mutate=no-menu-room` now removes that rule.
+- Under the one-home rule (PCA J71) Quran Study is frozen in MMSA; this change was asked for by the QR Architect before the freeze, and its commit goes to the PCA for QR to carry.
+
+**Tests:** bookmark-marks-back 342/0 (336/6 on `main`), and `--mutate=narrow-basis` brings the 6 back at 320px; journey-s9 288/0 (286/2 on `main`), `--mutate-no-centre` brings the 2 back at 1440px; journey-folder-menus 148/0, `--mutate=no-menu-room` (v11.09's rule removed) stops it at the Delete tap; read-meaning 39/0; audit-part18 1020/0; audit-part11 506/0; navcheck exit 0; phone-width-overflow 217/0; qr-stage1-hidden 110/0; behaviour 971/0; re-checked after merging v11.11: bookmark-marks-back 342/0. Not this round's, identical on `main`: read-bar-tools 61/2 at 1280px (⋯ shows from 900px), with read-note-pane's 2 (Builder round #894).
