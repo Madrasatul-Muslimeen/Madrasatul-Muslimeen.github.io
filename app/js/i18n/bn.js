@@ -759,6 +759,11 @@ export const BN = {
   // Enhancement round -- the Bookmark Manager's own star, now on every
   // topic/routine/Asma detail screen as well as the Quran Note view.
   "Bookmark this": "এটি বুকমার্ক করুন",
+  // 16 Oct 2026 -- the bookmark dialog's āyah range (PCA J76, for QR J03).
+  "From āyah": "শুরুর আয়াত",
+  "To āyah": "শেষ আয়াত",
+  "Choose āyāt from 1 to {max}.": "১ থেকে {max} পর্যন্ত আয়াত বেছে নিন।",
+  "The first āyah must not come after the last.": "শুরুর আয়াত শেষ আয়াতের পরে হতে পারে না।",
   "Name this bookmark:": "এই বুকমার্কের নাম দিন:",
   "Studied": "অধ্যয়ন করা হয়েছে",
   "Logged today": "আজ লিপিবদ্ধ",
