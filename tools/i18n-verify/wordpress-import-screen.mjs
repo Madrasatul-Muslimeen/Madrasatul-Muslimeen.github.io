@@ -42,7 +42,8 @@ const bn = fs.readFileSync(path.join(root, "app/js/i18n/bn.js"), "utf8");
 
 // --- 1. THE ENTRY POINT ------------------------------------------------
 check("Mapping My Journey's own ⋯ menu links to the Import page", () => {
-  assert.ok(/href="import-notes\.html"/.test(journeyMapPage), "no link to import-notes.html found in journey-map.html");
+  // UPDATED IN PLACE (audit part 21): the link carries ?back=1 since the way-back law (decision 86), so the page can show ← Back.
+  assert.ok(/href="import-notes\.html(\?back=1)?"/.test(journeyMapPage), "no link to import-notes.html found in journey-map.html");
 });
 check("the ⋯ menu's own link text names Notes generally, not just WordPress (issue #271: two sources on one page)", () => {
   assert.ok(journeyMapPage.includes(">Import Notes…<"), "journey-map.html's ⋯ menu still names only WordPress, or was not updated");

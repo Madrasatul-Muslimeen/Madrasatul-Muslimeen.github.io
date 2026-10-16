@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "11.14",
+    "version": "11.15",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -3989,8 +3989,20 @@
     {
       "version": "11.14",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Bookmark dialog: an optional range unit, saved as range:S:A-B.",
+      "integration": {
+        "authorizedOn": "2026-10-16",
+        "integratedOn": "2026-10-16",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "11.15",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Audit part 21 (round #897, PR #899): the rest of Notes checked working; three fixes; MSA name; a Read bar line.",
       "integration": {
         "authorizedOn": "2026-10-16",
         "integratedOn": "2026-10-16",
@@ -3999,8 +4011,9 @@
       }
     }
   ],
-  "nextUnallocated": "11.15",
+  "nextUnallocated": "11.16",
   "nextUnallocatedNote": [
+    "v11.15 was allocated to audit part 21: every Notes feature checked; pop-up windows clear the nav row and bottom bars; My Notes history; the MSA name (round #897), 2026-10-16.",
     "v11.14 was allocated to the bookmark dialog can bookmark a range of ayat (PCA J76, for QR J03), 2026-10-16.",
     "v11.13 was allocated to audit part 20: Favourites, Archived, Trash and the Evernote import work; no dead ⋯ on the Read bar (round #894), 2026-10-16.",
     "v11.12 was allocated to the Read bar's way back shares a line on a small phone; journey-s9 and journey-folder-menus green (round #891), 2026-10-16.",
