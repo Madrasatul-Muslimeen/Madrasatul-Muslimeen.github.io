@@ -195,8 +195,19 @@ for (const lang of ["en", "bn"]) {
     check(`[${lang}/${viewport.width}] drilling into a Juz and a Surah reads the counter no further times`,
       readsAfterDrill === readsAfterWbwOpen, `${readsAfterWbwOpen} -> ${readsAfterDrill}`);
 
+    // PCA (QR J02 S1), 16 Oct 2026: the button can be reached. Scrolled into view the way a reader would, it sits
+    // inside the Explore view and nothing (the dock) covers its centre. Before #wbwPanel scrolled itself, it ran
+    // under the dock at 390px with nothing to scroll.
+    const studyReach = await page.evaluate(() => {
+      const btn = document.getElementById("wbwStudySurahBtn");
+      btn.scrollIntoView({ block: "nearest" });
+      const r = btn.getBoundingClientRect(), v = document.getElementById("exploreView").getBoundingClientRect();
+      const at = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      return { inView: r.top >= v.top - 1 && r.bottom <= v.bottom + 1, covered: !(at === btn || btn.contains(at)), at: at?.id || at?.className || null, r: [Math.round(r.top), Math.round(r.bottom)], view: [Math.round(v.top), Math.round(v.bottom)] };
+    });
+    check(`[${lang}/${viewport.width}] "Study this Surah" can be reached: inside the Explore view, not under the dock`, studyReach.inView && !studyReach.covered, JSON.stringify(studyReach));
     // Pressing "Study this Surah" actually navigates.
-    await page.click("#wbwStudySurahBtn");
+    await page.click("#wbwStudySurahBtn", { timeout: 8000 });
     await page.waitForTimeout(500);
     const afterStudyClick = await page.evaluate(() => ({
       readVisible: document.getElementById("readView")?.hidden === false,
