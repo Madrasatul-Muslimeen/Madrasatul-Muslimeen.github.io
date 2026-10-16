@@ -14,7 +14,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { chromium, newContext, openPage, clickReadTool } from "./harness.mjs";
+import { chromium, newContext, openPage, clickReadTool, BASE } from "./harness.mjs";
 let pass = 0, fail = 0;
 function check(name, ok, detail = "") {
   if (ok && typeof ok.then === "function") throw new Error(`check "${name}" was handed a promise`);
@@ -172,7 +172,7 @@ for (const lang of LANGS) for (const width of WIDTHS.filter((w) => w !== 320)) {
     const href = await ev(page, () => { const a = [...document.querySelectorAll('a[href*="journey-map.html"]')][0]; return a ? a.getAttribute("href") : null; });
     check(`${t}: Home ▾ carries a Mapping My Journey link to the full page`, !!href && /journey-map\.html/.test(href), String(href));
     if (href) {
-      const r = await page.request.get(new URL(href, "http://localhost:8080/app/").toString());
+      const r = await page.request.get(new URL(href, `${BASE}/app/`).toString());
       check(`${t}: ...and that page is served`, r.ok(), String(r.status()));
     }
   });
@@ -276,7 +276,12 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     const bd = await rect(page, "[data-pane-menu-backdrop]");
     check(`${t}: ${width < 600 ? "a dimmed backdrop covers the page behind the sheet" : "the popover has no backdrop (a tap on the page closes it)"}`, width < 600 ? !!bd && bd.w >= bd.vw - 1 : !bd);
     if (bd) await page.mouse.click(Math.min(bd.vw - 3, bd.l + 3), Math.max(3, bd.t + 3));
-    else await page.click("[data-pane-title]");
+    else {
+      // The popover sits over the middle of the title at 820 and 1440px, so tap the title where the menu does not cover it.
+      const pt = await ev(page, () => { const e = document.querySelector("[data-pane-title]"), m = document.querySelector("[data-pane-menu]"); const r = e.getBoundingClientRect(); for (let x = r.left + 4; x < r.right; x += 12) { const at = document.elementFromPoint(x, r.top + r.height / 2); if (at && !m.contains(at)) return { x, y: r.top + r.height / 2 }; } return null; });
+      check(`${t}: POSITIVE CONTROL part of the title is outside the popover, to tap`, !!pt, JSON.stringify(pt));
+      if (pt) await page.mouse.click(pt.x, pt.y);
+    }
     await settle(page, 300);
     check(`${t}: a tap outside closes the menu`, !(await vis(page, "[data-pane-menu]")), JSON.stringify(bd));
     // 5: Edit, type, Done saves
