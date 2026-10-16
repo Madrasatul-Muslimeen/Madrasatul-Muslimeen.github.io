@@ -200,6 +200,7 @@ button.tag-chip-btn:hover, button.tag-chip-btn:focus-visible { background: #dde6
 .pane-menu-danger button { color: #B3261E; border-color: #e5b4b0; }
 @media (max-width: 599px) {
   .bar-palette.pane-menu { position: fixed; left: 0; right: 0; bottom: 0; top: auto; width: 100%; max-width: none; max-height: 82vh; border-radius: 16px 16px 0 0; border-width: 1px 0 0; padding: 0 0.8rem 1rem; z-index: 21; }
+  .note-win .bar-palette.pane-menu { bottom: var(--nw-switch, 0px); max-height: calc(82vh - var(--nw-switch, 0px)); } /* audit29: the window switcher bar (56px) covered the sheet's last item, Move to Trash */
   /* Architect's review of #748: the sheet is the palette's own navy, so a white title row left "This note" pale gold
      on white, barely readable. The row takes the sheet's own colours, the title in white. */
   .pane-menu-head { display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 1; background: inherit; color: #fff; padding: 0.7rem 0 0.4rem; font-weight: 700; }

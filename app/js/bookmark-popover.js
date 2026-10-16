@@ -107,6 +107,7 @@ function ensureStyles() {
       background: white; color: #222; border-radius: 0.6rem; padding: 1rem 1.1rem;
       width: min(24rem, 100%); max-height: 100%; overflow-y: auto; box-shadow: 0 6px 24px rgba(0,0,0,0.25);
       font-family: system-ui, sans-serif;
+      box-sizing: border-box; /* audit29: with max-height 100% the dialog's padding stays inside it on a 320x568 phone, so Save is reachable */
     }
     .bm-popover h3 { margin: 0 0 0.7rem; font-size: 1.05rem; }
     .bm-popover-field { display: block; font-size: 0.85rem; margin-bottom: 0.7rem; color: #444; }
@@ -117,7 +118,7 @@ function ensureStyles() {
     }
     .bm-popover-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.4rem; }
     .bm-popover-actions button {
-      font-size: 0.88rem; padding: 0.35rem 0.8rem; min-height: 40px; border-radius: 0.4rem; border: 1px solid #ccc;
+      font-size: 0.88rem; padding: 0.35rem 0.8rem; min-height: 40px; min-width: 40px; border-radius: 0.4rem; border: 1px solid #ccc;
       background: #1F3A6E; color: white; cursor: pointer;
     }
     .bm-popover-actions button.secondary { background: white; color: #1F3A6E; }
@@ -129,7 +130,7 @@ function ensureStyles() {
     .bm-pop-unit-row { font-size: 0.85rem; margin-bottom: 0.7rem; color: #444; }
     .bm-pop-units { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 0.35rem; margin-top: 0.25rem; }
     .bm-pop-units button {
-      min-height: 36px; min-width: 0; padding: 0.25rem 0.35rem; font-size: 0.82rem; line-height: 1.15;
+      min-height: 40px; min-width: 0; padding: 0.25rem 0.35rem; font-size: 0.82rem; line-height: 1.15;
       border: 1px solid #c9d0e0; border-radius: 0.4rem; background: white; color: #1F3A6E; cursor: pointer;
       white-space: normal; overflow-wrap: anywhere;
     }

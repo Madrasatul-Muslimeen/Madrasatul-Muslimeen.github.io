@@ -7,6 +7,55 @@ v10.28). Read `CLAUDE.md` first. The prompt that starts the next session is
 
 This session was summarised once (its context compacted), which is why it hands over here.
 
+## LATEST UPDATE — 17 Oct 2026, 9:00 am Sydney, session `session_01M6JYqY9wiowXWGQix9WYAC` (v11.17 → v11.22) — READ THIS FIRST
+
+The MSA Master Architect, taking over from `session_01QrqatzKibuMLUrZsW4AgCr` at 9:55 pm on 16 Oct. The 8:35 pm block below
+is kept as history.
+
+**Released in this stretch** (each has its Done line in PCF MSA J29 and its line in the User Manual's What's New; the
+release lines are appended below by `allocate-version.py`):
+- **Audit part 24 (test-only, #906):** Records page and Continue strip checked working; `zab-data` and `zab-bar-browser`
+  repaired.
+- **v11.18 (#908):** Continue chips carry `back=1` and the topic-study pages show ← Back; hidden modules no longer use up
+  the strip's five places. **Fixed in review:** the first build mounted the Back from the shared Bookmark menu and drew a
+  SECOND ← Back on `quranrevival.html`, `bookmarks.html` and `asma-study.html`.
+- **v11.19 (#911):** Topic study (Deen, Arabic, Hadith) checked; 40px tabs; Breakdown note in Bangla (`way-modal.js`, shared
+  with the Qur'an page). `arabic-study` is deliberately not in `load-speed.mjs`.
+- **Round #910:** nothing to fix (j29p3 was already fixed in v11.13).
+- **Suite health sweep (#917, test-only):** all 129 MSA suites on `main`, **no app defect**; repaired
+  `hadith-source-rights` (decision 89's hadith-api grant now cited), `audit-part18` (Continue `back=1`) and `audit-part17`
+  (clipboard origin hardcoded to :8080). Report: `docs/reports/2026-10-17-msa-suite-health.md`.
+- **v11.20 (#914):** the smallest phone with real-length names (Notes, Mapping My Journey, Bookmarks, Zab).
+- **v11.21 (#916 + MSA J33):** Note windows, Bookmark menu and dialog, Zab → Note at 320px; **J33 = the Owner's QR J04**
+  (bigger Word card percentage circle), copied byte for byte into the frozen `quranrevival.html` on the PCA's request.
+- **v11.22 (#919):** audit part 29: the window ⋯ menu sheet clears the switcher bar; the bookmark dialog's unit buttons 40px and it fits a 320×568 phone.
+
+**Every MSA section of the User Manual has now had a first pass (parts 11–26) and a 320px real-length second pass
+(parts 27–29).** Next, in this order: the Owner's new words in the PCF; any `PCA ▸` change request; a third pass at tablet
+width (768–820px) with real-length content; then the Architect's backlog.
+
+**PCF rule changes today:** J82 (17 Oct): a job that only reports is status `report` ("Reporting"), never "Needs you"
+(J15 and J33 moved). Keep-alives are now every 6 hours.
+
+**Lessons from this stretch:**
+- **Dispatch a Builder round only when no `claude.yml` run is in progress.** A queued dispatch is displaced by bot
+  comments on an open PR (`issue_comment` runs in the same concurrency group): #910's first start was cancelled that way
+  and lost 1 h 50 min.
+- **A round dispatched before the previous release merges branches from the older `main` and can redo its fixes**
+  (#918 redid two of #916's); merge `main` in and keep the released version where they overlap.
+- **The Builder often ends without a PR** (#909, #912, #915), and **runs out of turns on compound shell commands** (#912
+  spent 105 turns, mostly refused `;`/`&&` chains). Every issue now says: one command per call.
+- **Pass `allocate-version.py`'s MILESTONE and CHANGELOG from files** (`"$(cat file)"`): an apostrophe ("Qur'an") in a
+  shell-quoted argument silently emptied both once.
+- **A suite that hardcodes `localhost:8080` passes on the Builder and fails on any other port**; use the harness `BASE`.
+- **A review must run every suite that asserts a URL the round changes** (v11.18 missed `audit-part18`).
+- **Shared-code changes need a side-effect probe**: compare the pages that use the shared file on `main` and on the branch
+  (v11.18's duplicate Back was found that way, not by the round's own suite).
+- **Container restarts are frequent here** (four in this stretch): they kill servers and background runs. Run long jobs as
+  tracked background tasks, write each result to a file as it finishes (`.done` files), and throw away results recorded
+  while the server was down (`0 passed`).
+- **Never `pkill -f` a name in your own command line** (it killed the shell once again); kill by PID.
+
 ## LATEST UPDATE — 16 Oct 2026, 8:35 pm Sydney, session `session_01QrqatzKibuMLUrZsW4AgCr` (v11.02 → v11.16) — READ THIS FIRST
 
 The MSA Master Architect (MMSA was renamed **MSA, Madrasah Study App**, by the Owner at 5:36 pm; the project id,
@@ -410,3 +459,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v11.19** (2026-10-16): audit part 26: Topic study works end to end; 40px sheet tabs; Breakdown note in Bangla (round #909).
 - **v11.20** (2026-10-16): audit part 27: the smallest phone with real-length names (Notes, Journey, Bookmarks, Zab) (round #913).
 - **v11.21** (2026-10-16): audit part 28: Note windows, Bookmark menu and dialog, Zab → Note on the smallest phone; J33 bigger Word card percentage (QR J04) (round #915).
+- **v11.22** (2026-10-16): audit part 29: small-phone pass finished (Note window menu, bookmark dialog on a short phone, menus part-way down) (round #918).

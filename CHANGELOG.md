@@ -21658,3 +21658,15 @@ New strings `wholeQuranLevelSentence` ("{level}: Achieved {known} and {percent} 
 - **Not reached, next round (#918):** a scroll-halfway pass over every MSA page's menus, folder windows and the Note window's ⋯ menu, Favourites/Archived rows with long titles, the bookmark dialog on a 568px-tall phone.
 
 **Tests:** audit-part28 246/0; `--mutate=nav40` (59/1) and `popfield40` (59/1) fail it where their defect shows (the Builder ran all five); bookmark-range-popover 158/0; bookmark-sheet 176/0; bookmark-folder-edit 68/0; bookmark-marks-back 342/0; journey-note-windows 254/0; zab-to-note 196/0; navcheck fits in both languages at every width; word-card-level-sentence 228/0 (with J33); behaviour 971/0 (on the merged branch).
+
+## v11.22 — 17 Oct 2026 — The small-phone pass finished: Note window ⋯ sheet, the bookmark dialog on a short phone, menus part-way down every MSA page (PCF MSA J29 audit part 29)
+
+**Built by Builder round #918** (branch `builder/issue-918-run-1424`, PR #919), reviewed and **merged onto v11.21 by the Architect**: the round was dispatched before v11.21 merged, so it was built on v11.20 and redid two of #916's fixes in its own form (a Note window title that wraps at every width; the bookmark dialog's scroll). Where they overlapped the released v11.21 form was kept (the title wraps on a phone sheet only); the round's new fixes were taken.
+
+- `app/css/note-window.css`: under 600px, a pop-up Note window's ⋯ menu sheet sits above the window switcher bar (`bottom: var(--nw-switch)`), which covered its last item, Move to Trash. **A shared note style:** the PCA has the change notice for QR.
+- `app/js/bookmark-popover.js`: the Unit buttons are 40px (were 36), Save/Cancel at least 40px wide, and `box-sizing: border-box` keeps the dialog's padding inside its 100% height on a 320×568 phone.
+- Checked clean: a scroll-halfway pass over 13 MSA pages (notes, journey-map, bookmarks, records, monitor, hadith-collections, hadith-study, deen-study, arabic-study, people, classes, homework, catalogue), the Zab bar at 768px and wider, pop-up folder windows, Favourites/Archived rows with long titles.
+- New suite `tools/i18n-verify/audit-part29-small-phone-browser.mjs`; the `bmscroll` and `nwtitle` mutation anchors were re-pointed at the merged lines in review (they found 0 matches and failed every flow, which proves nothing).
+- **Also in this release:** the handover's LATEST UPDATE for session `01M6JYqY` (17 Oct 9:00 am).
+
+**Tests:** audit-part29 1304/0; `--mutate=bmscroll` (306/2), `nwtitle` (306/2), `nwmenu` (307/1) and `bmbtn40` (307/1) each fail it; audit-part28 246/0; notes-note-windows 218/0; journey-note-windows 254/0; bookmark-range-popover 158/0; bookmark-sheet 176/0; bookmark-multi-save 192/0; behaviour 971/0.

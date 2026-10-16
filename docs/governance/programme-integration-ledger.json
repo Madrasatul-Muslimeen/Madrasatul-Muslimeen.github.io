@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "11.21",
+    "version": "11.22",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -4073,8 +4073,20 @@
     {
       "version": "11.21",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Audit part 28 (PCF MSA J29) and MSA J33 (QR J04 copied byte for byte).",
+      "integration": {
+        "authorizedOn": "2026-10-16",
+        "integratedOn": "2026-10-16",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "11.22",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Audit part 29 (PCF MSA J29): small-phone second pass finished; merged onto v11.21.",
       "integration": {
         "authorizedOn": "2026-10-16",
         "integratedOn": "2026-10-16",
@@ -4083,8 +4095,9 @@
       }
     }
   ],
-  "nextUnallocated": "11.22",
+  "nextUnallocated": "11.23",
   "nextUnallocatedNote": [
+    "v11.22 was allocated to audit part 29: small-phone pass finished (Note window menu, bookmark dialog on a short phone, menus part-way down) (round #918), 2026-10-16.",
     "v11.21 was allocated to audit part 28: Note windows, Bookmark menu and dialog, Zab → Note on the smallest phone; J33 bigger Word card percentage (QR J04) (round #915), 2026-10-16.",
     "v11.20 was allocated to audit part 27: the smallest phone with real-length names (Notes, Journey, Bookmarks, Zab) (round #913), 2026-10-16.",
     "v11.19 was allocated to audit part 26: Topic study works end to end; 40px sheet tabs; Breakdown note in Bangla (round #909), 2026-10-16.",
