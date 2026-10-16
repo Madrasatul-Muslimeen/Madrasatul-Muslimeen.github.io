@@ -112,6 +112,22 @@ Read this first, every session. It is the standing brief.
 >   (`h: true`): "vX.YY · date time (Sydney) · what changed, in plain words, and where to find it (job)", with a full UTC
 >   `at`. Write it in the same step as the release; the PCA checks at every :25/:55 that each release has its line.
 
+> ## ⇢ ONE HOME FOR EVERY APP PART (the Owner, PCA J71, 16 Oct 2026) — BINDING
+>
+> **Asma, LDOG and Quran Study live in QuranRevival** (repository `QuranRevival/QuranRevival.github.io`, its own
+> Architect). **Hadith, Dua and Seerah live in MMSA**, and so do the shared tools: **Notes / Mapping My Journey**
+> (`notes.html`, `journey-map.html`, `note-window.js`, the note pane), sign-in, Records and Bookmarks. Other apps open a
+> part's home; they never copy it.
+> - **MMSA's Asma, Quran Study and LDOG are FROZEN**: safety fixes only, each reported to the PCA so QR carries it. Any
+>   other need there goes to the PCA as "PCA ▸ change request". (`quranrevival.html` and its Quran-only scripts are
+>   Quran Study.)
+> - **QR reads MMSA's Hadith data** from `/tools/hadith-data-pull/output/…`: keep those paths stable, and send the PCA
+>   a change notice BEFORE any move.
+> - **QR keeps a pinned, byte-for-byte copy of MMSA's in-page note scripts** (the Notes pane beside the Read view, the
+>   Zab bar, "file this note"). Every change to them gets a change notice to the PCA with its commit.
+> - A Hadith tie to an Asma Name is a LINK to QR's Asma; a shared list lives in one data file in its owner's home.
+> - MMSA's audit rounds cover Hadith, Dua, Seerah and the shared tools.
+
 > ## ⇢ HADITH STUDY is being built on `feature/hadith-study` — READ IF YOU TOUCH HADITH
 >
 > **This branch's final application version is `v08.29`, and it is now MERGED TO `main`.** The
