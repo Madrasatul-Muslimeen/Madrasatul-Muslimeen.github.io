@@ -78,7 +78,7 @@ body.zab-docked #zabCorner { display: none; } /* audit-zab dock-hides-corner */
 #zabPanel { position: fixed; z-index: 950; background: #fff; color: #1b2a41; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 -2px 18px rgba(0,0,0,.28); left: 0; right: 0; bottom: 0; max-height: 78vh; border-radius: 16px 16px 0 0; }
 #zabPanel[hidden], #zabBackdrop[hidden] { display: none; }
 .zab-head { flex: 0 0 auto; display: flex; align-items: center; gap: 6px; padding: 8px 10px; border-bottom: 1px solid #dde3ee; min-width: 0; }
-.zab-head h2 { flex: 1 1 auto; margin: 0; font-size: 1rem; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.zab-head h2 { flex: 1 1 auto; margin: 0; font-size: 1rem; min-width: 0; overflow-wrap: anywhere; }
 .zab-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden; padding: 8px 10px 14px; }
 #zabPanel button, #zabPanel select, #zabPanel input { font: inherit; min-height: 40px; max-width: 100%; }
 #zabPanel button { min-width: 40px; border: 1px solid #c7d0e0; border-radius: 8px; background: #f3f6fb; color: #1b2a41; cursor: pointer; padding: 0 10px; }
@@ -142,11 +142,11 @@ body.zab-docked #zabCorner { display: none; } /* audit-zab dock-hides-corner */
 .zab-muted { color: #5b6b86; }
 /* Z6: the pocket tree. Crumbs and child chips wrap (never a sideways scroll); the Drawer rows are 40px+ and indent by level. */
 .zab-crumbs { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 4px; margin: 0 0 8px; min-width: 0; }
-.zab-crumbs button { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.zab-crumbs button { max-width: 100%; white-space: normal; overflow-wrap: anywhere; text-align: start; }
 #zabPanel .zab-crumbs button[aria-current="page"] { background: #1f3a6e; color: #fff; border-color: #1f3a6e; }
 .zab-crumbs .zab-sep { color: #5b6b86; }
 .zab-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 8px; min-width: 0; }
-.zab-chips button { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-radius: 999px; }
+.zab-chips button { max-width: 100%; white-space: normal; overflow-wrap: anywhere; text-align: start; border-radius: 20px; }
 .zab-drawer-row { margin-inline-start: calc(var(--zab-depth, 0) * 16px); }
 .zab-drawer-row .zab-twisty { min-width: 40px; width: 40px; padding: 0; }
 .zab-drawer-row .zab-twisty-gap { display: inline-block; width: 40px; height: 40px; }
