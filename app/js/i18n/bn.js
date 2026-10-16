@@ -1103,8 +1103,8 @@ export const BN = {
 
   // --- About page, the long blurb ---------------------------------------
   // QR Stage 1 (PCF J30): the app is now QuranRevival; four modules hidden.
-  "This app is now QuranRevival: Quran Study, Deen Study, Arabic, Hadith (with the Duas), Learn Deen On-the-Go and Asma ul Husna. General Study, Nature-Life, Life Skill and Health are hidden for now and will return in the new MMSA app; nothing saved in them is lost.":
-    "এই অ্যাপটি এখন QuranRevival: কুরআন অধ্যয়ন, দ্বীন শিক্ষা, আরবি, হাদীস (দোয়াসহ), চলার পথে দ্বীন শিক্ষা এবং আসমাউল হুসনা। সাধারণ শিক্ষা, প্রকৃতি ও জীবন, জীবন দক্ষতা এবং স্বাস্থ্য আপাতত লুকানো আছে; এগুলো নতুন MMSA অ্যাপে ফিরে আসবে, আর এগুলোতে সংরক্ষিত কিছুই হারাবে না।",
+  "This app is now QuranRevival: Quran Study, Deen Study, Arabic, Hadith (with the Duas), Learn Deen On-the-Go and Asma ul Husna. General Study, Nature-Life, Life Skill and Health are hidden for now and will return in the new MSA app (Madrasah Study App); nothing saved in them is lost.":
+    "এই অ্যাপটি এখন QuranRevival: কুরআন অধ্যয়ন, দ্বীন শিক্ষা, আরবি, হাদীস (দোয়াসহ), চলার পথে দ্বীন শিক্ষা এবং আসমাউল হুসনা। সাধারণ শিক্ষা, প্রকৃতি ও জীবন, জীবন দক্ষতা এবং স্বাস্থ্য আপাতত লুকানো আছে; এগুলো নতুন MSA অ্যাপে (মাদরাসা স্টাডি অ্যাপ) ফিরে আসবে, আর এগুলোতে সংরক্ষিত কিছুই হারাবে না।",
   "What's actually built versus only planned — read directly from this\n     app's own feature registry, never restated by hand, so this page can't\n     drift out of sync with the real code.":
     "কী কী সত্যিই তৈরি হয়েছে আর কী কেবল পরিকল্পনায় আছে — সরাসরি অ্যাপের নিজস্ব বৈশিষ্ট্য-নথি থেকে পড়া, হাতে লেখা নয়, তাই এই পাতাটি কখনো প্রকৃত কোড থেকে আলাদা হয়ে যেতে পারে না।",
   "Phase 0 & 1 — individually tracked features":
