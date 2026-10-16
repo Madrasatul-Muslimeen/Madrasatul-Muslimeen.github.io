@@ -284,14 +284,24 @@ check("the display contract never lets an explanation pass as the Hadith's own w
  * `approvedSources`; any OTHER subfolder of `output/` still requires its own
  * source's own grant, and `app/hadith-corpus` stays forbidden outright -- no
  * source's grant authorises a second, undocumented corpus location.
+ *
+ * Updated in place, 17 Oct 2026 (suite-health sweep, issue #912, PCF MSA J29):
+ * this had been RED on main since the Hadith database rounds of 8-12 Oct
+ * (f797ee9f translations, ea9f7f49 concordance, 2463e76c/5f8c9a25 dua,
+ * 708ead26 hadeethenc-links, 4796bbaa ayah-hadith), which added five output
+ * subfolders that are DERIVED from the two approved sources (hadeethenc,
+ * openiti-release) rather than being sources of their own. They are named here
+ * one by one; a sixth folder, or any source-named folder without a grant, is
+ * still an offender.
  */
+const DERIVED_OUTPUT_FOLDERS = ["ayah-hadith", "concordance", "dua", "hadeethenc-links", "translations"];
 check("no Hadith corpus subfolder exists without its own source's grant", () => {
   const approved = new Set(SOURCES.importAuthorisation.approvedSources ?? []);
   const outputDir = path.join(root, "tools", "hadith-data-pull", "output");
   const offenders = [];
   if (fs.existsSync(outputDir)) {
     for (const entry of fs.readdirSync(outputDir)) {
-      if (!approved.has(entry)) offenders.push(path.join("tools", "hadith-data-pull", "output", entry));
+      if (!approved.has(entry) && !DERIVED_OUTPUT_FOLDERS.includes(entry)) offenders.push(path.join("tools", "hadith-data-pull", "output", entry));
     }
   }
   if (fs.existsSync(path.join(root, "app", "hadith-corpus"))) {
