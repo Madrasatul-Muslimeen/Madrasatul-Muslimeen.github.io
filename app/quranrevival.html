@@ -3571,6 +3571,10 @@
      .wheel-box/.wheel-col/.wheel-sidebar/.explore-head-row/.ways-list/
      .way-row/.explore-crumb wholesale (the same idiom every other Explore
      mode already uses); these are the only genuinely new rules it needs. */
+  /* PCA (QR J02 S1), 16 Oct 2026: #wbwPanel sits BESIDE #exploreScroll, not inside it, so on a screen that does not
+     scroll (a phone with the Zab bar on) its lower part ran out of #exploreView and under the dock, where nothing
+     scrolled: "Study this Surah" could not be reached. It scrolls itself now, the way #exploreScroll does. */
+  #wbwPanel { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
   #wbwGateNotice { color: #b6c0d2; font-style: italic; text-align: center; margin: 0.6rem 0; }
   #wbwGateNotice[hidden] { display: none; }
   #wbwBody[hidden] { display: none; }
