@@ -7,7 +7,7 @@ v10.28). Read `CLAUDE.md` first. The prompt that starts the next session is
 
 This session was summarised once (its context compacted), which is why it hands over here.
 
-## LATEST UPDATE — 17 Oct 2026, 9:00 am Sydney, session `session_01M6JYqY9wiowXWGQix9WYAC` (v11.17 → v11.22) — READ THIS FIRST
+## LATEST UPDATE — 17 Oct 2026, 9:00 am Sydney, session `session_01M6JYqY9wiowXWGQix9WYAC` (v11.17 → v11.23), refreshed 10:50 am — READ THIS FIRST
 
 The MSA Master Architect, taking over from `session_01QrqatzKibuMLUrZsW4AgCr` at 9:55 pm on 16 Oct. The 8:35 pm block below
 is kept as history.
@@ -29,10 +29,21 @@ release lines are appended below by `allocate-version.py`):
 - **v11.21 (#916 + MSA J33):** Note windows, Bookmark menu and dialog, Zab → Note at 320px; **J33 = the Owner's QR J04**
   (bigger Word card percentage circle), copied byte for byte into the frozen `quranrevival.html` on the PCA's request.
 - **v11.22 (#919):** audit part 29: the window ⋯ menu sheet clears the switcher bar; the bookmark dialog's unit buttons 40px and it fits a 320×568 phone.
+- **v11.23 (#921):** audit part 30, the third pass at tablet width (768–820px) with real-length content: a Note window's
+  title wraps instead of being cut, in every window (`note-window.css`, a shared note script; the PCA was sent the change
+  notice and relayed it to QR).
+
+**Where things stand (10:50 am Sydney, 17 Oct):** `main` is at **v11.23**. **In flight: Builder round #922** (issue #922,
+audit part 31: Bangla accessible names on the MSA pages, and the Dua cards at tablet width). When its run ends, open its
+PR if the Builder did not, merge `main` in if its base is older than v11.23, review by measurement (its suite at
+320/390/820/1440 in en and bn, every mutation, the suites of each file it touches, `behaviour` once, `load-speed-check`),
+release it as the next free version (v11.24 unless something else took it; read it off `main`), send the PCA a change
+notice if a shared note script changed, and update the PCF (J29 Done line with W-T-P-E-O, What's New, `p/mmsa.monitor`).
 
 **Every MSA section of the User Manual has now had a first pass (parts 11–26) and a 320px real-length second pass
-(parts 27–29).** Next, in this order: the Owner's new words in the PCF; any `PCA ▸` change request; a third pass at tablet
-width (768–820px) with real-length content; then the Architect's backlog.
+(parts 27–29).** The tablet third pass began in v11.23. Next, in this order: the Owner's new words in the PCF; any `PCA ▸` change
+request; the rest of the tablet pass (#922 and whatever its review finds); then the Architect's backlog in `ARCHITECT.md`.
+**Waiting on the Owner only:** MSA J02, J05, J06, J07, J20, J22, J24.
 
 **PCF rule changes today:** J82 (17 Oct): a job that only reports is status `report` ("Reporting"), never "Needs you"
 (J15 and J33 moved). Keep-alives are now every 6 hours.
