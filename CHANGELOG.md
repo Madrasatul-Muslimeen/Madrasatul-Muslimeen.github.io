@@ -21670,3 +21670,14 @@ New strings `wholeQuranLevelSentence` ("{level}: Achieved {known} and {percent} 
 - **Also in this release:** the handover's LATEST UPDATE for session `01M6JYqY` (17 Oct 9:00 am).
 
 **Tests:** audit-part29 1304/0; `--mutate=bmscroll` (306/2), `nwtitle` (306/2), `nwmenu` (307/1) and `bmbtn40` (307/1) each fail it; audit-part28 246/0; notes-note-windows 218/0; journey-note-windows 254/0; bookmark-range-popover 158/0; bookmark-sheet 176/0; bookmark-multi-save 192/0; behaviour 971/0.
+
+## v11.23 — 17 Oct 2026 — Tablets with real-length content: Note window titles wrap in every window (PCF MSA J29 audit part 30)
+
+**Built by Builder round #920** (branch `builder/issue-920-run-1427`, PR #921), reviewed by the Architect by measurement on a current base. The third audit pass: 768×1024, 820×1180 and 1024×768, English and Bangla, with the real-length seeding of parts 27–29.
+
+- `app/css/note-window.css`: `.note-win .nw-bar { flex: 0 0 auto; min-height: 44px; padding-block: 2px; }` and `.note-win .nw-title { white-space: normal; … overflow-wrap: anywhere; }` now apply to every Note window, floating or phone sheet (v11.21 had limited them to phone sheets; at tablet widths a floating window cut a 90-character title with no way to read it). **A shared note style:** the PCA has the change notice for QR.
+- Checked clean: 3 cascaded windows inside the screen and clear of the nav row and the Zab bar; Mapping My Journey with 4-deep 40-character folders, the folder ⋯ menu and search; the Bookmarks page and dialog; the Zab bar (not the corner) from 768px, its panel, pockets inside pockets; Hadith collections and study, Records, Monitor, People; a 700–1100px sweep in 20px steps of notes, journey-map and bookmarks (no sideways scroll, no control under 40px, nav never covered); no English left on the Bangla pages.
+- New suite `tools/i18n-verify/audit-part30-tablet-browser.mjs` (mutations `nwtitle`, `sideways`, `tiny`, `cover`); part 29's `nwtitle` anchor follows the widened rule.
+- **Not reached:** Dua cards at tablet width (in round #922).
+
+**Tests:** audit-part30 564/0; `--mutate=nwtitle` fails it (70/1 at 768 en); audit-part29 1304/0 with its re-pointed `nwtitle` failing it (306/2); audit-part28 246/0; notes-note-windows 218/0; journey-note-windows 254/0; journey-folder-window 144/0; journey-note-folds-windows 82/0; journey-window-tabs 166/0; behaviour 971/0.
