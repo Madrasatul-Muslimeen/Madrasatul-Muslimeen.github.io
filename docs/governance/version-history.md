@@ -884,3 +884,4 @@ total). Allocated by the MMSA Architect.
 11.18: audit part 25: the Continue strip keeps the way back; hidden modules no longer use up its five places (round #907). Allocated by the MMSA Architect.
 11.19: audit part 26: Topic study works end to end; 40px sheet tabs; Breakdown note in Bangla (round #909). Allocated by the MMSA Architect.
 11.20: audit part 27: the smallest phone with real-length names (Notes, Journey, Bookmarks, Zab) (round #913). Allocated by the MMSA Architect.
+11.21: audit part 28: Note windows, Bookmark menu and dialog, Zab → Note on the smallest phone; J33 bigger Word card percentage (QR J04) (round #915). Allocated by the MMSA Architect.
