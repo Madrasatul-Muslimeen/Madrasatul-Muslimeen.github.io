@@ -599,3 +599,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v11.29** (2026-10-17): a focused button at the edge of the People and Catalogue tables comes fully into view at 320px (PCF MSA J29 j29p33).
 - **v11.30** (2026-10-17): letter writing practice in the writing window (PCF MSA J35 = QR J12).
 - **v11.31** (2026-10-17): Blank lines example like Trace over, light or dark (J34).
+- **v11.32** (2026-10-17): every page tab reads MSA (J36).

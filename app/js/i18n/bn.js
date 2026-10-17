@@ -158,7 +158,7 @@ export const BN = {
   "Show this opener": "এই সূচনা পর্দা দেখান",
 
   // --- About page -------------------------------------------------------
-  "QuranRevival — About": "কুরআনরিভাইভাল — পরিচিতি",
+  "MSA — About": "MSA — পরিচিতি",
   "About QuranRevival": "কুরআনরিভাইভাল সম্পর্কে",
   "Phase 0 & 1 — individually tracked features":
     "পর্যায় ০ ও ১ — আলাদাভাবে চিহ্নিত বৈশিষ্ট্যসমূহ",
@@ -199,7 +199,7 @@ export const BN = {
   "Date": "তারিখ",
 
   // --- Onboarding: creating an account ---------------------------------
-  "QuranRevival — Create your account (F-011)": "কুরআনরিভাইভাল — আপনার অ্যাকাউন্ট তৈরি করুন",
+  "MSA — Create your account (F-011)": "MSA — আপনার অ্যাকাউন্ট তৈরি করুন",
   "Create your account (F-011)": "আপনার অ্যাকাউন্ট তৈরি করুন",
   "Sets up a brand-new account: your account, your own person record, and\n     your owner role, all created together. Nothing existing is touched.":
     "একদম নতুন অ্যাকাউন্ট তৈরি করে: আপনার অ্যাকাউন্ট, আপনার নিজের ব্যক্তি-রেকর্ড এবং আপনার মালিকানার ভূমিকা — সবই একসাথে। বিদ্যমান কিছুই পরিবর্তন করা হয় না।",
@@ -239,7 +239,7 @@ export const BN = {
   // --- Accepting an invite ----------------------------------------------
   // Often the FIRST screen a new person ever sees, and the one place a
   // Bangla-only reader is most likely to give up if it is in English.
-  "QuranRevival — Accept invite (F-014)": "কুরআনরিভাইভাল — আমন্ত্রণ গ্রহণ",
+  "MSA — Accept invite (F-014)": "MSA — আমন্ত্রণ গ্রহণ",
   "Accept invite": "আমন্ত্রণ গ্রহণ করুন",
   "Accept": "গ্রহণ করুন",
   "Checking your invite link…": "আপনার আমন্ত্রণ লিংক যাচাই করা হচ্ছে…",
@@ -746,15 +746,15 @@ export const BN = {
   // are where a wrong word would do the most damage.
 
   // --- The nine module pages ---------------------------------------------
-  "QuranRevival — Deen Study": "কুরআনরিভাইভাল — দ্বীন শিক্ষা",
-  "QuranRevival — Arabic Language": "কুরআনরিভাইভাল — আরবি ভাষা",
-  "QuranRevival — Hadith": "কুরআনরিভাইভাল — হাদীস",
-  "QuranRevival — General Study": "কুরআনরিভাইভাল — সাধারণ শিক্ষা",
-  "QuranRevival — Nature-Life": "কুরআনরিভাইভাল — প্রকৃতি ও জীবন",
-  "QuranRevival — Life Skill": "কুরআনরিভাইভাল — জীবন দক্ষতা",
-  "QuranRevival — Health": "কুরআনরিভাইভাল — স্বাস্থ্য",
-  "QuranRevival — Learn Deen On-the-Go": "কুরআনরিভাইভাল — চলার পথে দ্বীন শিক্ষা",
-  "QuranRevival — Asma ul Husna": "কুরআনরিভাইভাল — আসমাউল হুসনা",
+  "MSA — Deen Study": "MSA — দ্বীন শিক্ষা",
+  "MSA — Arabic Language": "MSA — আরবি ভাষা",
+  "MSA — Hadith": "MSA — হাদীস",
+  "MSA — General Study": "MSA — সাধারণ শিক্ষা",
+  "MSA — Nature-Life": "MSA — প্রকৃতি ও জীবন",
+  "MSA — Life Skill": "MSA — জীবন দক্ষতা",
+  "MSA — Health": "MSA — স্বাস্থ্য",
+  "MSA — Learn Deen On-the-Go": "MSA — চলার পথে দ্বীন শিক্ষা",
+  "MSA — Asma ul Husna": "MSA — আসমাউল হুসনা",
 
   // --- Shared module-page furniture --------------------------------------
   "Nothing under here yet.": "এখানে এখনো কিছু নেই।",
@@ -1163,10 +1163,10 @@ export const BN = {
   "Manzil": "মানযিল",
 
   // --- Page titles and headings -----------------------------------------
-  "QuranRevival — Records": "কুরআনরিভাইভাল — রেকর্ড",
-  "QuranRevival — Monitor": "কুরআনরিভাইভাল — পর্যবেক্ষণ",
-  "QuranRevival — Homework": "কুরআনরিভাইভাল — বাড়ির কাজ",
-  "QuranRevival — Course Offers": "কুরআনরিভাইভাল — কোর্স অফার",
+  "MSA — Records": "MSA — রেকর্ড",
+  "MSA — Monitor": "MSA — পর্যবেক্ষণ",
+  "MSA — Homework": "MSA — বাড়ির কাজ",
+  "MSA — Course Offers": "MSA — কোর্স অফার",
   "Claim a status against a unit of study, see it confirmed or returned, and\n     confirm a whole surah, subject or week in one go.":
     "অধ্যয়নের কোনো একটি এককের বিপরীতে একটি অবস্থা দাবি করুন, তা নিশ্চিত হলো নাকি ফেরত এলো দেখুন, এবং একটি পূর্ণ সূরা, বিষয় বা সপ্তাহ একসাথে নিশ্চিত করুন।",
   "One report covering every module — whatever has actually been claimed or\n     logged. Quran gets an extra Approach-status section below, since it is\n     the only subject with structured progress data today.":
@@ -1489,10 +1489,10 @@ export const BN = {
   "Draft": "খসড়া",
 
   // --- Page titles, headings and intros ---------------------------------
-  "QuranRevival — People": "কুরআনরিভাইভাল — ব্যক্তিবর্গ",
-  "QuranRevival — Catalogue": "কুরআনরিভাইভাল — তালিকা",
-  "QuranRevival — Curriculum": "কুরআনরিভাইভাল — পাঠ্যক্রম",
-  "QuranRevival — Classes": "কুরআনরিভাইভাল — ক্লাস",
+  "MSA — People": "MSA — ব্যক্তিবর্গ",
+  "MSA — Catalogue": "MSA — তালিকা",
+  "MSA — Curriculum": "MSA — পাঠ্যক্রম",
+  "MSA — Classes": "MSA — ক্লাস",
   "Everyone in this madrasah: add a person, invite someone who signs in\n     themselves, and see who looks after whom.":
     "এই মাদরাসার সবাই: একজন ব্যক্তি যোগ করুন, কাউকে আমন্ত্রণ জানান যিনি নিজেই সাইন ইন করবেন, এবং কে কার দেখাশোনা করেন তা দেখুন।",
   "Modules, the subject tree, the Quran Approaches, and ladders and levels —\n     the data every study screen reads from. Anyone in the madrasah can look;\n     only the owner and a prime can edit.":
@@ -2024,7 +2024,7 @@ export const BN = {
 
   // --- The editing screen (taglines.html) -------------------------------
   "Taglines": "ট্যাগলাইন",
-  "QuranRevival — Taglines": "কুরআনরিভাইভাল — ট্যাগলাইন",
+  "MSA — Taglines": "MSA — ট্যাগলাইন",
   "The moving line under the app's name on the Quran Study page. Write the lines, say where each one links, choose the order and how long each one holds the strip. Only you can change these.":
     "কুরআন অধ্যয়ন পাতায় অ্যাপের নামের নিচের চলমান লাইন। লাইনগুলো লিখুন, কোনটি কোথায় নিয়ে যাবে তা বলুন, ক্রম ঠিক করুন এবং প্রতিটি কত সময় থাকবে তা বেছে নিন। কেবল আপনিই এগুলো বদলাতে পারেন।",
   "Only the account owner can change the taglines.": "কেবল অ্যাকাউন্টের মালিকই ট্যাগলাইন বদলাতে পারেন।",
@@ -2085,7 +2085,7 @@ export const BN = {
   "Every bookmark you have saved, from any module, in one place. Open one to jump straight back to where it was made. Group them into folders however you like.":
     "আপনার সংরক্ষণ করা প্রতিটি বুকমার্ক, যেকোনো মডিউল থেকে, একই জায়গায়। একটি খুললেই সরাসরি যেখানে তৈরি হয়েছিল সেখানে চলে যাবেন। ইচ্ছেমতো ফোল্ডারে ভাগ করে রাখুন।",
   "No bookmarks saved yet. Look for the ☆/🔖 button on a study screen.": "এখনো কোনো বুকমার্ক সংরক্ষণ করা হয়নি। অধ্যয়ন পাতায় ☆/🔖 বোতামটি খুঁজুন।",
-  "QuranRevival — Bookmarks": "কুরআনরিভাইভাল — বুকমার্ক",
+  "MSA — Bookmarks": "MSA — বুকমার্ক",
 
   // =====================================================================
   // Fixes round (23 Aug 2026) -- the bookmark-name popover (item 1) and the
@@ -2403,7 +2403,7 @@ export const BN = {
   // are its own headings as much as the page's.
   // -------------------------------------------------------------------
   "Backup": "ব্যাকআপ",
-  "QuranRevival — Backup": "QuranRevival — ব্যাকআপ",
+  "MSA — Backup": "MSA — ব্যাকআপ",
   "backup|noun": "ব্যাকআপ",
   "Save everything this madrasah has written — people, the catalogue, and every claim, note, bookmark and log entry — as one file on your own device. It opens in any browser, needs no internet, and is yours to keep.":
     "এই মাদরাসার লেখা সবকিছু — মানুষ, ক্যাটালগ, এবং প্রতিটি দাবি, নোট, বুকমার্ক ও লগ এন্ট্রি — আপনার নিজের ডিভাইসে একটি ফাইল হিসেবে সংরক্ষণ করুন। এটি যেকোনো ব্রাউজারে খোলে, ইন্টারনেট লাগে না, এবং এটি আপনারই।",
@@ -2764,7 +2764,7 @@ export const BN = {
   // written here would print literally on a Bangla page while the English
   // side -- real markup -- decoded correctly.
   // ---------------------------------------------------------------------
-  "QuranRevival — Hadith Collections (synthetic pilot)": "কুরআনরিভাইভাল — হাদিস সংকলনসমূহ (কৃত্রিম পরীক্ষামূলক)",
+  "MSA — Hadith Collections (synthetic pilot)": "MSA — হাদিস সংকলনসমূহ (কৃত্রিম পরীক্ষামূলক)",
   "Hadith Collections": "হাদিস সংকলনসমূহ",
   "Hadith Corpus": "হাদিস ভাণ্ডার",
   "Explore": "অন্বেষণ",
@@ -2860,7 +2860,7 @@ export const BN = {
   "My Notes for this unit": "এই ইউনিটের আমার নোট",
 
   // --- MAP Phase 6 (P6-F, issue #199) -- Mapping My Journey, all three view options + toggle ---
-  "QuranRevival — Mapping My Journey": "কুরআনরিভাইভাল — আমার যাত্রার মানচিত্র",
+  "MSA — Mapping My Journey": "MSA — আমার যাত্রার মানচিত্র",
   "Every permanent Note you've written, organised your way — folders, a timeline, or a path. Try all three; the app remembers which you picked.":
     "আপনি যে সব স্থায়ী নোট লিখেছেন, সেগুলো আপনার নিজের পছন্দমতো সাজানো — ফোল্ডার, টাইমলাইন, অথবা পথ। তিনটিই চেষ্টা করে দেখুন; অ্যাপ মনে রাখবে আপনি কোনটি বেছে নিয়েছেন।",
   "Everything": "সবকিছু",
@@ -2962,7 +2962,7 @@ export const BN = {
   // kept as the transliterated term (দাওয়াহ) -- an English translation would
   // lose the specific meaning the Owner's own ADR-011 uses throughout.
   "Dawah": "দাওয়াহ", // ?
-  "QuranRevival — Dawah": "কুরআনরিভাইভাল — দাওয়াহ", // ?
+  "MSA — Dawah": "MSA — দাওয়াহ", // ?
   "Turn one of your own permanent Notes into a printable page — shared inside this Madrasah once it's ready.":
     "আপনার নিজের একটি স্থায়ী নোটকে একটি প্রিন্টযোগ্য পাতায় রূপান্তর করুন — এটি প্রস্তুত হলে এই মাদরাসার ভেতরে শেয়ার করা হবে।",
   "My pages": "আমার পাতাসমূহ",
