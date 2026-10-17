@@ -22,6 +22,12 @@ const MUTATE = arg("mutate"), ONLY = arg("only"), WONLY = Number(arg("width")) |
 // name: [file, route glob, anchor (exactly once), replacement, page path it applies to]
 const MUTATIONS = {
   // each puts a fix back to the old behaviour and must fail the suite where the defect shows
+  arlang: ["app/js/hadith-browser.js", "**/js/hadith-browser.js", '  arNotice.setAttribute("lang", "ar");', "", "/hadith-"],
+  optlang: ["app/js/hadith-browser.js", "**/js/hadith-browser.js", "    o.lang = l;", "", "/hadith-"],
+  fileh: ["app/import-notes.html", "**/import-notes.html", "#fileInput { margin: 0.6rem 0; min-height: 40px; max-width: 100%;", "#fileInput { margin: 0.6rem 0;", "/import-notes"],
+  filew: ["app/import-notes.html", "**/import-notes.html", "min-height: 40px; max-width: 100%;", "min-height: 40px;", "/import-notes"],
+  metaw: ["app/notes.html", "**/notes.html*", "color: #888; overflow-wrap: anywhere; }", "color: #888; }", "/notes.html"],
+  chipw: ["app/hadith-study.html", "**/hadith-study.html", "  .topic-row-name, .topic-gloss { min-width: 0; overflow-wrap: anywhere; }", "", "/hadith-study"],
 };
 if (MUTATE && !MUTATIONS[MUTATE]) throw new Error(`no such mutation ${MUTATE}`);
 const browser = await chromium.launch();
@@ -160,6 +166,10 @@ function spacingScan() {
     if (w > 2 && h > 2) out.overlap.push(`${desc(a)} x ${desc(d)}`);
   }
   out.over = document.documentElement.scrollWidth - innerWidth;
+  // name what pokes past the right edge, so a sideways-scroll failure says where it comes from
+  out.wide = out.over > 0 ? [...document.querySelectorAll("body *")].filter((e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.right > innerWidth + 0.5; }).sort((x, y) => y.getBoundingClientRect().right - x.getBoundingClientRect().right).slice(0, 4).map((e) => `${desc(e)} right ${Math.round(e.getBoundingClientRect().right)}`) : [];
+  // a text run can poke out of a box that itself fits (a nowrap word in a narrow cell): name its parent too
+  if (out.over > 0 && !out.wide.length) { const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT); for (let n; (n = w.nextNode()) && out.wide.length < 4;) { const rg = document.createRange(); rg.selectNodeContents(n); const rr = rg.getBoundingClientRect(); if (rr.width > 0 && rr.right > innerWidth + 0.5) out.wide.push(`text "${n.nodeValue.trim().slice(0, 24)}" in ${desc(n.parentElement)} right ${Math.round(rr.right)}`); } }
   out.cut = [...new Set(out.cut)]; out.short = [...new Set(out.short)]; out.overlap = [...new Set(out.overlap)];
   return out;
 }
@@ -209,7 +219,7 @@ await flow("control", "en", 390, 800, "/app/about.html", "", async (t, page) => 
 
 // ---------------------------------------------------------------- Part A
 const MSA_NOTES = "/app/notes.html?unit=" + encodeURIComponent("ayah:2:255") + "&label=Test";
-for (const lang of LANGS) for (const width of [390, 1280].filter((w) => !WONLY || w === WONLY)) {
+for (const lang of LANGS) for (const width of WIDTHS) {
   const bn = lang === "bn";
   const H = width < 600 ? 844 : 800;
 
@@ -281,7 +291,7 @@ for (const lang of LANGS) for (const width of [390, 1280].filter((w) => !WONLY |
 
 // ---------------------------------------------------------------- Part B
 const PAGES = ["notes", "journey-map", "bookmarks", "records", "monitor", "hadith-collections", "hadith-study", "deen-study", "arabic-study", "people", "classes", "homework", "catalogue", "dawah", "import-notes", "about"];
-const SPACING_WIDTHS = [320, 390, 1280].filter((w) => !WONLY || w === WONLY);
+const SPACING_WIDTHS = WIDTHS;
 for (const lang of LANGS) for (const width of SPACING_WIDTHS) {
   const bn = lang === "bn";
   const H = width < 600 ? 844 : 800;
@@ -297,7 +307,14 @@ for (const lang of LANGS) for (const width of SPACING_WIDTHS) {
       check(`${t}: spacing: no text is cut`, r.cut.length === 0, r.cut.slice(0, 6).join(" | "));
       check(`${t}: spacing: no two controls overlap`, r.overlap.length === 0, r.overlap.slice(0, 6).join(" | "));
       check(`${t}: spacing: every control is 40px tall`, r.short.length === 0, r.short.slice(0, 6).join(" | "));
-      check(`${t}: spacing: no sideways scroll`, r.over <= 0, String(r.over));
+      // the nav row clips rather than scrolls, so a label that grows past the screen is CUT and no scroll width shows it:
+      // measure containment (each nav label inside the screen, and nothing cut inside it)
+      const navOut = await ev(page, () => [...document.querySelectorAll("nav .nav-cat > summary, nav .nav-cat > a")].filter((e) => e.getBoundingClientRect().width > 0).filter((e) => { const r = e.getBoundingClientRect(); return r.left < -0.5 || r.right > innerWidth + 0.5 || e.scrollWidth > e.clientWidth + 1; }).map((e) => `${e.textContent.trim().slice(0, 14)} ${Math.round(e.getBoundingClientRect().left)}..${Math.round(e.getBoundingClientRect().right)} sw${e.scrollWidth}/${e.clientWidth}`));
+      const navN = await ev(page, () => [...document.querySelectorAll("nav .nav-cat > summary, nav .nav-cat > a")].filter((e) => e.getBoundingClientRect().width > 0).length);
+      if (pg === "hadith-collections") check(`${t}: this page has no nav row (a standalone page)`, navN === 0, String(navN));
+      else check(`${t}: POSITIVE CONTROL the nav row has labels`, navN >= 3, String(navN));
+      check(`${t}: spacing: every nav label sits inside the screen, uncut`, navOut.length === 0, navOut.slice(0, 4).join(" | "));
+      check(`${t}: spacing: no sideways scroll`, r.over <= 0, `${r.over}px: ${r.wide.join(" | ")}`);
     });
   }
 }

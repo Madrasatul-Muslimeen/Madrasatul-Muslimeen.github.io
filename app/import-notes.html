@@ -29,7 +29,7 @@
   .gate-notice { background: #fdf6ea; border: 1px solid #B8862F; border-radius: 0.5rem; padding: 0.6rem 0.8rem; font-size: 0.88rem; margin: 0.7rem 0; }
   #contextBar { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; margin: 1rem 0; font-size: 0.9rem; }
   #contextBar label { margin: 0; }
-  #fileInput { margin: 0.6rem 0; min-height: 40px; box-sizing: border-box; } /* audit part 34: the native file control measured 21px */
+  #fileInput { margin: 0.6rem 0; min-height: 40px; max-width: 100%; box-sizing: border-box; } /* audit part 34: the native file control measured 21px, and with wider text spacing it ran past a 320px screen */
   .preview-card { border: 1px solid #ddd; border-radius: 0.6rem; padding: 0.8rem 0.9rem; margin: 0.8rem 0; }
   .preview-stats { display: flex; flex-wrap: wrap; gap: 0.6rem 1.2rem; margin: 0.5rem 0; }
   .preview-stat { font-size: 0.86rem; }
