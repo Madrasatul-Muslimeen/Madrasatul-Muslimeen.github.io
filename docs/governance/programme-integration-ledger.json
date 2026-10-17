@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "11.26",
+    "version": "11.29",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -4133,8 +4133,44 @@
     {
       "version": "11.26",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Audit part 33 (PR #929): scroll-padding-bottom in zab-bar.js; focus visible on every MSA page.",
+      "integration": {
+        "authorizedOn": "2026-10-17",
+        "integratedOn": "2026-10-17",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "11.27",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Builder round #931 (PR #932), corrected in review: text-spacing overflow fixes, Arabic lang marking, the shell.css change dropped.",
+      "integration": {
+        "authorizedOn": "2026-10-17",
+        "integratedOn": "2026-10-17",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "11.28",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "The Owner's urgent rename of the main page (tab title and heading) to Madrasah Study App (MSA), built by the Architect.",
+      "integration": {
+        "authorizedOn": "2026-10-17",
+        "integratedOn": "2026-10-17",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "11.29",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "J29 j29p33: table-focus.js keeps a keyboard-focused button inside its sideways-scrolling table on a small phone; built by the Architect.",
       "integration": {
         "authorizedOn": "2026-10-17",
         "integratedOn": "2026-10-17",
@@ -4143,8 +4179,11 @@
       }
     }
   ],
-  "nextUnallocated": "11.27",
+  "nextUnallocated": "11.30",
   "nextUnallocatedNote": [
+    "v11.29 was allocated to a focused button at the edge of the People and Catalogue tables comes fully into view at 320px (PCF MSA J29 j29p33), 2026-10-17.",
+    "v11.28 was allocated to the main page renamed Madrasah Study App (MSA) (PCF MSA J36), 2026-10-17.",
+    "v11.27 was allocated to audit part 34: wider text spacing fits a 320px screen; Hadith Arabic marked lang=ar (PCF MSA J29), 2026-10-17.",
     "v11.26 was allocated to audit part 33: Tab clears the Zab bar and corner; keyboard focus checked (round #928), 2026-10-17.",
     "v11.25 was allocated to audit part 32: Tab stays inside dialogs; focus returns on close (round #925), 2026-10-17.",
     "v11.24 was allocated to audit part 31: screen-reader names in Bangla and English; Dua cards on tablets (round #922), 2026-10-17.",

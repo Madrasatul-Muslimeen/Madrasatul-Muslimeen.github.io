@@ -293,6 +293,7 @@ export const BN = {
 
   // --- The landing screen and its dock tabs ------------------------------
   "QuranRevival — Phase 4/5": "কুরআনরিভাইভাল",
+  "Madrasah Study App (MSA)": "মাদ্রাসা স্টাডি অ্যাপ (MSA)", // the Owner, 17 Oct 2026 (PCF inbox 9bnl4tkit8wmvk): the main page's name
   "Mastery Wheel": "দক্ষতার চাকা", // ?
   "Study options": "অধ্যয়নের সেটিংস",
   // Enhancement round -- the dock's own tab label ("Options"), a shorter

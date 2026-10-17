@@ -549,3 +549,6 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v11.24** (2026-10-17): audit part 31: screen-reader names in Bangla and English; Dua cards on tablets (round #922).
 - **v11.25** (2026-10-17): audit part 32: Tab stays inside dialogs; focus returns on close (round #925).
 - **v11.26** (2026-10-17): audit part 33: Tab clears the Zab bar and corner; keyboard focus checked (round #928).
+- **v11.27** (2026-10-17): audit part 34: wider text spacing fits a 320px screen; Hadith Arabic marked lang=ar (PCF MSA J29).
+- **v11.28** (2026-10-17): the main page renamed Madrasah Study App (MSA) (PCF MSA J36).
+- **v11.29** (2026-10-17): a focused button at the edge of the People and Catalogue tables comes fully into view at 320px (PCF MSA J29 j29p33).

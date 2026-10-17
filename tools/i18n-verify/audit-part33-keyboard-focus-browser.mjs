@@ -21,6 +21,7 @@ const arg = (n) => (process.argv.find((a) => a.startsWith(`--${n}=`)) || "").sli
 const MUTATE = arg("mutate"), ONLY = arg("only"), WONLY = Number(arg("width")) || 0, LONLY = arg("lang");
 // name: [file, route glob, anchor (exactly once), replacement, page path it applies to]
 const MUTATIONS = {
+  tablefocus: ["app/js/table-focus.js", "**/js/table-focus.js*", "    if (r.left >= b.left && r.right <= b.right) return;", "    return;", "/app/"],
   zabpad: ["app/js/zab-bar.js", "**/js/zab-bar.js*", "html { scroll-padding-bottom: 76px; }\nhtml:has(.nw-switch) { scroll-padding-bottom: 128px; }\n", "", "/app/"],
 };
 if (MUTATE && !MUTATIONS[MUTATE]) throw new Error(`no such mutation ${MUTATE}`);
@@ -125,8 +126,9 @@ async function flow(name, lang, width, height, pagePath, seed, fn) {
   if (ctx) await Promise.race([ctx.close().catch(() => {}), new Promise((r) => setTimeout(r, 10000))]);
 }
 const ev = (page, f, a) => page.evaluate(f, a);
-// 320px is left out on purpose: the People and Catalogue tables scroll sideways there and a button at the clipped edge reads as covered (on main too; PCF MSA J29 j29p33, for round #931 or later).
-const WIDTHS = [390, 820, 1280, 1440].filter((w) => !WONLY || w === WONLY);
+// 320px is in since audit part 35 (PCF MSA J29 j29p33): the People and Catalogue tables scroll sideways there, and
+// js/table-focus.js now brings a focused button at the clipped edge fully into view (mutation `tablefocus`).
+const WIDTHS = [320, 390, 820, 1280, 1440].filter((w) => !WONLY || w === WONLY);
 const LANGS = ["en", "bn"].filter((l) => !LONLY || l === LONLY);
 
 // Press Tab from the top of the page, up to max stops. Returns { stops, judged, looped }.
