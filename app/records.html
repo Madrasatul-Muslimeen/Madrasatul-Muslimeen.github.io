@@ -13,7 +13,7 @@
   h1 { font-size: 1.4rem; }
   h2 { font-size: 1.15rem; margin-top: 2.2rem; border-bottom: 1px solid #eee; padding-bottom: 0.3rem; }
   label { display: block; margin: 0.8rem 0 0.3rem; font-weight: 600; font-size: 0.92rem; }
-  input[type="text"], input[type="number"], select, textarea { width: 100%; padding: 0.45rem; font-size: 0.95rem; border: 1px solid #ccc; border-radius: 0.35rem; box-sizing: border-box; }
+  input[type="text"], input[type="number"], select, textarea { width: 100%; padding: 0.45rem; font-size: 0.95rem; border: 1px solid #8c8c8c; border-radius: 0.35rem; box-sizing: border-box; }
   .row { display: flex; gap: 0.8rem; flex-wrap: wrap; }
   .row > div { flex: 1; min-width: 10rem; }
   button {
@@ -26,9 +26,9 @@
   table { width: 100%; border-collapse: collapse; margin-top: 0.6rem; }
   th, td { text-align: left; padding: 0.35rem 0.5rem; border-bottom: 1px solid #eee; font-size: 0.85rem; vertical-align: top; }
   .tag { display: inline-block; padding: 0.1rem 0.4rem; border-radius: 0.8rem; font-size: 0.72rem; background: #eef1f7; color: #1F3A6E; margin: 0.1rem 0.2rem 0.1rem 0; }
-  .status-not_applicable { color: #999; }
-  .status-not_started { color: #888; }
-  .status-learning { color: #b8862f; }
+  .status-not_applicable { color: #666; }
+  .status-not_started { color: #666; }
+  .status-learning { color: #8a6212; }
   .status-practising { color: #9c3b2e; }
   .status-achieved { color: #1f3a6e; font-weight: 600; }
   .status-mastered { color: #2e6b4f; font-weight: 700; }
@@ -105,7 +105,7 @@
         <div>
           <label for="unitRef">Reference</label>
           <input id="unitRef" type="text" />
-          <div id="unitRefHint" style="font-size:0.78rem; color:#777; margin-top:0.2rem;"></div>
+          <div id="unitRefHint" style="font-size:0.78rem; color: #666; margin-top:0.2rem;"></div>
         </div>
       </div>
       <div class="row">
@@ -422,7 +422,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       const active = domainList.filter((d) => d.status !== "archived");
       domainChips.innerHTML = active.length
         ? active.map((d) => `<label><input type="checkbox" value="${d.id}" /> ${langText(d.name, getAppLang(), d.id)}</label>`).join("")
-        : `<span style='color:#888; font-size:0.85rem;'>${t("No domain tags yet.")}</span>`;
+        : `<span style='color: #666; font-size:0.85rem;'>${t("No domain tags yet.")}</span>`;
     }
 
     function renderTrackableOptions() {
@@ -488,7 +488,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       if (pendingOnly.checked) rows = rows.filter(([, e]) => e.confirmState === "pending");
       entriesBody.innerHTML = rows.length
         ? rows.map(([entryKey, e]) => entryRowHtml(chunkKey, entryKey, e)).join("")
-        : `<tr><td colspan="8" style="color:#888;">${t("Nothing here yet.")}</td></tr>`;
+        : `<tr><td colspan="8" style="color: #666;">${t("Nothing here yet.")}</td></tr>`;
 
       entriesBody.querySelectorAll(".confirmBtn").forEach((btn) => {
         btn.addEventListener("click", async () => {
@@ -574,7 +574,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
               <td>${activityActionLabel(e.action)}</td>
             </tr>`;
           }).join("")
-        : `<tr><td colspan="5" style="color:#888;">${t("Nothing logged this week yet.")}</td></tr>`;
+        : `<tr><td colspan="5" style="color: #666;">${t("Nothing logged this week yet.")}</td></tr>`;
     }
 
     claimBtn.addEventListener("click", async () => {

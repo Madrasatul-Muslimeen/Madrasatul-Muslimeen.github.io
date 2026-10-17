@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "11.32",
+    "version": "11.33",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -4205,8 +4205,20 @@
     {
       "version": "11.32",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Every other page's tab reads MSA — … (PCF MSA J36, the Owner's answer).",
+      "integration": {
+        "authorizedOn": "2026-10-17",
+        "integratedOn": "2026-10-17",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "11.33",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Audit part 36: text and box colour contrast on MSA pages (PCF MSA J29, PR #943).",
       "integration": {
         "authorizedOn": "2026-10-17",
         "integratedOn": "2026-10-17",
@@ -4215,8 +4227,9 @@
       }
     }
   ],
-  "nextUnallocated": "11.33",
+  "nextUnallocated": "11.34",
   "nextUnallocatedNote": [
+    "v11.33 was allocated to audit part 36 colour contrast (J29), 2026-10-17.",
     "v11.32 was allocated to every page tab reads MSA (J36), 2026-10-17.",
     "v11.31 was allocated to Blank lines example like Trace over, light or dark (J34), 2026-10-17.",
     "v11.30 was allocated to letter writing practice in the writing window (PCF MSA J35 = QR J12), 2026-10-17.",
