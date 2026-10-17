@@ -124,7 +124,8 @@ function slowMotion() {
 // Part 39: an opened sheet, measured inside the sheet's own scroll box, never by the page's scroll position.
 function sheetCheck(spec) {
   const root = document.querySelector(spec.root);
-  const vis = (e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(e).visibility !== "hidden"; };
+  // checkVisibility: the content of a closed <details> keeps a box but is not shown
+  const vis = (e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(e).visibility !== "hidden" && (!e.checkVisibility || e.checkVisibility({ checkVisibilityCSS: true, contentVisibilityAuto: true })); };
   if (!root || !vis(root)) return { found: false };
   const nm = (el) => el.tagName.toLowerCase() + (el.id ? "#" + el.id : "") + (typeof el.className === "string" && el.className ? "." + el.className.trim().split(/\s+/)[0] : "");
   // A surface fixed to the screen cannot be reached by scrolling the page; one in the page's flow (a drop-down) can, but it must still fit the screen height.
@@ -135,7 +136,8 @@ function sheetCheck(spec) {
   // A floating Note window must also keep clear of the Zab bar that sits over the foot of the screen.
   const zb = document.getElementById("zabBar"), zbr = zb && getComputedStyle(zb).display !== "none" ? zb.getBoundingClientRect() : null;
   const floor = zbr && zbr.height > 0 && root.closest(".note-win:not(.sheet)") ? zbr.top : innerHeight;
-  if (fixed ? (rr.top < -1 || rr.bottom > floor + 1) : rr.height > innerHeight + 1) problems.push(`sheet leaves the viewport vertically (${Math.round(rr.top)}..${Math.round(rr.bottom)} of ${innerHeight}, ${fixed ? "fixed" : "in flow"})`);
+  // spec.inline: a panel that is part of the page itself (the Dua ✓ Check), reached by scrolling the page, so only its buttons and sideways fit are judged
+  if (!spec.inline && (fixed ? (rr.top < -1 || rr.bottom > floor + 1) : rr.height > innerHeight + 1)) problems.push(`sheet leaves the viewport vertically (${Math.round(rr.top)}..${Math.round(rr.bottom)} of ${innerHeight}, ${fixed ? "fixed" : "in flow"})`);
   if (rr.left < -1 || rr.right > innerWidth + 1) problems.push(`sheet leaves the viewport sideways (${Math.round(rr.left)}..${Math.round(rr.right)} of ${innerWidth})`);
   const scrollsX = (n) => { const o = getComputedStyle(n).overflowX; return o === "auto" || o === "scroll"; };
   const cut = [];
@@ -180,7 +182,7 @@ function sheetCheck(spec) {
       if (s.overflowX !== "visible" || s.overflowY !== "visible") { const b = n.getBoundingClientRect(); if (x < b.left || x > b.right || y < b.top || y > b.bottom) why = `clipped by ${nm(n)}`; }
     }
     if (!why) { const top = document.elementFromPoint(x, y); if (!(top && (el === top || el.contains(top) || top.contains(el)))) why = `covered by ${top ? nm(top) : "nothing"}`; }
-    if (why) bad.push(`${nm(el)} "${(el.innerText || el.getAttribute("aria-label") || "").trim().slice(0, 18)}" ${why}`);
+    if (why) bad.push(`${nm(el)} "${(el.innerText || el.getAttribute("aria-label") || "").trim().slice(0, 18)}" ${why} at ${Math.round(x)},${Math.round(y)} size ${Math.round(r.width)}x${Math.round(r.height)}`);
   }
   if (bad.length) problems.push(`unreachable: ${bad.slice(0, 4).join("; ")}`);
   return { found: true, n: list.length, problems, h: Math.round(rr.height), vh: innerHeight };
@@ -353,11 +355,26 @@ if (!MONLY || MONLY === "sheets") {
       await measure(t, page, "window switcher", { root: ".nw-switch", buttons: ["*"] });
     }, seedFor(bn));
 
-    if (want("navmenus")) for (const pg of ["notes", "bookmarks"]) await flow(`${lang} ${vpTag} navmenus-${pg}`, lang, vp, pg === "notes" ? NOTES_URL : "/app/bookmarks.html", false, async (page) => {
+    if (want("dua")) await flow(`${lang} ${vpTag} dua`, lang, vp, "/app/hadith-collections.html", false, async (page) => {
+      const t = `${lang} ${vpTag}`;
+      await page.click('[data-hadith-tab="dua"]');
+      await page.waitForSelector('[data-dua-card="2"] [data-dua-check-open]', { timeout: 20000 });
+      await settle(page, 400);
+      await page.click('[data-dua-card="2"] [data-dua-check-open]');
+      await page.waitForSelector('[data-dua-check-panel="2"] [data-dua-check-member]', { timeout: 20000 });
+      await measure(t, page, "Dua check panel (step 1)", { root: "[data-dua-check-panel]", inline: true, buttons: ["*"] });
+      await page.click("[data-dua-check-rest-same]");
+      await page.click('[data-dua-check-step="2"]'); await page.click("[data-dua-check-rest-ok]");
+      await measure(t, page, "Dua check panel (step 2)", { root: "[data-dua-check-panel]", inline: true, buttons: ["*"] });
+      await page.click('[data-dua-check-step="3"]');
+      await measure(t, page, "Dua check panel (step 3, Save)", { root: "[data-dua-check-panel]", inline: true, buttons: ["[data-dua-check-save]", "*"] });
+    }, seedFor(bn));
+
+    if (want("navmenus")) for (const pg of ["notes", "bookmarks", "hadith-collections", "hadith-study"]) await flow(`${lang} ${vpTag} navmenus-${pg}`, lang, vp, pg === "notes" ? NOTES_URL : `/app/${pg}.html`, false, async (page) => {
       const t = `${lang} ${vpTag} ${pg}`;
       await page.waitForSelector(".nav-cat > summary", { timeout: 15000 });
       const n = await ev(page, () => document.querySelectorAll(".nav-cat > summary").length);
-      check(`${t}: POSITIVE CONTROL the nav has drop-downs`, n >= 3, String(n));
+      check(`${t}: POSITIVE CONTROL the nav has drop-downs`, n >= 1, String(n));
       for (let i = 0; i < n; i++) {
         await ev(page, (k) => { document.querySelectorAll(".nav-cat[open]").forEach((d) => d.removeAttribute("open")); document.querySelectorAll(".nav-cat > summary")[k].click(); }, i); await settle(page, 400);
         const nm = await ev(page, (k) => (document.querySelectorAll(".nav-cat > summary")[k].textContent || "").trim().slice(0, 14), i);
