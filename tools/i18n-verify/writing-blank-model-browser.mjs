@@ -1,5 +1,5 @@
 // PCF MSA J34 (17 Oct 2026) -- Blank lines: the word or Ayah above the paper looks like Trace over (same size, Letter style),
-// with a choice A "Like Trace over" (default) or B "Like Trace over, dark". Run from the repository root with serve.js on :8080.
+// with a choice A "As traced" (default) or B "Dark ink". Run from the repository root with serve.js on :8080.
 //   node tools/i18n-verify/writing-blank-model-browser.mjs [--width=390] [--lang=en|bn] [--mutate=<name>] [--shot]
 import { chromium, newContext, openPage } from "./harness.mjs";
 import fs from "fs";
@@ -24,6 +24,7 @@ const MUTATIONS = {
   "old-size": ["writing-popout.js", "const fs = fsNow();\n    const pad = 8;", "const fs = Math.min(56, fsNow());\n    const pad = 8;"],
   "ignore-style": ["writing-popout.js", '(st.model === "dark" ? "model" : st.shade)', '(st.model === "dark" ? "model" : "light")'],
   "b-hollow": ["writing-sheet.js", 'const MODEL = { mode: "fill"', 'const MODEL = { mode: "stroke"'],
+  "long-labels": ["writing-popout.js", '${t("As traced")}</option>', '${t("Like Trace over")}</option>'],
   "no-remember": ["writing-popout.js", "localStorage.setItem(MODEL_KEY, v);", ""],
 };
 if (MUTATE && !MUTATIONS[MUTATE]) throw new Error("unknown mutation " + MUTATE);
@@ -162,8 +163,17 @@ for (const [width, height] of MUTATE ? sets.filter(([w]) => w === (WIDTH || 390)
   s = await selects(page);
   check(`${tag} Blank lines: the select is shown, >= 40px tall, inside the window, on a line with another list box`, s.shown && s.h >= 39.5 && s.inside && s.sharedLine, JSON.stringify(s));
   check(`${tag} select label and options are ${lang === "bn" ? "Bangla" : "English"}`, lang === "bn"
-    ? s.aria === "কাগজের উপরের উদাহরণ" && s.opts[0] === "উপর দিয়ে লেখার মতো" && s.opts[1] === "উপর দিয়ে লেখার মতো, গাঢ়"
-    : s.aria === "Example above the paper" && s.opts[0] === "Like Trace over" && s.opts[1] === "Like Trace over, dark", JSON.stringify(s));
+    ? s.aria === "কাগজের উপরের উদাহরণ" && s.opts[0] === "হালকা উদাহরণ" && s.opts[1] === "গাঢ় উদাহরণ"
+    : s.aria === "Example above the paper" && s.opts[0] === "As traced" && s.opts[1] === "Dark ink", JSON.stringify(s));
+  // Architect review of #941: the first labels were cut at 390px ("Like Trace ov"). With Blank lines on, every list box
+  // on the bar must hold its LONGEST option, measured in the box's own font, inside its own padding and arrow.
+  const cut = await page.evaluate(() => [...document.querySelectorAll("#writingSheet .wp-bar select")].filter((sel) => !sel.hidden).map((sel) => {
+    const cs = getComputedStyle(sel); const c = document.createElement("canvas").getContext("2d"); c.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+    const need = Math.max(...[...sel.options].map((o) => c.measureText(o.textContent).width));
+    const room = sel.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - 18;
+    return { box: sel.getAttribute("aria-label"), need: Math.round(need), room: Math.round(room) };
+  }).filter((b) => b.need > b.room));
+  check(`${tag} Blank lines: every list box shows its longest option whole`, cut.length === 0, JSON.stringify(cut));
   check(`${tag} default is A (nothing stored yet)`, (await page.inputValue("#writingSheet .wp [data-wp-model-style]")) === "like" && s.stored === null, JSON.stringify(s));
 
   // ---- size: word and Ayah

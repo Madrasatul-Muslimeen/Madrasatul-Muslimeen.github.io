@@ -490,7 +490,7 @@ if (ONLY || !MUTATE) {
     // Architect review (7 Oct 2026): the model is read, not traced -- its darkest letter pixel must reach 4.5:1
     // against the strip's own background (the first build painted it in the "book" tracing shade, ~1.2:1).
     // Updated 17 Oct 2026 (PCF MSA J34): the default model (A) now looks like Trace over, which is light by design; the
-    // readable-at-a-glance guarantee belongs to choice B "Like Trace over, dark", so it is selected before measuring.
+    // readable-at-a-glance guarantee belongs to choice B "Dark ink", so it is selected before measuring.
     await page.selectOption("#writingSheet .wp [data-wp-model-style]", "dark");
     await page.waitForTimeout(100);
     const modelContrast = await page.evaluate(() => {

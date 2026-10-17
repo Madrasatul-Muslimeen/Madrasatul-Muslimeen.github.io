@@ -83,6 +83,9 @@ const CSS = `
 @media (max-width:599.98px){.wp-tx{display:none}}
 `;
 
+// PCF MSA J34: the example above blank lines is A "As traced" (the Letter style) or B "Dark ink". Architect review of
+// #941 (17 Oct 2026): the first labels, "Like Trace over" / "Like Trace over, dark", were cut at 390px (92px of room,
+// 104 and 142 needed; Bangla too). The short words fit every width, and the box's spoken name says what it is.
 const MODEL_KEY = "writingModelStyle";
 function readModel() {
   try { return localStorage.getItem(MODEL_KEY) === "dark" ? "dark" : "like"; } catch { return "like"; }
@@ -116,8 +119,8 @@ export function openWordPopout({ host, word, ayahWords, unitWords, ensureFont, p
             <option value="blank">${t("Blank lines")}</option>
           </select>
           <select class="wp-shade" data-wp-model-style aria-label="${t("Example above the paper")}" title="${t("Example above the paper")}" hidden>
-            <option value="like">${t("Like Trace over")}</option>
-            <option value="dark">${t("Like Trace over, dark")}</option>
+            <option value="like">${t("As traced")}</option>
+            <option value="dark">${t("Dark ink")}</option>
           </select>
           <span class="wp-sp"></span>
           <button type="button" data-wp="close" aria-label="${t("Close")}" title="${t("Close")}">✕</button>

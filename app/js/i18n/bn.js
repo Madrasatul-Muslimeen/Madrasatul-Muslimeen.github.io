@@ -3808,8 +3808,9 @@ export const BN = {
   "Trace over": "উপর দিয়ে লিখতে",
   "Blank lines": "খালি লাইন",
   "Example above the paper": "কাগজের উপরের উদাহরণ",
-  "Like Trace over": "উপর দিয়ে লেখার মতো",
-  "Like Trace over, dark": "উপর দিয়ে লেখার মতো, গাঢ়",
+  // PCF MSA J34: the example above blank paper, A (like Trace over, always a light tracing shade) and B (dark).
+  "As traced": "হালকা উদাহরণ",
+  "Dark ink": "গাঢ় উদাহরণ",
   "Smaller window": "উইন্ডো ছোট করুন",
   "Word or Ayah": "শব্দ বা আয়াত",
   // Note-pane Part C1 (6 Oct 2026): annotations and heading status badges.
