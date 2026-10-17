@@ -21814,3 +21814,19 @@ The Owner answered J36's two optional choices at 8:20 pm Sydney: *"1. Yes. 2. Ke
 - Architect review: the suite and all six mutations re-run; audit-part33 706/0, audit-part16 564/0, card-look 96/0, navcheck clean, behaviour 971/0, phone-width-overflow 217/0, qr-stage1-hidden 110/0, load-speed-check 66/0; Hadith Collections and Monitor looked at at 390px.
 - Not reached (recorded by the round): an opened Note window, the Bookmark popover content and the Zab panels; a pixel-read of text over images; `.pill-archived` on course-offers and curriculum. These are backlog for the next audit part.
 - Shared with QR: `shell.css` (four nav colours) is also loaded by QR's pages; a change notice was sent through the PCA, with the round's suggestion that QR carry #888 → #666 on its own pages.
+
+## v11.34 — 17 Oct 2026 — audit part 37: contrast inside opened windows, the Bookmark dialog and Zab panels (PCF MSA J29)
+
+**Built by Builder round #945** (branch `builder/issue-945-run-1471`; the Builder pushed but opened no PR, so the Architect opened it). It extends `audit-part36-contrast-browser.mjs` with opened-surface flows (a Note window from Notes and from Mapping My Journey, its ⋯ sheet and the window switcher, the Bookmark dialog, the Zab panels) and a pixel-read check for text over pictures.
+
+- The round fixed: `.pill-ended`/`.pill-archived` #888→#666 (course-offers, curriculum); `.topic-bookmark-btn` gold #B8862F→#8a6212 with a #8c8c8c border, on the seven topic pages; Mapping My Journey's system branch name #B8862F→#8a6212.
+- **Corrected in review:** the round's own suite reported 72 failures it had left unfixed, all in shared scripts, and its Zab flow clicked a pocket its seed never created. Fixed:
+  - `note-window.css`: `.note-pane-meta` #777→#666 (4.48:1 → 5.74:1).
+  - `note-window.css`: **on a phone in the Light look, the ⋯ sheet's title "This note" was white on the white sheet (1:1)**. It is now `color: inherit`: dark on Light, light on the Night navy.
+  - `card-look.css`: the Night ⋯ sheet's group labels #6b7280 (3.62:1) → #9ca3af. They pass on the Light sheet and stay there.
+  - `bookmark-popover.js`: field border #ccc → #8c8c8c.
+  - `zab-bar.js`: text, select and date field borders #c7d0e0 → #7d8799.
+  - The suite seeds the `pk-tasks` pocket, as `zab-kinds-browser.mjs` does. Five review mutations each fail it.
+- Tests: the contrast suite 1184/0 (en, bn, Night, Light). Round mutations fail it; review mutations notemeta 24, panehead 4, panegl 8, bmfield 16, zabfield 40. audit-part32 896/0, audit-part33 706/0, audit-part23 185/0, zab-kinds 324/0, bookmark-marks-back 342/0, card-look 96/0, behaviour 971/0, phone-width-overflow 217/0, qr-stage1-hidden 110/0.
+- **load-speed-check** gave 64–65/66 here **and on unmodified `main`**, with a different page over its 20% "second visit" limit each run (index, hadith-collections, hadith-study). That is machine timing noise in this sandbox; this release changes colours only.
+- Shared with QR: `note-window.css`, `bookmark-popover.js`, `zab-bar.js` and `card-look.css`; a change notice with exact lines was sent through the PCA.

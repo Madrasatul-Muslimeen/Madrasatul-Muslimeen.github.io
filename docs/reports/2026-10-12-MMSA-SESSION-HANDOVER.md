@@ -601,3 +601,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v11.31** (2026-10-17): Blank lines example like Trace over, light or dark (J34).
 - **v11.32** (2026-10-17): every page tab reads MSA (J36).
 - **v11.33** (2026-10-17): audit part 36 colour contrast (J29).
+- **v11.34** (2026-10-17): audit part 37 contrast in opened windows (J29).
