@@ -32,6 +32,7 @@
   .module-row:hover { background: #f7f9fc; }
   @keyframes subjRowFlash { from { background: #fff3cd; } to { background: transparent; } }
   .subj-row-flash { animation: subjRowFlash 1.6s ease; }
+  @media (prefers-reduced-motion: reduce) { .subj-row-flash { animation: none; background: #fff3cd; } } /* audit part 38: a still highlight, no fade */
   #who { margin: 1rem 0; font-size: 0.95rem; color: #555; }
   #seedStatus { margin: 0.8rem 0; padding: 0.6rem; border-radius: 0.4rem; font-size: 0.88rem; display: none; }
   #seedStatus.ok { background: #d7f4d7; }
@@ -558,7 +559,8 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       }
       const targetRow = document.getElementById(`subj-row-${rootNode.id}`);
       if (!targetRow) return;
-      targetRow.scrollIntoView({ behavior: "smooth", block: "center" });
+      const reduceMotion = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches; // audit part 38: WCAG 2.3.3
+      targetRow.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
       targetRow.classList.add("subj-row-flash");
       setTimeout(() => targetRow.classList.remove("subj-row-flash"), 1600);
     }
