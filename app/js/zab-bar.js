@@ -68,6 +68,9 @@ const CSS = `
 #zabSpacer { display: block; height: 68px; } /* audit4 zab-spacer: phone, clears the 48px corner button */
 #zabCorner { position: fixed; right: 12px; bottom: calc(12px + var(--zab-lift, 0px)); width: 48px; height: 48px; border-radius: 50%; border: 0; z-index: 900; background: #1f3a6e; color: #fff; font-size: 22px; box-shadow: 0 2px 10px rgba(0,0,0,.3); cursor: pointer; }
 body:has(.nw-switch) #zabCorner { bottom: 68px; }
+/* audit part 33: Tab scrolls a control into view, and it must stop above the fixed corner or bar, not under it. */
+html { scroll-padding-bottom: 76px; }
+html:has(.nw-switch) { scroll-padding-bottom: 128px; }
 /* The Owner, 15 Oct 2026 (PCF J25, with a photo): the corner 🧰 covered the Qur'an page's "Mapping My Journey" tab.
    A page may give the 🧰 a place of its own ([data-zab-dock]); while that place is on screen the corner hides.
    Wherever the corner does show, it sits above a page's pinned bottom bar ([data-zab-lift]). */
@@ -154,6 +157,7 @@ body.zab-docked #zabCorner { display: none; } /* audit-zab dock-hides-corner */
 .zab-foot { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
 @media (min-width: 768px) {
   #zabBar { display: flex; }
+  html, html:has(.nw-switch) { scroll-padding-bottom: ${BAR_H + 16}px; }
   #zabSpacer { display: block; height: ${BAR_H}px; }
   #zabCorner { display: none; }
   .zab-dock-btn { display: none; }

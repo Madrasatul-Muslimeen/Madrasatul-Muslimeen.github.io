@@ -20,7 +20,10 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
 const arg = (n) => (process.argv.find((a) => a.startsWith(`--${n}=`)) || "").slice(n.length + 3);
 const MUTATE = arg("mutate"), ONLY = arg("only"), WONLY = Number(arg("width")) || 0, LONLY = arg("lang");
 // name: [file, route glob, anchor (exactly once), replacement, page path it applies to]
-const MUTATIONS = {};
+const MUTATIONS = {
+  zabpad: ["app/js/zab-bar.js", "**/js/zab-bar.js*", "  html, html:has(.nw-switch) { scroll-padding-bottom: ${BAR_H + 16}px; }\n", "", "/app/"],
+  zabpadphone: ["app/js/zab-bar.js", "**/js/zab-bar.js*", "html { scroll-padding-bottom: 76px; }\nhtml:has(.nw-switch) { scroll-padding-bottom: 128px; }\n", "", "/app/"],
+};
 if (MUTATE && !MUTATIONS[MUTATE]) throw new Error(`no such mutation ${MUTATE}`);
 const browser = await chromium.launch();
 
@@ -31,9 +34,10 @@ function stopProbe() {
   const e = document.activeElement;
   if (!e || e === document.body || e === document.documentElement) return null;
   window.__stops = window.__stops || [];
+  if (window.__stops[window.__stops.length - 1] === e) return { sub: true }; // a date or time field: its parts are one stop
   window.__stops.push(e);
   const cs = getComputedStyle(e);
-  const r = e.getBoundingClientRect();
+  const r = e.getClientRects()[0] || e.getBoundingClientRect(); // the first line box, so a link wrapped over lines is probed on its text
   const desc = (e.tagName.toLowerCase() + (e.id ? "#" + e.id : "") + (e.className && typeof e.className === "string" ? "." + e.className.trim().split(/\s+/)[0] : "")).slice(0, 48);
   let hidden = "";
   for (let n = e; n && n.nodeType === 1; n = n.parentElement) {
@@ -133,6 +137,7 @@ async function tabThrough(page, max = 60) {
   for (let i = 0; i < max; i++) {
     await page.keyboard.press("Tab");
     const s = await page.evaluate(`(${PROBE_SRC})()`);
+    if (s && s.sub) continue;
     if (!s) break; // focus left the page (to the browser) or fell to the body
     if (s.same) { // the element was already a stop: a wrap to the start is fine, a loop elsewhere is a trap
       const first = await page.evaluate(() => window.__stops[0] === document.activeElement);
@@ -197,7 +202,7 @@ for (const lang of LANGS) for (const width of WIDTHS) {
 
 // No trap: Tab leaves the Zab bar and a Dua card.
 async function leaves(page, regionSel, max = 80) {
-  const ok = await page.evaluate((s) => { const r = document.querySelector(s); const f = r && [...r.querySelectorAll('button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])')].find((e) => e.getBoundingClientRect().width); if (!f) return false; f.focus(); return true; }, regionSel);
+  const ok = await page.evaluate((s) => { const r = document.querySelector(s); const f = r && [...(r.matches("button") ? [r] : r.querySelectorAll('button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])'))].find((e) => e.getBoundingClientRect().width); if (!f) return false; f.focus(); return true; }, regionSel);
   if (!ok) return null;
   for (let i = 0; i < max; i++) {
     await page.keyboard.press("Tab");
@@ -208,9 +213,10 @@ async function leaves(page, regionSel, max = 80) {
 }
 for (const lang of LANGS) for (const width of WIDTHS) {
   await flow("trap:zab", lang, width, width < 600 ? 844 : 800, "/app/journey-map.html", "", async (t, page) => {
-    const r = await leaves(page, "#zabBar");
-    check(`${t}: POSITIVE CONTROL the Zab bar has a focusable control`, r !== null);
-    check(`${t}: Tab leaves the Zab bar`, r === true);
+    const region = width >= 768 ? "#zabBar" : "#zabCorner"; // below 768px the bar is a corner button
+    const r = await leaves(page, region);
+    check(`${t}: POSITIVE CONTROL the Zab ${region} has a focusable control`, r !== null);
+    check(`${t}: Tab leaves the Zab ${region}`, r === true);
   });
   await flow("trap:dua", lang, width, width < 600 ? 844 : 800, "/app/hadith-collections.html", `DATA.ayahCollections = [{ _id: TENANT_ID, tenantId: TENANT_ID, collections: [] }];`, async (t, page) => {
     await page.click('[data-hadith-tab="dua"]');
