@@ -1,0 +1,277 @@
+/* QR J01 R1 (QR-only): the Asma ul Husna app's look (app/asma.html). Night and Light follow MMSA's
+   card-look switch (the data-card-look attribute, same storage key). Calm, roomy, every control 40px or more. */
+
+:root, :root[data-card-look="night"] {
+  --bg: #0d2225;
+  --surface: #143236;
+  --surface-2: #1a3d42;
+  --line: rgba(255, 255, 255, 0.12);
+  --text: #eef2ea;
+  --muted: #a7bbb6;
+  --heading: #f3e6c4;
+  --gold: #d8b25a;
+  --on-gold: #1b2430;
+  --accent: #8fd3c4;
+  --hit: #e3c06a;
+  --wheel-bg: #111c2b;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  color-scheme: dark;
+}
+:root[data-card-look="light"] {
+  --bg: #f6f2e7;
+  --surface: #fffdf7;
+  --surface-2: #f0eadb;
+  --line: #e0d8c4;
+  --text: #1d2b2c;
+  --muted: #5b6966;
+  --heading: #0f4c4c;
+  --gold: #8a6116;
+  --on-gold: #ffffff;
+  --accent: #0f5c5c;
+  --hit: #8a6116;
+  --wheel-bg: #15233a;
+  --shadow: 0 1px 3px rgba(60, 50, 20, 0.12);
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans Bengali", sans-serif;
+  overflow-x: hidden;
+}
+:lang(bn) body, body:lang(bn) { font-family: "Noto Sans Bengali", system-ui, sans-serif; }
+[lang="ar"] { font-family: "Amiri", "Noto Naskh Arabic", serif; }
+a { color: var(--accent); }
+button { font: inherit; color: inherit; }
+button:focus-visible, a:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+.hint { color: var(--muted); font-size: 0.9rem; margin: 0; }
+body.qa-poster-open { overflow: hidden; }
+
+/* ---- top bar ---- */
+.qa-top {
+  position: sticky; top: 0; z-index: 20;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+  padding: 8px 16px 10px;
+  padding-top: max(8px, env(safe-area-inset-top));
+}
+.qa-top-row, .qa-tabs { max-width: 1200px; margin: 0 auto; }
+.qa-top-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.qa-title { display: flex; flex-direction: column; text-decoration: none; color: var(--heading); min-height: 40px; justify-content: center; min-width: 0; }
+.qa-title-ar { font-size: 1.05rem; line-height: 1.2; color: var(--gold); }
+.qa-title-en { font-weight: 700; font-size: 1.05rem; line-height: 1.2; white-space: nowrap; }
+.qa-switches { display: flex; gap: 8px; flex: 0 0 auto; }
+.qa-seg { display: inline-flex; padding: 2px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--line); }
+.qa-seg button {
+  min-width: 42px; min-height: 40px; padding: 0 8px; border: 0; border-radius: 10px;
+  background: transparent; color: var(--muted); cursor: pointer; font-size: 0.95rem;
+}
+.qa-seg button[aria-pressed="true"] { background: var(--gold); color: var(--on-gold); font-weight: 700; }
+.qa-tabs { display: grid; grid-template-columns: 1fr 1fr 44px; gap: 6px; margin-top: 8px; max-width: 520px; margin-left: auto; margin-right: auto; }
+.qa-tabs button {
+  min-height: 40px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface);
+  color: var(--text); cursor: pointer; font-weight: 600;
+}
+.qa-tabs .qa-moon { padding: 0; font-size: 1.1rem; color: var(--gold); }
+.qa-linkbtn { min-height: 40px; padding: 0 8px; border: 0; background: none; color: var(--accent); text-decoration: underline; cursor: pointer; font-size: 0.85rem; }
+.qa-tabs button[aria-current="page"] { border-color: var(--gold); box-shadow: inset 0 -3px 0 var(--gold); color: var(--heading); }
+
+/* ---- page ---- */
+.qa-view { max-width: 1200px; margin: 0 auto; padding: 16px 16px 24px; outline: none; }
+.qa-h1 { margin: 0 0 4px; font-size: 1.3rem; color: var(--heading); line-height: 1.3; }
+.qa-sub { margin: 0; color: var(--muted); font-size: 0.92rem; }
+.qa-intro { margin-bottom: 14px; }
+.qa-foot { max-width: 1200px; margin: 0 auto; padding: 8px 16px 32px; color: var(--muted); font-size: 0.85rem; text-align: center; }
+.qa-foot p { margin: 4px 0; }
+.qa-foot a { display: inline-flex; align-items: center; min-height: 40px; }
+
+/* ---- the 99 Names grid ---- */
+.qa-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.qa-card {
+  position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px;
+  min-height: 132px; padding: 12px 8px 12px; border-radius: 14px;
+  border: 1px solid var(--line); background: var(--surface); box-shadow: var(--shadow);
+  cursor: pointer; text-align: center; min-width: 0;
+}
+.qa-card:hover { border-color: var(--gold); }
+.qa-card.studied { border-color: color-mix(in srgb, #3fae74 55%, var(--line)); }
+.qa-card-num { position: absolute; top: 8px; left: 10px; font-size: 0.75rem; color: var(--muted); }
+.qa-card-tick {
+  position: absolute; top: 6px; right: 8px; width: 22px; height: 22px; border-radius: 50%;
+  display: grid; place-items: center; background: #3fae74; color: #fff; font-size: 0.8rem; font-weight: 700;
+}
+.qa-card-ar { font-size: 1.75rem; line-height: 1.6; color: var(--heading); margin-top: 8px; }
+.qa-card-name { font-weight: 600; font-size: 0.95rem; line-height: 1.25; }
+.qa-card-mean { color: var(--muted); font-size: 0.82rem; line-height: 1.3; overflow-wrap: anywhere; }
+
+/* ---- wheel + list ---- */
+.qa-wheel-layout { display: grid; gap: 16px; }
+.qa-wheel-card {
+  background: var(--wheel-bg); color: #eef2ea; border-radius: 16px; padding: 14px 12px 12px;
+  border: 1px solid var(--line); display: grid; justify-items: center; gap: 8px; min-width: 0;
+}
+.qa-wheel-card .qa-h1 { color: #f3e6c4; text-align: center; }
+.qa-wheel-card .qa-sub, .qa-wheel-card .qa-hint { color: #a9b6cc; text-align: center; }
+.qa-hint { margin: 0; font-size: 0.88rem; color: var(--muted); }
+.qa-wheel { width: 100%; max-width: 420px; }
+.qa-wheel .mastery-wheel { width: 100%; height: auto; overflow: visible; display: block; }
+.wheel-seg { cursor: pointer; stroke: #0c1320; stroke-width: 1; transition: stroke 0.15s, stroke-width 0.15s; }
+.wheel-seg:hover { stroke: #fbf3df; stroke-width: 1.5; }
+.wheel-seg-num { font-family: system-ui, sans-serif; font-size: 8px; font-weight: 600; fill: #dfe6f2; }
+.wheel-seg-label { font-family: system-ui, "Noto Sans Bengali", sans-serif; font-size: calc(9.1px * var(--asmax-wheel-label-scale, 1)); font-weight: 600; fill: #e6ecf6; }
+.wheel-seg-label-ar { font-family: "Amiri", serif; font-size: calc(9.1px * var(--asmax-wheel-ar-scale, 1.5)); }
+.qa-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; justify-content: center; font-size: 0.82rem; color: #a9b6cc; }
+.qa-legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+.qa-list { display: grid; gap: 8px; align-content: start; min-width: 0; }
+.qa-row {
+  display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; padding: 8px 12px;
+  border-radius: 12px; border: 1px solid var(--line); background: var(--surface); cursor: pointer; text-align: left;
+}
+.qa-row:hover { border-color: var(--gold); }
+.qa-badge {
+  flex: 0 0 auto; min-width: 32px; height: 32px; padding: 0 6px; border-radius: 16px; display: grid; place-items: center;
+  background: var(--surface-2); color: var(--heading); font-weight: 700; font-size: 0.85rem;
+}
+.qa-row-main { display: grid; gap: 2px; min-width: 0; flex: 1 1 auto; }
+.qa-row-title { font-weight: 600; line-height: 1.3; overflow-wrap: anywhere; }
+.qa-row-ar { font-size: 1.2rem; color: var(--heading); margin-right: 4px; }
+.qa-row-sub { color: var(--muted); font-size: 0.85rem; line-height: 1.3; overflow-wrap: anywhere; }
+.qa-row-go { color: var(--muted); font-size: 1.4rem; flex: 0 0 auto; }
+.qa-row-tick { flex: 0 0 auto; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: #3fae74; color: #fff; font-size: 0.85rem; font-weight: 700; }
+
+/* ---- back bar, ‹ › ---- */
+.qa-backbar { display: flex; align-items: center; justify-content: space-between; gap: 8px 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.qa-back {
+  display: inline-flex; align-items: center; gap: 4px; min-height: 40px; padding: 0 14px; border-radius: 999px;
+  border: 2px solid var(--gold); background: var(--surface); color: var(--heading); font-weight: 700; cursor: pointer;
+  max-width: 100%; text-align: left; line-height: 1.2; text-decoration: none;
+}
+.qa-nav { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; }
+.qa-nav-btn {
+  width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface);
+  font-size: 1.5rem; line-height: 1; cursor: pointer; color: var(--heading);
+}
+.qa-nav-btn:disabled { opacity: 0.35; cursor: default; }
+.qa-pos { color: var(--muted); font-size: 0.85rem; min-width: 4.5em; text-align: center; }
+
+/* ---- a Name ---- */
+.qa-detail { display: grid; gap: 16px; }
+.qa-namecard {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 16px; box-shadow: var(--shadow);
+  text-align: center; min-width: 0;
+}
+.qa-num { color: var(--muted); font-size: 0.85rem; }
+/* Room above for the marks Amiri draws over its letters (a shadda over a raised alif reaches above the line box). */
+.qa-ar { font-size: 2.6rem; line-height: 1.6; padding-top: 0.4em; color: var(--heading); }
+.qa-name { margin: 0; font-size: 1.35rem; line-height: 1.3; }
+.qa-mean { margin: 4px 0 0; color: var(--muted); font-size: 1rem; }
+.qa-tags { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin: 10px 0 0; }
+.qa-tag { font-size: 0.78rem; padding: 3px 10px; border-radius: 999px; background: var(--surface-2); color: var(--muted); }
+.qa-tag.weak { color: #c9853a; }
+.qa-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 14px; }
+.qa-studied, .qa-btn {
+  min-height: 44px; padding: 0 16px; border-radius: 12px; cursor: pointer; font-weight: 600;
+  border: 1px solid var(--line); background: var(--surface-2); color: var(--text);
+}
+.qa-studied.on { background: #3fae74; border-color: #3fae74; color: #fff; }
+.qa-btn { border-color: var(--gold); }
+.qa-device-note { margin: 6px 0 0; font-size: 0.78rem; color: var(--muted); }
+.qa-poster-inline { display: block; width: 100%; max-width: 360px; margin: 14px auto 6px; padding: 0; border: 0; background: none; cursor: zoom-in; }
+
+/* The shared renderers' classes (asma-renderer.js, asma-cited-ayat.js, asma-cited-hadith.js). */
+.asma-xref-block, .asma-belongs-block { margin: 14px 0 0; text-align: left; }
+.asma-xref-label, .asma-belongs-label, .asmax-cited-label {
+  font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px;
+}
+:lang(bn) .asma-xref-label, :lang(bn) .asma-belongs-label, :lang(bn) .asmax-cited-label { letter-spacing: 0; font-size: 0.85rem; }
+.asma-xref-row, .asma-belongs-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.asma-xref-chip, .asma-belongs-chip {
+  display: inline-flex; align-items: center; min-height: 40px; padding: 0 12px; border-radius: 999px; font-size: 0.85rem;
+  border: 1px solid var(--line); background: var(--surface-2); color: var(--text); text-decoration: none; text-align: left;
+}
+.asma-xref-chip.quran, .asma-belongs-chip { cursor: pointer; border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
+.asma-xref-chip.hadith { color: var(--muted); }
+.qa-cited-col { display: grid; gap: 16px; align-content: start; min-width: 0; }
+.asmax-cited { display: grid; gap: 10px; min-width: 0; }
+.asmax-cited[hidden] { display: none; }
+.asmax-cited-hint { margin: 0; }
+.asmax-cited-ayah, .asmax-cited-hadith {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px;
+  display: grid; gap: 8px; min-width: 0; scroll-margin-top: 130px;
+}
+.asmax-cited-ayah.qa-flash { animation: qa-flash 1.4s ease-out; }
+@keyframes qa-flash { 0% { box-shadow: 0 0 0 3px var(--gold); } 100% { box-shadow: 0 0 0 0 transparent; } }
+.asmax-cited-ref { font-weight: 700; color: var(--accent); }
+.asmax-cited-grade { font-weight: 400; font-size: 0.82rem; color: var(--muted); }
+.asmax-cited-words { display: flex; flex-wrap: wrap; gap: 2px 4px; line-height: 2.1; }
+.asmax-cited-word {
+  font-family: "Amiri", serif; font-size: 1.55rem; line-height: 1.6; color: inherit; background: none; border: 0;
+  border-radius: 6px; padding: 0 4px; min-height: 40px; cursor: pointer;
+}
+.asmax-cited-word:hover, .asmax-cited-word:focus-visible, .asmax-cited-word.sel { background: color-mix(in srgb, var(--accent) 18%, transparent); }
+.asmax-cited-word.hit { color: var(--hit); box-shadow: inset 0 -2px 0 var(--hit); }
+.asmax-cited-end { font-size: 1.2rem; color: var(--muted); align-self: center; }
+.qa-gloss { margin: 0; padding: 6px 10px; border-radius: 8px; background: var(--surface-2); font-size: 0.9rem; }
+.asmax-cited-tr { font-size: 0.95rem; line-height: 1.6; }
+.asmax-cited-tr.bn { font-family: "Noto Sans Bengali", sans-serif; }
+.asmax-cited-hadith-ar { font-family: "Amiri", serif; font-size: 1.35rem; line-height: 2; text-align: right; overflow-wrap: anywhere; }
+.asmax-cited-trlang { font-size: 0.8rem; }
+.asmax-cited-credit { display: inline-flex; align-items: center; min-height: 40px; font-size: 0.8rem; overflow-wrap: anywhere; }
+.asmax-cited-acts { display: flex; flex-wrap: wrap; gap: 8px; }
+.asmax-cited-open {
+  display: inline-flex; align-items: center; min-height: 40px; padding: 0 14px; border-radius: 10px;
+  background: var(--gold); color: var(--on-gold); font-weight: 700; text-decoration: none;
+}
+.qa-credit a { display: inline-flex; align-items: center; min-height: 40px; }
+
+/* ---- the poster, full size ---- */
+.qa-overlay {
+  position: fixed; inset: 0; z-index: 50; overflow-y: auto; background: #0b1b1e; overscroll-behavior: contain;
+  display: flex; flex-direction: column; align-items: center; padding: 0 16px 16px;
+}
+.qa-overlay[hidden] { display: none; }
+.qa-overlay-bar {
+  position: sticky; top: 0; z-index: 2; align-self: stretch; margin: 0 -16px 10px;
+  display: flex; align-items: center; gap: 10px; padding: 8px 16px; padding-top: max(8px, env(safe-area-inset-top));
+  background: #0f4c4c; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+.qa-overlay-bar .qa-back { background: #fff; color: #0f4c4c; border-color: #d8b25a; max-width: calc(100% - 56px); }
+.qa-close {
+  margin-left: auto; flex: 0 0 auto; width: 44px; height: 44px; display: grid; place-items: center;
+  background: transparent; color: #fff; border: 1px solid rgba(255, 255, 255, 0.55); border-radius: 10px; font-size: 1.5rem; cursor: pointer;
+}
+.qa-overlay-mount { width: 100%; display: flex; flex-direction: column; align-items: center; }
+/* The madrasah's own description needs sign-in, so its (always greyed-out) choice is not offered here. */
+.qa-overlay-mount [data-asma-desc-src="madrasah"] { display: none; }
+.qa-overlay-mount .asma-desc-seg { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.qa-overlay-mount .asma-desc-strip { margin-bottom: 12px; }
+.qa-overlay-mount .asma-desc-strip ~ .ahp-standalone { width: min(94vw, calc((94vh - 290px) * 1055 / 1491), 640px); }
+
+/* ---- computer ---- */
+@media (min-width: 900px) {
+  .qa-view { padding: 24px 24px 32px; }
+  .qa-grid { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; }
+  .qa-wheel-layout { grid-template-columns: minmax(0, 520px) minmax(0, 1fr); align-items: start; }
+  .qa-wheel-card { position: sticky; top: 124px; }
+  .qa-wheel { max-width: 480px; }
+  .qa-detail { grid-template-columns: minmax(0, 400px) minmax(0, 1fr); align-items: start; }
+  .qa-ar { font-size: 3rem; }
+}
+/* ---- offline (R2) ---- */
+.qa-offline { display: grid; justify-items: center; gap: 4px; margin: 4px auto 12px; max-width: 32rem; }
+.qa-offline[hidden], .qa-offline [hidden] { display: none; }
+.qa-offline .qa-btn { min-height: 44px; }
+.qa-offline-note { margin: 0; font-size: 0.82rem; color: var(--muted); }
+.qa-update {
+  position: fixed; left: 50%; bottom: max(16px, env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 60;
+  display: flex; align-items: center; gap: 12px; max-width: calc(100vw - 32px); padding: 6px 6px 6px 16px;
+  border-radius: 999px; background: var(--surface); color: var(--text); border: 1px solid var(--gold); box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  font-size: 0.9rem;
+}
+.qa-update[hidden] { display: none; }
+.qa-update button { min-height: 40px; padding: 0 16px; border-radius: 999px; border: 0; background: var(--gold); color: var(--on-gold); font-weight: 700; cursor: pointer; }
+.qa-noscript { padding: 16px; text-align: center; }

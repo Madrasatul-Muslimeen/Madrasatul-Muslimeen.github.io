@@ -1,0 +1,306 @@
+[
+ {
+  "id": "app/js/ayah-hadith.js#1",
+  "file": "app/js/ayah-hadith.js",
+  "why": "Hadith data is read from MMSA's address, Hadith's home (QR J02 S1d, PCA J71).",
+  "from": "const BASE_URL = \"../tools/hadith-data-pull/output/ayah-hadith/\";",
+  "to": "const BASE_URL = \"https://madrasatul-muslimeen.github.io/tools/hadith-data-pull/output/ayah-hadith/\";",
+  "exact": 1
+ },
+ {
+  "id": "app/js/hadith-translations.js#1",
+  "file": "app/js/hadith-translations.js",
+  "why": "Translations base URL points at MMSA's address (QR J02 S1d).",
+  "from": "const DEFAULT_BASE_URL = \"../tools/hadith-data-pull/output/translations/\";",
+  "to": "const DEFAULT_BASE_URL = \"https://madrasatul-muslimeen.github.io/tools/hadith-data-pull/output/translations/\";",
+  "exact": 1
+ },
+ {
+  "id": "app/js/openiti-corpus.js#1",
+  "file": "app/js/openiti-corpus.js",
+  "why": "DEFAULT_BASE_URL (openiti-release/) points at MMSA's address (QR J02 S1d).",
+  "from": "const DEFAULT_BASE_URL = \"../tools/hadith-data-pull/output/openiti-release/\";",
+  "to": "const DEFAULT_BASE_URL = \"https://madrasatul-muslimeen.github.io/tools/hadith-data-pull/output/openiti-release/\";",
+  "exact": 1
+ },
+ {
+  "id": "app/js/openiti-corpus.js#2",
+  "file": "app/js/openiti-corpus.js",
+  "why": "CONCORDANCE_BASE_URL (concordance/) points at MMSA's address (QR J02 S1d).",
+  "from": "const CONCORDANCE_BASE_URL = \"../tools/hadith-data-pull/output/concordance/\";",
+  "to": "const CONCORDANCE_BASE_URL = \"https://madrasatul-muslimeen.github.io/tools/hadith-data-pull/output/concordance/\";",
+  "exact": 1
+ },
+ {
+  "id": "app/js/openiti-corpus.js#3",
+  "file": "app/js/openiti-corpus.js",
+  "why": "LINKS_BASE_URL (hadeethenc-links/) points at MMSA's address (QR J02 S1d).",
+  "from": "const LINKS_BASE_URL = \"../tools/hadith-data-pull/output/hadeethenc-links/\";",
+  "to": "const LINKS_BASE_URL = \"https://madrasatul-muslimeen.github.io/tools/hadith-data-pull/output/hadeethenc-links/\";",
+  "exact": 1
+ },
+ {
+  "id": "app/js/openiti-corpus.js#4",
+  "file": "app/js/openiti-corpus.js",
+  "why": "DUA_BASE_URL (dua/) points at MMSA's address (QR J02 S1d).",
+  "from": "const DUA_BASE_URL = \"../tools/hadith-data-pull/output/dua/\";",
+  "to": "const DUA_BASE_URL = \"https://madrasatul-muslimeen.github.io/tools/hadith-data-pull/output/dua/\";",
+  "exact": 1
+ },
+ {
+  "id": "app/js/asma-posters.js#1",
+  "file": "app/js/asma-posters.js",
+  "why": "The photo of Al-Malik (#3) is captioned Al-Malik, not Al-Maalik (QR J01 R5).",
+  "from": "  { label: 'Al-Maalik', url: 'https://archive.org/download/NamesAndAttributesOfAllah/%28Maalik%29%20Al-Maalik.jpg' },",
+  "to": "  // QR J01 R5: this archive file is named \"(Maalik) Al-Maalik\", but the poster is Al-Malik's (#3, المَلِك, \"The King &\n  // Owner of Dominion\"; checked on the image, 16 Oct 2026, as MMSA found). Captioned for what it shows; 112 Al-Maalik has none.\n  { label: 'Al-Malik', url: 'https://archive.org/download/NamesAndAttributesOfAllah/%28Maalik%29%20Al-Maalik.jpg' },",
+  "exact": 1
+ },
+ {
+  "id": "app/js/routine-study.js#1",
+  "file": "app/js/routine-study.js",
+  "why": "LDOG imports mountContinueBack for its way back (QR J05).",
+  "from": "import { mountBookmarkMenu } from \"./bookmark-nav.js\";",
+  "to": "import { mountBookmarkMenu, mountContinueBack } from \"./bookmark-nav.js\";",
+  "exact": 1
+ },
+ {
+  "id": "app/js/routine-study.js#2",
+  "file": "app/js/routine-study.js",
+  "why": "LDOG calls mountContinueBack() after the Bookmark menu so a Continue chip (back=1) gives ← Back (QR J05).",
+  "from": "    mountBookmarkMenu(navBar, { db, getTenantId: () => activeTenantId, getPersonId: () => selectedPersonId, getBookmarksDoc: () => bookmarksDoc, getRoster: () => roster });",
+  "to": "    mountBookmarkMenu(navBar, { db, getTenantId: () => activeTenantId, getPersonId: () => selectedPersonId, getBookmarksDoc: () => bookmarksDoc, getRoster: () => roster });\n    mountContinueBack(); // QR J05: a Continue chip opened LDOG with back=1: ← Back to where it was (the way-back law, MMSA decision 86)",
+  "exact": 1
+ },
+ {
+  "id": "app/quranrevival.html#4a",
+  "file": "app/quranrevival.html",
+  "why": "(4) A range bookmark saved with only its position (range:S:A-B) opens at its first āyah as a Range (QR J03).",
+  "from": "    async function applyQuranBookmarkSettings(settings, position) {",
+  "to": "    async function applyQuranBookmarkSettings(settings, position) {\n      // QR J03: a range bookmark saved with only its position (range:S:A-B, no settings) opens at its first āyah, as a Range.\n      const rangeKey = typeof position === \"string\" ? position.match(/^range:(\\d+):(\\d+)-(\\d+)$/) : null;\n      if (rangeKey && typeof settings?.surahNum !== \"number\") {\n        const [surahNum, from, to] = rangeKey.slice(1).map(Number);\n        settings = { ...(settings ?? {}), surahNum, ayahNum: from, unitType: \"range\", rangeFrom: from, rangeTo: to, view: settings?.view ?? \"read\" };\n      }",
+  "exact": 1
+ },
+ {
+  "id": "app/quranrevival.html#4b",
+  "file": "app/quranrevival.html",
+  "why": "(4) readBookmarkUnitChoices() offers a Range choice (kind 'range') from the āyah to its ruku's end (QR J03).",
+  "from": "        });\n      }\n      return choices;",
+  "to": "        });\n      }\n      // QR J03 (the Owner): a range of āyāt, through MMSA's popover range kind (v11.14). It starts at the āyah on\n      // screen and runs to the end of its ruku' (in a Range unit, the unit's own range); the reader can change both.\n      const ayahs = currentSurahData.ayahs;\n      const rukuOf = ayahs.find((a) => a.ayah === ayah)?.ruku;\n      const rukuEnd = Math.max(ayah, ...ayahs.filter((a) => a.ruku === rukuOf).map((a) => a.ayah));\n      const [from, to] = info.unitType === \"range\" ? currentUnitAyahBounds() : [ayah, rukuEnd];\n      const meta = surahIndex.find((x) => x.surahNumber === currentSurahNum);\n      choices.push({\n        id: \"range\", label: t(\"Range\"), kind: \"range\", surah: currentSurahNum, ayahCount: currentSurahData.ayahCount,\n        from, to, surahName: surahName(currentSurahNum, meta?.nameEnglish), settings: base,\n      });\n      return choices;",
+  "exact": 1
+ },
+ {
+  "id": "app/quranrevival.html#4c",
+  "file": "app/quranrevival.html",
+  "why": "(4) The units mapping passes the range fields to the bookmark dialog (QR J03).",
+  "from": "        units: unitChoices.map(({ id, label, defaultName: dn }) => ({ id, label, defaultName: dn })),",
+  "to": "        units: unitChoices.map(({ id, label, defaultName: dn, kind, surah, ayahCount, from, to, surahName: sn }) => (kind === \"range\"\n          ? { id, label, kind, surah, ayahCount, from, to, surahName: sn } // QR J03: MMSA's popover range kind (v11.14)\n          : { id, label, defaultName: dn })),",
+  "exact": 1
+ },
+ {
+  "id": "app/quranrevival.html#4d",
+  "file": "app/quranrevival.html",
+  "why": "(4) A range saves under its own range:S:A-B key with MMSA's Range settings (QR J03).",
+  "from": "      const picked = unitChoices.find((u) => u.id === choice.unitId) ?? null;",
+  "to": "      let picked = unitChoices.find((u) => u.id === choice.unitId) ?? null;\n      // QR J03: a range saves under its own key (range:S:A-B) WITH the settings MMSA's Bookmarks page Range form writes,\n      // so MMSA opens it too.\n      if (picked?.kind === \"range\" && choice.range && choice.unitKey) {\n        const { surah, from, to } = choice.range;\n        picked = { ...picked, position: choice.unitKey, settings: { ...picked.settings, unitType: \"range\", surahNum: surah, ayahNum: from, rangeFrom: from, rangeTo: to } };\n      }",
+  "exact": 1
+ },
+ {
+  "id": "app/quranrevival.html#7a",
+  "file": "app/quranrevival.html",
+  "why": "(7) Band CSS comment: Aʿūdhu billāh RIGHT, Bismillah LEFT, in reading order (QR J09).",
+  "from": "  /* PCF J26 -- the \"Before Al-Fātiḥah\" band on the Read page (layout B): Aʿūdhu billāh LEFT, Bismillah RIGHT (the\n     band is dir=ltr, so the order holds in Bangla too), two columns that shrink (min-width:0) and never push the page wide. */",
+  "to": "  /* PCF J26 -- the \"Before Al-Fātiḥah\" band on the Read page (layout B), two columns that shrink (min-width:0) and never\n     push the page wide. QR J09 (the Owner, 17 Oct): Aʿūdhu billāh RIGHT, Bismillah LEFT, in the Qur'an's reading order\n     (the chips row is dir=rtl, the band itself ltr, so the order holds in Bangla too); the one shown in the reading\n     space is marked (aria-current). */",
+  "exact": 1
+ },
+ {
+  "id": "app/quranrevival.html#7b",
+  "file": "app/quranrevival.html",
+  "why": "(7) .opening-chips is dir=rtl; chips ltr; the shown chip is marked; the reading text is clickable (QR J09).",
+  "from": "  .opening-chips { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0.4rem; }",
+  "to": "  .opening-chips { direction: rtl; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0.4rem; }\n  .opening-chip { direction: ltr; }\n  .opening-chip[aria-current=\"true\"] { border-color: #b8892c; box-shadow: 0 0 0 2px rgba(184,137,44,0.45); background: #fff3d6; }\n  .opening-reading-ar { cursor: pointer; }",
+  "exact": 1
+ },
+ {
+  "id": "app/quranrevival.html#7c",
+  "file": "app/quranrevival.html",
+  "why": "(7) In the Single Ayah view a tap on the unit chip while Aʿūdhu billāh shows opens its card (QR J09).",
+  "from": "    function openChosenUnitCard() {\n      const info = currentUnitInfo();",
+  "to": "    function openChosenUnitCard() {\n      const info = currentUnitInfo();\n      if (info.unitType === \"ayah\" && openingReading) { openOpeningCard(OPENING_TAAWWUDH_KEY); return; } // QR J09",
+  "exact": 1
+ },
+ {
+  "id": "app/quranrevival.html#7d",
+  "file": "app/quranrevival.html",
+  "why": "(7) Declares the openingReading state (QR J09).",
+  "from": "    let currentAyahNum = 1;",
+  "to": "    let currentAyahNum = 1;\n    let openingReading = null; // QR J09 -- \"taawwudh\" while the Single Ayah view shows Aʿūdhu billāh (cleared by setAyahNum)",
+  "exact": 1
+ },
+ {
+  "id": "app/quranrevival.html#7e",
+  "file": "app/quranrevival.html",
+  "why": "(7) 'atStart' is true while Aʿūdhu billāh shows and not before the Bismillah (QR J09).",
+  "from": "          atStart = first && currentAyahNum <= 1;",
+  "to": "          atStart = first && (openingReading ? true : currentAyahNum <= 1 && !openingBeforeBismillah()); // QR J09",
+  "exact": 1
+ },
+ {
+  "id": "app/quranrevival.html#7f",
+  "file": "app/quranrevival.html",
+  "why": "(7) setAyahNum clears openingReading (QR J09).",
+  "from": "    function setAyahNum(n, half = null) { currentAyahNum = n; currentAyahHalf = half; }",
+  "to": "    function setAyahNum(n, half = null) { currentAyahNum = n; currentAyahHalf = half; openingReading = null; }",
+  "exact": 1
+ },
+ {
+  "id": "app/quranrevival.html#7g",
+  "file": "app/quranrevival.html",
+  "why": "(7) The āyah picker value is '0' while Aʿūdhu billāh shows (QR J09).",
+  "from": "      const v = String(currentRecordAyah());",
+  "to": "      const v = openingReading ? \"0\" : String(currentRecordAyah());",
+  "exact": 1
+ },
+ {
+  "id": "app/quranrevival.html#7h",
+  "file": "app/quranrevival.html",
+  "why": "(7) Al-Fātiḥah's āyah list shows 1–7; Bismillah and Aʿūdhu billāh are hidden options (QR J09).",
+  "from": "          : [`<option value=\"${n}\">${ayahLabelFor(currentSurahNum, n)}</option>`]))\n        .join(\"\");",
+  "to": "          : [`<option value=\"${n}\">${ayahLabelFor(currentSurahNum, n)}</option>`]))\n        .join(\"\");\n      // QR J09 (the Owner, 17 Oct): Al-Fātiḥah's list starts at āyah 1. The Bismillah and Aʿūdhu billāh are opened from\n      // the \"Before Al-Fātiḥah\" band; their options stay, hidden, so the closed picker still names what is shown.\n      if (split) {\n        ayahSelect.querySelector('option[value=\"1\"]')?.setAttribute(\"hidden\", \"\");\n        ayahSelect.insertAdjacentHTML(\"afterbegin\", `<option value=\"0\" hidden>${escapeHtml(t(\"Aʿūdhu billāh\"))}</option>`);\n      }",
+  "exact": 1
+ },
+ {
+  "id": "app/quranrevival.html#7i",
+  "file": "app/quranrevival.html",
+  "why": "(7) Al-Fātiḥah opens at āyah 1 (QR J09).",
+  "from": "      setAyahNum(1);",
+  "to": "      setAyahNum(fatihaCountApplies(currentSurahNum, fatihaOn()) ? 2 : 1); // QR J09: Al-Fātiḥah opens at āyah 1",
+  "exact": 1
+ },
+ {
+  "id": "app/quranrevival.html#7j",
+  "file": "app/quranrevival.html",
+  "why": "(7) bismillahHtmlFor() takes {single} and keeps the band above Al-Fātiḥah's āyah 1 in the Single Ayah view (QR J09).",
+  "from": "    function bismillahHtmlFor(surahNum, ayahNum) {\n      if (ayahNum === 1 && surahNum === 1) return openingBandHtml();",
+  "to": "    function bismillahHtmlFor(surahNum, ayahNum, { single = false } = {}) {\n      if (ayahNum === 1 && surahNum === 1) return openingBandHtml(single);\n      // QR J09: in the Single Ayah view the band stays above Al-Fātiḥah's āyah 1, its door to the Bismillah and Aʿūdhu billāh.\n      if (single && surahNum === 1 && ayahNum === 2 && fatihaCountApplies(1, fatihaOn())) return openingBandHtml(true);",
+  "exact": 1
+ },
+ {
+  "id": "app/quranrevival.html#7k",
+  "file": "app/quranrevival.html",
+  "why": "(7) openingBandHtml(single) computes the shown item (QR J09).",
+  "from": "    function openingBandHtml() {",
+  "to": "    function openingBandHtml(single = false) {\n      // QR J09: in the Single Ayah view the item shown in the reading space is marked.\n      const shownKey = !single ? null : openingReading === \"taawwudh\" ? OPENING_TAAWWUDH_KEY : currentAyahNum === 1 ? buildUnitKey.ayah(1, 1) : null;",
+  "exact": 1
+ },
+ {
+  "id": "app/quranrevival.html#7l",
+  "file": "app/quranrevival.html",
+  "why": "(7) Band buttons carry data-opening-single and aria-current (QR J09).",
+  "from": "        return `<button type=\"button\" class=\"opening-chip\" data-opening-open=\"${escapeHtml(it.key)}\" aria-label=\"${escapeHtml(t(\"Open {name}\", { name: it.name }))} — ${escapeHtml(statusLabel(st))}\">` +",
+  "to": "        return `<button type=\"button\" class=\"opening-chip\" data-opening-open=\"${escapeHtml(it.key)}\"${single ? \" data-opening-single\" : \"\"}${it.key === shownKey ? ' aria-current=\"true\"' : \"\"} aria-label=\"${escapeHtml(t(\"Open {name}\", { name: it.name }))} — ${escapeHtml(statusLabel(st))}\">` +",
+  "exact": 1
+ },
+ {
+  "id": "app/quranrevival.html#7m",
+  "file": "app/quranrevival.html",
+  "why": "(7) taawwudhReadingHtml(): Aʿūdhu billāh alone in the reading space, with its meaning (QR J09).",
+  "from": "      openAyahActionSheet(opening ? unitKey : \"1:1\", null, intro);\n    }",
+  "to": "      openAyahActionSheet(opening ? unitKey : \"1:1\", null, intro);\n    }\n    /** QR J09 (the Owner, 17 Oct, choice B): Aʿūdhu billāh in the reading space, alone, the way the Bismillah is shown. */\n    const OPENING_TAAWWUDH_BN = \"আমি অভিশপ্ত শয়তান থেকে আল্লাহর কাছে আশ্রয় চাই।\";\n    function taawwudhReadingHtml() {\n      const tr = translationLangs().map((lang) => {\n        const text = lang === \"bn\" ? OPENING_TAAWWUDH_BN : lang === \"en\" ? OPENING_TAAWWUDH_EN : \"\";\n        return text ? `<div class=\"${lang === \"bn\" ? \"ayah-translation ayah-translation-bn\" : \"ayah-translation\"}\"${lang === \"bn\" ? ' lang=\"bn\"' : \"\"}>${escapeHtml(text)}</div>` : \"\";\n      }).join(\"\");\n      return `<div class=\"ayah-arabic opening-reading-ar\" dir=\"rtl\" lang=\"ar\" data-opening-card=\"${escapeHtml(OPENING_TAAWWUDH_KEY)}\" role=\"button\" tabindex=\"0\" title=\"${escapeHtml(t(\"Open {name}\", { name: t(\"Aʿūdhu billāh\") }))}\">${OPENING_TAAWWUDH_AR}</div>${tr}`;\n    }",
+  "exact": 1
+ },
+ {
+  "id": "app/quranrevival.html#7n",
+  "file": "app/quranrevival.html",
+  "why": "(7) Band click: first tap shows the item in the reading space, a second tap opens its card (QR J09).",
+  "from": "    document.addEventListener(\"click\", (e) => {\n      const btn = e.target?.closest?.(\"[data-opening-open]\");\n      if (btn) openOpeningCard(btn.dataset.openingOpen);",
+  "to": "    document.addEventListener(\"click\", (e) => {\n      const card = e.target?.closest?.(\"[data-opening-card]\");\n      if (card) { openOpeningCard(card.dataset.openingCard); return; }\n      const btn = e.target?.closest?.(\"[data-opening-open]\");\n      if (!btn) return;\n      // QR J09: in the Single Ayah view the first tap shows the item in the reading space; a tap on the one shown opens its card.\n      if (btn.hasAttribute(\"data-opening-single\") && btn.getAttribute(\"aria-current\") !== \"true\") {\n        stopDrill();\n        setAyahNum(1);\n        if (btn.dataset.openingOpen === OPENING_TAAWWUDH_KEY) openingReading = \"taawwudh\";\n        renderStudyScreen(); renderWheel();\n        return;\n      }\n      openOpeningCard(btn.dataset.openingOpen);",
+  "exact": 1
+ },
+ {
+  "id": "app/quranrevival.html#7o",
+  "file": "app/quranrevival.html",
+  "why": "(7) The Read bar's unit chip names Aʿūdhu billāh while it shows (QR J09).",
+  "from": "        const chipText = unitChipText(unitInfo);\n        readUnitChip.querySelector(\".read-unit-chip-text\").textContent = chipText;\n        readUnitChip.setAttribute(\"aria-label\", t(\"Open {unit}\", { unit: unitInfo.label }));\n        readUnitChip.title = unitInfo.label;",
+  "to": "        // QR J09: while Aʿūdhu billāh is in the reading space, the chip names it (and opens its card).\n        const chipLabel = openingReading && unitInfo.unitType === \"ayah\" ? t(\"Aʿūdhu billāh\") : null;\n        const chipText = chipLabel ?? unitChipText(unitInfo);\n        readUnitChip.querySelector(\".read-unit-chip-text\").textContent = chipText;\n        readUnitChip.setAttribute(\"aria-label\", t(\"Open {unit}\", { unit: chipLabel ?? unitInfo.label }));\n        readUnitChip.title = chipLabel ?? unitInfo.label;",
+  "exact": 1
+ },
+ {
+  "id": "app/quranrevival.html#7p",
+  "file": "app/quranrevival.html",
+  "why": "(7) Renders Aʿūdhu billāh alone in the reading space (QR J09).",
+  "from": "        if (!ayah) return;",
+  "to": "        if (!ayah) return;\n        if (openingReading === \"taawwudh\" && currentSurahNum === 1) {\n          // QR J09 -- Aʿūdhu billāh alone in the reading space (no āyah: no word tools, no ⋮ menu; its text opens its card).\n          ayahPosition.textContent = `${t(\"Surah {n}\", { n: num(1) })} — ${t(\"Aʿūdhu billāh\")}`;\n          syncAyahSelect();\n          prevAyahBtn.disabled = true;\n          nextAyahBtn.disabled = false;\n          ayahPanels.innerHTML = openingBandHtml(true) + taawwudhReadingHtml();\n          delete ayahPanels.dataset.ayahCollapsibleFor;\n          if (ayahPanels.dataset.shownAyah !== \"1:taawwudh\") { ayahPanels.scrollTop = 0; ayahPanels.dataset.shownAyah = \"1:taawwudh\"; }\n          readQuickMenuSlot.innerHTML = \"\";\n          renderPersistentWordCard();\n          renderListeningControls();\n          renderUnitLabel();\n          renderReadTransport();\n          renderUnitSpanReadout();\n          renderUnitNav();\n          syncReadPickers();\n          syncReadNotes();\n          return;\n        }",
+  "exact": 1
+ },
+ {
+  "id": "app/quranrevival.html#7q",
+  "file": "app/quranrevival.html",
+  "why": "(7) ⏮ from the Bismillah goes back to Aʿūdhu billāh; the band is drawn single (QR J09).",
+  "from": "        prevAyahBtn.disabled = currentAyahNum <= 1 && currentHalf() !== \"b\";\n        nextAyahBtn.disabled = currentAyahNum >= currentSurahData.ayahCount && currentHalf() !== \"a\";\n        ayahPanels.innerHTML = bismillahHtmlFor(currentSurahNum, currentAyahNum) + layoutAParts(ayah, panels, {",
+  "to": "        // QR J09: from the Bismillah, ⏮ goes back to Aʿūdhu billāh.\n        prevAyahBtn.disabled = currentAyahNum <= 1 && currentHalf() !== \"b\" && !(currentSurahNum === 1 && fatihaCountApplies(1, fatihaOn()));\n        nextAyahBtn.disabled = currentAyahNum >= currentSurahData.ayahCount && currentHalf() !== \"a\";\n        ayahPanels.innerHTML = bismillahHtmlFor(currentSurahNum, currentAyahNum, { single: true }) + layoutAParts(ayah, panels, {",
+  "exact": 1
+ },
+ {
+  "id": "app/quranrevival.html#7r",
+  "file": "app/quranrevival.html",
+  "why": "(7) openingBeforeBismillah() and the ⏮ ⏭ order Aʿūdhu billāh → Bismillah → āyah 1 (QR J09).",
+  "from": "    // Issue #606 -- with the Al-Fātiḥah count on, internal 1:7 is two stops: 6 then 7.\n    function stepAyahBy(dir) {",
+  "to": "    // Issue #606 -- with the Al-Fātiḥah count on, internal 1:7 is two stops: 6 then 7.\n    /** QR J09: on Al-Fātiḥah's Bismillah (count on), one step back is Aʿūdhu billāh. */\n    function openingBeforeBismillah() { return !openingReading && currentSurahNum === 1 && currentAyahNum === 1 && fatihaCountApplies(1, fatihaOn()); }\n    function stepAyahBy(dir) {\n      // QR J09 -- the reading order before Al-Fātiḥah: Aʿūdhu billāh, the Bismillah, then āyah 1.\n      if (openingReading) { if (dir > 0) { setAyahNum(1); return true; } return false; }\n      if (dir < 0 && openingBeforeBismillah()) { openingReading = \"taawwudh\"; return true; }",
+  "exact": 1
+ },
+ {
+  "id": "app/quranrevival.html#7s",
+  "file": "app/quranrevival.html",
+  "why": "(7) ⏮ ⏭ buttons allow stepping to/from Aʿūdhu billāh (QR J09).",
+  "from": "    prevAyahBtn.addEventListener(\"click\", () => { if (currentAyahNum > 1 || currentHalf() === \"b\") { stopDrill(); stepAyahBy(-1); renderStudyScreen(); renderWheel(); } });\n    nextAyahBtn.addEventListener(\"click\", () => { if (currentAyahNum < currentSurahData.ayahCount || currentHalf() === \"a\") { stopDrill(); stepAyahBy(1); renderStudyScreen(); renderWheel(); } });",
+  "to": "    prevAyahBtn.addEventListener(\"click\", () => { if (currentAyahNum > 1 || currentHalf() === \"b\" || openingBeforeBismillah()) { stopDrill(); stepAyahBy(-1); renderStudyScreen(); renderWheel(); } });\n    nextAyahBtn.addEventListener(\"click\", () => { if (currentAyahNum < currentSurahData.ayahCount || currentHalf() === \"a\" || openingReading) { stopDrill(); stepAyahBy(1); renderStudyScreen(); renderWheel(); } });",
+  "exact": 1
+ },
+ {
+  "id": "app/quranrevival.html#8a",
+  "file": "app/quranrevival.html",
+  "why": "(8) CSS: 12px edge / 24px corner resize handles, menu row above the windows, Approach window no longer scrolls itself (QR J10).",
+  "from": "    .note-popup-resize[data-note-resize=\"sw\"] { bottom: -3px; left: -3px; width: 14px; height: 14px; cursor: nesw-resize; }\n  }",
+  "to": "    .note-popup-resize[data-note-resize=\"sw\"] { bottom: -3px; left: -3px; width: 14px; height: 14px; cursor: nesw-resize; }\n  }\n  /* QR J10 (the Owner, 17 Oct: \"resizeable from any corner and any side\"; \"the menu bar also overflow ... not the entire\n     banner\"). On a desktop width the Approach and Explore windows: (1) their 8 resize handles are easy to find with a\n     mouse -- each edge a 12px band across the border, each corner a 24px square; (2) the menu row (Home, Modules,\n     Operation, Bookmark) stays above a window that reaches it, as the bottom bar already does; the title and tagline\n     above it do not. (A window that has never been moved is also re-fitted clear of the bottom bar once that bar\n     can be measured -- see the dock observer in the script.) */\n  @media (min-width: 900px) {\n    #wheelPopupView > .note-popup-resize[data-note-resize], #exploreView > .note-popup-resize[data-note-resize] { z-index: 6; }\n    #wheelPopupView > .note-popup-resize[data-note-resize=\"n\"], #exploreView > .note-popup-resize[data-note-resize=\"n\"] { top: -6px; left: 18px; right: 18px; height: 12px; }\n    #wheelPopupView > .note-popup-resize[data-note-resize=\"s\"], #exploreView > .note-popup-resize[data-note-resize=\"s\"] { bottom: -6px; left: 18px; right: 18px; height: 12px; }\n    #wheelPopupView > .note-popup-resize[data-note-resize=\"e\"], #exploreView > .note-popup-resize[data-note-resize=\"e\"] { right: -6px; top: 18px; bottom: 18px; width: 12px; }\n    #wheelPopupView > .note-popup-resize[data-note-resize=\"w\"], #exploreView > .note-popup-resize[data-note-resize=\"w\"] { left: -6px; top: 18px; bottom: 18px; width: 12px; }\n    #wheelPopupView > .note-popup-resize[data-note-resize=\"ne\"], #exploreView > .note-popup-resize[data-note-resize=\"ne\"] { top: -6px; right: -6px; width: 24px; height: 24px; }\n    #wheelPopupView > .note-popup-resize[data-note-resize=\"nw\"], #exploreView > .note-popup-resize[data-note-resize=\"nw\"] { top: -6px; left: -6px; width: 24px; height: 24px; }\n    #wheelPopupView > .note-popup-resize[data-note-resize=\"se\"], #exploreView > .note-popup-resize[data-note-resize=\"se\"] { bottom: -6px; right: -6px; width: 24px; height: 24px; }\n    #wheelPopupView > .note-popup-resize[data-note-resize=\"sw\"], #exploreView > .note-popup-resize[data-note-resize=\"sw\"] { bottom: -6px; left: -6px; width: 24px; height: 24px; }\n    #topNav.app-nav { position: relative; z-index: 61; } /* above the windows (55) and the bottom bar (60) */\n    /* The handles sit across the window's border, half outside it: the Approach window itself no longer scrolls (that\n       clipped them and laid its scrollbar over the right one); the wheel area inside it scrolls instead. */\n    #stage > #wheelPopupView { overflow: visible; } /* outranks the window rule below */\n    #wheelPopupView > #wheelSection { overflow-y: auto; }\n  }",
+  "exact": 1
+ },
+ {
+  "id": "app/quranrevival.html#8b",
+  "file": "app/quranrevival.html",
+  "why": "(8) JS: re-fit never-moved windows clear of the bottom bar when #app resizes; maximized wheel area keeps clear of the menu row and bar (QR J10).",
+  "from": "      maximizeBtn: wheelPopupMaximizeBtn,\n    });",
+  "to": "      maximizeBtn: wheelPopupMaximizeBtn,\n    });\n    // QR J10: once the bottom bar can be measured, and again whenever it moves (it rises when the Zab bar arrives under\n    // it, which shrinks #app, not the bar), a never-moved Approach or Explore window is re-fitted clear of it, so its\n    // bottom edge and corners can be grabbed. refit() leaves a window the reader has moved or resized alone.\n    if (typeof ResizeObserver === \"function\" && document.getElementById(\"dock\")) {\n      const refitPopups = () => { if (!wheelPopupViewEl.hidden) wheelPopupWin?.refit(); if (!exploreView.hidden) explorePopupWin?.refit(); };\n      const popupRO = new ResizeObserver(refitPopups);\n      popupRO.observe(document.getElementById(\"dock\"), { box: \"border-box\" });\n      popupRO.observe(document.getElementById(\"dock\").parentElement, { box: \"border-box\" }); // #app shrinks when the Zab bar arrives\n    }\n    // QR J10: maximized, the menu row and the bottom bar float over the window's edges; the wheel area keeps clear of\n    // both by exactly the overlap, so nothing inside the window is hidden behind them.\n    function fitMaximizedWheelWindow() {\n      const max = wheelPopupMaximizeBtn.getAttribute(\"aria-pressed\") === \"true\" && !wheelPopupViewEl.hidden && innerWidth >= 900;\n      if (!max) { wheelSectionEl.style.removeProperty(\"margin-top\"); wheelSectionEl.style.removeProperty(\"margin-bottom\"); return; }\n      const nav = document.getElementById(\"topNav\")?.getBoundingClientRect();\n      const dock = document.getElementById(\"dock\")?.getBoundingClientRect();\n      const bar = wheelPopupTitleBarEl.getBoundingClientRect(), win = wheelPopupViewEl.getBoundingClientRect();\n      wheelSectionEl.style.marginTop = `${Math.max(0, Math.round((nav?.bottom ?? 0) - bar.bottom + 6))}px`;\n      wheelSectionEl.style.marginBottom = `${Math.max(0, Math.round(win.bottom - (dock && dock.height ? dock.top : win.bottom) + 6))}px`;\n    }\n    wheelPopupMaximizeBtn.addEventListener(\"click\", () => requestAnimationFrame(fitMaximizedWheelWindow));\n    addEventListener(\"resize\", () => requestAnimationFrame(fitMaximizedWheelWindow));",
+  "exact": 1
+ },
+ {
+  "id": "app/quranrevival.html#10a",
+  "file": "app/quranrevival.html",
+  "why": "(10) Short window (768px+ wide, ≤500px high): 60px room under .wheel-col so Wheel/Legend/Unit clear the Zab bar (QR J20).",
+  "from": "  @media (max-width: 767px) { .wheel-drawer-row:has(.zab-dock-btn) .wheel-drawer-btn { min-width: 4.6rem; } } /* audit-zab dock-row-fit */",
+  "to": "  @media (max-width: 767px) { .wheel-drawer-row:has(.zab-dock-btn) .wheel-drawer-btn { min-width: 4.6rem; } } /* audit-zab dock-row-fit */\n  /* QR J20 (MSA audit part 38): in a short window (phone landscape) the wheel column runs past #app, so the page could\n     not scroll its last row (Wheel / Legend / Unit) clear of the fixed Zab bar; room below it lets every control rise above. */\n  @media (min-width: 768px) and (max-height: 500px) { body.zab-bar-on .wheel-col { padding-bottom: 60px; } }",
+  "exact": 1
+ },
+ {
+  "id": "app/quranrevival.html#10b",
+  "file": "app/quranrevival.html",
+  "why": "(10) Reduced motion stops the veiled wheel's fade and the Mushaf pages' smooth scroll (QR J20).",
+  "from": "  @media (prefers-reduced-motion: reduce) { .mu-rays, .mu-glow, .mu-spark path { animation: none; } }",
+  "to": "  @media (prefers-reduced-motion: reduce) { .mu-rays, .mu-glow, .mu-spark path { animation: none; } }\n  /* QR J20 (MSA audit part 38): reduced motion also stops the veiled wheel's fade and the Mushaf pages' smooth scroll. */\n  @media (prefers-reduced-motion: reduce) {\n    .wheel-veiled #wheelContainer svg { transition: none; }\n    #pageViewContainer, html body.read-sideways #pageViewContainer { scroll-behavior: auto; }\n  }",
+  "exact": 1
+ },
+ {
+  "id": "app/quranrevival.html#7t",
+  "file": "app/quranrevival.html",
+  "why": "(7, fixed in review) A bookmark opened while Aʿūdhu billāh shows clears it, so the bookmarked āyah is drawn (Codex on #956; QR J09).",
+  "from": "          currentAyahNum = settings.ayahNum;\n",
+  "to": "          currentAyahNum = settings.ayahNum;\n          openingReading = null; // QR J09: a bookmark's āyah, not Aʿūdhu billāh\n",
+  "exact": 1
+ },
+ {
+  "id": "app/quranrevival.html#7u",
+  "file": "app/quranrevival.html",
+  "why": "(7, fixed in review) Enter or Space on the Aʿūdhu billāh text (role=button) opens its card, as a tap does (Codex on #956; QR J09).",
+  "from": "    document.addEventListener(\"click\", (e) => {\n      const card = e.target?.closest?.(\"[data-opening-card]\");\n",
+  "to": "    document.addEventListener(\"keydown\", (e) => {\n      if (e.key !== \"Enter\" && e.key !== \" \") return;\n      const card = e.target?.closest?.(\"[data-opening-card]\");\n      if (card) { e.preventDefault(); openOpeningCard(card.dataset.openingCard); }\n    });\n    document.addEventListener(\"click\", (e) => {\n      const card = e.target?.closest?.(\"[data-opening-card]\");\n",
+  "exact": 1
+ }
+]

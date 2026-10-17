@@ -1,0 +1,67 @@
+# PCA J110 step 4: the workflow the QR repository runs to publish QuranRevival BUILT FROM MSA's one source.
+# It belongs in QuranRevival/QuranRevival.github.io as .github/workflows/build-from-msa.yml. It is kept here, in
+# MSA, so it is reviewed with the build it runs; this copy does not run here (it is not under .github/).
+#
+# What it does: checks out MSA (public, no password needed) at a given commit, runs
+# `node tools/apps/build-app.mjs qr`, and publishes build/qr as QR's site with GitHub Pages.
+#
+# Turning it on (step 5, after the Owner has looked at the built QR side by side with today's):
+#   QR repository → Settings → Pages → Source: "GitHub Actions", then run this workflow.
+# THE WAY BACK (minutes): Settings → Pages → Source: "Deploy from a branch", main, / (root). Today's frozen QR
+#   files are still on QR's main branch, untouched, so the address serves them again.
+# Before the switch: quranrevival.github.io must be in Firebase Authentication's authorised domains (Owner), and
+#   the MSA version built must be v11.39 or later (the build refuses less once qr.json says "live").
+
+name: build-from-msa
+
+on:
+  workflow_dispatch:
+    inputs:
+      msa_ref:
+        description: "MSA commit or branch to build (default: main)"
+        required: false
+        default: "main"
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out MSA's one source
+        uses: actions/checkout@v4
+        with:
+          repository: Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io
+          ref: ${{ inputs.msa_ref }}
+          path: msa
+          lfs: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Prove MSA's source still builds MSA unchanged, then build QR
+        working-directory: msa
+        run: |
+          set -euo pipefail
+          node tools/apps/apps-build-check.mjs
+          node tools/apps/build-app.mjs qr --out=../_site
+          echo "Built from MSA $(git rev-parse --short HEAD), version $(grep -o 'APP_VERSION = "[0-9.]*"' app/js/version.js)"
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

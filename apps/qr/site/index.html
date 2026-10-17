@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en" data-card-look="night">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- QR J02 S4 (QR-only): QR's front page. The site's address (/index.html) and /app/index.html (where the copied
+     pages' "index.html" links land, and the copy the offline worker keeps) are the SAME file, byte for byte
+     (tools/qr-verify/front-browser.mjs checks it); the <base> below makes every link and file the same from both. -->
+<base href="/app/">
+<title>QuranRevival</title>
+<meta name="description" content="Quran Study, Asma ul Husna and Learn Deen On-the-Go.">
+<meta name="theme-color" content="#0f4c4c">
+<link rel="icon" href="data:,">
+<script>
+  // Before first paint, so neither the look nor the language flashes (the same keys as MMSA's prefs.js and Asma).
+  try {
+    document.documentElement.setAttribute("data-card-look", localStorage.getItem("mm_card_look") === "light" ? "light" : "night");
+    if (localStorage.getItem("mm_app_lang") === "bn") document.documentElement.lang = "bn";
+  } catch (e) { /* storage blocked: Night, English */ }
+</script>
+<link rel="stylesheet" href="css/qr-fonts.css">
+<link rel="stylesheet" href="css/qr-front.css">
+</head>
+<body>
+<header class="qf-top">
+  <div class="qf-top-row">
+    <a class="qf-brand" href="/">
+      <span class="qf-brand-ar" lang="ar" dir="rtl">إحياء القرآن</span>
+      <span class="qf-brand-en">QuranRevival</span>
+    </a>
+    <div class="qf-switches">
+      <div class="qf-seg" role="group" aria-label="Language" data-t-label="Language">
+        <button type="button" data-lang="en" aria-pressed="true" lang="en">EN</button>
+        <button type="button" data-lang="bn" aria-pressed="false" lang="bn">বাং</button>
+      </div>
+      <div class="qf-seg" role="group" aria-label="Card look" data-t-label="Card look">
+        <button type="button" data-look="night" aria-pressed="true" data-t="Night">Night</button>
+        <button type="button" data-look="light" aria-pressed="false" data-t="Light">Light</button>
+      </div>
+    </div>
+  </div>
+</header>
+<main class="qf-main">
+  <p class="qf-lead" data-t="lead">Study the Quran, the Names of Allah and your Deen, a little every day.</p>
+  <nav class="qf-cards" aria-label="QuranRevival">
+    <a class="qf-card" href="quranrevival.html" id="qfQuran">
+      <span class="qf-card-ar" lang="ar" dir="rtl">القرآن</span>
+      <span class="qf-card-title" data-t="Quran Study">Quran Study</span>
+      <span class="qf-card-text" data-t="quranText">Read, listen and keep track of your study, surah by surah. Sign in to keep your progress.</span>
+    </a>
+    <a class="qf-card" href="asma.html" id="qfAsma">
+      <span class="qf-card-ar" lang="ar" dir="rtl">الأسماء الحسنى</span>
+      <span class="qf-card-title" data-t="Asma ul Husna">Asma ul Husna</span>
+      <span class="qf-card-text" data-t="asmaText">The 99 Names of Allah, with their meanings. No sign-in.</span>
+    </a>
+    <a class="qf-card" href="ldog-study.html" id="qfLdog">
+      <span class="qf-card-ar" lang="ar" dir="rtl">الدين</span>
+      <span class="qf-card-title" data-t="Learn Deen On-the-Go">Learn Deen On-the-Go</span>
+      <span class="qf-card-text" data-t="ldogText">A short daily habit of learning your Deen, wherever you are.</span>
+    </a>
+  </nav>
+  <p class="qf-quiet"><span data-t="full">The full Madrasah:</span> <a href="https://madrasatul-muslimeen.github.io/" id="qfMmsa">madrasatul-muslimeen.github.io</a></p>
+  <p class="qf-version" id="qfVersion"></p>
+</main>
+<script type="module" src="js/qr-front.js"></script>
+</body>
+</html>
