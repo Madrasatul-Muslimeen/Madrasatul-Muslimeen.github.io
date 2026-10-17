@@ -7,7 +7,49 @@ v10.28). Read `CLAUDE.md` first. The prompt that starts the next session is
 
 This session was summarised once (its context compacted), which is why it hands over here.
 
-## LATEST UPDATE — 18 Oct 2026, 9:15 am Sydney, session `session_012qyCSaxMwZTToqQsij6wmR` (v11.34 → v11.37) — READ THIS FIRST
+## LATEST UPDATE — 18 Oct 2026, 10:56 am Sydney, session `session_01FjtmD2u1VJcHGbzQJkNY6z` (J110 steps 1–4) — READ THIS FIRST
+
+The MSA Master Architect took over at 9:16 am on 18 Oct and hands over at 43% context, at the PCA's request; the Owner
+has a new MSA job for the fresh session. **The PCA is `session_01HUvvFAYs3CSniCSwrgeKkk`.** `main` is **v11.37**, with
+no release made this stretch. **MSA's next release is v11.39**: 11.38 is skipped in the ledger because frozen QR
+already uses it. Nothing is in flight: no Builder round and no open PR.
+
+**PCA J110 "One source, many apps" (PMS `p/pl/jobs/J110`)**
+- **Steps 1–4 are merged:** #955 (`e180a71`), #956 (`07db1f1`) and #957 (`15c036a`).
+  - `app/apps/msa.json` is today's MSA; `app/apps/qr.json` is QR's settings (status `draft`, `minVersion` 11.39).
+  - `tools/apps/build-app.mjs` builds an app; `tools/apps/apps-build-check.mjs` (47/0, runs in `verify`) proves
+    msa builds back byte for byte.
+  - QR's own files are in `apps/qr/site/`, its 38 counted edits in `apps/qr/edits.json`, its worker fill-in in
+    `apps/qr/after-build.mjs`, and its poster-data generator in `apps/qr/tools/`.
+  - QR's 20 ported checks: `bash tools/apps/qr-verify/run-all.sh`, with `QR_REPO` set to a full QR clone for
+    upgrade-browser. **All green** on 18 Oct: upgrade 85/0, links 52/0, qr-offline 36/0, asma 274/0 and the rest.
+  - The guide is `tools/apps/README.md`, and `CLAUDE.md` has a block on it.
+- **Step 5:** the Owner ticked (10:48 am) that Firebase already allows quranrevival.github.io, MSA's next release is
+  v11.39, and the QR Architect adds `apps/qr/qr-repo-workflow.yml` to QR as `.github/workflows/build-from-msa.yml`.
+  - **The side-by-side preview is ready:** https://claude.ai/artifact/E3o2gUt414xA5Tq9rdH7mY (7 screens, phone
+    and computer). Its source is in the old session's scratchpad; republish from the URL if needed.
+  - **Waiting on the Owner:** J110 Needs `n110c`, "A switch / B something looks wrong".
+  - **On A:**
+    1. Release MSA **v11.39** with `allocate-version.py`, including its What's New line.
+    2. Set `qr.json` `status` to `live`.
+    3. The QR repository runs build-from-msa after its Pages source is set to "GitHub Actions".
+  - **The way back:** set QR's Pages source back to "Deploy from a branch".
+- **Steps 6–7:** J109 (Legacy v10) needs no building: the built QR carries MSA's link. Step 7 on MSA's side is the
+  CLAUDE.md block; the QR Architect hands over its notes.
+- **Credits** (`MSA_MOVE_KEY`, `claude -p` background runs): 3 runs, **US$2.27**, written in J110 after each run.
+  Today's credit is a bonus outside the US$85 cap. Credits renew at about 6 pm Sydney.
+
+**Lessons**
+- **Never wait with `pgrep -f "<words>"` when those words are in your own waiting command.** It matches itself;
+  wait on a PID instead (`while kill -0 $PID`).
+- **Give a credit run its own git worktree** (`git worktree add`), then merge its branch. It cannot then collide
+  with the session's work.
+- **A credit run's result is a claim:** rerun its checks yourself on the current build. Run 3's failures were all
+  from a build that was older than the worker step.
+- **The app's intro screen ("Tap to skip") covers a plain screenshot.** Use the i18n-verify harness and remove the
+  splash, as the QR checks do.
+
+## LATEST UPDATE — 18 Oct 2026, 9:15 am Sydney, session `session_012qyCSaxMwZTToqQsij6wmR` (v11.34 → v11.37) — superseded by the 10:56 am block above, kept as history
 
 The MSA Master Architect took over at 12:45 am on 18 Oct. It hands over at 9:15 am on the PCA's request: only a NEW session can
 see the API key `MSA_MOVE_KEY`. **The PCA is now `session_01HUvvFAYs3CSniCSwrgeKkk`** (confirmed against
