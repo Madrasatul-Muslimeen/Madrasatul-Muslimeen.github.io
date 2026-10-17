@@ -18,12 +18,12 @@ let pass = 0, fail = 0;
 const check = (ok, what, detail = "") => { ok ? pass++ : fail++; console.log(`${ok ? "ok  " : "FAIL"} ${what}${!ok && detail ? ` ${detail}` : ""}`); };
 
 let generated = true;
-// PORTED: the generator is tooling in the MSA source (REPO/tools/asma-poster). QR's variant of it (typo fixes, MEANING_132,
-// --check) is not in MSA yet, and MSA's own writes into app/js, so it is only run when it supports --check.
-const GEN = path.join(REPO, "tools/asma-poster/build-poster-data.mjs");
+// PORTED: QR's generator (typo fixes, MEANING_132, --check) lives with QR's own files: apps/qr/tools/build-poster-data.mjs.
+// It is run in --check mode against the BUILT app's file.
+const GEN = path.join(REPO, "apps/qr/tools/build-poster-data.mjs");
 const genSrc = fs.existsSync(GEN) ? fs.readFileSync(GEN, "utf8") : "";
 // the generator runs with the BUILT app as the working directory (it reads app/js and docs/reference from there)
-try { if (!genSrc.includes('"--check"')) throw new Error("no --check"); execFileSync(process.execPath, [GEN, "--check"], { stdio: "pipe" }); } catch { generated = false; }
+try { if (!genSrc.includes('"--check"')) throw new Error("no --check"); execFileSync(process.execPath, [GEN, "--check", `--file=${path.resolve("app/js/asma-poster-data.js")}`], { stdio: "pipe" }); } catch { generated = false; }
 check(generated, "app/js/asma-poster-data.js is what tools/asma-poster/build-poster-data.mjs writes from its sources");
 
 const data = await importBuilt("app/js/asma-poster-data.js");
