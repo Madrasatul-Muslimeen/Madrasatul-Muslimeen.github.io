@@ -21778,3 +21778,16 @@ Found by audit part 33's review (v11.26) and filed as J29 j29p33. Built and revi
 - **Shared scripts (QR's pinned copy):** `writing-popout.js` changed and `arabic-letters.js` is new; `writing-sheet.js` is not changed. QR was sent the change notice with the merge commit and the covering checks.
 
 **Tests:** writing-letters 266/0 (re-run in review: `next-dead` 26/8, `way-back` 30/2, `no-model` 30/2 at 390 en); writing-sheet-popout 342/0; writing-sheet 214/0; writing-sheet-fatiha-count 30/0; writing-sheet-record 28/0; writing-sheet-unit-toolbar 54/0; wheel-writing-slice 25/0; qr-stage1-hidden 110/0; phone-width-overflow 217/0; load-speed-check 66/0; behaviour 971/0.
+
+## v11.31 — 17 Oct 2026 — Blank lines: the example above the paper looks like Trace over, light or dark (PCF MSA J34 = QR J11)
+
+**Built by Builder round #938** (branch `builder/issue-938-run-1461`, PR #941, opened by the Builder). Reviewed by the Architect by measurement after merging `main` in. The Owner (QR J11, 17 Oct): *"Make the TEXT look like as it looks in Trace Over"*, and asked A or B: *"Keep both options to choose from."*
+
+- `app/js/writing-popout.js`: in Blank lines the model above the paper (word, Ayah, and the four letter forms in Letters mode) is drawn at Trace over's size (`fsNow()`, was `min(56, …)` for a word and 24 for an Ayah) with the same placement; a tall Ayah scrolls inside the model band (max 34% of the window) and never shrinks. A new list box, shown only while Blank lines is on, chooses **A "As traced"** (the Letter style: Light, Lighter or Like the book; the default) or **B "Dark ink"**. The choice is kept in `localStorage` (`writingModelStyle`, read in a try/catch). Below 500px the box joins the list-box line.
+- `app/js/writing-sheet.js`: `MODEL` (used only for the model) is `fill`, not `stroke`, so B is solid dark ink.
+- `app/js/i18n/bn.js`: "Example above the paper", "As traced" (হালকা উদাহরণ), "Dark ink" (গাঢ় উদাহরণ).
+- **Corrected in review:** the Builder's labels "Like Trace over" / "Like Trace over, dark" were cut at 390px (92px of room; 104 and 142 needed) and in Bangla; the screenshot read "Like Trace ov". `writing-sheet-popout`'s fit check skips hidden boxes, and this box is hidden in Trace over, so nothing measured it. Labels shortened; the new suite asserts every visible box holds its longest option with Blank lines on, proven by a `long-labels` mutation.
+- **Checks updated in place:** `writing-sheet-popout`'s model-contrast check now selects B first (A is light by the Owner's design), its localStorage checks allow the `writingModelStyle` preference, and its bar measures skip a hidden box.
+- New suite `tools/i18n-verify/writing-blank-model-browser.mjs`: 171/0 at five widths, en and bn, with a positive control for the pixel reader; mutations `old-size`, `ignore-style`, `b-hollow`, `no-remember`, `long-labels` each fail it.
+- Other suites: writing-sheet-popout 342/0, writing-letters 266/0, writing-sheet 214/0, -fatiha-count 30/0, -record 28/0, -unit-toolbar 54/0, wheel-writing-slice 25/0, qr-stage1-hidden 110/0, phone-width-overflow 217/0, load-speed-check 66/0, behaviour 971/0.
+- Shared with QR (one home rule, PCA J71): QR copies `writing-popout.js`, `writing-sheet.js` and the two bn keys; a change notice with the exact lines was sent through the PCA.

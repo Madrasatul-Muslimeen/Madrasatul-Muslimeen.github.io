@@ -894,3 +894,4 @@ total). Allocated by the MMSA Architect.
 11.28: the main page renamed Madrasah Study App (MSA) (PCF MSA J36). Allocated by the MMSA Architect.
 11.29: a focused button at the edge of the People and Catalogue tables comes fully into view at 320px (PCF MSA J29 j29p33). Allocated by the MMSA Architect.
 11.30: letter writing practice in the writing window (PCF MSA J35 = QR J12). Allocated by the MMSA Architect.
+11.31: Blank lines example like Trace over, light or dark (J34). Allocated by the MMSA Architect.
