@@ -32,6 +32,12 @@ const MUTATIONS = {
   goldtext: ["app/deen-study.html", "**/deen-study.html*", "cursor: pointer; color: #8a6212; padding: 0.05rem 0.35rem; }", "cursor: pointer; color: #B8862F; padding: 0.05rem 0.35rem; }", "/app/deen-study.html"],
   goldactive: ["app/deen-study.html", "**/deen-study.html*", ".topic-bookmark-btn.active { background: #8a6212; color: #fff; border-color: #8a6212; }", ".topic-bookmark-btn.active { background: #B8862F; color: #fff; border-color: #B8862F; }", "/app/deen-study.html"],
   pathbranch: ["app/journey-map.html", "**/journey-map.html*", ".path-branch.system > .path-branch-head .path-branch-name { color: #8a6212; }", ".path-branch.system > .path-branch-head .path-branch-name { color: #B8862F; }", "/app/journey-map.html"],
+  // Architect's review of #945: the fixes made in review
+  notemeta: ["app/css/note-window.css", "**/css/note-window.css*", "font-size: 0.8rem; color: #666; } /* audit part 37", "font-size: 0.8rem; color: #777; } /* audit part 37", "/app/notes.html"],
+  panehead: ["app/css/note-window.css", "**/css/note-window.css*", "background: inherit; color: inherit; padding", "background: inherit; color: #fff; padding", "/app/"],
+  panegl: ["app/css/card-look.css", "**/css/card-look.css*", '[data-card-look="night"] .pane-menu-gl { color: #9ca3af; }', "", "/app/"],
+  bmfield: ["app/js/bookmark-popover.js", "**/js/bookmark-popover.js*", "border: 1px solid #8c8c8c; border-radius: 0.35rem; box-sizing: border-box; /* audit part 37", "border: 1px solid #ccc; border-radius: 0.35rem; box-sizing: border-box; /* audit part 37", "/app/"],
+  zabfield: ["app/js/zab-bar.js", "**/js/zab-bar.js*", "border: 1px solid #7d8799;", "border: 1px solid #c7d0e0;", "/app/journey-map.html"],
   hadithfield: ["app/css/hadith.css", "**/css/hadith.css*", "  .hadith-lang-select { min-height: 40px; min-width: 0; padding: 0.3rem 0.5rem; border-radius: 0.35rem; border: 1px solid var(--hadith-field); }", "  .hadith-lang-select { min-height: 40px; min-width: 0; padding: 0.3rem 0.5rem; border-radius: 0.35rem; border: 1px solid var(--hadith-rule); }", "/app/hadith-collections.html"],
 };
 if (MUTATE && !MUTATIONS[MUTATE]) throw new Error(`no such mutation ${MUTATE}`);
@@ -371,6 +377,10 @@ DATA.noteSources.push(Object.assign({_id:"t1__s-"+id,sourceLinkId:"s-"+id,noteId
 function P(id,l,folder,o){DATA.notePlacements.push(Object.assign({_id:"t1__"+id,placementId:id,noteId:hx(l),folderId:folder,order:o,status:"active"},own))}
 N("n1","First note",1,{favourite:true});N("n3","Third note",3);N("n4","Fourth note",4);
 P("p1","n1","fA",0);P("p3","n3","fB",0);P("p4","n4","fB",1);
+// Architect's review of #945: the Zab flow clicks pocket "pk-tasks", which this seed never created (the flow timed
+// out at every width); seeded as zab-kinds-browser.mjs does.
+var zs={createdAt:new Date(),updatedAt:new Date(),createdBy:"uid-1",schemaVersion:1,addedByPersonId:"p1",tenantId:"t1",status:"active"};
+DATA.zabPockets=[Object.assign({_id:"t1__pk-tasks",pocketId:"pk-tasks",order:0,name:"Tasks",icon:"✅",ztype:"tasks"},zs)];DATA.zabItems=DATA.zabItems||[];
 })();`;
 const P37_NOTES = "/app/notes.html?unit=" + encodeURIComponent("ayah:2:255") + "&label=Test";
 const opened = (page, sel) => ev(page, (s) => [...document.querySelectorAll(s)].some((e) => { const b = e.getBoundingClientRect(); const c = getComputedStyle(e); return b.width > 0 && b.height > 0 && c.visibility !== "hidden" && c.display !== "none" && !e.closest("[hidden]"); }), sel);

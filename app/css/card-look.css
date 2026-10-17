@@ -347,6 +347,8 @@
    on one dropdown" -- its own CSS comment), the same starting point as
    Hadith above, so it needs the Night direction only. */
 [data-card-look="night"] .bar-palette { background: var(--card-bg-inset); border-color: var(--card-line); color: var(--card-text); box-shadow: var(--card-shadow); }
+/* Audit part 37: the ⋯ sheet's group labels (#6b7280) were 3.62:1 on this navy; on the Light sheet they are 4.83:1 and stay. */
+[data-card-look="night"] .pane-menu-gl { color: #9ca3af; }
 [data-card-look="night"] .bar-palette .qcr-icon-btn { background: var(--card-bg); border-color: var(--card-line); color: var(--card-text); }
 [data-card-look="night"] .bar-palette .qcr-archived-toggle { color: var(--card-text); }
 [data-card-look="night"] .bar-palette-divider { background: var(--card-line); }
