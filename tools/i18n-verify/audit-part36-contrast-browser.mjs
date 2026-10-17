@@ -25,7 +25,7 @@ const MUTATIONS = {
   learning: ["app/monitor.html", "**/monitor.html*", "  .status-learning { color: #8a6212; }", "  .status-learning { color: #b8862f; }", "/app/monitor.html"],
   fieldborder: ["app/monitor.html", "**/monitor.html*", "input[type=\"month\"] { padding: 0.4rem; font-size: 0.92rem; border: 1px solid #8c8c8c;", "input[type=\"month\"] { padding: 0.4rem; font-size: 0.92rem; border: 1px solid #ccc;", "/app/monitor.html"],
   navlabel: ["app/css/shell.css", "**/css/shell.css*", "  color: #666; margin-bottom: 0.2rem;", "  color: #999; margin-bottom: 0.2rem;", "/app/notes.html"],
-  navcurrent: ["app/css/shell.css", "**/css/shell.css*", ".nav-current { color: #666;", ".nav-current { color: #888;", "/app/notes.html"],
+  navcurrent: ["app/css/shell.css", "**/css/shell.css*", ".nav-current { color: #666;", ".nav-current { color: #888;", "/app/journey-map.html"],
   hadithfield: ["app/css/hadith.css", "**/css/hadith.css*", "  .hadith-lang-select { min-height: 40px; min-width: 0; padding: 0.3rem 0.5rem; border-radius: 0.35rem; border: 1px solid var(--hadith-field); }", "  .hadith-lang-select { min-height: 40px; min-width: 0; padding: 0.3rem 0.5rem; border-radius: 0.35rem; border: 1px solid var(--hadith-rule); }", "/app/hadith-collections.html"],
 };
 if (MUTATE && !MUTATIONS[MUTATE]) throw new Error(`no such mutation ${MUTATE}`);
@@ -208,7 +208,7 @@ async function judgePage(t, page) {
   check(`${t}: every text node meets 4.5:1 (3:1 large) over its real background`, m.badText.length === 0, m.badText.slice(0, 8).map(fmtText).join(" | "));
   check(`${t}: every enabled control that is marked out by a border or fill is 3:1 beside its surroundings`, m.badCtl.length === 0, m.badCtl.slice(0, 8).map(fmtCtl).join(" | "));
   if (m.imgText.length) console.log(`  NOTE  ${t}: text over an image or gradient, not measurable by colour: ${m.imgText.slice(0, 4).map(fmtText).join(" | ")}`);
-  if (!process.argv.includes("--quiet")) console.log(`  NOTE  ${t}: skipped disabled ${m.s.skipped.disabled}, text-only controls ${m.s.skipped.textOnly}, measured ${m.s.text.length} text and ${m.s.ctl.length} controls`);
+  if (!process.argv.includes("--quiet") && !arg("out")) console.log(`  NOTE  ${t}: skipped disabled ${m.s.skipped.disabled}, text-only controls ${m.s.skipped.textOnly}, measured ${m.s.text.length} text and ${m.s.ctl.length} controls`);
   const pg = page.url().replace(/^.*\/app\//, "").replace(/\?.*/, "");
   for (const x of m.badText) FOUND.set(`${pg}  TEXT ${x.d} ${x.fg} on ${x.bg}`, fmtText(x));
   for (const x of m.badCtl) FOUND.set(`${pg}  CTL  ${x.d} ${x.border} ${x.fill}`, fmtCtl(x).replace(/\n/g, " "));
@@ -227,8 +227,9 @@ for (const look of LOOKS) await flow("control", "en", look, 390, 800, "/app/abou
       '<div style="background:rgba(0,0,0,0.5)"><p id="pc3" style="color:#555;margin:4px">dark on a half black parent</p></div>' +
       '<p id="pc4" style="color:#000;opacity:0.4;margin:4px">faded black on white</p>' +
       '<p id="pc5" style="color:#999;font-size:26px;margin:4px">large grey</p>' +
-      '<button id="pc6" style="border:1px solid #ddd;background:#fff;color:#000">light border</button>' +
-      '<button id="pc7" style="border:1px solid #555;background:#fff;color:#000">dark border</button>' +
+      '<input id="pc6" value="light border" style="border:1px solid #ddd;background:#fff;color:#000">' +
+      '<input id="pc7" value="dark border" style="border:1px solid #555;background:#fff;color:#000">' +
+      '<button id="pc10" style="border:1px solid #ddd;background:#fff;color:#000">bordered button with text</button>' +
       '<button id="pc8" style="border:0;background:transparent;color:#000">text only</button>' +
       '<button id="pc9" disabled style="border:1px solid #ddd;background:#fff;color:#000">disabled</button>';
     document.body.appendChild(d);
@@ -244,6 +245,7 @@ for (const look of LOOKS) await flow("control", "en", look, 390, 800, "/app/abou
   check(`${t}: POSITIVE CONTROL large text is judged at 3:1 (grey #999 on white at 26px is flagged only if under 3)`, tx("pc5") && tx("pc5").need === 3 && !tx("pc5").ok, JSON.stringify(tx("pc5")));
   check(`${t}: POSITIVE CONTROL a 1px #ddd border on #fff is flagged`, cl("pc6") && !cl("pc6").ok && cl("pc6").bR < 3, JSON.stringify(cl("pc6")));
   check(`${t}: POSITIVE CONTROL a 1px #555 border on #fff passes`, cl("pc7") && cl("pc7").ok, JSON.stringify(cl("pc7")));
+  check(`${t}: POSITIVE CONTROL a pale-bordered button that carries text is marked out by its text (exempt, counted)`, !cl("pc10"), JSON.stringify(cl("pc10")));
   check(`${t}: POSITIVE CONTROL a text-only button is not a control to measure`, !cl("pc8"), JSON.stringify(cl("pc8")));
   check(`${t}: POSITIVE CONTROL a disabled control is skipped and counted`, !cl("pc9") && s.skipped.disabled >= 1, JSON.stringify(s.skipped));
 });
