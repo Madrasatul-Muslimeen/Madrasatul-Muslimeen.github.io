@@ -17,7 +17,7 @@ if (!fs.existsSync(path.join(SRC, "app/apps/msa.json"))) {
   process.exit(2);
 }
 const TMP = fs.mkdtempSync(path.join(os.tmpdir(), "apps-build-"));
-const ONLY = ["app", "index.html", "404.html", ".nojekyll"]; // the data folders are copied as they are; no rule reads them (checked below)
+const ONLY = ["app", "index.html", "404.html", ".nojekyll", "tools/hadith-data-pull/output/asma-cited-hadith.json"]; // the data folders are copied as they are; no rule reads them (checked below)
 let pass = 0, fail = 0;
 function check(name, fn) {
   let ok;
@@ -120,10 +120,11 @@ check("the front page's name, heading and short name are QR's", () => {
   return t.includes("<title>QuranRevival</title>") && t.includes('<span class="app-name-full">QuranRevival</span>') &&
     t.includes('.app-name-short::before { content: "QuranRevival"; }') && !t.includes('<span class="app-name-full">Madrasah Study App (MSA)</span>');
 });
-check("the offline caches are qr-…, and the clean-up deletes only qr-… caches", () => {
+check("the offline caches are qr-…, no mm- cache is named, and the clean-up deletes only qr-… caches", () => {
   const t = read(qrOut, "app/sw.js");
-  return /const CACHE_NAME = `qr-app-\$\{APP_VERSION\}`;/.test(t) && t.includes('"qr-qf-fonts-v1"') && t.includes('"qr-ext-v1"') &&
-    t.includes('"qr-mushaf-v1"') && !/["`]mm-(app|qf-fonts|ext|mushaf)-/.test(t) && (t.match(/startsWith\("qr-/g) || []).length === 5;
+  const deletes = [...t.matchAll(/key\.startsWith\("([a-z-]+)"\) && key !== [A-Z_]+\) await caches\.delete/g)].map((m) => m[1]);
+  return t.includes("const APP_CACHE = `qr-app-${APP_VERSION}`;") && t.includes('"qr-qf-fonts-v1"') && t.includes('"qr-ext-v1"') &&
+    t.includes('"qr-mushaf-v1"') && !/["`]mm-(app|qf-fonts|ext|mushaf)-/.test(t) && deletes.length >= 3 && deletes.every((d) => d.startsWith("qr-"));
 });
 check("the built scripts still parse (sw.js, bn.js, hidden-modules.js, bookmark-nav.js)", () =>
   ["app/sw.js", "app/js/i18n/bn.js", "app/js/hidden-modules.js", "app/js/bookmark-nav.js"].every((f) => parsesAsModule(path.join(qrOut, f))));
@@ -152,7 +153,18 @@ check("every one of QR's edits is in the built file (and there are 36)", () => {
 check("every one of QR's own files is in the built app byte for byte (the Asma app, the front page, the fonts)", () => {
   const own = listFiles(path.join(SRC, qs.overlay), ["app", "index.html", "404.html", ".nojekyll"]);
   return own.length > 40 && own.includes("app/asma.html") && own.includes("app/asma.webmanifest") &&
-    own.every((f) => sha(path.join(SRC, qs.overlay, f)) === sha(path.join(qrOut, f)));
+    own.filter((f) => !(qr.after?.written || []).includes(f)).every((f) => sha(path.join(SRC, qs.overlay, f)) === sha(path.join(qrOut, f)));
+});
+check("QR's worker carries MSA's one version number and the built app's shell", () => {
+  const v = read(SRC, "app/js/version.js").match(/APP_VERSION = "([\d.]+)"/)[1];
+  const sw = read(qrOut, "app/sw.js");
+  const shell = JSON.parse(sw.match(/const SHELL = (\[[\s\S]*?\]);/)[1]);
+  return sw.includes(`const APP_VERSION = ${JSON.stringify(v)};`) && read(qrOut, "app/js/qr-version.js").includes(`APP_VERSION = ${JSON.stringify(v)}`) &&
+    shell.length > 100 && shell.includes("quranrevival.html") && shell.every((f) => fs.existsSync(path.join(qrOut, "app", f)));
+});
+check("QR's worker is QR's own (the upgrade path for today's phones), with no import (it must run as a classic worker too)", () => {
+  const sw = read(qrOut, "app/sw.js");
+  return /QR: version \$\{APP_VERSION\} is already running/.test(sw) && !/^\s*import\s/m.test(sw) && sw.includes("qr-quran-v1") && parsesAsModule(path.join(qrOut, "app/sw.js"));
 });
 check("QR's settings say what steps 2 to 5 still owe", () => qs.status === "draft" && qs.later.some((l) => /qr-app-<version>/.test(l)) && qs.later.some((l) => /authorised domains/.test(l)));
 
@@ -204,6 +216,15 @@ check("the hidden-modules list changed in the source stops the build", () =>
   mutate("app/js/hidden-modules.js", '["general", "naturelife", "lifeskill", "health"]', '["general", "naturelife", "lifeskill"]', () => throws(() => buildMut("msa"), /modules hidden from this app: found 0/)));
 check("a front page that does not exist stops the build", () =>
   mutate("app/apps/qr.json", '"frontPage": "quranrevival.html"', '"frontPage": "qr-front.html"', () => throws(() => buildMut("qr"), /front page app\/qr-front\.html does not exist/)));
+check("a live QR below minVersion 11.39 is refused (a phone on frozen QR 11.38 would never update)", () =>
+  mutate("app/apps/qr.json", '"status": "draft"', '"status": "live"', () => throws(() => buildMut("qr"), /below QR's minVersion 11\.39/)));
+check("control: the same live QR at 11.39 builds", () =>
+  mutate("app/apps/qr.json", '"status": "draft"', '"status": "live"', () => mutate("app/js/version.js", `APP_VERSION = "${read(SRC, "app/js/version.js").match(/APP_VERSION = "([\d.]+)"/)[1]}"`, 'APP_VERSION = "11.39"', () => !!buildMut("qr"))));
+check("a file the worker saves at install but the build lacks stops the build", () => {
+  const f = path.join(mutSrc, "apps/qr/site/app/asma-about.html"), keep = fs.readFileSync(f);
+  fs.rmSync(f);
+  try { return throws(() => buildMut("qr"), /install list names files the build does not have: asma-about\.html/); } finally { fs.writeFileSync(f, keep); }
+});
 check("writing an app over its own source is refused", () => throws(() => buildApp({ id: "qr", src: mutSrc, out: mutSrc, only: ONLY }), /refusing/));
 check("...and so is an output folder that is, or sits inside, a source path (--out=app, --out=index.html, --out=app/js)", () =>
   ["app", "index.html", "app/js", "app/apps"].every((o) => throws(() => buildApp({ id: "qr", src: mutSrc, out: path.join(mutSrc, o), only: ONLY }), /refusing/)) &&
@@ -218,7 +239,7 @@ fs.writeFileSync(path.join(mutSrc, "apps/fx/site/app/fx-own.html"), "<!doctype h
 fs.writeFileSync(path.join(mutSrc, "apps/fx/site/app/js/continue-strip.js"), "// fx's own\n");
 const fxEdits = [{ id: "nav#1", file: "app/js/nav.js", why: "fixture", from: "export const LEGACY_APP_URL", to: "export const FX = 1;\nexport const LEGACY_APP_URL", exact: 1 }];
 fs.writeFileSync(path.join(mutSrc, "apps/fx/edits.json"), JSON.stringify(fxEdits));
-const fxs = { ...qs, id: "fx", site: ["index.html", "app"], overlay: "apps/fx/site", edits: "apps/fx/edits.json" };
+const fxs = { ...qs, id: "fx", afterBuild: null, site: ["index.html", "app"], overlay: "apps/fx/site", edits: "apps/fx/edits.json" };
 const buildFx = (over = {}) => buildApp({ settings: { ...fxs, ...over }, src: mutSrc, out: path.join(TMP, "fx"), only: ONLY });
 check("an own file is added and an own file replaces the source's", () => {
   const r = buildFx();

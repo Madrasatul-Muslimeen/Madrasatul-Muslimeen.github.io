@@ -22,6 +22,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { execFileSync } from "node:child_process";
 
 const DASH = " — ";
 const TEXT_EXT = new Set([".html", ".js", ".mjs", ".css", ".json", ".webmanifest", ".txt", ".svg"]);
@@ -79,6 +80,7 @@ function validate(s, base, src) {
   }
   // An app's own files live outside app/, so MSA's site never serves them under /app/.
   if (s.overlay && (s.overlay === "app" || s.overlay.startsWith("app/"))) throw new Error(`settings "${s.id}": overlay must be outside app/ (it is "${s.overlay}")`);
+  if (s.afterBuild && (s.afterBuild.startsWith("app/") || !fs.existsSync(path.join(src, s.afterBuild)))) throw new Error(`settings "${s.id}": afterBuild ${s.afterBuild} must exist outside app/`);
   if (s.edits && !fs.existsSync(path.join(src, s.edits))) throw new Error(`settings "${s.id}": edits file ${s.edits} does not exist`);
   if (s.manifest) {
     for (const k of ["file", "pages", "data"]) if (!(k in s.manifest)) throw new Error(`settings "${s.id}": manifest.${k} is missing`);
@@ -297,7 +299,17 @@ export function buildApp({ id, settings, src = ".", out, only } = {}) {
     fs.mkdirSync(path.dirname(dest), { recursive: true });
     fs.copyFileSync(abs, dest);
   }
-  return { id, out, files: files.length + extra.size + added.length, copied, written, overlaid: { replaced: replaced.sort(), added: added.sort() }, edited: [...new Set(edits.map((e) => e.file))].sort(), changedFiles: [...changed.keys()].filter((r) => files.includes(r)).sort(), addedFiles: [...extra.keys()].sort() };
+  // The app's own last step (settings "afterBuild": a script run with the output folder), e.g. QR's worker block.
+  let after = null;
+  if (s.afterBuild) {
+    try {
+      const so = execFileSync(process.execPath, [path.join(src, s.afterBuild), out], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], env: { ...process.env, APPS_SETTINGS: JSON.stringify(s) } });
+      after = JSON.parse(so.trim().split("\n").pop());
+    } catch (e) {
+      throw new Error(`cannot build "${id}": its after-build step failed: ${(e.stderr || e.message || "").toString().trim()}`);
+    }
+  }
+  return { id, out, after, files: files.length + extra.size + added.length, copied, written, overlaid: { replaced: replaced.sort(), added: added.sort() }, edited: [...new Set(edits.map((e) => e.file))].sort(), changedFiles: [...changed.keys()].filter((r) => files.includes(r)).sort(), addedFiles: [...extra.keys()].sort() };
 }
 
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
@@ -313,6 +325,7 @@ if (isMain) {
     for (const f of r.addedFiles) console.log(`  added   ${f}`);
     for (const f of r.overlaid.replaced) console.log(`  own     ${f} (in place of the source's)`);
     for (const f of r.overlaid.added) console.log(`  own     ${f}`);
+    if (r.after) console.log(`  after-build: ${JSON.stringify(r.after)}`);
   } catch (e) {
     console.error(e.message);
     process.exit(1);
