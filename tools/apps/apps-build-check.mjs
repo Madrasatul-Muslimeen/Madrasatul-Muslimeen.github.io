@@ -144,11 +144,11 @@ check("files no rule touches are copied exactly (only the expected files differ)
   if (same.length) throw new Error("changed but identical to the source: " + same.join(", "));
   return d.length === changed.size;
 });
-check("every one of QR's edits is in the built file (and there are 36)", () => {
+check("every one of QR's edits is in the built file (and there are 38)", () => {
   const edits = JSON.parse(read(SRC, qs.edits));
   const missing = edits.filter((e) => !read(qrOut, e.file).includes(e.to));
   if (missing.length) throw new Error(missing.map((e) => e.id).join(", "));
-  return edits.length === 36;
+  return edits.length === 38;
 });
 check("every one of QR's own files is in the built app byte for byte (the Asma app, the front page, the fonts)", () => {
   const own = listFiles(path.join(SRC, qs.overlay), ["app", "index.html", "404.html", ".nojekyll"]);

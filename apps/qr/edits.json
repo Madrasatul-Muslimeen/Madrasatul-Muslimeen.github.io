@@ -286,5 +286,21 @@
   "from": "  @media (prefers-reduced-motion: reduce) { .mu-rays, .mu-glow, .mu-spark path { animation: none; } }",
   "to": "  @media (prefers-reduced-motion: reduce) { .mu-rays, .mu-glow, .mu-spark path { animation: none; } }\n  /* QR J20 (MSA audit part 38): reduced motion also stops the veiled wheel's fade and the Mushaf pages' smooth scroll. */\n  @media (prefers-reduced-motion: reduce) {\n    .wheel-veiled #wheelContainer svg { transition: none; }\n    #pageViewContainer, html body.read-sideways #pageViewContainer { scroll-behavior: auto; }\n  }",
   "exact": 1
+ },
+ {
+  "id": "app/quranrevival.html#7t",
+  "file": "app/quranrevival.html",
+  "why": "(7, fixed in review) A bookmark opened while Aʿūdhu billāh shows clears it, so the bookmarked āyah is drawn (Codex on #956; QR J09).",
+  "from": "          currentAyahNum = settings.ayahNum;\n",
+  "to": "          currentAyahNum = settings.ayahNum;\n          openingReading = null; // QR J09: a bookmark's āyah, not Aʿūdhu billāh\n",
+  "exact": 1
+ },
+ {
+  "id": "app/quranrevival.html#7u",
+  "file": "app/quranrevival.html",
+  "why": "(7, fixed in review) Enter or Space on the Aʿūdhu billāh text (role=button) opens its card, as a tap does (Codex on #956; QR J09).",
+  "from": "    document.addEventListener(\"click\", (e) => {\n      const card = e.target?.closest?.(\"[data-opening-card]\");\n",
+  "to": "    document.addEventListener(\"keydown\", (e) => {\n      if (e.key !== \"Enter\" && e.key !== \" \") return;\n      const card = e.target?.closest?.(\"[data-opening-card]\");\n      if (card) { e.preventDefault(); openOpeningCard(card.dataset.openingCard); }\n    });\n    document.addEventListener(\"click\", (e) => {\n      const card = e.target?.closest?.(\"[data-opening-card]\");\n",
+  "exact": 1
  }
 ]

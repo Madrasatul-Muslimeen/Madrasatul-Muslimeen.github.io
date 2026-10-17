@@ -46,7 +46,7 @@ tokens. QR uses MSA's palette until a step makes them settings.
 its manifest, icons, fonts and store screens, QR's front page and site root, `404.html`, `.nojekyll`, QR's glue
 scripts (`qr-*.js`), the poster-data fixes (`asma-poster-data.js`) and `asma-cited-hadith.json`. Nothing there is a
 copy of an MSA file. `apps/qr/edits.json` is QR's table of deliberate changes ("Deliberate changes from the copy
-point" in QR's `docs/QR-PLAN.md`) re-expressed against today's MSA: 36 edits (Range bookmarks, the Aʿūdhu billāh
+point" in QR's `docs/QR-PLAN.md`) re-expressed against today's MSA: 38 edits (two fixed in review; Range bookmarks, the Aʿūdhu billāh
 band, window handles, short screens and reduced motion, LDOG's way back, the Al-Malik caption, Hadith data read from
 MSA's address). Measured on 18 Oct: of today's QR's 208 site files, 202 come out of the build byte for byte; the 6
 that differ are `sw.js` (step 3), `version.js` (one number), and MSA's own later changes in `bn.js`,
