@@ -220,7 +220,9 @@ function syntheticBanner() {
   box.setAttribute("role", "note");
   // All three languages, always -- a reader in any one of them must be able to
   // tell this is not real, without changing their language setting first.
-  box.appendChild(el("p", "hadith-synth-ar", SYNTHETIC_NOTICE.ar));
+  const arNotice = el("p", "hadith-synth-ar", SYNTHETIC_NOTICE.ar);
+  arNotice.setAttribute("lang", "ar"); // marks the Arabic so a reader's widened letter-spacing does not break its joining (audit part 34)
+  box.appendChild(arNotice);
   box.appendChild(el("p", "hadith-synth-en", SYNTHETIC_NOTICE.en));
   box.appendChild(el("p", "hadith-synth-bn", SYNTHETIC_NOTICE.bn));
   return box;
@@ -260,6 +262,7 @@ function controls(state, render) {
   for (const l of CONTENT_LANGUAGES) {
     const o = el("option", null, CONTENT_LANG_LABELS[l]);
     o.value = l;
+    o.lang = l; // each language is named in its own script; marking it keeps a reader's widened letter-spacing off the Arabic (audit part 34)
     if (l === state.contentLang) o.selected = true;
     sel.appendChild(o);
   }
