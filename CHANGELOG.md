@@ -21752,3 +21752,15 @@ The Owner's urgent Quick task (17 Oct 3:50 pm, PCF inbox 9bnl4tkit8wmvk, relayed
 - **Found, not this round's:** `head-search-browser.mjs` fails 18 checks on `main` too. It still expects a 36px Search button, and the button is 40px since the 40px-control rounds. Filed on the Architect's backlog.
 
 **Tests:** bookmark-marks-back 342/0 (its "the Qur'an page's name" check was updated in place to the new name per language, with the reason recorded); qr-stage1-hidden 110/0; bangla-sweep-newer-screens 23/0; navcheck green; phone-width-overflow 217/0; load-speed-check 66/0; behaviour 971/0.
+
+## v11.29 — 17 Oct 2026 — with a keyboard on a small phone, a focused button at the edge of the People and Catalogue tables comes fully into view (PCF MSA J29 j29p33, audit part 35)
+
+Found by audit part 33's review (v11.26) and filed as J29 j29p33. Built and reviewed by the Architect.
+
+- Below 600px, `people.html` and `catalogue.html` make each table `display: block; overflow-x: auto`, so it scrolls sideways inside its own box. When Tab focused a button only partly inside that box, Chrome did not scroll the box. Measured at 320px in English: People's `button.small` sat at 280..342px in a table ending at 304px, `scrollLeft` 0, so its centre was in the page gutter. The same happened on Catalogue (298..338px) and People's `getLinkBtn`.
+- New `app/js/table-focus.js`, `keepFocusInTables()`: on `focusin`, if the focused element is inside a `table` or `.table-wrap` that really scrolls sideways and is not fully inside it, scroll that box just enough (never past the element's own left edge). Loaded by `people.html` and `catalogue.html` only, as a separate small module before the page's own script. It is not a shared note script and not on Quran Study's page.
+- `tools/i18n-verify/audit-part33-keyboard-focus-browser.mjs`: `WIDTHS` now includes 320 (it was left out on purpose for exactly this), plus the mutation `tablefocus` (2 failures at 320px: People and Catalogue).
+- `tools/i18n-verify/audit-part17-teaching-browser.mjs`: its Bangla About check now accepts the proper names MSA and OpenITI / Open Islamicate Texts Initiative. Test-only, the same as #926 did for `bangla-sweep-lib`. It was 4 failures on `main`.
+- **Process lesson:** switching branches in the working tree while browser suites run feeds them the other branch's files. Two of this round's results were invalidated that way and re-run. Finish or stop the suites before any `git checkout`, or use a separate worktree.
+
+**Tests:** audit-part33 706/0 at five widths, and 146/0 at 320 alone; `--mutate=tablefocus` 144/2; approach-sections 59/0; approach-short-names 70/0; catalogue-add-approach 30/0; catalogue-sections 126/0; catalogue-startup-seed 5/0; catalogue-tabs 56/0; family-signup 68/0; bangla-sweep-other-pages 224/0; module-startup-reads green; audit-part17 864/0 (bn 444/0 after the name fix); phone-width-overflow 217/0; load-speed-check 66/0.
