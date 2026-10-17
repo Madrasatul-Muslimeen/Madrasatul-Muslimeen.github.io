@@ -722,7 +722,7 @@ console.log("\n=== 17. PHASE 4: the same four pages are still exactly English ==
     row: document.querySelector("#entriesBody tr")?.innerText.replace(/\s+/g, " ").trim(),
     tenantOpt: document.getElementById("tenantSelect")?.options[0]?.textContent?.trim(),
   }));
-  check("17 English title and heading intact", r.title === "QuranRevival — Records" && r.h1 === "Records", `${r.title} | ${r.h1}`);
+  check("17 English title and heading intact", r.title === "MSA — Records" && r.h1 === "Records", `${r.title} | ${r.h1}`);
   check("17 unit types read as English words", r.unitOpts.join() === "Ayah,Range,Surah", JSON.stringify(r.unitOpts));
   check("17 a row still reads in English", /Ayah 1:1/.test(r.row || "") && /Awaiting confirmation/.test(r.row || ""), r.row);
   check("17 roles read as English words", r.tenantOpt === "Madrasatul Muslimeen (Owner, Prime)", r.tenantOpt);
@@ -896,7 +896,7 @@ console.log("\n=== 21. PHASE 5: the admin pages are still exactly English ===");
     h1: document.querySelector("h1")?.textContent?.trim(),
     modules: [...document.querySelectorAll("#modulesBody tr")].map((tr) => tr.innerText.replace(/\s+/g, " ").trim()),
   }));
-  check("21 English title and heading intact", r.title === "QuranRevival — Catalogue" && r.h1 === "Catalogue", `${r.title} | ${r.h1}`);
+  check("21 English title and heading intact", r.title === "MSA — Catalogue" && r.h1 === "Catalogue", `${r.title} | ${r.h1}`);
   check("21 renderer and status read as English words",
         /Ayah by ayah/.test(r.modules[0] || "") && /Active/.test(r.modules[0] || ""), r.modules[0]);
   check("21 no page errors in English", errors.length === 0, errors.slice(0, 2).join(" | "));
@@ -1027,7 +1027,7 @@ console.log("\n=== 23. PHASE 6: the Asma page is still exactly English ===");
     };
   });
   check("23 English title, heading and all 99 cards intact",
-        r.title === "QuranRevival — Asma ul Husna" && r.h1 === "Asma ul Husna" && r.count === 99,
+        r.title === "MSA — Asma ul Husna" && r.h1 === "Asma ul Husna" && r.count === 99,
         `${r.title} | ${r.h1} | ${r.count}`);
   check("23 the card still reads Ar-Rahman / The Most Merciful, in Latin digits",
         r.number === "1" && r.name === "Ar-Rahman" && r.meaning === "The Most Merciful",
