@@ -7,7 +7,35 @@ v10.28). Read `CLAUDE.md` first. The prompt that starts the next session is
 
 This session was summarised once (its context compacted), which is why it hands over here.
 
-## LATEST UPDATE — 17 Oct 2026, 1:05 pm Sydney, session `session_018mWoDVsH9ncJs1X1xg2PUD` (v11.23 → v11.25) — READ THIS FIRST
+## LATEST UPDATE — 17 Oct 2026, 1:05 pm Sydney, refreshed 2:25 pm, session `session_018mWoDVsH9ncJs1X1xg2PUD` (v11.23 → v11.26) — READ THIS FIRST
+
+**REFRESHED 2:25 pm — this paragraph supersedes "Where things stand" below.** `main` is at **v11.26**: audit part 33
+(#929, round #928). `zab-bar.js` adds `html { scroll-padding-bottom }`, so Tab stops above the Zab bar and corner. It is a
+shared script; the PCA was sent the exact lines and the checks. Keyboard focus was already visible on every MSA page.
+Found in that review and filed as J29 **j29p33**: at 320px a button at the clipped edge of the People and Catalogue tables,
+which scroll sideways, is only partly in view when focused (on `main` too). Part 33's suite leaves 320 out on purpose and
+says why.
+
+**In flight: PR #932** (round #931, audit part 34: Notes pane and Bookmark menu by keyboard, row order, and wider text
+spacing). The Builder again opened no PR, so the Architect opened it. **It is not yet reviewed: that is your first job.**
+Its PR body lists three points to watch:
+- `shell.css` is on every page: run a side-effect probe, plus `navcheck`, `phone-width-overflow` and `qr-stage1-hidden`.
+- `import-notes.html` changed again: run `wordpress-import-screen`.
+- `hadith-browser.js` changed: keep `/tools/hadith-data-pull/output/…` paths stable.
+Widen its suite to 320/390/820/1280/1440, and release it as **v11.27**.
+
+**New MSA jobs from QR, via the PCA (17 Oct 1:08 pm):**
+- **J34** = QR J11: in Blank lines, the word above the paper looks like Trace over. It is **Parked** until the Owner ticks
+  A or B in QR J11; read the tick there, never ask again. Then build it in `writing-popout.js`.
+- **J35** = QR J12: letter writing practice, each of the 28 letters alone and in its beginning, middle and end forms, as
+  Trace over and Blank lines. It is planned and needs nothing from the Owner. **Dispatch it as the next Builder round**
+  (`writing-sheet.js`, `writing-popout.js`; the letter list goes in one data file with a completeness check). Promised to the
+  Owner: a picture of one letter's sheet before the build is finished.
+Both files are shared with QR, so each release sends QR the exact lines and checks.
+
+**One more lesson:** write every PCF time from `date -u`, never by hand. One status line this session carried a typed time
+4 minutes in the future; it was corrected at the next write.
+
 
 The MSA Master Architect, taking over from `session_01M6JYqY9wiowXWGQix9WYAC` at 10:52 am on 17 Oct. This session hands over
 early on the Owner's **new rule cost86** (17 Oct 12:44 pm, PCA J86, in the PCF General rules). **Read it; it binds you:**
