@@ -7,7 +7,53 @@ v10.28). Read `CLAUDE.md` first. The prompt that starts the next session is
 
 This session was summarised once (its context compacted), which is why it hands over here.
 
-## LATEST UPDATE — 17 Oct 2026, 5:05 pm Sydney, session `session_01EXxaMgDxPuADkuAus61QVX` (v11.26 → v11.30) — READ THIS FIRST
+## LATEST UPDATE — 18 Oct 2026, 12:40 am Sydney, session `session_01VLTMxUCwUemDmx8ydcpZnq` (v11.30 → v11.34) — READ THIS FIRST
+
+The MSA Master Architect took over at 5:04 pm on 17 Oct and hands over at the context limit (cost86). **The PCA is now
+`session_01N6xeVcU5K2Heo5VSSgfKh4`** (since 8:29 pm; `session_015vTqvkMg3piq1bTzKMxrUU` is retired). Read
+`meta/global.sessionUrl` before messaging.
+
+**Released in this stretch.** Each has its PCF Done line with W-T-P-E-O and its What's New line. Each shared-file change
+was sent to the PCA with exact lines.
+- **Test-only #940:** `head-search-browser.mjs` expected the 40px Search button (was 36px), now 94/0. This clears the
+  old backlog item.
+- **v11.31 (#941, round #938, J34):** in Blank lines the model above the paper looks like Trace over. A new box chooses
+  "As traced" or "Dark ink" (`writingModelStyle`). Corrected in review: the labels were cut at 390px.
+- **v11.32 (#944, J36, URGENT Owner answer "1. Yes. 2. Keep it now"):** every page's tab reads "MSA — …" (31 pages,
+  26 bn keys). `bookmark-nav.js` strips both prefixes. J36 is done; the tagline is kept.
+- **v11.33 (#943, round #942, J29 audit part 36):** text and box colour contrast on MSA pages. #999/#888/#777 →
+  #666, field borders → #8c8c8c, and the new token `--hadith-field`.
+- **v11.34 (#947, round #945, audit part 37):** contrast inside opened windows. The round left 72 failures; they
+  were fixed in review. The Light-look phone ⋯ sheet title "This note" was white on white. Also fixed: note dates,
+  the Night sheet labels, the bookmark and Zab field borders, and the suite's missing Zab seed.
+
+**In flight: Builder round #946 = MSA J37** (= QR J16; the Owner chose A at 11:11 pm): a 📜 Mushaf button on the
+reading bar beside 📖 Meaning, in full screen too. It is the same switch as `#mushafToggle`. The issue holds the full
+spec: layout at five widths in en/bn, four mutations, and the screenshot. Run 1474 started at 11:14 pm and has pushed
+to `builder/issue-946-run-1474`. **At your first wake:**
+1. Open its PR if the Builder did not (it often does not).
+2. Review it by measurement. LOOK at the 390px screenshot in en and bn, normal and full screen.
+3. Release it as **v11.35** (read the number off the ledger).
+4. Send the PCA the QR notice: the exact lines in `quranrevival.html` and `bn.js`.
+5. Reply in J37 and close it; QR's J16 waits on it.
+
+**Next after that:** the J29 audit continues (Hadith, Dua and the shared tools; Seerah has no module yet). Ideas not
+yet covered: phone landscape (844×390), 200% zoom, reduced motion. Keep a Builder round running.
+**Waiting on the Owner only:** MSA J02, J05, J06, J07, J20, J22, J24; J35's Bangla letter names.
+
+**Lessons from this stretch:**
+- **The local `serve.js` can die between wakes** (the container restarts). Every suite then fails "flow ran /
+  ERR_CONNECTION_REFUSED", which reads like a broken round. Curl `localhost:8080` before believing a mass failure.
+- **Never put a `//` comment in the middle of a JS line.** The v11.32 edit commented out the rest of an expression
+  and stopped every page's scripts. The Bangla sweeps caught it. Run `node --check` on every changed `.js`.
+- **A Builder that "finished" may have left its own suite red.** #945 pushed with 72 failing assertions and no PR
+  or comment. Always run the round's suite yourself before reading its claims.
+- **`load-speed-check` is timing-noisy here.** A different page goes over its 20% "second visit" limit on each run, on
+  unmodified `main` too. Compare against `main` before blaming a round.
+- **A hidden box escapes a fit check.** `writing-sheet-popout`'s fit check skips hidden selects, so a box shown
+  only in one mode was never measured. Measure in the mode that shows it.
+
+## LATEST UPDATE — 17 Oct 2026, 5:05 pm Sydney, session `session_01EXxaMgDxPuADkuAus61QVX` (v11.26 → v11.30) — superseded by the 12:40 am block above, kept as history
 
 The MSA Master Architect took over from `session_018mWoDVsH9ncJs1X1xg2PUD` at 2:22 pm and hands over at about 40% context
 (Owner rule cost86). **The PCA is now `session_015vTqvkMg3piq1bTzKMxrUU`** (read `meta/global.sessionUrl` before
