@@ -43,8 +43,9 @@
   .domainChips input { width: auto; }
 
   /* Issue #293 -- at phone width a wide table scrolls inside its own box
-     instead of dragging the whole page sideways. Desktop is untouched. */
-  @media (max-width: 600px) { table { display: block; overflow-x: auto; } }
+     instead of dragging the whole page sideways. Desktop is untouched.
+     Audit part 38: 720px, not 600px -- at 640px (a 1280px screen at 200% zoom) the table is 642px wide and dragged the page sideways. */
+  @media (max-width: 720px) { table { display: block; overflow-x: auto; } }
   #newDomainName { max-width: 100%; box-sizing: border-box; }
 </style>
 </head>
