@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "11.24",
+    "version": "11.25",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -4109,8 +4109,20 @@
     {
       "version": "11.24",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Audit part 31 (PR #923): accessible names on Monitor and Import; Dua cards on tablets checked.",
+      "integration": {
+        "authorizedOn": "2026-10-17",
+        "integratedOn": "2026-10-17",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "11.25",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Audit part 32 (PR #927): modal-focus.js; focus return in note-window.js; Dua Check on tablets checked.",
       "integration": {
         "authorizedOn": "2026-10-17",
         "integratedOn": "2026-10-17",
@@ -4119,8 +4131,9 @@
       }
     }
   ],
-  "nextUnallocated": "11.25",
+  "nextUnallocated": "11.26",
   "nextUnallocatedNote": [
+    "v11.25 was allocated to audit part 32: Tab stays inside dialogs; focus returns on close (round #925), 2026-10-17.",
     "v11.24 was allocated to audit part 31: screen-reader names in Bangla and English; Dua cards on tablets (round #922), 2026-10-17.",
     "v11.23 was allocated to audit part 30: tablets with real-length content; Note window titles wrap in every window (round #920), 2026-10-16.",
     "v11.22 was allocated to audit part 29: small-phone pass finished (Note window menu, bookmark dialog on a short phone, menus part-way down) (round #918), 2026-10-16.",
