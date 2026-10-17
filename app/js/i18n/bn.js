@@ -3807,6 +3807,10 @@ export const BN = {
   // Architect review (7 Oct 2026): the short forms fit a 320px phone; "Lines" stays the box's spoken name.
   "Trace over": "উপর দিয়ে লিখতে",
   "Blank lines": "খালি লাইন",
+  "Example above the paper": "কাগজের উপরের উদাহরণ",
+  // PCF MSA J34: the example above blank paper, A (like Trace over, always a light tracing shade) and B (dark).
+  "As traced": "হালকা উদাহরণ",
+  "Dark ink": "গাঢ় উদাহরণ",
   "Smaller window": "উইন্ডো ছোট করুন",
   "Word or Ayah": "শব্দ বা আয়াত",
   // Note-pane Part C1 (6 Oct 2026): annotations and heading status badges.

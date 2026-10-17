@@ -309,7 +309,7 @@ for (const [width, height] of ONLY ? [] : [[390, 800], [820, 1000], [1280, 800]]
   await wp(page, '[data-wp="close-anyway"]'); await page.waitForTimeout(150);
   check(`${tag} Close closes only the pop-out; the sheet stays open and its page is untouched`, await page.evaluate(() => !document.querySelector("#writingSheet .wp") && !!document.querySelector("#writingSheet .ws-page")));
   check(`${tag} the pop-out's writing was never stored on the sheet`, (await sheetInk(page)) === noInk0);
-  const stored = await page.evaluate(() => Object.keys(localStorage).filter((k) => /stroke|writing/i.test(k) && k !== "writingSheetShade" && k !== "writingSheetTools"));
+  const stored = await page.evaluate(() => Object.keys(localStorage).filter((k) => /stroke|writing/i.test(k) && k !== "writingSheetShade" && k !== "writingSheetTools" && k !== "writingModelStyle")); // writingModelStyle: the A/B example choice (PCF MSA J34), a preference like the Letter style
   check(`${tag} nothing of the writing is in localStorage`, stored.length === 0, stored.join());
 
   // Esc on a clean pop-out closes it straight away
@@ -377,7 +377,8 @@ if (ONLY || !MUTATE) {
     await popFromWord(page, 1, "1:2:3");
     const lay = await page.evaluate(() => {
       const win = document.querySelector("#writingSheet .wp-win").getBoundingClientRect();
-      const bs = [...document.querySelectorAll("#writingSheet .wp-bar button,#writingSheet .wp-bar select")];
+      // Updated 17 Oct 2026 (PCF MSA J34): a control that is not on screen (the example select, shown only on Blank lines) is not measured.
+      const bs = [...document.querySelectorAll("#writingSheet .wp-bar button,#writingSheet .wp-bar select")].filter((e) => !e.hidden);
       const rows = {};
       bs.forEach((e) => { const r = e.getBoundingClientRect(); const k = Math.round((r.top + r.height / 2) / 30); (rows[k] ||= []).push(r); });
       const vis = (sel) => { const r = document.querySelector(`#writingSheet .wp ${sel}`).getBoundingClientRect(); return r.width >= 39.5 && r.height >= 39.5 && r.left >= win.left - 0.5 && r.right <= win.right + 0.5; };
@@ -396,7 +397,7 @@ if (ONLY || !MUTATE) {
     check(`${tag} Word AND Ayah both show, with ‹ › ⬆ More paper ✋ Move and ⛶ (phone included)`, lay.word && lay.ayah && lay.prev && lay.next && lay.more && lay.move && lay.full, JSON.stringify(lay));
     // The Owner, 7-8 Oct 2026: on a phone the two list boxes ("Blank lines", "Light") showed only their first letters.
     // Each box's longest option, measured in the box's OWN font, plus its own padding and the arrow, must fit it.
-    const boxes = await page.evaluate(() => [...document.querySelectorAll("#writingSheet .wp-bar select")].map((sel) => {
+    const boxes = await page.evaluate(() => [...document.querySelectorAll("#writingSheet .wp-bar select")].filter((s) => !s.hidden).map((sel) => {
       const cs = getComputedStyle(sel);
       const c = document.createElement("canvas").getContext("2d"); c.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
       const longest = Math.max(...[...sel.options].map((o) => c.measureText(o.textContent).width));
@@ -488,6 +489,10 @@ if (ONLY || !MUTATE) {
     check(`${tag} ...the word is pinned in a strip above the paper (the right word)`, mBlank.shown && mBlank.h > 20 && mBlank.y + mBlank.h <= scrollR.y + 1 && modelGlyphs === firstWord("1:2:3").g, JSON.stringify({ mBlank, scrollR, modelGlyphs }));
     // Architect review (7 Oct 2026): the model is read, not traced -- its darkest letter pixel must reach 4.5:1
     // against the strip's own background (the first build painted it in the "book" tracing shade, ~1.2:1).
+    // Updated 17 Oct 2026 (PCF MSA J34): the default model (A) now looks like Trace over, which is light by design; the
+    // readable-at-a-glance guarantee belongs to choice B "Dark ink", so it is selected before measuring.
+    await page.selectOption("#writingSheet .wp [data-wp-model-style]", "dark");
+    await page.waitForTimeout(100);
     const modelContrast = await page.evaluate(() => {
       const c = document.querySelector("#writingSheet .wp [data-wp-modelcv]");
       const d = c.getContext("2d").getImageData(0, 0, c.width, c.height).data;
@@ -583,7 +588,7 @@ if (ONLY || !MUTATE) {
     await wp(page, '[data-wp-mode="ayah"]'); await settle(page);
     check(`${tag} on the last Ayah › is disabled; ‹ is not`, (await dis(page, "next")) && !(await dis(page, "prev")));
     await page.keyboard.press("Escape"); await settle(page);
-    const stored = await page.evaluate(() => Object.keys(localStorage).filter((k) => /stroke|writing|popout/i.test(k) && k !== "writingSheetShade" && k !== "writingSheetTools"));
+    const stored = await page.evaluate(() => Object.keys(localStorage).filter((k) => /stroke|writing|popout/i.test(k) && k !== "writingSheetShade" && k !== "writingSheetTools" && k !== "writingModelStyle")); // writingModelStyle: the A/B example choice (PCF MSA J34), a preference like the Letter style
     check(`${tag} nothing is stored (localStorage)`, stored.length === 0, stored.join());
     await ctx.close();
   }
