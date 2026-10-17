@@ -76,7 +76,7 @@ Cause of (a), checked in the build: `build/qr/app/sw.js` is MSA's worker. It has
 - `update: before, qr-app-11.38 holds data opened on use`; `update: Quran Study shows MMSA's "Updated — tap to reload"`; `update: the new version saved qr-app-11.39 while qr-app-11.38 still serves`; `update: qr-app-11.39 already holds the data the reader had opened`; `version bump stopped early: page.click: Timeout`.
 
 **12 upgrade (30)**, all (a) (old site 00.04 is never taken over; one registration with `/app/sw.js?v=00.04` stays active):
-- ×2 (@390, @1400) each, for `asma`, `quran` and `later`: `new site: the reader sees "A new version is ready · Reload"`; `one registration, QR's worker active, nothing waiting`; `the page runs version null (expected 11.38)`; `qr-app-00.04 deleted, qr-app-11.38 in use`; (`quran` and `later` also) `at most one update notice in all (2: mmsa@quranrevival.html ...)`. That is 5+5+4 = 14 per width, less the `asma` notice lines: 28 in total;
+- ×2 (@390, @1400) each, for `asma`, `quran` and `later`: `new site: the reader sees "A new version is ready · Reload"`; `one registration, QR's worker active, nothing waiting`; `the page runs version null (expected 11.38)`; `qr-app-00.04 deleted, qr-app-11.38 in use`; (`quran` and `later` also) `at most one update notice in all (2: mmsa@quranrevival.html ...)`. Per width: `asma` 4, `quran` 5, `later` 5 = 14, so 28 in total;
 - `no-module browser: Asma's worker runs as a classic one ([], version null)`; `no-module browser: offline, the 99 Names`.
 
 **13 links (19)**
@@ -90,7 +90,7 @@ Cause of (a), checked in the build: `build/qr/app/sw.js` is MSA's worker. It has
 ## Other results worth a line
 - No failure is (b) or (c): the version number (`qr-version.js` 11.38), `theme-color`, the Legacy link and MSA's later changes did not trip any assertion. The six site files that differ from frozen QR (README) are not asserted on by these checks.
 - `one-worker-browser.mjs` passes 42/0 against MSA's own worker; it did not need QR's worker.
-- Of the 21 files, 12 checks pass with no failure or are helpers; failures are all (a) except check 13's (d) pages finding and check 2's tooling gap.
+- Checks 3, 4, 5, 7, 9, 10, 15, 16, 17 and 18 pass with no failure (the remaining failures are all (a), except check 13's (d) pages finding and check 2's tooling gap).
 
 ## (d) summary (REAL)
 One: the built QR holds 30 MSA pages (and extra `app/js`, `app/health`, `mushaf/`) that today's QR does not. Fix is in `apps/qr.json` `site` (list QR's 6 pages, scripts and data instead of all of `app`); not changed here, `apps/` is out of this round.
