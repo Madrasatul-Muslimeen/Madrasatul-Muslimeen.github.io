@@ -898,3 +898,4 @@ total). Allocated by the MMSA Architect.
 11.32: every page tab reads MSA (J36). Allocated by the MMSA Architect.
 11.33: audit part 36 colour contrast (J29). Allocated by the MMSA Architect.
 11.34: audit part 37 contrast in opened windows (J29). Allocated by the MMSA Architect.
+11.35: the 📜 Mushaf button on the Read bar (J37). Allocated by the MMSA Architect.

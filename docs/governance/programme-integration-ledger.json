@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "11.34",
+    "version": "11.35",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -4229,8 +4229,20 @@
     {
       "version": "11.34",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Audit part 37: contrast inside opened windows, the Bookmark dialog and Zab panels (PCF MSA J29, PR from round #945).",
+      "integration": {
+        "authorizedOn": "2026-10-17",
+        "integratedOn": "2026-10-17",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "11.35",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Read bar 📜 Mushaf button beside 📖 Meaning, also in full screen (PCF MSA J37 = QR J16), Builder round #946 corrected in review.",
       "integration": {
         "authorizedOn": "2026-10-17",
         "integratedOn": "2026-10-17",
@@ -4239,8 +4251,9 @@
       }
     }
   ],
-  "nextUnallocated": "11.35",
+  "nextUnallocated": "11.36",
   "nextUnallocatedNote": [
+    "v11.35 was allocated to the 📜 Mushaf button on the Read bar (J37), 2026-10-17.",
     "v11.34 was allocated to audit part 37 contrast in opened windows (J29), 2026-10-17.",
     "v11.33 was allocated to audit part 36 colour contrast (J29), 2026-10-17.",
     "v11.32 was allocated to every page tab reads MSA (J36), 2026-10-17.",
