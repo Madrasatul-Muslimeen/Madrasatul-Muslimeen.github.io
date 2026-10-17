@@ -8,7 +8,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { chromium, newContext, openPage } from "./harness.mjs";
+import { chromium, newContext, openPage, BASE } from "./harness.mjs";
 let pass = 0, fail = 0;
 function check(name, ok, detail = "") {
   if (ok && typeof ok.then === "function") throw new Error(`check "${name}" was handed a promise`);
@@ -26,6 +26,12 @@ const MUTATIONS = {
   fieldborder: ["app/monitor.html", "**/monitor.html*", "input[type=\"month\"] { padding: 0.4rem; font-size: 0.92rem; border: 1px solid #8c8c8c;", "input[type=\"month\"] { padding: 0.4rem; font-size: 0.92rem; border: 1px solid #ccc;", "/app/monitor.html"],
   navlabel: ["app/css/shell.css", "**/css/shell.css*", "  color: #666; margin-bottom: 0.2rem;", "  color: #999; margin-bottom: 0.2rem;", "/app/notes.html"],
   navcurrent: ["app/css/shell.css", "**/css/shell.css*", ".nav-current { color: #666;", ".nav-current { color: #888;", "/app/journey-map.html"],
+  // part 37: each restores the pre-fix colour of one rule
+  pillended: ["app/course-offers.html", "**/course-offers.html*", "  .pill-ended, .pill-archived { background: #eee; color: #666; }", "  .pill-ended, .pill-archived { background: #eee; color: #888; }", "/app/course-offers.html"],
+  pillarchived: ["app/curriculum.html", "**/curriculum.html*", "  .pill-archived { background: #eee; color: #666; }", "  .pill-archived { background: #eee; color: #888; }", "/app/curriculum.html"],
+  goldtext: ["app/deen-study.html", "**/deen-study.html*", "cursor: pointer; color: #8a6212; padding: 0.05rem 0.35rem; }", "cursor: pointer; color: #B8862F; padding: 0.05rem 0.35rem; }", "/app/deen-study.html"],
+  goldactive: ["app/deen-study.html", "**/deen-study.html*", ".topic-bookmark-btn.active { background: #8a6212; color: #fff; border-color: #8a6212; }", ".topic-bookmark-btn.active { background: #B8862F; color: #fff; border-color: #B8862F; }", "/app/deen-study.html"],
+  pathbranch: ["app/journey-map.html", "**/journey-map.html*", ".path-branch.system > .path-branch-head .path-branch-name { color: #8a6212; }", ".path-branch.system > .path-branch-head .path-branch-name { color: #B8862F; }", "/app/journey-map.html"],
   hadithfield: ["app/css/hadith.css", "**/css/hadith.css*", "  .hadith-lang-select { min-height: 40px; min-width: 0; padding: 0.3rem 0.5rem; border-radius: 0.35rem; border: 1px solid var(--hadith-field); }", "  .hadith-lang-select { min-height: 40px; min-width: 0; padding: 0.3rem 0.5rem; border-radius: 0.35rem; border: 1px solid var(--hadith-rule); }", "/app/hadith-collections.html"],
 };
 if (MUTATE && !MUTATIONS[MUTATE]) throw new Error(`no such mutation ${MUTATE}`);
@@ -140,7 +146,7 @@ const SCAN_SRC = scan.toString();
 async function open(lang, look, width, height, pagePath, seed) {
   const ctx = await newContext(browser, { appLang: lang === "bn" ? "bn" : null, banner: false, viewport: { width, height }, extraSeedJs: seed });
   await ctx.addInitScript((lk) => { try { localStorage.setItem("mm_card_look", lk); } catch {} }, look);
-  await ctx.route((u) => !["localhost", "www.gstatic.com", "cdn.jsdelivr.net"].includes(u.hostname), (r) => r.abort());
+  await ctx.route((u) => ![new URL(BASE).hostname, "www.gstatic.com", "cdn.jsdelivr.net"].includes(u.hostname), (r) => r.abort());
   await ctx.route("**/js/zab-readiness.js", (r) => r.fulfill({ status: 200, contentType: "text/javascript; charset=utf-8", body: READY_ZAB }));
   if (MUTATE && pagePath.includes(MUTATIONS[MUTATE][4])) {
     const [file, glob, from, to] = MUTATIONS[MUTATE];
@@ -181,9 +187,9 @@ const LOOKS = ["night", "light"].filter((l) => !KONLY || l === KONLY);
 
 // Judge one scan: returns the failing text rows and control rows (image-backed text is reported, not failed).
 // Each nav menu is measured open, one at a time (the nav closes the others), and the results are merged.
-async function measure(page) {
+async function measure(page, opts = {}) {
   const s = await page.evaluate(`(${SCAN_SRC})()`);
-  const n = await page.evaluate(() => document.querySelectorAll(".nav-cat").length);
+  const n = opts.nav === false ? 0 : await page.evaluate(() => document.querySelectorAll(".nav-cat").length);
   for (let i = 0; i < n; i++) {
     await page.evaluate((k) => { document.querySelectorAll(".nav-cat").forEach((c, j) => { c.open = j === k; }); }, i);
     await page.waitForTimeout(60);
@@ -193,7 +199,7 @@ async function measure(page) {
     o.ctl.forEach((x) => { if (!haveC.has(x.d + x.s)) s.ctl.push(x); });
     for (const k of Object.keys(o.skipped)) s.skipped[k] = Math.max(s.skipped[k], o.skipped[k]);
   }
-  await page.evaluate(() => document.querySelectorAll(".nav-cat").forEach((c) => { c.open = false; }));
+  if (opts.nav !== false) await page.evaluate(() => document.querySelectorAll(".nav-cat").forEach((c) => { c.open = false; }));
   const badText = s.text.filter((x) => !x.ok && !x.image);
   const imgText = s.text.filter((x) => !x.ok && x.image);
   const badCtl = s.ctl.filter((x) => !x.ok);
@@ -202,8 +208,85 @@ async function measure(page) {
 const FOUND = new Map();
 const fmtText = (x) => `${x.d} "${x.s}" ${x.fg} on ${x.bg} = ${x.r}:1 (needs ${x.need})`;
 const fmtCtl = (x) => `${x.d} "${x.s}" border ${x.border} (${x.bR}:1) fill ${x.fill} (${x.fR}:1) beside ${x.around}`;
-async function judgePage(t, page) {
-  const m = await measure(page);
+// Part 37: text over an image or gradient, judged on the real pixels behind it (the scan above can only report these).
+// Marks up to `cap` visible text elements whose background chain holds an image/gradient, hides each one's text in turn,
+// screenshots the text box, and compares the text colour with the DARKEST and the LIGHTEST pixel behind it. The worse one is judged.
+function markImageText(cap) {
+  const parse = (c) => { const m = /rgba?\(([^)]+)\)/.exec(c || ""); if (!m) return null; const p = m[1].split(/[ ,\/]+/).filter(Boolean).map(Number); return { r: p[0], g: p[1], b: p[2], a: p.length > 3 ? p[3] : 1 }; };
+  document.querySelectorAll("[data-p37i]").forEach((e) => e.removeAttribute("data-p37i"));
+  const out = []; const seen = new Set();
+  const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  for (let t = w.nextNode(); t && out.length < cap; t = w.nextNode()) {
+    if (!t.nodeValue.trim()) continue;
+    const el = t.parentElement;
+    if (!el || seen.has(el) || ["SCRIPT", "STYLE", "NOSCRIPT", "OPTION", "TEMPLATE"].includes(el.tagName)) continue;
+    if (el.checkVisibility && !el.checkVisibility({ checkVisibilityCSS: true })) continue;
+    let image = false;
+    for (let n = el; n && n.nodeType === 1; n = n.parentElement) {
+      const s = getComputedStyle(n);
+      if (s.backgroundImage && s.backgroundImage !== "none") { image = true; break; }
+      const c = parse(s.backgroundColor); if (c && c.a >= 1) break;
+    }
+    if (!image) continue;
+    const range = document.createRange(); range.selectNodeContents(t);
+    const rs = [...range.getClientRects()].filter((r) => r.width > 1 && r.height > 1);
+    if (!rs.length) continue;
+    seen.add(el);
+    el.setAttribute("data-p37i", String(out.length));
+    out.push({ i: out.length, d: el.tagName.toLowerCase() + (el.id ? "#" + el.id : "") + (typeof el.className === "string" && el.className ? "." + el.className.trim().split(/\s+/)[0] : ""), s: t.nodeValue.trim().slice(0, 24) });
+  }
+  return out;
+}
+// Runs in the page with a PNG data URL: returns the darkest and the lightest pixel as { r, g, b }.
+async function extremes(url) {
+  const img = new Image(); img.src = url; await img.decode();
+  const c = document.createElement("canvas"); c.width = img.width; c.height = img.height;
+  const g = c.getContext("2d"); g.drawImage(img, 0, 0);
+  const d = g.getImageData(0, 0, c.width, c.height).data;
+  const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+  let lo = null, hi = null, loL = 9, hiL = -1;
+  for (let k = 0; k < d.length; k += 4) { const L = 0.2126 * f(d[k]) + 0.7152 * f(d[k + 1]) + 0.0722 * f(d[k + 2]); if (L < loL) { loL = L; lo = { r: d[k], g: d[k + 1], b: d[k + 2] }; } if (L > hiL) { hiL = L; hi = { r: d[k], g: d[k + 1], b: d[k + 2] }; } }
+  return { lo, hi };
+}
+const lumOf = (c) => { const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }; return 0.2126 * f(c.r) + 0.7152 * f(c.g) + 0.0722 * f(c.b); };
+const ratioOf = (a, b) => { const x = lumOf(a), y = lumOf(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+// Judge the marked element `sel`: { fg, lo, hi, worst, need, ok }.
+async function pixelJudge(page, sel) {
+  const info = await page.evaluate((s) => {
+    const el = document.querySelector(s); if (!el) return null;
+    el.scrollIntoView({ block: "center" });
+    const t = [...el.childNodes].find((n) => n.nodeType === 3 && n.nodeValue.trim()) || el.firstChild;
+    const range = document.createRange(); range.selectNodeContents(t || el);
+    const rs = [...range.getClientRects()].filter((r) => r.width > 1 && r.height > 1);
+    if (!rs.length) return null;
+    const x0 = Math.min(...rs.map((r) => r.left)), y0 = Math.min(...rs.map((r) => r.top)), x1 = Math.max(...rs.map((r) => r.right)), y1 = Math.max(...rs.map((r) => r.bottom));
+    const cs = getComputedStyle(el), m = /rgba?\(([^)]+)\)/.exec(cs.color).slice(1)[0].split(/[ ,\/]+/).map(Number);
+    const size = parseFloat(cs.fontSize), bold = parseInt(cs.fontWeight, 10) >= 700;
+    const st = document.createElement("style"); st.id = "p37hide"; st.textContent = `${s}, ${s} * { color: transparent !important; text-shadow: none !important; -webkit-text-fill-color: transparent !important; }`;
+    document.head.appendChild(st);
+    return { clip: { x: Math.max(0, x0), y: Math.max(0, y0), width: Math.min(innerWidth, x1) - Math.max(0, x0), height: Math.min(innerHeight, y1) - Math.max(0, y0) }, fg: { r: m[0], g: m[1], b: m[2] }, need: size >= 24 || (bold && size >= 18.66) ? 3 : 4.5 };
+  }, sel);
+  if (!info || info.clip.width < 1 || info.clip.height < 1) return null;
+  const png = await page.screenshot({ clip: info.clip });
+  await page.evaluate(() => document.getElementById("p37hide")?.remove());
+  const { lo, hi } = await page.evaluate(`(async () => { const ex = ${extremes.toString()}; return ex(${JSON.stringify("data:image/png;base64," + png.toString("base64"))}); })()`);
+  const rLo = ratioOf(info.fg, lo), rHi = ratioOf(info.fg, hi), worst = Math.min(rLo, rHi);
+  return { fg: info.fg, lo, hi, worst: Math.round(worst * 100) / 100, need: info.need, ok: worst >= info.need - 0.005 };
+}
+const rgbHex = (c) => "#" + [c.r, c.g, c.b].map((v) => Math.round(v).toString(16).padStart(2, "0")).join("");
+async function judgeImageText(t, page, cap = 10) {
+  const els = await page.evaluate(`(${markImageText.toString()})(${cap})`);
+  const bad = [];
+  for (const e of els) {
+    const j = await pixelJudge(page, `[data-p37i="${e.i}"]`);
+    if (j && !j.ok) bad.push(`${e.d} "${e.s}" ${rgbHex(j.fg)} vs darkest ${rgbHex(j.lo)} / lightest ${rgbHex(j.hi)} = ${j.worst}:1 (needs ${j.need})`);
+  }
+  check(`${t}: text over an image or gradient (${els.length} found) meets its ratio at the worst pixel behind it`, bad.length === 0, bad.slice(0, 6).join(" | "));
+  for (const b of bad) FOUND.set(`${page.url().replace(/^.*\/app\//, "").replace(/\?.*/, "")}  IMG  ${b.split(" ")[0]}`, b);
+}
+async function judgePage(t, page, opts) {
+  const m = await measure(page, opts && opts.nav === false ? opts : {});
+  if (!(opts && opts.noImage)) await judgeImageText(t, page);
   check(`${t}: POSITIVE CONTROL the page has visible text`, m.s.text.length >= 5, String(m.s.text.length));
   check(`${t}: every text node meets 4.5:1 (3:1 large) over its real background`, m.badText.length === 0, m.badText.slice(0, 8).map(fmtText).join(" | "));
   check(`${t}: every enabled control that is marked out by a border or fill is 3:1 beside its surroundings`, m.badCtl.length === 0, m.badCtl.slice(0, 8).map(fmtCtl).join(" | "));
@@ -274,6 +357,150 @@ for (const lang of LANGS) for (const look of LOOKS) {
     check(`${t}: POSITIVE CONTROL the Zab ${sel} is on screen`, await page.evaluate((s) => { const e = document.querySelector(s); return !!e && e.getBoundingClientRect().width > 0; }, sel));
     await judgePage(`${t} Zab`, page);
   });
+}
+
+// ---------------------------------------------------------------- Part 37: opened windows and dialogs, pills, gold text, text over images
+const P37_SEED = `(function(){window.__stubApplyBatches=true;window.__stubRecordTxData=true;window.__DATA=DATA;
+var own={tenantId:"t1",ownerPersonId:"p1",ownerUid:"test-uid",schemaVersion:1};
+function ts(d){return{toDate:function(){return new Date(d||"2026-09-01T10:00:00Z")},toMillis:function(){return new Date(d||"2026-09-01T10:00:00Z").getTime()}}}
+DATA.noteFolders=[];DATA.notes=[];DATA.notePlacements=[];DATA.noteRevisions=[];DATA.noteSections=[];DATA.noteTags=[];DATA.noteTagLinks=[];DATA.noteSources=[];DATA.noteLinks=[];
+["fA","fB"].forEach(function(id,i){DATA.noteFolders.push(Object.assign({_id:"t1__"+id,folderId:id,name:"Folder "+(i+1),parentFolderId:null,semanticRole:"user",order:i,status:"active",updatedAt:ts()},own))});
+function hx(l){return l.slice(1).repeat(32)}
+function N(l,title,day,extra){var id=hx(l);DATA.notes.push(Object.assign({_id:"t1__"+id,noteId:id,title:title,bodyHtml:"<p>Body "+l+"</p>",currentRevisionId:"rev-"+id,status:"active",visibility:"private",createdAt:ts("2026-08-0"+day+"T09:00:00Z"),updatedAt:ts("2026-09-0"+day+"T10:00:00Z")},own,extra||{}));
+DATA.noteSources.push(Object.assign({_id:"t1__s-"+id,sourceLinkId:"s-"+id,noteId:id,sourceKey:"ayah:2:255",sourceKind:"quran-unit",relationshipKind:"origin",approachId:null,provenanceKind:"study-note",status:"active",createdAt:ts(),updatedAt:ts()},own))}
+function P(id,l,folder,o){DATA.notePlacements.push(Object.assign({_id:"t1__"+id,placementId:id,noteId:hx(l),folderId:folder,order:o,status:"active"},own))}
+N("n1","First note",1,{favourite:true});N("n3","Third note",3);N("n4","Fourth note",4);
+P("p1","n1","fA",0);P("p3","n3","fB",0);P("p4","n4","fB",1);
+})();`;
+const P37_NOTES = "/app/notes.html?unit=" + encodeURIComponent("ayah:2:255") + "&label=Test";
+const opened = (page, sel) => ev(page, (s) => [...document.querySelectorAll(s)].some((e) => { const b = e.getBoundingClientRect(); const c = getComputedStyle(e); return b.width > 0 && b.height > 0 && c.visibility !== "hidden" && c.display !== "none" && !e.closest("[hidden]"); }), sel);
+const settle = (page, ms = 350) => page.waitForTimeout(ms);
+// Seeds a fixture of real classes into the page, so the page's OWN stylesheet colours it; returns the scan rows by element id.
+async function fixtureRows(page, html, hostSel) {
+  await ev(page, ([h, host]) => { const w = document.createElement("div"); w.id = "p37fx"; w.innerHTML = h; (document.querySelector(host) || document.body).appendChild(w); w.scrollIntoView({ block: "center" }); }, [html, hostSel || "main"]);
+  const s = await page.evaluate(`(${SCAN_SRC})()`);
+  return { text: (id) => s.text.find((x) => x.d.includes("#" + id)), ctl: (id) => s.ctl.find((x) => x.d.includes("#" + id)) };
+}
+
+// Text over an image or gradient: the pixel-read detector flags what the colour scan cannot see.
+for (const look of LOOKS) await flow("p37-pixel-control", "en", look, 390, 800, "/app/about.html", "", async (t, page) => {
+  await ev(page, () => {
+    const d = document.createElement("div"); d.id = "pxRoot";
+    d.style.cssText = "position:fixed;left:0;top:0;width:100vw;height:100vh;z-index:99998;background:#fff";
+    d.innerHTML =
+      '<div style="background:linear-gradient(to right,#000,#fff);margin:6px"><p id="px1" style="color:#fff;margin:0;padding:8px;font-size:20px">white over black-to-white</p></div>' +
+      '<div style="background:linear-gradient(#000,#222);margin:6px"><p id="px2" style="color:#fff;margin:0;padding:8px;font-size:20px">white over near black</p></div>' +
+      '<div style="background:linear-gradient(#fff,#ddd);margin:6px"><p id="px3" style="color:#000;margin:0;padding:8px;font-size:20px">black over near white</p></div>' +
+      '<div style="background:linear-gradient(to right,#fff 50%,#222 50%);margin:6px"><p id="px4" style="color:#777;margin:0;padding:8px;font-size:20px">mid grey over half white half black</p></div>';
+    document.body.appendChild(d);
+  });
+  const j1 = await pixelJudge(page, "#px1"), j2 = await pixelJudge(page, "#px2"), j3 = await pixelJudge(page, "#px3"), j4 = await pixelJudge(page, "#px4");
+  check(`${t}: POSITIVE CONTROL white text over a black-to-white gradient is flagged (the lighter pixels behind the text box give under 3:1)`, j1 && !j1.ok && j1.worst < 3, JSON.stringify(j1));
+  check(`${t}: POSITIVE CONTROL white text over near-black passes`, j2 && j2.ok, JSON.stringify(j2));
+  check(`${t}: POSITIVE CONTROL black text over near-white passes`, j3 && j3.ok, JSON.stringify(j3));
+  check(`${t}: POSITIVE CONTROL grey text over a half-white half-black image is flagged by the worse side`, j4 && !j4.ok, JSON.stringify(j4));
+  const marked = await page.evaluate(`(${markImageText.toString()})(10)`);
+  check(`${t}: POSITIVE CONTROL the marker finds the four seeded gradient texts`, marked.length === 4, JSON.stringify(marked));
+});
+
+// Pills, gold text, the path-branch name: real classes injected into the real pages.
+for (const lang of LANGS) for (const look of LOOKS) for (const width of WIDTHS) {
+  const H = width < 600 ? 844 : 800;
+  for (const [pg, cls] of [["course-offers", ["pill-ended", "pill-archived"]], ["curriculum", ["pill-archived"]]]) {
+    await flow(`p37-pill-${pg}`, lang, look, width, H, `/app/${pg}.html`, "", async (t, page) => {
+      const fx = await fixtureRows(page, cls.map((c, i) => `<p><span id="pill${i}" class="pill ${c}">${c}</span></p>`).join(""), "main, .container, body");
+      cls.forEach((c, i) => { const r = fx.text("pill" + i); check(`${t}: .${c} meets 4.5:1`, !!r && r.ok, JSON.stringify(r)); });
+    });
+  }
+  for (const pg of ["deen-study", "hadith-study"]) {
+    await flow(`p37-gold-${pg}`, lang, look, width, H, `/app/${pg}.html`, "", async (t, page) => {
+      const fx = await fixtureRows(page, '<h2>Topic <button type="button" id="gold0" class="topic-bookmark-btn">★</button> <button type="button" id="gold1" class="topic-bookmark-btn active">★</button></h2>', "main, .container, body");
+      const a = fx.text("gold0"), b = fx.text("gold1");
+      check(`${t}: .topic-bookmark-btn gold text meets 3:1 (large) or 4.5:1`, !!a && a.ok, JSON.stringify(a));
+      check(`${t}: .topic-bookmark-btn.active white text on its gold fill meets 4.5:1`, !!b && b.ok, JSON.stringify(b));
+    });
+  }
+  await flow("p37-path-branch", lang, look, width, H, "/app/journey-map.html", P37_SEED, async (t, page) => {
+    await page.waitForSelector(".folder-row[data-folder-id=fA]", { timeout: 15000 });
+    const fx = await fixtureRows(page, '<div class="path-branch system"><div class="path-branch-head"><span id="pb0" class="path-branch-name">System branch</span></div></div>', ".folder-row");
+    const r = fx.text("pb0");
+    check(`${t}: .path-branch.system .path-branch-name meets 4.5:1`, !!r && r.ok, JSON.stringify(r));
+  });
+}
+
+// Opened windows and dialogs.
+for (const lang of LANGS) for (const look of LOOKS) {
+  for (const width of [390, 1280].filter((w) => !WONLY || w === WONLY)) {
+    const H = width < 600 ? 844 : 800;
+    await flow("p37-notewin", lang, look, width, H, P37_NOTES, P37_SEED, async (t, page) => {
+      await page.waitForSelector(".note-card[data-note-id]", { timeout: 15000 });
+      const card = (l) => `.note-card[data-note-id="${l.slice(1).repeat(32)}"] [data-note-window]`;
+      await ev(page, (s) => document.querySelector(s).click(), card("n1")); await settle(page, 700);
+      check(`${t}: POSITIVE CONTROL a Note window is open`, await opened(page, ".note-win"));
+      await judgePage(`${t} Note window title bar`, page, { nav: false });
+      await ev(page, () => document.querySelector(".note-win [data-pane-menu-btn]")?.click()); await settle(page, 400);
+      check(`${t}: POSITIVE CONTROL the window ⋯ menu is open`, await opened(page, ".note-win [data-pane-menu].open"));
+      await judgePage(`${t} Note window ⋯ menu`, page, { nav: false });
+      await page.keyboard.press("Escape"); await settle(page, 300);
+      for (const l of ["n3", "n4"]) { await ev(page, (s) => document.querySelector(s)?.click(), card(l)); await settle(page, 500); }
+      check(`${t}: POSITIVE CONTROL three windows and a switcher`, (await ev(page, () => document.querySelectorAll("[data-win-switch]").length)) === 3);
+      await judgePage(`${t} window switcher`, page, { nav: false });
+    });
+    await flow("p37-bmpop", lang, look, width, H, P37_NOTES, P37_SEED, async (t, page) => {
+      await page.waitForSelector(".nav-cat-bookmark > summary", { timeout: 15000 });
+      await ev(page, async () => { const m = await import("./js/bookmark-popover.js"); m.openBookmarkNamePopover({ defaultName: "Al-Baqarah 255", folders: [{ id: "f1", name: "Folder one", parentId: null }, { id: "f2", name: "Child", parentId: "f1" }], people: [], roster: [{ id: "p1", name: "Me" }, { id: "p2", name: "Other" }], selectedPersonId: "p1", units: [{ id: "ayah", label: "This āyah", defaultName: "a" }, { id: "range", label: "A range", defaultName: "b", ayahCount: 286, from: 1, to: 3 }] }); await new Promise((r) => setTimeout(r, 300)); });
+      check(`${t}: POSITIVE CONTROL the bookmark dialog is open`, await opened(page, ".bm-popover [data-bm-pop-save]"));
+      await judgePage(`${t} Bookmark dialog`, page, { nav: false });
+      await ev(page, () => { const n = document.querySelector("[data-bm-pop-newfolder-row]"); if (n) n.style.display = ""; const s = document.querySelector("[data-bm-pop-folder]"); if (s) { s.value = s.options[s.options.length - 1].value; s.dispatchEvent(new Event("change", { bubbles: true })); } });
+      await settle(page, 250);
+      await judgePage(`${t} Bookmark dialog, new-folder field`, page, { nav: false, noImage: true });
+      await page.keyboard.press("Escape"); await settle(page, 300);
+      await ev(page, async () => { const m = await import("./js/bookmark-popover.js"); m.openBookmarkExistsChoice(); await new Promise((r) => setTimeout(r, 300)); });
+      check(`${t}: POSITIVE CONTROL the Already-bookmarked dialog is open`, await opened(page, "[data-bm-exists-choice]"));
+      await judgePage(`${t} Already-bookmarked dialog`, page, { nav: false });
+    });
+    await flow("p37-journey", lang, look, width, H, "/app/journey-map.html", P37_SEED, async (t, page) => {
+      await page.waitForSelector(".folder-row[data-folder-id=fA]", { timeout: 15000 });
+      await ev(page, () => document.querySelector('.folder-row[data-folder-id="fA"] .folder-menu-btn').click()); await settle(page, 300);
+      await ev(page, () => document.querySelector('.folder-row[data-folder-id="fA"] [data-folder-move]').click()); await settle(page, 500);
+      check(`${t}: POSITIVE CONTROL the folder picker is open`, await opened(page, "#folderPicker .folder-picker"));
+      await judgePage(`${t} folder picker`, page, { nav: false });
+      await page.keyboard.press("Escape"); await settle(page, 300);
+      await ev(page, () => document.querySelector('.folder-row[data-folder-id="fA"]')?.click()); await settle(page, 600);
+      const has = await ev(page, () => !!document.querySelector("[data-note-window]"));
+      check(`${t}: POSITIVE CONTROL a note can be opened in a window from the journey map`, has);
+      if (has) {
+        await ev(page, () => document.querySelector("[data-note-window]").click()); await settle(page, 800);
+        check(`${t}: POSITIVE CONTROL the Note window is open on the journey map`, await opened(page, ".note-win"));
+        await judgePage(`${t} Note window (journey map)`, page, { nav: false });
+        await ev(page, () => document.querySelector(".note-win [data-pane-menu-btn]")?.click()); await settle(page, 400);
+        await judgePage(`${t} Note window ⋯ menu (journey map)`, page, { nav: false });
+      }
+    });
+  }
+  for (const width of [320, 1280].filter((w) => !WONLY || w === WONLY)) {
+    await flow("p37-zabpanels", lang, look, width, width < 600 ? 844 : 800, "/app/journey-map.html", P37_SEED, async (t, page) => {
+      const opener = width >= 768 ? "#zabBar [data-zab-open]" : "#zabCorner";
+      await page.waitForSelector(opener, { timeout: 10000 });
+      await page.click(opener); await page.waitForSelector("#zabPanel:not([hidden]) [data-zab-pocket]", { timeout: 10000 });
+      await settle(page, 400);
+      await judgePage(`${t} Zab pocket list`, page, { nav: false });
+      await page.click('#zabPanel [data-zab-pocket="pk-tasks"]'); await page.waitForSelector("#zabPanel [data-zab-new-item]", { timeout: 8000 });
+      await page.fill("#zabPanel [data-zab-new-item]", "Audit task"); await page.press("#zabPanel [data-zab-new-item]", "Enter");
+      await page.waitForSelector('#zabPanel .zab-text:text-is("Audit task")', { timeout: 8000 });
+      await judgePage(`${t} Zab a pocket with a task`, page, { nav: false });
+      await page.click("#zabPanel [data-zab-steps]"); await settle(page, 300);
+      await judgePage(`${t} Zab task steps`, page, { nav: false });
+      await ev(page, () => document.querySelector("#zabPanel [data-zab-iedit]")?.click()); await settle(page, 300);
+      check(`${t}: POSITIVE CONTROL the Zab task editor is open`, await opened(page, "#zabPanel [data-zab-item-text]"));
+      await judgePage(`${t} Zab task editor`, page, { nav: false });
+      await ev(page, () => document.querySelector("#zabPanel [data-zab-cancel-edit]")?.click()); await settle(page, 200);
+      await ev(page, () => document.querySelector('#zabPanel [data-zab-nav="list"]')?.click()); await settle(page, 300);
+      await ev(page, () => document.querySelector("#zabPanel [data-zab-pedit]")?.click()); await settle(page, 300);
+      check(`${t}: POSITIVE CONTROL the Zab pocket editor is open`, await opened(page, "#zabPanel [data-zab-f='name']"));
+      await judgePage(`${t} Zab pocket editor`, page, { nav: false });
+    });
+  }
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);
