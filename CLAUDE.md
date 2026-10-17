@@ -128,6 +128,21 @@ Read this first, every session. It is the standing brief.
 > - A Hadith tie to an Asma Name is a LINK to QR's Asma; a shared list lives in one data file in its owner's home.
 > - MMSA's audit rounds cover Hadith, Dua, Seerah and the shared tools.
 
+> ## ⇢ ONE SOURCE, MANY APPS (PCA J110, 18 Oct 2026) — READ IF YOU TOUCH TITLES, `sw.js`, THE HIDDEN MODULES OR QR
+>
+> This repository builds every app. `app/apps/<id>.json` is an app's settings, and `node tools/apps/build-app.mjs <id>`
+> makes its site in `build/<id>/` (git-ignored). **`app/apps/msa.json` is today's MSA**: building `msa` gives back
+> the source byte for byte, and `tools/apps/apps-build-check.mjs` (in the `verify` workflow) fails when the source
+> stops saying what msa.json says. So **a change to a page title prefix, the app's name, a cache name in `app/sw.js`
+> or `hidden-modules.js` must update msa.json (or the rule's count in `build-app.mjs`) in the same commit.**
+> - **QR is built from here.** QR's own files are in `apps/qr/site/`; its changes to shared files are counted edits
+>   in `apps/qr/edits.json`; it keeps QR's own worker (`apps/qr/after-build.mjs` fills it in). QR's 20 checks run
+>   against the build: `bash tools/apps/qr-verify/run-all.sh`. Guide: `tools/apps/README.md`.
+> - **An edit whose text no longer matches stops QR's build.** When an MSA change breaks one, re-anchor it in
+>   `apps/qr/edits.json`; never delete it to get green.
+> - **Version numbers:** frozen QR is v11.38, so **MSA's next release is v11.39** (QR's worker refuses a number it is
+>   already running). The live QR is still the frozen copy until step 5 (Owner ticks in PMS J110).
+
 > ## ⇢ HADITH STUDY is being built on `feature/hadith-study` — READ IF YOU TOUCH HADITH
 >
 > **This branch's final application version is `v08.29`, and it is now MERGED TO `main`.** The

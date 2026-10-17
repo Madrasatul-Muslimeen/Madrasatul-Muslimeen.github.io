@@ -4275,8 +4275,9 @@
       }
     }
   ],
-  "nextUnallocated": "11.38",
+  "nextUnallocated": "11.39",
   "nextUnallocatedNote": [
+    "v11.38 is SKIPPED in MSA: frozen QR (quranrevival.github.io) already released v11.38, and the QR built from MSA shares MSA's number (PCA J110). A built QR at 11.38 would reuse the frozen QR's qr-app-11.38 offline cache and mix old and new files on phones. Set by the MSA Architect, 2026-10-18.",
     "v11.37 was allocated to audit part 39 opened windows on short screens (J29), 2026-10-17.",
     "v11.36 was allocated to audit part 38 landscape, zoom, reduced motion (J29), 2026-10-17.",
     "v11.35 was allocated to the 📜 Mushaf button on the Read bar (J37), 2026-10-17.",
