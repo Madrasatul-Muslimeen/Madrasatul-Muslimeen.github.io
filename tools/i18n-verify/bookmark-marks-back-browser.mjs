@@ -124,7 +124,10 @@ for (const lang of ["en", "bn"]) for (const width of [320, 390, 768, 1280]) {
   // Previewing as:…"): (1) a page's name is its heading's own words, never its version, buttons or preview note; (2) a
   // sheet that fills the screen (the Word Card) is not a bottom bar -- the chip steps aside and comes back when it closes.
   const label = await P.evaluate(async () => (await import("/app/js/bookmark-nav.js")).pageLabelOf(document));
-  check(`${tag}: the Qur'an page's name is just its heading's words ("QuranRevival")`, label === "QuranRevival", JSON.stringify(label));
+  // Updated 17 Oct 2026: the Owner renamed the page "Madrasah Study App (MSA)" (PCF inbox 9bnl4tkit8wmvk). On a phone the
+  // heading shows "MSA", drawn by CSS, so the label stays the full name at every width.
+  const wantName = tag.startsWith("bn") ? "মাদ্রাসা স্টাডি অ্যাপ (MSA)" : "Madrasah Study App (MSA)";
+  check(`${tag}: the Qur'an page's name is just its heading's words ("${wantName}")`, label === wantName, JSON.stringify(label));
   // UPDATED IN PLACE 10 Oct 2026 (issue #750): the bookmark now opens the Read view itself (with the Notes pane), and the
   // Read tab is a TOGGLE -- the old unconditional click sent the reader back to the landing view (measured: body gains
   // "landing-view", the chip leaves the dock for <body>, and the floating chip then covered "Options" in the Study menu).
