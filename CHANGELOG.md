@@ -21791,3 +21791,15 @@ Found by audit part 33's review (v11.26) and filed as J29 j29p33. Built and revi
 - New suite `tools/i18n-verify/writing-blank-model-browser.mjs`: 171/0 at five widths, en and bn, with a positive control for the pixel reader; mutations `old-size`, `ignore-style`, `b-hollow`, `no-remember`, `long-labels` each fail it.
 - Other suites: writing-sheet-popout 342/0, writing-letters 266/0, writing-sheet 214/0, -fatiha-count 30/0, -record 28/0, -unit-toolbar 54/0, wheel-writing-slice 25/0, qr-stage1-hidden 110/0, phone-width-overflow 217/0, load-speed-check 66/0, behaviour 971/0.
 - Shared with QR (one home rule, PCA J71): QR copies `writing-popout.js`, `writing-sheet.js` and the two bn keys; a change notice with the exact lines was sent through the PCA.
+
+## v11.32 — 17 Oct 2026 — every page's tab reads "MSA — …" (PCF MSA J36)
+
+The Owner answered J36's two optional choices at 8:20 pm Sydney: *"1. Yes. 2. Keep it now"*. So every other page's tab follows the main page's v11.28 rename, and the tagline "Reviving the Quran, abandoned." stays as it is.
+
+- 31 `app/*.html` titles: "QuranRevival — X" → "MSA — X". `app/index.html` (the redirect page) reads "Madrasah Study App (MSA)". `quranrevival-render-test.html` is unchanged; page headings are unchanged.
+- `app/js/i18n/bn.js`: 26 keys renamed to the new titles, the Bangla values to "MSA — …". "QuranRevival — Phase 4/5" is kept for the legacy title.
+- `app/js/bookmark-nav.js` `pageLabel()`: strips `^(?:QuranRevival|MSA)\s*[—-]\s*`, so a new bookmark is still named "Hadith", not "MSA — Hadith". A page cached with the old title still works.
+- **A defect caught before it shipped:** the first edit put a `//` comment in the middle of that line, which commented out the rest of the expression and stopped every page's scripts (the Bangla sweeps and the audit flows failed on "Unexpected token return"). It was moved above the line, every `app/js` file was syntax-checked, and every failing suite was re-run green.
+- Checks updated in place (old titles pinned): `behaviour.mjs` 17, 21 and the Asma title check; `dawah-screen.mjs` and `journey-map-screen.mjs` (their Bangla-title keys).
+- Tests: behaviour 971/0, dawah-screen 23/0, journey-map-screen 47/0, bookmark-marks-back 342/0, audit-part17 868/0, audit-part25 112/0, bangla-sweep core 112/0 / other pages 224/0 / newer screens 23/0, phone-width-overflow 217/0, qr-stage1-hidden 110/0, load-speed-check 66/0.
+- Shared with QR: `bookmark-nav.js` (one line); a change notice was sent through the PCA.

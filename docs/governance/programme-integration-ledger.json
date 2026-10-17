@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "11.31",
+    "version": "11.32",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -4193,8 +4193,20 @@
     {
       "version": "11.31",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Blank lines: the model above the paper looks like Trace over, with an As traced / Dark ink choice (PCF MSA J34, PR #941).",
+      "integration": {
+        "authorizedOn": "2026-10-17",
+        "integratedOn": "2026-10-17",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "11.32",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Every other page's tab reads MSA — … (PCF MSA J36, the Owner's answer).",
       "integration": {
         "authorizedOn": "2026-10-17",
         "integratedOn": "2026-10-17",
@@ -4203,8 +4215,9 @@
       }
     }
   ],
-  "nextUnallocated": "11.32",
+  "nextUnallocated": "11.33",
   "nextUnallocatedNote": [
+    "v11.32 was allocated to every page tab reads MSA (J36), 2026-10-17.",
     "v11.31 was allocated to Blank lines example like Trace over, light or dark (J34), 2026-10-17.",
     "v11.30 was allocated to letter writing practice in the writing window (PCF MSA J35 = QR J12), 2026-10-17.",
     "v11.29 was allocated to a focused button at the edge of the People and Catalogue tables comes fully into view at 320px (PCF MSA J29 j29p33), 2026-10-17.",
