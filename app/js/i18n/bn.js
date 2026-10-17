@@ -3788,6 +3788,16 @@ export const BN = {
   // 6 Oct 2026 (W2) -- pop out a word or an Ayah on the Writing sheet.
   "Tap a word to pop it out": "আলাদা করে দেখতে একটি শব্দে ট্যাপ করুন",
   "Word": "শব্দ",
+  // 17 Oct 2026 (PCF MSA J35) -- Letters practice in the writing window.
+  "Letters": "হরফ",
+  "Alone": "একা",
+  "Beginning": "শুরুতে",
+  "Middle": "মাঝে",
+  "Ending": "শেষে",
+  "does not join the next letter": "পরের হরফের সাথে মেলে না",
+  "joins only the letter before it": "শুধু আগের হরফের সাথে মেলে",
+  "Previous letter": "আগের হরফ",
+  "Next letter": "পরের হরফ",
   "Smaller letters": "অক্ষর ছোট করুন",
   "Bigger letters": "অক্ষর বড় করুন",
   "Bigger window": "উইন্ডো বড় করুন",
