@@ -54,7 +54,10 @@ const CSS = `
 .wp-bar{flex:0 0 auto;display:flex;flex-direction:column;gap:4px;padding:6px 4px;background:#1F3A6E;color:#fff}
 .wp-row{display:flex;gap:3px;align-items:center;min-width:0;flex-wrap:nowrap}
 @media (max-width:480px){.wp-bar .wp-tx{display:none}.wp-bar button[data-wp-mode]{padding-left:0.25rem;padding-right:0.25rem}}
-@media (max-width:380px){.wp-bar{flex-direction:row;flex-wrap:wrap;gap:3px}.wp-row{display:contents}.wp-bar .wp-sp{display:none}}
+.wp-bar .wp-br{display:none}
+@media (max-width:380px){.wp-bar{flex-direction:row;flex-wrap:wrap;gap:3px}.wp-row{display:contents}.wp-bar .wp-sp{display:none}
+  /* Word / Ayah / Letters take one tidy line of their own (PCF MSA J35): the three no longer leave A+ stranded on a line by itself */
+  .wp-bar .wp-br{display:block;flex:0 0 100%;height:0}.wp-bar button[data-wp-mode]{flex:1 1 0}}
 .wp-bar button{min-height:40px;min-width:40px;padding:0.3rem 0.35rem;border:1px solid rgba(255,255,255,0.35);border-radius:8px;background:rgba(255,255,255,0.12);color:#fff;font:inherit;font-size:0.95rem;line-height:1.1;white-space:nowrap;flex:0 0 auto;cursor:pointer}
 .wp-bar button:disabled{opacity:0.4;cursor:default}
 .wp-bar button[aria-pressed="true"]{background:#B8862F;border-color:#B8862F}
@@ -94,6 +97,7 @@ export function openWordPopout({ host, word, ayahWords, unitWords, ensureFont, p
           <button type="button" data-wp-mode="word" aria-pressed="false">${t("Word")}</button>
           <button type="button" data-wp-mode="ayah" aria-pressed="false">${t("Ayah")}</button>
           <button type="button" data-wp-mode="letters" aria-pressed="false">${t("Letters")}</button>
+          <span class="wp-br" aria-hidden="true"></span>
           <button type="button" data-wp="prev" aria-label="${t("Previous word")}" title="${t("Previous word")}">‹</button>
           <button type="button" data-wp="next" aria-label="${t("Next word")}" title="${t("Next word")}">›</button>
           <button type="button" data-wp="smaller" aria-label="${t("Smaller letters")}" title="${t("Smaller letters")}">A−</button>

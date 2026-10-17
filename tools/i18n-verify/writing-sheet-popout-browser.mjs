@@ -290,11 +290,11 @@ for (const [width, height] of ONLY ? [] : [[390, 800], [820, 1000], [1280, 800]]
   if (lang === "bn") {
     const labels = await page.evaluate(() => [...document.querySelectorAll("#writingSheet .wp-bar [aria-label]")].map((e) => e.getAttribute("aria-label")));
     const modes = await page.evaluate(() => [...document.querySelectorAll("#writingSheet .wp [data-wp-mode]")].map((e) => e.textContent.trim()));
-    check(`${tag} the pop-out's labels are in Bangla`, labels.every((l) => /[ঀ-৿]/.test(l) || /^A[+−]$/.test(l)) && modes.join() === "শব্দ,আয়াত", JSON.stringify({ labels, modes }));
+    check(`${tag} the pop-out's labels are in Bangla`, labels.every((l) => /[ঀ-৿]/.test(l) || /^A[+−]$/.test(l)) && modes.join() === "শব্দ,আয়াত,হরফ", JSON.stringify({ labels, modes }));
     const lab = await page.evaluate(() => document.querySelector('#writingSheet [data-ws="unit"]').textContent);
     check(`${tag} digits stay in Bangla on the sheet`, /[০-৯]|আল-ফাতিহা/.test(lab) && !/[0-9]/.test(lab), lab);
   } else {
-    check(`${tag} English labels`, (await page.evaluate(() => [...document.querySelectorAll("#writingSheet .wp [data-wp-mode]")].map((e) => e.textContent.trim()).join())) === "Word,Ayah");
+    check(`${tag} English labels`, (await page.evaluate(() => [...document.querySelectorAll("#writingSheet .wp [data-wp-mode]")].map((e) => e.textContent.trim()).join())) === "Word,Ayah,Letters");
   }
 
   // ---- closing
@@ -392,7 +392,7 @@ if (ONLY || !MUTATE) {
     // Updated in place again 8 Oct 2026: the Owner, the list boxes cut on a phone ("Blank lines", "Light" showed their
     // first letters) -- in a window narrower than 500px they take a third row of their own, so a phone has three rows
     // (at 320px too, measured); the tablet and PC windows keep two.
-    check(`${tag} bar: two rows (three on a phone), every control >= 40px and inside the window, no sideways scroll`, lay.rows === (width < 600 ? 3 : 2) && lay.all && lay.overflow <= 0, JSON.stringify(lay));
+    check(`${tag} bar: two rows (three on a phone), every control >= 40px and inside the window, no sideways scroll`, lay.rows === (width < 380 ? 4 : width < 600 ? 3 : 2) && lay.all && lay.overflow <= 0, JSON.stringify(lay));
     check(`${tag} Word AND Ayah both show, with ‹ › ⬆ More paper ✋ Move and ⛶ (phone included)`, lay.word && lay.ayah && lay.prev && lay.next && lay.more && lay.move && lay.full, JSON.stringify(lay));
     // The Owner, 7-8 Oct 2026: on a phone the two list boxes ("Blank lines", "Light") showed only their first letters.
     // Each box's longest option, measured in the box's OWN font, plus its own padding and the arrow, must fit it.
