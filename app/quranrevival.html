@@ -2633,20 +2633,22 @@
      full-screen state, where the strip is otherwise empty apart from the
      full-screen icon. */
   body.immersive-read.fs-hide-readbar.fs-hide-transport #readBar > *:not(#readBarEnd):not(#mushafPageRef):not(#readQuickRow):not(#readListBtn):not(#readMeaningLayersSlot) { display: none; }
-  body.immersive-read.fs-hide-readbar.fs-hide-transport #readBarEnd > *:not(#hideChromeBtn):not(#readMeaningBtn):not(#readBarBookmarkBtn) { display: none; }
+  body.immersive-read.fs-hide-readbar.fs-hide-transport #readBarEnd > *:not(#hideChromeBtn):not(#readMeaningBtn):not(#readMushafBtn):not(#readBarBookmarkBtn) { display: none; }
   /* 10 Oct 2026: 📖 Meaning stays in the bare full-screen state too (the Owner: "visible even in full screen Mushaf
      view"), beside ⤢. */
-  #readMeaningBtn {
+  #readMeaningBtn, #readMushafBtn {
     box-sizing: border-box; height: 40px; padding: 0 0.7rem; margin: 0; flex: 0 0 auto;
     display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem;
     font: inherit; font-size: 0.88rem; font-weight: 700; line-height: 1; white-space: nowrap;
     border-radius: 0.5rem; border: 1.5px solid #1F3A6E; background: #fff; color: #1F3A6E; cursor: pointer;
   }
-  #readMeaningBtn[aria-pressed="true"] { background: #1F3A6E; color: #fff; }
-  #readMeaningBtn:focus-visible { outline: 3px solid #B8862F; outline-offset: 2px; }
+  #readMeaningBtn[aria-pressed="true"], #readMushafBtn[aria-pressed="true"] { background: #1F3A6E; color: #fff; }
+  #readMeaningBtn:focus-visible, #readMushafBtn:focus-visible { outline: 3px solid #B8862F; outline-offset: 2px; }
   /* Measured at 320px with Mushaf's page reference on the bar: the worded button took a line of its own and moved the
      page down 42px. Below 360px it is 📖 alone (its spoken name stays the words), the same rule ☰ Surah list follows. */
   @media (max-width: 359px) { #readMeaningBtn { padding: 0; width: 40px; } #readMeaningBtn .read-meaning-word { display: none; } }
+  /* 📜 Mushaf: the word costs ~80px on a bar whose 390px budget has 37px spare (measured), so it is 📜 alone below 480px. */
+  @media (max-width: 479px) { #readMushafBtn { padding: 0; width: 40px; } #readMushafBtn .read-mushaf-word { display: none; } }
   /* The Meaning flow: every āyah of the page(s), with its meanings, one after another. One wrapper, so "Page by
      page" (which turns each direct child of #pageViewContainer into a sideways page) makes it one page that scrolls
      down inside itself; otherwise #readScroll scrolls it. */
@@ -5452,6 +5454,8 @@
             <!-- The Owner, 12 Oct 2026 ("Add bookmark button on the top of the Mushaf page"): 🔖 on the Mushaf bar itself,
                  kept in the bare full-screen state beside 📖 and ⤢. The same bookmark as #readBookmarkBtn (behind ⋯). -->
             <button type="button" class="secondary qr-ico" id="readBarBookmarkBtn" aria-label="Bookmark this" title="Bookmark this" hidden>🔖</button>
+            <!-- 17 Oct 2026 (QR J16 = PCF MSA J37): 📜 Mushaf, the very same switch as Options ▸ "Mushaf view", one tap away, also in full screen. -->
+            <button type="button" class="read-meaning-btn" id="readMushafBtn" aria-pressed="false" aria-label="Mushaf view" title="Mushaf view"><span aria-hidden="true">📜</span><span class="read-mushaf-word">Mushaf</span></button>
             <button type="button" class="read-meaning-btn" id="readMeaningBtn" aria-pressed="false"><span aria-hidden="true">📖</span><span class="read-meaning-word">Meaning</span></button>
             <button type="button" class="secondary qr-ico" id="hideChromeBtn" aria-label="Full screen" title="Full screen">⤢</button>
             <button type="button" class="secondary qr-ico" id="readWindowBtn" aria-label="Open as a window" title="Open as a window" aria-pressed="false">🗗</button>
@@ -18517,6 +18521,30 @@
     });
     paintReadMeaningBtn();
 
+    // 17 Oct 2026 (QR J16 = PCF MSA J37): 📜 Mushaf. The very same switch as Options ▸ "Mushaf view": it flips
+    // #mushafToggle and dispatches its change, so nothing else differs. It lands on the same āyah either way.
+    const readMushafBtn = document.getElementById("readMushafBtn");
+    function paintReadMushafBtn() {
+      if (!readMushafBtn) return;
+      readMushafBtn.setAttribute("aria-pressed", String(mushafToggle.checked));
+      const tip = t("Mushaf view");
+      readMushafBtn.setAttribute("aria-label", tip);
+      readMushafBtn.title = tip;
+      readMushafBtn.querySelector(".read-mushaf-word").textContent = t("Mushaf");
+    }
+    readMushafBtn?.addEventListener("click", () => {
+      if (readMeaningOn) {
+        // Close the Meaning flow first, as tapping 📖 again would; the one render below then draws the new view.
+        readMeaningOn = false;
+        try { localStorage.setItem(READ_MEANING_KEY, "0"); } catch { /* per device only */ }
+        paintReadMeaningBtn();
+      }
+      mushafToggle.checked = !mushafToggle.checked;
+      mushafToggle.dispatchEvent(new Event("change"));
+    });
+    mushafToggle.addEventListener("change", paintReadMushafBtn);
+    paintReadMushafBtn();
+
     async function renderFlowView(fromAyah, toAyah, panels, isMushaf) {
       const ayahKeys = [];
       for (let a = fromAyah; a <= toAyah; a++) ayahKeys.push(`${currentSurahNum}:${a}`);
@@ -22564,6 +22592,7 @@
       // is its own mode over the top of either.
       const [unitFrom, unitTo] = currentUnitAyahBounds();
       const isMushaf = mushafToggle.checked;
+      paintReadMushafBtn(); // keeps 📜 in step when a preset or restore sets the tick without a change event
       // WHICH units read as a flow is unchanged from before this round: Whole
       // Surah and Range. A Ruku'/Juz/Hizb/Page still reads ayah by ayah with
       // Previous/Next, which is round 18's own behaviour and what the owner
