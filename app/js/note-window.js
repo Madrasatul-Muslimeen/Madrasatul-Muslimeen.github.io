@@ -77,7 +77,7 @@ export const NOTE_VIEW_HTML = `
 const NOTE_DRAFT_MS = 1000, NOTE_IDLE_MS = 30000, NOTE_RETRY_MS = 10000;
 const DRAFT_KEY = (noteId) => `qr.journeyNoteDraft.${noteId}`;
 const COLLAPSE_KEY = (noteId) => `qr.journeyNoteCollapsed.${noteId}`;
-const WIN_LIMITS = { minW: 320, minH: 360, bar: 44 };
+const WIN_LIMITS = { minW: 320, get minH() { return Math.min(360, Math.max(200, window.innerHeight - 52)); }, bar: 44 }; // audit part 39: on a 390px-high screen a 360px window ran under the 44px Zab bar
 const WIN_SHEET_BELOW = 640, WIN_OFFSET = 28, WIN_Z = 1000, WIN_SWITCH_H = 56;
 const WIN_PANEL_SIDE_MIN = 560; // narrower than this, the pinned panel slides over the Note instead of sitting beside it
 const LONG_PRESS_MS = 550;
@@ -2755,7 +2755,10 @@ export function createNoteViews(host) {
     const w = Math.min(520, window.innerWidth - 40), h = Math.min(620, window.innerHeight - 60);
     // Centred, but never over the nav row (audit part 21: at 1440 x 900 the first window used to start 18px up inside it).
     const nav = document.getElementById("topNav"), navBottom = nav && nav.getClientRects().length ? Math.ceil(nav.getBoundingClientRect().bottom) : 0;
-    const y = Math.max(Math.round((window.innerHeight - h) / 2), navBottom > 0 ? navBottom + 8 : 0);
+    // Audit part 39: on a short screen (phone landscape, 200% zoom) there is no room under the nav row, so the window starts at the top and keeps clear of the Zab bar.
+    const short = window.innerHeight < 560;
+    const y = short ? 8 : Math.max(Math.round((window.innerHeight - h) / 2), navBottom > 0 ? navBottom + 8 : 0);
+    if (short) return { x: Math.round((window.innerWidth - w) / 2), y, w, h: Math.max(Math.min(h, window.innerHeight - y - 52), Math.min(360, window.innerHeight - 52)) };
     // ...and leaves room under it for the bottom tab strip (52px) and the Zab bar (44px) plus two cascaded windows (audit part 21: at 820 x 900
     // the third window ran 5px under the Zab bar and the strip covered the lower edge of the first).
     return { x: Math.round((window.innerWidth - w) / 2), y, w, h: Math.max(Math.min(h, window.innerHeight - y - 100 - 2 * WIN_OFFSET), 360) };

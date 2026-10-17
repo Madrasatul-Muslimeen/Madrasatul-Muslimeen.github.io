@@ -25,6 +25,10 @@ const MUTATIONS = {
   // recordstable was dropped in review (v11.36): at 640px the records table is 608px wide on unmodified main, in en and bn,
   // so the reported 642px overflow did not reproduce and the mutation could not fail the suite; records.html is unchanged.
   cataloguescroll: ["app/catalogue.html", "**/catalogue.html*", 'behavior: reduceMotion ? "auto" : "smooth"', 'behavior: "smooth"', "/app/catalogue.html"],
+  // part 39
+  winshort: ["app/js/note-window.js", "**/js/note-window.js*", "const short = window.innerHeight < 560;", "const short = false;", "/app/notes.html"],
+  winlimits: ["app/js/note-window.js", "**/js/note-window.js*", "get minH() { return Math.min(360, Math.max(200, window.innerHeight - 52)); }", "minH: 360", "/app/notes.html"],
+  foldermenu: ["app/journey-map.html", "**/journey-map.html*", "@media (max-height: 520px) { .folder-row-menu.open { max-height: calc(100vh - 7rem); overflow-y: auto; overscroll-behavior: contain; } }", "", "/app/journey-map.html"],
   catalogueflash: ["app/catalogue.html", "**/catalogue.html*", "@media (prefers-reduced-motion: reduce) { .subj-row-flash { animation: none; background: #fff3cd; } }", "", "/app/catalogue.html"],
 };
 if (MUTATE && !MUTATIONS[MUTATE]) throw new Error(`no such mutation ${MUTATE}`);
@@ -123,9 +127,15 @@ function sheetCheck(spec) {
   const vis = (e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(e).visibility !== "hidden"; };
   if (!root || !vis(root)) return { found: false };
   const nm = (el) => el.tagName.toLowerCase() + (el.id ? "#" + el.id : "") + (typeof el.className === "string" && el.className ? "." + el.className.trim().split(/\s+/)[0] : "");
+  // A surface fixed to the screen cannot be reached by scrolling the page; one in the page's flow (a drop-down) can, but it must still fit the screen height.
+  let fixed = false;
+  for (let n = root; n && n !== document.documentElement; n = n.parentElement) if (getComputedStyle(n).position === "fixed") { fixed = true; break; }
   const rr = root.getBoundingClientRect();
   const problems = [];
-  if (rr.top < -1 || rr.bottom > innerHeight + 1) problems.push(`sheet leaves the viewport vertically (${Math.round(rr.top)}..${Math.round(rr.bottom)} of ${innerHeight})`);
+  // A floating Note window must also keep clear of the Zab bar that sits over the foot of the screen.
+  const zb = document.getElementById("zabBar"), zbr = zb && getComputedStyle(zb).display !== "none" ? zb.getBoundingClientRect() : null;
+  const floor = zbr && zbr.height > 0 && root.closest(".note-win:not(.sheet)") ? zbr.top : innerHeight;
+  if (fixed ? (rr.top < -1 || rr.bottom > floor + 1) : rr.height > innerHeight + 1) problems.push(`sheet leaves the viewport vertically (${Math.round(rr.top)}..${Math.round(rr.bottom)} of ${innerHeight}, ${fixed ? "fixed" : "in flow"})`);
   if (rr.left < -1 || rr.right > innerWidth + 1) problems.push(`sheet leaves the viewport sideways (${Math.round(rr.left)}..${Math.round(rr.right)} of ${innerWidth})`);
   const scrollsX = (n) => { const o = getComputedStyle(n).overflowX; return o === "auto" || o === "scroll"; };
   const cut = [];
@@ -153,8 +163,14 @@ function sheetCheck(spec) {
         const nb = n.getBoundingClientRect(), eb = el.getBoundingClientRect();
         n.scrollTop += (eb.top + eb.height / 2) - (nb.top + nb.height / 2);
       }
+      const ox = getComputedStyle(n).overflowX;
+      if ((ox === "auto" || ox === "scroll") && n.scrollWidth > n.clientWidth) {
+        const nb = n.getBoundingClientRect(), eb = el.getBoundingClientRect();
+        n.scrollLeft += (eb.left + eb.width / 2) - (nb.left + nb.width / 2);
+      }
       if (n === root) break;
     }
+    if (!fixed) el.scrollIntoView({ block: "center", inline: "nearest", behavior: "instant" });
     const r = el.getBoundingClientRect();
     const x = r.left + r.width / 2, y = r.top + r.height / 2;
     let why = null;
@@ -371,7 +387,7 @@ if (!MONLY || MONLY === "sheets") {
       await measure(t, page, "page ⋯ menu", { root: ".page-menu-wrap .bar-palette.open", buttons: ["*"] });
       for (const [nm, id] of [["Favourites dialog", "openFavouritesBtn"], ["Archived dialog", "openArchivedBtn"]]) {
         await ev(page, (i) => document.getElementById(i).click(), id); await settle(page, 500);
-        await measure(t, page, nm, { root: "[role=dialog]", buttons: ["*"] });
+        await measure(t, page, nm, { root: "#siyagahDialog .folder-picker", buttons: ["*"] });
         await page.keyboard.press("Escape"); await settle(page, 300);
         await ev(page, () => document.querySelector(".page-menu-wrap [data-bar-palette-toggle]")?.click()); await settle(page, 300);
       }
