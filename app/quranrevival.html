@@ -2647,8 +2647,12 @@
   /* Measured at 320px with Mushaf's page reference on the bar: the worded button took a line of its own and moved the
      page down 42px. Below 360px it is 📖 alone (its spoken name stays the words), the same rule ☰ Surah list follows. */
   @media (max-width: 359px) { #readMeaningBtn { padding: 0; width: 40px; } #readMeaningBtn .read-meaning-word { display: none; } }
-  /* 📜 Mushaf: the word costs ~80px on a bar whose 390px budget has 37px spare (measured), so it is 📜 alone below 480px. */
-  @media (max-width: 479px) { #readMushafBtn { padding: 0; width: 40px; } #readMushafBtn .read-mushaf-word { display: none; } }
+  /* 📜 Mushaf: the word costs ~47px, and at 600px (page reference + 🔖 + 📖 Meaning + ⤢) the bar wrapped to two lines
+     with it (measured in review), so it is 📜 alone below 768px. Hidden while the Meaning flow is open over the Mushaf,
+     where 📖 itself reads "Mushaf" (back to the Mushaf): two "Mushaf" buttons doing opposite things, and at 390px the
+     bar wrapped under the three switches. */
+  @media (max-width: 767px) { #readMushafBtn { padding: 0; width: 40px; } #readMushafBtn .read-mushaf-word { display: none; } }
+  #readMushafBtn[hidden] { display: none; }
   /* The Meaning flow: every āyah of the page(s), with its meanings, one after another. One wrapper, so "Page by
      page" (which turns each direct child of #pageViewContainer into a sideways page) makes it one page that scrolls
      down inside itself; otherwise #readScroll scrolls it. */
@@ -18368,6 +18372,8 @@
       const tip = readMeaningOn ? (mushafToggle.checked ? t("Back to the Mushaf") : t("Back to the reading")) : t("Show the meaning: translations and word by word");
       readMeaningBtn.setAttribute("aria-label", tip);
       readMeaningBtn.title = tip;
+      const mushafBtn = document.getElementById("readMushafBtn");
+      if (mushafBtn) mushafBtn.hidden = readMeaningOn && mushafToggle.checked;
     }
 
     async function meaningPageHtml(pageNum) {
@@ -18531,6 +18537,7 @@
       readMushafBtn.setAttribute("aria-label", tip);
       readMushafBtn.title = tip;
       readMushafBtn.querySelector(".read-mushaf-word").textContent = t("Mushaf");
+      readMushafBtn.hidden = readMeaningOn && mushafToggle.checked;
     }
     readMushafBtn?.addEventListener("click", () => {
       if (readMeaningOn) {

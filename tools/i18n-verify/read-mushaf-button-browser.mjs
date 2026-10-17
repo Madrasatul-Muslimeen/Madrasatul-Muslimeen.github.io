@@ -4,6 +4,7 @@
 //   --mutate=no-fullscreen    #readMushafBtn dropped from the bare-state :not() list  -> the full-screen checks fail
 //   --mutate=not-same-switch  the tap flips a private flag, not the tick             -> the switch checks fail
 //   --mutate=no-pressed       aria-pressed never updates                              -> the pressed checks fail
+//   --mutate=dup-mushaf      📜 stays beside 📖 "Mushaf" in the Meaning flow       -> the step-aside check fails
 //   --mutate=meaning-stuck    the tap does not close an open Meaning flow             -> the Meaning check fails
 //   --width=390 --lang=bn     restrict the matrix
 import { chromium, newContext, openPage } from "./harness.mjs";
@@ -20,6 +21,7 @@ const MUT = {
   "no-fullscreen": [":not(#readMeaningBtn):not(#readMushafBtn):not(#readBarBookmarkBtn)", ":not(#readMeaningBtn):not(#readBarBookmarkBtn)"],
   "not-same-switch": ["mushafToggle.checked = !mushafToggle.checked;", "window.__privMushaf = !window.__privMushaf;"],
   "no-pressed": ['readMushafBtn.setAttribute("aria-pressed", String(mushafToggle.checked));', "void 0;"],
+  "dup-mushaf": ["hidden = readMeaningOn && mushafToggle.checked;", "hidden = false;"], // both places (split/join)
   "meaning-stuck": ["      if (readMeaningOn) {\n        // Close the Meaning flow first", "      if (false) {\n        // Close the Meaning flow first"],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
@@ -88,7 +90,8 @@ for (const lang of LANGS) for (const width of WIDTHS) {
   const s0 = await state(page);
   check(`${tag} 📜 is on the Read bar, tappable, ≥ 40px tall, unpressed`, s0.shown && s0.tappable && s0.h >= 40 && s0.pressed === "false" && !s0.tick, JSON.stringify(s0));
   check(`${tag} its spoken name is ${bn ? "in Bangla (মুসহাফ দৃশ্য)" : '"Mushaf view"'}`, bn ? s0.label === "মুসহাফ দৃশ্য" : s0.label === "Mushaf view", s0.label);
-  check(`${tag} the word shows only from 480px up (${width >= 480}), 📜 alone below at 40px wide`, s0.wordShown === (width >= 480) && (width >= 480 || s0.w === 40), JSON.stringify({ w: s0.w, wordShown: s0.wordShown }));
+  // Review (v11.35): 480px → 768px; at 600px the word wrapped the bar to two lines (read-quick-buttons 600).
+  check(`${tag} the word shows only from 768px up (${width >= 768}), 📜 alone below at 40px wide`, s0.wordShown === (width >= 768) && (width >= 768 || s0.w === 40), JSON.stringify({ w: s0.w, wordShown: s0.wordShown }));
   if (s0.wordShown) check(`${tag} the word reads ${bn ? "মুসহাফ" : "Mushaf"}`, s0.word === (bn ? "মুসহাফ" : "Mushaf"), s0.word);
   const r0 = await rows(page);
   check(`${tag} #readBarEnd keeps one row (tops ${r0.tops.join(",")}) and the bar is no taller for 📜 (${r0.withIt} vs ${r0.without}), no sideways overflow`, r0.oneRow && r0.withIt === r0.without && r0.over <= 0, JSON.stringify(r0));
@@ -143,6 +146,18 @@ for (const lang of LANGS) for (const width of WIDTHS) {
   const m1 = await page.evaluate(() => ({ flow: document.querySelectorAll("#pageViewContainer [data-meaning-key]").length, on: document.getElementById("readMeaningBtn").getAttribute("aria-pressed"), stored: localStorage.getItem("qr.readMeaning") }));
   const s5 = await state(page);
   check(`${tag} tapping 📜 from the Meaning flow closes it (📖 un-pressed) and opens the Mushaf at 57:2`, m1.flow === 0 && m1.on === "false" && m1.stored === "0" && s5.tick && s5.pages > 0 && s5.marked.includes("57:2"), JSON.stringify({ m1, tick: s5.tick, pages: s5.pages, marked: s5.marked }));
+
+  // Review (v11.35): the Meaning flow opened OVER the Mushaf makes 📖 read "Mushaf" (back to the Mushaf), so 📜 steps
+  // aside rather than be a second "Mushaf" button doing the opposite; closing the flow brings it back, pressed.
+  await page.click("#readMeaningBtn");
+  await page.waitForFunction(() => document.querySelectorAll("#pageViewContainer [data-meaning-key]").length > 0, null, { timeout: 15000 }).catch(() => {});
+  await page.waitForTimeout(500);
+  const d0 = await state(page), w0 = await page.evaluate(() => document.querySelector("#readMeaningBtn .read-meaning-word").textContent.trim());
+  check(`${tag} Meaning over the Mushaf: 📖 reads ${bn ? "মুসহাফ" : "Mushaf"} and 📜 steps aside (one "Mushaf" button, not two)`, !d0.shown && d0.tick && w0 === (bn ? "মুসহাফ" : "Mushaf"), JSON.stringify({ shown: d0.shown, w0 }));
+  await page.click("#readMeaningBtn");
+  await waitMushaf(page, true);
+  const d1 = await state(page);
+  check(`${tag} ...closing it brings 📜 back, pressed, tappable`, d1.shown && d1.tappable && d1.pressed === "true", JSON.stringify(d1));
 
   check(`${tag} no page errors`, errors.filter((e) => !/ERR_CERT|archive\.org|net::|api\.quran/.test(e)).length === 0, errors.slice(0, 2).join(" | "));
   await ctx.close();
