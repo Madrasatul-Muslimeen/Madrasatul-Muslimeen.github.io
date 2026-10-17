@@ -85,9 +85,9 @@ body.zab-docked #zabCorner { display: none; } /* audit-zab dock-hides-corner */
 .zab-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden; padding: 8px 10px 14px; }
 #zabPanel button, #zabPanel select, #zabPanel input { font: inherit; min-height: 40px; max-width: 100%; }
 #zabPanel button { min-width: 40px; border: 1px solid #c7d0e0; border-radius: 8px; background: #f3f6fb; color: #1b2a41; cursor: pointer; padding: 0 10px; }
-#zabPanel input[type="text"], #zabPanel select { border: 1px solid #c7d0e0; border-radius: 8px; padding: 0 8px; background: #fff; color: #1b2a41; min-width: 0; }
+#zabPanel input[type="text"], #zabPanel select { border: 1px solid #7d8799; border-radius: 8px; padding: 0 8px; background: #fff; color: #1b2a41; min-width: 0; }
 #zabPanel input[type="color"] { padding: 0 2px; width: 44px; }
-#zabPanel input[type="date"] { border: 1px solid #c7d0e0; border-radius: 8px; padding: 0 8px; background: #fff; color: #1b2a41; min-width: 0; flex: 0 1 11rem; }
+#zabPanel input[type="date"] { border: 1px solid #7d8799; border-radius: 8px; padding: 0 8px; background: #fff; color: #1b2a41; min-width: 0; flex: 0 1 11rem; }
 .zab-add { display: flex; gap: 6px; margin-bottom: 8px; }
 .zab-add button { flex: 0 0 auto; white-space: nowrap; } /* Z3 review: a squeezed Add broke into "Ad / d" beside a step box */
 .zab-add input { flex: 1 1 auto; }

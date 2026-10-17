@@ -897,3 +897,4 @@ total). Allocated by the MMSA Architect.
 11.31: Blank lines example like Trace over, light or dark (J34). Allocated by the MMSA Architect.
 11.32: every page tab reads MSA (J36). Allocated by the MMSA Architect.
 11.33: audit part 36 colour contrast (J29). Allocated by the MMSA Architect.
+11.34: audit part 37 contrast in opened windows (J29). Allocated by the MMSA Architect.
