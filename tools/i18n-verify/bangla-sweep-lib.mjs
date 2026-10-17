@@ -5,6 +5,8 @@
 export const NAME_TOKENS = [
   /(?:app\/)?\b[\w-]+\.(?:html|js|md)\b/gi, // file names first, so "quranrevival.html" is not half-eaten by the QuranRevival token
   /HadeethEnc(\.com)?/gi, /OpenITI/gi, /hadith-api/gi, /fawazahmed0/gi, /Muhsin Khan/gi, /QuranRevival/gi,
+  /Open Islamicate Texts Initiative/g, // OpenITI's full name, in its credit on the About page
+  /\bMSA\b/g, // the app's own name (Madrasah Study App, v11.15), printed in Latin inside the Bangla About line
   /\bQCR\b/g, // the Ayah-collections feature name, deliberately kept in Latin script in bn.js ("QCR": "QCR")
   // About page feature registry: product names, file names and code identifiers inside otherwise-Bangla lines.
   /\bFirebase\b/g, /\b(?:CRUD|CSV|LDOG)\b/g,

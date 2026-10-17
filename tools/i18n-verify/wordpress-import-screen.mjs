@@ -64,7 +64,8 @@ check("switching source swaps the file input's accept/multiple and the two help 
   }
 });
 check("the WordPress file input starts as a SINGLE .xml picker (the default source) -- unchanged initial markup", () => {
-  assert.ok(/<input type="file" id="fileInput" accept="\.xml" \/>/.test(page), "no .xml file input found, or its initial markup changed");
+  // Audit part 31 (v11.24) added aria-label="File"; other attributes may follow, but it stays one .xml file, never `multiple`.
+  assert.ok(/<input type="file" id="fileInput" accept="\.xml"(?![^>]*\bmultiple\b)[^>]*\/>/.test(page), "no .xml file input found, or its initial markup changed");
 });
 check("a stack-name input exists for Evernote's optional shared parent folder, starting hidden", () => {
   assert.ok(/<div id="stackNameRow" style="display:none;">/.test(page), "#stackNameRow is not present or not hidden by default");
