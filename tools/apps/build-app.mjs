@@ -61,10 +61,11 @@ function listSite(src, site) {
 }
 
 function validate(s, base, src) {
-  const need = ["schema", "id", "name", "titlePrefix", "siteRootName", "frontPage", "colours", "cachePrefix", "hiddenModules", "site"];
+  const need = ["schema", "id", "address", "name", "titlePrefix", "siteRootName", "frontPage", "colours", "cachePrefix", "hiddenModules", "site"];
   for (const k of need) if (!(k in s)) throw new Error(`settings "${s.id}": "${k}" is missing`);
   if (s.schema !== 1) throw new Error(`settings "${s.id}": schema ${s.schema} is not 1`);
   if (!s.name?.full?.en || !s.name?.full?.bn || !s.name?.short) throw new Error(`settings "${s.id}": name.full.en, name.full.bn and name.short are all needed`);
+  if (!/^https:\/\/[a-z0-9.-]+\/$/.test(s.address)) throw new Error(`settings "${s.id}": address "${s.address}" must be https://<host>/`);
   if (!/^[a-z][a-z0-9]*$/.test(s.cachePrefix)) throw new Error(`settings "${s.id}": cachePrefix "${s.cachePrefix}" must be lower-case letters and digits`);
   if (s.cachePrefix !== base.cachePrefix && s.address === base.address) throw new Error(`settings "${s.id}": shares MSA's address, so it must share its cache names`);
   if (!fs.existsSync(path.join(src, "app", s.frontPage))) throw new Error(`settings "${s.id}": front page app/${s.frontPage} does not exist`);
@@ -101,9 +102,13 @@ function rules(base, s) {
   const fb = base.name.full, fs_ = s.name.full;
   add((p) => p === "app/js/i18n/bn.js", `${JSON.stringify(fb.en)}: ${JSON.stringify(fb.bn)}`, `${JSON.stringify(fs_.en)}: ${JSON.stringify(fs_.bn)}`, { exact: 1 }, "the app's full name in Bangla");
   add((p) => p === "app/index.html", `<title>${fb.en}</title>`, `<title>${fs_.en}</title>`, { exact: 1 }, "app/index.html title");
-  add((p) => p === "app/quranrevival.html", `<title>${fb.en}</title>`, `<title>${fs_.en}</title>`, { exact: 1 }, "front page title");
-  add((p) => p === "app/quranrevival.html", `<span class="app-name-full">${fb.en}</span>`, `<span class="app-name-full">${fs_.en}</span>`, { exact: 1 }, "front page heading");
-  add((p) => p === "app/quranrevival.html", `.app-name-short::before { content: ${JSON.stringify(base.name.short)}; }`, `.app-name-short::before { content: ${JSON.stringify(s.name.short)}; }`, { exact: 1 }, "the heading's short name below 700px");
+  // MSA's name markup lives in MSA's front page. An app with another front page
+  // keeps these on that page (it is still a page of the app) and brings its own
+  // front page's heading as an overlay file.
+  const namePage = `app/${base.frontPage}`;
+  add((p) => p === namePage, `<title>${fb.en}</title>`, `<title>${fs_.en}</title>`, { exact: 1 }, "front page title");
+  add((p) => p === namePage, `<span class="app-name-full">${fb.en}</span>`, `<span class="app-name-full">${fs_.en}</span>`, { exact: 1 }, "front page heading");
+  add((p) => p === namePage, `.app-name-short::before { content: ${JSON.stringify(base.name.short)}; }`, `.app-name-short::before { content: ${JSON.stringify(s.name.short)}; }`, { exact: 1 }, "the heading's short name below 700px");
 
   add((p) => p === "index.html", `<title>${base.siteRootName}</title>`, `<title>${s.siteRootName}</title>`, { exact: 1 }, "site root title");
   add((p) => p === "index.html", `Taking you to ${base.siteRootName}…`, `Taking you to ${s.siteRootName}…`, { exact: 1 }, "site root text");
@@ -157,7 +162,12 @@ export function buildApp({ id, settings, src = ".", out, only } = {}) {
   validate(base, base, src);
   validate(s, base, src);
   out = path.resolve(out || path.join(src, "build", id));
-  if (out === src || src.startsWith(out + path.sep)) throw new Error(`refusing to write the app over its own source (${out})`);
+  // The output folder is deleted first, so it must not be, hold or sit inside anything the build reads.
+  const inputs = [src, ...s.site.map((p) => path.join(src, p)), path.join(src, SETTINGS_DIR), ...(s.overlay ? [path.join(src, s.overlay)] : []), ...(s.edits ? [path.join(src, s.edits)] : [])];
+  const overlaps = (a, b) => a === b || a.startsWith(b + path.sep) || b.startsWith(a + path.sep);
+  for (const i of inputs) {
+    if (i === src ? (out === src || src.startsWith(out + path.sep)) : overlaps(out, i)) throw new Error(`refusing to write the app over its own source (${out})`);
+  }
   const site = only ? s.site.filter((p) => only.includes(p)) : s.site;
   for (const p of site) if (!fs.existsSync(path.join(src, p))) throw new Error(`settings "${id}": site path ${p} does not exist`);
   const files = listSite(src, site);
@@ -233,7 +243,8 @@ export function buildApp({ id, settings, src = ".", out, only } = {}) {
       if (!fs.existsSync(path.join(src, rel))) throw new Error(`cannot build "${id}": manifest page ${rel} does not exist`);
       const t = textOf(rel);
       if (/<link rel="manifest"/.test(t)) throw new Error(`cannot build "${id}": ${rel} already has a manifest link`);
-      changed.set(rel, headInsert(t, `<link rel="manifest" href="./${m.file}">\n`, rel));
+      const href = path.posix.relative(path.posix.dirname(rel), `app/${m.file}`);
+      changed.set(rel, headInsert(t, `<link rel="manifest" href="${href.includes("/") ? href : "./" + href}">\n`, rel));
     }
   }
   if (s.icon) {

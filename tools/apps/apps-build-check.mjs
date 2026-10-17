@@ -151,6 +151,11 @@ check("the manifest is written with the app's colours", () => {
 });
 check("the page named gets the manifest link, others do not", () =>
   read(fxOut, "app/asma-study.html").includes('<link rel="manifest" href="./fixture.webmanifest">') && !read(fxOut, "app/notes.html").includes('rel="manifest"'));
+check("a page in a sub-folder links the manifest relative to itself", () => {
+  const out = path.join(TMP, "fixture-sub");
+  buildApp({ settings: { ...fixture, manifest: { ...fixture.manifest, pages: ["health/health-atlas.html"] } }, out, only: ONLY });
+  return read(out, "app/health/health-atlas.html").includes('<link rel="manifest" href="../fixture.webmanifest">');
+});
 check("the icon link is relative from a page in a sub-folder", () =>
   read(fxOut, "app/health/health-atlas.html").includes('<link rel="icon" href="../img/wheel-hub-calligraphy.webp">') && read(fxOut, "app/notes.html").includes('<link rel="icon" href="img/wheel-hub-calligraphy.webp">'));
 check("a manifest icon that does not exist stops the build", () => throws(() =>
@@ -185,6 +190,12 @@ check("the hidden-modules list changed in the source stops the build", () =>
 check("a front page that does not exist stops the build", () =>
   mutate("app/apps/qr.json", '"frontPage": "quranrevival.html"', '"frontPage": "qr-front.html"', () => throws(() => buildMut("qr"), /front page app\/qr-front\.html does not exist/)));
 check("writing an app over its own source is refused", () => throws(() => buildApp({ id: "qr", src: mutSrc, out: mutSrc, only: ONLY }), /refusing/));
+check("...and so is an output folder that is, or sits inside, a source path (--out=app, --out=index.html, --out=app/js)", () =>
+  ["app", "index.html", "app/js", "app/apps"].every((o) => throws(() => buildApp({ id: "qr", src: mutSrc, out: path.join(mutSrc, o), only: ONLY }), /refusing/)) &&
+  fs.existsSync(path.join(mutSrc, "app/js/nav.js")) && fs.existsSync(path.join(mutSrc, "index.html")));
+check("control: an output folder beside the source paths (build/qr) is allowed", () => !!buildApp({ id: "qr", src: mutSrc, out: path.join(mutSrc, "build/qr"), only: ONLY }));
+check("an app without an address is refused", () =>
+  mutate("app/apps/qr.json", '"address": "https://quranrevival.github.io/",', "", () => throws(() => buildMut("qr"), /"address" is missing/)));
 
 console.log("5. An app's own files (overlay) and its hunks on shared files (edits)");
 fs.mkdirSync(path.join(mutSrc, "apps/fx/site/app/js"), { recursive: true });
