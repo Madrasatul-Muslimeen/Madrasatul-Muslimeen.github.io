@@ -20,7 +20,8 @@ const arg = (n) => (process.argv.find((a) => a.startsWith(`--${n}=`)) || "").sli
 const MUTATE = arg("mutate"), ONLY = arg("only"), LONLY = arg("lang"), MONLY = arg("mode"), SHOTS = arg("shots");
 // name: [file, route glob, anchor (exactly once), replacement, page path it applies to]
 const MUTATIONS = {
-  recordstable: ["app/records.html", "**/records.html*", "@media (max-width: 720px) { table { display: block; overflow-x: auto; } }", "@media (max-width: 600px) { table { display: block; overflow-x: auto; } }", "/app/records.html"],
+  // recordstable was dropped in review (v11.36): at 640px the records table is 608px wide on unmodified main, in en and bn,
+  // so the reported 642px overflow did not reproduce and the mutation could not fail the suite; records.html is unchanged.
   cataloguescroll: ["app/catalogue.html", "**/catalogue.html*", 'behavior: reduceMotion ? "auto" : "smooth"', 'behavior: "smooth"', "/app/catalogue.html"],
   catalogueflash: ["app/catalogue.html", "**/catalogue.html*", "@media (prefers-reduced-motion: reduce) { .subj-row-flash { animation: none; background: #fff3cd; } }", "", "/app/catalogue.html"],
 };
