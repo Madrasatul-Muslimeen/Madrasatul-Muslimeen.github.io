@@ -21,8 +21,7 @@ const arg = (n) => (process.argv.find((a) => a.startsWith(`--${n}=`)) || "").sli
 const MUTATE = arg("mutate"), ONLY = arg("only"), WONLY = Number(arg("width")) || 0, LONLY = arg("lang");
 // name: [file, route glob, anchor (exactly once), replacement, page path it applies to]
 const MUTATIONS = {
-  zabpad: ["app/js/zab-bar.js", "**/js/zab-bar.js*", "  html, html:has(.nw-switch) { scroll-padding-bottom: ${BAR_H + 16}px; }\n", "", "/app/"],
-  zabpadphone: ["app/js/zab-bar.js", "**/js/zab-bar.js*", "html { scroll-padding-bottom: 76px; }\nhtml:has(.nw-switch) { scroll-padding-bottom: 128px; }\n", "", "/app/"],
+  zabpad: ["app/js/zab-bar.js", "**/js/zab-bar.js*", "html { scroll-padding-bottom: 76px; }\nhtml:has(.nw-switch) { scroll-padding-bottom: 128px; }\n", "", "/app/"],
 };
 if (MUTATE && !MUTATIONS[MUTATE]) throw new Error(`no such mutation ${MUTATE}`);
 const browser = await chromium.launch();

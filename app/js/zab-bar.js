@@ -157,7 +157,6 @@ body.zab-docked #zabCorner { display: none; } /* audit-zab dock-hides-corner */
 .zab-foot { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
 @media (min-width: 768px) {
   #zabBar { display: flex; }
-  html, html:has(.nw-switch) { scroll-padding-bottom: ${BAR_H + 16}px; }
   #zabSpacer { display: block; height: ${BAR_H}px; }
   #zabCorner { display: none; }
   .zab-dock-btn { display: none; }
