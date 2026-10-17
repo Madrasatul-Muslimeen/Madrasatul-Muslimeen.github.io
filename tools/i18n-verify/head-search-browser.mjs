@@ -40,17 +40,20 @@ const measure = (page) => page.evaluate(() => {
 });
 
 // ---- Where it sits, how it looks, at every width, both languages
-// Expected by hand: on the title's line, at the banner's right edge, 36px tall,
+// Expected by hand: on the title's line, at the banner's right edge, 40px tall,
 // a 2px gold (#B8862F) border on white with navy text; the word shown from
-// 360px up ("Search" / "খুঁজুন"), the magnifier alone below that (36x36).
+// 360px up ("Search" / "খুঁজুন"), the magnifier alone below that (40x40).
+// UPDATED IN PLACE 17 Oct 2026: J29 audit part 9 (5de2faa7, 15 Oct) raised the button to the 40px finger target
+// (min-height 40px; 40px wide when the magnifier stands alone). The checks still asked for 36px and failed 18 times
+// on `main`: a stale assertion, not a defect, so the expected size moved and nothing else did.
 for (const lang of ["en", "bn"]) {
   for (const width of [320, 340, 360, 390, 412, 768, 1280]) {
     const { ctx, page } = await start({ lang, width });
     const m = await measure(page);
     const tag = `${lang} ${width}px`;
     check(`${tag}: Search is on the title's line, at the banner's right edge`, m.sameLine && m.afterTitle && m.rightEdge <= 1 && m.titleOneLine, JSON.stringify(m));
-    check(`${tag}: gold 2px border, white, navy, 36px tall`, m.h === 36 && m.bw === "2px" && m.border === "rgb(184, 134, 47)" && m.bg === "rgb(255, 255, 255)" && m.color === "rgb(31, 58, 110)", JSON.stringify(m));
-    if (width < 360) check(`${tag}: the magnifier alone, a 36px circle`, !m.labelShown && m.w === 36, JSON.stringify(m));
+    check(`${tag}: gold 2px border, white, navy, 40px tall`, m.h === 40 && m.bw === "2px" && m.border === "rgb(184, 134, 47)" && m.bg === "rgb(255, 255, 255)" && m.color === "rgb(31, 58, 110)", JSON.stringify(m));
+    if (width < 360) check(`${tag}: the magnifier alone, a 40px circle`, !m.labelShown && m.w === 40, JSON.stringify(m));
     else check(`${tag}: reads "${lang === "bn" ? "খুঁজুন" : "Search"}", nothing cut`, m.labelShown && m.labelText === (lang === "bn" ? "খুঁজুন" : "Search") && !m.cut, JSON.stringify(m));
     check(`${tag}: spoken name is "${lang === "bn" ? "খুঁজুন" : "Search"}"`, m.aria === (lang === "bn" ? "খুঁজুন" : "Search"), String(m.aria));
     check(`${tag}: no sideways scroll`, !m.over, JSON.stringify(m));
