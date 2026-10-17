@@ -76,6 +76,9 @@ function validate(s, base, src) {
     const v = s.colours[c];
     if (v !== null && !/^#[0-9a-fA-F]{6}$/.test(v)) throw new Error(`settings "${s.id}": colours.${c} "${v}" must be null or #rrggbb`);
   }
+  // An app's own files live outside app/, so MSA's site never serves them under /app/.
+  if (s.overlay && (s.overlay === "app" || s.overlay.startsWith("app/"))) throw new Error(`settings "${s.id}": overlay must be outside app/ (it is "${s.overlay}")`);
+  if (s.edits && !fs.existsSync(path.join(src, s.edits))) throw new Error(`settings "${s.id}": edits file ${s.edits} does not exist`);
   if (s.manifest) {
     for (const k of ["file", "pages", "data"]) if (!(k in s.manifest)) throw new Error(`settings "${s.id}": manifest.${k} is missing`);
     if (!/^[a-z0-9-]+\.webmanifest$/.test(s.manifest.file)) throw new Error(`settings "${s.id}": manifest.file must be <name>.webmanifest in app/`);
@@ -163,6 +166,19 @@ export function buildApp({ id, settings, src = ".", out, only } = {}) {
   const found = rs.map(() => 0);
   const changed = new Map(); // rel -> new text
   const textOf = (rel) => changed.get(rel) ?? fs.readFileSync(path.join(src, rel), "utf8");
+
+  // This app's own hunks on shared files (settings "edits"), applied to the
+  // source BEFORE the rules, each found exactly as often as it says.
+  const edits = s.edits ? JSON.parse(fs.readFileSync(path.join(src, s.edits), "utf8")) : [];
+  const editProblems = [];
+  for (const e of edits) {
+    if (!e.file || typeof e.from !== "string" || typeof e.to !== "string" || !e.from) { editProblems.push(`edit ${e.id || "?"}: file, from and to are needed`); continue; }
+    if (!fs.existsSync(path.join(src, e.file))) { editProblems.push(`edit ${e.id}: ${e.file} does not exist`); continue; }
+    const t = textOf(e.file), n = count(t, e.from), want = e.exact ?? 1;
+    if (n !== want) { editProblems.push(`edit ${e.id} (${e.why || ""}): found ${n} of its text in ${e.file}, expected ${want}`); continue; }
+    changed.set(e.file, replaceAll(t, e.from, e.to));
+  }
+  if (editProblems.length) throw new Error(`cannot build "${id}": an edit no longer fits the source\n  - ${editProblems.join("\n  - ")}`);
   // Rules apply to the whole source tree's app/ and index.html, whatever --only says,
   // so a partial build can never skip a count.
   const ruleFiles = listSite(src, ["index.html", "app"]);
@@ -230,6 +246,22 @@ export function buildApp({ id, settings, src = ".", out, only } = {}) {
     }
   }
 
+  // This app's own whole files (settings "overlay": a folder laid out like the
+  // site), added or put in place of the source's file. A file both edited and
+  // overlaid is a mistake: one of the two would be lost silently.
+  const overlay = new Map(); // rel -> absolute source file
+  if (s.overlay) {
+    const root = path.join(src, s.overlay);
+    if (!fs.existsSync(root)) throw new Error(`cannot build "${id}": overlay folder ${s.overlay} does not exist`);
+    for (const rel of listSite(root, fs.readdirSync(root).sort())) {
+      const under = (list) => list.some((p) => rel === p || rel.startsWith(p + "/"));
+      if (!under(s.site)) throw new Error(`cannot build "${id}": overlay file ${rel} is outside the app's site`);
+      if (!under(site)) continue; // left out by --only
+      if (edits.some((e) => e.file === rel)) throw new Error(`cannot build "${id}": ${rel} is both edited and overlaid`);
+      overlay.set(rel, path.join(root, rel));
+    }
+  }
+
   fs.rmSync(out, { recursive: true, force: true });
   let copied = 0, written = 0;
   for (const rel of files) {
@@ -244,7 +276,14 @@ export function buildApp({ id, settings, src = ".", out, only } = {}) {
     fs.mkdirSync(path.dirname(dest), { recursive: true });
     fs.writeFileSync(dest, text); written++;
   }
-  return { id, out, files: files.length + extra.size, copied, written, changedFiles: [...changed.keys()].filter((r) => files.includes(r)).sort(), addedFiles: [...extra.keys()].sort() };
+  const replaced = [], added = [];
+  for (const [rel, abs] of overlay) {
+    const dest = path.join(out, rel);
+    (fs.existsSync(dest) ? replaced : added).push(rel);
+    fs.mkdirSync(path.dirname(dest), { recursive: true });
+    fs.copyFileSync(abs, dest);
+  }
+  return { id, out, files: files.length + extra.size + added.length, copied, written, overlaid: { replaced: replaced.sort(), added: added.sort() }, edited: [...new Set(edits.map((e) => e.file))].sort(), changedFiles: [...changed.keys()].filter((r) => files.includes(r)).sort(), addedFiles: [...extra.keys()].sort() };
 }
 
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
@@ -258,6 +297,8 @@ if (isMain) {
     console.log(`built "${r.id}" into ${path.relative(process.cwd(), r.out) || "."}: ${r.files} files (${r.written} written by rules, ${r.copied} copied)`);
     for (const f of r.changedFiles) console.log(`  changed ${f}`);
     for (const f of r.addedFiles) console.log(`  added   ${f}`);
+    for (const f of r.overlaid.replaced) console.log(`  own     ${f} (in place of the source's)`);
+    for (const f of r.overlaid.added) console.log(`  own     ${f}`);
   } catch (e) {
     console.error(e.message);
     process.exit(1);

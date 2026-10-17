@@ -186,6 +186,39 @@ check("a front page that does not exist stops the build", () =>
   mutate("app/apps/qr.json", '"frontPage": "quranrevival.html"', '"frontPage": "qr-front.html"', () => throws(() => buildMut("qr"), /front page app\/qr-front\.html does not exist/)));
 check("writing an app over its own source is refused", () => throws(() => buildApp({ id: "qr", src: mutSrc, out: mutSrc, only: ONLY }), /refusing/));
 
+console.log("5. An app's own files (overlay) and its hunks on shared files (edits)");
+fs.mkdirSync(path.join(mutSrc, "apps/fx/site/app/js"), { recursive: true });
+fs.writeFileSync(path.join(mutSrc, "apps/fx/site/app/fx-own.html"), "<!doctype html><title>own</title>\n");
+fs.writeFileSync(path.join(mutSrc, "apps/fx/site/app/js/continue-strip.js"), "// fx's own\n");
+const fxEdits = [{ id: "nav#1", file: "app/js/nav.js", why: "fixture", from: "export const LEGACY_APP_URL", to: "export const FX = 1;\nexport const LEGACY_APP_URL", exact: 1 }];
+fs.writeFileSync(path.join(mutSrc, "apps/fx/edits.json"), JSON.stringify(fxEdits));
+const fxs = { ...qs, id: "fx", overlay: "apps/fx/site", edits: "apps/fx/edits.json" };
+const buildFx = (over = {}) => buildApp({ settings: { ...fxs, ...over }, src: mutSrc, out: path.join(TMP, "fx"), only: ONLY });
+check("an own file is added and an own file replaces the source's", () => {
+  const r = buildFx();
+  return r.overlaid.added.includes("app/fx-own.html") && r.overlaid.replaced.includes("app/js/continue-strip.js") &&
+    read(path.join(TMP, "fx"), "app/js/continue-strip.js") === "// fx's own\n";
+});
+check("an edit lands once, and the rules still run on the edited file", () => {
+  buildFx();
+  const t = read(path.join(TMP, "fx"), "app/js/nav.js");
+  return t.split("export const FX = 1;").length === 2 && t.includes("export const LEGACY_APP_URL");
+});
+check("the msa build of the same source is untouched by fx's files", () => {
+  const out = path.join(TMP, "fx-msa");
+  buildApp({ id: "msa", src: mutSrc, out, only: ONLY });
+  return !fs.existsSync(path.join(out, "app/fx-own.html")) && !read(out, "app/js/nav.js").includes("FX = 1");
+});
+check("an edit whose text is not in the source stops the build", () => {
+  fs.writeFileSync(path.join(mutSrc, "apps/fx/edits.json"), JSON.stringify([{ ...fxEdits[0], from: "export const NOT_THERE" }]));
+  try { return throws(() => buildFx(), /edit nav#1 .*found 0/); } finally { fs.writeFileSync(path.join(mutSrc, "apps/fx/edits.json"), JSON.stringify(fxEdits)); }
+});
+check("a file both edited and overlaid stops the build", () => {
+  fs.writeFileSync(path.join(mutSrc, "apps/fx/site/app/js/nav.js"), "x");
+  try { return throws(() => buildFx(), /both edited and overlaid/); } finally { fs.rmSync(path.join(mutSrc, "apps/fx/site/app/js/nav.js")); }
+});
+check("an overlay inside app/ is refused (MSA would serve it)", () => throws(() => buildFx({ overlay: "app/fx" }), /overlay must be outside app\//));
+
 fs.rmSync(TMP, { recursive: true, force: true });
 console.log(`\napps-build-check: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
