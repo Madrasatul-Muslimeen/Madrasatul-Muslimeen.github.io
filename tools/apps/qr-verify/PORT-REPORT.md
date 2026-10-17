@@ -94,3 +94,15 @@ Cause of (a), checked in the build: `build/qr/app/sw.js` is MSA's worker. It has
 
 ## (d) summary (REAL)
 One: the built QR holds 30 MSA pages (and extra `app/js`, `app/health`, `mushaf/`) that today's QR does not. Fix is in `apps/qr.json` `site` (list QR's 6 pages, scripts and data instead of all of `app`); not changed here, `apps/` is out of this round.
+
+## Re-run on the current build (Architect, 18 Oct 10:40 am Sydney)
+
+This run uses the build with QR's own worker (step 3a), the `pages` setting (only QR's 6 pages) and QR's poster-data
+generator in `apps/qr/tools/`. Command: `bash tools/apps/qr-verify/run-all.sh` with `QR_REPO` set.
+**Every check passes:**
+naming 10/0 · asma-poster-data-check 9/0 · asma-local-sync 12/0 · pages 80/0 · front 65/0 · asma 274/0 ·
+asma-offline 58/0 · asma-screensaver 74/0 · asma-store 84/0 · one-worker 42/0 · quran-ldog 38/0 · qr-offline 36/0 ·
+upgrade 85/0 · links 52/0 · explore-asma-wheel 36/0 · range-bookmark 40/0 · fatiha-opening 36/0 · approach-window 49/0 ·
+mmsa-hadith-route exit 0 · import-walk exit 0.
+Every class (a) failure above was the missing worker, and every class (d) failure was the missing `pages`
+setting. None remains.
