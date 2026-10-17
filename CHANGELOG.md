@@ -21803,3 +21803,14 @@ The Owner answered J36's two optional choices at 8:20 pm Sydney: *"1. Yes. 2. Ke
 - Checks updated in place (old titles pinned): `behaviour.mjs` 17, 21 and the Asma title check; `dawah-screen.mjs` and `journey-map-screen.mjs` (their Bangla-title keys).
 - Tests: behaviour 971/0, dawah-screen 23/0, journey-map-screen 47/0, bookmark-marks-back 342/0, audit-part17 868/0, audit-part25 112/0, bangla-sweep core 112/0 / other pages 224/0 / newer screens 23/0, phone-width-overflow 217/0, qr-stage1-hidden 110/0, load-speed-check 66/0.
 - Shared with QR: `bookmark-nav.js` (one line); a change notice was sent through the PCA.
+
+## v11.33 — 17 Oct 2026 — audit part 36: text and box colour contrast on MSA pages (PCF MSA J29)
+
+**Built by Builder round #942** (branch `builder/issue-942-run-1467`, PR #943, opened by the Builder). Reviewed by the Architect by measurement after merging `main` (v11.32) in. The first audit of WCAG 1.4.3 (text, 4.5:1, or 3:1 for large text) and 1.4.11 (box borders, 3:1) on MSA's own pages. Every text node is measured against its real composited background, including alpha and opacity.
+
+- Text: `.nav-cat-group-label`, `.nav-bm-control span`, `.nav-current`, `.nav-bm-empty` (`shell.css`); muted, empty, meta, gloss and hint text on bookmarks, monitor, homework, classes, journey-map, notes, the three topic pages, catalogue and records: #999/#888/#777 → #666. `.status-learning` #b8862f → #8a6212.
+- Boxes: `input/select/textarea` borders #ccc → #8c8c8c on 14 pages; Hadith and Dua fields get a new token `--hadith-field:#8c8c8c` (was `--hadith-rule` #e2ddcd, 1.36:1). Buttons that carry their own text keep their borders (the 1.4.11 exemption).
+- New suite `tools/i18n-verify/audit-part36-contrast-browser.mjs`: 450/0, with 22 positive-control assertions (seeded #999 on white flagged, alpha and opacity composited, large text at 3:1, a pale field border flagged, disabled and text-carrying controls skipped and counted). Six mutations each fail it.
+- Architect review: the suite and all six mutations re-run; audit-part33 706/0, audit-part16 564/0, card-look 96/0, navcheck clean, behaviour 971/0, phone-width-overflow 217/0, qr-stage1-hidden 110/0, load-speed-check 66/0; Hadith Collections and Monitor looked at at 390px.
+- Not reached (recorded by the round): an opened Note window, the Bookmark popover content and the Zab panels; a pixel-read of text over images; `.pill-archived` on course-offers and curriculum. These are backlog for the next audit part.
+- Shared with QR: `shell.css` (four nav colours) is also loaded by QR's pages; a change notice was sent through the PCA, with the round's suggestion that QR carry #888 → #666 on its own pages.
