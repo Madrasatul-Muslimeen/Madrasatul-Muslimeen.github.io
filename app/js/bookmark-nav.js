@@ -138,8 +138,9 @@ export function pageLabelOf(doc = document) {
   return (copy.textContent || "").replace(/\s+/g, " ").trim();
 }
 function pageLabel() {
+  // Tabs read "MSA — …" since J36 (17 Oct 2026); the old "QuranRevival — …" prefix is still stripped for cached pages.
   const own = pageLabelOf(document);
-  const title = (own || document.title.replace(/^QuranRevival\s*[—-]\s*/, "") || document.title).trim();
+  const title = (own || document.title.replace(/^(?:QuranRevival|MSA)\s*[—-]\s*/, "") || document.title).trim();
   return title.length > 40 ? `${title.slice(0, 39)}…` : title;
 }
 /**
