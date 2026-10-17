@@ -103,12 +103,13 @@ console.log("2. The QR draft: every setting lands, nothing of MSA's is left");
 const qrOut = path.join(TMP, "qr");
 const qr = buildApp({ id: "qr", out: qrOut, only: ONLY });
 const qs = readSettings(SRC, "qr");
-check("every page title reads 'QuranRevival — …', none 'MSA — …'", () => {
+check("every page title reads 'QuranRevival — …', none 'MSA — …' (and only QR's pages are in the app)", () => {
   const pages = listFiles(qrOut, ["app"]).filter((f) => f.endsWith(".html"));
-  const msaTitles = pages.filter((f) => read(qrOut, f).includes("<title>MSA — "));
-  const qrTitles = pages.filter((f) => read(qrOut, f).includes("<title>QuranRevival — "));
-  const srcTitles = listFiles(SRC, ["app"]).filter((f) => f.endsWith(".html") && read(SRC, f).includes("<title>MSA — "));
-  return msaTitles.length === 0 && qrTitles.length === srcTitles.length && srcTitles.length >= 25;
+  const expected = qs.pages.map((p) => `app/${p}`).sort();
+  if (JSON.stringify(pages) !== JSON.stringify(expected)) throw new Error(`pages: ${pages.join(", ")}`);
+  const fromSrc = expected.filter((f) => fs.existsSync(path.join(SRC, f)) && read(SRC, f).includes("<title>MSA — "));
+  return pages.every((f) => !read(qrOut, f).includes("<title>MSA — ")) && fromSrc.length >= 2 && fromSrc.every((f) => read(qrOut, f).includes("<title>QuranRevival — ")) &&
+    listFiles(SRC, ["app"]).filter((f) => f.endsWith(".html") && read(SRC, f).includes("<title>MSA — ")).length >= 25;
 });
 check("Bangla titles: every 'MSA — ' key has its 'QuranRevival — ' key", () => {
   const a = read(SRC, "app/js/i18n/bn.js"), b = read(qrOut, "app/js/i18n/bn.js");
@@ -130,7 +131,7 @@ check("the built scripts still parse (sw.js, bn.js, hidden-modules.js, bookmark-
   ["app/sw.js", "app/js/i18n/bn.js", "app/js/hidden-modules.js", "app/js/bookmark-nav.js"].every((f) => parsesAsModule(path.join(qrOut, f))));
 check("the theme colour reaches every page head once", () => {
   const pages = listFiles(qrOut, ["app", "index.html"]).filter((f) => f.endsWith(".html"));
-  return pages.length > 30 && pages.every((f) => {
+  return pages.length >= 7 && pages.every((f) => {
     const t = read(qrOut, f), m = t.match(/<meta name="theme-color" content="#0f4c4c">/g) || [];
     return m.length === 1 && t.indexOf(m[0]) < t.indexOf("</head>");
   });
@@ -169,7 +170,7 @@ check("QR's worker is QR's own (the upgrade path for today's phones), with no im
 check("QR's settings say what steps 2 to 5 still owe", () => qs.status === "draft" && qs.later.some((l) => /qr-app-<version>/.test(l)) && qs.later.some((l) => /authorised domains/.test(l)));
 
 console.log("3. A manifest and an icon, from a settings fixture");
-const fixture = { ...qs, id: "fixture", manifest: { file: "fixture.webmanifest", pages: ["asma-study.html"], data: { name: "Fixture", icons: [{ src: "img/wheel-hub-calligraphy.webp", sizes: "512x512", type: "image/webp" }] } }, icon: "img/wheel-hub-calligraphy.webp" };
+const fixture = { ...qs, id: "fixture", pages: null, manifest: { file: "fixture.webmanifest", pages: ["asma-study.html"], data: { name: "Fixture", icons: [{ src: "img/wheel-hub-calligraphy.webp", sizes: "512x512", type: "image/webp" }] } }, icon: "img/wheel-hub-calligraphy.webp" };
 const fxOut = path.join(TMP, "fixture");
 const fx = buildApp({ settings: fixture, out: fxOut, only: ONLY });
 check("the manifest is written with the app's colours", () => {
@@ -221,9 +222,9 @@ check("a live QR below minVersion 11.39 is refused (a phone on frozen QR 11.38 w
 check("control: the same live QR at 11.39 builds", () =>
   mutate("app/apps/qr.json", '"status": "draft"', '"status": "live"', () => mutate("app/js/version.js", `APP_VERSION = "${read(SRC, "app/js/version.js").match(/APP_VERSION = "([\d.]+)"/)[1]}"`, 'APP_VERSION = "11.39"', () => !!buildMut("qr"))));
 check("a file the worker saves at install but the build lacks stops the build", () => {
-  const f = path.join(mutSrc, "apps/qr/site/app/asma-about.html"), keep = fs.readFileSync(f);
+  const f = path.join(mutSrc, "apps/qr/site/app/js/asma-about.js"), keep = fs.readFileSync(f);
   fs.rmSync(f);
-  try { return throws(() => buildMut("qr"), /install list names files the build does not have: asma-about\.html/); } finally { fs.writeFileSync(f, keep); }
+  try { return throws(() => buildMut("qr"), /install list names files the build does not have: js\/asma-about\.js/); } finally { fs.writeFileSync(f, keep); }
 });
 check("writing an app over its own source is refused", () => throws(() => buildApp({ id: "qr", src: mutSrc, out: mutSrc, only: ONLY }), /refusing/));
 check("...and so is an output folder that is, or sits inside, a source path (--out=app, --out=index.html, --out=app/js)", () =>
@@ -239,7 +240,7 @@ fs.writeFileSync(path.join(mutSrc, "apps/fx/site/app/fx-own.html"), "<!doctype h
 fs.writeFileSync(path.join(mutSrc, "apps/fx/site/app/js/continue-strip.js"), "// fx's own\n");
 const fxEdits = [{ id: "nav#1", file: "app/js/nav.js", why: "fixture", from: "export const LEGACY_APP_URL", to: "export const FX = 1;\nexport const LEGACY_APP_URL", exact: 1 }];
 fs.writeFileSync(path.join(mutSrc, "apps/fx/edits.json"), JSON.stringify(fxEdits));
-const fxs = { ...qs, id: "fx", afterBuild: null, site: ["index.html", "app"], overlay: "apps/fx/site", edits: "apps/fx/edits.json" };
+const fxs = { ...qs, id: "fx", pages: null, afterBuild: null, site: ["index.html", "app"], overlay: "apps/fx/site", edits: "apps/fx/edits.json" };
 const buildFx = (over = {}) => buildApp({ settings: { ...fxs, ...over }, src: mutSrc, out: path.join(TMP, "fx"), only: ONLY });
 check("an own file is added and an own file replaces the source's", () => {
   const r = buildFx();
@@ -264,6 +265,7 @@ check("a file both edited and overlaid stops the build", () => {
   fs.writeFileSync(path.join(mutSrc, "apps/fx/site/app/js/nav.js"), "x");
   try { return throws(() => buildFx(), /both edited and overlaid/); } finally { fs.rmSync(path.join(mutSrc, "apps/fx/site/app/js/nav.js")); }
 });
+check("a page the settings name but nobody has stops the build", () => throws(() => buildFx({ pages: ["index.html", "nowhere.html"] }), /page app\/nowhere\.html does not exist/));
 check("an overlay inside app/ is refused (MSA would serve it)", () => throws(() => buildFx({ overlay: "app/fx" }), /overlay must be outside app\//));
 
 fs.rmSync(TMP, { recursive: true, force: true });

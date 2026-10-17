@@ -38,7 +38,7 @@
   ],
   "later": [
     "QR's heading: name.short is QuranRevival, so the heading reads QuranRevival at every width, as QR does today (QR's edits #11a-#11c are not used: the title and heading come from these settings, and the version is MSA's one number, QR J22)",
-    "step 2: hiddenModules can only hide a module nav.js tags with a moduleId (today: general, naturelife, lifeskill, health); QR shows only its own pages and qr-links.js sends other links to MSA",
+    "pages: the built QR holds only today's QR's 6 pages; any other page address gives QR's 404, and qr-links.js sends links to those pages to MSA, as today. hiddenModules stays as MSA's until nav.js tags every module",
     "step 2: name.full.bn once the Owner gives QR's Bangla name (today QR shows QuranRevival in Bangla too)",
     "step 3 (built): the built QR keeps QR's own worker (apps/qr/site/app/sw.js, its proven upgrade path); apps/qr/after-build.mjs fills its version (MSA's number) and shell from the built app. It names its caches qr-app-<version> and deletes older qr-app-* on activate, and keeps qr-quran-v1. From status live it refuses a version below minVersion 11.39 (frozen QR is 11.38: a phone already running 11.38 would refuse a worker of that number). Later: one worker shared with MSA",
     "step 2: MSA's 'Legacy App - v10' nav link is not in today's QR (PCA J109 decides)",
@@ -48,5 +48,13 @@
   "overlay": "apps/qr/site",
   "edits": "apps/qr/edits.json",
   "afterBuild": "apps/qr/after-build.mjs",
-  "minVersion": "11.39"
+  "minVersion": "11.39",
+  "pages": [
+    "index.html",
+    "quranrevival.html",
+    "ldog-study.html",
+    "journey-map.html",
+    "asma.html",
+    "asma-about.html"
+  ]
 }

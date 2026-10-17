@@ -175,7 +175,11 @@ export function buildApp({ id, settings, src = ".", out, only } = {}) {
   const inOverlay = (p) => s.overlay && fs.existsSync(path.join(src, s.overlay, p));
   for (const p of site) if (!fs.existsSync(path.join(src, p)) && !inOverlay(p)) throw new Error(`settings "${id}": site path ${p} does not exist`);
   const srcSite = site.filter((p) => fs.existsSync(path.join(src, p)));
-  const files = listSite(src, srcSite);
+  // Settings "pages": the app's pages (paths inside app/). Any other page under app/ is left out of this app,
+  // so its address gives the site's 404 (and the app's own links can send readers to MSA for it).
+  const keepPage = (rel) => !s.pages || !(rel.startsWith("app/") && rel.endsWith(".html")) || s.pages.includes(rel.slice(4));
+  if (s.pages) for (const pg of s.pages) if (!fs.existsSync(path.join(src, "app", pg)) && !inOverlay(`app/${pg}`)) throw new Error(`settings "${id}": page app/${pg} does not exist`);
+  const files = listSite(src, srcSite).filter(keepPage);
 
   const rs = rules(base, s);
   const found = rs.map(() => 0);
