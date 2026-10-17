@@ -271,6 +271,7 @@ export function openWordPopout({ host, word, ayahWords, unitWords, ensureFont, p
       });
     });
     modelEl.dataset.glyphs = L.items.map((i) => i.g).join("|");
+    modelEl.dataset.fs = String(fs);
   }
 
   /** Letters, blank lines: the four forms shown once above the ruled lines, each with its name and example word. */
