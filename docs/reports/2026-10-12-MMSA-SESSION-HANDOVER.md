@@ -7,6 +7,52 @@ v10.28). Read `CLAUDE.md` first. The prompt that starts the next session is
 
 This session was summarised once (its context compacted), which is why it hands over here.
 
+## LATEST UPDATE — 17 Oct 2026, 1:05 pm Sydney, session `session_018mWoDVsH9ncJs1X1xg2PUD` (v11.23 → v11.25) — READ THIS FIRST
+
+The MSA Master Architect, taking over from `session_01M6JYqY9wiowXWGQix9WYAC` at 10:52 am on 17 Oct. This session hands over
+early on the Owner's **new rule cost86** (17 Oct 12:44 pm, PCA J86, in the PCF General rules). **Read it; it binds you:**
+(A) hand over at about **40%** context, not 75%; (C) **no self wake-ups**: set no `send_later` or check-in of your own. You wake
+on the 6-hourly PCA keep-alive, a 📣, an Owner comment or a PCA message, and check Builder results at those wakes;
+(D) a shared-script change notice to QR gives **the exact lines and the names of the checks that cover them**.
+The 9:00 am block below is kept as history.
+
+**Released in this stretch** (each has its J29 Done line with W-T-P-E-O and its What's New line):
+- **v11.24 (#923, round #922, audit part 31):** screen-reader names on MSA's pages, English and Bangla. Monitor's ◀ ▶ and its
+  date and month fields, and the Import file field, had no name. The Dua cards on tablets were clean. **Fixed in review:**
+  `wordpress-import-screen` pinned the file input's exact markup and broke on the new `aria-label`; it now checks for one
+  `.xml` picker, never `multiple`.
+- **Test-only (#926):** `bangla-sweep-lib.mjs` accepts the proper names MSA and "Open Islamicate Texts Initiative". It had
+  been 222/2 on `main` since v11.15 and is now 224/0. Removing the About line's Bangla still fails it (J29 j29p31, answered).
+- **v11.25 (#927, round #925, audit part 32):** new `app/js/modal-focus.js` (`trapModal`). Tab stays inside the bookmark
+  dialogs, the folder pickers and the Note-window dialogs. Closing a dialog, Note window or folder window returns focus to
+  its opener. **Shared note scripts changed** (`note-window.js`, `bookmark-popover.js`, plus the new file they import).
+  The PCA was sent the exact lines and the checks.
+
+**Where things stand (1:05 pm Sydney, 17 Oct):** `main` is at **v11.25**. **In flight: Builder round #928** (issue #928,
+run 1441, dispatched 11:54 am): audit part 33, a visible keyboard focus on every MSA control and a Tab order that follows
+the screen. At your first wake:
+1. If it has finished, open its PR if the Builder did not (#925's run opened none).
+2. Merge `main` in.
+3. **Widen its suite's `WIDTHS` to 320/390/820/1280/1440.** Both #922 and #925 shipped suites covering only 390/1280.
+4. Run every mutation, the suites of each file it touches (a CSS focus rule touches many pages, so include
+   `phone-width-overflow`, `audit-part28/29/30` and `qr-stage1-hidden`), `behaviour` once and `load-speed-check`.
+5. Release it as **v11.26** (read the number off the ledger) and update the PCF.
+Next after that: the rest of J29's audit, in the order of the PCF User Manual (keyboard and screen-reader passes are new
+dimensions; Hadith, Dua, Seerah and the shared tools only, per PCA J71). Then the Architect's backlog in `ARCHITECT.md`.
+**Waiting on the Owner only:** MSA J02, J05, J06, J07, J20, J22, J24.
+
+**Lessons from this stretch:**
+- **A fresh container cannot import `playwright`**: it is installed globally, and ES modules ignore global packages. Run
+  `mkdir -p node_modules && ln -sfn /opt/node-tools/node_modules/playwright node_modules/playwright && ln -sfn
+  /opt/node-tools/node_modules/playwright-core node_modules/playwright-core`. `node_modules` is ignored by git. Without it,
+  every browser suite "fails" in a second with `ERR_MODULE_NOT_FOUND`; read the log, not the count.
+- **The clone is shallow**: `programme-ledger` reports a baseline "not an ancestor of origin/main" until
+  `git fetch --unshallow origin` and a fetch of all branches. Unshallow before believing it.
+- **An accessibility attribute breaks any check that pins exact markup.** Run every suite that greps the changed HTML file
+  (`grep -l <file> tools/i18n-verify/*.mjs`), not only the browser ones. That is how #923's regression was found.
+- **Prove a "red on `main` too" claim** by checking out `origin/main`'s `app/` into the working tree, running the suite, and
+  restoring with `git checkout HEAD -- app/`. Then file it, or fix it if it is test-only and small (#926).
+
 ## LATEST UPDATE — 17 Oct 2026, 9:00 am Sydney, session `session_01M6JYqY9wiowXWGQix9WYAC` (v11.17 → v11.23), refreshed 10:50 am — READ THIS FIRST
 
 The MSA Master Architect, taking over from `session_01QrqatzKibuMLUrZsW4AgCr` at 9:55 pm on 16 Oct. The 8:35 pm block below
