@@ -21681,3 +21681,18 @@ New strings `wholeQuranLevelSentence` ("{level}: Achieved {known} and {percent} 
 - **Not reached:** Dua cards at tablet width (in round #922).
 
 **Tests:** audit-part30 564/0; `--mutate=nwtitle` fails it (70/1 at 768 en); audit-part29 1304/0 with its re-pointed `nwtitle` failing it (306/2); audit-part28 246/0; notes-note-windows 218/0; journey-note-windows 254/0; journey-folder-window 144/0; journey-note-folds-windows 82/0; journey-window-tabs 166/0; behaviour 971/0.
+
+## v11.24 — 17 Oct 2026 — Screen-reader names in Bangla and English across MSA's pages; Dua cards on tablets (PCF MSA J29 audit part 31)
+
+**Built by Builder round #922** (branch `builder/issue-922-run-1430`, PR #923), reviewed by the Architect by measurement after merging `main` (v11.23) in. A new dimension for the audit: the names a screen reader speaks and the hints a reader sees (`aria-label`, `title`, `alt`, `placeholder`, `aria-description`).
+
+- `app/monitor.html`: the ◀ ▶ buttons and the date and month fields had no accessible name (a bare arrow is not a name). They now carry `aria-label` "Previous week", "Next week", "Date", "Previous month", "Next month" and "Month".
+- `app/import-notes.html`: the file field has `aria-label="File"`.
+- `app/js/i18n/bn.js`: five new keys ("Previous week", "Next week", "Previous month", "Next month", "File"); "Date" and "Month" reuse existing keys.
+- Checked clean: `notes`, `journey-map`, `bookmarks`, `records`, `monitor`, `hadith-collections`, `hadith-study`, `deen-study`, `arabic-study`, `people`, `classes`, `homework`, `catalogue`, `dawah`, `import-notes` and `about`, plus the nav, the ⋯ page menu and the Zab corner once opened, in English and Bangla. The Dua cards at 768×1024, 820×1180 and 1024×768: no sideways scroll, nothing cut, every control 40px or more, clear of the Zab corner.
+- New suite `tools/i18n-verify/audit-part31-accessible-names-browser.mjs` (positive controls; mutations `monweek`, `monanchor`, `impfile`). Widened in review from 390/1280 to 320/390/820/1280/1440px.
+- **Fixed in review:** `tools/i18n-verify/wordpress-import-screen.mjs` matched the file field's exact markup and went from 21/0 to 20/1 on the new `aria-label`. The check was updated in place: it now requires one `.xml` picker and never `multiple`, and both mutations fail it.
+- **Not reached (now round #925):** names inside opened Note windows, the bookmark dialog and the Bookmark menu; the Dua ✓ Check flow.
+- **Found, not this round's:** `bangla-sweep-other-pages-browser` fails 2 checks on the About page in Bangla. It reads the proper names QuranRevival, MSA and OpenITI as English interface text. It is the same 222/2 on v11.23 `main`, and it is on the backlog.
+
+**Tests:** audit-part31 655/0; `--mutate=monweek`, `monanchor` and `impfile` each fail it (25/10, every failure on the named control); wordpress-import-screen 21/0; monitor-study-activity 12/0; module-startup-reads 28/0; account-card 1235/0; audit-part5 234/0; audit-part13 494/0; audit-part20 132/0; audit-part21 608/0; notes-way-back 33/0; student-roster-access 30/0; evernote-import-parser 41/0; journey-map-boundary 19/0; phone-width-overflow 217/0; qr-stage1-hidden 110/0; load-speed-check 66/0; behaviour 971/0.

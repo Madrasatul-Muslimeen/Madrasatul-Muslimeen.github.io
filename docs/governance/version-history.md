@@ -887,3 +887,4 @@ total). Allocated by the MMSA Architect.
 11.21: audit part 28: Note windows, Bookmark menu and dialog, Zab → Note on the smallest phone; J33 bigger Word card percentage (QR J04) (round #915). Allocated by the MMSA Architect.
 11.22: audit part 29: small-phone pass finished (Note window menu, bookmark dialog on a short phone, menus part-way down) (round #918). Allocated by the MMSA Architect.
 11.23: audit part 30: tablets with real-length content; Note window titles wrap in every window (round #920). Allocated by the MMSA Architect.
+11.24: audit part 31: screen-reader names in Bangla and English; Dua cards on tablets (round #922). Allocated by the MMSA Architect.
