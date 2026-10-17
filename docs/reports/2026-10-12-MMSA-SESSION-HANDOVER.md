@@ -7,7 +7,59 @@ v10.28). Read `CLAUDE.md` first. The prompt that starts the next session is
 
 This session was summarised once (its context compacted), which is why it hands over here.
 
-## LATEST UPDATE — 18 Oct 2026, 12:40 am Sydney, session `session_01VLTMxUCwUemDmx8ydcpZnq` (v11.30 → v11.34) — READ THIS FIRST
+## LATEST UPDATE — 18 Oct 2026, 9:15 am Sydney, session `session_012qyCSaxMwZTToqQsij6wmR` (v11.34 → v11.37) — READ THIS FIRST
+
+The MSA Master Architect took over at 12:45 am on 18 Oct. It hands over at 9:15 am on the PCA's request: only a NEW session can
+see the API key `MSA_MOVE_KEY`. **The PCA is now `session_01HUvvFAYs3CSniCSwrgeKkk`** (confirmed against
+`meta/global.sessionUrl`).
+
+**Released in this stretch.** Each has its PCF Done line with W-T-P-E-O and its What's New line.
+- **v11.35 (#949, round #946, J37 = QR J16):** a 📜 Mushaf button on the Read bar beside 📖 Meaning, in full screen too.
+  Corrected in review: the word shows only from 768px. 📜 steps aside while the Meaning flow is open over the Mushaf,
+  where 📖 already reads "Mushaf". Four behaviour checks were updated. J37 is closed and QR was sent the notice.
+- **v11.36 (#951, round #950, J29 part 38):** phone landscape, 200% zoom and reduced motion. Catalogue now honours
+  reduced motion. **The round's records.html change was dropped**: here the table is 608px at 640, and its mutation
+  could not fail.
+- **v11.37 (#953, round #952, J29 part 39):** opened windows on short screens. The Note window and the folder ⋯ menu now
+  fit. **Shared `note-window.js` changed**, and QR was sent the exact lines. **Open follow-up:** in the Builder's CI the
+  Records table reads 658px at 640 (fonts differ), so v11.36's dropped records fix may be real on some devices.
+
+**State.** `main` is v11.37. Nothing is in flight: no Builder round and no open PR. **Own audit rounds are PAUSED until
+Thu 22 Oct, about 7 pm** (the Owner's answer A, relayed by the PCA). Until then work only on Owner jobs and on bugs that
+block a student. **QR is FROZEN as it is** (PCA J110, 9:13 am): copy no more MSA fixes into it.
+
+**THE JOB: PCA J110, "One source, many apps"** (PMS `p/pl/jobs/J110`). The Owner answered "1A 2A 3A. Start working
+straight away" at 9:12 am in the PCA session, recorded in J110 `needs` n110a. **Read J110's whole plan first.** QR's
+facts are in the QR repo, `docs/QR-PLAN.md`.
+1. **Start step 1:** a settings file per app, `app/apps/<app>.json` (name, titles, icon, colours, manifest, cache name,
+   which modules show, front page), plus a build script. **MSA must stay unchanged for users**: its settings are
+   today's MSA. Prove it byte-for-byte, or with the existing suites (behaviour, phone-width-overflow,
+   qr-stage1-hidden, brief-integrity).
+2. **Heavy mechanical parts run as background runs on the API credits:**
+   `ANTHROPIC_API_KEY="$MSA_MOVE_KEY" claude -p "…"`.
+   - **Never print, log, echo or commit the key**, and never put it in a command's output.
+   - Check it exists with `[ -n "$MSA_MOVE_KEY" ] && echo set`.
+   - The credits arrive about **6 pm Sydney on 18 Oct**. The **first run is one tiny test call**. If it is refused, tell
+     the PCA and do not retry.
+3. **After every background run, write the running credit total in J110. Stop at US$85.** The Console's US$85 limit is
+   the backstop. There is no card and auto-reload is off. Running the checks costs nothing.
+4. Keep the PMS monitor at one job per line. Set no wake-ups of your own (cost86). At about 40% context, write a
+   handover and send the PCA "PCA ▸ handover ready" with the opening message.
+
+**Lessons from this stretch:**
+- **Run each round's mutations yourself.** #950 claimed `recordstable` failed. It passed 107/0 here, so the change was
+  dropped.
+- **A Builder's green suite can still break OTHER suites.** #946's own suite passed while read-bar-bookmark-layers and
+  read-quick-buttons failed. Run the suites of every element the round touches, and compare with `main`.
+- **The local `playwright` package is missing in a fresh container.** Fix it with
+  `mkdir -p node_modules && ln -sf /opt/node22/lib/node_modules/playwright node_modules/playwright`. `node_modules` is
+  git-ignored.
+- **The clone is shallow.** Run `git fetch --unshallow origin main` and fetch `claude/phase4-wiring` and
+  `claude/pensive-knuth-2pu3jj` before believing brief-integrity or programme-ledger ancestor failures.
+- **Fonts differ between this sandbox and the Builder's CI.** A width that is only a few px over the limit can
+  reproduce in one and not the other.
+
+## LATEST UPDATE — 18 Oct 2026, 12:40 am Sydney, session `session_01VLTMxUCwUemDmx8ydcpZnq` (v11.30 → v11.34) — superseded by the 9:15 am block above, kept as history
 
 The MSA Master Architect took over at 5:04 pm on 17 Oct and hands over at the context limit (cost86). **The PCA is now
 `session_01N6xeVcU5K2Heo5VSSgfKh4`** (since 8:29 pm; `session_015vTqvkMg3piq1bTzKMxrUU` is retired). Read
