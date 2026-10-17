@@ -38,3 +38,4 @@ tools/hadith-data-pull/raw-pull/hadeethenc/
 
 # Screenshots some tools/i18n-verify suites write for the Builder; never committed
 .builder-round/
+build/

@@ -153,3 +153,11 @@ jobs:
           cat "$recap"
           echo "===== END RECAP (the job fails below if any exit was non-zero) ====="
           exit "$failed"
+
+      # PCA J110 step 1: one source, many apps. Building "msa" from
+      # app/apps/msa.json must give back app/ and index.html byte for byte, and
+      # every other app's build must still find what msa.json says the source
+      # holds. A change to a page title, a cache name in sw.js or the hidden
+      # modules list that is not carried into app/apps/msa.json fails here.
+      - name: One source, many apps (apps-build-check)
+        run: node tools/apps/apps-build-check.mjs

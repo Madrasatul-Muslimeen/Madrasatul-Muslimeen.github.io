@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "id": "qr",
+  "status": "draft",
+  "about": "PCA J110 step 1 draft: QuranRevival built from the MSA source. Only the settings the source can already take are filled. Step 2 brings QR's own parts into MSA (the Asma app without sign-in and its manifest and icons, QR's front page, the poster-data fixes); step 3 the one offline worker that takes over and deletes today's qr-app-<version> and qr-* caches; step 4 QR's checks. Not published anywhere until step 5.",
+  "address": "https://quranrevival.github.io/",
+  "name": {
+    "full": { "en": "QuranRevival", "bn": "QuranRevival" },
+    "short": "QR"
+  },
+  "titlePrefix": "QuranRevival",
+  "siteRootName": "QuranRevival",
+  "frontPage": "quranrevival.html",
+  "icon": null,
+  "colours": { "theme": "#0f4c4c", "background": "#0d2225" },
+  "manifest": null,
+  "cachePrefix": "qr",
+  "hiddenModules": ["general", "naturelife", "lifeskill", "health"],
+  "site": [
+    "index.html",
+    "app",
+    "mushaf",
+    "tools/quran-data-pull/output",
+    "tools/hadith-data-pull/output"
+  ],
+  "later": [
+    "step 2: name.full.bn once the Owner gives QR's Bangla name (today QR shows QuranRevival in Bangla too)",
+    "step 2: hiddenModules can only hide a module nav.js tags with a moduleId (today: general, naturelife, lifeskill, health); QR's Deen, Arabic, Hadith and Dawah links need tags first",
+    "step 2: frontPage = QR's own front page, manifest = asma.webmanifest with the asma-* icons",
+    "step 3: the worker must take over and delete the qr-app-<version> and qr-* caches of today's QR",
+    "step 5: quranrevival.github.io must be in Firebase Authentication's authorised domains (Owner)"
+  ]
+}
