@@ -7,7 +7,52 @@ v10.28). Read `CLAUDE.md` first. The prompt that starts the next session is
 
 This session was summarised once (its context compacted), which is why it hands over here.
 
-## LATEST UPDATE — 17 Oct 2026, 1:05 pm Sydney, refreshed 2:25 pm, session `session_018mWoDVsH9ncJs1X1xg2PUD` (v11.23 → v11.26) — READ THIS FIRST
+## LATEST UPDATE — 17 Oct 2026, 5:05 pm Sydney, session `session_01EXxaMgDxPuADkuAus61QVX` (v11.26 → v11.30) — READ THIS FIRST
+
+The MSA Master Architect took over from `session_018mWoDVsH9ncJs1X1xg2PUD` at 2:22 pm and hands over at about 40% context
+(Owner rule cost86). **The PCA is now `session_015vTqvkMg3piq1bTzKMxrUU`** (read `meta/global.sessionUrl` before
+messaging: `session_01F4rELd6jNvVx14F99bVM4j` and `session_017W7wuohe8qk4GK6qLE8wNN` are older PCA sessions, and the
+second is inactive).
+
+**Released in this stretch** (each has its PCF Done line with W-T-P-E-O and its What's New line):
+- **v11.27 (#932, round #931, J29 audit part 34):** keyboard leftovers checked clean; text-spacing overflow at 320px fixed
+  (topic chip, Import file box, revision id); Hadith Arabic marked `lang="ar"`. **The round's `shell.css` nav change was
+  dropped**: its defect did not reproduce and its mutation could not fail the suite.
+- **v11.28 (#936, J36):** the Owner's urgent rename. The main page's tab and heading read "Madrasah Study App (MSA)".
+  Below 700px the heading shows "MSA", drawn by CSS, so the "← Back to …" pill keeps the full name. **J36 waits on two
+  optional Owner ticks:** rename the other pages' "QuranRevival — …" tab titles to "MSA — …"; keep or change the tagline
+  "Reviving the Quran, abandoned.".
+- **v11.29 (#937, J29 j29p33):** new `app/js/table-focus.js` brings a focused button fully into a sideways-scrolling table
+  (People, Catalogue). `audit-part33` now includes 320px.
+- **v11.30 (#935, round #934, J35 = QR J12):** Letters mode in the writing window: 28 letters, four forms each, Trace over
+  and Blank lines. Three example words were corrected in review, and the data check now asserts the letter's position.
+  **QR was sent the change notice** (via the PCA session above).
+
+**In flight: Builder round #938 = MSA J34** (= QR J11; the Owner chose "keep both", 2:43 pm). In Blank lines, the
+example above the paper is drawn like Trace over, with a choice of A light (follows the Letter style) or B dark.
+Dispatched about 5:01 pm. **At your first wake:** if it has finished, open its PR if the Builder did not; merge `main`
+in; review it by measurement (its suite in en and bn at five widths, every mutation, the writing-sheet*/writing-letters
+suites, behaviour once, load-speed-check); release it as **v11.31** (read the number off the ledger); then send QR the
+change notice for `writing-popout.js` (exact lines and checks) through the PCA.
+
+**Next after that:** the rest of J29's audit (Hadith, Dua, Seerah and the shared tools; the PCF User Manual is the
+checklist), then the Architect's backlog. **New backlog item:** `head-search-browser.mjs` fails 18 checks on `main`. It
+still expects a 36px Search button, and the button is 40px. It is a stale test: update it in place.
+**Waiting on the Owner only:** MSA J02, J05, J06, J07, J20, J22, J24, and J36's two optional ticks. Also ask them to
+read J35's Bangla letter names.
+
+**Lessons from this stretch (each cost a re-run):**
+- **`ayah-related-hadith-mutations.mjs` edits `app/js/hadith-browser.js` ON DISK while it runs.** Run beside other suites,
+  it fed them mutated code, and a commit picked up the mutated line. Run it alone, and read every commit's diff.
+- **Never `git checkout` while browser suites run**: they read the working tree through `serve.js`. Wait, or use a
+  worktree.
+- **A waiter must never `pgrep -f` a name in its own command line** (`until ! pgrep -f "runall.sh"` matched itself and hung).
+  Wait on a file the job writes.
+- **A data check that asks "does the word contain the letter" is not the check that was meant.** The spec said "in that
+  place". Read what an assertion really asserts, and add a positive control for the case the spec names.
+- `writing-letters-browser.mjs` re-saves its picture only with `--shot`. Regenerate it after a data change.
+
+## UPDATE — 17 Oct 2026, 1:05 pm Sydney, refreshed 2:25 pm, session `session_018mWoDVsH9ncJs1X1xg2PUD` (v11.23 → v11.26) — superseded by the 5:05 pm block above, kept as history
 
 **REFRESHED 2:25 pm — this paragraph supersedes "Where things stand" below.** `main` is at **v11.26**: audit part 33
 (#929, round #928). `zab-bar.js` adds `html { scroll-padding-bottom }`, so Tab stops above the Zab bar and corner. It is a
