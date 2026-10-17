@@ -24,6 +24,7 @@ import { t, num } from "./i18n.js";
 import { sanitizeNoteHtml, isSafeNoteHref, NOTE_STATUS_COLOURS, NOTE_ANN_TEXT_MAX, NOTE_STATUS_LABEL_MAX } from "./note-sanitize.js";
 import { isOn as previewsOn, setOn as setPreviewsOn, pickLinks, loadPreview, hostOf } from "./note-link-preview.js";
 import { closeAllBarPalettes } from "./bar-palette.js";
+import { trapModal } from "./modal-focus.js";
 import { NOTE_IMAGE_WIDTHS, NOTE_IMAGE_ALT_MAX } from "./note-image-path.js";
 import { sheetInsertHtml, mountSheets } from "./note-sheet-ui.js";
 import { headingStyleCss, PALETTE, LIMITS as SETTING_LIMITS, cleanText as cleanSettingText } from "./note-user-settings.js";
@@ -2289,7 +2290,8 @@ export function createNoteViews(host) {
         <p class="tag-picker-msg" data-dlg-msg role="alert" hidden></p>${inner}</div>`;
     document.body.appendChild(el);
     const back = document.activeElement;
-    const close = () => { el.remove(); if (back?.isConnected) back.focus?.({ preventScroll: true }); };
+    const releaseFocus = trapModal(el); // aria-modal: Tab stays inside (audit part 32)
+    const close = () => { el.remove(); releaseFocus(); if (back?.isConnected) back.focus?.({ preventScroll: true }); };
     el.addEventListener("click", (e) => { if (e.target === el || e.target.closest("[data-dlg-close]")) close(); });
     el.addEventListener("keydown", (e) => { if (e.key === "Escape") { e.stopPropagation(); close(); } });
     const q = (sel) => el.querySelector(sel);
@@ -2980,6 +2982,7 @@ export function createNoteViews(host) {
     winOrder.push(v);
     layoutWindows();
     renderView(v);
+    v.opener = rememberOpener();
     win.focus({ preventScroll: true });
     return v;
   }
@@ -3073,6 +3076,7 @@ export function createNoteViews(host) {
     winOrder.push(fw);
     layoutWindows();
     paintFolderWindow(fw);
+    fw.opener = rememberOpener();
     win.focus({ preventScroll: true });
     return fw;
   }
@@ -3114,10 +3118,12 @@ export function createNoteViews(host) {
   }
   function closeFolderWindow(fw) {
     if (!folderWins.includes(fw)) return;
+    const held = fw.win.contains(document.activeElement);
     fw.win.remove();
     folderWins.splice(folderWins.indexOf(fw), 1);
     winOrder = winOrder.filter((x) => x !== fw);
     layoutWindows();
+    if (held) returnFocus(fw);
   }
 
   /** Closing a window flushes its edit like every other way out. */
@@ -3125,10 +3131,23 @@ export function createNoteViews(host) {
     if (!windowViews.includes(v)) return;
     if (v.ed) endEdit(v);
     closeAllBarPalettes(null);
+    const held = v.win.contains(document.activeElement);
     v.win.remove();
     windowViews.splice(windowViews.indexOf(v), 1);
     winOrder = winOrder.filter((x) => x !== v);
     layoutWindows();
+    if (held) returnFocus(v);
+  }
+  /** Audit part 32: the control that was focused when a window opened (a card's "Open in window" button), so closing the window by Escape or ✕ puts the keyboard back there instead of on the page body. */
+  function rememberOpener() {
+    const a = document.activeElement;
+    return a && a !== document.body && !a.closest?.(".note-win") ? a : null;
+  }
+  function returnFocus(v) {
+    const shown = (e) => e && e.isConnected && e.getClientRects().length > 0;
+    const next = winOrder[winOrder.length - 1];
+    const target = shown(v.opener) ? v.opener : (next?.win ?? null);
+    target?.focus?.({ preventScroll: true });
   }
   /** Single: the pane becomes a window. A pending edit is flushed FIRST (one revision, if changed), then the window opens. */
   async function popOutPane(note) {

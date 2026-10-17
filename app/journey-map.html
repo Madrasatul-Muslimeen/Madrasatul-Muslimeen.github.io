@@ -498,6 +498,7 @@
     import { roleListLabel } from "./js/labels.js";
     import { sanitizeNoteHtml } from "./js/note-sanitize.js";
     import { closeAllBarPalettes } from "./js/bar-palette.js";
+    import { trapModal } from "./js/modal-focus.js";
     import { createNoteViews } from "./js/note-window.js";
     import { createStudyNote, notesForStudyUnit } from "./js/study-note-service.js";
     import { getAyahNotes, ayahNoteHtml } from "./js/ayah-notes.js";
@@ -2631,9 +2632,11 @@
         const listEl = overlay.querySelector("[data-picker-list]");
         const searchEl = overlay.querySelector("[data-picker-search]");
         const onKey = (e) => { if (e.key === "Escape") finish(null); };
+        const releaseFocus = trapModal(overlay);
         function finish(value) {
           document.removeEventListener("keydown", onKey);
           overlay.remove();
+          releaseFocus();
           resolve(value);
         }
         const rows = pickerRows().filter(({ folder }) => includeSystem || !isSystemFolderRole(folder.semanticRole));
@@ -2840,9 +2843,11 @@
         let hlKey = null, formKind = null, busy = false;
         const say = (m) => { msgEl.textContent = m; msgEl.style.display = m ? "block" : "none"; };
         const onKey = (e) => { if (e.key === "Escape") finish(null); };
+        const releaseFocus = trapModal(overlay);
         function finish(value) {
           document.removeEventListener("keydown", onKey);
           overlay.remove();
+          releaseFocus();
           resolve(value);
         }
         const hlNode = () => (hlKey ? findNodeByExpandKey(mergedRoots(), hlKey) : null);
