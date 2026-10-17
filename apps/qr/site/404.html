@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en" data-card-look="night">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Not here · QuranRevival</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="data:,">
+<!-- QR J02 S4 (QR-only). GitHub Pages shows this page for any address the site does not have. A page of the full
+     Madrasah that QR does not hold (a link a copied page made before app/js/qr-links.js could fix it) opens there,
+     when the switch in qr-links.js says "mmsa". Anything else: a calm note and the way home. -->
+<script>
+  try {
+    document.documentElement.setAttribute("data-card-look", localStorage.getItem("mm_card_look") === "light" ? "light" : "night");
+    if (localStorage.getItem("mm_app_lang") === "bn") document.documentElement.lang = "bn";
+  } catch (e) { /* storage blocked: Night, English */ }
+</script>
+<style>
+:root, :root[data-card-look="night"] { --bg: #0d2225; --surface: #143236; --line: rgba(255,255,255,.12); --text: #eef2ea; --muted: #a7bbb6; --heading: #f3e6c4; --gold: #d8b25a; --accent: #8fd3c4; color-scheme: dark; }
+:root[data-card-look="light"] { --bg: #f6f2e7; --surface: #fffdf7; --line: #e0d8c4; --text: #1d2b2c; --muted: #5b6966; --heading: #0f4c4c; --gold: #8a6116; --accent: #0f5c5c; color-scheme: light; }
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px 16px; background: var(--bg); color: var(--text); font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans Bengali", sans-serif; }
+main { max-width: 30rem; width: 100%; text-align: center; }
+h1 { margin: 0 0 8px; font-size: 1.3rem; color: var(--heading); }
+p { margin: 0 0 16px; color: var(--muted); }
+a { color: var(--accent); }
+.home { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 20px; border-radius: 12px; border: 1px solid var(--gold); color: var(--heading); text-decoration: none; font-weight: 600; }
+.quiet { margin-top: 20px; font-size: .9rem; }
+</style>
+</head>
+<body>
+<main id="qrNotHere">
+  <h1 data-t="title">This page is not here</h1>
+  <p data-t="body">QuranRevival does not have this page.</p>
+  <a class="home" href="/" data-t="home">QuranRevival home</a>
+  <p class="quiet"><span data-t="full">The full Madrasah:</span> <a href="https://madrasatul-muslimeen.github.io/">madrasatul-muslimeen.github.io</a></p>
+</main>
+<script type="module">
+  import { QR_OTHER_SUBJECTS, notInQr, mmsaUrl, sameInQr, mmsaHome, awayNoteSeen } from "/app/js/qr-links.js";
+  const own = sameInQr(location.href);
+  if (mmsaHome(location.href)) {
+    // J02 S1e: a page whose home is MMSA (Notes and the others), opened by script: the one-time note first.
+    document.getElementById("qrNotHere").hidden = true;
+    const go = awayNoteSeen() || await (await import("/app/js/qr-away-note.js")).showAwayNote();
+    if (go) location.replace(mmsaUrl(location.href));
+    else if (history.length > 1) history.back();
+    else location.replace("/");
+  } else if (own || (QR_OTHER_SUBJECTS === "mmsa" && notInQr(location.href))) {
+    document.getElementById("qrNotHere").hidden = true;
+    location.replace(own ?? mmsaUrl(location.href));
+  } else {
+    const BN = { title: "এই পাতাটি এখানে নেই", body: "কুরআন রিভাইভালে এই পাতাটি নেই।", home: "কুরআন রিভাইভাল হোম", full: "পূর্ণ মাদ্রাসা:" };
+    if (document.documentElement.lang === "bn") document.querySelectorAll("[data-t]").forEach((el) => { el.textContent = BN[el.dataset.t]; });
+  }
+</script>
+</body>
+</html>

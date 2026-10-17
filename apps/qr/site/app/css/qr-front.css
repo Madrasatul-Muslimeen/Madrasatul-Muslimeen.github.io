@@ -1,0 +1,95 @@
+/* QR J02 S4 (QR-only): QR's front page (index.html). The same tokens as the Asma app (asma.css): Night and Light
+   follow MMSA's card-look switch (data-card-look, key mm_card_look). Calm and roomy; every control 40px or more. */
+
+:root, :root[data-card-look="night"] {
+  --bg: #0d2225;
+  --surface: #143236;
+  --surface-2: #1a3d42;
+  --line: rgba(255, 255, 255, 0.12);
+  --text: #eef2ea;
+  --muted: #a7bbb6;
+  --heading: #f3e6c4;
+  --gold: #d8b25a;
+  --on-gold: #1b2430;
+  --accent: #8fd3c4;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  color-scheme: dark;
+}
+:root[data-card-look="light"] {
+  --bg: #f6f2e7;
+  --surface: #fffdf7;
+  --surface-2: #f0eadb;
+  --line: #e0d8c4;
+  --text: #1d2b2c;
+  --muted: #5b6966;
+  --heading: #0f4c4c;
+  --gold: #8a6116;
+  --on-gold: #ffffff;
+  --accent: #0f5c5c;
+  --shadow: 0 1px 3px rgba(60, 50, 20, 0.12);
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans Bengali", sans-serif;
+  overflow-x: hidden;
+}
+:lang(bn) body, body:lang(bn) { font-family: "Noto Sans Bengali", system-ui, sans-serif; }
+[lang="ar"] { font-family: "Amiri", "Noto Naskh Arabic", serif; }
+a { color: var(--accent); }
+button { font: inherit; color: inherit; }
+button:focus-visible, a:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+
+/* ---- top bar ---- */
+.qf-top {
+  border-bottom: 1px solid var(--line);
+  padding: 8px 16px 10px;
+  padding-top: max(8px, env(safe-area-inset-top));
+}
+.qf-top-row { max-width: 1080px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.qf-brand { display: flex; flex-direction: column; justify-content: center; min-height: 44px; min-width: 0; text-decoration: none; color: var(--heading); }
+.qf-brand-ar { font-size: 1.05rem; line-height: 1.2; color: var(--gold); }
+.qf-brand-en { font-weight: 700; font-size: 1.1rem; line-height: 1.2; white-space: nowrap; }
+.qf-switches { display: flex; gap: 8px; flex: 0 0 auto; }
+.qf-seg { display: inline-flex; padding: 2px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--line); }
+.qf-seg button {
+  min-width: 42px; min-height: 40px; padding: 0 8px; border: 0; border-radius: 10px;
+  background: transparent; color: var(--muted); cursor: pointer; font-size: 0.95rem;
+}
+.qf-seg button[aria-pressed="true"] { background: var(--gold); color: var(--on-gold); font-weight: 700; }
+
+/* ---- the three cards ---- */
+.qf-main { max-width: 1080px; margin: 0 auto; padding: 28px 16px 40px; }
+.qf-lead { margin: 0 auto 24px; max-width: 34rem; text-align: center; color: var(--muted); font-size: 1.05rem; }
+.qf-cards { display: grid; grid-template-columns: 1fr; gap: 16px; }
+.qf-card {
+  display: flex; flex-direction: column; gap: 6px;
+  min-height: 132px; padding: 20px 20px 22px;
+  border-radius: 18px; border: 1px solid var(--line); background: var(--surface); box-shadow: var(--shadow);
+  text-decoration: none; color: var(--text);
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+.qf-card:hover { border-color: var(--gold); }
+.qf-card:active { transform: scale(0.99); }
+.qf-card-ar { font-size: 1.7rem; line-height: 1.3; color: var(--gold); }
+.qf-card-title { font-size: 1.25rem; font-weight: 700; color: var(--heading); line-height: 1.3; }
+.qf-card-text { color: var(--muted); font-size: 0.95rem; }
+.qf-quiet { margin: 32px 0 0; text-align: center; color: var(--muted); font-size: 0.9rem; }
+.qf-quiet a { display: inline-flex; align-items: center; min-height: 40px; overflow-wrap: anywhere; }
+.qf-version { margin: 4px 0 0; text-align: center; color: var(--muted); font-size: 0.8rem; opacity: 0.8; }
+
+@media (min-width: 760px) {
+  .qf-main { padding-top: 56px; }
+  .qf-lead { margin-bottom: 40px; font-size: 1.15rem; }
+  .qf-cards { grid-template-columns: repeat(3, 1fr); gap: 24px; }
+  .qf-card { min-height: 240px; padding: 28px 26px; }
+  .qf-card-ar { font-size: 2.1rem; margin-bottom: 8px; }
+  .qf-card-title { font-size: 1.35rem; }
+}
+@media (prefers-reduced-motion: reduce) { .qf-card { transition: none; } }

@@ -169,8 +169,11 @@ export function buildApp({ id, settings, src = ".", out, only } = {}) {
     if (i === src ? (out === src || src.startsWith(out + path.sep)) : overlaps(out, i)) throw new Error(`refusing to write the app over its own source (${out})`);
   }
   const site = only ? s.site.filter((p) => only.includes(p)) : s.site;
-  for (const p of site) if (!fs.existsSync(path.join(src, p))) throw new Error(`settings "${id}": site path ${p} does not exist`);
-  const files = listSite(src, site);
+  // A site path is in the source, or (for an app's own file) in its overlay folder.
+  const inOverlay = (p) => s.overlay && fs.existsSync(path.join(src, s.overlay, p));
+  for (const p of site) if (!fs.existsSync(path.join(src, p)) && !inOverlay(p)) throw new Error(`settings "${id}": site path ${p} does not exist`);
+  const srcSite = site.filter((p) => fs.existsSync(path.join(src, p)));
+  const files = listSite(src, srcSite);
 
   const rs = rules(base, s);
   const found = rs.map(() => 0);

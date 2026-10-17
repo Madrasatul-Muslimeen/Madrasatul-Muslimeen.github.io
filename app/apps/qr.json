@@ -2,32 +2,49 @@
   "schema": 1,
   "id": "qr",
   "status": "draft",
-  "about": "PCA J110 step 1 draft: QuranRevival built from the MSA source. Only the settings the source can already take are filled. Step 2 brings QR's own parts into MSA (the Asma app without sign-in and its manifest and icons, QR's front page, the poster-data fixes); step 3 the one offline worker that takes over and deletes today's qr-app-<version> and qr-* caches; step 4 QR's checks. Not published anywhere until step 5.",
+  "about": "PCA J110 draft: QuranRevival built from the MSA source. Step 2 (in progress): QR's own files are in apps/qr/site (the Asma app without sign-in, its manifest, icons, fonts and screens, QR's front page, the poster-data fixes, QR's glue scripts) and QR's 36 deliberate changes to shared files are counted edits in apps/qr/edits.json (from QR-PLAN.md's table, re-expressed against today's MSA by a credit run and validated). Step 3 the one offline worker; step 4 QR's checks. Not published anywhere until step 5.",
   "address": "https://quranrevival.github.io/",
   "name": {
-    "full": { "en": "QuranRevival", "bn": "QuranRevival" },
-    "short": "QR"
+    "full": {
+      "en": "QuranRevival",
+      "bn": "QuranRevival"
+    },
+    "short": "QuranRevival"
   },
   "titlePrefix": "QuranRevival",
   "siteRootName": "QuranRevival",
   "frontPage": "quranrevival.html",
   "icon": null,
-  "colours": { "theme": "#0f4c4c", "background": "#0d2225" },
+  "colours": {
+    "theme": "#0f4c4c",
+    "background": "#0d2225"
+  },
   "manifest": null,
   "cachePrefix": "qr",
-  "hiddenModules": ["general", "naturelife", "lifeskill", "health"],
+  "hiddenModules": [
+    "general",
+    "naturelife",
+    "lifeskill",
+    "health"
+  ],
   "site": [
     "index.html",
+    "404.html",
+    ".nojekyll",
     "app",
     "mushaf",
     "tools/quran-data-pull/output",
-    "tools/hadith-data-pull/output"
+    "tools/hadith-data-pull/output/asma-cited-hadith.json"
   ],
   "later": [
+    "QR's heading: name.short is QuranRevival, so the heading reads QuranRevival at every width, as QR does today (QR's edits #11a-#11c are not used: the title and heading come from these settings, and the version is MSA's one number, QR J22)",
+    "step 2: hiddenModules can only hide a module nav.js tags with a moduleId (today: general, naturelife, lifeskill, health); QR shows only its own pages and qr-links.js sends other links to MSA",
     "step 2: name.full.bn once the Owner gives QR's Bangla name (today QR shows QuranRevival in Bangla too)",
-    "step 2: hiddenModules can only hide a module nav.js tags with a moduleId (today: general, naturelife, lifeskill, health); QR's Deen, Arabic, Hadith and Dawah links need tags first",
-    "step 2: frontPage = QR's own front page, manifest = asma.webmanifest with the asma-* icons",
-    "step 3: the worker must take over and delete the qr-app-<version> and qr-* caches of today's QR",
+    "step 2: MSA's 'Legacy App - v10' nav link is not in today's QR (PCA J109 decides)",
+    "step 3: the worker must take over and delete the qr-app-<version> and qr-* caches of today's QR, keep qr-quran-v1, and add qr-copied-page.js to the copied pages as QR's sw.js does",
+    "step 3: Hadith data is read from MSA's address (edits ayah-hadith, hadith-translations, openiti-corpus); hadeethenc-corpus.js still reads ../tools/hadith-data-pull: check in step 4 whether a QR page uses it",
     "step 5: quranrevival.github.io must be in Firebase Authentication's authorised domains (Owner)"
-  ]
+  ],
+  "overlay": "apps/qr/site",
+  "edits": "apps/qr/edits.json"
 }

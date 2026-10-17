@@ -17,7 +17,7 @@ if (!fs.existsSync(path.join(SRC, "app/apps/msa.json"))) {
   process.exit(2);
 }
 const TMP = fs.mkdtempSync(path.join(os.tmpdir(), "apps-build-"));
-const ONLY = ["app", "index.html"]; // the data folders are copied as they are; no rule reads them (checked below)
+const ONLY = ["app", "index.html", "404.html", ".nojekyll"]; // the data folders are copied as they are; no rule reads them (checked below)
 let pass = 0, fail = 0;
 function check(name, fn) {
   let ok;
@@ -118,7 +118,7 @@ check("Bangla titles: every 'MSA — ' key has its 'QuranRevival — ' key", () 
 check("the front page's name, heading and short name are QR's", () => {
   const t = read(qrOut, "app/quranrevival.html");
   return t.includes("<title>QuranRevival</title>") && t.includes('<span class="app-name-full">QuranRevival</span>') &&
-    t.includes('.app-name-short::before { content: "QR"; }') && !t.includes('<span class="app-name-full">Madrasah Study App (MSA)</span>');
+    t.includes('.app-name-short::before { content: "QuranRevival"; }') && !t.includes('<span class="app-name-full">Madrasah Study App (MSA)</span>');
 });
 check("the offline caches are qr-…, and the clean-up deletes only qr-… caches", () => {
   const t = read(qrOut, "app/sw.js");
@@ -136,8 +136,23 @@ check("the theme colour reaches every page head once", () => {
 });
 check("files no rule touches are copied exactly (only the expected files differ)", () => {
   const d = compareTrees(SRC, qrOut, ONLY, inSettings).filter((x) => x.startsWith("differs "));
-  const changed = new Set(qr.changedFiles);
-  return d.length === changed.size && d.every((x) => changed.has(x.slice(8)));
+  const changed = new Set([...qr.changedFiles, ...qr.overlaid.replaced]);
+  const unexpected = d.filter((x) => !changed.has(x.slice(8)));
+  if (unexpected.length) throw new Error(unexpected.join("; "));
+  const same = [...changed].filter((f) => !d.includes("differs " + f));
+  if (same.length) throw new Error("changed but identical to the source: " + same.join(", "));
+  return d.length === changed.size;
+});
+check("every one of QR's edits is in the built file (and there are 36)", () => {
+  const edits = JSON.parse(read(SRC, qs.edits));
+  const missing = edits.filter((e) => !read(qrOut, e.file).includes(e.to));
+  if (missing.length) throw new Error(missing.map((e) => e.id).join(", "));
+  return edits.length === 36;
+});
+check("every one of QR's own files is in the built app byte for byte (the Asma app, the front page, the fonts)", () => {
+  const own = listFiles(path.join(SRC, qs.overlay), ["app", "index.html", "404.html", ".nojekyll"]);
+  return own.length > 40 && own.includes("app/asma.html") && own.includes("app/asma.webmanifest") &&
+    own.every((f) => sha(path.join(SRC, qs.overlay, f)) === sha(path.join(qrOut, f)));
 });
 check("QR's settings say what steps 2 to 5 still owe", () => qs.status === "draft" && qs.later.some((l) => /qr-app-<version>/.test(l)) && qs.later.some((l) => /authorised domains/.test(l)));
 
@@ -164,7 +179,7 @@ check("a manifest icon that does not exist stops the build", () => throws(() =>
 console.log("4. Mutations: each guard can fail");
 // A copy of the source's app/ and index.html, to change without touching the real one.
 const mutSrc = path.join(TMP, "src");
-for (const p of [...ONLY, "tools/apps"]) fs.cpSync(path.join(SRC, p), path.join(mutSrc, p), { recursive: true });
+for (const p of ["app", "index.html", "tools/apps", "apps"]) fs.cpSync(path.join(SRC, p), path.join(mutSrc, p), { recursive: true });
 const mutate = (rel, from, to, fn) => {
   const f = path.join(mutSrc, rel), keep = fs.readFileSync(f, "utf8");
   if (!keep.includes(from)) throw new Error(`mutation anchor not found in ${rel}: ${from}`);
@@ -184,7 +199,7 @@ check("...but the same words in a comment do not", () =>
 check("a new hard-coded MSA cache name elsewhere in app/ stops the qr build", () =>
   mutate("app/js/nav.js", "export const LEGACY_APP_URL", 'const X = "mm-app-x";\nexport const LEGACY_APP_URL', () => throws(() => buildMut("qr"), /nav\.js still says "mm-app-"/)));
 check("a hidden module nav.js cannot hide stops the build", () =>
-  mutate("app/apps/qr.json", '"hiddenModules": ["general"', '"hiddenModules": ["hadith", "general"', () => throws(() => buildMut("qr"), /hidden module "hadith"/)));
+  mutate("app/apps/qr.json", '"naturelife",', '"naturelife", "hadith",', () => throws(() => buildMut("qr"), /hidden module "hadith"/)));
 check("the hidden-modules list changed in the source stops the build", () =>
   mutate("app/js/hidden-modules.js", '["general", "naturelife", "lifeskill", "health"]', '["general", "naturelife", "lifeskill"]', () => throws(() => buildMut("msa"), /modules hidden from this app: found 0/)));
 check("a front page that does not exist stops the build", () =>
@@ -203,7 +218,7 @@ fs.writeFileSync(path.join(mutSrc, "apps/fx/site/app/fx-own.html"), "<!doctype h
 fs.writeFileSync(path.join(mutSrc, "apps/fx/site/app/js/continue-strip.js"), "// fx's own\n");
 const fxEdits = [{ id: "nav#1", file: "app/js/nav.js", why: "fixture", from: "export const LEGACY_APP_URL", to: "export const FX = 1;\nexport const LEGACY_APP_URL", exact: 1 }];
 fs.writeFileSync(path.join(mutSrc, "apps/fx/edits.json"), JSON.stringify(fxEdits));
-const fxs = { ...qs, id: "fx", overlay: "apps/fx/site", edits: "apps/fx/edits.json" };
+const fxs = { ...qs, id: "fx", site: ["index.html", "app"], overlay: "apps/fx/site", edits: "apps/fx/edits.json" };
 const buildFx = (over = {}) => buildApp({ settings: { ...fxs, ...over }, src: mutSrc, out: path.join(TMP, "fx"), only: ONLY });
 check("an own file is added and an own file replaces the source's", () => {
   const r = buildFx();

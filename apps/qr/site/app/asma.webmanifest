@@ -1,0 +1,94 @@
+{
+  "id": "./asma.html",
+  "name": "Asma ul Husna",
+  "short_name": "Asma",
+  "description": "The 99 Names of Allah: each Name's meaning in English or Bangla, its poster, and the ayat and hadith it is named in. Works offline. No sign-in, no ads, nothing collected.",
+  "lang": "en",
+  "dir": "ltr",
+  "start_url": "./asma.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#0f4c4c",
+  "background_color": "#0d2225",
+  "categories": [
+    "education",
+    "books"
+  ],
+  "icons": [
+    {
+      "src": "img/asma-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "img/asma-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "img/asma-icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "img/screens/narrow-names.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "The 99 Names of Allah"
+    },
+    {
+      "src": "img/screens/narrow-name.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "A Name with its poster"
+    },
+    {
+      "src": "img/screens/wide-groups.png",
+      "sizes": "1400x900",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "The owner's groups on a wheel"
+    },
+    {
+      "src": "img/screens/wide-name.png",
+      "sizes": "1400x900",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "A Name with its ayat and hadith"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "The 99 Names",
+      "short_name": "99 Names",
+      "url": "./asma.html#v=names",
+      "icons": [
+        {
+          "src": "img/asma-icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Groups of Names",
+      "short_name": "Groups",
+      "url": "./asma.html#v=groups",
+      "icons": [
+        {
+          "src": "img/asma-icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ]
+}
