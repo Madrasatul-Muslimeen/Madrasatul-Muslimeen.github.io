@@ -72,6 +72,7 @@
 
 import { t, num } from "./i18n.js";
 import { buildUnitKey } from "./unit-keys.js";
+import { trapModal } from "./modal-focus.js";
 
 const isRangeUnit = (u) => u?.kind === "range";
 /** A range's own default Name: "Al-Baqarah 255–257" (or "2:255–257" without a surah name). */
@@ -259,9 +260,11 @@ export function openBookmarkNamePopover({ defaultName = "", folders = [], people
     function onKeydown(e) {
       if (e.key === "Escape") close(null);
     }
+    const releaseFocus = trapModal(overlay);
     function close(result) {
       overlay.remove();
       document.removeEventListener("keydown", onKeydown);
+      releaseFocus();
       resolve(result);
     }
 
@@ -466,9 +469,11 @@ export function openBookmarkExistsChoice() {
       </div>`;
     document.body.appendChild(overlay);
     function onKeydown(e) { if (e.key === "Escape") close(null); }
+    const releaseFocus = trapModal(overlay);
     function close(result) {
       overlay.remove();
       document.removeEventListener("keydown", onKeydown);
+      releaseFocus();
       resolve(result);
     }
     document.addEventListener("keydown", onKeydown);
