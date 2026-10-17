@@ -64,7 +64,8 @@ const CSS = `
 .wp-bar .wp-sp{flex:1 1 0;min-width:0}
 .wp-bar .wp-shade{min-height:40px;min-width:48px;flex:1 1 0;max-width:190px;padding:0.3rem 0.4rem;border:1px solid rgba(255,255,255,0.35);border-radius:8px;background:rgba(255,255,255,0.12);color:#fff;font:inherit;font-size:0.85rem}
 .wp-bar .wp-shade option{color:#1b1b16;background:#fff}
-.wp-bar .wp-shade[data-wp-lines]{flex:0 1 auto;max-width:none}
+.wp-bar .wp-shade[data-wp-lines],.wp-bar .wp-shade[data-wp-model-style]{flex:0 1 auto;max-width:none}
+.wp-bar .wp-shade[hidden]{display:none}
 .wp-bar .wp-row3:empty{display:none}
 .wp-bar .wp-row3 .wp-shade{flex:1 1 0;max-width:none;font-size:0.9rem}
 @media (max-width:380px){.wp-bar .wp-row3 .wp-shade{flex:1 1 40%}}
@@ -81,6 +82,14 @@ const CSS = `
 .wp-move .wp-ink{cursor:grab}
 @media (max-width:599.98px){.wp-tx{display:none}}
 `;
+
+const MODEL_KEY = "writingModelStyle";
+function readModel() {
+  try { return localStorage.getItem(MODEL_KEY) === "dark" ? "dark" : "like"; } catch { return "like"; }
+}
+function saveModel(v) {
+  try { localStorage.setItem(MODEL_KEY, v); } catch { /* this visit only */ }
+}
 
 export function openWordPopout({ host, word, ayahWords, unitWords, ensureFont, paintGlyph, shade, onShade, onClose, mode = "word" }) {
   const root = document.createElement("div");
@@ -105,6 +114,10 @@ export function openWordPopout({ host, word, ayahWords, unitWords, ensureFont, p
           <select class="wp-shade" data-wp-lines aria-label="${t("Lines")}" title="${t("Lines")}">
             <option value="trace">${t("Trace over")}</option>
             <option value="blank">${t("Blank lines")}</option>
+          </select>
+          <select class="wp-shade" data-wp-model-style aria-label="${t("Example above the paper")}" title="${t("Example above the paper")}" hidden>
+            <option value="like">${t("Like Trace over")}</option>
+            <option value="dark">${t("Like Trace over, dark")}</option>
           </select>
           <span class="wp-sp"></span>
           <button type="button" data-wp="close" aria-label="${t("Close")}" title="${t("Close")}">✕</button>
@@ -146,6 +159,7 @@ export function openWordPopout({ host, word, ayahWords, unitWords, ensureFont, p
   const confirmEl = $("[data-wp-confirm]");
   const modelEl = $("[data-wp-model]");
   const modelCv = $("[data-wp-modelcv]");
+  const modelSel = $("[data-wp-model-style]");
 
   const st = {
     mode: mode === "ayah" ? "ayah" : "word",
@@ -157,6 +171,7 @@ export function openWordPopout({ host, word, ayahWords, unitWords, ensureFont, p
     lines: "trace", extra: 0,                       // extra = fresh blocks added with ⬆ More paper
     strokes: new Map(),                             // one list of strokes per word / per Ayah
     drawing: null, geom: null, shade, fit: 0,
+    model: readModel(),                             // "like" (A, default) or "dark" (B): the example above blank lines
   };
   const dirty = () => [...st.strokes.values()].some((l) => l.length > 0);
   const m = document.createElement("canvas").getContext("2d");
@@ -215,6 +230,9 @@ export function openWordPopout({ host, word, ayahWords, unitWords, ensureFont, p
     return { items, lines, maxW };
   }
 
+  /** A: the reader's Letter style; B: solid dark ink ("model" in the host's paintGlyph). */
+  const modelShade = () => (st.model === "dark" ? "model" : st.shade);
+
   /** The word (or Ayah) pinned above the paper while the lines are blank. */
   function renderModel() {
     const blank = st.lines === "blank";
@@ -222,7 +240,9 @@ export function openWordPopout({ host, word, ayahWords, unitWords, ensureFont, p
     if (!blank) return;
     if (st.mode === "letters") { renderLettersModel(); return; }
     const vw = modelEl.clientWidth || scrollEl.clientWidth;
-    const fs = st.mode === "word" ? Math.min(56, fsNow()) : 24;
+    // Owner, 17 Oct 2026 (PCF MSA J34): the model looks as it does in Trace over -- same size, same placement; a tall
+    // Ayah scrolls inside the model band (.wp-model) and never shrinks.
+    const fs = fsNow();
     const pad = 8;
     const L = layout(fs, vw - 2 * pad);
     const lh = fs * 1.6;
@@ -241,13 +261,13 @@ export function openWordPopout({ host, word, ayahWords, unitWords, ensureFont, p
     ctx.textAlign = "right";
     // Owner, 7 Oct 2026: "Why the word is not in tracing/ writing font?" -- the model is drawn in the same hollow
     // letters as the lines to trace over, in dark ink so it is still read at a glance (a thicker outline than the paper's).
-    ctx.lineWidth = Math.max(1, fs / 40);
+    ctx.lineWidth = Math.max(0.35, fs / 90);
     const rightEdge = st.mode === "word" ? Wc / 2 + L.maxW / 2 : Wc - pad;
     L.lines.forEach((line, li) => {
       const y = pad + li * lh + lh * 0.72;
       line.forEach((w) => {
         ctx.font = `${fs}px '${w.family}'`;
-        paintGlyph(ctx, w.g, rightEdge - w.offset, y, w.marker, "model");   // dark: read, not traced
+        paintGlyph(ctx, w.g, rightEdge - w.offset, y, w.marker, modelShade());
       });
     });
     modelEl.dataset.glyphs = L.items.map((i) => i.g).join("|");
@@ -276,7 +296,7 @@ export function openWordPopout({ host, word, ayahWords, unitWords, ensureFont, p
     LETTER_FORMS.forEach((f, i) => {
       const cx = vw - cellW * (i + 0.5);
       ctx.font = `${fs}px '${LETTER_FAMILY}'`;
-      paintGlyph(ctx, L.forms[f], cx, 50, false, "model");
+      paintGlyph(ctx, L.forms[f], cx, 50, false, modelShade());
       noteLines(ctx, cx, 72, cellW - 4, 11, f === "alone" ? `${letterName()} · ${formLabel(f)}` : formLabel(f), formNote(L, f));
       ctx.font = `15px '${LETTER_FAMILY}'`;
       ctx.fillStyle = "#1b1b16";
@@ -467,6 +487,8 @@ export function openWordPopout({ host, word, ayahWords, unitWords, ensureFont, p
     nx.setAttribute("aria-label", nl); nx.title = nl; nx.disabled = !neighbour(1);
     $("[data-wp-shade]").value = st.shade;
     $("[data-wp-lines]").value = st.lines;
+    modelSel.hidden = st.lines !== "blank";
+    modelSel.value = st.model;
   }
 
   async function ensureFor(w) {
@@ -622,6 +644,12 @@ export function openWordPopout({ host, word, ayahWords, unitWords, ensureFont, p
   $("[data-wp-lines]").addEventListener("change", (e) => {
     st.lines = e.target.value === "blank" ? "blank" : "trace";
     st.extra = 0;
+    paintBar();
+    render();
+  });
+  modelSel.addEventListener("change", (e) => {
+    st.model = e.target.value === "dark" ? "dark" : "like";
+    saveModel(st.model);
     render();
   });
 
@@ -630,10 +658,10 @@ export function openWordPopout({ host, word, ayahWords, unitWords, ensureFont, p
   const NARROW_WIN = 500;
   const row3 = $("[data-wp-row3]");
   const linesSel = $("[data-wp-lines]"), shadeSel = $("[data-wp-shade]");
-  const homes = [[linesSel, linesSel.nextElementSibling], [shadeSel, shadeSel.nextElementSibling]];
+  const homes = [[linesSel, modelSel.nextElementSibling], [modelSel, modelSel.nextElementSibling], [shadeSel, shadeSel.nextElementSibling]];
   function placeListBoxes() {
     const narrow = win.getBoundingClientRect().width < NARROW_WIN;
-    if (narrow && linesSel.parentElement !== row3) row3.append(linesSel, shadeSel);
+    if (narrow && linesSel.parentElement !== row3) row3.append(linesSel, modelSel, shadeSel);
     else if (!narrow && linesSel.parentElement === row3) for (const [sel, before] of homes) before.before(sel);
   }
   placeListBoxes();
