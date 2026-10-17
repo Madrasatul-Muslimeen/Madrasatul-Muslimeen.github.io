@@ -133,7 +133,8 @@ async function popFromWord(page, n, loc) {
   await page.waitForFunction(() => { const s = document.querySelector("#writingSheet .wp [data-wp-stage]"); return s && s.dataset.fs; }, null, { timeout: 8000 });
   await page.waitForTimeout(300);
 }
-const wp = (page, sel) => page.click(`#writingSheet .wp ${sel}`);
+// A click that cannot happen (missing or disabled control) FAILS BY NAME after 4s instead of killing the run.
+const wp = (page, sel) => must(`click ${sel}`, page.click(`#writingSheet .wp ${sel}`, { timeout: 4000 }));
 const info = (page) => page.evaluate(() => {
   const r = document.querySelector("#writingSheet .wp");
   const s = r?.querySelector("[data-wp-stage]");
