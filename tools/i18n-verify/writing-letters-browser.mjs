@@ -51,6 +51,12 @@ function validate(list) {
       if (!L.examples?.[f]) bad.push(`${L.id} has no ${f} example`);
       else if (!L.examples[f].includes(L.letter)) bad.push(`${L.id} ${f} example ${L.examples[f]} lacks the letter`);
       if (L.forms?.[f] && !L.forms[f].includes(L.letter)) bad.push(`${L.id} ${f} form lacks the letter`);
+      // Added in review: an example must show the letter IN THE NAMED PLACE, not merely somewhere in the word. The first
+      // build had كتاب as ب's "middle" (its ب is at the end), بيت as ت's middle and كذب as ذ's end.
+      const w = L.examples?.[f] || "";
+      if (f === "start" && w[0] !== L.letter) bad.push(`${L.id} start example ${w} does not begin with ${L.letter}`);
+      if (f === "end" && w.at(-1) !== L.letter) bad.push(`${L.id} end example ${w} does not end with ${L.letter}`);
+      if (f === "middle" && !w.slice(1, -1).includes(L.letter)) bad.push(`${L.id} middle example ${w} has no ${L.letter} inside it`);
     }
     if (!L.name?.en || !L.name?.bn) bad.push(`${L.id} has no en/bn name`);
     if ((NON_JOINERS.includes(L.letter)) === !!L.joinsLeft) bad.push(`${L.id} joinsLeft is wrong`);
@@ -63,6 +69,8 @@ if (!ONLY || ONLY === "data") {
   check("data: POSITIVE CONTROL -- a seeded 27-letter list fails the same check", validate(ARABIC_LETTERS.slice(0, 27)).length > 0);
   const broken = ARABIC_LETTERS.map((L, i) => (i === 3 ? { ...L, examples: { ...L.examples, middle: "كتب" } } : L));
   check("data: POSITIVE CONTROL -- an example that lacks its letter fails", validate(broken).length > 0);
+  const misplaced = ARABIC_LETTERS.map((L, i) => (i === 1 ? { ...L, examples: { ...L.examples, middle: "كتاب" } } : L));
+  check("data: POSITIVE CONTROL -- a 'middle' example whose letter is at the end (ب in كتاب) fails", validate(misplaced).some((x) => /middle example/.test(x)), validate(misplaced).join("; "));
   check("data: the six non-joining letters (ا د ذ ر ز و) are flagged and only they", ARABIC_LETTERS.filter((L) => !L.joinsLeft).map((L) => L.letter).join("") === NON_JOINERS);
   check("data: joining forms use a tatweel, non-joiners' middle is their end shape", ARABIC_LETTERS.every((L) => (L.joinsLeft ? L.forms.start === L.letter + "ـ" && L.forms.middle === "ـ" + L.letter + "ـ" : L.forms.start === L.letter && L.forms.middle === L.forms.end)));
 }
