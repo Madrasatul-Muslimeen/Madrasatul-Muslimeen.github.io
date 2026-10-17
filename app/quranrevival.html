@@ -10,7 +10,7 @@
        randomly." The phone heading's separators: a line or a dot, picked at
        random each time the page opens (the CSS under .wheel-heading::before). -->
   <script>document.documentElement.setAttribute('data-head-sep', Math.random() < 0.5 ? 'line' : 'dot');</script>
-<title>QuranRevival — Phase 4/5</title>
+<title>Madrasah Study App (MSA)</title>
 <style>
   /* Shell round 7 (12 Aug 2026) -- this page is now a real app shell rather
      than a plain scrolling document: a header, a stage that STRETCHES to
@@ -81,6 +81,15 @@
     box-shadow: 0 1px 4px rgba(19, 25, 42, 0.25);
   }
   h1 .head-search-btn:hover { background: #fdf6e3; }
+  /* The Owner, 17 Oct 2026 (PCF inbox 9bnl4tkit8wmvk): the app is "Madrasah Study App (MSA)". Measured: with the
+     full name the English title needs 347px, so below 700px the Search button broke onto a second line (the header
+     grew from 40px to 72px at 390px and 99px at 320px). Below 700px the heading shows "MSA"; the tab title and wider
+     screens show the full name.
+     The short name is drawn by CSS so the page's own label (the "← Back to …" pill reads the heading's text) stays
+     the full name. */
+  .app-name-short { display: none; }
+  .app-name-short::before { content: "MSA"; }
+  @media (max-width: 699px) { .app-name-full { display: none; } .app-name-short { display: inline; } }
   h1 .head-search-btn svg { flex: 0 0 auto; }
   /* Measured at 360px in English: "QuranRevival v09.13" plus the 99px button
      needed 334px of a 328px line, so the button broke onto its own line.
@@ -4858,7 +4867,7 @@
        relocatePreviewNotice() below. This span just gives the title text
        its own flex box so h1's own justify-content: space-between (below)
        has two things to split between, not one. -->
-  <h1><span id="appTitleText">QuranRevival <span id="appVersion" class="app-version"></span></span><button type="button" id="headSearchBtn" class="head-search-btn" aria-controls="panelStudyOptions"><svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg><span class="head-search-label">Search</span></button></h1>
+  <h1><span id="appTitleText"><span class="app-name-full">Madrasah Study App (MSA)</span><span class="app-name-short"></span> <span id="appVersion" class="app-version"></span></span><button type="button" id="headSearchBtn" class="head-search-btn" aria-controls="panelStudyOptions"><svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg><span class="head-search-label">Search</span></button></h1>
   <!-- Shell round 20 (17 Aug 2026) -- the moving tagline strip. It stands
        EXACTLY where the static tagline stood, which is the owner's own call
        and also the cheap one: measured at 17-19px against the <p>'s own

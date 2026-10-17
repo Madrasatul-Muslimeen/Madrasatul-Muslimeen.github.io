@@ -891,3 +891,4 @@ total). Allocated by the MMSA Architect.
 11.25: audit part 32: Tab stays inside dialogs; focus returns on close (round #925). Allocated by the MMSA Architect.
 11.26: audit part 33: Tab clears the Zab bar and corner; keyboard focus checked (round #928). Allocated by the MMSA Architect.
 11.27: audit part 34: wider text spacing fits a 320px screen; Hadith Arabic marked lang=ar (PCF MSA J29). Allocated by the MMSA Architect.
+11.28: the main page renamed Madrasah Study App (MSA) (PCF MSA J36). Allocated by the MMSA Architect.
