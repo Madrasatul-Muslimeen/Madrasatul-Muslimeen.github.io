@@ -124,7 +124,7 @@ async function flow(name, lang, width, height, pagePath, seed, fn) {
 const ev = (page, f, a) => page.evaluate(f, a);
 const settle = (page, ms = 350) => page.waitForTimeout(ms);
 const noErr = (errors) => errors.filter((e) => !/ERR_CERT|ERR_TUNNEL|net::|archive\.org|api\.quran|quran\.foundation|fonts\.g|Failed to load resource/i.test(e));
-const WIDTHS = [390, 1280].filter((w) => !WONLY || w === WONLY);
+const WIDTHS = [320, 390, 820, 1280, 1440].filter((w) => !WONLY || w === WONLY);
 const LANGS = ["en", "bn"].filter((l) => !LONLY || l === LONLY);
 const visible = (page, sel) => ev(page, (s) => [...document.querySelectorAll(s)].some((e) => { const b = e.getBoundingClientRect(); const c = getComputedStyle(e); return b.width > 0 && b.height > 0 && c.visibility !== "hidden" && c.display !== "none" && !e.closest("[hidden]"); }), sel);
 
