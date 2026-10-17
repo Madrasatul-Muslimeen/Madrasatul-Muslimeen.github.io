@@ -313,7 +313,7 @@ export function openWordPopout({ host, word, ayahWords, unitWords, ensureFont, p
     // The paper is copied down the window (a copybook): enough blocks to fill it, plus whatever ⬆ More paper added.
     const blocks = Math.min(MAX_BLOCKS, Math.max(1, Math.ceil((vh - 2 * pad) / blockH)) + st.extra);
     const Hc = Math.max(vh, Math.ceil(blocks * blockH + 2 * pad));
-    const ax = st.mode === "word" ? Wc / 2 : Wc - pad;          // anchor of the strokes
+    const ax = st.mode !== "ayah" ? Wc / 2 : Wc - pad;         // anchor of the strokes
     const ay = 0;
     const top = pad;
     let dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -333,7 +333,7 @@ export function openWordPopout({ host, word, ayahWords, unitWords, ensureFont, p
     ctx.direction = "ltr";
     ctx.textAlign = "right";
     ctx.lineWidth = Math.max(0.35, fs / 90);
-    const rightEdge = st.mode === "word" ? Wc / 2 + L.maxW / 2 : Wc - pad;
+    const rightEdge = st.mode !== "ayah" ? Wc / 2 + L.maxW / 2 : Wc - pad;
     for (let b = 0; b < blocks; b++) {
       L.lines.forEach((line, li) => {
         const y = top + (b * L.lines.length + li) * lh + lh * 0.72;
