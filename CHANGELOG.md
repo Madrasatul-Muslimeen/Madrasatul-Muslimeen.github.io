@@ -21851,3 +21851,21 @@ The Owner answered J36's two optional choices at 8:20 pm Sydney: *"1. Yes. 2. Ke
 - Not reached (recorded by the round): opened sheets and dialogs in landscape.
 - For QR (change request, via the PCA): at 844×390 the wheel drawer buttons, `wheelCtaBtn` and `ways-group-btn`s sit under the Zab bar; under reduced motion an SVG transition (0.25s) and `#pageViewContainer`'s `scroll-behavior: smooth` still run; at 640px `ways-toggle-all`/`myStatusWideBtn` sit under other controls.
 - Tests: audit-part38 107/0 (`cataloguescroll` and `catalogueflash` each fail it); catalogue-tabs 56/0, catalogue-sections 126/0, catalogue-add-approach 30/0, audit-part17 868/0, bangla-sweep-other-pages 224/0; and from the round: behaviour 971/0, phone-width-overflow 217/0, qr-stage1-hidden 110/0, audit-part36 1184/0, audit-part33 706/0, card-look 96/0.
+
+## v11.37 — 18 Oct 2026 — audit part 39: opened windows, sheets and menus on short screens (PCF MSA J29)
+
+**Built by Builder round #952** (PR #953, branch `builder/issue-952-run-1485`). This round opens each sheet, dialog and menu in phone landscape (844×390) and at 200% zoom (640×450), in en and bn, and checks that its Close/Save/primary button can be reached by scrolling only inside the sheet itself.
+
+- `app/js/note-window.js` (**shared note script; QR keeps a pinned copy, so a change notice was sent**):
+  - line 80: `WIN_LIMITS.minH` is now a getter, `Math.min(360, Math.max(200, innerHeight - 52))`;
+  - `defaultWinRect()`: when `innerHeight < 560`, the first window starts at y = 8 and its height keeps it clear of the 52px bottom strip.
+  - Measured on `main` first: at 844×390 the window ran from 185 to 545px, and the ⋯ sheet's 🗑 Delete was off the screen. Screens 560px high or taller are unchanged.
+- `app/journey-map.html`: `@media (max-height: 520px)`, the open folder ⋯ menu gets `max-height: calc(100vh - 7rem); overflow-y: auto`. On `main` it was 643px tall with no inner scroll.
+- These already fitted, so nothing changed: the Bookmark dialog, the nav menus, the Zab panels, the window switcher, the Mapping My Journey page ⋯ menu, Favourites, Archived, the folder picker, Trash and the Dua ✓ Check panel.
+- `tools/i18n-verify/audit-part38-landscape-zoom-motion-browser.mjs`: new `--mode=sheets` with the `sheetCheck` detector. Its positive controls: a seeded too-tall sheet with no inner scroll is flagged, the same sheet with an inner scroll passes, and an over-wide child is flagged.
+- Architect review:
+  - the sheets suite and all three mutations were re-run (8, 2 and 4 failures);
+  - journey-note-windows 254/0, journey-window-tabs 166/0 and journey-folder-menus 148/0;
+  - audit-part21-notes was 607/1. The failing flow (bn 820px, Dua ← Back) then passed on two re-runs, and also with `main`'s two files, so it was a timing miss.
+- Recorded: in the Builder's CI the part-38 records check reads 658px at 640px, while this sandbox reads 608px, so the records fix dropped in v11.36 may be real where fonts differ. It is a follow-up.
+- Not reached: cascaded second and third Note windows on a short screen; the Bookmark dialog in edit mode; the Note editor's toolbars; the Zab item-edit forms.
