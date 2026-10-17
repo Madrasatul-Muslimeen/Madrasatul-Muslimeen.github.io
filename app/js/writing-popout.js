@@ -11,6 +11,8 @@
 // from the words' anchor) so a size change redraws them with the letters.
 
 import { t } from "./i18n.js";
+import { getAppLang } from "./prefs.js";
+import { ARABIC_LETTERS } from "./arabic-letters.js";
 
 const MULT = [0.3, 0.45, 0.65, 0.85, 1, 1.4];     // of the base size, five or more steps
 const BASE_AYAH = 64;                              // css px at 1.0
@@ -23,6 +25,27 @@ const GAP = 0.12;                                  // em between words, as on th
 const LINE_H = 2.0;                                // em per line
 const MORE_BLOCKS = 2;                             // fresh lines (or Ayah copies) one tap of ⬆ adds
 const MAX_BLOCKS = 60;
+// Letters practice (PCF MSA J35): the Mushaf page fonts draw Qur'an glyph codes and cannot show a lone letter or its
+// joining forms, so Letters mode draws real Unicode text in Amiri Quran, a bundled Arabic text font (app/fonts, no
+// network): it is the face closest to the Qur'an's own hand and it keeps every joining feature, so the font joins
+// the tatweel forms. FontFace is loaded once, under a name of its own.
+const LETTER_FAMILY = "MMSA Letter Practice";
+const LETTER_FORMS = ["alone", "start", "middle", "end"];
+const LETTER_FS = 96;                              // css px at 1.0 (a phone fits the widest form)
+let letterFontReady = null;
+function ensureLetterFont() {
+  if (!letterFontReady) {
+    letterFontReady = (async () => {
+      try {
+        const f = new FontFace(LETTER_FAMILY, `url(${new URL("../fonts/amiriquran.woff2", import.meta.url).href})`);
+        await f.load();
+        document.fonts.add(f);
+        return true;
+      } catch { return false; }
+    })();
+  }
+  return letterFontReady;
+}
 
 const CSS = `
 .wp{position:fixed;inset:0;z-index:9600;background:rgba(20,24,40,0.55);display:flex;align-items:center;justify-content:center;overflow:hidden;font-family:'Inter',system-ui,sans-serif}
@@ -70,6 +93,7 @@ export function openWordPopout({ host, word, ayahWords, unitWords, ensureFont, p
         <div class="wp-row">
           <button type="button" data-wp-mode="word" aria-pressed="false">${t("Word")}</button>
           <button type="button" data-wp-mode="ayah" aria-pressed="false">${t("Ayah")}</button>
+          <button type="button" data-wp-mode="letters" aria-pressed="false">${t("Letters")}</button>
           <button type="button" data-wp="prev" aria-label="${t("Previous word")}" title="${t("Previous word")}">‹</button>
           <button type="button" data-wp="next" aria-label="${t("Next word")}" title="${t("Next word")}">›</button>
           <button type="button" data-wp="smaller" aria-label="${t("Smaller letters")}" title="${t("Smaller letters")}">A−</button>
@@ -121,6 +145,7 @@ export function openWordPopout({ host, word, ayahWords, unitWords, ensureFont, p
 
   const st = {
     mode: mode === "ayah" ? "ayah" : "word",
+    li: 0,                                          // the letter Letters mode is on (index into ARABIC_LETTERS)
     cw: word,                                       // the word the pop-out is on now
     // The Owner, 9 Oct 2026: the pop-out "should take the whole screen with its buttons" -- it opens full screen;
     // ⛶ still makes it a window.
@@ -133,16 +158,26 @@ export function openWordPopout({ host, word, ayahWords, unitWords, ensureFont, p
   const m = document.createElement("canvas").getContext("2d");
 
   const ayahOf = (loc) => { try { return ayahWords(loc) || []; } catch { return []; } };
-  const wordsFor = () => (st.mode === "word" ? [st.cw] : (ayahOf(st.cw.loc).length ? ayahOf(st.cw.loc) : [st.cw]));
+  const letterNow = () => ARABIC_LETTERS[st.li];
+  const letterName = () => letterNow().name[getAppLang() === "bn" ? "bn" : "en"];
+  const formLabel = (f) => ({ alone: t("Alone"), start: t("Beginning"), middle: t("Middle"), end: t("Ending") })[f];
+  /** What a form really is for a letter that never joins forward: said plainly, never an invented shape. */
+  const formNote = (L, f) => (L.joinsLeft ? "" : f === "start" ? t("does not join the next letter") : f === "middle" ? t("joins only the letter before it") : "");
+  const lettersItems = () => {
+    const L = letterNow();
+    return LETTER_FORMS.map((f) => ({ g: L.forms[f], loc: `L:${L.id}:${f}`, page: 0, family: LETTER_FAMILY, marker: false, form: f }));
+  };
+  const wordsFor = () => (st.mode === "letters" ? lettersItems() : st.mode === "word" ? [st.cw] : (ayahOf(st.cw.loc).length ? ayahOf(st.cw.loc) : [st.cw]));
   /** The strokes of what is on the paper: this word, or this Ayah (keyed by its first word). */
   function strokeList() {
-    const key = st.mode === "word" ? `w:${st.cw.loc}` : `a:${(ayahOf(st.cw.loc)[0] || st.cw).loc}`;
+    const key = st.mode === "letters" ? `l:${letterNow().id}` : st.mode === "word" ? `w:${st.cw.loc}` : `a:${(ayahOf(st.cw.loc)[0] || st.cw).loc}`;
     if (!st.strokes.has(key)) st.strokes.set(key, []);
     return st.strokes.get(key);
   }
 
   function baseFs() {
     if (st.mode === "ayah") return BASE_AYAH;
+    if (st.mode === "letters") return LETTER_FS;
     if (!st.fit) {
       // Fit the word to most of a phone's width once, so a window resize never changes the letter size.
       m.font = `100px '${st.cw.family}'`;
@@ -164,10 +199,13 @@ export function openWordPopout({ host, word, ayahWords, unitWords, ensureFont, p
     const maxW = Math.max(0, ...items.map((i) => i.width));
     const lines = [[]];
     let cursor = 0;
+    const letters = st.mode === "letters";
     items.forEach((it) => {
       const cur = lines[lines.length - 1];
-      if (st.mode === "ayah" && cur.length && cursor + it.width > avail) { lines.push([]); cursor = 0; }
-      lines[lines.length - 1].push({ ...it, offset: cursor });
+      // Letters: each form has a line of its own, centred on the others.
+      if (letters && cur.length) { lines.push([]); cursor = 0; }
+      else if (st.mode === "ayah" && cur.length && cursor + it.width > avail) { lines.push([]); cursor = 0; }
+      lines[lines.length - 1].push({ ...it, offset: letters ? (maxW - it.width) / 2 : cursor });
       cursor += it.width + gap;
     });
     return { items, lines, maxW };
@@ -178,6 +216,7 @@ export function openWordPopout({ host, word, ayahWords, unitWords, ensureFont, p
     const blank = st.lines === "blank";
     modelEl.hidden = !blank;
     if (!blank) return;
+    if (st.mode === "letters") { renderLettersModel(); return; }
     const vw = modelEl.clientWidth || scrollEl.clientWidth;
     const fs = st.mode === "word" ? Math.min(56, fsNow()) : 24;
     const pad = 8;
@@ -208,6 +247,53 @@ export function openWordPopout({ host, word, ayahWords, unitWords, ensureFont, p
       });
     });
     modelEl.dataset.glyphs = L.items.map((i) => i.g).join("|");
+  }
+
+  /** Letters, blank lines: the four forms shown once above the ruled lines, each with its name and example word. */
+  function renderLettersModel() {
+    const vw = modelEl.clientWidth || scrollEl.clientWidth;
+    const L = letterNow();
+    const cellW = vw / 4;
+    const Hc = 132;
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    modelCv.width = Math.round(vw * dpr); modelCv.height = Math.round(Hc * dpr);
+    modelCv.style.width = `${vw}px`; modelCv.style.height = `${Hc}px`;
+    const ctx = modelCv.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.fillStyle = "#f4eedd";
+    ctx.fillRect(0, 0, vw, Hc);
+    ctx.lineJoin = "round";
+    ctx.direction = "ltr";
+    ctx.textBaseline = "alphabetic";
+    ctx.textAlign = "center";
+    const fs = Math.min(44, cellW * 0.62);
+    ctx.lineWidth = Math.max(1, fs / 40);
+    // right to left, as the Arabic is read: alone, beginning, middle, end
+    LETTER_FORMS.forEach((f, i) => {
+      const cx = vw - cellW * (i + 0.5);
+      ctx.font = `${fs}px '${LETTER_FAMILY}'`;
+      paintGlyph(ctx, L.forms[f], cx, 50, false, "model");
+      noteLines(ctx, cx, 72, cellW - 4, 11, f === "alone" ? `${letterName()} · ${formLabel(f)}` : formLabel(f), formNote(L, f));
+      ctx.font = `15px '${LETTER_FAMILY}'`;
+      ctx.fillStyle = "#1b1b16";
+      ctx.fillText(L.examples[f], cx, Hc - 8);
+    });
+    modelEl.dataset.glyphs = LETTER_FORMS.map((f) => L.forms[f]).join("|");
+  }
+  /** A form's name, and under it (smaller) what it really is; wrapped to the cell, never cut. */
+  function noteLines(ctx, x, y, maxW, px, label, note) {
+    let yy = y;
+    const wrap = (text, font, color) => {
+      ctx.font = font; ctx.fillStyle = color;
+      let cur = "";
+      for (const w of text.split(" ")) {
+        const tryS = cur ? `${cur} ${w}` : w;
+        if (cur && ctx.measureText(tryS).width > maxW) { ctx.fillText(cur, x, yy); yy += px + 2; cur = w; } else cur = tryS;
+      }
+      if (cur) { ctx.fillText(cur, x, yy); yy += px + 2; }
+    };
+    wrap(label, `600 ${px}px 'Inter',system-ui,sans-serif`, "#4a3a10");
+    if (note) wrap(note, `${px - 1}px 'Inter',system-ui,sans-serif`, "#7a6a40");
   }
 
   let lastBox = "";
@@ -259,6 +345,7 @@ export function openWordPopout({ host, word, ayahWords, unitWords, ensureFont, p
         line.forEach((w) => {
           ctx.font = `${fs}px '${w.family}'`;
           paintGlyph(ctx, w.g, rightEdge - w.offset, y, w.marker, st.shade);
+          if (st.mode === "letters") paperNote(ctx, w, pad, y, lh);
         });
       });
     }
@@ -266,13 +353,14 @@ export function openWordPopout({ host, word, ayahWords, unitWords, ensureFont, p
     // Architect review (#604): when the letters are wider than the window, show the START of the Arabic
     // (its right-hand end), not its left; a centred word that fits stays centred. Only on a new size or
     // view, so a reader's own scrolling (✋ Move) is not undone by a window resize.
-    const viewKey = `${st.mode}|${fs}|${st.cw.loc}`;
+    const viewKey = `${st.mode}|${fs}|${st.mode === "letters" ? st.li : st.cw.loc}`;
     if (viewKey !== st.lastView) {
       st.lastView = viewKey;
       scrollEl.scrollLeft = Math.max(0, Math.ceil(rightEdge + pad - vw));
       scrollEl.scrollTop = 0;
     }
     stage.dataset.mode = st.mode;
+    if (st.mode === "letters") stage.dataset.letter = letterNow().id; else delete stage.dataset.letter;
     stage.dataset.fs = String(fs);
     stage.dataset.size = String(st.idx);
     stage.dataset.canvasW = String(Wc);
@@ -286,6 +374,25 @@ export function openWordPopout({ host, word, ayahWords, unitWords, ensureFont, p
     root.dataset.glyph = st.cw.g;
     root.dataset.loc = st.cw.loc;
     paintInk();
+  }
+
+  /** Letters, trace over: each form's name and example word, small, at the paper's left edge of its line. */
+  function paperNote(ctx, w, pad, y, lh) {
+    const L = letterNow();
+    ctx.save();
+    ctx.textAlign = "left";
+    ctx.lineWidth = 1;
+    const x = Math.round(pad * 0.5) + 4;
+    const top = y - lh * 0.72;
+    ctx.fillStyle = "#4a3a10";
+    ctx.font = `600 12px 'Inter',system-ui,sans-serif`;
+    ctx.fillText(w.form === "alone" ? `${letterName()} · ${formLabel(w.form)}` : formLabel(w.form), x, top + 18);
+    const note = formNote(L, w.form);
+    if (note) { ctx.fillStyle = "#7a6a40"; ctx.font = `11px 'Inter',system-ui,sans-serif`; ctx.fillText(note, x, top + 32); }
+    ctx.fillStyle = "#1b1b16";
+    ctx.font = `20px '${LETTER_FAMILY}'`;
+    ctx.fillText(L.examples[w.form], x, top + (note ? 58 : 48));
+    ctx.restore();
   }
 
   function paintInk() {
@@ -319,6 +426,7 @@ export function openWordPopout({ host, word, ayahWords, unitWords, ensureFont, p
   // ---- ‹ › : the neighbour word (or Ayah) in the unit, or null at its ends
   function unitList() { try { return unitWords?.() || []; } catch { return []; } }
   function neighbour(dir) {
+    if (st.mode === "letters") { const k = st.li + dir; return k >= 0 && k < ARABIC_LETTERS.length ? k : null; }
     const all = unitList();
     const i = all.findIndex((w) => w.loc === st.cw.loc);
     if (i < 0) return null;
@@ -348,8 +456,8 @@ export function openWordPopout({ host, word, ayahWords, unitWords, ensureFont, p
     const wl = st.full ? t("Exit full screen") : t("Full screen");
     wb.setAttribute("aria-label", wl);
     wb.title = wl;
-    const w = st.mode === "word";
-    const pl = w ? t("Previous word") : t("Previous Ayah"), nl = w ? t("Next word") : t("Next Ayah");
+    const w = st.mode === "word", lt = st.mode === "letters";
+    const pl = lt ? t("Previous letter") : w ? t("Previous word") : t("Previous Ayah"), nl = lt ? t("Next letter") : w ? t("Next word") : t("Next Ayah");
     const pv = $('[data-wp="prev"]'), nx = $('[data-wp="next"]');
     pv.setAttribute("aria-label", pl); pv.title = pl; pv.disabled = !neighbour(-1);
     nx.setAttribute("aria-label", nl); nx.title = nl; nx.disabled = !neighbour(1);
@@ -372,6 +480,7 @@ export function openWordPopout({ host, word, ayahWords, unitWords, ensureFont, p
     const n = neighbour(dir);
     if (!n) return;
     cancelStroke();
+    if (st.mode === "letters") { st.li = n; st.extra = 0; paintBar(); render(); return; }
     await ensureFor(n);
     if (st.destroyed) return;
     st.cw = n;
@@ -480,7 +589,9 @@ export function openWordPopout({ host, word, ayahWords, unitWords, ensureFont, p
       // The Owner, 9 Oct 2026: an Ayah opened from its end mark, then Word, showed the end mark as "the word". A mark
       // is never a word to write: Word starts on that Ayah's first word.
       if (st.mode === "word" && st.cw.marker) st.cw = ayahOf(st.cw.loc).find((w) => !w.marker) ?? unitList().find((w) => !w.marker && w.loc.split(":").slice(0, 2).join(":") === st.cw.loc.split(":").slice(0, 2).join(":")) ?? st.cw;
-      paintBar(); render(); return;
+      paintBar(); render();
+      if (st.mode === "letters") ensureLetterFont().then(() => { if (!st.destroyed && st.mode === "letters") { render(); root.dataset.letterFont = "1"; } });
+      return;
     }
     if (b.dataset.wpTool) { st.tool = b.dataset.wpTool; paintBar(); return; }
     switch (b.dataset.wp) {
