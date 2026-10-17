@@ -12,6 +12,7 @@ import { chromium, newContext, openPage } from "./harness.mjs";
 let pass = 0, fail = 0;
 function check(name, ok, detail = "") {
   if (ok && typeof ok.then === "function") throw new Error(`check "${name}" was handed a promise`);
+  if (process.argv.some((a) => a.startsWith("--out="))) { if (ok) pass++; else { fail++; console.log(`  FAIL  ${name}`); } return; } // a findings run prints names only
   if (ok) { pass++; console.log(`  PASS  ${name}`); } else { fail++; console.log(`  FAIL  ${name}${detail ? `\n        ${detail}` : ""}`); }
 }
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
@@ -19,7 +20,14 @@ const arg = (n) => (process.argv.find((a) => a.startsWith(`--${n}=`)) || "").sli
 const MUTATE = arg("mutate"), ONLY = arg("only"), WONLY = Number(arg("width")) || 0, LONLY = arg("lang"), KONLY = arg("look");
 const LIST = process.argv.includes("--list");
 // name: [file, route glob, anchor (exactly once), replacement, page path it applies to]
-const MUTATIONS = {};
+const MUTATIONS = {
+  muted: ["app/monitor.html", "**/monitor.html*", "  .muted { color: #666; font-size: 0.85rem; }", "  .muted { color: #888; font-size: 0.85rem; }", "/app/monitor.html"],
+  learning: ["app/monitor.html", "**/monitor.html*", "  .status-learning { color: #8a6212; }", "  .status-learning { color: #b8862f; }", "/app/monitor.html"],
+  fieldborder: ["app/monitor.html", "**/monitor.html*", "input[type=\"month\"] { padding: 0.4rem; font-size: 0.92rem; border: 1px solid #8c8c8c;", "input[type=\"month\"] { padding: 0.4rem; font-size: 0.92rem; border: 1px solid #ccc;", "/app/monitor.html"],
+  navlabel: ["app/css/shell.css", "**/css/shell.css*", "  color: #666; margin-bottom: 0.2rem;", "  color: #999; margin-bottom: 0.2rem;", "/app/notes.html"],
+  navcurrent: ["app/css/shell.css", "**/css/shell.css*", ".nav-current { color: #666;", ".nav-current { color: #888;", "/app/notes.html"],
+  hadithfield: ["app/css/hadith.css", "**/css/hadith.css*", "  .hadith-lang-select { min-height: 40px; min-width: 0; padding: 0.3rem 0.5rem; border-radius: 0.35rem; border: 1px solid var(--hadith-field); }", "  .hadith-lang-select { min-height: 40px; min-width: 0; padding: 0.3rem 0.5rem; border-radius: 0.35rem; border: 1px solid var(--hadith-rule); }", "/app/hadith-collections.html"],
+};
 if (MUTATE && !MUTATIONS[MUTATE]) throw new Error(`no such mutation ${MUTATE}`);
 const browser = await chromium.launch();
 
@@ -56,6 +64,8 @@ function scan() {
   };
   const effOpacity = (el) => { let o = 1; for (let n = el; n && n.nodeType === 1; n = n.parentElement) o *= parseFloat(getComputedStyle(n).opacity); return o; };
   const visible = (el) => {
+    // checkVisibility sees closed <details>, content-visibility and display:none ancestors that a rect alone cannot
+    if (el.checkVisibility && !el.checkVisibility({ checkVisibilityCSS: true })) return false;
     for (let n = el; n && n.nodeType === 1; n = n.parentElement) {
       const s = getComputedStyle(n);
       if (n.hasAttribute("hidden") || s.display === "none" || s.visibility === "hidden") return false;
@@ -115,6 +125,9 @@ function scan() {
     const bR = bcol ? ratio(bcol, around) : 0, fR = fill ? ratio(fill, around) : 0;
     const marked = (bw > 0 && bcol && bR > 1.05) || (fill && fR > 1.05);
     if (!marked) { skipped.textOnly++; continue; }
+    // A button or summary that carries visible text is marked out by that text (1.4.11 exception); a box you type or pick in is not.
+    const isField = ["INPUT", "SELECT", "TEXTAREA"].includes(el.tagName) && !["button", "submit", "reset", "checkbox", "radio"].includes((el.type || "").toLowerCase());
+    if (!isField && (el.innerText || "").trim()) { skipped.textOnly++; continue; }
     // shadow also marks a box
     const shadow = cs.boxShadow !== "none";
     const ok = bR >= 3 || fR >= 3;
@@ -167,13 +180,26 @@ const LANGS = ["en", "bn"].filter((l) => !LONLY || l === LONLY);
 const LOOKS = ["night", "light"].filter((l) => !KONLY || l === KONLY);
 
 // Judge one scan: returns the failing text rows and control rows (image-backed text is reported, not failed).
+// Each nav menu is measured open, one at a time (the nav closes the others), and the results are merged.
 async function measure(page) {
   const s = await page.evaluate(`(${SCAN_SRC})()`);
+  const n = await page.evaluate(() => document.querySelectorAll(".nav-cat").length);
+  for (let i = 0; i < n; i++) {
+    await page.evaluate((k) => { document.querySelectorAll(".nav-cat").forEach((c, j) => { c.open = j === k; }); }, i);
+    await page.waitForTimeout(60);
+    const o = await page.evaluate(`(${SCAN_SRC})()`);
+    const have = new Set(s.text.map((x) => x.d + x.s)), haveC = new Set(s.ctl.map((x) => x.d + x.s));
+    o.text.forEach((x) => { if (!have.has(x.d + x.s)) s.text.push(x); });
+    o.ctl.forEach((x) => { if (!haveC.has(x.d + x.s)) s.ctl.push(x); });
+    for (const k of Object.keys(o.skipped)) s.skipped[k] = Math.max(s.skipped[k], o.skipped[k]);
+  }
+  await page.evaluate(() => document.querySelectorAll(".nav-cat").forEach((c) => { c.open = false; }));
   const badText = s.text.filter((x) => !x.ok && !x.image);
   const imgText = s.text.filter((x) => !x.ok && x.image);
   const badCtl = s.ctl.filter((x) => !x.ok);
   return { s, badText, imgText, badCtl };
 }
+const FOUND = new Map();
 const fmtText = (x) => `${x.d} "${x.s}" ${x.fg} on ${x.bg} = ${x.r}:1 (needs ${x.need})`;
 const fmtCtl = (x) => `${x.d} "${x.s}" border ${x.border} (${x.bR}:1) fill ${x.fill} (${x.fR}:1) beside ${x.around}`;
 async function judgePage(t, page) {
@@ -182,8 +208,10 @@ async function judgePage(t, page) {
   check(`${t}: every text node meets 4.5:1 (3:1 large) over its real background`, m.badText.length === 0, m.badText.slice(0, 8).map(fmtText).join(" | "));
   check(`${t}: every enabled control that is marked out by a border or fill is 3:1 beside its surroundings`, m.badCtl.length === 0, m.badCtl.slice(0, 8).map(fmtCtl).join(" | "));
   if (m.imgText.length) console.log(`  NOTE  ${t}: text over an image or gradient, not measurable by colour: ${m.imgText.slice(0, 4).map(fmtText).join(" | ")}`);
-  console.log(`  NOTE  ${t}: skipped disabled ${m.s.skipped.disabled}, text-only controls ${m.s.skipped.textOnly}, measured ${m.s.text.length} text and ${m.s.ctl.length} controls`);
-  if (LIST) { m.badText.forEach((x) => console.log("  TEXT  " + fmtText(x))); m.badCtl.forEach((x) => console.log("  CTL   " + fmtCtl(x))); }
+  if (!process.argv.includes("--quiet")) console.log(`  NOTE  ${t}: skipped disabled ${m.s.skipped.disabled}, text-only controls ${m.s.skipped.textOnly}, measured ${m.s.text.length} text and ${m.s.ctl.length} controls`);
+  const pg = page.url().replace(/^.*\/app\//, "").replace(/\?.*/, "");
+  for (const x of m.badText) FOUND.set(`${pg}  TEXT ${x.d} ${x.fg} on ${x.bg}`, fmtText(x));
+  for (const x of m.badCtl) FOUND.set(`${pg}  CTL  ${x.d} ${x.border} ${x.fill}`, fmtCtl(x).replace(/\n/g, " "));
 }
 
 // Positive controls: the detectors flag seeded defects and composite correctly.
@@ -224,6 +252,26 @@ for (const lang of LANGS) for (const look of LOOKS) for (const width of WIDTHS) 
   for (const p of PAGES) {
     await flow(`page:${p}`, lang, look, width, width < 600 ? 844 : 800, `/app/${p}.html`, "", judgePage);
   }
+}
+
+if (LIST) {
+  const lines = [...FOUND.entries()].sort().map(([k, v]) => `${k}  =>  ${v}`);
+  if (arg("out")) fs.writeFileSync(arg("out"), lines.join("\n") + "\n");
+  else { console.log("\nDISTINCT FINDINGS"); lines.forEach((l) => console.log("  " + l)); }
+}
+// A Dua card opened, and the Zab bar (wide) or corner (narrow).
+for (const lang of LANGS) for (const look of LOOKS) {
+  await flow("dua", lang, look, 1280, 800, "/app/hadith-collections.html", `DATA.ayahCollections = [{ _id: TENANT_ID, tenantId: TENANT_ID, collections: [] }];`, async (t, page) => {
+    await page.click('[data-hadith-tab="dua"]');
+    await page.waitForSelector("[data-dua-card]", { timeout: 20000 });
+    await page.waitForTimeout(500);
+    await judgePage(`${t} Dua tab`, page);
+  });
+  for (const w of [320, 1280]) await flow("zab", lang, look, w, w < 600 ? 844 : 800, "/app/journey-map.html", "", async (t, page) => {
+    const sel = w >= 768 ? "#zabBar" : "#zabCorner";
+    check(`${t}: POSITIVE CONTROL the Zab ${sel} is on screen`, await page.evaluate((s) => { const e = document.querySelector(s); return !!e && e.getBoundingClientRect().width > 0; }, sel));
+    await judgePage(`${t} Zab`, page);
+  });
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);

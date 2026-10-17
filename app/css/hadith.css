@@ -15,7 +15,7 @@
  * imposing it on the module page would restyle headings the corpus does not
  * own.
  */
-:root { --hadith-ink:#1B2A41; --hadith-gold:#B8862F; --hadith-rule:#e2ddcd; --hadith-muted:#5f6470; }
+:root { --hadith-ink:#1B2A41; --hadith-gold:#B8862F; --hadith-rule:#e2ddcd; --hadith-field:#8c8c8c; --hadith-muted:#5f6470; }
 
   /* ---- The notice that is never conditional ---- */
   .hadith-synthetic-banner {
@@ -34,7 +34,7 @@
   }
   .hadith-tab.active { background: var(--hadith-ink); color: #fff; border-color: var(--hadith-ink); }
   .hadith-lang-wrap { display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; min-width: 0; }
-  .hadith-lang-select { min-height: 40px; min-width: 0; padding: 0.3rem 0.5rem; border-radius: 0.35rem; border: 1px solid var(--hadith-rule); }
+  .hadith-lang-select { min-height: 40px; min-width: 0; padding: 0.3rem 0.5rem; border-radius: 0.35rem; border: 1px solid var(--hadith-field); }
 
   /* ---- Lists ---- */
   .hadith-list { display: flex; flex-direction: column; gap: 0.4rem; }
@@ -87,7 +87,7 @@
   /* ---- Track (demo only) ---- */
   .hadith-track { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-top: 0.7rem; padding-top: 0.6rem; border-top: 1px dashed var(--hadith-rule); }
   .hadith-track-label { font-size: 0.85rem; font-weight: 600; }
-  .hadith-track-select { min-height: 40px; min-width: 0; padding: 0.3rem 0.5rem; border-radius: 0.35rem; border: 1px solid var(--hadith-rule); }
+  .hadith-track-select { min-height: 40px; min-width: 0; padding: 0.3rem 0.5rem; border-radius: 0.35rem; border: 1px solid var(--hadith-field); }
   .hadith-not-saved { flex-basis: 100%; font-size: 0.8rem; color: #7d1f1e; margin: 0.2rem 0 0; font-weight: 600; }
 
   /* ---- Topic ---- */
@@ -97,7 +97,7 @@
   .hadith-topic-heading { font-size: 0.85rem; color: var(--hadith-muted); margin: 0.6rem 0 0; }
 
   /* ---- Search ---- */
-  .hadith-search-input { width: 100%; min-height: 44px; padding: 0.5rem 0.7rem; border: 1px solid var(--hadith-rule); border-radius: 0.45rem; font-size: 1rem; }
+  .hadith-search-input { width: 100%; min-height: 44px; padding: 0.5rem 0.7rem; border: 1px solid var(--hadith-field); border-radius: 0.45rem; font-size: 1rem; }
   .hadith-match-where { font-size: 0.8rem; color: var(--hadith-gold); font-weight: 600; margin: 0.6rem 0 0; }
 
   /* ---- Commentary ---- */
@@ -172,12 +172,12 @@
 .openiti-row-name-ar { direction: rtl; text-align: right; }
 .openiti-goto { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; margin: 0.6rem 0; }
 .openiti-goto-label { display: flex; align-items: center; gap: 0.4rem; font-size: 0.88rem; }
-.openiti-goto-input { min-height: 40px; min-width: 0; width: 7rem; padding: 0.3rem 0.5rem; border-radius: 0.35rem; border: 1px solid var(--hadith-rule); }
+.openiti-goto-input { min-height: 40px; min-width: 0; width: 7rem; padding: 0.3rem 0.5rem; border-radius: 0.35rem; border: 1px solid var(--hadith-field); }
 .openiti-goto-btn { min-height: 40px; padding: 0.4rem 0.9rem; border-radius: 0.35rem; border: 1px solid var(--hadith-rule); background: #fff; cursor: pointer; font-weight: 600; }
 .openiti-goto-msg { margin: 0.2rem 0; }
 /* Round H-DB2: the numbering choice beside "Go to hadith number", sized like its input; and each narration's
    standard number on its card. */
-.openiti-goto-mode { min-height: 40px; min-width: 0; max-width: 100%; padding: 0.3rem 0.4rem; border-radius: 0.35rem; border: 1px solid var(--hadith-rule); background: #fff; font: inherit; font-size: 0.88rem; }
+.openiti-goto-mode { min-height: 40px; min-width: 0; max-width: 100%; padding: 0.3rem 0.4rem; border-radius: 0.35rem; border: 1px solid var(--hadith-field); background: #fff; font: inherit; font-size: 0.88rem; }
 .openiti-goto-hint { font-size: 0.8rem; color: var(--hadith-muted); }
 .openiti-standard-number { margin: 0.1rem 0 0.3rem; font-size: 0.85rem; font-weight: 600; color: var(--hadith-ink); }
 /* Keys Round 1: "Āyāt this hadith quotes" -- each āyah a 40px link into the Read view. */
@@ -211,7 +211,7 @@
 /* 9 Oct 2026: 📝 My Notes and 🔖 Bookmark on a dua card, side by side. */
 .dua-note-bookmark { align-items: flex-start; gap: 0.5rem; margin-top: 0.15rem; }
 .dua-note-bookmark [role="status"]:empty { display: none; }
-.dua-status { min-height: 40px; min-width: 0; padding: 0.3rem 0.4rem; border-radius: 0.4rem; border: 1px solid var(--hadith-rule); background: #fff; color: var(--hadith-ink); font: inherit; font-size: 0.85rem; cursor: pointer; }
+.dua-status { min-height: 40px; min-width: 0; padding: 0.3rem 0.4rem; border-radius: 0.4rem; border: 1px solid var(--hadith-field); background: #fff; color: var(--hadith-ink); font: inherit; font-size: 0.85rem; cursor: pointer; }
 .dua-status[aria-pressed="true"] { background: #dcefe3; border-color: #2f7d4f; color: #1f5c38; font-weight: 600; }
 .openiti-show-more { min-height: 40px; padding: 0.4rem 0.9rem; border-radius: 0.35rem; border: 1px solid var(--hadith-rule); background: #fff; cursor: pointer; font-weight: 600; margin: 0.5rem 0; }
 .openiti-editorial-label { color: #7d5a00; font-weight: 700; }
@@ -249,7 +249,7 @@ a.hadeethenc-study-btn[aria-disabled="true"], button.hadeethenc-study-btn[aria-d
   opacity: 0.5; cursor: default;
 }
 .hadeethenc-study-label { font-size: 0.82rem; font-weight: 600; color: var(--hadith-ink); }
-.hadeethenc-study-select { min-height: 40px; min-width: 0; padding: 0.3rem 0.5rem; border-radius: 0.35rem; border: 1px solid var(--hadith-rule); }
+.hadeethenc-study-select { min-height: 40px; min-width: 0; padding: 0.3rem 0.5rem; border-radius: 0.35rem; border: 1px solid var(--hadith-field); }
 /* 👥 the record-for picker beside "Studied" (decision 71). Architect review (#597): hadith-collections.html carries
    no copy of the picker's styles (each study page inlines its own), so the list rendered unstyled and always open.
    The same look as the Qur'an page's, scoped here, with its own dark ink on its white box. */
@@ -354,5 +354,5 @@ a.hadeethenc-study-btn[aria-disabled="true"], button.hadeethenc-study-btn[aria-d
 .dua-check-word { grid-template-columns: minmax(4.5rem, auto) minmax(0, 1fr); gap: 0.6rem; align-items: center; }
 .dua-check-ar { font-family: 'Amiri', 'Noto Naskh Arabic', serif; font-size: 1.5rem; text-align: center; overflow-wrap: anywhere; }
 .dua-check-winfo, .dua-check-fixbox { display: grid; gap: 0.35rem; min-width: 0; }
-.dua-check-input { min-height: 40px; min-width: 0; width: 100%; box-sizing: border-box; padding: 0.3rem 0.6rem; font: 1.3rem 'Amiri', 'Noto Naskh Arabic', serif; border-radius: 0.4rem; border: 1px solid var(--hadith-rule); }
+.dua-check-input { min-height: 40px; min-width: 0; width: 100%; box-sizing: border-box; padding: 0.3rem 0.6rem; font: 1.3rem 'Amiri', 'Noto Naskh Arabic', serif; border-radius: 0.4rem; border: 1px solid var(--hadith-field); }
 @media (max-width: 480px) { .dua-check-word { grid-template-columns: minmax(0, 1fr); } .dua-check-ar { text-align: right; } }

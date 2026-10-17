@@ -24,7 +24,7 @@
   button.danger { background: white; color: #a3352b; border-color: #d9a49d; }
   button.tiny { padding: 0.12rem 0.5rem; font-size: 0.8rem; }
   button:disabled { opacity: 0.5; cursor: default; }
-  select, input[type="text"] { font-size: 0.85rem; padding: 0.3rem 0.4rem; border: 1px solid #ccc; border-radius: 0.35rem; }
+  select, input[type="text"] { font-size: 0.85rem; padding: 0.3rem 0.4rem; border: 1px solid #8c8c8c; border-radius: 0.35rem; }
   .note { font-size: 0.88rem; color: #666; }
   .warn { background: #fff8e6; border: 1px solid #f0d9a0; border-radius: 0.5rem; padding: 0.6rem 0.8rem; font-size: 0.88rem; margin: 0.7rem 0; }
   #contextBar { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; margin: 1rem 0; font-size: 0.9rem; }
@@ -54,7 +54,7 @@
   }
   .view-toggle-btn[aria-pressed="true"] { background: #1F3A6E; color: #fff; }
 
-  #emptyMsg { color: #888; font-size: 0.9rem; margin: 1rem 0; }
+  #emptyMsg { color: #666; font-size: 0.9rem; margin: 1rem 0; }
 
   /* -- Option A: folders -- an expandable TREE (issue #259), replacing the
      former one-folder-at-a-time drill-down. --tree-scale is the A-/A+ text
@@ -119,10 +119,10 @@
      the row wider than the screen or get cut with an ellipsis nobody can
      read the rest of. */
   .folder-row-name { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; font-weight: 500; color: #1F3A6E; font-size: calc(0.94rem * var(--tree-scale, 1)); }
-  .folder-row-count { font-size: calc(0.78rem * var(--tree-scale, 1)); color: #888; }
+  .folder-row-count { font-size: calc(0.78rem * var(--tree-scale, 1)); color: #666; }
   .folder-pin-flag { font-size: 0.85rem; }
   .folder-rename-input { flex: 1 1 auto; min-width: 0; font-weight: 600; color: #1F3A6E; font-size: calc(0.94rem * var(--tree-scale, 1)); }
-  .folder-tree-empty, .folder-tree-file-btn { font-size: 0.85rem; color: #888; padding: 0.3rem 0; }
+  .folder-tree-empty, .folder-tree-file-btn { font-size: 0.85rem; color: #666; padding: 0.3rem 0; }
   /* Siyagah round 3 -- the destination picker (one chooser for Copy to… and
      Move to…, notes and folders) and the Trash view. The picker is a fixed
      overlay above everything this document draws; full screen at phone width. */
@@ -203,7 +203,7 @@
   /* Audit part 19 (PCF J29): from 768px the fixed Zab bar (44px) sits on the bottom of the screen. A folder's ⋯ menu hangs below its row, so for a row near the end of the page the menu IS the end of the page and its last item (Delete) could never be scrolled clear of the bar. The menu's own bottom padding gives the page room to scroll it above the bar. */
   @media (min-width: 768px) { body:has(#zabBar) .folder-row-menu.open { padding-bottom: 56px; } } /* audit19 zabclear */
   .note-order-btn { min-width: 2.4rem; }
-  .folder-search-breadcrumb { display: block; font-size: 0.76rem; color: #888; }
+  .folder-search-breadcrumb { display: block; font-size: 0.76rem; color: #666; }
   .folder-search-result { padding: 0.4rem 0.55rem; border: 1px solid #ddd; border-radius: 0.5rem; margin: 0.3rem 0; cursor: pointer; background: #fff; }
   .folder-footer { margin: 0.8rem 0 0.3rem; border-top: 1px dashed #ddd; padding-top: 0.6rem; }
   .folder-footer-target { font-size: 0.82rem; color: #555; margin: 0 0 0.4rem; }
@@ -217,7 +217,7 @@
     border: 1px solid #1F3A6E; background: #fff; color: #1F3A6E; cursor: pointer;
   }
   .filter-chip[aria-pressed="true"] { background: #1F3A6E; color: #fff; }
-  .timeline-day { margin: 1rem 0 0.3rem; font-size: 0.82rem; font-weight: 600; color: #888; border-bottom: 1px dashed #ddd; padding-bottom: 0.2rem; }
+  .timeline-day { margin: 1rem 0 0.3rem; font-size: 0.82rem; font-weight: 600; color: #666; border-bottom: 1px dashed #ddd; padding-bottom: 0.2rem; }
 
   /* -- Option C: path -- a BRANCHING tree (issue #267, an Owner decision: "Path
      view: branching with links"), replacing v08.37's own honest-first-pass
@@ -239,18 +239,18 @@
   }
   .path-branch-toggle-leaf { visibility: hidden; }
   .path-branch-name { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; font-weight: 600; color: #1F3A6E; }
-  .path-branch-count { font-size: 0.78rem; color: #888; }
+  .path-branch-count { font-size: 0.78rem; color: #666; }
   /* The trunk/branch line itself -- every level of nesting adds one more,
      which is what draws the "branching down" shape the issue asks for. */
   .path-branch-body { margin-left: 1.1rem; padding-left: 1rem; border-left: 3px solid #B8862F; }
-  .path-branch-empty { font-size: 0.85rem; color: #888; padding: 0.2rem 0; }
+  .path-branch-empty { font-size: 0.85rem; color: #666; padding: 0.2rem 0; }
   .path-stops { position: relative; margin: 0.2rem 0; }
   .path-stop { position: relative; margin: 0 0 0.7rem; padding-left: 0.9rem; }
   .path-stop-marker {
     position: absolute; left: -1.34rem; top: 0.3rem; width: 10px; height: 10px;
     border-radius: 50%; background: #B8862F; border: 2px solid #fff; box-shadow: 0 0 0 1px #B8862F;
   }
-  .path-stop-date { font-size: 0.76rem; color: #888; }
+  .path-stop-date { font-size: 0.76rem; color: #666; }
   .path-more-btn { min-height: 40px; margin: 0.2rem 0 0.6rem; }
   .path-link-badge {
     min-height: 40px; min-width: 40px; padding: 0.1rem 0.55rem; font-size: 0.8rem; border-radius: 999px;
@@ -268,7 +268,7 @@
   .note-card { border: 1px solid #ddd; border-radius: 0.6rem; padding: 0.7rem 0.85rem; margin: 0.6rem 0; background: #fff; }
   .note-card-head { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; cursor: pointer; }
   .note-card-title { font-weight: 600; font-size: 0.96rem; flex: 1 1 auto; min-width: 8rem; }
-  .note-card-meta { font-size: 0.76rem; color: #888; }
+  .note-card-meta { font-size: 0.76rem; color: #666; }
   .note-body-preview { margin-top: 0.5rem; font-size: 0.9rem; line-height: 1.4; display: none; }
   .note-body-preview.open { display: block; }
   .note-body-preview p { margin: 0.3rem 0; }
