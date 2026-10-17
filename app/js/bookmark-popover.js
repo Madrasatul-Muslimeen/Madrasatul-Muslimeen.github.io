@@ -114,7 +114,7 @@ function ensureStyles() {
     .bm-popover-field { display: block; font-size: 0.85rem; margin-bottom: 0.7rem; color: #444; }
     .bm-popover-field input, .bm-popover-field select {
       display: block; width: 100%; margin-top: 0.25rem; font-size: 0.92rem;
-      padding: 0.35rem 0.45rem; border: 1px solid #ccc; border-radius: 0.35rem; box-sizing: border-box;
+      padding: 0.35rem 0.45rem; border: 1px solid #8c8c8c; border-radius: 0.35rem; box-sizing: border-box; /* audit part 37: #ccc was 1.61:1 */
       min-height: 40px; /* audit28: a finger-sized field (they were 29-31px) */
     }
     .bm-popover-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.4rem; }

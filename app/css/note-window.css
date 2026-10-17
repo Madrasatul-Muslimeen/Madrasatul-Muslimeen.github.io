@@ -33,7 +33,7 @@
 .pane-contents-menu button { min-height: 40px; }
 .pane-contents-menu { left: 0; right: auto; width: 15rem; max-height: 60vh; overflow-y: auto; }
 .note-pane-title { margin: 0.7rem 0 0.2rem; font-size: 1.25rem; overflow-wrap: anywhere; }
-.note-pane-meta { margin: 0 0 0.4rem; font-size: 0.8rem; color: #777; }
+.note-pane-meta { margin: 0 0 0.4rem; font-size: 0.8rem; color: #666; } /* audit part 37: #777 was 4.48:1 on white */
 .note-pane-chips { margin: 0 0 0.6rem; }
 .note-pane-chips .folder-chip { border: 1px solid #c9d3e6; cursor: pointer; font-size: 0.8rem; min-height: 32px; padding: 0.2rem 0.7rem; }
 .note-pane-body { line-height: 1.5; overflow-wrap: anywhere; }
@@ -203,7 +203,9 @@ button.tag-chip-btn:hover, button.tag-chip-btn:focus-visible { background: #dde6
   .note-win .bar-palette.pane-menu { bottom: var(--nw-switch, 0px); max-height: calc(82vh - var(--nw-switch, 0px)); } /* audit29: the window switcher bar (56px) covered the sheet's last item, Move to Trash */
   /* Architect's review of #748: the sheet is the palette's own navy, so a white title row left "This note" pale gold
      on white, barely readable. The row takes the sheet's own colours, the title in white. */
-  .pane-menu-head { display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 1; background: inherit; color: #fff; padding: 0.7rem 0 0.4rem; font-weight: 700; }
+  /* Architect's review of #945 (audit part 37): in the Light look the sheet is WHITE, so a white title was invisible
+     (1:1); the title now takes the sheet's own text colour -- dark on the Light sheet, light on the Night navy. */
+  .pane-menu-head { display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 1; background: inherit; color: inherit; padding: 0.7rem 0 0.4rem; font-weight: 700; }
   .pane-menu .pane-menu-x { width: 40px; min-width: 40px; font-size: 1.3rem; padding: 0; text-align: center; }
   .pane-menu-cols { column-count: 1; }
   .bar-palette.pane-menu.open + .pane-menu-backdrop { display: block; position: fixed; inset: 0; background: rgba(15, 20, 40, 0.45); z-index: 20; }
