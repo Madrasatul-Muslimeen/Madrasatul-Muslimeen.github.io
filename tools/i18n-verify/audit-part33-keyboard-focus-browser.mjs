@@ -125,7 +125,7 @@ async function flow(name, lang, width, height, pagePath, seed, fn) {
   if (ctx) await Promise.race([ctx.close().catch(() => {}), new Promise((r) => setTimeout(r, 10000))]);
 }
 const ev = (page, f, a) => page.evaluate(f, a);
-const WIDTHS = [390, 820, 1280].filter((w) => !WONLY || w === WONLY);
+const WIDTHS = [320, 390, 820, 1280, 1440].filter((w) => !WONLY || w === WONLY);
 const LANGS = ["en", "bn"].filter((l) => !LONLY || l === LONLY);
 
 // Press Tab from the top of the page, up to max stops. Returns { stops, judged, looped }.
