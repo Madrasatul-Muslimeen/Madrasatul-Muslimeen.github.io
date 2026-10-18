@@ -3563,6 +3563,35 @@
   .quran-word-card [role="tab"][aria-selected="true"] { background: var(--card-button-pressed-bg); color: var(--card-button-pressed-text); }
   @media (max-width: 380px) { .quran-word-card [role="tab"] { padding: 0.5rem 0.4rem; font-size: 0.82rem; } }
   @media (max-width: 340px) { .quran-word-card [role="tab"] { padding: 0.5rem 0.25rem; font-size: 0.75rem; } }
+  /* PCF MSA J38+J39 (19 Oct 2026): FIVE tabs. Below 600px they share ONE row (no wrap) as equal cells whose names may
+     break onto a second line rather than push the row wider (Bangla "শব্দে শব্দে" is the longest); from 600px each
+     carries a small line under its name. */
+  .quran-word-card [role="tab"] { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.1rem; }
+  .word-card-tab-sub { display: none; font-size: 0.68rem; font-weight: 400; opacity: 0.85; white-space: nowrap; }
+  @media (max-width: 599px) {
+    .quran-word-card [role="tablist"] { flex-wrap: nowrap; gap: 0.2rem; }
+    .quran-word-card [role="tab"] { flex: 1 1 0; padding: 0.4rem 0.1rem; font-size: 0.74rem; white-space: normal; overflow-wrap: anywhere; text-align: center; }
+  }
+  @media (min-width: 600px) {
+    .quran-word-card [role="tablist"] { flex-wrap: nowrap; }
+    .quran-word-card [role="tab"] { flex: 1 1 0; min-height: 52px; }
+    .word-card-tab-sub { display: block; }
+  }
+  /* The new purple parts. One token set per card look; every pair is measured at >= 4.5:1 by
+     tools/i18n-verify/word-card-five-levels-browser.mjs. The "what it does" line sits on the card's always-light
+     surface, so it carries the light pair in both looks. */
+  .quran-word-card { --wc-purple-bg: #f1e9fb; --wc-purple-ink: #4b2a85; --wc-purple-line: #a98bdc; }
+  [data-card-look="light"] .quran-word-card { --wc-purple-bg: #f1e9fb; --wc-purple-ink: #4b2a85; --wc-purple-line: #a98bdc; }
+  [data-card-look="night"] .quran-word-card { --wc-purple-bg: #2d2150; --wc-purple-ink: #e1d2ff; --wc-purple-line: #8a6fd0; }
+  .word-card-cando, .word-card-ordernote, .word-card-whowhen { margin: 0 0 0.5rem; padding: 0.45rem 0.65rem; border-radius: 0.5rem; background: var(--wc-purple-bg); color: var(--wc-purple-ink); border: 1px solid var(--wc-purple-line); font-size: 0.86rem; line-height: 1.35; }
+  .word-card-ordernote { font-size: 0.8rem; font-style: italic; }
+  .word-card-whowhen-item b { font-weight: 800; }
+  .word-card-does { font-size: 0.72rem; font-weight: 700; color: #4b2a85; background: #f1e9fb; border-radius: 999px; padding: 0.05rem 0.45rem; justify-self: center; }
+  .word-card-reach { margin: 0.4rem 0 0; font-size: 0.85rem; color: var(--card-text); }
+  .word-card-grow-chips { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+  .word-card-grow-chip { background: #f7f8f6; color: #13241f; border: 1px solid #d6ddd9; border-radius: 999px; padding: 0.2rem 0.6rem; font-size: 0.82rem; min-width: 0; overflow-wrap: anywhere; }
+  .word-card-grow-chip-current { background: #fff4d6; border-color: #c9a24a; }
+  .word-card-meaning-group .word-card-dcards { margin-top: 0.3rem; }
   /* MAP Phase 3 -- the WbW progress block. Every button here is a real
      finger target: 40px is what this project settled on after a round of
      26px icon buttons the owner had to complain about. The state row uses
@@ -7557,7 +7586,7 @@
       if (lemmaFormsTable || lemmaFormsLoading) return;
       lemmaFormsLoading = true;
       loadLemmaForms().then((d) => { lemmaFormsTable = d.values; }).catch((e) => console.warn("lemma forms unavailable", e))
-        .finally(() => { lemmaFormsLoading = false; if (lemmaFormsTable && quranWordCardState.open && (quranWordCardState.level === "basic" || quranWordCardState.level === "intermediate" || quranWordCardState.level === "depth")) renderPersistentWordCard(); });
+        .finally(() => { lemmaFormsLoading = false; if (lemmaFormsTable && quranWordCardState.open && quranWordCardState.level !== "wbw") renderPersistentWordCard(); });
     }
     // Round 5 -- the Verb Conjugation section's data, fetched the FIRST time a verb's Depth tab is drawn (I9).
     let verbFormsTable = null;
@@ -7567,7 +7596,7 @@
       if (verbFormsTable || verbFormsLoading || verbFormsFailed) return;
       verbFormsLoading = true;
       loadVerbForms().then((d) => { verbFormsTable = d.values; }).catch((e) => { verbFormsFailed = true; console.warn("verb forms unavailable", e); })
-        .finally(() => { verbFormsLoading = false; if (quranWordCardState.open && quranWordCardState.level === "depth") renderPersistentWordCard(); });
+        .finally(() => { verbFormsLoading = false; if (quranWordCardState.open && quranWordCardState.level === "tasrif") renderPersistentWordCard(); });
     }
     // Decision 61 -- the three "Needs a source" lines. Each file is fetched only when its own
     // Depth section is OPEN (I9): opening the card, or the Depth tab, fetches none of them.
@@ -7655,7 +7684,7 @@
       if (lemmaDictionary || lemmaDictionaryLoading) return;
       lemmaDictionaryLoading = true;
       loadLemmaDictionary().then((d) => { lemmaDictionary = d; }).catch((e) => console.warn("dictionary unavailable", e))
-        .finally(() => { lemmaDictionaryLoading = false; if (lemmaDictionary && quranWordCardState.open && (quranWordCardState.level === "depth" || quranWordCardState.level === "wbw")) renderPersistentWordCard(); });
+        .finally(() => { lemmaDictionaryLoading = false; if (lemmaDictionary && quranWordCardState.open && quranWordCardState.level !== "basic") renderPersistentWordCard(); });
     }
     function ensureBanglaLemmaDictionary() {
       if (getAppLang() !== "bn" || lemmaDictionaryBn || lemmaDictionaryBnLoading) return;
@@ -16335,6 +16364,8 @@
     // the reader's own language for every string it can print. Built fresh on
     // each render rather than cached, so switching language in place is
     // reflected without a reload, the way every other surface here behaves.
+    // J38/J39: the Root tab is "মূল" in Bangla; the app's own "Root" (ধাতু) names a different thing elsewhere.
+    function rootTabName() { return getAppLang() === "bn" ? "মূল" : "Root"; }
     function wordCardLabels() {
       return {
         cardRegion: t("Quran word card"),
@@ -16344,13 +16375,42 @@
         close: t("Close word card"),
         ayahActionsButton: t("This āyah ⋯"),
         wbw: t("WbW"),
-        basic: t("Basic"),
-        intermediate: t("Intermediate"),
+        basic: t("Family"),
+        intermediate: rootTabName(),
+        tasrif: t("Taṣrīf"),
         depth: t("Depth"),
         wbwFull: t("Word by word"),
-        basicFull: t("Basic Arabic"),
-        intermediateFull: t("Intermediate Arabic"),
+        basicFull: t("Family"),
+        intermediateFull: rootTabName(),
+        tasrifFull: t("Taṣrīf"),
         depthFull: t("Arabic in Depth"),
+        tabSubWbw: t("the word here"),
+        tabSubIntermediate: t("where it comes from"),
+        tabSubBasic: t("its words"),
+        tabSubTasrif: t("how it changes"),
+        tabSubDepth: t("in this āyah"),
+        canDoWbw: t("Achieved here means: I know what this word means here, and what its attached pieces add."),
+        canDoIntermediate: t("Achieved here means: I know this root's core meaning, and I can spot its words."),
+        canDoBasic: t("Achieved here means: I know this meaning in its other forms, and the root's other meanings."),
+        canDoTasrif: t("Achieved here means: I can tell who does it and when, and how the word changes for other people and times."),
+        canDoDepth: t("Achieved here means: I can explain this word's form and its grammar in this āyah, and why this word was chosen."),
+        orderNoteIntermediate: t("Usually studied after WbW. You can open it any time."),
+        orderNoteBasic: t("Usually studied after Root. You can open it any time."),
+        orderNoteTasrif: t("Usually studied after Family. You can open it any time."),
+        orderNoteDepth: t("Usually studied after Taṣrīf. You can open it any time."),
+        rootGrowsHeading: t("How the root grows: its {n} meanings"),
+        rootGrowsChip: t("{meaning} · {count}×"),
+        reachRoot: t("Achieved here adds Roots studied +1. It does not add to Words known."),
+        reachStudyMark: t("Achieved here is a study mark on the root. It does not add to Words known."),
+        meaningsOfWordItself: t("Meanings of {word} itself"),
+        familyGroupsHeading: t("The root's meaning groups"),
+        doesVerb: t("the action itself"),
+        doesMasdar: t("the doing of it"),
+        doesDoer: t("the one who does it"),
+        doesDone: t("the one it is done to"),
+        tasrifGated: t("Saving Taṣrīf marks waits for one settings step by the Owner."),
+        tasrifNotApplicable: t("Not applicable"),
+        levelNameTasrif: t("Taṣrīf"),
         meaningsOfWord: t("Meanings of this word, {word}"),
         meaningsOfWordNote: t("How the Qur'an's word-by-word translation renders it, grouped by its main English word."),
         meaningsOfWordOne: t("The word-by-word translation renders this word one way throughout the Qur'an."),
@@ -16407,7 +16467,7 @@
         visitingFrom: t("Visiting from {ref}"),
         rootUnavailable: t("Root unavailable in the approved dataset"),
         lemmaUnavailable: t("Dictionary Word unavailable in the approved dataset"),
-        notApplicable: t("Not applicable: this word has no dictionary word, so Basic, Intermediate and Depth leave it out of their totals."),
+        notApplicable: t("Not applicable: this word has no dictionary word, so Family, Root and Depth leave it out of their totals."),
         clearEarlierMark: t("Clear the earlier mark"),
         loadingOccurrences: t("Loading occurrences…"),
         occurrencesUnavailable: t("Occurrence list unavailable: {error}"),
@@ -16678,12 +16738,12 @@
         wholeQuranLevelSentence: t("{level}: Achieved {known} and {percent} of {total} words"),
         percentCircleLabel: t("{percent}%"),
         levelNameWbw: t("WbW"),
-        levelNameBasic: t("Basic"),
-        levelNameIntermediate: t("Intermediate"),
+        levelNameBasic: t("Family"),
+        levelNameIntermediate: rootTabName(),
         levelNameDepth: t("Depth"),
-        knownThroughBasicGroup: t("Known through its meaning group (Basic: same meaning)"),
+        knownThroughBasicGroup: t("Known through its meaning group (Family: same meaning)"),
         knownThroughDepthRoot: t("Known through the root {root} (Depth: same root)"),
-        knownThroughIntermediateRoot: t("Known through the root {root} (Intermediate: every meaning of the root)"),
+        knownThroughIntermediateRoot: t("Known through the root {root} (Root: every meaning of the root)"),
         searchButton: t("Search for a word"),
         searchLabel: t("Find a word: type it in Arabic (with or without vowel marks), its meaning, or a place like 2:42:8"),
         searchGo: t("Search"),
@@ -16837,6 +16897,8 @@
       const { tenantId, subjectPersonId, actorPersonId, isSupervisor } = wordProgressActor();
       if (!tenantId || !subjectPersonId || !actorPersonId) return {};
       const level = quranWordCardState.level;
+      // J38/J39: Taṣrīf has its own closed block (study-tasrif-level-readiness.js); it reads and writes nothing here.
+      if (level === "tasrif") return { progress: null, authority: null, coverage: null };
       if (level !== "wbw" && !isWordLevelsPersistenceReady()) return { progress: null, authority: null, coverage: null };
       const confirmationRequired = !!wordProgressConfirmRequired;
       const progress = wordProgressFor({ tenantId, personId: subjectPersonId, level, occurrenceId: quranWordCardState.occurrenceId, confirmationRequired });
@@ -16887,6 +16949,7 @@
       const { tenantId, subjectPersonId } = wordProgressActor();
       if (!tenantId || !subjectPersonId || !quranWordCardState.occurrenceId) return;
       const level = quranWordCardState.level;
+      if (level === "tasrif") return; // gated: nothing is read for Taṣrīf
       if (level !== "wbw" && !isWordLevelsPersistenceReady()) return;
       let ref;
       try { ref = parseQuranWordOccurrenceId(quranWordCardState.occurrenceId); } catch { return; }
@@ -17081,16 +17144,16 @@
     function ensureIntermediateData() {
       if (intermediateGroupsState === null) {
         intermediateGroupsState = "loading";
-        ensureMeaningGroups().finally(() => { intermediateGroupsState = "done"; if (quranWordCardState.open && quranWordCardState.level === "intermediate") renderPersistentWordCard(); });
+        ensureMeaningGroups().finally(() => { intermediateGroupsState = "done"; if (quranWordCardState.open && (quranWordCardState.level === "intermediate" || quranWordCardState.level === "basic")) renderPersistentWordCard(); });
       }
       if (lemmaSensesOf("x") === undefined && !ensureIntermediateData.sensesAsked) {
         ensureIntermediateData.sensesAsked = true;
         loadLemmaSenses().then(() => { lemmaSensesError = null; }, (error) => { lemmaSensesError = error.message; })
-          .finally(() => { ensureIntermediateData.sensesAsked = false; if (quranWordCardState.open && quranWordCardState.level === "intermediate") renderPersistentWordCard(); });
+          .finally(() => { ensureIntermediateData.sensesAsked = false; if (quranWordCardState.open && (quranWordCardState.level === "intermediate" || quranWordCardState.level === "basic")) renderPersistentWordCard(); });
       }
     }
     function intermediateContext(word) {
-      if (quranWordCardState.level !== "intermediate") return {};
+      if (quranWordCardState.level !== "intermediate" && quranWordCardState.level !== "basic") return {};
       const lemma = word?.morphology?.lemma;
       const senses = lemma ? lemmaSensesOf(lemma) : [];
       const key = senseKey(word?.translation?.en);
@@ -17325,6 +17388,7 @@
       const { tenantId, subjectPersonId, actorPersonId } = wordProgressActor();
       if (!tenantId || !subjectPersonId || !actorPersonId || !quranWordCardState.occurrenceId) return;
       const level = quranWordCardState.level;
+      if (level === "tasrif") return; // gated: nothing is ever written for level `tasrif` until the Owner publishes the Rules
       const occurrenceId = quranWordCardState.occurrenceId;
       // 👥 Family recording (decision 71): one write set PER ticked person,
       // others first and the Student last (the order claimApproachStatus uses).
@@ -17668,11 +17732,12 @@
       const content = mount.querySelector("[data-word-card-content]") ?? mount;
       // The English WbW stem box also prints the dictionary meaning, so that
       // page loads the same first-use file Depth does.
-      if (quranWordCardState.level === "depth" || (quranWordCardState.level === "wbw" && getAppLang() !== "bn")) ensureLemmaDictionary();
+      // J38/J39: Root (its meaning), Taṣrīf (the present's meaning) and Depth all read the dictionary.
+      if (["depth", "intermediate", "tasrif"].includes(quranWordCardState.level) || (quranWordCardState.level === "wbw" && getAppLang() !== "bn")) ensureLemmaDictionary();
       if (quranWordCardState.level === "depth") ensureBanglaLemmaDictionary();
-      if (quranWordCardState.level === "basic" || quranWordCardState.level === "intermediate" || quranWordCardState.level === "depth") ensureLemmaForms();
-      if (quranWordCardState.level === "intermediate") ensureIntermediateData();
-      if (quranWordCardState.level === "depth" && quranWordCardContext.wordFeatures?.tense) ensureVerbForms();
+      if (quranWordCardState.level !== "wbw") ensureLemmaForms();
+      if (quranWordCardState.level === "intermediate" || quranWordCardState.level === "basic") ensureIntermediateData();
+      if (quranWordCardState.level === "tasrif" && quranWordCardContext.wordFeatures?.tense) ensureVerbForms();
       // Round 4 -- an accordion the reader opened or closed stays that way: read the open state off the DOM before it is replaced.
       content.querySelectorAll("details[data-word-card-sec]").forEach((d) => { wordCardDepthOpen[d.dataset.wordCardSec] = d.open; });
       // Round 6 -- what was typed in the Search row stays, however often the card is redrawn.
@@ -18241,7 +18306,7 @@
       const tab = event.target.closest("[data-word-card-level]");
       if (!tab || !["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
       event.preventDefault();
-      const levels = ["wbw", "basic", "intermediate", "depth"]; // decision 103: four tabs
+      const levels = ["wbw", "intermediate", "basic", "tasrif", "depth"]; // J38/J39: five tabs, in tab order
       const at = levels.indexOf(tab.dataset.wordCardLevel);
       const next = event.key === "Home" ? 0 : event.key === "End" ? levels.length - 1 : (at + (event.key === "ArrowRight" ? 1 : -1) + levels.length) % levels.length;
       const mountEl = activeWordCardMount();
