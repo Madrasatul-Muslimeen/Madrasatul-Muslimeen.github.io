@@ -938,7 +938,9 @@ function wordShareOfQuranLine(context, text, formatNumber) {
 }
 
 function tabButton(level, selected, label, fullName, sub) {
-  const named = fullName && fullName !== label ? ` title="${escapeHtml(fullName)}" aria-label="${escapeHtml(fullName)}"` : "";
+  // The spoken name is the whole name (never name + small line); a tooltip only where it adds words.
+  const spoken = fullName || label;
+  const named = ` aria-label="${escapeHtml(spoken)}"${fullName && fullName !== label ? ` title="${escapeHtml(fullName)}"` : ""}`;
   // J38/J39: a small line under the name (CSS shows it from 600px; below that only the name is on screen).
   const subLine = sub ? `<small class="word-card-tab-sub" data-word-card-tab-sub>${escapeHtml(sub)}</small>` : "";
   return `<button type="button" role="tab" data-word-card-level="${level}" aria-selected="${selected}" tabindex="${selected ? "0" : "-1"}"${named}><span class="word-card-tab-name">${escapeHtml(label)}</span>${subLine}</button>`;

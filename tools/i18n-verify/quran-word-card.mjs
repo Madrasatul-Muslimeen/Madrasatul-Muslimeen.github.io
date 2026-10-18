@@ -22,7 +22,8 @@ check("card starts closed", () => assert.equal(renderQuranWordCard({ state: crea
 check("opening preserves permanent identity", () => assert.equal(openWordCard(createWordCardState(), id).occurrenceId, id));
 check("WbW renders Arabic and both meanings", () => { const html = renderQuranWordCard({ state: openWordCard(createWordCardState(), id), chapter, ayah, word }); assert.match(html, /بِسْمِ/); assert.match(html, /In the name/); assert.match(html, /নামে/); });
 // Updated in place 12 Oct 2026 (decisions 101/103): a fourth level, Intermediate, between Basic and Depth.
-check("four level tabs are always present", () => { const html = renderQuranWordCard({ state: openWordCard(createWordCardState(), id), chapter, ayah, word }); assert.equal((html.match(/role="tab"/g) || []).length, 4); });
+// UPDATED IN PLACE (J38/J39, 19 Oct 2026): the card has FIVE tabs now (WbW, Root, Family, Taṣrīf, Depth); this described four.
+check("five level tabs are always present", () => { const html = renderQuranWordCard({ state: openWordCard(createWordCardState(), id), chapter, ayah, word }); assert.equal((html.match(/role="tab"/g) || []).length, 5); });
 check("level selection persists while occurrence stays open", () => { const state = selectWordCardLevel(openWordCard(createWordCardState(), id), "basic"); assert.equal(state.level, "basic"); assert.equal(state.open, true); assert.equal(state.occurrenceId, id); });
 // Updated in place (3 Oct 2026): Word card round 3 (decision 59, the approved
 // demo) prints the root as spaced letters, "س م و", in the header's root box
@@ -216,7 +217,8 @@ check("the page really hands the card its reader's language", () => {
   // Each label must come from t(), not a literal typed at the call site.
   const body = page.slice(page.indexOf("function wordCardLabels()"));
   const block = body.slice(0, body.indexOf("\n    }"));
-  ["Quran word card", "Basic Arabic", "Arabic in Depth", "Dictionary meaning"]
+  // UPDATED IN PLACE (J38/J39): "Basic Arabic" is no longer a label (the tab is Family now); "Taṣrīf" stands in for it.
+  ["Quran word card", "Taṣrīf", "Arabic in Depth", "Dictionary meaning"]
     .forEach((k) => assert.ok(block.includes(`t("${k}")`), `${k} is not translated at the call site`));
 });
 
