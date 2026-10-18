@@ -901,3 +901,4 @@ total). Allocated by the MMSA Architect.
 11.35: the 📜 Mushaf button on the Read bar (J37). Allocated by the MMSA Architect.
 11.36: audit part 38 landscape, zoom, reduced motion (J29). Allocated by the MMSA Architect.
 11.37: audit part 39 opened windows on short screens (J29). Allocated by the MMSA Architect.
+11.39: QR built from the MSA source, the switch (PCA J110 step 5). Allocated by the MMSA Architect.

@@ -167,7 +167,8 @@ check("QR's worker is QR's own (the upgrade path for today's phones), with no im
   const sw = read(qrOut, "app/sw.js");
   return /QR: version \$\{APP_VERSION\} is already running/.test(sw) && !/^\s*import\s/m.test(sw) && sw.includes("qr-quran-v1") && parsesAsModule(path.join(qrOut, "app/sw.js"));
 });
-check("QR's settings say what steps 2 to 5 still owe", () => qs.status === "draft" && qs.later.some((l) => /qr-app-<version>/.test(l)) && qs.later.some((l) => /authorised domains/.test(l)));
+// Step 5 (the Owner's "A, switch", J110 n110c, 18 Oct 2026): QR is live, and the Firebase domain item is settled.
+check("QR's settings say it is live, with the worker note kept and the settled Firebase item gone", () => qs.status === "live" && qs.later.some((l) => /qr-app-<version>/.test(l)) && !qs.later.some((l) => /authorised domains/.test(l)));
 
 console.log("3. A manifest and an icon, from a settings fixture");
 const fixture = { ...qs, id: "fixture", pages: null, manifest: { file: "fixture.webmanifest", pages: ["asma-study.html"], data: { name: "Fixture", icons: [{ src: "img/wheel-hub-calligraphy.webp", sizes: "512x512", type: "image/webp" }] } }, icon: "img/wheel-hub-calligraphy.webp" };
@@ -217,10 +218,13 @@ check("the hidden-modules list changed in the source stops the build", () =>
   mutate("app/js/hidden-modules.js", '["general", "naturelife", "lifeskill", "health"]', '["general", "naturelife", "lifeskill"]', () => throws(() => buildMut("msa"), /modules hidden from this app: found 0/)));
 check("a front page that does not exist stops the build", () =>
   mutate("app/apps/qr.json", '"frontPage": "quranrevival.html"', '"frontPage": "qr-front.html"', () => throws(() => buildMut("qr"), /front page app\/qr-front\.html does not exist/)));
+const curVer = `APP_VERSION = "${read(SRC, "app/js/version.js").match(/APP_VERSION = "([\d.]+)"/)[1]}"`;
 check("a live QR below minVersion 11.39 is refused (a phone on frozen QR 11.38 would never update)", () =>
-  mutate("app/apps/qr.json", '"status": "draft"', '"status": "live"', () => throws(() => buildMut("qr"), /below QR's minVersion 11\.39/)));
+  mutate("app/js/version.js", curVer, 'APP_VERSION = "11.38"', () => throws(() => buildMut("qr"), /below QR's minVersion 11\.39/)));
 check("control: the same live QR at 11.39 builds", () =>
-  mutate("app/apps/qr.json", '"status": "draft"', '"status": "live"', () => mutate("app/js/version.js", `APP_VERSION = "${read(SRC, "app/js/version.js").match(/APP_VERSION = "([\d.]+)"/)[1]}"`, 'APP_VERSION = "11.39"', () => !!buildMut("qr"))));
+  mutate("app/js/version.js", curVer, 'APP_VERSION = "11.39"', () => !!buildMut("qr")));
+check("control: a draft QR at 11.38 builds (the floor binds only once live)", () =>
+  mutate("app/apps/qr.json", '"status": "live"', '"status": "draft"', () => mutate("app/js/version.js", curVer, 'APP_VERSION = "11.38"', () => !!buildMut("qr"))));
 check("a file the worker saves at install but the build lacks stops the build", () => {
   const f = path.join(mutSrc, "apps/qr/site/app/js/asma-about.js"), keep = fs.readFileSync(f);
   fs.rmSync(f);
