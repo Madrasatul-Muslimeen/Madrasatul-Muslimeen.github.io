@@ -81,6 +81,7 @@ export const BN = {
   "Legacy App - v08 ↗": "পুরাতন অ্যাপ - v08 ↗",
   "Legacy App - v09 ↗": "পুরাতন অ্যাপ - v09 ↗",
   "Legacy App - v10 ↗": "পুরাতন অ্যাপ - v10 ↗",
+  "Legacy App - v11 ↗": "পুরাতন অ্যাপ - v11 ↗",
   // 10 Oct 2026: Essence | Act, Unique | Shared on the Name bar (asmaXQuickFile).
   "Filed under {classification}. Tap to take it out.": "{classification}-এর অধীনে রাখা আছে। সরাতে চাপুন।",
   "File under {classification}": "{classification}-এর অধীনে রাখুন",
