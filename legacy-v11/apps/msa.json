@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "id": "msa",
+  "status": "live",
+  "about": "PCA J110 step 1: the settings of today's MSA. Building 'msa' from the source gives back the source byte for byte (tools/apps/apps-build-check.mjs). Every other app's settings are read against these: a value here is what the source holds today, and the build stops if the source no longer says it.",
+  "address": "https://madrasatul-muslimeen.github.io/",
+  "name": {
+    "full": { "en": "Madrasah Study App (MSA)", "bn": "মাদ্রাসা স্টাডি অ্যাপ (MSA)" },
+    "short": "MSA"
+  },
+  "titlePrefix": "MSA",
+  "siteRootName": "QuranRevival",
+  "frontPage": "quranrevival.html",
+  "icon": null,
+  "colours": { "theme": null, "background": null },
+  "manifest": null,
+  "cachePrefix": "mm",
+  "hiddenModules": ["general", "naturelife", "lifeskill", "health"],
+  "site": [
+    "index.html",
+    "app",
+    "mushaf",
+    "tools/quran-data-pull/output",
+    "tools/hadith-data-pull/output"
+  ]
+}
