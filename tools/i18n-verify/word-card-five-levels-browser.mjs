@@ -24,7 +24,7 @@ const MUT = {
   nogrows: ["app/js/quran-word-card.js", "${rootGrowsSection(layers, context, text, formatNumber)}", ""],
   nowhowhen: ["app/js/word-card-depth.js", 'if (!features?.tense) return "";\n  const { lang } = ctx;', 'return "";\n  const { lang } = ctx;'],
   nodoes: ["app/js/quran-word-card.js", "(does && !sameWords ?", "(false ?"],
-  nocando: ["app/js/quran-word-card.js", 'return `<p class="word-card-cando"', 'return "" || `<p class="word-card-cando"'],
+  nocando: ["app/js/quran-word-card.js", 'return `<p class="word-card-cando"', 'return "" && `<p class="word-card-cando"'],
   lowcontrast: ["app/quranrevival.html", '[data-card-look="light"] .quran-word-card { --wc-purple-bg: #f1e9fb; --wc-purple-ink: #4b2a85;', '[data-card-look="light"] .quran-word-card { --wc-purple-bg: #f1e9fb; --wc-purple-ink: #c9b8ee;'],
   gateopen: ["app/js/study-tasrif-level-readiness.js", "ready: false,\n  decision: null,", 'ready: true,\n  decision: { by: "master-architect", on: "2026-10-19", reference: "mutation" },'],
   noorder: ["app/js/quran-word-card.js", "return note ? `<p class=\"word-card-ordernote\"", "return false ? `<p class=\"word-card-ordernote\""],
