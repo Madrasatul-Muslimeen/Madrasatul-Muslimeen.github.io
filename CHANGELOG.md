@@ -21869,3 +21869,13 @@ The Owner answered J36's two optional choices at 8:20 pm Sydney: *"1. Yes. 2. Ke
   - audit-part21-notes was 607/1. The failing flow (bn 820px, Dua ← Back) then passed on two re-runs, and also with `main`'s two files, so it was a timing miss.
 - Recorded: in the Builder's CI the part-38 records check reads 658px at 640px, while this sandbox reads 608px, so the records fix dropped in v11.36 may be real where fonts differ. It is a follow-up.
 - Not reached: cascaded second and third Note windows on a short screen; the Bookmark dialog in edit mode; the Note editor's toolbars; the Zab item-edit forms.
+
+## v11.39 — 18 Oct 2026 — QuranRevival built from the MSA source (PCA J110 step 5)
+
+- The Owner ticked **A, switch** on the side-by-side preview (J110 `n110c`, 18 Oct 2026).
+- `app/apps/qr.json`: `status` `draft` → `live`; its `about` says so; the Firebase authorised-domain "later" item is removed (the Owner checked: quranrevival.github.io is already authorised).
+- With `live`, `apps/qr/after-build.mjs` enforces `minVersion` 11.39, so a built QR can never reuse frozen QR's v11.38 offline cache.
+- v11.38 is skipped in MSA (frozen QR's number).
+- `CLAUDE.md` "One source, many apps" block: the switch is recorded with its way back.
+- MSA itself is unchanged apart from the version: `apps-build-check.mjs` proves `msa` still builds back byte for byte.
+- QR goes live when its repository's Pages source is "GitHub Actions" and `build-from-msa` runs.

@@ -745,3 +745,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v11.35** (2026-10-17): the 📜 Mushaf button on the Read bar (J37).
 - **v11.36** (2026-10-17): audit part 38 landscape, zoom, reduced motion (J29).
 - **v11.37** (2026-10-17): audit part 39 opened windows on short screens (J29).
+- **v11.39** (2026-10-18): QR built from the MSA source, the switch (PCA J110 step 5).

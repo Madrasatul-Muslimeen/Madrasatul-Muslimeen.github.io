@@ -140,8 +140,10 @@ Read this first, every session. It is the standing brief.
 >   against the build: `bash tools/apps/qr-verify/run-all.sh`. Guide: `tools/apps/README.md`.
 > - **An edit whose text no longer matches stops QR's build.** When an MSA change breaks one, re-anchor it in
 >   `apps/qr/edits.json`; never delete it to get green.
-> - **Version numbers:** frozen QR is v11.38, so **MSA's next release is v11.39** (QR's worker refuses a number it is
->   already running). The live QR is still the frozen copy until step 5 (Owner ticks in PMS J110).
+> - **Version numbers:** frozen QR is v11.38, so MSA skipped it and **released v11.39** (QR's worker refuses a number it
+>   is already running). **The Owner ticked A, switch (18 Oct 2026, J110 n110c)**: `qr.json` is `live` from v11.39, and
+>   QR is the build once QR's Pages source is "GitHub Actions" and its `build-from-msa` workflow has run. Way back:
+>   QR Settings → Pages → "Deploy from a branch".
 
 > ## ⇢ HADITH STUDY is being built on `feature/hadith-study` — READ IF YOU TOUCH HADITH
 >
@@ -405,7 +407,7 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v11.37 on `main`** (18 Oct 2026 — **audit part 39: opened windows, sheets and menus in phone landscape (844×390) and at 200% zoom (640×450); on a short screen the Note window now starts at the top and stays clear of the Zab bar, and a Mapping My Journey folder's ⋯ menu scrolls inside itself**, PCF MSA J29). Built by Builder round #952 (PR #953, opened by the Builder). Each defect was measured on unmodified `main` before it was fixed: the first Note window ran from 185px to 545px on a 390px-high screen, its ⋯ sheet's 🗑 Delete was off the screen, and the folder menu was 643px tall with no inner scroll. **Shared note script changed:** `app/js/note-window.js` (`WIN_LIMITS.minH` and `defaultWinRect()`; screens 560px high or taller are unchanged); QR was sent the change notice. Also changed: `app/journey-map.html` (`@media (max-height: 520px)`). The Bookmark dialog, nav menus, Zab panels and Dua ✓ Check panel already fitted. `audit-part38-landscape-zoom-motion-browser.mjs` gained `--mode=sheets` with a positive control for reachability inside a sheet. **Recorded:** in the Builder's CI the part-38 records check reads 658px at 640px (fonts differ), while this sandbox reads 608px, so the dropped v11.36 records fix may be real on some devices. It is a follow-up, not done during the usage pause. **Tests:** sheets mode 402/0 (mutations `winshort` 8, `winlimits` 2, `foldermenu` 4 failures); journey-note-windows 254/0; journey-window-tabs 166/0; journey-folder-menus 148/0; audit-part21-notes 607/1 then 13/0 on two re-runs of the failing flow (bn 820 Dua ← Back, a timing miss); and from the round: behaviour 971/0, phone-width-overflow 217/0, qr-stage1-hidden 110/0, audit-part36 1184/0, audit-part33 706/0, card-look 96/0.
+**Current milestone: v11.39 on `main`** (18 Oct 2026 — **QuranRevival is now built from the MSA source (PCA J110 step 5, "One source, many apps")**: the Owner looked at the side-by-side preview and ticked **A, switch** (J110 `n110c`). `app/apps/qr.json` is `status: "live"`, so `apps/qr/after-build.mjs` now refuses any version below `minVersion` 11.39. v11.38 was skipped in MSA because frozen QR already used it. **Nothing changes for MSA users** beyond the version number: `apps-build-check.mjs` still proves `msa` builds back byte for byte. QR goes live when the QR repository's Pages source is set to "GitHub Actions" and its `build-from-msa` workflow runs; the way back is QR Settings → Pages → "Deploy from a branch". Steps 1–4 were #955–#957.)
 
 **Earlier milestones, v08.111 back to v07.139, and the long notes around them**
 (the held Phase 4 wiring, the four deployment states, the Programme Integration
