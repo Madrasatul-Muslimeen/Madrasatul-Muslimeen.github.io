@@ -31,7 +31,7 @@ const MUT = {
   nosync: ["app/js/bookmark-popover.js", "everyoneBox.checked = boxes.length > 0 && boxes.every((b) => b.checked);", "everyoneBox.checked = false;"],
   noask: ["app/quranrevival.html", "if (existing && toggle) {\n        const pick", "if (false) {\n        const pick"],
   nobn: ["app/js/i18n/bn.js", '"Whole sūrah": "পূর্ণ সূরা",', ""],
-  nowrap: ["app/js/bookmark-popover.js", "display: flex; flex-wrap: wrap; gap: 0.35rem;", "display: flex; flex-wrap: nowrap; gap: 0.35rem;"],
+  nowrap: ["app/js/bookmark-popover.js", "display: flex; flex-wrap: wrap; gap: 0.35rem;", "display: flex; flex-wrap: nowrap; gap: 0.35rem; } .bm-pop-units button { flex-shrink: 0 !important; white-space: nowrap !important;"],
   short: ["app/js/bookmark-popover.js", "flex: 0 1 auto; min-height: 40px;", "flex: 0 1 auto; min-height: 20px; height: 20px;"],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);

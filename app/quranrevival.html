@@ -21822,15 +21822,16 @@
           });
         }
       }
-      const meta = surahIndex.find((s) => s.surahNumber === currentSurahNum);
-      const sName = surahName(currentSurahNum, meta?.nameEnglish);
+      const sName = surahName(currentSurahNum, surahIndex.find((s) => s.surahNumber === currentSurahNum)?.nameEnglish);
       all.push({ id: "surah", label: t("Whole sūrah"), defaultName: sName || t("Whole Surah {surah}", { surah: num(currentSurahNum) }), position: buildUnitKey.surah(currentSurahNum), settings: at("surah") });
       if (rec && rec.juz) all.push({ id: "juz", label: t("This juz"), defaultName: t("Juz {juz}", { juz: num(rec.juz) }), position: buildUnitKey.juz(rec.juz), settings: at("juz") });
       // The selected study unit comes first and is preselected, so today's default is unchanged. When it is one of
       // the five it moves to the front; a wider one that is not (Range, Hizb) is added in front.
       const sel = all.find((c) => c.id === info.unitType);
-      if (sel) return [info.unitType === "ayah" ? sel : { ...sel, defaultName: info.label, settings: base }, ...all.filter((c) => c !== sel)];
-      return [{ id: "unit", label: unitChipText(info), defaultName: info.label, position: info.unitKey, settings: base }, ...all];
+      const choices = sel
+        ? [info.unitType === "ayah" ? sel : { ...sel, defaultName: info.label, settings: base }, ...all.filter((c) => c !== sel)]
+        : [{ id: "unit", label: unitChipText(info), defaultName: info.label, position: info.unitKey, settings: base }, ...all];
+      return choices;
     }
 
     async function toggleAyahBookmark(unitKey, defaultNameOverride, settingsOverride, { toggle = true, unitChoices = [] } = {}) {

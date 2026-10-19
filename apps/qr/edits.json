@@ -83,8 +83,8 @@
   "id": "app/quranrevival.html#4b",
   "file": "app/quranrevival.html",
   "why": "(4) readBookmarkUnitChoices() offers a Range choice (kind 'range') from the āyah to its ruku's end (QR J03).",
-  "from": "        });\n      }\n      return choices;",
-  "to": "        });\n      }\n      // QR J03 (the Owner): a range of āyāt, through MMSA's popover range kind (v11.14). It starts at the āyah on\n      // screen and runs to the end of its ruku' (in a Range unit, the unit's own range); the reader can change both.\n      const ayahs = currentSurahData.ayahs;\n      const rukuOf = ayahs.find((a) => a.ayah === ayah)?.ruku;\n      const rukuEnd = Math.max(ayah, ...ayahs.filter((a) => a.ruku === rukuOf).map((a) => a.ayah));\n      const [from, to] = info.unitType === \"range\" ? currentUnitAyahBounds() : [ayah, rukuEnd];\n      const meta = surahIndex.find((x) => x.surahNumber === currentSurahNum);\n      choices.push({\n        id: \"range\", label: t(\"Range\"), kind: \"range\", surah: currentSurahNum, ayahCount: currentSurahData.ayahCount,\n        from, to, surahName: surahName(currentSurahNum, meta?.nameEnglish), settings: base,\n      });\n      return choices;",
+  "from": "      return choices;",
+  "to": "      // QR J03 (the Owner): a range of āyāt, through MMSA's popover range kind (v11.14). It starts at the āyah on\n      // screen and runs to the end of its ruku' (in a Range unit, the unit's own range); the reader can change both.\n      const ayahs = currentSurahData.ayahs;\n      const rukuOf = ayahs.find((a) => a.ayah === ayah)?.ruku;\n      const rukuEnd = Math.max(ayah, ...ayahs.filter((a) => a.ruku === rukuOf).map((a) => a.ayah));\n      const [from, to] = info.unitType === \"range\" ? currentUnitAyahBounds() : [ayah, rukuEnd];\n      const meta = surahIndex.find((x) => x.surahNumber === currentSurahNum);\n      choices.push({\n        id: \"range\", label: t(\"Range\"), kind: \"range\", surah: currentSurahNum, ayahCount: currentSurahData.ayahCount,\n        from, to, surahName: surahName(currentSurahNum, meta?.nameEnglish), settings: base,\n      });\n      return choices;",
   "exact": 1
  },
  {
