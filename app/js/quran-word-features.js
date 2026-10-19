@@ -66,6 +66,16 @@ export async function loadVerbForms({ fetchImpl = fetch, baseUrl = BASE } = {}) 
   });
 }
 
+/** J41 round 2 -- every noun place's gender, number and case (3 letters per place, parallel to the lemma's list in
+ *  lemmas-index.json). Fetched only the first time the Taṣrīf level is drawn for a word with no tense (I9), then cached. */
+export async function loadNounForms({ fetchImpl = fetch, baseUrl = BASE } = {}) {
+  return load(`${baseUrl}noun-forms.json`, fetchImpl, (data) => {
+    if (data.contract !== "noun-forms:v1" || !data.values || typeof data.values !== "object") {
+      throw new Error("Invalid noun forms format.");
+    }
+  });
+}
+
 /** Round 6 -- every exact written form of every word, with its places, for the
  *  card's Search. Fetched only when the reader presses Search (I9) -- never at
  *  startup, never when the card or its 🔍 row merely opens -- then cached. */
