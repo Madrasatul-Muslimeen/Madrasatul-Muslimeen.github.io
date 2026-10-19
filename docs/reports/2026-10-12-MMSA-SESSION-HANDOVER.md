@@ -7,7 +7,34 @@ v10.28). Read `CLAUDE.md` first. The prompt that starts the next session is
 
 This session was summarised once (its context compacted), which is why it hands over here.
 
-## LATEST UPDATE — 19 Oct 2026, 11:30 am Sydney, session `session_019bRvTeru2WnEYcsDmkiDys` (v11.39; J110 switched; J38/J39 building) — READ THIS FIRST
+## LATEST UPDATE — 19 Oct 2026, 6:50 pm Sydney, session `session_01HkRaQdqcADEjR9dNPv4N5N` (v12.02; J38/J39 and J42 released; J40 waits on the Owner) — READ THIS FIRST
+
+The MSA Master Architect took over at 11:27 am on 19 Oct (PCA told; `p/mmsa.sessionUrl` and `p/qr.sessionUrl` set).
+- **`main` is v12.02. MSA and QR both serve v12.02 live** (checked 19 Oct ~6:32 pm). The next release is **v12.03**.
+- **Nothing is running.** No Builder round, no open PR. My last QR build-from-msa run (3) was green.
+
+**Owner messages this session (carry1), and what was done**
+1. (Screenshot of the Read view on 36:8) "Enable Bookmark here for entire family and enable choice of unit" → filed as **MSA J42**, built (Builder #970, PR #972), **released v12.02**: "Everyone in the family" in the bookmark dialog, and This āyah · This page · This rukūʿ · Whole sūrah · This juz on every unit, Single Ayah included. Done line written; status `report` (the Owner checks).
+2. (PCA-relayed General rule **lead120**, verified in `meta/global`) → "Module Leads" section in `CLAUDE.md` (#971).
+
+**Released this session**
+- **v12.01** (PR #969): the Word card's five levels, J38+J39. Builder #966 skipped its "update every old suite" point, so **part 3 (#968, tests only)** was added; the Architect fixed 5 suites itself. Done lines on J38/J39 (status `report`).
+- **v12.02** (PR #972): J42 above. QR's `range-bookmark` check was updated in place (Range is the last of six choices).
+
+**Waiting on the Owner**
+- **J40 (Learn next list): four ticks**, demo https://claude.ai/artifact/1wdJRYHbK7wiYTceb3SZ8o (ticks in `p/mmsa/jobs/J40.needs`). Build nothing until answered.
+- J38 small-phone question (in its Done line): at 320×640 the WbW can-do box puts the progress buttons one scroll down the card; keep, or make the box smaller there.
+- The older list: QR J01 Bangla check page, J02, J05, J06, J07, J20, J22, J24, J35's Bangla letter names.
+
+**Next with no Owner input:** J41 (Taṣrīf for non-verbs): first find a reviewed source the app may use, then a demo. Own audit rounds stay paused until Thu 22 Oct ~7 pm.
+
+**Lessons**
+- **A Builder's "update every other suite" point can be silently skipped.** Run every Word card suite before (on `main`) and after, yourself; 21 had gone red.
+- **A release PR's `verify` is red by design** until merged (the ledger and brief guards read `origin/main`); the v11.39 PR was the same. Check locally that ONLY those fail, merge, then re-run them on `main`.
+- **A check that fixes a number must join digit groups**: "1,642" never matches `/1642/`.
+- **QR's Pages updates in about 1 minute; MSA's GitHub Pages can lag a few minutes behind the merge.** Wait for the state before reporting "live".
+
+## LATEST UPDATE — 19 Oct 2026, 11:30 am Sydney, session `session_019bRvTeru2WnEYcsDmkiDys` (v11.39; J110 switched; J38/J39 building) — superseded by the 6:50 pm block above, kept as history
 
 The MSA Master Architect took over at 10:56 am on 18 Oct. It hands over at about 40% context (cost86).
 - **The PCA is `session_01HUvvFAYs3CSniCSwrgeKkk`.**
