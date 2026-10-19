@@ -234,6 +234,7 @@ export const WORD_CARD_DEFAULT_LABELS = Object.freeze({
   // -- so these strings never appear for a word without segments.
   colourWordPartsToggle: "Colour word parts",
   colourToggleShort: "Colour",
+  legendButton: "ⓘ Legend",
   segmentLegendParticle: "particle",
   segmentLegendPerson: "person",
   segmentLegendDeterminer: "determiner",
@@ -864,14 +865,14 @@ function familyGroupMarkHtml(fg, lemma, count, text, formatNumber) {
   if (!fg || !lemma) return "";
   const view = fg.viewOf(lemma);
   const may = !!fg.authority?.mayClaim && view.loaded !== false && !fg.saving;
-  const label = { learning: text.stateLearning, practising: text.statePractising, achieved: text.stateAchieved };
+  const label = { not_started: text.stateNotStarted, learning: text.stateLearning, practising: text.statePractising, achieved: text.stateAchieved };
   const lem = escapeHtml(lemma);
   const button = (state) => `<button type="button" data-family-group-state="${state}" data-family-group-lemma="${lem}" aria-pressed="${view.state === state}" style="${stageColourStyle(state)}"${may ? "" : " disabled"}>${escapeHtml(label[state])}</button>`;
   const decide = fg.authority?.mayDecide && view.awaitingReview && !fg.saving
     ? `<div class="word-card-group-decide"><button type="button" data-family-group-decide="confirmed" data-family-group-lemma="${lem}">${escapeHtml(text.confirm)}</button><button type="button" data-family-group-decide="returned" data-family-group-lemma="${lem}">${escapeHtml(text.sendBack)}</button></div>`
     : "";
   return `<div class="word-card-group-mark" data-family-group-mark role="group" aria-label="${escapeHtml(text.familyGroupMarkLabel)}">` +
-    `<div class="word-card-group-states">${button("learning")}${button("practising")}${button("achieved")}</div>` +
+    `<div class="word-card-group-states">${button("not_started")}${button("learning")}${button("practising")}${button("achieved")}</div>` +
     `<p class="word-card-group-reach" data-family-group-reach>${escapeHtml(String(text.familyGroupReach).replace("{n}", formatNumber(count)))}</p>${decide}</div>`;
 }
 
@@ -1003,6 +1004,15 @@ function canDoHtml(level, text) {
 function orderNoteHtml(level, text) {
   const note = text[`orderNote${LEVEL_KEY[level]}`];
   return note ? `<p class="word-card-ordernote" data-word-card-ordernote="${level}">${escapeHtml(String(note))}</p>` : "";
+}
+
+/** J43 -- one small purple "ⓘ Legend" button at the right end of the colour row; its balloon holds this level's
+ *  can-do sentence and, where the level has one, its order note. The balloon is always in the markup (hidden until
+ *  the page's click handler opens it), so a re-render keeps the text and the stable selectors. */
+function legendHtml(level, text) {
+  return `<span class="word-card-legend" data-word-card-legend>` +
+    `<button type="button" class="word-card-legend-btn" data-word-card-legend-toggle aria-expanded="false" aria-controls="wordCardLegendBalloon">${escapeHtml(text.legendButton)}</button>` +
+    `<div class="word-card-legend-balloon" id="wordCardLegendBalloon" role="note" data-word-card-legend-balloon hidden>${canDoHtml(level, text)}${orderNoteHtml(level, text)}</div></span>`;
 }
 
 /** The Root tab's "How the root grows: its N meanings": one chip per meaning group of the root -- the group's
@@ -1303,7 +1313,6 @@ function levelPanel(level, word, layers, context, text, formatNumber) {
     // stays plain regardless.
     // J23 layout B: the meaning bar now sits ABOVE the tabs (meaningBarHtml, called by renderQuranWordCard).
     return `<div role="tabpanel" data-word-card-panel="wbw"><div class="word-card-main">
-      ${canDoHtml("wbw", text)}
       ${wordFactsHtml(word, layers, context.wordFeatures ?? null, text, formatNumber)}
       ${wordPartsHtml(word, layers, context.wordFeatures ?? null, context.wordSegments, context, text)}
       </div><div class="word-card-side">
@@ -1329,8 +1338,6 @@ function levelPanel(level, word, layers, context, text, formatNumber) {
     // J38/J39: Family holds today's Basic and Intermediate together -- the word's own meanings, then one card per
     // meaning group of the root with its word cards -- and Basic's counts and occurrence list below them.
     return `<div role="tabpanel" data-word-card-panel="basic"><div class="word-card-main">
-      ${orderNoteHtml("basic", text)}
-      ${canDoHtml("basic", text)}
       ${wordFactsHtml(word, layers, context.wordFeatures ?? null, text, formatNumber)}
       ${layers.lemma ? wordSensesSection(word, layers, context, text, formatNumber) : ""}
       ${derivedCardsSection(layers, context, text, formatNumber)}
@@ -1347,8 +1354,6 @@ function levelPanel(level, word, layers, context, text, formatNumber) {
     // Root (stored as `intermediate`): where the word comes from -- the root's meaning, its words in this āyah
     // (moved here from Depth), and how the root grows. The mark is keyed by the root.
     return `<div role="tabpanel" data-word-card-panel="intermediate"><div class="word-card-main">
-      ${orderNoteHtml("intermediate", text)}
-      ${canDoHtml("intermediate", text)}
       ${wordFactsHtml(word, layers, context.wordFeatures ?? null, text, formatNumber)}
       <div class="word-card-root-family" data-word-card-root-family>${rootFamilyHtml({ word, layers, features: context.wordFeatures ?? null, ctx: depthCtx })}</div>
       ${rootGrowsSection(layers, context, text, formatNumber)}
@@ -1362,8 +1367,6 @@ function levelPanel(level, word, layers, context, text, formatNumber) {
     // never writes; a word that is not a verb is Not applicable.
     const features = context.wordFeatures ?? null;
     return `<div role="tabpanel" data-word-card-panel="tasrif"><div class="word-card-main">
-      ${orderNoteHtml("tasrif", text)}
-      ${canDoHtml("tasrif", text)}
       ${tasrifSectionsHtml({ word, layers, features, open: context.depthOpen ?? {}, ctx: depthCtx })}
       </div><div class="word-card-side">
       ${isTasrifLevelPersistenceReady() && features?.tense ? progressBlock(context.progress, context.authority, null, text, formatNumber, { levelTotals: context.levelTotals, learnNext: context.learnNext, level, where }) : tasrifProgressHtml(features, text)}
@@ -1377,8 +1380,6 @@ function levelPanel(level, word, layers, context, text, formatNumber) {
   // (whole-Qur'an total, lemma-wide claim): those stay scoped to WbW, per the
   // issue's own point 4.
   return `<div role="tabpanel" data-word-card-panel="depth"><div class="word-card-main">
-    ${orderNoteHtml("depth", text)}
-    ${canDoHtml("depth", text)}
     ${depthSectionsHtml({ word, layers, features: context.wordFeatures ?? null, open: context.depthOpen ?? {}, ctx: depthCtx })}
     </div><div class="word-card-side">
     ${progressBlock(context.progress, context.authority, null, text, formatNumber, { levelTotals: context.levelTotals, learnNext: context.learnNext, level, where, notApplicable: !layers.lemma })}
@@ -1475,10 +1476,11 @@ function segmentLegendHtml(segments, text) {
 // On the WbW tab the tick lives in the meaning bar and this row holds only the legend (when colour is on); on the other
 // tabs there is no meaning bar, so the row keeps the tick with its full label exactly as before.
 function segmentControlsHtml(segments, colourOn, text, level) {
-  if (!validSegments(segments)) return "";
-  if (level === "wbw") return colourOn ? `<div class="word-card-segment-controls">${segmentLegendHtml(segments, text)}</div>` : "";
+  const legend = legendHtml(level, text);
+  if (!validSegments(segments)) return `<div class="word-card-segment-controls">${legend}</div>`;
+  if (level === "wbw") return `<div class="word-card-segment-controls">${colourOn ? segmentLegendHtml(segments, text) : ""}${legend}</div>`;
   const toggle = colourToggleHtml(colourOn, text.colourWordPartsToggle, false);
-  return `<div class="word-card-segment-controls">${toggle}${colourOn ? segmentLegendHtml(segments, text) : ""}</div>`;
+  return `<div class="word-card-segment-controls">${toggle}${colourOn ? segmentLegendHtml(segments, text) : ""}${legend}</div>`;
 }
 
 /**

@@ -3373,6 +3373,7 @@ export const BN = {
   "Dark": "গাঢ়", // ?
   "Light": "হালকা", // ?
   "Colour": "রঙিন", // ?
+  "ⓘ Legend": "ⓘ নির্দেশিকা", // J43
 
   // Issue #354 -- Card look: Night or Light, beside Language in Settings.
   "Card look": "কার্ডের রূপ", // ?

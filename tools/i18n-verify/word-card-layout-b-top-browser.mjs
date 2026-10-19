@@ -109,7 +109,23 @@ for (const lang of ["en", "bn"]) {
       // Architect review, 14 Oct: Bangla's "রঙিন" is shorter than "Colour" and, measured, fits beside the long meaning at
       // 320px without making it wrap, so there IS room there and showing it is correct (the Owner: "as long as there is
       // space"). The no-room case is asserted in English, and the last check below still requires both states to occur.
-      if (long && width <= 320 && lang === "en") check(`${tag} a long meaning leaves no room, so only the box shows`, d.compact === true && !d.labelShown, JSON.stringify({ compact: d.compact, shown: d.labelShown }));
+      // UPDATED IN PLACE 19 Oct 2026 (PCF MSA J43, the bigger gloss): this long meaning now WRAPS on its own at 320px,
+      // and the word "Colour" fits in its last line's spare space, so by the rule fitWordCardColourLabels() implements
+      // ("drop the word only when it costs the line height"; the Owner: "as long as there is space") showing it is
+      // correct. So assert the RULE, not a fixed outcome: either the line is compact, or showing the word adds no height.
+      if (long && width <= 320 && lang === "en") {
+        const cost = await page.evaluate(() => {
+          const bar = document.querySelector("#quranWordCardMount [data-word-card-meaning-bar]");
+          const block = bar?.querySelector(".word-card-meaning-text") ?? bar;
+          if (!bar || !block) return null;
+          const was = bar.hasAttribute("data-compact");
+          bar.setAttribute("data-compact", ""); const hCompact = block.getBoundingClientRect().height;
+          bar.removeAttribute("data-compact"); const hFull = block.getBoundingClientRect().height;
+          if (was) bar.setAttribute("data-compact", "");
+          return { hCompact: Math.round(hCompact), hFull: Math.round(hFull) };
+        });
+        check(`${tag} a long meaning: the word "Colour" shows only when it costs no extra height (${JSON.stringify(cost)})`, !!cost && (d.compact === true ? !d.labelShown : (d.labelShown && cost.hFull <= cost.hCompact + 1)), JSON.stringify({ compact: d.compact, shown: d.labelShown, cost }));
+      }
       if (!long && width >= 768) check(`${tag} a short meaning on a wide card shows the word`, d.labelShown, JSON.stringify({ compact: d.compact }));
       saw[d.labelShown ? "shown" : "hidden"]++;
       check(`${tag} nothing clipped past the card, no sideways scroll`, d.clipped === 0 && d.page <= 0 && d.cardScroll <= 0, JSON.stringify({ c: d.clipped, p: d.page, s: d.cardScroll }));
