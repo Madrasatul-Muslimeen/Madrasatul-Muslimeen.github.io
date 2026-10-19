@@ -21893,3 +21893,12 @@ The Owner answered J36's two optional choices at 8:20 pm Sydney: *"1. Yes. 2. Ke
 - Checks: new `word-card-five-levels-browser` (106/0, 15 mutations proven); 21 older Word card suites updated in place with dated reasons; QR build 20/20.
 - Recorded: at 320×640 only, the WbW progress row is one scroll of the card away (the can-do box sits at the top, as the spec asks); every larger viewport shows it without scrolling.
 - Builder rounds #961, #966, #968; Architect review and fixes in #969.
+
+## v12.02 — 19 Oct 2026 — Bookmark for the whole family, and a choice of unit (PCF MSA J42)
+
+- The Owner (19 Oct, a phone screenshot of the Read view on 36:8): "Enable Bookmark here for entire family and enable choice of unit."
+- **"Everyone in the family"** is the first row of the bookmark dialog's "Assign to" (2+ people): it ticks everyone, unticking leaves only the reader, and it shows ticked when all are ticked by hand. Saving is unchanged: one copy per person, in their own bookmarks.
+- **The unit choice is always offered, Single Ayah included, on both bookmark buttons (Read bar and Mushaf bar)**: This āyah · This page · This rukūʿ · Whole sūrah · This juz, as a wrapping row of 40px chips. The selected study unit is first and preselected (today's default unchanged); a wider unit that is not one of the five (Range, Hizb) is added in front. Rukūʿ and juz come from the āyah's own data; an unknown boundary is left out, never guessed.
+- ★ on a unit already bookmarked still asks first (remove, or add another).
+- Bangla for the four new strings. QR's edit 4b re-anchored; QR's range-bookmark check updated in place (Range is the last of six).
+- Checks: new `bookmark-family-unit-browser` 46/0 (9 mutations; two re-proven by the Architect); every bookmark suite green; behaviour 971/0; phone-width 217/0; QR build 20/20. The dialog was measured at 320×640, 390 and 1280 in English and Bangla: no sideways scroll, and Save is reachable (the dialog scrolls inside itself).

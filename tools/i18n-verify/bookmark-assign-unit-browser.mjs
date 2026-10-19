@@ -240,9 +240,10 @@ for (const lang of ["en", "bn"]) {
   check(`${tag} precondition: the reader is at āyah ${N} (scrolled past āyah 1)`, N > 5, String(N));
   await openDialog(page);
   const units = await page.evaluate(() => [...document.querySelectorAll("[data-bm-pop-unit]")].map((b) => ({ id: b.dataset.bmPopUnit, text: b.textContent, on: b.getAttribute("aria-checked"), h: b.getBoundingClientRect().height })));
-  check(`${tag} three choices: the unit (picked), This āyah, This page`, units.map((u) => `${u.id}:${u.on}`).join(",") === "unit:true,ayah:false,page:false"
+  // Updated in place (PCF MSA J42): five choices now, the selected unit (Whole sūrah) first and picked.
+  check(`${tag} five choices: the unit (picked), This āyah, This page, rukūʿ, juz`, units.map((u) => `${u.id}:${u.on}`).join(",") === "surah:true,ayah:false,page:false,ruku:false,juz:false"
     && (lang === "bn" ? units[1]?.text === "এই আয়াত" && units[2]?.text === "এই পৃষ্ঠা" : units[1]?.text === "This āyah" && units[2]?.text === "This page"), JSON.stringify(units));
-  check(`${tag} every choice is 36px+ tall`, units.length === 3 && units.every((u) => u.h >= 36), JSON.stringify(units));
+  check(`${tag} every choice is 36px+ tall`, units.length === 5 && units.every((u) => u.h >= 36), JSON.stringify(units));
   const nameOf = () => page.evaluate(() => document.querySelector("[data-bm-pop-name]").value);
   const name0 = await nameOf();
   check(`${tag} the default Name is the unit's, as before`, lang === "bn" ? /সম্পূর্ণ সূরা/.test(name0) : name0 === "Whole Surah 2", name0);
@@ -289,7 +290,8 @@ for (const lang of ["en"]) {
   const { ctx, page } = await open({});
   await readView(page, { unit: "ayah" });
   await openDialog(page);
-  check("[en 390 single ayah] no unit choice on a Single Ayah", (await page.evaluate(() => document.querySelectorAll("[data-bm-pop-unit]").length)) === 0);
+  // Updated in place (PCF MSA J42): a Single Ayah now offers the five choices too (bookmark-family-unit-browser.mjs).
+  check("[en 390 single ayah] the five unit choices are offered on a Single Ayah", (await page.evaluate(() => document.querySelectorAll("[data-bm-pop-unit]").length)) === 5);
   await page.click("[data-bm-pop-cancel]");
   await ctx.close();
 }
@@ -337,7 +339,8 @@ for (const lang of ["en", "bn"]) {
       return { sx: document.documentElement.scrollWidth - innerWidth, pop: [pop.left, pop.right, pop.top, pop.bottom], W: innerWidth, H: innerHeight, btns, actions };
     });
     check(`${tag} no sideways scroll, the dialog inside the screen`, m.sx <= 0 && m.pop[0] >= 0 && m.pop[1] <= m.W + 0.5 && m.pop[2] >= 0 && m.pop[3] <= m.H + 0.5, JSON.stringify(m));
-    check(`${tag} the three choices: one row, each 36px+, nothing cut`, m.btns.length === 3 && new Set(m.btns.map((b) => b.top)).size === 1 && m.btns.every((b) => b.h >= 36 && b.w > 0 && b.cutX <= 1 && b.cutY <= 1), JSON.stringify(m.btns));
+    // Updated in place (PCF MSA J42): five chips in a wrapping row (it wraps; each chip stays whole).
+    check(`${tag} the five choices: a tidy wrapping row, each 36px+, nothing cut`, m.btns.length === 5 && m.btns.every((b) => b.h >= 36 && b.w > 0 && b.cutX <= 1 && b.cutY <= 1), JSON.stringify(m.btns));
     check(`${tag} Cancel and Save are 36px+`, m.actions.length === 2 && m.actions.every((x) => x >= 36), JSON.stringify(m.actions));
     if (SHOTS) await page.screenshot({ path: `${SHOTS}/bm-dialog-${lang}-${w}.png` });
     await ctx.close();

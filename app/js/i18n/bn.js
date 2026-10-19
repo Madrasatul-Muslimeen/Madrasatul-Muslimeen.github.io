@@ -3260,6 +3260,11 @@ export const BN = {
   // "Choose an Approach…", "Not started"/"Learning"/"Practising"/"Achieved",
   // "Status", "Close" -- already exists above and is reused as-is.
   "This page": "এই পৃষ্ঠা",
+  // PCF MSA J42 -- the bookmark dialog's unit choices and the one-tap "everyone".
+  "This rukūʿ": "এই রুকু",
+  "Whole sūrah": "পূর্ণ সূরা",
+  "This juz": "এই জুয",
+  "Everyone in the family": "পরিবারের সবাই",
   // Issue #370 -- the Global Approach Card.
   "Mastered is confirmed by a teacher.": "আয়ত্ত হয়েছে কিনা তা একজন শিক্ষক নিশ্চিত করেন।",
   "Choose an Approach above first, then tap your stage.": "প্রথমে ওপরে একটি পদ্ধতি বেছে নিন, তারপর আপনার ধাপে চাপুন।",
