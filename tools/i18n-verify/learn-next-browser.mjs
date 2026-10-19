@@ -33,7 +33,10 @@ const DATA_MUT = {
 const MUT = {
   firstrow: ["app/quranrevival.html", "const row = firstUnknownRow(ctx.data.rows, learnNextIsKnown);", "const row = ctx.data.rows[0];"],
   nofamily: ["app/quranrevival.html", "if (own.countsAsKnown || !meaningGroupsLive() || isFormKey(lemmaId)) return own;", "return own;"],
-  rootknown: ["app/quranrevival.html", "// PCF J38 (19 Oct 2026): a Root (intermediate), Taṣrīf or Depth mark is a study mark on a ROOT and never makes", 'const rk = claimKeyFor(ROOT_LEVEL, { root }); if (rk && lemmaProgressFor({ tenantId, personId, level: ROOT_LEVEL, lemmaId: rk, confirmationRequired }).countsAsKnown) return { ...own, countsAsKnown: true, knownViaLevel: { level: ROOT_LEVEL, key: rk } };\n      // PCF J38 (19 Oct 2026): a Root (intermediate), Taṣrīf or Depth mark is a study mark on a ROOT and never makes'],
+  // Architect review (19 Oct 2026): the first version of this mutation added a branch keyed on `root`, which the Learn
+  // next list never passes, so it changed nothing and the check went UNPROVEN. This one lets ANY Root/Taṣrīf/Depth
+  // Achieved the person holds count as known -- exactly the leak the check exists to catch.
+  rootknown: ["app/quranrevival.html", "// PCF J38 (19 Oct 2026): a Root (intermediate), Taṣrīf or Depth mark is a study mark on a ROOT and never makes", 'if (["intermediate", "tasrif", "depth"].some((l) => (countKnownLemmaClaims({ tenantId, personId, level: l, confirmationRequired }) ?? 0) > 0)) return { ...own, countsAsKnown: true };\n      // PCF J38 (19 Oct 2026): a Root (intermediate), Taṣrīf or Depth mark is a study mark on a ROOT and never makes'],
   nohide: ["app/js/learn-next.js", "const list = hideKnown ? rows.filter((row) => !isKnown(row)) : rows;", "const list = rows;"],
   page50: ["app/js/learn-next.js", "export const LEARN_NEXT_PAGE = 100;", "export const LEARN_NEXT_PAGE = 50;"],
   noback: ["app/quranrevival.html", 'setAppReturn(t("Back to Learn next"), "", () =>', 'false && setAppReturn(t("Back to Learn next"), "", () =>'],
@@ -248,7 +251,12 @@ for (const [lang, width, height] of [["en", 320, 640], ["en", 390, 844], ["en", 
     check(`${tag} the line changes after a Family group Achieved (group ${gid} → rank 3: ${n3.l})`, !!wrote && nfc((await nextWord(page)) ?? "") === nfc(n3.l), `${wrote} ${await nextWord(page)}`);
 
     // Root / Taṣrīf / Depth marks on the next word never change the line.
-    await openWordOf(page, n3.o);
+    // Architect review (19 Oct 2026): n3 is مَا, which has NO root, so Root/Taṣrīf/Depth are Not applicable on it and
+    // pressing them wrote nothing (the positive control below caught it). Mark a word that HAS a root instead:
+    // قَالَ (rank 7, root ق و ل). The line must still name n3.
+    const rooted = rows.find((r) => nfc(r.l) === nfc("قَالَ"));
+    await openWordOf(page, rooted.o);
+    const rb = await wcount(page);
     for (const level of ["intermediate", "tasrif", "depth"]) {
       await openTab(page, level);
       await press(page, '.word-card-side [data-word-progress-state="achieved"]');
@@ -256,6 +264,10 @@ for (const [lang, width, height] of [["en", 320, 640], ["en", 390, 844], ["en", 
     }
     await openTab(page, "wbw");
     await page.waitForTimeout(800);
+    // POSITIVE CONTROL (Architect review, 19 Oct 2026): the three presses really wrote a claim at each level, so the
+    // "does NOT change it" check below is about real marks, not presses that did nothing.
+    const rootWrites = (await wlog(page, rb)).filter((x) => /^quranLemmaProgress:t1__p1__(intermediate|tasrif|depth)__/.test(x));
+    check(`${tag} POSITIVE CONTROL: the Root, Taṣrīf and Depth presses each wrote a claim (${rootWrites.join(",")})`, ["intermediate", "tasrif", "depth"].every((l) => rootWrites.some((x) => x.includes(`__${l}__`))), rootWrites.join(","));
     check(`${tag} Root, Taṣrīf and Depth marks do NOT change it (still ${n3.l})`, nfc((await nextWord(page)) ?? "") === nfc(n3.l), String(await nextWord(page)));
 
     // --- the sheet knows who knows what
