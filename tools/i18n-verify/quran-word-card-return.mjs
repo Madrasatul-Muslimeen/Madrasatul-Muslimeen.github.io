@@ -198,7 +198,10 @@ for (const lang of ["en", "bn"]) {
   const ctx = await newContext(browser, { viewport: { width: 390, height: 844 } });
   const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
   await openFixtureWord(page);
-  await clickSafely(page, '#quranWordCardMount [data-word-card-level="depth"]');
+  // Updated in place 19 Oct 2026 (five-levels change, J38/J39): the derived-form list left Depth (Root & Word Family
+  // moved to Root, and Family draws each form as a card with the same [data-word-form-toggle]), so this regression
+  // follows the expandable forms to the Family tab (id "basic").
+  await clickSafely(page, '#quranWordCardMount [data-word-card-level="basic"]');
   await page.waitForTimeout(1500);
   const firstForm = await page.evaluate(() => document.querySelector("[data-word-form-toggle]")?.getAttribute("data-word-form-toggle"));
   if (!firstForm) {
@@ -207,9 +210,11 @@ for (const lang of ["en", "bn"]) {
     const originId = await page.evaluate(() => document.querySelector(".quran-word-card")?.getAttribute("data-occurrence-id"));
     await clickSafely(page, "[data-word-form-toggle]");
     await page.waitForTimeout(2000);
-    const target = await page.evaluate(() => document.querySelector("[data-word-occurrence-goto]")?.getAttribute("data-word-occurrence-goto"));
+    // (Family also lists "Meanings of X itself" place boxes with the same attribute, so the expanded FORM's own list is scoped.)
+    const FORM_GOTO = ".word-card-form-occurrences [data-word-occurrence-goto]";
+    const target = await page.evaluate((sel) => document.querySelector(sel)?.getAttribute("data-word-occurrence-goto"), FORM_GOTO);
     if (target) {
-      await clickSafely(page, "[data-word-occurrence-goto]");
+      await clickSafely(page, FORM_GOTO);
       await page.waitForTimeout(1200);
       await clickSafely(page, "[data-word-card-origin-back]");
       await page.waitForTimeout(2600);
@@ -218,7 +223,7 @@ for (const lang of ["en", "bn"]) {
         level: document.querySelector('.quran-word-card [role="tab"][aria-selected="true"]')?.getAttribute("data-word-card-level"),
         formExpanded: document.querySelector("[data-word-form-toggle]")?.getAttribute("aria-expanded"),
       }));
-      check("the original word reopens on the Depth tab", back.occurrenceId === originId && back.level === "depth", JSON.stringify(back));
+      check("the original word reopens on the Family tab (was Depth before the five-levels change)", back.occurrenceId === originId && back.level === "basic", JSON.stringify(back));
       check("the previously-expanded derived form is restored (pre-existing v08.21 behaviour, unchanged)",
             back.formExpanded === "true", back.formExpanded);
     } else {
