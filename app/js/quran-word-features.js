@@ -76,6 +76,16 @@ export async function loadNounForms({ fetchImpl = fetch, baseUrl = BASE } = {}) 
   });
 }
 
+/** PCF MSA J45 -- every dictionary word's renderings in the word-by-word translation, one sense number per place,
+ *  parallel to lemmas-index.json. Fetched only the first time the Family level is drawn (I9), then cached. */
+export async function loadLemmaSenseIndex({ fetchImpl = fetch, baseUrl = BASE } = {}) {
+  return load(`${baseUrl}lemma-sense-index.json`, fetchImpl, (data) => {
+    if (data.contract !== "lemma-sense-index:v1" || data.parallelTo !== "lemmas-index.json" || !data.values || typeof data.values !== "object") {
+      throw new Error("Invalid lemma sense index format.");
+    }
+  });
+}
+
 /** Round 6 -- every exact written form of every word, with its places, for the
  *  card's Search. Fetched only when the reader presses Search (I9) -- never at
  *  startup, never when the card or its 🔍 row merely opens -- then cached. */

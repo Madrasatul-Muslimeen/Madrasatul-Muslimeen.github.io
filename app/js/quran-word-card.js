@@ -101,8 +101,15 @@ export const WORD_CARD_DEFAULT_LABELS = Object.freeze({
   reachRoot: "Achieved here adds Roots studied +1. It does not add to Words known.",
   reachStudyMark: "Achieved here is a study mark on the root. It does not add to Words known.",
   // J38/J39 -- Family tab (3A: what each shape group does, in purple).
-  meaningsOfWordItself: "Meanings of {word} itself",
-  familyGroupsHeading: "The root's meaning groups",
+  // PCF MSA J45 (20 Oct 2026, 1A 2A 3A): the two meaning sections as one, one row per meaning group, side by side.
+  familyCombinedHeading: "The root's words, by meaning",
+  familyCombinedNote: "Each row: the meaning group's words and your mark; in purple, how the Qur'an's word-by-word translation renders each word, at every place.",
+  familyRenderHeading: "How the translation renders each word",
+  familyRenderPlaces: "{n} places",
+  familyRenderOnePlace: "1 place",
+  familyRenderOther: "other renderings",
+  familyRenderLoading: "Loading how the translation renders each word…",
+  familyRenderUnavailable: "How the translation renders each word could not load: {error}",
   doesVerb: "the action itself",
   doesMasdar: "the doing of it",
   doesDoer: "the one who does it",
@@ -788,7 +795,14 @@ function formsSection(layers, context, text, formatNumber, { expandable }) {
  * The order is orderDerivedForms()'s alone; this function never sorts.
  */
 function derivedCardsSection(layers, context, text, formatNumber) {
-  if (!layers.root) return "";
+  // J45: a dictionary word with no root has no meaning groups, but still its own renderings (the old "Meanings of
+  // this word itself" section showed them), so nothing is lost.
+  if (!layers.root) return layers.lemma
+    ? `<section class="word-card-forms word-card-family-combined" data-word-card-family-combined>
+    <h4>${escapeHtml(text.familyCombinedHeading)}</h4>
+    <div class="word-card-meaning-group word-card-meaning-group-current word-card-family-solo">${familyRenderingsHtml([{ lemma: layers.lemma }], context, text, formatNumber)}</div>
+  </section>`
+    : "";
   const data = context.rootForms;
   if (context.rootFormsError || !data || !data.forms?.length) return formsSection(layers, context, text, formatNumber, { expandable: false });
   const bn = text.formMeaningLang === "bn";
@@ -844,16 +858,72 @@ function derivedCardsSection(layers, context, text, formatNumber) {
       `<div class="word-card-meaning-group-top">${formMeaning(head, text) || `<span dir="rtl" lang="ar">${escapeHtml(lemmaText(head.lemma))}</span>`}` +
       `<span class="word-card-sense-tag">${g.mine ? `${escapeHtml(text.meaningThisWord)} · ` : ""}${escapeHtml(String(text.meaningSenseCount).replace("{n}", formatNumber(g.total)))}</span></div>` +
       `<div class="word-card-dcards">${g.forms.map(cardOf).join("")}</div>` +
+      familyRenderingsHtml(g.forms, context, text, formatNumber) +
       familyGroupMarkHtml(context.familyGroups, head.lemma, g.total, text, formatNumber) + `</div>`;
   }).join("");
   const openForm = forms.find((f) => f.lemma === context.expandedForm);
   const pop = openForm ? derivedFormPopup(openForm, context, text, formatNumber) : "";
-  return `<section class="word-card-forms" data-word-card-dcards>
-    <h4>${escapeHtml(text.familyGroupsHeading)}</h4>
+  return `<section class="word-card-forms word-card-family-combined" data-word-card-dcards data-word-card-family-combined>
+    <h4>${escapeHtml(text.familyCombinedHeading)}</h4>
     <p class="word-card-forms-summary">${escapeHtml(summary)}</p>
+    <p class="word-card-forms-note">${escapeHtml(text.familyCombinedNote)}</p>
     ${cards}
     ${pop}
   </section>`;
+}
+
+/**
+ * PCF MSA J45 (the Owner, 20 Oct 2026: 1A combined side by side, stacked on a phone; 2A every place, wrapped; 3A no
+ * cross-row links) -- a Family row's purple column: how the Qur'an's word-by-word translation renders EACH word of the
+ * row, every place a chip that is a data-word-occurrence-goto link (the same way to an āyah, and back, as every
+ * occurrence list). context.familyRenderings is { loading } until lemma-sense-index.json and lemmas-index.json have
+ * loaded (first use of Family, I9), then { senses, places, here } -- senses[lemma] = [labels, numbers], one number
+ * per place, parallel to places[lemma]; `here` is this word's packed place. A place numbered -1 (no main English word)
+ * goes last, under "other renderings", so no place is ever lost. The DOM order (cards, renderings, mark) is the
+ * phone's one column; the page's container query puts the renderings in a second column on a wide card.
+ */
+function familyRenderingsHtml(forms, context, text, formatNumber) {
+  const fr = context.familyRenderings;
+  const head = `<h5>${escapeHtml(text.familyRenderHeading)}</h5>`;
+  let body;
+  if (fr?.error) body = `<p class="word-card-family-render-status" role="status">${escapeHtml(String(text.familyRenderUnavailable).replace("{error}", fr.error))}</p>`;
+  else if (!fr || fr.loading || !fr.senses || !fr.places) body = `<p class="word-card-family-render-status">${escapeHtml(text.familyRenderLoading)}</p>`;
+  else body = forms.map((f) => familyWordRenderingHtml(f, fr, text, formatNumber)).join("");
+  return `<div class="word-card-family-render" data-word-card-family-render>${head}${body}</div>`;
+}
+
+function familyWordRenderingHtml(form, fr, text, formatNumber) {
+  const places = fr.places[form.lemma] ?? [];
+  const [labels = [], numbers = []] = fr.senses[form.lemma] ?? [];
+  const buckets = labels.map(() => []);
+  const other = [];
+  places.forEach((packed, i) => {
+    const k = numbers[i];
+    (Number.isInteger(k) && k >= 0 && k < buckets.length ? buckets[k] : other).push(packed);
+  });
+  const chip = (packed) => {
+    const s = Math.floor(packed / 1000000), a = Math.floor(packed / 1000) % 1000, w = packed % 1000;
+    const shown = typeof text.displayRef === "function" ? text.displayRef(s, a, w) : `${s}:${a}`;
+    const mine = packed === fr.here;
+    return `<button type="button" class="word-card-family-chip${mine ? " word-card-family-chip-current" : ""}"${mine ? ' aria-current="true"' : ""} data-word-occurrence-goto="${s}:${a}:${w}" aria-label="${escapeHtml(String(text.goToOccurrence).replace("{ref}", shown))}">${escapeHtml(shown)}</button>`;
+  };
+  const line = (label, refs, isOther) => {
+    if (!refs.length) return "";
+    const mine = refs.includes(fr.here);
+    return `<div class="word-card-family-sense${mine ? " word-card-sense-current" : ""}${isOther ? " word-card-family-sense-other" : ""}"${mine ? ' aria-current="true"' : ""} data-word-card-family-sense>` +
+      // A few labels in the data start with the translation's own punctuation (", pray for victory"); it is trimmed for show.
+      `<b${isOther ? "" : ' lang="en"'}>${escapeHtml(isOther ? label : String(label).replace(/^[^\p{L}\p{N}]+/u, ""))}</b>` +
+      `<span class="word-card-family-x">${escapeHtml(String(text.meaningSenseCount).replace("{n}", formatNumber(refs.length)))}</span>` +
+      (mine ? `<span class="word-card-sense-tag">${escapeHtml(text.meaningThisWord)}</span>` : "") +
+      `<span class="word-card-family-chips">${refs.map(chip).join("")}</span></div>`;
+  };
+  const n = places.length;
+  const count = n === 1 ? text.familyRenderOnePlace : String(text.familyRenderPlaces).replace("{n}", formatNumber(n));
+  return `<div class="word-card-family-word" data-word-card-family-word="${escapeHtml(form.lemma)}">` +
+    `<p class="word-card-family-who"><span dir="rtl" lang="ar">${escapeHtml(lemmaText(form.lemma))}</span> · ${escapeHtml(count)}</p>` +
+    labels.map((label, k) => line(label, buckets[k], false)).join("") +
+    line(text.familyRenderOther, other, true) +
+    `</div>`;
 }
 
 /**
@@ -1194,54 +1264,6 @@ export function wordPartsHtml(word, layers, features, segments, context, text) {
 }
 
 /**
- * Decision 103 -- "Meanings of this word": the dictionary word's senses as the Qur'an's word-by-word translation
- * renders it (lemma-senses.json, first use). `context.lemmaSenses` is undefined while loading, [] when the
- * translation renders the word one way only. The sense this occurrence belongs to is marked (context.senseKey).
- * Each place is a data-word-occurrence-goto link: the same way to an āyah, and back, as every occurrence list.
- */
-const SENSES_SHOWN = 6;
-function wordSensesSection(word, layers, context, text, formatNumber) {
-  const ar = `<span dir="rtl" lang="ar">${escapeHtml(lemmaText(layers.lemma))}</span>`;
-  const heading = `<h4>${escapeHtml(String(text.meaningsOfWordItself)).replace("{word}", () => ar)}</h4>`;
-  if (context.lemmaSensesError) return `<section class="word-card-senses" data-word-card-senses>${heading}<p role="status">${escapeHtml(String(text.meaningsUnavailable).replace("{error}", context.lemmaSensesError))}</p></section>`;
-  const senses = context.lemmaSenses;
-  if (senses === undefined) return `<section class="word-card-senses" data-word-card-senses>${heading}<p>${escapeHtml(text.loadingMeanings)}</p></section>`;
-  if (!senses.length) return `<section class="word-card-senses" data-word-card-senses>${heading}<p class="word-card-forms-summary">${escapeHtml(text.meaningsOfWordOne)}</p></section>`;
-  const shown = senses.slice(0, SENSES_SHOWN);
-  const loadedItems = Array.isArray(context.lemmaOccurrenceItems) ? context.lemmaOccurrenceItems : [];
-  const rows = shown.map(([label, count, refs], i) => {
-    const mine = context.currentSenseIndex === i;
-    const links = refs.map((packed) => {
-      const s = Math.floor(packed / 1000000), a = Math.floor(packed / 1000) % 1000, w = packed % 1000;
-      const ref = `${s}:${a}:${w}`;
-      const shownRef = typeof text.displayRef === "function" ? text.displayRef(s, a, w) : `${s}:${a}`;
-      return `<button type="button" class="word-card-sense-ref" data-word-occurrence-goto="${escapeHtml(ref)}" aria-label="${escapeHtml(String(text.goToOccurrence).replace("{ref}", shownRef))}">${escapeHtml(shownRef)}</button>`;
-    }).join("");
-    // J23: Arabic word boxes. Distinct spellings at this sense's places when those are already loaded (no new
-    // load); otherwise the dictionary word once. Each box opens the word at the sense's first place of that spelling.
-    const spelled = new Map();
-    for (const packed of refs) {
-      const s = Math.floor(packed / 1000000), a = Math.floor(packed / 1000) % 1000, w = packed % 1000;
-      const found = loadedItems.find((o) => o.surah === s && o.ayah === a && o.position === w);
-      if (found?.arabic && !spelled.has(found.arabic)) spelled.set(found.arabic, `${s}:${a}:${w}`);
-    }
-    if (!spelled.size && refs.length) {
-      const p = refs[0];
-      spelled.set(lemmaText(layers.lemma), `${Math.floor(p / 1000000)}:${Math.floor(p / 1000) % 1000}:${p % 1000}`);
-    }
-    const boxes = [...spelled].map(([arabic, ref]) =>
-      `<button type="button" class="word-card-dcard word-card-sense-box" data-word-occurrence-goto="${escapeHtml(ref)}" aria-label="${escapeHtml(String(text.goToOccurrence).replace("{ref}", (() => { const [rs, ra, rw] = ref.split(":").map(Number); return typeof text.displayRef === "function" ? text.displayRef(rs, ra, rw) : `${rs}:${ra}`; })()))}">` +
-      `<span class="word-card-dcard-ar" dir="rtl" lang="ar">${escapeHtml(arabic)}</span><span class="word-card-sense-box-label" lang="en">${escapeHtml(label)}</span></button>`).join("");
-    return `<li class="word-card-sense${mine ? " word-card-sense-current" : ""}"${mine ? ' aria-current="true"' : ""} data-word-card-sense="${i}">` +
-      `<span class="word-card-sense-top"><b lang="en">${escapeHtml(label)}</b>${mine ? `<span class="word-card-sense-tag">${escapeHtml(text.meaningThisWord)}</span>` : ""}<span class="word-card-sense-count">${escapeHtml(String(text.meaningSenseCount).replace("{n}", formatNumber(count)))}</span></span>` +
-      (boxes ? `<span class="word-card-sense-boxes" data-word-card-sense-boxes>${boxes}</span>` : "") +
-      `<span class="word-card-sense-refs">${links}</span></li>`;
-  }).join("");
-  const more = senses.length > SENSES_SHOWN ? `<p class="word-card-forms-note">${escapeHtml(String(text.meaningMore).replace("{n}", formatNumber(senses.length - SENSES_SHOWN)))}</p>` : "";
-  return `<section class="word-card-senses" data-word-card-senses>${heading}<p class="word-card-forms-summary">${escapeHtml(text.meaningsOfWordNote)}</p><ol class="word-card-sense-list">${rows}</ol>${more}</section>`;
-}
-
-/**
  * Decision 103 -- "Meanings of this root": the root's dictionary words (context.rootForms, the same list Basic's
  * derived-form cards use) grouped by meaning (context.meaningGroupOf: lemma-meaning-groups.json, the groups Basic
  * counts by). A word in no group is a meaning of its own. Each word is the same card and pop-up as Basic's.
@@ -1338,11 +1360,10 @@ function levelPanel(level, word, layers, context, text, formatNumber) {
     // info" -- so the derived forms come straight after the word's facts, and
     // the occurrence counts sit below them. Round 3: the facts are the same
     // row WbW shows, and the forms are ordered cards.
-    // J38/J39: Family holds today's Basic and Intermediate together -- the word's own meanings, then one card per
-    // meaning group of the root with its word cards -- and Basic's counts and occurrence list below them.
+    // J38/J39: Family holds today's Basic and Intermediate together -- one row per meaning group of the root with its
+    // word cards and (J45) how the translation renders each word -- and Basic's counts and occurrence list below them.
     return `<div role="tabpanel" data-word-card-panel="basic"><div class="word-card-main">
       ${wordFactsHtml(word, layers, context.wordFeatures ?? null, text, formatNumber)}
-      ${layers.lemma ? wordSensesSection(word, layers, context, text, formatNumber) : ""}
       ${derivedCardsSection(layers, context, text, formatNumber)}
       <p>${layers.root ? count(text.rootOccurrences, Number(context.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0)) : escapeHtml(text.rootUnavailable)}</p>
       ${layers.lemma ? lemmaOccurrenceBlock(word, layers, context, text, formatNumber) : `<p>${escapeHtml(text.lemmaUnavailable)}</p>`}

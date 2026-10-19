@@ -3696,6 +3696,33 @@
   .word-card-grow-chip { background: #f7f8f6; color: #13241f; border: 1px solid #d6ddd9; border-radius: 999px; padding: 0.2rem 0.6rem; font-size: 0.82rem; min-width: 0; overflow-wrap: anywhere; }
   .word-card-grow-chip-current { background: #fff4d6; border-color: #c9a24a; }
   .word-card-meaning-group .word-card-dcards { margin-top: 0.3rem; }
+  /* PCF MSA J45 (20 Oct 2026, 1A 2A 3A) -- Family: one row per meaning group. The DOM order (top, cards, renderings,
+     mark) is the phone's one column, renderings under the row's cards; a section at least 700px wide puts the purple
+     renderings in a second column beside the cards and the mark. Measured 20 Oct 2026 at 35:2:2: the section is 762px
+     at a 1280 window, 753 at 900, 747 at 768 (two columns), 369 at 390 and 299 at 320 (one). The purple column's text is --wc-purple-ink on --wc-purple-bg, so it reads
+     in the light and the night card looks alike; the current place is marked gold, never with a light background. */
+  .word-card-family-combined { container-type: inline-size; }
+  .word-card-family-render { background: var(--wc-purple-bg); color: var(--wc-purple-ink); border: 1px dashed var(--wc-purple-line); border-radius: 0.65rem; padding: 0.5rem 0.6rem; display: grid; gap: 0.55rem; min-width: 0; align-content: start; }
+  .word-card-family-render h5 { margin: 0; font-size: 0.85rem; color: var(--wc-purple-ink); }
+  .word-card-family-render-status { margin: 0; font-size: 0.82rem; color: var(--wc-purple-ink); }
+  .word-card-family-word { display: grid; gap: 0.3rem; min-width: 0; }
+  .word-card-family-who { margin: 0; font-size: 0.8rem; font-weight: 700; color: var(--wc-purple-ink); }
+  .word-card-family-who [lang="ar"] { font-size: 1.15rem; font-weight: 400; }
+  .word-card-family-sense { display: flex; flex-wrap: wrap; gap: 0.25rem 0.45rem; align-items: baseline; border: 1px solid var(--wc-purple-line); border-radius: 0.5rem; padding: 0.3rem 0.5rem; min-width: 0; color: var(--wc-purple-ink); }
+  .word-card-family-sense b { font-size: 0.88rem; overflow-wrap: anywhere; }
+  .word-card-family-render .word-card-sense-current { background: transparent; box-shadow: none; border: 2px solid #c9a24a; }
+  .word-card-family-x { font-size: 0.75rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .word-card-family-chips { display: flex; flex-wrap: wrap; gap: 0.25rem; width: 100%; min-width: 0; }
+  button.word-card-family-chip { font: inherit; font-size: 0.78rem; min-height: 36px; min-width: 44px; padding: 0 0.55rem; border-radius: 999px; border: 1px solid var(--wc-purple-line); background: transparent; color: var(--wc-purple-ink); cursor: pointer; font-variant-numeric: tabular-nums; }
+  button.word-card-family-chip:hover { border-color: #c9a24a; }
+  button.word-card-family-chip-current { border: 2px solid #c9a24a; font-weight: 700; }
+  @container (min-width: 700px) {
+    .word-card-family-combined .word-card-meaning-group:not(.word-card-family-solo) { grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); grid-template-rows: auto auto 1fr; grid-template-areas: "top top" "cards render" "mark render"; column-gap: 0.9rem; align-items: start; }
+    .word-card-family-combined .word-card-meaning-group-top { grid-area: top; }
+    .word-card-family-combined .word-card-meaning-group .word-card-dcards { grid-area: cards; grid-template-columns: repeat(auto-fill, minmax(6.2rem, 1fr)); }
+    .word-card-family-combined .word-card-family-render { grid-area: render; }
+    .word-card-family-combined .word-card-group-mark { grid-area: mark; }
+  }
   /* MAP Phase 3 -- the WbW progress block. Every button here is a real
      finger target: 40px is what this project settled on after a round of
      26px icon buttons the owner had to complain about. The state row uses
@@ -6772,7 +6799,6 @@
     import { loadLemmaDictionary, loadBanglaLemmaDictionary, lemmaDictionaryEntry } from "./js/lemma-dictionary.js";
     import { loadLemmaMeaningGroups, sameMeaningLemmas, meaningGroupOf } from "./js/lemma-meaning-groups.js";
     import { loadLearnNext, firstUnknownRow, milestoneFigures, visibleRows, placeOfRow, stepRange, wordShare, LEARN_NEXT_PAGE } from "./js/learn-next.js";
-    import { loadLemmaSenses, lemmaSensesOf, senseKey } from "./js/lemma-senses.js";
     // Decision 58 (#490) -- Basic/Depth lemma-wide claims, behind their own gate (ready:false).
     import { isLemmaLevelsPersistenceReady } from "./js/study-lemma-levels-readiness.js";
     import { claimKeyFor, LEMMA_WIDE_LEVELS } from "./js/quran-lemma-levels.js";
@@ -6782,7 +6808,7 @@
     import { relatedBySharedWords, relatedThroughLists, connectedThroughNotes } from "./js/ayah-related.js";
     import { wordSegmentsFor } from "./js/quran-word-segments.js";
     import { nounCodeFor } from "./js/word-card-depth.js";
-    import { wordFeaturesFor, loadLemmaForms, loadVerbForms, loadNounForms, loadWordFeaturesForSurah, loadWordFormsIndex, loadWordSyntaxForSurah, loadFuruqIndex, loadMufradatForRoot } from "./js/quran-word-features.js";
+    import { wordFeaturesFor, loadLemmaForms, loadVerbForms, loadNounForms, loadWordFeaturesForSurah, loadWordFormsIndex, loadWordSyntaxForSurah, loadFuruqIndex, loadMufradatForRoot, loadLemmaSenseIndex } from "./js/quran-word-features.js";
     import { searchWordForms, placeFromId } from "./js/word-card-search.js";
     import { wordProgressAuthority, WBW_WORD_STATES, resolveWordProgress } from "./js/quran-word-progress.js";
     import { primeAyahProgress, getSurahProgress, wordProgressFor, setWordState, decideWordApproval, clearWordProgressCache } from "./js/quran-word-progress-data.js";
@@ -16592,8 +16618,14 @@
         rootGrowsChip: t("{meaning} · {count}×"),
         reachRoot: t("Achieved here adds Roots studied +1. It does not add to Words known."),
         reachStudyMark: t("Achieved here is a study mark on the root. It does not add to Words known."),
-        meaningsOfWordItself: t("Meanings of {word} itself"),
-        familyGroupsHeading: t("The root's meaning groups"),
+        familyCombinedHeading: t("The root's words, by meaning"),
+        familyCombinedNote: t("Each row: the meaning group's words and your mark; in purple, how the Qur'an's word-by-word translation renders each word, at every place."),
+        familyRenderHeading: t("How the translation renders each word"),
+        familyRenderPlaces: t("{n} places"),
+        familyRenderOnePlace: t("1 place"),
+        familyRenderOther: t("other renderings"),
+        familyRenderLoading: t("Loading how the translation renders each word…"),
+        familyRenderUnavailable: t("How the translation renders each word could not load: {error}"),
         doesVerb: t("the action itself"),
         doesMasdar: t("the doing of it"),
         doesDoer: t("the one who does it"),
@@ -17336,28 +17368,35 @@
     async function ensureMeaningGroups() {
       try { await loadLemmaMeaningGroups(); } catch (error) { console.warn("meaning groups unavailable", error); }
     }
-    /** Decision 103 -- the Intermediate tab's two first-use files: the meaning groups (its root meanings) and
-        lemma-senses.json (its word meanings). Each re-draws the card once it lands; a failure is shown in the card. */
-    let lemmaSensesError = null;
+    /** Decision 103 -- the meaning groups (Root's meanings, Family's rows), loaded on first use of either level; and
+        PCF MSA J45 -- Family's purple column: lemma-sense-index.json with lemmas-index.json (its places), first use of
+        Family only (I9). Each re-draws the card once it lands. A failure is said in the card and not retried until the page
+        reloads, so a missing file can never become a fetch-and-redraw loop; the left column keeps working. */
     let intermediateGroupsState = null; // null | "loading" | "done"
+    let familyRenderData = null; // { senses, places } once loaded
+    let familyRenderError = null;
+    let familyRenderAsked = false;
     function ensureIntermediateData() {
       if (intermediateGroupsState === null) {
         intermediateGroupsState = "loading";
         ensureMeaningGroups().finally(() => { intermediateGroupsState = "done"; if (quranWordCardState.open && (quranWordCardState.level === "intermediate" || quranWordCardState.level === "basic")) renderPersistentWordCard(); });
       }
-      if (lemmaSensesOf("x") === undefined && !ensureIntermediateData.sensesAsked) {
-        ensureIntermediateData.sensesAsked = true;
-        loadLemmaSenses().then(() => { lemmaSensesError = null; }, (error) => { lemmaSensesError = error.message; })
-          .finally(() => { ensureIntermediateData.sensesAsked = false; if (quranWordCardState.open && (quranWordCardState.level === "intermediate" || quranWordCardState.level === "basic")) renderPersistentWordCard(); });
+      if (quranWordCardState.level === "basic" && !familyRenderData && !familyRenderAsked && !familyRenderError) {
+        familyRenderAsked = true;
+        Promise.all([loadLemmaSenseIndex(), loadWordIdentityIndex("lemma")])
+          .then(([senses, lemmas]) => { familyRenderData = { senses: senses.values, places: lemmas.values }; },
+            (error) => { familyRenderError = error.message; })
+          .finally(() => { familyRenderAsked = false; if (quranWordCardState.open && quranWordCardState.level === "basic") renderPersistentWordCard(); });
       }
     }
     function intermediateContext(word) {
       if (quranWordCardState.level !== "intermediate" && quranWordCardState.level !== "basic") return {};
-      const lemma = word?.morphology?.lemma;
-      const senses = lemma ? lemmaSensesOf(lemma) : [];
-      const key = senseKey(word?.translation?.en);
-      const currentSenseIndex = Array.isArray(senses) ? senses.findIndex(([label]) => senseKey(label) === key) : -1;
-      return { lemmaSenses: lemmaSensesError ? [] : senses, lemmaSensesError, currentSenseIndex, meaningGroupOf, familyGroups: quranWordCardState.level === "basic" ? familyGroupsContext() : null };
+      if (quranWordCardState.level !== "basic") return { meaningGroupOf };
+      let ref = null;
+      try { ref = parseQuranWordOccurrenceId(quranWordCardState.occurrenceId); } catch { ref = null; }
+      const here = ref ? ref.surah * 1000000 + ref.ayah * 1000 + ref.position : null;
+      const familyRenderings = familyRenderError ? { error: familyRenderError } : familyRenderData ? { ...familyRenderData, here } : { loading: true };
+      return { meaningGroupOf, familyRenderings, familyGroups: familyGroupsContext() };
     }
 
     /** PCF J39 (19 Oct 2026, 5A) -- what Family's per-meaning-group controls need: who may mark, and each group's own
