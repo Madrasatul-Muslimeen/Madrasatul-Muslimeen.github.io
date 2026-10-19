@@ -2918,10 +2918,17 @@
   .word-card-meaning-group-top .word-card-sense-tag { margin-left: auto; }
   /* PCF J39 5A -- one Learning / Practising / Achieved control per meaning group (Family). */
   .word-card-group-mark { display: grid; gap: 0.3rem; min-width: 0; }
-  .word-card-group-states { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.35rem; }
-  .word-card-group-states button, .word-card-group-decide button { font: inherit; font-size: 0.8rem; min-height: 40px; padding: 0 0.3rem; border-radius: 0.6rem; border: 1px solid #b9c4be; background: #fff; color: #13241f; cursor: pointer; overflow-wrap: anywhere; }
-  .word-card-group-states button[aria-pressed="true"] { background: var(--stage-bg, #1d6b4a); color: var(--stage-fg, #fff); border-color: var(--stage-edge, #1d6b4a); }
-  .word-card-group-states button:disabled { opacity: 0.6; cursor: default; }
+  /* J43 (image 3): the same control as the main WORD PROGRESS block (four states, 40px, 0.35rem radius, stage colours when
+     pressed), on the palette that block wears on the LIGHT look (measured: #f6f2e4 buttons, #1f3a6e text, #eee edge),
+     because the group card is always a light surface. */
+  .word-card-group-states { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.35rem; }
+  @media (max-width: 400px) { .word-card-group-states { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .word-card-group-states button { font: inherit; font-size: 0.85rem; line-height: 1.15; min-height: 40px; min-width: 0; padding: 0.5rem 0.4rem; border-radius: 0.35rem; border: 1px solid #eee; background: #f6f2e4; color: #1f3a6e; cursor: pointer; overflow-wrap: anywhere; }
+  .word-card-group-decide button { font: inherit; font-size: 0.8rem; min-height: 40px; padding: 0 0.3rem; border-radius: 0.6rem; border: 1px solid #b9c4be; background: #fff; color: #13241f; cursor: pointer; overflow-wrap: anywhere; }
+  .word-card-group-states button[aria-pressed="true"] { background: var(--stage-bg, #1d6b4a); color: var(--stage-fg, #fff); border-color: var(--stage-edge, #1d6b4a); font-weight: 700; }
+  .word-card-group-states button:disabled { opacity: 0.45; cursor: default; }
+  @media (max-width: 380px) { .word-card-group-states button { padding: 0.5rem 0.25rem; font-size: 0.78rem; } }
+  @media (max-width: 340px) { .word-card-group-states button { padding: 0.5rem 0.15rem; font-size: 0.72rem; } }
   .word-card-group-decide { display: flex; gap: 0.35rem; flex-wrap: wrap; }
   .word-card-group-reach { margin: 0; font-size: 0.78rem; font-weight: 700; color: #4b2a85; }
   .word-card-sense-boxes { display: flex; flex-wrap: wrap; gap: 0.35rem; min-width: 0; }
@@ -4406,6 +4413,21 @@
   .word-card-meaning-text { flex: 1 1 auto; min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 1.1rem; }
   .word-card-meaning-bar .word-card-segment-toggle { flex: 0 0 auto; min-height: 38px; min-width: 38px; justify-content: center; font-size: 0.8rem; white-space: nowrap; }
   .word-card-meaning-bar[data-compact] .word-card-segment-toggle-text { display: none; }
+  /* J43 (image 1): the gloss was body size (0.9rem, line 3554's `.quran-word-card p`) in a mostly empty box. English and
+     Bangla are 1.35x that and bold; the transliteration is a little smaller, italic. Colours are untouched. */
+  .quran-word-card .word-card-meaning-text > p.word-card-meaning { font-size: 1.22rem; font-weight: 700; line-height: 1.3; overflow-wrap: anywhere; }
+  .quran-word-card .word-card-meaning-text > p.word-card-transliteration { font-size: 1.02rem; font-style: italic; font-weight: 600; overflow-wrap: anywhere; }
+  /* J43 (image 2): the ⓘ Legend button sits at the right end of the colour row; its balloon is a purple-edged pop-over
+     with a pointer. [hidden] is beaten by display rules here, so the override is explicit. */
+  .word-card-segment-controls { position: relative; }
+  .word-card-legend { margin-inline-start: auto; }
+  .word-card-legend-btn { min-height: 40px; padding: 0 0.8rem; font: inherit; font-size: 0.85rem; font-weight: 700; border-radius: 999px; background: var(--wc-purple-bg); color: var(--wc-purple-ink); border: 1px solid var(--wc-purple-line); cursor: pointer; white-space: nowrap; }
+  .word-card-legend-btn[aria-expanded="true"] { background: var(--wc-purple-ink); color: var(--wc-purple-bg); }
+  .word-card-legend-balloon { position: absolute; inset-inline-end: 0; top: calc(100% + 0.5rem); z-index: 5; box-sizing: border-box; width: min(22rem, 100%); padding: 0.5rem; border: 2px solid var(--wc-purple-line); border-radius: 0.7rem; background: var(--wc-purple-bg); color: var(--wc-purple-ink); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28); }
+  .word-card-legend-balloon[hidden] { display: none; }
+  .word-card-legend-balloon::before { content: ""; position: absolute; inset-inline-end: 1.5rem; top: -0.5rem; width: 0.8rem; height: 0.8rem; background: var(--wc-purple-bg); border-top: 2px solid var(--wc-purple-line); border-left: 2px solid var(--wc-purple-line); transform: rotate(45deg); }
+  .word-card-legend-balloon > p { margin: 0 0 0.4rem; }
+  .word-card-legend-balloon > p:last-child { margin-bottom: 0; }
   .word-card-ayah-action-btn:hover { filter: brightness(1.1); }
   .hifz-surah-header { justify-content: center; background: rgba(201,162,75,0.14); border: 1px solid rgba(201,162,75,0.4); border-radius: 6px; font-size: 16px; font-size: 4.5cqw; font-family: system-ui, sans-serif; color: #7a5f1e; padding: 0.3em 0.6em; }
   /* 27 Sep 2026, Owner: the Surah banner was "very tiny". The banner glyph's
@@ -16531,6 +16553,7 @@
         // Issue #263 -- word-part colouring switch + legend.
         colourWordPartsToggle: t("Colour word parts"),
         colourToggleShort: t("Colour"),
+        legendButton: t("ⓘ Legend"),
         segmentLegendParticle: t("particle"),
         segmentLegendPerson: t("person"),
         segmentLegendDeterminer: t("determiner"),
@@ -17801,6 +17824,22 @@
     function activeWordCardMount() {
       return document.getElementById("quranWordCardMount");
     }
+    // J43 -- the ⓘ Legend balloon. Plain DOM state (the balloon is always in the markup, hidden), so nothing is written.
+    // A second tap, a tap anywhere outside the balloon, or Esc closes it.
+    function setWordCardLegend(open) {
+      const mount = activeWordCardMount();
+      const btn = mount?.querySelector("[data-word-card-legend-toggle]");
+      const balloon = mount?.querySelector("[data-word-card-legend-balloon]");
+      if (!btn || !balloon) return;
+      btn.setAttribute("aria-expanded", String(open));
+      balloon.hidden = !open;
+    }
+    document.addEventListener("click", (event) => {
+      if (!(event.target instanceof Element)) return;
+      const toggle = event.target.closest("[data-word-card-legend-toggle]");
+      if (toggle) { setWordCardLegend(toggle.getAttribute("aria-expanded") !== "true"); return; }
+      if (!event.target.closest("[data-word-card-legend-balloon]")) setWordCardLegend(false);
+    });
     /** Empties the CONTENT of both mounts and hides them. Never touches the
      *  mount's own children beyond that -- the eight resize handles are
      *  static chrome and must outlive every render (see the markup comment). */
@@ -18536,6 +18575,8 @@
       if (event.key === "Enter" && event.target.closest("[data-word-card-search-input]")) { event.preventDefault(); runWordCardSearch(); return; }
       if (event.key === "Escape" && event.target.closest("[data-word-card-content]")) {
         event.preventDefault();
+        const legendBtn = activeWordCardMount()?.querySelector("[data-word-card-legend-toggle][aria-expanded='true']");
+        if (legendBtn) { setWordCardLegend(false); legendBtn.focus({ preventScroll: true }); return; }
         activeWordCardMount()?.querySelector("[data-word-card-close]")?.click();
       }
       const tab = event.target.closest("[data-word-card-level]");

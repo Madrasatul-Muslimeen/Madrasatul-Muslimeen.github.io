@@ -134,6 +134,133 @@ const contrast = (page, look, selector) => page.evaluate(([look, selector]) => {
   return { ratio: (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05) };
 }, [look, selector]);
 
+// WCAG ratio of an element's text colour over the first opaque background found walking up from it, per card look
+// ("dark" is the default look: no attribute).
+const ratioIn = (page, look, selector) => page.evaluate(([look, selector]) => {
+  if (look === "dark") document.documentElement.removeAttribute("data-card-look"); else document.documentElement.setAttribute("data-card-look", look);
+  const el = document.querySelector(selector);
+  if (!el) return null;
+  const rgb = (s) => (s.match(/[\d.]+/g) || []).map(Number);
+  const lum = ([r, g, b]) => { const f = (c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; }; return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b); };
+  let bg = null;
+  for (let n = el; n && !bg; n = n.parentElement) { const c = rgb(getComputedStyle(n).backgroundColor); if (c.length === 3 || (c.length === 4 && c[3] === 1)) bg = c; }
+  const fg = rgb(getComputedStyle(el).color);
+  const [a, b] = [lum(fg), lum(bg ?? [255, 255, 255])];
+  return { ratio: (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05), fg: getComputedStyle(el).color };
+}, [look, selector]);
+const MOUNT = "#quranWordCardMount";
+const legendState = (page) => page.evaluate(() => {
+  const card = document.querySelector("#quranWordCardMount .quran-word-card");
+  const row = card?.querySelector(".word-card-segment-controls");
+  const btn = card?.querySelector("[data-word-card-legend-toggle]");
+  const bal = card?.querySelector("[data-word-card-legend-balloon]");
+  const cr = card?.getBoundingClientRect(), rr = row?.getBoundingClientRect(), br = btn?.getBoundingClientRect();
+  const vis = (e) => !!e && getComputedStyle(e).display !== "none" && e.getBoundingClientRect().height > 0;
+  const er = bal?.getBoundingClientRect();
+  return {
+    exists: !!btn, tag: btn?.tagName, h: br?.height ?? 0, expanded: btn?.getAttribute("aria-expanded"), shown: vis(bal),
+    atRightEnd: !!br && !!rr && Math.abs(rr.right - br.right) <= 14 && br.left > rr.left + 20,
+    insideCard: !!br && !!cr && br.left >= cr.left - 1 && br.right <= cr.right + 1 && (!vis(bal) || (er.left >= cr.left - 1 && er.right <= cr.right + 1)),
+    cando: bal?.querySelector("[data-word-card-cando]")?.textContent.trim() ?? null,
+    order: bal?.querySelector("[data-word-card-ordernote]")?.textContent.trim() ?? null,
+    outsideCando: [...(card?.querySelectorAll("[data-word-card-cando]") ?? [])].filter((e) => !bal.contains(e)).length,
+    over: document.documentElement.scrollWidth - innerWidth,
+    label: btn?.textContent.trim(),
+  };
+});
+
+async function j43Checks(page, tag, lang, width) {
+  // --- image 1: the word-by-word gloss box (WbW tab)
+  await openTab(page, "wbw");
+  const g = await page.evaluate(() => {
+    const bar = document.querySelector("#quranWordCardMount [data-word-card-meaning-bar]");
+    const fs = (s) => { const e = bar?.querySelector(s); return e ? parseFloat(getComputedStyle(e).fontSize) : null; };
+    const cs = (s) => bar?.querySelector(s) ? getComputedStyle(bar.querySelector(s)) : null;
+    const body = parseFloat(getComputedStyle(document.querySelector("#quranWordCardMount .word-card-reference")).fontSize);
+    const br = bar?.getBoundingClientRect(), cr = document.querySelector("#quranWordCardMount .quran-word-card").getBoundingClientRect();
+    return { body, en: fs(".word-card-meaning-en"), bn: fs(".word-card-meaning-bn"), tr: fs(".word-card-transliteration"), enW: Number(cs(".word-card-meaning-en")?.fontWeight), trStyle: cs(".word-card-transliteration")?.fontStyle, inside: !!br && br.left >= cr.left - 1 && br.right <= cr.right + 1, over: document.documentElement.scrollWidth - innerWidth };
+  });
+  check(`${tag} J43 gloss: English ~1.35x body (${g.en}px vs ${g.body}px), bold; Bangla the same; transliteration smaller and italic; fits, no sideways scroll`,
+    g.en >= g.body * 1.3 && g.enW >= 700 && g.bn === g.en && g.tr < g.en && g.tr >= g.body && g.trStyle === "italic" && g.inside && g.over <= 0, JSON.stringify(g));
+  if (width === 390) {
+    const bad = [];
+    for (const look of ["light", "dark", "night"]) {
+      for (const sel of [`${MOUNT} .word-card-meaning-en`, `${MOUNT} .word-card-meaning-bn`, `${MOUNT} .word-card-transliteration`, `${MOUNT} .word-card-gloss-segment`]) {
+        const r = await ratioIn(page, look, sel);
+        if (r && r.ratio < 4.5) bad.push(`${look} ${sel.split(" ").pop()} ${r.ratio.toFixed(2)} ${r.fg}`);
+      }
+    }
+    check(`${tag} J43 gloss: every gloss line and colour segment has >= 4.5:1 on the light, dark and Night looks`, bad.length === 0, bad.join("; "));
+  }
+  // --- image 2: ⓘ Legend balloon on all five levels
+  for (const level of LEVELS) {
+    await openTab(page, level);
+    const s0 = await legendState(page);
+    const wantLabel = lang === "bn" ? "ⓘ নির্দেশিকা" : "ⓘ Legend";
+    check(`${tag} J43 Legend [${level}]: a real button "${wantLabel}", 40px+, at the row's right end, inside the card, closed, no old can-do box in the panel`,
+      s0.exists && s0.tag === "BUTTON" && s0.label === wantLabel && s0.h >= 40 && s0.atRightEnd && s0.insideCard && s0.expanded === "false" && !s0.shown && s0.outsideCando === 0 && s0.over <= 0, JSON.stringify(s0));
+    await page.click(`${MOUNT} [data-word-card-legend-toggle]`);
+    await page.waitForTimeout(150);
+    const s1 = await legendState(page);
+    const wantCando = lang === "bn" ? /^এখানে অর্জিত মানে/ : /^Achieved here means/;
+    const wantOrder = level === "wbw" ? s1.order === null : !!s1.order;
+    check(`${tag} J43 Legend [${level}]: tap opens the balloon (aria-expanded true) with the can-do sentence${level === "wbw" ? "" : " and the order note"} in ${lang}, inside the card`,
+      s1.expanded === "true" && s1.shown && wantCando.test(s1.cando ?? "") && wantOrder && s1.insideCard && s1.over <= 0, JSON.stringify(s1));
+    if (width === 390) {
+      const bad = [];
+      for (const look of ["light", "dark", "night"]) for (const sel of ["[data-word-card-cando]", "[data-word-card-ordernote]"]) { const r = await ratioIn(page, look, `${MOUNT} ${sel}`); if (r && r.ratio < 4.5) bad.push(`${look} ${sel} ${r.ratio.toFixed(2)}`); }
+      check(`${tag} J43 Legend [${level}]: balloon text >= 4.5:1 on light, dark and Night`, bad.length === 0, bad.join("; "));
+      await page.evaluate(() => document.documentElement.setAttribute("data-card-look", "night"));
+    }
+    await page.click(`${MOUNT} [data-word-card-legend-toggle]`);
+    const s2 = await legendState(page);
+    await page.click(`${MOUNT} [data-word-card-legend-toggle]`);
+    await page.keyboard.press("Escape");
+    const s3 = await legendState(page);
+    await page.click(`${MOUNT} [data-word-card-legend-toggle]`);
+    await page.click(`${MOUNT} .word-card-reference`);
+    const s4 = await legendState(page);
+    const stillOpen = await page.evaluate(() => !!document.querySelector("#quranWordCardMount .quran-word-card"));
+    check(`${tag} J43 Legend [${level}]: closes on a second tap, on Esc (card stays open) and on a tap outside`,
+      s2.expanded === "false" && !s2.shown && s3.expanded === "false" && !s3.shown && stillOpen && s4.expanded === "false" && !s4.shown, JSON.stringify({ s2, s3, s4, stillOpen }));
+  }
+  // --- image 3: Family's group control is the main block's control, on the card's light surface
+  await openTab(page, "basic");
+  await page.waitForFunction(() => document.querySelectorAll("#quranWordCardMount [data-family-group-mark]").length === 3, null, { timeout: 10000 }).catch(() => {});
+  const f = await page.evaluate(() => {
+    const css = (e) => { const c = getComputedStyle(e); return { bg: c.backgroundColor, fg: c.color, border: c.borderTopColor, h: Math.round(e.getBoundingClientRect().height), r: c.borderTopLeftRadius, fs: c.fontSize }; };
+    const main = [...document.querySelectorAll("#quranWordCardMount [data-word-progress-state]")];
+    const group = document.querySelector("#quranWordCardMount [data-family-group-mark]");
+    const gb = [...group.querySelectorAll("[data-family-group-state]")];
+    const pressedMain = main.filter((b) => b.getAttribute("aria-pressed") === "true");
+    const reach = group.querySelector("[data-family-group-reach]");
+    reach.scrollIntoView({ block: "center" });
+    const rr = reach.getBoundingClientRect();
+    const hit = document.elementFromPoint(rr.left + rr.width / 2, rr.top + rr.height / 2);
+    const below = rr.top >= gb[0].getBoundingClientRect().bottom - 1;
+    // The group card is always a LIGHT surface, so it is compared with the main block on its light look.
+    document.documentElement.setAttribute("data-card-look", "light");
+    const off = (list) => list.find((b) => b.getAttribute("aria-pressed") !== "true");
+    return { states: gb.map((b) => b.dataset.familyGroupState), mainStates: main.map((b) => b.dataset.wordProgressState), unpressed: css(off(gb)), mainUnpressed: css(off(main)), mainStage: main[0].style.cssText, groupStage: gb[0].style.cssText, h: gb.map((b) => Math.round(b.getBoundingClientRect().height)), reachHit: hit === reach || reach.contains(hit), below, label: gb.map((b) => b.textContent.trim()), mainLabel: main.map((b) => b.textContent.trim()), pressedMain: pressedMain.length };
+  });
+  check(`${tag} J43 Family group control: the same four states, labels and stage colours as the main WORD PROGRESS block; 40px+ buttons`,
+    JSON.stringify(f.states) === JSON.stringify(f.mainStates) && JSON.stringify(f.states) === '["not_started","learning","practising","achieved"]' && JSON.stringify(f.label) === JSON.stringify(f.mainLabel) && f.groupStage === f.mainStage && f.h.every((h) => h >= 40), JSON.stringify(f));
+  check(`${tag} J43 Family group control: unpressed buttons have the main block's colours, size, radius and text size`, JSON.stringify(f.unpressed) === JSON.stringify(f.mainUnpressed), JSON.stringify([f.unpressed, f.mainUnpressed]));
+  check(`${tag} J43 Family reach line "→ Words known +N" sits under the buttons and is not covered (elementFromPoint at its centre is the line)`, f.below && f.reachHit, JSON.stringify(f));
+  // pressed: the colours match the main block's pressed colours for the same state
+  await press(page, '[data-family-group-state="learning"]', 0);
+  await page.waitForTimeout(2500);
+  const p = await page.evaluate(() => {
+    const g = document.querySelector('#quranWordCardMount [data-family-group-state="learning"][aria-pressed="true"]');
+    const c = g && getComputedStyle(g);
+    return { found: !!g, bg: c?.backgroundColor, fg: c?.color, weight: c?.fontWeight, stage: g?.style.cssText };
+  });
+  check(`${tag} J43 Family group control: a pressed state wears the stage colour (not brown) with bold text`, p.found && /^--stage-bg: ?#8a6a35/.test(p.stage ?? "") && p.bg === "rgb(138, 106, 53)" && Number(p.weight) >= 700, JSON.stringify(p));
+  await page.evaluate(() => document.documentElement.setAttribute("data-card-look", "night"));
+  await openTab(page, "wbw"); // the checks after this block start from the WbW tab, as before
+  return { g, f };
+}
+
 for (const [lang, width] of [["en", 320], ["en", 390], ["en", 768], ["en", 1280], ["bn", 320], ["bn", 390], ["bn", 768], ["bn", 1280]]) {
   const tag = `[${lang} ${width}]`;
   console.log(`\n=== Word card five levels ${tag} ===`);
@@ -162,6 +289,8 @@ for (const [lang, width] of [["en", 320], ["en", 390], ["en", 768], ["en", 1280]
   check(`${tag} the small line under each tab is ${width >= 600 ? "shown" : "hidden"} (${width >= 600 ? "from" : "below"} 600px) and is the spec's text`,
     row.subShown.every((s) => s === (width >= 600)) && JSON.stringify(row.subs) === JSON.stringify(lang === "bn" ? BN_SUB : EN_SUB), JSON.stringify({ shown: row.subShown, subs: row.subs }));
   check(`${tag} a tab's spoken name is its whole name, not name + small line`, row.spoken.every((s, i) => s && !s.includes(row.subs[i])), JSON.stringify(row.spoken));
+  // 1b. PCF J43 -- the polish round (issue #975): gloss size, the ⓘ Legend balloon, Family's group control. Every width.
+  const j43 = await j43Checks(page, tag, lang, width);
   if (width !== 390) { await ctx.close(); continue; }
 
   // 2. each tab's sections
@@ -252,8 +381,9 @@ for (const [lang, width] of [["en", 320], ["en", 390], ["en", 768], ["en", 1280]
   // 2c. J39 5A -- a Family mark per meaning group, writing only that group's key.
   await page.waitForFunction(() => document.querySelectorAll("#quranWordCardMount [data-family-group-mark]").length === 3, null, { timeout: 10000 }).catch(() => {});
   const gm = await page.evaluate(() => [...document.querySelectorAll("#quranWordCardMount [data-word-card-meaning-group]")].map((g) => ({ n: g.querySelectorAll("[data-family-group-state]").length, reach: g.querySelector("[data-family-group-reach]")?.textContent.trim() ?? null, lemma: g.querySelector("[data-family-group-state]")?.dataset.familyGroupLemma })));
-  check(`${tag} Family: every meaning-group card has Learning / Practising / Achieved and a "→ Words known +N" line`,
-    gm.length === 3 && gm.every((g) => g.n === 3 && /^(→ Words known \+|→ জানা শব্দ \+)/.test(g.reach ?? "")), JSON.stringify(gm));
+  // UPDATED IN PLACE (J43, issue #975): the group control now has the main block's four states (Not started added), so n is 4.
+  check(`${tag} Family: every meaning-group card has Not started / Learning / Practising / Achieved and a "→ Words known +N" line`,
+    gm.length === 3 && gm.every((g) => g.n === 4 && /^(→ Words known \+|→ জানা শব্দ \+)/.test(g.reach ?? "")), JSON.stringify(gm));
   const gb = await wcount(page);
   await press(page, '[data-family-group-state="achieved"]', 1);
   await page.waitForTimeout(2800);
@@ -269,12 +399,19 @@ for (const [lang, width] of [["en", 320], ["en", 390], ["en", 768], ["en", 1280]
   // 3. purple parts, contrast on both looks (the app has two card looks: light and night)
   await openTab(page, "tasrif");
   for (const look of ["light", "night"]) {
+    // UPDATED IN PLACE (J43): the can-do box and order note now live in the ⓘ Legend balloon, which is closed by default
+    // (hidden), so the Legend is opened first; contrast is still measured on the real rendered balloon.
+    await page.evaluate(() => { const b = document.querySelector("#quranWordCardMount [data-word-card-legend-toggle]"); if (b?.getAttribute("aria-expanded") !== "true") b?.click(); });
     const c1 = await contrast(page, look, "[data-word-card-cando]");
     const c2 = await contrast(page, look, "[data-word-card-ordernote]");
     const c3 = await contrast(page, look, "[data-word-card-whowhen]");
     check(`${tag} purple parts on the ${look} look: can-do ${c1?.ratio?.toFixed(2)}, order note ${c2?.ratio?.toFixed(2)}, who-and-when ${c3?.ratio?.toFixed(2)} (>= 4.5:1)`, !!c1 && !!c2 && !!c3 && c1.ratio >= 4.5 && c2.ratio >= 4.5 && c3.ratio >= 4.5, JSON.stringify([c1, c2, c3]));
   }
+  // J43: the open Legend balloon sits over the tab row, so it is closed (a tap on its button) before the next tab is pressed.
+  await page.evaluate(() => { const b = document.querySelector("#quranWordCardMount [data-word-card-legend-toggle][aria-expanded='true']"); b?.click(); });
   await openTab(page, "basic");
+  // J43: wait for the state (the groups hydrate after the tab opens) rather than a guessed delay.
+  await page.waitForFunction(() => document.querySelector("#quranWordCardMount [data-word-card-does]"), null, { timeout: 10000 }).catch(() => {});
   for (const look of ["light", "night"]) {
     const c = await contrast(page, look, "[data-word-card-does]");
     check(`${tag} the purple "what it does" line on the ${look} look: ${c?.ratio?.toFixed(2)} (>= 4.5:1)`, !!c && c.ratio >= 4.5, JSON.stringify(c));
