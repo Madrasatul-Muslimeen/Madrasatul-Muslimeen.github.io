@@ -63,6 +63,13 @@ const S = {
   conjPast: { en: "Past", bn: "অতীত" },
   conjPresent: { en: "Present", bn: "বর্তমান" },
   conjCommand: { en: "Command", bn: "আদেশ" },
+  // PCF MSA J46 (20 Oct 2026): the toggle row and the one-tense view.
+  conjAll: { en: "All three", bn: "তিনটিই" },
+  conjWhich: { en: "Which tense to show", bn: "কোন কাল দেখাবে" },
+  conjGroup3: { en: "He, she, they", bn: "সে, তারা" },
+  conjGroup2: { en: "You", bn: "তুমি, তোমরা" },
+  conjGroup1: { en: "I, we", bn: "আমি, আমরা" },
+  conjGoTense: { en: "Show {t}", bn: "{t} দেখাও" },
   conjTimes: { en: "✦ in the Qur'an: {n} times", bn: "✦ কুরআনে: {n} বার" },
   conjHere: { en: "In this āyah: {ar} ({mood})", bn: "এই আয়াতে: {ar} ({mood})" },
   conjPassive: { en: "This word is passive; the tables are active.", bn: "এই শব্দটি কর্মবাচ্য; ছকগুলো কর্তৃবাচ্য।" },
@@ -618,10 +625,9 @@ const CONJ_LEAD = { past: "الْمَاضِي", pres: "الْمُضَارِع", 
 
 /** One of the three tables: 14 rows in PERSONS order, the pronoun on the right
  *  (the grid and the table are right-to-left, as in the demo). */
-function conjTable(kind, rows, heading, ctx, here, entry) {
+function conjRows(kind, rows, ctx, here, entry) {
   const { lang, formatNumber } = ctx;
-  const head = rows.find((r) => r?.pgn === "3MS") ?? rows.find((r) => r?.pgn === "2MS");
-  const body = PERSONS.map((p, i) => {
+  return PERSONS.map((p, i) => {
     const r = rows[i];
     const sep = i === 6 || i === 12 ? " word-card-cj-sep" : "";
     const pr = `<td class="word-card-cj-pr"><span class="word-card-ar" dir="rtl" lang="ar">${esc(p.ar)}</span><small>${esc(p[lang] ?? p.en)}</small></td>`;
@@ -633,10 +639,44 @@ function conjTable(kind, rows, heading, ctx, here, entry) {
       ? `<span class="word-card-cj-mood" data-word-card-conj-mood>${esc(fill(pick("conjHere", lang), { ar: "\u0000", mood: S.moodWord[lang][here.mood] })).replace("\u0000", AR(here.word))}</span>` : "";
     const vb = `<td class="word-card-cj-vb" data-word-card-conj-form="${esc(r.ar)}"><span class="word-card-cj-p">${esc(r.prefix)}</span><span class="word-card-cj-st">${esc(r.stem)}</span><span class="word-card-cj-e">${esc(r.ending)}</span>${q}${mood}</td>`;
     return `<tr class="word-card-cj-row${sep}${isHere ? " word-card-cj-here" : ""}"${isHere ? " data-word-card-conj-here" : ""} data-word-card-conj-pgn="${p.pgn}">${pr}${vb}</tr>`;
-  }).join("");
+  });
+}
+
+const leadOf = (rows) => rows.find((r) => r?.pgn === "3MS") ?? rows.find((r) => r?.pgn === "2MS");
+
+function conjTable(kind, rows, heading, ctx, here, entry) {
+  const head = leadOf(rows);
+  const body = conjRows(kind, rows, ctx, here, entry).join("");
   return `<div class="word-card-cj word-card-cj-${kind}" data-word-card-conj-table="${kind}">` +
     `<h4>${heading}</h4><div class="word-card-cj-lead" dir="rtl" lang="ar">${esc(CONJ_LEAD[kind])} (${esc(head?.ar ?? "")})</div>` +
     `<table>${body}</table></div>`;
+}
+
+const CONJ_ORDER = ["past", "pres", "imp"];
+const CONJ_NAME_KEY = { past: "conjPast", pres: "conjPresent", imp: "conjCommand" };
+
+/** PCF MSA J46 -- ONE tense alone, filling the card: its three person groups side by side (right to left, as the
+ *  Arabic reads: he/she/they, you, I and we), stacking on a narrow card; ‹ › step to the next tense. Same rows, same
+ *  gold row, same Qur'an counts as the three-column view (conjRows). */
+function conjOneTable(kind, rows, heading, ctx, here, entry) {
+  const { lang } = ctx;
+  const head = leadOf(rows);
+  const all = conjRows(kind, rows, ctx, here, entry).map((tr) => tr.replace(" word-card-cj-sep", ""));
+  const groups = [[0, 6, "conjGroup3"], [6, 12, "conjGroup2"], [12, 14, "conjGroup1"]].map(([a, b, key]) =>
+    `<div class="word-card-cj-group" data-word-card-conj-group="${key}"><p class="word-card-cj-gname">${esc(pick(key, lang))}</p><table>${all.slice(a, b).join("")}</table></div>`).join("");
+  const i = CONJ_ORDER.indexOf(kind);
+  const prev = CONJ_ORDER[(i + 2) % 3], next = CONJ_ORDER[(i + 1) % 3];
+  const step = (k, glyph) => `<button type="button" class="word-card-cj-step" data-word-card-conj-view="${k}" aria-label="${esc(fill(pick("conjGoTense", lang), { t: pick(CONJ_NAME_KEY[k], lang) }))}">${glyph}</button>`;
+  return `<div class="word-card-cj word-card-cj-${kind} word-card-cj-one" data-word-card-conj-table="${kind}" data-word-card-conj-single>` +
+    `<div class="word-card-cj-onehead">${step(prev, "‹")}<div><h4>${heading}</h4><div class="word-card-cj-lead" dir="rtl" lang="ar">${esc(CONJ_LEAD[kind])} (${esc(head?.ar ?? "")})</div></div>${step(next, "›")}</div>` +
+    `<div class="word-card-cj-groups">${groups}</div></div>`;
+}
+
+/** PCF MSA J46 1A -- the four-button toggle: All three · Past · Present · Command. */
+function conjToggle(view, lang) {
+  const b = (k, label, ar) => `<button type="button" data-word-card-conj-view="${k}" aria-pressed="${view === k}">${esc(label)}${ar ? `<small dir="rtl" lang="ar">${ar}</small>` : ""}</button>`;
+  return `<div class="word-card-conj-toggle" role="group" aria-label="${esc(pick("conjWhich", lang))}" data-word-card-conj-toggle>` +
+    b("all", pick("conjAll", lang), "") + CONJ_ORDER.map((k) => b(k, pick(CONJ_NAME_KEY[k], lang), CONJ_LEAD[k])).join("") + `</div>`;
 }
 
 /** Verb Conjugation · تَصْرِيفُ الْفِعْل. Every form comes from the engine
@@ -665,12 +705,22 @@ function conjSection(word, features, ctx) {
   // with a dot, so the heading never reads "Present (to learn (something))".
   const h4 = (key, gloss) => `${esc(pick(key, lang))}${!gloss ? "" : /[()]/.test(gloss) ? ` <b lang="en">· ${esc(gloss)}</b>` : ` <b lang="en">(${esc(gloss)})</b>`}`;
   const unknown = `<div class="word-card-cj word-card-cj-unknown" data-word-card-conj-unknown><p class="word-card-dnote">${esc(pick("conjUnknownVowel", lang))}</p></div>`;
-  const tables = [
-    result.pastKnown ? conjTable("past", result.past, h4("conjPast"), ctx, here, entry) : unknown,
-    result.presentKnown ? conjTable("pres", result.present, h4("conjPresent", meaning), ctx, here, entry) : unknown,
-    result.presentKnown ? conjTable("imp", result.command, h4("conjCommand"), ctx, here, entry) : unknown,
-  ];
-  out.push(`<div class="word-card-conj-wrap"><div class="word-card-conj" data-word-card-conj-grid>${tables.join("")}</div></div>`);
+  // PCF MSA J46 2A: a view the reader chose this visit wins; otherwise All three, except on a narrow card (a phone),
+  // which opens on the tense of this āyah's word.
+  const view = ["all", ...CONJ_ORDER].includes(ctx.conjView) ? ctx.conjView : (ctx.conjNarrow && here?.kind ? here.kind : "all");
+  const spec = {
+    past: [result.pastKnown, result.past, h4("conjPast")],
+    pres: [result.presentKnown, result.present, h4("conjPresent", meaning)],
+    imp: [result.presentKnown, result.command, h4("conjCommand")],
+  };
+  out.push(conjToggle(view, lang));
+  if (view === "all") {
+    const tables = CONJ_ORDER.map((k) => (spec[k][0] ? conjTable(k, spec[k][1], spec[k][2], ctx, here, entry) : unknown));
+    out.push(`<div class="word-card-conj-wrap"><div class="word-card-conj" data-word-card-conj-grid>${tables.join("")}</div></div>`);
+  } else {
+    const [known, rows, heading] = spec[view];
+    out.push(`<div class="word-card-conj-wrap">${known ? conjOneTable(view, rows, heading, ctx, here, entry) : unknown}</div>`);
+  }
   return out.join("");
 }
 

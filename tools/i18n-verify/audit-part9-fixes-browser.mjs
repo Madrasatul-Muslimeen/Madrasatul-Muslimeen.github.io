@@ -101,6 +101,11 @@ for (const lang of ["en", "bn"]) for (const width of [320, 390, 820, 1440]) {
     await page.waitForTimeout(1200);
     await page.evaluate(() => { const s = document.querySelector('[data-word-card-sec="conj"]'); if (s) s.open = true; });
     await page.waitForTimeout(600);
+    // Updated in place 20 Oct 2026 (PCF MSA J46, tick 2A): a narrow card now OPENS on the āyah word's tense; this
+    // check measures the three-table view, so it presses "All three" first, as a reader would. The one-tense view's
+    // own containment checks are in word-card-tense-toggle-browser.mjs.
+    await page.evaluate(() => document.querySelector('[data-word-card-conj-toggle] [data-word-card-conj-view="all"][aria-pressed="false"]')?.click());
+    await page.waitForTimeout(600);
     const m = await page.evaluate(() => {
       const s = document.querySelector('[data-word-card-sec="conj"]');
       if (!s) return null;
