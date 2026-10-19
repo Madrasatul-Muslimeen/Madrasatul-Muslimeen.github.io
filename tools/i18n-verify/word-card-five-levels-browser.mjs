@@ -22,6 +22,10 @@
 //   grouplemma  a Family group control marks the CURRENT word's group     -> "writes only that group's key" fails
 //   noroots     the totals box prints word sentences for root levels      -> "studied N of 1,642 roots" fails
 //   noorder     the order note is not drawn                           -> the order-note check fails
+//   smallgloss  the gloss stays body size and regular weight (J43)    -> "J43 gloss: English ~1.35x" fails
+//   nolegend    no ⓘ Legend button is drawn (J43)                     -> the Legend checks fail
+//   threestate  the Family group control loses Not started (J43)      -> "same four states" fails
+//   legendleft  the Legend sits at the row's LEFT end (J43)           -> "at the row's right end" fails
 import { chromium, newContext, openPage } from "./harness.mjs";
 import fs from "fs";
 
@@ -41,6 +45,11 @@ const MUT = {
   rootcounts: ["app/quranrevival.html", 'function levelCountsWords(level) { return level === "wbw" || level === "basic"; }', 'function levelCountsWords(level) { return true; }'],
   grouplemma: ["app/js/quran-word-card.js", "familyGroupMarkHtml(context.familyGroups, head.lemma,", "familyGroupMarkHtml(context.familyGroups, layers.lemma,"],
   noroots: ["app/js/quran-word-card.js", 'if (unit === "roots") {', 'if (false) {'],
+  // J43 mutations, added by the Architect in review (19 Oct 2026): the round shipped its checks unproven.
+  smallgloss: ["app/quranrevival.html", "p.word-card-meaning { font-size: 1.22rem; font-weight: 700;", "p.word-card-meaning { font-size: 0.9rem; font-weight: 400;"],
+  nolegend: ["app/js/quran-word-card.js", "const legend = legendHtml(level, text);", "const legend = \"\";"],
+  threestate: ["app/js/quran-word-card.js", "${button(\"not_started\")}${button(\"learning\")}", "${button(\"learning\")}"],
+  legendleft: ["app/quranrevival.html", ".word-card-legend { margin-inline-start: auto; }", ".word-card-legend { margin-inline-start: 0; order: -1; }"],
   noorder: ["app/js/quran-word-card.js", "return note ? `<p class=\"word-card-ordernote\"", "return false ? `<p class=\"word-card-ordernote\""],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
