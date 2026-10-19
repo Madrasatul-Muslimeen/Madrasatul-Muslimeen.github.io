@@ -10,7 +10,7 @@
 //   noscroll   Back does not restore the card's own scroll          -> the "same scroll" check fails
 //   ink        the purple column's text is the card's text colour  -> the rendered-colour check fails
 //   onecol     the wide layout is never applied                     -> the two-columns check fails
-//   twocol     the two columns are forced on a phone too            -> the one-column / overflow checks fail
+//   twocol     the two columns are forced on a phone too            -> the one-column check fails
 //   eager      the files are fetched before Family opens             -> the network check fails
 //   order      the current word's group is not first                 -> the "Open row first and gold" check fails
 //   markkey    a group control writes the current word's group       -> the Family mark write check fails

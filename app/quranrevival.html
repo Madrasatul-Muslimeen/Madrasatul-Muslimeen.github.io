@@ -3722,6 +3722,9 @@
     .word-card-family-combined .word-card-meaning-group .word-card-dcards { grid-area: cards; grid-template-columns: repeat(auto-fill, minmax(6.2rem, 1fr)); }
     .word-card-family-combined .word-card-family-render { grid-area: render; }
     .word-card-family-combined .word-card-group-mark { grid-area: mark; }
+    /* In the half-width column four buttons in a row wrap "Not started" to two lines (49px, not the main block's 40px);
+       two by two, as the main WORD PROGRESS block sits in the side panel, every label is one line. */
+    .word-card-family-combined .word-card-group-states { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
   /* MAP Phase 3 -- the WbW progress block. Every button here is a real
      finger target: 40px is what this project settled on after a round of

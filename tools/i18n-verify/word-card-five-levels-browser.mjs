@@ -116,6 +116,9 @@ const panelInfo = (page) => page.evaluate(() => {
     growChips: qa("[data-word-card-grow-chip]").map((c) => c.textContent.trim()),
     senses: qa("[data-word-card-sense]").length,
     sensesHead: q("[data-word-card-senses] h4")?.textContent.trim() ?? null,
+    combinedHead: q("[data-word-card-family-combined] h4")?.textContent.trim() ?? null,
+    renders: qa("[data-word-card-meaning-group] [data-word-card-family-render]").length,
+    markedSense: qa("[data-word-card-family-sense].word-card-sense-current").length,
     groups: qa("[data-word-card-meaning-group]").map((g) => ({ current: g.classList.contains("word-card-meaning-group-current"), cards: g.querySelectorAll(".word-card-dcard").length })),
     does: qa("[data-word-card-does]").map((d) => ({ kind: d.dataset.wordCardDoes, text: d.textContent.trim() })),
     counts: !!q(".word-card-lemma-toggle"),
@@ -319,9 +322,13 @@ for (const [lang, width] of [["en", 320], ["en", 390], ["en", 768], ["en", 1280]
   await openTab(page, "basic");
   await page.waitForFunction(() => document.querySelectorAll('#quranWordCardMount [data-word-card-meaning-group]').length === 3, null, { timeout: 10000 }).catch(() => {});
   const fam = await panelInfo(page);
-  check(`${tag} Family: order note, can-do, "Meanings of … itself" senses, three meaning-group cards (this word's first, in gold), counts below`,
-    fam.panel === "basic" && !!fam.order && !!fam.cando && fam.senses === 2 && fam.groups.length === 3 && fam.groups[0].current && !fam.groups[1].current && fam.groups[0].cards === 5 && fam.counts, JSON.stringify(fam));
-  check(`${tag} Family: the senses heading names the word itself`, /itself|নিজের/.test(fam.sensesHead ?? ""), fam.sensesHead ?? "");
+  // Updated in place 20 Oct 2026 (PCF MSA J45, Owner's ticks 1A 2A 3A): "Meanings of … itself" and the meaning-group
+  // cards are ONE section now, a row per meaning group with its purple renderings; the old senses list is gone (0).
+  await page.waitForFunction(() => document.querySelectorAll('#quranWordCardMount [data-word-card-family-word]').length > 0, null, { timeout: 10000 }).catch(() => {});
+  const fam2 = await panelInfo(page);
+  check(`${tag} Family: order note, can-do, ONE combined section: three meaning-group rows (this word's first, in gold), each with its renderings, counts below`,
+    fam2.panel === "basic" && !!fam2.order && !!fam2.cando && fam2.senses === 0 && fam2.groups.length === 3 && fam2.groups[0].current && !fam2.groups[1].current && fam2.groups[0].cards === 5 && fam2.renders === 3 && fam2.counts, JSON.stringify(fam2));
+  check(`${tag} Family: the combined heading is "The root's words, by meaning", and one rendering line is marked "this word"`, (lang === "bn" ? /অর্থ অনুযায়ী/ : /^The root's words, by meaning$/).test(fam2.combinedHead ?? "") && fam2.markedSense === 1, JSON.stringify({ h: fam2.combinedHead, m: fam2.markedSense }));
   check(`${tag} Family 3A: purple "what it does" lines on the shape groups (verb, masdar) and never twice the group label`,
     fam.does.some((d) => d.kind === "verb" && /action itself|কাজটি নিজেই/.test(d.text)) && fam.does.some((d) => d.kind === "masdar" && /doing of it|কাজটি করা/.test(d.text)) && fam.does.every((d) => ["verb", "masdar", "doer", "done"].includes(d.kind)), JSON.stringify(fam.does));
   check(`${tag} Family: the progress block still carries the state buttons (one block, the current word's group)`, fam.stateButtons === 4, String(fam.stateButtons));

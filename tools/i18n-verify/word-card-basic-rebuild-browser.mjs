@@ -86,14 +86,17 @@ for (const lang of ["en", "bn"]) {
     const big = cards.slice(1, 9);
     const perRow = new Set(big.map((c) => c.top));
     const first = big.filter((c) => c.top === big[0].top);
-    const want = width >= 1000 ? 7 : 3;
+    // Updated in place 20 Oct 2026 (PCF MSA J45, Owner's tick 1A): on a wide card each row is two columns, the cards
+    // beside the purple renderings, so the cards' column holds 3 per row at 1280 as on a phone (the approved demo).
+    const want = 3;
     check(`${L}: ${want} cards per row (in the 8-card group)`, first.length === want, `${first.length} rows=${perRow.size}`);
     check(`${L}: the first card is the rightmost in its row`, first.every((c) => c.x <= big[0].x + 0.5));
     check(`${L}: no card text is cut`, cards.every((c) => c.uncut && c.cardUncut), JSON.stringify(cards.filter((c) => !c.uncut || !c.cardUncut).map((c) => c.ar)));
     check(`${L}: no sideways scroll`, await page.evaluate(() => { const c = document.querySelector(".quran-word-card"); return c.scrollWidth <= c.clientWidth + 1 && document.documentElement.scrollWidth <= window.innerWidth + 1; }));
     const head = await page.evaluate(() => ({ h: document.querySelector("[data-word-card-dcards] h4").textContent, s: document.querySelector("[data-word-card-dcards] .word-card-forms-summary").textContent }));
     // Updated in place 19 Oct 2026 (five-levels change, J38/J39): Family's heading is "The root's meaning groups".
-    check(`${L}: heading`, lang === "bn" ? /[ঀ-৿]/.test(head.h) && head.h.length > 3 : head.h === "The root's meaning groups", head.h);
+    // Updated in place again 20 Oct 2026 (PCF MSA J45): the two meaning sections are one, "The root's words, by meaning".
+    check(`${L}: heading`, lang === "bn" ? /[ঀ-৿]/.test(head.h) && head.h.length > 3 : head.h === "The root's words, by meaning", head.h);
     check(`${L}: summary says 14 forms`, lang === "bn" ? /^১৪টি রূপ · মোট .+ বার$/.test(head.s) : /^14 forms · \d+ times in all$/.test(head.s), head.s);
     check(`${L}: the record buttons and root count still follow the cards`, await page.evaluate(() => { const p = document.querySelector('[data-word-card-panel="basic"]'); const d = p.querySelector("[data-word-card-dcards]"); return !!d.nextElementSibling; }));
     check(`${L}: "lemma" appears nowhere in the visible text`, !/lemma/i.test(await page.evaluate(() => document.querySelector(".quran-word-card").innerText)));
