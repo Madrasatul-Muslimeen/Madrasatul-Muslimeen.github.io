@@ -262,6 +262,8 @@ export const WORD_CARD_DEFAULT_LABELS = Object.freeze({
   // PCF J23 -- one sentence per level. {percent} is the progress circle with "54%" written inside it (the Owner,
   // 14 Oct: option C's circle IN PLACE of the number, never both).
   wholeQuranLevelSentence: "{level}: Achieved {known} and {percent} of {total} words",
+  learnNextTitle: "Learn next",
+  learnNextLine: "Next up: {word} · {meaning} · {count} places",
   percentCircleLabel: "{percent}%",
   levelNameWbw: "WbW",
   levelNameBasic: "Family",
@@ -425,7 +427,7 @@ function percentCircle(pct, text, formatNumber) {
  * `null` while that gate is closed or nothing has been counted yet for this
  * person; the caller shows nothing rather than a fabricated 0.
  */
-function wholeQuranKnownLines(wholeQuranTotal, text, formatNumber, levelTotals) {
+function wholeQuranKnownLines(wholeQuranTotal, text, formatNumber, levelTotals, learnNext) {
   // Decision 58 (#490): once Basic/Depth lemma-wide claims are live the page
   // hands over one total PER LEVEL and the box carries one pair of lines per
   // level. Without `levelTotals` (the gate is closed) nothing below changes.
@@ -452,7 +454,13 @@ function wholeQuranKnownLines(wholeQuranTotal, text, formatNumber, levelTotals) 
         .replace("{total}", big(formatNumber(grouped(total.total))));
       return `<p class="word-progress-whole-quran" data-whole-quran-level="${escapeHtml(level)}">${sentence}</p>`;
     });
-    return `<div class="word-progress-whole-quran-box">${rows.join("")}</div>`;
+    // PCF J40: the purple "Learn next" line -- the highest-ranked word the chosen person does not yet know.
+    // `learnNext` is { word, meaning, count } (already in the reader's language), or absent while it is loading.
+    const next = learnNext?.word ? `<button type="button" class="word-card-learnnext" data-learn-next-open>
+      <span class="word-card-learnnext-title">${escapeHtml(String(text.learnNextTitle ?? WORD_CARD_TEXT.learnNextTitle))}</span>
+      <span class="word-card-learnnext-line">${escapeHtml(String(text.learnNextLine ?? WORD_CARD_TEXT.learnNextLine)).replace("{word}", () => `<bdi lang="ar" dir="rtl" class="word-card-learnnext-ar">${escapeHtml(learnNext.word)}</bdi>`).replace("{meaning}", () => escapeHtml(learnNext.meaning ?? "")).replace("{count}", () => escapeHtml(formatNumber(grouped(learnNext.count))))}</span>
+    </button>` : "";
+    return `<div class="word-progress-whole-quran-box">${rows.join("")}${next}</div>`;
   }
   if (!wholeQuranTotal) return "";
   // Thousands grouped here only ("77,429"; Bangla keeps its own digits via
@@ -580,7 +588,7 @@ function progressBlock(progress, authority, coverage, text, formatNumber, wbw = 
     <div class="word-progress-status" data-word-progress-status>
     <h3 class="word-progress-heading word-progress-heading-pc">${escapeHtml(text.statusHeading)}</h3>
     <div class="word-progress-status-top">${ring}${coverageLine}</div>
-    ${wholeQuranKnownLines(wbw.wholeQuranTotal, text, formatNumber, wbw.levelTotals)}
+    ${wholeQuranKnownLines(wbw.wholeQuranTotal, text, formatNumber, wbw.levelTotals, wbw.learnNext)}
     ${wbw.thisWordShareHtml ?? ""}
     ${learnDeltaLine(wbw.learnDelta, text, formatNumber)}
     </div>
@@ -1305,7 +1313,7 @@ function levelPanel(level, word, layers, context, text, formatNumber) {
         learnDelta: context.learnDelta,
         lemmaProgress: context.lemmaProgress,
         lemmaAuthority: context.lemmaAuthority,
-        levelTotals: context.levelTotals,
+        levelTotals: context.levelTotals, learnNext: context.learnNext,
         level, where,
       })}
       ${knownThroughLine(context.knownViaGroupLemma, text)}
@@ -1332,7 +1340,7 @@ function levelPanel(level, word, layers, context, text, formatNumber) {
       ${context.occurrencesLoading ? `<p>${escapeHtml(text.loadingOccurrences)}</p>` : ""}
       ${context.occurrencesError ? `<p role="status">${escapeHtml(String(text.occurrencesUnavailable).replace("{error}", context.occurrencesError))}</p>` : ""}
       </div><div class="word-card-side">
-      ${progressBlock(context.progress, context.authority, null, text, formatNumber, { levelTotals: context.levelTotals, level, where, notApplicable: !layers.lemma })}
+      ${progressBlock(context.progress, context.authority, null, text, formatNumber, { levelTotals: context.levelTotals, learnNext: context.learnNext, level, where, notApplicable: !layers.lemma })}
     </div></div>`;
   }
   if (level === "intermediate") {
@@ -1345,7 +1353,7 @@ function levelPanel(level, word, layers, context, text, formatNumber) {
       <div class="word-card-root-family" data-word-card-root-family>${rootFamilyHtml({ word, layers, features: context.wordFeatures ?? null, ctx: depthCtx })}</div>
       ${rootGrowsSection(layers, context, text, formatNumber)}
       </div><div class="word-card-side">
-      ${progressBlock(context.progress, context.authority, null, text, formatNumber, { levelTotals: context.levelTotals, level, where, notApplicable: !layers.lemma })}
+      ${progressBlock(context.progress, context.authority, null, text, formatNumber, { levelTotals: context.levelTotals, learnNext: context.learnNext, level, where, notApplicable: !layers.lemma })}
       <p class="word-card-reach" data-word-card-reach="root">${escapeHtml(text.reachRoot)}</p>
     </div></div>`;
   }
@@ -1358,7 +1366,7 @@ function levelPanel(level, word, layers, context, text, formatNumber) {
       ${canDoHtml("tasrif", text)}
       ${tasrifSectionsHtml({ word, layers, features, open: context.depthOpen ?? {}, ctx: depthCtx })}
       </div><div class="word-card-side">
-      ${isTasrifLevelPersistenceReady() && features?.tense ? progressBlock(context.progress, context.authority, null, text, formatNumber, { levelTotals: context.levelTotals, level, where }) : tasrifProgressHtml(features, text)}
+      ${isTasrifLevelPersistenceReady() && features?.tense ? progressBlock(context.progress, context.authority, null, text, formatNumber, { levelTotals: context.levelTotals, learnNext: context.learnNext, level, where }) : tasrifProgressHtml(features, text)}
       <p class="word-card-reach" data-word-card-reach="tasrif">${escapeHtml(text.reachStudyMark)}</p>
     </div></div>`;
   }
@@ -1373,7 +1381,7 @@ function levelPanel(level, word, layers, context, text, formatNumber) {
     ${canDoHtml("depth", text)}
     ${depthSectionsHtml({ word, layers, features: context.wordFeatures ?? null, open: context.depthOpen ?? {}, ctx: depthCtx })}
     </div><div class="word-card-side">
-    ${progressBlock(context.progress, context.authority, null, text, formatNumber, { levelTotals: context.levelTotals, level, where, notApplicable: !layers.lemma })}
+    ${progressBlock(context.progress, context.authority, null, text, formatNumber, { levelTotals: context.levelTotals, learnNext: context.learnNext, level, where, notApplicable: !layers.lemma })}
     <p class="word-card-reach" data-word-card-reach="depth">${escapeHtml(text.reachStudyMark)}</p>
   </div></div>`;
 }
