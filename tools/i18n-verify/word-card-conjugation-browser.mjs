@@ -34,9 +34,10 @@ async function openWord(page, surah, ayah, pos) {
 }
 async function depth(page) {
   console.log("    [depth]");
-  if (!(await page.$("[data-word-card-sec]"))) await page.click('[data-word-card-level="depth"]', { timeout: 8000 });
-  await page.waitForSelector("[data-word-card-sec]", { timeout: 8000 }).catch(() => {});
-  await page.waitForFunction(() => document.querySelector('[data-word-card-sec="root"] [data-word-card-fam]'), null, { timeout: 8000 }).catch(() => {});
+  // Updated in place 19 Oct 2026 (five-levels change, J38/J39): Verb Conjugation moved from Depth to the TAṢRĪF tab
+  // (stored id "tasrif"), so this helper (still named depth) opens that tab and the section is followed there.
+  if (!(await page.$('[data-word-card-panel="tasrif"]'))) await page.click('[data-word-card-level="tasrif"]', { timeout: 8000 });
+  await page.waitForSelector('[data-word-card-panel="tasrif"]', { timeout: 8000 }).catch(() => {});
   await page.waitForTimeout(1200);
 }
 const conj = (page) => page.evaluate(() => {

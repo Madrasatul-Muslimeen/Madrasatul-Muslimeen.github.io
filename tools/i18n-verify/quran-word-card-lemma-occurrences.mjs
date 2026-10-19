@@ -65,7 +65,10 @@ for (const lang of ["en", "bn"]) {
   // pre-existing count-only <p> always showed, now a real toggle.
   await page.screenshot({ path: `/tmp/lemma-collapsed-${lang}.png` });
 
-  const beforeList = await page.evaluate(() => document.querySelectorAll("[data-word-occurrence-goto]").length);
+  // Updated in place 19 Oct 2026 (five-levels change, J38/J39): Family also draws the "Meanings of X itself" place
+  // boxes with the same data-word-occurrence-goto, so every row query here is scoped to the expanded list itself
+  // (.word-card-form-occurrences), which is what these checks have always meant.
+  const beforeList =await page.evaluate(() => document.querySelectorAll(".word-card-form-occurrences [data-word-occurrence-goto]").length);
 
   await page.click("[data-word-lemma-toggle]");
   await page.waitForTimeout(2000);
@@ -75,7 +78,7 @@ for (const lang of ["en", "bn"]) {
 
   const after = await page.evaluate(() => {
     const btn = document.querySelector("[data-word-lemma-toggle]");
-    const rows = [...document.querySelectorAll("[data-word-occurrence-goto]")];
+    const rows = [...document.querySelectorAll(".word-card-form-occurrences [data-word-occurrence-goto]")];
     return {
       expanded: btn?.getAttribute("aria-expanded"),
       rowCount: rows.length,
@@ -96,7 +99,7 @@ for (const lang of ["en", "bn"]) {
   await page.waitForTimeout(300);
   const collapsed = await page.evaluate(() => ({
     expanded: document.querySelector("[data-word-lemma-toggle]")?.getAttribute("aria-expanded"),
-    rows: document.querySelectorAll("[data-word-occurrence-goto]").length,
+    rows: document.querySelectorAll(".word-card-form-occurrences [data-word-occurrence-goto]").length,
   }));
   check(`${lang} collapsing sets aria-expanded=false`, collapsed.expanded === "false", collapsed.expanded);
   check(`${lang} collapsing removes the rows from the DOM`, collapsed.rows === beforeList,
@@ -108,8 +111,8 @@ for (const lang of ["en", "bn"]) {
   // not a new navigation path.
   await page.click("[data-word-lemma-toggle]");
   await page.waitForTimeout(2000);
-  const target = await page.evaluate(() => document.querySelector("[data-word-occurrence-goto]")?.getAttribute("data-word-occurrence-goto"));
-  await page.click("[data-word-occurrence-goto]");
+  const target = await page.evaluate(() => document.querySelector(".word-card-form-occurrences [data-word-occurrence-goto]")?.getAttribute("data-word-occurrence-goto"));
+  await page.click(".word-card-form-occurrences [data-word-occurrence-goto]");
   await page.waitForTimeout(1200);
   const navigated = await page.evaluate((wanted) => {
     const [s, a] = wanted.split(":").map(Number);
@@ -163,7 +166,7 @@ for (const lang of ["en", "bn"]) {
   await page.click("[data-word-lemma-toggle]");
   await page.waitForTimeout(2000);
   const shown = await page.evaluate(() => {
-    const rows = document.querySelectorAll("[data-word-occurrence-goto]").length;
+    const rows = document.querySelectorAll(".word-card-form-occurrences [data-word-occurrence-goto]").length;
     const note = document.querySelector(".word-card-forms-note")?.textContent || "";
     const m = note.match(/of (\d+)/);
     return { rows, statedTotal: m ? Number(m[1]) : rows };
@@ -190,7 +193,7 @@ for (const lang of ["en", "bn"]) {
   await page.waitForTimeout(2000);
   const afterMove = await page.evaluate(() => {
     const btn = document.querySelector("[data-word-lemma-toggle]");
-    return { expanded: btn?.getAttribute("aria-expanded"), rows: document.querySelectorAll("[data-word-occurrence-goto]").length };
+    return { expanded: btn?.getAttribute("aria-expanded"), rows: document.querySelectorAll(".word-card-form-occurrences [data-word-occurrence-goto]").length };
   });
   check("the NEW word's own toggle starts collapsed", afterMove.expanded !== "true", JSON.stringify(afterMove));
   await ctx.close();

@@ -95,7 +95,7 @@ for (const lang of ["en", "bn"]) {
       w: Math.round(r.width), h: Math.round(r.height),
       top: Math.round(r.top), bottom: Math.round(r.bottom),
       display: cs.display, visibility: cs.visibility,
-      tabs: [...c.querySelectorAll('[role="tab"]')].map((t) => t.textContent.trim()),
+      tabs: [...c.querySelectorAll('[role="tab"]')].map((t) => (t.querySelector(".word-card-tab-name") ?? t).textContent.trim()),
       selected: c.querySelector('[role="tab"][aria-selected="true"]')?.textContent.trim(),
       panel: c.querySelector('[role="tabpanel"]')?.getAttribute("data-word-card-panel"),
       arabic: c.querySelector(".word-card-arabic")?.textContent.trim(),
@@ -115,7 +115,7 @@ for (const lang of ["en", "bn"]) {
         JSON.stringify({ top: card?.top, reach }));
   check(`${lang} real Arabic is drawn`, /[؀-ۿ]/.test(card?.arabic || ""), card?.arabic);
 // Updated in place 12 Oct 2026 (decisions 101/103): a fourth level, Intermediate, between Basic and Depth; the tabs read the short level names.
-  check(`${lang} all four tabs are present`, card?.tabs.length === 4, JSON.stringify(card?.tabs));
+  check(`${lang} all five tabs are present (WbW, Root, Family, Taṣrīf, Depth: five-levels change, J38/J39, 19 Oct 2026)`, card?.tabs.length === 5, JSON.stringify(card?.tabs));
   check(`${lang} WbW is the tab it opens on`, card?.panel === "wbw", card?.panel);
 
   // Language: read the RENDERED card, not the catalogue.
@@ -124,8 +124,9 @@ for (const lang of ["en", "bn"]) {
     check("bn the tabs are Bangla", card.tabs.every((t) => BANGLA.test(t)), JSON.stringify(card.tabs));
     check("bn the card's own accessible name is Bangla", BANGLA.test(card.region || ""), card.region);
   } else {
-    check("en the tabs read WbW / Basic / Intermediate / Depth",
-          card.tabs.join(",") === "WbW,Basic,Intermediate,Depth", JSON.stringify(card.tabs));
+    // Updated in place 19 Oct 2026 (five-levels change, J38/J39): five tabs; the tab NAME is read, not its small line.
+    check("en the tabs read WbW / Root / Family / Taṣrīf / Depth",
+          card.tabs.join(",") === "WbW,Root,Family,Taṣrīf,Depth", JSON.stringify(card.tabs));
   }
 
   // Basic Arabic tab, by clicking it as a reader would.
@@ -177,7 +178,8 @@ for (const lang of ["en", "bn"]) {
     selected: document.querySelector('.quran-word-card [role="tab"][aria-selected="true"]')?.getAttribute("data-word-card-level"),
   }));
   check(`${lang} ArrowRight advances focus and selection together`,
-        afterRight.focused === "basic" && afterRight.selected === "basic", JSON.stringify(afterRight));
+        // Updated in place 19 Oct 2026 (five-levels change, J38/J39): the tab after WbW is Root (stored id "intermediate").
+        afterRight.focused === "intermediate" && afterRight.selected === "intermediate", JSON.stringify(afterRight));
 
   // Next / previous word.
   await page.click("[data-word-card-move='next']");

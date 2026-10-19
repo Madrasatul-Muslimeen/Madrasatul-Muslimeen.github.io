@@ -175,7 +175,11 @@ for (const lang of ["en", "bn"]) for (const width of [390, 1280]) {
     await page.waitForSelector('#quranWordCardMount [data-word-card-panel="wbw"]', { timeout: 8000 });
     await page.waitForTimeout(900);
     c = await card(page);
-    check(`${T} ٱلْبَوَارِ known through its root: WbW shows Achieved and names the root (Intermediate)`, c?.pressed.join() === "achieved" && c.throughLevel === "intermediate", JSON.stringify(c));
+    // Updated in place 19 Oct 2026 (five-levels change, J38/J39): a Root mark is a study mark on the ROOT and NEVER makes
+    // a word known, so the owner's old screenshot state (WbW "Achieved, through its root") can no longer arise. The
+    // check follows the new rule: after an Achieved on the Root tab, WbW is NOT Achieved and names no level. The
+    // "does NOT say marked at another place" check below it still holds, and now also guards that nothing leaks.
+    check(`${T} ٱلْبَوَارِ after a ROOT Achieved: WbW is NOT Achieved and names no level (a Root mark never makes a word known)`, !!c && !c.pressed.includes("achieved") && c.throughLevel === null, JSON.stringify(c));
     check(`${T} ...and does NOT say "marked Achieved at another place of this word" (it was another word's mark)`, c && !c.elsewhere, JSON.stringify(c));
     check(`${T} no page errors`, errors.filter((e) => !/ERR_CERT|net::|archive\.org|api\.quran|Failed to load resource/i.test(e)).length === 0, errors.slice(0, 2).join(" | "));
     await ctx.close();
