@@ -7,7 +7,72 @@ v10.28). Read `CLAUDE.md` first. The prompt that starts the next session is
 
 This session was summarised once (its context compacted), which is why it hands over here.
 
-## LATEST UPDATE — 20 Oct 2026, 5:15 am Sydney, session `session_01HkRaQdqcADEjR9dNPv4N5N` (v12.04; J40 and J43 released; HANDOVER) — READ THIS FIRST
+## LATEST UPDATE — 20 Oct 2026, 9:30 am Sydney, session `session_01Y2PZz59DoDCLqadc337srK` (v12.04 live; v12.05 being assembled; HANDOVER at ~65% context) — READ THIS FIRST
+
+Took over 5:13 am 20 Oct (PCA told). **`main` is v12.04, live on MSA and QR** (checked 5:13 am). **Next release: v12.05**,
+carrying J41 + J44 + J45 + J46 + J47 together. Nothing has been released this session.
+
+**Where every piece is (all on GitHub)**
+- **Merged to `main` (data only, no app change):** #979 J41 `noun-forms.json` (+ `noun-forms-data.mjs`, 23/0, 6 mutations
+  caught); #981 J45 `lemma-sense-index.json` (+ `lemma-sense-index-data.mjs`, 12/0, 4 mutations caught).
+- **Branch `release/v12.05`** = main + `builder/issue-980-run-1571` (J41 display, Builder; hit its 90-min limit, no PR;
+  Architect reviewed: matches 1A 2A 3C) + `j44/wheel-default` + `j46/tense-toggle` (one conflict in the
+  `renderQuranWordCard({...context})` line, resolved: both sets of keys) + a fix to the J41 suite's mutation mode.
+  On it: `word-card-tasrif-noun-browser` **228/0**; its mutations dn-count, case-a-g, case-n, ink **caught**; no-this, lazy,
+  back, overflow **still to run** (`node tools/i18n-verify/word-card-tasrif-noun-browser.mjs --lang=en --width=390 --mutate=NAME`,
+  overflow at --width=320; caught = exit 1). Also green there: tense-toggle 22/0, wheel-fill 46/0, the two data suites.
+- **Branch `j44/wheel-default`** (Architect): PC Mastery Wheel window fills the screen and the wheel is the largest that
+  fits, at EVERY start (browser storage was being lost on the Owner's reset office computer). `wheel-fill-browser` 46/0,
+  7 mutations caught.
+- **Branch `j46/tense-toggle`** (Architect): Taṣrīf four-button toggle (All three · Past · Present · Command), one tense
+  ~1.5× with person groups side by side, phone opens on the āyah word's tense (2A). `word-card-tense-toggle-browser` 22/0,
+  6 mutations caught. Updated in place (2A is deliberate): word-card-conjugation (213/0), audit-part12 (500/0), audit-part9
+  (64/0) press "All three" first at phone width.
+- **Branch `j47/learn-next-steps`** (Architect, NOT yet merged into release/v12.05): seven toggle tiles 10/25/50/100/300/
+  500/1,000, "All N / Only the new N", known rows a distinct green, "+x.x%" own share per word, Bangla. `learn-next-browser`
+  updated in place, **182/0**, 4 new mutations caught.
+- **Builder queue (one at a time):** issue **#982** J45 display (Family level side by side; dispatched 7:55 am, branches from
+  main) then issue **#983** J48 round 1 (Vocabulary module; dispatched 9:25 am; told to merge j47 first). Look for branches
+  `builder/issue-98x-run-*`; rounds often end with NO PR.
+
+**Next steps, in order**
+1. Finish J41's 4 remaining mutations on release/v12.05.
+2. When #982 lands: review by measurement (its suite + mutations), merge it and `j47/learn-next-steps` into release/v12.05.
+3. Full before/after of every `word-card-*` / `quran-word-card*` / `learn-next-browser` / `phone-width-overflow` suite.
+   **Before (main at dc83709, 35 suites): all green except `quran-word-card-popup` 19/3 and `qr-stage1-hidden` (exit 1, needs
+   QR_REPO).** Expect `word-card-five-levels-browser` to need an in-place update (it asserts the old Taṣrīf Not applicable
+   text for nouns).
+4. Release v12.05 (`allocate-version.py`), the What's New line (`p/mmsa.manual`), PR, merge, check live, Done lines
+   (W-T-P-E-O) on J41 J44 J45 J46 J47, PCA change notice (note-pane scripts untouched).
+5. **QR build-from-msa for v12.05: this session could NOT reach QuranRevival** (add_repo refused by the permission check).
+   Ask the Owner to allow it, or to run QR's `build-from-msa` workflow themselves.
+6. Review #983 (J48 round 1) when it lands. **J48 round 2** (review schedule in the account, Owner ticked 3A) needs a
+   Firestore Rules candidate the Owner publishes (Owner Control Gate).
+
+**Owner messages this session (carry1), and what was done** — every one is filed in the PCF job named.
+1. J41 "1. A, 2.A 3. Show me the difference in those 99 between B and C" → B-vs-C page; **the 99 was my checker's error,
+   the real count is 55** (44 were ـَانِ/ـُونَ that belong to the word, e.g. فُرْقَان, broken plurals قُرُون). Then "C".
+2. Screenshot of the Mastery Wheel: "always the app starts with this page setting … in PC even after a new version" → J44.
+3. Family-level screenshot: combine the two meaning sections side by side → J45 demos; "1.A, 2A", then "3.A" (no see-also).
+4. Taṣrīf screenshot: Past/Present/Command as a toggle → J46 demo; "place [persons] side by side"; "2.A"; "You didn't show
+   me the toggle" (marked it, two styles); "1. Four".
+5. Learn next screenshot: "first 25 and first 50 … a 500 … toggle showing the words" → J47 demo; then "distinct color" for
+   known + "% beside the word … Build it" (read as 1A 2A).
+6. "Think this as a vocabulary learning module … practices … test … reconcile with the Word card and the Progress Wheel"
+   → J48 proposal https://claude.ai/artifact/TMi8GbJ5KT2xCdLExw4vv6 ; "J48: A, both places, 2.A,3.A,4.A. Build per demo".
+
+**Lessons**
+- **A count is a claim about the checker first.** "99 wrong labels" was 55: an ending test that ignores whether the letters
+  belong to the word itself. The Owner's "show me" exposed it; re-derive any number before it reaches the Owner.
+- **A Builder suite's own mutation mode can be blind:** #980's exited 0 under every mutation and only printed a missing
+  anchor. Make anchors throw and caught mutations exit 1 before trusting it.
+- **A hidden copy of the Word card sits in the page;** a test must act on the VISIBLE one (waits and clicks matched the
+  hidden previous card and timed out).
+- **A deliberate default change (J46 2A) makes old suites fail for the right reason:** update them in place to press the
+  view they measure, with the reason; never delete.
+- **Builder rounds stop at ~90 min;** ask them to push early, and check `builder/issue-*` branches, not PRs.
+
+## LATEST UPDATE — 20 Oct 2026, 5:15 am Sydney, session `session_01HkRaQdqcADEjR9dNPv4N5N` (v12.04; J40 and J43 released; HANDOVER) — superseded by the 20 Oct 9:30 am block above, kept as history
 
 The same session as the 6:50 pm block below, handing over at about 40% context (hand119). **Nothing is running**: no
 Builder round, no open PR; my last QR `build-from-msa` (run 5) was dispatched at 5:10 am for v12.04 — confirm both apps
