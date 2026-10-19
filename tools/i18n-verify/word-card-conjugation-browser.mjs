@@ -39,6 +39,11 @@ async function depth(page) {
   if (!(await page.$('[data-word-card-panel="tasrif"]'))) await page.click('[data-word-card-level="tasrif"]', { timeout: 8000 });
   await page.waitForSelector('[data-word-card-panel="tasrif"]', { timeout: 8000 }).catch(() => {});
   await page.waitForTimeout(1200);
+  // Updated in place 20 Oct 2026 (PCF MSA J46, the Owner's tick 2A): on a narrow card the conjugation now OPENS on the
+  // tense of the āyah's word; this suite checks the three-column view, so it presses "All three" first, as a reader
+  // would. The one-tense view has its own suite, word-card-tense-toggle-browser.mjs.
+  const all = await page.$('[data-word-card-conj-toggle] [data-word-card-conj-view="all"][aria-pressed="false"]');
+  if (all) { await all.click(); await page.waitForTimeout(600); }
 }
 const conj = (page) => page.evaluate(() => {
   const s = document.querySelector('[data-word-card-sec="conj"]');

@@ -3503,6 +3503,21 @@
   .word-card-cj-here td { background: #fff4d6; }
   .word-card-cj-q, .word-card-cj-mood { direction: ltr; unicode-bidi: isolate; font-family: inherit; font-size: 0.64rem; font-weight: 800; color: #8a6a1f; display: block; line-height: 1.2; }
   .word-card-cj-mood { font-weight: 600; color: #5b4510; }
+  /* PCF MSA J46 -- the four-button tense toggle (purple: new) and the one-tense view. */
+  .word-card-conj-toggle { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; padding: 6px; border-radius: 12px; border: 1px dashed var(--wc-purple-line); margin: 0 0 8px; }
+  .word-card-conj-toggle button { min-height: 44px; min-width: 0; display: grid; gap: 2px; align-content: center; justify-items: center; padding: 4px; border-radius: 9px; border: 1px solid var(--wc-purple-line); background: var(--wc-purple-bg); color: var(--wc-purple-ink); font: inherit; font-weight: 700; font-size: 0.85rem; line-height: 1.25; cursor: pointer; overflow-wrap: anywhere; }
+  .word-card-conj-toggle button small { font-family: var(--quran-font); font-weight: 400; font-size: 0.9rem; }
+  .word-card-conj-toggle button[aria-pressed="true"] { background: var(--wc-purple-ink); color: var(--wc-purple-bg); border-color: var(--wc-purple-ink); }
+  .word-card-cj-onehead { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; gap: 8px; align-items: center; }
+  .word-card-cj-step { width: 44px; height: 44px; border-radius: 10px; border: 1px solid var(--wc-purple-line); background: var(--wc-purple-bg); color: var(--wc-purple-ink); font: inherit; font-weight: 800; font-size: 1.2rem; cursor: pointer; }
+  .word-card-cj-groups { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; direction: rtl; align-items: start; }
+  @container (max-width: 640px) { .word-card-cj-groups { grid-template-columns: minmax(0, 1fr); } }
+  .word-card-cj-group { direction: ltr; min-width: 0; display: grid; gap: 2px; }
+  .word-card-cj-gname { margin: 0; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #5b6d66; }
+  .word-card-cj-one .word-card-cj-vb { font-size: 2rem; line-height: 1.6; }
+  .word-card-cj-one .word-card-cj-pr .word-card-ar { font-size: 1.35rem; }
+  .word-card-cj-one .word-card-cj-pr small { font-size: 0.78rem; }
+  .word-card-cj-one .word-card-cj-q, .word-card-cj-one .word-card-cj-mood { font-size: 0.74rem; }
   .word-card-cj-mood .word-card-ar { font-size: 0.9rem; }
   .word-card-meaning-bar { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 1.1rem; border: 1px solid var(--card-line); border-radius: 0.4rem; padding: 0.5rem 0.75rem; background: var(--card-bg-inset); margin: 0.4rem 0; }
   .word-card-meaning-bar > p { margin: 0; min-width: 0; font-size: 1.15rem; font-weight: 700; }
@@ -7642,6 +7657,9 @@
     // Round 3 -- Basic's derived-form order data, fetched the FIRST time a Basic tab is drawn (I9).
     let lemmaFormsTable = null;
     const wordCardDepthOpen = {};
+    // PCF MSA J46: the Taṣrīf tense toggle (All three · Past · Present · Command). The reader's choice holds for this
+    // visit, across words; null = not chosen yet (All three, or this āyah's tense on a narrow card).
+    let wordCardConjView = null;
     let lemmaFormsLoading = false;
     function ensureLemmaForms() {
       if (lemmaFormsTable || lemmaFormsLoading) return;
@@ -17895,7 +17913,7 @@
       // Round 6 -- what was typed in the Search row stays, however often the card is redrawn.
       const typed = content.querySelector("[data-word-card-search-input]");
       if (typed) wordCardSearch.value = typed.value;
-      content.innerHTML = renderQuranWordCard({ state: quranWordCardState, chapter: currentSurahData, ayah, word, context: { ...quranWordCardContext, search: wordCardSearch, lemmaForms: lemmaFormsTable, verbForms: verbFormsTable, verbFormsFailed, depthOpen: wordCardDepthOpen, needsSource: needsSourceContext(word, currentSurahData.surahNumber), ...wordCardDictionaryContext(word), ...intermediateContext(word), ...wordProgressContext(ref), ...quranWordCardLemmaContext, hasPrevious: at > 0, hasNext: at >= 0 && at < ids.length - 1, rootOccurrenceCount: quranWordCardContext.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0, colourWordPartsEnabled: getColourWordParts(), displayRef: wordRefFor }, labels: { ...wordCardLabels(), ...wordProgressLabels() }, formatNumber: num });
+      content.innerHTML = renderQuranWordCard({ state: quranWordCardState, chapter: currentSurahData, ayah, word, context: { ...quranWordCardContext, search: wordCardSearch, lemmaForms: lemmaFormsTable, verbForms: verbFormsTable, verbFormsFailed, depthOpen: wordCardDepthOpen, conjView: wordCardConjView, conjNarrow: window.matchMedia("(max-width: 640px)").matches, needsSource: needsSourceContext(word, currentSurahData.surahNumber), ...wordCardDictionaryContext(word), ...intermediateContext(word), ...wordProgressContext(ref), ...quranWordCardLemmaContext, hasPrevious: at > 0, hasNext: at >= 0 && at < ids.length - 1, rootOccurrenceCount: quranWordCardContext.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0, colourWordPartsEnabled: getColourWordParts(), displayRef: wordRefFor }, labels: { ...wordCardLabels(), ...wordProgressLabels() }, formatNumber: num });
       // Decision 61 -- opening a section is what fetches its data.
       content.querySelectorAll("details[data-word-card-sec]").forEach((d) => {
         d.addEventListener("toggle", () => {
@@ -18519,6 +18537,14 @@
       if (searchForm) { listWordCardSearchPlaces(Number(searchForm.dataset.wordCardSearchForm)); return; }
       const searchPlace = event.target.closest("[data-word-card-search-place]");
       if (searchPlace) { openWordCardSearchPlace(Number(searchPlace.dataset.wordCardSearchPlace)); return; }
+      const conjViewBtn = event.target.closest("[data-word-card-conj-view]");
+      if (conjViewBtn) {
+        wordCardConjView = conjViewBtn.dataset.wordCardConjView;
+        renderPersistentWordCard();
+        // Keep the reader at the toggle, not wherever the taller or shorter table would leave them.
+        activeWordCardMount()?.querySelector("[data-word-card-conj-toggle]")?.scrollIntoView({ block: "nearest" });
+        return;
+      }
       const formToggle = event.target.closest("[data-word-form-toggle]");
       if (formToggle) {
         const lemma = formToggle.dataset.wordFormToggle;

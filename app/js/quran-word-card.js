@@ -1295,6 +1295,7 @@ function levelPanel(level, word, layers, context, text, formatNumber) {
   const depthCtx = {
     lang: text.formMeaningLang === "bn" ? "bn" : "en", formatNumber, segments: context.wordSegments, rootForms: context.rootForms,
     lemmaForms: context.lemmaForms, verbForms: context.verbForms, verbFormsFailed: context.verbFormsFailed, dictionaryLookup: context.dictionaryLookup, ayahWords: context.ayahWords, ayahFeatures: context.ayahFeatures,
+    conjView: context.conjView, conjNarrow: context.conjNarrow, // PCF MSA J46: the tense toggle
     ayahNumber: context.ayahNumber, surahNumber: context.surahNumber,
     nahw: context.needsSource?.nahw, furuq: context.needsSource?.furuq, mufradat: context.needsSource?.mufradat,
     laneUrl: layers.root ? ejtaalUrl(layers.root) : null,
