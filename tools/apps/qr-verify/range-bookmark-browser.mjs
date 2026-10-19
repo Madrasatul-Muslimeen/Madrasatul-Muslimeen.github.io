@@ -1,6 +1,6 @@
 // QR J03 (the Owner): bookmark a range of āyāt from Quran Study's Read view, through MMSA's popover range kind
 // (bookmark-popover.js, MMSA v11.14, pinned). At 390 and 1400, English and Bangla, signed in through MMSA's harness:
-//   - the dialog's fourth choice is Range; its Name is "<Surah> <a>–<b>" (Bangla digits and name in Bangla);
+//   - the dialog's last choice is Range (after MSA's five since J42); its Name is "<Surah> <a>–<b>" (Bangla digits and name in Bangla);
 //   - Save writes the bookmark into the same bookmarks document, position range:S:A-B, with the settings MMSA's
 //     Bookmarks page writes for a range (unitType range, surahNum, ayahNum = from, rangeFrom, rangeTo);
 //   - a reversed or out-of-surah range is refused in words, the dialog staying open;
@@ -95,7 +95,12 @@ async function dialog(width, lang) {
 
   await openDialog(page);
   const units = await page.evaluate(() => [...document.querySelectorAll("[data-bm-pop-unit]")].map((b) => ({ id: b.dataset.bmPopUnit, t: b.textContent.trim() })));
-  check(units.length === 4 && units[3].id === "range" && units[3].t === WORDS[lang].range, `${tag} the dialog's fourth choice is Range (${units.map((u) => u.t).join(" · ")})`);
+  // UPDATED IN PLACE 19 Oct 2026 (PCF MSA J42, v12.02): MSA's dialog now offers every unit that holds the āyah --
+  // āyah, page, rukūʿ, sūrah, juz -- so QR's Range is the LAST of six choices, not the fourth of four. What this
+  // guards is unchanged: QR's edit 4b still adds Range, once, after MSA's own choices.
+  const ids = units.map((u) => u.id);
+  check(units.length === 6 && units[5].id === "range" && units[5].t === WORDS[lang].range && ids.filter((i) => i === "range").length === 1
+    && ["ayah", "page", "ruku", "surah", "juz"].every((i) => ids.includes(i)), `${tag} the dialog's last choice is Range, after MSA's five (${units.map((u) => u.t).join(" · ")})`);
   await page.click('[data-bm-pop-unit="range"]');
   const f = await page.evaluate(() => ({ from: document.querySelector("[data-bm-pop-range-from]")?.value, to: document.querySelector("[data-bm-pop-range-to]")?.value, name: document.querySelector("[data-bm-pop-name]")?.value }));
   const wantName = `${surahName} ${dg(lang, 1)}–${dg(lang, 7)}`;
