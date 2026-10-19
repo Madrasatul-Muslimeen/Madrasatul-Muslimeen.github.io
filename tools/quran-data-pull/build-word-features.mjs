@@ -31,6 +31,20 @@
 //   pass   1 when the verb is passive
 //   deriv  AP (active participle) | PP (passive participle) | VN (verbal noun)
 //
+// And a THIRD on-demand output (J41, the Taṣrīf level for nouns):
+//
+//   output/noun-forms.json   for every Dictionary word that occurs as a noun,
+//                            adjective or proper noun, one 3-letter code per
+//                            place, PARALLEL to that word's list in
+//                            lemmas-index.json (same key, same order):
+//     letter 1  gender  M | F | -
+//     letter 2  number  S | D | P | -   (S when the Corpus gives a gender only)
+//     letter 3  case    N | A | G | -   exactly as the Corpus labels it, but
+//               LOWER-CASE (n | a | g) when that label contradicts the word's
+//               own ending (see caseEndingClash: 55 places in the Qur'an).
+//     "---" is a place that is not a noun there, or not aligned.
+//   The data never rewrites the Corpus's label; the app decides what to show.
+//
 // Run:  node tools/quran-data-pull/build-word-features.mjs [path/to/quranic-corpus-morphology-0.4.txt]
 // With no path it downloads the file from the same two mirrors as pull.js.
 
@@ -43,6 +57,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SURAHS_DIR = path.join(__dirname, "output", "surahs");
 const OUT_DIR = path.join(__dirname, "output", "word-features");
 const LEMMA_FORMS_PATH = path.join(__dirname, "output", "lemma-forms.json");
+const LEMMAS_INDEX_PATH = path.join(__dirname, "output", "lemmas-index.json");
+const NOUN_FORMS_PATH = path.join(__dirname, "output", "noun-forms.json");
 
 const MORPH_URLS = [
   "https://raw.githubusercontent.com/alstat/QuranTree.jl/master/data/quranic-corpus-morphology-0.4.txt",
@@ -71,6 +87,61 @@ export function stemFeatures(tag, features) {
   else if (tag === "V" && f.includes("PASS")) out.pass = 1;
   if (tag === "V" && out.tense === "IMPF" && !out.mood) out.mood = "IND";
   return out;
+}
+
+/** The Corpus tags whose stem carries a noun's gender, number and case (J41). */
+export const NOUN_FEATURE_TAGS = new Set(["N", "ADJ", "PN"]);
+
+/** A noun stem's gender, number and case (J41), or null for any other tag. */
+export function nounFeatures(tag, features) {
+  if (!NOUN_FEATURE_TAGS.has(tag)) return null;
+  const f = features.split("|");
+  const out = {};
+  const gn = f.find((x) => /^(?:[MF][SDP]?|[SDP])$/.test(x));
+  if (gn) {
+    if (/^[MF]/.test(gn)) out.gen = gn[0];
+    out.num = /[SDP]$/.test(gn) ? gn.slice(-1) : "S";
+  }
+  const c = f.find((x) => x === "NOM" || x === "ACC" || x === "GEN");
+  if (c) out.case = c;
+  return out;
+}
+
+/** The 3-letter noun-forms code for one Corpus word's rows (J41). */
+export function nounFormCode(rows) {
+  const stem = rows && rows.find((r) => r.features.split("|")[0] === "STEM");
+  const nf = stem && nounFeatures(stem.tag, stem.features);
+  if (!nf) return "---";
+  const c = nf.case ? nf.case[0] : "-";
+  return (nf.gen || "-") + (nf.num || "-") + (caseEndingClash(stem) ? c.toLowerCase() : c);
+}
+
+/**
+ * True when a noun stem's case label contradicts its own ending (J41). Only
+ * the two endings that show the case by themselves are judged: the dual
+ * (ـَانِ nominative; ـَيْنِ accusative or genitive) and the sound masculine
+ * plural (ـُونَ nominative; ـِينَ accusative or genitive). A broken plural such
+ * as قُرُون, or a word like فُرْقَان, ends in the same letters as part of the
+ * word itself, so the plural rule needs the Dictionary word to end in
+ * ـِين/ـُون too, and the dual rule needs the Corpus's own D.
+ */
+export function caseEndingClash(stem) {
+  const f = stem.features.split("|");
+  const sf = nounFeatures(stem.tag, stem.features);
+  if (!sf || !sf.case) return false;
+  const form = stem.form || "";
+  const lem = cleanLemmaBw((f.find((x) => x.startsWith("LEM:")) || "").slice(4));
+  const nomEnd = /aAni?$/, obliqueEnd = /ayo(ni)?$/;
+  if (sf.num === "D") {
+    if (obliqueEnd.test(form)) return sf.case === "NOM";
+    if (nomEnd.test(form)) return sf.case !== "NOM";
+    return false;
+  }
+  if (sf.num === "P" && sf.gen === "M" && /(iy|uw)n$/.test(lem)) {
+    if (/iyna?$/.test(form)) return sf.case === "NOM";
+    if (/uwna?$/.test(form)) return sf.case !== "NOM";
+  }
+  return false;
 }
 
 // ---------------------------------------------------------------------------
@@ -324,6 +395,7 @@ async function main() {
   const surahFiles = fs.readdirSync(SURAHS_DIR).filter((f) => /^surah_\d{3}\.json$/.test(f)).sort();
   let totalWords = 0, totalAligned = 0, totalBytes = 0, maxBytes = 0;
   const perSurah = [];
+  const nounCodes = new Map();
   for (const file of surahFiles) {
     const surahNumber = Number(file.match(/\d{3}/)[0]);
     const data = JSON.parse(fs.readFileSync(path.join(SURAHS_DIR, file), "utf8"));
@@ -337,6 +409,7 @@ async function main() {
         const key = resolveWordKeyExact(morph, ayahKey, w.arabic, usedWn);
         if (!key) continue;
         words[`${a.ayah}:${w.position}`] = featuresForRows(morph.idx[key]);
+        nounCodes.set(surahNumber * 1000000 + a.ayah * 1000 + w.position, nounFormCode(morph.idx[key]));
         aligned++;
       }
     }
@@ -355,6 +428,28 @@ async function main() {
     coveragePercent: Math.round((10000 * totalAligned) / totalWords) / 100,
     totalBytes, maxBytes, perSurah,
   }, null, 2));
+
+  const lemmasIndex = JSON.parse(fs.readFileSync(LEMMAS_INDEX_PATH, "utf8"));
+  const nounForms = {};
+  let nounPlaces = 0, clashes = 0;
+  for (const [lemma, occ] of Object.entries(lemmasIndex.values)) {
+    const codes = occ.map((o) => nounCodes.get(o) || "---");
+    if (codes.every((c) => c === "---")) continue;
+    nounForms[lemma] = codes.join("");
+    nounPlaces += codes.filter((c) => c !== "---").length;
+    clashes += codes.filter((c) => /[nag]$/.test(c)).length;
+  }
+  const nounJson = JSON.stringify({
+    contract: "noun-forms:v1",
+    source: "quranic-corpus-morphology-0.4.txt (Quranic Arabic Corpus, GPL)",
+    loadBoundary: "on-demand-only",
+    parallelTo: "lemmas-index.json",
+    codeWidth: 3,
+    entryCount: Object.keys(nounForms).length, nounPlaces, caseEndingClashes: clashes,
+    values: nounForms,
+  });
+  fs.writeFileSync(NOUN_FORMS_PATH, nounJson);
+  console.log(`noun-forms: ${Object.keys(nounForms).length} Dictionary words, ${nounPlaces} noun places, ${clashes} case labels against their ending, ${Buffer.byteLength(nounJson)} bytes.`);
 
   const reviewed = JSON.parse(fs.readFileSync(path.join(__dirname, "derived-forms-reviewed.json"), "utf8"));
   const lemmaForms = groupLemmas(stemRowsByLemmaFrom(text), reviewed);
