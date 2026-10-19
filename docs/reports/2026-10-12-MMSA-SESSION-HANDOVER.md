@@ -7,7 +7,45 @@ v10.28). Read `CLAUDE.md` first. The prompt that starts the next session is
 
 This session was summarised once (its context compacted), which is why it hands over here.
 
-## LATEST UPDATE — 20 Oct 2026, 9:30 am Sydney, session `session_01Y2PZz59DoDCLqadc337srK` (v12.04 live; v12.05 being assembled; HANDOVER at ~65% context) — READ THIS FIRST
+## LATEST UPDATE — 20 Oct 2026, 11:00 am Sydney, session `session_01C356HZaJsKM1dnZUNaQoMc` (v12.05 live on MSA; J48 round 1 with the Builder; round 2 Rules waiting on the Owner) — READ THIS FIRST
+
+Took over 9:29 am 20 Oct (PCA told; `p/mmsa.sessionUrl` and `p/qr.sessionUrl` set). **`main` is v12.05, live on MSA**
+(checked 10:48 am). **QR is NOT rebuilt for v12.05**: `add_repo` for QuranRevival was refused again in this session;
+the Owner must allow it or run QR's `build-from-msa` workflow. **Next release: v12.06.**
+
+**Done this session**
+- Handover PR #984 merged. J41's last 4 mutations run (8/8 caught). `j47/learn-next-steps` merged into the release.
+- **J45 display built by the Architect**: Builder #982 ran 90 min and pushed NOTHING. Branch `j45/family-combined`:
+  one row per meaning group, purple renderings (from `lemma-sense-index.json` + `lemmas-index.json`, first use of Family
+  only; `lemma-senses.json` is no longer fetched) beside the cards from a 700px card (container query), under them on a
+  phone; Back restores the card's own scroll (`cardScrollTop` in the origin); group control 2×2 in the wide row.
+  New suite `word-card-family-combined-browser` 97/0, 11 mutations caught. Updated in place: `quran-word-card`,
+  `word-card-basic-rebuild-browser`, `word-card-five-levels-browser`, `word-card-intermediate-browser`,
+  `word-card-sense-arabic-browser` (5 mutations re-anchored, caught).
+- **QR edit 8b re-anchored** (J44's `fill: true` line had broken QR's build; found by running `build-app.mjs qr`).
+- **v12.05 released** (PR #985): J41 J44 J45 J46 J47. Sweep of 40 Word card suites green except
+  `quran-word-card-popup` 19/3 (same on `main`); `behaviour.mjs` 971/0. Done lines (W-T-P-E-O), status `report`,
+  What's New `wn-v1205`.
+- **J48 round 2 Rules candidate** (PR #986, merged; `firestore.rules` untouched):
+  `docs/governance/2026-10-20-vocab-review-DEPLOYMENT-candidate.rules` (+31 lines, `quranVocabReview/{tenant}__{person}`,
+  one doc per student, `words` map), `npm run vocab-review` (pass on candidate, fail on live, 11/11 mutations caught at
+  their own lines), Owner guide `...-vocab-review-owner-publish-guide.md`. Owner asked in J48 need `n48b`.
+
+**Running**
+- **Builder #983 (J48 round 1)**, run 1585 from `main`, branch `builder/issue-983-run-1585` (pushing WIP early). Its
+  first run (1581) stopped at once: the Builder may not run `git merge`, and the issue said to merge j47 (now on main).
+  Review it by measurement when it lands; then round 2's code (schedule writes) once the Owner says the Rules are live.
+
+**Lessons**
+- **GitHub keeps ONE pending run per concurrency group**: a bot comment on any PR queues a `claude.yml` run that knocks
+  a waiting `workflow_dispatch` out of the queue (run 1578 for #983 was lost this way). Dispatch when the group is idle,
+  or check the run actually started.
+- **The Builder cannot `git merge`**: never write "merge branch X first" in an issue; get X onto `main` first.
+- **Run `build-app.mjs qr` on every release branch**: a shared-file change can silently break a QR edit's anchor.
+- **A Back that restores the level but not the card's scroll** is a half way-back on a long level; the card scrolls in
+  `.word-card-content`, not the mount.
+
+## LATEST UPDATE — 20 Oct 2026, 9:30 am Sydney, session `session_01Y2PZz59DoDCLqadc337srK` (v12.04 live; v12.05 being assembled; HANDOVER at ~65% context) — superseded by the 20 Oct 11:00 am block above, kept as history
 
 Took over 5:13 am 20 Oct (PCA told). **`main` is v12.04, live on MSA and QR** (checked 5:13 am). **Next release: v12.05**,
 carrying J41 + J44 + J45 + J46 + J47 together. Nothing has been released this session.
