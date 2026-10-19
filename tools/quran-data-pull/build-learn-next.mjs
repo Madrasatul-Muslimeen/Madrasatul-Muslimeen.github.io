@@ -56,6 +56,7 @@ const out = rows.map((row, i) => {
 });
 
 const doc = { contract: "learn-next:v1", total, count: out.length, rows: out };
-fs.writeFileSync(OUT + "learn-next.json", JSON.stringify(doc));
-console.log(`learn-next.json: ${out.length} words, ${total} occurrences, ${wbwRows} rows with a word-by-word meaning, ${fs.statSync(OUT + "learn-next.json").size} bytes`);
+const FILE = process.env.LEARN_NEXT_OUT || OUT + "learn-next.json"; // the test suite builds a mutated copy elsewhere
+fs.writeFileSync(FILE, JSON.stringify(doc));
+console.log(`learn-next.json: ${out.length} words, ${total} occurrences, ${wbwRows} rows with a word-by-word meaning, ${fs.statSync(FILE).size} bytes`);
 for (const k of [10, 100, 300, 1000]) console.log(`first ${k}: ${out[k - 1].p}%`);
