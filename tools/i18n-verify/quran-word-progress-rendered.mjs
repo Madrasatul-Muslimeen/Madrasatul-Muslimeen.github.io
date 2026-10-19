@@ -371,13 +371,24 @@ for (const lang of ["en", "bn"]) {
         // card's own 45vh cap once left all three buttons below the fold --
         // found by looking at a screenshot while every rect check passed.
         statesReachableWithoutScrolling: states.getBoundingClientRect().bottom <= mr.bottom + 1,
+        // Scrolled into view INSIDE the card (never the page): is the row then wholly inside the mount?
+        statesReachableByCardScroll: (() => { states.scrollIntoView({ block: "nearest" }); const sr = states.getBoundingClientRect(); return sr.top >= mr.top - 1 && sr.bottom <= mr.bottom + 1 && sr.bottom <= innerHeight + 1; })(),
       };
     });
+    // UPDATED IN PLACE 19 Oct 2026 (PCF MSA J38/J39, the Word card's five levels): spec section 2 puts the purple
+    // "Achieved here means: ..." box at the TOP of the WbW tab, which pushes the progress row ~70px further down. At
+    // 320x640 only -- the smallest screen measured -- the row is now one scroll of the card away rather than on first
+    // view; that is the Owner's approved layout (demo3), reported to the Owner, not a defect. So at 320x640 the check
+    // asserts the row is REACHABLE by scrolling the card itself (and still fully inside it); every larger viewport
+    // keeps the strict no-scroll rule. The rest of the check (one row or 2x2, >=40px, no cut, no sideways scroll) is
+    // unchanged at every size.
+    const smallest = w === 320 && h === 640;
+    if (m) m.reachOk = smallest ? m.statesReachableByCardScroll : m.statesReachableWithoutScrolling;
     const ok = m && m.buttons.length === 4 && neat(m.buttons.map((b) => b.top))
       && m.buttons.every((b) => b.h >= 40) && m.inside && !m.buttons.some((b) => b.truncated)
-      && m.statesReachableWithoutScrolling && m.overflow <= 0;
+      && m.reachOk && m.overflow <= 0;
     check(`[${lang}] ${w}x${h}: one row or 2x2, >=40px, on screen, reachable, no label cut, no sideways scroll`, !!ok,
-      m ? `tops=${JSON.stringify(m.buttons.map((b) => b.top))} h=${JSON.stringify(m.buttons.map((b) => b.h))} cut=${JSON.stringify(m.buttons.filter((b) => b.truncated).map((b) => b.text))} inside=${m.inside} reachable=${m.statesReachableWithoutScrolling} overflowX=${m.overflow}` : "no block");
+      m ? `tops=${JSON.stringify(m.buttons.map((b) => b.top))} h=${JSON.stringify(m.buttons.map((b) => b.h))} cut=${JSON.stringify(m.buttons.filter((b) => b.truncated).map((b) => b.text))} inside=${m.inside} reachable=${m.statesReachableWithoutScrolling} byCardScroll=${m.statesReachableByCardScroll} overflowX=${m.overflow}` : "no block");
     await ctx.close();
   }
 }

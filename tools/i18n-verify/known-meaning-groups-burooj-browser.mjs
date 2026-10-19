@@ -30,7 +30,11 @@ const waitMark = (page, s, a, p, want) => page.waitForFunction(([s, a, p, want])
 
 const WORDS = [[3, 1, "وَشَاهِدٍ"], [3, 2, "وَمَشْهُودٍ"], [7, 6, "شُهُودٌ"], [9, 10, "شَهِيدٌ"]];
 // Hand-written: which of the four each level's Achieved on 85:3:1 (شَاهِد) must mark.
-const WANT = { wbw: [true, false, true, false], basic: [true, true, true, true], depth: [true, true, true, true] };
+// UPDATED IN PLACE 19 Oct 2026 (PCF MSA J38 1A, the Word card's five levels): Depth is now a study mark on the ROOT
+// and never makes a word count as known, so Depth Achieved on شَاهِد marks NONE of the four. This is the reverse of
+// what Depth did before (the whole root); the check still runs and now proves the new rule. WbW and Basic (now
+// "Family") are unchanged.
+const WANT = { wbw: [true, false, true, false], basic: [true, true, true, true], depth: [false, false, false, false] };
 
 for (const level of ["wbw", "basic", "depth"]) for (const width of [390, 1280]) {
   const tag = `[${level} ${width}]`;

@@ -94,9 +94,10 @@ for (const lang of ["en", "bn"]) for (const width of [320, 390, 820, 1440]) {
   });
   await flow(`${tag} verb-table`, "/app/quranrevival.html", null, async (t, page) => {
     await openWord(page, 2, 102, 35); // فَيَتَعَلَّمُونَ, Form V of ع ل م
-    if (!(await page.$("[data-word-card-sec]"))) await page.click('[data-word-card-level="depth"]', { timeout: 8000 });
-    await page.waitForSelector("[data-word-card-sec]", { timeout: 8000 });
-    await page.waitForFunction(() => document.querySelector('[data-word-card-sec="root"] [data-word-card-fam]'), null, { timeout: 8000 }).catch(() => {});
+    // UPDATED IN PLACE 19 Oct 2026 (PCF MSA J39, the Word card's five levels): Verb Conjugation moved from Depth to
+    // the new Taṣrīf tab (stored id `tasrif`), unchanged, so the table is opened there. Everything measured is the same.
+    await page.click('[data-word-card-level="tasrif"]', { timeout: 8000 });
+    await page.waitForSelector('[data-word-card-sec="conj"]', { timeout: 8000 });
     await page.waitForTimeout(1200);
     await page.evaluate(() => { const s = document.querySelector('[data-word-card-sec="conj"]'); if (s) s.open = true; });
     await page.waitForTimeout(600);
