@@ -3593,6 +3593,34 @@
   [data-card-look="night"] .quran-word-card { --wc-purple-bg: #2d2150; --wc-purple-ink: #e1d2ff; --wc-purple-line: #8a6fd0; }
   .word-card-cando, .word-card-ordernote, .word-card-whowhen { margin: 0 0 0.5rem; padding: 0.45rem 0.65rem; border-radius: 0.5rem; background: var(--wc-purple-bg); color: var(--wc-purple-ink); border: 1px solid var(--wc-purple-line); font-size: 0.86rem; line-height: 1.35; }
   .word-card-ordernote { font-size: 0.8rem; font-style: italic; }
+  /* PCF J40 -- the purple "Learn next" line in the totals box, and its sheet. Purple tokens as above; the sheet is a
+     light surface in every look. */
+  /* Architect review: `.word-card-progress button` (0,1,1) out-ranked a bare class here and painted the line gold. */
+  .word-card-progress button.word-card-learnnext, .word-card-learnnext { display: block; width: 100%; min-height: 44px; margin: 0.5rem 0 0; padding: 0.4rem 0.7rem; text-align: start; border-radius: 0.5rem; background: var(--wc-purple-bg); color: var(--wc-purple-ink); border: 1px solid var(--wc-purple-line); font: inherit; cursor: pointer; overflow-wrap: anywhere; box-sizing: border-box; }
+  .word-card-learnnext-title { display: block; font-size: 0.74rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
+  .word-card-learnnext-line { display: block; font-size: 0.92rem; font-weight: 700; line-height: 1.4; }
+  .word-card-learnnext-ar { font-family: var(--quran-font, serif); font-size: 1.15rem; }
+  .learn-next-sheet { position: fixed; inset: 0; z-index: 1400; display: flex; flex-direction: column; background: #fff; color: #13241f; }
+  .learn-next-sheet[hidden] { display: none; }
+  .ln-head { display: flex; align-items: center; gap: 0.6rem; padding: 0.5rem 0.75rem; border-bottom: 1px solid #d6ddd9; flex: 0 0 auto; }
+  .ln-back { min-height: 44px; min-width: 44px; padding: 0 0.8rem; border-radius: 0.5rem; border: 1px solid #a98bdc; background: #f1e9fb; color: #4b2a85; font: inherit; font-weight: 700; cursor: pointer; }
+  .ln-title { margin: 0; font-size: 1.15rem; }
+  .ln-body { flex: 1 1 auto; overflow-y: auto; overflow-x: hidden; padding: 0.6rem 0.75rem 1.5rem; }
+  .ln-note { margin: 0 0 0.6rem; padding: 0.45rem 0.65rem; border-radius: 0.5rem; background: #f1e9fb; color: #4b2a85; border: 1px solid #a98bdc; font-size: 0.86rem; line-height: 1.35; }
+  .ln-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.4rem; margin: 0 0 0.6rem; }
+  .ln-tile { display: flex; flex-direction: column; align-items: center; padding: 0.35rem 0.2rem; border-radius: 0.5rem; background: #f1e9fb; color: #4b2a85; text-align: center; min-width: 0; }
+  .ln-tile-n { font-size: 0.72rem; overflow-wrap: anywhere; } .ln-tile-p { font-size: 1rem; }
+  .ln-hide { display: flex; align-items: center; gap: 0.5rem; min-height: 44px; font-size: 0.9rem; }
+  .ln-hide input { width: 22px; height: 22px; flex: 0 0 auto; }
+  .ln-list { display: flex; flex-direction: column; gap: 0.3rem; }
+  .ln-row { display: grid; grid-template-columns: 2.4rem minmax(0, 1fr) auto; grid-template-areas: "rank ar count" "rank mean sofar" "rank tick tick"; column-gap: 0.5rem; align-items: center; width: 100%; min-height: 56px; padding: 0.4rem 0.55rem; text-align: start; border: 1px solid #d6ddd9; border-radius: 0.5rem; background: #fafbfa; color: inherit; font: inherit; cursor: pointer; box-sizing: border-box; }
+  .ln-row.ln-known { background: #eef7f0; }
+  .ln-rank { grid-area: rank; font-weight: 800; color: #4b2a85; font-size: 0.85rem; }
+  .ln-ar { grid-area: ar; font-family: var(--quran-font, serif); font-size: 1.5rem; line-height: 1.6; text-align: right; direction: rtl; overflow-wrap: anywhere; }
+  .ln-mean { grid-area: mean; font-size: 0.85rem; overflow-wrap: anywhere; min-width: 0; } .ln-mean-2 { color: #55615c; }
+  .ln-count { grid-area: count; font-weight: 800; font-size: 0.9rem; } .ln-sofar { grid-area: sofar; font-size: 0.75rem; color: #4b2a85; text-align: end; }
+  .ln-tick { grid-area: tick; font-size: 0.78rem; font-weight: 800; color: #1d6b4a; }
+  .ln-more { display: block; width: 100%; min-height: 48px; margin: 0.7rem 0 0; border-radius: 0.5rem; border: 1px solid #a98bdc; background: #f1e9fb; color: #4b2a85; font: inherit; font-weight: 700; cursor: pointer; }
   .word-card-whowhen-item b { font-weight: 800; }
   .word-card-does { font-size: 0.72rem; font-weight: 700; color: #4b2a85; background: #f1e9fb; border-radius: 999px; padding: 0.05rem 0.45rem; justify-self: center; }
   .word-card-reach { margin: 0.4rem 0 0; font-size: 0.85rem; color: var(--card-text); }
@@ -6660,6 +6688,7 @@
     import { parseQuranWordOccurrenceId } from "./js/quran-word-identity.js";
     import { loadLemmaDictionary, loadBanglaLemmaDictionary, lemmaDictionaryEntry } from "./js/lemma-dictionary.js";
     import { loadLemmaMeaningGroups, sameMeaningLemmas, meaningGroupOf } from "./js/lemma-meaning-groups.js";
+    import { loadLearnNext, firstUnknownRow, milestoneFigures, visibleRows, placeOfRow, LEARN_NEXT_PAGE } from "./js/learn-next.js";
     import { loadLemmaSenses, lemmaSensesOf, senseKey } from "./js/lemma-senses.js";
     // Decision 58 (#490) -- Basic/Depth lemma-wide claims, behind their own gate (ready:false).
     import { isLemmaLevelsPersistenceReady } from "./js/study-lemma-levels-readiness.js";
@@ -16746,6 +16775,8 @@
           wholeQuranPercentLevelShort: t("You know ({level}) {percent}% of the words"),
         }),
         wholeQuranLevelSentence: t("{level}: Achieved {known} and {percent} of {total} words"),
+        learnNextTitle: t("Learn next"),
+        learnNextLine: t("Next up: {word} · {meaning} · {count} places"),
         rootsStudiedSentence: t("{level}: studied {known} of {total} roots"),
         familyGroupMarkLabel: t("Your progress on this meaning"),
         familyGroupReach: t("→ Words known +{n}"),
@@ -17031,9 +17062,14 @@
           levelTotals = [...wordRows, ...rootRows].sort((a, b) => order.indexOf(a.level) - order.indexOf(b.level));
         } catch { levelTotals = undefined; }
       }
+      // PCF J40: the purple "Learn next" line. Fetched on first use (here), never at startup.
+      let learnNext = null;
+      if (levelTotals) {
+        try { learnNext = await learnNextLineFor({ tenantId, personId: subjectPersonId, confirmationRequired }); } catch (error) { console.warn("Learn next unavailable", error); }
+      }
       if (requestId !== quranWordCardLemmaRequestId) return; // superseded mid-read
 
-      if (!lemmaId) { quranWordCardLemmaContext = { wholeQuranTotal, levelTotals }; if (quranWordCardState.occurrenceId === requestedId) renderPersistentWordCard(); return; }
+      if (!lemmaId) { quranWordCardLemmaContext = { wholeQuranTotal, levelTotals, learnNext }; if (quranWordCardState.occurrenceId === requestedId) renderPersistentWordCard(); return; }
 
       let lemmaProgress = null, lemmaAuthority = null, knownViaLevel = null;
       if (isLemmaProgressPersistenceReady()) {
@@ -17104,7 +17140,7 @@
         learnDelta = computed;
       }
       if (requestId !== quranWordCardLemmaRequestId) return;
-      quranWordCardLemmaContext = { wholeQuranTotal, levelTotals, lemmaProgress, lemmaAuthority, learnDelta, knownViaLevel };
+      quranWordCardLemmaContext = { wholeQuranTotal, levelTotals, learnNext, lemmaProgress, lemmaAuthority, learnDelta, knownViaLevel };
       if (quranWordCardState.open && quranWordCardState.occurrenceId === requestedId) renderPersistentWordCard();
     }
 
@@ -18179,6 +18215,124 @@
     }
 
     /** The shared half of "go there and open that word" -- the way back uses it. */
+    // ---- PCF J40: "Learn next" -- the Qur'an's words by how often they occur --------------------------------------
+    // "Known" is exactly what "Words known" means: WbW (keyed by the lemma) or Family (keyed by its meaning group).
+    // Root, Taṣrīf and Depth never count (J38) -- lemmaViewWithGroup() already says so. Synchronous over what
+    // primeAllLemmaProgress() cached; the list is fetched on first use only.
+    let learnNextCtx = null;       // { tenantId, personId, confirmationRequired, data }
+    let learnNextShown = LEARN_NEXT_PAGE, learnNextHide = false, learnNextScroll = 0;
+
+    async function ensureLearnNext({ tenantId, personId, confirmationRequired }) {
+      const data = await loadLearnNext();
+      // Two lists (WbW, Family) = 4 queries on a first open; 0 once cached for the visit.
+      await primeAllLemmaProgress(db, { tenantId, personId, level: "wbw" });
+      if (meaningGroupsLive()) {
+        try { await loadLemmaMeaningGroups(); } catch (error) { console.warn("meaning groups unavailable", error); }
+        await primeAllLemmaProgress(db, { tenantId, personId, level: MEANING_GROUP_LEVEL });
+      }
+      if (!learnNextCtx || learnNextCtx.personId !== personId || learnNextCtx.tenantId !== tenantId) { learnNextShown = LEARN_NEXT_PAGE; }
+      learnNextCtx = { tenantId, personId, confirmationRequired, data };
+      return learnNextCtx;
+    }
+    function learnNextIsKnown(row) {
+      const c = learnNextCtx;
+      return !!lemmaViewWithGroup({ tenantId: c.tenantId, personId: c.personId, lemmaId: row.l, confirmationRequired: c.confirmationRequired }).countsAsKnown;
+    }
+    function learnNextMeaning(row, other = false) {
+      const bn = getAppLang() === "bn";
+      const first = bn ? row.b : row.e, second = bn ? row.e : row.b;
+      return (other ? second : first) || (other ? "" : second) || "";
+    }
+    async function learnNextLineFor(args) {
+      const ctx = await ensureLearnNext(args);
+      const row = firstUnknownRow(ctx.data.rows, learnNextIsKnown);
+      return row ? { word: row.l, meaning: learnNextMeaning(row), count: row.n, rank: row.r } : null;
+    }
+
+    function learnNextSheetEl() {
+      let el = document.getElementById("learnNextSheet");
+      if (!el) {
+        el = document.createElement("div");
+        el.id = "learnNextSheet";
+        el.className = "learn-next-sheet";
+        el.setAttribute("role", "dialog");
+        el.setAttribute("aria-modal", "true");
+        el.hidden = true;
+        document.body.appendChild(el);
+        el.addEventListener("click", (e) => {
+          if (e.target.closest("[data-ln-back]")) { closeLearnNextSheet(); return; }
+          if (e.target.closest("[data-ln-more]")) { learnNextShown += LEARN_NEXT_PAGE; renderLearnNextSheet(true); return; }
+          const row = e.target.closest("[data-ln-row]");
+          if (row) openLearnNextRow(Number(row.dataset.lnRow));
+        });
+        el.addEventListener("change", (e) => {
+          if (e.target.closest("[data-ln-hide]")) { learnNextHide = e.target.checked; learnNextShown = LEARN_NEXT_PAGE; renderLearnNextSheet(); }
+        });
+        el.addEventListener("keydown", (e) => { if (e.key === "Escape") closeLearnNextSheet(); });
+      }
+      return el;
+    }
+    function renderLearnNextSheet(keepScroll = false) {
+      const el = learnNextSheetEl(), c = learnNextCtx;
+      if (!c) return;
+      const scroller = el.querySelector("[data-ln-scroll]");
+      const keep = keepScroll && scroller ? scroller.scrollTop : 0;
+      const grouped = (n) => num(Number(n).toLocaleString("en-US"));
+      const rows = c.data.rows;
+      const knownTotal = rows.reduce((n, r) => n + (learnNextIsKnown(r) ? 1 : 0), 0);
+      const view = visibleRows(rows, learnNextIsKnown, { hideKnown: learnNextHide, shown: learnNextShown });
+      const tiles = milestoneFigures(rows).map((m) => `<div class="ln-tile" data-ln-tile="${m.n}"><span class="ln-tile-n">${escapeHtml(t("First {n}", { n: grouped(m.n) }))}</span><b class="ln-tile-p">${escapeHtml(num(m.percent.toFixed(1)))}%</b></div>`).join("");
+      const list = view.rows.map((r) => {
+        const known = learnNextIsKnown(r);
+        const other = learnNextMeaning(r, true);
+        return `<button type="button" class="ln-row${known ? " ln-known" : ""}" data-ln-row="${r.r}">
+          <span class="ln-rank">${escapeHtml(num(r.r))}</span>
+          <span class="ln-ar" lang="ar" dir="rtl">${escapeHtml(r.l)}</span>
+          <span class="ln-mean"><span class="ln-mean-1">${escapeHtml(learnNextMeaning(r))}</span>${other ? ` <span class="ln-mean-2">· ${escapeHtml(other)}</span>` : ""}</span>
+          <span class="ln-count">${escapeHtml(grouped(r.n))}×</span>
+          <span class="ln-sofar">${escapeHtml(t("{p}% so far", { p: num(r.p.toFixed(1)) }))}</span>
+          ${known ? `<span class="ln-tick">${escapeHtml(t("✓ known"))}</span>` : ""}
+        </button>`;
+      }).join("");
+      const more = view.total > view.rows.length ? `<button type="button" class="ln-more" data-ln-more>${escapeHtml(t("Show 100 more"))}</button>` : "";
+      el.setAttribute("aria-label", t("Learn next"));
+      el.innerHTML = `<div class="ln-head"><button type="button" class="ln-back" data-ln-back>← ${escapeHtml(t("Back"))}</button><h2 class="ln-title">${escapeHtml(t("Learn next"))}</h2></div>
+        <div class="ln-body" data-ln-scroll>
+          <p class="ln-note">${escapeHtml(t("The words that occur most often come first. Learn these and you will meet them everywhere in the Qur'an."))}</p>
+          <div class="ln-tiles">${tiles}</div>
+          <label class="ln-hide"><input type="checkbox" data-ln-hide${learnNextHide ? " checked" : ""}> <span>${escapeHtml(t("Hide words I know ({n} known)", { n: grouped(knownTotal) }))}</span></label>
+          <div class="ln-list" data-ln-list>${list}</div>${more}
+        </div>`;
+      const next = el.querySelector("[data-ln-scroll]");
+      if (next && keep) next.scrollTop = keep;
+    }
+    async function openLearnNextSheet() {
+      const { tenantId, subjectPersonId } = wordProgressActor();
+      if (!tenantId || !subjectPersonId) return;
+      await ensureLearnNext({ tenantId, personId: subjectPersonId, confirmationRequired: !!wordProgressConfirmRequired });
+      learnNextScroll = 0;
+      showLearnNextSheet();
+    }
+    function showLearnNextSheet() {
+      const el = learnNextSheetEl();
+      renderLearnNextSheet();
+      el.hidden = false;
+      const scroller = el.querySelector("[data-ln-scroll]");
+      if (scroller) scroller.scrollTop = learnNextScroll;
+      el.querySelector("[data-ln-back]")?.focus({ preventScroll: true });
+    }
+    function closeLearnNextSheet() { const el = document.getElementById("learnNextSheet"); if (el) el.hidden = true; }
+    async function openLearnNextRow(rank) {
+      const row = learnNextCtx?.data.rows[rank - 1];
+      if (!row) return;
+      learnNextScroll = document.querySelector("#learnNextSheet [data-ln-scroll]")?.scrollTop ?? 0;
+      closeLearnNextSheet();
+      const { surah, ayah, position } = placeOfRow(row);
+      await openWordOccurrenceAt(surah, ayah, position, "read");
+      // The way-back law (decision 86): the list again, at the same place.
+      setAppReturn(t("Back to Learn next"), "", () => { renderLearnNextSheet(); showLearnNextSheet(); }, { inWordCard: true });
+    }
+
     async function openWordOccurrenceAt(surah, ayah, position, view, restore = null) {
       quranWordCardRequest++;
       await navigateToAyah(surah, ayah, view);
@@ -18311,6 +18465,7 @@
       const wordCardAyahAction = event.target.closest("[data-word-card-ayah-action]");
       if (wordCardAyahAction) { openAyahActionSheet(wordCardAyahAction.dataset.wordCardAyahAction); return; }
       // Round 6 -- the 🔍 Search row. Only Search / Enter / a Try chip fetch the word list.
+      if (event.target.closest("[data-learn-next-open]")) { openLearnNextSheet().catch((error) => console.warn("Learn next unavailable", error)); return; }
       const searchToggle = event.target.closest("[data-word-card-search-toggle]");
       if (searchToggle) {
         wordCardSearch.open = !wordCardSearch.open;
