@@ -17,6 +17,7 @@
 //     lowpurple  the light purple ink is washed out              -> "purple ink 4.5:1 on all three looks"
 //     lownight   the night purple ink is washed out              -> same check
 //     smallbtn   the purple line is 30px tall                    -> "at least 44px tall"
+//     goldline   the totals box's button style paints the line (Architect, 19 Oct) -> "painted in the card's purple"
 import { chromium, newContext, openPage } from "./harness.mjs";
 import fs from "fs";
 import { execFileSync } from "child_process";
@@ -32,7 +33,10 @@ const DATA_MUT = {
 const MUT = {
   firstrow: ["app/quranrevival.html", "const row = firstUnknownRow(ctx.data.rows, learnNextIsKnown);", "const row = ctx.data.rows[0];"],
   nofamily: ["app/quranrevival.html", "if (own.countsAsKnown || !meaningGroupsLive() || isFormKey(lemmaId)) return own;", "return own;"],
-  rootknown: ["app/quranrevival.html", "// PCF J38 (19 Oct 2026): a Root (intermediate), Taṣrīf or Depth mark is a study mark on a ROOT and never makes", 'const rk = claimKeyFor(ROOT_LEVEL, { root }); if (rk && lemmaProgressFor({ tenantId, personId, level: ROOT_LEVEL, lemmaId: rk, confirmationRequired }).countsAsKnown) return { ...own, countsAsKnown: true, knownViaLevel: { level: ROOT_LEVEL, key: rk } };\n      // PCF J38 (19 Oct 2026): a Root (intermediate), Taṣrīf or Depth mark is a study mark on a ROOT and never makes'],
+  // Architect review (19 Oct 2026): the first version of this mutation added a branch keyed on `root`, which the Learn
+  // next list never passes, so it changed nothing and the check went UNPROVEN. This one lets ANY Root/Taṣrīf/Depth
+  // Achieved the person holds count as known -- exactly the leak the check exists to catch.
+  rootknown: ["app/quranrevival.html", "// PCF J38 (19 Oct 2026): a Root (intermediate), Taṣrīf or Depth mark is a study mark on a ROOT and never makes", 'if (["intermediate", "tasrif", "depth"].some((l) => (countKnownLemmaClaims({ tenantId, personId, level: l, confirmationRequired }) ?? 0) > 0)) return { ...own, countsAsKnown: true };\n      // PCF J38 (19 Oct 2026): a Root (intermediate), Taṣrīf or Depth mark is a study mark on a ROOT and never makes'],
   nohide: ["app/js/learn-next.js", "const list = hideKnown ? rows.filter((row) => !isKnown(row)) : rows;", "const list = rows;"],
   page50: ["app/js/learn-next.js", "export const LEARN_NEXT_PAGE = 100;", "export const LEARN_NEXT_PAGE = 50;"],
   noback: ["app/quranrevival.html", 'setAppReturn(t("Back to Learn next"), "", () =>', 'false && setAppReturn(t("Back to Learn next"), "", () =>'],
@@ -40,6 +44,7 @@ const MUT = {
   bnleak: ["app/js/i18n/bn.js", '"Show 100 more": "আরও ১০০টি দেখান",', ""],
   lowpurple: ["app/quranrevival.html", '[data-card-look="light"] .quran-word-card { --wc-purple-bg: #f1e9fb; --wc-purple-ink: #4b2a85;', '[data-card-look="light"] .quran-word-card { --wc-purple-bg: #f1e9fb; --wc-purple-ink: #c9b8ee;'],
   lownight: ["app/quranrevival.html", "--wc-purple-bg: #2d2150; --wc-purple-ink: #e1d2ff;", "--wc-purple-bg: #2d2150; --wc-purple-ink: #5a4a8a;"],
+  goldline: ["app/quranrevival.html", ".word-card-progress button.word-card-learnnext, .word-card-learnnext { display: block;", ".word-card-learnnext { display: block;"],
   smallbtn: ["app/quranrevival.html", ".word-card-learnnext { display: block; width: 100%; min-height: 44px;", ".word-card-learnnext { display: block; width: 100%; min-height: 0; max-height: 30px; overflow: hidden;"],
 };
 if (MUTATE && !MUT[MUTATE] && !DATA_MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
@@ -178,6 +183,24 @@ for (const [lang, width, height] of [["en", 320, 640], ["en", 390, 844], ["en", 
     const c = await contrast(page, look, "#quranWordCardMount .word-card-learnnext");
     ratios.push(`${name}=${c?.ratio?.toFixed(2)}`);
   }
+  // Architect review (19 Oct 2026): a contrast ratio passes for ANY readable colour, and it did -- the line was gold,
+  // painted by `.word-card-progress button`. So also assert the RENDERED colours are the card's own purple tokens.
+  const painted = [];
+  for (const [name, look] of looks) {
+    painted.push(await page.evaluate(([look, name]) => {
+      document.documentElement.setAttribute("data-card-look", look);
+      document.querySelectorAll("[data-card-look]").forEach((e) => e.setAttribute("data-card-look", look));
+      const b = document.querySelector("#quranWordCardMount .word-card-learnnext");
+      const card = b?.closest(".quran-word-card");
+      if (!b || !card) return `${name}:none`;
+      const probe = document.createElement("span"); card.appendChild(probe);
+      probe.style.color = "var(--wc-purple-ink)"; probe.style.backgroundColor = "var(--wc-purple-bg)";
+      const want = [getComputedStyle(probe).color, getComputedStyle(probe).backgroundColor]; probe.remove();
+      const got = [getComputedStyle(b).color, getComputedStyle(b.querySelector(".word-card-learnnext-line") ?? b).color, getComputedStyle(b).backgroundColor];
+      return got[0] === want[0] && got[1] === want[0] && got[2] === want[1] ? `${name}:ok` : `${name}:${got.join("/")} want ${want.join("/")}`;
+    }, [look, name]));
+  }
+  check(`${tag} the line is painted in the card's purple (ink and background), not another button style (${painted.join(" ")})`, painted.every((x) => x.endsWith(":ok")), painted.join(" "));
   await page.evaluate(() => document.documentElement.removeAttribute("data-card-look"));
 
   // --- the sheet
@@ -228,7 +251,12 @@ for (const [lang, width, height] of [["en", 320, 640], ["en", 390, 844], ["en", 
     check(`${tag} the line changes after a Family group Achieved (group ${gid} → rank 3: ${n3.l})`, !!wrote && nfc((await nextWord(page)) ?? "") === nfc(n3.l), `${wrote} ${await nextWord(page)}`);
 
     // Root / Taṣrīf / Depth marks on the next word never change the line.
-    await openWordOf(page, n3.o);
+    // Architect review (19 Oct 2026): n3 is مَا, which has NO root, so Root/Taṣrīf/Depth are Not applicable on it and
+    // pressing them wrote nothing (the positive control below caught it). Mark a word that HAS a root instead:
+    // قَالَ (rank 7, root ق و ل). The line must still name n3.
+    const rooted = rows.find((r) => nfc(r.l) === nfc("قَالَ"));
+    await openWordOf(page, rooted.o);
+    const rb = await wcount(page);
     for (const level of ["intermediate", "tasrif", "depth"]) {
       await openTab(page, level);
       await press(page, '.word-card-side [data-word-progress-state="achieved"]');
@@ -236,6 +264,10 @@ for (const [lang, width, height] of [["en", 320, 640], ["en", 390, 844], ["en", 
     }
     await openTab(page, "wbw");
     await page.waitForTimeout(800);
+    // POSITIVE CONTROL (Architect review, 19 Oct 2026): the three presses really wrote a claim at each level, so the
+    // "does NOT change it" check below is about real marks, not presses that did nothing.
+    const rootWrites = (await wlog(page, rb)).filter((x) => /^quranLemmaProgress:t1__p1__(intermediate|tasrif|depth)__/.test(x));
+    check(`${tag} POSITIVE CONTROL: the Root, Taṣrīf and Depth presses each wrote a claim (${rootWrites.join(",")})`, ["intermediate", "tasrif", "depth"].every((l) => rootWrites.some((x) => x.includes(`__${l}__`))), rootWrites.join(","));
     check(`${tag} Root, Taṣrīf and Depth marks do NOT change it (still ${n3.l})`, nfc((await nextWord(page)) ?? "") === nfc(n3.l), String(await nextWord(page)));
 
     // --- the sheet knows who knows what

@@ -21902,3 +21902,12 @@ The Owner answered J36's two optional choices at 8:20 pm Sydney: *"1. Yes. 2. Ke
 - ★ on a unit already bookmarked still asks first (remove, or add another).
 - Bangla for the four new strings. QR's edit 4b re-anchored; QR's range-bookmark check updated in place (Range is the last of six).
 - Checks: new `bookmark-family-unit-browser` 46/0 (9 mutations; two re-proven by the Architect); every bookmark suite green; behaviour 971/0; phone-width 217/0; QR build 20/20. The dialog was measured at 320×640, 390 and 1280 in English and Bangla: no sideways scroll, and Save is reachable (the dialog scrolls inside itself).
+
+## v12.03 — 19 Oct 2026 — "Learn next": the Qur'an's words in order of how often they occur (PCF MSA J40)
+
+- The Owner: "J40. Al Hamdulillah! Good! Build it." — the four recommended ticks: 1A (a purple line in the Word card's totals box), 2A (known = Achieved at WbW or Family), 3A (all 4,832 words, 100 at a time), 4A (the person chosen in 👥).
+- **Purple "Learn next" line** in the totals box: "Next up: <word> · <meaning> · N places", the most common word not yet known; tap to open the list.
+- **The list**: ← Back, a note, four tiles (first 10 / 100 / 300 / 1,000 = 25.7 / 57.3 / 73.5 / 88.9% of 74,122 words), "Hide words I know (n known)", one row per word (rank, Arabic, meaning in both languages, count, "N% so far", ✓ known), "Show 100 more". A row opens its Word card at its first place; Back returns to the list at the same place.
+- Data: `tools/quran-data-pull/build-learn-next.mjs` → `output/learn-next.json`, ordered by count then lemma text; meanings from the Word card's dictionary (a "label: meaning" gloss shows the meaning; none → the word-by-word reading, marked). Fetched on first use only.
+- Architect review fixes: the line was painted gold by the totals box's button rule (fixed; a rendered-colour check with a `goldline` mutation); the "Root/Taṣrīf/Depth never change it" check pressed a rootless word and could not fail (now a positive control and a real `rootknown` mutation).
+- Checks: `learn-next-browser` 140/0, 15 mutations; every Word card suite, behaviour, phone-width and qr-stage1 as on `main` (popup 19/3 already red there); QR build 20/20.

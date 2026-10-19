@@ -843,3 +843,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v11.39** (2026-10-18): QR built from the MSA source, the switch (PCA J110 step 5).
 - **v12.01** (2026-10-19): the Word card's five levels (WbW, Root, Family, Taṣrīf, Depth), PCF MSA J38+J39; opens the v12 line (v12.00 unused; v11 archived as legacy-v11).
 - **v12.02** (2026-10-19): Bookmark for the whole family, and a choice of unit also on Single Ayah (PCF MSA J42).
+- **v12.03** (2026-10-19): Learn next: the Qur'an's words in order of how often they occur (PCF MSA J40).
