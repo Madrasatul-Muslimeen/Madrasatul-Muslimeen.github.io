@@ -26,7 +26,10 @@ DATA.quranWordTotals = [
 ];
 `;
 const WANT = { wbw: 0, basic: 54, depth: 100 };
-const NAMES = { en: { wbw: "WbW", basic: "Basic", depth: "Depth" }, bn: { wbw: "শব্দে শব্দে", basic: "প্রাথমিক", depth: "গভীরতা" } };
+// UPDATED IN PLACE 19 Oct 2026 (five-levels change, J38/J39): the stored level "basic" is the FAMILY tab now, so its sentence
+// starts "Family"; and Depth is a study mark on a ROOT that writes no word total, so its line is "Depth: studied N of
+// 1,642 roots" with NO percentage circle (the seeded depth total below is ignored by design). Both are asserted.
+const NAMES = { en: { wbw: "WbW", basic: "Family", depth: "Depth" }, bn: { wbw: "শব্দে শব্দে", basic: "পরিবার", depth: "গভীরতা" } };
 const BN = "০১২৩৪৫৬৭৮৯";
 const ascii = (s) => s.replace(/[০-৯]/g, (d) => String(BN.indexOf(d)));
 const CIRC = 2 * Math.PI * 15;
@@ -109,7 +112,12 @@ for (const lang of ["en", "bn"]) {
     await openWord(page);
     const d = await read(page);
     check(`${tag} the box holds a sentence for each level, and no separate percent line`, d.paragraphs >= 3 && d.percentParas === 0 && ["wbw", "basic", "depth"].every((l) => d.levels[l].text), JSON.stringify(d.levels));
-    for (const l of ["wbw", "basic", "depth"]) {
+    {
+      const v = d.levels.depth;
+      check(`${tag} depth: the sentence starts with "${NAMES[lang].depth}" and counts roots (studied 0 of 1,642), not words`, (v.text ?? "").startsWith(NAMES[lang].depth) && /0/.test(ascii(v.text)) && /1642/.test(ascii(v.text)) && !/74122|%/.test(ascii(v.text)), v.text);
+      check(`${tag} depth: no percentage circle and no gold disc (a root count has no word percentage)`, !v.circle && !v.discBg, JSON.stringify(v));
+    }
+    for (const l of ["wbw", "basic"]) {
       const v = d.levels[l];
       const a = ascii(v.text ?? "");
       check(`${tag} ${l}: the sentence starts with the level name "${NAMES[lang][l]}"`, (v.text ?? "").startsWith(NAMES[lang][l]), v.text);
@@ -122,7 +130,7 @@ for (const lang of ["en", "bn"]) {
       check(`${tag} ${l}: not clipped`, v.overflow <= 0, String(v.overflow));
     }
     check(`${tag} Basic sentence groups its numbers: 40,026 of 74,122`, /40,026/.test(ascii(d.levels.basic.text ?? "")) && /74,122/.test(ascii(d.levels.basic.text ?? "")), d.levels.basic.text);
-    if (lang === "en") check(`${tag} English reads exactly "Basic: Achieved 40,026 and 54% of 74,122 words"`, d.levels.basic.text === "Basic: Achieved 40,026 and 54% of 74,122 words", d.levels.basic.text);
+    if (lang === "en") check(`${tag} English reads exactly "Family: Achieved 40,026 and 54% of 74,122 words"`, d.levels.basic.text === "Family: Achieved 40,026 and 54% of 74,122 words", d.levels.basic.text);
     check(`${tag} the gold arc has contrast >= 3:1 against the card (${d.contrast?.toFixed(2)})`, d.contrast != null && d.contrast >= 3, `${d.contrast} on ${d.bg}`);
     check(`${tag} no sideways scroll on the page`, d.page <= 0, String(d.page));
     await ctx.close();

@@ -63,7 +63,9 @@ for (const lang of ["en", "bn"]) for (const width of [320, 390, 820, 1440]) {
   await page.evaluate(() => document.querySelector('[data-word-occurrence$=":14:22:8"]')?.click());
   await page.waitForFunction(() => document.querySelector("#quranWordCardMount .quran-word-card"), null, { timeout: 8000 }).catch(() => {});
   await page.waitForTimeout(800);
-  await page.click('#quranWordCardMount [data-word-card-level="intermediate"]').catch(() => {});
+  // Updated in place 19 Oct 2026 (five-levels change, J38/J39): "Meanings of this word" moved from the Intermediate tab to
+  // FAMILY (stored id "basic"), so the sense rows are read there.
+  await page.click('#quranWordCardMount [data-word-card-level="basic"]').catch(() => {});
   await page.waitForFunction(() => document.querySelectorAll("#quranWordCardMount [data-word-card-sense]").length > 0, null, { timeout: 10000 }).catch(() => {});
   await page.waitForTimeout(400);
   const m = await measure(page);
@@ -84,9 +86,9 @@ for (const lang of ["en", "bn"]) for (const width of [320, 390, 820, 1440]) {
     const there = await page.evaluate(() => ({ surah: document.getElementById("surahSelect").value, ayah: document.getElementById("ayahSelect").value, back: !!document.querySelector("[data-word-card-origin-back]") }));
     check(`${tag} tapping a box opens its place, with "Back to Word Card"`, !!ref && there.back && `${there.surah}:${there.ayah}` === ref.split(":").slice(0, 2).join(":"), JSON.stringify({ ref, there }));
     await page.click("[data-word-card-origin-back]", { timeout: 3000 }).catch(() => {});
-    await page.waitForFunction(() => document.querySelector('#quranWordCardMount [role="tab"][aria-selected="true"]')?.dataset.wordCardLevel === "intermediate", null, { timeout: 5000 }).catch(() => {});
+    await page.waitForFunction(() => document.querySelector('#quranWordCardMount [role="tab"][aria-selected="true"]')?.dataset.wordCardLevel === "basic", null, { timeout: 5000 }).catch(() => {});
     const back = await page.evaluate(() => document.querySelector('#quranWordCardMount [role="tab"][aria-selected="true"]')?.dataset.wordCardLevel ?? null);
-    check(`${tag} Back returns to the Word card, Intermediate tab`, back === "intermediate", String(back));
+    check(`${tag} Back returns to the Word card, Family tab`, back === "basic", String(back));
   }
   await ctx.close();
 }
