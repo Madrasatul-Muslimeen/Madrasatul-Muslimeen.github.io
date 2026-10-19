@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "12.01",
+    "version": "12.02",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -4289,8 +4289,20 @@
     {
       "version": "12.01",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "The Word card's five levels, J38+J39 (#961, #966, #968, PR #969); first release of the v12 line.",
+      "integration": {
+        "authorizedOn": "2026-10-19",
+        "integratedOn": "2026-10-19",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.02",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Bookmark: Everyone in the family, and five unit choices on every unit, J42 (#970, PR #972).",
       "integration": {
         "authorizedOn": "2026-10-19",
         "integratedOn": "2026-10-19",
@@ -4299,8 +4311,9 @@
       }
     }
   ],
-  "nextUnallocated": "12.02",
+  "nextUnallocated": "12.03",
   "nextUnallocatedNote": [
+    "v12.02 was allocated to Bookmark for the whole family, and a choice of unit also on Single Ayah (PCF MSA J42), 2026-10-19.",
     "v12.01 was allocated to the Word card's five levels (WbW, Root, Family, Taṣrīf, Depth), PCF MSA J38+J39; opens the v12 line (v12.00 unused; v11 archived as legacy-v11), 2026-10-19.",
     "v11.39 was allocated to QR built from the MSA source, the switch (PCA J110 step 5), 2026-10-18.",
     "v11.38 is SKIPPED in MSA: frozen QR (quranrevival.github.io) already released v11.38, and the QR built from MSA shares MSA's number (PCA J110). A built QR at 11.38 would reuse the frozen QR's qr-app-11.38 offline cache and mix old and new files on phones. Set by the MSA Architect, 2026-10-18.",
