@@ -39,7 +39,11 @@ export function levelWordTotal(level) {
   return level === "basic" || level === "intermediate" || level === "depth" ? QURAN_LEMMA_WORD_COUNT : QURAN_TOTAL_WORD_COUNT;
 }
 
-export const QURAN_WORD_TOTAL_CONTRACT = "quran-word-total:v1";
+/** PCF J38 (19 Oct 2026) -- the roots of the Qur'an. Root, Taṣrīf and Depth are study marks on a ROOT, so their
+ *  totals-box line reads "studied N of 1,642 roots"; they never move a word total. */
+export const QURAN_ROOT_COUNT = 1642;
+
+export const QURAN_WORD_TOTAL_CONTRACT ="quran-word-total:v1";
 
 function isNonEmptyString(value) {
   return typeof value === "string" && value.trim().length > 0;

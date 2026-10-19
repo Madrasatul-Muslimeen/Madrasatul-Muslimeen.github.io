@@ -55,8 +55,8 @@ export const WORD_PROGRESS_CONTRACT = "quran-word-progress:v1";
  * is decided, exactly as `basic`/`depth` were until this issue.
  */
 // Decisions 101/103 (12 Oct 2026): a fourth level, Intermediate, between Basic and Depth -- the same claim unit.
-export const ARABIC_LEVELS = Object.freeze(["wbw", "basic", "intermediate", "depth"]);
-export const IMPLEMENTED_ARABIC_LEVELS = Object.freeze(["wbw", "basic", "intermediate", "depth"]);
+export const ARABIC_LEVELS = Object.freeze(["wbw", "basic", "intermediate", "tasrif", "depth"]);
+export const IMPLEMENTED_ARABIC_LEVELS = Object.freeze(["wbw", "basic", "intermediate", "tasrif", "depth"]);
 
 /**
  * A word's own ramp, deliberately three rungs and not the six of STATUSES.

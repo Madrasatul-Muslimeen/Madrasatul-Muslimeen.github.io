@@ -93,6 +93,11 @@ export const WORD_CARD_DEFAULT_LABELS = Object.freeze({
   // J38/J39 -- Root tab.
   rootGrowsHeading: "How the root grows: its {n} meanings",
   rootGrowsChip: "{meaning} · {count}×",
+  // PCF J38 (counting): Root, Taṣrīf and Depth are study marks on a root, counted as roots studied, never as words known.
+  rootsStudiedSentence: "{level}: studied {known} of {total} roots",
+  // PCF J39 5A -- one Family mark per meaning group, and what it adds.
+  familyGroupMarkLabel: "Your progress on this meaning",
+  familyGroupReach: "→ Words known +{n}",
   reachRoot: "Achieved here adds Roots studied +1. It does not add to Words known.",
   reachStudyMark: "Achieved here is a study mark on the root. It does not add to Words known.",
   // J38/J39 -- Family tab (3A: what each shape group does, in purple).
@@ -428,8 +433,15 @@ function wholeQuranKnownLines(wholeQuranTotal, text, formatNumber, levelTotals) 
     const grouped = (n) => Number(n ?? 0).toLocaleString("en-US");
     const big = (v) => `<strong class="word-progress-whole-quran-num">${escapeHtml(v)}</strong>`;
     const names = { wbw: text.levelNameWbw, basic: text.levelNameBasic, intermediate: text.levelNameIntermediate, tasrif: text.levelNameTasrif, depth: text.levelNameDepth };
-    const rows = levelTotals.map(({ level, total }) => {
+    const rows = levelTotals.map(({ level, total, unit }) => {
       const name = String(names[level] ?? level);
+      // PCF J38: a study mark on a ROOT reads "Root: studied N of 1,642 roots" -- no percent circle, no word count.
+      if (unit === "roots") {
+        const rootsSentence = escapeHtml(String(text.rootsStudiedSentence ?? WORD_CARD_TEXT.rootsStudiedSentence)).replace("{level}", () => escapeHtml(name))
+          .replace("{known}", () => big(formatNumber(grouped(total.known))))
+          .replace("{total}", () => big(formatNumber(grouped(total.total))));
+        return `<p class="word-progress-whole-quran" data-whole-quran-level="${escapeHtml(level)}" data-whole-quran-unit="roots">${rootsSentence}</p>`;
+      }
       // PCF J23 (the Owner, 13 Oct 2026): ONE sentence per level, "WbW: Achieved 12,345 and (circle) 54% of 77,777 words".
       const pct = percentRounded(total.known, total.total);
       // Layout B (the Owner, 14 Oct): the known number in a filled gold disc.
@@ -483,12 +495,8 @@ function knownThroughLine(lemma, text) {
  */
 function knownThroughLevelLine(via, text) {
   if (!via) return "";
-  if (via.level === "depth" || via.level === "intermediate") {
-    const root = `<span dir="rtl" lang="ar">${escapeHtml(via.key)}</span>`;
-    const template = via.level === "intermediate" ? text.knownThroughIntermediateRoot : text.knownThroughDepthRoot;
-    const line = escapeHtml(String(template)).replace("{root}", () => root);
-    return `<p class="word-progress-known-through" data-word-known-through data-known-through-level="${via.level}">${line}</p>`;
-  }
+  // PCF J38: a Root / Taṣrīf / Depth mark never makes a word known, so there is no "known through the root" line.
+  if (via.level !== "basic") return "";
   return `<p class="word-progress-known-through" data-word-known-through data-known-through-level="basic">${escapeHtml(String(text.knownThroughBasicGroup))}</p>`;
 }
 
@@ -826,7 +834,8 @@ function derivedCardsSection(layers, context, text, formatNumber) {
     return `<div class="word-card-meaning-group${g.mine ? " word-card-meaning-group-current" : ""}" data-word-card-meaning-group>` +
       `<div class="word-card-meaning-group-top">${formMeaning(head, text) || `<span dir="rtl" lang="ar">${escapeHtml(lemmaText(head.lemma))}</span>`}` +
       `<span class="word-card-sense-tag">${g.mine ? `${escapeHtml(text.meaningThisWord)} · ` : ""}${escapeHtml(String(text.meaningSenseCount).replace("{n}", formatNumber(g.total)))}</span></div>` +
-      `<div class="word-card-dcards">${g.forms.map(cardOf).join("")}</div></div>`;
+      `<div class="word-card-dcards">${g.forms.map(cardOf).join("")}</div>` +
+      familyGroupMarkHtml(context.familyGroups, head.lemma, g.total, text, formatNumber) + `</div>`;
   }).join("");
   const openForm = forms.find((f) => f.lemma === context.expandedForm);
   const pop = openForm ? derivedFormPopup(openForm, context, text, formatNumber) : "";
@@ -836,6 +845,26 @@ function derivedCardsSection(layers, context, text, formatNumber) {
     ${cards}
     ${pop}
   </section>`;
+}
+
+/**
+ * PCF J39 5A -- one Learning / Practising / Achieved control on a meaning-group card. It writes level `basic` keyed by
+ * THAT group's id (data-family-group-lemma names a word of the group; the page derives the key), and its reach line
+ * says how many words it adds to Words known. Supervisors see Confirm / Send back on an Achieved mark awaiting them.
+ */
+function familyGroupMarkHtml(fg, lemma, count, text, formatNumber) {
+  if (!fg || !lemma) return "";
+  const view = fg.viewOf(lemma);
+  const may = !!fg.authority?.mayClaim && view.loaded !== false && !fg.saving;
+  const label = { learning: text.stateLearning, practising: text.statePractising, achieved: text.stateAchieved };
+  const lem = escapeHtml(lemma);
+  const button = (state) => `<button type="button" data-family-group-state="${state}" data-family-group-lemma="${lem}" aria-pressed="${view.state === state}" style="${stageColourStyle(state)}"${may ? "" : " disabled"}>${escapeHtml(label[state])}</button>`;
+  const decide = fg.authority?.mayDecide && view.awaitingReview && !fg.saving
+    ? `<div class="word-card-group-decide"><button type="button" data-family-group-decide="confirmed" data-family-group-lemma="${lem}">${escapeHtml(text.confirm)}</button><button type="button" data-family-group-decide="returned" data-family-group-lemma="${lem}">${escapeHtml(text.sendBack)}</button></div>`
+    : "";
+  return `<div class="word-card-group-mark" data-family-group-mark role="group" aria-label="${escapeHtml(text.familyGroupMarkLabel)}">` +
+    `<div class="word-card-group-states">${button("learning")}${button("practising")}${button("achieved")}</div>` +
+    `<p class="word-card-group-reach" data-family-group-reach>${escapeHtml(String(text.familyGroupReach).replace("{n}", formatNumber(count)))}</p>${decide}</div>`;
 }
 
 /** The pop-up over Basic's derived-form cards: that form's own places, each one a
@@ -1318,7 +1347,6 @@ function levelPanel(level, word, layers, context, text, formatNumber) {
       </div><div class="word-card-side">
       ${progressBlock(context.progress, context.authority, null, text, formatNumber, { levelTotals: context.levelTotals, level, where, notApplicable: !layers.lemma })}
       <p class="word-card-reach" data-word-card-reach="root">${escapeHtml(text.reachRoot)}</p>
-      ${knownThroughLevelLine(context.knownViaLevel, text)}
     </div></div>`;
   }
   if (level === "tasrif") {

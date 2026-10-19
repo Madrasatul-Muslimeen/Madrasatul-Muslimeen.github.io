@@ -24,16 +24,20 @@
 /** Who may declare deployment readiness. Closed: a module cannot authorise itself. */
 export const TASRIF_LEVEL_READINESS_AUTHORITIES = Object.freeze(["master-architect"]);
 
-/** THE DECLARATION. The single place the answer lives. NOT READY: the Rules
-    change has not been published. */
+/** THE DECLARATION. The single place the answer lives. READY: the Owner published
+    the Rules change on 19 Oct 2026. */
 export const TASRIF_LEVEL_PERSISTENCE_DECLARATION = Object.freeze({
-  ready: false,
-  decision: null,
+  ready: true,
+  decision: Object.freeze({
+    by: "master-architect",
+    on: "2026-10-19",
+    reference: "docs/governance/2026-10-19-tasrif-level-owner-publish-guide.md",
+  }),
   gate: "E1",
   note:
-    "Taṣrīf marks (level 'tasrif') wait for the Owner to publish " +
-    "docs/governance/2026-10-19-tasrif-level-DEPLOYMENT-candidate.rules. " +
-    "Until then the Taṣrīf progress block is closed and nothing is written for 'tasrif'.",
+    "Taṣrīf marks (level 'tasrif') are OPEN: the Owner published " +
+    "docs/governance/2026-10-19-tasrif-level-DEPLOYMENT-candidate.rules on 19 Oct 2026 (#964). " +
+    "Setting ready back to false closes the block and nothing is then written for 'tasrif'.",
 });
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
