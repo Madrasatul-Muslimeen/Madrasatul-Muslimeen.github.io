@@ -1,0 +1,59 @@
+{
+  "schema": 1,
+  "id": "qr",
+  "status": "live",
+  "about": "PCA J110: QuranRevival built from the MSA source. LIVE from v11.39 (the Owner ticked A, switch, 18 Oct 2026, J110 n110c). QR's own files are in apps/qr/site, its deliberate changes to shared files are counted edits in apps/qr/edits.json, and apps/qr/after-build.mjs fills QR's own offline worker. The QR repository publishes the build with .github/workflows/build-from-msa.yml once its Pages source is GitHub Actions; the way back is QR Settings > Pages > Deploy from a branch.",
+  "address": "https://quranrevival.github.io/",
+  "name": {
+    "full": {
+      "en": "QuranRevival",
+      "bn": "QuranRevival"
+    },
+    "short": "QuranRevival"
+  },
+  "titlePrefix": "QuranRevival",
+  "siteRootName": "QuranRevival",
+  "frontPage": "quranrevival.html",
+  "icon": null,
+  "colours": {
+    "theme": "#0f4c4c",
+    "background": "#0d2225"
+  },
+  "manifest": null,
+  "cachePrefix": "qr",
+  "hiddenModules": [
+    "general",
+    "naturelife",
+    "lifeskill",
+    "health"
+  ],
+  "site": [
+    "index.html",
+    "404.html",
+    ".nojekyll",
+    "app",
+    "mushaf",
+    "tools/quran-data-pull/output",
+    "tools/hadith-data-pull/output/asma-cited-hadith.json"
+  ],
+  "later": [
+    "QR's heading: name.short is QuranRevival, so the heading reads QuranRevival at every width, as QR does today (QR's edits #11a-#11c are not used: the title and heading come from these settings, and the version is MSA's one number, QR J22)",
+    "pages: the built QR holds only today's QR's 6 pages; any other page address gives QR's 404, and qr-links.js sends links to those pages to MSA, as today. hiddenModules stays as MSA's until nav.js tags every module",
+    "step 2: name.full.bn once the Owner gives QR's Bangla name (today QR shows QuranRevival in Bangla too)",
+    "step 3 (built): the built QR keeps QR's own worker (apps/qr/site/app/sw.js, its proven upgrade path); apps/qr/after-build.mjs fills its version (MSA's number) and shell from the built app. It names its caches qr-app-<version> and deletes older qr-app-* on activate, and keeps qr-quran-v1. From status live it refuses a version below minVersion 11.39 (frozen QR is 11.38: a phone already running 11.38 would refuse a worker of that number). Later: one worker shared with MSA",
+    "step 2: MSA's 'Legacy App - v10' nav link is not in today's QR (PCA J109 decides)",
+    "step 3: Hadith data is read from MSA's address (edits ayah-hadith, hadith-translations, openiti-corpus); hadeethenc-corpus.js still reads ../tools/hadith-data-pull: check in step 4 whether a QR page uses it"
+  ],
+  "overlay": "apps/qr/site",
+  "edits": "apps/qr/edits.json",
+  "afterBuild": "apps/qr/after-build.mjs",
+  "minVersion": "11.39",
+  "pages": [
+    "index.html",
+    "quranrevival.html",
+    "ldog-study.html",
+    "journey-map.html",
+    "asma.html",
+    "asma-about.html"
+  ]
+}
