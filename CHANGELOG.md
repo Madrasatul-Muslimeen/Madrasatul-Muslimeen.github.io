@@ -21879,3 +21879,17 @@ The Owner answered J36's two optional choices at 8:20 pm Sydney: *"1. Yes. 2. Ke
 - `CLAUDE.md` "One source, many apps" block: the switch is recorded with its way back.
 - MSA itself is unchanged apart from the version: `apps-build-check.mjs` proves `msa` still builds back byte for byte.
 - QR goes live when its repository's Pages source is "GitHub Actions" and `build-from-msa` runs.
+
+## v12.01 — 19 Oct 2026 — The Word card's five levels (PCF MSA J38 + J39)
+
+- **Five tabs: WbW · Root · Family · Taṣrīf · Depth**, each with a small line under it from 600px, fitting at 320px in English and Bangla. New parts are purple, with light, dark and Night tokens measured at 4.5:1 or better.
+- Stored level ids are unchanged (Root = `intermediate`, Family = `basic`, Depth = `depth`); Taṣrīf is the new `tasrif`, open since the Owner published its Rules (#964).
+- **Root**: the root's meaning, "used N times in F forms", the words of this āyah from the root, and "How the root grows" (one chip per meaning group). Moved from Depth.
+- **Family**: the old Basic and Intermediate together; one card per meaning group with a purple "what it does" line, and **one Learning / Practising / Achieved mark per group** (level `basic`, keyed by that group; "→ Words known +N").
+- **Taṣrīf**: the "who and when" line (who, when, to whom) and Verb Conjugation, moved from Depth. A word that is not a verb says so and is Not applicable (J41 queued).
+- **Depth**: Morphology (stays), Grammar in This Āyah, Word Choice, Classical Usage, Dictionary & Forms.
+- **Counting (J38 1A)**: Words known grows only from WbW and Family. Root, Taṣrīf and Depth never mark a word known and never write a word total; their lines read "studied N of 1,642 roots". No saved document was changed or deleted.
+- Load path: the landing page reads one claim list (Family) instead of three; the root levels' lists are read when the totals box opens.
+- Checks: new `word-card-five-levels-browser` (106/0, 15 mutations proven); 21 older Word card suites updated in place with dated reasons; QR build 20/20.
+- Recorded: at 320×640 only, the WbW progress row is one scroll of the card away (the can-do box sits at the top, as the spec asks); every larger viewport shows it without scrolling.
+- Builder rounds #961, #966, #968; Architect review and fixes in #969.

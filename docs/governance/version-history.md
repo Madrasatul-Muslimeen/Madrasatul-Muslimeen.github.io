@@ -902,3 +902,4 @@ total). Allocated by the MMSA Architect.
 11.36: audit part 38 landscape, zoom, reduced motion (J29). Allocated by the MMSA Architect.
 11.37: audit part 39 opened windows on short screens (J29). Allocated by the MMSA Architect.
 11.39: QR built from the MSA source, the switch (PCA J110 step 5). Allocated by the MMSA Architect.
+12.01: the Word card's five levels (WbW, Root, Family, Taṣrīf, Depth), PCF MSA J38+J39; opens the v12 line (v12.00 unused; v11 archived as legacy-v11). Allocated by the MMSA Architect.
