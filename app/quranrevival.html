@@ -18389,6 +18389,9 @@
           expandedForm: quranWordCardExpandedForm,
           lemmaExpanded: quranWordCardLemmaExpanded,
           scrollY: readViewScrollTop(),
+          // PCF MSA J45 -- the card's own scroll too, so Back lands on the same place in a long Family level
+          // (the way-back law: the view, the place in it, and the card that was open).
+          cardScrollTop: activeWordCardMount()?.querySelector(".word-card-content")?.scrollTop ?? 0,
         };
       }
       // v08.22 -- CLOSE the card before navigating. The reader asked to see
@@ -18631,6 +18634,11 @@
       const returnView = "read";
       await openWordOccurrenceAt(ref.surah, ref.ayah, ref.position, returnView, origin);
       if (returnView === "read" && Number.isFinite(origin.scrollY)) setReadViewScrollTop(origin.scrollY);
+      if (origin.cardScrollTop > 0) {
+        const put = () => { const el = activeWordCardMount()?.querySelector(".word-card-content"); if (el) el.scrollTop = origin.cardScrollTop; };
+        put();
+        requestAnimationFrame(put); // once more after the re-draw the level's first-use data may cause
+      }
       // The expanded form is restored by hydrateWordCardOccurrences() once the
       // forms index lands -- see its own comment for why it belongs there.
     }

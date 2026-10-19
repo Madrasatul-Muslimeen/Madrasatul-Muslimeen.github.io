@@ -7,6 +7,7 @@
 //   noother    places numbered -1 are dropped                      -> "other renderings ×1 (2:76)" and the 16 fail
 //   nothis     the current place is not marked                     -> the "this word" check fails
 //   nogoto     a chip is not a way to its āyah                      -> the 48:1 tap / way-back checks fail
+//   noscroll   Back does not restore the card's own scroll          -> the "same scroll" check fails
 //   ink        the purple column's text is the card's text colour  -> the rendered-colour check fails
 //   onecol     the wide layout is never applied                     -> the two-columns check fails
 //   twocol     the two columns are forced on a phone too            -> the one-column / overflow checks fail
@@ -23,6 +24,7 @@ const JS = "app/js/quran-word-card.js", HTML = "app/quranrevival.html";
 const MUT = {
   noright: [JS, "      familyRenderingsHtml(g.forms, context, text, formatNumber) +\n", ""],
   noother: [JS, "    line(text.familyRenderOther, other, true) +\n", ""],
+  noscroll: [HTML, "        put();\n        requestAnimationFrame(put);", "        void put;"],
   nothis: [JS, "    const mine = refs.includes(fr.here);", "    const mine = false;"],
   nogoto: [JS, '"${mine ? \' aria-current="true"\' : ""} data-word-occurrence-goto="${s}:${a}:${w}"', '"${mine ? \' aria-current="true"\' : ""} data-x-goto="${s}:${a}:${w}"'],
   ink: [HTML, ".word-card-family-sense { display: flex; flex-wrap: wrap; gap: 0.25rem 0.45rem; align-items: baseline; border: 1px solid var(--wc-purple-line); border-radius: 0.5rem; padding: 0.3rem 0.5rem; min-width: 0; color: var(--wc-purple-ink); }",
@@ -42,7 +44,9 @@ const check = (n, ok, d = "") => {
 const MOUNT = "#quranWordCardMount";
 const wlog = (page, n = 0) => page.evaluate((n) => (window.__stubWriteData || []).slice(n).map((w) => `${w.col}:${w.id}`), n);
 const wcount = (page) => page.evaluate(() => (window.__stubWriteData || []).length);
-const EXPECT_KEY = process.env.EXPECT_KEY ?? "?";
+// Measured on main (dc83709) with the very same press, 20 Oct 2026: the second row ("a victory", فَتْح, a meaning of
+// its own) writes quranLemmaProgress t1__p1__basic__فَتْح.
+const EXPECT_KEY = "فَتْح";
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH });
 
 async function goTo(page, s, a) {
@@ -69,7 +73,9 @@ const rowsOf = (page) => page.evaluate(() => [...document.querySelectorAll("#qur
 const geometry = (page) => page.evaluate(() => {
   const card = document.querySelector("#quranWordCardMount .quran-word-card")?.getBoundingClientRect();
   const rows = [...document.querySelectorAll("#quranWordCardMount [data-word-card-family-combined] [data-word-card-meaning-group]")].map((g) => {
-    const c = g.querySelector(".word-card-dcards").getBoundingClientRect(), r = g.querySelector("[data-word-card-family-render]").getBoundingClientRect();
+    const ce = g.querySelector(".word-card-dcards"), re = g.querySelector("[data-word-card-family-render]");
+    if (!ce || !re) return { besides: false, under: false, missing: true };
+    const c = ce.getBoundingClientRect(), r = re.getBoundingClientRect();
     const m = g.querySelector("[data-family-group-mark]")?.getBoundingClientRect() ?? null;
     return { besides: r.left >= c.right - 1 && r.top < c.bottom, under: r.top >= c.bottom - 1 && Math.abs(r.left - c.left) < 2 && (!m || m.top >= r.bottom - 1) };
   });
@@ -124,7 +130,8 @@ for (const [lang, width] of runs) {
   const marked = fath?.senses.filter((s) => s.current) ?? [];
   check(`${tag} "allah grants" is the one line marked "this word", and its 35:2:2 chip is marked`, marked.length === 1 && marked[0].label === "allah grants" && marked[0].tag === (lang === "bn" ? "এই শব্দ" : "this word") && marked[0].chips.some((c) => c.goto === "35:2:2" && c.current)
     && rows.flatMap((r) => r.words.flatMap((w) => w.senses.flatMap((s) => s.chips))).filter((c) => c.current).length === 1, JSON.stringify(marked));
-  const judge = rows.find((r) => r.cards.includes("فَتَّاح"));
+  // Found by فَٰتِحِين's exact key in the data (فَتَّاح's key writes its shadda and fatha in the other order).
+  const judge = rows.find((r) => r.words.some((w) => w.lemma === "فَٰتِحِين"));
   check(`${tag} the "Judge" row (فَتَّاح, فَٰتِحِين) has its own renderings for both words`, !!judge && judge !== first && judge.words.length === 2 && judge.words.every((w) => w.senses.length >= 1 && w.senses.every((s) => s.chips.length >= 1)), JSON.stringify(judge));
   const allChips = rows.flatMap((r) => r.words.flatMap((w) => w.senses.flatMap((s) => s.chips)));
   check(`${tag} every chip is a way to its place (data-word-occurrence-goto s:a:w); 38 places in the root`, allChips.length === 38 && allChips.every((c) => /^\d+:\d+:\d+$/.test(c.goto ?? "")), String(allChips.length));
@@ -138,6 +145,7 @@ for (const [lang, width] of runs) {
       const probe = document.createElement("span"); probe.style.color = "var(--wc-purple-ink)"; probe.style.backgroundColor = "var(--wc-purple-bg)"; card.appendChild(probe);
       const want = getComputedStyle(probe).color, wantBg = getComputedStyle(probe).backgroundColor; probe.remove();
       const box = card.querySelector("[data-word-card-family-render]");
+      if (!box) return { want, wantBg, bg: null, got: [], n: 0 };
       const texts = [box.querySelector("h5"), ...box.querySelectorAll(".word-card-family-who, .word-card-family-sense b, .word-card-family-x, .word-card-family-chip")];
       return { want, wantBg, bg: getComputedStyle(box).backgroundColor, got: [...new Set(texts.map((e) => getComputedStyle(e).color))], n: texts.length };
     }, look);
@@ -176,7 +184,6 @@ for (const [lang, width] of runs) {
     await page.evaluate(() => document.querySelectorAll('#quranWordCardMount [data-word-card-meaning-group]')[1]?.querySelector('[data-family-group-state="learning"]')?.click());
     await page.waitForTimeout(2600);
     const log = (await wlog(page, n0)).filter((x) => /^quranLemmaProgress:/.test(x));
-    // Measured on main (dc83709) with the same press: quranLemmaProgress:t1__p1__basic__فتح:1 for the second row ("a victory").
     check(`${tag} a Learning press on the second row writes the same document as on main (quranLemmaProgress t1__p1__basic__${EXPECT_KEY})`, log.length === 1 && log[0] === `quranLemmaProgress:t1__p1__basic__${EXPECT_KEY}`, JSON.stringify(log));
   }
   await ctx.close();
