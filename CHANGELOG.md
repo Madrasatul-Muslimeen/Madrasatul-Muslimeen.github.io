@@ -21911,3 +21911,12 @@ The Owner answered J36's two optional choices at 8:20 pm Sydney: *"1. Yes. 2. Ke
 - Data: `tools/quran-data-pull/build-learn-next.mjs` → `output/learn-next.json`, ordered by count then lemma text; meanings from the Word card's dictionary (a "label: meaning" gloss shows the meaning; none → the word-by-word reading, marked). Fetched on first use only.
 - Architect review fixes: the line was painted gold by the totals box's button rule (fixed; a rendered-colour check with a `goldline` mutation); the "Root/Taṣrīf/Depth never change it" check pressed a rootless word and could not fail (now a positive control and a real `rootknown` mutation).
 - Checks: `learn-next-browser` 140/0, 15 mutations; every Word card suite, behaviour, phone-width and qr-stage1 as on `main` (popup 19/3 already red there); QR build 20/20.
+
+## v12.04 — 20 Oct 2026 — Word card polish: bigger word-by-word text, ⓘ Legend, Family buttons like the main ones (PCF MSA J43)
+
+- The Owner (19 Oct, three screenshots on 14:42:11 تَشْخَصُ): "Make text bigger, attractive and Eye catching"; "place the text as a button to popup as baloon … Name the button as legend … (Same for all levels)"; "this is unusual. Fix."
+- **Word-by-word box**: English and Bangla meanings 1.22rem bold (from body size); transliteration italic. Contrast 4.5:1+ on light, dark and Night.
+- **ⓘ Legend** (bn ⓘ নির্দেশিকা): one purple button at the right end of the colour row on all five levels; its balloon holds the level's can-do sentence and order note; closes on a second tap, Esc or a tap outside.
+- **Family**: each meaning group's control has the main block's four states (Not started added) and its colours and sizes; the reach line is never under the 🧰 button.
+- Architect review: four mutations added (smallgloss, nolegend, threestate, legendleft) — the round shipped its checks unproven; `word-card-layout-b-top` now asserts the Colour-word rule rather than a fixed outcome, since the bigger gloss wraps on its own at 320px.
+- Checks: five-levels 278/0; every Word card suite, Learn next, behaviour, phone-width, qr-stage1 green (popup 19/3 as on `main`); QR 20/20.
