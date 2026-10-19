@@ -7,7 +7,75 @@ v10.28). Read `CLAUDE.md` first. The prompt that starts the next session is
 
 This session was summarised once (its context compacted), which is why it hands over here.
 
-## LATEST UPDATE — 18 Oct 2026, 10:56 am Sydney, session `session_01FjtmD2u1VJcHGbzQJkNY6z` (J110 steps 1–4) — READ THIS FIRST
+## LATEST UPDATE — 19 Oct 2026, 11:30 am Sydney, session `session_019bRvTeru2WnEYcsDmkiDys` (v11.39; J110 switched; J38/J39 building) — READ THIS FIRST
+
+The MSA Master Architect took over at 10:56 am on 18 Oct. It hands over at about 40% context (cost86).
+- **The PCA is `session_01HUvvFAYs3CSniCSwrgeKkk`.**
+- **`main` is v11.39.** The next release is **v12.01** (v12.00 is unused).
+- **The QR Architect is retired; the MSA Architect owns QR** (PCA, 19 Oct).
+- **New MSA rule `carry1`** (the Owner): everything said in the Architect session is carried forward. The list below is every Owner message of this session, with what was done.
+
+**Owner messages this session, and what was done**
+1. 19 Oct, "A." (J110 `n110c`, switch):
+   - released **v11.39** (#959) with `qr.json` live;
+   - all 20 QR checks were green on that build.
+2. "done" (J110 `n110d`, QR Pages source set to GitHub Actions):
+   - ran QR `build-from-msa` (run 39176194092): build and deploy were green;
+   - **quranrevival.github.io serves the QR built from MSA, v11.39**, checked live at 390 and 1280px;
+   - J110 has its Done line;
+   - QR J22 is closed, and `p/qr.monitor` is updated.
+3. "Read Word card and its 4 levels … file the discussion in the Meeting and the build as a Job" (and "Rule for all msg in here to carry forward in NS"):
+   - review in `meet/mmsa-wc-levels`, filed as job **MSA J38**;
+   - rule **`carry1`** is in `p/mmsa.rules`.
+   - **Correction made later in the session:** the WbW "words known" total was never inflated (each level keeps its own total). What a root tap does do is make every word of the root *show* as known, and put 151 words into that level's own line.
+4. "Show me in demo …" → demo 1: https://claude.ai/artifact/2AakF2Q2cxz6gpCCyuXRT6
+5. "did I miss something …" → demo 2, step by step: https://claude.ai/artifact/UFCz6XNErBppp8G89vG9QJ (demo 1 kept unchanged).
+6. "I liked all your ideas … purple … keep 7 in queue" and the five-level idea:
+   - J38 ticks 1A–6A; 7A became **MSA J40** ("learn next" list, queued);
+   - five levels filed as **MSA J39**, with demo3 https://claude.ai/artifact/9VTQVtmKnvw7e4j59Wn11R
+7. "All good except Morphology stays in depth … queue verb conjugation for non-verbs … start building now":
+   - J39 ticks **1A 2A 3B 4A 5A 6A 7A**;
+   - **MSA J41** (Taṣrīf for non-verbs) queued.
+8. "Taṣrīf rules are live" → `firestore.rules` synced (#964).
+9. "Add the Legacy App - v11 link to the menu" → #965, all 26 pages; legacy-links 169/0.
+
+**J38 + J39, the Word card's five levels: the job in hand**
+- The spec is `docs/reference/2026-10-19-word-card-five-levels-build-spec.md` (#960). **Build exactly as demo3, new parts in purple.**
+- The five tabs: WbW · Root · Family · Taṣrīf · Depth. Stored ids: Root = `intermediate`, Family = `basic`, Taṣrīf = `tasrif` (new), Depth = `depth`.
+- **Done and merged:**
+  - Taṣrīf Rules candidate + emulator test + guide (#962), published by the Owner and synced (#964);
+  - `legacy-v11/` (#963) and its menu link (#965).
+- **Part 1** (Builder #961, branch `builder/issue-961-run-1532`, merged with main as **`j39/part1`**): the tabs and content.
+  - Reviewed: its suite `word-card-five-levels-browser` is 86/0, and the content matches the spec.
+  - It opened no PR, and it updated only `quran-word-card.mjs`.
+  - **Not merged alone**, because its tabs already promise part 2's counting.
+- **Part 2** (Builder **#966**, run 39180576999, dispatched ON `j39/part1`, started 11:23 am):
+  - counting (Root, Taṣrīf and Depth never mark words known or move word totals; their lines read "studied N of 1,642 roots");
+  - Family per-meaning marks;
+  - **Taṣrīf gate opened** (the declaration is authorised in the issue);
+  - every old Word card suite updated in place.
+  - **Its PR should target `main` with parts 1 and 2 together.**
+
+**Next steps for the new session**
+1. Review #966's PR by measurement:
+   - run its suites and every Word card suite yourself, plus behaviour, phone-width-overflow and qr-stage1-hidden;
+   - QR build + `tools/apps/qr-verify/run-all.sh`;
+   - look at the tabs at 390 and 1280px against demo3.
+2. Merge.
+3. Release **v12.01** with `allocate-version.py`, plus its What's New line.
+4. Re-run QR `build-from-msa` (QR gets v12.01 and the v11 menu link).
+5. Close J38/J39 with Done lines (W-T-P-E-O), and send the PCA the change notice.
+
+**Waiting on the Owner:** QR J01's Bangla check page https://claude.ai/artifact/9KkSXMNe2MTYoPe1ZrwKfy, and J02, J05, J06, J07, J20, J22, J24 and J35's Bangla letter names.
+**Credits:** US$2.27 in all; none used this session. Own audit rounds stay paused until Thu 22 Oct, about 7 pm.
+
+**Lessons**
+- **A Builder round can finish without a PR.** Check `builder/issue-<n>-run-<run>` branches, not only the PR list.
+- **A round's branch is made from the ref it is dispatched on.** Dispatch on a part-1 branch to stack part 2 without merging part 1 to `main`, which Pages serves live.
+- **Bot comments (chatgpt-codex-connector) start Builder runs on PRs.** They queue behind a dispatched round and do not cancel it.
+- **An element screenshot of the Word card shows only its visible top**, because it scrolls inside itself. Read the panel text for the rest.
+
+## LATEST UPDATE — 18 Oct 2026, 10:56 am Sydney, session `session_01FjtmD2u1VJcHGbzQJkNY6z` (J110 steps 1–4) — superseded by the 19 Oct 11:30 am block above, kept as history
 
 The MSA Master Architect took over at 9:16 am on 18 Oct and hands over at 43% context, at the PCA's request; the Owner
 has a new MSA job for the fresh session. **The PCA is `session_01HUvvFAYs3CSniCSwrgeKkk`.** `main` is **v11.37**, with
