@@ -205,6 +205,15 @@ for (const lang of ["en", "bn"].filter((l) => !only("lang") || only("lang") === 
     check(`${L} 18:32:7: the AG line is the "this word" box and no table box is`, r.cells.AG?.here === true && ["DN", "DA", "DG"].every((k) => !r.cells[k]?.here), JSON.stringify([r.cells.AG, r.cells.DN]));
     await fit("18:32:7");
 
+    // ---------- 49:9:2 طَآئِفَتَانِ and 9:10:10 ٱلْمُعْتَدُونَ (Corpus says genitive / accusative; the ending says nominative) ----------
+    for (const [s, a, p, want] of [[49, 9, 2, { box: "DN", ending: "ـَانِ", number: /Dual/ }], [9, 10, 10, { box: "PN", ending: "ـُونَ", number: /Plural/ }]]) {
+      await openWord(page, s, a, p);
+      await openTasrif(page);
+      r = await read(page);
+      if (en) check(`${L} ${s}:${a}:${p}: Case reads "Nominative" from its ending ${want.ending}, never the Corpus's label`, /^Nominative/.test(r.chips.case ?? "") && !/Accusative|Genitive/.test(r.chips.case ?? "") && r.caseLine.includes(want.ending) && want.number.test(r.chips.number ?? ""), JSON.stringify([r.chips, r.caseLine]));
+      check(`${L} ${s}:${a}:${p}: it sits in the ${want.box} box and nowhere else is "this word"`, r.cells[want.box]?.here === true && Object.values(r.cells).filter((c) => c.here).length === 1, JSON.stringify(Object.entries(r.cells).filter(([, c]) => c.here)));
+    }
+
     // ---------- a particle keeps today's Not applicable line ----------
     await openWord(page, 2, 2, 1);
     await page.click('[data-word-card-level="tasrif"]', { timeout: 8000 }).catch(() => {});
