@@ -45,6 +45,11 @@ const MUT = {
   lowpurple: ["app/quranrevival.html", '[data-card-look="light"] .quran-word-card { --wc-purple-bg: #f1e9fb; --wc-purple-ink: #4b2a85;', '[data-card-look="light"] .quran-word-card { --wc-purple-bg: #f1e9fb; --wc-purple-ink: #c9b8ee;'],
   lownight: ["app/quranrevival.html", "--wc-purple-bg: #2d2150; --wc-purple-ink: #e1d2ff;", "--wc-purple-bg: #2d2150; --wc-purple-ink: #5a4a8a;"],
   goldline: ["app/quranrevival.html", ".word-card-progress button.word-card-learnnext, .word-card-learnnext { display: block;", ".word-card-learnnext { display: block;"],
+  // PCF MSA J47 -- the step tiles, the known colour and the per-word share.
+  notoggle: ["app/quranrevival.html", "learnNextStep = learnNextStep === n ? null : n;", "learnNextStep = null;"],
+  nonew: ["app/js/learn-next.js", "return { from: onlyNew && i > 0 ? LEARN_NEXT_MILESTONES[i - 1] + 1 : 1, to: n };", "return { from: 1, to: n };"],
+  pale: ["app/quranrevival.html", ".ln-row.ln-known { background: #d7efdf; border-color: #2e7d55; border-inline-start: 6px solid #2e7d55; }", ".ln-row.ln-known { background: #eef7f0; }"],
+  sharecum: ["app/js/learn-next.js", "return total > 0 ? (100 * Number(row.n)) / total : 0;", "return Number(row.p);"],
   smallbtn: ["app/quranrevival.html", ".word-card-learnnext { display: block; width: 100%; min-height: 44px;", ".word-card-learnnext { display: block; width: 100%; min-height: 0; max-height: 30px; overflow: hidden;"],
 };
 if (MUTATE && !MUT[MUTATE] && !DATA_MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
@@ -119,6 +124,7 @@ const contrast = (page, look, selector) => page.evaluate(([look, selector]) => {
   const [a, b] = [lum(fg), lum(bg)];
   return { ratio: (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05) };
 }, [look, selector]);
+const digits0 = (s) => String(s).replace(/[০-৯]/g, (d) => "০১২৩৪৫৬৭৮৯".indexOf(d)).trim();
 const sheetInfo = (page) => page.evaluate(() => {
   const s = document.getElementById("learnNextSheet");
   if (!s || s.hidden) return null;
@@ -209,9 +215,32 @@ for (const [lang, width, height] of [["en", 320, 640], ["en", 390, 844], ["en", 
   let sh = await sheetInfo(page);
   { const c = await contrast(page, null, "#learnNextSheet .ln-note"); ratios.push(`sheet=${c?.ratio?.toFixed(2)}`); }
   check(`${tag} the purple ink reaches 4.5:1 or more on all three looks (${ratios.join(" ")})`, ratios.length === 3 && ratios.every((r) => Number(r.split("=")[1]) >= 4.5), ratios.join(" "));
-  check(`${tag} tapping the line opens the sheet: header, note, four milestone tiles, checkbox, 100 rows`, !!sh && sh.rows === 100 && sh.tiles.length === 4, JSON.stringify(sh && { rows: sh.rows, tiles: sh.tiles }));
+  // Updated in place 20 Oct 2026 (PCF MSA J47): the Owner asked for First 25, 50 and 500 too -- seven tiles, not four.
+  check(`${tag} tapping the line opens the sheet: header, note, seven step tiles, checkbox, 100 rows`, !!sh && sh.rows === 100 && sh.tiles.length === 7, JSON.stringify(sh && { rows: sh.rows, tiles: sh.tiles }));
   if (!sh) { await ctx.close(); continue; }
-  check(`${tag} milestone tiles show 25.7% / 57.3% / 73.5% / 88.9%`, JSON.stringify(sh.tiles.map((t) => t.p.replace(/[০-৯]/g, (d) => "০১২৩৪৫৬৭৮৯".indexOf(d)).replace(/\./g, "."))) === JSON.stringify(["25.7%", "57.3%", "73.5%", "88.9%"]) || /২৫|25/.test(sh.tiles[0].p), JSON.stringify(sh.tiles));
+  // Updated in place 20 Oct 2026 (J47): the seven figures, read off learn-next.json's cumulative column by hand. The
+  // old `|| /২৫|25/.test(...)` let ANY Bangla run pass on the first tile alone; the digits are now converted and compared.
+  check(`${tag} step tiles show 25.7 / 37.2 / 47.2 / 57.3 / 73.5 / 80.7 / 88.9%`, JSON.stringify(sh.tiles.map((t) => t.p.replace(/[০-৯]/g, (d) => "০১২৩৪৫৬৭৮৯".indexOf(d)))) === JSON.stringify(["25.7%", "37.2%", "47.2%", "57.3%", "73.5%", "80.7%", "88.9%"]), JSON.stringify(sh.tiles));
+  // --- J47: each tile opens the words in it
+  const ranksNow = () => page.evaluate(() => [...document.querySelectorAll("#learnNextSheet .ln-row")].map((r) => Number(r.dataset.lnRow)));
+  await page.evaluate(() => document.querySelector('#learnNextSheet [data-ln-tile="25"]').click());
+  await page.waitForTimeout(250);
+  let rk = await ranksNow();
+  const pressed = await page.evaluate(() => [...document.querySelectorAll("#learnNextSheet [data-ln-tile]")].filter((b) => b.getAttribute("aria-pressed") === "true").map((b) => b.dataset.lnTile));
+  check(`${tag} J47: tapping First 25 shows exactly words 1–25 and marks that tile pressed`, JSON.stringify(rk) === JSON.stringify(Array.from({ length: 25 }, (_, i) => i + 1)) && pressed.join() === "25", `${rk.length} ${rk.slice(0, 3)}…${rk.slice(-2)} pressed=${pressed}`);
+  await page.evaluate(() => document.querySelector('#learnNextSheet [data-ln-new="1"]').click());
+  await page.waitForTimeout(250);
+  rk = await ranksNow();
+  check(`${tag} J47: "Only the new 15" shows exactly words 11–25`, JSON.stringify(rk) === JSON.stringify(Array.from({ length: 15 }, (_, i) => i + 11)), `${rk.length} ${rk.slice(0, 3)}…`);
+  await page.evaluate(() => document.querySelector('#learnNextSheet [data-ln-new="0"]').click());
+  await page.evaluate(() => document.querySelector('#learnNextSheet [data-ln-tile="25"]').click());
+  await page.waitForTimeout(250);
+  rk = await ranksNow();
+  check(`${tag} J47: tapping the open tile again gives back the whole list (100 rows, from 1)`, rk.length === 100 && rk[0] === 1, `${rk.length}`);
+  const share = await page.evaluate(() => document.querySelector('#learnNextSheet [data-ln-row="1"] .ln-share')?.textContent ?? "");
+  check(`${tag} J47: word 1 (مِن, 3,229 of 74,122 places) shows its own share, +4.4% (not the running 4.4% "so far" alone: word 2 shows +3.6%)`, digits0(share) === "+4.4%" && digits0(await page.evaluate(() => document.querySelector('#learnNextSheet [data-ln-row="2"] .ln-share')?.textContent ?? "")) === "+3.6%", share);
+  sh = await sheetInfo(page);
+  check(`${tag} J47: with seven tiles the sheet still fits (no sideways scroll, every tile whole)`, sh.over <= 0 && sh.pageOver <= 0 && sh.tiles.every((t) => t.w), JSON.stringify({ over: sh.over, page: sh.pageOver, tiles: sh.tiles.map((t) => t.w) }));
   check(`${tag} sheet fits: no sideways scroll, every tile and row whole, ← Back reachable (40px+)`, sh.over <= 0 && sh.pageOver <= 0 && sh.wide === 0 && sh.tiles.every((t) => t.w) && sh.backIn, JSON.stringify({ over: sh.over, page: sh.pageOver, wide: sh.wide, tiles: sh.tiles, back: sh.backIn }));
   check(`${tag} the Arabic is right-to-left in the Quranic font`, sh.ar === "rtl" && /quran|serif|Amiri|Uthman|Scheherazade/i.test(sh.fontAr), sh.fontAr);
   check(`${tag} "100 at a time": exactly 100 rows are drawn, with a Show-100-more button (never all 4,832)`, sh.rows === 100 && sh.more, `${sh.rows} ${sh.moreText}`);
@@ -278,6 +307,13 @@ for (const [lang, width, height] of [["en", 320, 640], ["en", 390, 844], ["en", 
     const wantIn100 = rows.slice(0, 100).filter(isKnown).length;
     const digits = (s) => s.replace(/[০-৯]/g, (d) => "০১২৩৪৫৬৭৮৯".indexOf(d));
     check(`${tag} known rows are marked "✓ known" (${wantIn100} of the first 100) and the label counts ${wantKnown}`, sh.known === wantIn100 && sh.ticks === wantIn100 && digits(sh.hideLabel).includes(`(${wantKnown}`), JSON.stringify({ k: sh.known, t: sh.ticks, l: sh.hideLabel, wantIn100, wantKnown }));
+    // J47 (the Owner: known words in a DISTINCT colour): the RENDERED colours, a known row against a word still to learn.
+    const paint = await page.evaluate(() => {
+      const k = document.querySelector("#learnNextSheet .ln-row.ln-known"), u = document.querySelector("#learnNextSheet .ln-row:not(.ln-known)");
+      const cs = (e) => e && getComputedStyle(e);
+      return k && u ? { kBg: cs(k).backgroundColor, uBg: cs(u).backgroundColor, kEdge: cs(k).borderInlineStartWidth, kEdgeCol: cs(k).borderInlineStartColor, uEdge: cs(u).borderInlineStartWidth } : null;
+    });
+    check(`${tag} J47: a known row is painted its own green (background #d7efdf, a 6px #2e7d55 edge); a word to learn is not`, !!paint && paint.kBg === "rgb(215, 239, 223)" && paint.kEdge === "6px" && paint.kEdgeCol === "rgb(46, 125, 85)" && paint.uBg !== paint.kBg && paint.uEdge !== "6px", JSON.stringify(paint));
     await page.evaluate(() => { const c = document.querySelector("#learnNextSheet [data-ln-hide]"); c.checked = true; c.dispatchEvent(new Event("change", { bubbles: true })); });
     await page.waitForTimeout(300);
     const hid = await sheetInfo(page);

@@ -3663,14 +3663,26 @@
   .ln-title { margin: 0; font-size: 1.15rem; }
   .ln-body { flex: 1 1 auto; overflow-y: auto; overflow-x: hidden; padding: 0.6rem 0.75rem 1.5rem; }
   .ln-note { margin: 0 0 0.6rem; padding: 0.45rem 0.65rem; border-radius: 0.5rem; background: #f1e9fb; color: #4b2a85; border: 1px solid #a98bdc; font-size: 0.86rem; line-height: 1.35; }
-  .ln-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.4rem; margin: 0 0 0.6rem; }
-  .ln-tile { display: flex; flex-direction: column; align-items: center; padding: 0.35rem 0.2rem; border-radius: 0.5rem; background: #f1e9fb; color: #4b2a85; text-align: center; min-width: 0; }
+  /* J47: seven step tiles, each a toggle; four to a row on a phone. */
+  .ln-tiles { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 0.4rem; margin: 0 0 0.6rem; }
+  @media (max-width: 600px) { .ln-tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+  .ln-tile { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 52px; padding: 0.35rem 0.2rem; border-radius: 0.5rem; border: 1px solid #c9b3e6; background: #f1e9fb; color: #4b2a85; text-align: center; min-width: 0; font: inherit; cursor: pointer; }
+  .ln-tile[aria-pressed="true"] { background: #4b2a85; color: #fff; border-color: #4b2a85; }
+  .ln-showing { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.4rem; margin: 0 0 0.5rem; padding: 0.4rem 0.6rem; border: 1px dashed #a98bdc; border-radius: 0.5rem; color: #4b2a85; font-size: 0.85rem; }
+  .ln-seg { display: inline-flex; border: 1px solid #a98bdc; border-radius: 1rem; overflow: hidden; }
+  .ln-seg button { min-height: 40px; padding: 0 0.75rem; border: 0; background: #fff; color: #4b2a85; font: inherit; font-size: 0.82rem; cursor: pointer; }
+  .ln-seg button[aria-pressed="true"] { background: #4b2a85; color: #fff; }
+  .ln-seg button:disabled { opacity: 0.5; cursor: default; }
+  .ln-share { display: inline-block; margin-inline-start: 0.25rem; padding: 0 0.35rem; border-radius: 0.6rem; background: #f1e9fb; color: #4b2a85; font-size: 0.75rem; font-weight: 800; }
   .ln-tile-n { font-size: 0.72rem; overflow-wrap: anywhere; } .ln-tile-p { font-size: 1rem; }
   .ln-hide { display: flex; align-items: center; gap: 0.5rem; min-height: 44px; font-size: 0.9rem; }
   .ln-hide input { width: 22px; height: 22px; flex: 0 0 auto; }
   .ln-list { display: flex; flex-direction: column; gap: 0.3rem; }
   .ln-row { display: grid; grid-template-columns: 2.4rem minmax(0, 1fr) auto; grid-template-areas: "rank ar count" "rank mean sofar" "rank tick tick"; column-gap: 0.5rem; align-items: center; width: 100%; min-height: 56px; padding: 0.4rem 0.55rem; text-align: start; border: 1px solid #d6ddd9; border-radius: 0.5rem; background: #fafbfa; color: inherit; font: inherit; cursor: pointer; box-sizing: border-box; }
-  .ln-row.ln-known { background: #eef7f0; }
+  /* J47 (the Owner: "make them a distinct color, so even they are known, eyes get over it again"): a known word is
+     unmistakably green -- tinted card, deep green edge and tick -- while a word still to learn stays white. */
+  .ln-row.ln-known { background: #d7efdf; border-color: #2e7d55; border-inline-start: 6px solid #2e7d55; }
+  .ln-row.ln-known .ln-ar { color: #1d5c3c; }
   .ln-rank { grid-area: rank; font-weight: 800; color: #4b2a85; font-size: 0.85rem; }
   .ln-ar { grid-area: ar; font-family: var(--quran-font, serif); font-size: 1.5rem; line-height: 1.6; text-align: right; direction: rtl; overflow-wrap: anywhere; }
   .ln-mean { grid-area: mean; font-size: 0.85rem; overflow-wrap: anywhere; min-width: 0; } .ln-mean-2 { color: #55615c; }
@@ -6759,7 +6771,7 @@
     import { parseQuranWordOccurrenceId } from "./js/quran-word-identity.js";
     import { loadLemmaDictionary, loadBanglaLemmaDictionary, lemmaDictionaryEntry } from "./js/lemma-dictionary.js";
     import { loadLemmaMeaningGroups, sameMeaningLemmas, meaningGroupOf } from "./js/lemma-meaning-groups.js";
-    import { loadLearnNext, firstUnknownRow, milestoneFigures, visibleRows, placeOfRow, LEARN_NEXT_PAGE } from "./js/learn-next.js";
+    import { loadLearnNext, firstUnknownRow, milestoneFigures, visibleRows, placeOfRow, stepRange, wordShare, LEARN_NEXT_PAGE } from "./js/learn-next.js";
     import { loadLemmaSenses, lemmaSensesOf, senseKey } from "./js/lemma-senses.js";
     // Decision 58 (#490) -- Basic/Depth lemma-wide claims, behind their own gate (ready:false).
     import { isLemmaLevelsPersistenceReady } from "./js/study-lemma-levels-readiness.js";
@@ -18378,6 +18390,8 @@
     // primeAllLemmaProgress() cached; the list is fetched on first use only.
     let learnNextCtx = null;       // { tenantId, personId, confirmationRequired, data }
     let learnNextShown = LEARN_NEXT_PAGE, learnNextHide = false, learnNextScroll = 0;
+    // J47: the open step tile (null = the whole list) and its "only the new ones" switch.
+    let learnNextStep = null, learnNextOnlyNew = false;
 
     async function ensureLearnNext({ tenantId, personId, confirmationRequired }) {
       const data = await loadLearnNext();
@@ -18419,6 +18433,10 @@
         el.addEventListener("click", (e) => {
           if (e.target.closest("[data-ln-back]")) { closeLearnNextSheet(); return; }
           if (e.target.closest("[data-ln-more]")) { learnNextShown += LEARN_NEXT_PAGE; renderLearnNextSheet(true); return; }
+          const tile = e.target.closest("[data-ln-tile]");
+          if (tile) { const n = Number(tile.dataset.lnTile); learnNextStep = learnNextStep === n ? null : n; learnNextShown = LEARN_NEXT_PAGE; renderLearnNextSheet(); return; }
+          const seg = e.target.closest("[data-ln-new]");
+          if (seg) { learnNextOnlyNew = seg.dataset.lnNew === "1"; learnNextShown = LEARN_NEXT_PAGE; renderLearnNextSheet(); return; }
           const row = e.target.closest("[data-ln-row]");
           if (row) openLearnNextRow(Number(row.dataset.lnRow));
         });
@@ -18437,8 +18455,19 @@
       const grouped = (n) => num(Number(n).toLocaleString("en-US"));
       const rows = c.data.rows;
       const knownTotal = rows.reduce((n, r) => n + (learnNextIsKnown(r) ? 1 : 0), 0);
-      const view = visibleRows(rows, learnNextIsKnown, { hideKnown: learnNextHide, shown: learnNextShown });
-      const tiles = milestoneFigures(rows).map((m) => `<div class="ln-tile" data-ln-tile="${m.n}"><span class="ln-tile-n">${escapeHtml(t("First {n}", { n: grouped(m.n) }))}</span><b class="ln-tile-p">${escapeHtml(num(m.percent.toFixed(1)))}%</b></div>`).join("");
+      const range = learnNextStep ? stepRange(learnNextStep, learnNextOnlyNew) : null;
+      const view = visibleRows(rows, learnNextIsKnown, { hideKnown: learnNextHide, shown: learnNextShown, range });
+      // J47: every tile is a toggle that opens the words in its step; tapping the open one closes it.
+      const tiles = milestoneFigures(rows).map((m) => `<button type="button" class="ln-tile" data-ln-tile="${m.n}" aria-pressed="${learnNextStep === m.n}"><span class="ln-tile-n">${escapeHtml(t("First {n}", { n: grouped(m.n) }))}</span><b class="ln-tile-p">${escapeHtml(num(m.percent.toFixed(1)))}%</b></button>`).join("");
+      let showing = `<p class="ln-showing" data-ln-showing>${escapeHtml(t("Showing the whole list, 100 at a time. Tap a step to open its words."))}</p>`;
+      if (range) {
+        const step = rows[learnNextStep - 1];
+        const what = learnNextOnlyNew ? t("words {a}–{b}", { a: grouped(range.from), b: grouped(range.to) }) : t("the first {n} words", { n: grouped(learnNextStep) });
+        const newCount = range.to - (stepRange(learnNextStep, true).from) + 1;
+        showing = `<div class="ln-showing" data-ln-showing><span>${escapeHtml(t("Showing {what} · together {p}% of the Qur'an", { what, p: num(step.p.toFixed(1)) }))}</span>` +
+          `<span class="ln-seg" role="group" aria-label="${escapeHtml(t("Which words"))}"><button type="button" data-ln-new="0" aria-pressed="${!learnNextOnlyNew}">${escapeHtml(t("All {n}", { n: grouped(learnNextStep) }))}</button>` +
+          `<button type="button" data-ln-new="1" aria-pressed="${learnNextOnlyNew}"${newCount === learnNextStep ? " disabled" : ""}>${escapeHtml(t("Only the new {n}", { n: grouped(newCount) }))}</button></span></div>`;
+      }
       const list = view.rows.map((r) => {
         const known = learnNextIsKnown(r);
         const other = learnNextMeaning(r, true);
@@ -18446,7 +18475,7 @@
           <span class="ln-rank">${escapeHtml(num(r.r))}</span>
           <span class="ln-ar" lang="ar" dir="rtl">${escapeHtml(r.l)}</span>
           <span class="ln-mean"><span class="ln-mean-1">${escapeHtml(learnNextMeaning(r))}</span>${other ? ` <span class="ln-mean-2">· ${escapeHtml(other)}</span>` : ""}</span>
-          <span class="ln-count">${escapeHtml(grouped(r.n))}×</span>
+          <span class="ln-count">${escapeHtml(grouped(r.n))}× <span class="ln-share" title="${escapeHtml(t("Learning this word adds {p}% of the Qur'an's words"))}">+${escapeHtml(num(wordShare(r, c.data.total).toFixed(1)))}%</span></span>
           <span class="ln-sofar">${escapeHtml(t("{p}% so far", { p: num(r.p.toFixed(1)) }))}</span>
           ${known ? `<span class="ln-tick">${escapeHtml(t("✓ known"))}</span>` : ""}
         </button>`;
@@ -18456,7 +18485,8 @@
       el.innerHTML = `<div class="ln-head"><button type="button" class="ln-back" data-ln-back>← ${escapeHtml(t("Back"))}</button><h2 class="ln-title">${escapeHtml(t("Learn next"))}</h2></div>
         <div class="ln-body" data-ln-scroll>
           <p class="ln-note">${escapeHtml(t("The words that occur most often come first. Learn these and you will meet them everywhere in the Qur'an."))}</p>
-          <div class="ln-tiles">${tiles}</div>
+          <div class="ln-tiles" role="group" aria-label="${escapeHtml(t("Steps"))}">${tiles}</div>
+          ${showing}
           <label class="ln-hide"><input type="checkbox" data-ln-hide${learnNextHide ? " checked" : ""}> <span>${escapeHtml(t("Hide words I know ({n} known)", { n: grouped(knownTotal) }))}</span></label>
           <div class="ln-list" data-ln-list>${list}</div>${more}
         </div>`;
