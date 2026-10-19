@@ -48,7 +48,11 @@ let running = 0, wbwRows = 0;
 const out = rows.map((row, i) => {
   running += row.n;
   const k = nfc(row.lemma);
-  const dEn = enIndex.get(k)?.m, dBn = bnIndex.get(k)?.m?.[0], w = wbwIndex.get(k);
+  // Architect review (19 Oct 2026): a dictionary gloss shaped "label: meaning" ("having partitive effect: of, some of")
+  // shows the meaning after the colon; one that ENDS with its colon ("elative degree of كَبِير (kabīr):") has no plain
+  // meaning at all, so the word-by-word reading is used instead (and the row is marked w). Never invented.
+  const plain = (g) => { const s = String(g ?? "").trim(); const i = s.indexOf(":"); if (i < 0) return s; const rest = s.slice(i + 1).trim(); return rest; };
+  const dEn = plain(enIndex.get(k)?.m) || undefined, dBn = bnIndex.get(k)?.m?.[0], w = wbwIndex.get(k);
   const e = shorten(dEn || w?.en), b = shorten(dBn || w?.bn);
   const r = { r: i + 1, l: row.lemma, n: row.n, p: Math.round((running / total) * 1000) / 10, e, b, o: row.first };
   if (!dEn || !dBn) { r.w = 1; wbwRows++; }

@@ -3595,7 +3595,8 @@
   .word-card-ordernote { font-size: 0.8rem; font-style: italic; }
   /* PCF J40 -- the purple "Learn next" line in the totals box, and its sheet. Purple tokens as above; the sheet is a
      light surface in every look. */
-  .word-card-learnnext { display: block; width: 100%; min-height: 44px; margin: 0.5rem 0 0; padding: 0.4rem 0.7rem; text-align: start; border-radius: 0.5rem; background: var(--wc-purple-bg); color: var(--wc-purple-ink); border: 1px solid var(--wc-purple-line); font: inherit; cursor: pointer; overflow-wrap: anywhere; box-sizing: border-box; }
+  /* Architect review: `.word-card-progress button` (0,1,1) out-ranked a bare class here and painted the line gold. */
+  .word-card-progress button.word-card-learnnext, .word-card-learnnext { display: block; width: 100%; min-height: 44px; margin: 0.5rem 0 0; padding: 0.4rem 0.7rem; text-align: start; border-radius: 0.5rem; background: var(--wc-purple-bg); color: var(--wc-purple-ink); border: 1px solid var(--wc-purple-line); font: inherit; cursor: pointer; overflow-wrap: anywhere; box-sizing: border-box; }
   .word-card-learnnext-title { display: block; font-size: 0.74rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
   .word-card-learnnext-line { display: block; font-size: 0.92rem; font-weight: 700; line-height: 1.4; }
   .word-card-learnnext-ar { font-family: var(--quran-font, serif); font-size: 1.15rem; }

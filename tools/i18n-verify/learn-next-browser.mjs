@@ -17,6 +17,7 @@
 //     lowpurple  the light purple ink is washed out              -> "purple ink 4.5:1 on all three looks"
 //     lownight   the night purple ink is washed out              -> same check
 //     smallbtn   the purple line is 30px tall                    -> "at least 44px tall"
+//     goldline   the totals box's button style paints the line (Architect, 19 Oct) -> "painted in the card's purple"
 import { chromium, newContext, openPage } from "./harness.mjs";
 import fs from "fs";
 import { execFileSync } from "child_process";
@@ -40,6 +41,7 @@ const MUT = {
   bnleak: ["app/js/i18n/bn.js", '"Show 100 more": "আরও ১০০টি দেখান",', ""],
   lowpurple: ["app/quranrevival.html", '[data-card-look="light"] .quran-word-card { --wc-purple-bg: #f1e9fb; --wc-purple-ink: #4b2a85;', '[data-card-look="light"] .quran-word-card { --wc-purple-bg: #f1e9fb; --wc-purple-ink: #c9b8ee;'],
   lownight: ["app/quranrevival.html", "--wc-purple-bg: #2d2150; --wc-purple-ink: #e1d2ff;", "--wc-purple-bg: #2d2150; --wc-purple-ink: #5a4a8a;"],
+  goldline: ["app/quranrevival.html", ".word-card-progress button.word-card-learnnext, .word-card-learnnext { display: block;", ".word-card-learnnext { display: block;"],
   smallbtn: ["app/quranrevival.html", ".word-card-learnnext { display: block; width: 100%; min-height: 44px;", ".word-card-learnnext { display: block; width: 100%; min-height: 0; max-height: 30px; overflow: hidden;"],
 };
 if (MUTATE && !MUT[MUTATE] && !DATA_MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
@@ -178,6 +180,24 @@ for (const [lang, width, height] of [["en", 320, 640], ["en", 390, 844], ["en", 
     const c = await contrast(page, look, "#quranWordCardMount .word-card-learnnext");
     ratios.push(`${name}=${c?.ratio?.toFixed(2)}`);
   }
+  // Architect review (19 Oct 2026): a contrast ratio passes for ANY readable colour, and it did -- the line was gold,
+  // painted by `.word-card-progress button`. So also assert the RENDERED colours are the card's own purple tokens.
+  const painted = [];
+  for (const [name, look] of looks) {
+    painted.push(await page.evaluate(([look, name]) => {
+      document.documentElement.setAttribute("data-card-look", look);
+      document.querySelectorAll("[data-card-look]").forEach((e) => e.setAttribute("data-card-look", look));
+      const b = document.querySelector("#quranWordCardMount .word-card-learnnext");
+      const card = b?.closest(".quran-word-card");
+      if (!b || !card) return `${name}:none`;
+      const probe = document.createElement("span"); card.appendChild(probe);
+      probe.style.color = "var(--wc-purple-ink)"; probe.style.backgroundColor = "var(--wc-purple-bg)";
+      const want = [getComputedStyle(probe).color, getComputedStyle(probe).backgroundColor]; probe.remove();
+      const got = [getComputedStyle(b).color, getComputedStyle(b.querySelector(".word-card-learnnext-line") ?? b).color, getComputedStyle(b).backgroundColor];
+      return got[0] === want[0] && got[1] === want[0] && got[2] === want[1] ? `${name}:ok` : `${name}:${got.join("/")} want ${want.join("/")}`;
+    }, [look, name]));
+  }
+  check(`${tag} the line is painted in the card's purple (ink and background), not another button style (${painted.join(" ")})`, painted.every((x) => x.endsWith(":ok")), painted.join(" "));
   await page.evaluate(() => document.documentElement.removeAttribute("data-card-look"));
 
   // --- the sheet
