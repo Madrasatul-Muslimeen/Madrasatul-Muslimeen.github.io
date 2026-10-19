@@ -1296,6 +1296,8 @@ function levelPanel(level, word, layers, context, text, formatNumber) {
     lang: text.formMeaningLang === "bn" ? "bn" : "en", formatNumber, segments: context.wordSegments, rootForms: context.rootForms,
     lemmaForms: context.lemmaForms, verbForms: context.verbForms, verbFormsFailed: context.verbFormsFailed, dictionaryLookup: context.dictionaryLookup, ayahWords: context.ayahWords, ayahFeatures: context.ayahFeatures,
     ayahNumber: context.ayahNumber, surahNumber: context.surahNumber,
+    nounForms: context.nounForms, nounFormsFailed: context.nounFormsFailed, formTexts: context.formTexts, nounBox: context.nounBox,
+    lemmaOccurrences: context.lemmaOccurrences, occurrencesLoading: context.occurrencesLoading,
     nahw: context.needsSource?.nahw, furuq: context.needsSource?.furuq, mufradat: context.needsSource?.mufradat,
     laneUrl: layers.root ? ejtaalUrl(layers.root) : null,
     dictionaryHtml: dictionaryBox(word, context, text, formatNumber),

@@ -23,7 +23,36 @@ const S = {
   whoWhenWho: { en: "Who", bn: "কে" },
   whoWhenWhen: { en: "When", bn: "কখন" },
   whoWhenTo: { en: "To whom", bn: "কাকে" },
-  tasrifNotVerb: { en: "Not applicable: this word is not a verb, and Taṣrīf has no content for other words yet.", bn: "প্রযোজ্য নয়: এই শব্দটি ক্রিয়া নয়, আর অন্য শব্দের জন্য তাসরীফে এখনো কিছু নেই।" },
+  tasrifNotVerb: { en: "Not applicable: Taṣrīf has nothing for this kind of word (a particle, for example).", bn: "প্রযোজ্য নয়: এই ধরনের শব্দের (যেমন অব্যয়ের) জন্য তাসরীফে কিছু নেই।" },
+  // J41 round 2 -- Taṣrīf for nouns.
+  nounShapeTitle: { en: "This word's shape", bn: "এই শব্দের গড়ন" },
+  nounFormsTitle: { en: "The forms of {lemma} in the Qur'an ({n} places)", bn: "কুরআনে {lemma}-এর রূপগুলো ({n}টি স্থান)" },
+  nounLoading: { en: "Loading this word's forms…", bn: "এই শব্দের রূপগুলো লোড হচ্ছে…" },
+  nounFailed: { en: "This word's forms could not be loaded, so nothing is shown here.", bn: "এই শব্দের রূপগুলো লোড করা যায়নি, তাই এখানে কিছু দেখানো হচ্ছে না।" },
+  nNumber: {
+    S: { en: "Singular", bn: "একবচন" }, D: { en: "Dual", bn: "দ্বিবচন" }, P: { en: "Plural", bn: "বহুবচন" },
+  },
+  nNumberGloss: { S: { en: "one", bn: "একটি" }, D: { en: "two", bn: "দুটি" }, P: { en: "three or more", bn: "তিন বা তার বেশি" } },
+  nGender: { M: { en: "Masculine", bn: "পুংলিঙ্গ" }, F: { en: "Feminine", bn: "স্ত্রীলিঙ্গ" } },
+  nGenderGloss: { M: { en: "male", bn: "পুরুষ" }, F: { en: "female", bn: "নারী" } },
+  nCase: { N: { en: "Nominative", bn: "কর্তৃকারক (মারফূ)" }, A: { en: "Accusative", bn: "কর্মকারক (মানসূব)" }, G: { en: "Genitive", bn: "সম্বন্ধপদ (মাজরূর)" }, AG: { en: "Accusative or genitive", bn: "কর্ম বা সম্বন্ধপদ (মানসূব বা মাজরূর)" } },
+  nCaseShort: { N: { en: "Nominative", bn: "কর্তৃকারক" }, A: { en: "Accusative", bn: "কর্মকারক" }, G: { en: "Genitive", bn: "সম্বন্ধপদ" } },
+  nCaseLine: {
+    N: { en: "marfūʿ: usually the doer, or what the sentence is about", bn: "মারফূ: সাধারণত কাজের কর্তা, বা বাক্য যার সম্পর্কে" },
+    A: { en: "manṣūb: usually what the action falls on", bn: "মানসূব: সাধারণত যার উপর কাজটি পড়ে" },
+    G: { en: "majrūr: usually after a preposition, or the owner in a pair of words", bn: "মাজরূর: সাধারণত অব্যয়ের পরে, বা দুই শব্দের জোড়ায় মালিক" },
+  },
+  nCaseEnding: { en: "from its ending {e}", bn: "এর শেষাংশ {e} থেকে" },
+  nDefinite: { en: "Definite", bn: "নির্দিষ্ট" },
+  nDefiniteGloss: { en: "“the …”", bn: "“ওই …”" },
+  nHere: { en: "this word", bn: "এই শব্দ" },
+  nEmpty: { en: "not in the Qur'an", bn: "কুরআনে নেই" },
+  nTimes: { en: "×{n}", bn: "×{n}" },
+  nAgLine: { en: "×{n} accusative or genitive", bn: "×{n} কর্ম বা সম্বন্ধপদ" },
+  nFormsLabel: { en: "Forms", bn: "রূপ" },
+  nPlacesLabel: { en: "Places", bn: "স্থান" },
+  nOpenPlace: { en: "Open {ref}", bn: "{ref} খুলুন" },
+  nTapHint: { en: "Tap a box to see its forms and places.", bn: "কোনো ঘরে ট্যাপ করলে তার রূপ ও স্থান দেখা যাবে।" },
   secSarf: { en: "Morphology (Ṣarf)", bn: "রূপতত্ত্ব (সার্ফ)" },
   secConj: { en: "Verb Conjugation", bn: "ক্রিয়া-রূপান্তর" },
   secNahw: { en: "Grammar in This Āyah (Naḥw)", bn: "এই আয়াতের ব্যাকরণ (নাহু)" },
@@ -708,10 +737,147 @@ export function whoWhenHtml({ word, layers, features, ctx }) {
   return `<p class="word-card-whowhen" data-word-card-whowhen>${bits.map(([k, v]) => `<span class="word-card-whowhen-item"><b>${esc(k)}:</b> ${v}</span>`).join('<span class="word-card-whowhen-dot" aria-hidden="true"> · </span>')}</p>`;
 }
 
+// ---- J41 round 2 -- Taṣrīf for words that are not verbs --------------------------------------------------------------
+// The data is noun-forms.json: three letters per place, parallel to the lemma's list in lemmas-index.json
+// (gender M/F/-, number S/D/P/-, case N/A/G/-). A LOWER-case case letter means the Corpus label contradicts the word's
+// ending (55 places); under the Owner's option 3C the ending decides and the Corpus's word is never shown for them.
+const NOUN_CASE_AR = { N: "مَرْفُوع", A: "مَنْصُوب", G: "مَجْرُور" };
+const NOUN_NUMBER_AR = { S: "مُفْرَد", D: "مُثَنَّى", P: "جَمْع" };
+const NOUN_GENDER_AR = { M: "مُذَكَّر", F: "مُؤَنَّث" };
+const NOUN_ENDINGS = { D: { n: "ـَيْنِ", ag: "ـَانِ" }, P: { n: "ـِينَ", ag: "ـُونَ" } };
+const placeId = (r) => r.surah * 1_000_000 + r.ayah * 1_000 + r.position;
+
+/** The 3-letter code of one place of a lemma, or null when it is not a noun place (or is not in the list). */
+export function nounCodeFor(values, lemma, refs, here) {
+  const codes = values?.[lemma];
+  if (!codes || !Array.isArray(refs)) return null;
+  const i = refs.findIndex((r) => r.surah === here.surah && r.ayah === here.ayah && r.position === here.position);
+  if (i < 0) return null;
+  const code = codes.slice(i * 3, i * 3 + 3);
+  return code.length === 3 && code !== "---" ? code : null;
+}
+
+/** Which table box a code belongs in -- by its ENDING when the Corpus label contradicts it. null: not counted
+ *  (a place with number `-` or case `-` is not counted). `AG` is the "accusative or genitive" line under the table. */
+export function nounBucket(code) {
+  if (!code || code === "---") return null;
+  const number = code[1], kase = code[2];
+  if (!"SDP".includes(number) || !"NAGnag".includes(kase)) return null;
+  if (kase === "n") return { number, key: "AG", kase: "AG", ending: NOUN_ENDINGS[number]?.n ?? null };
+  if (kase === "a" || kase === "g") return { number, key: number + "N", kase: "N", ending: NOUN_ENDINGS[number]?.ag ?? null };
+  return { number, key: number + kase, kase, ending: null };
+}
+
+const placeTextMaps = new WeakMap();
+/** place id -> its written form, from word-forms-index.json (built once per loaded index). */
+function placeTexts(index) {
+  if (!index || !Array.isArray(index.forms)) return null;
+  let map = placeTextMaps.get(index);
+  if (!map) {
+    map = new Map();
+    for (const f of index.forms) for (const id of f[4]) map.set(id, f[0]);
+    placeTextMaps.set(index, map);
+  }
+  return map;
+}
+
+function nounBoxes(codes, refs, texts) {
+  const boxes = {};
+  let total = 0;
+  for (let i = 0; i < refs.length; i++) {
+    const bucket = nounBucket(codes.slice(i * 3, i * 3 + 3));
+    if (!bucket) continue;
+    total++;
+    const box = (boxes[bucket.key] ??= { count: 0, refs: [], forms: new Map() });
+    box.count++;
+    box.refs.push(refs[i]);
+    const text = texts?.get(placeId(refs[i]));
+    if (text) box.forms.set(text, (box.forms.get(text) ?? 0) + 1);
+  }
+  for (const box of Object.values(boxes)) box.forms = [...box.forms].sort((a, b) => b[1] - a[1]);
+  return { boxes, total };
+}
+
+/** Both purple boxes for a noun, or null when this word has no noun code (a particle: today's Not applicable line). */
+function nounSectionsHtml({ word, features, ctx }) {
+  const { lang, formatNumber } = ctx;
+  const lemma = word.morphology?.lemma;
+  if (!lemma) return null;
+  if (ctx.nounFormsFailed && !ctx.nounForms) return `<p class="word-card-dnote" data-word-card-noun-failed>${esc(pick("nounFailed", lang))}</p>`;
+  const loading = `<p class="word-card-dnote" data-word-card-noun-loading>${esc(pick("nounLoading", lang))}</p>`;
+  if (!ctx.nounForms) return loading;
+  const refs = ctx.lemmaOccurrences;
+  if (!refs) return ctx.occurrencesLoading ? loading : null;
+  const here = { surah: ctx.surahNumber, ayah: ctx.ayahNumber, position: word.position };
+  const code = nounCodeFor(ctx.nounForms, lemma, refs, here);
+  if (!code) return null;
+  const mine = nounBucket(code);
+
+  // (a) This word's shape
+  const chip = (kind, name, gloss, ar) => `<span class="word-card-nchip" data-noun-chip="${kind}"><b>${esc(name)}</b>${gloss ? ` <small>${esc(gloss)}</small>` : ""}${ar ? ` <span class="word-card-nchip-ar" dir="rtl" lang="ar">${esc(ar)}</span>` : ""}</span>`;
+  const number = code[1], gender = code[0], k = code[2];
+  const caseKey = k === "-" ? null : k === "n" ? "AG" : k === "a" || k === "g" ? "N" : k;
+  const chips = [];
+  if (S.nNumber[number]) chips.push(chip("number", pick2("nNumber", number, lang), pick2("nNumberGloss", number, lang), NOUN_NUMBER_AR[number]));
+  if (S.nGender[gender]) chips.push(chip("gender", pick2("nGender", gender, lang), pick2("nGenderGloss", gender, lang), NOUN_GENDER_AR[gender]));
+  if (caseKey) chips.push(chip("case", pick2("nCase", caseKey, lang), "", NOUN_CASE_AR[caseKey]));
+  if (Array.isArray(features?.parts) && features.parts.includes("det")) chips.push(chip("definite", pick("nDefinite", lang), pick("nDefiniteGloss", lang), ""));
+  let caseLine = "";
+  if (caseKey) {
+    const text = k === "n" || k === "a" || k === "g" ? fill(pick("nCaseEnding", lang), { e: "\u0000" }).replace("\u0000", mine?.ending ?? "") : pick2("nCaseLine", caseKey, lang);
+    caseLine = `<p class="word-card-nline" data-noun-case-line data-noun-case-key="${caseKey}">${k === "n" || k === "a" || k === "g" ? esc(text).replace(esc(mine?.ending ?? ""), `<span dir="rtl" lang="ar">${esc(mine?.ending ?? "")}</span>`) : esc(text)}</p>`;
+  }
+  const shape = `<section class="word-card-noun-box" data-word-card-noun-shape><h4>${esc(pick("nounShapeTitle", lang))}</h4><div class="word-card-nchips">${chips.join("")}</div>${caseLine}</section>`;
+
+  // (b) The forms of the lemma in the Qur'an
+  const texts = placeTexts(ctx.formTexts);
+  const { boxes, total } = nounBoxes(ctx.nounForms[lemma], refs, texts);
+  const cell = (key, extraClass = "") => {
+    const b = boxes[key];
+    if (!b) return `<span class="word-card-ncell word-card-ncell-empty" data-noun-cell="${key}" data-noun-empty>${esc(pick("nEmpty", lang))}</span>`;
+    const isHere = mine?.key === key;
+    const on = ctx.nounBox === key;
+    const top = b.forms[0]?.[0];
+    return `<button type="button" class="word-card-ncell${isHere ? " word-card-ncell-here" : ""}${on ? " word-card-ncell-open" : ""}${extraClass}" data-noun-cell="${key}"${isHere ? " data-noun-here" : ""} aria-expanded="${on}">` +
+      `${top ? `<span class="word-card-ncell-ar" dir="rtl" lang="ar">${esc(top)}</span>` : ""}` +
+      `<span class="word-card-ncell-n" data-noun-count>${esc(fill(pick("nTimes", lang), { n: formatNumber(b.count) }))}</span>` +
+      `${isHere ? `<span class="word-card-ncell-this">${esc(pick("nHere", lang))}</span>` : ""}</button>`;
+  };
+  const head = ["N", "A", "G"].map((c) => `<th scope="col"><span>${esc(pick2("nCaseShort", c, lang))}</span><span class="word-card-ntable-ar" dir="rtl" lang="ar">${esc(NOUN_CASE_AR[c])}</span></th>`).join("");
+  const rows = ["S", "D", "P"].map((n) => `<tr><th scope="row"><span>${esc(pick2("nNumber", n, lang))}</span><span class="word-card-ntable-ar" dir="rtl" lang="ar">${esc(NOUN_NUMBER_AR[n])}</span></th>${["N", "A", "G"].map((c) => `<td>${cell(n + c)}</td>`).join("")}</tr>`).join("");
+  let agLine = "";
+  if (boxes.AG) {
+    const isHere = mine?.key === "AG";
+    const on = ctx.nounBox === "AG";
+    agLine = `<button type="button" class="word-card-ncell word-card-ncell-line${isHere ? " word-card-ncell-here" : ""}${on ? " word-card-ncell-open" : ""}" data-noun-cell="AG"${isHere ? " data-noun-here" : ""} aria-expanded="${on}">` +
+      `<span class="word-card-ncell-n" data-noun-count>${esc(fill(pick("nTimes", lang), { n: formatNumber(boxes.AG.count) }))}</span> <span>${esc(pick2("nCase", "AG", lang))}</span>${isHere ? ` <span class="word-card-ncell-this">${esc(pick("nHere", lang))}</span>` : ""}</button>`;
+  }
+  let list = "";
+  const open = ctx.nounBox && boxes[ctx.nounBox];
+  if (open) {
+    const key = ctx.nounBox;
+    const title = key === "AG" ? pick2("nCase", "AG", lang) : `${pick2("nNumber", key[0], lang)} · ${pick2("nCase", key[1], lang)}`;
+    const forms = open.forms.map(([t, n]) => `<span class="word-card-nform" data-noun-list-form><span dir="rtl" lang="ar">${esc(t)}</span> <small>${esc(fill(pick("nTimes", lang), { n: formatNumber(n) }))}</small></span>`).join("");
+    const places = open.refs.map((r) => {
+      const label = `${formatNumber(r.surah)}:${formatNumber(r.ayah)}`;
+      const t = texts?.get(placeId(r));
+      return `<button type="button" class="word-card-nplace" data-word-occurrence-goto="${r.surah}:${r.ayah}:${r.position}" aria-label="${esc(fill(pick("nOpenPlace", lang), { ref: label }))}"><b>${esc(label)}</b>${t ? ` <span dir="rtl" lang="ar">${esc(t)}</span>` : ""}</button>`;
+    }).join("");
+    list = `<div class="word-card-nlist" data-noun-list="${key}"><p class="word-card-nlist-h"><b>${esc(title)}</b></p>` +
+      `<p class="word-card-nlist-l">${esc(pick("nFormsLabel", lang))}</p><div class="word-card-nforms">${forms}</div>` +
+      `<p class="word-card-nlist-l">${esc(pick("nPlacesLabel", lang))}</p><div class="word-card-nplaces">${places}</div></div>`;
+  }
+  const formsBox = `<section class="word-card-noun-box" data-word-card-noun-forms><h4>${esc(fill(pick("nounFormsTitle", lang), { lemma: "\u0000", n: formatNumber(total) })).replace("\u0000", `<span dir="rtl" lang="ar">${esc(lemmaText(lemma))}</span>`)}</h4>` +
+    `<table class="word-card-ntable" data-noun-table><thead><tr><th></th>${head}</tr></thead><tbody>${rows}</tbody></table>${agLine}${list}` +
+    `<p class="word-card-nhint">${esc(pick("nTapHint", lang))}</p></section>`;
+  return shape + formsBox;
+}
+const pick2 = (key, sub, lang) => S[key][sub][lang] ?? S[key][sub].en;
+
 /** J38/J39 -- the Taṣrīf tab's body: the "who and when" line, then Verb Conjugation (moved here from Depth,
  *  unchanged). A word that is not a verb says so in words; its progress block reads "Not applicable". */
 export function tasrifSectionsHtml({ word, layers, features, ctx, open = {} }) {
-  if (!features?.tense) return `<p class="word-card-dnote" data-word-card-tasrif-na>${esc(pick("tasrifNotVerb", ctx.lang))}</p>`;
+  if (!features?.tense) return nounSectionsHtml({ word, features, ctx }) ?? `<p class="word-card-dnote" data-word-card-tasrif-na>${esc(pick("tasrifNotVerb", ctx.lang))}</p>`;
   const isOpen = "conj" in open ? !!open.conj : true;
   return whoWhenHtml({ word, layers, features, ctx }) + depthLegendHtml(ctx.lang) + accordion("conj", ctx.lang, isOpen, conjSection(word, features, ctx));
 }
