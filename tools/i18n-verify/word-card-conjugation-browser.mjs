@@ -34,9 +34,10 @@ async function openWord(page, surah, ayah, pos) {
 }
 async function depth(page) {
   console.log("    [depth]");
-  if (!(await page.$("[data-word-card-sec]"))) await page.click('[data-word-card-level="depth"]', { timeout: 8000 });
-  await page.waitForSelector("[data-word-card-sec]", { timeout: 8000 }).catch(() => {});
-  await page.waitForFunction(() => document.querySelector('[data-word-card-sec="root"] [data-word-card-fam]'), null, { timeout: 8000 }).catch(() => {});
+  // Updated in place 19 Oct 2026 (five-levels change, J38/J39): Verb Conjugation moved from Depth to the TAṢRĪF tab
+  // (stored id "tasrif"), so this helper (still named depth) opens that tab and the section is followed there.
+  if (!(await page.$('[data-word-card-panel="tasrif"]'))) await page.click('[data-word-card-level="tasrif"]', { timeout: 8000 });
+  await page.waitForSelector('[data-word-card-panel="tasrif"]', { timeout: 8000 }).catch(() => {});
   await page.waitForTimeout(1200);
 }
 const conj = (page) => page.evaluate(() => {
@@ -92,7 +93,9 @@ for (const lang of ["en", "bn"].filter((l) => !only("lang") || only("lang") === 
     await page.waitForSelector('[data-word-card-sec="conj"] [data-word-card-conj-table]', { timeout: 8000 }).catch(() => {});
     check(`${L}: I9 -- requested once when Depth is opened on a verb`, verbReq.length === 1, String(verbReq.length));
     let c = await conj(page);
-    check(`${L}: 2:102:35 has the section, third in order, closed`, c && !c.open && JSON.stringify(c.order.slice(0, 3)) === '["root","sarf","conj"]', JSON.stringify(c?.order));
+    // Updated in place 19 Oct 2026 (five-levels change, J38/J39): on the Taṣrīf tab the conjugation is the ONLY section
+    // (it was third of six in Depth, closed); Taṣrīf opens it by default, so it is open on arrival.
+    check(`${L}: 2:102:35 has the section, the only one on the Taṣrīf tab, open by default`, c && c.open && JSON.stringify(c.order) === '["conj"]', JSON.stringify(c?.order));
     check(`${L}: icon ت and title`, c && c.ico === "ت" && c.title === (lang === "bn" ? "ক্রিয়া-রূপান্তর" : "Verb Conjugation"), c?.title);
     // Architect review: the demo's title carries the Arabic name too.
     const arTitle = await page.evaluate(() => document.querySelector('[data-word-card-sec="conj"] [data-word-card-acc-ar]')?.textContent ?? "");

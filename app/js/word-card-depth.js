@@ -19,6 +19,11 @@ function esc(value) {
 /** Every string this tab prints that is not Arabic (I11). */
 const S = {
   secRoot: { en: "Root & Word Family", bn: "মূল ও শব্দ-পরিবার" },
+  secDict: { en: "Dictionary & Forms", bn: "অভিধান ও রূপ" },
+  whoWhenWho: { en: "Who", bn: "কে" },
+  whoWhenWhen: { en: "When", bn: "কখন" },
+  whoWhenTo: { en: "To whom", bn: "কাকে" },
+  tasrifNotVerb: { en: "Not applicable: this word is not a verb, and Taṣrīf has no content for other words yet.", bn: "প্রযোজ্য নয়: এই শব্দটি ক্রিয়া নয়, আর অন্য শব্দের জন্য তাসরীফে এখনো কিছু নেই।" },
   secSarf: { en: "Morphology (Ṣarf)", bn: "রূপতত্ত্ব (সার্ফ)" },
   secConj: { en: "Verb Conjugation", bn: "ক্রিয়া-রূপান্তর" },
   secNahw: { en: "Grammar in This Āyah (Naḥw)", bn: "এই আয়াতের ব্যাকরণ (নাহু)" },
@@ -131,6 +136,23 @@ const S = {
   noUnattributed: { en: "No unattributed example or generated quotation will be shown.", bn: "উৎসহীন কোনো উদাহরণ বা তৈরি করা উদ্ধৃতি দেখানো হবে না।" },
 };
 
+/** 4A -- "who and when": the person, in plain words, for each Corpus person-gender-number code. */
+const WHO = {
+  "3MS": { en: "he", bn: "সে" }, "3FS": { en: "she", bn: "সে (নারী)" },
+  "3MP": { en: "they (men)", bn: "তারা (পুরুষ)" }, "3FP": { en: "they (women)", bn: "তারা (নারী)" },
+  "3MD": { en: "they two", bn: "তারা দুজন" }, "3FD": { en: "they two", bn: "তারা দুজন" },
+  "2MS": { en: "you (one man)", bn: "তুমি (পুরুষ)" }, "2FS": { en: "you (one woman)", bn: "তুমি (নারী)" },
+  "2MP": { en: "you all (men)", bn: "তোমরা (পুরুষ)" }, "2FP": { en: "you all (women)", bn: "তোমরা (নারী)" },
+  "2MD": { en: "you two", bn: "তোমরা দুজন" }, "2FD": { en: "you two", bn: "তোমরা দুজন" },
+  "1S": { en: "I", bn: "আমি" }, "1P": { en: "we", bn: "আমরা" },
+};
+const WHO_ALIAS = { "3D": "3MD", "2D": "2MD" };
+const WHEN = {
+  PERF: { en: "past (it is done)", bn: "অতীত (কাজটি হয়ে গেছে)" },
+  IMPF: { en: "present (it is happening)", bn: "বর্তমান (কাজটি হচ্ছে)" },
+  IMPV: { en: "a command", bn: "একটি আদেশ" },
+};
+
 const pick = (key, lang) => S[key][lang] ?? S[key].en;
 const fill = (template, values) => String(template).replace(/\{(\w+)\}/g, (m, k) => (k in values ? values[k] : m));
 const AR = (value, extra = "") => `<span class="word-card-ar" dir="rtl" lang="ar"${extra}>${esc(value)}</span>`;
@@ -150,11 +172,11 @@ function line(kind, lang, body, cls = "") {
   return `<div class="word-card-dline${cls ? ` ${cls}` : ""}" data-word-card-dline="${kind}">${sourceTagHtml(kind, lang)} ${body}</div>`;
 }
 
-const SECTIONS = ["root", "sarf", "conj", "nahw", "choice", "classical"];
-const ICONS = { root: "ر", sarf: "ص", conj: "ت", nahw: "ن", choice: "≠", classical: "ل" };
+const DEPTH_SECTIONS = ["sarf", "nahw", "choice", "classical", "dict"];
+const ICONS = { root: "ر", sarf: "ص", conj: "ت", nahw: "ن", choice: "≠", classical: "ل", dict: "م" };
 // The demo names the conjugation section in Arabic too (#conjAcc).
 const TITLES_AR = { conj: "تَصْرِيفُ الْفِعْل" };
-const TITLES = { root: "secRoot", sarf: "secSarf", conj: "secConj", nahw: "secNahw", choice: "secChoice", classical: "secClassical" };
+const TITLES = { dict: "secDict", root: "secRoot", sarf: "secSarf", conj: "secConj", nahw: "secNahw", choice: "secChoice", classical: "secClassical" };
 
 function accordion(key, lang, open, body) {
   return `<details class="word-card-acc" data-word-card-sec="${key}"${open ? " open" : ""}>` +
@@ -657,26 +679,56 @@ function rootSection(word, layers, features, ctx) {
       out.push(`<div class="word-card-ayahroot" dir="rtl" data-word-card-ayahroot>${chips}</div>`);
     }
   }
-  // Everything the old Depth tab had stays, below the lines above.
-  out.push(ctx.dictionaryHtml, ctx.formsHtml);
   return out.join("");
 }
 
+/** J38/J39 -- the Root tab's body: the section that used to open Depth ("Root & Word Family"). */
+export function rootFamilyHtml({ word, layers, features, ctx }) {
+  return rootSection(word, layers, features, ctx);
+}
+
+/** 4A -- the "who and when" line, verbs only: Who from `pgn`, When from `tense`, To whom from the pron-obj part's `pp`.
+ *  Returns "" for a word with no tense (not a verb) and never guesses a field the data does not carry. */
+export function whoWhenHtml({ word, layers, features, ctx }) {
+  if (!features?.tense) return "";
+  const { lang } = ctx;
+  const bits = [];
+  const who = WHO[WHO_ALIAS[features.pgn] || features.pgn];
+  if (who) bits.push([pick("whoWhenWho", lang), esc(who[lang] ?? who.en)]);
+  const when = WHEN[features.tense];
+  if (when) bits.push([pick("whoWhenWhen", lang), esc(when[lang] ?? when.en)]);
+  const at = Array.isArray(features.parts) ? features.parts.indexOf("pron-obj") : -1;
+  const to = at >= 0 ? WHO[WHO_ALIAS[features.pp?.[at]] || features.pp?.[at]] : null;
+  if (to) {
+    const seg = Array.isArray(ctx.segments) && ctx.segments.length === features.parts.length ? ctx.segments[at] : null;
+    const piece = seg ? String(layers?.surfaceToken ?? word.arabic ?? "").slice(seg.from, seg.to) : "";
+    bits.push([pick("whoWhenTo", lang), `${esc(to[lang] ?? to.en)}${piece ? ` (${AR(piece)})` : ""}`]);
+  }
+  if (!bits.length) return "";
+  return `<p class="word-card-whowhen" data-word-card-whowhen>${bits.map(([k, v]) => `<span class="word-card-whowhen-item"><b>${esc(k)}:</b> ${v}</span>`).join('<span class="word-card-whowhen-dot" aria-hidden="true"> · </span>')}</p>`;
+}
+
+/** J38/J39 -- the Taṣrīf tab's body: the "who and when" line, then Verb Conjugation (moved here from Depth,
+ *  unchanged). A word that is not a verb says so in words; its progress block reads "Not applicable". */
+export function tasrifSectionsHtml({ word, layers, features, ctx, open = {} }) {
+  if (!features?.tense) return `<p class="word-card-dnote" data-word-card-tasrif-na>${esc(pick("tasrifNotVerb", ctx.lang))}</p>`;
+  const isOpen = "conj" in open ? !!open.conj : true;
+  return whoWhenHtml({ word, layers, features, ctx }) + depthLegendHtml(ctx.lang) + accordion("conj", ctx.lang, isOpen, conjSection(word, features, ctx));
+}
+
 /**
- * The whole Depth panel body (legend + five accordions). `open` is the
- * reader's own open/closed choices ({ root: bool, ... }); a section they have
- * never touched follows the default: only Root & Word Family starts open.
+ * The whole Depth panel body (legend + accordions). `open` is the reader's own open/closed choices; a section they
+ * have never touched follows the default: only Morphology starts open. J38/J39: Root & Word Family moved to the Root
+ * tab and Verb Conjugation to Taṣrīf; the dictionary and forms keep their place here as the last accordion.
  */
 export function depthSectionsHtml({ word, layers, features, ctx, open = {} }) {
-  const isOpen = (k) => (k in open ? !!open[k] : k === "root");
-  const showConj = !!features?.tense;
+  const isOpen = (k) => (k in open ? !!open[k] : k === "sarf");
   const bodies = {
-    root: rootSection(word, layers, features, ctx),
     sarf: sarfSection(word, layers, features, ctx),
-    conj: showConj ? conjSection(word, features, ctx) : "",
     nahw: nahwSection(word, layers, features, ctx),
     choice: choiceSection(word, layers, features, ctx),
     classical: classicalSection(word, layers, ctx),
+    dict: `${ctx.dictionaryHtml ?? ""}${ctx.formsHtml ?? ""}`,
   };
-  return depthLegendHtml(ctx.lang) + SECTIONS.filter((k) => k !== "conj" || showConj).map((k) => accordion(k, ctx.lang, isOpen(k), bodies[k])).join("");
+  return depthLegendHtml(ctx.lang) + DEPTH_SECTIONS.map((k) => accordion(k, ctx.lang, isOpen(k), bodies[k])).join("");
 }

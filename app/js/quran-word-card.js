@@ -5,12 +5,17 @@ import { quranWordOccurrenceId, wordIdentityLayers } from "./quran-word-identity
 import { QURAN_TOTAL_WORD_COUNT, percentRounded } from "./quran-word-total.js";
 import { arabicToBuckwalter } from "./buckwalter.js";
 import { partName, partMeaning, PART_KINDS, FORM_NAMES, STEM_NAMES, DERIV_NAMES, DERIVED_GROUP_LABELS, orderDerivedForms } from "./word-grammar-tables.js";
-import { depthSectionsHtml } from "./word-card-depth.js";
+import { depthSectionsHtml, rootFamilyHtml, tasrifSectionsHtml } from "./word-card-depth.js";
 import { stageColourStyle } from "./ayah-action-sheet.js";
 import { lemmaText } from "./lemma-text.js";
+import { isTasrifLevelPersistenceReady } from "./study-tasrif-level-readiness.js";
 
-// Decisions 101/103 (12 Oct 2026): four levels; Intermediate sits between Basic and Depth.
-export const WORD_CARD_LEVELS = Object.freeze(["wbw", "basic", "intermediate", "depth"]);
+// PCF MSA J38 + J39 (19 Oct 2026): FIVE tabs, in tab order: WbW · Root · Family · Taṣrīf · Depth. The STORED level ids
+// are unchanged -- Root is `intermediate`, Family is `basic` -- so every saved mark stays valid under its new name;
+// `tasrif` is new. What a reader sees is WORD_CARD_LEVEL_NAMES, never the stored id.
+export const WORD_CARD_LEVELS = Object.freeze(["wbw", "intermediate", "basic", "tasrif", "depth"]);
+/** The English display name of each stored level id (the page translates it; the card never prints the id). */
+export const WORD_CARD_LEVEL_NAMES = Object.freeze({ wbw: "WbW", intermediate: "Root", basic: "Family", tasrif: "Taṣrīf", depth: "Depth" });
 
 /**
  * v08.22 -- every grammatical-category segment the packaged corpus actually
@@ -60,13 +65,52 @@ export const WORD_CARD_DEFAULT_LABELS = Object.freeze({
   // 12 Oct 2026 (decision 103): four tabs must fit a phone, so the tabs read the short level names; each keeps its
   // full name as its tooltip and spoken name (basicFull / intermediateFull / depthFull).
   wbw: "WbW",
-  basic: "Basic",
-  intermediate: "Intermediate",
+  basic: "Family",
+  intermediate: "Root",
+  tasrif: "Taṣrīf",
   depth: "Depth",
   wbwFull: "Word by word",
-  basicFull: "Basic Arabic",
-  intermediateFull: "Intermediate Arabic",
+  basicFull: "Family",
+  intermediateFull: "Root",
+  tasrifFull: "Taṣrīf",
   depthFull: "Arabic in Depth",
+  // J38/J39 -- the small line under each tab (from 600px; hidden below).
+  tabSubWbw: "the word here",
+  tabSubIntermediate: "where it comes from",
+  tabSubBasic: "its words",
+  tabSubTasrif: "how it changes",
+  tabSubDepth: "in this āyah",
+  // J38/J39 -- the can-do box (every tab) and the gentle order note (Root, Family, Taṣrīf, Depth). Both purple.
+  canDoWbw: "Achieved here means: I know what this word means here, and what its attached pieces add.",
+  canDoIntermediate: "Achieved here means: I know this root's core meaning, and I can spot its words.",
+  canDoBasic: "Achieved here means: I know this meaning in its other forms, and the root's other meanings.",
+  canDoTasrif: "Achieved here means: I can tell who does it and when, and how the word changes for other people and times.",
+  canDoDepth: "Achieved here means: I can explain this word's form and its grammar in this āyah, and why this word was chosen.",
+  orderNoteIntermediate: "Usually studied after WbW. You can open it any time.",
+  orderNoteBasic: "Usually studied after Root. You can open it any time.",
+  orderNoteTasrif: "Usually studied after Family. You can open it any time.",
+  orderNoteDepth: "Usually studied after Taṣrīf. You can open it any time.",
+  // J38/J39 -- Root tab.
+  rootGrowsHeading: "How the root grows: its {n} meanings",
+  rootGrowsChip: "{meaning} · {count}×",
+  // PCF J38 (counting): Root, Taṣrīf and Depth are study marks on a root, counted as roots studied, never as words known.
+  rootsStudiedSentence: "{level}: studied {known} of {total} roots",
+  // PCF J39 5A -- one Family mark per meaning group, and what it adds.
+  familyGroupMarkLabel: "Your progress on this meaning",
+  familyGroupReach: "→ Words known +{n}",
+  reachRoot: "Achieved here adds Roots studied +1. It does not add to Words known.",
+  reachStudyMark: "Achieved here is a study mark on the root. It does not add to Words known.",
+  // J38/J39 -- Family tab (3A: what each shape group does, in purple).
+  meaningsOfWordItself: "Meanings of {word} itself",
+  familyGroupsHeading: "The root's meaning groups",
+  doesVerb: "the action itself",
+  doesMasdar: "the doing of it",
+  doesDoer: "the one who does it",
+  doesDone: "the one it is done to",
+  // J38/J39 -- Taṣrīf's closed progress block (see study-tasrif-level-readiness.js).
+  tasrifGated: "Saving Taṣrīf marks waits for one settings step by the Owner.",
+  tasrifNotApplicable: "Not applicable",
+  levelNameTasrif: "Taṣrīf",
   // The Intermediate tab (decision 103: the different meanings of the same word and of the same root).
   meaningsOfWord: "Meanings of this word, {word}",
   meaningsOfWordNote: "How the Qur'an's word-by-word translation renders it, grouped by its main English word.",
@@ -127,7 +171,7 @@ export const WORD_CARD_DEFAULT_LABELS = Object.freeze({
   visitingFrom: "Visiting from {ref}",
   rootUnavailable: "Root unavailable in the approved dataset",
   lemmaUnavailable: "Dictionary Word unavailable in the approved dataset",
-  notApplicable: "Not applicable: this word has no dictionary word, so Basic, Intermediate and Depth leave it out of their totals.",
+  notApplicable: "Not applicable: this word has no dictionary word, so Family, Root and Depth leave it out of their totals.",
   clearEarlierMark: "Clear the earlier mark",
   loadingOccurrences: "Loading occurrences…",
   occurrencesUnavailable: "Occurrence list unavailable: {error}",
@@ -220,12 +264,12 @@ export const WORD_CARD_DEFAULT_LABELS = Object.freeze({
   wholeQuranLevelSentence: "{level}: Achieved {known} and {percent} of {total} words",
   percentCircleLabel: "{percent}%",
   levelNameWbw: "WbW",
-  levelNameBasic: "Basic",
-  levelNameIntermediate: "Intermediate",
+  levelNameBasic: "Family",
+  levelNameIntermediate: "Root",
   levelNameDepth: "Depth",
-  knownThroughBasicGroup: "Known through its meaning group (Basic: same meaning)",
+  knownThroughBasicGroup: "Known through its meaning group (Family: same meaning)",
   knownThroughDepthRoot: "Known through the root {root} (Depth: same root)",
-  knownThroughIntermediateRoot: "Known through the root {root} (Intermediate: every meaning of the root)",
+  knownThroughIntermediateRoot: "Known through the root {root} (Root: every meaning of the root)",
   // Round 6 -- the 🔍 Search row (spec "Search (in the header)").
   searchButton: "Search for a word",
   searchLabel: "Find a word: type it in Arabic (with or without vowel marks), its meaning, or a place like 2:42:8",
@@ -388,9 +432,16 @@ function wholeQuranKnownLines(wholeQuranTotal, text, formatNumber, levelTotals) 
   if (Array.isArray(levelTotals) && levelTotals.length) {
     const grouped = (n) => Number(n ?? 0).toLocaleString("en-US");
     const big = (v) => `<strong class="word-progress-whole-quran-num">${escapeHtml(v)}</strong>`;
-    const names = { wbw: text.levelNameWbw, basic: text.levelNameBasic, intermediate: text.levelNameIntermediate, depth: text.levelNameDepth };
-    const rows = levelTotals.map(({ level, total }) => {
+    const names = { wbw: text.levelNameWbw, basic: text.levelNameBasic, intermediate: text.levelNameIntermediate, tasrif: text.levelNameTasrif, depth: text.levelNameDepth };
+    const rows = levelTotals.map(({ level, total, unit }) => {
       const name = String(names[level] ?? level);
+      // PCF J38: a study mark on a ROOT reads "Root: studied N of 1,642 roots" -- no percent circle, no word count.
+      if (unit === "roots") {
+        const rootsSentence = escapeHtml(String(text.rootsStudiedSentence ?? WORD_CARD_TEXT.rootsStudiedSentence)).replace("{level}", () => escapeHtml(name))
+          .replace("{known}", () => big(formatNumber(grouped(total.known))))
+          .replace("{total}", () => big(formatNumber(grouped(total.total))));
+        return `<p class="word-progress-whole-quran" data-whole-quran-level="${escapeHtml(level)}" data-whole-quran-unit="roots">${rootsSentence}</p>`;
+      }
       // PCF J23 (the Owner, 13 Oct 2026): ONE sentence per level, "WbW: Achieved 12,345 and (circle) 54% of 77,777 words".
       const pct = percentRounded(total.known, total.total);
       // Layout B (the Owner, 14 Oct): the known number in a filled gold disc.
@@ -444,12 +495,8 @@ function knownThroughLine(lemma, text) {
  */
 function knownThroughLevelLine(via, text) {
   if (!via) return "";
-  if (via.level === "depth" || via.level === "intermediate") {
-    const root = `<span dir="rtl" lang="ar">${escapeHtml(via.key)}</span>`;
-    const template = via.level === "intermediate" ? text.knownThroughIntermediateRoot : text.knownThroughDepthRoot;
-    const line = escapeHtml(String(template)).replace("{root}", () => root);
-    return `<p class="word-progress-known-through" data-word-known-through data-known-through-level="${via.level}">${line}</p>`;
-  }
+  // PCF J38: a Root / Taṣrīf / Depth mark never makes a word known, so there is no "known through the root" line.
+  if (via.level !== "basic") return "";
   return `<p class="word-progress-known-through" data-word-known-through data-known-through-level="basic">${escapeHtml(String(text.knownThroughBasicGroup))}</p>`;
 }
 
@@ -746,7 +793,10 @@ function derivedCardsSection(layers, context, text, formatNumber) {
     })).map((x) => ({ ...x.src, group: x.group, formNo: x.form }));
   }
   const summary = String(text.derivedCardsSummary).replace("{n}", formatNumber(data.formCount ?? data.forms.length)).replace("{total}", formatNumber(data.totalOccurrences));
-  const cards = forms.map((f) => {
+  // J38/J39 (3A) -- the shape group's "what it does" line, in purple. Other groups get none, and a line the
+  // group label already says in the same words is not printed twice.
+  const doesKey = { verb: "doesVerb", masdar: "doesMasdar", doer: "doesDoer", done: "doesDone" };
+  const cardOf = (f) => {
     const { name } = f.pos ? posName(f.pos, text) : { name: text.formCategoryUnknown };
     const formNo = f.group === "verb" && f.formNo > 0 && FORM_NAMES[f.formNo]
       ? ` · ${bn ? formatNumber(f.formNo) : FORM_NAMES[f.formNo].roman}` : "";
@@ -756,22 +806,65 @@ function derivedCardsSection(layers, context, text, formatNumber) {
     // Each card is the same toggle Depth's form rows already are (data-word-form-toggle), so the page's
     // expandWordForm() loads its places, and "Back to Word Card" restores the open pop-up with no new state.
     const open = context.expandedForm === f.lemma;
+    const label = f.group ? (DERIVED_GROUP_LABELS[f.group]?.[lang] ?? "") : "";
+    const does = f.group && doesKey[f.group] ? String(text[doesKey[f.group]] ?? "") : "";
+    const sameWords = does && label.trim().toLowerCase() === does.trim().toLowerCase();
     return `<button type="button" class="word-card-dcard${f.group ? ` word-card-dgroup-${f.group}` : ""}${current ? " word-card-dcard-current" : ""}${open ? " word-card-dcard-open" : ""}"${current ? ' data-word-card-form-current aria-current="true"' : ""} data-word-card-dcard data-word-form-toggle="${escapeHtml(f.lemma)}" aria-expanded="${open ? "true" : "false"}" aria-haspopup="dialog">` +
-      (f.group ? `<span class="word-card-dcard-group">${escapeHtml(DERIVED_GROUP_LABELS[f.group]?.[lang] ?? "")}</span>` : "") +
+      (f.group ? `<span class="word-card-dcard-group">${escapeHtml(label)}</span>` : "") +
+      (does && !sameWords ? `<span class="word-card-does" data-word-card-does="${f.group}">${escapeHtml(does)}</span>` : "") +
       `<span class="word-card-dcard-pos">${escapeHtml(pos)}</span>` +
       `<span class="word-card-dcard-ar" dir="rtl" lang="ar">${escapeHtml(lemmaText(f.lemma))}</span>` +
       formMeaning(f, text) +
       `<span class="word-card-dcard-count">${escapeHtml(String(text.derivedCardCount).replace("{n}", formatNumber(f.count)))}</span>` +
       `</button>`;
+  };
+  // One card per meaning group of the root (context.meaningGroupOf: the groups the Family mark counts by), the
+  // current word's group first and in gold; a word in no group is a meaning of its own.
+  const groupOf = typeof context.meaningGroupOf === "function" ? context.meaningGroupOf : () => null;
+  const groups = new Map();
+  forms.forEach((f, i) => {
+    const id = groupOf(f.lemma) || `solo:${f.lemma}`;
+    if (!groups.has(id)) groups.set(id, { id, forms: [], first: i });
+    groups.get(id).forms.push(f);
+  });
+  const list = [...groups.values()].map((g) => ({ ...g, total: g.forms.reduce((n, f) => n + f.count, 0), mine: g.forms.some((f) => f.lemma === layers.lemma) }))
+    .sort((x, y) => (y.mine - x.mine) || (y.total - x.total) || (x.first - y.first));
+  const cards = list.map((g) => {
+    const head = [...g.forms].sort((x, y) => y.count - x.count)[0];
+    return `<div class="word-card-meaning-group${g.mine ? " word-card-meaning-group-current" : ""}" data-word-card-meaning-group>` +
+      `<div class="word-card-meaning-group-top">${formMeaning(head, text) || `<span dir="rtl" lang="ar">${escapeHtml(lemmaText(head.lemma))}</span>`}` +
+      `<span class="word-card-sense-tag">${g.mine ? `${escapeHtml(text.meaningThisWord)} · ` : ""}${escapeHtml(String(text.meaningSenseCount).replace("{n}", formatNumber(g.total)))}</span></div>` +
+      `<div class="word-card-dcards">${g.forms.map(cardOf).join("")}</div>` +
+      familyGroupMarkHtml(context.familyGroups, head.lemma, g.total, text, formatNumber) + `</div>`;
   }).join("");
   const openForm = forms.find((f) => f.lemma === context.expandedForm);
   const pop = openForm ? derivedFormPopup(openForm, context, text, formatNumber) : "";
   return `<section class="word-card-forms" data-word-card-dcards>
-    <h4>${escapeHtml(text.derivedForms)}</h4>
+    <h4>${escapeHtml(text.familyGroupsHeading)}</h4>
     <p class="word-card-forms-summary">${escapeHtml(summary)}</p>
-    <div class="word-card-dcards">${cards}</div>
+    ${cards}
     ${pop}
   </section>`;
+}
+
+/**
+ * PCF J39 5A -- one Learning / Practising / Achieved control on a meaning-group card. It writes level `basic` keyed by
+ * THAT group's id (data-family-group-lemma names a word of the group; the page derives the key), and its reach line
+ * says how many words it adds to Words known. Supervisors see Confirm / Send back on an Achieved mark awaiting them.
+ */
+function familyGroupMarkHtml(fg, lemma, count, text, formatNumber) {
+  if (!fg || !lemma) return "";
+  const view = fg.viewOf(lemma);
+  const may = !!fg.authority?.mayClaim && view.loaded !== false && !fg.saving;
+  const label = { learning: text.stateLearning, practising: text.statePractising, achieved: text.stateAchieved };
+  const lem = escapeHtml(lemma);
+  const button = (state) => `<button type="button" data-family-group-state="${state}" data-family-group-lemma="${lem}" aria-pressed="${view.state === state}" style="${stageColourStyle(state)}"${may ? "" : " disabled"}>${escapeHtml(label[state])}</button>`;
+  const decide = fg.authority?.mayDecide && view.awaitingReview && !fg.saving
+    ? `<div class="word-card-group-decide"><button type="button" data-family-group-decide="confirmed" data-family-group-lemma="${lem}">${escapeHtml(text.confirm)}</button><button type="button" data-family-group-decide="returned" data-family-group-lemma="${lem}">${escapeHtml(text.sendBack)}</button></div>`
+    : "";
+  return `<div class="word-card-group-mark" data-family-group-mark role="group" aria-label="${escapeHtml(text.familyGroupMarkLabel)}">` +
+    `<div class="word-card-group-states">${button("learning")}${button("practising")}${button("achieved")}</div>` +
+    `<p class="word-card-group-reach" data-family-group-reach>${escapeHtml(String(text.familyGroupReach).replace("{n}", formatNumber(count)))}</p>${decide}</div>`;
 }
 
 /** The pop-up over Basic's derived-form cards: that form's own places, each one a
@@ -873,9 +966,69 @@ function wordShareOfQuranLine(context, text, formatNumber) {
   return `<p class="word-card-share-of-quran">${escapeHtml(line)}</p>`;
 }
 
-function tabButton(level, selected, label, fullName) {
-  const named = fullName && fullName !== label ? ` title="${escapeHtml(fullName)}" aria-label="${escapeHtml(fullName)}"` : "";
-  return `<button type="button" role="tab" data-word-card-level="${level}" aria-selected="${selected}" tabindex="${selected ? "0" : "-1"}"${named}>${escapeHtml(label)}</button>`;
+function tabButton(level, selected, label, fullName, sub) {
+  // The spoken name is the whole name (never name + small line); a tooltip only where it adds words.
+  const spoken = fullName || label;
+  const named = ` aria-label="${escapeHtml(spoken)}"${fullName && fullName !== label ? ` title="${escapeHtml(fullName)}"` : ""}`;
+  // J38/J39: a small line under the name (CSS shows it from 600px; below that only the name is on screen).
+  const subLine = sub ? `<small class="word-card-tab-sub" data-word-card-tab-sub>${escapeHtml(sub)}</small>` : "";
+  return `<button type="button" role="tab" data-word-card-level="${level}" aria-selected="${selected}" tabindex="${selected ? "0" : "-1"}"${named}><span class="word-card-tab-name">${escapeHtml(label)}</span>${subLine}</button>`;
+}
+
+const LEVEL_KEY = { wbw: "Wbw", intermediate: "Intermediate", basic: "Basic", tasrif: "Tasrif", depth: "Depth" };
+
+/** The five tabs, in WORD_CARD_LEVELS order. */
+function tabsHtml(level, text) {
+  return WORD_CARD_LEVELS.map((id) => {
+    const k = LEVEL_KEY[id];
+    const key = id === "wbw" ? "wbw" : id;
+    return tabButton(id, level === id, text[key], text[`${key}Full`], text[`tabSub${k}`]);
+  }).join("");
+}
+
+/** J38/J39 -- the purple "Achieved here means ..." box, on every tab. */
+function canDoHtml(level, text) {
+  return `<p class="word-card-cando" data-word-card-cando="${level}">${escapeHtml(String(text[`canDo${LEVEL_KEY[level]}`] ?? ""))}</p>`;
+}
+
+/** J38/J39 (6A) -- the gentle order note, in purple, on Root, Family, Taṣrīf and Depth. There is no lock. */
+function orderNoteHtml(level, text) {
+  const note = text[`orderNote${LEVEL_KEY[level]}`];
+  return note ? `<p class="word-card-ordernote" data-word-card-ordernote="${level}">${escapeHtml(String(note))}</p>` : "";
+}
+
+/** The Root tab's "How the root grows: its N meanings": one chip per meaning group of the root -- the group's
+ *  meaning and its count -- from the same data Family's cards use, without the word cards. */
+function rootGrowsSection(layers, context, text, formatNumber) {
+  if (!layers.root) return "";
+  const data = context.rootForms;
+  if (context.rootFormsError || !data || !data.forms?.length) return "";
+  const groupOf = typeof context.meaningGroupOf === "function" ? context.meaningGroupOf : () => null;
+  const groups = new Map();
+  for (const f of data.forms) {
+    const id = groupOf(f.lemma) || `solo:${f.lemma}`;
+    if (!groups.has(id)) groups.set(id, []);
+    groups.get(id).push(f);
+  }
+  const list = [...groups.values()].map((forms) => {
+    const sorted = [...forms].sort((x, y) => y.count - x.count);
+    return { head: sorted[0], total: sorted.reduce((n, f) => n + f.count, 0), mine: sorted.some((f) => f.lemma === layers.lemma) };
+  }).sort((x, y) => (y.mine - x.mine) || (y.total - x.total));
+  const lang = text.formMeaningLang === "bn" ? "bn" : "en";
+  const chips = list.map((g) => {
+    const meaning = g.head.meaning?.[lang] || g.head.meaning?.[lang === "bn" ? "en" : "bn"] || lemmaText(g.head.lemma);
+    const mlang = g.head.meaning?.[lang] ? lang : g.head.meaning?.[lang === "bn" ? "en" : "bn"] ? (lang === "bn" ? "en" : "bn") : "ar";
+    const label = String(text.rootGrowsChip).replace("{meaning}", meaning).replace("{count}", formatNumber(g.total));
+    return `<span class="word-card-grow-chip${g.mine ? " word-card-grow-chip-current" : ""}" data-word-card-grow-chip lang="${mlang}">${escapeHtml(label)}</span>`;
+  }).join("");
+  return `<section class="word-card-root-grows" data-word-card-root-grows><h4>${escapeHtml(String(text.rootGrowsHeading).replace("{n}", formatNumber(list.length)))}</h4><div class="word-card-grow-chips">${chips}</div></section>`;
+}
+
+/** Taṣrīf's progress block. CLOSED by the readiness gate: it prints one line saying why and NO control, so nothing
+ *  can be written for level `tasrif` (the page also refuses the level). A non-verb is Not applicable (I7). */
+function tasrifProgressHtml(features, text) {
+  if (!features?.tense) return `<div class="word-card-progress" data-word-progress data-word-progress-tasrif><div class="word-progress-rec"><p class="word-progress-state word-progress-na" data-word-progress-na>${escapeHtml(text.tasrifNotApplicable)}</p></div></div>`;
+  return `<div class="word-card-progress" data-word-progress data-word-progress-tasrif><div class="word-progress-rec"><p class="word-progress-state" data-word-progress-gated>${escapeHtml(text.tasrifGated)}</p></div></div>`;
 }
 
 /**
@@ -1031,7 +1184,7 @@ export function wordPartsHtml(word, layers, features, segments, context, text) {
 const SENSES_SHOWN = 6;
 function wordSensesSection(word, layers, context, text, formatNumber) {
   const ar = `<span dir="rtl" lang="ar">${escapeHtml(lemmaText(layers.lemma))}</span>`;
-  const heading = `<h4>${escapeHtml(String(text.meaningsOfWord)).replace("{word}", () => ar)}</h4>`;
+  const heading = `<h4>${escapeHtml(String(text.meaningsOfWordItself)).replace("{word}", () => ar)}</h4>`;
   if (context.lemmaSensesError) return `<section class="word-card-senses" data-word-card-senses>${heading}<p role="status">${escapeHtml(String(text.meaningsUnavailable).replace("{error}", context.lemmaSensesError))}</p></section>`;
   const senses = context.lemmaSenses;
   if (senses === undefined) return `<section class="word-card-senses" data-word-card-senses>${heading}<p>${escapeHtml(text.loadingMeanings)}</p></section>`;
@@ -1119,7 +1272,17 @@ function levelPanel(level, word, layers, context, text, formatNumber) {
   // Round 7 (#525) -- "WbW · 2:102 · word 35", the small line in Record your
   // Progress. The reference stays in plain digits (an identifier); the word
   // number is a count, in the reader's digits.
-  const levelNames = { wbw: text.levelNameWbw, basic: text.levelNameBasic, intermediate: text.levelNameIntermediate, depth: text.levelNameDepth };
+  const levelNames = { wbw: text.levelNameWbw, basic: text.levelNameBasic, intermediate: text.levelNameIntermediate, tasrif: text.levelNameTasrif, depth: text.levelNameDepth };
+  // The Depth module's context: shared by Root (its family section), Taṣrīf (conjugation) and Depth itself.
+  const depthCtx = {
+    lang: text.formMeaningLang === "bn" ? "bn" : "en", formatNumber, segments: context.wordSegments, rootForms: context.rootForms,
+    lemmaForms: context.lemmaForms, verbForms: context.verbForms, verbFormsFailed: context.verbFormsFailed, dictionaryLookup: context.dictionaryLookup, ayahWords: context.ayahWords, ayahFeatures: context.ayahFeatures,
+    ayahNumber: context.ayahNumber, surahNumber: context.surahNumber,
+    nahw: context.needsSource?.nahw, furuq: context.needsSource?.furuq, mufradat: context.needsSource?.mufradat,
+    laneUrl: layers.root ? ejtaalUrl(layers.root) : null,
+    dictionaryHtml: dictionaryBox(word, context, text, formatNumber),
+    formsHtml: formsSection(layers, context, text, formatNumber, { expandable: true }),
+  };
   const where = `${levelNames[level] ?? level} · ${context.surahNumber}:${context.ayahNumber} · ${String(text.wordNumberLabel).replace("{n}", formatNumber(word.position))}`;
   if (level === "wbw") {
     // Deliberately bilingual: WbW shows the English and Bangla gloss together
@@ -1132,6 +1295,7 @@ function levelPanel(level, word, layers, context, text, formatNumber) {
     // stays plain regardless.
     // J23 layout B: the meaning bar now sits ABOVE the tabs (meaningBarHtml, called by renderQuranWordCard).
     return `<div role="tabpanel" data-word-card-panel="wbw"><div class="word-card-main">
+      ${canDoHtml("wbw", text)}
       ${wordFactsHtml(word, layers, context.wordFeatures ?? null, text, formatNumber)}
       ${wordPartsHtml(word, layers, context.wordFeatures ?? null, context.wordSegments, context, text)}
       </div><div class="word-card-side">
@@ -1154,8 +1318,13 @@ function levelPanel(level, word, layers, context, text, formatNumber) {
     // info" -- so the derived forms come straight after the word's facts, and
     // the occurrence counts sit below them. Round 3: the facts are the same
     // row WbW shows, and the forms are ordered cards.
+    // J38/J39: Family holds today's Basic and Intermediate together -- the word's own meanings, then one card per
+    // meaning group of the root with its word cards -- and Basic's counts and occurrence list below them.
     return `<div role="tabpanel" data-word-card-panel="basic"><div class="word-card-main">
+      ${orderNoteHtml("basic", text)}
+      ${canDoHtml("basic", text)}
       ${wordFactsHtml(word, layers, context.wordFeatures ?? null, text, formatNumber)}
+      ${layers.lemma ? wordSensesSection(word, layers, context, text, formatNumber) : ""}
       ${derivedCardsSection(layers, context, text, formatNumber)}
       <p>${layers.root ? count(text.rootOccurrences, Number(context.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0)) : escapeHtml(text.rootUnavailable)}</p>
       ${layers.lemma ? lemmaOccurrenceBlock(word, layers, context, text, formatNumber) : `<p>${escapeHtml(text.lemmaUnavailable)}</p>`}
@@ -1167,37 +1336,45 @@ function levelPanel(level, word, layers, context, text, formatNumber) {
     </div></div>`;
   }
   if (level === "intermediate") {
+    // Root (stored as `intermediate`): where the word comes from -- the root's meaning, its words in this āyah
+    // (moved here from Depth), and how the root grows. The mark is keyed by the root.
     return `<div role="tabpanel" data-word-card-panel="intermediate"><div class="word-card-main">
+      ${orderNoteHtml("intermediate", text)}
+      ${canDoHtml("intermediate", text)}
       ${wordFactsHtml(word, layers, context.wordFeatures ?? null, text, formatNumber)}
-      ${layers.lemma ? wordSensesSection(word, layers, context, text, formatNumber) : ""}
-      ${rootMeaningsSection(layers, context, text, formatNumber)}
+      <div class="word-card-root-family" data-word-card-root-family>${rootFamilyHtml({ word, layers, features: context.wordFeatures ?? null, ctx: depthCtx })}</div>
+      ${rootGrowsSection(layers, context, text, formatNumber)}
       </div><div class="word-card-side">
       ${progressBlock(context.progress, context.authority, null, text, formatNumber, { levelTotals: context.levelTotals, level, where, notApplicable: !layers.lemma })}
-      ${layers.root && layers.lemma && context.rootForms?.totalOccurrences ? `<p class="word-card-intermediate-reach" data-word-card-intermediate-reach>${escapeHtml(String(text.intermediateReach)).replace("{root}", () => `<span dir="rtl" lang="ar">${escapeHtml(spacedRoot(layers.root))}</span>`).replace("{total}", () => escapeHtml(formatNumber(context.rootForms.totalOccurrences)))}</p>` : ""}
-      ${knownThroughLevelLine(context.knownViaLevel, text)}
+      <p class="word-card-reach" data-word-card-reach="root">${escapeHtml(text.reachRoot)}</p>
     </div></div>`;
   }
-  // v08.21 -- the occurrence section comes FIRST, then the dictionary and the
-  // rest of Depth's existing detail, which is the owner's own ordering.
+  if (level === "tasrif") {
+    // Taṣrīf (stored as `tasrif`): how the word changes. Its progress block is closed by the readiness gate and
+    // never writes; a word that is not a verb is Not applicable.
+    const features = context.wordFeatures ?? null;
+    return `<div role="tabpanel" data-word-card-panel="tasrif"><div class="word-card-main">
+      ${orderNoteHtml("tasrif", text)}
+      ${canDoHtml("tasrif", text)}
+      ${tasrifSectionsHtml({ word, layers, features, open: context.depthOpen ?? {}, ctx: depthCtx })}
+      </div><div class="word-card-side">
+      ${isTasrifLevelPersistenceReady() && features?.tense ? progressBlock(context.progress, context.authority, null, text, formatNumber, { levelTotals: context.levelTotals, level, where }) : tasrifProgressHtml(features, text)}
+      <p class="word-card-reach" data-word-card-reach="tasrif">${escapeHtml(text.reachStudyMark)}</p>
+    </div></div>`;
+  }
+  // Depth: the rest -- Morphology, Grammar in This Āyah, Word Choice, Classical Usage, and the dictionary and forms.
+  // Root & Word Family moved to Root and Verb Conjugation to Taṣrīf.
   // Issue #320 -- claim/confirm controls (progressBlock) are shared with the
   // WbW panel above, but WITHOUT coverage or any of the WbW-only extras
   // (whole-Qur'an total, lemma-wide claim): those stay scoped to WbW, per the
   // issue's own point 4.
   return `<div role="tabpanel" data-word-card-panel="depth"><div class="word-card-main">
-    ${depthSectionsHtml({
-      word, layers, features: context.wordFeatures ?? null, open: context.depthOpen ?? {},
-      ctx: {
-        lang: text.formMeaningLang === "bn" ? "bn" : "en", formatNumber, segments: context.wordSegments, rootForms: context.rootForms,
-        lemmaForms: context.lemmaForms, verbForms: context.verbForms, verbFormsFailed: context.verbFormsFailed, dictionaryLookup: context.dictionaryLookup, ayahWords: context.ayahWords, ayahFeatures: context.ayahFeatures,
-        ayahNumber: context.ayahNumber, surahNumber: context.surahNumber,
-        nahw: context.needsSource?.nahw, furuq: context.needsSource?.furuq, mufradat: context.needsSource?.mufradat,
-        laneUrl: layers.root ? ejtaalUrl(layers.root) : null,
-        dictionaryHtml: dictionaryBox(word, context, text, formatNumber),
-        formsHtml: formsSection(layers, context, text, formatNumber, { expandable: true }),
-      },
-    })}
+    ${orderNoteHtml("depth", text)}
+    ${canDoHtml("depth", text)}
+    ${depthSectionsHtml({ word, layers, features: context.wordFeatures ?? null, open: context.depthOpen ?? {}, ctx: depthCtx })}
     </div><div class="word-card-side">
     ${progressBlock(context.progress, context.authority, null, text, formatNumber, { levelTotals: context.levelTotals, level, where, notApplicable: !layers.lemma })}
+    <p class="word-card-reach" data-word-card-reach="depth">${escapeHtml(text.reachStudyMark)}</p>
   </div></div>`;
 }
 
@@ -1356,7 +1533,7 @@ export function renderQuranWordCard({ state, chapter, ayah, word, context = {}, 
     ${state.level === "wbw" ? meaningBarHtml(word, context, text, validSegments(context.wordSegments) ? colourToggleHtml(context.colourWordPartsEnabled, text.colourToggleShort, true) : "") : ""}
     ${segmentControlsHtml(context.wordSegments, context.colourWordPartsEnabled, text, state.level)}
     ${originBar(context.origin, text)}
-    <div role="tablist" aria-label="${escapeHtml(text.tablist)}">${tabButton("wbw", state.level === "wbw", text.wbw, text.wbwFull)}${tabButton("basic", state.level === "basic", text.basic, text.basicFull)}${tabButton("intermediate", state.level === "intermediate", text.intermediate, text.intermediateFull)}${tabButton("depth", state.level === "depth", text.depth, text.depthFull)}</div>
+    <div role="tablist" aria-label="${escapeHtml(text.tablist)}">${tabsHtml(state.level, text)}</div>
     ${levelPanel(state.level, word, layers, context, text, formatNumber)}
   </section>`;
 }

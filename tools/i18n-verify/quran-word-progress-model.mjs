@@ -52,9 +52,10 @@ check("review states mirror records.js confirmState", () =>
 // ARABIC_LEVELS ahead of its own claim unit is still caught by the same
 // mechanism (see the new "a genuinely future level" check below).
 // Updated in place 12 Oct 2026 (decisions 101/103): a fourth level, Intermediate, between Basic and Depth.
-check("all four Arabic levels are named", () => assert.deepEqual(ARABIC_LEVELS, ["wbw", "basic", "intermediate", "depth"]));
+// Updated in place 19 Oct 2026 (PCF J39, #966): a fifth level, Taṣrīf (`tasrif`), between Intermediate and Depth.
+check("all five Arabic levels are named", () => assert.deepEqual(ARABIC_LEVELS, ["wbw", "basic", "intermediate", "tasrif", "depth"]));
 check("all four are implemented -- issue #320 settled Basic/Depth's claim unit; decision 103 adds Intermediate on the same unit", () =>
-  assert.deepEqual(IMPLEMENTED_ARABIC_LEVELS, ["wbw", "basic", "intermediate", "depth"]));
+  assert.deepEqual(IMPLEMENTED_ARABIC_LEVELS, ["wbw", "basic", "intermediate", "tasrif", "depth"]));
 check("Basic Arabic progress is ACCEPTED by the state model, not refused", () =>
   assert.equal(requireImplementedLevel("basic"), "basic"));
 check("Arabic in Depth progress is ACCEPTED too", () =>

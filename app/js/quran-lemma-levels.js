@@ -9,6 +9,7 @@
 //            or the lemma when it has no group
 //   intermediate -> the root, e.g. "رحم"            (decision 103: the different meanings of the
 //            same root and of the same word -- every word of the root, whatever its meaning)
+//   tasrif -> the root (PCF J39: a study mark on the root, like Depth; it never moves a word total)
 //   depth -> the root, e.g. "رحم"                   (the whole root; Depth adds study, not reach)
 //
 // Why not one record per lemma with a fan-out write: that would write for the
@@ -19,7 +20,7 @@
 // Keys of different levels never share a document (the level is in the doc id),
 // so a group id can never be mistaken for a lemma or a root.
 
-export const LEMMA_WIDE_LEVELS = Object.freeze(["wbw", "basic", "intermediate", "depth"]);
+export const LEMMA_WIDE_LEVELS = Object.freeze(["wbw", "basic", "intermediate", "tasrif", "depth"]);
 
 /** The claim key a word is covered by at `level`, or null when it has none (no lemma / no root). */
 export function claimKeyFor(level, { lemma, root } = {}, groupOf = () => null) {

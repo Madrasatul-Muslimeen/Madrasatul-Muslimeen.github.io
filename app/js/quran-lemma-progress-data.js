@@ -69,6 +69,7 @@ import { TENANT } from "./collections.js";
 import { createDocument, updateDocument } from "./envelope.js";
 import { isLemmaProgressPersistenceReady } from "./study-lemma-progress-readiness.js";
 import { isLemmaLevelsPersistenceReady } from "./study-lemma-levels-readiness.js";
+import { isTasrifLevelPersistenceReady } from "./study-tasrif-level-readiness.js";
 
 /**
  * Decision 58 -- the gate for ONE level. `wbw` needs only the lemma gate, so
@@ -77,6 +78,7 @@ import { isLemmaLevelsPersistenceReady } from "./study-lemma-levels-readiness.js
  */
 export function lemmaLevelReady(level) {
   if (!isLemmaProgressPersistenceReady()) return false;
+  if (level === "tasrif" && !isTasrifLevelPersistenceReady()) return false; // PCF J39: Taṣrīf has its own Rules gate
   return level === "wbw" || isLemmaLevelsPersistenceReady();
 }
 import {
@@ -205,6 +207,21 @@ export async function primeAllLemmaProgress(db, { tenantId, personId, level = "w
   }
   store.allLoaded = true;
   return { fetched: learnerSnap.docs.length + supervisorSnap.docs.length, cached: false };
+}
+
+/**
+ * PCF J38 (19 Oct 2026) -- how many of this person's claims at `level` count as known (the "studied N of 1,642
+ * roots" figure for Root, Taṣrīf and Depth). Reads only what primeAllLemmaProgress() cached; `null` until that
+ * has loaded the whole list, so "not read yet" is never shown as 0.
+ */
+export function countKnownLemmaClaims({ tenantId, personId, level = "wbw", confirmationRequired = false } = {}) {
+  const store = cacheFor({ tenantId, personId, level });
+  if (store.allLoaded !== true) return null;
+  let n = 0;
+  for (const lemmaId of store.keys()) {
+    if (lemmaProgressFor({ tenantId, personId, level, lemmaId, confirmationRequired }).countsAsKnown) n += 1;
+  }
+  return n;
 }
 
 /**

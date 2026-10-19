@@ -121,7 +121,7 @@ const totalsOf = (page) => page.evaluate(() => {
       known: document.querySelector(`#quranWordCardMount [data-whole-quran-level="${level}"]`)?.textContent ?? null,
       percent: document.querySelector(`#quranWordCardMount [data-whole-quran-level="${level}"]`)?.textContent ?? null,
       // The two <strong> numbers are the total and the known count, in the language's own order.
-      knownNum: [...document.querySelectorAll(`#quranWordCardMount [data-whole-quran-level="${level}"] strong`)].map((e) => e.textContent).find((x) => !/^(77,429|৭৭,৪২৯|74,122|৭৪,১২২)$/.test(x)) ?? null, // decision 68: Basic/Depth say 74,122
+      knownNum: [...document.querySelectorAll(`#quranWordCardMount [data-whole-quran-level="${level}"] strong`)].map((e) => e.textContent).find((x) => !/^(77,429|৭৭,৪২৯|74,122|৭৪,১২২|1,642|১,৬৪২)$/.test(x)) ?? null, // decision 68: Basic/Depth say 74,122
     };
   }
   return out;
@@ -130,7 +130,9 @@ const knownNumber = (t) => (t.knownNum == null ? null : Number(asciiDigits(t.kno
 const errs = (errors) => errors.filter((e) => !/CERT|archive\.org|api\.quran/.test(e));
 const lemmaWrites = (page) => page.evaluate(() => (window.__stubWriteData || []).filter((w) => /^quranLemma/.test(w.col)).map((w) => ({ col: w.col, id: w.id })));
 
-const LEVEL_NAME = { en: { wbw: "WbW", basic: "Basic", depth: "Depth" }, bn: { wbw: "শব্দে শব্দে", basic: "প্রাথমিক", depth: "গভীরতা" } };
+// UPDATED IN PLACE 19 Oct 2026 (PCF J38+J39, #966): the Basic tab is named Family (part 1), and Depth is now a study mark on
+// the ROOT: it never makes a word known, never moves a word total, and its totals line reads "studied N of 1,642 roots".
+const LEVEL_NAME = { en: { wbw: "WbW", basic: "Family", depth: "Depth" }, bn: { wbw: "শব্দে শব্দে", basic: "পরিবার", depth: "গভীরতা" } };
 
 for (const [width, height] of [[390, 844], [1280, 900]]) {
   for (const lang of ["en", "bn"]) {
@@ -149,15 +151,17 @@ for (const [width, height] of [[390, 844], [1280, 900]]) {
       await page.click('#quranWordCardMount [data-word-progress-state="achieved"]');
       await page.waitForTimeout(1500);
 
-      check(`${tag} ٱلرَّحْمَٰن itself is marked`, await waitMark(page, 1, 1, 3, true));
+      // Depth (a study mark on the root) marks NO word known, the word itself included.
+      const selfMarked = level !== "depth";
+      check(`${tag} ٱلرَّحْمَٰن itself ${selfMarked ? "is" : "is NOT"} marked`, await waitMark(page, 1, 1, 3, selfMarked));
       await page.waitForTimeout(500);
-      const rahimMarked = level !== "wbw";
+      const rahimMarked = level === "basic";
       check(`${tag} ٱلرَّحِيم (1:1:4) ${rahimMarked ? "IS" : "is NOT"} marked`, (await marked(page, 1, 1, 4)) === rahimMarked);
       await goTo(page, 1, 3);
       check(`${tag} ٱلرَّحِيم (1:3:2) ${rahimMarked ? "IS" : "is NOT"} marked`, (await marked(page, 1, 3, 2)) === rahimMarked);
-      check(`${tag} ٱلرَّحْمَٰن (1:3:1), the same word, is marked`, await waitMark(page, 1, 3, 1, true));
+      check(`${tag} ٱلرَّحْمَٰن (1:3:1), the same word, ${selfMarked ? "is" : "is NOT"} marked`, await waitMark(page, 1, 3, 1, selfMarked));
       await goTo(page, 3, 6);
-      const arhamWant = level === "depth";
+      const arhamWant = false; // no level marks a word of another meaning; Depth marks none at all
       check(`${tag} أَرْحَام (3:6:5) ${arhamWant ? "IS" : "is NOT"} marked`, (await marked(page, 3, 6, 5)) === arhamWant);
 
       // One record covers the spread; nothing is written for a mate.
@@ -169,17 +173,19 @@ for (const [width, height] of [[390, 844], [1280, 900]]) {
       // One totals document PER LEVEL: WbW keeps its old id, the others append their level.
       const totalWrites = await page.evaluate(() => (window.__stubWriteData || []).filter((w) => w.col === "quranWordTotals").map((w) => w.id));
       const wantTotalId = level === "wbw" ? /^t1__p1$/ : new RegExp(`^t1__p1__${level}$`);
-      check(`${tag} the totals write goes to this level's own document`, totalWrites.length >= 1 && totalWrites.every((id) => wantTotalId.test(id)), JSON.stringify(totalWrites));
+      if (level === "depth") check(`${tag} a Depth mark writes NO word total (it is a study mark on the root)`, totalWrites.length === 0, JSON.stringify(totalWrites));
+      else check(`${tag} the totals write goes to this level's own document`, totalWrites.length >= 1 && totalWrites.every((id) => wantTotalId.test(id)), JSON.stringify(totalWrites));
 
       await goTo(page, 1, 1);
       await openWord(page, 1, 1, 3, level);
       const totals = await totalsOf(page);
       for (const l of ["wbw", "basic", "depth"]) {
-        const wantN = l === level ? WANT[l] : 0;
+        const wantN = l === level ? (l === "depth" ? 1 : WANT[l]) : 0; // Depth counts ROOTS studied: one root marked
         check(`${tag} "You know" line for ${l} reads ${wantN}`, knownNumber(totals[l]) === wantN, JSON.stringify(totals[l]));
         check(`${tag} the ${l} line names its level (${LEVEL_NAME[lang][l]})`, (totals[l].known ?? "").includes(LEVEL_NAME[lang][l]), JSON.stringify(totals[l]));
       }
-      check(`${tag} the percentage line for ${level} reads ${WANT_PERCENT[level]}%`, asciiDigits(totals[level].percent ?? "").includes(WANT_PERCENT[level]), JSON.stringify(totals[level]));
+      if (level !== "depth") check(`${tag} the percentage line for ${level} reads ${WANT_PERCENT[level]}%`, asciiDigits(totals[level].percent ?? "").includes(WANT_PERCENT[level]), JSON.stringify(totals[level]));
+      else check(`${tag} the Depth line is a roots line: studied 1 of 1,642 roots, no percentage`, /1,642|১,৬৪২/.test(totals.depth.known ?? "") && !/%/.test(totals.depth.known ?? ""), JSON.stringify(totals.depth));
 
       // Layout: the box is inside the card, nothing clipped.
       const box = await page.evaluate(() => {
@@ -192,7 +198,8 @@ for (const [width, height] of [[390, 844], [1280, 900]]) {
       });
       // Updated in place 12 Oct 2026 (decision 103): a fourth level, Intermediate, adds its pair of lines (8, was 6).
       // Updated in place 13 Oct 2026 (PCF J23): one sentence per level now carries the percentage, so 4 lines (was 8).
-      check(`${tag} the bold box holds 4 lines inside the card, none clipped`, !!box && box.inside && box.wide === 0 && box.lines === 4, JSON.stringify(box));
+      // Updated in place 19 Oct 2026 (PCF J38+J39): five levels (WbW, Root, Family, Taṣrīf, Depth), so 5 lines.
+      check(`${tag} the bold box holds 5 lines inside the card, none clipped`, !!box && box.inside && box.wide === 0 && box.lines === 5, JSON.stringify(box));
       await page.screenshot({ path: `.builder-round/shot-levels-${lang}-${width}-${level}.png` });
 
       if (level === "basic" && width === 390 && lang === "en") {
@@ -200,7 +207,7 @@ for (const [width, height] of [[390, 844], [1280, 900]]) {
         await goTo(page, 1, 1);
         await openWord(page, 1, 1, 4);
         const through = await page.evaluate(() => document.querySelector("#quranWordCardMount [data-word-known-through]")?.textContent ?? null);
-        check(`${tag} ٱلرَّحِيم's card says it is known through Basic`, /Basic: same meaning/.test(through ?? ""), String(through));
+        check(`${tag} ٱلرَّحِيم's card says it is known through Family (was Basic; renamed in part 1, #961)`, /Family: same meaning/.test(through ?? ""), String(through));
         const pressed = await page.evaluate(() => [...document.querySelectorAll("#quranWordCardMount [data-word-progress-state]")].find((e) => e.getAttribute("aria-pressed") === "true")?.dataset.wordProgressState);
         // Updated in place, 7 Oct 2026: since v09.90 (the Owner, 6 Oct: the Word Card shows "known elsewhere" as
         // Achieved) a word known through its group shows its buttons at Achieved. This check still read "not started";

@@ -25,7 +25,7 @@ const bnDigits = (s) => String(s).replace(/\d/g, (d) => BN_DIGITS[d]);
 // PLACE 5 Oct 2026 (decision 68): Basic and Depth are over 74,122 (the words
 // that have a dictionary word), so 10000 -> 13.49 and 5000 -> 6.75 (were 12.92
 // and 6.46 over 77,429). WbW is still over 77,429.
-const RING = { wbw: "28.16", basic: "13.49", depth: "6.75" };
+const RING = { wbw: "28.16", basic: "13.49", depth: "0.00" }; // depth: 19 Oct 2026, a root-count level (was 6.75 of words)
 const CIRC = 2 * Math.PI * 50;
 const LABELS = { en: ["Not started", "Learning", "Practising", "Achieved"], bn: ["শুরু হয়নি", "শিখছি", "অনুশীলন করছি", "অর্জিত হয়েছে"] };
 const HEADINGS = { en: ["Record your Progress", "Know Your Status"], bn: ["আপনার অগ্রগতি লিখুন", "আপনার অবস্থা জানুন"] };
@@ -124,7 +124,7 @@ for (const lang of ["en", "bn"].filter((l) => !arg("lang") || arg("lang") === l)
       check(`${T} Record your Progress sits to the right of the tab content`, !!m.rec && !!m.main && m.rec.l >= m.main.r - 0.5, JSON.stringify({ rec: m.rec?.l, mainRight: m.main?.r }));
       check(`${T} Know Your Status sits to the right of the tab content, below the first box`, !!m.status && m.status.l >= m.main.r - 0.5 && m.status.t >= m.rec.b - 0.5, JSON.stringify({ st: m.status, rec: m.rec }));
       check(`${T} the two PC headings, in ${lang}`, JSON.stringify(m.headings) === JSON.stringify(HEADINGS[lang]) && !m.phoneHeadingVisible, JSON.stringify(m.headings));
-      const levelWord = { en: { wbw: "WbW", basic: "Basic", depth: "Depth" }, bn: { wbw: "শব্দে শব্দে", basic: "প্রাথমিক", depth: "গভীরতা" } }[lang][level];
+      const levelWord = { en: { wbw: "WbW", basic: "Family", depth: "Depth" }, bn: { wbw: "শব্দে শব্দে", basic: "পরিবার", depth: "গভীরতা" } }[lang][level]; // Basic is Family now (19 Oct 2026)
       check(`${T} the small line names level · āyah · word`, m.where === `${levelWord} · 1:7 · ${lang === "bn" ? `শব্দ ${bnDigits(6)}` : "word 6"}`, String(m.where));
       check(`${T} four stage buttons in the box: none cut, each >= 40px high, each inside the box`, m.buttons.length === 4 && JSON.stringify(m.buttons.map((b) => b.text)) === JSON.stringify(LABELS[lang]) && m.buttons.every((b) => !b.cut && b.h >= 40 && b.l >= m.rec.l - 0.5 && b.r <= m.rec.r + 0.5), JSON.stringify(m.buttons.map((b) => [b.text, b.w, b.h, b.cut])));
       // WbW's seeded word is Learning; Basic and Depth have no record, so Not started is pressed (its own dark colour).
@@ -138,8 +138,12 @@ for (const lang of ["en", "bn"].filter((l) => !arg("lang") || arg("lang") === l)
       check(`${T} the ring reads ${digits(RING[level])}%`, m.ringNum === `${digits(RING[level])}%`, String(m.ringNum));
       check(`${T} the ring's aria-label`, m.ringLabel === (lang === "bn" ? `কুরআনের ${digits(RING[level])}% শব্দ জানা` : `${RING[level]}% of the words of the Qur'an known`), String(m.ringLabel));
       const want = (Number(RING[level]) / 100) * CIRC;
-      check(`${T} the arc is ${RING[level]}% of the circumference (+-0.5%)`, m.hasArc && Math.abs(m.arcLen - want) <= CIRC * 0.005, `${m.arcLen} vs ${want.toFixed(2)}`);
-      check(`${T} "You know" line for this level says the same number`, new RegExp(`${digits(RING[level]).replace(".", "\\.")}`).test(await page.evaluate((lv) => document.querySelector(`#quranWordCardMount [data-whole-quran-level="${lv}"]`)?.textContent ?? "", level)), "");
+      // Updated in place 19 Oct 2026 (five-levels change, J38/J39): Depth is a root-count level now (nothing is seeded for it
+      // and it writes no word total), so its ring is 0.00% with NO arc drawn (a zero-length arc), and its "You know" line
+      // is "studied 0 of 1,642 roots" rather than the seeded word percentage.
+      check(`${T} the arc is ${RING[level]}% of the circumference (+-0.5%)`, level === "depth" ? !m.hasArc || m.arcLen === 0 : m.hasArc && Math.abs(m.arcLen - want) <= CIRC * 0.005, `${m.arcLen} vs ${want.toFixed(2)}`);
+      const lineText = await page.evaluate((lv) => document.querySelector(`#quranWordCardMount [data-whole-quran-level="${lv}"]`)?.textContent ?? "", level);
+      check(`${T} "You know" line for this level says the same number`, level === "depth" ? /(1,642|১,৬৪২)/.test(lineText) && /(studied 0|০টি)/.test(lineText) : new RegExp(`${digits(RING[level]).replace(".", "\\.")}`).test(lineText), lineText);
       check(`${T} no sideways scroll`, m.sidewaysScroll <= 0 && m.contentScroll <= 0, JSON.stringify({ d: m.sidewaysScroll, c: m.contentScroll }));
       if (level === "wbw") {
         if (SHOTS) await page.screenshot({ path: `/tmp/pcboxes-${lang}-${width}.png` });

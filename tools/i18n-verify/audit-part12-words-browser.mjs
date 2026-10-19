@@ -72,6 +72,11 @@ async function flow(name, lang, width, fn) {
 
 const ev = (page, f, a) => page.evaluate(f, a);
 const settle = (page, ms = 500) => page.waitForTimeout(ms);
+// 19 Oct 2026 (five-levels change, J38/J39): the dictionary box sits in Depth's collapsed "Dictionary & Forms" section.
+const openDictSection = async (page) => {
+  await page.waitForSelector('[data-word-card-sec="dict"]', { state: "attached", timeout: 8000 });
+  await page.evaluate(() => { document.querySelector('[data-word-card-sec="dict"]').open = true; });
+};
 const clean = (page) => ev(page, () => document.querySelectorAll('[id*="splash"], .app-splash-overlay').forEach((e) => e.remove()));
 async function openRead(page) {
   await clean(page);
@@ -368,6 +373,9 @@ for (const lang of LANGS) for (const width of WIDTHS) {
   await flow("dictionary", lang, width, async (t, page) => {
     await openWord(page, 1, 2, 1);
     await page.click('#quranWordCardMount [data-word-card-level="depth"]');
+    // Updated in place 19 Oct 2026 (five-levels change, J38/J39): the Dictionary box is in Depth's collapsed "Dictionary & Forms"
+    // section now, so the reader opens it first.
+    await openDictSection(page);
     await page.waitForSelector("[data-word-card-dictionary]", { timeout: 8000 });
     await page.waitForFunction(() => !!document.querySelector("[data-word-card-dict-meaning], [data-word-card-dict-none]"), null, { timeout: 8000 });
     const d = await ev(page, () => { const b = document.querySelector("[data-word-card-dictionary]"); const r = b.getBoundingClientRect(); const a = (k) => { const e = b.querySelector(`[data-word-card-dict-link="${k}"]`); return e && { href: e.getAttribute("href"), target: e.getAttribute("target"), rel: e.getAttribute("rel"), h: e.getBoundingClientRect().height }; }; return { meaning: b.querySelector("[data-word-card-dict-meaning]")?.textContent ?? null, corpus: a("corpus"), ejtaal: a("ejtaal"), inView: r.left >= -1 && r.right <= innerWidth + 1 }; });
@@ -378,6 +386,7 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     await ev(page, () => document.querySelector("[data-word-card-close]").click());
     await openWord(page, 1, 3, 1);
     await page.click('#quranWordCardMount [data-word-card-level="depth"]');
+    await openDictSection(page);
     await page.waitForFunction(() => document.querySelector('[data-word-card-dict-link="corpus"]'), null, { timeout: 8000 });
     const h2 = await ev(page, () => document.querySelector('[data-word-card-dict-link="corpus"]').getAttribute("href"));
     check(`${t}: for the next word the Corpus link follows it (q=rHm)`, h2 === "https://corpus.quran.com/qurandictionary.jsp?q=rHm", h2);
@@ -386,16 +395,21 @@ for (const lang of LANGS) for (const width of WIDTHS) {
   // 11: the Verb conjugation table opens for a verb and is absent for a noun.
   await flow("conj", lang, width, async (t, page) => {
     await openWord(page, 2, 102, 35);
-    await page.click('#quranWordCardMount [data-word-card-level="depth"]');
+    // Updated in place 19 Oct 2026 (five-levels change, J38/J39): Verb Conjugation moved from Depth to the TAṢRĪF tab.
+    await page.click('#quranWordCardMount [data-word-card-level="tasrif"]');
     await page.waitForSelector('[data-word-card-sec="conj"]', { timeout: 10000 }).catch(() => {});
     const v = await ev(page, () => { const s = document.querySelector('[data-word-card-sec="conj"]'); if (!s) return null; const w0 = s.open; s.querySelector("summary").click(); return { was: w0, now: s.open, tables: s.querySelectorAll("[data-word-card-conj-table]").length, rows: s.querySelectorAll("tr").length }; });
     check(`${t}: POSITIVE CONTROL a verb (2:102:35) has a Verb conjugation section that opens`, !!v && v.now !== v.was && v.tables >= 2 && v.rows >= 28, JSON.stringify(v));
     await ev(page, () => document.querySelector("[data-word-card-close]").click());
     await openWord(page, 1, 3, 1);
-    await page.click('#quranWordCardMount [data-word-card-level="depth"]');
-    await page.waitForSelector("[data-word-card-sec]", { timeout: 8000 });
+    await page.click('#quranWordCardMount [data-word-card-level="tasrif"]');
+    await page.waitForSelector('[data-word-card-panel="tasrif"]', { timeout: 8000 });
     await settle(page, 1200);
-    check(`${t}: a noun (الرحمن) has no Verb conjugation section, while its other Depth sections show`, await ev(page, () => !document.querySelector('[data-word-card-sec="conj"]') && document.querySelectorAll("[data-word-card-sec]").length >= 2));
+    const nounNoConj = await ev(page, () => !document.querySelector('[data-word-card-sec="conj"]'));
+    await page.click('#quranWordCardMount [data-word-card-level="depth"]');
+    await page.waitForSelector('[data-word-card-panel="depth"] [data-word-card-sec]', { timeout: 8000 });
+    await settle(page, 1200);
+    check(`${t}: a noun (الرحمن) has no Verb conjugation section on Taṣrīf, while its other Depth sections show`, nounNoConj && await ev(page, () => document.querySelectorAll("[data-word-card-sec]").length >= 2));
   });
 
   // 13: on the Bangla page, no English is left on these surfaces (the app's own names and source names excepted).

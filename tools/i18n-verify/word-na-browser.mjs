@@ -101,7 +101,9 @@ for (const lang of ["en", "bn"]) {
     check(`${tag}: ...and says Not applicable, in ${lang === "bn" ? "Bangla" : "English"}`, lang === "bn" ? /^প্রযোজ্য নয়/.test(b.na) : /^Not applicable/.test(b.na), b.na);
     check(`${tag}: ...offers "Clear the earlier mark" (it was marked Achieved before), a real tap target`, !!b.clear && b.clear.h >= 30 && b.clear.at && (lang === "bn" ? /আগের/.test(b.clear.text) : b.clear.text === "Clear the earlier mark"), JSON.stringify(b.clear));
     check(`${tag}: Basic total is 74,122 (only words with a dictionary word): 10,000 known = 13.49%`, /74122/.test(ascii(b.basic.known)) && /13\.49/.test(ascii(b.basic.pct)), JSON.stringify(b.basic));
-    check(`${tag}: Depth total is 74,122 too: 5,000 known = 6.75%`, /74122/.test(ascii(b.depth.known)) && /6\.75/.test(ascii(b.depth.pct)), JSON.stringify(b.depth));
+    // Updated in place 19 Oct 2026 (five-levels change, J38/J39): Depth is a study mark on a ROOT now and never writes a
+    // word total, so its line reads "studied N of 1,642 roots" -- the 74,122 words total belongs to Family (the check above).
+    check(`${tag}: Depth counts roots, not words: "studied 0 of 1,642 roots" (the 74,122 total is Family's)`, /1642/.test(ascii(b.depth.known)) && !/74122|6\.75/.test(ascii(b.depth.known) + ascii(b.depth.pct)), JSON.stringify(b.depth));
     check(`${tag}: WbW keeps every word: 77,429`, /77429/.test(ascii(b.wbw.known)), JSON.stringify(b.wbw));
     const before = await page.evaluate(() => (window.__stubWriteData || []).length);
     await page.click("#quranWordCardMount .word-progress-na-clear", { timeout: 3000 }).catch(() => {});

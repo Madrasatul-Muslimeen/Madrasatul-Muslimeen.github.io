@@ -96,6 +96,9 @@ for (const level of ["basic", "depth"]) {
     const parts = level === "basic"
       ? ["word-card-dcard-pos\"", "word-card-dcard-ar\"", "word-card-form-meaning", "word-card-dcard-count\""]
       : ["word-card-form-pos\"", "word-card-form-arabic", "word-card-form-meaning", "word-card-form-count"];
+    // Updated in place 19 Oct 2026 (five-levels change, J38/J39): Family's card now carries formMeaning(head) at its
+    // TOP, so inside one card the order is meaning -> category -> Arabic -> count. Depth keeps its old order.
+    if (level === "basic") parts.unshift(parts.splice(2, 1)[0]);
     const at = parts.map((s) => h.indexOf(s));
     assert.ok(at.every((i) => i > -1), JSON.stringify(at));
     assert.deepEqual([...at].sort((a, b) => a - b), at);

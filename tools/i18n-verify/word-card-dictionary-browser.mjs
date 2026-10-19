@@ -70,6 +70,10 @@ async function openWord(page, a, p) {
 }
 async function depth(page) {
   await page.click('[data-word-card-level="depth"]');
+  // Updated in place 19 Oct 2026 (five-levels change, J38/J39): the dictionary box now lives in Depth's collapsed
+  // "Dictionary & Forms" section, so the reader opens that section first (a closed <details> is not visible).
+  await page.waitForSelector('[data-word-card-sec="dict"]', { state: "attached", timeout: 6000 });
+  await page.evaluate(() => { document.querySelector('[data-word-card-sec="dict"]').open = true; });
   await page.waitForSelector("[data-word-card-dictionary]", { timeout: 6000 });
 }
 async function goDepth(page, a, p) {
