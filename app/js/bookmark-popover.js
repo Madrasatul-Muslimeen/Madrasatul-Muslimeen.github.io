@@ -129,9 +129,9 @@ function ensureStyles() {
     .bm-pop-assignee-row .who-name { flex: 1; }
     .bm-pop-assignee-row .who-tag { font-size: 0.66rem; color: #777; background: #f6f7fb; border: 1px solid #eee; border-radius: 0.6rem; padding: 0.02rem 0.4rem; }
     .bm-pop-unit-row { font-size: 0.85rem; margin-bottom: 0.7rem; color: #444; }
-    .bm-pop-units { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 0.35rem; margin-top: 0.25rem; }
+    .bm-pop-units { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.25rem; }
     .bm-pop-units button {
-      min-height: 40px; min-width: 0; padding: 0.25rem 0.35rem; font-size: 0.82rem; line-height: 1.15;
+      flex: 0 1 auto; min-height: 40px; min-width: 0; max-width: 100%; padding: 0.25rem 0.7rem; font-size: 0.82rem; line-height: 1.15;
       border: 1px solid #c9d0e0; border-radius: 0.4rem; background: white; color: #1F3A6E; cursor: pointer;
       white-space: normal; overflow-wrap: anywhere;
     }
@@ -184,10 +184,14 @@ function renderPopoverInner(defaultName, folders, people, defaultPersonTagId, ro
       return `<label class="bm-pop-assignee-row"><input type="checkbox" value="${p.id}" data-name="${escapeHtml(p.name)}" ${checked}><span class="who-name">${escapeHtml(p.name)}</span>${tag}</label>`;
     })
     .join("");
+  // PCF MSA J42: a one-tap "Everyone in the family" as the first row (2+ people). It is not an assignee: the
+  // ticked people below are still what is read, so each person still gets their own copy.
+  const everyoneRow = `<label class="bm-pop-assignee-row"><input type="checkbox" data-bm-pop-everyone ${(roster ?? []).every((p) => p.id === selectedPersonId) ? "checked" : ""}><span class="who-name">${t("Everyone in the family")}</span></label>`;
   const assigneeField = roster && roster.length >= 2
-    ? `<label class="bm-popover-field">${t("Assign to")}
+    ? `<div class="bm-popover-field" role="group">${t("Assign to")}
+        ${everyoneRow}
         <div class="bm-pop-assignees" data-bm-pop-assignees>${assigneeRows}</div>
-      </label>`
+      </div>`
     : "";
   // The Owner, 12 Oct 2026 -- "quick unit choice". Two or more units only:
   // one choice is no choice. Not a .bm-popover-field: those are the labelled
@@ -329,8 +333,20 @@ export function openBookmarkNamePopover({ defaultName = "", folders = [], people
     // both. A "+ New folder…" choice is left alone either way: it creates a
     // fresh folder by NAME in each assignee's own document, which the caller
     // (toggleAyahBookmark() and its siblings) is what actually loops over.
+    const everyoneBox = overlay.querySelector("[data-bm-pop-everyone]");
+    function syncEveryone() {
+      if (!everyoneBox || !assigneesList) return;
+      const boxes = [...assigneesList.querySelectorAll("input")];
+      everyoneBox.checked = boxes.length > 0 && boxes.every((b) => b.checked);
+    }
+    everyoneBox?.addEventListener("change", () => {
+      // Ticking ticks every person; unticking leaves only the reader.
+      assigneesList.querySelectorAll("input").forEach((b) => { b.checked = everyoneBox.checked || b.value === selectedPersonId; });
+      updateForAssigneeCount();
+    });
     function updateForAssigneeCount() {
       if (!assigneesList) return;
+      syncEveryone();
       const ticked = [...assigneesList.querySelectorAll("input:checked")];
       const n = ticked.length;
       const multi = n > 1;
