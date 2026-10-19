@@ -7,7 +7,40 @@ v10.28). Read `CLAUDE.md` first. The prompt that starts the next session is
 
 This session was summarised once (its context compacted), which is why it hands over here.
 
-## LATEST UPDATE — 19 Oct 2026, 6:50 pm Sydney, session `session_01HkRaQdqcADEjR9dNPv4N5N` (v12.02; J38/J39 and J42 released; J40 waits on the Owner) — READ THIS FIRST
+## LATEST UPDATE — 20 Oct 2026, 5:15 am Sydney, session `session_01HkRaQdqcADEjR9dNPv4N5N` (v12.04; J40 and J43 released; HANDOVER) — READ THIS FIRST
+
+The same session as the 6:50 pm block below, handing over at about 40% context (hand119). **Nothing is running**: no
+Builder round, no open PR; my last QR `build-from-msa` (run 5) was dispatched at 5:10 am for v12.04 — confirm both apps
+serve v12.04 (`/app/js/version.js` on MSA, `/app/js/qr-version.js` on QR). **`main` is v12.04; next is v12.05.**
+
+**Owner messages since the 6:50 pm block (carry1), and what was done**
+3. "J40. Al Hamdulillah! Good! Build it." → read as the four recommended ticks 1A 2A 3A 4A (recorded under J40's needs);
+   Builder #974, Architect fixes, **released v12.03** (PR #976): the purple "Learn next" line and the list of 4,832
+   dictionary words. Live on MSA and QR at 3:07 am (GitHub's Actions queue delayed it ~30 min). J40 status `report`.
+4. Three screenshots of the Word card on 14:42:11: "Make text bigger … place the text as a button to popup as baloon …
+   legend … this is unusual. Fix." → **MSA J43**, Builder #975 (stacked on J40's branch), Architect fixes, **released
+   v12.04** (PR #977): bigger word-by-word text, the ⓘ Legend balloon on every level, Family's per-meaning control =
+   the main WORD PROGRESS control. J43 status `report`. The J38 small-phone question is closed by this (still one
+   card-scroll at 320×640, recorded).
+
+**Open, with nothing needed from the Owner:** **J41** (Taṣrīf for non-verbs): sources checked (plan line j41p2 in the
+PCF) — next is a DEMO for the Owner: (1) this noun's own number/gender/case, which needs the word-features pull to keep
+QAC's `gen`/`num`/`case` for nouns (it drops them today), and (2) "the forms of this word in the Qur'an" from the
+existing form index. Build nothing past the demo until the Owner answers.
+**Waiting on the Owner:** checks of v12.01–v12.04; QR J01 Bangla check page; J02, J05, J06, J07, J20, J22, J24; J35.
+
+**Lessons from this stretch**
+- **Builder rounds keep finishing in ~10–80 minutes with NO PR and unproven checks.** Every round this session needed the
+  Architect to run the full suite set and add or fix mutations: #966 skipped "update every old suite", #974 shipped an
+  empty `rootknown` mutation and a check that pressed a rootless word, #975 shipped its checks with no mutations.
+- **A contrast check passes for ANY readable colour.** The Learn next line was gold (`.word-card-progress button`
+  out-ranked its class) while its 4.5:1 check passed. Assert the RENDERED colour equals the intended token.
+- **A "does NOT change" check needs a positive control that the action really happened** (a press on a word with no
+  root writes nothing).
+- **`pgrep -f "node serve.js"` matches its own command line** — start the server unconditionally in a fresh container.
+- **GitHub's Actions queue can hold a Pages deploy for 30 minutes**; wait for the live version before saying "live".
+
+## LATEST UPDATE — 19 Oct 2026, 6:50 pm Sydney, session `session_01HkRaQdqcADEjR9dNPv4N5N` (v12.02; J38/J39 and J42 released; J40 waits on the Owner) — superseded by the 20 Oct 5:15 am block above, kept as history
 
 The MSA Master Architect took over at 11:27 am on 19 Oct (PCA told; `p/mmsa.sessionUrl` and `p/qr.sessionUrl` set).
 - **`main` is v12.02. MSA and QR both serve v12.02 live** (checked 19 Oct ~6:32 pm). The next release is **v12.03**.
