@@ -398,6 +398,10 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     // Updated in place 19 Oct 2026 (five-levels change, J38/J39): Verb Conjugation moved from Depth to the TAṢRĪF tab.
     await page.click('#quranWordCardMount [data-word-card-level="tasrif"]');
     await page.waitForSelector('[data-word-card-sec="conj"]', { timeout: 10000 }).catch(() => {});
+    // Updated in place 20 Oct 2026 (PCF MSA J46, tick 2A): a narrow card now OPENS on the āyah word's tense, so the
+    // three tables are one tap away; press "All three" first, as a reader would, then count them as before.
+    await ev(page, () => document.querySelector('[data-word-card-conj-toggle] [data-word-card-conj-view="all"][aria-pressed="false"]')?.click());
+    await page.waitForTimeout(600);
     const v = await ev(page, () => { const s = document.querySelector('[data-word-card-sec="conj"]'); if (!s) return null; const w0 = s.open; s.querySelector("summary").click(); return { was: w0, now: s.open, tables: s.querySelectorAll("[data-word-card-conj-table]").length, rows: s.querySelectorAll("tr").length }; });
     check(`${t}: POSITIVE CONTROL a verb (2:102:35) has a Verb conjugation section that opens`, !!v && v.now !== v.was && v.tables >= 2 && v.rows >= 28, JSON.stringify(v));
     await ev(page, () => document.querySelector("[data-word-card-close]").click());

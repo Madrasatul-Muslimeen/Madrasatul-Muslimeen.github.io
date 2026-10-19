@@ -16,7 +16,8 @@ const MUT = {
   // `rootknown`, which restores that spread and must make the "does NOT mark وَعْدَ known" checks FAIL.
   notab: ["app/js/quran-word-card.js", 'return WORD_CARD_LEVELS.map((id) => {', 'return WORD_CARD_LEVELS.filter((x) => x !== "intermediate").map((id) => {'],
   rootknown: ["app/quranrevival.html", "// PCF J38 (19 Oct 2026): a Root (intermediate), Taṣrīf or Depth mark is a study mark on a ROOT and never makes", 'const rk = claimKeyFor(ROOT_LEVEL, { root }); if (rk && lemmaProgressFor({ tenantId, personId, level: INTERMEDIATE_LEVEL, lemmaId: rk, confirmationRequired }).countsAsKnown) return { ...own, countsAsKnown: true, knownViaLevel: { level: INTERMEDIATE_LEVEL, key: rk } };\n      if (rk && lemmaProgressFor({ tenantId, personId, level: ROOT_LEVEL, lemmaId: rk, confirmationRequired }).countsAsKnown) return { ...own, countsAsKnown: true, knownViaLevel: { level: ROOT_LEVEL, key: rk } };\n      // PCF J38 (19 Oct 2026): a Root (intermediate), Taṣrīf or Depth mark is a study mark on a ROOT and never makes'],
-  nosenses: ["app/js/quran-word-card.js", "${layers.lemma ? wordSensesSection(word, layers, context, text, formatNumber) : \"\"}", ""],
+  // Re-anchored 20 Oct 2026 (PCF MSA J45): the word's meanings are drawn by the purple column of each Family row.
+  nosenses: ["app/js/quran-word-card.js", "      familyRenderingsHtml(g.forms, context, text, formatNumber) +\n", ""],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
 let pass = 0, fail = 0;
@@ -35,9 +36,13 @@ const waitMark = (page, s, a, p, want) => page.waitForFunction(([s, a, p, want])
 const panel = (page) => page.evaluate(() => {
   const card = document.querySelector("#quranWordCardMount .quran-word-card");
   const tabs = [...(card?.querySelectorAll('[role="tab"]') ?? [])];
-  const senses = [...(card?.querySelectorAll("[data-word-card-sense]") ?? [])].map((li) => ({
-    label: li.querySelector(".word-card-sense-top b")?.textContent.trim(), count: li.querySelector(".word-card-sense-count")?.textContent.trim(),
-    current: li.classList.contains("word-card-sense-current"), refs: [...li.querySelectorAll(".word-card-sense-ref")].map((b) => b.dataset.wordOccurrenceGoto) }));
+  // Updated in place 20 Oct 2026 (PCF MSA J45): "Meanings of this word" is now this word's block in Family's purple
+  // column (the block holding the line marked "this word"); every place is listed, so a sense's refs are all of them,
+  // and the place-less "other renderings" line is not a sense.
+  const mine = card?.querySelector("[data-word-card-family-sense].word-card-sense-current")?.closest("[data-word-card-family-word]");
+  const senses = [...(mine?.querySelectorAll("[data-word-card-family-sense]:not(.word-card-family-sense-other)") ?? [])].map((li) => ({
+    label: li.querySelector("b")?.textContent.trim(), count: li.querySelector(".word-card-family-x")?.textContent.trim(),
+    current: li.classList.contains("word-card-sense-current"), refs: [...li.querySelectorAll(".word-card-family-chip")].map((b) => b.dataset.wordOccurrenceGoto) }));
   const groups = [...(card?.querySelectorAll("[data-word-card-meaning-group]") ?? [])].map((g) => ({
     current: g.classList.contains("word-card-meaning-group-current"), words: [...g.querySelectorAll("[data-word-form-toggle]")].map((b) => b.dataset.wordFormToggle) }));
   const tr = tabs.map((t) => t.getBoundingClientRect());
@@ -68,7 +73,8 @@ for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 1280]]) {
   }
   const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
   const fetched = [];
-  page.on("request", (r) => { if (/lemma-senses\.json/.test(r.url())) fetched.push(r.url()); });
+  // Updated in place 20 Oct 2026 (PCF MSA J45): Family's word meanings come from lemma-sense-index.json (every place).
+  page.on("request", (r) => { if (/lemma-sense-index\.json/.test(r.url())) fetched.push(r.url()); });
   await page.waitForTimeout(600);
   check(`${tag} the word-meanings file is NOT fetched at startup`, fetched.length === 0, JSON.stringify(fetched));
   if (!(await page.evaluate(() => (document.getElementById("tabReadBtn")?.getBoundingClientRect().width ?? 0) > 0))) { await page.click("#tabStudyBtn"); await page.waitForTimeout(150); }
@@ -86,7 +92,7 @@ for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 1280]]) {
   check(`${tag} each tab has a spoken name (Root, Family, Taṣrīf, Arabic in Depth)`, lang === "bn" ? p0.tabNames.length === 5 && p0.tabNames.every((n) => n) : JSON.stringify(p0.tabNames.slice(1)) === JSON.stringify(["Root", "Family", "Taṣrīf", "Arabic in Depth"]), JSON.stringify(p0.tabNames));
 
   await page.click('#quranWordCardMount [data-word-card-level="basic"]').catch(() => {});
-  await page.waitForFunction(() => document.querySelectorAll("#quranWordCardMount [data-word-card-sense]").length > 0 && document.querySelectorAll("#quranWordCardMount [data-word-card-meaning-group]").length === 3, null, { timeout: 10000 }).catch(() => {});
+  await page.waitForFunction(() => document.querySelectorAll("#quranWordCardMount [data-word-card-family-word]").length > 0 && document.querySelectorAll("#quranWordCardMount [data-word-card-meaning-group]").length === 3, null, { timeout: 10000 }).catch(() => {});
   const p1 = await panel(page);
   check(`${tag} the Family tab opens its own panel (the meanings live here now)`, p1.selected === "basic" && p1.panel === "basic", JSON.stringify({ selected: p1.selected, panel: p1.panel }));
   check(`${tag} the word-meanings file is fetched on first use of the tab`, fetched.length === 1, JSON.stringify(fetched));
@@ -106,7 +112,7 @@ for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 1280]]) {
 
   if (lang === "en" && width === 390) {
     // The way-back law: a place opens its āyah, and "Back to Word Card" returns to this tab.
-    await page.click('#quranWordCardMount .word-card-sense-ref[data-word-occurrence-goto="40:28:31"]');
+    await page.click('#quranWordCardMount .word-card-family-chip[data-word-occurrence-goto="40:28:31"]');
     await page.waitForFunction(() => document.querySelector("[data-word-card-origin-back]"), null, { timeout: 10000 }).catch(() => {});
     const there = await page.evaluate(() => ({ surah: document.getElementById("surahSelect").value, ayah: document.getElementById("ayahSelect").value, back: !!document.querySelector("[data-word-card-origin-back]") }));
     check(`${tag} tapping 40:28 opens Ghafir 40:28 with "Back to Word Card"`, there.surah === "40" && there.ayah === "28" && there.back, JSON.stringify(there));

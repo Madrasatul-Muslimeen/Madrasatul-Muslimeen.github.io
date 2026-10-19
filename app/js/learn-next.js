@@ -5,7 +5,8 @@ const URL_ = "/tools/quran-data-pull/output/learn-next.json";
 let promise = null;
 
 export const LEARN_NEXT_PAGE = 100;
-export const LEARN_NEXT_MILESTONES = [10, 100, 300, 1000];
+// PCF MSA J47 (the Owner, 20 Oct 2026): seven steps, each a tile that opens the words in it.
+export const LEARN_NEXT_MILESTONES = [10, 25, 50, 100, 300, 500, 1000];
 
 export function loadLearnNext() {
   if (!promise) {
@@ -28,9 +29,22 @@ export function milestoneFigures(rows) {
   return LEARN_NEXT_MILESTONES.filter((n) => rows?.[n - 1]).map((n) => ({ n, percent: rows[n - 1].p }));
 }
 
-/** The rows to draw: known ones dropped when `hideKnown`, then the first `shown`. */
-export function visibleRows(rows, isKnown, { hideKnown = false, shown = LEARN_NEXT_PAGE } = {}) {
-  const list = hideKnown ? rows.filter((row) => !isKnown(row)) : rows;
+/** J47 -- the ranks a step tile opens: 1..n, or only the step's new words (the previous milestone + 1 .. n). */
+export function stepRange(n, onlyNew = false) {
+  const i = LEARN_NEXT_MILESTONES.indexOf(n);
+  if (i < 0) return null;
+  return { from: onlyNew && i > 0 ? LEARN_NEXT_MILESTONES[i - 1] + 1 : 1, to: n };
+}
+
+/** J47 -- one word's own share of the Qur'an's words, in percent (what learning THIS word adds). */
+export function wordShare(row, total) {
+  return total > 0 ? (100 * Number(row.n)) / total : 0;
+}
+
+/** The rows to draw: the step's ranks when `range` is given, known ones dropped when `hideKnown`, then the first `shown`. */
+export function visibleRows(rows, isKnown, { hideKnown = false, shown = LEARN_NEXT_PAGE, range = null } = {}) {
+  const ranged = range ? rows.filter((row) => row.r >= range.from && row.r <= range.to) : rows;
+  const list = hideKnown ? ranged.filter((row) => !isKnown(row)) : ranged;
   return { rows: list.slice(0, shown), total: list.length };
 }
 

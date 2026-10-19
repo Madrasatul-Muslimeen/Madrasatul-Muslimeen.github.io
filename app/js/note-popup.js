@@ -114,6 +114,20 @@ function clampGeometry(g, minW = MIN_WIDTH, minH = MIN_HEIGHT) {
   return { width, height, top, left };
 }
 
+// PCF MSA J44 (the Owner, 20 Oct 2026: "I want always the app starts with this page setting (mostly size of the pop
+// up and the wheel) in PC even after a new version"): a window opened with `fill` takes the whole space between the
+// top inset (the menu row) and the bottom inset (the dock), with a small side margin, and opens that way at EVERY
+// start -- never from a size stored by an earlier visit, because browser storage is exactly what a new browser, a
+// cleared profile or a reset office computer loses. A resize still lasts for the rest of the visit.
+function fillGeometry(minW = MIN_WIDTH, minH = MIN_HEIGHT, topInset = 0, bottomInset = 0) {
+  const inset = insetOf(topInset);
+  const floor = window.innerHeight - insetOf(bottomInset) - 8;
+  const side = Math.max(16, Math.round(window.innerWidth * 0.02));
+  const width = Math.max(minW, window.innerWidth - 2 * side);
+  const height = Math.max(minH, floor - inset);
+  return { width, height, top: inset, left: Math.max(0, Math.round((window.innerWidth - width) / 2)) };
+}
+
 function loadGeometry(id, minW = MIN_WIDTH, minH = MIN_HEIGHT, maxW = 920, topInset = 0, bottomInset = 0) {
   const saved = readJson(geometryKeyFor(id));
   if (saved && Number.isFinite(saved.width) && Number.isFinite(saved.height)
@@ -264,8 +278,13 @@ function clearGeometry(el) {
  * owner actually asked to drag by. Omitted, the whole handle drags, exactly
  * as the four stage views already do.
  */
-export function initPopupWindow(el, { id = "note", dragHandleEl, resizeHandleEls = [], maximizeBtn, onMaximizeChange, minWidth = MIN_WIDTH, minHeight = MIN_HEIGHT, dragFromSelector = null, defaultMaxWidth = 920, topInset = 0, bottomInset = 0 } = {}) {
-  let geometry = loadGeometry(id, minWidth, minHeight, defaultMaxWidth, topInset, bottomInset);
+export function initPopupWindow(el, { id = "note", dragHandleEl, resizeHandleEls = [], maximizeBtn, onMaximizeChange, minWidth = MIN_WIDTH, minHeight = MIN_HEIGHT, dragFromSelector = null, defaultMaxWidth = 920, topInset = 0, bottomInset = 0, fill = false } = {}) {
+  // J44: with `fill`, the opening size is fillGeometry() at every start; `touched` is this visit's own drag/resize.
+  let touched = false;
+  const openingGeometry = () => (fill
+    ? fillGeometry(minWidth, minHeight, topInset, bottomInset)
+    : loadGeometry(id, minWidth, minHeight, defaultMaxWidth, topInset, bottomInset));
+  let geometry = openingGeometry();
   let wasPopupViewport = isPopupViewport();
   if (wasPopupViewport) applyGeometry(el, geometry); else clearGeometry(el);
   let maximized = false;
@@ -276,6 +295,7 @@ export function initPopupWindow(el, { id = "note", dragHandleEl, resizeHandleEls
     applyGeometry(el, geometry);
     if (persist) saveGeometry(geometry, id);
   }
+  function remember() { touched = true; saveGeometry(geometry, id); }
 
   dragHandleEl?.addEventListener("pointerdown", (e) => {
     if (maximized) return;
@@ -283,6 +303,7 @@ export function initPopupWindow(el, { id = "note", dragHandleEl, resizeHandleEls
     if (dragFromSelector && !e.target.closest(dragFromSelector)) return; // v08.20: only the named part of the handle drags
     if (e.button !== undefined && e.button !== 0) return; // left-click/primary touch only
     e.preventDefault();
+    touched = true; // J44: the reader's own drag from its first move, so a re-fit never fights it
     const startX = e.clientX, startY = e.clientY, startGeom = { ...geometry };
     dragHandleEl.setPointerCapture(e.pointerId);
     const move = (ev) => {
@@ -291,7 +312,7 @@ export function initPopupWindow(el, { id = "note", dragHandleEl, resizeHandleEls
     const up = () => {
       dragHandleEl.removeEventListener("pointermove", move);
       dragHandleEl.removeEventListener("pointerup", up);
-      saveGeometry(geometry, id);
+      remember();
     };
     dragHandleEl.addEventListener("pointermove", move);
     dragHandleEl.addEventListener("pointerup", up);
@@ -302,6 +323,7 @@ export function initPopupWindow(el, { id = "note", dragHandleEl, resizeHandleEls
     handle.addEventListener("pointerdown", (e) => {
       if (maximized) return;
       e.preventDefault();
+      touched = true; // J44: as above
       const startX = e.clientX, startY = e.clientY, startGeom = { ...geometry };
       handle.setPointerCapture(e.pointerId);
       const move = (ev) => {
@@ -316,7 +338,7 @@ export function initPopupWindow(el, { id = "note", dragHandleEl, resizeHandleEls
       const up = () => {
         handle.removeEventListener("pointermove", move);
         handle.removeEventListener("pointerup", up);
-        saveGeometry(geometry, id);
+        remember();
       };
       handle.addEventListener("pointermove", move);
       handle.addEventListener("pointerup", up);
@@ -325,7 +347,7 @@ export function initPopupWindow(el, { id = "note", dragHandleEl, resizeHandleEls
 
   maximizeBtn?.addEventListener("click", () => {
     if (maximized) {
-      commit(preMaximizeGeometry ?? loadGeometry(id, minWidth, minHeight, defaultMaxWidth, topInset, bottomInset));
+      commit(preMaximizeGeometry ?? openingGeometry(), { persist: !fill });
       maximized = false;
     } else {
       preMaximizeGeometry = { ...geometry };
@@ -353,6 +375,7 @@ export function initPopupWindow(el, { id = "note", dragHandleEl, resizeHandleEls
     }
     if (!nowPopupViewport) return; // nothing to re-clamp -- no inline geometry to have drifted
     if (maximized) { commit({ width: window.innerWidth - 24, height: window.innerHeight - 24, top: 12, left: 12 }, { persist: false }); return; }
+    if (fill && !touched) { commit(fillGeometry(minWidth, minHeight, topInset, bottomInset), { persist: false }); return; }
     commit(clampGeometry(geometry, minWidth, minHeight), { persist: false });
   });
 
@@ -361,7 +384,9 @@ export function initPopupWindow(el, { id = "note", dragHandleEl, resizeHandleEls
   // (dragged or resized) geometry is the reader's own and is never touched.
   return {
     refit() {
-      if (maximized || !isPopupViewport() || readJson(geometryKeyFor(id))) return;
+      if (maximized || !isPopupViewport()) return;
+      if (fill) { if (!touched) commit(fillGeometry(minWidth, minHeight, topInset, bottomInset), { persist: false }); return; }
+      if (readJson(geometryKeyFor(id))) return;
       commit(defaultGeometry(minWidth, minHeight, defaultMaxWidth, topInset, bottomInset), { persist: false });
     },
   };

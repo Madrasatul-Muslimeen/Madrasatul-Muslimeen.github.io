@@ -60,7 +60,9 @@ check("Depth's forms list (moved from Basic in round 3) lists every derived form
 // 30 Sep 2026, Owner: "Move the derivatives above n counts below. (Derivatives are for learning, occurrences are just info)"
 check("Basic Arabic: the derived forms come BEFORE the occurrence counts", () => {
   const html = renderQuranWordCard({ state: selectWordCardLevel(openWordCard(createWordCardState(), id), "basic"), chapter, ayah, word, context: { ...formsContext, rootOccurrenceCount: 381, lemmaOccurrenceCount: 4 } });
-  const forms = html.indexOf('class="word-card-forms"'), rootLine = html.indexOf("381 root-linked"), lemmaLine = html.indexOf("occurrences of this Dictionary Word"), share = html.indexOf("Appears ");
+  // Updated in place (20 Oct 2026, PCF MSA J45): the section's class list gained word-card-family-combined, so it is
+  // found by its stable data-word-card-dcards attribute, which it carried before and still carries.
+  const forms = html.indexOf("data-word-card-dcards"), rootLine = html.indexOf("381 root-linked"), lemmaLine = html.indexOf("occurrences of this Dictionary Word"), share = html.indexOf("Appears ");
   assert.ok(forms > 0 && rootLine > 0 && lemmaLine > 0 && share > 0, JSON.stringify({ forms, rootLine, lemmaLine, share }));
   assert.ok(forms < rootLine && forms < lemmaLine && forms < share, JSON.stringify({ forms, rootLine, lemmaLine, share }));
   assert.ok(html.indexOf("</dl>") < forms, "the forms still come after the word's own facts");
