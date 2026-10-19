@@ -14,16 +14,23 @@ const check = (n, ok, d = "") => {
 };
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH });
 const nfc = (s) => String(s).normalize("NFC");
-const SECTIONS = ["root", "sarf", "conj", "nahw", "choice", "classical"];
+// UPDATED IN PLACE 19 Oct 2026 (five-levels change, J38/J39): the six Depth sections were split across tabs. "Root & Word
+// Family" moved to the ROOT tab (id "intermediate"), "Verb Conjugation" to the TAṢRĪF tab, and Depth now holds Ṣarf,
+// Naḥw, Word Choice, Classical Usage and a new "Dictionary & Forms" section (the old dictionary box and the expandable
+// forms list). Every check below FOLLOWS ITS SECTION to the tab that now holds it; none was dropped.
+const SECTIONS = ["sarf", "nahw", "choice", "classical", "dict"];
 const TITLES = {
-  en: ["Root & Word Family", "Morphology (Ṣarf)", "Verb Conjugation", "Grammar in This Āyah (Naḥw)", "Word Choice & Distinctions", "Classical Arabic Usage"],
-  bn: ["মূল ও শব্দ-পরিবার", "রূপতত্ত্ব (সার্ফ)", "ক্রিয়া-রূপান্তর", "এই আয়াতের ব্যাকরণ (নাহু)", "শব্দচয়ন ও পার্থক্য", "ধ্রুপদী আরবি ব্যবহার"],
+  en: ["Morphology (Ṣarf)", "Grammar in This Āyah (Naḥw)", "Word Choice & Distinctions", "Classical Arabic Usage", "Dictionary & Forms"],
+  bn: ["রূপতত্ত্ব (সার্ফ)", "এই আয়াতের ব্যাকরণ (নাহু)", "শব্দচয়ন ও পার্থক্য", "ধ্রুপদী আরবি ব্যবহার", "অভিধান ও রূপ"],
 };
+const CONJ_TITLE = { en: "Verb Conjugation", bn: "ক্রিয়া-রূপান্তর" };
 const TAGS = { en: { data: "From the data", rule: "Grammar rule", needs: "Needs a source" }, bn: { data: "তথ্য থেকে", rule: "ব্যাকরণের নিয়ম", needs: "উৎস প্রয়োজন" } };
 // Hand-written: tagged lines per section for 2:102:35.
 // Round 5 added the conjugation section (one tagged line). #533: with every section opened, Naḥw
 // carries the six old rows plus three Corpus lines (9) and Classical a fourth tag, the al-Mufradāt entry (4).
-const TAGGED = [3, 7, 1, 9, 3, 4];
+// Per tab now: Root's family block has 3 tagged lines, Taṣrīf's conjugation 1, and Depth's five sections
+// (Ṣarf 7, Naḥw 9, Choice 3, Classical 4, Dictionary & Forms 0) -- the same numbers as before, split by tab.
+const TAGGED = [7, 9, 3, 4, 0];
 const FORM_V = { en: "Ta- in front of Form II", bn: "দ্বিতীয় রূপের আগে তা- যোগ হলে" };
 
 async function openWord(page, surah, ayah, pos) {
@@ -44,9 +51,19 @@ async function openWord(page, surah, ayah, pos) {
 }
 async function depth(page) {
   await page.click('[data-word-card-level="depth"]');
-  await page.waitForSelector("[data-word-card-sec]", { timeout: 8000 }).catch(() => {});
-  await page.waitForFunction(() => document.querySelector('[data-word-card-sec="root"] [data-word-card-fam]'), null, { timeout: 8000 }).catch(() => {});
+  await page.waitForSelector('[data-word-card-panel="depth"] [data-word-card-sec]', { timeout: 8000 }).catch(() => {});
   await page.waitForTimeout(1200);
+}
+// Updated in place 19 Oct 2026: the Root and Taṣrīf tabs hold the sections that left Depth.
+async function rootTab(page) {
+  await page.click('[data-word-card-level="intermediate"]');
+  await page.waitForFunction(() => document.querySelector('[data-word-card-panel="intermediate"] [data-word-card-fam]'), null, { timeout: 8000 }).catch(() => {});
+  await page.waitForTimeout(800);
+}
+async function tasrifTab(page) {
+  await page.click('[data-word-card-level="tasrif"]');
+  await page.waitForSelector('[data-word-card-panel="tasrif"] [data-word-card-sec="conj"]', { timeout: 8000 }).catch(() => {});
+  await page.waitForTimeout(800);
 }
 const secInfo = (page) => page.evaluate(() => [...document.querySelectorAll("[data-word-card-sec]")].map((d) => ({
   key: d.dataset.wordCardSec, open: d.open, title: d.querySelector(".word-card-acc-t").textContent,
@@ -61,7 +78,7 @@ for (const lang of ["en", "bn"]) {
     if (process.argv.includes("--mutate-open")) {
       await ctx.route("**/js/word-card-depth.js", async (route) => {
         const res = await route.fetch();
-        const body = (await res.text()).replace('k === "root"', "true");
+        const body = (await res.text()).replace('k === "sarf"', "true");
         await route.fulfill({ response: res, body });
       });
     }
@@ -71,25 +88,10 @@ for (const lang of ["en", "bn"]) {
     await page.waitForTimeout(800);
     await openWord(page, 2, 102, 35);
     check(`${L}: I9 -- nothing for Depth is fetched before Depth is opened`, !requested.some((u) => /lemma-forms\.json/.test(u)));
-    await depth(page);
-
-    const legend = await page.evaluate(() => [...document.querySelectorAll("[data-word-card-legend] [data-word-card-src]")].map((e) => [e.dataset.wordCardSrc, e.textContent]));
-    // Decision 61 (#533) added the fourth tag, "From a book".
-    check(`${L}: legend names the four sources`, JSON.stringify(legend) === JSON.stringify([["data", TAGS[lang].data], ["rule", TAGS[lang].rule], ["needs", TAGS[lang].needs], ["book", lang === "bn" ? "বই থেকে" : "From a book"]]), JSON.stringify(legend));
-    const secs = await secInfo(page);
-    check(`${L}: six sections in order (round 5 added Verb Conjugation)`, JSON.stringify(secs.map((s) => s.key)) === JSON.stringify(SECTIONS) && JSON.stringify(secs.map((s) => s.title)) === JSON.stringify(TITLES[lang]), JSON.stringify(secs.map((s) => s.title)));
-    check(`${L}: only the first section is open`, JSON.stringify(secs.map((s) => s.open)) === "[true,false,false,false,false,false]", JSON.stringify(secs.map((s) => s.open)));
-    check(`${L}: accordions are light (#f6f8f7)`, secs.every((s) => s.bg === "rgb(246, 248, 247)"), secs[0]?.bg);
-
-    // Open the other four so every line can be read.
-    await page.evaluate(() => document.querySelectorAll("[data-word-card-sec]").forEach((d) => { d.open = true; }));
-    await page.waitForTimeout(200);
-    const secs2 = await secInfo(page);
-    check(`${L}: tagged lines per section ${TAGGED.join("/")}`, JSON.stringify(secs2.map((s) => s.tagged)) === JSON.stringify(TAGGED), JSON.stringify(secs2.map((s) => s.tagged)));
-
-    // Section 1
+    // ROOT tab (was Depth's section 1, "Root & Word Family").
+    await rootTab(page);
     const root = await page.evaluate(() => {
-      const s = document.querySelector('[data-word-card-sec="root"]');
+      const s = document.querySelector('[data-word-card-panel="intermediate"]');
       return {
         fam: s.querySelector("[data-word-card-fam]")?.textContent || "",
         famTag: s.querySelector("[data-word-card-fam]")?.closest("[data-word-card-dline]")?.dataset.wordCardDline,
@@ -99,20 +101,51 @@ for (const lang of ["en", "bn"]) {
         tileBorder: parseFloat(getComputedStyle(s.querySelector(".word-card-fam-root") || s).borderTopWidth),
         meaning: s.querySelector("[data-word-card-root-meaning]")?.textContent || "",
         chips: [...s.querySelectorAll("[data-word-card-goto]")].map((c) => ({ n: c.dataset.wordCardGoto.split(":").pop(), bg: getComputedStyle(c).backgroundColor, cur: c.hasAttribute("data-word-card-chip-current") })),
+        tagged: s.querySelectorAll("[data-word-card-src]").length,
+      };
+    });
+    check(`${L}: Root tab: family line starts with the root and ← the 14 forms, tagged rule`, root.fam.startsWith("ع ل م ←") && root.fam.split("·").length === 14 && root.famTag === "rule", root.fam);
+    check(`${L}: Root tab: family line is in round 3's order (عَلِمَ first, عَلَٰمَٰت last)`, nfc(root.fam).includes(nfc("← عَلِمَ · عَلَّمَ · يَتَعَلَّمُ · عِلْم")) && nfc(root.fam).endsWith(nfc("عَلَٰمَٰت")), root.fam);
+    check(`${L}: Root tab: the root's meaning comes from the Form I verb (Wiktionary)`, root.meaning.length > 2 && /know/i.test(root.meaning), root.meaning);
+    check(`${L}: Root tab: "In this āyah" has 6 chips, word numbers 14 25 35 52 58 74`, JSON.stringify(root.chips.map((c) => c.n)) === '["14","25","35","52","58","74"]', JSON.stringify(root.chips.map((c) => c.n)));
+    check(`${L}: Root tab: only the chip for 35 is gold`, JSON.stringify(root.chips.filter((c) => c.bg === "rgb(255, 244, 214)").map((c) => c.n)) === '["35"]' && root.chips.filter((c) => c.cur).length === 1);
+    check(`${L}: Root tab: the root and its family are big (>= 28px), the root in a bordered tile, the family on its own panel`, root.famPx >= 28 && root.tileBorder >= 1 && root.panelBg !== "rgba(0, 0, 0, 0)" && root.famDisplay === "flex", JSON.stringify({ famPx: root.famPx, tileBorder: root.tileBorder, panelBg: root.panelBg, famDisplay: root.famDisplay }));
+    check(`${L}: Root tab: the family block carries 3 tagged lines`, root.tagged === 3, String(root.tagged));
+
+    // TAṢRĪF tab (was Depth's section 3, "Verb Conjugation"): one section, one tagged line.
+    await tasrifTab(page);
+    const conjSec = await page.evaluate(() => { const d = document.querySelector('[data-word-card-panel="tasrif"] [data-word-card-sec="conj"]'); return d && { title: d.querySelector(".word-card-acc-t").textContent, tagged: d.querySelectorAll("[data-word-card-src]").length }; });
+    check(`${L}: Taṣrīf tab: holds the Verb Conjugation section (${CONJ_TITLE[lang]}) with 1 tagged line`, !!conjSec && conjSec.title === CONJ_TITLE[lang] && conjSec.tagged === 1, JSON.stringify(conjSec));
+
+    await depth(page);
+
+    const legend = await page.evaluate(() => [...document.querySelectorAll("[data-word-card-legend] [data-word-card-src]")].map((e) => [e.dataset.wordCardSrc, e.textContent]));
+    // Decision 61 (#533) added the fourth tag, "From a book".
+    check(`${L}: legend names the four sources`, JSON.stringify(legend) === JSON.stringify([["data", TAGS[lang].data], ["rule", TAGS[lang].rule], ["needs", TAGS[lang].needs], ["book", lang === "bn" ? "বই থেকে" : "From a book"]]), JSON.stringify(legend));
+    const secs = await secInfo(page);
+    check(`${L}: five sections in order (Conjugation moved to Taṣrīf, Root & Word Family to Root; Dictionary & Forms is Depth's fifth)`, JSON.stringify(secs.map((s) => s.key)) === JSON.stringify(SECTIONS) && JSON.stringify(secs.map((s) => s.title)) === JSON.stringify(TITLES[lang]), JSON.stringify(secs.map((s) => s.title)));
+    check(`${L}: only the first section is open`, JSON.stringify(secs.map((s) => s.open)) === "[true,false,false,false,false]", JSON.stringify(secs.map((s) => s.open)));
+    check(`${L}: accordions are light (#f6f8f7)`, secs.every((s) => s.bg === "rgb(246, 248, 247)"), secs[0]?.bg);
+
+    // Open the other four so every line can be read.
+    await page.evaluate(() => document.querySelectorAll("[data-word-card-sec]").forEach((d) => { d.open = true; }));
+    await page.waitForTimeout(200);
+    const secs2 = await secInfo(page);
+    check(`${L}: tagged lines per section ${TAGGED.join("/")}`, JSON.stringify(secs2.map((s) => s.tagged)) === JSON.stringify(TAGGED), JSON.stringify(secs2.map((s) => s.tagged)));
+
+    // Section 1 (the old "Root & Word Family") is the Root tab now, checked above. Its dictionary box, links and the
+    // expandable forms list live on in Depth's "Dictionary & Forms" section, checked here.
+    const dsec = await page.evaluate(() => {
+      const s = document.querySelector('[data-word-card-sec="dict"]');
+      return {
         links: [...s.querySelectorAll("[data-word-card-dict-link]")].map((a) => a.dataset.wordCardDictLink),
         dictionary: !!s.querySelector("[data-word-card-dictionary]"), forms: !!s.querySelector(".word-card-forms"),
         expandable: s.querySelectorAll("[data-word-form-toggle]").length,
       };
     });
-    check(`${L}: family line starts with the root and ← the 14 forms, tagged rule`, root.fam.startsWith("ع ل م ←") && root.fam.split("·").length === 14 && root.famTag === "rule", root.fam);
-    check(`${L}: family line is in round 3's order (عَلِمَ first, عَلَٰمَٰت last)`, nfc(root.fam).includes(nfc("← عَلِمَ · عَلَّمَ · يَتَعَلَّمُ · عِلْم")) && nfc(root.fam).endsWith(nfc("عَلَٰمَٰت")), root.fam);
-    check(`${L}: the root's meaning comes from the Form I verb (Wiktionary)`, root.meaning.length > 2 && /know/i.test(root.meaning), root.meaning);
-    check(`${L}: "In this āyah" has 6 chips, word numbers 14 25 35 52 58 74`, JSON.stringify(root.chips.map((c) => c.n)) === '["14","25","35","52","58","74"]', JSON.stringify(root.chips.map((c) => c.n)));
-    check(`${L}: only the chip for 35 is gold`, JSON.stringify(root.chips.filter((c) => c.bg === "rgb(255, 244, 214)").map((c) => c.n)) === '["35"]' && root.chips.filter((c) => c.cur).length === 1);
     // Updated in place 7 Oct 2026 (Owner: "Place wiktionary above other two dictionaries"): Wiktionary first, then both.
-    check(`${L}: Wiktionary first, then both dictionary links are kept`, JSON.stringify(root.links.slice(0, 3)) === '["wiktionary","corpus","ejtaal"]', JSON.stringify(root.links));
-    check(`${L}: the root and its family are big (>= 28px), the root in a bordered tile, the family on its own panel`, root.famPx >= 28 && root.tileBorder >= 1 && root.panelBg !== "rgba(0, 0, 0, 0)" && root.famDisplay === "flex", JSON.stringify({ famPx: root.famPx, tileBorder: root.tileBorder, panelBg: root.panelBg, famDisplay: root.famDisplay }));
-    check(`${L}: the old dictionary box and the expandable forms list are kept inside`, root.dictionary && root.forms && root.expandable === 14, `${root.dictionary} ${root.forms} ${root.expandable}`);
+    check(`${L}: Wiktionary first, then both dictionary links are kept`, JSON.stringify(dsec.links.slice(0, 3)) === '["wiktionary","corpus","ejtaal"]', JSON.stringify(dsec.links));
+    check(`${L}: the old dictionary box and the expandable forms list are kept inside Dictionary & Forms`, dsec.dictionary && dsec.forms && dsec.expandable === 14, `${dsec.dictionary} ${dsec.forms} ${dsec.expandable}`);
 
     // Section 2
     const sarf = await page.evaluate(() => Object.fromEntries([...document.querySelectorAll("[data-word-card-morph-row]")].map((r) => [r.querySelector("th").textContent, { v: r.querySelector("td").innerText, tag: r.querySelector("[data-word-card-src]").dataset.wordCardSrc }])));
@@ -168,13 +201,14 @@ for (const lang of ["en", "bn"]) {
     await page.click('[data-word-card-move="previous"]');
     await page.waitForTimeout(1200);
     const after = await secInfo(page);
-    check(`${L}: Morphology stays open (and Root stays closed) after › and ‹`, JSON.stringify(after.map((s) => s.open)) === "[false,true,false,false,false,false]", JSON.stringify(after.map((s) => s.open)));
+    check(`${L}: Morphology stays open (and the rest stay closed) after › and ‹`, JSON.stringify(after.map((s) => s.open)) === "[true,false,false,false,false]", JSON.stringify(after.map((s) => s.open)));
 
     // Tap a chip.
-    await page.evaluate(() => { document.querySelector('[data-word-card-sec="root"]').open = true; });
+    // (The chips are on the Root tab now, and tapping one keeps the reader on that tab.)
+    await rootTab(page);
     await page.click('[data-word-card-goto$=":2:102:52"]');
     await page.waitForTimeout(1500);
-    const moved = await page.evaluate(() => ({ id: document.querySelector(".quran-word-card").dataset.occurrenceId, ar: document.querySelector(".word-card-arabic").textContent, depth: !!document.querySelector('[data-word-card-panel="depth"]') }));
+    const moved = await page.evaluate(() => ({ id: document.querySelector(".quran-word-card").dataset.occurrenceId, ar: document.querySelector(".word-card-arabic").textContent, depth: !!document.querySelector('[data-word-card-panel="intermediate"]') }));
     check(`${L}: tapping chip 52 opens 2:102:52 (وَيَتَعَلَّمُونَ)`, /:2:102:52$/.test(moved.id) && nfc(moved.ar).includes(nfc("وَيَتَعَلَّمُونَ")) && moved.depth, JSON.stringify(moved));
     await page.screenshot({ path: `/tmp/depth-${lang}-${width}.png`, fullPage: false });
     await ctx.close();

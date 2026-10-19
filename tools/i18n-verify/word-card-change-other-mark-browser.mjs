@@ -167,15 +167,20 @@ for (const lang of ["en", "bn"]) for (const width of [390, 1280]) {
     await page.click('#quranWordCardMount [data-word-card-level="wbw"]');
     await page.waitForSelector('#quranWordCardMount [data-word-card-panel="wbw"]', { timeout: 8000 });
     await page.waitForTimeout(900);
-    check(`${T} WbW shows Achieved through the root (control)`, (await pressed(page)) === "achieved", await pressed(page));
+    // Updated in place 19 Oct 2026 (five-levels change, J38/J39): a Root mark is a study mark on the ROOT and never makes a
+    // word known, so "known through the root" no longer exists and there is no question to ask. This block now guards the
+    // new rule: after a ROOT Achieved, WbW is NOT Achieved (negative control: the root claim WAS written, below), a WbW
+    // press asks nothing and writes only this place, and it never touches the root claim.
+    const rootWrites = await page.evaluate(() => (window.__stubWriteData || []).filter((w) => w.col === "quranLemmaProgress").map((w) => w.id));
+    check(`${T} (positive control) the Root Achieved WAS written as an intermediate claim on the root`, rootWrites.some((id) => /__intermediate__/.test(id)), JSON.stringify(rootWrites));
+    check(`${T} WbW does NOT show Achieved after a Root Achieved (a Root mark never makes a word known)`, (await pressed(page)) !== "achieved", await pressed(page));
     let n = await mark(page);
     await page.click('#quranWordCardMount [data-word-progress-state="learning"]'); await page.waitForTimeout(1500);
     const a = await ask(page);
-    check(`${T} the question names the root and Learning`, !!a && a.text.includes("بور") && a.text.includes(L[lang].learning), JSON.stringify(a));
-    await answer(page, "change");
+    check(`${T} pressing Learning on WbW asks no question (there is no other mark to change)`, a === null, JSON.stringify(a));
     const w = await writesSince(page, n);
     const lw = lemmaWrites(w);
-    check(`${T} Change it writes the root claim (level intermediate) as learning`, lw.length >= 1 && lw.some((x) => /__intermediate__/.test(x.id) && x.state === "learning"), JSON.stringify(lw));
+    check(`${T} ...it writes only this place and no root claim`, w.some((x) => x.col === "quranWordProgress") && !lw.some((x) => /__intermediate__/.test(x.id)), JSON.stringify(w));
     check(`${T} the card then shows Learning, no Achieved`, (await pressed(page)) === "learning", await pressed(page));
     // The Intermediate tab's own place mark at 14:28:12 (an occurrence-level state) is a different mark and stays; only
     // the root claim, which is what spread Achieved to other words, is lowered.

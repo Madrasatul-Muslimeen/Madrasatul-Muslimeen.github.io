@@ -10,7 +10,12 @@ let pass = 0, fail = 0;
 const check = (n, ok, d = "") => ok ? (pass++, console.log(`  PASS  ${n}`)) : (fail++, console.log(`  FAIL  ${n} ${d}`));
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH });
 const nfc = (s) => String(s).normalize("NFC");
-const EXPECT = ["عَلِمَ", "عَلَّمَ", "يَتَعَلَّمُ", "عِلْم", "عَٰلِم", "مَّعْلُوم", "مَّعْلُومَٰت", "مُعَلَّم", "عَلِيم", "عَلَّٰم", "أَعْلَم", "عَٰلَمِين", "أَعْلَٰم", "عَلَٰمَٰت"].map(nfc);
+// UPDATED IN PLACE 19 Oct 2026 (five-levels change, J38/J39): this tab is FAMILY now (stored id "basic"). Its 14 derived
+// forms are no longer one flat list in shape order but ONE CARD PER MEANING GROUP (this word's group first, then by the
+// group's total, forms by count inside it), so the exact order below is the Family order for the root ع ل م: five
+// groups of 1, 8, 1, 2 and 2 cards (sizes asserted below). Hand-written from the first Family render and checked
+// against the packaged counts (يَتَعَلَّمُ 2×; then عَلِمَ 382× leading the 8-card group).
+const EXPECT = ["يَتَعَلَّمُ", "عَلِمَ", "عِلْم", "عَٰلِم", "مَّعْلُوم", "مَّعْلُومَٰت", "عَلِيم", "عَلَّٰم", "أَعْلَم", "عَٰلَمِين", "عَلَّمَ", "مُعَلَّم", "أَعْلَٰم", "عَلَٰمَٰت"].map(nfc);
 
 async function openWord(page, surah, ayah, pos) {
   const reachable = await page.evaluate(() => { const b = document.getElementById("tabReadBtn"); return !!b && b.getBoundingClientRect().width > 0; });
@@ -66,23 +71,29 @@ for (const lang of ["en", "bn"]) {
     }));
     check(`${L}: 14 cards`, cards.length === 14, String(cards.length));
     check(`${L}: the 14 cards in the exact order`, JSON.stringify(cards.map((c) => nfc(c.ar))) === JSON.stringify(EXPECT), cards.map((c) => c.ar).join(" "));
-    check(`${L}: group tag on card 4 (Verbal noun)`, cards[3]?.group === (lang === "bn" ? "ক্রিয়াবাচক বিশেষ্য" : "Verbal noun"), cards[3]?.group);
-    check(`${L}: group tag on card 5 (The one who does it)`, cards[4]?.group === (lang === "bn" ? "কর্তাবাচক" : "The one who does it"), cards[4]?.group);
-    check(`${L}: group tag on card 11 (Comparative)`, cards[10]?.group === (lang === "bn" ? "তুলনাবাচক" : "Comparative"), cards[10]?.group);
-    check(`${L}: card 3 verb label carries the Form number`, cards[2]?.pos.includes(lang === "bn" ? "৫" : "V"), cards[2]?.pos);
+    // (Indexes below follow the Family order in EXPECT: 0 يَتَعَلَّمُ, 1 عَلِمَ, 2 عِلْم, 3 عَٰلِم, 8 أَعْلَم.)
+    check(`${L}: group tag on the عِلْم card (Verbal noun)`, cards[2]?.group === (lang === "bn" ? "ক্রিয়াবাচক বিশেষ্য" : "Verbal noun"), cards[2]?.group);
+    check(`${L}: group tag on the عَٰلِم card (The one who does it)`, cards[3]?.group === (lang === "bn" ? "কর্তাবাচক" : "The one who does it"), cards[3]?.group);
+    check(`${L}: group tag on the أَعْلَم card (Comparative)`, cards[8]?.group === (lang === "bn" ? "তুলনাবাচক" : "Comparative"), cards[8]?.group);
+    check(`${L}: the current verb card (يَتَعَلَّمُ) label carries the Form number`, cards[0]?.pos.includes(lang === "bn" ? "৫" : "V"), cards[0]?.pos);
     check(`${L}: counts use the reader's digits and word`, lang === "bn" ? /বার$/.test(cards[3]?.count) && /[০-৯]/.test(cards[3]?.count) : /^\d+×$/.test(cards[3]?.count), cards[3]?.count);
     const gold = cards.map((c, i) => c.bg === "rgb(255, 244, 214)" ? i : -1).filter((i) => i >= 0);
-    check(`${L}: card 3 is the only gold card (computed background)`, JSON.stringify(gold) === "[2]", JSON.stringify(gold));
-    check(`${L}: only card 3 carries the current marker`, cards.filter((c) => c.cur).length === 1 && cards[2]?.cur);
-    const perRow = new Set(cards.slice(0, 14).map((c) => c.top));
-    const first = cards.filter((c) => c.top === cards[0].top);
+    check(`${L}: the current word's card is the only gold card (computed background)`, JSON.stringify(gold) === "[0]", JSON.stringify(gold));
+    check(`${L}: only that card carries the current marker`, cards.filter((c) => c.cur).length === 1 && cards[0]?.cur);
+    const sizes = await page.evaluate(() => [...document.querySelectorAll("[data-word-card-meaning-group]")].map((g) => g.querySelectorAll("[data-word-card-dcard]").length));
+    check(`${L}: cards sit in five meaning groups of 1, 8, 1, 2 and 2`, JSON.stringify(sizes) === "[1,8,1,2,2]", JSON.stringify(sizes));
+    // Cards per row are measured inside the 8-card group (indexes 1..8), the only one that fills a row.
+    const big = cards.slice(1, 9);
+    const perRow = new Set(big.map((c) => c.top));
+    const first = big.filter((c) => c.top === big[0].top);
     const want = width >= 1000 ? 7 : 3;
-    check(`${L}: ${want} cards per row`, first.length === want, `${first.length} rows=${perRow.size}`);
-    check(`${L}: the first card is the rightmost in its row`, first.every((c) => c.x <= cards[0].x + 0.5));
+    check(`${L}: ${want} cards per row (in the 8-card group)`, first.length === want, `${first.length} rows=${perRow.size}`);
+    check(`${L}: the first card is the rightmost in its row`, first.every((c) => c.x <= big[0].x + 0.5));
     check(`${L}: no card text is cut`, cards.every((c) => c.uncut && c.cardUncut), JSON.stringify(cards.filter((c) => !c.uncut || !c.cardUncut).map((c) => c.ar)));
     check(`${L}: no sideways scroll`, await page.evaluate(() => { const c = document.querySelector(".quran-word-card"); return c.scrollWidth <= c.clientWidth + 1 && document.documentElement.scrollWidth <= window.innerWidth + 1; }));
-    const head = await page.evaluate(() => ({ h: document.querySelector("[data-word-card-dcards] h4").textContent, s: document.querySelector(".word-card-forms-summary").textContent }));
-    check(`${L}: heading`, head.h === (lang === "bn" ? "এই ধাতু থেকে উৎপন্ন রূপসমূহ" : "Derived forms of this root"), head.h);
+    const head = await page.evaluate(() => ({ h: document.querySelector("[data-word-card-dcards] h4").textContent, s: document.querySelector("[data-word-card-dcards] .word-card-forms-summary").textContent }));
+    // Updated in place 19 Oct 2026 (five-levels change, J38/J39): Family's heading is "The root's meaning groups".
+    check(`${L}: heading`, lang === "bn" ? /[ঀ-৿]/.test(head.h) && head.h.length > 3 : head.h === "The root's meaning groups", head.h);
     check(`${L}: summary says 14 forms`, lang === "bn" ? /^১৪টি রূপ · মোট .+ বার$/.test(head.s) : /^14 forms · \d+ times in all$/.test(head.s), head.s);
     check(`${L}: the record buttons and root count still follow the cards`, await page.evaluate(() => { const p = document.querySelector('[data-word-card-panel="basic"]'); const d = p.querySelector("[data-word-card-dcards]"); return !!d.nextElementSibling; }));
     check(`${L}: "lemma" appears nowhere in the visible text`, !/lemma/i.test(await page.evaluate(() => document.querySelector(".quran-word-card").innerText)));
