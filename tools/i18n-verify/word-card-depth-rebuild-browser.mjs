@@ -129,6 +129,9 @@ for (const lang of ["en", "bn"]) {
 
     // Open the other four so every line can be read.
     await page.evaluate(() => document.querySelectorAll("[data-word-card-sec]").forEach((d) => { d.open = true; }));
+    // 19 Oct 2026 (Architect): Classical's fourth tag (the al-Mufradāt entry) arrives after the section opens; a fixed
+    // 200ms lost that race at 3 of 8 viewports. Wait for the STATE (or give up after 8s and let the check report it).
+    await page.waitForFunction((want) => document.querySelectorAll('[data-word-card-sec="classical"] [data-word-card-src]').length >= want, TAGGED[3], { timeout: 8000 }).catch(() => {});
     await page.waitForTimeout(200);
     const secs2 = await secInfo(page);
     check(`${L}: tagged lines per section ${TAGGED.join("/")}`, JSON.stringify(secs2.map((s) => s.tagged)) === JSON.stringify(TAGGED), JSON.stringify(secs2.map((s) => s.tagged)));

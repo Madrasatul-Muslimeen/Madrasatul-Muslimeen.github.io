@@ -114,7 +114,7 @@ for (const lang of ["en", "bn"]) {
     check(`${tag} the box holds a sentence for each level, and no separate percent line`, d.paragraphs >= 3 && d.percentParas === 0 && ["wbw", "basic", "depth"].every((l) => d.levels[l].text), JSON.stringify(d.levels));
     {
       const v = d.levels.depth;
-      check(`${tag} depth: the sentence starts with "${NAMES[lang].depth}" and counts roots (studied 0 of 1,642), not words`, (v.text ?? "").startsWith(NAMES[lang].depth) && /0/.test(ascii(v.text)) && /1642/.test(ascii(v.text)) && !/74122|%/.test(ascii(v.text)), v.text);
+      check(`${tag} depth: the sentence starts with "${NAMES[lang].depth}" and counts roots (studied 0 of 1,642), not words`, (v.text ?? "").startsWith(NAMES[lang].depth) && /\b0\b/.test(ascii(v.text).replace(/,/g, "")) && /\b1642\b/.test(ascii(v.text).replace(/,/g, "")) && !/74122|%/.test(ascii(v.text).replace(/,/g, "")), v.text); // 19 Oct 2026 (Architect): the number is printed grouped ("1,642"), so digit groups are joined before matching
       check(`${tag} depth: no percentage circle and no gold disc (a root count has no word percentage)`, !v.circle && !v.discBg, JSON.stringify(v));
     }
     for (const l of ["wbw", "basic"]) {
