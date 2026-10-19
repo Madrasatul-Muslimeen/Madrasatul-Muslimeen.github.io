@@ -28,7 +28,8 @@
     "zab": "firebase emulators:exec --only firestore --project demo-mmsa-zab --config zab.firebase.json \"node --test zab.rules.test.mjs\"",
     "ayah-keys": "firebase emulators:exec --only firestore --project demo-mmsa-ayah-keys --config ayah-keys.firebase.json \"node --test ayah-keys.rules.test.mjs\"",
     "roster-access": "firebase emulators:exec --only firestore --project demo-quranrevival-roster-access --config roster-access.firebase.json \"node --test roster-access.rules.test.mjs\"",
-    "tasrif-level": "firebase emulators:exec --only firestore --project demo-quranrevival-tasrif-level --config tasrif-level.firebase.json \"node --test tasrif-level.rules.test.mjs\""
+    "tasrif-level": "firebase emulators:exec --only firestore --project demo-quranrevival-tasrif-level --config tasrif-level.firebase.json \"node --test tasrif-level.rules.test.mjs\"",
+    "vocab-review": "firebase emulators:exec --only firestore --project demo-mmsa-vocab-review --config vocab-review.firebase.json \"node --test vocab-review.rules.test.mjs\""
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "5.0.2",
