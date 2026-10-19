@@ -85,7 +85,8 @@ for (const lang of ["en", "bn"].filter((l) => !only("lang") || only("lang") === 
       await ctx.route(`**/${m[0] === "quranrevival.html" ? "app/quranrevival.html" : `js/${m[0]}`}*`, async (route) => {
         const res = await route.fetch();
         let body = await res.text();
-        if (!body.includes(m[1])) console.log(`    [mutation ${MUTATE}: anchor NOT FOUND in ${m[0]}]`);
+        // Architect review (20 Oct 2026): a missing anchor STOPS the run -- a mutation that changed nothing would read as a pass.
+        if (!body.includes(m[1])) throw new Error(`mutation ${MUTATE}: anchor NOT FOUND in ${m[0]}`);
         body = body.split(m[1]).join(m[2]);
         await route.fulfill({ response: res, body });
       });
@@ -225,4 +226,5 @@ for (const lang of ["en", "bn"].filter((l) => !only("lang") || only("lang") === 
 }
 await browser.close();
 console.log(`\n==== Word card Taṣrīf for nouns${MUTATE ? ` [MUTATION ${MUTATE}]` : ""}: ${pass} passed, ${fail} failed ====`);
-process.exit(MUTATE ? 0 : fail ? 1 : 0);
+// Architect review: a mutation run exits 1 when it is caught, like every other suite here.
+process.exit(fail ? 1 : 0);
