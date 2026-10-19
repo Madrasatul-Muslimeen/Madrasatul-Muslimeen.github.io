@@ -145,6 +145,21 @@ Read this first, every session. It is the standing brief.
 >   QR is the build once QR's Pages source is "GitHub Actions" and its `build-from-msa` workflow has run. Way back:
 >   QR Settings → Pages → "Deploy from a branch".
 
+> ## ⇢ MODULE LEADS (the Owner's PCF General rule `lead120`, 19 Oct 2026) — READ IF YOU ARE A LEAD, OR BUILD FOR ONE
+>
+> When the Owner starts work on a module (Hadith, Health, Seerah…), the PCA opens a **Module Lead** session for it,
+> "MSA · <Module> Lead".
+> - **Planning INSIDE a module** (its contents, lessons, order, features) is the Lead's, with the Owner. **Planning ACROSS
+>   modules** (which modules, their order, shared parts, releases, QR and other apps) stays with the MSA Architect.
+> - **A Lead works only on its module's own files, on its own branch.** It never changes a shared part (sign-in, Notes /
+>   Mapping My Journey, Records, Bookmarks, `quranrevival.html`'s shared code, `bn.js` beyond its module's strings,
+>   `sw.js`, `app/apps/*.json`, the protected paths above): it asks the MSA Architect.
+> - It records its jobs in the PMS under MSA, marked with the module name, and **hands finished parts to the MSA
+>   Architect**, who reviews by measurement, merges, releases ONE version and rebuilds QR. A Lead never merges, never
+>   allocates a version.
+> - Leads have no keep-alive; a Lead idle 3 days is closed by the PCA after a clean handover (hand119). cost86, rec118,
+>   carry1 and hand119 apply to Leads too. A Builder round started by a Lead follows the Builder's contract below.
+
 > ## ⇢ HADITH STUDY is being built on `feature/hadith-study` — READ IF YOU TOUCH HADITH
 >
 > **This branch's final application version is `v08.29`, and it is now MERGED TO `main`.** The
