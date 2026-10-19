@@ -1,7 +1,11 @@
 // PCF MSA J38 + J39 (19 Oct 2026) -- the Word card's FIVE tabs, part 1 (tabs and content):
 // docs/reference/2026-10-19-word-card-five-levels-build-spec.md sections 1, 2, 4 and 6.
 // Example word: وَعَدَكُمْ, Ibrāhīm 14:22 word 8, root و ع د. Run from the repository root with serve.js on :8080.
-// Counting (spec section 3) and Family's per-group marks are PART 2 and are not asserted here.
+// PART 2 (issue #966) adds counting (spec section 3), Family's per-group marks and the OPEN Taṣrīf gate.
+// UPDATED IN PLACE (19 Oct 2026, part 2): the Owner published the Rules and the Architect opened the Taṣrīf gate, so
+// the part-1 checks "the block is CLOSED by the gate" and "writes nothing while gated" now describe the CLOSED case,
+// which is kept as the mutation `gateclosed` (run it: it must PASS the closed assertions and write nothing). In the
+// default (open) run the same slots assert the block writes level `tasrif` keyed by the root.
 // Mutations (--mutate=NAME) must each FAIL:
 //   notasrif    the Taṣrīf tab is not drawn                           -> order/fit/Taṣrīf checks fail
 //   sub600      the small line shows below 600px                     -> the hidden-below-600 check fails
@@ -11,7 +15,12 @@
 //   nodoes      the purple "what it does" lines are not drawn         -> the 3A check fails
 //   nocando     the can-do box is not drawn                           -> the purple-parts check fails
 //   lowcontrast the light-look purple ink is washed out               -> the contrast check fails
-//   gateopen    the Taṣrīf readiness gate is opened                   -> "Taṣrīf writes nothing while gated" fails
+//   gateclosed  the Taṣrīf readiness gate is CLOSED -> runs the closed-case assertions (block closed, nothing written); the open-case ones are skipped
+//   tasnowrite  the Taṣrīf press writes nothing even though the gate is open -> "Taṣrīf writes level tasrif" fails
+//   rootknown   a Root mark makes the word known again (the old branch)   -> "never marks a word known" fails
+//   rootcounts  Root/Taṣrīf/Depth move a word total again                 -> "never writes a word total" fails
+//   grouplemma  a Family group control marks the CURRENT word's group     -> "writes only that group's key" fails
+//   noroots     the totals box prints word sentences for root levels      -> "studied N of 1,642 roots" fails
 //   noorder     the order note is not drawn                           -> the order-note check fails
 import { chromium, newContext, openPage } from "./harness.mjs";
 import fs from "fs";
@@ -26,7 +35,12 @@ const MUT = {
   nodoes: ["app/js/quran-word-card.js", "(does && !sameWords ?", "(false ?"],
   nocando: ["app/js/quran-word-card.js", 'return `<p class="word-card-cando"', 'return "" && `<p class="word-card-cando"'],
   lowcontrast: ["app/quranrevival.html", '[data-card-look="light"] .quran-word-card { --wc-purple-bg: #f1e9fb; --wc-purple-ink: #4b2a85;', '[data-card-look="light"] .quran-word-card { --wc-purple-bg: #f1e9fb; --wc-purple-ink: #c9b8ee;'],
-  gateopen: ["app/js/study-tasrif-level-readiness.js", "ready: false,\n  decision: null,", 'ready: true,\n  decision: { by: "master-architect", on: "2026-10-19", reference: "mutation" },'],
+  gateclosed: ["app/js/study-tasrif-level-readiness.js", "ready: true,\n  decision: Object.freeze({", "ready: false,\n  decision: Object.freeze({"],
+  tasnowrite: ["app/quranrevival.html", 'if (level === "tasrif" && !isTasrifLevelPersistenceReady()) return; // gated: nothing is ever written', 'if (level === "tasrif") return; // gated: nothing is ever written'],
+  rootknown: ["app/quranrevival.html", "// PCF J38 (19 Oct 2026): a Root (intermediate), Taṣrīf or Depth mark is a study mark on a ROOT and never makes", 'const rk = claimKeyFor(ROOT_LEVEL, { root }); if (rk && lemmaProgressFor({ tenantId, personId, level: INTERMEDIATE_LEVEL, lemmaId: rk, confirmationRequired }).countsAsKnown) return { ...own, countsAsKnown: true, knownViaLevel: { level: INTERMEDIATE_LEVEL, key: rk } };\n      if (rk && lemmaProgressFor({ tenantId, personId, level: ROOT_LEVEL, lemmaId: rk, confirmationRequired }).countsAsKnown) return { ...own, countsAsKnown: true, knownViaLevel: { level: ROOT_LEVEL, key: rk } };\n      // PCF J38 (19 Oct 2026): a Root (intermediate), Taṣrīf or Depth mark is a study mark on a ROOT and never makes'],
+  rootcounts: ["app/quranrevival.html", 'function levelCountsWords(level) { return level === "wbw" || level === "basic"; }', 'function levelCountsWords(level) { return true; }'],
+  grouplemma: ["app/js/quran-word-card.js", "familyGroupMarkHtml(context.familyGroups, head.lemma,", "familyGroupMarkHtml(context.familyGroups, layers.lemma,"],
+  noroots: ["app/js/quran-word-card.js", 'if (unit === "roots") {', 'if (false) {'],
   noorder: ["app/js/quran-word-card.js", "return note ? `<p class=\"word-card-ordernote\"", "return false ? `<p class=\"word-card-ordernote\""],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
@@ -38,6 +52,11 @@ const EN_TABS = ["WbW", "Root", "Family", "Taṣrīf", "Depth"];
 const BN_TABS = ["শব্দে শব্দে", "মূল", "পরিবার", "তাসরীফ", "গভীরতা"];
 const EN_SUB = ["the word here", "where it comes from", "its words", "how it changes", "in this āyah"];
 const BN_SUB = ["এখানে শব্দটি", "কোথা থেকে এসেছে", "এর শব্দগুলো", "কীভাবে বদলায়", "এই আয়াতে"];
+const CLOSED = MUTATE === "gateclosed";
+const wlog = (page, n = 0) => page.evaluate((n) => (window.__stubWriteData || []).slice(n).map((w) => `${w.col}:${w.id}`), n);
+const wcount = (page) => page.evaluate(() => (window.__stubWriteData || []).length);
+const press = (page, sel, i = 0) => page.evaluate(([sel, i]) => document.querySelectorAll("#quranWordCardMount " + sel)[i]?.click(), [sel, i]);
+const wholeLines = (page) => page.evaluate(() => Object.fromEntries([...document.querySelectorAll("#quranWordCardMount [data-whole-quran-level]")].map((e) => [e.dataset.wholeQuranLevel, e.textContent.trim().replace(/\s+/g, " ")])));
 const LEVELS = ["wbw", "intermediate", "basic", "tasrif", "depth"];
 
 async function goTo(page, s, a) {
@@ -175,16 +194,29 @@ for (const [lang, width] of [["en", 320], ["en", 390], ["en", 768], ["en", 1280]
   check(`${tag} Taṣrīf: order note, can-do, Verb Conjugation (moved from Depth), open by default`, tas.panel === "tasrif" && !!tas.order && !!tas.cando && tas.conj && tas.openSecs.includes("conj"), JSON.stringify(tas));
   check(`${tag} Taṣrīf 4A: "Who: he · When: past (it is done) · To whom: you all (men) (كُمْ)"`,
     lang === "bn" ? /কে: সে · কখন: অতীত \(কাজটি হয়ে গেছে\) · কাকে: তোমরা \(পুরুষ\)/.test(tas.whowhen ?? "") : /^Who: he · When: past \(it is done\) · To whom: you all \(men\) \(كُمْ\)$/.test(tas.whowhen ?? ""), tas.whowhen ?? "");
-  check(`${tag} Taṣrīf: the progress block is CLOSED by the gate (the Owner's words, no state buttons)`,
-    tas.stateButtons === 0 && (lang === "bn" ? /সেটিংস ধাপ/.test(tas.gated ?? "") : tas.gated === "Saving Taṣrīf marks waits for one settings step by the Owner."), JSON.stringify({ gated: tas.gated, n: tas.stateButtons }));
+  const wantGated = lang === "bn" ? /সেটিংস ধাপ/.test(tas.gated ?? "") : tas.gated === "Saving Taṣrīf marks waits for one settings step by the Owner.";
   check(`${tag} Taṣrīf: reach line is "a study mark on the root, does not add to Words known"`, /study mark|পাঠের চিহ্ন/.test(tas.reach ?? ""), tas.reach ?? "");
-  // Taṣrīf writes nothing while gated: press everything that could be pressed in the block, read the write log.
-  const before = await page.evaluate(() => (window.__stubWriteData || []).length);
-  await page.evaluate(() => document.querySelectorAll('#quranWordCardMount .word-card-side button').forEach((b) => b.click()));
-  await page.waitForTimeout(800);
-  const log = await page.evaluate((n) => (window.__stubWriteData || []).slice(n).map((w) => `${w.col}:${w.id}`), before);
-  const all = await page.evaluate(() => (window.__stubWriteData || []).map((w) => `${w.col}:${w.id}`));
-  check(`${tag} Taṣrīf writes nothing while gated (no level 'tasrif' document anywhere, no write from pressing the block)`, !all.some((s) => /tasrif/.test(s)) && log.length === 0, JSON.stringify({ log, all }));
+  if (CLOSED) {
+    // The CLOSED case (part 1's checks, kept): the Owner's words, no state buttons, and nothing written.
+    check(`${tag} Taṣrīf (gate closed): the progress block is CLOSED (the Owner's words, no state buttons)`, tas.stateButtons === 0 && wantGated, JSON.stringify({ gated: tas.gated, n: tas.stateButtons }));
+    const before = await wcount(page);
+    await page.evaluate(() => document.querySelectorAll('#quranWordCardMount .word-card-side button').forEach((b) => b.click()));
+    await page.waitForTimeout(800);
+    const log = await wlog(page, before);
+    const all = await wlog(page);
+    check(`${tag} Taṣrīf (gate closed) writes nothing (no level 'tasrif' document anywhere, no write from pressing the block)`, !all.some((x) => /tasrif/.test(x)) && log.length === 0, JSON.stringify({ log, all }));
+  } else {
+    check(`${tag} Taṣrīf (gate open): the progress block is OPEN -- four state buttons, no waiting message`, tas.stateButtons === 4 && tas.gated === null, JSON.stringify({ gated: tas.gated, n: tas.stateButtons }));
+    const before = await wcount(page);
+    await press(page, '.word-card-side [data-word-progress-state="achieved"]');
+    await page.waitForTimeout(2500);
+    const log = await wlog(page, before);
+    check(`${tag} Taṣrīf writes level 'tasrif' keyed by the ROOT (occurrence mark + one root-keyed claim)`,
+      log.some((x) => /^quranLemmaProgress:t1__p1__tasrif__وعد$/.test(x)) && log.some((x) => /^quranWordProgress:t1__p1__tasrif__/.test(x)), JSON.stringify(log));
+    check(`${tag} a Taṣrīf mark never writes a word total or a word counter`, !log.some((x) => /^quranWordTotals:|^quranLemmaOccurrenceCounters:/.test(x)), JSON.stringify(log));
+    const lines = await wholeLines(page);
+    check(`${tag} totals box: "Taṣrīf: studied 1 of 1,642 roots"`, lang === "bn" ? /১,৬৪২টি মূলের মধ্যে ১টি/.test(lines.tasrif ?? "") : lines.tasrif === "Taṣrīf: studied 1 of 1,642 roots", JSON.stringify(lines));
+  }
 
   await openTab(page, "depth");
   const dep = await panelInfo(page);
@@ -192,6 +224,47 @@ for (const [lang, width] of [["en", 320], ["en", 390], ["en", 768], ["en", 1280]
     dep.panel === "depth" && !!dep.order && !!dep.cando && JSON.stringify(dep.secs) === '["sarf","nahw","choice","classical","dict"]' && JSON.stringify(dep.openSecs) === '["sarf"]', JSON.stringify(dep));
   check(`${tag} Depth: no Root & Word Family section and no Verb Conjugation`, !dep.secs.includes("root") && !dep.secs.includes("conj") && !dep.conj && !dep.rootFamily, JSON.stringify(dep.secs));
   check(`${tag} Depth: reach line is the study-mark line`, /study mark|পাঠের চিহ্ন/.test(dep.reach ?? ""), dep.reach ?? "");
+
+  // 2b. PART 2 -- counting. A Depth and a Root mark: study marks on the root only.
+  const cb = await wcount(page);
+  await openTab(page, "depth");
+  await press(page, '.word-card-side [data-word-progress-state="achieved"]');
+  await page.waitForTimeout(2500);
+  await openTab(page, "intermediate");
+  await press(page, '.word-card-side [data-word-progress-state="achieved"]');
+  await page.waitForTimeout(2500);
+  const clog = await wlog(page, cb);
+  check(`${tag} Depth and Root marks write their root-keyed claims (level depth / intermediate)`,
+    clog.some((x) => /^quranLemmaProgress:t1__p1__depth__وعد$/.test(x)) && clog.some((x) => /^quranLemmaProgress:t1__p1__intermediate__وعد$/.test(x)), JSON.stringify(clog));
+  check(`${tag} Root and Depth marks never write a word total or a word counter`, !clog.some((x) => /^quranWordTotals:|^quranLemmaOccurrenceCounters:/.test(x)), JSON.stringify(clog));
+  const lines2 = await wholeLines(page);
+  const zeroWords = (v) => /Achieved 0 and 0%|০/.test(v ?? "") || /\b0\b.*0%/.test(v ?? "");
+  check(`${tag} Root, Taṣrīf and Depth lines read "studied N of 1,642 roots" (Root and Depth studied 1); WbW and Family keep word sentences at 0`,
+    ["intermediate", "depth", "tasrif"].every((k) => CLOSED && k === "tasrif" ? true : /1,642|১,৬৪২/.test(lines2[k] ?? "") && !/words|শব্দ/.test(lines2[k] ?? ""))
+      && /(?:studied|পড়া) ?.*|studied/.test(lines2.intermediate ?? "") && (lang === "bn" || (lines2.intermediate === "Root: studied 1 of 1,642 roots" && lines2.depth === "Depth: studied 1 of 1,642 roots"))
+      && /77,429|৭৭,৪২৯/.test(lines2.wbw ?? "") && /74,122|৭৪,১২২/.test(lines2.basic ?? "") && zeroWords(lines2.wbw) && zeroWords(lines2.basic), JSON.stringify(lines2));
+  await openTab(page, "wbw");
+  const wbwAfter = await page.evaluate(() => ({ achieved: document.querySelector('#quranWordCardMount [data-word-progress-state="achieved"]')?.getAttribute("aria-pressed"), through: !!document.querySelector("#quranWordCardMount [data-word-known-through]"), elsewhere: !!document.querySelector("#quranWordCardMount [data-word-progress-known-elsewhere]") }));
+  check(`${tag} after Root, Taṣrīf and Depth marks on this root the word is NOT known: WbW shows no Achieved, no "known through" line`, wbwAfter.achieved === "false" && !wbwAfter.through && !wbwAfter.elsewhere, JSON.stringify(wbwAfter));
+  const rootMarkedFam = await (async () => { await openTab(page, "basic"); return page.evaluate(() => !!document.querySelector("#quranWordCardMount [data-known-through-level]")); })();
+  check(`${tag} no "Known through the root" line anywhere (Family shows none for a root mark)`, !rootMarkedFam);
+
+  // 2c. J39 5A -- a Family mark per meaning group, writing only that group's key.
+  await page.waitForFunction(() => document.querySelectorAll("#quranWordCardMount [data-family-group-mark]").length === 3, null, { timeout: 10000 }).catch(() => {});
+  const gm = await page.evaluate(() => [...document.querySelectorAll("#quranWordCardMount [data-word-card-meaning-group]")].map((g) => ({ n: g.querySelectorAll("[data-family-group-state]").length, reach: g.querySelector("[data-family-group-reach]")?.textContent.trim() ?? null, lemma: g.querySelector("[data-family-group-state]")?.dataset.familyGroupLemma })));
+  check(`${tag} Family: every meaning-group card has Learning / Practising / Achieved and a "→ Words known +N" line`,
+    gm.length === 3 && gm.every((g) => g.n === 3 && /^(→ Words known \+|→ জানা শব্দ \+)/.test(g.reach ?? "")), JSON.stringify(gm));
+  const gb = await wcount(page);
+  await press(page, '[data-family-group-state="achieved"]', 1);
+  await page.waitForTimeout(2800);
+  const glog = await wlog(page, gb);
+  const lemmaKeys = glog.filter((x) => /^quranLemmaProgress:t1__p1__basic__/.test(x));
+  const secondGroupKey = "وعد:3";
+  check(`${tag} a Family group mark writes ONLY that group's key (${secondGroupKey}), at level basic`, lemmaKeys.length === 1 && lemmaKeys[0] === `quranLemmaProgress:t1__p1__basic__${secondGroupKey}` && !glog.some((x) => /^quranWordProgress:/.test(x)), JSON.stringify(glog));
+  const lines3 = await wholeLines(page);
+  const gReach = Number((gm[1].reach ?? "").replace(/\D/g, "")) || null;
+  check(`${tag} the Family total moves by that group's own count (${gm[1].reach}) and WbW stays 0`,
+    lang === "bn" ? /১৭|17/.test(lines3.basic ?? "") : lines3.basic?.startsWith("Family: Achieved 17 and") && gm[1].reach === "→ Words known +17", JSON.stringify({ lines3, gm }));
 
   // 3. purple parts, contrast on both looks (the app has two card looks: light and night)
   await openTab(page, "tasrif");
