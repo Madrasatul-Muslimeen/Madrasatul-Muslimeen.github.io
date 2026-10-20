@@ -18724,7 +18724,9 @@
         vocab.busy = true; renderVocab();
         const writes = practiceWrites(rows, vocab.answers, vocabStateOf);
         const moved = await vocabWrite(writes);
-        vocab = { ...vocab, busy: false, mode: "wordscore", tally: tl, moved }; renderVocab(); return;
+        // a one-word round scores its three QUESTIONS (the word itself moves only if all three were right)
+        const byQ = { right: vocab.answers.filter((a) => a.right).length, total: vocab.answers.length };
+        vocab = { ...vocab, busy: false, mode: "wordscore", tally: byQ, moved }; renderVocab(); return;
       }
       if (vocab.test) {
         const passed = testPassed(vocab.answers);
@@ -18766,7 +18768,9 @@
       const head = (title, back = "close") => `<div class="vo-head"><button type="button" class="vo-back" data-vo="${back}">← ${escapeHtml(t("Back"))}</button><h2 class="vo-title">${escapeHtml(title)}</h2></div>`;
       const stepName = v.step ? (v.onlyNew ? t("words {a}–{b}", { a: g(stepRange(v.step, true).from), b: g(v.step) }) : t("the first {n} words", { n: g(v.step) })) : "";
       let body = "";
-      if (v.mode === "menu") {
+      if ((v.mode === "play" || v.mode === "word") && !v.questions[v.i]) {
+        el.innerHTML = head(t("Vocabulary")) + `<div class="vo-body"><p class="vo-note">${escapeHtml(t("Saving…"))}</p></div>`;
+      } else if (v.mode === "menu") {
         const kinds = PRACTICE_KINDS.map((k) => `<button type="button" class="vo-kind" data-vo="start" data-kind="${k}">${escapeHtml(t(VOCAB_KIND_NAME[k]))}</button>`).join("");
         body = `<p class="vo-note">${escapeHtml(t("Practise {what}", { what: stepName }))}</p><div class="vo-kinds">${kinds}</div>
           <button type="button" class="vo-test" data-vo="start" data-kind="test">${escapeHtml(t("Step test"))}</button>
