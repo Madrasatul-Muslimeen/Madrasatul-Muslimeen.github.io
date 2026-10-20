@@ -13,7 +13,7 @@
 //     noask      the passed test never asks                 -> "pass asks"
 //     lowtest    the test passes at 30% (an 80% test then passes) -> "fail (<90%) writes nothing"
 //     nobackcard the one-word round closes the card         -> "Back returns to the same card"
-//     nocardsync Back does not redraw the card             -> "the Word card shows the mark the round wrote"
+//     nocardsync Back does not redraw the card             -> "the SAME Word card shows Achieved after a passed step test"
 //     bnleak     one Bangla string is missing               -> "Bangla has no English"
 //     palegreen  the J47 green is washed out                -> "known = J47 green"
 //     lowpurple  the purple control is not its token        -> "purple control EQUALS its token"
@@ -119,7 +119,7 @@ async function answerChoice(page, lang, right) {
   let row = null;
   if (info.kind === "meaning") row = rowOfAr(info.ar);
   else if (info.kind === "arabic") row = rows.find((r) => meanOf(r, lang) === info.mean);
-  else if (info.kind === "ayah") { const t = info.occ.split(":").map(Number); row = rows.find((r) => r.o === t[0] * 1000000 + t[1] * 1000 + t[2]); }
+  else if (info.kind === "ayah") { if (!info.occ) throw new Error("no ringed word carries its place (data-vo-target): " + JSON.stringify(info)); const t = info.occ.split(":").map(Number); row = rows.find((r) => r.o === t[0] * 1000000 + t[1] * 1000 + t[2]); }
   const want = info.kind === "arabic" ? row.l : meanOf(row, lang);
   const idx = info.opts.findIndex((o) => nfc(o) === nfc(want));
   const pick = right ? idx : info.opts.findIndex((_, i) => i !== idx);
@@ -299,10 +299,25 @@ for (const [lang, width, height] of [["en", 390, 844], ["en", 320, 640], ["en", 
   await sleep(page, 400);
   const back = await page.evaluate(() => ({ hidden: document.getElementById("vocabSheet").hidden, card: !!document.querySelector("#quranWordCardMount .quran-word-card"), level: document.querySelector("#quranWordCardMount [data-word-card-panel]")?.dataset.wordCardPanel, occ: document.querySelector("#quranWordCardMount .quran-word-card")?.innerText.includes("مِن") }));
   check(`${tag} Back returns to the same card and level (${level0})`, back.hidden && back.card && back.level === level0, JSON.stringify(back));
-  // Architect review (the brief: "then the Word card for one of them shows" the new mark): ONE mark, so the card the
-  // reader returns to shows the state the round just wrote (3 of 3 right while Not started = Learning), not a stale one.
-  const shown = await page.evaluate(() => document.querySelector('#quranWordCardMount [data-word-progress-state][aria-pressed="true"]')?.dataset.wordProgressState ?? null);
-  check(`${tag} the Word card shows the mark the round wrote (Learning), without a reload`, shown === "learning", String(shown));
+  // Architect review (the brief: "then the Word card for one of them shows Achieved"). The card's state buttons are
+  // PER PLACE and only Achieved crosses places (knownElsewhere), so the path that must agree is: the card open -> its
+  // Learn next line -> First 10 -> Step test passed -> "Yes, mark them" -> back to the SAME card, which now shows Achieved
+  // without a reload (it showed the old mark: the card was never redrawn when the sheet closed).
+  const before = await page.evaluate(() => document.querySelector('#quranWordCardMount [data-word-progress-state][aria-pressed="true"]')?.dataset.wordProgressState ?? null);
+  await page.evaluate(() => document.querySelector("#quranWordCardMount [data-learn-next-open]")?.click());
+  await page.waitForFunction(() => { const s = document.getElementById("learnNextSheet"); return s && !s.hidden && s.querySelectorAll(".ln-row").length > 0; }, null, { timeout: 15000 }).catch(() => {});
+  await page.evaluate(() => document.querySelector('#learnNextSheet [data-ln-tile="10"]')?.click());
+  await sleep(page, 250);
+  await vo2(page, "#learnNextSheet", "[data-ln-vocab=test]");
+  await page.waitForSelector("#vocabSheet .vo-card", { timeout: 10000 }).catch(() => {});
+  for (let i = 0; i < 10; i++) { await answerChoice(page, "en", true); await sleep(page, 150); }
+  await page.waitForSelector("#vocabSheet [data-vo=markyes]", { timeout: 8000 }).catch(() => {});
+  await vo(page, "[data-vo=markyes]");
+  await page.waitForSelector("#vocabSheet .vo-moved", { timeout: 15000 }).catch(() => {});
+  await vo(page, "[data-vo=menu]"); await sleep(page, 200); await vo(page, "[data-vo=close]"); await sleep(page, 1200);
+  await page.evaluate(() => document.querySelector("#learnNextSheet [data-ln-back]")?.click()); await sleep(page, 400);
+  const after = await page.evaluate(() => ({ occ: document.querySelector("#quranWordCardMount .quran-word-card") ? !!document.querySelector("#quranWordCardMount [data-word-progress-state]") : false, state: document.querySelector('#quranWordCardMount [data-word-progress-state][aria-pressed="true"]')?.dataset.wordProgressState ?? null }));
+  check(`${tag} the SAME Word card shows Achieved after a passed step test from its Learn next line, without a reload (was ${before})`, before !== "achieved" && after.occ && after.state === "achieved", JSON.stringify(after));
   await ctx.close();
 }
 
