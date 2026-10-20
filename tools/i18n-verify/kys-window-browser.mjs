@@ -6,6 +6,13 @@
 //   --mutate=no-room    the wheel keeps its old 0..360 box      -> the "numbers inside" checks fail
 //   --mutate=no-float   the card never floats                  -> the move/resize checks fail
 //   --mutate=no-back    leaving for Explore offers no way back  -> the Back chip checks fail
+//   --mutate=stored     the card opens from a stored size again -> the J50 "opens large" checks fail
+//   --mutate=under-zab  the card runs to the screen's bottom   -> "its resize corner free" and the resize check fail
+// UPDATED IN PLACE 20 Oct 2026 (PCF MSA J50, the Owner: "enable the window to appear in this size in PC always"): on a
+// PC the card now opens LARGE at every start (92% wide, at most 1,280px; down to 12px above the Zab bar), never from a
+// size an earlier visit stored, so "opens centred, 832 wide", "its place is remembered" and "opens where it was left"
+// now assert the large opening, that no place is stored, and that an old stored place is ignored. The wheel's own size
+// is still remembered.
 import { chromium, newContext, openPage } from "./harness.mjs";
 import fs from "node:fs";
 
@@ -30,6 +37,8 @@ async function start(lang, width, height, store = null) {
     const swap = (a, b) => { if (!body.includes(a)) throw new Error(`mutation anchor missing: ${a.slice(0, 60)}`); body = body.split(a).join(b); };
     if (MUTATE === "no-room") { swap("names, roomForNumbers: true });", "names });"); swap("centerSub, roomForNumbers: true });", "centerSub });"); }
     else if (MUTATE === "no-float") swap('when: () => window.innerWidth >= 900', "when: () => false");
+    else if (MUTATE === "under-zab") swap("h = Math.max(300, zabTop - 24);", "h = window.innerHeight - 24;");
+    else if (MUTATE === "stored") swap("initial: myStatusWinLarge, fill: true });", "initial: myStatusWinStart(0) });");
     else if (MUTATE === "no-back") swap('      mountBackRow(`← ${t("Back to {page}", { page: t("Know Your Status") })}`, {', "      ({");
     else throw new Error(`unknown mutation ${MUTATE}`);
     await ctx.route("**/app/quranrevival.html*", (r) => r.fulfill({ status: 200, contentType: "text/html; charset=utf-8", body }));
@@ -73,13 +82,20 @@ for (const lang of ["en", "bn"]) {
     const floating = await page.evaluate(() => document.getElementById("myStatusCard").hasAttribute("data-fc-floating"));
     check(`${tag}: the card is a window (it floats)`, floating);
     const r0 = await rectOf(page, "#myStatusCard");
-    check(`${tag}: it opens where it always did (centred, 832 wide)`, !!r0 && Math.abs(r0.w - 832) < 2 && Math.abs(r0.x - 224) < 2, JSON.stringify(r0));
-    await dragBy(page, "#myStatusCard header h2", -150, 40);
-    const r1 = await rectOf(page, "#myStatusCard");
-    check(`${tag}: dragging its title bar moves it`, !!r1 && Math.abs(r1.x - (r0.x - 150)) < 3 && Math.abs(r1.y - (r0.y + 40)) < 3, JSON.stringify(r1));
+    // J50: 1280 x 0.92 = 1,177.6 wide, centred (x 51.2); from y 12 down to 12px above the Zab bar, and its resize corner
+    // is the thing at its own point (the Zab bar covered it when the window ran to the screen's bottom).
+    const zabTop = await page.evaluate(() => { const z = document.getElementById("zabBar"); return z && z.offsetHeight ? z.getBoundingClientRect().top : innerHeight; });
+    const seFree = await page.evaluate(() => { const h = document.querySelector('#myStatusCard .fc-h[data-h="se"]'); const r = h.getBoundingClientRect(); return document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2) === h; });
+    check(`${tag}: it opens LARGE (92% wide, centred; from 12px below the top to 12px above the Zab bar), its resize corner free`, !!r0 && Math.abs(r0.w - 1177.6) < 2 && Math.abs(r0.x - 51.2) < 2 && Math.abs(r0.y - 12) < 2 && Math.abs(r0.y + r0.h - (zabTop - 12)) < 2 && seFree, JSON.stringify({ r0, zabTop, seFree }));
+    // Updated in place (J50): the window now opens large, so it is resized first (its corner is on screen) and then
+    // moved 30px left and 40px down (a 150px move would push the large window off the screen's left edge, which the
+    // window rightly refuses).
     await dragBy(page, '#myStatusCard .fc-h[data-h="se"]', -120, -100);
+    const r1 = await rectOf(page, "#myStatusCard");
+    check(`${tag}: dragging its corner resizes it`, !!r1 && Math.abs(r1.w - (r0.w - 120)) < 4 && Math.abs(r1.h - (r0.h - 100)) < 4, JSON.stringify(r1));
+    await dragBy(page, "#myStatusCard header h2", -30, 40);
     const r2 = await rectOf(page, "#myStatusCard");
-    check(`${tag}: dragging its corner resizes it`, !!r2 && Math.abs(r2.w - (r1.w - 120)) < 4 && Math.abs(r2.h - (r1.h - 100)) < 4, JSON.stringify(r2));
+    check(`${tag}: dragging its title bar moves it`, !!r2 && Math.abs(r2.x - (r1.x - 30)) < 3 && Math.abs(r2.y - (r1.y + 40)) < 3, JSON.stringify(r2));
     // the wheel's own grip
     const w0 = await rectOf(page, "#myStatusOverviewWheel svg");
     await page.evaluate(() => document.querySelector("#myStatusOverviewWheel [data-fc-grip]")?.scrollIntoView({ block: "center" }));
@@ -89,7 +105,7 @@ for (const lang of ["en", "bn"]) {
     const n2 = await numbers(page);
     check(`${tag}: ...and at its new size no number is cut`, n2.outside === 0 && n2.overPills === 0, JSON.stringify(n2));
     const stored = await page.evaluate(() => ({ rect: localStorage.getItem("mm_kys_rect"), wheel: localStorage.getItem("mm_kys_wheel") }));
-    check(`${tag}: its place, size and wheel size are remembered on this device`, !!stored.rect && !!stored.wheel, JSON.stringify(stored));
+    check(`${tag}: J50: the card's place is NOT stored (it opens large every time); the wheel size is remembered`, !stored.rect && !!stored.wheel, JSON.stringify(stored));
     // the Approach card: a window too, with ← Back
     await page.evaluate(() => document.querySelector('#myStatusOverviewWheel .wheel-seg[data-key]')?.dispatchEvent(new MouseEvent("click", { bubbles: true })));
     await page.waitForFunction(() => !document.getElementById("myStatusDetailMount").hidden, null, { timeout: 5000 }).catch(() => {});
@@ -131,7 +147,7 @@ for (const lang of ["en", "bn"]) {
     const { ctx, page } = await start(lang, 1280, 800, { mm_kys_rect: saved });
     await openKys(page);
     const r = await rectOf(page, "#myStatusCard");
-    check(`${tag}: the card opens where it was left`, !!r && Math.abs(r.x - 40) < 2 && Math.abs(r.y - 30) < 2 && Math.abs(r.w - 600) < 2 && Math.abs(r.h - 500) < 2, JSON.stringify(r));
+    check(`${tag}: J50: an old stored place (600x500 at 40,30) is ignored; the card opens large`, !!r && Math.abs(r.w - 1177.6) < 2 && r.h > 700 && Math.abs(r.y - 12) < 2, JSON.stringify(r));
     await ctx.close();
   }
   // ---- phone: full screen, as before ----

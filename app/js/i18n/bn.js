@@ -2456,6 +2456,8 @@ export const BN = {
   "Achieved here is a study mark on the root. It does not add to Words known.": "এখানে অর্জিত হলো মূলের উপর একটি পাঠের চিহ্ন। এতে জানা শব্দ বাড়ে না।",
   "Meanings of {word} itself": "{word}-এর নিজের অর্থসমূহ",
   "The root's meaning groups": "মূলের অর্থের দলগুলো",
+  // PCF MSA J50 -- Know Your Status: the Approach pull-down.
+  "All Approaches (the whole list)": "সব পদ্ধতি (পুরো তালিকা)",
   // PCF MSA J45 -- Family: the two meaning sections as one, side by side.
   "The root's words, by meaning": "মূলের শব্দগুলো, অর্থ অনুযায়ী",
   "Each row: the meaning group's words and your mark; in purple, how the Qur'an's word-by-word translation renders each word, at every place.": "প্রতিটি সারি: অর্থের দলের শব্দগুলো ও আপনার চিহ্ন; বেগুনিতে, কুরআনের শব্দে শব্দে অনুবাদ প্রতিটি শব্দকে প্রতিটি স্থানে কীভাবে অনুবাদ করে।",

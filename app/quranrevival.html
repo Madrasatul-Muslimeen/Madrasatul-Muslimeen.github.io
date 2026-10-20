@@ -1157,6 +1157,19 @@
   .explore-approach-row { display: flex; justify-content: center; min-width: 0; margin: 4px 0 2px; }
   .explore-approach-row[hidden] { display: none; }
   /* Owner decision 82 -- Explore: every Approach at once, tap a slice, Back and Previous/Next, Take. */
+  /* PCF MSA J51 -- one bar of controls above Explore's wheel on a PC (each part keeps its own [hidden]). */
+  @media (min-width: 900px) {
+    .explore-ctl-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 14px; margin: 0 0 6px; }
+    /* On a PC the bar is moved above the whole panel (placeExploreCtlBar), so it has the window's full width for one
+       line; it goes with the Quran panel when another Explore tab is open. */
+    #exploreScroll > .explore-ctl-bar { flex: 0 0 auto; padding: 8px 12px 4px; margin: 0; }
+    #exploreScroll:has(> #explorePanel[hidden]) > .explore-ctl-bar { display: none; }
+    .explore-ctl-bar > * { margin: 0; }
+    .explore-ctl-bar > .aa-nav:not([hidden]) { display: flex; gap: 6px; }
+    .explore-ctl-bar > .explore-head-row { flex: 0 1 auto; min-width: 0; }
+    .explore-ctl-bar > .aa-seg:not([hidden]) { display: inline-grid; grid-template-columns: auto auto; }
+    .explore-ctl-bar > .aa-seg button { padding: 0 14px; }
+  }
   .aa-nav { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center; min-width: 0; margin: 0 0 6px; }
   .aa-nav[hidden], .aa-seg[hidden] { display: none; }
   .aa-nav button, .aa-seg button, .aa-take, .aa-sheet button { font-family: 'Inter', sans-serif; font-size: 0.85rem; min-height: 44px; border-radius: 12px; cursor: pointer; }
@@ -3329,6 +3342,35 @@
     border-radius: 0.35rem; background: transparent; color: #fff; cursor: pointer; white-space: nowrap;
   }
   .ms-wheel-switch { flex-wrap: wrap; }
+  /* PCF MSA J50 -- the Approach pull-down sits at the top of the list and stays there while the list scrolls. */
+  /* flex: 1 1 100% + min-width: 0: below 620px the list's row wraps, and a <select>'s natural width is its LONGEST
+     option (a real Approach name), which pushed the list 93px sideways at 320px. */
+  .ms-pick-bar { position: sticky; top: -0.8rem; z-index: 2; align-self: stretch; flex: 1 1 100%; min-width: 0; box-sizing: border-box; display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; padding: 0.5rem 0.2rem; background: var(--card-bg); border-bottom: 1px solid var(--card-line); }
+  .ms-pick-bar label { font-weight: 700; color: var(--card-heading); }
+  .ms-pick-bar select { flex: 1 1 14rem; width: 100%; min-width: 0; max-width: 32rem; min-height: 44px; padding: 0.3rem 0.6rem; font: inherit; font-size: 1rem; border: 1px solid #B8862F; border-radius: 0.45rem; background: var(--card-bg-inset); color: var(--card-heading); }
+  .my-status-list li[hidden] { display: none; }
+  /* One Approach on its own reads larger. */
+  .my-status-list.ms-one .my-status-row-name { font-size: 1.3rem; }
+  .my-status-list.ms-one .my-status-row-figure { font-size: 1rem; }
+  .my-status-list.ms-one .ms-tile-fig { font-size: 1.1rem; }
+  /* PCF MSA J50 (the Owner: "make the texts look bigger, elegant, eye-catching (in PC context)"). */
+  @media (min-width: 900px) {
+    .my-status-row-btn { padding: 0.65rem 0.6rem; gap: 0.3rem; }
+    .my-status-row-name { font-size: 1.12rem; letter-spacing: 0.01em; }
+    .my-status-row-figure { font-size: 0.92rem; }
+    .ms-tiles { gap: 0.45rem; }
+    .ms-tile { padding: 0.4rem 0.55rem; border-radius: 0.5rem; }
+    .ms-tile-name { font-size: 0.78rem; letter-spacing: 0.02em; }
+    .ms-tile-fig { font-size: 1rem; }
+    .ms-tile-of { font-size: 0.78rem; }
+    .ms-tile-bar { height: 5px; }
+    .my-status-whole-line { font-size: 0.95rem; }
+    .my-status-list.ms-one .my-status-row-name { font-size: 1.6rem; }
+    .my-status-list.ms-one .my-status-row-figure { font-size: 1.1rem; }
+    .my-status-list.ms-one .ms-tile-name { font-size: 0.9rem; }
+    .my-status-list.ms-one .ms-tile-fig { font-size: 1.35rem; }
+    .my-status-list.ms-one .ms-tile { padding: 0.6rem 0.75rem; }
+  }
   .ms-wheel-switch .wheel-show-btn { flex: 0 1 auto; min-width: 0; }
   /* From 620px the tiles need the list's full width (six across), so the wheel sits above it rather than beside it. */
   @media (min-width: 620px) {
@@ -4358,13 +4400,17 @@
   .ayah-connected-studied.is-not-studied { color: #6b4a00; }
   .ayah-connected-studied.is-unchecked { color: #5b5b5b; font-weight: 500; font-style: italic; }
   .ayah-hifz-chip { display: inline-flex; align-items: center; min-height: 1.6rem; padding: 0.2rem 0.6rem; border-radius: 999px; color: #fff; font-size: 0.8rem; font-weight: 600; text-shadow: 0 0 2px rgba(0,0,0,0.35); }
-  /* PCF J26 -- the "Before Al-Fātiḥah" band on the Read page (layout B): Aʿūdhu billāh LEFT, Bismillah RIGHT (the
-     band is dir=ltr, so the order holds in Bangla too), two columns that shrink (min-width:0) and never push the page wide. */
+  /* PCF J26 -- the "Before Al-Fātiḥah" band on the Read page (layout B), two columns that shrink (min-width:0) and never
+     push the page wide. PCF MSA J49 (the Owner, 20 Oct 2026, screenshot: "This was done before, but dropped … Fix it"):
+     the two buttons read RIGHT TO LEFT like the āyāt, Aʿūdhu billāh on the RIGHT and the Bismillah on its left. The
+     button row is dir=rtl and each button's own text ltr, so the order is the same in English and Bangla. (QR had this
+     as its own edit, QR J09; it is now in the one source.) */
   .opening-band { direction: ltr; box-sizing: border-box; max-width: 100%; margin: 0.2rem 0 0.8rem; padding: 0.5rem; border: 1px dashed #b8892c; border-radius: 0.7rem; background: rgba(214,166,72,0.14); display: flex; flex-direction: column; gap: 0.4rem; }
   /* PCF J26 audit polish (14 Oct): on a wide screen the band keeps a calm width (about two phone widths), centred. */
   @media (min-width: 900px) { .opening-band { max-width: 48rem; margin-left: auto; margin-right: auto; } } /* j26 band-cap */
   .opening-band-title { font-size: 0.78rem; font-weight: 600; color: #7a5a14; letter-spacing: 0.02em; }
-  .opening-chips { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0.4rem; }
+  .opening-chips { direction: rtl; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0.4rem; }
+  .opening-chip { direction: ltr; }
   .opening-chip { min-width: 0; min-height: 44px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.1rem; padding: 0.3rem 0.4rem; border: 1px solid #c9b88a; border-radius: 0.6rem; background: #fffaf0; color: #1b1b16; cursor: pointer; font: inherit; }
   .opening-chip-ar { font-family: var(--quran-font); direction: rtl; font-size: 1.1rem; line-height: 1.5; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .opening-chip-name { display: inline-flex; align-items: center; gap: 0.3rem; max-width: 100%; font-size: 0.74rem; color: #4a4a40; }
@@ -5834,6 +5880,10 @@
               <!-- Owner decision 82 (7 Oct 2026): Back and Previous/Next, shown only
                    at the Surah and Ayah levels (renderExploreSurahLevel() and
                    renderExploreAyahLevel() fill it). -->
+              <!-- PCF MSA J51 (the Owner, 20 Oct 2026, on a PC: "Organise the options in a single bar ... so that Wheel can
+                   be enlarged"): Back and the sūrah steps, the trail, All / One Approach and Track the Status sit in ONE
+                   bar from 900px; below that they stack as before. -->
+              <div class="explore-ctl-bar" id="exploreCtlBar">
               <div id="exploreNavBar" class="aa-nav" hidden></div>
               <div class="explore-head-row">
                 <div id="exploreBreadcrumb"></div>
@@ -5889,6 +5939,7 @@
                   </div>
                 </div>
               </div>
+              </div><!-- /#exploreCtlBar -->
               <!-- 2 Sep 2026 -- "enable all wheels ... to be expandable
                    from any side", same mechanism as the Mastery Wheel/QCR/
                    Asma wheels. -->
@@ -11900,7 +11951,15 @@
       const wheelEl = document.getElementById("myStatusOverviewWheel");
       if (wheelEl) attachScopedWheelClickHandler(wheelEl, (key) => openMyStatusDetail(key));
       // The Owner, 6 Oct 2026: the wheel resizes too -- a corner grip, remembered on this device.
-      makeResizableBox(wheelEl, { key: "mm_kys_wheel", min: 200, max: 900, cssVar: "--kys-wheel", label: t("Make the wheel bigger or smaller") });
+      const wheelBox = makeResizableBox(wheelEl, { key: "mm_kys_wheel", min: 200, max: 900, cssVar: "--kys-wheel", label: t("Make the wheel bigger or smaller") });
+      // PCF MSA J50: on a PC with no wheel size kept on this computer (a new browser, a reset office computer), the
+      // wheel opens large in the large window -- about two-thirds of the window's height, and never wider than it.
+      let keptWheel = null;
+      try { keptWheel = JSON.parse(localStorage.getItem("mm_kys_wheel") || "null"); } catch { keptWheel = null; }
+      if (wheelBox && !keptWheel?.size && window.innerWidth >= 900) {
+        const card = document.getElementById("myStatusCard").getBoundingClientRect();
+        wheelBox.set(Math.min(card.width - 80, card.height * 0.62));
+      }
       box.querySelectorAll("[data-kys-wheel-unit]").forEach((btn) => {
         btn.addEventListener("click", () => {
           setMyStatusWheelUnit(btn.dataset.kysWheelUnit);
@@ -11918,17 +11977,28 @@
         const headline = myStatusHeadlineText(trackable.id, summary, cache.wordTotals);
         const name = langText(trackable.name, getAppLang(), trackable.id);
         const pct = Math.max(0, Math.min(100, myStatusRatio(trackable.id, summary, cache.wordTotals) * 100));
-        return `<li><button type="button" class="my-status-row-btn" data-my-status-open="${trackable.id}">
+        const hide = myStatusPick && myStatusPick !== trackable.id ? " hidden" : "";
+        return `<li data-ms-row="${trackable.id}"${hide}><button type="button" class="my-status-row-btn" data-my-status-open="${trackable.id}">
           <span class="my-status-row-name">${escapeHtml(name)}</span>
           <span class="my-status-row-figure">${escapeHtml(headline)}</span>
           ${myStatusTilesHtml(trackable.id, cache)}
           <span class="my-status-row-bar" aria-hidden="true"><span style="width:${pct > 0 ? Math.max(pct, 1.5) : 0}%"></span></span>
         </button></li>`;
       }).join("");
+      // PCF MSA J50 (the Owner, 20 Oct 2026): "Enable every Approach to choose through a pull-down menu (so the user
+      // don't have to scroll to see all … also keep option the current all list visible at a glance as well". The
+      // pull-down stays at the top of the list while it scrolls; "All Approaches" is the whole list, as before, and one
+      // Approach shows that Approach alone, larger. The choice holds for the visit.
+      const options = quranTrackables.map((trackable, i) =>
+        `<option value="${trackable.id}"${myStatusPick === trackable.id ? " selected" : ""}>${escapeHtml(`${num(i + 1)}. ${langText(trackable.name, getAppLang(), trackable.id)}`)}</option>`).join("");
       return `<p class="my-status-whole-line">${t("Know your status on the whole Qur'an, by Approach.")}</p>
       <div class="my-status-wheel-row">
         ${myStatusWheelBoxHtml(cache)}
-        <ul class="my-status-list">${rows}</ul>
+        <div class="ms-pick-bar" data-ms-pick-bar>
+          <label for="myStatusPickSelect">${escapeHtml(t("Approach"))}</label>
+          <select id="myStatusPickSelect" data-ms-pick><option value=""${myStatusPick ? "" : " selected"}>${escapeHtml(t("All Approaches (the whole list)"))}</option>${options}</select>
+        </div>
+        <ul class="my-status-list${myStatusPick ? " ms-one" : ""}" data-ms-list>${rows}</ul>
       </div>`;
     }
 
@@ -12020,6 +12090,7 @@
     /** The list+wheel body only -- never touches the detail card (issue #341:
      *  opening/closing/switching the detail must never re-render this, which
      *  is what keeps its own scroll position exactly where it was). */
+    let myStatusPick = ""; // PCF MSA J50: "" = all Approaches; else the one chosen in the pull-down (this visit)
     function renderMyStatusOverviewNow() {
       if (myStatusLoading) {
         myStatusBodyEl.innerHTML = `<p class="my-status-loading">${t("Loading your status…")}</p>`;
@@ -12036,6 +12107,14 @@
       // (issue #341) -- it no longer appends/toggles anything in this body.
       myStatusBodyEl.querySelectorAll("[data-my-status-open]").forEach((btn) => {
         btn.addEventListener("click", () => openMyStatusDetail(btn.dataset.myStatusOpen));
+      });
+      myStatusBodyEl.querySelector("[data-ms-pick]")?.addEventListener("change", (e) => {
+        myStatusPick = e.target.value;
+        const list = myStatusBodyEl.querySelector("[data-ms-list]");
+        list.classList.toggle("ms-one", !!myStatusPick);
+        list.querySelectorAll("[data-ms-row]").forEach((li) => { li.hidden = !!myStatusPick && li.dataset.msRow !== myStatusPick; });
+        // The chosen Approach comes into view right under the pull-down.
+        myStatusBodyEl.querySelector("[data-ms-pick-bar]")?.scrollIntoView({ block: "start", behavior: "instant" });
       });
       attachMyStatusWheel();
     }
@@ -12156,7 +12235,17 @@
       const w = Math.min(832, window.innerWidth * 0.92) - inset * 2, h = window.innerHeight * 0.85 - inset * 2;
       return { x: (window.innerWidth - w) / 2, y: (window.innerHeight - h) / 2, w, h };
     };
-    const myStatusWin = makeFloatingCard(document.getElementById("myStatusCard"), { key: "mm_kys_rect", minW: 340, minH: 300, when: () => window.innerWidth >= 900, initial: myStatusWinStart(0) });
+    // PCF MSA J50 (the Owner, 20 Oct 2026, screenshot: "enable the window to appear in this size in PC always"): the
+    // card opens large at EVERY start on a PC -- 92% of the screen's width (at most 1,280px), from 12px below the top
+    // down to 12px above the Zab bar (which sits over the screen's bottom edge and would cover the window's resize
+    // corner) -- never from a size an earlier visit stored; a move or resize this visit is kept (float-card `fill`).
+    const myStatusWinLarge = () => {
+      const zab = document.getElementById("zabBar");
+      const zabTop = zab && zab.offsetHeight ? zab.getBoundingClientRect().top : window.innerHeight;
+      const w = Math.min(1280, window.innerWidth * 0.92), h = Math.max(300, zabTop - 24);
+      return { x: (window.innerWidth - w) / 2, y: 12, w, h };
+    };
+    const myStatusWin = makeFloatingCard(document.getElementById("myStatusCard"), { key: "mm_kys_rect", minW: 340, minH: 300, when: () => window.innerWidth >= 900, initial: myStatusWinLarge, fill: true });
     const myStatusDetailWin = makeFloatingCard(document.getElementById("myStatusDetailCard"), { key: "mm_kys_detail_rect", minW: 340, minH: 300, when: () => window.innerWidth >= 900, initial: myStatusWinStart(24) });
     /** A jump out of Know Your Status (to Explore) leaves "← Back to Know Your Status", which reopens it on the
      *  same Approach card. Leaving Explore any other way drops the chip (setStageView). */
@@ -14001,7 +14090,42 @@
       wheelColEl.querySelectorAll("button, .wheel-intro-settled").forEach((el) => fitRO.observe(el));
       queueFit();
     }
-    setUpWheelResize("exploreQuran", { wrapEl: exploreWheelResizeWrapEl, paneEl: exploreWheelColEl, handleEls: exploreWheelResizeHandleEls });
+    setUpWheelResize("exploreQuran", { wrapEl: exploreWheelResizeWrapEl, paneEl: exploreWheelColEl, handleEls: exploreWheelResizeHandleEls, onDrag: () => { exploreWheelDragged = true; } });
+
+    /** PCF MSA J51 (the Owner, 20 Oct 2026: "so that Wheel can be enlarged. Also enable the screen open in this size
+        always"). As J44 does for the Mastery Wheel: on a PC Explore's window opens filling the screen, and its Quran
+        wheel takes the LARGEST size at which it fits the window's scroll area below the one bar of controls -- at every
+        start and whenever the window or the bar changes size, never from a size an earlier visit stored. A wheel the
+        reader drags this visit stays as dragged. Below 900px nothing changes. */
+    let exploreWheelDragged = false;
+    // J51: the one bar of controls lives in the wheel's column on a phone and above the whole panel on a PC (where the
+    // list sits beside the wheel and the column alone is too narrow for one line). Its ids and handlers never change.
+    const exploreCtlBarEl = document.getElementById("exploreCtlBar");
+    function placeExploreCtlBar() {
+      const scroller = document.getElementById("exploreScroll");
+      if (window.matchMedia("(min-width: 900px)").matches) { if (exploreCtlBarEl.parentElement !== scroller) scroller.prepend(exploreCtlBarEl); }
+      else if (exploreCtlBarEl.parentElement !== exploreWheelColEl) exploreWheelColEl.prepend(exploreCtlBarEl);
+    }
+    placeExploreCtlBar();
+    window.matchMedia("(min-width: 900px)").addEventListener("change", placeExploreCtlBar);
+    function fitExploreWheelToWindow() {
+      if (exploreWheelDragged || !window.matchMedia("(min-width: 900px)").matches || exploreView.hidden) return;
+      const scroller = document.getElementById("exploreScroll");
+      if (!scroller || !exploreWheelColEl.offsetWidth) return;
+      const top = exploreWheelResizeWrapEl.getBoundingClientRect().top + scroller.scrollTop;
+      const room = scroller.getBoundingClientRect().bottom - top - 8;
+      const size = Math.floor(Math.max(160, Math.min(900, contentWidth(exploreWheelColEl) - 4, room)));
+      applyWheelSize(exploreWheelResizeWrapEl, size);
+    }
+    {
+      let fitQueued = false;
+      const queueFit = () => { if (fitQueued) return; fitQueued = true; requestAnimationFrame(() => { fitQueued = false; explorePopupWin?.refit(); fitExploreWheelToWindow(); }); };
+      const fitRO = new ResizeObserver(queueFit);
+      fitRO.observe(exploreView);
+      fitRO.observe(document.getElementById("exploreCtlBar"));
+      fitRO.observe(document.getElementById("dock"));
+      queueFit();
+    }
     setUpWheelResize("asma", { wrapEl: asmaXWheelResizeWrapEl, paneEl: asmaXWheelPaneEl, handleEls: asmaXWheelResizeHandleEls });
 
     // 2 Sep 2026 -- PC popup round: the Approach (Mastery Wheel) and Explore
@@ -14054,6 +14178,7 @@
       dragHandleEl: exploreBarEl,
       resizeHandleEls: explorePopupResizeHandles,
       maximizeBtn: explorePopupMaximizeBtn,
+      fill: true, // PCF MSA J51: on a PC Explore always opens filling the space between the menu row and the dock
     });
     // v08.20 -- the Word Card floats as its own small window on a desktop,
     // dragged by its header and resized from any edge or corner, exactly the
