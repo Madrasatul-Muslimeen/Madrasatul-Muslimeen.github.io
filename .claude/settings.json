@@ -3,6 +3,7 @@
     "defaultMode": "bypassPermissions",
     "allow": [
       "Bash(node --check *)",
+      "mcp__claude-code-remote__add_repo",
       "Bash(node serve.js)",
       "Bash(git add *)",
       "Bash(git commit *)",
