@@ -8,6 +8,7 @@
 //   notsticky  the pull-down scrolls away with the list          -> "stays at the top while the list scrolls" fails
 //   small      the PC text sizes are the old ones                -> the "bigger on a PC" checks fail
 //   nowheel    a new computer's wheel opens at the old default   -> the "wheel opens large" check fails
+//   widesel    the pull-down takes its longest option's width     -> the list's own "no sideways scroll" fails on a phone
 import { chromium, newContext, openPage } from "./harness.mjs";
 import fs from "node:fs";
 
@@ -25,12 +26,14 @@ const MUT = {
   notsticky: [[".ms-pick-bar { position: sticky; top: -0.8rem;", ".ms-pick-bar { position: static; top: -0.8rem;"]],
   small: [["    .my-status-row-name { font-size: 1.12rem; letter-spacing: 0.01em; }", "    .my-status-row-name { font-size: 0.9rem; }"],
     ["    .my-status-list.ms-one .my-status-row-name { font-size: 1.6rem; }", "    .my-status-list.ms-one .my-status-row-name { font-size: 1.3rem; }"]],
+  widesel: [["align-self: stretch; flex: 1 1 100%; min-width: 0; box-sizing: border-box; display: flex;", "align-self: stretch; display: flex;"], [".ms-pick-bar select { flex: 1 1 14rem; width: 100%; min-width: 0;", ".ms-pick-bar select { flex: 1 1 14rem; min-width: 0;"]],
   nowheel: [["if (wheelBox && !keptWheel?.size && window.innerWidth >= 900) {", "if (false) {"]],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
 const SEED = `
 for (let i = 11; i <= 40; i++) DATA.trackables.push({ _id: TENANT_ID + "__extra" + i, tenantId: TENANT_ID, subjectId: "quran", order: 100 + i, status: "active",
-  name: lang("Approach number " + i, "পদ্ধতি " + i), groupName: lang("More", "আরও"), guide: { what: lang("w", "w"), how: lang("h", "h"), measure: lang("m", "m") }, panels: ["text"] });`;
+  // One real-length name (a live tenant's are this long): a <select> is as wide as its longest option.
+  name: i === 11 ? lang("Reading Meaning with Tafsir (every āyah, with its explanation)", "অর্থসহ পাঠ ও তাফসীর (প্রতিটি আয়াত, তার ব্যাখ্যাসহ)") : lang("Approach number " + i, "পদ্ধতি " + i), groupName: lang("More", "আরও"), guide: { what: lang("w", "w"), how: lang("h", "h"), measure: lang("m", "m") }, panels: ["text"] });`;
 const ALL = { en: "All Approaches (the whole list)", bn: "সব পদ্ধতি (পুরো তালিকা)" };
 
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
@@ -66,12 +69,14 @@ const state = (page) => page.evaluate(() => {
     nameSize: name ? parseFloat(getComputedStyle(name).fontSize) : 0, figSize: fig ? parseFloat(getComputedStyle(fig).fontSize) : 0,
     barTop: br ? Math.round(br.top - body.top) : null, barIn: !!br && br.top >= body.top - 1 && br.bottom <= body.bottom + 1,
     over: document.documentElement.scrollWidth - innerWidth,
+    // The list's own box: below 620px its row wraps, and a <select> sized by its longest option pushed it 93px sideways.
+    bodyOver: (() => { const b = document.getElementById("myStatusBody"); return b.scrollWidth - b.clientWidth; })(),
     wheel: Math.round(document.querySelector("#myStatusOverviewWheel svg")?.getBoundingClientRect().width ?? 0),
     card: (() => { const r = document.getElementById("myStatusCard").getBoundingClientRect(); return { w: Math.round(r.width), h: Math.round(r.height) }; })(),
   };
 });
 
-for (const [lang, width, height] of [["en", 1280, 800], ["en", 1600, 900], ["bn", 1280, 800], ["en", 390, 844], ["bn", 390, 844]]) {
+for (const [lang, width, height] of [["en", 1280, 800], ["en", 1600, 900], ["bn", 1280, 800], ["en", 390, 844], ["bn", 390, 844], ["en", 320, 640]]) {
   const tag = `${lang}/${width}`;
   const pc = width >= 900;
   console.log(`\n=== ${tag} ===`);
@@ -103,7 +108,7 @@ for (const [lang, width, height] of [["en", 1280, 800], ["en", 1600, 900], ["bn"
   await page.evaluate(() => document.querySelector("#myStatusBody [data-my-status-open]")?.click());
   await page.waitForFunction(() => !document.getElementById("myStatusDetailMount").hidden, null, { timeout: 5000 }).catch(() => {});
   check(`${tag}: a row still opens its Approach card`, await page.evaluate(() => !document.getElementById("myStatusDetailMount").hidden));
-  check(`${tag}: no sideways scroll`, s2.over <= 0, String(s2.over));
+  check(`${tag}: no sideways scroll, on the page or inside the list`, s2.over <= 0 && s0.bodyOver <= 0 && s2.bodyOver <= 0, JSON.stringify({ page: s2.over, list0: s0.bodyOver, list2: s2.bodyOver }));
   check(`${tag}: no page errors`, errors.filter((e) => !/ERR_CERT|net::|archive\.org|api\.quran|Failed to load resource/i.test(e)).length === 0, errors.slice(0, 2).join(" | "));
   await ctx.close();
 }
