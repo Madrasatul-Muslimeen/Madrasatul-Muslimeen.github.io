@@ -910,3 +910,4 @@ total). Allocated by the MMSA Architect.
 12.06: Before Al-Fātiḥah reads right to left (PCF MSA J49). Allocated by the MMSA Architect.
 12.07: Know Your Status and Explore, bigger on a PC (PCF MSA J50 J51). Allocated by the MMSA Architect.
 12.08: the Qur'an Vocabulary module, round 1 (PCF MSA J48). Allocated by the MMSA Architect.
+12.09: Āyah posters, the madda sign, the word marked and the middle view, Learn next to 95%, ten questions (PCF MSA J52 J53 J54 J55 J56). Allocated by the MMSA Architect.
