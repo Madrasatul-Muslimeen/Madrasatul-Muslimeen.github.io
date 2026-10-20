@@ -11,7 +11,7 @@ export const MMSA_ORIGIN = "https://madrasatul-muslimeen.github.io";
 
 /** Every page QR holds under app/ (tools/qr-verify/links-browser.mjs checks this list against the files). */
 export const QR_PAGES = Object.freeze([
-  "asma-about.html", "asma.html", "index.html", "journey-map.html", "ldog-study.html", "quranrevival.html",
+  "asma-about.html", "asma.html", "ayah-poster.html", "index.html", "journey-map.html", "ldog-study.html", "quranrevival.html",
 ]);
 
 // J02 S1e (PCA J71, one home for every app part): Notes and the other pages Quran Study opens live in MMSA. A link to
