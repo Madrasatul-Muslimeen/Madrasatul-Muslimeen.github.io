@@ -39,6 +39,12 @@ const MUT = {
   rootknown: ["app/quranrevival.html", "// PCF J38 (19 Oct 2026): a Root (intermediate), Taṣrīf or Depth mark is a study mark on a ROOT and never makes", 'if (["intermediate", "tasrif", "depth"].some((l) => (countKnownLemmaClaims({ tenantId, personId, level: l, confirmationRequired }) ?? 0) > 0)) return { ...own, countsAsKnown: true };\n      // PCF J38 (19 Oct 2026): a Root (intermediate), Taṣrīf or Depth mark is a study mark on a ROOT and never makes'],
   nohide: ["app/js/learn-next.js", "const list = hideKnown ? rows.filter((row) => !isKnown(row)) : rows;", "const list = rows;"],
   page50: ["app/js/learn-next.js", "export const LEARN_NEXT_PAGE = 100;", "export const LEARN_NEXT_PAGE = 50;"],
+  // PCF MSA J54 -- the distinct mark and the middle view.
+  nomark: ["app/quranrevival.html", "      paintVocabTarget(`${surah}:${ayah}:${position}`);\n      const before = readChromeState;", "      const before = readChromeState;"],
+  goldmark: ["app/quranrevival.html", "background-color: #e4d4fb !important; outline: 3px solid #6b3fb5 !important;", "background-color: rgba(255, 196, 61, 0.55); outline: 2px solid #c9a24a;"],
+  nomiddle: ["app/quranrevival.html", "      if (readChromeStates().includes(1)) setReadChrome(1);\n      return (how) =>", "      return (how) =>"],
+  keepmark: ["app/quranrevival.html", "return (how) => { paintVocabTarget(null); if (how", "return (how) => { if (how"],
+  norestore: ["app/quranrevival.html", "if (how === \"back\" && readChromeStates().includes(before)) setReadChrome(before);", ""],
   noback: ["app/quranrevival.html", 'setAppReturn(t("Back to Learn next"), "", () =>', 'false && setAppReturn(t("Back to Learn next"), "", () =>'],
   scrollreset: ["app/quranrevival.html", "if (scroller) scroller.scrollTop = learnNextScroll;", "if (scroller) scroller.scrollTop = 0;"],
   bnleak: ["app/js/i18n/bn.js", '"Show 100 more": "আরও ১০০টি দেখান",', ""],
@@ -332,6 +338,7 @@ for (const [lang, width, height] of [["en", 320, 640], ["en", 390, 844], ["en", 
     await page.waitForTimeout(200);
     const before = (await sheetInfo(page)).scrollTop;
     const target = rows[149];
+    const chromeBefore = await page.evaluate(() => ({ immersive: document.body.classList.contains("immersive-read"), topnav: document.body.classList.contains("fs-hide-topnav") }));
     await page.evaluate(() => document.querySelector('#learnNextSheet [data-ln-row="150"]').click());
     await page.waitForFunction((o) => { const id = document.querySelector("#quranWordCardMount .quran-word-card"); return !!id; }, target.o, { timeout: 12000 }).catch(() => {});
     await page.waitForTimeout(1500);
@@ -339,8 +346,23 @@ for (const [lang, width, height] of [["en", 320, 640], ["en", 390, 844], ["en", 
     const s150 = Math.floor(target.o / 1000000), a150 = Math.floor((target.o % 1000000) / 1000), p150 = target.o % 1000;
     const openId = await page.evaluate(() => document.querySelector("#quranWordCardMount [data-word-occurrence-id], #quranWordCardMount .quran-word-card")?.outerHTML.length);
     check(`${tag} a row opens that word's Word card (${s150}:${a150}:${p150}) and shows the way back`, opened.sheetHidden && opened.card && /Learn next|এরপর শিখুন/.test(opened.pill ?? ""), JSON.stringify(opened) + openId);
+    // PCF MSA J54 (the Owner, 20 Oct 2026): the word is marked in a DISTINCT colour (the Vocabulary purple, not the
+    // gold āyah highlight or a progress colour), and the page lands in the middle view (chrome state 1: the app's own
+    // menus hidden, the reading's own controls kept). Going back removes the mark and restores the view.
+    const mark = await page.evaluate((occ) => {
+      const st = (e) => { const c = getComputedStyle(e); return { bg: c.backgroundColor, ol: c.outlineColor, ow: c.outlineWidth, os: c.outlineStyle }; };
+      const all = [...document.querySelectorAll("#readView [data-word-occurrence]")];
+      const t = document.querySelector(`#readView [data-word-occurrence="${occ}"]`);
+      const purple = all.filter((e) => getComputedStyle(e).outlineColor === "rgb(107, 63, 181)" && getComputedStyle(e).outlineStyle !== "none");
+      return { found: !!t, t: t ? st(t) : null, purple: new Set(purple.map((e) => e.dataset.wordOccurrence)).size, purpleIsTarget: purple.every((e) => e.dataset.wordOccurrence === occ), ringed: purple.map((e) => `${e.tagName}.${e.className}<${e.parentElement?.className}`), nb: all.find((e) => e !== t) ? st(all.find((e) => e !== t)) : null };
+    }, `quran-word-occurrence:v1:${s150}:${a150}:${p150}`);
+    check(`${tag} J54: the word (${s150}:${a150}:${p150}) alone is marked in the Vocabulary purple (#e4d4fb, a 3px #6b3fb5 ring)`, mark.found && mark.t.bg === "rgb(228, 212, 251)" && mark.t.ol === "rgb(107, 63, 181)" && mark.t.ow === "3px" && mark.t.os === "solid" && mark.purple === 1 && mark.purpleIsTarget, JSON.stringify(mark));
+    const chromeOpen = await page.evaluate(() => ({ immersive: document.body.classList.contains("immersive-read"), topnav: document.body.classList.contains("fs-hide-topnav"), banner: document.body.classList.contains("fs-hide-banner"), dock: document.body.classList.contains("fs-hide-dock"), btnPressed: document.getElementById("hideChromeBtn")?.getAttribute("aria-pressed") }));
+    check(`${tag} J54: it lands in the middle view (the app's menus hidden, the reading's controls kept), from the normal view`, !chromeBefore.immersive && chromeOpen.immersive && chromeOpen.topnav && chromeOpen.banner && chromeOpen.dock && chromeOpen.btnPressed === "true", JSON.stringify({ chromeBefore, chromeOpen }));
     await page.evaluate(() => document.querySelector("#ayahCardBackPill [data-ayah-card-back]")?.click());
     await page.waitForTimeout(900);
+    const afterBack = await page.evaluate(() => ({ style: !!document.getElementById("vocabTargetStyle"), immersive: document.body.classList.contains("immersive-read") }));
+    check(`${tag} J54: Back to Learn next removes the mark and restores the view the reader had`, !afterBack.style && afterBack.immersive === chromeBefore.immersive, JSON.stringify(afterBack));
     const back = await sheetInfo(page);
     check(`${tag} Back returns to the list at the same scroll place (${before} → ${back?.scrollTop}) with 200 rows still drawn`, !!back && Math.abs(back.scrollTop - before) <= 2 && back.rows === 200, JSON.stringify(back && { st: back.scrollTop, rows: back.rows }));
   }

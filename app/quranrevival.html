@@ -18250,7 +18250,7 @@
         back.className = "word-card-return-btn word-card-app-back";
         back.dataset.wordCardAppBack = "";
         back.innerHTML = `<span aria-hidden="true">←</span> ${escapeHtml(ayahCardReturn.title)}`;
-        back.addEventListener("click", () => { const r = ayahCardReturn; clearAyahCardReturn(); r?.back?.(); });
+        back.addEventListener("click", () => { const r = ayahCardReturn; clearAyahCardReturn("back"); r?.back?.(); });
         content.prepend(back);
       }
       // J23: show the word "Colour" on the meaning line only where it fits (measured, not a fixed width); re-measured on resize.
@@ -18736,8 +18736,32 @@
       closeLearnNextSheet();
       const { surah, ayah, position } = placeOfRow(row);
       await openWordOccurrenceAt(surah, ayah, position, "read");
+      const undo = landVocabWord(surah, ayah, position); // J54
       // The way-back law (decision 86): the list again, at the same place.
-      setAppReturn(t("Back to Learn next"), "", () => { renderLearnNextSheet(); showLearnNextSheet(); }, { inWordCard: true });
+      setAppReturn(t("Back to Learn next"), "", () => { renderLearnNextSheet(); showLearnNextSheet(); }, { inWordCard: true, onClear: undo });
+    }
+
+    /**
+     * PCF MSA J54 (the Owner, 20 Oct 2026, a screenshot of the Read view reached from Learn next: "enable the word to be a
+     * distinction color. Also enable landing on this page is on this setting of view (It's the middle view, not the full
+     * screen, not the all menu view)"). A word opened from Learn next or the Vocabulary sheet is marked in the module's
+     * purple (unlike the gold āyah highlight and the progress colours), and the page lands in the middle view (chrome
+     * state 1: the app's own menus hidden, the reading's own controls kept). Returns the undo for setAppReturn's onClear:
+     * the mark always goes; going BACK also restores the view the reader had.
+     */
+    function landVocabWord(surah, ayah, position) {
+      paintVocabTarget(`${surah}:${ayah}:${position}`);
+      const before = readChromeState;
+      if (readChromeStates().includes(1)) setReadChrome(1);
+      return (how) => { paintVocabTarget(null); if (how === "back" && readChromeStates().includes(before)) setReadChrome(before); };
+    }
+    function paintVocabTarget(ref) {
+      let style = document.getElementById("vocabTargetStyle");
+      const m = /^(\d+):(\d+):(\d+)$/.exec(ref ?? "");
+      if (!m) { style?.remove(); return; }
+      if (!style) { style = document.createElement("style"); style.id = "vocabTargetStyle"; document.head.appendChild(style); }
+      const word = `[data-word-occurrence="quran-word-occurrence:v1:${m[1]}:${m[2]}:${m[3]}"]`;
+      style.textContent = `#readView ${word} { background-color: #e4d4fb !important; outline: 3px solid #6b3fb5 !important; outline-offset: 2px; border-radius: 6px; box-shadow: 0 0 0 6px rgba(107, 63, 181, 0.18); }`;
     }
 
     // ---- PCF MSA J48 round 1: Vocabulary -- Learn, Practise (4 kinds), Step test ---------------------------------------
@@ -18828,7 +18852,8 @@
         const keep = { ...vocab };
         closeVocabSheet(); closeLearnNextSheet();
         await openWordOccurrenceAt(s, a, p, "read");
-        setAppReturn(t("Back to the step"), "", () => { learnNextStep = keep.step; learnNextOnlyNew = keep.onlyNew; showLearnNextSheet(); vocab = { ...keep }; renderVocab(); vocabSheetEl().hidden = false; }, { inWordCard: true });
+        const undo = landVocabWord(s, a, p); // J54
+        setAppReturn(t("Back to the step"), "", () => { learnNextStep = keep.step; learnNextOnlyNew = keep.onlyNew; showLearnNextSheet(); vocab = { ...keep }; renderVocab(); vocabSheetEl().hidden = false; }, { inWordCard: true, onClear: undo });
       }
     }
     async function vocabPrepareQuestion() {
@@ -21656,14 +21681,15 @@
     // The way-back law (decision 86): ONE pill for every "you came from there" -- `title` says where, `label` a
     // short reference, `back()` restores it. Set by the Āyah card's actions and by an Asma Name's references.
     let ayahCardReturn = null;
-    function setAppReturn(title, label, back, opts = {}) { ayahCardReturn = { title, label, back, inWordCard: !!opts.inWordCard }; renderAyahCardBackPill(); if (opts.inWordCard) renderPersistentWordCard(); }
+    // J54: opts.onClear(how) runs once when this way back goes -- "back" (used), "dismiss" (×) or "replaced" (another took its place).
+    function setAppReturn(title, label, back, opts = {}) { ayahCardReturn?.onClear?.("replaced"); ayahCardReturn = { title, label, back, inWordCard: !!opts.inWordCard, onClear: opts.onClear ?? null }; renderAyahCardBackPill(); if (opts.inWordCard) renderPersistentWordCard(); }
     function rememberAyahCardReturn(unitKey) {
       if (!unitKey) return;
       const { surah, ayah, half } = parseAyahUnitKey(unitKey);
       const r = { surah, ayah, half, view: "read", scrollY: readViewScrollTop() };
       setAppReturn(t("Back to Āyah card"), ayahRefLabel(surah, ayah, { half }).replace(/^.*?(\S+:\S+).*$/, "$1"), () => returnToAyahCard(r));
     }
-    function clearAyahCardReturn() { ayahCardReturn = null; renderAyahCardBackPill(); }
+    function clearAyahCardReturn(how = "dismiss") { const r = ayahCardReturn; ayahCardReturn = null; r?.onClear?.(how); renderAyahCardBackPill(); }
     function renderAyahCardBackPill() {
       let pill = document.getElementById("ayahCardBackPill");
       if (!ayahCardReturn) { if (pill) { pill.hidden = true; pill.innerHTML = ""; } return; }
@@ -21674,7 +21700,7 @@
         document.body.appendChild(pill);
         pill.addEventListener("click", (e) => {
           if (e.target.closest("[data-ayah-card-back-dismiss]")) { clearAyahCardReturn(); return; }
-          if (e.target.closest("[data-ayah-card-back]")) { const r = ayahCardReturn; clearAyahCardReturn(); r?.back?.(); }
+          if (e.target.closest("[data-ayah-card-back]")) { const r = ayahCardReturn; clearAyahCardReturn("back"); r?.back?.(); }
         });
       }
       pill.innerHTML = `<button type="button" class="ayah-card-back-btn" data-ayah-card-back><span aria-hidden="true">←</span> ${escapeHtml(ayahCardReturn.title)}${ayahCardReturn.label ? ` <span class="ayah-card-back-ref">${escapeHtml(ayahCardReturn.label)}</span>` : ""}</button>` +
