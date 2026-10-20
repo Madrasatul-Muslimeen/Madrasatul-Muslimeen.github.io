@@ -7,7 +7,62 @@ v10.28). Read `CLAUDE.md` first. The prompt that starts the next session is
 
 This session was summarised once (its context compacted), which is why it hands over here.
 
-## LATEST UPDATE — 20 Oct 2026, 12:20 pm Sydney, session `session_01C356HZaJsKM1dnZUNaQoMc` (v12.07 live on MSA AND QR; HANDOVER) — READ THIS FIRST
+## LATEST UPDATE — 20 Oct 2026, 5:55 pm Sydney, session `session_01TZ1fWztdUQb49mZBoChfqV` (v12.09 live on MSA; QR NOT rebuilt; HANDOVER) — READ THIS FIRST
+
+Took over 12:23 pm 20 Oct from `session_01C356HZ` (PCA told; `p/mmsa.sessionUrl` and `p/qr.sessionUrl` set). Handing over
+on the PCA's word (hand119). **`main` is v12.09, live on MSA (5:49 pm). Next release: v12.10.** The PCA is now
+`session_019xuGwr6uFeQUpKmERwBPxX`.
+
+**QR IS NOT REBUILT: it still serves v12.07.** In this session `add_repo QuranRevival/QuranRevival.github.io` (push) was
+refused by the auto-mode permission check every time, including on the Owner's direct request, and so was adding a
+permission rule to `.claude/settings.json` (a session may not widen its own permissions). I did not work around it.
+The Owner was given two ways: run QR's `build-from-msa` workflow themselves (QR repo → Actions → build-from-msa →
+`msa_ref: main`), or commit `{"permissions":{"allow":["mcp__claude-code-remote__add_repo"]}}` to `.claude/settings.json`
+on `main` (it takes effect in the NEXT session). **First job of the next session: check `.claude/settings.json`, then
+`add_repo` + clone QR, run build-from-msa, and run QR's 20 checks** (`node tools/apps/build-app.mjs qr && QR_REPO=<clone>
+bash tools/apps/qr-verify/run-all.sh`). Without the clone 19 of the 20 run and pass against the v12.09 build;
+`upgrade-browser` needs the clone. **v12.09 added `ayah-poster.html` to QR's pages** (`app/apps/qr.json`, and
+`apps/qr/site/app/js/qr-links.js` QR_PAGES): check it is served on QR after the rebuild.
+
+**Released this session**
+- **v12.08** (PR #991): MSA J48 round 1, the Vocabulary module (Builder #983 run 1585, which opened no PR). Review found
+  and fixed one defect (an open Word card was not redrawn when the Vocabulary sheet closed) and two checks that could
+  not fail (`noring`, `lowtest`).
+- **v12.09** (PR #992): MSA J52 Āyah posters (new `app/ayah-poster.html`, `app/js/ayah-poster.js`,
+  `app/js/ayah-poster-image.js`), J53 the madda "^" (display via `lemmaText()`; the lemma KEY is unchanged), J54 the word
+  from Learn next marked in purple + the middle view (`landVocabWord`, `setAppReturn` `onClear`), J55 Learn next to First
+  2,020 = 95% + `formatShare` + Arabic on the left, J56 Practise this word asks ten questions (9 of 10 moves the word).
+
+**Running / waiting**
+1. **QR rebuild** (above): owed since v12.08.
+2. **MSA J48 round 2** (the review schedule in the account): waits on the Owner's Rules paste (J48 need `n48b`).
+   Build it against `quranVocabReview/{tenant}__{person}` once they say "Vocabulary rules are live". Round 3 after.
+3. No Builder round is running. Own audit rounds stay paused until Thu 22 Oct ~7 pm (Owner jobs and student-blocking
+   bugs only).
+
+**Owner messages this session (carry1), each filed in the PCF job named**
+1. 3:25 pm: "J52:1-4:A, 5.B.6. A print button in note prints the note. The same button in poster prints the Poster." → J52, v12.09.
+2. 3:44 pm (screenshot): "Fix the sign." → J53, v12.09.
+3. ~3:55 pm (screenshot): the word from Vocabulary in a distinct colour; land in the middle view → J54, v12.09.
+4. ~4:20 pm (screenshot): next 500 words or how many make 95%; each word's own %; the word on the left → J55, v12.09.
+5. ~4:35 pm (screenshot): "Only 3 questions! Can you make it to 10?" → J56, v12.09.
+6. **5:52 pm (last 30 minutes):** "Add a permanent permission in this repo's settings to allow adding the QuranRevival
+   repo with push access, then add it now and rebuild QR" → refused by the permission check (above); the Owner was told
+   the two ways. Not yet filed as its own job: it is item 1 of "Running / waiting".
+
+**Lessons**
+- **A release PR's `verify` is red until it merges**: `programme-ledger` compares the ledger with `origin/main`, and the
+  job stops at that first failure, hiding the rest. Run the other verify suites locally before merging (all green for
+  v12.09), and confirm the pre-release head was green.
+- **Mutation-prove the Builder's checks yourself**: 2 of its 13 could not fail (a ring check reading any place attribute;
+  a fail case answering all wrong). An "all wrong" case cannot prove a threshold: put the fail case just under the line.
+- **A new page must be added to `qr.json` pages AND `qr-links.js` QR_PAGES**, or QR's Āyah card links to a 404; and a
+  title written in JS ("MSA — ") breaks QR's build: let `translateStatic()` translate the `<title>`.
+- **Check the clock before every PCF time**: one status line said 4:35 pm at 3:35 pm (corrected in the next line).
+- `audit-part15-asma-browser` "cited: no page errors" fails intermittently on `main` too (a word-progress console race,
+  5 of 8 on `main`, 3 of 8 on the branch): a candidate audit item after 22 Oct.
+
+## LATEST UPDATE — 20 Oct 2026, 12:20 pm Sydney, session `session_01C356HZaJsKM1dnZUNaQoMc` (v12.07 live on MSA AND QR; HANDOVER) — superseded by the 5:55 pm block above, kept as history
 
 Same session as the 11:00 am block below, handing over (hand119; long context). **`main` is v12.07, live on MSA and QR**
 (MSA 12:16 pm, QR 12:17 pm). **Next release: v12.08.** Releases this session: v12.05 (J41 J44 J45 J46 J47), v12.06 (J49),
