@@ -29,7 +29,11 @@ const read = (key) => { try { return JSON.parse(localStorage.getItem(key) || "nu
 const write = (key, v) => { try { localStorage.setItem(key, JSON.stringify(v)); } catch { /* private mode: not remembered */ } };
 
 /** A card that moves by its header and resizes by its edges, while `when()` is true. Returns { refresh, reset }. */
-export function makeFloatingCard(cardEl, { key, handleEl = null, minW = 320, minH = 260, when = () => window.innerWidth >= 700, initial = null, onChange = null } = {}) {
+// PCF MSA J50 (the Owner, 20 Oct 2026, of Know Your Status: "enable the window to appear in this size in PC always"):
+// with `fill`, the card opens at `initial()` at EVERY start and never from a size stored by an earlier visit (browser
+// storage is what a reset office computer loses, as J44 found for the Mastery Wheel); a move or resize this visit
+// is kept until the page is reloaded.
+export function makeFloatingCard(cardEl, { key, handleEl = null, minW = 320, minH = 260, when = () => window.innerWidth >= 700, initial = null, onChange = null, fill = false } = {}) {
   if (!cardEl) return null;
   ensureCss();
   const handle = handleEl || cardEl.querySelector("header");
@@ -46,7 +50,7 @@ export function makeFloatingCard(cardEl, { key, handleEl = null, minW = 320, min
     // Start where it was left on this device; else at `initial()` (the caller's own default size, which must not
     // depend on content still loading); else where the card already is, so turning it on moves nothing.
     const r = cardEl.getBoundingClientRect();
-    const saved = read(key);
+    const saved = fill ? null : read(key);
     rect = clampRect(saved && saved.w ? saved : (initial?.() ?? { x: r.left, y: r.top, w: r.width, h: r.height }), limits);
     cardEl.classList.add("fc-floating");
     cardEl.dataset.fcFloating = "";
@@ -69,7 +73,7 @@ export function makeFloatingCard(cardEl, { key, handleEl = null, minW = 320, min
   };
   const drag = (e, mode) => startDrag(e, mode, {
     getRect: () => rect, setRect: (r) => { rect = r; apply(); }, locked: () => !cardEl.classList.contains("fc-floating"),
-    limits, dragClass: "fc-dragging", onEnd: () => write(key, rect),
+    limits, dragClass: "fc-dragging", onEnd: () => { if (!fill) write(key, rect); },
   });
   handle?.addEventListener("pointerdown", (e) => {
     // Buttons, selects and links in the header keep working; only the bar itself moves the card.
