@@ -1,0 +1,204 @@
+<title>Vocabulary Round 3 Choices</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+/* Layout: one reading column; each choice is a panel showing the app's own surface (Learn next, the Wheel, Monitor),
+   driven by one shared "words known" slider so 1A and 1B show the same student. */
+:root{
+  --page:#f6f5fa; --ink:#1b2236; --muted:#5a6274; --line:#dedbe8; --card:#ffffff;
+  --pur:#4b2a85; --pur-bg:#f1e9fb; --pur-line:#c9b3e6;
+  --navy:#16213f; --navy-2:#22305a; --gold:#d8b25a; --gold-ink:#8a6400;
+  --green:#2e7d55; --green-bg:#d7efdf;
+  --f-body:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif; --f-ar:"Amiri","Noto Naskh Arabic",serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--page:#13121a;--ink:#e8e6f1;--muted:#a9a4bb;--line:#2d2a39;--card:#1c1a26;--pur:#d8c6ff;--pur-bg:#2a2140;--pur-line:#594583;--gold-ink:#e0b65a;--green:#7fd1a2;--green-bg:#183324;color-scheme:dark}}
+:root[data-theme="dark"]{--page:#13121a;--ink:#e8e6f1;--muted:#a9a4bb;--line:#2d2a39;--card:#1c1a26;--pur:#d8c6ff;--pur-bg:#2a2140;--pur-line:#594583;--gold-ink:#e0b65a;--green:#7fd1a2;--green-bg:#183324;color-scheme:dark}
+body{background:var(--page);color:var(--ink);font:16px/1.55 var(--f-body)}
+.wrap{max-width:860px;margin:0 auto;padding-block:24px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:26px}
+h1{margin:0;font-size:1.55rem;color:var(--pur);text-wrap:balance} h2{margin:0;font-size:1.2rem;text-wrap:balance} h3{margin:0;font-size:1rem}
+p{margin:0} .sub{color:var(--muted)} .ar{font-family:var(--f-ar)}
+section{display:grid;gap:12px}
+.tag{display:inline-block;font-size:.75rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--pur);background:var(--pur-bg);border:1px solid var(--pur-line);border-radius:999px;padding:2px 10px;justify-self:start}
+.rec{color:var(--green);border-color:var(--green);background:var(--green-bg)}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;display:grid;gap:12px;min-width:0}
+.slider{background:var(--pur-bg);border:1px solid var(--pur-line);border-radius:12px;padding:12px 14px;display:grid;gap:6px;position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
+.slider label{font-weight:700;color:var(--pur)}
+.slider input{width:100%;accent-color:#6b3fb5}
+.slider output{font-variant-numeric:tabular-nums}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--page)}
+/* 1A badge, as it would sit at the top of Learn next and in Know Your Status */
+.badge{border:1px solid #a98bdc;background:#f1e9fb;color:#4b2a85;border-radius:12px;padding:10px 12px;display:grid;gap:8px}
+.badge .big{font-size:1.05rem;font-weight:700}
+.steps{display:flex;flex-wrap:wrap;gap:6px}
+.step{font-size:.85rem;border-radius:999px;padding:3px 10px;border:1px solid #c9b3e6;background:#fff;color:#4b2a85;font-variant-numeric:tabular-nums}
+.step.done{background:#d7efdf;border-color:#2e7d55;color:#1d5a3c;font-weight:700}
+.step.now{border-style:dashed}
+.bar{height:10px;border-radius:999px;background:#e4d4fb;overflow:hidden}
+.bar i{display:block;height:100%;background:#4b2a85;border-radius:999px}
+.mock-head{display:flex;align-items:center;gap:10px}
+.mock-back{border:1px solid #c9b3e6;background:#f1e9fb;color:#4b2a85;border-radius:8px;padding:6px 10px;font-weight:700;font-size:.9rem}
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+@media (max-width:640px){.two{grid-template-columns:minmax(0,1fr)}}
+.where{font-size:.8rem;color:var(--muted);font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+/* 1B wheel */
+.wheel-box{background:radial-gradient(circle at 50% 45%,var(--navy-2),var(--navy));border-radius:14px;padding:14px;display:grid;justify-items:center;gap:10px;color:#f2e7c9}
+.wheel-box svg{width:100%;max-width:340px;height:auto}
+.ayah{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;direction:rtl}
+.w{font-family:var(--f-ar);font-size:1.5rem;line-height:1.6;border-radius:8px;padding:0 8px;border:2px solid transparent;color:#f2e7c9;background:transparent}
+.w.known{background:#2e7d55;border-color:#7fd1a2}
+.legend{font-size:.85rem;color:#e9dfc3;text-align:center}
+/* 2A monitor table */
+.tablebox{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:560px;font-size:.92rem}
+th,td{text-align:start;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:.8rem;color:var(--muted)}
+td.n{font-variant-numeric:tabular-nums}
+.due{display:inline-block;border-radius:999px;padding:1px 8px;font-weight:700;font-variant-numeric:tabular-nums}
+.due.some{background:#fdecc8;color:#7a4b00}
+.due.none{background:var(--green-bg);color:var(--green)}
+.ex{font-size:.8rem;color:var(--gold-ink);font-weight:700}
+.ask{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;display:grid;gap:8px}
+ul{margin:0;padding-inline-start:20px;display:grid;gap:4px}
+input:focus-visible,button:focus-visible{outline:3px solid #c9962b;outline-offset:2px}
+</style>
+
+<div class="wrap">
+  <header style="display:grid;gap:8px">
+    <h1>Vocabulary, round 3: what you would see</h1>
+    <p class="sub">MSA J48, questions 1 and 2. The words, their shares and Al-Fātiḥah 1:2 are the app's real data. Slide "words known" to see each option change for the same student. Nothing here is saved.</p>
+  </header>
+
+  <div class="slider">
+    <label for="known">Words known: the first <output id="knownOut">25</output> words of Learn next</label>
+    <input id="known" type="range" min="0" max="300" step="1" value="25">
+  </div>
+
+  <section>
+    <span class="tag rec">1A · recommended</span>
+    <h2>A Vocabulary badge; the Wheel stays as it is</h2>
+    <p class="sub">The badge sits at the top of Learn next and on Know Your Status. A step shows ✓ once its step test is passed (here: once all its words are known).</p>
+    <div class="two">
+      <div class="panel">
+        <span class="where">Learn next (top)</span>
+        <div class="mock-head"><span class="mock-back">← Back</span><b>Learn next</b></div>
+        <div class="badge" id="badgeA"></div>
+      </div>
+      <div class="panel">
+        <span class="where">Know Your Status</span>
+        <div class="badge" id="badgeB"></div>
+        <p class="sub" style="font-size:.9rem">The Approach list below it is unchanged.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <span class="tag">1B</span>
+    <h2>The Wheel's Word-by-word segment also fills for the āyah</h2>
+    <p class="sub">The segment keeps the colour of the mark you give it. A gold fill inside it grows with how many of this āyah's words you know. Tap a word below to see it change.</p>
+    <div class="wheel-box">
+      <svg id="wheel" viewBox="-170 -170 340 340" role="img" aria-label="Mastery Wheel for Al-Fātiḥah 1:2"></svg>
+      <div class="ayah" id="ayah"></div>
+      <p class="legend" id="wheelNote"></p>
+    </div>
+  </section>
+
+  <section>
+    <span class="tag rec">2A · recommended</span>
+    <h2>A Vocabulary table on the teacher's Monitor</h2>
+    <p class="sub">A new table after "Per student", one row per student the teacher can see. <span class="ex">Example students</span>; the first row follows the slider.</p>
+    <div class="panel tablebox">
+      <table>
+        <thead><tr><th>Student</th><th>Words known</th><th>Share of the Qur'an</th><th>Steps passed</th><th>Due for review today</th><th>Last practised</th></tr></thead>
+        <tbody id="mon"></tbody>
+      </table>
+    </div>
+    <p class="sub">2B leaves Monitor as it is.</p>
+  </section>
+
+  <section class="ask">
+    <h2>What I need from you</h2>
+    <p class="sub">Tick in the PCF (MSA J48, need n48c), or tell me how to make it better.</p>
+    <ul>
+      <li><b>1.</b> A (badge only, Wheel unchanged) or B (badge and the Wheel's Word-by-word fill)</li>
+      <li><b>2.</b> A (Vocabulary table on Monitor) or B (not now)</li>
+      <li><b>3.</b> A (build after the usage reset, Thu 22 Oct ~7 pm) or B (build now)</li>
+    </ul>
+  </section>
+</div>
+
+<script>
+// Real data: Learn next steps and the share of the Qur'an's words they cover (learn-next.json), and Al-Fatihah 1:2.
+const STEPS = [[10,25.7],[25,37.2],[50,47.2],[100,57.3],[300,73.5],[500,80.7],[1000,88.9],[1500,92.6],[2020,95.0]];
+// Share of the Qur'an's words covered by the first n words (n = 0..300), straight from learn-next.json.
+const SHARE = [0, 4.4, 8, 10.9, 13.2, 15.5, 17.8, 19.9, 21.9, 23.9, 25.7, 27, 28.1, 29.1, 30.1, 30.9, 31.8, 32.5, 33.2, 33.9, 34.5, 35, 35.6, 36.1, 36.6, 37.2, 37.7, 38.2, 38.7, 39.1, 39.6, 40.1, 40.5, 40.9, 41.4, 41.8, 42.2, 42.6, 43, 43.3, 43.7, 44.1, 44.4, 44.8, 45.2, 45.5, 45.9, 46.2, 46.5, 46.9, 47.2, 47.5, 47.8, 48, 48.3, 48.6, 48.9, 49.1, 49.3, 49.6, 49.8, 50.1, 50.3, 50.5, 50.7, 51, 51.2, 51.4, 51.6, 51.8, 52, 52.2, 52.4, 52.6, 52.8, 53, 53.2, 53.4, 53.6, 53.8, 53.9, 54.1, 54.3, 54.5, 54.7, 54.8, 55, 55.2, 55.3, 55.5, 55.7, 55.8, 56, 56.2, 56.3, 56.5, 56.6, 56.8, 57, 57.1, 57.3, 57.4, 57.5, 57.7, 57.8, 58, 58.1, 58.2, 58.3, 58.5, 58.6, 58.7, 58.8, 59, 59.1, 59.2, 59.3, 59.4, 59.6, 59.7, 59.8, 59.9, 60, 60.1, 60.3, 60.4, 60.5, 60.6, 60.7, 60.8, 60.9, 61, 61.1, 61.2, 61.4, 61.5, 61.6, 61.7, 61.8, 61.9, 62, 62.1, 62.2, 62.3, 62.4, 62.5, 62.6, 62.7, 62.8, 62.9, 63, 63.1, 63.2, 63.3, 63.4, 63.5, 63.6, 63.7, 63.8, 63.9, 64, 64, 64.1, 64.2, 64.3, 64.4, 64.5, 64.6, 64.7, 64.8, 64.9, 65, 65.1, 65.2, 65.2, 65.3, 65.4, 65.5, 65.6, 65.7, 65.8, 65.8, 65.9, 66, 66.1, 66.2, 66.3, 66.3, 66.4, 66.5, 66.6, 66.7, 66.7, 66.8, 66.9, 67, 67, 67.1, 67.2, 67.3, 67.4, 67.4, 67.5, 67.6, 67.7, 67.7, 67.8, 67.9, 68, 68, 68.1, 68.2, 68.2, 68.3, 68.4, 68.5, 68.5, 68.6, 68.7, 68.7, 68.8, 68.9, 68.9, 69, 69.1, 69.1, 69.2, 69.3, 69.3, 69.4, 69.5, 69.5, 69.6, 69.7, 69.7, 69.8, 69.9, 69.9, 70, 70.1, 70.1, 70.2, 70.2, 70.3, 70.4, 70.4, 70.5, 70.6, 70.6, 70.7, 70.7, 70.8, 70.9, 70.9, 71, 71, 71.1, 71.1, 71.2, 71.3, 71.3, 71.4, 71.4, 71.5, 71.6, 71.6, 71.7, 71.7, 71.8, 71.8, 71.9, 71.9, 72, 72.1, 72.1, 72.2, 72.2, 72.3, 72.3, 72.4, 72.4, 72.5, 72.5, 72.6, 72.6, 72.7, 72.8, 72.8, 72.9, 72.9, 73, 73, 73.1, 73.1, 73.2, 73.2, 73.3, 73.3, 73.4, 73.4, 73.5];
+const AYAH = [["ٱلْحَمْدُ","All praise",259],["لِلَّهِ","(be) to Allah",2],["رَبِّ","the Lord",11],["ٱلْعَـٰلَمِينَ","of the worlds",152]];
+const APPROACHES = ["Memorise","Recite correctly","Tajweed rules","Listen attentively","Read daily","Understand translation","Study tafsir","Word by word","Reflect","Act upon it"];
+const WBW = APPROACHES.indexOf("Word by word");
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+let extra = new Set(); // words of 1:2 tapped as known in the demo
+
+function shareOf(n) { return SHARE[Math.max(0, Math.min(n, SHARE.length - 1))]; }
+function badge(n) {
+  const share = shareOf(n), passed = STEPS.filter(([s]) => n >= s), next = STEPS.find(([s]) => n < s);
+  const steps = STEPS.map(([s]) => `<span class="step${n >= s ? " done" : next && next[0] === s ? " now" : ""}">${n >= s ? "✓ " : ""}First ${s.toLocaleString("en")}${!(n >= s) && next && next[0] === s ? ` · ${n}/${s}` : ""}</span>`).join("");
+  return `<span class="big">You know ${n.toLocaleString("en")} words = ${share.toFixed(1)}% of the Qur'an's words</span>
+    <div class="bar" aria-hidden="true"><i style="width:${Math.min(100, share)}%"></i></div>
+    <div class="steps" aria-label="Steps">${steps}</div>
+    <span style="font-size:.9rem">${passed.length} of ${STEPS.length} steps passed${next ? ` · next: First ${next[0].toLocaleString("en")} (${next[1]}%)` : ""}</span>`;
+}
+function arc(r0, r1, a0, a1) {
+  const p = (r, a) => `${(r * Math.sin(a)).toFixed(2)} ${(-r * Math.cos(a)).toFixed(2)}`;
+  const large = a1 - a0 > Math.PI ? 1 : 0;
+  return `M ${p(r1, a0)} A ${r1} ${r1} 0 ${large} 1 ${p(r1, a1)} L ${p(r0, a1)} A ${r0} ${r0} 0 ${large} 0 ${p(r0, a0)} Z`;
+}
+function wheel(n) {
+  const known = AYAH.map(([, , rank], i) => rank <= n || extra.has(i));
+  const k = known.filter(Boolean).length, frac = k / AYAH.length;
+  const N = APPROACHES.length, step = 2 * Math.PI / N, R0 = 62, R1 = 160;
+  let out = "";
+  APPROACHES.forEach((name, i) => {
+    const a0 = i * step, a1 = (i + 1) * step, mid = a0 + step / 2;
+    const isW = i === WBW;
+    out += `<path d="${arc(R0, R1, a0 + 0.004, a1 - 0.004)}" fill="${isW ? "#2a2f52" : "#1d2547"}" stroke="#3b4675" stroke-width="1"/>`;
+    if (isW && frac > 0) out += `<path d="${arc(R0, R0 + (R1 - R0) * frac, a0 + 0.004, a1 - 0.004)}" fill="#d8b25a" opacity=".85"/>`;
+    if (isW) out += `<path d="${arc(R0, R1, a0 + 0.004, a1 - 0.004)}" fill="none" stroke="#f2d48a" stroke-width="2.5"/>`;
+    const tr = (R0 + R1) / 2, x = tr * Math.sin(mid), y = -tr * Math.cos(mid);
+    let rot = mid * 180 / Math.PI - 90; if (rot > 90) rot -= 180;
+    out += `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" transform="rotate(${rot.toFixed(1)} ${x.toFixed(1)} ${y.toFixed(1)})" text-anchor="middle" dominant-baseline="middle" font-size="10" fill="${isW ? "#fff6de" : "#9aa3c4"}" font-weight="${isW ? 700 : 400}">${esc(name)}</text>`;
+  });
+  out += `<circle r="${R0 - 4}" fill="#121a34" stroke="#d8b25a" stroke-width="1.5"/>`;
+  out += `<text y="-14" text-anchor="middle" font-size="12" fill="#d8b25a" font-weight="700">1:2</text>`;
+  out += `<text y="8" text-anchor="middle" font-size="15" fill="#fff6de" font-weight="700">${k} / ${AYAH.length}</text>`;
+  out += `<text y="26" text-anchor="middle" font-size="9" fill="#c9bf9f">words known</text>`;
+  $("wheel").innerHTML = out;
+  $("ayah").innerHTML = AYAH.map(([ar, en, rank], i) => `<button type="button" class="w${known[i] ? " known" : ""}" data-i="${i}" title="${esc(en)} · word ${rank} in Learn next" aria-pressed="${known[i]}">${esc(ar)}</button>`).join("");
+  $("wheelNote").textContent = `Al-Fātiḥah 1:2 · ${k} of 4 words known (green). Learn next ranks: ${AYAH.map(([, en, r]) => `${en} #${r}`).join(", ")}.`;
+}
+function monitor(n) {
+  const rows = [
+    ["Student A (follows the slider)", n, Math.max(0, Math.min(10, Math.round(n / 8))), "today"],
+    ["Student B", 112, 0, "yesterday"],
+    ["Student C", 9, 4, "3 days ago"],
+  ];
+  $("mon").innerHTML = rows.map(([who, k, due, last]) => {
+    const passed = STEPS.filter(([s]) => k >= s).map(([s]) => s);
+    return `<tr><td>${esc(who)}</td><td class="n">${k.toLocaleString("en")}</td><td class="n">${shareOf(k).toFixed(1)}%</td><td>${passed.length ? passed.map((s) => `First ${s}`).join(", ") : "none yet"}</td><td><span class="due ${due ? "some" : "none"}">${due ? `${due} words` : "nothing"}</span></td><td>${esc(last)}</td></tr>`;
+  }).join("");
+}
+function render() {
+  const n = Number($("known").value);
+  $("knownOut").textContent = n;
+  $("badgeA").innerHTML = badge(n);
+  $("badgeB").innerHTML = `<b style="font-size:.9rem">Vocabulary</b>` + badge(n);
+  wheel(n); monitor(n);
+}
+$("known").addEventListener("input", () => { extra.clear(); render(); });
+$("ayah").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-i]"); if (!b) return;
+  const i = Number(b.dataset.i);
+  if (b.getAttribute("aria-pressed") === "true" && extra.has(i)) extra.delete(i); else extra.add(i);
+  wheel(Number($("known").value));
+});
+render();
+</script>
