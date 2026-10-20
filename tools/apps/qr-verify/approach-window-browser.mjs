@@ -62,7 +62,10 @@ async function run(width, height) {
       return { x, y, w: b.width, h: b.height, top: document.elementFromPoint(x, y) === h };
     }, d);
     check(hit.top && Math.min(hit.w, hit.h) >= 12, `${tag} the ${d} handle is on top where it sits (${Math.round(hit.w)}x${Math.round(hit.h)})`);
-    const dx = d.includes("e") ? 40 : d.includes("w") ? -40 : 0;
+    // Updated in place 20 Oct 2026 (PCF MSA J44, released in v12.05): the window now opens FILLING the space between the
+    // menu row and the dock, so an outward drag of the left or right edge runs into the screen's edge and is rightly
+    // refused. Every edge is dragged INWARD instead (n and s already were), which proves each handle resizes just as well.
+    const dx = d.includes("e") ? -40 : d.includes("w") ? 40 : 0;
     const dy = d.includes("s") ? -40 : d.includes("n") ? 30 : 0; // s: pull up (below is the bottom bar); n: push down (above is the menu row)
     await page.mouse.move(hit.x, hit.y); await page.mouse.down();
     await page.mouse.move(hit.x + dx, hit.y + dy, { steps: 6 }); await page.mouse.up();
@@ -72,7 +75,7 @@ async function run(width, height) {
       l: Math.round(after.l - before.l), t: Math.round(after.t - before.t), r: Math.round(after.r - before.r), b: Math.round(after.b - before.b),
     };
     const want = {
-      l: d.includes("w") ? -40 : 0, r: d.includes("e") ? 40 : 0,
+      l: d.includes("w") ? 40 : 0, r: d.includes("e") ? -40 : 0,
       t: d.includes("n") ? 30 : 0, b: d.includes("s") ? -40 : 0,
     };
     const ok = ["l", "t", "r", "b"].every((k) => Math.abs(moved[k] - want[k]) <= 2);
