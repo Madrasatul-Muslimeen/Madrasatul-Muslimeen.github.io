@@ -422,7 +422,7 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v12.06 on `main`** (20 Oct 2026 — **"Before Al-Fātiḥah" reads right to left** (PCF MSA J49, the Owner's screenshot: "This was done before, but dropped due to MSA-QR back n forth … Fix it"): the two buttons above Al-Fātiḥah show Aʿūdhu billāh on the RIGHT and the Bismillah on its left, in the Qur'an's reading order, in English and Bangla. QR had this as its own edit (QR J09); it is now in the one source and QR's edits 7a/7b are re-anchored, QR's built page byte-identical. The previous release, v12.05, carried J41 J44 J45 J46 J47.)
+**Current milestone: v12.07 on `main`** (20 Oct 2026 — **Know Your Status and Explore, bigger on a PC** (PCF MSA J50, J51; the Owner's two screenshots): Know Your Status opens large at every start on a PC (92% wide, down to just above the Zab bar, never from a stored size), with a sticky **Approach pull-down** (All Approaches, the whole list as before, or one Approach alone, larger) and bigger type; Explore on a PC puts Back, the sūrah steps, the trail, All / One Approach and Track the Status in **one bar** above the whole panel, opens filling the screen at every start, and its wheel takes the largest size that fits (1440 screen: 360 → 488px). The previous release, v12.06, is "Before Al-Fātiḥah" right to left (J49).)
 
 **Earlier milestones, v08.111 back to v07.139, and the long notes around them**
 (the held Phase 4 wiring, the four deployment states, the Programme Integration
