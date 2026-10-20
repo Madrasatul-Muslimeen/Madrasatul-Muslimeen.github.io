@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "12.07",
+    "version": "12.08",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -4361,8 +4361,20 @@
     {
       "version": "12.07",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "v12.07: Know Your Status pull-down and large window; Explore one bar and large window (J50 J51).",
+      "integration": {
+        "authorizedOn": "2026-10-20",
+        "integratedOn": "2026-10-20",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.08",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "v12.08: the Vocabulary module round 1 — Learn, four practice kinds, the step test, Practise this word (J48).",
       "integration": {
         "authorizedOn": "2026-10-20",
         "integratedOn": "2026-10-20",
@@ -4371,8 +4383,9 @@
       }
     }
   ],
-  "nextUnallocated": "12.08",
+  "nextUnallocated": "12.09",
   "nextUnallocatedNote": [
+    "v12.08 was allocated to the Qur'an Vocabulary module, round 1 (PCF MSA J48), 2026-10-20.",
     "v12.07 was allocated to Know Your Status and Explore, bigger on a PC (PCF MSA J50 J51), 2026-10-20.",
     "v12.06 was allocated to Before Al-Fātiḥah reads right to left (PCF MSA J49), 2026-10-20.",
     "v12.05 was allocated to Taṣrīf for nouns, the Mastery Wheel big on a PC, Family's meanings side by side, Taṣrīf's tense toggle, Learn next steps (PCF MSA J41 J44 J45 J46 J47), 2026-10-19.",
