@@ -7,7 +7,53 @@ v10.28). Read `CLAUDE.md` first. The prompt that starts the next session is
 
 This session was summarised once (its context compacted), which is why it hands over here.
 
-## LATEST UPDATE — 20 Oct 2026, 11:00 am Sydney, session `session_01C356HZaJsKM1dnZUNaQoMc` (v12.05 live on MSA; J48 round 1 with the Builder; round 2 Rules waiting on the Owner) — READ THIS FIRST
+## LATEST UPDATE — 20 Oct 2026, 12:20 pm Sydney, session `session_01C356HZaJsKM1dnZUNaQoMc` (v12.07 live on MSA AND QR; HANDOVER) — READ THIS FIRST
+
+Same session as the 11:00 am block below, handing over (hand119; long context). **`main` is v12.07, live on MSA and QR**
+(MSA 12:16 pm, QR 12:17 pm). **Next release: v12.08.** Releases this session: v12.05 (J41 J44 J45 J46 J47), v12.06 (J49),
+v12.07 (J50 J51).
+
+**QR access now WORKS.** The Owner said "QR updates. Do it yourself"; `add_repo QuranRevival/QuranRevival.github.io`
+(push) then succeeded. A new session must call `add_repo` again and clone (`git clone --depth 1 ... /home/user/
+quranrevival.github.io`, then `fetch --depth=1000 origin main` for `upgrade-browser`). Rebuild QR at every release:
+`workflow_dispatch` of QR's `build-from-msa.yml` (input `msa_ref: main`) through the GitHub tools; it is live in ~1 min.
+QR's 20 checks: `node tools/apps/build-app.mjs qr && QR_REPO=/home/user/quranrevival.github.io bash tools/apps/qr-verify/run-all.sh`
+(all 20 green at v12.07). Running one QR check alone needs `node tools/apps/serve-app.mjs build/qr &` first.
+
+**Running / next, in order**
+1. **Review Builder #983 (MSA J48 round 1, Vocabulary module)** by measurement: run 1585 finished SUCCESS with 2 commits on
+   `builder/issue-983-run-1585` (its own suite 65 checks) and NO PR. Open the PR, run its suite and mutations yourself,
+   the Word card / Learn next suites before and after, and release it (v12.08) if sound.
+2. **MSA J48 round 2** (review schedule in the account): Rules candidate merged (PR #986,
+   `docs/governance/2026-10-20-vocab-review-DEPLOYMENT-candidate.rules`, `npm run vocab-review`); waits on the Owner's paste
+   (J48 need `n48b`). Build round 2's code against `quranVocabReview/{tenant}__{person}` once they say "Vocabulary rules are live".
+3. **MSA J52 (āyah posters)**: demo https://claude.ai/artifact/2wL8HGSG4mzwdvBHsAmzup, six ticks waiting (need `n52a`).
+   No real āyah poster exists today (the Āyah card's 🖨 Poster prints a Note via the Dawah page). Build nothing until answered.
+4. Own audit rounds stay paused until Thu 22 Oct ~7 pm (Owner jobs and student-blocking bugs only).
+
+**Owner messages since the 11:00 am block (carry1), and what was done** — each filed in the PCF job named.
+1. (9:27 am, to the previous session two minutes before its handover; found by the PCA) Before Al-Fātiḥah screenshot:
+   "This was done before, but dropped due to MSA-QR back n forth … Fix it" → **MSA J49**, released **v12.06**.
+2. (11:19 am) "QR updates. Do it yourself" → QR access attached; QR rebuilt at v12.06 and v12.07.
+3. (11:19 am) Know Your Status screenshot: Approach pull-down, bigger text on a PC, window this size always → **MSA J50**, v12.07.
+4. (11:19 am) Explore screenshot: one bar so the wheel can be bigger, screen this size always → **MSA J51**, v12.07.
+5. (11:19 am) "Search what we built about Ayah Poster … two types … children with words meaning … Dawah … translation
+   options for both" → **MSA J52**, demo, ticks waiting.
+
+**Lessons**
+- **A browser-stored size is lost on the Owner's reset office computer** (J44, J50, J51): a window the Owner wants "this
+  size always" opens at a computed size every start (`fill` in note-popup.js and float-card.js), never a stored one.
+- **A window sized to the screen's bottom sits under the Zab bar** (z 900): its resize corner could not be grabbed. Measure
+  with `elementFromPoint` on every handle.
+- **A `<select>` in a wrapping flex row takes its longest option's width** (the brief's own lesson, again): it pushed
+  Know Your Status 93px sideways on a phone. The new suite missed it because its seeded names were short. Seed one
+  real-length name, and measure the scrolling box itself, not just the page.
+- **QR's checks could not run while QR was unreachable, and one went red unseen for a release** (J44 vs
+  `approach-window-browser`). Run all 20 at every release now that the clone exists.
+- **A message that reaches a session minutes before its handover can be lost**: the PCA caught J49. When taking over,
+  read the old session's last user events (`list_events` kinds `user`) for anything after its handover block.
+
+## LATEST UPDATE — 20 Oct 2026, 11:00 am Sydney, session `session_01C356HZaJsKM1dnZUNaQoMc` (v12.05 live on MSA; J48 round 1 with the Builder; round 2 Rules waiting on the Owner) — superseded by the 12:20 pm block above, kept as history
 
 Took over 9:29 am 20 Oct (PCA told; `p/mmsa.sessionUrl` and `p/qr.sessionUrl` set). **`main` is v12.05, live on MSA**
 (checked 10:48 am). **QR is NOT rebuilt for v12.05**: `add_repo` for QuranRevival was refused again in this session;
