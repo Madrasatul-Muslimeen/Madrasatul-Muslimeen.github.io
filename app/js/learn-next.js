@@ -6,7 +6,9 @@ let promise = null;
 
 export const LEARN_NEXT_PAGE = 100;
 // PCF MSA J47 (the Owner, 20 Oct 2026): seven steps, each a tile that opens the words in it.
-export const LEARN_NEXT_MILESTONES = [10, 25, 50, 100, 300, 500, 1000];
+// PCF MSA J55 (the Owner, 20 Oct 2026: "how many words more makes 95%?"): 1,500 (92.6%) and 2,020, the first step
+// at 95% of the Qur'an's words (2,000 is 94.9%).
+export const LEARN_NEXT_MILESTONES = [10, 25, 50, 100, 300, 500, 1000, 1500, 2020];
 
 export function loadLearnNext() {
   if (!promise) {
@@ -39,6 +41,13 @@ export function stepRange(n, onlyNew = false) {
 /** J47 -- one word's own share of the Qur'an's words, in percent (what learning THIS word adds). */
 export function wordShare(row, total) {
   return total > 0 ? (100 * Number(row.n)) / total : 0;
+}
+
+/** J55 ("each word should also show its own percentage"): a share written so a rare word never reads 0.0 --
+ *  one decimal from 1%, two from 0.1%, three below (20 of 74,122 places = 0.027). Digits only; the page adds "+" and "%". */
+export function formatShare(p) {
+  const v = Number(p) || 0;
+  return v.toFixed(v >= 1 ? 1 : v >= 0.1 ? 2 : 3);
 }
 
 /** The rows to draw: the step's ranks when `range` is given, known ones dropped when `hideKnown`, then the first `shown`. */

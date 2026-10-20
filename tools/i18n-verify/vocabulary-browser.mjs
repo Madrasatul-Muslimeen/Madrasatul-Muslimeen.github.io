@@ -17,6 +17,12 @@
 //     bnleak     one Bangla string is missing               -> "Bangla has no English"
 //     palegreen  the J47 green is washed out                -> "known = J47 green"
 //     lowpurple  the purple control is not its token        -> "purple control EQUALS its token"
+//     caret      Learn next prints the raw key (J53)          -> "Learn next words 51–100 show no Latin mark"
+//     vocaret    the Vocabulary Learn list prints the raw key -> "the Vocabulary Learn list of 51–100 shows no Latin mark"
+//     word3      (pure) the one-word round is 3 questions (J56) -> "J56: buildWordRound gives 10 questions"
+//     sameplace  (pure) every āyah question at one place      -> "J56: its three āyah questions are at three different places"
+//     wordall    (pure) the word moves only at 10 of 10       -> "J56: 9 of 10 moves the word up"
+//     optcaret   (pure) an Arabic option prints the raw key  -> "J53: a Pick-the-Arabic option shows the word as a reader sees it"
 import { chromium, newContext, openPage } from "./harness.mjs";
 import fs from "fs";
 
@@ -28,6 +34,10 @@ const PURE_MUT = {
   dupmean: ["if (taken.has(key(cand)) || taken.has(norm(meaningOf(cand, lang)))) continue;", "if (cand.r === row.r) continue;"],
   demote: ["return null;\n}\n\n/** [{ rank, lemma, state }]", "return \"learning\";\n}\n\n/** [{ rank, lemma, state }]"],
   lowpass: ["export const PASS_RATIO = 0.9;", "export const PASS_RATIO = 0.8;"],
+  word3: ["export const WORD_ROUND_SIZE = 10;", "export const WORD_ROUND_SIZE = 3;"],
+  sameplace: ["      if (k === \"ayah\" && spread.length) q.place = spread[i % spread.length];", "      if (k === \"ayah\" && spread.length) q.place = spread[0];"],
+  wordall: ["if (!answers.length || right / answers.length < PASS_RATIO) return [];", "if (!answers.length || right < answers.length) return [];"],
+  optcaret: ['text: on === "arabic" ? lemmaText(r.l) :', 'text: on === "arabic" ? r.l :'],
 };
 const MUT = {
   noring: ["app/quranrevival.html", "w.position === pl.position ? \" vo-ring\" : \"\"", "w.position === pl.position + 1 ? \" vo-ring\" : \"\""],
@@ -38,6 +48,8 @@ const MUT = {
   nobackcard: ["app/quranrevival.html", "if (act === \"close\") { const wasWord", "if (act === \"close\") { document.getElementById(\"quranWordCardMount\").innerHTML = \"\"; const wasWord"],
   bnleak: ["app/js/i18n/bn.js", "\"Pick the Arabic\": \"আরবি বাছুন\",", ""],
   nocardsync: ["app/quranrevival.html", "if (quranWordCardState.occurrenceId) { await hydrateWordCardLemmaExtras(); renderPersistentWordCard(); }", ""],
+  caret: ["app/quranrevival.html", '<span class="ln-ar" lang="ar" dir="rtl">${escapeHtml(lemmaText(r.l))}</span>', '<span class="ln-ar" lang="ar" dir="rtl">${escapeHtml(r.l)}</span>'],
+  vocaret: ["app/quranrevival.html", '<span class="vo-lw-ar" lang="ar" dir="rtl">${escapeHtml(lemmaText(r.l))}</span>', '<span class="vo-lw-ar" lang="ar" dir="rtl">${escapeHtml(r.l)}</span>'],
   palegreen: ["app/quranrevival.html", ".vo-lw.vo-known { background: #d7efdf;", ".vo-lw.vo-known { background: #eef7f0;"],
   lowpurple: ["app/quranrevival.html", ".ln-vbtn { flex: 1 1 6rem; min-height: 44px; padding: 0 0.7rem; border-radius: 0.5rem; border: 1px solid #4b2a85; background: #4b2a85;", ".ln-vbtn { flex: 1 1 6rem; min-height: 44px; padding: 0 0.7rem; border-radius: 0.5rem; border: 1px solid #4b2a85; background: #5b3a95;"],
 };
@@ -58,7 +70,7 @@ let V;
     if (!src.includes(a)) throw new Error(`pure mutation anchor missing: ${MUTATE}`);
     src = src.split(a).join(b);
   }
-  src = src.replace('from "./learn-next.js"', `from "${process.cwd()}/app/js/learn-next.js"`);
+  src = src.replace('from "./learn-next.js"', `from "${process.cwd()}/app/js/learn-next.js"`).replace('from "./lemma-text.js"', `from "${process.cwd()}/app/js/lemma-text.js"`);
   fs.writeFileSync("/tmp/vocabulary-under-test.mjs", src);
   V = await import("/tmp/vocabulary-under-test.mjs?" + Date.now());
 }
@@ -93,6 +105,17 @@ let V;
   check("90% passes, 89% does not", V.testPassed(ans([...Array(9).fill(true), false])) === true && V.testPassed(ans([...Array(8).fill(true), false, false])) === false && V.testPassed(ans([...Array(89).fill(true), ...Array(11).fill(false)])) === false);
   check("a wrong answer plans no write", V.practiceWrites(rows, ans([false, false]), () => "not_started").length === 0);
   check("achievedWrites skips a word already Achieved", V.achievedWrites(V.deckRows(rows, 10), (l) => (l === rows[0].l ? "achieved" : "not_started")).length === 9);
+  { // J56: the one-word round
+    const places = Array.from({ length: 30 }, (_, i) => ({ surah: 2, ayah: i + 1, position: 1 }));
+    const wr = V.buildWordRound(rows, rows[0], { rng, places });
+    const k = (x) => wr.filter((q) => q.kind === x).length;
+    const ay = wr.filter((q) => q.kind === "ayah").map((q) => `${q.place?.surah}:${q.place?.ayah}`);
+    check("J56: buildWordRound gives 10 questions (1 flashcard, 3 of each choice kind), all about the word", wr.length === 10 && k("flashcard") === 1 && k("meaning") === 3 && k("arabic") === 3 && k("ayah") === 3 && wr.every((q) => q.rank === rows[0].r), JSON.stringify(wr.map((q) => q.kind)));
+    check("J56: its three āyah questions are at three different places", new Set(ay).size === 3 && !ay.includes("undefined:undefined"), JSON.stringify(ay));
+    const ans = (n) => Array.from({ length: 10 }, (_, i) => ({ rank: rows[0].r, right: i < n }));
+    check("J56: 9 of 10 moves the word up (Not started → Learning); 8 of 10 writes nothing", V.wordRoundWrites(rows[0], ans(9), () => "not_started")[0]?.state === "learning" && V.wordRoundWrites(rows[0], ans(8), () => "not_started").length === 0);
+  }
+  check("J53: a Pick-the-Arabic option shows the word as a reader sees it (no \"^\"), its key unchanged", (() => { const d = V.deckRows(rows, 100); const all = d.flatMap((r) => V.pickOptions(r, V.optionPool(rows, d), "arabic", "en", rng) ?? []); return all.length > 300 && all.every((o) => !/[\^#@\[]/.test(o.text)) && all.some((o) => o.lemma.includes("^")); })());
 }
 if (PURE_MUT[MUTATE]) { console.log(`\n${pass} passed, ${fail} failed`); process.exit(fail ? 1 : 0); }
 
@@ -101,7 +124,8 @@ const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PAT
 const writes = (page, n = 0) => page.evaluate((n) => (window.__stubWriteData || []).slice(n).filter((w) => w.col === "quranLemmaProgress").map((w) => ({ id: w.id, state: w.data?.state ?? w.data?.learner?.state ?? JSON.stringify(w.data) })), n);
 const wcount = (page) => page.evaluate(() => (window.__stubWriteData || []).length);
 const sleep = (page, ms) => page.waitForTimeout(ms);
-const rowOfAr = (s) => rows.find((r) => nfc(r.l) === nfc(s));
+const { lemmaText } = await import(`${process.cwd()}/app/js/lemma-text.js`);
+const rowOfAr = (s) => rows.find((r) => nfc(lemmaText(r.l)) === nfc(s) || nfc(r.l) === nfc(s)); // J53: the screen shows lemmaText(key)
 const meanOf = (r, lang) => (lang === "bn" ? r.b : r.e);
 const vo = (page, sel) => page.evaluate((s) => document.querySelector("#vocabSheet " + s)?.click(), sel);
 const voText = (page, sel) => page.evaluate((s) => document.querySelector("#vocabSheet " + s)?.textContent?.trim() ?? null, sel);
@@ -119,8 +143,14 @@ async function answerChoice(page, lang, right) {
   let row = null;
   if (info.kind === "meaning") row = rowOfAr(info.ar);
   else if (info.kind === "arabic") row = rows.find((r) => meanOf(r, lang) === info.mean);
-  else if (info.kind === "ayah") { if (!info.occ) throw new Error("no ringed word carries its place (data-vo-target): " + JSON.stringify(info)); const t = info.occ.split(":").map(Number); row = rows.find((r) => r.o === t[0] * 1000000 + t[1] * 1000 + t[2]); }
-  const want = info.kind === "arabic" ? row.l : meanOf(row, lang);
+  else if (info.kind === "ayah") {
+    if (!info.occ) throw new Error("no ringed word carries its place (data-vo-target): " + JSON.stringify(info));
+    const t = info.occ.split(":").map(Number);
+    row = rows.find((r) => r.o === t[0] * 1000000 + t[1] * 1000 + t[2]);
+    // J56: a one-word round rings OTHER places of the word too -- find the word by the lemma at that place.
+    if (!row) { const su = JSON.parse(fs.readFileSync(`${OUT}surahs/surah_${String(t[0]).padStart(3, "0")}.json`, "utf8")); const lem = su.ayahs.find((x) => x.ayah === t[1])?.words.find((w) => w.position === t[2])?.morphology?.lemma; row = rows.find((r) => r.l === lem); }
+  }
+  const want = info.kind === "arabic" ? lemmaText(row.l) : meanOf(row, lang);
   const idx = info.opts.findIndex((o) => nfc(o) === nfc(want));
   const pick = right ? idx : info.opts.findIndex((_, i) => i !== idx);
   await page.evaluate((i) => document.querySelectorAll("#vocabSheet [data-vo=pick]")[i].click(), pick);
@@ -236,6 +266,19 @@ for (const [lang, width, height] of [["en", 390, 844], ["en", 320, 640], ["en", 
     const greens = await page.evaluate(() => document.querySelectorAll("#learnNextSheet .ln-row.ln-known").length);
     const bg = await page.evaluate(() => { const k = document.querySelector("#learnNextSheet .ln-row.ln-known"); return k ? [getComputedStyle(k).backgroundColor, getComputedStyle(k).borderInlineStartColor] : null; });
     check(`${tag} Learn next shows the 10 in the J47 green (known = #d7efdf with a #2e7d55 edge)`, greens >= 10 && bg && bg[0] === "rgb(215, 239, 223)" && bg[1] === "rgb(46, 125, 85)", JSON.stringify({ greens, bg }));
+    // J53 (the Owner's screenshot, 20 Oct 2026: "Fix the sign", شَا^ءَ and أُولَٰ^ئِك circled): a lemma is a KEY spelt
+    // with the corpus's Latin marks; every word the reader SEES goes through lemmaText (^ -> U+0653 maddah above).
+    await page.evaluate(() => document.querySelector('#learnNextSheet [data-ln-tile="100"]')?.click());
+    await sleep(page, 300);
+    await page.evaluate(() => document.querySelector('#learnNextSheet [data-ln-new="1"]')?.click());
+    await sleep(page, 300);
+    const marks = await page.evaluate(() => { const ar = [...document.querySelectorAll("#learnNextSheet .ln-ar")].map((e) => e.textContent); return { n: ar.length, latin: ar.filter((t) => /[\^#@\[]/.test(t)), r51: ar[0] }; });
+    check(`${tag} Learn next words 51–100 show no Latin mark (no "^"): word 51 reads ${marks.r51}`, marks.n >= 40 && marks.latin.length === 0 && marks.r51 === lemmaText(rows[50].l) && rows[50].l.includes("^"), JSON.stringify(marks));
+    await vo2(page, "#learnNextSheet", "[data-ln-vocab=learn]");
+    await page.waitForSelector("#vocabSheet .vo-lw-ar", { timeout: 8000 }).catch(() => {});
+    const vmarks = await page.evaluate(() => [...document.querySelectorAll("#vocabSheet .vo-lw-ar")].map((e) => e.textContent).filter((t) => /[\^#@\[]/.test(t)));
+    check(`${tag} the Vocabulary Learn list of 51–100 shows no Latin mark`, vmarks.length === 0, JSON.stringify(vmarks));
+    await vo(page, "[data-vo=menu]"); await vo(page, "[data-vo=close]"); await sleep(page, 300);
   }
 
   // ---- fit at every width: the sheet, the menu, a question
@@ -289,12 +332,34 @@ for (const [lang, width, height] of [["en", 390, 844], ["en", 320, 640], ["en", 
   const level0 = await page.evaluate(() => document.querySelector("#quranWordCardMount [data-word-card-panel]")?.dataset.wordCardPanel);
   await page.evaluate(() => document.querySelector("#quranWordCardMount .word-card-practise")?.click());
   await page.waitForSelector("#vocabSheet .vo-card", { timeout: 15000 }).catch(() => {});
-  const qs = [];
-  for (let i = 0; i < 3; i++) { const r = await answerChoice(page, "en", true); qs.push(r.info.kind); await nextQ(page); }
-  check(`${tag} "Practise this word" is a one-word round: one question of each kind 2–4 (${qs.join(",")}), all about word 1`, [...qs].sort().join() === "arabic,ayah,meaning", qs.join());
+  // UPDATED IN PLACE for PCF MSA J56 (the Owner, 20 Oct 2026: "Only 3 questions! Can you make it to 10?"): ten
+  // questions -- a flashcard, then Pick the meaning / Pick the Arabic / In its āyah three times, each āyah question at a
+  // DIFFERENT place of the word.
+  const qs = [], words = [], ayahAt = [];
+  for (let i = 0; i < 10; i++) {
+    const kind = await page.evaluate(() => document.querySelector("#vocabSheet .vo-card")?.dataset.voKind ?? null);
+    const n = await voText(page, ".vo-prog");
+    if (kind === "flashcard") {
+      words.push(await voText(page, ".vo-card .vo-ar"));
+      await vo(page, "[data-vo=reveal]"); await sleep(page, 150);
+      await vo(page, "[data-vo=flash][data-right='1']"); await sleep(page, 300);
+      qs.push(`flashcard@${n}`);
+      continue;
+    }
+    if (!kind) break;
+    const r = await answerChoice(page, "en", true);
+    qs.push(r.info.kind); words.push(r.row?.l ?? null);
+    if (r.info.kind === "ayah") ayahAt.push(r.info.occ);
+    await nextQ(page);
+  }
+  const count = (k) => qs.filter((q) => q.startsWith(k)).length;
+  check(`${tag} J56: "Practise this word" asks TEN questions: 1 flashcard, 3 Pick the meaning, 3 Pick the Arabic, 3 In its āyah`, qs.length === 10 && count("flashcard") === 1 && count("meaning") === 3 && count("arabic") === 3 && count("ayah") === 3 && /1 of 10/.test(qs[0]), qs.join());
+  check(`${tag} J56: every question is about word 1 (${rows[0].l})`, words.length === 10 && words.every((w) => w === null || nfc(w) === nfc(rows[0].l) || nfc(w) === nfc(lemmaText(rows[0].l))), JSON.stringify(words));
+  const placeOk = ayahAt.every((occ) => { const [ss, aa, pp] = String(occ).split(":").map(Number); const su = JSON.parse(fs.readFileSync(`${OUT}surahs/surah_${String(ss).padStart(3, "0")}.json`, "utf8")); return su.ayahs.find((x) => x.ayah === aa)?.words.find((w) => w.position === pp)?.morphology?.lemma === rows[0].l; });
+  check(`${tag} J56: the three āyah questions ring three DIFFERENT places, each a real place of the word (${ayahAt.join(" · ")})`, ayahAt.length === 3 && new Set(ayahAt).size === 3 && placeOk, JSON.stringify(ayahAt));
   await page.waitForSelector("#vocabSheet [data-vo-score]", { timeout: 8000 }).catch(() => {});
   await sleep(page, 800);
-  check(`${tag} the score screen says 3 of 3`, /3/.test(await voText(page, "[data-vo-score]") ?? ""), await voText(page, "[data-vo-score]"));
+  check(`${tag} the score screen says 10 of 10`, /\b10\b.*\b10\b/.test(await voText(page, "[data-vo-score]") ?? ""), await voText(page, "[data-vo-score]"));
   await vo(page, "[data-vo=close]");
   await sleep(page, 400);
   const back = await page.evaluate(() => ({ hidden: document.getElementById("vocabSheet").hidden, card: !!document.querySelector("#quranWordCardMount .quran-word-card"), level: document.querySelector("#quranWordCardMount [data-word-card-panel]")?.dataset.wordCardPanel, occ: document.querySelector("#quranWordCardMount .quran-word-card")?.innerText.includes("مِن") }));

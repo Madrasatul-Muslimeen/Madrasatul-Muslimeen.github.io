@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="./css/shell.css" />
+<title>MSA — Āyah poster</title>
+<style>
+  /* PCF MSA J52 -- the Āyah posters. The chrome (bar, choices) is the app's navy and gold; the poster is a sheet of
+     paper whose every size is a share of its own width (cqw) times --k, which fitPosterToSheet() lowers until the
+     whole poster fits. So the screen, the printed A4/A3 page and the picture file (ayah-poster-image.js) keep the
+     same proportions. */
+  @font-face { font-family: 'QR Scheherazade'; src: url('fonts/scheherazade.woff2') format('woff2'); font-display: swap; }
+  @font-face { font-family: 'QR Noto Naskh'; src: url('fonts/notonaskh.woff2') format('woff2'); font-display: swap; }
+  :root { --ap-navy: #1F3A6E; --ap-gold: #B8862F; --ap-ar: 'QR Scheherazade', 'QR Noto Naskh', 'Noto Naskh Arabic', serif; --ap-en: Georgia, 'Times New Roman', serif; --ap-bn: 'Noto Sans Bengali', 'Hind Siliguri', Vrinda, 'Shonar Bangla', sans-serif; --ap-ui: system-ui, -apple-system, 'Segoe UI', sans-serif; --ap-paper-ratio: 1.4142857; }
+  body { margin: 0; background: #eef0f3; color: #1c2433; font-family: var(--ap-ui); padding-bottom: 60px; }
+  .ap-bar { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 0.6rem; padding: 0.5rem 0.75rem; background: var(--ap-navy); color: #fff; }
+  .ap-back { min-height: 44px; padding: 0 0.9rem; border-radius: 999px; border: 2px solid var(--ap-gold); background: #fff; color: var(--ap-navy); font: inherit; font-weight: 700; cursor: pointer; flex: 0 0 auto; }
+  .ap-title { margin: 0; font-size: 1.1rem; min-width: 0; overflow-wrap: anywhere; }
+  .ap-wrap { max-width: 1200px; margin: 0 auto; padding: 0.9rem 16px 1.5rem; box-sizing: border-box; display: grid; gap: 0.9rem; }
+  .ap-choose { display: grid; gap: 0.7rem; max-width: 640px; margin: 1.2rem auto; }
+  .ap-choose[hidden], #apEditor[hidden] { display: none; } /* a class rule's display beats [hidden] (the brief's trap) */
+  .ap-choose h2 { margin: 0; font-size: 1.2rem; text-align: center; }
+  .ap-choose-btns { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: 0.7rem; }
+  .ap-big { min-height: 88px; padding: 0.7rem 1rem; border-radius: 0.8rem; border: 2px solid var(--ap-navy); background: #fff; color: var(--ap-navy); font: inherit; font-weight: 700; font-size: 1.05rem; cursor: pointer; display: grid; gap: 0.25rem; text-align: center; }
+  .ap-big small { font-weight: 400; font-size: 0.85rem; color: #4a5568; }
+  .ap-tools { display: flex; flex-wrap: wrap; gap: 0.6rem 1.1rem; align-items: center; }
+  .ap-grp { display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center; min-width: 0; }
+  .ap-grp[hidden] { display: none; }
+  .ap-lab { font-size: 0.82rem; color: #4a5568; margin-inline-end: 0.15rem; }
+  .ap-grp button, .ap-grp select { font: inherit; min-height: 44px; padding: 0 0.85rem; border-radius: 999px; border: 1px solid #b8c0cc; background: #fff; color: #1c2433; cursor: pointer; min-width: 0; max-width: 100%; }
+  .ap-grp select { padding: 0 0.5rem; border-radius: 0.6rem; }
+  .ap-grp button[aria-pressed="true"] { background: var(--ap-navy); color: #fff; border-color: var(--ap-navy); }
+  .ap-grp button:focus-visible, .ap-act:focus-visible, .ap-back:focus-visible, .ap-big:focus-visible { outline: 3px solid var(--ap-gold); outline-offset: 2px; }
+  .ap-acts { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .ap-act { min-height: 48px; padding: 0 1.1rem; border-radius: 0.6rem; border: 2px solid var(--ap-navy); background: var(--ap-navy); color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+  .ap-act.ap-act-2 { background: #fff; color: var(--ap-navy); }
+  .ap-status { margin: 0; min-height: 1.3em; font-size: 0.9rem; color: #1d6b4a; }
+  .ap-status.ap-warn { color: #8a2a1a; font-weight: 700; }
+  .ap-stage { display: flex; justify-content: center; }
+  .ap-sheet { width: 100%; max-width: 620px; aspect-ratio: 1 / var(--ap-paper-ratio); container-type: inline-size; box-shadow: 0 8px 30px rgba(20,30,50,0.18); border-radius: 4px; overflow: hidden; background: #fff; --k: 1; }
+  .ap-poster { box-sizing: border-box; height: 100%; overflow: hidden; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  /* the study poster (for children, for the wall) */
+  .ap-kid { background: #fffdf7; color: #1d2433; padding: 6cqw 5.5cqw; display: flex; flex-direction: column; gap: calc(var(--k) * 3cqw); }
+  .ap-kid-head { text-align: center; display: grid; gap: calc(var(--k) * 0.6cqw); }
+  .ap-kid-head .ap-name { font-family: var(--ap-ar); font-size: calc(var(--k) * 7cqw); line-height: 1.4; color: #0f5132; }
+  .ap-en-name { font-family: var(--ap-en); font-size: calc(var(--k) * 3cqw); font-weight: 700; line-height: 1.3; }
+  .ap-ref { font-size: calc(var(--k) * 2.2cqw); color: #7a6a45; letter-spacing: 0.06em; line-height: 1.3; }
+  .ap-kid-ayahs { display: grid; gap: calc(var(--k) * 2.6cqw); align-content: start; flex: 1 1 auto; min-height: 0; }
+  .ap-kid-ayah { display: flex; flex-direction: row-reverse; flex-wrap: wrap; gap: calc(var(--k) * 1.6cqw); align-items: stretch; justify-content: flex-start; }
+  .ap-kid-word { box-sizing: border-box; border: calc(var(--k) * 0.35cqw) solid #d9cfb8; border-radius: calc(var(--k) * 2cqw); padding: calc(var(--k) * 1.2cqw) calc(var(--k) * 1.6cqw); display: flex; flex-direction: column; justify-content: center; align-items: center; min-width: calc(var(--k) * 14cqw); max-width: calc(var(--k) * 37.2cqw); text-align: center; }
+  .ap-kid-word:nth-child(4n+1) { background: #e8f4ec; } .ap-kid-word:nth-child(4n+2) { background: #fff1d6; } .ap-kid-word:nth-child(4n+3) { background: #e7eefb; } .ap-kid-word:nth-child(4n+4) { background: #fbe8ee; }
+  .ap-kid-word .ap-ar { font-family: var(--ap-ar); font-size: calc(var(--k) * 6.2cqw); line-height: 1.5; }
+  .ap-tr { font-family: var(--ap-en); font-style: italic; font-size: calc(var(--k) * 2.1cqw); line-height: 1.3; color: #5d5442; }
+  .ap-m-en { font-family: var(--ap-en); font-size: calc(var(--k) * 2.4cqw); font-weight: 700; line-height: 1.3; }
+  .ap-m-bn { font-family: var(--ap-bn); font-size: calc(var(--k) * 2.5cqw); line-height: 1.35; }
+  .ap-kid-num { align-self: center; box-sizing: border-box; font-family: var(--ap-ar); font-size: calc(var(--k) * 4cqw); color: #a07a24; border: calc(var(--k) * 0.35cqw) solid #d9b765; border-radius: 50%; width: calc(var(--k) * 7cqw); height: calc(var(--k) * 7cqw); display: grid; place-items: center; line-height: 1; }
+  .ap-kid-foot { display: flex; justify-content: space-between; gap: 1cqw; font-size: 1.9cqw; line-height: 1.5; color: #7a6a45; border-top: 0.3cqw dashed #d9cfb8; padding-top: 1.4cqw; flex: 0 0 auto; }
+  /* the Dawah poster */
+  .ap-dawah { background: radial-gradient(120% 80% at 50% 0%, #1f3160 0%, #14213d 60%); color: #f3ead6; padding: 9cqw 8cqw; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: calc(var(--k) * 4cqw); text-align: center; position: relative; }
+  .ap-dawah::before { content: ""; position: absolute; inset: 3cqw; border: 0.4cqw solid rgba(216,178,90,0.55); border-radius: 1.5cqw; pointer-events: none; }
+  .ap-dawah > * { margin: 0; flex: 0 0 auto; }
+  .ap-dawah .ap-ar { font-family: var(--ap-ar); font-size: calc(var(--k) * 6.6cqw); line-height: 1.85; color: #fff8e7; }
+  .ap-dawah .ap-ref { font-size: calc(var(--k) * 2.4cqw); letter-spacing: 0.12em; color: #d8b25a; font-weight: 700; }
+  .ap-rule { width: 22cqw; height: 0.4cqw; background: #d8b25a; border-radius: 1cqw; }
+  .ap-t-en { font-family: var(--ap-en); font-style: italic; font-size: calc(var(--k) * 3.5cqw); line-height: 1.55; }
+  .ap-t-bn { font-family: var(--ap-bn); font-size: calc(var(--k) * 3.5cqw); line-height: 1.6; }
+  .ap-from { font-size: calc(var(--k) * 1.9cqw); color: #b9b3a2; line-height: 1.4; }
+  .ap-hidden-canvas { display: none; }
+  /* Print: the sheet alone, the whole page, with its colours. The paper size is written by setPaper(). */
+  @media print {
+    body { background: #fff; padding: 0; }
+    .ap-bar, .ap-tools, .ap-acts, .ap-status, .ap-choose, #zabRoot, #swUpdateNotice { display: none !important; }
+    .ap-wrap { padding: 0; max-width: none; display: block; }
+    .ap-stage { display: block; }
+    .ap-sheet { width: var(--ap-print-w, 210mm); max-width: none; height: var(--ap-print-h, 297mm); aspect-ratio: auto; box-shadow: none; border-radius: 0; }
+  }
+</style>
+<style id="apPageSize">@page { size: A4 portrait; margin: 0; }</style>
+</head>
+<body>
+  <div class="ap-bar"><button type="button" class="ap-back" id="apBack">← Back</button><h1 class="ap-title" id="apTitle">Āyah poster</h1></div>
+  <main class="ap-wrap">
+    <section class="ap-choose" id="apChoose" hidden>
+      <h2 id="apChooseTitle">Which poster?</h2>
+      <div class="ap-choose-btns">
+        <button type="button" class="ap-big" data-ap-choose="study"><span id="apChooseStudy">Study poster</span><small id="apChooseStudyHint">For children: every word with its meaning, for the wall</small></button>
+        <button type="button" class="ap-big" data-ap-choose="dawah"><span id="apChooseDawah">Dawah poster</span><small id="apChooseDawahHint">The āyah in Arabic with its translation, to share</small></button>
+      </div>
+    </section>
+    <div id="apEditor" hidden>
+      <div class="ap-tools" role="toolbar" id="apTools"></div>
+      <div class="ap-acts" id="apActs"></div>
+      <p class="ap-status" id="apStatus" role="status" aria-live="polite"></p>
+      <div class="ap-stage"><div class="ap-sheet" id="apSheet"></div></div>
+    </div>
+    <canvas class="ap-hidden-canvas" id="apCanvas" aria-hidden="true"></canvas>
+  </main>
+  <script type="module">
+    import { t, translateStatic } from "./js/i18n.js";
+    import { getAppLang } from "./js/prefs.js";
+    import { getSurah } from "./js/quran-data.js";
+    import { registerServiceWorker } from "./js/sw-register.js";
+    import { posterModel, clampRange, rukuRange, rangeRef, renderStudyPosterHtml, renderDawahPosterHtml, posterFileName, escapeHtml, MAX_AYAHS, PAPERS } from "./js/ayah-poster.js";
+    import { paintPoster, posterBlob } from "./js/ayah-poster-image.js";
+
+    registerServiceWorker();
+    const $ = (id) => document.getElementById(id);
+    const params = new URLSearchParams(location.search);
+    const num = (n) => (getAppLang() === "bn" ? String(n).replace(/\d/g, (d) => "০১২৩৪৫৬৭৮৯"[d]) : String(n));
+    const state = {
+      surah: Math.min(114, Math.max(1, Number(params.get("surah")) || 1)),
+      ayah: Math.max(1, Number(params.get("ayah")) || 1),
+      from: Number(params.get("from")) || null, to: Number(params.get("to")) || null,
+      kind: ["study", "dawah"].includes(params.get("kind")) ? params.get("kind") : null,
+      lang: ["en", "bn", "both"].includes(params.get("lang")) ? params.get("lang") : "both",
+      translit: params.get("tr") !== "0",
+      paper: params.get("paper") === "a3" ? "a3" : "a4",
+    };
+    let surahData = null, lastFit = { k: 1, fits: true };
+
+    // The way-back law (decision 86): ← Back goes to exactly where the reader was (that page kept its place in its
+    // own address); opened on its own, it goes to the Qur'an.
+    translateStatic(document.querySelector(".ap-bar")); // also translates <title> from bn.js (the one-source rule: no app name in code)
+    $("apBack").textContent = `← ${t("Back")}`;
+    $("apBack").addEventListener("click", () => { if (history.length > 1) history.back(); else location.href = "./quranrevival.html"; });
+    $("apTitle").textContent = t("Āyah poster");
+    $("apChooseTitle").textContent = t("Which poster?");
+    $("apChooseStudy").textContent = t("Study poster");
+    $("apChooseStudyHint").textContent = t("For children: every word with its meaning, for the wall");
+    $("apChooseDawah").textContent = t("Dawah poster");
+    $("apChooseDawahHint").textContent = t("The āyah in Arabic with its translation, to share");
+
+    /** Keeps the choices in the address, so a reload or ← Back from a later page returns to this same poster. */
+    function writeAddress() {
+      const u = new URL(location.href);
+      for (const [k, v] of Object.entries({ surah: state.surah, ayah: state.ayah, from: state.from, to: state.to, kind: state.kind, lang: state.lang, tr: state.translit ? "1" : "0", paper: state.paper })) {
+        if (v == null) u.searchParams.delete(k); else u.searchParams.set(k, String(v));
+      }
+      history.replaceState(history.state, "", u);
+    }
+
+    const pressed = (on) => `aria-pressed="${on ? "true" : "false"}"`;
+    function toolsHtml() {
+      const n = surahData.ayahCount, ruku = rukuRange(surahData, state.ayah);
+      const whole = state.from === 1 && state.to === n, isAyah = state.from === state.ayah && state.to === state.ayah;
+      const isRuku = state.from === ruku.from && state.to === ruku.to && !isAyah;
+      const opts = (sel) => Array.from({ length: n }, (_, i) => `<option value="${i + 1}"${i + 1 === sel ? " selected" : ""}>${num(i + 1)}</option>`).join("");
+      return `
+        <div class="ap-grp" role="group" aria-label="${escapeHtml(t("Poster"))}"><span class="ap-lab">${escapeHtml(t("Poster"))}</span>
+          <button type="button" data-ap-kind="study" ${pressed(state.kind === "study")}>${escapeHtml(t("Study poster"))}</button>
+          <button type="button" data-ap-kind="dawah" ${pressed(state.kind === "dawah")}>${escapeHtml(t("Dawah poster"))}</button></div>
+        <div class="ap-grp" role="group" aria-label="${escapeHtml(t("Āyāt"))}"><span class="ap-lab">${escapeHtml(t("Āyāt"))}</span>
+          <button type="button" data-ap-range="ayah" ${pressed(isAyah)}>${escapeHtml(t("This āyah"))}</button>
+          ${ruku.to > ruku.from && ruku.to - ruku.from + 1 <= MAX_AYAHS && !(ruku.from === 1 && ruku.to === n) ? `<button type="button" data-ap-range="ruku" ${pressed(isRuku)}>${escapeHtml(t("This rukūʿ"))}</button>` : ""}
+          ${n > 1 && n <= MAX_AYAHS ? `<button type="button" data-ap-range="surah" ${pressed(whole)}>${escapeHtml(t("Whole sūrah"))}</button>` : ""}
+          <label class="ap-lab" for="apFrom">${escapeHtml(t("From"))}</label><select id="apFrom" data-ap-from>${opts(state.from)}</select>
+          <label class="ap-lab" for="apTo">${escapeHtml(t("To"))}</label><select id="apTo" data-ap-to>${opts(state.to)}</select></div>
+        <div class="ap-grp" role="group" aria-label="${escapeHtml(state.kind === "study" ? t("Word meanings") : t("Translation"))}"><span class="ap-lab">${escapeHtml(state.kind === "study" ? t("Word meanings") : t("Translation"))}</span>
+          <button type="button" data-ap-lang="en" ${pressed(state.lang === "en")}>${escapeHtml(t("English"))}</button>
+          <button type="button" data-ap-lang="bn" ${pressed(state.lang === "bn")}>${escapeHtml(t("Bangla"))}</button>
+          <button type="button" data-ap-lang="both" ${pressed(state.lang === "both")}>${escapeHtml(t("Both"))}</button></div>
+        <div class="ap-grp" role="group" aria-label="${escapeHtml(t("Transliteration"))}"${state.kind === "study" ? "" : " hidden"}><span class="ap-lab">${escapeHtml(t("Transliteration"))}</span>
+          <button type="button" data-ap-tr="1" ${pressed(state.translit)}>${escapeHtml(t("On"))}</button>
+          <button type="button" data-ap-tr="0" ${pressed(!state.translit)}>${escapeHtml(t("Off"))}</button></div>
+        <div class="ap-grp" role="group" aria-label="${escapeHtml(t("Paper"))}"><span class="ap-lab">${escapeHtml(t("Paper"))}</span>
+          <button type="button" data-ap-paper="a4" ${pressed(state.paper === "a4")}>A4</button>
+          <button type="button" data-ap-paper="a3" ${pressed(state.paper === "a3")}>A3</button></div>`;
+    }
+
+    /** The poster's own words, in the reader's language. */
+    function posterText(model) {
+      const ref = rangeRef(model, num);
+      return state.kind === "study"
+        ? { title: t("Sūrah {name} · {meaning}", { name: model.nameEn, meaning: model.nameMeaning }), ref: t("QUR'AN {ref} · WORD BY WORD", { ref }), from: t("Madrasatul Muslimeen"), tip: t("Read it, point to each word, say its meaning"), ayahLabel: (n) => t("āyah {n}", { n: num(n) }) }
+        : { ref: t("Sūrah {name} · {ref}", { name: model.nameEn, ref }), from: t("The Qur'an · shared by Madrasatul Muslimeen") };
+    }
+
+    /** The largest --k (0.3–1) at which the poster fits its sheet: nothing is ever cut off unseen. */
+    function fitPosterToSheet() {
+      const sheet = $("apSheet"), poster = sheet.firstElementChild;
+      if (!poster) return { k: 1, fits: true };
+      const over = () => poster.scrollHeight > poster.clientHeight + 1 || [...poster.querySelectorAll(".ap-kid-ayahs")].some((e) => e.scrollHeight > e.clientHeight + 1);
+      const at = (k) => { sheet.style.setProperty("--k", String(k)); return !over(); };
+      if (at(1)) return { k: 1, fits: true };
+      let lo = 0.3, hi = 1;
+      if (!at(lo)) return { k: lo, fits: false };
+      for (let i = 0; i < 14; i++) { const mid = (lo + hi) / 2; if (at(mid)) lo = mid; else hi = mid; }
+      at(lo);
+      return { k: lo, fits: true };
+    }
+
+    function setPaper() {
+      const p = PAPERS[state.paper];
+      $("apPageSize").textContent = `@page { size: ${state.paper === "a3" ? "A3" : "A4"} portrait; margin: 0; }`;
+      document.documentElement.style.setProperty("--ap-paper-ratio", String(p.h / p.w));
+      document.documentElement.style.setProperty("--ap-print-w", `${p.w}mm`);
+      document.documentElement.style.setProperty("--ap-print-h", `${p.h}mm`);
+    }
+
+    function render() {
+      writeAddress();
+      if (!state.kind) { $("apChoose").hidden = false; $("apEditor").hidden = true; return; }
+      $("apChoose").hidden = true; $("apEditor").hidden = false;
+      const model = posterModel(surahData, state.from, state.to);
+      $("apTitle").textContent = `${t(state.kind === "study" ? "Study poster" : "Dawah poster")} · ${rangeRef(model, num)}`;
+      $("apTools").innerHTML = toolsHtml();
+      $("apActs").innerHTML = `<button type="button" class="ap-act" data-ap-print>🖨 ${escapeHtml(t("Print"))}</button><button type="button" class="ap-act ap-act-2" data-ap-picture>🖼 ${escapeHtml(t("Save as picture"))}</button>`;
+      setPaper();
+      const text = posterText(model);
+      $("apSheet").innerHTML = state.kind === "study"
+        ? renderStudyPosterHtml(model, { lang: state.lang, translit: state.translit, text })
+        : renderDawahPosterHtml(model, { lang: state.lang, text });
+      lastFit = fitPosterToSheet();
+      setStatus(lastFit.fits ? "" : t("This is too much for one sheet: choose fewer āyāt, or A3."), !lastFit.fits);
+    }
+    function setStatus(msg, warn = false) { $("apStatus").textContent = msg; $("apStatus").classList.toggle("ap-warn", warn); }
+
+    function setRange(from, to) { const r = clampRange(surahData.ayahCount, from, to); state.from = r.from; state.to = r.to; render(); }
+
+    document.addEventListener("click", async (e) => {
+      const b = e.target.closest("button");
+      if (!b) return;
+      if (b.dataset.apChoose) { state.kind = b.dataset.apChoose; render(); return; }
+      if (b.dataset.apKind) { state.kind = b.dataset.apKind; render(); return; }
+      if (b.dataset.apLang) { state.lang = b.dataset.apLang; render(); return; }
+      if (b.dataset.apTr) { state.translit = b.dataset.apTr === "1"; render(); return; }
+      if (b.dataset.apPaper) { state.paper = b.dataset.apPaper; render(); return; }
+      if (b.dataset.apRange === "ayah") { setRange(state.ayah, state.ayah); return; }
+      if (b.dataset.apRange === "ruku") { const r = rukuRange(surahData, state.ayah); setRange(r.from, r.to); return; }
+      if (b.dataset.apRange === "surah") { setRange(1, surahData.ayahCount); return; }
+      if (b.hasAttribute("data-ap-print")) { window.print(); return; }
+      if (b.hasAttribute("data-ap-picture")) { await savePicture(); return; }
+    });
+    document.addEventListener("change", (e) => {
+      if (e.target.matches("[data-ap-from]")) { const f = Number(e.target.value); setRange(f, Math.max(f, state.to)); }
+      if (e.target.matches("[data-ap-to]")) { const to = Number(e.target.value); setRange(Math.min(state.from, to), to); }
+    });
+
+    /** 5B: the poster as a PNG. A phone that can share files offers its own share sheet; anything else downloads it. */
+    async function savePicture() {
+      const model = posterModel(surahData, state.from, state.to), canvas = $("apCanvas");
+      try {
+        await fontsReady();
+        paintPoster(canvas, model, { kind: state.kind, lang: state.lang, translit: state.translit, paper: state.paper, text: posterText(model) });
+        const blob = await posterBlob(canvas), name = posterFileName(model, state.kind);
+        const file = typeof File === "function" ? new File([blob], name, { type: "image/png" }) : null;
+        if (file && navigator.canShare?.({ files: [file] })) {
+          try { await navigator.share({ files: [file], title: $("apTitle").textContent }); setStatus(t("Picture ready to share.")); return; }
+          catch (err) { if (err?.name === "AbortError") { setStatus(""); return; } /* otherwise save it instead */ }
+        }
+        const url = URL.createObjectURL(blob), a = document.createElement("a");
+        a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 60000);
+        setStatus(t("Picture saved: {name}", { name }));
+      } catch (err) {
+        // I15: a failure reaches the reader in words.
+        setStatus(t("The picture could not be made: {why}", { why: err?.message ?? String(err) }), true);
+      }
+    }
+    function fontsReady() {
+      const loads = [`700 40px 'QR Scheherazade'`, `40px 'QR Scheherazade'`].map((f) => document.fonts?.load?.(f, "بسم").catch(() => null));
+      return Promise.all(loads).then(() => document.fonts?.ready);
+    }
+
+    let refit = 0;
+    new ResizeObserver(() => { cancelAnimationFrame(refit); refit = requestAnimationFrame(() => { if (state.kind && surahData) { lastFit = fitPosterToSheet(); setStatus(lastFit.fits ? "" : t("This is too much for one sheet: choose fewer āyāt, or A3."), !lastFit.fits); } }); }).observe($("apSheet"));
+
+    try {
+      surahData = await getSurah(state.surah);
+      state.ayah = Math.min(state.ayah, surahData.ayahCount);
+      const r = clampRange(surahData.ayahCount, state.from ?? state.ayah, state.to ?? state.from ?? state.ayah);
+      state.from = r.from; state.to = r.to;
+      await fontsReady();
+      render();
+      document.body.dataset.apReady = "1";
+    } catch (err) {
+      $("apChoose").hidden = true; $("apEditor").hidden = false;
+      setStatus(t("The āyah could not be loaded: {why}", { why: err?.message ?? String(err) }), true);
+      document.body.dataset.apReady = "error";
+    }
+  </script>
+</body>
+</html>

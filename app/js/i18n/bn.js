@@ -4348,4 +4348,30 @@ export const BN = {
   "Previous month": "আগের মাস",
   "Next month": "পরের মাস",
   "File": "ফাইল",
+  // ---------------------------------------------------------------------
+  // PCF MSA J52 — the Āyah posters (20 Oct 2026)
+  // ---------------------------------------------------------------------
+  "Āyah poster": "আয়াতের পোস্টার",
+  "MSA — Āyah poster": "MSA — আয়াতের পোস্টার",
+  "Which poster?": "কোন পোস্টার?",
+  "Study poster": "পড়ার পোস্টার",
+  "For children: every word with its meaning, for the wall": "শিশুদের জন্য: প্রতিটি শব্দ তার অর্থসহ, দেয়ালে লাগানোর জন্য",
+  "Dawah poster": "দাওয়াহ পোস্টার", // ?
+  "The āyah in Arabic with its translation, to share": "আরবিতে আয়াত ও তার অনুবাদ, অন্যদের সাথে শেয়ার করার জন্য",
+  "Āyāt": "আয়াত",
+  "Word meanings": "শব্দের অর্থ",
+  "Paper": "কাগজ",
+  "Save as picture": "ছবি হিসেবে রাখুন",
+  "Sūrah {name} · {meaning}": "সূরা {name} · {meaning}",
+  "QUR'AN {ref} · WORD BY WORD": "কুরআন {ref} · শব্দে শব্দে",
+  "Madrasatul Muslimeen": "মাদরাসাতুল মুসলিমীন",
+  "Read it, point to each word, say its meaning": "পড়ো, প্রতিটি শব্দ আঙুলে দেখাও, তার অর্থ বলো",
+  "āyah {n}": "আয়াত {n}",
+  "Sūrah {name} · {ref}": "সূরা {name} · {ref}",
+  "The Qur'an · shared by Madrasatul Muslimeen": "আল-কুরআন · মাদরাসাতুল মুসলিমীনের পক্ষ থেকে",
+  "This is too much for one sheet: choose fewer āyāt, or A3.": "এক পাতায় এত ধরে না: কম আয়াত বাছুন, অথবা A3।",
+  "Picture ready to share.": "ছবি শেয়ারের জন্য তৈরি।",
+  "Picture saved: {name}": "ছবি রাখা হয়েছে: {name}",
+  "The picture could not be made: {why}": "ছবিটি তৈরি করা যায়নি: {why}",
+  "The āyah could not be loaded: {why}": "আয়াতটি আনা যায়নি: {why}",
 };
