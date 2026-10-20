@@ -112,7 +112,7 @@ async function openVocab(page) {
 async function answerChoice(page, lang, right) {
   const info = await page.evaluate(() => {
     const card = document.querySelector("#vocabSheet .vo-card");
-    return { kind: card?.dataset.voKind, ar: card?.querySelector(".vo-ar")?.textContent ?? null, mean: card?.querySelector(".vo-mean")?.textContent ?? null, ring: card?.querySelector(".vo-ring")?.textContent ?? null, occ: card?.querySelector("[data-vo-target]")?.dataset.voTarget ?? null, opts: [...document.querySelectorAll("#vocabSheet [data-vo=pick]")].map((b) => b.textContent.trim()) };
+    return { kind: card?.dataset.voKind, ar: card?.querySelector(".vo-ar")?.textContent ?? null, mean: card?.querySelector(".vo-mean")?.textContent ?? null, ring: card?.querySelector(".vo-ring")?.textContent ?? null, occ: card?.querySelector(".vo-ring")?.dataset.voTarget ?? null /* Architect review: read off the RINGED word itself (it read any [data-vo-target], so a ring on the wrong word passed: mutation noring went uncaught) */, opts: [...document.querySelectorAll("#vocabSheet [data-vo=pick]")].map((b) => b.textContent.trim()) };
   });
   let row = null;
   if (info.kind === "meaning") row = rowOfAr(info.ar);
