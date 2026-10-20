@@ -1045,6 +1045,37 @@ service cloud.firestore {
       // No delete (I4/D6). A superseded decision is kept in history.
     }
 
+    // ---------------------------------------------------------------------
+    // PCF MSA J48 round 2 (the Owner's tick 3A, 20 Oct 2026): the Vocabulary module's review schedule, kept in the
+    // account so it follows the student to any computer. ONE document per student,
+    // quranVocabReview/{tenantId}__{personId}, holding `words`, a map from a word's key to its place in the schedule
+    // (its box, when it is next due, its last result). One read loads the whole schedule (load-speed contract); no
+    // query, so no index. Whoever may record for the student may read and write it; who it belongs to never changes;
+    // only `words` and `updatedAt` move; nothing is deleted (I4/D6). It is practice state, never a mark: "known"
+    // stays the Word card's own records.
+    // ---------------------------------------------------------------------
+    function isVocabReviewCreate(reviewKey) {
+      return request.resource.data.get('contractVersion', '') == 'quran-vocab-review:v1'
+          && reviewKey == request.resource.data.tenantId + '__' + request.resource.data.personId
+          && request.resource.data.words is map
+          && request.resource.data.keys().hasOnly(['contractVersion', 'tenantId', 'personId', 'words',
+               'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'])
+          && request.resource.data.keys().hasAll(['schemaVersion', 'createdAt', 'updatedAt', 'createdBy']);
+    }
+    match /quranVocabReview/{reviewKey} {
+      allow read: if isPlatformAdmin();
+      allow read: if signedIn() && !exists(/databases/$(database)/documents/quranVocabReview/$(reviewKey));
+      allow read: if canRecordFor(resource.data.tenantId, resource.data.personId);
+
+      allow create: if canRecordFor(request.resource.data.tenantId, request.resource.data.personId)
+                    && isVocabReviewCreate(reviewKey);
+      allow update: if resource != null
+                    && canRecordFor(resource.data.tenantId, resource.data.personId)
+                    && request.resource.data.words is map
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['words', 'updatedAt']);
+      // No delete (I4/D6). A word leaves the schedule only by its entry changing, never by the document going.
+    }
+
     // =====================================================================
     // Issue #303 -- the bounded-cost counter behind lemma-level word
     // progress (quranLemmaOccurrenceCounters). Assembled 26 Sep 2026 into
