@@ -467,7 +467,7 @@ function wholeQuranKnownLines(wholeQuranTotal, text, formatNumber, levelTotals, 
     // `learnNext` is { word, meaning, count } (already in the reader's language), or absent while it is loading.
     const next = learnNext?.word ? `<button type="button" class="word-card-learnnext" data-learn-next-open>
       <span class="word-card-learnnext-title">${escapeHtml(String(text.learnNextTitle ?? WORD_CARD_TEXT.learnNextTitle))}</span>
-      <span class="word-card-learnnext-line">${escapeHtml(String(text.learnNextLine ?? WORD_CARD_TEXT.learnNextLine)).replace("{word}", () => `<bdi lang="ar" dir="rtl" class="word-card-learnnext-ar">${escapeHtml(learnNext.word)}</bdi>`).replace("{meaning}", () => escapeHtml(learnNext.meaning ?? "")).replace("{count}", () => escapeHtml(formatNumber(grouped(learnNext.count))))}</span>
+      <span class="word-card-learnnext-line">${escapeHtml(String(text.learnNextLine ?? WORD_CARD_TEXT.learnNextLine)).replace("{word}", () => `<bdi lang="ar" dir="rtl" class="word-card-learnnext-ar">${escapeHtml(lemmaText(learnNext.word))}</bdi>`).replace("{meaning}", () => escapeHtml(learnNext.meaning ?? "")).replace("{count}", () => escapeHtml(formatNumber(grouped(learnNext.count))))}</span>
     </button>` : "";
     return `<div class="word-progress-whole-quran-box">${rows.join("")}${next}</div>`;
   }

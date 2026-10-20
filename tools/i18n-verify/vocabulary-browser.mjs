@@ -17,6 +17,9 @@
 //     bnleak     one Bangla string is missing               -> "Bangla has no English"
 //     palegreen  the J47 green is washed out                -> "known = J47 green"
 //     lowpurple  the purple control is not its token        -> "purple control EQUALS its token"
+//     caret      Learn next prints the raw key (J53)          -> "Learn next words 51–100 show no Latin mark"
+//     vocaret    the Vocabulary Learn list prints the raw key -> "the Vocabulary Learn list of 51–100 shows no Latin mark"
+//     optcaret   (pure) an Arabic option prints the raw key  -> "J53: a Pick-the-Arabic option shows the word as a reader sees it"
 import { chromium, newContext, openPage } from "./harness.mjs";
 import fs from "fs";
 
@@ -28,6 +31,7 @@ const PURE_MUT = {
   dupmean: ["if (taken.has(key(cand)) || taken.has(norm(meaningOf(cand, lang)))) continue;", "if (cand.r === row.r) continue;"],
   demote: ["return null;\n}\n\n/** [{ rank, lemma, state }]", "return \"learning\";\n}\n\n/** [{ rank, lemma, state }]"],
   lowpass: ["export const PASS_RATIO = 0.9;", "export const PASS_RATIO = 0.8;"],
+  optcaret: ['text: on === "arabic" ? lemmaText(r.l) :', 'text: on === "arabic" ? r.l :'],
 };
 const MUT = {
   noring: ["app/quranrevival.html", "w.position === pl.position ? \" vo-ring\" : \"\"", "w.position === pl.position + 1 ? \" vo-ring\" : \"\""],
@@ -38,6 +42,8 @@ const MUT = {
   nobackcard: ["app/quranrevival.html", "if (act === \"close\") { const wasWord", "if (act === \"close\") { document.getElementById(\"quranWordCardMount\").innerHTML = \"\"; const wasWord"],
   bnleak: ["app/js/i18n/bn.js", "\"Pick the Arabic\": \"আরবি বাছুন\",", ""],
   nocardsync: ["app/quranrevival.html", "if (quranWordCardState.occurrenceId) { await hydrateWordCardLemmaExtras(); renderPersistentWordCard(); }", ""],
+  caret: ["app/quranrevival.html", '<span class="ln-ar" lang="ar" dir="rtl">${escapeHtml(lemmaText(r.l))}</span>', '<span class="ln-ar" lang="ar" dir="rtl">${escapeHtml(r.l)}</span>'],
+  vocaret: ["app/quranrevival.html", '<span class="vo-lw-ar" lang="ar" dir="rtl">${escapeHtml(lemmaText(r.l))}</span>', '<span class="vo-lw-ar" lang="ar" dir="rtl">${escapeHtml(r.l)}</span>'],
   palegreen: ["app/quranrevival.html", ".vo-lw.vo-known { background: #d7efdf;", ".vo-lw.vo-known { background: #eef7f0;"],
   lowpurple: ["app/quranrevival.html", ".ln-vbtn { flex: 1 1 6rem; min-height: 44px; padding: 0 0.7rem; border-radius: 0.5rem; border: 1px solid #4b2a85; background: #4b2a85;", ".ln-vbtn { flex: 1 1 6rem; min-height: 44px; padding: 0 0.7rem; border-radius: 0.5rem; border: 1px solid #4b2a85; background: #5b3a95;"],
 };
@@ -58,7 +64,7 @@ let V;
     if (!src.includes(a)) throw new Error(`pure mutation anchor missing: ${MUTATE}`);
     src = src.split(a).join(b);
   }
-  src = src.replace('from "./learn-next.js"', `from "${process.cwd()}/app/js/learn-next.js"`);
+  src = src.replace('from "./learn-next.js"', `from "${process.cwd()}/app/js/learn-next.js"`).replace('from "./lemma-text.js"', `from "${process.cwd()}/app/js/lemma-text.js"`);
   fs.writeFileSync("/tmp/vocabulary-under-test.mjs", src);
   V = await import("/tmp/vocabulary-under-test.mjs?" + Date.now());
 }
@@ -93,6 +99,7 @@ let V;
   check("90% passes, 89% does not", V.testPassed(ans([...Array(9).fill(true), false])) === true && V.testPassed(ans([...Array(8).fill(true), false, false])) === false && V.testPassed(ans([...Array(89).fill(true), ...Array(11).fill(false)])) === false);
   check("a wrong answer plans no write", V.practiceWrites(rows, ans([false, false]), () => "not_started").length === 0);
   check("achievedWrites skips a word already Achieved", V.achievedWrites(V.deckRows(rows, 10), (l) => (l === rows[0].l ? "achieved" : "not_started")).length === 9);
+  check("J53: a Pick-the-Arabic option shows the word as a reader sees it (no \"^\"), its key unchanged", (() => { const d = V.deckRows(rows, 100); const all = d.flatMap((r) => V.pickOptions(r, V.optionPool(rows, d), "arabic", "en", rng) ?? []); return all.length > 300 && all.every((o) => !/[\^#@\[]/.test(o.text)) && all.some((o) => o.lemma.includes("^")); })());
 }
 if (PURE_MUT[MUTATE]) { console.log(`\n${pass} passed, ${fail} failed`); process.exit(fail ? 1 : 0); }
 
@@ -101,7 +108,8 @@ const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PAT
 const writes = (page, n = 0) => page.evaluate((n) => (window.__stubWriteData || []).slice(n).filter((w) => w.col === "quranLemmaProgress").map((w) => ({ id: w.id, state: w.data?.state ?? w.data?.learner?.state ?? JSON.stringify(w.data) })), n);
 const wcount = (page) => page.evaluate(() => (window.__stubWriteData || []).length);
 const sleep = (page, ms) => page.waitForTimeout(ms);
-const rowOfAr = (s) => rows.find((r) => nfc(r.l) === nfc(s));
+const { lemmaText } = await import(`${process.cwd()}/app/js/lemma-text.js`);
+const rowOfAr = (s) => rows.find((r) => nfc(lemmaText(r.l)) === nfc(s) || nfc(r.l) === nfc(s)); // J53: the screen shows lemmaText(key)
 const meanOf = (r, lang) => (lang === "bn" ? r.b : r.e);
 const vo = (page, sel) => page.evaluate((s) => document.querySelector("#vocabSheet " + s)?.click(), sel);
 const voText = (page, sel) => page.evaluate((s) => document.querySelector("#vocabSheet " + s)?.textContent?.trim() ?? null, sel);
@@ -120,7 +128,7 @@ async function answerChoice(page, lang, right) {
   if (info.kind === "meaning") row = rowOfAr(info.ar);
   else if (info.kind === "arabic") row = rows.find((r) => meanOf(r, lang) === info.mean);
   else if (info.kind === "ayah") { if (!info.occ) throw new Error("no ringed word carries its place (data-vo-target): " + JSON.stringify(info)); const t = info.occ.split(":").map(Number); row = rows.find((r) => r.o === t[0] * 1000000 + t[1] * 1000 + t[2]); }
-  const want = info.kind === "arabic" ? row.l : meanOf(row, lang);
+  const want = info.kind === "arabic" ? lemmaText(row.l) : meanOf(row, lang);
   const idx = info.opts.findIndex((o) => nfc(o) === nfc(want));
   const pick = right ? idx : info.opts.findIndex((_, i) => i !== idx);
   await page.evaluate((i) => document.querySelectorAll("#vocabSheet [data-vo=pick]")[i].click(), pick);
@@ -236,6 +244,19 @@ for (const [lang, width, height] of [["en", 390, 844], ["en", 320, 640], ["en", 
     const greens = await page.evaluate(() => document.querySelectorAll("#learnNextSheet .ln-row.ln-known").length);
     const bg = await page.evaluate(() => { const k = document.querySelector("#learnNextSheet .ln-row.ln-known"); return k ? [getComputedStyle(k).backgroundColor, getComputedStyle(k).borderInlineStartColor] : null; });
     check(`${tag} Learn next shows the 10 in the J47 green (known = #d7efdf with a #2e7d55 edge)`, greens >= 10 && bg && bg[0] === "rgb(215, 239, 223)" && bg[1] === "rgb(46, 125, 85)", JSON.stringify({ greens, bg }));
+    // J53 (the Owner's screenshot, 20 Oct 2026: "Fix the sign", شَا^ءَ and أُولَٰ^ئِك circled): a lemma is a KEY spelt
+    // with the corpus's Latin marks; every word the reader SEES goes through lemmaText (^ -> U+0653 maddah above).
+    await page.evaluate(() => document.querySelector('#learnNextSheet [data-ln-tile="100"]')?.click());
+    await sleep(page, 300);
+    await page.evaluate(() => document.querySelector('#learnNextSheet [data-ln-new="1"]')?.click());
+    await sleep(page, 300);
+    const marks = await page.evaluate(() => { const ar = [...document.querySelectorAll("#learnNextSheet .ln-ar")].map((e) => e.textContent); return { n: ar.length, latin: ar.filter((t) => /[\^#@\[]/.test(t)), r51: ar[0] }; });
+    check(`${tag} Learn next words 51–100 show no Latin mark (no "^"): word 51 reads ${marks.r51}`, marks.n >= 40 && marks.latin.length === 0 && marks.r51 === lemmaText(rows[50].l) && rows[50].l.includes("^"), JSON.stringify(marks));
+    await vo2(page, "#learnNextSheet", "[data-ln-vocab=learn]");
+    await page.waitForSelector("#vocabSheet .vo-lw-ar", { timeout: 8000 }).catch(() => {});
+    const vmarks = await page.evaluate(() => [...document.querySelectorAll("#vocabSheet .vo-lw-ar")].map((e) => e.textContent).filter((t) => /[\^#@\[]/.test(t)));
+    check(`${tag} the Vocabulary Learn list of 51–100 shows no Latin mark`, vmarks.length === 0, JSON.stringify(vmarks));
+    await vo(page, "[data-vo=menu]"); await vo(page, "[data-vo=close]"); await sleep(page, 300);
   }
 
   // ---- fit at every width: the sheet, the menu, a question

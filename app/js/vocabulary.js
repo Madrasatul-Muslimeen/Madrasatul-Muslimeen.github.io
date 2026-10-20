@@ -2,6 +2,7 @@
 // PURE: no DOM, no Firestore, no fetch. The page feeds it learn-next rows and draws what it returns.
 // There is NO second "known" list: every result is written by the page through the Word card's own lemma mark.
 import { stepRange } from "./learn-next.js";
+import { lemmaText } from "./lemma-text.js";
 
 export const PRACTICE_KINDS = Object.freeze(["flashcard", "meaning", "arabic", "ayah"]);
 export const CHOICE_KINDS = Object.freeze(["meaning", "arabic", "ayah"]);
@@ -57,7 +58,7 @@ export function pickOptions(row, pool, on, lang = "en", rng = Math.random) {
   }
   if (wrong.length < OPTION_COUNT - 1) return null;
   const all = shuffle([row, ...wrong], rng);
-  return all.map((r) => ({ rank: r.r, lemma: r.l, text: on === "arabic" ? r.l : meaningOf(r, lang), correct: r.r === row.r }));
+  return all.map((r) => ({ rank: r.r, lemma: r.l, text: on === "arabic" ? lemmaText(r.l) : meaningOf(r, lang) /* J53: shown through lemmaText (the key keeps its ^) */, correct: r.r === row.r }));
 }
 
 /** The pool wrong options come from: the step's words; if fewer than 4, the next steps' words too (never invented). */
