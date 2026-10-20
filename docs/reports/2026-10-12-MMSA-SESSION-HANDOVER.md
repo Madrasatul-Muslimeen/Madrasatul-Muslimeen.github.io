@@ -1087,3 +1087,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v12.07** (2026-10-20): Know Your Status and Explore, bigger on a PC (PCF MSA J50 J51).
 - **v12.08** (2026-10-20): the Qur'an Vocabulary module, round 1 (PCF MSA J48).
 - **v12.09** (2026-10-20): Āyah posters, the madda sign, the word marked and the middle view, Learn next to 95%, ten questions (PCF MSA J52 J53 J54 J55 J56).
+- **v12.10** (2026-10-20): the Vocabulary review schedule kept in the account (PCF MSA J48 round 2).
