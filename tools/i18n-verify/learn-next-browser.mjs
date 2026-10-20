@@ -45,6 +45,10 @@ const MUT = {
   nomiddle: ["app/quranrevival.html", "      if (readChromeStates().includes(1)) setReadChrome(1);\n      return (how) =>", "      return (how) =>"],
   keepmark: ["app/quranrevival.html", "return (how) => { paintVocabTarget(null); if (how", "return (how) => { if (how"],
   norestore: ["app/quranrevival.html", "if (how === \"back\" && readChromeStates().includes(before)) setReadChrome(before);", ""],
+  // PCF MSA J55
+  no95: ["app/js/learn-next.js", "[10, 25, 50, 100, 300, 500, 1000, 1500, 2020]", "[10, 25, 50, 100, 300, 500, 1000]"],
+  sharefix1: ["app/js/learn-next.js", "return v.toFixed(v >= 1 ? 1 : v >= 0.1 ? 2 : 3);", "return v.toFixed(1);"],
+  arright: ["app/quranrevival.html", "line-height: 1.6; text-align: left; direction: rtl; overflow-wrap: anywhere; }", "line-height: 1.6; text-align: right; direction: rtl; overflow-wrap: anywhere; }"],
   noback: ["app/quranrevival.html", 'setAppReturn(t("Back to Learn next"), "", () =>', 'false && setAppReturn(t("Back to Learn next"), "", () =>'],
   scrollreset: ["app/quranrevival.html", "if (scroller) scroller.scrollTop = learnNextScroll;", "if (scroller) scroller.scrollTop = 0;"],
   bnleak: ["app/js/i18n/bn.js", '"Show 100 more": "আরও ১০০টি দেখান",', ""],
@@ -222,11 +226,12 @@ for (const [lang, width, height] of [["en", 320, 640], ["en", 390, 844], ["en", 
   { const c = await contrast(page, null, "#learnNextSheet .ln-note"); ratios.push(`sheet=${c?.ratio?.toFixed(2)}`); }
   check(`${tag} the purple ink reaches 4.5:1 or more on all three looks (${ratios.join(" ")})`, ratios.length === 3 && ratios.every((r) => Number(r.split("=")[1]) >= 4.5), ratios.join(" "));
   // Updated in place 20 Oct 2026 (PCF MSA J47): the Owner asked for First 25, 50 and 500 too -- seven tiles, not four.
-  check(`${tag} tapping the line opens the sheet: header, note, seven step tiles, checkbox, 100 rows`, !!sh && sh.rows === 100 && sh.tiles.length === 7, JSON.stringify(sh && { rows: sh.rows, tiles: sh.tiles }));
+  // Updated in place again 20 Oct 2026 (PCF MSA J55): the Owner asked how many words make 95% -- First 1,500 and First 2,020 join.
+  check(`${tag} tapping the line opens the sheet: header, note, nine step tiles, checkbox, 100 rows`, !!sh && sh.rows === 100 && sh.tiles.length === 9, JSON.stringify(sh && { rows: sh.rows, tiles: sh.tiles }));
   if (!sh) { await ctx.close(); continue; }
   // Updated in place 20 Oct 2026 (J47): the seven figures, read off learn-next.json's cumulative column by hand. The
   // old `|| /২৫|25/.test(...)` let ANY Bangla run pass on the first tile alone; the digits are now converted and compared.
-  check(`${tag} step tiles show 25.7 / 37.2 / 47.2 / 57.3 / 73.5 / 80.7 / 88.9%`, JSON.stringify(sh.tiles.map((t) => t.p.replace(/[০-৯]/g, (d) => "০১২৩৪৫৬৭৮৯".indexOf(d)))) === JSON.stringify(["25.7%", "37.2%", "47.2%", "57.3%", "73.5%", "80.7%", "88.9%"]), JSON.stringify(sh.tiles));
+  check(`${tag} step tiles show 25.7 / 37.2 / 47.2 / 57.3 / 73.5 / 80.7 / 88.9 / 92.6 / 95.0%`, JSON.stringify(sh.tiles.map((t) => t.p.replace(/[০-৯]/g, (d) => "০১২৩৪৫৬৭৮৯".indexOf(d)))) === JSON.stringify(["25.7%", "37.2%", "47.2%", "57.3%", "73.5%", "80.7%", "88.9%", "92.6%", "95.0%"]), JSON.stringify(sh.tiles));
   // --- J47: each tile opens the words in it
   const ranksNow = () => page.evaluate(() => [...document.querySelectorAll("#learnNextSheet .ln-row")].map((r) => Number(r.dataset.lnRow)));
   await page.evaluate(() => document.querySelector('#learnNextSheet [data-ln-tile="25"]').click());
@@ -245,8 +250,26 @@ for (const [lang, width, height] of [["en", 320, 640], ["en", 390, 844], ["en", 
   check(`${tag} J47: tapping the open tile again gives back the whole list (100 rows, from 1)`, rk.length === 100 && rk[0] === 1, `${rk.length}`);
   const share = await page.evaluate(() => document.querySelector('#learnNextSheet [data-ln-row="1"] .ln-share')?.textContent ?? "");
   check(`${tag} J47: word 1 (مِن, 3,229 of 74,122 places) shows its own share, +4.4% (not the running 4.4% "so far" alone: word 2 shows +3.6%)`, digits0(share) === "+4.4%" && digits0(await page.evaluate(() => document.querySelector('#learnNextSheet [data-ln-row="2"] .ln-share')?.textContent ?? "")) === "+3.6%", share);
+  // J55 ("each word should also show its own percentage"): a rare word's share never reads 0.0 -- word 501 is 20 of
+  // 74,122 places, +0.027%; and the Arabic sits at the row's LEFT ("How about placing the Word in the left").
+  await page.evaluate(() => document.querySelector('#learnNextSheet [data-ln-tile="1000"]').click());
+  await page.waitForTimeout(250);
+  await page.evaluate(() => document.querySelector('#learnNextSheet [data-ln-new="1"]').click());
+  await page.waitForTimeout(300);
+  const j55 = await page.evaluate(() => {
+    const row = document.querySelector('#learnNextSheet [data-ln-row="501"]');
+    if (!row) return null;
+    const rr = row.getBoundingClientRect(), ar = row.querySelector(".ln-ar"), rank = row.querySelector(".ln-rank"), cnt = row.querySelector(".ln-count");
+    const g = document.createRange(); g.selectNodeContents(ar); const tr = g.getBoundingClientRect();
+    return { share: row.querySelector(".ln-share").textContent, textLeft: Math.round(tr.left - rank.getBoundingClientRect().right), textRight: Math.round(cnt.getBoundingClientRect().left - tr.right), rowW: Math.round(rr.width) };
+  });
+  check(`${tag} J55: word 501 (20 places) shows its own share as +0.027%, not +0.0%`, !!j55 && digits0(j55.share) === "+0.027%", JSON.stringify(j55));
+  check(`${tag} J55: the Arabic word sits at the row's left, beside its number (gap to the number < its gap to the count)`, !!j55 && j55.textLeft >= 0 && j55.textLeft < 24 && j55.textLeft < j55.textRight, JSON.stringify(j55));
+  await page.evaluate(() => document.querySelector('#learnNextSheet [data-ln-new="0"]').click());
+  await page.evaluate(() => document.querySelector('#learnNextSheet [data-ln-tile="1000"]').click());
+  await page.waitForTimeout(250);
   sh = await sheetInfo(page);
-  check(`${tag} J47: with seven tiles the sheet still fits (no sideways scroll, every tile whole)`, sh.over <= 0 && sh.pageOver <= 0 && sh.tiles.every((t) => t.w), JSON.stringify({ over: sh.over, page: sh.pageOver, tiles: sh.tiles.map((t) => t.w) }));
+  check(`${tag} J47/J55: with nine tiles the sheet still fits (no sideways scroll, every tile whole)`, sh.over <= 0 && sh.pageOver <= 0 && sh.tiles.every((t) => t.w), JSON.stringify({ over: sh.over, page: sh.pageOver, tiles: sh.tiles.map((t) => t.w) }));
   check(`${tag} sheet fits: no sideways scroll, every tile and row whole, ← Back reachable (40px+)`, sh.over <= 0 && sh.pageOver <= 0 && sh.wide === 0 && sh.tiles.every((t) => t.w) && sh.backIn, JSON.stringify({ over: sh.over, page: sh.pageOver, wide: sh.wide, tiles: sh.tiles, back: sh.backIn }));
   check(`${tag} the Arabic is right-to-left in the Quranic font`, sh.ar === "rtl" && /quran|serif|Amiri|Uthman|Scheherazade/i.test(sh.fontAr), sh.fontAr);
   check(`${tag} "100 at a time": exactly 100 rows are drawn, with a Show-100-more button (never all 4,832)`, sh.rows === 100 && sh.more, `${sh.rows} ${sh.moreText}`);

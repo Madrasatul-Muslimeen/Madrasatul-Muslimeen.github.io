@@ -3706,8 +3706,10 @@
   .ln-body { flex: 1 1 auto; overflow-y: auto; overflow-x: hidden; padding: 0.6rem 0.75rem 1.5rem; }
   .ln-note { margin: 0 0 0.6rem; padding: 0.45rem 0.65rem; border-radius: 0.5rem; background: #f1e9fb; color: #4b2a85; border: 1px solid #a98bdc; font-size: 0.86rem; line-height: 1.35; }
   /* J47: seven step tiles, each a toggle; four to a row on a phone. */
-  .ln-tiles { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 0.4rem; margin: 0 0 0.6rem; }
-  @media (max-width: 600px) { .ln-tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+  /* J55: nine steps -- one row of nine on a wide screen, 5 + 4 on a tablet, three rows of three on a phone. */
+  .ln-tiles { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 0.4rem; margin: 0 0 0.6rem; }
+  @media (max-width: 1000px) { .ln-tiles { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+  @media (max-width: 600px) { .ln-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
   .ln-tile { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 52px; padding: 0.35rem 0.2rem; border-radius: 0.5rem; border: 1px solid #c9b3e6; background: #f1e9fb; color: #4b2a85; text-align: center; min-width: 0; font: inherit; cursor: pointer; }
   .ln-tile[aria-pressed="true"] { background: #4b2a85; color: #fff; border-color: #4b2a85; }
   .ln-showing { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.4rem; margin: 0 0 0.5rem; padding: 0.4rem 0.6rem; border: 1px dashed #a98bdc; border-radius: 0.5rem; color: #4b2a85; font-size: 0.85rem; }
@@ -3726,7 +3728,8 @@
   .ln-row.ln-known { background: #d7efdf; border-color: #2e7d55; border-inline-start: 6px solid #2e7d55; }
   .ln-row.ln-known .ln-ar { color: #1d5c3c; }
   .ln-rank { grid-area: rank; font-weight: 800; color: #4b2a85; font-size: 0.85rem; }
-  .ln-ar { grid-area: ar; font-family: var(--quran-font, serif); font-size: 1.5rem; line-height: 1.6; text-align: right; direction: rtl; overflow-wrap: anywhere; }
+  /* J55 (the Owner: "How about placing the Word in the left"): the Arabic starts at the row's left, beside its number. */
+  .ln-ar { grid-area: ar; font-family: var(--quran-font, serif); font-size: 1.5rem; line-height: 1.6; text-align: left; direction: rtl; overflow-wrap: anywhere; }
   .ln-mean { grid-area: mean; font-size: 0.85rem; overflow-wrap: anywhere; min-width: 0; } .ln-mean-2 { color: #55615c; }
   .ln-count { grid-area: count; font-weight: 800; font-size: 0.9rem; } .ln-sofar { grid-area: sofar; font-size: 0.75rem; color: #4b2a85; text-align: end; }
   .ln-tick { grid-area: tick; font-size: 0.78rem; font-weight: 800; color: #1d6b4a; }
@@ -6886,7 +6889,7 @@
     import { parseQuranWordOccurrenceId } from "./js/quran-word-identity.js";
     import { loadLemmaDictionary, loadBanglaLemmaDictionary, lemmaDictionaryEntry } from "./js/lemma-dictionary.js";
     import { loadLemmaMeaningGroups, sameMeaningLemmas, meaningGroupOf } from "./js/lemma-meaning-groups.js";
-    import { loadLearnNext, firstUnknownRow, milestoneFigures, visibleRows, placeOfRow, stepRange, wordShare, LEARN_NEXT_PAGE } from "./js/learn-next.js";
+    import { loadLearnNext, firstUnknownRow, milestoneFigures, visibleRows, placeOfRow, stepRange, wordShare, formatShare, LEARN_NEXT_PAGE } from "./js/learn-next.js";
     // J53: a lemma is a KEY (Buckwalter marks like ^ kept as Latin); lemmaText() is how a reader sees it.
     import { lemmaText } from "./js/lemma-text.js";
     import { PRACTICE_KINDS, deckRows, buildRound, buildTest, buildWordRound, tally, testPassed, practiceWrites, achievedWrites } from "./js/vocabulary.js";
@@ -18695,7 +18698,7 @@
           <span class="ln-rank">${escapeHtml(num(r.r))}</span>
           <span class="ln-ar" lang="ar" dir="rtl">${escapeHtml(lemmaText(r.l))}</span>
           <span class="ln-mean"><span class="ln-mean-1">${escapeHtml(learnNextMeaning(r))}</span>${other ? ` <span class="ln-mean-2">· ${escapeHtml(other)}</span>` : ""}</span>
-          <span class="ln-count">${escapeHtml(grouped(r.n))}× <span class="ln-share" title="${escapeHtml(t("Learning this word adds {p}% of the Qur'an's words"))}">+${escapeHtml(num(wordShare(r, c.data.total).toFixed(1)))}%</span></span>
+          <span class="ln-count">${escapeHtml(grouped(r.n))}× <span class="ln-share" title="${escapeHtml(t("Learning this word adds {p}% of the Qur'an's words"))}">+${escapeHtml(num(formatShare(wordShare(r, c.data.total))))}%</span></span>
           <span class="ln-sofar">${escapeHtml(t("{p}% so far", { p: num(r.p.toFixed(1)) }))}</span>
           ${known ? `<span class="ln-tick">${escapeHtml(t("✓ known"))}</span>` : ""}
         </button>`;
@@ -18938,7 +18941,7 @@
         el.innerHTML = head(t("Practise")) + `<div class="vo-body">${body}</div>`;
       } else if (v.mode === "learn") {
         const view = deck.slice(0, v.shown);
-        const share = (r) => `+${num(wordShare(r, learnNextCtx.data.total).toFixed(1))}%`;
+        const share = (r) => `+${num(formatShare(wordShare(r, learnNextCtx.data.total)))}%`;
         body = `<p class="vo-note">${escapeHtml(stepName)}</p><div class="vo-list">` + view.map((r) => `<div class="vo-lw${learnNextIsKnown(r) ? " vo-known" : ""}" data-vo-lw="${r.r}"><span class="vo-lw-ar" lang="ar" dir="rtl">${escapeHtml(lemmaText(r.l))}</span><span class="vo-lw-mean">${escapeHtml(learnNextMeaning(r))} <span class="vo-lw-mean2">· ${escapeHtml(learnNextMeaning(r, true))}</span></span><span class="vo-lw-root" data-vo-root="${r.r}"></span><span class="vo-lw-share">${escapeHtml(g(r.n))}× ${escapeHtml(share(r))}</span><span class="vo-places" data-vo-places="${r.r}"></span></div>`).join("") + `</div>`;
         if (deck.length > view.length) body += `<button type="button" class="vo-more" data-vo="more">${escapeHtml(t("Show 20 more"))}</button>`;
         el.innerHTML = head(t("Learn"), "menu") + `<div class="vo-body">${body}</div>`;
