@@ -3759,6 +3759,12 @@
   .vo-ring { padding: 0 0.25rem; border-radius: 0.5rem; box-shadow: 0 0 0 3px #d4a017; background: #fff3c4; }
   .vo-reveal { font-size: 1.05rem; text-align: center; margin: 0.4rem 0; }
   .vo-score { font-size: 1.4rem; font-weight: 800; color: #4b2a85; text-align: center; }
+  .ln-review { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.6rem; margin: 0 0 0.6rem; }
+  .ln-review:empty { display: none; }
+  .ln-review-msg { margin: 0; color: #4b2a85; font-size: 0.9rem; flex: 1 1 12rem; min-width: 0; }
+  .ln-review-err, .ln-review-err b { color: #7a1f1f; }
+  .ln-review .ln-review-go { flex: 0 1 14rem; }
+  .vo-sched { color: #4b2a85; font-size: 0.9rem; }
   .vo-pass, .vo-moved { color: #1d6b4a; font-weight: 700; } .vo-fail { color: #7a1f1f; font-weight: 700; } .vo-ask { font-weight: 800; }
   .vo-back-words { font-family: var(--quran-font, serif); font-size: 1.5rem; display: flex; flex-wrap: wrap; gap: 0.6rem; justify-content: center; }
   .vo-lw { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.2rem 0.5rem; align-items: center; margin: 0 0 0.4rem; padding: 0.45rem 0.55rem; border: 1px solid #d6ddd9; border-radius: 0.5rem; background: #fafbfa; }
@@ -6893,6 +6899,8 @@
     // J53: a lemma is a KEY (Buckwalter marks like ^ kept as Latin); lemmaText() is how a reader sees it.
     import { lemmaText } from "./js/lemma-text.js";
     import { PRACTICE_KINDS, deckRows, buildRound, buildTest, buildWordRound, wordRoundWrites, tally, testPassed, practiceWrites, achievedWrites } from "./js/vocabulary.js";
+    import { dayOf, addDays, scheduleWrites, summary as vocabReviewSummary, reviewDeck } from "./js/vocab-review.js";
+    import { loadVocabReview, saveVocabReview } from "./js/vocab-review-data.js";
     // Decision 58 (#490) -- Basic/Depth lemma-wide claims, behind their own gate (ready:false).
     import { isLemmaLevelsPersistenceReady } from "./js/study-lemma-levels-readiness.js";
     import { claimKeyFor, LEMMA_WIDE_LEVELS } from "./js/quran-lemma-levels.js";
@@ -18648,6 +18656,10 @@
         el.addEventListener("click", (e) => {
           if (e.target.closest("[data-ln-back]")) { closeLearnNextSheet(); return; }
           if (e.target.closest("[data-ln-more]")) { learnNextShown += LEARN_NEXT_PAGE; renderLearnNextSheet(true); return; }
+          if (e.target.closest("[data-ln-review-go]")) {
+            openVocabulary({ mode: "menu", step: null, onlyNew: false }).then(() => vocabAction("review")).catch((error) => console.warn("Vocabulary", error));
+            return;
+          }
           const tile = e.target.closest("[data-ln-tile]");
           if (tile) { const n = Number(tile.dataset.lnTile); learnNextStep = learnNextStep === n ? null : n; learnNextShown = LEARN_NEXT_PAGE; renderLearnNextSheet(); return; }
           const seg = e.target.closest("[data-ln-new]");
@@ -18708,6 +18720,7 @@
       el.innerHTML = `<div class="ln-head"><button type="button" class="ln-back" data-ln-back>← ${escapeHtml(t("Back"))}</button><h2 class="ln-title">${escapeHtml(t("Learn next"))}</h2></div>
         <div class="ln-body" data-ln-scroll>
           <p class="ln-note">${escapeHtml(t("The words that occur most often come first. Learn these and you will meet them everywhere in the Qur'an."))}</p>
+          <div class="ln-review" data-ln-review>${learnNextReviewHtml()}</div>
           <div class="ln-tiles" role="group" aria-label="${escapeHtml(t("Steps"))}">${tiles}</div>
           ${showing}
           <label class="ln-hide"><input type="checkbox" data-ln-hide${learnNextHide ? " checked" : ""}> <span>${escapeHtml(t("Hide words I know ({n} known)", { n: grouped(knownTotal) }))}</span></label>
@@ -18722,6 +18735,7 @@
       await ensureLearnNext({ tenantId, personId: subjectPersonId, confirmationRequired: !!wordProgressConfirmRequired });
       learnNextScroll = 0;
       showLearnNextSheet();
+      ensureVocabReview().then(paintLearnNextReview).catch((error) => console.warn("Vocabulary review schedule", error));
     }
     function showLearnNextSheet() {
       const el = learnNextSheetEl();
@@ -18804,10 +18818,63 @@
       }
       return done;
     }
+    // ---- PCF MSA J48 round 2: the review schedule kept in the account (quranVocabReview, the Owner's tick 3A) --------
+    // Read once per person per visit, when Learn next or the Vocabulary sheet opens (never at startup, I9). Every round
+    // (practice, review, step test, the Word card's one-word round) moves its words in the schedule: right -> back after
+    // 1, 2, 4, 8, 16 days; missed -> tomorrow. Practice state only: the MARK is still the Word card's (vocabWrite).
+    let vocabReview = null;   // { tenantId, personId, words, failed }
+    async function ensureVocabReview() {
+      const c = learnNextCtx;
+      if (!c) return null;
+      if (vocabReview && vocabReview.tenantId === c.tenantId && vocabReview.personId === c.personId && !vocabReview.failed) return vocabReview;
+      try {
+        const { words } = await loadVocabReview(db, { tenantId: c.tenantId, personId: c.personId });
+        vocabReview = { tenantId: c.tenantId, personId: c.personId, words, failed: false };
+      } catch (error) {
+        console.warn("Vocabulary review schedule", error);
+        vocabReview = { tenantId: c.tenantId, personId: c.personId, words: {}, failed: true };
+      }
+      return vocabReview;
+    }
+    /** Saves this round's schedule changes. Returns true, or false after saying so on screen (I15). */
+    async function vocabSaveSchedule(answers, opts = {}) {
+      const r = await ensureVocabReview();
+      if (!r || r.failed) return false;
+      const changes = scheduleWrites(learnNextCtx.data.rows, answers, r.words, dayOf(new Date()), new Date().toISOString(), opts);
+      if (!Object.keys(changes).length) return true;
+      try {
+        const words = await saveVocabReview(db, { tenantId: r.tenantId, personId: r.personId, changes, uid: auth.currentUser?.uid });
+        if (vocabReview === r) r.words = words ?? { ...r.words, ...changes };
+        return true;
+      } catch (error) {
+        console.warn("Vocabulary review schedule", error);
+        return false;
+      }
+    }
+    /** Learn next's "Due today" strip. Empty until the schedule has loaded. */
+    function learnNextReviewHtml() {
+      const r = vocabReview, c = learnNextCtx;
+      if (!r || !c || r.tenantId !== c.tenantId || r.personId !== c.personId) return "";
+      if (r.failed) return `<p class="ln-review-msg ln-review-err">${escapeHtml(t("Your review schedule could not be loaded. Check the connection and open Learn next again."))}</p>`;
+      const today = dayOf(new Date()), s = vocabReviewSummary(r.words, today);
+      const due = reviewDeck(c.data.rows, r.words, today, Infinity).length;
+      if (due) return `<p class="ln-review-msg"><b>${escapeHtml(t("Due today: {n} words", { n: num(due.toLocaleString("en-US")) }))}</b></p><button type="button" class="ln-vbtn ln-review-go" data-ln-review-go>${escapeHtml(t("Review now"))}</button>`;
+      if (s.later && s.next === addDays(today, 1)) return `<p class="ln-review-msg" data-ln-review-next="${s.next}">${escapeHtml(t("Nothing due today. Next review: tomorrow."))}</p>`;
+      if (s.later) {
+        const day = new Date(`${s.next}T12:00:00`).toLocaleDateString(getAppLang() === "bn" ? "bn-BD" : "en-GB", { weekday: "short", day: "numeric", month: "short" });
+        return `<p class="ln-review-msg" data-ln-review-next="${s.next}">${escapeHtml(t("Nothing due today. Next review: {day}", { day }))}</p>`;
+      }
+      return `<p class="ln-review-msg">${escapeHtml(t("Practise a step: the words come back here for review after 1, 2, 4, 8 and 16 days."))}</p>`;
+    }
+    function paintLearnNextReview() {
+      const slot = document.querySelector("#learnNextSheet [data-ln-review]");
+      if (slot) slot.innerHTML = learnNextReviewHtml();
+    }
     async function openVocabulary(args) {
       const { tenantId, subjectPersonId } = wordProgressActor();
       if (!tenantId || !subjectPersonId) return;
       await ensureLearnNext({ tenantId, personId: subjectPersonId, confirmationRequired: !!wordProgressConfirmRequired });
+      await ensureVocabReview();
       vocab = args;
       renderVocab();
       vocabSheetEl().hidden = false;
@@ -18842,7 +18909,15 @@
         return;
       }
       if (act === "next") { await vocabNext(); return; }
-      if (act === "again") { await vocabAction("start", { kind: vocab.kind }); return; }
+      if (act === "review") {
+        const r = await ensureVocabReview();
+        const deck = reviewDeck(rows, r?.words ?? {}, dayOf(new Date()));
+        const questions = buildTest(rows, deck, { lang: getAppLang() });
+        vocab = { mode: "play", kind: "review", review: true, test: false, step: null, onlyNew: false, questions, i: 0, answers: [], picked: null, revealed: false, deckSize: deck.length };
+        if (!questions.length) { vocab = { ...vocab, mode: "score", tally: { right: 0, total: 0, wrongRanks: [] }, moved: 0, saved: true }; renderVocab(); return; }
+        await vocabPrepareQuestion(); renderVocab(); return;
+      }
+      if (act === "again") { await (vocab.review ? vocabAction("review") : vocabAction("start", { kind: vocab.kind })); return; }
       if (act === "markyes") {
         const items = achievedWrites(vocabDeck(), vocabStateOf);
         vocab.busy = true; renderVocab();
@@ -18889,17 +18964,21 @@
         const row = rows[vocab.answers[0]?.rank - 1];
         const writes = row ? wordRoundWrites(row, vocab.answers, vocabStateOf) : [];
         const moved = await vocabWrite(writes);
+        const saved = await vocabSaveSchedule(vocab.answers, { byQuestions: true });
         const byQ = { right: vocab.answers.filter((a) => a.right).length, total: vocab.answers.length };
-        vocab = { ...vocab, busy: false, mode: "wordscore", tally: byQ, moved }; renderVocab(); return;
+        vocab = { ...vocab, busy: false, mode: "wordscore", tally: byQ, moved, saved }; renderVocab(); return;
       }
       if (vocab.test) {
         const passed = testPassed(vocab.answers);
-        vocab = { ...vocab, mode: "score", tally: tl, passed, askMark: passed && achievedWrites(vocabDeck(), vocabStateOf).length > 0, moved: 0 };
+        vocab.busy = true; renderVocab();
+        const saved = await vocabSaveSchedule(vocab.answers);
+        vocab = { ...vocab, busy: false, mode: "score", tally: tl, passed, askMark: passed && achievedWrites(vocabDeck(), vocabStateOf).length > 0, moved: 0, saved };
         renderVocab(); return;
       }
       vocab.busy = true; renderVocab();
       const moved = await vocabWrite(practiceWrites(rows, vocab.answers, vocabStateOf));
-      vocab = { ...vocab, busy: false, mode: "score", tally: tl, moved }; renderVocab();
+      const saved = await vocabSaveSchedule(vocab.answers);
+      vocab = { ...vocab, busy: false, mode: "score", tally: tl, moved, saved }; renderVocab();
     }
     async function openVocabWordRound(lemma) {
       const { tenantId, subjectPersonId } = wordProgressActor();
@@ -18960,7 +19039,7 @@
       } else if (v.mode === "play" || v.mode === "word") {
         const q = v.questions[v.i];
         const row = rows[q.rank - 1];
-        const title = v.mode === "word" ? t("Practise this word") : v.test ? t("Step test") : t(VOCAB_KIND_NAME[v.kind]);
+        const title = v.mode === "word" ? t("Practise this word") : v.review ? t("Review") : v.test ? t("Step test") : t(VOCAB_KIND_NAME[v.kind]);
         const prog = `<p class="vo-prog">${escapeHtml(t("Question {i} of {n}", { i: g(v.i + 1), n: g(v.questions.length) }))}</p>`;
         let prompt = "", opts = "";
         const ar = `<div class="vo-ar" lang="ar" dir="rtl">${escapeHtml(lemmaText(row.l))}</div>`;
@@ -18980,10 +19059,10 @@
           }).join("") + `</div>` + (!v.test && v.fed ? `<button type="button" class="vo-next" data-vo="next">${escapeHtml(t("Next"))}</button>` : "");
         }
         body = `${prog}<div class="vo-card" data-vo-kind="${q.kind}">${prompt}</div>${opts}${v.busy ? `<p class="vo-note">${escapeHtml(t("Saving…"))}</p>` : ""}`;
-        el.innerHTML = head(title, v.mode === "word" ? "close" : "menu") + `<div class="vo-body">${body}</div>`;
+        el.innerHTML = head(title, v.mode === "word" || v.review ? "close" : "menu") + `<div class="vo-body">${body}</div>`;
       } else if (v.mode === "score" || v.mode === "wordscore") {
         const tl = v.tally;
-        const line = `<p class="vo-score" data-vo-score>${escapeHtml(t("Score: {right} of {total}", { right: g(tl.right), total: g(tl.total) }))}</p>`;
+        const line = v.review && !tl.total ? "" : `<p class="vo-score" data-vo-score>${escapeHtml(t("Score: {right} of {total}", { right: g(tl.right), total: g(tl.total) }))}</p>`;
         let more = "";
         if (v.test) {
           more = v.passed
@@ -18992,9 +19071,15 @@
           if (v.askMark) more += `<p class="vo-ask">${escapeHtml(t("Mark these {n} words Achieved?", { n: g(achievedWrites(vocabDeck(), vocabStateOf).length) }))}</p><div class="vo-two"><button type="button" class="vo-opt" data-vo="markyes">${escapeHtml(t("Yes, mark them"))}</button><button type="button" class="vo-opt" data-vo="markno">${escapeHtml(t("No, not now"))}</button></div>`;
           else if (v.marked != null) more += `<p class="vo-moved">${escapeHtml(t("Marked {n} words Achieved.", { n: g(v.marked) }))}</p>`;
         } else if (v.moved) more = `<p class="vo-moved">${escapeHtml(t("{n} words moved up.", { n: g(v.moved) }))}</p>`;
-        const again = v.mode === "wordscore" ? "" : `<button type="button" class="vo-next" data-vo="again">${escapeHtml(v.test ? t("Take the test again") : t("Another round"))}</button>`;
-        body = `${line}${more}${again}<button type="button" class="vo-next vo-done" data-vo="${v.mode === "wordscore" ? "close" : "menu"}">${escapeHtml(t("Done"))}</button>`;
-        el.innerHTML = head(v.test ? t("Step test") : t("Score"), v.mode === "wordscore" ? "close" : "menu") + `<div class="vo-body">${body}</div>`;
+        // J48 round 2: where the words went in the review schedule, or (I15) that it could not be saved.
+        if (v.review && !tl.total) more += `<p class="vo-note">${escapeHtml(t("Nothing is due for review today."))}</p>`;
+        else if (v.saved === false) more += `<p class="vo-fail" data-vo-sched="failed">${escapeHtml(t("Your review schedule could not be saved. Your marks are kept; check the connection and try again."))}</p>`;
+        else if (v.saved) more += `<p class="vo-sched" data-vo-sched="saved">${escapeHtml(t("Saved to your review schedule: right answers come back in a few days, missed words tomorrow."))}</p>`;
+        const dueLeft = v.review && vocabReview ? reviewDeck(rows, vocabReview.words, dayOf(new Date())).length : 0;
+        const again = v.mode === "wordscore" || (v.review && !dueLeft) ? "" : `<button type="button" class="vo-next" data-vo="again">${escapeHtml(v.review ? t("Review more") : v.test ? t("Take the test again") : t("Another round"))}</button>`;
+        const done = v.mode === "wordscore" || v.review ? "close" : "menu";
+        body = `${line}${more}${again}<button type="button" class="vo-next vo-done" data-vo="${done}">${escapeHtml(t("Done"))}</button>`;
+        el.innerHTML = head(v.review ? t("Review") : v.test ? t("Step test") : t("Score"), done) + `<div class="vo-body">${body}</div>`;
       }
       el.setAttribute("aria-label", t("Vocabulary"));
     }

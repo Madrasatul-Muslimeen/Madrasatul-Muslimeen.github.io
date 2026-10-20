@@ -2673,6 +2673,18 @@ export const BN = {
   "Practise {what}": "অনুশীলন করুন: {what}",
   "Back to the step": "ধাপে ফিরুন",
   "Show 20 more": "আরও ২০টি দেখান",
+  // PCF MSA J48 round 2 -- the review schedule.
+  "Review": "পুনরালোচনা",
+  "Review now": "এখন পুনরালোচনা করুন",
+  "Review more": "আরও পুনরালোচনা",
+  "Due today: {n} words": "আজ পুনরালোচনার জন্য: {n}টি শব্দ",
+  "Nothing due today. Next review: {day}": "আজ কিছু বাকি নেই। পরের পুনরালোচনা: {day}",
+  "Nothing due today. Next review: tomorrow.": "আজ কিছু বাকি নেই। পরের পুনরালোচনা আগামীকাল।",
+  "Practise a step: the words come back here for review after 1, 2, 4, 8 and 16 days.": "একটি ধাপ অনুশীলন করুন: শব্দগুলো ১, ২, ৪, ৮ ও ১৬ দিন পরে এখানে পুনরালোচনার জন্য ফিরে আসবে।",
+  "Your review schedule could not be loaded. Check the connection and open Learn next again.": "আপনার পুনরালোচনার সময়সূচি খোলা যায়নি। সংযোগ দেখে আবার “এরপর শিখুন” খুলুন।",
+  "Nothing is due for review today.": "আজ পুনরালোচনার কিছু বাকি নেই।",
+  "Your review schedule could not be saved. Your marks are kept; check the connection and try again.": "আপনার পুনরালোচনার সময়সূচি সংরক্ষণ করা যায়নি। আপনার চিহ্নগুলো রাখা আছে; সংযোগ দেখে আবার চেষ্টা করুন।",
+  "Saved to your review schedule: right answers come back in a few days, missed words tomorrow.": "পুনরালোচনার সময়সূচিতে রাখা হয়েছে: সঠিক উত্তরের শব্দ কয়েক দিন পরে, ভুল হওয়া শব্দ আগামীকাল ফিরে আসবে।",
   // PCF MSA J47 -- Learn next steps.
   "Showing the whole list, 100 at a time. Tap a step to open its words.": "পুরো তালিকা দেখানো হচ্ছে, একবারে ১০০টি। কোনো ধাপের শব্দ দেখতে সেটিতে চাপুন।",
   "words {a}–{b}": "শব্দ {a}–{b}",

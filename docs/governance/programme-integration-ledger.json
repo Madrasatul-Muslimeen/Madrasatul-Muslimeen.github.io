@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "12.09",
+    "version": "12.10",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -4385,8 +4385,20 @@
     {
       "version": "12.09",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "v12.09: Āyah posters (study and Dawah, print and picture); the madda sign in Learn next and Vocabulary; the word from Learn next marked in purple in the middle view; Learn next to 95% with each word's own share; Practise this word asks ten questions (J52–J56).",
+      "integration": {
+        "authorizedOn": "2026-10-20",
+        "integratedOn": "2026-10-20",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.10",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "v12.10: the Vocabulary review schedule in the account — Due today and Review now; right answers come back after 1, 2, 4, 8, 16 days, missed words tomorrow (J48 round 2).",
       "integration": {
         "authorizedOn": "2026-10-20",
         "integratedOn": "2026-10-20",
@@ -4395,8 +4407,9 @@
       }
     }
   ],
-  "nextUnallocated": "12.10",
+  "nextUnallocated": "12.11",
   "nextUnallocatedNote": [
+    "v12.10 was allocated to the Vocabulary review schedule kept in the account (PCF MSA J48 round 2), 2026-10-20.",
     "v12.09 was allocated to Āyah posters, the madda sign, the word marked and the middle view, Learn next to 95%, ten questions (PCF MSA J52 J53 J54 J55 J56), 2026-10-20.",
     "v12.08 was allocated to the Qur'an Vocabulary module, round 1 (PCF MSA J48), 2026-10-20.",
     "v12.07 was allocated to Know Your Status and Explore, bigger on a PC (PCF MSA J50 J51), 2026-10-20.",
