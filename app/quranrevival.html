@@ -1157,6 +1157,19 @@
   .explore-approach-row { display: flex; justify-content: center; min-width: 0; margin: 4px 0 2px; }
   .explore-approach-row[hidden] { display: none; }
   /* Owner decision 82 -- Explore: every Approach at once, tap a slice, Back and Previous/Next, Take. */
+  /* PCF MSA J51 -- one bar of controls above Explore's wheel on a PC (each part keeps its own [hidden]). */
+  @media (min-width: 900px) {
+    .explore-ctl-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 14px; margin: 0 0 6px; }
+    /* On a PC the bar is moved above the whole panel (placeExploreCtlBar), so it has the window's full width for one
+       line; it goes with the Quran panel when another Explore tab is open. */
+    #exploreScroll > .explore-ctl-bar { flex: 0 0 auto; padding: 8px 12px 4px; margin: 0; }
+    #exploreScroll:has(> #explorePanel[hidden]) > .explore-ctl-bar { display: none; }
+    .explore-ctl-bar > * { margin: 0; }
+    .explore-ctl-bar > .aa-nav:not([hidden]) { display: flex; gap: 6px; }
+    .explore-ctl-bar > .explore-head-row { flex: 0 1 auto; min-width: 0; }
+    .explore-ctl-bar > .aa-seg:not([hidden]) { display: inline-grid; grid-template-columns: auto auto; }
+    .explore-ctl-bar > .aa-seg button { padding: 0 14px; }
+  }
   .aa-nav { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center; min-width: 0; margin: 0 0 6px; }
   .aa-nav[hidden], .aa-seg[hidden] { display: none; }
   .aa-nav button, .aa-seg button, .aa-take, .aa-sheet button { font-family: 'Inter', sans-serif; font-size: 0.85rem; min-height: 44px; border-radius: 12px; cursor: pointer; }
@@ -5805,6 +5818,10 @@
               <!-- Owner decision 82 (7 Oct 2026): Back and Previous/Next, shown only
                    at the Surah and Ayah levels (renderExploreSurahLevel() and
                    renderExploreAyahLevel() fill it). -->
+              <!-- PCF MSA J51 (the Owner, 20 Oct 2026, on a PC: "Organise the options in a single bar ... so that Wheel can
+                   be enlarged"): Back and the sūrah steps, the trail, All / One Approach and Track the Status sit in ONE
+                   bar from 900px; below that they stack as before. -->
+              <div class="explore-ctl-bar" id="exploreCtlBar">
               <div id="exploreNavBar" class="aa-nav" hidden></div>
               <div class="explore-head-row">
                 <div id="exploreBreadcrumb"></div>
@@ -5860,6 +5877,7 @@
                   </div>
                 </div>
               </div>
+              </div><!-- /#exploreCtlBar -->
               <!-- 2 Sep 2026 -- "enable all wheels ... to be expandable
                    from any side", same mechanism as the Mastery Wheel/QCR/
                    Asma wheels. -->
@@ -13968,7 +13986,42 @@
       wheelColEl.querySelectorAll("button, .wheel-intro-settled").forEach((el) => fitRO.observe(el));
       queueFit();
     }
-    setUpWheelResize("exploreQuran", { wrapEl: exploreWheelResizeWrapEl, paneEl: exploreWheelColEl, handleEls: exploreWheelResizeHandleEls });
+    setUpWheelResize("exploreQuran", { wrapEl: exploreWheelResizeWrapEl, paneEl: exploreWheelColEl, handleEls: exploreWheelResizeHandleEls, onDrag: () => { exploreWheelDragged = true; } });
+
+    /** PCF MSA J51 (the Owner, 20 Oct 2026: "so that Wheel can be enlarged. Also enable the screen open in this size
+        always"). As J44 does for the Mastery Wheel: on a PC Explore's window opens filling the screen, and its Quran
+        wheel takes the LARGEST size at which it fits the window's scroll area below the one bar of controls -- at every
+        start and whenever the window or the bar changes size, never from a size an earlier visit stored. A wheel the
+        reader drags this visit stays as dragged. Below 900px nothing changes. */
+    let exploreWheelDragged = false;
+    // J51: the one bar of controls lives in the wheel's column on a phone and above the whole panel on a PC (where the
+    // list sits beside the wheel and the column alone is too narrow for one line). Its ids and handlers never change.
+    const exploreCtlBarEl = document.getElementById("exploreCtlBar");
+    function placeExploreCtlBar() {
+      const scroller = document.getElementById("exploreScroll");
+      if (window.matchMedia("(min-width: 900px)").matches) { if (exploreCtlBarEl.parentElement !== scroller) scroller.prepend(exploreCtlBarEl); }
+      else if (exploreCtlBarEl.parentElement !== exploreWheelColEl) exploreWheelColEl.prepend(exploreCtlBarEl);
+    }
+    placeExploreCtlBar();
+    window.matchMedia("(min-width: 900px)").addEventListener("change", placeExploreCtlBar);
+    function fitExploreWheelToWindow() {
+      if (exploreWheelDragged || !window.matchMedia("(min-width: 900px)").matches || exploreView.hidden) return;
+      const scroller = document.getElementById("exploreScroll");
+      if (!scroller || !exploreWheelColEl.offsetWidth) return;
+      const top = exploreWheelResizeWrapEl.getBoundingClientRect().top + scroller.scrollTop;
+      const room = scroller.getBoundingClientRect().bottom - top - 8;
+      const size = Math.floor(Math.max(160, Math.min(900, contentWidth(exploreWheelColEl) - 4, room)));
+      applyWheelSize(exploreWheelResizeWrapEl, size);
+    }
+    {
+      let fitQueued = false;
+      const queueFit = () => { if (fitQueued) return; fitQueued = true; requestAnimationFrame(() => { fitQueued = false; explorePopupWin?.refit(); fitExploreWheelToWindow(); }); };
+      const fitRO = new ResizeObserver(queueFit);
+      fitRO.observe(exploreView);
+      fitRO.observe(document.getElementById("exploreCtlBar"));
+      fitRO.observe(document.getElementById("dock"));
+      queueFit();
+    }
     setUpWheelResize("asma", { wrapEl: asmaXWheelResizeWrapEl, paneEl: asmaXWheelPaneEl, handleEls: asmaXWheelResizeHandleEls });
 
     // 2 Sep 2026 -- PC popup round: the Approach (Mastery Wheel) and Explore
@@ -14021,6 +14074,7 @@
       dragHandleEl: exploreBarEl,
       resizeHandleEls: explorePopupResizeHandles,
       maximizeBtn: explorePopupMaximizeBtn,
+      fill: true, // PCF MSA J51: on a PC Explore always opens filling the space between the menu row and the dock
     });
     // v08.20 -- the Word Card floats as its own small window on a desktop,
     // dragged by its header and resized from any edge or corner, exactly the
