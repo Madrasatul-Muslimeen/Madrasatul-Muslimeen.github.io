@@ -4325,13 +4325,17 @@
   .ayah-connected-studied.is-not-studied { color: #6b4a00; }
   .ayah-connected-studied.is-unchecked { color: #5b5b5b; font-weight: 500; font-style: italic; }
   .ayah-hifz-chip { display: inline-flex; align-items: center; min-height: 1.6rem; padding: 0.2rem 0.6rem; border-radius: 999px; color: #fff; font-size: 0.8rem; font-weight: 600; text-shadow: 0 0 2px rgba(0,0,0,0.35); }
-  /* PCF J26 -- the "Before Al-Fātiḥah" band on the Read page (layout B): Aʿūdhu billāh LEFT, Bismillah RIGHT (the
-     band is dir=ltr, so the order holds in Bangla too), two columns that shrink (min-width:0) and never push the page wide. */
+  /* PCF J26 -- the "Before Al-Fātiḥah" band on the Read page (layout B), two columns that shrink (min-width:0) and never
+     push the page wide. PCF MSA J49 (the Owner, 20 Oct 2026, screenshot: "This was done before, but dropped … Fix it"):
+     the two buttons read RIGHT TO LEFT like the āyāt, Aʿūdhu billāh on the RIGHT and the Bismillah on its left. The
+     button row is dir=rtl and each button's own text ltr, so the order is the same in English and Bangla. (QR had this
+     as its own edit, QR J09; it is now in the one source.) */
   .opening-band { direction: ltr; box-sizing: border-box; max-width: 100%; margin: 0.2rem 0 0.8rem; padding: 0.5rem; border: 1px dashed #b8892c; border-radius: 0.7rem; background: rgba(214,166,72,0.14); display: flex; flex-direction: column; gap: 0.4rem; }
   /* PCF J26 audit polish (14 Oct): on a wide screen the band keeps a calm width (about two phone widths), centred. */
   @media (min-width: 900px) { .opening-band { max-width: 48rem; margin-left: auto; margin-right: auto; } } /* j26 band-cap */
   .opening-band-title { font-size: 0.78rem; font-weight: 600; color: #7a5a14; letter-spacing: 0.02em; }
-  .opening-chips { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0.4rem; }
+  .opening-chips { direction: rtl; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0.4rem; }
+  .opening-chip { direction: ltr; }
   .opening-chip { min-width: 0; min-height: 44px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.1rem; padding: 0.3rem 0.4rem; border: 1px solid #c9b88a; border-radius: 0.6rem; background: #fffaf0; color: #1b1b16; cursor: pointer; font: inherit; }
   .opening-chip-ar { font-family: var(--quran-font); direction: rtl; font-size: 1.1rem; line-height: 1.5; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .opening-chip-name { display: inline-flex; align-items: center; gap: 0.3rem; max-width: 100%; font-size: 0.74rem; color: #4a4a40; }

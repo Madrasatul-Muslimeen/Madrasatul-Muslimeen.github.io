@@ -1,9 +1,13 @@
 // PCF J26 / issue #814 -- "Before Al-Fātiḥah": Aʿūdhu billāh (opening:taawwudh) and the Bismillah (ayah:1:1) as study items
-// above Al-Fātiḥah's āyah 1, layout B (one band, two buttons, Aʿūdhu billāh on the LEFT). Run from the repository root with
+// above Al-Fātiḥah's āyah 1, layout B (one band, two buttons). UPDATED IN PLACE 20 Oct 2026 (PCF MSA J49, the Owner's
+// screenshot: "This was done before, but dropped … Fix it"): the buttons read right to left, Aʿūdhu billāh on the RIGHT
+// of the Bismillah (it was LEFT under J26's layout B; QR had the swap as its own edit, now in the one source).
+// Run from the repository root with
 // serve.js on :8080. Expected values are written by hand from the issue.
 //
 // Mutations (each makes named checks FAIL):
-//   --mutate=swap      Bismillah on the left of Aʿūdhu billāh
+//   --mutate=swap      the Bismillah first in the row (so Aʿūdhu billāh would sit LEFT of it)
+//   --mutate=ltrrow    the button row reads left to right again (Aʿūdhu billāh LEFT)
 //   --mutate=chunk     opening:* is stored in subject_quran instead of surah_1
 //   --mutate=always-bismillah  the band shows the Bismillah even with the count setting off
 //   --mutate=small     the buttons shrink below 44px
@@ -19,6 +23,7 @@ function check(name, ok, detail = "") {
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
 const MUTATIONS = {
   swap: ["app/quranrevival.html", "**/app/quranrevival.html*", "const items = [{ key: OPENING_TAAWWUDH_KEY", "const items = [{ key: buildUnitKey.ayah(1, 1), opening: false, ar: \"بِسْمِ ٱللَّهِ\", name: t(\"Bismillah\") }, { key: OPENING_TAAWWUDH_KEY"],
+  ltrrow: ["app/quranrevival.html", "**/app/quranrevival.html*", ".opening-chips { direction: rtl; display: grid;", ".opening-chips { display: grid;"],
   chunk: ["app/js/records.js", "**/app/js/records.js*", 'if (unitType === "opening") return "surah_1";', 'if (unitType === "opening") return `subject_${subjectId}`;'],
   "always-bismillah": ["app/quranrevival.html", "**/app/quranrevival.html*", "if (fatihaCountApplies(1, fatihaOn())) items.push", "if (true) items.push"],
   small: ["app/quranrevival.html", "**/app/quranrevival.html*", ".opening-chip { min-width: 0; min-height: 44px;", ".opening-chip { min-width: 0; min-height: 20px; max-height: 20px; overflow: hidden;"],
@@ -72,7 +77,7 @@ for (const lang of ["en", "bn"]) for (const width of [320, 390, 768, 1280]) {
   const b = await bandInfo(page);
   check(`${tag} the band is present with two buttons`, b.present && b.chips.length === 2, JSON.stringify(b.chips));
   check(`${tag} the band is above the first row of āyah 1`, b.present && b.firstTop != null && b.bandBottom <= b.firstTop + 1, `${b.bandBottom} vs ${b.firstTop}`);
-  check(`${tag} Aʿūdhu billāh is LEFT of Bismillah`, b.chips.length === 2 && b.chips[0].key === "opening:taawwudh" && b.chips[1].key === "ayah:1:1" && b.chips[0].x < b.chips[1].x);
+  check(`${tag} Aʿūdhu billāh is RIGHT of Bismillah (read right to left, first in the row)`, b.chips.length === 2 && b.chips[0].key === "opening:taawwudh" && b.chips[1].key === "ayah:1:1" && b.chips[0].x > b.chips[1].x, JSON.stringify(b.chips.map((c) => [c.key, Math.round(c.x)])));
   check(`${tag} buttons are 44px or more`, b.chips.length === 2 && b.chips.every((c) => c.h >= 43.5 && c.w >= 43.5), JSON.stringify(b.chips));
   check(`${tag} the band title is translated`, lang === "en" ? b.title === "Before Al-Fātiḥah" : /[ঀ-৿]/.test(b.title), b.title);
   check(`${tag} no sideways scroll`, await noSideways(page));

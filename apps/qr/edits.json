@@ -107,7 +107,7 @@
   "id": "app/quranrevival.html#7a",
   "file": "app/quranrevival.html",
   "why": "(7) Band CSS comment: Aʿūdhu billāh RIGHT, Bismillah LEFT, in reading order (QR J09).",
-  "from": "  /* PCF J26 -- the \"Before Al-Fātiḥah\" band on the Read page (layout B): Aʿūdhu billāh LEFT, Bismillah RIGHT (the\n     band is dir=ltr, so the order holds in Bangla too), two columns that shrink (min-width:0) and never push the page wide. */",
+  "from": "  /* PCF J26 -- the \"Before Al-Fātiḥah\" band on the Read page (layout B), two columns that shrink (min-width:0) and never\n     push the page wide. PCF MSA J49 (the Owner, 20 Oct 2026, screenshot: \"This was done before, but dropped … Fix it\"):\n     the two buttons read RIGHT TO LEFT like the āyāt, Aʿūdhu billāh on the RIGHT and the Bismillah on its left. The\n     button row is dir=rtl and each button's own text ltr, so the order is the same in English and Bangla. (QR had this\n     as its own edit, QR J09; it is now in the one source.) */",
   "to": "  /* PCF J26 -- the \"Before Al-Fātiḥah\" band on the Read page (layout B), two columns that shrink (min-width:0) and never\n     push the page wide. QR J09 (the Owner, 17 Oct): Aʿūdhu billāh RIGHT, Bismillah LEFT, in the Qur'an's reading order\n     (the chips row is dir=rtl, the band itself ltr, so the order holds in Bangla too); the one shown in the reading\n     space is marked (aria-current). */",
   "exact": 1
  },
@@ -115,7 +115,7 @@
   "id": "app/quranrevival.html#7b",
   "file": "app/quranrevival.html",
   "why": "(7) .opening-chips is dir=rtl; chips ltr; the shown chip is marked; the reading text is clickable (QR J09).",
-  "from": "  .opening-chips { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0.4rem; }",
+  "from": "  .opening-chips { direction: rtl; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0.4rem; }\n  .opening-chip { direction: ltr; }",
   "to": "  .opening-chips { direction: rtl; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0.4rem; }\n  .opening-chip { direction: ltr; }\n  .opening-chip[aria-current=\"true\"] { border-color: #b8892c; box-shadow: 0 0 0 2px rgba(184,137,44,0.45); background: #fff3d6; }\n  .opening-reading-ar { cursor: pointer; }",
   "exact": 1
  },
