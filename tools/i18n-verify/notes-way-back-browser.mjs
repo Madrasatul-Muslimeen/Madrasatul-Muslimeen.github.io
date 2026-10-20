@@ -1,7 +1,9 @@
 // Way-back sweep (decision 86, "always enable coming back to a view where it came from"): the three links that left
 // for another page with no way back now carry back=1, and ← Back lands exactly where the reader was.
 //   1. the Note view's ⋯ menu "📔 My Notes for this unit"  -> notes.html  -> ← Back: the SAME āyah, Note view open
-//   2. the Āyah card's "Make a poster"                    -> notes.html  -> ← Back: the SAME āyah, Read view
+//   2. the Āyah card's "Make a poster"                    -> ayah-poster.html -> ← Back: the SAME āyah, Read view
+//      (UPDATED IN PLACE for PCF MSA J52, 20 Oct 2026: 🖨 Poster now opens the Āyah posters page, not the Notes
+//      page's printable Note; the Note is printed from the Note itself. The way back is the same law.)
 //   3. Mapping My Journey's "Import Notes…"               -> import-notes.html -> ← Back: Mapping My Journey
 // Link 2 needs "this āyah has an active Note"; the stub holds none, so that one lookup is pinned true by a route
 // override (the only fixture override; it is named in the check text).
@@ -20,7 +22,7 @@ const check = (name, ok, detail = "") => {
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
 const MUT = {
   noback1: ["quranrevival.html", "&label=${encodeURIComponent(ref)}&back=1`,\n      });", "&label=${encodeURIComponent(ref)}`,\n      });"],
-  noback2: ["quranrevival.html", "&dawah=1&back=1`", "&dawah=1`"],
+  noback2: ["quranrevival.html", "&ayah=${encodeURIComponent(ayahNum)}&back=1`", "&ayah=${encodeURIComponent(ayahNum)}`"],
   noback3: ["journey-map.html", 'href="import-notes.html?back=1"', 'href="import-notes.html"'],
   noplace1: ["quranrevival.html", "      if (a) rememberQuranPlace(", "      if (false) rememberQuranPlace("],
   noplace2: ["quranrevival.html", "      rememberQuranPlace(unitKey);\n      location.href", "      location.href"],
@@ -97,15 +99,16 @@ for (const [lang, width, look] of [["en", 390, "light"], ["bn", 390, "night"], [
     await P.waitForSelector("[data-ayah-sheet] [data-ayah-sheet-poster]", { timeout: 8000 });
     await P.waitForTimeout(500);
     let went = true;
-    await Promise.all([P.waitForURL(/notes\.html\?/, { timeout: 15000 }), P.click("[data-ayah-sheet] [data-ayah-sheet-poster]")]).catch(() => { went = false; });
-    check(`${tag} (2) Make a poster opens the Notes page with dawah=1 and back=1`, went && /dawah=1/.test(P.url()) && /[?&]back=1\b/.test(P.url()), P.url());
+    await Promise.all([P.waitForURL(/ayah-poster\.html\?/, { timeout: 15000 }), P.click("[data-ayah-sheet] [data-ayah-sheet-poster]")]).catch(() => { went = false; });
+    const pu = new URL(P.url());
+    check(`${tag} (2) Make a poster opens the Āyah posters page for 2:255 with back=1`, went && pu.searchParams.get("surah") === "2" && pu.searchParams.get("ayah") === "255" && /[?&]back=1\b/.test(P.url()), P.url());
     if (went) {
-      await P.waitForFunction(() => document.getElementById("unitBanner")?.textContent.trim().length > 0, null, { timeout: 15000 }).catch(() => {});
-      const b = await backState(P);
-      check(`${tag} (2) the Notes page shows ${BACK(bn)}, 40px tall`, b?.text === BACK(bn) && b.h >= 40, JSON.stringify(b));
+      await P.waitForFunction(() => document.body.dataset.apReady, null, { timeout: 15000 }).catch(() => {});
+      const b = await P.evaluate(() => { const e = document.getElementById("apBack"); if (!e || e.hidden) return null; const r = e.getBoundingClientRect(); return { text: e.textContent.trim(), h: r.height }; });
+      check(`${tag} (2) the posters page shows ${BACK(bn)}, 40px tall`, b?.text === BACK(bn) && b.h >= 40, JSON.stringify(b));
       if (b) {
         let back = true;
-        await Promise.all([P.waitForURL(/quranrevival\.html/, { timeout: 15000 }), P.click("#notesBackBtn")]).catch(() => { back = false; });
+        await Promise.all([P.waitForURL(/quranrevival\.html/, { timeout: 15000 }), P.click("#apBack")]).catch(() => { back = false; });
         await P.waitForFunction(() => document.getElementById("readView")?.getBoundingClientRect().height > 0 && document.getElementById("ayahSelect")?.value === "255", null, { timeout: 25000 }).catch(() => {});
         const after = await place(P);
         check(`${tag} (2) ← Back lands on the Qur'an page at 2:255 in the Read view (no Note view forced open)`, back && after.surah === "2" && after.ayah === "255" && after.readOpen && !after.noteOpen, JSON.stringify({ ...after, noteText: "" }));

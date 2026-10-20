@@ -21178,12 +21178,15 @@
         uses (openNoteView()). `hasPosterNote` is passed in by the caller
         (captured at render time, BEFORE onClose wipes ayahSheetHasPosterNote
         back to null) rather than read off that module variable here. */
+    // PCF MSA J52 (the Owner, 20 Oct 2026: "1-4: A ... 6. A print button in note prints the note. The same button in
+    // poster prints the Poster."): 🖨 Poster now opens the Āyah posters page, which asks "Study poster or Dawah
+    // poster?" (1A) for this āyah (a range is chosen there, 2A). A Note is no longer needed; a Note is printed from
+    // the Note itself ("Make a printable page" on the Notes page), as before. `hasPosterNote` is kept in the
+    // signature for the callers; ← Back returns here (rememberQuranPlace, the way-back law).
     function openAyahPoster(unitKey, hasPosterNote) {
-      if (hasPosterNote === false) { openNotesPaneFromAyahCard(unitKey, { fresh: true }); return; } // decision 95: write the Note first, in the pane
-      const { surah, ayah: ayahNum, half } = parseAyahUnitKey(unitKey);
-      const ref = ayahRefLabel(surah, ayahNum, { half });
+      const { surah, ayah: ayahNum } = parseAyahUnitKey(unitKey);
       rememberQuranPlace(unitKey);
-      location.href = `notes.html?unit=${encodeURIComponent(unitKey)}&label=${encodeURIComponent(ref)}&dawah=1&back=1`;
+      location.href = `ayah-poster.html?surah=${encodeURIComponent(surah)}&ayah=${encodeURIComponent(ayahNum)}&back=1`;
     }
 
     /** The way-back law (decision 86): before leaving for notes.html, write the place into THIS page's own address
