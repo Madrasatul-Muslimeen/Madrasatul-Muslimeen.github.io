@@ -11,8 +11,9 @@
 //     nowrite    a round writes nothing                     -> "right while Not started writes ONE learning doc"
 //     writewrong a wrong answer is written too              -> "a wrong answer writes nothing"
 //     noask      the passed test never asks                 -> "pass asks"
-//     lowtest    the test passes at 50%                     -> "fail (<90%) writes nothing"
+//     lowtest    the test passes at 30% (an 80% test then passes) -> "fail (<90%) writes nothing"
 //     nobackcard the one-word round closes the card         -> "Back returns to the same card"
+//     nocardsync Back does not redraw the card             -> "the Word card shows the mark the round wrote"
 //     bnleak     one Bangla string is missing               -> "Bangla has no English"
 //     palegreen  the J47 green is washed out                -> "known = J47 green"
 //     lowpurple  the purple control is not its token        -> "purple control EQUALS its token"
@@ -209,11 +210,12 @@ for (const [lang, width, height] of [["en", 390, 844], ["en", 320, 640], ["en", 
     // ---- Flashcard
     await vo(page, "[data-vo=close]"); // leave the round
     await sleep(page, 200);
-    // ---- Step test: fail first (all wrong), nothing written
+    // ---- Step test: fail first at 8 of 10 (80%, just under the line), nothing written.
+    // Architect review: this answered ALL wrong, so a pass mark lowered to 30% still failed it (mutation lowtest uncaught).
     await vo2(page, "#learnNextSheet", "[data-ln-vocab=test]");
     await page.waitForSelector("#vocabSheet .vo-card", { timeout: 10000 }).catch(() => {});
     const wf = await wcount(page);
-    for (let i = 0; i < 10; i++) { await answerChoice(page, lang, false); await sleep(page, 150); }
+    for (let i = 0; i < 10; i++) { await answerChoice(page, lang, i < 8); await sleep(page, 150); }
     await page.waitForSelector("#vocabSheet [data-vo-score]", { timeout: 8000 }).catch(() => {});
     check(`${tag} Step test fail (<90%) writes nothing and says which words go back`, (await writes(page, wf)).length === 0 && !!(await page.evaluate(() => document.querySelector("#vocabSheet .vo-back-words span"))), JSON.stringify(await writes(page, wf)));
     check(`${tag} a failed test does not ask to mark Achieved`, !(await page.evaluate(() => document.querySelector('#vocabSheet [data-vo=markyes]'))));
@@ -296,6 +298,10 @@ for (const [lang, width, height] of [["en", 390, 844], ["en", 320, 640], ["en", 
   await sleep(page, 400);
   const back = await page.evaluate(() => ({ hidden: document.getElementById("vocabSheet").hidden, card: !!document.querySelector("#quranWordCardMount .quran-word-card"), level: document.querySelector("#quranWordCardMount [data-word-card-panel]")?.dataset.wordCardPanel, occ: document.querySelector("#quranWordCardMount .quran-word-card")?.innerText.includes("مِن") }));
   check(`${tag} Back returns to the same card and level (${level0})`, back.hidden && back.card && back.level === level0, JSON.stringify(back));
+  // Architect review (the brief: "then the Word card for one of them shows" the new mark): ONE mark, so the card the
+  // reader returns to shows the state the round just wrote (3 of 3 right while Not started = Learning), not a stale one.
+  const shown = await page.evaluate(() => document.querySelector('#quranWordCardMount [data-word-progress-state][aria-pressed="true"]')?.dataset.wordProgressState ?? null);
+  check(`${tag} the Word card shows the mark the round wrote (Learning), without a reload`, shown === "learning", String(shown));
   await ctx.close();
 }
 
