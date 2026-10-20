@@ -982,3 +982,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v12.03** (2026-10-19): Learn next: the Qur'an's words in order of how often they occur (PCF MSA J40).
 - **v12.04** (2026-10-19): Word card polish: bigger word-by-word text, the ⓘ Legend balloon, Family buttons like the main ones (PCF MSA J43).
 - **v12.05** (2026-10-19): Taṣrīf for nouns, the Mastery Wheel big on a PC, Family's meanings side by side, Taṣrīf's tense toggle, Learn next steps (PCF MSA J41 J44 J45 J46 J47).
+- **v12.06** (2026-10-20): Before Al-Fātiḥah reads right to left (PCF MSA J49).

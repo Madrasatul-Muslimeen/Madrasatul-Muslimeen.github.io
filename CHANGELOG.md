@@ -21930,3 +21930,10 @@ The Owner answered J36's two optional choices at 8:20 pm Sydney: *"1. Yes. 2. Ke
 - **J47, Learn next steps** (read as 1A 2A): seven toggle tiles 10/25/50/100/300/500/1,000, "All N / Only the new N", known rows a distinct green, "+x.x%" each word's own share. `learn-next-browser` 182/0, 4 new mutations caught.
 - **QR**: edit 8b in `apps/qr/edits.json` re-anchored on J44's new `fill` line (QR's build had stopped); `build-app.mjs qr` builds.
 - Checks (Architect, on the release branch): every `word-card-*` / `quran-word-card*` suite, `learn-next-browser`, `lemma-sense-index-data`, `phone-width-overflow`, `qr-stage1-hidden` green except `quran-word-card-popup` 19/3, the same as on `main`.
+
+## v12.06 — 20 Oct 2026 — "Before Al-Fātiḥah" reads right to left (PCF MSA J49)
+
+- The Owner (20 Oct, ~9:27 am, screenshot of Al-Fātiḥah's "Before Al-Fātiḥah" band with arrows swapping the two buttons): "This was done before, but dropped due to MSA-QR back n forth, i guess? FIx it or rebuild it."
+- Found: QR had the swap as its OWN edit (`apps/qr/edits.json` 7b, QR J09, 17 Oct), so MSA kept J26's "Aʿūdhu billāh LEFT". Now in the one source: `.opening-chips { direction: rtl }`, each button's text ltr. QR's edits 7a (comment) and 7b (its marked-chip extras) re-anchored; QR's built `quranrevival.html` is byte-identical to before.
+- The old session received this two minutes before its handover and pushed nothing; this release is the rebuild.
+- Checks: `fatiha-opening-band-browser` updated in place 132/0 (Aʿūdhu billāh RIGHT of the Bismillah), mutations `swap` and new `ltrrow` caught; `audit-part12-words-browser` 500/0; `kys-opening-line-browser` 47/0; `build-app.mjs qr` builds, `apps-build-check` green.
