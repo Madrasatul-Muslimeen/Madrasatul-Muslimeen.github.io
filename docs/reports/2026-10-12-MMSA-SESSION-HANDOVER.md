@@ -1030,3 +1030,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v12.05** (2026-10-19): Taṣrīf for nouns, the Mastery Wheel big on a PC, Family's meanings side by side, Taṣrīf's tense toggle, Learn next steps (PCF MSA J41 J44 J45 J46 J47).
 - **v12.06** (2026-10-20): Before Al-Fātiḥah reads right to left (PCF MSA J49).
 - **v12.07** (2026-10-20): Know Your Status and Explore, bigger on a PC (PCF MSA J50 J51).
+- **v12.08** (2026-10-20): the Qur'an Vocabulary module, round 1 (PCF MSA J48).

@@ -909,3 +909,4 @@ total). Allocated by the MMSA Architect.
 12.05: Taṣrīf for nouns, the Mastery Wheel big on a PC, Family's meanings side by side, Taṣrīf's tense toggle, Learn next steps (PCF MSA J41 J44 J45 J46 J47). Allocated by the MMSA Architect.
 12.06: Before Al-Fātiḥah reads right to left (PCF MSA J49). Allocated by the MMSA Architect.
 12.07: Know Your Status and Explore, bigger on a PC (PCF MSA J50 J51). Allocated by the MMSA Architect.
+12.08: the Qur'an Vocabulary module, round 1 (PCF MSA J48). Allocated by the MMSA Architect.

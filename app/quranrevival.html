@@ -3730,6 +3730,39 @@
   .ln-mean { grid-area: mean; font-size: 0.85rem; overflow-wrap: anywhere; min-width: 0; } .ln-mean-2 { color: #55615c; }
   .ln-count { grid-area: count; font-weight: 800; font-size: 0.9rem; } .ln-sofar { grid-area: sofar; font-size: 0.75rem; color: #4b2a85; text-align: end; }
   .ln-tick { grid-area: tick; font-size: 0.78rem; font-weight: 800; color: #1d6b4a; }
+  /* PCF MSA J48 -- Vocabulary. Purple (#4b2a85 on #f1e9fb) for the module's own parts; known = the J47 green. */
+  .word-card-practise { display: block; width: 100%; min-height: 44px; margin: 0.5rem 0 0; padding: 0.4rem 0.7rem; border-radius: 0.5rem; background: var(--wc-purple-bg); color: var(--wc-purple-ink); border: 1px solid var(--wc-purple-line); font: inherit; font-weight: 700; cursor: pointer; box-sizing: border-box; }
+  .ln-vocab { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0 0 0.6rem; }
+  .ln-vbtn { flex: 1 1 6rem; min-height: 44px; padding: 0 0.7rem; border-radius: 0.5rem; border: 1px solid #4b2a85; background: #4b2a85; color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+  .vocab-sheet { position: fixed; inset: 0; z-index: 1450; display: flex; flex-direction: column; background: #fff; color: #13241f; }
+  .vocab-sheet[hidden] { display: none; }
+  .vo-head { display: flex; align-items: center; gap: 0.6rem; padding: 0.5rem 0.75rem; border-bottom: 1px solid #d6ddd9; flex: 0 0 auto; }
+  .vo-back { min-height: 44px; min-width: 44px; padding: 0 0.8rem; border-radius: 0.5rem; border: 1px solid #a98bdc; background: #f1e9fb; color: #4b2a85; font: inherit; font-weight: 700; cursor: pointer; }
+  .vo-title { margin: 0; font-size: 1.15rem; }
+  .vo-body { flex: 1 1 auto; overflow-y: auto; overflow-x: hidden; padding: 0.7rem 0.75rem 1.5rem; max-width: 640px; width: 100%; margin: 0 auto; box-sizing: border-box; }
+  .vo-note, .vo-prog { margin: 0 0 0.6rem; padding: 0.45rem 0.65rem; border-radius: 0.5rem; background: #f1e9fb; color: #4b2a85; border: 1px solid #a98bdc; font-size: 0.88rem; }
+  .vo-kinds, .vo-opts { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.5rem; margin: 0 0 0.6rem; }
+  .vo-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem; margin: 0.5rem 0; }
+  .vo-kind, .vo-opt, .vo-next, .vo-test, .vo-learn, .vo-more { display: block; width: 100%; min-height: 48px; padding: 0.4rem 0.7rem; border-radius: 0.5rem; border: 1px solid #a98bdc; background: #f1e9fb; color: #4b2a85; font: inherit; font-weight: 700; cursor: pointer; box-sizing: border-box; overflow-wrap: anywhere; }
+  .vo-test, .vo-next { background: #4b2a85; color: #fff; border-color: #4b2a85; margin: 0.5rem 0 0; }
+  .vo-learn, .vo-more { margin: 0.5rem 0 0; }
+  .vo-opt[lang="ar"] { font-family: var(--quran-font, serif); font-size: 1.5rem; }
+  .vo-opt.vo-right { background: #d7efdf; border-color: #2e7d55; color: #1d5c3c; }
+  .vo-opt.vo-wrong { background: #fbe3e3; border-color: #b13b3b; color: #7a1f1f; }
+  .vo-card { margin: 0 0 0.7rem; padding: 1rem 0.75rem; border: 1px solid #d6ddd9; border-radius: 0.6rem; background: #fafbfa; text-align: center; }
+  .vo-ar { font-family: var(--quran-font, serif); font-size: 2.6rem; line-height: 1.7; overflow-wrap: anywhere; }
+  .vo-mean { font-size: 1.15rem; font-weight: 700; overflow-wrap: anywhere; }
+  .vo-ayah { font-family: var(--quran-font, serif); font-size: 1.6rem; line-height: 2.2; text-align: right; }
+  .vo-ring { padding: 0 0.25rem; border-radius: 0.5rem; box-shadow: 0 0 0 3px #d4a017; background: #fff3c4; }
+  .vo-reveal { font-size: 1.05rem; text-align: center; margin: 0.4rem 0; }
+  .vo-score { font-size: 1.4rem; font-weight: 800; color: #4b2a85; text-align: center; }
+  .vo-pass, .vo-moved { color: #1d6b4a; font-weight: 700; } .vo-fail { color: #7a1f1f; font-weight: 700; } .vo-ask { font-weight: 800; }
+  .vo-back-words { font-family: var(--quran-font, serif); font-size: 1.5rem; display: flex; flex-wrap: wrap; gap: 0.6rem; justify-content: center; }
+  .vo-lw { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.2rem 0.5rem; align-items: center; margin: 0 0 0.4rem; padding: 0.45rem 0.55rem; border: 1px solid #d6ddd9; border-radius: 0.5rem; background: #fafbfa; }
+  .vo-lw.vo-known { background: #d7efdf; border-color: #2e7d55; border-inline-start: 6px solid #2e7d55; }
+  .vo-lw-ar { font-family: var(--quran-font, serif); font-size: 1.5rem; } .vo-lw-mean { grid-column: 1 / -1; font-size: 0.88rem; overflow-wrap: anywhere; } .vo-lw-mean2, .vo-lw-root { color: #55615c; font-size: 0.8rem; }
+  .vo-lw-share { font-size: 0.8rem; font-weight: 800; color: #4b2a85; text-align: end; } .vo-places { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  .vo-place { min-height: 44px; min-width: 44px; padding: 0 0.7rem; border-radius: 0.5rem; border: 1px solid #a98bdc; background: #f1e9fb; color: #4b2a85; font: inherit; font-weight: 700; cursor: pointer; }
   .ln-more { display: block; width: 100%; min-height: 48px; margin: 0.7rem 0 0; border-radius: 0.5rem; border: 1px solid #a98bdc; background: #f1e9fb; color: #4b2a85; font: inherit; font-weight: 700; cursor: pointer; }
   .word-card-whowhen-item b { font-weight: 800; }
   .word-card-does { font-size: 0.72rem; font-weight: 700; color: #4b2a85; background: #f1e9fb; border-radius: 999px; padding: 0.05rem 0.45rem; justify-self: center; }
@@ -6565,6 +6598,7 @@
                  and Note bars wherever the bar can hold it without a new line
                  (fitBarButton() below). -->
             <button type="button" class="study-pillar-action" id="tabWritingBtn" data-study-action="writing" role="menuitem"><span aria-hidden="true">✍ </span>Writing sheet</button>
+            <button type="button" class="study-pillar-action" id="tabVocabularyBtn" data-study-action="vocabulary" role="menuitem">Vocabulary</button>
             <button type="button" class="study-pillar-action" id="tabStudyOptionsBtn" data-study-action="options" data-panel="panelStudyOptions" role="menuitem" aria-controls="panelStudyOptions" aria-expanded="false">Options</button>
           </div>
         </div>
@@ -6853,6 +6887,7 @@
     import { loadLemmaDictionary, loadBanglaLemmaDictionary, lemmaDictionaryEntry } from "./js/lemma-dictionary.js";
     import { loadLemmaMeaningGroups, sameMeaningLemmas, meaningGroupOf } from "./js/lemma-meaning-groups.js";
     import { loadLearnNext, firstUnknownRow, milestoneFigures, visibleRows, placeOfRow, stepRange, wordShare, LEARN_NEXT_PAGE } from "./js/learn-next.js";
+    import { PRACTICE_KINDS, deckRows, buildRound, buildTest, buildWordRound, tally, testPassed, practiceWrites, achievedWrites } from "./js/vocabulary.js";
     // Decision 58 (#490) -- Basic/Depth lemma-wide claims, behind their own gate (ready:false).
     import { isLemmaLevelsPersistenceReady } from "./js/study-lemma-levels-readiness.js";
     import { claimKeyFor, LEMMA_WIDE_LEVELS } from "./js/quran-lemma-levels.js";
@@ -11132,6 +11167,8 @@
     }
     document.getElementById("readWritingBtn").addEventListener("click", openWritingSheetForCurrentUnit);
     document.getElementById("tabWritingBtn").addEventListener("click", () => { openWritingSheetForCurrentUnit(); });
+    // J48: the Vocabulary module's home is the Learn next sheet (steps, Learn, Practise, Step test).
+    document.getElementById("tabVocabularyBtn").addEventListener("click", () => { openLearnNextSheet().catch((error) => console.warn("Vocabulary unavailable", error)); });
 
     /** Issue #421, the Owner's "Both": an optional bar button is shown only
         where it costs its bar no extra line. Measured, not guessed from a
@@ -17088,6 +17125,7 @@
         }),
         wholeQuranLevelSentence: t("{level}: Achieved {known} and {percent} of {total} words"),
         learnNextTitle: t("Learn next"),
+        practiseThisWord: t("Practise this word"),
         learnNextLine: t("Next up: {word} · {meaning} · {count} places"),
         rootsStudiedSentence: t("{level}: studied {known} of {total} roots"),
         familyGroupMarkLabel: t("Your progress on this meaning"),
@@ -18039,12 +18077,14 @@
       // confirmation rule and supervisor flag); omitted = the page's Student.
       const subjectPersonId = who?.personId ?? actor.subjectPersonId;
       const isSupervisor = who ? !!who.isSupervisor : actor.isSupervisor;
-      if (!tenantId || !subjectPersonId || !actorPersonId || !quranWordCardState.occurrenceId) return;
+      // J48: the Vocabulary module marks a lemma with NO Word card open, naming it (override.lemmaId) and its places.
+      const noCard = !quranWordCardState.occurrenceId && !!override?.lemmaId;
+      if (!tenantId || !subjectPersonId || !actorPersonId || (!quranWordCardState.occurrenceId && !noCard)) return;
       if (!levelWideLive(level)) return;
-      let ref;
-      try { ref = parseQuranWordOccurrenceId(quranWordCardState.occurrenceId); } catch { return; }
-      const ayah = currentSurahData?.ayahs.find((a) => a.ayah === ref.ayah);
-      const word = ayah?.words?.find((w) => w.position === ref.position);
+      let ref = null;
+      if (!noCard) { try { ref = parseQuranWordOccurrenceId(quranWordCardState.occurrenceId); } catch { return; } }
+      const ayah = ref ? currentSurahData?.ayahs.find((a) => a.ayah === ref.ayah) : null;
+      const word = ref ? ayah?.words?.find((w) => w.position === ref.position) : null;
       // Decision 58 (#490): the claim is keyed per level -- the lemma (WbW),
       // the meaning group (Basic) or the root (Depth) -- so ONE document
       // covers the whole spread and nothing is written for a group-mate or
@@ -18608,6 +18648,13 @@
           const seg = e.target.closest("[data-ln-new]");
           if (seg) { learnNextOnlyNew = seg.dataset.lnNew === "1"; learnNextShown = LEARN_NEXT_PAGE; renderLearnNextSheet(); return; }
           const row = e.target.closest("[data-ln-row]");
+          const vo = e.target.closest("[data-ln-vocab]");
+          if (vo && learnNextStep) {
+            const what = vo.dataset.lnVocab;
+            openVocabulary({ mode: what === "learn" ? "learn" : "menu", step: learnNextStep, onlyNew: learnNextOnlyNew, shown: 20 })
+              .then(() => (what === "test" ? vocabAction("start", { kind: "test" }) : null)).catch((error) => console.warn("Vocabulary", error));
+            return;
+          }
           if (row) openLearnNextRow(Number(row.dataset.lnRow));
         });
         el.addEventListener("change", (e) => {
@@ -18636,7 +18683,8 @@
         const newCount = range.to - (stepRange(learnNextStep, true).from) + 1;
         showing = `<div class="ln-showing" data-ln-showing><span>${escapeHtml(t("Showing {what} · together {p}% of the Qur'an", { what, p: num(step.p.toFixed(1)) }))}</span>` +
           `<span class="ln-seg" role="group" aria-label="${escapeHtml(t("Which words"))}"><button type="button" data-ln-new="0" aria-pressed="${!learnNextOnlyNew}">${escapeHtml(t("All {n}", { n: grouped(learnNextStep) }))}</button>` +
-          `<button type="button" data-ln-new="1" aria-pressed="${learnNextOnlyNew}"${newCount === learnNextStep ? " disabled" : ""}>${escapeHtml(t("Only the new {n}", { n: grouped(newCount) }))}</button></span></div>`;
+          `<button type="button" data-ln-new="1" aria-pressed="${learnNextOnlyNew}"${newCount === learnNextStep ? " disabled" : ""}>${escapeHtml(t("Only the new {n}", { n: grouped(newCount) }))}</button></span></div>` +
+          `<div class="ln-vocab" role="group" aria-label="${escapeHtml(t("Vocabulary"))}"><button type="button" class="ln-vbtn" data-ln-vocab="learn">${escapeHtml(t("Learn"))}</button><button type="button" class="ln-vbtn" data-ln-vocab="practise">${escapeHtml(t("Practise"))}</button><button type="button" class="ln-vbtn" data-ln-vocab="test">${escapeHtml(t("Step test"))}</button></div>`;
       }
       const list = view.rows.map((r) => {
         const known = learnNextIsKnown(r);
@@ -18688,6 +18736,234 @@
       await openWordOccurrenceAt(surah, ayah, position, "read");
       // The way-back law (decision 86): the list again, at the same place.
       setAppReturn(t("Back to Learn next"), "", () => { renderLearnNextSheet(); showLearnNextSheet(); }, { inWordCard: true });
+    }
+
+    // ---- PCF MSA J48 round 1: Vocabulary -- Learn, Practise (4 kinds), Step test ---------------------------------------
+    // ONE mark: every result goes through runLemmaProgressAction() -- the Word card's own lemma mark (level wbw, the 👥
+    // person, the same authority and supervisor confirmation). No second "known" list, no store, no localStorage.
+    const VOCAB_KIND_NAME = { flashcard: "Flashcard", meaning: "Pick the meaning", arabic: "Pick the Arabic", ayah: "In its āyah" };
+    let vocab = null;   // { mode: menu|learn|play|score|word, step, onlyNew, kind, test, questions, i, answers, shown, ... }
+    function vocabSheetEl() {
+      let el = document.getElementById("vocabSheet");
+      if (!el) {
+        el = document.createElement("div");
+        el.id = "vocabSheet";
+        el.className = "vocab-sheet";
+        el.setAttribute("role", "dialog");
+        el.setAttribute("aria-modal", "true");
+        el.hidden = true;
+        document.body.appendChild(el);
+        el.addEventListener("click", (e) => { const b = e.target.closest("[data-vo]"); if (b) vocabAction(b.dataset.vo, b.dataset).catch((error) => console.warn("Vocabulary", error)); });
+        el.addEventListener("keydown", (e) => { if (e.key === "Escape") closeVocabSheet(); });
+      }
+      return el;
+    }
+    function closeVocabSheet() { const el = document.getElementById("vocabSheet"); if (el) el.hidden = true; vocab = null; }
+    function vocabStateOf(lemma) {
+      const c = learnNextCtx;
+      return lemmaProgressFor({ tenantId: c.tenantId, personId: c.personId, level: "wbw", lemmaId: lemma, confirmationRequired: c.confirmationRequired }).state ?? "not_started";
+    }
+    function vocabDeck() { return deckRows(learnNextCtx.data.rows, vocab.step, vocab.onlyNew); }
+    /** Writes `state` for each item through the Word card's own mark. A failure is reported in words by safeWrite (I15). */
+    async function vocabWrite(items) {
+      let done = 0;
+      for (const it of items) {
+        const before = vocabStateOf(it.lemma);
+        const refs = await occurrenceRefsForClaimKey(it.lemma);
+        await runLemmaProgressAction({ kind: "state", state: it.state }, "wbw", null, { lemmaId: it.lemma, refs });
+        if (vocabStateOf(it.lemma) !== before) done++;
+      }
+      return done;
+    }
+    async function openVocabulary(args) {
+      const { tenantId, subjectPersonId } = wordProgressActor();
+      if (!tenantId || !subjectPersonId) return;
+      await ensureLearnNext({ tenantId, personId: subjectPersonId, confirmationRequired: !!wordProgressConfirmRequired });
+      vocab = args;
+      renderVocab();
+      vocabSheetEl().hidden = false;
+      vocabSheetEl().querySelector("[data-vo='close']")?.focus({ preventScroll: true });
+    }
+    async function vocabAction(act, d) {
+      if (!vocab) return;
+      const rows = learnNextCtx.data.rows;
+      if (act === "close") {
+        const wasWord = vocab.mode === "word" || vocab.mode === "wordscore";
+        closeVocabSheet();
+        if (!wasWord) renderLearnNextSheet();
+        // Architect review: ONE mark, so an open Word card shows what the round just wrote (it showed the old mark
+        // until a reload). The same redraw the card does after its own lemma marks.
+        if (quranWordCardState.occurrenceId) { await hydrateWordCardLemmaExtras(); renderPersistentWordCard(); }
+        return;
+      }
+      if (act === "menu") { vocab = { mode: "menu", step: vocab.step, onlyNew: vocab.onlyNew }; renderVocab(); return; }
+      if (act === "learn") { vocab = { mode: "learn", step: vocab.step, onlyNew: vocab.onlyNew, shown: 20 }; renderVocab(); return; }
+      if (act === "more") { vocab.shown += 20; renderVocab(); return; }
+      if (act === "start") {
+        const kind = d.kind, deck = vocabDeck(), lang = getAppLang();
+        const questions = kind === "test" ? buildTest(rows, deck, { lang }) : buildRound(rows, deck, kind, { lang });
+        vocab = { ...vocab, mode: "play", kind, test: kind === "test", questions, i: 0, answers: [], picked: null, revealed: false, deckSize: deck.length };
+        await vocabPrepareQuestion(); renderVocab(); return;
+      }
+      if (act === "reveal") { vocab.revealed = true; renderVocab(); return; }
+      if (act === "flash") { await vocabAnswer(d.right === "1"); return; }
+      if (act === "pick") {
+        const q = vocab.questions[vocab.i];
+        await vocabAnswer(q.options[Number(d.idx)].correct, Number(d.idx));
+        return;
+      }
+      if (act === "next") { await vocabNext(); return; }
+      if (act === "again") { await vocabAction("start", { kind: vocab.kind }); return; }
+      if (act === "markyes") {
+        const items = achievedWrites(vocabDeck(), vocabStateOf);
+        vocab.busy = true; renderVocab();
+        const done = await vocabWrite(items);
+        vocab = { ...vocab, busy: false, marked: done, mode: "score", askMark: false }; renderVocab(); return;
+      }
+      if (act === "markno") { vocab.askMark = false; renderVocab(); return; }
+      if (act === "place") {
+        const [s, a, p] = [Number(d.s), Number(d.a), Number(d.p)];
+        const keep = { ...vocab };
+        closeVocabSheet(); closeLearnNextSheet();
+        await openWordOccurrenceAt(s, a, p, "read");
+        setAppReturn(t("Back to the step"), "", () => { learnNextStep = keep.step; learnNextOnlyNew = keep.onlyNew; showLearnNextSheet(); vocab = { ...keep }; renderVocab(); vocabSheetEl().hidden = false; }, { inWordCard: true });
+      }
+    }
+    async function vocabPrepareQuestion() {
+      const q = vocab.questions[vocab.i];
+      vocab.ayahHtml = "";
+      if (!q || q.kind !== "ayah") return;
+      const row = learnNextCtx.data.rows[q.rank - 1], pl = placeOfRow(row);
+      const surah = await getSurah(pl.surah);
+      const a = surah.ayahs.find((x) => x.ayah === pl.ayah);
+      vocab.ayahHtml = (a?.words ?? []).map((w) => `<span class="vo-w${w.position === pl.position ? " vo-ring" : ""}" data-vo-occ="${row.o}"${w.position === pl.position ? ` data-vo-target="${pl.surah}:${pl.ayah}:${pl.position}"` : ""}>${escapeHtml(w.arabic)}</span>`).join(" ");
+    }
+    async function vocabAnswer(right, idx = null) {
+      const q = vocab.questions[vocab.i];
+      vocab.answers.push({ rank: q.rank, right: !!right });
+      if (vocab.test) { await vocabNext(); return; }
+      vocab.picked = idx ?? (right ? 1 : 0); vocab.lastRight = !!right; vocab.fed = true;
+      if (q.kind === "flashcard") { await vocabNext(); return; }
+      renderVocab();
+    }
+    async function vocabNext() {
+      vocab.i++; vocab.picked = null; vocab.revealed = false; vocab.fed = false;
+      if (vocab.i < vocab.questions.length) { await vocabPrepareQuestion(); renderVocab(); return; }
+      await vocabFinish();
+    }
+    async function vocabFinish() {
+      const rows = learnNextCtx.data.rows, tl = tally(vocab.answers);
+      if (vocab.mode === "word" || vocab.word) {
+        vocab.busy = true; renderVocab();
+        const writes = practiceWrites(rows, vocab.answers, vocabStateOf);
+        const moved = await vocabWrite(writes);
+        // a one-word round scores its three QUESTIONS (the word itself moves only if all three were right)
+        const byQ = { right: vocab.answers.filter((a) => a.right).length, total: vocab.answers.length };
+        vocab = { ...vocab, busy: false, mode: "wordscore", tally: byQ, moved }; renderVocab(); return;
+      }
+      if (vocab.test) {
+        const passed = testPassed(vocab.answers);
+        vocab = { ...vocab, mode: "score", tally: tl, passed, askMark: passed && achievedWrites(vocabDeck(), vocabStateOf).length > 0, moved: 0 };
+        renderVocab(); return;
+      }
+      vocab.busy = true; renderVocab();
+      const moved = await vocabWrite(practiceWrites(rows, vocab.answers, vocabStateOf));
+      vocab = { ...vocab, busy: false, mode: "score", tally: tl, moved }; renderVocab();
+    }
+    async function openVocabWordRound(lemma) {
+      const { tenantId, subjectPersonId } = wordProgressActor();
+      if (!tenantId || !subjectPersonId) return;
+      await ensureLearnNext({ tenantId, personId: subjectPersonId, confirmationRequired: !!wordProgressConfirmRequired });
+      const rows = learnNextCtx.data.rows, row = rows[(vocabRankOfLemma(lemma) ?? 0) - 1];
+      if (!row) return;
+      const questions = buildWordRound(rows, row, { lang: getAppLang() });
+      vocab = { mode: "word", word: true, step: null, onlyNew: false, kind: "word", test: false, questions, i: 0, answers: [], picked: null, revealed: false };
+      await vocabPrepareQuestion(); renderVocab();
+      vocabSheetEl().hidden = false;
+    }
+    function vocabRankOfLemma(lemma) { return (learnNextCtx?.data.rows.find((r) => r.l.normalize("NFC") === String(lemma).normalize("NFC")))?.r ?? null; }
+    async function vocabLearnPlaces(rows) {
+      const out = new Map();
+      for (const r of rows) {
+        try {
+          const refs = (await occurrenceRefsForClaimKey(r.l)).slice(0, 3);
+          const first = refs[0] ? (await getSurah(refs[0].surah)).ayahs.find((a) => a.ayah === refs[0].ayah)?.words?.find((w) => w.position === refs[0].position) : null;
+          out.set(r.r, { refs, root: first?.morphology?.root ?? "" });
+        } catch { out.set(r.r, { refs: [], root: "" }); }
+      }
+      return out;
+    }
+    function renderVocab() {
+      const el = vocabSheetEl(), v = vocab;
+      if (!v) return;
+      const rows = learnNextCtx.data.rows, deck = v.step ? vocabDeck() : [];
+      const g = (n) => num(Number(n).toLocaleString("en-US"));
+      const head = (title, back = "close") => `<div class="vo-head"><button type="button" class="vo-back" data-vo="${back}">← ${escapeHtml(t("Back"))}</button><h2 class="vo-title">${escapeHtml(title)}</h2></div>`;
+      const stepName = v.step ? (v.onlyNew ? t("words {a}–{b}", { a: g(stepRange(v.step, true).from), b: g(v.step) }) : t("the first {n} words", { n: g(v.step) })) : "";
+      let body = "";
+      if ((v.mode === "play" || v.mode === "word") && !v.questions[v.i]) {
+        el.innerHTML = head(t("Vocabulary")) + `<div class="vo-body"><p class="vo-note">${escapeHtml(t("Saving…"))}</p></div>`;
+      } else if (v.mode === "menu") {
+        const kinds = PRACTICE_KINDS.map((k) => `<button type="button" class="vo-kind" data-vo="start" data-kind="${k}">${escapeHtml(t(VOCAB_KIND_NAME[k]))}</button>`).join("");
+        body = `<p class="vo-note">${escapeHtml(t("Practise {what}", { what: stepName }))}</p><div class="vo-kinds">${kinds}</div>
+          <button type="button" class="vo-test" data-vo="start" data-kind="test">${escapeHtml(t("Step test"))}</button>
+          <button type="button" class="vo-learn" data-vo="learn">${escapeHtml(t("Learn"))}</button>`;
+        el.innerHTML = head(t("Practise")) + `<div class="vo-body">${body}</div>`;
+      } else if (v.mode === "learn") {
+        const view = deck.slice(0, v.shown);
+        const share = (r) => `+${num(wordShare(r, learnNextCtx.data.total).toFixed(1))}%`;
+        body = `<p class="vo-note">${escapeHtml(stepName)}</p><div class="vo-list">` + view.map((r) => `<div class="vo-lw${learnNextIsKnown(r) ? " vo-known" : ""}" data-vo-lw="${r.r}"><span class="vo-lw-ar" lang="ar" dir="rtl">${escapeHtml(r.l)}</span><span class="vo-lw-mean">${escapeHtml(learnNextMeaning(r))} <span class="vo-lw-mean2">· ${escapeHtml(learnNextMeaning(r, true))}</span></span><span class="vo-lw-root" data-vo-root="${r.r}"></span><span class="vo-lw-share">${escapeHtml(g(r.n))}× ${escapeHtml(share(r))}</span><span class="vo-places" data-vo-places="${r.r}"></span></div>`).join("") + `</div>`;
+        if (deck.length > view.length) body += `<button type="button" class="vo-more" data-vo="more">${escapeHtml(t("Show 20 more"))}</button>`;
+        el.innerHTML = head(t("Learn"), "menu") + `<div class="vo-body">${body}</div>`;
+        vocabLearnPlaces(view).then((map) => {
+          if (vocab !== v || v.mode !== "learn") return;
+          for (const r of view) {
+            const info = map.get(r.r); if (!info) continue;
+            const rootEl = el.querySelector(`[data-vo-root="${r.r}"]`), plEl = el.querySelector(`[data-vo-places="${r.r}"]`);
+            if (rootEl) rootEl.textContent = info.root ? `${t("Root")}: ${info.root}` : "";
+            if (plEl) plEl.innerHTML = info.refs.map((p) => `<button type="button" class="vo-place" data-vo="place" data-s="${p.surah}" data-a="${p.ayah}" data-p="${p.position}">${escapeHtml(num(`${p.surah}:${p.ayah}`))}</button>`).join("");
+          }
+        });
+      } else if (v.mode === "play" || v.mode === "word") {
+        const q = v.questions[v.i];
+        const row = rows[q.rank - 1];
+        const title = v.mode === "word" ? t("Practise this word") : v.test ? t("Step test") : t(VOCAB_KIND_NAME[v.kind]);
+        const prog = `<p class="vo-prog">${escapeHtml(t("Question {i} of {n}", { i: g(v.i + 1), n: g(v.questions.length) }))}</p>`;
+        let prompt = "", opts = "";
+        const ar = `<div class="vo-ar" lang="ar" dir="rtl">${escapeHtml(row.l)}</div>`;
+        if (q.kind === "flashcard") {
+          prompt = ar;
+          opts = v.revealed
+            ? `<p class="vo-reveal">${escapeHtml(learnNextMeaning(row))} <span class="vo-lw-mean2">· ${escapeHtml(learnNextMeaning(row, true))}</span></p><div class="vo-two"><button type="button" class="vo-opt" data-vo="flash" data-right="1">${escapeHtml(t("I knew it"))}</button><button type="button" class="vo-opt" data-vo="flash" data-right="0">${escapeHtml(t("Not yet"))}</button></div>`
+            : `<button type="button" class="vo-opt vo-show" data-vo="reveal">${escapeHtml(t("Show the meaning"))}</button>`;
+        } else {
+          if (q.kind === "meaning") prompt = ar;
+          else if (q.kind === "arabic") prompt = `<div class="vo-mean">${escapeHtml(learnNextMeaning(row))}</div>`;
+          else prompt = `<div class="vo-ayah" lang="ar" dir="rtl" data-vo-ayah>${v.ayahHtml || ""}</div>`;
+          opts = `<div class="vo-opts">` + q.options.map((o, idx) => {
+            const cls = !v.test && v.fed ? (o.correct ? " vo-right" : v.picked === idx ? " vo-wrong" : "") : "";
+            const arab = q.kind === "arabic";
+            return `<button type="button" class="vo-opt${cls}" data-vo="pick" data-idx="${idx}"${v.fed ? " disabled" : ""}${arab ? ` lang="ar" dir="rtl"` : ""}>${escapeHtml(o.text)}</button>`;
+          }).join("") + `</div>` + (!v.test && v.fed ? `<button type="button" class="vo-next" data-vo="next">${escapeHtml(t("Next"))}</button>` : "");
+        }
+        body = `${prog}<div class="vo-card" data-vo-kind="${q.kind}">${prompt}</div>${opts}${v.busy ? `<p class="vo-note">${escapeHtml(t("Saving…"))}</p>` : ""}`;
+        el.innerHTML = head(title, v.mode === "word" ? "close" : "menu") + `<div class="vo-body">${body}</div>`;
+      } else if (v.mode === "score" || v.mode === "wordscore") {
+        const tl = v.tally;
+        const line = `<p class="vo-score" data-vo-score>${escapeHtml(t("Score: {right} of {total}", { right: g(tl.right), total: g(tl.total) }))}</p>`;
+        let more = "";
+        if (v.test) {
+          more = v.passed
+            ? `<p class="vo-pass">${escapeHtml(t("Passed! 90% or more is needed."))}</p>`
+            : `<p class="vo-fail">${escapeHtml(t("Not passed yet. 90% or more is needed. These words go back to practice:"))}</p><div class="vo-back-words">${tl.wrongRanks.map((rk) => `<span lang="ar" dir="rtl">${escapeHtml(rows[rk - 1].l)}</span>`).join(" ")}</div>`;
+          if (v.askMark) more += `<p class="vo-ask">${escapeHtml(t("Mark these {n} words Achieved?", { n: g(achievedWrites(vocabDeck(), vocabStateOf).length) }))}</p><div class="vo-two"><button type="button" class="vo-opt" data-vo="markyes">${escapeHtml(t("Yes, mark them"))}</button><button type="button" class="vo-opt" data-vo="markno">${escapeHtml(t("No, not now"))}</button></div>`;
+          else if (v.marked != null) more += `<p class="vo-moved">${escapeHtml(t("Marked {n} words Achieved.", { n: g(v.marked) }))}</p>`;
+        } else if (v.moved) more = `<p class="vo-moved">${escapeHtml(t("{n} words moved up.", { n: g(v.moved) }))}</p>`;
+        const again = v.mode === "wordscore" ? "" : `<button type="button" class="vo-next" data-vo="again">${escapeHtml(v.test ? t("Take the test again") : t("Another round"))}</button>`;
+        body = `${line}${more}${again}<button type="button" class="vo-next vo-done" data-vo="${v.mode === "wordscore" ? "close" : "menu"}">${escapeHtml(t("Done"))}</button>`;
+        el.innerHTML = head(v.test ? t("Step test") : t("Score"), v.mode === "wordscore" ? "close" : "menu") + `<div class="vo-body">${body}</div>`;
+      }
+      el.setAttribute("aria-label", t("Vocabulary"));
     }
 
     async function openWordOccurrenceAt(surah, ayah, position, view, restore = null) {
@@ -18827,6 +19103,8 @@
       const wordCardAyahAction = event.target.closest("[data-word-card-ayah-action]");
       if (wordCardAyahAction) { openAyahActionSheet(wordCardAyahAction.dataset.wordCardAyahAction); return; }
       // Round 6 -- the 🔍 Search row. Only Search / Enter / a Try chip fetch the word list.
+      const practiseBtn = event.target.closest("[data-vocab-practise-word]");
+      if (practiseBtn) { openVocabWordRound(practiseBtn.dataset.lemma).catch((error) => console.warn("Vocabulary unavailable", error)); return; }
       if (event.target.closest("[data-learn-next-open]")) { openLearnNextSheet().catch((error) => console.warn("Learn next unavailable", error)); return; }
       const searchToggle = event.target.closest("[data-word-card-search-toggle]");
       if (searchToggle) {

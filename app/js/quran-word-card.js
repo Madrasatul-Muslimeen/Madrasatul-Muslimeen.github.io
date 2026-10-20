@@ -271,6 +271,7 @@ export const WORD_CARD_DEFAULT_LABELS = Object.freeze({
   // 14 Oct: option C's circle IN PLACE of the number, never both).
   wholeQuranLevelSentence: "{level}: Achieved {known} and {percent} of {total} words",
   learnNextTitle: "Learn next",
+  practiseThisWord: "Practise this word",
   learnNextLine: "Next up: {word} · {meaning} · {count} places",
   percentCircleLabel: "{percent}%",
   levelNameWbw: "WbW",
@@ -1352,6 +1353,7 @@ function levelPanel(level, word, layers, context, text, formatNumber) {
       })}
       ${knownThroughLine(context.knownViaGroupLemma, text)}
       ${knownThroughLevelLine(context.knownViaLevel, text)}
+      ${word?.morphology?.lemma ? `<button type="button" class="word-card-practise" data-vocab-practise-word data-lemma="${escapeHtml(word.morphology.lemma)}">${escapeHtml(String(text.practiseThisWord ?? WORD_CARD_TEXT.practiseThisWord))}</button>` : ""}
     </div></div>`;
   }
   if (level === "basic") {
