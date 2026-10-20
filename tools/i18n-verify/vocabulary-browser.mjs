@@ -37,6 +37,7 @@ const MUT = {
   lowtest: ["app/js/vocabulary.js", "export const PASS_RATIO = 0.9;", "export const PASS_RATIO = 0.3;"],
   nobackcard: ["app/quranrevival.html", "if (act === \"close\") { const wasWord", "if (act === \"close\") { document.getElementById(\"quranWordCardMount\").innerHTML = \"\"; const wasWord"],
   bnleak: ["app/js/i18n/bn.js", "\"Pick the Arabic\": \"আরবি বাছুন\",", ""],
+  nocardsync: ["app/quranrevival.html", "if (quranWordCardState.occurrenceId) { await hydrateWordCardLemmaExtras(); renderPersistentWordCard(); }", ""],
   palegreen: ["app/quranrevival.html", ".vo-lw.vo-known { background: #d7efdf;", ".vo-lw.vo-known { background: #eef7f0;"],
   lowpurple: ["app/quranrevival.html", ".ln-vbtn { flex: 1 1 6rem; min-height: 44px; padding: 0 0.7rem; border-radius: 0.5rem; border: 1px solid #4b2a85; background: #4b2a85;", ".ln-vbtn { flex: 1 1 6rem; min-height: 44px; padding: 0 0.7rem; border-radius: 0.5rem; border: 1px solid #4b2a85; background: #5b3a95;"],
 };

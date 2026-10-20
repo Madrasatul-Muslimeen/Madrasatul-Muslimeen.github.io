@@ -6599,7 +6599,7 @@
                  (fitBarButton() below). -->
             <button type="button" class="study-pillar-action" id="tabWritingBtn" data-study-action="writing" role="menuitem"><span aria-hidden="true">✍ </span>Writing sheet</button>
             <button type="button" class="study-pillar-action" id="tabVocabularyBtn" data-study-action="vocabulary" role="menuitem">Vocabulary</button>
-            <button type="button" class="study-pillar-action" id="tabStudyOptionsBtn"data-study-action="options" data-panel="panelStudyOptions" role="menuitem" aria-controls="panelStudyOptions" aria-expanded="false">Options</button>
+            <button type="button" class="study-pillar-action" id="tabStudyOptionsBtn" data-study-action="options" data-panel="panelStudyOptions" role="menuitem" aria-controls="panelStudyOptions" aria-expanded="false">Options</button>
           </div>
         </div>
         <!-- Ayah Collections round 2 -- Explore stops being a small drawer
@@ -18787,7 +18787,15 @@
     async function vocabAction(act, d) {
       if (!vocab) return;
       const rows = learnNextCtx.data.rows;
-      if (act === "close") { const wasWord = vocab.mode === "word" || vocab.mode === "wordscore"; closeVocabSheet(); if (!wasWord) renderLearnNextSheet(); return; }
+      if (act === "close") {
+        const wasWord = vocab.mode === "word" || vocab.mode === "wordscore";
+        closeVocabSheet();
+        if (!wasWord) renderLearnNextSheet();
+        // Architect review: ONE mark, so an open Word card shows what the round just wrote (it showed the old mark
+        // until a reload). The same redraw the card does after its own lemma marks.
+        if (quranWordCardState.occurrenceId) { await hydrateWordCardLemmaExtras(); renderPersistentWordCard(); }
+        return;
+      }
       if (act === "menu") { vocab = { mode: "menu", step: vocab.step, onlyNew: vocab.onlyNew }; renderVocab(); return; }
       if (act === "learn") { vocab = { mode: "learn", step: vocab.step, onlyNew: vocab.onlyNew, shown: 20 }; renderVocab(); return; }
       if (act === "more") { vocab.shown += 20; renderVocab(); return; }
