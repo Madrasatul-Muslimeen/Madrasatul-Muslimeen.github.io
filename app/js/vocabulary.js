@@ -89,11 +89,42 @@ export function buildTest(rows, deck, { lang = "en", rng = Math.random } = {}) {
   return shuffle(deck, rng).map((r) => makeQuestion(r, CHOICE_KINDS[Math.floor(rng() * CHOICE_KINDS.length)], pool, lang, rng)).filter(Boolean);
 }
 
-/** The one-word round of the Word card: one question of each kind 2-4. */
-export function buildWordRound(rows, row, { lang = "en", rng = Math.random } = {}) {
+/** PCF MSA J56 (the Owner, 20 Oct 2026: "Only 3 questions! Can you make it to 10?"): the Word card's one-word round. */
+export const WORD_ROUND_SIZE = 10;
+/**
+ * Ten questions about ONE word: a flashcard first, then Pick the meaning, Pick the Arabic and In its āyah three times
+ * each -- every choice question with its own fresh wrong options, and each āyah question at a DIFFERENT place of the
+ * word (`places`: [{surah, ayah, position}], its occurrences; fewer places repeat the first ones).
+ */
+export function buildWordRound(rows, row, { lang = "en", rng = Math.random, places = [] } = {}) {
   const near = rows.filter((r) => Math.abs(r.r - row.r) <= 60);
   const pool = near.length >= OPTION_COUNT * 2 ? near : rows.slice(0, 80);
-  return CHOICE_KINDS.map((k) => makeQuestion(row, k, pool, lang, rng)).filter(Boolean);
+  const spread = pickPlaces(places, 3, rng);
+  const out = [makeQuestion(row, "flashcard", pool, lang, rng)];
+  for (let i = 0; i < 3; i++) {
+    for (const k of CHOICE_KINDS) {
+      const q = makeQuestion(row, k, pool, lang, rng);
+      if (!q) continue;
+      if (k === "ayah" && spread.length) q.place = spread[i % spread.length];
+      out.push(q);
+    }
+  }
+  return out.slice(0, WORD_ROUND_SIZE);
+}
+
+/** Up to n different places, spread over the word's occurrences: the first, then others drawn at random. */
+export function pickPlaces(places, n, rng = Math.random) {
+  const list = (places ?? []).filter((p) => p && p.surah && p.ayah && p.position);
+  if (list.length <= n) return list.slice();
+  return [list[0], ...shuffle(list.slice(1), rng).slice(0, n - 1)];
+}
+
+/** A one-word round moves the word up (as practiceWrites does) when 90% or more of its questions were right. */
+export function wordRoundWrites(row, answers, stateOf) {
+  const right = answers.filter((a) => a.right).length;
+  if (!answers.length || right / answers.length < PASS_RATIO) return [];
+  const state = stateAfterRight(stateOf(row.l));
+  return state ? [{ rank: row.r, lemma: row.l, state }] : [];
 }
 
 /** answers: [{ rank, right }]. A word is "right" in a round if every question about it was right. */
