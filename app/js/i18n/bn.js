@@ -4400,4 +4400,12 @@ export const BN = {
   "Both translit.": "দুই প্রতিবর্ণ",
   "No translit.": "প্রতিবর্ণ নেই",
   "Bangla transliteration is made by rules from the Arabic and is being checked.": "বাংলা প্রতিবর্ণীকরণ আরবি থেকে নিয়ম অনুযায়ী তৈরি এবং যাচাই করা হচ্ছে।",
+  // PCF MSA J68 -- a new Note's first title, and copying āyāt.
+  "Quran {ref} - {name}:": "কুরআন {ref} - {name}:",
+  "Copy āyāt": "আয়াত কপি করুন",
+  "Several āyāt": "কয়েকটি আয়াত",
+  "Include": "সাথে",
+  "Copy {n} āyāt": "{n}টি আয়াত কপি করুন",
+  "Copied.": "কপি হয়েছে।",
+  "Could not copy: select the text and copy it yourself.": "কপি করা যায়নি: লেখাটি বেছে নিজে কপি করুন।",
 };

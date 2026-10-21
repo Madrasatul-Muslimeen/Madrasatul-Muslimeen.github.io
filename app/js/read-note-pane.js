@@ -68,6 +68,7 @@ function apply() {
 
 function srcFor(u, { focusNew = false } = {}) {
   const q = new URLSearchParams({ embed: "1", unit: u.unitKey, unitLabel: u.label });
+  if (u.noteTitle) q.set("noteTitle", u.noteTitle); // PCF MSA J68: a new Note's first title ("Quran 22:3 - Al-Hajj:")
   // In the address, not a message: the page may reload itself once (adopting the reader's language) and a message
   // sent before that is lost; the address is read again.
   if (focusNew) q.set("focusNew", "1");
@@ -222,7 +223,7 @@ export function openReadNotePane(u, whenClosed = null, { tab = "notes", backLabe
   const first = !frame.getAttribute("src");
   if (first) frame.setAttribute("src", srcFor(u, { focusNew }));
   else {
-    if (unit?.unitKey !== u.unitKey) toFrame({ type: "mmsa-unit", unit: u.unitKey, label: u.label });
+    if (unit?.unitKey !== u.unitKey) toFrame({ type: "mmsa-unit", unit: u.unitKey, label: u.label, noteTitle: u.noteTitle ?? "" });
     if (focusNew) toFrame({ type: "mmsa-focus-new" });
   }
   unit = u;
@@ -236,7 +237,7 @@ export function openReadNotePane(u, whenClosed = null, { tab = "notes", backLabe
 /** The Read view moved to another āyah: an open pane follows it; a closed one waits until it is opened. */
 export function setReadNotePaneUnit(u) {
   if (!pane || pane.hidden || !u || u.unitKey === unit?.unitKey) return;
-  toFrame({ type: "mmsa-unit", unit: u.unitKey, label: u.label });
+  toFrame({ type: "mmsa-unit", unit: u.unitKey, label: u.label, noteTitle: u.noteTitle ?? "" });
   unit = u;
   paint();
 }
