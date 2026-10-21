@@ -29,7 +29,7 @@ const PURE_MUT = {
 };
 const MUT = {
   hiddenask: ["app/ayah-poster.html", "  .ap-choose[hidden], #apEditor[hidden] { display: none; }", "  .ap-x[hidden] { display: none; }"],
-  notranslit: ["app/js/ayah-poster.js", "return { tr: !!translit,", "return { tr: true,"],
+  notranslit: ["app/js/ayah-poster.js", 'return { tr: m === "latin" || m === "both",', "return { tr: true,"],
   langleak: ["app/js/ayah-poster.js", "en: lang !== \"bn\", bn: lang !== \"en\" };", "en: true, bn: lang !== \"en\" };"],
   nofit: ["app/ayah-poster.html", "      if (at(1)) return { k: 1, fits: true };\n      let lo = 0.3", "      if (true) return { k: 1, fits: true };\n      let lo = 0.3"],
   nopage: ["app/ayah-poster.html", "size: ${state.paper === \"a3\" ? \"A3\" : \"A4\"} portrait", "size: A4 portrait"],
@@ -58,9 +58,10 @@ console.log("\n=== pure: app/js/ayah-poster.js ===");
     if (!src.includes(a)) throw new Error(`pure mutation anchor missing: ${MUTATE}`);
     src = src.split(a).join(b);
   }
-  const tmp = `/tmp/ayah-poster-under-test-${process.pid}.mjs`;
+  // J58: the module now imports ./quran-translit-bn.js, so the copy under test lives beside it (not in /tmp).
+  const tmp = `app/js/_ayah-poster-under-test-${process.pid}.mjs`;
   fs.writeFileSync(tmp, src);
-  const P = await import(tmp + "?" + Date.now());
+  const P = await import("../../" + tmp + "?" + Date.now());
   const s2 = surah(2), s112 = surah(112);
   const r1 = P.clampRange(286, 250, 400), r2 = P.clampRange(4, 3, 1), r3 = P.clampRange(286, 1, 286);
   check("a range stays inside the sūrah and at most 40 āyāt", r1.from === 250 && r1.to === 286 && r2.from === 1 && r2.to === 3 && r3.to - r3.from + 1 === 40, JSON.stringify({ r1, r2, r3 }));
@@ -86,6 +87,8 @@ async function context(opts) {
   }
   return ctx;
 }
+/** J58: the choices are ONE summary line, closed by default; this opens it (once). */
+async function openMenu(page) { if ((await page.getAttribute("#apSum", "aria-expanded")) !== "true") await page.click("#apSum"); await page.waitForTimeout(120); }
 async function poster(ctx, q) {
   const { page, errors } = await openPage(ctx, `/app/ayah-poster.html?${q}`);
   await page.waitForFunction(() => document.body.dataset.apReady, null, { timeout: 20000 }).catch(() => {});
@@ -105,16 +108,20 @@ const realErrors = (errs) => errs.filter((e) => !/ERR_CERT|net::|archive\.org|ap
   check("the choice is kept in the address (a reload or ← Back returns to it)", new URL(page.url()).searchParams.get("kind") === "study" && new URL(page.url()).searchParams.get("back") === "1");
   // 2A: one āyah, or a range
   check("2A: it opens on this āyah alone (112:1, 4 words)", await page.evaluate(() => document.querySelectorAll("#apSheet .ap-kid-ayah").length === 1 && document.querySelectorAll("#apSheet .ap-kid-word").length === 4));
-  await page.click("[data-ap-range=surah]"); await page.waitForTimeout(300);
+  await openMenu(page);
+  await page.selectOption("[data-ap-range-select]", "surah"); await page.waitForTimeout(300);
   check("2A: Whole sūrah gives 112:1–4, all 15 words, each āyah closed by its number", await page.evaluate(() => document.querySelectorAll("#apSheet .ap-kid-ayah").length === 4 && document.querySelectorAll("#apSheet .ap-kid-word").length === 15 && document.querySelectorAll("#apSheet .ap-kid-num").length === 4));
+  check("J58: From and To show only after Choose āyāt…", !(await shown(page, "[data-ap-from]")));
+  await page.selectOption("[data-ap-range-select]", "custom"); await page.waitForTimeout(250);
+  check("J58: …and then both are there", await shown(page, "[data-ap-from]") && await shown(page, "[data-ap-to]"));
   await page.selectOption("[data-ap-from]", "2"); await page.waitForTimeout(300);
   check("2A: From 2 gives 112:2–4", await page.evaluate(() => document.querySelectorAll("#apSheet .ap-kid-ayah").length === 3) && /112 : 2–4/.test(await page.textContent("#apTitle")), await page.textContent("#apTitle"));
-  await page.click("[data-ap-range=surah]"); await page.waitForTimeout(300);
+  await page.selectOption("[data-ap-range-select]", "surah"); await page.waitForTimeout(300);
   // 3A: meanings and transliteration
   const lines = () => page.evaluate(() => ({ tr: document.querySelectorAll("#apSheet .ap-tr").length, en: document.querySelectorAll("#apSheet .ap-m-en").length, bn: document.querySelectorAll("#apSheet .ap-m-bn").length }));
   const both = await lines();
   check("3A: Both + transliteration On: every word box has transliteration, English and Bangla", both.tr === 15 && both.en === 15 && both.bn === 15, JSON.stringify(both));
-  await page.click("[data-ap-tr='0']"); await page.waitForTimeout(250);
+  await page.click("[data-ap-tr=off]"); await page.waitForTimeout(250);
   check("3A: Transliteration Off removes every transliteration", (await lines()).tr === 0, JSON.stringify(await lines()));
   await page.click("[data-ap-lang=bn]"); await page.waitForTimeout(250);
   const bnOnly = await lines();
@@ -149,6 +156,7 @@ const realErrors = (errs) => errs.filter((e) => !/ERR_CERT|net::|archive\.org|ap
   check("too much for one sheet says so in words (2:1–40), never cuts silently", w.warn && /too much for one sheet/.test(w.text), JSON.stringify(w));
   await big.close();
   // print
+  await openMenu(page);
   await page.click("[data-ap-paper=a3]"); await page.waitForTimeout(250);
   check("A3 sets the printed page to A3 (the @page rule) and is kept in the address", /size: A3 portrait/.test(await page.textContent("#apPageSize")) && new URL(page.url()).searchParams.get("paper") === "a3");
   await page.click("[data-ap-paper=a4]"); await page.waitForTimeout(250);
@@ -216,6 +224,7 @@ for (const [lang, width] of [["en", 320], ["en", 768], ["en", 1280], ["bn", 390]
   const ownWords = () => page.evaluate(() => [...document.querySelectorAll(".ap-bar, .ap-choose, .ap-tools .ap-lab, .ap-tools button, .ap-acts")].filter((e) => e.getBoundingClientRect().height > 0).map((e) => e.textContent).join(" ").replace(/A4|A3|MSA/g, "").match(/[A-Za-z]{3,}/g) || []);
   const leakAsk = lang === "bn" ? await ownWords() : [];
   await page.click("[data-ap-choose=study]"); await page.waitForTimeout(300);
+  await openMenu(page);
   const fit = await page.evaluate(() => ({ side: document.documentElement.scrollWidth - innerWidth, small: [...document.querySelectorAll(".ap-grp button, .ap-grp select, .ap-act, .ap-back")].filter((b) => b.getBoundingClientRect().height > 0 && b.getBoundingClientRect().height < 44).map((b) => b.textContent.trim()), sheetW: document.getElementById("apSheet").getBoundingClientRect().width }));
   check(`[${lang} ${width}] no sideways scroll, every control 44px+, the sheet on screen`, fit.side <= 0 && fit.small.length === 0 && fit.sheetW > 200, JSON.stringify(fit));
   if (lang === "bn") {

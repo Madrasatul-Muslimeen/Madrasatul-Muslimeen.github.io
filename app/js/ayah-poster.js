@@ -6,6 +6,8 @@
 // One āyah or a range of one sūrah (2A). PURE: no DOM, no fetch. The page (ayah-poster.html) feeds it a sūrah file
 // from quran-data.js and draws what it returns; ayah-poster-image.js draws the SAME model on a canvas (5B).
 
+import { banglaTranslit } from "./quran-translit-bn.js";
+
 /** The longest range one poster takes. A rukūʿ is at most ~40 āyāt; longer is not a poster. */
 export const MAX_AYAHS = 40;
 export const KINDS = Object.freeze(["study", "dawah"]);
@@ -49,7 +51,7 @@ export function posterModel(surah, from, to) {
     n: x.ayah,
     en: x.translations?.en ?? "",
     bn: x.translations?.bn ?? "",
-    words: (x.words ?? []).map((w) => ({ ar: w.arabic ?? "", tr: w.transliteration ?? "", en: w.translation?.en ?? "", bn: w.translation?.bn ?? "" })),
+    words: (x.words ?? []).map((w) => ({ ar: w.arabic ?? "", tr: w.transliteration ?? "", trBn: banglaTranslit(w.arabic), en: w.translation?.en ?? "", bn: w.translation?.bn ?? "" })),
   }));
   return {
     surah: surah?.surahNumber ?? null,
@@ -73,18 +75,24 @@ export function dawahTranslation(model, lang) {
   return model.ayahs.map((a) => (lang === "bn" ? a.bn : a.en)).filter(Boolean).join(" ");
 }
 
-/** Which meaning lines a study poster's word box carries. */
+/** The transliteration choices of the study poster (J58): Latin, Bangla, Both, Off. */
+export const TRANSLITS = Object.freeze(["latin", "bn", "both", "off"]);
+/** Old callers passed a boolean (true = the Latin line); a name from TRANSLITS is kept; anything else is Latin. */
+export const translitMode = (v) => (v === false || v === 0 ? "off" : TRANSLITS.includes(v) ? v : "latin");
+
+/** Which lines a study poster's word box carries: `tr` the Latin transliteration, `trBn` the Bangla one, then the meanings. */
 export function studyLines(lang, translit) {
-  return { tr: !!translit, en: lang !== "bn", bn: lang !== "en" };
+  const m = translitMode(translit);
+  return { tr: m === "latin" || m === "both", trBn: m === "bn" || m === "both", en: lang !== "bn", bn: lang !== "en" };
 }
 
 /**
  * The study poster's HTML. `text` carries the page's own translated words (title line, footer); every size is a
  * multiple of `--k`, which the page lowers until the whole poster fits its sheet.
  */
-export function renderStudyPosterHtml(model, { lang = "both", translit = true, text = {} } = {}) {
+export function renderStudyPosterHtml(model, { lang = "both", translit = "latin", text = {} } = {}) {
   const show = studyLines(lang, translit);
-  const ayahs = model.ayahs.map((a) => `<div class="ap-kid-ayah">${a.words.map((w) => `<div class="ap-kid-word"><span class="ap-ar" lang="ar" dir="rtl">${escapeHtml(w.ar)}</span>${show.tr ? `<span class="ap-tr">${escapeHtml(w.tr)}</span>` : ""}${show.en ? `<span class="ap-m-en" lang="en">${escapeHtml(w.en)}</span>` : ""}${show.bn ? `<span class="ap-m-bn" lang="bn">${escapeHtml(w.bn)}</span>` : ""}</div>`).join("")}<span class="ap-kid-num" aria-label="${escapeHtml(text.ayahLabel ? text.ayahLabel(a.n) : `āyah ${a.n}`)}">${arabicNumber(a.n)}</span></div>`).join("");
+  const ayahs = model.ayahs.map((a) => `<div class="ap-kid-ayah">${a.words.map((w) => `<div class="ap-kid-word"><span class="ap-ar" lang="ar" dir="rtl">${escapeHtml(w.ar)}</span>${show.tr ? `<span class="ap-tr">${escapeHtml(w.tr)}</span>` : ""}${show.trBn && w.trBn ? `<span class="ap-tr ap-tr-bn" lang="bn">${escapeHtml(w.trBn)}</span>` : ""}${show.en ? `<span class="ap-m-en" lang="en">${escapeHtml(w.en)}</span>` : ""}${show.bn ? `<span class="ap-m-bn" lang="bn">${escapeHtml(w.bn)}</span>` : ""}</div>`).join("")}<span class="ap-kid-num" aria-label="${escapeHtml(text.ayahLabel ? text.ayahLabel(a.n) : `āyah ${a.n}`)}">${arabicNumber(a.n)}</span></div>`).join("");
   return `<div class="ap-poster ap-kid" data-poster-kind="study"><div class="ap-kid-head"><span class="ap-ar ap-name" lang="ar" dir="rtl">${escapeHtml(model.nameAr)}</span><span class="ap-en-name">${escapeHtml(text.title ?? model.nameEn)}</span><span class="ap-ref">${escapeHtml(text.ref ?? rangeRef(model))}</span></div><div class="ap-kid-ayahs">${ayahs}</div><div class="ap-kid-foot"><span>${escapeHtml(text.from ?? "Madrasatul Muslimeen")}</span><span>${escapeHtml(text.tip ?? "")}</span></div></div>`;
 }
 

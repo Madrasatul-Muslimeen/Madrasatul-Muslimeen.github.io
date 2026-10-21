@@ -2859,6 +2859,12 @@
   .wbw-translit { font-size: calc(0.72rem * var(--qr-wbw-scale, 1)); color: #888; font-style: italic; }
   .wbw-gloss { font-size: calc(0.8rem * var(--qr-wbw-scale, 1)); }
   .wbw-gloss-bn { font-family: 'Noto Sans Bengali', sans-serif; color: #555; }
+  /* J58: the Bangla-script transliteration, upright (italic Bengali is not a thing); #555 on white is 7.5:1. */
+  .wbw-translit-bn { font-family: 'Noto Sans Bengali', sans-serif; font-size: calc(0.76rem * var(--qr-wbw-scale, 1)); color: #555; font-style: normal; }
+  .translit-script-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem 0.6rem; margin: 0 0 0.45rem; font-size: 0.85rem; }
+  .translit-script-row select { min-width: 0; max-width: 100%; min-height: 36px; }
+  .translit-script-note { flex: 1 1 100%; margin: 0; font-size: 0.78rem; color: #555; line-height: 1.35; }
+  .quran-word-card .word-card-meaning-text > p.word-card-transliteration-bn { font-style: normal; font-family: 'Noto Sans Bengali', sans-serif; }
   .root-pos { font-size: 0.7rem; color: #888; }
   .root-root { color: #1F3A6E; }
   .root-count { font-size: 0.65rem; color: #999; margin-left: 0.2rem; }
@@ -6483,6 +6489,17 @@
                intrusive. Its OWN row and class, not .reading-ticks: that class
                means "the reading choices" (checks count it, and Mushaf greys
                every one of them), and this is not a way of drawing the text. -->
+          <!-- PCF MSA J58: which script the word-by-word transliteration is printed in. Its OWN row (not .reading-ticks:
+               that class is counted by checks and greyed by Mushaf). Unset, it follows the app language. -->
+          <div class="translit-script-row" id="translitScriptRow">
+            <label for="translitScriptSelect">Transliteration</label>
+            <select id="translitScriptSelect">
+              <option value="latin">Latin</option>
+              <option value="bn">Bangla</option>
+              <option value="both">Both</option>
+            </select>
+            <p class="translit-script-note" id="translitScriptNote">Bangla transliteration is made by rules from the Arabic and is being checked.</p>
+          </div>
           <div class="unit-prompt-ticks">
             <label id="fatihaCountControl"><input type="checkbox" id="fatihaCountToggle" checked /> Al-Fātiḥah: Bismillah unnumbered (<span lang="ar" dir="rtl" data-i18n-skip>ٱلْحَمْدُ</span> is āyah 1)</label>
           </div>
@@ -6919,6 +6936,7 @@
     // Decision 58 (#490) -- Basic/Depth lemma-wide claims, behind their own gate (ready:false).
     import { isLemmaLevelsPersistenceReady } from "./js/study-lemma-levels-readiness.js";
     import { claimKeyFor, LEMMA_WIDE_LEVELS } from "./js/quran-lemma-levels.js";
+    import { BANGLA_TRANSLIT_NOTE } from "./js/quran-translit-bn.js";
     import { createWordCardState, openWordCard, closeWordCard, selectWordCardLevel, moveWordCard, renderQuranWordCard, fitWordCardColourLabels, WORD_CARD_POS_SEGMENTS } from "./js/quran-word-card.js";
     import { occurrenceRefsFor, occurrenceRefsForClaimKey, rootFormsFor, unpackWordIndexRef, loadWordIdentityIndex } from "./js/quran-word-index.js";
     import { wbwClaimKey, isFormKey } from "./js/quran-word-form-key.js";
@@ -6980,6 +6998,7 @@
     import { makeFloatingCard, makeResizableBox } from "./js/float-card.js";
     import {
       getAppLang, getQuranTranslationLangs, setQuranTranslationLangs,
+      getTransliterationScript, setTransliterationScript, isTransliterationScriptChosen,
       getFullScreenHides, setFullScreenHides, FULLSCREEN_HIDEABLE,
       getQuranFont, setQuranFont, quranFontStack,
       getSidewaysReading, setSidewaysReading,
@@ -16778,6 +16797,7 @@
     function wordCardLabels() {
       return {
         cardRegion: t("Quran word card"),
+        translitBnNote: t(BANGLA_TRANSLIT_NOTE),
         tablist: t("Arabic learning level"),
         previous: t("Previous word"),
         next: t("Next word"),
@@ -18266,7 +18286,7 @@
       // Round 6 -- what was typed in the Search row stays, however often the card is redrawn.
       const typed = content.querySelector("[data-word-card-search-input]");
       if (typed) wordCardSearch.value = typed.value;
-      content.innerHTML = renderQuranWordCard({ state: quranWordCardState, chapter: currentSurahData, ayah, word, context: { ...quranWordCardContext, search: wordCardSearch, lemmaForms: lemmaFormsTable, verbForms: verbFormsTable, verbFormsFailed, nounForms: nounFormsTable, nounFormsFailed, formTexts: nounFormTexts, nounBox: wordCardNounBox?.id === quranWordCardState.occurrenceId ? wordCardNounBox.key : null, depthOpen: wordCardDepthOpen, conjView: wordCardConjView, conjNarrow: window.matchMedia("(max-width: 640px)").matches, needsSource: needsSourceContext(word, currentSurahData.surahNumber), ...wordCardDictionaryContext(word), ...intermediateContext(word), ...wordProgressContext(ref), ...quranWordCardLemmaContext, hasPrevious: at > 0, hasNext: at >= 0 && at < ids.length - 1, rootOccurrenceCount: quranWordCardContext.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0, colourWordPartsEnabled: getColourWordParts(), displayRef: wordRefFor }, labels: { ...wordCardLabels(), ...wordProgressLabels() }, formatNumber: num });
+      content.innerHTML = renderQuranWordCard({ state: quranWordCardState, chapter: currentSurahData, ayah, word, context: { ...quranWordCardContext, search: wordCardSearch, lemmaForms: lemmaFormsTable, verbForms: verbFormsTable, verbFormsFailed, nounForms: nounFormsTable, nounFormsFailed, formTexts: nounFormTexts, nounBox: wordCardNounBox?.id === quranWordCardState.occurrenceId ? wordCardNounBox.key : null, depthOpen: wordCardDepthOpen, conjView: wordCardConjView, conjNarrow: window.matchMedia("(max-width: 640px)").matches, needsSource: needsSourceContext(word, currentSurahData.surahNumber), ...wordCardDictionaryContext(word), ...intermediateContext(word), ...wordProgressContext(ref), ...quranWordCardLemmaContext, hasPrevious: at > 0, hasNext: at >= 0 && at < ids.length - 1, rootOccurrenceCount: quranWordCardContext.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0, colourWordPartsEnabled: getColourWordParts(), translitScript: getTransliterationScript(), displayRef: wordRefFor }, labels: { ...wordCardLabels(), ...wordProgressLabels() }, formatNumber: num });
       // Decision 61 -- opening a section is what fetches its data.
       content.querySelectorAll("details[data-word-card-sec]").forEach((d) => {
         d.addEventListener("toggle", () => {
@@ -24679,6 +24699,16 @@
       setQuranTranslationLangs(langs); // [] is legal: Arabic on its own
       renderStudyScreen();
     }
+    // J58 -- the transliteration script: shows what is in force (the stored choice, else the app-language default),
+    // and a change redraws the word-by-word panel and an open Word card without a reload.
+    const translitScriptSelect = document.getElementById("translitScriptSelect");
+    translitScriptSelect.value = getTransliterationScript();
+    translitScriptSelect.addEventListener("change", () => {
+      setTransliterationScript(translitScriptSelect.value);
+      translitScriptSelect.value = getTransliterationScript();
+      renderStudyScreen();
+      renderPersistentWordCard();
+    });
     trEnToggle.addEventListener("change", applyTranslationTicks);
     trBnToggle.addEventListener("change", applyTranslationTicks);
     wbwShowToggle.addEventListener("change", onReadingTickChanged);

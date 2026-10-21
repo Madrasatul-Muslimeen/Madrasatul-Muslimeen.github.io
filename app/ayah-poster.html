@@ -24,14 +24,26 @@
   .ap-choose-btns { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: 0.7rem; }
   .ap-big { min-height: 88px; padding: 0.7rem 1rem; border-radius: 0.8rem; border: 2px solid var(--ap-navy); background: #fff; color: var(--ap-navy); font: inherit; font-weight: 700; font-size: 1.05rem; cursor: pointer; display: grid; gap: 0.25rem; text-align: center; }
   .ap-big small { font-weight: 400; font-size: 0.85rem; color: #4a5568; }
-  .ap-tools { display: flex; flex-wrap: wrap; gap: 0.6rem 1.1rem; align-items: center; }
-  .ap-grp { display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center; min-width: 0; }
+  /* PCF MSA J58 (the Owner's 2B, "One line"): the choices fold into ONE summary button that opens them as tidy rows --
+     a fixed label column, then a segmented group. Below 380px a label sits above its buttons, so no row wraps. */
+  .ap-menu { display: grid; gap: 0.5rem; }
+  .ap-sum { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; width: 100%; box-sizing: border-box; min-height: 48px; padding: 0.4rem 0.9rem; border-radius: 0.7rem; border: 2px solid var(--ap-navy); background: #fff; color: var(--ap-navy); font: inherit; font-weight: 600; text-align: start; cursor: pointer; }
+  .ap-sum-text { min-width: 0; overflow-wrap: anywhere; }
+  .ap-sum-go { flex: 0 0 auto; font-weight: 700; white-space: nowrap; }
+  .ap-sum:focus-visible { outline: 3px solid var(--ap-gold); outline-offset: 2px; }
+  .ap-tools { display: grid; gap: 0.6rem; padding: 0.7rem; border-radius: 0.7rem; background: #fff; border: 1px solid #d3d9e2; }
+  .ap-tools[hidden] { display: none; }
+  .ap-grp { display: grid; grid-template-columns: 7.5rem minmax(0, 1fr); gap: 0.35rem 0.6rem; align-items: center; min-width: 0; }
   .ap-grp[hidden] { display: none; }
-  .ap-lab { font-size: 0.82rem; color: #4a5568; margin-inline-end: 0.15rem; }
-  .ap-grp button, .ap-grp select { font: inherit; min-height: 44px; padding: 0 0.85rem; border-radius: 999px; border: 1px solid #b8c0cc; background: #fff; color: #1c2433; cursor: pointer; min-width: 0; max-width: 100%; }
-  .ap-grp select { padding: 0 0.5rem; border-radius: 0.6rem; }
+  .ap-lab { font-size: 0.85rem; color: #3b4658; margin-inline-end: 0.15rem; }
+  .ap-seg { display: flex; flex-wrap: nowrap; gap: 0.3rem; min-width: 0; align-items: center; }
+  .ap-seg > button { flex: 1 1 0; }
+  .ap-seg > .ap-sub { flex: 0 0 auto; }
+  .ap-grp button, .ap-grp select { font: inherit; font-size: 0.92rem; min-height: 44px; padding: 0 0.3rem; border-radius: 999px; border: 1px solid #b8c0cc; background: #fff; color: #1c2433; cursor: pointer; min-width: 0; max-width: 100%; }
+  .ap-grp select { padding: 0 0.5rem; border-radius: 0.6rem; flex: 1 1 0; }
   .ap-grp button[aria-pressed="true"] { background: var(--ap-navy); color: #fff; border-color: var(--ap-navy); }
   .ap-grp button:focus-visible, .ap-act:focus-visible, .ap-back:focus-visible, .ap-big:focus-visible { outline: 3px solid var(--ap-gold); outline-offset: 2px; }
+  @media (max-width: 379px) { .ap-grp { grid-template-columns: minmax(0, 1fr); } }
   .ap-acts { display: flex; flex-wrap: wrap; gap: 0.5rem; }
   .ap-act { min-height: 48px; padding: 0 1.1rem; border-radius: 0.6rem; border: 2px solid var(--ap-navy); background: var(--ap-navy); color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
   .ap-act.ap-act-2 { background: #fff; color: var(--ap-navy); }
@@ -52,6 +64,7 @@
   .ap-kid-word:nth-child(4n+1) { background: #e8f4ec; } .ap-kid-word:nth-child(4n+2) { background: #fff1d6; } .ap-kid-word:nth-child(4n+3) { background: #e7eefb; } .ap-kid-word:nth-child(4n+4) { background: #fbe8ee; }
   .ap-kid-word .ap-ar { font-family: var(--ap-ar); font-size: calc(var(--k) * 6.2cqw); line-height: 1.5; }
   .ap-tr { font-family: var(--ap-en); font-style: italic; font-size: calc(var(--k) * 2.1cqw); line-height: 1.3; color: #5d5442; }
+  .ap-tr-bn { font-family: var(--ap-bn); font-style: normal; font-size: calc(var(--k) * 2.3cqw); line-height: 1.35; }
   .ap-m-en { font-family: var(--ap-en); font-size: calc(var(--k) * 2.4cqw); font-weight: 700; line-height: 1.3; }
   .ap-m-bn { font-family: var(--ap-bn); font-size: calc(var(--k) * 2.5cqw); line-height: 1.35; }
   .ap-kid-num { align-self: center; box-sizing: border-box; font-family: var(--ap-ar); font-size: calc(var(--k) * 4cqw); color: #a07a24; border: calc(var(--k) * 0.35cqw) solid #d9b765; border-radius: 50%; width: calc(var(--k) * 7cqw); height: calc(var(--k) * 7cqw); display: grid; place-items: center; line-height: 1; }
@@ -71,6 +84,7 @@
   @media print {
     body { background: #fff; padding: 0; }
     .ap-bar, .ap-tools, .ap-acts, .ap-status, .ap-choose, #zabRoot, #swUpdateNotice { display: none !important; }
+    .ap-menu { display: none !important; }
     .ap-wrap { padding: 0; max-width: none; display: block; }
     .ap-stage { display: block; }
     .ap-sheet { width: var(--ap-print-w, 210mm); max-width: none; height: var(--ap-print-h, 297mm); aspect-ratio: auto; box-shadow: none; border-radius: 0; }
@@ -89,8 +103,11 @@
       </div>
     </section>
     <div id="apEditor" hidden>
-      <div class="ap-tools" role="toolbar" id="apTools"></div>
-      <div class="ap-acts" id="apActs"></div>
+      <div class="ap-menu" id="apMenu">
+        <button type="button" class="ap-sum" id="apSum" aria-expanded="false" aria-controls="apTools"><span class="ap-sum-text" id="apSumText"></span><span class="ap-sum-go" id="apSumGo"></span></button>
+        <div class="ap-acts" id="apActs"></div>
+        <div class="ap-tools" role="group" id="apTools" hidden></div>
+      </div>
       <p class="ap-status" id="apStatus" role="status" aria-live="polite"></p>
       <div class="ap-stage"><div class="ap-sheet" id="apSheet"></div></div>
     </div>
@@ -98,7 +115,7 @@
   </main>
   <script type="module">
     import { t, translateStatic } from "./js/i18n.js";
-    import { getAppLang } from "./js/prefs.js";
+    import { getAppLang, getTransliterationScript } from "./js/prefs.js";
     import { getSurah } from "./js/quran-data.js";
     import { registerServiceWorker } from "./js/sw-register.js";
     import { posterModel, clampRange, rukuRange, rangeRef, renderStudyPosterHtml, renderDawahPosterHtml, posterFileName, escapeHtml, MAX_AYAHS, PAPERS } from "./js/ayah-poster.js";
@@ -114,10 +131,15 @@
       from: Number(params.get("from")) || null, to: Number(params.get("to")) || null,
       kind: ["study", "dawah"].includes(params.get("kind")) ? params.get("kind") : null,
       lang: ["en", "bn", "both"].includes(params.get("lang")) ? params.get("lang") : "both",
-      translit: params.get("tr") !== "0",
+      // J58: tr = 0 (off) | lat | bn | both. An old tr=1, or none, reads as the reader's own preference (else the app language).
+      translit: { 0: "off", lat: "latin", bn: "bn", both: "both" }[params.get("tr")] ?? getTransliterationScript(),
       paper: params.get("paper") === "a3" ? "a3" : "a4",
+      custom: false, // "Choose āyāt…" is picked: From and To show
     };
     let surahData = null, lastFit = { k: 1, fits: true };
+    const MENU_KEY = "mm_poster_menu_open";
+    let menuOpen = false;
+    try { menuOpen = localStorage.getItem(MENU_KEY) === "1"; } catch { /* storage refused: closed */ }
 
     // The way-back law (decision 86): ← Back goes to exactly where the reader was (that page kept its place in its
     // own address); opened on its own, it goes to the Qur'an.
@@ -134,7 +156,7 @@
     /** Keeps the choices in the address, so a reload or ← Back from a later page returns to this same poster. */
     function writeAddress() {
       const u = new URL(location.href);
-      for (const [k, v] of Object.entries({ surah: state.surah, ayah: state.ayah, from: state.from, to: state.to, kind: state.kind, lang: state.lang, tr: state.translit ? "1" : "0", paper: state.paper })) {
+      for (const [k, v] of Object.entries({ surah: state.surah, ayah: state.ayah, from: state.from, to: state.to, kind: state.kind, lang: state.lang, tr: { off: "0", latin: "lat", bn: "bn", both: "both" }[state.translit], paper: state.paper })) {
         if (v == null) u.searchParams.delete(k); else u.searchParams.set(k, String(v));
       }
       history.replaceState(history.state, "", u);
@@ -146,26 +168,38 @@
       const whole = state.from === 1 && state.to === n, isAyah = state.from === state.ayah && state.to === state.ayah;
       const isRuku = state.from === ruku.from && state.to === ruku.to && !isAyah;
       const opts = (sel) => Array.from({ length: n }, (_, i) => `<option value="${i + 1}"${i + 1 === sel ? " selected" : ""}>${num(i + 1)}</option>`).join("");
-      return `
-        <div class="ap-grp" role="group" aria-label="${escapeHtml(t("Poster"))}"><span class="ap-lab">${escapeHtml(t("Poster"))}</span>
-          <button type="button" data-ap-kind="study" ${pressed(state.kind === "study")}>${escapeHtml(t("Study poster"))}</button>
-          <button type="button" data-ap-kind="dawah" ${pressed(state.kind === "dawah")}>${escapeHtml(t("Dawah poster"))}</button></div>
-        <div class="ap-grp" role="group" aria-label="${escapeHtml(t("Āyāt"))}"><span class="ap-lab">${escapeHtml(t("Āyāt"))}</span>
-          <button type="button" data-ap-range="ayah" ${pressed(isAyah)}>${escapeHtml(t("This āyah"))}</button>
-          ${ruku.to > ruku.from && ruku.to - ruku.from + 1 <= MAX_AYAHS && !(ruku.from === 1 && ruku.to === n) ? `<button type="button" data-ap-range="ruku" ${pressed(isRuku)}>${escapeHtml(t("This rukūʿ"))}</button>` : ""}
-          ${n > 1 && n <= MAX_AYAHS ? `<button type="button" data-ap-range="surah" ${pressed(whole)}>${escapeHtml(t("Whole sūrah"))}</button>` : ""}
-          <label class="ap-lab" for="apFrom">${escapeHtml(t("From"))}</label><select id="apFrom" data-ap-from>${opts(state.from)}</select>
-          <label class="ap-lab" for="apTo">${escapeHtml(t("To"))}</label><select id="apTo" data-ap-to>${opts(state.to)}</select></div>
-        <div class="ap-grp" role="group" aria-label="${escapeHtml(state.kind === "study" ? t("Word meanings") : t("Translation"))}"><span class="ap-lab">${escapeHtml(state.kind === "study" ? t("Word meanings") : t("Translation"))}</span>
-          <button type="button" data-ap-lang="en" ${pressed(state.lang === "en")}>${escapeHtml(t("English"))}</button>
-          <button type="button" data-ap-lang="bn" ${pressed(state.lang === "bn")}>${escapeHtml(t("Bangla"))}</button>
-          <button type="button" data-ap-lang="both" ${pressed(state.lang === "both")}>${escapeHtml(t("Both"))}</button></div>
-        <div class="ap-grp" role="group" aria-label="${escapeHtml(t("Transliteration"))}"${state.kind === "study" ? "" : " hidden"}><span class="ap-lab">${escapeHtml(t("Transliteration"))}</span>
-          <button type="button" data-ap-tr="1" ${pressed(state.translit)}>${escapeHtml(t("On"))}</button>
-          <button type="button" data-ap-tr="0" ${pressed(!state.translit)}>${escapeHtml(t("Off"))}</button></div>
-        <div class="ap-grp" role="group" aria-label="${escapeHtml(t("Paper"))}"><span class="ap-lab">${escapeHtml(t("Paper"))}</span>
-          <button type="button" data-ap-paper="a4" ${pressed(state.paper === "a4")}>A4</button>
-          <button type="button" data-ap-paper="a3" ${pressed(state.paper === "a3")}>A3</button></div>`;
+      const mode = state.custom ? "custom" : isAyah ? "ayah" : isRuku ? "ruku" : whole ? "surah" : "custom";
+      const opt = (v, label) => `<option value="${v}"${mode === v ? " selected" : ""}>${escapeHtml(label)}</option>`;
+      const row = (label, body, attrs = "") => `<div class="ap-grp" role="group" aria-label="${escapeHtml(label)}"${attrs}><span class="ap-lab">${escapeHtml(label)}</span><div class="ap-seg">${body}</div></div>`;
+      const seg = (attr, value, label, on) => `<button type="button" ${attr}="${value}" ${pressed(on)}>${escapeHtml(label)}</button>`;
+      const meaningsLabel = state.kind === "study" ? t("Word meanings") : t("Translation");
+      return [
+        row(t("Poster"), seg("data-ap-kind", "study", t("Study"), state.kind === "study") + seg("data-ap-kind", "dawah", t("Dawah"), state.kind === "dawah")),
+        row(t("Āyāt"), `<select id="apRange" data-ap-range-select aria-label="${escapeHtml(t("Āyāt"))}">`
+          + opt("ayah", `${t("This āyah")} ${num(state.ayah)}:${num(state.ayah)}`)
+          + (ruku.to > ruku.from && ruku.to - ruku.from + 1 <= MAX_AYAHS && !(ruku.from === 1 && ruku.to === n) ? opt("ruku", t("This rukūʿ")) : "")
+          + (n > 1 && n <= MAX_AYAHS ? opt("surah", t("Whole sūrah")) : "")
+          + opt("custom", t("Choose āyāt…")) + "</select>"),
+        // From and To appear only after "Choose āyāt…".
+        row(`${t("From")} / ${t("To")}`, `<label class="ap-sub ap-lab" for="apFrom">${escapeHtml(t("From"))}</label><select id="apFrom" data-ap-from>${opts(state.from)}</select><label class="ap-sub ap-lab" for="apTo">${escapeHtml(t("To"))}</label><select id="apTo" data-ap-to>${opts(state.to)}</select>`, mode === "custom" ? ' data-ap-fromto' : ' data-ap-fromto hidden'),
+        row(meaningsLabel, seg("data-ap-lang", "en", t("English"), state.lang === "en") + seg("data-ap-lang", "bn", t("Bangla"), state.lang === "bn") + seg("data-ap-lang", "both", t("Both"), state.lang === "both")),
+        row(t("Transliteration"), seg("data-ap-tr", "latin", t("Latin"), state.translit === "latin") + seg("data-ap-tr", "bn", t("Bangla"), state.translit === "bn") + seg("data-ap-tr", "both", t("Both"), state.translit === "both") + seg("data-ap-tr", "off", t("Off"), state.translit === "off"), state.kind === "study" ? "" : " hidden"),
+        row(t("Paper"), seg("data-ap-paper", "a4", "A4", state.paper === "a4") + seg("data-ap-paper", "a3", "A3", state.paper === "a3")),
+      ].join("");
+    }
+
+    /** "Study · 1:1 · Both · Bangla translit. · A4" -- the whole menu said in one line. */
+    function summaryText(model) {
+      const parts = [t(state.kind === "study" ? "Study" : "Dawah"), rangeRef(model, num).replace(/ /g, ""), { en: t("English"), bn: t("Bangla"), both: t("Both") }[state.lang]];
+      if (state.kind === "study") parts.push({ latin: t("Latin translit."), bn: t("Bangla translit."), both: t("Both translit."), off: t("No translit.") }[state.translit]);
+      parts.push(state.paper.toUpperCase());
+      return parts.join(" · ");
+    }
+    function paintMenu(model) {
+      $("apTools").hidden = !menuOpen;
+      $("apSum").setAttribute("aria-expanded", menuOpen ? "true" : "false");
+      $("apSumText").textContent = summaryText(model);
+      $("apSumGo").textContent = `⚙ ${t("Change")}`;
     }
 
     /** The poster's own words, in the reader's language. */
@@ -205,6 +239,7 @@
       const model = posterModel(surahData, state.from, state.to);
       $("apTitle").textContent = `${t(state.kind === "study" ? "Study poster" : "Dawah poster")} · ${rangeRef(model, num)}`;
       $("apTools").innerHTML = toolsHtml();
+      paintMenu(model);
       $("apActs").innerHTML = `<button type="button" class="ap-act" data-ap-print>🖨 ${escapeHtml(t("Print"))}</button><button type="button" class="ap-act ap-act-2" data-ap-picture>🖼 ${escapeHtml(t("Save as picture"))}</button>`;
       setPaper();
       const text = posterText(model);
@@ -224,15 +259,27 @@
       if (b.dataset.apChoose) { state.kind = b.dataset.apChoose; render(); return; }
       if (b.dataset.apKind) { state.kind = b.dataset.apKind; render(); return; }
       if (b.dataset.apLang) { state.lang = b.dataset.apLang; render(); return; }
-      if (b.dataset.apTr) { state.translit = b.dataset.apTr === "1"; render(); return; }
+      if (b.dataset.apTr) { state.translit = b.dataset.apTr; render(); return; }
       if (b.dataset.apPaper) { state.paper = b.dataset.apPaper; render(); return; }
-      if (b.dataset.apRange === "ayah") { setRange(state.ayah, state.ayah); return; }
-      if (b.dataset.apRange === "ruku") { const r = rukuRange(surahData, state.ayah); setRange(r.from, r.to); return; }
-      if (b.dataset.apRange === "surah") { setRange(1, surahData.ayahCount); return; }
+      if (b.id === "apSum") {
+        menuOpen = !menuOpen;
+        try { localStorage.setItem(MENU_KEY, menuOpen ? "1" : "0"); } catch { /* the open state just is not remembered */ }
+        $("apTools").hidden = !menuOpen; b.setAttribute("aria-expanded", menuOpen ? "true" : "false");
+        return;
+      }
       if (b.hasAttribute("data-ap-print")) { window.print(); return; }
       if (b.hasAttribute("data-ap-picture")) { await savePicture(); return; }
     });
     document.addEventListener("change", (e) => {
+      if (e.target.matches("[data-ap-range-select]")) {
+        const v = e.target.value;
+        state.custom = v === "custom";
+        if (v === "ayah") setRange(state.ayah, state.ayah);
+        else if (v === "ruku") { const r = rukuRange(surahData, state.ayah); setRange(r.from, r.to); }
+        else if (v === "surah") setRange(1, surahData.ayahCount);
+        else render();
+        return;
+      }
       if (e.target.matches("[data-ap-from]")) { const f = Number(e.target.value); setRange(f, Math.max(f, state.to)); }
       if (e.target.matches("[data-ap-to]")) { const to = Number(e.target.value); setRange(Math.min(state.from, to), to); }
     });
@@ -271,6 +318,11 @@
       state.ayah = Math.min(state.ayah, surahData.ayahCount);
       const r = clampRange(surahData.ayahCount, state.from ?? state.ayah, state.to ?? state.from ?? state.ayah);
       state.from = r.from; state.to = r.to;
+      { // a range from the address that is none of the presets opens with "Choose āyāt…" selected
+        const ru = rukuRange(surahData, state.ayah), n = surahData.ayahCount;
+        const preset = (r.from === state.ayah && r.to === state.ayah) || (r.from === ru.from && r.to === ru.to) || (r.from === 1 && r.to === n);
+        state.custom = !preset;
+      }
       await fontsReady();
       render();
       document.body.dataset.apReady = "1";

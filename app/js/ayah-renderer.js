@@ -10,6 +10,8 @@ import { t, num } from "./i18n.js";
 import { posLabel } from "./labels.js";
 import { badgeNumber } from "./fatiha-count.js";
 import { lemmaText } from "./lemma-text.js";
+import { getAppLang, getTransliterationScript, isTransliterationScriptChosen } from "./prefs.js";
+import { banglaTranslit, BANGLA_TRANSLIT_NOTE } from "./quran-translit-bn.js";
 
 /** Escapes then re-expands only the exact tajweed tags quran.com emits — never trusts raw HTML beyond that whitelist. */
 export function tajweedRawToSafeHtml(raw) {
@@ -342,6 +344,9 @@ export function renderTranslationPanel(ayah, langs = ["en"]) {
  */
 export function renderWordByWordPanel(ayah, { langs = ["en"], interactive = false, surahNumber = null } = {}) {
   if (!ayah.words?.length) return `<div class="wbw-empty">${t("No word-by-word data for this ayah.")}</div>`;
+  const script = isTransliterationScriptChosen()
+    ? getTransliterationScript()
+    : (!langs.includes("en") || getAppLang() === "bn" ? "bn" : "latin");
   const chips = ayah.words
     .map((w) => {
       const clickable = interactive && Number.isInteger(surahNumber);
@@ -359,11 +364,12 @@ export function renderWordByWordPanel(ayah, { langs = ["en"], interactive = fals
       // The owner's report: every control said Bangla, yet the chips still
       // printed `tabaraka`. "বাংলা only" has to mean only Bangla, and a Latin
       // line is unreadable to exactly the person this app's Bangla is for.
-      // (A Bangla-script transliteration would be a different thing entirely
-      // -- the pulled data has no such field, only the Latin one.)
-      const translit = langs.includes("en")
-        ? `<${contentTag} class="wbw-translit">${escapeHtml(w.transliteration)}</${contentTag}>`
-        : "";
+      // J58 -- that rule stays the DEFAULT. A Bangla-script transliteration (made by rules from the Arabic, see
+      // quran-translit-bn.js) now exists, so with no stored choice a Bangla-only panel (or a Bangla app) prints it
+      // instead of nothing; a choice the reader stored (Latin / Bangla / Both) is shown exactly as chosen.
+      const latinLine = `<${contentTag} class="wbw-translit">${escapeHtml(w.transliteration)}</${contentTag}>`;
+      const bnLine = `<${contentTag} class="wbw-translit wbw-translit-bn" lang="bn" title="${escapeHtml(t(BANGLA_TRANSLIT_NOTE))}">${escapeHtml(banglaTranslit(w.arabic))}</${contentTag}>`;
+      const translit = script === "both" ? latinLine + bnLine : script === "bn" ? bnLine : latinLine;
       const occurrenceAttrs = clickable
         ? ` data-word-occurrence="quran-word-occurrence:v1:${surahNumber}:${ayah.ayah}:${w.position}" data-surah="${surahNumber}" data-ayah="${ayah.ayah}"`
         : "";

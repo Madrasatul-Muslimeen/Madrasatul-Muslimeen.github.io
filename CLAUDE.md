@@ -422,7 +422,7 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v12.12 on `main`** (21 Oct 2026 — **Word card: the Legend is a small ⓘ in the top bar** (PCF MSA J59, the Owner's ask from a phone screenshot): the purple ⓘ Legend button left the row under the meaning bar and sits in the Word card's top bar beside **This āyah ⋯** as a round 40px **ⓘ** (named "Legend for this level" for a screen reader); its balloon opens under the top bar with its pointer under the ⓘ, and the colour row is drawn only when it holds the colour key. The previous release, v12.11, is the Word card's Go to its āyah (J57).)
+**Current milestone: v12.13 on `main`** (21 Oct 2026 — **Bangla transliteration everywhere, and the poster menu as one line** (PCF MSA J58, the Owner's ticks n58b 1A 2B 3A): every Qur'an word has a Bangla-script transliteration made by fixed rules from the Arabic (`app/js/quran-translit-bn.js`, pure, computed at render time; marked "made by rules from the Arabic and is being checked"), shown in the Word card, the word-by-word panel and the Study poster; **Transliteration: Latin | Bangla | Both** sits beside the translation languages, and with nothing chosen it follows the app language. The āyah poster's choices fold into ONE summary line that opens into tidy rows, with Print and Save always visible. Built by Builder round #1001, finished by the Architect after the Builder's credentials expired. The previous release, v12.12, is the Word card's ⓘ Legend (J59).)
 
 **Earlier milestones, v08.111 back to v07.139, and the long notes around them**
 (the held Phase 4 wiring, the four deployment states, the Programme Integration

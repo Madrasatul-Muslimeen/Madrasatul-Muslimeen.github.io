@@ -241,6 +241,43 @@ export function setQuranTranslationLangs(langs) {
   return getQuranTranslationLangs();
 }
 
+// ---------------------------------------------------------------------------
+// PCF MSA J58 -- which script the word-by-word TRANSLITERATION is printed in: Latin, Bangla, or both. Nothing stored
+// means "follow the app's language" (Bangla readers see Bangla, English readers see Latin); a stored value is the
+// reader's own choice and wins from then on.
+// ---------------------------------------------------------------------------
+export const TRANSLIT_SCRIPTS = ["latin", "bn", "both"];
+const TRANSLIT_SCRIPT_KEY = "mm_translit_script";
+
+let translitScriptThisPage = null; // kept when storage is refused, so the control still works for this page
+
+function readTranslitScript() {
+  try {
+    const v = localStorage.getItem(TRANSLIT_SCRIPT_KEY);
+    return TRANSLIT_SCRIPTS.includes(v) ? v : translitScriptThisPage;
+  } catch {
+    return translitScriptThisPage;
+  }
+}
+
+/** True when the reader has picked a script themselves (so the default no longer applies). */
+export function isTransliterationScriptChosen() {
+  return readTranslitScript() !== null;
+}
+
+/** "latin" | "bn" | "both" -- the stored choice, else "bn" for a Bangla app and "latin" otherwise. */
+export function getTransliterationScript() {
+  return readTranslitScript() ?? (getAppLang() === "bn" ? "bn" : "latin");
+}
+
+/** Stores the reader's choice; an unknown value is ignored. */
+export function setTransliterationScript(v) {
+  if (!TRANSLIT_SCRIPTS.includes(v)) return getTransliterationScript();
+  translitScriptThisPage = v;
+  try { localStorage.setItem(TRANSLIT_SCRIPT_KEY, v); } catch { /* private mode: the choice lasts this page only */ }
+  return getTransliterationScript();
+}
+
 /** The default reaction to the language changing: reload, so every name on
  *  the page comes back in the new language. Blunt on purpose — this app is
  *  multi-page, so a reload is the same thing that happens on any
