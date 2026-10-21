@@ -1,7 +1,7 @@
 // PCF MSA J68 part 4 (the Owner, 21 Oct 2026: "Enable Note view to be moveable/ resizeable from anyside, any corner"):
-// from 900px the Read view's Notes pane (#readNotePane) is a window -- moved by its bar, resized from all 8 handles
+// from 1100px (where the pane is already the right-hand column) the Read view's Notes pane (#readNotePane) is a window -- moved by its bar, resized from all 8 handles
 // (app/js/float-window.js), a 360x320 minimum, always inside the screen, remembered in localStorage "mmsa-read-note-window".
-// Below 900px (390, 768) it is exactly the full-screen pane it was. Checked at 1280x900 and 1600x1000, en and bn.
+// Below 1100px (390, 768, 1024) it is exactly the full-screen pane it was. Checked at 1280x900 and 1600x1000, en and bn.
 // Run from the repository root, serve.js on :8080.
 //   --mutate=nomove     the bar no longer moves the window                          -> the bar-drag checks fail
 //   --mutate=buttondrag a drag that starts on a bar button moves the window too     -> "a drag on a button" fails
@@ -10,7 +10,7 @@
 //   --mutate=offscreen  the rect is not kept inside the screen                      -> the inside-the-screen checks fail
 //   --mutate=nosave     the rect is never remembered                                -> the "survives a reload" check fails
 //   --mutate=framegrab  the frame keeps the pointer during a drag                   -> the "frame does not swallow" check fails
-//   --mutate=alwayswin  the window also applies below 900px                         -> the 390 / 768 checks fail
+//   --mutate=alwayswin  the window also applies below 1100px                        -> the 390 / 768 / 1024 checks fail
 import { chromium, newContext, openPage, clickReadTool } from "./harness.mjs";
 import fs from "node:fs";
 
@@ -29,7 +29,7 @@ const MUT = {
   offscreen: [F, "function clampWin(r) {", "function clampWin(r) { return r;"],
   nosave: [F, "onEnd: saveRect,", "onEnd: () => {},"],
   framegrab: [F, "body.rnp-dragging #readNotePane .rnp-frame { pointer-events: none; }", ""],
-  alwayswin: [F, "WINDOW_FROM = 900", "WINDOW_FROM = 300"],
+  alwayswin: [F, "WINDOW_FROM = SIDE_FROM", "WINDOW_FROM = 300"],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
 
@@ -175,8 +175,8 @@ for (const lang of ["en", "bn"]) for (const [vw, vh] of [[1280, 900], [1600, 100
   await ctx.close();
 }
 
-// ---- 3. Below 900px nothing changes ----
-for (const lang of ["en", "bn"]) for (const [vw, vh] of [[390, 844], [768, 1000]]) {
+// ---- 3. Below 1100px nothing changes (Architect review: WINDOW_FROM = SIDE_FROM; 1024 is a tablet held sideways) ----
+for (const lang of ["en", "bn"]) for (const [vw, vh] of [[390, 844], [768, 1000], [1024, 768]]) {
   const tag = `[${lang} ${vw}]`;
   const ctx = await makeCtx(lang, vw, vh, { x: 100, y: 100, w: 400, h: 400 });
   const P = await openPane(ctx);

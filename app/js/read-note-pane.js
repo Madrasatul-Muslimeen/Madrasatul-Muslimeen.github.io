@@ -16,7 +16,9 @@ import { HANDLES, handleCss, startDrag } from "./float-window.js";
 
 export const PHONE = 600, SIDE_FROM = 1100;
 // PCF MSA J68 part 4: from WINDOW_FROM px the pane is a window (move by its bar, resize from 8 handles), remembered per device.
-const WINDOW_FROM = 900, WIN_KEY = "mmsa-read-note-window", LIMITS = { minW: 360, minH: 320, bar: 48 };
+// It starts where the pane is already the right-hand column (SIDE_FROM): below that a tablet keeps the full-screen pane
+// (the Owner, 11 Oct 2026: no more half screen), and the window's first open is exactly today's place at every width.
+const WINDOW_FROM = SIDE_FROM, WIN_KEY = "mmsa-read-note-window", LIMITS = { minW: 360, minH: 320, bar: 48 };
 
 const CSS = `
 #readNotePane { position: fixed; z-index: 960; display: flex; flex-direction: column; box-sizing: border-box; background: #fff; color: #222;
