@@ -50,7 +50,9 @@ try {
   // S1b: the pages Quran Study opens (notes, bookmarks, journey map, records, monitor, about, onboarding,
   // import notes, accept invite) also call MMSA's sw-register.js; each order visits all of them.
   const S1B = ["journey-map.html"]; // J02 S1e: the other S1b pages live in MMSA now (PCA J71)
-  for (const order of [["asma.html", "quranrevival.html", "ldog-study.html", ...S1B, "asma.html"], ["quranrevival.html", ...S1B, "asma.html", "ldog-study.html", "notes.html"]]) {
+  // UPDATED IN PLACE (21 Oct 2026): the second order ended on notes.html, which QR's build no longer carries (Notes lives in
+  // MMSA since PCA J71, as S1B above already says), so it stopped on a 404 before checking anything; it ends on Quran Study.
+  for (const order of [["asma.html", "quranrevival.html", "ldog-study.html", ...S1B, "asma.html"], ["quranrevival.html", ...S1B, "asma.html", "ldog-study.html", "quranrevival.html"]]) {
     try { await visit(order); } catch (err) { check(false, `${order.join(" → ")} stopped early: ${String(err.message).split("\n")[0]}`); }
   }
 } finally {
