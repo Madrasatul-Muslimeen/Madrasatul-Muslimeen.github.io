@@ -12,8 +12,13 @@
 // Owns no data. Its only messages: "mmsa-unit" (the āyah changed) and "mmsa-journey-flush" (save a Note being edited)
 // to the page inside; "mmsa-open-journey" and "mmsa-unit-count" from it.
 import { t } from "./i18n.js";
+import { HANDLES, handleCss, startDrag } from "./float-window.js";
 
 export const PHONE = 600, SIDE_FROM = 1100;
+// PCF MSA J68 part 4: from WINDOW_FROM px the pane is a window (move by its bar, resize from 8 handles), remembered per device.
+// It starts where the pane is already the right-hand column (SIDE_FROM): below that a tablet keeps the full-screen pane
+// (the Owner, 11 Oct 2026: no more half screen), and the window's first open is exactly today's place at every width.
+const WINDOW_FROM = SIDE_FROM, WIN_KEY = "mmsa-read-note-window", LIMITS = { minW: 360, minH: 320, bar: 48 };
 
 const CSS = `
 #readNotePane { position: fixed; z-index: 960; display: flex; flex-direction: column; box-sizing: border-box; background: #fff; color: #222;
@@ -35,6 +40,13 @@ const CSS = `
 .rnp-track { flex: 1 1 auto; overflow: auto; padding: 0.9rem; display: flex; flex-direction: column; gap: 0.6rem; }
 .rnp-track p { margin: 0; color: #444; line-height: 1.5; }
 .rnp-track-btn { min-height: 48px; padding: 0 1rem; border: 1px solid #c9a24b; border-radius: 0.7rem; background: #fdf6ea; color: #1F3A6E; font: inherit; font-weight: 600; text-align: left; cursor: pointer; }
+#readNotePane.rnp-win { right: auto; bottom: auto; border-width: 1px; border-radius: 10px; }
+.rnp-win-h { display: none; }
+#readNotePane.rnp-win .rnp-win-h { display: block; }
+#readNotePane.rnp-win .rnp-bar { cursor: move; touch-action: none; }
+body.rnp-dragging #readNotePane .rnp-frame { pointer-events: none; }
+body.rnp-dragging { user-select: none; }
+${handleCss("rnp-win-h")}
 body.rnp-open-side { padding-right: var(--rnp-w); box-sizing: border-box; }
 body.rnp-open-dock { padding-bottom: var(--rnp-h); }
 `;
@@ -48,8 +60,33 @@ let pane = null, frame = null, titleEl = null, unit = null, onClose = null, trac
 const TRACK_ACTIONS = [["take", "🧭", "Take an Approach"], ["record", "✅", "Record Your Progress"], ["status", "📊", "Know Your Status"]];
 const counts = new Map(); // unitKey -> number of Notes, for the āyāt whose Notes the pane has read this session
 
+let rect = null; // the window's place; null until first shown
+function loadRect() {
+  try {
+    const r = JSON.parse(localStorage.getItem(WIN_KEY) || "null");
+    if (r && [r.x, r.y, r.w, r.h].every(Number.isFinite)) return { x: r.x, y: r.y, w: r.w, h: r.h };
+  } catch { /* private mode or bad value */ }
+  return null;
+}
+function saveRect() { try { localStorage.setItem(WIN_KEY, JSON.stringify(rect)); } catch { /* not remembered */ } }
+/** Fully inside the screen, never smaller than the minimum. */
+function clampWin(r) {
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const w = Math.min(Math.max(r.w, Math.min(LIMITS.minW, vw)), vw), h = Math.min(Math.max(r.h, Math.min(LIMITS.minH, vh)), vh);
+  return { x: Math.round(Math.min(Math.max(r.x, 0), vw - w)), y: Math.round(Math.min(Math.max(r.y, 0), vh - h)), w: Math.round(w), h: Math.round(h) };
+}
+function defaultRect() { // today's place: the right-hand column
+  const w = Math.max(380, Math.round(window.innerWidth * 0.4));
+  return { x: window.innerWidth - w, y: 0, w, h: window.innerHeight };
+}
+const winCtx = {
+  getRect: () => rect, setRect: (r) => { rect = clampWin(r); apply(); },
+  locked: () => !pane || layout() !== "win", limits: LIMITS, onEnd: saveRect, dragClass: "rnp-dragging",
+};
+
 function layout() {
   const w = window.innerWidth;
+  if (w >= WINDOW_FROM) return "win";
   return w >= SIDE_FROM ? "side" : "phone"; // a tablet too: the Owner, 11 Oct 2026 (no more half screen)
 }
 
@@ -59,11 +96,23 @@ function apply() {
   const root = document.documentElement;
   root.style.setProperty("--rnp-w", `${Math.max(380, Math.round(window.innerWidth * 0.4))}px`);
   root.style.setProperty("--rnp-h", `${Math.round(window.innerHeight * 0.55)}px`);
-  pane.classList.toggle("rnp-side", mode === "side");
+  pane.classList.toggle("rnp-win", mode === "win");
+  pane.classList.toggle("rnp-side", mode === "side" || mode === "win"); // a window is the side column, moved and resized
   pane.classList.toggle("rnp-dock", mode === "dock");
   pane.classList.toggle("rnp-phone", mode === "phone");
   document.body.classList.toggle("rnp-open-side", open && mode === "side");
   document.body.classList.toggle("rnp-open-dock", open && mode === "dock");
+  if (mode === "win") {
+    if (!rect) rect = loadRect() ?? defaultRect();
+    rect = clampWin(rect);
+    Object.assign(pane.style, { left: `${rect.x}px`, top: `${rect.y}px`, width: `${rect.w}px`, height: `${rect.h}px` });
+    // The reading is pushed aside only while the window sits in the right-hand column, as before.
+    const docked = open && rect.x + rect.w >= window.innerWidth - 1 && rect.x > window.innerWidth * 0.4;
+    document.body.classList.toggle("rnp-open-side", docked);
+    root.style.setProperty("--rnp-w", `${window.innerWidth - rect.x}px`);
+  } else {
+    for (const p of ["left", "top", "width", "height"]) pane.style.removeProperty(p);
+  }
 }
 
 function srcFor(u, { focusNew = false } = {}) {
@@ -111,6 +160,7 @@ function build() {
   journey.title = t("Open in Mapping My Journey");
   journey.addEventListener("click", () => toFrame({ type: "mmsa-open-journey-request" }));
   bar.append(back, titleEl, journey, close);
+  bar.addEventListener("pointerdown", (e) => { if (!e.target.closest("button")) startDrag(e, "move", winCtx); });
   frame = document.createElement("iframe");
   frame.className = "rnp-frame";
   frame.addEventListener("load", () => {
@@ -144,6 +194,13 @@ function build() {
   track.setAttribute("role", "tabpanel");
   track.hidden = true;
   pane.append(bar, tabs, frame, track);
+  for (const h of HANDLES) {
+    const d = document.createElement("div");
+    d.className = "rnp-win-h";
+    d.dataset.h = h;
+    d.addEventListener("pointerdown", (e) => startDrag(e, h, winCtx));
+    pane.appendChild(d);
+  }
   document.body.appendChild(pane);
   window.addEventListener("resize", apply);
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && pane && !pane.hidden && !document.getElementById("journeyTray")?.offsetParent) closeReadNotePane(); });

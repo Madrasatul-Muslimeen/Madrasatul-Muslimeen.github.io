@@ -422,7 +422,7 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v12.17 on `main`** (21 Oct 2026 — **three Owner jobs**: MSA J67 (the Āyah card as a window on a computer: moved by its top bar, resized from 4 corners and 4 sides, kept inside the screen, its place and size remembered per device, two columns once 560px wide; phones and tablets unchanged; Builder round #1007), J66 part 2 (Bangla আ in one piece in 13 Hadith places: three translation books, HadeethEnc re-hashed over the record as stored, one Dua word; each Hadith puller writes it so) and J61 part 2b (the rest of the Word card's small Arabic at 90% of the main word: WbW facts, part names, Learn next, Family, every Arabic word in Depth, the Arabic inside the Form sentence). J68 part 4 (the Notes pane as a window) is Builder round #1008.)
+**Current milestone: v12.18 on `main`** (21 Oct 2026 — **MSA J68 part 4**: the Read view's Notes pane is a window on a computer (1100px and wider): moved by its bar, resized from 4 corners and 4 sides, kept inside the screen, its place and size remembered per device, first opening exactly where it is today; a tablet held sideways keeps the full-screen pane (the Owner, 11 Oct). Builder round #1008, with one Architect fix. The previous release, v12.17, is the Āyah card as a window (J67), Bangla আ in the Hadith data (J66 part 2) and the Word card's small Arabic at 90% (J61 part 2b).)
 
 **Earlier milestones, v08.111 back to v07.139, and the long notes around them**
 (the held Phase 4 wiring, the four deployment states, the Programme Integration
