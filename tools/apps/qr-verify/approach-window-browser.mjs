@@ -56,7 +56,8 @@ async function run(width, height) {
   for (const d of dirs) {
     const before = await rect("#wheelPopupView");
     const hit = await page.evaluate((dir) => {
-      const h = document.querySelector(`#wheelPopupView > .note-popup-resize[data-note-resize="${dir}"]`);
+      // Updated in place for MSA v12.20 (PCF MSA J72): the handles live in their own frame over the window's edge.
+      const h = document.querySelector(`[data-popup-win-frame="wheel"] > .note-popup-resize[data-note-resize="${dir}"]`) || document.querySelector(`#wheelPopupView > .note-popup-resize[data-note-resize="${dir}"]`);
       const b = h.getBoundingClientRect();
       const x = b.left + b.width / 2, y = b.top + b.height / 2;
       return { x, y, w: b.width, h: b.height, top: document.elementFromPoint(x, y) === h };
