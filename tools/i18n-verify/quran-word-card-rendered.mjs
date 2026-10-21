@@ -259,7 +259,9 @@ for (const lang of ["en", "bn"]) {
           const tr = t.getBoundingClientRect();
           return { top: Math.round(tr.top), h: Math.round(tr.height), w: Math.round(tr.width) };
         });
-        const btns = [...c.querySelectorAll("button")].map((b) => {
+        // Updated in place 21 Oct 2026 (PCF MSA J60): a button that is not on screen (Family's hidden places and a "+N more"
+        // with nothing behind it, [hidden]) is not a tap target and measures 0px; only rendered buttons are measured.
+        const btns = [...c.querySelectorAll("button")].filter((b) => b.getClientRects().length > 0).map((b) => {
           const br = b.getBoundingClientRect();
           return Math.min(Math.round(br.width), Math.round(br.height));
         });

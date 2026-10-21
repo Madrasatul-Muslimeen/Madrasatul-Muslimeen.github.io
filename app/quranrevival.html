@@ -3423,6 +3423,8 @@
   .word-card-search-place { border: 1px solid var(--card-line); background-color: var(--card-bg-inset); color: var(--card-text); border-radius: 0.4rem; padding: 0.4rem 0.6rem; font-variant-numeric: tabular-nums; cursor: pointer; font: inherit; font-size: 0.85rem; }
   .word-card-search-place[aria-current="true"] { border-color: #c9a24a; background: #c9a24a; color: #1b2a41; font-weight: 700; }
   .word-card-search button:focus-visible, .word-card-search input:focus-visible { outline: 2px solid var(--card-heading); outline-offset: 2px; }
+  /* J61: the big word's size as a token (set before the two width rules below, which change it with the word). */
+  .quran-word-card { --wc-head-ar: 2rem; }
   @media (max-width: 520px) {
     .quran-word-card header { gap: 0.25rem; }
     .quran-word-card header button { width: 40px; height: 40px; } /* audit J29 fix 6: was 36px; 40px is the finger target */
@@ -3430,10 +3432,12 @@
     .word-card-root-box small { font-size: 0.55rem; }
     .word-card-root-box span { font-size: 1.1rem; }
     .quran-word-card .word-card-arabic { font-size: 1.55rem; }
+    .quran-word-card { --wc-head-ar: 1.55rem; }
   }
   @media (max-width: 340px) {
     .word-card-root-box span { font-size: 0.95rem; }
     .quran-word-card .word-card-arabic { font-size: 1.3rem; }
+    .quran-word-card { --wc-head-ar: 1.3rem; }
   }
   .word-card-arabic { font-family: var(--quran-font); font-size: 2rem; line-height: 1.5; }
   /* Round 2 -- WbW facts row, meaning bar and word-part boxes (the demo's
@@ -3672,6 +3676,14 @@
   .word-card-nchip { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 0.3rem; padding: 0.25rem 0.6rem; border: 1px solid var(--wc-purple-line); border-radius: 999px; background: transparent; color: inherit; }
   .word-card-nchip small { opacity: 0.8; }
   .word-card-nchip-ar, .word-card-ntable-ar { font-family: var(--quran-font); }
+  /* PCF MSA J61 (the Owner, 21 Oct 2026, a phone screenshot of Taṣrīf at 12:1:5: "Make the Arabic bigger as the equal
+     size of the main word itself (may be 10% less)"): every Arabic word in the two Taṣrīf boxes is 90% of the big word at
+     the top of the card. --wc-head-ar follows that word's own size at each width (2rem, 1.55rem at 520px, 1.3rem at 340px). */
+  .word-card-noun-box { --wc-tasrif-ar: calc(var(--wc-head-ar) * 0.9); }
+  .word-card-noun-box [lang="ar"] { font-size: var(--wc-tasrif-ar); line-height: 1.45; }
+  /* J61: on a 320px phone the case names broke inside the word ("Nominativ / e", there before J61 too): the column heads
+     take a slightly smaller type on a card under 20rem, measured to keep each name whole. */
+  @container wordcard (max-width: 20rem) { .word-card-ntable thead th { font-size: 0.64rem; } }
   .word-card-nline { margin: 0; font-size: 0.8rem; }
   .word-card-ntable { width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 3px; }
   .word-card-ntable th { font-weight: 600; font-size: 0.74rem; text-align: center; color: inherit; padding: 0.1rem; vertical-align: bottom; overflow-wrap: anywhere; }
@@ -16344,7 +16356,7 @@
           <div class="note-qcr-field"><span class="note-qcr-field-label">${escapeHtml(t("Attach"))}</span>
             <button type="button" class="note-qcr-select note-qcr-dd-btn${attachOn ? " active" : ""}" data-note-qcr-dd-toggle="attach" title="${escapeHtml(attachTitle)}"><span class="note-qcr-dd-summary">${escapeHtml(String(attachSummary))}</span> <span class="car">▾</span></button>
           </div>
-          <div class="note-qcr-field"><span class="note-qcr-field-label">${escapeHtml(t("Yr Level"))}</span>
+          <div class="note-qcr-field"><span class="note-qcr-field-label">${escapeHtml(t("Level"))}</span>
             <button type="button" class="note-qcr-select note-qcr-dd-btn${yrOn ? " active" : ""}" data-note-qcr-dd-toggle="yrlevel" title="${escapeHtml(yrLevelTitle)}" ${selectedGroup ? "" : "disabled"}><span class="note-qcr-dd-summary">${escapeHtml(String(yrLevelSummary))}</span> <span class="car">▾</span></button>
           </div>
           <div class="note-qcr-dd-pop${groupOn ? " on" : ""}" data-note-qcr-dd-pop="group">${renderGroupPopoverHtml()}</div>

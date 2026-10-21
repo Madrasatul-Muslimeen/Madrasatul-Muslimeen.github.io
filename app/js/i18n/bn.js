@@ -2215,6 +2215,8 @@ export const BN = {
   "Yr Level": "শ্রেণি স্তর", // ?
   "Yr {n}": "শ্রেণি {n}", // ?
   "Regular adult": "সাধারণ প্রাপ্তবয়স্ক", // ?
+  "Non-Muslim": "অমুসলিম", // ? PCF MSA J62
+  "Non-Muslim 13-yo": "অমুসলিম ১৩ বছর", // ? PCF MSA J62
   "None": "কোনোটি নেই", // ?
   "Not set.": "নির্ধারণ করা হয়নি।", // ?
 
