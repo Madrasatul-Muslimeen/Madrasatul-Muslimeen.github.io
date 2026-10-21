@@ -29,7 +29,7 @@ const PURE_MUT = {
 };
 const MUT = {
   hiddenask: ["app/ayah-poster.html", "  .ap-choose[hidden], #apEditor[hidden] { display: none; }", "  .ap-x[hidden] { display: none; }"],
-  notranslit: ["app/js/ayah-poster.js", "return { tr: !!translit,", "return { tr: true,"],
+  notranslit: ["app/js/ayah-poster.js", 'return { tr: m === "latin" || m === "both",', "return { tr: true,"],
   langleak: ["app/js/ayah-poster.js", "en: lang !== \"bn\", bn: lang !== \"en\" };", "en: true, bn: lang !== \"en\" };"],
   nofit: ["app/ayah-poster.html", "      if (at(1)) return { k: 1, fits: true };\n      let lo = 0.3", "      if (true) return { k: 1, fits: true };\n      let lo = 0.3"],
   nopage: ["app/ayah-poster.html", "size: ${state.paper === \"a3\" ? \"A3\" : \"A4\"} portrait", "size: A4 portrait"],

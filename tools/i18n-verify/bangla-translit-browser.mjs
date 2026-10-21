@@ -23,7 +23,7 @@ const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice
 const MUT = {
   wcdefault: ["app/js/quran-word-card.js", 'const script = context.translitScript ?? "latin";', 'const script = "latin";'],
   wcnotitle: ["app/js/quran-word-card.js", ' title="${escapeHtml(text.translitBnNote)}"', ""],
-  wcnolive: ["app/quranrevival.html", "      renderStudyScreen();\n      renderPersistentWordCard();\n    });\n    trEnToggle", "      renderStudyScreen();\n    });\n    trEnToggle"],
+  wcnolive: ["app/quranrevival.html", "      renderStudyScreen();\n      renderPersistentWordCard();\n    });\n    trEnToggle", "    });\n    trEnToggle"],
   wbwchosen: ["app/js/ayah-renderer.js", "const script = isTransliterationScriptChosen()", "const script = false"],
   wbwrule24: ["app/js/ayah-renderer.js", '(!langs.includes("en") || getAppLang() === "bn" ? "bn" : "latin")', '(getAppLang() === "bn" ? "bn" : "latin")'],
   notecolour: ["app/quranrevival.html", "font-size: 0.78rem; color: #555; line-height: 1.35; }", "font-size: 0.78rem; color: #c4c4c4; line-height: 1.35; }"],
