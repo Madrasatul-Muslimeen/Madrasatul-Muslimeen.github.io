@@ -7,7 +7,67 @@ v10.28). Read `CLAUDE.md` first. The prompt that starts the next session is
 
 This session was summarised once (its context compacted), which is why it hands over here.
 
-## LATEST UPDATE — 20 Oct 2026, 5:55 pm Sydney, session `session_01TZ1fWztdUQb49mZBoChfqV` (v12.09 live on MSA; QR NOT rebuilt; HANDOVER) — READ THIS FIRST
+## LATEST UPDATE — 21 Oct 2026, 12:40 pm Sydney, session `session_01YZYYGbS7PEgU5srQjy3pkd` (v12.11 live on MSA AND QR; HANDOVER) — READ THIS FIRST
+
+Took over 12:15 am 21 Oct from `session_01TZ1fWztdUQb49mZBoChfqV`. Handing over at ~55% context (cost86/hand119).
+**`main` is v12.11, live on MSA (12:33 pm) and on QR (12:34 pm). Next release: v12.12.** The PCA is
+`session_019xuGwr6uFeQUpKmERwBPxX`. Nothing is running: no Builder round, no test run, no open PR.
+
+**QR is now rebuilt by the session itself.** The Owner merged PR #996: `.claude/settings.json` on `main` allows
+`mcp__claude-code-remote__add_repo`. At every MSA release: `add_repo QuranRevival/QuranRevival.github.io` (push), clone to
+`/home/user/quranrevival.github.io` (then `fetch --depth=1000 origin main`), dispatch QR's `build-from-msa.yml` on `main`
+with `msa_ref: main` (GitHub MCP `actions_run_trigger`), check `https://quranrevival.github.io/app/js/version.js`, and run
+QR's 20 checks: `node tools/apps/build-app.mjs qr && QR_REPO=/home/user/quranrevival.github.io bash tools/apps/qr-verify/run-all.sh`
+(20/20 on v12.10 and v12.11). The QR clone's own `CLAUDE.md` is the QR Architect's brief, not ours: we only build QR.
+
+**Released this session**
+- **v12.10** (PR #995): MSA J48 round 2, the Vocabulary review schedule in `quranVocabReview/{tenant}__{person}`
+  (`app/js/vocab-review.js` pure, `app/js/vocab-review-data.js`; Learn next "Due today: N" + Review now; right → 1, 2, 4,
+  8, 16 days, missed → tomorrow; practice state only). Suite `vocab-review-browser` 68/0, 13 mutations.
+- **v12.11** (PR #997): MSA J57, the Word card's WbW "Go to its āyah {ref}" (`goToItsAyahButton()` in
+  `quran-word-card.js`, a `data-word-occurrence-goto` link, so `goToWordOccurrence()` closes the card, rings the word and
+  offers Back to Word Card). Suite `word-card-goto-ayah-browser` 35/0, 6 mutations.
+
+**Running / waiting (each in the PCF job named)**
+1. **MSA J48 round 3: AGREED, build from Thu 22 Oct ~7 pm** (the usage reset; Owner tick n48d "A. Fill: Keep both
+   options. When: A"). The spec is J48 plan `j48p10` and the demo https://claude.ai/artifact/MptfKdYitcgWFPnhqrkp3u
+   (`docs/reference/2026-10-21-j48-round3-demo.html`, branch `claude/j48-round3-demo`, not merged): (1) the Āyah Wheel's
+   Word by word segment fills in gold by the āyah's words known; (2) a second display, the **Vocabulary Wheel**: 9
+   segments = the 9 Learn next steps, each filling in green, ✓ when the step is passed, the share of the Qur'an in the
+   centre, an **Approaches | Vocabulary** switch above the Wheel, a segment opens its step in Learn next with ← Back,
+   and a **fill switch** under it ("the step's new words" default | "all words up to it"), remembered per device;
+   (3) the badge at the top of Learn next and on Know Your Status; (4) a Vocabulary table on the teacher's Monitor
+   (words known, share, steps passed, due today, last practised). **A step counts ✓ when all its words are Achieved**
+   (no new store; told to the Owner, who may say otherwise). No Rules change.
+2. **MSA J48 check step 2** (Due today → Review now) on Thu 22 Oct: the PCA set the Owner's reminder for 8:30 am
+   (`trig_015dVbffcCTCDEhq8epxwrwz`). Need `n48e` stays open until then.
+3. **MSA J57 check** (need `n57a`) and **MSA J58** (need `n58a`): Bangla transliteration everywhere + a tidier poster
+   menu; waits on the Owner's ticks. Found: the only transliteration is Latin, from quran.com's word data; no Bangla
+   source exists in the repo. Recommended 1A: generate it from the Arabic by fixed rules, sample first. Poster menu: demo
+   first (3A).
+4. Own audit rounds stay paused until Thu 22 Oct ~7 pm (use108): Owner jobs and student-blocking bugs only.
+
+**Owner messages this session (carry1), each filed in the PCF job named**
+1. ~6:45 am: "J48: Demo for 1 and 2" → J48 n48c, demo v1.
+2. ~7:05 am: "1B. also another Wheel display should show the progress of the 9 segments. 2A. yes. Demo again" → J48, demo v2.
+3. ~7:15 am: "A. Fill: Keep both options. When: A" → J48 n48d, round 3 agreed.
+4. ~7:30 am: the QR Actions screenshot, "QR: Is that it?" → the Owner ran build-from-msa #8; QR on v12.10 at 7:36 am.
+5. ~8:00 am: "QR update: Allowing permission to the session to do itself." → add_repo succeeded; PR #996 merged by the Owner.
+6. ~8:20 am: "What exactly you want from me about J48 and J52-J56 … highlighted … dim all other" → one ❗ check per job, the rest dimmed.
+7. ~10:40 am: J48 step 1 works (reminder for step 2); J52 Bangla transliteration + menu → J58; J53, J55, J56 OK; J54 OK
+   plus a Word card button to the āyah → J57 (released v12.11).
+No Owner message in the last 30 minutes.
+
+**Lessons**
+- **This session cannot set reminders or wake-ups** (lineage depth 8 of 8): ask the PCA to set an Owner's reminder.
+- **A one-off failure in a long suite is a claim, not a finding**: `audit-part12-words` failed one 390px Taṣrīf timing
+  check on the J57 branch; it passed on `main` and on a rerun of the branch (500/0). Re-run once before blaming the round.
+- **A background Bash run is stopped at its time limit, and a container restart stops it too**: push a branch before a
+  long run, and run long suites one at a time.
+- **The PCF highlights an open `needs` item, and `imp: true` adds ❗ Important**; `vis: "dim"` dims an entry. Never `hide`
+  the Owner's text.
+
+## 20 Oct 2026, 5:55 pm Sydney, session `session_01TZ1fWztdUQb49mZBoChfqV` (superseded by the 21 Oct 12:40 pm block above; kept as history)
 
 Took over 12:23 pm 20 Oct from `session_01C356HZ` (PCA told; `p/mmsa.sessionUrl` and `p/qr.sessionUrl` set). Handing over
 on the PCA's word (hand119). **`main` is v12.09, live on MSA (5:49 pm). Next release: v12.10.** The PCA is now
