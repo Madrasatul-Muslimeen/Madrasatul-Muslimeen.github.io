@@ -2283,6 +2283,8 @@
       text-align: center; overflow-wrap: anywhere; max-width: 100%;
     }
     #readToolsMenu.open #readNotesBtn .read-notes-count { top: 4px; right: 6px; }
+    /* J63: no Bookmark tile in the card; the bar's own 🔖 (#readBarBookmarkBtn) is the bookmark. */
+    #readToolsMenu.open #readBookmarkBtn { display: none !important; }
     /* A±'s sliders are anchored to the RIGHT of their button for the bar (see .text-size-popover); in the panel A± is the
        first tile, at the left, so a right anchor ran them 125px off a 390px phone. Anchor them to the tile's left. */
     #readToolsMenu.open .text-size-popover { left: 0; right: auto; }
@@ -3571,6 +3573,23 @@
   .word-card-cj-one .word-card-cj-pr small { font-size: 0.78rem; }
   .word-card-cj-one .word-card-cj-q, .word-card-cj-one .word-card-cj-mood { font-size: 0.74rem; }
   .word-card-cj-mood .word-card-ar { font-size: 0.9rem; }
+  /* PCF MSA J61 part 2 (the Owner, 21 Oct 2026: "Arabic bigger in Tasrif? Yes. And to other places where it was that
+     small."): the verb Taṣrīf section's Arabic -- its title, the three tense names on the toggle, each table's lead line,
+     the pronouns and the verbs -- is 90% of the big word at the top of the card, as part 1 did for nouns (it was 45-65% on
+     a computer). The one-tense view keeps its own larger sizes. */
+  .word-card-acc[data-word-card-sec="conj"] { --wc-tasrif-ar: calc(var(--wc-head-ar) * 0.9); }
+  .word-card-acc-ar > span[lang], .word-card-conj-toggle button small, .word-card-cj-lead, .word-card-cj-pr .word-card-ar, .word-card-cj-vb, .word-card-cj-mood .word-card-ar { font-size: var(--wc-tasrif-ar); }
+  .word-card-cj-one .word-card-cj-pr .word-card-ar { font-size: max(1.35rem, var(--wc-tasrif-ar)); }
+  /* ...and its verbs stay clearly bigger than in All three (J46: "at least 1.4x"), now that All three is 90%: on a computer
+     29px there, ~42px here; on a phone 2rem is already the larger. */
+  .word-card-cj-one .word-card-cj-vb { font-size: max(2rem, calc(var(--wc-tasrif-ar) * 1.45)); }
+  /* J61 part 2: on a card under 20rem (a 320px phone) a toggle button is ~64px wide: "Command" broke as "Comma / nd"
+     (before J61 too) and a tense name at 90% broke inside the word. Less padding and type, and
+     columns sized to their names. */
+  @container wordcard (max-width: 20rem) {
+    .word-card-conj-toggle { gap: 4px; padding: 4px; grid-template-columns: repeat(4, auto); }
+    .word-card-conj-toggle button { padding: 4px 1px; font-size: 0.8rem; }
+  }
   .word-card-meaning-bar { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 1.1rem; border: 1px solid var(--card-line); border-radius: 0.4rem; padding: 0.5rem 0.75rem; background: var(--card-bg-inset); margin: 0.4rem 0; }
   .word-card-meaning-bar > p { margin: 0; min-width: 0; font-size: 1.15rem; font-weight: 700; }
   .word-card-meaning-bar > .word-card-transliteration { font-size: 0.95rem; }
@@ -4176,6 +4195,24 @@
      trade at this round's own scope, flagged as a follow-up refinement
      rather than built speculatively. Reuses .qm-item/.qm-divider (the
      Read/Note view quick menus' own item styling) for every action row. */
+  /* PCF MSA J68: the Āyah card's Copy chooser, over the card, in the card's own look (both looks via --card-*). */
+  .ayah-copy-dlg { position: fixed; inset: 0; z-index: 1200; display: grid; place-items: center; padding: 16px; background: rgba(10,16,30,0.45); }
+  .ayah-copy-box { width: min(440px, 100%); box-sizing: border-box; display: grid; gap: 0.7rem; padding: 0.8rem 0.9rem 0.9rem; border-radius: 14px; background: var(--card-bg, #fff); color: var(--card-text, #13241f); box-shadow: var(--card-shadow, 0 10px 30px rgba(0,0,0,0.3)); border: 1px solid var(--card-line, #d6ddd9); }
+  .ayah-copy-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+  .ayah-copy-head h3 { margin: 0; font-size: 1.05rem; color: var(--card-heading, #1d6b4a); }
+  .ayah-copy-x { min-width: 44px; min-height: 44px; border: 0; background: none; color: var(--card-text-muted, #5b6d66); font-size: 1.3rem; cursor: pointer; }
+  .ayah-copy-row { display: grid; grid-template-columns: 4.6rem minmax(0, 1fr); gap: 0.4rem 0.5rem; align-items: center; }
+  .ayah-copy-range { grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1fr); }
+  .ayah-copy-lab { font-size: 0.85rem; color: var(--card-text-muted, #5b6d66); }
+  .ayah-copy-seg { display: flex; gap: 0.35rem; min-width: 0; }
+  .ayah-copy-seg > button { flex: 1 1 0; min-width: 0; min-height: 44px; padding: 0 0.4rem; border-radius: 999px; border: 1px solid var(--card-line, #d6ddd9); background: var(--card-bg-inset, #fff); color: var(--card-text, #13241f); font: inherit; font-size: 0.88rem; cursor: pointer; }
+  .ayah-copy-seg > button[aria-pressed="true"] { background: #1F3A6E; border-color: #1F3A6E; color: #fff; }
+  .ayah-copy-range select { min-height: 44px; min-width: 0; font: inherit; border-radius: 0.5rem; border: 1px solid var(--card-line, #d6ddd9); background: var(--card-bg-inset, #fff); color: var(--card-text, #13241f); padding: 0 0.4rem; }
+  .ayah-copy-go { min-height: 48px; border-radius: 0.6rem; border: 0; background: #1d6b4a; color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+  .ayah-copy-go:disabled { opacity: 0.5; cursor: default; }
+  .ayah-copy-status { margin: 0; min-height: 1.2em; font-size: 0.88rem; color: var(--card-heading, #1d6b4a); }
+  .ayah-copy-status.is-warn { color: #b3261e; font-weight: 700; }
+  @media (max-width: 379px) { .ayah-copy-row { grid-template-columns: minmax(0, 1fr); } .ayah-copy-range { grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1fr); } }
   #ayahActionSheetOverlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 960; }
   #ayahActionSheetOverlay.open { display: block; }
   /* Issue #354 -- the Ayah Card (and, below, the "This page" card and the
@@ -4278,6 +4315,15 @@
   }
   .ayah-card-back-btn { min-height: 40px; padding: 0 0.9rem; border: 0; border-radius: 999px; background: transparent; color: #f2e8d5; font-size: 0.88rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
   .ayah-card-back-ref { color: #c9a24b; margin-left: 0.3rem; }
+  /* J63 (PCF MSA J63, the Owner, 21 Oct 2026): on a phone the words were cut ("← Bac…"), so below 600px the pill is a big
+     arrow and the ×, each a 44px tile; the full words stay as the button's aria-label and title. Tablet and desktop keep the text. */
+  @media (max-width: 599.98px) {
+    .ayah-card-back-text { display: none; }
+    .ayah-card-back-pill .ayah-card-back-btn, .ayah-card-back-pill.back-docked .ayah-card-back-btn { min-height: 44px; min-width: 44px; padding: 0 0.6rem; }
+    .ayah-card-back-pill .ayah-card-back-arrow { font-size: 1.5rem; line-height: 1; }
+    .ayah-card-back-pill .ayah-card-back-x, .ayah-card-back-pill.back-docked .ayah-card-back-x { width: 44px; height: 44px; }
+    #readBackSlot { flex-basis: auto; }
+  }
   .ayah-card-back-x { width: 40px; height: 40px; flex: 0 0 auto; padding: 0; border: 0; border-radius: 50%; background: rgba(255, 255, 255, 0.08); color: #f2e8d5; font-size: 1.2rem; cursor: pointer; }
   /* 📖 Note view pop-up: the āyah as the Note view shows it, over the card. */
   /* The Owner, 9 Oct 2026 (a tablet): "no way back or it is covered". 100vh is the screen with the browser's bars
@@ -5826,6 +5872,8 @@
                    write every Explore Asma edit already makes), shown/hidden
                    by JS alongside every other role-gated control on this page. -->
               <button type="button" class="secondary qr-ico" id="readAttachAsmaBtn" aria-label="Attach to Asma ul Husna" title="Attach to Asma ul Husna" hidden>🔗</button>
+              <!-- J63 (PCF MSA J63): Attach to QCR, beside Attach to Asma -- the QCR pop-up of this āyah, as the Āyah card's 📚 QCR opens it. -->
+              <button type="button" class="secondary qr-ico" id="readAttachQcrBtn" aria-label="Attach to QCR" title="Attach to QCR" hidden>📚</button>
             </div>
             <!-- Round 31 -- the owner's own question: "why should the three dot
                  take space over the Ayah? put the dots on the Bar, where there
@@ -7496,6 +7544,7 @@
     const readToolsBtn = document.getElementById("readToolsBtn");
     const readToolsMenu = document.getElementById("readToolsMenu");
     const readBookmarkBtn = document.getElementById("readBookmarkBtn");
+    const readAttachQcrBtn = document.getElementById("readAttachQcrBtn");
     const readBarBookmarkBtn = document.getElementById("readBarBookmarkBtn");
     const readNotesBtn = document.getElementById("readNotesBtn");
     const readUnitChip = document.getElementById("readUnitChip"); // issue #348, Owner decision 18
@@ -20340,6 +20389,78 @@
       return parts.join("\n\n");
     }
 
+    /** PCF MSA J68 (the Owner, 21 Oct 2026: "Enable copying Arabic Text. Or Enable a button to copy the Ayah with option
+     *  to copy individual, and multiple"): the Āyah card's 📋 Copy opens this small chooser over the card -- this āyah or
+     *  From–To āyāt of its sūrah, and any of Arabic · English · Bangla (remembered on this device) -- then 📋 Copy. Each
+     *  āyah is copied as buildAyahText() always has (its reference, then the chosen texts). ✕, Esc or a tap outside opens
+     *  the card again on 📋 Copy (the way-back law). */
+    const COPY_LANGS_KEY = "mmsa-copy-langs";
+    function copyLangsSaved() {
+      try { const v = JSON.parse(localStorage.getItem(COPY_LANGS_KEY) || "null"); if (Array.isArray(v) && v.length) return v.filter((x) => ["ar", "en", "bn"].includes(x)); } catch { /* not remembered */ }
+      return ["ar", getAppLang() === "bn" ? "bn" : "en"];
+    }
+    function openAyahCopyDialog(unitKey) {
+      const { surah, ayah } = parseAyahUnitKey(unitKey);
+      const many = surah === currentSurahNum && !!currentSurahData; // the other āyāt need the sūrah that is loaded
+      const n = many ? currentSurahData.ayahCount : ayah;
+      const st = { mode: "one", from: ayah, to: ayah, langs: copyLangsSaved() };
+      document.getElementById("ayahCopyDlg")?.remove();
+      const dlg = document.createElement("div");
+      dlg.id = "ayahCopyDlg"; dlg.className = "ayah-copy-dlg";
+      const opts = (sel) => Array.from({ length: n }, (_, i) => `<option value="${i + 1}"${i + 1 === sel ? " selected" : ""}>${num(i + 1)}</option>`).join("");
+      const paint = () => {
+        const pressed = (on) => `aria-pressed="${on ? "true" : "false"}"`;
+        dlg.innerHTML = `<div class="ayah-copy-box" role="dialog" aria-modal="true" aria-labelledby="ayahCopyTitle">
+          <div class="ayah-copy-head"><h3 id="ayahCopyTitle">📋 ${escapeHtml(t("Copy āyāt"))}</h3><button type="button" class="ayah-copy-x" data-copy-close aria-label="${escapeHtml(t("Close"))}">✕</button></div>
+          <div class="ayah-copy-row" role="group" aria-label="${escapeHtml(t("Āyāt"))}"><span class="ayah-copy-lab">${escapeHtml(t("Āyāt"))}</span><div class="ayah-copy-seg">
+            <button type="button" data-copy-mode="one" ${pressed(st.mode === "one")}>${escapeHtml(t("This āyah"))} ${num(surah)}:${num(ayah)}</button>
+            ${many ? `<button type="button" data-copy-mode="many" ${pressed(st.mode === "many")}>${escapeHtml(t("Several āyāt"))}</button>` : ""}</div></div>
+          ${st.mode === "many" ? `<div class="ayah-copy-row ayah-copy-range"><label class="ayah-copy-lab" for="ayahCopyFrom">${escapeHtml(t("From"))}</label><select id="ayahCopyFrom" data-copy-from>${opts(st.from)}</select><label class="ayah-copy-lab" for="ayahCopyTo">${escapeHtml(t("To"))}</label><select id="ayahCopyTo" data-copy-to>${opts(st.to)}</select></div>` : ""}
+          <div class="ayah-copy-row" role="group" aria-label="${escapeHtml(t("Include"))}"><span class="ayah-copy-lab">${escapeHtml(t("Include"))}</span><div class="ayah-copy-seg">
+            ${[["ar", t("Arabic")], ["en", t("English")], ["bn", t("Bangla")]].map(([k, l]) => `<button type="button" data-copy-lang="${k}" ${pressed(st.langs.includes(k))}>${escapeHtml(l)}</button>`).join("")}</div></div>
+          <button type="button" class="ayah-copy-go" data-copy-go${st.langs.length ? "" : " disabled"}>📋 ${escapeHtml(st.mode === "many" && st.to > st.from ? t("Copy {n} āyāt", { n: num(st.to - st.from + 1) }) : t("Copy"))}</button>
+          <p class="ayah-copy-status" role="status" aria-live="polite" data-copy-status></p></div>`;
+      };
+      // The card closed when its 📋 was pressed (as every tile does); closing the chooser opens it again, on 📋 Copy.
+      const close = () => {
+        dlg.remove(); window.removeEventListener("keydown", onKey, true);
+        const { half } = parseAyahUnitKey(unitKey);
+        openAyahActionSheet(`${surah}:${ayah}`, half ?? null);
+        ayahActionSheetMountEl.querySelector("[data-ayah-sheet-copy]")?.focus({ preventScroll: true });
+      };
+      const onKey = (e) => { if (e.key === "Escape") { e.preventDefault(); e.stopImmediatePropagation(); close(); } };
+      dlg.addEventListener("click", async (e) => {
+        if (e.target === dlg || e.target.closest("[data-copy-close]")) { close(); return; }
+        const b = e.target.closest("button");
+        if (!b) return;
+        if (b.dataset.copyMode) { st.mode = b.dataset.copyMode; if (st.mode === "one") { st.from = st.to = ayah; } paint(); dlg.querySelector(`[data-copy-mode="${st.mode}"]`)?.focus(); return; }
+        if (b.dataset.copyLang) {
+          const k = b.dataset.copyLang;
+          st.langs = ["ar", "en", "bn"].filter((x) => (x === k ? !st.langs.includes(k) : st.langs.includes(x)));
+          try { localStorage.setItem(COPY_LANGS_KEY, JSON.stringify(st.langs)); } catch { /* not remembered */ }
+          paint(); dlg.querySelector(`[data-copy-lang="${k}"]`)?.focus(); return;
+        }
+        if (b.hasAttribute("data-copy-go")) {
+          const keys = Array.from({ length: st.to - st.from + 1 }, (_, i) => ayahRecordKey(surah, st.from + i));
+          const text = (st.mode === "many" ? keys : [unitKey]).map((k) => buildAyahText(k, st.langs)).filter(Boolean).join("\n\n");
+          const ok = text ? await copyToClipboard(text) : false;
+          const status = dlg.querySelector("[data-copy-status]");
+          status.textContent = ok ? `✓ ${t("Copied.")}` : t("Could not copy: select the text and copy it yourself.");
+          status.classList.toggle("is-warn", !ok);
+        }
+      });
+      dlg.addEventListener("change", (e) => {
+        if (e.target.matches("[data-copy-from]")) { st.from = Number(e.target.value); st.to = Math.max(st.from, st.to); }
+        else if (e.target.matches("[data-copy-to]")) { st.to = Number(e.target.value); st.from = Math.min(st.from, st.to); }
+        else return;
+        paint(); dlg.querySelector(e.target.matches("[data-copy-from]") ? "[data-copy-from]" : "[data-copy-to]")?.focus();
+      });
+      window.addEventListener("keydown", onKey, true); // window, capture: before the card's own Esc (which would close it too)
+      paint();
+      document.body.appendChild(dlg);
+      dlg.querySelector("[data-copy-go]")?.focus();
+    }
+
     /** Plays exactly this one āyah with whatever reciter is already ticked/current -- the quick menu's own "just a click away" Play, distinct from playCurrentSelection()'s unit-wide drill. */
     function quickPlayAyah(unitKey) {
       const { surah, ayah: ayahNum } = parseAyahUnitKey(unitKey);
@@ -21395,6 +21516,9 @@
         : "not_started";
       const sheetHalf = ayahSheetHalf;
       const keepScroll = ayahActionSheetMountEl.querySelector("[data-ayah-sheet]")?.scrollTop ?? 0;
+      // PCF MSA J68: the card re-renders as its data arrives; the control that had the keyboard's focus keeps it (by its
+      // own data-ayah-sheet-* name), as the scroll is kept -- so "back to 📋 Copy" survives the card's later renders.
+      const keepFocus = (() => { const a = document.activeElement; if (!a || a === document.body || !ayahActionSheetMountEl.contains(a)) return null; const n = [...a.attributes].find((x) => x.name.startsWith("data-ayah-sheet-")); return n ? `[${n.name}]` : null; })();
       // Issue #348 -- the ladder at the card's own top. unitCardTablesCache
       // is filled the first time ANYTHING in the app awaits
       // unitCardBoundaryTables() (a marker render, an earlier Unit Card
@@ -21439,6 +21563,7 @@
       // Keep the reader's place: the card re-renders as its data arrives
       // (Status, then Related), and each re-render used to jump to the top.
       if (keepScroll) { const el = ayahActionSheetMountEl.querySelector("[data-ayah-sheet]"); if (el) el.scrollTop = keepScroll; }
+      if (keepFocus && !ayahActionSheetMountEl.contains(document.activeElement)) ayahActionSheetMountEl.querySelector(keepFocus)?.focus({ preventScroll: true });
       mountClaimForPicker(ayahActionSheetMountEl, "[data-gac-record-title]"); // 👥 who this records for
       // Owner, 7 Oct 2026: "Enable back button always to come back to the view/ location where it came
       // from" -- an action that takes the reader away from this card leaves a way back to it.
@@ -21472,10 +21597,7 @@
         },
         onFileInFolder: (unitKey) => openAyahFolderFiling(unitKey),
         onPlay: (unitKey) => quickPlayAyah(unitKey),
-        onCopy: async (unitKey) => {
-          const langs = ["ar", getAppLang() === "bn" ? "bn" : "en"];
-          await copyToClipboard(buildAyahText(unitKey, langs));
-        },
+        onCopy: (unitKey) => openAyahCopyDialog(unitKey),
         onShare: async (unitKey) => {
           const langs = ["ar", getAppLang() === "bn" ? "bn" : "en"];
           await shareText(buildAyahText(unitKey, langs), unitKey);
@@ -21853,7 +21975,9 @@
           if (e.target.closest("[data-ayah-card-back]")) { const r = ayahCardReturn; clearAyahCardReturn("back"); r?.back?.(); }
         });
       }
-      pill.innerHTML = `<button type="button" class="ayah-card-back-btn" data-ayah-card-back><span aria-hidden="true">←</span> ${escapeHtml(ayahCardReturn.title)}${ayahCardReturn.label ? ` <span class="ayah-card-back-ref">${escapeHtml(ayahCardReturn.label)}</span>` : ""}</button>` +
+      // J63: below 600px only a big ← and the × show; the words stay as aria-label and title (CSS hides .ayah-card-back-text there).
+      const backWords = `${ayahCardReturn.title}${ayahCardReturn.label ? ` ${ayahCardReturn.label}` : ""}`;
+      pill.innerHTML = `<button type="button" class="ayah-card-back-btn" data-ayah-card-back aria-label="${escapeHtml(backWords)}" title="${escapeHtml(backWords)}"><span class="ayah-card-back-arrow" aria-hidden="true">←</span><span class="ayah-card-back-text"> ${escapeHtml(ayahCardReturn.title)}${ayahCardReturn.label ? ` <span class="ayah-card-back-ref">${escapeHtml(ayahCardReturn.label)}</span>` : ""}</span></button>` +
         `<button type="button" class="ayah-card-back-x" data-ayah-card-back-dismiss aria-label="${escapeHtml(t("Close"))}">×</button>`;
       pill.hidden = false;
       placeInDock(pill, "back-docked");
@@ -23850,7 +23974,7 @@
       readBookmarkBtn.setAttribute("title", unitBmLabel);
       // 12 Oct 2026: the same bookmark on the Mushaf bar (the Owner: "Add bookmark button on the top of the Mushaf page").
       if (readBarBookmarkBtn) {
-        readBarBookmarkBtn.hidden = !mushafToggle.checked;
+        readBarBookmarkBtn.hidden = false; // J63: the card has no Bookmark tile, so the bar's 🔖 shows in the plain Read view too
         readBarBookmarkBtn.textContent = readBookmarkBtn.textContent;
         readBarBookmarkBtn.setAttribute("aria-label", unitBmLabel);
         readBarBookmarkBtn.setAttribute("title", unitBmLabel);
@@ -23875,6 +23999,8 @@
       // it writes to asmaCollections/{tenantId}, the same Manage-mode write
       // every Explore Asma edit already makes.
       readAttachAsmaBtn.hidden = !canAdminCatalogueClientSide();
+      // J63: Attach to QCR needs ONE āyah (a QCR pop-up is for an āyah), not owner/prime: the Āyah card's 📚 QCR is open to every reader.
+      readAttachQcrBtn.hidden = unitInfo.unitType !== "ayah";
 
       if (usesFlow) {
         // Round 31: the bar-mounted ⋮ (below) only ever means "this one
@@ -23994,7 +24120,14 @@
       const label = isUnnumberedBismillah(currentSurahNum, currentAyahNum)
         ? t("Surah {surah}, Bismillah", { surah: num(currentSurahNum) })
         : `${num(currentSurahNum)}:${ayahLabelFor(currentSurahNum, currentAyahNum, half)}`;
-      return { unitKey: ayahRecordKey(currentSurahNum, currentAyahNum, half), label };
+      return { unitKey: ayahRecordKey(currentSurahNum, currentAyahNum, half), label, noteTitle: noteTitleFor(currentSurahNum, label) };
+    }
+    /** PCF MSA J68 (the Owner, 21 Oct 2026: "Enable the Title to start with 'Quran (Surah Number): Ayah Number - Surah
+     *  Name:' when note view opens from an Ayah Card"): a new Note on an āyah starts with this title, e.g.
+     *  "Quran 22:3 - Al-Hajj:"; the reader writes on after it. `label` is the āyah's own "22:3". */
+    function noteTitleFor(surah, label) {
+      const sx = surahIndex.find((x) => x.surahNumber === surah);
+      return t("Quran {ref} - {name}:", { ref: label, name: surahName(surah, sx?.nameEnglish ?? "") });
     }
     function paintReadNotesBtn() {
       const u = readNotesUnit();
@@ -24642,6 +24775,12 @@
       );
     }
 
+    readAttachQcrBtn.addEventListener("click", () => {
+      const info = currentUnitInfo();
+      if (info.unitType !== "ayah") return;
+      // The way back: the pop-up closes onto the Read view at this same āyah (the tools card closed on the tap).
+      openQcrPopup(info.unitKey, { backLabel: t("Read") });
+    });
     readAttachAsmaBtn.addEventListener("click", () => {
       openAsmaXAttachPopover({ prefillRef: asmaRefTextFor(currentSurahNum, currentAyahNum) });
     });

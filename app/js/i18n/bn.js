@@ -2347,6 +2347,7 @@ export const BN = {
   "Type a reference first.": "প্রথমে একটি সূত্র লিখুন।", // ?
   "Tick at least one Name.": "অন্তত একটি নাম বাছাই করুন।", // ?
   "Attach to Asma ul Husna": "আসমাউল হুসনায় যুক্ত করুন", // ?
+  "Attach to QCR": "QCR-এ যুক্ত করুন",
 
   // 30 Aug 2026 round -- the Asma drawer's own attach button, and
   // create-a-new-Name-while-attaching.
@@ -4400,4 +4401,16 @@ export const BN = {
   "Both translit.": "দুই প্রতিবর্ণ",
   "No translit.": "প্রতিবর্ণ নেই",
   "Bangla transliteration is made by rules from the Arabic and is being checked.": "বাংলা প্রতিবর্ণীকরণ আরবি থেকে নিয়ম অনুযায়ী তৈরি এবং যাচাই করা হচ্ছে।",
+  // PCF MSA J65 -- the study poster's "Āyah on top" lines.
+  "Āyah on top": "উপরে আয়াত",
+  "Āyah: {list}": "আয়াত: {list}",
+  "This is too much for one sheet: choose fewer āyāt, A3, or turn Āyah on top off.": "এক পাতায় এত ধরে না: কম আয়াত বাছুন, A3, অথবা উপরে আয়াত বন্ধ করুন।",
+  // PCF MSA J68 -- a new Note's first title, and copying āyāt.
+  "Quran {ref} - {name}:": "কুরআন {ref} - {name}:",
+  "Copy āyāt": "আয়াত কপি করুন",
+  "Several āyāt": "কয়েকটি আয়াত",
+  "Include": "সাথে",
+  "Copy {n} āyāt": "{n}টি আয়াত কপি করুন",
+  "Copied.": "কপি হয়েছে।",
+  "Could not copy: select the text and copy it yourself.": "কপি করা যায়নি: লেখাটি বেছে নিজে কপি করুন।",
 };

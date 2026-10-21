@@ -148,7 +148,10 @@ const realErrors = (errs) => errs.filter((e) => !/ERR_CERT|net::|archive\.org|ap
 {
   console.log("\n=== fit, print and the picture (1280) ===");
   const ctx = await context({ viewport: { width: 1280, height: 900 }, acceptDownloads: true });
-  const { page } = await poster(ctx, "surah=36&ayah=1&from=1&to=12&kind=study");
+  // J65 (21 Oct 2026): the study poster now opens with the āyah's Arabic over the words (half the page). This check is
+  // about the WORDS alone being scaled to fit, so it asks for no āyah on top (top=0); the āyah-on-top fit is checked in
+  // ayah-poster-top-browser.mjs, where Yā-Sīn 1–12 with the āyah on top must say so in words.
+  const { page } = await poster(ctx, "surah=36&ayah=1&from=1&to=12&kind=study&top=0");
   const f = await page.evaluate(() => { const s = document.getElementById("apSheet"), p = s.firstElementChild, a = p.querySelector(".ap-kid-ayahs"); return { k: Number(s.style.getPropertyValue("--k")), over: p.scrollHeight - p.clientHeight, ayOver: a.scrollHeight - a.clientHeight, status: document.getElementById("apStatus").textContent }; });
   check("a long range is scaled down until it fits: Yā-Sīn 1–12 at --k below 1, nothing cut, no warning", f.k < 1 && f.k >= 0.3 && f.over <= 1 && f.ayOver <= 1 && f.status === "", JSON.stringify(f));
   const { page: big } = await poster(ctx, "surah=2&ayah=1&from=1&to=40&kind=study");

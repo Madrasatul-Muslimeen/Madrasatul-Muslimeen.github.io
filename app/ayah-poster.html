@@ -68,6 +68,18 @@
   .ap-m-en { font-family: var(--ap-en); font-size: calc(var(--k) * 2.4cqw); font-weight: 700; line-height: 1.3; }
   .ap-m-bn { font-family: var(--ap-bn); font-size: calc(var(--k) * 2.5cqw); line-height: 1.35; }
   .ap-kid-num { align-self: center; box-sizing: border-box; font-family: var(--ap-ar); font-size: calc(var(--k) * 4cqw); color: #a07a24; border: calc(var(--k) * 0.35cqw) solid #d9b765; border-radius: 50%; width: calc(var(--k) * 7cqw); height: calc(var(--k) * 7cqw); display: grid; place-items: center; line-height: 1; }
+  /* PCF MSA J65 (the Owner, 21 Oct 2026: "Arabic, Eng and Bangla options single and multiple to choose from over the
+     words. Try to keep half of the page for Ayah and half for words"): with any "Āyah on top" line chosen, the space
+     under the heading is two equal halves (flex 1 1 0 each), the whole āyah over the word boxes. fitPosterToSheet()
+     gives each half its own --k (the āyah may grow to 1.5 to fill its half); the sheet's own --k stays 1, so the heading
+     keeps its full size. */
+  .ap-kid[data-ap-top] .ap-kid-ayahs { flex: 1 1 0; overflow: hidden; }
+  .ap-kid-top { flex: 1 1 0; min-height: 0; overflow: hidden; display: flex; flex-direction: column; justify-content: safe center; align-items: center; gap: calc(var(--k) * 1.8cqw); text-align: center; }
+  .ap-kid-top > * { margin: 0; flex: 0 0 auto; max-width: 100%; }
+  .ap-top-ar { font-family: var(--ap-ar); font-size: calc(var(--k) * 6.6cqw); line-height: 1.85; color: #0f5132; }
+  .ap-top-rule { width: 18cqw; height: 0.35cqw; background: #d9b765; border-radius: 1cqw; }
+  .ap-top-en { font-family: var(--ap-en); font-style: italic; font-size: calc(var(--k) * 3.4cqw); line-height: 1.5; }
+  .ap-top-bn { font-family: var(--ap-bn); font-size: calc(var(--k) * 3.4cqw); line-height: 1.6; }
   .ap-kid-foot { display: flex; justify-content: space-between; gap: 1cqw; font-size: 1.9cqw; line-height: 1.5; color: #7a6a45; border-top: 0.3cqw dashed #d9cfb8; padding-top: 1.4cqw; flex: 0 0 auto; }
   /* the Dawah poster */
   .ap-dawah { background: radial-gradient(120% 80% at 50% 0%, #1f3160 0%, #14213d 60%); color: #f3ead6; padding: 9cqw 8cqw; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: calc(var(--k) * 4cqw); text-align: center; position: relative; }
@@ -118,7 +130,7 @@
     import { getAppLang, getTransliterationScript } from "./js/prefs.js";
     import { getSurah } from "./js/quran-data.js";
     import { registerServiceWorker } from "./js/sw-register.js";
-    import { posterModel, clampRange, rukuRange, rangeRef, renderStudyPosterHtml, renderDawahPosterHtml, posterFileName, escapeHtml, MAX_AYAHS, PAPERS } from "./js/ayah-poster.js";
+    import { posterModel, clampRange, rukuRange, rangeRef, renderStudyPosterHtml, renderDawahPosterHtml, posterFileName, escapeHtml, topLines, TOP_LINES, TOP_SHARES, WORDS_K_MIN, MAX_AYAHS, PAPERS } from "./js/ayah-poster.js";
     import { paintPoster, posterBlob } from "./js/ayah-poster-image.js";
 
     registerServiceWorker();
@@ -134,6 +146,8 @@
       // J58: tr = 0 (off) | lat | bn | both. An old tr=1, or none, reads as the reader's own preference (else the app language).
       translit: { 0: "off", lat: "latin", bn: "bn", both: "both" }[params.get("tr")] ?? getTransliterationScript(),
       paper: params.get("paper") === "a3" ? "a3" : "a4",
+      // J65: the study poster's "Āyah on top" lines (top=ar,en,bn; top=0 none). None in the address: the Arabic.
+      top: params.has("top") ? topLines(params.get("top")) : ["ar"],
       custom: false, // "Choose āyāt…" is picked: From and To show
     };
     let surahData = null, lastFit = { k: 1, fits: true };
@@ -156,7 +170,7 @@
     /** Keeps the choices in the address, so a reload or ← Back from a later page returns to this same poster. */
     function writeAddress() {
       const u = new URL(location.href);
-      for (const [k, v] of Object.entries({ surah: state.surah, ayah: state.ayah, from: state.from, to: state.to, kind: state.kind, lang: state.lang, tr: { off: "0", latin: "lat", bn: "bn", both: "both" }[state.translit], paper: state.paper })) {
+      for (const [k, v] of Object.entries({ surah: state.surah, ayah: state.ayah, from: state.from, to: state.to, kind: state.kind, lang: state.lang, tr: { off: "0", latin: "lat", bn: "bn", both: "both" }[state.translit], paper: state.paper, top: state.top.length ? state.top.join(",") : "0" })) {
         if (v == null) u.searchParams.delete(k); else u.searchParams.set(k, String(v));
       }
       history.replaceState(history.state, "", u);
@@ -176,7 +190,7 @@
       return [
         row(t("Poster"), seg("data-ap-kind", "study", t("Study"), state.kind === "study") + seg("data-ap-kind", "dawah", t("Dawah"), state.kind === "dawah")),
         row(t("Āyāt"), `<select id="apRange" data-ap-range-select aria-label="${escapeHtml(t("Āyāt"))}">`
-          + opt("ayah", `${t("This āyah")} ${num(state.ayah)}:${num(state.ayah)}`)
+          + opt("ayah", `${t("This āyah")} ${num(state.surah)}:${num(state.ayah)}`)
           + (ruku.to > ruku.from && ruku.to - ruku.from + 1 <= MAX_AYAHS && !(ruku.from === 1 && ruku.to === n) ? opt("ruku", t("This rukūʿ")) : "")
           + (n > 1 && n <= MAX_AYAHS ? opt("surah", t("Whole sūrah")) : "")
           + opt("custom", t("Choose āyāt…")) + "</select>"),
@@ -184,14 +198,18 @@
         row(`${t("From")} / ${t("To")}`, `<label class="ap-sub ap-lab" for="apFrom">${escapeHtml(t("From"))}</label><select id="apFrom" data-ap-from>${opts(state.from)}</select><label class="ap-sub ap-lab" for="apTo">${escapeHtml(t("To"))}</label><select id="apTo" data-ap-to>${opts(state.to)}</select>`, mode === "custom" ? ' data-ap-fromto' : ' data-ap-fromto hidden'),
         row(meaningsLabel, seg("data-ap-lang", "en", t("English"), state.lang === "en") + seg("data-ap-lang", "bn", t("Bangla"), state.lang === "bn") + seg("data-ap-lang", "both", t("Both"), state.lang === "both")),
         row(t("Transliteration"), seg("data-ap-tr", "latin", t("Latin"), state.translit === "latin") + seg("data-ap-tr", "bn", t("Bangla"), state.translit === "bn") + seg("data-ap-tr", "both", t("Both"), state.translit === "both") + seg("data-ap-tr", "off", t("Off"), state.translit === "off"), state.kind === "study" ? "" : " hidden"),
+        // J65: any one, several, or none (each button toggles on its own).
+        row(t("Āyah on top"), TOP_LINES.map((k) => seg("data-ap-top", k, TOP_NAMES()[k], state.top.includes(k))).join(""), state.kind === "study" ? "" : " hidden"),
         row(t("Paper"), seg("data-ap-paper", "a4", "A4", state.paper === "a4") + seg("data-ap-paper", "a3", "A3", state.paper === "a3")),
       ].join("");
     }
 
-    /** "Study · 1:1 · Both · Bangla translit. · A4" -- the whole menu said in one line. */
+    const TOP_NAMES = () => ({ ar: t("Arabic"), en: t("English"), bn: t("Bangla") });
+    /** "Study · 1:1 · Both · Bangla translit. · Āyah: Arabic+English · A4" -- the whole menu said in one line. */
     function summaryText(model) {
       const parts = [t(state.kind === "study" ? "Study" : "Dawah"), rangeRef(model, num).replace(/ /g, ""), { en: t("English"), bn: t("Bangla"), both: t("Both") }[state.lang]];
       if (state.kind === "study") parts.push({ latin: t("Latin translit."), bn: t("Bangla translit."), both: t("Both translit."), off: t("No translit.") }[state.translit]);
+      if (state.kind === "study" && state.top.length) parts.push(t("Āyah: {list}", { list: state.top.map((k) => TOP_NAMES()[k]).join("+") }));
       parts.push(state.paper.toUpperCase());
       return parts.join(" · ");
     }
@@ -210,10 +228,38 @@
         : { ref: t("Sūrah {name} · {ref}", { name: model.nameEn, ref }), from: t("The Qur'an · shared by Madrasatul Muslimeen") };
     }
 
+    /** The largest --k (0.3–max) on `el` at which `over()` is false. */
+    function fitBox(el, max, over) {
+      const at = (k) => { el.style.setProperty("--k", String(k)); return !over(); };
+      if (at(max)) return { k: max, fits: true };
+      let lo = 0.3, hi = max;
+      if (!at(lo)) return { k: lo, fits: false };
+      for (let i = 0; i < 14; i++) { const mid = (lo + hi) / 2; if (at(mid)) lo = mid; else hi = mid; }
+      at(lo);
+      return { k: lo, fits: true };
+    }
+    /** J65: the āyah over the words. Half and half first; only when the words would fall below half size there does
+     *  the āyah's share step down (0.05 at a time, to TOP_SHARE_MIN) to give them room -- "try to keep half". Each
+     *  part has its own --k. ayah-poster-image.js's paintStudySplit() makes the same choice for the picture. */
+    function fitSplit(sheet, poster, top) {
+      sheet.style.setProperty("--k", "1");
+      const words = poster.querySelector(".ap-kid-ayahs");
+      const spill = (el) => () => el.scrollHeight > el.clientHeight + 1;
+      let best = null;
+      for (const share of TOP_SHARES) {
+        top.style.flexGrow = String(share); words.style.flexGrow = String(1 - share);
+        const a = fitBox(top, 1.5, spill(top)), w = fitBox(words, 1, spill(words));
+        best = { k: w.k, kTop: a.k, share, fits: a.fits && w.fits && !spill(poster)() };
+        if (best.fits && w.k >= WORDS_K_MIN) break;
+      }
+      return best;
+    }
     /** The largest --k (0.3–1) at which the poster fits its sheet: nothing is ever cut off unseen. */
     function fitPosterToSheet() {
       const sheet = $("apSheet"), poster = sheet.firstElementChild;
       if (!poster) return { k: 1, fits: true };
+      const top = poster.querySelector(".ap-kid-top");
+      if (top) return fitSplit(sheet, poster, top);
       const over = () => poster.scrollHeight > poster.clientHeight + 1 || [...poster.querySelectorAll(".ap-kid-ayahs")].some((e) => e.scrollHeight > e.clientHeight + 1);
       const at = (k) => { sheet.style.setProperty("--k", String(k)); return !over(); };
       if (at(1)) return { k: 1, fits: true };
@@ -244,10 +290,15 @@
       setPaper();
       const text = posterText(model);
       $("apSheet").innerHTML = state.kind === "study"
-        ? renderStudyPosterHtml(model, { lang: state.lang, translit: state.translit, text })
+        ? renderStudyPosterHtml(model, { lang: state.lang, translit: state.translit, top: state.top, text })
         : renderDawahPosterHtml(model, { lang: state.lang, text });
       lastFit = fitPosterToSheet();
-      setStatus(lastFit.fits ? "" : t("This is too much for one sheet: choose fewer āyāt, or A3."), !lastFit.fits);
+      setStatus(fitMessage(lastFit), !lastFit.fits);
+    }
+    /** "" when the poster fits; else what to do, in words (J65: with the āyah on top, turning it off is a way too). */
+    function fitMessage(fit) {
+      if (fit.fits) return "";
+      return state.kind === "study" && state.top.length ? t("This is too much for one sheet: choose fewer āyāt, A3, or turn Āyah on top off.") : t("This is too much for one sheet: choose fewer āyāt, or A3.");
     }
     function setStatus(msg, warn = false) { $("apStatus").textContent = msg; $("apStatus").classList.toggle("ap-warn", warn); }
 
@@ -260,6 +311,7 @@
       if (b.dataset.apKind) { state.kind = b.dataset.apKind; render(); return; }
       if (b.dataset.apLang) { state.lang = b.dataset.apLang; render(); return; }
       if (b.dataset.apTr) { state.translit = b.dataset.apTr; render(); return; }
+      if (b.dataset.apTop) { const k = b.dataset.apTop; state.top = topLines(state.top.includes(k) ? state.top.filter((x) => x !== k) : [...state.top, k]); render(); return; }
       if (b.dataset.apPaper) { state.paper = b.dataset.apPaper; render(); return; }
       if (b.id === "apSum") {
         menuOpen = !menuOpen;
@@ -289,7 +341,7 @@
       const model = posterModel(surahData, state.from, state.to), canvas = $("apCanvas");
       try {
         await fontsReady();
-        paintPoster(canvas, model, { kind: state.kind, lang: state.lang, translit: state.translit, paper: state.paper, text: posterText(model) });
+        paintPoster(canvas, model, { kind: state.kind, lang: state.lang, translit: state.translit, top: state.top, paper: state.paper, text: posterText(model) });
         const blob = await posterBlob(canvas), name = posterFileName(model, state.kind);
         const file = typeof File === "function" ? new File([blob], name, { type: "image/png" }) : null;
         if (file && navigator.canShare?.({ files: [file] })) {
@@ -311,7 +363,7 @@
     }
 
     let refit = 0;
-    new ResizeObserver(() => { cancelAnimationFrame(refit); refit = requestAnimationFrame(() => { if (state.kind && surahData) { lastFit = fitPosterToSheet(); setStatus(lastFit.fits ? "" : t("This is too much for one sheet: choose fewer āyāt, or A3."), !lastFit.fits); } }); }).observe($("apSheet"));
+    new ResizeObserver(() => { cancelAnimationFrame(refit); refit = requestAnimationFrame(() => { if (state.kind && surahData) { lastFit = fitPosterToSheet(); setStatus(fitMessage(lastFit), !lastFit.fits); } }); }).observe($("apSheet"));
 
     try {
       surahData = await getSurah(state.surah);

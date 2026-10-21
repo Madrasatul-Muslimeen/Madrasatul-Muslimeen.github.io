@@ -805,10 +805,10 @@
     // page reaches the binding only through the service (study-note-boundary.mjs).
     const PANE_UNIT_SHAPES = [/^ayah:\d{1,3}:\d{1,3}$/, /^range:\d{1,3}:\d{1,3}-\d{1,3}$/, /^surah:\d{1,3}$/, /^ruku:\d{1,3}:\d{1,3}$/, /^juz:\d{1,2}$/, /^hizb:\d{1,2}$/, /^page:[A-Za-z0-9_-]+:\d{1,3}$/];
     const isPaneUnitKey = (k) => typeof k === "string" && PANE_UNIT_SHAPES.some((re) => re.test(k));
-    let unitKeyParam = null, unitLabelParam = "";
+    let unitKeyParam = null, unitLabelParam = "", noteTitleParam = ""; // J68: noteTitle, a new Note's first title
     try {
       const q = new URLSearchParams(location.search);
-      if (q.get("embed") === "1" && isPaneUnitKey(q.get("unit"))) { unitKeyParam = q.get("unit"); unitLabelParam = q.get("unitLabel") || ""; }
+      if (q.get("embed") === "1" && isPaneUnitKey(q.get("unit"))) { unitKeyParam = q.get("unit"); unitLabelParam = q.get("unitLabel") || ""; noteTitleParam = q.get("noteTitle") || ""; }
     } catch { /* no unit: the ordinary page */ }
     const unitMode = unitKeyParam !== null;
     let currentView = unitMode ? "unit" : viewFromHash()
@@ -3960,7 +3960,8 @@
       const folderId = node ? await ensureRealFolder(node) : null;
       if (!folderId) { btn.disabled = false; return; }
       const ownerArgs = { tenantId: activeTenantId, ownerPersonId: selectedPersonId, ownerUid: auth.currentUser.uid, actorUid: auth.currentUser.uid };
-      const label = unitLabel();
+      // PCF MSA J68: from the Read view the host sends the first title ("Quran 22:3 - Al-Hajj:"); else the āyah's own label.
+      const label = noteTitleParam || unitLabel();
       const outcome = await safeWrite(async () => {
         const { note } = await createStudyNote(db, { ...ownerArgs, unitKey: unitKeyParam, title: label });
         try {
@@ -4015,7 +4016,7 @@
       if (!isPaneUnitKey(ev.data.unit) || ev.data.unit === unitKeyParam) return;
       try { endEdit(paneView); } catch { /* nothing being edited */ }
       if (paneView.noteId !== null) closeNotePane();
-      unitKeyParam = ev.data.unit; unitLabelParam = ev.data.label || "";
+      unitKeyParam = ev.data.unit; unitLabelParam = ev.data.label || ""; noteTitleParam = ev.data.noteTitle || "";
       if (currentView === "unit") renderUnitView();
     });
 

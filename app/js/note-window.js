@@ -63,7 +63,7 @@ export const NOTE_VIEW_HTML = `
         <button type="button" class="secondary pane-btn" data-find-close>✕</button>
       </div>
       <h2 class="note-pane-title" data-pane-title></h2>
-      <input type="text" class="pane-edit-title" data-edit-title hidden>
+      <textarea class="pane-edit-title" data-edit-title rows="1" hidden></textarea>
       <p class="note-pane-meta" data-pane-meta></p>
       <button type="button" class="secondary tiny nw-ver-btn" data-win-ver hidden></button>
       <div class="note-pane-chips" data-pane-chips></div>
@@ -236,6 +236,8 @@ export function createNoteViews(host) {
     const v = { el, kind, win: null, uid: kind === "pane" ? "" : `w${++viewSeq}`, noteId: null, order: [], folderId: null, ed: null };
     v.barEl = el.querySelector("[data-pane-bar]");
     v.editTitleEl = el.querySelector("[data-edit-title]");
+    // J68: a wider or narrower pane re-wraps the title, so its height follows the box's width.
+    if (typeof ResizeObserver === "function") { let w = 0; new ResizeObserver(([e]) => { const nw = Math.round(e.contentRect.width); if (nw && nw !== w) { w = nw; fitEditTitle(v.editTitleEl); } }).observe(v.editTitleEl); }
     v.editToolbarEl = el.querySelector("[data-edit-toolbar]");
     v.editStatusEl = el.querySelector("[data-edit-status]");
     v.draftOfferEl = el.querySelector("[data-draft-offer]");
@@ -248,6 +250,7 @@ export function createNoteViews(host) {
     }
     el.addEventListener("input", (ev) => {
       if (!ev.target.closest("[data-edit-title], [data-edit-body]")) return;
+      if (ev.target.matches("[data-edit-title]")) fitEditTitle(ev.target);
       if (v.win && ev.target.matches("[data-edit-title]")) v.win.querySelector(".nw-title").textContent = ev.target.value.trim() || t("(untitled)");
       onEditInput(v);
     });
@@ -263,6 +266,8 @@ export function createNoteViews(host) {
       else if (ev.target.closest?.("[data-edit-panel]") && ev.key === "Escape") { ev.stopPropagation(); closePanel(v); editBodyEl(v)?.focus(); }
       // Note-pane round 2 (item 20): Esc in the text, the title or the toolbar ends editing, the same as ✓ Done.
       else if (ev.key === "Escape" && v.ed && ev.target.closest?.("[data-edit-body], [data-edit-title], [data-edit-toolbar]")) { ev.preventDefault(); ev.stopPropagation(); finishEdit(v); }
+      // PCF MSA J68: the title wraps but is still one line of text -- Enter goes on to the note's body.
+      else if (ev.key === "Enter" && ev.target.matches?.("[data-edit-title]")) { ev.preventDefault(); editBodyEl(v)?.focus(); }
     });
     if (kind === "pane") wirePress(v, el); // a window wires its whole frame instead (its title is on the bar)
     el.addEventListener("pointerdown", (ev) => { const g = ev.target.closest("[data-sec-grip]"); if (g && v.ed) startGripDrag(v, g, ev); });
@@ -1017,12 +1022,21 @@ export function createNoteViews(host) {
 
 
 
+  /** PCF MSA J68 (the Owner, 21 Oct 2026: "Enable Title wrapped, not cuts horizontal"): the title box is a one-row
+   *  textarea that grows to show the whole title on as many lines as it needs. A line break pasted in becomes a space
+   *  (a title is one line of text). */
+  function fitEditTitle(el) {
+    if (/[\r\n]/.test(el.value)) { const at = el.selectionStart; el.value = el.value.replace(/\r?\n|\r/g, " "); el.setSelectionRange(at, at); }
+    el.style.height = "auto";
+    if (el.scrollHeight) el.style.height = `${el.scrollHeight + (el.offsetHeight - el.clientHeight)}px`;
+  }
   /** Begin editing `note`; `draft` (a restored local draft) replaces the stored text in the editor but never the baseline it is compared with. */
   function startEdit(v, note, draft = null) {
     if (v.ed || !host.ready()) return;
     v.ed = { view: v, noteId: note.noteId, baseRevisionId: note.currentRevisionId, baseTitle: (note.title ?? "").trim(), baseBody: normBody(note.bodyHtml) };
     v.editTitleEl.value = draft ? draft.title : (note.title ?? "");
     v.editTitleEl.hidden = false;
+    fitEditTitle(v.editTitleEl);
     v.el.querySelector("[data-pane-title]").hidden = true;
     v.draftOfferEl.hidden = true;
     closeFind(v, { focus: false });
