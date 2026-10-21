@@ -47,7 +47,8 @@ export function chunkEdition(hadiths) {
   let count = 0;
   for (const h of hadiths) {
     const n = Math.trunc(Number(h.hadithnumber));
-    const text = String(h.text ?? "").replace(/\s+/g, " ").trim();
+    // PCF MSA J66: a Bangla আ written as two pieces (অ + া) is stored as the one letter আ (a no-op for English)
+    const text = String(h.text ?? "").replace(/\s+/g, " ").replace(/\u0985\u09BE/g, "\u0986").trim();
     if (!(n > 0) || !text) continue;
     const k = Math.floor(n / CHUNK);
     if (!chunks.has(k)) chunks.set(k, {});
