@@ -28,7 +28,7 @@ const MUT = {
   noorder: [W, '.ayah-sheet-pane-info > .ayah-sheet-body { order: 1; }', '.ayah-sheet-pane-info > .ayah-sheet-body { order: 9; }'],
   nopull: [S, "  return n > 2\n", "  return n > 99\n"],
   nofold: [W, "    try { localStorage.setItem(FT_KEY, JSON.stringify(ftOpen)); } catch { /* not remembered */ }", "    void 0;"],
-  bar2: [W, ".ayah-sheet[data-ayah-win] .ayah-sheet-header { flex-wrap: nowrap;", ".ayah-sheet[data-ayah-win] .ayah-sheet-header { flex-wrap: wrap;"],
+  bar2: [W, "  .ayah-sheet[data-ayah-win] .ayah-sheet-header .ayah-sheet-head-tools { order: 2; flex: 0 0 auto; }\n", "  .ayah-sheet[data-ayah-win] .ayah-sheet-header { flex-wrap: wrap !important; }\n"],
   phone: [W, "const WINDOW_FROM = 900;", "const WINDOW_FROM = 0;"],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
