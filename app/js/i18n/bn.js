@@ -4435,4 +4435,5 @@ export const BN = {
   "Loading your notes…": "আপনার নোট আসছে…",
   "attached here": "এখানে যুক্ত",
   "\"{title}\" attached to {unit}.": "\"{title}\" {unit}-এ যুক্ত হয়েছে।",
+  "Loading your review schedule…": "আপনার পুনরাবৃত্তির সূচি আসছে…", // PCF MSA J73
 };
