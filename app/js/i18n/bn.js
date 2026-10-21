@@ -4400,4 +4400,8 @@ export const BN = {
   "Both translit.": "দুই প্রতিবর্ণ",
   "No translit.": "প্রতিবর্ণ নেই",
   "Bangla transliteration is made by rules from the Arabic and is being checked.": "বাংলা প্রতিবর্ণীকরণ আরবি থেকে নিয়ম অনুযায়ী তৈরি এবং যাচাই করা হচ্ছে।",
+  // PCF MSA J65 -- the study poster's "Āyah on top" lines.
+  "Āyah on top": "উপরে আয়াত",
+  "Āyah: {list}": "আয়াত: {list}",
+  "This is too much for one sheet: choose fewer āyāt, A3, or turn Āyah on top off.": "এক পাতায় এত ধরে না: কম আয়াত বাছুন, A3, অথবা উপরে আয়াত বন্ধ করুন।",
 };

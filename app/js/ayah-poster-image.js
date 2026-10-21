@@ -2,7 +2,7 @@
 // ayah-poster.js's HTML onto a canvas, in the same proportions (every size is a share of the sheet's width, the
 // HTML's `cqw`), so the picture and the printed sheet look alike. The browser shapes the Arabic and the Bangla
 // itself (canvas text runs through the same shaper as the page), and the page has already loaded the fonts.
-import { arabicNumber, dawahArabic, dawahTranslation, rangeRef, studyLines, PAPERS } from "./ayah-poster.js";
+import { arabicNumber, dawahArabic, dawahTranslation, rangeRef, studyLines, topLines, TOP_SHARES, WORDS_K_MIN, PAPERS } from "./ayah-poster.js";
 
 export const FONTS = Object.freeze({
   ar: "'QR Scheherazade', 'QR Noto Naskh', 'Noto Naskh Arabic', serif",
@@ -53,13 +53,16 @@ function wrapAt(ctx, text, px, lh, fam, style, max, role) {
   return wrapLines(ctx, text, max).map((t) => ({ t, px, lh, fam, style, role }));
 }
 
-/** Lays out (and, with draw, paints) the study poster at scale k. Returns how far down the content reaches. */
-function paintStudy(ctx, W, H, model, opts, k, draw) {
-  const u = W / 100, C = STUDY_COLOURS, show = studyLines(opts.lang, opts.translit), text = opts.text ?? {};
-  const padX = 5.5 * u, top = 6 * u, footTop = H - 6 * u - (1.4 * u + 1.9 * u * 1.5);
-  if (draw) { ctx.fillStyle = C.paper; ctx.fillRect(0, 0, W, H); }
+/** The study poster's geometry: the side padding, where the content starts and where the footer's rule sits. */
+function studyFrame(W, H) {
+  const u = W / 100;
+  return { u, padX: 5.5 * u, top: 6 * u, footTop: H - 6 * u - (1.4 * u + 1.9 * u * 1.5) };
+}
+
+/** The heading (the sūrah's Arabic name, its English title, the reference) at scale k, from y; returns the y below it. */
+function studyHeading(ctx, W, model, text, u, k, y, draw) {
+  const C = STUDY_COLOURS;
   ctx.textBaseline = "middle"; ctx.textAlign = "center";
-  let y = top;
   const centred = (t, px, fam, lh, colour, style = {}, dir = "ltr") => {
     font(ctx, px, fam, style); ctx.direction = dir;
     if (draw) { ctx.fillStyle = colour; ctx.fillText(t, W / 2, y + (px * lh) / 2); }
@@ -67,7 +70,58 @@ function paintStudy(ctx, W, H, model, opts, k, draw) {
   };
   centred(model.nameAr, 7 * u * k, FONTS.ar, 1.4, C.name, {}, "rtl"); y += 0.6 * u * k;
   centred(text.title ?? model.nameEn, 3 * u * k, FONTS.en, 1.3, C.ink, { bold: true }); y += 0.6 * u * k;
-  centred(text.ref ?? rangeRef(model), 2.2 * u * k, FONTS.ui, 1.3, C.ref); y += 3 * u * k;
+  centred(text.ref ?? rangeRef(model), 2.2 * u * k, FONTS.ui, 1.3, C.ref);
+  return y;
+}
+
+/** J65: the whole āyah (range) block -- the chosen top lines -- at scale k. Measures its height; with draw, paints it
+ *  centred in [y0, y0 + room]. Same sizes as the page's .ap-top-* rules. */
+function studyTopBlock(ctx, W, model, top, u, k, y0, room, draw) {
+  const C = STUDY_COLOURS, maxW = W - 11 * u, blocks = [];
+  const para = (t, px, fam, lh, colour, style = {}, dir = "ltr") => { font(ctx, px, fam, style); ctx.direction = dir; blocks.push({ lines: wrapLines(ctx, t, maxW), px, fam, lh, colour, style, dir }); };
+  if (top.includes("ar")) para(dawahArabic(model), 6.6 * u * k, FONTS.ar, 1.85, C.name, {}, "rtl");
+  if (top.includes("ar") && top.length > 1) blocks.push({ rule: true, h: 0.35 * u });
+  if (top.includes("en")) para(dawahTranslation(model, "en"), 3.4 * u * k, FONTS.en, 1.5, C.ink, { italic: true });
+  if (top.includes("bn")) para(dawahTranslation(model, "bn"), 3.4 * u * k, FONTS.bn, 1.6, C.ink);
+  const gap = 1.8 * u * k, heights = blocks.map((b) => (b.rule ? b.h : b.lines.length * b.px * b.lh));
+  const total = heights.reduce((s, h) => s + h, 0) + gap * Math.max(0, blocks.length - 1);
+  if (draw) {
+    let y = y0 + Math.max(0, (room - total) / 2);
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    blocks.forEach((b, i) => {
+      if (b.rule) { ctx.fillStyle = C.numLine; ctx.fillRect(W / 2 - 9 * u, y, 18 * u, b.h); y += b.h; }
+      else for (const l of b.lines) { font(ctx, b.px, b.fam, b.style); ctx.direction = b.dir; ctx.fillStyle = b.colour; ctx.fillText(l, W / 2, y + (b.px * b.lh) / 2); y += b.px * b.lh; }
+      if (i < blocks.length - 1) y += gap;
+    });
+  }
+  return total;
+}
+
+/** The study poster's footer: a dashed rule, the sender on the left, the tip on the right. */
+function studyFoot(ctx, W, text, f) {
+  const { u, padX, footTop } = f, C = STUDY_COLOURS;
+  ctx.strokeStyle = C.line; ctx.lineWidth = 0.3 * u; ctx.setLineDash([1.2 * u, 0.8 * u]);
+  ctx.beginPath(); ctx.moveTo(padX, footTop); ctx.lineTo(W - padX, footTop); ctx.stroke(); ctx.setLineDash([]);
+  font(ctx, 1.9 * u, FONTS.ui); ctx.fillStyle = C.ref; ctx.direction = "ltr"; ctx.textBaseline = "middle";
+  const fy = footTop + 1.4 * u + (1.9 * u * 1.5) / 2;
+  ctx.textAlign = "left"; ctx.fillText(text.from ?? "", padX, fy);
+  ctx.textAlign = "right"; ctx.fillText(text.tip ?? "", W - padX, fy);
+}
+
+/** Lays out (and, with draw, paints) the study poster at scale k. Returns how far down the content reaches. */
+function paintStudy(ctx, W, H, model, opts, k, draw) {
+  const C = STUDY_COLOURS, text = opts.text ?? {}, f = studyFrame(W, H), { u } = f;
+  if (draw) { ctx.fillStyle = C.paper; ctx.fillRect(0, 0, W, H); }
+  const y = studyHeading(ctx, W, model, text, u, k, f.top, draw) + 3 * u * k;
+  const bottom = studyWords(ctx, W, model, opts, u, k, y, draw);
+  if (draw) studyFoot(ctx, W, text, f);
+  return { bottom, limit: f.footTop - 2 * u * k };
+}
+
+/** The word boxes of every āyah, right to left in rows, at scale k from y; returns how far down they reach. */
+function studyWords(ctx, W, model, opts, u, k, y, draw) {
+  const C = STUDY_COLOURS, show = studyLines(opts.lang, opts.translit), padX = 5.5 * u;
+  ctx.textBaseline = "middle"; ctx.textAlign = "center";
   const gap = 1.6 * u * k;
   for (const a of model.ayahs) {
     const items = a.words.map((w) => ({ ...studyBox(ctx, w, show, u, k), kind: "word" }));
@@ -101,15 +155,31 @@ function paintStudy(ctx, W, H, model, opts, k, draw) {
     });
     y += 2.6 * u * k;
   }
-  if (draw) {
-    ctx.strokeStyle = C.line; ctx.lineWidth = 0.3 * u; ctx.setLineDash([1.2 * u, 0.8 * u]);
-    ctx.beginPath(); ctx.moveTo(padX, footTop); ctx.lineTo(W - padX, footTop); ctx.stroke(); ctx.setLineDash([]);
-    font(ctx, 1.9 * u, FONTS.ui); ctx.fillStyle = C.ref; ctx.direction = "ltr"; ctx.textBaseline = "middle";
-    const fy = footTop + 1.4 * u + (1.9 * u * 1.5) / 2;
-    ctx.textAlign = "left"; ctx.fillText(text.from ?? "", padX, fy);
-    ctx.textAlign = "right"; ctx.fillText(text.tip ?? "", W - padX, fy);
+  return y; // with the space after the last āyah, as the fit has always measured it
+}
+
+/** J65: the study poster with the āyah on top -- the heading at full size, then the āyah's share and the words' share
+ *  of the rest (half and half first; less for the āyah only while the words would fall below WORDS_K_MIN, as the
+ *  page's fitSplit() does), with the poster's 3cqw gaps, each fitted at its own scale like the page's two --k. */
+function paintStudySplit(ctx, W, H, model, opts) {
+  const C = STUDY_COLOURS, text = opts.text ?? {}, f = studyFrame(W, H), { u } = f, top = topLines(opts.top);
+  const headBottom = studyHeading(ctx, W, model, text, u, 1, f.top, false);
+  const gap = 3 * u, footRuleGap = 3 * u; // the poster's flex gap between head / top / words / foot
+  const space = f.footTop - footRuleGap - headBottom - 2 * gap, topY = headBottom + gap;
+  let a, w, room, wordsY, share;
+  for (share of TOP_SHARES) {
+    room = space * share; wordsY = topY + room + gap;
+    const wordsRoom = space - room, y0 = wordsY, tr = room;
+    a = fitScale((k) => ({ bottom: studyTopBlock(ctx, W, model, top, u, k, topY, tr, false), limit: tr }), 1.5);
+    w = fitScale((k) => ({ bottom: studyWords(ctx, W, model, opts, u, k, y0, false) - 2.6 * u * k - y0, limit: wordsRoom }));
+    if (a.fits && w.fits && w.k >= WORDS_K_MIN) break;
   }
-  return { bottom: y, limit: footTop - 2 * u * k };
+  ctx.fillStyle = C.paper; ctx.fillRect(0, 0, W, H);
+  studyHeading(ctx, W, model, text, u, 1, f.top, true);
+  studyTopBlock(ctx, W, model, top, u, a.k, topY, room, true);
+  studyWords(ctx, W, model, opts, u, w.k, wordsY, true);
+  studyFoot(ctx, W, text, f);
+  return { k: w.k, kTop: a.k, share, fits: a.fits && w.fits };
 }
 
 /** Lays out (and, with draw, paints) the Dawah poster at scale k, its blocks centred top to bottom. */
@@ -149,20 +219,21 @@ function paintDawah(ctx, W, H, model, opts, k, draw) {
   return { bottom: total, limit: H - 18 * u };
 }
 
-/** The largest scale (0.3–1) at which the content fits the sheet; `fits` is false when even 0.3 overflows. */
-export function fitScale(measure) {
-  if (measure(1).bottom <= measure(1).limit) return { k: 1, fits: true };
-  let lo = 0.3, hi = 1;
+/** The largest scale (0.3–max) at which the content fits the sheet; `fits` is false when even 0.3 overflows. */
+export function fitScale(measure, max = 1) {
+  if (measure(max).bottom <= measure(max).limit) return { k: max, fits: true };
+  let lo = 0.3, hi = max;
   if (measure(lo).bottom > measure(lo).limit) return { k: lo, fits: false };
   for (let i = 0; i < 14; i++) { const mid = (lo + hi) / 2; const m = measure(mid); if (m.bottom <= m.limit) lo = mid; else hi = mid; }
   return { k: lo, fits: true };
 }
 
 /** Paints the poster onto `canvas` (sized to the paper) and returns { k, fits }. */
-export function paintPoster(canvas, model, { kind = "study", lang = "both", translit = true, paper = "a4", text = {} } = {}) {
+export function paintPoster(canvas, model, { kind = "study", lang = "both", translit = true, top = [], paper = "a4", text = {} } = {}) {
   const { w, h } = pictureSize(paper);
   canvas.width = w; canvas.height = h;
   const ctx = canvas.getContext("2d");
+  if (kind === "study" && topLines(top).length) return paintStudySplit(ctx, w, h, model, { lang, translit, top, text });
   const paint = kind === "dawah" ? paintDawah : paintStudy;
   const opts = { lang, translit, text };
   const fit = fitScale((k) => paint(ctx, w, h, model, opts, k, false));

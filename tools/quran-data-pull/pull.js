@@ -219,6 +219,11 @@ function morphDataForWord(morph, wordKey) {
 // Per-surah pull
 // ---------------------------------------------------------------------------
 
+/** PCF MSA J66: the source writes আ in some Bangla word meanings as two pieces, অ (U+0985) + the vowel sign া (U+09BE),
+ *  which a phone or printer draws as a broken letter with a dotted circle (22:4 "অাগুনের"). Bangla text is stored with
+ *  the one proper letter, আ (U+0986). tools/i18n-verify/bangla-two-piece-aa.mjs checks every output file for it. */
+const bnText = (s) => String(s ?? "").replace(/\u0985\u09BE/g, "\u0986");
+
 async function fetchSurah(surahNum, morph) {
   const uthmani = await fetchJsonWithRetry(`https://api.alquran.cloud/v1/surah/${surahNum}/quran-uthmani`);
   await sleep(REQUEST_DELAY_MS);
@@ -268,7 +273,7 @@ async function fetchSurah(surahNum, morph) {
           transliteration: w.transliteration && w.transliteration.text ? w.transliteration.text : "",
           translation: {
             en: w.translation && w.translation.text ? w.translation.text.replace(/<[^>]*>/g, "") : "",
-            bn: bnWord && bnWord.translation && bnWord.translation.text ? bnWord.translation.text.replace(/<[^>]*>/g, "") : "",
+            bn: bnWord && bnWord.translation && bnWord.translation.text ? bnText(bnWord.translation.text.replace(/<[^>]*>/g, "")) : "",
           },
           morphology: morphData,
         };
@@ -278,7 +283,7 @@ async function fetchSurah(surahNum, morph) {
       ayah: ayahNum,
       uthmaniText: a.text,
       tajweedText: tajweedByAyah[ayahNum] || null,
-      translations: { en: enByAyah[ayahNum] || "", bn: bnByAyah[ayahNum] || "" },
+      translations: { en: enByAyah[ayahNum] || "", bn: bnText(bnByAyah[ayahNum]) },
       juz: a.juz,
       page: a.page,
       ruku: a.ruku,

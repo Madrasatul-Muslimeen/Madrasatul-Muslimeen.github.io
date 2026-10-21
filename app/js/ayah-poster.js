@@ -86,14 +86,32 @@ export function studyLines(lang, translit) {
   return { tr: m === "latin" || m === "both", trBn: m === "bn" || m === "both", en: lang !== "bn", bn: lang !== "en" };
 }
 
+/** PCF MSA J65 (the Owner, 21 Oct 2026: "Enable the poster with Arabic, Eng and Bangla options single and multiple to
+ *  choose from over the words. Try to keep half of the page for Ayah and half for words"): the study poster can carry the
+ *  whole āyah (range) above its word boxes, in any of these, one or several. */
+export const TOP_LINES = Object.freeze(["ar", "en", "bn"]);
+/** The āyah's share of the space under the heading, tried in order: half first ("try to keep half of the page for Ayah
+ *  and half for words"), then less, only while the words would otherwise be printed below WORDS_K_MIN of full size. */
+export const TOP_SHARES = Object.freeze([0.5, 0.45, 0.4, 0.35, 0.3]);
+export const WORDS_K_MIN = 0.5;
+/** The chosen top lines in TOP_LINES order: from an array, or from the address form "ar,en" ("0" or "" = none). */
+export function topLines(v) {
+  const list = Array.isArray(v) ? v : String(v ?? "").split(",");
+  return TOP_LINES.filter((k) => list.includes(k));
+}
+
 /**
  * The study poster's HTML. `text` carries the page's own translated words (title line, footer); every size is a
  * multiple of `--k`, which the page lowers until the whole poster fits its sheet.
  */
-export function renderStudyPosterHtml(model, { lang = "both", translit = "latin", text = {} } = {}) {
+export function renderStudyPosterHtml(model, { lang = "both", translit = "latin", top = [], text = {} } = {}) {
   const show = studyLines(lang, translit);
+  const tl = topLines(top);
+  // J65: with any top line chosen, the space under the heading is two equal halves, the āyah over the words; each half
+  // has its own --k (the page fits each), and the heading keeps its full size.
+  const topHtml = tl.length ? `<div class="ap-kid-top" data-ap-top-block>${tl.includes("ar") ? `<p class="ap-ar ap-top-ar" lang="ar" dir="rtl">${escapeHtml(dawahArabic(model))}</p>` : ""}${tl.includes("ar") && tl.length > 1 ? `<span class="ap-top-rule" aria-hidden="true"></span>` : ""}${tl.includes("en") ? `<p class="ap-top-en" lang="en">${escapeHtml(dawahTranslation(model, "en"))}</p>` : ""}${tl.includes("bn") ? `<p class="ap-top-bn" lang="bn">${escapeHtml(dawahTranslation(model, "bn"))}</p>` : ""}</div>` : "";
   const ayahs = model.ayahs.map((a) => `<div class="ap-kid-ayah">${a.words.map((w) => `<div class="ap-kid-word"><span class="ap-ar" lang="ar" dir="rtl">${escapeHtml(w.ar)}</span>${show.tr ? `<span class="ap-tr">${escapeHtml(w.tr)}</span>` : ""}${show.trBn && w.trBn ? `<span class="ap-tr ap-tr-bn" lang="bn">${escapeHtml(w.trBn)}</span>` : ""}${show.en ? `<span class="ap-m-en" lang="en">${escapeHtml(w.en)}</span>` : ""}${show.bn ? `<span class="ap-m-bn" lang="bn">${escapeHtml(w.bn)}</span>` : ""}</div>`).join("")}<span class="ap-kid-num" aria-label="${escapeHtml(text.ayahLabel ? text.ayahLabel(a.n) : `āyah ${a.n}`)}">${arabicNumber(a.n)}</span></div>`).join("");
-  return `<div class="ap-poster ap-kid" data-poster-kind="study"><div class="ap-kid-head"><span class="ap-ar ap-name" lang="ar" dir="rtl">${escapeHtml(model.nameAr)}</span><span class="ap-en-name">${escapeHtml(text.title ?? model.nameEn)}</span><span class="ap-ref">${escapeHtml(text.ref ?? rangeRef(model))}</span></div><div class="ap-kid-ayahs">${ayahs}</div><div class="ap-kid-foot"><span>${escapeHtml(text.from ?? "Madrasatul Muslimeen")}</span><span>${escapeHtml(text.tip ?? "")}</span></div></div>`;
+  return `<div class="ap-poster ap-kid" data-poster-kind="study"${tl.length ? ` data-ap-top="${tl.join(",")}"` : ""}><div class="ap-kid-head"><span class="ap-ar ap-name" lang="ar" dir="rtl">${escapeHtml(model.nameAr)}</span><span class="ap-en-name">${escapeHtml(text.title ?? model.nameEn)}</span><span class="ap-ref">${escapeHtml(text.ref ?? rangeRef(model))}</span></div>${topHtml}<div class="ap-kid-ayahs">${ayahs}</div><div class="ap-kid-foot"><span>${escapeHtml(text.from ?? "Madrasatul Muslimeen")}</span><span>${escapeHtml(text.tip ?? "")}</span></div></div>`;
 }
 
 /** The Dawah poster's HTML: the reference, the Arabic, a gold rule, then the chosen translation(s). */
