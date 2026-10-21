@@ -1347,6 +1347,7 @@ function levelPanel(level, word, layers, context, text, formatNumber) {
     lang: text.formMeaningLang === "bn" ? "bn" : "en", formatNumber, segments: context.wordSegments, rootForms: context.rootForms,
     lemmaForms: context.lemmaForms, verbForms: context.verbForms, verbFormsFailed: context.verbFormsFailed, dictionaryLookup: context.dictionaryLookup, ayahWords: context.ayahWords, ayahFeatures: context.ayahFeatures,
     conjView: context.conjView, conjNarrow: context.conjNarrow, // PCF MSA J46: the tense toggle
+    conjBasic: !!context.conjBasic, // PCF MSA J69: the basic form فَعَلَ instead of this word's own Taṣrīf
     ayahNumber: context.ayahNumber, surahNumber: context.surahNumber,
     nounForms: context.nounForms, nounFormsFailed: context.nounFormsFailed, formTexts: context.formTexts, nounBox: context.nounBox,
     lemmaOccurrences: context.lemmaOccurrences, occurrencesLoading: context.occurrencesLoading,

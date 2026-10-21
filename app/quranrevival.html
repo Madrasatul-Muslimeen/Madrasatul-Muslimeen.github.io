@@ -3554,6 +3554,28 @@
   .word-card-cj-e { color: #c2410c; } .word-card-cj-p { color: #7c3aed; } .word-card-cj-st { color: #1b4fa8; }
   .word-card-cj td.word-card-cj-no { text-align: center; color: #c62828; font-weight: 800; font-size: 1rem; }
   .word-card-cj-sep td { border-top: 3px solid #9aa9a2; }
+  /* PCF MSA J69 (the Owner, 22 Oct 2026: "give each block a distinctive look"): the five person blocks -- he-group,
+     she-group, you, you (f), I and we -- are each a plate of their own: a gap between them, the pronoun side in the
+     block's colour with a stripe on its outer edge, the verbs on a faint wash of the same colour. The gold row (this
+     āyah's word) keeps its gold. Endings keep their colours on the light wash. */
+  .word-card-cj table { background: transparent; }
+  .word-card-cj-blk + .word-card-cj-blk tr:first-child td { border-top: 9px solid transparent; }
+  .word-card-cj-blk[data-word-card-conj-blk="3m"] { --cjb-pr: #dce8fb; --cjb-vb: #f4f8ff; --cjb-edge: #2f63b0; }
+  .word-card-cj-blk[data-word-card-conj-blk="3f"] { --cjb-pr: #f9dde8; --cjb-vb: #fff5f9; --cjb-edge: #b03a6f; }
+  .word-card-cj-blk[data-word-card-conj-blk="2m"] { --cjb-pr: #d6f0df; --cjb-vb: #f2fbf5; --cjb-edge: #23804d; }
+  .word-card-cj-blk[data-word-card-conj-blk="2f"] { --cjb-pr: #fbe7c6; --cjb-vb: #fffaf0; --cjb-edge: #a8650e; }
+  .word-card-cj-blk[data-word-card-conj-blk="1"] { --cjb-pr: #e5ddfa; --cjb-vb: #f8f5ff; --cjb-edge: #5b3fb0; }
+  .word-card-cj-blk td { background: var(--cjb-vb); }
+  .word-card-cj-blk td.word-card-cj-pr { background: var(--cjb-pr); box-shadow: inset -5px 0 0 var(--cjb-edge); }
+  .word-card-cj-blk td.word-card-cj-pr small { color: #33413b; }
+  .word-card-cj-blk + .word-card-cj-blk .word-card-cj-sep td { border-top: 9px solid transparent; }
+  .word-card-cj-blk .word-card-cj-here td, .word-card-cj-blk .word-card-cj-here td.word-card-cj-pr { background: #fff4d6; }
+  /* PCF MSA J69: "Basic form: فَعَلَ" above every word's Taṣrīf, and "← Back to <word>" inside it. */
+  .word-card-basic-bar { display: flex; justify-content: flex-end; margin: 0 0 8px; }
+  .word-card-basic-btn { min-height: 44px; padding: 4px 14px; border-radius: 999px; border: 1px solid #c9a24a; background: #fdf6e3; color: #5a3d0a; font: inherit; font-weight: 700; font-size: 0.9rem; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+  .word-card-basic-btn [lang="ar"] { font-family: var(--quran-font); font-weight: 400; font-size: var(--wc-small-ar, 1.4rem); line-height: 1.3; }
+  .word-card-basic-btn.word-card-basic-back { background: #c9a24a; color: #1b2a41; border-color: #c9a24a; }
+  .word-card-basic-btn:focus-visible { outline: 2px solid #1d6b4a; outline-offset: 2px; }
   .word-card-cj-here td { background: #fff4d6; }
   .word-card-cj-q, .word-card-cj-mood { direction: ltr; unicode-bidi: isolate; font-family: inherit; font-size: 0.64rem; font-weight: 800; color: #8a6a1f; display: block; line-height: 1.2; }
   .word-card-cj-mood { font-weight: 600; color: #5b4510; }
@@ -7955,6 +7977,7 @@
     // PCF MSA J46: the Taṣrīf tense toggle (All three · Past · Present · Command). The reader's choice holds for this
     // visit, across words; null = not chosen yet (All three, or this āyah's tense on a narrow card).
     let wordCardConjView = null;
+    let wordCardConjBasic = null; // PCF MSA J69: the occurrence whose Taṣrīf is showing the basic form فَعَلَ (null: none)
     let lemmaFormsLoading = false;
     function ensureLemmaForms() {
       if (lemmaFormsTable || lemmaFormsLoading) return;
@@ -18385,7 +18408,7 @@
       // Round 6 -- what was typed in the Search row stays, however often the card is redrawn.
       const typed = content.querySelector("[data-word-card-search-input]");
       if (typed) wordCardSearch.value = typed.value;
-      content.innerHTML = renderQuranWordCard({ state: quranWordCardState, chapter: currentSurahData, ayah, word, context: { ...quranWordCardContext, search: wordCardSearch, lemmaForms: lemmaFormsTable, verbForms: verbFormsTable, verbFormsFailed, nounForms: nounFormsTable, nounFormsFailed, formTexts: nounFormTexts, nounBox: wordCardNounBox?.id === quranWordCardState.occurrenceId ? wordCardNounBox.key : null, depthOpen: wordCardDepthOpen, conjView: wordCardConjView, conjNarrow: window.matchMedia("(max-width: 640px)").matches, needsSource: needsSourceContext(word, currentSurahData.surahNumber), ...wordCardDictionaryContext(word), ...intermediateContext(word), ...wordProgressContext(ref), ...quranWordCardLemmaContext, hasPrevious: at > 0, hasNext: at >= 0 && at < ids.length - 1, rootOccurrenceCount: quranWordCardContext.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0, colourWordPartsEnabled: true, translitScript: getTransliterationScript(), displayRef: wordRefFor }, labels: { ...wordCardLabels(), ...wordProgressLabels() }, formatNumber: num });
+      content.innerHTML = renderQuranWordCard({ state: quranWordCardState, chapter: currentSurahData, ayah, word, context: { ...quranWordCardContext, search: wordCardSearch, lemmaForms: lemmaFormsTable, verbForms: verbFormsTable, verbFormsFailed, nounForms: nounFormsTable, nounFormsFailed, formTexts: nounFormTexts, nounBox: wordCardNounBox?.id === quranWordCardState.occurrenceId ? wordCardNounBox.key : null, depthOpen: wordCardDepthOpen, conjView: wordCardConjView, conjBasic: wordCardConjBasic === quranWordCardState.occurrenceId, conjNarrow: window.matchMedia("(max-width: 640px)").matches, needsSource: needsSourceContext(word, currentSurahData.surahNumber), ...wordCardDictionaryContext(word), ...intermediateContext(word), ...wordProgressContext(ref), ...quranWordCardLemmaContext, hasPrevious: at > 0, hasNext: at >= 0 && at < ids.length - 1, rootOccurrenceCount: quranWordCardContext.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0, colourWordPartsEnabled: true, translitScript: getTransliterationScript(), displayRef: wordRefFor }, labels: { ...wordCardLabels(), ...wordProgressLabels() }, formatNumber: num });
       // Decision 61 -- opening a section is what fetches its data.
       content.querySelectorAll("details[data-word-card-sec]").forEach((d) => {
         d.addEventListener("toggle", () => {
@@ -19379,6 +19402,15 @@
       if (searchForm) { listWordCardSearchPlaces(Number(searchForm.dataset.wordCardSearchForm)); return; }
       const searchPlace = event.target.closest("[data-word-card-search-place]");
       if (searchPlace) { openWordCardSearchPlace(Number(searchPlace.dataset.wordCardSearchPlace)); return; }
+      const conjBasicBtn = event.target.closest("[data-word-card-conj-basic]");
+      if (conjBasicBtn) {
+        // PCF MSA J69: open the basic form فَعَلَ from this word's Taṣrīf; ← Back returns to the word's own (the way-back law).
+        wordCardConjBasic = conjBasicBtn.dataset.wordCardConjBasic === "on" ? quranWordCardState.occurrenceId : null;
+        renderPersistentWordCard();
+        activeWordCardMount()?.querySelector("[data-word-card-conj-basic]")?.scrollIntoView({ block: "nearest" });
+        activeWordCardMount()?.querySelector("[data-word-card-conj-basic]")?.focus({ preventScroll: true });
+        return;
+      }
       const conjViewBtn = event.target.closest("[data-word-card-conj-view]");
       if (conjViewBtn) {
         wordCardConjView = conjViewBtn.dataset.wordCardConjView;

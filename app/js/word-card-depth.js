@@ -69,6 +69,11 @@ const S = {
   conjGroup3: { en: "He, she, they", bn: "সে, তারা" },
   conjGroup2: { en: "You", bn: "তুমি, তোমরা" },
   conjGroup1: { en: "I, we", bn: "আমি, আমরা" },
+  // PCF MSA J69 (the Owner, 22 Oct 2026): each person block has its own look, and فَعَلَ is the basic form to open from any word.
+  conjBasicBtn: { en: "Basic form: {ar}", bn: "মূল রূপ: {ar}" },
+  conjBasicBack: { en: "← Back to {ar}", bn: "← {ar}-এ ফিরুন" },
+  conjBasicRule: { en: "The basic form: Form I of {root}. Every verb in Taṣrīf follows this pattern; compare your word with it.", bn: "মূল রূপ: {root}-এর ফর্ম ১। তাসরীফে প্রতিটি ক্রিয়া এই ছাঁচ মেনে চলে; আপনার শব্দটি এর সঙ্গে মিলিয়ে দেখুন।" },
+  conjBasicHelp: { en: "Endings in colour; ✦ = found in the Qur'an (this verb's own count).", bn: "শেষাংশ রঙিন; ✦ = কুরআনে পাওয়া যায় (এই ক্রিয়ারই সংখ্যা)।" },
   conjGoTense: { en: "Show {t}", bn: "{t} দেখাও" },
   conjTimes: { en: "✦ in the Qur'an: {n} times", bn: "✦ কুরআনে: {n} বার" },
   conjHere: { en: "In this āyah: {ar} ({mood})", bn: "এই আয়াতে: {ar} ({mood})" },
@@ -634,7 +639,7 @@ function conjRows(kind, rows, ctx, here, entry) {
   const { lang, formatNumber } = ctx;
   return PERSONS.map((p, i) => {
     const r = rows[i];
-    const sep = i === 6 || i === 12 ? " word-card-cj-sep" : "";
+    const sep = (i === 6 || i === 12 ? " word-card-cj-sep" : "") + ` word-card-cj-b-${CONJ_BLOCK_OF[i]}`;
     const pr = `<td class="word-card-cj-pr"><span class="word-card-ar" dir="rtl" lang="ar">${esc(p.ar)}</span><small>${esc(p[lang] ?? p.en)}</small></td>`;
     if (!r) return `<tr class="word-card-cj-row${sep}" data-word-card-conj-pgn="${p.pgn}">${pr}<td class="word-card-cj-no" data-word-card-conj-none>✕</td></tr>`;
     const isHere = !!here && here.kind === kind && here.pgn === p.pgn;
@@ -647,11 +652,17 @@ function conjRows(kind, rows, ctx, here, entry) {
   });
 }
 
+// PCF MSA J69: the five person blocks (he-group, she-group, you, you (f), I and we), each its own plate and colour.
+const CONJ_BLOCKS = [["3m", 0, 3], ["3f", 3, 6], ["2m", 6, 9], ["2f", 9, 12], ["1", 12, 14]];
+const CONJ_BLOCK_OF = CONJ_BLOCKS.flatMap(([k, a, b]) => Array(b - a).fill(k));
+const blockBodies = (trs, from, to) => CONJ_BLOCKS.filter(([, a, b]) => a >= from && b <= to)
+  .map(([k, a, b]) => `<tbody class="word-card-cj-blk" data-word-card-conj-blk="${k}">${trs.slice(a, b).join("")}</tbody>`).join("");
+
 const leadOf = (rows) => rows.find((r) => r?.pgn === "3MS") ?? rows.find((r) => r?.pgn === "2MS");
 
 function conjTable(kind, rows, heading, ctx, here, entry) {
   const head = leadOf(rows);
-  const body = conjRows(kind, rows, ctx, here, entry).join("");
+  const body = blockBodies(conjRows(kind, rows, ctx, here, entry), 0, 14);
   return `<div class="word-card-cj word-card-cj-${kind}" data-word-card-conj-table="${kind}">` +
     `<h4>${heading}</h4><div class="word-card-cj-lead" dir="rtl" lang="ar">${esc(CONJ_LEAD[kind])} (${esc(head?.ar ?? "")})</div>` +
     `<table>${body}</table></div>`;
@@ -668,7 +679,7 @@ function conjOneTable(kind, rows, heading, ctx, here, entry) {
   const head = leadOf(rows);
   const all = conjRows(kind, rows, ctx, here, entry).map((tr) => tr.replace(" word-card-cj-sep", ""));
   const groups = [[0, 6, "conjGroup3"], [6, 12, "conjGroup2"], [12, 14, "conjGroup1"]].map(([a, b, key]) =>
-    `<div class="word-card-cj-group" data-word-card-conj-group="${key}"><p class="word-card-cj-gname">${esc(pick(key, lang))}</p><table>${all.slice(a, b).join("")}</table></div>`).join("");
+    `<div class="word-card-cj-group" data-word-card-conj-group="${key}"><p class="word-card-cj-gname">${esc(pick(key, lang))}</p><table>${blockBodies(all, a, b)}</table></div>`).join("");
   const i = CONJ_ORDER.indexOf(kind);
   const prev = CONJ_ORDER[(i + 2) % 3], next = CONJ_ORDER[(i + 1) % 3];
   const step = (k, glyph) => `<button type="button" class="word-card-cj-step" data-word-card-conj-view="${k}" aria-label="${esc(fill(pick("conjGoTense", lang), { t: pick(CONJ_NAME_KEY[k], lang) }))}">${glyph}</button>`;
@@ -689,7 +700,8 @@ function conjToggle(view, lang) {
  *  one plain line saying why. */
 function conjSection(word, features, ctx) {
   const { lang, formatNumber } = ctx;
-  const lemma = word.morphology?.lemma;
+  const basic = !!ctx.conjBasic;
+  const lemma = basic ? BASIC_LEMMA : word.morphology?.lemma;
   const need = (key) => line("needs", lang, esc(pick(key, lang)), "word-card-need");
   if (!ctx.verbForms) return ctx.verbFormsFailed ? need("conjFailed") : `<p class="word-card-dnote" data-word-card-conj-loading>${esc(pick("conjLoading", lang))}</p>`;
   const entry = lemma ? ctx.verbForms[lemma] : null;
@@ -698,14 +710,16 @@ function conjSection(word, features, ctx) {
   if (!result.supported) return need(CONJ_REASON[result.reason] ?? "conjWeak");
   const rootAr = [...toArabic(entry.r)].join(" ");
   const formLabel = lang === "bn" ? formatNumber(entry.f) : (FORM_NAMES[entry.f]?.roman ?? String(entry.f));
-  const out = [line("rule", lang, `${esc(fill(pick("conjRule", lang), { n: formLabel, root: "\u0000" })).replace("\u0000", AR(rootAr))} <span class="word-card-m">${esc(pick("conjHelp", lang))}</span>`)];
-  const kind = CONJ_TENSE[features.tense];
+  const out = basic
+    ? [line("rule", lang, `${esc(fill(pick("conjBasicRule", lang), { root: "\u0000" })).replace("\u0000", AR(rootAr))} <span class="word-card-m">${esc(pick("conjBasicHelp", lang))}</span>`)]
+    : [line("rule", lang, `${esc(fill(pick("conjRule", lang), { n: formLabel, root: "\u0000" })).replace("\u0000", AR(rootAr))} <span class="word-card-m">${esc(pick("conjHelp", lang))}</span>`)];
+  const kind = basic ? null : CONJ_TENSE[features.tense];
   const here = kind && !features.pass
     ? { kind, pgn: PGN_ALIASES[features.pgn] || features.pgn, mood: features.tense === "IMPF" ? features.mood || "IND" : "IND", word: String(word.arabic ?? "").replace(/^\u06DE\s*/, "").replace(/\s+[\u06D6-\u06ED]+/g, "").trim() }
     : null;
-  if (features.pass) out.push(`<p class="word-card-dnote" data-word-card-conj-passive>${esc(pick("conjPassive", lang))}</p>`);
+  if (!basic && features.pass) out.push(`<p class="word-card-dnote" data-word-card-conj-passive>${esc(pick("conjPassive", lang))}</p>`);
   // Only the present has a Dictionary meaning to give (the Dictionary word is the present form); the other two get none rather than an invented one.
-  const meaning = ctx.dictionaryLookup?.(lemma)?.m;
+  const meaning = basic ? null : ctx.dictionaryLookup?.(lemma)?.m;
   // A meaning that already carries brackets ("to learn (something)") is set off
   // with a dot, so the heading never reads "Present (to learn (something))".
   const h4 = (key, gloss) => `${esc(pick(key, lang))}${!gloss ? "" : /[()]/.test(gloss) ? ` <b lang="en">· ${esc(gloss)}</b>` : ` <b lang="en">(${esc(gloss)})</b>`}`;
@@ -932,9 +946,21 @@ const pick2 = (key, sub, lang) => S[key][sub][lang] ?? S[key][sub].en;
 /** J38/J39 -- the Taṣrīf tab's body: the "who and when" line, then Verb Conjugation (moved here from Depth,
  *  unchanged). A word that is not a verb says so in words; its progress block reads "Not applicable". */
 export function tasrifSectionsHtml({ word, layers, features, ctx, open = {} }) {
-  if (!features?.tense) return nounSectionsHtml({ word, features, ctx }) ?? `<p class="word-card-dnote" data-word-card-tasrif-na>${esc(pick("tasrifNotVerb", ctx.lang))}</p>`;
   const isOpen = "conj" in open ? !!open.conj : true;
-  return whoWhenHtml({ word, layers, features, ctx }) + depthLegendHtml(ctx.lang) + accordion("conj", ctx.lang, isOpen, conjSection(word, features, ctx));
+  // PCF MSA J69: فَعَلَ, the basic form, opens from every word's Taṣrīf; ← Back returns to the word's own Taṣrīf.
+  if (ctx.conjBasic) return basicBarHtml(word, ctx) + depthLegendHtml(ctx.lang) + accordion("conj", ctx.lang, isOpen, conjSection(word, {}, ctx));
+  if (!features?.tense) return basicBarHtml(word, ctx) + (nounSectionsHtml({ word, features, ctx }) ?? `<p class="word-card-dnote" data-word-card-tasrif-na>${esc(pick("tasrifNotVerb", ctx.lang))}</p>`);
+  return whoWhenHtml({ word, layers, features, ctx }) + basicBarHtml(word, ctx) + depthLegendHtml(ctx.lang) + accordion("conj", ctx.lang, isOpen, conjSection(word, features, ctx));
+}
+
+const BASIC_LEMMA = "فَعَلَ";
+/** PCF MSA J69 -- the bar above Taṣrīf: "Basic form: فَعَلَ" from a word, "← Back to <word>" from the basic form. */
+function basicBarHtml(word, ctx) {
+  const { lang } = ctx;
+  const ar = String(word.arabic ?? "").replace(/^\u06DE\s*/, "").replace(/\s+[\u06D6-\u06ED]+/g, "").trim();
+  const label = ctx.conjBasic ? pick("conjBasicBack", lang) : pick("conjBasicBtn", lang);
+  const text = esc(fill(label, { ar: "\u0000" })).replace("\u0000", `<span dir="rtl" lang="ar">${esc(ctx.conjBasic ? ar : BASIC_LEMMA)}</span>`);
+  return `<div class="word-card-basic-bar"><button type="button" class="word-card-basic-btn${ctx.conjBasic ? " word-card-basic-back" : ""}" data-word-card-conj-basic="${ctx.conjBasic ? "off" : "on"}">${text}</button></div>`;
 }
 
 /**
