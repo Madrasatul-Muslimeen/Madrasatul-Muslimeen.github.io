@@ -114,7 +114,9 @@ for (const lang of ["en", "bn"]) for (const width of [320, 1280]) {
   for (let i = 0; i < hdr.length; i++) for (let j = i + 1; j < hdr.length; j++) if (overlap(hdr[i], hdr[j])) ov++;
   // Updated in place 14 Oct 2026 (PCF J23 layout B, round #812): "This āyah" moved into the header beside 🔍, so the
   // header has six children without a root box (‹ 🔍 This-āyah word › ×), not five.
-  check(`${lang}/${width}: word with no root has no ROOT box and no overlap`, !has && hdr.length === 6 && ov === 0, `root=${has} children=${hdr.length} overlaps=${ov}`);
+  // Updated in place 21 Oct 2026 (PCF MSA J59): the ⓘ Legend moved into the header beside "This āyah", so seven
+  // (‹ 🔍 This-āyah ⓘ word › ×).
+  check(`${lang}/${width}: word with no root has no ROOT box and no overlap`, !has && hdr.length === 7 && ov === 0, `root=${has} children=${hdr.length} overlaps=${ov}`);
   await ctx.close();
 }
 

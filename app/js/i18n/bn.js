@@ -3436,6 +3436,7 @@ export const BN = {
   "Light": "হালকা", // ?
   "Colour": "রঙিন", // ?
   "ⓘ Legend": "ⓘ নির্দেশিকা", // J43
+  "Legend for this level": "এই স্তরের নির্দেশিকা", // J59: the ⓘ button's name for a screen reader
 
   // Issue #354 -- Card look: Night or Light, beside Language in Settings.
   "Card look": "কার্ডের রূপ", // ?

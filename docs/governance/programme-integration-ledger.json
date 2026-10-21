@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "12.11",
+    "version": "12.12",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -4409,8 +4409,20 @@
     {
       "version": "12.11",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "v12.11: the Word card's WbW level opens the āyah its word sits in, with Back to Word Card (J57).",
+      "integration": {
+        "authorizedOn": "2026-10-21",
+        "integratedOn": "2026-10-21",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.12",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "MSA J59: the Word card's Legend button moves into the header beside This āyah as a small ⓘ; the empty colour row is no longer drawn.",
       "integration": {
         "authorizedOn": "2026-10-21",
         "integratedOn": "2026-10-21",
@@ -4419,8 +4431,9 @@
       }
     }
   ],
-  "nextUnallocated": "12.12",
+  "nextUnallocated": "12.13",
   "nextUnallocatedNote": [
+    "v12.12 was allocated to Word card: the Legend is a small ⓘ in the top bar (PCF MSA J59), 2026-10-21.",
     "v12.11 was allocated to Word card: Go to its āyah (PCF MSA J57), 2026-10-21.",
     "v12.10 was allocated to the Vocabulary review schedule kept in the account (PCF MSA J48 round 2), 2026-10-20.",
     "v12.09 was allocated to Āyah posters, the madda sign, the word marked and the middle view, Learn next to 95%, ten questions (PCF MSA J52 J53 J54 J55 J56), 2026-10-20.",

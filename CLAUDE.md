@@ -422,7 +422,7 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v12.11 on `main`** (21 Oct 2026 — **Word card: Go to its āyah** (PCF MSA J57, the Owner's ask after checking J54): the Word card's WbW level has a **Go to its āyah 2:3** button under Practise this word. It opens the āyah this word sits in (from Learn next or Vocabulary, the word's first appearance): the card closes, the āyah shows with the word ringed in gold, and **Back to Word Card** brings the card back at WbW. The previous release, v12.10, is the Vocabulary review schedule (J48 round 2).)
+**Current milestone: v12.12 on `main`** (21 Oct 2026 — **Word card: the Legend is a small ⓘ in the top bar** (PCF MSA J59, the Owner's ask from a phone screenshot): the purple ⓘ Legend button left the row under the meaning bar and sits in the Word card's top bar beside **This āyah ⋯** as a round 40px **ⓘ** (named "Legend for this level" for a screen reader); its balloon opens under the top bar with its pointer under the ⓘ, and the colour row is drawn only when it holds the colour key. The previous release, v12.11, is the Word card's Go to its āyah (J57).)
 
 **Earlier milestones, v08.111 back to v07.139, and the long notes around them**
 (the held Phase 4 wiring, the four deployment states, the Programme Integration

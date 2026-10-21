@@ -1,0 +1,166 @@
+<title>Bangla Transliteration and Poster Menu</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amiri+Quran&family=Hind+Siliguri:wght@400;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=Inter+Tight:wght@500;600&display=swap">
+<style>
+/* Layout: one reading column; two phone-sized mock-ups side by side that stack on a phone. */
+:root {
+  --bg: #f7f6f2; --panel: #ffffff; --ink: #1d2433; --muted: #5a6273; --line: #d9dbe0;
+  --navy: #1f3566; --gold: #b5852a; --green: #2f6d4f; --tick: #eef2f9;
+  --ar: "Amiri Quran", "Amiri", serif; --bn: "Hind Siliguri", "Noto Sans Bengali", sans-serif;
+  --body: "Source Serif 4", Georgia, serif; --ui: "Inter Tight", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #141821; --panel: #1c2230; --ink: #e8eaf0; --muted: #a3abbc; --line: #343c4d; --navy: #9fb6ea; --gold: #d9ac55; --green: #79c19c; --tick: #232c40; color-scheme: dark } }
+:root[data-theme="dark"] { --bg: #141821; --panel: #1c2230; --ink: #e8eaf0; --muted: #a3abbc; --line: #343c4d; --navy: #9fb6ea; --gold: #d9ac55; --green: #79c19c; --tick: #232c40; color-scheme: dark }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 16px; line-height: 1.55; }
+.wrap { max-width: 60rem; margin: 0 auto; padding-block: 1.5rem 3rem; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 2rem; }
+h1, h2, h3 { font-family: var(--ui); text-wrap: balance; line-height: 1.2; margin: 0; }
+h1 { font-size: 1.6rem; } h2 { font-size: 1.25rem; } h3 { font-size: 1rem; }
+p { margin: 0; max-width: 65ch; }
+.eyebrow { font-family: var(--ui); font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gold); }
+section { display: grid; gap: 0.9rem; }
+.ask { border: 2px solid var(--gold); border-radius: 0.6rem; padding: 1rem; background: var(--panel); display: grid; gap: 0.5rem; }
+.ask label { display: flex; gap: 0.5rem; align-items: flex-start; font-family: var(--ui); cursor: pointer; }
+.ask input { width: 1.2rem; height: 1.2rem; margin-top: 0.15rem; accent-color: var(--navy); }
+.tblwrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 0.5rem; background: var(--panel); }
+table { border-collapse: collapse; width: 100%; min-width: 28rem; }
+th, td { padding: 0.45rem 0.7rem; border-bottom: 1px solid var(--line); text-align: start; vertical-align: middle; }
+th { font-family: var(--ui); font-size: 0.78rem; color: var(--muted); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+td.ref { font-family: var(--ui); font-size: 0.8rem; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+td.ar { font-family: var(--ar); font-size: 1.5rem; direction: rtl; text-align: right; line-height: 1.9; }
+td.lat { font-style: italic; color: var(--muted); }
+td.bn { font-family: var(--bn); font-size: 1.12rem; font-weight: 600; color: var(--green); }
+td.mean { font-family: var(--bn); color: var(--muted); font-size: 0.95rem; }
+.surah-pick { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.surah-pick button, .seg button { font-family: var(--ui); font-size: 0.9rem; min-height: 40px; padding: 0 0.9rem; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer; }
+.surah-pick button[aria-pressed="true"], .seg button[aria-pressed="true"] { background: var(--navy); border-color: var(--navy); color: var(--bg); }
+button:focus-visible, select:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+ul.rules { margin: 0; padding-inline-start: 1.2rem; display: grid; gap: 0.3rem; max-width: 65ch; }
+.rules b { font-family: var(--bn); }
+.phones { display: grid; grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr)); gap: 1.2rem; align-items: start; }
+.phone { border: 1px solid var(--line); border-radius: 1.2rem; background: var(--panel); padding: 0.6rem 0.5rem; display: grid; gap: 0.6rem; min-width: 0; max-width: 24rem; }
+.phone h3 { display: flex; justify-content: space-between; gap: 0.5rem; align-items: baseline; }
+.phone h3 small { font-weight: 500; color: var(--muted); font-size: 0.78rem; }
+.today { font-family: var(--ui); font-size: 0.82rem; display: flex; flex-wrap: wrap; gap: 0.35rem 0.4rem; align-items: center; color: var(--muted); }
+.today span.b { border: 1px solid var(--line); border-radius: 999px; padding: 0.35rem 0.7rem; color: var(--ink); }
+.today span.b.on { background: var(--navy); color: var(--bg); border-color: var(--navy); }
+.grid-menu { display: grid; grid-template-columns: 6rem minmax(0, 1fr); gap: 0.45rem 0.6rem; align-items: center; font-family: var(--ui); }
+.grid-menu .lab { font-size: 0.8rem; color: var(--muted); }
+.seg { display: flex; flex-wrap: wrap; gap: 0.3rem; min-width: 0; }
+.seg button { padding: 0 0.6rem; font-size: 0.85rem; }
+.grid-menu select { font: inherit; font-size: 0.85rem; min-height: 40px; border-radius: 0.5rem; border: 1px solid var(--line); background: var(--panel); color: var(--ink); padding: 0 0.4rem; max-width: 100%; }
+.ft { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center; }
+.acts { display: flex; gap: 0.4rem; }
+.acts span { font-family: var(--ui); font-size: 0.85rem; border-radius: 0.5rem; padding: 0.55rem 0.8rem; background: var(--navy); color: var(--bg); font-weight: 600; }
+.acts span.o { background: transparent; color: var(--navy); border: 1px solid var(--navy); }
+.summary { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; font-family: var(--ui); font-size: 0.85rem; min-height: 44px; border: 1px solid var(--line); border-radius: 0.6rem; background: var(--tick); color: var(--ink); padding: 0 0.7rem; cursor: pointer; text-align: start; }
+.summary b { font-weight: 600; }
+.mini-poster { border: 1px dashed var(--line); border-radius: 0.5rem; display: flex; flex-direction: row-reverse; gap: 0.35rem; padding: 0.5rem; justify-content: center; flex-wrap: wrap; }
+.mini-poster div { border-radius: 0.4rem; padding: 0.3rem 0.45rem; text-align: center; background: var(--tick); min-width: 3.6rem; }
+.mini-poster .a { font-family: var(--ar); font-size: 1.25rem; line-height: 1.7; }
+.mini-poster .t { font-size: 0.7rem; font-style: italic; color: var(--muted); }
+.mini-poster .tb { font-family: var(--bn); font-size: 0.78rem; color: var(--green); font-weight: 600; }
+@media (max-width: 380px) { .grid-menu { grid-template-columns: minmax(0, 1fr); gap: 0.15rem; } .grid-menu .seg, .grid-menu > div { margin-bottom: 0.35rem; } }
+.note { font-family: var(--ui); font-size: 0.82rem; color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+<main class="wrap">
+  <header style="display:grid;gap:0.5rem">
+    <div class="eyebrow">MSA J58 · demo · 21 Oct 2026</div>
+    <h1>Bangla transliteration and a tidier poster menu</h1>
+    <p>You ticked: look for a published Bangla word-by-word transliteration first. I searched quran.com, QUL, Tanzil, alquran.cloud, QuranEnc, the Bangla Qur'an apps, GitHub and Hugging Face. <b>None exists.</b> The apps show Bangla pronunciation for a whole āyah, never word by word, and offer no data to reuse. So, as you ticked, I made it from the Arabic by fixed rules. Here is the sample, and two menu layouts. Nothing in the app has changed yet.</p>
+  </header>
+
+  <section aria-labelledby="s1">
+    <div class="eyebrow">Part 1</div>
+    <h2 id="s1">The sample: every word of Al-Fātiḥah, and four more sūrahs</h2>
+    <p>The green column is new, made by the rules below from the Arabic. The grey Latin column is what the app shows today, from quran.com. A scholar should read it before it goes live.</p>
+    <div class="surah-pick" role="group" aria-label="Sūrah" id="pick"></div>
+    <div class="tblwrap"><table><thead><tr><th>Word</th><th>Arabic</th><th>Bangla (new)</th><th>Latin (today)</th><th>Meaning</th></tr></thead><tbody id="rows"></tbody></table></div>
+    <h3>The rules, in short</h3>
+    <ul class="rules">
+      <li>Each Arabic letter has one Bangla letter: ب <b>ব</b>, ث and ص <b>ছ</b>, ذ ز ظ <b>য</b>, ح and ه <b>হ</b>, ض <b>দ</b>, ط <b>ত</b>, ق and ك <b>ক</b>, ع <b>‘</b> (as in <b>না‘বুদু</b>).</li>
+      <li>Short vowels: fatḥa <b>া</b>, kasra <b>ি</b>, ḍamma <b>ু</b>. A long ā is <b>া-</b> (as in <b>মা-লিকি</b>); long ī and ū are <b>ী</b> and <b>ূ</b>.</li>
+      <li>A doubled letter (shadda) is written twice: <b>রাব্বি</b>. The sun letters take the l: <b>আর্রাহমা-নি</b>, <b>আদ্দীনি</b>.</li>
+      <li>Each word is read on its own, so ٱلْ at the start is <b>আল</b> and ٱهْدِنَا is <b>ইহদিনা-</b>. The name Allah is always <b>আল্লা-হ</b>.</li>
+      <li>Letters the muṣḥaf marks as silent are left out (the alif in آمَنُوا۟).</li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="s2">
+    <div class="eyebrow">Part 2</div>
+    <h2 id="s2">The poster menu</h2>
+    <p>Today the menu is one long run of buttons: on a phone it fills 308 pixels before the poster starts, and “From” is left on its own at the end of a line. Both new layouts fit the Bangla transliteration choice (Latin, Bangla, Both, Off) and keep Print and Save always in sight. Tap the buttons to try them.</p>
+    <div class="phones">
+      <div class="phone"><h3>Today <small>phone, 308px tall</small></h3>
+        <div class="today"><span>Poster</span><span class="b on">Study poster</span><span class="b">Dawah poster</span><span>Āyāt</span><span class="b on">This āyah</span><span class="b">Whole sūrah</span><span>From</span><span class="b">1 ▾</span><span>To</span><span class="b">1 ▾</span><span>Word meanings</span><span class="b">English</span><span class="b">Bangla</span><span class="b on">Both</span><span>Transliteration</span><span class="b on">On</span><span class="b">Off</span><span>Paper</span><span class="b on">A4</span><span class="b">A3</span></div>
+        <div class="acts"><span>🖨 Print</span><span class="o">🖼 Save as picture</span></div>
+      </div>
+      <div class="phone" data-demo="a"><h3>A. Tidy rows <small>always open</small></h3>
+        <div class="menu"></div>
+        <div class="ft"><div class="acts"><span>🖨 Print</span><span class="o">🖼 Save as picture</span></div></div>
+        <div class="mini-poster"></div>
+      </div>
+      <div class="phone" data-demo="b"><h3>B. One line <small>opens when tapped</small></h3>
+        <button type="button" class="summary" aria-expanded="false" id="sumB"><span class="sumtext"></span><b>⚙ Change</b></button>
+        <div class="menu" hidden></div>
+        <div class="ft"><div class="acts"><span>🖨 Print</span><span class="o">🖼 Save as picture</span></div></div>
+        <div class="mini-poster"></div>
+      </div>
+    </div>
+    <p class="note">In both: the āyāt choice is one list (This āyah, This rukūʿ, Whole sūrah, Choose āyāt…); From and To show only after “Choose āyāt…”. Paper sits beside the other choices. Each layout keeps every choice the page has today.</p>
+  </section>
+
+  <section aria-labelledby="s3">
+    <div class="eyebrow">What I need from you</div>
+    <h2 id="s3">Three ticks (also in the PMS, MSA J58)</h2>
+    <div class="ask"><b>1. The Bangla sample</b>
+      <label><input type="checkbox" id="q1a"> A. Reads well: use these rules for every word (about 77,400), marked “made by rules, being checked”</label>
+      <label><input type="checkbox" id="q1b"> B. Change something first (say which word, and how it should read)</label></div>
+    <div class="ask"><b>2. The poster menu</b>
+      <label><input type="checkbox" id="q2a"> A. Tidy rows, always open (recommended: every choice in sight; 229px on a 390px phone instead of 308px, and on the smallest phones each label sits above its buttons so nothing wraps)</label>
+      <label><input type="checkbox" id="q2b"> B. One line that opens when tapped (the poster starts higher)</label></div>
+    <div class="ask"><b>3. Which transliteration shows first</b>
+      <label><input type="checkbox" id="q3a"> A. Follow the app's language: Bangla readers see Bangla, English readers see Latin; anyone can switch (recommended)</label>
+      <label><input type="checkbox" id="q3b"> B. Both, everywhere, until changed</label></div>
+    <p class="note">These boxes are for your eyes; please tick them in the PMS (MSA J58), where I read them.</p>
+  </section>
+</main>
+<script>
+const DATA = {"1":{"name":"Al-Faatiha","ar":"سُورَةُ ٱلْفَاتِحَةِ","ayahs":[{"a":1,"w":[["بِسْمِ","bis'mi","বিসমি","নামে"],["ٱللَّهِ","l-lahi","আল্লা-হি","আল্লাহ (র)"],["ٱلرَّحْمَـٰنِ","l-raḥmāni","আর্রাহমা-নি","পরম করুণাময়"],["ٱلرَّحِيمِ","l-raḥīmi","আর্রাহীমি","অসীম দয়ালু"]]},{"a":2,"w":[["ٱلْحَمْدُ","al-ḥamdu","আলহামদু","সকল প্রশংসা"],["لِلَّهِ","lillahi","লিল্লা-হি","আল্লাহ্‌রই জন্য"],["رَبِّ","rabbi","রাব্বি","(যিনি) রব"],["ٱلْعَـٰلَمِينَ","l-ʿālamīna","আল‘আ-লামীনা","সারা জগতের"]]},{"a":3,"w":[["ٱلرَّحْمَـٰنِ","al-raḥmāni","আর্রাহমা-নি","অশেষ করুণাময়"],["ٱلرَّحِيمِ","l-raḥīmi","আর্রাহীমি","পরম দয়ালু"]]},{"a":4,"w":[["مَـٰلِكِ","māliki","মা-লিকি","অধিপতি"],["يَوْمِ","yawmi","ইয়াওমি","দিনের"],["ٱلدِّينِ","l-dīni","আদ্দীনি","বিচারের"]]},{"a":5,"w":[["إِيَّاكَ","iyyāka","ইয়্যা-কা","আপনারই শুধু"],["نَعْبُدُ","naʿbudu","না‘বুদু","আমরা ইবাদত করি"],["وَإِيَّاكَ","wa-iyyāka","ওয়াইয়্যা-কা","এবং আপনারই (কাছে  শুধু)"],["نَسْتَعِينُ","nastaʿīnu","নাসতা‘ঈনু","আমরা সাহায্য চাই।"]]},{"a":6,"w":[["ٱهْدِنَا","ih'dinā","ইহদিনা-","আমাদেরকে দেখান"],["ٱلصِّرَٰطَ","l-ṣirāṭa","আছ্ছিরা-তা","পথ"],["ٱلْمُسْتَقِيمَ","l-mus'taqīma","আলমুসতাকীমা","সরল সঠিক"]]},{"a":7,"w":[["صِرَٰطَ","ṣirāṭa","ছিরা-তা","(সেই) পথে"],["ٱلَّذِينَ","alladhīna","আল্লাযীনা","যাদেরকে"],["أَنْعَمْتَ","anʿamta","আন‘আমতা","আপনি অনুগ্রহ দান করেছেন"],["عَلَيْهِمْ","ʿalayhim","‘আলাইহিম","তাদের উপর"],["غَيْرِ","ghayri","গাইরি","নয় (পথ)"],["ٱلْمَغْضُوبِ","l-maghḍūbi","আলমাগদূবি","অভিশপ্তদের"],["عَلَيْهِمْ","ʿalayhim","‘আলাইহিম","যাদের উপর (গজব পরেছে)"],["وَلَا","walā","ওয়ালা-","এবং না"],["ٱلضَّآلِّينَ","l-ḍālīna","আদ্দা-ল্লীনা","পথভ্রষ্টদের"]]}]},"78":{"name":"An-Naba","ar":"سُورَةُ النَّبَإِ","ayahs":[{"a":1,"w":[["عَمَّ","ʿamma","‘আম্মা","কি সম্পর্কে"],["يَتَسَآءَلُونَ","yatasāalūna","ইয়াতাসা-আলূনা","তারা পরস্পরকে জিজ্ঞাসা করছে"]]},{"a":2,"w":[["عَنِ","ʿani","‘আনি","সম্পর্কে"],["ٱلنَّبَإِ","l-naba-i","আন্নাবাই","সংবাদ"],["ٱلْعَظِيمِ","l-ʿaẓīmi","আল‘আযীমি","মহা (অর্থাৎ কিয়ামত)"]]},{"a":3,"w":[["ٱلَّذِى","alladhī","আল্লাযী","তা (এমন যে)"],["هُمْ","hum","হুম","তারা"],["فِيهِ","fīhi","ফীহি","সে বিষয়ে"],["مُخْتَلِفُونَ","mukh'talifūna","মুখতালিফূনা","(নিজেরাই) মতানৈক্যকারী"]]},{"a":4,"w":[["كَلَّا","kallā","কাল্লা-","কখনও না"],["سَيَعْلَمُونَ","sayaʿlamūna","সায়া‘লামূনা","তারা শীঘ্র জানবে"]]},{"a":5,"w":[["ثُمَّ","thumma","ছুম্মা","আবার (বলি)"],["كَلَّا","kallā","কাল্লা-","কখনও না"],["سَيَعْلَمُونَ","sayaʿlamūna","সায়া‘লামূনা","তারা শীঘ্র জানবে"]]}]},"112":{"name":"Al-Ikhlaas","ar":"سُورَةُ الإِخۡلَاصِ","ayahs":[{"a":1,"w":[["قُلْ","qul","কুল","বলো"],["هُوَ","huwa","হুওয়া","\"তিনি"],["ٱللَّهُ","l-lahu","আল্লা-হু","আল্লাহ"],["أَحَدٌ","aḥadun","আহাদুন","এক-অদ্বিতীয়"]]},{"a":2,"w":[["ٱللَّهُ","al-lahu","আল্লা-হু","আল্লাহ"],["ٱلصَّمَدُ","l-ṣamadu","আছ্ছামাদু","অমুখাপেক্ষী"]]},{"a":3,"w":[["لَمْ","lam","লাম","নি"],["يَلِدْ","yalid","ইয়ালিদ","তিনি (কাউকে) জন্ম দেন"],["وَلَمْ","walam","ওয়ালাম","এবং নি"],["يُولَدْ","yūlad","ইয়ূলাদ","তাঁকে জন্ম দেয়া হয়"]]},{"a":4,"w":[["وَلَمْ","walam","ওয়ালাম","এবং নাই"],["يَكُن","yakun","ইয়াকুন","(হয়)"],["لَّهُۥ","lahu","লাহূ","তাঁর"],["كُفُوًا","kufuwan","কুফুওয়ান","সমতুল্য/ সমান"],["أَحَدٌۢ","aḥadun","আহাদুন","কেউই\""]]}]},"113":{"name":"Al-Falaq","ar":"سُورَةُ الفَلَقِ","ayahs":[{"a":1,"w":[["قُلْ","qul","কুল","বলো"],["أَعُوذُ","aʿūdhu","আ‘ঊযু","\"আমি আশ্রয় চাই"],["بِرَبِّ","birabbi","বিরাব্বি","স্রষ্টার নিকট"],["ٱلْفَلَقِ","l-falaqi","আলফালাকি","প্রভাতের"]]},{"a":2,"w":[["مِن","min","মিন","হতে"],["شَرِّ","sharri","শার্রি","অনিষ্ট"],["مَا","mā","মা-","যা"],["خَلَقَ","khalaqa","খালাকা","তিনি সৃষ্টি করেছেন"]]},{"a":3,"w":[["وَمِن","wamin","ওয়ামিন","এবং হতে"],["شَرِّ","sharri","শার্রি","অনিষ্ট"],["غَاسِقٍ","ghāsiqin","গা-সিকিন","রাতের অন্ধকারের"],["إِذَا","idhā","ইযা-","যখন"],["وَقَبَ","waqaba","ওয়াকাবা","তা গভীর হয়"]]},{"a":4,"w":[["وَمِن","wamin","ওয়ামিন","এবং হতে"],["شَرِّ","sharri","শার্রি","অনিষ্ট"],["ٱلنَّفَّـٰثَـٰتِ","l-nafāthāti","আন্নাফ্ফা-ছা-তি","ফুঁকদানকারীর (রাতের) অনিষ্ট"],["فِى","fī","ফী","মধ্যে"],["ٱلْعُقَدِ","l-ʿuqadi","আল‘উকাদি","গিঁটগুলোর"]]},{"a":5,"w":[["وَمِن","wamin","ওয়ামিন","এবং হতে"],["شَرِّ","sharri","শার্রি","অনিষ্ট"],["حَاسِدٍ","ḥāsidin","হা-সিদিন","হিংসুকের"],["إِذَا","idhā","ইযা-","যখন"],["حَسَدَ","ḥasada","হাসাদা","সে হিংসা করে\""]]}]},"114":{"name":"An-Naas","ar":"سُورَةُ النَّاسِ","ayahs":[{"a":1,"w":[["قُلْ","qul","কুল","বলো"],["أَعُوذُ","aʿūdhu","আ‘ঊযু","\"আমি আশ্রয় চাই"],["بِرَبِّ","birabbi","বিরাব্বি","রবের নিকট"],["ٱلنَّاسِ","l-nāsi","আন্না-সি","মানুষের"]]},{"a":2,"w":[["مَلِكِ","maliki","মালিকি","মহা অধিপতির (নিকট)"],["ٱلنَّاسِ","l-nāsi","আন্না-সি","মানুষের"]]},{"a":3,"w":[["إِلَـٰهِ","ilāhi","ইলা-হি","ইলাহ্‌র (নিকট)"],["ٱلنَّاسِ","l-nāsi","আন্না-সি","মানুষের"]]},{"a":4,"w":[["مِن","min","মিন","হতে"],["شَرِّ","sharri","শার্রি","অমঙ্গল"],["ٱلْوَسْوَاسِ","l-waswāsi","আলওয়াসওয়া-সি","কুমন্ত্রণার"],["ٱلْخَنَّاسِ","l-khanāsi","আলখান্না-সি","আত্নগোপনকারী"]]},{"a":5,"w":[["ٱلَّذِى","alladhī","আল্লাযী","যে"],["يُوَسْوِسُ","yuwaswisu","ইয়ুওয়াসওয়িসু","কুমন্ত্রণা দেয়"],["فِى","fī","ফী","মধ্যে"],["صُدُورِ","ṣudūri","ছুদূরি","অন্তরসমূহের"],["ٱلنَّاسِ","l-nāsi","আন্না-সি","মানুষের"]]},{"a":6,"w":[["مِنَ","mina","মিনা","মধ্য হতে"],["ٱلْجِنَّةِ","l-jinati","আলজিন্নাতি","জিনের"],["وَٱلنَّاسِ","wal-nāsi","ওয়ান্না-সি","ও মানুষের"]]}]}};
+const pick = document.getElementById("pick"), rows = document.getElementById("rows");
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+function show(n) {
+  for (const b of pick.children) b.setAttribute("aria-pressed", String(b.dataset.n === String(n)));
+  rows.innerHTML = DATA[n].ayahs.flatMap((a) => a.w.map((w, i) => `<tr><td class="ref">${n}:${a.a}:${i + 1}</td><td class="ar" lang="ar">${esc(w[0])}</td><td class="bn" lang="bn">${esc(w[2])}</td><td class="lat">${esc(w[1])}</td><td class="mean" lang="bn">${esc(w[3])}</td></tr>`)).join("");
+}
+for (const n of Object.keys(DATA)) { const b = document.createElement("button"); b.type = "button"; b.dataset.n = n; b.textContent = `${DATA[n].name}${n === "78" ? " 1–5" : ""}`; b.onclick = () => show(n); pick.append(b); }
+show("1");
+// the two menu mock-ups share one state each
+const W = DATA[1].ayahs[0].w;
+function menuHtml(st) {
+  const seg = (key, opts) => `<div class="seg" role="group">${opts.map(([v, l]) => `<button type="button" data-k="${key}" data-v="${v}" aria-pressed="${st[key] === v}">${l}</button>`).join("")}</div>`;
+  return `<div class="grid-menu">
+    <span class="lab">Poster</span>${seg("kind", [["study", "Study"], ["dawah", "Dawah"]])}
+    <span class="lab">Āyāt</span><div><select data-k="range" aria-label="Āyāt">${[["ayah", "This āyah 1:1"], ["ruku", "This rukūʿ"], ["surah", "Whole sūrah"], ["choose", "Choose āyāt…"]].map(([v, l]) => `<option value="${v}"${st.range === v ? " selected" : ""}>${l}</option>`).join("")}</select>${st.range === "choose" ? ` <select aria-label="From"><option>From 1</option></select> <select aria-label="To"><option>To 3</option></select>` : ""}</div>
+    <span class="lab">${st.kind === "study" ? "Meanings" : "Translation"}</span>${seg("lang", [["en", "English"], ["bn", "Bangla"], ["both", "Both"]])}
+    ${st.kind === "study" ? `<span class="lab">Transliteration</span>${seg("tr", [["lat", "Latin"], ["bn", "Bangla"], ["both", "Both"], ["off", "Off"]])}` : ""}
+    <span class="lab">Paper</span>${seg("paper", [["a4", "A4"], ["a3", "A3"]])}
+  </div>`;
+}
+function posterHtml(st) {
+  return W.map((w) => `<div><div class="a" lang="ar">${esc(w[0])}</div>${st.tr === "lat" || st.tr === "both" ? `<div class="t">${esc(w[1])}</div>` : ""}${st.tr === "bn" || st.tr === "both" ? `<div class="tb" lang="bn">${esc(w[2])}</div>` : ""}</div>`).join("");
+}
+const label = { study: "Study", dawah: "Dawah", ayah: "1:1", ruku: "rukūʿ", surah: "whole sūrah", choose: "1–3", en: "English", bn: "Bangla", both: "Both", lat: "Latin", off: "off", a4: "A4", a3: "A3" };
+for (const phone of document.querySelectorAll("[data-demo]")) {
+  const st = { kind: "study", range: "ayah", lang: "both", tr: "bn", paper: "a4" };
+  const menu = phone.querySelector(".menu"), mini = phone.querySelector(".mini-poster"), sum = phone.querySelector(".summary");
+  const draw = () => {
+    menu.innerHTML = menuHtml(st); mini.innerHTML = posterHtml(st);
+    if (sum) sum.querySelector(".sumtext").textContent = `${label[st.kind]} · ${label[st.range]} · ${label[st.lang]}${st.kind === "study" ? ` · ${label[st.tr]} translit.` : ""} · ${label[st.paper]}`;
+  };
+  menu.addEventListener("click", (e) => { const b = e.target.closest("button[data-k]"); if (!b) return; st[b.dataset.k] = b.dataset.v; draw(); });
+  menu.addEventListener("change", (e) => { if (e.target.dataset.k) { st[e.target.dataset.k] = e.target.value; draw(); } });
+  if (sum) sum.addEventListener("click", () => { const open = sum.getAttribute("aria-expanded") !== "true"; sum.setAttribute("aria-expanded", String(open)); menu.hidden = !open; });
+  draw();
+}
+</script>
