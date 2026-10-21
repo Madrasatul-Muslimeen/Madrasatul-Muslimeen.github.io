@@ -422,7 +422,7 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v12.18 on `main`** (21 Oct 2026 — **MSA J68 part 4**: the Read view's Notes pane is a window on a computer (1100px and wider): moved by its bar, resized from 4 corners and 4 sides, kept inside the screen, its place and size remembered per device, first opening exactly where it is today; a tablet held sideways keeps the full-screen pane (the Owner, 11 Oct). Builder round #1008, with one Architect fix. The previous release, v12.17, is the Āyah card as a window (J67), Bangla আ in the Hadith data (J66 part 2) and the Word card's small Arabic at 90% (J61 part 2b).)
+**Current milestone: v12.19 on `main`** (22 Oct 2026 — **two Owner jobs**: MSA J69 (each Taṣrīf person block its own plate and colour -- he, she, you, you (f), I and we; a gold "Basic form: فَعَلَ" button at the start of every word's Taṣrīf line opens the full فَعَلَ table, with ← Back to the word) and J70 (the Āyah card on a computer opens large, 92% of the screen; bar 2 on one line, the buttons as bar 3; two equal halves with a drag handle -- the full text left, with Translations and Word by word that open and close, Approach / Progress / Status / Info right; ⤢ or 📖 puts the full text across the card with the rest as a bar above; Related āyāt a pull-down above 2). J71 (the Notes window from the Āyah card, tidy bars, search to attach notes) is a demo next.)
 
 **Earlier milestones, v08.111 back to v07.139, and the long notes around them**
 (the held Phase 4 wiring, the four deployment states, the Programme Integration
