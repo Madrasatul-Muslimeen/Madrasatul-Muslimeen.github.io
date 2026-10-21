@@ -1149,3 +1149,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v12.09** (2026-10-20): Āyah posters, the madda sign, the word marked and the middle view, Learn next to 95%, ten questions (PCF MSA J52 J53 J54 J55 J56).
 - **v12.10** (2026-10-20): the Vocabulary review schedule kept in the account (PCF MSA J48 round 2).
 - **v12.11** (2026-10-21): Word card: Go to its āyah (PCF MSA J57).
+- **v12.12** (2026-10-21): Word card: the Legend is a small ⓘ in the top bar (PCF MSA J59).
