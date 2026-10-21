@@ -128,6 +128,15 @@ export function contentHash(record) {
   return crypto.createHash("sha256").update(canonical, "utf8").digest("hex");
 }
 
+/** PCF MSA J66: Bangla আ written as two pieces (অ U+0985 + া U+09BE) -> the one letter আ (U+0986), in every string. */
+export const bnText = (s) => String(s ?? "").replace(/\u0985\u09BE/g, "\u0986");
+export function bnDeep(v) {
+  if (typeof v === "string") return bnText(v);
+  if (Array.isArray(v)) return v.map(bnDeep);
+  if (v && typeof v === "object") return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, bnDeep(x)]));
+  return v;
+}
+
 /** The Arabic matn of a record: `hadeeth` in the ar pull, `hadeeth_ar` in every translated pull (measured). */
 export function arabicText(record, lang) {
   return lang === "ar" ? record.hadeeth : (record.hadeeth_ar ?? null);
@@ -260,7 +269,10 @@ async function pullOneLanguage(lang) {
   await mapLimited(allIds, CONCURRENCY, async (id) => {
     const detail = await pullHadithDetail(lang, id);
     if (String(detail?.id) !== id) throw new Error(`hadeeths/one ${id} (${lang}) returned id ${detail?.id}`);
-    details.set(id, { ...detail, contentHash: contentHash(detail) });
+    // PCF MSA J66: Bangla আ arrives in a few records as two pieces (অ + া), drawn as a broken letter; it is stored as
+    // the one letter আ, and the hash is taken over the record as stored.
+    const stored = lang === "bn" ? bnDeep(detail) : detail;
+    details.set(id, { ...stored, contentHash: contentHash(stored) });
     if (++done % 250 === 0) console.log(`    ${done}/${allIds.length}`);
   });
 
