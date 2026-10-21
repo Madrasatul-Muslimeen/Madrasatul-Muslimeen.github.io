@@ -7024,7 +7024,7 @@
     import { getAyahNotes, ayahNoteHtml, ayahHasNote, saveAyahNote, ensureAyahNotesWritable } from "./js/ayah-notes.js";
     import { renderQuickMenu, attachQuickMenuHandlers, attachQcrDrawerHandlers, notesToPlainText, copyToClipboard, shareText } from "./js/ayah-note-renderer.js";
     import { initReadWindow } from "./js/read-window.js";
-    import { initAyahCardWindow } from "./js/ayah-card-window.js";
+    import { initAyahCardWindow, ayahCardRectJustNow } from "./js/ayah-card-window.js";
     import { initPopupWindow, initSideSplitter, initListCollapse, loadSideViewMode, saveSideViewMode } from "./js/note-popup.js";
     import {
       collectionsFrom, activeCollections,
@@ -24366,14 +24366,15 @@
         closeAyahActionSheet();
         const intro = { arabic: OPENING_TAAWWUDH_AR, translation: t(OPENING_TAAWWUDH_EN), opening: true, backLabel: t("Back") };
         const unit = { unitKey, label: t("Aʿūdhu billāh") };
-        await openReadNotesPane(unit, { backLabel: t("Back to Āyah card"), focusNew: fresh }, () => { paintReadNotesBtn(); openAyahActionSheet(unitKey, null, intro); });
+        await openReadNotesPane(unit, { backLabel: t("Back to Āyah card"), focusNew: fresh, rect: ayahCardRectJustNow() }, () => { paintReadNotesBtn(); openAyahActionSheet(unitKey, null, intro); });
         return;
       }
       const { surah, ayah, half } = parseAyahUnitKey(unitKey);
       const r = { surah, ayah, half, view: "read", scrollY: stageView === "read" ? readViewScrollTop() : null };
+      const rect = ayahCardRectJustNow(); // PCF MSA J71: the Notes window takes the card's own size and place
       closeAyahActionSheet();
       if (stageView !== "read" || currentSurahNum !== surah || currentAyahNum !== ayah) await navigateToAyah(surah, ayah, "read", half);
-      await openReadNotesPane(readNotesUnit(), { backLabel: t("Back to Āyah card"), focusNew: fresh }, () => { paintReadNotesBtn(); returnToAyahCard(r); });
+      await openReadNotesPane(readNotesUnit(), { backLabel: t("Back to Āyah card"), focusNew: fresh, rect }, () => { paintReadNotesBtn(); returnToAyahCard(r); });
     }
 
     /** Shell round 22 -- bring the reading screen's pickers into line with the
