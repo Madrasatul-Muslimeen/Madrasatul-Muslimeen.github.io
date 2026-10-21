@@ -510,6 +510,7 @@ export function renderAyahActionSheetHtml({
       <div class="ayah-sheet-handle" aria-hidden="true"></div>
       ${ladderHtml}
       <div class="ayah-sheet-header">
+        ${intro ? "" : `<button type="button" class="ayah-sheet-homeback" data-ayah-sheet-close data-ayah-sheet-homeback aria-label="${escapeHtml(t("Back"))}" title="${escapeHtml(t("Back"))}">←</button>`}<!-- PCF MSA J72: a way back to where the card was opened -->
         <span class="ayah-sheet-ref">${escapeHtml(ref)}</span>
         <span class="ayah-sheet-head-tools"${intro?.opening ? " hidden" : ""}>
           <span class="ayah-sheet-nav-pair">

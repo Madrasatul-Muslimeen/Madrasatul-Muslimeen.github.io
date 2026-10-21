@@ -26,6 +26,16 @@ export function homeRect() {
   return { x: Math.round(Math.min(Math.max(current.x, 0), vw - w)), y: Math.round(Math.min(Math.max(current.y, 0), vh - h)), w: Math.round(w), h: Math.round(h) };
 }
 
+/** Places a dialog box at the home rect on a computer (inline position, so it beats the box's own CSS size); on a
+    narrow screen, or before the home window was placed, it clears that and the box keeps its own layout. */
+export function placeAtHome(el) {
+  if (!el) return false;
+  const r = homeRect();
+  const props = { position: "fixed", left: `${r?.x}px`, top: `${r?.y}px`, width: `${r?.w}px`, height: `${r?.h}px`, maxHeight: "none", maxWidth: "none", margin: "0", boxSizing: "border-box" };
+  for (const [k, v] of Object.entries(props)) el.style[k] = r ? v : "";
+  return !!r;
+}
+
 /** True when the home rect is one the reader chose (moved or resized), not the home window's own first fill. */
 export function homeRectChosen() { homeRect(); return !!current?.user; }
 

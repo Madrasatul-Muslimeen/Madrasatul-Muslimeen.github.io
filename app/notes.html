@@ -234,6 +234,7 @@
 
     function renderNav(roles, viewAsRole) {
       navBar.innerHTML = renderNavBar(roles, viewAsRole);
+      import("./js/bookmark-nav.js").then((m) => m.mountNavBack()).catch(() => {}); // PCF MSA J72: opened from the menu -> ← Back
       navHomeExtra.innerHTML = renderHomeExtras(roles);
       mountSyncedAppLangControl(navHomeExtra, { db, uid: auth.currentUser?.uid });
       mountCardLookControl(navHomeExtra);

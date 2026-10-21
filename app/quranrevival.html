@@ -3195,6 +3195,7 @@
   .rc-header-actions { display: inline-flex; align-items: center; gap: 0.5rem; flex: 0 0 auto; }
   .rc-home-btn { flex: 0 0 auto; min-height: 40px; padding: 0 0.8rem; display: inline-flex; align-items: center; gap: 0.35rem; font: inherit; font-size: 0.95rem; font-weight: 700; border: 1px solid rgba(255,255,255,0.5); border-radius: 0.35rem; background: transparent; color: #fff; cursor: pointer; white-space: nowrap; }
   .rc-home-btn span[aria-hidden] { font-size: 1.15rem; line-height: 1; }
+  .rc-card header h2 { flex: 1 1 auto; min-width: 0; } /* J72: ← Back first, the title, then ⌂ Home and × */
   .rc-tabs { display: flex; gap: 0.25rem; padding: 0.4rem 0.5rem 0; border-bottom: 1px solid var(--card-line); }
   .rc-tab {
     flex: 1 1 0; min-width: 0; min-height: 40px; padding: 0.25rem 0.2rem; border: 0; border-bottom: 3px solid transparent; background: none;
@@ -4293,6 +4294,8 @@
   .ayah-sheet .claim-for-line + .approach-stage-row { margin-top: 0.1rem; } /* the same when 👥 shares the title's line */
   .ayah-sheet-ref { font-size: 0.9rem; color: var(--card-heading); font-weight: 600; }
   .ayah-sheet-close { background: none; border: none; color: var(--card-text-muted); font-size: 1.5rem; line-height: 1; min-width: 40px; min-height: 40px; padding: 0.2rem 0.5rem; cursor: pointer; }
+  /* PCF MSA J72: the card's ← Back, first in its header (the same as × : back to where the card was opened) */
+  .ayah-sheet-homeback { order: -1; flex: 0 0 auto; width: 40px; height: 40px; border: 1px solid #c9a24b; border-radius: 0.6rem; background: transparent; color: var(--card-heading); font-size: 1.2rem; line-height: 1; cursor: pointer; }
   /* Owner, 7 Oct 2026 (a photo of the Āyah card, two boxes drawn after the reference): ‹ › step the card
      to the previous / next āyah, then 📖 Note view. One tidy cluster beside the reference, 40px targets. */
   .ayah-sheet-header { gap: 0.4rem; }
@@ -6910,6 +6913,7 @@
   <div id="myStatusMount" hidden data-keep-note-popovers>
     <div id="myStatusCard" class="my-status-card">
       <header>
+        <button type="button" id="myStatusBackBtn" class="my-status-back-btn" data-home-back>← Back</button><!-- PCF MSA J72 -->
         <h2 id="myStatusTitle">Know Your Status</h2>
         <button type="button" id="myStatusCloseBtn" class="my-status-close-btn">&times;</button>
       </header>
@@ -6936,6 +6940,8 @@
   <div id="readContentsMount" hidden data-keep-note-popovers>
     <div id="readContentsCard" class="rc-card" role="dialog" aria-modal="true" aria-labelledby="readContentsTitle">
       <header>
+        <!-- PCF MSA J72: "must have a back button/ arrow to come back to home screen where it was click from" -->
+        <button type="button" id="readContentsBackBtn" class="rc-home-btn rc-back-btn" data-home-back>← <span class="rc-home-word">Back</span></button>
         <h2 id="readContentsTitle">Read</h2>
         <!-- Owner, 2 Oct 2026 (a phone photo of this list): "Enable a way to
              move to home (page landing) from here." -->
@@ -7025,6 +7031,7 @@
     import { renderQuickMenu, attachQuickMenuHandlers, attachQcrDrawerHandlers, notesToPlainText, copyToClipboard, shareText } from "./js/ayah-note-renderer.js";
     import { initReadWindow } from "./js/read-window.js";
     import { initAyahCardWindow, ayahCardRectJustNow } from "./js/ayah-card-window.js";
+    import { placeAtHome } from "./js/home-window.js";
     import { initPopupWindow, initSideSplitter, initListCollapse, loadSideViewMode, saveSideViewMode } from "./js/note-popup.js";
     import {
       collectionsFrom, activeCollections,
@@ -12491,6 +12498,7 @@
     // width now, so the old placeWheelIntroRow() (which moved it into a band
     // across the card from 721px) is gone.
     myStatusCloseBtn?.addEventListener("click", closeMyStatus);
+    document.getElementById("myStatusBackBtn")?.addEventListener("click", closeMyStatus); // PCF MSA J72: ← Back
     myStatusMountEl?.addEventListener("click", (e) => { if (e.target === myStatusMountEl) closeMyStatus(); });
     myStatusDetailCloseBtn?.addEventListener("click", closeMyStatusDetail);
     // ← Back: from an Approach card to the Know Your Status list it was opened from (the Owner, 6 Oct 2026).
@@ -12614,6 +12622,7 @@
 
     async function openReadContents() {
       readContentsMountEl.hidden = false;
+      placeAtHome(document.getElementById("readContentsCard")); // PCF MSA J72: the home window's size and place
       readContentsBodyEl.innerHTML = `<p class="rc-empty">${rcEsc(t("Loading…"))}</p>`;
       try {
         await loadReadContentsTables();
@@ -12626,6 +12635,7 @@
       document.getElementById("readContentsCloseBtn").focus();
     }
     function closeReadContents() { readContentsMountEl.hidden = true; }
+    document.getElementById("readContentsBackBtn")?.addEventListener("click", closeReadContents); // J72: ← Back = back where it was opened
 
     /** Set the unit exactly as the Study options pickers do, then open Read. */
     async function openReadContentsRow(kind, n) {
