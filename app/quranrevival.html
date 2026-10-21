@@ -5155,6 +5155,30 @@
     .note-popup-resize[data-note-resize="nw"] { top: -3px; left: -3px; width: 14px; height: 14px; cursor: nwse-resize; }
     .note-popup-resize[data-note-resize="se"] { bottom: -3px; right: -3px; width: 14px; height: 14px; cursor: nwse-resize; }
     .note-popup-resize[data-note-resize="sw"] { bottom: -3px; left: -3px; width: 14px; height: 14px; cursor: nesw-resize; }
+    /* PCF MSA J72: the handles sit in their own frame over the window's edge (note-popup.js), with grab areas a mouse
+       finds: 12px along every side, 22px at every corner, and a gold grip at each corner so the corners can be seen. */
+    .popup-win-frame { position: fixed; display: none; pointer-events: none; }
+    .popup-win-frame > .note-popup-resize { pointer-events: auto; z-index: 1; }
+    .popup-win-frame > .note-popup-resize[data-note-resize="n"] { top: -6px; left: 14px; right: 14px; height: 12px; }
+    .popup-win-frame > .note-popup-resize[data-note-resize="s"] { bottom: -6px; left: 14px; right: 14px; height: 12px; }
+    .popup-win-frame > .note-popup-resize[data-note-resize="e"] { top: 14px; bottom: 14px; right: -6px; width: 12px; }
+    .popup-win-frame > .note-popup-resize[data-note-resize="w"] { top: 14px; bottom: 14px; left: -6px; width: 12px; }
+    .popup-win-frame > .note-popup-resize[data-note-resize$="e"][data-note-resize^="n"],
+    .popup-win-frame > .note-popup-resize[data-note-resize$="w"][data-note-resize^="n"],
+    .popup-win-frame > .note-popup-resize[data-note-resize$="e"][data-note-resize^="s"],
+    .popup-win-frame > .note-popup-resize[data-note-resize$="w"][data-note-resize^="s"] { width: 22px; height: 22px; z-index: 2; }
+    .popup-win-frame > .note-popup-resize[data-note-resize="ne"] { top: -6px; right: -6px; }
+    .popup-win-frame > .note-popup-resize[data-note-resize="nw"] { top: -6px; left: -6px; }
+    .popup-win-frame > .note-popup-resize[data-note-resize="se"] { bottom: -6px; right: -6px; }
+    .popup-win-frame > .note-popup-resize[data-note-resize="sw"] { bottom: -6px; left: -6px; }
+    .popup-win-frame > .note-popup-resize[data-note-resize="ne"]::after, .popup-win-frame > .note-popup-resize[data-note-resize="nw"]::after,
+    .popup-win-frame > .note-popup-resize[data-note-resize="se"]::after, .popup-win-frame > .note-popup-resize[data-note-resize="sw"]::after {
+      content: ""; position: absolute; width: 10px; height: 10px; border: 0 solid #c9a24b; opacity: 0.85; }
+    .popup-win-frame > .note-popup-resize[data-note-resize="ne"]::after { top: 6px; right: 6px; border-top-width: 3px; border-right-width: 3px; border-top-right-radius: 4px; }
+    .popup-win-frame > .note-popup-resize[data-note-resize="nw"]::after { top: 6px; left: 6px; border-top-width: 3px; border-left-width: 3px; border-top-left-radius: 4px; }
+    .popup-win-frame > .note-popup-resize[data-note-resize="se"]::after { bottom: 6px; right: 6px; border-bottom-width: 3px; border-right-width: 3px; border-bottom-right-radius: 4px; }
+    .popup-win-frame > .note-popup-resize[data-note-resize="sw"]::after { bottom: 6px; left: 6px; border-bottom-width: 3px; border-left-width: 3px; border-bottom-left-radius: 4px; }
+    .popup-win-frame > .note-popup-resize:hover::after { opacity: 1; border-color: #e2bd62; }
   }
 
   /* ---- 2 Sep 2026: the SAME PC-popup treatment above, for the Approach

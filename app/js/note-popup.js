@@ -290,9 +290,36 @@ export function initPopupWindow(el, { id = "note", dragHandleEl, resizeHandleEls
   let maximized = false;
   let preMaximizeGeometry = null;
 
+  // PCF MSA J72 (the Owner, 22 Oct 2026: "Enable it resizeable from all side and all corners"): measured, the bottom and
+  // right edges of the Mastery Wheel window did nothing -- the handles were children of a window that scrolls, so the
+  // bottom one scrolled away with the contents and the scrollbar sat over the right one. The handles now live in a
+  // frame of their own laid exactly over the window's edge (position: fixed, one step above it, transparent to every
+  // click except on the handles), so no content of the window can cover them.
+  const frame = document.createElement("div");
+  frame.className = "popup-win-frame";
+  frame.dataset.popupWinFrame = id;
+  resizeHandleEls.forEach((h) => frame.appendChild(h));
+  if (resizeHandleEls.length) document.body.appendChild(frame);
+  function syncFrame() {
+    if (!resizeHandleEls.length) return;
+    const r = el.getBoundingClientRect();
+    const on = isPopupViewport() && !maximized && r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== "hidden";
+    if (!on) { frame.style.display = "none"; return; }
+    const z = parseInt(getComputedStyle(el).zIndex, 10);
+    Object.assign(frame.style, { display: "block", left: `${r.left}px`, top: `${r.top}px`, width: `${r.width}px`, height: `${r.height}px`, zIndex: String((Number.isFinite(z) ? z : 0) + 1) });
+  }
+  if (resizeHandleEls.length) {
+    new ResizeObserver(syncFrame).observe(el); // shown, hidden (a size of 0) or resized by its own contents
+    new MutationObserver(syncFrame).observe(el, { attributes: true, attributeFilter: ["style", "class", "hidden"] });
+    // shown or hidden by an ancestor (a stage view switched) without the window's own attributes changing
+    new MutationObserver(syncFrame).observe(document.body, { attributes: true, subtree: true, attributeFilter: ["hidden", "class"] });
+    requestAnimationFrame(syncFrame);
+  }
+
   function commit(next, { persist = true } = {}) {
     geometry = next;
     applyGeometry(el, geometry);
+    syncFrame();
     if (persist) saveGeometry(geometry, id);
   }
   function remember() { touched = true; saveGeometry(geometry, id); }
@@ -355,6 +382,7 @@ export function initPopupWindow(el, { id = "note", dragHandleEl, resizeHandleEls
       maximized = true;
     }
     maximizeBtn.setAttribute("aria-pressed", maximized ? "true" : "false");
+    syncFrame();
     onMaximizeChange?.(maximized);
   });
 
@@ -369,8 +397,9 @@ export function initPopupWindow(el, { id = "note", dragHandleEl, resizeHandleEls
     const nowPopupViewport = isPopupViewport();
     if (nowPopupViewport !== wasPopupViewport) {
       wasPopupViewport = nowPopupViewport;
-      if (!nowPopupViewport) { clearGeometry(el); return; }
+      if (!nowPopupViewport) { clearGeometry(el); syncFrame(); return; }
       applyGeometry(el, clampGeometry(geometry, minWidth, minHeight));
+      syncFrame();
       return;
     }
     if (!nowPopupViewport) return; // nothing to re-clamp -- no inline geometry to have drifted
