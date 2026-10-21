@@ -7,7 +7,33 @@ v10.28). Read `CLAUDE.md` first. The prompt that starts the next session is
 
 This session was summarised once (its context compacted), which is why it hands over here.
 
-## LATEST UPDATE — 21 Oct 2026, 4:30 pm Sydney, session `session_01LzpvsLYG9iahYhnxMrNNHH` (v12.15 live on MSA AND QR; Builder round #1004 running; HANDOVER) — READ THIS FIRST
+## LATEST UPDATE — 21 Oct 2026, 6:25 pm Sydney, session `session_017XmUaxwDGhjaQExeKYwYJj` (v12.16 live on MSA AND QR; Builder round #1007 running; HANDOVER) — READ THIS FIRST
+
+Took over 4:46 pm 21 Oct from `session_01LzpvsLYG9iahYhnxMrNNHH`. Handing over at ~45% context (cost86/hand119).
+**`main` is v12.16, live on MSA (6:18 pm) and QR (6:18 pm, build-from-msa run 14); QR's 20 checks on the v12.16 build: the result is in the PCA message "PCA ▸ handover ready". Next release: v12.17.** The PCA is `session_019xuGwr6uFeQUpKmERwBPxX`.
+
+**Released this session: v12.16** (PR #1009, merge `d90228bd`): MSA J61 part 2a (verb Taṣrīf Arabic at 90%; one-tense verbs 1.45×, J46), J63 (Mushaf tools card; Builder #1004 hit its 90-minute limit after pushing, finished from `builder/issue-1004-run-1626`), J65 (the Study poster's "Āyah on top", half and half, `TOP_SHARES`/`WORDS_K_MIN`), J66 part 1 (Bangla আ in one piece in 14 Qur'an word meanings; `pull.js` `bnText()`; indexes rebuilt), J68 parts 1–3 (Note title "Quran 2:255 - Al-Baqara:", wrapping title, the Āyah card's Copy chooser). New suites, each mutation-proven: `word-card-tasrif-verb-arabic-size-browser`, `ayah-poster-top-browser`, `ayah-note-title-copy-browser`, `bangla-two-piece-aa`. PCA change notice sent for the shared note scripts (J68). What's New line written. Owner checks: **n61b, n63a, n65a, n68a** (and still open n58c, n60a, n61a, n62a, n64a).
+
+**Running / next (each in its PCF job)**
+1. **MSA J67, Builder round #1007** (dispatched 5:46 pm, run 1632): the Āyah card as a window on a PC (float-window.js, 8 handles, remembered rect, two columns when wide). When it lands: review by measurement, release v12.17. If it opens no PR, finish from its `builder/issue-1007-*` branch.
+2. **MSA J68 part 4, Builder round #1008** (issue written): the Notes pane as a window. Dispatch it as soon as #1007's run ends (the Builder queue holds one waiting run, and a merge's bot comment can cancel a waiting dispatch, so do not queue it behind a running one).
+3. **MSA J66 part 2**: the same two-piece আ in 13 Hadith Bangla places (`tools/hadith-data-pull/output/translations/{muslim,nasai,tirmidhi}/bn`, `hadeethenc/bn`, `dua/words-22.json`); mend in each puller as `pull.js` does, widen `bangla-two-piece-aa`'s DIRS; check those outputs for sha manifests first.
+4. **MSA J61 part 2b**: the rest of the Word card's small Arabic, measured on a computer: WbW facts line 48–65%, part names 53%, Learn next 57%, Family "who" 57%, Depth's iʿrāb 45% and book titles 53% (`.word-card-fact-ar/-sub`, `.word-card-part-arname`, `.word-card-learnnext-ar`, `.word-card-family-who span`, `.word-card-irab bdi`, `.word-card-book-t`). Same token approach as part 2a.
+5. **MSA J64**: the Owner's taps (n64a). **MSA J48 round 3**: from Thu 22 Oct ~7 pm (j48p10); step 2 check needs n48e (PCA 8:30 am Thu).
+
+**Owner messages this session (carry1), each filed in the PCF job named**
+1. ~5:15 pm: the poster screenshot, "Enable the poster with Arabic, Eng and Bangla options single and multiple to choose from over the words. Try to keep half of the page for Ayah and half for words" → J65 (released); the broken আ in the same screenshot → J66.
+2. ~5:28 pm: "Ayah Card: … resizeable from every corner and everyside … moveable … Then organise the features/ buttons" → J67 (Builder #1007).
+3. ~5:40 pm: the Note view: title "Quran (Surah): Ayah - Surah Name:", title wrapped, copy the Arabic (one or several), Note view movable/resizable → J68 (parts 1–3 released; part 4 = #1008).
+
+**Lessons**
+- **Chrome does not start a text selection on a `<button>`**, and every Read-view Arabic word is one: a drag that starts on a word copies the Arabic alone, one that starts beside it copies everything. A Copy chooser is the reliable answer; turning the words into spans would be a wide behaviour change.
+- **An Āyah card tile closes the card first** (`fire()` calls `onClose`): a dialog opened from a tile must reopen the card on close (`openAyahActionSheet("S:A", half)` takes "S:A", not the record key). The card now keeps keyboard focus across its own re-renders (`keepFocus`, like `keepScroll`).
+- **A worktree per job, each on its own port (8083, 8084, 8085)**, kept the long suites honest while three jobs were built in parallel; two browsers at once were fine, three or more crashed one suite ("Target page, context or browser has been closed", 33 false fails).
+- **`[data-x]` as a test selector also matches a container carrying the same attribute**: the poster div has `data-ap-top` too; scope to `button[data-ap-top]`.
+- **A new rule can break an older Owner rule silently**: J61's 90% made J46's "one-tense at least 1.4× bigger" false on a computer; only the old suite caught it.
+
+## LATEST UPDATE — 21 Oct 2026, 4:30 pm Sydney, session `session_01LzpvsLYG9iahYhnxMrNNHH` (v12.15 live on MSA AND QR; Builder round #1004 running; HANDOVER) — superseded by the 6:25 pm block above, kept as history
 
 Took over 2:47 pm 21 Oct from `session_012pLhEYVFHKJ8KbEvMua2kF`. Handing over at ~40% context (cost86/hand119).
 **`main` is v12.15 (v12.14 live 4:29 pm; v12.15 is QR's offline list, see below). Next release: v12.16.** The PCA is `session_019xuGwr6uFeQUpKmERwBPxX`.
