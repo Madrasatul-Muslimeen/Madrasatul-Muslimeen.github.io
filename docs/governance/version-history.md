@@ -918,3 +918,4 @@ total). Allocated by the MMSA Architect.
 12.14: Word card Family rows and plates, WbW always coloured; Taṣrīf Arabic at 90%; QCR Level (PCF MSA J60 J61 J62). Allocated by the MMSA Architect.
 12.15: QR's offline lists carry the Bangla transliteration module. Allocated by the MMSA Architect.
 12.16: MSA J61 part 2a, J63, J65, J66, J68 parts 1-3. Allocated by the MMSA Architect.
+12.17: MSA J67, J66 part 2, J61 part 2b. Allocated by the MMSA Architect.

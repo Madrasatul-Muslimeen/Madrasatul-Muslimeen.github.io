@@ -131,7 +131,8 @@ export function linkRow(form) {
   const w = best.w;
   const lemmas = [...form.byLemma.keys()].filter(Boolean).length;
   // The word-by-word source opens some meanings with stray quote marks ("''হে আল্লাহ"); they are not part of the meaning.
-  const clean = (x) => String(x ?? "").replace(/^['\u2018\u2019"]+/u, "").trim();
+  // PCF MSA J66: a Bangla আ written as two pieces (অ + া) becomes the one letter আ
+  const clean = (x) => String(x ?? "").replace(/^['\u2018\u2019"]+/u, "").replace(/\u0985\u09BE/g, "\u0986").trim();
   return [best.place, form.count, w.arabic, w.transliteration ?? "", clean(w.translation?.en), clean(w.translation?.bn),
     w.morphology?.root ?? "", lemma, lemmas, wbwClaimKey(w) ?? "", form.places];
 }

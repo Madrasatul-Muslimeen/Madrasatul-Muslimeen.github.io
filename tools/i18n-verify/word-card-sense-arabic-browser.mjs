@@ -47,7 +47,9 @@ const measure = (page) => page.evaluate(() => {
       const r = ar.getBoundingClientRect();
       return { inside: inside(r), text: ar.textContent.trim(), font: getComputedStyle(ar).fontFamily, rtl: ar.getAttribute("dir") };
     });
-    const chips = [...li.querySelectorAll(".word-card-family-chip")].map((b) => { const r = b.getBoundingClientRect(); return { h: r.height, inside: inside(r) }; });
+    // UPDATED IN PLACE 21 Oct 2026 (MSA Architect): a word's later places sit behind "+ N more" as [hidden] chips, which
+    // measure 0x0 and read as "0px tall, outside the row". Only the chips on screen are measured; a row still needs one.
+    const chips = [...li.querySelectorAll(".word-card-family-chip")].filter((b) => !b.hidden && b.getBoundingClientRect().width > 0).map((b) => { const r = b.getBoundingClientRect(); return { h: r.height, inside: inside(r) }; });
     return { boxes, chips };
   });
   return { rows, over: document.documentElement.scrollWidth - innerWidth };
