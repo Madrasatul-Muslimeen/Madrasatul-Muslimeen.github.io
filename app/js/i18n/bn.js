@@ -2672,6 +2672,8 @@ export const BN = {
   "{n} words moved up.": "{n}টি শব্দ এক ধাপ এগিয়েছে।",
   "Practise {what}": "অনুশীলন করুন: {what}",
   "Back to the step": "ধাপে ফিরুন",
+  // PCF MSA J57
+  "Go to its āyah {ref}": "এর আয়াতে যান {ref}",
   "Show 20 more": "আরও ২০টি দেখান",
   // PCF MSA J48 round 2 -- the review schedule.
   "Review": "পুনরালোচনা",

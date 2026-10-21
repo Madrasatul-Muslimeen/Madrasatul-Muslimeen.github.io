@@ -3735,6 +3735,10 @@
   .ln-tick { grid-area: tick; font-size: 0.78rem; font-weight: 800; color: #1d6b4a; }
   /* PCF MSA J48 -- Vocabulary. Purple (#4b2a85 on #f1e9fb) for the module's own parts; known = the J47 green. */
   .word-card-practise { display: block; width: 100%; min-height: 44px; margin: 0.5rem 0 0; padding: 0.4rem 0.7rem; border-radius: 0.5rem; background: var(--wc-purple-bg); color: var(--wc-purple-ink); border: 1px solid var(--wc-purple-line); font: inherit; font-weight: 700; cursor: pointer; box-sizing: border-box; }
+  /* PCF MSA J57: the way to the āyah this word sits in. Outlined in the card's own purple tokens, so it reads on the light
+     and the night card alike, and stays second to Practise (filled). */
+  .word-card-goto-ayah { display: block; width: 100%; min-height: 44px; margin: 0.5rem 0 0; padding: 0.4rem 0.7rem; border-radius: 0.5rem; background: transparent; color: var(--wc-purple-ink); border: 1.5px solid var(--wc-purple-ink); font: inherit; font-weight: 700; cursor: pointer; box-sizing: border-box; }
+  .word-card-goto-ayah:hover { background: var(--wc-purple-bg); }
   .ln-vocab { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0 0 0.6rem; }
   .ln-vbtn { flex: 1 1 6rem; min-height: 44px; padding: 0 0.7rem; border-radius: 0.5rem; border: 1px solid #4b2a85; background: #4b2a85; color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
   .vocab-sheet { position: fixed; inset: 0; z-index: 1450; display: flex; flex-direction: column; background: #fff; color: #13241f; }
@@ -17139,6 +17143,7 @@
         wholeQuranLevelSentence: t("{level}: Achieved {known} and {percent} of {total} words"),
         learnNextTitle: t("Learn next"),
         practiseThisWord: t("Practise this word"),
+        goToItsAyah: t("Go to its āyah {ref}"),
         learnNextLine: t("Next up: {word} · {meaning} · {count} places"),
         rootsStudiedSentence: t("{level}: studied {known} of {total} roots"),
         familyGroupMarkLabel: t("Your progress on this meaning"),
