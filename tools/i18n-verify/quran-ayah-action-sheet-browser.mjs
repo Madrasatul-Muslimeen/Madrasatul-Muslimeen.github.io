@@ -195,19 +195,27 @@ for (const viewport of [
         // Updated in place 7 Oct 2026: the Owner then asked for the actions "below the Ayah name/ number in a row",
         // so the one-tap action row (and its hints) now sits between the header and Status; Status follows it directly.
         const statusEl = sheet?.querySelector("[data-ayah-sheet-status]");
-        const header = box(statusEl?.previousElementSibling);
+        // UPDATED IN PLACE 22 Oct 2026 (PCF MSA J70): the action row now sits in its own bar (.ayah-sheet-tilebar) and
+        // Status's previous sibling is a hidden "Show both halves" bar, so the gap is measured from the action bar itself.
+        // On a computer the card is a window whose right half puts Status UNDER Take an Approach (the Owner's order), so
+        // there the check reads "Status is in the right half, above Info" instead.
+        const windowed = sheet?.hasAttribute("data-ayah-win");
+        const header = box(sheet?.querySelector(".ayah-sheet-tilebar") ?? statusEl?.previousElementSibling);
         const status = box(sheet?.querySelector("[data-ayah-sheet-status]"));
         const play = box(sheet?.querySelector("[data-ayah-sheet-play]"));
         const title = sheet?.querySelector("[data-ayah-sheet-status] .ayah-sheet-section-title");
         const tb = box(title);
         const scroller = sheet;
         const sb = box(scroller);
+        const pane = box(sheet?.querySelector("[data-ayah-sheet-paneinfo]")), info = box(sheet?.querySelector("[data-ayah-sheet-info]")), body = box(sheet?.querySelector(".ayah-sheet-body"));
         return header && status && play && tb ? {
+          windowed, inRightHalf: windowed ? !!pane && status.left >= pane.left - 1 && !!body && body.top < status.top && !!info && status.bottom <= info.top + 1 : null,
           gapUnderHeader: Math.round(status.top - header.bottom), statusAbovePlay: play.bottom <= status.top + 1,
           titleVisible: tb.top >= sb.top && tb.bottom <= Math.min(sb.bottom, innerHeight), titleText: title.textContent.trim(),
         } : null;
       });
-      check(`${lang} ${viewport.label} "Status of this āyah" sits straight under the action row (gap ${order?.gapUnderHeader}px)`, !!order && order.gapUnderHeader >= 0 && order.gapUnderHeader <= 12, JSON.stringify(order));
+      if (order?.windowed) check(`${lang} ${viewport.label} (the card as a window, J70) "Status of this āyah" is in the right half, under Take an Approach, above Info`, order.inRightHalf === true, JSON.stringify(order));
+      else check(`${lang} ${viewport.label} "Status of this āyah" sits straight under the action row (gap ${order?.gapUnderHeader}px)`, !!order && order.gapUnderHeader >= 0 && order.gapUnderHeader <= 12, JSON.stringify(order));
       check(`${lang} ${viewport.label} ...with Play this āyah in the row above it`, !!order && order.statusAbovePlay, JSON.stringify(order));
       check(`${lang} ${viewport.label} ...and its heading is in view the moment the card opens ("${{ en: "Status of this āyah", bn: order?.titleText }[lang]}")`,
         !!order && order.titleVisible && (lang !== "en" || order.titleText === "Status of this āyah"), JSON.stringify(order));

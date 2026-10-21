@@ -166,13 +166,20 @@ for (const [lang, width, height] of [["en", 390, 844], ["bn", 390, 844], ["en", 
     if (!rs.every(Boolean)) return { all: false };
     const [ref, prev, next, nv, close] = rs;
     const same = (a, b) => Math.abs(a.top - b.top) < 2;
+    // UPDATED IN PLACE 22 Oct 2026 (PCF MSA J70, the Owner: "Tidy the 2nd topbar"): on a computer the card is a wide
+    // window and its bar 2 is ONE line -- the reference, then ‹ › 📖, then ✕. Phones keep the two rows.
+    const mid = (r) => (r.top + r.bottom) / 2;
+    if (document.querySelector("[data-ayah-sheet][data-ayah-win]")) return { all: true, windowed: true,
+      row1: [prev, next, nv, close].every((r) => Math.abs(mid(r) - mid(ref)) < 12) && prev.left >= ref.right - 1 && close.left >= nv.right - 1, row2: true,
+      order: next.left >= prev.right - 1 && nv.left >= next.right - 1,
+      inside: rs.every((r) => r.left >= sheet.left - 1 && r.right <= sheet.right + 1), tap: rs.slice(1).every((r) => r.height >= 40 && r.width >= 40) };
     return { all: true,
       row1: Math.abs((ref.top + ref.bottom) / 2 - (close.top + close.bottom) / 2) < 12 && close.left >= ref.right - 1,
       row2: same(prev, next) && same(next, nv) && prev.top >= Math.min(ref.bottom, close.bottom) - 1,
       order: next.left >= prev.right - 1 && nv.left >= next.right - 1,
       inside: rs.every((r) => r.left >= sheet.left - 1 && r.right <= sheet.right + 1), tap: rs.slice(1).every((r) => r.height >= 40 && r.width >= 40) };
   });
-  check(`${tag} the header reads: reference … ✕ on row 1, then ‹, ›, 📖 Note view on row 2 -- inside the card, 40px targets`, head.all && head.row1 && head.row2 && head.order && head.inside && head.tap, JSON.stringify(head));
+  check(`${tag} the header reads: ${head.windowed ? "reference, ‹ › 📖, ✕ on one line (the card as a window)" : "reference … ✕ on row 1, then ‹, ›, 📖 Note view on row 2"} -- inside the card, 40px targets`, head.all && head.row1 && head.row2 && head.order && head.inside && head.tap, JSON.stringify(head));
   // The Owner: "all these choices/ actions could be placed below the Ayah name/ number in a row".
   const acts = await page.evaluate(() => {
     const row = document.querySelector("[data-ayah-sheet] [data-ayah-sheet-actions]"); if (!row) return null;
@@ -197,51 +204,62 @@ for (const [lang, width, height] of [["en", 390, 844], ["bn", 390, 844], ["en", 
   const refBack = await ref();
   check(`${tag} › moves the card to 14:15 and ‹ back to 14:14`, /14:15|১৪:১৫/.test(refNext) && refBack === ref0 && /14:14|১৪:১৪/.test(ref0), `${ref0} → ${refNext} → ${refBack}`);
 
-  await page.click("[data-ayah-sheet-noteview]");
-  await page.waitForFunction(() => document.querySelectorAll("#ayahNoteViewPopup .ayah-nv-sec").length === 4, null, { timeout: 8000 }).catch(() => {});
-  const nv = await page.evaluate(() => {
-    const box = document.querySelector("#ayahNoteViewPopup:not([hidden]) .ayah-nv-box"); if (!box) return null;
-    const r = box.getBoundingClientRect();
-    return { secs: box.querySelectorAll(".ayah-nv-sec").length, arabic: !!box.querySelector(".ayah-arabic")?.textContent.trim(), en: !!box.querySelector(".ayah-translation:not(.ayah-translation-bn)")?.textContent.trim(), bn: !!box.querySelector(".ayah-translation-bn")?.textContent.trim(), wbw: box.querySelectorAll(".wbw-word").length, inView: r.left >= 0 && r.right <= innerWidth && r.top >= 0 && r.bottom <= innerHeight };
-  });
-  check(`${tag} 📖 shows the āyah as the Note view does: Arabic, English, Bangla, Word by Word, on screen`, !!nv && nv.secs === 4 && nv.arabic && nv.en && nv.bn && nv.wbw === 10 && nv.inView, JSON.stringify(nv));
-  // The Owner, 9 Oct 2026, on a tablet: "no way back or it is covered". While a phone or tablet browser shows its
-  // address bar, the visible area is SHORTER than 100vh. Simulated by shortening the pop-up (fixed to the visible
-  // area) by a third: "← Āyah card" must still be on screen and the topmost thing where it is pressed.
-  const barShowing = await page.evaluate(() => {
-    const pop = document.getElementById("ayahNoteViewPopup");
-    pop.style.bottom = `${Math.round(innerHeight / 3)}px`;
-    const b = pop.querySelector("[data-ayah-nv-back]"), r = b.getBoundingClientRect(), box = pop.querySelector(".ayah-nv-box").getBoundingClientRect();
-    const top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
-    const out = { btnTop: Math.round(r.top), boxTop: Math.round(box.top), boxBottom: Math.round(box.bottom), visibleBottom: Math.round(pop.getBoundingClientRect().bottom), pressable: !!top && b.contains(top) };
-    pop.style.bottom = "";
-    return out;
-  });
-  check(`${tag} with the browser's address bar showing, "← Āyah card" stays on screen and pressable, the box inside the visible area`, barShowing.btnTop >= 0 && barShowing.pressable && barShowing.boxBottom <= barShowing.visibleBottom + 1, JSON.stringify(barShowing));
-  // 10 Oct 2026, the Owner: Full text "Make it full screen." -- and ‹ › step through the āyāt without leaving it.
-  const fs = await page.evaluate(() => { const r = document.querySelector("#ayahNoteViewPopup .ayah-nv-box").getBoundingClientRect(); return { l: Math.round(r.left), t: Math.round(r.top), w: Math.round(r.width), h: Math.round(r.height), iw: innerWidth, ih: innerHeight }; });
-  check(`${tag} Full text fills the screen`, fs.l === 0 && fs.t === 0 && fs.w === fs.iw && fs.h === fs.ih, JSON.stringify(fs));
-  const nvRef = () => page.evaluate(() => document.querySelector("#ayahNoteViewPopup .ayah-nv-ref")?.textContent ?? "");
-  const nvNav = await page.evaluate(() => { const bs = [...document.querySelectorAll("#ayahNoteViewPopup [data-ayah-nv-step]")]; return bs.map((b) => { const r = b.getBoundingClientRect(); const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return { text: b.textContent.trim(), h: Math.round(r.height), inView: r.bottom <= innerHeight + 1 && r.top >= 0, hit: !!hit && b.contains(hit) }; }); });
-  check(`${tag} ...‹ Previous āyah and Next āyah › sit on screen at the bottom, at least 40px, tappable, ${lang === "bn" ? "in Bangla" : "in English"}`, nvNav.length === 2 && nvNav.every((b) => b.h >= 40 && b.inView && b.hit) && (lang === "bn" ? /আয়াত/.test(nvNav[0].text) : /Previous āyah/.test(nvNav[0].text) && /Next āyah/.test(nvNav[1].text)), JSON.stringify(nvNav));
-  const nv0 = await nvRef();
-  await page.click('#ayahNoteViewPopup [data-ayah-nv-step]:not(:first-child)');
-  await page.waitForFunction((r) => (document.querySelector("#ayahNoteViewPopup .ayah-nv-ref")?.textContent ?? "") !== r && document.querySelectorAll("#ayahNoteViewPopup .ayah-nv-sec").length === 4, nv0, { timeout: 8000 }).catch(() => {});
-  const nv1 = await nvRef();
-  await page.click('#ayahNoteViewPopup [data-ayah-nv-step]:first-child');
-  await page.waitForFunction((r) => (document.querySelector("#ayahNoteViewPopup .ayah-nv-ref")?.textContent ?? "") === r, nv0, { timeout: 8000 }).catch(() => {});
-  const nv2 = await nvRef();
-  check(`${tag} ...› shows 14:15 in full, ‹ 14:14 again, still full screen`, /14:15|১৪:১৫/.test(nv1) && nv2 === nv0 && /14:14|১৪:১৪/.test(nv0), `${nv0} → ${nv1} → ${nv2}`);
-  await page.click('#ayahNoteViewPopup [data-ayah-nv-step]:not(:first-child)');
-  await page.waitForTimeout(600);
-  await page.click("[data-ayah-nv-back]");
-  const afterStep = await page.evaluate(() => ({ pop: !!document.querySelector("#ayahNoteViewPopup:not([hidden])"), ref: document.querySelector("[data-ayah-sheet] .ayah-sheet-ref")?.textContent }));
-  check(`${tag} ...after stepping on, ← Āyah card still returns to the card the reader came from (14:14), as it was`, !afterStep.pop && afterStep.ref === ref0, JSON.stringify(afterStep));
-  await page.click("[data-ayah-sheet-noteview]");
-  await page.waitForFunction(() => document.querySelectorAll("#ayahNoteViewPopup .ayah-nv-sec").length === 4, null, { timeout: 8000 }).catch(() => {});
-  await page.click("[data-ayah-nv-back]");
-  const afterNv = await page.evaluate(() => ({ pop: !!document.querySelector("#ayahNoteViewPopup:not([hidden])"), card: document.getElementById("ayahActionSheetOverlay")?.classList.contains("open"), ref: document.querySelector("[data-ayah-sheet] .ayah-sheet-ref")?.textContent }));
-  check(`${tag} the pop-up's ← goes back to the same Āyah card`, !afterNv.pop && afterNv.card && afterNv.ref === ref0, JSON.stringify(afterNv));
+  // UPDATED IN PLACE 22 Oct 2026 (PCF MSA J70): on a computer the Āyah card is a two-pane window whose left half IS the
+  // full text, so 📖 puts that text across the card instead of opening the separate Note view (the phone/tablet path
+  // below is unchanged). The same promise is asserted of it: Arabic, English, Bangla and Word by Word, on screen.
+  const windowed = await page.evaluate(() => !!document.querySelector("[data-ayah-sheet][data-ayah-win]"));
+  if (windowed) {
+    await page.click("[data-ayah-sheet-noteview]"); await page.waitForTimeout(300);
+    const ftw = await page.evaluate(() => { const t = document.querySelector("[data-ayah-sheet-text]"), r = t?.getBoundingClientRect(); return t ? { mode: document.querySelector("[data-ayah-sheet-panes]")?.dataset.paneMode, arabic: !!t.querySelector(".ayah-ft-ar")?.textContent.trim(), tr: t.querySelectorAll(".ayah-ft-tr p").length, wbw: t.querySelectorAll(".ayah-ft-w").length, inView: r.left >= 0 && r.right <= innerWidth && r.top >= 0 && r.top < innerHeight, popup: !!document.querySelector("#ayahNoteViewPopup:not([hidden])") } : null; });
+    check(`${tag} (the card as a window) 📖 puts the full text across the card: Arabic, English, Bangla, Word by Word, on screen, no separate pop-up`, !!ftw && ftw.mode === "text" && ftw.arabic && ftw.tr === 2 && ftw.wbw === 10 && ftw.inView && !ftw.popup, JSON.stringify(ftw));
+    await page.click("[data-ayah-sheet-noteview]"); await page.waitForTimeout(300);
+  } else {
+    await page.click("[data-ayah-sheet-noteview]");
+    await page.waitForFunction(() => document.querySelectorAll("#ayahNoteViewPopup .ayah-nv-sec").length === 4, null, { timeout: 8000 }).catch(() => {});
+    const nv = await page.evaluate(() => {
+      const box = document.querySelector("#ayahNoteViewPopup:not([hidden]) .ayah-nv-box"); if (!box) return null;
+      const r = box.getBoundingClientRect();
+      return { secs: box.querySelectorAll(".ayah-nv-sec").length, arabic: !!box.querySelector(".ayah-arabic")?.textContent.trim(), en: !!box.querySelector(".ayah-translation:not(.ayah-translation-bn)")?.textContent.trim(), bn: !!box.querySelector(".ayah-translation-bn")?.textContent.trim(), wbw: box.querySelectorAll(".wbw-word").length, inView: r.left >= 0 && r.right <= innerWidth && r.top >= 0 && r.bottom <= innerHeight };
+    });
+    check(`${tag} 📖 shows the āyah as the Note view does: Arabic, English, Bangla, Word by Word, on screen`, !!nv && nv.secs === 4 && nv.arabic && nv.en && nv.bn && nv.wbw === 10 && nv.inView, JSON.stringify(nv));
+    // The Owner, 9 Oct 2026, on a tablet: "no way back or it is covered". While a phone or tablet browser shows its
+    // address bar, the visible area is SHORTER than 100vh. Simulated by shortening the pop-up (fixed to the visible
+    // area) by a third: "← Āyah card" must still be on screen and the topmost thing where it is pressed.
+    const barShowing = await page.evaluate(() => {
+      const pop = document.getElementById("ayahNoteViewPopup");
+      pop.style.bottom = `${Math.round(innerHeight / 3)}px`;
+      const b = pop.querySelector("[data-ayah-nv-back]"), r = b.getBoundingClientRect(), box = pop.querySelector(".ayah-nv-box").getBoundingClientRect();
+      const top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      const out = { btnTop: Math.round(r.top), boxTop: Math.round(box.top), boxBottom: Math.round(box.bottom), visibleBottom: Math.round(pop.getBoundingClientRect().bottom), pressable: !!top && b.contains(top) };
+      pop.style.bottom = "";
+      return out;
+    });
+    check(`${tag} with the browser's address bar showing, "← Āyah card" stays on screen and pressable, the box inside the visible area`, barShowing.btnTop >= 0 && barShowing.pressable && barShowing.boxBottom <= barShowing.visibleBottom + 1, JSON.stringify(barShowing));
+    // 10 Oct 2026, the Owner: Full text "Make it full screen." -- and ‹ › step through the āyāt without leaving it.
+    const fs = await page.evaluate(() => { const r = document.querySelector("#ayahNoteViewPopup .ayah-nv-box").getBoundingClientRect(); return { l: Math.round(r.left), t: Math.round(r.top), w: Math.round(r.width), h: Math.round(r.height), iw: innerWidth, ih: innerHeight }; });
+    check(`${tag} Full text fills the screen`, fs.l === 0 && fs.t === 0 && fs.w === fs.iw && fs.h === fs.ih, JSON.stringify(fs));
+    const nvRef = () => page.evaluate(() => document.querySelector("#ayahNoteViewPopup .ayah-nv-ref")?.textContent ?? "");
+    const nvNav = await page.evaluate(() => { const bs = [...document.querySelectorAll("#ayahNoteViewPopup [data-ayah-nv-step]")]; return bs.map((b) => { const r = b.getBoundingClientRect(); const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return { text: b.textContent.trim(), h: Math.round(r.height), inView: r.bottom <= innerHeight + 1 && r.top >= 0, hit: !!hit && b.contains(hit) }; }); });
+    check(`${tag} ...‹ Previous āyah and Next āyah › sit on screen at the bottom, at least 40px, tappable, ${lang === "bn" ? "in Bangla" : "in English"}`, nvNav.length === 2 && nvNav.every((b) => b.h >= 40 && b.inView && b.hit) && (lang === "bn" ? /আয়াত/.test(nvNav[0].text) : /Previous āyah/.test(nvNav[0].text) && /Next āyah/.test(nvNav[1].text)), JSON.stringify(nvNav));
+    const nv0 = await nvRef();
+    await page.click('#ayahNoteViewPopup [data-ayah-nv-step]:not(:first-child)');
+    await page.waitForFunction((r) => (document.querySelector("#ayahNoteViewPopup .ayah-nv-ref")?.textContent ?? "") !== r && document.querySelectorAll("#ayahNoteViewPopup .ayah-nv-sec").length === 4, nv0, { timeout: 8000 }).catch(() => {});
+    const nv1 = await nvRef();
+    await page.click('#ayahNoteViewPopup [data-ayah-nv-step]:first-child');
+    await page.waitForFunction((r) => (document.querySelector("#ayahNoteViewPopup .ayah-nv-ref")?.textContent ?? "") === r, nv0, { timeout: 8000 }).catch(() => {});
+    const nv2 = await nvRef();
+    check(`${tag} ...› shows 14:15 in full, ‹ 14:14 again, still full screen`, /14:15|১৪:১৫/.test(nv1) && nv2 === nv0 && /14:14|১৪:১৪/.test(nv0), `${nv0} → ${nv1} → ${nv2}`);
+    await page.click('#ayahNoteViewPopup [data-ayah-nv-step]:not(:first-child)');
+    await page.waitForTimeout(600);
+    await page.click("[data-ayah-nv-back]");
+    const afterStep = await page.evaluate(() => ({ pop: !!document.querySelector("#ayahNoteViewPopup:not([hidden])"), ref: document.querySelector("[data-ayah-sheet] .ayah-sheet-ref")?.textContent }));
+    check(`${tag} ...after stepping on, ← Āyah card still returns to the card the reader came from (14:14), as it was`, !afterStep.pop && afterStep.ref === ref0, JSON.stringify(afterStep));
+    await page.click("[data-ayah-sheet-noteview]");
+    await page.waitForFunction(() => document.querySelectorAll("#ayahNoteViewPopup .ayah-nv-sec").length === 4, null, { timeout: 8000 }).catch(() => {});
+    await page.click("[data-ayah-nv-back]");
+    const afterNv = await page.evaluate(() => ({ pop: !!document.querySelector("#ayahNoteViewPopup:not([hidden])"), card: document.getElementById("ayahActionSheetOverlay")?.classList.contains("open"), ref: document.querySelector("[data-ayah-sheet] .ayah-sheet-ref")?.textContent }));
+    check(`${tag} the pop-up's ← goes back to the same Āyah card`, !afterNv.pop && afterNv.card && afterNv.ref === ref0, JSON.stringify(afterNv));
+  }
 
   // A word chip leaves the card for the Word card; "Back to Āyah card" brings the card back.
   await page.evaluate(() => document.querySelector("[data-ayah-sheet] [data-word-occurrence]")?.click());
