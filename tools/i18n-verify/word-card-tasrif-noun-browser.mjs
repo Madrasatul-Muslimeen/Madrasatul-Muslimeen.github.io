@@ -133,6 +133,9 @@ for (const lang of ["en", "bn"].filter((l) => !only("lang") || only("lang") === 
         if (!box) { off.push(`${sel} missing`); continue; }
         for (const el of [box, ...box.querySelectorAll("*")]) {
           if (el.hasAttribute("data-noun-empty") || el.closest("[data-noun-empty]")) continue;
+          // UPDATED IN PLACE 22 Oct 2026 (PCF MSA J69): the gold "Basic form: فَعَلَ" button now sits in the shape box's
+          // sentence on its own gold chip, deliberately not purple; its own ink-on-chip contrast is checked below instead.
+          if (el.closest(".word-card-basic-bar")) continue;
           if (![...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim())) continue;
           const c = getComputedStyle(el).color;
           if (c !== want) off.push(`${el.tagName.toLowerCase()}${el.dataset.nounCell ? `[${el.dataset.nounCell}]` : ""}:${c}`);
@@ -141,6 +144,15 @@ for (const lang of ["en", "bn"].filter((l) => !only("lang") || only("lang") === 
       return { want, off };
     });
     check(`${L} every text in both purple boxes renders in exactly --wc-purple-ink (${ink.want})`, ink.off.length === 0, JSON.stringify(ink));
+    // J69: the gold button's text against its own chip (WCAG AA 4.5:1 for normal text)
+    const chip = await page.evaluate(() => {
+      const b = document.querySelector("#quranWordCardMount .word-card-basic-btn"); if (!b) return null;
+      const rgb = (c) => c.match(/\d+(\.\d+)?/g).slice(0, 3).map(Number);
+      const lum = ([r, g, bl]) => { const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }; return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(bl); };
+      const a = lum(rgb(getComputedStyle(b).color)), c = lum(rgb(getComputedStyle(b).backgroundColor));
+      return Math.round(((Math.max(a, c) + 0.05) / (Math.min(a, c) + 0.05)) * 100) / 100;
+    });
+    check(`${L} the gold "Basic form" button's text reads on its own chip (contrast at least 4.5:1)`, chip !== null && chip >= 4.5, String(chip));
 
     // --- the way back: tap a box, tap a place, Back ---
     await page.click('[data-noun-cell="SG"]');
