@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "12.14",
+    "version": "12.15",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -4445,8 +4445,20 @@
     {
       "version": "12.14",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "PCF MSA J60, J61 part 1 and J62: the Family level's one-row places with +N more and a plate per meaning, the WbW word parts always coloured with no Colour tick or key line, Taṣrīf's Arabic at 90% of the main word, and QCR's Level with two Non-Muslim levels.",
+      "integration": {
+        "authorizedOn": "2026-10-21",
+        "integratedOn": "2026-10-21",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.15",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "QR's worker lists (SHELL and PRECACHE in apps/qr/site/app/sw.js) gain app/js/quran-translit-bn.js, which v12.13 added and QR's asma-offline check found missing.",
       "integration": {
         "authorizedOn": "2026-10-21",
         "integratedOn": "2026-10-21",
@@ -4455,8 +4467,9 @@
       }
     }
   ],
-  "nextUnallocated": "12.15",
+  "nextUnallocated": "12.16",
   "nextUnallocatedNote": [
+    "v12.15 was allocated to QR's offline lists carry the Bangla transliteration module, 2026-10-21.",
     "v12.14 was allocated to Word card Family rows and plates, WbW always coloured; Taṣrīf Arabic at 90%; QCR Level (PCF MSA J60 J61 J62), 2026-10-21.",
     "v12.13 was allocated to Bangla transliteration everywhere and the one-line poster menu (PCF MSA J58), 2026-10-21.",
     "v12.12 was allocated to Word card: the Legend is a small ⓘ in the top bar (PCF MSA J59), 2026-10-21.",

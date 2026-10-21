@@ -422,7 +422,7 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v12.14 on `main`** (21 Oct 2026 — **Word card Family, WbW colour and Taṣrīf Arabic; QCR Level** (PCF MSA J60, J61 part 1, J62, the Owner's phone screenshots): Family shows ONE measured row of places per meaning, then **+N more** (the gold place of this word always on it; **Show fewer** closes), each meaning on its own plate; the WbW word parts are always coloured, with no Colour tick and no "particle · stem" key line; every Arabic word in Taṣrīf's two noun boxes is 90% of the main word at the top (`--wc-head-ar`, `--wc-tasrif-ar`); QCR's third field reads **Level**, with **Non-Muslim** and **Non-Muslim 13-yo** added (ids `nonmuslim`, `nonmuslim13`). The previous release, v12.13, is Bangla transliteration everywhere (J58).)
+**Current milestone: v12.15 on `main`** (21 Oct 2026 — **QR offline fix**: QR's own worker lists (`apps/qr/site/app/sw.js`, SHELL and PRECACHE) now carry `app/js/quran-translit-bn.js`, the module v12.13 (J58) added, so QR's Asma page and Word card work offline; found by QR's `asma-offline-browser` check on v12.14. MSA itself caches by folder and was not affected. The previous release, v12.14, is the Word card's Family rows and plates, WbW always coloured, Taṣrīf Arabic at 90% and QCR Level (J60, J61 part 1, J62).)
 
 **Earlier milestones, v08.111 back to v07.139, and the long notes around them**
 (the held Phase 4 wiring, the four deployment states, the Programme Integration
