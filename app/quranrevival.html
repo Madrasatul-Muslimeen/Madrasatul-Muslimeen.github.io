@@ -3574,10 +3574,13 @@
   /* PCF MSA J61 part 2 (the Owner, 21 Oct 2026: "Arabic bigger in Tasrif? Yes. And to other places where it was that
      small."): the verb Taṣrīf section's Arabic -- its title, the three tense names on the toggle, each table's lead line,
      the pronouns and the verbs -- is 90% of the big word at the top of the card, as part 1 did for nouns (it was 45-65% on
-     a computer). The one-tense view keeps its own larger sizes where they are bigger (its verbs are 2rem already). */
+     a computer). The one-tense view keeps its own larger sizes. */
   .word-card-acc[data-word-card-sec="conj"] { --wc-tasrif-ar: calc(var(--wc-head-ar) * 0.9); }
   .word-card-acc-ar > span[lang], .word-card-conj-toggle button small, .word-card-cj-lead, .word-card-cj-pr .word-card-ar, .word-card-cj-vb, .word-card-cj-mood .word-card-ar { font-size: var(--wc-tasrif-ar); }
   .word-card-cj-one .word-card-cj-pr .word-card-ar { font-size: max(1.35rem, var(--wc-tasrif-ar)); }
+  /* ...and its verbs stay clearly bigger than in All three (J46: "at least 1.4x"), now that All three is 90%: on a computer
+     29px there, ~42px here; on a phone 2rem is already the larger. */
+  .word-card-cj-one .word-card-cj-vb { font-size: max(2rem, calc(var(--wc-tasrif-ar) * 1.45)); }
   /* J61 part 2: on a card under 20rem (a 320px phone) a toggle button is ~64px wide: "Command" broke as "Comma / nd"
      (before J61 too) and a tense name at 90% broke inside the word. Less padding and type, and
      columns sized to their names. */

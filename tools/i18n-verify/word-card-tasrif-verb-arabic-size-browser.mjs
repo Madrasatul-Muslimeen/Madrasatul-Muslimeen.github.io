@@ -8,6 +8,7 @@
 //   nosize    the size rule is gone (the old 45-65% sizes)            -> the 90% checks fail
 //   notoken   the section's token is gone                            -> the 90% checks fail
 //   onepron   the one-tense view's pronouns lose their floor          -> the one-tense pronoun check fails at 390
+//   onebig    the one-tense verbs are not kept 1.45x bigger (J46)       -> the one-tense verb check fails at 1280
 //   btn       the toggle's buttons keep their padding and type at 320 -> the "whole names" checks fail at 320
 //   cols      the toggle keeps four equal columns at 320              -> the "inside its button" check fails at 320
 import { chromium, newContext, openPage } from "./harness.mjs";
@@ -20,6 +21,7 @@ const MUT = {
   notoken: [HTML, '  .word-card-acc[data-word-card-sec="conj"] { --wc-tasrif-ar: calc(var(--wc-head-ar) * 0.9); }\n', ""],
   onepron: [HTML, "  .word-card-cj-one .word-card-cj-pr .word-card-ar { font-size: max(1.35rem, var(--wc-tasrif-ar)); }\n", ""],
   btn: [HTML, "    .word-card-conj-toggle button { padding: 4px 1px; font-size: 0.8rem; }\n", ""],
+  onebig: [HTML, "  .word-card-cj-one .word-card-cj-vb { font-size: max(2rem, calc(var(--wc-tasrif-ar) * 1.45)); }\n", ""],
   cols: [HTML, " grid-template-columns: repeat(4, auto); }", " }"],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
@@ -89,7 +91,7 @@ for (const [lang, width] of runs) {
     check(`${t} the big word at the top is ${wantHead}px, and the view is the one asked for`, Math.abs(s.head - wantHead) < 0.2 && s.one === (view !== "all"), JSON.stringify({ h: s.head, one: s.one }));
     check(`${t} the title, the toggle's three tense names and the lead line are 90% of it (${want.toFixed(2)}px)`, s.nToggle === 4 && near(s.acc, want) && near(s.tog, want) && near(s.lead, want), JSON.stringify({ acc: s.acc, tog: s.tog, lead: s.lead }));
     if (view === "all") check(`${t} every pronoun and every verb is 90% too`, near(s.pr, want) && near(s.vb, want), JSON.stringify({ pr: s.pr, vb: s.vb }));
-    else check(`${t} the verbs keep 2rem and the pronouns at least 1.35rem (and at least 90%)`, near(s.vb, 32) && near(s.pr, Math.max(21.6, want)), JSON.stringify({ pr: s.pr, vb: s.vb }));
+    else check(`${t} the verbs are the larger of 2rem and 1.45x All three's (${Math.max(32, want * 1.45).toFixed(2)}px; J46), the pronouns at least 1.35rem and 90%`, near(s.vb, Math.max(32, want * 1.45)) && near(s.pr, Math.max(21.6, want)), JSON.stringify({ pr: s.pr, vb: s.vb }));
     check(`${t} every tense name on the toggle is whole, on one line, inside its button`, s.broken.length === 0 && s.spill.length === 0, JSON.stringify({ b: s.broken, s: s.spill }));
     check(`${t} no verb or pronoun spills out of its cell, nothing leaves the card, no sideways scroll`, s.cellSpill === 0 && s.outOfCard === 0 && s.over <= 0, JSON.stringify({ cs: s.cellSpill, c: s.outOfCard, o: s.over }));
     if (process.argv.includes("--shot")) {
