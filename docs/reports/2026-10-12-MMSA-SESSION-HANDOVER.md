@@ -7,7 +7,68 @@ v10.28). Read `CLAUDE.md` first. The prompt that starts the next session is
 
 This session was summarised once (its context compacted), which is why it hands over here.
 
-## LATEST UPDATE — 21 Oct 2026, 2:45 pm Sydney, session `session_012pLhEYVFHKJ8KbEvMua2kF` (v12.12 live on MSA AND QR; Builder round #1001 running; HANDOVER) — READ THIS FIRST
+## LATEST UPDATE — 21 Oct 2026, 4:30 pm Sydney, session `session_01LzpvsLYG9iahYhnxMrNNHH` (v12.15 live on MSA AND QR; Builder round #1004 running; HANDOVER) — READ THIS FIRST
+
+Took over 2:47 pm 21 Oct from `session_012pLhEYVFHKJ8KbEvMua2kF`. Handing over at ~40% context (cost86/hand119).
+**`main` is v12.15 (v12.14 live 4:29 pm; v12.15 is QR's offline list, see below). Next release: v12.16.** The PCA is `session_019xuGwr6uFeQUpKmERwBPxX`.
+
+**Released this session**
+- **v12.13** (PR #1003): MSA J58, Bangla transliteration everywhere (`app/js/quran-translit-bn.js`) with a Latin | Bangla | Both
+  choice, and the poster menu as one line. Built by Builder round #1001; **its GitHub credentials expired (401) after its third
+  push, so it opened no PR**; the Architect finished it from `builder/issue-1001-run-1620`, applying the two mutation anchors
+  the Builder listed in its comment on #1001. Owner check `n58c` open.
+- **v12.14** (PR #1005): MSA J60 (Family: one measured row of places per meaning + "+N more", a plate per meaning,
+  `fitWordCardFamilyRows()`; WbW always coloured, the Colour tick and colour-key line removed), J61 part 1 (Taṣrīf noun-box
+  Arabic at 90% of the main word: `--wc-head-ar` / `--wc-tasrif-ar`; whole case names at 320px), J62 (QCR "Level", ids
+  `nonmuslim` and `nonmuslim13`, additive). Owner checks `n60a`, `n61a`, `n62a` open.
+- **v12.15** (QR only): QR's 20 checks on v12.14 were 19/20; `asma-offline-browser` found that J58's new
+  `app/js/quran-translit-bn.js` was in neither of QR's offline lists (`apps/qr/site/app/sw.js` SHELL and PRECACHE), so QR's
+  Asma page (via `asma-cited-ayat.js`) and Word card (via `quran-word-card.js`) would miss it offline. Added to both;
+  asma-offline 58/0, qr-offline 36/0, one-worker 42/0, upgrade 85/0. MSA's own worker caches by folder and was not affected.
+  **After it merges: dispatch QR's `build-from-msa.yml` and confirm QR serves v12.15** (if this session could not).
+- Owner checks done: **n59a** (v12.12 ⓘ) and **n57a** (v12.11 Go to its āyah): "both legend n go to works"; J57 and J59 closed.
+
+**Running / waiting (each in the PCF job named)**
+1. **MSA J63, Builder round #1004** (dispatched ~4:20 pm): the Mushaf view's ⋯ tools card loses its Bookmark tile (the
+   toolbar 🔖 stays), gains an "Attach to QCR" 📚 tile (opens `openQcrPopup` with Back to the āyah), and the floating Back
+   pill is a bigger arrow-only ← below 600px (text kept as aria-label/title). Spec in #1004. Review by measurement, then
+   release v12.16. If the Builder loses its login again, finish from its pushed branch as with #1001.
+2. **MSA J61 part 2** (the Owner, ~4:10 pm: "Arabic bigger in Tasrif? Yes. And to other places where it was that small."):
+   the verb Taṣrīf (conjugation) table, then a measured sweep of every Arabic word in the app much smaller than its
+   screen's main Arabic, each sized off a token as part 1 did, with a suite like `word-card-tasrif-arabic-size-browser`.
+3. **MSA J64** (the Owner, ~4:22 pm: rename the QCR group "Inna Fi Zalikal Ayah" to "Inna Fi Zalikah La Ayah - Mu'min", and
+   add "… - Non-Muslim"): these are the Owner's own Firestore data, which a session cannot write; n64a gives the app's own
+   taps (Explore → QCR → ⋯ → ✎ / +). If they tick C ("make it a button"), that is a build round.
+4. **MSA J48 round 3**: AGREED, build from Thu 22 Oct ~7 pm (plan j48p10; demo branch `claude/j48-round3-demo`). Step 2
+   check: the PCA reminds the Owner Thu 8:30 am; need `n48e`.
+5. Owner checks open: n58c, n60a, n61a, n62a, n64a.
+
+**Owner messages this session (carry1), each filed in the PCF job named**
+1. ~2:55 pm: the phone queue question (answered: type and Send while Claude works) + Family one row/"x more"/plates + WbW
+   always coloured, no tick, no "stem, particle" line → J60.
+2. ~3:35 pm: "Make the Arabic bigger as the equal size of the main word itself (may be 10% less)" + "both legend n go to
+   works" → J61; n59a/n57a ticked A.
+3. ~3:45 pm: "QCR: Rename Yr Level to Level. Add 'Non-Muslim- 13-yo' as a level." → J62.
+4. ~4:10 pm: Taṣrīf Yes and everywhere small (→ J61 part 2); "J62. Add another level for only 'Non-Muslim'" (→ J62,
+   done); the Mushaf card screenshot (→ J63, Builder #1004).
+5. ~4:22 pm: rename the QCR group to "… - Mu'min" and add "… - Non-Muslim" → J64.
+
+**Lessons**
+- **QR's checks serve the QR build on port 8082** (`tools/apps/serve-app.mjs`). A second `serve.js` for a worktree on 8082
+  makes them test the wrong site and fail by the dozen. Use 8081/8083, and stop every extra server before `run-all.sh`.
+- **A worktree's test server is not the main checkout's**: before believing a red run, ask which directory the port
+  serves (`/proc/<pid>/cwd`). One J62 run went red only because 8081 was an older worktree.
+- **A hidden control is not a tap target**: `quran-word-card-rendered` counted J60's `[hidden]` "+N more" buttons as 0px;
+  it now measures only rendered buttons (updated in place).
+- **Run QR's 20 checks BEFORE merging a round that adds a module**: QR's worker has fixed file lists, so a new `.js` an
+  Asma or Quran page imports must be added to `apps/qr/site/app/sw.js` (SHELL and/or PRECACHE) in the same round. J58 missed
+  it and needed v12.15. Write that into the next Builder spec that adds a file.
+- **Never `pkill -f` a pattern that is also in your own command line**: it kills your own shell (exit 144), and every
+  step after it silently does not run.
+- **A new check can be blind on its first run**: J61's column-head check read the `<th>`'s own text node, but the name is in
+  a `<span>`; its mutation went UNCAUGHT and that is how it was found. Mutation-prove every check before believing it.
+
+## LATEST UPDATE — 21 Oct 2026, 2:45 pm Sydney, session `session_012pLhEYVFHKJ8KbEvMua2kF` (v12.12 live on MSA AND QR; Builder round #1001 running; HANDOVER) — superseded by the 4:30 pm block above, kept as history
 
 Took over 12:43 pm 21 Oct from `session_01YZYYGbS7PEgU5srQjy3pkd`. Handing over at ~40% context (cost86/hand119), on the PCA's word.
 **`main` is v12.12, live on MSA and QR (1:41 pm). Next release: v12.13.** The PCA is `session_019xuGwr6uFeQUpKmERwBPxX`.
@@ -1193,3 +1254,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v12.12** (2026-10-21): Word card: the Legend is a small ⓘ in the top bar (PCF MSA J59).
 - **v12.13** (2026-10-21): Bangla transliteration everywhere and the one-line poster menu (PCF MSA J58).
 - **v12.14** (2026-10-21): Word card Family rows and plates, WbW always coloured; Taṣrīf Arabic at 90%; QCR Level (PCF MSA J60 J61 J62).
+- **v12.15** (2026-10-21): QR's offline lists carry the Bangla transliteration module.
