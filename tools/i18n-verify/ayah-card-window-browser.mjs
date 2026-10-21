@@ -74,7 +74,9 @@ async function openCard(P) {
   await P.waitForFunction(() => document.querySelector("[data-ayah-sheet] .ayah-sheet-ref"), null, { timeout: 8000 });
   await P.waitForTimeout(500);
 }
-const sheetRect = (P) => P.evaluate(() => { const b = document.querySelector("[data-ayah-sheet]")?.getBoundingClientRect(); return b && { x: b.left, y: b.top, w: b.width, h: b.height }; });
+const isOpen = (P) => P.evaluate(() => !!document.querySelector("[data-ayah-sheet]"));
+// A card that closed unexpectedly reads as NaN, so the position checks FAIL by name instead of the suite crashing.
+const sheetRect = (P) => P.evaluate(() => { const b = document.querySelector("[data-ayah-sheet]")?.getBoundingClientRect() ?? { left: NaN, top: NaN, width: NaN, height: NaN }; return { x: b.left, y: b.top, w: b.width, h: b.height }; });
 const centre = (P, sel) => P.evaluate((s) => { const b = document.querySelector(s).getBoundingClientRect(); return { x: b.left + b.width / 2, y: b.top + b.height / 2 }; }, sel);
 async function drag(P, from, dx, dy) {
   await P.mouse.move(from.x, from.y); await P.mouse.down();
@@ -216,13 +218,13 @@ for (const look of ["night", "light"]) for (const lang of ["en", "bn"]) {
       await P.evaluate(() => document.querySelector('[data-approach-stage-btn="practising"]')?.click());
       await P.waitForTimeout(400);
       const after = await P.evaluate(() => (window.__stubWriteData || []).filter((x) => x.col === "records").length);
-      check(`${tag} a stage button still writes the record, and the card stays open`, after > before && !!(await sheetRect(P)), `${before} -> ${after}`);
+      check(`${tag} a stage button still writes the record, and the card stays open`, after > before && await isOpen(P), `${before} -> ${after}`);
       for (const [name, sel] of [["Note", "[data-ayah-sheet-note]"], ["Poster", "[data-ayah-sheet-poster]"], ["QCR", "[data-ayah-sheet-qcr]"], ["Play", "[data-ayah-sheet-play]"], ["Copy", "[data-ayah-sheet-copy]"]]) {
-        if (!(await sheetRect(P))) await openCard(P);
+        if (!(await isOpen(P))) await openCard(P);
         const present = await P.evaluate((s) => !!document.querySelector(`[data-ayah-sheet] ${s}`), sel);
         await P.evaluate((s) => document.querySelector(`[data-ayah-sheet] ${s}`)?.click(), sel);
         await P.waitForTimeout(500);
-        const gone = !(await sheetRect(P));
+        const gone = !(await isOpen(P));
         const fd = await P.evaluate(() => { const f = document.querySelector("[data-ayah-win-frame]"); return f ? getComputedStyle(f).display : "none"; });
         check(`${tag} the ${name} tile acts as before (card closes, handles go with it)`, present && gone && fd === "none", `present=${present} gone=${gone} frame=${fd}`);
         if (name === "Note") check(`${tag} Note opens the note pane`, await P.evaluate(() => !document.getElementById("readNotePane")?.hidden));
