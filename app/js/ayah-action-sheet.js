@@ -376,8 +376,16 @@ function relatedInfoHtml(related) {
 function fullTextPaneHtml(fullText) {
   if (!fullText) return `<p class="ayah-status-empty">${escapeHtml(t("Open the āyah's sūrah to see its full text here."))}</p>`;
   const tr = (text, lang, label) => text ? `<div class="ayah-ft-tr"><span class="ayah-ft-label">${escapeHtml(label)}</span><p lang="${lang}">${escapeHtml(text)}</p></div>` : "";
+  // PCF MSA J70 (the Owner, 22 Oct 2026): "Enable the full text with translations and WbW expand/collapse" -- two
+  // sections under the Arabic, each opened and closed by its own heading; the card remembers which (ayah-card-window.js).
+  const words = (fullText.words ?? []).filter((w) => w?.arabic);
+  const wbw = words.length
+    ? `<details class="ayah-ft-sec" data-ayah-ft-sec="wbw"><summary>${escapeHtml(t("Word by word"))} <span class="ayah-ft-count">${escapeHtml(String(words.length))}</span></summary>
+        <div class="ayah-ft-wbw" dir="rtl">${words.map((w) => `<span class="ayah-ft-w"><b dir="rtl" lang="ar">${escapeHtml(w.arabic)}</b>${w.translit ? `<i dir="ltr">${escapeHtml(w.translit)}</i>` : ""}${w.en ? `<small dir="ltr" lang="en">${escapeHtml(w.en)}</small>` : ""}${w.bn ? `<small dir="ltr" lang="bn">${escapeHtml(w.bn)}</small>` : ""}</span>`).join("")}</div></details>`
+    : "";
+  const trs = tr(fullText.en, "en", t("English")) + tr(fullText.bn, "bn", t("Bangla"));
   return `<p class="ayah-ft-ar" dir="rtl" lang="ar" data-i18n-skip>${escapeHtml(fullText.arabic ?? "")}</p>` +
-    tr(fullText.en, "en", t("English")) + tr(fullText.bn, "bn", t("Bangla"));
+    (trs ? `<details class="ayah-ft-sec" data-ayah-ft-sec="tr" open><summary>${escapeHtml(t("Translations"))}</summary>${trs}</details>` : "") + wbw;
 }
 
 /**

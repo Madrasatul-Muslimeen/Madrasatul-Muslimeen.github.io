@@ -4420,4 +4420,5 @@ export const BN = {
   "Full text across the whole card": "পূর্ণ পাঠ পুরো কার্ড জুড়ে",
   "Drag to resize the two halves": "দুই অর্ধেকের মাপ বদলাতে টানুন",
   "Status, Approach and Info": "অবস্থা, পদ্ধতি ও তথ্য",
+  "Translations": "অনুবাদ",
 };

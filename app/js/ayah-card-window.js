@@ -15,6 +15,7 @@ import { HANDLES, startDrag, handleCss } from "./float-window.js";
 // opening" -- a new key, so every device's first open is the new large card, not a place remembered from J67.
 const KEY = "mmsa-ayah-window-v2";
 const PANES_KEY = "mmsa-ayah-panes"; // { f: the left pane's share 0..1, mode: "split" | "text" | "info" }
+const FT_KEY = "mmsa-ayah-ft-open"; // J70: which full-text sections are open { tr, wbw }
 const SQUEEZE = 0.12; // dragged nearer an edge than this, a pane squeezes to a bar above the other
 const WINDOW_FROM = 900;
 const WIDE_FROM = 560; // card width from which the contents sit in two columns
@@ -150,9 +151,12 @@ export function initAyahCardWindow(mountEl) {
   }
 
   let panes = loadPanes();
+  let ftOpen = (() => { try { return { tr: true, wbw: false, ...(JSON.parse(localStorage.getItem(FT_KEY) || "null") ?? {}) }; } catch { return { tr: true, wbw: false }; } })();
   function applyPanes(sheet) {
     const box = sheet?.querySelector("[data-ayah-sheet-panes]");
     if (!box) return;
+    // the full text's sections open as the reader left them (the card is redrawn as its data arrives)
+    box.querySelectorAll("details[data-ayah-ft-sec]").forEach((d) => { const want = !!ftOpen[d.dataset.ayahFtSec]; if (d.open !== want) { d.dataset.ftApplying = "1"; d.open = want; } });
     box.dataset.paneMode = panes.mode;
     box.style.setProperty("--ap-l", `${panes.f}fr`);
     box.style.setProperty("--ap-r", `${1 - panes.f}fr`);
@@ -186,6 +190,14 @@ export function initAyahCardWindow(mountEl) {
     e.preventDefault();
     setPanes({ f: Math.min(Math.max(panes.f + d, SQUEEZE), 1 - SQUEEZE), mode: "split" });
   });
+  // J70: opening or closing Translations / Word by word is remembered on this device ("toggle" does not bubble: capture)
+  mountEl.addEventListener("toggle", (e) => {
+    const d = e.target;
+    if (!(d instanceof HTMLDetailsElement) || !d.dataset.ayahFtSec) return;
+    if (d.dataset.ftApplying) { delete d.dataset.ftApplying; return; }
+    ftOpen = { ...ftOpen, [d.dataset.ayahFtSec]: d.open };
+    try { localStorage.setItem(FT_KEY, JSON.stringify(ftOpen)); } catch { /* not remembered */ }
+  }, true);
   // ⤢ and 📖 Full text: the full text across the card (again: back to both halves); a squeezed bar: both halves again.
   // Capture phase, so on a PC the header's 📖 widens the left pane instead of opening the separate Note view.
   mountEl.addEventListener("click", (e) => {
