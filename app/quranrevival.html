@@ -18406,7 +18406,8 @@
       if (quranWordCardState.level === "depth") ensureBanglaLemmaDictionary();
       if (quranWordCardState.level !== "wbw") ensureLemmaForms();
       if (quranWordCardState.level === "intermediate" || quranWordCardState.level === "basic") ensureIntermediateData();
-      if (quranWordCardState.level === "tasrif" && quranWordCardContext.wordFeatures?.tense) ensureVerbForms();
+      // J69: the basic form فَعَلَ is a verb table too, so a noun's Taṣrīf fetches the verb forms when it is opened.
+      if (quranWordCardState.level === "tasrif" && (quranWordCardContext.wordFeatures?.tense || wordCardConjBasic === quranWordCardState.occurrenceId)) ensureVerbForms();
       else if (quranWordCardState.level === "tasrif") ensureNounData(word);
       // Round 4 -- an accordion the reader opened or closed stays that way: read the open state off the DOM before it is replaced.
       content.querySelectorAll("details[data-word-card-sec]").forEach((d) => { wordCardDepthOpen[d.dataset.wordCardSec] = d.open; });

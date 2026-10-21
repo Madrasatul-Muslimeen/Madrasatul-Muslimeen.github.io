@@ -711,8 +711,8 @@ function conjSection(word, features, ctx) {
   const rootAr = [...toArabic(entry.r)].join(" ");
   const formLabel = lang === "bn" ? formatNumber(entry.f) : (FORM_NAMES[entry.f]?.roman ?? String(entry.f));
   const out = basic
-    ? [line("rule", lang, `${esc(fill(pick("conjBasicRule", lang), { root: "\u0000" })).replace("\u0000", AR(rootAr))} <span class="word-card-m">${esc(pick("conjBasicHelp", lang))}</span> ${basicBarHtml(word, ctx)}`)]
-    : [line("rule", lang, `${esc(fill(pick("conjRule", lang), { n: formLabel, root: "\u0000" })).replace("\u0000", AR(rootAr))} <span class="word-card-m">${esc(pick("conjHelp", lang))}</span> ${basicBarHtml(word, ctx)}`)];
+    ? [line("rule", lang, `${basicBarHtml(word, ctx)} ${esc(fill(pick("conjBasicRule", lang), { root: "\u0000" })).replace("\u0000", AR(rootAr))} <span class="word-card-m">${esc(pick("conjBasicHelp", lang))}</span>`)]
+    : [line("rule", lang, `${basicBarHtml(word, ctx)} ${esc(fill(pick("conjRule", lang), { n: formLabel, root: "\u0000" })).replace("\u0000", AR(rootAr))} <span class="word-card-m">${esc(pick("conjHelp", lang))}</span>`)];
   const kind = basic ? null : CONJ_TENSE[features.tense];
   const here = kind && !features.pass
     ? { kind, pgn: PGN_ALIASES[features.pgn] || features.pgn, mood: features.tense === "IMPF" ? features.mood || "IND" : "IND", word: String(word.arabic ?? "").replace(/^\u06DE\s*/, "").replace(/\s+[\u06D6-\u06ED]+/g, "").trim() }
@@ -950,13 +950,14 @@ export function tasrifSectionsHtml({ word, layers, features, ctx, open = {} }) {
   // PCF MSA J69: فَعَلَ, the basic form, opens from every word's Taṣrīf; ← Back returns to the word's own Taṣrīf.
   // The Owner (22 Oct): "this buttons take another row" -- so the button shares the legend row (a verb, the basic form)
   // or the heading of the word's shape box (a noun), never a row of its own.
-  // A verb (and the basic form itself) carries it at the end of its "Form I of ف ع ل" line, in conjSection.
+  // A verb (and the basic form itself) carries it at the start of its "Form I of ف ع ل" line, in conjSection, so the
+  // line's own text always flows on beside it.
   if (ctx.conjBasic) return depthLegendHtml(ctx.lang) + accordion("conj", ctx.lang, isOpen, conjSection(word, {}, ctx));
   if (!features?.tense) {
     const nouns = nounSectionsHtml({ word, features, ctx });
     if (!nouns) return `<div class="word-card-basic-row">${basicBarHtml(word, ctx)}</div><p class="word-card-dnote" data-word-card-tasrif-na>${esc(pick("tasrifNotVerb", ctx.lang))}</p>`;
-    // At the end of the shape box's sentence ("majrūr: usually after a preposition …"), or beside its heading when it has none.
-    if (/data-noun-case-line[^>]*>[\s\S]*?<\/p>/.test(nouns)) return nouns.replace(/(data-noun-case-line[^>]*>[\s\S]*?)<\/p>/, `$1 ${basicBarHtml(word, ctx)}</p>`);
+    // At the start of the shape box's sentence ("majrūr: usually after a preposition …"), or beside its heading when it has none.
+    if (/data-noun-case-line[^>]*>/.test(nouns)) return nouns.replace(/(data-noun-case-line[^>]*>)/, `$1${basicBarHtml(word, ctx)} `);
     return nouns.replace(/(data-word-card-noun-shape><h4)>([\s\S]*?)<\/h4>/, `$1 class="word-card-basic-h4"><span>$2</span>${basicBarHtml(word, ctx)}</h4>`);
   }
   return whoWhenHtml({ word, layers, features, ctx }) + depthLegendHtml(ctx.lang) + accordion("conj", ctx.lang, isOpen, conjSection(word, features, ctx));
