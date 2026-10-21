@@ -364,7 +364,20 @@ function relatedInfoHtml(related) {
   const part = (title, items) => items.length
     ? `<p class="ayah-related-sub">${escapeHtml(title)}</p><div class="ayah-related-list">${items.map(relatedItemHtml).join("")}</div>`
     : "";
-  return part(t("In the same QCR collection or Asma Name"), lists) + part(t("Share this āyah's rarer words"), shared);
+  const body = part(t("In the same QCR collection or Asma Name"), lists) + part(t("Share this āyah's rarer words"), shared);
+  // PCF MSA J70 (the Owner, 22 Oct 2026): "Make 'Related Ayat' as Pull-down (when it is more than 2)".
+  const n = lists.length + shared.length;
+  return n > 2
+    ? `<details class="ayah-related-more" data-ayah-related-more><summary>${escapeHtml(t("Show {n} related āyāt", { n }))}</summary>${body}</details>`
+    : body;
+}
+
+/** PCF MSA J70 -- the left pane of the card as a window: the āyah's full text (Arabic, English, Bangla). */
+function fullTextPaneHtml(fullText) {
+  if (!fullText) return `<p class="ayah-status-empty">${escapeHtml(t("Open the āyah's sūrah to see its full text here."))}</p>`;
+  const tr = (text, lang, label) => text ? `<div class="ayah-ft-tr"><span class="ayah-ft-label">${escapeHtml(label)}</span><p lang="${lang}">${escapeHtml(text)}</p></div>` : "";
+  return `<p class="ayah-ft-ar" dir="rtl" lang="ar" data-i18n-skip>${escapeHtml(fullText.arabic ?? "")}</p>` +
+    tr(fullText.en, "en", t("English")) + tr(fullText.bn, "bn", t("Bangla"));
 }
 
 /**
@@ -461,7 +474,9 @@ export function renderAyahActionSheetHtml({
   connected = null, hadith = null, ladderHtml = "", canPrev = true, canNext = true,
   // PCF J26 -- `intro` = { arabic, translation, backLabel, opening } turns this into the card of a "Before Al-Fātiḥah" item:
   // the full Arabic and a translation under the header, a visible ← Back, and (opening: true) only the parts that fit a non-āyah.
-  intro = null
+  intro = null,
+  // PCF MSA J70 -- { arabic, en, bn } for the left pane of the card as a window (null: not loaded; the pane says so).
+  fullText = null
 } = {}) {
   void hasNote; // kept for callers that already pass it (icon/wording decisions belong to isBookmarked/isSelf above, not this flag)
   const noteWhy = t("Only your own record can create or file a Note.");
@@ -498,9 +513,17 @@ export function renderAyahActionSheetHtml({
         <button type="button" class="ayah-sheet-close" data-ayah-sheet-close aria-label="${escapeHtml(t("Close"))}">×</button>
       </div>
       ${introHtml}
-      <div class="ayah-sheet-cols">
-      <div class="ayah-sheet-col-a">
-      ${actionRow}
+      <div class="ayah-sheet-tilebar">${actionRow}</div>
+      <div class="ayah-sheet-panes" data-ayah-sheet-panes>
+      <section class="ayah-sheet-pane-text" data-ayah-sheet-text${intro?.opening ? " hidden" : ""}>
+        <button type="button" class="ayah-sheet-squeezed" data-ayah-sheet-showboth data-squeezed-for="text"><span aria-hidden="true">📖</span> ${escapeHtml(t("Full text"))} <span class="ayah-sheet-squeezed-hint">${escapeHtml(t("Show both halves"))}</span></button>
+        <div class="ayah-sheet-pane-head"><h3 class="ayah-sheet-section-title">${escapeHtml(t("Full text"))}</h3>
+          <button type="button" class="ayah-sheet-pane-max" data-ayah-sheet-textfull aria-label="${escapeHtml(t("Full text across the whole card"))}" title="${escapeHtml(t("Full text across the whole card"))}">⤢</button></div>
+        <div class="ayah-sheet-ft" data-ayah-sheet-ft>${fullTextPaneHtml(fullText)}</div>
+      </section>
+      <div class="ayah-sheet-splitter" data-ayah-sheet-splitter role="separator" aria-orientation="vertical" tabindex="0" aria-label="${escapeHtml(t("Drag to resize the two halves"))}" title="${escapeHtml(t("Drag to resize the two halves"))}"></div>
+      <div class="ayah-sheet-pane-info" data-ayah-sheet-paneinfo>
+      <button type="button" class="ayah-sheet-squeezed" data-ayah-sheet-showboth data-squeezed-for="info"><span aria-hidden="true">🎯</span> ${escapeHtml(t("Status, Approach and Info"))} <span class="ayah-sheet-squeezed-hint">${escapeHtml(t("Show both halves"))}</span></button>
       <div class="ayah-sheet-status" data-ayah-sheet-status>
         <h3 class="ayah-sheet-section-title">${escapeHtml(intro?.opening ? t("Status") : t("Status of this āyah"))}</h3>
         <div class="ayah-status-block">
@@ -509,8 +532,6 @@ export function renderAyahActionSheetHtml({
           ${intro?.opening ? "" : `<button type="button" class="qm-item ayah-sheet-wheel-btn" data-ayah-sheet-see-wheel>${escapeHtml(t("See on the wheel"))}</button>`}
         </div>${statusBlocksHtml}
       </div>
-      </div>
-      <div class="ayah-sheet-col-b">
       <div class="ayah-sheet-body">${pickerHtml}</div>
       <div class="ayah-sheet-status ayah-sheet-info" data-ayah-sheet-info${intro?.opening ? " hidden" : ""}>
         <h3 class="ayah-sheet-section-title">${escapeHtml(t("Info"))}</h3>

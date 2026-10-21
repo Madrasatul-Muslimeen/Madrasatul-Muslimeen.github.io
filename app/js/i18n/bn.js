@@ -4413,4 +4413,11 @@ export const BN = {
   "Copy {n} āyāt": "{n}টি আয়াত কপি করুন",
   "Copied.": "কপি হয়েছে।",
   "Could not copy: select the text and copy it yourself.": "কপি করা যায়নি: লেখাটি বেছে নিজে কপি করুন।",
+  // PCF MSA J70: the Āyah card as two panes.
+  "Show {n} related āyāt": "{n}টি সম্পর্কিত আয়াত দেখুন",
+  "Open the āyah's sūrah to see its full text here.": "এখানে পূর্ণ পাঠ দেখতে আয়াতটির সূরা খুলুন।",
+  "Show both halves": "দুই অর্ধেকই দেখুন",
+  "Full text across the whole card": "পূর্ণ পাঠ পুরো কার্ড জুড়ে",
+  "Drag to resize the two halves": "দুই অর্ধেকের মাপ বদলাতে টানুন",
+  "Status, Approach and Info": "অবস্থা, পদ্ধতি ও তথ্য",
 };
