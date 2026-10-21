@@ -3,6 +3,7 @@
 // for the Word card, each āyah with an Āyah card button. This file is pure: no Firebase, no DOM, no fetch (I2). The
 // caller loads each āyah with quran-data.js's getAyah() and wires the buttons.
 import { normalizeArabicForSearch } from "./quran-word-identity.js";
+import { banglaTranslit } from "./quran-translit-bn.js"; // J58: a Bangla reader hears the Bangla transliteration
 
 const bare = (s) => normalizeArabicForSearch(String(s ?? "")).replace(/^ال/, "");
 
@@ -37,7 +38,7 @@ export function renderCitedAyatHtml({ ayat, roots, heading, t, escapeHtml, num, 
     const words = (data.words ?? []).map((w) => {
       const hit = roots.has(w?.morphology?.root) ? " hit" : "";
       const meaning = (lang === "bn" ? w.translation?.bn : w.translation?.en) || w.translation?.en || "";
-      return `<button type="button" class="asmax-cited-word${hit}" data-asmax-cited-word="${surah}:${ayah}:${w.position}" aria-label="${escapeHtml(`${w.transliteration ?? ""} — ${meaning}`)}">${escapeHtml(w.arabic)}</button>`;
+      return `<button type="button" class="asmax-cited-word${hit}" data-asmax-cited-word="${surah}:${ayah}:${w.position}" aria-label="${escapeHtml(`${lang === "bn" ? banglaTranslit(w.arabic) : (w.transliteration ?? "")} — ${meaning}`)}">${escapeHtml(w.arabic)}</button>`;
     }).join("");
     const tr = (lang === "bn" ? data.translations?.bn : data.translations?.en) || data.translations?.en || "";
     return `<article class="asmax-cited-ayah" data-asmax-cited="${surah}:${ayah}">

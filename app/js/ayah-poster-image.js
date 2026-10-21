@@ -40,6 +40,7 @@ function studyBox(ctx, w, show, u, k) {
   const maxInner = 34 * u * k, lines = [];
   font(ctx, 6.2 * u * k, FONTS.ar); lines.push({ t: w.ar, px: 6.2 * u * k, lh: 1.5, fam: FONTS.ar, rtl: true });
   if (show.tr && w.tr) lines.push(...wrapAt(ctx, w.tr, 2.1 * u * k, 1.3, FONTS.en, { italic: true }, maxInner, "tr"));
+  if (show.trBn && w.trBn) lines.push(...wrapAt(ctx, w.trBn, 2.3 * u * k, 1.35, FONTS.bn, {}, maxInner, "tr"));
   if (show.en && w.en) lines.push(...wrapAt(ctx, w.en, 2.4 * u * k, 1.3, FONTS.en, { bold: true }, maxInner, "en"));
   if (show.bn && w.bn) lines.push(...wrapAt(ctx, w.bn, 2.5 * u * k, 1.35, FONTS.bn, {}, maxInner, "bn"));
   let inner = 0;

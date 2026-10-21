@@ -4389,4 +4389,12 @@ export const BN = {
   "Picture saved: {name}": "ছবি রাখা হয়েছে: {name}",
   "The picture could not be made: {why}": "ছবিটি তৈরি করা যায়নি: {why}",
   "The āyah could not be loaded: {why}": "আয়াতটি আনা যায়নি: {why}",
+  // PCF MSA J58 round 1 -- the Bangla transliteration choice and the poster menu as one line.
+  "Latin": "ল্যাটিন",
+  "Choose āyāt…": "আয়াত বেছে নিন…",
+  "Latin translit.": "ল্যাটিন প্রতিবর্ণ",
+  "Bangla translit.": "বাংলা প্রতিবর্ণ",
+  "Both translit.": "দুই প্রতিবর্ণ",
+  "No translit.": "প্রতিবর্ণ নেই",
+  "Bangla transliteration is made by rules from the Arabic and is being checked.": "বাংলা প্রতিবর্ণীকরণ আরবি থেকে নিয়ম অনুযায়ী তৈরি এবং যাচাই করা হচ্ছে।",
 };

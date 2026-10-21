@@ -8,6 +8,7 @@ import { partName, partMeaning, PART_KINDS, FORM_NAMES, STEM_NAMES, DERIV_NAMES,
 import { depthSectionsHtml, rootFamilyHtml, tasrifSectionsHtml } from "./word-card-depth.js";
 import { stageColourStyle } from "./ayah-action-sheet.js";
 import { lemmaText } from "./lemma-text.js";
+import { banglaTranslit, BANGLA_TRANSLIT_NOTE } from "./quran-translit-bn.js";
 import { isTasrifLevelPersistenceReady } from "./study-tasrif-level-readiness.js";
 
 // PCF MSA J38 + J39 (19 Oct 2026): FIVE tabs, in tab order: WbW · Root · Family · Taṣrīf · Depth. The STORED level ids
@@ -53,6 +54,7 @@ export const WORD_CARD_POS_SEGMENTS = Object.freeze([
  * wherever that language needs them.
  */
 export const WORD_CARD_DEFAULT_LABELS = Object.freeze({
+  translitBnNote: BANGLA_TRANSLIT_NOTE,
   cardRegion: "Quran word card",
   tablist: "Arabic learning level",
   previous: "Previous word",
@@ -1479,6 +1481,19 @@ function originBar(origin, text) {
  * J23 layout B -- the WbW meaning line, above the level tabs, with the Colour tick at its right edge. The tick keeps
  * aria-label "Colour"; the visible word is dropped (data-compact) by fitWordCardColourLabels() when the line has no room.
  */
+/**
+ * J58 -- the transliteration line(s) of the WbW meaning bar: Latin, Bangla (made by rules from the Arabic, marked
+ * as such in its title) or both. `context.translitScript` is "latin" | "bn" | "both"; the card is pure, so the page
+ * passes the reader's choice in. Absent, it stays the Latin line it always was.
+ */
+function translitLinesHtml(word, context, text) {
+  const script = context.translitScript ?? "latin";
+  const latin = word.transliteration && script !== "bn" ? `<p class="word-card-transliteration">${escapeHtml(word.transliteration)}</p>` : "";
+  const bnText = script !== "latin" && word.arabic ? banglaTranslit(word.arabic) : "";
+  const bn = bnText ? `<p class="word-card-transliteration word-card-transliteration-bn" lang="bn" title="${escapeHtml(text.translitBnNote)}">${escapeHtml(bnText)}</p>` : "";
+  return latin + bn;
+}
+
 function meaningBarHtml(word, context, text, toggleHtml) {
   const showSegmentColour = context.colourWordPartsEnabled && validSegments(context.wordSegments);
   const enGloss = word.translation?.en || text.meaningUnavailableEn;
@@ -1487,7 +1502,7 @@ function meaningBarHtml(word, context, text, toggleHtml) {
     <div class="word-card-meaning-text">
       <p class="word-card-meaning word-card-meaning-en" lang="en">${enGlossHtml}</p>
       <p class="word-card-meaning word-card-meaning-bn" lang="bn">${escapeHtml(word.translation?.bn || text.meaningUnavailableBn)}</p>
-      ${word.transliteration ? `<p class="word-card-transliteration">${escapeHtml(word.transliteration)}</p>` : ""}
+      ${translitLinesHtml(word, context, text)}
     </div>${toggleHtml}
   </div>`;
 }
