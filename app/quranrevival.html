@@ -3833,6 +3833,16 @@
   .word-card-family-word { display: grid; gap: 0.3rem; min-width: 0; }
   .word-card-family-who { margin: 0; font-size: 0.8rem; font-weight: 700; color: var(--wc-purple-ink); }
   .word-card-family-who [lang="ar"] { font-size: 1.15rem; font-weight: 400; }
+  /* PCF MSA J61 part 2b (the Owner, 21 Oct 2026: "Arabic bigger ... And to other places where it was that small."): the
+     rest of the Word card's small Arabic is 90% of the big word at the top, as Taṣrīf is (parts 1 and 2a). Measured on a
+     computer it was 45-65%: the WbW facts line, the part names, Learn next, Family's "who", Depth's iʿrāb words and the
+     book entries. --wc-head-ar follows the big word at each width, so a phone gets 90% of its own smaller word. */
+  .quran-word-card { --wc-small-ar: calc(var(--wc-head-ar) * 0.9); }
+  .word-card-fact b.word-card-fact-ar, .word-card-fact .word-card-fact-sub, .word-card-part .word-card-part-arname, .word-card-learnnext .word-card-learnnext-ar,
+  .word-card-family-who [lang="ar"], .word-card-irab bdi[lang="ar"], .word-card-irab-head bdi[lang="ar"], .word-card-book .word-card-book-t,
+  .quran-word-card .word-card-ar, .word-card-ar-chip b { font-size: var(--wc-small-ar); }
+  .word-card-irab bdi[lang="ar"], .word-card-irab-head bdi[lang="ar"] { font-family: var(--quran-font); line-height: 1.5; }
+  .word-card-learnnext .word-card-learnnext-ar { line-height: 1.5; }
   /* J60 (the Owner: "For each meaning with its occurances, give it a distinctive look/ plate"): each meaning is a plate of
      its own -- its own face, a solid edge with a thick purple bar at its start, and a shadow -- so one meaning's places
      are never read as the next one's. Text stays --wc-purple-ink on --wc-purple-plate in both looks. */
