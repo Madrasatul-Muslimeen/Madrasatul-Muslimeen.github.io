@@ -97,6 +97,12 @@ body.ayah-win-dragging { user-select: none; }
   .ayah-sheet[data-ayah-win] .ayah-sheet-panes[data-pane-mode="info"] .ayah-sheet-pane-info { grid-row: 2; }
   .ayah-sheet[data-ayah-win] .ayah-sheet-panes[data-pane-mode="text"] .ayah-sheet-pane-info > .ayah-sheet-squeezed,
   .ayah-sheet[data-ayah-win] .ayah-sheet-panes[data-pane-mode="info"] .ayah-sheet-pane-text > .ayah-sheet-squeezed { display: flex; }
+  /* a card made narrower than 560px: the two halves stack (full text on top), one scrolling column, no splitter */
+  .ayah-sheet[data-ayah-win]:not([data-wide]) > .ayah-sheet-panes { display: block; overflow-y: auto; }
+  .ayah-sheet[data-ayah-win]:not([data-wide]) .ayah-sheet-pane-text, .ayah-sheet[data-ayah-win]:not([data-wide]) .ayah-sheet-pane-info { overflow: visible; border-right: 0; }
+  .ayah-sheet[data-ayah-win]:not([data-wide]) .ayah-sheet-pane-text > :not(.ayah-sheet-squeezed), .ayah-sheet[data-ayah-win]:not([data-wide]) .ayah-sheet-pane-info > :not(.ayah-sheet-squeezed) { display: revert; }
+  .ayah-sheet[data-ayah-win]:not([data-wide]) .ayah-sheet-pane-info { display: flex; }
+  .ayah-sheet[data-ayah-win]:not([data-wide]) .ayah-sheet-splitter, .ayah-sheet[data-ayah-win]:not([data-wide]) .ayah-sheet-squeezed { display: none; }
   .ayah-sheet.ayah-win-set { box-sizing: border-box; right: auto; bottom: auto; max-height: none; }
 }
 `;
