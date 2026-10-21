@@ -2215,6 +2215,8 @@ export const BN = {
   "Yr Level": "শ্রেণি স্তর", // ?
   "Yr {n}": "শ্রেণি {n}", // ?
   "Regular adult": "সাধারণ প্রাপ্তবয়স্ক", // ?
+  "Non-Muslim": "অমুসলিম", // ? PCF MSA J62
+  "Non-Muslim 13-yo": "অমুসলিম ১৩ বছর", // ? PCF MSA J62
   "None": "কোনোটি নেই", // ?
   "Not set.": "নির্ধারণ করা হয়নি।", // ?
 
@@ -2492,6 +2494,7 @@ export const BN = {
   "{groups} meanings · {words} dictionary words · {total} times. Words with the same meaning are grouped, as Basic counts them.": "{groups}টি অর্থ · {words}টি অভিধান-শব্দ · {total} বার। একই অর্থের শব্দগুলো একসাথে, যেভাবে প্রাথমিক স্তরে গোনা হয়।",
   "this word": "এই শব্দ",
   "+{n} more": "আরও {n}টি",
+  "Show fewer": "কম দেখান",
   "Achieved here marks every word of the root {root}, whatever its meaning ({total} words).": "এখানে অর্জিত দিলে {root} মূলের প্রতিটি শব্দ চিহ্নিত হয়, অর্থ যা-ই হোক ({total}টি শব্দ)।",
   "Loading meanings…": "অর্থ লোড হচ্ছে…",
   "Meanings unavailable: {error}": "অর্থ পাওয়া যায়নি: {error}",

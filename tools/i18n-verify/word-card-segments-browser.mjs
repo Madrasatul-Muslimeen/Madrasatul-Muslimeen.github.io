@@ -71,8 +71,7 @@ for (const lang of ["en", "bn"]) {
     const ctx = await newContext(browser, { appLang: lang, viewport });
     const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
     await openFixtureWord(page);
-    // Colouring defaults to ON (prefs.js getColourWordParts()) and each
-    // browser context here is fresh, so no localStorage seeding is needed.
+    // J60: the Word card is always coloured (the page no longer reads prefs.js getColourWordParts()).
 
     const segInfo = await page.evaluate(() => {
       const spans = [...document.querySelectorAll(".word-card-arabic .word-card-segment")];
@@ -129,21 +128,23 @@ for (const lang of ["en", "bn"]) {
     // word's, within 1px -- proves span boundaries did not break Arabic
     // letter joining.
     const widthColoured = await page.evaluate(() => document.querySelector(".word-card-arabic")?.getBoundingClientRect().width);
-    await page.evaluate(() => { const cb = document.querySelector("[data-word-card-colour-toggle]"); if (cb?.checked) { cb.checked = false; cb.dispatchEvent(new Event("change", { bubbles: true })); } });
-    await page.waitForTimeout(200);
-    const afterToggleOff = await page.evaluate(() => ({
-      segmentCount: document.querySelectorAll(".word-card-arabic .word-card-segment").length,
-      width: document.querySelector(".word-card-arabic")?.getBoundingClientRect().width,
-      text: document.querySelector(".word-card-arabic")?.textContent || "",
-    }));
-    check(`${lang}/${viewport.width}: the switch turns colouring off (0 spans, plain text unchanged)`,
-      afterToggleOff.segmentCount === 0 && afterToggleOff.text === segInfo.text, JSON.stringify(afterToggleOff));
+    // Updated in place for PCF MSA J60 (the Owner, 21 Oct 2026: "removing the color tick/ untick option, it should be
+    // always coloured"): there is no switch to turn colouring off any more, so the PLAIN word is a clone of the very same
+    // element (same classes, same computed style) holding the same text with no spans, measured beside it.
+    const afterToggleOff = await page.evaluate(() => {
+      const el = document.querySelector(".word-card-arabic");
+      const plain = el.cloneNode(false);
+      plain.textContent = el.textContent;
+      el.after(plain);
+      const out = { segmentCount: plain.querySelectorAll(".word-card-segment").length, width: plain.getBoundingClientRect().width, text: plain.textContent || "", tick: document.querySelectorAll("[data-word-card-colour-toggle]").length };
+      plain.remove();
+      return out;
+    });
+    check(`${lang}/${viewport.width}: J60 there is no colour switch, and the plain clone holds the same text with no spans`,
+      afterToggleOff.tick === 0 && afterToggleOff.segmentCount === 0 && afterToggleOff.text === segInfo.text, JSON.stringify(afterToggleOff));
     check(`${lang}/${viewport.width}: coloured vs. plain rendered width within 1px (shaping preserved)`,
       Math.abs((widthColoured ?? 0) - (afterToggleOff.width ?? 0)) <= 1,
       `coloured=${widthColoured} plain=${afterToggleOff.width}`);
-
-    // Re-enable for cleanliness / next iteration's localStorage assumption.
-    await page.evaluate(() => { const cb = document.querySelector("[data-word-card-colour-toggle]"); if (cb && !cb.checked) { cb.checked = true; cb.dispatchEvent(new Event("change", { bubbles: true })); } });
 
     // The sandbox proxy intercepts outside HTTPS (audio, fonts), which shows up
     // as a failed resource load. That is environmental, not a page error.

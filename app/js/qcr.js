@@ -75,10 +75,15 @@ import { DEFAULT_QCR_COLLECTIONS } from "./qcr-data.js";
 // bigger, not-yet-scoped idea ("every study item labelled by year band,
 // across every module") as its own future round; this is that idea's first,
 // narrower instance, not that round arriving early.
-export const YR_LEVEL_IDS = [...Array.from({ length: 12 }, (_, i) => `yr${i + 1}`), "adult"];
+// PCF MSA J62 (the Owner, 21 Oct 2026): "Rename Yr Level to Level. Add 'Non-Muslim- 13-yo' as a level." -- one more id,
+// added at the end, and then (the Owner, the same day: "Add another level for only 'Non-Muslim'") a plain Non-Muslim
+// before it (I5: the ids already saved keep their meaning; nothing stored is reshaped).
+export const YR_LEVEL_IDS = [...Array.from({ length: 12 }, (_, i) => `yr${i + 1}`), "adult", "nonmuslim", "nonmuslim13"];
 
 export function yrLevelLabel(id) {
   if (id === "adult") return t("Regular adult");
+  if (id === "nonmuslim") return t("Non-Muslim");
+  if (id === "nonmuslim13") return t("Non-Muslim 13-yo");
   const n = Number(String(id).replace("yr", ""));
   return Number.isFinite(n) ? t("Yr {n}", { n: num(n) }) : String(id ?? "");
 }

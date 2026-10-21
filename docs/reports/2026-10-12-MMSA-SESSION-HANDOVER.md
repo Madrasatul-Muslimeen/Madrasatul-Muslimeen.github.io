@@ -1192,3 +1192,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v12.11** (2026-10-21): Word card: Go to its āyah (PCF MSA J57).
 - **v12.12** (2026-10-21): Word card: the Legend is a small ⓘ in the top bar (PCF MSA J59).
 - **v12.13** (2026-10-21): Bangla transliteration everywhere and the one-line poster menu (PCF MSA J58).
+- **v12.14** (2026-10-21): Word card Family rows and plates, WbW always coloured; Taṣrīf Arabic at 90%; QCR Level (PCF MSA J60 J61 J62).

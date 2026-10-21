@@ -110,6 +110,8 @@ export const WORD_CARD_DEFAULT_LABELS = Object.freeze({
   familyRenderPlaces: "{n} places",
   familyRenderOnePlace: "1 place",
   familyRenderOther: "other renderings",
+  familyMore: "+{n} more",
+  familyFewer: "Show fewer",
   familyRenderLoading: "Loading how the translation renders each word…",
   familyRenderUnavailable: "How the translation renders each word could not load: {error}",
   doesVerb: "the action itself",
@@ -912,7 +914,7 @@ function familyWordRenderingHtml(form, fr, text, formatNumber) {
     const mine = packed === fr.here;
     return `<button type="button" class="word-card-family-chip${mine ? " word-card-family-chip-current" : ""}"${mine ? ' aria-current="true"' : ""} data-word-occurrence-goto="${s}:${a}:${w}" aria-label="${escapeHtml(String(text.goToOccurrence).replace("{ref}", shown))}">${escapeHtml(shown)}</button>`;
   };
-  const line = (label, refs, isOther) => {
+  const line = (label, refs, isOther, key) => {
     if (!refs.length) return "";
     const mine = refs.includes(fr.here);
     return `<div class="word-card-family-sense${mine ? " word-card-sense-current" : ""}${isOther ? " word-card-family-sense-other" : ""}"${mine ? ' aria-current="true"' : ""} data-word-card-family-sense>` +
@@ -920,14 +922,17 @@ function familyWordRenderingHtml(form, fr, text, formatNumber) {
       `<b${isOther ? "" : ' lang="en"'}>${escapeHtml(isOther ? label : String(label).replace(/^[^\p{L}\p{N}]+/u, ""))}</b>` +
       `<span class="word-card-family-x">${escapeHtml(String(text.meaningSenseCount).replace("{n}", formatNumber(refs.length)))}</span>` +
       (mine ? `<span class="word-card-sense-tag">${escapeHtml(text.meaningThisWord)}</span>` : "") +
-      `<span class="word-card-family-chips">${refs.map(chip).join("")}</span></div>`;
+      `<span class="word-card-family-chips">${refs.map(chip).join("")}` +
+      // J60: one row of places shows; fitWordCardFamilyRows() (the page, after each render) measures what wraps, hides it
+      // and names how many behind this button, which opens them all.
+      `<button type="button" class="word-card-family-more" data-word-card-family-more="${escapeHtml(`${form.lemma}|${key}`)}" aria-expanded="false" hidden></button></span></div>`;
   };
   const n = places.length;
   const count = n === 1 ? text.familyRenderOnePlace : String(text.familyRenderPlaces).replace("{n}", formatNumber(n));
   return `<div class="word-card-family-word" data-word-card-family-word="${escapeHtml(form.lemma)}">` +
     `<p class="word-card-family-who"><span dir="rtl" lang="ar">${escapeHtml(lemmaText(form.lemma))}</span> · ${escapeHtml(count)}</p>` +
-    labels.map((label, k) => line(label, buckets[k], false)).join("") +
-    line(text.familyRenderOther, other, true) +
+    labels.map((label, k) => line(label, buckets[k], false, k)).join("") +
+    line(text.familyRenderOther, other, true, "other") +
     `</div>`;
 }
 
@@ -1473,15 +1478,6 @@ function originBar(origin, text) {
 }
 
 /**
- * Issue #263 -- the toggle is offered whenever this word HAS segments,
- * whatever the current on/off state, so a reader can turn colouring back
- * on; the legend only prints while colouring is actually showing.
- */
-/**
- * J23 layout B -- the WbW meaning line, above the level tabs, with the Colour tick at its right edge. The tick keeps
- * aria-label "Colour"; the visible word is dropped (data-compact) by fitWordCardColourLabels() when the line has no room.
- */
-/**
  * J58 -- the transliteration line(s) of the WbW meaning bar: Latin, Bangla (made by rules from the Arabic, marked
  * as such in its title) or both. `context.translitScript` is "latin" | "bn" | "both"; the card is pure, so the page
  * passes the reader's choice in. Absent, it stays the Latin line it always was.
@@ -1494,7 +1490,12 @@ function translitLinesHtml(word, context, text) {
   return latin + bn;
 }
 
-function meaningBarHtml(word, context, text, toggleHtml) {
+/**
+ * J23 layout B -- the WbW meaning line, above the level tabs. PCF MSA J60 (the Owner, 21 Oct 2026: "removing the color
+ * tick/ untick option, it should be always coloured … And also remove 'stem, particle' that line"): no Colour tick here
+ * and no colour-key row under it (the parts are named under the word); the page always asks for coloured word parts.
+ */
+function meaningBarHtml(word, context, text) {
   const showSegmentColour = context.colourWordPartsEnabled && validSegments(context.wordSegments);
   const enGloss = word.translation?.en || text.meaningUnavailableEn;
   const enGlossHtml = showSegmentColour ? segmentedGlossHtml(enGloss, context.wordSegments) : escapeHtml(enGloss);
@@ -1503,47 +1504,47 @@ function meaningBarHtml(word, context, text, toggleHtml) {
       <p class="word-card-meaning word-card-meaning-en" lang="en">${enGlossHtml}</p>
       <p class="word-card-meaning word-card-meaning-bn" lang="bn">${escapeHtml(word.translation?.bn || text.meaningUnavailableBn)}</p>
       ${translitLinesHtml(word, context, text)}
-    </div>${toggleHtml}
+    </div>
   </div>`;
 }
 
 /**
- * Decides BY MEASURING whether the meaning line has room for the word "Colour": with the word hidden, note the text
- * block's height; with it shown, if the text needs more height (it wrapped to make room) the word does not fit and only
- * the tick box stays. No fixed width is involved. The page calls this after each render and on resize.
+ * PCF MSA J60 (the Owner, 21 Oct 2026: "Family: Keep only one row of occurances visible which should follow by 'x more',
+ * n enable that to open all"). BY MEASURING, never a fixed count: in each meaning's row of places, every place that
+ * wraps below the first line is hidden, and the row's last button says how many ("+12 more"); places are dropped from
+ * the end of the first line until that button fits on it too. The gold place of this very word is never hidden.
+ * `open` is the page's set of rows the reader opened (lemma|meaning), which then show every place and "Show fewer".
+ * The page calls this after each render, on resize and on a tap of the button.
  */
-export function fitWordCardColourLabels(root) {
-  for (const bar of root?.querySelectorAll?.("[data-word-card-meaning-bar]") ?? []) {
-    const block = bar.querySelector(".word-card-meaning-text");
-    if (!block || !bar.querySelector(".word-card-segment-toggle")) continue;
-    bar.setAttribute("data-compact", "");
-    const compact = block.getBoundingClientRect().height;
-    bar.removeAttribute("data-compact");
-    if (block.getBoundingClientRect().height > compact + 1) bar.setAttribute("data-compact", "");
+export function fitWordCardFamilyRows(root, open, text, formatNumber = String) {
+  for (const more of root?.querySelectorAll?.("[data-word-card-family-more]") ?? []) {
+    const chips = [...more.parentElement.querySelectorAll(".word-card-family-chip")];
+    chips.forEach((c) => { c.hidden = false; });
+    more.hidden = true;
+    if (!chips.length) continue;
+    const top = (el) => el.getBoundingClientRect().top;
+    const line1 = top(chips[0]) + 2;
+    if (!chips.some((c) => top(c) > line1)) continue;
+    more.hidden = false;
+    if (open?.has(more.dataset.wordCardFamilyMore)) {
+      more.setAttribute("aria-expanded", "true");
+      more.textContent = text.familyFewer;
+      continue;
+    }
+    more.setAttribute("aria-expanded", "false");
+    const current = chips.find((c) => c.classList.contains("word-card-family-chip-current"));
+    chips.forEach((c) => { if (c !== current && top(c) > line1) c.hidden = true; });
+    const count = () => {
+      more.textContent = String(text.familyMore).replace("{n}", formatNumber(chips.filter((c) => c.hidden).length));
+    };
+    count();
+    // the gold place, when it wrapped, and the button itself must sit on the first line: give up places from its end
+    for (let i = chips.length - 1; i > 0 && (top(more) > line1 || (current && top(current) > line1)); i--) {
+      if (chips[i] === current || chips[i].hidden) continue;
+      chips[i].hidden = true;
+      count();
+    }
   }
-}
-
-function colourToggleHtml(colourOn, label, short) {
-  const l = escapeHtml(label);
-  return `<label class="word-card-segment-toggle"><input type="checkbox" data-word-card-colour-toggle${colourOn ? " checked" : ""} aria-label="${l}"><span class="word-card-segment-toggle-text">${short ? l : ` ${l}`}</span></label>`;
-}
-
-function segmentLegendHtml(segments, text) {
-  const label = { particle: text.segmentLegendParticle, person: text.segmentLegendPerson, determiner: text.segmentLegendDeterminer, stem: text.segmentLegendStem };
-  const legend = WORD_SEGMENT_ROLES.filter((r) => segments.some((s) => s.role === r))
-    .map((r) => `<span class="word-card-segment-legend-item"><span class="word-card-segment-legend-dot word-card-segment-${r}">●</span>${escapeHtml(label[r])}</span>`)
-    .join("");
-  return `<span class="word-card-segment-legend">${legend}</span>`;
-}
-
-// On the WbW tab the tick lives in the meaning bar and this row holds only the colour key (when colour is on); on the
-// other tabs there is no meaning bar, so the row keeps the tick with its full label exactly as before. J59: the ⓘ Legend
-// left this row for the header, so a row with nothing in it is not drawn at all (the bar-space the Owner asked to save).
-function segmentControlsHtml(segments, colourOn, text, level) {
-  if (!validSegments(segments)) return "";
-  if (level === "wbw") return colourOn ? `<div class="word-card-segment-controls">${segmentLegendHtml(segments, text)}</div>` : "";
-  const toggle = colourToggleHtml(colourOn, text.colourWordPartsToggle, false);
-  return `<div class="word-card-segment-controls">${toggle}${colourOn ? segmentLegendHtml(segments, text) : ""}</div>`;
 }
 
 /**
@@ -1605,8 +1606,7 @@ export function renderQuranWordCard({ state, chapter, ayah, word, context = {}, 
       <button type="button" data-word-card-close aria-label="${escapeHtml(text.close)}">×</button></header>
     ${legendBalloonHtml(state.level, text)}
     ${searchOpen ? searchRowHtml(context.search, text, formatNumber, refText) : ""}
-    ${state.level === "wbw" ? meaningBarHtml(word, context, text, validSegments(context.wordSegments) ? colourToggleHtml(context.colourWordPartsEnabled, text.colourToggleShort, true) : "") : ""}
-    ${segmentControlsHtml(context.wordSegments, context.colourWordPartsEnabled, text, state.level)}
+    ${state.level === "wbw" ? meaningBarHtml(word, context, text) : ""}
     ${originBar(context.origin, text)}
     <div role="tablist" aria-label="${escapeHtml(text.tablist)}">${tabsHtml(state.level, text)}</div>
     ${levelPanel(state.level, word, layers, context, text, formatNumber)}

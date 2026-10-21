@@ -54,7 +54,8 @@ const MUT = {
   // J59 mutations: the balloon's pointer must sit under the ⓘ, and a colour row with nothing in it must not be drawn.
   noarrow: ["app/quranrevival.html", 'balloon.style.setProperty("--wc-legend-arrow",', 'void ("--wc-legend-arrow",'],
   wrap320: ["app/quranrevival.html", "    .quran-word-card header { column-gap: 0.2rem; }\n", ""],
-  emptyrow: ["app/js/quran-word-card.js", '`<div class="word-card-segment-controls">${segmentLegendHtml(segments, text)}</div>` : "";', '`<div class="word-card-segment-controls">${segmentLegendHtml(segments, text)}</div>` : `<div class="word-card-segment-controls"></div>`;'],
+  // Re-anchored for J60 (the colour row is gone): an empty colour row drawn under the meaning bar again.
+  emptyrow: ["app/js/quran-word-card.js", '${state.level === "wbw" ? meaningBarHtml(word, context, text) : ""}\n', '${state.level === "wbw" ? meaningBarHtml(word, context, text) : ""}<div class="word-card-segment-controls"></div>\n'],
   noorder: ["app/js/quran-word-card.js", "return note ? `<p class=\"word-card-ordernote\"", "return false ? `<p class=\"word-card-ordernote\""],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
@@ -227,18 +228,15 @@ async function j43Checks(page, tag, lang, width) {
     check(`${tag} J59 Legend [${level}]: a real 40x40 button "ⓘ" named "${wantName}", in the header beside This āyah, the header's buttons on one row, inside the card, closed, no empty colour row, no old can-do box in the panel`,
       s0.exists && s0.tag === "BUTTON" && s0.label === "ⓘ" && s0.name === wantName && s0.h >= 40 && s0.w >= 40 && s0.w <= 44 && s0.inHeader && s0.oneRow && s0.insideCard && s0.expanded === "false" && !s0.shown && !s0.rowEmpty && s0.outsideCando === 0 && s0.over <= 0, JSON.stringify(s0));
     if (level === "wbw") {
-      // J59: with Colour OFF the WbW colour row has nothing left in it (the ⓘ went to the header), so it is not drawn; with
-      // Colour ON it holds the colour key. Both states measured, and the reader's own setting is put back.
-      const rowFor = async (on) => {
-        await page.evaluate((want) => { const c = document.querySelector("#quranWordCardMount [data-word-card-colour-toggle]"); if (c && c.checked !== want) c.click(); }, on);
-        await page.waitForFunction((want) => document.querySelector("#quranWordCardMount [data-word-card-colour-toggle]")?.checked === want, on, { timeout: 5000 }).catch(() => {});
-        return page.evaluate(() => [...document.querySelectorAll("#quranWordCardMount .word-card-segment-controls")].map((r) => r.children.length));
-      };
-      const was = await page.evaluate(() => document.querySelector("#quranWordCardMount [data-word-card-colour-toggle]")?.checked ?? null);
-      const off = await rowFor(false), on = await rowFor(true);
-      if (was !== null) await rowFor(was);
-      check(`${tag} J59 WbW colour row: not drawn with Colour off (${JSON.stringify(off)}), holds the colour key with Colour on (${JSON.stringify(on)})`,
-        was !== null && off.length === 0 && on.length === 1 && on[0] > 0, JSON.stringify({ was, off, on }));
+      // J59 checked the colour row with Colour off and on. Updated in place for PCF MSA J60 (the Owner, 21 Oct 2026:
+      // "removing the color tick/ untick option, it should be always coloured … remove 'stem, particle' that line"):
+      // there is no Colour tick and no colour row at all now, and the word parts are coloured.
+      const wbw = await page.evaluate(() => ({
+        tick: document.querySelectorAll("#quranWordCardMount [data-word-card-colour-toggle]").length,
+        rows: document.querySelectorAll("#quranWordCardMount .word-card-segment-controls").length,
+        coloured: document.querySelectorAll("#quranWordCardMount .word-card-arabic [class*='word-card-segment-']").length,
+      }));
+      check(`${tag} J60 WbW: no Colour tick, no colour row, and the word parts are coloured`, wbw.tick === 0 && wbw.rows === 0 && wbw.coloured >= 1, JSON.stringify(wbw));
     }
     await page.click(`${MOUNT} [data-word-card-legend-toggle]`);
     await page.waitForTimeout(150);

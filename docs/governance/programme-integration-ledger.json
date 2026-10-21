@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "12.13",
+    "version": "12.14",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -4433,8 +4433,20 @@
     {
       "version": "12.13",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "PCF MSA J58 round 1: Bangla-script transliteration made by the Owner's approved rules, a Latin / Bangla / Both choice that follows the app language, and the poster menu as one line (Builder round #1001, finished by the Architect).",
+      "integration": {
+        "authorizedOn": "2026-10-21",
+        "integratedOn": "2026-10-21",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.14",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "PCF MSA J60, J61 part 1 and J62: the Family level's one-row places with +N more and a plate per meaning, the WbW word parts always coloured with no Colour tick or key line, Taṣrīf's Arabic at 90% of the main word, and QCR's Level with two Non-Muslim levels.",
       "integration": {
         "authorizedOn": "2026-10-21",
         "integratedOn": "2026-10-21",
@@ -4443,8 +4455,9 @@
       }
     }
   ],
-  "nextUnallocated": "12.14",
+  "nextUnallocated": "12.15",
   "nextUnallocatedNote": [
+    "v12.14 was allocated to Word card Family rows and plates, WbW always coloured; Taṣrīf Arabic at 90%; QCR Level (PCF MSA J60 J61 J62), 2026-10-21.",
     "v12.13 was allocated to Bangla transliteration everywhere and the one-line poster menu (PCF MSA J58), 2026-10-21.",
     "v12.12 was allocated to Word card: the Legend is a small ⓘ in the top bar (PCF MSA J59), 2026-10-21.",
     "v12.11 was allocated to Word card: Go to its āyah (PCF MSA J57), 2026-10-21.",
