@@ -32,6 +32,8 @@
 // wheel -- initSideSplitter()/initListCollapse() below, keyed by "note"
 // (the original, unchanged), "approach", "exploreQuran", "qcr", "asma".
 
+import { homeRect, homeRectChosen, setHomeRect, SHARED as HOME_SHARED } from "./home-window.js";
+
 const GEOMETRY_KEY = "mm_note_popup_geometry";
 const SIDE_WIDTH_KEY = "mm_note_popup_side_width";
 const VIEW_MODE_KEY = "mm_note_popup_side_view"; // "list" | "card"
@@ -278,10 +280,23 @@ function clearGeometry(el) {
  * owner actually asked to drag by. Omitted, the whole handle drags, exactly
  * as the four stage views already do.
  */
-export function initPopupWindow(el, { id = "note", dragHandleEl, resizeHandleEls = [], maximizeBtn, onMaximizeChange, minWidth = MIN_WIDTH, minHeight = MIN_HEIGHT, dragFromSelector = null, defaultMaxWidth = 920, topInset = 0, bottomInset = 0, fill = false } = {}) {
+export function initPopupWindow(el, { id = "note", dragHandleEl, resizeHandleEls = [], maximizeBtn, onMaximizeChange, minWidth = MIN_WIDTH, minHeight = MIN_HEIGHT, dragFromSelector = null, defaultMaxWidth = 920, topInset = 0, bottomInset = 0, fill = false, home = null } = {}) {
   // J44: with `fill`, the opening size is fillGeometry() at every start; `touched` is this visit's own drag/resize.
-  let touched = false;
-  const openingGeometry = () => (fill
+  // PCF MSA J72 `home`: "self" -- this IS the home window (the landing screen's), whose rect every pop-up shares
+  // (home-window.js); "follow" -- this window opens at the home rect. A rect the reader chose is the home window's
+  // opening place too (J44's fill stays the first-ever opening).
+  // The shared rect is the window's OUTSIDE edge (what the eye compares): geometry is the CSS width/height, so a
+  // window with padding or a border (content-box) adds them, measured, never assumed.
+  const extra = () => {
+    const cs = getComputedStyle(el);
+    if (cs.boxSizing === "border-box") return { w: 0, h: 0 };
+    const n = (v) => parseFloat(v) || 0;
+    return { w: n(cs.paddingLeft) + n(cs.paddingRight) + n(cs.borderLeftWidth) + n(cs.borderRightWidth), h: n(cs.paddingTop) + n(cs.paddingBottom) + n(cs.borderTopWidth) + n(cs.borderBottomWidth) };
+  };
+  const toRect = (g) => { const x = extra(); return { x: g.left, y: g.top, w: g.width + x.w, h: g.height + x.h }; };
+  const fromHome = () => { const r = homeRect(); if (!r) return null; const x = extra(); return clampGeometry({ left: r.x, top: r.y, width: Math.round(r.w - x.w), height: Math.round(r.h - x.h) }, minWidth, minHeight); };
+  let touched = home === "self" && homeRectChosen();
+  const openingGeometry = () => ((home === "follow" || (home === "self" && homeRectChosen())) && fromHome()) || (fill
     ? fillGeometry(minWidth, minHeight, topInset, bottomInset)
     : loadGeometry(id, minWidth, minHeight, defaultMaxWidth, topInset, bottomInset));
   let geometry = openingGeometry();
@@ -290,12 +305,58 @@ export function initPopupWindow(el, { id = "note", dragHandleEl, resizeHandleEls
   let maximized = false;
   let preMaximizeGeometry = null;
 
+  // PCF MSA J72 (the Owner, 22 Oct 2026: "Enable it resizeable from all side and all corners"): measured, the bottom and
+  // right edges of the Mastery Wheel window did nothing -- the handles were children of a window that scrolls, so the
+  // bottom one scrolled away with the contents and the scrollbar sat over the right one. The handles now live in a
+  // frame of their own laid exactly over the window's edge (position: fixed, one step above it, transparent to every
+  // click except on the handles), so no content of the window can cover them.
+  const frame = document.createElement("div");
+  frame.className = "popup-win-frame";
+  frame.dataset.popupWinFrame = id;
+  resizeHandleEls.forEach((h) => frame.appendChild(h));
+  if (resizeHandleEls.length) document.body.appendChild(frame);
+  let shownBefore = false;
+  function syncFrame() {
+    const r = el.getBoundingClientRect();
+    const shown = r.width > 0 && r.height > 0;
+    if (shown && !shownBefore) { shownBefore = true; onShown(); } // a follower just came into sight
+    shownBefore = shown;
+    if (!resizeHandleEls.length) return;
+    const on = isPopupViewport() && !maximized && shown && getComputedStyle(el).visibility !== "hidden";
+    if (!on) { frame.style.display = "none"; return; }
+    const z = parseInt(getComputedStyle(el).zIndex, 10);
+    Object.assign(frame.style, { display: "block", left: `${r.left}px`, top: `${r.top}px`, width: `${r.width}px`, height: `${r.height}px`, zIndex: String((Number.isFinite(z) ? z : 0) + 1) });
+  }
+  {
+    new ResizeObserver(syncFrame).observe(el); // shown, hidden (a size of 0) or resized by its own contents
+    new MutationObserver(syncFrame).observe(el, { attributes: true, attributeFilter: ["style", "class", "hidden"] });
+    // shown or hidden by an ancestor (a stage view switched) without the window's own attributes changing
+    new MutationObserver(syncFrame).observe(document.body, { attributes: true, subtree: true, attributeFilter: ["hidden", "class"] });
+    requestAnimationFrame(syncFrame);
+  }
+
   function commit(next, { persist = true } = {}) {
     geometry = next;
     applyGeometry(el, geometry);
+    syncFrame();
     if (persist) saveGeometry(geometry, id);
+    // only the home window's own fill is written here (user: false never replaces a chosen rect): a chosen rect it merely
+    // took -- perhaps widened to its own minimum -- must stay the reader's, so the other pop-ups keep it exactly
+    if (home === "self" && !maximized && isPopupViewport()) setHomeRect(toRect(geometry), { from: "home", user: false });
   }
-  function remember() { touched = true; saveGeometry(geometry, id); }
+  function remember() {
+    touched = true; gesture = false; saveGeometry(geometry, id);
+    if (home) setHomeRect(toRect(geometry), { from: home === "self" ? "home" : "popup", user: true });
+  }
+  // J72: a follower shown again takes the home rect again (with SHARED, whatever it was itself last given).
+  let gesture = false; // a drag or resize in progress: the shared rect is the reader's own only once it ends
+  function onShown() {
+    if (!home || gesture || maximized || !isPopupViewport() || (touched && !HOME_SHARED)) return;
+    if (home === "self" && !(HOME_SHARED && homeRectChosen())) return; // the home window follows only a rect the reader chose
+    const g = fromHome();
+    if (g && (g.left !== geometry.left || g.top !== geometry.top || g.width !== geometry.width || g.height !== geometry.height)) commit(g, { persist: false });
+  }
+  if (home === "self" && isPopupViewport()) setHomeRect(toRect(geometry), { from: "home", user: false });
 
   dragHandleEl?.addEventListener("pointerdown", (e) => {
     if (maximized) return;
@@ -304,6 +365,7 @@ export function initPopupWindow(el, { id = "note", dragHandleEl, resizeHandleEls
     if (e.button !== undefined && e.button !== 0) return; // left-click/primary touch only
     e.preventDefault();
     touched = true; // J44: the reader's own drag from its first move, so a re-fit never fights it
+    gesture = true;
     const startX = e.clientX, startY = e.clientY, startGeom = { ...geometry };
     dragHandleEl.setPointerCapture(e.pointerId);
     const move = (ev) => {
@@ -324,6 +386,7 @@ export function initPopupWindow(el, { id = "note", dragHandleEl, resizeHandleEls
       if (maximized) return;
       e.preventDefault();
       touched = true; // J44: as above
+      gesture = true;
       const startX = e.clientX, startY = e.clientY, startGeom = { ...geometry };
       handle.setPointerCapture(e.pointerId);
       const move = (ev) => {
@@ -355,6 +418,7 @@ export function initPopupWindow(el, { id = "note", dragHandleEl, resizeHandleEls
       maximized = true;
     }
     maximizeBtn.setAttribute("aria-pressed", maximized ? "true" : "false");
+    syncFrame();
     onMaximizeChange?.(maximized);
   });
 
@@ -369,8 +433,9 @@ export function initPopupWindow(el, { id = "note", dragHandleEl, resizeHandleEls
     const nowPopupViewport = isPopupViewport();
     if (nowPopupViewport !== wasPopupViewport) {
       wasPopupViewport = nowPopupViewport;
-      if (!nowPopupViewport) { clearGeometry(el); return; }
+      if (!nowPopupViewport) { clearGeometry(el); syncFrame(); return; }
       applyGeometry(el, clampGeometry(geometry, minWidth, minHeight));
+      syncFrame();
       return;
     }
     if (!nowPopupViewport) return; // nothing to re-clamp -- no inline geometry to have drifted
@@ -385,6 +450,7 @@ export function initPopupWindow(el, { id = "note", dragHandleEl, resizeHandleEls
   return {
     refit() {
       if (maximized || !isPopupViewport()) return;
+      if (home === "follow" || (home === "self" && homeRectChosen())) { onShown(); return; }
       if (fill) { if (!touched) commit(fillGeometry(minWidth, minHeight, topInset, bottomInset), { persist: false }); return; }
       if (readJson(geometryKeyFor(id))) return;
       commit(defaultGeometry(minWidth, minHeight, defaultMaxWidth, topInset, bottomInset), { persist: false });

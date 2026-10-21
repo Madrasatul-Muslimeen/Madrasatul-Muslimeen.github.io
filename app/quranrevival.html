@@ -3195,6 +3195,7 @@
   .rc-header-actions { display: inline-flex; align-items: center; gap: 0.5rem; flex: 0 0 auto; }
   .rc-home-btn { flex: 0 0 auto; min-height: 40px; padding: 0 0.8rem; display: inline-flex; align-items: center; gap: 0.35rem; font: inherit; font-size: 0.95rem; font-weight: 700; border: 1px solid rgba(255,255,255,0.5); border-radius: 0.35rem; background: transparent; color: #fff; cursor: pointer; white-space: nowrap; }
   .rc-home-btn span[aria-hidden] { font-size: 1.15rem; line-height: 1; }
+  .rc-card header h2 { flex: 1 1 auto; min-width: 0; } /* J72: ← Back first, the title, then ⌂ Home and × */
   .rc-tabs { display: flex; gap: 0.25rem; padding: 0.4rem 0.5rem 0; border-bottom: 1px solid var(--card-line); }
   .rc-tab {
     flex: 1 1 0; min-width: 0; min-height: 40px; padding: 0.25rem 0.2rem; border: 0; border-bottom: 3px solid transparent; background: none;
@@ -3807,6 +3808,8 @@
   .ln-vbtn { flex: 1 1 6rem; min-height: 44px; padding: 0 0.7rem; border-radius: 0.5rem; border: 1px solid #4b2a85; background: #4b2a85; color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
   .vocab-sheet { position: fixed; inset: 0; z-index: 1450; display: flex; flex-direction: column; background: #fff; color: #13241f; }
   .vocab-sheet[hidden] { display: none; }
+  /* PCF MSA J73: on a computer Learn next and Vocabulary are pop-ups at the home size (home-window.js placeAtHome) */
+  .learn-next-sheet.at-home, .vocab-sheet.at-home { inset: auto; border: 1px solid #c9a24b; border-radius: 0.6rem; overflow: hidden; box-shadow: 0 12px 40px rgba(20, 10, 50, 0.35); }
   .vo-head { display: flex; align-items: center; gap: 0.6rem; padding: 0.5rem 0.75rem; border-bottom: 1px solid #d6ddd9; flex: 0 0 auto; }
   .vo-back { min-height: 44px; min-width: 44px; padding: 0 0.8rem; border-radius: 0.5rem; border: 1px solid #a98bdc; background: #f1e9fb; color: #4b2a85; font: inherit; font-weight: 700; cursor: pointer; }
   .vo-title { margin: 0; font-size: 1.15rem; }
@@ -4293,6 +4296,8 @@
   .ayah-sheet .claim-for-line + .approach-stage-row { margin-top: 0.1rem; } /* the same when 👥 shares the title's line */
   .ayah-sheet-ref { font-size: 0.9rem; color: var(--card-heading); font-weight: 600; }
   .ayah-sheet-close { background: none; border: none; color: var(--card-text-muted); font-size: 1.5rem; line-height: 1; min-width: 40px; min-height: 40px; padding: 0.2rem 0.5rem; cursor: pointer; }
+  /* PCF MSA J72: the card's ← Back, first in its header (the same as × : back to where the card was opened) */
+  .ayah-sheet-homeback { order: -1; flex: 0 0 auto; width: 40px; height: 40px; border: 1px solid #c9a24b; border-radius: 0.6rem; background: transparent; color: var(--card-heading); font-size: 1.2rem; line-height: 1; cursor: pointer; }
   /* Owner, 7 Oct 2026 (a photo of the Āyah card, two boxes drawn after the reference): ‹ › step the card
      to the previous / next āyah, then 📖 Note view. One tidy cluster beside the reference, 40px targets. */
   .ayah-sheet-header { gap: 0.4rem; }
@@ -5155,6 +5160,30 @@
     .note-popup-resize[data-note-resize="nw"] { top: -3px; left: -3px; width: 14px; height: 14px; cursor: nwse-resize; }
     .note-popup-resize[data-note-resize="se"] { bottom: -3px; right: -3px; width: 14px; height: 14px; cursor: nwse-resize; }
     .note-popup-resize[data-note-resize="sw"] { bottom: -3px; left: -3px; width: 14px; height: 14px; cursor: nesw-resize; }
+    /* PCF MSA J72: the handles sit in their own frame over the window's edge (note-popup.js), with grab areas a mouse
+       finds: 12px along every side, 22px at every corner, and a gold grip at each corner so the corners can be seen. */
+    .popup-win-frame { position: fixed; display: none; pointer-events: none; }
+    .popup-win-frame > .note-popup-resize { pointer-events: auto; z-index: 1; }
+    .popup-win-frame > .note-popup-resize[data-note-resize="n"] { top: -6px; left: 14px; right: 14px; height: 12px; }
+    .popup-win-frame > .note-popup-resize[data-note-resize="s"] { bottom: -6px; left: 14px; right: 14px; height: 12px; }
+    .popup-win-frame > .note-popup-resize[data-note-resize="e"] { top: 14px; bottom: 14px; right: -6px; width: 12px; }
+    .popup-win-frame > .note-popup-resize[data-note-resize="w"] { top: 14px; bottom: 14px; left: -6px; width: 12px; }
+    .popup-win-frame > .note-popup-resize[data-note-resize$="e"][data-note-resize^="n"],
+    .popup-win-frame > .note-popup-resize[data-note-resize$="w"][data-note-resize^="n"],
+    .popup-win-frame > .note-popup-resize[data-note-resize$="e"][data-note-resize^="s"],
+    .popup-win-frame > .note-popup-resize[data-note-resize$="w"][data-note-resize^="s"] { width: 22px; height: 22px; z-index: 2; }
+    .popup-win-frame > .note-popup-resize[data-note-resize="ne"] { top: -6px; right: -6px; }
+    .popup-win-frame > .note-popup-resize[data-note-resize="nw"] { top: -6px; left: -6px; }
+    .popup-win-frame > .note-popup-resize[data-note-resize="se"] { bottom: -6px; right: -6px; }
+    .popup-win-frame > .note-popup-resize[data-note-resize="sw"] { bottom: -6px; left: -6px; }
+    .popup-win-frame > .note-popup-resize[data-note-resize="ne"]::after, .popup-win-frame > .note-popup-resize[data-note-resize="nw"]::after,
+    .popup-win-frame > .note-popup-resize[data-note-resize="se"]::after, .popup-win-frame > .note-popup-resize[data-note-resize="sw"]::after {
+      content: ""; position: absolute; width: 10px; height: 10px; border: 0 solid #c9a24b; opacity: 0.85; }
+    .popup-win-frame > .note-popup-resize[data-note-resize="ne"]::after { top: 6px; right: 6px; border-top-width: 3px; border-right-width: 3px; border-top-right-radius: 4px; }
+    .popup-win-frame > .note-popup-resize[data-note-resize="nw"]::after { top: 6px; left: 6px; border-top-width: 3px; border-left-width: 3px; border-top-left-radius: 4px; }
+    .popup-win-frame > .note-popup-resize[data-note-resize="se"]::after { bottom: 6px; right: 6px; border-bottom-width: 3px; border-right-width: 3px; border-bottom-right-radius: 4px; }
+    .popup-win-frame > .note-popup-resize[data-note-resize="sw"]::after { bottom: 6px; left: 6px; border-bottom-width: 3px; border-left-width: 3px; border-bottom-left-radius: 4px; }
+    .popup-win-frame > .note-popup-resize:hover::after { opacity: 1; border-color: #e2bd62; }
   }
 
   /* ---- 2 Sep 2026: the SAME PC-popup treatment above, for the Approach
@@ -6886,6 +6915,7 @@
   <div id="myStatusMount" hidden data-keep-note-popovers>
     <div id="myStatusCard" class="my-status-card">
       <header>
+        <button type="button" id="myStatusBackBtn" class="my-status-back-btn" data-home-back>← Back</button><!-- PCF MSA J72 -->
         <h2 id="myStatusTitle">Know Your Status</h2>
         <button type="button" id="myStatusCloseBtn" class="my-status-close-btn">&times;</button>
       </header>
@@ -6912,6 +6942,8 @@
   <div id="readContentsMount" hidden data-keep-note-popovers>
     <div id="readContentsCard" class="rc-card" role="dialog" aria-modal="true" aria-labelledby="readContentsTitle">
       <header>
+        <!-- PCF MSA J72: "must have a back button/ arrow to come back to home screen where it was click from" -->
+        <button type="button" id="readContentsBackBtn" class="rc-home-btn rc-back-btn" data-home-back>← <span class="rc-home-word">Back</span></button>
         <h2 id="readContentsTitle">Read</h2>
         <!-- Owner, 2 Oct 2026 (a phone photo of this list): "Enable a way to
              move to home (page landing) from here." -->
@@ -7000,7 +7032,8 @@
     import { getAyahNotes, ayahNoteHtml, ayahHasNote, saveAyahNote, ensureAyahNotesWritable } from "./js/ayah-notes.js";
     import { renderQuickMenu, attachQuickMenuHandlers, attachQcrDrawerHandlers, notesToPlainText, copyToClipboard, shareText } from "./js/ayah-note-renderer.js";
     import { initReadWindow } from "./js/read-window.js";
-    import { initAyahCardWindow } from "./js/ayah-card-window.js";
+    import { initAyahCardWindow, ayahCardRectJustNow } from "./js/ayah-card-window.js";
+    import { placeAtHome } from "./js/home-window.js";
     import { initPopupWindow, initSideSplitter, initListCollapse, loadSideViewMode, saveSideViewMode } from "./js/note-popup.js";
     import {
       collectionsFrom, activeCollections,
@@ -12467,6 +12500,7 @@
     // width now, so the old placeWheelIntroRow() (which moved it into a band
     // across the card from 721px) is gone.
     myStatusCloseBtn?.addEventListener("click", closeMyStatus);
+    document.getElementById("myStatusBackBtn")?.addEventListener("click", closeMyStatus); // PCF MSA J72: ← Back
     myStatusMountEl?.addEventListener("click", (e) => { if (e.target === myStatusMountEl) closeMyStatus(); });
     myStatusDetailCloseBtn?.addEventListener("click", closeMyStatusDetail);
     // ← Back: from an Approach card to the Know Your Status list it was opened from (the Owner, 6 Oct 2026).
@@ -12590,6 +12624,7 @@
 
     async function openReadContents() {
       readContentsMountEl.hidden = false;
+      placeAtHome(document.getElementById("readContentsCard")); // PCF MSA J72: the home window's size and place
       readContentsBodyEl.innerHTML = `<p class="rc-empty">${rcEsc(t("Loading…"))}</p>`;
       try {
         await loadReadContentsTables();
@@ -12602,6 +12637,7 @@
       document.getElementById("readContentsCloseBtn").focus();
     }
     function closeReadContents() { readContentsMountEl.hidden = true; }
+    document.getElementById("readContentsBackBtn")?.addEventListener("click", closeReadContents); // J72: ← Back = back where it was opened
 
     /** Set the unit exactly as the Study options pickers do, then open Read. */
     async function openReadContentsRow(kind, n) {
@@ -14345,6 +14381,7 @@
       resizeHandleEls: wheelPopupResizeHandles,
       maximizeBtn: wheelPopupMaximizeBtn,
       fill: true, // PCF MSA J44: on a PC the Mastery Wheel always opens filling the space between the menu row and the dock
+      home: "self", // PCF MSA J72: the landing window's size and place is every pop-up's (js/home-window.js)
     });
     explorePopupWin = initPopupWindow(exploreView, {
       id: "explore",
@@ -14354,6 +14391,7 @@
       resizeHandleEls: explorePopupResizeHandles,
       maximizeBtn: explorePopupMaximizeBtn,
       fill: true, // PCF MSA J51: on a PC Explore always opens filling the space between the menu row and the dock
+      home: "follow", // PCF MSA J72: opens at the landing window's size and place
     });
     // v08.20 -- the Word Card floats as its own small window on a desktop,
     // dragged by its header and resized from any edge or corner, exactly the
@@ -14384,6 +14422,7 @@
         // size the reader chose is still kept).
         defaultMaxWidth: 1120,
         topInset: popupTopInset, // audit12 wcinset: the floating card opened over the nav row
+        home: "follow", // PCF MSA J72: opens at the landing window's size and place
       });
     });
 
@@ -18925,6 +18964,7 @@
       const el = learnNextSheetEl();
       renderLearnNextSheet();
       el.hidden = false;
+      el.classList.toggle("at-home", placeAtHome(el)); // PCF MSA J73: a pop-up at the standard (home) size on a computer
       const scroller = el.querySelector("[data-ln-scroll]");
       if (scroller) scroller.scrollTop = learnNextScroll;
       el.querySelector("[data-ln-back]")?.focus({ preventScroll: true });
@@ -19007,16 +19047,31 @@
     // (practice, review, step test, the Word card's one-word round) moves its words in the schedule: right -> back after
     // 1, 2, 4, 8, 16 days; missed -> tomorrow. Practice state only: the MARK is still the Word card's (vocabWrite).
     let vocabReview = null;   // { tenantId, personId, words, failed }
+    // PCF MSA J73 (the Owner, 22 Oct 2026: "Learn, Practice or Step test buttons do not do anything, no response"): the
+    // schedule's read could hang (a connection that neither answers nor fails), and the three buttons awaited it, so
+    // they never opened. Now nothing waits on it longer than VOCAB_REVIEW_WAIT_MS: after that it counts as not loaded
+    // (said in words, I15) while the read goes on; if it answers later, the schedule is taken and Learn next repainted.
+    const VOCAB_REVIEW_WAIT_MS = 8000;
+    let vocabReviewLoad = null; // { key, promise } of the read in flight
     async function ensureVocabReview() {
       const c = learnNextCtx;
       if (!c) return null;
       if (vocabReview && vocabReview.tenantId === c.tenantId && vocabReview.personId === c.personId && !vocabReview.failed) return vocabReview;
-      try {
-        const { words } = await loadVocabReview(db, { tenantId: c.tenantId, personId: c.personId });
-        vocabReview = { tenantId: c.tenantId, personId: c.personId, words, failed: false };
-      } catch (error) {
-        console.warn("Vocabulary review schedule", error);
-        vocabReview = { tenantId: c.tenantId, personId: c.personId, words: {}, failed: true };
+      const key = `${c.tenantId}|${c.personId}`;
+      if (vocabReviewLoad?.key !== key) {
+        const load = { key, promise: null };
+        load.promise = loadVocabReview(db, { tenantId: c.tenantId, personId: c.personId })
+          .then(({ words }) => {
+            if (learnNextCtx?.tenantId === c.tenantId && learnNextCtx?.personId === c.personId) { vocabReview = { tenantId: c.tenantId, personId: c.personId, words, failed: false }; paintLearnNextReview(); }
+            return true;
+          })
+          .catch((error) => { console.warn("Vocabulary review schedule", error); return false; })
+          .finally(() => { if (vocabReviewLoad === load) vocabReviewLoad = null; });
+        vocabReviewLoad = load;
+      }
+      const answered = await Promise.race([vocabReviewLoad.promise, new Promise((res) => setTimeout(() => res("slow"), VOCAB_REVIEW_WAIT_MS))]);
+      if (answered !== true && !(vocabReview && vocabReview.tenantId === c.tenantId && vocabReview.personId === c.personId && !vocabReview.failed)) {
+        vocabReview = { tenantId: c.tenantId, personId: c.personId, words: {}, failed: true, slow: answered === "slow" };
       }
       return vocabReview;
     }
@@ -19038,7 +19093,8 @@
     /** Learn next's "Due today" strip. Empty until the schedule has loaded. */
     function learnNextReviewHtml() {
       const r = vocabReview, c = learnNextCtx;
-      if (!r || !c || r.tenantId !== c.tenantId || r.personId !== c.personId) return "";
+      // J73: while the schedule is being read, say so (an empty line here was the only sign of a read that hung)
+      if (!r || !c || r.tenantId !== c.tenantId || r.personId !== c.personId) return c ? `<p class="ln-review-msg" data-ln-review-loading>${escapeHtml(t("Loading your review schedule…"))}</p>` : "";
       if (r.failed) return `<p class="ln-review-msg ln-review-err">${escapeHtml(t("Your review schedule could not be loaded. Check the connection and open Learn next again."))}</p>`;
       const today = dayOf(new Date()), s = vocabReviewSummary(r.words, today);
       const due = reviewDeck(c.data.rows, r.words, today, Infinity).length;
@@ -19058,10 +19114,11 @@
       const { tenantId, subjectPersonId } = wordProgressActor();
       if (!tenantId || !subjectPersonId) return;
       await ensureLearnNext({ tenantId, personId: subjectPersonId, confirmationRequired: !!wordProgressConfirmRequired });
-      await ensureVocabReview();
+      ensureVocabReview().catch(() => {}); // J73: never waited on here -- Learn, Practise and Step test open at once
       vocab = args;
       renderVocab();
       vocabSheetEl().hidden = false;
+      vocabSheetEl().classList.toggle("at-home", placeAtHome(vocabSheetEl())); // PCF MSA J73: the same standard size
       vocabSheetEl().querySelector("[data-vo='close']")?.focus({ preventScroll: true });
     }
     async function vocabAction(act, d) {
@@ -24342,14 +24399,15 @@
         closeAyahActionSheet();
         const intro = { arabic: OPENING_TAAWWUDH_AR, translation: t(OPENING_TAAWWUDH_EN), opening: true, backLabel: t("Back") };
         const unit = { unitKey, label: t("Aʿūdhu billāh") };
-        await openReadNotesPane(unit, { backLabel: t("Back to Āyah card"), focusNew: fresh }, () => { paintReadNotesBtn(); openAyahActionSheet(unitKey, null, intro); });
+        await openReadNotesPane(unit, { backLabel: t("Back to Āyah card"), focusNew: fresh, rect: ayahCardRectJustNow() }, () => { paintReadNotesBtn(); openAyahActionSheet(unitKey, null, intro); });
         return;
       }
       const { surah, ayah, half } = parseAyahUnitKey(unitKey);
       const r = { surah, ayah, half, view: "read", scrollY: stageView === "read" ? readViewScrollTop() : null };
+      const rect = ayahCardRectJustNow(); // PCF MSA J71: the Notes window takes the card's own size and place
       closeAyahActionSheet();
       if (stageView !== "read" || currentSurahNum !== surah || currentAyahNum !== ayah) await navigateToAyah(surah, ayah, "read", half);
-      await openReadNotesPane(readNotesUnit(), { backLabel: t("Back to Āyah card"), focusNew: fresh }, () => { paintReadNotesBtn(); returnToAyahCard(r); });
+      await openReadNotesPane(readNotesUnit(), { backLabel: t("Back to Āyah card"), focusNew: fresh, rect }, () => { paintReadNotesBtn(); returnToAyahCard(r); });
     }
 
     /** Shell round 22 -- bring the reading screen's pickers into line with the

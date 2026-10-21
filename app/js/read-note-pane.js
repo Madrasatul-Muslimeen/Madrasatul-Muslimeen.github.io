@@ -13,6 +13,7 @@
 // to the page inside; "mmsa-open-journey" and "mmsa-unit-count" from it.
 import { t } from "./i18n.js";
 import { HANDLES, handleCss, startDrag } from "./float-window.js";
+import { homeRect, setHomeRect, SHARED as HOME_SHARED } from "./home-window.js";
 
 export const PHONE = 600, SIDE_FROM = 1100;
 // PCF MSA J68 part 4: from WINDOW_FROM px the pane is a window (move by its bar, resize from 8 handles), remembered per device.
@@ -47,6 +48,34 @@ const CSS = `
 body.rnp-dragging #readNotePane .rnp-frame { pointer-events: none; }
 body.rnp-dragging { user-select: none; }
 ${handleCss("rnp-win-h")}
+/* PCF MSA J71: the top bar's search, finding any Note in Mapping My Journey to attach to this āyah. */
+.rnp-find { flex: 1 1 22rem; min-width: 0; max-width: 30rem; position: relative; display: flex; align-items: center; }
+.rnp-find[hidden] { display: none; }
+.rnp-find input { width: 100%; min-height: 36px; box-sizing: border-box; padding: 0 0.8rem 0 2.1rem; border: 1px solid #c9a24b; border-radius: 999px;
+  background: rgba(255,255,255,0.12); color: #fff; font: inherit; }
+.rnp-find input::placeholder { color: #d9e0ee; }
+.rnp-find input:focus { outline: none; background: #fff; color: #1F3A6E; box-shadow: 0 0 0 3px rgba(201,162,75,0.45); }
+.rnp-find input:focus::placeholder { color: #6b7590; }
+.rnp-find-ic { position: absolute; inset-inline-start: 0.7rem; pointer-events: none; font-size: 0.9rem; }
+.rnp-find-btn { flex: 0 0 auto; min-width: 44px; min-height: 40px; border: 1px solid #c9a24b; border-radius: 0.6rem; background: transparent; color: #fff; font: inherit; cursor: pointer; }
+.rnp-find-btn[hidden] { display: none; }
+.rnp-results { position: absolute; top: calc(100% + 6px); inset-inline: 0; min-width: min(26rem, 92vw); z-index: 5; max-height: min(60vh, 26rem); overflow: auto;
+  background: #fff; color: #222; border: 1px solid #c9a24b; border-radius: 12px; box-shadow: 0 12px 32px rgba(15,30,60,0.28); padding: 0.35rem; }
+.rnp-results[hidden] { display: none; }
+.rnp-res-head { padding: 0.35rem 0.6rem 0.45rem; font-size: 0.8rem; color: #6b5a2e; border-bottom: 1px solid #f0e6cc; margin-bottom: 0.25rem; }
+.rnp-res { display: flex; align-items: center; gap: 0.5rem; padding: 0.3rem 0.3rem 0.3rem 0.6rem; border-radius: 8px; }
+.rnp-res:hover, .rnp-res:focus-within { background: #fbf6ea; }
+.rnp-res-open { flex: 1 1 auto; min-width: 0; min-height: 44px; padding: 0.2rem 0; border: 0; background: none; text-align: start; font: inherit; color: inherit; cursor: pointer; }
+.rnp-res-t { display: block; font-weight: 600; color: #1F3A6E; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rnp-res-s { display: block; font-size: 0.82rem; color: #5b6170; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rnp-res-add { flex: 0 0 auto; min-height: 40px; padding: 0 0.8rem; border: 1px solid #1F3A6E; border-radius: 999px; background: #1F3A6E; color: #fff; font: inherit; font-size: 0.85rem; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.rnp-res-add[disabled] { background: #eef2e6; color: #3d6b2a; border-color: #b9cfa6; cursor: default; }
+.rnp-res-none { padding: 0.7rem 0.6rem; color: #5b6170; }
+/* a narrow pane (a phone): the results take the pane's whole width under its bar */
+#readNotePane.rnp-finding .rnp-results { position: fixed; top: 54px; left: 8px; right: 8px; min-width: 0; }
+/* PCF MSA J71: wide (from the Āyah card on a computer), the Notes / Track tabs are drawn by the page inside, on the row
+   that carries the note's tools; this row only shows while the Track tab is open. */
+#readNotePane.rnp-tabs-in-frame .rnp-tabs { display: none; }
 body.rnp-open-side { padding-right: var(--rnp-w); box-sizing: border-box; }
 body.rnp-open-dock { padding-bottom: var(--rnp-h); }
 `;
@@ -61,6 +90,9 @@ const TRACK_ACTIONS = [["take", "🧭", "Take an Approach"], ["record", "✅", "
 const counts = new Map(); // unitKey -> number of Notes, for the āyāt whose Notes the pane has read this session
 
 let rect = null; // the window's place; null until first shown
+let fromCard = false; // J71: this opening took the Āyah card's own place (not remembered unless the reader moves it)
+const HOST_TABS_FROM = 820; // J71: a pane at least this wide has room for the tabs and the note's tools on one row
+let findBox = null, findInput = null, findBtn = null, results = null, searchSeq = 0;
 function loadRect() {
   try {
     const r = JSON.parse(localStorage.getItem(WIN_KEY) || "null");
@@ -81,7 +113,7 @@ function defaultRect() { // today's place: the right-hand column
 }
 const winCtx = {
   getRect: () => rect, setRect: (r) => { rect = clampWin(r); apply(); },
-  locked: () => !pane || layout() !== "win", limits: LIMITS, onEnd: saveRect, dragClass: "rnp-dragging",
+  locked: () => !pane || layout() !== "win", limits: LIMITS, onEnd: () => { fromCard = false; saveRect(); setHomeRect(rect, { from: "popup", user: true }); }, dragClass: "rnp-dragging",
 };
 
 function layout() {
@@ -113,6 +145,28 @@ function apply() {
   } else {
     for (const p of ["left", "top", "width", "height"]) pane.style.removeProperty(p);
   }
+  paintFindPlace();
+  syncHostedTabs();
+}
+
+/** J71: the tabs move onto the page's tools row while the pane is wide and on its Notes tab. */
+let hostedSent = null;
+function syncHostedTabs() {
+  if (!pane || pane.hidden) return;
+  const on = layout() === "win" && pane.getBoundingClientRect().width >= HOST_TABS_FROM && !frame.hidden; // a computer's window only: phones and tablets keep today's rows
+  pane.classList.toggle("rnp-tabs-in-frame", on);
+  if (on === hostedSent) return;
+  hostedSent = on;
+  toFrame({ type: "mmsa-pane-tabs", on, notes: t("Notes"), track: t("Track this āyah") });
+}
+/** J71: a wide bar carries the search box itself; a narrow one a 🔍 that opens it in the title's place. */
+function paintFindPlace() {
+  if (!findBox) return;
+  const wide = pane.getBoundingClientRect().width >= 600;
+  const open = wide || pane.classList.contains("rnp-finding");
+  findBox.hidden = !open;
+  findBtn.hidden = wide || open;
+  titleEl.hidden = !wide && open;
 }
 
 function srcFor(u, { focusNew = false } = {}) {
@@ -159,8 +213,41 @@ function build() {
   journey.setAttribute("aria-label", t("Open in Mapping My Journey"));
   journey.title = t("Open in Mapping My Journey");
   journey.addEventListener("click", () => toFrame({ type: "mmsa-open-journey-request" }));
-  bar.append(back, titleEl, journey, close);
-  bar.addEventListener("pointerdown", (e) => { if (!e.target.closest("button")) startDrag(e, "move", winCtx); });
+  // PCF MSA J71 (the Owner, 22 Oct 2026: "On the top bar, enable other notes to drop/ attach/ Tag from the Map (may be
+  // by enabling search)"): the bar's empty middle is a search over every Note in Mapping My Journey; each result opens
+  // here or is attached to this āyah with one press. The page inside does the finding (it already holds the Notes).
+  findBox = document.createElement("div");
+  findBox.className = "rnp-find";
+  findBox.setAttribute("role", "search");
+  const ic = document.createElement("span"); ic.className = "rnp-find-ic"; ic.textContent = "🔍"; ic.setAttribute("aria-hidden", "true");
+  findInput = document.createElement("input");
+  findInput.type = "search";
+  findInput.dataset.rnpSearch = "";
+  findInput.setAttribute("autocomplete", "off");
+  findInput.setAttribute("aria-label", t("Find a note in Mapping My Journey to attach"));
+  findInput.addEventListener("input", () => runSearch());
+  findInput.addEventListener("focus", () => { if (findInput.value.trim()) runSearch(); });
+  findInput.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") { e.stopPropagation(); if (!results.hidden) { results.hidden = true; } else { findInput.value = ""; closeFind(); } }
+    if (e.key === "ArrowDown") { e.preventDefault(); results.querySelector("button")?.focus(); }
+  });
+  results = document.createElement("div");
+  results.className = "rnp-results";
+  results.dataset.rnpResults = "";
+  results.hidden = true;
+  results.addEventListener("keydown", (e) => { if (e.key === "Escape") { e.stopPropagation(); results.hidden = true; findInput.focus(); } });
+  findBox.append(ic, findInput, results);
+  findBtn = document.createElement("button");
+  findBtn.type = "button";
+  findBtn.className = "rnp-find-btn";
+  findBtn.dataset.rnpFindBtn = "";
+  findBtn.textContent = "🔍";
+  findBtn.setAttribute("aria-label", t("Find a note in Mapping My Journey to attach"));
+  findBtn.title = t("Find a note in Mapping My Journey to attach");
+  findBtn.addEventListener("click", () => { pane.classList.add("rnp-finding"); paintFindPlace(); findInput.focus(); });
+  document.addEventListener("pointerdown", (e) => { if (results && !results.hidden && !findBox.contains(e.target)) results.hidden = true; });
+  bar.append(back, titleEl, findBox, findBtn, journey, close);
+  bar.addEventListener("pointerdown", (e) => { if (!e.target.closest("button, input, .rnp-results")) startDrag(e, "move", winCtx); });
   frame = document.createElement("iframe");
   frame.className = "rnp-frame";
   frame.addEventListener("load", () => {
@@ -171,6 +258,7 @@ function build() {
     frameReady = true;
     const w = waiting; waiting = [];
     for (const m of w) frame.contentWindow?.postMessage(m, location.origin);
+    hostedSent = null; syncHostedTabs(); // J71: a (re)loaded page is told again where its tabs go
   });
   frame.title = t("Notes");
   // Decision 95: "Track this āyah becomes a tab of the pane". The tab offers the Read view's own three Approach
@@ -209,6 +297,16 @@ function build() {
     if (ev.data?.type === "mmsa-open-journey") {
       import("./journey-tray.js").then((m) => m.openJourneyTray({ noteId: ev.data.noteId || null }))
         .catch(() => { window.location.href = "journey-map.html#folders"; });
+    } else if (ev.data?.type === "mmsa-pane-hello") {
+      hostedSent = null; syncHostedTabs(); // J71: the page inside is listening now
+    } else if (ev.data?.type === "mmsa-pane-tab" && ev.data.tab === "track") {
+      showTab("track");
+    } else if (ev.data?.type === "mmsa-note-search-results" && ev.data.id === searchSeq) {
+      paintResults(ev.data);
+    } else if (ev.data?.type === "mmsa-note-attached") {
+      const b = results.querySelector(`[data-rnp-attach="${window.CSS.escape(ev.data.noteId)}"]`);
+      if (b && ev.data.ok) { b.disabled = true; b.textContent = `✓ ${t("Attached")}`; }
+      else if (b) { b.disabled = false; b.textContent = `📎 ${t("Attach to {unit}", { unit: unit?.label ?? "" })}`; }
     } else if (ev.data?.type === "mmsa-unit-count" && typeof ev.data.unit === "string" && Number.isFinite(ev.data.count)) {
       counts.set(ev.data.unit, ev.data.count);
       onCount?.(ev.data.unit, ev.data.count);
@@ -221,6 +319,52 @@ function showTab(key) {
   track.hidden = key !== "track";
   tabs.querySelectorAll("[data-rnp-tab]").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.rnpTab === key)));
   if (key === "track") paintTrack();
+  syncHostedTabs();
+}
+
+function closeFind() { pane.classList.remove("rnp-finding"); results.hidden = true; paintFindPlace(); }
+function runSearch() {
+  const q = findInput.value.trim();
+  if (!q) { results.hidden = true; return; }
+  toFrame({ type: "mmsa-note-search", q, id: ++searchSeq });
+}
+function paintResults({ results: list = [], total = 0, loading = false }) {
+  results.replaceChildren();
+  const head = document.createElement("div");
+  head.className = "rnp-res-head";
+  head.textContent = loading ? t("Loading your notes…")
+    : total === 1 ? t("1 note in Mapping My Journey — attach it to {unit}", { unit: unit?.label ?? "" })
+    : total ? t("{n} notes in Mapping My Journey — attach any to {unit}", { n: total, unit: unit?.label ?? "" }) : "";
+  if (head.textContent) results.appendChild(head);
+  if (!loading && !list.length) {
+    const none = document.createElement("div");
+    none.className = "rnp-res-none";
+    none.textContent = t("No note in Mapping My Journey has these words.");
+    results.appendChild(none);
+  }
+  for (const r of list) {
+    const row = document.createElement("div");
+    row.className = "rnp-res";
+    row.dataset.rnpResult = r.noteId;
+    const open = document.createElement("button");
+    open.type = "button";
+    open.className = "rnp-res-open";
+    const tt = document.createElement("span"); tt.className = "rnp-res-t"; tt.textContent = r.title;
+    const sn = document.createElement("span"); sn.className = "rnp-res-s"; sn.textContent = r.snippet;
+    open.append(tt, sn);
+    open.title = t("Open this note");
+    open.addEventListener("click", () => { results.hidden = true; showTab("notes"); toFrame({ type: "mmsa-note-open", noteId: r.noteId }); });
+    const add = document.createElement("button");
+    add.type = "button";
+    add.className = "rnp-res-add";
+    add.dataset.rnpAttach = r.noteId;
+    if (r.here) { add.disabled = true; add.textContent = `✓ ${t("Already here")}`; }
+    else add.textContent = `📎 ${t("Attach to {unit}", { unit: unit?.label ?? "" })}`;
+    add.addEventListener("click", () => { add.disabled = true; add.textContent = t("Attaching…"); toFrame({ type: "mmsa-note-attach", noteId: r.noteId }); });
+    row.append(open, add);
+    results.appendChild(row);
+  }
+  results.hidden = false;
 }
 
 function paintTrack() {
@@ -257,6 +401,7 @@ export function readNotePaneFocusNew() { if (frame) toFrame({ type: "mmsa-focus-
 function paint() {
   const label = unit?.label ?? "";
   titleEl.textContent = t("Notes on {unit}", { unit: label });
+  findInput.placeholder = t("Find a note to attach to {unit}", { unit: label });
   pane.setAttribute("aria-label", t("Notes on {unit}", { unit: label }));
   pane.querySelector("[data-rnp-back]").textContent = `← ${t("Back to {unit}", { unit: label })}`;
   if (!track.hidden) paintTrack();
@@ -274,7 +419,7 @@ export function readNotePaneUnit() { return unit; }
 
 /** Opens the pane on `u` = { unitKey, label }, on its Notes tab or (`tab: "track"`) its Track tab. `whenClosed` runs
     after it closes (the button takes the focus back). `backLabel` names the way back when it is not the āyah. */
-export function openReadNotePane(u, whenClosed = null, { tab = "notes", backLabel = null, focusNew = false } = {}) {
+export function openReadNotePane(u, whenClosed = null, { tab = "notes", backLabel = null, focusNew = false, rect: cardRect = null } = {}) {
   if (!pane) build();
   onClose = whenClosed;
   const first = !frame.getAttribute("src");
@@ -286,8 +431,16 @@ export function openReadNotePane(u, whenClosed = null, { tab = "notes", backLabe
   unit = u;
   paint();
   if (backLabel) pane.querySelector("[data-rnp-back]").textContent = `← ${backLabel}`;
-  showTab(tab);
+  // PCF MSA J71 (the Owner: "Note button brings the note, should appear as the same size, same place as the Ayah Card"):
+  // opened from the card on a computer, the window takes the card's own rect for this opening. Moving or resizing it
+  // makes that the remembered place, as before; the next opening from anywhere else is the remembered one again.
+  if (cardRect && layout() === "win" && [cardRect.x, cardRect.y, cardRect.w, cardRect.h].every(Number.isFinite)) { rect = clampWin(cardRect); fromCard = true; }
+  else if (layout() === "win" && (HOME_SHARED || !rect) && homeRect()) { rect = clampWin(homeRect()); fromCard = false; } // PCF MSA J72
+  else if (fromCard) { rect = loadRect() ?? defaultRect(); fromCard = false; }
+  pane.classList.remove("rnp-finding");
+  results.hidden = true;
   pane.hidden = false;
+  showTab(tab);
   apply();
 }
 
@@ -304,6 +457,7 @@ export function closeReadNotePane({ quiet = false } = {}) {
   // A Note being edited is saved before it goes out of sight (the page inside stays loaded, only hidden).
   try { frame.contentWindow?.postMessage({ type: "mmsa-journey-flush" }, location.origin); } catch { /* not loaded */ }
   pane.hidden = true;
+  results.hidden = true;
   apply();
   const fn = onClose; onClose = null;
   if (!quiet) fn?.(); // a Track action goes on to its own card; the ← Back's own job (the focus, a way back) is not run

@@ -45,7 +45,8 @@ const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PAT
 async function makeCtx(lang, width, height, rect = null) {
   const ctx = await newContext(browser, { appLang: lang, banner: false, viewport: { width, height }, extraSeedJs: SEED });
   await ctx.route("**/archive.org/**", (r) => r.abort());
-  if (rect) await ctx.addInitScript((r) => { try { if (!localStorage.getItem("mmsa-read-note-window")) localStorage.setItem("mmsa-read-note-window", JSON.stringify(r)); } catch { /* */ } }, rect);
+  // J72: a remembered place is the shared home rect now (n72a A), so it is seeded there too
+  if (rect) await ctx.addInitScript((r) => { try { if (!localStorage.getItem("mmsa-read-note-window")) { localStorage.setItem("mmsa-read-note-window", JSON.stringify(r)); localStorage.setItem("mmsa-home-window-v1", JSON.stringify({ ...r, user: true })); } } catch { /* */ } }, rect);
   if (MUTATE) {
     const [file, a, b] = MUT[MUTATE];
     await ctx.route(`**/app/${file}*`, async (r) => { const src = fs.readFileSync(`app/${file}`, "utf8"); if (!src.includes(a)) throw new Error(`mutation anchor missing: ${MUTATE}`); await r.fulfill({ status: 200, contentType: "text/javascript; charset=utf-8", body: src.split(a).join(b) }); });
@@ -84,17 +85,22 @@ for (const lang of ["en", "bn"]) for (const [vw, vh] of [[1280, 900], [1600, 100
   let ctx = await makeCtx(lang, vw, vh);
   let P = await openPane(ctx);
   const d0 = await rectOf(P);
-  const expW = Math.max(380, Math.round(vw * 0.4));
-  check(`${tag} first open = today's place (right-hand column, full height)`, d0.x === vw - expW && d0.y === 0 && d0.w === expW && d0.h === vh, JSON.stringify(d0));
+  // UPDATED IN PLACE for PCF MSA J72 (the Owner: "Enable this size globally for all pop-ups"): the first open is the
+  // home window's size and place (the landing window's), no longer the right-hand column.
+  const hr = await P.evaluate(() => JSON.parse(localStorage.getItem("mmsa-home-window-v1") || "null"));
+  check(`${tag} first open = the home window's size and place ${JSON.stringify(hr)}`, !!hr && near(d0.x, hr.x) && near(d0.y, hr.y) && near(d0.w, hr.w) && near(d0.h, hr.h), JSON.stringify(d0));
   check(`${tag} ...the 8 handles are there`, (await P.evaluate(() => document.querySelectorAll("#readNotePane .rnp-win-h:not([hidden])").length)) === 8);
   // shrink the height first so the window has room to move down
   const sH = await center(P, '.rnp-win-h[data-h="s"]');
   await dragTo(P, sH, { x: sH.x, y: sH.y - 300 });
+  // J72: and narrower from its right edge, so the home-sized window has room to move right
+  const eW = await center(P, '.rnp-win-h[data-h="e"]');
+  await dragTo(P, eW, { x: eW.x - 400, y: eW.y });
   const d1 = await rectOf(P);
   const tp = await center(P, TITLE);
-  await dragTo(P, tp, { x: tp.x - 250, y: tp.y + 120 });
+  await dragTo(P, tp, { x: tp.x + 250, y: tp.y + 120 });
   const d2 = await rectOf(P);
-  check(`${tag} dragging the bar moves the window by the drag distance (-250, +120)`, near(d2.x, d1.x - 250) && near(d2.y, d1.y + 120) && d2.w === d1.w && d2.h === d1.h, JSON.stringify({ d1, d2 }));
+  check(`${tag} dragging the bar moves the window by the drag distance (+250, +120)`, near(d2.x, d1.x + 250) && near(d2.y, d1.y + 120) && d2.w === d1.w && d2.h === d1.h, JSON.stringify({ d1, d2 }));
   const jb = await center(P, "[data-rnp-journey]");
   await dragTo(P, jb, { x: jb.x - 100, y: jb.y + 50 });
   const d3 = await rectOf(P);

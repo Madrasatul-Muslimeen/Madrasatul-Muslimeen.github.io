@@ -86,16 +86,19 @@ for (const lang of ["en", "bn"]) {
     // is the thing at its own point (the Zab bar covered it when the window ran to the screen's bottom).
     const zabTop = await page.evaluate(() => { const z = document.getElementById("zabBar"); return z && z.offsetHeight ? z.getBoundingClientRect().top : innerHeight; });
     const seFree = await page.evaluate(() => { const h = document.querySelector('#myStatusCard .fc-h[data-h="se"]'); const r = h.getBoundingClientRect(); return document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2) === h; });
-    check(`${tag}: it opens LARGE (92% wide, centred; from 12px below the top to 12px above the Zab bar), its resize corner free`, !!r0 && Math.abs(r0.w - 1177.6) < 2 && Math.abs(r0.x - 51.2) < 2 && Math.abs(r0.y - 12) < 2 && Math.abs(r0.y + r0.h - (zabTop - 12)) < 2 && seFree, JSON.stringify({ r0, zabTop, seFree }));
+    // UPDATED IN PLACE for PCF MSA J72 (the Owner, 22 Oct 2026: "Enable this size globally for all pop-ups", newer than
+    // J50's large card): the card opens at the home window's size and place, the same as every other pop-up.
+    const hr = await page.evaluate(() => JSON.parse(localStorage.getItem("mmsa-home-window-v1") || "null"));
+    check(`${tag}: it opens at the home window's size and place ${JSON.stringify(hr)}, above the Zab bar, its resize corner free`, !!r0 && !!hr && Math.abs(r0.w - hr.w) < 2 && Math.abs(r0.x - hr.x) < 2 && Math.abs(r0.y - hr.y) < 2 && Math.abs(r0.h - hr.h) < 2 && r0.y + r0.h <= zabTop && seFree, JSON.stringify({ r0, zabTop, seFree }));
     // Updated in place (J50): the window now opens large, so it is resized first (its corner is on screen) and then
     // moved 30px left and 40px down (a 150px move would push the large window off the screen's left edge, which the
     // window rightly refuses).
     await dragBy(page, '#myStatusCard .fc-h[data-h="se"]', -120, -100);
     const r1 = await rectOf(page, "#myStatusCard");
     check(`${tag}: dragging its corner resizes it`, !!r1 && Math.abs(r1.w - (r0.w - 120)) < 4 && Math.abs(r1.h - (r0.h - 100)) < 4, JSON.stringify(r1));
-    await dragBy(page, "#myStatusCard header h2", -30, 40);
+    await dragBy(page, "#myStatusCard header h2", 30, 40); // J72: rightwards -- the home rect starts near the left edge
     const r2 = await rectOf(page, "#myStatusCard");
-    check(`${tag}: dragging its title bar moves it`, !!r2 && Math.abs(r2.x - (r1.x - 30)) < 3 && Math.abs(r2.y - (r1.y + 40)) < 3, JSON.stringify(r2));
+    check(`${tag}: dragging its title bar moves it`, !!r2 && Math.abs(r2.x - (r1.x + 30)) < 3 && Math.abs(r2.y - (r1.y + 40)) < 3, JSON.stringify(r2));
     // the wheel's own grip
     const w0 = await rectOf(page, "#myStatusOverviewWheel svg");
     await page.evaluate(() => document.querySelector("#myStatusOverviewWheel [data-fc-grip]")?.scrollIntoView({ block: "center" }));
@@ -147,7 +150,8 @@ for (const lang of ["en", "bn"]) {
     const { ctx, page } = await start(lang, 1280, 800, { mm_kys_rect: saved });
     await openKys(page);
     const r = await rectOf(page, "#myStatusCard");
-    check(`${tag}: J50: an old stored place (600x500 at 40,30) is ignored; the card opens large`, !!r && Math.abs(r.w - 1177.6) < 2 && r.h > 700 && Math.abs(r.y - 12) < 2, JSON.stringify(r));
+    const hr = await page.evaluate(() => JSON.parse(localStorage.getItem("mmsa-home-window-v1") || "null"));
+    check(`${tag}: J50/J72: an old stored place (600x500 at 40,30) is ignored; the card opens at the home rect`, !!r && !!hr && Math.abs(r.w - hr.w) < 2 && Math.abs(r.h - hr.h) < 2 && Math.abs(r.y - hr.y) < 2, JSON.stringify({ r, hr }));
     await ctx.close();
   }
   // ---- phone: full screen, as before ----

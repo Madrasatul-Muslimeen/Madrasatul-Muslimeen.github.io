@@ -42,6 +42,9 @@
 //       overlaps it"), not a bug; changing it is a real product trade-off,
 //       not a one-line fix.
 // See the dated report for the exact merge-safe plan for both.
+// Updated in place for PCF MSA J72 (the Owner, 22 Oct 2026): the Word card's resize handles now live in their own frame
+// over the window's edge ([data-popup-win-frame="wordcard"], note-popup.js) -- inside a scrolling window the bottom
+// and right ones could be covered. Same handles, new place.
 import { chromium, newContext, openPage } from "./harness.mjs";
 
 let pass = 0, fail = 0;
@@ -141,7 +144,7 @@ for (const lang of ["en", "bn"]) {
   // the card low enough to overlap #dock -- the south/southeast/southwest
   // handles sit under the dock there, by design, and would make this
   // check fail for a reason that has nothing to do with resizing itself.)
-  const se = page.locator('#quranWordCardMount [data-note-resize="se"]');
+  const se = page.locator('[data-popup-win-frame="wordcard"] [data-note-resize="se"]');
   const beforeResize = await mountRect(page);
   await dragBy(page, se, 50, 30);
   const afterResize = await mountRect(page);
@@ -183,9 +186,13 @@ for (const lang of ["en", "bn"]) {
   await page.waitForTimeout(400);
   await openFixtureWord(page);
   const reopened = await mountRect(page);
-  check(`${lang} reopening the card restores the remembered geometry`,
-        Math.abs(reopened.styleWidth - afterResize.styleWidth) < 4 && Math.abs(reopened.left - afterDrag.left) < 4,
-        JSON.stringify({ reopened, afterResize, afterDrag }));
+  // Updated in place for PCF MSA J72 (the Owner's "Enable this size globally for all pop-ups", built as n72a A): the
+  // dragged/resized rect is the SHARED home rect now, so the card reopens at it -- the same size, at the place last
+  // chosen, kept inside the screen (home-window.js clamps x to fit). Before J72 it was this card's own memory.
+  const keptX = Math.max(0, Math.min(afterDrag.left, 1280 - afterDrag.width));
+  check(`${lang} reopening the card opens at the size and place last chosen (the shared home rect, inside the screen)`,
+        Math.abs(reopened.styleWidth - afterResize.styleWidth) < 4 && Math.abs(reopened.left - keptX) < 4 && Math.abs(reopened.top - afterDrag.top) < 4,
+        JSON.stringify({ reopened, afterResize, afterDrag, keptX }));
 
   const real = errors.filter((e) => !/ERR_TUNNEL_CONNECTION_FAILED|ERR_CERT_AUTHORITY_INVALID|archive\.org|api\.quran\.com/.test(e));
   check(`${lang} no page errors across the whole sequence`, real.length === 0, real.slice(0, 2).join(" | "));
@@ -246,7 +253,7 @@ for (const width of [390, 412]) {
   await openFixtureWord(page);
   const reach = await page.evaluate(() => {
     const header = document.querySelector("#quranWordCardMount header");
-    const handles = [...document.querySelectorAll('#quranWordCardMount [data-note-resize]')];
+    const handles = [...document.querySelectorAll('[data-popup-win-frame="wordcard"] [data-note-resize]')];
     return {
       headerTabbable: header?.tabIndex >= 0 && header.getAttribute("tabindex") !== null,
       headerHasName: !!(header?.getAttribute("aria-label") || header?.getAttribute("role")),
@@ -282,14 +289,16 @@ for (const width of [390, 412]) {
   await removeSplashes(page);
   const header = page.locator("#quranWordCardMount header").first();
   await dragBy(page, header, 0, 40); // pushes the card's bottom edge into #dock's own footprint (measured: default bottom 828px, #dock spans ~858-891px)
-  const se = page.locator('#quranWordCardMount [data-note-resize="se"]');
+  const se = page.locator('[data-popup-win-frame="wordcard"] [data-note-resize="se"]');
   const box = await se.boundingBox();
   const topEl = await page.evaluate((b) => {
     const el = document.elementFromPoint(b.x + b.width / 2, b.y + b.height / 2);
-    return el ? `${el.tagName}#${el.id}` : "NONE";
+    return el ? `${el.tagName}#${el.id}${el.classList.contains("note-popup-resize") ? " resize" : ""}` : "NONE";
   }, box);
-  check("recorded: once the card overlaps #dock, the south-east handle's own point hit-tests to #dock instead",
-        topEl === "DIV#dock" || topEl === "BUTTON#tabJourneyBtn" || /tabRow|dock/i.test(topEl), topEl);
+  // INVERTED in place for PCF MSA J72: the recorded limitation is fixed. The handles live in their own frame one step
+  // above the window (note-popup.js), so the south-east handle is still the thing under its own point over the dock.
+  check("J72: once the card overlaps #dock, the south-east handle is still the thing under its own point (no longer hidden by the dock)",
+        /resize/.test(topEl) || topEl === "DIV#", topEl);
   await ctx.close();
 }
 

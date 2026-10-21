@@ -157,7 +157,7 @@ for (const [lang, width, height] of [["en", 390, 844], ["bn", 390, 844], ["en", 
   await page.evaluate(() => document.querySelector('[data-ayah-num-badge="14:14"]')?.click());
   await page.waitForFunction(() => document.querySelector("[data-ayah-sheet] .ayah-sheet-ref"), null, { timeout: 8000 });
   const head = await page.evaluate(() => {
-    const els = ["ayah-sheet-ref", '[data-ayah-sheet-step="-1"]', '[data-ayah-sheet-step="1"]', "[data-ayah-sheet-noteview]", "[data-ayah-sheet-close]"].map((q) => document.querySelector(q.startsWith("[") ? `[data-ayah-sheet] ${q}` : `[data-ayah-sheet] .${q}`));
+    const els = ["ayah-sheet-ref", '[data-ayah-sheet-step="-1"]', '[data-ayah-sheet-step="1"]', "[data-ayah-sheet-noteview]", "ayah-sheet-close"].map((q) => document.querySelector(q.startsWith("[") ? `[data-ayah-sheet] ${q}` : `[data-ayah-sheet] .${q}`));
     const rs = els.map((e) => e?.getBoundingClientRect());
     const sheet = document.querySelector("[data-ayah-sheet]").getBoundingClientRect();
     // Updated in place, round #837 (J29 audit fix 7): the header is now two
@@ -165,6 +165,10 @@ for (const [lang, width, height] of [["en", 390, 844], ["bn", 390, 844], ["en", 
     // instead of five things squeezed into one. Order, inside and 40px stay.
     if (!rs.every(Boolean)) return { all: false };
     const [ref, prev, next, nv, close] = rs;
+    // PCF MSA J72: the header now starts with a 40px ← Back (data-ayah-sheet-close too, so the × is taken by its class),
+    // on the reference's row, before the reference.
+    const hb = document.querySelector("[data-ayah-sheet] [data-ayah-sheet-homeback]")?.getBoundingClientRect();
+    if (!hb || hb.width < 39.5 || hb.height < 39.5 || hb.right > ref.left + 1 || Math.abs((hb.top + hb.bottom) / 2 - (ref.top + ref.bottom) / 2) > 12) return { all: false, homeback: hb ? [hb.left, hb.top, hb.width, hb.height] : null };
     const same = (a, b) => Math.abs(a.top - b.top) < 2;
     // UPDATED IN PLACE 22 Oct 2026 (PCF MSA J70, the Owner: "Tidy the 2nd topbar"): on a computer the card is a wide
     // window and its bar 2 is ONE line -- the reference, then ‹ › 📖, then ✕. Phones keep the two rows.

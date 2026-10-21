@@ -10,6 +10,7 @@
 //
 // Pure UI: no Firebase, no app state beyond that one localStorage key.
 import { HANDLES, startDrag, handleCss } from "./float-window.js";
+import { homeRect, setHomeRect, SHARED as HOME_SHARED } from "./home-window.js";
 
 // PCF MSA J70 (the Owner, 22 Oct 2026): "Enable the card appears like that (in context to the entire screen) on first
 // opening" -- a new key, so every device's first open is the new large card, not a place remembered from J67.
@@ -108,12 +109,22 @@ body.ayah-win-dragging { user-select: none; }
 `;
 
 /** mountEl: #ayahActionSheetMount. Returns { sync, isWindowed }. */
+// PCF MSA J71: where the card was last on screen, for a window that opens in its place (the Notes window from 📝 Note).
+// A tile closes the card before its action runs, so the place is kept for a moment after the card closes.
+let shownRect = null, closedAt = 0, shownNow = false;
+const JUST_NOW_MS = 1500;
+/** The card's rect { x, y, w, h } while it is a window on screen, or within a moment of its closing; else null. */
+export function ayahCardRectJustNow() {
+  return shownRect && (shownNow || Date.now() - closedAt < JUST_NOW_MS) ? { ...shownRect } : null;
+}
+
 export function initAyahCardWindow(mountEl) {
   const style = document.createElement("style");
   style.textContent = CSS;
   document.head.appendChild(style);
 
   let rect = load();
+  let wasActive = false;
   const frame = document.createElement("div");
   frame.className = "ayah-win-frame";
   frame.setAttribute("data-ayah-win-frame", "");
@@ -133,6 +144,8 @@ export function initAyahCardWindow(mountEl) {
     const sheet = sheetEl();
     const act = active();
     if (!act) {
+      wasActive = false;
+      if (shownNow) { shownNow = false; closedAt = Date.now(); }
       frame.classList.remove("on");
       if (sheet) {
         sheet.removeAttribute("data-ayah-win");
@@ -142,6 +155,9 @@ export function initAyahCardWindow(mountEl) {
       }
       return;
     }
+    // PCF MSA J72: each opening takes the home window's size and place (with SHARED; else only the first opening).
+    if (!wasActive && (HOME_SHARED || !rect)) rect = homeRect() ?? rect;
+    wasActive = true;
     if (!rect) rect = defaultRect(); // J70: the first open is the large card, not the old side panel
     sheet.setAttribute("data-ayah-win", "");
     applyPanes(sheet);
@@ -154,6 +170,7 @@ export function initAyahCardWindow(mountEl) {
     Object.assign(frame.style, { left: `${b.left}px`, top: `${b.top}px`, width: `${b.width}px`, height: `${b.height}px` });
     frame.classList.add("on");
     sheet.toggleAttribute("data-wide", b.width >= WIDE_FROM);
+    shownRect = { x: b.left, y: b.top, w: b.width, h: b.height }; shownNow = true;
   }
 
   let panes = loadPanes();
@@ -225,7 +242,7 @@ export function initAyahCardWindow(mountEl) {
     setRect: (r) => { rect = clampInside(r); apply(); },
     locked: () => !active(),
     limits: LIMITS,
-    onEnd: () => { if (rect) save(rect); },
+    onEnd: () => { if (rect) { save(rect); setHomeRect(rect, { from: "popup", user: true }); } },
     dragClass: "ayah-win-dragging",
   };
 

@@ -28,6 +28,7 @@
 import { weekKeyFor } from "./activity.js";
 import {
   NOTE_STATUS,
+  createNoteSource,
   createPermanentNote,
   getNotesByIds,
   listNoteSourcesForUnit,
@@ -268,4 +269,21 @@ export async function unbindStudyNoteSource(db, {
 } = {}) {
   await retireNoteSource(db, { tenantId, ownerPersonId, sourceLinkId, actorUid });
   return { unbound: sourceLinkId };
+}
+
+/**
+ * PCF MSA J71 (the Owner, 22 Oct 2026: "enable other notes to drop/ attach/ Tag from the Map") -- binds an EXISTING
+ * Note to one more Study Unit as a `reference` ("attached here"), the second relationship kind ADR-009 already names.
+ * The Note itself is untouched: no revision, no placement, no folder (ADR-010: a Destination is never derived from an
+ * Origin, and this is neither). It earns no Journaling Activity: attaching is filing, not study.
+ *
+ * Returns `{ sourceLinkId }`. A Note already on the unit is the caller's to refuse (the pane shows "already here");
+ * nothing here forbids it, for the same reason `createNoteSource()` does not (see there).
+ */
+export async function attachStudyNoteToUnit(db, {
+  tenantId, ownerPersonId, ownerUid = null, noteId, unitKey, actorUid,
+} = {}) {
+  const source = studyNoteSource({ unitKey, relationshipKind: "reference", provenanceKind: PROVENANCE_STUDY_NOTE });
+  const sourceLinkId = await createNoteSource(db, { tenantId, ownerPersonId, ownerUid, noteId, source, actorUid });
+  return { sourceLinkId };
 }

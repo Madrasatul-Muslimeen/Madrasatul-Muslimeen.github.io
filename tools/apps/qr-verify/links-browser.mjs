@@ -223,7 +223,8 @@ async function awayNote(width, lang) {
   await page.goto(`${base}/app/quranrevival.html`, { waitUntil: "load" });
   await page.waitForFunction(() => !!navigator.serviceWorker.controller, null, { timeout: 90000 });
   await page.reload({ waitUntil: "load" });
-  await page.waitForSelector('a[data-qr-away][href$="/app/bookmarks.html"]', { state: "attached" });
+  // Updated in place for MSA v12.20 (PCF MSA J72): a menu link carries ?navBack=1, so its href no longer ENDS in .html.
+  await page.waitForSelector('a[data-qr-away][href*="/app/bookmarks.html"]', { state: "attached" });
   await page.waitForTimeout(800);
   const words = lang === "bn" ? /মাদ্রাসা অ্যাপে খুলবে/ : /This opens in the Madrasah app\. If it asks, sign in once with the same Google account; your notes are the same\./;
   const note = async () => page.evaluate(() => {
@@ -232,7 +233,7 @@ async function awayNote(width, lang) {
     const btns = [...box.querySelectorAll("button")].map((b) => { const r = b.getBoundingClientRect(); return { t: b.textContent.trim(), h: r.height, w: r.width, in: r.left >= 0 && r.right <= innerWidth && r.bottom <= innerHeight }; });
     return { text: box.textContent.trim(), btns, sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth };
   });
-  await page.evaluate(() => document.querySelector('a[data-qr-away][href$="/app/bookmarks.html"]').click());
+  await page.evaluate(() => document.querySelector('a[data-qr-away][href*="/app/bookmarks.html"]').click());
   await page.waitForSelector("#qrAwayNote");
   const n1 = await note();
   const want = lang === "bn" ? ["বাতিল", "চালিয়ে যান"] : ["Cancel", "Continue"];
@@ -241,9 +242,9 @@ async function awayNote(width, lang) {
   if (process.env.SHOTS && width === 390) await page.screenshot({ path: `${process.env.SHOTS}/away-note-390-${lang}.png` });
   await page.click("#qrAwayNote .qan-stay");
   check(page.url().startsWith(`${base}/app/quranrevival.html`) && !(await note()), `${tag}: Cancel stays on Quran Study`);
-  await page.evaluate(() => document.querySelector('a[data-qr-away][href$="/app/bookmarks.html"]').click());
+  await page.evaluate(() => document.querySelector('a[data-qr-away][href*="/app/bookmarks.html"]').click());
   await page.waitForURL(`${MMSA}/**`);
-  check(page.url() === `${MMSA}/app/bookmarks.html`, `${tag}: the second time there is no note; it opens MMSA's page (${page.url()})`);
+  check(page.url() === `${MMSA}/app/bookmarks.html?navBack=1`, `${tag}: the second time there is no note; it opens MMSA's page, which shows ← Back (navBack=1, MSA v12.20) (${page.url()})`);
   // By script, in a browser that has not seen the note yet: 404.html shows it, then Continue goes on.
   await page.goto(`${base}/`, { waitUntil: "load" });
   await page.evaluate(() => localStorage.removeItem("qr_mmsa_away_note_seen"));

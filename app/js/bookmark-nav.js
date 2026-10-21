@@ -187,6 +187,20 @@ export function mountContinueBack() {
 }
 
 /**
+ * PCF MSA J72 (the Owner, 22 Oct 2026: every screen opened by a click "must have a back button/ arrow to come back to
+ * home screen where it was click from"): a page opened from the app's menu (navBack=1, nav.js) shows ← Back to the
+ * page it was opened from. Run by the shared menu (mountBookmarkMenu) and by the pages without it; once per page.
+ * A page that answers navBack=1 itself (quranrevival.html, its own Back pill) passes navBack: false to the menu.
+ */
+export function mountNavBack() {
+  if (new URLSearchParams(location.search).get("navBack") !== "1") return null;
+  if (document.querySelector("[data-bm-back]")) return null;
+  let from = "";
+  try { const u = new URL(document.referrer); if (u.origin === location.origin && u.href !== location.href) from = u.href; } catch { from = ""; }
+  return mountBackRow(`← ${t("Back")}`, from ? { href: from } : { onBack: () => { if (history.length > 1) history.back(); else location.href = "./index.html"; } });
+}
+
+/**
  * The floating "← Back …" chip, shared (6 Oct 2026): a bookmark's return to the page it was opened from (above),
  * and, inside one page, a return to the window something was opened from (e.g. Explore opened from Know Your
  * Status). `href` makes it a link; `onBack` a button that removes the chip and calls back. ✕ only removes it.
@@ -416,11 +430,12 @@ function lastPlacesHtml(bookmarksDoc, onLastPlace) {
   return `<div class="nav-bm-lasts">${one("read", "📖", "Last read", "Nothing read yet")}${one("play", "▶", "Last played", "Nothing played yet")}</div>`;
 }
 
-export function mountBookmarkMenu(navBarEl, { db, getTenantId, getPersonId, getBookmarksDoc = null, getRoster = null, onApplyPreset = null, onLastPlace = null }) {
+export function mountBookmarkMenu(navBarEl, { db, getTenantId, getPersonId, getBookmarksDoc = null, getRoster = null, onApplyPreset = null, onLastPlace = null, navBack = true }) {
   const details = navBarEl.querySelector(".nav-cat-bookmark");
   const listEl = navBarEl.querySelector("#navBookmarkList");
   if (!details || !listEl) return;
   mountBookmarkBack(navBarEl);
+  if (navBack) mountNavBack(); // J72: opened from the menu -> ← Back
 
   let loading = false;
   let fetchedRoster = null; // only ever populated on the fallback path below

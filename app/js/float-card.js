@@ -9,6 +9,7 @@
 //
 // Where and how big is remembered per device (localStorage, like the reading choices); nothing is written to the
 // database. Below `when()` (a phone, where the card is the whole screen) the card is left exactly as it was.
+import { homeRect, setHomeRect, SHARED as HOME_SHARED } from "./home-window.js";
 import { HANDLES, handleCss, clampRect, startDrag } from "./float-window.js";
 
 const CSS_ID = "mm-float-card-css";
@@ -51,7 +52,9 @@ export function makeFloatingCard(cardEl, { key, handleEl = null, minW = 320, min
     // depend on content still loading); else where the card already is, so turning it on moves nothing.
     const r = cardEl.getBoundingClientRect();
     const saved = fill ? null : read(key);
-    rect = clampRect(saved && saved.w ? saved : (initial?.() ?? { x: r.left, y: r.top, w: r.width, h: r.height }), limits);
+    // PCF MSA J72: a floating card opens at the home window's size and place (with SHARED; else when nothing is saved).
+    const home = (HOME_SHARED || !(saved && saved.w)) ? homeRect() : null;
+    rect = clampRect(home ?? (saved && saved.w ? saved : (initial?.() ?? { x: r.left, y: r.top, w: r.width, h: r.height })), limits);
     cardEl.classList.add("fc-floating");
     cardEl.dataset.fcFloating = "";
     handles = HANDLES.map((h) => {
@@ -73,7 +76,7 @@ export function makeFloatingCard(cardEl, { key, handleEl = null, minW = 320, min
   };
   const drag = (e, mode) => startDrag(e, mode, {
     getRect: () => rect, setRect: (r) => { rect = r; apply(); }, locked: () => !cardEl.classList.contains("fc-floating"),
-    limits, dragClass: "fc-dragging", onEnd: () => { if (!fill) write(key, rect); },
+    limits, dragClass: "fc-dragging", onEnd: () => { if (!fill) write(key, rect); setHomeRect(rect, { from: "popup", user: true }); },
   });
   handle?.addEventListener("pointerdown", (e) => {
     // Buttons, selects and links in the header keep working; only the bar itself moves the card.

@@ -404,6 +404,41 @@
   .unit-actions button[aria-disabled="true"] { opacity: 0.55; cursor: progress; }
   .unit-actions button.unit-new-ready { outline: 3px solid #c9a24b; outline-offset: 2px; }
   .unit-kind { font-size: 0.72rem; padding: 0.1rem 0.5rem; border-radius: 999px; background: #eef2ff; color: #1F3A6E; white-space: nowrap; }
+  /* PCF MSA J71 (the Owner, 22 Oct 2026: "Organise the buttons under their similar types, use the empty spaces"): when
+     the Notes pane is wide (opened from the Āyah card on a computer) the pane's own tab bar is drawn HERE, at the start
+     of the row that already carries the note's tools, so one row holds both and the separate tool row goes. The tools
+     sit in four groups divided by a thin gold rule: move (← ‹ ›) · find and file (🔍 ⇅ ⧉ 📎) · make (✚) · finish (Done ⋯). */
+  .jm-host-tabs, .jm-tool-sep { display: none; }
+  html.pane-tabs-hosted .jm-host-tabs { display: inline-flex; flex: 0 0 auto; gap: 0.3rem; padding: 3px; border-radius: 999px; background: #fff; border: 1px solid #e3d7b8; }
+  .jm-host-tab { min-height: 40px; padding: 0 0.85rem; border: 0; border-radius: 999px; background: transparent; color: #1F3A6E; font: inherit; font-weight: 600; cursor: pointer; white-space: nowrap; }
+  .jm-host-tab[aria-selected="true"] { background: #1F3A6E; color: #fff; box-shadow: inset 0 0 0 1px #c9a24b; }
+  .jm-host-tab:focus-visible { outline: 3px solid #c9a24b; outline-offset: 1px; }
+  html.pane-tabs-hosted body { padding: 0; }
+  html.pane-tabs-hosted #notePane { margin-top: 0; border: 0; border-radius: 0; padding: 0 0.9rem 1rem; }
+  html.pane-tabs-hosted #notePane .note-pane-bar, html.pane-tabs-hosted .unit-head {
+    margin: 0 -0.9rem 0.5rem; padding: 0.4rem 0.9rem; min-height: 52px; box-sizing: border-box; background: #f4efe2; border-bottom: 1px solid #e3d7b8; }
+  html.pane-tabs-hosted .unit-head { flex-direction: row; align-items: center; flex-wrap: wrap; margin: 0 -0.6rem 0.6rem; padding: 0.4rem 0.6rem; }
+  html.pane-tabs-hosted .unit-head .unit-title { display: none; } /* the pane's own bar names the āyah */
+  html.pane-tabs-hosted .unit-head .unit-actions { margin-inline-start: auto; }
+  html.pane-tabs-hosted .unit-head [data-unit-journey] { display: none; } /* the pane's top bar carries the same ↗ */
+  html.pane-tabs-hosted .jm-tool-sep { display: inline-block; flex: 0 0 1px; align-self: center; height: 26px; margin: 0 0.25rem; background: #c9a24b; }
+  html.pane-tabs-hosted #notePane .note-pane-bar > .jm-host-tabs { margin-inline-end: 0.5rem; }
+  html.pane-tabs-hosted #noteLayout.pane-open.tier-wide #notePane { margin-top: 0; top: 0; max-height: 100vh; }
+  html.pane-tabs-hosted #notePane.pane-editing .note-pane-bar { box-shadow: none; background: #f4efe2; }
+  html.pane-tabs-hosted #notePane.pane-editing .pane-edit-toolbar { top: 52px; box-shadow: none; }
+  /* the list beside the Note (a wide pane): the tabs stay over the list, once */
+  html.pane-tabs-hosted #noteLayout.pane-open.tier-wide #notePane .jm-host-tabs { display: none; }
+  html.pane-tabs-hosted #notePane .note-pane-bar .pane-btn { min-width: 40px; min-height: 40px; border-radius: 0.6rem; background: #fff; border-color: #d8ccab; color: #1F3A6E; }
+  html.pane-tabs-hosted #notePane .note-pane-bar [data-pane-edit-toggle] { background: #1F3A6E; color: #fff; border-color: #c9a24b; padding: 0 0.9rem; font-weight: 600; }
+  /* ...and the formatting row moves up: right under that one row, its group tabs and the group's buttons on ONE line,
+     so the title and the note start two rows higher. */
+  html.pane-tabs-hosted #notePane.pane-editing { display: flex; flex-direction: column; }
+  html.pane-tabs-hosted #notePane.pane-editing > .note-pane-bar { order: -3; }
+  html.pane-tabs-hosted #notePane.pane-editing > .note-find-bar { order: -2; }
+  html.pane-tabs-hosted #notePane.pane-editing > .pane-edit-toolbar { order: -1; margin: 0 0 0.5rem; }
+  html.pane-tabs-hosted #notePane .pane-edit-toolbar.tb-grouped { flex-wrap: nowrap; overflow-x: auto; }
+  html.pane-tabs-hosted #notePane .pane-edit-toolbar.tb-grouped .tb-tabs { flex: 0 0 auto; grid-template-columns: repeat(5, auto); margin-inline-end: 0.4rem; padding-inline-end: 0.6rem; border-inline-end: 1px solid #c9a24b; }
+  html.pane-tabs-hosted #notePane .pane-edit-toolbar .tb-tab { padding: 2px 0.7rem; white-space: nowrap; }
   .unit-old-note { border: 1px dashed #c9a24b; border-radius: 0.6rem; padding: 0.6rem 0.8rem; margin: 0.6rem 0; background: #fffdf6; }
   .unit-old-note h3 { margin: 0 0 0.3rem; font-size: 0.9rem; color: #6b4e10; }
   .unit-old-note .unit-old-body { font-size: 0.92rem; line-height: 1.5; max-height: 14rem; overflow: auto; }
@@ -503,7 +538,7 @@
     import { closeAllBarPalettes } from "./js/bar-palette.js";
     import { trapModal } from "./js/modal-focus.js";
     import { createNoteViews } from "./js/note-window.js";
-    import { createStudyNote, notesForStudyUnit } from "./js/study-note-service.js";
+    import { attachStudyNoteToUnit, createStudyNote, notesForStudyUnit } from "./js/study-note-service.js";
     import { getAyahNotes, ayahNoteHtml } from "./js/ayah-notes.js";
     import { createFirestoreSettingsStore } from "./js/note-user-settings-fs.js";
     import { NOTE_STATUS, FINALISED_REFUSAL, createNoteFolder, createNotePlacement, createPermanentNote, listNoteRevisions, restoreNote, retirePermanentNote, updatePermanentNoteContent } from "./js/note-foundation.js";
@@ -764,6 +799,7 @@
 
     function renderNav(roles, viewAsRole) {
       navBar.innerHTML = renderNavBar(roles, viewAsRole);
+      import("./js/bookmark-nav.js").then((m) => m.mountNavBack()).catch(() => {}); // PCF MSA J72: opened from the menu -> ← Back
       navHomeExtra.innerHTML = renderHomeExtras(roles);
       mountSyncedAppLangControl(navHomeExtra, { db, uid: auth.currentUser?.uid });
       mountCardLookControl(navHomeExtra);
@@ -3884,6 +3920,8 @@
     // read-only below: nothing is copied and nothing is deleted (the Owner: "no old notes copy needed").
     let unitRenderToken = 0, unitRowsCache = null;
     const unitMadeHere = []; // Notes made in this pane, kept until a full load carries them (the page patches its own copy)
+    const unitAttachedHere = []; // J71: { noteId, unitKey } attached from the pane's search, until a fresh read carries them
+    let unitNoteIds = new Set(); // the Notes the list shows now (search marks them "already here")
     const unitLabel = () => unitLabelParam || unitKeyParam;
     async function renderUnitView() {
       const my = ++unitRenderToken;
@@ -3918,15 +3956,18 @@
       const kindOf = new Map();
       for (const { source, note } of rows) if (!kindOf.has(note.noteId) || source.relationshipKind === "origin") kindOf.set(note.noteId, source.relationshipKind);
       for (const n of unitMadeHere) if (n.unitKey === unitKeyParam && !kindOf.has(n.noteId)) kindOf.set(n.noteId, "origin");
+      for (const a of unitAttachedHere) if (a.unitKey === unitKeyParam && !kindOf.has(a.noteId)) kindOf.set(a.noteId, "reference");
       const notes = [...kindOf.keys()]
         .map((id) => allNotes.find((n) => n.noteId === id) ?? rows.find((r) => r.note.noteId === id)?.note ?? unitMadeHere.find((n) => n.noteId === id))
         .filter((n) => n && n.status !== NOTE_STATUS.RETIRED);
       // Every listed Note must be openable before the full load arrives: the Note view reads from allNotes.
       for (const n of notes) if (!allNotes.some((x) => x.noteId === n.noteId)) allNotes.push(n);
       body.innerHTML = notes.length
-        ? notes.map((n) => noteCardHtml(n, { extraHead: `<span class="unit-kind" data-unit-kind="${escapeHtml(kindOf.get(n.noteId))}">${escapeHtml(kindOf.get(n.noteId) === "origin" ? t("started here") : t("mentions it"))}</span>` })).join("")
+        ? notes.map((n) => noteCardHtml(n, { extraHead: `<span class="unit-kind" data-unit-kind="${escapeHtml(kindOf.get(n.noteId))}">${escapeHtml(kindOf.get(n.noteId) === "origin" ? t("started here") : `📎 ${t("attached here")}`)}</span>` })).join("")
         : `<p class="note" data-unit-empty>${escapeHtml(own ? t("No notes on {unit} yet. Press ✚ New note to write one.", { unit: label }) : t("No notes on {unit} yet.", { unit: label }))}</p>`;
       wireNoteCards(body, notes);
+      unitNoteIds = new Set(notes.map((n) => n.noteId));
+      paintHostedTabs();
       // The Read view's 📝 shows how many Notes this āyah has, once they have been read here (no read of its own).
       try { window.parent?.postMessage({ type: "mmsa-unit-count", unit: unitKeyParam, count: notes.length }, location.origin); } catch { /* not embedded */ }
       renderUnitOldNote(my);
@@ -4019,6 +4060,97 @@
       unitKeyParam = ev.data.unit; unitLabelParam = ev.data.label || ""; noteTitleParam = ev.data.noteTitle || "";
       if (currentView === "unit") renderUnitView();
     });
+
+    // =====================================================================
+    // PCF MSA J71 (the Owner, 22 Oct 2026) -- the pane's top-bar search, and its tabs drawn on the tools row
+    // =====================================================================
+    // The Read view's pane asks; this page answers from the Notes it has already read (allNotes: no new read, I9).
+    // "mmsa-note-search" {q, id} -> "mmsa-note-search-results" {id, results, total, loading}; "mmsa-note-attach" {noteId}
+    // binds that Note to the pane's āyah as a reference (attachStudyNoteToUnit, the one new write; I15 through
+    // safeWrite); "mmsa-note-open" {noteId} opens it here, its ← Back returning to the āyah's list (decision 86).
+    const plainOf = (html) => { const d = document.createElement("div"); d.innerHTML = sanitizeNoteHtml(html || ""); return (d.textContent || "").replace(/\s+/g, " ").trim(); };
+    const foldText = (s) => String(s || "").normalize("NFD").replace(/[̀-ًͯ-ٰٟ]/g, "").toLowerCase();
+    function searchMapNotes(q) {
+      const words = foldText(q).split(/\s+/).filter(Boolean);
+      if (!words.length) return { results: [], total: 0 };
+      const hits = [];
+      for (const n of allNotes) {
+        if (n.status === NOTE_STATUS.RETIRED) continue;
+        const title = noteTitleOf(n), body = plainOf(n.bodyHtml), ft = foldText(title), fb = foldText(body);
+        if (!words.every((w) => ft.includes(w) || fb.includes(w))) continue;
+        const inTitle = words.every((w) => ft.includes(w));
+        const at = fb.indexOf(words[0]);
+        const snippet = at < 0 ? body.slice(0, 90) : `${at > 30 ? "…" : ""}${body.slice(Math.max(0, at - 30), at + 70)}`;
+        hits.push({ noteId: n.noteId, title, snippet, here: unitNoteIds.has(n.noteId), inTitle, when: displayTimestamp(n)?.toMillis?.() ?? 0 });
+      }
+      hits.sort((a, b) => (b.inTitle - a.inTitle) || (a.here - b.here) || (b.when - a.when));
+      return { results: hits.slice(0, 8).map(({ inTitle, when, ...r }) => r), total: hits.length };
+    }
+    async function attachToUnit(noteId) {
+      if (!unitMode || !isSelfSelected() || unitNoteIds.has(noteId)) return { ok: unitNoteIds.has(noteId) };
+      const note = allNotes.find((n) => n.noteId === noteId);
+      if (!note) return { ok: false };
+      const outcome = await safeWrite(() => attachStudyNoteToUnit(db, {
+        tenantId: activeTenantId, ownerPersonId: selectedPersonId, ownerUid: auth.currentUser.uid, noteId, unitKey: unitKeyParam, actorUid: auth.currentUser.uid,
+      }), { collection: TENANT.NOTE_SOURCES, action: "attachStudyNoteToUnit" });
+      if (!outcome.ok) return { ok: false };
+      unitAttachedHere.push({ noteId, unitKey: unitKeyParam });
+      unitRowsCache = null; // read again on the next drawing; the page's own copy above carries it until then
+      showPageStatus(t('"{title}" attached to {unit}.', { title: noteTitleOf(note), unit: unitLabel() }));
+      if (currentView === "unit") await renderUnitView();
+      return { ok: true };
+    }
+    let hostedTabs = false, hostedLabels = { notes: "", track: "" };
+    function hostedTabsHtml() {
+      return `<button type="button" class="jm-host-tab" role="tab" aria-selected="true" data-jm-host-tab="notes">📝 ${escapeHtml(hostedLabels.notes || t("Notes"))}</button>`
+        + `<button type="button" class="jm-host-tab" role="tab" aria-selected="false" data-jm-host-tab="track">✅ ${escapeHtml(hostedLabels.track || t("Track this āyah"))}</button>`;
+    }
+    function placeHostedTabs(container) {
+      if (!container || container.querySelector(":scope > .jm-host-tabs")) return;
+      const box = document.createElement("span");
+      box.className = "jm-host-tabs"; box.setAttribute("role", "tablist"); box.dataset.jmHostTabs = "";
+      box.innerHTML = hostedTabsHtml();
+      box.addEventListener("click", (e) => {
+        const b = e.target.closest("[data-jm-host-tab]");
+        if (b?.dataset.jmHostTab === "track") window.parent?.postMessage({ type: "mmsa-pane-tab", tab: "track" }, location.origin);
+      });
+      container.prepend(box);
+    }
+    function paintHostedTabs() {
+      if (!unitMode) return;
+      document.documentElement.classList.toggle("pane-tabs-hosted", hostedTabs);
+      const bar = notePaneEl?.querySelector("[data-pane-bar]");
+      if (bar && !bar.querySelector(".jm-tool-sep")) { // the group dividers, once (the bar's buttons are never redrawn)
+        for (const sel of ["[data-pane-find-toggle]", "[data-pane-new]", "[data-pane-edit-toggle]"]) {
+          const b = bar.querySelector(`:scope > ${sel}`);
+          if (b) { const sep = document.createElement("span"); sep.className = "jm-tool-sep"; sep.setAttribute("aria-hidden", "true"); b.before(sep); }
+        }
+      }
+      if (!hostedTabs) return;
+      placeHostedTabs(bar);
+      placeHostedTabs(viewUnit.querySelector(".unit-head"));
+    }
+    window.addEventListener("message", async (ev) => {
+      if (ev.origin !== location.origin || ev.source !== window.parent || !unitMode) return;
+      const m = ev.data || {};
+      if (m.type === "mmsa-pane-tabs") {
+        hostedTabs = !!m.on; hostedLabels = { notes: m.notes || "", track: m.track || "" };
+        if (!hostedTabs) document.querySelectorAll(".jm-host-tabs").forEach((x) => x.remove());
+        paintHostedTabs();
+      } else if (m.type === "mmsa-note-search" && typeof m.q === "string") {
+        const out = notesAndPlacementsLoaded ? searchMapNotes(m.q) : { results: [], total: 0, loading: true };
+        window.parent?.postMessage({ type: "mmsa-note-search-results", id: m.id, ...out }, location.origin);
+      } else if (m.type === "mmsa-note-attach" && typeof m.noteId === "string") {
+        const r = await attachToUnit(m.noteId);
+        window.parent?.postMessage({ type: "mmsa-note-attached", noteId: m.noteId, ok: r.ok }, location.origin);
+      } else if (m.type === "mmsa-note-open" && typeof m.noteId === "string" && allNotes.some((n) => n.noteId === m.noteId)) {
+        try { endEdit(paneView); } catch { /* nothing being edited */ }
+        openNotePane(m.noteId, null);
+      }
+    });
+    // The pane may have spoken before this listener existed (the page loads, then may reload once in the reader's
+    // language): say so, and it tells again where the tabs go.
+    if (unitMode) try { window.parent?.postMessage({ type: "mmsa-pane-hello" }, location.origin); } catch { /* not embedded */ }
 
     // =====================================================================
     // OPTION C -- Path: a BRANCHING tree with links (issue #267)

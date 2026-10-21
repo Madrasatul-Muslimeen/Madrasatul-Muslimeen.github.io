@@ -13,6 +13,8 @@ import { chromium, newContext, openPage, clickReadTool } from "./harness.mjs";
 import fs from "node:fs";
 
 let pass = 0, fail = 0;
+// Updated in place for PCF MSA J71: a Note bound to the āyah as a `reference` is labelled "📎 attached here" (the pane's
+// search attaches Notes that way; nothing else in the app writes a reference), no longer "mentions it".
 const check = (name, ok, detail = "") => {
   if (typeof ok?.then === "function") throw new Error(`check "${name}" was given a promise`);
   if (ok) { pass++; console.log(`  PASS  ${name}`); } else { fail++; console.log(`  FAIL  ${name} ${detail}`); }
@@ -45,8 +47,8 @@ DATA.noteSources = [...(DATA.noteSources ?? []), ...${JSON.stringify(SOURCES)}];
 (DATA.ayahNotes.find((d) => d._id === "t1__p1") || {}).notes = { "ayah:2:256": { html: "<p>My old quick note on 2:256</p>" } };`;
 
 const L = {
-  en: { backUnit: "← Back to the unit card", backNotes: "Back to Notes on 2:257", backCard: "← Back to Āyah card", title258: "Notes on 2:258", title256: "Notes on 2:256", title257: "Notes on 2:257", back: "← Back to 2:256", started: "started here", mentions: "mentions it", old: "Your note from the Note view", empty257: "No notes on 2:257 yet", newBtn: "New note on 2:257" },
-  bn: { backUnit: "← ইউনিট কার্ডে ফিরে যান", backNotes: "২:২৫৭-এর নোটে ফিরে যান", backCard: "← আয়াত কার্ডে ফিরুন", title258: "২:২৫৮-এর নোট", title256: "২:২৫৬-এর নোট", title257: "২:২৫৭-এর নোট", back: "← ২:২৫৬-এ ফিরে যান", started: "এখানে শুরু", mentions: "এর উল্লেখ আছে", old: "নোট ভিউ থেকে আপনার নোট", empty257: "২:২৫৭-এ এখনো কোনো নোট নেই", newBtn: "২:২৫৭-এ নতুন নোট" },
+  en: { backUnit: "← Back to the unit card", backNotes: "Back to Notes on 2:257", backCard: "← Back to Āyah card", title258: "Notes on 2:258", title256: "Notes on 2:256", title257: "Notes on 2:257", back: "← Back to 2:256", started: "started here", mentions: "📎 attached here", old: "Your note from the Note view", empty257: "No notes on 2:257 yet", newBtn: "New note on 2:257" },
+  bn: { backUnit: "← ইউনিট কার্ডে ফিরে যান", backNotes: "২:২৫৭-এর নোটে ফিরে যান", backCard: "← আয়াত কার্ডে ফিরুন", title258: "২:২৫৮-এর নোট", title256: "২:২৫৬-এর নোট", title257: "২:২৫৭-এর নোট", back: "← ২:২৫৬-এ ফিরে যান", started: "এখানে শুরু", mentions: "📎 এখানে যুক্ত", old: "নোট ভিউ থেকে আপনার নোট", empty257: "২:২৫৭-এ এখনো কোনো নোট নেই", newBtn: "২:২৫৭-এ নতুন নোট" },
 };
 
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
@@ -104,12 +106,15 @@ for (const lang of ["en", "bn"]) for (const [width, height, mode] of [[390, 844,
   await F.waitForTimeout(500);
   const where = await ev((m) => {
     const p = document.getElementById("readNotePane"), r = p.getBoundingClientRect(), rs = document.getElementById("readScroll").getBoundingClientRect();
-    return { cls: [...p.classList].join(" "), l: r.left, t: r.top, r: r.right, b: r.bottom, w: r.width, h: r.height, iw: innerWidth, ih: innerHeight, readRight: rs.right, side: document.body.classList.contains("rnp-open-side"), dock: document.body.classList.contains("rnp-open-dock"), sideways: document.documentElement.scrollWidth > innerWidth + 1 };
+    const home = JSON.parse(localStorage.getItem("mmsa-home-window-v1") || "null");
+    return { home, cls: [...p.classList].join(" "), l: r.left, t: r.top, r: r.right, b: r.bottom, w: r.width, h: r.height, iw: innerWidth, ih: innerHeight, readRight: rs.right, side: document.body.classList.contains("rnp-open-side"), dock: document.body.classList.contains("rnp-open-dock"), sideways: document.documentElement.scrollWidth > innerWidth + 1 };
   }, mode);
   const placed = mode === "phone" ? where.l <= 0.5 && where.t <= 0.5 && Math.abs(where.r - where.iw) <= 1 && Math.abs(where.b - where.ih) <= 1
     : mode === "dock" ? Math.abs(where.b - where.ih) <= 1 && where.l <= 0.5 && Math.abs(where.r - where.iw) <= 1 && where.h < where.ih * 0.7 && where.dock
-    : Math.abs(where.r - where.iw) <= 1 && where.t <= 0.5 && where.w < where.iw * 0.5 && where.side && where.readRight <= where.l + 1;
-  check(`${tag} the pane sits ${mode === "phone" ? "over the whole screen" : mode === "dock" ? "docked under the reading, about half the height" : "beside the reading, which is not covered"}`, placed && where.cls.includes(`rnp-${mode}`), JSON.stringify(where));
+    // UPDATED IN PLACE for PCF MSA J72 (the Owner: "Enable this size globally for all pop-ups"): on a computer the pane is
+    // a pop-up at the home window's size and place (over the reading), no longer the right-hand column beside it.
+    : !!where.home && Math.abs(where.l - where.home.x) <= 2 && Math.abs(where.t - where.home.y) <= 2 && Math.abs(where.w - where.home.w) <= 2 && Math.abs(where.h - where.home.h) <= 2;
+  check(`${tag} the pane sits ${mode === "phone" ? "over the whole screen" : mode === "dock" ? "docked under the reading, about half the height" : "at the home window's size and place (a pop-up, J72)"}`, placed && where.cls.includes(`rnp-${mode}`), JSON.stringify(where));
   check(`${tag} ...no sideways scroll`, !where.sideways, JSON.stringify(where));
   const list = await F.evaluate(() => ({
     title: document.querySelector("[data-unit-title]")?.textContent ?? "",
@@ -185,7 +190,8 @@ for (const lang of ["en", "bn"]) for (const [width, height, mode] of [[390, 844,
   check(`${tag} ...closing the tray leaves the Notes pane and the reading as they were`, await ev(() => document.getElementById("journeyTray").hidden && !document.getElementById("readNotePane").hidden && document.getElementById("ayahSelect").value === "257"));
   // 8. Round 2a: "Track this āyah" is a tab of the pane; Record Your Progress opens the Āyah card (its 👥 included) and
   // leaves "Back to Notes on 2:257", which brings the pane back on its Track tab.
-  await P.click('#readNotePane [data-rnp-tab="track"]');
+  // J71: on a computer the tabs are drawn by the page inside, on its tools row; the Track tab is pressed there
+  if (await ev(() => !!document.querySelector("#readNotePane.rnp-tabs-in-frame"))) await F.click('.jm-host-tab[data-jm-host-tab="track"]'); else await P.click('#readNotePane [data-rnp-tab="track"]');
   await P.waitForTimeout(300);
   const tr = await ev(() => ({ frame: document.querySelector("#readNotePane .rnp-frame").hidden, track: document.querySelector("#readNotePane .rnp-track").hidden,
     btns: [...document.querySelectorAll("#readNotePane [data-rnp-track]")].map((b) => b.dataset.rnpTrack), sel: document.querySelector('#readNotePane [data-rnp-tab="track"]').getAttribute("aria-selected"),

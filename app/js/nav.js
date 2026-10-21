@@ -156,7 +156,11 @@ function renderLinks(links, currentFile, canAdmin) {
     .filter((l) => !isHiddenFromQr(l.moduleId))
     .map((l) => {
       const isCurrent = l.href === currentFile;
-      return `<a href="${l.href}" class="nav-link${isCurrent ? " nav-current" : ""}"${isCurrent ? ' aria-current="page"' : ""}>${t(l.label)}</a>`;
+      // PCF MSA J72 (the way-back law, decision 86): a menu link carries navBack=1, and the page it opens shows ← Back to
+      // exactly the page it was opened from (bookmark-nav.js mountNavBack). Its own marker, not back=1: several pages give
+      // back=1 a meaning of their own, and answering it from the shared menu drew a second ← Back there once.
+      const href = isCurrent ? l.href : `${l.href}${l.href.includes("?") ? "&" : "?"}navBack=1`;
+      return `<a href="${href}" class="nav-link${isCurrent ? " nav-current" : ""}"${isCurrent ? ' aria-current="page"' : ""}>${t(l.label)}</a>`;
     })
     .join("");
 }
