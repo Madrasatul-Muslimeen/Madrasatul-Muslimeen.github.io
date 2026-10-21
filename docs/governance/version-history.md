@@ -921,3 +921,4 @@ total). Allocated by the MMSA Architect.
 12.17: MSA J67, J66 part 2, J61 part 2b. Allocated by the MMSA Architect.
 12.18: MSA J68 part 4. Allocated by the MMSA Architect.
 12.19: MSA J69, J70. Allocated by the MMSA Architect.
+12.20: J71 J72 J73 (Notes from the Āyah card; pop-ups one size, every edge, ← Back; Vocabulary buttons). Allocated by the MMSA Architect.

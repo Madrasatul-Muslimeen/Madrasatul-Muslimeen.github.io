@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "12.19",
+    "version": "12.20",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -4505,8 +4505,20 @@
     {
       "version": "12.19",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Taṣrīf person blocks and the basic form فَعَلَ (J69); the Āyah card as a large two-pane window with the full text (J70).",
+      "integration": {
+        "authorizedOn": "2026-10-21",
+        "integratedOn": "2026-10-21",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.20",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "PCF MSA J71, J72, J73: Notes from the Āyah card in its place with a search to attach; every pop-up resizes from every edge at one shared size with ← Back everywhere; Vocabulary's Learn, Practise and Step test open at once.",
       "integration": {
         "authorizedOn": "2026-10-21",
         "integratedOn": "2026-10-21",
@@ -4515,8 +4527,9 @@
       }
     }
   ],
-  "nextUnallocated": "12.20",
+  "nextUnallocated": "12.21",
   "nextUnallocatedNote": [
+    "v12.20 was allocated to J71 J72 J73 (Notes from the Āyah card; pop-ups one size, every edge, ← Back; Vocabulary buttons), 2026-10-21.",
     "v12.19 was allocated to MSA J69, J70, 2026-10-21.",
     "v12.18 was allocated to MSA J68 part 4, 2026-10-21.",
     "v12.17 was allocated to MSA J67, J66 part 2, J61 part 2b, 2026-10-21.",
