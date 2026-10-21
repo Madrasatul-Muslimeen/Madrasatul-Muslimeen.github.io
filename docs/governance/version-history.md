@@ -914,3 +914,4 @@ total). Allocated by the MMSA Architect.
 12.10: the Vocabulary review schedule kept in the account (PCF MSA J48 round 2). Allocated by the MMSA Architect.
 12.11: Word card: Go to its āyah (PCF MSA J57). Allocated by the MMSA Architect.
 12.12: Word card: the Legend is a small ⓘ in the top bar (PCF MSA J59). Allocated by the MMSA Architect.
+12.13: Bangla transliteration everywhere and the one-line poster menu (PCF MSA J58). Allocated by the MMSA Architect.
