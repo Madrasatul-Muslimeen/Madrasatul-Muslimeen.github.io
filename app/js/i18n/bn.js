@@ -2347,6 +2347,7 @@ export const BN = {
   "Type a reference first.": "প্রথমে একটি সূত্র লিখুন।", // ?
   "Tick at least one Name.": "অন্তত একটি নাম বাছাই করুন।", // ?
   "Attach to Asma ul Husna": "আসমাউল হুসনায় যুক্ত করুন", // ?
+  "Attach to QCR": "QCR-এ যুক্ত করুন",
 
   // 30 Aug 2026 round -- the Asma drawer's own attach button, and
   // create-a-new-Name-while-attaching.
