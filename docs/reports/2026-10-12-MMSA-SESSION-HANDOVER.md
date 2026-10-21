@@ -7,7 +7,37 @@ v10.28). Read `CLAUDE.md` first. The prompt that starts the next session is
 
 This session was summarised once (its context compacted), which is why it hands over here.
 
-## LATEST UPDATE — 21 Oct 2026, 6:25 pm Sydney, session `session_017XmUaxwDGhjaQExeKYwYJj` (v12.16 live on MSA AND QR; Builder round #1007 running; HANDOVER) — READ THIS FIRST
+## LATEST UPDATE — 22 Oct 2026, 8:45 am Sydney, session `session_01NRUt1vXovcsHryRwq8E6J6` (v12.19 live on MSA AND QR; J71 demo next; HANDOVER) — READ THIS FIRST
+
+Took over 6:31 pm 21 Oct from `session_017XmUaxwDGhjaQExeKYwYJj`. Handing over at ~40% context (cost86/hand119).
+**`main` is v12.19, live on MSA and QR since 8:39 am 22 Oct (build-from-msa dispatched after merge `40ef7bb1`). QR's 20 checks on v12.19: the result is in the PCA message "PCA ▸ handover ready" (v12.17 and v12.18 were 20/20). Next release: v12.20.** The PCA is `session_019xuGwr6uFeQUpKmERwBPxX`.
+
+**Released this session**
+- **v12.17** (PR #1013): MSA J67 (Builder #1007, PR #1011 merged inside it; the Āyah card as a window), J66 part 2 (Bangla আ in 13 Hadith places; three Hadith pullers mend it; HadeethEnc re-hashed over the record as stored), J61 part 2b (the rest of the Word card's small Arabic at 90%, `--wc-small-ar`). Also `word-card-sense-arabic` fixed (hidden "+ N more" chips measured 0px; red on `main` before).
+- **v12.18** (PR #1014): MSA J68 part 4 (Builder #1008, PR #1012; the Read view's Notes pane as a window). Architect fix: `WINDOW_FROM = SIDE_FROM` (1100px), so a tablet keeps the full-screen pane. PCA change notice sent (`read-note-pane.js`).
+- **v12.19** (PR #1015): MSA J69 (Taṣrīf person blocks as plates, five `tbody` blocks; "Basic form: فَعَلَ" at the START of the Form line / a noun's shape sentence, `conjBasic`, ← Back) and J70 (the Āyah card as a window opens at 92%, key `mmsa-ayah-window-v2`; bars 1-3; two panes with a splitter, `mmsa-ayah-panes`; full text left with Translations / Word by word `details`, `mmsa-ayah-ft-open`; ⤢ / 📖 = text across the card, the other half a bar above; Related āyāt a pull-down above 2; card under 560px stacks). New suites `word-card-tasrif-blocks-basic-browser` (100/0, 8 mutations), `ayah-card-panes-browser` (35/0, 10 mutations). Updated in place, each with its reason: `ayah-card-window-browser`, `quran-ayah-action-sheet-browser`, `word-card-ayah-card-ways-back-browser`, `word-card-tasrif-noun-browser`.
+
+**Running / next (each in its PCF job)**
+1. **MSA J71 — the first job of the next session, a DEMO** (the Owner's message 22 Oct ~8:10 am, a PC screenshot of "Notes on 2:18" opened from the Āyah card, three empty spaces circled): (1) the Notes window (`#readNotePane`, `app/js/read-note-pane.js`, the `journey-map.html?embed=1` frame) opened from the Āyah card's 📝 Note takes the Āyah card's exact rect (`mmsa-ayah-window-v2` / the card's live rect); (2) use the three empty spaces: the top bar's middle gets a search box; the tab bar (Notes · Track this āyah) also carries the note's tools grouped (‹ › · 🔍 sort copy attach · ＋ · Done ⋯), so the separate tool row goes; the formatting row moves up so the title and body start higher — "show your best elegant, distinctive design"; (3) the top bar's search finds any other Map note to attach / tag to this āyah. Build in the real app on a branch, screenshots on a computer, ask n71a. **Shared note scripts** (`read-note-pane.js`, `journey-map.html`, `note-window.*`): QR pins a copy, so a PCA change notice with the release.
+2. **QR's 20 checks on v12.19** (run locally after the merge): if any failed, the PCA message names it; fix first.
+3. **MSA J64**: the Owner's taps (n64a). **MSA J48 round 3**: from Thu 22 Oct ~7 pm (j48p10); step 2 needs n48e (PCA 8:30 am Thu).
+4. Owner checks open: **n69b, n70b** (v12.19), n67a, n61c, n66a, n68b, n61b, n63a, n65a, n68a, n58c, n60a, n61a, n62a, n64a.
+
+**Owner messages this session (carry1), each filed in the PCF job named**
+1. ~7:05 am 22 Oct: Taṣrīf screenshots, "Can you give each block a distinctive look? …" and "place this Fa A' La as the basic form under Tasirf …Demo" → J69 (released).
+2. ~7:25 am: "Only thing is this buttons take another row." → J69 (fixed: the button sits at the start of an existing line).
+3. ~7:35 am: the Āyah card's eight points ("appears like that … two equal panes … full Text on the left … squeezing the right half to a bar above … Tidy the 2nd topbar … button groups as the 3rd bar … left side blocks to the right half above 'related Ayat' … Related Ayat as Pull-down") → J70.
+4. ~7:50 am: "Forgot to attach the image but you did exactly, good without it. Enable the full text with translations and WbW expand/collps. Build it." → J70 (released).
+5. ~8:10 am: the Notes window from the Āyah card (same size and place, three empty spaces, search to attach Map notes, "Demo") → J71 (recorded; demo next).
+
+**Lessons**
+- **`pkill -f "serve.js"` from a Bash command kills that command's own shell** (its command line contains the pattern): stop servers by PID, or with a pattern the command itself does not contain.
+- **A deliberate layout change makes old checks describe the old layout**: J70 needed four suites updated in place (Status measured from a hidden sibling read 341px; 📖 no longer opens the pop-up on a PC; bar 2 is one line). Run every suite that opens the changed surface, at a PC width AND a phone width, before releasing.
+- **A mutation that changes one CSS property can be unproven when another rule still holds the layout** (bar 2: `wrap` alone did not wrap, because the tools' basis was already `auto`): mutate the whole rule group the feature added.
+- **A probe that measures "the element before X" breaks when a hidden element is inserted before X**: measure from a named element.
+- **Insert a control into existing text at the START of the line**: at the end it can still wrap onto a row of its own on a phone (the longer "← Back to …" did).
+
+## LATEST UPDATE — 21 Oct 2026, 6:25 pm Sydney, session `session_017XmUaxwDGhjaQExeKYwYJj` (v12.16 live on MSA AND QR; Builder round #1007 running; HANDOVER) — superseded by the 22 Oct 8:45 am block above, kept as history
 
 Took over 4:46 pm 21 Oct from `session_01LzpvsLYG9iahYhnxMrNNHH`. Handing over at ~45% context (cost86/hand119).
 **`main` is v12.16, live on MSA (6:18 pm) and QR (6:18 pm, build-from-msa run 14); QR's 20 checks on the v12.16 build: the result is in the PCA message "PCA ▸ handover ready". Next release: v12.17.** The PCA is `session_019xuGwr6uFeQUpKmERwBPxX`.
