@@ -711,8 +711,8 @@ function conjSection(word, features, ctx) {
   const rootAr = [...toArabic(entry.r)].join(" ");
   const formLabel = lang === "bn" ? formatNumber(entry.f) : (FORM_NAMES[entry.f]?.roman ?? String(entry.f));
   const out = basic
-    ? [line("rule", lang, `${esc(fill(pick("conjBasicRule", lang), { root: "\u0000" })).replace("\u0000", AR(rootAr))} <span class="word-card-m">${esc(pick("conjBasicHelp", lang))}</span>`)]
-    : [line("rule", lang, `${esc(fill(pick("conjRule", lang), { n: formLabel, root: "\u0000" })).replace("\u0000", AR(rootAr))} <span class="word-card-m">${esc(pick("conjHelp", lang))}</span>`)];
+    ? [line("rule", lang, `${esc(fill(pick("conjBasicRule", lang), { root: "\u0000" })).replace("\u0000", AR(rootAr))} <span class="word-card-m">${esc(pick("conjBasicHelp", lang))}</span> ${basicBarHtml(word, ctx)}`)]
+    : [line("rule", lang, `${esc(fill(pick("conjRule", lang), { n: formLabel, root: "\u0000" })).replace("\u0000", AR(rootAr))} <span class="word-card-m">${esc(pick("conjHelp", lang))}</span> ${basicBarHtml(word, ctx)}`)];
   const kind = basic ? null : CONJ_TENSE[features.tense];
   const here = kind && !features.pass
     ? { kind, pgn: PGN_ALIASES[features.pgn] || features.pgn, mood: features.tense === "IMPF" ? features.mood || "IND" : "IND", word: String(word.arabic ?? "").replace(/^\u06DE\s*/, "").replace(/\s+[\u06D6-\u06ED]+/g, "").trim() }
@@ -948,9 +948,18 @@ const pick2 = (key, sub, lang) => S[key][sub][lang] ?? S[key][sub].en;
 export function tasrifSectionsHtml({ word, layers, features, ctx, open = {} }) {
   const isOpen = "conj" in open ? !!open.conj : true;
   // PCF MSA J69: فَعَلَ, the basic form, opens from every word's Taṣrīf; ← Back returns to the word's own Taṣrīf.
-  if (ctx.conjBasic) return basicBarHtml(word, ctx) + depthLegendHtml(ctx.lang) + accordion("conj", ctx.lang, isOpen, conjSection(word, {}, ctx));
-  if (!features?.tense) return basicBarHtml(word, ctx) + (nounSectionsHtml({ word, features, ctx }) ?? `<p class="word-card-dnote" data-word-card-tasrif-na>${esc(pick("tasrifNotVerb", ctx.lang))}</p>`);
-  return whoWhenHtml({ word, layers, features, ctx }) + basicBarHtml(word, ctx) + depthLegendHtml(ctx.lang) + accordion("conj", ctx.lang, isOpen, conjSection(word, features, ctx));
+  // The Owner (22 Oct): "this buttons take another row" -- so the button shares the legend row (a verb, the basic form)
+  // or the heading of the word's shape box (a noun), never a row of its own.
+  // A verb (and the basic form itself) carries it at the end of its "Form I of ف ع ل" line, in conjSection.
+  if (ctx.conjBasic) return depthLegendHtml(ctx.lang) + accordion("conj", ctx.lang, isOpen, conjSection(word, {}, ctx));
+  if (!features?.tense) {
+    const nouns = nounSectionsHtml({ word, features, ctx });
+    if (!nouns) return `<div class="word-card-basic-row">${basicBarHtml(word, ctx)}</div><p class="word-card-dnote" data-word-card-tasrif-na>${esc(pick("tasrifNotVerb", ctx.lang))}</p>`;
+    // At the end of the shape box's sentence ("majrūr: usually after a preposition …"), or beside its heading when it has none.
+    if (/data-noun-case-line[^>]*>[\s\S]*?<\/p>/.test(nouns)) return nouns.replace(/(data-noun-case-line[^>]*>[\s\S]*?)<\/p>/, `$1 ${basicBarHtml(word, ctx)}</p>`);
+    return nouns.replace(/(data-word-card-noun-shape><h4)>([\s\S]*?)<\/h4>/, `$1 class="word-card-basic-h4"><span>$2</span>${basicBarHtml(word, ctx)}</h4>`);
+  }
+  return whoWhenHtml({ word, layers, features, ctx }) + depthLegendHtml(ctx.lang) + accordion("conj", ctx.lang, isOpen, conjSection(word, features, ctx));
 }
 
 const BASIC_LEMMA = "فَعَلَ";
@@ -960,7 +969,7 @@ function basicBarHtml(word, ctx) {
   const ar = String(word.arabic ?? "").replace(/^\u06DE\s*/, "").replace(/\s+[\u06D6-\u06ED]+/g, "").trim();
   const label = ctx.conjBasic ? pick("conjBasicBack", lang) : pick("conjBasicBtn", lang);
   const text = esc(fill(label, { ar: "\u0000" })).replace("\u0000", `<span dir="rtl" lang="ar">${esc(ctx.conjBasic ? ar : BASIC_LEMMA)}</span>`);
-  return `<div class="word-card-basic-bar"><button type="button" class="word-card-basic-btn${ctx.conjBasic ? " word-card-basic-back" : ""}" data-word-card-conj-basic="${ctx.conjBasic ? "off" : "on"}">${text}</button></div>`;
+  return `<span class="word-card-basic-bar"><button type="button" class="word-card-basic-btn${ctx.conjBasic ? " word-card-basic-back" : ""}" data-word-card-conj-basic="${ctx.conjBasic ? "off" : "on"}">${text}</button></span>`;
 }
 
 /**
