@@ -89,9 +89,20 @@ const FLOWS = {
   },
   async notepane(tag, page) {
     await click(page, "tabStudyBtn"); await click(page, "tabNoteBtn"); await page.waitForTimeout(900);
-    const S = [".rnp-back", ".rnp-close", ".rnp-tab"];
+    // Updated in place for PCF MSA J71/J72: on a computer the Notes window opens at the home size and its Notes / Track
+    // tabs are drawn by the page inside, on its tools row (.jm-host-tab in the frame); measured there, at the same 40px.
+    await page.waitForTimeout(1200);
+    const hosted = await page.evaluate(() => !!document.querySelector("#readNotePane.rnp-tabs-in-frame"));
+    const S = hosted ? [".rnp-back", ".rnp-close"] : [".rnp-back", ".rnp-close", ".rnp-tab"];
     const r = await sizes(page, S);
     tall(tag, r, S);
+    if (hosted) {
+      const fr = page.frames().find((f) => /journey-map\.html\?embed=1/.test(f.url()));
+      await fr?.waitForFunction(() => document.querySelector(".jm-host-tab")?.getBoundingClientRect().height > 0, null, { timeout: 15000 }).catch(() => {});
+      const tabs = fr ? await fr.evaluate(() => [...document.querySelectorAll(".jm-host-tab")].filter((e) => e.getBoundingClientRect().height > 0).map((e) => Math.round(e.getBoundingClientRect().height * 10) / 10)) : [];
+      check(`${tag}: POSITIVE CONTROL the Notes window's tabs are on its tools row`, tabs.length >= 2, JSON.stringify(tabs));
+      check(`${tag}: those tabs >= 40px tall`, tabs.every((h) => h >= 39.5), JSON.stringify(tabs));
+    }
     const c = r.out[".rnp-close"][0];
     check(`${tag}: Note window close button inside the screen (right ${c && Math.round(c.r)} of ${r.vw})`, !!c && c.r <= r.vw + 1 && c.l >= -1);
   },

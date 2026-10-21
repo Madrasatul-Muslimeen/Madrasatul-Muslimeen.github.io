@@ -6,6 +6,9 @@
 // Run from the repository root with serve.js running. MUTATE=<name> serves one deliberate break (see MUTATIONS) and
 // the suite must then FAIL; that is how each check below was proven able to fail.
 
+// Updated in place for PCF MSA J72 (the Owner, 22 Oct 2026: "resizeable from all side and all corners"): the resize
+// handles now live in their own frame over the window's edge ([data-popup-win-frame="wheel"], note-popup.js), because
+// inside the scrolling window the bottom and right ones could not be grabbed. Same handles, new place.
 import fs from "node:fs";
 import { chromium, newContext, openPage } from "./harness.mjs";
 
@@ -126,7 +129,7 @@ console.log("\n3. What the reader does THIS visit is kept");
   const { ctx, page } = await open(1600, 1240);
   const before = await measure(page);
   // Shrink the window from its bottom-right corner, the way a reader drags it.
-  const h = await page.evaluate(() => { const b = document.querySelector('#wheelPopupView > .note-popup-resize[data-note-resize="se"]').getBoundingClientRect(); return { x: b.x + b.width / 2, y: b.y + b.height / 2 }; });
+  const h = await page.evaluate(() => { const b = document.querySelector('[data-popup-win-frame="wheel"] > .note-popup-resize[data-note-resize="se"]').getBoundingClientRect(); return { x: b.x + b.width / 2, y: b.y + b.height / 2 }; });
   await page.mouse.move(h.x, h.y); await page.mouse.down(); await page.mouse.move(h.x - 300, h.y - 200, { steps: 6 }); await page.mouse.up();
   await page.waitForTimeout(300);
   const dragged = await measure(page);

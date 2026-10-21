@@ -153,7 +153,7 @@ function apply() {
 let hostedSent = null;
 function syncHostedTabs() {
   if (!pane || pane.hidden) return;
-  const on = pane.getBoundingClientRect().width >= HOST_TABS_FROM && !frame.hidden;
+  const on = layout() === "win" && pane.getBoundingClientRect().width >= HOST_TABS_FROM && !frame.hidden; // a computer's window only: phones and tablets keep today's rows
   pane.classList.toggle("rnp-tabs-in-frame", on);
   if (on === hostedSent) return;
   hostedSent = on;

@@ -120,12 +120,14 @@ for (const look of ["night", "light"]) for (const lang of ["en", "bn"]) {
     const { page: P, errors } = await openPage(ctx, "/app/quranrevival.html");
     await toRead(P); await openCard(P);
 
-    // J70: the first open is the large card -- 92% of the width (at most 1600), centred, under the top bar, full height
+    // UPDATED IN PLACE for PCF MSA J72 (the Owner, 22 Oct 2026: "Enable this size globally for all pop-ups"): the card
+    // opens at the home window's size and place (the landing window's, home-window.js), no longer J70's own 92% card.
     const rf = await sheetRect(P);
-    const fw = Math.min(Math.round(w * 0.92), 1600), fy = Math.min(72, Math.round(h * 0.08));
-    check(`${tag} first open (J70): a large card, ${fw}px wide, centred, top ${fy}px, full height`, near(rf.w, fw, 2) && near(rf.x, (w - fw) / 2, 2) && near(rf.y, fy, 2) && near(rf.h, h - fy - 12, 3), R(rf));
-    // from here on, J67's old side-panel place, as a remembered rect (room to move and resize)
-    await P.evaluate(([vw, vh]) => localStorage.setItem("mmsa-ayah-window-v2", JSON.stringify({ x: vw - 22.4 - 376, y: 72, w: 376, h: vh - 72 - 24 })), [w, h]);
+    const hr = await P.evaluate(() => JSON.parse(localStorage.getItem("mmsa-home-window-v1") || "null"));
+    check(`${tag} first open (J72): the card takes the home window's size and place ${R(hr ?? {})}`, !!hr && near(rf.w, hr.w, 2) && near(rf.x, hr.x, 2) && near(rf.y, hr.y, 2) && near(rf.h, hr.h, 3), R(rf));
+    // from here on, J67's old side-panel place, as a remembered rect (room to move and resize) -- seeded as the shared
+    // home rect too (J72, n72a A: every opening takes the home rect, so that is where a remembered place lives)
+    await P.evaluate(([vw, vh]) => { const r = { x: vw - 22.4 - 376, y: 72, w: 376, h: vh - 72 - 24 }; localStorage.setItem("mmsa-ayah-window-v2", JSON.stringify(r)); localStorage.setItem("mmsa-home-window-v1", JSON.stringify({ ...r, user: true })); }, [w, h]);
     await P.reload({ waitUntil: "networkidle" }); await P.waitForTimeout(400);
     await toRead(P); await openCard(P);
     const r0 = await sheetRect(P);

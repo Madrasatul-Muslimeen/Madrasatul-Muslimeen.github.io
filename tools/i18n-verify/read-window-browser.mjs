@@ -59,6 +59,10 @@ for (const lang of ["en", "bn"].filter((l) => !ONLY || l === ONLY)) {
     await routeMutation(ctx);
     const { page } = await openPage(ctx, "/app/quranrevival.html");
     const errors = []; page.on("pageerror", (e) => errors.push(e.message));
+    // PCF MSA J72: a window opens at the shared home rect (home-window.js). Seeded here as a mid-sized rect a reader
+    // chose, so this suite's move and resize checks keep room around the window (the landing window nearly fills a PC).
+    await page.evaluate(() => localStorage.setItem("mmsa-home-window-v1", JSON.stringify({ x: 260, y: 110, w: 760, h: 640, user: true })));
+    await page.reload({ waitUntil: "networkidle" });
     await page.waitForTimeout(600);
     await openRead(page);
     const docked = await rect(page, "#readView");

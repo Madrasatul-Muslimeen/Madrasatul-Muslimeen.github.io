@@ -340,20 +340,23 @@ export function initPopupWindow(el, { id = "note", dragHandleEl, resizeHandleEls
     applyGeometry(el, geometry);
     syncFrame();
     if (persist) saveGeometry(geometry, id);
-    if (home === "self" && !maximized && isPopupViewport()) setHomeRect(toRect(geometry), { from: "home", user: touched });
+    // only the home window's own fill is written here (user: false never replaces a chosen rect): a chosen rect it merely
+    // took -- perhaps widened to its own minimum -- must stay the reader's, so the other pop-ups keep it exactly
+    if (home === "self" && !maximized && isPopupViewport()) setHomeRect(toRect(geometry), { from: "home", user: false });
   }
   function remember() {
-    touched = true; saveGeometry(geometry, id);
+    touched = true; gesture = false; saveGeometry(geometry, id);
     if (home) setHomeRect(toRect(geometry), { from: home === "self" ? "home" : "popup", user: true });
   }
   // J72: a follower shown again takes the home rect again (with SHARED, whatever it was itself last given).
+  let gesture = false; // a drag or resize in progress: the shared rect is the reader's own only once it ends
   function onShown() {
-    if (!home || maximized || !isPopupViewport() || (touched && !HOME_SHARED)) return;
+    if (!home || gesture || maximized || !isPopupViewport() || (touched && !HOME_SHARED)) return;
     if (home === "self" && !(HOME_SHARED && homeRectChosen())) return; // the home window follows only a rect the reader chose
     const g = fromHome();
     if (g && (g.left !== geometry.left || g.top !== geometry.top || g.width !== geometry.width || g.height !== geometry.height)) commit(g, { persist: false });
   }
-  if (home === "self" && isPopupViewport()) setHomeRect(toRect(geometry), { from: "home", user: touched });
+  if (home === "self" && isPopupViewport()) setHomeRect(toRect(geometry), { from: "home", user: false });
 
   dragHandleEl?.addEventListener("pointerdown", (e) => {
     if (maximized) return;
@@ -362,6 +365,7 @@ export function initPopupWindow(el, { id = "note", dragHandleEl, resizeHandleEls
     if (e.button !== undefined && e.button !== 0) return; // left-click/primary touch only
     e.preventDefault();
     touched = true; // J44: the reader's own drag from its first move, so a re-fit never fights it
+    gesture = true;
     const startX = e.clientX, startY = e.clientY, startGeom = { ...geometry };
     dragHandleEl.setPointerCapture(e.pointerId);
     const move = (ev) => {
@@ -382,6 +386,7 @@ export function initPopupWindow(el, { id = "note", dragHandleEl, resizeHandleEls
       if (maximized) return;
       e.preventDefault();
       touched = true; // J44: as above
+      gesture = true;
       const startX = e.clientX, startY = e.clientY, startGeom = { ...geometry };
       handle.setPointerCapture(e.pointerId);
       const move = (ev) => {
