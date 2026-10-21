@@ -4401,7 +4401,17 @@
      straight under the header (its own line is the header's), and the
      actions below it take the dividing line instead. */
   .ayah-sheet-header + .ayah-sheet-status[data-ayah-sheet-status] { border-top: 0; margin-top: 0; padding-top: 0.15rem; }
-  .ayah-sheet-status[data-ayah-sheet-status] + .ayah-sheet-body { border-top: 1px solid var(--card-line); margin-top: 0.4rem; padding-top: 0.3rem; }
+  .ayah-sheet-col-b > .ayah-sheet-body:first-child { border-top: 1px solid var(--card-line); margin-top: 0.4rem; padding-top: 0.3rem; }
+  /* J67 -- the contents sit in two column wrappers; narrow (and on phones) they are invisible and the card is one column
+     exactly as before. js/ayah-card-window.js sets [data-wide] when the card is 560px or wider. */
+  .ayah-sheet-cols, .ayah-sheet-col-a, .ayah-sheet-col-b { display: contents; }
+  @media (min-width: 900px) {
+    .ayah-sheet[data-wide] .ayah-sheet-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 0.9rem; align-items: start; }
+    .ayah-sheet[data-wide] .ayah-sheet-col-a, .ayah-sheet[data-wide] .ayah-sheet-col-b { display: block; min-width: 0; }
+    .ayah-sheet[data-wide] .ayah-sheet-col-b > .ayah-sheet-body:first-child { border-top: 0; margin-top: 0; padding-top: 0; }
+    .ayah-sheet[data-wide] .ayah-sheet-col-b > .ayah-sheet-info { border-top: 1px solid var(--card-line); }
+    .ayah-sheet[data-wide] .ayah-sheet-actrow { grid-template-columns: repeat(auto-fit, minmax(76px, 1fr)); }
+  }
   .ayah-sheet-section-title { font-size: 0.82rem; color: var(--card-heading); margin: 0 0.2rem 0.4rem; }
   .ayah-status-block { margin: 0 0.2rem 0.9rem; }
   .ayah-status-heading { font-size: 0.76rem; color: var(--card-text-muted); text-transform: uppercase; letter-spacing: 0.02em; margin: 0 0 0.3rem; }
@@ -6891,6 +6901,7 @@
     import { getAyahNotes, ayahNoteHtml, ayahHasNote, saveAyahNote, ensureAyahNotesWritable } from "./js/ayah-notes.js";
     import { renderQuickMenu, attachQuickMenuHandlers, attachQcrDrawerHandlers, notesToPlainText, copyToClipboard, shareText } from "./js/ayah-note-renderer.js";
     import { initReadWindow } from "./js/read-window.js";
+    import { initAyahCardWindow } from "./js/ayah-card-window.js";
     import { initPopupWindow, initSideSplitter, initListCollapse, loadSideViewMode, saveSideViewMode } from "./js/note-popup.js";
     import {
       collectionsFrom, activeCollections,
@@ -7642,6 +7653,7 @@
     // Issue #286 -- "This āyah" action sheet + "File in folder(s)…".
     const ayahActionSheetOverlayEl = document.getElementById("ayahActionSheetOverlay");
     const ayahActionSheetMountEl = document.getElementById("ayahActionSheetMount");
+    initAyahCardWindow(ayahActionSheetMountEl); // J67 -- on a PC the Āyah card can be moved and resized
     const ayahFolderFilingOverlayEl = document.getElementById("ayahFolderFilingOverlay");
     const ayahFolderFilingTitleEl = document.getElementById("ayahFolderFilingTitle");
     const ayahFolderFilingNotePickerMountEl = document.getElementById("ayahFolderFilingNotePickerMount");
