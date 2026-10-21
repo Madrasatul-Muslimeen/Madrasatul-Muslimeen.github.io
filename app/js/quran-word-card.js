@@ -272,6 +272,7 @@ export const WORD_CARD_DEFAULT_LABELS = Object.freeze({
   wholeQuranLevelSentence: "{level}: Achieved {known} and {percent} of {total} words",
   learnNextTitle: "Learn next",
   practiseThisWord: "Practise this word",
+  goToItsAyah: "Go to its āyah {ref}",
   learnNextLine: "Next up: {word} · {meaning} · {count} places",
   percentCircleLabel: "{percent}%",
   levelNameWbw: "WbW",
@@ -1309,6 +1310,20 @@ function rootMeaningsSection(layers, context, text, formatNumber) {
   </section>`;
 }
 
+/**
+ * PCF MSA J57 (the Owner, 21 Oct 2026: "nothing in WbW (Word Card) takes back to where this word belong to … we need a
+ * button in WbW to bring the Ayah where this word belongs to"): the āyah this card's word sits in. Opened from Learn next
+ * or Vocabulary, that is the word's first appearance. It is a data-word-occurrence-goto link, so it takes the same way as
+ * every place chip: the card closes, the āyah shows with the word ringed, and "Back to Word Card" brings the card back.
+ */
+function goToItsAyahButton(word, context, text, formatNumber) {
+  const s = Number(context?.surahNumber), a = Number(context?.ayahNumber), w = Number(word?.position);
+  if (![s, a, w].every((n) => Number.isInteger(n) && n > 0)) return "";
+  const shown = `${formatNumber(s)}:${formatNumber(a)}`;
+  const label = String(text.goToItsAyah ?? WORD_CARD_TEXT.goToItsAyah).replace("{ref}", shown);
+  return `<button type="button" class="word-card-goto-ayah" data-word-occurrence-goto="${s}:${a}:${w}">${escapeHtml(label)}</button>`;
+}
+
 function levelPanel(level, word, layers, context, text, formatNumber) {
   // Round 7 (#525) -- "WbW · 2:102 · word 35", the small line in Record your
   // Progress. The reference stays in plain digits (an identifier); the word
@@ -1354,6 +1369,7 @@ function levelPanel(level, word, layers, context, text, formatNumber) {
       ${knownThroughLine(context.knownViaGroupLemma, text)}
       ${knownThroughLevelLine(context.knownViaLevel, text)}
       ${word?.morphology?.lemma ? `<button type="button" class="word-card-practise" data-vocab-practise-word data-lemma="${escapeHtml(word.morphology.lemma)}">${escapeHtml(String(text.practiseThisWord ?? WORD_CARD_TEXT.practiseThisWord))}</button>` : ""}
+      ${goToItsAyahButton(word, context, text, formatNumber)}
     </div></div>`;
   }
   if (level === "basic") {

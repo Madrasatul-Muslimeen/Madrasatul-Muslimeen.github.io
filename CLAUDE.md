@@ -422,7 +422,7 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v12.10 on `main`** (21 Oct 2026 — **Vocabulary review schedule, kept in the account** (PCF MSA J48 round 2, the Owner's tick 3A; Rules published by the Owner 20 Oct): every Vocabulary round (practice, the step test, Practise this word) moves its words in the student's review schedule, `quranVocabReview/{tenant}__{person}` — a word answered right comes back after 1, then 2, 4, 8 and 16 days, a word missed comes back tomorrow. Learn next shows **Due today: N words** with **Review now** (up to 10 due words, the longest-waiting first, mixed question kinds); when nothing is due it says when the next review is. One read when Learn next or the Vocabulary sheet opens, never at startup; practice state only, never a mark ("known" stays the Word card's). The previous release, v12.09, is Āyah posters and the Learn next / Vocabulary polish (J52–J56).)
+**Current milestone: v12.11 on `main`** (21 Oct 2026 — **Word card: Go to its āyah** (PCF MSA J57, the Owner's ask after checking J54): the Word card's WbW level has a **Go to its āyah 2:3** button under Practise this word. It opens the āyah this word sits in (from Learn next or Vocabulary, the word's first appearance): the card closes, the āyah shows with the word ringed in gold, and **Back to Word Card** brings the card back at WbW. The previous release, v12.10, is the Vocabulary review schedule (J48 round 2).)
 
 **Earlier milestones, v08.111 back to v07.139, and the long notes around them**
 (the held Phase 4 wiring, the four deployment states, the Programme Integration
