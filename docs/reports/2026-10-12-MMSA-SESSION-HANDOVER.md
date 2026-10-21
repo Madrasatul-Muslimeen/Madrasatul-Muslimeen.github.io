@@ -1255,3 +1255,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v12.13** (2026-10-21): Bangla transliteration everywhere and the one-line poster menu (PCF MSA J58).
 - **v12.14** (2026-10-21): Word card Family rows and plates, WbW always coloured; Taṣrīf Arabic at 90%; QCR Level (PCF MSA J60 J61 J62).
 - **v12.15** (2026-10-21): QR's offline lists carry the Bangla transliteration module.
+- **v12.16** (2026-10-21): MSA J61 part 2a, J63, J65, J66, J68 parts 1-3.

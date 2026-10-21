@@ -73,7 +73,9 @@ for (const lang of ["en", "bn"]) for (const [width, height, mode] of [[390, 844,
 
   // 1. The button: on the Read bar, the same size as its neighbours, nothing read for it before it is pressed (I9).
   const btn = await ev(() => {
-    const b = document.getElementById("readNotesBtn"), bm = document.getElementById("readBookmarkBtn"), r = b?.getBoundingClientRect();
+    // UPDATED IN PLACE for PCF MSA J63 (v12.16, the Owner: no Bookmark tile in the tools card): #readBookmarkBtn is hidden
+    // there now, and the bar's own 🔖 (#readBarBookmarkBtn) is the one beside 📝, so 📝 is measured against that.
+    const b = document.getElementById("readNotesBtn"), bm = document.getElementById("readBarBookmarkBtn"), r = b?.getBoundingClientRect();
     return { shown: !!r && r.width > 0, h: r?.height ?? 0, bmH: bm?.getBoundingClientRect().height ?? 0, label: b?.getAttribute("aria-label"), inside: !!r && r.left >= 0 && r.right <= innerWidth + 0.5,
       loaded: !!document.getElementById("readNotePane"), badge: !b?.querySelector(".read-notes-count")?.hidden };
   });
