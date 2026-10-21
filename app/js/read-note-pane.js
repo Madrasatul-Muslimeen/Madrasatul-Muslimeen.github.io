@@ -13,6 +13,7 @@
 // to the page inside; "mmsa-open-journey" and "mmsa-unit-count" from it.
 import { t } from "./i18n.js";
 import { HANDLES, handleCss, startDrag } from "./float-window.js";
+import { homeRect, setHomeRect, SHARED as HOME_SHARED } from "./home-window.js";
 
 export const PHONE = 600, SIDE_FROM = 1100;
 // PCF MSA J68 part 4: from WINDOW_FROM px the pane is a window (move by its bar, resize from 8 handles), remembered per device.
@@ -112,7 +113,7 @@ function defaultRect() { // today's place: the right-hand column
 }
 const winCtx = {
   getRect: () => rect, setRect: (r) => { rect = clampWin(r); apply(); },
-  locked: () => !pane || layout() !== "win", limits: LIMITS, onEnd: () => { fromCard = false; saveRect(); }, dragClass: "rnp-dragging",
+  locked: () => !pane || layout() !== "win", limits: LIMITS, onEnd: () => { fromCard = false; saveRect(); setHomeRect(rect, { from: "popup", user: true }); }, dragClass: "rnp-dragging",
 };
 
 function layout() {
@@ -434,6 +435,7 @@ export function openReadNotePane(u, whenClosed = null, { tab = "notes", backLabe
   // opened from the card on a computer, the window takes the card's own rect for this opening. Moving or resizing it
   // makes that the remembered place, as before; the next opening from anywhere else is the remembered one again.
   if (cardRect && layout() === "win" && [cardRect.x, cardRect.y, cardRect.w, cardRect.h].every(Number.isFinite)) { rect = clampWin(cardRect); fromCard = true; }
+  else if (layout() === "win" && (HOME_SHARED || !rect) && homeRect()) { rect = clampWin(homeRect()); fromCard = false; } // PCF MSA J72
   else if (fromCard) { rect = loadRect() ?? defaultRect(); fromCard = false; }
   pane.classList.remove("rnp-finding");
   results.hidden = true;

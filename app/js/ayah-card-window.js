@@ -10,6 +10,7 @@
 //
 // Pure UI: no Firebase, no app state beyond that one localStorage key.
 import { HANDLES, startDrag, handleCss } from "./float-window.js";
+import { homeRect, setHomeRect, SHARED as HOME_SHARED } from "./home-window.js";
 
 // PCF MSA J70 (the Owner, 22 Oct 2026): "Enable the card appears like that (in context to the entire screen) on first
 // opening" -- a new key, so every device's first open is the new large card, not a place remembered from J67.
@@ -123,6 +124,7 @@ export function initAyahCardWindow(mountEl) {
   document.head.appendChild(style);
 
   let rect = load();
+  let wasActive = false;
   const frame = document.createElement("div");
   frame.className = "ayah-win-frame";
   frame.setAttribute("data-ayah-win-frame", "");
@@ -142,6 +144,7 @@ export function initAyahCardWindow(mountEl) {
     const sheet = sheetEl();
     const act = active();
     if (!act) {
+      wasActive = false;
       if (shownNow) { shownNow = false; closedAt = Date.now(); }
       frame.classList.remove("on");
       if (sheet) {
@@ -152,6 +155,9 @@ export function initAyahCardWindow(mountEl) {
       }
       return;
     }
+    // PCF MSA J72: each opening takes the home window's size and place (with SHARED; else only the first opening).
+    if (!wasActive && (HOME_SHARED || !rect)) rect = homeRect() ?? rect;
+    wasActive = true;
     if (!rect) rect = defaultRect(); // J70: the first open is the large card, not the old side panel
     sheet.setAttribute("data-ayah-win", "");
     applyPanes(sheet);
@@ -236,7 +242,7 @@ export function initAyahCardWindow(mountEl) {
     setRect: (r) => { rect = clampInside(r); apply(); },
     locked: () => !active(),
     limits: LIMITS,
-    onEnd: () => { if (rect) save(rect); },
+    onEnd: () => { if (rect) { save(rect); setHomeRect(rect, { from: "popup", user: true }); } },
     dragClass: "ayah-win-dragging",
   };
 

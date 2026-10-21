@@ -14369,6 +14369,7 @@
       resizeHandleEls: wheelPopupResizeHandles,
       maximizeBtn: wheelPopupMaximizeBtn,
       fill: true, // PCF MSA J44: on a PC the Mastery Wheel always opens filling the space between the menu row and the dock
+      home: "self", // PCF MSA J72: the landing window's size and place is every pop-up's (js/home-window.js)
     });
     explorePopupWin = initPopupWindow(exploreView, {
       id: "explore",
@@ -14378,6 +14379,7 @@
       resizeHandleEls: explorePopupResizeHandles,
       maximizeBtn: explorePopupMaximizeBtn,
       fill: true, // PCF MSA J51: on a PC Explore always opens filling the space between the menu row and the dock
+      home: "follow", // PCF MSA J72: opens at the landing window's size and place
     });
     // v08.20 -- the Word Card floats as its own small window on a desktop,
     // dragged by its header and resized from any edge or corner, exactly the
@@ -14408,6 +14410,7 @@
         // size the reader chose is still kept).
         defaultMaxWidth: 1120,
         topInset: popupTopInset, // audit12 wcinset: the floating card opened over the nav row
+        home: "follow", // PCF MSA J72: opens at the landing window's size and place
       });
     });
 

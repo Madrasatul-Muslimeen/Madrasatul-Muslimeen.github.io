@@ -13,6 +13,7 @@
 //
 // Pure UI: no Firebase, no app state beyond localStorage geometry.
 import { HANDLES, startDrag } from "./float-window.js";
+import { homeRect, setHomeRect, SHARED as HOME_SHARED } from "./home-window.js";
 
 const KEY = "mmsa-read-window";
 const WINDOW_FROM = 900;
@@ -54,6 +55,7 @@ export function initReadWindow({ viewEl, titleBarEl, titleEl, buttons, isOpen, g
   let full = false;
   let rect = stored.rect && [stored.rect.x, stored.rect.y, stored.rect.w, stored.rect.h].every(Number.isFinite) ? stored.rect : null;
   const persist = () => save({ on, rect });
+  let wasActive = false;
   const active = () => on && isOpen() && window.innerWidth >= WINDOW_FROM;
 
   // eight resize handles; the south-east one is the big gold corner
@@ -73,7 +75,10 @@ export function initReadWindow({ viewEl, titleBarEl, titleEl, buttons, isOpen, g
     document.body.classList.toggle("read-window-full", act && full);
     buttons.pop?.setAttribute("aria-pressed", String(on));
     buttons.full?.setAttribute("aria-pressed", String(full));
-    if (!act) { for (const p of ["left", "top", "width", "height"]) viewEl.style.removeProperty(p); return; }
+    if (!act) { wasActive = false; for (const p of ["left", "top", "width", "height"]) viewEl.style.removeProperty(p); return; }
+    // PCF MSA J72: each opening as a window takes the home window's size and place (with SHARED; else the first only).
+    if (!wasActive && (HOME_SHARED || !rect)) rect = homeRect() ?? rect;
+    wasActive = true;
     if (!rect) rect = smallerRect();
     rect = clampInside(rect);
     const r = full ? { x: 0, y: 0, w: window.innerWidth, h: window.innerHeight } : rect;
@@ -82,7 +87,7 @@ export function initReadWindow({ viewEl, titleBarEl, titleEl, buttons, isOpen, g
   }
   const ctx = {
     getRect: () => rect, setRect: (r) => { rect = clampInside(r); apply(); },
-    locked: () => full || !active(), limits: LIMITS, onEnd: persist, dragClass: "jt-dragging",
+    locked: () => full || !active(), limits: LIMITS, onEnd: () => { persist(); if (rect) setHomeRect(rect, { from: "popup", user: true }); }, dragClass: "jt-dragging",
   };
   titleBarEl.addEventListener("pointerdown", (e) => { if (!e.target.closest("button")) startDrag(e, "move", ctx); });
   titleBarEl.addEventListener("dblclick", (e) => { if (!e.target.closest("button")) { full = !full; apply(); } });
