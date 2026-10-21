@@ -912,3 +912,4 @@ total). Allocated by the MMSA Architect.
 12.08: the Qur'an Vocabulary module, round 1 (PCF MSA J48). Allocated by the MMSA Architect.
 12.09: Āyah posters, the madda sign, the word marked and the middle view, Learn next to 95%, ten questions (PCF MSA J52 J53 J54 J55 J56). Allocated by the MMSA Architect.
 12.10: the Vocabulary review schedule kept in the account (PCF MSA J48 round 2). Allocated by the MMSA Architect.
+12.11: Word card: Go to its āyah (PCF MSA J57). Allocated by the MMSA Architect.
