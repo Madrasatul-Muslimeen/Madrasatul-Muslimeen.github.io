@@ -498,6 +498,8 @@ export function renderAyahActionSheetHtml({
         <button type="button" class="ayah-sheet-close" data-ayah-sheet-close aria-label="${escapeHtml(t("Close"))}">×</button>
       </div>
       ${introHtml}
+      <div class="ayah-sheet-cols">
+      <div class="ayah-sheet-col-a">
       ${actionRow}
       <div class="ayah-sheet-status" data-ayah-sheet-status>
         <h3 class="ayah-sheet-section-title">${escapeHtml(intro?.opening ? t("Status") : t("Status of this āyah"))}</h3>
@@ -507,6 +509,8 @@ export function renderAyahActionSheetHtml({
           ${intro?.opening ? "" : `<button type="button" class="qm-item ayah-sheet-wheel-btn" data-ayah-sheet-see-wheel>${escapeHtml(t("See on the wheel"))}</button>`}
         </div>${statusBlocksHtml}
       </div>
+      </div>
+      <div class="ayah-sheet-col-b">
       <div class="ayah-sheet-body">${pickerHtml}</div>
       <div class="ayah-sheet-status ayah-sheet-info" data-ayah-sheet-info${intro?.opening ? " hidden" : ""}>
         <h3 class="ayah-sheet-section-title">${escapeHtml(t("Info"))}</h3>
@@ -522,6 +526,8 @@ export function renderAyahActionSheetHtml({
           <h4 class="ayah-status-heading">${escapeHtml(t("Connected āyāt"))}</h4>
           ${connectedInfoHtml(connected)}
         </div>
+      </div>
+      </div>
       </div>
     </div>`;
 }

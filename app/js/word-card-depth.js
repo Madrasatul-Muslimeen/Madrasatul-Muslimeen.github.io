@@ -192,6 +192,11 @@ const WHEN = {
 const pick = (key, lang) => S[key][lang] ?? S[key].en;
 const fill = (template, values) => String(template).replace(/\{(\w+)\}/g, (m, k) => (k in values ? values[k] : m));
 const AR = (value, extra = "") => `<span class="word-card-ar" dir="rtl" lang="ar"${extra}>${esc(value)}</span>`;
+// PCF MSA J61 part 2b: Arabic words written inside an English or Bangla sentence (the Form sentences: "... — عَلِمَ he
+// knew.") are each wrapped as AR(), so they take the card's Arabic size instead of the sentence's small type. The text
+// itself is unchanged.
+const AR_RUN = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]+(?:\s+[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]+)*/g;
+const escWithAr = (text) => esc(text).replace(AR_RUN, (run) => AR(run));
 
 /** The source tag; `kind` is "data" | "rule" | "needs". */
 export function sourceTagHtml(kind, lang) {
@@ -559,7 +564,7 @@ function choiceSection(word, layers, features, ctx) {
   if (formNo) {
     const f = FORM_NAMES[formNo];
     const label = fill(pick("formN", lang), { n: lang === "bn" ? formatNumber(formNo) : f.roman });
-    out.push(line("rule", lang, `<b>${esc(label)}</b> (${AR(f.past)}): <span data-word-card-form-sentence lang="${lang}">${esc(f[lang] ?? f.en)}</span>`));
+    out.push(line("rule", lang, `<b>${esc(label)}</b> (${AR(f.past)}): <span data-word-card-form-sentence lang="${lang}">${escWithAr(f[lang] ?? f.en)}</span>`));
   }
   // Decision 61 -- near-synonyms from al-Furūq.
   const fu = ctx.furuq;

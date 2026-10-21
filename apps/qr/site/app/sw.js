@@ -51,6 +51,7 @@ const SHELL = [
   "js/assign-picker.js",
   "js/audio-player.js",
   "js/ayah-action-sheet.js",
+  "js/ayah-card-window.js",
   "js/ayah-folder-filing-plan.js",
   "js/ayah-folder-filing-renderer.js",
   "js/ayah-hadith.js",
