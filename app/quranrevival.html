@@ -2283,6 +2283,8 @@
       text-align: center; overflow-wrap: anywhere; max-width: 100%;
     }
     #readToolsMenu.open #readNotesBtn .read-notes-count { top: 4px; right: 6px; }
+    /* J63: no Bookmark tile in the card; the bar's own 🔖 (#readBarBookmarkBtn) is the bookmark. */
+    #readToolsMenu.open #readBookmarkBtn { display: none !important; }
     /* A±'s sliders are anchored to the RIGHT of their button for the bar (see .text-size-popover); in the panel A± is the
        first tile, at the left, so a right anchor ran them 125px off a 390px phone. Anchor them to the tile's left. */
     #readToolsMenu.open .text-size-popover { left: 0; right: auto; }
@@ -4260,6 +4262,15 @@
   }
   .ayah-card-back-btn { min-height: 40px; padding: 0 0.9rem; border: 0; border-radius: 999px; background: transparent; color: #f2e8d5; font-size: 0.88rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
   .ayah-card-back-ref { color: #c9a24b; margin-left: 0.3rem; }
+  /* J63 (PCF MSA J63, the Owner, 21 Oct 2026): on a phone the words were cut ("← Bac…"), so below 600px the pill is a big
+     arrow and the ×, each a 44px tile; the full words stay as the button's aria-label and title. Tablet and desktop keep the text. */
+  @media (max-width: 599.98px) {
+    .ayah-card-back-text { display: none; }
+    .ayah-card-back-pill .ayah-card-back-btn, .ayah-card-back-pill.back-docked .ayah-card-back-btn { min-height: 44px; min-width: 44px; padding: 0 0.6rem; }
+    .ayah-card-back-pill .ayah-card-back-arrow { font-size: 1.5rem; line-height: 1; }
+    .ayah-card-back-pill .ayah-card-back-x, .ayah-card-back-pill.back-docked .ayah-card-back-x { width: 44px; height: 44px; }
+    #readBackSlot { flex-basis: auto; }
+  }
   .ayah-card-back-x { width: 40px; height: 40px; flex: 0 0 auto; padding: 0; border: 0; border-radius: 50%; background: rgba(255, 255, 255, 0.08); color: #f2e8d5; font-size: 1.2rem; cursor: pointer; }
   /* 📖 Note view pop-up: the āyah as the Note view shows it, over the card. */
   /* The Owner, 9 Oct 2026 (a tablet): "no way back or it is covered". 100vh is the screen with the browser's bars
@@ -5810,6 +5821,8 @@
                    write every Explore Asma edit already makes), shown/hidden
                    by JS alongside every other role-gated control on this page. -->
               <button type="button" class="secondary qr-ico" id="readAttachAsmaBtn" aria-label="Attach to Asma ul Husna" title="Attach to Asma ul Husna" hidden>🔗</button>
+              <!-- J63 (PCF MSA J63): Attach to QCR, beside Attach to Asma -- the QCR pop-up of this āyah, as the Āyah card's 📚 QCR opens it. -->
+              <button type="button" class="secondary qr-ico" id="readAttachQcrBtn" aria-label="Attach to QCR" title="Attach to QCR" hidden>📚</button>
             </div>
             <!-- Round 31 -- the owner's own question: "why should the three dot
                  take space over the Ayah? put the dots on the Bar, where there
@@ -7481,6 +7494,7 @@
     const readToolsBtn = document.getElementById("readToolsBtn");
     const readToolsMenu = document.getElementById("readToolsMenu");
     const readBookmarkBtn = document.getElementById("readBookmarkBtn");
+    const readAttachQcrBtn = document.getElementById("readAttachQcrBtn");
     const readBarBookmarkBtn = document.getElementById("readBarBookmarkBtn");
     const readNotesBtn = document.getElementById("readNotesBtn");
     const readUnitChip = document.getElementById("readUnitChip"); // issue #348, Owner decision 18
@@ -21835,7 +21849,9 @@
           if (e.target.closest("[data-ayah-card-back]")) { const r = ayahCardReturn; clearAyahCardReturn("back"); r?.back?.(); }
         });
       }
-      pill.innerHTML = `<button type="button" class="ayah-card-back-btn" data-ayah-card-back><span aria-hidden="true">←</span> ${escapeHtml(ayahCardReturn.title)}${ayahCardReturn.label ? ` <span class="ayah-card-back-ref">${escapeHtml(ayahCardReturn.label)}</span>` : ""}</button>` +
+      // J63: below 600px only a big ← and the × show; the words stay as aria-label and title (CSS hides .ayah-card-back-text there).
+      const backWords = `${ayahCardReturn.title}${ayahCardReturn.label ? ` ${ayahCardReturn.label}` : ""}`;
+      pill.innerHTML = `<button type="button" class="ayah-card-back-btn" data-ayah-card-back aria-label="${escapeHtml(backWords)}" title="${escapeHtml(backWords)}"><span class="ayah-card-back-arrow" aria-hidden="true">←</span><span class="ayah-card-back-text"> ${escapeHtml(ayahCardReturn.title)}${ayahCardReturn.label ? ` <span class="ayah-card-back-ref">${escapeHtml(ayahCardReturn.label)}</span>` : ""}</span></button>` +
         `<button type="button" class="ayah-card-back-x" data-ayah-card-back-dismiss aria-label="${escapeHtml(t("Close"))}">×</button>`;
       pill.hidden = false;
       placeInDock(pill, "back-docked");
@@ -23832,7 +23848,7 @@
       readBookmarkBtn.setAttribute("title", unitBmLabel);
       // 12 Oct 2026: the same bookmark on the Mushaf bar (the Owner: "Add bookmark button on the top of the Mushaf page").
       if (readBarBookmarkBtn) {
-        readBarBookmarkBtn.hidden = !mushafToggle.checked;
+        readBarBookmarkBtn.hidden = false; // J63: the card has no Bookmark tile, so the bar's 🔖 shows in the plain Read view too
         readBarBookmarkBtn.textContent = readBookmarkBtn.textContent;
         readBarBookmarkBtn.setAttribute("aria-label", unitBmLabel);
         readBarBookmarkBtn.setAttribute("title", unitBmLabel);
@@ -23857,6 +23873,8 @@
       // it writes to asmaCollections/{tenantId}, the same Manage-mode write
       // every Explore Asma edit already makes.
       readAttachAsmaBtn.hidden = !canAdminCatalogueClientSide();
+      // J63: Attach to QCR needs ONE āyah (a QCR pop-up is for an āyah), not owner/prime: the Āyah card's 📚 QCR is open to every reader.
+      readAttachQcrBtn.hidden = unitInfo.unitType !== "ayah";
 
       if (usesFlow) {
         // Round 31: the bar-mounted ⋮ (below) only ever means "this one
@@ -24624,6 +24642,12 @@
       );
     }
 
+    readAttachQcrBtn.addEventListener("click", () => {
+      const info = currentUnitInfo();
+      if (info.unitType !== "ayah") return;
+      // The way back: the pop-up closes onto the Read view at this same āyah (the tools card closed on the tap).
+      openQcrPopup(info.unitKey, { backLabel: t("Read") });
+    });
     readAttachAsmaBtn.addEventListener("click", () => {
       openAsmaXAttachPopover({ prefillRef: asmaRefTextFor(currentSurahNum, currentAyahNum) });
     });
