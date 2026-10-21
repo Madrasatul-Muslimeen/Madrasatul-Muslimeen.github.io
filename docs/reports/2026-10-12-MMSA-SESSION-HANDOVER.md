@@ -7,7 +7,48 @@ v10.28). Read `CLAUDE.md` first. The prompt that starts the next session is
 
 This session was summarised once (its context compacted), which is why it hands over here.
 
-## LATEST UPDATE — 21 Oct 2026, 12:40 pm Sydney, session `session_01YZYYGbS7PEgU5srQjy3pkd` (v12.11 live on MSA AND QR; HANDOVER) — READ THIS FIRST
+## LATEST UPDATE — 21 Oct 2026, 2:45 pm Sydney, session `session_012pLhEYVFHKJ8KbEvMua2kF` (v12.12 live on MSA AND QR; Builder round #1001 running; HANDOVER) — READ THIS FIRST
+
+Took over 12:43 pm 21 Oct from `session_01YZYYGbS7PEgU5srQjy3pkd`. Handing over at ~40% context (cost86/hand119), on the PCA's word.
+**`main` is v12.12, live on MSA and QR (1:41 pm). Next release: v12.13.** The PCA is `session_019xuGwr6uFeQUpKmERwBPxX`.
+
+**Released / merged this session**
+- **v12.12** (PR #999): MSA J59, the Word card's Legend is a round 40px ⓘ in the header beside "This āyah ⋯"
+  (`legendButtonHtml()` / `legendBalloonHtml()` in `quran-word-card.js`; the balloon hangs from a zero-height
+  `.word-card-legend-row` under the header, its pointer placed by `setWordCardLegend()` via `--wc-legend-arrow`; the
+  colour row is not drawn when empty; a 320px container query keeps the header on one row). Suites: five-levels 286/0
+  (5 mutations), wbw-rebuild 136/0, 14 more Word card suites green. Owner check `n59a` open.
+- **PR #1000** (test only): QR's `one-worker-browser` visited `notes.html`, which QR no longer carries (PCA J71), and
+  stopped on a 404 (red on v12.11 too). Now 42/0, mutation `split` still caught. QR's 20 checks are 20/20 on v12.12.
+- J58 demo kept: `docs/reference/2026-10-21-j58-bangla-translit-and-poster-menu-demo.html` and the approved rules
+  `docs/reference/2026-10-21-j58-bangla-translit-prototype.mjs`.
+
+**Running / waiting (each in the PCF job named)**
+1. **MSA J58 Builder round: issue #1001, Actions run 39535866610 (#1620), started 1:57 pm, IN PROGRESS at 2:43 pm, no PR
+   yet.** Owner ticks n58b (session, ~1:55 pm, "J58:A1.2b3a"): 1A the rules as sampled for every word, marked "made by
+   rules, being checked"; 2B the poster menu as ONE LINE that opens when tapped; 3A the first transliteration follows the
+   app language. Spec in #1001. **Next step:** when its PR lands, review by measurement (the golden list for Al-Fātiḥah
+   and Al-Ikhlāṣ in #1001 must match exactly; run `bangla-translit`, `bangla-translit-browser`, `ayah-poster-browser`,
+   the Word card suites, governance and `apps-build-check`; LOOK at the poster menu at 320/390 and the Word card in
+   Bangla), merge, allocate **v12.13** (`allocate-version.py`), write the What's New line, rebuild QR (dispatch
+   `build-from-msa.yml`, then QR's 20 checks), and ask the Owner for one ❗ check in J58. If the run fails or opens no PR,
+   read its log and either re-dispatch or build the rest yourself from the pushed branch.
+2. **MSA J48 round 3: AGREED, build from Thu 22 Oct ~7 pm** (unchanged from the block below; demo branch
+   `claude/j48-round3-demo` kept unmerged). **J48 check step 2**: the PCA's Owner reminder Thu 8:30 am; need `n48e`.
+3. Owner checks open: **n59a** (v12.12 ⓘ), **n57a** (v12.11 Go to its āyah).
+4. Own audit rounds paused until Thu 22 Oct ~7 pm (use108): Owner jobs and student-blocking bugs only.
+
+**Owner messages this session (carry1), each filed in the PCF job named**
+1. ~1:55 pm: "J58:A1.2b3a" → J58 n58b (comment n58b1) and plan j58p5; Builder round #1001 dispatched.
+   (Two earlier Owner messages of ~12:42 pm, J58 n58a and the new J59, came through the previous session and the PCA's
+   addendum; both are done or in hand above.) No other Owner message in the last 30 minutes.
+
+**Lessons**
+- **QR's checks can rot when a page moves home**: a check that walks pages must follow PCA J71's page list; a 404 stops
+  the walk and hides the checks after it. Read a single failing QR check's log before calling it flaky.
+- **The publish of a demo in the session scratchpad is not kept**: copy a demo into `docs/reference/` in the same PR.
+
+## LATEST UPDATE — 21 Oct 2026, 12:40 pm Sydney, session `session_01YZYYGbS7PEgU5srQjy3pkd` (v12.11 live on MSA AND QR; HANDOVER) — superseded by the 2:45 pm block above, kept as history
 
 Took over 12:15 am 21 Oct from `session_01TZ1fWztdUQb49mZBoChfqV`. Handing over at ~55% context (cost86/hand119).
 **`main` is v12.11, live on MSA (12:33 pm) and on QR (12:34 pm). Next release: v12.12.** The PCA is
