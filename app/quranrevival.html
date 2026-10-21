@@ -3658,9 +3658,9 @@
   /* The new purple parts. One token set per card look; every pair is measured at >= 4.5:1 by
      tools/i18n-verify/word-card-five-levels-browser.mjs. The "what it does" line sits on the card's always-light
      surface, so it carries the light pair in both looks. */
-  .quran-word-card { --wc-purple-bg: #f1e9fb; --wc-purple-ink: #4b2a85; --wc-purple-line: #a98bdc; }
-  [data-card-look="light"] .quran-word-card { --wc-purple-bg: #f1e9fb; --wc-purple-ink: #4b2a85; --wc-purple-line: #a98bdc; }
-  [data-card-look="night"] .quran-word-card { --wc-purple-bg: #2d2150; --wc-purple-ink: #e1d2ff; --wc-purple-line: #8a6fd0; }
+  .quran-word-card { --wc-purple-bg: #f1e9fb; --wc-purple-ink: #4b2a85; --wc-purple-line: #a98bdc; --wc-purple-plate: #ffffff; }
+  [data-card-look="light"] .quran-word-card { --wc-purple-bg: #f1e9fb; --wc-purple-ink: #4b2a85; --wc-purple-line: #a98bdc; --wc-purple-plate: #ffffff; }
+  [data-card-look="night"] .quran-word-card { --wc-purple-bg: #2d2150; --wc-purple-ink: #e1d2ff; --wc-purple-line: #8a6fd0; --wc-purple-plate: #3d2e6b; }
   .word-card-cando, .word-card-ordernote, .word-card-whowhen { margin: 0 0 0.5rem; padding: 0.45rem 0.65rem; border-radius: 0.5rem; background: var(--wc-purple-bg); color: var(--wc-purple-ink); border: 1px solid var(--wc-purple-line); font-size: 0.86rem; line-height: 1.35; }
   .word-card-ordernote { font-size: 0.8rem; font-style: italic; }
   /* J41 round 2 -- Taṣrīf for nouns: two purple boxes (the word's shape; the forms of its lemma in the Qur'an). Every text in
@@ -3802,9 +3802,15 @@
   .word-card-family-word { display: grid; gap: 0.3rem; min-width: 0; }
   .word-card-family-who { margin: 0; font-size: 0.8rem; font-weight: 700; color: var(--wc-purple-ink); }
   .word-card-family-who [lang="ar"] { font-size: 1.15rem; font-weight: 400; }
-  .word-card-family-sense { display: flex; flex-wrap: wrap; gap: 0.25rem 0.45rem; align-items: baseline; border: 1px solid var(--wc-purple-line); border-radius: 0.5rem; padding: 0.3rem 0.5rem; min-width: 0; color: var(--wc-purple-ink); }
+  /* J60 (the Owner: "For each meaning with its occurances, give it a distinctive look/ plate"): each meaning is a plate of
+     its own -- its own face, a solid edge with a thick purple bar at its start, and a shadow -- so one meaning's places
+     are never read as the next one's. Text stays --wc-purple-ink on --wc-purple-plate in both looks. */
+  .word-card-family-sense { display: flex; flex-wrap: wrap; gap: 0.25rem 0.45rem; align-items: baseline; border: 1px solid var(--wc-purple-line); border-inline-start-width: 5px; border-radius: 0.6rem; padding: 0.4rem 0.55rem; min-width: 0; color: var(--wc-purple-ink); background: var(--wc-purple-plate); box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18); }
+  .word-card-family-word { gap: 0.5rem; }
+  button.word-card-family-chip[hidden], .word-card-family-more[hidden] { display: none; }
+  button.word-card-family-more { font: inherit; font-size: 0.78rem; font-weight: 700; min-height: 36px; min-width: 44px; padding: 0 0.7rem; border-radius: 999px; border: 1px solid var(--wc-purple-ink); background: var(--wc-purple-ink); color: var(--wc-purple-plate); cursor: pointer; white-space: nowrap; }
   .word-card-family-sense b { font-size: 0.88rem; overflow-wrap: anywhere; }
-  .word-card-family-render .word-card-sense-current { background: transparent; box-shadow: none; border: 2px solid #c9a24a; }
+  .word-card-family-render .word-card-sense-current { border: 2px solid #c9a24a; border-inline-start-width: 5px; }
   .word-card-family-x { font-size: 0.75rem; font-weight: 700; font-variant-numeric: tabular-nums; }
   .word-card-family-chips { display: flex; flex-wrap: wrap; gap: 0.25rem; width: 100%; min-width: 0; }
   button.word-card-family-chip { font: inherit; font-size: 0.78rem; min-height: 36px; min-width: 44px; padding: 0 0.55rem; border-radius: 999px; border: 1px solid var(--wc-purple-line); background: transparent; color: var(--wc-purple-ink); cursor: pointer; font-variant-numeric: tabular-nums; }
@@ -4605,11 +4611,9 @@
     .quran-word-card header { column-gap: 0.2rem; }
     .quran-word-card header button.word-card-ayah-action-btn { padding: 0 0.25rem; }
   }
-  /* J23: the WbW meaning line carries the Colour tick at its right edge; [data-compact] drops the word, keeps the box. */
+  /* J23: the WbW meaning line. J60: the Colour tick left it (the word parts are always coloured). */
   .word-card-meaning-bar { flex-wrap: nowrap; align-items: center; justify-content: space-between; gap: 0.5rem; }
   .word-card-meaning-text { flex: 1 1 auto; min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 1.1rem; }
-  .word-card-meaning-bar .word-card-segment-toggle { flex: 0 0 auto; min-height: 38px; min-width: 38px; justify-content: center; font-size: 0.8rem; white-space: nowrap; }
-  .word-card-meaning-bar[data-compact] .word-card-segment-toggle-text { display: none; }
   /* J43 (image 1): the gloss was body size (0.9rem, line 3554's `.quran-word-card p`) in a mostly empty box. English and
      Bangla are 1.35x that and bold; the transliteration is a little smaller, italic. Colours are untouched. */
   .quran-word-card .word-card-meaning-text > p.word-card-meaning { font-size: 1.22rem; font-weight: 700; line-height: 1.3; overflow-wrap: anywhere; }
@@ -6937,7 +6941,7 @@
     import { isLemmaLevelsPersistenceReady } from "./js/study-lemma-levels-readiness.js";
     import { claimKeyFor, LEMMA_WIDE_LEVELS } from "./js/quran-lemma-levels.js";
     import { BANGLA_TRANSLIT_NOTE } from "./js/quran-translit-bn.js";
-    import { createWordCardState, openWordCard, closeWordCard, selectWordCardLevel, moveWordCard, renderQuranWordCard, fitWordCardColourLabels, WORD_CARD_POS_SEGMENTS } from "./js/quran-word-card.js";
+    import { createWordCardState, openWordCard, closeWordCard, selectWordCardLevel, moveWordCard, renderQuranWordCard, fitWordCardFamilyRows, WORD_CARD_POS_SEGMENTS } from "./js/quran-word-card.js";
     import { occurrenceRefsFor, occurrenceRefsForClaimKey, rootFormsFor, unpackWordIndexRef, loadWordIdentityIndex } from "./js/quran-word-index.js";
     import { wbwClaimKey, isFormKey } from "./js/quran-word-form-key.js";
     import { relatedBySharedWords, relatedThroughLists, connectedThroughNotes } from "./js/ayah-related.js";
@@ -7008,7 +7012,6 @@
       getExploreJuzView, setExploreJuzView,
       getExploreQuranView, setExploreQuranView,
       getWheelLook, setWheelLook, getWheelShow, setWheelShow, getWheelNames, setWheelNames,
-      getColourWordParts, setColourWordParts,
       getMarkWordsMode, setMarkWordsMode, markWordsShows,
       getMushafTajweedFontOn, setMushafTajweedFontOn,
       getEndOfUnitPromptOn, setEndOfUnitPromptOn,
@@ -18225,8 +18228,21 @@
         balloon.style.setProperty("--wc-legend-arrow", `${Math.max(8, Math.min(r.width - 24, b.left + b.width / 2 - r.left - 7))}px`);
       }
     }
+    // J60 -- the Family rows the reader opened with "+N more" (lemma|meaning), kept for the session so a re-render or
+    // Prev/Next keeps them open. Plain DOM work: nothing is written.
+    const wordCardFamilyOpen = new Set();
+    function fitWordCardFamily(root) {
+      fitWordCardFamilyRows(root, wordCardFamilyOpen, { familyMore: t("+{n} more"), familyFewer: t("Show fewer") }, num);
+    }
     document.addEventListener("click", (event) => {
       if (!(event.target instanceof Element)) return;
+      const more = event.target.closest("[data-word-card-family-more]");
+      if (more) {
+        const key = more.dataset.wordCardFamilyMore;
+        if (!wordCardFamilyOpen.delete(key)) wordCardFamilyOpen.add(key);
+        fitWordCardFamily(more.closest("[data-word-card-content]") ?? activeWordCardMount());
+        return;
+      }
       const toggle = event.target.closest("[data-word-card-legend-toggle]");
       if (toggle) { setWordCardLegend(toggle.getAttribute("aria-expanded") !== "true"); return; }
       if (!event.target.closest("[data-word-card-legend-balloon]")) setWordCardLegend(false);
@@ -18286,7 +18302,7 @@
       // Round 6 -- what was typed in the Search row stays, however often the card is redrawn.
       const typed = content.querySelector("[data-word-card-search-input]");
       if (typed) wordCardSearch.value = typed.value;
-      content.innerHTML = renderQuranWordCard({ state: quranWordCardState, chapter: currentSurahData, ayah, word, context: { ...quranWordCardContext, search: wordCardSearch, lemmaForms: lemmaFormsTable, verbForms: verbFormsTable, verbFormsFailed, nounForms: nounFormsTable, nounFormsFailed, formTexts: nounFormTexts, nounBox: wordCardNounBox?.id === quranWordCardState.occurrenceId ? wordCardNounBox.key : null, depthOpen: wordCardDepthOpen, conjView: wordCardConjView, conjNarrow: window.matchMedia("(max-width: 640px)").matches, needsSource: needsSourceContext(word, currentSurahData.surahNumber), ...wordCardDictionaryContext(word), ...intermediateContext(word), ...wordProgressContext(ref), ...quranWordCardLemmaContext, hasPrevious: at > 0, hasNext: at >= 0 && at < ids.length - 1, rootOccurrenceCount: quranWordCardContext.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0, colourWordPartsEnabled: getColourWordParts(), translitScript: getTransliterationScript(), displayRef: wordRefFor }, labels: { ...wordCardLabels(), ...wordProgressLabels() }, formatNumber: num });
+      content.innerHTML = renderQuranWordCard({ state: quranWordCardState, chapter: currentSurahData, ayah, word, context: { ...quranWordCardContext, search: wordCardSearch, lemmaForms: lemmaFormsTable, verbForms: verbFormsTable, verbFormsFailed, nounForms: nounFormsTable, nounFormsFailed, formTexts: nounFormTexts, nounBox: wordCardNounBox?.id === quranWordCardState.occurrenceId ? wordCardNounBox.key : null, depthOpen: wordCardDepthOpen, conjView: wordCardConjView, conjNarrow: window.matchMedia("(max-width: 640px)").matches, needsSource: needsSourceContext(word, currentSurahData.surahNumber), ...wordCardDictionaryContext(word), ...intermediateContext(word), ...wordProgressContext(ref), ...quranWordCardLemmaContext, hasPrevious: at > 0, hasNext: at >= 0 && at < ids.length - 1, rootOccurrenceCount: quranWordCardContext.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0, colourWordPartsEnabled: true, translitScript: getTransliterationScript(), displayRef: wordRefFor }, labels: { ...wordCardLabels(), ...wordProgressLabels() }, formatNumber: num });
       // Decision 61 -- opening a section is what fetches its data.
       content.querySelectorAll("details[data-word-card-sec]").forEach((d) => {
         d.addEventListener("toggle", () => {
@@ -18305,11 +18321,12 @@
         back.addEventListener("click", () => { const r = ayahCardReturn; clearAyahCardReturn("back"); r?.back?.(); });
         content.prepend(back);
       }
-      // J23: show the word "Colour" on the meaning line only where it fits (measured, not a fixed width); re-measured on resize.
-      fitWordCardColourLabels(content);
-      if (typeof ResizeObserver === "function" && !content._colourFitRO) {
-        content._colourFitRO = new ResizeObserver(() => fitWordCardColourLabels(content));
-        content._colourFitRO.observe(content);
+      // J60: Family shows one measured row of places per meaning, then "+N more"; re-measured when the width changes.
+      fitWordCardFamily(content);
+      if (typeof ResizeObserver === "function" && !content._familyFitRO) {
+        let width = content.clientWidth;
+        content._familyFitRO = new ResizeObserver(() => { if (content.clientWidth !== width) { width = content.clientWidth; fitWordCardFamily(content); } });
+        content._familyFitRO.observe(content);
       }
       // 👥 the same picker as the other Record cards (shared claimForIds); nothing for a lone person.
       mountClaimForPicker(content, "[data-word-progress-rec] .word-progress-states, [data-word-progress-rec] [data-word-progress-na]");
@@ -19335,17 +19352,6 @@
       if (chipGo) { quranWordCardState = openWordCard(quranWordCardState, chipGo.dataset.wordCardGoto); quranWordCardContext = {}; quranWordCardLemmaContext = {}; renderPersistentWordCard(); hydrateWordCardOccurrences(); hydrateWordProgress(); hydrateWordCardLemmaExtras(); return; }
       const move = event.target.closest("[data-word-card-move]");
       if (move) { quranWordCardState = moveWordCard(quranWordCardState, wordCardOccurrenceIds(), move.dataset.wordCardMove); quranWordCardContext = {}; quranWordCardLemmaContext = {}; renderPersistentWordCard(); hydrateWordCardOccurrences(); hydrateWordProgress(); hydrateWordCardLemmaExtras(); }
-    });
-    // Issue #263 -- the "Colour word parts" switch is a per-device
-    // preference (prefs.js), not word-card state, so it survives Prev/Next
-    // and re-opening the card; toggling it only re-renders, it never
-    // re-fetches the segments already loaded for this word.
-    document.getElementById(viewId).addEventListener("change", (event) => {
-      if (!(event.target instanceof Element)) return;
-      if (event.target.closest("[data-word-card-colour-toggle]")) {
-        setColourWordParts(event.target.checked);
-        renderPersistentWordCard();
-      }
     });
     document.getElementById(viewId).addEventListener("keydown", (event) => {
       if (!quranWordCardState.open || !(event.target instanceof Element)) return;

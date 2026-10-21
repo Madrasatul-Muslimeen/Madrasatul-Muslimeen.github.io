@@ -3,8 +3,10 @@
 //   meaning line, and the word "Colour" shows only where the MEASURED line has room.
 //   MUTATE=ownrow        renders "This āyah" in a row of its own again -> same-row check must FAIL
 //   MUTATE=meaningbelow  makes the meaning bar follow the tabs          -> order check must FAIL
-//   MUTATE=nofit         never hides the word                           -> no-room case must FAIL
-//   MUTATE=notick        drops the tick from the meaning line           -> tick checks must FAIL
+//   MUTATE=tick          puts a Colour tick back on the meaning line    -> the J60 "no tick" checks must FAIL
+// UPDATED IN PLACE 21 Oct 2026 (PCF MSA J60, the Owner: "removing the color tick/ untick option, it should be always
+// coloured"): the tick and its measured "Colour" word are gone, so their checks (and the nofit / notick mutations, whose
+// code no longer exists) became "no tick, and the meaning text has the whole line".
 // Run from the repository root with `node serve.js` running. SHOT_DIR=/tmp writes the 390px screenshots.
 import { chromium, newContext, openPage } from "./harness.mjs";
 
@@ -13,7 +15,6 @@ let pass = 0, fail = 0;
 const check = (n, ok, d = "") => ok ? (pass++, process.env.VERBOSE && console.log(`  PASS  ${n}`)) : (fail++, console.log(`  FAIL  ${n} ${d}`));
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH });
 const SHOT = process.env.SHOT_DIR || (await import("node:os")).tmpdir();
-const saw = { shown: 0, hidden: 0 };
 
 const AYAH_BTN = /\n *<button type="button" class="word-card-ayah-action-btn"[^\n]*<\/button>/;
 const MEANING_CALL = /\$\{state\.level === "wbw" \? meaningBarHtml\([^\n]*\n/;
@@ -26,14 +27,13 @@ async function mutate(ctx) {
     const before = body;
     if (MUTATE === "ownrow") {
       const m = body.match(AYAH_BTN);
-      if (m) body = body.replace(AYAH_BTN, "").replace("    ${segmentControlsHtml(", `    <div class="word-card-ayah-action-row">${m[0].trim()}</div>\n    \${segmentControlsHtml(`);
+      if (m) body = body.replace(AYAH_BTN, "").replace("    ${levelPanel(state.level", `    <div class="word-card-ayah-action-row">${m[0].trim()}</div>\n    \${levelPanel(state.level`);
     }
     if (MUTATE === "meaningbelow") {
       const m = body.match(MEANING_CALL);
       if (m) body = body.replace(MEANING_CALL, "").replace("    ${levelPanel(state.level", m[0] + "    ${levelPanel(state.level");
     }
-    if (MUTATE === "nofit") body = body.replace("height > compact + 1)", "height > compact + 1e9)");
-    if (MUTATE === "notick") body = body.replace("validSegments(context.wordSegments) ? colourToggleHtml(context.colourWordPartsEnabled, text.colourToggleShort, true) : \"\"", '""');
+    if (MUTATE === "tick") body = body.replace("    </div>\n  </div>`;\n}", '    </div><label class="word-card-segment-toggle"><input type="checkbox" data-word-card-colour-toggle checked aria-label="Colour"></label>\n  </div>`;\n}');
     if (body === before) throw new Error("mutation did not apply: " + MUTATE);
     await route.fulfill({ response: res, body });
   });
@@ -101,40 +101,14 @@ for (const lang of ["en", "bn"]) {
       check(`${tag} "This āyah" is right of 🔍 and at least 38px tall`, !!d.ayah && d.ayah.l >= d.search.r - 0.5 && d.ayah.h >= 37.5, JSON.stringify(d.ayah));
       check(`${tag} the meaning line is above the level tabs`, d.bar.b <= d.tabs.t + 0.5, `${d.bar.b} vs ${d.tabs.t}`);
       check(`${tag} the meaning line is below the header`, d.bar.t >= d.header.b - 0.5);
-      check(`${tag} the Colour tick is on the meaning line, at its right edge`, !!d.tickBox && d.tickBox.t >= d.bar.t - 0.5 && d.tickBox.b <= d.bar.b + 0.5 && d.tickBox.r >= d.bar.r - 16 && d.tickBox.l > d.text.l, JSON.stringify({ t: d.tickBox, b: d.bar }));
-      check(`${tag} the tick keeps an aria-label "Colour" (translated)`, d.tickLabel === (lang === "bn" ? "রঙিন" : "Colour"), String(d.tickLabel));
-      check(`${tag} the tick target is at least 38px`, !!d.tickBox && d.tickBox.h >= 37.5 && d.tickBox.w >= 37.5, JSON.stringify(d.tickBox));
-      check(`${tag} the word is visible exactly when the line is not compact`, d.labelShown === !d.compact, JSON.stringify({ shown: d.labelShown, compact: d.compact }));
-      check(`${tag} text and tick do not overlap`, !!d.tickBox && d.text.r <= d.tickBox.l + 0.5, JSON.stringify({ t: d.text, k: d.tickBox }));
-      // Architect review, 14 Oct: Bangla's "রঙিন" is shorter than "Colour" and, measured, fits beside the long meaning at
-      // 320px without making it wrap, so there IS room there and showing it is correct (the Owner: "as long as there is
-      // space"). The no-room case is asserted in English, and the last check below still requires both states to occur.
-      // UPDATED IN PLACE 19 Oct 2026 (PCF MSA J43, the bigger gloss): this long meaning now WRAPS on its own at 320px,
-      // and the word "Colour" fits in its last line's spare space, so by the rule fitWordCardColourLabels() implements
-      // ("drop the word only when it costs the line height"; the Owner: "as long as there is space") showing it is
-      // correct. So assert the RULE, not a fixed outcome: either the line is compact, or showing the word adds no height.
-      if (long && width <= 320 && lang === "en") {
-        const cost = await page.evaluate(() => {
-          const bar = document.querySelector("#quranWordCardMount [data-word-card-meaning-bar]");
-          const block = bar?.querySelector(".word-card-meaning-text") ?? bar;
-          if (!bar || !block) return null;
-          const was = bar.hasAttribute("data-compact");
-          bar.setAttribute("data-compact", ""); const hCompact = block.getBoundingClientRect().height;
-          bar.removeAttribute("data-compact"); const hFull = block.getBoundingClientRect().height;
-          if (was) bar.setAttribute("data-compact", "");
-          return { hCompact: Math.round(hCompact), hFull: Math.round(hFull) };
-        });
-        check(`${tag} a long meaning: the word "Colour" shows only when it costs no extra height (${JSON.stringify(cost)})`, !!cost && (d.compact === true ? !d.labelShown : (d.labelShown && cost.hFull <= cost.hCompact + 1)), JSON.stringify({ compact: d.compact, shown: d.labelShown, cost }));
-      }
-      if (!long && width >= 768) check(`${tag} a short meaning on a wide card shows the word`, d.labelShown, JSON.stringify({ compact: d.compact }));
-      saw[d.labelShown ? "shown" : "hidden"]++;
+      check(`${tag} J60: no Colour tick on the meaning line`, d.tickBox === null && d.tickLabel === null, JSON.stringify({ t: d.tickBox, l: d.tickLabel }));
+      check(`${tag} J60: the meaning text has the whole line (within 30px of the bar's width)`, !!d.text && d.text.w >= d.bar.w - 30, JSON.stringify({ t: d.text, b: d.bar }));
       check(`${tag} nothing clipped past the card, no sideways scroll`, d.clipped === 0 && d.page <= 0 && d.cardScroll <= 0, JSON.stringify({ c: d.clipped, p: d.page, s: d.cardScroll }));
       if (SHOT && !long && !MUTATE && width === 390) await page.screenshot({ path: `${SHOT}/layout-b-${lang}-390.png` });
       await ctx.close();
     }
   }
 }
-check("the word 'Colour' showed in at least one case and was dropped in at least one other", saw.shown > 0 && saw.hidden > 0, JSON.stringify(saw));
 console.log(`\n${pass} passed, ${fail} failed`);
 await browser.close();
 process.exit(fail ? 1 : 0);

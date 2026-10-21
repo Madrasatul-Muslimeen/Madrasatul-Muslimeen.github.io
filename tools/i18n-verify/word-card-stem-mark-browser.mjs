@@ -91,7 +91,8 @@ for (const lang of ["en", "bn"]) for (const width of [390, 1280]) for (const car
     check(`[${L}] top word: the determiner is not marked`, m.headOtherBg === "none", m.headOtherBg);
     check(`[${L}] meaning: the stem words have the highlighter band`, /linear-gradient/.test(m.glossStemBg ?? "") && (m.glossStemBg ?? "").includes(green), m.glossStemBg);
     check(`[${L}] meaning: and the glow`, /rgba\(/.test(m.glossStemShadow ?? "") && m.glossStemShadow !== "none", m.glossStemShadow);
-    check(`[${L}] legend: "stem" is highlighted`, /linear-gradient/.test(m.legendBg ?? ""), m.legendBg);
+    // J60 (the Owner: "remove 'stem, particle' that line"): the colour key is gone, so there is no legend to mark.
+    check(`[${L}] J60: no colour-key line on the card`, m.legendBg === null, m.legendBg);
     const stemParts = m.parts.filter((p) => p.bg !== "none");
     check(`[${L}] exactly one part box is marked, and it is the stem`, stemParts.length === 1 && stemParts[0].id.startsWith("stem-"), JSON.stringify(m.parts.map((p) => p.id + ":" + (p.bg !== "none"))));
     check(`[${L}] the Stem box has the top band, the green edge and the glow`, (stemParts[0]?.shadow ?? "").includes("inset") && /rgb\(79, 176, 124\)/.test(stemParts[0]?.shadow ?? "") && /rgba\(29, 138, 78, 0\.18\)/.test(stemParts[0]?.shadow ?? ""), stemParts[0]?.shadow);
@@ -114,11 +115,12 @@ for (const lang of ["en", "bn"]) for (const width of [390, 1280]) for (const car
   await page.waitForTimeout(500);
   m = await look(page);
   check(`[${L}] Basic: top word glow and Dictionary word box still marked`, !!m && /radial-gradient/.test(m.headStemBg ?? "") && /linear-gradient/.test(m.dictBg ?? ""), m && `${m.headStemBg} ${m.dictBg}`);
-  // Colour word parts OFF: nothing is marked
-  await page.evaluate(() => { const t = document.querySelector("#quranWordCardMount [data-word-card-colour-toggle]"); if (t) { t.checked = false; t.dispatchEvent(new Event("change", { bubbles: true })); } });
-  await page.waitForTimeout(500);
+  // Updated in place 21 Oct 2026 (PCF MSA J60, the Owner: "removing the color tick/ untick option, it should be always
+  // coloured"): there is no Colour switch to turn off, so the old "Colour off: no mark" case is now "there is no switch,
+  // and the mark is still on".
   m = await look(page);
-  check(`[${L}] Colour word parts off: no stem mark anywhere`, !!m && !m.mark && (m.dictBg === "none" || m.dictBg === null) && m.parts.every((p) => p.bg === "none"), m && `${m.mark} ${m.dictBg}`);
+  const noSwitch = await page.evaluate(() => document.querySelectorAll("#quranWordCardMount [data-word-card-colour-toggle]").length === 0);
+  check(`[${L}] J60: no Colour switch on the card, and the stem mark stays on`, noSwitch && !!m && m.mark, m && `${noSwitch} ${m.mark}`);
   await ctx.close();
 }
 await browser.close();

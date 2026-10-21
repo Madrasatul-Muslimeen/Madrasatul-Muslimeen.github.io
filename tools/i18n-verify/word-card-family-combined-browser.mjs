@@ -27,8 +27,9 @@ const MUT = {
   noscroll: [HTML, "        put();\n        requestAnimationFrame(put);", "        void put;"],
   nothis: [JS, "    const mine = refs.includes(fr.here);", "    const mine = false;"],
   nogoto: [JS, '"${mine ? \' aria-current="true"\' : ""} data-word-occurrence-goto="${s}:${a}:${w}"', '"${mine ? \' aria-current="true"\' : ""} data-x-goto="${s}:${a}:${w}"'],
-  ink: [HTML, ".word-card-family-sense { display: flex; flex-wrap: wrap; gap: 0.25rem 0.45rem; align-items: baseline; border: 1px solid var(--wc-purple-line); border-radius: 0.5rem; padding: 0.3rem 0.5rem; min-width: 0; color: var(--wc-purple-ink); }",
-    ".word-card-family-sense { display: flex; flex-wrap: wrap; gap: 0.25rem 0.45rem; align-items: baseline; border: 1px solid var(--wc-purple-line); border-radius: 0.5rem; padding: 0.3rem 0.5rem; min-width: 0; color: var(--card-text); }"],
+  // Re-anchored 21 Oct 2026 for J60's plates (the rule gained a plate background; the mutation is the same ink swap).
+  ink: [HTML, "padding: 0.4rem 0.55rem; min-width: 0; color: var(--wc-purple-ink); background: var(--wc-purple-plate);",
+    "padding: 0.4rem 0.55rem; min-width: 0; color: var(--card-text); background: var(--wc-purple-plate);"],
   onecol: [HTML, "@container (min-width: 700px) {\n    .word-card-family-combined", "@container (min-width: 7000px) {\n    .word-card-family-combined"],
   twocol: [HTML, "@container (min-width: 700px) {\n    .word-card-family-combined", "@container (min-width: 1px) {\n    .word-card-family-combined"],
   eager: [HTML, 'if (quranWordCardState.level === "basic" && !familyRenderData && !familyRenderAsked && !familyRenderError) {', "if (!familyRenderData && !familyRenderAsked && !familyRenderError) {"],
