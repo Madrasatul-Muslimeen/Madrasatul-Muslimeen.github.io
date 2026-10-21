@@ -1,7 +1,12 @@
 // PCF MSA J67 (the Owner, 21 Oct 2026): "Enable the current Ayah card to be expanded / resizeable / moveable ... then
 // organise the features / buttons according to it." On a PC (>= 900px) the Āyah card is a window: moved by its header,
-// resized from 4 corners and 4 sides, kept inside the screen, remembered per device (`mmsa-ayah-window`); contents sit in
+// resized from 4 corners and 4 sides, kept inside the screen, remembered per device (`mmsa-ayah-window-v2`); contents sit in
 // two columns once the card is 560px wide. Below 900px the card is exactly what it was.
+// UPDATED IN PLACE 22 Oct 2026 (PCF MSA J70, the Owner): the first open is a LARGE card (92% of the screen, centred, full
+// height; a new storage key so every device starts there), and the two columns are now the two panes (the full text left,
+// the rest right; stacked when the card is under 560px). The rest of this suite starts from J67's old side-panel place,
+// seeded as a remembered rect, so its move / handle / minimum checks keep their room. The panes have their own suite
+// (ayah-card-panes-browser).
 // Real data (22:3), 1280x900 and 1600x1000, English and Bangla, Night and Light looks; 390 and 768 for "unchanged".
 // Run from the repository root, serve.js on :8080.
 //   --mutate=nomove       the header drag does nothing                      -> move checks fail
@@ -115,9 +120,16 @@ for (const look of ["night", "light"]) for (const lang of ["en", "bn"]) {
     const { page: P, errors } = await openPage(ctx, "/app/quranrevival.html");
     await toRead(P); await openCard(P);
 
-    // first open = today's place and size (right side, 22rem + padding, top 4.5rem)
+    // J70: the first open is the large card -- 92% of the width (at most 1600), centred, under the top bar, full height
+    const rf = await sheetRect(P);
+    const fw = Math.min(Math.round(w * 0.92), 1600), fy = Math.min(72, Math.round(h * 0.08));
+    check(`${tag} first open (J70): a large card, ${fw}px wide, centred, top ${fy}px, full height`, near(rf.w, fw, 2) && near(rf.x, (w - fw) / 2, 2) && near(rf.y, fy, 2) && near(rf.h, h - fy - 12, 3), R(rf));
+    // from here on, J67's old side-panel place, as a remembered rect (room to move and resize)
+    await P.evaluate(([vw, vh]) => localStorage.setItem("mmsa-ayah-window-v2", JSON.stringify({ x: vw - 22.4 - 376, y: 72, w: 376, h: vh - 72 - 24 })), [w, h]);
+    await P.reload({ waitUntil: "networkidle" }); await P.waitForTimeout(400);
+    await toRead(P); await openCard(P);
     const r0 = await sheetRect(P);
-    check(`${tag} first open: today's place -- right side, top 4.5rem, about 22rem wide`, near(r0.x + r0.w, w - 22.4, 2) && near(r0.y, 72, 2) && r0.w > 340 && r0.w < 400, R(r0));
+    check(`${tag} a remembered place is used: the old side panel (right side, top 4.5rem, 376px wide)`, near(r0.x + r0.w, w - 22.4, 2) && near(r0.y, 72, 2) && near(r0.w, 376, 2), R(r0));
     const frame0 = await P.evaluate(() => { const f = document.querySelector("[data-ayah-win-frame]"), b = f.getBoundingClientRect(); return { on: getComputedStyle(f).display !== "none", n: f.querySelectorAll(".ayah-win-h").length, x: b.left, y: b.top, w: b.width, h: b.height }; });
     check(`${tag} the frame carries 8 handles and sits on the card`, frame0.on && frame0.n === 8 && near(frame0.x, r0.x) && near(frame0.w, r0.w) && near(frame0.h, r0.h), JSON.stringify(frame0));
 
@@ -152,14 +164,14 @@ for (const look of ["night", "light"]) for (const lang of ["en", "bn"]) {
       check(`${tag} handle ${hd} (${dx},${dy}) changes only its own edge(s)`, near(a.x, ex.x) && near(a.y, ex.y) && near(a.w, ex.w) && near(a.h, ex.h, 3), `${R(b)} -> ${R(a)} expected ${R(ex)}`);
     }
 
-    // two columns from 560px of card width, one column below
-    const cols = () => P.evaluate(() => { const s = document.querySelector("[data-ayah-sheet]"), a = s.querySelector("[data-ayah-sheet-actions]"), b = s.querySelector(".ayah-sheet-body"), ab = a.getBoundingClientRect(), bb = b.getBoundingClientRect(); return { w: s.getBoundingClientRect().width, wide: s.hasAttribute("data-wide"), bx: bb.left, ax: ab.left, aw: ab.width, by: bb.top, ay: ab.top }; });
+    // two columns from 560px of card width, one column below -- J70: the columns are the panes (full text | the rest)
+    const cols = () => P.evaluate(() => { const s = document.querySelector("[data-ayah-sheet]"), a = s.querySelector("[data-ayah-sheet-text]"), b = s.querySelector("[data-ayah-sheet-paneinfo]"), ab = a.getBoundingClientRect(), bb = b.getBoundingClientRect(); return { w: s.getBoundingClientRect().width, wide: s.hasAttribute("data-wide"), bx: bb.left, ax: ab.left, aw: ab.width, by: bb.top, ay: ab.top }; });
     let cs = await cols();
     check(`${tag} narrow (${Math.round(cs.w)}px): one column -- the right part sits under the left`, cs.w < 560 && !cs.wide && near(cs.ax, cs.bx, 2) && cs.by > cs.ay, JSON.stringify(cs));
     const east = await centre(P, '.ayah-win-frame .ayah-win-h[data-h="e"]');
     await drag(P, east, 640 - cs.w + 10, 0);
     cs = await cols();
-    check(`${tag} wide (${Math.round(cs.w)}px): two columns -- Take an Approach column beside the tiles and status`, cs.w >= 560 && cs.wide && cs.bx > cs.ax + cs.aw * 0.9 && near(cs.by, cs.ay, 12), JSON.stringify(cs));
+    check(`${tag} wide (${Math.round(cs.w)}px): two columns -- the rest beside the full text`, cs.w >= 560 && cs.wide && cs.bx > cs.ax + cs.aw * 0.9 && near(cs.by, cs.ay, 12), JSON.stringify(cs));
     const fit = await P.evaluate(() => {
       const s = document.querySelector("[data-ayah-sheet]"), tiles = [...s.querySelectorAll(".ayah-sheet-act")], bad = [];
       for (const t of tiles) { const l = t.querySelector(".ayah-sheet-act-label"), b = t.getBoundingClientRect();
@@ -196,9 +208,9 @@ for (const look of ["night", "light"]) for (const lang of ["en", "bn"]) {
     await P.setViewportSize({ width: w, height: h }); await P.waitForTimeout(300);
 
     // remembered after a reload
-    const saved = await P.evaluate(() => { try { return JSON.parse(localStorage.getItem("mmsa-ayah-window")); } catch { return null; } });
+    const saved = await P.evaluate(() => { try { return JSON.parse(localStorage.getItem("mmsa-ayah-window-v2")); } catch { return null; } });
     const rBefore = await sheetRect(P);
-    check(`${tag} the rect is stored under mmsa-ayah-window`, !!saved && [saved.x, saved.y, saved.w, saved.h].every(Number.isFinite), JSON.stringify(saved));
+    check(`${tag} the rect is stored under mmsa-ayah-window-v2`, !!saved && [saved.x, saved.y, saved.w, saved.h].every(Number.isFinite), JSON.stringify(saved));
     await P.reload({ waitUntil: "networkidle" }); await P.waitForTimeout(400);
     await toRead(P); await openCard(P);
     const rAfter = await sheetRect(P);
