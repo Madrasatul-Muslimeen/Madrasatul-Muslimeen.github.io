@@ -47,9 +47,14 @@ const MUT = {
   noroots: ["app/js/quran-word-card.js", 'if (unit === "roots") {', 'if (false) {'],
   // J43 mutations, added by the Architect in review (19 Oct 2026): the round shipped its checks unproven.
   smallgloss: ["app/quranrevival.html", "p.word-card-meaning { font-size: 1.22rem; font-weight: 700;", "p.word-card-meaning { font-size: 0.9rem; font-weight: 400;"],
-  nolegend: ["app/js/quran-word-card.js", "const legend = legendHtml(level, text);", "const legend = \"\";"],
+  // UPDATED IN PLACE (J59, 21 Oct 2026): the ⓘ moved from the colour row into the header, so these two mutations follow it.
+  nolegend: ["app/js/quran-word-card.js", "      ${legendButtonHtml(text)}\n", ""],
   threestate: ["app/js/quran-word-card.js", "${button(\"not_started\")}${button(\"learning\")}", "${button(\"learning\")}"],
-  legendleft: ["app/quranrevival.html", ".word-card-legend { margin-inline-start: auto; }", ".word-card-legend { margin-inline-start: 0; order: -1; }"],
+  legendleft: ["app/quranrevival.html", "header button.word-card-legend-btn { width: 40px; height: 40px;", "header button.word-card-legend-btn { order: 9; width: 26px; height: 26px;"],
+  // J59 mutations: the balloon's pointer must sit under the ⓘ, and a colour row with nothing in it must not be drawn.
+  noarrow: ["app/quranrevival.html", 'balloon.style.setProperty("--wc-legend-arrow",', 'void ("--wc-legend-arrow",'],
+  wrap320: ["app/quranrevival.html", "    .quran-word-card header { column-gap: 0.2rem; }\n", ""],
+  emptyrow: ["app/js/quran-word-card.js", '`<div class="word-card-segment-controls">${segmentLegendHtml(segments, text)}</div>` : "";', '`<div class="word-card-segment-controls">${segmentLegendHtml(segments, text)}</div>` : `<div class="word-card-segment-controls"></div>`;'],
   noorder: ["app/js/quran-word-card.js", "return note ? `<p class=\"word-card-ordernote\"", "return false ? `<p class=\"word-card-ordernote\""],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
@@ -163,21 +168,29 @@ const ratioIn = (page, look, selector) => page.evaluate(([look, selector]) => {
 const MOUNT = "#quranWordCardMount";
 const legendState = (page) => page.evaluate(() => {
   const card = document.querySelector("#quranWordCardMount .quran-word-card");
-  const row = card?.querySelector(".word-card-segment-controls");
+  const head = card?.querySelector("header");
   const btn = card?.querySelector("[data-word-card-legend-toggle]");
+  const ayahBtn = card?.querySelector("header [data-word-card-ayah-action]");
+  const row = card?.querySelector(".word-card-segment-controls");
   const bal = card?.querySelector("[data-word-card-legend-balloon]");
-  const cr = card?.getBoundingClientRect(), rr = row?.getBoundingClientRect(), br = btn?.getBoundingClientRect();
+  const cr = card?.getBoundingClientRect(), br = btn?.getBoundingClientRect(), ar = ayahBtn?.getBoundingClientRect();
   const vis = (e) => !!e && getComputedStyle(e).display !== "none" && e.getBoundingClientRect().height > 0;
   const er = bal?.getBoundingClientRect();
   return {
-    exists: !!btn, tag: btn?.tagName, h: br?.height ?? 0, expanded: btn?.getAttribute("aria-expanded"), shown: vis(bal),
-    atRightEnd: !!br && !!rr && Math.abs(rr.right - br.right) <= 14 && br.left > rr.left + 20,
+    exists: !!btn, tag: btn?.tagName, h: br?.height ?? 0, w: br?.width ?? 0, expanded: btn?.getAttribute("aria-expanded"), shown: vis(bal),
+    // J59: in the header, straight after "This āyah ⋯", on its row (same vertical centre) and to its right.
+    inHeader: !!btn && !!head && head.contains(btn) && btn.previousElementSibling === ayahBtn && !!ar && Math.abs((ar.top + ar.height / 2) - (br.top + br.height / 2)) <= 2 && br.left >= ar.right - 1 && br.left - ar.right <= 14,
+    // the pointer's centre is under the ⓘ's centre (within 6px), measured on the real rendered ::before
+    arrowOff: vis(bal) ? (() => { const cs = getComputedStyle(bal, "::before"); const left = er.left + parseFloat(cs.left) + parseFloat(cs.width) / 2 + 2; return Math.abs(left - (br.left + br.width / 2)); })() : null,
+    rowEmpty: !!row && row.children.length === 0,
+    // J59: ‹ 🔍 This āyah ⓘ › × stay on ONE row (the 320px phone was the tight one: × wrapped before the fix)
+    oneRow: !!head && new Set([...head.querySelectorAll(":scope > button")].map((b) => Math.round(b.getBoundingClientRect().top))).size === 1,
     insideCard: !!br && !!cr && br.left >= cr.left - 1 && br.right <= cr.right + 1 && (!vis(bal) || (er.left >= cr.left - 1 && er.right <= cr.right + 1)),
     cando: bal?.querySelector("[data-word-card-cando]")?.textContent.trim() ?? null,
     order: bal?.querySelector("[data-word-card-ordernote]")?.textContent.trim() ?? null,
     outsideCando: [...(card?.querySelectorAll("[data-word-card-cando]") ?? [])].filter((e) => !bal.contains(e)).length,
     over: document.documentElement.scrollWidth - innerWidth,
-    label: btn?.textContent.trim(),
+    label: btn?.textContent.trim(), name: btn?.getAttribute("aria-label"),
   };
 });
 
@@ -208,16 +221,32 @@ async function j43Checks(page, tag, lang, width) {
   for (const level of LEVELS) {
     await openTab(page, level);
     const s0 = await legendState(page);
-    const wantLabel = lang === "bn" ? "ⓘ নির্দেশিকা" : "ⓘ Legend";
-    check(`${tag} J43 Legend [${level}]: a real button "${wantLabel}", 40px+, at the row's right end, inside the card, closed, no old can-do box in the panel`,
-      s0.exists && s0.tag === "BUTTON" && s0.label === wantLabel && s0.h >= 40 && s0.atRightEnd && s0.insideCard && s0.expanded === "false" && !s0.shown && s0.outsideCando === 0 && s0.over <= 0, JSON.stringify(s0));
+    // UPDATED IN PLACE (J59): the button is now a small round "ⓘ" in the header beside "This āyah ⋯" (the Owner's ask), named
+    // for a screen reader in the reader's language; no colour row is drawn empty.
+    const wantName = lang === "bn" ? "এই স্তরের নির্দেশিকা" : "Legend for this level";
+    check(`${tag} J59 Legend [${level}]: a real 40x40 button "ⓘ" named "${wantName}", in the header beside This āyah, the header's buttons on one row, inside the card, closed, no empty colour row, no old can-do box in the panel`,
+      s0.exists && s0.tag === "BUTTON" && s0.label === "ⓘ" && s0.name === wantName && s0.h >= 40 && s0.w >= 40 && s0.w <= 44 && s0.inHeader && s0.oneRow && s0.insideCard && s0.expanded === "false" && !s0.shown && !s0.rowEmpty && s0.outsideCando === 0 && s0.over <= 0, JSON.stringify(s0));
+    if (level === "wbw") {
+      // J59: with Colour OFF the WbW colour row has nothing left in it (the ⓘ went to the header), so it is not drawn; with
+      // Colour ON it holds the colour key. Both states measured, and the reader's own setting is put back.
+      const rowFor = async (on) => {
+        await page.evaluate((want) => { const c = document.querySelector("#quranWordCardMount [data-word-card-colour-toggle]"); if (c && c.checked !== want) c.click(); }, on);
+        await page.waitForFunction((want) => document.querySelector("#quranWordCardMount [data-word-card-colour-toggle]")?.checked === want, on, { timeout: 5000 }).catch(() => {});
+        return page.evaluate(() => [...document.querySelectorAll("#quranWordCardMount .word-card-segment-controls")].map((r) => r.children.length));
+      };
+      const was = await page.evaluate(() => document.querySelector("#quranWordCardMount [data-word-card-colour-toggle]")?.checked ?? null);
+      const off = await rowFor(false), on = await rowFor(true);
+      if (was !== null) await rowFor(was);
+      check(`${tag} J59 WbW colour row: not drawn with Colour off (${JSON.stringify(off)}), holds the colour key with Colour on (${JSON.stringify(on)})`,
+        was !== null && off.length === 0 && on.length === 1 && on[0] > 0, JSON.stringify({ was, off, on }));
+    }
     await page.click(`${MOUNT} [data-word-card-legend-toggle]`);
     await page.waitForTimeout(150);
     const s1 = await legendState(page);
     const wantCando = lang === "bn" ? /^এখানে অর্জিত মানে/ : /^Achieved here means/;
     const wantOrder = level === "wbw" ? s1.order === null : !!s1.order;
-    check(`${tag} J43 Legend [${level}]: tap opens the balloon (aria-expanded true) with the can-do sentence${level === "wbw" ? "" : " and the order note"} in ${lang}, inside the card`,
-      s1.expanded === "true" && s1.shown && wantCando.test(s1.cando ?? "") && wantOrder && s1.insideCard && s1.over <= 0, JSON.stringify(s1));
+    check(`${tag} J43 Legend [${level}]: tap opens the balloon (aria-expanded true) with the can-do sentence${level === "wbw" ? "" : " and the order note"} in ${lang}, inside the card, its pointer under the ⓘ (J59)`,
+      s1.expanded === "true" && s1.shown && wantCando.test(s1.cando ?? "") && wantOrder && s1.insideCard && s1.arrowOff !== null && s1.arrowOff <= 6 && s1.over <= 0, JSON.stringify(s1));
     if (width === 390) {
       const bad = [];
       for (const look of ["light", "dark", "night"]) for (const sel of ["[data-word-card-cando]", "[data-word-card-ordernote]"]) { const r = await ratioIn(page, look, `${MOUNT} ${sel}`); if (r && r.ratio < 4.5) bad.push(`${look} ${sel} ${r.ratio.toFixed(2)}`); }

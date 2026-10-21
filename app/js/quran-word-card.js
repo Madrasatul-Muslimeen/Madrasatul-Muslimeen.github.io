@@ -241,7 +241,8 @@ export const WORD_CARD_DEFAULT_LABELS = Object.freeze({
   // -- so these strings never appear for a word without segments.
   colourWordPartsToggle: "Colour word parts",
   colourToggleShort: "Colour",
-  legendButton: "ⓘ Legend",
+  legendButton: "ⓘ",
+  legendButtonLabel: "Legend for this level",
   segmentLegendParticle: "particle",
   segmentLegendPerson: "person",
   segmentLegendDeterminer: "determiner",
@@ -1078,13 +1079,18 @@ function orderNoteHtml(level, text) {
   return note ? `<p class="word-card-ordernote" data-word-card-ordernote="${level}">${escapeHtml(String(note))}</p>` : "";
 }
 
-/** J43 -- one small purple "ⓘ Legend" button at the right end of the colour row; its balloon holds this level's
- *  can-do sentence and, where the level has one, its order note. The balloon is always in the markup (hidden until
- *  the page's click handler opens it), so a re-render keeps the text and the stable selectors. */
-function legendHtml(level, text) {
-  return `<span class="word-card-legend" data-word-card-legend>` +
-    `<button type="button" class="word-card-legend-btn" data-word-card-legend-toggle aria-expanded="false" aria-controls="wordCardLegendBalloon">${escapeHtml(text.legendButton)}</button>` +
-    `<div class="word-card-legend-balloon" id="wordCardLegendBalloon" role="note" data-word-card-legend-balloon hidden>${canDoHtml(level, text)}${orderNoteHtml(level, text)}</div></span>`;
+/** J43 -- the ⓘ Legend balloon holds this level's can-do sentence and, where the level has one, its order note.
+ *  J59 (21 Oct 2026, the Owner: "Move 'Legend' to the top bar … as 'i' button") -- the button is now a small square ⓘ in
+ *  the header beside "This āyah ⋯" (its name, for a screen reader, is the label), and the balloon sits in its own
+ *  zero-height row just under the header: outside the header, so a press inside it never starts the window drag. The
+ *  balloon is always in the markup (hidden until the page's click handler opens it), so a re-render keeps the text and
+ *  the stable selectors. */
+function legendButtonHtml(text) {
+  return `<button type="button" class="word-card-legend-btn" data-word-card-legend-toggle aria-expanded="false" aria-controls="wordCardLegendBalloon" aria-label="${escapeHtml(text.legendButtonLabel)}" title="${escapeHtml(text.legendButtonLabel)}">${escapeHtml(text.legendButton)}</button>`;
+}
+function legendBalloonHtml(level, text) {
+  return `<div class="word-card-legend-row" data-word-card-legend-row>` +
+    `<div class="word-card-legend-balloon" id="wordCardLegendBalloon" role="note" data-word-card-legend-balloon hidden>${canDoHtml(level, text)}${orderNoteHtml(level, text)}</div></div>`;
 }
 
 /** The Root tab's "How the root grows: its N meanings": one chip per meaning group of the root -- the group's
@@ -1515,14 +1521,14 @@ function segmentLegendHtml(segments, text) {
   return `<span class="word-card-segment-legend">${legend}</span>`;
 }
 
-// On the WbW tab the tick lives in the meaning bar and this row holds only the legend (when colour is on); on the other
-// tabs there is no meaning bar, so the row keeps the tick with its full label exactly as before.
+// On the WbW tab the tick lives in the meaning bar and this row holds only the colour key (when colour is on); on the
+// other tabs there is no meaning bar, so the row keeps the tick with its full label exactly as before. J59: the ⓘ Legend
+// left this row for the header, so a row with nothing in it is not drawn at all (the bar-space the Owner asked to save).
 function segmentControlsHtml(segments, colourOn, text, level) {
-  const legend = legendHtml(level, text);
-  if (!validSegments(segments)) return `<div class="word-card-segment-controls">${legend}</div>`;
-  if (level === "wbw") return `<div class="word-card-segment-controls">${colourOn ? segmentLegendHtml(segments, text) : ""}${legend}</div>`;
+  if (!validSegments(segments)) return "";
+  if (level === "wbw") return colourOn ? `<div class="word-card-segment-controls">${segmentLegendHtml(segments, text)}</div>` : "";
   const toggle = colourToggleHtml(colourOn, text.colourWordPartsToggle, false);
-  return `<div class="word-card-segment-controls">${toggle}${colourOn ? segmentLegendHtml(segments, text) : ""}${legend}</div>`;
+  return `<div class="word-card-segment-controls">${toggle}${colourOn ? segmentLegendHtml(segments, text) : ""}</div>`;
 }
 
 /**
@@ -1577,10 +1583,12 @@ export function renderQuranWordCard({ state, chapter, ayah, word, context = {}, 
     <header><button type="button" data-word-card-move="previous" aria-label="${escapeHtml(text.previous)}"${context.hasPrevious ? "" : " disabled"}>‹</button>
       <button type="button" class="word-card-search-btn" data-word-card-search-toggle aria-pressed="${searchOpen}" aria-label="${escapeHtml(text.searchButton)}">🔍</button>
       <button type="button" class="word-card-ayah-action-btn" data-word-card-ayah-action="${chapter.surahNumber}:${ayah.ayah}">${escapeHtml(text.ayahActionsButton)}</button>
+      ${legendButtonHtml(text)}
       <div class="word-card-head-word"><div class="word-card-arabic" dir="rtl" lang="ar">${arabicHtml}</div><div class="word-card-reference">${escapeHtml(refText(chapter.surahNumber, ayah.ayah, word.position))}</div></div>
       ${layers.root ? `<div class="word-card-root-box" data-word-card-root-box><small>${escapeHtml(text.rootBoxLabel)}</small><span dir="rtl" lang="ar">${escapeHtml(spacedRoot(layers.root))}</span></div>` : ""}
       <button type="button" data-word-card-move="next" aria-label="${escapeHtml(text.next)}"${context.hasNext ? "" : " disabled"}>›</button>
       <button type="button" data-word-card-close aria-label="${escapeHtml(text.close)}">×</button></header>
+    ${legendBalloonHtml(state.level, text)}
     ${searchOpen ? searchRowHtml(context.search, text, formatNumber, refText) : ""}
     ${state.level === "wbw" ? meaningBarHtml(word, context, text, validSegments(context.wordSegments) ? colourToggleHtml(context.colourWordPartsEnabled, text.colourToggleShort, true) : "") : ""}
     ${segmentControlsHtml(context.wordSegments, context.colourWordPartsEnabled, text, state.level)}

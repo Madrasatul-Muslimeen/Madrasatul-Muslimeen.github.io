@@ -4586,11 +4586,18 @@
      the second -- rather than squeezing the word to nothing. */
   @container wordcard (max-width: 30rem) {
     .quran-word-card header { flex-wrap: wrap; row-gap: 0.25rem; }
-    .quran-word-card header button.word-card-ayah-action-btn { margin-inline-end: auto; }
+    .quran-word-card header button.word-card-legend-btn { margin-inline-end: auto; } /* J59: was on "This āyah"; the ⓘ now sits beside it */
     .quran-word-card header > .word-card-head-word { order: 5; flex: 1 1 calc(100% - 6rem); min-width: 4.5rem; }
     .quran-word-card header > .word-card-root-box { order: 6; }
     .quran-word-card header > [data-word-card-move="next"] { order: 3; }
     .quran-word-card header > [data-word-card-close] { order: 4; }
+  }
+  /* J59, measured: on a 320px phone the card's content box is 299px and ‹ 🔍 [This āyah] ⓘ › × needed 308px, so × wrapped
+     to a row of its own. A tighter gap and side padding on "This āyah" (88 → 80px) bring the row to 296px; every button
+     keeps its 40px. */
+  @container wordcard (max-width: 20rem) {
+    .quran-word-card header { column-gap: 0.2rem; }
+    .quran-word-card header button.word-card-ayah-action-btn { padding: 0 0.25rem; }
   }
   /* J23: the WbW meaning line carries the Colour tick at its right edge; [data-compact] drops the word, keeps the box. */
   .word-card-meaning-bar { flex-wrap: nowrap; align-items: center; justify-content: space-between; gap: 0.5rem; }
@@ -4605,11 +4612,15 @@
      with a pointer. [hidden] is beaten by display rules here, so the override is explicit. */
   .word-card-segment-controls { position: relative; }
   .word-card-legend { margin-inline-start: auto; }
-  .word-card-legend-btn { min-height: 40px; padding: 0 0.8rem; font: inherit; font-size: 0.85rem; font-weight: 700; border-radius: 999px; background: var(--wc-purple-bg); color: var(--wc-purple-ink); border: 1px solid var(--wc-purple-line); cursor: pointer; white-space: nowrap; }
-  .word-card-legend-btn[aria-expanded="true"] { background: var(--wc-purple-ink); color: var(--wc-purple-bg); }
-  .word-card-legend-balloon { position: absolute; inset-inline-end: 0; top: calc(100% + 0.5rem); z-index: 5; box-sizing: border-box; width: min(22rem, 100%); padding: 0.5rem; border: 2px solid var(--wc-purple-line); border-radius: 0.7rem; background: var(--wc-purple-bg); color: var(--wc-purple-ink); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28); }
+  /* J59: the ⓘ is a small round tile in the header beside "This āyah ⋯" (40px, the finger target; the specificity beats
+     `.quran-word-card header button`), and the balloon hangs from a zero-height row under the header, its pointer
+     placed under the ⓘ by setWordCardLegend() (--wc-legend-arrow, measured when it opens). */
+  .quran-word-card header button.word-card-legend-btn { width: 40px; height: 40px; padding: 0; font: inherit; font-size: 1.2rem; font-weight: 700; line-height: 1; border-radius: 999px; background: var(--wc-purple-bg); color: var(--wc-purple-ink); border: 1px solid var(--wc-purple-line); cursor: pointer; }
+  .quran-word-card header button.word-card-legend-btn[aria-expanded="true"] { background: var(--wc-purple-ink); color: var(--wc-purple-bg); }
+  .word-card-legend-row { position: relative; height: 0; }
+  .word-card-legend-balloon { position: absolute; left: 0; top: 0.5rem; text-align: start; z-index: 5; box-sizing: border-box; width: min(22rem, 100%); padding: 0.5rem; border: 2px solid var(--wc-purple-line); border-radius: 0.7rem; background: var(--wc-purple-bg); color: var(--wc-purple-ink); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28); }
   .word-card-legend-balloon[hidden] { display: none; }
-  .word-card-legend-balloon::before { content: ""; position: absolute; inset-inline-end: 1.5rem; top: -0.5rem; width: 0.8rem; height: 0.8rem; background: var(--wc-purple-bg); border-top: 2px solid var(--wc-purple-line); border-left: 2px solid var(--wc-purple-line); transform: rotate(45deg); }
+  .word-card-legend-balloon::before { content: ""; position: absolute; left: var(--wc-legend-arrow, 1.5rem); top: -0.5rem; width: 0.8rem; height: 0.8rem; background: var(--wc-purple-bg); border-top: 2px solid var(--wc-purple-line); border-left: 2px solid var(--wc-purple-line); transform: rotate(45deg); }
   .word-card-legend-balloon > p { margin: 0 0 0.4rem; }
   .word-card-legend-balloon > p:last-child { margin-bottom: 0; }
   .word-card-ayah-action-btn:hover { filter: brightness(1.1); }
@@ -16897,7 +16908,7 @@
         // Issue #263 -- word-part colouring switch + legend.
         colourWordPartsToggle: t("Colour word parts"),
         colourToggleShort: t("Colour"),
-        legendButton: t("ⓘ Legend"),
+        legendButtonLabel: t("Legend for this level"),
         segmentLegendParticle: t("particle"),
         segmentLegendPerson: t("person"),
         segmentLegendDeterminer: t("determiner"),
@@ -18188,6 +18199,11 @@
       if (!btn || !balloon) return;
       btn.setAttribute("aria-expanded", String(open));
       balloon.hidden = !open;
+      // J59: the pointer sits under the ⓘ wherever the header has put it (one row or two, any width).
+      if (open) {
+        const b = btn.getBoundingClientRect(), r = balloon.getBoundingClientRect();
+        balloon.style.setProperty("--wc-legend-arrow", `${Math.max(8, Math.min(r.width - 24, b.left + b.width / 2 - r.left - 7))}px`);
+      }
     }
     document.addEventListener("click", (event) => {
       if (!(event.target instanceof Element)) return;
