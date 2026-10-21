@@ -42,6 +42,8 @@
 [data-pane-menu] .pane-editfold-item { display: none; }
 .note-pane-bar.edit-folded [data-pane-menu] .pane-editfold-item { display: block; }
 .pane-edit-title { width: 100%; box-sizing: border-box; font: inherit; font-size: 1.15rem; font-weight: 600; min-height: 40px; margin: 0.7rem 0 0.2rem; padding: 0.3rem 0.5rem; border: 1px solid #aab; border-radius: 0.4rem; }
+/* PCF MSA J68: the title box wraps (a textarea that note-window.js's fitEditTitle() grows to its text), never cut. */
+.pane-edit-title { display: block; resize: none; overflow: hidden; line-height: 1.35; white-space: pre-wrap; overflow-wrap: anywhere; }
 /* S12 -- the toolbar scrolls sideways INSIDE itself (never the page); every button is at least 40px. */
 .pane-edit-toolbar { display: flex; flex-wrap: nowrap; align-items: center; gap: 0.3rem; margin: 0.4rem 0; overflow-x: auto; overflow-y: hidden; max-width: 100%; box-sizing: border-box; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
 .pane-edit-toolbar > * { flex: 0 0 auto; }

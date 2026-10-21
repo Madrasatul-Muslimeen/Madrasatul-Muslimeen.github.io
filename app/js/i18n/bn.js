@@ -4405,4 +4405,12 @@ export const BN = {
   "Āyah on top": "উপরে আয়াত",
   "Āyah: {list}": "আয়াত: {list}",
   "This is too much for one sheet: choose fewer āyāt, A3, or turn Āyah on top off.": "এক পাতায় এত ধরে না: কম আয়াত বাছুন, A3, অথবা উপরে আয়াত বন্ধ করুন।",
+  // PCF MSA J68 -- a new Note's first title, and copying āyāt.
+  "Quran {ref} - {name}:": "কুরআন {ref} - {name}:",
+  "Copy āyāt": "আয়াত কপি করুন",
+  "Several āyāt": "কয়েকটি আয়াত",
+  "Include": "সাথে",
+  "Copy {n} āyāt": "{n}টি আয়াত কপি করুন",
+  "Copied.": "কপি হয়েছে।",
+  "Could not copy: select the text and copy it yourself.": "কপি করা যায়নি: লেখাটি বেছে নিজে কপি করুন।",
 };
