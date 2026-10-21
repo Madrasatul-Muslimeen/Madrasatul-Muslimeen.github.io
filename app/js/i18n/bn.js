@@ -4421,4 +4421,18 @@ export const BN = {
   "Drag to resize the two halves": "দুই অর্ধেকের মাপ বদলাতে টানুন",
   "Status, Approach and Info": "অবস্থা, পদ্ধতি ও তথ্য",
   "Translations": "অনুবাদ",
+  // PCF MSA J71: the Notes window's search, finding a note in Mapping My Journey to attach to the āyah
+  "Find a note to attach to {unit}": "{unit}-এ যুক্ত করতে একটি নোট খুঁজুন",
+  "Find a note in Mapping My Journey to attach": "যুক্ত করতে আমার যাত্রার মানচিত্রে একটি নোট খুঁজুন",
+  "1 note in Mapping My Journey — attach it to {unit}": "আমার যাত্রার মানচিত্রে ১টি নোট — {unit}-এ যুক্ত করুন",
+  "{n} notes in Mapping My Journey — attach any to {unit}": "আমার যাত্রার মানচিত্রে {n}টি নোট — যেকোনোটি {unit}-এ যুক্ত করুন",
+  "No note in Mapping My Journey has these words.": "আমার যাত্রার মানচিত্রের কোনো নোটে এই শব্দগুলো নেই।",
+  "Open this note": "এই নোটটি খুলুন",
+  "Already here": "আগেই এখানে আছে",
+  "Attach to {unit}": "{unit}-এ যুক্ত করুন",
+  "Attaching…": "যুক্ত হচ্ছে…",
+  "Attached": "যুক্ত হয়েছে",
+  "Loading your notes…": "আপনার নোট আসছে…",
+  "attached here": "এখানে যুক্ত",
+  "\"{title}\" attached to {unit}.": "\"{title}\" {unit}-এ যুক্ত হয়েছে।",
 };
