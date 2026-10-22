@@ -4663,6 +4663,11 @@
      N") rather than a whole sentence. */
   .unit-card-inside { border-top: 1px solid var(--card-line); margin-top: 0.4rem; padding: 0.5rem 0.2rem 0; }
   .unit-card-inside-row { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  /* The Owner, 23 Oct 2026: the unit card as the Āyah card's window -- its left pane lists the unit's āyāt. */
+  .unit-ft-ayah { padding: 0.3rem 0 0.2rem; border-top: 1px solid var(--card-line); }
+  .unit-ft-ayah:first-child { border-top: 0; }
+  .unit-ft-ref { display: inline-block; min-width: 2.6rem; padding: 0.1rem 0.45rem; border-radius: 999px; background: var(--card-bg-inset); border: 1px solid var(--card-line); color: var(--card-heading); font-size: 0.78rem; font-weight: 700; text-align: center; }
+  @media (min-width: 900px) { .ayah-sheet[data-ayah-win] .ayah-sheet-pane-info > .unit-card-inside { order: 3; } }
   .unit-card-inside-chip { min-width: 40px; min-height: 40px; padding: 0.2rem 0.6rem; color: #fff; text-shadow: 0 0 2px rgba(0,0,0,0.35); border: none; border-radius: 0.35rem; font: inherit; font-size: 0.82rem; font-weight: 600; cursor: pointer; }
 
   /* Issue #348 -- the boundary markers inside the flowing Read view
@@ -7220,7 +7225,7 @@
     // Issue #348 -- the Unit Card (Ruku'/Page/Hizb/Juz/Surah/Range) and the
     // ladder shared with the Ayah Card, both pure renderers reusing the same
     // Approach four-stage picker and Approach-status strip as the cards above.
-    import { renderUnitCardHtml, attachUnitCardHandlers } from "./js/unit-card.js";
+    import { renderUnitCardHtml, attachUnitCardHandlers, unitFullTextHtml } from "./js/unit-card.js";
     import { renderUnitLadderHtml } from "./js/unit-ladder.js";
     import { resolveUnitInfo, ladderRungsForAyah } from "./js/unit-resolve.js";
     import { unitBoundaryMarkersInWindow } from "./js/unit-markers.js";
@@ -21723,6 +21728,33 @@
     }
 
     let unitCardCurrentInfo = null;
+    /** The Owner, 23 Oct 2026: the unit card's left pane, as on the Āyah card -- every āyah of the unit. Kept for the
+        unit on screen ({ key, html }) because the card is redrawn many times while it is open. Asked for only once the
+        card is open (I9), from the sūrah files the reader's device already caches (getSurah()). */
+    let unitCardFullText = null;
+    async function loadUnitCardFullText(info) {
+      const ayahs = [];
+      for (let s = info.fromSurah; s <= info.toSurah; s++) {
+        const data = s === currentSurahNum && currentSurahData ? currentSurahData : await getSurah(s);
+        for (const a of data?.ayahs ?? []) {
+          if (s === info.fromSurah && a.ayah < info.fromAyah) continue;
+          if (s === info.toSurah && a.ayah > info.toAyah) continue;
+          ayahs.push({ surah: s, ayah: a.ayah, arabic: a.uthmaniText, en: a.translations?.en ?? "", bn: a.translations?.bn ?? "" });
+        }
+      }
+      return ayahs;
+    }
+    function fillUnitCardFullText(info) {
+      const key = info.unitKey;
+      if (unitCardFullText?.key === key) return;
+      unitCardFullText = { key, html: null };
+      loadUnitCardFullText(info).catch(() => null).then((ayahs) => {
+        if (unitCardFullText?.key !== key) return; // another unit was opened meanwhile
+        unitCardFullText.html = unitFullTextHtml(ayahs);
+        const ft = unitCardUnitKey === key ? ayahActionSheetMountEl.querySelector("[data-unit-card-ft]") : null;
+        if (ft) ft.innerHTML = unitCardFullText.html;
+      });
+    }
 
     /** The one write both the Ayah Card and the Unit Card make for an
         Approach claim -- claimApproachStatus() -- refreshing whichever
@@ -21790,7 +21822,9 @@
         approachStatuses,
         achievedLine: "", wbwLine: "",
         insideTitle: "", insideItems: [],
+        fullTextHtml: unitCardFullText?.key === info.unitKey ? unitCardFullText.html : "",
       });
+      fillUnitCardFullText(info);
       mountClaimForPicker(ayahActionSheetMountEl, "[data-gac-record-title]"); // 👥 who this records for
       attachUnitCardHandlers(ayahActionSheetMountEl, {
         onClose: closeUnitCard,
@@ -21826,7 +21860,7 @@
         if (unitCardUnitKey !== info.unitKey) return;
         const el = ayahActionSheetMountEl.querySelector("[data-unit-card]");
         if (!el || !items.length) return;
-        el.insertAdjacentHTML("beforeend", `<div class="unit-card-inside" data-unit-card-inside-block><h4 class="ayah-status-heading">${escapeHtml(title)}</h4><div class="unit-card-inside-row">${items.map((it) => `<button type="button" class="unit-card-inside-chip" style="background:${it.color}" data-unit-card-inside="${escapeHtml(it.unitKey ?? "")}" data-unit-card-jump="${escapeHtml(it.jump ?? "")}">${escapeHtml(it.label)}</button>`).join("")}</div></div>`);
+        (el.querySelector("[data-ayah-sheet-paneinfo]") ?? el).insertAdjacentHTML("beforeend", `<div class="unit-card-inside" data-unit-card-inside-block><h4 class="ayah-status-heading">${escapeHtml(title)}</h4><div class="unit-card-inside-row">${items.map((it) => `<button type="button" class="unit-card-inside-chip" style="background:${it.color}" data-unit-card-inside="${escapeHtml(it.unitKey ?? "")}" data-unit-card-jump="${escapeHtml(it.jump ?? "")}">${escapeHtml(it.label)}</button>`).join("")}</div></div>`);
         el.querySelectorAll("[data-unit-card-inside-block] .unit-card-inside-chip").forEach((chip) => {
           chip.addEventListener("click", () => {
             closeUnitCard();

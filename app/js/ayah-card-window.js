@@ -65,7 +65,8 @@ const CSS = `${handleCss("ayah-win-h")}
 .ayah-win-frame .ayah-win-h[data-h="w"] { left: -4px; width: 8px; }
 body.ayah-win-dragging { user-select: none; }
 @media (min-width: ${WINDOW_FROM}px) {
-  .ayah-sheet[data-ayah-sheet] .ayah-sheet-header, .ayah-sheet[data-ayah-sheet] .ayah-sheet-handle { cursor: move; touch-action: none; }
+  .ayah-sheet[data-ayah-sheet] .ayah-sheet-header, .ayah-sheet[data-ayah-sheet] .ayah-sheet-handle,
+  .ayah-sheet[data-unit-card] .ayah-sheet-header, .ayah-sheet[data-unit-card] .ayah-sheet-handle { cursor: move; touch-action: none; }
   /* PCF MSA J70 -- the card as a window: bar 1 (the unit pills), bar 2 (the reference, ‹ ›, 📖, ✕), bar 3 (the buttons),
      then two equal panes: the full text on the left, Status / Approach / Progress / Info on the right. */
   .ayah-sheet[data-ayah-win] { display: flex; flex-direction: column; overflow: hidden; }
@@ -137,7 +138,8 @@ export function initAyahCardWindow(mountEl) {
   });
   mountEl.after(frame);
 
-  const sheetEl = () => mountEl.querySelector("[data-ayah-sheet]");
+  // The Owner, 23 Oct 2026: the Ruku', Page, Hizb, Juz and Surah cards (the unit card) open as this same window.
+  const sheetEl = () => mountEl.querySelector("[data-ayah-sheet], [data-unit-card]");
   const active = () => window.innerWidth >= WINDOW_FROM && !!sheetEl();
 
   function apply() {
@@ -251,7 +253,7 @@ export function initAyahCardWindow(mountEl) {
   mountEl.addEventListener("pointerdown", (e) => {
     if (!active() || !(e.target instanceof Element)) return;
     const bar = e.target.closest(".ayah-sheet-header, .ayah-sheet-handle");
-    if (!bar || !bar.closest("[data-ayah-sheet]") || e.target.closest("button, select, a, input, label")) return;
+    if (!bar || !bar.closest("[data-ayah-sheet], [data-unit-card]") || e.target.closest("button, select, a, input, label")) return;
     startDrag(e, "move", ctx);
   });
 
