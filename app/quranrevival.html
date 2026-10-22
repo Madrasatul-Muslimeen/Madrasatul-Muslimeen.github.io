@@ -208,6 +208,8 @@
      that rule is shared by all 16 pages and only THIS page is fighting for
      landing height. */
   #topNav.app-nav { margin-bottom: 0.4rem; padding-bottom: 0.45rem; }
+  /* PCF MSA J75 ("Tiny line, takes space", the line under the menu row circled on a phone): no rule there below 600px. */
+  @media (max-width: 599px) { #topNav.app-nav { border-bottom: 0; padding-bottom: 0.1rem; } }
 
   /* ---------- Global banner (Phase 5; compacted shell round 5) ----------
      The tenant's own editable announcement strip. Used to be a second hero
@@ -2686,10 +2688,38 @@
   /* Issue #794: with a wide fallback sans-serif (the Builder's runner's) the three pills plus 🔖 📖 ⤢ need ~384px and the
      bar wrapped to two rows (91px) at 390/400. Tighter pills below 440px keep it one row with room to spare. */
   @media (max-width: 439px) { #readMeaningLayersSlot { gap: 0.2rem; } #readMeaningLayersSlot label { padding: 0 0.42rem; font-size: 0.74rem; } }
+  /* PCF MSA J75 (the Owner, 22 Oct 2026, two phone screenshots of the Meaning flow: "Make one row of buttons. All fits
+     easily."): measured at 412px the switches need 164px and 🔖 📖 Mushaf ⤢ ⋯ 228px of a 380px bar, so the tools wrapped
+     to a second line. On a phone, while the switches are shown, 📖 is its icon alone (its spoken name and tip are the
+     words, set by paintReadMeaningBtn()) and the gaps and pads are a little tighter: one line at 412 and 390. */
+  @media (max-width: 479px) {
+    #readBar:has(#readMeaningLayersSlot:not([hidden])) #readMeaningBtn { padding: 0; width: 40px; }
+    #readBar:has(#readMeaningLayersSlot:not([hidden])) #readMeaningBtn .read-meaning-word { display: none; }
+    #readBar:has(#readMeaningLayersSlot:not([hidden])) #readBarEnd { gap: 0.25rem; }
+    #readMeaningLayersSlot { gap: 0.15rem; }
+    #readMeaningLayersSlot label { padding: 0 0.36rem; }
+    /* ...and the switches and the tools are ONE row: a zero-height break (this ::before, a whole line wide) ends the
+       line before the switches, so the bar never seats them beside ⏮ ⏭ ▶ ■ and leaves the tools a line of their own. */
+    #readBar:has(#readMeaningLayersSlot:not([hidden]))::before { content: ""; order: 1; flex: 0 0 100%; height: 0; }
+    #readBar:has(#readMeaningLayersSlot:not([hidden])) > #readMeaningLayersSlot { order: 2; }
+    #readBar:has(#readMeaningLayersSlot:not([hidden])) > #readBarEnd { order: 3; }
+    #readBar:has(#readMeaningLayersSlot:not([hidden])) > #readBackSlot { order: 4; }
+    /* The Owner, 22 Oct 2026 ("How to organise buttons in one row? Write only 'Surah', discard ' list', For English,
+       write only Eng. Mushaf only icon."): ☰ Surah and Eng, and ☰ Surah joins the switches' row. */
+    #readBar:has(#readMeaningLayersSlot:not([hidden])) > #readListBtn { order: 2; }
+    body.read-from-contents #readBar:has(#readMeaningLayersSlot:not([hidden])) > #readListBtn { padding: 0 0.45rem; gap: 0.2rem; }
+    #readBar:has(#readMeaningLayersSlot:not([hidden])) #readBarEnd { gap: 0.15rem; }
+    #readMeaningLayersSlot label { padding: 0 0.3rem; }
+  }
+
+  @media (max-width: 379px) { #readMeaningLayersSlot label { padding: 0 0.3rem; font-size: 0.7rem; } }
   #readMeaningLayersSlot label:has(input:checked) { background: #1F3A6E; color: #fff; }
   #readMeaningLayersSlot input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
   #readMeaningLayersSlot label:has(input:focus-visible) { outline: 3px solid #B8862F; outline-offset: 2px; }
   .meaning-page-rule { text-align: center; font-size: 0.8rem; color: #7b6a45; letter-spacing: 0.04em; border-top: 1px dashed #d9cfb6; padding-top: 0.4rem; }
+  /* PCF MSA J75 ("Page number twice", "Tiny line takes space"): the first page's label sits right under ↑ Previous page,
+     so it carries no dashed line above it (the lines stay where they divide one page from the next). */
+  [data-meaning-pages] > .meaning-page-rule:first-child { border-top: 0; padding-top: 0; }
   .meaning-ayah { border: 1px solid #ece4d0; border-radius: 0.8rem; background: #fffdf7; padding: 0.6rem 0.8rem 0.8rem; scroll-margin-top: 3.4rem; }
   .meaning-ayah.out { opacity: 0.62; }
   .meaning-ayah.out:focus-within, .meaning-ayah.out:hover { opacity: 1; }
@@ -7374,6 +7404,7 @@
       lastRenderedRoles = roles;
       lastRenderedViewAsRole = viewAsRole;
       navBar.innerHTML = renderNavBar(roles, viewAsRole);
+      if (!navBar.__pageWindows) { navBar.__pageWindows = true; import("./js/page-window.js").then((m) => m.wirePageWindowLinks(navBar.closest(".app-nav") ?? navBar)).catch(() => {}); } // PCF MSA J74: menu pages as windows on a computer
       relocatePreviewNotice();
       // The banner Search button's spoken name (its visible word is translated
       // with the rest of the static markup; below 360px only the icon shows).
@@ -19679,6 +19710,19 @@
     var meaningObserver = null;
     const MUSHAF_LAST_PAGE = 604;
 
+    // PCF MSA J75 (the Owner, 22 Oct 2026: "Write only 'Surah', discard ' list', For English, write only Eng."): below
+    // 480px ☰ reads "Surah" (its spoken name stays "Surah list") and the English switch "Eng". One word in the page at a
+    // time, so what is read out, copied or checked is what is shown.
+    const SHORT_READ_LABELS = window.matchMedia ? window.matchMedia("(max-width: 479px)") : null;
+    function shortReadLabels() { return !!SHORT_READ_LABELS?.matches; }
+    function paintShortReadLabels() {
+      const w = document.querySelector("#readListBtn .read-list-word");
+      if (w) w.textContent = shortReadLabels() ? t("Surah") : t("Surah list");
+      const en = document.querySelector('#readMeaningLayersSlot [data-meaning-layer="en"] + [data-ml-word]');
+      if (en) en.textContent = shortReadLabels() ? t("Eng") : t("English");
+    }
+    SHORT_READ_LABELS?.addEventListener?.("change", paintShortReadLabels);
+    paintShortReadLabels();
     function paintReadMeaningBtn() {
       if (!readMeaningBtn) return;
       readMeaningBtn.setAttribute("aria-pressed", String(readMeaningOn));
@@ -19744,19 +19788,20 @@
         for (const p of pages) html += await meaningPageHtml(p);
         if (token !== meaningRenderToken) return;
         meaningPagesShown = [...pages];
-        const layer = (k, label) => `<label><input type="checkbox" data-meaning-layer="${k}"${readMeaningLayers[k] ? " checked" : ""}> ${escapeHtml(label)}</label>`;
+        const layer = (k, label) => `<label><input type="checkbox" data-meaning-layer="${k}"${readMeaningLayers[k] ? " checked" : ""}> <span data-ml-word>${escapeHtml(label)}</span></label>`;
         const first = pages[0], last = pages[pages.length - 1];
         const layersSlot = document.getElementById("readMeaningLayersSlot");
         if (layersSlot) {
-          layersSlot.innerHTML = `${layer("en", t("English"))}${layer("bn", t("Bangla"))}${layer("wbw", t("WbW"))}`;
+          // PCF MSA J75 (the Owner: "For English, write only Eng"): on a phone the English switch reads "Eng" (paintShortReadLabels).
+          layersSlot.innerHTML = `${layer("en", shortReadLabels() ? t("Eng") : t("English"))}${layer("bn", t("Bangla"))}${layer("wbw", t("WbW"))}`;
           layersSlot.querySelector('[data-meaning-layer="wbw"]')?.parentElement.setAttribute("title", t("Word by Word"));
           layersSlot.setAttribute("aria-label", t("Show"));
           layersSlot.hidden = false;
         }
         pageViewContainer.innerHTML = `<div class="meaning-flow" data-meaning-flow>
-          <button type="button" class="meaning-more" data-meaning-prev${first > 1 ? "" : " disabled"}>↑ ${escapeHtml(t("Page {page}", { page: num(Math.max(1, first - 1)) }))}</button>
+          <button type="button" class="meaning-more" data-meaning-prev${first > 1 ? "" : " disabled"} title="${escapeHtml(t("Page {page}", { page: num(Math.max(1, first - 1)) }))}">↑ ${escapeHtml(t("Previous page"))}</button>
           <div data-meaning-pages>${html}</div>
-          <button type="button" class="meaning-more" data-meaning-next${last < MUSHAF_LAST_PAGE ? "" : " disabled"}>↓ ${escapeHtml(t("Page {page}", { page: num(Math.min(MUSHAF_LAST_PAGE, last + 1)) }))}</button>
+          <button type="button" class="meaning-more" data-meaning-next${last < MUSHAF_LAST_PAGE ? "" : " disabled"} title="${escapeHtml(t("Page {page}", { page: num(Math.min(MUSHAF_LAST_PAGE, last + 1)) }))}">↓ ${escapeHtml(t("Next page"))}</button>
         </div>`;
         wireMeaningFlow();
         const focus = meaningFocusKey ?? (pageViewContainer.querySelector(".meaning-ayah:not(.out)")?.dataset.meaningKey ?? null);

@@ -75,7 +75,8 @@ for (const [lang, W] of [["en", 400], ["bn", 400], ["en", 390], ["en", 1280]]) {
     const cover = Math.round(Math.max(...[document.getElementById("readBar"), document.querySelector("#pageViewContainer [data-meaning-layer]")?.closest("div")].filter(Boolean).map((e) => e.getBoundingClientRect().bottom)));
     return { labels, inFlow: document.querySelectorAll("#pageViewContainer [data-meaning-layer]").length, mTop: Math.round(m.top), cover, over: document.documentElement.scrollWidth - innerWidth };
   });
-  const want = lang === "bn" ? ["ইংরেজি", "বাংলা", "শব্দে শব্দে"] : ["English", "Bangla", "WbW"];
+  // PCF MSA J75 (the Owner, 22 Oct 2026: "For English, write only Eng"): below 480px the English switch reads "Eng".
+  const want = lang === "bn" ? ["ইংরেজি", "বাংলা", "শব্দে শব্দে"] : [W < 480 ? "Eng" : "English", "Bangla", "WbW"];
   check(`${tag} the three switches are on the Read bar, none left in the flow, each whole and 36px tall: ${want.join(" / ")}`, L.inFlow === 0 && JSON.stringify(L.labels.map((l) => l.t)) === JSON.stringify(want) && L.labels.every((l) => l.whole && l.inBar && l.h >= 36), JSON.stringify(L));
   check(`${tag} ...on 📖's own line, so the bar and switches cover at most 60px (137px before)`, L.labels.every((l) => Math.abs(l.top - L.mTop) < 4) && L.cover <= 60, JSON.stringify({ cover: L.cover, tops: L.labels.map((l) => l.top), mTop: L.mTop }));
   check(`${tag} no sideways scroll`, L.over <= 0, String(L.over));

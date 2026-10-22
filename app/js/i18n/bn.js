@@ -4436,4 +4436,8 @@ export const BN = {
   "attached here": "এখানে যুক্ত",
   "\"{title}\" attached to {unit}.": "\"{title}\" {unit}-এ যুক্ত হয়েছে।",
   "Loading your review schedule…": "আপনার পুনরাবৃত্তির সূচি আসছে…", // PCF MSA J73
+  "Open as a full page": "পূর্ণ পৃষ্ঠা হিসেবে খুলুন", // PCF MSA J74
+  "Previous page": "আগের পৃষ্ঠা", // PCF MSA J75
+  "Next page": "পরের পৃষ্ঠা",
+  "Eng": "ইংরেজি", // PCF MSA J75: the English switch's short name on a phone
 };
