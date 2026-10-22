@@ -83,11 +83,18 @@ for (const role of ["student", "owner"]) {
   check("tall phone, dragged to 300px: the wheel keeps exactly its saved size", Math.abs(m.wrapW - 300) <= 1, `wrap ${m.wrapW}`);
   await ctx.close(); }
 
-// 4. A PC is untouched: the dragged size rules there as before.
-{ const { ctx, page } = await open({ role: "owner", lang: "en", width: 1280, height: 800, saved: 420, bigText: false, surah: false });
-  const m = await measure(page);
-  check("PC (1280px), dragged to 420px: the wheel keeps exactly its saved size", Math.abs(m.wrapW - 420) <= 1, `wrap ${m.wrapW}`);
-  await ctx.close(); }
+// 4. A PC is untouched by the J24 cap. Updated in place 23 Oct 2026: since v12.05 (PCF MSA J44, the Owner: "I want
+//    always the app starts with this page setting (mostly size of the pop up and the wheel) in PC even after a new
+//    version") a PC's wheel opens at the largest size that fits its window, NEVER from a size an earlier visit stored.
+//    So this case asserted "keeps exactly its saved 420px" and had been red since v12.05 (it came up at 346, the fit).
+//    It now asserts J44's rule: a stored size changes nothing on a PC, and the fitted wheel is a real size, not the floor.
+{ const pc = async (saved) => { const { ctx, page } = await open({ role: "owner", lang: "en", width: 1280, height: 800, saved, bigText: false, surah: false });
+    const m = await measure(page); await ctx.close(); return m; };
+  const withSaved = await pc(420), none = await pc(null);
+  check("PC (1280px), dragged to 420px on an earlier visit: the saved size really is stored (positive control)", withSaved.resized, JSON.stringify(withSaved));
+  check("PC (1280px), J44: an earlier visit's saved size changes nothing -- the wheel opens at the same fitted size as with none saved",
+    Math.abs(withSaved.wrapW - none.wrapW) <= 2, `saved 420 -> ${withSaved.wrapW}, none -> ${none.wrapW}`);
+  check("PC (1280px): the fitted wheel is a real size (more than the 160px floor)", withSaved.wrapW > 200, `wrap ${withSaved.wrapW}`); }
 
 await browser.close();
 console.log(`\n${pass} passed, ${fail} failed`);
