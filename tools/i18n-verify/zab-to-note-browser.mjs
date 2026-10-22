@@ -224,15 +224,18 @@ for (const lang of ["en", "bn"]) {
         await page.click('#zabPanel [data-zab-nav="trash"]');
         await page.waitForSelector("#zabPanel [data-zab-became] a", { timeout: 8000 });
         await page.click("#zabPanel [data-zab-became] a");
-        await page.waitForURL(/journey-map\.html/, { timeout: 15000, waitUntil: "commit" });
-        check(`${tag}: Open leaves for Mapping My Journey with back=1`, /back=1/.test(page.url()) && /note=/.test(page.url()), page.url());
-        // Architect review: the way-back law needs a VISIBLE ← Back on Mapping My Journey, not the browser's own Back.
-        const jmBack = await page.waitForSelector("#jmBackBtn", { state: "visible", timeout: 15000 }).catch(() => null);
-        check(`${tag}: Mapping My Journey shows a visible ← Back (back=1)`, !!jmBack);
-        if (jmBack) await jmBack.click(); else await page.goBack({ waitUntil: "commit" });
+        // UPDATED IN PLACE for PCF MSA J81 part 3 (the Owner: a note tapped anywhere opens in the Mapping My Journey note
+        // window): Open no longer leaves the page for journey-map.html?back=1; it opens the tray over this page, and the
+        // tray's ✕ is the way back, to Zab as it was.
+        const url0 = page.url();
+        await page.waitForSelector("#journeyTray:not([hidden]) iframe", { timeout: 15000 }).catch(() => {});
+        const tr = await page.evaluate(() => ({ shown: !!document.querySelector("#journeyTray:not([hidden])"), src: document.querySelector("#journeyTray iframe")?.getAttribute("src") ?? "" }));
+        check(`${tag}: Open shows the Note in the Mapping My Journey tray, on the same page`, tr.shown && /embed=1&note=/.test(tr.src) && page.url() === url0, JSON.stringify({ tr, url: page.url() }));
+        await page.click("#journeyTray .jt-close");
         await page.waitForSelector("#zabPanel:not([hidden]) [data-zab-new-item]", { timeout: 15000 }).catch(() => {});
         const back = await page.evaluate(() => ({ open: !document.querySelector("#zabPanel")?.hidden, head: document.querySelector("#zabPanel .zab-head h2")?.textContent || "" }));
-        check(`${tag}: ← Back reopens Zab on the same pocket`, back.open && back.head.includes("Plain"), JSON.stringify(back));
+        // (UPDATED IN PLACE, J81 part 3: the page never left, so Zab is exactly as it was, still on the view Open was pressed in.)
+        check(`${tag}: closing the tray leaves Zab open exactly as it was`, back.open && back.head.includes("Trash"), JSON.stringify(back));
       }
     } catch (err) {
       check(`${tag}: ran to the end`, false, String(err && err.stack || err).split("\n").slice(0, 4).join(" | "));

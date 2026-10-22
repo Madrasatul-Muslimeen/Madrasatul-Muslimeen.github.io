@@ -127,10 +127,14 @@ for (const lang of ["en", "bn"]) for (const [width, height, mode] of [[390, 844,
   check(`${tag} ...it lists both Notes on 2:256: one "${W.started}", one "${W.mentions}"`, list.cards.length === 2 && list.cards.find((c) => c.id === "n256")?.kind === W.started && list.cards.find((c) => c.id === "n7")?.kind === W.mentions, JSON.stringify(list.cards));
   check(`${tag} ...the old Note-view note is shown, read only, as it was (nothing copied)`, list.old.includes(W.old) && list.old.includes("My old quick note on 2:256"), list.old);
   check(`${tag} ...with ✚ New note and Open in Mapping My Journey, and without the page's own view toggle and person row`, list.newBtn && list.journey && list.toggle === "none" && list.ctx === "none", JSON.stringify(list));
-  // 3. A Note opens in Mapping My Journey's own Note view.
+  // 3. A Note opens in Mapping My Journey's own Note window.
+  // UPDATED IN PLACE for PCF MSA J81 part 3 (the Owner: a note tapped anywhere opens in the Mapping My Journey note
+  // window): tapping a Note in the pane's list opens the Journey TRAY on it, no longer the pane's small Note view.
   await F.click('[data-unit-body] [data-note-id="n256"] [data-note-open]');
-  await F.waitForFunction(() => !document.getElementById("notePane").hidden && /No compulsion in religion/.test(document.getElementById("notePane").textContent), null, { timeout: 8000 }).catch(() => {});
-  check(`${tag} tapping "Started on 2:256" opens it in the Journey Note view`, await F.evaluate(() => !document.getElementById("notePane").hidden && /No compulsion in religion/.test(document.getElementById("notePane").textContent)));
+  const inTray = () => ev(() => !document.getElementById("journeyTray")?.hidden && /No compulsion in religion/.test(document.querySelector("#journeyTray iframe")?.contentDocument?.getElementById("notePane")?.textContent ?? ""));
+  for (let i = 0; i < 120 && !(await inTray()); i++) await P.waitForTimeout(100);
+  check(`${tag} tapping "Started on 2:256" opens it in the Mapping My Journey tray`, await inTray());
+  await P.click("#journeyTray .jt-close"); await P.waitForTimeout(300);
 
   // 4. The way back: ← Back closes the pane, the reading is where it was, and the badge now says 2.
   const backText = await ev(() => document.querySelector("#readNotePane [data-rnp-back]")?.textContent ?? "");
@@ -163,7 +167,9 @@ for (const lang of ["en", "bn"]) for (const [width, height, mode] of [[390, 844,
   check(`${tag} the button reads "✚ ${W.newBtn}"`, newLabel.includes(W.newBtn), newLabel);
   await F.waitForFunction(() => document.querySelector("[data-unit-new]") && !document.querySelector("[data-unit-new]").hasAttribute("aria-disabled"), null, { timeout: 15000 }).catch(() => {});
   await F.click("[data-unit-new]");
-  await F.waitForFunction(() => !document.getElementById("notePane").hidden, null, { timeout: 8000 }).catch(() => {});
+  // UPDATED IN PLACE for PCF MSA J81 part 3: a Note just made opens in the Mapping My Journey tray (not the pane's own
+  // small Note view); the pane keeps listing it. Typing into it happens in the tray (journey-note-windows-browser).
+  await P.waitForFunction(() => document.querySelector("#journeyTray:not([hidden]) iframe")?.getAttribute("src")?.includes("note="), null, { timeout: 12000 }).catch(() => {});
   await F.waitForTimeout(500);
   const made = await F.evaluate(() => {
     const w = window.__stubWriteData || [], log = window.__fsLog || [];
@@ -173,21 +179,19 @@ for (const lang of ["en", "bn"]) for (const [width, height, mode] of [[390, 844,
       listed: [...document.querySelectorAll("[data-unit-body] [data-note-id]")].map((c) => c.querySelector("[data-unit-kind]")?.textContent) };
   });
   check(`${tag} ✚ writes a Note, linked to ayah:2:257 as its origin, and files it in a folder`, made.notes && made.source === "ayah:2:257" && made.kind === "origin" && made.placement, JSON.stringify(made));
-  check(`${tag} ...the new Note is listed ("${W.started}") and open in the Note view`, made.paneOpen && made.listed.length === 1 && made.listed[0] === W.started, JSON.stringify(made));
-  const editing = await F.evaluate(() => { const a = document.activeElement; return { editable: !!a?.isContentEditable, inPane: !!a && document.getElementById("notePane").contains(a) }; });
-  check(`${tag} ...ready to write: the cursor is in its text`, editing.editable && editing.inPane, JSON.stringify(editing));
-  await F.locator("#notePane [contenteditable=true]").first().pressSequentially("Bismillah");
-  check(`${tag} ...typing goes straight into the new Note`, (await F.evaluate(() => document.querySelector("#notePane [contenteditable=true]")?.textContent ?? "")).includes("Bismillah"));
-
-  // 7. Open in Mapping My Journey: the tray, over the reading, on that Note; closing it comes back to the reading.
-  // From the pane's own bar (on a phone the open Note covers the list and its button).
-  await P.click("#readNotePane [data-rnp-journey]");
-  await P.waitForFunction(() => document.querySelector("#journeyTray:not([hidden]) iframe")?.getAttribute("src")?.includes("note="), null, { timeout: 8000 }).catch(() => {});
+  check(`${tag} ...the new Note is listed ("${W.started}") and the pane's own Note view stays shut`, !made.paneOpen && made.listed.length === 1 && made.listed[0] === W.started, JSON.stringify(made));
   const tray = await ev(() => ({ shown: !!document.querySelector("#journeyTray:not([hidden])"), src: document.querySelector("#journeyTray iframe")?.getAttribute("src") ?? "" }));
-  check(`${tag} Open in Mapping My Journey opens the tray on the new Note`, tray.shown && /embed=1&note=/.test(tray.src), JSON.stringify(tray));
+  check(`${tag} ...and the Mapping My Journey tray opens on the new Note`, tray.shown && /embed=1&note=/.test(tray.src), JSON.stringify(tray));
+
+  // 7. Closing the tray comes back to the reading and the pane; the pane's ↗ opens the tray again.
   await P.click("#journeyTray .jt-close");
   await P.waitForTimeout(300);
   check(`${tag} ...closing the tray leaves the Notes pane and the reading as they were`, await ev(() => document.getElementById("journeyTray").hidden && !document.getElementById("readNotePane").hidden && document.getElementById("ayahSelect").value === "257"));
+  await P.click("#readNotePane [data-rnp-journey]");
+  await P.waitForFunction(() => document.querySelector("#journeyTray:not([hidden]) iframe"), null, { timeout: 8000 }).catch(() => {});
+  check(`${tag} the pane's ↗ opens the Mapping My Journey tray`, await ev(() => !!document.querySelector("#journeyTray:not([hidden])")));
+  await P.click("#journeyTray .jt-close");
+  await P.waitForTimeout(300);
   // 8. Round 2a: "Track this āyah" is a tab of the pane; Record Your Progress opens the Āyah card (its 👥 included) and
   // leaves "Back to Notes on 2:257", which brings the pane back on its Track tab.
   // J71: on a computer the tabs are drawn by the page inside, on its tools row; the Track tab is pressed there
