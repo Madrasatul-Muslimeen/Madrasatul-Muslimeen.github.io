@@ -926,3 +926,4 @@ total). Allocated by the MMSA Architect.
 12.22: MSA J48 round 3 (Vocabulary Wheel). Allocated by the MMSA Architect.
 12.23: MSA J72 sweep part 2 (Track window, Asma posters at the home size). Allocated by the MMSA Architect.
 12.24: the Word card reads its word's own surah (audit-part15's error). Allocated by the MMSA Architect.
+12.25: the Āyah card's tabs, the Note buttons, a minimise button on every pop-up, Hadith's notice. Allocated by the MMSA Architect.
