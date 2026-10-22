@@ -590,6 +590,8 @@ async function onClick(e) {
     // exactly this place with Zab as it was (the way-back law). Without the tray module, the full page with back=1.
     if (e.button > 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return; // new tab: the link's own behaviour
     e.preventDefault();
+    // On Mapping My Journey's own page the tray would open the page over itself: there, the full page as before.
+    if (/\/journey-map\.html$/.test(location.pathname)) { rememberWayBack(); location.href = noteLink.href; return; }
     import("./journey-tray.js").then((m) => m.openJourneyTray({ noteId: noteLink.dataset.zabNoteOpen }))
       .catch(() => { rememberWayBack(); location.href = noteLink.href; });
     return;
