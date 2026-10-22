@@ -82,6 +82,15 @@ for (const [lang, width, look] of [["bn", 390, "light"], ["en", 1280, "night"], 
   const { page, errors } = await openPage(ctx, "/app/hadith-collections.html");
   await page.evaluate((l) => document.documentElement.setAttribute("data-card-look", l), look);
   const digits = (s) => lang === "bn" ? String(s).replace(/\d/g, (d) => "০১২৩৪৫৬৭৮৯"[d]) : String(s);
+  // Audit part 40 (#1028): the red "Synthetic development data -- these are not real narrations" notice
+  // belongs over the synthetic pilot only. Positive control first: it IS on Topics, so the Dua check
+  // below cannot pass on a page that simply never draws it.
+  await acheck("the synthetic-data notice is shown on Topics (synthetic pilot)", async () => {
+    await page.click('[data-hadith-tab="topic"]');
+    await page.waitForSelector('[data-hadith-tab="topic"].active');
+    const n = await page.$$eval(".hadith-synthetic-banner", (r) => r.length);
+    if (n !== 1) throw new Error(`${n}`);
+  });
   await acheck("the Hadith page has a Dua tab; its Dua chapters list the eleven books", async () => {
     await page.click('[data-hadith-tab="dua"]');
     await page.click('[data-dua-mode="chapters"]');
@@ -96,6 +105,10 @@ for (const [lang, width, look] of [["bn", 390, "light"], ["en", 1280, "night"], 
     await page.waitForSelector("[data-dua-card]");
     const r = await page.evaluate(() => ({ n: document.querySelectorAll("[data-dua-card]").length, count: document.querySelector(".dua-cards-count")?.textContent ?? "", first: document.querySelector("[data-dua-card]")?.dataset.duaCard }));
     if (r.n !== 40 || !r.count.includes(digits("3,126").replace(",", lang === "bn" ? "," : ",")) && !r.count.includes(digits("3126"))) throw new Error(JSON.stringify(r));
+  });
+  await acheck("the Dua tab (real duas) carries NO synthetic-data notice", async () => {
+    const n = await page.$$eval(".hadith-synthetic-banner", (r) => r.length);
+    if (n !== 0) throw new Error(`${n}`);
   });
   await acheck("progress on a dua is saved ONCE, as dua:<n> in the person's Hadith records", async () => {
     const card = await page.$("[data-dua-card]");

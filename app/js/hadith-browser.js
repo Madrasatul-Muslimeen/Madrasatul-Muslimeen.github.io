@@ -95,9 +95,12 @@ export function mountHadithBrowser(root, { mount = "standalone", initialHadeethE
     // The Collections landing now leads with REAL HadeethEnc text (#309), so
     // the "not real narrations" notice there sits directly above the
     // synthetic pilot list it describes (renderCollections), not above the
-    // real source. Every other view still shows only synthetic data, so it
-    // keeps the notice at the top.
-    if (!(state.view === "collections" && !state.editionId)) root.appendChild(syntheticBanner());
+    // real source. The Dua tab (real duas from the Arabic books) and the
+    // Explanations tab (verified outbound links to real narrations) show no
+    // synthetic data at all, so the notice there told a reader that real
+    // duas were "not real narrations" (audit part 40, #1028). Every other
+    // view still shows only synthetic data, so it keeps the notice at the top.
+    if (showsSyntheticAtTop(state)) root.appendChild(syntheticBanner());
     root.appendChild(controls(state, render));
     const body = el("div", "hadith-body");
     body.id = "hadithBody";
@@ -213,6 +216,13 @@ function focusActiveTab() {
 // ---------------------------------------------------------------------------
 // The notice that is never conditional
 // ---------------------------------------------------------------------------
+
+const REAL_DATA_VIEWS = new Set(["dua", "commentary"]);
+
+function showsSyntheticAtTop(state) {
+  if (REAL_DATA_VIEWS.has(state.view)) return false;
+  return !(state.view === "collections" && !state.editionId);
+}
 
 function syntheticBanner() {
   const box = el("div", "hadith-synthetic-banner");
