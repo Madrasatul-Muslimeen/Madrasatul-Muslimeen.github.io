@@ -925,3 +925,4 @@ total). Allocated by the MMSA Architect.
 12.21: J74 J75 (menu pages as windows; Meaning flow one row on a phone). Allocated by the MMSA Architect.
 12.22: MSA J48 round 3 (Vocabulary Wheel). Allocated by the MMSA Architect.
 12.23: MSA J72 sweep part 2 (Track window, Asma posters at the home size). Allocated by the MMSA Architect.
+12.24: the Word card reads its word's own surah (audit-part15's error). Allocated by the MMSA Architect.
