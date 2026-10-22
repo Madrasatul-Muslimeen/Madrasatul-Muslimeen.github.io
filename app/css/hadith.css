@@ -173,7 +173,7 @@
 .openiti-goto { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; margin: 0.6rem 0; }
 .openiti-goto-label { display: flex; align-items: center; gap: 0.4rem; font-size: 0.88rem; }
 .openiti-goto-input { min-height: 40px; min-width: 0; width: 7rem; padding: 0.3rem 0.5rem; border-radius: 0.35rem; border: 1px solid var(--hadith-field); }
-.openiti-goto-btn { min-height: 40px; padding: 0.4rem 0.9rem; border-radius: 0.35rem; border: 1px solid var(--hadith-rule); background: #fff; cursor: pointer; font-weight: 600; }
+.openiti-goto-btn { min-height: 40px; padding: 0.4rem 0.9rem; border-radius: 0.35rem; border: 1px solid var(--hadith-rule); background: #fff; color: var(--hadith-ink); cursor: pointer; font-weight: 600; }
 .openiti-goto-msg { margin: 0.2rem 0; }
 /* Round H-DB2: the numbering choice beside "Go to hadith number", sized like its input; and each narration's
    standard number on its card. */

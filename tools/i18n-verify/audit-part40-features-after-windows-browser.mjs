@@ -26,6 +26,7 @@ const MUTATE = arg("mutate"), ONLY = arg("only"), WONLY = Number(arg("width")) |
 // name: [file, route glob, anchor (exactly once), replacement, page path it applies to]. Each puts one fix back to the old code.
 const MUTATIONS = {
   crumbnight: ["app/css/card-look.css", "**/css/card-look.css*", '[data-card-look="night"] .hadith-card .hadeethenc-crumb { color: var(--card-link); }\n', "\n", "/app/hadith-"],
+  gobtn: ["app/css/hadith.css", "**/css/hadith.css*", "background: #fff; color: var(--hadith-ink); cursor: pointer; font-weight: 600; }", "background: #fff; cursor: pointer; font-weight: 600; }", "/app/hadith-"],
   chip: ["app/deen-study.html", "**/deen-study.html*", ".topic-status-unclaimed { background: #6b6b6b !important; }", ".topic-status-unclaimed { background: #888 !important; }", "/app/deen-study.html"],
   chiphadith: ["app/hadith-study.html", "**/hadith-study.html*", ".topic-status-unclaimed { background: #6b6b6b !important; }", ".topic-status-unclaimed { background: #888 !important; }", "/app/hadith-study.html"],
   closebtn: ["app/health-study.html", "**/health-study.html*", ".way-close-btn { background: none; border: none; font-size: 1.4rem; cursor: pointer; color: #666; flex-shrink: 0; }", ".way-close-btn { background: none; border: none; font-size: 1.4rem; cursor: pointer; color: #888; flex-shrink: 0; }", "/app/health-study.html"],
@@ -89,7 +90,7 @@ function measure(scope) {
     const size = parseFloat(cs.fontSize), bold = Number(cs.fontWeight) >= 700;
     const need = size >= 24 || (size >= 18.66 && bold) ? 3 : 4.5;
     const rr = ratio(fg, bg);
-    if (rr < need) out.contrast.push(`${desc(e)} ${rr.toFixed(2)}<${need}`);
+    if (rr < need) out.contrast.push(`${desc(e)} ${rr.toFixed(2)}<${need} (${cs.color} on rgb(${Math.round(bg.r)},${Math.round(bg.g)},${Math.round(bg.b)}))`);
   }
   out.cut = [...new Set(out.cut)]; out.covered = [...new Set(out.covered)]; out.backSmall = [...new Set(out.backSmall)]; out.contrast = [...new Set(out.contrast)];
   return out;
@@ -149,6 +150,8 @@ async function open(lang, look, width, height, pagePath, seed) {
   const ctx = await newContext(browser, { appLang: lang === "bn" ? "bn" : null, banner: false, viewport: { width, height }, extraSeedJs: seed || null });
   await ctx.route((u) => ![new URL(BASE).hostname, "www.gstatic.com", "cdn.jsdelivr.net"].includes(u.hostname), (r) => r.abort());
   await ctx.addInitScript((lk) => { try { localStorage.setItem("mm_card_look", lk); } catch { /* */ } }, look);
+  // a computer has a home window the reader has placed (home-window.js); every pop-up opens at it
+  if (width >= 900) await ctx.addInitScript(() => { try { localStorage.setItem("mmsa-home-window-v1", JSON.stringify({ x: 200, y: 100, w: 860, h: 600, user: true })); } catch { /* */ } });
   if (MUTATE) {
     const [file, glob, from, to, applies] = MUTATIONS[MUTATE];
     if (pagePath.includes(applies)) {
@@ -276,6 +279,7 @@ async function bookmarksPage(t, p) {
   await ev(p, () => { window.__stubWriteData = []; });
   await jsClick(p, "[data-bm-toggle]"); await settle(p, 800);
   check(`${t}: Retire is written`, (await writes(p)) >= 1);
+  if (!(await visible(p, ".nav-cat-bookmark > summary"))) return; // a page window drops the page's own menu row: the Bookmark menu is the Qur'an page's there
   await ev(p, () => { document.querySelector(".nav-cat-bookmark > summary")?.click(); }); await settle(p, 400);
   await state(t, p, "Bookmark menu", ".nav-cat-bookmark[open] .nav-cat-links", { scope: ".nav-cat-bookmark .nav-cat-links" }); // on a phone the menu is a panel over the page, which rightly covers the Bookmark pill itself
   const hrefs = await ev(p, () => [...document.querySelectorAll(".nav-cat-bookmark .nav-cat-links a")].map((a) => a.getAttribute("href")));
@@ -295,6 +299,14 @@ async function topic(t, p, m) {
   await ev(p, () => { document.querySelector(".bm-popover button")?.click(); }); await settle(p, 300);
   await jsClick(p, "#trackTopicBtn"); await settle(p, 800);
   await state(t, p, "Track window", "#wayModalMount .way-back-btn", { scope: "#wayModalOverlay" });
+  if (await ev(p, () => innerWidth >= 900)) {
+    const box = await ev(p, () => {
+      const r = document.getElementById("wayModalMount").getBoundingClientRect(), framed = window.self !== window.top;
+      const home = framed ? { x: 0, y: 0, w: innerWidth, h: innerHeight } : JSON.parse(localStorage.getItem("mmsa-home-window-v1"));
+      return { framed, r: [Math.round(r.x), Math.round(r.y), Math.round(r.width), Math.round(r.height)], home: [home.x, home.y, home.w, home.h] };
+    });
+    check(`${t}: the Track window sits at the home rect (${box.framed ? "filling its page window" : "on a page of its own"})`, box.r.every((v, i) => Math.abs(v - box.home[i]) <= 2), JSON.stringify(box));
+  }
   await jsClick(p, "#wayModalMount .way-back-btn"); await settle(p, 400);
   check(`${t}: ← Back closes the Track window and the topic is still shown`, await ev(p, () => !document.getElementById("wayModalOverlay").classList.contains("open") && !!document.getElementById("trackTopicBtn")));
 }
@@ -338,6 +350,9 @@ for (const lang of LANGS) for (const look of LOOKS) for (const width of WIDTHS) 
   await flow("hadeethenc", lang, look, width, "/app/hadith-collections.html", "", wrap(hadeethenc));
   await flow("openiti", lang, look, width, "/app/hadith-collections.html", "", wrap(openiti));
   await flow("dua", lang, look, width, "/app/hadith-collections.html", DUA_SEED, wrap(dua));
+  // the Hadith page itself (hadith-study.html) carries the same library under its own page styles
+  await flow("hadeethenc-hs", lang, look, width, "/app/hadith-study.html", "", wrap(hadeethenc));
+  await flow("openiti-hs", lang, look, width, "/app/hadith-study.html", "", wrap(openiti));
   await flow("bookmarks", lang, look, width, "/app/bookmarks.html", BM_SEED, wrap(bookmarksPage));
   for (const m of Object.values(TOPICS)) await flow(`topic-${m.id}`, lang, look, width, `/app/${m.page}`, topicSeed(m), wrap((t, p) => topic(t, p, m)));
   await flow("continue", lang, look, width, `/app/${TOPICS.deen.page}`, topicSeed(TOPICS.deen), wrap(async (t, p) => { await continueChip(t, p, TOPICS.deen); check(`${t}: the chip opened the topic itself`, await ev(p, () => !!document.getElementById("trackTopicBtn"))); }));
