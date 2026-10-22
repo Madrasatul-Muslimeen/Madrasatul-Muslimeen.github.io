@@ -1646,7 +1646,13 @@
       orderFrom: paneOrderFrom, folderFrom: paneFolderFrom,
       paneTier: noteLayoutTier, paneApply: () => applyNoteTier(), scroller,
     });
-    const { paneView, windowViews, allViews, openPane: openNotePane, closePane: closeNotePane, openWindow: openNoteWindow, openFolderWindow, closeView, endEdit } = noteViews;
+    const { paneView, windowViews, allViews, openPane: openNotePaneHere, closePane: closeNotePane, openWindow: openNoteWindow, openFolderWindow, closeView, endEdit } = noteViews;
+    // J81 part 3: in the Read view's Notes pane (unit mode) a Note tapped, searched for or just made opens in the
+    // Mapping My Journey tray over the reading, not in this small pane (which keeps listing and starting Notes).
+    function openNotePane(noteId, fromEl) {
+      if (unitMode) { openUnitInJourney(noteId); return; }
+      openNotePaneHere(noteId, fromEl);
+    }
 
     // =====================================================================
     // Siyagah round 14 (decision 66, #566) -- Pin / Favourite / Archive /
@@ -3936,7 +3942,7 @@
         <div data-unit-body><p class="note">${escapeHtml(t("Loading…"))}</p></div>
         <div data-unit-old></div>`;
       viewUnit.querySelector("[data-unit-new]")?.addEventListener("click", (e) => newNoteOnUnit(e.currentTarget));
-      viewUnit.querySelector("[data-unit-journey]").addEventListener("click", openUnitInJourney);
+      viewUnit.querySelector("[data-unit-journey]").addEventListener("click", () => openUnitInJourney());
       const body = viewUnit.querySelector("[data-unit-body]");
       if (!activeTenantId || !selectedPersonId) { unitCannotLoad(body, label); return; }
       let rows;
@@ -4029,9 +4035,9 @@
     }
     // The Read view opens Mapping My Journey as its tray, over the reading, on the Note open here (if any); closing the
     // tray comes straight back (the way-back law, decision 86). Asked from the list's button or the pane's own ↗.
-    function openUnitInJourney() {
+    function openUnitInJourney(noteId = paneView.noteId ?? null) {
       try { endEdit(paneView); } catch { /* nothing being edited */ }
-      window.parent?.postMessage({ type: "mmsa-open-journey", noteId: paneView.noteId ?? null }, location.origin);
+      window.parent?.postMessage({ type: "mmsa-open-journey", noteId }, location.origin);
     }
     window.addEventListener("message", (ev) => {
       if (ev.origin === location.origin && ev.data?.type === "mmsa-open-journey-request" && unitMode) openUnitInJourney();
