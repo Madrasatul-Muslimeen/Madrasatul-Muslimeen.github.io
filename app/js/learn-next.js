@@ -62,3 +62,35 @@ export function placeOfRow(row) {
   const o = Number(row.o);
   return { surah: Math.floor(o / 1000000), ayah: Math.floor((o % 1000000) / 1000), position: o % 1000 };
 }
+
+// ---- PCF MSA J48 round 3 (the Owner, 21 Oct 2026: "another Wheel display should show the progress of the 9 segments")
+// The Vocabulary Wheel and the badge read the same figures. A step is PASSED when every word in it (1..n) is known --
+// the Word card's own marks, so there is no new store and no Rules change.
+
+/** One entry per step: its new words (previous step + 1 .. n) and all its words (1 .. n), known counts, passed. */
+export function vocabStepFigures(rows, isKnown) {
+  const list = rows ?? [];
+  const known = list.map((row) => !!isKnown(row));
+  let prev = 0;
+  return LEARN_NEXT_MILESTONES.filter((n) => list[n - 1]).map((n) => {
+    let all = 0, fresh = 0;
+    for (let i = 0; i < n; i++) if (known[i]) { all++; if (i >= prev) fresh++; }
+    const out = { n, from: prev + 1, to: n, newSize: n - prev, newKnown: fresh, allKnown: all, passed: all === n };
+    prev = n;
+    return out;
+  });
+}
+
+/** How much of a step's segment is filled (0..1): by the step's own new words ("new"), or by all words up to it ("all"). */
+export function vocabStepFill(step, mode = "new") {
+  return mode === "all" ? step.allKnown / step.n : step.newKnown / step.newSize;
+}
+
+/** The badge's figures: words known, the share of the Qur'an's words they cover (percent), steps passed, next step. */
+export function vocabBadgeFigures(rows, total, isKnown) {
+  let words = 0, occurrences = 0;
+  for (const row of rows ?? []) if (isKnown(row)) { words++; occurrences += Number(row.n) || 0; }
+  const steps = vocabStepFigures(rows, isKnown);
+  const next = steps.find((s) => !s.passed) ?? null;
+  return { words, share: total > 0 ? (100 * occurrences) / total : 0, steps, passed: steps.filter((s) => s.passed).length, next: next ? next.n : null };
+}

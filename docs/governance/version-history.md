@@ -923,3 +923,4 @@ total). Allocated by the MMSA Architect.
 12.19: MSA J69, J70. Allocated by the MMSA Architect.
 12.20: J71 J72 J73 (Notes from the Āyah card; pop-ups one size, every edge, ← Back; Vocabulary buttons). Allocated by the MMSA Architect.
 12.21: J74 J75 (menu pages as windows; Meaning flow one row on a phone). Allocated by the MMSA Architect.
+12.22: MSA J48 round 3 (Vocabulary Wheel). Allocated by the MMSA Architect.

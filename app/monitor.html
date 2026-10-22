@@ -38,6 +38,14 @@
   .rangeLabel { font-size: 0.88rem; color: #555; margin-left: 0.4rem; }
   .actions { margin: 0.8rem 0; display: flex; gap: 0.6rem; }
   .muted { color: #666; font-size: 0.85rem; }
+  /* PCF MSA J48 round 3 (2A): the Vocabulary table */
+  .vocab-table-wrap { overflow-x: auto; }
+  .vocab-table-wrap table { min-width: 36rem; }
+  .vt-n { font-variant-numeric: tabular-nums; }
+  .vt-due { display: inline-block; border-radius: 999px; padding: 0 0.5rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .vt-due-some { background: #fdecc8; color: #7a4b00; }
+  .vt-due-none { background: #d7efdf; color: #1d5a3c; }
+  #vocabLoadBtn { min-height: 44px; }
   #reportBody, #quranBody { }
 
   /* Issue #293 -- at phone width a wide table scrolls inside its own box
@@ -112,6 +120,14 @@
       <p class="muted">Loading…</p>
     </div>
 
+    <!-- PCF MSA J48 round 3 (the Owner's 2A, 21 Oct 2026): one row per student, read on a tap (two word lists and one
+         review schedule per student), never when the page opens. -->
+    <div id="vocabSection">
+      <h2>Vocabulary</h2>
+      <p class="muted">The Qur'an's words each student knows (the Word card's own marks), the Learn next steps passed, and the review schedule. Not scoped to the week/month above.</p>
+      <div id="vocabBody"><button type="button" id="vocabLoadBtn">Show the Vocabulary table</button></div>
+    </div>
+
     <div id="activitySection">
       <h2>Study activity this week — <span id="activityPersonName"></span></h2>
       <p class="muted">Read-only. This is what was actually studied, never a claim or confirmation — see the Quran Approach breakdown below for status.</p>
@@ -156,7 +172,11 @@
     import { getSubjectTree, getTrackables } from "./js/catalogue.js";
     import { activityForRoster, monthWeekKeys, filterEntriesToMonth, summarizeByStudent, summarizeBySubject, summarizeQuranApproaches, entriesToCsvRows, downloadCsv, printReportHtml, studyActivitySectionForWeek } from "./js/monitor.js";
     import { weekKeyFor } from "./js/activity.js";
-    import { listAllRecordsForPerson } from "./js/records.js";
+    import { listAllRecordsForPerson, getSubjectConfirmationOverride, computeConfirmationRequired } from "./js/records.js";
+    import { loadLearnNext, vocabBadgeFigures } from "./js/learn-next.js";
+    import { primeVocabKnown, vocabKnownFor } from "./js/vocab-known.js";
+    import { loadVocabReview } from "./js/vocab-review-data.js";
+    import { dayOf, reviewDeck } from "./js/vocab-review.js";
     import { statusLabel, unitKeyLabel } from "./js/unit-keys.js";
     import { activityActionLabel } from "./js/activity.js";
     import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
@@ -465,6 +485,51 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       refreshStudyActivity();
     }
 
+    // ---------------------------------------------------------------------
+    // PCF MSA J48 round 3 (2A) -- the Vocabulary table: for each student the teacher can see, words known, the share
+    // of the Qur'an's words, steps passed, due for review today and the day last practised. A student whose lists
+    // cannot be read says so in their own row (I15).
+    // ---------------------------------------------------------------------
+    const vocabBody = document.getElementById("vocabBody");
+    let vocabShown = false;
+    async function vocabRowFor(person, data, override, today) {
+      const name = langText(person.name, getAppLang(), person.id);
+      try {
+        const confirmationRequired = await computeConfirmationRequired(db, activeTenantId, person.id, override);
+        const [, review] = await Promise.all([
+          primeVocabKnown(db, { tenantId: activeTenantId, personId: person.id }),
+          loadVocabReview(db, { tenantId: activeTenantId, personId: person.id }),
+        ]);
+        const b = vocabBadgeFigures(data.rows, data.total, vocabKnownFor({ tenantId: activeTenantId, personId: person.id, confirmationRequired }));
+        const due = reviewDeck(data.rows, review.words, today, Infinity).length;
+        const last = Object.values(review.words).reduce((m, e) => (typeof e?.at === "string" && e.at > m ? e.at : m), "");
+        const lastText = last ? num(new Date(last).toLocaleDateString(dateLocale(), { day: "numeric", month: "short", year: "numeric" })) : "—";
+        return `<tr data-vt-person="${person.id}" data-vt-words="${b.words}"><td>${name}</td><td class="vt-n">${num(b.words.toLocaleString("en-US"))}</td>
+          <td class="vt-n">${num(b.share.toFixed(1))}%</td><td class="vt-n">${t("{k} of {n}", { k: num(b.passed), n: num(b.steps.length) })}</td>
+          <td><span class="vt-due ${due ? "vt-due-some" : "vt-due-none"}">${num(due)}</span></td><td>${lastText}</td></tr>`;
+      } catch (err) {
+        console.warn("Vocabulary table", person.id, err);
+        return `<tr data-vt-person="${person.id}" data-vt-failed><td>${name}</td><td colspan="5" style="color:#9c3b2e;">${t("Couldn't load this student's vocabulary:")} ${err.code ?? ""}</td></tr>`;
+      }
+    }
+    async function refreshVocabTable() {
+      if (!vocabShown) return;
+      const people = visibleRoster;
+      if (!people.length) { vocabBody.innerHTML = `<p class="muted">${t("No students in scope.")}</p>`; return; }
+      vocabBody.innerHTML = `<p class="muted">${t("Loading…")}</p>`;
+      try {
+        const [data, override] = await Promise.all([loadLearnNext(), getSubjectConfirmationOverride(db, activeTenantId, "quran")]);
+        const today = dayOf(new Date());
+        const rows = await Promise.all(people.map((p) => vocabRowFor(p, data, override, today)));
+        vocabBody.innerHTML = `<div class="vocab-table-wrap"><table data-vocab-table><thead><tr><th>${t("Student")}</th><th>${t("Words known")}</th><th>${t("Share of the Qur'an")}</th><th>${t("Steps passed")}</th><th>${t("Due for review today")}</th><th>${t("Last practised")}</th></tr></thead>
+          <tbody>${rows.join("")}</tbody></table></div>`;
+      } catch (err) {
+        vocabBody.innerHTML = `<p style="color:#9c3b2e;">${t("Couldn't load the Vocabulary table:")} ${err.code ?? ""} ${err.message}</p>`;
+        console.error(err);
+      }
+    }
+    vocabBody.addEventListener("click", (e) => { if (e.target.closest("#vocabLoadBtn")) { vocabShown = true; refreshVocabTable(); } });
+
     personSelect.addEventListener("change", () => { setSelectedPersonId(personSelect.value); refreshReport(); refreshQuranBreakdown(); refreshStudyActivity(); });
     wholeRoster.addEventListener("change", refreshReport);
 
@@ -580,6 +645,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       // myMemberships already carries every membership's own hydrated tenant
       // document (fetched once, at sign-in) -- no reason to fetch it again.
       await loadContextData();
+      refreshVocabTable(); // J48 round 3: a table already shown follows the tenant
     });
   </script>
   <script type="module">
