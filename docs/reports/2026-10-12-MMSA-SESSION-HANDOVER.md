@@ -7,7 +7,38 @@ v10.28). Read `CLAUDE.md` first. The prompt that starts the next session is
 
 This session was summarised once (its context compacted), which is why it hands over here.
 
-## LATEST UPDATE — 22 Oct 2026, 8:45 am Sydney, session `session_01NRUt1vXovcsHryRwq8E6J6` (v12.19 live on MSA AND QR; J71 demo next; HANDOVER) — READ THIS FIRST
+## LATEST UPDATE — 22 Oct 2026, 11:20 pm Sydney, session `session_011rXL5Ag47YfqVMmMBdLMQj` (v12.21 live on MSA AND QR; HANDOVER) — READ THIS FIRST
+
+Took over 8:48 am 22 Oct from `session_01NRUt1vXovcsHryRwq8E6J6`. Handing over at ~40% context (cost86/hand119).
+**`main` is v12.21, live on MSA and QR since 11:18 pm 22 Oct (PR #1018, merge `bddfe2ac`; QR build-from-msa dispatched; QR's 20 checks 20/20 on the build). Next release: v12.22.** The PCA is `session_019xuGwr6uFeQUpKmERwBPxX`.
+
+**Released this session**
+- **v12.20** (PR #1017, merge `ff720dd0`, live 10:58 am; QR 20/20): MSA J71 (the Notes window from the Āyah card takes the card's place, `ayahCardRectJustNow()`; top-bar search over every Map note, "📎 Attach" = `attachStudyNoteToUnit()` → `createNoteSource` reference; on a computer the tabs and the note's tools on one row, `.jm-host-tab`, `mmsa-pane-tabs`/`-hello`), J72 (resize handles in a frame over the window's edge, `[data-popup-win-frame]`; ONE shared home rect `app/js/home-window.js`, `SHARED`, the landing window `home: "self"`; menu links `navBack=1` + `mountNavBack()`; ← Back on the Read list, KYS, Āyah card), J73 (Vocabulary's buttons never await the review-schedule read; `VOCAB_REVIEW_WAIT_MS` 8 s; stub `window.__stubHangCols`). PCA change notice sent (shared note scripts).
+- **v12.21** (PR #1018, live 11:18 pm; QR 20/20): MSA J74 (n72b B: menu pages as windows at the home size over the landing screen, `app/js/page-window.js`, `?inWindow=1`; Mapping My Journey keeps its tray), J75 (Meaning flow on a phone in one row, `#readBar::before` break; ☰ "Surah" and "Eng" below 480px, `paintShortReadLabels()`; ↑ Previous page / ↓ Next page; no dashed line above the first label; no nav rule below 600px). Also cleared 40 stale failures on `main` (read-list-button, read-contents: 36px → 40px; audit-part12: J70's Full text). J76 answered (mouse writing already works; n76a asked).
+- New suites: `popup-home-size-browser`, `vocab-buttons-open-browser`, `page-window-browser`, `read-meaning-one-row-browser` (each mutation-proven). Many updated in place (listed in CHANGELOG v12.20/v12.21). QR: edits #8a/#8b re-anchored; QR checks `links-browser`, `approach-window-browser` updated in place.
+
+**Running / next (each in its PCF job)**
+1. Nothing in flight. Owner checks: **n71b, n72c, n73a** (v12.20), **n74a, n75a** (v12.21), **n76a** (writing: A keep / B write over the example), and the older n69b, n70b, n67a, n61c, n66a, n68b, n61b, n63a, n65a, n68a, n58c, n60a, n61a, n62a, n64a.
+2. **MSA J48 round 3 is DUE** (agreed for after the usage reset, Thu 22 Oct ~7 pm, plan j48p10): this session's worker restarted around then and it was not started. It is the next session's first job (step 2 check needs n48e).
+3. **J72 sweep, rest**: Hadith, Dua, Seerah and Asma pop-ups to the home size with ← Back (the Writing sheet stays full screen, decision 83).
+4. **Pre-existing reds on `main`** (offered to the Owner): bookmark-marks-back 12, audit-part14 8, audit-part1 4, read-window 4 (contrast of "Before Al-Fātiḥah" 2.85:1), global-approach-card 2; audit-part15 intermittent page error (lemma-wide word progress, "A valid, bounded Surah ayah range is required").
+
+**Owner messages this session (carry1), each filed in the PCF job named**
+1. ~9:10 am: the Mastery Wheel window ("resizeable from all side and all corners … this size globally for all pop-ups … global check … same size … back button") → J72 (released v12.20).
+2. ~9:35 am: Vocabulary ("opens to this wide screen, make it open popup as the same standard size"; "Learn, Practice or Step test buttons do not do anything") → J73 (released v12.20).
+3. ~11:05 am: "n71a: A. n72a: A, n72b. B" → J71/J72 recorded; n72b B built as J74 (v12.21). Same message: "Is it possible to enable writing through mouse in PC and Laptop?" → J76 (answered; n76a).
+4. ~11:10 am: two phone screenshots of the Meaning flow ("Make one row of buttons … Page number twice … Tiny line takes space") → J75 (v12.21).
+5. Evening: "How to orgsnise buttons in one row? Write only 'Surah', discard ' list', For English, write only Eng. Mushaf only icon." → J75 part 2 (v12.21).
+
+**Lessons**
+- **Never switch a checkout's branch while its suites run against it**: the served files change mid-run and the results are invalid. One worktree per job, each on its own port (this session: 8083 for the work, 8084 a clean `main` for baselines).
+- **Compare a red suite with `main` at the SAME version before calling it yours**: here 7 suites were already red on v12.20; audit-part12 had been red since J70 (v12.19) unnoticed.
+- **A "shared" state needs a gesture guard**: the landing window re-took the shared rect in the middle of its own drag (a ResizeObserver refit) and snapped back; a `gesture` flag fixed it.
+- **A delegated click handler near the target runs before a document-level one**: the page-window handler on the nav would have taken Mapping My Journey from its tray (journey-tray.js listens on document); exclude it, and check it.
+- **A test that seeds a remembered rect must seed the shared one too** once windows share one; and a selector `a[href$=".html"]` breaks the day a link gains a query (`navBack=1`): use `^=` or the pathname.
+- **`pkill -f` with a pattern in your own command line kills your own shell (again, exit 144)**: kill by PID from `pgrep` + `/proc/<pid>/cwd`.
+
+## LATEST UPDATE — 22 Oct 2026, 8:45 am Sydney, session `session_01NRUt1vXovcsHryRwq8E6J6` (v12.19 live on MSA AND QR; J71 demo next; HANDOVER) — superseded by the 22 Oct 11:20 pm block above, kept as history
 
 Took over 6:31 pm 21 Oct from `session_017XmUaxwDGhjaQExeKYwYJj`. Handing over at ~40% context (cost86/hand119).
 **`main` is v12.19, live on MSA and QR since 8:39 am 22 Oct (build-from-msa dispatched after merge `40ef7bb1`). QR's 20 checks on v12.19: the result is in the PCA message "PCA ▸ handover ready" (v12.17 and v12.18 were 20/20). Next release: v12.20.** The PCA is `session_019xuGwr6uFeQUpKmERwBPxX`.
