@@ -193,8 +193,11 @@ for (const lang of ["en", "bn"]) for (const width of [1280, 390]) {
     await toggleEdit(W);
     await P.waitForSelector(`${W} [data-edit-body]`, { timeout: 5000 }).catch(() => {});
     await P.waitForTimeout(250);
-    const wide = await P.evaluate((w) => { const t = document.querySelector(w + " [data-edit-toolbar]"); return { grouped: t.classList.contains("tb-grouped"), tabsShown: getComputedStyle(t.querySelector("[data-tb-tabs]")).display !== "none", w: document.querySelector(w + " [data-pane-body]").clientWidth }; }, W);
-    check(`${tag}: a wide Note (${wide.w}px) keeps every tool in one row`, !wide.grouped && !wide.tabsShown && wide.w >= 600, JSON.stringify(wide));
+    // UPDATED IN PLACE 23 Oct 2026 (PCF MSA J71, the Owner ticked B): a wide Note no longer keeps all 34 tools in one
+    // row (it ran ~1530px and scrolled sideways even in a 1480px window). It shows the five group tabs and the chosen
+    // group's tools on ONE line (tb-inline), with nothing scrolling sideways.
+    const wide = await P.evaluate((w) => { const t = document.querySelector(w + " [data-edit-toolbar]"); const tabs = t.querySelector("[data-tb-tabs]").getBoundingClientRect(); const on = [...t.querySelectorAll("[data-tb-g].tb-on")].filter((b) => b.getBoundingClientRect().width > 0); return { grouped: t.classList.contains("tb-grouped"), inline: t.classList.contains("tb-inline"), tabsShown: tabs.width > 0, oneLine: on.length > 0 && on.every((b) => Math.abs(b.getBoundingClientRect().top - tabs.top) <= 4), sideways: t.scrollWidth - t.clientWidth, w: document.querySelector(w + " [data-pane-body]").clientWidth }; }, W);
+    check(`${tag}: a wide Note (${wide.w}px) shows the five group tabs and the chosen group's tools on one line, nothing sideways`, wide.grouped && wide.inline && wide.tabsShown && wide.oneLine && wide.sideways <= 1 && wide.w >= 600, JSON.stringify(wide));
     await toggleEdit(W);
   }
 

@@ -29,6 +29,7 @@ import { NOTE_IMAGE_WIDTHS, NOTE_IMAGE_ALT_MAX } from "./note-image-path.js";
 import { sheetInsertHtml, mountSheets } from "./note-sheet-ui.js";
 import { headingStyleCss, PALETTE, LIMITS as SETTING_LIMITS, cleanText as cleanSettingText } from "./note-user-settings.js";
 import { HANDLES, handleCss, clampRect, startDrag } from "./float-window.js";
+import { restoreWindow } from "./minimise.js";
 
 const escapeHtml = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
@@ -422,10 +423,12 @@ export function createNoteViews(host) {
   const HIGHLIGHTS = [["#FFF59D", "Yellow"], ["#C8E6C9", "Light green"], ["#BBDEFB", "Light blue"], ["#F8BBD0", "Pink"], ["#E1BEE7", "Lavender"], ["#FFE0B2", "Orange"]];
   const isHeadingEl = (n) => n?.nodeType === 1 && /^H[1-4]$/.test(n.tagName);
 
-  // Note-pane round 4 (item 28): on a narrow Note the toolbar shows five labelled groups (Siyagah's palettes); the
-  // chosen group's tools sit under them, so nothing scrolls sideways. A wide Note keeps the one row.
+  // Note-pane round 4 (item 28): the toolbar shows five labelled groups (Siyagah's palettes) and the chosen group's
+  // tools, so nothing scrolls sideways. The Owner, 23 Oct 2026 (PCF MSA J71, ticked B): at EVERY width -- a wide Note
+  // used to keep one row of all 34 tools, which ran ~1530px and scrolled sideways even in a 1480px window. From 600px
+  // the tabs and the chosen group's tools share a line (tb-inline); a narrower Note puts the tools under the tabs.
   const TOOL_GROUPS = [["Aa", "Text"], ["H", "Headings"], ["≡", "Paragraph"], ["+", "Insert"], ["↺", "Undo"]];
-  const TOOLBAR_GROUPED_BELOW = 600;
+  const TOOLBAR_INLINE_FROM = 600;
   function renderEditToolbar(v) {
     const label = (k) => escapeHtml(t(k));
     let g = 0;
@@ -442,8 +445,8 @@ export function createNoteViews(host) {
     const tb = v.editToolbarEl;
     if (!tb || tb.hidden || !v.ed) return;
     const width = (v.bodyEl.clientWidth || v.el.clientWidth);
-    const grouped = width > 0 && width < TOOLBAR_GROUPED_BELOW;
-    tb.classList.toggle("tb-grouped", grouped);
+    tb.classList.add("tb-grouped");
+    tb.classList.toggle("tb-inline", width >= TOOLBAR_INLINE_FROM);
     for (const b of tb.querySelectorAll("[data-tb-g]")) b.classList.toggle("tb-on", Number(b.dataset.tbG) === v.tbOpen);
     for (const b of tb.querySelectorAll("[data-tb-tab]")) b.setAttribute("aria-selected", String(Number(b.dataset.tbTab) === v.tbOpen));
   }
@@ -2797,7 +2800,7 @@ export function createNoteViews(host) {
     if (winOrder[winOrder.length - 1] !== v) { winOrder = winOrder.filter((x) => x !== v); winOrder.push(v); layoutWindows(); }
   }
   function focusView(v) {
-    if (v.win) { bringToFront(v); v.win.focus({ preventScroll: true }); }
+    if (v.win) { restoreWindow(v.win); bringToFront(v); v.win.focus({ preventScroll: true }); } // J81: a minimised window comes back
     else { v.el.scrollIntoView?.({ block: "nearest" }); v.el.focus?.({ preventScroll: true }); }
   }
   /** The bottom switcher: only on a sheet, only with more than one window open. */
