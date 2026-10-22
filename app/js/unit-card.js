@@ -121,6 +121,7 @@ export function renderUnitCardHtml({
   approachStatuses = [],
   achievedLine = "", wbwLine = "",
   insideTitle = "", insideItems = [],
+  fullTextHtml = "",
 } = {}) {
   const actionsHtml = [
     noteItemHtml(),
@@ -128,20 +129,36 @@ export function renderUnitCardHtml({
     playItemHtml(),
     markAsReadItemHtml(markAsRead),
   ].join("");
+  // The Owner, 23 Oct 2026 ("all tabs should render same view as the Ayah in the Ayah Card view"): the same bars and
+  // the same two panes as the Āyah card (ayah-action-sheet.js), so on a PC ayah-card-window.js opens it as the same
+  // large window -- the unit's āyāt on the left (filled in by the page once the card is open: `fullTextHtml`), its
+  // Approach, Record, actions and Status on the right. Below 900px the panes are invisible wrappers and the text pane
+  // is hidden, so a phone keeps exactly the one column it had.
   return `
     <div class="ayah-sheet unit-card" data-unit-card data-unit-type="${escapeHtml(unitType)}" data-unit-key="${escapeHtml(unitKey)}" role="dialog" aria-modal="true" aria-label="${escapeHtml(unitLabel || ref)}">
       <div class="ayah-sheet-handle" aria-hidden="true"></div>
       ${ladderHtml}
       <div class="ayah-sheet-header">
+        <button type="button" class="ayah-sheet-homeback" data-unit-card-close data-unit-card-homeback aria-label="${escapeHtml(t("Back"))}" title="${escapeHtml(t("Back"))}">←</button>
         <span class="ayah-sheet-ref">${escapeHtml(unitLabel)}${ref ? ` · ${escapeHtml(ref)}` : ""}</span>
         <button type="button" class="ayah-sheet-close" data-unit-card-close aria-label="${escapeHtml(t("Close"))}">×</button>
       </div>
+      <div class="ayah-sheet-panes" data-ayah-sheet-panes>
+      <section class="ayah-sheet-pane-text" data-ayah-sheet-text>
+        <button type="button" class="ayah-sheet-squeezed" data-ayah-sheet-showboth data-squeezed-for="text"><span aria-hidden="true">📖</span> ${escapeHtml(t("Full text"))} <span class="ayah-sheet-squeezed-hint">${escapeHtml(t("Show both halves"))}</span></button>
+        <div class="ayah-sheet-pane-head"><h3 class="ayah-sheet-section-title">${escapeHtml(t("Full text"))}</h3>
+          <button type="button" class="ayah-sheet-pane-max" data-ayah-sheet-textfull aria-label="${escapeHtml(t("Full text across the whole card"))}" title="${escapeHtml(t("Full text across the whole card"))}">⤢</button></div>
+        <div class="ayah-sheet-ft" data-unit-card-ft>${fullTextHtml || `<p class="ayah-status-empty">${escapeHtml(t("Loading…"))}</p>`}</div>
+      </section>
+      <div class="ayah-sheet-splitter" data-ayah-sheet-splitter role="separator" aria-orientation="vertical" tabindex="0" aria-label="${escapeHtml(t("Drag to resize the two halves"))}" title="${escapeHtml(t("Drag to resize the two halves"))}"></div>
+      <div class="ayah-sheet-pane-info" data-ayah-sheet-paneinfo>
+      <button type="button" class="ayah-sheet-squeezed" data-ayah-sheet-showboth data-squeezed-for="info"><span aria-hidden="true">🎯</span> ${escapeHtml(t("Status, Approach and Info"))} <span class="ayah-sheet-squeezed-hint">${escapeHtml(t("Show both halves"))}</span></button>
       <div class="ayah-sheet-body">
         ${renderApproachStagePickerHtml({ approachOptionsHtml, selectedApproachId, selectedApproachStatusId, selectId: "unitCardApproachSelect", approachSummary, canConfirm })}
         ${countsForEachAyahLineHtml(countsForEachAyahYes)}
         ${actionsHtml}
       </div>
-      <div class="ayah-sheet-status" data-unit-card-status>
+      <div class="ayah-sheet-status" data-unit-card-status data-ayah-sheet-status>
         <h3 class="ayah-sheet-section-title">${escapeHtml(t("Status of this unit"))}</h3>
         <div class="ayah-status-block">
           <h4 class="ayah-status-heading">${escapeHtml(t("Approach"))}</h4>
@@ -156,7 +173,27 @@ export function renderUnitCardHtml({
         </div>
       </div>
       ${insideSectionHtml(insideTitle, insideItems)}
+      </div>
+      </div>
     </div>`;
+}
+
+/**
+ * The left pane of the unit card as a window: every āyah of the unit, its Arabic and (in one remembered
+ * "Translations" section per āyah, the same `data-ayah-ft-sec="tr"` as the Āyah card) its English and Bangla.
+ * `ayahs`: [{ surah, ayah, arabic, en, bn }] in order; null: could not be loaded (said in words).
+ */
+export function unitFullTextHtml(ayahs) {
+  if (!ayahs) return `<p class="ayah-status-empty">${escapeHtml(t("Couldn't load this unit's text just now."))}</p>`;
+  const tr = (text, lang, label) => text ? `<div class="ayah-ft-tr"><span class="ayah-ft-label">${escapeHtml(label)}</span><p lang="${lang}">${escapeHtml(text)}</p></div>` : "";
+  return ayahs.map((a) => {
+    const trs = tr(a.en, "en", t("English")) + tr(a.bn, "bn", t("Bangla"));
+    return `<div class="unit-ft-ayah" data-unit-ft-ayah="${escapeHtml(`${a.surah}:${a.ayah}`)}">
+        <span class="unit-ft-ref">${escapeHtml(`${num(a.surah)}:${num(a.ayah)}`)}</span>
+        <p class="ayah-ft-ar" dir="rtl" lang="ar" data-i18n-skip>${escapeHtml(a.arabic ?? "")}</p>
+        ${trs ? `<details class="ayah-ft-sec" data-ayah-ft-sec="tr" open><summary>${escapeHtml(t("Translations"))}</summary>${trs}</details>` : ""}
+      </div>`;
+  }).join("");
 }
 
 /**
