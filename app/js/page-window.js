@@ -109,7 +109,7 @@ export function wirePageWindowLinks(navEl) {
     const a = e.target.closest("a.nav-link[href]");
     if (!a || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || a.target === "_blank") return;
     const u = new URL(a.getAttribute("href"), location.href);
-    if (u.origin !== location.origin || !/\.html$/.test(u.pathname) || /\/(quranrevival|index)\.html$/.test(u.pathname)) return;
+    if (u.origin !== location.origin || !/\.html$/.test(u.pathname) || /\/(quranrevival|index|journey-map)\.html$/.test(u.pathname)) return; // Mapping My Journey keeps its own tray (journey-tray.js)
     if (!openPageWindow(u.href, a.textContent.trim())) return;
     e.preventDefault();
     a.closest("details")?.removeAttribute("open"); // the menu folds away, as it does after a tap

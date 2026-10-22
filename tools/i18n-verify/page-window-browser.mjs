@@ -10,6 +10,7 @@
 //   --mutate=nowindow  the menus keep plain links          -> (1) fails
 //   --mutate=nohide    the page inside keeps its menu row   -> (2) fails
 //   --mutate=noback    ← Back does nothing                  -> (3) fails
+//   --mutate=takesjourney  the window takes Mapping My Journey -> its tray check fails
 import { chromium, newContext, openPage } from "./harness.mjs";
 import fs from "node:fs";
 
@@ -23,6 +24,7 @@ const MUT = {
   nowindow: ["js/page-window.js", "  navEl.addEventListener(\"click\", (e) => {", "  if (true) return;\n  navEl.addEventListener(\"click\", (e) => {"],
   nohide: ["js/nav.js", "html.in-window .app-nav, ", ""],
   noback: ["js/page-window.js", "back.addEventListener(\"click\", closePageWindow);", "void 0;"],
+  takesjourney: ["js/page-window.js", "(quranrevival|index|journey-map)", "(quranrevival|index)"],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
@@ -61,6 +63,11 @@ for (const lang of ["en", "bn"]) {
     await P.click("#pageWindow [data-pgw-back]"); await P.waitForTimeout(300);
     check(`${tag} ${file}: ← Back closes it, back on the landing screen`, !(await winState(P)) && /quranrevival\.html/.test(P.url()) && (await P.evaluate(() => document.getElementById("wheelPopupView").getBoundingClientRect().width > 0)));
   }
+  // Mapping My Journey keeps its own tray (journey-tray.js); the page window never takes it
+  await clickMenu(P, "journey-map.html"); await P.waitForTimeout(1200);
+  const jt = await P.evaluate(() => ({ tray: !!document.querySelector("#journeyTray:not([hidden])"), win: !!document.querySelector("#pageWindow:not([hidden])") }));
+  check(`${tag} Mapping My Journey from the menu still opens its own tray, not a page window`, jt.tray && !jt.win, JSON.stringify(jt));
+  await P.evaluate(() => document.querySelector("#journeyTray .jt-close")?.click()); await P.waitForTimeout(300);
   await clickMenu(P, "records.html"); await P.waitForTimeout(1200);
   await P.click("#pageWindow [data-pgw-close]"); await P.waitForTimeout(250);
   check(`${tag} ✕ closes it`, !(await winState(P)));

@@ -152,14 +152,14 @@ for (const lang of ["en", "bn"]) {
   check("full page: header shows and no tray exists", d.h1 !== "none" && !d.tray, JSON.stringify(d));
   await ctx.close();
 }
-// A nav link opens the tray.
+// A nav link opens the tray. (Updated in place for v12.20, PCF MSA J72: a menu link carries ?navBack=1, so it no longer ENDS in .html.)
 {
   const ctx = await newContext(browser, { viewport: { width: 1280, height: 800 } });
   const { page } = await openPage(ctx, "/app/notes.html");
   const url0 = page.url();
-  const n = await page.evaluate(() => { const a = [...document.querySelectorAll('a[href$="journey-map.html"]')][0]; return !!a; });
+  const n = await page.evaluate(() => { const a = [...document.querySelectorAll('a[href^="journey-map.html"]')][0]; return !!a; });
   if (n) {
-    await page.evaluate(() => { document.querySelector('a[href$="journey-map.html"]').click(); });
+    await page.evaluate(() => { document.querySelector('a[href^="journey-map.html"]').click(); });
     await page.waitForSelector("#journeyTray:not([hidden])", { timeout: 5000 }).catch(() => {});
     check("nav link opens the tray without navigating", page.url() === url0 && await page.evaluate(() => !document.getElementById("journeyTray")?.hidden), page.url());
   } else check("nav link to Mapping My Journey exists on notes.html", false);
