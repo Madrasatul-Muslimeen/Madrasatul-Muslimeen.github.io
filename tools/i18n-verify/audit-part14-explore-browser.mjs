@@ -276,7 +276,8 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     await ev(page, () => document.querySelector('.aa-sheet [data-aa-act="read"]').click());
     await page.waitForFunction(() => !document.getElementById("readView").hidden, null, { timeout: 8000 });
     await settle(page, 900);
-    const pill = await ev(page, () => { const b = document.querySelector("#ayahCardBackPill [data-ayah-card-back]"); const r = b?.getBoundingClientRect(); return { text: b?.innerText.replace(/\s+/g, " ") ?? null, r: r && { left: r.left, right: r.right, top: r.top, bottom: r.bottom, width: r.width, height: r.height }, shown: !!r && r.width > 0 }; });
+    // v12.16 (PCF MSA J63): below 600px the Back pill draws only a 44px "←" and keeps its words as aria-label/title, so a pill showing only the arrow is read by its words. Updated in place, reason recorded.
+    const pill = await ev(page, () => { const b = document.querySelector("#ayahCardBackPill [data-ayah-card-back]"); const r = b?.getBoundingClientRect(); return { text: (b ? (b.innerText.trim() === "←" ? `← ${b.getAttribute("aria-label") ?? ""}` : b.innerText) : null)?.replace(/\s+/g, " ") ?? null, r: r && { left: r.left, right: r.right, top: r.top, bottom: r.bottom, width: r.width, height: r.height }, shown: !!r && r.width > 0 }; });
     if (PROBE) console.log(t, "pill", JSON.stringify(pill));
     check(`${t}: Read opens the reading view and leaves a visible "Back to Explore" pill, on screen`, pill.shown && /Explore|অন্বেষণ/.test(pill.text) && inside(pill.r, width, vh), JSON.stringify(pill));
     await page.click("#ayahCardBackPill [data-ayah-card-back]"); await settle(page, 1500);
@@ -307,7 +308,8 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     await page.waitForFunction(() => !document.getElementById("readView").hidden, null, { timeout: 10000 });
     await settle(page, 1200);
     const [, sn, an] = pick.key.match(/^ayah:(\d+):(\d+)/) || [];
-    const read = await ev(page, () => ({ surah: document.getElementById("surahSelect")?.value, ayah: document.getElementById("ayahSelect")?.value, pill: document.querySelector("#ayahCardBackPill [data-ayah-card-back]")?.innerText.replace(/\s+/g, " ") ?? null }));
+    // v12.16 (PCF MSA J63): below 600px the Back pill draws only a 44px "←" and keeps its words as aria-label/title, so a pill showing only the arrow is read by its words. Updated in place, reason recorded.
+    const read = await ev(page, () => ({ surah: document.getElementById("surahSelect")?.value, ayah: document.getElementById("ayahSelect")?.value, pill: ((b) => (b ? (b.innerText.trim() === "←" ? `← ${b.getAttribute("aria-label") ?? ""}` : b.innerText) : null)?.replace(/\s+/g, " "))(document.querySelector("#ayahCardBackPill [data-ayah-card-back]")) ?? null }));
     if (PROBE) console.log(t, "read", JSON.stringify(read));
     check(`${t}: tapping a row opens that āyah in the Read view (${pick.key})`, read.surah === sn && read.ayah === an, JSON.stringify(read));
     check(`${t}: a "Back to QCR" pill is on screen`, !!read.pill && /QCR/.test(read.pill) && inside(await rectOf(page, "#ayahCardBackPill [data-ayah-card-back]"), width, vh), String(read.pill));
