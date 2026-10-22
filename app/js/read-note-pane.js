@@ -14,6 +14,7 @@
 import { t } from "./i18n.js";
 import { HANDLES, handleCss, startDrag } from "./float-window.js";
 import { homeRect, setHomeRect, SHARED as HOME_SHARED } from "./home-window.js";
+import { restoreWindow } from "./minimise.js";
 
 export const PHONE = 600, SIDE_FROM = 1100;
 // PCF MSA J68 part 4: from WINDOW_FROM px the pane is a window (move by its bar, resize from 8 handles), remembered per device.
@@ -421,6 +422,7 @@ export function readNotePaneUnit() { return unit; }
     after it closes (the button takes the focus back). `backLabel` names the way back when it is not the āyah. */
 export function openReadNotePane(u, whenClosed = null, { tab = "notes", backLabel = null, focusNew = false, rect: cardRect = null } = {}) {
   if (!pane) build();
+  restoreWindow(pane); // PCF MSA J81: opening it again brings a minimised pane back
   onClose = whenClosed;
   const first = !frame.getAttribute("src");
   if (first) frame.setAttribute("src", srcFor(u, { focusNew }));

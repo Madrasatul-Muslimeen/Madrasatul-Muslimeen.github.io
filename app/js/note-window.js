@@ -29,6 +29,7 @@ import { NOTE_IMAGE_WIDTHS, NOTE_IMAGE_ALT_MAX } from "./note-image-path.js";
 import { sheetInsertHtml, mountSheets } from "./note-sheet-ui.js";
 import { headingStyleCss, PALETTE, LIMITS as SETTING_LIMITS, cleanText as cleanSettingText } from "./note-user-settings.js";
 import { HANDLES, handleCss, clampRect, startDrag } from "./float-window.js";
+import { restoreWindow } from "./minimise.js";
 
 const escapeHtml = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
@@ -2799,7 +2800,7 @@ export function createNoteViews(host) {
     if (winOrder[winOrder.length - 1] !== v) { winOrder = winOrder.filter((x) => x !== v); winOrder.push(v); layoutWindows(); }
   }
   function focusView(v) {
-    if (v.win) { bringToFront(v); v.win.focus({ preventScroll: true }); }
+    if (v.win) { restoreWindow(v.win); bringToFront(v); v.win.focus({ preventScroll: true }); } // J81: a minimised window comes back
     else { v.el.scrollIntoView?.({ block: "nearest" }); v.el.focus?.({ preventScroll: true }); }
   }
   /** The bottom switcher: only on a sheet, only with more than one window open. */

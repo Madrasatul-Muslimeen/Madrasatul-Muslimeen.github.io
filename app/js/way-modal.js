@@ -10,6 +10,7 @@ import { summarizeStatuses, STATUSES, statusLabel } from "./unit-keys.js";
 import { t, num } from "./i18n.js";
 import { STATUS_COLORS } from "./mastery-wheel.js";
 import { placeDialogAtHome } from "./home-window.js";
+import { restoreWindow } from "./minimise.js"; // PCF MSA J81: the – beside ✕
 // Multi-student round -- renderAssignDropdown()/checkedAssignees() moved to
 // their own file so bookmark-popover.js (a Claim-free, Firebase-free popover
 // component) could reuse them too, without pulling in this file's own
@@ -200,6 +201,7 @@ export function attachWayModalHandlers(modalEl, { onClose } = {}) {
   ensureWayModalCss();
   const box = modalEl.parentElement?.id === "wayModalMount" ? modalEl.parentElement : modalEl;
   placeDialogAtHome(box);
+  restoreWindow(box); // J81: a Track window opened while the last one was minimised is shown
 }
 
 let wayCssAdded = false;

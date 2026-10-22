@@ -7221,6 +7221,7 @@
     // ladder shared with the Ayah Card, both pure renderers reusing the same
     // Approach four-stage picker and Approach-status strip as the cards above.
     import { renderUnitCardHtml, attachUnitCardHandlers } from "./js/unit-card.js";
+    import { restoreWindow } from "./js/minimise.js"; // PCF MSA J81: the – beside ✕ on every pop-up
     import { renderUnitLadderHtml } from "./js/unit-ladder.js";
     import { resolveUnitInfo, ladderRungsForAyah } from "./js/unit-resolve.js";
     import { unitBoundaryMarkersInWindow } from "./js/unit-markers.js";
@@ -21431,7 +21432,7 @@
       pageApproachCardPageNum = pageNum;
       pageApproachCardSelectedApproachId = mushafRingApproachId; // same reason as openAyahActionSheet()
       renderPageApproachCardNow();
-      ayahActionSheetOverlayEl.classList.add("open");
+      ayahActionSheetOverlayEl.classList.add("open"); restoreWindow(ayahActionSheetOverlayEl); // J81: a card opened while minimised is shown
     }
 
     // ===================== Issue #348 -- the Unit Card =====================
@@ -21853,7 +21854,7 @@
       // Study options), so the counts and Inside colours show at once.
       unitCardSelectedApproachId = endOfUnitApproachId();
       renderUnitCardNow();
-      ayahActionSheetOverlayEl.classList.add("open");
+      ayahActionSheetOverlayEl.classList.add("open"); restoreWindow(ayahActionSheetOverlayEl); // J81: a card opened while minimised is shown
     }
 
     function closeUnitCard() {
@@ -22321,7 +22322,7 @@
       ayahSheetSelectedApproachId = mushafRingApproachId;
       clearAyahCardReturn(); // the card is open again: no "back to it" needed
       renderAyahActionSheetNow();
-      ayahActionSheetOverlayEl.classList.add("open");
+      ayahActionSheetOverlayEl.classList.add("open"); restoreWindow(ayahActionSheetOverlayEl); // J81: a card opened while minimised is shown
       ensureAyahSheetRelatedLoaded(unitKey, surahNum, ayahNum);
       ensureAyahSheetConnectedLoaded(unitKey, surahNum, ayahNum);
       ensureAyahSheetHadithLoaded(unitKey, surahNum, ayahNum);
@@ -22342,7 +22343,7 @@
       ayahSheetSelectedApproachId = mushafRingApproachId || endOfUnitApproachId();
       clearAyahCardReturn();
       renderAyahActionSheetNow();
-      ayahActionSheetOverlayEl.classList.add("open");
+      ayahActionSheetOverlayEl.classList.add("open"); restoreWindow(ayahActionSheetOverlayEl); // J81: a card opened while minimised is shown
       ensureAyahNoteDataLoaded().then(() => { if (ayahSheetUnitKey === unitKey) renderAyahActionSheetNow(); });
     }
 
