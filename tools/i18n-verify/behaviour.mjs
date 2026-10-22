@@ -1959,7 +1959,8 @@ console.log("\n=== 30. Shell round 18: unit numbers, transport, reading view ===
   // v10.27 (the Owner, 12 Oct 2026: "Move those buttons up" and "Add bookmark button on the top of the Mushaf page") -- #readMeaningLayersSlot (the Meaning switches, on the bar while 📖 is on) joined before #readBackSlot, and #readBarBookmarkBtn (🔖 on the Mushaf bar) before 📖; in Mushaf view ⋯'s #readBookmarkBtn steps aside so 🔖 is shown once. Updated in place, reason recorded.
   check("30j prev unit, prev āyah, next āyah, next unit, play, stop, full screen, bookmark and reading-complete are on the reading screen",
         // v11.35 (QR J16 = PCF MSA J37) -- #readMushafBtn (📜) joined #readBarEnd before 📖. Updated in place, reason recorded.
-        transport.visible && JSON.stringify(transport.buttons) === '["readListBtn","readUnitChip","prevUnitBtn","prevAyahBtn","nextAyahBtn","nextUnitBtn","readPlayBtn","readStopBtn","readBarBookmarkBtn","readMushafBtn","readMeaningBtn","hideChromeBtn","readWindowBtn","readToolsBtn","readBookmarkBtn","readNotesBtn","readCompleteBtn","readWritingBtn","readAttachAsmaBtn"]', JSON.stringify(transport));
+  // v12.16 (J63, 21 Oct 2026: "Attach to QCR tile") -- #readAttachQcrBtn joined the tools after #readAttachAsmaBtn. Updated in place, reason recorded.
+        transport.visible && JSON.stringify(transport.buttons) === '["readListBtn","readUnitChip","prevUnitBtn","prevAyahBtn","nextAyahBtn","nextUnitBtn","readPlayBtn","readStopBtn","readBarBookmarkBtn","readMushafBtn","readMeaningBtn","hideChromeBtn","readWindowBtn","readToolsBtn","readBookmarkBtn","readNotesBtn","readCompleteBtn","readWritingBtn","readAttachAsmaBtn","readAttachQcrBtn"]', JSON.stringify(transport));
   check("30j the separate 'Whole surah' button is gone (Play follows the unit)", transport.noWholeSurah);
   check("30j the merged button is named Play while nothing is playing",
         /Play|চালান/.test(transport.playLabel) && !/Pause|থামান/.test(transport.playLabel), transport.playLabel);
@@ -2013,8 +2014,9 @@ console.log("\n=== 30l. Round 18's own controls in Bangla ===");
   // v10.21 -- #readMeaningBtn and #readToolsBtn joined; seventeen now, their Bangla names part of the I11 evidence. Updated in place, reason recorded.
   // v10.27 (the Owner, 12 Oct 2026: "Move those buttons up" and "Add bookmark button on the top of the Mushaf page") -- #readMeaningLayersSlot (the Meaning switches, on the bar while 📖 is on) joined before #readBackSlot, and #readBarBookmarkBtn (🔖 on the Mushaf bar) before 📖; in Mushaf view ⋯'s #readBookmarkBtn steps aside so 🔖 is shown once. Eighteen now, #readBarBookmarkBtn's Bangla name part of the I11 evidence. Updated in place, reason recorded.
   // v11.35 (QR J16 = PCF MSA J37) -- #readMushafBtn (📜) joined before 📖; nineteen now, its Bangla name মুসহাফ দৃশ্য part of the I11 evidence. Updated in place, reason recorded.
+  // v12.16 (J63) -- #readAttachQcrBtn joined the tools; twenty now, its Bangla name "QCR-এ যুক্ত করুন" part of the I11 evidence. Updated in place, reason recorded.
   check("30l every reading-screen control is NAMED in Bangla",
-        t18.length === 19 && t18.every((x) => BANGLA.test(x)), JSON.stringify(t18));
+        t18.length === 20 && t18.every((x) => BANGLA.test(x)), JSON.stringify(t18));
   await page.close();
   await ctx.close();
 }
@@ -2585,7 +2587,8 @@ const readRef = readingRef; // round 22: #readRef is retired, see readingRef abo
   // v10.27 (the Owner, 12 Oct 2026: "Move those buttons up" and "Add bookmark button on the top of the Mushaf page") -- #readMeaningLayersSlot (the Meaning switches, on the bar while 📖 is on) joined before #readBackSlot, and #readBarBookmarkBtn (🔖 on the Mushaf bar) before 📖; in Mushaf view ⋯'s #readBookmarkBtn steps aside so 🔖 is shown once. Updated in place, reason recorded.
   check("33a the read bar is Prev unit · Prev āyah · Next āyah · Next unit · Play · Stop · Full screen · Bookmark · Reading complete · ⋮ slot",
         // v11.35 (QR J16 = PCF MSA J37) -- #readMushafBtn (📜) joined #readBarEnd before 📖. Updated in place, reason recorded.
-        bar.ids.join() === "readListBtn,mushafPageRef,readApproachBar,readUnitChip,prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,readQuickRow,readMeaningLayersSlot,readBackSlot,readBarEnd,readBarBookmarkBtn,readMushafBtn,readMeaningBtn,hideChromeBtn,readWindowBtn,readToolsBtn,readToolsMenu,readTextSizeSlot,readBookmarkBtn,readNotesBtn,readCompleteBtn,readWritingBtn,readAttachAsmaBtn,readQuickMenuSlot,readCompleteMsg",
+  // v12.16 (J63, 21 Oct 2026: "Attach to QCR tile") -- #readAttachQcrBtn joined the tools after #readAttachAsmaBtn. Updated in place, reason recorded.
+        bar.ids.join() === "readListBtn,mushafPageRef,readApproachBar,readUnitChip,prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,readQuickRow,readMeaningLayersSlot,readBackSlot,readBarEnd,readBarBookmarkBtn,readMushafBtn,readMeaningBtn,hideChromeBtn,readWindowBtn,readToolsBtn,readToolsMenu,readTextSizeSlot,readBookmarkBtn,readNotesBtn,readCompleteBtn,readWritingBtn,readAttachAsmaBtn,readAttachQcrBtn,readQuickMenuSlot,readCompleteMsg",
         JSON.stringify(bar.ids));
   check("33a the '◂ Mastery Wheel' button is gone (the Read tab does it)", bar.noBack);
   check("33a the separate Pause button is gone", bar.noSeparatePause);
@@ -3231,10 +3234,15 @@ console.log("\n=== 36. Shell round 24: word-by-word direction and transliteratio
       translits: chips.filter((c) => c.querySelector(".wbw-translit")).length,
       glosses: chips.filter((c) => c.querySelector(".wbw-gloss-bn")).length,
       latin: chips.filter((c) => /[A-Za-z]/.test(c.textContent)).length,
+      bnTranslits: chips.filter((c) => /[\u0980-\u09FF]/.test(c.querySelector(".wbw-translit")?.textContent ?? "")).length,
     };
   });
-  check("36b 'বাংলা only' really means only Bangla — no Latin transliteration",
-        bnOnly.count > 0 && bnOnly.translits === 0, JSON.stringify(bnOnly));
+  // v12.13 (PCF MSA J58, "Bangla transliteration everywhere"): 'বাংলা only' now shows the transliteration in BANGLA
+  // script, so "no transliteration at all" no longer describes it; what stays true is no LATIN transliteration. A
+  // positive count of Bangla transliterations (one per chip) keeps "no Latin" from passing on an empty chip. Updated in
+  // place, reason recorded.
+  check("36b 'বাংলা only' really means only Bangla — no Latin transliteration (each chip's is in Bangla script)",
+        bnOnly.count > 0 && bnOnly.bnTranslits === bnOnly.count && bnOnly.latin === 0, JSON.stringify(bnOnly));
   check("36b ...and the Bangla gloss is still there", bnOnly.glosses === bnOnly.count, JSON.stringify(bnOnly));
   check("36b ...with no Latin letters left on any chip", bnOnly.latin === 0, JSON.stringify(bnOnly));
 
@@ -3341,7 +3349,8 @@ console.log("\n=== 37. Shell round 25: grammar labels, and the control row ===")
   // v10.27 (the Owner, 12 Oct 2026: "Move those buttons up" and "Add bookmark button on the top of the Mushaf page") -- #readMeaningLayersSlot (the Meaning switches, on the bar while 📖 is on) joined before #readBackSlot, and #readBarBookmarkBtn (🔖 on the Mushaf bar) before 📖; in Mushaf view ⋯'s #readBookmarkBtn steps aside so 🔖 is shown once. Updated in place, reason recorded.
   check("37a the row is Prev unit · Prev āyah · Next āyah · Next unit · Play · Stop · Full screen · Bookmark · Reading complete · ⋮ slot",
         // v11.35 (QR J16 = PCF MSA J37) -- #readMushafBtn (📜) joined #readBarEnd before 📖. Updated in place, reason recorded.
-        m.barKids.join() === "readListBtn,mushafPageRef,readApproachBar,readUnitChip,prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,readQuickRow,readMeaningLayersSlot,readBackSlot,readBarBookmarkBtn,readMushafBtn,readMeaningBtn,hideChromeBtn,readWindowBtn,readToolsBtn,readTextSizeSlot,readBookmarkBtn,readNotesBtn,readCompleteBtn,readWritingBtn,readAttachAsmaBtn,readQuickMenuSlot,readCompleteMsg", JSON.stringify(m.barKids));
+  // v12.16 (J63, 21 Oct 2026: "Attach to QCR tile") -- #readAttachQcrBtn joined the tools after #readAttachAsmaBtn. Updated in place, reason recorded.
+        m.barKids.join() === "readListBtn,mushafPageRef,readApproachBar,readUnitChip,prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,readQuickRow,readMeaningLayersSlot,readBackSlot,readBarBookmarkBtn,readMushafBtn,readMeaningBtn,hideChromeBtn,readWindowBtn,readToolsBtn,readTextSizeSlot,readBookmarkBtn,readNotesBtn,readCompleteBtn,readWritingBtn,readAttachAsmaBtn,readAttachQcrBtn,readQuickMenuSlot,readCompleteMsg", JSON.stringify(m.barKids));
   // `space-between` would leave large, uneven gaps between controls, which
   // is exactly how a stale `space-between` survived this round's first
   // attempt -- checking the gaps directly catches that regardless of how
@@ -4673,7 +4682,9 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
       const vis = (el) => !!el && el.getClientRects().length > 0 && getComputedStyle(el).visibility !== "hidden";
       return {
         gone: document.getElementById("noteView") === null && typeof window.__dormantOpenNoteView === "undefined" && !document.querySelector(".note-view") && !document.querySelector(".note-bar1, .note-bar2"),
-        bar: ["readPlayBtn", "readBookmarkBtn", "readNotesBtn"].map((id) => { const el = document.getElementById(id); return vis(el) || (id !== "readPlayBtn" && !!el?.closest("#readToolsMenu") && vis(document.getElementById("readToolsBtn"))); }),
+        // v12.16 (J63: "the bar's 🔖 shows in the plain Read view too"): from 900px ⋯'s #readBookmarkBtn steps aside for
+        // the bar's own #readBarBookmarkBtn, the same bookmark -- either one on screen counts. Updated in place, reason recorded.
+        bar: ["readPlayBtn", "readBookmarkBtn", "readNotesBtn"].map((id) => { const el = document.getElementById(id); return vis(el) || (id === "readBookmarkBtn" && vis(document.getElementById("readBarBookmarkBtn"))) || (id !== "readPlayBtn" && !!el?.closest("#readToolsMenu") && vis(document.getElementById("readToolsBtn"))); }),
         menu: vis(document.querySelector("#readQuickMenuSlot [data-qm-toggle]")),
         items: ["copy", "share"].every((k) => document.querySelector(`#readQuickMenuSlot [data-qm-sub-toggle="${k}"]`)) && ["wbw", "roots", "derivatives"].every((k) => document.querySelector(`#readQuickMenuSlot [data-qm-${k}]`)),
         overflow: document.documentElement.scrollWidth - innerWidth,
@@ -5317,8 +5328,12 @@ console.log("\n=== 45. Quran bookmarks -- naming prompt, full settings capture/r
   // v10.21 (the Owner, 10 Oct 2026: the Read bar's tools "under one button") -- below 900px the Bookmark button is behind ⋯ More tools: open ⋯ first, then
   // measure it really on screen (in the panel). Updated in place, reason recorded.
   if (await page.evaluate(() => (document.getElementById("readBookmarkBtn")?.getBoundingClientRect().width ?? 0) === 0 && (document.getElementById("readToolsBtn")?.getBoundingClientRect().width ?? 0) > 0)) { await page.click("#readToolsBtn"); await page.waitForTimeout(150); }
+  // v10.27 (12 Oct 2026): from 900px, while the bar's own 🔖 (#readBarBookmarkBtn, the same bookmark) shows, the ⋯ one steps
+  // aside -- measure whichever of the two is on screen. Updated in place, reason recorded (it measured 0x0 and the section
+  // then crashed on clicking it, stopping the suite before sections 45-56).
   const readBmBtn = await page.evaluate(() => {
-    const b = document.getElementById("readBookmarkBtn");
+    const own = document.getElementById("readBookmarkBtn"), bar = document.getElementById("readBarBookmarkBtn");
+    const b = (own?.getBoundingClientRect().width ?? 0) === 0 && (bar?.getBoundingClientRect().width ?? 0) > 0 ? bar : own;
     const r = b?.getBoundingClientRect();
     return { present: !!b, hidden: b?.hidden, w: r?.width ?? 0, h: r?.height ?? 0, label: b?.getAttribute("aria-label"), text: b?.textContent.trim() };
   });

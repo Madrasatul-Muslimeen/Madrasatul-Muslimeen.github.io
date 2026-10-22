@@ -299,7 +299,9 @@ for (const lang of ["en", "bn"]) {
       return { cls: s.className, top: r.top, height: r.height, width: r.width, vw: innerWidth, vh: innerHeight, header: getComputedStyle(s.querySelector(".ayah-sheet-header")).position };
     });
     if (width < 900) check(`[${lang} ${width}] the Ayah Card is full screen too, header pinned`, !!ayahSheet && !/page-approach-card|unit-card/.test(ayahSheet.cls) && ayahSheet.top <= 1 && ayahSheet.height >= ayahSheet.vh - 2 && ayahSheet.header === "sticky", JSON.stringify(ayahSheet));
-    else check(`[${lang} ${width}] the Ayah Card stays the floating panel`, !!ayahSheet && ayahSheet.width < ayahSheet.vw / 2, JSON.stringify(ayahSheet));
+    // v12.20 (PCF MSA J72, "this size globally for all pop-ups"): from 900px the Āyah card is a window at the home size
+    // (ayah-win-set), no longer a panel under half the screen wide. Updated in place, reason recorded.
+    else check(`[${lang} ${width}] the Ayah Card stays a floating window (the home size), inside the screen`, !!ayahSheet && /\bayah-win-set\b/.test(ayahSheet.cls) && ayahSheet.top > 10 && ayahSheet.width <= ayahSheet.vw && ayahSheet.top + ayahSheet.height <= ayahSheet.vh, JSON.stringify(ayahSheet));
     const ayahSummary = await page.evaluate(() => document.querySelector(".ayah-sheet [data-gac-approach-summary] .gac-approach-name")?.textContent.trim());
     check(`[${lang} ${width}] the Ayah Card opens on the same chosen Approach, named in full`, ayahSummary === T[lang].recite, ayahSummary);
     await sweepCard("the Ayah Card");

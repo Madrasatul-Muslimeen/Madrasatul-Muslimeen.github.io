@@ -79,7 +79,10 @@ for (const lang of ["en", "bn"].filter((l) => !ONLY || l === ONLY)) {
       await page.evaluate((lk) => document.documentElement.setAttribute("data-card-look", lk), look);
       const c = await page.evaluate(() => {
         const lum = (rgb) => { const m = rgb.match(/[\d.]+/g).map(Number); const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }; return 0.2126 * f(m[0]) + 0.7152 * f(m[1]) + 0.0722 * f(m[2]); };
-        const bgOf = (el) => { while (el) { const b = getComputedStyle(el).backgroundColor; if (b && !/rgba\(\d+, \d+, \d+, 0\)|transparent/.test(b)) return b; el = el.parentElement; } return "rgb(255, 255, 255)"; };
+        // A see-through background is blended over what is under it (23 Oct 2026: the "Before Al-Fātiḥah" band's 14% gold
+        // wash was read as solid gold, 2.85:1, where the rendered colour is 5.74:1 -- a probe defect, not the app's).
+        const bgOf = (el) => { const layers = []; while (el) { const b = getComputedStyle(el).backgroundColor; const m = (b.match(/[\d.]+/g) || []).map(Number); const a = m.length > 3 ? m[3] : 1; if (a > 0) { layers.push([m[0], m[1], m[2], a]); if (a >= 1) break; } el = el.parentElement; }
+          let c = [255, 255, 255]; for (const [r, g, b2, a] of layers.reverse()) c = [r * a + c[0] * (1 - a), g * a + c[1] * (1 - a), b2 * a + c[2] * (1 - a)]; return `rgb(${c.join(", ")})`; };
         const els = [...document.querySelectorAll("#readScroll p, #readScroll span, #readScroll div")].filter((e) => e.childElementCount === 0 && e.textContent.trim().length > 3 && e.getBoundingClientRect().width > 0);
         let worst = 99, what = "";
         for (const e of els.slice(0, 120)) { const a = lum(getComputedStyle(e).color), b = lum(bgOf(e)); const r = (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05); if (r < worst) { worst = r; what = e.textContent.trim().slice(0, 30); } }

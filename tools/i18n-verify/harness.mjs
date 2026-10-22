@@ -85,7 +85,14 @@ export { chromium };
 /** 10 Oct 2026 (the Owner: the Read bar's tools "under one button so that a row space is saved"): below 900px Text size,
  *  Bookmark, Notes, Mark complete, Writing sheet and Attach to Asma sit behind ⋯ (#readToolsBtn). Clicks `sel` the way a
  *  reader would: opening ⋯ first when the tool is not on screen. From 900px it is a plain click. */
+// v10.27 (12 Oct 2026, "Add bookmark button on the top of the Mushaf page") and v12.16 (J63, the bar's 🔖 in the plain Read
+// view too): from 900px, while the bar's own 🔖 (#readBarBookmarkBtn) shows, ⋯'s #readBookmarkBtn steps aside (`#readBar.bar-bm-on`) -- the bar's one forwards to it, the
+// same bookmark. A reader presses the one on screen, so this does too (behaviour.mjs crashed on the hidden twin, measured on v12.22-23,
+// stopping before sections 45-56).
+const READ_TOOL_TWINS = { "#readBookmarkBtn": "#readBarBookmarkBtn" };
 export async function clickReadTool(page, sel) {
+  const twin = READ_TOOL_TWINS[sel];
+  if (twin && await page.evaluate(([s, t]) => (document.querySelector(s)?.getBoundingClientRect().width ?? 0) === 0 && (document.querySelector(t)?.getBoundingClientRect().width ?? 0) > 0, [sel, twin])) sel = twin;
   const shown = await page.evaluate((s) => (document.querySelector(s)?.getBoundingClientRect().width ?? 0) > 0, sel);
   if (!shown && await page.evaluate(() => (document.getElementById("readToolsBtn")?.getBoundingClientRect().width ?? 0) > 0)) {
     await page.click("#readToolsBtn");
