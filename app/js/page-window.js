@@ -10,6 +10,7 @@
 import { t } from "./i18n.js";
 import { HANDLES, handleCss, startDrag } from "./float-window.js";
 import { homeRect, setHomeRect, HOME_FROM } from "./home-window.js";
+import { restoreWindow } from "./minimise.js";
 
 const LIMITS = { minW: 420, minH: 320, bar: 48 };
 const CSS = `
@@ -92,6 +93,7 @@ export function openPageWindow(url, title) {
   rect = r;
   place();
   win.hidden = false;
+  restoreWindow(win); // PCF MSA J81
   win.querySelector("[data-pgw-back]").focus({ preventScroll: true });
   return true;
 }

@@ -436,7 +436,8 @@
   html.pane-tabs-hosted #notePane.pane-editing > .note-pane-bar { order: -3; }
   html.pane-tabs-hosted #notePane.pane-editing > .note-find-bar { order: -2; }
   html.pane-tabs-hosted #notePane.pane-editing > .pane-edit-toolbar { order: -1; margin: 0 0 0.5rem; }
-  html.pane-tabs-hosted #notePane .pane-edit-toolbar.tb-grouped { flex-wrap: nowrap; overflow-x: auto; }
+  /* J71 (B, 23 Oct 2026): it wraps rather than scrolling sideways when the line is full. */
+  html.pane-tabs-hosted #notePane .pane-edit-toolbar.tb-grouped { flex-wrap: wrap; overflow-x: visible; }
   html.pane-tabs-hosted #notePane .pane-edit-toolbar.tb-grouped .tb-tabs { flex: 0 0 auto; grid-template-columns: repeat(5, auto); margin-inline-end: 0.4rem; padding-inline-end: 0.6rem; border-inline-end: 1px solid #c9a24b; }
   html.pane-tabs-hosted #notePane .pane-edit-toolbar .tb-tab { padding: 2px 0.7rem; white-space: nowrap; }
   .unit-old-note { border: 1px dashed #c9a24b; border-radius: 0.6rem; padding: 0.6rem 0.8rem; margin: 0.6rem 0; background: #fffdf6; }

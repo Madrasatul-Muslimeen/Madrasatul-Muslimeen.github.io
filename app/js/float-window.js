@@ -4,6 +4,8 @@
 // that moves the window, a minimum size, and a title bar that can never leave
 // the screen. Pure UI -- no Firebase, no app state; the caller owns the rect.
 
+import "./minimise.js"; // PCF MSA J81: every floating window gets a – beside its ✕
+
 export const HANDLES = ["n", "s", "e", "w", "ne", "nw", "se", "sw"];
 
 /** CSS for the eight handles of elements carrying class `cls` (and data-h). */

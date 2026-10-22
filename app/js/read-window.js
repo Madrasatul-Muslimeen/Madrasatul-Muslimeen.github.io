@@ -14,6 +14,7 @@
 // Pure UI: no Firebase, no app state beyond localStorage geometry.
 import { HANDLES, startDrag } from "./float-window.js";
 import { homeRect, setHomeRect, SHARED as HOME_SHARED } from "./home-window.js";
+import { restoreWindow } from "./minimise.js";
 
 const KEY = "mmsa-read-window";
 const WINDOW_FROM = 900;
@@ -77,6 +78,7 @@ export function initReadWindow({ viewEl, titleBarEl, titleEl, buttons, isOpen, g
     buttons.full?.setAttribute("aria-pressed", String(full));
     if (!act) { wasActive = false; for (const p of ["left", "top", "width", "height"]) viewEl.style.removeProperty(p); return; }
     // PCF MSA J72: each opening as a window takes the home window's size and place (with SHARED; else the first only).
+    if (!wasActive) restoreWindow(viewEl); // PCF MSA J81: opened again, a minimised Read window comes back
     if (!wasActive && (HOME_SHARED || !rect)) rect = homeRect() ?? rect;
     wasActive = true;
     if (!rect) rect = smallerRect();

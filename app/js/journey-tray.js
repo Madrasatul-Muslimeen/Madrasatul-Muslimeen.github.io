@@ -9,6 +9,7 @@
 // href opens journey-map.html as a full page as it always did.
 import { t } from "./i18n.js";
 import { HANDLES, handleCss, clampRect, startDrag } from "./float-window.js";
+import { restoreWindow } from "./minimise.js";
 
 const KEY = "mmsa-journey-tray";
 const MIN_W = 320, MIN_H = 360, PHONE = 600, BAR = 44;
@@ -107,6 +108,7 @@ export function openJourneyTray({ noteId = null } = {}) {
   if (noteId) frame.setAttribute("src", `journey-map.html?embed=1&note=${encodeURIComponent(noteId)}#folders`);
   else if (!frame.getAttribute("src")) frame.setAttribute("src", SRC);
   tray.hidden = false;
+  restoreWindow(tray); // PCF MSA J81: opening it again brings a minimised tray back
   apply();
 }
 
