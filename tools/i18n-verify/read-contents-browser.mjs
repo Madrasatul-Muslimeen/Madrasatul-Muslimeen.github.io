@@ -3,6 +3,8 @@
 // Run from the repository root, with serve.js on :8080.
 // Expected values are written BY HAND (from the packaged index files), never
 // computed by the code under test.
+// Updated in place 22 Oct 2026: the Read bar's buttons and ⤢ are the app's 40px finger size (measured 40 on `main`, where
+// these four checks expected 36 and were red, 32 failures), so they now expect 40.
 import { chromium, newContext, openPage } from "./harness.mjs";
 
 let pass = 0, fail = 0;
@@ -101,10 +103,10 @@ for (const lang of ["en", "bn"]) {
     if (width > 580 && width <= 720) {
       const corners = await page.evaluate(() => ["readContentsBtn", "wheelUnitBtn", "myStatusWideBtn"].map((id) => document.getElementById(id).closest(".tablet-corner")?.className.match(/tablet-corner-(\w+)/)?.[1] ?? null));
       check(`${tag}: (tablet) Read, Choose a Unit and Know Your Status are all shown, in the top-right, bottom-left and bottom-right corners`, m.shown.every(Boolean) && JSON.stringify(corners) === '["tr","bl","br"]', JSON.stringify(corners));
-      check(`${tag}: (tablet) each is one line, 36px tall`, m.heights.every((x) => x === 36), JSON.stringify(m.heights));
+      check(`${tag}: (tablet) each is one line, 40px tall`, m.heights.every((x) => x === 40), JSON.stringify(m.heights));
     } else {
     check(`${tag}: Read, Choose a Unit and Know Your Status are all shown, in that order, in the one action row`, m.shown.every(Boolean) && m.order && m.inRow, JSON.stringify(m));
-    check(`${tag}: the action row is one line of 36px buttons`, m.tops === 1 && m.heights.every((x) => x === 36), JSON.stringify(m));
+    check(`${tag}: the action row is one line of 40px buttons`, m.tops === 1 && m.heights.every((x) => x === 40), JSON.stringify(m));
     check(`${tag}: the action row sits under the wheel and above its colour key`, m.underWheel && m.aboveLegend, JSON.stringify(m));
     }
     check(`${tag}: no button is cut or off screen, and no sideways scroll`, !m.cut && m.inView && !m.over, JSON.stringify(m));
@@ -160,12 +162,12 @@ for (const [lang, width] of [["en", 390], ["bn", 320], ["en", 1280]]) {
   });
   const bare = await fs();
   const gold = "rgb(184, 134, 47)";
-  check(`[${lang} ${width}] bare screen: ⤢ is a 36px square, fully visible, solid gold`, bare.w === 36 && bare.h === 36 && bare.op === "1" && bare.bg === gold && bare.pressed === "true" && bare.inView, JSON.stringify(bare));
+  check(`[${lang} ${width}] bare screen: ⤢ is a 40px square, fully visible, solid gold`, bare.w === 40 && bare.h === 40 && bare.op === "1" && bare.bg === gold && bare.pressed === "true" && bare.inView, JSON.stringify(bare));
   check(`[${lang} ${width}] ⤢ glyph is at least 20px (was 15px)`, bare.fs >= 20, JSON.stringify(bare));
   // Press until the menus are back, then check the resting look.
   for (let i = 0; i < 3 && (await fs()).pressed === "true"; i++) { await page.click("#hideChromeBtn"); await page.waitForTimeout(200); }
   const rest = await fs();
-  check(`[${lang} ${width}] menus shown: ⤢ is a 36px square with a 2px gold border`, rest.pressed === "false" && rest.w === 36 && rest.h === 36 && rest.border === gold && rest.bw === "2px" && rest.op === "1", JSON.stringify(rest));
+  check(`[${lang} ${width}] menus shown: ⤢ is a 40px square with a 2px gold border`, rest.pressed === "false" && rest.w === 40 && rest.h === 40 && rest.border === gold && rest.bw === "2px" && rest.op === "1", JSON.stringify(rest));
   await ctx.close();
 }
 

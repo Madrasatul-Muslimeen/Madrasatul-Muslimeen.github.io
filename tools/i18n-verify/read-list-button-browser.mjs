@@ -19,6 +19,7 @@ let pass = 0, fail = 0;
 const check = (n, ok, d = "") => ok ? (pass++, console.log(`  PASS  ${n}`)) : (fail++, console.log(`  FAIL  ${n} ${d}`));
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
 const LABEL = { en: "Surah list", bn: "সূরার তালিকা" };
+const SHORT = { en: "Surah", bn: "সূরা" };
 
 async function start(lang, width) {
   const ctx = await newContext(browser, { appLang: lang, banner: false, viewport: { width, height: width >= 768 ? 900 : 844 } });
@@ -68,10 +69,14 @@ for (const lang of ["en", "bn"]) for (const width of [320, 390, 1280]) {
   const b = await btn(page);
   check(`${tag} after Read -> list -> a surah, the button is shown`, b.shown, JSON.stringify(b));
   check(`${tag} it sits top left of the Read bar, inside the screen (left ${b.left}px, bar ${b.barLeft}px, top ${b.top}px)`, b.left >= 0 && b.left - b.barLeft <= 16 && b.top >= 0 && b.top <= 80 && b.right <= b.vw, JSON.stringify(b));
-  check(`${tag} it is 36px tall, a finger-sized target`, b.h === 36 && b.w >= 36, JSON.stringify(b));
+  // Updated in place 22 Oct 2026: the bar's buttons are the app's 40px finger size now (they measured 40 on `main`
+  // since well before v12.20, so this read 36 and was red there).
+  check(`${tag} it is 40px tall, a finger-sized target`, b.h === 40 && b.w >= 40, JSON.stringify(b));
   check(`${tag} it overlaps neither the ⤢ button nor the page reference`, !b.overFull && !b.overRef, JSON.stringify(b));
   check(`${tag} its accessible name is "${LABEL[lang]}"`, b.aria === LABEL[lang], JSON.stringify(b));
-  if (width < 360) check(`${tag} below 360px it is the ☰ alone (square)`, b.word === null && b.w === 36, JSON.stringify(b));
+  if (width < 360) check(`${tag} below 360px it is the ☰ alone (square)`, b.word === null && b.w === 40, JSON.stringify(b));
+  // PCF MSA J75 (the Owner, 22 Oct 2026: "Write only 'Surah', discard ' list'"): below 480px it reads "☰ Surah".
+  else if (width < 480) check(`${tag} it reads "☰ ${SHORT[lang]}" on a phone (J75)`, b.word === SHORT[lang], JSON.stringify(b));
   else check(`${tag} it reads "☰ ${LABEL[lang]}"`, b.word === LABEL[lang], JSON.stringify(b));
 
   // Press it: the list, on the tab last used. Go to a Juz first. A press that

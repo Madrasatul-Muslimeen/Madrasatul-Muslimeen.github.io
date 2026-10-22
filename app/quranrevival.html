@@ -2711,8 +2711,7 @@
     #readBar:has(#readMeaningLayersSlot:not([hidden])) #readBarEnd { gap: 0.15rem; }
     #readMeaningLayersSlot label { padding: 0 0.3rem; }
   }
-  .rl-short, .ml-short { display: none; }
-  @media (max-width: 479px) { #readListBtn .rl-short, #readMeaningLayersSlot .ml-short { display: inline; } #readListBtn .rl-long, #readMeaningLayersSlot .ml-long { display: none; } }
+
   @media (max-width: 379px) { #readMeaningLayersSlot label { padding: 0 0.3rem; font-size: 0.7rem; } }
   #readMeaningLayersSlot label:has(input:checked) { background: #1F3A6E; color: #fff; }
   #readMeaningLayersSlot input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
@@ -5876,7 +5875,7 @@
                from read view to Surah list? Make one." -- demo approved, "go"):
                back to the list this Read view was opened from, on the tab last
                used. Shown only on that route (body.read-from-contents). -->
-          <button type="button" id="readListBtn" class="read-list-btn" aria-label="Surah list"><span aria-hidden="true">☰</span><span class="read-list-word"><span class="rl-long">Surah list</span><span class="rl-short">Surah</span></span></button>
+          <button type="button" id="readListBtn" class="read-list-btn" aria-label="Surah list"><span aria-hidden="true">☰</span><span class="read-list-word">Surah list</span></button>
           <button type="button" id="mushafPageRef" class="mushaf-page-ref" hidden></button>
           <!-- Issue #370 (Global Approach Card, Owner-approved 29 Sep 2026) --
                the "Choose an Approach" capsule. It takes the space
@@ -19711,6 +19710,19 @@
     var meaningObserver = null;
     const MUSHAF_LAST_PAGE = 604;
 
+    // PCF MSA J75 (the Owner, 22 Oct 2026: "Write only 'Surah', discard ' list', For English, write only Eng."): below
+    // 480px ☰ reads "Surah" (its spoken name stays "Surah list") and the English switch "Eng". One word in the page at a
+    // time, so what is read out, copied or checked is what is shown.
+    const SHORT_READ_LABELS = window.matchMedia ? window.matchMedia("(max-width: 479px)") : null;
+    function shortReadLabels() { return !!SHORT_READ_LABELS?.matches; }
+    function paintShortReadLabels() {
+      const w = document.querySelector("#readListBtn .read-list-word");
+      if (w) w.textContent = shortReadLabels() ? t("Surah") : t("Surah list");
+      const en = document.querySelector('#readMeaningLayersSlot [data-meaning-layer="en"] + [data-ml-word]');
+      if (en) en.textContent = shortReadLabels() ? t("Eng") : t("English");
+    }
+    SHORT_READ_LABELS?.addEventListener?.("change", paintShortReadLabels);
+    paintShortReadLabels();
     function paintReadMeaningBtn() {
       if (!readMeaningBtn) return;
       readMeaningBtn.setAttribute("aria-pressed", String(readMeaningOn));
@@ -19776,12 +19788,12 @@
         for (const p of pages) html += await meaningPageHtml(p);
         if (token !== meaningRenderToken) return;
         meaningPagesShown = [...pages];
-        const layer = (k, label, html = null) => `<label><input type="checkbox" data-meaning-layer="${k}"${readMeaningLayers[k] ? " checked" : ""}> ${html ?? escapeHtml(label)}</label>`;
+        const layer = (k, label) => `<label><input type="checkbox" data-meaning-layer="${k}"${readMeaningLayers[k] ? " checked" : ""}> <span data-ml-word>${escapeHtml(label)}</span></label>`;
         const first = pages[0], last = pages[pages.length - 1];
         const layersSlot = document.getElementById("readMeaningLayersSlot");
         if (layersSlot) {
-          // PCF MSA J75 (the Owner: "For English, write only Eng"): on a phone the English switch reads "Eng" (CSS picks one).
-          layersSlot.innerHTML = `${layer("en", "", `<span class="ml-long">${escapeHtml(t("English"))}</span><span class="ml-short">${escapeHtml(t("Eng"))}</span>`)}${layer("bn", t("Bangla"))}${layer("wbw", t("WbW"))}`;
+          // PCF MSA J75 (the Owner: "For English, write only Eng"): on a phone the English switch reads "Eng" (paintShortReadLabels).
+          layersSlot.innerHTML = `${layer("en", shortReadLabels() ? t("Eng") : t("English"))}${layer("bn", t("Bangla"))}${layer("wbw", t("WbW"))}`;
           layersSlot.querySelector('[data-meaning-layer="wbw"]')?.parentElement.setAttribute("title", t("Word by Word"));
           layersSlot.setAttribute("aria-label", t("Show"));
           layersSlot.hidden = false;
