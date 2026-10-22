@@ -28,9 +28,8 @@ export function homeRect() {
 
 /** Places a dialog box at the home rect on a computer (inline position, so it beats the box's own CSS size); on a
     narrow screen, or before the home window was placed, it clears that and the box keeps its own layout. */
-export function placeAtHome(el) {
+export function placeAtHome(el, r = homeRect()) {
   if (!el) return false;
-  const r = homeRect();
   const props = { position: "fixed", left: `${r?.x}px`, top: `${r?.y}px`, width: `${r?.w}px`, height: `${r?.h}px`, maxHeight: "none", maxWidth: "none", margin: "0", boxSizing: "border-box" };
   for (const [k, v] of Object.entries(props)) el.style[k] = r ? v : "";
   return !!r;
@@ -50,4 +49,22 @@ export function setHomeRect(r, { from = "home", user = false } = {}) {
   if (current && current.x === next.x && current.y === next.y && current.w === next.w && current.h === next.h && current.user === next.user) return;
   current = next;
   try { localStorage.setItem(KEY, JSON.stringify(next)); } catch { /* not remembered */ }
+}
+
+/** True inside a page window (PCF MSA J74: a menu page in a frame over the landing screen): there the frame IS the home
+    window, and the home rect (in the landing screen's pixels) means nothing. */
+export function inPageWindow() { try { return window.self !== window.top; } catch { return true; } }
+
+/** Places a pop-up a page opens (the Track window, an Asma poster) at the home size on a computer (PCF MSA J72, the
+    sweep's second part): the home rect on a page of its own, the whole frame inside a page window. Sets --hw / --hh
+    (the box's width and height) for content sized to the screen; on a phone, or before the home window was placed, it
+    clears all of that and the pop-up keeps its own layout. Returns true when placed. */
+export function placeDialogAtHome(el) {
+  if (!el) return false;
+  const r = inPageWindow() ? { x: 0, y: 0, w: window.innerWidth, h: window.innerHeight } : homeRect();
+  const placed = placeAtHome(el, r);
+  el.style.setProperty("--hw", placed ? `${r.w}px` : "");
+  el.style.setProperty("--hh", placed ? `${r.h}px` : "");
+  el.classList.toggle("at-home", placed);
+  return placed;
 }

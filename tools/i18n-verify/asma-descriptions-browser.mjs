@@ -48,9 +48,12 @@ for (const [lang, width, height] of [["bn", 390, 844], ["en", 1280, 800]]) {
   await page.waitForSelector("#asmaXPosterOverlay.open [data-asma-desc-strip]");
   const s1 = await page.evaluate(() => {
     const o = document.querySelector("#asmaXPosterOverlay.open"); const strip = o.querySelector("[data-asma-desc-strip]"); const poster = o.querySelector(".ahp-standalone");
-    const sb = strip.getBoundingClientRect(), pb = poster.getBoundingClientRect();
+    // v12.23 (J72): on a computer the poster opens in a box at the home size, the strip scrolling above the poster; both
+    // are measured against that box (the screen, below 900px), the poster once scrolled into view.
+    const bx = o.classList.contains("at-home") ? o.getBoundingClientRect() : { top: 0, left: 0, bottom: innerHeight, right: innerWidth };
+    poster.scrollIntoView({ block: "end" }); const sb = strip.getBoundingClientRect(), pb = poster.getBoundingClientRect();
     return { pressed: o.querySelector('[data-asma-desc-src][aria-pressed="true"]')?.dataset.asmaDescSrc, edit: !!o.querySelector("[data-asma-desc-edit]"),
-      above: sb.bottom <= pb.top + 1, stripIn: sb.left >= -1 && sb.right <= innerWidth + 1, posterIn: pb.top >= -1 && pb.bottom <= innerHeight + 1 && pb.right <= innerWidth + 1,
+      above: sb.bottom <= pb.top + 1, stripIn: sb.left >= bx.left - 1 && sb.right <= bx.right + 1, posterIn: pb.top >= bx.top - 1 && pb.bottom <= bx.bottom + 1 && pb.right <= bx.right + 1,
       btnH: Math.min(...[...strip.querySelectorAll("button")].filter((b) => b.offsetParent).map((b) => b.getBoundingClientRect().height)),
       desc: o.querySelector("[data-poster-desc]").textContent.slice(0, 40), labels: [...strip.querySelectorAll("[data-asma-desc-src]")].map((b) => b.textContent) };
   });

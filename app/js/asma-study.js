@@ -40,6 +40,7 @@ import { startScreensaver } from "./screensaver-idle.js";
 import { renderAsmaGrid, renderAsmaDetail, renderAsmaCollectionListHtml, renderAsmaPosterHtml, asmaEntryDisplayName } from "./asma-renderer.js";
 import { fitAsmaPosters, wireAsmaPosterRefs } from "./asma-poster.js";
 import { mountPosterWithDescriptions } from "./asma-descriptions.js";
+import { placeDialogAtHome } from "./home-window.js";
 import { renderScopedWheel, renderWheelLegend, attachScopedWheelClickHandler } from "./mastery-wheel.js";
 import {
   collectionsFrom, extraNamesFrom, overridesFrom, activeCollections, activeExtraNames,
@@ -848,6 +849,7 @@ export function initAsmaStudyPage() {
   function openPosterView(entry) {
     if (!posterOverlay || !posterMount) return;
     posterOverlay.classList.add("open");
+    placeDialogAtHome(posterOverlay); // PCF MSA J72 (the sweep's second part): at the home size on a computer
     posterOverlay.scrollTop = 0;
     const backBtn = document.getElementById("posterBackBtn");
     if (backBtn) backBtn.textContent = `← ${t("Back to {name}", { name: asmaEntryDisplayName(entry) })}`;

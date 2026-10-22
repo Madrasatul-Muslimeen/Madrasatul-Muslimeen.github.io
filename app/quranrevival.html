@@ -2086,6 +2086,11 @@
   #asmaXPosterCloseBtn { margin-left: auto; flex: 0 0 auto; width: 40px; height: 40px; display: grid; place-items: center; background: transparent; color: #fff; border: 1px solid rgba(255,255,255,0.55); font-size: 1.4rem; line-height: 1; padding: 0; border-radius: 0.5rem; cursor: pointer; }
   #asmaXPosterBackBtn:focus-visible, #asmaXPosterCloseBtn:focus-visible { outline: 3px solid #B8862F; outline-offset: 2px; }
   #asmaXPosterMount .asma-desc-strip ~ .ahp-standalone { width: min(94vw, calc((94vh - 290px) * 1055 / 1491)); } /* the bar's 60px off the height asma-descriptions.js budgets */
+  /* PCF MSA J72, the sweep's second part: on a computer the full-size poster opens at the home size (home-window.js
+     placeDialogAtHome sets --hw/--hh, the box's own size), so the poster is sized to the box (its whole height below the bar; the description strip scrolls above it), not to the screen. */
+  #asmaXPosterOverlay.at-home { border-radius: 10px; box-shadow: 0 12px 40px rgba(10, 20, 45, 0.35); background: #26324a; }
+  #asmaXPosterOverlay.at-home #asmaXPosterMount .ahp-standalone,
+  #asmaXPosterOverlay.at-home #asmaXPosterMount .asma-desc-strip ~ .ahp-standalone { width: min(calc(var(--hw) - 2rem), calc((var(--hh) - 80px) * 1055 / 1491)); }
 
   /* 30 Aug 2026 round -- Add/Edit-Name and multi-Name attach-reference
      overlays. Same dark card-on-scrim idiom as the poster overlay above,
@@ -7107,7 +7112,7 @@
     import { renderQuickMenu, attachQuickMenuHandlers, attachQcrDrawerHandlers, notesToPlainText, copyToClipboard, shareText } from "./js/ayah-note-renderer.js";
     import { initReadWindow } from "./js/read-window.js";
     import { initAyahCardWindow, ayahCardRectJustNow } from "./js/ayah-card-window.js";
-    import { placeAtHome } from "./js/home-window.js";
+    import { placeAtHome, placeDialogAtHome } from "./js/home-window.js";
     import { initPopupWindow, initSideSplitter, initListCollapse, loadSideViewMode, saveSideViewMode } from "./js/note-popup.js";
     import {
       collectionsFrom, activeCollections,
@@ -15634,6 +15639,7 @@
       // Decision 85: full size, each reference opens its Ayah here or its Hadith in the Hadith library.
       // Decision 87 (8 Oct 2026): a strip above it picks whose description it shows; owner/prime edit the madrasah's.
       asmaXPosterOverlayEl.classList.add("open");
+      placeDialogAtHome(asmaXPosterOverlayEl); // PCF MSA J72 (the sweep's second part): at the home size on a computer
       const backBtn = document.getElementById("asmaXPosterBackBtn");
       backBtn.textContent = `← ${t("Back to {name}", { name: asmaEntryDisplayName(entry) })}`;
       asmaXPosterCloseBtn.setAttribute("aria-label", t("Close"));
