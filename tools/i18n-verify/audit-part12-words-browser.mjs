@@ -140,14 +140,25 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     const rel = await ev(page, () => ({ rel: document.querySelector("[data-ayah-sheet-related]")?.textContent.trim().length, con: document.querySelector("[data-ayah-sheet-connected]")?.textContent.trim().length, jumps: [...document.querySelectorAll("[data-ayah-related-jump]")].map((b) => b.dataset.ayahRelatedJump) }));
     if (PROBE) console.log(t, JSON.stringify(rel));
     check(`${t}: Related and Connected āyāt sections are never blank`, rel.rel > 20 && rel.con > 20, JSON.stringify(rel));
-    // 4: Full text opens and closes.
-    await page.click("[data-ayah-sheet-noteview]");
-    await page.waitForFunction(() => document.querySelectorAll("#ayahNoteViewPopup:not([hidden]) .ayah-nv-sec").length === 4, null, { timeout: 8000 }).catch(() => {});
-    const nv = await ev(page, () => { const p = document.querySelector("#ayahNoteViewPopup:not([hidden])"); if (!p) return null; const r = p.querySelector(".ayah-nv-box").getBoundingClientRect(); const b = p.querySelector("[data-ayah-nv-back]").getBoundingClientRect(); return { secs: p.querySelectorAll(".ayah-nv-sec").length, ref: p.querySelector(".ayah-nv-ref")?.textContent, inView: r.left >= -1 && r.right <= innerWidth + 1 && r.top >= -1 && r.bottom <= innerHeight + 1, back: b.width > 0 && b.top >= 0 && b.bottom <= innerHeight }; });
-    check(`${t}: Full text opens on that āyah, inside the screen, with a visible way back`, !!nv && nv.secs === 4 && nv.ref.includes(refText(lang, "36:38")) && nv.inView && nv.back, JSON.stringify(nv));
-    await page.click("[data-ayah-nv-back]"); await settle(page, 400);
-    const closed = await ev(page, () => ({ pop: !!document.querySelector("#ayahNoteViewPopup:not([hidden])"), card: document.getElementById("ayahActionSheetOverlay")?.classList.contains("open") }));
-    check(`${t}: Full text closes, back to the same Āyah card`, !closed.pop && closed.card, JSON.stringify(closed));
+    // 4: Full text opens and closes. UPDATED IN PLACE (PCF MSA J70, v12.19, the Owner: "Enable the full text also to take
+    // the entire card size"): on a computer (the card as a window) 📖 puts the full text across the card itself, and 📖
+    // again shows both halves -- no separate pop-up. Phones and tablets keep the Full text pop-up, checked as before.
+    if (await ev(page, () => !!document.querySelector("[data-ayah-sheet][data-ayah-win]"))) {
+      await page.click("[data-ayah-sheet-noteview]"); await settle(page, 400);
+      const tx = await ev(page, () => { const b = document.querySelector("[data-ayah-sheet-panes]"); const sh = document.querySelector("[data-ayah-sheet]").getBoundingClientRect(); const nv = document.querySelector("[data-ayah-sheet-noteview]").getBoundingClientRect(); return { mode: b?.dataset.paneMode, ref: document.querySelector("[data-ayah-sheet] .ayah-sheet-ref")?.textContent ?? "", inView: sh.left >= -1 && sh.right <= innerWidth + 1 && sh.top >= -1 && sh.bottom <= innerHeight + 1, back: nv.width > 0 }; });
+      check(`${t}: Full text fills the card on that āyah, inside the screen, with 📖 there to go back`, tx.mode === "text" && tx.ref.includes(refText(lang, "36:38")) && tx.inView && tx.back, JSON.stringify(tx));
+      await page.click("[data-ayah-sheet-noteview]"); await settle(page, 400);
+      const both = await ev(page, () => ({ mode: document.querySelector("[data-ayah-sheet-panes]")?.dataset.paneMode, card: document.getElementById("ayahActionSheetOverlay")?.classList.contains("open") }));
+      check(`${t}: 📖 again shows both halves, the same Āyah card`, both.mode === "split" && both.card, JSON.stringify(both));
+    } else {
+      await page.click("[data-ayah-sheet-noteview]");
+      await page.waitForFunction(() => document.querySelectorAll("#ayahNoteViewPopup:not([hidden]) .ayah-nv-sec").length === 4, null, { timeout: 8000 }).catch(() => {});
+      const nv = await ev(page, () => { const p = document.querySelector("#ayahNoteViewPopup:not([hidden])"); if (!p) return null; const r = p.querySelector(".ayah-nv-box").getBoundingClientRect(); const b = p.querySelector("[data-ayah-nv-back]").getBoundingClientRect(); return { secs: p.querySelectorAll(".ayah-nv-sec").length, ref: p.querySelector(".ayah-nv-ref")?.textContent, inView: r.left >= -1 && r.right <= innerWidth + 1 && r.top >= -1 && r.bottom <= innerHeight + 1, back: b.width > 0 && b.top >= 0 && b.bottom <= innerHeight }; });
+      check(`${t}: Full text opens on that āyah, inside the screen, with a visible way back`, !!nv && nv.secs === 4 && nv.ref.includes(refText(lang, "36:38")) && nv.inView && nv.back, JSON.stringify(nv));
+      await page.click("[data-ayah-nv-back]"); await settle(page, 400);
+      const closed = await ev(page, () => ({ pop: !!document.querySelector("#ayahNoteViewPopup:not([hidden])"), card: document.getElementById("ayahActionSheetOverlay")?.classList.contains("open") }));
+      check(`${t}: Full text closes, back to the same Āyah card`, !closed.pop && closed.card, JSON.stringify(closed));
+    }
     check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
   });
 
