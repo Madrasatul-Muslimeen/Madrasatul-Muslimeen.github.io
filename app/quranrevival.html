@@ -10376,7 +10376,6 @@
         return `<li class="${s.passed ? "vwl-done" : ""}"><button type="button" data-vstep="${s.n}"><span class="vwl-name">${escapeHtml(t("First {n}", { n: grouped(s.n) }))}</span><span class="vwl-fig">${escapeHtml(`${grouped(k)}/${grouped(size)}`)}</span></button></li>`;
       }).join("")}</ul>`;
       wheelSidebarContainer.querySelectorAll("[data-vstep]").forEach((btn) => btn.addEventListener("click", () => openLearnNextAtStep(Number(btn.dataset.vstep))));
-      requestAnimationFrame(fitApproachWheelToWindow); // the wheel arrives after "Loading…": size it to the window again
     }
     /** A segment opens its step in Learn next; Learn next's ← Back closes it onto the Wheel, still on Vocabulary. */
     function openLearnNextAtStep(n) {

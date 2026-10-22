@@ -19,7 +19,6 @@
 //   nobadge  Learn next has no badge                                           -> (6)
 //   nokys    Know Your Status has no badge                                     -> (6)
 //   nogold   the Word by word slice never fills                                -> (7)
-//   nofit    the Vocabulary Wheel is not fitted to the window again            -> (8)
 //   bnleak   one Bangla string is missing                                      -> (8)
 //   titlebar the switch stays in a row of its own above the wheel on a computer  -> (8)
 //   phonerow on a phone the switch is a row of its own above the wheel           -> (8)
@@ -46,7 +45,6 @@ const MUT = {
   nobadge: [HTML, "          ${vocabBadgeHtml()}\n          <p class=\"ln-note\">", "          <p class=\"ln-note\">"],
   nokys: [HTML, "      if (slot && vocabCtxIsCurrent()) slot.innerHTML = vocabBadgeHtml();", ""],
   nogold: [HTML, "if (wordFrac && trackable.id === WBW_TRACKABLE_ID) {", "if (false) {"],
-  nofit: [HTML, "      requestAnimationFrame(fitApproachWheelToWindow); // the wheel arrives", "      // the wheel arrives"],
   phonerow: [HTML, "else if (drawer.firstElementChild !== wheelKindRowEl) drawer.prepend(wheelKindRowEl);", "else document.getElementById(\"wheelStageWrap\").before(wheelKindRowEl);"],
   titlebar: [HTML, "if (wheelKindRowEl.parentElement !== slot) slot.appendChild(wheelKindRowEl);", "void slot;"],
   monitorauto: ["app/monitor.html", "    let vocabShown = false;", "    let vocabShown = true; setTimeout(() => refreshVocabTable(), 0);"],
@@ -121,6 +119,10 @@ for (const lang of ["en", "bn"]) for (const [width, height] of [[1440, 900], [39
   }
   let fetched = 0;
   ctx.on("request", (rq) => { if (/learn-next\.json/.test(rq.url())) fetched++; });
+  // The list arrives 2 s late, and on a computer the window is maximised meanwhile: the wheel must still fit when it
+  // arrives. (A first build re-fitted it on arrival; once the switch left the wheel's column the wheel's size no longer
+  // depends on what it holds, a "nofit" mutation could not fail, and the re-fit was removed as dead code.)
+  await ctx.route("**/learn-next.json*", async (r) => { await new Promise((res) => setTimeout(res, 2000)); await r.continue(); });
   let { page, errors } = await open(ctx);
 
   // (1)
@@ -147,7 +149,10 @@ for (const lang of ["en", "bn"]) for (const [width, height] of [[1440, 900], [39
 
   // (2) + (3)
   await page.evaluate(() => document.querySelector('[data-wheel-kind="vocab"]').click());
+  // the window is maximised while the list loads (its size changes, so the wheel is fitted to "Loading…")
+  if (width >= 900) { await page.waitForTimeout(300); await page.evaluate(() => document.getElementById("wheelPopupMaximizeBtn")?.click()); await page.waitForTimeout(600); }
   await page.waitForFunction(() => document.querySelector("#wheelContainer svg[data-vocab-wheel]"), null, { timeout: 30000 }).catch(() => {});
+  await page.waitForTimeout(300);
   let w = await wheelInfo(page);
   check(`${tag} (2) Vocabulary draws 9 segments, First 10 … First 2,020`, w.segs === 9 && w.keys.join() === STEPS.map((n) => `vstep-${n}`).join(), JSON.stringify(w.keys));
   check(`${tag} (2) the centre is the share of the Qur'an's words known (${share.toFixed(1)}%)`, digits(w.centre).split(" | ").includes(`${share.toFixed(1)}%`), w.centre);
