@@ -10,6 +10,7 @@
 //   --mutate=nobreak  no line break before the switches  -> (1) fails at 412/390
 //   --mutate=prevnum  the button names the page number     -> (2) fails
 //   --mutate=rule     the first label keeps its dashed line -> (3) fails
+//   --mutate=longlabels  "Surah list" and "English" in full -> (5) fails
 import { chromium, newContext, openPage } from "./harness.mjs";
 import fs from "node:fs";
 
@@ -23,6 +24,7 @@ const MUT = {
   nobreak: ['#readBar:has(#readMeaningLayersSlot:not([hidden]))::before { content: ""; order: 1; flex: 0 0 100%; height: 0; }', ""],
   prevnum: ['">↑ ${escapeHtml(t("Previous page"))}</button>', '">↑ ${escapeHtml(t("Page {page}", { page: num(Math.max(1, first - 1)) }))}</button>'],
   rule: ["[data-meaning-pages] > .meaning-page-rule:first-child { border-top: 0; padding-top: 0; }", ""],
+  longlabels: ["@media (max-width: 479px) { #readListBtn .rl-short, #readMeaningLayersSlot .ml-short { display: inline; } #readListBtn .rl-long, #readMeaningLayersSlot .ml-long { display: none; } }", ""],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
 const W = { en: { prev: "↑ Previous page", page: "Page" }, bn: { prev: "↑ আগের পৃষ্ঠা", page: "পৃষ্ঠা" } };
@@ -69,6 +71,36 @@ for (const lang of ["en", "bn"]) for (const [width, height] of [[412, 900], [390
   check(`${tag} the page number shows once at the top: "${m.rule}"`, new RegExp(W[lang].page).test(m.rule) && !/\d|[০-৯]/.test(m.prev));
   check(`${tag} no dashed line above the first page's label`, m.ruleBorder);
   check(`${tag} no page errors`, errors.length === 0, errors.slice(0, 2).join(" | "));
+  await ctx.close();
+}
+// (5) The Owner, 22 Oct 2026: "Write only 'Surah', discard ' list', For English, write only Eng. Mushaf only icon." --
+// the Read view opened from the Surah list (full screen, ☰ Surah on the bar), Meaning open: ONE row at 412.
+for (const lang of ["en", "bn"]) {
+  const tag = `[${lang} 412 from the list]`;
+  const ctx = await newContext(browser, { appLang: lang, banner: false, viewport: { width: 412, height: 900 } });
+  await ctx.route("**/archive.org/**", (r) => r.abort());
+  if (MUTATE) {
+    const [a, b] = MUT[MUTATE];
+    await ctx.route("**/app/quranrevival.html*", async (r) => { const src = fs.readFileSync("app/quranrevival.html", "utf8"); await r.fulfill({ status: 200, contentType: "text/html; charset=utf-8", body: src.split(a).join(b) }); });
+  }
+  const { page: P } = await openPage(ctx, "/app/quranrevival.html");
+  const ev = (f, a) => P.evaluate(f, a);
+  await ev(() => document.querySelectorAll('[id*="splash"], .app-splash-overlay').forEach((e) => e.remove())); await P.waitForTimeout(800);
+  await ev(() => document.getElementById("readContentsBtn")?.click()); // the landing screen's Read: the Surah list
+  await P.waitForFunction(() => document.querySelectorAll("#readContentsBody .rc-row").length > 0, null, { timeout: 15000 });
+  await P.click('#readContentsBody .rc-row[data-rc-kind="surah"][data-rc-n="8"]'); await P.waitForTimeout(2500);
+  if (!(await ev(() => document.getElementById("readMushafBtn").getAttribute("aria-pressed") === "true"))) { await P.click("#readMushafBtn"); await P.waitForTimeout(2000); }
+  await P.click("#readMeaningBtn");
+  await P.waitForFunction(() => document.querySelector("[data-meaning-pages] .meaning-page-rule"), null, { timeout: 20000 });
+  await P.waitForTimeout(600);
+  const m = await ev(() => {
+    const vis = (e) => e.getBoundingClientRect().width > 0;
+    const items = [document.getElementById("readListBtn"), ...document.querySelectorAll("#readMeaningLayersSlot label"), ...[...document.querySelectorAll("#readBarEnd > button")].filter(vis)];
+    const mids = items.map((e) => { const r = e.getBoundingClientRect(); return Math.round((r.top + r.bottom) / 2); });
+    return { mids, surah: document.querySelector("#readListBtn .read-list-word")?.innerText.trim(), eng: document.querySelector('#readMeaningLayersSlot [data-meaning-layer="en"]')?.parentElement.innerText.trim(), mushafWord: document.querySelector("#readMeaningBtn .read-meaning-word")?.getBoundingClientRect().width ?? 0, sw: document.documentElement.scrollWidth };
+  });
+  check(`${tag} ☰ "${lang === "en" ? "Surah" : "সূরা"}" (no " list") and the English switch "${lang === "en" ? "Eng" : "ইংরেজি"}"; 📖 an icon alone`, m.surah === (lang === "en" ? "Surah" : "সূরা") && m.eng === (lang === "en" ? "Eng" : "ইংরেজি") && m.mushafWord === 0, JSON.stringify(m));
+  check(`${tag} ☰ Surah, the switches and the tools are ONE row, no sideways scroll`, m.mids.every((y) => Math.abs(y - m.mids[0]) < 6) && m.sw <= 412, JSON.stringify(m));
   await ctx.close();
 }
 await browser.close();

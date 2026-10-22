@@ -2704,7 +2704,15 @@
     #readBar:has(#readMeaningLayersSlot:not([hidden])) > #readMeaningLayersSlot { order: 2; }
     #readBar:has(#readMeaningLayersSlot:not([hidden])) > #readBarEnd { order: 3; }
     #readBar:has(#readMeaningLayersSlot:not([hidden])) > #readBackSlot { order: 4; }
+    /* The Owner, 22 Oct 2026 ("How to organise buttons in one row? Write only 'Surah', discard ' list', For English,
+       write only Eng. Mushaf only icon."): ☰ Surah and Eng, and ☰ Surah joins the switches' row. */
+    #readBar:has(#readMeaningLayersSlot:not([hidden])) > #readListBtn { order: 2; }
+    body.read-from-contents #readBar:has(#readMeaningLayersSlot:not([hidden])) > #readListBtn { padding: 0 0.45rem; gap: 0.2rem; }
+    #readBar:has(#readMeaningLayersSlot:not([hidden])) #readBarEnd { gap: 0.15rem; }
+    #readMeaningLayersSlot label { padding: 0 0.3rem; }
   }
+  .rl-short, .ml-short { display: none; }
+  @media (max-width: 479px) { #readListBtn .rl-short, #readMeaningLayersSlot .ml-short { display: inline; } #readListBtn .rl-long, #readMeaningLayersSlot .ml-long { display: none; } }
   @media (max-width: 379px) { #readMeaningLayersSlot label { padding: 0 0.3rem; font-size: 0.7rem; } }
   #readMeaningLayersSlot label:has(input:checked) { background: #1F3A6E; color: #fff; }
   #readMeaningLayersSlot input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
@@ -5868,7 +5876,7 @@
                from read view to Surah list? Make one." -- demo approved, "go"):
                back to the list this Read view was opened from, on the tab last
                used. Shown only on that route (body.read-from-contents). -->
-          <button type="button" id="readListBtn" class="read-list-btn" aria-label="Surah list"><span aria-hidden="true">☰</span><span class="read-list-word">Surah list</span></button>
+          <button type="button" id="readListBtn" class="read-list-btn" aria-label="Surah list"><span aria-hidden="true">☰</span><span class="read-list-word"><span class="rl-long">Surah list</span><span class="rl-short">Surah</span></span></button>
           <button type="button" id="mushafPageRef" class="mushaf-page-ref" hidden></button>
           <!-- Issue #370 (Global Approach Card, Owner-approved 29 Sep 2026) --
                the "Choose an Approach" capsule. It takes the space
@@ -19768,11 +19776,12 @@
         for (const p of pages) html += await meaningPageHtml(p);
         if (token !== meaningRenderToken) return;
         meaningPagesShown = [...pages];
-        const layer = (k, label) => `<label><input type="checkbox" data-meaning-layer="${k}"${readMeaningLayers[k] ? " checked" : ""}> ${escapeHtml(label)}</label>`;
+        const layer = (k, label, html = null) => `<label><input type="checkbox" data-meaning-layer="${k}"${readMeaningLayers[k] ? " checked" : ""}> ${html ?? escapeHtml(label)}</label>`;
         const first = pages[0], last = pages[pages.length - 1];
         const layersSlot = document.getElementById("readMeaningLayersSlot");
         if (layersSlot) {
-          layersSlot.innerHTML = `${layer("en", t("English"))}${layer("bn", t("Bangla"))}${layer("wbw", t("WbW"))}`;
+          // PCF MSA J75 (the Owner: "For English, write only Eng"): on a phone the English switch reads "Eng" (CSS picks one).
+          layersSlot.innerHTML = `${layer("en", "", `<span class="ml-long">${escapeHtml(t("English"))}</span><span class="ml-short">${escapeHtml(t("Eng"))}</span>`)}${layer("bn", t("Bangla"))}${layer("wbw", t("WbW"))}`;
           layersSlot.querySelector('[data-meaning-layer="wbw"]')?.parentElement.setAttribute("title", t("Word by Word"));
           layersSlot.setAttribute("aria-label", t("Show"));
           layersSlot.hidden = false;

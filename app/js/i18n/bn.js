@@ -4439,4 +4439,5 @@ export const BN = {
   "Open as a full page": "পূর্ণ পৃষ্ঠা হিসেবে খুলুন", // PCF MSA J74
   "Previous page": "আগের পৃষ্ঠা", // PCF MSA J75
   "Next page": "পরের পৃষ্ঠা",
+  "Eng": "ইংরেজি", // PCF MSA J75: the English switch's short name on a phone
 };
