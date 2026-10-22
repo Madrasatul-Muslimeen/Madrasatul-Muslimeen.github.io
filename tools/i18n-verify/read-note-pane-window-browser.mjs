@@ -149,9 +149,12 @@ for (const lang of ["en", "bn"]) for (const [vw, vh] of [[1280, 900], [1600, 100
   if (Fr) {
     await Fr.waitForFunction(() => document.querySelector("[data-unit-new]") && !document.querySelector("[data-unit-new]").hasAttribute("aria-disabled"), null, { timeout: 15000 }).catch(() => {});
     await Fr.click("[data-unit-new]");
-    made = await Fr.waitForFunction(() => !document.getElementById("notePane").hidden, null, { timeout: 8000 }).then(() => true).catch(() => false);
+    // UPDATED IN PLACE for PCF MSA J81 part 3: the new Note opens in the Mapping My Journey tray (its address names the Note),
+    // no longer in the pane's own Note view; the tray is closed again before the pane's ← Back is pressed.
+    made = await P2.waitForFunction(() => document.querySelector("#journeyTray:not([hidden]) iframe")?.getAttribute("src")?.includes("note="), null, { timeout: 12000 }).then(() => true).catch(() => false);
+    if (made) await P2.click("#journeyTray .jt-close");
   }
-  check(`${tag} the Notes tab still makes a Note (the frame's [data-unit-new])`, made);
+  check(`${tag} the Notes tab still makes a Note (the frame's [data-unit-new]), opened in the tray`, made);
   await P2.click("#readNotePane [data-rnp-back]"); await P2.waitForTimeout(300);
   check(`${tag} ← Back still closes the pane`, await P2.evaluate(() => document.getElementById("readNotePane").hidden));
   await ctx.close();

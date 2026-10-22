@@ -586,11 +586,14 @@ async function onClick(e) {
   const q = (sel) => el.closest(sel);
   const noteLink = q("[data-zab-note-open]");
   if (noteLink) {
-    // A full-page visit, not the Mapping My Journey pop-up tray (journey-tray.js would otherwise catch this link):
-    // the Note opens with back=1, and ← Back returns here with Zab open on this pocket.
+    // J81 part 3: the Note opens in the Mapping My Journey tray over this page (journey-tray.js), so ✕ returns to
+    // exactly this place with Zab as it was (the way-back law). Without the tray module, the full page with back=1.
     if (e.button > 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return; // new tab: the link's own behaviour
-    e.preventDefault(); rememberWayBack();
-    location.href = noteLink.href;
+    e.preventDefault();
+    // On Mapping My Journey's own page the tray would open the page over itself: there, the full page as before.
+    if (/\/journey-map\.html$/.test(location.pathname)) { rememberWayBack(); location.href = noteLink.href; return; }
+    import("./journey-tray.js").then((m) => m.openJourneyTray({ noteId: noteLink.dataset.zabNoteOpen }))
+      .catch(() => { rememberWayBack(); location.href = noteLink.href; });
     return;
   }
   const c = S.ctx;
