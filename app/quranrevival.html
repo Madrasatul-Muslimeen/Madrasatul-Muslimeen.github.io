@@ -17828,7 +17828,13 @@
       let ref;
       try { ref = parseQuranWordOccurrenceId(quranWordCardState.occurrenceId); } catch { return; }
       const requestedId = quranWordCardState.occurrenceId;
-      const ayah = currentSurahData?.ayahs.find((a) => a.ayah === ref.ayah);
+      // The word's OWN surah, taken once, before the first await: the reader may change the open surah while these
+      // reads are in flight (Asma's cited word, then "← Back"), and the open surah's āyah list then no longer holds this
+      // word -- its āyah could be past that surah's end ("A valid, bounded Surah ayah range is required", shown to the
+      // reader as a failed read) or name another word's lemma. getSurah() is cached, so this costs nothing when open.
+      const wordSurahData = currentSurahData?.surahNumber === ref.surah ? currentSurahData : await getSurah(ref.surah).catch(() => null);
+      if (requestId !== quranWordCardLemmaRequestId) return;
+      const ayah = wordSurahData?.ayahs.find((a) => a.ayah === ref.ayah);
       const word = ayah?.words?.find((w) => w.position === ref.position);
       const lemmaId = wbwClaimKey(word) || null;
       const confirmationRequired = !!wordProgressConfirmRequired;
@@ -17886,8 +17892,8 @@
           // known in this ayah" coverage (effectiveViewsForScope) reads
           // freshly-cached data on the very next render, not just this one
           // word's own lemma.
-          const ayahScope = occurrenceIdsForAyah(currentSurahData, ref.ayah);
-          await primeLemmaProgressForOccurrenceScope(currentSurahData, ayahScope, tenantId, subjectPersonId);
+          const ayahScope = occurrenceIdsForAyah(wordSurahData, ref.ayah);
+          await primeLemmaProgressForOccurrenceScope(wordSurahData, ayahScope, tenantId, subjectPersonId);
           // Decision 56 -- known only through a same-meaning word: say so.
           // Display only; this word's own buttons keep showing its own state.
           if (!lemmaProgress.countsAsKnown) {
@@ -17973,6 +17979,7 @@
     function wordOfOccurrence(occurrenceId) {
       let ref;
       try { ref = parseQuranWordOccurrenceId(occurrenceId); } catch { return null; }
+      if (currentSurahData?.surahNumber !== ref.surah) return null; // another surah's word is not in the open one
       return currentSurahData?.ayahs.find((a) => a.ayah === ref.ayah)?.words?.find((w) => w.position === ref.position) ?? null;
     }
 

@@ -232,7 +232,11 @@ for (const [width, height] of [[390, 844], [1100, 900]]) {
     check(`[${lang} ${width}] the level sentence reads "${YOU.join("…")}", without "${QURAN}"`, YOU.every((w) => (card?.wholeQuranLine ?? "").includes(w)) && !(card?.wholeQuranLine ?? QURAN).includes(QURAN), card?.wholeQuranLine);
     check(`[${lang} ${width}] the same sentence carries the percent "${YOU_PCT.join("…")}"`, YOU_PCT.every((w) => (card?.wholeQuranPercentLine ?? "").includes(w)) && /%/.test(card?.wholeQuranPercentLine ?? ""), card?.wholeQuranPercentLine);
     const boxLines = await page.evaluate(() => [...document.querySelectorAll("#quranWordCardMount .word-progress-whole-quran-box p")].map((p) => p.textContent.trim()));
-    check(`[${lang} ${width}] the box holds one sentence per level, four lines, none saying "${QURAN}"`, boxLines.length === 4 && boxLines.every((l) => !l.includes(QURAN) && /%/.test(l)), JSON.stringify(boxLines));
+    // Updated in place 23 Oct 2026: since v12.01 (PCF MSA J38 + J39) the Word card has FIVE levels (WbW, Root, Family,
+    // Taṣrīf, Depth), and the three root levels count roots ("studied 0 of 1,642 roots"), with no percent. This check
+    // still wanted four lines, each with a percent, and had been red since v12.01. Five lines now; the two word levels
+    // (the first and third) carry the percent.
+    check(`[${lang} ${width}] the box holds one sentence per level, five lines, none saying "${QURAN}"; the two word levels carry a percent`, boxLines.length === 5 && boxLines.every((l) => !l.includes(QURAN)) && /%/.test(boxLines[0]) && /%/.test(boxLines[2]), JSON.stringify(boxLines));
     const st = card?.wholeQuranStyle;
     // UPDATED IN PLACE, 2 Oct 2026 -- the Owner published the Basic/Depth Rules
     // and that gate is open, so the box carries ONE pair of lines PER LEVEL
@@ -242,8 +246,9 @@ for (const [width, height] of [[390, 844], [1100, 900]]) {
     // Updated in place 14 Oct 2026 (PCF J23, the Owner chose layout B): the percentage is written INSIDE the progress
     // circle, not as a bold number, so each level carries TWO bold numbers (known, in a gold disc, and total): 2 x 4 = 8.
     // The circle and its percentage are proved in word-card-level-sentence-browser.mjs.
-    check(`[${lang} ${width}] both lines are bold (weight >= 700) and the numbers (two per level, four levels) bigger and heavier still`,
-      !!st && st.numCount === 8 && st.lineWeight >= 700 && st.numWeight >= 800 && st.numSize >= st.lineSize * 1.15, JSON.stringify(st));
+    // Updated in place 23 Oct 2026: five levels since v12.01, so 2 x 5 = 10 numbers.
+    check(`[${lang} ${width}] both lines are bold (weight >= 700) and the numbers (two per level, five levels) bigger and heavier still`,
+      !!st && st.numCount === 10 && st.lineWeight >= 700 && st.numWeight >= 800 && st.numSize >= st.lineSize * 1.15, JSON.stringify(st));
     check(`[${lang} ${width}] the numbers stand out in the card's accent colour, unlike the sentence`, !!st && st.numColor !== st.lineColor, JSON.stringify(st));
     check(`[${lang} ${width}] Number 3 -- this word's own share-of-Qur'an line renders (unaffected by the lemma gate)`, !!card?.shareOfQuranLine, JSON.stringify(card));
     check(`[${lang} ${width}] Number 3 -- names this lemma's real occurrence count`, toWestern(card?.shareOfQuranLine ?? "").includes(String(LEMMA_OCCURRENCE_COUNT)), card?.shareOfQuranLine);

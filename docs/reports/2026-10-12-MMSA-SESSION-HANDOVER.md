@@ -1390,3 +1390,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v12.21** (2026-10-22): J74 J75 (menu pages as windows; Meaning flow one row on a phone).
 - **v12.22** (2026-10-22): MSA J48 round 3 (Vocabulary Wheel).
 - **v12.23** (2026-10-22): MSA J72 sweep part 2 (Track window, Asma posters at the home size).
+- **v12.24** (2026-10-22): the Word card reads its word's own surah (audit-part15's error).

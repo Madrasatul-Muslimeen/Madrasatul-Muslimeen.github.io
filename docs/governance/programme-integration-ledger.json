@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "12.23",
+    "version": "12.24",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -4553,8 +4553,20 @@
     {
       "version": "12.23",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "MSA J72, the sweep's second part: the Track window and both Asma full-size posters open at the home size with ← Back.",
+      "integration": {
+        "authorizedOn": "2026-10-22",
+        "integratedOn": "2026-10-22",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.24",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "v12.24: the Word card's lemma-wide reads use the word's own surah, never the surah opened while they were in flight; two stale checks updated in place.",
       "integration": {
         "authorizedOn": "2026-10-22",
         "integratedOn": "2026-10-22",
@@ -4563,8 +4575,9 @@
       }
     }
   ],
-  "nextUnallocated": "12.24",
+  "nextUnallocated": "12.25",
   "nextUnallocatedNote": [
+    "v12.24 was allocated to the Word card reads its word's own surah (audit-part15's error), 2026-10-22.",
     "v12.23 was allocated to MSA J72 sweep part 2 (Track window, Asma posters at the home size), 2026-10-22.",
     "v12.22 was allocated to MSA J48 round 3 (Vocabulary Wheel), 2026-10-22.",
     "v12.21 was allocated to J74 J75 (menu pages as windows; Meaning flow one row on a phone), 2026-10-22.",
