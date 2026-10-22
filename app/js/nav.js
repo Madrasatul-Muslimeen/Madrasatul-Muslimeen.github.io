@@ -57,6 +57,24 @@ import { t } from "./i18n.js";
 import { roleLabel } from "./labels.js";
 import { isHiddenFromQr } from "./hidden-modules.js";
 
+// PCF MSA J74 (the Owner's n72b B): a page opened as a window over the landing screen (page-window.js, ?inWindow=1)
+// drops its own menu row -- the window's bar carries ← Back -- and a link back to the Qur'an page leaves the window.
+// Every page imports this module, so this is the one place that knows it.
+try {
+  if (new URLSearchParams(location.search).get("inWindow") === "1" && window.parent !== window) {
+    document.documentElement.classList.add("in-window");
+    const st = document.createElement("style");
+    st.textContent = "html.in-window .app-nav, html.in-window #zabBar, html.in-window [data-bm-back] { display: none !important; }";
+    document.head.appendChild(st);
+    document.addEventListener("click", (e) => {
+      const a = e.target.closest?.("a[href]");
+      if (!a || a.target) return;
+      const u = new URL(a.getAttribute("href"), location.href);
+      if (u.origin === location.origin && /\/(quranrevival|index)\.html$/.test(u.pathname)) a.target = "_top";
+    }, true);
+  }
+} catch { /* not a browser page */ }
+
 const STUDY_LINKS = [
   { href: "quranrevival.html", label: "Quran Study" }, // renamed from "Study" -- see shell round 4
   { href: "deen-study.html", label: "Deen Study" },

@@ -121,7 +121,8 @@ export function registerServiceWorker() {
   // Zab round Z2 (PCF J25): this is the one function every page already calls, so it carries the Zab bar's
   // mount -- ONE place, not pasted into each page. zab-readiness.js is pure and tiny; the bar's own code is
   // fetched ONLY when the gate is open, so a shut gate costs a page nothing and shows nothing (I9).
-  if (isZabReady()) import("./zab-bar.js").then((m) => m.mountZabBar()).catch((err) => console.warn("Zab bar not mounted:", err.message));
+  const inWindow = new URLSearchParams(location.search).get("inWindow") === "1" && window.parent !== window; // J74: inside a page window
+  if (isZabReady() && !inWindow) import("./zab-bar.js").then((m) => m.mountZabBar()).catch((err) => console.warn("Zab bar not mounted:", err.message));
   if (!("serviceWorker" in navigator)) return;
   if (!isSecureEnough() || isDisabled()) {
     if ("serviceWorker" in navigator) unregisterAny();

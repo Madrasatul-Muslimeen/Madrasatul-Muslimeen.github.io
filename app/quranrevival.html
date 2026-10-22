@@ -7374,6 +7374,7 @@
       lastRenderedRoles = roles;
       lastRenderedViewAsRole = viewAsRole;
       navBar.innerHTML = renderNavBar(roles, viewAsRole);
+      if (!navBar.__pageWindows) { navBar.__pageWindows = true; import("./js/page-window.js").then((m) => m.wirePageWindowLinks(navBar.closest(".app-nav") ?? navBar)).catch(() => {}); } // PCF MSA J74: menu pages as windows on a computer
       relocatePreviewNotice();
       // The banner Search button's spoken name (its visible word is translated
       // with the rest of the static markup; below 360px only the icon shows).

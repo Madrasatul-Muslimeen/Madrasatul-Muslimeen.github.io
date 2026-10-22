@@ -111,14 +111,16 @@ for (const lang of ["en", "bn"]) {
   await P.evaluate(() => document.getElementById("readWindowBtn")?.click()); await P.waitForTimeout(700);
   check(`${tag} the Read window opens at that rect`, same(await R(P, "#readView"), home), JSON.stringify(await R(P, "#readView")));
   await P.evaluate(() => document.getElementById("readWindowBtn")?.click()); await P.waitForTimeout(300);
-  // (4) a menu page
+  // (4) a menu page. Updated for PCF MSA J74 (n72b B): on the landing screen a menu link now opens a page WINDOW
+  // (page-window-browser), so the page-to-page way back is proven from another page's menu: People -> Records.
+  await P.goto(P.url().replace(/quranrevival\.html.*$/, "people.html"), { waitUntil: "networkidle" }); await P.waitForTimeout(800);
   const href = await P.evaluate(() => [...document.querySelectorAll(".nav-cat-links a[href]")].find((a) => /^records\.html/.test(a.getAttribute("href")))?.getAttribute("href") ?? "");
   check(`${tag} a menu link carries navBack=1 (${href})`, /navBack=1/.test(href), href);
   // clicked, as a reader does (the page learns where it came from from the click itself)
   await Promise.all([P.waitForNavigation({ waitUntil: "networkidle" }), P.evaluate((h) => [...document.querySelectorAll(".nav-cat-links a[href]")].find((a) => a.getAttribute("href") === h).click(), href)]);
   await P.waitForTimeout(800);
   const chip = await P.evaluate(() => { const b = document.querySelector("[data-bm-back] .bm-back"); const r = b?.getBoundingClientRect(); return r && r.width ? { text: b.textContent.trim(), href: b.getAttribute("href") || "" } : null; });
-  check(`${tag} the page it opens shows ← Back to the page it came from`, !!chip && /←/.test(chip.text) && /quranrevival\.html/.test(chip.href), JSON.stringify(chip));
+  check(`${tag} the page it opens shows ← Back to the page it came from`, !!chip && /←/.test(chip.text) && /people\.html/.test(chip.href), JSON.stringify(chip));
   check(`${tag} no page errors`, errors.length === 0, errors.slice(0, 2).join(" | "));
   await ctx.close();
 }
