@@ -9,6 +9,7 @@ import { langText } from "./lang.js";
 import { summarizeStatuses, STATUSES, statusLabel } from "./unit-keys.js";
 import { t, num } from "./i18n.js";
 import { STATUS_COLORS } from "./mastery-wheel.js";
+import { placeDialogAtHome } from "./home-window.js";
 // Multi-student round -- renderAssignDropdown()/checkedAssignees() moved to
 // their own file so bookmark-popover.js (a Claim-free, Firebase-free popover
 // component) could reuse them too, without pulling in this file's own
@@ -172,6 +173,7 @@ export function renderWayModalShell(title, tabBodies, tabs = DEFAULT_TABS, assig
   const panels = tabs.map((t, i) => `<div class="way-tab-panel ${i === 0 ? "active" : ""}" data-tab="${t}">${tabBodies[t] ?? ""}</div>`).join("");
   return `<div class="way-modal">
     <div class="way-modal-header">
+      <button type="button" class="way-back-btn">${escapeHtml(t("← Back"))}</button>
       <div class="way-header-row"><h3>${escapeHtml(title)}</h3>${assignDropdownHtml}</div>
       <button type="button" class="way-close-btn" aria-label="Close">&times;</button>
     </div>
@@ -190,6 +192,28 @@ export function attachWayModalHandlers(modalEl, { onClose } = {}) {
   });
   const closeBtn = modalEl.querySelector(".way-close-btn");
   if (closeBtn && onClose) closeBtn.addEventListener("click", onClose);
+  // PCF MSA J72 (the sweep's second part): a ← Back to where it was opened (the way-back law, decision 86), and on a
+  // computer the box opens at the home size (home-window.js). Every page opens this modal the same way, so the Quran,
+  // Hadith, Dua, Asma and topic pages all take it from here.
+  const backBtn = modalEl.querySelector(".way-back-btn");
+  if (backBtn && onClose) backBtn.addEventListener("click", onClose);
+  ensureWayModalCss();
+  const box = modalEl.parentElement?.id === "wayModalMount" ? modalEl.parentElement : modalEl;
+  placeDialogAtHome(box);
+}
+
+let wayCssAdded = false;
+function ensureWayModalCss() {
+  if (wayCssAdded || typeof document === "undefined") return;
+  wayCssAdded = true;
+  const style = document.createElement("style");
+  style.textContent = `
+.way-modal-header > .way-back-btn { flex: 0 0 auto; min-height: 40px; padding: 0 0.8rem; border: 2px solid #B8862F; border-radius: 999px; background: #fff; color: #1F3A6E; font: inherit; font-weight: 700; font-size: 0.9rem; cursor: pointer; white-space: nowrap; }
+.way-modal-header > .way-back-btn:focus-visible { outline: 3px solid #B8862F; outline-offset: 2px; }
+.way-modal-header { align-items: center; }
+#wayModalMount.at-home { border-radius: 10px; overflow-y: auto; }
+`;
+  document.head.appendChild(style);
 }
 
 /**

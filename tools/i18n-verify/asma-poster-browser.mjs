@@ -136,9 +136,13 @@ for (const [lang, width, height] of [["en", 390, 844], ["bn", 390, 844], ["en", 
   await page.waitForFunction(() => document.querySelector("#asmaXPosterOverlay.open .ahp-standalone"), null, { timeout: 5000 }).catch(() => {});
   const big = await page.evaluate(() => {
     const o = document.querySelector("#asmaXPosterOverlay.open .ahp-standalone"); if (!o) return null;
+    // v12.23 (J72): on a computer the poster opens in a box at the home size and scrolls in it, under the strip; so it is
+    // scrolled into view, then measured against its box (the screen, below 900px).
+    const ov = document.querySelector("#asmaXPosterOverlay"), bx = ov.classList.contains("at-home") ? ov.getBoundingClientRect() : { top: 0, left: 0, bottom: innerHeight, right: innerWidth };
+    o.scrollIntoView({ block: "end" });
     const q = [...o.querySelectorAll("[data-poster-quran]")], b = o.getBoundingClientRect();
     return { q: q.map((x) => x.dataset.posterQuran), qHit: q.every((x) => { const r = x.getBoundingClientRect(); const e = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return e === x || x.contains(e); }),
-      inView: b.top >= -1 && b.bottom <= innerHeight + 1 && b.left >= -1 && b.right <= innerWidth + 1 };
+      inView: b.top >= bx.top - 1 && b.bottom <= bx.bottom + 1 && b.left >= bx.left - 1 && b.right <= bx.right + 1 };
   });
   check(`${tag} full size: Ar-Rahman's two Ayat are buttons (1:1, 55:1), tappable, the poster fully on screen`, !!big && big.q.join() === "1:1,55:1" && big.qHit && big.inView, JSON.stringify(big));
   if (big?.q.length) {

@@ -101,6 +101,10 @@
   #posterPrintBtn { margin-left: auto; flex: 0 0 auto; min-height: 40px; }
   #posterCloseBtn { flex: 0 0 auto; width: 40px; height: 40px; display: grid; place-items: center; background: transparent; color: #fff; border: 1px solid rgba(255,255,255,0.55); font-size: 1.4rem; line-height: 1; padding: 0; border-radius: 0.5rem; cursor: pointer; }
   #posterMount .asma-desc-strip ~ .ahp-standalone { width: min(94vw, calc((94vh - 290px) * 1055 / 1491)); }
+  /* PCF MSA J72, the sweep's second part: on a computer the poster opens at the home size (home-window.js), sized to its box (its whole height below the bar; the strip scrolls above it). */
+  #posterOverlay.at-home { border-radius: 10px; box-shadow: 0 12px 40px rgba(10, 20, 45, 0.35); background: #26324a; }
+  #posterOverlay.at-home #posterMount .ahp-standalone,
+  #posterOverlay.at-home #posterMount .asma-desc-strip ~ .ahp-standalone { width: min(calc(var(--hw) - 2rem), calc((var(--hh) - 80px) * 1055 / 1491)); }
 
   .asma-poster {
     width: 320px; aspect-ratio: 210 / 297;

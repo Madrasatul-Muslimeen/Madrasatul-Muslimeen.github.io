@@ -1366,3 +1366,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v12.20** (2026-10-21): J71 J72 J73 (Notes from the Āyah card; pop-ups one size, every edge, ← Back; Vocabulary buttons).
 - **v12.21** (2026-10-22): J74 J75 (menu pages as windows; Meaning flow one row on a phone).
 - **v12.22** (2026-10-22): MSA J48 round 3 (Vocabulary Wheel).
+- **v12.23** (2026-10-22): MSA J72 sweep part 2 (Track window, Asma posters at the home size).

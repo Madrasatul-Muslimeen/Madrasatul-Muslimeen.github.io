@@ -103,10 +103,10 @@ for (const lang of ["en", "bn"]) {
       return { open: !!document.querySelector("#asmaXPosterOverlay.open .ahp-standalone"), bar: !!bar && R(bar).height > 0,
         backText: back?.textContent.trim() ?? "", backHit: hit(back), xHit: hit(x),
         xContrast: x && bar ? +contrast(getComputedStyle(x).color, barBg).toFixed(2) : 0,
-        barAboveStrip: !!bar && !!strip && R(bar).bottom <= R(strip).top + 1, barTop: bar ? Math.round(R(bar).top) : -1,
+        barAboveStrip: !!bar && !!strip && R(bar).bottom <= R(strip).top + 1, barTop: bar ? Math.round(R(bar).top) : -1, boxTop: (() => { const ov = document.getElementById("asmaXPosterOverlay"); return ov.classList.contains("at-home") ? Math.round(R(ov).top) : 0; })() /* v12.23 (J72): a box at the home size on a computer */,
         xLabel: x?.getAttribute("aria-label") ?? "" };
     })()`);
-    check(`${tag} tapping the poster opens it full size, with a bar first`, f.open && f.bar && f.barTop <= 1, JSON.stringify(f));
+    check(`${tag} tapping the poster opens it full size, with a bar first`, f.open && f.bar && f.barTop <= f.boxTop + 1, JSON.stringify(f));
     check(`${tag} ...the bar sits above the description strip; "← Back to {Name}" and × are both really tappable`, f.barAboveStrip && f.backHit && f.xHit, JSON.stringify(f));
     check(`${tag} ...× can be seen: at least 4.5:1 against the bar (it was 15% white over cream)`, f.xContrast >= 4.5, f.xContrast);
     check(`${tag} ...the way back names the Name, in ${lang === "bn" ? "Bangla" : "English"}; × has a translated name`,
