@@ -72,7 +72,7 @@ for (const lang of ["en", "bn"]) for (const [width, height] of [[1440, 900], [39
     check(`${tag} ${name}: the tray opens with the note's own title in its note window ("${wantTitle}")`, ok && (wantTitle instanceof RegExp ? wantTitle.test(title) : title === wantTitle), title);
     const mid = await state();
     check(`${tag} ${name}: nothing else opened (no Āyah card, no page window; the pane is ${paneStays ? "still" : "not"} open)`, mid.tray && !mid.sheet && !mid.wp && mid.pane === paneStays, JSON.stringify(mid));
-    await P.click("#journeyTray .jt-close"); await P.waitForTimeout(400);
+    await P.click("#journeyTray .jt-close", { timeout: 3000 }).catch(() => {}); await P.waitForTimeout(400);
     const after = await state();
     check(`${tag} ${name}: ✕ returns to exactly where the reader was (same āyah, same scroll, same pane)`, !after.tray && after.ayah === before.ayah && Math.abs(after.scroll - before.scroll) <= 2 && after.pane === before.pane, JSON.stringify({ before, after }));
   }
