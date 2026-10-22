@@ -1316,3 +1316,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v12.18** (2026-10-21): MSA J68 part 4.
 - **v12.19** (2026-10-21): MSA J69, J70.
 - **v12.20** (2026-10-21): J71 J72 J73 (Notes from the Āyah card; pop-ups one size, every edge, ← Back; Vocabulary buttons).
+- **v12.21** (2026-10-22): J74 J75 (menu pages as windows; Meaning flow one row on a phone).
