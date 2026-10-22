@@ -55,9 +55,14 @@ for (const lang of ["en", "bn"]) {
     const o = await page.evaluate(() => {
       const intro = document.getElementById("wheelIntroSettled"), row = document.getElementById("wheelDrawerRow");
       const between = []; for (let n = intro.nextElementSibling; n && n !== row; n = n.nextElementSibling) { const r = n.getBoundingClientRect(); if (r.width > 0 && r.height > 0) between.push(n.id || n.className); }
-      return { sameParent: intro.parentElement === row.parentElement, between, introBottom: intro.getBoundingClientRect().bottom, rowTop: row.getBoundingClientRect().top, buttons: [...row.querySelectorAll("button")].map((b) => ({ t: b.textContent.trim(), h: b.getBoundingClientRect().height, exp: b.getAttribute("aria-expanded") })) };
+      return { sameParent: intro.parentElement === row.parentElement, between, introBottom: intro.getBoundingClientRect().bottom, rowTop: row.getBoundingClientRect().top, buttons: [...row.querySelectorAll(".wheel-drawer-btn")].map((b) => ({ t: b.textContent.trim(), h: b.getBoundingClientRect().height, exp: b.getAttribute("aria-expanded") })),
+        // PCF J25 (the Owner, 15 Oct 2026, a photo): on a phone the 🧰 sits at the row's right end ([data-zab-dock]).
+        others: [...row.querySelectorAll("button:not(.wheel-drawer-btn)")].filter((b) => b.getBoundingClientRect().width > 0).map((b) => ({ cls: b.className, t: b.textContent.trim(), h: Math.round(b.getBoundingClientRect().height), last: b.getBoundingClientRect().right >= Math.max(...[...row.querySelectorAll("button")].map((x) => x.getBoundingClientRect().right)) - 0.5 })) };
     });
     check(`${tag} order: Read bar, then the drawer row, nothing visible between them while closed`, o.sameParent && o.between.length === 0 && o.rowTop >= o.introBottom - 1, JSON.stringify(o));
+    // UPDATED IN PLACE 23 Oct 2026: these two counted every button in the row, and since PCF J25 (15 Oct) the row also
+    // holds the docked 🧰 -- 4 buttons, red ever since. They now count the drawer buttons, and the 🧰 has its own check.
+    check(`${tag} the row holds nothing but the three drawers and, on a phone, the docked 🧰 at its right end (40px)`, o.others.every((b) => b.cls === "zab-dock-btn" && b.t === "🧰" && b.h >= 40 && b.last) && (width >= 768 || o.others.length === 1), JSON.stringify(o.others));
     check(`${tag} three drawer buttons, 40px+, all closed`, o.buttons.length === 3 && o.buttons.every((b) => b.h >= 40 && b.exp === "false"), JSON.stringify(o.buttons));
     check(`${tag} the three names go through t()`, lang === "en" ? o.buttons.map((b) => b.t).join("|").replace(/▴/g, "") === "Wheel|Legend|Unit" : o.buttons.every((b) => /[ঀ-৿]/.test(b.t)), JSON.stringify(o.buttons.map((b) => b.t)));
     let closed = true; for (const n of Object.keys(GROUPS)) closed = closed && !(await vis(page, n));
@@ -127,9 +132,12 @@ for (const lang of ["en", "bn"]) {
       const bottom = Math.max(...nums.map((e) => e.getBoundingClientRect().bottom));
       const bar = document.getElementById("wheelIntroSettled").getBoundingClientRect();
       // "Place those wheel buttons as marked up": Wheel to the left edge, Unit to the right.
-      const btns = [...document.querySelectorAll("#wheelDrawerRow .wheel-drawer-btn")].map((b) => b.getBoundingClientRect());
+      // PCF J25: the 🧰, when docked, takes the right end; Wheel, Legend and Unit shift left ("as shown").
+      const btns = [...document.querySelectorAll("#wheelDrawerRow .wheel-drawer-btn, #wheelDrawerRow .zab-dock-btn")].filter((b) => b.getBoundingClientRect().width > 0).map((b) => b.getBoundingClientRect());
+      const gapsBetween = btns.slice(1).map((b, i) => b.left - btns[i].right);
       return { n: nums.length, gap: Math.round((top - card.top) * 10) / 10, bottomGap: Math.round((bar.top - bottom) * 10) / 10,
-        leftInset: Math.round(btns[0].left - card.left), rightInset: Math.round(card.right - btns[2].right),
+        leftInset: Math.round(btns[0].left - card.left), rightInset: Math.round(card.right - btns[btns.length - 1].right), items: btns.length,
+        spread: Math.round((Math.max(...gapsBetween) - Math.min(...gapsBetween)) * 10) / 10,
         // Owner, 1 Oct 2026 (demo approved, "go"): the first screen ends at the
         // dock -- Open all starts below it, the drawer row is above it.
         // Page coordinates (an earlier step may have scrolled): the fold is the
@@ -150,7 +158,9 @@ for (const lang of ["en", "bn"]) {
       // extreme edges" (was 8-24px in).
       check(`${tag} the highest wheel number sits well inside the dark card, at least 15px below its top (gap ${g.gap}px; spare height on a tall screen adds to it)`, g.gap >= 15, JSON.stringify(g));
       check(`${tag} the lowest wheel number clears the capsule bar by 18-28px (gap ${g.bottomGap}px)`, g.bottomGap >= 18 && g.bottomGap <= 28, JSON.stringify(g));
-      check(`${tag} Wheel sits at the extreme left edge, Unit at the extreme right (insets ${g.leftInset}/${g.rightInset}px), Legend centred`, g.leftInset <= 10 && g.rightInset <= 10 && g.leftInset >= 2 && g.rightInset >= 2 && g.legendOff <= 3, JSON.stringify(g));
+      // UPDATED IN PLACE 23 Oct 2026 (PCF J25): with the 🧰 docked the row's right end is the 🧰, not Unit, and the four
+      // are spaced evenly; Legend is centred only when the 🧰 is not there.
+      check(`${tag} Wheel sits at the extreme left edge, the row's last item (Unit, or the docked 🧰) at the extreme right (insets ${g.leftInset}/${g.rightInset}px), the items evenly spaced`, g.leftInset <= 10 && g.rightInset <= 10 && g.leftInset >= 2 && g.rightInset >= 2 && (g.items === 4 ? g.spread <= 1 : g.legendOff <= 3), JSON.stringify(g));
       check(`${tag} the first screen ends at the dock: the drawer row is above it, Open all below it (row ${g.rowBottom}, dock ${g.dockTop}, Open all ${g.openAllTop})`, g.rowBottom <= g.dockTop && g.openAllTop >= g.dockTop, JSON.stringify(g));
     }
     else check(`${tag} the Approach list top is measured (${g.listTop}px)`, g.listTop > 0);
@@ -184,13 +194,23 @@ for (const size of [0, 560, 760]) {
   await page.waitForSelector("#wheelContainer .wheel-seg-num", { timeout: 20000 });
   await clear(page);
   await page.click("#wheelPopupMaximizeBtn"); await page.waitForTimeout(600);
-  if (size) { await page.evaluate((px) => { const w = document.getElementById("wheelResizeWrap"); w.classList.add("wheel-resized"); w.style.width = px + "px"; }, size); await page.waitForTimeout(500); }
+  // UPDATED IN PLACE 23 Oct 2026: this used to set the wrap's width straight from the test. Since v12.05 (PCF MSA J44)
+  // a PC's wheel is re-fitted to its window whenever the window or its controls change size, and only a size the
+  // READER drags this visit is kept -- so the set width was undone (953px either way) and this case was red. The
+  // reader's real gesture is used instead: the east edge handle, dragged with the mouse by the difference.
+  if (size) {
+    const h = await page.evaluate(() => { const e = document.querySelector('#wheelResizeWrap .wheel-resize-handle[data-wheel-resize="e"]').getBoundingClientRect();
+      return { x: e.left + e.width / 2, y: e.top + e.height / 2, w: document.getElementById("wheelResizeWrap").getBoundingClientRect().width }; });
+    await page.mouse.move(h.x, h.y); await page.mouse.down();
+    await page.mouse.move(h.x + (size - h.w) / 2, h.y, { steps: 4 }); await page.mouse.move(h.x + (size - h.w), h.y, { steps: 4 });
+    await page.mouse.up(); await page.waitForTimeout(700);
+  }
   const pc = await page.evaluate(() => {
     const nums = [...document.querySelectorAll("#wheelContainer .wheel-seg-num")].map((e) => e.getBoundingClientRect());
     const bar = document.getElementById("wheelIntroSettled").getBoundingClientRect();
     return { n: nums.length, wheel: Math.round(document.querySelector("#wheelContainer svg").getBoundingClientRect().width), gap: Math.round((bar.top - Math.max(...nums.map((r) => r.bottom))) * 10) / 10 };
   });
-  check(`[PC maximised, wheel ${pc.wheel}px] the lowest number clears the capsule bar by 8-20px (gap ${pc.gap}px)`, pc.n >= 30 && pc.gap >= 8 && pc.gap <= 20 && (!size || pc.wheel === size), JSON.stringify(pc));
+  check(`[PC maximised, wheel ${pc.wheel}px] the lowest number clears the capsule bar by 8-20px (gap ${pc.gap}px)`, pc.n >= 30 && pc.gap >= 8 && pc.gap <= 20 && (!size || Math.abs(pc.wheel - size) <= 1), JSON.stringify(pc));
   await ctx.close();
 }
 console.log("gaps/list tops:", JSON.stringify(gaps));
