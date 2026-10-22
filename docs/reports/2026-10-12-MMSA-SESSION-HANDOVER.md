@@ -7,7 +7,40 @@ v10.28). Read `CLAUDE.md` first. The prompt that starts the next session is
 
 This session was summarised once (its context compacted), which is why it hands over here.
 
-## LATEST UPDATE — 23 Oct 2026, 3:50 am Sydney, session `session_01GkAPfmGq41a58zqYMQFQmB` (v12.23 live on MSA AND QR; behaviour.mjs green; HANDOVER) — READ THIS FIRST
+## LATEST UPDATE — 23 Oct 2026, 10:30 am Sydney, session `session_01MYQKgXtFU3L7VDfnhNRxbp` (v12.24 + v12.25 live on MSA AND QR; HANDOVER) — READ THIS FIRST
+
+Took over 3:50 am 23 Oct from `session_01GkAPfmGq41a58zqYMQFQmB`. Handing over at ~40% context (cost86/hand119). **The PCA moved to `session_01HqedLzJPW6qKznTRoYyron`** (8:30 am; confirmed in `meta/global.sessionUrl`) — send PCA messages there. Hadith Lead: `session_01Q2HmCeWjo1vVYV5kgMBvC9`.
+**`main` is v12.25** (PR #1030, merge `139d5514`, live MSA and QR 8:25 am; QR 20/20). **Next release: v12.26.**
+
+**Released this session**
+- PR #1025 (checks only): landing-drawers 284/0, landing-drawer-row-resized-wheel 15/0 (stale since J25 / J44).
+- **v12.24** (PR #1027): the Word card reads its word's own surah (audit-part15's intermittent error, reproduced 3/3); `quran-lemma-progress-rendered` updated for five levels.
+- **v12.25** (PR #1030): **J78** every Āyah card tab as the same window; **J71 B** Note formatting buttons as five group tabs at every width; **J81 parts 1–2** `app/js/minimise.js` (– beside ✕ on every pop-up, chips, bottom row steps windows aside); **#1028** audit part 40 (four readability fixes); **J80** (Hadith Lead) notice off the Dua/Explanations tabs.
+
+**IN FLIGHT — the next session's first jobs**
+1. **PR #1031 (Builder round #1029, J81 part 3: every note opens in the Mapping My Journey window) — LANDED, NOT YET REVIEWED.** Review by measurement: its new suite `note-opens-in-journey-browser` 60/0 and mutations; it changes `journey-tray.js`, `zab-bar.js` (shared note scripts: QR change notice), `journey-map.html`. Open items it lists: Hadith/Dua "My Notes" go to `notes.html?unit=` (no note id; Hadith Lead's call — tell them), My Notes page / Bookmarks / Records / Continue strip not audited by hand; `audit-part28` 4 and `audit-part4-fixes` 1 failures it did not compare with main — compare on a clean main worktree before calling them ours. behaviour.mjs total is in its PR comment.
+2. **Builder round #1032 RUNNING** (dispatched 10:25 am): J82 parts 1, 2, 4, 5 — Learn next opens the next word's Word card; Bookmark from the Āyah card returns to it; ‹ › page buttons on the full-screen Mushaf and in the Read bar. Review its PR when it lands.
+3. **Issue #1033 WRITTEN, NOT DISPATCHED** (one Builder round at a time; a second dispatch while one runs replaces the queued one): J82 part 3, the Notes window's 10 rows → standard 5. Dispatch it when #1032's run has finished.
+4. Then release v12.26 (allocate-version.py; QR 20 checks BEFORE merge; build-from-msa; confirm both version.js; PMS What's New + Done lines with a check tick).
+
+**Waiting on the Owner (PMS ticks):** **n79a** (J79: 37 broken places in the Bangla translation — both public copies, alquran.cloud and Tanzil, carry the same breaks; proposed corrections listed; after the tick: apply only those words, add a check that fails on any `\d{4};` or stray non-Bangla letter, release), **n77a** (J77: the Read bar's way back on a phone — bisected to v11.35's 📜 + J63's phone rule), **n78a, n71c, n81a** (checks of v12.25), n72d and the older list in the 3:50 am block.
+
+**Owner messages this session (carry1)**, all filed in the PMS:
+- ~6:40 am: Āyah card tabs → **J78**, released v12.25.
+- ~7:00 am: "the note view buttons … horizontal endless" → **J71** (two layouts shown; Owner ticked **B**), released v12.25.
+- ~7:05 am: bottom buttons / minimise / every note in the MMJ window → **J81** (Owner ticked: the Read view's pane too); parts 1–2 released v12.25, part 3 = PR #1031 (review pending).
+- ~10:15 am: Learn next / Bookmark way back / Note's 10 rows / Mushaf page buttons ×2 → **J82**: issues #1032 (running) and #1033 (queued).
+
+**Recorded red on `main`, not this session's** (each compared on a clean main): `audit-part19-notes` readpane 1440 (2); `journey-note-edit` 1280 "typing at the end of a long Note" (1; its summary line does NOT count it — a suite fault to fix); `bookmark-marks-back` 12 (= J77); `audit-part16` "studied ← Back lands on 4563" flakes under load (green alone 3/3).
+
+**Lessons**
+- **Name a data-attribute after what it does, once**: the – button carried `data-mm-min` — the same attribute that HIDES a minimised window — so it hid itself; caught only because the suite measured visibility.
+- **A mutation that copies the fix is no mutation**: capturing `currentSurahData` before the await IS the fix, so "replace with currentSurahData" passed; the old behaviour was reading it AFTER the awaits.
+- **A redundant path hides an unproven one**: the bottom-row handler restored the tray itself, so the tray's own `restoreWindow` could be deleted with the suite green; testing a link OUTSIDE the bottom row proved it.
+- **Both public copies of a translation can share one corruption**: re-pulling is not a fix; check the source before promising a repair.
+- **One Builder dispatch at a time**: GitHub keeps one pending run per concurrency group; a second dispatch replaces the first.
+
+## LATEST UPDATE — 23 Oct 2026, 3:50 am Sydney, session `session_01GkAPfmGq41a58zqYMQFQmB` (v12.23 live on MSA AND QR; behaviour.mjs green; HANDOVER) — superseded by the 10:30 am block above, kept as history
 
 Took over 12:30 am 23 Oct from `session_011rXL5Ag47YfqVMmMBdLMQj`. Handing over at ~40% context (cost86/hand119). **Nothing is in flight**: no Builder round, no open PR, no test run.
 **`main` is v12.23** (PR #1022, merge `67d57cfa`, live on MSA and QR 2:24 am 23 Oct; QR build-from-msa dispatched, both `version.js` read 12.23; QR's 20 checks 20/20 on the build), then **PR #1023** (merge `adab5b05`, checks only, no version). **Next release: v12.24.** The PCA is `session_019xuGwr6uFeQUpKmERwBPxX`; the MSA · Hadith Lead is `session_01Q2HmCeWjo1vVYV5kgMBvC9` (no branch; told of #1022's commit).
