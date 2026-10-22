@@ -7,7 +7,30 @@ v10.28). Read `CLAUDE.md` first. The prompt that starts the next session is
 
 This session was summarised once (its context compacted), which is why it hands over here.
 
-## LATEST UPDATE — 23 Oct 2026, 12:40 am Sydney, session `session_011rXL5Ag47YfqVMmMBdLMQj` (v12.22 merged; HANDOVER) — READ THIS FIRST
+## LATEST UPDATE — 23 Oct 2026, 3:50 am Sydney, session `session_01GkAPfmGq41a58zqYMQFQmB` (v12.23 live on MSA AND QR; behaviour.mjs green; HANDOVER) — READ THIS FIRST
+
+Took over 12:30 am 23 Oct from `session_011rXL5Ag47YfqVMmMBdLMQj`. Handing over at ~40% context (cost86/hand119). **Nothing is in flight**: no Builder round, no open PR, no test run.
+**`main` is v12.23** (PR #1022, merge `67d57cfa`, live on MSA and QR 2:24 am 23 Oct; QR build-from-msa dispatched, both `version.js` read 12.23; QR's 20 checks 20/20 on the build), then **PR #1023** (merge `adab5b05`, checks only, no version). **Next release: v12.24.** The PCA is `session_019xuGwr6uFeQUpKmERwBPxX`; the MSA · Hadith Lead is `session_01Q2HmCeWjo1vVYV5kgMBvC9` (no branch; told of #1022's commit).
+
+**Done this session**
+- **v12.23 = MSA J72, the sweep's second part** (CHANGELOG v12.23): the Track window (`app/js/way-modal.js`, shared by Hadith, Dua, Asma, Deen, every study page and the Qur'an page) opens at the home size on a computer with a 40px ← Back, fills the frame inside a J74 page window (`placeDialogAtHome()`, `inPageWindow()` in `home-window.js`); both Asma full-size posters at the home size, solid `#26324a`, poster sized to the box. Seerah has no screens yet; Asma's edit forms stay small. **J72's sweep is finished** (n72d asks the Owner to check). New suite `popup-home-sweep-browser` 44/0, 5 mutations.
+- **PR #1023 (checks only): `behaviour.mjs` runs to the end — 971/0.** It had been CRASHING at 907 (section 45 clicked `#readBookmarkBtn`, which at ≥900px steps aside for the bar's `#readBarBookmarkBtn` since v12.16 J63), so sections 45–56 never ran; `harness.clickReadTool` now presses the twin on screen. Also green now: bookmark-assign-unit, bookmark-family-unit, bookmark-multi-save, read-window (its contrast probe read a 14% gold wash as solid: 2.85 vs 5.74 rendered), global-approach-card, audit-part14 650/0, audit-part18 1020/0. audit-part1's 4 were this sandbox's stale local `main` ref (210/0 once current).
+
+**Next (each needs nothing from the Owner unless said)**
+1. Owner: **n72d** (v12.23), n48e, n48f (v12.22), n74a, n75a, n71b, n72c, n73a, n76a, and the older n69b, n70b, n67a, n61c, n66a, n68b, n61b, n63a, n65a, n68a, n58c, n60a, n61a, n62a, n64a. MSA J64 waits on the Owner's taps.
+2. **Still red on `main`**: `bookmark-marks-back` 12 (red at v12.19 too: on a phone the back label in the Read bar takes a line of its own, `sharesLine:false`, 5 lines — may be a real layout regression; screenshot it before deciding), `landing-drawer-row-resized-wheel` 1 (red at v12.19 too: on a PC a wheel dragged to 420px comes up at 346 — the landing window caps it?), `landing-drawers` 246/28 (not yet looked at), audit-part15's intermittent "lemma-wide word progress" page error.
+3. Then the PCF rule "when no job is left, audit feature by feature (the User Manual is the checklist)".
+
+**Owner messages this session (carry1):** none arrived (none in the PCF since 22 Oct 11:56 pm UTC; none in this session).
+
+**Lessons**
+- **A suite that crashes reads as "N failed" in a summary line and hides everything after it**: `behaviour.mjs`'s "907/7, same as main" was carried as a baseline while sections 45–56 had stopped running. Read the LAST lines of the log, not the count.
+- **A hidden twin is not a broken button**: when a control steps aside for an equivalent one on screen, teach the harness which one a reader presses (`READ_TOOL_TWINS`), not each suite.
+- **A contrast probe must blend see-through backgrounds** over what is under them; reading `rgba(…, 0.14)` as solid gave a false 2.85:1.
+- **This sandbox's local `main` ref can be days stale** (here #998): any check doing `git show main:…` then compares against an old page. `git branch -f main origin/main` first.
+- **An unproven mutation can be a coincidence of sizes**: `noframe` passed because a 1000px home rect, clamped into a 998px frame, happens to fill it; the frame branch only matters below 900px, so the suite's home rect is 860 wide.
+
+## LATEST UPDATE — 23 Oct 2026, 12:40 am Sydney, session `session_011rXL5Ag47YfqVMmMBdLMQj` (v12.22 merged; HANDOVER) — superseded by the 23 Oct 3:50 am block above, kept as history
 
 The Owner said "You can now resume your job where you were paused" (~11:30 pm 22 Oct), so this session (summarised once) built **MSA J48 round 3** instead of handing over, and hands over now (cost86/hand119).
 **`main` is v12.22 (PR #1020, merge `8bd29981`, 12:27 am 23 Oct); QR build-from-msa run #20 succeeded at 12:28 am; QR's 20 checks 20/20 on the build. Next release: v12.23.** The PCA is `session_019xuGwr6uFeQUpKmERwBPxX`.
