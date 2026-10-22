@@ -7,7 +7,24 @@ v10.28). Read `CLAUDE.md` first. The prompt that starts the next session is
 
 This session was summarised once (its context compacted), which is why it hands over here.
 
-## LATEST UPDATE — 22 Oct 2026, 11:20 pm Sydney, session `session_011rXL5Ag47YfqVMmMBdLMQj` (v12.21 live on MSA AND QR; HANDOVER) — READ THIS FIRST
+## LATEST UPDATE — 23 Oct 2026, 12:40 am Sydney, session `session_011rXL5Ag47YfqVMmMBdLMQj` (v12.22 merged; HANDOVER) — READ THIS FIRST
+
+The Owner said "You can now resume your job where you were paused" (~11:30 pm 22 Oct), so this session (summarised once) built **MSA J48 round 3** instead of handing over, and hands over now (cost86/hand119).
+**`main` is v12.22 (PR #1020, merge `8bd29981`, 12:27 am 23 Oct); QR build-from-msa run #20 succeeded at 12:28 am; QR's 20 checks 20/20 on the build. Next release: v12.23.** The PCA is `session_019xuGwr6uFeQUpKmERwBPxX`.
+
+**v12.22 = MSA J48 round 3** (CHANGELOG v12.22 has the detail): Approaches | Vocabulary switch (`#wheelKindRow`, moved by script: `#wheelKindTitleSlot` in the Wheel window's title bar ≥900px, the top of the Wheel ▴ drawer below — a row above the wheel cost it up to 57px / 22%, wheel-centre caught it); `renderVocabWheel()` (9 steps, green fill by new words or all up to it, `mmsa.vocabWheelFill.v1`; ✓ when all words known; segment → Learn next on that step, ← Back); gold Word-by-word fill on the Āyah Wheel (`ayahWheelWordFraction()`, memory only); `vocabBadgeHtml()` on Learn next and KYS; Monitor's Vocabulary table (`app/js/vocab-known.js`). Pure figures in `learn-next.js` (`vocabStepFigures`, `vocabStepFill`, `vocabBadgeFigures`). New suite `vocab-wheel-browser` 114/0, 13 mutations.
+
+**Next**
+1. Owner: **n48e** (check round 3) and **n48f** (switch on a phone: A drawer as built / B a row above the wheel, the demo). Plus the list in the 11:20 pm block below.
+2. **J72 sweep, rest** (Hadith, Dua, Seerah, Asma pop-ups to the home size with ← Back).
+3. Pre-existing reds on `main` (below), plus `landing-drawers` 246/28 and `landing-drawer-row-resized-wheel` 12/1 (both the same on v12.21).
+
+**Lessons**
+- **An unproven mutation can mean dead code, not a weak check**: `nofit` stopped failing once the switch left the wheel's column; the re-fit it guarded had become unreachable, so it was removed rather than kept "just in case".
+- **A seed must be able to tell two rules apart**: "all words of the step" vs "only its new words" agree when words 1–25 are known; leaving word 11 out separates them (the `passed` mutation).
+- **Running 24 browser suites at once in this sandbox makes some crash on timeouts**: re-run them one at a time before believing a crash.
+
+## LATEST UPDATE — 22 Oct 2026, 11:20 pm Sydney, session `session_011rXL5Ag47YfqVMmMBdLMQj` (v12.21 live on MSA AND QR; HANDOVER) — superseded by the 23 Oct 12:40 am block above, kept as history
 
 Took over 8:48 am 22 Oct from `session_01NRUt1vXovcsHryRwq8E6J6`. Handing over at ~40% context (cost86/hand119).
 **`main` is v12.21, live on MSA and QR since 11:18 pm 22 Oct (PR #1018, merge `bddfe2ac`; QR build-from-msa dispatched; QR's 20 checks 20/20 on the build). Next release: v12.22.** The PCA is `session_019xuGwr6uFeQUpKmERwBPxX`.
