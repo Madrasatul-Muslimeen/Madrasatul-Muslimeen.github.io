@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "12.22",
+    "version": "12.23",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -4541,8 +4541,20 @@
     {
       "version": "12.22",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "MSA J48 round 3: the Vocabulary Wheel, the gold Word-by-word fill, the vocabulary badge and the Monitor Vocabulary table.",
+      "integration": {
+        "authorizedOn": "2026-10-22",
+        "integratedOn": "2026-10-22",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.23",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "MSA J72, the sweep's second part: the Track window and both Asma full-size posters open at the home size with ← Back.",
       "integration": {
         "authorizedOn": "2026-10-22",
         "integratedOn": "2026-10-22",
@@ -4551,8 +4563,9 @@
       }
     }
   ],
-  "nextUnallocated": "12.23",
+  "nextUnallocated": "12.24",
   "nextUnallocatedNote": [
+    "v12.23 was allocated to MSA J72 sweep part 2 (Track window, Asma posters at the home size), 2026-10-22.",
     "v12.22 was allocated to MSA J48 round 3 (Vocabulary Wheel), 2026-10-22.",
     "v12.21 was allocated to J74 J75 (menu pages as windows; Meaning flow one row on a phone), 2026-10-22.",
     "v12.20 was allocated to J71 J72 J73 (Notes from the Āyah card; pop-ups one size, every edge, ← Back; Vocabulary buttons), 2026-10-21.",
