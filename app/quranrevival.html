@@ -769,6 +769,20 @@
     font-family: 'Inter', sans-serif; font-size: 0.76rem; font-weight: 700; cursor: pointer;
   }
   .wheel-look-btn[aria-pressed="true"] { background: var(--card-button-pressed-bg); border-color: var(--card-button-pressed-bg); color: var(--card-button-pressed-text); }
+  /* PCF MSA J48 round 3: Approaches | Vocabulary above the wheel, and how a Vocabulary segment fills */
+  .wheel-kind-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.3rem 0.8rem; margin: 0 0 0.35rem; }
+  .wheel-kind-row .wheel-look-switch { margin-top: 0; }
+  .wheel-kind-row .wheel-look-btn { min-height: 40px; }
+  .wheel-kind-row [data-vocab-fill-switch][hidden] { display: none; }
+  .wheel-vocab #wheelHubPickers, .wheel-vocab #wheelCtaBtn { display: none !important; }
+  .wheel-vocab #wheelContainer svg { filter: none !important; }
+  .vocab-wheel-msg { color: #c9d3ea; text-align: center; padding: 2rem 0.5rem; margin: 0; }
+  .vocab-wheel-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.3rem; }
+  .vocab-wheel-list button { width: 100%; min-height: 44px; display: flex; align-items: center; gap: 0.6rem; padding: 0.3rem 0.6rem; border-radius: 0.5rem; border: 1px solid var(--card-line); background: transparent; color: var(--card-text); font: inherit; text-align: start; cursor: pointer; }
+  .vocab-wheel-list .vwl-name { flex: 1 1 auto; font-weight: 700; }
+  .vocab-wheel-list .vwl-fig { font-variant-numeric: tabular-nums; color: var(--card-text-muted); }
+  .vocab-wheel-list .vwl-done .vwl-name::before { content: "✓ "; color: #2e9d63; }
+  .vocab-wheel-legend { margin: 0; font-size: 0.85rem; color: var(--card-text-muted); text-align: center; }
   /* Issue #352 -- the Show toggle and the All-units ring key / data box. */
   .wheel-names-btn { margin-left: 0.5rem; }
   .wheel-show-btn { min-height: 40px; min-width: 0; padding: 0.25rem 0.6rem; }
@@ -3836,6 +3850,16 @@
   .word-card-goto-ayah:hover { background: var(--wc-purple-bg); }
   .ln-vocab { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0 0 0.6rem; }
   .ln-vbtn { flex: 1 1 6rem; min-height: 44px; padding: 0 0.7rem; border-radius: 0.5rem; border: 1px solid #4b2a85; background: #4b2a85; color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+  /* PCF MSA J48 round 3: the vocabulary badge (Learn next, Know Your Status) */
+  .vocab-badge { border: 1px solid #a98bdc; background: #f1e9fb; color: #4b2a85; border-radius: 0.6rem; padding: 0.6rem 0.75rem; display: grid; gap: 0.45rem; margin: 0 0 0.7rem; }
+  .vocab-badge[hidden] { display: none; }
+  .vb-big { margin: 0; font-size: 1.02rem; font-weight: 700; }
+  .vb-bar { display: block; height: 10px; border-radius: 999px; background: #e4d4fb; overflow: hidden; }
+  .vb-bar > i { display: block; height: 100%; background: #4b2a85; border-radius: 999px; }
+  .vb-steps { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+  .vb-step { font-size: 0.85rem; border-radius: 999px; padding: 0.15rem 0.6rem; border: 1px solid #c9b3e6; background: #fff; color: #4b2a85; font-variant-numeric: tabular-nums; }
+  .vb-step.vb-done { background: #d7efdf; border-color: #2e7d55; color: #1d5a3c; font-weight: 700; }
+  .vb-sum { margin: 0; font-size: 0.9rem; }
   .vocab-sheet { position: fixed; inset: 0; z-index: 1450; display: flex; flex-direction: column; background: #fff; color: #13241f; }
   .vocab-sheet[hidden] { display: none; }
   /* PCF MSA J73: on a computer Learn next and Vocabulary are pop-ups at the home size (home-window.js placeAtHome) */
@@ -5491,6 +5515,19 @@
                wheel (see #wheelIntroSettled there), holds the three action
                buttons only, and the Approach list's title moved to the
                heading line. -->
+          <!-- PCF MSA J48 round 3 (the Owner, 21 Oct 2026, 1B): two displays of the Wheel. "Vocabulary" draws the 9 Learn
+               next steps; its list (780 KB) is fetched on this first tap only, never at startup (I9), so the choice is
+               not remembered across loads. How a segment fills IS remembered on this device. -->
+          <div class="wheel-kind-row" id="wheelKindRow">
+            <div id="wheelKindSwitch" class="wheel-look-switch" role="group" aria-label="Which Wheel">
+              <button type="button" class="wheel-look-btn" data-wheel-kind="approaches" aria-pressed="true">Approaches</button>
+              <button type="button" class="wheel-look-btn" data-wheel-kind="vocab" aria-pressed="false">Vocabulary</button>
+            </div>
+            <div class="wheel-look-switch" data-vocab-fill-switch role="group" aria-label="How a segment fills" hidden>
+              <button type="button" class="wheel-look-btn" data-vocab-fill="new" aria-pressed="true">The step's new words</button>
+              <button type="button" class="wheel-look-btn" data-vocab-fill="all" aria-pressed="false">All words up to it</button>
+            </div>
+          </div>
           <div id="wheelStageWrap" class="wheel-stage-wrap wheel-veiled">
             <!-- 2 Sep 2026 -- "enable all wheels ... to be expandable from
                  any side": a drag-resize wrap around #wheelContainer alone
@@ -7116,7 +7153,7 @@
     import { parseQuranWordOccurrenceId } from "./js/quran-word-identity.js";
     import { loadLemmaDictionary, loadBanglaLemmaDictionary, lemmaDictionaryEntry } from "./js/lemma-dictionary.js";
     import { loadLemmaMeaningGroups, sameMeaningLemmas, meaningGroupOf } from "./js/lemma-meaning-groups.js";
-    import { loadLearnNext, firstUnknownRow, milestoneFigures, visibleRows, placeOfRow, stepRange, wordShare, formatShare, LEARN_NEXT_PAGE } from "./js/learn-next.js";
+    import { loadLearnNext, firstUnknownRow, milestoneFigures, visibleRows, placeOfRow, stepRange, wordShare, formatShare, LEARN_NEXT_PAGE, vocabBadgeFigures, vocabStepFill } from "./js/learn-next.js";
     // J53: a lemma is a KEY (Buckwalter marks like ^ kept as Latin); lemmaText() is how a reader sees it.
     import { lemmaText } from "./js/lemma-text.js";
     import { PRACTICE_KINDS, deckRows, buildRound, buildTest, buildWordRound, wordRoundWrites, tally, testPassed, practiceWrites, achievedWrites } from "./js/vocabulary.js";
@@ -7655,6 +7692,10 @@
     const wheelStageWrapEl = document.getElementById("wheelStageWrap");
     const wheelCtaBtn = document.getElementById("wheelCtaBtn");
     const wheelHubPickers = document.getElementById("wheelHubPickers");
+    // PCF MSA J48 round 3 -- declared up here because renderWheel() may run before its own block is reached.
+    const VOCAB_GOLD = "#d8b25a", VOCAB_GREEN = "#2e9d63", VOCAB_FILL_KEY = "mmsa.vocabWheelFill.v1";
+    let wheelKind = "approaches", vocabWheelLoad = null, lastWheelWordFrac = "";
+    const wheelKindRowEl = document.getElementById("wheelKindRow");
     const wheelHubGraphic = document.getElementById("wheelHubGraphic");
     const readUnitTypeSelect = document.getElementById("readUnitTypeSelect");
     const readAyahSelect = document.getElementById("readAyahSelect");
@@ -10036,6 +10077,8 @@
 
     function renderWheel() {
       dropWheelPaintCopy();
+      syncWheelKindSwitch();
+      if (wheelKind === "vocab") { renderVocabWheel(); return; }
       if (!quranTrackables.length || !currentSurahData) {
         wheelContainer.innerHTML = `<p style="color:#8fa0c2;">${t("No Approaches yet.")}</p>`;
         wheelSidebarContainer.innerHTML = "";
@@ -10059,13 +10102,25 @@
       // ("not started") is meaningless in either language and was never
       // translated. Pre-existing here, not introduced by this round.
       const wheelLabels = statusLabelsById();
-      const items = approachStatuses.map(({ trackable, statusId }) => ({
-        key: trackable.id,
-        number: num(approachNo(trackable)),
-        shortLabel: wheelShortLabel(trackable),
-        statusId,
-        title: segTitle(langText(trackable.name, getAppLang(), trackable.id), statusId, wheelLabels),
-      }));
+      // PCF MSA J48 round 3 (1B): on one āyah, the Word by word slice also fills in gold by how many of the āyah's
+      // words are known -- read from what is already in memory, so drawing the Wheel never waits on a read.
+      const wordFrac = show === "unit" && currentUnitType === "ayah" ? ayahWheelWordFraction() : null;
+      lastWheelWordFrac = wordFrac ? `${wordFrac.known}/${wordFrac.total}` : "";
+      const items = approachStatuses.map(({ trackable, statusId }) => {
+        const item = {
+          key: trackable.id,
+          number: num(approachNo(trackable)),
+          shortLabel: wheelShortLabel(trackable),
+          statusId,
+          title: segTitle(langText(trackable.name, getAppLang(), trackable.id), statusId, wheelLabels),
+        };
+        if (wordFrac && trackable.id === WBW_TRACKABLE_ID) {
+          item.progress = wordFrac.total ? wordFrac.known / wordFrac.total : 0;
+          item.progressFill = VOCAB_GOLD;
+          item.title += ` · ${t("{ref} · {k}/{n} words known", { ref: `${num(currentSurahNum)}:${num(currentAyahNum)}`, k: num(wordFrac.known), n: num(wordFrac.total) })}`;
+        }
+        return item;
+      });
       // The hub's own overlay (Ta'awwudh/Bismillah, permanently, plus the
       // Surah/Ayah pickers) now occupies this whole spot -- the owner's own
       // instruction, after the chosen ayah's own Arabic text kept showing
@@ -10189,6 +10244,124 @@
       syncWheelUnitPalette();
       renderWheelHubUnit();
       layoutWheelHub();
+    }
+
+    // -----------------------------------------------------------------------
+    // PCF MSA J48 round 3 -- the Vocabulary Wheel (the Owner, 21 Oct 2026: "1B. also another Wheel display should
+    // show the progress of the 9 segments"). Nine segments, the nine Learn next steps; each fills in green by how much
+    // of the step is known (its new words, or all words up to it -- the reader's choice, kept on this device), and is
+    // ticked once every word in it is known. The centre is the share of the Qur'an's words known.
+    // -----------------------------------------------------------------------
+    function vocabFillMode() { try { return localStorage.getItem(VOCAB_FILL_KEY) === "all" ? "all" : "new"; } catch { return "new"; } }
+    function setVocabFillMode(mode) { try { localStorage.setItem(VOCAB_FILL_KEY, mode); } catch { /* this visit only */ } }
+    function syncWheelKindSwitch() {
+      wheelKindRowEl?.querySelectorAll("[data-wheel-kind]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.wheelKind === wheelKind)));
+      const fillSw = wheelKindRowEl?.querySelector("[data-vocab-fill-switch]");
+      if (fillSw) fillSw.hidden = wheelKind !== "vocab";
+      const mode = vocabFillMode();
+      wheelKindRowEl?.querySelectorAll("[data-vocab-fill]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.vocabFill === mode)));
+      wheelStageWrapEl?.classList.toggle("wheel-vocab", wheelKind === "vocab");
+    }
+    wheelKindRowEl?.addEventListener("click", (e) => {
+      const kind = e.target.closest("[data-wheel-kind]")?.dataset.wheelKind;
+      if (kind && kind !== wheelKind) { wheelKind = kind; renderWheel(); requestAnimationFrame(fitApproachWheelToWindow); return; }
+      const fill = e.target.closest("[data-vocab-fill]")?.dataset.vocabFill;
+      if (fill && fill !== vocabFillMode()) { setVocabFillMode(fill); renderWheel(); }
+    });
+    /** Known words of the āyah on screen, from memory only (null while nothing about it is known yet). */
+    function ayahWheelWordFraction() {
+      try {
+        const { tenantId, subjectPersonId } = wordProgressActor();
+        const a = currentSurahData?.ayahs?.find((x) => x.ayah === currentAyahNum);
+        if (!tenantId || !subjectPersonId || !a?.words?.length) return null;
+        const half = currentHalf();
+        const inHalf = (p) => !half || (half === "b" ? p > FATIHA_SPLIT_AFTER_WORD_PAGE : p <= FATIHA_SPLIT_AFTER_WORD_PAGE);
+        const confirmationRequired = !!wordProgressConfirmRequired;
+        const words = a.words.filter((w) => inHalf(w.position));
+        const known = words.filter((w) => {
+          const occView = wordProgressFor({ tenantId, personId: subjectPersonId, occurrenceId: `quran-word-occurrence:v1:${currentSurahNum}:${currentAyahNum}:${w.position}`, confirmationRequired });
+          const lemmaId = wbwClaimKey(w);
+          const lemmaView = lemmaId && isLemmaProgressPersistenceReady()
+            ? lemmaViewWithGroup({ tenantId, personId: subjectPersonId, lemmaId, root: w.morphology?.root, confirmationRequired }) : null;
+          return lemmaView ? effectiveOccurrenceState(occView, lemmaView).countsAsKnown : !!occView.countsAsKnown;
+        }).length;
+        return { known, total: words.length };
+      } catch { return null; }
+    }
+    /** Redraw the Approach wheel only when the gold fill would change (after a read lands, e.g. the Āyah card's). */
+    function refreshAyahWheelWordFill() {
+      if (wheelKind !== "approaches" || effectiveWheelShow() !== "unit" || currentUnitType !== "ayah") return;
+      const f = ayahWheelWordFraction();
+      if ((f ? `${f.known}/${f.total}` : "") !== lastWheelWordFrac) renderWheel();
+    }
+    function startVocabWheelLoad() {
+      const { tenantId, subjectPersonId } = wordProgressActor();
+      if (!tenantId || !subjectPersonId) return false;
+      if (!vocabWheelLoad) {
+        vocabWheelLoad = (async () => {
+          await wordProgressConfirmationRequired(tenantId, subjectPersonId);
+          await ensureLearnNext({ tenantId, personId: subjectPersonId, confirmationRequired: !!wordProgressConfirmRequired });
+        })().catch((error) => { reportWriteFailure(error, { what: "load the Vocabulary Wheel" }); throw error; })
+          .finally(() => { vocabWheelLoad = null; if (wheelKind === "vocab") renderWheel(); });
+        vocabWheelLoad.catch(() => {});
+      }
+      return true;
+    }
+    function vocabCtxIsCurrent() {
+      const { tenantId, subjectPersonId } = wordProgressActor();
+      return !!learnNextCtx && learnNextCtx.tenantId === tenantId && learnNextCtx.personId === subjectPersonId;
+    }
+    function renderVocabWheel() {
+      if (wheelRingPanelEl) wheelRingPanelEl.hidden = true;
+      wheelHubPickers.hidden = true;
+      wheelCtaBtn.hidden = true;
+      wheelLegendContainer.innerHTML = `<p class="vocab-wheel-legend">${escapeHtml(t("Green: the words of a step you know. ✓: every word of the step known."))}</p>`;
+      if (!vocabCtxIsCurrent()) {
+        const started = startVocabWheelLoad();
+        wheelContainer.innerHTML = `<p class="vocab-wheel-msg" data-vocab-wheel-msg>${escapeHtml(started ? t("Loading your vocabulary…") : t("Sign in to see your vocabulary."))}</p>`;
+        wheelSidebarContainer.innerHTML = "";
+        return;
+      }
+      const c = learnNextCtx, mode = vocabFillMode();
+      const b = vocabBadgeFigures(c.data.rows, c.data.total, learnNextIsKnown);
+      const grouped = (n) => num(Number(n).toLocaleString("en-US"));
+      const items = b.steps.map((s) => {
+        const fill = vocabStepFill(s, mode);
+        const k = mode === "all" ? s.allKnown : s.newKnown, size = mode === "all" ? s.n : s.newSize;
+        const name = t("First {n}", { n: grouped(s.n) });
+        return {
+          key: `vstep-${s.n}`,
+          number: "",
+          fill: "#22305a",
+          progress: fill,
+          progressFill: VOCAB_GREEN,
+          sliceLines: [escapeHtml(s.passed ? `✓ ${name}` : name), escapeHtml(`${grouped(k)}/${grouped(size)}`)],
+          title: escapeHtml(`${name}: ${t("{k} of {n} words known", { k: grouped(k), n: grouped(size) })}${s.passed ? ` · ${t("passed")}` : ""}`),
+        };
+      });
+      wheelContainer.innerHTML = renderScopedWheel(items, {
+        centerLabel: `${num(b.share.toFixed(1))}%`,
+        centerSub: escapeHtml(t("of the Qur'an's words")),
+      });
+      wheelContainer.querySelector("svg")?.setAttribute("data-vocab-wheel", mode);
+      wheelContainer.querySelectorAll(".wheel-seg").forEach((seg) => {
+        const n = Number(String(seg.dataset.key).replace("vstep-", ""));
+        if (b.steps.find((s) => s.n === n)?.passed) seg.setAttribute("stroke", "#7fd1a2");
+      });
+      attachScopedWheelClickHandler(wheelContainer, (key) => openLearnNextAtStep(Number(String(key).replace("vstep-", ""))));
+      wheelSidebarContainer.innerHTML = `<ul class="vocab-wheel-list" data-vocab-wheel-list>${b.steps.map((s) => {
+        const k = mode === "all" ? s.allKnown : s.newKnown, size = mode === "all" ? s.n : s.newSize;
+        return `<li class="${s.passed ? "vwl-done" : ""}"><button type="button" data-vstep="${s.n}"><span class="vwl-name">${escapeHtml(t("First {n}", { n: grouped(s.n) }))}</span><span class="vwl-fig">${escapeHtml(`${grouped(k)}/${grouped(size)}`)}</span></button></li>`;
+      }).join("")}</ul>`;
+      wheelSidebarContainer.querySelectorAll("[data-vstep]").forEach((btn) => btn.addEventListener("click", () => openLearnNextAtStep(Number(btn.dataset.vstep))));
+      requestAnimationFrame(fitApproachWheelToWindow); // the wheel arrives after "Loading…": size it to the window again
+    }
+    /** A segment opens its step in Learn next; Learn next's ← Back closes it onto the Wheel, still on Vocabulary. */
+    function openLearnNextAtStep(n) {
+      learnNextStep = n;
+      learnNextOnlyNew = vocabFillMode() === "new" && n !== 10;
+      learnNextShown = LEARN_NEXT_PAGE;
+      openLearnNextSheet().catch((error) => console.warn("Learn next", error));
     }
 
     // -----------------------------------------------------------------------
@@ -12231,6 +12404,7 @@
       const options = quranTrackables.map((trackable, i) =>
         `<option value="${trackable.id}"${myStatusPick === trackable.id ? " selected" : ""}>${escapeHtml(`${num(i + 1)}. ${langText(trackable.name, getAppLang(), trackable.id)}`)}</option>`).join("");
       return `<p class="my-status-whole-line">${t("Know your status on the whole Qur'an, by Approach.")}</p>
+      <div data-ms-vocab-badge>${vocabCtxIsCurrent() ? vocabBadgeHtml() : ""}</div>
       <div class="my-status-wheel-row">
         ${myStatusWheelBoxHtml(cache)}
         <div class="ms-pick-bar" data-ms-pick-bar>
@@ -12515,6 +12689,12 @@
         myStatusLoading = false;
         renderMyStatusOverviewNow();
       }
+      // PCF MSA J48 round 3: the vocabulary badge, read after the status so it never holds the list up.
+      if (!vocabCtxIsCurrent() && startVocabWheelLoad()) {
+        try { await vocabWheelLoad; } catch { /* reported by the load */ }
+      }
+      const slot = myStatusBodyEl.querySelector("[data-ms-vocab-badge]");
+      if (slot && vocabCtxIsCurrent()) slot.innerHTML = vocabBadgeHtml();
     }
 
     /** Closes the WHOLE sheet, detail card included. */
@@ -18973,6 +19153,7 @@
       el.setAttribute("aria-label", t("Learn next"));
       el.innerHTML = `<div class="ln-head"><button type="button" class="ln-back" data-ln-back>← ${escapeHtml(t("Back"))}</button><h2 class="ln-title">${escapeHtml(t("Learn next"))}</h2></div>
         <div class="ln-body" data-ln-scroll>
+          ${vocabBadgeHtml()}
           <p class="ln-note">${escapeHtml(t("The words that occur most often come first. Learn these and you will meet them everywhere in the Qur'an."))}</p>
           <div class="ln-review" data-ln-review>${learnNextReviewHtml()}</div>
           <div class="ln-tiles" role="group" aria-label="${escapeHtml(t("Steps"))}">${tiles}</div>
@@ -19122,6 +19303,23 @@
       }
     }
     /** Learn next's "Due today" strip. Empty until the schedule has loaded. */
+    /** PCF MSA J48 round 3 -- the badge at the top of Learn next and on Know Your Status. */
+    function vocabBadgeHtml() {
+      const c = learnNextCtx;
+      if (!c) return "";
+      const b = vocabBadgeFigures(c.data.rows, c.data.total, learnNextIsKnown);
+      const grouped = (n) => num(Number(n).toLocaleString("en-US"));
+      const chips = b.steps.map((s) => `<span class="vb-step${s.passed ? " vb-done" : ""}" data-vb-step="${s.n}"${s.passed ? " data-vb-passed" : ""}>${escapeHtml(`${s.passed ? "✓ " : ""}${t("First {n}", { n: grouped(s.n) })}`)}</span>`).join("");
+      const sum = b.next
+        ? t("{k} of {n} steps passed · next: First {next}", { k: num(b.passed), n: num(b.steps.length), next: grouped(b.next) })
+        : t("All {n} steps passed", { n: num(b.steps.length) });
+      return `<div class="vocab-badge" data-vocab-badge data-vb-words="${b.words}">
+        <p class="vb-big">${escapeHtml(t("You know {n} words = {p}% of the Qur'an's words", { n: grouped(b.words), p: num(b.share.toFixed(1)) }))}</p>
+        <span class="vb-bar" aria-hidden="true"><i style="width:${Math.min(100, b.share).toFixed(2)}%"></i></span>
+        <div class="vb-steps">${chips}</div>
+        <p class="vb-sum" data-vb-sum>${escapeHtml(sum)}</p>
+      </div>`;
+    }
     function learnNextReviewHtml() {
       const r = vocabReview, c = learnNextCtx;
       // J73: while the schedule is being read, say so (an empty line here was the only sign of a read that hung)
@@ -20787,6 +20985,7 @@
       } catch { coverage = null; }
       ayahSheetWordStatus = { known: coverage?.known ?? words.filter((w) => w.known).length, total: coverage?.total ?? words.length, words };
       renderAyahActionSheetNow();
+      refreshAyahWheelWordFill(); // PCF MSA J48 round 3
     }
 
     /** "Make a poster" (issue #295) -- read-on-first-use whether an active
