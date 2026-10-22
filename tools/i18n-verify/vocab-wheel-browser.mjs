@@ -21,6 +21,8 @@
 //   nogold   the Word by word slice never fills                                -> (7)
 //   nofit    the Vocabulary Wheel is not fitted to the window again            -> (8)
 //   bnleak   one Bangla string is missing                                      -> (8)
+//   titlebar the switch stays in a row of its own above the wheel on a computer  -> (8)
+//   phonerow on a phone the switch is a row of its own above the wheel           -> (8)
 //   monitorauto  the Monitor reads the table as the page opens                 -> (9)
 //   monitorcount the Monitor ignores WbW marks                                 -> (9)
 import { chromium, newContext, openPage } from "./harness.mjs";
@@ -45,6 +47,8 @@ const MUT = {
   nokys: [HTML, "      if (slot && vocabCtxIsCurrent()) slot.innerHTML = vocabBadgeHtml();", ""],
   nogold: [HTML, "if (wordFrac && trackable.id === WBW_TRACKABLE_ID) {", "if (false) {"],
   nofit: [HTML, "      requestAnimationFrame(fitApproachWheelToWindow); // the wheel arrives", "      // the wheel arrives"],
+  phonerow: [HTML, "else if (drawer.firstElementChild !== wheelKindRowEl) drawer.prepend(wheelKindRowEl);", "else document.getElementById(\"wheelStageWrap\").before(wheelKindRowEl);"],
+  titlebar: [HTML, "if (wheelKindRowEl.parentElement !== slot) slot.appendChild(wheelKindRowEl);", "void slot;"],
   monitorauto: ["app/monitor.html", "    let vocabShown = false;", "    let vocabShown = true; setTimeout(() => refreshVocabTable(), 0);"],
   monitorcount: ["app/js/vocab-known.js", "if (lemmaProgressFor({ tenantId, personId, lemmaId, confirmationRequired }).countsAsKnown) return true;", ""],
   bnleak: [BN, '  "of the Qur\'an\'s words": "কুরআনের শব্দের",\n', ""],
@@ -124,6 +128,23 @@ for (const lang of ["en", "bn"]) for (const [width, height] of [[1440, 900], [39
   check(`${tag} (1) learn-next.json is not fetched at startup`, fetched === 0, String(fetched));
   check(`${tag} (1) the Wheel opens on Approaches, the fill switch hidden`, start.pressed.includes("approaches") && start.fillHidden === true && start.mode === null, JSON.stringify(start.pressed));
 
+  // (6) Know Your Status FIRST, on a page that has not read the list yet: the badge is filled in after the status.
+  await page.evaluate(() => document.getElementById("myStatusWideBtn")?.click());
+  await page.waitForFunction(() => document.querySelector("#myStatusBody [data-ms-vocab-badge] [data-vocab-badge]"), null, { timeout: 20000 }).catch(() => {});
+  const kysFirst = await page.evaluate(() => document.querySelector("#myStatusBody [data-vocab-badge]")?.dataset.vbWords ?? null);
+  check(`${tag} (6) Know Your Status opened first still gets its badge (${words} words)`, Number(kysFirst) === words, String(kysFirst));
+  await page.evaluate(() => document.getElementById("myStatusBackBtn")?.click());
+  await page.waitForTimeout(300);
+
+  // (8) where the switch is: never a row of its own that the wheel pays for
+  if (width < 900) {
+    const before = await page.evaluate(() => ({ inDrawer: !!document.querySelector('[data-wheel-drawer-panel="wheel"]')?.contains(document.getElementById("wheelKindRow")) }));
+    await page.click('#wheelDrawerRow [data-wheel-drawer="wheel"]');
+    await page.waitForTimeout(250);
+    const shown = await page.evaluate(() => [...document.querySelectorAll("#wheelKindRow [data-wheel-kind]")].map((b) => Math.round(b.getBoundingClientRect().height)));
+    check(`${tag} (8) on a phone the switch is in the Wheel drawer and shows when it opens, buttons at least 40px`, before.inDrawer && shown.length === 2 && shown.every((h) => h >= 40), JSON.stringify({ before, shown }));
+  }
+
   // (2) + (3)
   await page.evaluate(() => document.querySelector('[data-wheel-kind="vocab"]').click());
   await page.waitForFunction(() => document.querySelector("#wheelContainer svg[data-vocab-wheel]"), null, { timeout: 30000 }).catch(() => {});
@@ -142,6 +163,14 @@ for (const lang of ["en", "bn"]) for (const [width, height] of [[1440, 900], [39
     const sec = document.getElementById("wheelSection").getBoundingClientRect();
     return { svgB: svg.bottom, svgR: svg.right, svgL: svg.left, secB: sec.bottom, over: document.documentElement.scrollWidth - innerWidth, w: svg.width };
   });
+  if (width >= 900) {
+    const bar = await page.evaluate(() => {
+      const b = document.getElementById("wheelPopupTitleBar");
+      return { inBar: !!b?.contains(document.getElementById("wheelKindRow")), h: b?.getBoundingClientRect().height ?? 0,
+        cut: [...(b?.querySelectorAll("button, .note-popup-title") ?? [])].filter((e) => e.scrollWidth > e.clientWidth + 1).length };
+    });
+    check(`${tag} (8) on a computer the switch sits in the window's title bar, one line, nothing cut (no wheel height spent)`, bar.inBar && bar.h <= 60 && bar.cut === 0, JSON.stringify(bar));
+  }
   if (width >= 900) check(`${tag} (8) the Vocabulary Wheel sits inside the window (no taller than its space)`, fit.svgB <= fit.secB + 1 && fit.w >= 200, JSON.stringify(fit));
   else check(`${tag} (8) the Vocabulary Wheel fits the phone, no sideways scroll`, fit.over <= 0 && fit.svgL >= 0 && fit.svgR <= width + 1, JSON.stringify(fit));
   if (lang === "bn") {

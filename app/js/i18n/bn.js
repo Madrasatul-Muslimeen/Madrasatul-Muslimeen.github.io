@@ -4443,8 +4443,10 @@ export const BN = {
   // PCF MSA J48 round 3: the Vocabulary Wheel, the badge
   "Which Wheel": "কোন চাকা",
   "How a segment fills": "একটি অংশ কীভাবে ভরে",
-  "The step's new words": "ধাপের নতুন শব্দ",
-  "All words up to it": "এ পর্যন্ত সব শব্দ",
+  "New words": "নতুন শব্দ",
+  "All up to it": "এ পর্যন্ত সব",
+  "Fill by the step's new words": "ধাপের নতুন শব্দ দিয়ে ভরুন",
+  "Fill by all words up to it": "এ পর্যন্ত সব শব্দ দিয়ে ভরুন",
   "Green: the words of a step you know. ✓: every word of the step known.": "সবুজ: ধাপের যে শব্দগুলো আপনি জানেন। ✓: ধাপের সব শব্দ জানা।",
   "Loading your vocabulary…": "আপনার শব্দভান্ডার আসছে…",
   "Sign in to see your vocabulary.": "আপনার শব্দভান্ডার দেখতে সাইন ইন করুন।",

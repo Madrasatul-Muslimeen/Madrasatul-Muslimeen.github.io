@@ -774,6 +774,11 @@
   .wheel-kind-row .wheel-look-switch { margin-top: 0; }
   .wheel-kind-row .wheel-look-btn { min-height: 40px; }
   .wheel-kind-row [data-vocab-fill-switch][hidden] { display: none; }
+  /* On a computer the switch sits in the Wheel window's title bar, so it costs the wheel no height (measured: a row of
+     its own above the wheel took 57px of it at 1280-1920 wide). */
+  .wheel-kind-title-slot { margin-inline-start: auto; display: flex; min-width: 0; }
+  .wheel-kind-title-slot .wheel-kind-row { margin: 0 0.6rem 0 0; flex-wrap: nowrap; }
+  [data-wheel-drawer-panel="wheel"] > .wheel-kind-row { margin: 0 0 0.35rem; padding-bottom: 0.35rem; border-bottom: 1px solid var(--card-line); }
   .wheel-vocab #wheelHubPickers, .wheel-vocab #wheelCtaBtn { display: none !important; }
   .wheel-vocab #wheelContainer svg { filter: none !important; }
   .vocab-wheel-msg { color: #c9d3ea; text-align: center; padding: 2rem 0.5rem; margin: 0; }
@@ -5460,6 +5465,7 @@
       <div id="wheelPopupView">
         <div id="wheelPopupTitleBar" class="note-popup-titlebar">
           <span class="note-popup-title"><span class="wheel-title-main">Mastery Wheel</span><span class="wheel-title-sep" aria-hidden="true"></span><span class="wheel-title-approach" data-approach-list-title>Quran Approaches - 40 Ways</span></span>
+          <span id="wheelKindTitleSlot" class="wheel-kind-title-slot"></span><!-- J48 round 3: the switch, on a computer -->
           <div class="note-popup-titlebar-actions">
             <button type="button" id="wheelPopupMaximizeBtn" title="Maximize" aria-pressed="false">⬜</button>
           </div>
@@ -5515,7 +5521,8 @@
                wheel (see #wheelIntroSettled there), holds the three action
                buttons only, and the Approach list's title moved to the
                heading line. -->
-          <!-- PCF MSA J48 round 3 (the Owner, 21 Oct 2026, 1B): two displays of the Wheel. "Vocabulary" draws the 9 Learn
+          <!-- PCF MSA J48 round 3 (the Owner, 21 Oct 2026, 1B): two displays of the Wheel. Moved by script on load:
+               the Wheel window's title bar on a computer, the "Wheel" drawer on a phone or tablet. "Vocabulary" draws the 9 Learn
                next steps; its list (780 KB) is fetched on this first tap only, never at startup (I9), so the choice is
                not remembered across loads. How a segment fills IS remembered on this device. -->
           <div class="wheel-kind-row" id="wheelKindRow">
@@ -5524,8 +5531,8 @@
               <button type="button" class="wheel-look-btn" data-wheel-kind="vocab" aria-pressed="false">Vocabulary</button>
             </div>
             <div class="wheel-look-switch" data-vocab-fill-switch role="group" aria-label="How a segment fills" hidden>
-              <button type="button" class="wheel-look-btn" data-vocab-fill="new" aria-pressed="true">The step's new words</button>
-              <button type="button" class="wheel-look-btn" data-vocab-fill="all" aria-pressed="false">All words up to it</button>
+              <button type="button" class="wheel-look-btn" data-vocab-fill="new" aria-pressed="true" title="Fill by the step's new words">New words</button>
+              <button type="button" class="wheel-look-btn" data-vocab-fill="all" aria-pressed="false" title="Fill by all words up to it">All up to it</button>
             </div>
           </div>
           <div id="wheelStageWrap" class="wheel-stage-wrap wheel-veiled">
@@ -10261,6 +10268,21 @@
       const mode = vocabFillMode();
       wheelKindRowEl?.querySelectorAll("[data-vocab-fill]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.vocabFill === mode)));
       wheelStageWrapEl?.classList.toggle("wheel-vocab", wheelKind === "vocab");
+    }
+    {
+      // Where the switch costs the wheel nothing: on a computer (the Wheel window, >= 900px) in the window's title bar;
+      // on a phone or tablet at the top of the "Wheel" drawer (measured: a row of its own above the wheel made the wheel
+      // 4-22% smaller there, 209 -> 162px at 320 wide, because the wheel is fitted to the first screen).
+      const slot = document.getElementById("wheelKindTitleSlot");
+      const drawer = document.querySelector('[data-wheel-drawer-panel="wheel"]');
+      const wide = window.matchMedia("(min-width: 900px)");
+      const place = () => {
+        if (!wheelKindRowEl || !slot || !drawer) return;
+        if (wide.matches) { if (wheelKindRowEl.parentElement !== slot) slot.appendChild(wheelKindRowEl); }
+        else if (drawer.firstElementChild !== wheelKindRowEl) drawer.prepend(wheelKindRowEl);
+      };
+      place();
+      wide.addEventListener("change", place);
     }
     wheelKindRowEl?.addEventListener("click", (e) => {
       const kind = e.target.closest("[data-wheel-kind]")?.dataset.wheelKind;
