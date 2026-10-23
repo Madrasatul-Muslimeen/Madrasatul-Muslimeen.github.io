@@ -327,7 +327,8 @@
 [data-card-look="night"] .page-card { background: var(--card-bg-inset); border-color: var(--card-line); color: var(--card-text); }
 [data-card-look="night"] .page-card-title { color: var(--card-text); }
 [data-card-look="night"] .page-card-meta { color: var(--card-text-muted); }
-[data-card-look="night"] .status-group-heading { color: var(--card-text-muted); border-color: var(--card-line); }
+/* Audit part 43: .status-group-heading sits on the page itself (light, not on a card), so it keeps its own #555 -- the
+   Night re-pick read 1.79:1 on white. */
 [data-card-look="night"] .warn { background: #3a2e08; border-color: #8a6a10; color: #e8c77a; }
 /* The status pills carry a real meaning each (draft/shared/retired/awaiting
    approval), so every one is its own light-on-dark re-pick, not a shared

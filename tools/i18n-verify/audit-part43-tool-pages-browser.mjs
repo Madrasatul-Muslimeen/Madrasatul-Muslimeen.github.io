@@ -18,6 +18,8 @@ const arg = (n) => (process.argv.find((a) => a.startsWith(`--${n}=`)) || "").sli
 const MUTATE = arg("mutate"), ONLY = arg("only"), WONLY = Number(arg("width")) || 0, LONLY = arg("lang"), KONLY = arg("look");
 // name: [file, route glob, anchor (exactly once), replacement]. Each puts one fix back to the old code.
 const MUTATIONS = {
+  dawahheading: ["app/css/card-look.css", "**/css/card-look.css*", "/* Audit part 43: .status-group-heading sits", "[data-card-look=\"night\"] .status-group-heading { color: var(--card-text-muted); border-color: var(--card-line); }\n/* "],
+  monthfield: ["app/css/admin-touch.css", "**/css/admin-touch.css*", "body.admin-touch input[type=\"month\"],", ""],
 };
 if (MUTATE && !MUTATIONS[MUTATE]) throw new Error(`no such mutation ${MUTATE}`);
 const browser = await chromium.launch();
@@ -130,7 +132,7 @@ async function open(lang, look, width, height, pagePath, extraSeedJs = "") {
     const body = fs.readFileSync(path.join(ROOT, file), "utf8");
     const n = body.split(from).length - 1;
     if (n !== 1) throw new Error(`mutation anchor for ${MUTATE} found ${n} times`);
-    await ctx.route(glob, (r) => r.fulfill({ status: 200, contentType: "text/javascript; charset=utf-8", body: body.split(from).join(to) }));
+    await ctx.route(glob, (r) => r.fulfill({ status: 200, contentType: file.endsWith(".css") ? "text/css; charset=utf-8" : "text/javascript; charset=utf-8", body: body.split(from).join(to) }));
   }
   const { page, errors } = await openPage(ctx, pagePath);
   await page.waitForTimeout(900);
