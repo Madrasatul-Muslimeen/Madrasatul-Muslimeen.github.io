@@ -22124,3 +22124,15 @@ The Owner, 23 Oct 2026, in the MSA session:
 - Tests on the release branch: behaviour 971/0, phone-width-overflow 225/0, mushaf-page-ref 129/0, read-mushaf-button 186/0, audit-part4-fixes 1302/0; QR's 20 checks 20/20.
 - Red on `main` before this release and unchanged (each compared on a clean `main`): `audit-part28-small-phone` 4 (Bookmark dialog "Assign to rows" positive control at 320/360, en and bn); `read-bar-tools-browser` en 360 "⋯ opens a panel of tiles" (no Bookmark tile) and then a crash; and the earlier list (`audit-part19-notes` readpane 1440, `journey-note-edit` 1280, `bookmark-marks-back` 12 = J77).
 - Shared with QR: `quranrevival.html` and the note scripts `journey-tray.js` and `zab-bar.js`; change notice sent to the PCA.
+
+## v12.27 — 23 Oct 2026 — The Mapping My Journey window opened on a Note is the note window; tidy formatting rows (PCF MSA J82 part 3)
+
+The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows are there before the note area begins? 10. Organise them the best and the most standard way."
+
+- **What v12.26 had already done.** Since J81 part 3, a Note tapped or made in the Read view's Notes pane opens in the Mapping My Journey window, not in the pane where the Owner counted 10 rows. Measured there: reading 3 rows (window bar, Note bar, title); editing at 1280 5 rows, one of them ⌫ alone, wrapped off the formatting line; at 1440 the window (1006px) was three panels with the Note a 367px third column ("Paragrap/h" broken, tools 7 + 3, 6 rows).
+- **`journey-map.html`**: a pop-up opened on a Note (`?embed=1&note=`) keeps that Note the whole width (`noteFocus` → narrow tier) until it is closed; ← Back gives Mapping My Journey its three panels again.
+- **`note-window.js` `fitToolbar()`**: the tabs and the chosen group's tools share a line only when they fit; otherwise the tools go under the tabs.
+- **Builder round #1033 (PR #1037) closed unmerged**: built on the `main` before v12.26, it reorganised the Notes pane's own Note, which no longer shows a Note; on v12.26 its suite failed 8/8. Its one-meta-line idea is kept for later.
+- New suite `note-toolbar-fit-browser` 32/0 (en/bn, 1440/1280/390): at most 5 rows on a computer, 6 on a phone; tidy formatting; the Note the window's width; ← Back restores the panels. Mutations `focus` 8, `inline` 2.
+- Tests: journey-editor-input 112/0, journey-tray 227/0, journey-note-windows 254/0, note-opens-in-journey 60/0, journey-editor 577/0, read-note-pane 204/0, read-note-pane-window 94/0, audit-part21-notes 608/0; behaviour and QR's 20 checks on the release.
+- Shared with QR: `note-window.js` (a pinned note script) and `journey-map.html`; change notice to the PCA.
