@@ -13,6 +13,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import { stripSite } from "./strip-site.mjs";
 
 const out = path.resolve(process.argv[2] || "");
 // The settings the build used (it passes them in, so a test's settings are honoured), else app/apps/qr.json.
@@ -36,6 +37,15 @@ if (settings.status !== "draft" && settings.minVersion && below(version, setting
 }
 fs.writeFileSync(app("js/qr-version.js"),
   `// Written by apps/qr/after-build.mjs: QR shares MSA's one version number (QR J22, PCA J110).\nexport const APP_VERSION = ${JSON.stringify(version)};\n`);
+
+// Audit part 50, part 2 (PCF MSA J29): about half of what a first visit downloaded was COMMENTS. The built page's inline module and
+// style, and every built app/**/*.js but the worker and vendor/, lose theirs here (apps/qr/strip-site.mjs; lines and every token kept,
+// each file checked by apps/qr/verify-strip.mjs, and the build stops on any difference). The source keeps every comment; MSA's build
+// never reaches this step.
+// Before the worker's list, so its size is what a phone saves.
+let strip;
+try { strip = stripSite(out, { keepBefore: process.env.QR_STRIP_BEFORE || "" }); }
+catch (e) { console.error(`after-build: ${e.message}`); process.exit(1); }
 
 function shellList(sw) {
   const seen = new Set();
@@ -117,4 +127,4 @@ const firstModule = pageHtml.search(/<script\b[^>]*type="module"/);
 if (firstModule < 0) { console.error("after-build: quranrevival.html has no module script to put the preloads before"); process.exit(1); }
 fs.writeFileSync(page, pageHtml.slice(0, firstModule) + links.map((h) => `<link rel="modulepreload" href="${h}">`).join("\n") + "\n" + pageHtml.slice(firstModule));
 
-console.log(JSON.stringify({ written: ["app/js/qr-version.js", "app/sw.js", "app/quranrevival.html"], version, shell: list.length, bytes, modulepreload: links.length }));
+console.log(JSON.stringify({ written: ["app/js/qr-version.js", "app/sw.js", "app/quranrevival.html"], version, shell: list.length, bytes, modulepreload: links.length, stripped: strip }));

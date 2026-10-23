@@ -19,11 +19,12 @@ const check = (ok, what, detail = "") => { ok ? pass++ : fail++; console.log(`${
 
 let generated = true;
 // PORTED: QR's generator (typo fixes, MEANING_132, --check) lives with QR's own files: apps/qr/tools/build-poster-data.mjs.
-// It is run in --check mode against the BUILT app's file.
+// It is run in --check mode against QR's own copy in the SOURCE (apps/qr/site/…): the build strips that file's comments (audit
+// part 50 part 2, proven token for token by strip-comments-check.mjs), so "what the generator writes" is the source file's promise.
 const GEN = path.join(REPO, "apps/qr/tools/build-poster-data.mjs");
 const genSrc = fs.existsSync(GEN) ? fs.readFileSync(GEN, "utf8") : "";
 // the generator runs with the BUILT app as the working directory (it reads app/js and docs/reference from there)
-try { if (!genSrc.includes('"--check"')) throw new Error("no --check"); execFileSync(process.execPath, [GEN, "--check", `--file=${path.resolve("app/js/asma-poster-data.js")}`], { stdio: "pipe" }); } catch { generated = false; }
+try { if (!genSrc.includes('"--check"')) throw new Error("no --check"); execFileSync(process.execPath, [GEN, "--check", `--file=${path.join(REPO, "apps/qr/site/app/js/asma-poster-data.js")}`], { stdio: "pipe" }); } catch { generated = false; }
 check(generated, "app/js/asma-poster-data.js is what tools/asma-poster/build-poster-data.mjs writes from its sources");
 
 const data = await importBuilt("app/js/asma-poster-data.js");
