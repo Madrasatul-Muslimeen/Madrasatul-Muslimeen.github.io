@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "12.37",
+    "version": "12.39",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -4721,8 +4721,32 @@
     {
       "version": "12.37",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "The QR Lead's J90 (#1070) and bmUnits (#1074) with the shared relabelReadNotePane() hook: the last audit-47 findings fixed.",
+      "integration": {
+        "authorizedOn": "2026-10-23",
+        "integratedOn": "2026-10-23",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.38",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Audit part 48 part 2 (PR #1071): sw-register.js mounts the Zab bar after load + idle and starts the worker install after 1 s with no new request; load-speed suite with counted budgets.",
+      "integration": {
+        "authorizedOn": "2026-10-23",
+        "integratedOn": "2026-10-23",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.39",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Audit part 50 part 1 (PR #1079): QR's build writes modulepreload links for quranrevival.html's static import closure, before its first module script.",
       "integration": {
         "authorizedOn": "2026-10-23",
         "integratedOn": "2026-10-23",
@@ -4731,8 +4755,10 @@
       }
     }
   ],
-  "nextUnallocated": "12.38",
+  "nextUnallocated": "12.40",
   "nextUnallocatedNote": [
+    "v12.39 was allocated to audit part 50 part 1 (QR modulepreload), 2026-10-23.",
+    "v12.38 was allocated to audit part 48 part 2 (Zab bar and worker install wait for the page), 2026-10-23.",
     "v12.37 was allocated to audit 47's QR findings (Āyah card, Notes pane label, Bookmark popover) and relabelReadNotePane, 2026-10-23.",
     "v12.36 was allocated to audit part 47 (shared parts follow QR's language switch) and the QR Lead's J87, 2026-10-23.",
     "v12.35 was allocated to sign-in helper pages on both sites (switch off); a tap-size detector fix, 2026-10-23.",
