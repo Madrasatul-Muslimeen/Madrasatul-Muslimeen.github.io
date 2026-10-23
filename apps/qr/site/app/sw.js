@@ -401,11 +401,16 @@ self.addEventListener("message", (event) => {
   // MMSA's sw-register.js: the files a page loaded before this worker controlled it, to keep now (MMSA's "warm").
   if (data.type === "warm" && Array.isArray(data.urls)) {
     event.waitUntil((async () => {
-      const cache = await caches.open(APP_CACHE);
+      const appCache = await caches.open(APP_CACHE);
+      const quranCache = await caches.open(QURAN_CACHE);
       await Promise.all(data.urls.map(async (u) => {
         try {
           const request = new Request(u);
-          if (!isCacheable(request) || new URL(u).pathname.startsWith(SURAH_PATH) || await cache.match(request)) return;
+          if (!isCacheable(request)) return;
+          // Audit part 50: a surah read before this worker took over is kept too, in the cache quranFile() reads.
+          const isSurah = new URL(u).pathname.startsWith(SURAH_PATH);
+          const cache = isSurah ? quranCache : appCache;
+          if (await cache.match(request, { ignoreSearch: isSurah })) return;
           const response = await fetch(request);
           if (response && response.ok) await cache.put(request, response);
         } catch { /* best effort */ }

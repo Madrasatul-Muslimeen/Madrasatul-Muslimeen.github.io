@@ -22231,3 +22231,18 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 - `tools/i18n-verify/zab-bar-browser.mjs` waits for the bar (a state) instead of a fixed 200 ms. 370/0.
 - **`.github/workflows/architect.yml` gate 8** (PR #1078): a `builder/` PR is never merged while a `claude.yml` run (workflow_dispatch or issues) is queued or running. #1067 and #1073 had been merged ten minutes into their rounds.
 - Nothing stored, no Rules changed.
+
+## v12.39 — 24 Oct 2026 — QuranRevival's first visit fetches all its code at once (audit part 50, part 1)
+
+- **`apps/qr/after-build.mjs` (QR only)** (Builder round #1076, PR #1079): computes the static import closure of `quranrevival.html`'s module scripts (`import … from` / `export … from` / `import "…"`, never `import()`) and writes one `<link rel="modulepreload">` per module (133), generated on every build so it cannot go stale. MSA's build never runs this step and stays byte for byte (`apps-build-check` 48/0).
+- **Where, found in review:** the round put the links at the top of `<head>`. Measured (390 px, 1.6 Mbps / 150 ms, student): there the picker was usable at 7053 ms but first paint moved from 888 to 1548 ms, because 1.1 MB of modules shared the link with the 456 KB `<head>`; at the end of `<body>` nothing was gained (8096 ms); just before the first module script, first paint 884 ms and usable 7489 ms. On top of v12.38: first paint ~0.92 s and usable ~7.0 s at 390 and 1280 px.
+- **`tools/apps/qr-verify/load-speed-browser.mjs`:** checks that every closure module is preloaded, none outside it, and none in `<head>`; positive control that the walker finds over 100 modules. 62/0. Mutations `preload-missing` (2 fail), `preload-extra` (6), `preload-in-head` (3); `zab-early` (4) and `sw-early` (1) still fail.
+- **Not changed, from the same round:** `gtaf_bangla_timestamps.json` is already fetched once per page (`getTimestamps()` memoises it). A surah read before QR's worker took over is not kept offline: the cause is QR's own worker (`apps/qr/site/app/sw.js`, the `warm` handler skips `/surahs/`), sent to the QR Lead.
+- Nothing stored, no Rules changed.
+
+## v12.40 — 24 Oct 2026 — a surah read on a first visit is kept for offline; no more /favicon.ico request (the QR Lead's #1081)
+
+- **`apps/qr/site/app/sw.js` (QR's own worker, the QR Lead's):** the `warm` message (the files a page loaded before the worker controlled it, sent by `sw-register.js`) no longer skips `/tools/quran-data-pull/output/surahs/`. A warmed surah goes into `QURAN_CACHE` (`qr-quran-v1`), the cache `quranFile()` reads surahs from, matched with `ignoreSearch`; everything else still goes into the app cache. Found by Builder round #1076 (audit part 50, part 3).
+- **`app/quranrevival.html`:** `<link rel="icon" href="data:,">`. No icon file exists, so every visit asked the server for `/favicon.ico` and got a 404 (the request `load-speed-browser` lists but does not count since v12.38).
+- **New QR check `tools/apps/qr-verify/qr-surah-warm-browser.mjs`** (in `run-all.sh`, now 26): holds `sw.js` back until Yā-Sīn is on screen, then checks the cache, an offline reload, and that no favicon is requested (CDP). 12/0; `--mutate=skip` fails 4, `--mutate=icon` fails 1.
+- QR run-all 26/26; `apps-build-check` 48/0. Nothing stored in Firestore, no Rules changed.
