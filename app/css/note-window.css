@@ -36,6 +36,14 @@
 .note-pane-meta { margin: 0 0 0.4rem; font-size: 0.8rem; color: #666; } /* audit part 37: #777 was 4.48:1 on white */
 .note-pane-chips { margin: 0 0 0.6rem; }
 .note-pane-chips .folder-chip { border: 1px solid #c9d3e6; cursor: pointer; font-size: 0.8rem; min-height: 32px; padding: 0.2rem 0.7rem; }
+/* PCF MSA J82 part 3 (the Owner, 23 Oct 2026): created, changed, version and folder were four stacked rows under the title;
+   they are ONE small, muted line that wraps (never cuts). A window moves the three parts into its Details row, which leaves this empty. */
+.note-pane-metaline { display: flex; flex-wrap: wrap; align-items: center; gap: 0 0.7rem; margin: 0 0 0.5rem; font-size: 0.8rem; color: #666; }
+.note-pane-metaline:empty { display: none; }
+.note-pane-metaline > .note-pane-meta, .note-pane-metaline > .note-pane-chips { margin: 0; }
+.note-pane-metaline > .note-pane-meta:empty, .note-pane-metaline > .note-pane-chips:empty { display: none; }
+.note-pane-metaline > .nw-ver-btn { display: inline-flex; align-items: center; margin: 0; border: 0; background: transparent; color: #1F3A6E; text-decoration: underline; font-size: 0.8rem; padding: 0 0.3rem; }
+.note-pane-metaline > .note-pane-chips .folder-chip { min-height: 40px; }
 .note-pane-body { line-height: 1.5; overflow-wrap: anywhere; }
 /* Siyagah round 5 -- edit mode (Owner decision 42.3). Edit is the LAST thing on the header row to fold into the menu. */
 .note-pane-bar.edit-folded > [data-pane-edit-toggle] { display: none; }

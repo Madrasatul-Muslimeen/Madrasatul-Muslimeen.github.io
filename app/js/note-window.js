@@ -65,9 +65,7 @@ export const NOTE_VIEW_HTML = `
       </div>
       <h2 class="note-pane-title" data-pane-title></h2>
       <textarea class="pane-edit-title" data-edit-title rows="1" hidden></textarea>
-      <p class="note-pane-meta" data-pane-meta></p>
-      <button type="button" class="secondary tiny nw-ver-btn" data-win-ver hidden></button>
-      <div class="note-pane-chips" data-pane-chips></div>
+      <div class="note-pane-metaline" data-pane-metaline><p class="note-pane-meta" data-pane-meta></p><button type="button" class="secondary tiny nw-ver-btn" data-win-ver hidden></button><div class="note-pane-chips" data-pane-chips></div></div>
       <div class="pane-draft-offer" data-draft-offer hidden></div>
       <div class="pane-edit-toolbar" data-edit-toolbar hidden></div>
       <div class="pane-edit-panel" data-edit-panel hidden></div>

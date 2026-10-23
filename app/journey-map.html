@@ -403,6 +403,10 @@
   .unit-actions button { min-height: 40px; }
   .unit-actions button[aria-disabled="true"] { opacity: 0.55; cursor: progress; }
   .unit-actions button.unit-new-ready { outline: 3px solid #c9a24b; outline-offset: 2px; }
+  /* PCF MSA J82 part 3 (the Owner, 23 Oct 2026: "How many rows are there before the note area begins? 10. Organise them the
+     best and the most standard way."): the one-line status ("New note created in …") is a toast over the page here, not a
+     permanent row above the Note; it goes by itself after a few seconds, and a press on it. */
+  html.unit-mode #pageStatusMsg { position: fixed; z-index: 30; inset-inline: 0.7rem; bottom: 0.7rem; margin: 0; padding: 0.55rem 0.8rem; border-radius: 0.6rem; background: #1F3A6E; color: #fff; box-shadow: 0 4px 14px rgba(0,0,0,0.25); cursor: pointer; font-size: 0.9rem; }
   .unit-kind { font-size: 0.72rem; padding: 0.1rem 0.5rem; border-radius: 999px; background: #eef2ff; color: #1F3A6E; white-space: nowrap; }
   /* PCF MSA J71 (the Owner, 22 Oct 2026: "Organise the buttons under their similar types, use the empty spaces"): when
      the Notes pane is wide (opened from the Āyah card on a computer) the pane's own tab bar is drawn HERE, at the start
@@ -428,6 +432,11 @@
   html.pane-tabs-hosted #notePane.pane-editing .pane-edit-toolbar { top: 52px; box-shadow: none; }
   /* the list beside the Note (a wide pane): the tabs stay over the list, once */
   html.pane-tabs-hosted #noteLayout.pane-open.tier-wide #notePane .jm-host-tabs { display: none; }
+  /* J82 part 3: the list shows only when the āyah has several Notes. While the ONE Note is open the list column (its tabs,
+     its "+ New note" and its single row) goes, the pane takes the width, and the pane's own tab row is the only one. */
+  html.unit-single #noteLayout.pane-open.tier-wide:not(.three) { display: block; }
+  html.unit-single #noteLayout.pane-open #listPane, html.unit-single #noteLayout.pane-open > .jm-split { display: none; }
+  html.pane-tabs-hosted.unit-single #noteLayout.pane-open.tier-wide #notePane .jm-host-tabs { display: inline-flex; }
   html.pane-tabs-hosted #notePane .note-pane-bar .pane-btn { min-width: 40px; min-height: 40px; border-radius: 0.6rem; background: #fff; border-color: #d8ccab; color: #1F3A6E; }
   html.pane-tabs-hosted #notePane .note-pane-bar [data-pane-edit-toggle] { background: #1F3A6E; color: #fff; border-color: #c9a24b; padding: 0 0.9rem; font-weight: 600; }
   /* ...and the formatting row moves up: right under that one row, its group tabs and the group's buttons on ONE line,
@@ -982,6 +991,13 @@
     function showPageStatus(msg) {
       pageStatusMsg.textContent = msg;
       pageStatusMsg.style.display = "block";
+      if (unitMode) { // J82 part 3: a toast in the Notes window, not a row above the Note
+        clearTimeout(showPageStatus.timer);
+        pageStatusMsg.setAttribute("role", "status");
+        pageStatusMsg.onclick = () => { pageStatusMsg.style.display = "none"; };
+        showPageStatus.timer = setTimeout(() => { pageStatusMsg.style.display = "none"; }, 9000);
+        return;
+      }
       // The pane replaces the list below 1200px; its failures must still reach the reader (I15).
       if (typeof paneView !== "undefined" && paneView.noteId !== null) pageStatusMsg.scrollIntoView?.({ block: "nearest" });
     }
@@ -1353,6 +1369,11 @@
 
     const folderNotesEl = document.getElementById("folderNotes");
     const notePlaceholderEl = document.getElementById("notePlaceholder");
+    // J82 part 3: the Notes window (tabs hosted) lists Notes only when the āyah has several. The `let`s it reads are declared
+    // further down the page, so a call before they exist answers "not single".
+    function unitSingleNow() {
+      try { return unitMode && hostedTabs && unitNoteIds.size <= 1; } catch { return false; }
+    }
     function applyNoteTier() {
       const open = paneView.noteId !== null;
       const tier = noteLayoutTier();
@@ -1363,6 +1384,7 @@
       noteLayoutEl.classList.toggle("list-open", three && listOpen);
       noteLayoutEl.classList.toggle("tier-wide", tier === "wide");
       noteLayoutEl.classList.toggle("tier-narrow", tier === "narrow");
+      document.documentElement.classList.toggle("unit-single", open && unitSingleNow());
       document.body.classList.toggle("note-pane-wide", (open || three) && tier === "wide" && !isEmbedded);
       notePaneEl.hidden = !open;
       folderNotesEl.hidden = !three;
@@ -3969,6 +3991,7 @@
       wireNoteCards(body, notes);
       unitNoteIds = new Set(notes.map((n) => n.noteId));
       paintHostedTabs();
+      applyNoteTier();
       // The Read view's 📝 shows how many Notes this āyah has, once they have been read here (no read of its own).
       try { window.parent?.postMessage({ type: "mmsa-unit-count", unit: unitKeyParam, count: notes.length }, location.origin); } catch { /* not embedded */ }
       renderUnitOldNote(my);
@@ -4138,6 +4161,7 @@
         hostedTabs = !!m.on; hostedLabels = { notes: m.notes || "", track: m.track || "" };
         if (!hostedTabs) document.querySelectorAll(".jm-host-tabs").forEach((x) => x.remove());
         paintHostedTabs();
+        applyNoteTier();
       } else if (m.type === "mmsa-note-search" && typeof m.q === "string") {
         const out = notesAndPlacementsLoaded ? searchMapNotes(m.q) : { results: [], total: 0, loading: true };
         window.parent?.postMessage({ type: "mmsa-note-search-results", id: m.id, ...out }, location.origin);
