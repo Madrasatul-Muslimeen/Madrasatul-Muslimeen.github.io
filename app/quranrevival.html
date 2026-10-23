@@ -114,7 +114,7 @@
   .row > div { min-width: 9rem; }
 
   /* ---------- App banner (shell round 3) ---------- */
-  .app-version { font-size: 0.85rem; font-weight: 400; color: #888; vertical-align: middle; }
+  .app-version { font-size: 0.85rem; font-weight: 400; color: #666; vertical-align: middle; } /* QR Lead (audit, QR as a student): #888 on white was 3.54:1; #666 is 5.74:1 */
   .app-tagline { font-style: italic; color: #666; margin: 0 0 0.35rem; font-size: 0.95rem; }
 
   /* ---------- Tagline strip (shell round 20) ----------
@@ -2734,6 +2734,15 @@
   }
   @media (max-width: 359.98px) {
     #readBar:has(#mushafPagePrevBtn:not([hidden])) #mushafPageRef { flex: 1 1 0; min-width: 0; }
+  }
+  /* QR Lead (audit, read-quick-buttons red since v12.26): from 600px the bare full screen puts Notes / Record / Approach
+     on the top line, and with ‹ › (80px) that line needed 50-60px more than 568px (600) and 736px (768) give, so it took
+     two lines (80px). Up to 899px there, 📜 and 📖 are their icons alone (spoken names stay the words) and the page
+     reference is the elastic part: one line, as before ‹ ›. */
+  @media (min-width: 600px) and (max-width: 899.98px) {
+    body.read-from-contents.immersive-read.fs-hide-readbar.fs-hide-transport #readBar:has(#mushafPagePrevBtn:not([hidden])) #mushafPageRef { flex: 1 1 0; min-width: 0; }
+    body.read-from-contents.immersive-read.fs-hide-readbar.fs-hide-transport #readBar:has(#mushafPagePrevBtn:not([hidden])) :is(#readMeaningBtn, #readMushafBtn) { padding: 0; width: 40px; }
+    body.read-from-contents.immersive-read.fs-hide-readbar.fs-hide-transport #readBar:has(#mushafPagePrevBtn:not([hidden])) :is(.read-meaning-word, .read-mushaf-word) { display: none; }
   }
   @media (max-width: 359.98px) { /* J82 reference room */
     /* Architect review (v12.26): at 320 the bare full screen left the reference 22px and its text 0px -- only ▾ showed,
@@ -5427,6 +5436,9 @@
   #bootStatus[hidden] { display: none; }
   #bootStatus p { margin: 0 0 1rem; line-height: 1.5; }
   #bootStatus button { min-height: 40px; margin: 0 0.3rem; }
+  /* QR Lead (audit, QR as a student): Home ▾'s Sign in was the page's 27px default button on a computer (Sign out and
+     phones were already 40px from shell.css): 40px for a finger, both named so they stay alike. */
+  #signInBtn, #signOutBtn { min-height: 40px; }
   html.bm-opening #bootStatus { visibility: hidden; }
   #bmCover { display: none; }
   html.bm-opening #bmCover { display: block; position: fixed; left: 0; right: 0; bottom: 0; top: 3rem; z-index: 19000; background-color: #fff; padding: 2rem 1rem; text-align: center; color: #1F3A6E; font-weight: 600; }
