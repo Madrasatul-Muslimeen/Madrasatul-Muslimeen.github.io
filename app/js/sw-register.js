@@ -146,7 +146,13 @@ export function registerServiceWorker() {
   // fetched ONLY when the gate is open, so a shut gate costs a page nothing and shows nothing (I9).
   const inWindow = new URLSearchParams(location.search).get("inWindow") === "1" && window.parent !== window; // J74: inside a page window
   const embedded = new URLSearchParams(location.search).get("embed") === "1" && window.parent !== window; // J29 part 41: inside the tray / the Notes window: the page around it has its own Zab
-  if (isZabReady() && !inWindow && !embedded) import("./zab-bar.js").then((m) => m.mountZabBar()).catch((err) => console.warn("Zab bar not mounted:", err.message));
+  // Audit part 48 (J29): the bar's code (~26 KB gzipped) was fetched at once, in the middle of the page's own startup
+  // imports; it now waits for the window `load` event and an idle moment (2 s at most), so the page is usable first.
+  if (isZabReady() && !inWindow && !embedded) {
+    const mountZab = () => import("./zab-bar.js").then((m) => m.mountZabBar()).catch((err) => console.warn("Zab bar not mounted:", err.message));
+    const whenIdle = () => (window.requestIdleCallback ? window.requestIdleCallback(mountZab, { timeout: 2000 }) : setTimeout(mountZab, 500));
+    if (document.readyState === "complete") whenIdle(); else window.addEventListener("load", whenIdle, { once: true });
+  }
   if (!("serviceWorker" in navigator)) return;
   if (!isSecureEnough() || isDisabled()) {
     if ("serviceWorker" in navigator) unregisterAny();
@@ -189,6 +195,19 @@ export function registerServiceWorker() {
   // Deferred until the page has finished loading (see above). A page that
   // calls this after its own load event has already fired would otherwise
   // never register at all.
-  if (document.readyState === "complete") start();
-  else window.addEventListener("load", start, { once: true });
+  // Audit part 48 (J29): `load` fires when the page's imports are in, but its own data (the surah index, the first surah)
+  // is fetched just after; the worker's install (~6 MB) then shared the same slow link with it. So the install waits
+  // until the page has made no new request for 1 s (10 s at most). A PerformanceObserver sees every new request; counting
+  // performance.getEntriesByType("resource") would stop seeing them once the browser's 250-entry buffer is full.
+  const startWhenQuiet = () => {
+    const t0 = Date.now();
+    let since = Date.now(), obs = null;
+    try { obs = new PerformanceObserver(() => { since = Date.now(); }); obs.observe({ type: "resource" }); } catch { /* no observer: the 10 s cap still starts it */ }
+    const poll = () => {
+      if (Date.now() - since >= 1000 || Date.now() - t0 >= 10000) { if (obs) obs.disconnect(); start(); } else setTimeout(poll, 250);
+    };
+    poll();
+  };
+  if (document.readyState === "complete") startWhenQuiet();
+  else window.addEventListener("load", startWhenQuiet, { once: true });
 }

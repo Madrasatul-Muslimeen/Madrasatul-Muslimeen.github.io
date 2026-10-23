@@ -1563,3 +1563,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v12.35** (2026-10-23): sign-in helper pages on both sites (switch off); a tap-size detector fix.
 - **v12.36** (2026-10-23): audit part 47 (shared parts follow QR's language switch) and the QR Lead's J87.
 - **v12.37** (2026-10-23): audit 47's QR findings (Āyah card, Notes pane label, Bookmark popover) and relabelReadNotePane.
+- **v12.38** (2026-10-23): audit part 48 part 2 (Zab bar and worker install wait for the page).
