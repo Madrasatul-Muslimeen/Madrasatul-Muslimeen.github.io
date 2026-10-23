@@ -56,11 +56,12 @@ for (const lang of ["en", "bn"]) for (const width of [320, 390, 1280]) {
   console.log(`\n=== ☰ Surah list ${tag} ===`);
   const { ctx, page } = await start(lang, width);
 
-  // Another way into Read: the button must not be there.
+  // Another way into Read. UPDATED IN PLACE (QR Lead, the Owner 23 Oct 2026: "I want both read to be the same
+  // (preferably the 1st image which shows Surah list)"): Study -> Read now shows the button too.
   const reachable = await page.evaluate(() => { const b = document.getElementById("tabReadBtn"); return !!b && b.getBoundingClientRect().width > 0; });
   if (!reachable) { await page.click("#tabStudyBtn"); await page.waitForTimeout(150); }
   await page.click("#tabReadBtn"); await page.waitForTimeout(500);
-  check(`${tag} Read opened another way: no ☰ Surah list button`, !(await btn(page)).shown, JSON.stringify(await btn(page)));
+  check(`${tag} Read opened another way (Study -> Read): the ☰ Surah list button is there too`, (await btn(page)).shown, JSON.stringify(await btn(page)));
   await page.click("#tabApproachBtn").catch(() => {}); await page.waitForTimeout(400);
 
   // Read -> list -> surah 2.

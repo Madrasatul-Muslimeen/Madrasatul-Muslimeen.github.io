@@ -3316,7 +3316,10 @@ console.log("\n=== 37. Shell round 25: grammar labels, and the control row ===")
     // the group being pushed to the right edge on purpose, and is not counted. Updated in place, reason recorded.
     const inFlowKids = visibleKids.filter((el) => !["absolute", "fixed"].includes(getComputedStyle(el).position) && el.getBoundingClientRect().width > 0);
     const sameLine = (a, b) => { const x = a.getBoundingClientRect(), y = b.getBoundingClientRect(); return Math.abs((x.top + x.bottom) / 2 - (y.top + y.bottom) / 2) < 8; };
-    const gaps = inFlowKids.slice(1).map((el, i) => (sameLine(el, inFlowKids[i]) && el !== inFlowKids.find((k) => k.closest("#readBarEnd"))) ? Math.round(el.getBoundingClientRect().left - inFlowKids[i].getBoundingClientRect().right) : 0);
+    // QR Lead (the Owner, 23 Oct 2026: "I want both read to be the same"): ☰ Surah list is on every Read now, and its
+    // margin-right: auto (top left, the rest pushed right, as on the list route since v09.36) is on purpose: the space
+    // AFTER ☰ is not counted either. Updated in place, reason recorded.
+    const gaps = inFlowKids.slice(1).map((el, i) => (sameLine(el, inFlowKids[i]) && el !== inFlowKids.find((k) => k.closest("#readBarEnd")) && inFlowKids[i].id !== "readListBtn") ? Math.round(el.getBoundingClientRect().left - inFlowKids[i].getBoundingClientRect().right) : 0);
     return {
       barKids: kids.map((e) => e.id),
       noReciter: !document.getElementById("readReciterName"),
