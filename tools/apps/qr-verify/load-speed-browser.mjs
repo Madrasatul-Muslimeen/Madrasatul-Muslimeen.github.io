@@ -325,7 +325,11 @@ async function scenario(width, signedOut) {
     ctx.__sw.length = 0;
     const second = await visit(ctx, "SECOND visit, worker installed");
     print(second, tag);
-    const again = second.sameNet.map((r) => short(r.url));
+    // /favicon.ico is the BROWSER's own request (quranrevival.html declares no icon), not the page's, and whether it lands
+    // inside the measured window is timing: it is listed, never counted (it made the budget pass or fail run to run).
+    const favicon = second.sameNet.filter((r) => /\/favicon\.ico$/.test(new URL(r.url).pathname)).length;
+    if (favicon) say(`    the browser's own /favicon.ico request (not counted: the page declares no icon): ${favicon}`);
+    const again = second.sameNet.filter((r) => !/\/favicon\.ico$/.test(new URL(r.url).pathname)).map((r) => short(r.url));
     say(`    page fetched from the NETWORK again (same site): ${again.length}${again.length ? " -> " + again.slice(0, 12).join(", ") : ""}`);
     await new Promise((r) => setTimeout(r, 1500));
     const swAgain = ctx.__sw.map((x) => short(x.url));
