@@ -162,8 +162,11 @@ for (const w of [390, 1280]) {
   for (const p of PAGES) {
     const ctx = await mk(browser, { gate: true, width: w });
     const { page } = await open(ctx, p);
+    // Audit part 48: the bar's code now waits for the window load event and an idle moment (2 s at most), so wait for the STATE, not 200 ms.
+    const sel = w >= 768 ? "#zabBar" : docked(p, w) ? "[data-zab-dock] .zab-dock-btn" : "#zabCorner";
+    await page.waitForSelector(sel, { state: "attached", timeout: 5000 }).catch(() => {});
     await page.waitForTimeout(200);
-    if (!(await visible(page, w >= 768 ? "#zabBar" : docked(p, w) ? "[data-zab-dock] .zab-dock-btn" : "#zabCorner"))) missing.push(p);
+    if (!(await visible(page, sel))) missing.push(p);
     await ctx.close();
   }
   check(`${w}px: the ${w >= 768 ? "bar" : "corner button"} is on all ${PAGES.length} pages`, missing.length === 0, missing.join(", "));
