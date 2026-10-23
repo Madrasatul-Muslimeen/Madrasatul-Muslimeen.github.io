@@ -1470,6 +1470,10 @@
   .list-collapse-btn:hover { background: #ecd49a; }
   .list-collapse-btn::before { content: "\25c2"; } /* ◂ -- list is showing, tap to hide it */
   .list-collapse-btn.collapsed::before { content: "\25b8"; } /* ▸ -- list is hidden, tap to bring it back */
+  /* QR Lead (audit part 44, QR as a student): the drawn circle stays 24px (it sits in the 16px splitter), and a finger
+     gets 40px: an invisible 40px tap area round it, the same shape as the wheel button's (.wheel-cta-btn::before). */
+  .list-collapse-btn { position: relative; z-index: 1; } /* above the splitter grip and the wheel beside it */
+  .list-collapse-btn::after { content: ""; position: absolute; inset: -10px; } /* qr-lead tap: 20px inside the 2px border + 2 x 10 = 40px */
 
   /* ---------- QCR (Ayah Collections), round 2's own reference-app shape:
      a level switcher up top, and BELOW it, ALWAYS, the current collection's
