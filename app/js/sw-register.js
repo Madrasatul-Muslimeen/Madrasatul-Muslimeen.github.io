@@ -75,6 +75,23 @@ function loadedAppFiles() {
   return [...urls];
 }
 
+/**
+ * Audit part 41 review: the "warm" list above is sent once, after load, so a module the page imports LATER (a
+ * lazy import such as note-foundation.js) was never kept on a first visit, and the first open after an update
+ * fetched it from the network (service-worker.mjs, red on main 3 of 3). Send each later file too, in batches.
+ */
+function warmLaterFiles(reg) {
+  if (!reg?.active || typeof PerformanceObserver !== "function") return;
+  let batch = new Set(), timer = 0;
+  try {
+    new PerformanceObserver((list) => {
+      for (const entry of list.getEntries()) if (entry.name.startsWith(location.origin)) batch.add(entry.name.split("#")[0]);
+      if (!batch.size || timer) return;
+      timer = setTimeout(() => { const urls = [...batch]; batch = new Set(); timer = 0; reg.active?.postMessage({ type: "warm", urls }); }, 500);
+    }).observe({ type: "resource" });
+  } catch { /* best effort, like the first warm */ }
+}
+
 function announceUpdate() {
   if (document.getElementById("swUpdateNotice")) return; // already showing
   const notice = document.createElement("button");
@@ -155,6 +172,7 @@ export function registerServiceWorker() {
       return navigator.serviceWorker.ready;
     }).then((reg) => {
       reg?.active?.postMessage({ type: "warm", urls: loadedAppFiles() });
+      warmLaterFiles(reg);
     }).catch((err) => {
       // Best-effort, like every other progressive-enhancement feature in
       // this app: a registration failure must never block the page the
