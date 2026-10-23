@@ -42,7 +42,9 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const mmsa = process.argv[2] && !process.argv[2].startsWith("--") ? process.argv[2] : REPO; // ported: MMSA's original is this repository's own app/js (REPO); "ours" is the built app/js/asma-local.js
   if (!mmsa) { console.error("Usage: node tools/apps/qr-verify/asma-local-sync.mjs [MMSA checkout, default: this repository] [--write]"); process.exit(2); }
   const original = fs.readFileSync(path.join(mmsa, "app/js/asma-collections.js"), "utf8");
-  const target = "app/js/asma-local.js";
+  // QR's own copy in the SOURCE (apps/qr/site/…): the build strips comments from app/js/asma-local.js (audit part 50 part 2, proven
+  // token for token and line for line by strip-comments-check.mjs), so the byte-for-byte promise is the source file's.
+  const target = path.join(REPO, "apps/qr/site/app/js/asma-local.js");
   if (process.argv.includes("--write")) {
     const parts = FUNCTIONS.map((f) => { const s = extract(original, f); if (!s) throw new Error(`${f} not in MMSA's file`); return s; });
     fs.writeFileSync(target, `${HEADER}\n${parts.join("\n\n")}\n`);

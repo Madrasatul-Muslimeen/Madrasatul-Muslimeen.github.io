@@ -101,7 +101,15 @@ check("no rule reaches the data folders (so copying them as they are is exact)",
 
 console.log("2. The QR draft: every setting lands, nothing of MSA's is left");
 const qrOut = path.join(TMP, "qr");
+// QR's build strips the comments out of its scripts (apps/qr/strip-site.mjs, audit part 50 part 2), proven there to change nothing else.
+// The byte-for-byte checks below are about the RULES, the edits and QR's own files, so they read qrPre: the built app with every
+// stripped text as it was before the strip (QR_STRIP_BEFORE keeps them).
+process.env.QR_STRIP_BEFORE = path.join(TMP, "qr-before");
 const qr = buildApp({ id: "qr", out: qrOut, only: ONLY });
+delete process.env.QR_STRIP_BEFORE;
+const qrPre = path.join(TMP, "qr-pre");
+fs.cpSync(qrOut, qrPre, { recursive: true });
+if (fs.existsSync(path.join(TMP, "qr-before"))) fs.cpSync(path.join(TMP, "qr-before"), qrPre, { recursive: true });
 const qs = readSettings(SRC, "qr");
 check("every page title reads 'QuranRevival — …', none 'MSA — …' (and only QR's pages are in the app)", () => {
   const pages = listFiles(qrOut, ["app"]).filter((f) => f.endsWith(".html"));
@@ -137,7 +145,7 @@ check("the theme colour reaches every page head once", () => {
   });
 });
 check("files no rule touches are copied exactly (only the expected files differ)", () => {
-  const d = compareTrees(SRC, qrOut, ONLY, inSettings).filter((x) => x.startsWith("differs "));
+  const d = compareTrees(SRC, qrPre, ONLY, inSettings).filter((x) => x.startsWith("differs "));
   const changed = new Set([...qr.changedFiles, ...qr.overlaid.replaced]);
   const unexpected = d.filter((x) => !changed.has(x.slice(8)));
   if (unexpected.length) throw new Error(unexpected.join("; "));
@@ -147,14 +155,14 @@ check("files no rule touches are copied exactly (only the expected files differ)
 });
 check("every one of QR's edits is in the built file (and there are 38)", () => {
   const edits = JSON.parse(read(SRC, qs.edits));
-  const missing = edits.filter((e) => !read(qrOut, e.file).includes(e.to));
+  const missing = edits.filter((e) => !read(qrPre, e.file).includes(e.to));
   if (missing.length) throw new Error(missing.map((e) => e.id).join(", "));
   return edits.length === 38;
 });
 check("every one of QR's own files is in the built app byte for byte (the Asma app, the front page, the fonts)", () => {
   const own = listFiles(path.join(SRC, qs.overlay), ["app", "index.html", "404.html", ".nojekyll"]);
   return own.length > 40 && own.includes("app/asma.html") && own.includes("app/asma.webmanifest") &&
-    own.filter((f) => !(qr.after?.written || []).includes(f)).every((f) => sha(path.join(SRC, qs.overlay, f)) === sha(path.join(qrOut, f)));
+    own.filter((f) => !(qr.after?.written || []).includes(f)).every((f) => sha(path.join(SRC, qs.overlay, f)) === sha(path.join(qrPre, f)));
 });
 check("QR's worker carries MSA's one version number and the built app's shell", () => {
   const v = read(SRC, "app/js/version.js").match(/APP_VERSION = "([\d.]+)"/)[1];
