@@ -11,7 +11,8 @@
 //
 // Owns no data. Its only messages: "mmsa-unit" (the āyah changed) and "mmsa-journey-flush" (save a Note being edited)
 // to the page inside; "mmsa-open-journey" and "mmsa-unit-count" from it.
-import { t } from "./i18n.js";
+import { t, ensureCatalogueReady } from "./i18n.js";
+import { onAppLangChange } from "./prefs.js";
 import { HANDLES, handleCss, startDrag } from "./float-window.js";
 import { homeRect, setHomeRect, SHARED as HOME_SHARED } from "./home-window.js";
 import { restoreWindow } from "./minimise.js";
@@ -291,6 +292,7 @@ function build() {
     pane.appendChild(d);
   }
   document.body.appendChild(pane);
+  onAppLangChange(relabel); // audit 47 langpane
   window.addEventListener("resize", apply);
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && pane && !pane.hidden && !document.getElementById("journeyTray")?.offsetParent) closeReadNotePane(); });
   window.addEventListener("message", (ev) => {
@@ -399,6 +401,27 @@ export function setReadNotePaneHost(h) { host = h || {}; }
 /** Ask the page inside to make a new Note on the āyah ready to write (the Āyah card's 📝 Note with no Note yet). */
 export function readNotePaneFocusNew() { if (frame) toFrame({ type: "mmsa-focus-new" }); } // an already loaded page; a first opening passes focusNew
 
+/** Audit part 47 (PCF MSA J29): quranrevival.html switches language IN PLACE, and this pane is built once, so its bar's words,
+    its tabs and the page inside it (a frame, which reads the language only when it loads) kept the old language. */
+async function relabel() {
+  if (!pane) return;
+  await ensureCatalogueReady(); // the listeners fire before a first switch to Bangla has its catalogue
+  await new Promise((r) => setTimeout(r, 0)); // ...and the page has handed over its relabelled unit (relabelReadNotePane)
+  for (const [el, key] of [[pane.querySelector(".rnp-close"), "Close"], [pane.querySelector("[data-rnp-journey]"), "Open in Mapping My Journey"], [findBtn, "Find a note in Mapping My Journey to attach"]]) { el.setAttribute("aria-label", t(key)); el.title = t(key); }
+  findInput.setAttribute("aria-label", t("Find a note in Mapping My Journey to attach"));
+  frame.title = t("Notes");
+  tabs.querySelector('[data-rnp-tab="notes"]').textContent = `📝 ${t("Notes")}`;
+  tabs.querySelector('[data-rnp-tab="track"]').textContent = `✅ ${t("Track this āyah")}`;
+  results.hidden = true;
+  if (unit) paint();
+  // The page inside reads the language when it loads: load it again, on the unit the pane is on now (what is being typed is saved first).
+  if (frame.getAttribute("src") && unit) {
+    try { frame.contentWindow?.postMessage({ type: "mmsa-journey-flush" }, location.origin); } catch { /* not loaded */ }
+    frameReady = false;
+    frame.setAttribute("src", srcFor(unit, {}));
+  }
+}
+
 function paint() {
   const label = unit?.label ?? "";
   titleEl.textContent = t("Notes on {unit}", { unit: label });
@@ -447,6 +470,20 @@ export function openReadNotePane(u, whenClosed = null, { tab = "notes", backLabe
 }
 
 /** The Read view moved to another āyah: an open pane follows it; a closed one waits until it is opened. */
+/** The same unit, its label written again (the page's language changed in place: "2:255" -> "২:২৫৫"). setReadNotePaneUnit()
+    ignores an unchanged unit, and so does the page inside, so this repaints the bar and, if the page inside was loaded with
+    the old label, loads it again with the new one (never under a Note being typed). Asked for by the MSA-QR-LEAD (audit 47). */
+export function relabelReadNotePane(u) {
+  if (!pane || !u || !unit || u.unitKey !== unit.unitKey) return;
+  unit = { ...unit, ...u }; // audit 47 langrelabel
+  paint();
+  const src = frame.getAttribute("src");
+  if (!src || new URL(src, location.href).searchParams.get("unitLabel") === unit.label) return;
+  try { if (frame.contentDocument?.querySelector("[data-edit-body]")) return; } catch { /* not ours */ }
+  frameReady = false;
+  frame.setAttribute("src", srcFor(unit, {}));
+}
+
 export function setReadNotePaneUnit(u) {
   if (!pane || pane.hidden || !u || u.unitKey === unit?.unitKey) return;
   toFrame({ type: "mmsa-unit", unit: u.unitKey, label: u.label, noteTitle: u.noteTitle ?? "" });

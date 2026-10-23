@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "12.35",
+    "version": "12.37",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -4697,8 +4697,32 @@
     {
       "version": "12.35",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "The Owner's J88 part 1: Firebase's sign-in helper pages served from MSA and QR at /__/auth/ (switch SELF_HOSTED_AUTH_HOSTS empty, so sign-in is unchanged until the Owner's Google Cloud step); student-device-browser's small() skips scrolled-out controls.",
+      "integration": {
+        "authorizedOn": "2026-10-23",
+        "integratedOn": "2026-10-23",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.36",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Audit part 47 (PR #1064, finished by the Architect: a Note being typed survives the switch) and the QR Lead's J87 (PR #1068); quran-data.js's generic offline note removed.",
+      "integration": {
+        "authorizedOn": "2026-10-23",
+        "integratedOn": "2026-10-23",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.37",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "The QR Lead's J90 (#1070) and bmUnits (#1074) with the shared relabelReadNotePane() hook: the last audit-47 findings fixed.",
       "integration": {
         "authorizedOn": "2026-10-23",
         "integratedOn": "2026-10-23",
@@ -4707,8 +4731,10 @@
       }
     }
   ],
-  "nextUnallocated": "12.36",
+  "nextUnallocated": "12.38",
   "nextUnallocatedNote": [
+    "v12.37 was allocated to audit 47's QR findings (Āyah card, Notes pane label, Bookmark popover) and relabelReadNotePane, 2026-10-23.",
+    "v12.36 was allocated to audit part 47 (shared parts follow QR's language switch) and the QR Lead's J87, 2026-10-23.",
     "v12.35 was allocated to sign-in helper pages on both sites (switch off); a tap-size detector fix, 2026-10-23.",
     "v12.34 was allocated to QR language switch in place; Word card way back in its top row; audit part 46, 2026-10-23.",
     "v12.33 was allocated to audit part 45: Bookmark menu fills on four shared pages; three student fixes, 2026-10-23.",

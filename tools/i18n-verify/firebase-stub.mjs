@@ -23,7 +23,7 @@ const LATENCY = __LATENCY__;
 try { window.__fsLog = []; } catch (e) {}
 let __seq = 0;
 async function __trip(kind, col, id, produce) {
-  const rec = { n: ++__seq, kind: kind, col: col, id: id || null, t0: performance.now(), t1: null };
+  const rec = { n: ++__seq, kind: kind, col: col, id: id || null, t0: performance.now(), t1: null, stack: (function () { try { return new Error().stack; } catch (e) { return ""; } })() };
   try { window.__fsLog.push(rec); } catch (e) {}
   if (LATENCY > 0) await new Promise(function (r) { setTimeout(r, LATENCY); });
   // OPT-IN (explore-coverage-browser.mjs): reads of a collection named in window.__stubHold wait until

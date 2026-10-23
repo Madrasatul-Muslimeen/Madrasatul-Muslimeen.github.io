@@ -2924,7 +2924,11 @@
      flow view, the Note view alike) rather than only trailing the plain
      path. Right-aligned to match this app's RTL-first reading direction --
      the same edge Arabic reading starts from. */
-  .ayah-num-row { display: flex; justify-content: flex-end; margin: 0.3rem 0 0.1rem; }
+  /* QR Lead (audit part 46, QR as a student): the badge's 40px tap area (below) stands 8px above the 24px badge, and a
+     0.3rem (4.8px) top margin left its top 3px outside the panel, where a tap reached #studyScreen: 0.5rem (8px) keeps
+     the whole 40px inside. The row is 3.2px lower; nothing else moves. */
+  .ayah-num-row { display: flex; justify-content: flex-end; margin: 0.5rem 0 0.1rem; }
+  .read-loading { margin: 1rem 0; text-align: center; color: #555; font-weight: 600; } /* QR Lead: "Loading…" while a surah comes (loadSurah) */
   .ayah-num-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 1.5rem; height: 1.5rem; padding: 0 0.4rem; border-radius: 999px; background: #f0ead9; color: #8a6d1f; font-size: 0.78rem; font-weight: 700; border: 1px solid #d8c68a; }
   /* Issue #295 -- the badge is a real <button> (the Ayah Card's third entry
      point) now, in Read and Note view alike. `font`/`cursor` are the only
@@ -7622,6 +7626,20 @@
       renderUnitNumberPicker();
       paintShortReadLabels();
       paintWho();
+      // QR Lead (audit part 47): an open Notes pane keeps the label it was handed ("Notes on ২:২৫৫"), and an open Āyah card
+      // its words, ladder, Approach titles and reference. Both are told again, in the new language. The pane's repaint
+      // is read-note-pane.js's relabelReadNotePane() (shared; the MSA Architect's), called only if it is there.
+      if (readNotePaneMod?.isReadNotePaneOpen()) { const u = readNotePaneUnitNow(); if (u) readNotePaneMod.relabelReadNotePane?.(u); }
+      if (ayahSheetUnitKey) {
+        renderAyahActionSheetNow();
+        // Its Related āyāt and Related hadith were labelled (surah names, digits, "Asma:") when they loaded: label them
+        // again from what is already in memory (no new read: I9), each redrawing the card when done.
+        if (!ayahSheetIntro) {
+          const { surah: rs, ayah: ra } = parseAyahUnitKey(ayahSheetUnitKey);
+          if (ayahSheetRelated && !ayahSheetRelated.error) ensureAyahSheetRelatedLoaded(ayahSheetUnitKey, rs, ra);
+          if (ayahSheetHadith && !ayahSheetHadith.error) ensureAyahSheetHadithLoaded(ayahSheetUnitKey, rs, ra);
+        }
+      }
       // The strip's current line is JS-rendered, so translateStatic() above
       // cannot reach it (its WeakMap only holds nodes that were in the
       // markup). Redraw it in the new language, without animating -- a
@@ -10027,11 +10045,52 @@
       return displayParts(ayah).filter((a) => !half || a.half === half).map((a) => renderLayoutA(a, panels, opts)).join("");
     }
 
+    /** QR Lead (with the MSA Architect, 23 Oct 2026, audit part 46, I15): the reader chose a surah this device never
+        kept, with no internet. Say so here, on the Read path where the reader asked for it (not for background lookups),
+        and put the pickers back on the surah still on screen, so its name and its words agree. Same words, same look as
+        quran-data.js's first note; the same id, so there is never two. */
+    function announceChosenSurahUnavailable(surahNumber) {
+      document.getElementById("surahOfflineNotice")?.remove();
+      const note = document.createElement("div");
+      note.id = "surahOfflineNotice";
+      note.dataset.readPath = "";
+      note.setAttribute("role", "alert");
+      note.textContent = t("Surah {n} is not saved on this device, and there is no internet connection. Connect to read it.", { n: num(surahNumber) });
+      Object.assign(note.style, {
+        position: "fixed", left: "50%", bottom: "5rem", transform: "translateX(-50%)", zIndex: "99998",
+        maxWidth: "min(92vw, 28rem)", minHeight: "40px", boxSizing: "border-box", padding: "0.7rem 1.1rem", borderRadius: "14px",
+        background: "#7A1F1F", color: "#fff", font: "600 0.9rem system-ui, sans-serif", textAlign: "center", boxShadow: "0 2px 10px rgba(0,0,0,0.25)",
+      });
+      note.addEventListener("click", () => note.remove());
+      document.body.appendChild(note);
+      setTimeout(() => note.remove(), 9000);
+    }
+
     async function loadSurah() {
       quranWordCardRequest++;
       quranWordCardState = closeWordCard(quranWordCardState);
       clearWordCardMounts();
-      currentSurahData = await getSurah(currentSurahNum);
+      // QR Lead (audit part 46: on a slow line "the Read view is an empty box ... no loading words"): if the surah has
+      // not come within 200ms (from memory or the browser's cache it comes at once, so no flash), say "Loading…".
+      const loadingTimer = setTimeout(() => {
+        if (ayahPanels) ayahPanels.innerHTML = `<p class="read-loading" role="status">${escapeHtml(t("Loading…"))}</p>`;
+      }, 200);
+      try {
+        currentSurahData = await getSurah(currentSurahNum);
+      } catch (error) {
+        const asked = currentSurahNum;
+        if (currentSurahData && currentSurahData.surahNumber !== asked) {
+          currentSurahNum = currentSurahData.surahNumber;
+          surahSelect.value = String(currentSurahNum);
+          syncReadPickers();
+          syncWheelHubPickers();
+          renderStudyScreen(); // the surah still kept, in place of "Loading…"
+        }
+        if (error instanceof TypeError) announceChosenSurahUnavailable(asked); // no network and no saved copy
+        throw error;
+      } finally {
+        clearTimeout(loadingTimer);
+      }
       setAyahNum(1);
       // Owner ask (10 Aug 2026): Prev/Next alone made jumping to, say, ayah
       // 200 of a 286-ayah surah impractical -- a direct Ayah picker next to
@@ -23633,30 +23692,30 @@
       // PCF MSA J42: every unit that holds the āyah on screen, Single Ayah included, in a fixed order. A boundary
       // that is not known is left out, never guessed.
       const all = [{
-        id: "ayah", label: t("This āyah"), defaultName: ayahRefLabel(currentSurahNum, ayah, { half }),
+        id: "ayah", label: () => t("This āyah"), defaultName: ayahRefLabel(currentSurahNum, ayah, { half }),
         position: ayahRecordKey(currentSurahNum, ayah, half), settings: at("ayah"),
       }];
-      if (page) all.push({ id: "page", label: t("This page"), defaultName: t("Page {page}", { page: num(page) }), position: buildUnitKey.page(PAGE_EDITION, page), settings: at("page") });
+      if (page) all.push({ id: "page", label: () => t("This page"), defaultName: t("Page {page}", { page: num(page) }), position: buildUnitKey.page(PAGE_EDITION, page), settings: at("page") });
       if (rec && rec.ruku != null) {
         const idx = rukuIndexInSurah(currentSurahData.ayahs, rec.ruku);
         const inRuku = currentSurahData.ayahs.filter((a) => a.ruku === rec.ruku).map((a) => a.ayah);
         if (idx && inRuku.length) {
           all.push({
-            id: "ruku", label: t("This rukūʿ"),
+            id: "ruku", label: () => t("This rukūʿ"),
             defaultName: t("Ruku' {ruku} of Surah {surah} (ayahs {from}–{to})", { ruku: num(idx), surah: num(currentSurahNum), from: num(Math.min(...inRuku)), to: num(Math.max(...inRuku)) }),
             position: buildUnitKey.ruku(currentSurahNum, idx), settings: at("ruku"),
           });
         }
       }
       const sName = surahName(currentSurahNum, surahIndex.find((s) => s.surahNumber === currentSurahNum)?.nameEnglish);
-      all.push({ id: "surah", label: t("Whole sūrah"), defaultName: sName || t("Whole Surah {surah}", { surah: num(currentSurahNum) }), position: buildUnitKey.surah(currentSurahNum), settings: at("surah") });
-      if (rec && rec.juz) all.push({ id: "juz", label: t("This juz"), defaultName: t("Juz {juz}", { juz: num(rec.juz) }), position: buildUnitKey.juz(rec.juz), settings: at("juz") });
+      all.push({ id: "surah", label: () => t("Whole sūrah"), defaultName: sName || t("Whole Surah {surah}", { surah: num(currentSurahNum) }), position: buildUnitKey.surah(currentSurahNum), settings: at("surah") });
+      if (rec && rec.juz) all.push({ id: "juz", label: () => t("This juz"), defaultName: t("Juz {juz}", { juz: num(rec.juz) }), position: buildUnitKey.juz(rec.juz), settings: at("juz") });
       // The selected study unit comes first and is preselected, so today's default is unchanged. When it is one of
       // the five it moves to the front; a wider one that is not (Range, Hizb) is added in front.
       const sel = all.find((c) => c.id === info.unitType);
       const choices = sel
         ? [info.unitType === "ayah" ? sel : { ...sel, defaultName: info.label, settings: base }, ...all.filter((c) => c !== sel)]
-        : [{ id: "unit", label: unitChipText(info), defaultName: info.label, position: info.unitKey, settings: base }, ...all];
+        : [{ id: "unit", label: () => unitChipText(info), defaultName: info.label, position: info.unitKey, settings: base }, ...all];
       return choices;
     }
 
@@ -23702,11 +23761,13 @@
         // Fixes round 2 -- tag this bookmark with a person. Defaults to
         // whoever is selected right now (studying WITH a child is the
         // common case, per D10), and "No one in particular" clears it.
-        people: roster.map((p) => ({ id: p.id, name: langText(p.name, getAppLang(), p.id) })),
+        people: roster.map((p) => ({ id: p.id, name: () => langText(p.name, getAppLang(), p.id) })),
         defaultPersonTagId: selectedPersonId,
         // Multi-student round -- "Assign to", the same roster/scoping rule
         // the Track card's own Claim dropdown already uses.
-        roster: assignableRoster(),
+        // Names and unit labels are functions (the QR Lead, bmUnits), so a language switch while the dialog is open
+        // writes them again in the new language (bookmark-popover.js live()).
+        roster: assignableRoster().map((a) => { const p = roster.find((r) => r.id === a.id); return { ...a, name: p ? () => langText(p.name, getAppLang(), p.id) : a.name }; }),
         selectedPersonId,
         // The Owner, 12 Oct 2026 -- "quick unit choice" (Read view only; empty everywhere else).
         units: unitChoices.map(({ id, label, defaultName: dn }) => ({ id, label, defaultName: dn })),
@@ -24851,7 +24912,8 @@
       readNotesBtn.setAttribute("title", name);
       readNotesBtn.setAttribute("aria-expanded", String(!!readNotePaneMod?.isReadNotePaneOpen()));
     }
-    function syncReadNotes() {
+    /** The unit an open Notes pane should be on now, with its label in the app language (null: stay put). */
+    function readNotePaneUnitNow() {
       // An open pane follows the āyah when it is on an āyah; on a wider unit (round 2b: a Range, Surah, Page…) it
       // follows that unit as the reader moves through them, and stays put otherwise.
       const on = readNotePaneMod?.readNotePaneUnit();
@@ -24860,6 +24922,10 @@
         const info = currentUnitInfo();
         u = parseUnitKey(info.unitKey).unitType === parseUnitKey(on.unitKey).unitType ? { unitKey: info.unitKey, label: info.label } : null;
       }
+      return u;
+    }
+    function syncReadNotes() {
+      const u = readNotePaneUnitNow();
       if (u && readNotePaneMod) readNotePaneMod.setReadNotePaneUnit(u);
       paintReadNotesBtn();
     }
@@ -25641,7 +25707,13 @@
     // which is why ayahSelect's own handler below needs no matching call:
     // it only ever fires while the flow strip is hidden -- see this round's
     // own dated report for the reproduction that established that).
-    surahSelect.addEventListener("change", async () => { currentSurahNum = Number(surahSelect.value); await loadSurah(); await scrollFlowToCurrentAyah(); });
+    surahSelect.addEventListener("change", async () => {
+      currentSurahNum = Number(surahSelect.value);
+      // QR Lead (audit part 46): offline with the surah never kept, loadSurah() has already said so and put the pickers
+      // back (I15 met), so that one error stops here instead of surfacing as an uncaught "Failed to fetch".
+      try { await loadSurah(); } catch (error) { if (error instanceof TypeError) return; throw error; }
+      await scrollFlowToCurrentAyah();
+    });
     trackableSelect.addEventListener("change", () => changeCurrentTrackable(trackableSelect.value));
     personSelect.addEventListener("change", async () => {
       selectedPersonId = personSelect.value;

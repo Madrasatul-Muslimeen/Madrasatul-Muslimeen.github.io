@@ -185,7 +185,7 @@ async function visit(ctx, label) {
   const idleMs = Date.now() - t0;
   const nav = await t.page.evaluate(() => {
     const fcp = performance.getEntriesByName("first-contentful-paint")[0];
-    const logs = (window.__fsLog || []).map((x) => ({ kind: x.kind, col: x.col, id: x.id, t0: x.t0 }));
+    const logs = (window.__fsLog || []).map((x) => ({ kind: x.kind, col: x.col, id: x.id, t0: x.t0, stack: x.stack || "" }));
     return { origin: performance.timeOrigin, fcp: fcp ? fcp.startTime : null, loadEnd: performance.getEntriesByType("navigation")[0]?.loadEventEnd ?? null, logs, controlled: !!navigator.serviceWorker.controller };
   });
   const all = t.list();
@@ -214,6 +214,17 @@ async function visit(ctx, label) {
   };
   return out;
 }
+// The first app frames in a read's call stack (not the stub): function @ file:line, up to three deep.
+function callerOf(stack) {
+  const out = [];
+  for (const f of String(stack || "").split("\n").slice(1)) {
+    const m = f.match(/at (?:async )?(?:(.+?) \()?(https?:\/\/[^)\s]+?):(\d+):\d+\)?\s*$/);
+    if (!m || /firebase|stub|__trip/i.test(m[2])) continue;
+    out.push(`${m[1] || "(anon)"} @ ${m[2].replace(/^https?:\/\/[^/]+\//, "").replace(/\?.*$/, "")}:${m[3]}`);
+    if (out.length >= 3) break;
+  }
+  return out.join(" <- ") || "(no app frame)";
+}
 function print(v, tag) {
   say(`  [${tag}] ${v.label}: FCP ${v.fcpMs} ms; usable (surah picker filled) ${v.nav.usable == null ? "never" : Math.round(v.nav.usable) + " ms"}; idle after ${v.idleMs} ms; worker controls: ${v.nav.controlled}`);
   say(`    requests ${v.requests} (${kb(v.bytes)} raw), of which from the NETWORK ${v.netRequests} (${kb(v.netBytes)}); JS modules ${v.modules}`);
@@ -222,6 +233,7 @@ function print(v, tag) {
     const t0 = Math.min(...v.all.map((r) => r.t));
     for (const r of [...v.all].sort((a, b) => a.t - b.t)) say(`      +${String(Math.round(r.t - t0)).padStart(6)}ms ${String(kb(sizeOf(r))).padStart(7)} ${r.sw ? "sw" : "net"} ${short(r.url)}  <- ${short(r.from || "")}`);
   }
+  for (const l of v.reads) say(`      read ${l.kind} ${l.col}${l.id ? "/" + l.id : ""}  <- ${callerOf(l.stack)}`);
   say(`    reads: ${v.reads.map((l) => l.col + (l.id ? "/" + l.id : "")).join(", ") || "none"}`);
 }
 function top10(v, tag) {

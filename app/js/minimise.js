@@ -10,7 +10,8 @@
 // restoreWindow() so a minimised window that is opened again is shown, not left hidden.
 //
 // Pure UI: no Firebase, no storage.
-import { t } from "./i18n.js";
+import { t, ensureCatalogueReady } from "./i18n.js";
+import { onAppLangChange } from "./prefs.js";
 
 // { root: the window on screen; hide: what minimising hides (an overlay around the window, or the window itself);
 //   close: its ✕; title: its name. } The root must be visible for the – to be added.
@@ -72,8 +73,25 @@ export function minimiseWindow(root, spec = WINDOWS.find((s) => root.matches(s.r
   // Window frames that live beside the window (the Āyah card's resize frame) hide with it.
   target.setAttribute(ATTR, "");
   document.querySelectorAll(".ayah-win-frame.on").forEach((f) => { if (spec.id === "ayah") f.setAttribute(ATTR, ""); });
-  minimised.set(target, { chip, spec });
+  minimised.set(target, { chip, spec, root });
 }
+
+/** Audit part 47 (PCF MSA J29): quranrevival.html switches language IN PLACE, and the – buttons, the dock and the chips are
+    written once. Written again in the new language, after the windows have repainted their own titles (the chip is named
+    from its window's title). */
+async function relabel() {
+  await ensureCatalogueReady(); // the listeners fire before a first switch to Bangla has its catalogue
+  await new Promise((r) => requestAnimationFrame(r)); // ...and the windows repaint their titles first
+  if (dock) dock.setAttribute("aria-label", t("Minimised windows"));
+  document.querySelectorAll(".mm-min-btn").forEach((b) => { b.setAttribute("aria-label", t("Minimise")); b.title = t("Minimise"); });
+  for (const { chip, spec, root } of minimised.values()) {
+    const name = titleOf(spec, root);
+    chip.setAttribute("aria-label", t("Bring back {name}", { name }));
+    chip.title = t("Bring back {name}", { name });
+    chip.lastChild.textContent = name;
+  }
+}
+onAppLangChange(relabel); // audit 47 langmin
 
 /** Bring a minimised window back (also called by a window's own "open" code, so opening it again shows it). */
 export function restoreWindow(el) {

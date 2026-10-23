@@ -15,8 +15,6 @@
 // script's output is reachable as-is). Swap this one constant to the real
 // archive.org URL once the owner has uploaded the packaged files there —
 // nothing else in this file (or any caller) needs to change.
-import { t, num } from "./i18n.js";
-
 const BASE_URL = "/tools/quran-data-pull/output";
 
 const surahCache = new Map(); // surahNumber -> Promise<surah data>
@@ -41,34 +39,11 @@ export async function getSurah(surahNumber) {
         return res.json();
       }).catch((err) => {
         surahCache.delete(surahNumber); // don't cache a failed load — let the next call retry
-        if (err instanceof TypeError) announceSurahUnavailable(surahNumber); // no network and no saved copy
         throw err;
       })
     );
   }
   return surahCache.get(surahNumber);
-}
-
-/**
- * Audit part 46 (J29): a student offline who opens a surah this device never kept used to get an uncaught
- * "Failed to fetch" and the PREVIOUS surah's words left on screen under the new surah's name -- no message at all
- * (I15: a failed load must reach the person). Say so, in the page's language, in a 40px+ note that goes by itself.
- */
-function announceSurahUnavailable(surahNumber) {
-  if (typeof document === "undefined" || !document.body) return;
-  document.getElementById("surahOfflineNotice")?.remove();
-  const note = document.createElement("div");
-  note.id = "surahOfflineNotice";
-  note.setAttribute("role", "alert");
-  note.textContent = t("Surah {n} is not saved on this device, and there is no internet connection. Connect to read it.", { n: num(surahNumber) });
-  Object.assign(note.style, {
-    position: "fixed", left: "50%", bottom: "5rem", /* above the bottom tabs, which a note at 1rem covered */ transform: "translateX(-50%)", zIndex: "99998",
-    maxWidth: "min(92vw, 28rem)", minHeight: "40px", boxSizing: "border-box", padding: "0.7rem 1.1rem", borderRadius: "14px",
-    background: "#7A1F1F", color: "#fff", font: "600 0.9rem system-ui, sans-serif", textAlign: "center", boxShadow: "0 2px 10px rgba(0,0,0,0.25)",
-  });
-  note.addEventListener("click", () => note.remove());
-  document.body.appendChild(note);
-  setTimeout(() => note.remove(), 9000);
 }
 
 /** One ayah's data out of its surah. */
