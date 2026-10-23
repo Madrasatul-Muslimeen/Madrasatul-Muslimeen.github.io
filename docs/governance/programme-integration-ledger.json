@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "12.26",
+    "version": "12.27",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -4589,8 +4589,20 @@
     {
       "version": "12.26",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "J81 part 3 and J82 parts 1, 2, 4, 5 (PRs #1031, #1035), with the Architect's review fixes.",
+      "integration": {
+        "authorizedOn": "2026-10-23",
+        "integratedOn": "2026-10-23",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.27",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "J82 part 3 (Architect round; PR #1037 closed), the Note's rows in the Mapping My Journey window.",
       "integration": {
         "authorizedOn": "2026-10-23",
         "integratedOn": "2026-10-23",
@@ -4599,8 +4611,9 @@
       }
     }
   ],
-  "nextUnallocated": "12.27",
+  "nextUnallocated": "12.28",
   "nextUnallocatedNote": [
+    "v12.27 was allocated to The Mapping My Journey window opened on a Note is the note window; tidy formatting rows, 2026-10-23.",
     "v12.26 was allocated to Every Note opens in the Mapping My Journey window; Learn next, Bookmark way back, Mushaf page buttons, 2026-10-23.",
     "v12.25 was allocated to the Āyah card's tabs, the Note buttons, a minimise button on every pop-up, Hadith's notice, 2026-10-22.",
     "v12.24 was allocated to the Word card reads its word's own surah (audit-part15's error), 2026-10-22.",
