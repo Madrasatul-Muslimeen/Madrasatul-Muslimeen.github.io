@@ -1491,3 +1491,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v12.31** (2026-10-23): audit part 44: QR as a student; Language for a signed-out reader.
 - **v12.32** (2026-10-23): QR Lead J84: Mushaf ‹ › one page, whole pages, one Read.
 - **v12.33** (2026-10-23): audit part 45: Bookmark menu fills on four shared pages; three student fixes.
+- **v12.34** (2026-10-23): QR language switch in place; Word card way back in its top row; audit part 46.

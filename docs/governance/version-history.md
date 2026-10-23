@@ -935,3 +935,4 @@ total). Allocated by the MMSA Architect.
 12.31: audit part 44: QR as a student; Language for a signed-out reader. Allocated by the MMSA Architect.
 12.32: QR Lead J84: Mushaf ‹ › one page, whole pages, one Read. Allocated by the MMSA Architect.
 12.33: audit part 45: Bookmark menu fills on four shared pages; three student fixes. Allocated by the MMSA Architect.
+12.34: QR language switch in place; Word card way back in its top row; audit part 46. Allocated by the MMSA Architect.

@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "12.33",
+    "version": "12.34",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -4673,8 +4673,20 @@
     {
       "version": "12.33",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Audit part 45 (Builder round #1051, PR #1054, finished by the Architect): the Bookmark menu fills on Mapping My Journey, My Notes, Dawah and Import notes; Bookmark popover contrast, a 40px note-pane search, no sideways scroll in the wide Notes pane; new QR check student-tools-browser.",
+      "integration": {
+        "authorizedOn": "2026-10-23",
+        "integratedOn": "2026-10-23",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.34",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "The MSA-QR-LEAD's PR #1061 (J86 + J85), the Zab bar following an in-place language switch, and audit part 46 (Builder round #1057, PR #1058): offline surah note, a 44px one-line update notice; QR has 24 checks.",
       "integration": {
         "authorizedOn": "2026-10-23",
         "integratedOn": "2026-10-23",
@@ -4683,8 +4695,9 @@
       }
     }
   ],
-  "nextUnallocated": "12.34",
+  "nextUnallocated": "12.35",
   "nextUnallocatedNote": [
+    "v12.34 was allocated to QR language switch in place; Word card way back in its top row; audit part 46, 2026-10-23.",
     "v12.33 was allocated to audit part 45: Bookmark menu fills on four shared pages; three student fixes, 2026-10-23.",
     "v12.32 was allocated to QR Lead J84: Mushaf ‹ › one page, whole pages, one Read, 2026-10-23.",
     "v12.31 was allocated to audit part 44: QR as a student; Language for a signed-out reader, 2026-10-23.",
