@@ -942,3 +942,4 @@ total). Allocated by the MMSA Architect.
 12.38: audit part 48 part 2 (Zab bar and worker install wait for the page). Allocated by the MMSA Architect.
 12.39: audit part 50 part 1 (QR modulepreload). Allocated by the MMSA Architect.
 12.40: the QR Lead's surah warm + page icon (#1081). Allocated by the MMSA Architect.
+12.41: audit part 51 (My Notes and Mapping My Journey load speed). Allocated by the MMSA Architect.

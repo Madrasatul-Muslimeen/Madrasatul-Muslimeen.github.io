@@ -1566,3 +1566,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v12.38** (2026-10-23): audit part 48 part 2 (Zab bar and worker install wait for the page).
 - **v12.39** (2026-10-23): audit part 50 part 1 (QR modulepreload).
 - **v12.40** (2026-10-23): the QR Lead's surah warm + page icon (#1081).
+- **v12.41** (2026-10-23): audit part 51 (My Notes and Mapping My Journey load speed).
