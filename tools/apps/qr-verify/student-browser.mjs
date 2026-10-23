@@ -22,7 +22,10 @@ const REPORT = !!process.env.REPORT || process.argv.includes("--report");
 const PORT = Number(process.env.PORT) || 8107;
 
 /** name -> [file inside the built app, edit]. Filled in as fixes land. */
-const MUTATIONS = {};
+const MUTATIONS = {
+  // Fix 1 (app/js/nav.js): a signed-out reader gets Language and Night/Light in Home after the page settles. Old code: nothing until sign-in.
+  signedoutlang: ["app/js/nav.js", (t) => { const r = t.replace("setTimeout(offerSettingsWhileSignedOut, SIGNED_OUT_SETTINGS_MS)", "void 0"); if (r === t) throw new Error("mutation signedoutlang did not apply"); return r; }],
+};
 if (MUTATE && !MUTATIONS[MUTATE]) throw new Error(`Unknown mutation "${MUTATE}"`);
 
 const { REPO } = await import("./_root.mjs");
@@ -82,7 +85,7 @@ window.__sd = {
   covered: (root) => [...(root || document).querySelectorAll("button, a[href], select")]
     .filter((el) => window.__sd.visible(el) && !el.closest("[data-sd-skip]"))
     .filter((el) => { const r = el.getBoundingClientRect(); const x = r.left + r.width / 2, y = r.top + r.height / 2;
-      if (x < 0 || y < 0 || x > innerWidth || y > innerHeight || window.__sd.clipped(el, x, y)) return false; const hit = document.elementFromPoint(x, y); return hit && hit !== el && !el.contains(hit) && !hit.contains(el); })
+      if (x < 0 || y < 0 || x > innerWidth || y > innerHeight || window.__sd.clipped(el, x, y)) return false; const hit = document.elementFromPoint(x, y); if (!hit || hit === el || el.contains(hit) || hit.contains(el)) return false; for (let p = hit; p && p !== document.body; p = p.parentElement) if (getComputedStyle(p).position === "fixed" && root === undefined) return false; return true; })
     .map((el) => el.id || el.textContent.trim().slice(0, 20)),
   english: () => {
     const out = [], w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
@@ -109,6 +112,102 @@ const AREAS = [
 ];
 const WIDTHS = [[360, 740], [390, 844], [768, 1024], [1280, 720]];
 const LANGS = ["en", "bn"], AUTHS = ["student", "out"], THEMES = ["night", "light"];
+
+
+// ---- the student's flows on Quran Study: each does its main action and the RESULT is asserted ----
+const settle = (page, ms = 500) => page.waitForTimeout(ms);
+async function openRead(page) {
+  await page.evaluate(() => document.querySelectorAll('[id*="splash"], .app-splash-overlay').forEach((e) => e.remove()));
+  if (!(await page.evaluate(() => document.getElementById("tabReadBtn")?.getBoundingClientRect().width > 0))) { await page.click("#tabStudyBtn"); await settle(page, 200); }
+  await page.click("#tabReadBtn");
+  await page.waitForFunction(() => !document.getElementById("readView").hidden && document.getElementById("ayahPanels").textContent.trim().length > 20, null, { timeout: 10000 });
+  await settle(page, 400);
+}
+async function flows(auth, lang, [w, h]) {
+  const tag = `flows ${auth} ${w}x${h} ${lang}`;
+  const ctx = await ctxFor(browser, { auth, lang, width: w, height: h, theme: w === 390 ? "night" : "light" });
+  await ctx.addInitScript("window.__stubApplyBatches = true;");
+  const page = await ctx.newPage();
+  const errors = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  page.on("console", (m) => { if (m.type() === "error" && !NOISE.test(m.text())) errors.push("console: " + m.text()); });
+  page.setDefaultTimeout(12000);
+  await page.goto(`${base}/app/quranrevival.html`, { waitUntil: "load" });
+  const writes = (k = 0) => page.evaluate((n) => (window.__stubWriteData || []).slice(n).map((x) => ({ col: x.col, id: x.id, data: x.data })), k);
+  if (auth === "out") {
+    await settle(page, 3500);
+    await page.evaluate(DETECTORS);
+    const o = await page.evaluate(() => { const b = [...document.querySelectorAll("button")].find((x) => window.__sd.visible(x) && /Google|গুগল/.test(x.textContent)); const r = b?.getBoundingClientRect(); return { text: document.body.innerText.slice(0, 200), btn: !!b, h: r ? Math.round(r.height) : 0, tabsHidden: document.getElementById("tabReadBtn").getBoundingClientRect().width === 0 }; });
+    check(`${tag}: signed out, the page says so in words and offers Sign in with Google`, o.btn && /signed out|সাইন আউট|সাইন ইন/i.test(o.text), JSON.stringify(o));
+    check(`${tag}: the sign-in button is a finger control (40px or more)`, o.h >= 40, JSON.stringify(o));
+    const other0 = lang === "en" ? "bn" : "en";
+    const hb0 = await page.evaluate(() => document.querySelector("details.nav-cat-home > summary")?.textContent ?? "");
+    await page.evaluate(() => { document.querySelector("details.nav-cat-home").open = true; });
+    const has = await page.waitForSelector("#navAppLangSelect", { state: "attached", timeout: 4000 }).then(() => true).catch(() => false);
+    check(`${tag}: signed out, Home holds the Language box`, has);
+    if (has) await Promise.all([page.waitForLoadState("load").catch(() => {}), page.selectOption("#navAppLangSelect", other0)]);
+    await page.waitForFunction((b) => (document.querySelector("details.nav-cat-home > summary")?.textContent ?? b) !== b, hb0, { timeout: 15000 }).catch(() => {});
+    const hb1 = await page.evaluate(() => document.querySelector("details.nav-cat-home > summary")?.textContent ?? "");
+    check(`${tag}: Home -> Language works signed out too (${hb0.trim()} -> ${hb1.trim()})`, hb1 !== hb0);
+    check(`${tag}: no page errors`, errors.length === 0, errors.slice(0, 4).join(" | "));
+    await ctx.close();
+    return;
+  }
+  const opened = await waitFor(`${tag}: the Read view opens`, () => openRead(page).then(() => true));
+  check(`${tag}: the Read view opens and shows the āyah`, !!opened);
+  if (!opened) { await ctx.close(); return; }
+  // Choose a surah and an āyah: the page's own words change.
+  const before = await page.evaluate(() => document.getElementById("ayahPanels").textContent.trim().slice(0, 60));
+  await page.evaluate(() => { const s = document.getElementById("readSurahSelect"); s.value = "2"; s.dispatchEvent(new Event("change", { bubbles: true })); });
+  await settle(page, 1200);
+  const after = await page.evaluate(() => ({ t: document.getElementById("ayahPanels").textContent.trim().slice(0, 60), ref: document.getElementById("readRef")?.textContent.trim() }));
+  check(`${tag}: choosing surah 2 changes what is read (${after.ref})`, after.t !== before);
+  await page.evaluate(() => { const s = document.getElementById("readSurahSelect"); s.value = "1"; s.dispatchEvent(new Event("change", { bubbles: true })); });
+  await settle(page, 1000);
+  const vis = (sel) => page.evaluate((q) => { const e = document.querySelector(q); return !!e && e.getBoundingClientRect().width > 0; }, sel);
+  check(`${tag}: the Take / Record / Status bar shows`, (await vis("#readBarTakeBtn")) && (await vis("#readBarRecordBtn")) && (await vis("#readBarStatusBtn")));
+  // Know Your Status
+  await page.click("#readBarStatusBtn"); await settle(page, 1200);
+  const st = await page.evaluate(() => ({ open: !document.getElementById("myStatusMount").hidden, text: document.getElementById("myStatusBody").innerText.length, close: document.getElementById("myStatusCloseBtn").getBoundingClientRect().width > 0 }));
+  check(`${tag}: Know Your Status opens with its Approaches and a ✕`, st.open && st.text > 60 && st.close, JSON.stringify(st));
+  await page.click("#myStatusCloseBtn"); await settle(page, 400);
+  check(`${tag}: ✕ takes the student back to the Read view`, await page.evaluate(() => document.getElementById("myStatusMount").hidden && !document.getElementById("readView").hidden));
+  // Record Your Progress: the write is the student's own claim
+  await page.click("#readBarRecordBtn"); await settle(page, 900);
+  const picked = await waitFor(`${tag}: Record Your Progress card`, () => page.selectOption("#ayahSheetApproachSelect", "recite").then(() => true));
+  if (picked) {
+    await settle(page, 400);
+    const n = (await writes()).length;
+    await page.evaluate(() => document.querySelector('[data-ayah-sheet] [data-approach-stage-btn="practising"]').click());
+    await settle(page, 1500);
+    const w2 = await writes(n);
+    const rec = w2.find((x) => x.col === "records" && Object.entries(x.data || {}).some(([k, v]) => /^entries\.ayah:1:\d+::recite$/.test(k) && v?.claimedStatus === "practising"));
+    check(`${tag}: Practising is written as the student's own claim (records ${w2.map((x) => x.col).join(",")})`, !!rec, JSON.stringify(w2).slice(0, 400));
+    check(`${tag}: the claim names the student as the one who made it`, !!rec && Object.values(rec.data).some((v) => v?.claimedByPersonId === "p1"), JSON.stringify(rec?.data ?? null).slice(0, 300));
+    const pressed = await page.evaluate(() => document.querySelector('[data-ayah-sheet] [data-approach-stage-btn="practising"]')?.getAttribute("aria-pressed"));
+    check(`${tag}: the card shows Practising as pressed after the write`, pressed === "true");
+  }
+  await page.evaluate(() => document.querySelectorAll("#ayahActionSheetOverlay.open [data-ayah-sheet-close]").forEach((b) => b.click())); await settle(page, 300);
+  // Take an Approach: the wheel
+  await page.click("#readBarTakeBtn"); await settle(page, 1200);
+  const tk = await page.evaluate(() => ({ readHidden: document.getElementById("readView").hidden, segs: document.querySelectorAll("#wheelContainer .wheel-seg").length }));
+  check(`${tag}: Take an Approach draws the Approach wheel`, tk.readHidden && tk.segs >= 3, JSON.stringify(tk));
+  // Explore
+  if (!(await vis("#tabExploreBtn"))) { await page.click("#tabStudyBtn").catch(() => {}); await settle(page, 200); }
+  await page.click("#tabExploreBtn"); await settle(page, 1500);
+  const ex = await page.evaluate(() => ({ panel: !document.getElementById("explorePanel")?.hidden, text: (document.getElementById("explorePanel")?.innerText || "").length }));
+  check(`${tag}: Explore opens and shows its list`, ex.panel && ex.text > 40, JSON.stringify(ex));
+  // Language: Home -> Language switches the page's words and back
+  const other = lang === "en" ? "bn" : "en";
+  const hb = await page.evaluate(() => document.querySelector("details.nav-cat-home > summary")?.textContent ?? "");
+  await page.evaluate(() => { document.querySelector("details.nav-cat-home").open = true; });
+  await Promise.all([page.waitForLoadState("load").catch(() => {}), page.selectOption("#navAppLangSelect", other)]);
+  await page.waitForFunction((b) => (document.querySelector("details.nav-cat-home > summary")?.textContent ?? b) !== b, hb, { timeout: 15000 }).catch(() => {});
+  const hb2 = await page.evaluate(() => document.querySelector("details.nav-cat-home > summary")?.textContent ?? "");
+  check(`${tag}: Home -> Language to ${other} changes the page's words (${hb.trim()} -> ${hb2.trim()})`, hb2 !== hb);
+  check(`${tag}: no page errors through the flows`, errors.length === 0, errors.slice(0, 4).join(" | "));
+  await ctx.close();
+}
 
 const browser = await chromium.launch();
 try {
@@ -171,12 +270,20 @@ try {
         check(`${tag}: finger controls at least 40px tall`, m.small.length === 0, m.small.slice(0, 8).join(", "));
         if (lang === "bn") check(`${tag}: no English prose on the Bangla page`, m.english.length === 0, m.english.slice(0, 6).join(" | "));
         if (auth === "student") check(`${tag}: a student sees no admin control`, m.admin.length === 0, m.admin.join(", "));
+        if (auth === "out" && area.name !== "front" && area.name !== "asma") {
+          await page.waitForTimeout(2500);
+          check(`${tag}: signed out, Home -> Settings holds the Language box (a student can read the sign-in words in Bangla)`, await page.evaluate(() => !!document.querySelector("#navHomeExtra #navAppLangSelect, #navHomeExtra select")));
+        }
         rep("small", m.small); rep("english", m.english);
         if (process.env.SHOTS && (w === 390 || w === 1280)) await page.screenshot({ path: `${process.env.SHOTS}/${area.name}-${auth}-${w}-${lang}.png` });
       }
       check(`${tag}: no page errors`, errors.length === 0, errors.slice(0, 4).join(" | "));
       await ctx.close();
     }
+  }
+  for (const auth of AUTHS) for (const lang of LANGS) for (const vp of [[390, 844], [1280, 720]]) {
+    if ((AUTH && AUTH !== auth) || (LANG && LANG !== lang) || (WIDTH && Number(WIDTH) !== vp[0]) || (ONLY && !"flows".includes(ONLY))) continue;
+    try { await flows(auth, lang, vp); } catch (e) { check(`flows ${auth} ${vp[0]} ${lang}: stopped early`, false, String(e.message).split("\n")[0]); }
   }
 } finally {
   await browser.close();
