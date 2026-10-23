@@ -70,7 +70,8 @@
 // range:S:A-B (buildUnitKey.range, I5). A range unit may also be the only one
 // passed. Inert for every caller that passes none: no field, no new key.
 
-import { t, num } from "./i18n.js";
+import { t, num, ensureCatalogueReady } from "./i18n.js";
+import { onAppLangChange } from "./prefs.js";
 import { buildUnitKey } from "./unit-keys.js";
 import { trapModal } from "./modal-focus.js";
 
@@ -86,6 +87,30 @@ export function rangeProblem(u, from, to) {
   if (!Number.isInteger(from) || !Number.isInteger(to) || from < 1 || to < 1 || from > max || to > max) return t("Choose āyāt from 1 to {max}.", { max: num(max) });
   if (from > to) return t("The first āyah must not come after the last.");
   return null;
+}
+
+/** Audit part 47 (PCF MSA J29): quranrevival.html switches language IN PLACE, and these dialogs are drawn once. `rebuild()` returns
+    the dialog's markup for the NEW language; its words and attributes are copied over the open one, element by element. What the
+    reader has typed, picked or ticked is a property of the form fields, not text or an attribute, so it is never touched.
+    Returns the function that stops following (call it when the dialog closes). */
+function followAppLang(overlay, rebuild) {
+  const ATTRS = ["aria-label", "title", "placeholder", "alt"];
+  const sync = (live, fresh) => {
+    for (const a of ATTRS) if (fresh.hasAttribute(a) && live.getAttribute(a) !== fresh.getAttribute(a)) live.setAttribute(a, fresh.getAttribute(a));
+    const kids = [...live.childNodes], next = [...fresh.childNodes];
+    if (kids.length !== next.length) return; // the dialog changed shape since it was drawn: leave that part as it is
+    kids.forEach((k, i) => {
+      const n = next[i];
+      if (k.nodeType === 3 && n.nodeType === 3) { if (k.nodeValue !== n.nodeValue) k.nodeValue = n.nodeValue; }
+      else if (k.nodeType === 1 && n.nodeType === 1 && k.tagName === n.tagName && !k.hasAttribute("data-bm-pop-range-error")) sync(k, n);
+    });
+  };
+  return onAppLangChange(async () => {
+    await ensureCatalogueReady(); // the listeners fire before a first switch to Bangla has its catalogue
+    const fresh = document.createElement("div");
+    fresh.innerHTML = rebuild();
+    sync(overlay, fresh);
+  });
 }
 
 function escapeHtml(s) {
@@ -260,12 +285,14 @@ export function openBookmarkNamePopover({ defaultName = "", folders = [], people
     const unitList = units && (units.length >= 2 || (units.length === 1 && isRangeUnit(units[0]))) ? units : [];
     overlay.innerHTML = renderPopoverInner(unitList[0]?.defaultName ?? defaultName, folders, people, defaultPersonTagId, roster, selectedPersonId, unitList);
     document.body.appendChild(overlay);
+    const stopFollowing = followAppLang(overlay, () => renderPopoverInner(unitList[0]?.defaultName ?? defaultName, folders, people, defaultPersonTagId, roster, selectedPersonId, unitList)); // audit 47 langpop
 
     function onKeydown(e) {
       if (e.key === "Escape") close(null);
     }
     const releaseFocus = trapModal(overlay);
     function close(result) {
+      stopFollowing();
       overlay.remove();
       document.removeEventListener("keydown", onKeydown);
       releaseFocus();
@@ -411,7 +438,7 @@ export function formatNameList(names) {
   return t("{a} and {b}", { a: list.slice(0, -1).join(", "), b: list[list.length - 1] });
 }
 
-let noticeTimer = null;
+let noticeTimer = null, noticeRepaint = null, noticeFollows = false;
 /**
  * The Owner, 12 Oct 2026: a bookmark saved for someone else used to close the
  * dialog in silence, and nothing on the Owner's screen changed -- so it looked
@@ -433,11 +460,17 @@ export function showBookmarkSavedNotice({ names = [], links = [] } = {}) {
     el.setAttribute("aria-live", "polite");
     document.body.appendChild(el);
   }
-  el.innerHTML = `<span class="bm-saved-text" data-bm-saved-text>${escapeHtml(t("Saved for {names}", { names: formatNameList(names) }))}</span>`
-    + links.map((l) => `<a href="${escapeHtml(l.href)}" data-bm-saved-link>${escapeHtml(l.label)}</a>`).join("")
-    + `<button type="button" data-bm-saved-close aria-label="${escapeHtml(t("Close"))}">✕</button>`;
+  // `label` may be a function, so the notice can be written again in the language chosen while it is on screen (audit 47).
+  const paintNotice = () => {
+    el.innerHTML = `<span class="bm-saved-text" data-bm-saved-text>${escapeHtml(t("Saved for {names}", { names: formatNameList(names) }))}</span>`
+      + links.map((l) => `<a href="${escapeHtml(l.href)}" data-bm-saved-link>${escapeHtml(typeof l.label === "function" ? l.label() : l.label)}</a>`).join("")
+      + `<button type="button" data-bm-saved-close aria-label="${escapeHtml(t("Close"))}">✕</button>`;
+    el.querySelector("[data-bm-saved-close]").addEventListener("click", () => { el.hidden = true; });
+  };
+  paintNotice();
+  noticeRepaint = async () => { await ensureCatalogueReady(); if (!el.hidden) paintNotice(); };
+  if (!noticeFollows) { noticeFollows = true; onAppLangChange(() => noticeRepaint?.()); }
   el.hidden = false;
-  el.querySelector("[data-bm-saved-close]").addEventListener("click", () => { el.hidden = true; });
   clearTimeout(noticeTimer);
   noticeTimer = setTimeout(() => { el.hidden = true; }, 10000);
   return el;
@@ -455,7 +488,7 @@ export function announceBookmarkSaved({ savedFor = [], selectedPersonId = null, 
     names: savedFor.map(nameOf),
     links: savedFor.filter((pid) => pid !== selectedPersonId).map((pid) => ({
       href: `./bookmarks.html?person=${encodeURIComponent(pid)}&back=1`,
-      label: t("See {name}'s bookmarks", { name: nameOf(pid) }),
+      label: () => t("See {name}'s bookmarks", { name: nameOf(pid) }),
     })),
   });
 }
@@ -472,7 +505,7 @@ export function openBookmarkExistsChoice() {
   return new Promise((resolve) => {
     const overlay = document.createElement("div");
     overlay.className = "bm-popover-overlay";
-    overlay.innerHTML = `
+    const existsHtml = () => `
       <div class="bm-popover" role="dialog" aria-modal="true" aria-label="${t("Already bookmarked")}" data-bm-exists-choice>
         <div style="display:flex;align-items:center;justify-content:space-between;gap:.5rem;margin-bottom:.7rem">
           <h3 style="margin:0">${t("Already bookmarked")}</h3>
@@ -483,10 +516,13 @@ export function openBookmarkExistsChoice() {
           <button type="button" data-bm-exists-add style="min-height:44px;font-size:.92rem;border:1px solid #1F3A6E;border-radius:.4rem;background:#1F3A6E;color:white;cursor:pointer">${t("Add a bookmark…")}</button>
         </div>
       </div>`;
+    overlay.innerHTML = existsHtml();
     document.body.appendChild(overlay);
+    const stopFollowing = followAppLang(overlay, existsHtml); // audit 47 langpop
     function onKeydown(e) { if (e.key === "Escape") close(null); }
     const releaseFocus = trapModal(overlay);
     function close(result) {
+      stopFollowing();
       overlay.remove();
       document.removeEventListener("keydown", onKeydown);
       releaseFocus();
