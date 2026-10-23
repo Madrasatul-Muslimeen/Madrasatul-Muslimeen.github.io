@@ -6,10 +6,16 @@
 //   - an /app/ page is still controlled by /app/sw.js (the browser picks the longest scope), so QR's worker is unchanged;
 //   - offline (browser offline AND this suite's server stopped): the address and /index.html show the real front page
 //     (its title, its three cards, its styles applied, controlled by /root-sw.js), and tapping Quran Study opens it offline;
+//   - online, a NEW front page on the server reaches "/" on the next load (network first: a new version is never hidden);
+//   - /root-sw.js opens and writes no cache of its own (its source names no cache call; the site's caches are only
+//     /app/sw.js's qr-… ones);
 //   - ?nosw on the address (QR's kill switch) unregisters both workers.
 //   node tools/apps/qr-verify/qr-root-offline-browser.mjs [--width=N]      (its own server, on PORT, default 8117)
 //   --mutate=noreg       the front page does not register /root-sw.js (the old code); the suite must FAIL
 //   --mutate=nofallback  /root-sw.js has no offline answer (network only); the suite must FAIL
+//   --mutate=cachefirst  /root-sw.js answers from the caches first (a new version would be hidden); the suite must FAIL
+//   --mutate=writes      /root-sw.js keeps a cache of its own; the suite must FAIL
+//   --mutate=killone     the kill switch unregisters only the /app/ worker; the suite must FAIL
 import "./_root.mjs"; // runs against the built QR app (see _root.mjs)
 import fs from "node:fs";
 import path from "node:path";
@@ -25,6 +31,9 @@ const MIME = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; cha
 const MUTATIONS = {
   noreg: ["/app/js/qr-front.js", (t) => t.replace('navigator.serviceWorker.register("/root-sw.js", { scope: "/" })', "Promise.resolve()")],
   nofallback: ["/root-sw.js", (t) => t.replace("event.respondWith(fetch(request).catch(", "event.respondWith(fetch(request).catch(() => Response.error()) || (")],
+  cachefirst: ["/root-sw.js", (t) => t.replace("event.respondWith(fetch(request).catch(", "event.respondWith(caches.match(request.mode === \"navigate\" && FRONT.has(url.pathname) ? \"/app/index.html\" : request, { ignoreSearch: true }).then((m) => m || fetch(request)).catch(")],
+  writes: ["/root-sw.js", (t) => t.replace("event.respondWith(fetch(request).catch(", "event.respondWith(fetch(request).then(async (r) => { (await caches.open(\"root-copy\")).put(request, r.clone()); return r; }).catch(")],
+  killone: ["/app/js/qr-sw-register.js", (t) => t.replace("await Promise.all(regs.map((r) => r.unregister()));", "await Promise.all(regs.filter((r) => r.scope.endsWith(\"/app/\")).map((r) => r.unregister()));")],
 };
 const overrides = new Map();
 if (MUTATE) {
@@ -34,7 +43,7 @@ if (MUTATE) {
   if (edit(src) === src) throw new Error(`Mutation "${MUTATE}" did not apply`);
   overrides.set(p, edit);
 }
-let server;
+let server, serveNew = false;
 const sockets = new Set();
 function startServer() {
   server = http.createServer((req, res) => {
@@ -44,7 +53,8 @@ function startServer() {
     if (!file.startsWith(ROOT + path.sep)) { res.writeHead(403); res.end(); return; }
     fs.readFile(file, (err, data) => {
       if (err) { res.writeHead(404); res.end("Not found"); return; }
-      const body = overrides.has(p) ? overrides.get(p)(data.toString("utf8")) : data;
+      let body = overrides.has(p) ? overrides.get(p)(data.toString("utf8")) : data;
+      if (serveNew && p === "/index.html") body = body.toString("utf8").replace("<title>QuranRevival</title>", "<title>QuranRevival</title><meta name=\"qr-test-version\" content=\"new\">");
       res.writeHead(200, { "Content-Type": MIME[path.extname(file)] || "application/octet-stream", "Cache-Control": "no-cache" });
       res.end(body);
     });
@@ -82,6 +92,11 @@ const front = () => {
     controller: navigator.serviceWorker.controller?.scriptURL ?? null };
 };
 
+{
+  const src = (overrides.get("/root-sw.js") ?? ((t) => t))(fs.readFileSync(path.join(ROOT, "root-sw.js"), "utf8")).replace(/\/\/[^\n]*/g, "");
+  check(!/caches\.(open|delete)|\.put\(|cache\.add/.test(src), "/root-sw.js opens and writes no cache (no caches.open/delete, put or add in its code)");
+  check(/respondWith\(fetch\(request\)\.catch\(/.test(src), "/root-sw.js asks the network first and falls back only when it fails");
+}
 const browser = await chromium.launch();
 try {
   for (const width of WIDTHS) {
@@ -117,6 +132,16 @@ async function run(width) {
     await page.goto(`${base}/app/quranrevival.html`, { waitUntil: "load" });
     const ctl = await until(page, () => navigator.serviceWorker.controller?.scriptURL ?? null, 15000);
     check(ctl === `${base}/app/sw.js`, `${tag} an /app/ page is still controlled by /app/sw.js (${(ctl || "none").replace(base, "")})`);
+
+    await page.goto(`${base}/`, { waitUntil: "load" });
+    const before = await page.evaluate(() => document.querySelector('meta[name="qr-test-version"]')?.content ?? "old");
+    serveNew = true;
+    await page.reload({ waitUntil: "load" });
+    const after = await page.evaluate(() => ({ v: document.querySelector('meta[name="qr-test-version"]')?.content ?? "old", ctl: navigator.serviceWorker.controller?.scriptURL ?? null }));
+    serveNew = false;
+    check(before === "old" && after.v === "new" && after.ctl === `${base}/root-sw.js`, `${tag} online, a new front page on the server reaches "/" on the next load, through /root-sw.js (${before} -> ${after.v}, ${(after.ctl || "none").replace(base, "")})`);
+    const keys = await page.evaluate(() => caches.keys());
+    check(keys.length > 0 && keys.every((k) => k.startsWith("qr-")), `${tag} the site's caches are only /app/sw.js's qr-… ones (${keys.join(", ")})`);
 
     await ctx.setOffline(true);
     await stopServer();
