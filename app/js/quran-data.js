@@ -62,7 +62,7 @@ function announceSurahUnavailable(surahNumber) {
   note.setAttribute("role", "alert");
   note.textContent = t("Surah {n} is not saved on this device, and there is no internet connection. Connect to read it.", { n: num(surahNumber) });
   Object.assign(note.style, {
-    position: "fixed", left: "50%", bottom: "1rem", transform: "translateX(-50%)", zIndex: "99998",
+    position: "fixed", left: "50%", bottom: "5rem", /* above the bottom tabs, which a note at 1rem covered */ transform: "translateX(-50%)", zIndex: "99998",
     maxWidth: "min(92vw, 28rem)", minHeight: "40px", boxSizing: "border-box", padding: "0.7rem 1.1rem", borderRadius: "14px",
     background: "#7A1F1F", color: "#fff", font: "600 0.9rem system-ui, sans-serif", textAlign: "center", boxShadow: "0 2px 10px rgba(0,0,0,0.25)",
   });
