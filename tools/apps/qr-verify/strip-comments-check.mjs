@@ -178,5 +178,14 @@ for (const [name, bad] of [["changes one token", (s) => s.replace(/\btrue\b/, "f
   check(`... and nothing was written (the page still has its comments)`, fs.readFileSync(path.join(copy, page), "utf8") === fs.readFileSync(path.join(before, page), "utf8"));
 }
 
+{ // a text that no longer parses (token for token the same as its source, because the SOURCE was broken) stops the build too
+  const copy = path.join(tmp, "copy-parse");
+  fs.cpSync(before, copy, { recursive: true });
+  fs.appendFileSync(path.join(copy, "app/js/note-window.js"), "\n(((\n");
+  let msg = "";
+  try { stripSite(copy); } catch (e) { msg = e.message; }
+  check("a script that does not parse stops the build and names it", /note-window\.js.*does not parse/.test(msg), msg || "it did not stop");
+}
+
 console.log(`\n==== strip-comments-check: ${pass} passed, ${fail} failed ====`);
 process.exit(fail ? 1 : 0);
