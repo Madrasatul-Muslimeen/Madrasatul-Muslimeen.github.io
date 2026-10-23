@@ -63,7 +63,7 @@ async function partLearn(lang, width, height) {
   const tag = `[learn ${lang} ${width}]`;
   const { ctx, page } = await start(lang, width, height);
   const rows = JSON.parse(fs.readFileSync("tools/quran-data-pull/output/learn-next.json", "utf8")).rows;
-  const first = rows[0];
+  const first = rows[1]; // rank 2: the purple line then names rank 1, a different word
   const s = Math.floor(first.o / 1000000), a = Math.floor((first.o % 1000000) / 1000), p = first.o % 1000;
   await goTo(page, s, a);
   await page.evaluate(([s, a, p]) => document.querySelector(`[data-word-occurrence$=":${s}:${a}:${p}"]`)?.click(), [s, a, p]);
@@ -89,8 +89,8 @@ async function partLearn(lang, width, height) {
   const placed = await page.evaluate((o) => !!document.querySelector(`#quranWordCardMount [data-occurrence-id$=":${o}"], [data-word-occurrence="quran-word-occurrence:v1:${o}"]`), nextRow ? `${Math.floor(nextRow.o / 1000000)}:${Math.floor((nextRow.o % 1000000) / 1000)}:${nextRow.o % 1000}` : "0:0:0");
   check(`${tag} the card now shows the Learn next word (${next})`, hasNextWord || placed, `${wordNow}`);
   const back = await page.evaluate(() => { const b = document.querySelector("[data-ayah-card-back]"); const r = b?.getBoundingClientRect(); return b ? { label: b.getAttribute("aria-label"), h: Math.round(r.height), w: Math.round(r.width) } : null; });
-  check(`${tag} a way back is offered ("Back to Word Card 1:...") and is a finger target`, !!back && /(Word Card|ওয়ার্ড কার্ড)/.test(back.label) && back.h >= 36, JSON.stringify(back));
-  if (back) await page.click("[data-ayah-card-back]");
+  check(`${tag} a way back is offered ("Back to Word Card 1:...") and is a finger target`, !!back && /(Word Card|শব্দ কার্ড)/.test(back.label) && back.h >= 36, JSON.stringify(back));
+  if (back) await page.evaluate(() => document.querySelector("[data-ayah-card-back]").click());
   await page.waitForTimeout(2000);
   const restored = await headWord();
   check(`${tag} ← Back returns to the previous word's card exactly as it was`, restored === before, `${restored.slice(0, 80)} vs ${before.slice(0, 80)}`);
