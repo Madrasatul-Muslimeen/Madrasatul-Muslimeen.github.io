@@ -34,7 +34,8 @@
     "app",
     "mushaf",
     "tools/quran-data-pull/output",
-    "tools/hadith-data-pull/output/asma-cited-hadith.json"
+    "tools/hadith-data-pull/output/asma-cited-hadith.json",
+    "__/auth"
   ],
   "later": [
     "QR's heading: name.short is QuranRevival, so the heading reads QuranRevival at every width, as QR does today (QR's edits #11a-#11c are not used: the title and heading come from these settings, and the version is MSA's one number, QR J22)",
