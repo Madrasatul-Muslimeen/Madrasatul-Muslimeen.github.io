@@ -1608,3 +1608,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v12.42** (2026-10-23): the QR Lead's comment strip in QR's build (#1085).
 - **v12.43** (2026-10-23): audit part 52 (Journey and tool pages start-up reads together).
 - **v12.44** (2026-10-23): audit part 53, worker refreshes wait for a quiet page.
+- **v12.45** (2026-10-23): QR's own address opens offline (QR Lead round 9).
