@@ -475,8 +475,8 @@ export function openReadNotePane(u, whenClosed = null, { tab = "notes", backLabe
     the old label, loads it again with the new one (never under a Note being typed). Asked for by the MSA-QR-LEAD (audit 47). */
 export function relabelReadNotePane(u) {
   if (!pane || !u || !unit || u.unitKey !== unit.unitKey) return;
-  unit = { ...unit, ...u };
-  paint(); // audit 47 langrelabel
+  unit = { ...unit, ...u }; // audit 47 langrelabel
+  paint();
   const src = frame.getAttribute("src");
   if (!src || new URL(src, location.href).searchParams.get("unitLabel") === unit.label) return;
   try { if (frame.contentDocument?.querySelector("[data-edit-body]")) return; } catch { /* not ours */ }
