@@ -5,6 +5,7 @@
 //   --mutate=nofold    below 900px the tools are not folded behind ⋯ any more   -> the fold checks fail
 //   --mutate=nobottom  the study buttons stay in the bar on a phone           -> the bottom-row checks fail
 //   --mutate=tsleft    the A± sliders keep their right anchor inside the panel        -> the "fully on screen" check fails
+//   --mutate=tscover   the A± sliders drop 2.3rem again, over the A± tile (audit part 42) -> the "tile free" check fails
 //   --mutate=nogroup   📖 ⤢ ⋯ are not one group                               -> the "wrap together" check fails
 import { chromium, newContext, openPage } from "./harness.mjs";
 import fs from "node:fs";
@@ -18,7 +19,8 @@ const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice
 const MUT = {
   nofold: ["    #readToolsMenu { display: none; }\n    #readToolsMenu.open {", "    #readToolsMenu { display: contents; }\n    #readToolsMenu.open {"],
   nobottom: ["      position: fixed; left: 0.5rem; right: 0.5rem; bottom: calc(var(--rq-bottom, 0px) + 6px); z-index: 60;", "      position: static;"],
-  tsleft: ["    #readToolsMenu.open .text-size-popover { left: 0; right: auto; }", "    #readToolsMenu.open .text-size-popover { }"],
+  tsleft: ["    #readToolsMenu.open .text-size-popover { left: 0; right: auto; top: 100%; }", "    #readToolsMenu.open .text-size-popover { top: 100%; }"],
+  tscover: ["    #readToolsMenu.open .text-size-popover { left: 0; right: auto; top: 100%; }", "    #readToolsMenu.open .text-size-popover { left: 0; right: auto; }"],
   nogroup: ["  #readBarEnd { display: flex; align-items: center; gap: inherit; margin-left: auto; flex: 0 0 auto; }", "  #readBarEnd { display: contents; }"],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
@@ -84,12 +86,11 @@ for (const [lang, width, height] of [["en", 360, 740], ["en", 390, 844], ["bn", 
     check(`${tag} ...A± in the panel opens its sliders fully on screen, the panel staying open`, !!pop && pop.inView && pop.panelOpen, JSON.stringify(pop));
     // Audit part 42: measured at 360x740, the sliders (top 2.3rem under the tile) now start INSIDE the A± tile (the tile is 80px
     // tall and the popover covers its lower 43px), so elementFromPoint at the tile's centre is the popover and a second tap on A±
-    // cannot land. That is a Quran Study layout fault (app/quranrevival.html `.text-size-popover { top: 2.3rem }`, frozen under
-    // PCA J71): printed below as a NOTE and reported to the PCA as a change request, not counted. This step closes the sliders
-    // by calling the tile's own click(), which is what the tap would have done.
+    // cannot land. Fixed in app/quranrevival.html (PCA: MSA builds it): in the panel the sliders open at top: 100%. Now a real
+    // check, and the closing step is a real tap again.
     const covered = await page.evaluate(() => { const t = document.querySelector("#readTextSizeSlot [data-text-size-toggle]"), r = t.getBoundingClientRect(), h = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return !(h && t.contains(h)); });
-    if (covered) console.log(`  NOTE  ${tag} KNOWN QR FAULT: the A± sliders cover the A± tile, so the tile cannot be tapped again to close them (reported, not counted)`);
-    await page.evaluate(() => document.querySelector("#readTextSizeSlot [data-text-size-toggle]").click());
+    check(`${tag} ...the open sliders leave the A± tile free, so a second tap on A± lands on it (audit part 42)`, !covered);
+    await page.click("#readTextSizeSlot [data-text-size-toggle]");
     await page.waitForTimeout(200);
     if (!(await page.evaluate(() => document.getElementById("readToolsMenu").classList.contains("open")))) { await page.click("#readToolsBtn"); await page.waitForTimeout(200); }
     await page.keyboard.press("Escape");

@@ -2313,7 +2313,9 @@
     #readToolsMenu.open #readBookmarkBtn { display: none !important; }
     /* A±'s sliders are anchored to the RIGHT of their button for the bar (see .text-size-popover); in the panel A± is the
        first tile, at the left, so a right anchor ran them 125px off a 390px phone. Anchor them to the tile's left. */
-    #readToolsMenu.open .text-size-popover { left: 0; right: auto; }
+    #readToolsMenu.open .text-size-popover { left: 0; right: auto; top: 100%; }
+    /* Audit part 42 (PCA ▸ build it): the bar's 2.3rem drop starts INSIDE the 80px panel tile, so the sliders covered its lower
+       43px and a second tap on A± could not close them. In the panel they open just below the tile. */
     /* fitBarButton() hides ✍ where it would cost the BAR a line; inside the panel it costs the bar nothing. */
     #readToolsMenu.open .bar-btn-nofit { display: flex !important; }
   }
