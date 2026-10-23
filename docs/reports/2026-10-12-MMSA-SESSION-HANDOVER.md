@@ -7,7 +7,34 @@ v10.28). Read `CLAUDE.md` first. The prompt that starts the next session is
 
 This session was summarised once (its context compacted), which is why it hands over here.
 
-## LATEST UPDATE — 23 Oct 2026, 12:45 pm Sydney, session `session_01A9tGFy1MqSn1b53WSVJ6Nf` (v12.26 + v12.27 live on MSA AND QR; HANDOVER) — READ THIS FIRST
+## LATEST UPDATE — 23 Oct 2026, 4:45 pm Sydney, session `session_0181VQTFG7uodBiesZVCFHe9` (v12.28–v12.31 live on MSA AND QR; HANDOVER) — READ THIS FIRST
+
+Took over 12:43 pm 23 Oct from `session_01A9tGFy1MqSn1b53WSVJ6Nf`. Handing over at ~40% context (cost86/hand119). PCA: `session_01HqedLzJPW6qKznTRoYyron`. Hadith Lead: `session_01Q2HmCeWjo1vVYV5kgMBvC9`. **NEW: MSA-QR-LEAD `session_01Vyg5fxUBbFQShbQVtACFBn`** (opened by the Owner 23 Oct, lead120 choice B): owns QR-only files (`app/quranrevival.html`, `apps/qr/**`) on its own branch; the MSA Architect keeps shared files, ALL Builder dispatches and ALL releases; it hands PRs over as "MSA-QR-LEAD ▸ ready for release". MSA keep-alive `trig_01HzsS6KrHMioTsmMtmdE8qW` (8:07 am/pm): **ask the PCA to repoint it to the new session.**
+**`main` is v12.31** (PR #1052, merge `8aabf397`, live MSA and QR 4:41 pm; QR **22/22**). **Next release: v12.32.**
+
+**New rule (PMS p/mmsa rules `stu123`, the Owner via the PCA):** students now test on QuranRevival only. **Any QR fault a student would hit is student-blocking and comes before audit work.**
+
+**Released this session**
+- **v12.28** (PR #1043, live 1:56 pm): audit part 41 (#1041): no Zab inside `embed=1` frames. Review fix: `sw-register.js` `warmLaterFiles()` keeps files imported after load (service-worker.mjs was red on main 3/3, `note-foundation.js`).
+- **v12.29** (PR #1046, live 2:44 pm): **the Owner's J83 "QR doesn't have any language option"**: Language was 939px down a Home menu showing 367px (six Legacy App links); `shell.css` puts Settings first in Home on every page; new QR check `language-browser`. Audit part 42 (#1044): three stale checks updated, the Note pane stays pinned while editing (`journey-map.html`). A± sliders below their tile in the Read ⋯ card (PCA: MSA builds it).
+- **v12.30** (PR #1050, live 4:09 pm): audit part 43 (#1047, opened by the Architect: the run opened no PR): tool and admin pages; Accept invite role in Bangla, Dawah heading contrast, Monitor month field.
+- **v12.31** (PR #1052, live 4:41 pm): audit part 44 (#1049): QR as a student; a signed-out reader gets Language/Card look (`nav.js` `offerSettingsWhileSignedOut`); new QR check `student-browser` (its finger-size detector hit-tests the tap area, the QR Lead's method), in `run-all.sh`: **QR has 22 checks**.
+
+**IN FLIGHT — the next session's first jobs**
+1. **MSA-QR-LEAD PR #1053 READY FOR RELEASE** (the Owner's J84: Mushaf ‹ › move exactly one page, no cut third page, Study → Read gets the same bar; plus `#wheelListCollapseBtn` 40px tap area). Review by measurement on current main, run QR's 22 checks, and **on merge remove `wheelListCollapseBtn` from `FOR_QR_LEAD` in `tools/apps/qr-verify/student-browser.mjs`** (the suite reports it as no longer occurring). Release as v12.32. The Lead reports `read-quick-buttons` 198/6 red on main too (600/768 bar wraps since v12.26's ‹ ›): confirm on a clean main; audit material.
+2. **Builder round #1051 RUNNING** (run 39904302677, dispatched 4:10 pm): audit part 45, the shared tools as a student on QR (Notes, Mapping My Journey, Bookmarks, sign-in, the way back). It was dispatched from main BEFORE v12.31, so re-run its suite on current main first.
+3. PMS for J84 is the QR Lead's job record; write the release's What's New + Done lines as usual.
+
+**Waiting on the Owner (PMS ticks):** **n81c** (new: My Notes' ⧉ Open in window: A, the Mapping My Journey window (recommended) or B, keep My Notes' own windows (decision 42 vs J81)); **n83a** (check the language option); n79a, n77a, n78a, n71c, n81a, n81b, n82a, n82b, n72d and older; the Hadith Lead's tick on the Hadith/Dua "My Notes" links.
+No Owner messages arrived in this session directly; the Owner's J83 and the student rule came through the PCA and are done/recorded (carry1).
+
+**Lessons**
+- **A menu can hold a control and still hide it.** Language was present in the DOM and passed every "exists" check; it was 939px down a 367px scroll box. Measure whether a control is inside its scroll container's VISIBLE box (`language-browser` does).
+- **Measure a finger target by hit-testing, not by the drawn box.** `#wheelCtaBtn` is drawn 28px with a 40px `::before`; the first student suite called it too small. Hit-test 19px above and below the centre.
+- **A Builder run can push and open no PR** (#1045): open it yourself from the branch; the issue text now says "open the PR as soon as your first commit is pushed".
+- A mutated run can die on `route.fetch: socket hang up` after its failures are counted; the failures already prove the check, but re-run before quoting a number.
+
+## LATEST UPDATE — 23 Oct 2026, 12:45 pm Sydney, session `session_01A9tGFy1MqSn1b53WSVJ6Nf` (v12.26 + v12.27 live on MSA AND QR; HANDOVER) — superseded by the 4:45 pm block above, kept as history
 
 Took over 10:25 am 23 Oct from `session_01MYQKgXtFU3L7VDfnhNRxbp`. Handing over at ~40% context (cost86/hand119). PCA: `session_01HqedLzJPW6qKznTRoYyron`. Hadith Lead: `session_01Q2HmCeWjo1vVYV5kgMBvC9`. MSA keep-alive is `trig_01HzsS6KrHMioTsmMtmdE8qW` (8:07 am/pm), repointed by the PCA to this session; **the new session must ask the PCA to repoint it again.**
 **`main` is v12.27** (PR #1038, merge `0373dcbe`, live MSA and QR 12:39 pm; QR 20/20). **Next release: v12.28.**
