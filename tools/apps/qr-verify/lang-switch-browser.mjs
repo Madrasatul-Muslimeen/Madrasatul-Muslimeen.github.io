@@ -57,6 +57,7 @@ const MUTATIONS = {
   langmin: ["app/js/minimise.js", "**/app/js/minimise.js*", "onAppLangChange(relabel); // audit 47 langmin", ""],
   langpane: ["app/js/read-note-pane.js", "**/app/js/read-note-pane.js*", "onAppLangChange(relabel); // audit 47 langpane", ""],
   langlive: ["app/js/bookmark-popover.js", "**/app/js/bookmark-popover.js*", "const live = (x) => (typeof x === \"function\" ? x() : x);", "const live = ((memo) => (x) => (typeof x === \"function\" ? (memo.has(x) || memo.set(x, x()), memo.get(x)) : x))(new Map());"],
+  langrelabel: ["app/js/read-note-pane.js", "**/app/js/read-note-pane.js*", "paint(); // audit 47 langrelabel", ""],
   langtoast: ["app/js/bookmark-popover.js", "**/app/js/bookmark-popover.js*", "if (!noticeFollows) { noticeFollows = true; onAppLangChange(() => noticeRepaint?.()); }", ""],
   // the Builder's first version: the window's page reloaded under a Note being typed
   langedittray: ["app/js/journey-tray.js", "**/app/js/journey-tray.js*", "if (editing) return; // audit 47 langedit", ""],
@@ -307,6 +308,19 @@ async function popfn(t, p, errors, lang) {
   check(`${t}: the reader's pick (This page) is kept across the switch`, kept.page === "true", JSON.stringify(kept));
   check(`${t}: the Name being typed is kept across the switch`, kept.name === null || kept.name === "My own words", JSON.stringify(kept));
 }
+/** relabelReadNotePane(): the hook QR's applyAppLangChange() calls with the unit's label in the new language (unitLabel). */
+async function relabel(t, p, errors, lang) {
+  const to = OTHER(lang);
+  await readAyah(p);
+  await clickReadTool(p, "#readNotesBtn");
+  check(`${t}: POSITIVE CONTROL the Notes pane opens`, await until("pane", async () => { const f = notesFrame(p); return !!f && await f.locator("[data-unit-new]").count() > 0; }));
+  const r = await switchInPlace(p, to);
+  check(`${t}: POSITIVE CONTROL the switch happened IN PLACE`, r.changed && r.kept, JSON.stringify(r));
+  await ev(p, async (bn) => { const m = await import("./js/read-note-pane.js"); m.relabelReadNotePane?.({ unitKey: "ayah:2:255", label: bn ? "২:২৫৫" : "2:255" }); }, to === "bn");
+  await until("the page inside has the new label", async () => { const f = notesFrame(p); return !!f && /unitLabel=/.test(f.url()) && decodeURIComponent(f.url()).includes(to === "bn" ? "২:২৫৫" : "unitLabel=2:255") && f.evaluate(() => !!document.querySelector("[data-unit-new]")); }, 20000);
+  await settle(p, 1000);
+  await judge(t, p, "Notes pane after relabelReadNotePane()", to, "#readNotePane", "#readNotePane", {});
+}
 /** A toast on screen at the moment of the switch (the "Saved for ..." notice). */
 async function toast(t, p, errors, lang) {
   const to = OTHER(lang);
@@ -407,6 +421,7 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     await flow("chip", lang, width, chip);
     await flow("toast", lang, width, toast);
     await flow("popfn", lang, width, popfn);
+    await flow("relabel", lang, width, relabel);
     await flow("typing", lang, width, typing, { note: true });
   }
   await flow("menus", lang, width, menus, { signedOut: true });
