@@ -80,6 +80,20 @@ const missing = [...precacheList(sw), ...list].filter((f) => !fs.existsSync(path
 if (missing.length) { console.error(`after-build: the worker's install list names files the build does not have: ${missing.join(", ")}`); process.exit(1); }
 fs.writeFileSync(app("sw.js"), sw);
 
+// Audit part 50, part 2 (PCF MSA J29): half of what a first visit downloads was COMMENTS. quranrevival.html's inline module scripts
+// and <style>s lose theirs here (apps/qr/strip-comments.mjs: comments and spare whitespace only, every token kept, proven by
+// tools/apps/qr-verify/strip-comments-check.mjs). Gzipped, measured 24 Oct 2026: module 327 -> ~163 KB, style 122 -> ~44 KB.
+// The source keeps every comment; MSA's build never reaches this step.
+import { stripJs, stripCss } from "./strip-comments.mjs";
+{
+  const f = app("quranrevival.html");
+  const html = fs.readFileSync(f, "utf8");
+  const stripped = html
+    .replace(/(<script\b[^>]*type="module"[^>]*>)([\s\S]*?)(<\/script>)/g, (m, a, body, z) => (/\ssrc=/.test(a) ? m : a + stripJs(body) + z))
+    .replace(/(<style\b[^>]*>)([\s\S]*?)(<\/style>)/g, (m, a, body, z) => a + stripCss(body) + z);
+  fs.writeFileSync(f, stripped);
+}
+
 // Audit part 50 (PCF MSA J29): QR's first visit took 8 s to a usable picker, mostly the module waterfall (137 files whose
 // imports are found one hop at a time). The page's STATIC import closure (never import()) is written into the page (see WHERE) as
 // modulepreload links, so the browser asks for all of them at once. Generated here, never hand-written, so it cannot go
