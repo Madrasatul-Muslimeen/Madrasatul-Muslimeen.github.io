@@ -392,7 +392,8 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       bulkConfirmWeekBtn.style.display = canConfirm ? "" : "none";
       renderNav(myMemberships.find((m) => m.tenantId === activeTenantId)?.roles ?? [], viewAsRole);
 
-      const visibleRoster = (viewAsRole ? scopedRoster(roster, effRoles, myPersonId) : roster).filter((p) => p.status !== "archived");
+      // Audit part 57: scoped for a real student/guardian login too, as Homework and Monitor already do -- not only under "View as".
+      const visibleRoster = scopedRoster(roster, effRoles, myPersonId).filter((p) => p.status !== "archived");
       personSelect.innerHTML = visibleRoster
         .map((p) => `<option value="${p.id}">${langText(p.name, getAppLang(), p.id)}</option>`)
         .join("");
