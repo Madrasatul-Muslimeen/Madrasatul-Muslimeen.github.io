@@ -248,9 +248,11 @@ async function readTap(ctx, v, label) {
   await p.click("#tabReadBtn");
   await p.evaluate(() => { const e = document.getElementById("surahSelect"); if (e && e.value !== "2") { e.value = "2"; e.dispatchEvent(new Event("change", { bubbles: true })); } });
   const ok1 = await p.waitForFunction(() => document.querySelector('#readView [data-word-occurrence^="quran-word-occurrence:v1:2:"]'), null, { timeout: 60000 }).then(() => true, () => false);
+  await p.waitForFunction(() => !!document.querySelector('#ayahSelect option[value="255"]'), null, { timeout: 60000 }).catch(() => {});
   await p.evaluate(() => { const e = document.getElementById("ayahSelect"); e.value = "255"; e.dispatchEvent(new Event("change", { bubbles: true })); });
   const ok2 = await p.waitForFunction(() => document.querySelector('#readView [data-word-occurrence^="quran-word-occurrence:v1:2:255:"]'), null, { timeout: 60000 }).then(() => true, () => false);
   const ms = Date.now() - t0;
+  if (!(ok1 && ok2)) say(`    DEBUG not reached: ${JSON.stringify(await p.evaluate(() => ({ surah: document.getElementById("surahSelect")?.value, ayah: document.getElementById("ayahSelect")?.value, read: !document.getElementById("readView")?.hidden, occ: document.querySelectorAll("#readView [data-word-occurrence]").length, first: document.querySelector("#readView [data-word-occurrence]")?.getAttribute("data-word-occurrence") })))} errors: ${v.t.errors.slice(0, 2).join(" | ")}`);
   await idle(p, 1000, 20000);
   const fresh = v.t.list().filter((r) => !before.has(r.__id) && r.t >= mark - 50);
   const net = fresh.filter((r) => !r.sw && !r.disk);
@@ -288,7 +290,11 @@ async function scenario(width, signedOut) {
     }
     // read view, first visit
     let readFirst = null;
-    if (!signedOut && (!ONLY || /read/.test(ONLY))) readFirst = await readTap(ctx, first, "first visit");
+    if (!signedOut && (!ONLY || /read/.test(ONLY))) {
+      // its own fresh context: a surah opened before the worker takes over is not kept, and would change the second visit
+      const rc = await makeContext(width, signedOut);
+      try { const rv = await visit(rc, "read-tap context"); readFirst = await readTap(rc, rv, "first visit"); await rv.t.page.close(); } finally { await rc.close().catch(() => {}); }
+    }
     // install the worker, then visit again
     await swInstall(ctx, first.t.page);
     if (!ONLY || /first/.test(ONLY)) {
