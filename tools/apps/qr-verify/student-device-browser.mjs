@@ -141,7 +141,7 @@ async function measure(page) {
 // run says so when a listed id STOPS occurring (a fixed finding must leave this list).
 //   ayah-num-badge: the Read view's āyah number button is 24px with a 40px ::after tap area, but its top 8px lies
 //   outside the panel (`.ayah-num-row` margin 0.3rem), so a tap there lands on #studyScreen. Smallest fix: margin-top 0.5rem.
-const FOR_QR_LEAD = ["ayah-num-badge"];
+const FOR_QR_LEAD = []; // QR Lead PR: "ayah-num-badge" fixed (.ayah-num-row margin-top 0.5rem) and removed
 const seenKnown = new Set();
 function judge(tag, m, lang) {
   check(`${tag}: no sideways scroll`, m.sideways <= 0, `${m.sideways}px`);

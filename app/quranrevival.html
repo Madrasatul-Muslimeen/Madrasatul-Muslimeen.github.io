@@ -2924,7 +2924,10 @@
      flow view, the Note view alike) rather than only trailing the plain
      path. Right-aligned to match this app's RTL-first reading direction --
      the same edge Arabic reading starts from. */
-  .ayah-num-row { display: flex; justify-content: flex-end; margin: 0.3rem 0 0.1rem; }
+  /* QR Lead (audit part 46, QR as a student): the badge's 40px tap area (below) stands 8px above the 24px badge, and a
+     0.3rem (4.8px) top margin left its top 3px outside the panel, where a tap reached #studyScreen: 0.5rem (8px) keeps
+     the whole 40px inside. The row is 3.2px lower; nothing else moves. */
+  .ayah-num-row { display: flex; justify-content: flex-end; margin: 0.5rem 0 0.1rem; }
   .ayah-num-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 1.5rem; height: 1.5rem; padding: 0 0.4rem; border-radius: 999px; background: #f0ead9; color: #8a6d1f; font-size: 0.78rem; font-weight: 700; border: 1px solid #d8c68a; }
   /* Issue #295 -- the badge is a real <button> (the Ayah Card's third entry
      point) now, in Read and Note view alike. `font`/`cursor` are the only
@@ -10027,11 +10030,44 @@
       return displayParts(ayah).filter((a) => !half || a.half === half).map((a) => renderLayoutA(a, panels, opts)).join("");
     }
 
+    /** QR Lead (with the MSA Architect, 23 Oct 2026, audit part 46, I15): the reader chose a surah this device never
+        kept, with no internet. Say so here, on the Read path where the reader asked for it (not for background lookups),
+        and put the pickers back on the surah still on screen, so its name and its words agree. Same words, same look as
+        quran-data.js's first note; the same id, so there is never two. */
+    function announceChosenSurahUnavailable(surahNumber) {
+      document.getElementById("surahOfflineNotice")?.remove();
+      const note = document.createElement("div");
+      note.id = "surahOfflineNotice";
+      note.dataset.readPath = "";
+      note.setAttribute("role", "alert");
+      note.textContent = t("Surah {n} is not saved on this device, and there is no internet connection. Connect to read it.", { n: num(surahNumber) });
+      Object.assign(note.style, {
+        position: "fixed", left: "50%", bottom: "5rem", transform: "translateX(-50%)", zIndex: "99998",
+        maxWidth: "min(92vw, 28rem)", minHeight: "40px", boxSizing: "border-box", padding: "0.7rem 1.1rem", borderRadius: "14px",
+        background: "#7A1F1F", color: "#fff", font: "600 0.9rem system-ui, sans-serif", textAlign: "center", boxShadow: "0 2px 10px rgba(0,0,0,0.25)",
+      });
+      note.addEventListener("click", () => note.remove());
+      document.body.appendChild(note);
+      setTimeout(() => note.remove(), 9000);
+    }
+
     async function loadSurah() {
       quranWordCardRequest++;
       quranWordCardState = closeWordCard(quranWordCardState);
       clearWordCardMounts();
-      currentSurahData = await getSurah(currentSurahNum);
+      try {
+        currentSurahData = await getSurah(currentSurahNum);
+      } catch (error) {
+        const asked = currentSurahNum;
+        if (currentSurahData && currentSurahData.surahNumber !== asked) {
+          currentSurahNum = currentSurahData.surahNumber;
+          surahSelect.value = String(currentSurahNum);
+          syncReadPickers();
+          syncWheelHubPickers();
+        }
+        if (error instanceof TypeError) announceChosenSurahUnavailable(asked); // no network and no saved copy
+        throw error;
+      }
       setAyahNum(1);
       // Owner ask (10 Aug 2026): Prev/Next alone made jumping to, say, ayah
       // 200 of a 286-ayah surah impractical -- a direct Ayah picker next to
