@@ -1525,3 +1525,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v12.33** (2026-10-23): audit part 45: Bookmark menu fills on four shared pages; three student fixes.
 - **v12.34** (2026-10-23): QR language switch in place; Word card way back in its top row; audit part 46.
 - **v12.35** (2026-10-23): sign-in helper pages on both sites (switch off); a tap-size detector fix.
+- **v12.36** (2026-10-23): audit part 47 (shared parts follow QR's language switch) and the QR Lead's J87.

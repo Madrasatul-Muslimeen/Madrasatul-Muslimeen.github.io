@@ -24,11 +24,12 @@ const MIME = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; cha
 
 /** name -> [file inside the built app, edit]. Filled in as fixes land. */
 const MUTATIONS = {
-  // Fix 1 (app/js/quran-data.js): a surah this device never kept, opened offline, says so in words. Old code: an uncaught "Failed to fetch" and nothing on screen.
+  // Fix 1 (app/quranrevival.html's Read path since v12.36; app/js/quran-data.js before): a surah this device never kept, opened offline, says so in words. Old code: an uncaught "Failed to fetch" and nothing on screen.
   // Fix 2 (app/js/sw-register.js): the "Updated — tap to reload" notice is 40px or more tall and one line. Old code: 35px at 768+, a two-line pill on a phone.
   noticeheight: ["app/js/sw-register.js", (t) => t.replace('minHeight: "44px",', "")],
   noticewidth: ["app/js/sw-register.js", (t) => t.replace('width: "max-content",', "")],
-  surahoffline: ["app/js/quran-data.js", (t) => t.replace("if (err instanceof TypeError) announceSurahUnavailable(surahNumber);", "")],
+  // v12.36: the note moved to the Read path (quranrevival.html, the QR Lead's J87); quran-data.js no longer raises it.
+  surahoffline: ["app/quranrevival.html", (t) => t.replace("if (error instanceof TypeError) announceChosenSurahUnavailable(asked);", "")],
 };
 if (MUTATE && !MUTATIONS[MUTATE]) throw new Error(`Unknown mutation "${MUTATE}"`);
 const overrides = new Map();
