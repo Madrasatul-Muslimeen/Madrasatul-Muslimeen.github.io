@@ -80,6 +80,11 @@ window.__sd = {
   visible: (el) => { const r = el.getBoundingClientRect(); const cs = getComputedStyle(el); return r.width > 0 && r.height > 0 && cs.visibility !== "hidden" && cs.display !== "none" && !el.closest("[hidden]") && !el.disabled && !(el.closest("details:not([open])") && !el.closest("summary")); },
   small: (root) => [...(root || document).querySelectorAll("button, select, input:not([type=hidden]):not([type=checkbox]):not([type=radio]), [role=button]")]
     .filter((el) => window.__sd.visible(el) && !el.closest("[data-sd-skip]") && el.getBoundingClientRect().height < 40)
+    // A control drawn small can still carry a 40px tap area (a ::before/::after, e.g. .wheel-cta-btn, v10.66): hit-test
+    // 19px above and below its centre, as a finger would land (the MSA-QR-LEAD's method), before calling it too small.
+    .filter((el) => { const r = el.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+      const hits = (y) => { const h = document.elementFromPoint(cx, y); return !!h && (h === el || el.contains(h)); };
+      return !(hits(cy - 19) && hits(cy + 19)); })
     .map((el) => (el.id || el.className || el.tagName) + ":" + Math.round(el.getBoundingClientRect().height)),
   // a control scrolled out of a scroll box (or clipped by it) is not "covered": only judge ones whose centre is in every clipping ancestor
   clipped: (el, x, y) => { for (let p = el.parentElement; p && p !== document.body; p = p.parentElement) { const o = getComputedStyle(p); if (/(auto|scroll|hidden|clip)/.test(o.overflowY + o.overflowX)) { const r = p.getBoundingClientRect(); if (x < r.left || x > r.right || y < r.top || y > r.bottom) return true; } } return false; },
@@ -106,7 +111,8 @@ window.__sd = {
 
 // Findings in QR-only files (app/quranrevival.html), which belong to the MSA-QR-LEAD: listed, not failed, and a
 // listed id that STOPS occurring is itself reported (a fixed finding must leave this list).
-const FOR_QR_LEAD = { "quran-study": ["wheelCtaBtn", "wheelListCollapseBtn"] };
+// wheelCtaBtn left the list (review, 23 Oct): a false finding; its ::before gives a 40px tap area, now hit-tested above.
+const FOR_QR_LEAD = { "quran-study": ["wheelListCollapseBtn"] };
 const seenKnown = new Set();
 const AREAS = [
   { name: "front", path: "/", ready: "a" },
