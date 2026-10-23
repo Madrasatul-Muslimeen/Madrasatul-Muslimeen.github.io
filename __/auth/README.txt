@@ -7,8 +7,8 @@ option 3 (self-host the helper code). Copied unchanged on 23 Oct 2026 from
 https://study-monitoring.firebaseapp.com/__/auth/{handler,handler.js,experiments.js,iframe,iframe.js}.
 GitHub Pages serves an extensionless file as a download, so `handler` and `iframe` are folders holding index.html
 (Pages redirects /__/auth/handler?... to /__/auth/handler/?... and keeps the query), and their script tags point at
-/__/auth/... absolutely. That is the only change. The root .nojekyll lets GitHub Pages serve a folder whose name
-starts with "_".
+/__/auth/... absolutely. That is the only change. MSA's root _config.yml includes "__" so that GitHub Pages (Jekyll) serves a
+folder whose name starts with "_"; QR's build is published without Jekyll.
 
 Used only on the hosts listed in app/js/firebase-init.js SELF_HOSTED_AUTH_HOSTS, and a host is listed only once
 https://<host>/__/auth/handler is an authorised redirect URI of the project's Google OAuth client. Refresh these files

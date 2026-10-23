@@ -4,7 +4,7 @@
 // hosts in SELF_HOSTED_AUTH_HOSTS. This proves:
 //   files    the five helper files are there, copied from Firebase with only the script paths made absolute
 //   fresh    they still match what Firebase serves today (skipped, and said so, when firebaseapp.com is unreachable)
-//   sites    msa.json and qr.json both publish __/auth, and MSA's root has .nojekyll (Pages skips "_" folders without it)
+//   sites    msa.json and qr.json both publish __/auth; MSA's _config.yml includes "__" (Jekyll skips "_" folders otherwise)
 //   hosts    every listed host is a site that publishes __/auth; nothing else changes authDomain
 //   browser  /__/auth/handler/ and /__/auth/iframe/ load their scripts (window.fireauth), with no failed request
 // Run from the repository root with serve.js on :8080 (or QR_BASE):  node tools/i18n-verify/self-hosted-auth.mjs [--mutate=relative]
@@ -45,9 +45,9 @@ try {
 console.log("\n=== sites ===");
 const msa = JSON.parse(read("app/apps/msa.json")), qr = JSON.parse(read("app/apps/qr.json"));
 check("MSA publishes __/auth", msa.site.includes("__/auth"));
-check("MSA's site root has .nojekyll (GitHub Pages serves the repository root, and skips \"_\" folders without it)", fs.existsSync(".nojekyll"));
+check("MSA's Pages build includes the __ folder (_config.yml include; Jekyll skips \"_\" folders otherwise)", /^include:\s*\[[^\]]*"__"/m.test(fs.existsSync("_config.yml") ? read("_config.yml") : ""));
 check("QR publishes __/auth", qr.site.includes("__/auth"));
-check("QR publishes .nojekyll (the source's; QR's own identical copy was dropped)", qr.site.includes(".nojekyll"));
+check("QR publishes its own .nojekyll (its build is not Jekyll-processed)", qr.site.includes(".nojekyll") && fs.existsSync("apps/qr/site/.nojekyll"));
 
 console.log("\n=== hosts ===");
 const init = read("app/js/firebase-init.js");
