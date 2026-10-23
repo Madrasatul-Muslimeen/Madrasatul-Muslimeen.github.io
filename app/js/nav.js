@@ -52,7 +52,7 @@
 // The one import below is a constant list of languages, not state -- see
 // renderSettings() for why that keeps this file's purity intact.
 
-import { APP_LANGS } from "./prefs.js";
+import { APP_LANGS, mountAppLangControl, mountCardLookControl } from "./prefs.js";
 import { t } from "./i18n.js";
 import { roleLabel } from "./labels.js";
 import { isHiddenFromQr } from "./hidden-modules.js";
@@ -410,3 +410,21 @@ document.addEventListener("click", (e) => {
     if (!cat.contains(e.target)) cat.open = false;
   });
 });
+
+// Audit part 44 (PCF MSA J29, 23 Oct 2026; students now test on QR): a SIGNED-OUT reader had no Language or Night/Light
+// anywhere. Home -> Settings is filled by renderHomeExtras(roles) only once sign-in resolves (every page calls it from its
+// signed-in branch), so a student who has not signed in yet saw Home with nothing in it and could not read the sign-in
+// words in Bangla. After the page has settled, a Home that is STILL empty gets just those two controls. Timer only: no
+// network, nothing on the startup path (I9); a slow sign-in that lands later simply replaces them with the full Home.
+const SIGNED_OUT_SETTINGS_MS = 2500;
+export function offerSettingsWhileSignedOut() {
+  const host = document.getElementById("navHomeExtra");
+  if (!host || host.children.length) return false;
+  host.innerHTML = `<div class="nav-cat-group"><div class="nav-cat-group-label">${t("Settings")}</div>
+    <div class="nav-setting"><label for="navAppLangSelect">${t("Language")}</label><select id="navAppLangSelect">${APP_LANGS.map((l) => `<option value="${l.id}">${l.label}</option>`).join("")}</select></div>
+    ${renderCardLookButtons()}</div>`;
+  mountAppLangControl(host);
+  mountCardLookControl(host);
+  return true;
+}
+if (typeof document !== "undefined") setTimeout(offerSettingsWhileSignedOut, SIGNED_OUT_SETTINGS_MS);
