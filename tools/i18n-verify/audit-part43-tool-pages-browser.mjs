@@ -36,7 +36,9 @@ function measure(scope) {
     if (scope && !e.closest(scope)) continue;
     out.nCtl++;
     let r = e.getBoundingClientRect();
-    if (r.right > vw + 1 || r.left < -1) out.cut.push(desc(e) + ` [${Math.round(r.left)},${Math.round(r.right)}]`);
+    // a control inside its own sideways-scrolling box (a wide table, #293) is reachable by scrolling that box
+    const scrolls = (() => { for (let a = e.parentElement; a && a !== document.body; a = a.parentElement) { const o = getComputedStyle(a).overflowX; if ((o === "auto" || o === "scroll") && a.scrollWidth > a.clientWidth) return true; } return false; })();
+    if (!scrolls && (r.right > vw + 1 || r.left < -1)) out.cut.push(desc(e) + ` [${Math.round(r.left)},${Math.round(r.right)}]`);
     if (/^←/.test((e.textContent || "").trim()) && r.height < 39.5) out.backSmall.push(desc(e) + ` h=${Math.round(r.height)}`);
     // a finger control: buttons, selects, summaries (not text links inside prose, not checkboxes/radios)
     const isFinger = e.matches("button, select, summary") || (e.matches("input") && !/^(checkbox|radio|file)$/.test(e.type)) || (e.matches("a") && e.matches(".btn, .button, [class*=btn]"));
@@ -88,7 +90,7 @@ const MEASURE_SRC = measure.toString();
 
 const settle = (p, ms = 350) => p.waitForTimeout(ms);
 const ev = (p, f, a) => p.evaluate(f, a);
-const noErr = (errors) => errors.filter((e) => !/ERR_CERT|ERR_TUNNEL|net::|archive\.org|api\.quran|quran\.foundation|fonts\.g|Failed to load resource/i.test(e));
+const noErr = (errors) => errors.filter((e) => !/ERR_CERT|ERR_TUNNEL|net::|archive\.org|api\.quran|quran\.foundation|fonts\.g|Failed to load resource|\[write failure\]|denied by the test/i.test(e));
 const visible = (p, sel) => ev(p, (s) => [...document.querySelectorAll(s)].some((e) => { const b = e.getBoundingClientRect(), c = getComputedStyle(e); return b.width > 0 && b.height > 0 && c.visibility !== "hidden" && c.display !== "none" && !e.closest("[hidden]"); }), sel);
 /** A wait is a named state; a timeout fails by name. */
 async function until(name, fn, ms = 15000) {
@@ -150,18 +152,147 @@ async function flow(name, lang, look, width, pagePath, fn, seed = "") {
 
 // ---- the pages -------------------------------------------------------------------------------------------------------
 // file, what must be on screen, per-page main action (optional)
+const acceptSeed = `DATA.inviteTokens = [{ _id: "tok1", tenantId: "t1", email: "smahk9@gmail.com" }]; DATA.tenantInvites = [...(DATA.tenantInvites ?? []), { _id: "t1__smahk9@gmail.com", tenantId: "t1", email: "smahk9@gmail.com", role: "teacher", status: "pending" }];`;
 const PAGES = {
   about: { file: "about.html", see: "h1" },
   backup: { file: "backup.html", see: "h1" },
   import: { file: "import-notes.html", see: "h1" },
-  dawah: { file: "dawah.html", see: "h1" },
+  dawah: { file: "dawah.html", see: "h1", seed: "@dawahSeed" },
   monitor: { file: "monitor.html", see: "h1" },
   homework: { file: "homework.html", see: "h1" },
   people: { file: "people.html", see: "h1" },
   onboarding: { file: "onboarding.html", see: "h1" },
-  accept: { file: "accept-invite.html", see: "h1" },
+  accept: { file: "accept-invite.html?token=tok1", see: "h1", seed: "@acceptSeed" },
 };
-const ACTIONS = {};
+const wrote = (p, col) => ev(p, (c) => (window.__stubWriteData || []).filter((r) => r.col === c).length, col);
+const writes = (p, col) => ev(p, (c) => (window.__stubWriteData || []).filter((r) => r.col === c), col);
+/** Words on screen after a failed write (I15): the global banner or the page's own result box, non-empty and visible. */
+const failureWords = (p) => ev(p, () => [...document.querySelectorAll("#qr-write-failure-banner, #result, #createResult, #noteResult, #familyResult, #resultLine, .warn")].filter((e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(e).display !== "none" && (e.textContent || "").trim().length > 5; }).map((e) => e.textContent.trim().slice(0, 80)));
+const failWrites = (p) => ev(p, () => { window.__stubFailWrites = true; window.__stubFailTx = true; window.__stubFailBatch = true; });
+const ok = (p) => ev(p, () => { window.__stubFailWrites = false; window.__stubFailTx = false; window.__stubFailBatch = false; });
+var dawahSeed = `DATA.dawahPages = [{ _id: "t1__d1", pageId: "d1", tenantId: "t1", authorPersonId: "p1", authorUid: "test-uid", status: "draft", title: "Seeded printable page", bodyHtml: "<p>Seeded dawah body text</p>", sourceUnitKey: "ayah:2:256", schemaVersion: 1, createdAt: "${TS}", updatedAt: "${TS}", createdBy: "test-uid" }];`;
+const wxr = `<?xml version="1.0"?><rss xmlns:wp="x"><channel><wp:category><wp:term_id>1</wp:term_id><wp:category_nicename>fiqh</wp:category_nicename><wp:cat_name>Fiqh</wp:cat_name></wp:category>
+<item><title>2:255 Ayat al-Kursi</title><link>http://x/1</link><wp:post_id>11</wp:post_id><wp:post_date_gmt>2020-01-01 00:00:00</wp:post_date_gmt><wp:post_type>post</wp:post_type><wp:status>publish</wp:status><category domain="category" nicename="fiqh">Fiqh</category><content:encoded><![CDATA[<p>The throne verse.</p>]]></content:encoded></item>
+<item><title>A note without a reference</title><link>http://x/2</link><wp:post_id>12</wp:post_id><wp:post_date_gmt>2020-01-02 00:00:00</wp:post_date_gmt><wp:post_type>post</wp:post_type><wp:status>publish</wp:status><content:encoded><![CDATA[<p>Plain words.</p>]]></content:encoded></item></channel></rss>`;
+const ACTIONS = {
+  about: async (t, p) => {
+    const n = await ev(p, () => document.body.innerText.length);
+    check(`${t}: the page lists what the app has (text on screen)`, n > 500, String(n));
+  },
+  backup: async (t, p) => {
+    await ev(p, () => document.getElementById("makeBtn").click());
+    const done = await until("the backup link appears", () => visible(p, "#result a.download-link"), 20000);
+    check(`${t}: Make the backup gives a Save link and counts`, done);
+    if (!done) return;
+    const info = await ev(p, () => ({ href: document.querySelector("#result a.download-link").getAttribute("download"), stats: document.querySelectorAll("#result .stat").length, people: document.querySelector("#result .stat")?.textContent }));
+    check(`${t}: the file is an .html backup and the counts are shown (${info.stats})`, /\.html$/.test(info.href || "") && info.stats >= 5, JSON.stringify(info));
+    await state(t, p, "after the backup is made", "#result a.download-link");
+  },
+  import: async (t, p) => {
+    await p.setInputFiles("#fileInput", { name: "export.xml", mimeType: "text/xml", buffer: Buffer.from(wxr) });
+    const prev = await until("the preview shows", () => visible(p, "#previewSection"), 15000);
+    check(`${t}: choosing a WordPress file shows its preview`, prev);
+    if (!prev) return;
+    const stat = await ev(p, () => ({ notes: document.getElementById("statNotes").textContent.trim(), folders: document.getElementById("statFolders").textContent.trim() }));
+    check(`${t}: the preview counts the two posts as Notes`, /^(2|২)$/.test(stat.notes), JSON.stringify(stat));
+    await state(t, p, "with the preview", "#previewSection");
+    const before = await wrote(p, "notes");
+    await ev(p, () => document.getElementById("importBtn").click());
+    await settle(p, 1500);
+    const words = await ev(p, () => { const r = document.getElementById("resultLine"), g = document.getElementById("gateNotice"); return { result: getComputedStyle(r).display !== "none" ? r.textContent.trim() : "", gate: getComputedStyle(g).display !== "none" ? g.textContent.trim() : "" }; });
+    const after = await wrote(p, "notes");
+    check(`${t}: pressing Import either creates Notes in the stub or says in words why not (gate: "${words.gate.slice(0, 50)}")`, after > before || words.result.length > 5 || words.gate.length > 5, JSON.stringify({ before, after, words }));
+  },
+  dawah: async (t, p) => {
+    check(`${t}: the seeded page is listed`, await until("the seeded page card", () => visible(p, '[data-page-id="d1"]'), 10000));
+    await ev(p, () => document.querySelector('[data-page-id="d1"] [data-page-toggle]').click());
+    await settle(p, 300);
+    check(`${t}: opening it shows the Note's text`, /Seeded dawah body text/.test(await ev(p, () => document.querySelector('[data-page-id="d1"] [data-page-body]')?.innerText || "")));
+    await state(t, p, "page opened", '[data-page-id="d1"] [data-page-body]');
+    await ev(p, () => { window.__printed = 0; window.print = () => { window.__printed++; }; document.querySelector('[data-page-id="d1"] [data-page-print]').click(); });
+    const pr = await ev(p, () => ({ n: window.__printed, h: document.getElementById("printArea").innerText }));
+    check(`${t}: Print fills the printable area with the title and the text and asks to print`, pr.n === 1 && /Seeded printable page/.test(pr.h) && /Seeded dawah body text/.test(pr.h), JSON.stringify(pr));
+    await failWrites(p);
+    await ev(p, () => document.querySelector('[data-page-id="d1"] [data-page-submit]').click());
+    await settle(p, 800);
+    const w = await failureWords(p);
+    check(`${t}: a failed Share reaches the reader in words (I15)`, w.length > 0, JSON.stringify(w));
+    await ok(p);
+  },
+  monitor: async (t, p) => {
+    const rows = await ev(p, () => ({ tr: document.querySelectorAll("#reportBody tr").length, txt: document.getElementById("reportBody").innerText }));
+    check(`${t}: the week's report shows the seeded rows (${rows.tr} table rows)`, rows.tr >= 6 && /Ahsan|আহসান/.test(rows.txt), rows.txt.slice(0, 120));
+    const dl = await Promise.all([p.waitForEvent("download", { timeout: 8000 }).catch(() => null), ev(p, () => document.getElementById("csvBtn").click())]).then((x) => x[0]);
+    check(`${t}: Download CSV gives a file`, !!dl);
+    if (dl) { const text = fs.readFileSync(await dl.path(), "utf8"); check(`${t}: the CSV holds the seeded rows (${text.split("\n").length} lines)`, /Ahsan|আহসান/.test(text) && text.trim().split("\n").length >= 3, text.slice(0, 150)); }
+    await ev(p, () => { window.__opened = ""; window.open = () => ({ document: { write: (h) => { window.__opened += h; }, close() {} }, focus() {}, print() {}, close() {} }); document.getElementById("printBtn").click(); });
+    const printed = await ev(p, () => window.__opened);
+    check(`${t}: Print opens a printable copy that holds the seeded rows`, /Ahsan|আহসান/.test(printed) && /<table/.test(printed), printed.slice(0, 100));
+    const lbl = await ev(p, () => document.getElementById("rangeLabel").textContent);
+    await ev(p, () => document.getElementById("monthTabBtn").click());
+    await settle(p, 600);
+    const lbl2 = await ev(p, () => document.getElementById("rangeLabel").textContent);
+    check(`${t}: the Month tab changes the range label`, lbl !== lbl2, `${lbl} -> ${lbl2}`);
+    await state(t, p, "month tab", "#reportBody");
+  },
+  homework: async (t, p) => {
+    check(`${t}: the seeded assignment is listed`, /Memorise Surah Al-Fatiha|সূরা/.test(await ev(p, () => document.getElementById("assignmentsBody").innerText)) || /Fatiha/i.test(await ev(p, () => document.getElementById("assignmentsBody").innerText)));
+    await ev(p, () => { document.querySelector("#assignToChecks input")?.click(); document.getElementById("instructionsInput").value = "Read Surah Al-Ikhlas twice"; });
+    const before = await wrote(p, "assignments");
+    await ev(p, () => document.getElementById("createAssignmentBtn").click());
+    await settle(p, 1200);
+    const res = await ev(p, () => { const r = document.getElementById("createResult"); return { cls: r.className, txt: r.textContent.trim(), disp: getComputedStyle(r).display }; });
+    check(`${t}: Create assignment says it was created (${res.txt.slice(0, 50)})`, res.disp !== "none" && res.txt.length > 3 && !/fail/.test(res.cls), JSON.stringify(res));
+    check(`${t}: the stub received an assignment write`, (await ev(p, () => (window.__stubWriteData || []).length)) > 0, JSON.stringify(await ev(p, () => (window.__stubWriteData || []).map((x) => x.col))));
+    await failWrites(p);
+    await ev(p, () => { document.querySelector("#assignToChecks input")?.click(); document.getElementById("instructionsInput").value = "Second"; document.getElementById("createAssignmentBtn").click(); });
+    await settle(p, 1000);
+    const w = await failureWords(p);
+    check(`${t}: a failed Create reaches the reader in words (I15)`, w.length > 0, JSON.stringify(w));
+    await ok(p);
+  },
+  people: async (t, p) => {
+    await ev(p, () => { document.getElementById("name").value = "Yusuf"; document.getElementById("birthYear").value = "2015"; });
+    await ev(p, () => document.querySelector('input[name="role"][value="student"]').click());
+    const before = await wrote(p, "tenantPeople");
+    await ev(p, () => document.getElementById("addBtn").click());
+    await until("the add result shows", () => visible(p, "#result.ok"), 8000);
+    const r = await ev(p, () => ({ txt: document.getElementById("result").textContent, row: [...document.querySelectorAll("#rosterBody tr")].map((x) => x.innerText).filter((x) => /Yusuf/.test(x)) }));
+    check(`${t}: Add person says "Added" with an id`, /Added|যোগ/.test(r.txt), r.txt);
+    check(`${t}: the write carried the year of birth to the stub`, (await writes(p, "tenantPeople")).some((w) => /Yusuf/.test(JSON.stringify(w.data)) && /2015/.test(JSON.stringify(w.data))), JSON.stringify(await ev(p, () => (window.__stubWriteData || []).map((x) => x.col))));
+    await failWrites(p);
+    await ev(p, () => { document.getElementById("name").value = "Fails"; document.getElementById("addBtn").click(); });
+    await settle(p, 1000);
+    const w = await failureWords(p);
+    check(`${t}: a failed Add reaches the reader in words (I15)`, w.length > 0 && !/Added/.test(w.join(" ")), JSON.stringify(w));
+    await ok(p);
+  },
+  onboarding: async (t, p) => {
+    await ev(p, () => { document.querySelector('input[name="tenantType"][value="family"]').click(); document.getElementById("name").value = "Test Parent"; });
+    await ev(p, () => document.getElementById("createBtn").click());
+    const fam = await until("the family step opens", () => visible(p, "#familyStep"), 10000);
+    check(`${t}: choosing My family and Create opens Step 2 (family members)`, fam);
+    if (!fam) return;
+    await ev(p, () => { const n = document.getElementById("famName0"), y = document.getElementById("famYear0"); n.value = "Zayd"; n.dispatchEvent(new Event("input", { bubbles: true })); y.value = "2016"; y.dispatchEvent(new Event("input", { bubbles: true })); });
+    const age = await ev(p, () => document.querySelector("[data-fam-age]").textContent);
+    check(`${t}: a year of birth shows an age and ticks "child"`, age !== "—" && (await ev(p, () => document.querySelector('[data-fam-k="child"]').checked)), age);
+    await state(t, p, "family step", "#familyStep");
+    await ev(p, () => document.getElementById("familySave").click());
+    await settle(p, 1500);
+    check(`${t}: Save and continue says what happened`, (await ev(p, () => document.getElementById("familyResult").textContent.trim())).length > 3);
+  },
+  accept: async (t, p) => {
+    check(`${t}: with a valid token the invite is described and Accept is offered`, await until("accept area", () => visible(p, "#acceptArea"), 10000));
+    await state(t, p, "invite ready", "#acceptArea");
+    await ev(p, () => { document.getElementById("name").value = "Invitee"; });
+    await failWrites(p);
+    await ev(p, () => document.getElementById("acceptBtn").click());
+    await settle(p, 1200);
+    const w = await ev(p, () => document.getElementById("box").textContent.trim());
+    check(`${t}: a failed Accept reaches the reader in words (I15)`, w.length > 10 && /fail/.test(await ev(p, () => document.getElementById("box").className)), w);
+    await ok(p);
+  },
+};
 
 function pageFlow(key) {
   const def = PAGES[key];
@@ -203,8 +334,9 @@ const LANGS = ["en", "bn"].filter((l) => !LONLY || l === LONLY);
 const LOOKS = ["night", "light"].filter((l) => !KONLY || l === KONLY);
 for (const key of Object.keys(PAGES)) for (const lang of LANGS) for (const look of LOOKS) for (const width of WIDTHS) {
   const f = PAGES[key].file;
-  await flow(key, lang, look, width, `/app/${f}`, pageFlow(key), PAGES[key].seed || "");
-  await flow(key + "-window", lang, look, width, `/app/${f}?inWindow=1`, pageFlow(key), PAGES[key].seed || "");
+  const sd = PAGES[key].seed === "@dawahSeed" ? dawahSeed : PAGES[key].seed === "@acceptSeed" ? acceptSeed : "";
+  await flow(key, lang, look, width, `/app/${f}`, pageFlow(key), sd);
+  await flow(key + "-window", lang, look, width, `/app/${f}${f.includes("?") ? "&" : "?"}inWindow=1`, pageFlow(key), sd);
 }
 
 await browser.close();
