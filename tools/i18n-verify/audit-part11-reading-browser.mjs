@@ -329,6 +329,8 @@ for (const lang of ["en", "bn"]) for (const width of WIDTHS) {
     await page.click('#readContentsBody .rc-row[data-rc-kind="surah"][data-rc-n="112"]');
     await page.waitForFunction(() => document.body.classList.contains("immersive-read"), null, { timeout: 8000 });
     await settle(page, 800);
+    // UPDATED IN PLACE (QR Lead, the Owner 24 Oct 2026): from 600 to 1023px the three open from one "Study ▾" button.
+    await ev(page, () => { const b = document.querySelector("#readQuickRow [data-rq-menu]"); if (b && b.getBoundingClientRect().width > 0) b.click(); }); await settle(page, 300);
     const labels = await ev(page, () => [...document.querySelectorAll("#readQuickRow .rq-btn")].map((b) => ({ txt: b.textContent.trim(), w: b.getBoundingClientRect().width, h: b.getBoundingClientRect().height, inView: b.getBoundingClientRect().bottom <= innerHeight + 1 && b.getBoundingClientRect().right <= innerWidth + 1 })));
     check(`${t}: POSITIVE CONTROL three quick buttons are on screen`, labels.length === 3 && labels.every((l) => l.w > 0 && l.h >= 30 && l.inView), JSON.stringify(labels));
     if (lang === "bn") check(`${t}: their labels are Bangla`, labels.every((l) => BN.test(l.txt)), labels.map((l) => l.txt).join());

@@ -22271,3 +22271,47 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 - Checks: `audit-part43-tool-pages-browser` 5315/0; `journey-three-panel-browser` 464/0, `journey-tags-browser` 363/0, `journey-map-screen` 47/0, `wordpress-import-screen` 21/0, `tagline-scroll-browser` 67/0 (the Builder's); `apps-build-check` 48/0.
 - **Not built:** drawing the folder view before tags, sections and links (those reads already start beside the folder tree; the gain is small and needs a draw-then-redraw with its own ordering checks). **Found, for a later round:** a worker-controlled second visit to Mapping My Journey is usable at ~3.7 s, later than the first visit's ~3.0 s (`app/sw.js` background refreshes share the link).
 - Nothing stored, no Rules changed.
+
+## v12.44 — 24 Oct 2026 — A second visit is no longer slower than the first (audit part 53)
+
+- **`app/sw.js`** (Builder round #1087, PR #1088): a cache hit still answers at once, but its stale-while-revalidate refresh is held (`deferRefresh`) until no fetch event has arrived for `REFRESH_QUIET_MS` (2 s; every fetch counts, the page's Firestore calls included), or at most `REFRESH_MAX_WAIT_MS` (15 s) after the first hold, then refreshed `REFRESH_CONCURRENCY` (4) at a time, one per URL. A miss still fetches at once. The cache name `mm-app-${APP_VERSION}` and the install carry-over are unchanged, so a new release reaches the reader exactly as before.
+- **`tools/i18n-verify/shared-load-speed-browser.mjs`:** waits for the worker to finish filling its cache before the second visit; counted checks per page, width and reader: refreshes still happen (positive control), none starts before the page's last Firestore read or last same-site request, second visit usable no later than first + 200 ms. `--mutate=refresh-at-once` fails 36. 176/0.
+- Measured (390 and 1280, 1.6 Mbps / 150 ms): second visit usable ~0.3–0.7 s against ~2.5–3.1 s first; first refresh at ~+2.5 s, after the last page read (~+0.3–0.5 s). Before (part-filled cache): Journey second visit 3934 ms with 62 refreshes at once.
+- Checks: `service-worker` 18/0, `app-offline-boot-browser` 15/0, `mushaf-font-offline-cache-browser` 29/0, `load-speed-check` 66/0, `apps-build-check` 48/0.
+- **Not reached:** QR's own worker (`apps/qr/after-build.mjs`, the QR Lead's) second visit; the landing page's second visit. Nothing stored, no Rules changed.
+
+## v12.45 — 24 Oct 2026 — QuranRevival's own address opens offline (the QR Lead's round 9)
+
+- **`apps/qr/site/root-sw.js`** (new, QR-only; PR #1089): a worker at the site root, so `https://quranrevival.github.io/` opens offline (before: the browser's own "no internet" page, ~113 characters). GitHub Pages cannot send `Service-Worker-Allowed`, so `/app/sw.js` (scope `/app/`) could never reach `/`. Network-first; on a network failure a front-page navigation is answered from `/app/index.html` in the caches `/app/sw.js` keeps, anything else by `caches.match`. It opens and writes no cache of its own.
+- **`apps/qr/site/app/js/qr-front.js`:** registers `/root-sw.js` (scope `/`) only on `/` and `/index.html`, only after the app worker registered, so the kill switches (`?nosw`, `mm_disable_service_worker`) cover both. Every `/app/` page stays with `/app/sw.js` (longest matching scope).
+- **`app/apps/qr.json`** (declared shared change, approved by the MSA Architect): `site` += `"root-sw.js"`. `msa.json` untouched.
+- **New QR check `tools/apps/qr-verify/qr-root-offline-browser.mjs`** (run-all's 28th): 26/0 at 390 and 1400; mutations `noreg` 7, `nofallback` 5, `cachefirst` 2, `writes` 3, `killone` 1 fail. `apps-build-check` 48/0.
+- Nothing stored, no Rules changed.
+
+## v12.46 — 24 Oct 2026 — Study modules and teaching pages by the User Manual (audit part 54)
+
+- **`app/course-offers.html`, `app/curriculum.html`** (Builder round #1090, PR #1091): `.muted` help text `#888` → `#666` (3.54:1 → 5.74:1 on white).
+- **New `tools/i18n-verify/audit-part54-study-teach-browser.mjs`:** Deen Study, Arabic Study, People (Hand the device, View as), Classes, Course Offers, Curriculum and Catalogue, opened directly and with `?inWindow=1`, at 390 / 820 / 1280, English and Bangla, as the owner: positive control on screen, no sideways scroll, no cut or covered control, ← Back and finger controls ≥ 40px, text 4.5:1 on its real background, no English left in Bangla; every control the User Manual names exists and is not covered; the four hidden modules are absent from the menu and an old link still opens each. 938/0. `--mutate=offersmuted` and `--mutate=curriculummuted` fail 12 each.
+- Checks: `audit-part17-teaching-browser` 868/0, `bangla-sweep-other-pages-browser` 224/0.
+- **Not reached** (audit part 55, Builder round #1092): driving the Hand-the-device, View-as, Continue, create/enrol flows; the student pass. Routines (`ldog-study.html`) are QR's. Nothing stored, no Rules changed.
+
+## v12.47 — 24 Oct 2026 — On a tablet, the bare Read bar shows the whole surah name (the QR Lead's round 10)
+
+- **`app/quranrevival.html`** (PR #1095; the Owner's tablet screenshot, 24 Oct: "Place three marked buttons under a single button that opens them so that Surah name can be displayed properly" — "Not the bookmark, only other 3"): from 600 to 1023px, in the bare full-screen Read bar (`read-from-contents.immersive-read.fs-hide-readbar.fs-hide-transport`), Notes / Record / Approach sit behind one "Study ▾" pill (`[data-rq-menu]`, `aria-expanded`); choosing one, tapping elsewhere or Esc closes it, focus moves into the menu and back. Below 600px and from 1024px the wrapper is `display: contents`, so the three are laid out as before. The bookmark is untouched.
+- Measured: the longest surah name (Al-Munaafiqoon, 95px) had 39/45px at 600/680; now whole at every width ≥ 600.
+- Checks: `read-quick-buttons-browser` 254/0 (`--mutate=no-menu` fails 44), `audit-part11-reading-browser` 506/0 (both updated in place for the menu), `qr-mushaf-page-nav` 40/0, `apps-build-check` 48/0, QR `qr-root-offline` 26/0. Nothing stored, no Rules changed.
+
+## v12.48 — 24 Oct 2026 — Getting started, moving around and Bookmarks by the User Manual (audit part 56)
+
+- **`app/css/shell.css`** (Builder round #1094, PR #1096): `.nav-cat-links button#signInBtn` joins `#signOutBtn`'s rule (`min-height: 40px`): the signed-out Home ▾ "Sign in with Google" button was 31px (32px in Bangla).
+- **New `tools/i18n-verify/audit-part56-start-bookmarks-browser.mjs`:** 320 / 390 / 820 / 1280, English and Bangla, signed out, owner and student: the four menus open, a second tap or Esc closes, panels inside the screen, items ≥ 40px, no sideways scroll; signed out, Home is the only menu; the Bookmark sheet's ✕ Close (83×40) closes it; Manage bookmarks rename is stored in the owner's own document and shown, Rename / Retire ≥ 40px; a refused rename shows a red banner on screen (Bangla in Bangla) and keeps the old name (I15); a bookmark for a family member is stored in the child's own document, in a folder of the same name; a student sees only their own bookmarks. 452/0; `--mutate=signinsmall` fails 8.
+- Checks: `bangla-sweep-other-pages-browser` 224/0, `audit-part18-getting-started-browser --only=signin` 32/0.
+- User Manual out of date (corrected in the PCF): the Bookmark sheet covers the bar, so it closes with ✕ Close or Esc, not a second tap. **Not reached:** language / card look / Taglines at 320 and 820 (audit part 18 covers 390 / 820 / 1440); the Read bar's 🔖 popover (the QR Lead's). Nothing stored, no Rules changed.
+
+## v12.49 — 24 Oct 2026 — Records, Monitor reports and Homework by the User Manual (audit part 57)
+
+- **`app/records.html`** (Builder round #1097, PR #1098): the Person list is `scopedRoster(roster, effRoles, myPersonId)` for every sign-in, not only under View as, as `homework.html` and `monitor.html` already do: a student sees only themselves (measured `p1, p2` → `p2`), a guardian themselves and the people they manage; owner, prime and teacher keep the whole roster. Display only: the Rules still decide what can be read or written.
+- **`app/homework.html`:** `.submitNote { min-height: 40px; }` (the submission note box was 34px).
+- **New `tools/i18n-verify/audit-part57-records-monitor-browser.mjs`:** 320 / 390 / 820 / 1280, English and Bangla, owner and student: layout (no sideways page scroll; the wide Records table scrolls inside itself and Confirm stays reachable), one `getDoc` per surah chunk, claim / Confirm, refused writes (banner and an alert in words, nothing stored), Monitor week / month / ◀ ▶ / CSV (file name, translated header, a data row) / Print, Homework create (I17 fields), mark, score, refused submit, the student view. 468/0; `--mutate=rosterunscoped` fails 4, `--mutate=notebox` fails 8.
+- Checks: `audit-part13-recording-browser` 494/0, `audit-part17-teaching-browser` 868/0, `audit-part24-records-continue-browser` 178/0, `student-roster-access-browser` 30/0, `bangla-sweep-other-pages-browser` 224/0.
+- **Not reached:** Homework "Assign to" a class as a pure teacher, teaching-notes save, Monitor's "Whole roster", a refused Create assignment (the stub cannot fail that path). Nothing stored, no Rules changed.

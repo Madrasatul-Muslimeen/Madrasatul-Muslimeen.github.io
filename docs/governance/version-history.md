@@ -945,3 +945,9 @@ total). Allocated by the MMSA Architect.
 12.41: audit part 51 (My Notes and Mapping My Journey load speed). Allocated by the MMSA Architect.
 12.42: the QR Lead's comment strip in QR's build (#1085). Allocated by the MMSA Architect.
 12.43: audit part 52 (Journey and tool pages start-up reads together). Allocated by the MMSA Architect.
+12.44: audit part 53, worker refreshes wait for a quiet page. Allocated by the MMSA Architect.
+12.45: QR's own address opens offline (QR Lead round 9). Allocated by the MMSA Architect.
+12.46: audit part 54, study modules and teaching pages by the User Manual. Allocated by the MMSA Architect.
+12.47: tablet Read bar: Study menu, whole surah name (QR Lead round 10). Allocated by the MMSA Architect.
+12.48: audit part 56, getting started and Bookmarks by the User Manual. Allocated by the MMSA Architect.
+12.49: audit part 57, Records, Monitor and Homework by the User Manual. Allocated by the MMSA Architect.
