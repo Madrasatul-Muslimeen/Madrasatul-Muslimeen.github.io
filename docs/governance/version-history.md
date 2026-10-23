@@ -948,3 +948,4 @@ total). Allocated by the MMSA Architect.
 12.44: audit part 53, worker refreshes wait for a quiet page. Allocated by the MMSA Architect.
 12.45: QR's own address opens offline (QR Lead round 9). Allocated by the MMSA Architect.
 12.46: audit part 54, study modules and teaching pages by the User Manual. Allocated by the MMSA Architect.
+12.47: tablet Read bar: Study menu, whole surah name (QR Lead round 10). Allocated by the MMSA Architect.
