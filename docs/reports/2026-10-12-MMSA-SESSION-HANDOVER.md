@@ -1609,3 +1609,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v12.43** (2026-10-23): audit part 52 (Journey and tool pages start-up reads together).
 - **v12.44** (2026-10-23): audit part 53, worker refreshes wait for a quiet page.
 - **v12.45** (2026-10-23): QR's own address opens offline (QR Lead round 9).
+- **v12.46** (2026-10-23): audit part 54, study modules and teaching pages by the User Manual.
