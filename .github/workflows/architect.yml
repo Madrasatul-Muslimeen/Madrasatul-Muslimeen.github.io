@@ -38,6 +38,13 @@
 #      visible defects a session review then found (a model word at ~1.2:1
 #      contrast, a label cut at phone width). Such a pull request waits for a
 #      session Architect, who reviews, allocates and merges it.
+#   8. It is not a Builder branch (`builder/...`) while a Builder run of
+#      `claude.yml` (started by workflow_dispatch or an issue) is still queued
+#      or running. Added 24 Oct 2026 after #1067 and #1073 were merged here
+#      ten minutes into their rounds: the Builder's FIRST push was green and
+#      touched nothing protected, so every gate above passed, and the round's
+#      later commits then had no pull request. A round is reviewed when it
+#      has finished, not when it has first pushed.
 #
 #   A pull request failing ANY of these is never merged by this workflow. It is
 #   labelled, explained once on the pull request, and -- where it needs the
@@ -260,6 +267,13 @@ jobs:
           : > /tmp/eligible.txt
           : > /tmp/blocked.txt
 
+          # Gate 8: is a Builder round still going? Read once. A failed read
+          # counts as "running" -- refusing for one cycle is cheap, merging a
+          # half-built round is not.
+          builder_running=$(gh api "repos/$REPO/actions/workflows/claude.yml/runs?per_page=30" \
+            --jq '[.workflow_runs[] | select((.status=="in_progress" or .status=="queued") and (.event=="workflow_dispatch" or .event=="issues"))] | length' 2>/dev/null || echo 1)
+          echo "Builder runs still going: $builder_running"
+
           for n in $(jq -r '.[].number' /tmp/prs.json); do
             row=$(jq -r --argjson n "$n" '.[] | select(.number==$n)' /tmp/prs.json)
             title=$(jq -r '.title' <<<"$row")
@@ -285,6 +299,8 @@ jobs:
             [ -z "$reason" ] && [ "$draft" = "true" ] && reason="DRAFT — not marked ready for review"
             [ -z "$reason" ] && [ "$mergeable" != "MERGEABLE" ] && reason="not cleanly mergeable (GitHub says: $mergeable)"
             [ -z "$reason" ] && case ",$labels," in *,needs-owner,*) reason="carries the needs-owner label";; esac
+            headref=$(jq -r '.headRefName' <<<"$row")
+            [ -z "$reason" ] && [ "${builder_running:-1}" != "0" ] && case "$headref" in builder/*) reason="a Builder round is still running: reviewed when it finishes, not at its first push";; esac
 
             # Protected paths. `|| true` because a pull request with no files
             # listed must not kill the loop for every other one.
