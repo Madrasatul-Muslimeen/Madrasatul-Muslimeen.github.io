@@ -40,15 +40,32 @@ function check(name, ok, detail = "") {
 //              label, ladder rung, Approach dot title and the reference stay in the old language. Fix: redraw it there when #ayahActionSheetOverlay is open.
 const FOR_QR_LEAD = { unitLabel: /(Notes on|Back to|New note on|No notes on|Find a note to attach to) [২-৯০১]/ };
 const AYAH_CARD_LEAD = { ayahCard: /^page / };
+//   bmUnits    the Bookmark popover's unit buttons (This āyah, This page...) and the people's names are handed to it as words by
+//              quranrevival.html's toggleAyahBookmark(), in the language of the moment it opened: after bn -> en they stay Bangla
+//              (en -> bn, translateStatic() catches the English ones). Fix: pass `label` and `name` as functions; the popover
+//              accepts both since audit 47 (flow popfn proves it).
+const BM_LEAD = { ...FOR_QR_LEAD, bmUnits: /^page (button|span\.who-name) \[text\]|^page select \[selected\]/ }; // the names: the ticked list and the "For" picker
 const seenKnown = new Set();
 
 // name: [file in the built app, route glob, anchor (exactly once), replacement]. Each puts one fix back to the old code.
-const MUTATIONS = {};
+// translateStatic() already turns ENGLISH text nodes into Bangla on en -> bn, so langpop and langtray are caught bn -> en:
+//   node tools/apps/qr-verify/lang-switch-browser.mjs --mutate=langpop --only=bookmark --width=1280 --lang=bn   (langtray: --only=typing)
+//   langmin --only=chip, langpane --only=notes, langtoast --only=toast, langedittray --only=typing: --lang=en
+const MUTATIONS = {
+  langpop: ["app/js/bookmark-popover.js", "**/app/js/bookmark-popover.js*", "fresh.innerHTML = rebuild();", "return;"],
+  langtray: ["app/js/journey-tray.js", "**/app/js/journey-tray.js*", "onAppLangChange(relabel); // audit 47 langtray", ""],
+  langmin: ["app/js/minimise.js", "**/app/js/minimise.js*", "onAppLangChange(relabel); // audit 47 langmin", ""],
+  langpane: ["app/js/read-note-pane.js", "**/app/js/read-note-pane.js*", "onAppLangChange(relabel); // audit 47 langpane", ""],
+  langlive: ["app/js/bookmark-popover.js", "**/app/js/bookmark-popover.js*", "const live = (x) => (typeof x === \"function\" ? x() : x);", "const live = ((memo) => (x) => (typeof x === \"function\" ? (memo.has(x) || memo.set(x, x()), memo.get(x)) : x))(new Map());"],
+  langtoast: ["app/js/bookmark-popover.js", "**/app/js/bookmark-popover.js*", "if (!noticeFollows) { noticeFollows = true; onAppLangChange(() => noticeRepaint?.()); }", ""],
+  // the Builder's first version: the window's page reloaded under a Note being typed
+  langedittray: ["app/js/journey-tray.js", "**/app/js/journey-tray.js*", "if (editing) return; // audit 47 langedit", ""],
+};
 if (MUTATE && !MUTATIONS[MUTATE]) throw new Error(`no such mutation ${MUTATE}`);
 const browser = await chromium.launch();
 
 const BN = /[ঀ-৿]/;
-const PROPER = /QuranRevival|QR|MMSA|MSA|Qur'?an|Asma|Husna|Madrasatul|Muslimeen|Hadith|Mapping My Journey|Google|Zab|Baqara|Bismillah|Ahsan|Study|Gmail|smahk9|com|test|Owner|Prime|Dua|Seerah|CSV|JSON|ID|My spot|Maryam|Ayatul|Kursi/g;
+const PROPER = /QuranRevival|QR|MMSA|MSA|Qur'?an|Asma|Husna|Madrasatul|Muslimeen|Hadith|Mapping My Journey|Google|Zab|Baqara|Bismillah|Ahsan|Study|Gmail|smahk9|com|test|Owner|Prime|Dua|Seerah|CSV|JSON|ID|My spot|Maryam|Ayatul|Kursi|Ctrl|Shift/g;
 const englishLeft = (text) => (String(text).replace(/\S+@\S+/g, " ").replace(PROPER, " ").match(/[A-Za-z]{3,}/g) || []);
 const settle = (p, ms = 350) => p.waitForTimeout(ms);
 const ev = (p, f, a) => p.evaluate(f, a);
@@ -70,7 +87,7 @@ function readout(scope) {
   const vis = (e) => { const r = e.getBoundingClientRect(), c = getComputedStyle(e); return (r.width > 0 && r.height > 0 && c.visibility !== "hidden" && c.display !== "none" && !e.closest("[hidden]") && !folded(e)); };
   // The Qur'an's own text, its translations and the reader's own data are CONTENT, not interface: not read here.
   // (A card that sits INSIDE the Read view is read: only content between the card and its scope is skipped.)
-  const CONTENT = "script, style, svg, canvas, option, #readView, #readScroll, .mushaf, [data-word-occurrence], .ayah-sheet-ar, .ayah-sheet-tr, [data-content], [lang=ar], .note-card-title, .word-card-gloss-segment, .word-card-learnnext-line, .word-card-meaning";
+  const CONTENT = "script, style, svg, canvas, option, #readView, #readScroll, .mushaf, [data-word-occurrence], .ayah-sheet-ar, .ayah-sheet-tr, [data-content], [lang=ar], .note-card-title, .word-card-gloss-segment, .word-card-learnnext-line, .word-card-meaning, .note-pane-title, [data-pane-body]";
   const notInterface = (e) => { const c = e.closest(CONTENT); return !!c && !c.contains(root); };
   const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
   for (let n = w.nextNode(); n; n = w.nextNode()) {
@@ -126,9 +143,13 @@ DATA.userPrefs = [{ _id: "test-uid" }];
 DATA.bookmarks = [{ _id: TENANT_ID + "__p2", tenantId: TENANT_ID, personId: "p2", resume: {}, folders: [], saved: [{ id: "bmS", programId: "none", moduleId: "quranrevival", subjectId: "quran", name: "My spot", position: "ayah:2:255", folderId: null, removed: false,
   settings: { view: "read", unitType: "ayah", surahNum: 2, ayahNum: 255, trackableId: "tafsir", mushafOn: false }, createdAt: "${TS}" }] }];`;
 
-async function open(lang, width, height, pagePath, { signedOut = false } = {}) {
+const own = { tenantId: "t1", ownerPersonId: "p2", ownerUid: "test-uid", schemaVersion: 1, createdAt: TS, updatedAt: TS, createdBy: "test-uid" };
+const NOTE_SEED = `DATA.notes = [{ _id: "t1__n255", noteId: "n255", ...${JSON.stringify(own)}, title: "Started on 2:255", bodyHtml: "<p>The Throne verse.</p>", status: "active", visibility: "private", currentRevisionId: "n255-r1" }];
+DATA.noteSources = [{ _id: "t1__sn255", sourceLinkId: "sn255", ...${JSON.stringify(own)}, noteId: "n255", sourceKey: "ayah:2:255", sourceKind: "quran-unit", relationshipKind: "origin", approachId: null, provenanceKind: "study-note", status: "active" }];
+DATA.noteRevisions = [{ _id: "t1__n255-r1", revisionId: "n255-r1", noteId: "n255", previousRevisionId: null, title: "Started on 2:255", bodyHtml: "<p>The Throne verse.</p>", revisionReason: "content-update", actorUid: "test-uid", ...${JSON.stringify(own)} }];`;
+async function open(lang, width, height, pagePath, { signedOut = false, note = false } = {}) {
   const ctx = await newContext(browser, { appLang: lang === "bn" ? "bn" : null, banner: false, viewport: { width, height } });
-  const body = studentStub(stubFor({ banner: false, extraSeedJs: SEED }), { signedOut });
+  const body = studentStub(stubFor({ banner: false, extraSeedJs: SEED + (note ? "\n" + NOTE_SEED : "") }), { signedOut });
   await ctx.route("https://www.gstatic.com/firebasejs/**", (r) => r.fulfill({ status: 200, contentType: "text/javascript; charset=utf-8", body }));
   await ctx.route((u) => ![new URL(BASE).hostname, "www.gstatic.com", "cdn.jsdelivr.net"].includes(u.hostname), (r) => r.abort());
   await ctx.addInitScript(() => { try { localStorage.setItem("mm_card_look", "night"); } catch { /* */ } });
@@ -233,7 +254,7 @@ async function bookmark(t, p, errors, lang) {
   await clickReadTool(p, "#readBookmarkBtn");
   check(`${t}: POSITIVE CONTROL the Bookmark popover is open`, await until("popover", async () => visible(p, ".bm-popover [data-bm-pop-save]")));
   await switchInPlace(p, to);
-  await judge(t, p, "Bookmark popover (you tag, Save)", to, ".bm-popover", ".bm-popover-overlay");
+  await judge(t, p, "Bookmark popover (you tag, Save)", to, ".bm-popover", ".bm-popover-overlay", BM_LEAD);
 }
 async function cards(t, p, errors, lang) {
   const to = OTHER(lang);
@@ -267,6 +288,25 @@ async function chip(t, p, errors, lang) {
   await settle(p, 500);
   await judge(t, p, "the Notes pane brought back from its chip", to, "#readNotePane", "#readNotePane");
 }
+/** The Bookmark popover opened with its unit labels and people's names as FUNCTIONS (what QR's caller should pass): every word
+    follows the switch, the reader's own picks stay. */
+async function popfn(t, p, errors, lang) {
+  const to = OTHER(lang);
+  await ev(p, async () => {
+    const [m, i, pr] = await Promise.all([import("./js/bookmark-popover.js"), import("./js/i18n.js"), import("./js/prefs.js")]);
+    const nm = (en, bn) => () => (pr.getAppLang() === "bn" ? bn : en);
+    m.openBookmarkNamePopover({ defaultName: "2:255", folders: [], people: [{ id: "p2", name: nm("Maryam", "মারইয়াম") }], defaultPersonTagId: "p2",
+      roster: [{ id: "p2", name: nm("Maryam", "মারইয়াম"), isSelf: true }, { id: "p3", name: nm("Ahsan", "আহসান") }], selectedPersonId: "p2",
+      units: [{ id: "ayah", label: () => i.t("This āyah"), defaultName: "2:255" }, { id: "page", label: () => i.t("This page"), defaultName: "Page 42" }] });
+  });
+  check(`${t}: POSITIVE CONTROL the popover is open`, await until("popover", async () => visible(p, ".bm-popover [data-bm-pop-unit]")));
+  await ev(p, () => { document.querySelector('[data-bm-pop-unit="page"]').click(); document.querySelector("[data-bm-pop-name]") && (document.querySelector("[data-bm-pop-name]").value = "My own words"); });
+  await switchInPlace(p, to);
+  await judge(t, p, "Bookmark popover given live labels", to, ".bm-popover", ".bm-popover-overlay");
+  const kept = await ev(p, () => ({ page: document.querySelector('[data-bm-pop-unit="page"]')?.getAttribute("aria-checked"), name: document.querySelector("[data-bm-pop-name]")?.value ?? null }));
+  check(`${t}: the reader's pick (This page) is kept across the switch`, kept.page === "true", JSON.stringify(kept));
+  check(`${t}: the Name being typed is kept across the switch`, kept.name === null || kept.name === "My own words", JSON.stringify(kept));
+}
 /** A toast on screen at the moment of the switch (the "Saved for ..." notice). */
 async function toast(t, p, errors, lang) {
   const to = OTHER(lang);
@@ -291,6 +331,49 @@ async function zab(t, p, errors, lang) {
   await judge(t, p, signedOutOf(t) ? "Zab bar (after the reload)" : "Zab panel", to, signedOutOf(t) ? OPENER : "#zabPanel", "#zabRoot");
   const labels = await ev(p, () => [...document.querySelectorAll("#zabBar, #zabPanel, #zabCorner, .zab-dock-btn")].map((e) => e.getAttribute("aria-label") || ""));
   check(`${t}: the Zab bar, panel, corner and docked button speak ${to === "bn" ? "Bangla" : "English"} (aria-label)`, labels.length > 0 && labels.every((l) => to === "bn" ? BN.test(l) : !BN.test(l)), JSON.stringify(labels));
+}
+
+/** A Note being TYPED when the language is switched. A Note opened from the Notes pane opens for writing in the Mapping My
+    Journey window; the switch must leave the words in that same open editor (prefs.js: a reload under someone typing is
+    the worse surprise), while the pane's own page, with no Note open, follows at once. Closed and opened again, the window
+    is in the new language. */
+async function typing(t, p, errors, lang) {
+  const to = OTHER(lang), WORDS = "typed before the switch 47";
+  await readAyah(p);
+  await clickReadTool(p, "#readNotesBtn");
+  check(`${t}: POSITIVE CONTROL the Notes pane lists the seeded Note`, await until("pane note", async () => { const f = notesFrame(p); return !!f && await f.locator('[data-note-id="n255"]').count() > 0; }, 20000));
+  const nf = notesFrame(p);
+  await nf.evaluate(() => document.querySelector('[data-note-id="n255"] [data-note-open]')?.click());
+  const trayFrame = () => p.frames().find((x) => /journey-map\.html\?embed=1&note=n255/.test(x.url()));
+  const editBtn = (f) => f.evaluate(() => [...document.querySelectorAll("[data-pane-edit-toggle]")].find((e) => !e.hidden && e.getBoundingClientRect().width > 0)?.click() ?? "none");
+  check(`${t}: POSITIVE CONTROL the Note opens in the Mapping My Journey window`, await until("the Note opens", async () => !!trayFrame() && trayFrame().evaluate(() => [...document.querySelectorAll("[data-pane-edit-toggle]")].some((e) => !e.hidden && e.getBoundingClientRect().width > 0)), 20000));
+  const tf = trayFrame();
+  await editBtn(tf);
+  check(`${t}: POSITIVE CONTROL the Note is open for writing`, await until("editor", async () => (await tf.locator("[data-edit-body]").count()) > 0));
+  await tf.click("[data-edit-body]");
+  await p.keyboard.press("End");
+  await p.keyboard.type(" " + WORDS);
+  await tf.evaluate(() => { window.__sameDoc = "kept"; });
+  await nf.evaluate(() => { window.__sameDoc = "kept"; });
+  const r = await switchInPlace(p, to);
+  check(`${t}: POSITIVE CONTROL the switch happened IN PLACE`, r.changed && r.kept, JSON.stringify(r));
+  const inNew = (x) => (to === "bn" ? /[ঀ-৿]/.test(x) : !/[ঀ-৿]/.test(x) && /[A-Za-z]/.test(x));
+  check(`${t}: the window's own bar (left open over the switch) speaks the new language`, inNew(await ev(p, () => document.querySelector("#journeyTray .jt-title")?.textContent || "")));
+  check(`${t}: the window's page was NOT reloaded under the Note being typed`, await tf.evaluate(() => window.__sameDoc === "kept").catch(() => false));
+  const text = await tf.evaluate(() => document.querySelector("[data-edit-body]")?.textContent ?? null).catch(() => null);
+  check(`${t}: the words being typed are still in the open editor`, !!text && text.includes(WORDS), JSON.stringify(text));
+  const paneAgain = await until("the pane's page is loaded again", async () => { const f = notesFrame(p); return !!f && f.evaluate(() => window.__sameDoc !== "kept" && !!document.querySelector('[data-note-id="n255"]')); }, 20000);
+  check(`${t}: the Notes pane's page (no Note open in it) was loaded again in the new language`, paneAgain);
+  // Done: the words are saved. Then ✕, and the Note opened again: the window is in the new language.
+  await editBtn(tf);
+  // (each frame runs its own copy of the Firebase stub: the window's writes are in the window's DATA)
+  check(`${t}: the Note's words were saved`, await until("saved", async () => tf.evaluate((w) => JSON.stringify(window.__DATA?.noteRevisions || []).includes(w), WORDS), 15000));
+  await ev(p, () => document.querySelector("#journeyTray .jt-close")?.click());
+  await settle(p, 500);
+  await notesFrame(p)?.evaluate(() => document.querySelector('[data-note-id="n255"] [data-note-open]')?.click());
+  const back = await until("the window opens again", async () => !!trayFrame() && trayFrame().evaluate(() => window.__sameDoc !== "kept" && [...document.querySelectorAll("[data-pane-edit-toggle]")].some((e) => !e.hidden && e.getBoundingClientRect().width > 0)), 20000);
+  check(`${t}: POSITIVE CONTROL the Note opens again in the window`, back);
+  if (back) { await settle(p, 1200); await judge(t, p, "Mapping My Journey window opened again after the switch", to, "#journeyTray", "#journeyTray"); }
 }
 
 // ---- the detectors prove themselves -----------------------------------------------------------------------------------------
@@ -323,12 +406,14 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     await flow("zab", lang, width, zab);
     await flow("chip", lang, width, chip);
     await flow("toast", lang, width, toast);
+    await flow("popfn", lang, width, popfn);
+    await flow("typing", lang, width, typing, { note: true });
   }
   await flow("menus", lang, width, menus, { signedOut: true });
   await flow("zab", lang, width, zab, { signedOut: true });
 }
 
-if (!ONLY && !WONLY && !LONLY && !MUTATE && !PROBE) for (const id of Object.keys(FOR_QR_LEAD)) check(`the known QR Lead finding "${id}" still occurs (else remove it from FOR_QR_LEAD: it was fixed)`, seenKnown.has(id));
+if (!ONLY && !WONLY && !LONLY && !MUTATE && !PROBE) for (const id of [...Object.keys(BM_LEAD), ...Object.keys(AYAH_CARD_LEAD)]) check(`the known QR Lead finding "${id}" still occurs (else remove it from FOR_QR_LEAD: it was fixed)`, seenKnown.has(id));
 await browser.close();
 server.kill();
 console.log(`\n==== lang-switch-browser${MUTATE ? ` [mutated: ${MUTATE}]` : ""}: ${pass} passed, ${fail} failed ====`);

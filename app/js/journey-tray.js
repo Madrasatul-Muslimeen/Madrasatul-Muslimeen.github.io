@@ -115,7 +115,11 @@ async function relabel() {
   close.setAttribute("title", t("Close"));
   frame.title = t("Mapping My Journey");
   if (!frame.getAttribute("src")) return; // closed: it loads fresh, in the new language, when it opens
-  try { frame.contentWindow?.postMessage({ type: "mmsa-journey-flush" }, location.origin); } catch { /* not loaded */ }
+  // Never under a Note being typed (prefs.js: a reload mid-typing is the worse surprise): it keeps the old language until
+  // it is closed, and every opening loads it fresh.
+  let editing = false;
+  try { editing = !!frame.contentDocument?.querySelector("[data-edit-body]"); } catch { /* not ours */ }
+  if (editing) return; // audit 47 langedit
   try { frame.contentWindow.location.reload(); } catch { frame.setAttribute("src", frame.getAttribute("src")); } // the same Note, the same place, read again
 }
 

@@ -113,6 +113,10 @@ function followAppLang(overlay, rebuild) {
   });
 }
 
+// Audit 47: a unit's `label` and a person's `name` may be functions, so the open dialog can be written again in the
+// language chosen while it is on screen (followAppLang). A plain string is used as it is.
+const live = (x) => (typeof x === "function" ? x() : x);
+
 function escapeHtml(s) {
   return (s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
@@ -193,7 +197,7 @@ function renderPopoverInner(defaultName, folders, people, defaultPersonTagId, ro
     ? `<label class="bm-popover-field" data-bm-pop-person-row>${t("For")}
         <select data-bm-pop-person>
           <option value="">${t("No one in particular")}</option>
-          ${people.map((p) => `<option value="${p.id}" ${p.id === defaultPersonTagId ? "selected" : ""}>${escapeHtml(p.name)}</option>`).join("")}
+          ${people.map((p) => `<option value="${p.id}" ${p.id === defaultPersonTagId ? "selected" : ""}>${escapeHtml(live(p.name))}</option>`).join("")}
         </select>
       </label>`
     : "";
@@ -206,7 +210,7 @@ function renderPopoverInner(defaultName, folders, people, defaultPersonTagId, ro
     .map((p) => {
       const checked = p.id === selectedPersonId ? "checked" : "";
       const tag = p.isSelf ? `<span class="who-tag">${t("you")}</span>` : "";
-      return `<label class="bm-pop-assignee-row"><input type="checkbox" value="${p.id}" data-name="${escapeHtml(p.name)}" ${checked}><span class="who-name">${escapeHtml(p.name)}</span>${tag}</label>`;
+      return `<label class="bm-pop-assignee-row"><input type="checkbox" value="${p.id}" data-name="${escapeHtml(live(p.name))}" ${checked}><span class="who-name">${escapeHtml(live(p.name))}</span>${tag}</label>`;
     })
     .join("");
   // PCF MSA J42: a one-tap "Everyone in the family" as the first row (2+ people). It is not an assignee: the
@@ -237,7 +241,7 @@ function renderPopoverInner(defaultName, folders, people, defaultPersonTagId, ro
   const unitRow = units && units.length >= 2
     ? `<div class="bm-pop-unit-row" data-bm-pop-unit-row><span id="bmPopUnitLabel">${t("Bookmark")}</span>
         <div class="bm-pop-units" role="radiogroup" aria-labelledby="bmPopUnitLabel">${units.map((u, i) =>
-          `<button type="button" role="radio" aria-checked="${i === 0 ? "true" : "false"}" data-bm-pop-unit="${escapeHtml(u.id)}">${escapeHtml(u.label)}</button>`).join("")}</div>
+          `<button type="button" role="radio" aria-checked="${i === 0 ? "true" : "false"}" data-bm-pop-unit="${escapeHtml(u.id)}">${escapeHtml(live(u.label))}</button>`).join("")}</div>
       </div>`
     : "";
   return `<div class="bm-popover" role="dialog" aria-modal="true" aria-label="${t("Bookmark this")}">
