@@ -3,8 +3,16 @@
 //
 // Run from the repository root, with serve.js on :8080. Expected values are
 // written BY HAND from the issue, never computed by the code under test.
+// QR Lead (the Owner, 24 Oct 2026, a tablet screenshot: "Place three marked buttons under a single button that opens them
+// so that Surah name can be displayed properly"; "Not the bookmark, only other 3"): from 600 to 1023px the three sit
+// behind one "Study ▾" button; the surah name is shown whole (the longest, Al-Munaafiqoon, at every width from 600px).
+//   --mutate=no-menu   the tablet rule is switched off (the three pills back on the top line); the suite must FAIL
 import { chromium, newContext, openPage } from "./harness.mjs";
 import fs from "fs";
+const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
+const MUT = { "no-menu": ["@media (min-width: 600px) and (max-width: 1023.98px) {\n    body.read-from-contents.immersive-read.fs-hide-readbar.fs-hide-transport #readQuickRow { position: relative; }", "@media (max-width: 0px) {\n    body.read-from-contents.immersive-read.fs-hide-readbar.fs-hide-transport #readQuickRow { position: relative; }"] };
+if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
+const TABLET = (w) => w >= 600 && w < 1024;
 const REAL = fs.readFileSync("mushaf/mushaf-madani-v2.json");
 const MUSHAF_JSON_URL = "https://raw.githubusercontent.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/main/mushaf/mushaf-madani-v2.json";
 const MUSHAF_FONT_BASE = "https://verses.quran.foundation/fonts/quran/hafs/v2/woff2/";
@@ -16,6 +24,14 @@ const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PAT
 
 async function start({ lang = "en", width = 390, height = 844, look = "night" } = {}) {
   const ctx = await newContext(browser, { appLang: lang, banner: false, viewport: { width, height } });
+  if (MUTATE) {
+    const [from, to] = MUT[MUTATE];
+    await ctx.route("**/app/quranrevival.html*", async (r) => {
+      const res = await r.fetch(); const body = await res.text();
+      if (body.split(from).length !== 2) throw new Error(`mutation ${MUTATE}: anchor not found exactly once`);
+      r.fulfill({ response: res, body: body.replace(from, to) });
+    });
+  }
   await ctx.addInitScript((lk) => {
     try { localStorage.setItem("mm_card_look", lk); } catch (e) {}
     window.__played = 0;
@@ -59,6 +75,7 @@ const measure = (page) => page.evaluate(() => {
   const row = document.getElementById("readQuickRow"), rr = R(row);
   const btns = [...row.querySelectorAll(".rq-btn")].map(R);
   const hide = R(document.getElementById("hideChromeBtn")), ref = R(document.getElementById("mushafPageRef"));
+  const menu = R(row.querySelector("[data-rq-menu]"));
   const bar = document.getElementById("readBar"), de = document.documentElement;
   // Words on the page in view (left edge on screen), lowest bottom.
   let last = 0;
@@ -83,6 +100,8 @@ const measure = (page) => page.evaluate(() => {
     between: btns[0].left >= ref.right - 0.5 && btns[2].right <= hide.left + 0.5, refShown: ref.width > 0,
     barOneLine: Math.max(...tops) - Math.min(...tops) <= 4, barH: Math.round(R(bar).height),
     lastWordBottom: last, fixed: getComputedStyle(row).position,
+    menuCtr: menu.top + menu.height / 2, menuBetween: menu.width > 0 && menu.left >= ref.right - 0.5 && menu.right <= hide.left + 0.5,
+    itemsBelowBar: btns.every((b) => b.top >= R(bar).bottom - 0.5), oneColumn: btns.every((b) => Math.abs(b.left - btns[0].left) < 1),
   };
 });
 
@@ -92,6 +111,13 @@ for (const lang of ["en", "bn"]) {
     const { ctx, page } = await start({ lang, width, height: width >= 768 ? 1024 : 800 });
     await pick(page, "surah", 67);
     const tag = `[${lang} ${width}]`;
+    if (TABLET(width)) {
+      // UPDATED IN PLACE (QR Lead, the Owner 24 Oct 2026): on a tablet the three open from one "Study ▾" button.
+      const closed = await page.evaluate(() => { const b = document.querySelector("#readQuickRow [data-rq-menu]"), r = b.getBoundingClientRect(); return { w: r.width, txt: b.textContent.trim(), exp: b.getAttribute("aria-expanded"), items: [...document.querySelectorAll("#readQuickRow .rq-btn")].filter((x) => x.getBoundingClientRect().width > 0).length }; });
+      check(`${tag} closed: one "${lang === "en" ? "Study" : "অধ্যয়ন"} ▾" button, the three not on screen`, closed.w > 0 && closed.txt.startsWith(lang === "en" ? "Study" : "অধ্যয়ন") && closed.exp === "false" && closed.items === 0, JSON.stringify(closed));
+      if (closed.w > 0) { await page.click("#readQuickRow [data-rq-menu]"); await page.waitForTimeout(200); }
+      check(`${tag} pressed: the button says it is open (aria-expanded)`, await page.evaluate(() => document.querySelector("#readQuickRow [data-rq-menu]").getAttribute("aria-expanded") === "true"));
+    }
     check(`${tag} the three buttons are visible in the bare state`, await shown(page));
     check(`${tag} labelled ${want.join(" / ")}`, JSON.stringify(await labels(page)) === JSON.stringify(want), JSON.stringify(await labels(page)));
     const m = await measure(page);
@@ -102,6 +128,16 @@ for (const lang of ["en", "bn"]) {
       check(`${tag} fixed row at the bottom of the screen`, m.fixed === "fixed" && m.row.bottom >= m.vh - 0.5, JSON.stringify(m.row));
       check(`${tag} one line, three equal widths`, Math.max(...m.widths) - Math.min(...m.widths) <= 1 && m.ctr.every((c) => Math.abs(c - m.ctr[0]) < 1), JSON.stringify(m.widths));
       check(`${tag} the last Mushaf line is not covered by the row`, m.lastWordBottom > 0 && m.lastWordBottom <= m.row.top + 0.5, `last word bottom ${m.lastWordBottom} vs row top ${m.row.top}`);
+    } else if (TABLET(width)) {
+      check(`${tag} "Study ▾" on the top line, same centre as the full-screen button`, Math.abs(m.menuCtr - m.hideCtr) < 4, `${m.menuCtr} vs ${m.hideCtr}`);
+      check(`${tag} "Study ▾" between the page reference and the full-screen button`, m.menuBetween && m.refShown, JSON.stringify(m));
+      check(`${tag} opened: the three in one column below the bar`, m.itemsBelowBar && m.oneColumn, JSON.stringify(m));
+      check(`${tag} #readBar still one line`, m.barOneLine, `bar height ${m.barH}`);
+      await page.keyboard.press("Escape"); await page.waitForTimeout(200);
+      check(`${tag} Esc closes it`, await page.evaluate(() => !document.querySelector("#readQuickRow").classList.contains("rq-open") && document.querySelector("#readQuickRow [data-rq-menu]").getAttribute("aria-expanded") === "false" && document.getElementById("readQuickNoteBtn").getBoundingClientRect().width === 0));
+      await page.locator("#readQuickRow [data-rq-menu]").click({ timeout: 3000 }).catch(() => {}); await page.waitForTimeout(200);
+      await page.mouse.click(Math.round(width / 2), 500); await page.waitForTimeout(200);
+      check(`${tag} a tap elsewhere closes it`, await page.evaluate(() => document.getElementById("readQuickNoteBtn").getBoundingClientRect().width === 0));
     } else {
       check(`${tag} on the top line, same centre as the full-screen button`, m.ctr.every((c) => Math.abs(c - m.hideCtr) < 4), JSON.stringify(m.ctr) + " vs " + m.hideCtr);
       check(`${tag} between the page reference and the full-screen button`, m.between && m.refShown, JSON.stringify(m));
@@ -203,6 +239,37 @@ for(const [name, tab, n] of [["surah 67", "surah", 67], ["page 50", "page", 50]]
   }
 }
 
+// ---- the surah name is whole: the longest name (Al-Munaafiqoon, 63) at every width from 600px (the Owner's 600px tablet first)
+for (const width of [600, 680, 768, 900, 1023, 1024, 1280]) {
+  const { ctx, page } = await start({ width, height: width >= 768 ? 1024 : 960 });
+  await pick(page, "surah", 63);
+  await page.waitForFunction(() => !!document.getElementById("mushafPageRef")?.dataset.page, null, { timeout: 15000 }).catch(() => {});
+  await page.waitForTimeout(500);
+  const r = await page.evaluate(() => { const t = document.querySelector("#mushafPageRef .mushaf-page-ref-text"); return { text: t?.textContent ?? "", need: t?.scrollWidth ?? 0, has: t?.clientWidth ?? 0 }; });
+  check(`[name ${width}] POSITIVE CONTROL the reference names Al-Munaafiqoon`, /Munaafiqoon/.test(r.text), JSON.stringify(r));
+  check(`[name ${width}] the surah name is shown whole (${r.need}px in ${r.has}px)`, r.has > 0 && r.need <= r.has + 0.5, JSON.stringify(r));
+  await ctx.close();
+}
+
+// ---- on a tablet each of the three still does its job from the menu, and choosing one closes it
+for (const which of ["Note", "Track", "Approach"]) {
+  const { ctx, page } = await start({ width: 820, height: 1180 });
+  await pick(page, "surah", 67);
+  await page.locator("#readQuickRow [data-rq-menu]").click({ timeout: 3000 }).catch(() => {}); await page.waitForTimeout(200);
+  await page.click(`#readQuick${which}Btn`); await page.waitForTimeout(800);
+  const tag = `[tablet 820] Study ▾ -> ${which}`;
+  if (which === "Note") {
+    await page.waitForFunction(() => !document.getElementById("readNotePane")?.hidden, null, { timeout: 8000 }).catch(() => {});
+    check(`${tag}: opens the Notes pane`, await page.evaluate(() => !!document.getElementById("readNotePane") && !document.getElementById("readNotePane").hidden));
+  } else if (which === "Track") {
+    check(`${tag}: opens the Unit Card`, await page.evaluate(() => document.getElementById("ayahActionSheetOverlay").classList.contains("open") && [...document.querySelectorAll("#ayahActionSheetMount [data-unit-card]")].some((e) => e.getBoundingClientRect().width > 0)));
+  } else {
+    check(`${tag}: opens the wheel (Approach) view`, await page.evaluate(() => !document.getElementById("wheelPopupView").hidden && document.getElementById("readView").hidden));
+  }
+  check(`${tag}: choosing it closed the menu`, await page.evaluate(() => !document.getElementById("readQuickRow").classList.contains("rq-open") && document.querySelector("#readQuickRow [data-rq-menu]").getAttribute("aria-expanded") === "false"));
+  await ctx.close();
+}
+
 // ---- rendered contrast of a label against its own background, both looks
 const lum = ([r, g, b]) => { const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }; return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b); };
 for (const look of ["night", "light"]) {
@@ -219,5 +286,5 @@ for (const look of ["night", "light"]) {
 }
 
 await browser.close();
-console.log(`\n${pass} passed, ${fail} failed`);
+console.log(`\n${pass} passed, ${fail} failed${MUTATE ? ` (mutation: ${MUTATE})` : ""}`);
 process.exit(fail ? 1 : 0);

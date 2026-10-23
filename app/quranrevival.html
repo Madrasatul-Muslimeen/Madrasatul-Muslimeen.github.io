@@ -2845,7 +2845,22 @@
   #readQuickRow { display: none; gap: 0.4rem; flex: 0 0 auto; }
   #readQuickRow[hidden] { display: none !important; }
   body.read-from-contents.immersive-read.fs-hide-readbar.fs-hide-transport #readQuickRow { display: flex; }
-  #readQuickRow .rq-btn {
+  /* QR Lead (the Owner, 24 Oct 2026): the three behind one "Study ▾" pill from 600 to 1023px (see the markup). Elsewhere the
+     wrapper is display: contents, so the three are laid out exactly as before. */
+  #readQuickRow .rq-items { display: contents; }
+  #readQuickRow .rq-menu-btn { display: none; }
+  @media (min-width: 600px) and (max-width: 1023.98px) {
+    body.read-from-contents.immersive-read.fs-hide-readbar.fs-hide-transport #readQuickRow { position: relative; }
+    body.read-from-contents.immersive-read.fs-hide-readbar.fs-hide-transport #readQuickRow .rq-menu-btn { display: inline-flex; align-items: center; gap: 0.25rem; }
+    body.read-from-contents.immersive-read.fs-hide-readbar.fs-hide-transport #readQuickRow .rq-items {
+      display: none; position: absolute; top: calc(100% + 6px); right: 0; z-index: 70; flex-direction: column; gap: 0.4rem;
+      min-width: 10rem; padding: 0.5rem; box-sizing: border-box; background: #fff; border: 1px solid #e3d6b0;
+      border-radius: 0.75rem; box-shadow: 0 6px 20px rgba(19, 25, 42, 0.22);
+    }
+    body.read-from-contents.immersive-read.fs-hide-readbar.fs-hide-transport #readQuickRow.rq-open .rq-items { display: flex; }
+    #readQuickRow .rq-items .rq-btn { min-height: 40px; width: 100%; }
+  }
+  #readQuickRow .rq-btn, #readQuickRow .rq-menu-btn {
     flex: 0 0 auto; min-height: 36px; box-sizing: border-box; padding: 0 10px; margin: 0;
     font: inherit; font-size: 0.82rem; font-weight: 600; line-height: 1; white-space: nowrap;
     color: #5e4418; background: #fdf6e3; border: 1px solid #b8963a; border-radius: 999px; cursor: pointer;
@@ -6057,10 +6072,17 @@
           <button type="button" class="secondary qr-ico" id="readStopBtn" aria-label="Stop" title="Stop">■</button>
           <!-- Issue #419 -- see the #readQuickRow CSS for when it shows. Each
                button calls the same named function as the control it mirrors. -->
+          <!-- QR Lead (the Owner, 24 Oct 2026, a tablet screenshot: "Place three marked buttons under a single button that
+               opens them so that Surah name can be displayed properly" -- "Not the bookmark, only other 3"): from 600 to
+               1023px the three sit behind one "Study ▾" pill ([data-rq-menu]); see the #readQuickRow CSS. Below 600px they
+               stay the bottom row and from 1024px three pills; there [data-rq-items] is display: contents. -->
           <div id="readQuickRow" data-zab-lift>
-            <button type="button" class="rq-btn" id="readQuickNoteBtn">Notes</button>
-            <button type="button" class="rq-btn" id="readQuickTrackBtn">Record</button>
-            <button type="button" class="rq-btn" id="readQuickApproachBtn">Approach</button>
+            <button type="button" class="rq-menu-btn" data-rq-menu aria-haspopup="true" aria-expanded="false">Study<span aria-hidden="true">▾</span></button>
+            <div class="rq-items" data-rq-items>
+              <button type="button" class="rq-btn" id="readQuickNoteBtn">Notes</button>
+              <button type="button" class="rq-btn" id="readQuickTrackBtn">Record</button>
+              <button type="button" class="rq-btn" id="readQuickApproachBtn">Approach</button>
+            </div>
           </div>
           <!-- 10 Oct 2026: 📖 Meaning, ⤢, 🗗 and ⋯ (with its tools) are ONE group at the bar's right end, so on a phone they
                wrap to their own line together (the demo's shape) instead of ⤢ and ⋯ falling onto a line by themselves.
@@ -11656,6 +11678,19 @@
     document.getElementById("readQuickNoteBtn").addEventListener("click", () => openReadNotesPane());
     document.getElementById("readQuickTrackBtn").addEventListener("click", openChosenUnitCard);
     document.getElementById("readQuickApproachBtn").addEventListener("click", openApproachWheel);
+    // QR Lead (the Owner, 24 Oct 2026): "Study ▾" opens the three on a tablet; choosing one, tapping elsewhere or Esc closes it.
+    {
+      const row = document.getElementById("readQuickRow"), menuBtn = row.querySelector("[data-rq-menu]");
+      const setOpen = (open) => { row.classList.toggle("rq-open", open); menuBtn.setAttribute("aria-expanded", String(open)); };
+      menuBtn.addEventListener("click", () => {
+        const open = !row.classList.contains("rq-open");
+        setOpen(open);
+        if (open) row.querySelector("[data-rq-items] .rq-btn")?.focus();
+      });
+      row.querySelector("[data-rq-items]").addEventListener("click", () => setOpen(false));
+      document.addEventListener("click", (e) => { if (row.classList.contains("rq-open") && !row.contains(e.target)) setOpen(false); });
+      document.addEventListener("keydown", (e) => { if (e.key === "Escape" && row.classList.contains("rq-open")) { setOpen(false); menuBtn.focus(); } });
+    }
 
     // Ayah Collections round 2 -- Explore as a real #stage view, same
     // "tap the open tab to close it" idiom as Read/Note/Approach, replacing
