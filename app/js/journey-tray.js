@@ -7,7 +7,8 @@
 //
 // The plain link keeps working: with this module absent, or in a new tab, the
 // href opens journey-map.html as a full page as it always did.
-import { t } from "./i18n.js";
+import { t, ensureCatalogueReady } from "./i18n.js";
+import { onAppLangChange } from "./prefs.js";
 import { HANDLES, handleCss, clampRect, startDrag } from "./float-window.js";
 import { restoreWindow } from "./minimise.js";
 
@@ -97,8 +98,29 @@ function build() {
     tray.appendChild(d);
   }
   document.body.appendChild(tray);
+  onAppLangChange(relabel); // audit 47 langtray
   window.addEventListener("resize", apply);
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !tray.hidden) closeJourneyTray(); });
+}
+
+/** Audit part 47 (PCF MSA J29): quranrevival.html switches language IN PLACE. The window's bar is painted once and the page
+    inside it reads the language only when it loads, so both kept the old language. */
+async function relabel() {
+  if (!tray) return;
+  await ensureCatalogueReady(); // the listeners fire before a first switch to Bangla has its catalogue
+  tray.setAttribute("aria-label", t("Mapping My Journey"));
+  tray.querySelector(".jt-title").textContent = t("Mapping My Journey");
+  const close = tray.querySelector(".jt-close");
+  close.setAttribute("aria-label", t("Close"));
+  close.setAttribute("title", t("Close"));
+  frame.title = t("Mapping My Journey");
+  if (!frame.getAttribute("src")) return; // closed: it loads fresh, in the new language, when it opens
+  // Never under a Note being typed (prefs.js: a reload mid-typing is the worse surprise): it keeps the old language until
+  // it is closed, and every opening loads it fresh.
+  let editing = false;
+  try { editing = !!frame.contentDocument?.querySelector("[data-edit-body]"); } catch { /* not ours */ }
+  if (editing) return; // audit 47 langedit
+  try { frame.contentWindow.location.reload(); } catch { frame.setAttribute("src", frame.getAttribute("src")); } // the same Note, the same place, read again
 }
 
 /** `noteId` (decision 95: "Open in Mapping My Journey" from the Read view's Notes pane) opens that Note in the tray. */

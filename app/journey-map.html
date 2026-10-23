@@ -534,7 +534,7 @@
     import { getAppLang, mountCardLookControl } from "./js/prefs.js";
     import { adoptAppLangFromUserIndex, mountSyncedAppLangControl } from "./js/lang-sync.js";
     import { safeWrite, reportWriteFailure } from "./js/errors.js";
-    import { bootstrapContext, setActiveContext, getSelectedPersonId, setSelectedPersonId } from "./js/session-context.js";
+    import { getMyMembershipRoles, hydrateMemberships, pickContext, setActiveContext, getSelectedPersonId, setSelectedPersonId } from "./js/session-context.js";
     import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
     import { translateStatic, t } from "./js/i18n.js";
     import { mountAccountCard } from "./js/account-card.js";
@@ -4445,23 +4445,34 @@
       signOutBtn.style.display = "inline-block";
 
       try {
+        // Audit part 52 (the notes.html pattern, issue #291): userIndex and the ROLES-ONLY membership query are
+        // fired together; pickContext() only reads tenantId/personId/roles. The tenant names (hydrateMemberships)
+        // arrive beside the page's own reads and fill the tenant picker in without holding the folder view back.
+        const membershipRolesPromise = getMyMembershipRoles(db, user.uid);
+        membershipRolesPromise.catch(() => {}); // the real await is below; this only stops a reload (adoptAppLangFromUserIndex) logging it as unhandled.
         const userIndexSnap = await getDoc(doc(db, TENANT.USER_INDEX, user.uid));
         if (adoptAppLangFromUserIndex(userIndexSnap)) return;
         const defaultTenantId = userIndexSnap.exists() ? userIndexSnap.data().defaultTenantId : null;
-        const { context, memberships } = await bootstrapContext(db, user.uid, defaultTenantId);
+        const membershipRoles = await membershipRolesPromise;
+        const context = pickContext(membershipRoles, defaultTenantId);
         if (!context) {
           whoEl.innerHTML += noAccountMessageHtml();
           return;
         }
         activeTenantId = context.tenantId;
-        myMemberships = memberships;
-        tenantSelect.innerHTML = myMemberships
-          .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${roleListLabel(m.roles)})</option>`)
-          .join("");
+        myMemberships = membershipRoles;
+        const hydratedMembershipsPromise = hydrateMemberships(db, membershipRoles);
+        hydratedMembershipsPromise.catch(() => {}); // the failure surfaces through the awaited copy below.
+        const hydrationDone = hydratedMembershipsPromise.then((hydrated) => {
+          myMemberships = hydrated;
+          tenantSelect.innerHTML = myMemberships
+            .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${roleListLabel(m.roles)})</option>`)
+            .join("");
+        });
 
         renderToggle();
         appEl.style.display = "block";
-        await loadContextData();
+        await Promise.all([loadContextData(), hydrationDone]);
       } catch (err) {
         console.error(err);
         whoEl.textContent += ` — ${err.message}`;

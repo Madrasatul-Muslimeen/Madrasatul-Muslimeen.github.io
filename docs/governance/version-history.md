@@ -937,3 +937,11 @@ total). Allocated by the MMSA Architect.
 12.33: audit part 45: Bookmark menu fills on four shared pages; three student fixes. Allocated by the MMSA Architect.
 12.34: QR language switch in place; Word card way back in its top row; audit part 46. Allocated by the MMSA Architect.
 12.35: sign-in helper pages on both sites (switch off); a tap-size detector fix. Allocated by the MMSA Architect.
+12.36: audit part 47 (shared parts follow QR's language switch) and the QR Lead's J87. Allocated by the MMSA Architect.
+12.37: audit 47's QR findings (Āyah card, Notes pane label, Bookmark popover) and relabelReadNotePane. Allocated by the MMSA Architect.
+12.38: audit part 48 part 2 (Zab bar and worker install wait for the page). Allocated by the MMSA Architect.
+12.39: audit part 50 part 1 (QR modulepreload). Allocated by the MMSA Architect.
+12.40: the QR Lead's surah warm + page icon (#1081). Allocated by the MMSA Architect.
+12.41: audit part 51 (My Notes and Mapping My Journey load speed). Allocated by the MMSA Architect.
+12.42: the QR Lead's comment strip in QR's build (#1085). Allocated by the MMSA Architect.
+12.43: audit part 52 (Journey and tool pages start-up reads together). Allocated by the MMSA Architect.

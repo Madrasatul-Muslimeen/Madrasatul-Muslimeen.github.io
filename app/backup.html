@@ -112,7 +112,7 @@
     import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
     import { TENANT } from "./js/collections.js";
     import { getTenantRosterSnap } from "./js/roster-access.js";
-    import { bootstrapContext } from "./js/session-context.js";
+    import { getMyMembershipRoles, pickContext } from "./js/session-context.js";
     import { renderNavBar, renderHomeExtras } from "./js/nav.js";
     import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     import { adoptAppLangFromUserIndex, mountSyncedAppLangControl } from "./js/lang-sync.js";
@@ -276,10 +276,14 @@
       appEl.style.display = "block";
 
       try {
+        // Audit part 52: userIndex and the roles-only membership query go together; only roles are read off a membership.
+        const membershipsPromise = getMyMembershipRoles(db, user.uid);
+        membershipsPromise.catch(() => {}); // awaited below; this only stops a reload (adoptAppLangFromUserIndex) logging it as unhandled.
         const userIndexSnap = await getDoc(doc(db, TENANT.USER_INDEX, user.uid));
         if (adoptAppLangFromUserIndex(userIndexSnap)) return;
         const defaultTenantId = userIndexSnap.exists() ? userIndexSnap.data().defaultTenantId : null;
-        const { context, memberships } = await bootstrapContext(db, user.uid, defaultTenantId);
+        const memberships = await membershipsPromise;
+        const context = pickContext(memberships, defaultTenantId);
         if (!context) return;
         activeTenantId = context.tenantId;
         myPersonId = context.personId;

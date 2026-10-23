@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "12.35",
+    "version": "12.43",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -4697,8 +4697,104 @@
     {
       "version": "12.35",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "The Owner's J88 part 1: Firebase's sign-in helper pages served from MSA and QR at /__/auth/ (switch SELF_HOSTED_AUTH_HOSTS empty, so sign-in is unchanged until the Owner's Google Cloud step); student-device-browser's small() skips scrolled-out controls.",
+      "integration": {
+        "authorizedOn": "2026-10-23",
+        "integratedOn": "2026-10-23",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.36",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Audit part 47 (PR #1064, finished by the Architect: a Note being typed survives the switch) and the QR Lead's J87 (PR #1068); quran-data.js's generic offline note removed.",
+      "integration": {
+        "authorizedOn": "2026-10-23",
+        "integratedOn": "2026-10-23",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.37",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "The QR Lead's J90 (#1070) and bmUnits (#1074) with the shared relabelReadNotePane() hook: the last audit-47 findings fixed.",
+      "integration": {
+        "authorizedOn": "2026-10-23",
+        "integratedOn": "2026-10-23",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.38",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Audit part 48 part 2 (PR #1071): sw-register.js mounts the Zab bar after load + idle and starts the worker install after 1 s with no new request; load-speed suite with counted budgets.",
+      "integration": {
+        "authorizedOn": "2026-10-23",
+        "integratedOn": "2026-10-23",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.39",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Audit part 50 part 1 (PR #1079): QR's build writes modulepreload links for quranrevival.html's static import closure, before its first module script.",
+      "integration": {
+        "authorizedOn": "2026-10-23",
+        "integratedOn": "2026-10-23",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.40",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "The QR Lead's PR #1081: QR's worker keeps surahs read before it took over (warm into qr-quran-v1); quranrevival.html declares a data: icon.",
+      "integration": {
+        "authorizedOn": "2026-10-23",
+        "integratedOn": "2026-10-23",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.41",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Audit part 51 (PR #1082): shared-load-speed suite for notes.html and journey-map.html; notes.html reads tags only with a unit, beside the notes read.",
+      "integration": {
+        "authorizedOn": "2026-10-23",
+        "integratedOn": "2026-10-23",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.42",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "The QR Lead's PR #1085 (audit part 50 part 2): QR's build strips comments, line for line, from quranrevival.html's inline module and style and every built app/**/*.js except sw.js and vendor/, verified token by token.",
+      "integration": {
+        "authorizedOn": "2026-10-23",
+        "integratedOn": "2026-10-23",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.43",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Audit part 52 (PR #1084): journey-map, import-notes, about, backup and taglines fire userIndex and roles-only memberships together; bn.js Monitor note fixed.",
       "integration": {
         "authorizedOn": "2026-10-23",
         "integratedOn": "2026-10-23",
@@ -4707,8 +4803,16 @@
       }
     }
   ],
-  "nextUnallocated": "12.36",
+  "nextUnallocated": "12.44",
   "nextUnallocatedNote": [
+    "v12.43 was allocated to audit part 52 (Journey and tool pages start-up reads together), 2026-10-23.",
+    "v12.42 was allocated to the QR Lead's comment strip in QR's build (#1085), 2026-10-23.",
+    "v12.41 was allocated to audit part 51 (My Notes and Mapping My Journey load speed), 2026-10-23.",
+    "v12.40 was allocated to the QR Lead's surah warm + page icon (#1081), 2026-10-23.",
+    "v12.39 was allocated to audit part 50 part 1 (QR modulepreload), 2026-10-23.",
+    "v12.38 was allocated to audit part 48 part 2 (Zab bar and worker install wait for the page), 2026-10-23.",
+    "v12.37 was allocated to audit 47's QR findings (Āyah card, Notes pane label, Bookmark popover) and relabelReadNotePane, 2026-10-23.",
+    "v12.36 was allocated to audit part 47 (shared parts follow QR's language switch) and the QR Lead's J87, 2026-10-23.",
     "v12.35 was allocated to sign-in helper pages on both sites (switch off); a tap-size detector fix, 2026-10-23.",
     "v12.34 was allocated to QR language switch in place; Word card way back in its top row; audit part 46, 2026-10-23.",
     "v12.33 was allocated to audit part 45: Bookmark menu fills on four shared pages; three student fixes, 2026-10-23.",

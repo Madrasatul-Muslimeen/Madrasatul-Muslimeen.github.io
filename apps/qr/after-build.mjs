@@ -13,6 +13,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import { stripSite } from "./strip-site.mjs";
 
 const out = path.resolve(process.argv[2] || "");
 // The settings the build used (it passes them in, so a test's settings are honoured), else app/apps/qr.json.
@@ -36,6 +37,15 @@ if (settings.status !== "draft" && settings.minVersion && below(version, setting
 }
 fs.writeFileSync(app("js/qr-version.js"),
   `// Written by apps/qr/after-build.mjs: QR shares MSA's one version number (QR J22, PCA J110).\nexport const APP_VERSION = ${JSON.stringify(version)};\n`);
+
+// Audit part 50, part 2 (PCF MSA J29): about half of what a first visit downloaded was COMMENTS. The built page's inline module and
+// style, and every built app/**/*.js but the worker and vendor/, lose theirs here (apps/qr/strip-site.mjs; lines and every token kept,
+// each file checked by apps/qr/verify-strip.mjs, and the build stops on any difference). The source keeps every comment; MSA's build
+// never reaches this step.
+// Before the worker's list, so its size is what a phone saves.
+let strip;
+try { strip = stripSite(out, { keepBefore: process.env.QR_STRIP_BEFORE || "" }); }
+catch (e) { console.error(`after-build: ${e.message}`); process.exit(1); }
 
 function shellList(sw) {
   const seen = new Set();
@@ -79,4 +89,42 @@ const SHELL = ${JSON.stringify(list, null, 2)};
 const missing = [...precacheList(sw), ...list].filter((f) => !fs.existsSync(path.join(out, "app", f)));
 if (missing.length) { console.error(`after-build: the worker's install list names files the build does not have: ${missing.join(", ")}`); process.exit(1); }
 fs.writeFileSync(app("sw.js"), sw);
-console.log(JSON.stringify({ written: ["app/js/qr-version.js", "app/sw.js"], version, shell: list.length, bytes }));
+
+// Audit part 50 (PCF MSA J29): QR's first visit took 8 s to a usable picker, mostly the module waterfall (137 files whose
+// imports are found one hop at a time). The page's STATIC import closure (never import()) is written into the page (see WHERE) as
+// modulepreload links, so the browser asks for all of them at once. Generated here, never hand-written, so it cannot go
+// stale. QR-only because this step runs for QR alone (MSA's build never reaches it and stays byte for byte); not an
+// edits.json edit because an edit is a fixed text and this list changes whenever anyone adds an import.
+const STATIC_IMPORT = /(?:import|export)\s[^'"();]*?from\s*["'](\.{1,2}\/[^"']+\.js)["']|import\s+["'](\.{1,2}\/[^"']+\.js)["']/g;
+function staticClosure(pageFile) {
+  const html = fs.readFileSync(pageFile, "utf8");
+  const seen = new Set();
+  const walk = (src, dir) => {
+    for (const m of src.matchAll(STATIC_IMPORT)) {
+      const p = path.normalize(path.join(dir, m[1] || m[2]));
+      if (seen.has(p) || !fs.existsSync(p)) continue;
+      seen.add(p);
+      walk(fs.readFileSync(p, "utf8"), path.dirname(p));
+    }
+  };
+  for (const m of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)) {
+    if (!/type="module"/.test(m[1])) continue;
+    const s = m[1].match(/\ssrc="(?:\.\/)?([^"#?]+\.js)"/);
+    if (s) { const p = path.join(path.dirname(pageFile), s[1]); if (fs.existsSync(p) && !seen.has(p)) { seen.add(p); walk(fs.readFileSync(p, "utf8"), path.dirname(p)); } }
+    else walk(m[2], path.dirname(pageFile));
+  }
+  return [...seen].map((f) => "./" + path.relative(path.dirname(pageFile), f).split(path.sep).join("/")).sort();
+}
+const page = app("quranrevival.html");
+const links = staticClosure(page);
+if (!links.length) { console.error("after-build: quranrevival.html has no static module imports to preload (the walker is broken)"); process.exit(1); }
+// WHERE: just before the page's first module script, not at the top of <head>. Measured (390 px, 1.6 Mbps / 150 ms, student,
+// 24 Oct 2026): top of <head> made the picker usable at 7053 ms but put first paint at 1548 ms (main: 888), because 1.1 MB
+// of modules then shared the link with the 456 KB <head> and the landing markup; before the first module script, first
+// paint stays 884 ms and usable is 7489 ms; at the end of <body> nothing was gained (8096 ms).
+const pageHtml = fs.readFileSync(page, "utf8");
+const firstModule = pageHtml.search(/<script\b[^>]*type="module"/);
+if (firstModule < 0) { console.error("after-build: quranrevival.html has no module script to put the preloads before"); process.exit(1); }
+fs.writeFileSync(page, pageHtml.slice(0, firstModule) + links.map((h) => `<link rel="modulepreload" href="${h}">`).join("\n") + "\n" + pageHtml.slice(firstModule));
+
+console.log(JSON.stringify({ written: ["app/js/qr-version.js", "app/sw.js", "app/quranrevival.html"], version, shell: list.length, bytes, modulepreload: links.length, stripped: strip }));
