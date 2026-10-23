@@ -22287,3 +22287,10 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 - **`app/apps/qr.json`** (declared shared change, approved by the MSA Architect): `site` += `"root-sw.js"`. `msa.json` untouched.
 - **New QR check `tools/apps/qr-verify/qr-root-offline-browser.mjs`** (run-all's 28th): 26/0 at 390 and 1400; mutations `noreg` 7, `nofallback` 5, `cachefirst` 2, `writes` 3, `killone` 1 fail. `apps-build-check` 48/0.
 - Nothing stored, no Rules changed.
+
+## v12.46 — 24 Oct 2026 — Study modules and teaching pages by the User Manual (audit part 54)
+
+- **`app/course-offers.html`, `app/curriculum.html`** (Builder round #1090, PR #1091): `.muted` help text `#888` → `#666` (3.54:1 → 5.74:1 on white).
+- **New `tools/i18n-verify/audit-part54-study-teach-browser.mjs`:** Deen Study, Arabic Study, People (Hand the device, View as), Classes, Course Offers, Curriculum and Catalogue, opened directly and with `?inWindow=1`, at 390 / 820 / 1280, English and Bangla, as the owner: positive control on screen, no sideways scroll, no cut or covered control, ← Back and finger controls ≥ 40px, text 4.5:1 on its real background, no English left in Bangla; every control the User Manual names exists and is not covered; the four hidden modules are absent from the menu and an old link still opens each. 938/0. `--mutate=offersmuted` and `--mutate=curriculummuted` fail 12 each.
+- Checks: `audit-part17-teaching-browser` 868/0, `bangla-sweep-other-pages-browser` 224/0.
+- **Not reached** (audit part 55, Builder round #1092): driving the Hand-the-device, View-as, Continue, create/enrol flows; the student pass. Routines (`ldog-study.html`) are QR's. Nothing stored, no Rules changed.
