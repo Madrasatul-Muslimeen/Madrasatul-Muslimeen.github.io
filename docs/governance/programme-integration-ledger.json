@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "12.31",
+    "version": "12.32",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -4649,8 +4649,20 @@
     {
       "version": "12.31",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "v12.31: audit part 44 (PR #1049): a signed-out reader gets Language and Card look in Home; new QR check student-browser (QR now 22 checks).",
+      "integration": {
+        "authorizedOn": "2026-10-23",
+        "integratedOn": "2026-10-23",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.32",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "The MSA-QR-LEAD's PR #1053 (the Owner's J84): Mushaf ‹ › move exactly one printed page, the strip shows only whole pages, every way into Read gets the Surah-list bar, and the list-collapse button has a 40px tap area.",
       "integration": {
         "authorizedOn": "2026-10-23",
         "integratedOn": "2026-10-23",
@@ -4659,8 +4671,9 @@
       }
     }
   ],
-  "nextUnallocated": "12.32",
+  "nextUnallocated": "12.33",
   "nextUnallocatedNote": [
+    "v12.32 was allocated to QR Lead J84: Mushaf ‹ › one page, whole pages, one Read, 2026-10-23.",
     "v12.31 was allocated to audit part 44: QR as a student; Language for a signed-out reader, 2026-10-23.",
     "v12.30 was allocated to audit part 43: the tool and admin pages, 2026-10-23.",
     "v12.29 was allocated to Language first in Home (MSA and QR); audit part 42; A± sliders below their tile, 2026-10-23.",

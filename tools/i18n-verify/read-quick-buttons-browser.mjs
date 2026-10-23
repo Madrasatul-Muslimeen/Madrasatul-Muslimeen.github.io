@@ -119,7 +119,8 @@ for (const lang of ["en", "bn"]) {
   await page.click("#tabReadBtn");
   await page.waitForFunction(() => document.body.classList.contains("immersive-read"));
   await page.waitForTimeout(400);
-  check("Study-menu Read (Mushaf ticked, bare): NO quick buttons", !(await shown(page)));
+  // UPDATED IN PLACE (QR Lead, the Owner 23 Oct 2026: "I want both read to be the same"): Study -> Read now shows them.
+  check("Study-menu Read (Mushaf ticked, bare): the quick buttons show, as on the list route", await shown(page));
   await ctx.close();
 }
 {
@@ -142,7 +143,8 @@ for (const lang of ["en", "bn"]) {
   await page.click("#tabReadBtn");
   await page.waitForFunction(() => document.body.classList.contains("immersive-read"));
   await page.waitForTimeout(400);
-  check("coming back through the Study menu does NOT bring them back", !(await shown(page)));
+  // UPDATED IN PLACE (QR Lead, the Owner 23 Oct 2026): every way into Read is the same, so they come back.
+  check("coming back through the Study menu brings them back (every Read is the same)", await shown(page));
   await ctx.close();
 }
 
