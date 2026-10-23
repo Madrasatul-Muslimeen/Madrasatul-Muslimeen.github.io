@@ -1,6 +1,8 @@
 {
-  "beforePaintRequests": { "in": 140, "out": 140 },
-  "beforePaintModules": { "in": 136, "out": 136 },
+  "_note": "Counted budgets for load-speed-browser.mjs, measured on v12.35 (390 wide, English). Timings are never budgeted. beforePaintRequests: html + 2 stylesheets. modulesToUsable: JS files fetched until the window load event, after the audit-part-48 fixes (the Zab bar waits for load; main before them: 135 student / 136 signed-out). startupReads: Firestore reads of the signed-in student's first visit (tenantMemberUids, userIndex, tenants, tenantPeople, trackables, enrollments, records); signed-out reads nothing. secondVisitNetwork: the page's network fetches plus the worker's background refreshes on the second visit.",
+  "readsBeforePaint": { "in": 0, "out": 0 },
+  "beforePaintRequests": { "in": 3, "out": 3 },
+  "modulesToUsable": { "in": 133, "out": 133 },
   "startupReads": { "in": 7, "out": 0 },
-  "secondVisitNetwork": { "in": 0, "out": 0 }
+  "secondVisitNetwork": { "in": 4, "out": 2 }
 }
