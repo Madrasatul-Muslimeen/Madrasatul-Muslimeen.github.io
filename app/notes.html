@@ -458,7 +458,8 @@
     }
     async function loadTags() {
       tags = []; tagLinks = [];
-      if (!tagsReady() || !activeTenantId || !selectedPersonId) return;
+      // Audit part 51: with no Study Unit in the address the page draws no note cards, so nothing reads the tags.
+      if (!unitKey || !tagsReady() || !activeTenantId || !selectedPersonId) return;
       try {
         [tags, tagLinks] = await Promise.all([
           allPages((after) => listNoteTagsForOwnerPage(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, status: NOTE_STATUS.ACTIVE, after })),
@@ -475,8 +476,9 @@
     async function refreshView() {
       renderUnitBanner();
       renderReadOnlyBanner();
-      await loadTags();
-      if (!unitKey || !selectedPersonId) { currentRows = []; truncatedMsg.style.display = "none"; renderNotesList(); return; }
+      // Audit part 51: the tag reads run beside the notes read (they were one after the other) and are awaited before the cards are drawn.
+      const tagsDone = loadTags();
+      if (!unitKey || !selectedPersonId) { await tagsDone; currentRows = []; truncatedMsg.style.display = "none"; renderNotesList(); return; }
       try {
         const { rows, truncated } = await notesForStudyUnit(db, {
           tenantId: activeTenantId, ownerPersonId: selectedPersonId, unitKey,
@@ -490,6 +492,7 @@
         currentRows = [];
         unitBanner.innerHTML = `${escapeHtml(t("This screen could not read Notes for that unit."))} (${escapeHtml(err.message)})`;
       }
+      await tagsDone;
       renderNotesList();
       noteViews.sync(); // a window whose Note was removed closes; the rest show what was just loaded
       if (autoDawahRequested && !autoDawahAttempted) {
