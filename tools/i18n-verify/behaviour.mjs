@@ -1960,7 +1960,7 @@ console.log("\n=== 30. Shell round 18: unit numbers, transport, reading view ===
   check("30j prev unit, prev āyah, next āyah, next unit, play, stop, full screen, bookmark and reading-complete are on the reading screen",
         // v11.35 (QR J16 = PCF MSA J37) -- #readMushafBtn (📜) joined #readBarEnd before 📖. Updated in place, reason recorded.
   // v12.16 (J63, 21 Oct 2026: "Attach to QCR tile") -- #readAttachQcrBtn joined the tools after #readAttachAsmaBtn. Updated in place, reason recorded.
-        transport.visible && JSON.stringify(transport.buttons) === '["readListBtn","readUnitChip","prevUnitBtn","prevAyahBtn","nextAyahBtn","nextUnitBtn","readPlayBtn","readStopBtn","readBarBookmarkBtn","readMushafBtn","readMeaningBtn","hideChromeBtn","readWindowBtn","readToolsBtn","readBookmarkBtn","readNotesBtn","readCompleteBtn","readWritingBtn","readAttachAsmaBtn","readAttachQcrBtn"]', JSON.stringify(transport));
+        transport.visible && JSON.stringify(transport.buttons) === '["readListBtn","readUnitChip","mushafPagePrevBtn","mushafPageNextBtn","prevUnitBtn","prevAyahBtn","nextAyahBtn","nextUnitBtn","readPlayBtn","readStopBtn","readBarBookmarkBtn","readMushafBtn","readMeaningBtn","hideChromeBtn","readWindowBtn","readToolsBtn","readBookmarkBtn","readNotesBtn","readCompleteBtn","readWritingBtn","readAttachAsmaBtn","readAttachQcrBtn"]', JSON.stringify(transport));
   check("30j the separate 'Whole surah' button is gone (Play follows the unit)", transport.noWholeSurah);
   check("30j the merged button is named Play while nothing is playing",
         /Play|চালান/.test(transport.playLabel) && !/Pause|থামান/.test(transport.playLabel), transport.playLabel);
@@ -2015,8 +2015,9 @@ console.log("\n=== 30l. Round 18's own controls in Bangla ===");
   // v10.27 (the Owner, 12 Oct 2026: "Move those buttons up" and "Add bookmark button on the top of the Mushaf page") -- #readMeaningLayersSlot (the Meaning switches, on the bar while 📖 is on) joined before #readBackSlot, and #readBarBookmarkBtn (🔖 on the Mushaf bar) before 📖; in Mushaf view ⋯'s #readBookmarkBtn steps aside so 🔖 is shown once. Eighteen now, #readBarBookmarkBtn's Bangla name part of the I11 evidence. Updated in place, reason recorded.
   // v11.35 (QR J16 = PCF MSA J37) -- #readMushafBtn (📜) joined before 📖; nineteen now, its Bangla name মুসহাফ দৃশ্য part of the I11 evidence. Updated in place, reason recorded.
   // v12.16 (J63) -- #readAttachQcrBtn joined the tools; twenty now, its Bangla name "QCR-এ যুক্ত করুন" part of the I11 evidence. Updated in place, reason recorded.
+  // v12.26 (PCF MSA J82 parts 4-5) -- ‹ › joined the row; twenty-two now, their Bangla names আগের পৃষ্ঠা / পরের পৃষ্ঠা part of the I11 evidence. Updated in place, reason recorded.
   check("30l every reading-screen control is NAMED in Bangla",
-        t18.length === 20 && t18.every((x) => BANGLA.test(x)), JSON.stringify(t18));
+        t18.length === 22 && t18.every((x) => BANGLA.test(x)), JSON.stringify(t18));
   await page.close();
   await ctx.close();
 }
@@ -2588,7 +2589,8 @@ const readRef = readingRef; // round 22: #readRef is retired, see readingRef abo
   check("33a the read bar is Prev unit · Prev āyah · Next āyah · Next unit · Play · Stop · Full screen · Bookmark · Reading complete · ⋮ slot",
         // v11.35 (QR J16 = PCF MSA J37) -- #readMushafBtn (📜) joined #readBarEnd before 📖. Updated in place, reason recorded.
   // v12.16 (J63, 21 Oct 2026: "Attach to QCR tile") -- #readAttachQcrBtn joined the tools after #readAttachAsmaBtn. Updated in place, reason recorded.
-        bar.ids.join() === "readListBtn,mushafPageRef,readApproachBar,readUnitChip,prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,readQuickRow,readMeaningLayersSlot,readBackSlot,readBarEnd,readBarBookmarkBtn,readMushafBtn,readMeaningBtn,hideChromeBtn,readWindowBtn,readToolsBtn,readToolsMenu,readTextSizeSlot,readBookmarkBtn,readNotesBtn,readCompleteBtn,readWritingBtn,readAttachAsmaBtn,readAttachQcrBtn,readQuickMenuSlot,readCompleteMsg",
+        // v12.26 (PCF MSA J82 parts 4-5) -- #mushafPagePrevBtn and #mushafPageNextBtn (‹ ›, one printed Mushaf page; hidden outside Mushaf) joined the row before ⏮. Updated in place, reason recorded.
+        bar.ids.join() === "readListBtn,mushafPageRef,readApproachBar,readUnitChip,mushafPagePrevBtn,mushafPageNextBtn,prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,readQuickRow,readMeaningLayersSlot,readBackSlot,readBarEnd,readBarBookmarkBtn,readMushafBtn,readMeaningBtn,hideChromeBtn,readWindowBtn,readToolsBtn,readToolsMenu,readTextSizeSlot,readBookmarkBtn,readNotesBtn,readCompleteBtn,readWritingBtn,readAttachAsmaBtn,readAttachQcrBtn,readQuickMenuSlot,readCompleteMsg",
         JSON.stringify(bar.ids));
   check("33a the '◂ Mastery Wheel' button is gone (the Read tab does it)", bar.noBack);
   check("33a the separate Pause button is gone", bar.noSeparatePause);
@@ -3350,7 +3352,8 @@ console.log("\n=== 37. Shell round 25: grammar labels, and the control row ===")
   check("37a the row is Prev unit · Prev āyah · Next āyah · Next unit · Play · Stop · Full screen · Bookmark · Reading complete · ⋮ slot",
         // v11.35 (QR J16 = PCF MSA J37) -- #readMushafBtn (📜) joined #readBarEnd before 📖. Updated in place, reason recorded.
   // v12.16 (J63, 21 Oct 2026: "Attach to QCR tile") -- #readAttachQcrBtn joined the tools after #readAttachAsmaBtn. Updated in place, reason recorded.
-        m.barKids.join() === "readListBtn,mushafPageRef,readApproachBar,readUnitChip,prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,readQuickRow,readMeaningLayersSlot,readBackSlot,readBarBookmarkBtn,readMushafBtn,readMeaningBtn,hideChromeBtn,readWindowBtn,readToolsBtn,readTextSizeSlot,readBookmarkBtn,readNotesBtn,readCompleteBtn,readWritingBtn,readAttachAsmaBtn,readAttachQcrBtn,readQuickMenuSlot,readCompleteMsg", JSON.stringify(m.barKids));
+        // v12.26 (PCF MSA J82 parts 4-5) -- ‹ › (#mushafPagePrevBtn, #mushafPageNextBtn) joined the row before ⏮. Updated in place, reason recorded.
+        m.barKids.join() === "readListBtn,mushafPageRef,readApproachBar,readUnitChip,mushafPagePrevBtn,mushafPageNextBtn,prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,readQuickRow,readMeaningLayersSlot,readBackSlot,readBarBookmarkBtn,readMushafBtn,readMeaningBtn,hideChromeBtn,readWindowBtn,readToolsBtn,readTextSizeSlot,readBookmarkBtn,readNotesBtn,readCompleteBtn,readWritingBtn,readAttachAsmaBtn,readAttachQcrBtn,readQuickMenuSlot,readCompleteMsg", JSON.stringify(m.barKids));
   // `space-between` would leave large, uneven gaps between controls, which
   // is exactly how a stale `space-between` survived this round's first
   // attempt -- checking the gaps directly catches that regardless of how
