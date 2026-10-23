@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "12.47",
+    "version": "12.48",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -4841,8 +4841,20 @@
     {
       "version": "12.47",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "The QR Lead's PR #1095: from 600 to 1023px Notes / Record / Approach sit behind one Study pill so the surah name shows whole.",
+      "integration": {
+        "authorizedOn": "2026-10-23",
+        "integratedOn": "2026-10-23",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.48",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Builder round #1094 (PR #1096): the signed-out Sign in with Google button is 40px; new audit-part56 suite.",
       "integration": {
         "authorizedOn": "2026-10-23",
         "integratedOn": "2026-10-23",
@@ -4851,8 +4863,9 @@
       }
     }
   ],
-  "nextUnallocated": "12.48",
+  "nextUnallocated": "12.49",
   "nextUnallocatedNote": [
+    "v12.48 was allocated to audit part 56, getting started and Bookmarks by the User Manual, 2026-10-23.",
     "v12.47 was allocated to tablet Read bar: Study menu, whole surah name (QR Lead round 10), 2026-10-23.",
     "v12.46 was allocated to audit part 54, study modules and teaching pages by the User Manual, 2026-10-23.",
     "v12.45 was allocated to QR's own address opens offline (QR Lead round 9), 2026-10-23.",
