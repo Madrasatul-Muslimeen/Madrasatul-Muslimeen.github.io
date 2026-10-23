@@ -461,6 +461,8 @@ export function writeBatch() {
     set(ref, data) { staged.push(["set", ref, data]); },
     update(ref, data) { staged.push(["update", ref, data]); },
     async commit() {
+      // OPT-IN (audit-part43): a suite sets window.__stubFailBatch to see how a page words a refused batch.
+      if (typeof window !== "undefined" && window.__stubFailBatch) throw Object.assign(new Error("batch denied by the test"), { code: "permission-denied" });
       return __trip("batchCommit", "(batch of " + staged.length + ")", null, function () {
         staged.forEach(function (w) { __recordWriteData("batch-" + w[0], w[1], w[2]); });
         // OPT-IN (a suite sets window.__stubApplyBatches before the page runs):
