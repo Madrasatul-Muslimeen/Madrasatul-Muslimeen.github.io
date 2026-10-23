@@ -43,6 +43,8 @@ DATA.tenantPeople.push({ _id: "p4", tenantId: TENANT_ID, personId: "p4", name: l
 const enr = (ctx, type, p, role) => DATA.enrollments.push({ _id: TENANT_ID + "__" + ctx + "__" + p, tenantId: TENANT_ID, contextType: type, contextId: ctx, personId: p, roleInClass: role, subjectIds: [], status: "active" });
 enr("c1", "class", "t1", "teacher"); enr("c1", "class", "p2", "student"); enr("c1", "class", "p3", "student");
 enr("o1", "courseOffer", "t1", "teacher"); enr("o1", "courseOffer", "p3", "student");
+DATA.classes.push({ _id: TENANT_ID + "__c2", tenantId: TENANT_ID, name: lang("Other Class"), subjectIds: ["quran"], levelId: null, status: "active" });
+enr("c2", "class", "p4", "student"); /* a class t1 does not teach, holding the third student */
 DATA.assignments.length = 0; DATA.submissions.length = 0;
 `;
 const OWNER = TEACHER.split("\n").filter((l) => !l.startsWith("DATA.tenantMemberUids[0]")).join("\n");
@@ -102,7 +104,7 @@ const englishLeft = (page) => ev(page, () => {
   const w = document.createTreeWalker(document.querySelector("#app"), NodeFilter.SHOW_TEXT);
   for (let n; (n = w.nextNode());) {
     const p = n.parentElement; if (!p || /SCRIPT|STYLE|OPTION/.test(p.tagName) || !p.getClientRects().length) continue;
-    const s = n.textContent.trim(); if (/^(Evening Quran|Morning Class|Before Fajr group|Read two pages|Doing well on tajweed\.|Pages 1 to 2|Tariq|Yusuf|Zayd|Ahsan|Maryam)$/.test(s)) continue; /* seeded tenant data */ if (/[A-Za-z]{4,}/.test(s) && !/[ঀ-৿]/.test(s)) bad.push(s.slice(0, 40));
+    const s = n.textContent.trim(); if (/^(Evening Quran|Morning Class|Before Fajr group|Read two pages|Doing well on tajweed\.|Other Class|Pages 1 to 2|Tariq|Yusuf|Zayd|Ahsan|Maryam)$/.test(s)) continue; /* seeded tenant data */ if (/[A-Za-z]{4,}/.test(s) && !/[ঀ-৿]/.test(s)) bad.push(s.slice(0, 40));
   }
   return bad;
 });
