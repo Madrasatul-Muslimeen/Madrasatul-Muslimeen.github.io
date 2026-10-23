@@ -9,7 +9,7 @@ node tools/apps/serve-app.mjs build/qr > "$L/serve.log" 2>&1 & SP=$!
 trap 'kill $SP' EXIT
 sleep 1
 failed=0
-for c in naming asma-poster-data-check asma-local-sync pages-browser front-browser asma-browser asma-offline-browser asma-screensaver-browser asma-store-browser one-worker-browser quran-ldog-browser qr-offline-browser upgrade-browser links-browser explore-asma-wheel-browser range-bookmark-browser fatiha-opening-browser approach-window-browser language-browser student-browser mmsa-hadith-route import-walk; do
+for c in naming asma-poster-data-check asma-local-sync pages-browser front-browser asma-browser asma-offline-browser asma-screensaver-browser asma-store-browser one-worker-browser quran-ldog-browser qr-offline-browser upgrade-browser links-browser explore-asma-wheel-browser range-bookmark-browser fatiha-opening-browser approach-window-browser language-browser student-browser student-tools-browser mmsa-hadith-route import-walk; do
   timeout 1500 node "tools/apps/qr-verify/$c.mjs" > "$L/$c.log" 2>&1; rc=$?
   [ $rc -eq 0 ] || failed=1
   echo "$c rc=$rc $(grep -iE 'passed|failed' "$L/$c.log" | tail -1)"
