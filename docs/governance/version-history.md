@@ -930,3 +930,4 @@ total). Allocated by the MMSA Architect.
 12.26: Every Note opens in the Mapping My Journey window; Learn next, Bookmark way back, Mushaf page buttons. Allocated by the MMSA Architect.
 12.27: The Mapping My Journey window opened on a Note is the note window; tidy formatting rows. Allocated by the MMSA Architect.
 12.28: audit part 41: no Zab inside embedded windows; lazily loaded files kept offline. Allocated by the MMSA Architect.
+12.29: Language first in Home (MSA and QR); audit part 42; A± sliders below their tile. Allocated by the MMSA Architect.

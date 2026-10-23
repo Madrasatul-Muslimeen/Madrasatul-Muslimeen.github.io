@@ -285,7 +285,8 @@ for (const [lang, width] of [["bn", 390], ["en", 1280]]) {
     const inView = (el) => { const r = el.getBoundingClientRect(); return r.height > 0 && r.top >= -1 && r.bottom <= innerHeight + 1; };
     const done = document.querySelector("[data-pane-bar] > [data-pane-edit-toggle]:not([hidden])") || document.querySelector("[data-pane-menu-btn]");
     const scrolled = (document.scrollingElement.scrollTop || 0) + (document.getElementById("notePane").scrollTop || 0);
-    return { toolbar: inView(document.querySelector("[data-edit-toolbar]")), done: !!done && inView(done), scrolled };
+    const rc = (el) => { if (!el) return null; const r = el.getBoundingClientRect(); return [Math.round(r.top), Math.round(r.bottom), Math.round(r.height)]; };
+    return { toolbar: inView(document.querySelector("[data-edit-toolbar]")), done: !!done && inView(done), scrolled, ih: innerHeight, tbR: rc(document.querySelector("[data-edit-toolbar]")), doneR: rc(done), paneR: rc(document.getElementById("notePane")), layR: rc(document.getElementById("noteLayout")), sh: document.scrollingElement.scrollHeight, doc: document.scrollingElement.scrollTop || 0, pane: document.getElementById("notePane").scrollTop || 0, embed: location.search };
   });
   check(`${lang} ${width}px: typing at the end of a long Note keeps the formatting toolbar and the header (Done / ⋯) on screen`, m.scrolled > 200 && m.toolbar && m.done, JSON.stringify(m));
   await ctx.close();

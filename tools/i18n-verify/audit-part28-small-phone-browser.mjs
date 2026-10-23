@@ -274,7 +274,8 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     await page.waitForSelector(".bm-popover", { timeout: 8000 }); await settle(page, 500);
     const pop = ".bm-popover";
     const pb = await ev(page, () => { const r = document.querySelector(".bm-popover").getBoundingClientRect(); return { l: r.left, r: r.right, t: r.top, b: r.bottom, vw: innerWidth, vh: innerHeight }; });
-    check(`${t}: Bookmark dialog: POSITIVE CONTROL it shows the Assign to rows and the Range fields`, (await ev(page, () => document.querySelectorAll(".bm-pop-assignee-row").length === 3 && !!document.querySelector("[data-bm-pop-range]:not([hidden])"))));
+    // PCF MSA J42 added a first "Everyone in the family" row (also .bm-pop-assignee-row), so the roster of 3 shows 4 rows (audit part 42: stale count, was 3).
+    check(`${t}: Bookmark dialog: POSITIVE CONTROL it shows the Assign to rows and the Range fields`, (await ev(page, () => document.querySelectorAll(".bm-pop-assignee-row").length === 4 && !!document.querySelector("[data-bm-pop-range]:not([hidden])"))));
     check(`${t}: Bookmark dialog: inside the screen (top and bottom reachable), no sideways scroll`, pb.l >= -1 && pb.r <= pb.vw + 1 && pb.t >= -1 && pb.b <= pb.vh + 1 && (await wide(page)) <= 0, JSON.stringify(pb));
     const smb = await small(page, pop);
     check(`${t}: Bookmark dialog: every control is 40px or more`, smb.length === 0, smb.join(" "));
