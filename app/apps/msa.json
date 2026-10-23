@@ -21,6 +21,7 @@
     "app",
     "mushaf",
     "tools/quran-data-pull/output",
-    "tools/hadith-data-pull/output"
+    "tools/hadith-data-pull/output",
+    "__/auth"
   ]
 }
