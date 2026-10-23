@@ -30,6 +30,7 @@
   "site": [
     "index.html",
     "404.html",
+    "root-sw.js",
     ".nojekyll",
     "app",
     "mushaf",
