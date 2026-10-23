@@ -950,3 +950,4 @@ total). Allocated by the MMSA Architect.
 12.46: audit part 54, study modules and teaching pages by the User Manual. Allocated by the MMSA Architect.
 12.47: tablet Read bar: Study menu, whole surah name (QR Lead round 10). Allocated by the MMSA Architect.
 12.48: audit part 56, getting started and Bookmarks by the User Manual. Allocated by the MMSA Architect.
+12.49: audit part 57, Records, Monitor and Homework by the User Manual. Allocated by the MMSA Architect.
