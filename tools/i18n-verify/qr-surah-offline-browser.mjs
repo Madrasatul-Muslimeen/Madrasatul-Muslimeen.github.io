@@ -9,6 +9,7 @@
 //   --mutate=no-note     the Read path says nothing        -> the note checks FAIL
 //   --mutate=no-revert   the pickers keep the unread surah -> the picker checks FAIL
 //   --mutate=no-loading  no "Loading…" on a slow line       -> the slow-line checks FAIL
+//   --mutate=uncaught    the picker lets the offline error out -> the "no uncaught error" checks FAIL
 // Also (audit part 46, "the Read view is an empty box ... no loading words"): on a slow line (surah 114 held 2.5 s),
 // the Read view says "Loading…" (লোড হচ্ছে…) while it comes, then shows it.
 import { chromium, newContext, openPage } from "./harness.mjs";
@@ -21,6 +22,7 @@ const check = (name, ok, detail = "") => {
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
 const MUT = {
   "no-note": ["if (error instanceof TypeError) announceChosenSurahUnavailable(asked); // no network and no saved copy", "// (mutated)"],
+  "uncaught": ["try { await loadSurah(); } catch (error) { if (error instanceof TypeError) return; throw error; }", "await loadSurah();"],
   "no-revert": ["if (currentSurahData && currentSurahData.surahNumber !== asked) {", "if (false) {"],
   "no-loading": ["if (ayahPanels) ayahPanels.innerHTML = `<p class=\"read-loading\"", "if (false) ayahPanels.innerHTML = `<p class=\"read-loading\""],
 };
@@ -57,6 +59,7 @@ for (const [w, h] of [[1280, 900], [390, 844]]) for (const lang of ["en", "bn"])
   });
   check(`${tag} the Read path says so ("${m.text.slice(0, 60)}…")`, m.note && m.readPath, JSON.stringify(m));
   check(`${tag} ...naming surah 114 in ${lang}, 40px+, on screen`, (lang === "bn" ? /১১৪/.test(m.text) && /[ঀ-৿]/.test(m.text.replace(/১১৪/, "")) : /114/.test(m.text) && /not saved/.test(m.text)) && m.h >= 40 && m.onScreen, JSON.stringify(m));
+  check(`${tag} no uncaught error (the note has told the reader)`, !errors.some((e) => /Failed to fetch/i.test(e)), errors.slice(0, 2).join(" | "));
   check(`${tag} both surah pickers are back on surah 1, the surah still shown`, m.surah === "1" && m.read === "1" && (m.wheel === null || m.wheel === "1"), JSON.stringify({ surah: m.surah, read: m.read, wheel: m.wheel }));
   await ctx.setOffline(false);
   // Slow line: surah 114 held 2.5 s.
