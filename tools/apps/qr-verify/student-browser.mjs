@@ -20,6 +20,7 @@ const MUTATE = arg("mutate") ?? null;
 const ONLY = arg("only") ?? null, LANG = arg("lang") ?? null, WIDTH = arg("width") ?? null, AUTH = arg("auth") ?? null;
 const REPORT = !!process.env.REPORT || process.argv.includes("--report");
 const PORT = Number(process.env.PORT) || 8107;
+const SHOTS = arg("shots") ?? process.env.SHOTS ?? null;
 
 /** name -> [file inside the built app, edit]. Filled in as fixes land. */
 const MUTATIONS = {
@@ -283,7 +284,7 @@ try {
           check(`${tag}: signed out, Home -> Settings holds the Language box (a student can read the sign-in words in Bangla)`, await page.evaluate(() => !!document.querySelector("#navHomeExtra #navAppLangSelect, #navHomeExtra select")));
         }
         rep("small", m.small); rep("english", m.english);
-        if (process.env.SHOTS && (w === 390 || w === 1280)) await page.screenshot({ path: `${process.env.SHOTS}/${area.name}-${auth}-${w}-${lang}.png` });
+        if (SHOTS && (w === 390 || w === 1280)) await page.screenshot({ path: `${SHOTS}/${area.name}-${auth}-${w}-${lang}.png` });
       }
       check(`${tag}: no page errors`, errors.length === 0, errors.slice(0, 4).join(" | "));
       await ctx.close();
