@@ -50,4 +50,10 @@ document.querySelectorAll("[data-look]").forEach((b) => b.addEventListener("clic
 paint();
 
 // After the page is drawn, never before (as MMSA's sw-register.js). No note here: an update shows on the app's pages.
-addEventListener("load", () => { registerQrServiceWorker(); }, { once: true });
+// On QR's ADDRESS itself (not /app/index.html, the same file), also the tiny /root-sw.js, so the address opens offline; only
+// once the app's own worker registered, so the kill switches (which unregister every worker) cover both.
+addEventListener("load", () => {
+  registerQrServiceWorker().then((reg) => {
+    if (reg && ["/", "/index.html"].includes(location.pathname)) navigator.serviceWorker.register("/root-sw.js", { scope: "/" }).catch(() => {});
+  });
+}, { once: true });
