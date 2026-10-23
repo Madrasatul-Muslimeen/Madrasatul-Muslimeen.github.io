@@ -933,3 +933,4 @@ total). Allocated by the MMSA Architect.
 12.29: Language first in Home (MSA and QR); audit part 42; A± sliders below their tile. Allocated by the MMSA Architect.
 12.30: audit part 43: the tool and admin pages. Allocated by the MMSA Architect.
 12.31: audit part 44: QR as a student; Language for a signed-out reader. Allocated by the MMSA Architect.
+12.32: QR Lead J84: Mushaf ‹ › one page, whole pages, one Read. Allocated by the MMSA Architect.

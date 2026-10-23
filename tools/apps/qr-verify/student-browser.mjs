@@ -112,7 +112,8 @@ window.__sd = {
 // Findings in QR-only files (app/quranrevival.html), which belong to the MSA-QR-LEAD: listed, not failed, and a
 // listed id that STOPS occurring is itself reported (a fixed finding must leave this list).
 // wheelCtaBtn left the list (review, 23 Oct): a false finding; its ::before gives a 40px tap area, now hit-tested above.
-const FOR_QR_LEAD = { "quran-study": ["wheelListCollapseBtn"] };
+// wheelListCollapseBtn left the list (v12.32, the QR Lead's PR #1053): it has a 40px ::after tap area now.
+const FOR_QR_LEAD = { "quran-study": [] };
 const seenKnown = new Set();
 const AREAS = [
   { name: "front", path: "/", ready: "a" },
