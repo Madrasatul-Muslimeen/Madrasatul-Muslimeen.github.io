@@ -7626,6 +7626,20 @@
       renderUnitNumberPicker();
       paintShortReadLabels();
       paintWho();
+      // QR Lead (audit part 47): an open Notes pane keeps the label it was handed ("Notes on ২:২৫৫"), and an open Āyah card
+      // its words, ladder, Approach titles and reference. Both are told again, in the new language. The pane's repaint
+      // is read-note-pane.js's relabelReadNotePane() (shared; the MSA Architect's), called only if it is there.
+      if (readNotePaneMod?.isReadNotePaneOpen()) { const u = readNotePaneUnitNow(); if (u) readNotePaneMod.relabelReadNotePane?.(u); }
+      if (ayahSheetUnitKey) {
+        renderAyahActionSheetNow();
+        // Its Related āyāt and Related hadith were labelled (surah names, digits, "Asma:") when they loaded: label them
+        // again from what is already in memory (no new read: I9), each redrawing the card when done.
+        if (!ayahSheetIntro) {
+          const { surah: rs, ayah: ra } = parseAyahUnitKey(ayahSheetUnitKey);
+          if (ayahSheetRelated && !ayahSheetRelated.error) ensureAyahSheetRelatedLoaded(ayahSheetUnitKey, rs, ra);
+          if (ayahSheetHadith && !ayahSheetHadith.error) ensureAyahSheetHadithLoaded(ayahSheetUnitKey, rs, ra);
+        }
+      }
       // The strip's current line is JS-rendered, so translateStatic() above
       // cannot reach it (its WeakMap only holds nodes that were in the
       // markup). Redraw it in the new language, without animating -- a
@@ -23678,30 +23692,30 @@
       // PCF MSA J42: every unit that holds the āyah on screen, Single Ayah included, in a fixed order. A boundary
       // that is not known is left out, never guessed.
       const all = [{
-        id: "ayah", label: t("This āyah"), defaultName: ayahRefLabel(currentSurahNum, ayah, { half }),
+        id: "ayah", label: () => t("This āyah"), defaultName: ayahRefLabel(currentSurahNum, ayah, { half }),
         position: ayahRecordKey(currentSurahNum, ayah, half), settings: at("ayah"),
       }];
-      if (page) all.push({ id: "page", label: t("This page"), defaultName: t("Page {page}", { page: num(page) }), position: buildUnitKey.page(PAGE_EDITION, page), settings: at("page") });
+      if (page) all.push({ id: "page", label: () => t("This page"), defaultName: t("Page {page}", { page: num(page) }), position: buildUnitKey.page(PAGE_EDITION, page), settings: at("page") });
       if (rec && rec.ruku != null) {
         const idx = rukuIndexInSurah(currentSurahData.ayahs, rec.ruku);
         const inRuku = currentSurahData.ayahs.filter((a) => a.ruku === rec.ruku).map((a) => a.ayah);
         if (idx && inRuku.length) {
           all.push({
-            id: "ruku", label: t("This rukūʿ"),
+            id: "ruku", label: () => t("This rukūʿ"),
             defaultName: t("Ruku' {ruku} of Surah {surah} (ayahs {from}–{to})", { ruku: num(idx), surah: num(currentSurahNum), from: num(Math.min(...inRuku)), to: num(Math.max(...inRuku)) }),
             position: buildUnitKey.ruku(currentSurahNum, idx), settings: at("ruku"),
           });
         }
       }
       const sName = surahName(currentSurahNum, surahIndex.find((s) => s.surahNumber === currentSurahNum)?.nameEnglish);
-      all.push({ id: "surah", label: t("Whole sūrah"), defaultName: sName || t("Whole Surah {surah}", { surah: num(currentSurahNum) }), position: buildUnitKey.surah(currentSurahNum), settings: at("surah") });
-      if (rec && rec.juz) all.push({ id: "juz", label: t("This juz"), defaultName: t("Juz {juz}", { juz: num(rec.juz) }), position: buildUnitKey.juz(rec.juz), settings: at("juz") });
+      all.push({ id: "surah", label: () => t("Whole sūrah"), defaultName: sName || t("Whole Surah {surah}", { surah: num(currentSurahNum) }), position: buildUnitKey.surah(currentSurahNum), settings: at("surah") });
+      if (rec && rec.juz) all.push({ id: "juz", label: () => t("This juz"), defaultName: t("Juz {juz}", { juz: num(rec.juz) }), position: buildUnitKey.juz(rec.juz), settings: at("juz") });
       // The selected study unit comes first and is preselected, so today's default is unchanged. When it is one of
       // the five it moves to the front; a wider one that is not (Range, Hizb) is added in front.
       const sel = all.find((c) => c.id === info.unitType);
       const choices = sel
         ? [info.unitType === "ayah" ? sel : { ...sel, defaultName: info.label, settings: base }, ...all.filter((c) => c !== sel)]
-        : [{ id: "unit", label: unitChipText(info), defaultName: info.label, position: info.unitKey, settings: base }, ...all];
+        : [{ id: "unit", label: () => unitChipText(info), defaultName: info.label, position: info.unitKey, settings: base }, ...all];
       return choices;
     }
 
@@ -23747,11 +23761,13 @@
         // Fixes round 2 -- tag this bookmark with a person. Defaults to
         // whoever is selected right now (studying WITH a child is the
         // common case, per D10), and "No one in particular" clears it.
-        people: roster.map((p) => ({ id: p.id, name: langText(p.name, getAppLang(), p.id) })),
+        people: roster.map((p) => ({ id: p.id, name: () => langText(p.name, getAppLang(), p.id) })),
         defaultPersonTagId: selectedPersonId,
         // Multi-student round -- "Assign to", the same roster/scoping rule
         // the Track card's own Claim dropdown already uses.
-        roster: assignableRoster(),
+        // Names and unit labels are functions (the QR Lead, bmUnits), so a language switch while the dialog is open
+        // writes them again in the new language (bookmark-popover.js live()).
+        roster: assignableRoster().map((a) => { const p = roster.find((r) => r.id === a.id); return { ...a, name: p ? () => langText(p.name, getAppLang(), p.id) : a.name }; }),
         selectedPersonId,
         // The Owner, 12 Oct 2026 -- "quick unit choice" (Read view only; empty everywhere else).
         units: unitChoices.map(({ id, label, defaultName: dn }) => ({ id, label, defaultName: dn })),
@@ -24896,7 +24912,8 @@
       readNotesBtn.setAttribute("title", name);
       readNotesBtn.setAttribute("aria-expanded", String(!!readNotePaneMod?.isReadNotePaneOpen()));
     }
-    function syncReadNotes() {
+    /** The unit an open Notes pane should be on now, with its label in the app language (null: stay put). */
+    function readNotePaneUnitNow() {
       // An open pane follows the āyah when it is on an āyah; on a wider unit (round 2b: a Range, Surah, Page…) it
       // follows that unit as the reader moves through them, and stays put otherwise.
       const on = readNotePaneMod?.readNotePaneUnit();
@@ -24905,6 +24922,10 @@
         const info = currentUnitInfo();
         u = parseUnitKey(info.unitKey).unitType === parseUnitKey(on.unitKey).unitType ? { unitKey: info.unitKey, label: info.label } : null;
       }
+      return u;
+    }
+    function syncReadNotes() {
+      const u = readNotePaneUnitNow();
       if (u && readNotePaneMod) readNotePaneMod.setReadNotePaneUnit(u);
       paintReadNotesBtn();
     }

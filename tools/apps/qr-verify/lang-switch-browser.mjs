@@ -33,18 +33,12 @@ function check(name, ok, detail = "") {
 }
 // Findings in QR-only files (app/quranrevival.html, apps/qr/**) belong to the MSA-QR-LEAD: listed, not failed; a listed finding
 // that STOPS occurring is itself reported. id -> a pattern the leftover string matches.
-//   unitLabel  the Notes pane (and the page inside it) is handed its "2:255" label by quranrevival.html when it opens, and the page does not
-//              hand it a fresh one on a switch: "Notes on ২:২৫৫" / "Back to ২:২৫৫" keep the old script's digits (bn -> en), and the ASCII
-//              digits in bn (en -> bn, not seen by the Bangla-letter detector). Fix: applyAppLangChange() calls setReadNotePaneUnit() with the new label.
-//   ayahCard   the Āyah card is drawn by renderAyahActionSheetNow() in quranrevival.html and applyAppLangChange() does not redraw it: every
-//              label, ladder rung, Approach dot title and the reference stay in the old language. Fix: redraw it there when #ayahActionSheetOverlay is open.
-const FOR_QR_LEAD = { unitLabel: /(Notes on|Back to|New note on|No notes on|Find a note to attach to) [২-৯০১]/ };
-const AYAH_CARD_LEAD = { ayahCard: /^page / };
-//   bmUnits    the Bookmark popover's unit buttons (This āyah, This page...) and the people's names are handed to it as words by
-//              quranrevival.html's toggleAyahBookmark(), in the language of the moment it opened: after bn -> en they stay Bangla
-//              (en -> bn, translateStatic() catches the English ones). Fix: pass `label` and `name` as functions; the popover
-//              accepts both since audit 47 (flow popfn proves it).
-const BM_LEAD = { ...FOR_QR_LEAD, bmUnits: /^page (button|span\.who-name) \[text\]|^page select \[selected\]/ }; // the names: the ticked list and the "For" picker
+//   (unitLabel, the Notes pane's "2:255" after a switch, and ayahCard, the open Āyah card, were fixed in v12.37 by the QR Lead,
+//   #1070, with relabelReadNotePane(); bmUnits, the Bookmark popover's unit buttons and names, by #1074 passing functions.
+//   All three are now ordinary failures.)
+const FOR_QR_LEAD = {};
+const AYAH_CARD_LEAD = {};
+const BM_LEAD = { ...FOR_QR_LEAD };
 const seenKnown = new Set();
 
 // name: [file in the built app, route glob, anchor (exactly once), replacement]. Each puts one fix back to the old code.
@@ -57,6 +51,7 @@ const MUTATIONS = {
   langmin: ["app/js/minimise.js", "**/app/js/minimise.js*", "onAppLangChange(relabel); // audit 47 langmin", ""],
   langpane: ["app/js/read-note-pane.js", "**/app/js/read-note-pane.js*", "onAppLangChange(relabel); // audit 47 langpane", ""],
   langlive: ["app/js/bookmark-popover.js", "**/app/js/bookmark-popover.js*", "const live = (x) => (typeof x === \"function\" ? x() : x);", "const live = ((memo) => (x) => (typeof x === \"function\" ? (memo.has(x) || memo.set(x, x()), memo.get(x)) : x))(new Map());"],
+  langrelabel: ["app/js/read-note-pane.js", "**/app/js/read-note-pane.js*", "unit = { ...unit, ...u }; // audit 47 langrelabel", ""],
   langtoast: ["app/js/bookmark-popover.js", "**/app/js/bookmark-popover.js*", "if (!noticeFollows) { noticeFollows = true; onAppLangChange(() => noticeRepaint?.()); }", ""],
   // the Builder's first version: the window's page reloaded under a Note being typed
   langedittray: ["app/js/journey-tray.js", "**/app/js/journey-tray.js*", "if (editing) return; // audit 47 langedit", ""],
@@ -65,7 +60,7 @@ if (MUTATE && !MUTATIONS[MUTATE]) throw new Error(`no such mutation ${MUTATE}`);
 const browser = await chromium.launch();
 
 const BN = /[ঀ-৿]/;
-const PROPER = /QuranRevival|QR|MMSA|MSA|Qur'?an|Asma|Husna|Madrasatul|Muslimeen|Hadith|Mapping My Journey|Google|Zab|Baqara|Bismillah|Ahsan|Study|Gmail|smahk9|com|test|Owner|Prime|Dua|Seerah|CSV|JSON|ID|My spot|Maryam|Ayatul|Kursi|Ctrl|Shift/g;
+const PROPER = /QuranRevival|QR|MMSA|MSA|Qur'?an|Asma|Husna|Madrasatul|Muslimeen|Hadith|Mapping My Journey|Google|Zab|Baqara|Bismillah|Ahsan|Study|Gmail|smahk9|com|test|Owner|Prime|Dua|Seerah|CSV|JSON|ID|My spot|Maryam|Ayatul|Kursi|Ctrl|Shift|QCR/g;
 const englishLeft = (text) => (String(text).replace(/\S+@\S+/g, " ").replace(PROPER, " ").match(/[A-Za-z]{3,}/g) || []);
 const settle = (p, ms = 350) => p.waitForTimeout(ms);
 const ev = (p, f, a) => p.evaluate(f, a);
@@ -87,7 +82,7 @@ function readout(scope) {
   const vis = (e) => { const r = e.getBoundingClientRect(), c = getComputedStyle(e); return (r.width > 0 && r.height > 0 && c.visibility !== "hidden" && c.display !== "none" && !e.closest("[hidden]") && !folded(e)); };
   // The Qur'an's own text, its translations and the reader's own data are CONTENT, not interface: not read here.
   // (A card that sits INSIDE the Read view is read: only content between the card and its scope is skipped.)
-  const CONTENT = "script, style, svg, canvas, option, #readView, #readScroll, .mushaf, [data-word-occurrence], .ayah-sheet-ar, .ayah-sheet-tr, [data-content], [lang=ar], .note-card-title, .word-card-gloss-segment, .word-card-learnnext-line, .word-card-meaning, .note-pane-title, [data-pane-body]";
+  const CONTENT = "script, style, svg, canvas, option, #readView, #readScroll, .mushaf, [data-word-occurrence], .ayah-sheet-ar, .ayah-sheet-tr, [data-content], [lang=ar], .note-card-title, .word-card-gloss-segment, .word-card-learnnext-line, .word-card-meaning, .note-pane-title, [data-pane-body], .ayah-ft-tr p";
   const notInterface = (e) => { const c = e.closest(CONTENT); return !!c && !c.contains(root); };
   const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
   for (let n = w.nextNode(); n; n = w.nextNode()) {
@@ -307,6 +302,19 @@ async function popfn(t, p, errors, lang) {
   check(`${t}: the reader's pick (This page) is kept across the switch`, kept.page === "true", JSON.stringify(kept));
   check(`${t}: the Name being typed is kept across the switch`, kept.name === null || kept.name === "My own words", JSON.stringify(kept));
 }
+/** relabelReadNotePane(): the hook QR's applyAppLangChange() calls with the unit's label in the new language (unitLabel). */
+async function relabel(t, p, errors, lang) {
+  const to = OTHER(lang);
+  await readAyah(p);
+  await clickReadTool(p, "#readNotesBtn");
+  check(`${t}: POSITIVE CONTROL the Notes pane opens`, await until("pane", async () => { const f = notesFrame(p); return !!f && await f.locator("[data-unit-new]").count() > 0; }));
+  const r = await switchInPlace(p, to);
+  check(`${t}: POSITIVE CONTROL the switch happened IN PLACE`, r.changed && r.kept, JSON.stringify(r));
+  await ev(p, async (bn) => { const m = await import("./js/read-note-pane.js"); m.relabelReadNotePane?.({ unitKey: "ayah:2:255", label: bn ? "২:২৫৫" : "2:255" }); }, to === "bn");
+  await until("the page inside has the new label", async () => { const f = notesFrame(p); return !!f && /unitLabel=/.test(f.url()) && decodeURIComponent(f.url()).includes(to === "bn" ? "২:২৫৫" : "unitLabel=2:255") && f.evaluate(() => !!document.querySelector("[data-unit-new]")); }, 20000);
+  await settle(p, 1000);
+  await judge(t, p, "Notes pane after relabelReadNotePane()", to, "#readNotePane", "#readNotePane", {});
+}
 /** A toast on screen at the moment of the switch (the "Saved for ..." notice). */
 async function toast(t, p, errors, lang) {
   const to = OTHER(lang);
@@ -407,6 +415,7 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     await flow("chip", lang, width, chip);
     await flow("toast", lang, width, toast);
     await flow("popfn", lang, width, popfn);
+    await flow("relabel", lang, width, relabel);
     await flow("typing", lang, width, typing, { note: true });
   }
   await flow("menus", lang, width, menus, { signedOut: true });

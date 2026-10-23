@@ -406,6 +406,7 @@ export function readNotePaneFocusNew() { if (frame) toFrame({ type: "mmsa-focus-
 async function relabel() {
   if (!pane) return;
   await ensureCatalogueReady(); // the listeners fire before a first switch to Bangla has its catalogue
+  await new Promise((r) => setTimeout(r, 0)); // ...and the page has handed over its relabelled unit (relabelReadNotePane)
   for (const [el, key] of [[pane.querySelector(".rnp-close"), "Close"], [pane.querySelector("[data-rnp-journey]"), "Open in Mapping My Journey"], [findBtn, "Find a note in Mapping My Journey to attach"]]) { el.setAttribute("aria-label", t(key)); el.title = t(key); }
   findInput.setAttribute("aria-label", t("Find a note in Mapping My Journey to attach"));
   frame.title = t("Notes");
@@ -469,6 +470,20 @@ export function openReadNotePane(u, whenClosed = null, { tab = "notes", backLabe
 }
 
 /** The Read view moved to another āyah: an open pane follows it; a closed one waits until it is opened. */
+/** The same unit, its label written again (the page's language changed in place: "2:255" -> "২:২৫৫"). setReadNotePaneUnit()
+    ignores an unchanged unit, and so does the page inside, so this repaints the bar and, if the page inside was loaded with
+    the old label, loads it again with the new one (never under a Note being typed). Asked for by the MSA-QR-LEAD (audit 47). */
+export function relabelReadNotePane(u) {
+  if (!pane || !u || !unit || u.unitKey !== unit.unitKey) return;
+  unit = { ...unit, ...u }; // audit 47 langrelabel
+  paint();
+  const src = frame.getAttribute("src");
+  if (!src || new URL(src, location.href).searchParams.get("unitLabel") === unit.label) return;
+  try { if (frame.contentDocument?.querySelector("[data-edit-body]")) return; } catch { /* not ours */ }
+  frameReady = false;
+  frame.setAttribute("src", srcFor(unit, {}));
+}
+
 export function setReadNotePaneUnit(u) {
   if (!pane || pane.hidden || !u || u.unitKey === unit?.unitKey) return;
   toFrame({ type: "mmsa-unit", unit: u.unitKey, label: u.label, noteTitle: u.noteTitle ?? "" });
