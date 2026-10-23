@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "12.42",
+    "version": "12.43",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -4781,8 +4781,20 @@
     {
       "version": "12.42",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "The QR Lead's PR #1085 (audit part 50 part 2): QR's build strips comments, line for line, from quranrevival.html's inline module and style and every built app/**/*.js except sw.js and vendor/, verified token by token.",
+      "integration": {
+        "authorizedOn": "2026-10-23",
+        "integratedOn": "2026-10-23",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.43",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Audit part 52 (PR #1084): journey-map, import-notes, about, backup and taglines fire userIndex and roles-only memberships together; bn.js Monitor note fixed.",
       "integration": {
         "authorizedOn": "2026-10-23",
         "integratedOn": "2026-10-23",
@@ -4791,8 +4803,9 @@
       }
     }
   ],
-  "nextUnallocated": "12.43",
+  "nextUnallocated": "12.44",
   "nextUnallocatedNote": [
+    "v12.43 was allocated to audit part 52 (Journey and tool pages start-up reads together), 2026-10-23.",
     "v12.42 was allocated to the QR Lead's comment strip in QR's build (#1085), 2026-10-23.",
     "v12.41 was allocated to audit part 51 (My Notes and Mapping My Journey load speed), 2026-10-23.",
     "v12.40 was allocated to the QR Lead's surah warm + page icon (#1081), 2026-10-23.",

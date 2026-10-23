@@ -73,6 +73,9 @@ const MUTATIONS = {
   "tags-serial": ["app/notes.html", "**/app/notes.html*", [
     ["      const tagsDone = loadTags();\n", "      await loadTags(); const tagsDone = null;\n"],
   ]],
+  "journey-start-serial": ["app/journey-map.html", "**/app/journey-map.html*", [
+    ["        const membershipRolesPromise = getMyMembershipRoles(db, user.uid);\n", "        await getDoc(doc(db, TENANT.USER_INDEX, user.uid));\n        const membershipRolesPromise = getMyMembershipRoles(db, user.uid);\n"],
+  ]],
 };
 // Positive control: ONE extra startup module, which the counters must see.
 const CONTROLS = { "extra-import": ["app/notes.html", "**/app/notes.html*", [["</body>", '<script type="module" src="./js/writing-sheet.js"></script></body>']]] };
@@ -232,6 +235,11 @@ async function scenario(pageKey, width, who) {
       const nr = first.reads.find((l) => l.col === "noteSources");
       check(`${tag}: POSITIVE CONTROL the tag read and the notes read were both seen`, tagReads.length > 0 && !!nr, `${tagReads.length} tag reads, noteSources read ${!!nr}`);
       check(`${tag}: the tag reads start beside the notes read, not after it`, !!nr && tagReads.length > 0 && Math.abs(tagReads[0].t0 - nr.t0) <= 50, `tags @${Math.round(tagReads[0]?.t0)} notes @${Math.round(nr?.t0)}`);
+    }
+    if (pageKey === "journey") {
+      const ui = first.reads.find((l) => l.col === "userIndex"), mem = first.reads.find((l) => l.col === "tenantMemberUids");
+      check(`${tag}: POSITIVE CONTROL the userIndex read and the memberships read were both seen`, !!ui && !!mem, `userIndex ${!!ui}, tenantMemberUids ${!!mem}`);
+      check(`${tag}: the userIndex read and the memberships read start in the same round trip (within one latencyMs)`, !!ui && !!mem && Math.abs(ui.t0 - mem.t0) < LATENCY_MS, `userIndex @${Math.round(ui?.t0)} memberships @${Math.round(mem?.t0)}`);
     }
     check(`${tag}: JS modules fetched until usable within the budget (${B.modulesToUsable})`, first.modulesToUsable <= B.modulesToUsable, `${first.modulesToUsable}`);
     check(`${tag}: Firestore reads until usable within the budget (${B.readsToUsable})`, first.readsToUsable.length <= B.readsToUsable, `${first.readsToUsable.length}: ${first.readsToUsable.map((l) => l.col + (l.id ? "/" + l.id : "")).join(",")}`);

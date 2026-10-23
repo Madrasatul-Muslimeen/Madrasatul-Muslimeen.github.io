@@ -22261,3 +22261,13 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 - **New QR check `tools/apps/qr-verify/strip-comments-check.mjs`** (run-all's 27th, sandbox only; TypeScript from `TS_PATH`): every stripped text against TypeScript's scanner. 34/0; 4 mutations fail. `tools/apps/apps-build-check.mjs`: the three byte-for-byte QR checks read the pre-strip texts (`QR_STRIP_BEFORE`). `asma-local-sync` and `asma-poster-data-check` read QR's source copy.
 - Measured, first visit at 1.6 Mbps / 150 ms: 390 px first paint 1096 → 640 ms, usable 7292 → 5372 ms; 1280 px 1004 → 592 ms, 7240 → 5319 ms. Worker install 4.46 → 3.12 MB.
 - QR run-all 27/27, `load-speed-browser` 62/0, `apps-build-check` 48/0. Nothing stored, no Rules changed.
+
+## v12.43 — 24 Oct 2026 — Mapping My Journey and four tool pages start faster (audit part 52)
+
+- **`app/journey-map.html`, `app/import-notes.html`** (Builder round #1083, PR #1084): sign-in start-up fires `userIndex` and `getMyMembershipRoles()` together, picks the context with `pickContext()` from roles alone, and fills the tenant picker from `hydrateMemberships()` beside the page's own reads (the `notes.html` pattern, issue #291). `adoptAppLangFromUserIndex` and every error path kept. The account card's tenant name appears when the names arrive (one round trip), as on `notes.html`.
+- **`app/about.html`, `app/backup.html`, `app/taglines.html`:** the same two reads together; these pages read only roles off a membership, so the per-tenant name reads are not made at all.
+- **`tools/i18n-verify/shared-load-speed-browser.mjs`:** counted check that the userIndex and memberships reads start within one `latencyMs`, with a positive control; `--mutate=journey-start-serial` fails 6. 128/0. Mapping My Journey usable 3369 → ~3017 ms (390, owner).
+- **`app/js/i18n/bn.js`:** the Monitor page's Word-card note said "Learn next" in English inside its Bangla; now “এরপর শিখুন”, the app's own Bangla for it. `bangla-sweep-other-pages-browser` 220/4 on `main` → 224/0.
+- Checks: `audit-part43-tool-pages-browser` 5315/0; `journey-three-panel-browser` 464/0, `journey-tags-browser` 363/0, `journey-map-screen` 47/0, `wordpress-import-screen` 21/0, `tagline-scroll-browser` 67/0 (the Builder's); `apps-build-check` 48/0.
+- **Not built:** drawing the folder view before tags, sections and links (those reads already start beside the folder tree; the gain is small and needs a draw-then-redraw with its own ordering checks). **Found, for a later round:** a worker-controlled second visit to Mapping My Journey is usable at ~3.7 s, later than the first visit's ~3.0 s (`app/sw.js` background refreshes share the link).
+- Nothing stored, no Rules changed.

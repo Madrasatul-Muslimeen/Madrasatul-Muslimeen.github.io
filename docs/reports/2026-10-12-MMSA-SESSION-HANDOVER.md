@@ -1568,3 +1568,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v12.40** (2026-10-23): the QR Lead's surah warm + page icon (#1081).
 - **v12.41** (2026-10-23): audit part 51 (My Notes and Mapping My Journey load speed).
 - **v12.42** (2026-10-23): the QR Lead's comment strip in QR's build (#1085).
+- **v12.43** (2026-10-23): audit part 52 (Journey and tool pages start-up reads together).
