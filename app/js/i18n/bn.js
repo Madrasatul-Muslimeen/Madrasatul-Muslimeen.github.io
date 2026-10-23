@@ -1744,10 +1744,10 @@ export const BN = {
   "Pick a person above.": "উপরে একজন ব্যক্তি বেছে নিন।",
   "Pick a person, ladder and level first.": "আগে একজন ব্যক্তি, একটি ধাপ ও একটি স্তর বেছে নিন।",
   "Couldn't load grades:": "গ্রেড লোড করা যায়নি:",
-  "Classes are created and managed by the owner or a prime — you can see the classes you belong to below.":
-    "ক্লাস তৈরি ও পরিচালনা করেন মালিক বা প্রাইম — আপনি যেসব ক্লাসে আছেন সেগুলো নিচে দেখতে পারেন।",
-  "Course offers are created and managed by the owner or a prime — you can see the offers you are part of below.":
-    "কোর্স অফার তৈরি ও পরিচালনা করেন মালিক বা প্রাইম — আপনি যেসব অফারে আছেন সেগুলো নিচে দেখতে পারেন।",
+  "Classes are created and managed by the owner or a prime — the active classes are listed below.":
+    "ক্লাস তৈরি ও পরিচালনা করেন মালিক বা প্রাইম — চালু ক্লাসগুলো নিচে দেখানো হলো।",
+  "Course offers are created and managed by the owner or a prime — the active offers are listed below.":
+    "কোর্স অফার তৈরি ও পরিচালনা করেন মালিক বা প্রাইম — চালু অফারগুলো নিচে দেখানো হলো।",
   "Curriculum, resources and grades are written by the owner or a prime — you can browse ladders and levels on the Catalogue page, but this page has nothing to show you yet.":
     "পাঠ্যক্রম, উপকরণ ও গ্রেড লেখেন মালিক বা প্রাইম — আপনি তালিকা পাতায় ধাপ ও স্তর দেখতে পারেন, তবে এই পাতায় আপনার জন্য এখনো কিছু নেই।",
 
