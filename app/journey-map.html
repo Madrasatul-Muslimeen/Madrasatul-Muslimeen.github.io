@@ -422,6 +422,8 @@
   html.pane-tabs-hosted #notePane .note-pane-bar, html.pane-tabs-hosted .unit-head {
     margin: 0 -0.9rem 0.5rem; padding: 0.4rem 0.9rem; min-height: 52px; box-sizing: border-box; background: #f4efe2; border-bottom: 1px solid #e3d7b8; }
   html.pane-tabs-hosted .unit-head { flex-direction: row; align-items: center; flex-wrap: wrap; margin: 0 -0.6rem 0.6rem; padding: 0.4rem 0.6rem; }
+  /* Audit part 45: at the wide tier the hosted pane's parents have no side padding, so the -0.6rem margins stuck out 10px each side (sideways scroll inside the Notes pane at 1280). */
+  html.pane-tabs-hosted #noteLayout.tier-wide .unit-head { margin-inline: 0; }
   html.pane-tabs-hosted .unit-head .unit-title { display: none; } /* the pane's own bar names the āyah */
   html.pane-tabs-hosted .unit-head .unit-actions { margin-inline-start: auto; }
   html.pane-tabs-hosted .unit-head [data-unit-journey] { display: none; } /* the pane's top bar carries the same ↗ */
@@ -804,7 +806,8 @@
 
     function renderNav(roles, viewAsRole) {
       navBar.innerHTML = renderNavBar(roles, viewAsRole);
-      import("./js/bookmark-nav.js").then((m) => m.mountNavBack()).catch(() => {}); // PCF MSA J72: opened from the menu -> ← Back
+      // PCF MSA J29 (audit 45): the Bookmark menu is FILLED here too (it sat at "Loading…" for ever on this page); mountBookmarkMenu also mounts the ← Back of J72.
+      import("./js/bookmark-nav.js").then((m) => m.mountBookmarkMenu(navBar, { db, getTenantId: () => activeTenantId, getPersonId: () => selectedPersonId })).catch(() => {});
       navHomeExtra.innerHTML = renderHomeExtras(roles);
       mountSyncedAppLangControl(navHomeExtra, { db, uid: auth.currentUser?.uid });
       mountCardLookControl(navHomeExtra);

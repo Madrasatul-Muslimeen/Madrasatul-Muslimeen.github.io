@@ -52,7 +52,7 @@ ${handleCss("rnp-win-h")}
 /* PCF MSA J71: the top bar's search, finding any Note in Mapping My Journey to attach to this āyah. */
 .rnp-find { flex: 1 1 22rem; min-width: 0; max-width: 30rem; position: relative; display: flex; align-items: center; }
 .rnp-find[hidden] { display: none; }
-.rnp-find input { width: 100%; min-height: 36px; box-sizing: border-box; padding: 0 0.8rem 0 2.1rem; border: 1px solid #c9a24b; border-radius: 999px;
+.rnp-find input { width: 100%; min-height: 40px; /* audit 45: a finger target, was 36px */ box-sizing: border-box; padding: 0 0.8rem 0 2.1rem; border: 1px solid #c9a24b; border-radius: 999px;
   background: rgba(255,255,255,0.12); color: #fff; font: inherit; }
 .rnp-find input::placeholder { color: #d9e0ee; }
 .rnp-find input:focus { outline: none; background: #fff; color: #1F3A6E; box-shadow: 0 0 0 3px rgba(201,162,75,0.45); }
