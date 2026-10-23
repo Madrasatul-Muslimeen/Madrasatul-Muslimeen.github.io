@@ -1458,3 +1458,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v12.25** (2026-10-22): the Āyah card's tabs, the Note buttons, a minimise button on every pop-up, Hadith's notice.
 - **v12.26** (2026-10-23): Every Note opens in the Mapping My Journey window; Learn next, Bookmark way back, Mushaf page buttons.
 - **v12.27** (2026-10-23): The Mapping My Journey window opened on a Note is the note window; tidy formatting rows.
+- **v12.28** (2026-10-23): audit part 41: no Zab inside embedded windows; lazily loaded files kept offline.

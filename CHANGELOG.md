@@ -22136,3 +22136,12 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 - New suite `note-toolbar-fit-browser` 32/0 (en/bn, 1440/1280/390): at most 5 rows on a computer, 6 on a phone; tidy formatting; the Note the window's width; ← Back restores the panels. Mutations `focus` 8, `inline` 2.
 - Tests: journey-editor-input 112/0, journey-tray 227/0, journey-note-windows 254/0, note-opens-in-journey 60/0, journey-editor 577/0, read-note-pane 204/0, read-note-pane-window 94/0, audit-part21-notes 608/0; behaviour and QR's 20 checks on the release.
 - Shared with QR: `note-window.js` (a pinned note script) and `journey-map.html`; change notice to the PCA.
+
+## v12.28 — 23 Oct 2026 — One Zab strip, never one inside an embedded window; files loaded later are kept offline (PCF MSA J29, audit part 41)
+
+- **Audit part 41** (Builder round #1039, PR #1041, new suite `audit-part41-notes-shared-tools-browser` 406/0, en/bn, Night/Light, 390/768/1280/1440): the My Notes page, the Mapping My Journey window on a Note (full width at 1280/1440, ← Back, ✕, – and its chip), and Bookmarks/Records/Continue strip (no route there opens a Note) all work.
+- **Fixed: Zab drawn inside embedded frames.** Measured on unmodified `main`: at 1280/1440 two 🧰 Zab strips (the page's and one inside the tray's `journey-map.html?embed=1` frame); at 390 a `zabCorner` inside the frame. `sw-register.js` no longer mounts Zab when `embed=1` and framed (the tray and the Read view's Notes window both load that way). Mutation `zab`: 16 failures.
+- **Fixed in the review: a file imported after load was never kept offline.** `service-worker.mjs` failed on unmodified `main` 3 runs of 3 ("asked 29, not stored 1: note-foundation.js"): the page sent its loaded-files list to the worker once, after load, so a later lazy import was missed and the first open after an update fetched it from the network. `warmLaterFiles()` (a `PerformanceObserver` on resources) sends later same-origin files in batches. After: 18/0 three runs of 3.
+- **For the Owner (n81c, unbuilt):** My Notes' ⧉ Open in window still opens that page's own Note window (decision 42), not the Mapping My Journey window (J81).
+- Tests: behaviour 971/0 (main and PR), audit-part41 406/0, zab-bar 370/0, zab-to-note 195/0, journey-tray 227/0, note-opens-in-journey 60/0, minimise-windows 48/0, app-offline-boot 15/0, page-window 29/0, service-worker 18/0 ×3; QR's 20 checks on the release.
+- Shared with QR: `sw-register.js` (the Zab mount); change notice to the PCA.
