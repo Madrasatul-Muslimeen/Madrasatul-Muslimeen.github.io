@@ -7,7 +7,39 @@ v10.28). Read `CLAUDE.md` first. The prompt that starts the next session is
 
 This session was summarised once (its context compacted), which is why it hands over here.
 
-## LATEST UPDATE — 23 Oct 2026, 4:45 pm Sydney, session `session_0181VQTFG7uodBiesZVCFHe9` (v12.28–v12.31 live on MSA AND QR; HANDOVER) — READ THIS FIRST
+## LATEST UPDATE — 23 Oct 2026, 9:15 pm Sydney, session `session_01DUyp4e6AmEZuRp7etfXDhB` (v12.32–v12.35 live on MSA AND QR; HANDOVER) — READ THIS FIRST
+
+Took over 4:43 pm 23 Oct from `session_0181VQTFG7uodBiesZVCFHe9`. Handing over at ~40% context (hand119). PCA: `session_01HqedLzJPW6qKznTRoYyron`. MSA-QR-LEAD: `session_01Vyg5fxUBbFQShbQVtACFBn`. Hadith Lead: `session_01Q2HmCeWjo1vVYV5kgMBvC9`. The PCA keep-alive `trig_01VZRHraDj3abTzSFoxjkEtm` (8:07 am/pm) fired into this session at 8:08 pm: **ask the PCA to repoint it.**
+**`main` is v12.35** (PR #1063, merge `2a7e1db2`, live MSA and QR 9:07 pm; QR **24/24**). **Next release: v12.36.**
+
+**Released this session**
+- **v12.32** (PR #1056, live 5:04 pm): the Owner's **J84** by the MSA-QR-LEAD (PR #1053): Mushaf ‹ › one page, whole pages only, one Read bar; `wheelListCollapseBtn` 40px.
+- **v12.33** (PR #1059, live 5:32 pm): audit part 45 (Builder #1051/PR #1054, which stopped early, so the Architect finished it): the Bookmark menu fills on Mapping My Journey, My Notes, Import notes and Dawah; three fixes; new QR check `student-tools-browser`.
+- **v12.34** (PR #1062, live 7:38 pm): the Owner's **J86 + J85** by the QR Lead (PR #1061: in-place language switch re-labels the pickers, ☰, the sign-in line; the Word card's way back in its top row; one-line tablet bar; 40px Sign in), the Zab bar following the switch (`zab-bar.js` `relabel()`, Architect), audit part 46 (Builder #1057/PR #1058: offline note for an unsaved surah, 44px update notice; new QR check `student-device-browser`).
+- **v12.35** (PR #1063, live 9:07 pm): **the Owner's J88, part 1** (below).
+
+**The Owner's messages this session (carry1)**
+1. **8:27 pm, a screenshot: a student's Google sign-in on Brave for Android ends with "Unable to process request due to missing initial state" on `study-monitoring.firebaseapp.com/__/auth/handler`. "Fix."** Cause: storage partitioning (Brave, Safari, Firefox) with the auth helper on another site. **The Owner chose (tick, in the chat): "Yes, and I'll add the 2 addresses".** PMS job **J88**.
+   - **Part 1 DONE (v12.35):** Firebase's helper pages are served from both sites at `/__/auth/` (folders `handler/` and `iframe/`, absolute script paths; checked live, Pages keeps the query on the redirect). MSA's root `_config.yml` has `include: ["__"]`. `firebase-init.js` reads `SELF_HOSTED_AUTH_HOSTS`, which is **EMPTY**, so sign-in is unchanged. Check `tools/i18n-verify/self-hosted-auth.mjs` 25/0.
+   - **Part 2 READY on branch `fix/self-hosted-auth-on`** (one commit: both hosts listed; the check 27/0). **Release it ONLY after the Owner ticks J88's need j88n1** (the two redirect URIs added in Google Cloud → Credentials → Web client). Released early, Google would refuse sign-in for EVERYONE. After releasing, ask the Owner or a student to sign in on Brave (and an iPhone), and confirm it.
+   - Until then, students on Brave, Safari or Firefox sign in with Chrome.
+
+**IN FLIGHT — the next session's first jobs**
+1. **J88 part 2**: watch for the Owner's tick (PMS `p/mmsa/jobs/J88`, need `j88n1`), then merge `fix/self-hosted-auth-on` as v12.36 (allocate-version.py; QR run-all; build-from-msa).
+2. **PR #1064, audit part 47** (Builder #1060, run 39926167805, which hit 90 minutes, so the Architect opened the PR): shared parts follow an in-place language switch (`bookmark-popover.js`, `journey-tray.js`, `minimise.js`, `read-note-pane.js`, new QR suite `lang-switch-browser.mjs`). **Not accepted yet:** its `MUTATIONS` is EMPTY. Add one per `// audit 47 lang*` marker (langpop, langtray, langmin, langpane), and prove that a Note being typed survives a switch with the pane or window open (both reload their frame right after `mmsa-journey-flush`; the same pattern as `closeJourneyTray`, plus `pagehide` flush, but not measured). Its two `FOR_QR_LEAD` findings (`unitLabel`, `ayahCard`) go to the QR Lead.
+3. **The QR Lead's round 3 (J87)** comes as "MSA-QR-LEAD ▸ ready for release": the āyah-number tap area; the offline message moves to the Read path. **In that release, drop the generic `announceSurahUnavailable` from `app/js/quran-data.js`** (v12.34's, which also fires for background lookups). The QR Lead will also file a layout question for the Owner (the Read view gives the āyah text ~90px at 360×740).
+4. Keep a Builder round running (dispatch with `workflow_dispatch` and `issue_number`; **never put `@claude` in an issue body**, because it starts a run by itself, as #1057 did). The next audit part after 47: the Owner's call, or audit by the PCF User Manual on phone, tablet and computer.
+
+**Waiting on the Owner:** **J88 j88n1** (the Google Cloud step; it unblocks the sign-in fix), n81c, n83a, n79a, n77a, n78a, n71c, n81a, n81b, n82a, n82b, n72d; the Hadith Lead's tick on the Hadith/Dua "My Notes" links.
+
+**Lessons**
+- **An `onAppLangChange` listener fires BEFORE a first switch to Bangla has its catalogue.** Await `ensureCatalogueReady()` in the listener, or en → bn repaints in English (measured on the Zab bar: "🧰 Zab" stayed).
+- **A Builder note that asks it to `git merge` stops the run**: its shell refuses every write outside its file tools (#1060's first run, 39917835671). Merge on `main` first, then dispatch.
+- **A Builder run has 90 minutes** (`claude.yml` `timeout-minutes`). An audit round that measures 4 widths × 2 languages × 2 looks runs out. Scope a round to fit, and ask for the PR at the first push.
+- **A check of finger size must skip a control scrolled out of view inside its panel** (the QR Lead's finding; `student-device-browser` `small()` now uses `__sd.clipped`).
+- **GitHub Pages serves an extensionless file as a download, and Jekyll skips `_` folders.** A Firebase `/__/auth/handler` is a folder with `index.html` (Pages 301s to `handler/`, keeping the query), and `_config.yml` `include: ["__"]`. A root `.nojekyll` collides with QR's own in the build guards.
+
+## LATEST UPDATE — 23 Oct 2026, 4:45 pm Sydney, session `session_0181VQTFG7uodBiesZVCFHe9` (v12.28–v12.31 live on MSA AND QR; HANDOVER) — superseded by the 9:15 pm block above, kept as history
 
 Took over 12:43 pm 23 Oct from `session_01A9tGFy1MqSn1b53WSVJ6Nf`. Handing over at ~40% context (cost86/hand119). PCA: `session_01HqedLzJPW6qKznTRoYyron`. Hadith Lead: `session_01Q2HmCeWjo1vVYV5kgMBvC9`. **NEW: MSA-QR-LEAD `session_01Vyg5fxUBbFQShbQVtACFBn`** (opened by the Owner 23 Oct, lead120 choice B): owns QR-only files (`app/quranrevival.html`, `apps/qr/**`) on its own branch; the MSA Architect keeps shared files, ALL Builder dispatches and ALL releases; it hands PRs over as "MSA-QR-LEAD ▸ ready for release". MSA keep-alive `trig_01HzsS6KrHMioTsmMtmdE8qW` (8:07 am/pm): **ask the PCA to repoint it to the new session.**
 **`main` is v12.31** (PR #1052, merge `8aabf397`, live MSA and QR 4:41 pm; QR **22/22**). **Next release: v12.32.**
