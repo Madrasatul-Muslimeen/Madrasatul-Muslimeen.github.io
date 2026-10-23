@@ -215,6 +215,8 @@
 
     function renderNav(roles, viewAsRole) {
       navBar.innerHTML = renderNavBar(roles, viewAsRole);
+      // PCF MSA J29 (audit 45): the Bookmark menu is FILLED here too (it sat at "Loading…" for ever on this page).
+      import("./js/bookmark-nav.js").then((m) => m.mountBookmarkMenu(navBar, { db, getTenantId: () => activeTenantId, getPersonId: () => selectedPersonId })).catch(() => {});
       navHomeExtra.innerHTML = renderHomeExtras(roles);
       mountSyncedAppLangControl(navHomeExtra, { db, uid: auth.currentUser?.uid });
       mountCardLookControl(navHomeExtra);
