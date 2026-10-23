@@ -73,6 +73,8 @@
       </label>
     </div>
 
+    <div id="noAdminNote" class="muted" style="display:none;">Classes are created and managed by the owner or a prime — the active classes are listed below.</div>
+
     <fieldset id="createFieldset" style="display:none;">
       <legend>New class</legend>
       <label for="classNameInput">Name</label>
@@ -212,6 +214,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       visibleRoster = scopedRoster(roster, effRoles, myPersonId);
       canAdmin = effRoles.some((r) => ["owner", "prime"].includes(r));
       createFieldset.style.display = canAdmin ? "" : "none";
+      document.getElementById("noAdminNote").style.display = canAdmin ? "none" : "";
 
       const leaves = subjectTree.filter((n) => n.isTrackable && n.status !== "archived");
       subjectChecks.innerHTML = leaves
