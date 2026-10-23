@@ -22239,3 +22239,10 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 - **`tools/apps/qr-verify/load-speed-browser.mjs`:** checks that every closure module is preloaded, none outside it, and none in `<head>`; positive control that the walker finds over 100 modules. 62/0. Mutations `preload-missing` (2 fail), `preload-extra` (6), `preload-in-head` (3); `zab-early` (4) and `sw-early` (1) still fail.
 - **Not changed, from the same round:** `gtaf_bangla_timestamps.json` is already fetched once per page (`getTimestamps()` memoises it). A surah read before QR's worker took over is not kept offline: the cause is QR's own worker (`apps/qr/site/app/sw.js`, the `warm` handler skips `/surahs/`), sent to the QR Lead.
 - Nothing stored, no Rules changed.
+
+## v12.40 — 24 Oct 2026 — a surah read on a first visit is kept for offline; no more /favicon.ico request (the QR Lead's #1081)
+
+- **`apps/qr/site/app/sw.js` (QR's own worker, the QR Lead's):** the `warm` message (the files a page loaded before the worker controlled it, sent by `sw-register.js`) no longer skips `/tools/quran-data-pull/output/surahs/`. A warmed surah goes into `QURAN_CACHE` (`qr-quran-v1`), the cache `quranFile()` reads surahs from, matched with `ignoreSearch`; everything else still goes into the app cache. Found by Builder round #1076 (audit part 50, part 3).
+- **`app/quranrevival.html`:** `<link rel="icon" href="data:,">`. No icon file exists, so every visit asked the server for `/favicon.ico` and got a 404 (the request `load-speed-browser` lists but does not count since v12.38).
+- **New QR check `tools/apps/qr-verify/qr-surah-warm-browser.mjs`** (in `run-all.sh`, now 26): holds `sw.js` back until Yā-Sīn is on screen, then checks the cache, an offline reload, and that no favicon is requested (CDP). 12/0; `--mutate=skip` fails 4, `--mutate=icon` fails 1.
+- QR run-all 26/26; `apps-build-check` 48/0. Nothing stored in Firestore, no Rules changed.

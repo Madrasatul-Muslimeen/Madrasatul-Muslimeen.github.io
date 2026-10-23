@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "12.39",
+    "version": "12.40",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -4745,8 +4745,20 @@
     {
       "version": "12.39",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Audit part 50 part 1 (PR #1079): QR's build writes modulepreload links for quranrevival.html's static import closure, before its first module script.",
+      "integration": {
+        "authorizedOn": "2026-10-23",
+        "integratedOn": "2026-10-23",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.40",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "The QR Lead's PR #1081: QR's worker keeps surahs read before it took over (warm into qr-quran-v1); quranrevival.html declares a data: icon.",
       "integration": {
         "authorizedOn": "2026-10-23",
         "integratedOn": "2026-10-23",
@@ -4755,8 +4767,9 @@
       }
     }
   ],
-  "nextUnallocated": "12.40",
+  "nextUnallocated": "12.41",
   "nextUnallocatedNote": [
+    "v12.40 was allocated to the QR Lead's surah warm + page icon (#1081), 2026-10-23.",
     "v12.39 was allocated to audit part 50 part 1 (QR modulepreload), 2026-10-23.",
     "v12.38 was allocated to audit part 48 part 2 (Zab bar and worker install wait for the page), 2026-10-23.",
     "v12.37 was allocated to audit 47's QR findings (Āyah card, Notes pane label, Bookmark popover) and relabelReadNotePane, 2026-10-23.",
