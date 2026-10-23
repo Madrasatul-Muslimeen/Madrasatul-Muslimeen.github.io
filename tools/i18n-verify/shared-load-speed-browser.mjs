@@ -76,6 +76,9 @@ const MUTATIONS = {
   "journey-start-serial": ["app/journey-map.html", "**/app/journey-map.html*", [
     ["        const membershipRolesPromise = getMyMembershipRoles(db, user.uid);\n", "        await getDoc(doc(db, TENANT.USER_INDEX, user.uid));\n        const membershipRolesPromise = getMyMembershipRoles(db, user.uid);\n"],
   ]],
+  "refresh-at-once": ["app/sw.js", "**/app/sw.js*", [
+    ["const REFRESH_QUIET_MS = 2000;", "const REFRESH_QUIET_MS = 0;"],
+  ]],
 };
 // Positive control: ONE extra startup module, which the counters must see.
 const CONTROLS = { "extra-import": ["app/notes.html", "**/app/notes.html*", [["</body>", '<script type="module" src="./js/writing-sheet.js"></script></body>']]] };
@@ -245,18 +248,34 @@ async function scenario(pageKey, width, who) {
     check(`${tag}: Firestore reads until usable within the budget (${B.readsToUsable})`, first.readsToUsable.length <= B.readsToUsable, `${first.readsToUsable.length}: ${first.readsToUsable.map((l) => l.col + (l.id ? "/" + l.id : "")).join(",")}`);
     check(`${tag}: Firestore reads in all within the budget (${B.readsTotal})`, first.reads.length <= B.readsTotal, `${first.reads.length}`);
     await swInstall(first.t.page);
+    // let the worker finish filling its cache (its own fetches stop for 4 s), or the second visit meets half-empty caches
+    for (let n = -1, still = 0; still < 4000;) { await new Promise((r) => setTimeout(r, 500)); if (ctx.__sw.length === n) still += 500; else { n = ctx.__sw.length; still = 0; } }
     say(`  the worker made ${ctx.__sw.length} fetches of its own during the first visit`);
     await first.t.page.close();
+    const warmed = new Set(ctx.__sw.map((x) => x.url)); // what the worker had cached before the second visit
     ctx.__sw.length = 0;
     const second = await visit(ctx, pg, "SECOND visit, worker installed");
     print(second, tag, pg);
     const again = second.sameNet.filter((r) => !/\/favicon\.ico$/.test(new URL(r.url).pathname)).map((r) => short(r.url));
     say(`    page fetched from the NETWORK again (same site): ${again.length}${again.length ? " -> " + again.slice(0, 12).join(", ") : ""}`);
-    await new Promise((r) => setTimeout(r, 1500));
+    await new Promise((r) => setTimeout(r, 6000)); // held refreshes start after ~2 s of quiet
     const swAgain = ctx.__sw.map((x) => short(x.url));
     say(`    worker's own network fetches (background refresh): ${swAgain.length}${swAgain.length ? " -> " + swAgain.slice(0, 12).join(", ") : ""}`);
     check(`${tag}: POSITIVE CONTROL the second visit is controlled by the worker`, second.nav.controlled);
     check(`${tag}: second visit, files fetched from the network again within the budget (${B.secondVisitNetwork})`, again.length + swAgain.length <= B.secondVisitNetwork, `${again.length + swAgain.length}`);
+    // Audit part 53: the worker's background refreshes must not compete with the page's own loading.
+    const lastReadAt = second.reads.length ? second.nav.origin + Math.max(...second.reads.map((l) => l.t0)) : Infinity;
+    const lastModuleAt = Math.max(...second.all.filter((r) => r.url.startsWith(BASE)).map((r) => r.t));
+    // a refresh = a worker fetch of a file it already held; a fetch of a file it did not hold is a cache MISS the page waits for
+    // (the SDK and Mushaf files have their own cache-first handlers in sw.js, never refreshed here)
+    const refreshes = ctx.__sw.filter((x) => warmed.has(x.url) && x.url.startsWith(BASE));
+    say(`    earliest worker same-site fetches: ${[...refreshes].sort((a, b) => a.t - b.t).slice(0, 4).map((x) => `+${Math.round(x.t - second.nav.origin)} ${short(x.url)}`).join(", ")}`);
+    const firstSwAt = refreshes.length ? Math.min(...refreshes.map((x) => x.t)) : Infinity;
+    say(`    second visit vs first: usable ${second.usableMs} ms vs ${first.usableMs} ms (${second.usableMs - first.usableMs} ms); first worker refresh ${firstSwAt === Infinity ? "never" : "+" + Math.round(firstSwAt - second.nav.origin) + " ms"} after navigation start, last page read at +${Math.round(lastReadAt - second.nav.origin)} ms`);
+    check(`${tag}: POSITIVE CONTROL the worker still refreshes in the background (${refreshes.length} fetches)`, refreshes.length > 0);
+    check(`${tag}: no worker background refresh starts before the page's last Firestore read has started`, firstSwAt >= lastReadAt, `refresh at +${Math.round(firstSwAt - second.nav.origin)} ms, last read at +${Math.round(lastReadAt - second.nav.origin)} ms`);
+    check(`${tag}: no worker background refresh starts before the page's last same-site request`, firstSwAt >= lastModuleAt, `refresh +${Math.round(firstSwAt - second.nav.origin)} ms, last request +${Math.round(lastModuleAt - second.nav.origin)} ms`);
+    check(`${tag}: second visit usable no later than the first visit + 200 ms`, second.usableMs != null && second.usableMs <= first.usableMs + 200, `${second.usableMs} vs ${first.usableMs}`);
     await second.t.page.close();
   } finally { await ctx.close().catch(() => {}); }
 }

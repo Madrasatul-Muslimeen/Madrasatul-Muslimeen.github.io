@@ -359,7 +359,46 @@ self.addEventListener("activate", (event) => {
   );
 });
 
+// Audit part 53 (PCF MSA J29): background refreshes wait for a quiet page.
+// Every fetch event -- cacheable or not, so the page's own Firestore calls
+// count too -- marks the page busy. Held refreshes start once nothing has been
+// asked for during REFRESH_QUIET_MS, or at the latest REFRESH_MAX_WAIT_MS after
+// the first was held. A refresh only fills the cache for the NEXT open, so
+// holding it never changes what this open shows.
+const REFRESH_QUIET_MS = 2000;
+const REFRESH_MAX_WAIT_MS = 15000;
+const REFRESH_CONCURRENCY = 4;
+let lastFetchAt = 0;
+let refreshFlush = null;
+const heldRefreshes = new Map();
+function deferRefresh(event, cache, request) {
+  if (!heldRefreshes.has(request.url)) heldRefreshes.set(request.url, { cache, request });
+  if (!refreshFlush) refreshFlush = flushRefreshes();
+  event.waitUntil(refreshFlush);
+}
+async function flushRefreshes() {
+  const startedAt = Date.now();
+  while (Date.now() - lastFetchAt < REFRESH_QUIET_MS && Date.now() - startedAt < REFRESH_MAX_WAIT_MS) {
+    await new Promise((r) => setTimeout(r, 250));
+  }
+  const queue = [...heldRefreshes.values()];
+  heldRefreshes.clear();
+  async function worker() {
+    while (queue.length) {
+      const { cache, request } = queue.shift();
+      try {
+        const response = await fetch(request);
+        if (response && response.ok) await cache.put(request, response);
+      } catch { /* best effort: the cached copy stays */ }
+    }
+  }
+  await Promise.all(Array.from({ length: REFRESH_CONCURRENCY }, worker));
+  refreshFlush = null;
+  if (heldRefreshes.size) refreshFlush = flushRefreshes();
+}
+
 self.addEventListener("fetch", (event) => {
+  lastFetchAt = Date.now();
   const { request } = event;
 
   if (isQuranFoundationFont(request)) {
@@ -391,9 +430,15 @@ self.addEventListener("fetch", (event) => {
 
       // Stale-while-revalidate: a cache hit answers immediately -- the
       // whole point of a second open costing no round trip -- and a fresh
-      // copy is always fetched too, so the NEXT open already has whatever
-      // changed. event.waitUntil() keeps this background fetch alive even
-      // when `cached` lets respondWith() settle before it finishes.
+      // copy is fetched too, so the NEXT open already has whatever changed.
+      // Audit part 53: a hit's refresh is HELD until the page has gone quiet
+      // (see deferRefresh), because ~60 refreshes started at once shared the
+      // slow line with the page's own modules and reads and made the second
+      // visit slower than the first. A miss still fetches at once.
+      if (cached) {
+        deferRefresh(event, cache, request);
+        return cached;
+      }
       const revalidate = fetch(request)
         .then((response) => {
           if (response && response.ok) cache.put(request, response.clone());
@@ -402,7 +447,6 @@ self.addEventListener("fetch", (event) => {
         .catch(() => null);
       event.waitUntil(revalidate);
 
-      if (cached) return cached;
       const fresh = await revalidate;
       return fresh || Response.error();
     })()
