@@ -197,14 +197,14 @@ export function registerServiceWorker() {
   // never register at all.
   // Audit part 48 (J29): `load` fires when the page's imports are in, but its own data (the surah index, the first surah)
   // is fetched just after; the worker's install (~6 MB) then shared the same slow link with it. So the install waits
-  // until the page has made no new request for 1 s (10 s at most).
+  // until the page has made no new request for 1 s (10 s at most). A PerformanceObserver sees every new request; counting
+  // performance.getEntriesByType("resource") would stop seeing them once the browser's 250-entry buffer is full.
   const startWhenQuiet = () => {
     const t0 = Date.now();
-    let seen = performance.getEntriesByType("resource").length, since = Date.now();
+    let since = Date.now(), obs = null;
+    try { obs = new PerformanceObserver(() => { since = Date.now(); }); obs.observe({ type: "resource" }); } catch { /* no observer: the 10 s cap still starts it */ }
     const poll = () => {
-      const n = performance.getEntriesByType("resource").length;
-      if (n !== seen) { seen = n; since = Date.now(); }
-      if (Date.now() - since >= 1000 || Date.now() - t0 >= 10000) start(); else setTimeout(poll, 250);
+      if (Date.now() - since >= 1000 || Date.now() - t0 >= 10000) { if (obs) obs.disconnect(); start(); } else setTimeout(poll, 250);
     };
     poll();
   };
