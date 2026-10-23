@@ -1461,3 +1461,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v12.28** (2026-10-23): audit part 41: no Zab inside embedded windows; lazily loaded files kept offline.
 - **v12.29** (2026-10-23): Language first in Home (MSA and QR); audit part 42; A± sliders below their tile.
 - **v12.30** (2026-10-23): audit part 43: the tool and admin pages.
+- **v12.31** (2026-10-23): audit part 44: QR as a student; Language for a signed-out reader.
