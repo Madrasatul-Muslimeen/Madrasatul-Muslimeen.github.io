@@ -292,6 +292,160 @@ for (const lang of LANGS) {
       check(`${t}: no sideways page scroll at the end`, await noSideways(page));
       check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
     }, { seed: seedFor(who) });
+
+    // ============================ My Note tools: templates and phrases ============================
+    await flow(`mytools-${who}`, lang, width, "/app/journey-map.html#folders", async (t, page, ctx, errors) => {
+      await page.waitForFunction(() => document.querySelectorAll("[data-folder-tree] .folder-row[data-folder-id]").length >= 1 && !document.querySelector("[data-folder-count-loading]"), null, { timeout: 15000 });
+      await page.click('.folder-row[data-folder-id="fA"] [data-folder-name]');
+      await page.waitForSelector("#folderNotes [data-note-leaf]", { state: "visible" });
+      await page.click(`#folderNotes [data-note-leaf][data-note-id="${hx("n1")}"] [data-note-open]`);
+      await page.waitForSelector("#notePane:not([hidden])");
+      await page.click("[data-pane-menu-btn]");
+      await page.waitForSelector("[data-pane-menu] [data-pane-mytools]", { state: "visible" });
+      await page.click("[data-pane-menu] [data-pane-mytools]");
+      await page.waitForSelector(".mt-dialog [data-mt-sec]", { state: "visible" });
+      const dlgMsg = () => ev(page, () => [...document.querySelectorAll(".mt-dialog [data-dlg-msg], .mt-dialog .dlg-msg, .mt-dialog [role=alert]")].map((e) => e.textContent).join(" "));
+      check(`${t}: POSITIVE CONTROL My Note tools opens with Tabs, Templates, Phrases and Headings`, (await count(page, ".mt-dialog [data-mt-sec]")) === 4);
+      check(`${t}: the tool tabs and buttons are finger-sized`, (await smallTargets(page, ".mt-dialog [data-mt-sec], .mt-dialog button:not(.mt-chip)")).length === 0, (await smallTargets(page, ".mt-dialog [data-mt-sec], .mt-dialog button:not(.mt-chip)")).join(" | "));
+      check(`${t}: the dialog does not scroll the page sideways`, await noSideways(page));
+      // templates
+      await page.click('.mt-dialog [data-mt-sec="templates"]');
+      await resetWrites(page);
+      await ev(page, FAIL_ON);
+      await page.click(".mt-dialog [data-mt-tplsave]");
+      await settle(page, 900);
+      const tplFail = (await dlgMsg()) + (await said(page));
+      check(`${t}: a refused Save as template says so on screen (I15)`, tplFail.trim().length > 5, tplFail);
+      // by design (note-user-settings.js set()): the setting is kept on this device at once and the account write may fail, which the message says
+      check(`${t}: ...the message says it was not saved to the account, not that nothing happened`, /account|অ্যাকাউন্ট/.test(tplFail), tplFail);
+      await ev(page, FAIL_OFF);
+      await resetWrites(page);
+      await page.click(".mt-dialog [data-mt-tplsave]");
+      await settle(page, 900);
+      check(`${t}: Save as template lists a template named for the Note`, (await count(page, ".mt-dialog [data-mt-tpl]")) >= 1 && (await ev(page, () => document.querySelector(".mt-dialog [data-mt-tplname]").value)) === "Note One");
+      check(`${t}: ...and wrote only the person's own settings, never a Note`, (await writes(page)).length > 0 && (await writes(page)).every((x) => x.col === "userPrefs"), JSON.stringify((await writes(page)).map((x) => x.col + ":" + x.op)));
+      // phrases
+      await page.click('.mt-dialog [data-mt-sec="phrases"]');
+      await resetWrites(page);
+      await ev(page, FAIL_ON);
+      await page.fill("[data-mt-phrasenew]", "Peace be upon you");
+      await page.click(".mt-dialog [data-mt-phraseform] button[type=submit]");
+      await settle(page, 900);
+      const phFail = (await dlgMsg()) + (await said(page));
+      check(`${t}: a refused Add phrase says so on screen (I15)`, phFail.trim().length > 5, phFail);
+      check(`${t}: ...and keeps what was typed in the box`, (await page.inputValue("[data-mt-phrasenew]")) === "Peace be upon you");
+      await ev(page, FAIL_OFF);
+      await resetWrites(page);
+      await page.click(".mt-dialog [data-mt-phraseform] button[type=submit]");
+      await settle(page, 900);
+      check(`${t}: Add phrase lists the phrase`, (await count(page, ".mt-dialog [data-mt-phrase]")) >= 1 && (await ev(page, () => document.querySelector("[data-mt-phrasetext]").value)) === "Peace be upon you");
+      check(`${t}: ...and writes only the person's own settings`, (await writes(page)).length > 0 && (await writes(page)).every((x) => x.col === "userPrefs"), JSON.stringify((await writes(page)).map((x) => x.col + ":" + x.op)));
+      if (bn) {
+        const eng = await ev(page, () => { const bad = []; const wk = document.createTreeWalker(document.querySelector(".mt-dialog"), NodeFilter.SHOW_TEXT); for (let n; (n = wk.nextNode());) { const p = n.parentElement; if (!p || /SCRIPT|STYLE|OPTION|TEXTAREA/.test(p.tagName) || !p.getClientRects().length) continue; const s = n.textContent.trim(); if (/[A-Za-z]{4,}/.test(s) && !/[ঀ-৿]/.test(s)) bad.push(s.slice(0, 40)); } return bad; });
+        check(`${t}: no English left in My Note tools`, eng.length === 0, eng.slice(0, 5).join(" | "));
+      }
+      check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
+    }, { seed: seedFor(who) });
+
+    // ============================ Import Notes ============================
+    await flow(`import-${who}`, lang, width, "/app/import-notes.html?back=1", async (t, page, ctx, errors) => {
+      await page.waitForSelector("#fileInput", { state: "visible", timeout: 15000 });
+      const msg = () => ev(page, () => ["gateNotice", "resultLine", "progressLine", "readOnlyMsg", "pageStatusMsg"].map((i) => { const e = document.getElementById(i); return e && getComputedStyle(e).display !== "none" ? e.textContent : ""; }).join(" "));
+      check(`${t}: POSITIVE CONTROL the page offers a Source and a file`, (await vis(page, "#sourceSelect")) && (await vis(page, "#fileInput")));
+      check(`${t}: ← Back (the title's arrow) is finger-sized`, (await smallTargets(page, "#backLink")).length === 0, (await smallTargets(page, "#backLink")).join(" | "));
+      check(`${t}: no sideways page scroll`, await noSideways(page));
+      check(`${t}: the Import button and the preview stay hidden until a file is chosen`, !(await vis(page, "#importBtn")) && !(await vis(page, "#previewSection")));
+      await resetWrites(page);
+      await page.selectOption("#sourceSelect", "evernote");
+      await page.fill("#stackNameInput", "My stack");
+      await page.setInputFiles("#fileInput", path.join(ROOT, "tools/evernote-import/fixture-second.enex"));
+      await page.waitForSelector("#previewSection", { state: "visible", timeout: 10000 });
+      const notes = Number((await page.textContent("#statNotes")).replace(/\D/g, "") || NaN);
+      check(`${t}: 2. Preview counts the file's Notes (1) before anything is written`, (await page.textContent("#statNotes")).replace(/[^\d০-৯]/g, "") !== "" && (await writes(page)).length === 0, await page.textContent("#statNotes"));
+      void notes;
+      check(`${t}: the preview does not scroll the page sideways`, await noSideways(page));
+      check(`${t}: the Import button is finger-sized`, (await smallTargets(page, "#importBtn")).length === 0, (await smallTargets(page, "#importBtn")).join(" | "));
+      // refused
+      await ev(page, FAIL_ON);
+      await page.click("#importBtn");
+      await settle(page, 1500);
+      const refusedMsg = (await msg()) + (await banner(page)) + (await ev(page, () => document.getElementById("refusalList").textContent));
+      check(`${t}: a refused import says so on screen (I15)`, refusedMsg.trim().length > 5, refusedMsg);
+      check(`${t}: ...and stores nothing`, (await writes(page)).filter((x) => x.op === "set").length === 0, JSON.stringify((await writes(page)).map((x) => x.col + ":" + x.op)));
+      check(`${t}: ...and the file's preview is still there to try again`, await vis(page, "#previewSection"));
+      await ev(page, FAIL_OFF);
+      await resetWrites(page);
+      await page.click("#importBtn");
+      await page.waitForFunction(() => /\d/.test(document.getElementById("resultLine").textContent) && getComputedStyle(document.getElementById("resultLine")).display !== "none", null, { timeout: 15000 }).catch(() => null);
+      const w = await writes(page);
+      const folder = w.find((x) => x.col === "noteFolders" && x.op === "set"), note = w.find((x) => x.col === "notes" && x.op === "set");
+      check(`${t}: Import stores a folder and a Note`, !!folder && !!note, JSON.stringify(w.map((x) => x.col + ":" + x.op)) + (await msg()));
+      check(`${t}: ...each with the I17 fields`, !!folder && !!note && I17(folder.data) && I17(note.data), JSON.stringify([folder && Object.keys(folder.data), note && Object.keys(note.data)]));
+      check(`${t}: ...and the result line says Done`, (await msg()).trim().length > 5, await msg());
+      if (bn) {
+        const eng = await ev(page, () => { const bad = []; const wk = document.createTreeWalker(document.getElementById("app"), NodeFilter.SHOW_TEXT); for (let n; (n = wk.nextNode());) { const p = n.parentElement; if (!p || /SCRIPT|STYLE|OPTION|TEXTAREA/.test(p.tagName) || !p.getClientRects().length || p.closest("#personSelect, #tenantSelect, #filePreviewList, #unmatchedSample")) continue; const s = n.textContent.trim(); if (/[A-Za-z]{4,}/.test(s) && !/[ঀ-৿]/.test(s) && !/^(\.enex|\.xml|WordPress|Evernote|My stack)/.test(s)) bad.push(s.slice(0, 40)); } return bad; });
+        check(`${t}: no English left on the Import page`, eng.length === 0, eng.slice(0, 5).join(" | "));
+      }
+      check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
+    }, { seed: seedFor(who) });
+
+    // ============================ Dawah pages ============================
+    const DAWAH_SEED = (owner) => `(function () {
+      var o = { tenantId: "t1", authorPersonId: "${owner}", schemaVersion: 1, createdBy: "test-uid", createdAt: "2026-09-01T10:00:00.000Z", updatedAt: "2026-09-01T10:00:00.000Z", sourceNoteId: "x", sourceRevisionId: "y", sourceUnitKey: "ayah:2:255", approvedByPersonId: null, approvedAt: null, returnedNote: null, bodyHtml: "<p>Dawah body</p>" };
+      DATA.dawahPages = [
+        Object.assign({ _id: "t1__dpA", pageId: "dpA", title: "Draft page A", status: "draft" }, o),
+        Object.assign({ _id: "t1__dpB", pageId: "dpB", title: "A deliberately long Dawah page title that a real tenant might write down", status: "draft" }, o),
+        Object.assign({ _id: "t1__dpC", pageId: "dpC", title: "Shared page C", status: "shared" }, o)];
+    })();`;
+    await flow(`dawah-${who}`, lang, width, "/app/dawah.html?back=1", async (t, page, ctx, errors) => {
+      await page.waitForSelector("#viewToggle", { state: "visible", timeout: 15000 });
+      await settle(page, 600);
+      const card = (id) => `#viewMine .page-card[data-page-id="${id}"]`;
+      await page.waitForSelector(card("dpA"), { timeout: 10000 }).catch(() => null);
+      check(`${t}: POSITIVE CONTROL My pages lists the author's three pages`, (await count(page, "#viewMine .page-card")) === 3, String(await count(page, "#viewMine .page-card")));
+      check(`${t}: ← Back is shown (the way back)`, await vis(page, "#notesBackBtn"));
+      check(`${t}: the view toggle buttons are finger-sized`, (await smallTargets(page, "#viewToggle button")).length === 0, (await smallTargets(page, "#viewToggle button")).join(" | "));
+      check(`${t}: the page buttons are finger-sized`, (await smallTargets(page, ".page-actions button")).length === 0, (await smallTargets(page, ".page-actions button")).slice(0, 3).join(" | "));
+      check(`${t}: no sideways page scroll`, await noSideways(page));
+      const approvalsShown = await vis(page, '[data-view="approvals"]');
+      check(`${t}: Waiting for my approval is ${who === "owner" ? "offered to the owner" : "not offered to a student"}`, approvalsShown === (who === "owner"));
+      page.on("dialog", (d) => d.accept());
+      await ev(page, () => { window.__printCalls = 0; window.print = () => { window.__printCalls++; }; });
+      // Share / Send for approval (a student is an adult in this fixture, so Share): refused, then allowed
+      await ev(page, FAIL_ON);
+      await resetWrites(page);
+      await page.click(`${card("dpA")} [data-page-submit]`);
+      await settle(page, 900);
+      check(`${t}: a refused Share says so on screen (I15)`, (await said(page)).length > 5, await said(page));
+      check(`${t}: ...and the page is still a draft, nothing stored`, (await count(page, card("dpA") + " [data-page-submit]")) === 1 && (await writes(page)).length === 0);
+      await ev(page, FAIL_OFF);
+      await resetWrites(page);
+      await page.click(`${card("dpA")} [data-page-submit]`);
+      await settle(page, 1200);
+      let w = await writes(page);
+      check(`${t}: ${who === "student" ? "Send for approval" : "Share"} changes only the status of that page (no delete)`, w.some((x) => x.col === "dawahPages" && x.id === "t1__dpA" && x.data && x.data.status === (who === "student" ? "awaiting-approval" : "shared")) && !w.some((x) => x.op === "delete"), JSON.stringify(w.map((x) => x.col + ":" + x.op + ":" + JSON.stringify(x.data))));
+      // Remove: a retire mark
+      await resetWrites(page);
+      await page.click(`${card("dpB")} [data-page-retire]`);
+      await settle(page, 1200);
+      w = await writes(page);
+      check(`${t}: Remove is a retire mark, never an erase (I4)`, w.some((x) => x.col === "dawahPages" && x.id === "t1__dpB" && x.data && x.data.status === "retired") && !w.some((x) => x.op === "delete"), JSON.stringify(w.map((x) => x.col + ":" + x.op)));
+      // Print
+      await resetWrites(page);
+      await page.click(`${card("dpC")} [data-page-print]`);
+      await settle(page, 600);
+      check(`${t}: Print asks the browser to print once and writes nothing`, (await ev(page, () => window.__printCalls)) >= 1 && (await writes(page)).length === 0, String(await ev(page, () => window.__printCalls)));
+      // the other views
+      await page.click('[data-view="shared"]');
+      await settle(page, 300);
+      check(`${t}: Madrasah pages lists the shared pages`, (await count(page, "#viewShared .page-card")) >= 1, String(await count(page, "#viewShared .page-card")));
+      check(`${t}: no sideways page scroll on Madrasah pages`, await noSideways(page));
+      if (bn) {
+        const eng = await ev(page, () => { const bad = []; const wk = document.createTreeWalker(document.getElementById("app"), NodeFilter.SHOW_TEXT); for (let n; (n = wk.nextNode());) { const p = n.parentElement; if (!p || /SCRIPT|STYLE|OPTION/.test(p.tagName) || !p.getClientRects().length || p.closest(".page-card-title, .page-body-preview, #tenantSelect")) continue; const s = n.textContent.trim(); if (/[A-Za-z]{4,}/.test(s) && !/[ঀ-৿]/.test(s)) bad.push(s.slice(0, 40)); } return bad; });
+        check(`${t}: no English left on the Dawah page`, eng.length === 0, eng.slice(0, 5).join(" | "));
+      }
+      check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
+    }, { seed: seedFor(who) + DAWAH_SEED(who === "student" ? "p2" : "p1") });
   }
 }
 await browser.close();
