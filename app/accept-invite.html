@@ -56,6 +56,9 @@
     import { langText } from "./js/lang.js";
     import { getAppLang } from "./js/prefs.js";
     import { safeWrite } from "./js/errors.js";
+    import { roleLabel } from "./js/labels.js";
+    // Audit part 43: the role id was printed raw ("as teacher") on a Bangla page. English keeps its lower-case wording.
+    const roleText = (r) => (getAppLang() === "en" ? r : roleLabel(r));
     import { translateStatic, t } from "./js/i18n.js";
     import { registerServiceWorker } from "./js/sw-register.js";
     import { armScreensaver } from "./js/screensaver-idle.js";
@@ -141,7 +144,7 @@
 
         const tenantName = langText(invite.tenantName, getAppLang(), "this account");
         boxEl.className = "info";
-        boxEl.textContent = t("You are invited to join {tenant} as {role}.", { tenant: tenantName, role: invite.role });
+        boxEl.textContent = t("You are invited to join {tenant} as {role}.", { tenant: tenantName, role: roleText(invite.role) });
         acceptArea.style.display = "block";
       });
     }
@@ -157,7 +160,7 @@
 
       if (outcome.ok) {
         boxEl.className = "ok";
-        boxEl.textContent = t("Welcome! You have joined as {role}. Your person ID: {personId}.", { role: outcome.result.role, personId: outcome.result.personId });
+        boxEl.textContent = t("Welcome! You have joined as {role}. Your person ID: {personId}.", { role: roleText(outcome.result.role), personId: outcome.result.personId });
         acceptArea.style.display = "none";
       } else {
         boxEl.className = "fail";

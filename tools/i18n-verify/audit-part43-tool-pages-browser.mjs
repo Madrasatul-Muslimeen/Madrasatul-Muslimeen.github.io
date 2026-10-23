@@ -18,6 +18,7 @@ const arg = (n) => (process.argv.find((a) => a.startsWith(`--${n}=`)) || "").sli
 const MUTATE = arg("mutate"), ONLY = arg("only"), WONLY = Number(arg("width")) || 0, LONLY = arg("lang"), KONLY = arg("look");
 // name: [file, route glob, anchor (exactly once), replacement]. Each puts one fix back to the old code.
 const MUTATIONS = {
+  acceptrole: ["app/accept-invite.html", "**/accept-invite.html*", "role: roleText(invite.role)", "role: invite.role"],
   dawahheading: ["app/css/card-look.css", "**/css/card-look.css*", "/* Audit part 43: .status-group-heading sits", "[data-card-look=\"night\"] .status-group-heading { color: var(--card-text-muted); border-color: var(--card-line); }\n/* "],
   monthfield: ["app/css/admin-touch.css", "**/css/admin-touch.css*", "body.admin-touch input[type=\"month\"],", ""],
 };
@@ -88,6 +89,20 @@ function measure(scope) {
   for (const k of ["cut", "covered", "backSmall", "small", "contrast"]) out[k] = [...new Set(out[k])];
   return out;
 }
+// English left on a page opened in Bangla: visible Latin words of 4+ letters, minus proper names the page may keep.
+const PROPER = /^(Mapping|Journey|WordPress|Evernote|Google|Zab|Quran|Qur|Tools|Export|content|CSV|HTML|enex|XML|Madrasatul|Muslimeen|MSA|Ahsan|Maryam|Yusuf|Zayd|Seeded|Fatiha|Surah|Allah|Ikhlas|Kursi|Invitee|Test|Parent|example|invited|smahk|gmail|json|Ref|Hadith|Dawah|Asma|Husna|QuranRevival|Foundation|OpenITI|Open|Islamicate|Texts|Initiative|Learn|next|backup|quranrevival|gone|Memorise|Doing|well|tajweed|printable|page|body|text|note|without|reference)$/i;
+function latinLeft() {
+  const out = new Set(), seen = new Set();
+  const vis = (e) => { const r = e.getBoundingClientRect(), c = getComputedStyle(e); return r.width > 0 && r.height > 0 && c.visibility !== 'hidden' && c.display !== 'none' && !e.closest('[hidden]'); };
+  const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  for (let n = w.nextNode(); n; n = w.nextNode()) {
+    const e = n.parentElement; if (!e || seen.has(e) || !vis(e) || e.closest('script, style, code, #zabCorner, #zabBar, #zabPanel, [lang=en], [data-i18n-skip]' + (window.__latinSkip ? ', ' + window.__latinSkip : ''))) continue;
+    for (const m of n.nodeValue.matchAll(/[A-Za-z]{4,}/g)) if (!PROPER.test(m[0]) && !/^(https?|www)$/i.test(m[0])) out.add(m[0] + ' in ' + e.tagName.toLowerCase() + (e.id ? '#' + e.id : ''));
+  }
+  return [...out];
+}
+const LATIN_SRC = latinLeft.toString();
+const PROPER_SRC = PROPER.toString();
 const MEASURE_SRC = measure.toString();
 
 const settle = (p, ms = 350) => p.waitForTimeout(ms);
@@ -116,6 +131,11 @@ async function state(t, p, label, mustSee, only = {}) {
   check(`${tt}: every ← Back is 40px or taller`, m.backSmall.length === 0, m.backSmall.slice(0, 5).join(" | "));
   check(`${tt}: every finger control is 40px or taller`, m.small.length === 0, m.small.slice(0, 6).join(" | "));
   check(`${tt}: text colour 4.5:1 against its real background`, m.contrast.length === 0, m.contrast.slice(0, 6).join(" | "));
+  if (t.startsWith("bn ")) {
+    await p.evaluate((k) => { window.__latinSkip = k; }, only.latinSkip || "");
+    const left = await p.evaluate(`(() => { const PROPER = ${PROPER_SRC}; return (${LATIN_SRC})(); })()`);
+    check(`${tt}: no English left on the Bangla page (proper names aside)`, left.length === 0, left.slice(0, 8).join(" | "));
+  }
   return m;
 }
 
@@ -132,7 +152,7 @@ async function open(lang, look, width, height, pagePath, extraSeedJs = "") {
     const body = fs.readFileSync(path.join(ROOT, file), "utf8");
     const n = body.split(from).length - 1;
     if (n !== 1) throw new Error(`mutation anchor for ${MUTATE} found ${n} times`);
-    await ctx.route(glob, (r) => r.fulfill({ status: 200, contentType: file.endsWith(".css") ? "text/css; charset=utf-8" : "text/javascript; charset=utf-8", body: body.split(from).join(to) }));
+    await ctx.route(glob, (r) => r.fulfill({ status: 200, contentType: file.endsWith(".css") ? "text/css; charset=utf-8" : file.endsWith(".html") ? "text/html; charset=utf-8" : "text/javascript; charset=utf-8", body: body.split(from).join(to) }));
   }
   const { page, errors } = await openPage(ctx, pagePath);
   await page.waitForTimeout(900);
@@ -156,7 +176,7 @@ async function flow(name, lang, look, width, pagePath, fn, seed = "") {
 // file, what must be on screen, per-page main action (optional)
 const acceptSeed = `DATA.inviteTokens = [{ _id: "tok1", tenantId: "t1", email: "smahk9@gmail.com" }]; DATA.tenantInvites = [...(DATA.tenantInvites ?? []), { _id: "t1__smahk9@gmail.com", tenantId: "t1", email: "smahk9@gmail.com", role: "teacher", status: "pending" }];`;
 const PAGES = {
-  about: { file: "about.html", see: "h1" },
+  about: { file: "about.html", see: "h1", latinSkip: "td" },
   backup: { file: "backup.html", see: "h1" },
   import: { file: "import-notes.html", see: "h1" },
   dawah: { file: "dawah.html", see: "h1", seed: "@dawahSeed" },
@@ -301,14 +321,14 @@ function pageFlow(key) {
   return async (t, p, errors) => {
     await until("the page heading shows", () => visible(p, def.see), 20000);
     await settle(p, 700);
-    await state(t, p, "first screen", def.see);
+    await state(t, p, "first screen", def.see, { latinSkip: def.latinSkip });
     if (ACTIONS[key]) await ACTIONS[key](t, p, errors);
     check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
   };
 }
 
 // ---- the detectors prove themselves -------------------------------------------------------------------------------------
-if (!ONLY || "control".includes(ONLY)) await flow("control", "en", "night", 390, "/app/about.html", async (t, p) => {
+if (!ONLY || ONLY.split(",").includes("control")) await flow("control", "en", "night", 390, "/app/about.html", async (t, p) => {
   await ev(p, () => {
     const d = document.createElement("div");
     d.innerHTML = '<button id="c1" style="position:absolute;left:-80px;top:300px;width:60px;height:44px">cut</button>'
@@ -329,6 +349,43 @@ if (!ONLY || "control".includes(ONLY)) await flow("control", "en", "night", 390,
   const m2 = await p.evaluate(`(${MEASURE_SRC})()`);
   check(`${t}: POSITIVE CONTROL once the seeded defects are fixed they are no longer reported`, !m2.cut.some((x) => x.includes("#c1")) && !m2.backSmall.some((x) => x.includes("#c3")) && !m2.small.some((x) => x.includes("#c3")) && !m2.contrast.some((x) => x.includes("#c4")) && m2.over <= 0, JSON.stringify({ c: m2.cut, b: m2.backSmall, o: m2.over }));
 });
+
+if (!ONLY || ONLY.split(",").includes("control")) await flow("control", "bn", "night", 390, "/app/about.html", async (t, p) => {
+  await ev(p, () => { const e = document.createElement("p"); e.id = "c6"; e.textContent = "আপনি teacher হিসেবে"; document.body.prepend(e); });
+  const left = await p.evaluate(`(() => { const PROPER = ${PROPER_SRC}; return (${LATIN_SRC})(); })()`);
+  check(`${t}: POSITIVE CONTROL an English word on a Bangla page is found`, left.some((x) => x.startsWith("teacher")), JSON.stringify(left.slice(0, 5)));
+  check(`${t}: POSITIVE CONTROL a proper name (Zab) is not reported`, !left.some((x) => /^Zab/.test(x)), JSON.stringify(left.slice(0, 5)));
+});
+
+// ---- as a window from the menu (J74), then – and ← Back (v12.25) -----------------------------------------------------------
+const MENU_FILES = ["homework.html", "monitor.html", "people.html", "backup.html", "about.html", "dawah.html"];
+async function menuWindow(t, p, errors) {
+  for (const file of MENU_FILES) {
+    const tt = `${t} ${file}`;
+    const label = await ev(p, (f) => { const a = [...document.querySelectorAll(".app-nav a.nav-link[href]")].find((x) => x.getAttribute("href").startsWith(f)); if (!a) return null; a.closest("details")?.setAttribute("open", ""); a.click(); return a.textContent.trim(); }, file);
+    check(`${tt}: POSITIVE CONTROL the menu has a link to the page`, !!label);
+    if (!label) continue;
+    const opened = await until("the page window opens", () => visible(p, "#pageWindow:not([hidden])"), 10000);
+    check(`${tt}: the menu link "${label}" opens it in a window`, opened);
+    if (!opened) continue;
+    await settle(p, 1500);
+    const url0 = await ev(p, () => document.querySelector("#pageWindow iframe")?.src || "");
+    const mb = await ev(p, () => { const b = document.querySelector("#pageWindow .mm-min-btn"); if (!b) return null; const r = b.getBoundingClientRect(); const at = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return { w: Math.round(r.width), h: Math.round(r.height), top: !!at && (at === b || b.contains(at)) }; });
+    check(`${tt}: the window's – is 40px+ and not covered`, !!mb && mb.w >= 40 && mb.h >= 40 && mb.top, JSON.stringify(mb));
+    await ev(p, () => document.querySelector("#pageWindow .mm-min-btn")?.click()); await settle(p, 400);
+    let s = await ev(p, () => ({ win: !!document.querySelector("#pageWindow:not([hidden])") && getComputedStyle(document.getElementById("pageWindow")).display !== "none" && document.getElementById("pageWindow").getBoundingClientRect().width > 0, chip: document.querySelectorAll(".mm-min-chip").length }));
+    check(`${tt}: – hides the window and leaves one chip`, !s.win && s.chip === 1, JSON.stringify(s));
+    await ev(p, () => document.querySelector(".mm-min-chip")?.click()); await settle(p, 500);
+    s = await ev(p, () => ({ win: document.getElementById("pageWindow").getBoundingClientRect().width > 0, chip: document.querySelectorAll(".mm-min-chip").length, src: document.querySelector("#pageWindow iframe")?.src || "" }));
+    check(`${tt}: the chip restores the same window (same page, chip gone)`, s.win && s.chip === 0 && s.src === url0, JSON.stringify({ ...s, url0 }));
+    await ev(p, () => document.querySelector("#pageWindow [data-pgw-back]")?.click()); await settle(p, 400);
+    s = await ev(p, () => ({ win: !!document.querySelector("#pageWindow:not([hidden])") && document.getElementById("pageWindow").getBoundingClientRect().width > 0, url: location.pathname.split("/").pop() }));
+    check(`${tt}: ← Back closes it and the landing page is as it was`, !s.win && s.url === "quranrevival.html", JSON.stringify(s));
+  }
+  check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
+}
+if (!ONLY || ONLY.split(",").includes("menuwindow")) for (const lang of LANGS_ALL(LONLY)) await flow("menuwindow", lang, "night", 1440, "/app/quranrevival.html", menuWindow);
+function LANGS_ALL(l) { return ["en", "bn"].filter((x) => !l || x === l); }
 
 // ---- the sweep ----------------------------------------------------------------------------------------------------------
 const WIDTHS = [320, 390, 768, 1280].filter((w) => !WONLY || w === WONLY);
