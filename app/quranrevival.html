@@ -2741,6 +2741,31 @@
     /* ...and it is cut from its START, so what stays is the number ("…ah 77", "…৭৭"), the part that says where. */
     body.immersive-read.fs-hide-readbar.fs-hide-transport #readBar:has(#mushafPagePrevBtn:not([hidden])) .mushaf-page-ref-text { direction: rtl; text-align: left; }
   }
+  /* QR Lead (the Owner, 23 Oct 2026: "I want both read to be the same"): ☰ Surah list is on every Read now, so on a
+     phone's Mushaf bar (with ‹ ›) it is the ☰ alone, 40px square (its spoken name stays "Surah list"), and the page
+     reference is the elastic part in the normal view too: the bar keeps the lines it had without ☰. */
+  @media (max-width: 599.98px) {
+    body.read-from-contents #readBar:has(#mushafPagePrevBtn:not([hidden])) #readListBtn { padding: 0; width: 40px; }
+    body.read-from-contents #readBar:has(#mushafPagePrevBtn:not([hidden])) #readListBtn .read-list-word { display: none; }
+    body.read-from-contents #readBar:has(#mushafPagePrevBtn:not([hidden])) #mushafPageRef { flex: 1 1 0; min-width: 0; }
+    body.read-from-contents #readBar:has(#mushafPagePrevBtn:not([hidden])) .mushaf-page-ref-text { direction: rtl; text-align: left; }
+    /* ...and in the bare full screen the end tiles are 36px wide (40px tall) with 2px gaps, as below 360px already. */
+    body.read-from-contents.immersive-read.fs-hide-readbar.fs-hide-transport #readBar:has(#mushafPagePrevBtn:not([hidden])) { gap: 2px; }
+    body.read-from-contents.immersive-read.fs-hide-readbar.fs-hide-transport #readBar:has(#mushafPagePrevBtn:not([hidden])) #readBarEnd { gap: 2px; }
+    body.read-from-contents.immersive-read.fs-hide-readbar.fs-hide-transport #readBar:has(#mushafPagePrevBtn:not([hidden])) #readBarEnd > button { width: 36px; min-width: 36px; padding-left: 0; padding-right: 0; }
+  }
+  @media (max-width: 359.98px) {
+    body.read-from-contents #readBar:has(#mushafPagePrevBtn:not([hidden])) #readListBtn { width: 36px; min-width: 36px; }
+    body.read-from-contents #readBar:has(#mushafPagePrevBtn:not([hidden])) { gap: 2px; }
+    body.read-from-contents #readBar:has(#mushafPagePrevBtn:not([hidden])) :is(#prevUnitBtn, #nextUnitBtn, #readPlayBtn, #readStopBtn) { width: 36px; min-width: 36px; padding-left: 0; padding-right: 0; }
+    /* The bare full screen's top line is 288px at 320: ☰ + ‹ › + four tiles left the reference 14px. Here ☰ sits at the
+       left of the bottom row instead (Notes / Record / Approach, fixed below 600px), so the top line keeps the reference. */
+    body.read-from-contents.immersive-read.fs-hide-readbar.fs-hide-transport #readBar:has(#mushafPagePrevBtn:not([hidden])) #readListBtn {
+      position: fixed; left: 0.5rem; bottom: calc(var(--rq-bottom, 0px) + 8px + env(safe-area-inset-bottom, 0px)); z-index: 66;
+      width: 40px; min-width: 40px; height: 36px; margin: 0;
+    }
+    body.read-from-contents.immersive-read.fs-hide-readbar.fs-hide-transport #readBar:has(#mushafPagePrevBtn:not([hidden])) #readQuickRow { padding-left: calc(0.5rem + 44px); }
+  }
   @media (max-width: 479px) {
     #readBar:has(#readMeaningLayersSlot:not([hidden])) #readMeaningBtn { padding: 0; width: 40px; }
     #readBar:has(#readMeaningLayersSlot:not([hidden])) #readMeaningBtn .read-meaning-word { display: none; }
@@ -2759,6 +2784,11 @@
     body.read-from-contents #readBar:has(#readMeaningLayersSlot:not([hidden])) > #readListBtn { padding: 0 0.45rem; gap: 0.2rem; }
     #readBar:has(#readMeaningLayersSlot:not([hidden])) #readBarEnd { gap: 0.15rem; }
     #readMeaningLayersSlot label { padding: 0 0.3rem; }
+    /* QR Lead (the Owner, 23 Oct 2026, "both read the same"): ☰ is on every Read now. Outside the bare full screen the
+       bar also shows ⋯ and the transport, so ☰ joining the switches' row pushed the tools to a third line (360-412px):
+       there it stays at the head of the transport's line, its icon alone (spoken name "Surah list"). */
+    body.read-from-contents:not(.fs-hide-transport) #readBar:has(#readMeaningLayersSlot:not([hidden])) > #readListBtn { order: -1; padding: 0; width: 40px; }
+    body.read-from-contents:not(.fs-hide-transport) #readBar:has(#readMeaningLayersSlot:not([hidden])) > #readListBtn .read-list-word { display: none; }
   }
 
   @media (max-width: 379px) { #readMeaningLayersSlot label { padding: 0 0.3rem; font-size: 0.7rem; } }
@@ -11138,7 +11168,10 @@
       if (!reading) setImmersive(false);
       if (!reading) closeReadTools();
       else positionReadQuickRow();
-      if (!reading) document.body.classList.remove("read-from-contents"); // issue #419
+      // QR Lead (the Owner, 23 Oct 2026: "I want both read to be the same (preferably the 1st image which shows Surah
+      // list)"): every way into Read now gets the Surah-list route's bar (☰ Surah list, and in the bare full screen
+      // Notes / Record / Approach), not only Read -> list. The class keeps its name; it is cleared on leaving Read.
+      document.body.classList.toggle("read-from-contents", reading); // issue #419
       // Issue #348 review (I9): the unit markers' tables load on first Read.
       if (reading && !unitCardTablesCache) {
         unitCardBoundaryTables().then(() => { if (stageView === "read") renderStudyScreen(); }).catch(() => {});
@@ -20596,7 +20629,7 @@
       if (!Number.isFinite(cur) || target < 1 || target > 604) return;
       const show = () => {
         const el = pageViewContainer.querySelector(`.hifz-page[data-mushaf-page="${target}"]`);
-        if (el) { el.scrollIntoView({ inline: "start", block: "start", behavior: "instant" }); updateMushafPageRef(); }
+        if (el) { scrollToMushafPage(el); updateMushafPageRef(); }
         return !!el;
       };
       if (show()) return;
@@ -20615,6 +20648,37 @@
       try { await flowRenderPromise; } catch { /* renderFlowView() reports its own failure on-screen. */ }
       show();
     }
+    /** QR Lead (the Owner, 23 Oct 2026: "the right nav button doesn't work at all, the left nav button does things
+        weird"): put a printed page at the strip's start (its RIGHT edge, the way a Mushaf reads). scrollIntoView could
+        not: the page's own direction is ltr, so "start" aimed its LEFT edge at the strip's left, and the strip's
+        mandatory snap then pulled › back to where it was and threw ‹ two or more pages on. Measured, then scrolled. */
+    function scrollToMushafPage(el) {
+      if (!document.body.classList.contains("read-sideways")) { el.scrollIntoView({ block: "start", behavior: "instant" }); return; }
+      const strip = pageViewContainer, r = strip.getBoundingClientRect();
+      const right = r.left + strip.clientLeft + strip.clientWidth;
+      strip.scrollTo({ left: strip.scrollLeft + (el.getBoundingClientRect().right - right), behavior: "instant" });
+    }
+
+    /** QR Lead (the Owner, 23 Oct 2026: "the image shows a 3rd broke page"): a printed page is at most 560px wide, so a
+        1232px strip showed two pages and a cut slice of a third. The strip is made exactly as wide as the WHOLE pages
+        that fit (one, two...), centred; no cut page. Only for Mushaf pages side by side; anything else clears it. */
+    function fitMushafStrip() {
+      const strip = pageViewContainer, pageEl = strip.querySelector(":scope > .hifz-page");
+      let want = "";
+      if (pageEl && document.body.classList.contains("read-sideways") && getComputedStyle(strip).display !== "none") {
+        const pageMax = parseFloat(getComputedStyle(pageEl).maxWidth);
+        const host = strip.parentElement, hs = getComputedStyle(host);
+        const avail = host.clientWidth - parseFloat(hs.paddingLeft) - parseFloat(hs.paddingRight);
+        if (pageMax > 0 && avail > pageMax) want = `${Math.floor(avail / pageMax) * pageMax}px`;
+      }
+      // A width, not a max-width: with auto margins a column flex item shrinks to its content, and a scroller's is ~0.
+      if (strip.style.width !== want) {
+        strip.style.width = want;
+        strip.style.marginInline = want ? "auto" : "";
+      }
+    }
+    window.addEventListener("resize", () => { fitMushafStrip(); });
+
     mushafPagePrevBtn?.addEventListener("click", () => stepMushafPage(-1).catch((error) => console.warn("Mushaf page", error)));
     mushafPageNextBtn?.addEventListener("click", () => stepMushafPage(1).catch((error) => console.warn("Mushaf page", error)));
 
@@ -20622,6 +20686,7 @@
         view or when nothing is rendered yet, and never throws on a page the
         packaged Mushaf data doesn't recognise. */
     function updateMushafPageRef() {
+      fitMushafStrip();
       if (!mushafPageRef) return;
       if (!mushafToggle.checked || getComputedStyle(pageViewContainer).display === "none") {
         clearMushafPageRef(); return;
