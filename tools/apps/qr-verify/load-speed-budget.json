@@ -1,0 +1,6 @@
+{
+  "beforePaintRequests": { "in": 140, "out": 140 },
+  "beforePaintModules": { "in": 136, "out": 136 },
+  "startupReads": { "in": 7, "out": 0 },
+  "secondVisitNetwork": { "in": 0, "out": 0 }
+}

@@ -62,7 +62,11 @@ const BUDGET = {
 try { Object.assign(BUDGET, JSON.parse(fs.readFileSync(path.join(REPO, "tools/apps/qr-verify/load-speed-budget.json"), "utf8"))); } catch { /* no budget file yet: --report */ }
 
 // name: [file in the built app, route glob, anchor (exactly once), replacement]. Each puts one fix (or one extra) back.
-const MUTATIONS = {};
+const MUTATIONS = {
+  // part 1 (modulepreload): one link of the closure missing / one module outside the closure preloaded
+  "preload-missing": ["app/quranrevival.html", "**/app/quranrevival.html*", '<link rel="modulepreload" href="./js/account-card.js">\n', ""],
+  "preload-extra": ["app/quranrevival.html", "**/app/quranrevival.html*", "<head>\n", '<head>\n<link rel="modulepreload" href="./js/writing-sheet.js">\n'],
+};
 // Positive controls (the "control" flow): ONE extra startup module and ONE extra startup read, which the counters must see.
 const CONTROLS = {
   "extra-import": ["app/quranrevival.html", "**/app/quranrevival.html*", "</body>", '<script type="module" src="./js/writing-sheet.js"></script></body>'],
@@ -107,6 +111,23 @@ async function makeContext(width, signedOut) {
   ctx.__sw = [];
   ctx.on("request", (r) => { if (r.serviceWorker()) ctx.__sw.push({ url: r.url(), t: Date.now(), r }); });
   return ctx;
+}
+
+/** The static import closure of the BUILT page's module scripts, found here by a walker of its own (not after-build's): only `from "./x.js"` and `import "./x.js"`, never import(). */
+function staticClosureOnDisk() {
+  const pageFile = path.join(BUILD, "app/quranrevival.html");
+  const seen = new Set();
+  const walk = (src, dir) => {
+    const re = [/\bfrom\s*["'](\.[^"']+\.js)["']/g, /^\s*import\s*["'](\.[^"']+\.js)["']/gm];
+    for (const r of re) for (const m of src.matchAll(r)) {
+      const p = path.normalize(path.join(dir, m[1]));
+      if (seen.has(p) || !fs.existsSync(p)) continue;
+      seen.add(p); walk(fs.readFileSync(p, "utf8"), path.dirname(p));
+    }
+  };
+  const html = fs.readFileSync(pageFile, "utf8");
+  for (const m of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)) if (/type="module"/.test(m[1]) && !/\ssrc=/.test(m[1])) walk(m[2], path.dirname(pageFile));
+  return new Set([...seen].map((f) => path.relative(path.dirname(pageFile), f).split(path.sep).join("/")));
 }
 
 const rawSize = (u) => { try { const x = new URL(u); if (x.origin !== BASE) return 0; return fs.statSync(path.join(BUILD, decodeURIComponent(x.pathname))).size; } catch { return 0; } };
@@ -256,6 +277,15 @@ async function scenario(width, signedOut) {
     if (!ONLY || /first/.test(ONLY)) {
       check(`${tag}: first visit, requests before first paint within the budget (${BUDGET.beforePaintRequests[key]})`, first.beforePaintRequests <= BUDGET.beforePaintRequests[key], `${first.beforePaintRequests}`);
       check(`${tag}: first visit, modules before first paint within the budget (${BUDGET.beforePaintModules[key]})`, first.beforePaintModules <= BUDGET.beforePaintModules[key], `${first.beforePaintModules}`);
+    }
+    if (!ONLY || /preload/.test(ONLY)) {
+      const closure = staticClosureOnDisk();
+      const links = await first.t.page.evaluate(() => [...document.querySelectorAll('link[rel="modulepreload"]')].map((l) => l.getAttribute("href")));
+      const have = new Set(links.map((h) => h.replace(/^\.\//, "")));
+      const missing = [...closure].filter((f) => !have.has(f)), extra = [...have].filter((f) => !closure.has(f));
+      check(`${tag}: POSITIVE CONTROL the closure walker found the page's modules (${closure.size})`, closure.size > 100 && closure.has("js/firebase-init.js"), `${closure.size}`);
+      check(`${tag}: the page preloads every module in its static import closure`, missing.length === 0, `missing ${missing.length}: ${missing.slice(0, 5).join(", ")}`);
+      check(`${tag}: the page preloads no module outside its static import closure`, extra.length === 0, `extra ${extra.length}: ${extra.slice(0, 5).join(", ")}`);
     }
     // read view, first visit
     let readFirst = null;
