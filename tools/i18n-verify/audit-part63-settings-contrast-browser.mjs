@@ -20,7 +20,14 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
 const arg = (n) => (process.argv.find((a) => a.startsWith(`--${n}=`)) || "").slice(n.length + 3);
 const MUTATE = arg("mutate"), ONLY = arg("only"), WONLY = Number(arg("width")) || 0, LONLY = arg("lang");
 // [file, route glob, anchor (must occur exactly once), replacement, the page the mutation applies to]
-const MUTATIONS = {};
+const MUTATIONS = {
+  // Choosing a language is not stored, so no other page keeps it.
+  langforget: ["app/js/prefs.js", "**/js/prefs.js*", "  writeStored(APP_LANG_KEY, lang);\n", "", "/app/quranrevival.html"],
+  // Choosing a card look is not stored, so it does not survive leaving the page.
+  lookforget: ["app/js/prefs.js", "**/js/prefs.js*", "  writeStored(CARD_LOOK_KEY, id);\n", "", "/app/quranrevival.html"],
+  // Night's muted text (the account card labels) is darkened to a colour that is unreadable on the dark card.
+  nightmuted: ["app/css/card-look.css", "**/css/card-look.css*", "--card-text-muted: #b9c2d4;", "--card-text-muted: #3a4660;", "/app/quranrevival.html"],
+};
 if (MUTATE && !MUTATIONS[MUTATE]) throw new Error(`no such mutation ${MUTATE}`);
 const browser = await chromium.launch();
 const BN = /[ঀ-৿]/;
@@ -34,7 +41,7 @@ async function open(lang, width, pagePath, { seed = "", ctxOpts = {}, look = nul
     const body = fs.readFileSync(path.join(ROOT, file), "utf8");
     const n = body.split(from).length - 1;
     if (n !== 1) throw new Error(`mutation anchor for ${MUTATE} found ${n} times`);
-    await ctx.route(glob, (r) => r.fulfill({ status: 200, contentType: file.endsWith(".js") ? "text/javascript; charset=utf-8" : "text/html; charset=utf-8", body: body.split(from).join(to) }));
+    await ctx.route(glob, (r) => r.fulfill({ status: 200, contentType: file.endsWith(".js") ? "text/javascript; charset=utf-8" : file.endsWith(".css") ? "text/css; charset=utf-8" : "text/html; charset=utf-8", body: body.split(from).join(to) }));
   }
   const { page, errors } = await openPage(ctx, pagePath);
   await page.waitForTimeout(1200);
@@ -71,10 +78,14 @@ const CONTRAST_LIB = `
   const lum = (c) => { const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }; return 0.2126 * f(c.r) + 0.7152 * f(c.g) + 0.0722 * f(c.b); };
   const ratio = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
   window.__contrastOf = (el) => {
-    const layers = []; let unknown = false;
+    const layers = []; let unknown = false; let gradient = null;
     for (let e = el; e; e = e.parentElement) {
       const cs = getComputedStyle(e);
-      if (cs.backgroundImage && cs.backgroundImage !== "none") unknown = true;
+      if (cs.backgroundImage && cs.backgroundImage !== "none") {
+        const stops = (cs.backgroundImage.match(/rgba?\\([^)]+\\)/g) || []).map(parse).filter(Boolean);
+        if (stops.length && stops.every((x) => x.a >= 1)) { gradient = stops; break; }
+        unknown = true;
+      }
       const bg = parse(cs.backgroundColor);
       if (bg && bg.a > 0) layers.push(bg);
       if (bg && bg.a >= 1) break;
@@ -83,6 +94,7 @@ const CONTRAST_LIB = `
     for (let i = layers.length - 1; i >= 0; i--) base = over(layers[i], base);
     let fg = parse(getComputedStyle(el).color);
     if (!fg) return null;
+    if (gradient) { const rs = gradient.map((g) => ratio(over(fg, g), g)); return { ratio: Math.min(...rs), unknown, fg: getComputedStyle(el).color, bg: "gradient(" + gradient.length + " stops)" }; }
     const eff = over(fg, base);
     return { ratio: ratio(eff, base), unknown, fg: getComputedStyle(el).color, bg: "rgb(" + Math.round(base.r) + "," + Math.round(base.g) + "," + Math.round(base.b) + ")" };
   };
@@ -139,7 +151,74 @@ for (const lang of LANGS) for (const width of WIDTHS) {
       }
       check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
     }, { seed });
+    // My account, Card look (sticks across a reload and across pages, readable), the way back.
+    await flow(`look-${who}`, lang, width, "/app/quranrevival.html", async (t, page, ctx, errors) => {
+      await installContrast(page);
+      const homeLabel = await homeLabelOf(page);
+      const card = async () => {
+        await page.click(summaryOf(homeLabel)); await settle(page, 200);
+        await page.click("[data-open-account-card]"); await settle(page, 300);
+        const p = await ev(page, () => { if (!window.__contrastOf) return null; const sh = document.querySelector(".account-sheet"); const r = sh.getBoundingClientRect(); const items = [...sh.querySelectorAll("dt, dd, .account-sheet-title, label")].filter((e) => e.getClientRects().length && e.textContent.trim()).map((e) => window.__contrastOf(e)).filter(Boolean); return { look: document.documentElement.getAttribute("data-card-look"), facts: sh.querySelectorAll("dt").length, inside: r.left >= -1 && r.right <= innerWidth + 1 && r.top >= -1 && r.bottom <= innerHeight + 1, worst: Math.min(...items.map((i) => i.ratio)), n: items.length }; });
+        await page.click("#accountCardClose"); await settle(page, 200);
+        return p;
+      };
+      await installContrast(page);
+      const night = await card();
+      check(`${t}: My account opens inside the screen with its facts, Night is the default`, !!night && night.look === "night" && night.facts > 0 && night.inside, JSON.stringify(night));
+      check(`${t}: account card text is readable in Night (worst ${night?.worst?.toFixed(2)} of ${night?.n} items, 4.5:1)`, !!night && night.n > 0 && night.worst >= 4.5, JSON.stringify(night));
+      await page.click(summaryOf(homeLabel)); await settle(page, 200);
+      await page.click('[data-card-look-btn="light"]'); await settle(page, 300); await page.keyboard.press("Escape");
+      const light = await card();
+      check(`${t}: Light is applied and the account card text is readable (worst ${light?.worst?.toFixed(2)}, 4.5:1)`, !!light && light.look === "light" && light.worst >= 4.5, JSON.stringify(light));
+      for (const p of ["/app/deen-study.html", "/app/hadith-study.html", "/app/notes.html"]) {
+        await page.goto(`http://localhost:8080${p}`, { waitUntil: "load" }).catch(() => {}); await settle(page, 1000);
+        const k = await ev(page, () => ({ look: document.documentElement.getAttribute("data-card-look"), stored: localStorage.getItem("mm_card_look") }));
+        check(`${t}: ${p.slice(5)} keeps the Light look`, k.look === "light" && k.stored === "light", JSON.stringify(k));
+      }
+      await page.goto("http://localhost:8080/app/quranrevival.html", { waitUntil: "load" }); await settle(page, 1000);
+      await installContrast(page);
+      await page.click(summaryOf(await homeLabelOf(page))); await settle(page, 200);
+      await page.click('[data-card-look-btn="night"]'); await settle(page, 300); await page.keyboard.press("Escape");
+      const back = await ev(page, () => ({ look: document.documentElement.getAttribute("data-card-look"), stored: localStorage.getItem("mm_card_look") }));
+      check(`${t}: Night brings the first look back and is stored`, back.look === "night" && back.stored === "night", JSON.stringify(back));
+      check(`${t}: no sideways scroll, no page errors`, (await wide(page)) <= 0 && noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
+    }, { seed });
+
+    // Taglines strip: inside the screen, readable on its own background; owner sees the Taglines settings page.
+    await flow(`taglines-${who}`, lang, width, "/app/quranrevival.html", async (t, page, ctx, errors) => {
+      await installContrast(page);
+      await page.waitForSelector("#taglineStrip .tagline-line", { timeout: 15000 }).catch(() => {});
+      const s = await ev(page, () => { const el = document.querySelector("#taglineStrip .tagline-line:not(.tagline-leaving) .tagline-track") || document.querySelector("#taglineStrip"); const c = window.__contrastOf(el); const r = document.getElementById("taglineStrip").getBoundingClientRect(); return { c, l: r.left, r: r.right, text: el.textContent.trim().slice(0, 30) }; });
+      check(`${t}: POSITIVE CONTROL the strip shows a line`, s.text.length > 0, JSON.stringify(s));
+      check(`${t}: the strip sits inside the screen`, s.l >= -1 && s.r <= width + 1, JSON.stringify(s));
+      check(`${t}: the strip text is readable on its background (${s.c?.ratio?.toFixed(2)}, 4.5:1)`, !!s.c && s.c.ratio >= 4.5, JSON.stringify(s.c));
+      check(`${t}: no sideways scroll, no page errors`, (await wide(page)) <= 0 && noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
+    }, { seed, ctxOpts: { taglines: { lines: [{ id: "a", text: { en: "A gentle reminder", bn: "একটি মৃদু স্মরণ" }, link: null, order: 10, status: "active", holdDays: 7, ayahRef: null }], settings: { motion: "fade", changeAfterSeconds: 2, pauseOnHold: true, scroll: true, scrollSpeed: 10 } } } });
+
+    // Contrast of every menu item's text against its real background, Night and Light.
+    for (const look of ["night", "light"]) await flow(`contrast-${who}-${look}`, lang, width, "/app/quranrevival.html", async (t, page, ctx, errors) => {
+      await installContrast(page);
+      const labels = await ev(page, () => [...document.querySelectorAll(".nav-cat")].map((c) => c.querySelector("summary").textContent.trim()));
+      let total = 0; const low = [];
+      for (const label of labels) {
+        await page.click(summaryOf(label)); await settle(page, 250);
+        const items = await menuItems(page, label);
+        total += items.length;
+        for (const i of items) { ALL_WORST.push({ ...i, where: `${t} ${label}` }); if (i.ratio < 4.5 && !i.disabled && !i.unknown) low.push(`${i.tag}:"${i.text}" ${i.ratio.toFixed(2)} ${i.fg} on ${i.bg}`); }
+        await page.keyboard.press("Escape"); await settle(page, 150);
+      }
+      check(`${t}: POSITIVE CONTROL ${total} menu items measured across ${labels.length} menus`, labels.length === 4 && total > 20, `${labels.length} menus, ${total} items`);
+      check(`${t}: every menu item's text is 4.5:1 or better against its painted background`, low.length === 0, low.slice(0, 5).join(" | "));
+      check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
+    }, { seed, look });
   }
+}
+{
+  const worst = ALL_WORST.filter((i) => !i.unknown).sort((a, b) => a.ratio - b.ratio);
+  const seen = new Set(); const top = [];
+  for (const i of worst) { const k = i.text + i.fg + i.bg; if (seen.has(k)) continue; seen.add(k); top.push(i); if (top.length === 10) break; }
+  console.log(`\nWorst ten menu texts (distinct, of ${ALL_WORST.length} measured; ${ALL_WORST.filter((i) => i.unknown).length} sat on a gradient/image and are not rated):`);
+  for (const i of top) console.log(`  ${i.ratio.toFixed(2)}  "${i.text}" ${i.fg} on ${i.bg}  [${i.where}]`);
 }
 await browser.close();
 console.log(`\n${pass} passed, ${fail} failed`);
