@@ -114,7 +114,7 @@
   .row > div { min-width: 9rem; }
 
   /* ---------- App banner (shell round 3) ---------- */
-  .app-version { font-size: 0.85rem; font-weight: 400; color: #888; vertical-align: middle; }
+  .app-version { font-size: 0.85rem; font-weight: 400; color: #666; vertical-align: middle; } /* QR Lead (audit, QR as a student): #888 on white was 3.54:1; #666 is 5.74:1 */
   .app-tagline { font-style: italic; color: #666; margin: 0 0 0.35rem; font-size: 0.95rem; }
 
   /* ---------- Tagline strip (shell round 20) ----------
@@ -2735,6 +2735,15 @@
   @media (max-width: 359.98px) {
     #readBar:has(#mushafPagePrevBtn:not([hidden])) #mushafPageRef { flex: 1 1 0; min-width: 0; }
   }
+  /* QR Lead (audit, read-quick-buttons red since v12.26): from 600px the bare full screen puts Notes / Record / Approach
+     on the top line, and with ‹ › (80px) that line needed 50-60px more than 568px (600) and 736px (768) give, so it took
+     two lines (80px). Up to 899px there, 📜 and 📖 are their icons alone (spoken names stay the words) and the page
+     reference is the elastic part: one line, as before ‹ ›. */
+  @media (min-width: 600px) and (max-width: 899.98px) {
+    body.read-from-contents.immersive-read.fs-hide-readbar.fs-hide-transport #readBar:has(#mushafPagePrevBtn:not([hidden])) #mushafPageRef { flex: 1 1 0; min-width: 0; }
+    body.read-from-contents.immersive-read.fs-hide-readbar.fs-hide-transport #readBar:has(#mushafPagePrevBtn:not([hidden])) :is(#readMeaningBtn, #readMushafBtn) { padding: 0; width: 40px; }
+    body.read-from-contents.immersive-read.fs-hide-readbar.fs-hide-transport #readBar:has(#mushafPagePrevBtn:not([hidden])) :is(.read-meaning-word, .read-mushaf-word) { display: none; }
+  }
   @media (max-width: 359.98px) { /* J82 reference room */
     /* Architect review (v12.26): at 320 the bare full screen left the reference 22px and its text 0px -- only ▾ showed,
        so the full screen no longer said where the reader is. The four end tiles go to 36px wide (still 40px tall) and
@@ -3178,6 +3187,10 @@
   #wordCardReturnBar { margin: 0 0 0.4rem; }
   #wordCardReturnBar[hidden] { display: none !important; }
   .word-card-app-back { display: inline-flex; align-items: center; gap: 0.3rem; min-height: 40px; margin: 0 0 0.4rem; }
+  /* QR Lead (23 Oct 2026): in the card's top row it is a pill of the row's height that never grows past 13rem (a long
+     "Back to …" ends in …). On a narrow card (the header's own two-row layout, below) it is the ← alone, 40px square. */
+  .quran-word-card header button.word-card-app-back { width: auto; max-width: 13rem; margin: 0; padding: 0 0.7rem; gap: 0.3rem; border-radius: 999px; font-size: 0.85rem; flex: 0 1 auto; min-width: 40px; overflow: hidden; }
+  .quran-word-card header .word-card-app-back-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
   .word-card-return-btn {
     display: inline-flex; align-items: center; gap: 0.4rem;
     min-height: 40px; padding: 0.3rem 0.75rem;
@@ -4855,6 +4868,17 @@
     .quran-word-card header > .word-card-root-box { order: 6; }
     .quran-word-card header > [data-word-card-move="next"] { order: 3; }
     .quran-word-card header > [data-word-card-close] { order: 4; }
+    /* QR Lead (23 Oct 2026): the card's way back, ← alone, sits beside ⓘ (the push to the right moves from ⓘ to it). */
+    .quran-word-card header:has(> .word-card-app-back) button.word-card-legend-btn { margin-inline-end: 0; }
+    .quran-word-card header > button.word-card-app-back { width: 40px; flex: 0 0 auto; padding: 0; margin-inline-end: auto; }
+    .quran-word-card header > button.word-card-app-back .word-card-app-back-text { display: none; }
+  }
+  /* ...and on the narrowest card (a 320px phone: the first row is 296 of 299px), it goes to the second row, before the
+     word, the push back on ⓘ, and the word gives up 40px of its basis so the root box stays on that row. */
+  @container wordcard (max-width: 20rem) {
+    .quran-word-card header > button.word-card-app-back { order: 5; margin-inline-end: 0; }
+    .quran-word-card header:has(> .word-card-app-back) button.word-card-legend-btn { margin-inline-end: auto; }
+    .quran-word-card header:has(> .word-card-app-back) > .word-card-head-word { flex-basis: calc(100% - 9rem); }
   }
   /* J59, measured: on a 320px phone the card's content box is 299px and ‹ 🔍 [This āyah] ⓘ › × needed 308px, so × wrapped
      to a row of its own. A tighter gap and side padding on "This āyah" (88 → 80px) bring the row to 296px; every button
@@ -5427,6 +5451,9 @@
   #bootStatus[hidden] { display: none; }
   #bootStatus p { margin: 0 0 1rem; line-height: 1.5; }
   #bootStatus button { min-height: 40px; margin: 0 0.3rem; }
+  /* QR Lead (audit, QR as a student): Home ▾'s Sign in was the page's 27px default button on a computer (Sign out and
+     phones were already 40px from shell.css): 40px for a finger, both named so they stay alike. */
+  #signInBtn, #signOutBtn { min-height: 40px; }
   html.bm-opening #bootStatus { visibility: hidden; }
   #bmCover { display: none; }
   html.bm-opening #bmCover { display: block; position: fixed; left: 0; right: 0; bottom: 0; top: 3rem; z-index: 19000; background-color: #fff; padding: 2rem 1rem; text-align: center; color: #1F3A6E; font-weight: 600; }
@@ -7432,6 +7459,13 @@
     });
 
     const whoEl = document.getElementById("who");
+    // QR Lead (23 Oct 2026): what Home ▾'s sign-in line says, kept so a language change can say it again in the new language.
+    let whoState = null;
+    function paintWho() {
+      if (!whoState) return;
+      whoEl.textContent = whoState.email ? t("Signed in as {email}", { email: whoState.email }) : t("Not signed in.");
+      if (whoState.noAccount) whoEl.innerHTML += noAccountMessageHtml();
+    }
     const signInBtn = document.getElementById("signInBtn");
     const signOutBtn = document.getElementById("signOutBtn");
     const appEl = document.getElementById("app");
@@ -7574,6 +7608,20 @@
       renderTrackableSelectOptions();
       renderPresets(); // issue #410 -- JS-rendered labels
       renderBanner();
+      // QR Lead (the Owner, 23 Oct 2026, a Read view in English still showing "সম্পূর্ণ সূরা", "২. আল-বাকারা" and
+      // "সূরার তালিকা"): the pickers' options, ☰'s word and the sign-in line are JS-written, so translateStatic() cannot
+      // reach them. Written again here (values kept); renderStudyScreen() below then copies them to the Read bar's and
+      // the wheel's mirrors (syncReadPickers() / syncWheelHubPickers() now compare the words too).
+      fillSurahSelect();
+      if (currentSurahData) {
+        const keepAyah = ayahSelect.value;
+        fillAyahSelect();
+        if (keepAyah) ayahSelect.value = keepAyah;
+        renderRangeSelects();
+      }
+      renderUnitNumberPicker();
+      paintShortReadLabels();
+      paintWho();
       // The strip's current line is JS-rendered, so translateStatic() above
       // cannot reach it (its WeakMap only holds nodes that were in the
       // markup). Redraw it in the new language, without animating -- a
@@ -9814,11 +9862,7 @@
       currentTrackableId = quranTrackables[0]?.id ?? null;
 
       surahIndex = loadedSurahIndex;
-      surahSelect.innerHTML = surahIndex
-        // The option's VALUE stays a plain number -- it is parsed back with
-        // Number() on every change. Only the text a person reads is translated.
-        .map((s) => `<option value="${s.surahNumber}">${num(s.surahNumber)}. ${surahName(s.surahNumber, s.nameEnglish)}</option>`)
-        .join("");
+      fillSurahSelect();
       // The remembered surah is applied HERE, before the first loadSurah(),
       // not afterwards by restoreLastSession(). Doing it afterwards read the
       // records chunk TWICE on every restored load -- surah 1's, because
@@ -9947,6 +9991,18 @@
     function wordRefFor(surah, ayah, position) {
       // Audit J29 fix 9: visible text only (the Word card's reference and its status lines), so Bangla digits; every stored key / data attribute is built elsewhere with Latin digits.
       return num(displayWordRef(surah, ayah, position, fatihaOn(), t("Bismillah")));
+    }
+    /** The surah picker's options, in the app language. Called at boot and again by applyAppLangChange() (the value is
+        kept: a language change moves no one). */
+    function fillSurahSelect() {
+      if (!surahIndex) return;
+      const keep = surahSelect.value;
+      surahSelect.innerHTML = surahIndex
+        // The option's VALUE stays a plain number -- it is parsed back with
+        // Number() on every change. Only the text a person reads is translated.
+        .map((s) => `<option value="${s.surahNumber}">${num(s.surahNumber)}. ${surahName(s.surahNumber, s.nameEnglish)}</option>`)
+        .join("");
+      if (keep) surahSelect.value = keep;
     }
     function fillAyahSelect() {
       if (!currentSurahData) return;
@@ -10904,7 +10960,10 @@
         if (!mirror || !source) continue;
         const stale = mirror.options.length !== source.options.length
           || mirror.options[0]?.value !== source.options[0]?.value
-          || mirror.options[mirror.options.length - 1]?.value !== source.options[source.options.length - 1]?.value;
+          || mirror.options[mirror.options.length - 1]?.value !== source.options[source.options.length - 1]?.value
+          // QR Lead (the Owner, 23 Oct 2026: "Why Bangla is showing in Eng Lang selection?"): a language change keeps every
+          // value and changes only the words, so the words are compared too (the first option's is enough).
+          || mirror.options[0]?.textContent !== source.options[0]?.textContent;
         if (stale) mirror.innerHTML = source.innerHTML;
         if (mirror.value !== source.value) mirror.value = source.value;
       }
@@ -18799,9 +18858,15 @@
         back.type = "button";
         back.className = "word-card-return-btn word-card-app-back";
         back.dataset.wordCardAppBack = "";
-        back.innerHTML = `<span aria-hidden="true">←</span> ${escapeHtml(ayahCardReturn.title)}`;
+        back.title = ayahCardReturn.title;
+        back.innerHTML = `<span aria-hidden="true">←</span> <span class="word-card-app-back-text">${escapeHtml(ayahCardReturn.title)}</span>`;
         back.addEventListener("click", () => { const r = ayahCardReturn; clearAyahCardReturn("back"); r?.back?.(); });
-        content.prepend(back);
+        // QR Lead (the Owner, 23 Oct 2026, a Word card with "← Back to Learn next" alone on a line: "one button takes the
+        // entire row. Bring it to the below row."): it sits in the card's own top row, after ⓘ, before the word; the
+        // row's other controls keep their places. On a phone it is ← alone (its tip and words stay its name).
+        const head = content.querySelector(".quran-word-card > header");
+        const before = head?.querySelector(".word-card-head-word");
+        if (head && before) head.insertBefore(back, before); else content.prepend(back);
       }
       // J60: Family shows one measured row of places per meaning, then "+N more"; re-measured when the width changes.
       fitWordCardFamily(content);
@@ -24924,7 +24989,10 @@
         if (!mirror || !source) continue;
         const stale = mirror.options.length !== source.options.length
           || mirror.options[0]?.value !== source.options[0]?.value
-          || mirror.options[mirror.options.length - 1]?.value !== source.options[source.options.length - 1]?.value;
+          || mirror.options[mirror.options.length - 1]?.value !== source.options[source.options.length - 1]?.value
+          // QR Lead (the Owner, 23 Oct 2026: "Why Bangla is showing in Eng Lang selection?"): a language change keeps every
+          // value and changes only the words, so the words are compared too (the first option's is enough).
+          || mirror.options[0]?.textContent !== source.options[0]?.textContent;
         if (stale) mirror.innerHTML = source.innerHTML;
         if (mirror.value !== source.value) mirror.value = source.value;
       }
@@ -25713,14 +25781,14 @@
       if (!user) {
         forgetWheelPaintCopy();
         window.__bmCoverDone?.(false);
-        whoEl.textContent = t("Not signed in.");
+        whoState = { email: null, noAccount: false }; paintWho();
         signInBtn.style.display = "inline-block";
         signOutBtn.style.display = "none";
         appEl.style.display = "none";
         setBootStatus("signedOut");
         return;
       }
-      whoEl.textContent = t("Signed in as {email}", { email: user.email });
+      whoState = { email: user.email, noAccount: false }; paintWho();
       signInBtn.style.display = "none";
       signOutBtn.style.display = "inline-block";
 
@@ -25761,7 +25829,7 @@
         // tenant document.
         const context = pickContext(membershipRoles, defaultTenantId);
         if (!context) {
-          whoEl.innerHTML += noAccountMessageHtml();
+          whoState.noAccount = true; paintWho();
           setBootStatus("noAccount");
           return;
         }
