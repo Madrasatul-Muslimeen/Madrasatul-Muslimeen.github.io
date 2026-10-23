@@ -22279,3 +22279,18 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 - Measured (390 and 1280, 1.6 Mbps / 150 ms): second visit usable ~0.3–0.7 s against ~2.5–3.1 s first; first refresh at ~+2.5 s, after the last page read (~+0.3–0.5 s). Before (part-filled cache): Journey second visit 3934 ms with 62 refreshes at once.
 - Checks: `service-worker` 18/0, `app-offline-boot-browser` 15/0, `mushaf-font-offline-cache-browser` 29/0, `load-speed-check` 66/0, `apps-build-check` 48/0.
 - **Not reached:** QR's own worker (`apps/qr/after-build.mjs`, the QR Lead's) second visit; the landing page's second visit. Nothing stored, no Rules changed.
+
+## v12.45 — 24 Oct 2026 — QuranRevival's own address opens offline (the QR Lead's round 9)
+
+- **`apps/qr/site/root-sw.js`** (new, QR-only; PR #1089): a worker at the site root, so `https://quranrevival.github.io/` opens offline (before: the browser's own "no internet" page, ~113 characters). GitHub Pages cannot send `Service-Worker-Allowed`, so `/app/sw.js` (scope `/app/`) could never reach `/`. Network-first; on a network failure a front-page navigation is answered from `/app/index.html` in the caches `/app/sw.js` keeps, anything else by `caches.match`. It opens and writes no cache of its own.
+- **`apps/qr/site/app/js/qr-front.js`:** registers `/root-sw.js` (scope `/`) only on `/` and `/index.html`, only after the app worker registered, so the kill switches (`?nosw`, `mm_disable_service_worker`) cover both. Every `/app/` page stays with `/app/sw.js` (longest matching scope).
+- **`app/apps/qr.json`** (declared shared change, approved by the MSA Architect): `site` += `"root-sw.js"`. `msa.json` untouched.
+- **New QR check `tools/apps/qr-verify/qr-root-offline-browser.mjs`** (run-all's 28th): 26/0 at 390 and 1400; mutations `noreg` 7, `nofallback` 5, `cachefirst` 2, `writes` 3, `killone` 1 fail. `apps-build-check` 48/0.
+- Nothing stored, no Rules changed.
+
+## v12.46 — 24 Oct 2026 — Study modules and teaching pages by the User Manual (audit part 54)
+
+- **`app/course-offers.html`, `app/curriculum.html`** (Builder round #1090, PR #1091): `.muted` help text `#888` → `#666` (3.54:1 → 5.74:1 on white).
+- **New `tools/i18n-verify/audit-part54-study-teach-browser.mjs`:** Deen Study, Arabic Study, People (Hand the device, View as), Classes, Course Offers, Curriculum and Catalogue, opened directly and with `?inWindow=1`, at 390 / 820 / 1280, English and Bangla, as the owner: positive control on screen, no sideways scroll, no cut or covered control, ← Back and finger controls ≥ 40px, text 4.5:1 on its real background, no English left in Bangla; every control the User Manual names exists and is not covered; the four hidden modules are absent from the menu and an old link still opens each. 938/0. `--mutate=offersmuted` and `--mutate=curriculummuted` fail 12 each.
+- Checks: `audit-part17-teaching-browser` 868/0, `bangla-sweep-other-pages-browser` 224/0.
+- **Not reached** (audit part 55, Builder round #1092): driving the Hand-the-device, View-as, Continue, create/enrol flows; the student pass. Routines (`ldog-study.html`) are QR's. Nothing stored, no Rules changed.
