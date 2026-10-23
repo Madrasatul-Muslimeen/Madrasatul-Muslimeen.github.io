@@ -191,7 +191,8 @@ for (const lang of ["en", "bn"]) for (const [width, height, mode] of [[390, 844,
   // 8. Round 2a: "Track this āyah" is a tab of the pane; Record Your Progress opens the Āyah card (its 👥 included) and
   // leaves "Back to Notes on 2:257", which brings the pane back on its Track tab.
   // J71: on a computer the tabs are drawn by the page inside, on its tools row; the Track tab is pressed there
-  if (await ev(() => !!document.querySelector("#readNotePane.rnp-tabs-in-frame"))) await F.click('.jm-host-tab[data-jm-host-tab="track"]'); else await P.click('#readNotePane [data-rnp-tab="track"]');
+  // UPDATED IN PLACE (J82 part 3): with one Note open the list column's copy of the tabs is hidden and the pane bar's is the only one, so press the VISIBLE one.
+  if (await ev(() => !!document.querySelector("#readNotePane.rnp-tabs-in-frame"))) await F.click('.jm-host-tab[data-jm-host-tab="track"]:visible'); else await P.click('#readNotePane [data-rnp-tab="track"]');
   await P.waitForTimeout(300);
   const tr = await ev(() => ({ frame: document.querySelector("#readNotePane .rnp-frame").hidden, track: document.querySelector("#readNotePane .rnp-track").hidden,
     btns: [...document.querySelectorAll("#readNotePane [data-rnp-track]")].map((b) => b.dataset.rnpTrack), sel: document.querySelector('#readNotePane [data-rnp-tab="track"]').getAttribute("aria-selected"),
