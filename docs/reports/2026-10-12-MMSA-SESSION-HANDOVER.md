@@ -7,7 +7,38 @@ v10.28). Read `CLAUDE.md` first. The prompt that starts the next session is
 
 This session was summarised once (its context compacted), which is why it hands over here.
 
-## LATEST UPDATE — 23 Oct 2026, 10:30 am Sydney, session `session_01MYQKgXtFU3L7VDfnhNRxbp` (v12.24 + v12.25 live on MSA AND QR; HANDOVER) — READ THIS FIRST
+## LATEST UPDATE — 23 Oct 2026, 12:45 pm Sydney, session `session_01A9tGFy1MqSn1b53WSVJ6Nf` (v12.26 + v12.27 live on MSA AND QR; HANDOVER) — READ THIS FIRST
+
+Took over 10:25 am 23 Oct from `session_01MYQKgXtFU3L7VDfnhNRxbp`. Handing over at ~40% context (cost86/hand119). PCA: `session_01HqedLzJPW6qKznTRoYyron`. Hadith Lead: `session_01Q2HmCeWjo1vVYV5kgMBvC9`. MSA keep-alive is `trig_01HzsS6KrHMioTsmMtmdE8qW` (8:07 am/pm), repointed by the PCA to this session; **the new session must ask the PCA to repoint it again.**
+**`main` is v12.27** (PR #1038, merge `0373dcbe`, live MSA and QR 12:39 pm; QR 20/20). **Next release: v12.28.**
+
+**Released this session**
+- **v12.26** (PR #1036, live 12:06 pm): **J81 part 3** (PR #1031): every Note opens in the Mapping My Journey tray. This covers the Read view's Notes pane (tap, search, ✚), `journey-map.html?note=` links and Zab's Open. Review fix: on `journey-map.html` itself Zab's Open stays the full page with back=1 (`zab-to-note` mutations v/w). **J82 parts 1, 2, 4, 5** (PR #1035): Learn next opens the next word's card; Bookmark from the Āyah/unit card returns to it; ‹ › page buttons in the Read bar and full screen. Review fix: at 320 the bare full screen's page reference had 0px of text, so the end tiles are now 36px and the reference is cut from its start ("…77"; mutation tiny-ref). The learn-next way-back check now waits for a state.
+- **v12.27** (PR #1038, live 12:39 pm), **J82 part 3**, the Architect's own round. **Builder PR #1037 was closed unmerged:** it was built before v12.26 and changed the Notes pane, which no longer shows a Note; its suite failed 8/8 on v12.26. Instead: a tray opened on a Note is the note window at full width (`noteFocus`; at 1440 the Note had been a 367px third column), and `fitToolbar()` never leaves ⌫ alone on a line. New suite `note-toolbar-fit-browser` 32/0 (mutations focus 8, inline 2).
+
+**IN FLIGHT — the next session's first jobs**
+1. **Builder round #1039 RUNNING** (run 39885372689, dispatched 12:41 pm): audit part 41, Notes and the shared tools after v12.25–v12.27. Scope: My Notes page, Bookmarks to a Note, Records, Continue strip, the tray on a Note at 1440/1280, minimise everywhere, and **Zab drawn inside embedded frames** (the Architect saw up to 3 Zab strips at 1280: page, Notes window frame, tray frame; measure first). Review its PR by measurement when it lands; compare every red suite with a clean main.
+2. Then release v12.28 the usual way (allocate-version.py; QR 20 checks BEFORE merge; build-from-msa; both version.js; PMS What's New + Done lines with W-T-P-E-O).
+
+**Waiting on the Owner (PMS ticks):**
+- New this session: **n81b** (J81 part 3), **n82a** (J82 1, 2, 4, 5), **n82b** (J82 part 3).
+- Still open: **n79a** (J79 Bangla corrections: after the tick apply only those words and add a check failing on any `\d{4};` or stray non-Bangla letter), **n77a**, **n78a**, **n71c**, **n81a**, n72d and older.
+- The **Hadith Lead's tick** on the Hadith/Dua "My Notes" links (A keep the full page / B open the tray on that hadith's notes): the Lead will tell the Architect; leave those links until then.
+No Owner messages arrived this session (carry1: nothing to carry).
+
+**Recorded red on `main`, not this session's** (each compared on a clean main):
+- `audit-part28-small-phone` 4: Bookmark dialog "Assign to rows" positive control at 320/360.
+- `read-bar-tools-browser` en 360: no Bookmark tile in ⋯, then a crash.
+- Plus the earlier list: `audit-part19-notes` readpane 1440, `journey-note-edit` 1280, `bookmark-marks-back` 12 (= J77), and `audit-part16` flaking under load.
+- `j82-learn-next-bookmark-pages` "← Back returns … exactly as it was" failed once under heavy load (two suites and a mutation run at once); 0 in 4 runs since. It now waits for the state and prints where the texts differ.
+
+**Lessons**
+- **A round built on an older `main` can be overtaken by a release in between**: #1037 was correct for its base, but v12.26 moved the Note out of the pane it reorganised. Re-run a round's own suite on the CURRENT main before reviewing anything else; 8/8 red was the whole answer.
+- **Measure where the thing really is after the last release.** The Owner's "10 rows" became 3–5 in the tray once J81 shipped, and the real defect was elsewhere (the 1440 three-column squeeze), found only by measuring the new home.
+- **Parallel runs share screenshot paths**: a mutated run beside a clean one overwrote the clean screenshot twice. Look at a screenshot only from a run that ran alone, or give runs separate paths.
+- **A narrow element can pass a width check and still say nothing**: "Ay…" fits; the number ("…77") is what tells the reader where they are.
+
+## LATEST UPDATE — 23 Oct 2026, 10:30 am Sydney, session `session_01MYQKgXtFU3L7VDfnhNRxbp` (v12.24 + v12.25 live on MSA AND QR; HANDOVER) — superseded by the 12:45 pm block above, kept as history
 
 Took over 3:50 am 23 Oct from `session_01GkAPfmGq41a58zqYMQFQmB`. Handing over at ~40% context (cost86/hand119). **The PCA moved to `session_01HqedLzJPW6qKznTRoYyron`** (8:30 am; confirmed in `meta/global.sessionUrl`) — send PCA messages there. Hadith Lead: `session_01Q2HmCeWjo1vVYV5kgMBvC9`.
 **`main` is v12.25** (PR #1030, merge `139d5514`, live MSA and QR 8:25 am; QR 20/20). **Next release: v12.26.**
