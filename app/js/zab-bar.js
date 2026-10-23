@@ -27,9 +27,9 @@ import { db, auth } from "./firebase-init.js";
 import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { TENANT } from "./collections.js";
 import { getActiveContext, getMyMembershipRoles, pickContext } from "./session-context.js";
-import { t } from "./i18n.js";
+import { t, ensureCatalogueReady } from "./i18n.js";
 import { langText } from "./lang.js";
-import { getAppLang } from "./prefs.js";
+import { getAppLang, onAppLangChange } from "./prefs.js";
 import * as zab from "./zab-data.js";
 import * as zabNote from "./zab-to-note.js";
 
@@ -203,9 +203,24 @@ export function mountZabBar() {
     }
     dockAndLift();
     resumeAfterNote();
+    onAppLangChange(relabel);
   };
   if (document.body) start();
   else document.addEventListener("DOMContentLoaded", start, { once: true });
+}
+
+// MSA-QR-LEAD's change request (23 Oct 2026): a language switch made in place (applyAppLangChange, no reload) left
+// "🧰 জ়াব" in Bangla on an English page. Repaint every fixed label, then whatever the panel shows. The listeners
+// fire before a first switch to Bangla has loaded its catalogue, so wait for it (as applyAppLangChange does).
+async function relabel() {
+  try { await ensureCatalogueReady(); } catch { /* t() falls back to English */ }
+  if (!root) return;
+  root.querySelector("#zabBar")?.setAttribute("aria-label", t("Zab"));
+  const barBtn = root.querySelector("#zabBar > [data-zab-open]");
+  if (barBtn) barBtn.textContent = `🧰 ${t("Zab")}`;
+  root.querySelector("#zabPanel")?.setAttribute("aria-label", t("Zab"));
+  document.querySelectorAll("#zabCorner, .zab-dock-btn").forEach((b) => b.setAttribute("aria-label", t("Open Zab")));
+  render();
 }
 
 // The page's own place for the 🧰 ([data-zab-dock]) and its pinned bottom bar ([data-zab-lift]). A ResizeObserver

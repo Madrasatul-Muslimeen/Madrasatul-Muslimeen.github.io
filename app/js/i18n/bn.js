@@ -4471,4 +4471,5 @@ export const BN = {
   "Couldn't load this student's vocabulary:": "এই ছাত্রের শব্দভান্ডার আনা যায়নি:",
   "Couldn't load the Vocabulary table:": "শব্দভান্ডারের তালিকা আনা যায়নি:",
   "{k} of {n}": "{n}টির মধ্যে {k}টি",
+  "Surah {n} is not saved on this device, and there is no internet connection. Connect to read it.": "সূরা {n} এই ডিভাইসে সংরক্ষিত নেই, আর ইন্টারনেট সংযোগও নেই। পড়তে ইন্টারনেটে যুক্ত হোন।",
 };
