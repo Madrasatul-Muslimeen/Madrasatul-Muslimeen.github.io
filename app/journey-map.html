@@ -360,6 +360,10 @@
      180px scroll box (measured in the 1440px tray: 4 of 17 items reachable). While the menu is open the pane takes its
      column's full height, so the whole menu shows; closed, nothing changes. */
   #noteLayout.pane-open.tier-wide #notePane:has([data-pane-menu].open) { min-height: calc(100vh - 2rem); }
+  /* Audit part 42: a sticky pane can only pin inside its layout. Measured at 1280x760 editing a long Note: the layout was exactly as
+     tall as the pane (760px) and began 175px down the page, so when typing at the end scrolled the page the whole pane went with it
+     (toolbar top -10px, Done -50px). While editing, the layout gets room below the pane so the pane, its header and its toolbar stay pinned. */
+  #noteLayout.pane-open.tier-wide:has(#notePane.pane-editing) { min-height: calc(100vh + 24rem); }
   body.note-pane-wide { max-width: 84rem; }
   /* The Note view's own rules (bar, title, edit mode, pop-up windows) are in css/note-window.css, shared with notes.html; only the rules bound to THIS page's ids stay here. */
   #noteLayout.tier-wide [data-pane-back] { display: none; }

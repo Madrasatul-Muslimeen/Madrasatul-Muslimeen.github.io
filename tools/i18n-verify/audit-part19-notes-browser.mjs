@@ -404,7 +404,16 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     check(`${t}: ← Back closes the pane to the same āyah and the same place`, after.hidden && after.ayah === before.ayah && Math.abs(after.top - before.top) <= 2, JSON.stringify({ before, after }));
     // 2: Track this āyah
     await clickReadTool(page, "#readNotesBtn"); await settle(page, 500);
-    await page.click('#readNotePane [data-rnp-tab="track"]'); await settle(page, 300);
+    // Updated in place (audit part 42): since PCF MSA J71 a computer's wide Notes window (1440px) hides its own tab row
+    // (`.rnp-tabs-in-frame .rnp-tabs { display: none }`, read-note-pane.js syncHostedTabs) and the page inside the frame
+    // carries the Notes | Track tabs on its tools row (`[data-jm-host-tab]`). So click the tab that is really on screen.
+    const outerTab = await rect(page, '#readNotePane [data-rnp-tab="track"]');
+    if (outerTab && outerTab.w > 0) await page.click('#readNotePane [data-rnp-tab="track"]');
+    else {
+      const jf = page.frames().find((x) => /journey-map\.html\?embed=1&unit=/.test(x.url()));
+      await jf.click('[data-jm-host-tab="track"]', { timeout: 8000 });
+    }
+    await settle(page, 300);
     const tr = await ev(page, () => ({ btns: [...document.querySelectorAll("#readNotePane [data-rnp-track]")].map((b) => b.dataset.rnpTrack), hs: [...document.querySelectorAll("#readNotePane [data-rnp-track]")].map((b) => Math.round(b.getBoundingClientRect().height)), sel: document.querySelector('#readNotePane [data-rnp-tab="track"]').getAttribute("aria-selected") }));
     check(`${t}: the Track tab offers Take an Approach, Record Your Progress, Know Your Status (each 40px or more)`, tr.sel === "true" && tr.btns.join() === "take,record,status" && tr.hs.every((h) => h >= 40), JSON.stringify(tr));
     await page.click('#readNotePane [data-rnp-track="record"]');
