@@ -105,6 +105,9 @@ window.__sd = {
   small: (root) => [...(root || document).querySelectorAll("button, select, input:not([type=hidden]):not([type=checkbox]):not([type=radio]), [role=button]")]
     .filter((el) => window.__sd.visible(el) && el.getBoundingClientRect().height < 40)
     .filter((el) => { const r = el.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+      // Scrolled out of view inside a scrolling panel: scrolling reaches it, as covered() already says (the MSA-QR-LEAD,
+      // 23 Oct: #ayahPanels is 90px tall at 360x740 and the āyah number sat below it, so its tap test hit #studyScreen).
+      if (window.__sd.clipped(el, cx, cy)) return false;
       const hits = (y) => { if (y < 0 || y > innerHeight || cx < 0 || cx > innerWidth) return true; /* off the screen edge: scrolling reaches it, not a defect */ const h = document.elementFromPoint(cx, y); return !!h && (h === el || el.contains(h)); };
       return !(hits(cy - 19) && hits(cy + 19)); })
     .map((el) => (el.id || el.className || el.tagName) + ":" + Math.round(el.getBoundingClientRect().height)),
@@ -458,11 +461,13 @@ try {
         + '<button id="sdUnder" style="width:80px;height:50px;position:fixed;left:100px;top:100px;z-index:1">under</button><div style="position:fixed;left:90px;top:90px;width:120px;height:80px;z-index:9;background:red"></div>'
         + '<p id="sdEn">This sentence is plain English prose</p>'
         + '<p id="sdLow" style="color:#777;background:#888">low</p>'
-        + '<div id="sdWide" style="position:absolute;left:0;top:0;width:' + (innerWidth + 300) + 'px;height:5px"></div>';
+        + '<div id="sdWide" style="position:absolute;left:0;top:0;width:' + (innerWidth + 300) + 'px;height:5px"></div>'
+        + '<div style="position:fixed;left:5px;top:300px;width:100px;height:60px;overflow:auto;z-index:1"><div style="height:200px"></div><button id="sdScrolled" style="height:20px">y</button></div>';
       document.body.append(d);
-      return { small: window.__sd.small(d).length, covered: window.__sd.covered(d).length, english: window.__sd.english().length, sideways: window.__sd.sideways(), low: window.__sd.contrast(document.getElementById("sdLow")) };
+      return { smallIds: window.__sd.small(d), small: window.__sd.small(d).length, covered: window.__sd.covered(d).length, english: window.__sd.english().length, sideways: window.__sd.sideways(), low: window.__sd.contrast(document.getElementById("sdLow")) };
     });
     check("POSITIVE CONTROL small: an injected 20px button is found", pc.small >= 1, JSON.stringify(pc));
+    check("small: a 20px button scrolled out of view inside a scrolling panel is NOT counted (scrolling reaches it)", !pc.smallIds.some((x) => x.startsWith("sdScrolled:")) && pc.smallIds.some((x) => x.startsWith("sdSmall:")), JSON.stringify(pc.smallIds));
     check("POSITIVE CONTROL covered: an injected button under an overlay is found", pc.covered >= 1, JSON.stringify(pc));
     check("POSITIVE CONTROL english: English prose on a Bangla page is found", pc.english >= 1, JSON.stringify(pc));
     check("POSITIVE CONTROL sideways: an injected over-wide block is found", pc.sideways > 0, JSON.stringify(pc));
