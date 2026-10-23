@@ -34,14 +34,11 @@ function check(name, ok, detail = "") {
 // Findings in QR-only files (app/quranrevival.html, apps/qr/**) belong to the MSA-QR-LEAD: listed, not failed; a listed finding
 // that STOPS occurring is itself reported. id -> a pattern the leftover string matches.
 //   (unitLabel, the Notes pane's "2:255" after a switch, and ayahCard, the open Āyah card, were fixed in v12.37 by the QR Lead,
-//   #1070, with relabelReadNotePane(): both are now ordinary failures.)
+//   #1070, with relabelReadNotePane(); bmUnits, the Bookmark popover's unit buttons and names, by #1074 passing functions.
+//   All three are now ordinary failures.)
 const FOR_QR_LEAD = {};
 const AYAH_CARD_LEAD = {};
-//   bmUnits    the Bookmark popover's unit buttons (This āyah, This page...) and the people's names are handed to it as words by
-//              quranrevival.html's toggleAyahBookmark(), in the language of the moment it opened: after bn -> en they stay Bangla
-//              (en -> bn, translateStatic() catches the English ones). Fix: pass `label` and `name` as functions; the popover
-//              accepts both since audit 47 (flow popfn proves it).
-const BM_LEAD = { ...FOR_QR_LEAD, bmUnits: /^page (button|span\.who-name) \[text\]|^page select \[selected\]/ }; // the names: the ticked list and the "For" picker
+const BM_LEAD = { ...FOR_QR_LEAD };
 const seenKnown = new Set();
 
 // name: [file in the built app, route glob, anchor (exactly once), replacement]. Each puts one fix back to the old code.

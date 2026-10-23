@@ -23692,30 +23692,30 @@
       // PCF MSA J42: every unit that holds the āyah on screen, Single Ayah included, in a fixed order. A boundary
       // that is not known is left out, never guessed.
       const all = [{
-        id: "ayah", label: t("This āyah"), defaultName: ayahRefLabel(currentSurahNum, ayah, { half }),
+        id: "ayah", label: () => t("This āyah"), defaultName: ayahRefLabel(currentSurahNum, ayah, { half }),
         position: ayahRecordKey(currentSurahNum, ayah, half), settings: at("ayah"),
       }];
-      if (page) all.push({ id: "page", label: t("This page"), defaultName: t("Page {page}", { page: num(page) }), position: buildUnitKey.page(PAGE_EDITION, page), settings: at("page") });
+      if (page) all.push({ id: "page", label: () => t("This page"), defaultName: t("Page {page}", { page: num(page) }), position: buildUnitKey.page(PAGE_EDITION, page), settings: at("page") });
       if (rec && rec.ruku != null) {
         const idx = rukuIndexInSurah(currentSurahData.ayahs, rec.ruku);
         const inRuku = currentSurahData.ayahs.filter((a) => a.ruku === rec.ruku).map((a) => a.ayah);
         if (idx && inRuku.length) {
           all.push({
-            id: "ruku", label: t("This rukūʿ"),
+            id: "ruku", label: () => t("This rukūʿ"),
             defaultName: t("Ruku' {ruku} of Surah {surah} (ayahs {from}–{to})", { ruku: num(idx), surah: num(currentSurahNum), from: num(Math.min(...inRuku)), to: num(Math.max(...inRuku)) }),
             position: buildUnitKey.ruku(currentSurahNum, idx), settings: at("ruku"),
           });
         }
       }
       const sName = surahName(currentSurahNum, surahIndex.find((s) => s.surahNumber === currentSurahNum)?.nameEnglish);
-      all.push({ id: "surah", label: t("Whole sūrah"), defaultName: sName || t("Whole Surah {surah}", { surah: num(currentSurahNum) }), position: buildUnitKey.surah(currentSurahNum), settings: at("surah") });
-      if (rec && rec.juz) all.push({ id: "juz", label: t("This juz"), defaultName: t("Juz {juz}", { juz: num(rec.juz) }), position: buildUnitKey.juz(rec.juz), settings: at("juz") });
+      all.push({ id: "surah", label: () => t("Whole sūrah"), defaultName: sName || t("Whole Surah {surah}", { surah: num(currentSurahNum) }), position: buildUnitKey.surah(currentSurahNum), settings: at("surah") });
+      if (rec && rec.juz) all.push({ id: "juz", label: () => t("This juz"), defaultName: t("Juz {juz}", { juz: num(rec.juz) }), position: buildUnitKey.juz(rec.juz), settings: at("juz") });
       // The selected study unit comes first and is preselected, so today's default is unchanged. When it is one of
       // the five it moves to the front; a wider one that is not (Range, Hizb) is added in front.
       const sel = all.find((c) => c.id === info.unitType);
       const choices = sel
         ? [info.unitType === "ayah" ? sel : { ...sel, defaultName: info.label, settings: base }, ...all.filter((c) => c !== sel)]
-        : [{ id: "unit", label: unitChipText(info), defaultName: info.label, position: info.unitKey, settings: base }, ...all];
+        : [{ id: "unit", label: () => unitChipText(info), defaultName: info.label, position: info.unitKey, settings: base }, ...all];
       return choices;
     }
 
@@ -23761,11 +23761,13 @@
         // Fixes round 2 -- tag this bookmark with a person. Defaults to
         // whoever is selected right now (studying WITH a child is the
         // common case, per D10), and "No one in particular" clears it.
-        people: roster.map((p) => ({ id: p.id, name: langText(p.name, getAppLang(), p.id) })),
+        people: roster.map((p) => ({ id: p.id, name: () => langText(p.name, getAppLang(), p.id) })),
         defaultPersonTagId: selectedPersonId,
         // Multi-student round -- "Assign to", the same roster/scoping rule
         // the Track card's own Claim dropdown already uses.
-        roster: assignableRoster(),
+        // Names and unit labels are functions (the QR Lead, bmUnits), so a language switch while the dialog is open
+        // writes them again in the new language (bookmark-popover.js live()).
+        roster: assignableRoster().map((a) => { const p = roster.find((r) => r.id === a.id); return { ...a, name: p ? () => langText(p.name, getAppLang(), p.id) : a.name }; }),
         selectedPersonId,
         // The Owner, 12 Oct 2026 -- "quick unit choice" (Read view only; empty everywhere else).
         units: unitChoices.map(({ id, label, defaultName: dn }) => ({ id, label, defaultName: dn })),
