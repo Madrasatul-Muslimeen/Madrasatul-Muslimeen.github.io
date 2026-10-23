@@ -125,6 +125,66 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     check(`${t}: and it is finger-sized (${b.h}px) and inside the screen`, b.h >= 39.5 && b.inside, JSON.stringify(b));
     check(`${t}: no sideways scroll`, (await wide(page)) <= 1, String(await wide(page)));
   }, { signedOut: true });
+
+  // 3: Manage bookmarks: rename stored; a refused write is shown on screen and the old name stays (I15).
+  for (const refused of [false, true]) {
+    await flow(refused ? "refused" : "rename", lang, width, "/app/bookmarks.html", async (t, page, errors) => {
+      await page.waitForFunction(() => document.querySelectorAll("[data-bm-id]").length >= 2, null, { timeout: 15000 });
+      const small = await ev(page, () => [...document.querySelectorAll("[data-bm-rename], [data-bm-toggle]")].filter((e) => e.getBoundingClientRect().width > 0 && (e.getBoundingClientRect().height < 39.5)).map((e) => Math.round(e.getBoundingClientRect().height)));
+      check(`${t}: POSITIVE CONTROL two bookmarks listed; Rename and Retire are finger-sized`, small.length === 0, small.join());
+      check(`${t}: no sideways scroll`, (await wide(page)) <= 1, String(await wide(page)));
+      await ev(page, () => { window.__stubWriteData = []; });
+      page.once("dialog", (d) => d.accept("Audit renamed"));
+      await page.click('[data-bm-id="b1"] [data-bm-rename]'); await settle(page, 800);
+      const w = await bmWrites(page);
+      const nameNow = await ev(page, () => document.querySelector('[data-bm-id="b1"] [data-bm-name]')?.textContent.trim() ?? document.querySelector('[data-bm-id="b1"]').innerText);
+      if (!refused) {
+        check(`${t}: Rename stores the new name in the owner's own bookmarks document`, w.some((x) => x.id.endsWith("__p1") && (x.data?.saved || []).some((s) => s.id === "b1" && s.name === "Audit renamed")), JSON.stringify(w.at(-1)?.data || null).slice(0, 200));
+        check(`${t}: and the list shows it`, nameNow.includes("Audit renamed"), nameNow);
+      } else {
+        const banner = await ev(page, () => { const b = document.getElementById("qr-write-failure-banner"); return b && getComputedStyle(b).display !== "none" && b.getClientRects().length ? b.textContent : ""; });
+        check(`${t}: a refused rename shows an error on screen (I15)`, banner.length > 8, banner);
+        check(`${t}: and the list keeps the old name`, !nameNow.includes("Audit renamed") && nameNow.includes("Al-Baqarah"), nameNow);
+        if (bn) check(`${t}: the error is in Bangla`, BN.test(banner), banner);
+      }
+      check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
+    }, { seed: SEED, failWrites: refused });
+  }
+
+  // 4: a student sees only their own bookmarks.
+  await flow("student", lang, width, "/app/bookmarks.html", async (t, page, errors) => {
+    await page.waitForFunction(() => document.querySelectorAll("[data-bm-id]").length >= 1, null, { timeout: 15000 });
+    const txt = await ev(page, () => document.getElementById("app").innerText);
+    check(`${t}: POSITIVE CONTROL the student's own bookmark is listed`, /Student own 1/.test(txt));
+    check(`${t}: the owner's bookmarks are not shown to the student`, !/Al-Baqarah 255/.test(txt));
+    // (Who else the roster offers is limited by the Rules on the server, which the stub does not have: reported, not asserted.)
+    const me = await ev(page, () => document.getElementById("personSelect").value);
+    check(`${t}: the page opens on the student themself`, me === "p2", me);
+    check(`${t}: no sideways scroll`, (await wide(page)) <= 1, String(await wide(page)));
+    check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
+  }, { seed: SEED + STUDENT });
+
+  // 5: a bookmark for a child goes into the child's own document, in a folder of the same name.
+  await flow("family", lang, width, "/app/bookmarks.html", async (t, page, errors) => {
+    await page.waitForSelector("#newBookmarkBtn", { state: "visible", timeout: 15000 });
+    await page.click("#newBookmarkBtn");
+    await page.waitForSelector("#nbName", { state: "visible", timeout: 10000 });
+    await page.fill("#nbName", "For Zayd");
+    await page.fill("#nbSurah", "2").catch(() => {});
+    await page.fill("#nbAyah", "10").catch(() => {});
+    const boxes = await ev(page, () => [...document.querySelectorAll("#nbAssignees input[type=checkbox]")].map((c) => c.value));
+    check(`${t}: POSITIVE CONTROL Assign to offers the child`, boxes.includes("p3"), boxes.join());
+    await page.check('#nbAssignees input[value="p3"]');
+    await page.selectOption("#nbFolder", { label: "Hifz" }).catch(() => {});
+    await ev(page, () => { window.__stubWriteData = []; });
+    await page.click("#nbCreateBtn"); await settle(page, 1000);
+    const w = await bmWrites(page);
+    const kid = w.filter((x) => x.id.endsWith("__p3"));
+    const kidSaved = kid.flatMap((x) => x.data?.saved || []), kidFolders = kid.flatMap((x) => x.data?.folders || []);
+    check(`${t}: the bookmark is stored in the child's own document`, kidSaved.some((s) => s.name === "For Zayd"), JSON.stringify(w).slice(0, 300));
+    check(`${t}: in a folder of the same name as the owner's`, kidFolders.some((f) => f.name === "Hifz") && kidSaved.some((s) => s.name === "For Zayd" && kidFolders.some((f) => f.id === s.folderId && f.name === "Hifz")), JSON.stringify(kid.map((x) => ({ s: x.data?.saved, f: x.data?.folders }))).slice(0, 400));
+    check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
+  }, { seed: SEED });
 }
 await browser.close();
 console.log(`\n==== audit-part56${MUTATE ? ` [mutated: ${MUTATE}]` : ""}: ${pass} passed, ${fail} failed ====`);
