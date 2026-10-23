@@ -40,11 +40,9 @@ function check(name, ok, detail = "") {
 //              label, ladder rung, Approach dot title and the reference stay in the old language. Fix: redraw it there when #ayahActionSheetOverlay is open.
 const FOR_QR_LEAD = { unitLabel: /(Notes on|Back to|New note on|No notes on|Find a note to attach to) [২-৯০১]/ };
 const AYAH_CARD_LEAD = { ayahCard: /^page / };
-//   bmUnits    the Bookmark popover's unit buttons (This āyah, This page...) and the people's names are handed to it as words by
-//              quranrevival.html's toggleAyahBookmark(), in the language of the moment it opened: after bn -> en they stay Bangla
-//              (en -> bn, translateStatic() catches the English ones). Fix: pass `label` and `name` as functions; the popover
-//              accepts both since audit 47 (flow popfn proves it).
-const BM_LEAD = { ...FOR_QR_LEAD, bmUnits: /^page (button|span\.who-name) \[text\]|^page select \[selected\]/ }; // the names: the ticked list and the "For" picker
+// bmUnits (the Bookmark popover's unit buttons and people's names, handed over as words) was fixed by the QR Lead:
+// toggleAyahBookmark() now passes `label` and `name` as functions.
+const BM_LEAD = { ...FOR_QR_LEAD };
 const seenKnown = new Set();
 
 // name: [file in the built app, route glob, anchor (exactly once), replacement]. Each puts one fix back to the old code.
