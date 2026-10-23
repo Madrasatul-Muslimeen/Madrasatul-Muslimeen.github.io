@@ -13,6 +13,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import { stripSite } from "./strip-site.mjs";
 
 const out = path.resolve(process.argv[2] || "");
 // The settings the build used (it passes them in, so a test's settings are honoured), else app/apps/qr.json.
@@ -36,6 +37,15 @@ if (settings.status !== "draft" && settings.minVersion && below(version, setting
 }
 fs.writeFileSync(app("js/qr-version.js"),
   `// Written by apps/qr/after-build.mjs: QR shares MSA's one version number (QR J22, PCA J110).\nexport const APP_VERSION = ${JSON.stringify(version)};\n`);
+
+// Audit part 50, part 2 (PCF MSA J29): about half of what a first visit downloaded was COMMENTS. The built page's inline module and
+// style, and every built app/**/*.js but the worker and vendor/, lose theirs here (apps/qr/strip-site.mjs; lines and every token kept,
+// each file checked by apps/qr/verify-strip.mjs, and the build stops on any difference). The source keeps every comment; MSA's build
+// never reaches this step.
+// Before the worker's list, so its size is what a phone saves.
+let strip;
+try { strip = stripSite(out, { keepBefore: process.env.QR_STRIP_BEFORE || "" }); }
+catch (e) { console.error(`after-build: ${e.message}`); process.exit(1); }
 
 function shellList(sw) {
   const seen = new Set();
@@ -80,20 +90,6 @@ const missing = [...precacheList(sw), ...list].filter((f) => !fs.existsSync(path
 if (missing.length) { console.error(`after-build: the worker's install list names files the build does not have: ${missing.join(", ")}`); process.exit(1); }
 fs.writeFileSync(app("sw.js"), sw);
 
-// Audit part 50, part 2 (PCF MSA J29): half of what a first visit downloads was COMMENTS. quranrevival.html's inline module scripts
-// and <style>s lose theirs here (apps/qr/strip-comments.mjs: comments and spare whitespace only, every token kept, proven by
-// tools/apps/qr-verify/strip-comments-check.mjs). Gzipped, measured 24 Oct 2026: module 327 -> ~163 KB, style 122 -> ~44 KB.
-// The source keeps every comment; MSA's build never reaches this step.
-import { stripJs, stripCss } from "./strip-comments.mjs";
-{
-  const f = app("quranrevival.html");
-  const html = fs.readFileSync(f, "utf8");
-  const stripped = html
-    .replace(/(<script\b[^>]*type="module"[^>]*>)([\s\S]*?)(<\/script>)/g, (m, a, body, z) => (/\ssrc=/.test(a) ? m : a + stripJs(body) + z))
-    .replace(/(<style\b[^>]*>)([\s\S]*?)(<\/style>)/g, (m, a, body, z) => a + stripCss(body) + z);
-  fs.writeFileSync(f, stripped);
-}
-
 // Audit part 50 (PCF MSA J29): QR's first visit took 8 s to a usable picker, mostly the module waterfall (137 files whose
 // imports are found one hop at a time). The page's STATIC import closure (never import()) is written into the page (see WHERE) as
 // modulepreload links, so the browser asks for all of them at once. Generated here, never hand-written, so it cannot go
@@ -131,4 +127,4 @@ const firstModule = pageHtml.search(/<script\b[^>]*type="module"/);
 if (firstModule < 0) { console.error("after-build: quranrevival.html has no module script to put the preloads before"); process.exit(1); }
 fs.writeFileSync(page, pageHtml.slice(0, firstModule) + links.map((h) => `<link rel="modulepreload" href="${h}">`).join("\n") + "\n" + pageHtml.slice(firstModule));
 
-console.log(JSON.stringify({ written: ["app/js/qr-version.js", "app/sw.js", "app/quranrevival.html"], version, shell: list.length, bytes, modulepreload: links.length }));
+console.log(JSON.stringify({ written: ["app/js/qr-version.js", "app/sw.js", "app/quranrevival.html"], version, shell: list.length, bytes, modulepreload: links.length, stripped: strip }));
