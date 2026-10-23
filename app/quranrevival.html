@@ -2924,7 +2924,11 @@
      flow view, the Note view alike) rather than only trailing the plain
      path. Right-aligned to match this app's RTL-first reading direction --
      the same edge Arabic reading starts from. */
-  .ayah-num-row { display: flex; justify-content: flex-end; margin: 0.3rem 0 0.1rem; }
+  /* QR Lead (audit part 46, QR as a student): the badge's 40px tap area (below) stands 8px above the 24px badge, and a
+     0.3rem (4.8px) top margin left its top 3px outside the panel, where a tap reached #studyScreen: 0.5rem (8px) keeps
+     the whole 40px inside. The row is 3.2px lower; nothing else moves. */
+  .ayah-num-row { display: flex; justify-content: flex-end; margin: 0.5rem 0 0.1rem; }
+  .read-loading { margin: 1rem 0; text-align: center; color: #555; font-weight: 600; } /* QR Lead: "Loading…" while a surah comes (loadSurah) */
   .ayah-num-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 1.5rem; height: 1.5rem; padding: 0 0.4rem; border-radius: 999px; background: #f0ead9; color: #8a6d1f; font-size: 0.78rem; font-weight: 700; border: 1px solid #d8c68a; }
   /* Issue #295 -- the badge is a real <button> (the Ayah Card's third entry
      point) now, in Read and Note view alike. `font`/`cursor` are the only
@@ -10027,11 +10031,52 @@
       return displayParts(ayah).filter((a) => !half || a.half === half).map((a) => renderLayoutA(a, panels, opts)).join("");
     }
 
+    /** QR Lead (with the MSA Architect, 23 Oct 2026, audit part 46, I15): the reader chose a surah this device never
+        kept, with no internet. Say so here, on the Read path where the reader asked for it (not for background lookups),
+        and put the pickers back on the surah still on screen, so its name and its words agree. Same words, same look as
+        quran-data.js's first note; the same id, so there is never two. */
+    function announceChosenSurahUnavailable(surahNumber) {
+      document.getElementById("surahOfflineNotice")?.remove();
+      const note = document.createElement("div");
+      note.id = "surahOfflineNotice";
+      note.dataset.readPath = "";
+      note.setAttribute("role", "alert");
+      note.textContent = t("Surah {n} is not saved on this device, and there is no internet connection. Connect to read it.", { n: num(surahNumber) });
+      Object.assign(note.style, {
+        position: "fixed", left: "50%", bottom: "5rem", transform: "translateX(-50%)", zIndex: "99998",
+        maxWidth: "min(92vw, 28rem)", minHeight: "40px", boxSizing: "border-box", padding: "0.7rem 1.1rem", borderRadius: "14px",
+        background: "#7A1F1F", color: "#fff", font: "600 0.9rem system-ui, sans-serif", textAlign: "center", boxShadow: "0 2px 10px rgba(0,0,0,0.25)",
+      });
+      note.addEventListener("click", () => note.remove());
+      document.body.appendChild(note);
+      setTimeout(() => note.remove(), 9000);
+    }
+
     async function loadSurah() {
       quranWordCardRequest++;
       quranWordCardState = closeWordCard(quranWordCardState);
       clearWordCardMounts();
-      currentSurahData = await getSurah(currentSurahNum);
+      // QR Lead (audit part 46: on a slow line "the Read view is an empty box ... no loading words"): if the surah has
+      // not come within 200ms (from memory or the browser's cache it comes at once, so no flash), say "Loading…".
+      const loadingTimer = setTimeout(() => {
+        if (ayahPanels) ayahPanels.innerHTML = `<p class="read-loading" role="status">${escapeHtml(t("Loading…"))}</p>`;
+      }, 200);
+      try {
+        currentSurahData = await getSurah(currentSurahNum);
+      } catch (error) {
+        const asked = currentSurahNum;
+        if (currentSurahData && currentSurahData.surahNumber !== asked) {
+          currentSurahNum = currentSurahData.surahNumber;
+          surahSelect.value = String(currentSurahNum);
+          syncReadPickers();
+          syncWheelHubPickers();
+          renderStudyScreen(); // the surah still kept, in place of "Loading…"
+        }
+        if (error instanceof TypeError) announceChosenSurahUnavailable(asked); // no network and no saved copy
+        throw error;
+      } finally {
+        clearTimeout(loadingTimer);
+      }
       setAyahNum(1);
       // Owner ask (10 Aug 2026): Prev/Next alone made jumping to, say, ayah
       // 200 of a 286-ayah surah impractical -- a direct Ayah picker next to
@@ -25641,7 +25686,13 @@
     // which is why ayahSelect's own handler below needs no matching call:
     // it only ever fires while the flow strip is hidden -- see this round's
     // own dated report for the reproduction that established that).
-    surahSelect.addEventListener("change", async () => { currentSurahNum = Number(surahSelect.value); await loadSurah(); await scrollFlowToCurrentAyah(); });
+    surahSelect.addEventListener("change", async () => {
+      currentSurahNum = Number(surahSelect.value);
+      // QR Lead (audit part 46): offline with the surah never kept, loadSurah() has already said so and put the pickers
+      // back (I15 met), so that one error stops here instead of surfacing as an uncaught "Failed to fetch".
+      try { await loadSurah(); } catch (error) { if (error instanceof TypeError) return; throw error; }
+      await scrollFlowToCurrentAyah();
+    });
     trackableSelect.addEventListener("change", () => changeCurrentTrackable(trackableSelect.value));
     personSelect.addEventListener("change", async () => {
       selectedPersonId = personSelect.value;

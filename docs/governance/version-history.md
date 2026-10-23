@@ -937,3 +937,4 @@ total). Allocated by the MMSA Architect.
 12.33: audit part 45: Bookmark menu fills on four shared pages; three student fixes. Allocated by the MMSA Architect.
 12.34: QR language switch in place; Word card way back in its top row; audit part 46. Allocated by the MMSA Architect.
 12.35: sign-in helper pages on both sites (switch off); a tap-size detector fix. Allocated by the MMSA Architect.
+12.36: audit part 47 (shared parts follow QR's language switch) and the QR Lead's J87. Allocated by the MMSA Architect.

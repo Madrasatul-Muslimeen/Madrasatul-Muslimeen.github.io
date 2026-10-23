@@ -24,11 +24,12 @@ const MIME = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; cha
 
 /** name -> [file inside the built app, edit]. Filled in as fixes land. */
 const MUTATIONS = {
-  // Fix 1 (app/js/quran-data.js): a surah this device never kept, opened offline, says so in words. Old code: an uncaught "Failed to fetch" and nothing on screen.
+  // Fix 1 (app/quranrevival.html's Read path since v12.36; app/js/quran-data.js before): a surah this device never kept, opened offline, says so in words. Old code: an uncaught "Failed to fetch" and nothing on screen.
   // Fix 2 (app/js/sw-register.js): the "Updated — tap to reload" notice is 40px or more tall and one line. Old code: 35px at 768+, a two-line pill on a phone.
   noticeheight: ["app/js/sw-register.js", (t) => t.replace('minHeight: "44px",', "")],
   noticewidth: ["app/js/sw-register.js", (t) => t.replace('width: "max-content",', "")],
-  surahoffline: ["app/js/quran-data.js", (t) => t.replace("if (err instanceof TypeError) announceSurahUnavailable(surahNumber);", "")],
+  // v12.36: the note moved to the Read path (quranrevival.html, the QR Lead's J87); quran-data.js no longer raises it.
+  surahoffline: ["app/quranrevival.html", (t) => t.replace("if (error instanceof TypeError) announceChosenSurahUnavailable(asked);", "")],
 };
 if (MUTATE && !MUTATIONS[MUTATE]) throw new Error(`Unknown mutation "${MUTATE}"`);
 const overrides = new Map();
@@ -144,7 +145,7 @@ async function measure(page) {
 // run says so when a listed id STOPS occurring (a fixed finding must leave this list).
 //   ayah-num-badge: the Read view's āyah number button is 24px with a 40px ::after tap area, but its top 8px lies
 //   outside the panel (`.ayah-num-row` margin 0.3rem), so a tap there lands on #studyScreen. Smallest fix: margin-top 0.5rem.
-const FOR_QR_LEAD = ["ayah-num-badge"];
+const FOR_QR_LEAD = []; // QR Lead PR: "ayah-num-badge" fixed (.ayah-num-row margin-top 0.5rem) and removed
 const seenKnown = new Set();
 function judge(tag, m, lang) {
   check(`${tag}: no sideways scroll`, m.sideways <= 0, `${m.sideways}px`);
