@@ -127,7 +127,7 @@ function ensureStyles() {
     .bm-pop-assignee-row { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; cursor: pointer; user-select: none; padding: 0.1rem 0; }
     .bm-pop-assignee-row input[type="checkbox"] { width: 1.05rem; height: 1.05rem; accent-color: #1F3A6E; cursor: pointer; flex-shrink: 0; }
     .bm-pop-assignee-row .who-name { flex: 1; }
-    .bm-pop-assignee-row .who-tag { font-size: 0.66rem; color: #777; background: #f6f7fb; border: 1px solid #eee; border-radius: 0.6rem; padding: 0.02rem 0.4rem; }
+    .bm-pop-assignee-row .who-tag { font-size: 0.66rem; color: #555; /* audit 45: #777 was 4.18:1 on #f6f7fb */ background: #f6f7fb; border: 1px solid #eee; border-radius: 0.6rem; padding: 0.02rem 0.4rem; }
     .bm-pop-unit-row { font-size: 0.85rem; margin-bottom: 0.7rem; color: #444; }
     .bm-pop-units { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.25rem; }
     .bm-pop-units button {
