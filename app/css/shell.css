@@ -175,6 +175,12 @@ button.nav-account-btn { background: none; border: none; text-align: left; curso
 .nav-cat-home button { font-size: 0.82rem; padding: 0.3rem 0.7rem; }
 .nav-cat-group { display: flex; flex-direction: column; gap: 0.25rem; }
 .nav-cat-group + .nav-cat-group { margin-top: 0.4rem; padding-top: 0.5rem; border-top: 1px dashed #e5e5e5; }
+/* The Owner, 23 Oct 2026 (via the PCA): "QR doesn't have any language option". It had one, 939px down a Home menu that
+   shows 367px on a 1280x720 computer: six Legacy App links (v06-v11) pushed Settings below what the menu shows, with
+   nothing to say it scrolls. The Settings group (Language, Card look) comes FIRST: #navHomeExtra's groups join the
+   menu's own column (display: contents) and Settings takes order -1. One rule for every page, MSA and QR. */
+.nav-cat-home #navHomeExtra { display: contents; }
+.nav-cat-home .nav-cat-group:has(#navAppLangSelect) { order: -1; margin-top: 0; padding-top: 0; border-top: none; padding-bottom: 0.5rem; border-bottom: 1px dashed #e5e5e5; }
 .nav-cat-group-label {
   font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
   color: #666; margin-bottom: 0.2rem;
