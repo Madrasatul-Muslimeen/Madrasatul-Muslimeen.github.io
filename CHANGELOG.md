@@ -22279,3 +22279,11 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 - Measured (390 and 1280, 1.6 Mbps / 150 ms): second visit usable ~0.3–0.7 s against ~2.5–3.1 s first; first refresh at ~+2.5 s, after the last page read (~+0.3–0.5 s). Before (part-filled cache): Journey second visit 3934 ms with 62 refreshes at once.
 - Checks: `service-worker` 18/0, `app-offline-boot-browser` 15/0, `mushaf-font-offline-cache-browser` 29/0, `load-speed-check` 66/0, `apps-build-check` 48/0.
 - **Not reached:** QR's own worker (`apps/qr/after-build.mjs`, the QR Lead's) second visit; the landing page's second visit. Nothing stored, no Rules changed.
+
+## v12.45 — 24 Oct 2026 — QuranRevival's own address opens offline (the QR Lead's round 9)
+
+- **`apps/qr/site/root-sw.js`** (new, QR-only; PR #1089): a worker at the site root, so `https://quranrevival.github.io/` opens offline (before: the browser's own "no internet" page, ~113 characters). GitHub Pages cannot send `Service-Worker-Allowed`, so `/app/sw.js` (scope `/app/`) could never reach `/`. Network-first; on a network failure a front-page navigation is answered from `/app/index.html` in the caches `/app/sw.js` keeps, anything else by `caches.match`. It opens and writes no cache of its own.
+- **`apps/qr/site/app/js/qr-front.js`:** registers `/root-sw.js` (scope `/`) only on `/` and `/index.html`, only after the app worker registered, so the kill switches (`?nosw`, `mm_disable_service_worker`) cover both. Every `/app/` page stays with `/app/sw.js` (longest matching scope).
+- **`app/apps/qr.json`** (declared shared change, approved by the MSA Architect): `site` += `"root-sw.js"`. `msa.json` untouched.
+- **New QR check `tools/apps/qr-verify/qr-root-offline-browser.mjs`** (run-all's 28th): 26/0 at 390 and 1400; mutations `noreg` 7, `nofallback` 5, `cachefirst` 2, `writes` 3, `killone` 1 fail. `apps-build-check` 48/0.
+- Nothing stored, no Rules changed.
