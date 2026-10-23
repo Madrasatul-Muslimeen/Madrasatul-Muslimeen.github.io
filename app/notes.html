@@ -393,7 +393,9 @@
       if (!revisions.length) { container.innerHTML = `<p class="note">${t("No revision history.")}</p>`; return; }
       container.innerHTML = revisions.map((r) => {
         const when = r.createdAt?.toDate ? r.createdAt.toDate().toLocaleString() : "";
-        return `<div class="note-history-row">${escapeHtml(when)} — ${escapeHtml(r.revisionReason)}</div>`;
+        // Audit part 60: the stored reason is a machine word ("content-update"); the reader gets it in words, in their language.
+        const reasonLabel = { created: t("Created"), "content-update": t("Edited"), retired: t("Removed"), restored: t("Restored") }[r.revisionReason] ?? r.revisionReason;
+        return `<div class="note-history-row">${escapeHtml(when)} — ${escapeHtml(reasonLabel)}</div>`;
       }).join("");
     }
 

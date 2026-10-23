@@ -1596,6 +1596,8 @@ export const BN = {
   // renders the stored "archived" status in the owner's own word for the
   // action; the canonical id is untouched everywhere else.
   "Removed": "সরানো হয়েছে",
+  "Edited": "সম্পাদিত",
+  "Restored": "ফিরিয়ে আনা হয়েছে",
   "(not set)": "(নির্ধারিত নয়)",
   // v08.02 -- the Approach Sections editor (catalogue.html) and the section
   // headings the Mastery Wheel's sidebar now carries.
