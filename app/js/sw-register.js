@@ -104,6 +104,12 @@ function announceUpdate() {
     bottom: "1rem",
     transform: "translateX(-50%)",
     zIndex: "99999",
+    // Audit part 46 (J29): a finger control is 40px or more (it was 35px at 768 and up) and one line (left: 50% had
+    // squeezed it to half the screen, so on a phone the words wrapped into a two-line pill).
+    minHeight: "44px",
+    width: "max-content",
+    maxWidth: "calc(100vw - 2rem)",
+    boxSizing: "border-box",
     background: "#1F3A6E",
     color: "#fff",
     border: "none",
