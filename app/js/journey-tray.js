@@ -142,6 +142,9 @@ if (!embedded && !/\/journey-map\.html$/.test(location.pathname)) {
     const a = e.target.closest && e.target.closest("a[href]");
     if (!isJourneyLink(a)) return;
     e.preventDefault();
-    openJourneyTray();
+    // J81 part 3: a link naming a Note (journey-map.html?note=<id>) opens that Note in the tray.
+    let noteId = null;
+    try { noteId = new URL(a.getAttribute("href"), location.href).searchParams.get("note"); } catch { /* none */ }
+    openJourneyTray({ noteId });
   });
 }

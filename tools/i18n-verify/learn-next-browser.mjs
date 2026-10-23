@@ -220,7 +220,9 @@ for (const [lang, width, height] of [["en", 320, 640], ["en", 390, 844], ["en", 
   await page.evaluate(() => document.documentElement.removeAttribute("data-card-look"));
 
   // --- the sheet
-  await page.evaluate(() => document.querySelector("#quranWordCardMount [data-learn-next-open]")?.click());
+  // Updated in place 23 Oct 2026 (PCF MSA J82 part 1): the purple line now opens the NEXT WORD's card, not this list. The
+  // list stays reachable from the Vocabulary tab (the same openLearnNextSheet()), so these checks open it from there.
+  await page.evaluate(() => document.getElementById("tabVocabularyBtn")?.click());
   await page.waitForFunction(() => { const s = document.getElementById("learnNextSheet"); return s && !s.hidden && s.querySelectorAll(".ln-row").length > 0; }, null, { timeout: 12000 }).catch(() => {});
   let sh = await sheetInfo(page);
   { const c = await contrast(page, null, "#learnNextSheet .ln-note"); ratios.push(`sheet=${c?.ratio?.toFixed(2)}`); }
@@ -328,8 +330,8 @@ for (const [lang, width, height] of [["en", 320, 640], ["en", 390, 844], ["en", 
     check(`${tag} POSITIVE CONTROL: the Root, Taṣrīf and Depth presses each wrote a claim (${rootWrites.join(",")})`, ["intermediate", "tasrif", "depth"].every((l) => rootWrites.some((x) => x.includes(`__${l}__`))), rootWrites.join(","));
     check(`${tag} Root, Taṣrīf and Depth marks do NOT change it (still ${n3.l})`, nfc((await nextWord(page)) ?? "") === nfc(n3.l), String(await nextWord(page)));
 
-    // --- the sheet knows who knows what
-    await page.evaluate(() => document.querySelector("#quranWordCardMount [data-learn-next-open]")?.click());
+    // --- the sheet knows who knows what (opened from the Vocabulary tab since J82 part 1, see above)
+    await page.evaluate(() => document.getElementById("tabVocabularyBtn")?.click());
     await page.waitForFunction(() => { const s = document.getElementById("learnNextSheet"); return s && !s.hidden && s.querySelectorAll(".ln-row").length > 0; }, null, { timeout: 12000 }).catch(() => {});
     sh = await sheetInfo(page);
     const wantKnown = rows.filter(isKnown).length;

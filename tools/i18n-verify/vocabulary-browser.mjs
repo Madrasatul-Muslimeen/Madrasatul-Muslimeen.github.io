@@ -369,7 +369,9 @@ for (const [lang, width, height] of [["en", 390, 844], ["en", 320, 640], ["en", 
   // Learn next line -> First 10 -> Step test passed -> "Yes, mark them" -> back to the SAME card, which now shows Achieved
   // without a reload (it showed the old mark: the card was never redrawn when the sheet closed).
   const before = await page.evaluate(() => document.querySelector('#quranWordCardMount [data-word-progress-state][aria-pressed="true"]')?.dataset.wordProgressState ?? null);
-  await page.evaluate(() => document.querySelector("#quranWordCardMount [data-learn-next-open]")?.click());
+  // Updated in place 23 Oct 2026 (PCF MSA J82 part 1): the purple line opens the next word's card now; the list is opened
+  // from the Vocabulary tab (the same openLearnNextSheet()).
+  await page.evaluate(() => document.getElementById("tabVocabularyBtn")?.click());
   await page.waitForFunction(() => { const s = document.getElementById("learnNextSheet"); return s && !s.hidden && s.querySelectorAll(".ln-row").length > 0; }, null, { timeout: 15000 }).catch(() => {});
   await page.evaluate(() => document.querySelector('#learnNextSheet [data-ln-tile="10"]')?.click());
   await sleep(page, 250);

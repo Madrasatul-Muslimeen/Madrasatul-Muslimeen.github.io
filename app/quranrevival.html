@@ -2673,7 +2673,7 @@
      top-bar reference is to still say which Surah/āyāt this is in the BARE
      full-screen state, where the strip is otherwise empty apart from the
      full-screen icon. */
-  body.immersive-read.fs-hide-readbar.fs-hide-transport #readBar > *:not(#readBarEnd):not(#mushafPageRef):not(#readQuickRow):not(#readListBtn):not(#readMeaningLayersSlot) { display: none; }
+  body.immersive-read.fs-hide-readbar.fs-hide-transport #readBar > *:not(#readBarEnd):not(#mushafPageRef):not(#readQuickRow):not(#readListBtn):not(#readMeaningLayersSlot):not(#mushafPagePrevBtn):not(#mushafPageNextBtn) { display: none; }
   body.immersive-read.fs-hide-readbar.fs-hide-transport #readBarEnd > *:not(#hideChromeBtn):not(#readMeaningBtn):not(#readMushafBtn):not(#readBarBookmarkBtn) { display: none; }
   /* 10 Oct 2026: 📖 Meaning stays in the bare full-screen state too (the Owner: "visible even in full screen Mushaf
      view"), beside ⤢. */
@@ -2716,6 +2716,29 @@
      easily."): measured at 412px the switches need 164px and 🔖 📖 Mushaf ⤢ ⋯ 228px of a 380px bar, so the tools wrapped
      to a second line. On a phone, while the switches are shown, 📖 is its icon alone (its spoken name and tip are the
      words, set by paintReadMeaningBtn()) and the gaps and pads are a little tighter: one line at 412 and 390. */
+  /* PCF MSA J82 parts 4-5: ‹ › (one printed page) cost a phone's bar 86px. Below 600px, in the full screen's bare state, the
+     page reference is the elastic part (it ellipsises) and 📖 is its icon alone, so the bar keeps its single line. In the
+     normal Read view below 360px the reference is elastic too (measured at 320, 390, 1280, 1440: no new line; at 320 the
+     reference keeps only its first letters and ▾, the full name is its spoken name and tip). */
+  @media (max-width: 599.98px) {
+    body.immersive-read.fs-hide-readbar.fs-hide-transport #readBar:has(#mushafPagePrevBtn:not([hidden])) #mushafPageRef { flex: 1 1 0; min-width: 0; }
+    body.immersive-read.fs-hide-readbar.fs-hide-transport #readBar:has(#mushafPagePrevBtn:not([hidden])) #readMeaningBtn { padding: 0; width: 40px; }
+    body.immersive-read.fs-hide-readbar.fs-hide-transport #readBar:has(#mushafPagePrevBtn:not([hidden])) #readMeaningBtn .read-meaning-word { display: none; }
+    body.immersive-read.fs-hide-readbar.fs-hide-transport #readBar:has(#mushafPagePrevBtn:not([hidden])) { gap: 0.25rem; }
+  }
+  @media (max-width: 359.98px) {
+    #readBar:has(#mushafPagePrevBtn:not([hidden])) #mushafPageRef { flex: 1 1 0; min-width: 0; }
+  }
+  @media (max-width: 359.98px) { /* J82 reference room */
+    /* Architect review (v12.26): at 320 the bare full screen left the reference 22px and its text 0px -- only ▾ showed,
+       so the full screen no longer said where the reader is. The four end tiles go to 36px wide (still 40px tall) and
+       the gaps to 2px; ‹ › keep 40px. Measured at 320: the reference gets its text back ("Ayah 7…"). */
+    body.immersive-read.fs-hide-readbar.fs-hide-transport #readBar:has(#mushafPagePrevBtn:not([hidden])) { gap: 2px; }
+    body.immersive-read.fs-hide-readbar.fs-hide-transport #readBar:has(#mushafPagePrevBtn:not([hidden])) #readBarEnd { gap: 2px; }
+    body.immersive-read.fs-hide-readbar.fs-hide-transport #readBar:has(#mushafPagePrevBtn:not([hidden])) #readBarEnd > button { width: 36px; min-width: 36px; padding-left: 0; padding-right: 0; }
+    /* ...and it is cut from its START, so what stays is the number ("…ah 77", "…৭৭"), the part that says where. */
+    body.immersive-read.fs-hide-readbar.fs-hide-transport #readBar:has(#mushafPagePrevBtn:not([hidden])) .mushaf-page-ref-text { direction: rtl; text-align: left; }
+  }
   @media (max-width: 479px) {
     #readBar:has(#readMeaningLayersSlot:not([hidden])) #readMeaningBtn { padding: 0; width: 40px; }
     #readBar:has(#readMeaningLayersSlot:not([hidden])) #readMeaningBtn .read-meaning-word { display: none; }
@@ -5954,6 +5977,10 @@
                a long label wraps inside itself rather than pushing the rest
                of the row. -->
           <button type="button" id="readUnitChip" class="read-unit-chip" hidden><span class="read-unit-chip-text"></span></button>
+          <!-- PCF MSA J82 parts 4-5 (the Owner, 23 Oct 2026): ‹ › one printed Mushaf page back / on, in the bar's empty space.
+               Shown with the page reference (Mushaf view), in the full screen too; disabled at page 1 and 604. -->
+          <button type="button" class="secondary qr-ico" id="mushafPagePrevBtn" aria-label="Previous page" title="Previous page" hidden>‹</button>
+          <button type="button" class="secondary qr-ico" id="mushafPageNextBtn" aria-label="Next page" title="Next page" hidden>›</button>
           <button type="button" class="secondary qr-ico" id="prevUnitBtn" aria-label="Previous" title="Previous">⏮</button>
           <button type="button" class="secondary qr-ico" id="prevAyahBtn" aria-label="Previous āyah" title="Previous āyah">◂</button>
           <button type="button" class="secondary qr-ico" id="nextAyahBtn" aria-label="Next āyah" title="Next āyah">▸</button>
@@ -19212,6 +19239,44 @@
       showLearnNextSheet();
       ensureVocabReview().then(paintLearnNextReview).catch((error) => console.warn("Vocabulary review schedule", error));
     }
+    /**
+     * PCF MSA J82 part 1 (the Owner, 23 Oct 2026): the Word card's "LEARN NEXT · Next up: <word>" opens THAT word's card
+     * in the same window -- not the Vocabulary list. The way back (decision 86) returns to the word the reader was on,
+     * on the same level tab and the same scroll. The list itself stays reachable from the Vocabulary tab and the wheel.
+     */
+    async function openLearnNextWord() {
+      const { tenantId, subjectPersonId } = wordProgressActor();
+      if (!tenantId || !subjectPersonId) return;
+      const ctx = await ensureLearnNext({ tenantId, personId: subjectPersonId, confirmationRequired: !!wordProgressConfirmRequired });
+      const row = firstUnknownRow(ctx.data.rows, learnNextIsKnown);
+      if (!row) { await openLearnNextSheet(); return; }
+      let prev = null;
+      try {
+        if (quranWordCardState.occurrenceId) {
+          const o = parseQuranWordOccurrenceId(quranWordCardState.occurrenceId);
+          prev = {
+            occurrenceId: quranWordCardState.occurrenceId, ref: `${o.surah}:${o.ayah}:${o.position}`, surah: o.surah, ayah: o.ayah,
+            level: quranWordCardState.level, expandedForm: quranWordCardExpandedForm, lemmaExpanded: quranWordCardLemmaExpanded,
+            unitType: currentUnitType, scrollY: readViewScrollTop(), stageView,
+            cardScrollTop: activeWordCardMount()?.querySelector(".word-card-content")?.scrollTop ?? 0,
+          };
+        }
+      } catch { prev = null; }
+      const { surah, ayah, position } = placeOfRow(row);
+      quranWordCardOrigin = null;
+      renderWordCardReturnBar();
+      await openWordOccurrenceAt(surah, ayah, position, "read");
+      if (!prev) return;
+      setAppReturn(t("Back to Word Card"), prev.ref, async () => {
+        if (prev.unitType && prev.unitType !== currentUnitType) { currentUnitType = prev.unitType; unitTypeSelect.value = prev.unitType; updateUnitControlsVisibility(); }
+        await openWordOccurrenceAt(prev.surah, prev.ayah, Number(prev.ref.split(":")[2]), "read", prev);
+        if (Number.isFinite(prev.scrollY)) setReadViewScrollTop(prev.scrollY);
+        if (prev.cardScrollTop > 0) {
+          const put = () => { const el = activeWordCardMount()?.querySelector(".word-card-content"); if (el) el.scrollTop = prev.cardScrollTop; };
+          put(); requestAnimationFrame(put);
+        }
+      }, { inWordCard: true });
+    }
     function showLearnNextSheet() {
       const el = learnNextSheetEl();
       renderLearnNextSheet();
@@ -19733,7 +19798,7 @@
       // Round 6 -- the 🔍 Search row. Only Search / Enter / a Try chip fetch the word list.
       const practiseBtn = event.target.closest("[data-vocab-practise-word]");
       if (practiseBtn) { openVocabWordRound(practiseBtn.dataset.lemma).catch((error) => console.warn("Vocabulary unavailable", error)); return; }
-      if (event.target.closest("[data-learn-next-open]")) { openLearnNextSheet().catch((error) => console.warn("Learn next unavailable", error)); return; }
+      if (event.target.closest("[data-learn-next-open]")) { openLearnNextWord().catch((error) => console.warn("Learn next unavailable", error)); return; } // J82: the next word's card, not the list
       const searchToggle = event.target.closest("[data-word-card-search-toggle]");
       if (searchToggle) {
         wordCardSearch.open = !wordCardSearch.open;
@@ -20508,7 +20573,48 @@
       mushafPageRef.removeAttribute("aria-label");
       delete mushafPageRef.dataset.page;
       delete mushafPageRef.dataset.unit;
+      paintMushafPageNav(null);
     }
+
+    // PCF MSA J82 parts 4-5: ‹ › move one printed Mushaf page. Shown only while the page reference is (Mushaf view).
+    const mushafPagePrevBtn = document.getElementById("mushafPagePrevBtn"), mushafPageNextBtn = document.getElementById("mushafPageNextBtn");
+    function paintMushafPageNav(pageNum) {
+      if (!mushafPagePrevBtn || !mushafPageNextBtn) return;
+      const on = Number.isFinite(pageNum) && pageNum > 0;
+      mushafPagePrevBtn.hidden = mushafPageNextBtn.hidden = !on;
+      if (!on) return;
+      mushafPagePrevBtn.disabled = pageNum <= 1;
+      mushafPageNextBtn.disabled = pageNum >= 604;
+      mushafPagePrevBtn.setAttribute("aria-label", t("Previous page")); mushafPagePrevBtn.title = t("Previous page");
+      mushafPageNextBtn.setAttribute("aria-label", t("Next page")); mushafPageNextBtn.title = t("Next page");
+    }
+    async function stepMushafPage(dir) {
+      const cur = Number(mushafPageRef?.dataset.page);
+      const target = cur + dir;
+      if (!Number.isFinite(cur) || target < 1 || target > 604) return;
+      const show = () => {
+        const el = pageViewContainer.querySelector(`.hifz-page[data-mushaf-page="${target}"]`);
+        if (el) { el.scrollIntoView({ inline: "start", block: "start", behavior: "instant" }); updateMushafPageRef(); }
+        return !!el;
+      };
+      if (show()) return;
+      const first = mushafPageAyahGroups(target)[0];
+      if (!first) return;
+      // The same unit choice: a Page unit moves to the page; a range keeps its length; every other unit follows the āyah.
+      if (currentUnitType === "page") { await goToUnitNumber(target); renderUnitNav(); }
+      else {
+        if (currentUnitType === "range") {
+          if (first.surah !== currentSurahNum) { currentSurahNum = first.surah; surahSelect.value = String(first.surah); await loadSurah(); }
+          const span = Math.max(1, rangeSpan);
+          rangeFrom = first.firstAyah; rangeTo = Math.min(first.firstAyah + span - 1, currentSurahData.ayahCount);
+        }
+        await navigateToAyah(first.surah, first.firstAyah, stageView);
+      }
+      try { await flowRenderPromise; } catch { /* renderFlowView() reports its own failure on-screen. */ }
+      show();
+    }
+    mushafPagePrevBtn?.addEventListener("click", () => stepMushafPage(-1).catch((error) => console.warn("Mushaf page", error)));
+    mushafPageNextBtn?.addEventListener("click", () => stepMushafPage(1).catch((error) => console.warn("Mushaf page", error)));
 
     /** Safe to call at any time -- hides/empties the reference outside Mushaf
         view or when nothing is rendered yet, and never throws on a page the
@@ -20551,6 +20657,7 @@
       mushafPageRef.setAttribute("aria-label", `${refText} — ${unitInfo ? unitInfo.label : t("This page")}`);
       mushafPageRef.title = refText;
       mushafPageRef.innerHTML = `<span class="mushaf-page-ref-text">${escapeHtml(refText)}</span><span class="mushaf-page-ref-caret" aria-hidden="true">▾</span>`;
+      paintMushafPageNav(pageNum);
       updateReadApproachCapsule();
     }
 
@@ -21724,8 +21831,11 @@
       openNotesPaneForKey(unitKey, { backLabel: t("Back to the unit card") }, () => { paintReadNotesBtn(); openUnitCard(unitKey, from); });
     }
 
-    function unitCardToggleBookmark(unitKey, label) {
-      toggleAyahBookmark(unitKey, label);
+    async function unitCardToggleBookmark(unitKey, label) {
+      // PCF MSA J82 part 2: any exit of the Bookmark window brings the unit card back.
+      const from = unitCardOpenedFromAyah;
+      try { await toggleAyahBookmark(unitKey, label); }
+      finally { if (!unitCardUnitKey && !ayahSheetUnitKey) openUnitCard(unitKey, from); }
     }
 
     let unitCardCurrentInfo = null;
@@ -22018,7 +22128,7 @@
       mountClaimForPicker(ayahActionSheetMountEl, "[data-gac-record-title]"); // 👥 who this records for
       // Owner, 7 Oct 2026: "Enable back button always to come back to the view/ location where it came
       // from" -- an action that takes the reader away from this card leaves a way back to it.
-      const sheetKeyAtRender = ayahSheetUnitKey;
+      const sheetKeyAtRender = ayahSheetUnitKey, halfAtRender = ayahSheetHalf, introAtRender = ayahSheetIntro;
       attachAyahActionSheetHandlers(ayahActionSheetMountEl, {
         onStep: (unitKey, dir) => { const n = ayahCardNeighbour(unitKey, dir); if (n) openAyahActionSheet(n.key, n.half); },
         onNoteView: (unitKey) => openAyahNoteViewPopup(unitKey),
@@ -22030,7 +22140,18 @@
           if (rungType === "ayah") return; // already the Ayah Card, tapping its own rung does nothing
           openUnitCard(rungUnitKey, { surah, ayah: ayahNum });
         },
-        onBookmark: (unitKey) => toggleAyahBookmark(unitKey),
+        // PCF MSA J82 part 2: the card closes before the Bookmark window opens, so EVERY exit of that window (✕, Cancel,
+        // Esc, Save, Remove) brings the same Āyah card back -- the way-back law.
+        onBookmark: async (unitKey) => {
+          const half = halfAtRender, intro = introAtRender; // fire() closes the card first, which clears ayahSheetIntro
+          try { await toggleAyahBookmark(unitKey); }
+          finally {
+            if (!ayahSheetUnitKey) {
+              if (intro?.opening) openAyahActionSheet(unitKey, null, intro);
+              else { const p = parseAyahUnitKey(unitKey); openAyahActionSheet(`${p.surah}:${p.ayah}`, half, intro); }
+            }
+          }
+        },
         // Decision 95: the Note is the Notes pane now (Mapping My Journey's own Note), on the Read view.
         onNote: (unitKey) => { openNotesPaneFromAyahCard(unitKey); },
         // ✍ Take Note: the same view, ready to write -- its Notes box open, in sight, the cursor in it (a phone's

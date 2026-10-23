@@ -13,6 +13,7 @@
 //   p: the Note is owned by the item's adder      q: the trash drops noteId
 //   r: the Open link has no back=1                s: the item is not trashed at all
 //   t: a failed save still removes the item       u: the body is not escaped
+//   v: on journey-map.html, Open puts the tray over the page itself   w: no visible ← Back there
 // Screenshots (picker open, toast showing) go to /tmp/zab-z5-shots.
 // Run from the repository root with `node serve.js` running.
 import fs from "node:fs";
@@ -51,6 +52,7 @@ async function routeMutation(ctx) {
   else if (MUTATE === "s") await routeText(ctx, "**/js/zab-data.js", (s) => swap(s, `{ status: "trashed", deletedAt: serverTimestamp(), noteId }`, `{ noteId }`));
   else if (MUTATE === "t") await routeText(ctx, "**/js/zab-bar.js", (s) => swap(s, "  if (!res.ok) {\n    S.msg = res.stage", "  S.items = S.items.filter((i) => i.itemId !== itemId);\n  if (!res.ok) {\n    S.msg = res.stage"));
   else if (MUTATE === "u") await routeText(ctx, "**/js/zab-to-note.js", (s) => swap(s, "parts.push(`<p>${esc(l)}</p>`)", "parts.push(`<p>${l}</p>`)"));
+  else if (MUTATE === "v") await routeText(ctx, "**/js/zab-bar.js", (s) => swap(s, "if (/\\/journey-map\\.html$/.test(location.pathname)) {", "if (false) {")); // the tray over its own page
   else throw new Error(`unknown mutation ${MUTATE}`);
 }
 
@@ -77,13 +79,13 @@ const SEED = `
   ];
 })();`;
 
-async function open(browser, { lang, width }) {
-  const ctx = await newContext(browser, { appLang: lang === "bn" ? "bn" : null, viewport: { width, height: 860 }, extraSeedJs: SEED });
+async function open(browser, { lang, width, path = "records.html", seed = "" }) {
+  const ctx = await newContext(browser, { appLang: lang === "bn" ? "bn" : null, viewport: { width, height: 860 }, extraSeedJs: SEED + seed });
   await ctx.route((u) => !["localhost", "www.gstatic.com", "cdn.jsdelivr.net"].includes(u.hostname), (r) => r.abort());
   await ctx.route("**/js/zab-readiness.js", (route) => route.fulfill({ status: 200, contentType: "text/javascript; charset=utf-8", body: READY_OPEN }));
   await routeMutation(ctx);
   const page = await ctx.newPage();
-  await page.goto(`${BASE}/app/records.html`, { waitUntil: "load" });
+  await page.goto(`${BASE}/app/${path}`, { waitUntil: "load" });
   await page.waitForTimeout(1000);
   await page.evaluate(() => { for (const el of document.querySelectorAll('[id*="splash"], .mm-splash-overlay')) el.remove(); });
   return { ctx, page };
@@ -224,21 +226,49 @@ for (const lang of ["en", "bn"]) {
         await page.click('#zabPanel [data-zab-nav="trash"]');
         await page.waitForSelector("#zabPanel [data-zab-became] a", { timeout: 8000 });
         await page.click("#zabPanel [data-zab-became] a");
-        await page.waitForURL(/journey-map\.html/, { timeout: 15000, waitUntil: "commit" });
-        check(`${tag}: Open leaves for Mapping My Journey with back=1`, /back=1/.test(page.url()) && /note=/.test(page.url()), page.url());
-        // Architect review: the way-back law needs a VISIBLE ← Back on Mapping My Journey, not the browser's own Back.
-        const jmBack = await page.waitForSelector("#jmBackBtn", { state: "visible", timeout: 15000 }).catch(() => null);
-        check(`${tag}: Mapping My Journey shows a visible ← Back (back=1)`, !!jmBack);
-        if (jmBack) await jmBack.click(); else await page.goBack({ waitUntil: "commit" });
+        // UPDATED IN PLACE for PCF MSA J81 part 3 (the Owner: a note tapped anywhere opens in the Mapping My Journey note
+        // window): Open no longer leaves the page for journey-map.html?back=1; it opens the tray over this page, and the
+        // tray's ✕ is the way back, to Zab as it was.
+        const url0 = page.url();
+        await page.waitForSelector("#journeyTray:not([hidden]) iframe", { timeout: 15000 }).catch(() => {});
+        const tr = await page.evaluate(() => ({ shown: !!document.querySelector("#journeyTray:not([hidden])"), src: document.querySelector("#journeyTray iframe")?.getAttribute("src") ?? "" }));
+        check(`${tag}: Open shows the Note in the Mapping My Journey tray, on the same page`, tr.shown && /embed=1&note=/.test(tr.src) && page.url() === url0, JSON.stringify({ tr, url: page.url() }));
+        await page.click("#journeyTray .jt-close");
         await page.waitForSelector("#zabPanel:not([hidden]) [data-zab-new-item]", { timeout: 15000 }).catch(() => {});
         const back = await page.evaluate(() => ({ open: !document.querySelector("#zabPanel")?.hidden, head: document.querySelector("#zabPanel .zab-head h2")?.textContent || "" }));
-        check(`${tag}: ← Back reopens Zab on the same pocket`, back.open && back.head.includes("Plain"), JSON.stringify(back));
+        // (UPDATED IN PLACE, J81 part 3: the page never left, so Zab is exactly as it was, still on the view Open was pressed in.)
+        check(`${tag}: closing the tray leaves Zab open exactly as it was`, back.open && back.head.includes("Trash"), JSON.stringify(back));
       }
     } catch (err) {
       check(`${tag}: ran to the end`, false, String(err && err.stack || err).split("\n").slice(0, 4).join(" | "));
     } finally {
       await ctx.close();
     }
+  }
+}
+// J81 part 3, Architect review: on Mapping My Journey's OWN page, a Zab "Became a Note" link must not open the tray
+// over the page itself; it opens the Note there as a full page with back=1, and ← Back is visible (mutations v, w).
+{
+  const { ctx, page } = await open(browser, { lang: "en", width: 1440, path: "journey-map.html",
+    // A Zab item that already became a Note (only here, so the trash rows the loop above reads stay as they were).
+    seed: `\nDATA.zabItems.push({ _id: "t1__tr-1", itemId: "tr-1", pocketId: "pk-plain", order: 3, text: "Already a Note", done: false, ${stamp}, status: "trashed", deletedAt: new Date(), noteId: "n-became" });` });
+  try {
+    await page.click(opener(1440));
+    await page.waitForSelector('#zabPanel [data-zab-nav="trash"]', { timeout: 8000 });
+    await page.click('#zabPanel [data-zab-nav="trash"]');
+    await page.waitForSelector('#zabPanel [data-zab-became] a[data-zab-note-open="n-became"]', { timeout: 8000 });
+    // Positive control: the link really is the Zab note link the J81 handler acts on.
+    check("journey-map.html: POSITIVE CONTROL the trashed item's Became-a-Note link is shown", !!(await page.$('#zabPanel [data-zab-became] a[data-zab-note-open="n-became"]')));
+    await page.click('#zabPanel [data-zab-became] a[data-zab-note-open="n-became"]');
+    await page.waitForURL(/journey-map\.html\?.*note=n-became/, { timeout: 15000, waitUntil: "commit" }).catch(() => {});
+    const r = await page.evaluate(() => ({ url: location.href, tray: !!document.querySelector("#journeyTray:not([hidden])") }));
+    check("journey-map.html: Open goes to the Note as a full page with back=1, no tray over the page itself", /note=n-became/.test(r.url) && /back=1/.test(r.url) && !r.tray, JSON.stringify(r));
+    const jmBack = await page.waitForSelector("#jmBackBtn", { state: "visible", timeout: 15000 }).catch(() => null);
+    check("journey-map.html: ...and shows a visible ← Back (the way-back law)", !!jmBack);
+  } catch (err) {
+    check("journey-map.html: ran to the end", false, String(err && err.stack || err).split("\n").slice(0, 4).join(" | "));
+  } finally {
+    await ctx.close();
   }
 }
 await browser.close();

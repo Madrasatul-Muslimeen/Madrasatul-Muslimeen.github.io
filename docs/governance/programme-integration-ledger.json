@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "12.25",
+    "version": "12.26",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -4577,7 +4577,7 @@
     {
       "version": "12.25",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "v12.25: every Āyah card tab as the same window (J78), the Note's formatting buttons as group tabs (J71 B), a – minimise on every pop-up and the bottom buttons step windows aside (J81 parts 1-2), audit part 40's readability fixes (#1028), Hadith's notice off the Dua tab (J80).",
       "integration": {
         "authorizedOn": "2026-10-22",
@@ -4585,10 +4585,23 @@
         "method": "MERGE_PR",
         "reference": "CHANGELOG.md"
       }
+    },
+    {
+      "version": "12.26",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "J81 part 3 and J82 parts 1, 2, 4, 5 (PRs #1031, #1035), with the Architect's review fixes.",
+      "integration": {
+        "authorizedOn": "2026-10-23",
+        "integratedOn": "2026-10-23",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
     }
   ],
-  "nextUnallocated": "12.26",
+  "nextUnallocated": "12.27",
   "nextUnallocatedNote": [
+    "v12.26 was allocated to Every Note opens in the Mapping My Journey window; Learn next, Bookmark way back, Mushaf page buttons, 2026-10-23.",
     "v12.25 was allocated to the Āyah card's tabs, the Note buttons, a minimise button on every pop-up, Hadith's notice, 2026-10-22.",
     "v12.24 was allocated to the Word card reads its word's own surah (audit-part15's error), 2026-10-22.",
     "v12.23 was allocated to MSA J72 sweep part 2 (Track window, Asma posters at the home size), 2026-10-22.",
