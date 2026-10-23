@@ -10,6 +10,7 @@
 //   bookmark-gone the Āyah card is not reopened                      -> the part 2 checks fail
 //   page-skip     ‹ › move two pages                                 -> the part 4/5 "exactly one" checks fail
 //   no-fullscreen ‹ › dropped from the bare-state :not() list       -> the full-screen checks fail
+//   tiny-ref      the 36px tiles / 2px gaps switched off              -> the 320 "page reference still shows its text" checks fail
 import { chromium, newContext, openPage } from "./harness.mjs";
 import fs from "node:fs";
 
@@ -24,6 +25,7 @@ const MUT = {
   "learn-list": ["openLearnNextWord().catch((error) => console.warn(\"Learn next unavailable\", error)); return; } // J82", "openLearnNextSheet().catch((error) => console.warn(\"Learn next unavailable\", error)); return; } // J82"],
   "bookmark-gone": ["            if (!ayahSheetUnitKey) {\n              if (intro?.opening)", "            if (false) {\n              if (intro?.opening)"],
   "page-skip": ["const target = cur + dir;\n      if (!Number.isFinite(cur) || target < 1", "const target = cur + dir * 2;\n      if (!Number.isFinite(cur) || target < 1"],
+  "tiny-ref": ["@media (max-width: 359.98px) { /* J82 reference room */", "@media (max-width: 0px) { /* J82 reference room */"],
   "no-fullscreen": [":not(#mushafPagePrevBtn):not(#mushafPageNextBtn) { display: none; }", " { display: none; }"],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
@@ -91,9 +93,10 @@ async function partLearn(lang, width, height) {
   const back = await page.evaluate(() => { const b = document.querySelector("[data-ayah-card-back]"); const r = b?.getBoundingClientRect(); return b ? { label: b.getAttribute("aria-label"), h: Math.round(r.height), w: Math.round(r.width) } : null; });
   check(`${tag} a way back is offered ("Back to Word Card 1:...") and is a finger target`, !!back && /(Word Card|শব্দ কার্ড)/.test(back.label) && back.h >= 36, JSON.stringify(back));
   if (back) await page.evaluate(() => document.querySelector("[data-ayah-card-back]").click());
-  await page.waitForTimeout(2000);
-  const restored = await headWord();
-  check(`${tag} ← Back returns to the previous word's card exactly as it was`, restored === before, `${restored.slice(0, 80)} vs ${before.slice(0, 80)}`);
+  // Architect review: wait for the STATE (the previous card back), not a guessed 2 s -- under load 2 s was too short.
+  let restored = await headWord();
+  for (let i = 0; i < 100 && restored !== before; i++) { await page.waitForTimeout(100); restored = await headWord(); }
+  check(`${tag} ← Back returns to the previous word's card exactly as it was`, restored === before, (() => { let i = 0; while (i < restored.length && restored[i] === before[i]) i++; return `differs at ${i}: "${restored.slice(Math.max(0, i - 30), i + 60)}" vs "${before.slice(Math.max(0, i - 30), i + 60)}"`; })());
   await ctx.close();
 }
 
@@ -167,7 +170,7 @@ async function partPages(lang, width, height) {
   }
   const without = await barHeightWithout(page);
   check(`${tag} the Read bar keeps its line count (height ${st.barH} vs ${without} without ‹ ›), no sideways overflow`, st.barH === without && st.over <= 0, JSON.stringify({ with: st.barH, without, over: st.over }));
-  if (width === 390 || width === 1440) await page.screenshot({ path: `${SHOT_DIR}/j82-${lang}-${width}-normal.png` });
+  if (width === 320 || width === 390 || width === 1440) await page.screenshot({ path: `${SHOT_DIR}/j82-${lang}-${width}-normal.png` });
   await page.click("#mushafPageNextBtn");
   await waitFor("next page", page, (p) => Number(document.getElementById("mushafPageRef")?.dataset.page) !== p, p0, 8000);
   await page.waitForTimeout(700);
@@ -187,7 +190,11 @@ async function partPages(lang, width, height) {
   for (const id of ["mushafPagePrevBtn", "mushafPageNextBtn"]) check(`${tag} full screen: ${id} is shown, ≥ 40px, tappable`, sf[id].shown && sf[id].w >= 40 && sf[id].h >= 40 && sf[id].hit, JSON.stringify(sf[id]));
   const withoutF = await barHeightWithout(page);
   check(`${tag} full screen: the bar keeps its line count (${sf.barH} vs ${withoutF}), no sideways overflow`, sf.barH === withoutF && sf.over <= 0, JSON.stringify({ with: sf.barH, without: withoutF, over: sf.over }));
-  if (width === 390 || width === 1440) await page.screenshot({ path: `${SHOT_DIR}/j82-${lang}-${width}-fullscreen.png` });
+  // Architect review (v12.26): the bare full screen's page reference must still SAY where the reader is -- at 320 it had
+  // shrunk to its ▾ alone (text 0px wide). At least 4 characters' room for its text (mutation tiny-ref).
+  const refFs = await page.evaluate(() => { const t = document.querySelector("#mushafPageRef .mushaf-page-ref-text"); const r = t?.getBoundingClientRect(); return { w: Math.round(r?.width ?? 0), text: t?.textContent ?? "", fs: parseFloat(getComputedStyle(t ?? document.body).fontSize) }; });
+  check(`${tag} full screen: the page reference still shows its text ("${refFs.text}", ${refFs.w}px)`, refFs.w >= refFs.fs * 2, JSON.stringify(refFs));
+  if (width === 320 || width === 390 || width === 1440) await page.screenshot({ path: `${SHOT_DIR}/j82-${lang}-${width}-fullscreen.png` });
   if (sf.mushafPageNextBtn.shown) {
     await page.click("#mushafPageNextBtn");
     await waitFor("next page (full screen)", page, (p) => Number(document.getElementById("mushafPageRef")?.dataset.page) !== p, p0, 8000);

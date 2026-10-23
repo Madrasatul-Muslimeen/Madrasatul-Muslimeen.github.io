@@ -2729,6 +2729,16 @@
   @media (max-width: 359.98px) {
     #readBar:has(#mushafPagePrevBtn:not([hidden])) #mushafPageRef { flex: 1 1 0; min-width: 0; }
   }
+  @media (max-width: 359.98px) { /* J82 reference room */
+    /* Architect review (v12.26): at 320 the bare full screen left the reference 22px and its text 0px -- only ▾ showed,
+       so the full screen no longer said where the reader is. The four end tiles go to 36px wide (still 40px tall) and
+       the gaps to 2px; ‹ › keep 40px. Measured at 320: the reference gets its text back ("Ayah 7…"). */
+    body.immersive-read.fs-hide-readbar.fs-hide-transport #readBar:has(#mushafPagePrevBtn:not([hidden])) { gap: 2px; }
+    body.immersive-read.fs-hide-readbar.fs-hide-transport #readBar:has(#mushafPagePrevBtn:not([hidden])) #readBarEnd { gap: 2px; }
+    body.immersive-read.fs-hide-readbar.fs-hide-transport #readBar:has(#mushafPagePrevBtn:not([hidden])) #readBarEnd > button { width: 36px; min-width: 36px; padding-left: 0; padding-right: 0; }
+    /* ...and it is cut from its START, so what stays is the number ("…ah 77", "…৭৭"), the part that says where. */
+    body.immersive-read.fs-hide-readbar.fs-hide-transport #readBar:has(#mushafPagePrevBtn:not([hidden])) .mushaf-page-ref-text { direction: rtl; text-align: left; }
+  }
   @media (max-width: 479px) {
     #readBar:has(#readMeaningLayersSlot:not([hidden])) #readMeaningBtn { padding: 0; width: 40px; }
     #readBar:has(#readMeaningLayersSlot:not([hidden])) #readMeaningBtn .read-meaning-word { display: none; }
