@@ -351,7 +351,7 @@ button.nav-bm-preset { background: none; border: 0; font: inherit; font-size: 0.
    the Bookmark sheet is a real 40px tap target, and the three ordinary dropdowns scroll inside themselves rather than
    running off the bottom of the screen. */
 .nav-cat-links .nav-link, .nav-cat-links button.nav-account-btn { box-sizing: border-box; min-height: 40px; display: flex; align-items: center; } /* audit4 navlinks */
-.nav-cat-links .nav-legacy-link, .nav-cat-links button#signOutBtn { box-sizing: border-box; min-height: 40px; display: inline-flex; align-items: center; align-self: flex-start; }
+.nav-cat-links .nav-legacy-link, .nav-cat-links button#signOutBtn, .nav-cat-links button#signInBtn { box-sizing: border-box; min-height: 40px; display: inline-flex; align-items: center; align-self: flex-start; }
 .nav-cat-links .nav-setting select { box-sizing: border-box; min-height: 40px; }
 .nav-bm-control select, .nav-bm-expand-toggle { box-sizing: border-box; min-height: 40px; }
 .nav-bm-folder > summary, .nav-bm-item { min-height: 40px; box-sizing: border-box; }
