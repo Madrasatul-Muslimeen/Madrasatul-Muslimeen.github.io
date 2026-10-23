@@ -1330,7 +1330,13 @@
     // panels' minimums (240 + 260 + 300px, with the gaps) fit from 900px: a laptop-sized
     // pop-up shows all three, each resizable (the Owner, 8 Oct 2026). The full page keeps 1200.
     const NOTE_PANE_WIDE_FROM_EMBED = 900;
+    // PCF MSA J82 part 3: a pop-up opened ON a Note (?embed=1&note=<id>: every "open this Note" since J81) is the note
+    // window -- the Note the whole width, as in a narrower pop-up -- not a 350px third column beside the folders at 1440.
+    // Once that Note is closed (← Back), the pop-up is Mapping My Journey again, with its panels.
+    let noteFocus = document.documentElement.classList.contains("embed") && !!new URLSearchParams(location.search).get("note");
+    let noteFocusShown = false;
     function noteLayoutTier() {
+      if (noteFocus) return "narrow";
       const from = document.documentElement.classList.contains("embed") ? NOTE_PANE_WIDE_FROM_EMBED : NOTE_PANE_WIDE_FROM;
       return document.documentElement.clientWidth >= from ? "wide" : "narrow";
     }
@@ -1355,6 +1361,7 @@
     const notePlaceholderEl = document.getElementById("notePlaceholder");
     function applyNoteTier() {
       const open = paneView.noteId !== null;
+      if (open) noteFocusShown = true; else if (noteFocusShown) noteFocus = false;
       const tier = noteLayoutTier();
       // S8: the Folders view is three panels (tree | list | Note); Timeline, Path and Trash keep the two-panel layout.
       const three = currentView === "folders";

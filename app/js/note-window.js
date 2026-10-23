@@ -446,9 +446,15 @@ export function createNoteViews(host) {
     if (!tb || tb.hidden || !v.ed) return;
     const width = (v.bodyEl.clientWidth || v.el.clientWidth);
     tb.classList.add("tb-grouped");
-    tb.classList.toggle("tb-inline", width >= TOOLBAR_INLINE_FROM);
     for (const b of tb.querySelectorAll("[data-tb-g]")) b.classList.toggle("tb-on", Number(b.dataset.tbG) === v.tbOpen);
     for (const b of tb.querySelectorAll("[data-tb-tab]")) b.setAttribute("aria-selected", String(Number(b.dataset.tbTab) === v.tbOpen));
+    tb.classList.toggle("tb-inline", width >= TOOLBAR_INLINE_FROM);
+    // PCF MSA J82 part 3: when the tabs and the chosen group do not fit one line (the Text group in an ~850px Mapping My
+    // Journey window), the tools go under the tabs as on a narrow Note, never one stray tool (⌫) wrapped alone on a line.
+    if (tb.classList.contains("tb-inline")) {
+      const tops = [...tb.querySelectorAll(".tb-tab, [data-tb-g].tb-on")].map((b) => b.getBoundingClientRect().top);
+      if (tops.length && Math.max(...tops) - Math.min(...tops) > 4) tb.classList.remove("tb-inline");
+    }
   }
   const closestIn = (v, selector) => {
     const body = editBodyEl(v), sel = window.getSelection();
