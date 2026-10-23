@@ -2928,6 +2928,7 @@
      0.3rem (4.8px) top margin left its top 3px outside the panel, where a tap reached #studyScreen: 0.5rem (8px) keeps
      the whole 40px inside. The row is 3.2px lower; nothing else moves. */
   .ayah-num-row { display: flex; justify-content: flex-end; margin: 0.5rem 0 0.1rem; }
+  .read-loading { margin: 1rem 0; text-align: center; color: #555; font-weight: 600; } /* QR Lead: "Loading…" while a surah comes (loadSurah) */
   .ayah-num-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 1.5rem; height: 1.5rem; padding: 0 0.4rem; border-radius: 999px; background: #f0ead9; color: #8a6d1f; font-size: 0.78rem; font-weight: 700; border: 1px solid #d8c68a; }
   /* Issue #295 -- the badge is a real <button> (the Ayah Card's third entry
      point) now, in Read and Note view alike. `font`/`cursor` are the only
@@ -10055,6 +10056,11 @@
       quranWordCardRequest++;
       quranWordCardState = closeWordCard(quranWordCardState);
       clearWordCardMounts();
+      // QR Lead (audit part 46: on a slow line "the Read view is an empty box ... no loading words"): if the surah has
+      // not come within 200ms (from memory or the browser's cache it comes at once, so no flash), say "Loading…".
+      const loadingTimer = setTimeout(() => {
+        if (ayahPanels) ayahPanels.innerHTML = `<p class="read-loading" role="status">${escapeHtml(t("Loading…"))}</p>`;
+      }, 200);
       try {
         currentSurahData = await getSurah(currentSurahNum);
       } catch (error) {
@@ -10064,9 +10070,12 @@
           surahSelect.value = String(currentSurahNum);
           syncReadPickers();
           syncWheelHubPickers();
+          renderStudyScreen(); // the surah still kept, in place of "Loading…"
         }
         if (error instanceof TypeError) announceChosenSurahUnavailable(asked); // no network and no saved copy
         throw error;
+      } finally {
+        clearTimeout(loadingTimer);
       }
       setAyahNum(1);
       // Owner ask (10 Aug 2026): Prev/Next alone made jumping to, say, ayah
