@@ -940,3 +940,4 @@ total). Allocated by the MMSA Architect.
 12.36: audit part 47 (shared parts follow QR's language switch) and the QR Lead's J87. Allocated by the MMSA Architect.
 12.37: audit 47's QR findings (Āyah card, Notes pane label, Bookmark popover) and relabelReadNotePane. Allocated by the MMSA Architect.
 12.38: audit part 48 part 2 (Zab bar and worker install wait for the page). Allocated by the MMSA Architect.
+12.39: audit part 50 part 1 (QR modulepreload). Allocated by the MMSA Architect.
