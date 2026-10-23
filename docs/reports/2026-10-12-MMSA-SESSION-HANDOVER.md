@@ -1612,3 +1612,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v12.46** (2026-10-23): audit part 54, study modules and teaching pages by the User Manual.
 - **v12.47** (2026-10-23): tablet Read bar: Study menu, whole surah name (QR Lead round 10).
 - **v12.48** (2026-10-23): audit part 56, getting started and Bookmarks by the User Manual.
+- **v12.49** (2026-10-23): audit part 57, Records, Monitor and Homework by the User Manual.
