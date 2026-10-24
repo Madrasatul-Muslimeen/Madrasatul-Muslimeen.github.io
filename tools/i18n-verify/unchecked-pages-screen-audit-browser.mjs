@@ -90,6 +90,10 @@ const MEASURE = () => {
       if (e.hidden) return false;
       const cs = getComputedStyle(e);
       if (cs.display === "none" || cs.visibility === "hidden") return false;
+      // Architect review (audit part 86): a closed <details> keeps its links' boxes in Chromium (the landing's Home menu
+      // measured 547px of links with open=false), but nothing past its <summary> is on screen.
+      const d = e.parentElement?.closest("details");
+      if (d && !d.open && e.parentElement === d && e.tagName !== "SUMMARY") return false;
     }
     const r = el.getBoundingClientRect();
     return r.width > 0 && r.height > 0;
@@ -108,7 +112,10 @@ const MEASURE = () => {
     for (let p = el.parentElement; p && p !== document.documentElement; p = p.parentElement) {
       const cs = getComputedStyle(p);
       if (!/hidden|clip/.test(cs.overflowX + cs.overflowY)) continue;
-      const pr = p.getBoundingClientRect();
+      // Architect review (audit part 86): when <html> does not clip, the body's overflow belongs to the VIEWPORT (CSS overflow
+      // propagation), not to the body's own box: the landing's 1280px-wide centred body does not cut a window 1384px wide.
+      const toViewport = p === document.body && getComputedStyle(document.documentElement).overflow === "visible";
+      const pr = toViewport ? { left: 0, top: 0, right: innerWidth, bottom: innerHeight, width: innerWidth, height: innerHeight } : p.getBoundingClientRect();
       if (pr.width === 0 && pr.height === 0) continue;
       const cutX = /hidden|clip/.test(cs.overflowX) && (r.left < pr.left - 1 || r.right > pr.right + 1);
       const cutY = /hidden|clip/.test(cs.overflowY) && (r.top < pr.top - 1 || r.bottom > pr.bottom + 1);
@@ -180,7 +187,10 @@ for (const [name, path] of PAGES) {
       // IS linked from the app (nav.js noAccountMessageHtml, now with navBack=1) and mounts the Back row.
       // Audit part 86: the same holds for admin-self-check.html (owner diagnostic, opened by address; the only app reference is
       // screensaver-idle.js's never-on list, not a link) and for the landing page, which is the root every Back returns to.
-      if (path.startsWith("admin-self-check") || path === "index.html") check(`${tag}: no in-app link leads here (so no Back is owed)`, !fs.readdirSync("app").filter((f) => f.endsWith(".html") && f !== path).some((f) => new RegExp(`href=["'][^"']*${path.replace(".", "\\.")}["']`).test(fs.readFileSync(`app/${f}`, "utf8"))) || path === "index.html", "an app page now links here: give it a Back");
+      // Architect review: the landing's own clause read `... || path === "index.html"`, a check that could not fail. The landing is
+      // the root every Back returns to, so (e) is simply not asked of it, rather than asserted vacuously.
+      if (path === "index.html") { /* (e) not applicable: the root */ }
+      else if (path.startsWith("admin-self-check")) check(`${tag}: no in-app link leads here (so no Back is owed)`, !fs.readdirSync("app").filter((f) => f.endsWith(".html") && f !== path).some((f) => new RegExp(`href=["'][^"']*${path.replace(".", "\\.")}["']`).test(fs.readFileSync(`app/${f}`, "utf8"))), "an app page now links here: give it a Back");
       else if (path.startsWith("accept-invite")) check(`${tag}: no in-app page links here (so no Back is owed)`, !APP_LINKS_INVITE, "an app page now links to accept-invite.html: give it a Back");
       else check(`${tag}: ?navBack=1 shows a visible Back`, m.back.length > 0, "no Back control found");
       if (lang === "bn") {

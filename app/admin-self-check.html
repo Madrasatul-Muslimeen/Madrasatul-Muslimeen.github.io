@@ -29,10 +29,8 @@
 </head>
 <body>
   <h1>Admin self-check (F-008)</h1>
-  <p>One tap: checks that every collection this account can safely reach is
-     actually reachable, and that a test save to each one succeeds. Nothing
-     shown here is invented — every line is a real result from a real check
-     against the database, just now.</p>
+  <!-- One line on purpose: translateStatic() looks the text up exactly as written (audit part 86). -->
+  <p>One tap: checks that every collection this account can safely reach is actually reachable, and that a test save to each one succeeds. Nothing shown here is invented — every line is a real result from a real check against the database, just now.</p>
 
   <div id="who">Checking sign-in…</div>
   <button id="signInBtn" style="display:none;">Sign in with Google</button>
@@ -55,7 +53,7 @@
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
     import { runSelfCheck } from "./js/self-check.js";
     import { getSessionErrorBuffer } from "./js/errors.js";
-    import { translateStatic, t } from "./js/i18n.js";
+    import { translateStatic, t, num } from "./js/i18n.js";
     import { registerServiceWorker } from "./js/sw-register.js";
     import { armScreensaver } from "./js/screensaver-idle.js";
 
@@ -127,11 +125,11 @@
       summaryEl.className = failCount === 0 ? "ok" : "attention";
       summaryEl.textContent =
         failCount === 0
-          ? `All clear. ${results.length} checks ran, nothing needs attention. (${getSessionErrorBuffer().length} write failures logged this session.)`
-          : `${failCount} check(s) need attention — see the FAIL rows above. (${getSessionErrorBuffer().length} write failures logged this session.)`;
+          ? t("All clear. {n} checks ran, nothing needs attention. ({e} write failures logged this session.)", { n: num(results.length), e: num(getSessionErrorBuffer().length) })
+          : t("{n} check(s) need attention — see the FAIL rows above. ({e} write failures logged this session.)", { n: num(failCount), e: num(getSessionErrorBuffer().length) });
 
       runBtn.disabled = false;
-      runBtn.textContent = "Run self-check again";
+      runBtn.textContent = t("Run self-check again");
     });
   </script>
 </body>
