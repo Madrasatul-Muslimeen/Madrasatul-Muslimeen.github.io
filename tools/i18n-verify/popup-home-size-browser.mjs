@@ -66,7 +66,8 @@ for (const lang of ["en", "bn"]) {
   await clean(P); await P.waitForTimeout(1000);
   // (0) QR Lead (24 Oct 2026, audit part 73): the Zab bar loads after the page (v12.38) and lifts the dock by its 44px spacer.
   // A window first sized for the un-lifted dock must be refitted when the bar arrives, or its bottom edge (and the s / se / sw
-  // handles) sit under the tab row. Made deterministic: size it with the bar away, then bring the bar back. On a page of its
+  // handles) sit under the tab row. Made deterministic: size it with the bar away (and the room the page holds for it,
+  // html.zab-reserve), then bring the bar back. On a page of its
   // own, so the bar's coming and going leaves this flow's window exactly as it was.
   {
     const ctx0 = await ctxFor(lang, 1440, 900);
@@ -74,10 +75,10 @@ for (const lang of ["en", "bn"]) {
     await clean(P); await P.waitForTimeout(1000);
     const bottomVsTabs = () => P.evaluate(() => { const w = document.querySelector('[data-popup-win-frame="wheel"]') || document.getElementById("wheelPopupView"); const t = document.getElementById("tabRow"); return { win: Math.round(w.getBoundingClientRect().bottom), tabs: Math.round(t.getBoundingClientRect().top) }; });
     const had = await P.evaluate(() => document.body.classList.contains("zab-bar-on") && !!document.getElementById("zabSpacer"));
-    await P.evaluate(() => { document.getElementById("zabSpacer").style.display = "none"; document.body.classList.remove("zab-bar-on"); window.dispatchEvent(new Event("resize")); });
+    await P.evaluate(() => { document.getElementById("zabSpacer").style.display = "none"; document.body.classList.remove("zab-bar-on"); document.documentElement.classList.remove("zab-reserve"); window.dispatchEvent(new Event("resize")); });
     await P.waitForTimeout(400);
     const away = await bottomVsTabs();
-    await P.evaluate(() => { document.getElementById("zabSpacer").style.display = ""; document.body.classList.add("zab-bar-on"); });
+    await P.evaluate(() => { document.getElementById("zabSpacer").style.display = ""; document.body.classList.add("zab-bar-on"); document.documentElement.classList.add("zab-reserve"); });
     await P.waitForTimeout(400);
     const back = await bottomVsTabs();
     check(`${tag} POSITIVE CONTROL the Zab bar is on, and taking it away lowers the tab row`, had && away.tabs > back.tabs, JSON.stringify({ had, away, back }));

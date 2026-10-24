@@ -8,6 +8,7 @@
 //   --mutate=any-uid     another account's copy is shown       -> the "another account" check fails
 //   --mutate=no-guard    a copy carrying an event handler runs -> the "tampered" check fails
 //   --mutate=any-lang    a copy in the other language is shown -> the "other language" check fails
+//   --mutate=noreserve   no room held for the Zab bar at first paint (QR Lead, 24 Oct 2026) -> the 1280 "nothing jumps" checks fail
 import { chromium, newContext, BASE } from "./harness.mjs";
 import fs from "node:fs";
 
@@ -20,6 +21,7 @@ const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice
 let body = fs.readFileSync("app/quranrevival.html", "utf8");
 const swap = (a, b) => { const n = body.split(a).length - 1; if (!n) throw new Error(`mutation anchor missing: ${a.slice(0, 70)}`); console.log(`(mutation ${MUTATE}: ${n} occurrence(s) replaced)`); body = body.split(a).join(b); };
 if (MUTATE === "no-drop") swap("    function renderWheel() {\n      dropWheelPaintCopy();", "    function renderWheel() {");
+else if (MUTATE === "noreserve") swap("document.documentElement.classList.add('zab-reserve');", "");
 else if (MUTATE === "no-keep") swap("      keepWheelPaintCopy();\n", "");
 else if (MUTATE === "any-uid") swap("if (!user || wheelPaintCopyUid() !== user.uid) dropWheelPaintCopy();", "if (!user) dropWheelPaintCopy();");
 else if (MUTATE === "no-guard") swap("|\\son[a-z]+\\s*=", "");
