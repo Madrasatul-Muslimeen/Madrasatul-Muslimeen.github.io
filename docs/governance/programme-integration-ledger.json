@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "12.52",
+    "version": "12.53",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -4901,8 +4901,20 @@
     {
       "version": "12.52",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Audit part 64 (Builder round #1112, PR #1113): People, invites, accept-invite, onboarding, Backup, About; accept-invite and onboarding gain an Open the app link.",
+      "integration": {
+        "authorizedOn": "2026-10-24",
+        "integratedOn": "2026-10-24",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.53",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Audit part 65 (Builder round #1114, PR #1115): Catalogue and Curriculum by the User Manual; names typed in Bangla stored under bn (I11); Add ladder and Save heading say why (I15).",
       "integration": {
         "authorizedOn": "2026-10-24",
         "integratedOn": "2026-10-24",
@@ -4911,8 +4923,9 @@
       }
     }
   ],
-  "nextUnallocated": "12.53",
+  "nextUnallocated": "12.54",
   "nextUnallocatedNote": [
+    "v12.53 was allocated to audit part 65: Catalogue / Curriculum names keyed by language; refusals in words, 2026-10-24.",
     "v12.52 was allocated to audit part 64: a way back on accept-invite and onboarding, 2026-10-24.",
     "v12.51 was allocated to audit part 62: Classes / Course Offers note for non-admins, 2026-10-23.",
     "v12.50 was allocated to audit part 60: Notes pages; history rows in words, 2026-10-23.",
