@@ -10,7 +10,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { chromium, newContext, openPage } from "./harness.mjs";
+import { chromium, newContext, openPage, BASE } from "./harness.mjs";
 let pass = 0, fail = 0;
 function check(name, ok, detail = "") {
   if (ok && typeof ok.then === "function") throw new Error(`check "${name}" was handed a promise`);
@@ -141,7 +141,7 @@ for (const lang of LANGS) for (const width of WIDTHS) {
       await page.selectOption("#navAppLangSelect", target); await settle(page, 1500);
       const pages = ["/app/deen-study.html", "/app/hadith-study.html", "/app/notes.html", "/app/monitor.html", "/app/homework.html", "/app/classes.html", "/app/taglines.html", "/app/records.html"];
       for (const p of pages) {
-        await page.goto(`http://localhost:8080${p}`, { waitUntil: "load" }).catch(() => {});
+        await page.goto(`${BASE}${p}`, { waitUntil: "load" }).catch(() => {});
         await settle(page, 1200);
         const nav = await ev(page, () => ({ home: document.querySelector(".nav-cat-home > summary")?.textContent.trim() ?? "", stored: localStorage.getItem("mm_app_lang"), sideways: document.documentElement.scrollWidth - innerWidth }));
         check(`${t}: ${p.slice(5)} reads in ${target === "bn" ? "Bangla" : "English"} after the switch`, nav.stored === target && (target === "bn" ? BN.test(nav.home) : nav.home === "Home"), JSON.stringify(nav));
@@ -171,11 +171,11 @@ for (const lang of LANGS) for (const width of WIDTHS) {
       const light = await card();
       check(`${t}: Light is applied and the account card text is readable (worst ${light?.worst?.toFixed(2)}, 4.5:1)`, !!light && light.look === "light" && light.worst >= 4.5, JSON.stringify(light));
       for (const p of ["/app/deen-study.html", "/app/hadith-study.html", "/app/notes.html"]) {
-        await page.goto(`http://localhost:8080${p}`, { waitUntil: "load" }).catch(() => {}); await settle(page, 1000);
+        await page.goto(`${BASE}${p}`, { waitUntil: "load" }).catch(() => {}); await settle(page, 1000);
         const k = await ev(page, () => ({ look: document.documentElement.getAttribute("data-card-look"), stored: localStorage.getItem("mm_card_look") }));
         check(`${t}: ${p.slice(5)} keeps the Light look`, k.look === "light" && k.stored === "light", JSON.stringify(k));
       }
-      await page.goto("http://localhost:8080/app/quranrevival.html", { waitUntil: "load" }); await settle(page, 1000);
+      await page.goto(`${BASE}/app/quranrevival.html`, { waitUntil: "load" }); await settle(page, 1000);
       await installContrast(page);
       await page.click(summaryOf(await homeLabelOf(page))); await settle(page, 200);
       await page.click('[data-card-look-btn="night"]'); await settle(page, 300); await page.keyboard.press("Escape");
