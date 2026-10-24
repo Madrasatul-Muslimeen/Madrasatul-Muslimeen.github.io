@@ -15,9 +15,10 @@ import { SUBJECT_TEMPLATES, MODULE_TEMPLATES, APPROACH_TEMPLATES, TOPIC_TRACKABL
 const SEED_TEMPLATES = { SUBJECT_TEMPLATES, MODULE_TEMPLATES, APPROACH_TEMPLATES, TOPIC_TRACKABLE_TEMPLATES };
 
 let pass = 0, fail = 0;
+const failed = []; // repeated at the end, so a long run's red lines are not lost in the middle of its output
 function check(name, ok, detail = "") {
   if (ok && typeof ok.then === "function") throw new Error(`check "${name}" was handed a promise`);
-  if (ok) { pass++; console.log(`  PASS  ${name}`); } else { fail++; console.log(`  FAIL  ${name}${detail ? `\n        ${detail}` : ""}`); }
+  if (ok) { pass++; console.log(`  PASS  ${name}`); } else { fail++; failed.push(`${name}${detail ? ` -- ${detail}` : ""}`); console.log(`  FAIL  ${name}${detail ? `\n        ${detail}` : ""}`); }
 }
 const MUTATE = process.argv[2] || "";
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH });
@@ -41,7 +42,9 @@ const open = async (lang, width, look) => {
   await page.waitForTimeout(400);
   return { ctx, page, errors };
 };
-const drawer = (page, name) => page.click(`[data-wheel-drawer="${name}"]`);
+// Audit part 74: the click is dispatched on the button itself, so a drawer covered by the dock is reported by the
+// "reachable" check below as ONE red line, instead of a 30s Playwright timeout that kills the run and hides every case after it.
+const drawer = (page, name) => page.evaluate((n) => document.querySelector(`[data-wheel-drawer="${n}"]`).click(), name);
 const vis = (page, name) => page.evaluate((n) => { const p = document.querySelector(`[data-wheel-drawer-panel="${n}"]`); const r = p.getBoundingClientRect(); return getComputedStyle(p).display !== "none" && r.width > 0 && r.height > 0; }, name);
 const GROUPS = { wheel: "#wheelLookSwitch", legend: "#wheelLegendContainer", unit: "#wheelShowSwitch" };
 
@@ -65,6 +68,8 @@ for (const lang of ["en", "bn"]) {
     check(`${tag} the row holds nothing but the three drawers and, on a phone, the docked 🧰 at its right end (40px)`, o.others.every((b) => b.cls === "zab-dock-btn" && b.t === "🧰" && b.h >= 40 && b.last) && (width >= 768 || o.others.length === 1), JSON.stringify(o.others));
     check(`${tag} three drawer buttons, 40px+, all closed`, o.buttons.length === 3 && o.buttons.every((b) => b.h >= 40 && b.exp === "false"), JSON.stringify(o.buttons));
     check(`${tag} the three names go through t()`, lang === "en" ? o.buttons.map((b) => b.t).join("|").replace(/▴/g, "") === "Wheel|Legend|Unit" : o.buttons.every((b) => /[ঀ-৿]/.test(b.t)), JSON.stringify(o.buttons.map((b) => b.t)));
+    const reach = await page.evaluate(() => [...document.querySelectorAll("[data-wheel-drawer]")].map((b) => { const r = b.getBoundingClientRect(); const el = document.elementFromPoint(r.x + r.width / 2, Math.min(r.y + r.height / 2, innerHeight - 1)); return { n: b.dataset.wheelDrawer, ok: !!el && b.contains(el), y: Math.round(r.y + r.height / 2), dockTop: Math.round(document.getElementById("dock").getBoundingClientRect().top) }; }));
+    check(`${tag} reachable: each drawer button is the element at its own centre (not covered by the dock)`, reach.every((x) => x.ok), JSON.stringify(reach));
     let closed = true; for (const n of Object.keys(GROUPS)) closed = closed && !(await vis(page, n));
     check(`${tag} closed: none of the three groups is visible (computed display)`, closed);
 
@@ -256,5 +261,6 @@ for (const look of ["night", "light"]) for (const width of [390, 1280]) {
   await ctx.close();
 }
 await browser.close();
+for (const f of failed) console.log(`  FAILED: ${f}`);
 console.log(`\n==== Landing drawers: ${pass} passed, ${fail} failed ====`);
 process.exit(fail ? 1 : 0);

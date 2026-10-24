@@ -94,7 +94,9 @@ for (const lang of ["en", "bn"]) for (const width of [320, 360, 390, 740, 820]) 
         const c = document.getElementById("zabCorner"), q = document.getElementById("readQuickRow");
         const shown = c.getClientRects().length > 0, cr = c.getBoundingClientRect(), qr = q.getBoundingClientRect();
         const qVis = q.getClientRects().length > 0 && qr.height > 0;
-        const covered = qVis ? [...q.querySelectorAll("button")].filter((b) => { const br = b.getBoundingClientRect(); const h = document.elementFromPoint(br.left + br.width / 2, br.top + br.height / 2); return !(h && b.contains(h)); }).map((b) => b.id) : [];
+        // Updated in place 24 Oct 2026 (audit part 72): only buttons ON SCREEN count -- round 666fe0c4 added a tablet-only
+        // "Study" menu button that is display:none on a phone, and a 0x0 button is not covered, it is absent.
+        const covered = qVis ? [...q.querySelectorAll("button")].filter((b) => b.getClientRects().length > 0 && b.getBoundingClientRect().width > 0).filter((b) => { const br = b.getBoundingClientRect(); const h = document.elementFromPoint(br.left + br.width / 2, br.top + br.height / 2); return !(h && b.contains(h)); }).map((b) => b.id) : [];
         return { shown, qVis, gap: Math.round(qr.top - cr.bottom), covered };
       });
       check(`${tag}: POSITIVE CONTROL the Read view's quick buttons are on screen`, r.qVis, JSON.stringify(r));
