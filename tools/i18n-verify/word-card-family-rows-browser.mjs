@@ -12,6 +12,7 @@
 //   plate      a meaning has no plate of its own                   -> the plate checks fail
 //   pref       the card follows the old stored Colour choice       -> "coloured even with Colour stored off" fails
 //   tick       the Colour tick comes back                          -> the "no Colour tick" check fails
+//   keepfirst  the first place is never given up (audit part 78)  -> the 320px "drawn wider ... still ONE line" checks fail
 import { chromium, newContext, openPage } from "./harness.mjs";
 import fs from "fs";
 
@@ -20,7 +21,10 @@ const JS = "app/js/quran-word-card.js", HTML = "app/quranrevival.html";
 const MUT = {
   nofit: [HTML, "      fitWordCardFamily(content);\n", ""],
   nocurrent: [JS, "chips.forEach((c) => { if (c !== current && top(c) > line1) c.hidden = true; });", "chips.forEach((c) => { if (top(c) > line1) c.hidden = true; });"],
-  nomore: [JS, "i > 0 && (top(more) > line1 || (current && top(current) > line1)); i--)", "i > 0 && false; i--)"],
+  // Re-anchored (audit part 78): the loop now runs to i >= 0.
+  nomore: [JS, "i >= 0 && (top(more) > line1 || (current && top(current) > line1)); i--)", "i >= 0 && false; i--)"],
+  // Audit part 78: the first place is never given up again -> the wider-font check at 320 fails.
+  keepfirst: [JS, "for (let i = chips.length - 1; i >= 0 &&", "for (let i = chips.length - 1; i > 0 &&"],
   noopen: [HTML, "        if (!wordCardFamilyOpen.delete(key)) wordCardFamilyOpen.add(key);\n", ""],
   noresize: [HTML, "{ if (content.clientWidth !== width) { width = content.clientWidth; fitWordCardFamily(content); } }", "{ }"],
   plate: [HTML, "color: var(--wc-purple-ink); background: var(--wc-purple-plate); box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18); }", "color: var(--wc-purple-ink); }"],
@@ -154,6 +158,20 @@ for (const [lang, width] of runs) {
 
   const over = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
   check(`${tag} the page does not scroll sideways`, over <= 0, String(over));
+  if (width === 320) {
+    // Audit part 78 (the MSA Architect, measured): on a machine whose font draws the places wider, the first place
+    // 2:29:12 + the gold 6:3:4 + "+240 more" did not fit 232px and the button dropped to line 2, because the first place
+    // was never given up. Draw the places and the button wider (letter-spacing), re-measure (the width changes and comes
+    // back), and the row must still be ONE line with the gold place and the button on it. POSITIVE CONTROL: they grew.
+    const width0 = await page.evaluate(() => [...document.querySelectorAll("#quranWordCardMount [data-word-card-family-sense] .word-card-family-chip-current")].reduce((a, c) => a + c.getBoundingClientRect().width, 0));
+    await page.addStyleTag({ content: "#quranWordCardMount .word-card-family-chip, #quranWordCardMount [data-word-card-family-more] { letter-spacing: 3px; }" });
+    await page.setViewportSize({ width: 330, height: 844 }); await page.waitForTimeout(500);
+    await page.setViewportSize({ width: 320, height: 844 }); await page.waitForTimeout(800);
+    const width1 = await page.evaluate(() => [...document.querySelectorAll("#quranWordCardMount [data-word-card-family-sense] .word-card-family-chip-current")].reduce((a, c) => a + c.getBoundingClientRect().width, 0));
+    const wide = (await senses(page)).find((r) => r.current !== "none");
+    check(`${tag} audit part 78: POSITIVE CONTROL -- the wider font really widened the gold place (${Math.round(width0)} -> ${Math.round(width1)}px)`, width1 - width0 >= 12, JSON.stringify({ width0, width1 }));
+    check(`${tag} audit part 78: drawn wider, the "this word" meaning is still ONE line, the gold place and the button on it, N right`, !!wide && wide.lines === 1 && wide.current === "shown" && wide.currentFirstLine === true && !!wide.more && n(wide.more) === wide.total - wide.shown, JSON.stringify(wide));
+  }
 
   if (lang === "en" && width === 1280) {
     // A new width re-measures (a tablet turned, a window narrowed): from 1280 to a 320 phone, fewer places on the one line.

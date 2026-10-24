@@ -4923,9 +4923,13 @@
   /* J59, measured: on a 320px phone the card's content box is 299px and ‹ 🔍 [This āyah] ⓘ › × needed 308px, so × wrapped
      to a row of its own. A tighter gap and side padding on "This āyah" (88 → 80px) bring the row to 296px; every button
      keeps its 40px. */
+  /* Audit part 78 (QR Lead, 24 Oct 2026): it held here by 3px with "This āyah ⋯" at 80px, and on a machine whose
+     system-ui draws it at 90px × wrapped again. The gaps (0.1rem) and the side padding (2px) give back 12px, and the
+     button is held to 5.5rem: a wider font now wraps ITS words inside the same 40px tile, never × to a second row
+     (the five buttons 200px + 88px + 8px of gaps = 296 of 299px, whatever the font). */
   @container wordcard (max-width: 20rem) {
-    .quran-word-card header { column-gap: 0.2rem; }
-    .quran-word-card header button.word-card-ayah-action-btn { padding: 0 0.25rem; }
+    .quran-word-card header { column-gap: 0.1rem; }
+    .quran-word-card header button.word-card-ayah-action-btn { padding: 0 2px; max-width: 5.5rem; white-space: normal; line-height: 1.1; }
   }
   /* J23: the WbW meaning line. J60: the Colour tick left it (the word parts are always coloured). */
   .word-card-meaning-bar { flex-wrap: nowrap; align-items: center; justify-content: space-between; gap: 0.5rem; }
