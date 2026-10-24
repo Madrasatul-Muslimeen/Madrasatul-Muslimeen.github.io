@@ -16,3 +16,13 @@ Each suite run alone, from the repository root, against `main` (v12.54).
 | journey-three-panel-browser | 464 / 0 | 464 / 0 | green |
 | journey-tray-browser | 227 / 0 | 227 / 0 | green |
 | journey-tray-panes-browser | 56 / 0 | 56 / 0 | green |
+| journey-window-tabs-browser | 166 / 0 | 166 / 0 | green |
+
+## Closing checks
+
+- `stub-parity.mjs`: 4 passed, 0 failed
+- `bangla-sweep-other-pages-browser`: 224 passed, 0 failed
+
+## Result
+
+12 of 13 suites were green on `main` at v12.54; one (journey-note-windows-browser) had 4 stale-check failures, now fixed in the test file (no application file touched, no Rules, no version bump). Every suite was reached.
