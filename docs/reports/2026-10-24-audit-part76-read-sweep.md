@@ -8,6 +8,17 @@ Base: `main` at v12.55. Each suite run alone from the repository root. No suite 
 | 2 | read-bar-tools-browser | 67 / 0 | none | none |
 | 3 | read-contents-browser | before 247 / 1 (a second run 246 / 2), after 248 / 0 | stale: "⤢ is a 40px square". Below 600px, with ‹ › showing on a Read opened from the contents, the QR Lead's 23 Oct rule (`app/quranrevival.html` ~2775) makes the bare end tiles 36px wide, 40px tall. Whether it applies varied between runs, because it depends on the ‹ › state. | Check updated in place: expected width is read off the page state (36 when that rule applies, else 40), with a comment naming the round. |
 | 4 | read-list-button-browser | before 66 / 6 (a second run 5 failed), after 72 / 0 | stale, all of them, from the QR Lead's 23 Oct "both reads the same" round: (a) at 390px with ‹ › showing ☰ is the icon alone (CSS ~2771), the check wanted "☰ Surah"; (b) below 360px in the bare full screen ☰ moves to a fixed bottom-row spot, left 8, 40x36 (CSS ~2784, confirmed with a screenshot at 320x844), so "sits top left" and "40px tall" failed. | Checks updated in place: state-dependent expectations (probe now reads ‹ › visibility and viewport height), comments name the round. The app is unchanged. |
+| 9 | read-note-menu-browser | 24 / 0 | none | none |
+| 10 | read-note-pane-browser | 204 / 0 | none | none |
+| 11 | read-note-pane-window-browser | 94 / 0 | none | none |
+| 12 | read-pane-routes-browser | 30 / 0 | none | none |
+| 13 | read-quick-buttons-browser | 254 / 0 | none | none |
+| 14 | read-scroll-end-stays-browser | before 9 / 1, after 10 / 0 | stale: the wheel loop sent a fixed 40 events (4,800px) but 2:282 at 390px now scrolls 4,911px, so the end was never reached (ayah stayed 282, top 4800). Not a defect. | Loop count now follows the measured length (+10). `--mutate=burst` still fails (6 / 4). |
+
+Closing totals: `stub-parity` 4 / 0; `bangla-sweep-other-pages-browser` 224 / 0.
+
+(Rows 5–8 are listed above rows 9–14 in file order below.)
+
 | 5 | read-list-home-browser | 30 / 0 | none | none |
 | 6 | read-meaning-browser | 39 / 0 | none | none |
 | 7 | read-meaning-one-row-browser | 56 / 0 | none | none |
