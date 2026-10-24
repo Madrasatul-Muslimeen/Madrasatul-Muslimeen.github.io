@@ -53,7 +53,10 @@ const MUT = {
   legendleft: ["app/quranrevival.html", "header button.word-card-legend-btn { width: 40px; height: 40px;", "header button.word-card-legend-btn { order: 9; width: 26px; height: 26px;"],
   // J59 mutations: the balloon's pointer must sit under the ⓘ, and a colour row with nothing in it must not be drawn.
   noarrow: ["app/quranrevival.html", 'balloon.style.setProperty("--wc-legend-arrow",', 'void ("--wc-legend-arrow",'],
-  wrap320: ["app/quranrevival.html", "    .quran-word-card header { column-gap: 0.2rem; }\n", ""],
+  // Re-anchored (audit part 78): the 320px gap is 0.1rem now.
+  wrap320: ["app/quranrevival.html", "    .quran-word-card header { column-gap: 0.1rem; }\n", ""],
+  // Audit part 78: without the cap on "This āyah ⋯", a wider system font sends × to a second row again.
+  nocap: ["app/quranrevival.html", "padding: 0 2px; max-width: 5.5rem; white-space: normal; line-height: 1.1; }", "padding: 0 2px; }"],
   // Re-anchored for J60 (the colour row is gone): an empty colour row drawn under the meaning bar again.
   emptyrow: ["app/js/quran-word-card.js", '${state.level === "wbw" ? meaningBarHtml(word, context, text) : ""}\n', '${state.level === "wbw" ? meaningBarHtml(word, context, text) : ""}<div class="word-card-segment-controls"></div>\n'],
   noorder: ["app/js/quran-word-card.js", "return note ? `<p class=\"word-card-ordernote\"", "return false ? `<p class=\"word-card-ordernote\""],
@@ -227,6 +230,28 @@ async function j43Checks(page, tag, lang, width) {
     const wantName = lang === "bn" ? "এই স্তরের নির্দেশিকা" : "Legend for this level";
     check(`${tag} J59 Legend [${level}]: a real 40x40 button "ⓘ" named "${wantName}", in the header beside This āyah, the header's buttons on one row, inside the card, closed, no empty colour row, no old can-do box in the panel`,
       s0.exists && s0.tag === "BUTTON" && s0.label === "ⓘ" && s0.name === wantName && s0.h >= 40 && s0.w >= 40 && s0.w <= 44 && s0.inHeader && s0.oneRow && s0.insideCard && s0.expanded === "false" && !s0.shown && !s0.rowEmpty && s0.outsideCando === 0 && s0.over <= 0, JSON.stringify(s0));
+    if (level === "wbw" && width === 320) {
+      // Audit part 78: the row held by 3px here and broke on a machine whose system-ui draws "This āyah ⋯" 10px wider.
+      // Draw it 16px+ wider still (letter-spacing) and the header must hold: × on the first row, the label whole (it may
+      // wrap inside its tile), every button still 40px tall. POSITIVE CONTROL: the label really did get wider.
+      const wide = await page.evaluate(() => {
+        const head = document.querySelector("#quranWordCardMount .quran-word-card header");
+        const btn = head?.querySelector(".word-card-ayah-action-btn");
+        if (!btn) return null;
+        const natural = () => { const c = btn.cloneNode(true); Object.assign(c.style, { position: "absolute", visibility: "hidden", maxWidth: "none", whiteSpace: "nowrap" }); btn.after(c); const w = c.getBoundingClientRect().width; c.remove(); return w; };
+        const before = natural();
+        btn.style.letterSpacing = `${Math.ceil(17 / Math.max(1, [...btn.textContent.trim()].length))}px`; // 16px+ wider in either language
+        const after = natural();
+        const tops = [...head.querySelectorAll(":scope > button")].filter((b) => !b.classList.contains("word-card-app-back")).map((b) => Math.round(b.getBoundingClientRect().top));
+        const r = btn.getBoundingClientRect();
+        const out = { before: Math.round(before), after: Math.round(after), rows: new Set(tops).size, h: Math.round(r.height), whole: btn.scrollWidth <= btn.clientWidth + 1 && btn.scrollHeight <= btn.clientHeight + 1,
+          tall: [...head.querySelectorAll(":scope > button")].every((b) => b.getBoundingClientRect().height >= 39.5) };
+        btn.style.letterSpacing = "";
+        return out;
+      });
+      check(`${tag} audit part 78: POSITIVE CONTROL -- the wider font really widened "This āyah ⋯" by 16px+ (${wide?.before} -> ${wide?.after}px)`, !!wide && wide.after - wide.before >= 16, JSON.stringify(wide));
+      check(`${tag} audit part 78: with "This āyah ⋯" drawn wider, the header's buttons stay on ONE row, the label whole, every button 40px tall`, !!wide && wide.rows === 1 && wide.whole && wide.tall, JSON.stringify(wide));
+    }
     if (level === "wbw") {
       // J59 checked the colour row with Colour off and on. Updated in place for PCF MSA J60 (the Owner, 21 Oct 2026:
       // "removing the color tick/ untick option, it should be always coloured … remove 'stem, particle' that line"):

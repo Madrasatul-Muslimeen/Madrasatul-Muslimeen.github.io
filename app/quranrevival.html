@@ -3749,8 +3749,12 @@
   .word-card-cj-q, .word-card-cj-mood { direction: ltr; unicode-bidi: isolate; font-family: inherit; font-size: 0.64rem; font-weight: 800; color: #8a6a1f; display: block; line-height: 1.2; }
   .word-card-cj-mood { font-weight: 600; color: #5b4510; }
   /* PCF MSA J46 -- the four-button tense toggle (purple: new) and the one-tense view. */
-  .word-card-conj-toggle { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; padding: 6px; border-radius: 12px; border: 1px dashed var(--wc-purple-line); margin: 0 0 8px; }
-  .word-card-conj-toggle button { min-height: 44px; min-width: 0; display: grid; gap: 2px; align-content: center; justify-items: center; padding: 4px; border-radius: 9px; border: 1px solid var(--wc-purple-line); background: var(--wc-purple-bg); color: var(--wc-purple-ink); font: inherit; font-weight: 700; font-size: 0.85rem; line-height: 1.25; cursor: pointer; overflow-wrap: anywhere; }
+  /* Audit part 80 (QR Lead, 24 Oct 2026): four equal columns broke a tense name wherever one was a pixel short: at 360px
+     "Command", الْمَاضِي and الْمُضَارِع broke in two, and at 390 "Present" fitted by 0.1px. The buttons now share the row
+     equally but never go below their own name's width; when the four cannot fit, the row wraps a button to a second
+     line rather than break a word, whatever the reader's font. */
+  .word-card-conj-toggle { display: flex; flex-wrap: wrap; gap: 6px; padding: 6px; border-radius: 12px; border: 1px dashed var(--wc-purple-line); margin: 0 0 8px; }
+  .word-card-conj-toggle button { flex: 1 1 0; min-height: 44px; min-width: max-content; display: grid; gap: 2px; align-content: center; justify-items: center; padding: 4px; border-radius: 9px; border: 1px solid var(--wc-purple-line); background: var(--wc-purple-bg); color: var(--wc-purple-ink); font: inherit; font-weight: 700; font-size: 0.85rem; line-height: 1.25; cursor: pointer; overflow-wrap: anywhere; }
   .word-card-conj-toggle button small { font-family: var(--quran-font); font-weight: 400; font-size: 0.9rem; }
   .word-card-conj-toggle button[aria-pressed="true"] { background: var(--wc-purple-ink); color: var(--wc-purple-bg); border-color: var(--wc-purple-ink); }
   .word-card-cj-onehead { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; gap: 8px; align-items: center; }
@@ -3777,8 +3781,9 @@
   /* J61 part 2: on a card under 20rem (a 320px phone) a toggle button is ~64px wide: "Command" broke as "Comma / nd"
      (before J61 too) and a tense name at 90% broke inside the word. Less padding and type, and
      columns sized to their names. */
+  @container wordcard (max-width: 26rem) { .word-card-conj-toggle button { padding: 4px 2px; } } /* audit part 80: one row at 360 */
   @container wordcard (max-width: 20rem) {
-    .word-card-conj-toggle { gap: 4px; padding: 4px; grid-template-columns: repeat(4, auto); }
+    .word-card-conj-toggle { gap: 4px; padding: 4px; }
     .word-card-conj-toggle button { padding: 4px 1px; font-size: 0.8rem; }
   }
   .word-card-meaning-bar { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 1.1rem; border: 1px solid var(--card-line); border-radius: 0.4rem; padding: 0.5rem 0.75rem; background: var(--card-bg-inset); margin: 0.4rem 0; }
@@ -3900,6 +3905,11 @@
   .word-card-ntable th > span { display: block; }
   .word-card-ntable tbody th { text-align: start; }
   .word-card-ntable td { padding: 0; vertical-align: top; }
+  /* Audit part 80 (QR Lead, 24 Oct 2026; after the table's own rules, which it overrides): four equal columns left "Nominative" 5.6px to spare at 320px here and 4px short
+     where the system font draws 17% wider. Under 26rem the table sizes its columns to their contents and a head breaks only
+     between words, so the case names take room from the narrower row-head column instead (measured whole with the names
+     drawn 18% wider, at 320 and 360, nothing spilling). */
+  @container wordcard (max-width: 26rem) { .word-card-ntable { table-layout: auto; } .word-card-ntable th { overflow-wrap: break-word; } }
   .word-card-ncell { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.1rem; box-sizing: border-box; width: 100%; min-height: 44px; margin: 0; padding: 0.25rem 0.15rem; font: inherit; font-size: 0.8rem; text-align: center; border: 1px solid var(--wc-purple-line); border-radius: 0.4rem; background: transparent; color: inherit; overflow-wrap: anywhere; min-width: 0; }
   button.word-card-ncell { cursor: pointer; }
   .word-card-ncell-ar { font-family: var(--quran-font); font-size: 0.95rem; line-height: 1.3; }
@@ -4923,9 +4933,13 @@
   /* J59, measured: on a 320px phone the card's content box is 299px and ‹ 🔍 [This āyah] ⓘ › × needed 308px, so × wrapped
      to a row of its own. A tighter gap and side padding on "This āyah" (88 → 80px) bring the row to 296px; every button
      keeps its 40px. */
+  /* Audit part 78 (QR Lead, 24 Oct 2026): it held here by 3px with "This āyah ⋯" at 80px, and on a machine whose
+     system-ui draws it at 90px × wrapped again. The gaps (0.1rem) and the side padding (2px) give back 12px, and the
+     button is held to 5.5rem: a wider font now wraps ITS words inside the same 40px tile, never × to a second row
+     (the five buttons 200px + 88px + 8px of gaps = 296 of 299px, whatever the font). */
   @container wordcard (max-width: 20rem) {
-    .quran-word-card header { column-gap: 0.2rem; }
-    .quran-word-card header button.word-card-ayah-action-btn { padding: 0 0.25rem; }
+    .quran-word-card header { column-gap: 0.1rem; }
+    .quran-word-card header button.word-card-ayah-action-btn { padding: 0 2px; max-width: 5.5rem; white-space: normal; line-height: 1.1; }
   }
   /* J23: the WbW meaning line. J60: the Colour tick left it (the word parts are always coloured). */
   .word-card-meaning-bar { flex-wrap: nowrap; align-items: center; justify-content: space-between; gap: 0.5rem; }

@@ -10,7 +10,12 @@
 //   onepron   the one-tense view's pronouns lose their floor          -> the one-tense pronoun check fails at 390
 //   onebig    the one-tense verbs are not kept 1.45x bigger (J46)       -> the one-tense verb check fails at 1280
 //   btn       the toggle's buttons keep their padding and type at 320 -> the "whole names" checks fail at 320
-//   cols      the toggle keeps four equal columns at 320              -> the "inside its button" check fails at 320
+//   cols      UPDATED IN PLACE (audit part 80): a button may shrink below its name again (four equal shares, as the old
+//             grid was) -> the "whole names" checks fail at 360 (the width it broke at, now in the runs) and wider-font
+//   pad26     the 26rem padding rule is gone                          -> "one row" fails at en 360
+// Audit part 80 (QR Lead, 24 Oct 2026): at 360px "Command" and the Arabic tense names broke inside the word, and on a
+// machine with a wider system font they broke at 390 and 320 too. Added: 360 in the runs, a one-row check, and every
+// name drawn 2px/letter wider (letter-spacing) must stay whole and inside its button (the row may then wrap).
 import { chromium, newContext, openPage } from "./harness.mjs";
 import fs from "fs";
 
@@ -22,7 +27,8 @@ const MUT = {
   onepron: [HTML, "  .word-card-cj-one .word-card-cj-pr .word-card-ar { font-size: max(1.35rem, var(--wc-tasrif-ar)); }\n", ""],
   btn: [HTML, "    .word-card-conj-toggle button { padding: 4px 1px; font-size: 0.8rem; }\n", ""],
   onebig: [HTML, "  .word-card-cj-one .word-card-cj-vb { font-size: max(2rem, calc(var(--wc-tasrif-ar) * 1.45)); }\n", ""],
-  cols: [HTML, " grid-template-columns: repeat(4, auto); }", " }"],
+  cols: [HTML, ".word-card-conj-toggle button { flex: 1 1 0; min-height: 44px; min-width: max-content;", ".word-card-conj-toggle button { flex: 1 1 0; min-height: 44px; min-width: 0;"],
+  pad26: [HTML, "  @container wordcard (max-width: 26rem) { .word-card-conj-toggle button { padding: 4px 2px; } }", ""],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
 let pass = 0, fail = 0;
@@ -49,12 +55,12 @@ const measure = (page) => page.evaluate(() => {
   return {
     head, vb: sz(".word-card-cj-vb"), pr: sz(".word-card-cj-pr .word-card-ar"), lead: sz(".word-card-cj-lead"),
     tog: sz(".word-card-conj-toggle small"), acc: sz(".word-card-acc-ar > span[lang]"), nToggle: buttons.length,
-    one: !!m.querySelector("[data-word-card-conj-single]"), broken, spill, cellSpill, outOfCard, over: document.documentElement.scrollWidth - innerWidth,
+    one: !!m.querySelector("[data-word-card-conj-single]"), rows: new Set(buttons.map((b) => Math.round(b.getBoundingClientRect().top))).size, broken, spill, cellSpill, outOfCard, over: document.documentElement.scrollWidth - innerWidth,
   };
 });
 const near = (arr, v) => arr.length > 0 && arr.every((x) => Math.abs(x - v) < 0.2);
 
-const runs = [["en", 1280], ["en", 768], ["en", 390], ["en", 320], ["bn", 1280], ["bn", 390], ["bn", 320]];
+const runs = [["en", 1280], ["en", 768], ["en", 390], ["en", 360], ["en", 320], ["bn", 1280], ["bn", 390], ["bn", 360], ["bn", 320]];
 for (const [lang, width] of runs) {
   const tag = `${lang}/${width}`;
   console.log(`\n=== Taṣrīf verb Arabic size [${tag}] ===`);
@@ -93,6 +99,20 @@ for (const [lang, width] of runs) {
     if (view === "all") check(`${t} every pronoun and every verb is 90% too`, near(s.pr, want) && near(s.vb, want), JSON.stringify({ pr: s.pr, vb: s.vb }));
     else check(`${t} the verbs are the larger of 2rem and 1.45x All three's (${Math.max(32, want * 1.45).toFixed(2)}px; J46), the pronouns at least 1.35rem and 90%`, near(s.vb, Math.max(32, want * 1.45)) && near(s.pr, Math.max(21.6, want)), JSON.stringify({ pr: s.pr, vb: s.vb }));
     check(`${t} every tense name on the toggle is whole, on one line, inside its button`, s.broken.length === 0 && s.spill.length === 0, JSON.stringify({ b: s.broken, s: s.spill }));
+    check(`${t} the four tense buttons sit on one row`, s.nToggle === 4 && s.rows === 1, JSON.stringify({ rows: s.rows }));
+    {
+      // audit part 80: a wider system font (each letter 2px wider, 20% or so): still whole and inside its button
+      // The control reads the English/Bangla name's own text (the Arabic line is the app's bundled Quran font, the same on
+      // every phone, and Chrome does not space cursive Arabic letters anyway).
+      const widths = (w) => page.evaluate((ls) => [...document.querySelectorAll("#quranWordCardMount .word-card-conj-toggle button")].map((b) => { b.style.letterSpacing = ls; const r = document.createRange(); r.selectNodeContents(b.firstChild); return [...r.getClientRects()].reduce((a, x) => a + x.width, 0); }), w);
+      const w0 = await widths("");
+      const w1 = await widths("2px");
+      const wide = await measure(page);
+      await widths("");
+      const grew = Math.min(...w1.map((x, i) => x / w0[i] - 1));
+      check(`${t} POSITIVE CONTROL -- the wider font really widened every tense name (by ${(grew * 100).toFixed(0)}% at least)`, w0.length === 4 && grew >= 0.15, JSON.stringify({ w0, w1 }));
+      check(`${t} with every name drawn wider, every tense name is still whole and inside its button`, wide.broken.length === 0 && wide.spill.length === 0 && wide.outOfCard === 0, JSON.stringify({ b: wide.broken, s: wide.spill, o: wide.outOfCard, rows: wide.rows }));
+    }
     check(`${t} no verb or pronoun spills out of its cell, nothing leaves the card, no sideways scroll`, s.cellSpill === 0 && s.outOfCard === 0 && s.over <= 0, JSON.stringify({ cs: s.cellSpill, c: s.outOfCard, o: s.over }));
     if (process.argv.includes("--shot")) {
       await page.evaluate(() => document.querySelector("#quranWordCardMount [data-word-card-sec='conj']")?.scrollIntoView({ block: "start" }));

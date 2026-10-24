@@ -7,7 +7,12 @@
 //   nosize    the rule is gone (the old small sizes)                -> the 90% checks fail
 //   notoken   the phone widths do not follow the big word           -> the 90% checks fail at 320/390
 //   wrap      the table's cells cannot shrink their words           -> the "inside its box" checks fail at 320
-//   headsize  the column heads keep their size on a 320 phone       -> the "case names whole" check fails at 320
+//   headsize  the column heads keep their size on a 320 phone       -> RECORDED, now PASSES (audit part 80): with the
+//             columns sized to their contents (fixedcols, below) the names stay whole at 0.74rem too, even drawn wider.
+//             J61's smaller type is kept as margin; this mutation can no longer fail and is left in place to say so.
+//   fixedcols the table keeps four equal columns under 26rem          -> the wider-font "case names whole" checks fail
+// Audit part 80 (QR Lead, 24 Oct 2026): "Nominative" had 5.6px to spare at 320 here and was 4px short on a machine
+// whose system font draws 17% wider. Added: 360 in the runs, and the case names drawn 1px/letter wider must stay whole.
 import { chromium, newContext, openPage } from "./harness.mjs";
 import fs from "fs";
 
@@ -19,6 +24,7 @@ const MUT = {
   wrap: [HTML, "text-align: center; border: 1px solid var(--wc-purple-line); border-radius: 0.4rem; background: transparent; color: inherit; overflow-wrap: anywhere; min-width: 0; }",
     "text-align: center; border: 1px solid var(--wc-purple-line); border-radius: 0.4rem; background: transparent; color: inherit; white-space: nowrap; min-width: max-content; }"],
   headsize: [HTML, "@container wordcard (max-width: 20rem) { .word-card-ntable thead th { font-size: 0.64rem; } }", ""],
+  fixedcols: [HTML, "  @container wordcard (max-width: 26rem) { .word-card-ntable { table-layout: auto; } .word-card-ntable th { overflow-wrap: break-word; } }\n", ""],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
 let pass = 0, fail = 0;
@@ -55,7 +61,7 @@ const sizes = (page) => page.evaluate(() => {
   return { heads, broken, head, kinds: Object.fromEntries(Object.entries(kinds).map(([k, v]) => [k, [...v]])), n: ar.length, outOfBox, outOfCard, over: document.documentElement.scrollWidth - innerWidth };
 });
 
-const runs = [["en", 1280], ["en", 768], ["en", 390], ["en", 320], ["bn", 1280], ["bn", 390], ["bn", 320]];
+const runs = [["en", 1280], ["en", 768], ["en", 390], ["en", 360], ["en", 320], ["bn", 1280], ["bn", 390], ["bn", 320]];
 for (const [lang, width] of runs) {
   const tag = `${lang}/${width}`;
   console.log(`\n=== Taṣrīf Arabic size [${tag}] ===`);
@@ -89,6 +95,16 @@ for (const [lang, width] of runs) {
   check(`${tag} every Arabic word in the chips, the table head and the cells is 90% of it (${want.toFixed(2)}px)`, ["chip", "table head", "cell", "heading"].every((k) => s.kinds[k]?.length) && all.every((v) => Math.abs(v - want) < 0.2), JSON.stringify(s.kinds));
   check(`${tag} every Arabic word sits inside its own chip / cell / heading`, s.outOfBox.length === 0, JSON.stringify(s.outOfBox));
   check(`${tag} every column head's case name is whole, on one line (3 names read)`, s.heads === 3 && s.broken.length === 0, JSON.stringify(s.broken));
+  if (width <= 390) {
+    // audit part 80: a wider system font (each letter of the case names 1px wider): still whole, nothing leaves its box
+    const setLs = (ls) => page.evaluate((v) => [...document.querySelectorAll("#quranWordCardMount .word-card-ntable thead th span:not([lang])")].map((e) => { e.style.letterSpacing = v; const r = document.createRange(); r.selectNodeContents(e); return [...r.getClientRects()].reduce((a, x) => a + x.width, 0); }), ls);
+    const w0 = await setLs(""), w1 = await setLs("1px");
+    const wide = await sizes(page);
+    await setLs("");
+    const grew = Math.min(...w1.map((x, i) => x / w0[i] - 1));
+    check(`${tag} POSITIVE CONTROL -- the wider font really widened every case name (by ${(grew * 100).toFixed(0)}% at least)`, w1.length === 3 && grew >= 0.12, JSON.stringify({ w0, w1 }));
+    check(`${tag} with the case names drawn wider, each is still whole on one line, nothing leaves the card`, wide.heads === 3 && wide.broken.length === 0 && wide.outOfCard === 0 && wide.over <= 0, JSON.stringify({ b: wide.broken, o: wide.outOfCard }));
+  }
   check(`${tag} nothing in the two boxes leaves the card, and no sideways scroll`, s.outOfCard === 0 && s.over <= 0, JSON.stringify({ c: s.outOfCard, o: s.over }));
   // A tapped box opens its Forms line and Places: they are 90% too.
   await page.evaluate(() => document.querySelector('#quranWordCardMount button[data-noun-cell="SG"], #quranWordCardMount button[data-noun-cell]')?.click());
