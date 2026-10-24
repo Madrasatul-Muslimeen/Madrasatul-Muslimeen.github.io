@@ -93,9 +93,26 @@ check("no module STATICALLY imports zab-bar.js, and no page names it", () => {
   assert.deepEqual(naming, ["quranrevival.html"], "pages naming a Zab module: " + naming.join(", "));
   for (const f of htmls) assert.ok(!/zab-(bar|data)\.js/.test(raw(f).replace(/<!--[\s\S]*?-->/g, "")), f + " names a Zab module outside a comment");
 });
-check("the hop is guarded by isZabReady() on the same statement", () => {
-  const line = fs.readFileSync(path.join(appJs, "sw-register.js"), "utf8").split("\n").find((l) => l.includes("import(\"./zab-bar.js\")"));
-  assert.ok(line && /isZabReady\(\)/.test(line.split("import(")[0]), "the dynamic import is not behind isZabReady()");
+// Updated in place 24 Oct 2026 (audit part 72): v12.38 (audit part 48) moved the import into a deferred mountZab()
+// inside an `if (isZabReady() ...)` block, so it is no longer on the same line. The check now asserts the import sits
+// INSIDE an open block whose condition calls isZabReady() (braces counted, so a block closed before it does not count).
+check("the hop is guarded by isZabReady() (on its statement or an enclosing if-block)", () => {
+  const src = fs.readFileSync(path.join(appJs, "sw-register.js"), "utf8");
+  const at = src.indexOf("import(\"./zab-bar.js\")");
+  assert.ok(at > 0, "the dynamic import of zab-bar.js was not found");
+  const lineStart = src.lastIndexOf("\n", at) + 1;
+  if (/isZabReady\(\)/.test(src.slice(lineStart, at))) return;
+  const before = src.slice(0, at);
+  const re = /if\s*\(([^\n]*)\)\s*\{/g;
+  let m, guarded = false;
+  while ((m = re.exec(before))) {
+    if (!/isZabReady\(\)/.test(m[1])) continue;
+    const body = before.slice(m.index + m[0].length);
+    let depth = 0, closed = false;
+    for (const ch of body) { if (ch === "{") depth++; else if (ch === "}" && --depth < 0) { closed = true; break; } }
+    if (!closed) guarded = true;
+  }
+  assert.ok(guarded, "the dynamic import is not behind isZabReady()");
 });
 // Updated in place 15 Oct 2026: the Owner published the Zab Rules (PCF J25) and said "Yes, switch Zab on", so the
 // gate is now OPEN by a recorded Master Architect decision -- and still imports nothing.
