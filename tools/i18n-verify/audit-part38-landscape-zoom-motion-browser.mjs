@@ -24,6 +24,8 @@ const MUTATE = arg("mutate"), ONLY = arg("only"), LONLY = arg("lang"), MONLY = a
 const MUTATIONS = {
   // recordstable was dropped in review (v11.36): at 640px the records table is 608px wide on unmodified main, in en and bn,
   // so the reported 642px overflow did not reproduce and the mutation could not fail the suite; records.html is unchanged.
+  // part 67: recordstable is back. On today's main the records table IS 642px wide at 640px (the v11.36 reading no longer holds); the fix is records.html's table-scroll rule at <=700px.
+  recordstable: ["app/records.html", "**/records.html*", "@media (max-width: 700px) { table { display: block;", "@media (max-width: 600px) { table { display: block;", "/app/records.html"],
   cataloguescroll: ["app/catalogue.html", "**/catalogue.html*", 'behavior: reduceMotion ? "auto" : "smooth"', 'behavior: "smooth"', "/app/catalogue.html"],
   // part 39
   winshort: ["app/js/note-window.js", "**/js/note-window.js*", "const short = window.innerHeight < 560;", "const short = false;", "/app/notes.html"],
