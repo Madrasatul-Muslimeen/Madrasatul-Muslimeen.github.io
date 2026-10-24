@@ -28,3 +28,10 @@ The known landing `tenantSelect` cut was not reproduced as a finding by these fi
 - unchecked-pages-screen-audit: 956 passed, 13 failed (all Landing / Self-check Bangla above).
 - Mutations on the new fixes: `--mutate=longselect` on deen-study FAILS (7); `--mutate=narrowselect` on taglines FAILS (6). Existing mutations unchanged.
 - `stub-parity.mjs`: 4/0. `bangla-sweep-other-pages-browser`: 224/0 (before: same files untouched except the three pages' CSS).
+
+## Architect review (25 Oct 2026, session `session_0185XGUtQx6FfCbxmUqRkA7t`)
+- **Self-check in Bangla: fixed** (`app/admin-self-check.html`, `app/js/i18n/bn.js`): the heading, the paragraph (now one line, since `translateStatic()` looks text up exactly as written), Run self-check / again, the table heads and the result line (`t()` with `num()`). Before 3 failed, after 45/0.
+- **Landing "cut" links: a wrong measurement.** They sit in the Home menu, a CLOSED `<details>` whose links Chromium still sizes; the suite's `vis()` now treats content past a closed `<details>`' summary as not on screen. The 1440 "inside body" reds were the same kind: when `<html>` does not clip, the body's overflow belongs to the viewport (CSS overflow propagation), so the clip box is the screen, not the 1280px body.
+- **Landing small buttons: not a defect** (the QR Lead measured): `#wheelCtaBtn` and `#wheelListCollapseBtn` carry invisible 40px tap areas (`::before` / `::after`). A control under 40px now counts as small only when a point ±19px from its centre misses it. `--mutate=small` still fails 6, `--mutate=clip` 9.
+- The landing's (e) clause ended `|| path === "index.html"` (could not fail); (e) is now simply not asked of the root.
+- **Totals:** 963 passed, 0 failed (23 pages, real-length names).
