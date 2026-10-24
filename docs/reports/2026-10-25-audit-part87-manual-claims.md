@@ -24,3 +24,18 @@ Totals: 70 pass, 2 FAIL, 1 SKIP. Mutation `--mutate=start` (Esc no longer reache
 | Taglines strip | Owner: Home ▾ → Settings → Taglines; page has Add line, motion, Scroll long lines, Scroll speed, Save; editing enables Save; Save confirms | PASS ×2 viewports | |
 
 Side finding for the Notes round: on a page that mounts the Journey tray (People, etc.), **Home ▾ → Mapping My Journey opens the pop-up window, not "the full page"** (journey-tray.js intercepts the link). The Manual's "Home ▾ → Mapping My Journey for the full page" holds only on pages without the tray.
+
+## ▸ Bookmarks
+
+Totals: 38 pass, 2 FAIL, 3 SKIP (390 + 1440). Mutation `--mutate=bookmarks` (Save button and ✕ Close removed): 6 FAIL (the 2 real + 4 mutated), run once.
+
+| Entry | Claim | Result | Measured |
+|---|---|---|---|
+| Bookmarking a place | ☆/🔖 asks for Name, Folder (+ New folder…), Assign to; Save writes the bookmark under its Name in the chosen Folder | PASS | on Deen Study ▸ Ethics; write contains the name and folder `f2` |
+| **Bookmarking a place** | **Tapping again opens "Already bookmarked": Remove my bookmark / Add a bookmark…** | **FAIL — app and Manual disagree** | Only the Quran page's 🔖 (`openBookmarkExistsChoice`, quranrevival.html:23814) does this. On the topic pages' ☆ (`topic-study.js toggleTopicBookmark`) a second tap **removes at once**. Smallest fix: call `openBookmarkExistsChoice()` in `toggleTopicBookmark` when `existing` (shared module, so left to the Architect). Or, if the quick toggle is wanted, Manual sentence: *On the Quran page 🔖 again opens "Already bookmarked"…; on other study pages ☆ again removes the bookmark.* |
+| Bookmarks for family members | Ticking a person under Assign to ends with "Saved for …" and a link to their bookmarks | PASS | |
+| The Bookmark menu | 📖 Last read / ▶ Last played at the top; folders have ⠿ ✎ 🗑; ✎ renames (write recorded); ⠿ + ArrowDown reorders; 🗑 offers Undo and Undo restores; ✕ Close shuts it | PASS | |
+| The Bookmark menu | Show times / Hide times | PASS (check corrected) | **check was wrong:** times are ON by default, so the button first reads "Hide times". Manual sentence is fine. |
+| The Bookmark menu | "← Back to …" returns to the page you left | PASS (wording) | from Manage bookmarks… the button reads "← Back" (same Manual wording note as in Getting started). |
+| Manage bookmarks page | + New bookmark / + New folder; Open, Rename, Retire on each row; Retire then Show retired → Restore | PASS | the New bookmark form opens with Name and Create |
+| (not reached) | 🔖 on the Read bar, unit choices, listening state; per-person folder matching; Group by; Saved settings | SKIP | Quran Study is frozen/QR Lead's; second person's document not mutated by the stub |

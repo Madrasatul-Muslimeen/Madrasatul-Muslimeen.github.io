@@ -228,6 +228,135 @@ if (want("start")) {
   }
 }
 
+// =====================================================================================================================
+// ▸ Bookmarks
+// =====================================================================================================================
+const FOLDER_SEED = `DATA.bookmarks[0].folders = [{ id: "f1", name: "Memorising", parentId: null, order: 0, removed: false }, { id: "f2", name: "Reading", parentId: null, order: 1, removed: false }]; DATA.bookmarks[0].saved[0].folderId = "f1";`;
+const stubWritesOf = (page) => page.evaluate(() => JSON.stringify((window.__stubWriteData || []).concat(JSON.parse(sessionStorage.getItem("__stubWrites") || "[]"))));
+if (want("bookmarks")) {
+  console.log("== Bookmarks");
+  SKIP("Bookmarking a place: 🔖 on the Read bar / Mushaf bar / Āyah card, whole unit / This āyah / This page, 'even whether you were listening'", "Quran Study is frozen and the QR Lead's suites own its Read view; here the ☆ on a Deen Study page stands for the shared popover");
+  SKIP("Bookmarking a place: ticked people's folders matched by name in their own list (v10.38)", "needs the second person's own bookmarks document, which the stub does not mutate");
+  SKIP("The Bookmark menu: Group by changes the grouping / tapping a bookmark opens it / Saved settings", "Saved settings exist on the Quran page only; opening navigates to the Quran page");
+  for (const [w, h] of VIEWPORTS) {
+    const tag = `${w}px`;
+    // ### Bookmarking a place / Bookmarks for family members   (☆ on a study page: deen-study.html, topic Ethics)
+    {
+      const { ctx, page, errors } = await open("/app/deen-study.html", { w, h, ctxOpts: { extraSeedJs: FOLDER_SEED } });
+      await page.waitForSelector("#personSelect option", { state: "attached", timeout: 15000 });
+      await page.waitForTimeout(1200);
+      await page.locator("button", { hasText: /Ethics/ }).first().click();
+      await page.waitForSelector("#bookmarkTopicBtn", { state: "visible", timeout: 15000 });
+      await page.click("#bookmarkTopicBtn");
+      await page.waitForSelector("[data-bm-pop-save]", { state: "visible", timeout: 8000 }).catch(() => {});
+      const pop = await page.evaluate(() => {
+        const o = document.querySelector(".bm-popover-overlay");
+        return { has: !!o, name: o?.querySelector("[data-bm-pop-name]")?.value, folders: [...(o?.querySelectorAll("[data-bm-pop-folder] option") ?? [])].map((x) => x.textContent.trim()), assign: !!o?.querySelector("[data-bm-pop-assignees]"), newFolder: !![...(o?.querySelectorAll("[data-bm-pop-folder] option") ?? [])].find((x) => x.value === "__new__") };
+      });
+      check(`[${tag}] Bookmarking a place: ☆ asks for a Name, a Folder (with + New folder…) and Assign to`, pop.has && !!pop.name && pop.folders.includes("Memorising") && pop.newFolder && pop.assign, JSON.stringify(pop));
+      if (MUTATE === "bookmarks") await page.evaluate(() => document.querySelector("[data-bm-pop-save]")?.remove());
+      await page.fill("[data-bm-pop-name]", "My ethics place");
+      await page.selectOption("[data-bm-pop-folder]", { label: "Reading" });
+      await page.click("[data-bm-pop-save]").catch(() => {}); await page.waitForTimeout(900);
+      const w1 = await stubWritesOf(page);
+      check(`[${tag}] Bookmarking a place: Save writes the bookmark under its Name in the chosen Folder`, w1.includes("My ethics place") && w1.includes('"f2"'), w1.slice(0, 300));
+      // Already bookmarked → the Manual says an "Already bookmarked" choice appears; the topic page's ☆ removes at once.
+      await page.click("#bookmarkTopicBtn").catch(() => {}); await page.waitForTimeout(600);
+      const again = await page.evaluate(() => ({ choice: !!document.querySelector("[data-bm-exists-choice]"), star: document.getElementById("bookmarkTopicBtn")?.textContent.trim() }));
+      check(`[${tag}] Bookmarking a place: tapping again opens "Already bookmarked" (Remove my bookmark / Add a bookmark…) instead of removing at once`, again.choice, JSON.stringify(again) + " -- APP IS WRONG on the topic pages' ☆ (topic-study.js toggleTopicBookmark removes at once); the Quran-page 🔖 is the one the Manual describes");
+      await tidy(page);
+      // Family: tick the child under Assign to
+      await page.reload(); await page.waitForSelector("#personSelect option", { state: "attached" }); await page.waitForTimeout(1200);
+      await page.locator("button", { hasText: /Ethics/ }).first().click();
+      await page.waitForSelector("#bookmarkTopicBtn", { state: "visible", timeout: 15000 });
+      await page.click("#bookmarkTopicBtn");
+      await page.waitForSelector("[data-bm-pop-assignees]", { state: "visible", timeout: 8000 }).catch(() => {});
+      const kids = await page.evaluate(() => [...document.querySelectorAll("[data-bm-pop-assignees] label")].map((l) => l.textContent.trim()));
+      const box = page.locator("[data-bm-pop-assignees] label", { hasText: /Maryam|Child|Student|Aisha|Yusuf/i }).first();
+      const ticked = (await box.count()) ? (await box.locator("input").check(), true) : false;
+      await page.click("[data-bm-pop-save]").catch(() => {}); await page.waitForTimeout(1000);
+      const notice = await page.evaluate(() => ({ text: document.querySelector("[data-bm-saved-text]")?.textContent.trim(), links: [...document.querySelectorAll("[data-bm-saved-link]")].map((a) => a.textContent.trim()) }));
+      check(`[${tag}] Bookmarks for family members: ticking a person under Assign to ends with "Saved for …" and a link to that person's bookmarks`, ticked && /^Saved for /.test(notice.text || "") && notice.links.length > 0, JSON.stringify({ kids, notice }));
+      check(`[${tag}] Bookmarking a place: no page error`, quiet(errors).length === 0, JSON.stringify(quiet(errors)));
+      await ctx.close();
+    }
+    // ### The Bookmark menu
+    {
+      const { ctx, page, errors } = await open("/app/people.html", { w, h, ctxOpts: { extraSeedJs: FOLDER_SEED } });
+      await settle(page);
+      await page.locator("#topNav summary", { hasText: /^Bookmark$/ }).first().click();
+      await page.waitForSelector("#navBookmarkList [data-bm-last]", { timeout: 10000 }).catch(() => {});
+      const m = await page.evaluate(() => ({
+        lasts: [...document.querySelectorAll("#navBookmarkList [data-bm-last]")].map((x) => x.textContent.replace(/\s+/g, " ").trim()),
+        folders: [...document.querySelectorAll("#navBookmarkList details[data-bm-folder-id] [data-bm-folder-label]")].map((x) => x.textContent),
+        handle: document.querySelectorAll("[data-bm-folder-handle]").length, pencil: document.querySelectorAll("[data-bm-folder-rename]").length, bin: document.querySelectorAll("[data-bm-remove-folder]").length,
+        groupBy: !!document.querySelector("[data-bm-nav-groupby]"), times: document.querySelector("[data-bm-nav-times]")?.textContent.trim(),
+        bookmarks: [...document.querySelectorAll("#navBookmarkList a[data-bm-open-id]")].map((a) => a.textContent.trim()),
+      }));
+      check(`[${tag}] The Bookmark menu: 📖 Last read and ▶ Last played sit at the top`, m.lasts.length === 2 && /Last read/.test(m.lasts[0]) && /Last played/.test(m.lasts[1]), JSON.stringify(m.lasts));
+      check(`[${tag}] The Bookmark menu: folders show ⠿ ✎ 🗑 and Group by, Show times are there`, m.folders.length === 2 && m.handle === 2 && m.pencil === 2 && m.bin === 2 && m.groupBy && /times/.test(m.times || ""), JSON.stringify(m));
+      // The times are ON by default (check corrected: the first run assumed they start hidden): the button then reads Hide times.
+      const t1 = await page.evaluate(() => ({ btn: document.querySelector("[data-bm-nav-times]")?.textContent.trim(), when: document.querySelectorAll("#navBookmarkList [data-bm-when]").length }));
+      await page.click("[data-bm-nav-times]"); await page.waitForTimeout(300);
+      const t2 = await page.evaluate(() => ({ btn: document.querySelector("[data-bm-nav-times]")?.textContent.trim(), when: document.querySelectorAll("#navBookmarkList [data-bm-when]").length }));
+      check(`[${tag}] The Bookmark menu: the time each was last opened shows (Hide times), and Show times / Hide times toggles it`, /Hide times/.test(t1.btn || "") && t1.when > 0 && /Show times/.test(t2.btn || "") && t2.when === 0, JSON.stringify({ t1, t2 }));
+      await page.click("[data-bm-nav-times]"); await page.waitForTimeout(200);
+      // rename ✎
+      await page.click("[data-bm-folder-rename]"); await page.fill("[data-bm-folder-input]", "Memorised"); await page.keyboard.press("Enter"); await page.waitForTimeout(500);
+      const renamed = await page.evaluate(() => document.querySelector("[data-bm-folder-label]")?.textContent);
+      check(`[${tag}] The Bookmark menu: ✎ renames a folder`, renamed === "Memorised" && (await stubWritesOf(page)).includes("Memorised"), renamed);
+      // reorder ⠿ with the arrow keys
+      await page.locator("[data-bm-folder-handle]").first().focus(); await page.keyboard.press("ArrowDown"); await page.waitForTimeout(500);
+      const order = await page.evaluate(() => [...document.querySelectorAll("#navBookmarkList details[data-bm-folder-id] [data-bm-folder-label]")].map((x) => x.textContent));
+      check(`[${tag}] The Bookmark menu: ⠿ reorders folders (ArrowDown moves the first below the second)`, order[0] === "Reading" && order[1] === "Memorised", JSON.stringify(order));
+      // delete 🗑 + Undo
+      await page.locator("[data-bm-remove-folder]").first().click(); await page.waitForTimeout(500);
+      const gone = await page.evaluate(() => ({ undo: !!document.querySelector("[data-bm-undo-btn]"), folders: document.querySelectorAll("#navBookmarkList details[data-bm-folder-id]").length }));
+      check(`[${tag}] The Bookmark menu: 🗑 removes a folder and offers Undo`, gone.undo, JSON.stringify(gone));
+      await page.click("[data-bm-undo-btn]").catch(() => {}); await page.waitForTimeout(500);
+      const back = await page.evaluate(() => document.querySelectorAll("#navBookmarkList details[data-bm-folder-id]").length);
+      check(`[${tag}] The Bookmark menu: Undo brings the folder back`, back === 2, String(back));
+      // ✕ Close
+      if (MUTATE === "bookmarks") await page.evaluate(() => document.querySelector("[data-nav-bm-close]")?.remove());
+      await page.click("[data-nav-bm-close]").catch(() => {}); await page.waitForTimeout(200);
+      check(`[${tag}] The Bookmark menu: ✕ Close shuts it`, !(await isOpen(page, ".nav-cat-bookmark")));
+      await tidy(page);
+      check(`[${tag}] The Bookmark menu: no page error`, quiet(errors).length === 0, JSON.stringify(quiet(errors)));
+      await ctx.close();
+    }
+    // ### Manage bookmarks page
+    {
+      const { ctx, page } = await open("/app/people.html", { w, h, ctxOpts: { extraSeedJs: FOLDER_SEED } });
+      await settle(page);
+      await page.locator("#topNav summary", { hasText: /^Bookmark$/ }).first().click();
+      await page.waitForSelector('#navBookmarkList a[href^="bookmarks.html"], .nav-cat-bookmark a[href^="bookmarks.html"]', { state: "attached" });
+      const link = (await page.locator('.nav-cat-bookmark a[href^="bookmarks.html"]').first().textContent()).trim();
+      check(`[${tag}] Manage bookmarks page: Bookmark ▾ has "Manage bookmarks…"`, link === "Manage bookmarks…", link);
+      await page.locator('.nav-cat-bookmark a[href^="bookmarks.html"]').first().click();
+      await page.waitForSelector("#newBookmarkBtn", { state: "visible", timeout: 15000 });
+      await page.waitForTimeout(800);
+      const back = await page.evaluate(() => { const b = document.querySelector("[data-bm-back]"); return b ? b.textContent.replace(/\s+/g, " ").trim() : null; });
+      check(`[${tag}] The Bookmark menu: a "← Back" button returns you to the page you left (from Manage bookmarks…)`, /^←\s*Back/.test(back || ""), String(back));
+      const ui = await page.evaluate(() => ({ nb: document.getElementById("newBookmarkBtn").textContent.trim(), nf: document.getElementById("newFolderBtn").textContent.trim(), row: [...document.querySelectorAll(".bm-row")].map((r) => [...r.querySelectorAll("button")].map((b) => b.textContent.trim()).join("|")), fold: [...document.querySelectorAll(".bm-folder-header")].map((r) => [...r.querySelectorAll("button")].map((b) => b.textContent.trim()).join("|")) }));
+      check(`[${tag}] Manage bookmarks page: + New bookmark, + New folder, and Open / Rename / Retire on each row`, ui.nb === "+ New bookmark" && ui.nf === "+ New folder" && ui.row.length > 0 && ui.row.every((r) => /Open/.test(r) && /Rename/.test(r) && /Retire/.test(r)) && ui.fold.every((r) => /Rename/.test(r) && /Retire/.test(r)), JSON.stringify(ui));
+      // Retire → Restore
+      await page.locator(".bm-row [data-bm-toggle]").first().click(); await page.waitForTimeout(600);
+      await page.check("#showRetiredCk"); await page.waitForTimeout(400);
+      const lab = await page.locator(".bm-row.retired [data-bm-toggle]").first().textContent().catch(() => null);
+      check(`[${tag}] Manage bookmarks page: Retire hides a bookmark and Show retired offers Restore`, (lab || "").trim() === "Restore", String(lab));
+      await page.locator(".bm-row.retired [data-bm-toggle]").first().click().catch(() => {}); await page.waitForTimeout(500);
+      const restored = await page.locator(".bm-row.retired").count();
+      check(`[${tag}] Manage bookmarks page: Restore brings it back`, restored === 0, String(restored));
+      // + New bookmark form and + New folder
+      await page.click("#newBookmarkBtn"); await page.waitForTimeout(300);
+      const form = await shown(page, "#newBookmarkForm");
+      check(`[${tag}] Manage bookmarks page: + New bookmark opens a form with Name and Create`, form && (await shown(page, "#nbName")) && (await shown(page, "#nbCreateBtn")));
+      await page.click("#nbCancelBtn");
+      await ctx.close();
+    }
+  }
+}
+
 async function summ_bn(page) {
   await page.evaluate(() => { document.querySelector(".nav-cat-home").open = true; });
   await page.waitForTimeout(150);
