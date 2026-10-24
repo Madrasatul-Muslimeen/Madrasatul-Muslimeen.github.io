@@ -9,3 +9,5 @@ Regression sweep on `main` (cb87e36a), issue #1129. Each suite run alone from th
 | 3 | approach-record-status-bar-browser | 304 pass, 0 fail | green, nothing changed |
 | 4 | approach-sections-browser | 59 pass, 0 fail | green, nothing changed |
 | 5 | approach-short-names-browser | 70 pass, 0 fail | green, nothing changed |
+| 6 | catalogue-add-approach-browser | 30 pass, 0 fail | green, nothing changed |
+| 7 | catalogue-sections-browser | 126 pass, 0 fail | green, nothing changed |
