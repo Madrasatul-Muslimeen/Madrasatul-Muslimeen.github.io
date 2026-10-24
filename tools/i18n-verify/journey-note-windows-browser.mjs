@@ -263,7 +263,8 @@ for (const lang of ["en", "bn"]) {
       const saved = await rectOf(page, W("n1"));
       const stored = await page.evaluate(() => JSON.parse(localStorage.getItem("mmsa-journey-note-window")));
       check(`${tag}: geometry is kept per device in localStorage`, !!stored && Math.abs(stored.x - saved.x) <= 1 && Math.abs(stored.w - saved.w) <= 1);
-      check(`${tag}: ...and nothing about it is sent to Firestore`, await page.evaluate(() => !(window.__fsLog || []).some((l) => JSON.stringify(l).includes("nw-") || JSON.stringify(l).includes("note-window"))));
+      // Stale check, updated: the stub's __fsLog entries now carry a JS `stack` string whose frames name note-window.js, so matching the whole entry always hit. Match the entry WITHOUT its stack (what was written, not who called).
+      check(`${tag}: ...and nothing about it is sent to Firestore`, await page.evaluate(() => !(window.__fsLog || []).some((l) => { const { stack, ...rest } = l; const s = JSON.stringify(rest); return s.includes("nw-") || s.includes("note-window"); })));
       await page.reload();
       await chooseAlpha(page);
       await openPaneNote(page, "n1");
