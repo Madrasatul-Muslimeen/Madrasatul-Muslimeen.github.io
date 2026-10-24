@@ -26,4 +26,8 @@ No app file was changed. Notes pinned by QuranRevival (`note-window.js`, the not
 | The Note's ⋯ menu | Six groups in order, Mark = Pin/Favourite/Archive/Finalise, Delete last; phone: from the bottom, × or outside closes | PASS | |
 | Writing and editing a Note | ✏️ Edit opens the editor; toolbar has the 17 named tools; ✓ Done saves a revision; a failed save says "Not saved yet — will try again" | PASS | revision written once; message text exact |
 
-Totals so far: 67 pass, 0 fail, 3 skip.
+| Reading tools in a Note | 🔍 Find (box, match count), ⇅ open/close all headings, ☰ Contents, 🕘 Versions (list, open one to read), "Linked from" | PASS | on a phone the tool buttons sit behind ⋯, as the Manual says; Find counted "1" for a unique phrase; ⇅ flipped both heading sections; Contents listed both headings; a Note linked from another listed it under "Linked from". Check corrected twice: wrong selectors (`[data-find-input]`, `.note-sec.collapsed`). "Bring one back" restore is covered by `journey-s9-browser`, not repeated here. |
+| Tags on Notes | ⋯ → 🏷 Tags…, create/tick, Tags list shows the count, tap a tag to see its Notes | PASS | count "1"; the tag's Note list = Note One |
+| Pop-up Note windows | ⋯ → ⧉ Pop out; ▾ → ⧉ Open in window; several at once; tab strip (wide) / bottom switcher (phone); move and resize (wide); ✕ Close all; Pinned Notes in a side panel | PASS | title-bar drag moved the window >20px; the SE corner changed its size; "📌 Pinned (1)" opened a panel listing Note Three. Ctrl/⌘-click on a title not driven (SKIP-equivalent, not a separate check). |
+
+Totals so far: 111 pass, 0 fail, 3 skip.

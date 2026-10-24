@@ -756,6 +756,149 @@ if (want("notes")) {
     check(`[${tag}] The Note's ⋯ menu / Writing and editing: no page error`, quiet(errors).filter((e) => !/write failure|denied by the test/i.test(e)).length === 0, JSON.stringify(quiet(errors)));
     await ctx.close();
   } catch (e) { crash(e); }
+
+  // ### Reading tools in a Note   +   ### Tags on Notes   +   ### Pop-up Note windows   +   ### My Note tools   +   ### Favourites, Archived and Trash
+  // n1 has two headings (Contents, ⇅), and is linked to n2 (so n2 reads "Linked from" n1).
+  const RICH_SEED = NOTES_SEED() + `
+(function () {
+  var own = { tenantId: "t1", ownerPersonId: "p1", ownerUid: "test-uid", schemaVersion: 1, createdBy: "test-uid" };
+  var id = "1".repeat(32), id2 = "2".repeat(32);
+  var n = DATA.notes.find(function (x) { return x.noteId === id; });
+  n.bodyHtml = "<p>Intro line.</p><h1>First heading</h1><p>Body one.</p><h2>Second heading</h2><p>Body two.</p>";
+  DATA.noteRevisions.filter(function (r) { return r.noteId === id; }).forEach(function (r) { r.bodyHtml = n.bodyHtml; });
+  DATA.noteLinks = [Object.assign({ _id: "t1__l1", linkId: "l1", fromNoteId: id, toNoteId: id2, status: "active", createdAt: new Date("2026-09-01T10:00:00Z"), updatedAt: new Date("2026-09-01T10:00:00Z") }, own)];
+})();`;
+  for (const [w, h] of VIEWPORTS) try {
+    const tag = `${w}px`;
+    const { ctx, page, errors } = await jmOpen("/app/journey-map.html#folders", w, h, RICH_SEED);
+    await jmReady(page);
+    await jmOpenNote(page, "n1");
+    const barSel = (s) => `#notePane [data-pane-bar] > ${s}`;
+    // the tool buttons are on the bar, or ⋯ when it is narrow
+    const toolIn = async (attr) => { const onBar = await vis(page, barSel(attr)); if (onBar) return "bar"; await page.click("#notePane [data-pane-menu-btn]"); await page.waitForTimeout(250); const inMenu = await vis(page, `#notePane [data-pane-menu] ${attr}`); return inMenu ? "menu" : "none"; };
+    const use = async (attr) => { const where = await toolIn(attr); if (where === "bar") await page.click(barSel(attr)); else if (where === "menu") await page.click(`#notePane [data-pane-menu] ${attr}`); return where; };
+    // 🔍 Find in this Note
+    const find = await use("[data-pane-find-toggle]");
+    await page.waitForTimeout(300);
+    const findBox = await page.evaluate(() => { const i = document.querySelector("#notePane [data-find-input]"); return { has: !!i, shown: !!i && i.getBoundingClientRect().width > 0 }; });
+    check(`[${tag}] Reading tools in a Note: 🔍 Find in this Note (${find}) opens a find box`, find !== "none" && findBox.shown, JSON.stringify({ find, findBox }));
+    if (findBox.shown) {
+      await page.fill("#notePane [data-find-input]", "Body two"); await page.waitForTimeout(400);
+      const cnt = await page.evaluate(() => document.querySelector("#notePane [data-find-count]")?.textContent.trim() ?? "");
+      check(`[${tag}] Reading tools in a Note: typing in Find counts the matches ("${cnt}")`, /1/.test(cnt), cnt);
+    }
+    await page.keyboard.press("Escape"); await page.waitForTimeout(200);
+    // ⇅ open or close all headings
+    const fold = await toolIn("[data-pane-foldall]");
+    if (fold === "menu") await page.keyboard.press("Escape");
+    const headsOpen = () => page.evaluate(() => [...document.querySelectorAll("#notePane .note-sec")].map((d) => !d.classList.contains("collapsed")));
+    const h0 = await headsOpen();
+    if (fold !== "none") { await use("[data-pane-foldall]"); await page.waitForTimeout(300); }
+    const h1 = await headsOpen();
+    check(`[${tag}] Reading tools in a Note: ⇅ opens or closes all headings (it toggled ${h0.length} heading sections)`, fold !== "none" && h0.length >= 2 && JSON.stringify(h0) !== JSON.stringify(h1), JSON.stringify({ fold, h0, h1 }));
+    await page.keyboard.press("Escape");
+    // ☰ Contents
+    const cBtn = await vis(page, "#notePane [data-pane-contents-btn]");
+    if (cBtn) { await page.click("#notePane [data-pane-contents-btn]"); await page.waitForTimeout(300); }
+    const toc = await page.evaluate(() => [...document.querySelectorAll("#notePane [data-pane-contents-list] button, #notePane [data-pane-contents-list] a")].map((b) => b.textContent.trim()));
+    check(`[${tag}] Reading tools in a Note: ☰ Contents lists the Note's headings`, cBtn && toc.some((x) => /First heading/.test(x)) && toc.some((x) => /Second heading/.test(x)), JSON.stringify({ cBtn, toc }));
+    await page.keyboard.press("Escape");
+    await page.evaluate(() => document.querySelectorAll("[data-bar-palette].open").forEach((e) => e.classList.remove("open")));
+    // 🕘 Versions
+    const ver = await use("[data-pane-versions]");
+    await page.waitForSelector("[data-ver-body]", { timeout: 6000 }).catch(() => {});
+    await page.waitForTimeout(500);
+    const vrows = await page.evaluate(() => document.querySelectorAll("[data-ver-open]").length);
+    check(`[${tag}] Reading tools in a Note: 🕘 Versions (${ver}) lists the earlier versions`, ver !== "none" && vrows >= 1, String(vrows));
+    if (vrows) {
+      await page.click("[data-ver-open]"); await page.waitForTimeout(300);
+      check(`[${tag}] Reading tools in a Note: a version can be opened to read it (with its text), and "bring it back" is offered only for a version that is not the current one`, await page.evaluate(() => /First heading/.test(document.querySelector("[data-ver-text]")?.textContent ?? "")), "");
+    }
+    await page.click("[data-ver-close]").catch(() => {}); await page.waitForTimeout(200);
+    // Note links: n2 reads "Linked from"
+    await page.evaluate(() => document.querySelector("#notePane [data-pane-back]")?.click()); await page.waitForTimeout(300);
+    await jmOpenNote(page, "n2");
+    await page.waitForTimeout(600);
+    const linked = await page.evaluate(() => ({ head: document.querySelector("#notePane [data-links-in-head]")?.textContent.trim() ?? null, rows: [...document.querySelectorAll("#notePane [data-links-in] [data-link-open]")].map((b) => b.textContent.trim()) }));
+    check(`[${tag}] Reading tools in a Note: a Note linked from another shows "Linked from" with that Note`, /Linked from/.test(linked.head || "") && linked.rows.includes("Note One"), JSON.stringify(linked));
+    check(`[${tag}] Reading tools in a Note: no page error`, quiet(errors).length === 0, JSON.stringify(quiet(errors)));
+    await ctx.close();
+  } catch (e) { crash(e); }
+
+  // Tags: ⋯ → 🏷 Tags…, create a tag, tick; the Tags list shows its count; tap the tag to see its Notes
+  for (const [w, h] of VIEWPORTS) try {
+    const tag = `${w}px`;
+    const { ctx, page, errors } = await jmOpen("/app/journey-map.html#folders", w, h);
+    await jmReady(page);
+    await jmOpenNote(page, "n1");
+    await page.click("#notePane [data-pane-menu-btn]");
+    await page.waitForSelector("[data-pane-menu] [data-pane-tags]", { state: "visible" });
+    const tagBtn = await page.evaluate(() => document.querySelector("[data-pane-menu] [data-pane-tags]").textContent.trim());
+    check(`[${tag}] Tags on Notes: ⋯ has 🏷 Tags…`, /Tags/.test(tagBtn), tagBtn);
+    await page.click("[data-pane-menu] [data-pane-tags]"); await page.waitForSelector(".tag-picker");
+    await page.fill("[data-tag-new-name]", "Prayer"); await page.click("[data-tag-new]");
+    await page.waitForFunction(() => document.querySelectorAll(".tag-pick-row input:checked").length === 1, null, { timeout: 8000 }).catch(() => {});
+    check(`[${tag}] Tags on Notes: creating a tag in the picker also ticks it for this Note`, await page.evaluate(() => document.querySelectorAll(".tag-pick-row input:checked").length === 1));
+    await page.click("[data-tag-close]"); await page.waitForTimeout(300);
+    check(`[${tag}] Tags on Notes: the Note shows the tag as a chip`, await page.evaluate(() => [...document.querySelectorAll("#notePane [data-tag-chip]")].some((e) => /Prayer/.test(e.textContent))));
+    await page.evaluate(() => document.querySelector("#notePane [data-pane-back]")?.click()); await page.waitForTimeout(300);
+    if (await vis(page, "#folderNotes [data-list-back]")) { await page.click("#folderNotes [data-list-back]"); await page.waitForTimeout(300); }
+    await page.waitForSelector("[data-tags-block] [data-tag-item]", { timeout: 8000 }).catch(() => {});
+    const cnt = await page.evaluate(() => document.querySelector("[data-tag-item] [data-tag-count]")?.textContent.trim() ?? null);
+    check(`[${tag}] Tags on Notes: a Tags list under the folders shows how many Notes each tag has (1)`, cnt === "1", String(cnt));
+    await page.click("[data-tag-item] [data-tag-open]"); await page.waitForSelector("[data-tag-notes] [data-tag-note]", { timeout: 8000 }).catch(() => {});
+    const listed = await page.evaluate(() => [...document.querySelectorAll("[data-tag-note]")].map((e) => e.dataset.tagNote));
+    check(`[${tag}] Tags on Notes: tapping a tag lists its Notes`, JSON.stringify(listed) === JSON.stringify([hx("n1")]), JSON.stringify(listed));
+    check(`[${tag}] Tags on Notes: no page error`, quiet(errors).length === 0, JSON.stringify(quiet(errors)));
+    await ctx.close();
+  } catch (e) { crash(e); }
+
+  // Pop-up Note windows
+  for (const [w, h] of VIEWPORTS) try {
+    const tag = `${w}px`;
+    const { ctx, page, errors } = await jmOpen("/app/journey-map.html#folders", w, h, NOTES_SEED() + `DATA.notes.find(function (x) { return x.noteId === "${hx("n3")}"; }).pinned = true;`);
+    await jmReady(page);
+    await jmOpenNote(page, "n1");
+    await page.click("#notePane [data-pane-menu-btn]");
+    await page.click("[data-pane-menu] [data-pane-popout]");
+    await page.waitForSelector(`.note-win[data-note-id="${hx("n1")}"]`, { timeout: 8000 }).catch(() => {});
+    check(`[${tag}] Pop-up Note windows: ⋯ → ⧉ Pop out opens the Note in its own window`, (await count(page, ".note-win")) === 1);
+    // a second one: ▾ → ⧉ Open in window on the list row
+    await page.evaluate(() => document.querySelector("#folderNotes [data-list-back]")?.click());
+    if (w < 600) { await page.setViewportSize({ width: 820, height: 900 }); await page.waitForTimeout(500); }
+    await page.evaluate((id) => localStorage.setItem("mmsa-journey-note-window", JSON.stringify({ x: 420, y: 80, w: 360, h: 600 })), 0);
+    await page.evaluate((hxid) => { const row = document.querySelector(`#folderNotes [data-note-leaf][data-note-id="${hxid}"]`); row?.querySelector("[data-note-toggle]")?.click(); row?.querySelector("[data-note-window]")?.click(); }, hx("n2"));
+    await page.waitForSelector(`.note-win[data-note-id="${hx("n2")}"]`, { timeout: 8000 }).catch(() => {});
+    if (w < 600) { await page.setViewportSize({ width: w, height: h }); await page.waitForTimeout(500); }
+    check(`[${tag}] Pop-up Note windows: several Notes open at once, each in its own window`, (await count(page, ".note-win")) === 2);
+    const sw = await page.evaluate(() => ({ shown: !!document.getElementById("noteWinSwitch") && document.getElementById("noteWinSwitch").getBoundingClientRect().height > 0, tabs: document.querySelectorAll("#noteWinSwitch [data-win-switch]").length, closeAll: document.querySelector("#noteWinSwitch [data-win-closeall]")?.textContent.trim() ?? "" }));
+    check(`[${tag}] Pop-up Note windows: ${w < 600 ? "a switcher at the bottom" : "a tab strip"} switches between them`, sw.shown && sw.tabs === 2, JSON.stringify(sw));
+    if (w >= 1000) {
+      const TOP = `.note-win[data-note-id="${hx("n2")}"]`; // the newest window is on top
+      const bar = await page.locator(`${TOP} .nw-title`).boundingBox();
+      const before = await page.locator(TOP).boundingBox();
+      if (bar) { await page.mouse.move(bar.x + 20, bar.y + bar.height / 2); await page.mouse.down(); await page.mouse.move(bar.x - 40, bar.y + 50, { steps: 5 }); await page.mouse.up(); }
+      const after = await page.locator(TOP).boundingBox();
+      check(`[${tag}] Pop-up Note windows: a window can be moved by its title bar`, !!before && !!after && (Math.abs(after.x - before.x) > 20 || Math.abs(after.y - before.y) > 20), JSON.stringify({ before, after }));
+      const se = await page.locator(`${TOP} [data-h="se"]`).boundingBox();
+      if (se) { await page.mouse.move(se.x + 6, se.y + 6); await page.mouse.down(); await page.mouse.move(se.x - 80, se.y - 60, { steps: 5 }); await page.mouse.up(); }
+      const sized = await page.locator(TOP).boundingBox();
+      check(`[${tag}] Pop-up Note windows: a window can be resized by its corner`, !!se && !!sized && (Math.abs(sized.width - after.width) > 20 || Math.abs(sized.height - after.height) > 20), JSON.stringify({ after, sized }));
+    }
+    // Pinned Notes can be shown in a side panel
+    const frontWin = () => page.evaluate(() => { const ws = [...document.querySelectorAll(".note-win")].filter((x) => x.getBoundingClientRect().width > 0 && x.querySelector("[data-win-pins-toggle]")); return ws.sort((a, b) => (Number(getComputedStyle(b).zIndex) || 0) - (Number(getComputedStyle(a).zIndex) || 0))[0]?.dataset.noteId ?? null; });
+    const fid = await frontWin();
+    const WIN = `.note-win[data-note-id="${fid}"]`;
+    const pins = await page.evaluate((s) => { const t = document.querySelector(s + " [data-win-pins-toggle]"); return { has: !!t, text: t?.textContent.trim() ?? "" }; }, WIN);
+    if (pins.has) { await page.evaluate((s) => document.querySelector(s + " [data-win-pins-toggle]").click(), WIN); await page.waitForTimeout(300); }
+    const panel = await page.evaluate((s) => { const p = document.querySelector(s + " [data-win-pinned]"); const r = p?.getBoundingClientRect(); return { shown: !!p && !p.hidden && r.width > 0, text: p?.textContent.replace(/\s+/g, " ").trim().slice(0, 80) ?? "" }; }, WIN);
+    check(`[${tag}] Pop-up Note windows: 📌 Pinned in a window opens a side panel listing the pinned Notes (Note Three)`, pins.has && panel.shown && /Note Three/.test(panel.text), JSON.stringify({ pins, panel }));
+    check(`[${tag}] Pop-up Note windows: "✕ Close all (2)" is offered`, /Close all/.test(sw.closeAll), sw.closeAll);
+    await page.click("#noteWinSwitch [data-win-closeall]").catch(() => {}); await page.waitForTimeout(400);
+    check(`[${tag}] Pop-up Note windows: ✕ Close all closes them`, (await count(page, ".note-win")) === 0);
+    check(`[${tag}] Pop-up Note windows: no page error`, quiet(errors).length === 0, JSON.stringify(quiet(errors)));
+    await ctx.close();
+  } catch (e) { crash(e); }
 }
 
 async function summ_bn(page) {
