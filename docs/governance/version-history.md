@@ -957,3 +957,4 @@ total). Allocated by the MMSA Architect.
 12.53: audit part 65: Catalogue / Curriculum names keyed by language; refusals in words. Allocated by the MMSA Architect.
 12.54: audit part 67: menu bar and report tables under text spacing and zoom. Allocated by the MMSA Architect.
 12.55: audit parts 1 and 10: Āyah card heading and wheel number labels whole again. Allocated by the MMSA Architect.
+12.56: audit parts 73-77: the Zab bar no longer moves the bottom bar on a computer. Allocated by the MMSA Architect.
