@@ -79,12 +79,17 @@ for (const lang of ["en", "bn"]) for (const [width, height] of [[390, 844], [128
   const take = await ev(() => ({ pane: !document.getElementById("readNotePane")?.hidden, back: document.querySelector("#readNotePane [data-rnp-back]")?.textContent ?? "", title: document.querySelector("#readNotePane .rnp-title")?.textContent ?? "" }));
   const ready = F ? await F.evaluate(() => !!document.activeElement?.matches?.("[data-unit-new].unit-new-ready")) : false;
   check(`${tag} 📝 Note (no Note yet) opens the Notes pane on 2:255 with ✚ New note in focus`, take.pane && /2:255|২:২৫৫/.test(take.title) && ready, JSON.stringify({ ...take, ready }));
+  // UPDATED IN PLACE (J81 part 3, v12.26: every note opens in the Mapping My Journey window): pressing ✚ New note no longer
+  // puts a cursor in the pane; it writes the Note and opens #journeyTray on it. The stub keeps its data per page, so the
+  // tray's fresh page cannot read the Note back: it is proven by the tray's address naming the Note just written, and the write.
   await F?.click("[data-unit-new]");
-  await F?.waitForFunction(() => document.activeElement?.isContentEditable, null, { timeout: 10000 }).catch(() => {});
-  check(`${tag} ...pressing it makes the Note with the cursor in it, ready to type`, F ? await F.evaluate(() => !!document.activeElement?.isContentEditable) : false);
-  await P.keyboard.type("Bismillah");
-  check(`${tag} ...typing goes straight into the Note`, F ? (await F.evaluate(() => document.querySelector("#notePane [contenteditable=true]")?.textContent ?? "")).includes("Bismillah") : false);
+  await P.waitForFunction(() => /embed=1&note=[0-9a-f]{16,}/.test(document.querySelector("#journeyTray:not([hidden]) iframe")?.getAttribute("src") ?? ""), null, { timeout: 10000 }).catch(() => {});
+  const trayNote = await ev(() => ({ open: !!document.querySelector("#journeyTray:not([hidden])"), src: document.querySelector("#journeyTray iframe")?.getAttribute("src") ?? "" }));
+  const wroteNote = F ? await F.evaluate(() => (window.__stubWriteData || []).some((x) => x.col === "notes")).catch(() => false) : false;
+  check(`${tag} ...pressing it makes the Note and opens it in the Mapping My Journey window (v12.26)`, trayNote.open && /embed=1&note=[0-9a-f]{16,}/.test(trayNote.src) && wroteNote, JSON.stringify({ ...trayNote, wroteNote }));
   check(`${tag} ...and "Back to Āyah card" is there`, take.back === `← ${lang === "bn" ? "আয়াত কার্ডে ফিরুন" : "Back to Āyah card"}`, take.back);
+  // A reader closes the tray with its ✕, which returns them to the pane.
+  await P.click("#journeyTray .jt-close", { timeout: 5000 }).catch(() => {}); await P.waitForTimeout(400);
   await P.click("#readNotePane [data-rnp-back]");
   await P.waitForFunction(() => document.getElementById("ayahActionSheetOverlay")?.classList.contains("open"), null, { timeout: 8000 }).catch(() => {});
   await P.waitForTimeout(300);
