@@ -80,7 +80,7 @@ for (const lang of ["en", "bn"]) for (const width of [390, 1280]) {
   check(`${tag}: ...and at least one whole Firestore trip (400 ms) sooner than the real wheel (${tCopy} ms vs ${tReal} ms)`, tCopy + 400 <= tReal);
   check(`${tag}: the real wheel replaces it (${tCopy} ms -> ${tReal} ms), and the page can be tapped`, after.realShown && !after.copyShown && after.copySegs === 0 && !after.appInert, JSON.stringify(after));
   const near = (a, b) => a && b && Math.abs(a.x - b.x) <= 3 && Math.abs(a.y - b.y) <= 3 && Math.abs(a.w - b.w) <= 3;
-  check(`${tag}: ...in the same place and size (nothing jumps)`, near(early.copyBox, after.realBox) && near(after.realBox, realFirst.realBox), JSON.stringify({ copy: early.copyBox, real: after.realBox }));
+  check(`${tag}: ...in the same place and size (nothing jumps)`, near(early.copyBox, after.realBox) && near(after.realBox, realFirst.realBox), JSON.stringify({ copy: early.copyBox, real: after.realBox, firstVisit: realFirst.realBox }));
 
   // 3. Another account's copy on this device is taken away as soon as sign-in answers.
   await page.evaluate((k) => { const c = JSON.parse(localStorage.getItem(k)); c.uid = "someone-else"; localStorage.setItem(k, JSON.stringify(c)); }, KEY);
