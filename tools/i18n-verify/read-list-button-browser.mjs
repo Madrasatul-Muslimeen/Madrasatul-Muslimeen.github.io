@@ -47,7 +47,7 @@ const btn = (page) => page.evaluate(() => {
   const bar = document.getElementById("readBar").getBoundingClientRect();
   const overlap = (a, c) => c.width > 0 && a.left < c.right && c.left < a.right && a.top < c.bottom && c.top < a.bottom;
   return { shown: r.width > 0 && getComputedStyle(b).display !== "none", left: Math.round(r.left), right: Math.round(r.right), top: Math.round(r.top), h: Math.round(r.height), w: Math.round(r.width),
-    vw: innerWidth, barLeft: Math.round(bar.left), overFull: overlap(r, full), overRef: !ref.hidden && overlap(r, rr), aria: b.getAttribute("aria-label"),
+    vh: innerHeight, prev: !document.getElementById("mushafPagePrevBtn").hidden, vw: innerWidth, barLeft: Math.round(bar.left), overFull: overlap(r, full), overRef: !ref.hidden && overlap(r, rr), aria: b.getAttribute("aria-label"),
     word: word && getComputedStyle(word).display !== "none" ? word.textContent.trim() : null };
 });
 
@@ -69,14 +69,20 @@ for (const lang of ["en", "bn"]) for (const width of [320, 390, 1280]) {
   await pickRow(page, "surah", 2);
   const b = await btn(page);
   check(`${tag} after Read -> list -> a surah, the button is shown`, b.shown, JSON.stringify(b));
-  check(`${tag} it sits top left of the Read bar, inside the screen (left ${b.left}px, bar ${b.barLeft}px, top ${b.top}px)`, b.left >= 0 && b.left - b.barLeft <= 16 && b.top >= 0 && b.top <= 80 && b.right <= b.vw, JSON.stringify(b));
+  // Updated in place (QR Lead, 23 Oct 2026, app/quranrevival.html ~2784): below 360px, in the bare full screen with ‹ › showing,
+  // ☰ leaves the top line and sits fixed at the left of the bottom row (40x36), so the page reference keeps its room.
+  const bottomRow = width < 360 && b.prev;
+  if (bottomRow) check(`${tag} below 360px on the Mushaf bar ☰ sits at the left of the bottom row, inside the screen (left ${b.left}px, top ${b.top}px)`, b.left >= 0 && b.left <= 16 && b.top >= b.vh - 80 && b.top + b.h <= b.vh && b.right <= b.vw, JSON.stringify(b));
+  else check(`${tag} it sits top left of the Read bar, inside the screen (left ${b.left}px, bar ${b.barLeft}px, top ${b.top}px)`, b.left >= 0 && b.left - b.barLeft <= 16 && b.top >= 0 && b.top <= 80 && b.right <= b.vw, JSON.stringify(b));
   // Updated in place 22 Oct 2026: the bar's buttons are the app's 40px finger size now (they measured 40 on `main`
   // since well before v12.20, so this read 36 and was red there).
-  check(`${tag} it is 40px tall, a finger-sized target`, b.h === 40 && b.w >= 40, JSON.stringify(b));
+  check(`${tag} it is ${bottomRow ? "36" : "40"}px tall, a finger-sized target`, b.h === (bottomRow ? 36 : 40) && b.w >= 40, JSON.stringify(b));
   check(`${tag} it overlaps neither the ⤢ button nor the page reference`, !b.overFull && !b.overRef, JSON.stringify(b));
   check(`${tag} its accessible name is "${LABEL[lang]}"`, b.aria === LABEL[lang], JSON.stringify(b));
   if (width < 360) check(`${tag} below 360px it is the ☰ alone (square)`, b.word === null && b.w === 40, JSON.stringify(b));
   // PCF MSA J75 (the Owner, 22 Oct 2026: "Write only 'Surah', discard ' list'"): below 480px it reads "☰ Surah".
+  // QR Lead, 23 Oct 2026: with ‹ › on the phone's Mushaf bar, ☰ is the icon alone (40px square; ~2771); updated in place.
+  else if (width < 600 && b.prev) check(`${tag} on the phone's Mushaf bar (‹ › showing) it is the ☰ alone, 40px square`, b.word === null && b.w === 40, JSON.stringify(b));
   else if (width < 480) check(`${tag} it reads "☰ ${SHORT[lang]}" on a phone (J75)`, b.word === SHORT[lang], JSON.stringify(b));
   else check(`${tag} it reads "☰ ${LABEL[lang]}"`, b.word === LABEL[lang], JSON.stringify(b));
 
