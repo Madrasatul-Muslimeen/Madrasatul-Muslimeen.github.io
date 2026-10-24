@@ -5,3 +5,5 @@ Run on `main` (v12.55), one suite at a time from the repository root.
 | # | Suite | Result (before) | After | Cause / action |
 |---|---|---|---|---|
 | 1 | word-card-ayah-card-ways-back-browser | 80 pass / 0 fail | unchanged | green |
+| 2 | word-card-bangla-dictionary-browser | 200 pass / 0 fail | unchanged | green |
+| 3 | word-card-basic-rebuild-browser | 144 pass / 0 fail | unchanged | green |
