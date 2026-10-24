@@ -1539,8 +1539,9 @@ export function fitWordCardFamilyRows(root, open, text, formatNumber = String) {
       more.textContent = String(text.familyMore).replace("{n}", formatNumber(chips.filter((c) => c.hidden).length));
     };
     count();
-    // the gold place, when it wrapped, and the button itself must sit on the first line: give up places from its end
-    for (let i = chips.length - 1; i > 0 && (top(more) > line1 || (current && top(current) > line1)); i--) {
+    // the gold place, when it wrapped, and the button itself must sit on the first line: give up places from its end,
+    // the first place too when it must (audit part 78: at 320px 2:29:12 + gold 6:3:4 + "+240 more" did not fit)
+    for (let i = chips.length - 1; i >= 0 && (top(more) > line1 || (current && top(current) > line1)); i--) {
       if (chips[i] === current || chips[i].hidden) continue;
       chips[i].hidden = true;
       count();
