@@ -331,22 +331,31 @@ function justifyPageLines(pageEl) {
   const cs = getComputedStyle(pageEl);
   const paddingLeft = parseFloat(cs.paddingLeft) || 0;
   const paddingRight = parseFloat(cs.paddingRight) || 0;
-  const targetWidth = pageEl.clientWidth - paddingLeft - paddingRight;
-  if (!targetWidth) return;
-  pageEl.querySelectorAll(".hifz-line:not(.centered)").forEach((lineEl) => {
-    lineEl.style.transform = "";
+  const pageWidth = pageEl.clientWidth;
+  const targetWidth = pageWidth - paddingLeft - paddingRight;
+  if (!targetWidth) return 0;
+  // Audit part 79 (24 Oct 2026): clear every line, then measure every line, then scale every line. Clearing and
+  // measuring one line at a time forced a layout of every page already drawn for each line, so Al-Baqarah's 48th
+  // page cost several times its first and a tap waited seconds behind the render (78% of its time, profiled).
+  const lines = [...pageEl.querySelectorAll(".hifz-line:not(.centered)")];
+  lines.forEach((lineEl) => { lineEl.style.transform = ""; });
+  const naturals = lines.map((lineEl) => {
     // Round 28 -- the line's own INTRINSIC width, not the width its box was
     // allowed to be. `.hifz-line` carries `max-width: 100%`, so offsetWidth
     // alone can never exceed the target: a line whose glyphs are genuinely
     // too wide measured as exactly right, scaled by 1.0, and went on
     // overflowing its page by a few pixels with nothing able to notice.
-    const natural = Math.max(lineEl.offsetWidth, lineEl.scrollWidth);
+    return Math.max(lineEl.offsetWidth, lineEl.scrollWidth);
+  });
+  lines.forEach((lineEl, i) => {
+    const natural = naturals[i];
     if (!natural) return;
     let scale = targetWidth / natural;
     scale = Math.max(0.8, Math.min(1.5, scale));
     lineEl.style.transformOrigin = "right center";
     lineEl.style.transform = `scaleX(${scale.toFixed(4)})`;
   });
+  return pageWidth;
 }
 
 /**
@@ -364,9 +373,11 @@ function justifyPageLines(pageEl) {
  * No feedback loop: justification only sets transforms on the LINES, and a
  * transform changes no layout, so observing the page cannot re-trigger itself.
  */
-function watchPageWidth(pageEl) {
+function watchPageWidth(pageEl, justifiedAt = 0) {
   if (typeof ResizeObserver !== "function") return;
-  let lastWidth = 0;
+  // Audit part 79 -- the width the page was just justified at, so the observer's first report (it always reports
+  // once) does not justify the same page a second time.
+  let lastWidth = justifiedAt;
   const ro = new ResizeObserver(() => {
     const w = pageEl.clientWidth;
     if (!w || w === lastWidth) return;
@@ -627,8 +638,7 @@ async function renderPage(pageNum, highlightSet, container, surahArabicName, myG
   // Only justify once the real glyph font is confirmed loaded -- measuring
   // against a fallback font's metrics would produce the wrong scale.
   if (fontInfo.ready) {
-    justifyPageLines(pageEl);
-    watchPageWidth(pageEl); // ...and again whenever the page's width becomes known or changes
+    watchPageWidth(pageEl, justifyPageLines(pageEl)); // ...and again whenever the page's width becomes known or changes
   }
 }
 
@@ -667,7 +677,15 @@ export async function renderMushafPages(container, pages, highlightSet, surahAra
     await renderPage(p, highlightSet, container, surahArabicName, myGeneration, tajweedOn, onToggleTajweed, fatihaCount);
     // Issue #792 -- the caller can name the page in view once the first one is drawn, not the last.
     if (p === pages[0] && onFirstPage && myGeneration === renderGeneration) onFirstPage();
+    // Audit part 79 -- give the browser a turn between pages. With every page's font already loaded the awaits above
+    // resolve at once, so a whole surah was drawn in one task (1.25 s for Al-Baqarah) and a tap waited behind it.
+    if (p !== pages[pages.length - 1]) await yieldToBrowser();
   }
+}
+
+function yieldToBrowser() {
+  if (globalThis.scheduler && typeof globalThis.scheduler.yield === "function") return globalThis.scheduler.yield();
+  return new Promise((resolve) => setTimeout(resolve, 0));
 }
 
 /** Highlights whichever ayah is currently sounding during audio/drill playback -- a cheap class toggle on already-rendered spans, never a re-render (renderMushafPages is comparatively expensive: font loads + justification, and would visibly jank if run on every ayah-change tick). No-op if that ayah isn't part of the currently-rendered page(s) (e.g. a drill playing past the edge of a Range). */
