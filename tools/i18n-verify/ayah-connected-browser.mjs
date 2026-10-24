@@ -162,7 +162,12 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 1100, height: 800 
     check(`${label} the studied marker text is readable against the row (contrast >= 4.5:1)`, state.minStudiedContrast >= 4.5, state.minStudiedContrast?.toFixed(2));
     check(`${label} no sideways scroll with the card open`, state.sw <= 1, `${state.sw}px`);
 
-    await page.click('[data-ayah-related-jump="3:2"]');
+    // UPDATED IN PLACE (J70, "Related āyāt a pull-down above 2"): 3:2 is in several blocks (Related, Connected), the unscoped
+    // selector's FIRST match is a row inside a closed <details data-ayah-related-more>, and a closed fold is not clickable. Scope
+    // the tap to the Connected block and open its fold the way a reader does, after the card (redrawn as data arrives) settles.
+    await page.waitForTimeout(1500);
+    await page.evaluate(() => { const d = document.querySelector('[data-ayah-sheet-connected] [data-ayah-related-jump="3:2"]')?.closest("details[data-ayah-related-more]"); if (d && !d.open) d.querySelector("summary")?.click(); });
+    await page.click('[data-ayah-sheet-connected] [data-ayah-related-jump="3:2"]', { timeout: 8000 }).catch(() => {});
     await page.waitForTimeout(1500);
     const after = await page.evaluate(() => ({
       open: document.getElementById("ayahActionSheetOverlay")?.classList.contains("open"),
