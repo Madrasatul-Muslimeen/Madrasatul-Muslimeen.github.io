@@ -511,7 +511,7 @@ if (want("teaching")) {
 // =====================================================================================================================
 const hx = (id) => id.slice(1).repeat(32);
 // A step that cannot be taken (a control missing, a timeout) is a FAILED claim, not a crashed suite.
-const crash = (e) => { fail++; console.log(`  FAIL  step could not be taken: ${String(e.message || e).split("\n").slice(0, 2).join(" | ").slice(0, 300)}`); };
+const crash = (e) => { fail++; console.log(`  FAIL  step could not be taken: ${String(e.message || e).split("\n").slice(0, 2).join(" | ").slice(0, 200)} @ line ${(/manual-claims-msa-browser\.mjs:(\d+)/.exec(e.stack || "") || [])[1]}`); };
 // Mapping My Journey: Alpha{n1,n2,n3} and Beta{}; every Note started on 2:256. Writes are applied so the page can be driven on.
 const NOTES_SEED = (owner = "p1") => `
 (function () {
@@ -897,6 +897,86 @@ if (want("notes")) {
     await page.click("#noteWinSwitch [data-win-closeall]").catch(() => {}); await page.waitForTimeout(400);
     check(`[${tag}] Pop-up Note windows: ✕ Close all closes them`, (await count(page, ".note-win")) === 0);
     check(`[${tag}] Pop-up Note windows: no page error`, quiet(errors).length === 0, JSON.stringify(quiet(errors)));
+    await ctx.close();
+  } catch (e) { crash(e); }
+
+  // ### Pictures, tables and link previews   +   ### My Note tools   +   ### Favourites, Archived and Trash
+  for (const [w, h] of VIEWPORTS) try {
+    const tag = `${w}px`;
+    const { ctx, page, errors } = await jmOpen("/app/journey-map.html#folders", w, h);
+    await jmReady(page);
+    await jmOpenNote(page, "n1");
+    const barSel = (s) => `#notePane [data-pane-bar] > ${s}`;
+    const pressBar = async (attr) => { if (await vis(page, barSel(attr))) await page.click(barSel(attr)); else { await page.click("#notePane [data-pane-menu-btn]"); await page.click(`#notePane [data-pane-menu] ${attr}`); } };
+    // Pictures, tables, link previews
+    await pressBar("[data-pane-edit-toggle]"); await page.waitForSelector("#notePane [data-edit-body]", { state: "visible" });
+    const cmds = await page.evaluate(() => [...document.querySelectorAll("#notePane [data-edit-toolbar] [data-cmd]")].map((b) => b.dataset.cmd));
+    check(`[${tag}] Pictures, tables and link previews: while editing the toolbar has 🖼 picture, ▦ table and ⊞ spreadsheet tools`, ["image", "table", "sheet"].every((c) => cmds.includes(c)), JSON.stringify(cmds));
+    await pressBar("[data-pane-edit-toggle]"); await page.waitForTimeout(800); // ✓ Done
+    await page.click("#notePane [data-pane-menu-btn]"); await page.waitForTimeout(300);
+    const pv0 = await page.evaluate(() => document.querySelector("#notePane [data-pane-previews]")?.getAttribute("aria-pressed") ?? null);
+    check(`[${tag}] Pictures, tables and link previews: ⋯ has "Show link previews", off to begin with`, pv0 === "false", String(pv0));
+    await page.click("#notePane [data-pane-previews]"); await page.waitForTimeout(400);
+    // The switch first asks in words (the link's address goes to Microlink); "Turn on" then makes it so.
+    const asks = await page.evaluate(() => /Microlink/.test(document.querySelector("[data-preview-yes]")?.closest("div")?.parentElement?.textContent ?? ""));
+    check(`[${tag}] Pictures, tables and link previews: the switch asks first (Microlink gets each link's address) before turning cards on`, asks);
+    await page.click("[data-preview-yes]").catch(() => {}); await page.waitForTimeout(500);
+    const pv1 = await page.evaluate(() => document.querySelector("#notePane [data-pane-previews]")?.getAttribute("aria-pressed") ?? null);
+    check(`[${tag}] Pictures, tables and link previews: pressing it turns link cards on`, pv1 === "true", String(pv1));
+    await page.keyboard.press("Escape"); if (w < 600) await page.click(".pane-menu-x").catch(() => {});
+    await page.waitForTimeout(300);
+
+    // My Note tools
+    await page.click("#notePane [data-pane-menu-btn]"); await page.click("#notePane [data-pane-menu] [data-pane-mytools]");
+    await page.waitForSelector(".mt-dialog [data-mt-sec]", { state: "visible" });
+    await page.click('.mt-dialog [data-mt-sec="templates"]');
+    await page.click(".mt-dialog [data-mt-tplsave]"); await page.waitForTimeout(900);
+    const tpl = await page.evaluate(() => ({ n: document.querySelectorAll(".mt-dialog [data-mt-tpl]").length, name: document.querySelector(".mt-dialog [data-mt-tplname]")?.value, newFrom: [...document.querySelectorAll(".mt-dialog button")].some((b) => /New note from this/.test(b.textContent)), /* MANUAL IS STALE: the button reads "New note from this", not "New from template" */ writes: (window.__stubWriteData || []).map((x) => x.col) }));
+    check(`[${tag}] My Note tools: "Save as template" lists a template named for the Note, with "New from template" to start a Note from it`, tpl.n >= 1 && tpl.name === "Note One" && tpl.newFrom, JSON.stringify(tpl));
+    check(`[${tag}] My Note tools: the template is stored with the person's own settings (userPrefs), so it follows them to every device`, tpl.writes.length > 0 && tpl.writes.every((c) => c === "userPrefs"), JSON.stringify(tpl.writes));
+    await page.click('.mt-dialog [data-mt-sec="phrases"]');
+    await page.fill("[data-mt-phrasenew]", "Peace be upon you"); await page.click(".mt-dialog [data-mt-phraseform] button[type=submit]"); await page.waitForTimeout(800);
+    check(`[${tag}] My Note tools: Add phrase saves a phrase`, await page.evaluate(() => document.querySelector("[data-mt-phrasetext]")?.value === "Peace be upon you"));
+    await page.keyboard.press("Escape"); await page.evaluate(() => document.querySelectorAll(".mt-dialog").forEach((d) => (d.closest(".mt-overlay, [role=dialog]") || d).remove())); await page.waitForTimeout(200);
+
+    // Favourites, Archived and Trash
+    await page.evaluate(() => { window.__stubWriteData = []; });
+    await page.click("#notePane [data-pane-menu-btn]"); await page.waitForTimeout(250);
+    await page.click('#notePane [data-pane-flag="favourite"]'); await page.waitForTimeout(900);
+    if (await page.evaluate(() => document.querySelector("#notePane [data-pane-menu]").classList.contains("open"))) { await page.click('#notePane [data-pane-flag="archived"]'); await page.waitForTimeout(700); } else { await page.click("#notePane [data-pane-menu-btn]"); await page.waitForTimeout(250); await page.click('#notePane [data-pane-flag="archived"]'); await page.waitForTimeout(700); }
+    await page.keyboard.press("Escape"); if (w < 600) await page.click(".pane-menu-x").catch(() => {});
+    await page.waitForTimeout(300);
+    await page.click("#notePane [data-pane-back]").catch(() => {}); await page.waitForTimeout(300);
+    if (await vis(page, "#folderNotes [data-list-back]")) { await page.click("#folderNotes [data-list-back]"); await page.waitForTimeout(300); }
+    const pageMenu = async () => { await page.click('[data-bar-palette-toggle="pageMenu"]'); await page.waitForTimeout(300); };
+    const labels = async () => { await pageMenu(); const l = await page.evaluate(() => ["openFavouritesBtn", "openArchivedBtn", "openTrashBtn"].map((i) => document.getElementById(i)?.textContent.trim() ?? null)); await page.keyboard.press("Escape"); await page.evaluate(() => document.querySelectorAll("[data-bar-palette].open").forEach((e) => e.classList.remove("open"))); return l; };
+    const lab = await labels();
+    check(`[${tag}] Favourites, Archived and Trash: the page ⋯ offers ⭐ Favourites, 📦 Archived and 🗑 Trash`, /Favourites/.test(lab[0]) && /Archived/.test(lab[1]) && /Trash/.test(lab[2]), JSON.stringify(lab));
+    await pageMenu(); await page.click("#openFavouritesBtn"); await page.waitForTimeout(700);
+    const fav = await page.evaluate(() => document.querySelector("[data-flag-list=favourite]")?.textContent.replace(/\s+/g, " ").trim() ?? null);
+    check(`[${tag}] Favourites, Archived and Trash: Favourites lists the Note marked ⭐`, /Note One/.test(fav || ""), String(fav));
+    await page.keyboard.press("Escape"); await page.evaluate(() => document.querySelectorAll(".siyagah-overlay, [data-siyagah-dialog]").forEach((e) => e.remove()));
+    await pageMenu(); await page.click("#openArchivedBtn"); await page.waitForTimeout(700);
+    const arc = await page.evaluate(() => document.querySelector("[data-flag-list=archived]")?.textContent.replace(/\s+/g, " ").trim() ?? null);
+    check(`[${tag}] Favourites, Archived and Trash: Archived lists the Note marked 📦`, /Note One/.test(arc || ""), String(arc));
+    await page.keyboard.press("Escape"); await page.evaluate(() => document.querySelectorAll(".siyagah-overlay, [data-siyagah-dialog]").forEach((e) => e.remove()));
+    // delete a Note, find it in Trash, Restore
+    await jmOpenNote(page, "n2");
+    await page.click("#notePane [data-pane-menu-btn]"); await page.waitForTimeout(250);
+    await page.evaluate(() => { window.__stubWriteData = []; });
+    await page.click("#notePane [data-pane-delete]"); await page.waitForTimeout(400);
+    await page.click("[data-note-delete-yes]"); await page.waitForTimeout(1200);
+    const gone = await page.evaluate(() => window.__DATA.notes.find((n) => n.noteId === "2".repeat(32))?.status);
+    const wDel = await page.evaluate(() => (window.__stubWriteData || []).some((x) => /delete/i.test(x.kind)));
+    if (!(await vis(page, '[data-bar-palette-toggle="pageMenu"]'))) { await page.click("[data-list-back]").catch(() => {}); await page.waitForTimeout(400); }
+    await pageMenu(); await page.click("#openTrashBtn"); await page.waitForTimeout(800);
+    const inTrash = await page.evaluate((id) => !!document.querySelector(`[data-trash-note-id="${id}"]`), hx("n2"));
+    check(`[${tag}] Favourites, Archived and Trash: a deleted Note is only marked (never erased) and is in Trash`, gone && gone !== "active" && !wDel && inTrash, JSON.stringify({ gone, wDel, inTrash }));
+    if (MUTATE === "notes") await page.evaluate(() => document.querySelectorAll("[data-trash-restore]").forEach((e) => e.remove()));
+    await page.click(`[data-trash-note-id="${hx("n2")}"] [data-trash-restore]`, { timeout: 4000 }).catch(() => {}); await page.waitForTimeout(1200);
+    const back = await page.evaluate(() => window.__DATA.notes.find((n) => n.noteId === "2".repeat(32))?.status);
+    check(`[${tag}] Favourites, Archived and Trash: tapping Restore in Trash brings it back`, back === "active", String(back));
+    check(`[${tag}] Pictures / My Note tools / Favourites: no page error`, quiet(errors).length === 0, JSON.stringify(quiet(errors)));
     await ctx.close();
   } catch (e) { crash(e); }
 }

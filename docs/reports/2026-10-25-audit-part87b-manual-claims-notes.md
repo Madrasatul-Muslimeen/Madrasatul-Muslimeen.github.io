@@ -30,4 +30,9 @@ No app file was changed. Notes pinned by QuranRevival (`note-window.js`, the not
 | Tags on Notes | ⋯ → 🏷 Tags…, create/tick, Tags list shows the count, tap a tag to see its Notes | PASS | count "1"; the tag's Note list = Note One |
 | Pop-up Note windows | ⋯ → ⧉ Pop out; ▾ → ⧉ Open in window; several at once; tab strip (wide) / bottom switcher (phone); move and resize (wide); ✕ Close all; Pinned Notes in a side panel | PASS | title-bar drag moved the window >20px; the SE corner changed its size; "📌 Pinned (1)" opened a panel listing Note Three. Ctrl/⌘-click on a title not driven (SKIP-equivalent, not a separate check). |
 
-Totals so far: 111 pass, 0 fail, 3 skip.
+| Pictures, tables and link previews | Editing toolbar has 🖼 picture, ▦ table, ⊞ spreadsheet; ⋯ → Show link previews turns link cards on | PASS (with one extra step) | **Manual imprecise:** the switch first asks in words (each link's address goes to Microlink) and cards come on only after **Turn on**. Suggested: *⋯ → Show link previews → Turn on.* Picture upload, spreadsheet formulas, annotations and status badges are not driven here (covered by `journey-note-images-browser`, `note-sheet-engine`, `journey-annotations-status-browser`). |
+| My Note tools | Save as a template, phrases; stored with the person (follow them to every device) | PASS | write goes to `userPrefs` only |
+| **My Note tools** | "Use **New from template** when creating a Note" | **Manual is wrong (wording)** | The button in ⋯ → 🧰 My Note tools… → Templates reads **"New note from this"**. Suggested: *Use New note from this next to a template.* Check corrected. |
+| Favourites, Archived and Trash | ⋯ beside the views → ⭐ Favourites, 📦 Archived, 🗑 Trash; lists show the marked Note; a deleted Note is only marked and sits in Trash; Restore brings it back | PASS | Trash holds sections/folders/tags too; only Notes driven here |
+
+Totals so far: 137 pass, 0 fail, 3 skip.
