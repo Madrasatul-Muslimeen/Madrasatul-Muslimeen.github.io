@@ -39,7 +39,7 @@ const MUTATIONS = {
 if (MUTATE && !MUTATIONS[MUTATE]) throw new Error(`no such mutation ${MUTATE}`);
 const browser = await chromium.launch();
 const BN = /[ঀ-৿]/;
-// Real-shaped Approaches already in the tenant (the stub starts with none), so the new id is worked out by hand: approach_32.
+// Real-shaped Approaches already in the tenant (the stub starts with none), so the new id is worked out by hand: approach_31.
 const APPROACHES = `
 const SEC7 = { en: "A'mal / Application", bn: "আমল / প্রয়োগ" };
 DATA.trackables.push(
@@ -175,7 +175,7 @@ for (const lang of LANGS) {
       w = (await writes(page, "trackables", "Recitation Circle")).filter((x) => x.kind === "set");
       const d = w[0] && w[0].data;
       check(`${t}: the saved Approach carries I17's fields, both names, its short names and section`, w.length === 1 && ENVELOPE(d) && d.name.en === "Recitation Circle" && d.name.bn === "তিলাওয়াত হালকা" && d.shortName?.en === "Circle" && d.shortName?.bn === "হালকা" && d.group === 7 && d.countsForEachAyah === true, JSON.stringify(d));
-      check(`${t}: no existing Approach id was reused or renamed (I5)`, w.length === 1 && w[0].id === "t1__approach_32", w[0] && w[0].id);
+      check(`${t}: no existing Approach id was reused or renamed (I5)`, w.length === 1 && w[0].id === "t1__approach_31", w[0] && w[0].id);
 
       // Ladders & levels
       await tab(page, "ladders");
