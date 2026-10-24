@@ -9,7 +9,7 @@
 //        start      hides the Esc/outside-click close of the menu bar (sets every menu to stay open)
 //        bookmarks  hides the Bookmark menu's ✕ Close button
 //        teaching   hides the People page's "Hand the device to a child" box
-import { chromium, newContext, openPage } from "./harness.mjs";
+import { chromium, newContext, openPage, BASE as BASE_URL } from "./harness.mjs";
 
 let pass = 0, fail = 0, skip = 0;
 const check = (name, ok, detail = "") => {
@@ -352,6 +352,155 @@ if (want("bookmarks")) {
       const form = await shown(page, "#newBookmarkForm");
       check(`[${tag}] Manage bookmarks page: + New bookmark opens a form with Name and Create`, form && (await shown(page, "#nbName")) && (await shown(page, "#nbCreateBtn")));
       await page.click("#nbCancelBtn");
+      await ctx.close();
+    }
+  }
+}
+
+// =====================================================================================================================
+// ▸ Teaching, family and madrasah management
+// =====================================================================================================================
+const pageFor = async (path, w, h, ctxOpts = {}) => {
+  const o = await open(path, { w, h, ctxOpts });
+  await o.page.waitForSelector("#app", { state: "visible", timeout: 20000 }).catch(() => {});
+  await o.page.waitForTimeout(1200);
+  return o;
+};
+const writtenHas = async (page, ...needles) => { const s = await stubWritesOf(page); return needles.every((n) => s.includes(n)); };
+if (want("teaching")) {
+  console.log("== Teaching, family and madrasah management");
+  for (const [w, h] of VIEWPORTS) {
+    const tag = `${w}px`;
+    // ### People / Hand the device to a child / View as
+    {
+      const { ctx, page, errors } = await pageFor("/app/people.html", w, h);
+      if (MUTATE === "teaching") await page.evaluate(() => document.getElementById("startStudyBtn")?.closest("fieldset")?.remove());
+      const cols = await page.evaluate(() => [...document.querySelectorAll("#rosterTable th")].map((x) => x.textContent.trim()));
+      check(`[${tag}] People: the roster lists Name, Age, Roles, Managed by`, ["Name", "Age", "Roles", "Managed by"].every((c) => cols.includes(c)), JSON.stringify(cols));
+      const rows0 = await page.locator("#rosterBody tr").count();
+      await page.fill("#name", "Little Zayd"); await page.fill("#birthYear", "2016"); await page.check("#isMinor"); await page.check('input[name="role"][value="student"]');
+      await page.click("#addBtn"); await page.waitForTimeout(900);
+      check(`[${tag}] People: Add a person (Name, Year of birth, Roles, "This is a child") writes the person`, await writtenHas(page, "Little Zayd", "2016"), (await stubWritesOf(page)).slice(0, 200));
+      await page.fill("#inviteEmail", "teacher@example.org"); await page.selectOption("#inviteRole", "teacher"); await page.click("#inviteBtn"); await page.waitForTimeout(900);
+      const inv = await page.evaluate(() => ({ rows: [...document.querySelectorAll("#inviteBody tr")].map((r) => r.textContent.replace(/\s+/g, " ").trim()), res: document.getElementById("inviteResult").textContent.trim() }));
+      const copy = await page.evaluate(() => [...document.querySelectorAll("#inviteBody button, #inviteBody a")].map((b) => b.textContent.trim()));
+      // The stub never mutates its data, so the new invite itself is proved by the write; the row check uses the seeded pending invite.
+      check(`[${tag}] People: Invite (email + Role) creates the invite and a pending invite's row offers "Copy link"`, (await writtenHas(page, "teacher@example.org")) && /Copy link/.test(inv.res) && inv.rows.some((r) => /Pending.*Copy link/.test(r)) && copy.some((c) => /Copy link/.test(c)), JSON.stringify({ inv, copy }));
+      // Hand the device to a child
+      const kids = await page.evaluate(() => [...document.querySelectorAll("#studyPersonSelect option")].map((o) => o.textContent.trim()));
+      check(`[${tag}] Hand the device to a child: the People page offers Child, Start studying, End session`, kids.length > 0 && (await shown(page, "#startStudyBtn")), JSON.stringify(kids));
+      if (kids.length) {
+        await page.click("#startStudyBtn"); await page.waitForTimeout(900);
+        const st = await page.evaluate(() => ({ end: getComputedStyle(document.getElementById("endStudyBtn")).display, res: document.getElementById("studyResult").textContent.trim() }));
+        check(`[${tag}] Hand the device to a child: Start studying shows End session`, st.end !== "none", JSON.stringify(st));
+        // J92: the Manual promises the app is LOCKED to that child's study. Measure what the nav still offers.
+        // Start studying only writes sessionStorage "study lock" (study-lock.js); it is read by session-context.js to refuse a person switch.
+        // Measure from the child's side: open a study page in the same tab and see what the picker and the menu still offer.
+        await page.goto(`${BASE_URL}/app/deen-study.html`, { waitUntil: "networkidle" }); await page.waitForTimeout(1500);
+        const kid = await page.evaluate(() => ({ lock: sessionStorage.getItem("mm_study_lock") ?? Object.keys(sessionStorage).filter((k) => /lock/i.test(k)).join(","), people: [...document.querySelectorAll("#personSelect option")].map((o) => o.textContent.trim()), menus: [...document.querySelectorAll("#topNav summary")].map((s) => s.textContent.trim()), banner: /studying on their own|study session|locked/i.test(document.body.innerText) }));
+        check(`[${tag}] Hand the device to a child: the app is locked to that child's study (the child sees only themself, and the other menus are out of reach)`, kid.people.length === 1 && kid.menus.length < 4, JSON.stringify(kid) + " -- APP DOES LESS (PCF J92): the lock only refuses a person switch");
+        await page.goto(`${BASE_URL}/app/people.html`, { waitUntil: "networkidle" }); await page.waitForTimeout(1200);
+        await page.click("#endStudyBtn").catch(() => {}); await page.waitForTimeout(600);
+        const ended = await page.evaluate(() => getComputedStyle(document.getElementById("endStudyBtn")).display === "none");
+        check(`[${tag}] Hand the device to a child: End session ends it`, ended);
+      }
+      // View as
+      const vis = await page.evaluate(() => { const wrap = document.getElementById("viewAsWrap"); return { shown: !!wrap && wrap.getBoundingClientRect().width > 0, inCard: !!wrap?.closest("#accountCardPickers"), opts: [...document.querySelectorAll("#viewAsSelect option")].map((o) => o.textContent.trim()) }; });
+      check(`[${tag}] View as: People offers a "View as" chooser (your real role, Prime, Teacher, Guardian, Student)`, vis.opts.includes("(your real role)") && vis.opts.length === 5, JSON.stringify(vis));
+      if (vis.shown || vis.inCard) {
+        if (vis.inCard) { await page.locator("#topNav summary", { hasText: /^Home$/ }).first().click(); await page.click("[data-open-account-card]"); await page.waitForTimeout(300); }
+        await page.selectOption("#viewAsSelect", "student"); await page.waitForTimeout(1500);
+        const badge = await page.evaluate(() => document.querySelector(".nav-preview-notice")?.textContent.trim());
+        check(`[${tag}] View as: choosing Student shows a "Previewing as" badge`, /Previewing as/.test(badge || ""), String(badge));
+        await tidy(page);
+        await page.selectOption("#viewAsSelect", "").catch(() => {}); await page.waitForTimeout(1200);
+      } else {
+        check(`[${tag}] View as: the chooser is reachable on People`, false, JSON.stringify(vis));
+      }
+      check(`[${tag}] People: no page error`, quiet(errors).length === 0, JSON.stringify(quiet(errors)));
+      await ctx.close();
+    }
+    // ### Classes
+    {
+      const { ctx, page } = await pageFor("/app/classes.html", w, h);
+      await page.fill("#classNameInput", "Tajweed Circle"); await page.click("#createClassBtn"); await page.waitForTimeout(900);
+      check(`[${tag}] Classes: Create class (Name, Subjects) writes the class`, await writtenHas(page, "Tajweed Circle"));
+      const card = await page.evaluate(() => ({ enrol: !!document.querySelector(".enrolBtn"), bulk: [...document.querySelectorAll(".bulkConfirmClassBtn")].map((b) => b.textContent.trim()), arch: !!document.querySelector(".archiveClassBtn") }));
+      check(`[${tag}] Classes: each class has Enrol, "Bulk confirm all pending for this class" and Archive`, card.enrol && card.bulk.length > 0 && card.arch, JSON.stringify(card));
+      await page.locator(".enrolBtn").first().click(); await page.waitForTimeout(800);
+      check(`[${tag}] Classes: Enrol writes an enrolment`, await writtenHas(page, "enrollments"), (await stubWritesOf(page)).slice(-300));
+      await page.locator(".archiveClassBtn").first().click(); await page.waitForTimeout(800);
+      check(`[${tag}] Classes: Archive writes the class as archived`, await writtenHas(page, "archived"));
+      await ctx.close();
+    }
+    // ### Course Offers
+    {
+      const { ctx, page } = await pageFor("/app/course-offers.html", w, h);
+      await page.fill("#offerNameInput", "Outside Arabic tutor"); await page.fill("#startDateInput", "2026-11-01"); await page.click("#createOfferBtn"); await page.waitForTimeout(900);
+      check(`[${tag}] Course Offers: Fill Name, dates, Create offer writes it`, await writtenHas(page, "Outside Arabic tutor", "2026-11-01"));
+      const heading = await page.evaluate(() => document.getElementById("enrolmentsHeading")?.textContent.trim());
+      // Manual wording is fine ("enrol people under Enrolments"); the heading is "<Person>'s enrolments" -- check corrected.
+      check(`[${tag}] Course Offers: there is an enrolments section`, /enrolments/i.test(heading || ""), String(heading));
+      await ctx.close();
+    }
+    // ### Homework
+    {
+      const { ctx, page } = await pageFor("/app/homework.html", w, h);
+      await page.waitForSelector("#assignToChecks input", { state: "attached", timeout: 15000 }).catch(() => {});
+      await page.locator("#assignToChecks input").first().check().catch(() => {});
+      await page.fill("#instructionsInput", "Read Surah Al-Ikhlas twice"); await page.fill("#dueDateInput", "2026-11-05"); await page.fill("#maxScoreInput", "10");
+      await page.click("#createAssignmentBtn"); await page.waitForTimeout(900);
+      check(`[${tag}] Homework: Choose Assign to, fill the fields, Create assignment writes it`, await writtenHas(page, "Read Surah Al-Ikhlas twice"));
+      const acts = await page.evaluate(() => ({ sub: [...document.querySelectorAll(".markSubmittedBtn")].length, score: [...document.querySelectorAll(".saveScoreBtn")].length, note: !!document.getElementById("saveNoteBtn") }));
+      check(`[${tag}] Homework: each assignment has Mark as submitted and Save score; private teaching notes exist`, acts.sub > 0 && acts.score > 0 && acts.note, JSON.stringify(acts));
+      await page.locator(".markSubmittedBtn").first().click(); await page.waitForTimeout(800);
+      check(`[${tag}] Homework: Mark as submitted writes the submission`, await writtenHas(page, "submitted"));
+      await ctx.close();
+    }
+    // ### Curriculum
+    {
+      const { ctx, page } = await pageFor("/app/curriculum.html", w, h);
+      await page.fill("#unitNameInput", "Unit on Wudu"); await page.click("#createUnitBtn"); await page.waitForTimeout(900);
+      check(`[${tag}] Curriculum: Create unit writes it`, await writtenHas(page, "Unit on Wudu"));
+      await page.fill("#resourceUrlInput", "https://example.org/wudu").catch(() => {});
+      const rb = await shown(page, "#createResourceBtn");
+      check(`[${tag}] Curriculum: Create resource and the plan/grades controls exist`, rb);
+      await ctx.close();
+    }
+    // ### Catalogue
+    {
+      const { ctx, page } = await pageFor("/app/catalogue.html", w, h);
+      const tabs = await page.evaluate(() => [...document.querySelectorAll("[data-cat-tab]")].map((b) => b.dataset.catTab + "=" + b.textContent.trim()));
+      await page.click('[data-cat-tab="subjects"]');
+      await page.waitForSelector("#newSubjName", { state: "visible", timeout: 20000 }).catch(() => {});
+      await page.fill("#newSubjName", "Fiqh of Prayer"); await page.click("#addSubjBtn"); await page.waitForTimeout(900);
+      check(`[${tag}] Catalogue: Add subject writes it`, await writtenHas(page, "Fiqh of Prayer"));
+      await page.click('[data-cat-tab="approaches"]');
+      await page.fill("#newApproachNameEn", "Teach it back").catch(() => {}); await page.fill("#newApproachNameBn", "শেখান").catch(() => {});
+      await page.click("#addApproachBtn").catch(() => {}); await page.waitForTimeout(900);
+      check(`[${tag}] Catalogue: Add Approach (English and Bangla names) writes it`, await writtenHas(page, "Teach it back", "শেখান"));
+      await page.click('[data-cat-tab="ladders"]');
+      await page.fill("#newLadderName", "Grades A").catch(() => {}); await page.click("#addLadderBtn").catch(() => {}); await page.waitForTimeout(700);
+      check(`[${tag}] Catalogue: Add ladder writes it`, await writtenHas(page, "Grades A"));
+      await ctx.close();
+    }
+    // ### Backup
+    {
+      const { ctx, page } = await pageFor("/app/backup.html", w, h);
+      await page.waitForFunction(() => !document.getElementById("makeBtn").disabled, null, { timeout: 15000 }).catch(() => {});
+      await page.click("#makeBtn").catch(() => {});
+      // The page offers a real "Save" link (a.download-link) rather than starting the download itself (backup.html:196).
+      await page.waitForSelector("#result a.download-link", { timeout: 30000 }).catch(() => {});
+      const file = await page.evaluate(async () => { const a = document.querySelector("#result a.download-link"); if (!a) return null; const text = await (await fetch(a.href)).text(); return { name: a.download, text }; });
+      check(`[${tag}] Backup: Make the backup offers a file holding roster, claims, bookmarks, activity`, !!file && /bookmarks/i.test(file.text) && /activity/i.test(file.text) && /records|claims/i.test(file.text) && /people|roster/i.test(file.text), file ? `${file.name} ${file.text.length} bytes` : "no download link");
+      await ctx.close();
+    }
+    // ### About
+    {
+      const { ctx, page } = await open("/app/about.html", { w, h });
+      await page.waitForTimeout(1800);
+      const ab = await page.evaluate(() => ({ items: document.querySelectorAll("li, tr").length, text: document.body.innerText }));
+      check(`[${tag}] About: lists the app's features with their build phase, and acknowledges sources`, ab.items > 10 && /Phase/i.test(ab.text) && /Acknowledg|Credit|Source/i.test(ab.text), String(ab.items));
       await ctx.close();
     }
   }

@@ -38,4 +38,30 @@ Totals: 38 pass, 2 FAIL, 3 SKIP (390 + 1440). Mutation `--mutate=bookmarks` (Sav
 | The Bookmark menu | Show times / Hide times | PASS (check corrected) | **check was wrong:** times are ON by default, so the button first reads "Hide times". Manual sentence is fine. |
 | The Bookmark menu | "← Back to …" returns to the page you left | PASS (wording) | from Manage bookmarks… the button reads "← Back" (same Manual wording note as in Getting started). |
 | Manage bookmarks page | + New bookmark / + New folder; Open, Rename, Retire on each row; Retire then Show retired → Restore | PASS | the New bookmark form opens with Name and Create |
-| (not reached) | 🔖 on the Read bar, unit choices, listening state; per-person folder matching; Group by; Saved settings | SKIP | Quran Study is frozen/QR Lead's; second person's document not mutated by the stub |
+| (not reached, SKIP) | 🔖 on the Read bar, unit choices, listening state; per-person folder matching; Group by; Saved settings | SKIP | Quran Study is frozen/QR Lead's; second person's document not mutated by the stub |
+
+## ▸ Teaching, family and madrasah management
+
+Totals: 50 pass, 2 FAIL (390 + 1440). Mutation `--mutate=teaching` (Hand-the-device box removed): 2 FAIL — a different two (the "offers Child, Start studying" claim; the lock claim is then skipped because the box is gone), run once. Whole suite: **158 pass, 6 FAIL, 4 SKIP**. Baselines unchanged: `stub-parity` 4/0; `bangla-sweep-other-pages-browser` 224/0 (no app file touched).
+
+| Entry | Claim | Result | Measured |
+|---|---|---|---|
+| People | Roster columns Name, Age, Roles, Managed by; Add person (Name, Year of birth, "This is a child", Roles) writes the person; Invite writes the invite and a pending row offers Copy link | PASS | check corrected: the stub never mutates, so the new invite is proved by the write and the Copy link by the seeded pending invite |
+| **Hand the device to a child** | **Locks the app to one child's study so they cannot reach other people's records** | **FAIL — the app does less (PCF J92 confirmed)** | Start studying only writes `qr.studyLock` in sessionStorage (`study-lock.js`), read by `session-context.js` to refuse a person switch. Opening Deen Study afterwards in the same tab still lists both people (Ahsan, Maryam) and all four menus. Start studying / End session themselves PASS. Smallest fix is an Owner decision (a visible locked banner + hiding the menus and the other people while `qr.studyLock` is set, on every page) or the Manual sentence: *Marks the device as the child's: the app will not switch to another person until you press End session.* |
+| View as | Chooser (your real role, Prime, Teacher, Guardian, Student); choosing Student shows "Previewing as" | PASS | the chooser lives inside My account (moved by the card); Manual says "People → View as", reachable via Home ▾ → My account |
+| Classes | Create class writes it; Enrol; Bulk confirm all pending for this class and Archive buttons; Archive writes | PASS | |
+| Course Offers | Name + dates + Create offer writes it; an enrolments section | PASS | check corrected: heading reads "<Person>'s enrolments" |
+| Homework | tick Assign to, instructions, Create assignment writes; Mark as submitted writes; Save score and private notes present | PASS | check corrected: needs a ticked student |
+| Curriculum | Create unit writes it; Create resource exists | PASS | |
+| Catalogue | Add subject, Add Approach (English + Bangla), Add ladder write | PASS | check corrected: the page is tabbed (Subjects / Approaches / Ladders) and each form is inside its tab |
+| Backup | Make the backup offers a file with roster, claims, bookmarks, activity | PASS | check corrected: the page offers a Save link (`a.download-link`), it does not start the download |
+| About | Lists features with their build phase and acknowledgements | PASS | |
+| (not reached) | Curriculum plan/grades Add/Assign flow; Catalogue ✎/▲▼/Add level; Class Bulk confirm result; Course offer End; Homework Save score | not run | presence checked, action not exercised |
+
+## Summary of findings for the Architect
+
+1. **App does less:** My account card shows no Roles (and no Name on most pages) — `account-card.js:167`.
+2. **App does less (J92):** Hand the device to a child does not lock the app.
+3. **Disagreement:** topic-page ☆ removes at once; only the Quran-page 🔖 shows "Already bookmarked".
+4. **Manual wording:** a menu link's button reads "← Back", not "← Back to …"; Home ▾ → Mapping My Journey opens the pop-up window on pages that mount the tray; View as sits in My account.
+5. Not covered this run: Notes and Mapping My Journey section (left for a later round, as instructed).
