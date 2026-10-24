@@ -13,3 +13,5 @@ Each suite run alone, from the repository root, against `main` (v12.54).
 | journey-flags-links-browser | 306 / 0 | 306 / 0 | green |
 | journey-folder-menus-browser | 148 / 0 | 148 / 0 | green |
 | journey-folder-picker-browser | 310 / 0 | 310 / 0 | green |
+| journey-folder-window-browser | 144 / 0 | 144 / 0 | green |
+| journey-link-preview-browser | 192 / 0 | 192 / 0 | green |
