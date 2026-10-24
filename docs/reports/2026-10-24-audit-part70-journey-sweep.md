@@ -10,3 +10,4 @@ Each suite run alone, from the repository root, against `main` (v12.54).
 | journey-pane-resize-browser | 40 / 0 | 40 / 0 | green |
 | journey-reading-tools-browser | 488 / 0 | 488 / 0 | green |
 | journey-s9-browser | 288 / 0 | 288 / 0 | green |
+| journey-sections-browser | 349 / 0 | 349 / 0 | green |
