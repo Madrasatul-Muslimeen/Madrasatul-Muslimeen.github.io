@@ -13,6 +13,22 @@ Issue #1132. Each suite run alone on `main`, from the repository root.
 | 7 | unit-card-browser | 116 pass / 0 fail | unchanged | none |
 | 8 | unit-card-window-browser | 132 pass / 0 fail | unchanged | none |
 | 9 | unit-rings-browser | all en/bn scenarios and both 768px checks pass; run killed by a 30 s timeout at the 1100px step (`:317`), so no closing total printed | unchanged (check left red) | **real defect in the QR Lead's file** — see below |
+| 10 | bismillah-label-browser | 36 pass / 0 fail | unchanged | none |
+| 11 | global-approach-card-browser | 109 pass / 0 fail | unchanged | none |
+| 12 | pane-approach-card-browser | 29 pass / 0 fail | unchanged | none |
+| 13 | tagline-scroll-browser | 67 pass / 0 fail | unchanged | none |
+| 14 | j82-learn-next-bookmark-pages-browser | 144 pass / 0 fail | unchanged | none |
+
+## Closing totals
+
+- `stub-parity.mjs`: 4 passed, 0 failed.
+- `bangla-sweep-other-pages-browser`: 224 passed, 0 failed.
+
+## Summary
+
+13 of 14 suites are fully green on `main`. One is red for a real defect in the QR Lead's file
+(`unit-rings-browser`, below). No application file and no existing check was changed in this round; the
+only additions are this report and the probe script. Nothing stale and nothing environmental was found.
 
 ## unit-rings-browser — the Unit drawer button is under the dock at 1100×800
 
