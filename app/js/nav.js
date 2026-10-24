@@ -354,7 +354,7 @@ function renderSettings(canAdmin = false) {
 export function noAccountMessageHtml() {
   return ` — ${t("no account found yet.")}
     <br>${t("If someone invited you to join an existing madrasah, use the invite link they sent you (check your email) — don't create a new one here.")}
-    <br>${t("Starting fresh instead?")} <a href="onboarding.html">${t("Create a new account on the onboarding page")}</a>.`;
+    <br>${t("Starting fresh instead?")} <a href="onboarding.html?navBack=1">${t("Create a new account on the onboarding page")}</a>.`;
 }
 
 // PC layout fix: each nav category is a native <details>, and native

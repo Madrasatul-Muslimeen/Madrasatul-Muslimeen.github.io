@@ -112,6 +112,7 @@
     import { translateStatic, t, num } from "./js/i18n.js";
     import { registerServiceWorker } from "./js/sw-register.js";
     import { armScreensaver } from "./js/screensaver-idle.js";
+    import { mountNavBack } from "./js/bookmark-nav.js";
 
     // Phase 1 of the full translation: turn this page's own static markup
     // (headings, labels, buttons) into the chosen language before anything
@@ -119,6 +120,9 @@
     translateStatic();
     registerServiceWorker();
     armScreensaver();
+    // The way-back law (decision 86): the "no account found yet" message on every page links here with navBack=1,
+    // so a reader who followed it has a visible ← Back to the page they came from (audit part 84).
+    mountNavBack();
 
     const whoEl = document.getElementById("who");
     const signInBtn = document.getElementById("signInBtn");
