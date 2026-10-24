@@ -99,7 +99,10 @@ for (const lang of ["en", "bn"]) for (const width of [390, 1280]) {
   const wordRef = async (occ) => {
     await page.evaluate((o) => document.querySelector(`#pageViewContainer [data-word-occurrence="${o}"]`)?.click(), occ);
     await page.waitForFunction(() => !!document.querySelector(".quran-word-card .word-card-reference"), null, { timeout: 5000 }).catch(() => {});
-    return page.evaluate(() => document.querySelector(".quran-word-card .word-card-reference")?.textContent.trim());
+    // Updated in place 24 Oct 2026 (audit part 77): "Audit J29 fix 9" (audit part 1) shows the Word card's reference in
+    // Bangla digits in Bangla (stored keys stay Latin), so the visible text is read back to Latin digits before comparing.
+    const shown = await page.evaluate(() => document.querySelector(".quran-word-card .word-card-reference")?.textContent.trim());
+    return shown == null ? shown : shown.replace(/[০-৯]/g, (d) => String(d.charCodeAt(0) - 0x09e6));
   };
   check(`${tag} word card for غَيْرِ (internal 1:7:5) reads 1:7:1`, (await wordRef("quran-word-occurrence:v1:1:7:5")) === "1:7:1");
   check(`${tag} word card for صِرَٰطَ (internal 1:7:1) reads 1:6:1`, (await wordRef("quran-word-occurrence:v1:1:7:1")) === "1:6:1");

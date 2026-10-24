@@ -96,7 +96,9 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 1100, height: 800 
       const card = await page.evaluate(() => {
         const mount = [...document.querySelectorAll("[id^='quranWordCardMount']")].find((m) => m.querySelector(".quran-word-card"));
         const c = mount?.querySelector(".quran-word-card");
-        return c ? { text: c.textContent.slice(0, 200), occ: c.dataset.occurrence ?? c.getAttribute("data-word-occurrence") ?? null } : null;
+        // Updated in place 24 Oct 2026 (audit part 77): the card carries data-occurrence-id; the old read (data-occurrence) found
+        // nothing and fell back to a text match, which "Audit J29 fix 9"'s Bangla digits (২:২:৭) broke in Bangla.
+        return c ? { text: c.textContent.slice(0, 200), occ: c.dataset.occurrenceId ?? c.dataset.occurrence ?? c.getAttribute("data-word-occurrence") ?? null } : null;
       });
       check(`${label} ${view} view: tapping word 7 (inside the idgham run) opens the Word Card`, !!card, "no Word Card");
       check(`${label} ${view} view: the Word Card is for 2:2 word 7, not a neighbour`,

@@ -1655,7 +1655,13 @@
     #qcrWheelResizeWrap:not(.wheel-resized), #asmaXWheelResizeWrap:not(.wheel-resized) { max-width: 100%; }
     #qcrWheelContainer, #asmaXWheelContainer { max-width: 100%; }
     #qcrWheelPane .mastery-wheel, #asmaXWheelPane .mastery-wheel { max-width: 100%; }
+    /* QR Lead (24 Oct 2026, the MSA Architect's regression sweep): Word by Word's wheel too. Since #wbwPanel scrolls itself
+       (16 Oct) it clips sideways, and at 320px its 320px wheel poked 8px past the pane's 288px. */
+    #wbwWheelResizeWrap:not(.wheel-resized), #wbwWheelContainer, #wbwPanel .mastery-wheel { max-width: 100%; }
   }
+  /* ...and on the narrowest phones its card gives the wheel most of its 24px side padding back (238px -> 278px at 320px;
+     it was 320px wide, spilling past the card, before the pane clipped). */
+  @media (max-width: 379.98px) { #wbwPanel .wheel-box { padding-left: 4px; padding-right: 4px; } }
   /* .ways-list's own generic base rule (below) caps it at 420px with its
      own internal scrollbar -- a second, nested scroll region inside
      #qcrListPane's, the same double-scroll trap #wheelSection's own
@@ -1668,7 +1674,10 @@
   @media (min-width: 900px) {
     #qcrMain { flex-direction: row; }
     #qcrListPane { flex: 0 0 44%; max-width: 44%; border-right: 1px solid var(--card-line); }
-    #qcrWheelPane { flex: 1 1 auto; min-height: 0; overflow-y: auto; border-top: none; justify-content: center; }
+    /* QR Lead (24 Oct 2026, the MSA Architect's regression sweep): "safe": since v11.04's shorter Explore window the wheel and its
+       legend can be taller than the pane, and plain centring pushed the wheel's top labels ABOVE the pane, where no scroll reaches
+       (measured at 1440x900: QCR 36px, Asma 17px). Safe centring starts at the top instead; a browser without "safe" keeps "center". */
+    #qcrWheelPane { flex: 1 1 auto; min-height: 0; overflow-y: auto; border-top: none; justify-content: center; justify-content: safe center; }
     /* Owner's own report: the wheel rendered at its native 360x360
        regardless of how much wider its own pane actually was (measured:
        610px of pane at 1280px, wheel still 360px -- nearly 250px of
@@ -1953,7 +1962,7 @@
   @media (min-width: 900px) {
     #asmaXMain { flex-direction: row; }
     #asmaXListPane { flex: 0 0 44%; max-width: 44%; border-right: 1px solid var(--card-line); }
-    #asmaXWheelPane { flex: 1 1 auto; min-height: 0; overflow-y: auto; border-top: none; justify-content: center; }
+    #asmaXWheelPane { flex: 1 1 auto; min-height: 0; overflow-y: auto; border-top: none; justify-content: center; justify-content: safe center; }
     #asmaXWheelResizeWrap:not(.wheel-resized) { width: min(55vh, 480px); max-width: 100%; } /* audit10 asmapane */
     #asmaXWheelContainer { width: 100%; margin: 0 auto; }
     #asmaXWheelPane .mastery-wheel { width: 100%; max-width: none; height: auto; }
@@ -4472,8 +4481,11 @@
      gets the line to itself with × beside it and the ‹ › + Full text cluster drops to a line of its own: ref + × on line
      one, the cluster on line two. From 600 to 899px the card is wide enough to keep everything on one line, as before. */
   .ayah-sheet-ref { hyphens: none; -webkit-hyphens: none; overflow-wrap: normal; word-break: normal; }
+  /* QR Lead (24 Oct 2026, the MSA Architect's regression sweep): J72's ← Back (40px) joined line one, so at 390px the
+     heading had 222px for 222.7px of text and wrapped again. Line one's three gaps go from 0.4rem to 0.25rem (+7.2px), so it
+     is one line again from 390px; the 40px buttons are untouched. */
   @media (max-width: 599.98px), (min-width: 900px) {
-    .ayah-sheet-header { flex-wrap: wrap; }
+    .ayah-sheet-header { flex-wrap: wrap; column-gap: 0.25rem; }
     .ayah-sheet-ref { order: 1; flex: 1 1 12rem; }
     .ayah-sheet-close { order: 2; }
     .ayah-sheet-header .ayah-sheet-head-tools { order: 3; flex: 1 0 100%; justify-content: flex-end; }

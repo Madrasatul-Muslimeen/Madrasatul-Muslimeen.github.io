@@ -16,6 +16,10 @@ const MUTATIONS = {
   qcrroom: ["roomForNumbers: true, /* audit10 qcrroom */", ""],
   qcrpane: ["#qcrWheelResizeWrap:not(.wheel-resized) { width: min(55vh, 480px); max-width: 100%; } /* audit10 qcrpane */\n    #qcrWheelContainer { width: 100%; margin: 0 auto; }", "#qcrWheelContainer { width: min(55vh, 480px); margin: 0 auto; }"],
   narrowpane: ["#qcrWheelPane .mastery-wheel, #asmaXWheelPane .mastery-wheel { max-width: 100%; }", ""],
+  // QR Lead (24 Oct 2026, the MSA Architect's regression sweep): the two fixes that brought this suite back to green.
+  "unsafe-qcr": ["#qcrWheelPane { flex: 1 1 auto; min-height: 0; overflow-y: auto; border-top: none; justify-content: center; justify-content: safe center; }", "#qcrWheelPane { flex: 1 1 auto; min-height: 0; overflow-y: auto; border-top: none; justify-content: center; }"],      // QCR at 1440: plain centring again
+  "unsafe-asma": ["#asmaXWheelPane { flex: 1 1 auto; min-height: 0; overflow-y: auto; border-top: none; justify-content: center; justify-content: safe center; }", "#asmaXWheelPane { flex: 1 1 auto; min-height: 0; overflow-y: auto; border-top: none; justify-content: center; }"], // Asma at 1440
+  wbwnarrow: ["#wbwWheelResizeWrap:not(.wheel-resized), #wbwWheelContainer, #wbwPanel .mastery-wheel { max-width: 100%; }", ""], // WbW at 320
 };
 if (MUTATE && !MUTATIONS[MUTATE]) throw new Error(`no such mutation ${MUTATE}`);
 const browser = await chromium.launch();

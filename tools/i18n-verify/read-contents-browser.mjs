@@ -162,7 +162,12 @@ for (const [lang, width] of [["en", 390], ["bn", 320], ["en", 1280]]) {
   });
   const bare = await fs();
   const gold = "rgb(184, 134, 47)";
-  check(`[${lang} ${width}] bare screen: ⤢ is a 40px square, fully visible, solid gold`, bare.w === 40 && bare.h === 40 && bare.op === "1" && bare.bg === gold && bare.pressed === "true" && bare.inView, JSON.stringify(bare));
+  // QR Lead, 23 Oct 2026 ("I want both read to be the same"): below 600px the bare full screen's end tiles are 36px wide
+  // (still 40px tall) with 2px gaps, so the page reference keeps its room beside ‹ ›. Updated in place from 40 to 36 wide.
+  // The rule applies only with ‹ › showing (the Mushaf bar) on a Read opened from the contents; read that state off the page.
+  const narrowTiles = await page.evaluate(() => { const p = document.getElementById("mushafPagePrevBtn"); return document.body.classList.contains("read-from-contents") && !!p && !p.hidden; });
+  const wantW = width < 600 && narrowTiles ? 36 : 40;
+  check(`[${lang} ${width}] bare screen: ⤢ is ${wantW}px wide and 40px tall, fully visible, solid gold`, bare.w === wantW && bare.h === 40 && bare.op === "1" && bare.bg === gold && bare.pressed === "true" && bare.inView, JSON.stringify(bare));
   check(`[${lang} ${width}] ⤢ glyph is at least 20px (was 15px)`, bare.fs >= 20, JSON.stringify(bare));
   // Press until the menus are back, then check the resting look.
   for (let i = 0; i < 3 && (await fs()).pressed === "true"; i++) { await page.click("#hideChromeBtn"); await page.waitForTimeout(200); }

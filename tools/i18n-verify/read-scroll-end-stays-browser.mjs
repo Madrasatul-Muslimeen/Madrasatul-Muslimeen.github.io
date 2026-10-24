@@ -104,7 +104,9 @@ check("2:282 at 390px: its text really scrolls (positive control)", !!s && s.max
 if (s) {
   await setScroll("top");
   // One continuous scroll, events 60ms apart, on past the end; the pointer kept over plain text as the text moves.
-  for (let i = 0; i < 40; i++) {
+  // Updated in place: a fixed 40 events (4,800px) no longer reached the end of 2:282 (max 4,911px on today's main), so the
+  // count follows the measured length, plus ten past the end.
+  for (let i = 0, n = Math.ceil(s.max / 120) + 10; i < n; i++) {
     const pt = await plainPoint();
     if (pt) await P.mouse.move(pt.x, pt.y);
     await P.mouse.wheel(0, 120); await P.waitForTimeout(60);
