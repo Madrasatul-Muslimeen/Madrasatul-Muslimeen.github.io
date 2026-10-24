@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "12.54",
+    "version": "12.55",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -4925,8 +4925,20 @@
     {
       "version": "12.54",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Audit part 67 (Builder round #1117, PR #1118): regression sweep of audit suites 31-38; nav content basis to 420px, Monitor and Records tables scroll in their own box at wider screens.",
+      "integration": {
+        "authorizedOn": "2026-10-24",
+        "integratedOn": "2026-10-24",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.55",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "QR Lead round 11 (PR #1131): Āyah heading one line at 390px; QCR/Asma safe-centred at 1440; Word by Word wheel inside its pane at 320.",
       "integration": {
         "authorizedOn": "2026-10-24",
         "integratedOn": "2026-10-24",
@@ -4935,8 +4947,9 @@
       }
     }
   ],
-  "nextUnallocated": "12.55",
+  "nextUnallocated": "12.56",
   "nextUnallocatedNote": [
+    "v12.55 was allocated to audit parts 1 and 10: Āyah card heading and wheel number labels whole again, 2026-10-24.",
     "v12.54 was allocated to audit part 67: menu bar and report tables under text spacing and zoom, 2026-10-24.",
     "v12.53 was allocated to audit part 65: Catalogue / Curriculum names keyed by language; refusals in words, 2026-10-24.",
     "v12.52 was allocated to audit part 64: a way back on accept-invite and onboarding, 2026-10-24.",

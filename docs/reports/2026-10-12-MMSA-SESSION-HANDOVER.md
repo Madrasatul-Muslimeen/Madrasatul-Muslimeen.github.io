@@ -1705,3 +1705,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v12.52** (2026-10-24): audit part 64: a way back on accept-invite and onboarding.
 - **v12.53** (2026-10-24): audit part 65: Catalogue / Curriculum names keyed by language; refusals in words.
 - **v12.54** (2026-10-24): audit part 67: menu bar and report tables under text spacing and zoom.
+- **v12.55** (2026-10-24): audit parts 1 and 10: Āyah card heading and wheel number labels whole again.
