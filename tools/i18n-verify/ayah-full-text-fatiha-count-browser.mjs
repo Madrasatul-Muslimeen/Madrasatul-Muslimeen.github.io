@@ -46,6 +46,17 @@ for (const on of [true, false]) for (const width of [390, 1280]) {
   await page.waitForTimeout(600);
   const opened = await page.evaluate(() => !!document.querySelector("[data-ayah-sheet-noteview]"));
   check(`${tag} the Āyah card opened on stored 1:2`, opened);
+  if (width >= 768) {
+    // UPDATED IN PLACE (J70, ayah-card-window.js): on a computer the card is a window and its 📖 Full text widens the card's
+    // own left pane to the full text ("Capture phase, so on a PC the header's 📖 widens the left pane instead of opening the
+    // separate pop-up"). The pop-up, and so its numbered blocks and ‹ › steps, is reached only on a narrow screen (checked at 390).
+    await page.click("[data-ayah-sheet-noteview]", { timeout: 8000 }).catch(() => {});
+    await page.waitForTimeout(300);
+    const pc = await page.evaluate(() => ({ popup: !!document.querySelector("#ayahNoteViewPopup:not([hidden])"), mode: document.querySelector("[data-ayah-sheet-panes]")?.dataset.paneMode ?? null }));
+    check(`${tag} on a computer 📖 Full text widens the card's text pane (J70) and opens no pop-up`, !pc.popup && pc.mode === "text", JSON.stringify(pc));
+    await ctx.close();
+    continue;
+  }
   await page.click("[data-ayah-sheet-noteview]");
   await page.waitForFunction(() => document.querySelectorAll("#ayahNoteViewPopup .ayah-nv-sec").length >= 3, null, { timeout: 8000 }).catch(() => {});
   const a2 = await badges(page);
