@@ -11,6 +11,11 @@
        randomly." The phone heading's separators: a line or a dot, picked at
        random each time the page opens (the CSS under .wheel-heading::before). -->
   <script>document.documentElement.setAttribute('data-head-sep', Math.random() < 0.5 ? 'line' : 'dot');</script>
+  <!-- QR Lead (24 Oct 2026, the MSA Architect's sweep, audit part 73): the Zab bar loads after the page (v12.38) and its 44px
+       spacer then lifted the dock on a computer, so a second open's wheel (copy, then real) was drawn 485px and shrank to 442px
+       a moment later: the jump decision 81 forbids. Its room is held from the first paint (the CSS under html.zab-reserve) on
+       every page that will mount it (not inside a page window or an embed); the module below drops it if Zab is switched off. -->
+  <script>(function(){try{var q=new URLSearchParams(location.search);if(window.parent!==window&&(q.get('inWindow')==='1'||q.get('embed')==='1'))return;document.documentElement.classList.add('zab-reserve');}catch(e){}})();</script>
 <title>Madrasah Study App (MSA)</title>
 <style>
   /* Shell round 7 (12 Aug 2026) -- this page is now a real app shell rather
@@ -21,6 +26,9 @@
      and it is why the approaches list can show more rows before scrolling --
      it inherits every pixel the wheel doesn't use. */
   html { height: 100%; }
+  /* QR Lead (24 Oct 2026, audit part 73): the Zab bar's 44px held from the first paint on a computer until the bar itself
+     (body.zab-bar-on, its own #zabSpacer) takes it over, so the dock never moves when it arrives. */
+  @media (min-width: 768px) { html.zab-reserve body:not(.zab-bar-on)::after { content: ""; display: block; height: 44px; flex: 0 0 44px; } }
   body {
     font-family: system-ui, sans-serif; max-width: 60rem; margin: 0 auto;
     padding: 0.5rem 1rem 0; color: #222; box-sizing: border-box;
@@ -7433,12 +7441,14 @@
     } from "./js/audio-player.js";
     import { translateStatic, t, num, parseNum, surahName, ensureCatalogueReady } from "./js/i18n.js";
     import { registerServiceWorker } from "./js/sw-register.js";
+    import { isZabReady } from "./js/zab-readiness.js";
     import { armScreensaver } from "./js/screensaver-idle.js";
 
     // Phase 1 of the full translation: turn this page's own static markup
     // (headings, labels, buttons) into the chosen language before anything
     // else runs, so a Bangla reader never sees an English frame first.
     translateStatic();
+    if (!isZabReady()) document.documentElement.classList.remove("zab-reserve"); // no bar is coming: no room held for it
     registerServiceWorker();
     armScreensaver();
 
@@ -14768,6 +14778,12 @@
       let fitQueued = false;
       // The window is sized again first (a never-resized window, once the dock can be measured), then the wheel.
       const queueFit = () => { if (fitQueued) return; fitQueued = true; requestAnimationFrame(() => { fitQueued = false; wheelPopupWin?.refit(); fitApproachWheelToWindow(); }); };
+      // QR Lead (24 Oct 2026, the MSA Architect's sweep, audit part 73): the Zab bar (loaded after the page since v12.38) lifts
+      // #dock by moving it, not resizing it, so the ResizeObserver below never heard of it and a window first sized for the
+      // un-lifted dock kept its bottom edge (and its s / se / sw handles) under the tab row. Its switching on or off refits too.
+      { let zabOn = document.body.classList.contains("zab-bar-on");
+        new MutationObserver(() => { const on = document.body.classList.contains("zab-bar-on"); if (on !== zabOn) { zabOn = on; queueFit(); } })
+          .observe(document.body, { attributes: true, attributeFilter: ["class"] }); }
       const fitRO = new ResizeObserver(queueFit);
       fitRO.observe(document.getElementById("wheelSection"));
       fitRO.observe(document.getElementById("dock"));
@@ -14806,6 +14822,12 @@
     {
       let fitQueued = false;
       const queueFit = () => { if (fitQueued) return; fitQueued = true; requestAnimationFrame(() => { fitQueued = false; explorePopupWin?.refit(); fitExploreWheelToWindow(); }); };
+      // QR Lead (24 Oct 2026, the MSA Architect's sweep, audit part 73): the Zab bar (loaded after the page since v12.38) lifts
+      // #dock by moving it, not resizing it, so the ResizeObserver below never heard of it and a window first sized for the
+      // un-lifted dock kept its bottom edge (and its s / se / sw handles) under the tab row. Its switching on or off refits too.
+      { let zabOn = document.body.classList.contains("zab-bar-on");
+        new MutationObserver(() => { const on = document.body.classList.contains("zab-bar-on"); if (on !== zabOn) { zabOn = on; queueFit(); } })
+          .observe(document.body, { attributes: true, attributeFilter: ["class"] }); }
       const fitRO = new ResizeObserver(queueFit);
       fitRO.observe(exploreView);
       fitRO.observe(document.getElementById("exploreCtlBar"));
