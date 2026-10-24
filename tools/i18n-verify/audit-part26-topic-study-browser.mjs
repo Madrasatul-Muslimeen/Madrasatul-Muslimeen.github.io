@@ -201,9 +201,15 @@ for (const lang of LANGS) for (const width of WIDTHS) for (const m of MODULES) {
     check(`${t}: Bookmark this saves the place (a bookmarks write naming leaf_b in ${m.id})`, !!bw && JSON.stringify(bw.data).includes('"leaf_b"') && JSON.stringify(bw.data).includes(`"${m.id}"`), JSON.stringify(bw)?.slice(0, 300));
     check(`${t}: the star turns filled`, (await ev(page, () => document.getElementById("bookmarkTopicBtn").textContent.trim())) === "★");
     const w1 = await writeCount(page);
-    await page.click("#bookmarkTopicBtn"); await settle(page, 900);
+    // UPDATED IN PLACE (audit part 87, the Owner's J22 rule): a second tap asks "Already bookmarked" first; nothing is written
+    // until Remove my bookmark is pressed.
+    await page.click("#bookmarkTopicBtn"); await settle(page, 600);
+    const asked = await ev(page, () => !!document.querySelector("[data-bm-exists-choice]"));
+    const wAsk = (await writes(page, w1)).filter((x) => x.col === "bookmarks").length;
+    check(`${t}: a second tap asks "Already bookmarked" and writes nothing yet`, asked && wAsk === 0, JSON.stringify({ asked, wAsk }));
+    await page.click("[data-bm-exists-remove]").catch(() => {}); await settle(page, 900);
     const rm = (await writes(page, w1)).find((x) => x.col === "bookmarks");
-    check(`${t}: a second tap removes it (a bookmarks write) and the star empties`, !!rm && (await ev(page, () => document.getElementById("bookmarkTopicBtn").textContent.trim())) === "☆", JSON.stringify(rm)?.slice(0, 300));
+    check(`${t}: Remove my bookmark removes it (a bookmarks write) and the star empties`, !!rm && (await ev(page, () => document.getElementById("bookmarkTopicBtn").textContent.trim())) === "☆", JSON.stringify(rm)?.slice(0, 300));
     check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
   });
 

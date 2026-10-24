@@ -18,6 +18,7 @@
 // re-renders its nav, so the click is delegated from the document rather than
 // bound to the button itself.
 import { t } from "./i18n.js";
+import { auth } from "./firebase-init.js";
 // Installs the delegated Mapping My Journey tray opener on every page that has the account card.
 import "./journey-tray.js";
 
@@ -164,11 +165,19 @@ export function mountPageAccountCard({ movePerson = false, getEmail = () => "" }
     tenantRow: rowOf(tenantSelect),
     personRow: movePerson ? rowOf(personSelect) : null,
     contextBar,
-    getSummary: () => ({
-      name: movePerson ? personSelect?.selectedOptions[0]?.textContent : "",
-      email: getEmail(),
-      tenantName: tenantSelect?.selectedOptions[0]?.textContent,
-    }),
+    // Audit part 87 (the User Manual: "the card shows your name, email, madrasah and roles"): every page writes its tenant
+    // option as "<tenant> (<roles>)" (roleListLabel), so the roles are read off that text rather than fetched (I9); the
+    // name is the signed-in Google account's, or the chosen person's where the page moves its person picker here.
+    getSummary: () => {
+      const opt = tenantSelect?.selectedOptions[0]?.textContent?.trim() ?? "";
+      const m = /^(.*\S)\s+\(([^()]+)\)$/.exec(opt);
+      return {
+        name: movePerson ? personSelect?.selectedOptions[0]?.textContent : (auth.currentUser?.displayName || ""),
+        email: getEmail(),
+        tenantName: m ? m[1] : opt,
+        roles: m ? m[2] : "",
+      };
+    },
   });
   // `hidden` alone loses to a bar's own inline/class `display:flex` (the [hidden] trap).
   if (contextBar && contextBar.hidden) contextBar.style.setProperty("display", "none", "important");

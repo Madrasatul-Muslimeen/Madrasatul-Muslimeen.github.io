@@ -5460,8 +5460,11 @@ console.log("\n=== 47. Every other module gets a real, named Bookmark star too (
   const topicWrites = await page.evaluate(() => JSON.parse(sessionStorage.getItem("__stubWrites") || "[]"));
   check("47a ...and really writes it, without re-fetching the whole detail view",
         topicWrites.some((w) => w.col === "bookmarks" && w.data.includes("saved")), JSON.stringify(topicWrites));
-  // Toggling it off removes it again.
+  // Toggling it off removes it again -- UPDATED IN PLACE (audit part 87, the Owner's J22 rule): the tap asks first, and
+  // "Remove my bookmark" removes it.
   await page.click("#bookmarkTopicBtn");
+  await page.waitForSelector("[data-bm-exists-remove]", { timeout: 5000 }).catch(() => {});
+  await page.click("[data-bm-exists-remove]").catch(() => {});
   await page.waitForTimeout(300);
   const topicOff = await page.evaluate(() => document.getElementById("bookmarkTopicBtn")?.textContent.trim());
   check("47a ...and clicking it again removes it", topicOff === "☆", topicOff);
