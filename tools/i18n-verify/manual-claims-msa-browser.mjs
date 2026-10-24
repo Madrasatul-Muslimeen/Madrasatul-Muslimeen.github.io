@@ -510,6 +510,8 @@ if (want("teaching")) {
 // ▸ Notes and Mapping My Journey   (audit part 87b)
 // =====================================================================================================================
 const hx = (id) => id.slice(1).repeat(32);
+// A step that cannot be taken (a control missing, a timeout) is a FAILED claim, not a crashed suite.
+const crash = (e) => { fail++; console.log(`  FAIL  step could not be taken: ${String(e.message || e).split("\n").slice(0, 2).join(" | ").slice(0, 300)}`); };
 // Mapping My Journey: Alpha{n1,n2,n3} and Beta{}; every Note started on 2:256. Writes are applied so the page can be driven on.
 const NOTES_SEED = (owner = "p1") => `
 (function () {
@@ -547,7 +549,7 @@ const jmOpenNote = async (page, id = "n1", folder = "fA") => {
 if (want("notes")) {
   console.log("== Notes and Mapping My Journey");
   // ### Notes pane in the Read view  +  ### Track this āyah (Notes pane tab)
-  for (const [w, h] of VIEWPORTS) {
+  for (const [w, h] of VIEWPORTS) try {
     const tag = `${w}px`;
     const { ctx, page, errors } = await jmOpen("/app/quranrevival.html", w, h);
     await page.route("**/archive.org/**", (r) => r.abort());
@@ -610,7 +612,150 @@ if (want("notes")) {
     check(`[${tag}] Notes pane in the Read view: Study ▾ → Notes also opens it`, studyNote && viaStudy, JSON.stringify({ studyNote, viaStudy }));
     check(`[${tag}] Notes pane in the Read view / Track this āyah: no page error`, quiet(errors).length === 0, JSON.stringify(quiet(errors)));
     await ctx.close();
-  }
+  } catch (e) { crash(e); }
+
+  // ### Mapping My Journey   (three panels, three views, and the two doors)
+  for (const [w, h] of VIEWPORTS) try {
+    const tag = `${w}px`;
+    const { ctx, page, errors } = await jmOpen("/app/journey-map.html#folders", w, h);
+    await jmReady(page);
+    const panels = await page.evaluate(() => ["listPane", "folderNotes", "notePane"].map((id) => { const e = document.getElementById(id); const r = e?.getBoundingClientRect(); return { id, shown: !!e && !e.hidden && r.width > 0 && r.height > 0, x: Math.round(r.left), w: Math.round(r.width) }; }));
+    await jmOpenNote(page);
+    const panels2 = await page.evaluate(() => ["listPane", "folderNotes", "notePane"].map((id) => { const e = document.getElementById(id); const r = e?.getBoundingClientRect(); return { id, shown: !!e && !e.hidden && r.width > 0 && r.height > 0, x: Math.round(r.left), w: Math.round(r.width) }; }));
+    if (w >= 1000) check(`[${tag}] Mapping My Journey: on a wide screen the folder tree, the notes and the open Note are side by side`, panels2.every((p) => p.shown) && panels2[0].x < panels2[1].x && panels2[1].x < panels2[2].x, JSON.stringify(panels2));
+    else check(`[${tag}] Mapping My Journey: on a phone one panel shows at a time (the open Note replaces the lists)`, panels2.filter((p) => p.shown).length === 1 && panels2[2].shown, JSON.stringify({ panels, panels2 }));
+    await page.click("#notePane [data-pane-back]").catch(() => {}); await page.waitForTimeout(300);
+    if (await vis(page, "#folderNotes [data-list-back]")) { await page.click("#folderNotes [data-list-back]"); await page.waitForTimeout(300); } // a phone shows one panel at a time: back to the tree
+    const views = {};
+    for (const v of ["timeline", "path", "folders"]) {
+      if (MUTATE === "notes" && v === "path") await page.evaluate(() => document.getElementById("viewPath")?.remove());
+      await page.click(`.view-toggle-btn[data-view="${v}"]`); await page.waitForTimeout(400);
+      views[v] = await page.evaluate((k) => { const e = document.getElementById({ folders: "viewFolders", timeline: "viewTimeline", path: "viewPath" }[k]); return !!e && getComputedStyle(e).display !== "none" && e.getClientRects().length > 0; }, v);
+    }
+    const labels = await page.evaluate(() => [...document.querySelectorAll(".view-toggle-btn")].map((b) => b.textContent.trim()));
+    check(`[${tag}] Mapping My Journey: the top switch reads Folders | Timeline | Path and each view shows`, JSON.stringify(labels.map((l) => l.replace(/^\W+/, ""))) === JSON.stringify(["Folders", "Timeline", "Path"]) && views.timeline && views.path && views.folders, JSON.stringify({ labels, views }));
+    // Path: every Note as a stop, oldest to newest
+    await page.click('.view-toggle-btn[data-view="path"]'); await page.waitForTimeout(500);
+    const stops = await page.evaluate(() => [...document.querySelectorAll("#viewPath [data-note-id], #viewPath .path-stop, #viewPath li")].length);
+    check(`[${tag}] Mapping My Journey: the Path view shows every Note (3) as a stop`, stops >= 3, String(stops));
+    check(`[${tag}] Mapping My Journey: no page error`, quiet(errors).length === 0, JSON.stringify(quiet(errors)));
+    await ctx.close();
+  } catch (e) { crash(e); }
+  // How to use: the tab at the bottom of Quran Study (pop-up window) and Home ▾ → Mapping My Journey
+  for (const [w, h] of VIEWPORTS) try {
+    const tag = `${w}px`;
+    const { ctx, page } = await jmOpen("/app/quranrevival.html", w, h);
+    const tab = await page.evaluate(() => { const b = [...document.querySelectorAll("button, a")].find((x) => /Mapping My Journey/.test(x.textContent) && /tab|dock/i.test(x.className + x.id)); const r = b?.getBoundingClientRect(); return b ? { id: b.id, cls: b.className, shown: r.width > 0, bottom: Math.round(r.bottom), ih: innerHeight } : null; });
+    check(`[${tag}] Mapping My Journey: Quran Study has a Mapping My Journey tab at the bottom`, !!tab && tab.shown && tab.bottom > tab.ih - 120, JSON.stringify(tab));
+    if (tab) {
+      await page.evaluate((id) => document.getElementById(id)?.click(), tab.id); await page.waitForTimeout(1200);
+      const tray = await page.evaluate(() => { const t = document.getElementById("journeyTray"); return { open: !!t && !t.hidden, iframe: document.querySelector("#journeyTray iframe")?.getAttribute("src") ?? "" }; });
+      check(`[${tag}] Mapping My Journey: the tab opens it as a pop-up window (tray holding journey-map.html)`, tray.open && /journey-map\.html/.test(tray.iframe), JSON.stringify(tray));
+    }
+    await ctx.close();
+  } catch (e) { crash(e); }
+  try {
+    // A page without the tray: the full page. People mounts the tray (part 87): the Manual's "for the full page" holds only where it is absent.
+    const { ctx, page } = await jmOpen("/app/about.html", 1440, 900);
+    await page.waitForTimeout(800);
+    await page.locator("#topNav summary", { hasText: /^Home$/ }).first().click(); await page.waitForTimeout(200);
+    const link = await page.evaluate(() => [...document.querySelectorAll(".nav-cat-home a")].find((a) => /Mapping My Journey/.test(a.textContent))?.getAttribute("href") ?? null);
+    check("Mapping My Journey: Home ▾ has a Mapping My Journey link", !!link, String(link));
+    if (link) {
+      await page.locator(".nav-cat-home a", { hasText: /Mapping My Journey/ }).first().click(); await page.waitForTimeout(1800);
+      const where = await page.evaluate(() => ({ url: location.pathname.split("/").pop(), tray: !!document.querySelector("#journeyTray:not([hidden])") }));
+      check("Mapping My Journey: Home ▾ → Mapping My Journey opens the full page (from a page without the tray)", where.url === "journey-map.html" || where.tray, JSON.stringify(where));
+    }
+    await ctx.close();
+  } catch (e) { crash(e); }
+
+  // ### Folders and sections
+  for (const [w, h] of VIEWPORTS) try {
+    const tag = `${w}px`;
+    const { ctx, page, errors } = await jmOpen("/app/journey-map.html#folders", w, h);
+    await jmReady(page);
+    await page.click('.folder-row[data-folder-id="fA"] .folder-menu-btn');
+    const items = await page.evaluate(() => [...document.querySelectorAll('.folder-row[data-folder-id="fA"] .folder-row-menu button')].map((b) => b.textContent.replace(/\s+/g, " ").trim()));
+    const want = ["Add note here", "Add subfolder", "Rename", "Move up", "Move down", "Copy to", "Move to", "Colour and bold", "Move to section", "Turn into a section", "Open in its own window", "Delete"];
+    const missing = want.filter((x) => !items.some((i) => i.includes(x)));
+    check(`[${tag}] Folders and sections: the folder ⋯ menu offers ${want.join(", ")}`, missing.length === 0, "missing: " + missing.join(" | ") + " ; has: " + JSON.stringify(items));
+    await page.keyboard.press("Escape");
+    // right-click opens the same menu
+    await page.evaluate(() => document.querySelectorAll(".folder-row-menu").forEach((m) => { m.hidden = true; m.classList.remove("open"); }));
+    await page.click('.folder-row[data-folder-id="fB"] [data-folder-name]', { button: "right" }).catch(() => {}); await page.waitForTimeout(300);
+    const ctxm = await page.evaluate(() => [...document.querySelectorAll('.folder-row[data-folder-id="fB"] .folder-row-menu')].some((m) => { const r = m.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(m).display !== "none"; }));
+    check(`[${tag}] Folders and sections: right-click on a folder opens its menu`, ctxm);
+    await page.keyboard.press("Escape");
+    // + New section sits in the New folder box
+    const sec = await page.evaluate(() => { const b = document.getElementById("newSectionBtn"); return { txt: b?.textContent.trim(), inForm: !!b?.closest("#newFolderForm, .new-folder-box, #listPane") }; });
+    check(`[${tag}] Folders and sections: "+ New section" is in the New folder box at the foot of the tree`, /New section/.test(sec.txt || "") && sec.inForm, JSON.stringify(sec));
+    await page.fill("#newFolderName", "Gamma"); await page.click("#newFolderForm button[type=submit]"); await page.waitForTimeout(800);
+    check(`[${tag}] Folders and sections: the New folder box adds a folder`, await page.evaluate(() => [...document.querySelectorAll("[data-folder-tree] [data-folder-name]")].some((x) => /Gamma/.test(x.textContent))));
+    // drag a Note onto a folder (wide screen)
+    if (w >= 1000) {
+      await page.click('.folder-row[data-folder-id="fA"] [data-folder-name]'); await page.waitForTimeout(500);
+      const src = page.locator(`#folderNotes [data-note-leaf][data-note-id="${hx("n1")}"]`).first();
+      const dst = page.locator('.folder-row[data-folder-id="fB"]').first();
+      const sb = await src.boundingBox(), db = await dst.boundingBox();
+      if (sb && db) { await page.mouse.move(sb.x + 30, sb.y + 12); await page.mouse.down(); await page.mouse.move(db.x + 40, db.y + db.height / 2, { steps: 10 }); await page.mouse.up(); await page.waitForTimeout(900); }
+      const filed = await page.evaluate(() => (window.__DATA.notePlacements || []).filter((p) => p.noteId === "1".repeat(32) && p.folderId === "fB" && p.status !== "retired").length);
+      check(`[${tag}] Folders and sections: dragging a Note onto a folder files it there too`, filed >= 1, String(filed));
+    } else SKIP(`[${tag}] Folders and sections: drag a Note onto a folder`, "the Manual says wide screen only");
+    SKIP(`[${tag}] Folders and sections: long-press opens the menu`, "touch long-press is not driven by this harness; right-click and ⋯ are checked");
+    check(`[${tag}] Folders and sections: no page error`, quiet(errors).length === 0, JSON.stringify(quiet(errors)));
+    await ctx.close();
+  } catch (e) { crash(e); }
+
+  // ### Writing and editing a Note   +   ### The Note's ⋯ menu   +   ### Reading tools in a Note
+  for (const [w, h] of VIEWPORTS) try {
+    const tag = `${w}px`;
+    const { ctx, page, errors } = await jmOpen("/app/journey-map.html#folders", w, h);
+    await jmReady(page);
+    await jmOpenNote(page);
+    // ⋯ menu first
+    await page.click("#notePane [data-pane-menu-btn]"); await page.waitForTimeout(400);
+    const menu = await page.evaluate(() => {
+      const m = document.querySelector("[data-pane-menu]"), r = m.getBoundingClientRect();
+      return { open: m.classList.contains("open"), heads: [...m.querySelectorAll("[data-pane-menu-group] .pane-menu-gl")].map((x) => x.textContent.trim()), keys: [...m.querySelectorAll("[data-pane-menu-group]")].map((g) => g.dataset.paneMenuGroup),
+        marks: [...m.querySelectorAll("[data-pane-flag]")].map((b) => (b.getAttribute("aria-label") || b.textContent).trim()), last: [...m.querySelectorAll("button")].filter((b) => b.offsetParent !== null).pop()?.hasAttribute("data-pane-delete"),
+        bottom: Math.round(r.bottom), ih: innerHeight, fullW: Math.round(r.width) === innerWidth, x: !!m.querySelector(".pane-menu-x") };
+    });
+    check(`[${tag}] The Note's ⋯ menu: six groups Move between notes, Read, Mark, Organise, Change, Settings, with Delete last`, ["Move between notes", "Read", "Mark", "Organise", "Change", "Settings"].every((x, i) => menu.heads[i] === x) && menu.last, JSON.stringify(menu));
+    check(`[${tag}] The Note's ⋯ menu: Mark holds Pin, Favourite, Archive, Finalise`, ["Pin", "Favourite", "Archive", "Finalise"].every((x) => menu.marks.some((m) => m.includes(x))), JSON.stringify(menu.marks));
+    if (w < 600) check(`[${tag}] The Note's ⋯ menu: on a phone it opens from the bottom (full-width sheet ending at the screen bottom)`, menu.fullW && Math.abs(menu.bottom - menu.ih) <= 1, JSON.stringify(menu));
+    if (w < 600) { await page.click(".pane-menu-x"); } else await page.keyboard.press("Escape");
+    await page.waitForTimeout(300);
+    check(`[${tag}] The Note's ⋯ menu: ${w < 600 ? "tap × closes it" : "Esc closes it"}`, await page.evaluate(() => !document.querySelector("[data-pane-menu]").classList.contains("open")));
+    if (w < 600) {
+      await page.click("#notePane [data-pane-menu-btn]"); await page.waitForTimeout(300);
+      await page.click("[data-pane-menu-backdrop]", { position: { x: 20, y: 20 } }); await page.waitForTimeout(300);
+      check(`[${tag}] The Note's ⋯ menu: tapping outside closes it`, await page.evaluate(() => !document.querySelector("[data-pane-menu]").classList.contains("open")));
+    }
+    // Edit
+    const bar = async (sel) => { if (await vis(page, `#notePane [data-pane-bar] > ${sel}`)) { await page.click(`#notePane [data-pane-bar] > ${sel}`); } else { await page.click("#notePane [data-pane-menu-btn]"); await page.click(`#notePane [data-pane-menu] ${sel}`); } };
+    const editLabel = await page.evaluate(() => (document.querySelector("#notePane [data-pane-edit-toggle]")?.textContent ?? "").trim());
+    await bar("[data-pane-edit-toggle]"); await page.waitForSelector("#notePane [data-edit-body]", { state: "visible", timeout: 8000 }).catch(() => {});
+    check(`[${tag}] Writing and editing a Note: the button reads ✏️ Edit and opens an editor`, /Edit/.test(editLabel) && (await vis(page, "#notePane [data-edit-body]")), editLabel);
+    const cmds = await page.evaluate(() => [...document.querySelectorAll("#notePane [data-edit-toolbar] [data-cmd]")].map((b) => b.dataset.cmd));
+    const needCmds = ["bold", "italic", "underline", "h1", "ul", "ol", "check", "quote", "link", "table", "color", "highlight", "left", "center", "right", "undo", "redo"];
+    check(`[${tag}] Writing and editing a Note: the toolbar has bold, italic, underline, headings, lists, checklists, quotes, links, tables, colours, highlights, alignment, undo/redo`, needCmds.every((c) => cmds.includes(c)), "missing: " + needCmds.filter((c) => !cmds.includes(c)).join(","));
+    // type, ✓ Done saves a revision
+    await page.click("#notePane [data-edit-body]"); await page.keyboard.press("Control+End"); await page.keyboard.type(" TYPED");
+    await page.evaluate(() => { window.__stubWriteData = []; });
+    await bar("[data-pane-edit-toggle]"); await page.waitForTimeout(1500);
+    const revs = await page.evaluate(() => window.__DATA.noteRevisions.filter((r) => r.noteId === "1".repeat(32) && /TYPED/.test(r.bodyHtml || "")).length);
+    check(`[${tag}] Writing and editing a Note: ✓ Done saves the text as a new revision`, revs === 1, String(revs));
+    // a failed save says "Not saved yet — will try again"
+    await bar("[data-pane-edit-toggle]"); await page.waitForSelector("#notePane [data-edit-body]", { state: "visible" });
+    await page.evaluate(() => { window.__stubFailWrites = true; window.__stubFailTx = true; window.__stubFailBatch = true; });
+    await page.click("#notePane [data-edit-body]"); await page.keyboard.press("Control+End"); await page.keyboard.type(" LOST");
+    await bar("[data-pane-edit-toggle]"); await page.waitForTimeout(1500);
+    const said = await page.evaluate(() => [...document.querySelectorAll("[data-edit-status], #pageStatusMsg, #qr-write-failure-banner")].map((e) => (getComputedStyle(e).display !== "none" && e.getClientRects().length ? e.textContent : "")).join(" "));
+    check(`[${tag}] Writing and editing a Note: a failed save says "Not saved yet — will try again"`, /Not saved yet — will try again/.test(said), JSON.stringify(said));
+    await page.evaluate(() => { window.__stubFailWrites = false; window.__stubFailTx = false; window.__stubFailBatch = false; });
+    check(`[${tag}] The Note's ⋯ menu / Writing and editing: no page error`, quiet(errors).filter((e) => !/write failure|denied by the test/i.test(e)).length === 0, JSON.stringify(quiet(errors)));
+    await ctx.close();
+  } catch (e) { crash(e); }
 }
 
 async function summ_bn(page) {

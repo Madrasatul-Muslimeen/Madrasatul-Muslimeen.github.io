@@ -16,4 +16,14 @@ No app file was changed. Notes pinned by QuranRevival (`note-window.js`, the not
 | Track this āyah (Notes pane tab) | Tab holds Take an Approach, Record Your Progress, Know Your Status | PASS | three `[data-rnp-track]` buttons |
 | Track this āyah (Notes pane tab) | An action opens it and "Back to Notes on …" brings you back | PASS | Record Your Progress closes the pane, pill reads "Back to Notes on 2:256", pressing it reopens the pane |
 
-Totals so far: 24 pass at both widths (12 per width), 0 fail.
+| Mapping My Journey | Three panels: side by side on a wide screen, one at a time on a phone | PASS | 1440: tree, list, Note left to right; 390: only the open Note shows |
+| Mapping My Journey | Views Folders / Timeline / Path; Path shows every Note as a stop | PASS | all three views display; Path lists the 3 Notes |
+| Mapping My Journey | The tab at the bottom of Quran Study opens it as a pop-up window | PASS | tray iframe holds `journey-map.html` |
+| Mapping My Journey | Home ▾ → Mapping My Journey opens the full page | PASS on a page without the tray (About) | **Manual is imprecise (found in part 87):** on a page that mounts the tray (People, Quran Study…) it opens the pop-up window. Suggested: *Home ▾ → Mapping My Journey opens it (as a pop-up window on pages that have the Journey tab, as the full page elsewhere).* |
+| Folders and sections | ⋯ on a folder offers all 12 listed actions; right-click opens the menu; "+ New section" is in the New folder box; New folder adds one | PASS | every action label present |
+| Folders and sections | Drag a Note onto a folder files it there too (wide screen) | PASS at 1440 | placement to Beta written |
+| Folders and sections | Long-press opens the menu | SKIP | touch long-press is not driven by this harness |
+| The Note's ⋯ menu | Six groups in order, Mark = Pin/Favourite/Archive/Finalise, Delete last; phone: from the bottom, × or outside closes | PASS | |
+| Writing and editing a Note | ✏️ Edit opens the editor; toolbar has the 17 named tools; ✓ Done saves a revision; a failed save says "Not saved yet — will try again" | PASS | revision written once; message text exact |
+
+Totals so far: 67 pass, 0 fail, 3 skip.
