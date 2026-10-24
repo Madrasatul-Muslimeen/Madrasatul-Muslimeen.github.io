@@ -1,5 +1,7 @@
 // Audit part 84 (PCF MSA J29): first screen audit of the 8 pages that had no browser check at all --
 // classes, course offers, curriculum, backup, import notes, dawah, onboarding, accept invite.
+// Audit part 85 extends the same suite to 8 shared pages with one check or none -- monitor, homework, people, records,
+// catalogue, about, bookmarks, hadith collections.
 //
 // For each page, at 390x844, 820x1180 and 1440x900, in English and Bangla, on the RENDERED page:
 //   (a) it boots: no page error, and its main heading is on screen (the heading text is read: positive control)
@@ -40,10 +42,20 @@ NAME_TOKENS.push(/\bCSV\b/g, /\bJSON\b/g, /\bGoogle\b/g, /\bGmail\b/g, /\bhttps?
 // The curriculum page prints the seeded week's Qur'an reference and the resource's link address: the tenant's data.
 DATA_ALLOWED.push(/^সপ্তাহ [০-৯]+ — Surah Al-Fatiha$/, /^https:\/\/example\.org\/lesson$/);
 
+// Audit part 85: the stub's seeded bookmark name is the reader's own data; Records prints its storage chunk key on purpose
+// (records.html: "turning the key into Bengali digits would stop it matching what is stored"); Quran Foundation is the
+// font provider's name (About credits it by name in English on purpose).
+DATA_ALLOWED.push(/^Ayat al-Kursi$/, /^খণ্ড: (?:surah|subject)_\w+$/);
+NAME_TOKENS.push(/\bQuran Foundation\b/g);
+
 const PAGES = [
   ["Classes", "classes.html"], ["Course offers", "course-offers.html"], ["Curriculum", "curriculum.html"],
   ["Backup", "backup.html"], ["Import notes", "import-notes.html"], ["Dawah", "dawah.html"],
   ["Onboarding", "onboarding.html"], ["Accept invite", "accept-invite.html?token=not-a-real-link"],
+  // Audit part 85: the shared MSA pages that had one check or none on their screens.
+  ["Monitor", "monitor.html"], ["Homework", "homework.html"], ["People", "people.html"], ["Records", "records.html"],
+  ["Catalogue", "catalogue.html"], ["About", "about.html"], ["Bookmarks", "bookmarks.html"],
+  ["Hadith collections", "hadith-collections.html"],
 ];
 const VIEWPORTS = [[390, 844], [820, 1180], [1440, 900]];
 const LANGS = ["en", "bn"];
@@ -119,7 +131,9 @@ for (const [name, path] of PAGES) {
       const ctx = await newContext(browser, { appLang: lang === "bn" ? "bn" : null, banner: false, viewport: { width: w, height: h } });
       await ctx.route("**/archive.org/**", (r) => r.abort());
       const sep = path.includes("?") ? "&" : "?";
-      const { page: P, errors } = await openPage(ctx, "/app/" + path + sep + "navBack=1");
+      // hadith-collections.html answers back=1 (its own way-back, the Hadith Lead's) and not the menu's navBack=1.
+      const backParam = path.startsWith("hadith-collections") ? "back=1" : "navBack=1";
+      const { page: P, errors } = await openPage(ctx, "/app/" + path + sep + backParam);
       await P.waitForTimeout(1000);
       if (MUTATE) await P.evaluate((m) => {
         if (m === "wide") { const d = document.createElement("div"); d.style.cssText = "width:2000px;height:10px"; document.body.appendChild(d); }
