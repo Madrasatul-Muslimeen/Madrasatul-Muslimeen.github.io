@@ -27,6 +27,9 @@ const MUTATIONS = {
   fileh: ["app/import-notes.html", "**/import-notes.html", "#fileInput { margin: 0.6rem 0; min-height: 40px; max-width: 100%;", "#fileInput { margin: 0.6rem 0;", "/import-notes"],
   filew: ["app/import-notes.html", "**/import-notes.html", "min-height: 40px; max-width: 100%;", "min-height: 40px;", "/import-notes"],
   metaw: ["app/notes.html", "**/notes.html*", "color: #888; overflow-wrap: anywhere; }", "color: #888; }", "/notes.html"],
+  // part 67
+  monitortable: ["app/monitor.html", "**/monitor.html*", "@media (max-width: 900px) { table { display: block;", "@media (max-width: 600px) { table { display: block;", "/monitor"],
+  navbasis: ["app/css/shell.css", "**/css/shell.css*", "@media (max-width: 420px) {\n  .nav-cat { flex-basis: auto; }", "@media (max-width: 340px) {\n  .nav-cat { flex-basis: auto; }", "/"],
   chipw: ["app/hadith-study.html", "**/hadith-study.html", "  .topic-row-name, .topic-gloss { min-width: 0; overflow-wrap: anywhere; }", "", "/hadith-study"],
 };
 if (MUTATE && !MUTATIONS[MUTATE]) throw new Error(`no such mutation ${MUTATE}`);
