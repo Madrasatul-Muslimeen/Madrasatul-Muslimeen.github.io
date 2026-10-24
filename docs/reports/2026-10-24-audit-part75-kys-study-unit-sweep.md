@@ -7,3 +7,6 @@ Issue #1132. Each suite run alone on `main`, from the repository root.
 | 1 | kys-approach-pick-browser | 66 pass / 0 fail | unchanged | none |
 | 2 | kys-opening-line-browser | 47 pass / 0 fail | unchanged | none |
 | 3 | kys-window-browser | 50 pass / 0 fail | unchanged | none |
+| 4 | study-options-go-track-browser | 104 pass / 0 fail | unchanged | none |
+| 5 | study-options-play-read-browser | 73 pass / 0 fail | unchanged | none |
+| 6 | study-presets-browser | 84 pass / 0 fail | unchanged | none |
