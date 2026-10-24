@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "12.56",
+    "version": "12.57",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -4949,8 +4949,20 @@
     {
       "version": "12.56",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "QR Lead round 12 (PR #1140): html.zab-reserve holds the Zab bar's 44px from first paint on >=768px; landing and Explore windows refit on zab-bar-on.",
+      "integration": {
+        "authorizedOn": "2026-10-24",
+        "integratedOn": "2026-10-24",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.57",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Onboarding gets a visible Back from the no-account link (navBack=1, mountNavBack); first screen audit of the 8 unchecked pages.",
       "integration": {
         "authorizedOn": "2026-10-24",
         "integratedOn": "2026-10-24",
@@ -4959,8 +4971,9 @@
       }
     }
   ],
-  "nextUnallocated": "12.57",
+  "nextUnallocated": "12.58",
   "nextUnallocatedNote": [
+    "v12.57 was allocated to the sign-up page way back (audit part 84), 2026-10-24.",
     "v12.56 was allocated to audit parts 73-77: the Zab bar no longer moves the bottom bar on a computer, 2026-10-24.",
     "v12.55 was allocated to audit parts 1 and 10: Āyah card heading and wheel number labels whole again, 2026-10-24.",
     "v12.54 was allocated to audit part 67: menu bar and report tables under text spacing and zoom, 2026-10-24.",
