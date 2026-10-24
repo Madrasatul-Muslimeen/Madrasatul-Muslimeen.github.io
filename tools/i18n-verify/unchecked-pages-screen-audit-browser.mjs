@@ -45,8 +45,15 @@ DATA_ALLOWED.push(/^সপ্তাহ [০-৯]+ — Surah Al-Fatiha$/, /^https
 // Audit part 85: the stub's seeded bookmark name is the reader's own data; Records prints its storage chunk key on purpose
 // (records.html: "turning the key into Bengali digits would stop it matching what is stored"); Quran Foundation is the
 // font provider's name (About credits it by name in English on purpose).
-DATA_ALLOWED.push(/^Ayat al-Kursi$/, /^খণ্ড: (?:surah|subject)_\w+$/);
+DATA_ALLOWED.push(/^Ayat al-Kursi and the last two āyāt of Al-Baqarah$/, /^Weekend Qur'an Memorisation and Tajweed Circle \(Year 7–9\)( \((ক্লাস|কোর্স অফার)\))?$/,
+  /^Muhammad Abdur-Rahman ibn Abdullah Al-Hashimi$/, /^Maryam bint Abdullah Al-Hashimi$/, /^Reading \(with Tajweed\)$/, /^Madrasatul Muslimeen \(Owner, Prime\)$/, /^Ayat al-Kursi$/, /^খণ্ড: (?:surah|subject)_\w+$/);
 NAME_TOKENS.push(/\bQuran Foundation\b/g);
+
+// Audit part 86: the stub has no "arabic_language" root subject, so topic-study.js falls back to printing the module id "arabic"
+// (line 258). A real tenant has the subject; this is a fixture gap, not an untranslated label.
+DATA_ALLOWED.push(/^arabic$/);
+// The Approach name is truncated to 18 characters + "…" in the landing's wheel list; it is the tenant's own data.
+DATA_ALLOWED.push(/^Reading \(wit…$/);
 
 const PAGES = [
   ["Classes", "classes.html"], ["Course offers", "course-offers.html"], ["Curriculum", "curriculum.html"],
@@ -56,7 +63,23 @@ const PAGES = [
   ["Monitor", "monitor.html"], ["Homework", "homework.html"], ["People", "people.html"], ["Records", "records.html"],
   ["Catalogue", "catalogue.html"], ["About", "about.html"], ["Bookmarks", "bookmarks.html"],
   ["Hadith collections", "hadith-collections.html"],
+  // Audit part 86: the last shared pages.
+  ["Landing", "index.html"], ["Notes", "notes.html"], ["Journey map", "journey-map.html"], ["Deen study", "deen-study.html"],
+  ["Arabic study", "arabic-study.html"], ["Self-check", "admin-self-check.html"], ["Taglines", "taglines.html"],
 ];
+
+// Audit part 86: REAL-LENGTH data (v07.134 lesson: short fixture names report clean while a real tenant's text runs off a phone).
+// Pass --short to run on the stub's own short names, as parts 84-85 did.
+const REAL_SEED = `
+DATA.tenants[0].name = lang("Madrasatul Muslimeen (Owner, Prime)", "মাদরাসাতুল মুসলিমীন (মালিক, প্রাইম)");
+DATA.tenantPeople[0].name = lang("Muhammad Abdur-Rahman ibn Abdullah Al-Hashimi", "মুহাম্মাদ আবদুর রহমান ইবনে আবদুল্লাহ আল-হাশিমী");
+DATA.tenantPeople[1].name = lang("Maryam bint Abdullah Al-Hashimi", "মুহাম্মাদ আবদুর রহমান ইবনে আবদুল্লাহ আল-হাশিমী");
+DATA.trackables[0].name = lang("Reading (with Tajweed)");
+DATA.classes[0].name = lang("Weekend Qur'an Memorisation and Tajweed Circle (Year 7–9)");
+DATA.courseOffers[0].name = lang("Weekend Qur'an Memorisation and Tajweed Circle (Year 7–9)");
+DATA.bookmarks[0].saved[0].name = "Ayat al-Kursi and the last two āyāt of Al-Baqarah";
+`;
+const SEED = process.argv.includes("--short") ? null : REAL_SEED;
 const VIEWPORTS = [[390, 844], [820, 1180], [1440, 900]];
 const LANGS = ["en", "bn"];
 
@@ -67,6 +90,10 @@ const MEASURE = () => {
       if (e.hidden) return false;
       const cs = getComputedStyle(e);
       if (cs.display === "none" || cs.visibility === "hidden") return false;
+      // Architect review (audit part 86): a closed <details> keeps its links' boxes in Chromium (the landing's Home menu
+      // measured 547px of links with open=false), but nothing past its <summary> is on screen.
+      const d = e.parentElement?.closest("details");
+      if (d && !d.open && e.parentElement === d && e.tagName !== "SUMMARY") return false;
     }
     const r = el.getBoundingClientRect();
     return r.width > 0 && r.height > 0;
@@ -75,9 +102,16 @@ const MEASURE = () => {
   const heading = [...document.querySelectorAll("h1, h2")].find(vis);
   const sideways = document.documentElement.scrollWidth - window.innerWidth;
   const controls = [...document.querySelectorAll("button, [role=button], a.btn, a[class*=btn], a[class*=button], input[type=button], input[type=submit], select")].filter(vis);
+  // Architect review (audit part 86, the QR Lead's measurement): a control may draw a small pill and carry an invisible 40px
+  // tap area (a ::before / ::after with negative inset, e.g. #wheelCtaBtn, #wheelListCollapseBtn). So a box under 40px is
+  // small only when a finger's reach misses it: the points 19px from its centre, in each direction, must land on it.
+  const reaches = (el) => {
+    const r = el.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    return [[0, 0], [19, 0], [-19, 0], [0, 19], [0, -19]].every(([dx, dy]) => { const h = document.elementFromPoint(cx + dx, cy + dy); return !!h && (h === el || el.contains(h)); });
+  };
   const small = controls.filter((el) => {
     const r = el.getBoundingClientRect();
-    return r.width < 39.5 || r.height < 39.5;
+    return (r.width < 39.5 || r.height < 39.5) && !reaches(el);
   }).map((el) => `${el.tagName.toLowerCase()}${el.id ? "#" + el.id : ""} "${label(el)}" ${Math.round(el.getBoundingClientRect().width)}x${Math.round(el.getBoundingClientRect().height)}`);
   const clipped = [];
   for (const el of [...document.querySelectorAll("button, a, input, select, textarea, [role=button]")].filter(vis)) {
@@ -85,7 +119,10 @@ const MEASURE = () => {
     for (let p = el.parentElement; p && p !== document.documentElement; p = p.parentElement) {
       const cs = getComputedStyle(p);
       if (!/hidden|clip/.test(cs.overflowX + cs.overflowY)) continue;
-      const pr = p.getBoundingClientRect();
+      // Architect review (audit part 86): when <html> does not clip, the body's overflow belongs to the VIEWPORT (CSS overflow
+      // propagation), not to the body's own box: the landing's 1280px-wide centred body does not cut a window 1384px wide.
+      const toViewport = p === document.body && getComputedStyle(document.documentElement).overflow === "visible";
+      const pr = toViewport ? { left: 0, top: 0, right: innerWidth, bottom: innerHeight, width: innerWidth, height: innerHeight } : p.getBoundingClientRect();
       if (pr.width === 0 && pr.height === 0) continue;
       const cutX = /hidden|clip/.test(cs.overflowX) && (r.left < pr.left - 1 || r.right > pr.right + 1);
       const cutY = /hidden|clip/.test(cs.overflowY) && (r.top < pr.top - 1 || r.bottom > pr.bottom + 1);
@@ -128,7 +165,7 @@ for (const [name, path] of PAGES) {
   for (const [w, h] of VIEWPORTS) {
     for (const lang of LANGS) {
       const tag = `${name} ${w}x${h} ${lang}`;
-      const ctx = await newContext(browser, { appLang: lang === "bn" ? "bn" : null, banner: false, viewport: { width: w, height: h } });
+      const ctx = await newContext(browser, { appLang: lang === "bn" ? "bn" : null, banner: false, viewport: { width: w, height: h }, extraSeedJs: SEED });
       await ctx.route("**/archive.org/**", (r) => r.abort());
       const sep = path.includes("?") ? "&" : "?";
       // hadith-collections.html answers back=1 (its own way-back, the Hadith Lead's) and not the menu's navBack=1.
@@ -139,6 +176,10 @@ for (const [name, path] of PAGES) {
         if (m === "wide") { const d = document.createElement("div"); d.style.cssText = "width:2000px;height:10px"; document.body.appendChild(d); }
         if (m === "small") { const b = document.createElement("button"); b.textContent = "x"; b.style.cssText = "width:20px;height:20px;min-width:0;min-height:0"; document.body.appendChild(b); }
         if (m === "clip") { const c = document.createElement("div"); c.style.cssText = "width:50px;height:50px;overflow:hidden"; const b = document.createElement("button"); b.textContent = "cut"; b.style.cssText = "margin-left:40px;width:60px;height:44px"; c.appendChild(b); document.body.appendChild(c); }
+        // narrowselect: undo the part-86 floor on table-row selects (taglines.html) -- check (c) must fail there.
+        if (m === "narrowselect") for (const s of document.querySelectorAll("td select")) s.style.cssText = "min-width:0;width:25px";
+        // longselect: a select as wide as a real-length name with no min-width:0 guard (deen/arabic study) -- check (b) must fail.
+        if (m === "longselect") { const s = document.getElementById("personSelect"); if (s) { s.innerHTML = "<option>" + "Muhammad Abdur-Rahman ibn Abdullah Al-Hashimi and sons".repeat(2) + "</option>"; const st = document.createElement("style"); st.textContent = "#contextBar label,#contextBar select{min-width:auto!important;max-width:none!important}"; document.head.appendChild(st); } }
         if (m === "noback") for (const el of document.querySelectorAll("[data-bm-back]")) el.remove();
       }, MUTATE);
       const m = await P.evaluate(MEASURE);
@@ -151,7 +192,13 @@ for (const [name, path] of PAGES) {
       // UPDATED IN PLACE (audit part 84 review): accept-invite.html is reached only from an invite link sent by email (people.html
       // builds it), never from a page in the app, so there is no place to go back to and (e) does not apply there. onboarding.html
       // IS linked from the app (nav.js noAccountMessageHtml, now with navBack=1) and mounts the Back row.
-      if (path.startsWith("accept-invite")) check(`${tag}: no in-app page links here (so no Back is owed)`, !APP_LINKS_INVITE, "an app page now links to accept-invite.html: give it a Back");
+      // Audit part 86: the same holds for admin-self-check.html (owner diagnostic, opened by address; the only app reference is
+      // screensaver-idle.js's never-on list, not a link) and for the landing page, which is the root every Back returns to.
+      // Architect review: the landing's own clause read `... || path === "index.html"`, a check that could not fail. The landing is
+      // the root every Back returns to, so (e) is simply not asked of it, rather than asserted vacuously.
+      if (path === "index.html") { /* (e) not applicable: the root */ }
+      else if (path.startsWith("admin-self-check")) check(`${tag}: no in-app link leads here (so no Back is owed)`, !fs.readdirSync("app").filter((f) => f.endsWith(".html") && f !== path).some((f) => new RegExp(`href=["'][^"']*${path.replace(".", "\\.")}["']`).test(fs.readFileSync(`app/${f}`, "utf8"))), "an app page now links here: give it a Back");
+      else if (path.startsWith("accept-invite")) check(`${tag}: no in-app page links here (so no Back is owed)`, !APP_LINKS_INVITE, "an app page now links to accept-invite.html: give it a Back");
       else check(`${tag}: ?navBack=1 shows a visible Back`, m.back.length > 0, "no Back control found");
       if (lang === "bn") {
         const bnChars = await P.evaluate(() => (document.body.innerText.match(/[ঀ-৿]/g) || []).length);

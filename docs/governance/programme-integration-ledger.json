@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "12.58",
+    "version": "12.59",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -4973,8 +4973,20 @@
     {
       "version": "12.58",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "QR Lead round 13: Mushaf render yields and justifies in passes; Word card header and family rows font-proof at 320; Tasrif toggle never breaks a word.",
+      "integration": {
+        "authorizedOn": "2026-10-24",
+        "integratedOn": "2026-10-24",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.59",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Real-length screen audit of 23 shared pages; Deen/Arabic select overflow, Taglines selects, Self-check size and Bangla fixed.",
       "integration": {
         "authorizedOn": "2026-10-24",
         "integratedOn": "2026-10-24",
@@ -4983,8 +4995,9 @@
       }
     }
   ],
-  "nextUnallocated": "12.59",
+  "nextUnallocated": "12.60",
   "nextUnallocatedNote": [
+    "v12.59 was allocated to the shared pages measured with real-length names (audit parts 85-86), 2026-10-24.",
     "v12.58 was allocated to the Mushaf tap and the Word card rows at 320 (audit parts 78-80), 2026-10-24.",
     "v12.57 was allocated to the sign-up page way back (audit part 84), 2026-10-24.",
     "v12.56 was allocated to audit parts 73-77: the Zab bar no longer moves the bottom bar on a computer, 2026-10-24.",

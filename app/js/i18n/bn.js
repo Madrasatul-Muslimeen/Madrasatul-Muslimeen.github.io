@@ -4478,4 +4478,14 @@ export const BN = {
   "Couldn't load the Vocabulary table:": "শব্দভান্ডারের তালিকা আনা যায়নি:",
   "{k} of {n}": "{n}টির মধ্যে {k}টি",
   "Surah {n} is not saved on this device, and there is no internet connection. Connect to read it.": "সূরা {n} এই ডিভাইসে সংরক্ষিত নেই, আর ইন্টারনেট সংযোগও নেই। পড়তে ইন্টারনেটে যুক্ত হোন।",
+  // Admin self-check page (audit part 86, 25 Oct 2026).
+  "Admin self-check (F-008)": "অ্যাডমিন স্ব-পরীক্ষা (F-008)", // ?
+  "One tap: checks that every collection this account can safely reach is actually reachable, and that a test save to each one succeeds. Nothing shown here is invented — every line is a real result from a real check against the database, just now.": "এক ট্যাপে: এই অ্যাকাউন্ট নিরাপদে যে সব সংগ্রহে পৌঁছাতে পারে, সেগুলোতে সত্যিই পৌঁছানো যায় কি না, এবং প্রতিটিতে একটি পরীক্ষামূলক সংরক্ষণ সফল হয় কি না, তা দেখে। এখানে কিছুই বানানো নয় — প্রতিটি লাইন এইমাত্র ডেটাবেসে করা একটি আসল পরীক্ষার আসল ফল।", // ?
+  "Run self-check": "স্ব-পরীক্ষা চালান", // ?
+  "Run self-check again": "আবার স্ব-পরীক্ষা চালান", // ?
+  "Check": "পরীক্ষা", // ?
+  "Result": "ফলাফল", // ?
+  "What it means": "এর অর্থ", // ?
+  "All clear. {n} checks ran, nothing needs attention. ({e} write failures logged this session.)": "সব ঠিক আছে। {n}টি পরীক্ষা চলেছে, কিছুতেই মনোযোগ দরকার নেই। (এই সেশনে {e}টি লেখা ব্যর্থ হয়েছে।)", // ?
+  "{n} check(s) need attention — see the FAIL rows above. ({e} write failures logged this session.)": "{n}টি পরীক্ষায় মনোযোগ দরকার — ওপরের FAIL সারিগুলো দেখুন। (এই সেশনে {e}টি লেখা ব্যর্থ হয়েছে।)", // ?
 };
