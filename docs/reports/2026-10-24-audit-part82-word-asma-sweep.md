@@ -16,3 +16,9 @@ Run on `main` (v12.56), one suite at a time, from the repository root. Asma ul H
 | asma-file-under-browser | 52 / 0 | 52 / 0 | none | none |
 | asma-name-nav-poster-browser | 140 / 0 | 140 / 0 | none | none |
 | asma-poster-browser | 102 / 0 | 102 / 0 | none | none |
+| asma-quick-class-browser | 27 / 0 | 27 / 0 | none | none |
+| asma-ways-back-browser | 66 / 0 | 66 / 0 | none | none |
+
+Closing checks: `stub-parity.mjs` 4 passed / 0 failed; `bangla-sweep-other-pages-browser` 224 passed / 0 failed.
+
+Not reached: nothing (all 14 suites run). The known part-78 en/320 header ✕ wrap and "+N more" drop did not appear as failures in the suites run.
