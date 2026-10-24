@@ -7,7 +7,53 @@ v10.28). Read `CLAUDE.md` first. The prompt that starts the next session is
 
 This session was summarised once (its context compacted), which is why it hands over here.
 
-## LATEST UPDATE — 24 Oct 2026, 9:10 am Sydney, session `session_01JcT4DEWmQ2vkF4towUzMBe` (v12.44–v12.49 live on MSA; QR still v12.43; HANDOVER) — READ THIS FIRST
+## LATEST UPDATE — 24 Oct 2026, 8:05 pm Sydney, session `session_01MgT1xkk3XPgSpZkpTZQ6wW` (v12.50–v12.54 live on MSA; QR still v12.43; HANDOVER) — READ THIS FIRST
+
+Took over 9:06 am 24 Oct from `session_01JcT4DEWmQ2vkF4towUzMBe`. Handing over (hand119, ~40% context). PCA: `session_01HqedLzJPW6qKznTRoYyron` (ask it to repoint the MSA keep-alive `trig_01QHSCRKb7W4QZPBwnhFUz5S` to the next session). Leads: MSA-QR-LEAD `session_01TsfGsiLVCx7NHy9rHkE8Pn`; Hadith Lead `session_01Q2HmCeWjo1vVYV5kgMBvC9`; **NEW: MSA-HEALTH Lead `session_01SPFtgC4vwVzby6PR12Z9ek`** (opened by the Owner 24 Oct, lead120; owns `app/health-study.html`, `app/health/**`, `tools/health-atlas-verify/**`, branch `msa-health/lead`, PMS MSA J93; hands PRs as "MSA-HEALTH ▸ ready for release"). Keep Health files out of every Builder round.
+**`main` is v12.54** (PR #1118, merge `72614e4c`, live on MSA 7:11 pm 24 Oct; brief-integrity 13/0, ledger ok, ledger mutations 49/0), plus test/report-only merges #1120 and #1122. **Next release: v12.55.** **QuranRevival is still v12.43**: `add_repo QuranRevival/QuranRevival.github.io` (push) was refused again in this session; the Owner is asked on the PMS monitor line to tap Actions → build-from-msa (msa_ref main).
+
+**Owner messages this session (carry1):** none. No new Owner comment in the PMS between 9:06 am and 8:05 pm.
+
+**Released this session (all live on MSA; none yet on QR)**
+- **v12.50** (#1106, Builder #1103, 9:54 am): audit part 60; `notes.html` history rows read Created / Edited / Removed / Restored.
+- **v12.51** (#1109, Builder #1108, 10:50 am): Classes / Course Offers `#noAdminNote` for non-admins (Architect corrected the wording: every active class is shown, not "yours"). The Course Offers "Enrol" button is deliberate (`canEnrol` allows self / guardian).
+- **v12.52** (#1113, Builder #1112, 2:19 pm): audit part 64; `accept-invite.html` and `onboarding.html` end with "Open the app" (way-back law).
+- **v12.53** (#1115, Builder #1114, 4:09 pm): audit part 65; `nameByScript()` in `app/js/lang.js` — a subject / ladder / level / curriculum-unit name typed in Bangla is stored under `bn` (I11, new docs only, readers fall back); Add ladder / Save heading say why (I15).
+- **v12.54** (#1118, Builder #1117, 7:11 pm): audit part 67 regression sweep; `shell.css` nav content basis up to 420px (was 340), Monitor table scroll box to 900px, Records to 700px.
+- Test/report-only merges, no version: #1107 (part 61, teacher Homework), #1111 (part 63, language / look / contrast; the Architect fixed its hard-coded port), #1120 (part 68 sweep), #1122 (part 69 sweep).
+
+**Regression sweep (J29):** every MSA-owned manual section was audited at least once by part 65, so the audit suites are being re-run on today's app. Parts 1–30 run locally by the Architect: 26/29 green; the 3 red are not MSA's: part 1 (Āyah card heading wraps at 390) and part 10 (WbW wheel labels at 320, QCR / Asma at 1440) sent to the QR Lead; part 21's Dua "← Back" check is intermittent (1 in 4; FYI to the Hadith Lead). Parts 31–38 (#1118): three faults fixed in v12.54. Parts 40, 41, 43, 54, 55: green. Parts 56–65 were green at their merges today. `journey-*` 1–14 green (#1122).
+
+**IN FLIGHT / NEXT — the next session's first jobs**
+1. **Builder round #1123** (audit part 70: the remaining 13 `journey-*` suites, dispatched 8:04 pm, push after each suite). Review when its run completes; merge if report-only, release if it fixed an app file. Next slices: `bookmark-*` (10), `notes-*`/`note-*` (8), `writing-*` (7), `zab-*` (6; the Zab bar is pinned by QR: report, do not change), `bangla-*` (5).
+2. **QR rebuild**: try `add_repo` (push) once; if refused, keep the Owner's tap on the monitor line. When QR is rebuilt, the QR Lead's Āyah-card / wheel fixes and v12.50–v12.54 all reach it.
+3. **J88 part 2**: branch `fix/self-hosted-auth-on` has `main` merged in (9:2x am, one line over main). Merge `main` in again; release ONLY after the Owner ticks PMS J88 `j88n1`; then ask for a real sign-in on Brave and an iPhone.
+4. **J92**: wait for the Owner's A or B.
+
+**Waiting on the Owner:** the QR rebuild tap (or allowing the repo), **J92**, **J88 j88n1**, **J89**, **J91**, n81c, n83a, n79a, n77a, n78a, n71c, n81a, n81b, n82a, n82b, n72d; the Hadith Lead's tick on the Hadith/Dua "My Notes" links.
+
+**Lessons**
+- **The Builder can no longer edit its PR body or comment** (its tools are refused). Its final message is posted on the issue by the workflow ("Builder run N stopped and said"): every issue now says "your final message must hold the totals and the table".
+- **Watch the RUN, not a bot comment.** A round can open a PR and end without one. Poll `actions/workflows/claude.yml/runs?event=workflow_dispatch&per_page=1` until `completed`, then read the branch.
+- **A Builder round must run suites in the FOREGROUND.** Run 1882 backgrounded a suite and ended its turn ("Nothing else to do until the suite ends"), which ends a headless run with nothing pushed; run 1881 tripped on `/tmp` redirection and a 271 KB log. The issue text now says so; reuse `/tmp/…/issue8c.json`-style wording (see issue #1119's body).
+- **A 29-suite sweep does not fit 90 minutes.** #1116 was cancelled with nothing pushed. Give a round ≤ 14 suites and require a push after each.
+- **A suite with a hard-coded `localhost:8080` fails on any other port** (cross-origin storage): #1111 showed 304 false failures on 8085. Every issue now says "use the harness `BASE`".
+- **The draft flag cannot be set** ("AAAsapp does not have permission to convert … to draft"): review directly.
+
+**The opening message for the next session** (send it as is):
+
+> Bismillah. You are the MSA Master Architect, taking over from session_01MgT1xkk3XPgSpZkpTZQ6wW (hand119 handover). Read CLAUDE.md, ARCHITECT.md, then docs/reports/2026-10-12-MMSA-SESSION-HANDOVER.md, its LATEST UPDATE block of 24 Oct 8:05 pm first. Read the PMS (https://claude.ai/artifact/PhW1KKX28qrqj9dE7Ha8dZ): meta/global General rules (cost86, rec118, hand119, lead120, ka122, onehome71) and p/mmsa (carry1, stu123); answer any new Owner comments. Set p/mmsa.sessionUrl and p/qr.sessionUrl to your session link (pin with if_version). The PCA is session_01HqedLzJPW6qKznTRoYyron: reply 'PCA ▸ taken over' listing each running item with its state, and ask it to repoint the MSA keep-alive (trig_01QHSCRKb7W4QZPBwnhFUz5S).
+> State: main is v12.54 (live on MSA 7:11 pm 24 Oct). Next release v12.55. QuranRevival is still v12.43: add_repo QuranRevival/QuranRevival.github.io (push) was refused in the last two sessions, so build-from-msa was never run; try add_repo once and, if it works, dispatch build-from-msa (msa_ref main) and confirm quranrevival.github.io/app/js/version.js; else keep the Owner's tap on the PMS monitor line. Tell the PCA which way it went.
+> Leads: MSA-QR-LEAD session_01TsfGsiLVCx7NHy9rHkE8Pn (QR-only files: app/quranrevival.html, apps/qr/**; has the part 1 / part 10 sweep findings), MSA · Hadith Lead session_01Q2HmCeWjo1vVYV5kgMBvC9 (Hadith, Dua), MSA-HEALTH Lead session_01SPFtgC4vwVzby6PR12Z9ek (app/health-study.html, app/health/**, tools/health-atlas-verify/**). Leads never dispatch Builders and never release; they hand PRs over as "<LEAD> ▸ ready for release". You keep shared files, all Builder dispatches and all releases. Students test QR at quranrevival.github.io: student-blocking faults first (stu123).
+> Running items: (1) Builder round #1123 (audit part 70, the remaining 13 journey-* suites, dispatched 8:04 pm): watch the RUN (claude.yml runs?event=workflow_dispatch) not a bot comment; review the branch, merge if report-only, release if an app file changed; then dispatch the next slice at once (bookmark-*, notes-*/note-*, writing-*, zab-* (report only: QR pins it), bangla-*), ≤ 14 suites, push after each, suites in the FOREGROUND, final message holds the table (copy issue #1123's body). (2) J88 part 2 on branch fix/self-hosted-auth-on: release ONLY after the Owner ticks PMS J88 need j88n1; then ask for a real sign-in on Brave and an iPhone. (3) J92: wait for the Owner's A or B. (4) The Builder cannot edit PR bodies or set drafts; review directly.
+> Release steps: merge main into the PR branch FIRST, then allocate-version.py (commit and push at once); QR checks before the merge (public clone to /home/user/quranrevival.github.io, fetch --depth=300; node tools/apps/build-app.mjs qr; QR_REPO=/home/user/quranrevival.github.io bash tools/apps/qr-verify/run-all.sh in the background with no outer timeout, or the checks that cover the change, cost86 D); run the five non-ledger governance suites locally; merge; dispatch build-from-msa AFTER the merge if the repo is attached, and confirm both live version.js; PMS What's New line and Done lines with W-T-P-E-O. After the merge, fetch all branches (git fetch origin '+refs/heads/*:refs/remotes/origin/*') and run brief-integrity, programme-ledger, programme-ledger-mutations.
+> Waiting on the Owner: the QR rebuild tap (or allowing the repo), J92, J88 j88n1, J89, J91, n81c, n83a, n79a, n77a, n78a, n71c, n81a, n81b, n82a, n82b, n72d; the Hadith Lead's tick on the Hadith/Dua "My Notes" links.
+> Keep-alive every 12 hours (8:07 am/pm Sydney; ka122). No self wake-ups (cost86). Hand over at ~40% context (hand119), and include the full opening message for your successor.
+> Sandbox: start node serve.js (8080), extra worktrees on 8083+ (never 8082; PORT=… node serve.js and QR_BASE=http://localhost:… for i18n-verify suites); mkdir -p node_modules && ln -sf /opt/node22/lib/node_modules/playwright node_modules/playwright; export CHROMIUM_PATH=/opt/pw-browsers/chromium; git fetch --unshallow origin main; at most two browser suites at once. gh works for REST (GraphQL refused: create issues with gh api repos/…/issues --input; dispatch with gh api -X POST …/actions/workflows/claude.yml/dispatches -f ref=main -f 'inputs[issue_number]=N'). The GitHub MCP tools work for this repo (merge via merge_pull_request with the full 40-char expectedHeadSha; copy it from git rev-parse, never retype it).
+
+---
+
+## LATEST UPDATE — 24 Oct 2026, 9:10 am Sydney, session `session_01JcT4DEWmQ2vkF4towUzMBe` (v12.44–v12.49 live on MSA; QR still v12.43; HANDOVER) — superseded by the 24 Oct 8:05 pm block above, kept as history
 
 Took over 4:28 am 24 Oct from `session_01FTtCLzQdxrmt7MKzQeqSi8`. Handing over (hand119, ~40% context). PCA: `session_01HqedLzJPW6qKznTRoYyron` (it repointed the MSA keep-alive `trig_01QHSCRKb7W4QZPBwnhFUz5S`, 8:07 am/pm, to this session: ask it to repoint to the next). MSA-QR-LEAD: `session_01TsfGsiLVCx7NHy9rHkE8Pn`. Hadith Lead: `session_01Q2HmCeWjo1vVYV5kgMBvC9`.
 **`main` is v12.49** (PR #1098, merge `ee62077c`, live on MSA 8:32 am 24 Oct; brief-integrity 13/0, ledger 8/0, ledger mutations 49/0), plus the test-only merges #1100 (audit part 58) and #1102 (audit part 59, part 1). **Next release: v12.50.** **QuranRevival is still v12.43**: see item 1.
@@ -1654,3 +1700,8 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v12.47** (2026-10-23): tablet Read bar: Study menu, whole surah name (QR Lead round 10).
 - **v12.48** (2026-10-23): audit part 56, getting started and Bookmarks by the User Manual.
 - **v12.49** (2026-10-23): audit part 57, Records, Monitor and Homework by the User Manual.
+- **v12.50** (2026-10-23): audit part 60: Notes pages; history rows in words.
+- **v12.51** (2026-10-23): audit part 62: Classes / Course Offers note for non-admins.
+- **v12.52** (2026-10-24): audit part 64: a way back on accept-invite and onboarding.
+- **v12.53** (2026-10-24): audit part 65: Catalogue / Curriculum names keyed by language; refusals in words.
+- **v12.54** (2026-10-24): audit part 67: menu bar and report tables under text spacing and zoom.
