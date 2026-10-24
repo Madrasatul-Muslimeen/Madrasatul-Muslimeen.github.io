@@ -37,4 +37,16 @@ No app file was changed. Notes pinned by QuranRevival (`note-window.js`, the not
 
 | File in folder(s) from the Āyah card | Āyah card → File in folder(s)…; folders grouped by section; search box; tick folders; Save creates the Note if none and files it; ← Back to Āyah card | PASS | on 2:258 (no Note): Save wrote a Note linked to `ayah:2:258` and a placement in Beta; "Reflections" section heading shown; search "Beta" left only Beta; the Back button reads "← Back to Āyah card" and reopens the card. (▸ opening a folder not driven; the fold arrow exists.) |
 
-Totals so far: 151 pass, 0 fail, 3 skip.
+Totals through part 87b: 151 pass, 0 fail, 3 skip.
+
+## Part 87c — the last three Notes entries
+
+| Entry | Claims checked | Result | Note |
+|---|---|---|---|
+| Import Notes | Mapping My Journey → ⋯ has "Import Notes…"; Source offers WordPress (.xml) and Evernote (.enex); steps 1/2/3 with no preview before a file; Stack name only for Evernote; choosing an .enex shows a Preview (2 Notes, 1 linked to an āyah, 1 without reference) and writes nothing; 3. Import writes the Notes and a folder | PASS | WordPress path not driven separately (same page and preview code). |
+| My Notes page | Banner names the unit and lists its 3 Notes; + New Note about this unit → Save stores a Note linked to `ayah:2:256`; Edit opens an editor; Show history lists revisions; ⧉ Open in window opens one pop-up; ← Back with back=1 | PASS | Reaching the page from 📝 My Notes on a Hadith/Dua card not driven (Hadith Lead's files): SKIP; the page they open is what is checked. |
+| Dawah pages | Note → Make a printable page writes a draft Dawah page and opens dawah.html?back=1; Home ▾ has Dawah; three tabs; Print prints and stores nothing; Send for approval moves to awaiting-approval; owner sees Waiting for my approval with Approve and Return; Approve shares; Return asks a reason and returns to draft with it; Madrasah pages lists shared | PASS | **Manual imprecise:** an adult author's button reads **Share**; "Send for approval" appears for a minor author's pages. Suggested: *Send for approval (or Share, for an adult) / Print.* Āyah card → Make a poster is Quran Study (frozen): SKIP. |
+
+Totals for `--section=notes`: **211 pass, 0 fail, 4 skip** (151/0/3 at part 87b; +60).
+
+`--mutate=notes` (one claim broken per entry; now also the Import Notes link, the My Notes Edit button and the Waiting-for-approval tab): **22 failures, 145 pass**. Every mutated claim fails; some earlier entries cascade.

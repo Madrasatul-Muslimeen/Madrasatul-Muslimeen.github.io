@@ -1026,6 +1026,154 @@ if (want("notes")) {
     check(`[${tag}] File in folder(s): no page error`, quiet(errors).length === 0, JSON.stringify(quiet(errors)));
     await ctx.close();
   } catch (e) { crash(e); }
+
+  // ### Import Notes   (Mapping My Journey → ⋯ → Import Notes…; source + file, optional Stack name, 2. Preview, 3. Import)
+  const ENEX = `<?xml version="1.0" encoding="UTF-8"?><en-export><note><title>Reflection on Ayat al-Kursi 2:255</title><content><![CDATA[<?xml version="1.0"?><en-note><div>Allah, there is no god but He (2:255).</div></en-note>]]></content><created>20260101T100000Z</created></note><note><title>A plain thought</title><content><![CDATA[<?xml version="1.0"?><en-note><div>Nothing to cite here.</div></en-note>]]></content><created>20260102T100000Z</created></note></en-export>`;
+  for (const [w, h] of VIEWPORTS) try {
+    const tag = `${w}px`;
+    const { ctx, page, errors } = await jmOpen("/app/journey-map.html#folders", w, h);
+    await jmReady(page);
+    if (await vis(page, "#folderNotes [data-list-back]")) { await page.click("#folderNotes [data-list-back]"); await page.waitForTimeout(300); }
+    await page.click('[data-bar-palette-toggle="pageMenu"]'); await page.waitForTimeout(300);
+    if (MUTATE === "notes") await page.evaluate(() => document.querySelector('a[href^="import-notes.html"]')?.remove());
+    const link = await page.evaluate(() => { const a = document.querySelector('[data-bar-palette="pageMenu"] a[href^="import-notes.html"]'); return a ? { txt: a.textContent.trim(), shown: a.getBoundingClientRect().width > 0 } : null; });
+    check(`[${tag}] Import Notes: Mapping My Journey → ⋯ has "Import Notes…"`, !!link && link.shown && /^Import Notes/.test(link.txt), JSON.stringify(link));
+    await page.click('[data-bar-palette="pageMenu"] a[href^="import-notes.html"]', { timeout: 4000 }).catch(() => {});
+    await page.waitForURL(/import-notes\.html/, { timeout: 10000 }).catch(() => {});
+    await page.waitForSelector("#sourceSelect", { state: "visible", timeout: 15000 });
+    const src = await page.evaluate(() => ({ opts: [...document.querySelectorAll("#sourceSelect option")].map((o) => o.textContent.trim()), stackShown: getComputedStyle(document.getElementById("stackNameRow")).display !== "none", preview: getComputedStyle(document.getElementById("previewSection")).display !== "none", h: [...document.querySelectorAll("h2")].map((x) => x.textContent.trim()) }));
+    check(`[${tag}] Import Notes: the Source offers a WordPress export (.xml) and an Evernote export (.enex)`, src.opts.length === 2 && /WordPress.*\.xml/.test(src.opts[0]) && /Evernote.*\.enex/.test(src.opts[1]), JSON.stringify(src.opts));
+    check(`[${tag}] Import Notes: the page is the steps 1. Choose your export, 2. Preview, 3. Import (no preview before a file)`, /^1\./.test(src.h[0]) && /^2\. Preview/.test(src.h[1]) && /^3\. Import/.test(src.h[2]) && !src.preview, JSON.stringify(src));
+    check(`[${tag}] Import Notes: the optional Stack name is not offered for WordPress`, !src.stackShown);
+    await page.selectOption("#sourceSelect", "evernote"); await page.waitForTimeout(300);
+    check(`[${tag}] Import Notes: choosing Evernote offers an optional Stack name`, await vis(page, "#stackNameInput"));
+    await page.fill("#stackNameInput", "Personal Journal");
+    await page.evaluate(() => { window.__stubWriteData = []; });
+    await page.setInputFiles("#fileInput", [{ name: "My Notebook.enex", mimeType: "application/xml", buffer: Buffer.from(ENEX) }]);
+    await page.waitForFunction(() => getComputedStyle(document.getElementById("previewSection")).display !== "none", null, { timeout: 15000 }).catch(() => {});
+    await page.waitForTimeout(600);
+    const prev = await page.evaluate(() => ({ shown: getComputedStyle(document.getElementById("previewSection")).display !== "none", notes: document.getElementById("statNotes")?.textContent, ayah: document.getElementById("statAyahLinks")?.textContent, noRef: document.getElementById("statNoRef")?.textContent, folders: document.getElementById("statFolders")?.textContent, btn: document.getElementById("importBtn")?.getAttribute("aria-disabled") }));
+    check(`[${tag}] Import Notes: choosing the file shows a Preview (2 Notes, 1 linked to an āyah, 1 with no reference) before anything is imported`, prev.shown && prev.notes === "2" && prev.ayah === "1" && prev.noRef === "1", JSON.stringify(prev));
+    const wBefore = await page.evaluate(() => (window.__stubWriteData || []).length);
+    check(`[${tag}] Import Notes: the preview wrote nothing`, wBefore === 0);
+    await page.click("#importBtn"); await page.waitForTimeout(2500);
+    const res = await page.evaluate(() => { const w = window.__stubWriteData || []; return { result: document.getElementById("resultLine")?.textContent.trim() || "", notes: w.filter((x) => x.col === "notes").length, folderW: w.filter((x) => x.col === "noteFolders").length, status: document.getElementById("pageStatusMsg")?.textContent.trim() }; });
+    check(`[${tag}] Import Notes: 3. Import brings the Notes in (writes Notes and a folder, with the Stack name)`, res.notes >= 2 && res.folderW >= 1, JSON.stringify(res));
+    check(`[${tag}] Import Notes: no page error`, quiet(errors).length === 0, JSON.stringify(quiet(errors)));
+    await ctx.close();
+  } catch (e) { crash(e); }
+
+  // ### My Notes page   (notes.html for one study unit; New Note, Edit, history, Open in window, Make a printable page)
+  for (const [w, h] of VIEWPORTS) try {
+    const tag = `${w}px`;
+    const { ctx, page, errors } = await jmOpen("/app/notes.html?unit=ayah%3A2%3A256&label=%C4%80yah%202%3A256&back=1", w, h);
+    await page.waitForSelector("#notesContainer .note-card", { timeout: 15000 });
+    await page.waitForTimeout(500);
+    const top = await page.evaluate(() => ({ h1: document.querySelector("h1")?.textContent.trim(), banner: document.getElementById("unitBanner")?.textContent.trim(), cards: document.querySelectorAll("#notesContainer .note-card").length, newBtn: document.getElementById("newNoteBtn")?.textContent.trim(), back: !document.getElementById("notesBackBtn").hidden }));
+    check(`[${tag}] My Notes page: it is the Notes of one study unit (banner names 2:256, lists its 3 Notes)`, top.h1 === "My Notes" && /2:256/.test(top.banner || "") && top.cards === 3, JSON.stringify(top));
+    check(`[${tag}] My Notes page: "+ New Note about this unit" is offered`, /^\+\s*New Note about this unit/.test(top.newBtn || "") && (await vis(page, "#newNoteBtn")), JSON.stringify(top));
+    const acts = await page.evaluate(() => [...document.querySelector("#notesContainer .note-card .note-actions").querySelectorAll("button")].map((b) => b.textContent.replace(/\s+/g, " ").trim()));
+    if (MUTATE === "notes") acts.splice(acts.findIndex((a) => /Edit/.test(a)), 1);
+    check(`[${tag}] My Notes page: each Note offers Edit, Open in window, Show history and Make a printable page`, ["Edit", "Open in window", "Show history", "Make a printable page"].every((x) => acts.some((a) => a.includes(x))), JSON.stringify(acts));
+    // + New Note → Save
+    await page.click("#newNoteBtn"); await page.waitForSelector("#newNoteForm", { state: "visible", timeout: 5000 });
+    await page.fill("#newTitleInput", "Fresh thought");
+    await page.click("#newBodyEditor"); await page.keyboard.type("A new body for this unit");
+    await page.evaluate(() => { window.__stubWriteData = []; });
+    await page.click("#newSaveBtn"); await page.waitForTimeout(1500);
+    const saved = await page.evaluate(() => { const wr = window.__stubWriteData || []; return { note: wr.some((x) => x.col === "notes"), src: wr.find((x) => x.col === "noteSources")?.data?.sourceKey ?? null, listed: [...document.querySelectorAll("#notesContainer .note-title, #notesContainer [data-note-title]")].some((e) => /Fresh thought/.test(e.textContent)) }; });
+    check(`[${tag}] My Notes page: + New Note → Save stores the Note linked to the unit (ayah:2:256) and lists it`, saved.note && saved.src === "ayah:2:256" && saved.listed, JSON.stringify(saved));
+    // Edit
+    await page.click('#notesContainer .note-card [data-note-edit]'); await page.waitForTimeout(600);
+    const editing = await page.evaluate(() => !!document.querySelector("#notesContainer .note-card [contenteditable=true], #notesContainer .note-card textarea, #notesContainer .note-card input"));
+    check(`[${tag}] My Notes page: Edit opens an editor on the Note`, editing);
+    await page.reload(); await page.waitForSelector("#notesContainer .note-card", { timeout: 15000 }); await page.waitForTimeout(500);
+    // history
+    await page.click('#notesContainer .note-card [data-note-history-toggle]'); await page.waitForTimeout(800);
+    const hist = await page.evaluate(() => { const c = document.querySelector("#notesContainer .note-card [data-note-history]"); return { shown: c.getBoundingClientRect().height > 0, txt: c.textContent.replace(/\s+/g, " ").trim().slice(0, 80), btn: document.querySelector("#notesContainer .note-card [data-note-history-toggle]").textContent.trim() }; });
+    check(`[${tag}] My Notes page: Show history lists the Note's revisions (button then reads Hide history)`, hist.shown && /Edited|Revision|content-update/i.test(hist.txt) && /Hide history/.test(hist.btn), JSON.stringify(hist));
+    // Open in window
+    await page.click('#notesContainer .note-card [data-note-window]'); await page.waitForTimeout(1200);
+    const win = await page.evaluate(() => document.querySelectorAll(".note-win").length === 1);
+    check(`[${tag}] My Notes page: ⧉ Open in window opens the Note in a pop-up window`, win);
+    check(`[${tag}] My Notes page: ← Back is shown when the page was reached with back=1`, top.back);
+    check(`[${tag}] My Notes page: no page error`, quiet(errors).length === 0, JSON.stringify(quiet(errors)));
+    await ctx.close();
+  } catch (e) { crash(e); }
+
+  // ### Dawah pages   (Note → Make a printable page → Dawah: My pages → Send for approval / Print; owner Approve or Return with a reason)
+  const DAWAH_SEED = (author, minor) => NOTES_SEED() + `
+(function () {
+  var o = { tenantId: "t1", authorPersonId: "${author}", schemaVersion: 1, createdBy: "test-uid", createdAt: "2026-09-01T10:00:00.000Z", updatedAt: "2026-09-01T10:00:00.000Z", sourceNoteId: "x", sourceRevisionId: "y", sourceUnitKey: "ayah:2:255", approvedByPersonId: null, approvedAt: null, returnedNote: null, bodyHtml: "<p>Dawah body</p>" };
+  DATA.dawahPages = [
+    Object.assign({ _id: "t1__dpA", pageId: "dpA", title: "Draft page A", status: "draft" }, o),
+    Object.assign({ _id: "t1__dpW", pageId: "dpW", title: "Waiting page W", status: "awaiting-approval", authorPersonId: "p2" }, o, { authorPersonId: "p2" }),
+    Object.assign({ _id: "t1__dpV", pageId: "dpV", title: "Waiting page V", status: "awaiting-approval", authorPersonId: "p2" }, o, { authorPersonId: "p2" }),
+    Object.assign({ _id: "t1__dpC", pageId: "dpC", title: "Shared page C", status: "shared" }, o)];
+  ${minor ? 'DATA.tenantPeople.forEach(function (p) { if (p.personId === "p1") p.isMinor = true; });' : ""}
+})();`;
+  for (const [w, h] of VIEWPORTS) try {
+    const tag = `${w}px`;
+    // Make a printable page, from a Note
+    {
+      const { ctx, page, errors } = await jmOpen("/app/notes.html?unit=ayah%3A2%3A256&label=%C4%80yah%202%3A256&back=1", w, h);
+      await page.waitForSelector("#notesContainer .note-card [data-note-dawah]", { timeout: 15000 });
+      // the page then navigates to dawah.html (which would reset the write log), so hold that navigation and read what was written
+      await page.evaluate(() => { window.__stubWriteData = []; window.addEventListener("beforeunload", () => { sessionStorage.setItem("__mcW", JSON.stringify((window.__stubWriteData || []).map((x) => x.col + ":" + x.kind + ":" + (x.data?.status ?? "")))); }); });
+      await page.click("#notesContainer .note-card [data-note-dawah]");
+      await page.waitForURL(/dawah\.html/, { timeout: 10000 }).catch(() => {});
+      await page.waitForTimeout(800);
+      const wentTo = page.url();
+      const made = await page.evaluate(() => JSON.parse(sessionStorage.getItem("__mcW") || "[]"));
+      check(`[${tag}] Dawah pages: a Note's "Make a printable page" makes a draft Dawah page and opens the Dawah screen`, made.some((x) => /^dawahPages:.*:draft$/.test(x)) && /dawah\.html\?back=1/.test(wentTo || ""), JSON.stringify({ made, wentTo }));
+      await ctx.close();
+    }
+    // Home ▾ → Dawah, then My pages
+    const { ctx, page, errors } = await jmOpen("/app/about.html", w, h, DAWAH_SEED("p1", true));
+    await page.waitForTimeout(800);
+    await page.locator("#topNav summary", { hasText: /^Home$/ }).first().click(); await page.waitForTimeout(250);
+    const link = await page.evaluate(() => [...document.querySelectorAll(".nav-cat-home a")].find((a) => /^Dawah$/.test(a.textContent.trim()))?.getAttribute("href") ?? null);
+    check(`[${tag}] Dawah pages: Home ▾ has a Dawah link`, /dawah\.html/.test(link || ""), String(link));
+    await page.goto(new URL("/app/dawah.html", page.url()).href);
+    await page.waitForSelector('#viewMine .page-card[data-page-id="dpA"]', { timeout: 15000 });
+    await page.waitForTimeout(500);
+    const tabs = await page.evaluate(() => [...document.querySelectorAll("#viewToggle button")].map((b) => b.textContent.trim()));
+    check(`[${tag}] Dawah pages: the screen has My pages, Waiting for my approval and Madrasah pages`, JSON.stringify(tabs) === JSON.stringify(["My pages", "Waiting for my approval", "Madrasah pages"]), JSON.stringify(tabs));
+    const btns = await page.evaluate(() => [...document.querySelectorAll('#viewMine .page-card[data-page-id="dpA"] .page-actions button')].map((b) => b.textContent.trim()));
+    check(`[${tag}] Dawah pages: My pages → a draft by a minor author offers "Send for approval" and Print`, btns.includes("Send for approval") && btns.includes("Print"), JSON.stringify(btns));
+    await page.evaluate(() => { window.__printCalls = 0; window.print = () => { window.__printCalls++; }; window.__stubWriteData = []; });
+    await page.click('#viewMine [data-page-id="dpA"] [data-page-print]'); await page.waitForTimeout(400);
+    check(`[${tag}] Dawah pages: Print asks the browser to print (and stores nothing)`, (await page.evaluate(() => window.__printCalls)) === 1 && (await page.evaluate(() => window.__stubWriteData.length)) === 0);
+    await page.click('#viewMine [data-page-id="dpA"] [data-page-submit]'); await page.waitForTimeout(1500);
+    const sent = await page.evaluate(() => (window.__stubWriteData || []).filter((x) => x.col === "dawahPages").map((x) => x.data?.status));
+    check(`[${tag}] Dawah pages: Send for approval moves the page to awaiting-approval`, sent.includes("awaiting-approval"), JSON.stringify(sent));
+    await ctx.close();
+    // owner approves or returns
+    const o2 = await jmOpen("/app/dawah.html", w, h, DAWAH_SEED("p1", false));
+    const pg = o2.page;
+    await pg.waitForSelector('#viewMine .page-card[data-page-id="dpA"]', { timeout: 15000 });
+    const adult = await pg.evaluate(() => document.querySelector('#viewMine [data-page-id="dpA"] [data-page-submit]')?.textContent.trim());
+    check(`[${tag}] Dawah pages: an adult author's button reads "Share" (the Manual's "Send for approval" is for a minor author's pages)`, adult === "Share", String(adult));
+    if (MUTATE === "notes") await pg.evaluate(() => document.querySelector('[data-view="approvals"]')?.remove());
+    await pg.click('[data-view="approvals"]', { timeout: 4000 }).catch(() => {}); await pg.waitForTimeout(600);
+    const waiting = await pg.evaluate(() => [...document.querySelectorAll("#viewApprovals .page-card")].map((c) => c.dataset.pageId + ":" + [...c.querySelectorAll(".page-actions button")].map((b) => b.textContent.trim()).join("/")));
+    check(`[${tag}] Dawah pages: Waiting for my approval lists the pages sent by others with Approve and Return`, waiting.length === 2 && waiting.every((x) => /Approve\/Return/.test(x)), JSON.stringify(waiting));
+    await pg.evaluate(() => { window.__stubWriteData = []; });
+    await pg.click('#viewApprovals [data-page-id="dpW"] [data-page-approve]'); await pg.waitForTimeout(1500);
+    const appr = await pg.evaluate(() => (window.__stubWriteData || []).filter((x) => x.col === "dawahPages").map((x) => x.data?.status));
+    check(`[${tag}] Dawah pages: Approve shares the page with the madrasah`, appr.includes("shared"), JSON.stringify(appr));
+    let asked = null;
+    pg.once("dialog", (d) => { asked = d.message(); d.accept("Please add the source"); });
+    await pg.evaluate(() => { window.__stubWriteData = []; });
+    await pg.click('#viewApprovals [data-page-id="dpV"] [data-page-return]'); await pg.waitForTimeout(1500);
+    const ret = await pg.evaluate(() => (window.__stubWriteData || []).filter((x) => x.col === "dawahPages").map((x) => x.data?.status + "|" + (x.data?.returnedNote ?? "")));
+    check(`[${tag}] Dawah pages: Return asks for a reason and sends the page back to draft with it`, /Why is this page being returned/.test(asked || "") && ret.some((x) => x === "draft|Please add the source"), JSON.stringify({ asked, ret }));
+    await pg.click('[data-view="shared"]'); await pg.waitForTimeout(500);
+    check(`[${tag}] Dawah pages: Madrasah pages lists the shared pages`, (await pg.evaluate(() => document.querySelectorAll("#viewShared .page-card").length)) >= 1);
+    check(`[${tag}] Dawah pages: no page error`, quiet(errors).length === 0 && quiet(o2.errors).length === 0, JSON.stringify(quiet(o2.errors)));
+    await o2.ctx.close();
+  } catch (e) { crash(e); }
+  SKIP("Dawah pages: Āyah card → Make a poster / a Hadith or Dua card's 📝 My Notes link", "the Āyah card is Quran Study (frozen) and the Hadith/Dua cards are the Hadith Lead's; the page they open (notes.html?unit=) is what is checked above");
 }
 
 async function summ_bn(page) {
