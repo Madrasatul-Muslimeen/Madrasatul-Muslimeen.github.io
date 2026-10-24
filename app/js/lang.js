@@ -70,6 +70,17 @@ export function toLangObject(value, lang = "en") {
   return { [lang]: value ?? "" };
 }
 
+/**
+ * A single typed name keyed by the language it is WRITTEN in (I11): text in
+ * Bangla script (and no Latin letters) is stored under `bn`, anything else
+ * under `en`. Readers fall back across keys (langText), so a Bangla-only name
+ * still shows; it is just no longer filed under the wrong language.
+ */
+export function nameByScript(text) {
+  const s = String(text ?? "");
+  return /[ঀ-৿]/.test(s) && !/[A-Za-z]/.test(s) ? { bn: s } : { en: s };
+}
+
 export function setLangText(existing, lang, text) {
   return { ...toLangObject(existing), [lang]: text };
 }
