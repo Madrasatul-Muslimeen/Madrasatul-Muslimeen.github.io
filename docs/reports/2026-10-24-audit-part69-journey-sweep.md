@@ -11,3 +11,5 @@ Each suite run alone, from the repository root, against `main` (v12.54).
 | journey-editor-siyagah-browser | 98 / 0 | 98 / 0 | green |
 | journey-finish-browser | 64 / 0 | 64 / 0 | green |
 | journey-flags-links-browser | 306 / 0 | 306 / 0 | green |
+| journey-folder-menus-browser | 148 / 0 | 148 / 0 | green |
+| journey-folder-picker-browser | 310 / 0 | 310 / 0 | green |
