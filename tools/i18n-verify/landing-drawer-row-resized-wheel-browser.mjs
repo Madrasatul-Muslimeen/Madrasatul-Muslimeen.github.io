@@ -89,6 +89,10 @@ for (const role of ["student", "owner"]) {
 //    So this case asserted "keeps exactly its saved 420px" and had been red since v12.05 (it came up at 346, the fit).
 //    It now asserts J44's rule: a stored size changes nothing on a PC, and the fitted wheel is a real size, not the floor.
 { const pc = async (saved) => { const { ctx, page } = await open({ role: "owner", lang: "en", width: 1280, height: 800, saved, bigText: false, surah: false });
+    // Audit part 74: wait for the J44 fit to SETTLE (the width unchanged over three reads 500ms apart) before measuring;
+    // a fixed 3s wait caught the no-saved-size page mid-fit (346 against its settled 387, measured by a probe).
+    let prev = -1, same = 0;
+    for (let i = 0; i < 30 && same < 3; i++) { const w = await page.evaluate(() => document.getElementById("wheelResizeWrap").getBoundingClientRect().width); same = Math.abs(w - prev) < 1 ? same + 1 : 0; prev = w; await page.waitForTimeout(500); }
     const m = await measure(page); await ctx.close(); return m; };
   const withSaved = await pc(420), none = await pc(null);
   check("PC (1280px), dragged to 420px on an earlier visit: the saved size really is stored (positive control)", withSaved.resized, JSON.stringify(withSaved));
