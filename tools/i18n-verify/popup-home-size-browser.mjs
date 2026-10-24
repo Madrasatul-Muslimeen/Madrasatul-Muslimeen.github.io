@@ -15,6 +15,7 @@
 //   --mutate=notshared  SHARED off                                 -> (2) fails after Explore is resized
 //   --mutate=nonavback  menu links without navBack=1              -> (4) fails
 //   --mutate=nohome     placeAtHome() does nothing                -> (2) the Read list and Learn next fail
+//   --mutate=nozabrefit the Zab bar's arrival does not refit the landing window -> (0) fails
 import { chromium, newContext, openPage } from "./harness.mjs";
 import fs from "node:fs";
 
@@ -25,6 +26,8 @@ const check = (name, ok, detail = "") => {
 };
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
 const MUT = {
+  // QR Lead (24 Oct 2026, audit part 73): the Zab bar's lift of #dock refits the landing window (bn 1440: s / se / sw were under the tab row)
+  nozabrefit: ["quranrevival.html", "if (on !== zabOn) { zabOn = on; queueFit(); }", ""],
   noframe: ["js/note-popup.js", "resizeHandleEls.forEach((h) => frame.appendChild(h));", "void frame;"],
   notshared: ["js/home-window.js", "export const SHARED = true;", "export const SHARED = false;"],
   nonavback: ["js/nav.js", '`${l.href}${l.href.includes("?") ? "&" : "?"}navBack=1`', "l.href"],
@@ -37,7 +40,7 @@ async function ctxFor(lang, width, height) {
   await ctx.route("**/archive.org/**", (r) => r.abort());
   if (MUTATE) {
     const [file, a, b] = MUT[MUTATE];
-    await ctx.route(`**/app/${file}*`, async (r) => { const src = fs.readFileSync(`app/${file}`, "utf8"); if (!src.includes(a)) throw new Error(`mutation anchor missing: ${MUTATE}`); await r.fulfill({ status: 200, contentType: "text/javascript; charset=utf-8", body: src.split(a).join(b) }); });
+    await ctx.route(`**/app/${file}*`, async (r) => { const src = fs.readFileSync(`app/${file}`, "utf8"); if (!src.includes(a)) throw new Error(`mutation anchor missing: ${MUTATE}`); await r.fulfill({ status: 200, contentType: file.endsWith(".html") ? "text/html; charset=utf-8" : "text/javascript; charset=utf-8", body: src.split(a).join(b) }); });
   }
   return ctx;
 }
@@ -61,6 +64,26 @@ for (const lang of ["en", "bn"]) {
   const ctx = await ctxFor(lang, 1440, 900);
   const { page: P, errors } = await openPage(ctx, "/app/quranrevival.html");
   await clean(P); await P.waitForTimeout(1000);
+  // (0) QR Lead (24 Oct 2026, audit part 73): the Zab bar loads after the page (v12.38) and lifts the dock by its 44px spacer.
+  // A window first sized for the un-lifted dock must be refitted when the bar arrives, or its bottom edge (and the s / se / sw
+  // handles) sit under the tab row. Made deterministic: size it with the bar away, then bring the bar back. On a page of its
+  // own, so the bar's coming and going leaves this flow's window exactly as it was.
+  {
+    const ctx0 = await ctxFor(lang, 1440, 900);
+    const { page: P } = await openPage(ctx0, "/app/quranrevival.html");
+    await clean(P); await P.waitForTimeout(1000);
+    const bottomVsTabs = () => P.evaluate(() => { const w = document.querySelector('[data-popup-win-frame="wheel"]') || document.getElementById("wheelPopupView"); const t = document.getElementById("tabRow"); return { win: Math.round(w.getBoundingClientRect().bottom), tabs: Math.round(t.getBoundingClientRect().top) }; });
+    const had = await P.evaluate(() => document.body.classList.contains("zab-bar-on") && !!document.getElementById("zabSpacer"));
+    await P.evaluate(() => { document.getElementById("zabSpacer").style.display = "none"; document.body.classList.remove("zab-bar-on"); window.dispatchEvent(new Event("resize")); });
+    await P.waitForTimeout(400);
+    const away = await bottomVsTabs();
+    await P.evaluate(() => { document.getElementById("zabSpacer").style.display = ""; document.body.classList.add("zab-bar-on"); });
+    await P.waitForTimeout(400);
+    const back = await bottomVsTabs();
+    check(`${tag} POSITIVE CONTROL the Zab bar is on, and taking it away lowers the tab row`, had && away.tabs > back.tabs, JSON.stringify({ had, away, back }));
+    check(`${tag} landing window: when the Zab bar arrives, the window is refitted clear of the tab row`, back.win <= back.tabs + 1, JSON.stringify({ away, back }));
+    await ctx0.close();
+  }
   // (1) the 8 handles of the landing window
   for (const d of ["n", "s", "e", "w", "ne", "nw", "se", "sw"]) {
     const h = await P.evaluate((d) => { const v = document.getElementById("wheelPopupView"); const e = document.querySelector(`[data-popup-win-frame="wheel"] [data-note-resize="${d}"]`) || v.querySelector(`[data-note-resize="${d}"]`); const b = e.getBoundingClientRect(); return { x: b.x + b.width / 2, y: b.y + b.height / 2, w: b.width, h: b.height, self: document.elementFromPoint(b.x + b.width / 2, b.y + b.height / 2) === e }; }, d);
