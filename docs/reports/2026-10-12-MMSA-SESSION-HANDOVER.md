@@ -1753,3 +1753,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v12.55** (2026-10-24): audit parts 1 and 10: Āyah card heading and wheel number labels whole again.
 - **v12.56** (2026-10-24): audit parts 73-77: the Zab bar no longer moves the bottom bar on a computer.
 - **v12.57** (2026-10-24): the sign-up page way back (audit part 84).
+- **v12.58** (2026-10-24): the Mushaf tap and the Word card rows at 320 (audit parts 78-80).
