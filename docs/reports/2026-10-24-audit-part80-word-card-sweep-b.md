@@ -1,0 +1,29 @@
+# Audit part 80 (PCF MSA J29): Word card regression sweep B, suites 15-28
+
+Run on `main` at v12.56, one suite at a time, from the repository root. Issue #1142.
+
+| # | Suite | Result | Failures / cause / action |
+|---|---|---|---|
+| 1 | word-card-meaning-marking-browser | 91 pass, 0 fail | none |
+| 2 | word-card-needs-source-browser | 93 pass, 0 fail | none |
+| 3 | word-card-own-surah-browser | 16 pass, 0 fail | none |
+| 4 | word-card-pc-boxes-browser | 296 pass, 0 fail | none |
+| 5 | word-card-search-browser | 252 pass, 0 fail | none |
+| 6 | word-card-segments-browser | 40 pass, 0 fail | none |
+| 7 | word-card-sense-arabic-browser | 62 pass, 0 fail | none |
+| 8 | word-card-small-arabic-size-browser | 150 pass, 0 fail | none |
+| 9 | word-card-stem-mark-browser | 144 pass, 0 fail | none |
+| 10 | word-card-tasrif-arabic-size-browser | 48 pass, **1 fail** (en/320 "every column head's case name is whole"; same on a second run, so not flaky) | **Not stale; not changed, left red** (the CSS is `app/quranrevival.html`, the QR Lead's). Measured at en/320, Taṣrīf 12:1:5: the card is exactly 320px (20rem), so the J61 rule `@container wordcard (max-width: 20rem) { .word-card-ntable thead th { font-size: 0.64rem } }` does apply (computed 10.24px). Each head cell is 65.36px wide, 62.16px after its 0.1rem padding. In this sandbox's `system-ui, sans-serif` fallback font the unbroken names measure Nominative 65.98px, Accusative 62.36px, Genitive 48.16px, so Nominative and Accusative do not fit and `overflow-wrap: anywhere` wraps them onto 2 lines (Genitive fits). The check passed when J61 landed, so the likely cause is the width of the fallback font here (environmental), but the margin is under 4px, so a wide system font on a real 320px phone could do the same. **Proposed fix for the QR Lead:** take the heads to 0.6rem at ≤20rem (Nominative then needs about 61.9px of 62.16px, only just), or cut `.word-card-ntable th` padding to 0 and `border-spacing` to 2px at ≤20rem, which gives about 3px more per cell. Not verified on a real phone. |
+| 11 | word-card-tasrif-blocks-basic-browser | 100 pass, 0 fail | none |
+| 12 | word-card-tasrif-noun-browser | 236 pass, 0 fail (slow: over 10 minutes) | none |
+| 13 | word-card-tasrif-verb-arabic-size-browser | 66 pass, **4 fail**: en/390 and en/320, "every tense name on the toggle is whole", in both the All three and one-tense views; the tense is "Command". bn and en at 768/1280 pass | **Not stale; not changed, left red** (CSS in `app/quranrevival.html`, the QR Lead's). Measured (probe, Taṣrīf of 1:5:2, tense toggle, Chromium here with the `system-ui, sans-serif` fallback font): at 390 each button is 78.8px (74.8px inside padding and border at the 4px padding / 13.6px type), and "Command" needs about 76px unbroken (76.2px measured unbroken at 430), so `overflow-wrap: anywhere` breaks it in two. At 320 the J61 container rule applies (12.8px type, 1px padding, `auto` columns); "Command" needs about 71.8px (measured at 340) and its column gets 72.2px minus padding and border, about 68px, so it breaks again. At 340 it fits (79.9px button), at 430 it fits. Same shape as suite 10: J61's fix passes with a narrower font and fails by a few px with this one, so the cause is most likely the fallback font (environmental), but the margin is a few px and a wide system font on a real phone could do the same. **Proposed fix for the QR Lead:** apply the J61 rule (`padding: 4px 1px`, smaller type) from a container width of about 26rem instead of 20rem, with the type at 0.75rem (12px, "Command" about 67px, which fits the 74.8px inside at 390 and just fits at 360's 67.3px), and drop `grid-template-columns: repeat(4, auto)` to `minmax(0, auto)` columns at 320 so the longest name can take the room the short ones leave. Not verified on a real phone. |
+| 14 | word-card-tense-toggle-browser | 22 pass, 0 fail | none |
+
+## Closing checks
+
+- `stub-parity.mjs`: 4 pass, 0 fail.
+- `bangla-sweep-other-pages-browser`: 224 pass, 0 fail.
+
+## Totals
+
+Suites 15-28 (14 suites): 12 fully green, 2 red (suite 10 with 1 fail, suite 13 with 4 fails). Both reds are CSS in `app/quranrevival.html` (the QR Lead's): a few px of width short in this sandbox's fallback font, so likely font-dependent, left red with the fixes proposed above. No test file or app file was changed. The two probe scripts used for the measurements stayed uncommitted under `tools/i18n-verify/out/`.

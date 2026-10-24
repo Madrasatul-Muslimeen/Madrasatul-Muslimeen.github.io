@@ -40,7 +40,11 @@ const MUT = {
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
 const surah2 = JSON.parse(fs.readFileSync("tools/quran-data-pull/output/surahs/surah_002.json", "utf8"));
 const A = (n) => surah2.ayahs.find((a) => a.ayah === n);
-const SEED = "window.__stubApplyBatches = true; window.__stubRecordTxData = true;";
+// A Note already on 2:256 (row shapes as ayah-card-takenote-family-browser.mjs), opened in the tray for the title-box checks.
+const TS = "2026-01-01T00:00:00.000Z";
+const NOTE_256 = { _id: "t1__n256", noteId: "n256", tenantId: "t1", ownerPersonId: "p1", ownerUid: "test-uid", title: "On 2:256", bodyHtml: "<p>On 2:256</p>", status: "active", visibility: "private", currentRevisionId: "n256-r1", schemaVersion: 1, createdAt: TS, updatedAt: TS, createdBy: "test-uid" };
+const SOURCE_256 = { _id: "t1__s256", sourceLinkId: "s256", tenantId: "t1", ownerPersonId: "p1", ownerUid: "test-uid", noteId: "n256", sourceKey: "ayah:2:256", sourceKind: "quran-unit", relationshipKind: "origin", approachId: null, provenanceKind: "study-note", status: "active", schemaVersion: 1, createdAt: TS, updatedAt: TS, createdBy: "test-uid" };
+const SEED = `window.__stubApplyBatches = true; window.__stubRecordTxData = true; DATA.notes = [...(DATA.notes ?? []), ${JSON.stringify(NOTE_256)}]; DATA.noteSources = [...(DATA.noteSources ?? []), ${JSON.stringify(SOURCE_256)}];`;
 
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
 async function setup(lang, width, height) {
@@ -81,13 +85,36 @@ for (const lang of ["en", "bn"]) for (const [width, height] of [[1280, 800], [39
   let F = null;
   for (let i = 0; i < 80 && !F; i++) { F = P.frames().find((x) => /journey-map\.html\?embed=1&unit=ayah%3A2%3A255/.test(x.url())) ?? null; if (!F) await P.waitForTimeout(100); }
   await F?.waitForFunction(() => document.activeElement?.matches?.("[data-unit-new].unit-new-ready"), null, { timeout: 15000 }).catch(() => {});
+  // UPDATED IN PLACE (J81 part 3, v12.26: every note opens in the Mapping My Journey window): ✚ New note now writes the Note and
+  // opens #journeyTray on it, in a fresh page the stub cannot give the new Note to. So (1) reads the title off the Note's own
+  // write (the same createStudyNote the real app makes), and (2) runs in the tray on a seeded Note (2:256), via its ✏️ Edit.
   await F?.click("[data-unit-new]");
-  await F?.waitForFunction(() => { const e = document.querySelector("#notePane [data-edit-title]"); return e && !e.hidden; }, null, { timeout: 10000 }).catch(() => {});
-  const title = F ? await F.evaluate(() => document.querySelector("#notePane [data-edit-title]")?.value ?? null) : null;
+  await P.waitForFunction(() => /embed=1&note=[0-9a-f]{16,}/.test(document.querySelector("#journeyTray:not([hidden]) iframe")?.getAttribute("src") ?? ""), null, { timeout: 10000 }).catch(() => {});
+  const title = F ? await F.evaluate(() => (window.__stubWriteData || []).filter((x) => x.col === "notes").map((x) => x.data?.title ?? null)[0] ?? null).catch(() => null) : null;
+  const closeTray = async () => { await P.click("#journeyTray .jt-close", { timeout: 5000 }).catch(() => {}); await P.waitForTimeout(400); };
+  await closeTray();
   const want = lang === "en" ? TITLE.en : `কুরআন ২:২৫৫ - ${await ev(() => document.querySelector('#surahSelect option[value="2"]')?.textContent.replace(/^[\d০-৯]+\.\s*/, "").trim())}:`;
   check(`${tag} (1) the new Note's title is "${want}" (got "${title}")`, title === want, String(title));
   // (2) a long title wraps, nothing cut; Enter goes on to the body
   const long = "Quran 2:255 - Al-Baqara: Ayat al-Kursi, the greatest ayah in the Book of Allah, read it after every prayer and before sleep";
+  await P.click("#readNotePane [data-rnp-back]").catch(() => {});
+  await P.waitForFunction(() => document.getElementById("ayahActionSheetOverlay")?.classList.contains("open"), null, { timeout: 8000 }).catch(() => {});
+  await P.waitForTimeout(300);
+  await P.click('[data-ayah-sheet] [data-ayah-sheet-step="1"]');
+  await P.waitForFunction(() => /2:256|২:২৫৬/.test(document.querySelector("[data-ayah-sheet] .ayah-sheet-ref")?.textContent ?? ""), null, { timeout: 8000 }).catch(() => {});
+  await P.waitForTimeout(500);
+  await P.click("[data-ayah-sheet] [data-ayah-sheet-note]");
+  let F2 = null;
+  // the pane may reuse its page and be told the new āyah by message, so its address can still name 2:255
+  for (let i = 0; i < 80 && !F2; i++) { F2 = P.frames().find((x) => /journey-map\.html\?embed=1&unit=ayah%3A2%3A/.test(x.url())) ?? null; if (!F2) await P.waitForTimeout(100); }
+  await F2?.waitForSelector('[data-unit-body] [data-note-id="n256"] [data-note-open]', { timeout: 15000 }).catch(() => {});
+  await F2?.click('[data-unit-body] [data-note-id="n256"] [data-note-open]').catch(() => {});
+  let T = null;
+  for (let i = 0; i < 80 && !T; i++) { T = P.frames().find((x) => /journey-map\.html\?embed=1&note=n256/.test(x.url())) ?? null; if (!T) await P.waitForTimeout(100); }
+  await T?.waitForSelector("[data-pane-edit-toggle]:not([hidden])", { timeout: 15000 }).catch(() => {});
+  await T?.click("[data-pane-edit-toggle]:not([hidden])").catch(() => {});
+  await T?.waitForFunction(() => { const e = document.querySelector("#notePane [data-edit-title]"); return e && !e.hidden; }, null, { timeout: 10000 }).catch(() => {});
+  F = T;
   const wrap = F ? await F.evaluate(async (long) => {
     const e = document.querySelector("#notePane [data-edit-title]");
     const one = e.getBoundingClientRect().height;
@@ -102,9 +129,14 @@ for (const lang of ["en", "bn"]) for (const [width, height] of [[1280, 800], [39
   await P.waitForTimeout(200);
   const enter = F ? await F.evaluate(() => ({ body: !!document.activeElement?.isContentEditable, nl: /\n/.test(document.querySelector("#notePane [data-edit-title]").value) })) : null;
   check(`${tag} (2) Enter in the title goes on to the body (no line break in the title)`, enter?.body && !enter.nl, JSON.stringify(enter));
+  await closeTray();
   await P.click("#readNotePane [data-rnp-back]").catch(() => {});
   await P.waitForFunction(() => document.getElementById("ayahActionSheetOverlay")?.classList.contains("open"), null, { timeout: 8000 }).catch(() => {});
   await P.waitForTimeout(300);
+  // back to 2:255, where the Copy checks below are written (the title checks above stepped to 2:256)
+  await P.click('[data-ayah-sheet] [data-ayah-sheet-step="-1"]').catch(() => {});
+  await P.waitForFunction(() => /2:255|২:২৫৫/.test(document.querySelector("[data-ayah-sheet] .ayah-sheet-ref")?.textContent ?? ""), null, { timeout: 8000 }).catch(() => {});
+  await P.waitForTimeout(400);
   // (3) Copy
   if (!(await ev(() => !!document.querySelector("[data-ayah-sheet] [data-ayah-sheet-copy]")))) await openCard(P, 255);
   await P.click("[data-ayah-sheet] [data-ayah-sheet-copy]");
