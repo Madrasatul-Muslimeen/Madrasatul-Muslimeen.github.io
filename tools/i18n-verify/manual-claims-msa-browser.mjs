@@ -979,6 +979,53 @@ if (want("notes")) {
     check(`[${tag}] Pictures / My Note tools / Favourites: no page error`, quiet(errors).length === 0, JSON.stringify(quiet(errors)));
     await ctx.close();
   } catch (e) { crash(e); }
+
+  // ### File in folder(s) from the Āyah card   (on 2:258, which has no Note yet: the Manual says one is created)
+  const FILE_SEED = NOTES_SEED() + `
+(function () {
+  var own = { tenantId: "t1", ownerPersonId: "p1", ownerUid: "test-uid", schemaVersion: 1, createdBy: "test-uid" };
+  DATA.noteSections = [Object.assign({ _id: "t1__sec1", sectionId: "sec1", name: "Reflections", order: 0, status: "active" }, own)];
+  DATA.noteFolders.find(function (f) { return f.folderId === "fA"; }).sectionId = "sec1";
+})();`;
+  for (const [w, h] of VIEWPORTS) try {
+    const tag = `${w}px`;
+    const { ctx, page, errors } = await jmOpen("/app/quranrevival.html", w, h, FILE_SEED);
+    await page.route("**/archive.org/**", (r) => r.abort());
+    if (!(await shown(page, "#tabReadBtn"))) { await page.click("#tabStudyBtn"); await page.waitForTimeout(150); }
+    await page.click("#tabReadBtn"); await page.waitForTimeout(400);
+    await page.evaluate(() => { const s = document.getElementById("surahSelect"); s.value = "2"; s.dispatchEvent(new Event("change", { bubbles: true })); });
+    await page.waitForFunction(() => document.querySelector('#readView [data-word-occurrence^="quran-word-occurrence:v1:2:"]'), null, { timeout: 20000 });
+    await page.evaluate(() => { const el = document.getElementById("ayahSelect"); el.value = "258"; el.dispatchEvent(new Event("change", { bubbles: true })); });
+    await page.waitForTimeout(900);
+    await page.evaluate(() => document.querySelector('[data-ayah-num-badge="2:258"]')?.click());
+    await page.waitForSelector("[data-ayah-sheet] [data-ayah-sheet-file-folder]", { timeout: 10000 });
+    await page.waitForTimeout(500);
+    const label = await page.evaluate(() => document.querySelector("[data-ayah-sheet-file-folder]").getAttribute("aria-label") || document.querySelector("[data-ayah-sheet-file-folder]").textContent.trim());
+    check(`[${tag}] File in folder(s): the Āyah card offers "File in folder(s)…"`, /File in folder/.test(label), label);
+    if (MUTATE === "notes") await page.evaluate(() => document.querySelector("[data-ayah-sheet-file-folder]")?.remove());
+    await page.click("[data-ayah-sheet] [data-ayah-sheet-file-folder]", { timeout: 4000 }).catch(() => {});
+    await page.waitForSelector("[data-ayah-folder-picker]", { timeout: 8000 }).catch(() => {});
+    await page.waitForTimeout(600);
+    const pick = await page.evaluate(() => ({ search: !!document.querySelector("[data-ayah-folder-search]"), heads: [...document.querySelectorAll("[data-ayah-folder-sechead]")].map((x) => x.textContent.trim()), ticks: [...document.querySelectorAll("[data-ayah-folder-toggle]")].map((x) => x.dataset.ayahFolderToggle), save: !!document.querySelector("[data-ayah-folder-save]"), fold: document.querySelectorAll("[data-ayah-folder-fold]").length }));
+    check(`[${tag}] File in folder(s): the picker has a search box, tick boxes, Save, and groups folders under their section ("Reflections")`, pick.search && pick.save && pick.ticks.length >= 2 && pick.heads.includes("Reflections"), JSON.stringify(pick));
+    await page.fill("[data-ayah-folder-search]", "Beta"); await page.waitForTimeout(300);
+    const shownTicks = await page.evaluate(() => [...document.querySelectorAll("[data-ayah-folder-toggle]")].filter((x) => x.getBoundingClientRect().width > 0 || x.closest("label")?.getBoundingClientRect().width > 0).map((x) => x.dataset.ayahFolderToggle));
+    check(`[${tag}] File in folder(s): the search box narrows the folders (Beta only)`, shownTicks.join() === "fB", JSON.stringify(shownTicks));
+    await page.fill("[data-ayah-folder-search]", ""); await page.waitForTimeout(200);
+    const backTxt = await page.evaluate(() => { const b = document.getElementById("ayahFolderFilingBackBtn"); return { text: b?.textContent.trim(), shown: !!b && b.getBoundingClientRect().width > 0 }; });
+    check(`[${tag}] File in folder(s): "← Back to Āyah card" is on the picker`, backTxt.shown && /^←\s*Back to Āyah card/.test(backTxt.text || ""), JSON.stringify(backTxt));
+    await page.click("#ayahFolderFilingBackBtn"); await page.waitForTimeout(600);
+    const cardAgain = await page.evaluate(() => ({ card: document.getElementById("ayahActionSheetOverlay")?.classList.contains("open"), picker: document.getElementById("ayahFolderFilingOverlay")?.classList.contains("open") ?? !!document.querySelector("[data-ayah-folder-picker]")?.getBoundingClientRect().width }));
+    check(`[${tag}] File in folder(s): pressing it returns to the Āyah card (the picker closes)`, cardAgain.card && !cardAgain.picker, JSON.stringify(cardAgain));
+    await page.click("[data-ayah-sheet] [data-ayah-sheet-file-folder]"); await page.waitForSelector("[data-ayah-folder-picker]", { timeout: 8000 }); await page.waitForTimeout(600);
+    await page.evaluate(() => { window.__stubWriteData = []; });
+    await page.evaluate(() => document.querySelector('[data-ayah-folder-toggle="fB"]').click());
+    await page.click("[data-ayah-folder-save]"); await page.waitForTimeout(1500);
+    const done = await page.evaluate(() => { const w = window.__stubWriteData || []; const src = w.find((x) => x.col === "noteSources"); return { note: w.some((x) => x.col === "notes"), source: src?.data?.sourceKey ?? null, placed: w.filter((x) => x.col === "notePlacements").map((x) => x.data.folderId) }; });
+    check(`[${tag}] File in folder(s): Save creates the āyah's Note (linked to ayah:2:258) and files it in the ticked folder (Beta)`, done.note && done.source === "ayah:2:258" && done.placed.includes("fB"), JSON.stringify(done));
+    check(`[${tag}] File in folder(s): no page error`, quiet(errors).length === 0, JSON.stringify(quiet(errors)));
+    await ctx.close();
+  } catch (e) { crash(e); }
 }
 
 async function summ_bn(page) {

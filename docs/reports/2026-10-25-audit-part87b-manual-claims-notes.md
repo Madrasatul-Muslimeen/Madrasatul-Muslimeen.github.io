@@ -35,4 +35,6 @@ No app file was changed. Notes pinned by QuranRevival (`note-window.js`, the not
 | **My Note tools** | "Use **New from template** when creating a Note" | **Manual is wrong (wording)** | The button in ⋯ → 🧰 My Note tools… → Templates reads **"New note from this"**. Suggested: *Use New note from this next to a template.* Check corrected. |
 | Favourites, Archived and Trash | ⋯ beside the views → ⭐ Favourites, 📦 Archived, 🗑 Trash; lists show the marked Note; a deleted Note is only marked and sits in Trash; Restore brings it back | PASS | Trash holds sections/folders/tags too; only Notes driven here |
 
-Totals so far: 137 pass, 0 fail, 3 skip.
+| File in folder(s) from the Āyah card | Āyah card → File in folder(s)…; folders grouped by section; search box; tick folders; Save creates the Note if none and files it; ← Back to Āyah card | PASS | on 2:258 (no Note): Save wrote a Note linked to `ayah:2:258` and a placement in Beta; "Reflections" section heading shown; search "Beta" left only Beta; the Back button reads "← Back to Āyah card" and reopens the card. (▸ opening a folder not driven; the fold arrow exists.) |
+
+Totals so far: 151 pass, 0 fail, 3 skip.
