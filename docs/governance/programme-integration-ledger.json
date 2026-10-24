@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "12.51",
+    "version": "12.52",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -4889,7 +4889,7 @@
     {
       "version": "12.51",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Audit part 62 item 1 (Builder round #1108, PR #1109): Classes and Course Offers say in words who manages them, for a reader who is not owner or prime.",
       "integration": {
         "authorizedOn": "2026-10-23",
@@ -4897,10 +4897,23 @@
         "method": "MERGE_PR",
         "reference": "CHANGELOG.md"
       }
+    },
+    {
+      "version": "12.52",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Audit part 64 (Builder round #1112, PR #1113): People, invites, accept-invite, onboarding, Backup, About; accept-invite and onboarding gain an Open the app link.",
+      "integration": {
+        "authorizedOn": "2026-10-24",
+        "integratedOn": "2026-10-24",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
     }
   ],
-  "nextUnallocated": "12.52",
+  "nextUnallocated": "12.53",
   "nextUnallocatedNote": [
+    "v12.52 was allocated to audit part 64: a way back on accept-invite and onboarding, 2026-10-24.",
     "v12.51 was allocated to audit part 62: Classes / Course Offers note for non-admins, 2026-10-23.",
     "v12.50 was allocated to audit part 60: Notes pages; history rows in words, 2026-10-23.",
     "v12.49 was allocated to audit part 57, Records, Monitor and Homework by the User Manual, 2026-10-23.",

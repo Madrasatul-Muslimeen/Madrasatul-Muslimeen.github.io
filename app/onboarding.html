@@ -44,6 +44,7 @@
   .family-actions { display: flex; flex-wrap: wrap; gap: 0.6rem; }
   .family-actions button, #familyAdd { min-height: 44px; }
   #familyResult { margin: 0; }
+  #backLink { display: inline-flex; align-items: center; min-height: 40px; }
 </style>
 <link rel="stylesheet" href="./css/admin-touch.css" />
 </head>
@@ -81,6 +82,8 @@
   </form>
 
   <div id="result"></div>
+  <!-- Audit part 64: the way back. A person who is not making a family account would otherwise have no way into the app from here. -->
+  <p><a id="backLink" href="index.html">Open the app</a></p>
 
   <section id="familyStep" class="family-step" aria-labelledby="familyHeading" hidden>
     <p class="step-label">Step 2 of 2</p>

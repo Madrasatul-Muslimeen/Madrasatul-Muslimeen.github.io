@@ -953,3 +953,4 @@ total). Allocated by the MMSA Architect.
 12.49: audit part 57, Records, Monitor and Homework by the User Manual. Allocated by the MMSA Architect.
 12.50: audit part 60: Notes pages; history rows in words. Allocated by the MMSA Architect.
 12.51: audit part 62: Classes / Course Offers note for non-admins. Allocated by the MMSA Architect.
+12.52: audit part 64: a way back on accept-invite and onboarding. Allocated by the MMSA Architect.
