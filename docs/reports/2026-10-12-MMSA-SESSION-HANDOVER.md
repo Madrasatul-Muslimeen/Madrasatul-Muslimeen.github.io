@@ -1755,3 +1755,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v12.57** (2026-10-24): the sign-up page way back (audit part 84).
 - **v12.58** (2026-10-24): the Mushaf tap and the Word card rows at 320 (audit parts 78-80).
 - **v12.59** (2026-10-24): the shared pages measured with real-length names (audit parts 85-86).
+- **v12.60** (2026-10-24): the account card name and roles, and the topic bookmark choice (audit part 87).
