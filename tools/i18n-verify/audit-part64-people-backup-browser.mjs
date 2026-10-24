@@ -10,6 +10,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium, newContext, openPage } from "./harness.mjs";
+import { stubFor } from "./firebase-stub.mjs";
 let pass = 0, fail = 0;
 function check(name, ok, detail = "") {
   if (ok && typeof ok.then === "function") throw new Error(`check "${name}" was handed a promise`);
@@ -19,16 +20,29 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
 const arg = (n) => (process.argv.find((a) => a.startsWith(`--${n}=`)) || "").slice(n.length + 3);
 const MUTATE = arg("mutate"), ONLY = arg("only"), WONLY = Number(arg("width")) || 0, LONLY = arg("lang");
 // [file, route glob, anchor (must occur exactly once), replacement, the page the mutation applies to]
-const MUTATIONS = {};
+const MUTATIONS = {
+  // accept-invite ends every state without a way into the app.
+  noacceptback: ["app/accept-invite.html", "**/accept-invite.html*", '  <p><a id="backLink" href="index.html">Open the app</a></p>\n', "", "/app/accept-invite.html"],
+  // onboarding has no way into the app unless the family step was used.
+  noonboardback: ["app/onboarding.html", "**/onboarding.html*", '  <p><a id="backLink" href="index.html">Open the app</a></p>\n', "", "/app/onboarding.html"],
+  // the way back is too small a target for a finger.
+  smallback: ["app/accept-invite.html", "**/accept-invite.html*", "  #backLink { display: inline-flex; align-items: center; min-height: 40px; }\n", "", "/app/accept-invite.html"],
+};
 if (MUTATE && !MUTATIONS[MUTATE]) throw new Error(`no such mutation ${MUTATE}`);
 const browser = await chromium.launch();
 const BN = /[ঀ-৿]/;
 // The signed-in uid becomes the student p2 (a student's own row in the stub).
+const TOKENS = `DATA.inviteTokens = [
+  { _id: "tokPending123", tenantId: TENANT_ID, email: "invited@example.com" },
+  { _id: "tokMine456", tenantId: TENANT_ID, email: "smahk9@gmail.com" },
+  { _id: "tokOther789", tenantId: TENANT_ID, email: "someone.else@example.com" } ];
+DATA.tenantInvites.push({ _id: TENANT_ID + "__smahk9@gmail.com", tenantId: TENANT_ID, email: "smahk9@gmail.com", role: "student", status: "pending" });
+DATA.tenantInvites.push({ _id: TENANT_ID + "__someone.else@example.com", tenantId: TENANT_ID, email: "someone.else@example.com", role: "student", status: "pending" });`;
 const STUDENT = `DATA.tenantMemberUids[0].personId = "p2"; DATA.tenantMemberUids[0].roles = ["student"];`;
 
-async function open(lang, width, pagePath, { seed = "" } = {}) {
+async function open(lang, width, pagePath, { seed = "", signedOut = false } = {}) {
   const ctx = await newContext(browser, { appLang: lang === "bn" ? "bn" : null, banner: false, viewport: { width, height: width > 600 ? 900 : 844 }, extraSeedJs: seed || null });
-  if (MUTATE && MUTATIONS[MUTATE][4] === pagePath) {
+  if (MUTATE && pagePath.startsWith(MUTATIONS[MUTATE][4])) {
     const [file, glob, from, to] = MUTATIONS[MUTATE];
     const body = fs.readFileSync(path.join(ROOT, file), "utf8");
     const n = body.split(from).length - 1;
@@ -36,7 +50,15 @@ async function open(lang, width, pagePath, { seed = "" } = {}) {
     await ctx.route(glob, (r) => r.fulfill({ status: 200, contentType: file.endsWith(".js") ? "text/javascript; charset=utf-8" : "text/html; charset=utf-8", body: body.split(from).join(to) }));
   }
   await ctx.grantPermissions(["clipboard-read", "clipboard-write"]).catch(() => {});
+  if (signedOut) {
+    const body = stubFor({ banner: false, extraSeedJs: seed || null }).replace('cb({ uid: UID, email: "smahk9@gmail.com", displayName: "Owner" })', "cb(null)");
+    if (!body.includes("cb(null)")) throw new Error("stub shape changed: onAuthStateChanged line not found");
+    await ctx.route("https://www.gstatic.com/firebasejs/**", (r) => r.fulfill({ status: 200, contentType: "text/javascript; charset=utf-8", body }));
+  }
+  const reqs = [];
+  ctx.on("request", (r) => reqs.push(r.url()));
   const { page, errors } = await openPage(ctx, pagePath);
+  page.__reqs = reqs;
   await page.waitForTimeout(1500);
   await page.evaluate(() => document.querySelectorAll('[id*="splash"], .app-splash-overlay').forEach((e) => e.remove()));
   return { ctx, page, errors };
@@ -150,6 +172,145 @@ for (const lang of LANGS) {
       check(`${t}: no sideways scroll, nothing cut, finger controls 40px or more`, lf.sideways <= 0 && lf.cut.length === 0 && lf.small.length === 0, JSON.stringify(lf));
       check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
     }, { seed: STUDENT });
+
+    // 3: Invite as the owner: create, Copy link (opaque token, never the email, D9), refused invite.
+    await flow("invite-owner", lang, width, "/app/people.html", async (t, page, ctx, errors) => {
+      await page.waitForSelector("#inviteBody tr", { state: "attached", timeout: 15000 });
+      await settle(page, 500);
+      const rows = await ev(page, () => [...document.querySelectorAll("#inviteBody tr")].map((r) => ({ cells: [...r.cells].map((c) => c.textContent.trim()), btn: !!r.querySelector(".getLinkBtn") })));
+      check(`${t}: POSITIVE CONTROL the pending invite has a "Copy link" button and the consumed one has none`, rows.some((r) => r.cells[0] === "invited@example.com" && r.btn) && rows.some((r) => r.cells[0] === "gone@example.com" && !r.btn), JSON.stringify(rows));
+      const n0 = await writeCount(page);
+      await page.fill("#inviteEmail", "New.Person@Example.com");
+      await page.selectOption("#inviteRole", "guardian");
+      await page.click("#inviteBtn"); await settle(page, 1200);
+      const ws = await writes(page, n0);
+      const inv = ws.find((x) => x.col === "tenantInvites"), tok = ws.find((x) => x.col === "inviteTokens");
+      check(`${t}: Invite stores the invite (lower-cased email, role guardian, pending) with I17's four fields`, !!inv && inv.data.email === "new.person@example.com" && inv.data.role === "guardian" && inv.data.status === "pending" && STAMPS(inv.data), JSON.stringify(inv));
+      check(`${t}: and an opaque token document that maps to the email (the email is not the token)`, !!tok && !tok.id.includes("@") && tok.id.length >= 16 && tok.data.email === "new.person@example.com", JSON.stringify(tok && { id: tok.id }));
+      const said = await ev(page, () => document.getElementById("inviteResult").textContent);
+      check(`${t}: the page says the invite was created, in words (${bn ? "Bangla" : "English"})`, said.length > 10 && (!bn || BN.test(said)), said);
+      const emailLeft = await ev(page, () => document.getElementById("inviteEmail").value);
+      check(`${t}: and the email box is emptied`, emailLeft === "", emailLeft);
+      await page.click("#inviteBody tr:first-child .getLinkBtn"); await settle(page, 800);
+      const clip = await ev(page, () => navigator.clipboard.readText().catch((e) => "ERR " + e.message));
+      check(`${t}: "Copy link" puts an accept-invite link with the opaque token on the clipboard, never the email (D9)`, /accept-invite\.html\?token=tokPending123$/.test(clip) && !clip.includes("example.com") && !clip.includes("@"), clip);
+      const lb = await ev(page, () => document.querySelector("#inviteBody .getLinkBtn").textContent);
+      check(`${t}: and the button says Copied (${bn ? "Bangla" : "English"})`, lb.length > 3 && (!bn || BN.test(lb)), lb);
+      await ev(page, () => { window.__stubFailBatch = true; window.__stubFailWrites = true; window.__stubFailTx = true; });
+      await page.fill("#inviteEmail", "keep@example.com");
+      const n1 = await writeCount(page);
+      await page.click("#inviteBtn"); await settle(page, 1200);
+      const rr = await ev(page, () => ({ t: document.getElementById("inviteResult").textContent, email: document.getElementById("inviteEmail").value, dis: document.getElementById("inviteBtn").disabled }));
+      check(`${t}: a refused Invite says so in words, stores nothing, keeps the email and can be pressed again`, rr.t.length > 10 && (!bn || BN.test(rr.t)) && rr.email === "keep@example.com" && rr.dis === false && (await writeCount(page)) === n1, JSON.stringify(rr));
+      check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
+    }, { seed: TOKENS });
+
+    // 4: accept-invite: missing / bad link, signed out, wrong account, right account, accept.
+    const AI = "/app/accept-invite.html";
+    for (const [name, q, o] of [["missing", "", {}], ["bad", "?token=nope", {}], ["signedout", "?token=tokMine456", { signedOut: true }], ["wrongaccount", "?token=tokOther789", {}]]) {
+      await flow(`accept-${name}`, lang, width, AI + q, async (t, page, ctx, errors) => {
+        await settle(page, 600);
+        const f = await ev(page, () => ({ box: document.getElementById("box").textContent, cls: document.getElementById("box").className, signIn: getComputedStyle(document.getElementById("signInArea")).display, signOut: getComputedStyle(document.getElementById("signOutArea")).display, accept: getComputedStyle(document.getElementById("acceptArea")).display, back: (() => { const a = document.getElementById("backLink"); if (!a) return null; const b = a.getBoundingClientRect(); return { h: Math.round(b.height), href: a.getAttribute("href"), w: b.width }; })(), sideways: document.documentElement.scrollWidth - innerWidth, small: [...document.querySelectorAll("button, input")].filter((e) => e.getClientRects().length && e.getBoundingClientRect().height < 39.5).map((e) => e.id) }));
+        check(`${t}: says what is wrong or what to do, in words (${bn ? "Bangla" : "English"})`, f.box.length > 15 && f.box !== "Checking your invite link…" && (!bn || BN.test(f.box)), f.box);
+        if (name === "signedout") check(`${t}: signed out, it offers "Sign in with Google" and no Accept`, f.signIn !== "none" && f.accept === "none", JSON.stringify(f));
+        if (name === "wrongaccount") check(`${t}: wrong account, it offers Sign out and no Accept`, f.signOut !== "none" && f.accept === "none" && f.cls === "fail", JSON.stringify(f));
+        check(`${t}: the way back — an "Open the app" link to index.html, at least 40px tall`, !!f.back && f.back.href === "index.html" && f.back.h >= 40 && f.back.w > 0, JSON.stringify(f.back));
+        check(`${t}: no sideways scroll, finger controls 40px or more`, f.sideways <= 0 && f.small.length === 0, JSON.stringify({ s: f.sideways, small: f.small }));
+        check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
+      }, { seed: TOKENS, ...o });
+    }
+    await flow("accept-right", lang, width, AI + "?token=tokMine456", async (t, page, ctx, errors) => {
+      await page.waitForSelector("#acceptArea", { state: "visible", timeout: 15000 });
+      const box = await ev(page, () => document.getElementById("box").textContent);
+      check(`${t}: signed in as the invited email it says who invites you (${bn ? "Bangla" : "English"})`, /Madrasatul Muslimeen|মাদরাসাতুল/.test(box) && (!bn || BN.test(box)), box);
+      const n0 = await writeCount(page);
+      await page.fill("#name", "Fatima");
+      await page.click("#acceptBtn"); await settle(page, 1500);
+      const ws = await writes(page, n0);
+      const person = ws.find((x) => x.col === "tenantPeople");
+      check(`${t}: Accept writes the person (7-digit id, I17's four fields), the membership, the member-uid row and consumes the invite`, !!person && /^\d{7}$/.test(person.id) && STAMPS(person.data) && ws.some((x) => x.col === "memberships") && ws.some((x) => x.col === "tenantMemberUids") && ws.some((x) => x.col === "tenantInvites" && x.data.status === "consumed"), JSON.stringify(ws.map((x) => x.col + ":" + x.id)));
+      const after = await ev(page, () => ({ box: document.getElementById("box").textContent, cls: document.getElementById("box").className, back: !!document.getElementById("backLink") && document.getElementById("backLink").getBoundingClientRect().width > 0 }));
+      check(`${t}: it welcomes the person with their ID and the way into the app is on the page`, after.cls === "ok" && /\d{7}/.test(after.box) && after.back && (!bn || BN.test(after.box)), JSON.stringify(after));
+      check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
+    }, { seed: TOKENS });
+
+    // 5: onboarding: signed out, then a family account with members and years of birth.
+    await flow("onboarding-signedout", lang, width, "/app/onboarding.html", async (t, page, ctx, errors) => {
+      await settle(page, 600);
+      const f = await ev(page, () => ({ signIn: getComputedStyle(document.getElementById("signInBtn")).display, form: getComputedStyle(document.getElementById("onboardForm")).display, who: document.getElementById("who").textContent, back: !!document.getElementById("backLink") && document.getElementById("backLink").getBoundingClientRect().width > 0, sideways: document.documentElement.scrollWidth - innerWidth }));
+      check(`${t}: signed out it offers sign-in, hides the form and says "Not signed in" in words`, f.signIn !== "none" && f.form === "none" && f.who.length > 5 && (!bn || BN.test(f.who)), JSON.stringify(f));
+      check(`${t}: the way back — "Open the app" is on the page; no sideways scroll`, f.back && f.sideways <= 0, JSON.stringify(f));
+    }, { signedOut: true });
+    await flow("onboarding-family", lang, width, "/app/onboarding.html", async (t, page, ctx, errors) => {
+      await page.waitForSelector("#onboardForm", { state: "visible", timeout: 15000 });
+      const n0 = await writeCount(page);
+      await page.check('input[name="tenantType"][value="family"]');
+      await page.fill("#name", "Amina");
+      await page.click("#createBtn"); await settle(page, 1500);
+      const ws = await writes(page, n0);
+      check(`${t}: Create writes the tenant and the owner's person, with I17's four fields`, ws.some((x) => x.col === "tenants" && STAMPS(x.data)) && ws.some((x) => x.col === "tenantPeople" && STAMPS(x.data)), JSON.stringify(ws.map((x) => x.col)));
+      await page.waitForSelector("#familyStep", { state: "visible", timeout: 8000 });
+      const lf = await ev(page, () => ({ sideways: document.documentElement.scrollWidth - innerWidth, back: !!document.getElementById("backLink") && document.getElementById("backLink").getBoundingClientRect().width > 0, small: [...document.querySelectorAll("#familyStep button, #familyStep input:not([type=checkbox]), #backLink")].filter((e) => e.getClientRects().length && e.getBoundingClientRect().height < 39.5).map((e) => e.id || e.className), cut: [...document.querySelectorAll("#familyStep input, #familyStep button")].filter((e) => e.getBoundingClientRect().right > innerWidth + 1).map((e) => e.id) }));
+      check(`${t}: the family step has no sideways scroll, nothing cut, finger controls 40px or more, and the way back stays on the page`, lf.sideways <= 0 && lf.small.length === 0 && lf.cut.length === 0 && lf.back, JSON.stringify(lf));
+      await page.fill("#famName0", "Yusuf");
+      await page.fill("#famYear0", String(new Date().getFullYear() - 9));
+      const age = await ev(page, () => document.querySelector("[data-fam-age]").textContent);
+      check(`${t}: typing a year of birth shows the age`, /9|৯/.test(age), age);
+      await page.click("#familyAdd");
+      await page.fill("#famName1", "Hamza");
+      await page.fill("#famYear1", "1990");
+      const child1 = await ev(page, () => document.querySelectorAll('[data-fam-k="child"]')[1].checked);
+      check(`${t}: a year that makes an adult unticks "A child I look after"`, child1 === false);
+      const n1 = await writeCount(page);
+      await page.click("#familySave"); await settle(page, 1500);
+      const fw = (await writes(page, n1)).filter((x) => x.col === "tenantPeople");
+      check(`${t}: Save and continue stores two people, 7-digit ids, I17's four fields, birth years and child flags`, fw.length === 2 && fw.every((w) => /^\d{7}$/.test(w.id) && STAMPS(w.data)) && fw.some((w) => String(w.data.birthYear) === "1990" && w.data.isMinor === false) && fw.some((w) => w.data.isMinor === true && w.data.managedByPersonId), JSON.stringify(fw.map((w) => ({ id: w.id, by: w.data.birthYear, m: w.data.isMinor }))));
+      const msg = await ev(page, () => document.getElementById("familyResult").textContent);
+      check(`${t}: it says how many were added (${bn ? "Bangla" : "English"})`, msg.length > 8 && (!bn || BN.test(msg)), msg);
+      await page.fill("#famName0", "Keep Me");
+      await ev(page, () => { window.__stubFailBatch = true; window.__stubFailWrites = true; window.__stubFailTx = true; });
+      const n2 = await writeCount(page);
+      await page.click("#familySave"); await settle(page, 1500);
+      const kept = await ev(page, () => ({ v: document.getElementById("famName0") && document.getElementById("famName0").value, msg: document.getElementById("familyResult").textContent }));
+      check(`${t}: a refused Save names who was not saved, keeps the typed row and stores nothing`, kept.v === "Keep Me" && /Keep Me/.test(kept.msg) && (await writeCount(page)) === n2, JSON.stringify(kept));
+      check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
+    });
+
+    // 6: Backup: owner makes it, student's view.
+    for (const [who, seed] of [["owner", ""], ["student", STUDENT]]) {
+      await flow(`backup-${who}`, lang, width, "/app/backup.html", async (t, page, ctx, errors) => {
+        await page.waitForSelector("#makeBtn:not([disabled])", { timeout: 15000 });
+        await settle(page, 400);
+        const scope = await ev(page, () => document.getElementById("scopeLine").textContent);
+        check(`${t}: the scope line says whose data is saved, in words (${bn ? "Bangla" : "English"})`, scope.length > 10 && (!bn || BN.test(scope)), scope);
+        await page.click("#makeBtn");
+        await page.waitForSelector("#result a.download-link", { timeout: 20000 });
+        const r = await ev(page, async () => { const a = document.querySelector("#result a.download-link"); const txt = await (await fetch(a.href)).text(); return { name: a.getAttribute("download"), text: txt, link: a.textContent, stats: [...document.querySelectorAll("#result .stat")].map((s) => s.textContent), sideways: document.documentElement.scrollWidth - innerWidth }; });
+        check(`${t}: "Make the backup" produces a named .html file with a Save link`, /\.html$/.test(r.name) && r.link.length > 5, r.name);
+        check(`${t}: and the file holds the roster${who === "owner" ? " (Maryam)" : ""} and is a real document`, r.text.length > 2000 && (who !== "owner" || /Maryam|মারইয়াম|মরিয়ম/.test(r.text)), `len ${r.text.length}`);
+        check(`${t}: the page shows people / claims / notes / bookmarks / log counts and a size`, r.stats.length === 6, JSON.stringify(r.stats));
+        check(`${t}: no sideways scroll`, r.sideways <= 0, String(r.sideways));
+        const lf = await ev(page, layoutFacts);
+        check(`${t}: nothing cut and finger controls 40px or more`, lf.cut.length === 0 && lf.small.length === 0, JSON.stringify(lf));
+        const home = await homeLink(page);
+        check(`${t}: a way back to Home is on the page`, !!home && home.shown, JSON.stringify(home));
+        check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
+      }, { seed });
+    }
+
+    // 7: About.
+    await flow("about", lang, width, "/app/about.html", async (t, page, ctx, errors) => {
+      await page.waitForSelector("#featureRows tr", { state: "attached", timeout: 15000 });
+      await settle(page, 400);
+      const f = await ev(page, () => ({ rows: document.querySelectorAll("#featureRows tr").length, ack: document.getElementById("ackHeading") && document.getElementById("ackHeading").textContent, links: [...document.querySelectorAll("a[target=_blank]")].filter((a) => !a.className.includes("legacy")).length, ver: document.getElementById("versionLine").textContent, sideways: document.documentElement.scrollWidth - innerWidth }));
+      check(`${t}: POSITIVE CONTROL it lists features, the acknowledgements and the version`, f.rows > 5 && f.ack && f.links >= 2 && /\d\d\.\d\d|[০-৯]/.test(f.ver), JSON.stringify(f));
+      check(`${t}: no sideways scroll`, f.sideways <= 0, String(f.sideways));
+      const heavy = (page.__reqs || []).filter((u) => /quran-data-pull|hadith-data-pull|\.mp3|\/audio\/|poster|screensaver-images|mushaf/i.test(u));
+      check(`${t}: nothing heavy loads at startup (no Qur'an / Hadith data, audio or posters)`, heavy.length === 0, heavy.slice(0, 3).join(" | "));
+      const home = await homeLink(page);
+      check(`${t}: a way back to Home is on the page`, !!home && home.shown, JSON.stringify(home));
+      check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
+    });
   }
 }
 await browser.close();
