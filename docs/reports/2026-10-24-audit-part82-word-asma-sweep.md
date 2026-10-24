@@ -12,3 +12,7 @@ Run on `main` (v12.56), one suite at a time, from the repository root. Asma ul H
 | asma-cited-hadith-browser | 66 / 0 | 66 / 0 | none | none |
 | asma-classification-rename-browser | 20 / 0 | 20 / 0 | none | none |
 | asma-descriptions-browser | 26 / 0 | 26 / 0 | none | none |
+| asma-explore-name-poster-browser | 36 / 0 | 36 / 0 | none | none |
+| asma-file-under-browser | 52 / 0 | 52 / 0 | none | none |
+| asma-name-nav-poster-browser | 140 / 0 | 140 / 0 | none | none |
+| asma-poster-browser | 102 / 0 | 102 / 0 | none | none |
