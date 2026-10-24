@@ -18,6 +18,9 @@
   button.secondary { background: white; color: #1F3A6E; }
   button:disabled { opacity: 0.5; cursor: default; }
   select { padding: 0.4rem; font-size: 0.92rem; border: 1px solid #8c8c8c; border-radius: 0.35rem; }
+  /* Audit part 86: a real-length person name made the select as wide as its longest option and pushed the page 3px sideways at 390. */
+  #contextBar label { min-width: 0; max-width: 100%; }
+  #contextBar select { min-width: 0; max-width: 100%; }
   #who { margin: 1rem 0; font-size: 0.95rem; color: #555; }
 
   /* ---------- Topic browser ---------- */
