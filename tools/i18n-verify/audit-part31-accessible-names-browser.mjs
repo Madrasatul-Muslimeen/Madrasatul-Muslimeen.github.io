@@ -40,7 +40,9 @@ function scan(bn) {
     for (const a of ["aria-label", "title", "alt", "placeholder", "aria-description"]) {
       const v = e.getAttribute(a); if (v == null) continue;
       if (ent.test(v)) out.entities.push(`${desc(e)}[${a}]=${v}`);
-      if (bn && v.trim() && latin(v)) out.attrs.push(`${desc(e)}[${a}]=${v.slice(0, 40)}`);
+      // Part 67: a bookmark's delete label is "<Bangla words>: <the bookmark's own saved name>"; the name is the reader's data (the fixture's "Ayat al-Kursi"), not chrome, so only the words before ": " are judged.
+      const judged = e.matches(".nav-bm-del") ? v.split(": ")[0] : v;
+      if (bn && v.trim() && latin(judged)) out.attrs.push(`${desc(e)}[${a}]=${v.slice(0, 40)}`);
     }
     if (!["TEXTAREA", "SCRIPT", "STYLE"].includes(e.tagName)) {
       for (const n of e.childNodes) if (n.nodeType === 3 && ent.test(n.nodeValue)) out.entities.push(`${desc(e)} text=${n.nodeValue.trim().slice(0, 40)}`);
