@@ -352,13 +352,15 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     await settle(page, 1500);
     // The link sits in the Home menu's sign-in line, so the reader opens Home to see it.
     await page.click(summaryOf(await ev(page, () => document.querySelector(".nav-cat-home > summary").textContent.trim()))); await settle(page, 300);
-    const a = await ev(page, () => { const e = document.querySelector('a[href="onboarding.html"]'); const r = e?.getBoundingClientRect(); return e ? { text: e.textContent.trim(), vis: r.width > 0, l: r.left, r: r.right } : null; });
+    // UPDATED IN PLACE (audit part 84 review): the link carries navBack=1 so the sign-up page shows a ← Back (decision 86).
+    const a = await ev(page, () => { const e = document.querySelector('a[href="onboarding.html?navBack=1"]'); const r = e?.getBoundingClientRect(); return e ? { text: e.textContent.trim(), vis: r.width > 0, l: r.left, r: r.right } : null; });
     check(`${t}: with no account, the page offers the sign-up link, on screen`, !!a && a.vis && a.l >= -1 && a.r <= width + 1, JSON.stringify(a));
     check(`${t}: its words are ${bn ? "Bangla" : "English"}`, !!a && (bn ? BN.test(a.text) : a.text === "Create a new account on the onboarding page"), JSON.stringify(a));
-    await page.click('a[href="onboarding.html"]');
-    await page.waitForURL("**/onboarding.html", { timeout: 10000 }).catch(() => {});
+    await page.click('a[href="onboarding.html?navBack=1"]');
+    await page.waitForURL("**/onboarding.html?navBack=1", { timeout: 10000 }).catch(() => {});
     await page.waitForSelector("#onboardForm", { state: "visible", timeout: 10000 }).catch(() => {});
     check(`${t}: the link opens the sign-up form`, await ev(page, () => location.pathname.endsWith("/onboarding.html") && getComputedStyle(document.getElementById("onboardForm")).display !== "none"));
+    check(`${t}: ...with a visible ← Back to the page the reader came from`, await ev(page, () => { const b = document.querySelector("[data-bm-back] [data-bm-back-link]"); const r = b?.getBoundingClientRect(); return !!b && r.width > 0 && /quranrevival\.html/.test(b.getAttribute("href") ?? ""); }));
     check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
   }, { extraSeed: NOACCOUNT });
 

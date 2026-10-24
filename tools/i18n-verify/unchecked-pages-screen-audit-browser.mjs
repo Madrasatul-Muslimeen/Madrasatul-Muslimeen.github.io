@@ -15,6 +15,7 @@
 //   --mutate=small     inject a 20px button (check (c) must fail)
 //   --mutate=clip      inject a button cut by an overflow:hidden parent (clip check must fail)
 //   --mutate=noback    drop the Back control from the page (check (e) must fail)
+import fs from "node:fs";
 import { chromium, newContext, openPage } from "./harness.mjs";
 import { SCAN, leaksOf as baseLeaksOf, DATA_ALLOWED, NAME_TOKENS } from "./bangla-sweep-lib.mjs";
 
@@ -105,6 +106,9 @@ const quiet = (errors) => errors.filter((e) => !/ERR_CERT|net::|archive\.org|api
   await ctx.close();
 }
 
+// Every app page that LINKS to accept-invite.html (a string building its address is not a link a reader follows from that page).
+const APP_LINKS_INVITE = fs.readdirSync("app").filter((f) => f.endsWith(".html") && f !== "accept-invite.html")
+  .some((f) => /href=["'][^"']*accept-invite\.html/.test(fs.readFileSync(`app/${f}`, "utf8")));
 const findings = [];
 for (const [name, path] of PAGES) {
   if (ONLY && !path.startsWith(ONLY)) continue;
@@ -130,7 +134,11 @@ for (const [name, path] of PAGES) {
       check(`${tag}: no control cut by a clipping ancestor`, m.clipped.length === 0, JSON.stringify(m.clipped.slice(0, 4)));
       check(`${tag}: every visible button is at least 40x40`, m.small.length === 0, JSON.stringify(m.small.slice(0, 6)));
       // The menu opens a page with navBack=1 (nav.js, J72); back=1 is the Continue chips' marker and only study pages answer it.
-      check(`${tag}: ?navBack=1 shows a visible Back`, m.back.length > 0, "no Back control found");
+      // UPDATED IN PLACE (audit part 84 review): accept-invite.html is reached only from an invite link sent by email (people.html
+      // builds it), never from a page in the app, so there is no place to go back to and (e) does not apply there. onboarding.html
+      // IS linked from the app (nav.js noAccountMessageHtml, now with navBack=1) and mounts the Back row.
+      if (path.startsWith("accept-invite")) check(`${tag}: no in-app page links here (so no Back is owed)`, !APP_LINKS_INVITE, "an app page now links to accept-invite.html: give it a Back");
+      else check(`${tag}: ?navBack=1 shows a visible Back`, m.back.length > 0, "no Back control found");
       if (lang === "bn") {
         const bnChars = await P.evaluate(() => (document.body.innerText.match(/[ঀ-৿]/g) || []).length);
         check(`${tag}: rendered in Bangla (positive control)`, bnChars >= 5, `Bangla characters: ${bnChars}`);
