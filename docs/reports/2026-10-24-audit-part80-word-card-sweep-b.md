@@ -11,3 +11,5 @@ Run on `main` at v12.56, one suite at a time, from the repository root. Issue #1
 | 5 | word-card-search-browser | 252 pass, 0 fail | none |
 | 6 | word-card-segments-browser | 40 pass, 0 fail | none |
 | 7 | word-card-sense-arabic-browser | 62 pass, 0 fail | none |
+| 8 | word-card-small-arabic-size-browser | 150 pass, 0 fail | none |
+| 9 | word-card-stem-mark-browser | 144 pass, 0 fail | none |
