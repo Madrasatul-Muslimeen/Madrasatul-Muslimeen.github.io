@@ -102,9 +102,16 @@ const MEASURE = () => {
   const heading = [...document.querySelectorAll("h1, h2")].find(vis);
   const sideways = document.documentElement.scrollWidth - window.innerWidth;
   const controls = [...document.querySelectorAll("button, [role=button], a.btn, a[class*=btn], a[class*=button], input[type=button], input[type=submit], select")].filter(vis);
+  // Architect review (audit part 86, the QR Lead's measurement): a control may draw a small pill and carry an invisible 40px
+  // tap area (a ::before / ::after with negative inset, e.g. #wheelCtaBtn, #wheelListCollapseBtn). So a box under 40px is
+  // small only when a finger's reach misses it: the points 19px from its centre, in each direction, must land on it.
+  const reaches = (el) => {
+    const r = el.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    return [[0, 0], [19, 0], [-19, 0], [0, 19], [0, -19]].every(([dx, dy]) => { const h = document.elementFromPoint(cx + dx, cy + dy); return !!h && (h === el || el.contains(h)); });
+  };
   const small = controls.filter((el) => {
     const r = el.getBoundingClientRect();
-    return r.width < 39.5 || r.height < 39.5;
+    return (r.width < 39.5 || r.height < 39.5) && !reaches(el);
   }).map((el) => `${el.tagName.toLowerCase()}${el.id ? "#" + el.id : ""} "${label(el)}" ${Math.round(el.getBoundingClientRect().width)}x${Math.round(el.getBoundingClientRect().height)}`);
   const clipped = [];
   for (const el of [...document.querySelectorAll("button, a, input, select, textarea, [role=button]")].filter(vis)) {
