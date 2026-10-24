@@ -13,3 +13,4 @@ Each suite run alone, from the repository root, against `main` (v12.54).
 | journey-sections-browser | 349 / 0 | 349 / 0 | green |
 | journey-sheet-browser | 962 / 0 | 962 / 0 | green |
 | journey-tags-browser | 363 / 0 | 363 / 0 | green |
+| journey-three-panel-browser | 464 / 0 | 464 / 0 | green |
