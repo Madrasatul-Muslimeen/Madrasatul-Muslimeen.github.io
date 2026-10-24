@@ -87,7 +87,12 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 1100, height: 800 
       check(`${label} the Related heading is in Bangla`, bnTitle === "সম্পর্কিত আয়াত", bnTitle);
     }
 
-    await page.click('[data-ayah-related-jump="20:110"]');
+    // UPDATED IN PLACE (J70, ayah-action-sheet.js: "Related āyāt a pull-down above 2"): a list longer than 2 sits in a closed
+    // <details data-ayah-related-more>; the rows exist (and pass the checks above) but a tap needs the reader to open it first.
+    // The card is redrawn as its data arrives (which closes the fold again), so let it settle before opening.
+    await page.waitForTimeout(1500);
+    await page.evaluate(() => { const d = document.querySelector('[data-ayah-related-jump="20:110"]')?.closest("details[data-ayah-related-more]"); if (d && !d.open) d.querySelector("summary")?.click(); });
+    await page.click('[data-ayah-related-jump="20:110"]', { timeout: 8000 }).catch(() => {});
     await page.waitForTimeout(2000);
     const after = await page.evaluate(() => ({
       open: document.getElementById("ayahActionSheetOverlay")?.classList.contains("open"),
