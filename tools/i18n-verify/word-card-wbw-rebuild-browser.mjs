@@ -76,7 +76,10 @@ for (const lang of ["en", "bn"]) {
     // and Bangla meanings and the transliteration, as before) plus the Colour tick at its right edge, so its three
     // meaning items are measured inside `.word-card-meaning-text`.
     const mb = await rect(page, ".word-card-meaning-bar .word-card-meaning-text > *");
-    if (width >= 1000) check(`${L}: meaning bar is one row`, mb.length === 3 && mb.every((r) => Math.abs(r.y - mb[0].y) < 4), JSON.stringify(mb.map((r) => r.y)));
+    // Updated in place 24 Oct 2026 (audit part 82): the items are `align-items: baseline` with different font sizes
+    // (meaning 1.22rem, transliteration 1.02rem), so their TOPS differ by up to 4px on one row. "One row" now means
+    // every item's vertical span overlaps the first item's span; a wrapped item would sit wholly below it.
+    if (width >= 1000) check(`${L}: meaning bar is one row`, mb.length === 3 && mb.every((r) => r.y < mb[0].b - 1 && r.b > mb[0].y + 1), JSON.stringify(mb.map((r) => [r.y, r.b])));
     else check(`${L}: meaning bar items inside the card`, mb.length === 3 && mb.every((r) => r.r <= width));
 
     const hdr = await page.evaluate(() => [...document.querySelector(".quran-word-card header").children].map((e) => { const r = e.getBoundingClientRect(); return { n: e.className || e.tagName, x: r.x, y: r.y, w: r.width, h: r.height, r: r.right, b: r.bottom }; }));
