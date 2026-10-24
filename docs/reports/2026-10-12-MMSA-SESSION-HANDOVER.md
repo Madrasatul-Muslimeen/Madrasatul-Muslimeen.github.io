@@ -1655,3 +1655,5 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v12.48** (2026-10-23): audit part 56, getting started and Bookmarks by the User Manual.
 - **v12.49** (2026-10-23): audit part 57, Records, Monitor and Homework by the User Manual.
 - **v12.50** (2026-10-23): audit part 60: Notes pages; history rows in words.
+- **v12.51** (2026-10-23): audit part 62: Classes / Course Offers note for non-admins.
+- **v12.52** (2026-10-24): audit part 64: a way back on accept-invite and onboarding.

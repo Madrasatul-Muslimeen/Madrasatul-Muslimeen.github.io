@@ -73,6 +73,8 @@
       </label>
     </div>
 
+    <div id="noAdminNote" class="muted" style="display:none;">Course offers are created and managed by the owner or a prime — the active offers are listed below.</div>
+
     <fieldset id="createFieldset" style="display:none;">
       <legend>New course offer</legend>
       <label for="offerNameInput">Name</label>
@@ -251,6 +253,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
 
       canAdmin = effRoles.some((r) => ["owner", "prime"].includes(r));
       createFieldset.style.display = canAdmin ? "" : "none";
+      document.getElementById("noAdminNote").style.display = canAdmin ? "none" : "";
 
       const leaves = subjectTree.filter((n) => n.isTrackable && n.status !== "archived");
       subjectChecks.innerHTML = leaves
