@@ -15,3 +15,15 @@ Each suite run alone, from the repository root, against `main` (v12.54).
 | journey-folder-picker-browser | 310 / 0 | 310 / 0 | green |
 | journey-folder-window-browser | 144 / 0 | 144 / 0 | green |
 | journey-link-preview-browser | 192 / 0 | 192 / 0 | green |
+| journey-note-actions-browser | 184 / 0 | 184 / 0 | green |
+| journey-note-edit-browser | 208 / 0 | 208 / 0 | green (two extra "typing at the end of a long Note" PASS lines print after the total; not failures) |
+| journey-note-folds-windows-browser | 82 / 0 | 82 / 0 | green |
+
+## Closing checks
+
+- `stub-parity.mjs`: 4 passed, 0 failed
+- `bangla-sweep-other-pages-browser`: 224 passed, 0 failed
+
+## Result
+
+All 14 suites were green on `main` at v12.54. Nothing failed, so no check was changed, no defect fixed, and no application file touched. Every suite was reached.
