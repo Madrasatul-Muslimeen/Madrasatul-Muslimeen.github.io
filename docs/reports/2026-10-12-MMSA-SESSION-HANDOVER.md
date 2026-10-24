@@ -1657,3 +1657,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v12.50** (2026-10-23): audit part 60: Notes pages; history rows in words.
 - **v12.51** (2026-10-23): audit part 62: Classes / Course Offers note for non-admins.
 - **v12.52** (2026-10-24): audit part 64: a way back on accept-invite and onboarding.
+- **v12.53** (2026-10-24): audit part 65: Catalogue / Curriculum names keyed by language; refusals in words.

@@ -954,3 +954,4 @@ total). Allocated by the MMSA Architect.
 12.50: audit part 60: Notes pages; history rows in words. Allocated by the MMSA Architect.
 12.51: audit part 62: Classes / Course Offers note for non-admins. Allocated by the MMSA Architect.
 12.52: audit part 64: a way back on accept-invite and onboarding. Allocated by the MMSA Architect.
+12.53: audit part 65: Catalogue / Curriculum names keyed by language; refusals in words. Allocated by the MMSA Architect.

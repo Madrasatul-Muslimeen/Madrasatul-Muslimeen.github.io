@@ -21,6 +21,7 @@
 
 import { collection, doc, arrayUnion, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { TENANT } from "./collections.js";
+import { nameByScript } from "./lang.js";
 import { createDocument, updateDocument } from "./envelope.js";
 
 // ---------------------------------------------------------------------------
@@ -34,7 +35,7 @@ export async function createCurriculumUnit(db, tenantId, { subjectIds, name, ord
     tenantId,
     subjectIds: subjectIds ?? [],
     levelId: levelId ?? null,
-    name: { en: name },
+    name: nameByScript(name),
     order: order ?? 0,
     resourceIds: [],
     status: "active",

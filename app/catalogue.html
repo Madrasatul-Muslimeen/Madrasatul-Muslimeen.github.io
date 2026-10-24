@@ -1177,7 +1177,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
         () => saveApproachListTitle(db, activeTenantId, title, auth.currentUser.uid),
         { collection: "tenants", action: "saveApproachListTitle", id: activeTenantId }
       );
-      if (!outcome.ok) { msg.textContent = ""; alert(outcome.entry.message); return; }
+      if (!outcome.ok) { msg.textContent = outcome.entry.message; return; }
       const clean = {};
       for (const l of ["en", "bn"]) if (title[l].trim()) clean[l] = title[l].trim();
       tenantDoc = { ...(tenantDoc ?? {}), approachListTitle: clean };
@@ -2196,7 +2196,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
 
     addLadderBtn.addEventListener("click", async () => {
       const name = document.getElementById("newLadderName").value.trim();
-      if (!name) return;
+      if (!name) { ladderResult.textContent = t("Enter a name first."); return; }
       addLadderBtn.disabled = true;
       const outcome = await safeWrite(
         () => createLadder(db, activeTenantId, name, auth.currentUser.uid),

@@ -31,6 +31,7 @@ import {
   where,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { TENANT } from "./collections.js";
+import { nameByScript } from "./lang.js";
 import { createDocument, commitEnvelopeBatch, updateDocument } from "./envelope.js";
 import { MODULE_TEMPLATES, SUBJECT_TEMPLATES, APPROACH_TEMPLATES, TOPIC_TRACKABLE_TEMPLATES, SECTION_NAMES } from "./catalogue-data.js";
 import { createResource } from "./resources.js";
@@ -271,8 +272,8 @@ export async function createTopicSubject(db, tenantId, parentNode, { name, gloss
 
   await createDocument(db, TENANT.SUBJECTS, `${tenantId}__${newId}`, {
     tenantId,
-    name: { en: name },
-    gloss: gloss ? { en: gloss } : null,
+    name: nameByScript(name),
+    gloss: gloss ? nameByScript(gloss) : null,
     parentId: parentNode?.id ?? null,
     ancestorIds,
     moduleIds,
@@ -514,7 +515,7 @@ export async function createLadder(db, tenantId, name, uid) {
   const ladderId = doc(collection(db, TENANT.LADDERS)).id;
   await createDocument(db, TENANT.LADDERS, `${tenantId}__${ladderId}`, {
     tenantId,
-    name: { en: name },
+    name: nameByScript(name),
     status: "active",
   }, uid);
   return ladderId;
@@ -525,7 +526,7 @@ export async function createLevel(db, tenantId, ladderId, name, order, uid) {
   await createDocument(db, TENANT.LEVELS, `${tenantId}__${levelId}`, {
     tenantId,
     ladderId,
-    name: { en: name },
+    name: nameByScript(name),
     order,
     status: "active",
   }, uid);
