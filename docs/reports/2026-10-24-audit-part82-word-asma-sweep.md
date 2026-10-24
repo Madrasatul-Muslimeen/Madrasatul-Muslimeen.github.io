@@ -8,3 +8,7 @@ Run on `main` (v12.56), one suite at a time, from the repository root. Asma ul H
 | word-na-browser | 48 / 0 | 48 / 0 | none | none |
 | word-progress-practising-browser | 458 / 0 | 458 / 0 | none | none |
 | word-progress-saving-browser | 32 / 0 | 32 / 0 | none | none |
+| asma-cited-ayat-browser | 45 / 0 | 45 / 0 | none | none |
+| asma-cited-hadith-browser | 66 / 0 | 66 / 0 | none | none |
+| asma-classification-rename-browser | 20 / 0 | 20 / 0 | none | none |
+| asma-descriptions-browser | 26 / 0 | 26 / 0 | none | none |
