@@ -55,7 +55,7 @@ import {
   renderAssignDropdown, wireAssignDropdown, checkedAssignees, buildClaimResultMessage,
 } from "./way-modal.js";
 import { getBookmarks, touchResume, recentResumeEntries, saveBookmark, removeSavedBookmark, findSavedBookmark, createFolder, flattenFolderTree } from "./bookmarks.js";
-import { openBookmarkNamePopover, announceBookmarkSaved } from "./bookmark-popover.js";
+import { openBookmarkNamePopover, announceBookmarkSaved, openBookmarkExistsChoice } from "./bookmark-popover.js";
 import { saveBookmarkForAssignees, patchSelectedDoc } from "./bookmark-assign.js";
 import { renderContinueStrip } from "./continue-strip.js";
 
@@ -467,7 +467,14 @@ export function initTopicStudyPage({ moduleId, trackableId, rootSubjectId }) {
   async function toggleTopicBookmark(node) {
     if (!auth.currentUser || !selectedPersonId) return;
     const existing = findSavedBookmark(bookmarksDoc, { moduleId, subjectId: node.id, position: node.id });
+    // Audit part 87 / the Owner's J22 rule (12 Oct 2026): a tap on an existing bookmark ASKS (Remove my bookmark / Add a
+    // bookmark…) instead of removing at once, as the Quran page's 🔖 already does; ✕ or Escape writes nothing.
+    let pick = null;
     if (existing) {
+      pick = await openBookmarkExistsChoice();
+      if (pick !== "remove" && pick !== "add") return;
+    }
+    if (existing && pick === "remove") {
       const outcome = await safeWrite(
         () => removeSavedBookmark(db, activeTenantId, selectedPersonId, existing.id),
         { collection: TENANT.BOOKMARKS, action: "removeSavedBookmark" }
