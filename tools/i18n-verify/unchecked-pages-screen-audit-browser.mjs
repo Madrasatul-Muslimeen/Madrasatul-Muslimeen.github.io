@@ -45,7 +45,8 @@ DATA_ALLOWED.push(/^সপ্তাহ [০-৯]+ — Surah Al-Fatiha$/, /^https
 // Audit part 85: the stub's seeded bookmark name is the reader's own data; Records prints its storage chunk key on purpose
 // (records.html: "turning the key into Bengali digits would stop it matching what is stored"); Quran Foundation is the
 // font provider's name (About credits it by name in English on purpose).
-DATA_ALLOWED.push(/^Ayat al-Kursi$/, /^খণ্ড: (?:surah|subject)_\w+$/);
+DATA_ALLOWED.push(/^Ayat al-Kursi and the last two āyāt of Al-Baqarah$/, /^Weekend Qur'an Memorisation and Tajweed Circle \(Year 7–9\)( \((ক্লাস|কোর্স অফার)\))?$/,
+  /^Muhammad Abdur-Rahman ibn Abdullah Al-Hashimi$/, /^Maryam bint Abdullah Al-Hashimi$/, /^Reading \(with Tajweed\)$/, /^Madrasatul Muslimeen \(Owner, Prime\)$/, /^Ayat al-Kursi$/, /^খণ্ড: (?:surah|subject)_\w+$/);
 NAME_TOKENS.push(/\bQuran Foundation\b/g);
 
 const PAGES = [
@@ -56,7 +57,23 @@ const PAGES = [
   ["Monitor", "monitor.html"], ["Homework", "homework.html"], ["People", "people.html"], ["Records", "records.html"],
   ["Catalogue", "catalogue.html"], ["About", "about.html"], ["Bookmarks", "bookmarks.html"],
   ["Hadith collections", "hadith-collections.html"],
+  // Audit part 86: the last shared pages.
+  ["Landing", "index.html"], ["Notes", "notes.html"], ["Journey map", "journey-map.html"], ["Deen study", "deen-study.html"],
+  ["Arabic study", "arabic-study.html"], ["Self-check", "admin-self-check.html"], ["Taglines", "taglines.html"],
 ];
+
+// Audit part 86: REAL-LENGTH data (v07.134 lesson: short fixture names report clean while a real tenant's text runs off a phone).
+// Pass --short to run on the stub's own short names, as parts 84-85 did.
+const REAL_SEED = `
+DATA.tenants[0].name = lang("Madrasatul Muslimeen (Owner, Prime)", "মাদরাসাতুল মুসলিমীন (মালিক, প্রাইম)");
+DATA.tenantPeople[0].name = lang("Muhammad Abdur-Rahman ibn Abdullah Al-Hashimi", "মুহাম্মাদ আবদুর রহমান ইবনে আবদুল্লাহ আল-হাশিমী");
+DATA.tenantPeople[1].name = lang("Maryam bint Abdullah Al-Hashimi", "মুহাম্মাদ আবদুর রহমান ইবনে আবদুল্লাহ আল-হাশিমী");
+DATA.trackables[0].name = lang("Reading (with Tajweed)");
+DATA.classes[0].name = lang("Weekend Qur'an Memorisation and Tajweed Circle (Year 7–9)");
+DATA.courseOffers[0].name = lang("Weekend Qur'an Memorisation and Tajweed Circle (Year 7–9)");
+DATA.bookmarks[0].saved[0].name = "Ayat al-Kursi and the last two āyāt of Al-Baqarah";
+`;
+const SEED = process.argv.includes("--short") ? null : REAL_SEED;
 const VIEWPORTS = [[390, 844], [820, 1180], [1440, 900]];
 const LANGS = ["en", "bn"];
 
@@ -128,7 +145,7 @@ for (const [name, path] of PAGES) {
   for (const [w, h] of VIEWPORTS) {
     for (const lang of LANGS) {
       const tag = `${name} ${w}x${h} ${lang}`;
-      const ctx = await newContext(browser, { appLang: lang === "bn" ? "bn" : null, banner: false, viewport: { width: w, height: h } });
+      const ctx = await newContext(browser, { appLang: lang === "bn" ? "bn" : null, banner: false, viewport: { width: w, height: h }, extraSeedJs: SEED });
       await ctx.route("**/archive.org/**", (r) => r.abort());
       const sep = path.includes("?") ? "&" : "?";
       // hadith-collections.html answers back=1 (its own way-back, the Hadith Lead's) and not the menu's navBack=1.
