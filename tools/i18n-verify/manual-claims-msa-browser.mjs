@@ -506,6 +506,113 @@ if (want("teaching")) {
   }
 }
 
+// =====================================================================================================================
+// ▸ Notes and Mapping My Journey   (audit part 87b)
+// =====================================================================================================================
+const hx = (id) => id.slice(1).repeat(32);
+// Mapping My Journey: Alpha{n1,n2,n3} and Beta{}; every Note started on 2:256. Writes are applied so the page can be driven on.
+const NOTES_SEED = (owner = "p1") => `
+(function () {
+  window.__stubApplyBatches = true; window.__stubRecordTxData = true; window.__DATA = DATA;
+  var own = { tenantId: "t1", ownerPersonId: "${owner}", ownerUid: "test-uid", schemaVersion: 1, createdBy: "test-uid" };
+  function ts() { return { toDate: function () { return new Date("2026-09-01T10:00:00Z"); }, toMillis: function () { return new Date("2026-09-01T10:00:00Z").getTime(); } }; }
+  DATA.noteFolders = []; DATA.notes = []; DATA.notePlacements = []; DATA.noteRevisions = []; DATA.noteSections = []; DATA.noteTags = []; DATA.noteTagLinks = []; DATA.noteSources = [];
+  function F(id, name, parent, order) { DATA.noteFolders.push(Object.assign({ _id: "t1__" + id, folderId: id, name: name, parentFolderId: parent, semanticRole: "user", order: order, status: "active", updatedAt: ts() }, own)); }
+  function N(l, title, extra) { var id = l.slice(1).repeat(32); DATA.notes.push(Object.assign({ _id: "t1__" + id, noteId: id, title: title, bodyHtml: "<p>" + title + " body</p>", currentRevisionId: "rev-" + id, status: "active", visibility: "private", createdAt: ts(), updatedAt: ts() }, own, extra || {}));
+    DATA.noteRevisions.push(Object.assign({ _id: "t1__rev-" + id, revisionId: "rev-" + id, noteId: id, previousRevisionId: null, title: title, bodyHtml: "<p>" + title + " body</p>", revisionReason: "content-update", actorUid: "test-uid", createdAt: new Date("2026-09-01T10:00:00Z") }, own));
+    DATA.noteSources.push(Object.assign({ _id: "t1__s-" + id, sourceLinkId: "s-" + id, noteId: id, sourceKey: "ayah:2:256", sourceKind: "quran-unit", relationshipKind: "origin", approachId: null, provenanceKind: "study-note", status: "active", createdAt: ts(), updatedAt: ts() }, own)); }
+  function P(id, l, folder, order) { DATA.notePlacements.push(Object.assign({ _id: "t1__" + id, placementId: id, noteId: l.slice(1).repeat(32), folderId: folder, order: order, status: "active" }, own)); }
+  F("fA", "Alpha", null, 0); F("fB", "Beta", null, 1);
+  N("n1", "Note One"); N("n2", "Note Two"); N("n3", "Note Three");
+  P("p1", "n1", "fA", 0); P("p2", "n2", "fA", 1); P("p3", "n3", "fA", 2);
+})();`;
+const vis = (page, sel) => page.evaluate((s) => { const e = document.querySelector(s); if (!e) return false; const r = e.getBoundingClientRect(); return getComputedStyle(e).display !== "none" && getComputedStyle(e).visibility !== "hidden" && r.width > 0 && r.height > 0; }, sel);
+const count = (page, sel) => page.evaluate((s) => document.querySelectorAll(s).length, sel);
+const jmOpen = async (path, w, h, seed = NOTES_SEED(), extra = {}) => {
+  const ctx = await newContext(browser, { banner: false, appLang: null, viewport: { width: w, height: h }, extraSeedJs: seed, ...extra });
+  await ctx.addInitScript(() => { try { localStorage.setItem("qr.journeyMapExpanded", JSON.stringify(["fA", "fB"])); } catch {} });
+  const { page, errors } = await openPage(ctx, path);
+  await page.waitForTimeout(1200);
+  await page.evaluate(() => document.querySelectorAll('[id*="splash"], .app-splash-overlay').forEach((e) => e.remove()));
+  return { ctx, page, errors };
+};
+const jmReady = (page) => page.waitForFunction(() => document.querySelectorAll("[data-folder-tree] .folder-row[data-folder-id]").length >= 2 && !document.querySelector("[data-folder-count-loading]"), null, { timeout: 20000 });
+const jmOpenNote = async (page, id = "n1", folder = "fA") => {
+  if (await vis(page, "#folderNotes [data-list-back]")) await page.click("#folderNotes [data-list-back]");
+  await page.click(`.folder-row[data-folder-id="${folder}"] [data-folder-name]`);
+  await page.waitForSelector(`#folderNotes [data-note-leaf][data-note-id="${hx(id)}"] [data-note-open]`, { state: "visible", timeout: 15000 });
+  await page.click(`#folderNotes [data-note-leaf][data-note-id="${hx(id)}"] [data-note-open]`);
+  await page.waitForSelector("#notePane:not([hidden]) [data-pane-title]", { state: "visible", timeout: 15000 });
+};
+if (want("notes")) {
+  console.log("== Notes and Mapping My Journey");
+  // ### Notes pane in the Read view  +  ### Track this āyah (Notes pane tab)
+  for (const [w, h] of VIEWPORTS) {
+    const tag = `${w}px`;
+    const { ctx, page, errors } = await jmOpen("/app/quranrevival.html", w, h);
+    await page.route("**/archive.org/**", (r) => r.abort());
+    if (!(await shown(page, "#tabReadBtn"))) { await page.click("#tabStudyBtn"); await page.waitForTimeout(150); }
+    await page.click("#tabReadBtn"); await page.waitForTimeout(400);
+    await page.evaluate(() => { const s = document.getElementById("surahSelect"); s.value = "2"; s.dispatchEvent(new Event("change", { bubbles: true })); });
+    await page.waitForFunction(() => document.querySelector('#readView [data-word-occurrence^="quran-word-occurrence:v1:2:"]'), null, { timeout: 20000 });
+    await page.evaluate(() => { const el = document.getElementById("ayahSelect"); el.value = "256"; el.dispatchEvent(new Event("change", { bubbles: true })); });
+    await page.waitForTimeout(900);
+    // How to use, route 1: the Read bar's 📝 (on a phone ⋯ More tools → 📝)
+    const narrow = await shown(page, "#readToolsBtn");
+    check(`[${tag}] Notes pane in the Read view: ${narrow ? "on a phone 📝 is behind ⋯ More tools" : "on a computer 📝 is on the Read bar"}`, narrow ? !(await shown(page, "#readNotesBtn")) : await shown(page, "#readNotesBtn"));
+    if (narrow) await page.click("#readToolsBtn");
+    await page.waitForTimeout(150);
+    if (MUTATE === "notes") await page.evaluate(() => document.getElementById("readNotesBtn")?.remove());
+    await page.click("#readNotesBtn", { timeout: 4000 }).catch(() => {});
+    await page.waitForFunction(() => document.querySelector("#readNotePane:not([hidden]) iframe"), null, { timeout: 8000 }).catch(() => {});
+    let F = null;
+    for (let i = 0; i < 60 && !F; i++) { F = page.frames().find((x) => /journey-map\.html\?embed=1&unit=ayah%3A2%3A256/.test(x.url())); if (!F) await page.waitForTimeout(100); }
+    check(`[${tag}] Notes pane in the Read view: ${narrow ? "⋯ → 📝" : "📝 on the bar"} opens the pane on the āyah (journey-map.html?embed=1&unit=ayah:2:256)`, !!F, page.frames().map((f) => f.url()).join(" "));
+    if (F) {
+      await F.waitForSelector("[data-unit-body] [data-note-id], [data-unit-empty]", { timeout: 15000 }).catch(() => {});
+      await F.waitForTimeout(500);
+      const where = await page.evaluate(() => { const p = document.getElementById("readNotePane"), r = p.getBoundingClientRect(); return { l: r.left, t: r.top, r: r.right, b: r.bottom, iw: innerWidth, ih: innerHeight, w: r.width }; });
+      const list = await F.evaluate(() => ({ cards: [...document.querySelectorAll("[data-unit-body] [data-note-id]")].map((c) => c.dataset.noteId), newBtn: document.querySelector("[data-unit-new]")?.textContent.trim(), journey: !!document.querySelector("[data-unit-journey]") }));
+      check(`[${tag}] Notes pane in the Read view: it lists every Note linked to the āyah (the 3 seeded Notes started on 2:256) and has ✚ New note`, list.cards.length === 3 && /^✚\s*New note/.test(list.newBtn || ""), JSON.stringify(list));
+      if (narrow) check(`[${tag}] Notes pane in the Read view: on a phone the pane is full screen`, where.l <= 0.5 && where.t <= 0.5 && Math.abs(where.r - where.iw) <= 1 && Math.abs(where.b - where.ih) <= 1, JSON.stringify(where));
+      // MANUAL IS WRONG (PCF MSA J72): on a computer the pane is a pop-up WINDOW at the home window's size, over the reading, not a column "beside" it.
+      // Check corrected to the app: a window with a margin on every side (not full screen), inside the screen.
+      else check(`[${tag}] Notes pane in the Read view: on a computer the pane is a pop-up window over the reading (J72), with a margin all round, not full screen`, where.l > 0 && where.t > 0 && where.r < where.iw && where.b < where.ih, JSON.stringify(where));
+      const back = await page.evaluate(() => document.querySelector("#readNotePane [data-rnp-back]")?.textContent.trim());
+      check(`[${tag}] Notes pane in the Read view: the bar says "← Back to 2:256"`, /^←\s*Back to 2:256/.test(back || ""), String(back));
+      // ### Track this āyah tab
+      if (await page.evaluate(() => !!document.querySelector("#readNotePane.rnp-tabs-in-frame"))) await F.click('.jm-host-tab[data-jm-host-tab="track"]'); else await page.click('#readNotePane [data-rnp-tab="track"]');
+      await page.waitForTimeout(300);
+      const tr = await page.evaluate(() => ({ trackShown: !document.querySelector("#readNotePane .rnp-track").hidden, btns: [...document.querySelectorAll("#readNotePane [data-rnp-track]")].map((b) => b.dataset.rnpTrack + "=" + b.textContent.trim().replace(/\s+/g, " ")) }));
+      check(`[${tag}] Track this āyah: the tab holds Take an Approach, Record Your Progress and Know Your Status`, tr.trackShown && tr.btns.length === 3 && /Take an Approach/.test(tr.btns[0]) && /Record Your Progress/.test(tr.btns[1]) && /Know Your Status/.test(tr.btns[2]), JSON.stringify(tr));
+      await page.click('#readNotePane [data-rnp-track="record"]');
+      await page.waitForFunction(() => document.getElementById("ayahActionSheetOverlay")?.classList.contains("open"), null, { timeout: 8000 }).catch(() => {});
+      await page.waitForTimeout(400);
+      const rec = await page.evaluate(() => ({ pane: document.getElementById("readNotePane").hidden, pill: document.querySelector("#ayahCardBackPill:not([hidden]) [data-ayah-card-back]")?.textContent.trim() ?? "" }));
+      check(`[${tag}] Track this āyah: an action opens it and leaves "Back to Notes on 2:256"`, rec.pane && /Back to Notes on 2:256/.test(rec.pill), JSON.stringify(rec));
+      await page.evaluate(() => document.querySelector("#ayahCardBackPill [data-ayah-card-back]")?.click());
+      await page.waitForTimeout(600);
+      check(`[${tag}] Track this āyah: "Back to Notes on …" brings you back to the pane`, await page.evaluate(() => !document.getElementById("readNotePane").hidden));
+      // ↗ Open in Mapping My Journey opens the full tray; ← Back to … closes the pane
+      await page.click("#readNotePane [data-rnp-journey]");
+      await page.waitForFunction(() => document.querySelector("#journeyTray:not([hidden]) iframe"), null, { timeout: 8000 }).catch(() => {});
+      check(`[${tag}] Notes pane in the Read view: ↗ Open in Mapping My Journey opens the full tray`, await page.evaluate(() => !!document.querySelector("#journeyTray:not([hidden])")));
+      await page.click("#journeyTray .jt-close").catch(() => {}); await page.waitForTimeout(300);
+      await page.click("#readNotePane [data-rnp-back]").catch(() => {}); await page.waitForTimeout(300);
+      check(`[${tag}] Notes pane in the Read view: ← Back to … closes it`, await page.evaluate(() => document.getElementById("readNotePane").hidden));
+    }
+    // route 2: Study ▾ → Notes
+    await page.evaluate(() => { document.getElementById("ayahActionSheetOverlay")?.classList.remove("open"); document.getElementById("studyPillarMenu").hidden = true; });
+    await page.click("#tabStudyBtn", { timeout: 5000 }).catch((e) => console.log("   (Study click: " + String(e).split("\n")[0].slice(0, 160) + ")")); await page.waitForTimeout(200);
+    const studyNote = await shown(page, "#tabNoteBtn");
+    if (studyNote) { await page.click("#tabNoteBtn"); await page.waitForTimeout(900); }
+    const viaStudy = await page.evaluate(() => !document.getElementById("readNotePane")?.hidden);
+    check(`[${tag}] Notes pane in the Read view: Study ▾ → Notes also opens it`, studyNote && viaStudy, JSON.stringify({ studyNote, viaStudy }));
+    check(`[${tag}] Notes pane in the Read view / Track this āyah: no page error`, quiet(errors).length === 0, JSON.stringify(quiet(errors)));
+    await ctx.close();
+  }
+}
+
 async function summ_bn(page) {
   await page.evaluate(() => { document.querySelector(".nav-cat-home").open = true; });
   await page.waitForTimeout(150);
