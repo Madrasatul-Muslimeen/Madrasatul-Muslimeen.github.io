@@ -52,7 +52,12 @@ for (const viewport of [{ width: 320, height: 640 }, { width: 390, height: 844 }
     await goToAyah(page, 36, 38);
     check(`${label} I9: the index file is not fetched before the card opens`, fetched.length === 0, fetched.join(" "));
 
-    await page.click('#readView [data-ayah-num-badge="36:38"]');
+    // A real tap first. At 320x640 (with the default banner) Playwright finds #readScroll / #studyScreen / #singleAyahNavRow on top
+    // of the badge and the click never lands (a 30 s run-killing timeout); that is ONE red check here, and the card is then opened
+    // by the badge's own click() so the hadith checks below still run. See docs/reports/2026-10-24-audit-part81-ayah-card-sweep.md.
+    const tapped = await page.click('#readView [data-ayah-num-badge="36:38"]', { timeout: 4000 }).then(() => true, () => false);
+    if (!tapped) await page.evaluate(() => document.querySelector('#readView [data-ayah-num-badge="36:38"]')?.click());
+    check(`${label} a real tap on the 36:38 number badge reaches it (nothing sits on top)`, tapped, "Playwright's click was intercepted");
     await waitForHadith(page);
     check(`${label} positive control: the surah's index file is fetched once the card opens`, fetched.some((u) => /\/36\.json/.test(u)), fetched.join(" "));
     const heading = await page.evaluate(() => document.querySelector("[data-ayah-sheet-hadith] .ayah-status-heading")?.textContent);
