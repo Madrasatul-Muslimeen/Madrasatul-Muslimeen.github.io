@@ -22413,3 +22413,9 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 - **Fix (QR Lead, PR #1171), `app/quranrevival.html`:** a document Escape handler closes `#studyPillarMenu` like a tap, sets `aria-expanded="false"`, focuses `#tabStudyBtn`; `openReadContents()` remembers its opener and `closeReadContents({ restoreFocus })` returns focus on Esc, ×, ← Back or a tap outside (not when a row or Home is chosen).
 - Still red: `app/hadith-collections.html` loads no `nav.js`, so its Home ▾ ignores Esc (the Hadith Lead's file; sent).
 - Measured: keyboard audit 228/2; behaviour 971/0 (a first run had 38e red, its 5 s wait for an audio restart; the rerun passed); apps-build-check 48/0; QR front 65/0, pages 80/0, range-bookmark 40/0 (QR Lead). Nothing stored; no Rules changed.
+
+## v12.64 — 25 Oct 2026 — Hadith: 👥 opens on a HadeethEnc hadith; Esc closes the Home menu on Hadith Collections
+
+- **Audit part 89** (J29, Builder #1170, PR #1172): `manual-claims-msa-browser --section=hadith` checks the Manual's Hadith and Dua section claim by claim at 390 and 1440: 83 pass, 2 fail, 2 skip; `--mutate=hadith` 16 fail. The fault: on a HadeethEnc hadith the 👥 list never opened.
+- **Fix (Hadith Lead, branch `claude/hadith-lead-01q2`):** `app/js/hadith-browser.js` 👥 trigger calls `e.stopPropagation()`, because `way-modal.js`'s document listener toggled every `[data-assign-trigger]` too, so one tap opened and shut it; `app/hadith-collections.html` gets an inline Escape handler (closes `.nav-cat[open]`, focus back on its summary), as `nav.js:404` gives every other page (audit part 88).
+- Measured (Architect): `--section=hadith` 85/0/2 skip; shared-pages-keyboard-audit 230/0; hadeethenc-browser 82/0; behaviour 971/0. Not reached: the Bangla fold on OpenITI narrations. Nothing stored; no Rules changed.

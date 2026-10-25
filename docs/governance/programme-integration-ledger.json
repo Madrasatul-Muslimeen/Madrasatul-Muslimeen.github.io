@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "12.63",
+    "version": "12.64",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -5033,8 +5033,20 @@
     {
       "version": "12.63",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Audit part 88: Esc closes the Study menu and the Read list returns focus (QR Lead PR #1171).",
+      "integration": {
+        "authorizedOn": "2026-10-25",
+        "integratedOn": "2026-10-25",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.64",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Audit parts 88-89: the Hadith 👥 list opens; Esc on Hadith Collections (Hadith Lead).",
       "integration": {
         "authorizedOn": "2026-10-25",
         "integratedOn": "2026-10-25",
@@ -5043,8 +5055,9 @@
       }
     }
   ],
-  "nextUnallocated": "12.64",
+  "nextUnallocated": "12.65",
   "nextUnallocatedNote": [
+    "v12.64 was allocated to Hadith: 👥 opens on a HadeethEnc hadith; Esc closes the Home menu on Hadith Collections (audit parts 88-89), 2026-10-25.",
     "v12.63 was allocated to the Qur'an landing works from a keyboard (audit part 88), 2026-10-25.",
     "v12.62 was allocated to Bangla audio where the timing is not checked: the Owner's tick E (J95), 2026-10-25.",
     "v12.61 was allocated to Bangla audio plays each āyah as its own exact clip (J95), 2026-10-25.",
