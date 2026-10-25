@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "12.65",
+    "version": "12.66",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -5057,8 +5057,20 @@
     {
       "version": "12.65",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "DOMPurify's <script> in the head of dawah.html, notes.html and journey-map.html now carries defer, so it no longer blocks first paint (audit part 91, PR #1181).",
+      "integration": {
+        "authorizedOn": "2026-10-25",
+        "integratedOn": "2026-10-25",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.66",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Bangla Confirm anyway and Copy link shortened so they no longer wrap to 3 lines on a phone; the Bangla layout audit gains an accepted list (audit part 92, PR #1183).",
       "integration": {
         "authorizedOn": "2026-10-25",
         "integratedOn": "2026-10-25",
@@ -5067,8 +5079,9 @@
       }
     }
   ],
-  "nextUnallocated": "12.66",
+  "nextUnallocated": "12.67",
   "nextUnallocatedNote": [
+    "v12.66 was allocated to shorter Bangla for Confirm anyway and Copy link (audit part 92), 2026-10-25.",
     "v12.65 was allocated to Dawah, Notes and Mapping My Journey load DOMPurify with defer (audit part 91), 2026-10-25.",
     "v12.64 was allocated to Hadith: 👥 opens on a HadeethEnc hadith; Esc closes the Home menu on Hadith Collections (audit parts 88-89), 2026-10-25.",
     "v12.63 was allocated to the Qur'an landing works from a keyboard (audit part 88), 2026-10-25.",
