@@ -245,6 +245,10 @@ export function mountBackRow(text, { href = null, onBack = null, id = null, viaH
   document.body.appendChild(row);
   // Sit just above a bar fixed to the bottom of the screen (the Qur'an page's Study / Explore tabs), never on it.
   const pageFixed = new Set(), settleUntil = Date.now() + 1500;
+  // Audit part 95 (the QR Lead's request, 25 Oct 2026): a page may mark a sheet the chip may float OVER
+  // ([data-back-float-over], the Qur'an page's full-screen notes pane on a phone). Such a sheet is neither a bottom bar
+  // to sit above nor a window to step aside for, so the way back stays on screen while it is open.
+  const FLOAT_OVER = "[data-back-float-over]";
   const lift = () => {
     // The Owner, 8 Oct 2026: beside ✓ on the Read bar whenever the page offers a place for it (back-dock.js).
     const wasDocked = row.classList.contains("bm-back-docked");
@@ -258,6 +262,7 @@ export function mountBackRow(text, { href = null, onBack = null, id = null, viaH
     let top = window.innerHeight;
     for (const x of [16, window.innerWidth / 2]) {
       for (let el = document.elementFromPoint(x, window.innerHeight - 6); el && el !== document.body; el = el.parentElement) {
+        if (el.closest(FLOAT_OVER)) break;
         const pos = getComputedStyle(el).position;
         if (pos === "fixed" || pos === "sticky") { top = Math.min(top, el.getBoundingClientRect().top); break; }
       }
@@ -282,6 +287,7 @@ export function mountBackRow(text, { href = null, onBack = null, id = null, viaH
     const fixedHere = new Set();
     for (const [x, y] of spots) {
       for (let el = document.elementFromPoint(x, y); el && el !== document.body; el = el.parentElement) {
+        if (el.closest(FLOAT_OVER)) break;
         if (getComputedStyle(el).position === "fixed") fixedHere.add(el);
       }
     }
