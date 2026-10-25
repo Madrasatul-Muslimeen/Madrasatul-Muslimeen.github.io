@@ -11,7 +11,7 @@
      copy of a Note's own bodyHtml (ADR-011 §2), so it goes through the same
      DOMPurify allow-list notes.html/journey-map.html already use before ever
      touching innerHTML. -->
-<script src="vendor/purify.min.js"></script>
+<script src="vendor/purify.min.js" defer></script>
 <style>
   body { font-family: system-ui, sans-serif; max-width: 46rem; margin: 2rem auto; padding: 0 1rem 4rem; color: #222; }
   /* The way-back law (decision 86): ?back=1 shows ← Back to exactly where the reader came from. Same look as notes.html. */
