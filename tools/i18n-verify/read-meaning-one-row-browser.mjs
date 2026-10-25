@@ -44,7 +44,8 @@ for (const lang of ["en", "bn"]) for (const [width, height] of [[412, 900], [390
   await P.click("#tabReadBtn"); await P.waitForTimeout(500);
   await ev(() => { const u = document.getElementById("unitTypeSelect"); u.value = "surah"; u.dispatchEvent(new Event("change", { bubbles: true })); const s = document.getElementById("surahSelect"); s.value = "8"; s.dispatchEvent(new Event("change", { bubbles: true })); });
   await P.waitForTimeout(2000);
-  if (!(await ev(() => document.getElementById("readMushafBtn").getAttribute("aria-pressed") === "true"))) { await P.click("#readMushafBtn"); await P.waitForTimeout(2000); }
+  // PCF MSA J99: 📜 left the bar; the same switch through Options ▸ "Mushaf view". Updated in place, reason recorded.
+  if (!(await ev(() => document.getElementById("mushafToggle").checked))) { await ev(() => { const t = document.getElementById("mushafToggle"); t.checked = true; t.dispatchEvent(new Event("change", { bubbles: true })); }); await P.waitForTimeout(2000); }
   await P.click("#readMeaningBtn");
   await P.waitForFunction(() => document.querySelector("[data-meaning-pages] .meaning-page-rule"), null, { timeout: 20000 });
   await P.waitForTimeout(600);
@@ -89,7 +90,8 @@ for (const lang of ["en", "bn"]) {
   await ev(() => document.getElementById("readContentsBtn")?.click()); // the landing screen's Read: the Surah list
   await P.waitForFunction(() => document.querySelectorAll("#readContentsBody .rc-row").length > 0, null, { timeout: 15000 });
   await P.click('#readContentsBody .rc-row[data-rc-kind="surah"][data-rc-n="8"]'); await P.waitForTimeout(2500);
-  if (!(await ev(() => document.getElementById("readMushafBtn").getAttribute("aria-pressed") === "true"))) { await P.click("#readMushafBtn"); await P.waitForTimeout(2000); }
+  // PCF MSA J99: 📜 left the bar; the same switch through Options ▸ "Mushaf view". Updated in place, reason recorded.
+  if (!(await ev(() => document.getElementById("mushafToggle").checked))) { await ev(() => { const t = document.getElementById("mushafToggle"); t.checked = true; t.dispatchEvent(new Event("change", { bubbles: true })); }); await P.waitForTimeout(2000); }
   await P.click("#readMeaningBtn");
   await P.waitForFunction(() => document.querySelector("[data-meaning-pages] .meaning-page-rule"), null, { timeout: 20000 });
   await P.waitForTimeout(600);
