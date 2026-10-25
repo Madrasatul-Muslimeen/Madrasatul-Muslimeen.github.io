@@ -963,3 +963,4 @@ total). Allocated by the MMSA Architect.
 12.59: the shared pages measured with real-length names (audit parts 85-86). Allocated by the MMSA Architect.
 12.60: the account card name and roles, and the topic bookmark choice (audit part 87). Allocated by the MMSA Architect.
 12.61: Bangla audio plays each āyah as its own exact clip (J95). Allocated by the MMSA Architect.
+12.62: Bangla audio where the timing is not checked: the Owner's tick E (J95). Allocated by the MMSA Architect.
