@@ -84,6 +84,9 @@ const FLOWS = {
   },
   async read(tag, page) {
     await click(page, "tabStudyBtn"); await click(page, "tabReadBtn"); await page.waitForTimeout(900);
+    // PCF MSA J99 (the Owner, 25 Oct 2026: "put those 3 buttons inside the dots on the card"): below 600px the three are in
+    // the ⋯ card, so it is opened first, as a reader does. Updated in place, reason recorded.
+    if (await page.evaluate(() => !!document.querySelector("#readToolsMenu #readApproachBar"))) { await click(page, "readToolsBtn"); await page.waitForTimeout(250); }
     const S = ["#readBarTakeBtn", "#readBarRecordBtn", "#readBarStatusBtn", "#readUnitChip"];
     tall(tag, await sizes(page, S), S);
   },

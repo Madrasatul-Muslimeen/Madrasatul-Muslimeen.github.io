@@ -2721,6 +2721,9 @@
   /* Measured at 320px with Mushaf's page reference on the bar: the worded button took a line of its own and moved the
      page down 42px. Below 360px it is 📖 alone (its spoken name stays the words), the same rule ☰ Surah list follows. */
   @media (max-width: 359px) { #readMeaningBtn { padding: 0; width: 40px; } #readMeaningBtn .read-meaning-word { display: none; } }
+  /* PCF MSA J99 (the Owner ticked B): 📖 is the one switch for Āyah, Meaning and Mushaf; on a phone it is its icon alone,
+     the next view's words its tip and spoken name. */
+  @media (max-width: 599.98px) { #readMeaningBtn { padding: 0; width: 40px; } #readMeaningBtn .read-meaning-word { display: none; } }
   /* 📜 Mushaf: the word costs ~47px, and at 600px (page reference + 🔖 + 📖 Meaning + ⤢) the bar wrapped to two lines
      with it (measured in review), so it is 📜 alone below 768px. Hidden while the Meaning flow is open over the Mushaf,
      where 📖 itself reads "Mushaf" (back to the Mushaf): two "Mushaf" buttons doing opposite things, and at 390px the
@@ -6158,7 +6161,7 @@
                  kept in the bare full-screen state beside 📖 and ⤢. The same bookmark as #readBookmarkBtn (behind ⋯). -->
             <button type="button" class="secondary qr-ico" id="readBarBookmarkBtn" aria-label="Bookmark this" title="Bookmark this" hidden>🔖</button>
             <!-- 17 Oct 2026 (QR J16 = PCF MSA J37): 📜 Mushaf, the very same switch as Options ▸ "Mushaf view", one tap away, also in full screen. -->
-            <button type="button" class="read-meaning-btn" id="readMushafBtn" aria-pressed="false" aria-label="Mushaf view" title="Mushaf view"><span aria-hidden="true">📜</span><span class="read-mushaf-word">Mushaf</span></button>
+            <button type="button" class="read-meaning-btn" id="readMushafBtn" hidden aria-pressed="false" aria-label="Mushaf view" title="Mushaf view"><span aria-hidden="true">📜</span><span class="read-mushaf-word">Mushaf</span></button>
             <button type="button" class="read-meaning-btn" id="readMeaningBtn" aria-pressed="false"><span aria-hidden="true">📖</span><span class="read-meaning-word">Meaning</span></button>
             <button type="button" class="secondary qr-ico" id="hideChromeBtn" aria-label="Full screen" title="Full screen">⤢</button>
             <button type="button" class="secondary qr-ico" id="readWindowBtn" aria-label="Open as a window" title="Open as a window" aria-pressed="false">🗗</button>
@@ -20341,17 +20344,25 @@
     }
     SHORT_READ_LABELS?.addEventListener?.("change", paintShortReadLabels);
     paintShortReadLabels();
+    // PCF MSA J99 (the Owner ticked B, 25 Oct 2026: one button for 📜 and 📖): the Read view is in one of three views,
+    // and the one button moves on round them: Āyah (the plain reading) → Meaning → Mushaf → Āyah. Mushaf is the very
+    // same switch as Options ▸ "Mushaf view" (#mushafToggle), so the tick and the button always agree.
+    function readViewNow() { return readMeaningOn ? "meaning" : (mushafToggle.checked ? "mushaf" : "plain"); }
     function paintReadMeaningBtn() {
       if (!readMeaningBtn) return;
       readMeaningBtn.setAttribute("aria-pressed", String(readMeaningOn));
-      // The button names where it takes you: Meaning, or back to the Mushaf (or the plain reading when Mushaf is off).
-      const word = !readMeaningOn ? t("Meaning") : (mushafToggle.checked ? t("Mushaf") : t("Reading"));
+      // The button names where it takes you NEXT (its icon too); on a phone it is the icon alone, the words its tip.
+      const view = readViewNow();
+      const [icon, word, tip] = view === "plain" ? ["📖", t("Meaning"), t("Show the meaning: translations and word by word")]
+        : view === "meaning" ? ["📜", t("Mushaf"), t("Mushaf view")]
+        : ["↩", currentUnitType === "ayah" ? t("Āyah") : t("Reading"), t("Back to the reading")];
+      readMeaningBtn.querySelector('[aria-hidden="true"]').textContent = icon;
       readMeaningBtn.querySelector(".read-meaning-word").textContent = word;
-      const tip = readMeaningOn ? (mushafToggle.checked ? t("Back to the Mushaf") : t("Back to the reading")) : t("Show the meaning: translations and word by word");
+      readMeaningBtn.dataset.readNext = view === "plain" ? "meaning" : view === "meaning" ? "mushaf" : "plain";
       readMeaningBtn.setAttribute("aria-label", tip);
       readMeaningBtn.title = tip;
       const mushafBtn = document.getElementById("readMushafBtn");
-      if (mushafBtn) mushafBtn.hidden = readMeaningOn && mushafToggle.checked;
+      if (mushafBtn) mushafBtn.hidden = true; // J99: 📖 is the one switch now (its own handler is kept for the Options tick's sake below)
     }
 
     async function meaningPageHtml(pageNum) {
@@ -20473,6 +20484,19 @@
     }
 
     readMeaningBtn?.addEventListener("click", async () => {
+      // J99: Āyah → Meaning (the flow opens at the āyah being read); Meaning → Mushaf (the Mushaf opens at the page the
+      // reader had reached); Mushaf → Āyah (the Options tick is cleared, exactly as unticking it there).
+      const view = readViewNow();
+      if (view === "mushaf") { mushafToggle.checked = false; mushafToggle.dispatchEvent(new Event("change")); return; }
+      if (view === "meaning" && !mushafToggle.checked) {
+        const keepKey = meaningTopKey();
+        readMeaningOn = false;
+        try { localStorage.setItem(READ_MEANING_KEY, "0"); } catch { /* per device only */ }
+        mushafToggle.checked = true;
+        mushafToggle.dispatchEvent(new Event("change"));
+        await scrollMushafToKey(keepKey);
+        return;
+      }
       const goingOn = !readMeaningOn;
       let keepKey = null;
       if (goingOn) {
@@ -20494,16 +20518,18 @@
       try { localStorage.setItem(READ_MEANING_KEY, goingOn ? "1" : "0"); } catch { /* per device only */ }
       paintReadMeaningBtn();
       renderStudyScreen();
-      if (!goingOn && keepKey && mushafToggle.checked) {
-        // Back to the Mushaf at the page the reader had reached, when that page is one the Mushaf draws.
-        try { await flowRenderPromise; } catch { /* renderFlowView() reports its own failure on-screen. */ }
-        await ensureMushafData();
-        const [s, a] = keepKey.split(":");
-        const pages = getMushafPagesForKeys([`${s}:${a}`]);
-        const target = pages.length && pageViewContainer.querySelector(`.hifz-page[data-mushaf-page="${pages[0]}"]`);
-        if (target) { target.scrollIntoView({ inline: "start", block: "start", behavior: "instant" }); updateMushafPageRef(); }
-      }
+      if (!goingOn && keepKey && mushafToggle.checked) await scrollMushafToKey(keepKey);
     });
+    /** Back to the Mushaf at the page holding `keepKey` ("S:A"), when that page is one the Mushaf draws. */
+    async function scrollMushafToKey(keepKey) {
+      if (!keepKey) return;
+      try { await flowRenderPromise; } catch { /* renderFlowView() reports its own failure on-screen. */ }
+      await ensureMushafData();
+      const [s, a] = keepKey.split(":");
+      const pages = getMushafPagesForKeys([`${s}:${a}`]);
+      const target = pages.length && pageViewContainer.querySelector(`.hifz-page[data-mushaf-page="${pages[0]}"]`);
+      if (target) { target.scrollIntoView({ inline: "start", block: "start", behavior: "instant" }); updateMushafPageRef(); }
+    }
     paintReadMeaningBtn();
 
     // 17 Oct 2026 (QR J16 = PCF MSA J37): 📜 Mushaf. The very same switch as Options ▸ "Mushaf view": it flips
@@ -20516,7 +20542,7 @@
       readMushafBtn.setAttribute("aria-label", tip);
       readMushafBtn.title = tip;
       readMushafBtn.querySelector(".read-mushaf-word").textContent = t("Mushaf");
-      readMushafBtn.hidden = readMeaningOn && mushafToggle.checked;
+      readMushafBtn.hidden = true; // J99: the one 📖 button cycles through the Mushaf; this button stays for any old caller
     }
     readMushafBtn?.addEventListener("click", () => {
       if (readMeaningOn) {
@@ -20529,6 +20555,8 @@
       mushafToggle.dispatchEvent(new Event("change"));
     });
     mushafToggle.addEventListener("change", paintReadMushafBtn);
+    mushafToggle.addEventListener("change", paintReadMeaningBtn); // J99: the Options tick moves the one button on too
+    document.getElementById("unitTypeSelect")?.addEventListener("change", paintReadMeaningBtn); // "Āyah" or "Reading"
     paintReadMushafBtn();
 
     async function renderFlowView(fromAyah, toAyah, panels, isMushaf) {

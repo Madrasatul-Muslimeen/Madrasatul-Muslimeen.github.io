@@ -36,9 +36,19 @@ async function start(lang, width) {
   const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
   return { ctx, page, errors };
 }
+/** PCF MSA J99 (the Owner, 25 Oct 2026: "put those 3 buttons inside the dots on the card"): below 600px the three live in
+ *  the Read bar's ⋯ card, so a check opens the card first, as a reader does. Updated in place, reason recorded. */
+async function openCardFor(page, sel) {
+  const inCard = await page.evaluate((s) => { const e = document.querySelector(s); const m = document.getElementById("readToolsMenu"); return !!e && !!m && m.contains(e) && !m.classList.contains("open"); }, sel);
+  if (inCard) { await page.click("#readToolsBtn"); await page.waitForTimeout(250); }
+}
+async function closeCard(page) {
+  if (await page.evaluate(() => document.getElementById("readToolsMenu")?.classList.contains("open"))) { await page.keyboard.press("Escape"); await page.waitForTimeout(150); }
+}
 async function click(page, sel) {
   for (let i = 0; i < 4; i++) {
     await page.evaluate(() => document.querySelectorAll('[id*="splash"], .app-splash-overlay').forEach((e) => e.remove()));
+    await openCardFor(page, sel);
     try { await page.click(sel, { timeout: 4000 }); return; } catch (e) { if (i === 3) throw e; }
   }
 }
@@ -82,7 +92,8 @@ const measure = (page, sel) => page.evaluate((sel) => {
     over: document.documentElement.scrollWidth - innerWidth,
     contrast: btns.map((b) => +ratio(rgb(getComputedStyle(b).color), bg).toFixed(2)),
     barBg: cs.backgroundColor, border: cs.borderTopColor,
-    dividers: btns.slice(1).map((b) => [parseFloat(getComputedStyle(b).borderLeftWidth), getComputedStyle(b).borderLeftStyle, getComputedStyle(b).borderLeftColor]),
+    // J99: in the ⋯ card (below 600px) the three are stacked, so the divider is each one's top border. Updated in place.
+    dividers: btns.slice(1).map((b) => { const top = !!bar.closest("#readToolsMenu"), c = getComputedStyle(b); return top ? [parseFloat(c.borderTopWidth), c.borderTopStyle, c.borderTopColor] : [parseFloat(c.borderLeftWidth), c.borderLeftStyle, c.borderLeftColor]; }),
   };
 }, sel);
 
@@ -106,15 +117,19 @@ for (const lang of ["en", "bn"]) {
   for (const width of WIDTHS) {
     const { ctx, page, errors } = await start(lang, width);
     await openRead(page, false);
+    await openCardFor(page, BAR.read);
     assertLayout(`[${lang} ${width}] Read text view`, lang, width, await measure(page, BAR.read));
     if (width === 320 && lang === "bn" || width === 390 && lang === "en" || width === 1280 && lang === "en") await page.screenshot({ path: `/tmp/bar-read-text-${lang}-${width}.png` });
+    await closeCard(page);
     await openRead(page, true);
+    await openCardFor(page, BAR.read);
     const m = await measure(page, BAR.read);
     assertLayout(`[${lang} ${width}] Read Mushaf view`, lang, width, m);
     check(`[${lang} ${width}] Read: the bar is on its own line below the page reference`, await page.evaluate(() => document.getElementById("readApproachBar").getBoundingClientRect().top >= document.getElementById("mushafPageRef").getBoundingClientRect().bottom - 1), "");
     check(`[${lang} ${width}] #readApproachCapsule is gone`, await page.evaluate(() => !document.getElementById("readApproachCapsule")));
     const pal = await page.evaluate(() => { const c = getComputedStyle(document.getElementById("readApproachBar")); return [c.backgroundColor, c.borderTopColor]; });
     check(`[${lang} ${width}] Read palette: gold border #d8c68a on #fdf6e3`, pal[0] === "rgb(253, 246, 227)" && pal[1] === "rgb(216, 198, 138)", JSON.stringify(pal));
+    await closeCard(page);
     if (width === 320 && lang === "bn" || width === 390 && lang === "en" || width === 1280 && lang === "en") await page.screenshot({ path: `/tmp/bar-read-mushaf-${lang}-${width}.png` });
     // UPDATED IN PLACE (Note view retirement, step b): the Note view's approach bar is deleted with the view; the bar that
     // does this job is the Read view's, asserted above. The Note view checks become one absence assertion.
