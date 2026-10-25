@@ -210,10 +210,7 @@ const NO_MENU = new Set(["onboarding.html", "accept-invite.html"]);
 // FOUND BY THIS AUDIT, NOT YET FIXED (printed, not failed; an entry that stops occurring is reported so the fix is seen).
 // Distinct from an accepted finding: nobody has accepted it. The smallest fix is in docs/reports/2026-10-26-audit-part97-tablet.md.
 const KNOWN = [
-  // The page's bare `button { margin-top: 1.5rem }` (onboarding.html:22-25) / `margin-top: 1.2rem` (accept-invite.html:19-22) also
-  // hits the Zab bar's button, which then sits 14px below the 44px bar and is cut at the bottom edge of the screen.
-  ["onboarding.html", "clipped|div#zabRoot>nav#zabBar>button"],
-  ["accept-invite.html", "clipped|div#zabRoot>nav#zabBar>button"],
+  // (empty) The Zab-button finding on onboarding/accept-invite was fixed in v12.72 (zab-bar.js resets its own buttons' margin).
 ];
 const knownSeen = new Set();
 
@@ -248,6 +245,10 @@ for (const [name, path, num] of toRun) {
     if (NO_MENU.has(path.replace(/\?.*$/, ""))) check(`${name} / ${w}: page booted, no shared menu by design (positive control, heading ${m.headings}, menu ${m.menuButtons})`, m.headings > 0 && m.menuButtons === 0);
     else check(`${name} / ${w}: shared menu found (positive control, ${m.menuButtons})`, m.menuButtons > 0);
     check(`${name} / ${w}: page has controls (positive control, ${m.controls})`, m.controls > 0);
+    // v12.72: a broken zab-bar.js (a backtick in its CSS template) stopped the bar mounting and every check above stayed green.
+    // So the shared Zab bar is a positive control of its own: its button, the corner 🧰 or a page's own dock must be on screen.
+    const zab = await P.evaluate(() => [...document.querySelectorAll("#zabBar button, #zabCorner, .zab-dock-btn")].some((e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(e).visibility !== "hidden"; }));
+    check(`${name} / ${w}: the Zab bar mounted (positive control)`, zab);
     const row = { page: name, path, width: w, viewport: `${w}x${h}`, controls: m.controls, widthShare: m.width, counts: {}, smallOk: m.smallOk.length, findings: {} };
     for (const kind of KINDS) {
       const isKnown = (f) => { const i = KNOWN.findIndex(([p, k]) => path.startsWith(p) && f.key === k); if (i >= 0) knownSeen.add(i); return i >= 0; };
