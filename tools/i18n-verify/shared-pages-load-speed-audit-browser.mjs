@@ -69,22 +69,22 @@ const IDENTITY = new Set(["tenantMemberUids", "tenants", "tenantPeople", "users"
 const OWN_JOB = {
   "classes.html": ["classes", "enrollments", "tenantPeople", "teacherStudentLinks", "ladders", "levels"],
   "course-offers.html": ["courseOffers", "enrollments", "tenantPeople", "classes"],
-  "curriculum.html": ["curricula", "curriculum", "subjects", "grades", "resources"],
+  "curriculum.html": ["curricula", "curriculum", "curriculumUnits", "curriculumPlan", "personLevels", "subjects", "grades", "resources", "classes", "ladders", "levels"],
   "backup.html": ["*"],
   "import-notes.html": ["notes", "noteFolders", "notePlacements", "noteSources", "noteLinks"],
-  "monitor.html": ["records", "activity", "tenantPeople", "subjects", "trackables", "enrollments"],
-  "homework.html": ["homework", "tenantPeople", "feedback", "classes"],
-  "people.html": ["tenantPeople", "tenantInvites", "tenantMemberUids"],
-  "records.html": ["records", "tenantPeople", "subjects", "trackables", "levels", "ladders", "domains"],
-  "catalogue.html": ["subjects", "trackables", "approaches", "domains", "ladders", "levels"],
+  "monitor.html": ["records", "activity", "evidence", "tenantPeople", "subjects", "trackables", "enrollments"],
+  "homework.html": ["homework", "assignments", "submissions", "teachingNotes", "courseOffers", "tenantPeople", "feedback", "classes"],
+  "people.html": ["tenantPeople", "tenantInvites", "tenantMemberUids", "memberships"],
+  "records.html": ["records", "activity","tenantPeople", "subjects", "trackables", "levels", "ladders", "domains"],
+  "catalogue.html": ["subjects", "trackables", "approaches", "domains", "ladders", "levels", "modules", "subjectTemplates", "(batch"],
   "bookmarks.html": ["bookmarks", "bookmarkFolders"],
   "notes.html": ["notes", "noteFolders", "notePlacements", "noteSources", "noteLinks", "bookmarks"],
-  "journey-map.html": ["notes", "noteFolders", "notePlacements", "noteSources", "noteLinks"],
+  "journey-map.html": ["notes", "noteFolders", "notePlacements", "noteSources", "noteLinks", "noteSections", "noteTags", "noteTagLinks"],
   "deen-study.html": ["topics", "records", "subjects", "trackables"],
   "arabic-study.html": ["topics", "records", "subjects", "trackables"],
   "admin-self-check.html": ["*"],
   "taglines.html": ["taglines"],
-  "dawah.html": ["dawah"],
+  "dawah.html": ["dawah", "dawahPages"],
   "onboarding.html": ["tenantPeople", "tenantInvites"],
   "accept-invite.html": ["inviteTokens", "tenantInvites", "tenantPeople"],
   "about.html": ["featureRegistry"],
@@ -92,7 +92,7 @@ const OWN_JOB = {
   "index.html": [],
 };
 const classify = (rec, pagePath) => {
-  const col = rec.col, op = rec.kind;
+  const col = String(rec.col).startsWith("(") ? "(batch" : String(rec.col).split("/")[0], op = rec.kind;
   const writes = op === "setDoc" || op === "updateDoc" || op === "batchCommit" || op === "txCommit";
   if (ALLOWED.has(col)) return { verdict: "OK", why: "in the contract's three" };
   const own = OWN_JOB[pagePath.split("?")[0]] || [];
@@ -129,7 +129,7 @@ async function measure(name, path, prof) {
       r.fulfill({ response: resp, body });
     });
   }
-  if (MUTATE === "extra-read" && pagePath === "index.html") {
+  if (MUTATE === "extra-read" && (pagePath === "index.html" || ONLY === pagePath)) {
     await ctx.addInitScript(() => {
       document.addEventListener("DOMContentLoaded", () => {
         const s = document.createElement("script"); s.type = "module";
