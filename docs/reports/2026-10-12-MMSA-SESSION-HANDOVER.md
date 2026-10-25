@@ -1904,3 +1904,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v12.68** (2026-10-25): phone ← Back is the arrow alone, one row with the Read tools; Range in MSA's Bookmark this; Back returns to the same place (J98, audit part 95).
 - **v12.69** (2026-10-25): ← Back reachable over the Notes pane after Bookmarks → Open (audit part 95).
 - **v12.70** (2026-10-25): one 📖 switch Āyah → Meaning → Mushaf; the three study buttons in the ⋯ on a phone (J99).
+- **v12.71** (2026-10-25): a refused resume write no longer stops a Deen/Arabic topic opening (audit part 96, I15).

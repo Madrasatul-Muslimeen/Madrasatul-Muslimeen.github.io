@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "12.70",
+    "version": "12.71",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -5117,8 +5117,20 @@
     {
       "version": "12.70",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "One 📖 switch on the Read bar steps Āyah → Meaning → Mushaf; on a phone the three study buttons sit inside the Read bar's ⋯ card (PR #1194).",
+      "integration": {
+        "authorizedOn": "2026-10-25",
+        "integratedOn": "2026-10-25",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.71",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "topic-study.js catches a refused resume write: the topic opens and the refusal is said in words (audit part 96, PR #1196).",
       "integration": {
         "authorizedOn": "2026-10-25",
         "integratedOn": "2026-10-25",
@@ -5127,8 +5139,9 @@
       }
     }
   ],
-  "nextUnallocated": "12.71",
+  "nextUnallocated": "12.72",
   "nextUnallocatedNote": [
+    "v12.71 was allocated to a refused resume write no longer stops a Deen/Arabic topic opening (audit part 96, I15), 2026-10-25.",
     "v12.70 was allocated to one 📖 switch Āyah → Meaning → Mushaf; the three study buttons in the ⋯ on a phone (J99), 2026-10-25.",
     "v12.69 was allocated to ← Back reachable over the Notes pane after Bookmarks → Open (audit part 95), 2026-10-25.",
     "v12.68 was allocated to phone ← Back is the arrow alone, one row with the Read tools; Range in MSA's Bookmark this; Back returns to the same place (J98, audit part 95), 2026-10-25.",
