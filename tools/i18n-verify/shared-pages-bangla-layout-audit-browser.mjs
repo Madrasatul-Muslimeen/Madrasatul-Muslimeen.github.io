@@ -124,6 +124,11 @@ const MEASURE = () => {
   const navEl = document.querySelector("nav, #nav, .nav-bar, header") || document.body;
   const navFam = getComputedStyle(navEl).fontFamily;
   const hasBn = (fam) => document.fonts.check(`16px ${fam}`, "বাংলা");
+  // fonts.check() is true for any installed face, so also refuse a stack pinned to a Latin-only face (monospace / Courier ...)
+  // with no Bengali family named: the browser then has no reason to reach for a Bengali fallback.
+  const BN_FAM = /Noto Sans Bengali|Nirmala|Kalpurush|Vrinda|Siyam Rupali|Hind Siliguri|Bangla|system-ui|sans-serif/i;
+  const pinned = (fam) => /monospace|courier|consolas/i.test(fam) && !BN_FAM.test(fam);
+  if (pinned(bodyFam)) res.font.push({ key: "font|body-pinned", msg: `body font-family (${bodyFam}) is pinned to a face with no Bengali glyphs` });
   if (!hasBn(bodyFam)) res.font.push({ key: "font|body", msg: `body font-family (${bodyFam}) fails fonts.check for বাংলা` });
   if (!hasBn(navFam)) res.font.push({ key: "font|nav", msg: `nav font-family (${navFam}) fails fonts.check for বাংলা` });
   const ctx = document.createElement("canvas").getContext("2d");
@@ -137,6 +142,7 @@ const MEASURE = () => {
     if (!p || !BN.test(s) || /[A-Za-z]/.test(s) || s.length < 4 || !vis(p) || /^(SCRIPT|STYLE)$/.test(p.tagName)) continue;
     const cs = getComputedStyle(p);
     if (/amiri|naskh|scheherazade|uthmani|serif.*arabic/i.test(cs.fontFamily) && !/Noto Sans Bengali|Kalpurush|Vrinda|Nirmala/i.test(cs.fontFamily)) { /* an Arabic-face element: still must render Bengali */ }
+    if (pinned(cs.fontFamily)) { res.font.push({ key: "font|pinned|" + path(p), msg: `${path(p)} "${s.slice(0, 30)}" is set in (${cs.fontFamily}), no Bengali glyphs` }); checked++; continue; }
     const sig = cs.fontFamily + "|" + cs.fontSize + "|" + cs.fontWeight + "|" + s.slice(0, 12);
     if (seen.has(sig)) continue; seen.add(sig); checked++;
     ctx.font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
@@ -152,7 +158,8 @@ const MEASURE = () => {
 const MUTATIONS = {
   wide: () => { const s = document.createElement("span"); s.textContent = "এটি একটি অনেক দীর্ঘ বাংলা লেখা ".repeat(12); s.style.cssText = "display:inline-block;width:900px;white-space:nowrap"; document.body.appendChild(s); },
   cut: () => {
-    const el = [...document.querySelectorAll(".nav-cat, nav a, nav button, header a, header button")].find((e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && e.textContent.trim().length > 3; });
+    const own = (e) => [...e.childNodes].filter((n) => n.nodeType === 3).map((n) => n.nodeValue.trim()).join("").length;
+    const el = [...document.querySelectorAll(".nav-cat > summary, nav > a, header a, header button")].filter((e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && own(e) >= 2; }).sort((a, b) => own(b) - own(a))[0]; // the longest visible nav label
     if (el) el.style.cssText += ";max-width:30px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block";
   },
   squeeze: () => { const b = [...document.querySelectorAll("button")].find((e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && e.textContent.trim(); }); if (b) b.style.cssText += ";height:20px;min-height:0;overflow:hidden"; },
