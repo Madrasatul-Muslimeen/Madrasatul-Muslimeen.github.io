@@ -18,9 +18,19 @@
 //   --report=<path> write the per-page rows (JSON) to this path
 //   --mutate=extra-read   index.html reads `records` at startup (reads must fail on index.html)
 //   --mutate=slow         a 4 s blocking <script src> in every page's <head> (block and timing must fail)
+//   --mutate=big          a 3 MB blocking script of random (uncompressible) bytes in about.html's <head> (timing must fail even gzipped)
+//
+//   --raw                 no compression: load from serve.js on 8080 as before audit part 94
+//
+// Audit part 94: text files are served GZIP-COMPRESSED (Content-Encoding: gzip), as GitHub Pages does, by a small static
+// server this suite starts itself (serve.js sends no compression). The throttle is unchanged and applies to the compressed
+// bytes on the wire. See the comment above the server for why it is a server and not a page.route fulfil.
 import { chromium, newContext, BASE } from "./harness.mjs";
-import { writeFileSync, mkdirSync } from "node:fs";
-import { dirname } from "node:path";
+import { writeFileSync, mkdirSync, readFileSync, existsSync, statSync } from "node:fs";
+import { gzipSync } from "node:zlib";
+import { randomBytes } from "node:crypto";
+import { dirname, join, normalize } from "node:path";
+import { createServer } from "node:http";
 
 let pass = 0, fail = 0;
 const check = (name, ok, detail = "") => {
@@ -29,6 +39,9 @@ const check = (name, ok, detail = "") => {
 };
 const arg = (k) => (process.argv.find((a) => a.startsWith("--" + k + "=")) || "").slice(k.length + 3);
 const ONLY = arg("page"), MUTATE = arg("mutate"), LIST = process.argv.includes("--list"), REPORT = arg("report");
+const RAW = process.argv.includes("--raw");
+if (MUTATE && !["extra-read", "slow", "big"].includes(MUTATE)) throw new Error(`unknown --mutate=${MUTATE}`);
+if (MUTATE === "big" && RAW) throw new Error("--mutate=big is about the compressed size: do not combine it with --raw");
 
 // Copied from shared-pages-keyboard-audit-browser.mjs (not edited there).
 const PAGES = [
@@ -114,6 +127,39 @@ const KIND = (type, mime, url) => {
   return null;
 };
 
+// ---- the origin the pages are loaded from ----
+// Default: a small static server of THIS suite that serves the repository like GitHub Pages does: text files gzip-compressed
+// with Content-Encoding: gzip. (A page.route fulfil with that header was tried first and does not work: Chromium hands the
+// still-compressed bytes to the page, which renders them as text. A real server is also what the CDP throttle is meant for:
+// it then slows the compressed bytes actually on the wire.) serve.js and harness.mjs are not touched. --raw: serve.js as before.
+const GZ_TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".mjs": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".json": "application/json; charset=utf-8", ".svg": "image/svg+xml", ".txt": "text/plain; charset=utf-8", ".webmanifest": "application/manifest+json" };
+const OTHER_TYPES = { ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp", ".woff": "font/woff", ".woff2": "font/woff2", ".ttf": "font/ttf", ".otf": "font/otf", ".ico": "image/x-icon", ".mp3": "audio/mpeg" };
+let gzServer = null;
+let ORIGIN = BASE;
+if (!RAW) {
+  const ROOT = process.cwd();
+  // 3 MB of text the compressor cannot shrink: random bytes as base64 inside a comment (gzips only to ~75%, still ~2.2 MB)
+  const BIG = MUTATE === "big" ? Buffer.from("window.__big=1;/*" + randomBytes(2.25 * 1024 * 1024).toString("base64") + "*/") : null;
+  gzServer = createServer((req, res) => {
+    const u = new URL(req.url, "http://x");
+    let body, type, gz = true;
+    if (BIG && u.pathname === "/__big.js") { body = BIG; type = GZ_TYPES[".js"]; }
+    else {
+      const file = normalize(join(ROOT, decodeURIComponent(u.pathname)));
+      if (!file.startsWith(ROOT + "/") || !existsSync(file) || !statSync(file).isFile()) { res.writeHead(404); return res.end("not found"); }
+      const e = (file.match(/\.[a-z0-9]+$/i) || [""])[0].toLowerCase();
+      type = GZ_TYPES[e] || OTHER_TYPES[e] || "application/octet-stream"; gz = !!GZ_TYPES[e];
+      body = readFileSync(file);
+      if (BIG && u.pathname === "/app/about.html") body = Buffer.from(body.toString("utf8").replace(/<head[^>]*>/i, (m) => m + '<script src="/__big.js"></script>'));
+    }
+    if (gz) { body = gzipSync(body); res.writeHead(200, { "Content-Type": type, "Content-Encoding": "gzip", "Content-Length": body.length, Vary: "Accept-Encoding" }); }
+    else res.writeHead(200, { "Content-Type": type, "Content-Length": body.length });
+    res.end(body);
+  });
+  await new Promise((ok) => gzServer.listen(0, ok));
+  ORIGIN = `http://localhost:${gzServer.address().port}`;
+}
+
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
 const rows = [];
 
@@ -123,10 +169,11 @@ async function measure(name, path, prof) {
   const pagePath = path.split("?")[0];
   if (MUTATE === "slow") {
     await ctx.route("**/__slow-block.js", async (r) => { await sleep(4000); r.fulfill({ status: 200, contentType: "text/javascript", body: "window.__slowBlock=1;" }); });
-    await ctx.route(`${BASE}/app/${pagePath}*`, async (r) => {
+    await ctx.route(`${ORIGIN}/app/${pagePath}*`, async (r) => {
       const resp = await r.fetch();
       const body = (await resp.text()).replace(/<head[^>]*>/i, (m) => m + '<script src="/__slow-block.js"></script>');
-      r.fulfill({ response: resp, body });
+      const headers = { ...resp.headers() }; delete headers["content-encoding"]; delete headers["content-length"]; // the body is decoded text now
+      r.fulfill({ status: resp.status(), headers, body });
     });
   }
   if (MUTATE === "extra-read" && (pagePath === "index.html" || ONLY === pagePath)) {
@@ -152,7 +199,7 @@ async function measure(name, path, prof) {
   cdp.on("Network.responseReceived", (e) => { const r = reqs.get(e.requestId); if (r) { r.mime = e.response.mimeType; r.status = e.response.status; r.type = e.type || r.type; } });
   cdp.on("Network.loadingFinished", (e) => { const r = reqs.get(e.requestId); if (r) { r.size = e.encodedDataLength; r.tEnd = Date.now(); done.push(r); } });
   const sep = path.includes("?") ? "&" : "?";
-  const url = `${BASE}/app/${path}${sep}${path.startsWith("hadith-collections") ? "back=1" : "navBack=1"}`;
+  const url = `${ORIGIN}/app/${path}${sep}${path.startsWith("hadith-collections") ? "back=1" : "navBack=1"}`;
   await page.goto(url, { waitUntil: "networkidle", timeout: 60000 });
   await page.waitForTimeout(600);
   const data = await page.evaluate(() => {
@@ -174,11 +221,11 @@ async function measure(name, path, prof) {
   const fcp = data.fcp, lastRead = Math.max(0, ...data.log.map((r) => r.t1 || 0));
   const ready = Math.max(data.lcp || 0, fcp || 0, lastRead);
   const readyWall = data.origin + ready;
-  const files = done.filter((r) => !/gstatic\.com|jsdelivr/.test(r.url) && r.tEnd <= readyWall + 1).map((r) => ({ url: r.url.replace(BASE, ""), kind: KIND(r.type, r.mime, r.url), size: r.size || 0, type: r.type })).filter((f) => f.kind);
+  const files = done.filter((r) => !/gstatic\.com|jsdelivr/.test(r.url) && r.tEnd <= readyWall + 1).map((r) => ({ url: r.url.replace(ORIGIN, ""), kind: KIND(r.type, r.mime, r.url), size: r.size || 0, type: r.type })).filter((f) => f.kind);
   const bytes = { js: 0, css: 0, json: 0, font: 0 };
   for (const f of files) bytes[f.kind] += f.size;
   const top3 = [...files].sort((a, b) => b.size - a.size).slice(0, 3).map((f) => `${f.url} ${(f.size / 1024).toFixed(0)}K`);
-  const early = done.filter((r) => /^(Fetch|XHR)$/.test(r.type) && !/gstatic\.com|jsdelivr/.test(r.url) && fcp != null && r.tEnd - data.origin < fcp).map((r) => r.url.replace(BASE, ""));
+  const early = done.filter((r) => /^(Fetch|XHR)$/.test(r.type) && !/gstatic\.com|jsdelivr/.test(r.url) && fcp != null && r.tEnd - data.origin < fcp).map((r) => r.url.replace(ORIGIN, ""));
   const classed = reads.map((r) => ({ ...r, ...classify(r, pagePath), phase: fcp != null && r.t0 < fcp ? "before paint" : "after paint" }));
   const waited = classed.filter((r) => fcp != null && r.t1 != null && r.t1 < fcp).map((r) => `${r.kind} ${r.col}`);
   return { name, path, prof: prof.key, fcp, ready, bytes, top3, blocking, inline, classed, early, waited, errors: errors.length };
@@ -213,5 +260,6 @@ for (const [name, path] of PAGES) {
 
 if (REPORT) { mkdirSync(dirname(REPORT), { recursive: true }); writeFileSync(REPORT, JSON.stringify(rows, null, 1)); }
 await browser.close();
-console.log(`\n${pass} passed, ${fail} failed`);
+gzServer?.close();
+console.log(`\n${pass} passed, ${fail} failed${MUTATE ? ` (mutation: ${MUTATE})` : ""}${RAW ? " (--raw: uncompressed, as serve.js sends)" : " (gzip, as Pages sends)"}`);
 process.exit(fail ? 1 : 0);
