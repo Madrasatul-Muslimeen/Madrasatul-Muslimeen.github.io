@@ -169,7 +169,7 @@ export function mountBookmarkBack(navBarEl) {
   if (!r || typeof r.from !== "string" || r.shown || Date.now() - (r.at || 0) > RETURN_MAX_MS) return null;
   if (r.toPath !== location.pathname || r.from === location.href) return null;
   try { sessionStorage.setItem(RETURN_KEY, JSON.stringify({ ...r, shown: true })); } catch { /* once is best-effort */ }
-  return mountBackRow(`← ${t("Back to {page}", { page: r.label || t("the previous page") })}`, { href: r.from });
+  return mountBackRow(`← ${t("Back to {page}", { page: r.label || t("the previous page") })}`, { href: r.from, viaHistory: true });
 }
 
 /**
@@ -183,7 +183,7 @@ export function mountContinueBack() {
   if (document.querySelector("[data-bm-back]")) return null;
   let from = "";
   try { const u = new URL(document.referrer); if (u.origin === location.origin && u.href !== location.href) from = u.href; } catch { from = ""; }
-  return mountBackRow(`← ${t("Back")}`, from ? { href: from } : { onBack: () => { if (history.length > 1) history.back(); else location.href = "./index.html"; } });
+  return mountBackRow(`← ${t("Back")}`, from ? { href: from, viaHistory: true } : { onBack: () => { if (history.length > 1) history.back(); else location.href = "./index.html"; } });
 }
 
 /**
@@ -197,7 +197,7 @@ export function mountNavBack() {
   if (document.querySelector("[data-bm-back]")) return null;
   let from = "";
   try { const u = new URL(document.referrer); if (u.origin === location.origin && u.href !== location.href) from = u.href; } catch { from = ""; }
-  return mountBackRow(`← ${t("Back")}`, from ? { href: from } : { onBack: () => { if (history.length > 1) history.back(); else location.href = "./index.html"; } });
+  return mountBackRow(`← ${t("Back")}`, from ? { href: from, viaHistory: true } : { onBack: () => { if (history.length > 1) history.back(); else location.href = "./index.html"; } });
 }
 
 /**
@@ -205,7 +205,7 @@ export function mountNavBack() {
  * and, inside one page, a return to the window something was opened from (e.g. Explore opened from Know Your
  * Status). `href` makes it a link; `onBack` a button that removes the chip and calls back. ✕ only removes it.
  */
-export function mountBackRow(text, { href = null, onBack = null, id = null } = {}) {
+export function mountBackRow(text, { href = null, onBack = null, id = null, viaHistory = false } = {}) {
   if (id) document.getElementById(id)?.remove();
   const row = document.createElement("div");
   row.className = "bm-back-row";
@@ -215,6 +215,17 @@ export function mountBackRow(text, { href = null, onBack = null, id = null } = {
   back.className = "bm-back";
   back.dataset.bmBackLink = "";
   if (href) back.href = href;
+  // Audit part 95 (PR #1189): following the link reloads the page it came from at the TOP, so the reader lost their place
+  // (About scrolled 500px -> Catalogue -> ← Back landed at 0). When the page has added no history entry of its own since
+  // the chip was mounted, the entry before it IS that page: history.back() returns there with its scroll restored by the
+  // browser. Otherwise (the page pushed views of its own, or opened in a new tab) the link is followed as before.
+  if (href && viaHistory) {
+    const lenAtMount = history.length;
+    back.addEventListener("click", (e) => {
+      if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      if (history.length > 1 && history.length === lenAtMount) { e.preventDefault(); history.back(); }
+    });
+  }
   else { back.type = "button"; back.addEventListener("click", () => { row.remove(); onBack?.(); }); }
   // The Owner, 25 Oct 2026 (a phone screenshot): "For back button show only the back arrow". The arrow and the words are
   // two spans so shell.css can hide the words below 600px (as J63 does for the Āyah-card pill); the words stay as the
