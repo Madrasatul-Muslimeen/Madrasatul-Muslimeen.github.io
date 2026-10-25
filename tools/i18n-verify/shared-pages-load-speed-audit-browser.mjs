@@ -17,10 +17,15 @@
 //   --page=<file>   one page only      --list   print every read and the numbers   --verbose  print passes
 //   --report=<path> write the per-page rows (JSON) to this path
 //   --mutate=extra-read   index.html reads `records` at startup (reads must fail on index.html)
-//   --mutate=slow         a 4 s blocking <script src> in every page's <head> (block and timing must fail)
+//   --raw           serve the files uncompressed from serve.js, as before part 94 (default: gzip like GitHub Pages, from the suite's own route)
+//   --mutate=big    3 MB of random bytes as a <script type=module> on about.html: must fail even gzipped
+//   --mutate=slow        a 4 s blocking <script src> in every page's <head> (block and timing must fail)
 import { chromium, newContext, BASE } from "./harness.mjs";
-import { writeFileSync, mkdirSync } from "node:fs";
-import { dirname } from "node:path";
+import { writeFileSync, mkdirSync, readFileSync, existsSync, statSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
+import { gzipSync } from "node:zlib";
+import { createServer } from "node:http";
+import { randomBytes } from "node:crypto";
 
 let pass = 0, fail = 0;
 const check = (name, ok, detail = "") => {
@@ -28,6 +33,10 @@ const check = (name, ok, detail = "") => {
   if (ok) { pass++; if (process.argv.includes("--verbose")) console.log(`  PASS  ${name}`); } else { fail++; console.log(`  FAIL  ${name} ${detail}`); }
 };
 const arg = (k) => (process.argv.find((a) => a.startsWith("--" + k + "=")) || "").slice(k.length + 3);
+const RAW = process.argv.includes("--raw");
+const ROOT = resolve(".");
+const TEXT = new Set(["html", "js", "mjs", "css", "json", "svg", "txt", "xml"]);
+const MIME = { html: "text/html; charset=utf-8", js: "text/javascript; charset=utf-8", mjs: "text/javascript; charset=utf-8", css: "text/css; charset=utf-8", json: "application/json; charset=utf-8", svg: "image/svg+xml", png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", webp: "image/webp", woff2: "font/woff2", woff: "font/woff", ttf: "font/ttf", otf: "font/otf", txt: "text/plain; charset=utf-8", xml: "application/xml", ico: "image/x-icon", mp3: "audio/mpeg" };
 const ONLY = arg("page"), MUTATE = arg("mutate"), LIST = process.argv.includes("--list"), REPORT = arg("report");
 
 // Copied from shared-pages-keyboard-audit-browser.mjs (not edited there).
@@ -114,6 +123,27 @@ const KIND = (type, mime, url) => {
   return null;
 };
 
+// The suite's own static server: the repository's files, text types gzip-compressed with Content-Encoding: gzip (as Pages does).
+let gzipPort = 0;
+const gzipServer = RAW ? null : createServer((req, res) => {
+  const u = new URL(req.url, "http://x");
+  const e = ext(u.pathname);
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  if (MUTATE === "big" && u.pathname === "/app/__big.js") {
+    // 3 MB of random bytes as base64 inside a JS comment: valid JS, and gzip cannot take it below ~2.3 MB.
+    const out = gzipSync(Buffer.from("/*" + randomBytes(2.3 * 1024 * 1024).toString("base64") + "*/"));
+    res.writeHead(200, { "content-type": "text/javascript", "content-encoding": "gzip" }); return res.end(out);
+  }
+  const file = join(ROOT, decodeURIComponent(u.pathname));
+  if (!file.startsWith(ROOT) || !existsSync(file) || !statSync(file).isFile()) { res.writeHead(404); return res.end("not found"); }
+  let body = readFileSync(file);
+  if (MUTATE === "big" && u.pathname === "/app/about.html") body = Buffer.from(body.toString().replace(/<head[^>]*>/i, (m) => m + '<script type="module" src="/app/__big.js"></script>'));
+  const headers = { "content-type": MIME[e] || "application/octet-stream", "cache-control": "no-store" };
+  if (TEXT.has(e)) { headers["content-encoding"] = "gzip"; body = gzipSync(body); }
+  res.writeHead(200, headers); res.end(body);
+});
+if (gzipServer) await new Promise((ok) => gzipServer.listen(0, "127.0.0.1", () => { gzipPort = gzipServer.address().port; ok(); }));
+
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
 const rows = [];
 
@@ -121,6 +151,17 @@ async function measure(name, path, prof) {
   const ctx = await newContext(browser, { banner: false, viewport: { width: prof.w, height: prof.h }, latencyMs: LATENCY, extraSeedJs: REAL_SEED });
   await ctx.route("**/archive.org/**", (r) => r.abort());
   const pagePath = path.split("?")[0];
+  if (!RAW) {
+    // GitHub Pages sends text files gzip-compressed; serve.js sends them as they are. Hand every /app/** request to the
+    // suite's own gzip server (below) with route.continue({ url }): the browser still sees the page's own URL, decodes the
+    // gzip itself, and its line throttle and byte counts apply as they do for serve.js. Anything the harness stubs
+    // (firebase-init.js) falls through to it.
+    await ctx.route(`${BASE}/app/**`, (route) => {
+      const u = new URL(route.request().url());
+      if (u.pathname.endsWith("/js/firebase-init.js")) return route.fallback();
+      return route.continue({ url: `http://127.0.0.1:${gzipPort}${u.pathname}${u.search}` });
+    });
+  }
   if (MUTATE === "slow") {
     await ctx.route("**/__slow-block.js", async (r) => { await sleep(4000); r.fulfill({ status: 200, contentType: "text/javascript", body: "window.__slowBlock=1;" }); });
     await ctx.route(`${BASE}/app/${pagePath}*`, async (r) => {
