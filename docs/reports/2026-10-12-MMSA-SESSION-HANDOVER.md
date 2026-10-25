@@ -1857,3 +1857,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v12.65** (2026-10-25): Dawah, Notes and Mapping My Journey load DOMPurify with defer (audit part 91).
 - **v12.66** (2026-10-25): shorter Bangla for Confirm anyway and Copy link (audit part 92).
 - **v12.67** (2026-10-25): Taglines table headers at 13 px; phone-table reach suite (audit part 93).
+- **v12.68** (2026-10-25): phone ← Back is the arrow alone, one row with the Read tools; Range in MSA's Bookmark this; Back returns to the same place (J98, audit part 95).

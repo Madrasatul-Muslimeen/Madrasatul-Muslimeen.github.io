@@ -297,6 +297,17 @@ body:has(.nav-cat-bookmark[open]) { overflow: hidden; }
 .bm-back-row.bm-back-docked .bm-back { min-height: 40px; padding: 0 0.7rem; font-size: 0.82rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; line-height: 38px; }
 .bm-back-row.bm-back-docked .bm-back-x { width: 40px; height: 40px; }
 .bm-back-x { flex: 0 0 auto; width: 40px; height: 40px; padding: 0; border: 1px solid #ddd; border-radius: 0.4rem; background: white; color: #1F3A6E; cursor: pointer; }
+/* The Owner, 25 Oct 2026: on a phone the way back is the arrow alone (the words cut the Read bar onto a line of its own);
+   the words stay as aria-label and title. Tablet and desktop keep the words. Same rule as J63's Āyah-card pill. */
+@media (max-width: 599.98px) {
+  .bm-back-text { display: none; }
+  .bm-back-row .bm-back { min-width: 44px; min-height: 44px; padding: 0 0.6rem; justify-content: center; line-height: 1; }
+  .bm-back-arrow { font-size: 1.5rem; line-height: 1; }
+  .bm-back-row .bm-back-x { width: 44px; height: 44px; }
+  /* Docked in the Read bar it is two of the bar's own 40px tiles, so ← ✕ can share the row with 📖 ⤢ ⋯. */
+  .bm-back-row.bm-back-docked .bm-back { display: inline-flex; align-items: center; justify-content: center; width: 40px; min-width: 40px; min-height: 40px; padding: 0; line-height: 1; }
+  .bm-back-row.bm-back-docked .bm-back-x { width: 40px; height: 40px; }
+}
 /* Issue #410 -- a saved-settings row is a button that looks like the links around it, but is a real 40px tap target. */
 button.nav-bm-preset { background: none; border: 0; font: inherit; font-size: 0.86rem; text-align: left; cursor: pointer; min-height: 40px; padding: 0.1rem 0; max-width: 100%; overflow-wrap: anywhere; }
 .nav-bm-folder summary { color: #1F3A6E; font-size: 0.86rem; font-weight: 600; cursor: pointer; padding: 0.1rem 0; }
