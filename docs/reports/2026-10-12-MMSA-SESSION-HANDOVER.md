@@ -1855,3 +1855,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v12.63** (2026-10-25): the Qur'an landing works from a keyboard (audit part 88).
 - **v12.64** (2026-10-25): Hadith: 👥 opens on a HadeethEnc hadith; Esc closes the Home menu on Hadith Collections (audit parts 88-89).
 - **v12.65** (2026-10-25): Dawah, Notes and Mapping My Journey load DOMPurify with defer (audit part 91).
+- **v12.66** (2026-10-25): shorter Bangla for Confirm anyway and Copy link (audit part 92).
