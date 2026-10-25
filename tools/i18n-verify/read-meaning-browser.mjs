@@ -78,15 +78,25 @@ const flow = (page) => page.evaluate(() => {
   };
 });
 
+// PCF MSA J99 (the Owner ticked B, 25 Oct 2026): 📖 is now ONE switch round three views, Āyah → Meaning → Mushaf → Āyah,
+// naming the next one. From the Mushaf a tap goes to the Āyah (here, the Range's plain reading) and the next to Meaning;
+// from Meaning the next tap is the Mushaf at the page the reader reached, as before. Updated in place, reason recorded:
+// the way INTO Meaning is the cycle's; every check of what Meaning shows is unchanged.
+async function toMeaning(page) {
+  for (let i = 0; i < 3; i++) {
+    if (await page.evaluate(() => document.querySelectorAll("#pageViewContainer [data-meaning-key]").length > 0)) return;
+    await page.click("#readMeaningBtn"); await page.waitForTimeout(1200);
+  }
+}
 for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 1280]]) {
   const tag = `[${lang} ${width}]`;
   const { ctx, page, errors } = await start(lang, width);
   await openRange57(page);
   const b0 = await btn(page);
-  check(`${tag} 📖 sits on the Read bar beside ⤢, tappable, unpressed, reading "${lang === "bn" ? "অর্থ" : "Meaning"}"`, b0.shown && b0.tappable && b0.h >= 36 && b0.pressed === "false" && b0.word === (lang === "bn" ? "অর্থ" : "Meaning"), JSON.stringify(b0));
+  check(`${tag} 📖 sits on the Read bar beside ⤢, tappable, unpressed; in the Mushaf it names the plain reading next (J99: "${lang === "bn" ? "পড়া" : "Reading"}")`, b0.shown && b0.tappable && b0.h >= 36 && b0.pressed === "false" && b0.word === (lang === "bn" ? "পড়া" : "Reading"), JSON.stringify(b0));
   const pageInView = await page.evaluate(() => Number(document.getElementById("mushafPageRef")?.dataset.page || 0));
 
-  await page.click("#readMeaningBtn");
+  await toMeaning(page);
   await page.waitForFunction(() => document.querySelectorAll("#pageViewContainer [data-meaning-key]").length > 0, null, { timeout: 15000 }).catch(() => {});
   await page.waitForTimeout(600);
   const f = await flow(page);
@@ -97,7 +107,7 @@ for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 1280]]) {
   check(`${tag} ...it opens at the reader's place: the first āyah of the range on the page in view (${pageInView}), 57:1`, f.topKey === "57:1", JSON.stringify({ top: f.topKey, pageInView }));
   check(`${tag} ...no sideways scroll`, f.over <= 0, f.over);
   const b1 = await btn(page);
-  check(`${tag} ...the same button now reads "${lang === "bn" ? "মুসহাফ" : "Mushaf"}", pressed, and says it goes back`, b1.pressed === "true" && b1.word === (lang === "bn" ? "মুসহাফ" : "Mushaf") && (lang === "bn" ? BN.test(b1.label) : b1.label === "Back to the Mushaf"), JSON.stringify(b1));
+  check(`${tag} ...the same button now reads "${lang === "bn" ? "মুসহাফ" : "Mushaf"}", pressed, and says it goes back`, b1.pressed === "true" && b1.word === (lang === "bn" ? "মুসহাফ" : "Mushaf") && (lang === "bn" ? BN.test(b1.label) : b1.label === "Mushaf view"), JSON.stringify(b1));
   if (lang === "bn" || width === 1280) await page.screenshot({ path: `${SHOT_DIR}/read-meaning-${lang}-${width}.png` });
 
   // A layer off: Bangla goes, the place stays.
@@ -136,7 +146,7 @@ for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 1280]]) {
   check(`${tag} pressed again (in full screen), back to the Mushaf at the page the reader had reached (57:2 → page 537), still full screen`, back.mushaf > 0 && back.meaning === 0 && back.page === 537 && back.stillFull && b3.pressed === "false", JSON.stringify({ ...back, pressed: b3.pressed }));
 
   // Remembered on this device.
-  await page.click("#readMeaningBtn"); await page.waitForTimeout(800);
+  await toMeaning(page); await page.waitForTimeout(800);
   await page.reload(); await page.waitForTimeout(800);
   const remembered = await page.evaluate(() => { try { return localStorage.getItem("qr.readMeaning"); } catch { return null; } });
   check(`${tag} the choice is remembered on this device`, remembered === "1", remembered);

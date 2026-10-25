@@ -3,7 +3,7 @@
 //   "How about moving three buttons at the bottom of the screen?"
 // Expected values written BY HAND. Run from the repository root, serve.js on :8080.
 //   --mutate=nofold    below 900px the tools are not folded behind ⋯ any more   -> the fold checks fail
-//   --mutate=nobottom  the study buttons stay in the bar on a phone           -> the bottom-row checks fail
+//   --mutate=nomove    the study buttons stay on the bar on a phone (PCF MSA J99) -> the ⋯-card checks fail
 //   --mutate=tsleft    the A± sliders keep their right anchor inside the panel        -> the "fully on screen" check fails
 //   --mutate=tscover   the A± sliders drop 2.3rem again, over the A± tile (audit part 42) -> the "tile free" check fails
 //   --mutate=nogroup   📖 ⤢ ⋯ are not one group                               -> the "wrap together" check fails
@@ -18,7 +18,7 @@ const check = (name, ok, detail = "") => {
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
 const MUT = {
   nofold: ["    #readToolsMenu { display: none; }\n    #readToolsMenu.open {", "    #readToolsMenu { display: contents; }\n    #readToolsMenu.open {"],
-  nobottom: ["      position: fixed; left: 0.5rem; right: 0.5rem; bottom: calc(var(--rq-bottom, 0px) + 6px); z-index: 60;", "      position: static;"],
+  nomove: ["      if (readPhoneMQ.matches) { if (readApproachBarEl.parentElement !== readToolsMenu)", "      if (false) { if (readApproachBarEl.parentElement !== readToolsMenu)"],
   tsleft: ["    #readToolsMenu.open .text-size-popover { left: 0; right: auto; top: 100%; }", "    #readToolsMenu.open .text-size-popover { top: 100%; }"],
   tscover: ["    #readToolsMenu.open .text-size-popover { left: 0; right: auto; top: 100%; }", "    #readToolsMenu.open .text-size-popover { left: 0; right: auto; }"],
   nogroup: ["  #readBarEnd { display: flex; align-items: center; gap: inherit; margin-left: auto; flex: 0 0 auto; }", "  #readBarEnd { display: contents; }"],
@@ -98,7 +98,10 @@ for (const [lang, width, height] of [["en", 360, 740], ["en", 390, 844], ["bn", 
     const esc = await page.evaluate(() => ({ open: document.getElementById("readToolsMenu").classList.contains("open"), focus: document.activeElement?.id }));
     check(`${tag} ...Escape closes it and gives ⋯ the focus back`, !esc.open && esc.focus === "readToolsBtn", JSON.stringify(esc));
     await page.click("#readToolsBtn"); await page.waitForTimeout(200);
-    await page.mouse.click(10, height - 200); await page.waitForTimeout(200);
+    // PCF MSA J99: on a phone the card now holds the three study buttons, so (10, height - 200) fell INSIDE it (on "Take an
+    // Approach"). The tap outside is made just left of the card, half way down it. Updated in place, reason recorded.
+    const out = await page.evaluate(() => { const r = document.getElementById("readToolsMenu").getBoundingClientRect(); return { x: Math.max(2, Math.round(r.left) - 6), y: Math.round((r.top + r.bottom) / 2) }; });
+    await page.mouse.click(out.x, out.y); await page.waitForTimeout(200);
     check(`${tag} ...a tap outside closes it`, !(await page.evaluate(() => document.getElementById("readToolsMenu").classList.contains("open"))));
     await page.click("#readToolsBtn"); await page.waitForTimeout(200);
     await page.click("#readWritingBtn"); await page.waitForTimeout(400);
@@ -128,8 +131,14 @@ for (const [lang, width, height] of [["en", 360, 740], ["en", 390, 844], ["bn", 
     return { pos: getComputedStyle(a).position, top: Math.round(r.top), bottom: Math.round(r.bottom), h: Math.round(r.height), dockTop: d ? Math.round(d.top) : null, inBar: r.top >= bar.top - 1 && r.bottom <= bar.bottom + 1, tappable: btns.every(Boolean), contentEnd: Math.round(sr.bottom - pb) };
   });
   if (phone) {
-    check(`${tag} on a phone the three study buttons are one row just above the four bottom buttons, all tappable`, ab.pos === "fixed" && ab.dockTop != null && ab.bottom <= ab.dockTop && ab.dockTop - ab.bottom <= 12 && ab.tappable, JSON.stringify(ab));
-    check(`${tag} ...and the reading ends above them (nothing hidden under the row)`, ab.contentEnd <= ab.top + 1, JSON.stringify(ab));
+    // PCF MSA J99 (the Owner, 25 Oct 2026: "put those 3 buttons inside the dots on the card (expand the card), saves a row"):
+    // the row above the four bottom buttons is gone; the three are the last lines of the ⋯ card. Updated in place, reason recorded.
+    const shut = await page.evaluate(() => { const a = document.getElementById("readApproachBar"), r = a.getBoundingClientRect(), sc = document.getElementById("readScroll"); return { inMenu: !!a.closest("#readToolsMenu"), shown: r.width > 0 && r.height > 0, pb: parseFloat(getComputedStyle(sc).paddingBottom) || 0 }; });
+    check(`${tag} on a phone the three study buttons are not a row on the screen (they live in the ⋯ card), and the reading keeps no room for one`, shut.inMenu && !shut.shown && shut.pb === 0, JSON.stringify(shut));
+    await page.click("#readToolsBtn"); await page.waitForTimeout(250);
+    const inCard = await page.evaluate(() => [...document.querySelectorAll("#readToolsMenu #readApproachBar .approach-bar-btn")].map((b) => { const r = b.getBoundingClientRect(); const ok = [0.1, 0.5, 0.9].every((f) => { const e = document.elementFromPoint(r.left + r.width * f, r.top + r.height / 2); return !!e && b.contains(e); }); return { id: b.id, h: Math.round(r.height), inside: r.top >= 0 && r.bottom <= innerHeight && r.left >= 0 && r.right <= innerWidth, ok, whole: b.scrollWidth <= b.clientWidth + 1 }; }));
+    check(`${tag} ...⋯ shows them in order, each a whole 40px+ line inside the screen that a finger reaches end to end`, inCard.map((x) => x.id).join() === "readBarTakeBtn,readBarRecordBtn,readBarStatusBtn" && inCard.every((x) => x.h >= 40 && x.inside && x.ok && x.whole), JSON.stringify(inCard));
+    await page.keyboard.press("Escape"); await page.waitForTimeout(150);
   } else {
     check(`${tag} from 600px the three study buttons stay the bar's last line, all tappable`, ab.pos !== "fixed" && ab.inBar && ab.tappable, JSON.stringify(ab));
   }

@@ -78,6 +78,14 @@ async function flow(name, lang, width, fn, pagePath, timezoneId = null) {
 }
 
 const ev = (page, f, a) => page.evaluate(f, a);
+// PCF MSA J99 (the Owner, 25 Oct 2026: "put those 3 buttons inside the dots on the card"): below 600px Take / Record /
+// Status live in the Read bar's ⋯ card, so a tap opens the card first, as a reader does. Updated in place, reason recorded.
+async function openBarCard(page) {
+  if (await page.evaluate(() => !!document.querySelector("#readToolsMenu #readApproachBar") && !document.getElementById("readToolsMenu").classList.contains("open"))) {
+    await page.click("#readToolsBtn"); await page.waitForTimeout(250);
+  }
+}
+async function tapBar(page, sel) { await openBarCard(page); await page.click(sel); }
 // The week the Monitor page actually read: the date at the end of the activity document id it fetched (t1__p1__<weekKey>).
 const weekKeyRead = (page) => ev(page, () => ((window.__fsLog || []).find((x) => x.kind === "getDoc" && x.col === "activity")?.id || "").match(/(\d{4}-\d\d-\d\d)$/)?.[1] ?? null);
 const settle = (page, ms = 500) => page.waitForTimeout(ms);
@@ -104,25 +112,26 @@ for (const lang of LANGS) for (const width of WIDTHS) {
   await flow("bar", lang, width, async (t, page, ctx, errors) => {
     await openRead(page);
     const vw = width, vh = width > 600 ? 900 : 844;
+    await openBarCard(page);
     const bar = await ev(page, () => [...document.querySelectorAll("#readApproachBar button")].map((b) => { const r = b.getBoundingClientRect(); return { id: b.id, w: r.width, h: r.height, r: r.right, l: r.left }; }));
     if (PROBE) console.log(t, JSON.stringify(bar));
     check(`${t}: POSITIVE CONTROL the bar has Take / Record / Status buttons`, bar.map((b) => b.id).join() === "readBarTakeBtn,readBarRecordBtn,readBarStatusBtn", JSON.stringify(bar));
     check(`${t}: the three buttons sit inside the screen and are tap targets (>=36px high)`, bar.every((b) => b.w > 0 && b.l >= 0 && b.r <= vw + 1 && b.h >= 36), JSON.stringify(bar));
     // Know Your Status
-    await page.click("#readBarStatusBtn"); await settle(page, 1200);
+    await tapBar(page, "#readBarStatusBtn"); await settle(page, 1200);
     const st = await ev(page, () => { const c = document.getElementById("myStatusCard").getBoundingClientRect(); const x = document.getElementById("myStatusCloseBtn").getBoundingClientRect(); return { open: !document.getElementById("myStatusMount").hidden, title: document.getElementById("myStatusTitle").textContent, rows: document.querySelectorAll("#myStatusBody .my-status-row, #myStatusBody [data-trackable-id]").length, text: document.getElementById("myStatusBody").innerText.length, c: { l: c.left, r: c.right, t: c.top, b: c.bottom }, closeOn: x.width > 0 && x.top >= 0 && x.right <= innerWidth + 1, nav: Math.max(0, document.getElementById("topNav")?.getBoundingClientRect().bottom ?? 0) }; });
     if (PROBE) console.log(t, "status", JSON.stringify(st));
     check(`${t}: Know Your Status opens its card (whole-Qur'an status by Approach), inside the screen, with a visible ✕`, st.open && st.text > 80 && st.c.l >= -1 && st.c.r <= vw + 1 && st.c.t >= -1 && st.c.b <= vh + 1 && st.closeOn, JSON.stringify(st));
     await page.click("#myStatusCloseBtn"); await settle(page, 400);
     check(`${t}: ✕ closes Know Your Status`, await ev(page, () => document.getElementById("myStatusMount").hidden), "");
     // Record Your Progress
-    await page.click("#readBarRecordBtn"); await settle(page, 900);
+    await tapBar(page, "#readBarRecordBtn"); await settle(page, 900);
     const rc = await ev(page, () => { const sh = document.querySelector("[data-ayah-sheet]"); const r = sh?.getBoundingClientRect(); const c = sh?.querySelector("[data-ayah-sheet-close]")?.getBoundingClientRect(); return { open: document.getElementById("ayahActionSheetOverlay")?.classList.contains("open"), unit: sh?.dataset.unitKey, stages: sh ? sh.querySelectorAll("[data-approach-stage-btn]").length : 0, r: r && { l: r.left, r: r.right, t: r.top, b: r.bottom }, closeOn: !!c && c.width > 0 && c.top >= 0 && c.right <= innerWidth + 1 }; });
     if (PROBE) console.log(t, "record", JSON.stringify(rc));
     check(`${t}: Record Your Progress opens the card for the chosen unit (ayah:1:1) with the stage buttons, inside the screen`, rc.open && rc.unit === "ayah:1:1" && rc.stages === 6 && rc.r.l >= -1 && rc.r.r <= vw + 1 && rc.r.t >= -1 && rc.r.b <= vh + 1 && rc.closeOn, JSON.stringify(rc));
     await closeSheet(page);
     // Take an Approach
-    await page.click("#readBarTakeBtn"); await settle(page, 1200);
+    await tapBar(page, "#readBarTakeBtn"); await settle(page, 1200);
     const tk = await ev(page, () => { const w = document.getElementById("wheelSection").getBoundingClientRect(); return { readHidden: document.getElementById("readView").hidden, wheelH: w.height, wheelW: w.width, segs: document.querySelectorAll("#wheelContainer .wheel-seg").length, sheet: document.getElementById("ayahActionSheetOverlay")?.classList.contains("open") }; });
     if (PROBE) console.log(t, "take", JSON.stringify(tk));
     check(`${t}: Take an Approach shows the Approach wheel (Read view hidden, the wheel drawn with its Approach slices)`, tk.readHidden && tk.wheelH > 100 && tk.segs >= 3 && !tk.sheet, JSON.stringify(tk));
@@ -133,7 +142,7 @@ for (const lang of LANGS) for (const width of WIDTHS) {
   // 2: Record Your Progress -- the write and the re-render.
   await flow("record", lang, width, async (t, page, ctx, errors) => {
     await openRead(page);
-    await page.click("#readBarRecordBtn"); await settle(page, 900);
+    await tapBar(page, "#readBarRecordBtn"); await settle(page, 900);
     let st = await stageState(page);
     check(`${t}: POSITIVE CONTROL the stage buttons start disabled until an Approach is chosen`, st.length === 6 && st.every(([, d]) => d), JSON.stringify(st));
     await pickApproach(page, "recite");
@@ -152,7 +161,7 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     check(`${t}: after the card redraws, Practising is the pressed stage`, st.find(([s]) => s === "practising")?.[2] === "true" && st.find(([s]) => s === "not_started")?.[2] !== "true", JSON.stringify(st));
     // close, reopen: the status survives the re-render
     await closeSheet(page);
-    await page.click("#readBarRecordBtn"); await settle(page, 900);
+    await tapBar(page, "#readBarRecordBtn"); await settle(page, 900);
     await pickApproach(page, "recite");
     st = await stageState(page);
     check(`${t}: reopened, the card still shows Practising for that Approach`, st.find(([s]) => s === "practising")?.[2] === "true", JSON.stringify(st));
@@ -160,7 +169,7 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     check(`${t}: the card's status line names the new stage for Recite correctly`, lang === "bn" ? true : /Recite correctly: Practising/.test(summary), summary.slice(0, 300));
     await closeSheet(page);
     // Know Your Status reads the claim: Recite correctly gains a non-zero count
-    await page.click("#readBarStatusBtn"); await settle(page, 1500);
+    await tapBar(page, "#readBarStatusBtn"); await settle(page, 1500);
     const ms = await ev(page, () => document.getElementById("myStatusBody").innerText.replace(/\s+/g, " "));
     check(`${t}: Know Your Status still opens after the claim and lists the Approaches`, ms.length > 100, ms.slice(0, 200));
     check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
@@ -169,7 +178,7 @@ for (const lang of LANGS) for (const width of WIDTHS) {
   // 3: 👥 Recording for family members.
   await flow("family", lang, width, async (t, page, ctx, errors) => {
     await openRead(page);
-    await page.click("#readBarRecordBtn"); await settle(page, 900);
+    await tapBar(page, "#readBarRecordBtn"); await settle(page, 900);
     const pk = await ev(page, () => { const r = document.querySelector("[data-claim-for]"); const b = r?.querySelector("[data-assign-trigger]")?.getBoundingClientRect(); return r ? { label: r.querySelector("[data-assign-trigger-label]").textContent, rows: [...r.querySelectorAll("[data-assign-list] input")].map((i) => [i.value, i.checked]), h: b.height, w: b.width, inside: b.left >= 0 && b.right <= innerWidth + 1 } : null; });
     if (PROBE) console.log(t, JSON.stringify(pk));
     check(`${t}: POSITIVE CONTROL 👥 shows, naming the Student (${NAMES[lang][0]}) alone ticked`, !!pk && pk.label === NAMES[lang][0] && JSON.stringify(pk.rows) === JSON.stringify([["p1", true], ["p2", false]]), JSON.stringify(pk));
@@ -342,15 +351,15 @@ if (!LONLY || LONLY === "bn") {
     await openRead(page);
     const seen = {};
     seen.bar = await ev(page, () => document.getElementById("readApproachBar").innerText);
-    await page.click("#readBarStatusBtn"); await settle(page, 1200);
+    await tapBar(page, "#readBarStatusBtn"); await settle(page, 1200);
     seen.status = await ev(page, () => document.getElementById("myStatusCard").innerText);
     await page.click("#myStatusCloseBtn"); await settle(page, 300);
-    await page.click("#readBarRecordBtn"); await settle(page, 900);
+    await tapBar(page, "#readBarRecordBtn"); await settle(page, 900);
     await pickApproach(page, "recite");
     seen.record = await ev(page, () => document.querySelector("[data-ayah-sheet] .ayah-sheet-approach-select")?.closest("section, div")?.innerText ?? "");
     seen.recordCard = await ev(page, () => [...document.querySelectorAll("[data-ayah-sheet] [data-approach-stage-btn]")].map((b) => b.textContent).join(" ") + " " + (document.querySelector("[data-gac-record-title]")?.textContent ?? "") + " " + (document.querySelector("[data-claim-for]")?.innerText ?? ""));
     await closeSheet(page);
-    await page.click("#readBarTakeBtn"); await settle(page, 1000);
+    await tapBar(page, "#readBarTakeBtn"); await settle(page, 1000);
     await page.$eval('#wheelContainer .wheel-seg[data-key="memorise"]', (e) => e.dispatchEvent(new MouseEvent("click", { bubbles: true }))).catch(() => {});
     await page.waitForFunction(() => document.querySelector(".rnp-track:not([hidden]) .way-tab-btn"), null, { timeout: 8000 }).catch(() => {});
     seen.tabs = await ev(page, () => [...document.querySelectorAll(".rnp-track .way-tab-btn")].map((b) => b.textContent).join(" "));

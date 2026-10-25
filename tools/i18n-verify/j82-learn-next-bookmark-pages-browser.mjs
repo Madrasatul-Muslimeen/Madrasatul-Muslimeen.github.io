@@ -150,12 +150,15 @@ const barHeightWithout = (page) => page.evaluate(() => {
   st.textContent = "#mushafPagePrevBtn,#mushafPageNextBtn{display:none!important}"; document.head.append(st);
   const h = Math.round(bar.getBoundingClientRect().height); st.remove(); return h;
 });
+// PCF MSA J99 (the Owner ticked B, 25 Oct 2026): 📜 left the Read bar (📖 now cycles Āyah → Meaning → Mushaf). These checks
+// only need the Mushaf on or off, so they use the very same switch through Options ▸ "Mushaf view". Updated in place.
+const mushafTick = (page, on) => page.evaluate((o) => { const t = document.getElementById("mushafToggle"); if (t.checked !== o) { t.checked = o; t.dispatchEvent(new Event("change", { bubbles: true })); } }, on);
 async function partPages(lang, width, height) {
   const tag = `[pages ${lang} ${width}]`;
   const { ctx, page } = await start(lang, width, height);
   await setSel(page, "unitTypeSelect", "ayah"); await page.waitForTimeout(400);
   await goTo(page, 57, 2);
-  await page.click("#readMushafBtn");
+  await mushafTick(page, true);
   await waitFor("mushaf pages", page, () => [...document.querySelectorAll("#pageViewContainer .hifz-page")].some((e) => e.offsetParent !== null));
   await waitFor("page ref", page, () => !!document.getElementById("mushafPageRef")?.dataset.page);
   await page.waitForTimeout(600);
@@ -217,11 +220,11 @@ async function partEnds(lang, width, height) {
   for (const [pg, prevOff, nextOff] of [[1, true, false], [604, false, true]]) {
     await page.evaluate((n) => { const s = document.getElementById("unitNumSelect"); if (s) { s.value = String(n); s.dispatchEvent(new Event("change", { bubbles: true })); } }, pg);
     await page.waitForTimeout(500);
-    await page.click("#readMushafBtn").catch(() => {});
+    await mushafTick(page, true);
     await waitFor("page ref", page, (n) => Number(document.getElementById("mushafPageRef")?.dataset.page) === n, pg, 10000);
     const st = await navState(page);
     check(`${tag} on page ${pg}: ‹ ${prevOff ? "disabled" : "enabled"} and › ${nextOff ? "disabled" : "enabled"}`, st.mushafPagePrevBtn.disabled === prevOff && st.mushafPageNextBtn.disabled === nextOff, JSON.stringify(st));
-    await page.click("#readMushafBtn").catch(() => {});
+    await mushafTick(page, false);
     await page.waitForTimeout(400);
   }
   await ctx.close();
