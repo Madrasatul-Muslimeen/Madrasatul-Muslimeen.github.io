@@ -10,7 +10,8 @@
 // request) and plays them as their own little clip, from its start to its end: no seek, no clock to trust.
 //
 // Output: tools/quran-data-pull/output/bn-audio-bytes.json
-//   { v: 1, frameMs, surahs: { "<n>": { size, frames, ms, ayahs: [[startByte, endByte], ...] } } }
+//   { v: 1, frameMs, surahs: { "<n>": { size, frames, ms, ayahs: [[startByte, endByte, flag], ...] } } }
+//   flag: 1 checked against this recording; 2 not checked, its own map times in pauses; 0 not checked (see main())
 //   endByte is exclusive. The start is ONE FRAME EARLY (the frame before the one holding timestamp_from) so the first
 //   frame we want has its bit-reservoir bytes; that costs at most one frame (~26-36 ms) of the gap before the āyah.
 //
@@ -154,7 +155,17 @@ export function alignToRecording(file, entries, tmp, n) {
     ? [entries[i].timestamp_from, Math.min(entries[i].timestamp_to, audioMs)]
     : [st, i + 1 < starts.length ? starts[i + 1] - 1 : audioMs]));
   const shifts = starts.map((st, i) => st - entries[i].timestamp_from);
-  return { ranges, how, shifts, audioMs, lost: how.filter((h) => h === "lost").length, relocks: how.filter((h) => h === "relock").length, maxShift: Math.max(...shifts.map(Math.abs)) };
+  // J95 E (the Owner, 25 Oct 2026): a "lost" āyah whose OWN map times both sit in a pause of this recording (within
+  // 300 ms; the end may also be the end of the file) is played as it is, with a "not checked yet" line ("own"); any
+  // other lost āyah is played inside the nearest checked stretch by the app, so it never cuts a word.
+  // The START must be a pause inside the recitation (the map can run past this file's end: 112's last āyah starts after
+  // it, and a "clip" there was 418 bytes of nothing); the END may be the end of the file; the clip lasts 1 s or more.
+  const inGap = (ms) => pauses.some(([a, b]) => ms >= a - 300 && ms <= b + 300);
+  const own = how.map((h, i) => {
+    const { timestamp_from: from, timestamp_to: to } = entries[i];
+    return h === "lost" && from < audioMs - 1000 && Math.min(to, audioMs) - from >= 1000 && inGap(from) && (to >= audioMs - 100 || inGap(to));
+  });
+  return { ranges, how, own, shifts, audioMs, lost: how.filter((h) => h === "lost").length, relocks: how.filter((h) => h === "relock").length, maxShift: Math.max(...shifts.map(Math.abs)) };
 }
 
 const curl = (url, file) => execFileSync("curl", ["-sS", "-L", "--fail", "--retry", "3", "-o", file, url], { stdio: ["ignore", "ignore", "inherit"] });
@@ -169,8 +180,12 @@ async function main() {
     for (const n of list) {
       const entries = ts[String(n)];
       if (!entries?.length) throw new Error(`no timestamps for surah ${n}`);
-      const file = path.join(tmp, `${n}.mp3`);
-      curl(surahUrl(n), file);
+      // BN_AUDIO_CACHE: a folder of already-downloaded NNN.mp3 files (the same one bn-audio-clip-browser uses), read
+      // when the size matches what the item serves last time; anything else is downloaded as before
+      const cached = process.env.BN_AUDIO_CACHE && path.join(process.env.BN_AUDIO_CACHE, `${String(n).padStart(3, "0")}.mp3`);
+      const file = cached && fs.existsSync(cached) && (!out.surahs[String(n)] || fs.statSync(cached).size === out.surahs[String(n)].size)
+        ? cached : path.join(tmp, `${n}.mp3`);
+      if (file !== cached) curl(surahUrl(n), file);
       const buf = fs.readFileSync(file);
       const walk = walkFrames(buf);
       if (walk.offsets.length < 10) throw new Error(`surah ${n}: only ${walk.offsets.length} frames found`);
@@ -183,12 +198,13 @@ async function main() {
       const lenDiffMs = lastTo - ms;
       const al = alignToRecording(file, entries, tmp, n);
       const ayahs = ayahBytes(walk, al.ranges);
-      // per āyah: [startByte, endByte, trusted 1/0]; "lost" starts are kept (best guess) but marked untrusted
-      const rows = ayahs.map(([a, b], i) => [a, b, al.how[i] === "lost" ? 0 : 1]);
+      // per āyah: [startByte, endByte, flag]: 1 checked; 2 not checked, but its own map times sit in this recording's
+      // pauses (played as it is, with a "not checked yet" line); 0 not checked (the app plays the nearest checked stretch)
+      const rows = ayahs.map(([a, b], i) => [a, b, al.how[i] !== "lost" ? 1 : al.own[i] ? 2 : 0]);
       out.frameMs = +frameMs.toFixed(3);
       out.surahs[String(n)] = { size: buf.length, frames: walk.offsets.length, ms, lenDiffMs, lost: al.lost, maxShiftMs: al.maxShift, ayahs: rows };
       console.log(`surah ${String(n).padStart(3)}: ${walk.offsets.length} frames, ${(ms / 1000).toFixed(1)} s (last āyah ends ${(lastTo / 1000).toFixed(1)} s), ${entries.length} āyāt, ${walk.infoFrame > 0 ? "Xing/Info frame skipped" : "no Xing/Info frame"}${walk.resyncs ? `, ${walk.resyncs} bytes skipped` : ""}; map-vs-audio ${(lenDiffMs / 1000).toFixed(1)} s; aligned: ${entries.length - 1 - al.lost - al.relocks} snapped, ${al.relocks} relocked, ${al.lost} lost, largest shift ${(al.maxShift / 1000).toFixed(1)} s`);
-      fs.unlinkSync(file);
+      if (file !== cached) fs.unlinkSync(file);
       fs.writeFileSync(OUT, JSON.stringify(out));
     }
   } finally {

@@ -381,6 +381,9 @@ export const BN = {
   "▶ Play": "▶ চালান",
   "⏸ Pause": "⏸ থামান",
   "■ Stop": "■ বন্ধ",
+  // J95 E (25 Oct 2026): the line under the Read bar while a Bangla āyah whose timing is not checked plays
+  "Bangla timing for this āyah is not checked yet.": "এই আয়াতের বাংলা সময় এখনও যাচাই করা হয়নি।",
+  "Bangla timing is not checked here: āyāt {from}–{to} play together.": "এখানে বাংলা সময় যাচাই করা হয়নি: আয়াত {from}–{to} একসাথে বাজছে।",
   "▶ Whole surah": "▶ পুরো সূরা",
   "{reciter} only has whole-surah audio — use Whole surah instead.":
     "{reciter}-এর কেবল পুরো সূরার অডিও আছে — এর বদলে 'পুরো সূরা' ব্যবহার করুন।",
