@@ -3,12 +3,13 @@
 // assertion on what "What it does" says. One check per claim, named with the entry's title.
 //
 //   node tools/i18n-verify/manual-claims-msa-browser.mjs            (needs node serve.js on 8080)
-//   --section=start|bookmarks|teaching|notes|hadith   one section only
+//   --section=start|bookmarks|teaching|notes|hadith|modules   one section only
 //   --verbose                            print PASS lines too
 //   --mutate=<name>                      break one claim so its check must FAIL (one per section):
 //        start      hides the Esc/outside-click close of the menu bar (sets every menu to stay open)
 //        bookmarks  hides the Bookmark menu's ✕ Close button
 //        teaching   hides the People page's "Hand the device to a child" box
+//        modules    removes Track my progress (topic and routine), the topic's bookmark star and the Continue chip
 //        hadith     breaks one claim per entry: Text language, Go to number, Studied, Next ›, a progress stage, ✓ Check this dua
 import { chromium, newContext, openPage, BASE as BASE_URL } from "./harness.mjs";
 
@@ -1457,6 +1458,150 @@ if (want("hadith")) {
       await r.ctx.close();
     } catch (e) { crash(e); }
   }
+}
+
+// =====================================================================================================================
+// ▸ Other study modules   (audit part 90: topic study, routines, the Continue strip; shared MSA pages, so a FAIL is reported)
+// =====================================================================================================================
+if (want("modules")) {
+  console.log("== Other study modules");
+  const MODS = [
+    { id: "deen", root: "deen_study", page: "deen-study.html", trackable: "studied_deen", name: "Deen Study", done: "Studied" },
+    { id: "arabic", root: "arabic_language", page: "arabic-study.html", trackable: "studied_arabic", name: "Arabic", done: "Studied" },
+    { id: "ldog", root: "ldog", page: "ldog-study.html", trackable: "practised_ldog", name: "Learn Deen On-the-Go", done: "Practised" },
+  ];
+  // The stub's own catalogue holds no topic with a resource, so each module gets a root and two topics that have one (the stub's r1).
+  const seedMod = (m, extra = "") => `
+(function () {
+  window.__stubApplyBatches = true;
+  const root = "${m.root}", mod = "${m.id}", id = (s) => TENANT_ID + "__" + s;
+  DATA.trackables = DATA.trackables.filter((t) => t._id !== id("${m.trackable}"));
+  DATA.trackables.push({ _id: id("${m.trackable}"), tenantId: TENANT_ID, subjectId: root, order: 0, status: "active", name: lang("${m.done}"), groupName: lang("Understanding"), guide: { what: lang("What it is"), how: lang("How to do it"), measure: lang("How to measure") }, panels: ["text"] });
+  DATA.subjects = DATA.subjects.filter((s) => !(s.moduleIds || []).includes(mod));
+  const node = (sid, parent, anc, en, order, leaf) => DATA.subjects.push({ _id: id(sid), tenantId: TENANT_ID, subjectId: sid, parentId: parent, name: lang(en), moduleIds: [mod], ancestorIds: anc, status: "active", order, ...(leaf ? { isTrackable: true, resourceIds: ["r1"] } : {}) });
+  node(root, null, [], "${m.name}", 1, false);
+  node("leaf_b", root, [root], "Short topic", 1, true);
+  node("leaf_c", root, [root], "Second topic", 2, true);
+  ${extra}
+})();`;
+  const gone = (page, sel) => MUTATE === "modules" ? page.evaluate((s) => document.querySelectorAll(s).forEach((e) => e.remove()), sel) : null;
+  const wcountM = (page) => page.evaluate(() => (window.__stubWriteData || []).length);
+  const wfromM = (page, k) => page.evaluate((k) => (window.__stubWriteData || []).slice(k).map((x) => ({ col: x.col, id: x.id, data: x.data })), k);
+  const viaModules = async (page, m) => {
+    await settle(page);
+    await page.locator("#topNav summary", { hasText: /^Modules$/ }).first().click(); await page.waitForTimeout(150);
+    await Promise.all([page.waitForURL(new RegExp(m.page.replace(".", "\\.")), { timeout: 15000 }), page.click(`#navBar a[href^="${m.page}"]`)]);
+    await page.waitForSelector("#listContainer .topic-row", { timeout: 25000 });
+    await page.evaluate(() => document.querySelectorAll('[id*="splash"], .app-splash-overlay').forEach((e) => e.remove()));
+    await page.waitForTimeout(400);
+  };
+
+  for (const [w, h] of VIEWPORTS) {
+    const tag = `${w}px`;
+    // ### Topic study (Deen Study, Arabic)
+    for (const m of MODS.slice(0, 2)) {
+      try {
+        const { ctx, page, errors } = await open("/app/people.html", { w, h, ctxOpts: { extraSeedJs: seedMod(m) } });
+        await viaModules(page, m);
+        const T = `[${tag}] Topic study (${m.name})`;
+        check(`${T}: Modules ▾ → ${m.name} opens the subject's topics as a list`, (await page.locator("#listContainer .topic-row").count()) >= 2 && /Short topic/.test(await page.locator("#listContainer").innerText()));
+        const persons = await page.evaluate(() => [...document.querySelectorAll("#personSelect option")].length);
+        check(`${T}: there is a Person to pick`, persons >= 2, String(persons));
+        await page.click('.topic-row-leaf[data-id="leaf_b"]'); await page.waitForTimeout(900);
+        const det = await page.evaluate(() => ({ h2: document.querySelector("#detailContainer h2")?.childNodes[0]?.textContent.trim(), link: document.querySelector("#detailContainer a")?.getAttribute("href") ?? null }));
+        check(`${T}: opening a topic shows its resource`, det.h2 === "Short topic" && det.link === "https://example.org/lesson", JSON.stringify(det));
+        await gone(page, "#trackTopicBtn");
+        await page.click("#trackTopicBtn", { timeout: 4000 }).catch(() => {}); await page.waitForTimeout(600);
+        const title = await page.evaluate(() => document.querySelector("#wayModalMount h3")?.textContent.trim() ?? "");
+        check(`${T}: Track my progress opens "Short topic — Studied"`, title === "Short topic — Studied", title);
+        const tab = await page.evaluate(() => ({ tabs: [...document.querySelectorAll(".way-tab-btn")].map((b) => b.textContent.trim()), sel: !!document.querySelector(".way-track .way-status-select") }));
+        check(`${T}: its Track tab offers the stage choice (Guide and Breakdown tabs beside it)`, tab.sel && tab.tabs[0] === "Track" && tab.tabs.includes("Guide") && tab.tabs.includes("Breakdown"), JSON.stringify(tab));
+        let rec = null;
+        if (tab.sel) {
+          await page.selectOption(".way-status-select", "learning");
+          const k = await wcountM(page);
+          await page.click(".way-claim-btn"); await page.waitForTimeout(1000);
+          rec = (await wfromM(page, k)).find((x) => x.col === "records");
+        }
+        check(`${T}: choosing a stage and Claim records topic:leaf_b as learning`, !!rec && JSON.stringify(rec.data).includes("topic:leaf_b") && JSON.stringify(rec.data).includes('"learning"'), JSON.stringify(rec)?.slice(0, 200));
+        await page.click(".way-close-btn", { timeout: 3000 }).catch(() => {}); await page.waitForTimeout(300);
+        await gone(page, "#bookmarkTopicBtn");
+        const k2 = await wcountM(page);
+        await page.click("#bookmarkTopicBtn", { timeout: 4000 }).catch(() => {});
+        await page.click("[data-bm-pop-save]", { timeout: 4000 }).catch(() => {}); await page.waitForTimeout(900);
+        const bw = (await wfromM(page, k2)).find((x) => x.col === "bookmarks");
+        check(`${T}: Bookmark this saves your place`, !!bw && JSON.stringify(bw.data).includes("leaf_b"), JSON.stringify(bw)?.slice(0, 200));
+        check(`${T}: no sideways scroll, no page error`, (await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)) && quiet(errors).length === 0, JSON.stringify(quiet(errors)));
+        await ctx.close();
+      } catch (e) { crash(e); }
+    }
+
+    // ### Routines (Learn Deen On-the-Go)   (leaf_c is seeded as already practised today: the stub never mutates its data, so a fresh log cannot show on the page)
+    try {
+      const m = MODS[2];
+      const LOGGED = `DATA.activity = (DATA.activity || []).filter(function (a) { return a._id !== TENANT_ID + "__p1__" + THIS_WEEK; }).concat([{ _id: TENANT_ID + "__p1__" + THIS_WEEK, tenantId: TENANT_ID, personId: "p1", weekKey: THIS_WEEK, entries: [{ date: TODAY, subjectId: "leaf_c", unitKey: "topic:leaf_c", unitType: "topic", trackableId: "practised_ldog", action: "practised" }] }]);`;
+      const { ctx, page, errors } = await open("/app/people.html", { w, h, ctxOpts: { extraSeedJs: seedMod(m, LOGGED) } });
+      await viaModules(page, m);
+      const T = `[${tag}] Routines (Learn Deen On-the-Go)`;
+      const list = await page.evaluate(() => ({ rows: document.querySelectorAll("#listContainer .topic-row-leaf").length, badges: [...document.querySelectorAll("#listContainer .topic-reminder-done")].map((b) => b.textContent.trim()), rem: document.querySelector(".routine-reminder")?.textContent.trim() ?? "" }));
+      check(`${T}: a routine logged today shows "Logged today" in the list`, list.badges.length === 1 && list.badges[0] === "Logged today", JSON.stringify(list));
+      check(`${T}: the page says how many routines are not logged yet ("${list.rem}")`, list.rows >= 2 && list.rem === (list.rows - 1 === 1 ? "1 routine here not logged today yet." : `${list.rows - 1} routines here not logged today yet.`), JSON.stringify(list));
+      await page.click('.topic-row-leaf[data-id="leaf_c"]'); await page.waitForTimeout(900);
+      const dc = await page.evaluate(() => document.querySelector("#detailContainer")?.innerText ?? "");
+      check(`${T}: the logged routine's page reads "Logged today ✓"`, /Logged today ✓/.test(dc), dc.slice(0, 120));
+      await page.click('#breadcrumbContainer .topic-crumb-btn').catch(() => {}); await page.waitForTimeout(300);
+      await page.click('.topic-row-leaf[data-id="leaf_b"]'); await page.waitForTimeout(900);
+      const d1 = await page.evaluate(() => document.querySelector("#detailContainer")?.innerText ?? "");
+      check(`${T}: an unlogged routine says "Not logged today yet."`, /Not logged today yet\./.test(d1), d1.slice(0, 120));
+      await gone(page, "#trackTopicBtn");
+      await page.click("#trackTopicBtn", { timeout: 4000 }).catch(() => {}); await page.waitForTimeout(700);
+      const sh = await page.evaluate(() => ({ title: document.querySelector("#wayModalMount h3")?.textContent.trim(), tabs: [...document.querySelectorAll(".way-tab-btn")].map((b) => b.textContent.trim()) }));
+      check(`${T}: Track my progress opens "— Practised" with Track, Guide, Streak and Breakdown tabs`, sh.title === "Short topic — Practised" && JSON.stringify(sh.tabs) === JSON.stringify(["Track", "Guide", "Streak", "Breakdown"]), JSON.stringify(sh));
+      let lw = [];
+      if (sh.tabs.length) {
+        await page.click('.way-tab-btn[data-tab="Streak"]'); await page.waitForTimeout(200);
+        const k = await wcountM(page);
+        await page.click(".way-log-btn"); await page.waitForTimeout(1000);
+        lw = (await wfromM(page, k)).filter((x) => x.col === "activity");
+      }
+      check(`${T}: pressing Log today on the Streak tab writes a "practised" entry for the routine`, lw.length >= 1 && JSON.stringify(lw).includes("leaf_b") && JSON.stringify(lw).includes("practised"), JSON.stringify(lw).slice(0, 200));
+      check(`${T}: no sideways scroll, no page error`, (await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)) && quiet(errors).length === 0, JSON.stringify(quiet(errors)));
+      await ctx.close();
+    } catch (e) { crash(e); }
+
+    // ### Continue strip
+    try {
+      const m = MODS[0];
+      const RES = `DATA.bookmarks = [{ _id: TENANT_ID + "__p1", tenantId: TENANT_ID, personId: "p1", folders: [], saved: [], resume: { "deen::none::leaf_b": { position: null, settings: null, updatedAt: "2026-10-10T00:00:00.000Z" }, "general::none::g": { position: null, settings: null, updatedAt: "2026-10-12T00:00:00.000Z" } } }];`;
+      const { ctx, page, errors } = await open(`/app/${m.page}`, { w, h, ctxOpts: { extraSeedJs: seedMod(m, RES) } });
+      await page.waitForSelector("#listContainer .topic-row", { timeout: 25000 });
+      await page.waitForTimeout(1200);
+      await gone(page, ".continue-chip");
+      const strip = await page.evaluate(() => ({ chips: [...document.querySelectorAll("#continueStrip .continue-chip")].map((a) => a.textContent.replace(/\s+/g, " ").trim()) }));
+      const T = `[${tag}] Continue strip`;
+      check(`${T}: a "Continue: Deen Study — Short topic" line sits at the top of the study page`, strip.chips.length === 1 && strip.chips[0] === "Continue: Deen Study — Short topic", JSON.stringify(strip));
+      check(`${T}: a hidden module's newer place (General Study) is not offered`, !strip.chips.some((c) => /General/.test(c)), JSON.stringify(strip));
+      let there = null;
+      if (strip.chips.length) {
+        await Promise.all([page.waitForURL(/resume=leaf_b/, { timeout: 15000 }), page.click("#continueStrip .continue-chip", { timeout: 4000 })]).catch(() => {});
+        await page.waitForSelector("#detailContainer .topic-detail h2", { timeout: 20000 }).catch(() => {});
+        there = await page.evaluate(() => document.querySelector("#detailContainer h2")?.childNodes[0]?.textContent.trim());
+      }
+      check(`${T}: tapping it opens the topic you last were in`, there === "Short topic", String(there));
+      check(`${T}: no page error`, quiet(errors).length === 0, JSON.stringify(quiet(errors)));
+      await ctx.close();
+    } catch (e) { crash(e); }
+
+    // ### Hidden modules (the section's opening note)
+    try {
+      const { ctx, page } = await open("/app/general-study.html", { w, h });
+      await page.waitForTimeout(2500);
+      const g = await page.evaluate(() => ({ h1: document.querySelector("h1")?.textContent.trim(), url: location.pathname.split("/").pop() }));
+      check(`[${tag}] Hidden modules: an old link to General Study still opens its page`, g.url === "general-study.html" && /General/i.test(g.h1 || ""), JSON.stringify(g));
+      await ctx.close();
+    } catch (e) { crash(e); }
+  }
+  SKIP("Topic study: a second account's progress on the same topic", "needs a second signed-in account");
 }
 
 async function summ_bn(page) {
