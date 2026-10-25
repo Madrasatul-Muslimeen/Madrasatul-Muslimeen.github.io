@@ -11692,6 +11692,13 @@
       studyPillarMenu.hidden = true;
       tabStudyBtn.setAttribute("aria-expanded", "false");
     });
+    // Audit part 88 (keyboard): Esc closes the open Study menu, as a tap on it does, and gives the button its focus back.
+    document.addEventListener("keydown", (e) => {
+      if (e.key !== "Escape" || studyPillarMenu.hidden) return;
+      studyPillarMenu.hidden = true;
+      tabStudyBtn.setAttribute("aria-expanded", "false");
+      tabStudyBtn.focus();
+    });
 
     // Enhancement round -- Note as its own dock tab. Opens the Ayah Note
     // screen for whichever āyah is on screen right now, the same
@@ -13138,7 +13145,10 @@
       await readContentsLoading;
     }
 
-    async function openReadContents() {
+    // Audit part 88 (keyboard): the button that opened the list gets its focus back when the list closes without a choice.
+    let readContentsOpener = null;
+    async function openReadContents(e) {
+      readContentsOpener = e?.currentTarget instanceof HTMLElement ? e.currentTarget : document.activeElement;
       readContentsMountEl.hidden = false;
       placeAtHome(document.getElementById("readContentsCard")); // PCF MSA J72: the home window's size and place
       readContentsBodyEl.innerHTML = `<p class="rc-empty">${rcEsc(t("Loading…"))}</p>`;
@@ -13152,12 +13162,18 @@
       renderReadContents();
       document.getElementById("readContentsCloseBtn").focus();
     }
-    function closeReadContents() { readContentsMountEl.hidden = true; }
+    function closeReadContents({ restoreFocus = true } = {}) {
+      const wasOpen = !readContentsMountEl.hidden;
+      readContentsMountEl.hidden = true;
+      const opener = readContentsOpener;
+      readContentsOpener = null;
+      if (restoreFocus && wasOpen && opener?.isConnected && opener.offsetParent !== null) opener.focus();
+    }
     document.getElementById("readContentsBackBtn")?.addEventListener("click", closeReadContents); // J72: ← Back = back where it was opened
 
     /** Set the unit exactly as the Study options pickers do, then open Read. */
     async function openReadContentsRow(kind, n) {
-      closeReadContents();
+      closeReadContents({ restoreFocus: false }); // a row was chosen: the Read view takes over, not the opener
       stopDrill();
       mushafToggle.checked = true;
       mushafToggle.dispatchEvent(new Event("change"));
@@ -13204,7 +13220,7 @@
     document.getElementById("readListBtn")?.addEventListener("click", openReadContents);
     document.getElementById("readContentsCloseBtn")?.addEventListener("click", closeReadContents);
     // Owner, 2 Oct 2026: straight from the list to the landing page.
-    document.getElementById("readContentsHomeBtn")?.addEventListener("click", () => { closeReadContents(); openApproachWheel(); });
+    document.getElementById("readContentsHomeBtn")?.addEventListener("click", () => { closeReadContents({ restoreFocus: false }); openApproachWheel(); });
     readContentsMountEl?.addEventListener("click", (e) => { if (e.target === readContentsMountEl) closeReadContents(); });
     readContentsTabsEl?.addEventListener("click", (e) => {
       const tab = e.target.closest("[data-rc-tab]");
