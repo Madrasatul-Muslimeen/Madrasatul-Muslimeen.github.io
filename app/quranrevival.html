@@ -2348,12 +2348,18 @@
      three buttons at the bottom of the screen?" On a phone they are one slim row just above the four bottom buttons
      (--rq-bottom is the dock's measured height, positionReadQuickRow()); the reading gets that much room at its foot.
      From 600px they stay the bar's last line, where there is room. Hidden in the bare full-screen state, as before. */
+  /* PCF MSA J99 (the Owner, 25 Oct 2026, a phone screenshot: "put those 3 buttons inside the dots on the card (expand the
+     card), saves a row"): below 600px the three move into the ⋯ card (placeReadApproachBar()), one full-width line each,
+     in their order and with their full words, after the tiles; the reading gets that row back. */
   @media (max-width: 599.98px) {
-    #readBar #readApproachBar {
-      position: fixed; left: 0.5rem; right: 0.5rem; bottom: calc(var(--rq-bottom, 0px) + 6px); z-index: 60;
-      order: 0; flex: none; width: auto; box-shadow: 0 2px 10px rgba(19, 25, 42, 0.16);
+    #readBar #readToolsMenu #readApproachBar {
+      grid-column: 1 / -1; order: 99; flex-direction: column; width: auto; min-height: 0; border-radius: 0.7rem;
     }
-    body:not(.fs-hide-readbar) #readScroll { padding-bottom: calc(52px + env(safe-area-inset-bottom, 0px)); }
+    #readBar #readToolsMenu #readApproachBar .approach-bar-btn { flex: 0 0 auto; min-height: 44px; padding: 0.3rem 0.6rem; font-size: 0.86rem; }
+    #readBar #readToolsMenu #readApproachBar .approach-bar-btn + .approach-bar-btn { border-left: 0; border-top: 1.5px solid #d8c68a; }
+    /* The taller card reaches the Zab 🧰 corner (z 900) on a short phone (320x640): while open it sits over it (the Zab
+       panel, 950, and the Notes pane, 960, stay above). */
+    #readToolsMenu.open { z-index: 905; }
   }
   #readNotesBtn { position: relative; }
   #readNotesBtn[aria-expanded="true"] { outline: 2px solid #c9a24b; outline-offset: 1px; }
@@ -20280,6 +20286,20 @@
     });
     document.addEventListener("keydown", (e) => { if (e.key === "Escape" && readToolsMenu?.classList.contains("open")) closeReadTools({ focus: true }); });
     window.addEventListener("resize", placeReadTools);
+    // PCF MSA J99: below 600px Take an Approach | Record Your Progress | Know Your Status live in the ⋯ card (see its CSS);
+    // from 600px they go back to their own place on the bar, before the unit chip. Same buttons, ids and handlers, so each
+    // opens exactly what it did (and the card closes behind it, as for every tool).
+    const readApproachBarEl = document.getElementById("readApproachBar");
+    const readApproachHome = readApproachBarEl && { parent: readApproachBarEl.parentElement, next: readApproachBarEl.nextElementSibling };
+    const readPhoneMQ = window.matchMedia("(max-width: 599.98px)");
+    function placeReadApproachBar() {
+      if (!readApproachBarEl || !readToolsMenu) return;
+      if (readPhoneMQ.matches) { if (readApproachBarEl.parentElement !== readToolsMenu) readToolsMenu.appendChild(readApproachBarEl); }
+      else if (readApproachBarEl.parentElement !== readApproachHome.parent) readApproachHome.parent.insertBefore(readApproachBarEl, readApproachHome.next);
+      placeReadTools();
+    }
+    readPhoneMQ.addEventListener("change", placeReadApproachBar);
+    placeReadApproachBar();
     // The study buttons' bottom row sits on the dock's measured height; keep it right whenever the dock moves.
     if (typeof ResizeObserver === "function" && document.getElementById("dock")) new ResizeObserver(() => positionReadQuickRow()).observe(document.getElementById("dock"));
     positionReadQuickRow();
