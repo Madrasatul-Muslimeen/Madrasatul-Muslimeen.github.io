@@ -257,6 +257,7 @@ let byteMapCache = null; // J95: Promise<the āyah byte map, or null when it cou
 const clipCache = new Map(); // J95: "surah:ayah" -> Promise<blob: URL of that āyah's own bytes>, the last few only
 let segToken = 0; // J95: bumped by every new play or stop, so a clip that arrives late never starts over a newer request
 let onPlaybackError = null;
+let onTimingNote = null; // J95 E -- see setTimingNoteHandler()
 let onAyahChange = null;
 let onPlaybackState = null; // shell round 21 -- see setPlaybackStateHandler()
 let oneShotActive = false; // true only while playOneAndWait() owns the shared <audio> element -- see handleEnded() below
@@ -290,6 +291,24 @@ export function setAyahChangeHandler(fn) {
  */
 export function setPlaybackErrorHandler(fn) {
   onPlaybackError = fn;
+}
+
+/**
+ * J95 E (the Owner, 25 Oct 2026). Called with what the sounding Bangla clip is, whenever that changes:
+ *   { kind: "unchecked", surahNum, from, to }   one āyah whose timing is not checked against this recording yet
+ *   { kind: "stretch", surahNum, from, to }     āyāt from..to play together, the nearest checked stretch
+ *   null                                        anything else (a checked āyah, another reciter, stopped)
+ * so the page can say so under the player. Only the Bangla reciter ever sends a note.
+ */
+export function setTimingNoteHandler(fn) {
+  onTimingNote = fn;
+}
+let lastNoteKey = "";
+function timingNote(note) {
+  const key = note ? `${note.kind}:${note.surahNum}:${note.from}-${note.to}` : "";
+  if (key === lastNoteKey) return;
+  lastNoteKey = key;
+  if (onTimingNote) onTimingNote(note);
 }
 
 /**
@@ -762,15 +781,43 @@ function getByteMap(reciter) {
   return byteMapCache;
 }
 
+/**
+ * J95 E -- what one play of this āyah covers. A row's third field is 1 (checked against this recording), 2 (not
+ * checked, but its own map times sit in the recording's pauses) or 0 (not checked). An āyah plays its own row when its
+ * start and the next āyah's start are both usable (1 or 2); otherwise it plays the nearest CHECKED STRETCH, from the
+ * last usable start at or before it to the next usable start after it (or the end of the file), so a guessed boundary
+ * never cuts a word. That includes a checked āyah followed by unchecked ones: its own end is a guess.
+ * Returns { bytes: [start, endExclusive], from, to, note } or null when there is no row.
+ */
+export function bnSpan(map, surahNum, ayahNum) {
+  const s = map?.surahs?.[String(surahNum)];
+  const rows = s?.ayahs;
+  const i = ayahNum - 1;
+  const row = rows?.[i];
+  if (!row || !(row[1] > row[0])) return null;
+  const usable = (k) => rows[k][2] !== 0; // a map without the third field (older) counts every row as checked
+  let p = i;
+  while (p > 0 && !usable(p)) p--;
+  let q = i + 1;
+  while (q < rows.length && !usable(q)) q++;
+  if (p === i && q === i + 1) return { bytes: [row[0], row[1]], from: ayahNum, to: ayahNum, note: row[2] === 2 ? "unchecked" : null };
+  return { bytes: [rows[p][0], q < rows.length ? rows[q][0] : s.size], from: p + 1, to: q, note: "stretch" };
+}
+
 const CLIP_CACHE_SIZE = 6;
 async function clipFor(reciter, surahNum, ayahNum) {
+  return (await spanClip(reciter, surahNum, ayahNum))?.url ?? null;
+}
+/** { url (blob:), span } for this āyah's clip, or null (no map, no row, or the server ignored the Range). */
+async function spanClip(reciter, surahNum, ayahNum) {
   const map = await getByteMap(reciter);
-  const row = map?.surahs?.[String(surahNum)]?.ayahs?.[ayahNum - 1];
-  if (!row || !(row[1] > row[0])) return null;
-  const key = `${surahNum}:${ayahNum}`;
+  const span = bnSpan(map, surahNum, ayahNum);
+  if (!span) return null;
+  const [b0, b1] = span.bytes;
+  const key = `${surahNum}:${b0}-${b1}`; // one stretch is one clip, whichever of its āyāt asked for it
   if (!clipCache.has(key)) {
     const controller = typeof AbortController === "function" ? new AbortController() : null;
-    const p = fetch(reciter.surahUrl(surahNum), { headers: { Range: `bytes=${row[0]}-${row[1] - 1}` }, signal: controller?.signal })
+    const p = fetch(reciter.surahUrl(surahNum), { headers: { Range: `bytes=${b0}-${b1 - 1}` }, signal: controller?.signal })
       .then(async (res) => {
         // 200 means the whole file is coming: stop it, and let the seek path play this one
         if (res.status !== 206) { controller?.abort(); return null; }
@@ -785,13 +832,14 @@ async function clipFor(reciter, surahNum, ayahNum) {
       oldP.then((url) => { if (url && url !== currentMediaUrl) URL.revokeObjectURL(url); }).catch(() => {});
     }
   }
-  return clipCache.get(key);
+  const url = await clipCache.get(key);
+  return url ? { url, span } : null;
 }
 
-/** The clip for this āyah, or null; a failed download is reported (I15) and rethrown marked. */
+/** { url, span } for this āyah, or null; a failed download is reported (I15) and rethrown marked. */
 async function segmentedClip(reciter, surahNum, ayahNum) {
   try {
-    return await clipFor(reciter, surahNum, ayahNum);
+    return await spanClip(reciter, surahNum, ayahNum);
   } catch (err) {
     if (err?.name === "AbortError") return null;
     throw reportFailure(describeMediaError(2), { clip: true });
@@ -815,13 +863,20 @@ async function playSegmentedAyahInternal(surahNum, ayahNum, reciterId) {
   if (clip) {
     clearBoundaryListener();
     const el = ensureAudioEl();
-    // the next āyah of a range, fetched while this one plays, so the step between them is short
-    if (currentRange?.reciterId === reciterId && currentRange.index < currentRange.ayahs.length - 1) {
-      clipFor(reciter, surahNum, currentRange.ayahs[currentRange.index + 1]).catch(() => {});
+    const { span } = clip;
+    timingNote(span.note ? { kind: span.note, surahNum, from: span.from, to: span.to } : null);
+    if (currentRange?.reciterId === reciterId) {
+      // J95 E: a stretch has played every āyah of the range it holds, so the range carries on after the last of them
+      while (currentRange.index < currentRange.ayahs.length - 1 && currentRange.ayahs[currentRange.index + 1] <= span.to) currentRange.index++;
+      // the next āyah of a range, fetched while this one plays, so the step between them is short
+      if (currentRange.index < currentRange.ayahs.length - 1) {
+        clipFor(reciter, surahNum, currentRange.ayahs[currentRange.index + 1]).catch(() => {});
+      }
     }
     // 'ended' (handleEnded) moves a range on, loops, or ends the run: the same path a one-file-per-āyah reciter takes
-    return playUrl(el, clip);
+    return playUrl(el, clip.url);
   }
+  timingNote(null);
   const timestamps = await getTimestamps(reciterId);
   if (token !== segToken) return;
   const surahEntries = timestamps[String(surahNum)];
@@ -872,6 +927,7 @@ export function playSegmentedAyah(surahNum, ayahNum, reciterId) {
 
 export function stop() {
   segToken++;
+  timingNote(null);
   currentPlaylist = null;
   currentRange = null;
   clearBoundaryListener();
@@ -991,12 +1047,16 @@ export function playOneAndWait(surahNum, ayahNum, reciterId, { signal } = {}) {
   if (onAyahChange) onAyahChange(surahNum, ayahNum);
   nowPlaying = { surahNum, ayahNum, reciterId };
   const el = ensureAudioEl();
+  if (reciter.kind !== "segmented") timingNote(null);
 
+  // Resolves with the last āyah this play covered: ayahNum, or a Bangla stretch's last āyah (J95 E), so a drill can
+  // carry on after it instead of playing the same stretch again for each āyah inside it.
   return new Promise((resolve, reject) => {
     let settled = false;
     oneShotActive = true;
     const finish = (fn, arg) => { if (settled) return; settled = true; cleanup(); fn(arg); };
-    const onEnded = () => finish(resolve);
+    let coveredTo = ayahNum;
+    const onEnded = () => finish(resolve, coveredTo);
     const onAbort = () => { el.pause(); finish(reject, new DOMException("Aborted", "AbortError")); };
     function cleanup() {
       oneShotActive = false;
@@ -1013,9 +1073,12 @@ export function playOneAndWait(surahNum, ayahNum, reciterId, { signal } = {}) {
           if (settled) return null;
           // something else took the player while this clip downloaded: this step ends, as an abort would end it
           if (token !== segToken) { finish(reject, new DOMException("Aborted", "AbortError")); return null; }
-          if (!clip) return getTimestamps(reciterId);
+          if (!clip) { timingNote(null); return getTimestamps(reciterId); }
+          const { span } = clip;
+          timingNote(span.note ? { kind: span.note, surahNum, from: span.from, to: span.to } : null);
+          coveredTo = Math.max(ayahNum, span.to);
           el.addEventListener("ended", onEnded);
-          return playUrl(el, clip).then(() => null);
+          return playUrl(el, clip.url).then(() => null);
         })
         .then((timestamps) => {
           if (!timestamps || settled) return;
@@ -1082,10 +1145,16 @@ export async function playDrill({ surahNum, fromAyah, toAyah, reciterIds, repeat
   // there is nobody left who can play.
   const failed = new Set();
   let lastError = null;
+  // J95 E: a Bangla stretch plays several āyāt in one clip. covered[reciter] = { from, to } of the last one, so the
+  // āyāt after `from` inside it are not played again by that reciter in the same pass (the other reciters still are).
+  const covered = new Map();
   const step = async (surah, ayahNum, reciterId) => {
     if (failed.has(reciterId)) return;
+    const c = covered.get(reciterId);
+    if (c && ayahNum > c.from && ayahNum <= c.to) return;
     try {
-      await playOneAndWait(surah, ayahNum, reciterId, { signal });
+      const to = await playOneAndWait(surah, ayahNum, reciterId, { signal });
+      if (to > ayahNum) covered.set(reciterId, { from: ayahNum, to });
     } catch (err) {
       if (err?.name === "AbortError") throw err;
       failed.add(reciterId);
@@ -1101,6 +1170,7 @@ export async function playDrill({ surahNum, fromAyah, toAyah, reciterIds, repeat
     // single-reciter range player it replaces: when the whole selection has
     // been through, start it again.
     do {
+      covered.clear(); // a Loop's next pass plays every stretch again
       if (mode === "each") {
         for (const ayahNum of ayahs) {
           for (let round = 0; round < repeatCount; round++) {
@@ -1112,6 +1182,7 @@ export async function playDrill({ surahNum, fromAyah, toAyah, reciterIds, repeat
       } else {
         for (let round = 0; round < repeatCount; round++) {
           for (const reciterId of reciterIds) {
+            covered.delete(reciterId); // each Whole Unit round is a pass of its own
             for (const ayahNum of ayahs) {
               await step(surahNum, ayahNum, reciterId);
             }

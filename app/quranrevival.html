@@ -2283,6 +2283,9 @@
     flex: 0 0 auto; display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center;
     gap: 0.4rem; padding: 0.25rem 0 0.4rem; border-bottom: 1px solid #eef1f7;
   }
+  /* J95 E: the Bangla "not checked" line under the player; one short line, no height when hidden */
+  #bnTimingNote { flex: 0 0 auto; margin: 0.15rem 0 0.25rem; font-size: 0.78rem; line-height: 1.3; color: #6a4b00; }
+  #bnTimingNote[hidden] { display: none; }
   #readBar button { font-size: 0.78rem; padding: 0.3rem 0.55rem; margin: 0; white-space: nowrap; }
   /* Shell round 22 -- icon-only controls, the owner's ask ("previous and full
      screen can be shown as an icon only, takes minimal space"). Every one
@@ -6214,6 +6217,9 @@
           <span id="readCompleteMsg" role="status" aria-live="polite"
                 style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap"></span>
         </div>
+        <!-- J95 E (the Owner, 25 Oct 2026): while the Bangla reciter plays an āyah whose timing is not checked against
+             this recording, one small line under the player says so (setTimingNoteHandler() below). Hidden otherwise. -->
+        <p id="bnTimingNote" class="bn-timing-note" role="status" aria-live="polite" hidden></p>
         <div id="readScroll">
           <div id="studyScreen">
             <!-- v08.22 -- the way back from an occurrence. It lives HERE, in
@@ -7451,7 +7457,7 @@
       RECITERS, reciterIsReady, reciterSupportsSingleAyah, playSurah,
       setLoop, setPlaybackErrorHandler, setAyahChangeHandler, stop as stopAudio, playDrill, stopDrill,
       warmSegmentedTimestamps, pause as pauseAudio, resume as resumeAudio, isPlaying, isPaused, unlockAudio,
-      setPlaybackStateHandler, playOneAndWait,
+      setPlaybackStateHandler, playOneAndWait, setTimingNoteHandler,
     } from "./js/audio-player.js";
     import { translateStatic, t, num, parseNum, surahName, ensureCatalogueReady } from "./js/i18n.js";
     import { registerServiceWorker } from "./js/sw-register.js";
@@ -7519,6 +7525,17 @@
       // the study panels do. Cheap: an SVG string rebuild, no font loads or
       // page re-justification, so it doesn't carry the round-7 jank risk.
       renderWheel();
+    });
+
+    // J95 E (the Owner, 25 Oct 2026): what the Bangla reciter is playing when its timing is not checked yet.
+    const bnTimingNoteEl = document.getElementById("bnTimingNote");
+    setTimingNoteHandler((note) => {
+      bnTimingNoteEl.hidden = !note;
+      bnTimingNoteEl.dataset.kind = note?.kind ?? "";
+      bnTimingNoteEl.textContent = !note ? ""
+        : note.kind === "stretch"
+          ? t("Bangla timing is not checked here: āyāt {from}–{to} play together.", { from: num(note.from), to: num(note.to) })
+          : t("Bangla timing for this āyah is not checked yet.");
     });
 
     const whoEl = document.getElementById("who");

@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "12.61",
+    "version": "12.62",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -5009,8 +5009,20 @@
     {
       "version": "12.61",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "J95: Bangla āyāt played as frame-exact byte-range clips instead of seeking a VBR surah file (QR Lead PR #1168).",
+      "integration": {
+        "authorizedOn": "2026-10-25",
+        "integratedOn": "2026-10-25",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.62",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "J95 E: an unchecked Bangla āyah plays its nearest checked stretch, or with a not-checked line (QR Lead PR #1169).",
       "integration": {
         "authorizedOn": "2026-10-25",
         "integratedOn": "2026-10-25",
@@ -5019,8 +5031,9 @@
       }
     }
   ],
-  "nextUnallocated": "12.62",
+  "nextUnallocated": "12.63",
   "nextUnallocatedNote": [
+    "v12.62 was allocated to Bangla audio where the timing is not checked: the Owner's tick E (J95), 2026-10-25.",
     "v12.61 was allocated to Bangla audio plays each āyah as its own exact clip (J95), 2026-10-25.",
     "v12.60 was allocated to the account card name and roles, and the topic bookmark choice (audit part 87), 2026-10-24.",
     "v12.59 was allocated to the shared pages measured with real-length names (audit parts 85-86), 2026-10-24.",
