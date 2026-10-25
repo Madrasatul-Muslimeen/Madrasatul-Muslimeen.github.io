@@ -966,3 +966,4 @@ total). Allocated by the MMSA Architect.
 12.62: Bangla audio where the timing is not checked: the Owner's tick E (J95). Allocated by the MMSA Architect.
 12.63: the Qur'an landing works from a keyboard (audit part 88). Allocated by the MMSA Architect.
 12.64: Hadith: 👥 opens on a HadeethEnc hadith; Esc closes the Home menu on Hadith Collections (audit parts 88-89). Allocated by the MMSA Architect.
+12.65: Dawah, Notes and Mapping My Journey load DOMPurify with defer (audit part 91). Allocated by the MMSA Architect.
