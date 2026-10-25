@@ -972,3 +972,4 @@ total). Allocated by the MMSA Architect.
 12.68: phone ← Back is the arrow alone, one row with the Read tools; Range in MSA's Bookmark this; Back returns to the same place (J98, audit part 95). Allocated by the MMSA Architect.
 12.69: ← Back reachable over the Notes pane after Bookmarks → Open (audit part 95). Allocated by the MMSA Architect.
 12.70: one 📖 switch Āyah → Meaning → Mushaf; the three study buttons in the ⋯ on a phone (J99). Allocated by the MMSA Architect.
+12.71: a refused resume write no longer stops a Deen/Arabic topic opening (audit part 96, I15). Allocated by the MMSA Architect.
