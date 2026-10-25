@@ -7,7 +7,52 @@ v10.28). Read `CLAUDE.md` first. The prompt that starts the next session is
 
 This session was summarised once (its context compacted), which is why it hands over here.
 
-## LATEST UPDATE — 25 Oct 2026, 5:15 am Sydney, session `session_0185XGUtQx6FfCbxmUqRkA7t` (v12.57–v12.60 live on MSA AND QR; HANDOVER) — READ THIS FIRST
+## LATEST UPDATE — 25 Oct 2026, 6:30 pm Sydney, session `session_01Avu6aqMPNdhJXXtKwU7JJw` (v12.61–v12.64 live on MSA AND QR; HANDOVER) — READ THIS FIRST
+
+Took over 5:15 am 25 Oct from `session_0185XGUtQx6FfCbxmUqRkA7t`. Handing over (hand119). PCA `session_01MjY3uJ57nrwjD6jMdmxMSJ`; MSA keep-alive `trig_01TAPi5u2PXAjynzN6QixgHv` (8:07 am/pm Sydney, pointed at me: ask the PCA to repoint it). **QR Lead is now `session_015ngDvsuhSijscVGSQNe7Zh`** (took over 25 Oct from `session_01VBNLiqBHEzJqKxKJTvS2sa`); Hadith Lead `session_01Q2HmCeWjo1vVYV5kgMBvC9`; Health Lead `session_01SPFtgC4vwVzby6PR12Z9ek`.
+**`main` is v12.64** (PR #1175, merge `235d9b1c`, live on MSA and QR 6:19 pm; brief 13/0, ledger 0 failed, mutations 49/0). **Next release: v12.65.** **PMS writes WORKED all session** (the backlog of the previous session is written: What's New v12.57–v12.64, J29 Done lines, the six Manual wording corrections).
+
+**Owner messages this session (carry1):** (a) "Check the audio playing, specially Bangla audio … plays a part of previous Ayah and part of next Ayah" → J95, below. (b) Ticked **E** on J95 j95n1 (3:59 pm). (c) Asked for feedback on a Bangla intro article for QuranRevival (answered in chat; no repo work).
+
+**Released this session**
+- **v12.61** (#1168, QR Lead): **J95 Bangla audio**. Measured cause: the archive.org Shareef Bayezid Mahmud files are VBR MP3s (106/114 with only a 100-point Xing table, 002 with none), so seeking the whole-surah file landed by estimate: Chromium started 002 up to 147 s early, 036 ~0.5 s. Fix: `tools/quran-data-pull/build-bn-audio-bytes.mjs` → `tools/quran-data-pull/output/bn-audio-bytes.json` (frame-exact byte range per āyah, starts snapped to pauses); `audio-player.js` plays each āyah as a Range-fetched blob clip. Suite `bn-audio-clip-browser`.
+- **v12.62** (#1169, QR Lead): the Owner's tick E for the 316 unchecked āyāt: measured split 1 (11:106, plays with a "not checked yet" line) and 315 (play the nearest checked stretch, 133 stretches, most 2–3 āyāt; longest 74:1–56 and 92:1–21 → **follow-up tick J95 j95n2 open**). Suite `bn-audio-note-browser`.
+- **v12.63** (#1171, QR Lead): Qur'an landing keyboard (audit part 88): Esc closes the Study menu; the Read list returns focus.
+- **v12.64** (#1175, Hadith Lead; PR opened by me from its branch): 👥 opens on a HadeethEnc hadith (audit part 89); Esc on Hadith Collections (part 88).
+- Test/report merges: #1165 (part 87c, Manual Notes end), #1167 (part 88, keyboard audit of 23 shared pages, new suite `shared-pages-keyboard-audit-browser`; merged by the unattended Architect), #1172 (part 89, Manual Hadith/Dua), #1174 (part 90, Manual Other study modules). **Every MSA section of the Manual is now checked claim by claim (parts 87–90).**
+
+**IN FLIGHT / NEXT**
+1. **Builder #1176** (audit part 91, loading speed + start-up reads on the 23 shared pages, dispatched 6:25 pm). Review, re-run, route findings to each file's owner.
+2. **J95 j95n2** (the Owner): Sūrahs 74 and 92. Relay the tick to the QR Lead.
+3. Next audit slices: a Bangla rendering pass of the 23 shared pages; the Zab section when its Rules are published.
+4. **J88 part 2** (`fix/self-hosted-auth-on`): release ONLY after the Owner ticks `j88n1`.
+
+**Waiting on the Owner:** J95 j95n2, J89, J94, the QR Lead's Read-bar A/B/C, J92, J88 j88n1, J91, n81c, n83a, n79a, n77a, n78a, n71c, n81a, n81b, n82a, n82b, n72d; the Hadith Lead's tick on the Hadith/Dua "My Notes" links.
+
+**Lessons**
+- **archive.org is now reachable from the sandbox** (curl; serve the files locally for Chromium, whose TLS through the proxy fails). An audio fault can be measured: capture the element's output with WebAudio and cross-correlate against an ffmpeg decode.
+- **A seek in a VBR MP3 is an estimate.** Never play part of a long VBR file by `currentTime`; cut it by bytes.
+- **Re-measure an Owner option's numbers before it is ticked**: "about 145 / 170" became 1 / 315 on the real recording, and one option's "2–3 āyāt" hid a 3-minute case. Say so and put the follow-up as its own tick.
+- **A shallow clone makes programme-ledger report false "baseline not an ancestor" failures**: `git fetch --unshallow origin main` first.
+- **The unattended Architect merges test-only Builder PRs on its own**: check closed PRs before looking for an open one.
+- behaviour 38e (5 s wait for an audio restart) failed once and passed on the rerun: intermittent.
+
+**The opening message for the next session** (send it as is):
+
+> Bismillah. You are the MSA Master Architect, taking over from session_01Avu6aqMPNdhJXXtKwU7JJw (hand119 handover, 25 Oct ~6:30 pm Sydney). Read CLAUDE.md, ARCHITECT.md, then docs/reports/2026-10-12-MMSA-SESSION-HANDOVER.md, starting with its LATEST UPDATE block of 25 Oct 6:30 pm. Read the PMS (https://claude.ai/artifact/PhW1KKX28qrqj9dE7Ha8dZ): meta/global General rules (cost86, rec118, hand119, lead120, ka122, onehome71) and p/mmsa (carry1, stu123), and answer any new Owner comments. PMS writes WORKED all of last session: set p/mmsa.sessionUrl to your session link (pin with if_version), and ask the PCA to set p/qr.sessionUrl. The PCA is session_01MjY3uJ57nrwjD6jMdmxMSJ: send it "PCA ▸ taken over" with each running item and its state, and ask it to repoint the MSA keep-alive (trig_01TAPi5u2PXAjynzN6QixgHv).
+> State: main is v12.64 (live on MSA and QR at 6:19 pm, 25 Oct). Next release v12.65. add_repo QuranRevival/QuranRevival.github.io (push) works: after every release, dispatch build-from-msa.yml (ref main, inputs msa_ref=main) with mcp__github__actions_run_trigger, then confirm quranrevival.github.io/app/js/version.js.
+> Leads: QR Lead session_015ngDvsuhSijscVGSQNe7Zh (new 25 Oct; QR-only files: app/quranrevival.html, app/js/audio-player.js, app/js/quran-word-card.js, Quran-only scripts, apps/qr/**). Hadith Lead session_01Q2HmCeWjo1vVYV5kgMBvC9. Health Lead session_01SPFtgC4vwVzby6PR12Z9ek. Leads never dispatch Builders or release. They hand over as "<LEAD> ▸ ready for release", either with a PR or with a branch only (then open the PR yourself). Review each by measurement on a worktree (PORT=8083 node serve.js, QR_BASE=http://localhost:8083; check the port answers 200 first), run behaviour.mjs (in the background, ~12 min), allocate, and release. Students test QR, so student-blocking faults come first (stu123).
+> Running items:
+> (1) Builder round #1176 (audit part 91: loading speed and start-up reads on the 23 shared pages, new suite shared-pages-load-speed-audit-browser) was dispatched 6:25 pm. Watch the run (claude.yml runs?event=workflow_dispatch). The unattended Architect may merge a test-only PR itself, so check closed PRs too. Review it, re-run it, and send findings to the file's owner.
+> (2) J95 (Bangla audio) is done in v12.61 and v12.62. One Owner tick is open, J95 j95n2, on Sūrahs 74 and 92 (A leave the whole stretch / B no single-āyah Bangla there). Relay the tick to the QR Lead.
+> (3) All MSA sections of the Manual are now checked claim by claim (parts 87–90). Next audit slices: the Zab section (needs the Zab Rules; mostly SKIP), and a Bangla rendering pass of the 23 shared pages.
+> (4) J88 part 2 on fix/self-hosted-auth-on: release ONLY after the Owner ticks j88n1.
+> Release steps: merge main into the PR branch FIRST. Then run python3 tools/governance/allocate-version.py VER NEXT SHORT NOTE MILESTONE CHANGELOG, which also writes the handover line; commit and push at once. Run the five non-ledger verify suites (rules-authorisation-executable, study-activity-evidence-boundary and its mutations, study-event-wiring, workflow-expressions), apps-build-check, and node tools/apps/build-app.mjs qr. The release head's verify is red by design. Merge with the full 40-char expectedHeadSha. Then git fetch --unshallow origin main if the clone is shallow (otherwise programme-ledger shows false baseline failures), and run brief-integrity, programme-ledger and programme-ledger-mutations. Confirm the live version.js on both sites, then write to the PMS: the What's New line (p/mmsa.manual index 1), the job's Done line with W-T-P-E-O, and the monitor line.
+> Waiting on the Owner: J95 j95n2, J89, J94, the QR Lead's Read-bar A/B/C, J92, J88 j88n1, J91, n81c, n83a, n79a, n77a, n78a, n71c, n81a, n81b, n82a, n82b, n72d, and the Hadith Lead's tick on the Hadith/Dua "My Notes" links.
+> Keep-alive every 12 hours (8:07 am/pm Sydney; ka122). No self wake-ups (cost86). Hand over at ~40% context (hand119), and include the full opening message for your successor in the message to the PCA.
+> Sandbox: archive.org IS reachable now (curl, and Chromium via local copies). Worktrees on 8083+ (never 8082). Set up node_modules with: mkdir -p node_modules && ln -sf /opt/node22/lib/node_modules/playwright node_modules/playwright. CHROMIUM_PATH=/opt/pw-browsers/chromium. Run at most two browser suites at once. gh works for REST (create issues with gh api repos/…/issues --input; dispatch with gh api -X POST …/actions/workflows/claude.yml/dispatches -f ref=main -f 'inputs[issue_number]=N'). Never pkill -f: kill a server by its cwd. behaviour 38e (a 5 s wait for an audio restart) is intermittent: re-run before believing it.
+
+## LATEST UPDATE — 25 Oct 2026, 5:15 am Sydney, session `session_0185XGUtQx6FfCbxmUqRkA7t` (v12.57–v12.60 live on MSA AND QR; HANDOVER) (superseded 25 Oct 6:30 pm)
 
 Took over 11:30 pm 24 Oct from `session_01B9Hi1rr2d2qrrWup4feqnB`. Handing over (hand119, ~40% context). PCA `session_01MjY3uJ57nrwjD6jMdmxMSJ` (MSA keep-alive is `trig_01SqWy1FS4sohZL7Q4bcnEx3`, 8:07 am/pm Sydney, pointed at me: ask the PCA to repoint it). QR Lead `session_01VBNLiqBHEzJqKxKJTvS2sa`; Hadith Lead `session_01Q2HmCeWjo1vVYV5kgMBvC9`; Health Lead `session_01SPFtgC4vwVzby6PR12Z9ek` (nothing from Hadith/Health this session).
 **`main` is v12.60** (PR #1162, merge `a2ffaeb8`, live on MSA 4:38 am, brief 13/0, ledger ok, mutations 49/0). **Next release: v12.61.** **QuranRevival is v12.60 too** (live 4:39 am): **`add_repo QuranRevival/QuranRevival.github.io` (push) WORKED this session**, so I dispatched `build-from-msa` (msa_ref main) myself after every release (via `mcp__github__actions_run_trigger`, workflow `build-from-msa.yml`, ref main). Try add_repo first; if it works, no Owner tap is needed.
