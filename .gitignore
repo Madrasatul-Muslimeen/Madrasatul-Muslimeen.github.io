@@ -39,3 +39,7 @@ tools/hadith-data-pull/raw-pull/hadeethenc/
 # Screenshots some tools/i18n-verify suites write for the Builder; never committed
 .builder-round/
 build/
+
+# Audit-suite screenshots and row dumps (bn-layout, phone-tables): regenerated on every run, never committed
+tools/i18n-verify/out/bn-layout/
+tools/i18n-verify/out/phone-tables/
