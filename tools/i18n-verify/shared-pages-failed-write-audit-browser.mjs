@@ -84,8 +84,9 @@ const INSTALL = () => {
   const label = (el) => ((el.getAttribute("aria-label") || el.textContent || el.value || el.name || "") + "").replace(/\s+/g, " ").trim().slice(0, 40);
   const SEL = "button, [role=button], input[type=submit], input[type=button], summary";
   // the shared top menu: the same code on every page (nav.js / bookmark-nav.js / account-card.js)
-  const MENU = "nav, header, .nav-cat, .nav-cat-links, .nav-cat-group, .nav-link, .nav-setting, .nav-account-btn, .nav-bm-sheet-head, #navBookmarkList, .nav-preview-notice, [class*=nav-bm], [class*=account-card], #navAppLangSelect, [id^=zab], [class*=zab-], #mmSaver, #mmSaverSettings, [class*=bm-pop], [class*=bm-back]";
-  const inMenu = (el) => !!el.closest(MENU);
+  const MENU = ".nav-cat, .nav-cat-links, .nav-cat-group, .nav-link, .nav-setting, .nav-account-btn, .nav-bm-sheet-head, #navBookmarkList, .nav-preview-notice, [class*=nav-bm], [class*=account-card], #navAppLangSelect, [id^=zab], [class*=zab-], #mmSaver, #mmSaverSettings, [class*=bm-pop], [class*=bm-back]";
+  // (a body / wrapper class such as "nav-bm-open" must not turn the whole page into "menu": an ancestor that holds <main> / #app is not the menu)
+  const inMenu = (el) => { const m = el.closest(MENU); return !!m && m !== document.body && m !== document.documentElement && !m.querySelector("#app, main, #appRoot"); };
   const keyOf = (el) => `${el.tagName.toLowerCase()}#${el.id || ""}|${label(el)}|${el.getAttribute("data-action") || ""}${inMenu(el) ? "|MENU" : ""}`;
   const list = () => { const seen = {}; return [...document.querySelectorAll(SEL)].filter((el) => vis(el) && !el.disabled && el.getAttribute("aria-disabled") !== "true").map((el) => { const k = keyOf(el); seen[k] = (seen[k] || 0) + 1; return { key: k, nth: seen[k], label: label(el) }; }); };
   const pick = (key, nth) => { let n = 0; for (const el of document.querySelectorAll(SEL)) { if (vis(el) && keyOf(el) === key && ++n === nth) return el; } return null; };
@@ -134,7 +135,7 @@ async function openFresh(path, w, h, lang) {
   const sep = path.includes("?") ? "&" : "?";
   const { page, errors } = await openPage(ctx, "/app/" + path + sep + (path.startsWith("hadith-collections") ? "back=1" : "navBack=1"));
   page.on("dialog", (d) => d.accept(d.type() === "prompt" ? MARK : undefined).catch(() => {}));
-  await page.waitForTimeout(1500);
+  await page.waitForTimeout(1000);
   await page.evaluate(INSTALL);
   if (MUTATE === "silent" && path.startsWith(MUTATE_PAGE)) {
     // The page's refusal message is replaced by console.error only: any new text that says "not saved" is stripped as it appears.
@@ -242,8 +243,9 @@ for (const [name, path] of PAGES) {
         else queue.push({ via: [], c });
       }
       const done = new Set(); let n = 0, nMenu = 0;
-      while ((queue.length && n < CAP) || (menuQueue.length && nMenu < MENU_CAP)) {
-        const fromMenu = !(queue.length && n < CAP);
+      const cap = w < 800 ? Math.min(CAP, 10) : CAP; // the phone width repeats the same code paths: fewer controls, to fit the time
+      while ((queue.length && n < cap) || (menuQueue.length && nMenu < MENU_CAP)) {
+        const fromMenu = !(queue.length && n < cap);
         const q = fromMenu ? menuQueue : queue;
         if (fromMenu) nMenu++; else n++;
         const { via, c } = q.shift();
@@ -259,10 +261,10 @@ for (const [name, path] of PAGES) {
         if (!o.attempted && !o.nav && o.newControls.length && via.length < 1) for (const k of o.newControls.slice(0, 12)) {
           const nc = { key: k, nth: 1, label: k.split("|")[1] || k };
           if (isMenu(nc) && !auditMenu) continue;
-          (isMenu(nc) ? menuQueue : queue).push({ via: [...via, c], c: nc });
+          if (isMenu(nc)) menuQueue.unshift({ via: [...via, c], c: nc }); else queue.push({ via: [...via, c], c: nc });
         }
       }
-      if (queue.length) console.log(`   (cap ${CAP} reached; ${queue.length} controls not pressed)`);
+      if (queue.length) console.log(`   (cap ${cap} reached; ${queue.length} controls not pressed)`);
       if (menuQueue.length) console.log(`   (menu cap ${MENU_CAP} reached; ${menuQueue.length} menu controls not pressed)`);
     }
   }
