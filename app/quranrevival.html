@@ -25132,6 +25132,27 @@
       // 10 Oct 2026: below 900px 📝 sits behind ⋯, so the focus goes back to ⋯ (which carries the same count).
       readNotePaneMod.openReadNotePane(u, whenClosed ?? (() => { paintReadNotesBtn(); (readNotesBtn.getBoundingClientRect().width ? readNotesBtn : readToolsBtn).focus(); }), opts);
       paintReadNotesBtn();
+      watchPaneOverBackDock();
+    }
+    /** Audit part 95: Bookmarks → Open docked "← Back to Bookmarks" in #readBackSlot, under the Notes pane the bookmark
+        opens (decision 95), so no finger could reach it. While the pane covers the Read bar the slot stops being a dock
+        (js/back-dock.js reads [data-back-dock]); the way back then floats above the pane, as it does over the Word Card,
+        and docks again once the pane closes or is moved off the bar. The class change is what wakes the chips' watchers. */
+    function watchPaneOverBackDock() {
+      const pane = document.getElementById("readNotePane"), slot = document.getElementById("readBackSlot");
+      if (!pane || !slot || pane.__backDockWatch) return;
+      pane.setAttribute("data-back-float-over", ""); // bookmark-nav.js: the floating way back may sit over this pane (a full-screen sheet on a phone)
+      const check = () => {
+        const p = pane.getBoundingClientRect(), b = slot.parentElement.getBoundingClientRect();
+        const over = !pane.hidden && p.width > 0 && b.width > 0 && p.left < b.right && p.right > b.left && p.top < b.bottom && p.bottom > b.top;
+        if (over === slot.classList.contains("back-dock-covered")) return;
+        slot.classList.toggle("back-dock-covered", over);
+        if (over) slot.removeAttribute("data-back-dock"); else slot.setAttribute("data-back-dock", "");
+      };
+      pane.__backDockWatch = new MutationObserver(check);
+      pane.__backDockWatch.observe(pane, { attributes: true, attributeFilter: ["hidden", "class", "style"] });
+      window.addEventListener("resize", check);
+      check();
     }
     // Decision 95: "Track this āyah becomes a tab of the pane." Its three actions are the Read bar's own (the same cards,
     // the same records, 👥 included), each for the pane's āyah; each leaves "Back to Notes on S:A" (decision 86).
