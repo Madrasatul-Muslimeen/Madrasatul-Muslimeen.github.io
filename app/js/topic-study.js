@@ -405,15 +405,23 @@ export function initTopicStudyPage({ moduleId, trackableId, rootSubjectId }) {
     // position every time a topic is opened. Best-effort, same risk
     // tolerance as logActivity() below -- not wrapped in safeWrite(), a
     // failure here doesn't block studying.
+    // Audit part 96 (I15): it was awaited unguarded, so a refused write stopped the topic opening at all, in silence.
+    // The topic now opens anyway, and the refusal is said in words above it.
+    let resumeError = null;
     if (selectedPersonId) {
       // Follow-up round: tag the real course-offer id when this subject is
       // actively enrolled through one, instead of always NO_PROGRAM.
-      await touchResume(db, {
-        tenantId: activeTenantId, personId: selectedPersonId, moduleId,
-        programId: programBySubjectId.get(node.id) ?? NO_PROGRAM,
-        subjectId: node.id, position: node.id, uid: auth.currentUser.uid,
-      });
-      await refreshContinueStrip();
+      try {
+        await touchResume(db, {
+          tenantId: activeTenantId, personId: selectedPersonId, moduleId,
+          programId: programBySubjectId.get(node.id) ?? NO_PROGRAM,
+          subjectId: node.id, position: node.id, uid: auth.currentUser.uid,
+        });
+        await refreshContinueStrip();
+      } catch (err) {
+        console.error(err);
+        resumeError = err;
+      }
     }
 
     detailContainer.innerHTML = `<div class="topic-detail"><p>${t("Loading…")}</p></div>`;
@@ -434,6 +442,12 @@ export function initTopicStudyPage({ moduleId, trackableId, rootSubjectId }) {
       <button type="button" id="trackTopicBtn" ${resource ? "" : "disabled"}>${t("Track my progress")}</button>
     </div>`;
 
+    if (resumeError) {
+      const note = document.createElement("p");
+      note.className = "topic-empty"; note.setAttribute("role", "alert"); note.dataset.topicResumeError = "";
+      note.textContent = t("Couldn't save the change: {error}", { error: resumeError?.code || resumeError?.message || String(resumeError) });
+      detailContainer.querySelector(".topic-detail")?.prepend(note);
+    }
     const trackBtn = document.getElementById("trackTopicBtn");
     trackBtn.addEventListener("click", () => openWayModal(node));
     document.getElementById("bookmarkTopicBtn").addEventListener("click", () => toggleTopicBookmark(node));
