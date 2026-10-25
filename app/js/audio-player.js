@@ -156,6 +156,7 @@ const ENGLISH_FILENAMES = [
 ];
 
 const BANGLA_FOLDER = "Quran Bangla mp3 - Shareef Bayezid Mahmud";
+const BANGLA_BYTES_URL = "/tools/quran-data-pull/output/bn-audio-bytes.json";
 const BANGLA_TIMESTAMPS_URL =
   "https://raw.githubusercontent.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/refs/heads/main/gtaf_bangla_timestamps.json";
 
@@ -213,6 +214,9 @@ export const RECITERS = {
         ? `https://archive.org/download/ShareefBayezidMahmud/${encodeURIComponent(BANGLA_FOLDER)}/${String(surah).padStart(3, "0")}.mp3`
         : `https://archive.org/download/ShareefBayezidMahmud/${surah}.mp3`,
     timestampsUrl: BANGLA_TIMESTAMPS_URL,
+    // J95: frame-exact byte ranges per āyah (tools/quran-data-pull/build-bn-audio-bytes.mjs), so an āyah is played as
+    // its own clip instead of by seeking the whole-surah VBR file, which the browser can only place by estimate.
+    byteMapUrl: BANGLA_BYTES_URL,
   },
 };
 
@@ -249,6 +253,9 @@ let currentPlaylist = null; // legacy single-shot playlist shape, kept only so p
 let currentRange = null; // { surahNum, ayahs: [...], index, reciterId } -- drives ayah-by-ayah auto-advance for BOTH direct (one file per ayah) and segmented (seek+boundary) reciters
 let currentBoundaryListener = null; // the one active timeupdate listener for segmented playback, tracked so switching ayah/reciter never leaves a stale one (with a stale endMs) attached alongside a new one
 let timestampsCache = null; // Promise<raw Bangla timestamp map> -- same shape for every segmented reciter for now
+let byteMapCache = null; // J95: Promise<the āyah byte map, or null when it could not be read (the seek path is used then)>
+const clipCache = new Map(); // J95: "surah:ayah" -> Promise<blob: URL of that āyah's own bytes>, the last few only
+let segToken = 0; // J95: bumped by every new play or stop, so a clip that arrives late never starts over a newer request
 let onPlaybackError = null;
 let onAyahChange = null;
 let onPlaybackState = null; // shell round 21 -- see setPlaybackStateHandler()
@@ -545,6 +552,7 @@ export function playAyah(surahNum, ayahNum, reciterId) {
   if (!reciter || reciter.kind !== "direct" || !reciter.perAyahUrl) {
     throw new Error(`"${reciterId}" has no per-ayah audio configured yet.`);
   }
+  segToken++;
   currentPlaylist = null;
   currentRange = null;
   clearBoundaryListener();
@@ -559,6 +567,7 @@ function playCurrentRangeAyah() {
   if (onAyahChange) onAyahChange(surahNum, ayahNum);
   const reciter = RECITERS[reciterId];
   if (reciter.kind === "segmented") return playSegmentedAyahInternal(surahNum, ayahNum, reciterId);
+  segToken++;
   clearBoundaryListener();
   const el = ensureAudioEl();
   nowPlaying = { surahNum, ayahNum, reciterId };
@@ -608,6 +617,7 @@ export function playAyahRange(surahNum, fromAyah, toAyah, reciterId) {
 export function playSurah(surahNum, reciterId, ayahCount) {
   const reciter = RECITERS[reciterId];
   if (reciter?.kind === "direct" && reciter.surahUrl && !reciter.perAyahUrl) {
+    segToken++;
     currentPlaylist = null;
     currentRange = null;
     clearBoundaryListener();
@@ -732,6 +742,63 @@ function seekTo(el, url, seconds) {
 }
 
 /**
+ * J95 (the Owner: "Bangla audio sometimes plays part of the previous āyah and part of the next"). The Bangla files are
+ * VBR MP3s, one per surah; a browser seeks one by ESTIMATE (a 100-point Xing table, or none at all in 002), and the
+ * MSA Architect measured the element landing up to 147 s early in Al-Baqarah. So each āyah is fetched as its own byte
+ * range (frame-exact offsets from bn-audio-bytes.json, the starts lined up with this recording's pauses) and played
+ * from 0 to its own end: no seek, no boundary listener, ~100 KB instead of an 82 MB stream.
+ *
+ * Resolves to a blob: URL, or null when there is no map, no row, or the server ignored the Range (then the old seek
+ * path plays, as before). A network failure rejects, and is reported like any other load failure (I15).
+ */
+function getByteMap(reciter) {
+  if (!reciter?.byteMapUrl || typeof fetch !== "function") return Promise.resolve(null);
+  if (!byteMapCache) {
+    byteMapCache = fetch(reciter.byteMapUrl)
+      .then((res) => (res.ok ? res.json() : null))
+      .catch(() => null)
+      .then((map) => { if (!map?.surahs) byteMapCache = null; return map?.surahs ? map : null; });
+  }
+  return byteMapCache;
+}
+
+const CLIP_CACHE_SIZE = 6;
+async function clipFor(reciter, surahNum, ayahNum) {
+  const map = await getByteMap(reciter);
+  const row = map?.surahs?.[String(surahNum)]?.ayahs?.[ayahNum - 1];
+  if (!row || !(row[1] > row[0])) return null;
+  const key = `${surahNum}:${ayahNum}`;
+  if (!clipCache.has(key)) {
+    const controller = typeof AbortController === "function" ? new AbortController() : null;
+    const p = fetch(reciter.surahUrl(surahNum), { headers: { Range: `bytes=${row[0]}-${row[1] - 1}` }, signal: controller?.signal })
+      .then(async (res) => {
+        // 200 means the whole file is coming: stop it, and let the seek path play this one
+        if (res.status !== 206) { controller?.abort(); return null; }
+        const bytes = await res.arrayBuffer();
+        return URL.createObjectURL(new Blob([bytes], { type: "audio/mpeg" }));
+      })
+      .catch((err) => { clipCache.delete(key); throw err; });
+    clipCache.set(key, p);
+    while (clipCache.size > CLIP_CACHE_SIZE) {
+      const [oldKey, oldP] = clipCache.entries().next().value;
+      clipCache.delete(oldKey);
+      oldP.then((url) => { if (url && url !== currentMediaUrl) URL.revokeObjectURL(url); }).catch(() => {});
+    }
+  }
+  return clipCache.get(key);
+}
+
+/** The clip for this āyah, or null; a failed download is reported (I15) and rethrown marked. */
+async function segmentedClip(reciter, surahNum, ayahNum) {
+  try {
+    return await clipFor(reciter, surahNum, ayahNum);
+  } catch (err) {
+    if (err?.name === "AbortError") return null;
+    throw reportFailure(describeMediaError(2), { clip: true });
+  }
+}
+
+/**
  * Core segmented-ayah playback: seek to this ayah's boundary and stop at
  * the next one -- OR, if this ayah is part of an active currentRange,
  * advance to the next ayah in the range instead of just stopping. Shared by
@@ -741,7 +808,22 @@ function seekTo(el, url, seconds) {
  */
 async function playSegmentedAyahInternal(surahNum, ayahNum, reciterId) {
   const reciter = RECITERS[reciterId];
+  const token = ++segToken;
+  nowPlaying = { surahNum, ayahNum, reciterId };
+  const clip = await segmentedClip(reciter, surahNum, ayahNum);
+  if (token !== segToken) return; // a newer play or a stop came while this clip was downloading
+  if (clip) {
+    clearBoundaryListener();
+    const el = ensureAudioEl();
+    // the next āyah of a range, fetched while this one plays, so the step between them is short
+    if (currentRange?.reciterId === reciterId && currentRange.index < currentRange.ayahs.length - 1) {
+      clipFor(reciter, surahNum, currentRange.ayahs[currentRange.index + 1]).catch(() => {});
+    }
+    // 'ended' (handleEnded) moves a range on, loops, or ends the run: the same path a one-file-per-āyah reciter takes
+    return playUrl(el, clip);
+  }
   const timestamps = await getTimestamps(reciterId);
+  if (token !== segToken) return;
   const surahEntries = timestamps[String(surahNum)];
   const entry = surahEntries?.find((e) => e.verse_key === `${surahNum}:${ayahNum}`);
   if (!entry) throw new Error(`No timing data for surah ${surahNum}, ayah ${ayahNum}.`);
@@ -789,6 +871,7 @@ export function playSegmentedAyah(surahNum, ayahNum, reciterId) {
 }
 
 export function stop() {
+  segToken++;
   currentPlaylist = null;
   currentRange = null;
   clearBoundaryListener();
@@ -924,8 +1007,18 @@ export function playOneAndWait(surahNum, ayahNum, reciterId, { signal } = {}) {
     signal?.addEventListener("abort", onAbort);
 
     if (reciter.kind === "segmented") {
-      getTimestamps(reciterId)
+      const token = ++segToken;
+      segmentedClip(reciter, surahNum, ayahNum)
+        .then((clip) => {
+          if (settled) return null;
+          // something else took the player while this clip downloaded: this step ends, as an abort would end it
+          if (token !== segToken) { finish(reject, new DOMException("Aborted", "AbortError")); return null; }
+          if (!clip) return getTimestamps(reciterId);
+          el.addEventListener("ended", onEnded);
+          return playUrl(el, clip).then(() => null);
+        })
         .then((timestamps) => {
+          if (!timestamps || settled) return;
           const entry = timestamps[String(surahNum)]?.find((e) => e.verse_key === `${surahNum}:${ayahNum}`);
           if (!entry) throw new Error(`No timing data for surah ${surahNum}, ayah ${ayahNum}.`);
           const { timestamp_from: startMs, timestamp_to: endMs } = entry;
