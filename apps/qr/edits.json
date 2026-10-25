@@ -72,38 +72,6 @@
   "exact": 1
  },
  {
-  "id": "app/quranrevival.html#4a",
-  "file": "app/quranrevival.html",
-  "why": "(4) A range bookmark saved with only its position (range:S:A-B) opens at its first āyah as a Range (QR J03).",
-  "from": "    async function applyQuranBookmarkSettings(settings, position) {",
-  "to": "    async function applyQuranBookmarkSettings(settings, position) {\n      // QR J03: a range bookmark saved with only its position (range:S:A-B, no settings) opens at its first āyah, as a Range.\n      const rangeKey = typeof position === \"string\" ? position.match(/^range:(\\d+):(\\d+)-(\\d+)$/) : null;\n      if (rangeKey && typeof settings?.surahNum !== \"number\") {\n        const [surahNum, from, to] = rangeKey.slice(1).map(Number);\n        settings = { ...(settings ?? {}), surahNum, ayahNum: from, unitType: \"range\", rangeFrom: from, rangeTo: to, view: settings?.view ?? \"read\" };\n      }",
-  "exact": 1
- },
- {
-  "id": "app/quranrevival.html#4b",
-  "file": "app/quranrevival.html",
-  "why": "(4) readBookmarkUnitChoices() offers a Range choice (kind 'range') from the āyah to its ruku's end (QR J03).",
-  "from": "      return choices;",
-  "to": "      // QR J03 (the Owner): a range of āyāt, through MMSA's popover range kind (v11.14). It starts at the āyah on\n      // screen and runs to the end of its ruku' (in a Range unit, the unit's own range); the reader can change both.\n      const ayahs = currentSurahData.ayahs;\n      const rukuOf = ayahs.find((a) => a.ayah === ayah)?.ruku;\n      const rukuEnd = Math.max(ayah, ...ayahs.filter((a) => a.ruku === rukuOf).map((a) => a.ayah));\n      const [from, to] = info.unitType === \"range\" ? currentUnitAyahBounds() : [ayah, rukuEnd];\n      const meta = surahIndex.find((x) => x.surahNumber === currentSurahNum);\n      choices.push({\n        id: \"range\", label: () => t(\"Range\"), kind: \"range\", surah: currentSurahNum, ayahCount: currentSurahData.ayahCount,\n        from, to, surahName: surahName(currentSurahNum, meta?.nameEnglish), settings: base,\n      });\n      return choices;",
-  "exact": 1
- },
- {
-  "id": "app/quranrevival.html#4c",
-  "file": "app/quranrevival.html",
-  "why": "(4) The units mapping passes the range fields to the bookmark dialog (QR J03).",
-  "from": "        units: unitChoices.map(({ id, label, defaultName: dn }) => ({ id, label, defaultName: dn })),",
-  "to": "        units: unitChoices.map(({ id, label, defaultName: dn, kind, surah, ayahCount, from, to, surahName: sn }) => (kind === \"range\"\n          ? { id, label, kind, surah, ayahCount, from, to, surahName: sn } // QR J03: MMSA's popover range kind (v11.14)\n          : { id, label, defaultName: dn })),",
-  "exact": 1
- },
- {
-  "id": "app/quranrevival.html#4d",
-  "file": "app/quranrevival.html",
-  "why": "(4) A range saves under its own range:S:A-B key with MMSA's Range settings (QR J03).",
-  "from": "      const picked = unitChoices.find((u) => u.id === choice.unitId) ?? null;",
-  "to": "      let picked = unitChoices.find((u) => u.id === choice.unitId) ?? null;\n      // QR J03: a range saves under its own key (range:S:A-B) WITH the settings MMSA's Bookmarks page Range form writes,\n      // so MMSA opens it too.\n      if (picked?.kind === \"range\" && choice.range && choice.unitKey) {\n        const { surah, from, to } = choice.range;\n        picked = { ...picked, position: choice.unitKey, settings: { ...picked.settings, unitType: \"range\", surahNum: surah, ayahNum: from, rangeFrom: from, rangeTo: to } };\n      }",
-  "exact": 1
- },
- {
   "id": "app/quranrevival.html#7a",
   "file": "app/quranrevival.html",
   "why": "(7) Band CSS comment: Aʿūdhu billāh RIGHT, Bismillah LEFT, in reading order (QR J09).",
