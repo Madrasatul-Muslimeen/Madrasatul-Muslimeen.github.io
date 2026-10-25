@@ -7337,12 +7337,13 @@
     import { isLemmaLevelsPersistenceReady } from "./js/study-lemma-levels-readiness.js";
     import { claimKeyFor, LEMMA_WIDE_LEVELS } from "./js/quran-lemma-levels.js";
     import { BANGLA_TRANSLIT_NOTE } from "./js/quran-translit-bn.js";
-    import { createWordCardState, openWordCard, closeWordCard, selectWordCardLevel, moveWordCard, renderQuranWordCard, fitWordCardFamilyRows, WORD_CARD_POS_SEGMENTS } from "./js/quran-word-card.js";
+    // Audit part 91 (load speed): only the card's STATE is imported here; its renderer (quran-word-card.js and
+    // word-card-depth.js, ~180 KB) loads on first use, or quietly once the page is ready (loadWordCardModule() below).
+    import { createWordCardState, openWordCard, closeWordCard, selectWordCardLevel, moveWordCard } from "./js/quran-word-card-state.js";
     import { occurrenceRefsFor, occurrenceRefsForClaimKey, rootFormsFor, unpackWordIndexRef, loadWordIdentityIndex } from "./js/quran-word-index.js";
     import { wbwClaimKey, isFormKey } from "./js/quran-word-form-key.js";
     import { relatedBySharedWords, relatedThroughLists, connectedThroughNotes } from "./js/ayah-related.js";
     import { wordSegmentsFor } from "./js/quran-word-segments.js";
-    import { nounCodeFor } from "./js/word-card-depth.js";
     import { wordFeaturesFor, loadLemmaForms, loadVerbForms, loadNounForms, loadWordFeaturesForSurah, loadWordFormsIndex, loadWordSyntaxForSurah, loadFuruqIndex, loadMufradatForRoot, loadLemmaSenseIndex } from "./js/quran-word-features.js";
     import { searchWordForms, placeFromId } from "./js/word-card-search.js";
     import { wordProgressAuthority, WBW_WORD_STATES, resolveWordProgress } from "./js/quran-word-progress.js";
@@ -8297,6 +8298,22 @@
     // both for "not loaded" and "loaded, no claims yet" (Architect review, #318).
     let currentChunkLoadedFor = null;
     let quranWordCardState = createWordCardState();
+    // Audit part 91: the Word Card's renderer, loaded on first use. `wordCardMod` holds renderQuranWordCard,
+    // fitWordCardFamilyRows, WORD_CARD_POS_SEGMENTS and nounCodeFor once it is here; until then a card shows "Loading…"
+    // and draws itself the moment it arrives. It is also fetched quietly a few seconds after the page has loaded, so a
+    // student's first tap on a word does not wait for it.
+    let wordCardMod = null;
+    let wordCardModLoading = null;
+    function loadWordCardModule() {
+      wordCardModLoading ??= Promise.all([import("./js/quran-word-card.js"), import("./js/word-card-depth.js")])
+        .then(([card, depth]) => { wordCardMod = { ...card, nounCodeFor: depth.nounCodeFor }; return wordCardMod; })
+        .catch((err) => { wordCardModLoading = null; throw err; });
+      return wordCardModLoading;
+    }
+    window.addEventListener("load", () => setTimeout(() => {
+      const soon = window.requestIdleCallback || ((fn) => setTimeout(fn, 0));
+      soon(() => loadWordCardModule().catch(() => {})); // a failure here is reported when a card really needs it
+    }, 4000), { once: true });
     let quranWordCardContext = {};
     let quranWordCardRequest = 0;
     let quranWordCardTrigger = null;
@@ -8361,7 +8378,7 @@
       if (nounFormsTable && !nounFormTexts && !nounFormTextsLoading && !nounFormTextsFailed) {
         let ref = null;
         try { ref = parseQuranWordOccurrenceId(quranWordCardState.occurrenceId); } catch { return; }
-        if (!nounCodeFor(nounFormsTable, word.morphology?.lemma, quranWordCardContext.lemmaOccurrences, ref)) return;
+        if (!wordCardMod || !wordCardMod.nounCodeFor(nounFormsTable, word.morphology?.lemma, quranWordCardContext.lemmaOccurrences, ref)) return;
         nounFormTextsLoading = true;
         loadWordFormsIndex().then((d) => { nounFormTexts = d; }).catch((e) => { nounFormTextsFailed = true; console.warn("word forms unavailable", e); })
           .finally(() => { nounFormTextsLoading = false; redraw(); });
@@ -17593,7 +17610,7 @@
         // each put through this app's own catalogue. A category the catalogue
         // does not carry comes back unchanged and is printed as the source
         // records it; nothing here invents a grammatical term.
-        posNames: Object.fromEntries(WORD_CARD_POS_SEGMENTS.map((c) => [c, t(c)])),
+        posNames: wordCardMod ? Object.fromEntries(wordCardMod.WORD_CARD_POS_SEGMENTS.map((c) => [c, t(c)])) : {},
         formCategoryUnknown: t("Category not recorded"),
         formCategoryNote: t("Each form's category is the one the packaged grammatical analysis records for that written form."),
         formCategoryMixed: t("{count} of these forms are recorded with more than one category; the most frequent is shown."),
@@ -18948,7 +18965,8 @@
     // Prev/Next keeps them open. Plain DOM work: nothing is written.
     const wordCardFamilyOpen = new Set();
     function fitWordCardFamily(root) {
-      fitWordCardFamilyRows(root, wordCardFamilyOpen, { familyMore: t("+{n} more"), familyFewer: t("Show fewer") }, num);
+      if (!wordCardMod) return; // no card has been drawn yet
+      wordCardMod.fitWordCardFamilyRows(root, wordCardFamilyOpen, { familyMore: t("+{n} more"), familyFewer: t("Show fewer") }, num);
     }
     document.addEventListener("click", (event) => {
       if (!(event.target instanceof Element)) return;
@@ -19004,6 +19022,17 @@
       wordCardMountEls().forEach((m) => { if (m !== mount) { m.hidden = true; const c = m.querySelector("[data-word-card-content]"); if (c) c.innerHTML = ""; } });
       mount.hidden = false;
       const content = mount.querySelector("[data-word-card-content]") ?? mount;
+      if (!wordCardMod) {
+        // Audit part 91: the renderer is not here yet (a tap in the first seconds, or a slow line): say so, and draw the
+        // card as soon as it arrives. A failed load reaches the reader (I15) and the card closes rather than sit empty.
+        content.innerHTML = `<p class="word-card-loading" role="status">${escapeHtml(t("Loading…"))}</p>`;
+        loadWordCardModule().then(() => renderPersistentWordCard(), (err) => {
+          quranWordCardState = closeWordCard(quranWordCardState);
+          clearWordCardMounts();
+          reportWriteFailure(err, { what: "load the word card" });
+        });
+        return;
+      }
       // The English WbW stem box also prints the dictionary meaning, so that
       // page loads the same first-use file Depth does.
       // J38/J39: Root (its meaning), Taṣrīf (the present's meaning) and Depth all read the dictionary.
@@ -19019,7 +19048,7 @@
       // Round 6 -- what was typed in the Search row stays, however often the card is redrawn.
       const typed = content.querySelector("[data-word-card-search-input]");
       if (typed) wordCardSearch.value = typed.value;
-      content.innerHTML = renderQuranWordCard({ state: quranWordCardState, chapter: currentSurahData, ayah, word, context: { ...quranWordCardContext, search: wordCardSearch, lemmaForms: lemmaFormsTable, verbForms: verbFormsTable, verbFormsFailed, nounForms: nounFormsTable, nounFormsFailed, formTexts: nounFormTexts, nounBox: wordCardNounBox?.id === quranWordCardState.occurrenceId ? wordCardNounBox.key : null, depthOpen: wordCardDepthOpen, conjView: wordCardConjView, conjBasic: wordCardConjBasic === quranWordCardState.occurrenceId, conjNarrow: window.matchMedia("(max-width: 640px)").matches, needsSource: needsSourceContext(word, currentSurahData.surahNumber), ...wordCardDictionaryContext(word), ...intermediateContext(word), ...wordProgressContext(ref), ...quranWordCardLemmaContext, hasPrevious: at > 0, hasNext: at >= 0 && at < ids.length - 1, rootOccurrenceCount: quranWordCardContext.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0, colourWordPartsEnabled: true, translitScript: getTransliterationScript(), displayRef: wordRefFor }, labels: { ...wordCardLabels(), ...wordProgressLabels() }, formatNumber: num });
+      content.innerHTML = wordCardMod.renderQuranWordCard({ state: quranWordCardState, chapter: currentSurahData, ayah, word, context: { ...quranWordCardContext, search: wordCardSearch, lemmaForms: lemmaFormsTable, verbForms: verbFormsTable, verbFormsFailed, nounForms: nounFormsTable, nounFormsFailed, formTexts: nounFormTexts, nounBox: wordCardNounBox?.id === quranWordCardState.occurrenceId ? wordCardNounBox.key : null, depthOpen: wordCardDepthOpen, conjView: wordCardConjView, conjBasic: wordCardConjBasic === quranWordCardState.occurrenceId, conjNarrow: window.matchMedia("(max-width: 640px)").matches, needsSource: needsSourceContext(word, currentSurahData.surahNumber), ...wordCardDictionaryContext(word), ...intermediateContext(word), ...wordProgressContext(ref), ...quranWordCardLemmaContext, hasPrevious: at > 0, hasNext: at >= 0 && at < ids.length - 1, rootOccurrenceCount: quranWordCardContext.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0, colourWordPartsEnabled: true, translitScript: getTransliterationScript(), displayRef: wordRefFor }, labels: { ...wordCardLabels(), ...wordProgressLabels() }, formatNumber: num });
       // Decision 61 -- opening a section is what fetches its data.
       content.querySelectorAll("details[data-word-card-sec]").forEach((d) => {
         d.addEventListener("toggle", () => {

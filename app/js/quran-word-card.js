@@ -14,7 +14,9 @@ import { isTasrifLevelPersistenceReady } from "./study-tasrif-level-readiness.js
 // PCF MSA J38 + J39 (19 Oct 2026): FIVE tabs, in tab order: WbW · Root · Family · Taṣrīf · Depth. The STORED level ids
 // are unchanged -- Root is `intermediate`, Family is `basic` -- so every saved mark stays valid under its new name;
 // `tasrif` is new. What a reader sees is WORD_CARD_LEVEL_NAMES, never the stored id.
-export const WORD_CARD_LEVELS = Object.freeze(["wbw", "intermediate", "basic", "tasrif", "depth"]);
+// Audit part 91: the state lives in quran-word-card-state.js (the page loads this renderer only when a card is drawn).
+import { WORD_CARD_LEVELS } from "./quran-word-card-state.js";
+export { WORD_CARD_LEVELS, createWordCardState, openWordCard, closeWordCard, selectWordCardLevel, moveWordCard } from "./quran-word-card-state.js";
 /** The English display name of each stored level id (the page translates it; the card never prints the id). */
 export const WORD_CARD_LEVEL_NAMES = Object.freeze({ wbw: "WbW", intermediate: "Root", basic: "Family", tasrif: "Taṣrīf", depth: "Depth" });
 
@@ -634,38 +636,6 @@ function wholeQuranRingHtml(wbw, text, formatNumber) {
     <text class="word-progress-ring-num" x="60" y="58" text-anchor="middle" font-size="21" font-weight="800">${escapeHtml(shown)}</text>
     <text class="word-progress-ring-cap" x="60" y="78" text-anchor="middle" font-size="10">${escapeHtml(text.ringCaption)}</text>
   </svg>`;
-}
-
-function validLevel(level) {
-  if (!WORD_CARD_LEVELS.includes(level)) throw new TypeError(`Unknown word-card level: ${level}.`);
-  return level;
-}
-
-export function createWordCardState(level = "wbw") {
-  return Object.freeze({ open: false, occurrenceId: null, level: validLevel(level) });
-}
-
-export function openWordCard(state, occurrenceId) {
-  if (!occurrenceId) throw new TypeError("occurrenceId is required.");
-  return Object.freeze({ ...state, open: true, occurrenceId });
-}
-
-export function closeWordCard(state) {
-  return Object.freeze({ ...state, open: false });
-}
-
-export function selectWordCardLevel(state, level) {
-  return Object.freeze({ ...state, level: validLevel(level) });
-}
-
-export function moveWordCard(state, orderedOccurrenceIds, direction) {
-  if (!Array.isArray(orderedOccurrenceIds) || !orderedOccurrenceIds.length) return state;
-  const at = orderedOccurrenceIds.indexOf(state.occurrenceId);
-  if (at < 0) return state;
-  const delta = direction === "previous" ? -1 : direction === "next" ? 1 : 0;
-  if (!delta) throw new TypeError('direction must be "previous" or "next".');
-  const target = orderedOccurrenceIds[at + delta];
-  return target ? Object.freeze({ ...state, occurrenceId: target, open: true }) : state;
 }
 
 /**
