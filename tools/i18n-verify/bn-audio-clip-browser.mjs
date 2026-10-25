@@ -58,9 +58,12 @@ const PCM = Object.fromEntries(SURAHS.map((n) => [n, pcmOf(n)]));
 const BYTES = Object.fromEntries(SURAHS.map((n) => [n, fs.readFileSync(file(n))]));
 
 /** Normalised cross-correlation of `clip` (8 kHz) against `full` at lags around `expectMs`; the best lag and score. */
-function correlate(full, clip, expectMs, spanMs = 2000) {
-  const L = Math.min(clip.length, 8000 * 3);
-  const c = clip.subarray(0, L);
+function correlate(full, clip, expectMs, spanMs = 2000, skipMs = 1500) {
+  // A clip now starts in the pause before its āyah, so its first second can be silence, which matches nothing: the
+  // 3 s compared start skipMs into the clip, and the lag is reported for the clip's own start.
+  const skip = Math.round((skipMs * 8000) / 1000);
+  const L = Math.min(clip.length - skip, 8000 * 3);
+  const c = clip.subarray(skip, skip + L);
   const cm = c.reduce((s, x) => s + x, 0) / L;
   const cz = Float64Array.from(c, (x) => x - cm);
   const cn = Math.sqrt(cz.reduce((s, x) => s + x * x, 0)) || 1;
@@ -71,10 +74,10 @@ function correlate(full, clip, expectMs, spanMs = 2000) {
     let dot = 0, fn = 0; for (let i = 0; i < L; i++) { const f = full[lag + i] - fm; dot += f * cz[i]; fn += f * f; }
     return dot / (cn * (Math.sqrt(fn) || 1));
   };
-  const c0 = Math.round((expectMs * 8000) / 1000), span = Math.round((spanMs * 8000) / 1000);
+  const c0 = Math.round(((expectMs + skipMs) * 8000) / 1000), span = Math.round((spanMs * 8000) / 1000);
   for (let lag = c0 - span; lag <= c0 + span; lag += 8) { const s = at(lag); if (s > best.score) best = { lag, score: s }; }
   for (let lag = best.lag - 8; lag <= best.lag + 8; lag++) { const s = at(lag); if (s > best.score) best = { lag, score: s }; }
-  return { lagMs: (best.lag * 1000) / 8000, score: best.score, at };
+  return { lagMs: (best.lag * 1000) / 8000 - skipMs, score: best.score, at: (clipStartLag) => at(clipStartLag + skip) };
 }
 const WALK = Object.fromEntries(SURAHS.map((n) => [n, walkFrames(BYTES[n])]));
 const expectedStartMs = (n, byte) => {
@@ -87,7 +90,7 @@ const expectedStartMs = (n, byte) => {
 const browser = await chromium.launch({ args: ["--autoplay-policy=no-user-gesture-required"] });
 async function open({ noMap = false } = {}) {
   const ctx = await newContext(browser, { banner: false, viewport: { width: 1280, height: 800 } });
-  const ranges = [];
+  const ranges = [], allRanges = [];
   // archive.org from the local copies: Range answered with 206 + Content-Range, like the real server
   await ctx.route(/archive\.org\/.*\.mp3/, async (route) => {
     const url = route.request().url();
@@ -96,10 +99,13 @@ async function open({ noMap = false } = {}) {
     if (!buf) return route.fulfill({ status: 404, body: "" });
     const range = route.request().headers().range || null;
     ranges.push({ n, range });
+    allRanges.push({ n, range });
     const head = { "access-control-allow-origin": "*", "accept-ranges": "bytes", "content-type": "audio/mpeg" };
     const m = range && range.match(/bytes=(\d+)-(\d*)/);
     if (!m) return route.fulfill({ status: 200, headers: head, body: buf });
-    const a = Number(m[1]), b = m[2] ? Number(m[2]) : buf.length - 1;
+    // an open-ended "bytes=N-" (the element streaming the whole file, the old seek path) is answered 2 MB at a time,
+    // which a server may do and a browser handles; answering 82 MB per request crashed the page
+    const a = Number(m[1]), b = m[2] ? Number(m[2]) : Math.min(buf.length - 1, a + 2 * 1024 * 1024 - 1);
     return route.fulfill({ status: 206, headers: { ...head, "content-range": `bytes ${a}-${b}/${buf.length}` }, body: buf.subarray(a, b + 1) });
   });
   await ctx.route("**/tools/quran-data-pull/output/bn-audio-bytes.json*", async (route) => {
@@ -119,17 +125,20 @@ async function open({ noMap = false } = {}) {
   const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
   // the timestamps for the seek path come from raw.githubusercontent.com in the real app: serve the repository copy
   await ctx.route("https://raw.githubusercontent.com/**/gtaf_bangla_timestamps.json", (route) => route.fulfill({ status: 200, contentType: "application/json", body: fs.readFileSync("gtaf_bangla_timestamps.json") }));
-  return { ctx, page, errors, ranges };
+  return { ctx, page, errors, ranges, allRanges };
 }
 
 // The player keeps its <audio> private, so the page is given a hook: every Audio() made is remembered.
 const HOOK = `(() => { const A = window.Audio; window.__audios = []; window.Audio = function (...x) { const el = new A(...x); window.__audios.push(el); el.addEventListener("seeking", () => { el.__seeks = (el.__seeks || 0) + 1; }); return el; }; window.Audio.prototype = A.prototype; })();`;
 
 async function play(page, surah, ayah) {
+  // wait for THIS āyah's clip: the element's source must change and play (after a stop, the previous clip sits paused
+  // past 0.3 s and would otherwise be read as this one)
+  const before = await page.evaluate(() => { const el = window.__audios?.at(-1); return el ? el.currentSrc || el.src : null; });
   await page.evaluate(([s, a]) => import("/app/js/audio-player.js").then((ap) => { window.__ap = ap; window.__err = null; ap.playSegmentedAyah(s, a, "bn").catch((e) => { window.__err = String(e?.message || e); }); }), [surah, ayah]);
   for (const end = Date.now() + 15000; Date.now() < end;) {
     const st = await page.evaluate(() => { const el = window.__audios?.at(-1); return el ? { t: el.currentTime, src: el.currentSrc || el.src, paused: el.paused, err: window.__err } : { err: window.__err }; });
-    if (st.err || (st.src && st.t > 0.3)) break;
+    if (st.err || (st.src && st.src !== before && !st.paused && st.t > 0.3)) break;
     await page.waitForTimeout(100);
   }
   return page.evaluate(async () => {
@@ -138,7 +147,7 @@ async function play(page, surah, ayah) {
     const out = { src: el.currentSrc || el.src, t: el.currentTime, seeks: el.__seeks || 0, err: window.__err };
     if (out.src.startsWith("blob:")) {
       const buf = await (await fetch(out.src)).arrayBuffer();
-      const ac = new OfflineAudioContext(1, 8000 * 4, 8000);
+      const ac = new OfflineAudioContext(1, 8000 * 5, 8000);
       const decoded = await ac.decodeAudioData(buf.slice(0));
       out.decodedSec = decoded.duration;
       const src = ac.createBufferSource(); src.buffer = decoded; src.connect(ac.destination); src.start();
@@ -153,7 +162,7 @@ async function play(page, surah, ayah) {
 // ---------------------------------------------------------------------------------------------------------------
 const CASES = [[2, 5, "early"], [2, 142, "middle"], [2, 255, "late"], [36, 38, ""], [5, 50, ""]];
 {
-  const { ctx, page, errors, ranges } = await open();
+  const { ctx, page, errors, ranges, allRanges } = await open();
   await page.addInitScript(HOOK);
   await page.reload({ waitUntil: "networkidle" });
   for (const [s, a, where] of CASES) {
@@ -174,8 +183,8 @@ const CASES = [[2, 5, "early"], [2, 142, "middle"], [2, 255, "late"], [36, 38, "
       check(`${tag} 2. the clip IS this place in the recording`, false, "no clip to decode");
     }
   }
-  // 3. a range plays its āyāt in order, each its own request
-  ranges.length = 0;
+  // 3. a range plays its āyāt in order, each its own request (the log since the page opened: 2:255's clip, fetched by
+  //    test 2, may come from the player's small cache, which is right)
   const order = await page.evaluate(async () => {
     const ap = window.__ap; const seen = [];
     ap.setAyahChangeHandler((s, a) => seen.push(`${s}:${a}`));
@@ -191,10 +200,10 @@ const CASES = [[2, 5, "early"], [2, 142, "middle"], [2, 255, "late"], [36, 38, "
     ap.stop();
     return seen;
   });
-  const asked = ranges.filter((x) => x.n === 2).map((x) => x.range);
+  const asked = allRanges.filter((x) => x.n === 2).map((x) => x.range);
   const want = [254, 255, 256].map((a) => { const row = MAP.surahs["2"].ayahs[a - 1]; return `bytes=${row[0]}-${row[1] - 1}`; });
   check(`[2:254-256] 3. a range plays 2:254, 2:255, 2:256 in order`, order.slice(0, 3).join(",") === "2:254,2:255,2:256", JSON.stringify(order));
-  check(`[2:254-256] 3. ...each from its own Range request`, want.every((w) => asked.includes(w)), JSON.stringify({ asked, want }));
+  check(`[2:254-256] 3. ...each from its own Range request (this page's log)`, want.every((w) => asked.includes(w)), JSON.stringify({ asked, want }));
   check("no page errors", errors.filter((e) => !/ERR_CERT|net::|Failed to load resource|quran\.foundation|api\.quran/i.test(e)).length === 0, errors.slice(0, 2).join(" | "));
   await ctx.close();
 }
@@ -205,7 +214,9 @@ if (!MUTATE) {
   await page.reload({ waitUntil: "networkidle" });
   ranges.length = 0;
   const r = await play(page, 36, 38);
-  check("[36:38, no byte map] 4. the old seek path still plays (no Range header, the whole-surah file)", !!r.src && /036\.mp3/.test(r.src) && ranges.some((x) => x.n === 36 && !x.range) && r.t > 0, JSON.stringify({ src: r.src, ranges, t: r.t, err: r.err }));
+  // the element streams the whole-surah file itself (its own open-ended "bytes=N-" requests, never a map row) and seeks
+  const row = MAP.surahs["36"].ayahs[37];
+  check("[36:38, no byte map] 4. the old seek path still plays: the whole-surah file, not a clip, seeked to the āyah", !!r.src && /036\.mp3$/.test(r.src) && ranges.length > 0 && ranges.every((x) => x.n === 36 && (!x.range || /^bytes=\d+-$/.test(x.range))) && !ranges.some((x) => x.range === `bytes=${row[0]}-${row[1] - 1}`) && r.seeks >= 1 && r.t > 300, JSON.stringify({ src: r.src, ranges, t: r.t, seeks: r.seeks, err: r.err }));
   await ctx.close();
 }
 
