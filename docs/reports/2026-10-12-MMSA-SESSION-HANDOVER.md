@@ -1807,3 +1807,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v12.60** (2026-10-24): the account card name and roles, and the topic bookmark choice (audit part 87).
 - **v12.61** (2026-10-25): Bangla audio plays each āyah as its own exact clip (J95).
 - **v12.62** (2026-10-25): Bangla audio where the timing is not checked: the Owner's tick E (J95).
+- **v12.63** (2026-10-25): the Qur'an landing works from a keyboard (audit part 88).
