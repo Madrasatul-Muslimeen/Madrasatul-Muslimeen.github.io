@@ -2724,6 +2724,12 @@
   /* PCF MSA J99 (the Owner ticked B): 📖 is the one switch for Āyah, Meaning and Mushaf; on a phone it is its icon alone,
      the next view's words its tip and spoken name. */
   @media (max-width: 599.98px) { #readMeaningBtn { padding: 0; width: 40px; } #readMeaningBtn .read-meaning-word { display: none; } }
+  /* Measured at 820px (en): in the Meaning view, "📜 Mushaf" beside the English / Bangla / WbW switches took the bar to a
+     second line (146px vs 100px), as 📖 Meaning did on main; with the switches on the bar it is the icon alone up to 1023px. */
+  @media (max-width: 1023.98px) {
+    #readBar:has(#readMeaningLayersSlot:not([hidden])) #readMeaningBtn { padding: 0; width: 40px; }
+    #readBar:has(#readMeaningLayersSlot:not([hidden])) #readMeaningBtn .read-meaning-word { display: none; }
+  }
   /* 📜 Mushaf: the word costs ~47px, and at 600px (page reference + 🔖 + 📖 Meaning + ⤢) the bar wrapped to two lines
      with it (measured in review), so it is 📜 alone below 768px. Hidden while the Meaning flow is open over the Mushaf,
      where 📖 itself reads "Mushaf" (back to the Mushaf): two "Mushaf" buttons doing opposite things, and at 390px the

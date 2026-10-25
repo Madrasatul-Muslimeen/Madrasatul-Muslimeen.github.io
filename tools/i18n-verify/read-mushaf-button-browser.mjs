@@ -11,6 +11,7 @@
 //   --mutate=stale-icon      the icon never changes from 📖                           -> the next-view checks fail
 //   --mutate=dup-mushaf      📜 is shown again beside 📖                              -> the one-button checks fail
 //   --mutate=no-focus        the Meaning flow opens at the page's first āyah         -> the "opened at 57:2" checks fail
+//   --mutate=wide-in-meaning the switch keeps its word beside the Meaning switches   -> the Meaning-view width checks fail (768)
 //   --width=390 --lang=bn    restrict the matrix
 import { chromium, newContext, openPage } from "./harness.mjs";
 import fs from "node:fs";
@@ -28,6 +29,7 @@ const MUT = {
   "mushaf-stuck": ['if (view === "mushaf") { mushafToggle.checked = false;', 'if (view === "mushaf") { mushafToggle.checked = true;'],
   "stale-icon": ["readMeaningBtn.querySelector('[aria-hidden=\"true\"]').textContent = icon;", "void icon;"],
   "dup-mushaf": ["hidden = true; // J99", "hidden = false; // J99"], // both places (split/join)
+  "wide-in-meaning": ["  @media (max-width: 1023.98px) {\n    #readBar:has(#readMeaningLayersSlot:not([hidden])) #readMeaningBtn { padding: 0; width: 40px; }", "  @media (max-width: 1px) {\n    #readBar:has(#readMeaningLayersSlot:not([hidden])) #readMeaningBtn { padding: 0; width: 40px; }"],
   // (Mutation-checked: dropping only meaningFocusKey changes nothing for an āyah unit, whose āyah is the flow's first
   // un-dimmed one anyway; this one opens the flow at the page's first āyah.)
   "no-focus": ['const focus = meaningFocusKey ?? (pageViewContainer.querySelector(".meaning-ayah:not(.out)")', 'const focus = (pageViewContainer.querySelector(".meaning-ayah")'],
@@ -131,8 +133,11 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     const s1 = await state(page);
     check(`${t} tap 1 → the Meaning flow, opened at 57:2, pressed`, s1.flow > 0 && s1.flowKey === "57:2" && s1.pressed === "true" && !s1.tick, JSON.stringify({ flow: s1.flow, key: s1.flowKey, pressed: s1.pressed, tick: s1.tick }));
     check(`${t} ...it names the next view, Mushaf`, names(lang, s1, "mushaf", width) && !s1.oldShown, JSON.stringify({ icon: s1.icon, word: s1.word, label: s1.label, old: s1.oldShown }));
+    // In the Meaning view the English / Bangla / WbW switches sit on the bar and take it to a second line at some widths
+    // ON MAIN TOO, with the old 📖 (measured side by side, 25 Oct 2026: 320/360 en, 768 en, 320 bn, the same height before
+    // and after). What the switch itself owes there is to take the least room: its icon alone, 40px, below 1024px.
     const r1 = await rows(page);
-    check(`${t} ...one row, no line added (${r1.withIt} vs ${r1.without})`, r1.oneRow && r1.withIt === r1.without && r1.over <= 0, JSON.stringify(r1));
+    check(`${t} ...beside the Meaning switches it is the icon alone, 40px, below 1024px; no sideways overflow`, (width >= 1024 || s1.w === 40) && r1.over <= 0, JSON.stringify({ w: s1.w, over: r1.over }));
 
     await page.click("#readMeaningBtn"); await waitMushaf(page, true);
     const s2 = await state(page);
