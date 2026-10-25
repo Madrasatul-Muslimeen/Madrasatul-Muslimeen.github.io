@@ -656,7 +656,10 @@ async function renderHadeethEncStudyActions(container, id, title) {
       label.textContent = checked.length === 1 ? (checked[0].dataset.name ?? "1") : num(checked.length);
       trigger.setAttribute("aria-label", t("Record for: {names}", { names: checked.map((c) => c.dataset.name).join(", ") || "—" }));
     };
-    trigger.addEventListener("click", () => {
+    trigger.addEventListener("click", (e) => {
+      // way-modal.js's one document listener toggles every [data-assign-trigger] too; without this the same tap
+      // opened the list here and closed it there, so 👥 never opened on a HadeethEnc hadith (audit part 89, #1172).
+      e.stopPropagation();
       const open = !popover.classList.contains("open");
       popover.classList.toggle("open", open);
       trigger.setAttribute("aria-expanded", String(open));

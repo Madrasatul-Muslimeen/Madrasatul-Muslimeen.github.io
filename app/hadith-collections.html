@@ -202,5 +202,17 @@
     import { mountPageAccountCard } from "./js/account-card.js";
     mountPageAccountCard({ movePerson: false, getEmail: () => auth.currentUser?.email || "" });
   </script>
+  <script>
+    // This page does not load nav.js, so the Home menu (account-card.js) gets nav.js's Esc here: Esc closes an open
+    // menu and leaves focus on its own Home button (audit part 88, #1167).
+    document.addEventListener("keydown", (e) => {
+      if (e.key !== "Escape") return;
+      document.querySelectorAll(".nav-cat[open]").forEach((cat) => {
+        const hadFocus = cat.contains(document.activeElement);
+        cat.open = false;
+        if (hadFocus) cat.querySelector("summary")?.focus();
+      });
+    });
+  </script>
 </body>
 </html>
