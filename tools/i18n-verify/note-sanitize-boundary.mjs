@@ -95,12 +95,15 @@ const S12_ATTRS = ["data-mmsa-image", "width","class", "contenteditable", "data-
 // <script> in the <head>, now the local copy, on every page that renders Notes,
 // and the copy really is the pinned version.
 const fsForVendor = await import("node:fs");
+// UPDATED IN PLACE, 25 Oct 2026 (audit part 91, PR #1179): the tag now carries `defer`, so it no longer blocks
+// first paint. A deferred classic script runs in document order with the page's module scripts (all deferred), so
+// DOMPurify is still on window before any module code renders a body. `async` would break that order and is refused.
 for (const page of ["notes.html", "dawah.html", "journey-map.html"]) {
   const html = fsForVendor.readFileSync(`app/${page}`, "utf8");
   check(`DOMPurify is loaded from the app's own pinned copy, as a plain <script> tag, in ${page}'s <head>`, () => {
     const headMatch = html.match(/<head>([\s\S]*?)<\/head>/);
     assert.ok(headMatch, `${page} has no <head> section`);
-    assert.ok(/<script src="vendor\/purify\.min\.js"><\/script>/.test(headMatch[1]),
+    assert.ok(/<script src="vendor\/purify\.min\.js" defer><\/script>/.test(headMatch[1]),
       `the local DOMPurify <script> tag is missing from ${page}'s <head>`);
     assert.ok(!/cdn\.jsdelivr\.net\/npm\/dompurify/.test(html), `${page} still loads DOMPurify from the CDN`);
   });

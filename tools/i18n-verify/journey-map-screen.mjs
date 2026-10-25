@@ -100,11 +100,14 @@ check("the two system folders are represented even before either has a real docu
 // keeps same-origin files and never a CDN's -- loaded from jsDelivr, a Note
 // body could not render with no internet. Same intent: a plain <script> in
 // the page's own <head>, loaded before the page's module code.
+// UPDATED IN PLACE, 25 Oct 2026 (audit part 91, PR #1179): the tag now carries `defer`, so it no longer blocks
+// first paint. A deferred classic script runs in document order with the page's module scripts (all deferred), so
+// DOMPurify is still on window before any module code renders a body. `async` would break that order and is refused.
 check("DOMPurify is loaded from the app's own vendored copy, as a plain <script> tag, in journey-map.html's own <head>", () => {
   const headMatch = page.match(/<head>([\s\S]*?)<\/head>/);
   assert.ok(headMatch, "journey-map.html has no <head> section");
   assert.ok(
-    /<script src="vendor\/purify\.min\.js"><\/script>/.test(headMatch[1]) && !/jsdelivr/.test(page),
+    /<script src="vendor\/purify\.min\.js" defer><\/script>/.test(headMatch[1]) && !/jsdelivr/.test(page),
     "the vendored DOMPurify <script> tag is missing from journey-map.html's <head>, or a CDN copy is still loaded"
   );
 });
