@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "12.64",
+    "version": "12.65",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -5045,8 +5045,20 @@
     {
       "version": "12.64",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Audit parts 88-89: the Hadith 👥 list opens; Esc on Hadith Collections (Hadith Lead).",
+      "integration": {
+        "authorizedOn": "2026-10-25",
+        "integratedOn": "2026-10-25",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.65",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "DOMPurify's <script> in the head of dawah.html, notes.html and journey-map.html now carries defer, so it no longer blocks first paint (audit part 91, PR #1181).",
       "integration": {
         "authorizedOn": "2026-10-25",
         "integratedOn": "2026-10-25",
@@ -5055,8 +5067,9 @@
       }
     }
   ],
-  "nextUnallocated": "12.65",
+  "nextUnallocated": "12.66",
   "nextUnallocatedNote": [
+    "v12.65 was allocated to Dawah, Notes and Mapping My Journey load DOMPurify with defer (audit part 91), 2026-10-25.",
     "v12.64 was allocated to Hadith: 👥 opens on a HadeethEnc hadith; Esc closes the Home menu on Hadith Collections (audit parts 88-89), 2026-10-25.",
     "v12.63 was allocated to the Qur'an landing works from a keyboard (audit part 88), 2026-10-25.",
     "v12.62 was allocated to Bangla audio where the timing is not checked: the Owner's tick E (J95), 2026-10-25.",
