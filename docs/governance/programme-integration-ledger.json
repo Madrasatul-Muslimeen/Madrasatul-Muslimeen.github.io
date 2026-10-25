@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "12.67",
+    "version": "12.68",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -5081,8 +5081,20 @@
     {
       "version": "12.67",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Taglines table header text raised from 11.84 px to 13 px, and a new suite proves every table on six shared pages is reachable on a phone (audit part 93, PR #1184).",
+      "integration": {
+        "authorizedOn": "2026-10-25",
+        "integratedOn": "2026-10-25",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.68",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "On a phone the way-back chip is its arrow and shares one row with the Read tools; MSA's Bookmark this offers Range; Back returns to the same scroll (PR #1190).",
       "integration": {
         "authorizedOn": "2026-10-25",
         "integratedOn": "2026-10-25",
@@ -5091,8 +5103,9 @@
       }
     }
   ],
-  "nextUnallocated": "12.68",
+  "nextUnallocated": "12.69",
   "nextUnallocatedNote": [
+    "v12.68 was allocated to phone ← Back is the arrow alone, one row with the Read tools; Range in MSA's Bookmark this; Back returns to the same place (J98, audit part 95), 2026-10-25.",
     "v12.67 was allocated to Taglines table headers at 13 px; phone-table reach suite (audit part 93), 2026-10-25.",
     "v12.66 was allocated to shorter Bangla for Confirm anyway and Copy link (audit part 92), 2026-10-25.",
     "v12.65 was allocated to Dawah, Notes and Mapping My Journey load DOMPurify with defer (audit part 91), 2026-10-25.",
