@@ -14,6 +14,9 @@
 //   --mutate=cut      clip a nav label to 30px with an ellipsis                          (cut must fail)
 //   --mutate=squeeze  set a page button's height to 20px                                 (squeeze must fail)
 //   --mutate=font     force font-family: monospace on all text                           (font must fail)
+//   --mutate=clipscroll  overflow-x: hidden on the first scrolling table (run with --page=records.html)  (overflow must fail)
+// An element ending past the screen INSIDE a scrolling ancestor (overflow-x auto|scroll) is not overflow: the scroller is
+// reachable, and the scroller's own box is checked like any other element's (audit part 94).
 // Screenshots (320px, Bangla) go to tools/i18n-verify/out/bn-layout/; per-row JSON to out/bn-layout/rows.json.
 import fs from "node:fs";
 import { chromium, newContext, openPage } from "./harness.mjs";
@@ -82,12 +85,17 @@ const MEASURE = () => {
   for (const el of all) {
     if (getComputedStyle(el).position === "fixed" && el.getBoundingClientRect().left >= W) continue; // an off-screen drawer
     const r = el.getBoundingClientRect();
-    let bad = r.right > W + 1 ? `ends at ${Math.round(r.right)} past the ${W}px screen` : "";
-    for (let a = el.parentElement; a && !bad && a !== document.documentElement; a = a.parentElement) {
+    // Walk up to the nearest ancestor that scrolls or clips sideways. Inside a SCROLLER the box may end past the screen: the
+    // reader scrolls to it, so it is not overflow here (the scroller is itself in `all`, so its own box and whatever clips
+    // above it are checked in their turn). Past a CLIPPER, or with neither between it and the viewport, a box ending past
+    // the screen (or past the clipper) is cut off for good.
+    let bad = "", boundary = false;
+    for (let a = el.parentElement; a && a !== document.documentElement; a = a.parentElement) {
       const ox = getComputedStyle(a).overflowX;
-      if (ox === "hidden" || ox === "clip") { const ar = a.getBoundingClientRect(); if (r.right > ar.right + 1 && ar.width > 0) bad = `ends at ${Math.round(r.right)} past ${path(a)} (clips at ${Math.round(ar.right)})`; break; }
-      if (ox === "auto" || ox === "scroll") break; // it scrolls: reachable
+      if (ox === "hidden" || ox === "clip") { const ar = a.getBoundingClientRect(); if (r.right > ar.right + 1 && ar.width > 0) bad = `ends at ${Math.round(r.right)} past ${path(a)} (clips at ${Math.round(ar.right)})`; boundary = true; break; }
+      if (ox === "auto" || ox === "scroll") { boundary = true; break; } // it scrolls: reachable
     }
+    if (!bad && !boundary && r.right > W + 1) bad = `ends at ${Math.round(r.right)} past the ${W}px screen`;
     if (bad) offenders.add(el), (el.__ovMsg = bad);
   }
   for (const el of offenders) { // report the outermost offender only
@@ -163,6 +171,8 @@ const MUTATIONS = {
     if (el) el.style.cssText += ";max-width:30px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block";
   },
   squeeze: () => { const b = [...document.querySelectorAll("button")].find((e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && e.textContent.trim(); }); if (b) b.style.cssText += ";height:20px;min-height:0;overflow:hidden"; },
+  // The Records table scrolls sideways (overflow-x auto); clip it instead and its cells past the screen are lost: must count.
+  clipscroll: () => { const t = [...document.querySelectorAll("table")].find((e) => { const o = getComputedStyle(e).overflowX; const r = e.getBoundingClientRect(); return (o === "auto" || o === "scroll") && r.width > 0 && r.height > 0; }); if (t) t.style.overflowX = "hidden"; },
   font: () => { const s = document.createElement("style"); s.textContent = "body, body * { font-family: monospace !important }"; document.head.appendChild(s); },
 };
 if (MUTATE && !MUTATIONS[MUTATE]) throw new Error(`unknown --mutate=${MUTATE}`);
