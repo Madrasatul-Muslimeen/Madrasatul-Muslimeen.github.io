@@ -3,12 +3,13 @@
 // assertion on what "What it does" says. One check per claim, named with the entry's title.
 //
 //   node tools/i18n-verify/manual-claims-msa-browser.mjs            (needs node serve.js on 8080)
-//   --section=start|bookmarks|teaching   one section only
+//   --section=start|bookmarks|teaching|notes|hadith   one section only
 //   --verbose                            print PASS lines too
 //   --mutate=<name>                      break one claim so its check must FAIL (one per section):
 //        start      hides the Esc/outside-click close of the menu bar (sets every menu to stay open)
 //        bookmarks  hides the Bookmark menu's ✕ Close button
 //        teaching   hides the People page's "Hand the device to a child" box
+//        hadith     breaks one claim per entry: Text language, Go to number, Studied, Next ›, a progress stage, ✓ Check this dua
 import { chromium, newContext, openPage, BASE as BASE_URL } from "./harness.mjs";
 
 let pass = 0, fail = 0, skip = 0;
@@ -1174,6 +1175,288 @@ if (want("notes")) {
     await o2.ctx.close();
   } catch (e) { crash(e); }
   SKIP("Dawah pages: Āyah card → Make a poster / a Hadith or Dua card's 📝 My Notes link", "the Āyah card is Quran Study (frozen) and the Hadith/Dua cards are the Hadith Lead's; the page they open (notes.html?unit=) is what is checked above");
+}
+
+// =====================================================================================================================
+// ▸ Hadith and Dua   (audit part 89; the Hadith Lead's module, so a FAIL is reported, never fixed here)
+// =====================================================================================================================
+if (want("hadith")) {
+  console.log("== Hadith and Dua");
+  const fsx = await import("node:fs");
+  const OUT = "tools/hadith-data-pull/output";
+  const rec = (lang, id) => { const c = JSON.parse(fsx.readFileSync(`${OUT}/hadeethenc/${lang}/categories.json`, "utf8")); return JSON.parse(fsx.readFileSync(`${OUT}/hadeethenc/${c.hadithFile[id]}`, "utf8")).hadiths.find((h) => h.id === id); };
+  const R = { ar: rec("ar", "4563"), en: rec("en", "4563"), bn: rec("bn", "4563") };
+  // The numbers the Manual quotes, read from the data the app ships.
+  const books = fsx.readdirSync(`${OUT}/openiti-release`).filter((f) => /-ara1\.txt$/.test(f));
+  let duas = 0; const duaBooks = new Set();
+  for (let i = 1; i <= 79; i++) for (const c of JSON.parse(fsx.readFileSync(`${OUT}/dua/cards-${i}.json`, "utf8")).cards) { duas++; for (const m of c.members) duaBooks.add(m[0]); }
+  const BUKHARI = "0256Bukhari.Sahih.JK000110-ara1";
+  const FAMILY = `DATA.tenantPeople.push({ _id: "p3", tenantId: TENANT_ID, personId: "p3", name: "Yusuf", roles: ["guardian"] });`;
+  const CHECK = `DATA.ayahCollections = [{ _id: TENANT_ID, tenantId: TENANT_ID, collections: [] }];`;
+  const READER = `DATA.tenantMemberUids[0].roles = ["student"]; DATA.tenantPeople[0].roles = ["student"];`;
+  const mut = (page, sel) => MUTATE === "hadith" ? page.evaluate((s) => document.querySelectorAll(s).forEach((e) => e.remove()), sel) : null;
+  const wcount = (page) => page.evaluate(() => (window.__stubWriteData || []).length);
+  const wfrom = (page, k) => page.evaluate((k) => (window.__stubWriteData || []).slice(k).map((x) => ({ col: x.col, id: x.id, data: x.data })), k);
+  const hopen = async (w, h, seed = "") => {
+    const o = await open("/app/people.html", { w, h, ctxOpts: { extraSeedJs: seed } });
+    await o.ctx.route("**/archive.org/**", (r) => r.abort());
+    return o;
+  };
+  // Modules ▾ → Hadith, as the Manual says, then the page's own tab.
+  const toHadith = async (page, tab) => {
+    await settle(page);
+    await page.locator("#topNav summary", { hasText: /^Modules$/ }).first().click(); await page.waitForTimeout(150);
+    await Promise.all([page.waitForURL(/hadith-study\.html/, { timeout: 15000 }), page.click('#navBar a[href^="hadith-study.html"]')]);
+    await page.waitForSelector(`[data-hadith-tab="${tab}"]`, { timeout: 25000 });
+    await page.evaluate(() => document.querySelectorAll('[id*="splash"], .app-splash-overlay').forEach((e) => e.remove()));
+    await page.click(`[data-hadith-tab="${tab}"]`);
+  };
+  const openHE = async (page) => {
+    await page.waitForSelector('[data-hadeethenc-category="3"]', { timeout: 25000 });
+    await page.click('[data-hadeethenc-category="3"]');
+    await page.waitForSelector('[data-hadeethenc-hadith="4563"]', { timeout: 15000 });
+    await page.click('[data-hadeethenc-hadith="4563"]');
+    await page.waitForSelector('[data-hadeethenc-card="4563"]', { timeout: 15000 });
+  };
+  let gotoOpts = [];
+  const gotoBukhari = async (page, n = "6306") => {
+    await page.waitForSelector(`[data-openiti-book="${BUKHARI}"]`, { timeout: 25000 });
+    await page.click(`[data-openiti-book="${BUKHARI}"]`);
+    await page.waitForSelector("[data-openiti-goto-input]", { timeout: 15000 });
+    gotoOpts = await page.evaluate(() => [...document.querySelectorAll("[data-openiti-goto-mode] option")].map((o) => o.textContent.trim()));
+    await page.fill("[data-openiti-goto-input]", n);
+    await mut(page, "[data-openiti-goto-btn]");
+    await page.click("[data-openiti-goto-btn]", { timeout: 4000 });
+  };
+  const entryRows = (ws) => ws.filter((x) => x.col === "records").flatMap((x) => Object.entries(x.data?.entries || {}).map(([k, v]) => ({ id: x.id, key: k, status: v?.claimedStatus, by: v?.claimedByPersonId })).concat(Object.entries(x.data || {}).filter(([k]) => k.startsWith("entries.")).map(([k, v]) => ({ id: x.id, key: k.slice(8), status: v?.claimedStatus, by: v?.claimedByPersonId }))));
+  const fitsScreen = (page) => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1);
+
+  // The numbers the Manual quotes.
+  check("Hadith library: Arabic books (OpenITI): the data holds fifteen Arabic books", books.length === 15, String(books.length));
+  check("Dua cards: the data holds over 3,000 duas", duas > 3000, String(duas));
+  check("Dua cards: the duas are gathered from eleven hadith books", duaBooks.size === 11, String(duaBooks.size));
+
+  for (const [w, h] of VIEWPORTS) {
+    const tag = `${w}px`;
+    // ### Hadith library: HadeethEnc
+    try {
+      const { ctx, page, errors } = await hopen(w, h);
+      await toHadith(page, "collections");
+      const head = await page.evaluate(() => document.getElementById("hadithCorpusHeading")?.textContent.trim());
+      check(`[${tag}] Hadith library: HadeethEnc: Modules ▾ → Hadith → "Hadith Corpus" → Collections`, head === "Hadith Corpus", String(head));
+      await openHE(page);
+      const c = await page.evaluate(() => { const k = document.querySelector('[data-hadeethenc-card="4563"]'); return { ar: k.querySelector(".hadith-arabic")?.textContent, tr: k.querySelector(".hadith-translation-text")?.textContent, grade: k.querySelector(".hadith-attribution")?.textContent ?? "", sel: document.getElementById("hadithContentLang")?.value, ex: !!k.querySelector("[data-hadeethenc-explanation-toggle]") }; });
+      check(`[${tag}] Hadith library: HadeethEnc: a hadith opens with its Arabic and English, its grade and an explanation (verbatim from the packaged record)`, c.ar === R.ar.hadeeth && c.tr === R.en.hadeeth && c.grade.includes(R.en.grade) && c.ex, JSON.stringify(c).slice(0, 200));
+      await page.click('[data-hadeethenc-card="4563"] [data-hadeethenc-explanation-toggle]'); await page.waitForTimeout(200);
+      const ex = await page.evaluate(() => document.querySelector('[data-hadeethenc-card="4563"] .hadeethenc-explanation')?.innerText ?? "");
+      check(`[${tag}] Hadith library: HadeethEnc: the explanation opens`, ex.includes(R.en.explanation.slice(0, 40)), ex.slice(0, 80));
+      await mut(page, "#hadithContentLang");
+      await page.selectOption("#hadithContentLang", "bn", { timeout: 4000 }).catch(() => {}); await page.waitForTimeout(700);
+      const bn = await page.evaluate(() => document.querySelector('[data-hadeethenc-card="4563"] .hadith-translation-text')?.textContent ?? null);
+      check(`[${tag}] Hadith library: HadeethEnc: Text language বাংলা shows the hadith's Bangla`, bn === R.bn.hadeeth, String(bn).slice(0, 60));
+      check(`[${tag}] Hadith library: HadeethEnc: no sideways scroll, no page error`, (await fitsScreen(page)) && quiet(errors).length === 0, JSON.stringify(quiet(errors)));
+      await ctx.close();
+    } catch (e) { crash(e); }
+
+    // ### Hadith library: Arabic books (OpenITI)
+    try {
+      const { ctx, page, errors } = await hopen(w, h);
+      await toHadith(page, "collections");
+      await page.waitForSelector("[data-openiti-book]", { timeout: 25000 });
+      const bookN = await page.evaluate(() => document.querySelectorAll("[data-openiti-book]").length);
+      const names = await page.evaluate(() => [...document.querySelectorAll("[data-openiti-book]")].map((b) => b.textContent.replace(/\s+/g, " ")).join(" | "));
+      check(`[${tag}] Hadith library: Arabic books (OpenITI): the Collections tab lists the Arabic books (the Manual says fifteen; the page lists ${bookN})`, bookN === 15, `${bookN}: ${names.slice(0, 300)}`);
+      check(`[${tag}] Hadith library: Arabic books (OpenITI): Bukhari, Muslim, the Sunan, Malik, Riyad as-Salihin and al-Adhkar are among them`, ["Bukhari", "Muslim", "Sunan", "Malik|Muwatta", "Riyad", "Adhkar"].every((n) => new RegExp(n, "i").test(names)), names.slice(0, 300));
+      await gotoBukhari(page);
+      await page.waitForSelector('[data-openiti-passage="6578"]', { timeout: 20000 }).catch(() => {});
+      await page.waitForTimeout(800);
+      const s = await page.evaluate(() => { const c = document.querySelector('[data-openiti-passage="6578"]'); return { text: c?.innerText ?? "" }; });
+      s.opts = gotoOpts;
+      check(`[${tag}] Hadith library: Arabic books (OpenITI): Go to hadith number 6306 (Standard number) finds Bukhari 6306 («سيد الاستغفار»)`, /سيد الاستغفار/.test(s.text) && /6306/.test(s.text), s.text.slice(0, 100));
+      check(`[${tag}] Hadith library: Arabic books (OpenITI): "Which numbering" offers Standard number and This edition's number`, s.opts.length === 2 && /^Standard number$/i.test(s.opts[0]) && /edition/i.test(s.opts[1]), JSON.stringify(s.opts));
+      // Back to the book's chapter list (the Manual's route), then the edition's own number.
+      await page.reload();
+      await page.waitForSelector('[data-hadith-tab="collections"]', { timeout: 25000 });
+      await page.click('[data-hadith-tab="collections"]');
+      await page.waitForSelector(`[data-openiti-book="${BUKHARI}"]`, { timeout: 25000 });
+      await page.click(`[data-openiti-book="${BUKHARI}"]`);
+      await page.waitForSelector("[data-openiti-goto-input]", { timeout: 15000 });
+      await page.selectOption("[data-openiti-goto-mode]", "edition");
+      await page.fill("[data-openiti-goto-input]", "5947");
+      await page.click("[data-openiti-goto-btn]");
+      await page.waitForSelector('[data-openiti-passage="6578"]', { timeout: 20000 }).catch(() => {});
+      await page.waitForTimeout(800);
+      const ed = await page.evaluate(() => document.querySelector('[data-openiti-passage="6578"]')?.innerText ?? "");
+      check(`[${tag}] Hadith library: Arabic books (OpenITI): This edition's number 5947 finds the same narration`, /سيد الاستغفار/.test(ed) && /5947/.test(ed) && /6306/.test(ed), ed.slice(0, 100));
+      await page.evaluate(() => { const d = document.querySelector('[data-openiti-passage="6578"] [data-standard-translation="en"]'); d?.scrollIntoView({ block: "center" }); d?.querySelector("summary")?.click(); });
+      await page.waitForSelector('[data-openiti-passage="6578"] [data-standard-translation="en"] [data-standard-translation-text]', { timeout: 15000 }).catch(() => {});
+      const tr = await page.evaluate(() => { const d = document.querySelector('[data-openiti-passage="6578"] [data-standard-translation="en"]'); return { label: d?.querySelector("summary")?.textContent.trim(), text: d?.querySelector("[data-standard-translation-text]")?.textContent ?? "" }; });
+      check(`[${tag}] Hadith library: Arabic books (OpenITI): opening "English translation" reads the translation ("${tr.label}")`, /English translation/i.test(tr.label || "") && /Shaddad bin Aus/.test(tr.text), JSON.stringify(tr).slice(0, 160));
+      SKIP(`[${tag}] Hadith library: Arabic books (OpenITI): the Bangla translation fold "where available"`, "the English fold is checked; the Bangla fold is the same code path and its text file is a separate network fetch of the same shape");
+      check(`[${tag}] Hadith library: Arabic books (OpenITI): no sideways scroll, no page error`, (await fitsScreen(page)) && quiet(errors).length === 0, JSON.stringify(quiet(errors)));
+      await ctx.close();
+    } catch (e) { crash(e); }
+
+    // ### Hadith "Studied" and notes
+    try {
+      const { ctx, page, errors } = await hopen(w, h, FAMILY);
+      await toHadith(page, "collections");
+      await openHE(page);
+      await page.waitForSelector('[data-hadeethenc-card="4563"] [data-claim-for]', { timeout: 15000 });
+      await page.waitForSelector('[data-hadeethenc-card="4563"] [data-hadeethenc-bookmark][aria-disabled="false"]', { timeout: 15000 }).catch(() => {});
+      await mut(page, '[data-hadeethenc-studied="4563"]');
+      let k = await wcount(page);
+      await page.selectOption('[data-hadeethenc-studied="4563"]', "achieved", { timeout: 4000 }).catch(() => {});
+      await page.waitForTimeout(900);
+      let es = entryRows(await wfrom(page, k));
+      check(`[${tag}] Hadith "Studied" and notes: Studied records hadith:hadeethenc:4563 as studied for the signed-in person`, es.length === 1 && es[0].key.startsWith("hadith:hadeethenc:4563") && es[0].id.includes("__p1__") && es[0].status === "achieved", JSON.stringify(es));
+      // APP IS WRONG (reported, not fixed): hadith-browser.js:654 toggles the popover on the trigger AND way-modal.js:271's delegated document listener
+      // toggles it again (hadith-study.html imports way-modal.js), so the 👥 list opens and shuts in the same tap. Smallest fix: e.stopPropagation() in that handler.
+      let tapped = 0;
+      const pick = async (id) => {
+        await page.waitForTimeout(400);
+        await page.click('[data-hadeethenc-card="4563"] [data-claim-for] [data-assign-trigger]'); await page.waitForTimeout(250);
+        const isOpen = await page.evaluate(() => document.querySelector('[data-hadeethenc-card="4563"] [data-assign-popover]')?.classList.contains("open"));
+        if (tapped++ === 0) check(`[${tag}] Hadith "Studied" and notes: tapping 👥 opens the list of people to include`, isOpen === true, "the list did not open (two click handlers toggle it twice)");
+        if (!isOpen) await page.evaluate(() => document.querySelector('[data-hadeethenc-card="4563"] [data-assign-popover]')?.classList.add("open")); // so the later claims can still be measured
+        await page.waitForTimeout(100); await page.click(`[data-hadeethenc-card="4563"] [data-claim-for] [data-assign-list] input[value="${id}"]`); await page.click('[data-hadeethenc-card="4563"] [data-claim-for] [data-assign-trigger]'); await page.waitForTimeout(100); };
+      await pick("p3"); await pick("p1");
+      k = await wcount(page);
+      await page.selectOption('[data-hadeethenc-studied="4563"]', "learning", { timeout: 4000 }).catch(() => {});
+      await page.waitForTimeout(900);
+      es = entryRows(await wfrom(page, k));
+      check(`[${tag}] Hadith "Studied" and notes: 👥 records it for a family member (Yusuf) instead`, es.length === 1 && es[0].id.includes("__p3__") && es[0].status === "learning", JSON.stringify(es));
+      k = await wcount(page);
+      await page.click('[data-hadeethenc-bookmark="4563"]');
+      await page.waitForTimeout(900);
+      const bw = (await wfrom(page, k)).filter((x) => x.col === "bookmarks").flatMap((x) => (x.data?.saved ?? []).map((b) => b.position));
+      const bt = await page.evaluate(() => document.querySelector('[data-hadeethenc-bookmark="4563"]')?.textContent.trim());
+      check(`[${tag}] Hadith "Studied" and notes: Bookmark this saves the hadith (button then reads "${bt}")`, bw.some((p) => String(p).startsWith("hadith:hadeethenc:4563")), JSON.stringify([bw, bt]));
+      const nl = await page.evaluate(() => { const a = document.querySelector('[data-hadeethenc-note-link="4563"]'); return { text: a?.textContent.trim(), href: a?.getAttribute("href") }; });
+      check(`[${tag}] Hadith "Studied" and notes: 📝 My Notes links the hadith to its notes (the Manual's label: "📝 My Notes"; the page says "${nl.text}")`, /My Notes/.test(nl.text || "") && /unit=hadith:hadeethenc:4563|unit=hadith%3Ahadeethenc%3A4563/.test(nl.href || ""), JSON.stringify(nl));
+      await page.click('[data-hadith-tab="collections"]');
+      await page.waitForSelector("#openitiSection .openiti-study-soon", { timeout: 25000 });
+      const soon = await page.evaluate(() => document.querySelector("#openitiSection .openiti-study-soon")?.textContent ?? "");
+      check(`[${tag}] Hadith "Studied" and notes: the OpenITI Arabic books say "not enabled here yet"`, /not enabled here yet/.test(soon), soon.slice(0, 120));
+      check(`[${tag}] Hadith "Studied" and notes: no page error`, quiet(errors).length === 0, JSON.stringify(quiet(errors)));
+      await ctx.close();
+    } catch (e) { crash(e); }
+
+    // ### Dua cards
+    try {
+      const { ctx, page, errors } = await hopen(w, h);
+      await toHadith(page, "dua");
+      await page.waitForSelector("[data-dua-card]", { timeout: 25000 });
+      const list = () => page.evaluate(() => ({ count: document.querySelector(".dua-cards-count")?.textContent ?? "", ids: [...document.querySelectorAll("[data-dua-card]")].map((c) => Number(c.dataset.duaCard)), narr: [...document.querySelectorAll("[data-dua-narrated-count]")].map((e) => Number(e.dataset.duaNarratedCount)), prevOff: document.querySelector("[data-dua-prev]")?.disabled }));
+      const p1 = await list();
+      check(`[${tag}] Dua cards: Hadith → Dua shows cards, most-narrated first (count line: "${p1.count.slice(0, 60)}")`, p1.ids.length === 40 && p1.narr.every((n, i) => i === 0 || n <= p1.narr[i - 1]) && p1.narr[0] > 1, JSON.stringify({ n: p1.ids.length, narr: p1.narr.slice(0, 6) }));
+      check(`[${tag}] Dua cards: the count line names the whole set (${duas})`, p1.count.includes(String(duas).replace(/\B(?=(\d{3})+$)/, ",")) || p1.count.includes(String(duas)), p1.count);
+      await mut(page, "[data-dua-next]");
+      await page.click("[data-dua-next]", { timeout: 4000 }).catch(() => {}); await page.waitForTimeout(700);
+      const p2 = await list();
+      await page.click("[data-dua-prev]", { timeout: 4000 }).catch(() => {}); await page.waitForTimeout(700);
+      const p3 = await list();
+      check(`[${tag}] Dua cards: Next › shows the next set and ‹ Previous returns`, p2.ids[0] !== p1.ids[0] && p2.prevOff === false && p3.ids.join() === p1.ids.join(), JSON.stringify({ a: p1.ids[0], b: p2.ids[0], c: p3.ids[0] }));
+      const card4 = '[data-dua-card="4"]';
+      const words = () => page.evaluate((c) => ({ w: document.querySelector(`${c} [data-dua-words]`)?.textContent ?? "", sw: document.querySelector(`${c} [data-dua-vowels-toggle]`)?.textContent ?? "" }), card4);
+      const vw = await words();
+      await page.evaluate((c) => document.querySelector(`${c} [data-dua-vowels-toggle]`)?.scrollIntoView({ block: "center" }), card4);
+      await page.click(`${card4} [data-dua-vowels-toggle]`); const nv = await words();
+      await page.click(`${card4} [data-dua-vowels-toggle]`); const bk = await words();
+      const vow = (s) => /[ً-ْ]/.test(s);
+      check(`[${tag}] Dua cards: With vowels / Without vowels switches the dua's words ("${vw.sw}" / "${nv.sw}")`, vow(vw.w) && !vow(nv.w) && vow(bk.w) && /Without vowels/.test(vw.sw) && /With vowels/.test(nv.sw), JSON.stringify([vw.sw, nv.sw]));
+      const fw = await page.evaluate(() => { const e = document.querySelector('[data-dua-card="4"] [data-dua-words]'); return e ? getComputedStyle(e).fontFamily : ""; });
+      check(`[${tag}] Dua cards: the dua's words are set in the Qur'anic font`, /qur|uthman|amiri|scheherazade|kfgq|hafs|noto naskh/i.test(fw), fw);
+      const d2 = await page.evaluate(() => { const c = document.querySelector('[data-dua-card="2"]'); const hd = c.querySelector("[data-dua-narrated-count]"); return { n: hd.dataset.duaNarratedCount, head: hd.textContent.trim(), refs: c.querySelectorAll(".dua-also [data-dua-ref]").length }; });
+      check(`[${tag}] Dua cards: "${d2.head}" lists each source (${d2.refs})`, /Narrated in \d+ places/.test(d2.head) && d2.refs === Number(d2.n), JSON.stringify(d2));
+      await page.evaluate(() => document.querySelector('[data-dua-card="2"] .dua-also')?.scrollIntoView({ block: "center" }));
+      const first = await page.evaluate(() => document.querySelector('[data-dua-card="2"] .dua-also > .dua-also-refs [data-dua-ref]')?.dataset.duaRef);
+      await page.click(`[data-dua-card="2"] .dua-also > .dua-also-refs [data-dua-ref="${first}"]`);
+      await page.waitForSelector("[data-openiti-trail-back]", { timeout: 25000 });
+      const bt = await page.evaluate(() => document.querySelector("[data-openiti-trail-back]")?.textContent.trim());
+      await page.click("[data-openiti-trail-back]");
+      await page.waitForSelector('[data-dua-card="2"].hadith-card-focused', { timeout: 20000 }).catch(() => {});
+      const back = await page.evaluate(() => { const r = document.querySelector('[data-dua-card="2"]')?.getBoundingClientRect(); return { focused: !!document.querySelector('[data-dua-card="2"].hadith-card-focused'), on: !!r && r.bottom > 0 && r.top < innerHeight }; });
+      check(`[${tag}] Dua cards: a source opens its narration with "${bt}", which returns to the same dua`, /^←\s*Back to Dua 2/.test(bt || "") && back.focused && back.on, JSON.stringify({ bt, back }));
+      await page.click('[data-dua-mode="chapters"]');
+      await page.waitForSelector("[data-dua-book]", { timeout: 15000 });
+      check(`[${tag}] Dua cards: "Dua chapters" browses by book`, (await page.locator("[data-dua-book]").count()) === 11, String(await page.locator("[data-dua-book]").count()));
+      check(`[${tag}] Dua cards: no sideways scroll, no page error`, (await fitsScreen(page)) && quiet(errors).length === 0, JSON.stringify(quiet(errors)));
+      await ctx.close();
+    } catch (e) { crash(e); }
+
+    // ### Dua progress, words, notes and bookmarks
+    try {
+      const { ctx, page, errors } = await hopen(w, h);
+      await toHadith(page, "dua");
+      await page.waitForSelector('[data-dua-card="1"] [data-dua-status="learning"]', { timeout: 25000 });
+      const card = '[data-dua-card="1"]';
+      const stages = await page.evaluate((c) => [...document.querySelectorAll(`${c} [data-dua-status]`)].map((b) => b.dataset.duaStatus + ":" + b.textContent.trim()), card);
+      check(`[${tag}] Dua progress, words, notes and bookmarks: "My progress on this dua" offers five stages (${stages.join(", ")})`, stages.length === 5, JSON.stringify(stages));
+      await page.evaluate((c) => document.querySelector(c).scrollIntoView({ block: "start" }), card);
+      await mut(page, `${card} [data-dua-status="learning"]`);
+      const k = await wcount(page);
+      await page.click(`${card} [data-dua-status="learning"]`, { timeout: 4000 }).catch(() => {}); await page.waitForTimeout(900);
+      const es = entryRows(await wfrom(page, k));
+      check(`[${tag}] Dua progress, words, notes and bookmarks: tapping a stage records dua:1 once`, es.length === 1 && es[0].key.startsWith("dua:1") && es[0].status === "learning", JSON.stringify(es));
+      await page.evaluate((c) => document.querySelector(`${c} [data-dua-word="1"]`)?.scrollIntoView({ block: "center" }), card);
+      await page.click(`${card} [data-dua-word="1"]`);
+      await page.waitForSelector('[data-dua-word-panel="1"] [data-dua-word-open]', { timeout: 10000 });
+      const wp = await page.evaluate(() => { const p = document.querySelector('[data-dua-word-panel="1"]'); return { open: p.querySelector("[data-dua-word-open]")?.textContent.trim(), href: p.querySelector("[data-dua-word-open]")?.getAttribute("href"), text: p.innerText.length, prog: !!p.querySelector("[data-claim-for], [data-word-status], select, button:not([data-dua-word-open])") }; });
+      check(`[${tag}] Dua progress, words, notes and bookmarks: tapping a word opens its card with "${wp.open}" and the word's progress`, /Open in the Word card/.test(wp.open || "") && /word=2:131:7/.test(wp.href || "") && wp.text > 20 && wp.prog, JSON.stringify(wp));
+      const nb = await page.evaluate(() => ({ note: document.querySelector('[data-dua-note-bookmark="1"] [data-dua-note-link]')?.textContent.trim(), bm: document.querySelector('[data-dua-note-bookmark="1"] [data-dua-bookmark]')?.textContent.trim() }));
+      check(`[${tag}] Dua progress, words, notes and bookmarks: the card has 📝 My Notes and 🔖 Bookmark this ("${nb.note}" / "${nb.bm}")`, /My Notes/.test(nb.note || "") && /Bookmark/.test(nb.bm || ""), JSON.stringify(nb));
+      const k2 = await wcount(page);
+      await page.click('[data-dua-note-bookmark="1"] [data-dua-bookmark]'); await page.waitForTimeout(900);
+      const bw = (await wfrom(page, k2)).filter((x) => x.col === "bookmarks").flatMap((x) => (x.data?.saved ?? []).map((b) => b.position));
+      check(`[${tag}] Dua progress, words, notes and bookmarks: 🔖 saves dua:1`, bw.includes("dua:1"), JSON.stringify(bw));
+      let went = true;
+      await Promise.all([page.waitForURL(/quranrevival\.html\?word=2:131:7/, { timeout: 20000 }), page.click('[data-dua-word-panel="1"] [data-dua-word-open]')]).catch(() => { went = false; });
+      check(`[${tag}] Dua progress, words, notes and bookmarks: Open in the Word card reaches the Qur'an word 2:131:7`, went, page.url());
+      check(`[${tag}] Dua progress, words, notes and bookmarks: no page error`, quiet(errors).length === 0, JSON.stringify(quiet(errors)));
+      await ctx.close();
+    } catch (e) { crash(e); }
+
+    // ### ✓ Check this dua
+    try {
+      const { ctx, page, errors } = await hopen(w, h, CHECK);
+      await toHadith(page, "dua");
+      const card = '[data-dua-card="2"]';
+      await page.waitForSelector(`${card} [data-dua-check-open]`, { timeout: 25000 });
+      await mut(page, `${card} [data-dua-check-open]`);
+      await page.evaluate((c) => document.querySelector(`${c} [data-dua-check-open]`)?.scrollIntoView({ block: "center" }), card);
+      await page.click(`${card} [data-dua-check-open]`, { timeout: 4000 }).catch(() => {});
+      await page.waitForSelector('[data-dua-check-panel="2"] [data-dua-check-member]', { timeout: 6000 }).catch(() => {});
+      const mem = await page.evaluate(() => document.querySelectorAll('[data-dua-check-panel="2"] [data-dua-check-member]').length);
+      check(`[${tag}] ✓ Check this dua: the owner's Dua card opens the review with a Narrations step (${mem} narrations)`, mem === 23, String(mem));
+      if (mem) {
+        await page.click('[data-dua-check-member] [data-v="cut"]'); await page.click("[data-dua-check-rest-same]");
+        await page.click('[data-dua-check-step="2"]');
+        await page.waitForSelector("[data-dua-check-word]", { timeout: 10000 });
+        const nw = await page.locator("[data-dua-check-word]").count();
+        check(`[${tag}] ✓ Check this dua: the Words step lists each word to confirm its Qur'an word (${nw})`, nw > 5, String(nw));
+        await page.click("[data-dua-check-rest-ok]"); await page.click('[data-dua-check-step="3"]');
+        const k = await wcount(page);
+        await page.click("[data-dua-check-save]");
+        await page.waitForSelector(`${card} [data-dua-check-status="done"]`, { timeout: 15000 }).catch(() => {});
+        const wr = (await wfrom(page, k)).filter((x) => x.col === "ayahCollections");
+        check(`[${tag}] ✓ Check this dua: Save stores the check (duaChecks.2) and the card says it was checked`, wr.length === 1 && Object.keys(wr[0].data).includes("duaChecks.2") && /checked by/.test(await page.evaluate((c) => document.querySelector(`${c} [data-dua-check-status]`)?.textContent ?? "", card)), JSON.stringify(wr.map((x) => Object.keys(x.data))));
+        await page.click(`${card} [data-dua-check-open]`); await page.waitForSelector("[data-dua-check-back]");
+        const bt = await page.evaluate(() => document.querySelector("[data-dua-check-back]")?.textContent.trim());
+        await page.click("[data-dua-check-back]"); await page.waitForTimeout(300);
+        check(`[${tag}] ✓ Check this dua: "${bt}" returns to the dua`, /Back to Dua/.test(bt || "") && !(await page.$("[data-dua-check-panel]")), String(bt));
+      }
+      check(`[${tag}] ✓ Check this dua: no page error`, quiet(errors).length === 0, JSON.stringify(quiet(errors)));
+      await ctx.close();
+      // a reader (not owner/prime) does not see it
+      const r = await hopen(w, h, CHECK + READER);
+      await toHadith(r.page, "dua");
+      await r.page.waitForSelector(`${card} [data-dua-word="0"]`, { timeout: 25000 });
+      await r.page.waitForTimeout(1500);
+      check(`[${tag}] ✓ Check this dua: a reader who is not owner/prime is not offered it`, (await r.page.locator("[data-dua-check-open]").count()) === 0);
+      await r.ctx.close();
+    } catch (e) { crash(e); }
+  }
 }
 
 async function summ_bn(page) {
