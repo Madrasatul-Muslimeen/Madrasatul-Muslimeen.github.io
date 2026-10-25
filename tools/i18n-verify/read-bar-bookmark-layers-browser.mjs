@@ -66,7 +66,9 @@ for (const [lang, W] of [["en", 400], ["bn", 400], ["en", 390], ["en", 1280]]) {
   const b1 = await bm(), viaTools = await page.evaluate(() => document.getElementById("readBookmarkBtn")?.textContent.trim());
   check(`${tag} tapping 🔖 bookmarks the unit: it turns ★ and the ⋯ menu's 🔖 agrees`, b1.glyph === "★" && viaTools === "★", JSON.stringify({ b1: b1.glyph, viaTools }));
 
-  await page.click("#readMeaningBtn");
+  // PCF MSA J99 (the Owner ticked B): 📖 cycles Āyah → Meaning → Mushaf, so from the Mushaf it takes two taps to Meaning
+  // (via the plain reading). Updated in place, reason recorded.
+  for (let i = 0; i < 3 && !(await page.evaluate(() => document.querySelectorAll("#pageViewContainer [data-meaning-key]").length > 0)); i++) { await page.click("#readMeaningBtn"); await page.waitForTimeout(1200); }
   await page.waitForFunction(() => document.querySelectorAll("#pageViewContainer [data-meaning-key]").length > 0, null, { timeout: 15000 }).catch(() => {});
   await page.waitForTimeout(700);
   const L = await page.evaluate(() => {

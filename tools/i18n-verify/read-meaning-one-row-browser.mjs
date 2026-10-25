@@ -46,7 +46,8 @@ for (const lang of ["en", "bn"]) for (const [width, height] of [[412, 900], [390
   await P.waitForTimeout(2000);
   // PCF MSA J99: 📜 left the bar; the same switch through Options ▸ "Mushaf view". Updated in place, reason recorded.
   if (!(await ev(() => document.getElementById("mushafToggle").checked))) { await ev(() => { const t = document.getElementById("mushafToggle"); t.checked = true; t.dispatchEvent(new Event("change", { bubbles: true })); }); await P.waitForTimeout(2000); }
-  await P.click("#readMeaningBtn");
+  // PCF MSA J99: 📖 cycles Āyah → Meaning → Mushaf, so from the Mushaf it takes two taps to Meaning (via the plain reading).
+  for (let i = 0; i < 3 && !(await ev(() => !!document.querySelector("[data-meaning-pages] .meaning-page-rule"))); i++) { await P.click("#readMeaningBtn"); await P.waitForTimeout(1500); }
   await P.waitForFunction(() => document.querySelector("[data-meaning-pages] .meaning-page-rule"), null, { timeout: 20000 });
   await P.waitForTimeout(600);
   const m = await ev(() => {
@@ -92,7 +93,8 @@ for (const lang of ["en", "bn"]) {
   await P.click('#readContentsBody .rc-row[data-rc-kind="surah"][data-rc-n="8"]'); await P.waitForTimeout(2500);
   // PCF MSA J99: 📜 left the bar; the same switch through Options ▸ "Mushaf view". Updated in place, reason recorded.
   if (!(await ev(() => document.getElementById("mushafToggle").checked))) { await ev(() => { const t = document.getElementById("mushafToggle"); t.checked = true; t.dispatchEvent(new Event("change", { bubbles: true })); }); await P.waitForTimeout(2000); }
-  await P.click("#readMeaningBtn");
+  // PCF MSA J99: 📖 cycles Āyah → Meaning → Mushaf, so from the Mushaf it takes two taps to Meaning (via the plain reading).
+  for (let i = 0; i < 3 && !(await ev(() => !!document.querySelector("[data-meaning-pages] .meaning-page-rule"))); i++) { await P.click("#readMeaningBtn"); await P.waitForTimeout(1500); }
   await P.waitForFunction(() => document.querySelector("[data-meaning-pages] .meaning-page-rule"), null, { timeout: 20000 });
   await P.waitForTimeout(600);
   const m = await ev(() => {
