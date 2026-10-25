@@ -1,0 +1,299 @@
+// Audit part 97 (PCF MSA J29): do the 23 shared pages work at TABLET widths?  Parts 91-96 covered speed, Bangla, phone tables,
+// keyboard, the way back and refused saves; nothing had measured a tablet.  Each page is opened signed in as the owner, with
+// real-length names seeded, at 768x1024 and 820x1180 (portrait) and 1024x768 (landscape).  Per page and width it records:
+//   sideways  the page scrolls sideways (documentElement.scrollWidth > innerWidth); names the element that sticks out
+//   clipped   a visible button / link / select / input whose box leaves the viewport, or is cut by an overflow:hidden|clip
+//             ancestor (containment is checked, not scrollWidth).  Inside a scroller (overflow-x auto|scroll) it is reachable.
+//   cut       white-space:nowrap + text-overflow:ellipsis whose scrollWidth > clientWidth
+//   overlap   elementFromPoint at a control's centre is neither the control nor inside it
+//   small     a control under 32px on either side (FAILS); 32-39px is listed as "small, not failing" (40px is the target)
+//   width     the main column's share of the viewport (report only; under 60% at 1024 landscape earns a line)
+// The shared top menu (Home / Modules / Operation / Bookmark) is opened ONCE, on classes.html, at each width, and each open panel
+// is measured the same way.  Bangla (--lang=bn) runs at 768 only, on the 3 pages with the most controls.
+//
+// Run from the repository root with node serve.js on 8080:  node tools/i18n-verify/shared-pages-tablet-audit-browser.mjs
+//   --page=<name|file|N|N-M>   a page, or a 1-based range of the 23 (default all)      --lang=bn   Bangla at 768, top 3 pages
+//   --list   print every finding      --verbose   print passes
+//   --mutate=wide   inject a 1200px wide element into the first page measured; the suite must FAIL
+// Positive control: the shared menu's own category buttons must be found (count > 0) on every page, or the page did not boot.
+// Screenshots go to tools/i18n-verify/out/tablet/ (git-ignored); per-row JSON to out/tablet/rows.json on a full run.
+import fs from "node:fs";
+import { chromium, newContext, openPage } from "./harness.mjs";
+
+let pass = 0, fail = 0;
+const check = (name, ok, detail = "") => {
+  if (typeof ok?.then === "function") throw new Error(`check "${name}" was given a promise`);
+  if (ok) { pass++; if (process.argv.includes("--verbose")) console.log(`  PASS  ${name}`); } else { fail++; console.log(`  FAIL  ${name} ${detail}`); }
+};
+const arg = (k) => (process.argv.find((a) => a.startsWith("--" + k + "=")) || "").slice(k.length + 3);
+const ONLY = arg("page"), MUTATE = arg("mutate"), LANG = arg("lang") === "bn" ? "bn" : "en", LIST = process.argv.includes("--list");
+
+// Same order as shared-pages-failed-write-audit-browser.mjs / the Bangla layout audit (copied, not edited there).
+const PAGES = [
+  ["Classes", "classes.html"], ["Course offers", "course-offers.html"], ["Curriculum", "curriculum.html"],
+  ["Backup", "backup.html"], ["Import notes", "import-notes.html"], ["Dawah", "dawah.html"],
+  ["Onboarding", "onboarding.html"], ["Accept invite", "accept-invite.html?token=not-a-real-link"],
+  ["Monitor", "monitor.html"], ["Homework", "homework.html"], ["People", "people.html"], ["Records", "records.html"],
+  ["Catalogue", "catalogue.html"], ["About", "about.html"], ["Bookmarks", "bookmarks.html"],
+  ["Hadith collections", "hadith-collections.html"],
+  ["Landing", "index.html"], ["Notes", "notes.html"], ["Journey map", "journey-map.html"], ["Deen study", "deen-study.html"],
+  ["Arabic study", "arabic-study.html"], ["Self-check", "admin-self-check.html"], ["Taglines", "taglines.html"],
+];
+const REAL_SEED = `
+DATA.tenants[0].name = lang("Madrasatul Muslimeen (Owner, Prime)", "মাদরাসাতুল মুসলিমীন (মালিক, প্রাইম)");
+DATA.tenantPeople[0].name = lang("Muhammad Abdur-Rahman ibn Abdullah Al-Hashimi", "মুহাম্মাদ আবদুর রহমান ইবনে আবদুল্লাহ আল-হাশিমী");
+DATA.tenantPeople[1].name = lang("Maryam bint Abdullah Al-Hashimi", "মুহাম্মাদ আবদুর রহমান ইবনে আবদুল্লাহ আল-হাশিমী");
+DATA.trackables[0].name = lang("Reading (with Tajweed)");
+DATA.classes[0].name = lang("Weekend Qur'an Memorisation and Tajweed Circle (Year 7–9)");
+DATA.courseOffers[0].name = lang("Weekend Qur'an Memorisation and Tajweed Circle (Year 7–9)");
+DATA.bookmarks[0].saved[0].name = "Ayat al-Kursi and the last two āyāt of Al-Baqarah";
+`;
+const ALL_VIEWPORTS = [[768, 1024], [820, 1180], [1024, 768]];
+const VIEWPORTS = LANG === "bn" ? [[768, 1024]] : ALL_VIEWPORTS;
+const OUT = "tools/i18n-verify/out/tablet";
+fs.mkdirSync(OUT, { recursive: true });
+
+// --page= : a 1-based range "1-12", a single number, or a name / file prefix.
+function selectPages() {
+  if (!ONLY) return PAGES.map((p, i) => [...p, i + 1]);
+  const m = /^(\d+)(?:-(\d+))?$/.exec(ONLY);
+  if (m) { const a = +m[1], b = +(m[2] || m[1]); return PAGES.map((p, i) => [...p, i + 1]).filter(([, , n]) => n >= a && n <= b); }
+  return PAGES.map((p, i) => [...p, i + 1]).filter(([n, f]) => n.toLowerCase() === ONLY.toLowerCase() || f.startsWith(ONLY));
+}
+
+// Runs in the page.  `rootSel` scopes the controls (the menu's open panel); null measures the whole page.
+const MEASURE = (rootSel) => {
+  const W = window.innerWidth, H = window.innerHeight;
+  const root = rootSel ? document.querySelector(rootSel) : document.body;
+  const vis = (el) => {
+    for (let e = el; e && e !== document.documentElement; e = e.parentElement) {
+      if (e.hidden || e.inert) return false;
+      const cs = getComputedStyle(e);
+      if (cs.display === "none" || cs.visibility === "hidden" || cs.opacity === "0") return false;
+      const d = e.parentElement?.closest("details");
+      if (d && !d.open && e.parentElement === d && e.tagName !== "SUMMARY") return false;
+    }
+    const r = el.getBoundingClientRect();
+    return r.width > 0 && r.height > 0;
+  };
+  const path = (el) => {
+    const out = [];
+    for (let e = el; e && e !== document.body && out.length < 4; e = e.parentElement)
+      out.unshift(e.tagName.toLowerCase() + (e.id ? "#" + e.id : (typeof e.className === "string" && e.className.trim() ? "." + e.className.trim().split(/\s+/)[0] : "")));
+    return out.join(">");
+  };
+  const txt = (el) => (el.getAttribute("aria-label") || el.value || el.textContent || el.getAttribute("title") || "").toString().replace(/\s+/g, " ").trim().slice(0, 40);
+  const res = { sideways: [], clipped: [], cut: [], overlap: [], small: [], smallOk: [], width: null, controls: 0, menuButtons: 0 };
+  res.menuButtons = document.querySelectorAll(".nav-cat > summary").length;
+  res.headings = document.querySelectorAll("h1, h2").length;
+
+  const doc = document.documentElement;
+  if (!rootSel && doc.scrollWidth > window.innerWidth) {
+    // name the element that sticks out: the visible element whose right edge is furthest past the viewport, outside any scroller
+    let worst = null, wr = W;
+    for (const el of document.body.querySelectorAll("*")) {
+      if (/^(SCRIPT|STYLE|SVG|PATH|OPTION|TEMPLATE|NOSCRIPT)$/i.test(el.tagName) || !vis(el)) continue;
+      if (getComputedStyle(el).position === "fixed") continue;
+      let inScroller = false;
+      for (let a = el.parentElement; a && a !== doc; a = a.parentElement) { const ox = getComputedStyle(a).overflowX; if (ox === "auto" || ox === "scroll" || ox === "hidden" || ox === "clip") { inScroller = true; break; } }
+      if (inScroller) continue;
+      const r = el.getBoundingClientRect();
+      if (r.right > wr) { wr = r.right; worst = el; }
+    }
+    res.sideways.push({ key: "sideways|page", msg: `page scrolls sideways: scrollWidth ${doc.scrollWidth} > ${W}` + (worst ? `; ${path(worst)} ends at ${Math.round(wr)}` : "; no single element found (a clipped or fixed one)") });
+  }
+
+  const sel = "button, a[href], select, input:not([type=hidden]), textarea, summary, [role=button], [tabindex]:not([tabindex='-1'])";
+  const controls = [...root.querySelectorAll(sel)].filter((el) => !el.disabled && vis(el));
+  res.controls = controls.length;
+
+  for (const el of controls) {
+    const r = el.getBoundingClientRect();
+    const where = `${path(el)} "${txt(el)}"`;
+    // clipped: out of the viewport, or cut by a clipping ancestor; inside a sideways scroller it is reachable
+    let bad = "", fixed = false;
+    for (let a = el; a && a !== doc; a = a.parentElement) if (getComputedStyle(a).position === "fixed") { fixed = true; break; }
+    let boundary = false;
+    for (let a = el.parentElement; a && a !== doc; a = a.parentElement) {
+      const cs = getComputedStyle(a);
+      const hx = cs.overflowX === "hidden" || cs.overflowX === "clip", hy = cs.overflowY === "hidden" || cs.overflowY === "clip";
+      if (hx || hy) {
+        const ar = a.getBoundingClientRect();
+        if (ar.width > 0 && ar.height > 0) {
+          if (hx && (r.right > ar.right + 1 || r.left < ar.left - 1)) { bad = `cut by ${path(a)} (box ${Math.round(ar.left)}..${Math.round(ar.right)}, control ${Math.round(r.left)}..${Math.round(r.right)})`; break; }
+          if (hy && (r.bottom > ar.bottom + 1 || r.top < ar.top - 1) && cs.overflowY === "clip") { bad = `cut vertically by ${path(a)}`; break; }
+        }
+      }
+      if (cs.overflowX === "auto" || cs.overflowX === "scroll") { boundary = true; break; }
+    }
+    if (!bad && !boundary && (r.right > W + 1 || r.left < -1)) bad = `box ${Math.round(r.left)}..${Math.round(r.right)} leaves the ${W}px viewport`;
+    if (!bad && fixed && (r.bottom > H + 1 || r.top < -1)) bad = `fixed control box ${Math.round(r.top)}..${Math.round(r.bottom)} leaves the ${H}px viewport`;
+    if (bad) res.clipped.push({ key: "clipped|" + path(el), msg: `${where} ${bad}` });
+
+    // small targets (a link running inside a sentence is text, not a tile)
+    const cs = getComputedStyle(el);
+    const isInlineLink = el.tagName === "A" && cs.display === "inline";
+    if (!isInlineLink && !(el.tagName === "INPUT" && /^(checkbox|radio)$/.test(el.type))) {
+      const m = Math.min(r.width, r.height);
+      if (m < 32) res.small.push({ key: "small|" + path(el), msg: `${where} is ${Math.round(r.width)}x${Math.round(r.height)}px` });
+      else if (m < 40) res.smallOk.push({ key: "smallOk|" + path(el), msg: `${where} is ${Math.round(r.width)}x${Math.round(r.height)}px` });
+    }
+  }
+
+  // cut labels
+  for (const el of root.querySelectorAll("*")) {
+    if (/^(SCRIPT|STYLE|SVG|PATH|OPTION)$/i.test(el.tagName)) continue;
+    const cs = getComputedStyle(el);
+    if (cs.textOverflow !== "ellipsis" || cs.whiteSpace !== "nowrap" || !vis(el)) continue;
+    if (el.scrollWidth > el.clientWidth + 1) res.cut.push({ key: "cut|" + path(el), msg: `${path(el)} "${txt(el)}" needs ${el.scrollWidth}px, has ${el.clientWidth}px` });
+  }
+
+  // wasted width: the widest visible main column
+  if (!rootSel) {
+    const cands = [document.querySelector("main"), ...document.body.children].filter((e) => e && !/^(SCRIPT|STYLE|NAV|HEADER|TEMPLATE|NOSCRIPT)$/i.test(e.tagName) && vis(e) && getComputedStyle(e).position !== "fixed");
+    const w = Math.max(0, ...cands.map((e) => e.getBoundingClientRect().width));
+    res.width = Math.round((w / W) * 100);
+  }
+
+  // overlap: what is on top at the control's centre?  Bring it into view first.
+  const seen = new Set();
+  for (const el of controls.slice(0, 160)) {
+    const p = path(el); if (seen.has(p + txt(el))) continue; seen.add(p + txt(el));
+    // In a page, bring it into view (centre, then top: fixed bars sit at the edges) and flag it only if NOTHING reaches it.
+    // In the menu panel nothing is scrolled (the menu is not sticky), so a control off screen is skipped.
+    // Not tested: a control that takes no pointer (the current page's own link), the open menu category's own summary (the
+    // Bookmark sheet covers the bar by design and carries a Close), and one below the fold of its own vertical scroller.
+    if (getComputedStyle(el).pointerEvents === "none" || (rootSel && el.tagName === "SUMMARY")) continue;
+    const covered = () => {
+      const r = el.getBoundingClientRect();
+      for (let a = el.parentElement; a && a !== doc; a = a.parentElement) {
+        const oy = getComputedStyle(a).overflowY;
+        if (oy === "auto" || oy === "scroll" || oy === "hidden") { const ar = a.getBoundingClientRect(); if (r.bottom > ar.bottom + 1 || r.top < ar.top - 1) return null; }
+      }
+      const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+      if (cx < 0 || cy < 0 || cx >= W || cy >= H) return null; // off screen: reported as clipped, not here
+      const top = document.elementFromPoint(cx, cy);
+      if (!top || top === el || el.contains(top) || (el.tagName === "LABEL" && top.control === el)) return "";
+      return `${path(top)} at (${Math.round(cx)},${Math.round(cy)})`;
+    };
+    let c = covered();
+    if (!rootSel && c !== "") {
+      for (const block of ["center", "start"]) { el.scrollIntoView({ block, inline: "nearest" }); c = covered(); if (c === "") break; }
+    }
+    if (c) res.overlap.push({ key: "overlap|" + p, msg: `${p} "${txt(el)}" is covered by ${c}` });
+  }
+  window.scrollTo(0, 0);
+  return res;
+};
+
+const MUTATIONS = {
+  wide: () => { const d = document.createElement("div"); d.textContent = "wide"; d.style.cssText = "width:1200px;height:20px;background:red"; document.body.appendChild(d); },
+};
+if (MUTATE && !MUTATIONS[MUTATE]) throw new Error(`unknown --mutate=${MUTATE}`);
+
+const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
+const rows = [];
+const slug = (path) => path.replace(/\?.*$/, "").replace(/\.html$/, "");
+
+async function openAt(path, w, h) {
+  const ctx = await newContext(browser, { appLang: LANG === "bn" ? "bn" : null, banner: false, viewport: { width: w, height: h }, extraSeedJs: REAL_SEED });
+  await ctx.route("**/archive.org/**", (r) => r.abort());
+  const sep = path.includes("?") ? "&" : "?";
+  const { page: P } = await openPage(ctx, "/app/" + path + sep + (path.startsWith("hadith-collections") ? "back=1" : "navBack=1"));
+  await P.waitForTimeout(1000);
+  await P.waitForSelector("#zabBar button", { timeout: 4000 }).catch(() => {}); // the Zab bar joins late; measure with it in place
+  await P.waitForTimeout(200);
+  return { ctx, P };
+}
+
+const NO_MENU = new Set(["onboarding.html", "accept-invite.html"]);
+// FOUND BY THIS AUDIT, NOT YET FIXED (printed, not failed; an entry that stops occurring is reported so the fix is seen).
+// Distinct from an accepted finding: nobody has accepted it. The smallest fix is in docs/reports/2026-10-26-audit-part97-tablet.md.
+const KNOWN = [
+  // The page's bare `button { margin-top: 1.5rem }` (onboarding.html:22-25) / `margin-top: 1.2rem` (accept-invite.html:19-22) also
+  // hits the Zab bar's button, which then sits 14px below the 44px bar and is cut at the bottom edge of the screen.
+  ["onboarding.html", "clipped|div#zabRoot>nav#zabBar>button"],
+  ["accept-invite.html", "clipped|div#zabRoot>nav#zabBar>button"],
+];
+const knownSeen = new Set();
+
+const KINDS = ["sideways", "clipped", "cut", "overlap", "small"];
+const pages = selectPages();
+if (!pages.length) throw new Error(`--page=${ONLY} matches no page`);
+
+let toRun = pages;
+if (LANG === "bn") { // the 3 pages with the most controls (counted in English at 768)
+  const counts = [];
+  for (const [name, path] of pages) {
+    const { ctx, P } = await openAt(path, 768, 1024);
+    counts.push([name, path, await P.evaluate(() => document.querySelectorAll("button, a[href], select, input:not([type=hidden]), textarea, summary").length)]);
+    await ctx.close();
+  }
+  counts.sort((a, b) => b[2] - a[2]);
+  toRun = counts.slice(0, 3).map(([name, path]) => pages.find((p) => p[1] === path));
+  console.log("Bangla, the 3 pages with the most controls: " + counts.slice(0, 3).map(([n, , c]) => `${n} (${c})`).join(", "));
+}
+
+let mutated = false;
+for (const [name, path, num] of toRun) {
+  console.log(`\n== ${num}. ${name} (${path}) ==`);
+  for (const [w, h] of VIEWPORTS) {
+    const t0 = Date.now();
+    const { ctx, P } = await openAt(path, w, h);
+    if (MUTATE && !mutated) { await P.evaluate(MUTATIONS[MUTATE]); await P.waitForTimeout(150); mutated = true; }
+    const m = await P.evaluate(MEASURE, null);
+    if (!MUTATE) await P.screenshot({ path: `${OUT}/${slug(path)}-${w}x${h}${LANG === "bn" ? "-bn" : ""}.png`, fullPage: false });
+    // Onboarding and Accept invite are sign-in-flow pages with no shared top menu by design (they show a heading and a plain
+    // "Open the app" link); there the positive control is that the page's own heading rendered and the menu is truly absent.
+    if (NO_MENU.has(path.replace(/\?.*$/, ""))) check(`${name} / ${w}: page booted, no shared menu by design (positive control, heading ${m.headings}, menu ${m.menuButtons})`, m.headings > 0 && m.menuButtons === 0);
+    else check(`${name} / ${w}: shared menu found (positive control, ${m.menuButtons})`, m.menuButtons > 0);
+    check(`${name} / ${w}: page has controls (positive control, ${m.controls})`, m.controls > 0);
+    const row = { page: name, path, width: w, viewport: `${w}x${h}`, controls: m.controls, widthShare: m.width, counts: {}, smallOk: m.smallOk.length, findings: {} };
+    for (const kind of KINDS) {
+      const isKnown = (f) => { const i = KNOWN.findIndex(([p, k]) => path.startsWith(p) && f.key === k); if (i >= 0) knownSeen.add(i); return i >= 0; };
+      for (const f of m[kind].filter(isKnown)) console.log(`  KNOWN  ${name} / ${w}: ${f.msg}`);
+      const fresh = m[kind].filter((f) => !isKnown(f));
+      row.counts[kind] = m[kind].length;
+      row.findings[kind] = m[kind].map((f) => f.msg);
+      check(`${name} / ${w}: ${kind} (${m[kind].length}, known ${m[kind].length - fresh.length})`, fresh.length === 0, "\n      " + fresh.slice(0, 8).map((f) => f.msg).join("\n      "));
+      if (LIST) for (const f of m[kind]) console.log(`    [${w} ${kind}] ${f.msg}`);
+    }
+    row.findings.smallOk = m.smallOk.map((f) => f.msg);
+    if (LIST) for (const f of m.smallOk) console.log(`    [${w} small, not failing] ${f.msg}`);
+    if (w === 1024 && m.width !== null && m.width < 60) console.log(`  NOTE  ${name} / 1024: main column uses ${m.width}% of the viewport`);
+    row.seconds = +((Date.now() - t0) / 1000).toFixed(1);
+
+    // The shared top menu: once, on classes.html, at each width.
+    if (path === "classes.html" && !MUTATE) {
+      const menu = { cats: 0, findings: {} };
+      const n = await P.evaluate(() => document.querySelectorAll("details.nav-cat").length);
+      menu.cats = n;
+      check(`menu / ${w}: categories found (positive control, ${n})`, n > 0);
+      for (let i = 0; i < n; i++) {
+        await P.evaluate((i) => { document.querySelectorAll("details.nav-cat").forEach((d, j) => { d.open = j === i; }); }, i);
+        await P.waitForTimeout(150);
+        const label = await P.evaluate((i) => document.querySelectorAll("details.nav-cat")[i].querySelector("summary").textContent.trim(), i);
+        const mm = await P.evaluate((i) => { document.querySelectorAll("details.nav-cat")[i].setAttribute("data-tablet-menu", "1"); return true; }, i);
+        const mr = await P.evaluate(MEASURE, "details.nav-cat[data-tablet-menu]");
+        await P.evaluate(() => document.querySelectorAll("details.nav-cat[data-tablet-menu]").forEach((d) => d.removeAttribute("data-tablet-menu")));
+        if (i === 0 || label) await P.screenshot({ path: `${OUT}/menu-${label.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-${w}x${h}.png` });
+        check(`menu "${label}" / ${w}: opens with controls (${mr.controls})`, mm && mr.controls > 0);
+        for (const kind of ["clipped", "cut", "overlap", "small"]) {
+          menu.findings[`${label}|${kind}`] = mr[kind].map((f) => f.msg);
+          check(`menu "${label}" / ${w}: ${kind} (${mr[kind].length})`, mr[kind].length === 0, "\n      " + mr[kind].slice(0, 8).map((f) => f.msg).join("\n      "));
+          if (LIST) for (const f of mr[kind]) console.log(`    [menu ${label} ${w} ${kind}] ${f.msg}`);
+        }
+      }
+      row.menu = menu;
+    }
+    await ctx.close();
+    rows.push(row);
+  }
+}
+if (!MUTATE && !ONLY) fs.writeFileSync(`${OUT}/rows.json`, JSON.stringify(rows, null, 1));
+console.log("\n=== per page and width: sideways/clipped/cut/overlap/small (small 32-39 in brackets), controls, main column %, seconds ===");
+for (const r of rows) console.log(`${r.page.padEnd(20)} ${String(r.width).padStart(4)}  ${r.counts.sideways}/${r.counts.clipped}/${r.counts.cut}/${r.counts.overlap}/${r.counts.small} [${r.smallOk}]  controls ${r.controls}  col ${r.widthShare}%  ${r.seconds}s`);
+for (const [i, [p, k]] of KNOWN.entries()) if (!MUTATE && !knownSeen.has(i) && toRun.some(([, path]) => path.startsWith(p))) console.log(`  NOTE  known finding no longer occurs (fixed? remove the entry): ${p} ${k}`);
+console.log(`\n${pass} passed, ${fail} failed${MUTATE ? ` (mutation: ${MUTATE})` : ""}${LANG === "bn" ? " (Bangla)" : ""}`);
+await browser.close();
+process.exit(fail ? 1 : 0);
