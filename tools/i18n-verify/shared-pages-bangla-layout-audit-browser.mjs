@@ -187,6 +187,14 @@ async function measure(path, w, h, lang, name) {
   return m;
 }
 
+// ACCEPTED by name, with the reason and who accepted it. A finding here is printed, not failed; an entry that stops
+// occurring is reported (so a fix is never found by accident). Never add an entry to get green.
+const ACCEPTED = [
+  // A HadeethEnc chapter title wrapping to 3 lines at 320/390 in Bangla: fully readable, nothing cut, and the row grows
+  // to hold it. Accepted by the Hadith Lead, 25 Oct 2026 (audit part 92): clamping it would hide part of the name.
+  ["hadith-collections.html", "squeeze|lines|section#hadeethencSection>div.hadeethenc-body>div.hadith-list>button.hadith-row"],
+];
+const acceptedSeen = new Set();
 for (const [name, path] of PAGES) {
   if (ONLY && !path.startsWith(ONLY)) continue;
   console.log(`\n== ${name} (${path}) ==`);
@@ -196,7 +204,9 @@ for (const [name, path] of PAGES) {
     const row = { page: name, path, width: w, counts: {}, newInBn: {}, enCounts: {}, findings: {} };
     for (const kind of ["overflow", "cut", "squeeze", "font"]) {
       const enKeys = new Set(en[kind].map((f) => f.key));
-      const fresh = bn[kind].filter((f) => !enKeys.has(f.key));
+      const accepted = (f) => { const i = ACCEPTED.findIndex(([p, k]) => path.startsWith(p) && f.key === k); if (i >= 0) acceptedSeen.add(i); return i >= 0; };
+      const fresh = bn[kind].filter((f) => !enKeys.has(f.key) && !accepted(f));
+      for (const f of bn[kind].filter((f) => !enKeys.has(f.key) && accepted(f))) console.log(`  ACCEPTED  ${name} / ${w}: ${f.msg}`);
       row.counts[kind] = bn[kind].length; row.enCounts[kind] = en[kind].length; row.newInBn[kind] = fresh.length;
       row.findings[kind] = { bn: bn[kind].map((f) => f.msg), en: en[kind].map((f) => f.msg), fresh: fresh.map((f) => f.msg) };
       check(`${name} / ${w}: ${kind} (bn ${bn[kind].length}, en ${en[kind].length}, new in Bangla ${fresh.length})`, fresh.length === 0, "\n      " + fresh.slice(0, 8).map((f) => f.msg).join("\n      "));
@@ -211,6 +221,7 @@ for (const [name, path] of PAGES) {
 if (!MUTATE && !ONLY) fs.writeFileSync(`${OUT}/rows.json`, JSON.stringify(rows, null, 1));
 console.log("\n=== per page and width: bn counts (overflow/cut/squeeze/font) -> new in Bangla ===");
 for (const r of rows) console.log(`${r.page.padEnd(20)} ${String(r.width).padStart(4)}  bn ${r.counts.overflow}/${r.counts.cut}/${r.counts.squeeze}/${r.counts.font}  en ${r.enCounts.overflow}/${r.enCounts.cut}/${r.enCounts.squeeze}/${r.enCounts.font}  new ${r.newInBn.overflow}/${r.newInBn.cut}/${r.newInBn.squeeze}/${r.newInBn.font}`);
+for (const [i, [p, k]] of ACCEPTED.entries()) if ((!ONLY || p.startsWith(ONLY)) && !MUTATE && !acceptedSeen.has(i)) console.log(`  NOTE  accepted entry no longer occurs (remove it): ${p} ${k}`);
 console.log(`\n${pass} passed, ${fail} failed${MUTATE ? ` (mutation: ${MUTATE})` : ""}`);
 await browser.close();
 process.exit(fail ? 1 : 0);
