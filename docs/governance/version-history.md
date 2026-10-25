@@ -965,3 +965,4 @@ total). Allocated by the MMSA Architect.
 12.61: Bangla audio plays each āyah as its own exact clip (J95). Allocated by the MMSA Architect.
 12.62: Bangla audio where the timing is not checked: the Owner's tick E (J95). Allocated by the MMSA Architect.
 12.63: the Qur'an landing works from a keyboard (audit part 88). Allocated by the MMSA Architect.
+12.64: Hadith: 👥 opens on a HadeethEnc hadith; Esc closes the Home menu on Hadith Collections (audit parts 88-89). Allocated by the MMSA Architect.
