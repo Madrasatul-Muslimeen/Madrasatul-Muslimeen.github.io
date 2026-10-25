@@ -13,6 +13,7 @@
 //   --mutate=slot-rule|slot-min|slot-basis|slot-max   #readBackSlot's v10.20 width rule (whole / min-width / flex / max-width)
 //                       removed from the SERVED page, routed; app/ is untouched -> the slot checks (issue #760)
 //   --mutate=narrow-basis  the 6.5rem / 5.5rem basis rules for narrow phones (issue #891) removed -> the 320 and 390 en line-sharing checks fail
+//   --mutate=one-row    the one-row rules (25 Oct 2026: Meaning as its icon while a way-back is docked) removed -> the 390 line-sharing checks fail
 //   --mutate=raw-label  the page name is the heading's whole text -> the name check fails
 import { chromium, newContext, openPage } from "./harness.mjs";
 import fs from "node:fs";
@@ -34,6 +35,14 @@ const SLOT_MUTANTS = {
 };
 async function routeMutation(ctx) {
   if (!MUTATE) return;
+  if (MUTATE === "one-row") {
+    // the 25 Oct 2026 one-row rules (Meaning as its icon, the tools closed up, while a way-back is docked) removed
+    let html = fs.readFileSync("app/quranrevival.html", "utf8");
+    html = swap(html, "#readBar:has(#readBackSlot:not(:empty)) #readMeaningBtn .read-meaning-word { display: none; }", "");
+    html = swap(html, "#readBar:has(#readBackSlot:not(:empty)) #readMeaningBtn { padding: 0; width: 40px; }", "");
+    await ctx.route(/\/app\/quranrevival\.html(\?.*)?$/, (r) => r.fulfill({ status: 200, contentType: "text/html; charset=utf-8", body: html }));
+    return;
+  }
   if (MUTATE === "narrow-basis") {
     let html = fs.readFileSync("app/quranrevival.html", "utf8");
     html = swap(html, "#readBackSlot { flex-basis: 6.5rem; }", "#readBackSlot { }");
@@ -62,7 +71,7 @@ async function routeMutation(ctx) {
 
 const SEED = `DATA.bookmarks[0].usedAt = { bm1: "2026-10-04T09:30:00.000Z" };`;
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH });
-for (const lang of ["en", "bn"]) for (const width of [320, 390, 768, 1280]) {
+for (const lang of ["en", "bn"]) for (const width of (process.env.WIDTHS ? process.env.WIDTHS.split(",").map(Number) : [320, 390, 768, 1280])) {
   const tag = `${lang}/${width}`;
   console.log(`\n=== ${tag} ===`);
   const ctx = await newContext(browser, { appLang: lang, banner: false, viewport: { width, height: 900 }, extraSeedJs: SEED });
@@ -218,7 +227,9 @@ for (const lang of ["en", "bn"]) for (const width of [320, 390, 768, 1280]) {
   // and the label is cut only by the chip's own ellipsis (never clipped by an ancestor or pushed past the slot).
   for (const label of [null, lang === "bn" ? "← ফিরে যান: আমার যাত্রার মানচিত্র (ম্যাপিং মাই জার্নি)" : "← Back to Mapping My Journey"]) {
     const lt = label ? "a long label" : "the page's own label";
-    if (label) await P.evaluate((t) => { const a = document.querySelector("[data-bm-back-link]"); if (a) a.textContent = t; }, label);
+    // 25 Oct 2026: the chip is an arrow span and a words span (bookmark-nav.js), so a long label goes into the words span
+    // and the spoken name, the arrow staying; an older chip without the spans still gets its whole text replaced.
+    if (label) await P.evaluate((t) => { const a = document.querySelector("[data-bm-back-link]"); const w = a?.querySelector(".bm-back-text"); if (w) { const words = t.replace(/^←\s*/, ""); w.textContent = ` ${words}`; a.setAttribute("aria-label", words); a.title = words; } else if (a) a.textContent = t; }, label);
     await P.waitForTimeout(150);
     const m = await P.evaluate(() => {
       const bar = document.getElementById("readBar"), slot = document.getElementById("readBackSlot"), row = document.querySelector("[data-bm-back]");
@@ -237,11 +248,18 @@ for (const lang of ["en", "bn"]) for (const width of [320, 390, 768, 1280]) {
         xTile: !!X && X.width >= 39 && X.height >= 39 && X.left >= R.left - 1 && X.right <= R.right + 1 && X.right <= innerWidth + 1,
         linkH: Math.round(A.height), linkInRow: A.left >= R.left - 1 && A.right <= R.right + 1,
         cut: a.scrollWidth > a.clientWidth + 1, ellipsis: cs.textOverflow === "ellipsis" && cs.overflow === "hidden",
-        visibleChars: A.width >= 60,
+        // Updated in place 25 Oct 2026 (the Owner: "For back button show only the back arrow"): below 600px the chip is its
+        // ← alone, so "room to read" there means the arrow is a whole 40px target and the words are its spoken name and
+        // tooltip, hidden on screen; from 600px the words show and keep the old 60px rule.
+        visibleChars: innerWidth < 600
+          ? A.width >= 40 && !!row.querySelector(".bm-back-arrow") && getComputedStyle(row.querySelector(".bm-back-text") ?? a).display === "none" && (a.getAttribute("aria-label") || "").length > 3 && a.title === a.getAttribute("aria-label")
+          : A.width >= 60,
         lines: tops.size, backMid: Math.round(mid(R)), endMids: ends, playMid: lineOf("readPlayBtn") === null ? null : Math.round(lineOf("readPlayBtn")),
         endOneLine: ends.length > 0 && ends.every((t) => Math.abs(t - ends[0]) <= 4),
         sharesLine: [lineOf("readPlayBtn"), lineOf("readBarEnd") ?? ends[0]].some((l) => l !== null && Math.abs(l - mid(R)) < 30),
         sideways: document.documentElement.scrollWidth > innerWidth + 1,
+        kids: [...document.getElementById("readBar").children].filter((e) => e.getBoundingClientRect().width > 0).map((e) => { const r = e.getBoundingClientRect(); return `${e.id || e.className}@${Math.round(r.left)},${Math.round(r.top)}w${Math.round(r.width)}`; }).join(" "), // PROBE only
+        endW: [...document.querySelectorAll("#readBarEnd > *")].map((e) => `${e.id || e.className}:${Math.round(e.getBoundingClientRect().width)}`).join(" "), // PROBE only
       };
     });
     if (process.env.PROBE) console.log(`  PROBE ${tag} ${lt}`, JSON.stringify(m));

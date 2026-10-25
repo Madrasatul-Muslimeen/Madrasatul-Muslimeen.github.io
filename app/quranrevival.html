@@ -4555,6 +4555,21 @@
     .ayah-card-back-pill .ayah-card-back-x, .ayah-card-back-pill.back-docked .ayah-card-back-x { width: 44px; height: 44px; }
     #readBackSlot { flex-basis: auto; }
   }
+  /* The Owner, 25 Oct 2026 (a 394px phone screenshot of 36:8): "For back button show only the back arrow n the rest organise
+     in one row". Below 600px the way-back chip is its arrow and ✕ (bookmark-nav.js / shell.css), and while one is docked
+     📖 Meaning shows its icon alone (its word stays its aria-label and title, as at 320px) and the tools close up, so
+     ← ✕ and 🔖 📜 📖 ⤢ ⋯ ⋮ share ONE line. */
+  @media (max-width: 599.98px) {
+    #readBar:has(#readBackSlot:not(:empty)) #readMeaningBtn { padding: 0; width: 40px; }
+    #readBar:has(#readBackSlot:not(:empty)) #readMeaningBtn .read-meaning-word { display: none; }
+    #readBar:has(#readBackSlot:not(:empty)) #readBarEnd { gap: 0.3rem; }
+  }
+  /* Measured 25 Oct 2026: at 360px the line is 328px; ← ✕ take 85 and six 40px tools 264, so the tools step down to 36px
+     tiles with tighter gaps (the bare full-screen bar's own narrow size), and the line holds ← ✕ 🔖 📜 📖 ⤢ ⋯ ⋮ again. */
+  @media (max-width: 379.98px) {
+    #readBar:has(#readBackSlot:not(:empty)) #readBarEnd { gap: 0.15rem; }
+    #readBar:has(#readBackSlot:not(:empty)) #readBarEnd > button { width: 36px; min-width: 36px; padding-left: 0; padding-right: 0; }
+  }
   .ayah-card-back-x { width: 40px; height: 40px; flex: 0 0 auto; padding: 0; border: 0; border-radius: 50%; background: rgba(255, 255, 255, 0.08); color: #f2e8d5; font-size: 1.2rem; cursor: pointer; }
   /* 📖 Note view pop-up: the āyah as the Note view shows it, over the card. */
   /* The Owner, 9 Oct 2026 (a tablet): "no way back or it is covered". 100vh is the screen with the browser's bars
@@ -23340,6 +23355,12 @@
 
     /** The other half of captureQuranBookmarkSettings() -- restores every field it captured, then lands on the bookmarked āyah's own Note screen (item 6: "open the same place where the bookmark was created from"). Silently tolerant of a settings object from before this round (null, or missing fields) -- every field is optional and simply left alone. */
     async function applyQuranBookmarkSettings(settings, position) {
+      // QR J03: a range bookmark saved with only its position (range:S:A-B, no settings) opens at its first āyah, as a Range.
+      const rangeKey = typeof position === "string" ? position.match(/^range:(\d+):(\d+)-(\d+)$/) : null;
+      if (rangeKey && typeof settings?.surahNum !== "number") {
+        const [surahNum, from, to] = rangeKey.slice(1).map(Number);
+        settings = { ...(settings ?? {}), surahNum, ayahNum: from, unitType: "range", rangeFrom: from, rangeTo: to, view: settings?.view ?? "read" };
+      }
       if (settings) {
         if (typeof settings.surahNum === "number" && settings.surahNum !== currentSurahNum && surahIndex.some((s) => s.surahNumber === settings.surahNum)) {
           currentSurahNum = settings.surahNum;
@@ -23833,6 +23854,17 @@
       const choices = sel
         ? [info.unitType === "ayah" ? sel : { ...sel, defaultName: info.label, settings: base }, ...all.filter((c) => c !== sel)]
         : [{ id: "unit", label: () => unitChipText(info), defaultName: info.label, position: info.unitKey, settings: base }, ...all];
+      // QR J03 (the Owner): a range of āyāt, through MMSA's popover range kind (v11.14). It starts at the āyah on
+      // screen and runs to the end of its ruku' (in a Range unit, the unit's own range); the reader can change both.
+      const ayahs = currentSurahData.ayahs;
+      const rukuOf = ayahs.find((a) => a.ayah === ayah)?.ruku;
+      const rukuEnd = Math.max(ayah, ...ayahs.filter((a) => a.ruku === rukuOf).map((a) => a.ayah));
+      const [from, to] = info.unitType === "range" ? currentUnitAyahBounds() : [ayah, rukuEnd];
+      const meta = surahIndex.find((x) => x.surahNumber === currentSurahNum);
+      choices.push({
+        id: "range", label: () => t("Range"), kind: "range", surah: currentSurahNum, ayahCount: currentSurahData.ayahCount,
+        from, to, surahName: surahName(currentSurahNum, meta?.nameEnglish), settings: base,
+      });
       return choices;
     }
 
@@ -23887,10 +23919,18 @@
         roster: assignableRoster().map((a) => { const p = roster.find((r) => r.id === a.id); return { ...a, name: p ? () => langText(p.name, getAppLang(), p.id) : a.name }; }),
         selectedPersonId,
         // The Owner, 12 Oct 2026 -- "quick unit choice" (Read view only; empty everywhere else).
-        units: unitChoices.map(({ id, label, defaultName: dn }) => ({ id, label, defaultName: dn })),
+        units: unitChoices.map(({ id, label, defaultName: dn, kind, surah, ayahCount, from, to, surahName: sn }) => (kind === "range"
+          ? { id, label, kind, surah, ayahCount, from, to, surahName: sn } // QR J03: MMSA's popover range kind (v11.14)
+          : { id, label, defaultName: dn })),
       });
       if (!choice) return false; // cancelled -- no write, no re-render
-      const picked = unitChoices.find((u) => u.id === choice.unitId) ?? null;
+      let picked = unitChoices.find((u) => u.id === choice.unitId) ?? null;
+      // QR J03: a range saves under its own key (range:S:A-B) WITH the settings MMSA's Bookmarks page Range form writes,
+      // so MMSA opens it too.
+      if (picked?.kind === "range" && choice.range && choice.unitKey) {
+        const { surah, from, to } = choice.range;
+        picked = { ...picked, position: choice.unitKey, settings: { ...picked.settings, unitType: "range", surahNum: surah, ayahNum: from, rangeFrom: from, rangeTo: to } };
+      }
       // Save the SAME bookmark into every ticked assignee's own document, one
       // write per person on their own bookmarks/{tenantId}__{personId}
       // document -- bookmark-assign.js, shared with Asma, Deen Study and the
