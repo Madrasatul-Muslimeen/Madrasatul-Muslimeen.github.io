@@ -247,22 +247,12 @@ const STATES = {
 // FOUND BY THIS AUDIT, NOT YET FIXED (printed, not failed; an entry that stops occurring is reported so the fix is seen).
 // Distinct from an accepted finding: nobody has accepted it. The smallest fix is in docs/reports/2026-10-26-audit-part97-tablet.md.
 const KNOWN = [
-  // The page's bare `button { margin-top: 1.5rem }` (onboarding.html:22-25) / `margin-top: 1.2rem` (accept-invite.html:19-22) also
-  // hits the Zab bar's button, which then sits 14px below the 44px bar and is cut at the bottom edge of the screen.
-  ["onboarding.html", "clipped|div#zabRoot>nav#zabBar>button"],
-  ["accept-invite.html", "clipped|div#zabRoot>nav#zabBar>button"],
+  // The Zab-button finding on onboarding/accept-invite (round 1) was fixed in v12.72: zab-bar.js resets its own buttons' margin.
   // Round 2 (pages 13-23): small targets under 32px.  Details and the smallest fixes: docs/reports/2026-10-26-audit-part97-tablet.md.
   // The two Landing entries are QR's wheel buttons: drawn 28px / 24px on purpose, each with an invisible 40px tap area
   // (quranrevival.html:854 `.wheel-cta-btn::before`, :1485 `.list-collapse-btn::after`), so they are not faults; the probe measures the drawn box.
   ["index.html", "small|div.wheel-col>div#wheelStageWrap>div#wheelHubPickers>button#wheelCtaBtn"],
   ["index.html", "small|div#wheelPopupView>div#wheelSection>div#wheelListSplitter>button#wheelListCollapseBtn", "en"], // 1024 only; Bangla runs 768
-  ["notes.html", "small|div#app>div#newNoteForm>input#newTitleInput", "en"],
-  ["notes.html", "small|div#app>div#newNoteForm>div#newToolbar>button.secondary", "en"],
-  ["notes.html", "small|div#app>div#newNoteForm>div.note-actions>button#newSaveBtn", "en"],
-  ["notes.html", "small|div#app>div#newNoteForm>div.note-actions>button#newCancelBtn", "en"],
-  ["taglines.html", "small|div#adminArea>div.card>div>input#scrollSpeedInput"],
-  // Bangla only: the "this ayah only" input in a 5.5rem cell is 31.6px wide (32x40 when rounded), a hair under 32.
-  ["taglines.html", "small|tbody#lineRows>tr>td.cell-narrow>input", "bn"],
 ];
 const knownSeen = new Set();
 const isKnownFor = (path) => (f, kind = f.key.split("|")[0]) => { const i = KNOWN.findIndex(([p, k]) => path.startsWith(p) && f.key === k); if (i >= 0) knownSeen.add(i); return i >= 0; };
@@ -298,6 +288,10 @@ for (const [name, path, num] of toRun) {
     if (NO_MENU.has(path.replace(/\?.*$/, ""))) check(`${name} / ${w}: page booted, no shared menu by design (positive control, heading ${m.headings}, menu ${m.menuButtons})`, m.headings > 0 && m.menuButtons === 0);
     else check(`${name} / ${w}: shared menu found (positive control, ${m.menuButtons})`, m.menuButtons > 0);
     check(`${name} / ${w}: page has controls (positive control, ${m.controls})`, m.controls > 0);
+    // v12.72: a broken zab-bar.js (a backtick in its CSS template) stopped the bar mounting and every check above stayed green.
+    // So the shared Zab bar is a positive control of its own: its button, the corner 🧰 or a page's own dock must be on screen.
+    const zab = await P.evaluate(() => [...document.querySelectorAll("#zabBar button, #zabCorner, .zab-dock-btn")].some((e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(e).visibility !== "hidden"; }));
+    check(`${name} / ${w}: the Zab bar mounted (positive control)`, zab);
     const row = { page: name, path, width: w, viewport: `${w}x${h}`, controls: m.controls, widthShare: m.width, counts: {}, smallOk: m.smallOk.length, findings: {} };
     for (const kind of KINDS) {
       const isKnown = (f) => { const i = KNOWN.findIndex(([p, k]) => path.startsWith(p) && f.key === k); if (i >= 0) knownSeen.add(i); return i >= 0; };

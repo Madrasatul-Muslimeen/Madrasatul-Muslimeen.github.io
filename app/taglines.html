@@ -32,7 +32,7 @@
   th { font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.04em; color: #666; }
   tr.archived td { opacity: 0.55; }
   .cell-text { min-width: 12rem; }
-  .cell-narrow { width: 5.5rem; }
+  .cell-narrow { width: 5.5rem; min-width: 5.5rem; } /* audit part 97: in Bangla the cell shrank its input to 31.6px */
   .cell-link { min-width: 10rem; }
   .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: 0.6rem; align-items: end; }
   .card { border: 1px solid #e5e5e5; border-radius: 0.6rem; padding: 0.9rem; margin-top: 0.6rem; }
@@ -121,7 +121,7 @@
         </div>
         <div>
           <label for="scrollSpeedInput">Scroll speed</label>
-          <input type="range" id="scrollSpeedInput" min="1" max="10" step="1" style="width:100%;" />
+          <input type="range" id="scrollSpeedInput" min="1" max="10" step="1" style="width:100%; min-height:40px;" />
           <span id="scrollSpeedLabel" class="note"></span>
         </div>
       </div>

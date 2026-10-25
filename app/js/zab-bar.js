@@ -63,10 +63,11 @@ const CSS = `
 #zabRoot *, #zabRoot *::before, #zabRoot *::after { box-sizing: border-box; }
 #zabBar { position: fixed; left: 0; right: 0; bottom: 0; height: ${BAR_H}px; z-index: 900; display: none; align-items: center; gap: 4px; padding: 0 6px; background: #1f3a6e; color: #fff; }
 #zabBar .zab-bar-scroll { display: flex; gap: 4px; flex: 1 1 auto; min-width: 0; overflow-x: auto; scrollbar-width: none; }
-#zabBar button { min-height: 40px; min-width: 40px; border: 0; border-radius: 8px; background: rgba(255,255,255,.14); color: #fff; font: inherit; padding: 0 12px; cursor: pointer; white-space: nowrap; flex: 0 0 auto; }
+/* audit part 97: a page's bare "button { margin-top }" rule (onboarding, accept-invite) pushed the bar's button 10px off screen. */
+#zabBar button { margin: 0; min-height: 40px; min-width: 40px; border: 0; border-radius: 8px; background: rgba(255,255,255,.14); color: #fff; font: inherit; padding: 0 12px; cursor: pointer; white-space: nowrap; flex: 0 0 auto; }
 #zabBar button[aria-pressed="true"] { background: #fff; color: #1f3a6e; }
 #zabSpacer { display: block; height: 68px; } /* audit4 zab-spacer: phone, clears the 48px corner button */
-#zabCorner { position: fixed; right: 12px; bottom: calc(12px + var(--zab-lift, 0px)); width: 48px; height: 48px; border-radius: 50%; border: 0; z-index: 900; background: #1f3a6e; color: #fff; font-size: 22px; box-shadow: 0 2px 10px rgba(0,0,0,.3); cursor: pointer; }
+#zabCorner { margin: 0; position: fixed; right: 12px; bottom: calc(12px + var(--zab-lift, 0px)); width: 48px; height: 48px; border-radius: 50%; border: 0; z-index: 900; background: #1f3a6e; color: #fff; font-size: 22px; box-shadow: 0 2px 10px rgba(0,0,0,.3); cursor: pointer; }
 body:has(.nw-switch) #zabCorner { bottom: 68px; }
 /* audit part 33: Tab scrolls a control into view, and it must stop above the fixed corner or bar, not under it. */
 html { scroll-padding-bottom: 76px; }
@@ -84,7 +85,7 @@ body.zab-docked #zabCorner { display: none; } /* audit-zab dock-hides-corner */
 .zab-head h2 { flex: 1 1 auto; margin: 0; font-size: 1rem; min-width: 0; overflow-wrap: anywhere; }
 .zab-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden; padding: 8px 10px 14px; }
 #zabPanel button, #zabPanel select, #zabPanel input { font: inherit; min-height: 40px; max-width: 100%; }
-#zabPanel button { min-width: 40px; border: 1px solid #c7d0e0; border-radius: 8px; background: #f3f6fb; color: #1b2a41; cursor: pointer; padding: 0 10px; }
+#zabPanel button { margin: 0; min-width: 40px; border: 1px solid #c7d0e0; border-radius: 8px; background: #f3f6fb; color: #1b2a41; cursor: pointer; padding: 0 10px; }
 #zabPanel input[type="text"], #zabPanel select { border: 1px solid #7d8799; border-radius: 8px; padding: 0 8px; background: #fff; color: #1b2a41; min-width: 0; }
 #zabPanel input[type="color"] { padding: 0 2px; width: 44px; }
 #zabPanel input[type="date"] { border: 1px solid #7d8799; border-radius: 8px; padding: 0 8px; background: #fff; color: #1b2a41; min-width: 0; flex: 0 1 11rem; }
