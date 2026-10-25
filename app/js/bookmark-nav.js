@@ -216,7 +216,16 @@ export function mountBackRow(text, { href = null, onBack = null, id = null } = {
   back.dataset.bmBackLink = "";
   if (href) back.href = href;
   else { back.type = "button"; back.addEventListener("click", () => { row.remove(); onBack?.(); }); }
-  back.textContent = text;
+  // The Owner, 25 Oct 2026 (a phone screenshot): "For back button show only the back arrow". The arrow and the words are
+  // two spans so shell.css can hide the words below 600px (as J63 does for the Āyah-card pill); the words stay as the
+  // control's aria-label and title.
+  const words = String(text).replace(/^←\s*/, "");
+  const arrow = document.createElement("span");
+  arrow.className = "bm-back-arrow"; arrow.setAttribute("aria-hidden", "true"); arrow.textContent = "←";
+  const label = document.createElement("span");
+  label.className = "bm-back-text"; label.textContent = ` ${words}`;
+  back.append(arrow, label);
+  back.setAttribute("aria-label", words); back.title = words;
   const x = document.createElement("button");
   x.type = "button"; x.className = "bm-back-x"; x.dataset.bmBackClose = "";
   x.textContent = "✕"; x.setAttribute("aria-label", t("Close")); x.title = t("Close");
