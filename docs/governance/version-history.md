@@ -968,3 +968,4 @@ total). Allocated by the MMSA Architect.
 12.64: Hadith: 👥 opens on a HadeethEnc hadith; Esc closes the Home menu on Hadith Collections (audit parts 88-89). Allocated by the MMSA Architect.
 12.65: Dawah, Notes and Mapping My Journey load DOMPurify with defer (audit part 91). Allocated by the MMSA Architect.
 12.66: shorter Bangla for Confirm anyway and Copy link (audit part 92). Allocated by the MMSA Architect.
+12.67: Taglines table headers at 13 px; phone-table reach suite (audit part 93). Allocated by the MMSA Architect.
