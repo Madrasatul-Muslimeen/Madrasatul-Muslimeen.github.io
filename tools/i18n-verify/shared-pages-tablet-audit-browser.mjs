@@ -36,7 +36,7 @@ const PAGES = [
   ["Monitor", "monitor.html"], ["Homework", "homework.html"], ["People", "people.html"], ["Records", "records.html"],
   ["Catalogue", "catalogue.html"], ["About", "about.html"], ["Bookmarks", "bookmarks.html"],
   ["Hadith collections", "hadith-collections.html"],
-  ["Landing", "index.html"], ["Notes", "notes.html"], ["Journey map", "journey-map.html"], ["Deen study", "deen-study.html"],
+  ["Landing", "index.html"], ["Notes", "notes.html?unit=ayah:2:255&label=Al-Baqarah%202:255"], ["Journey map", "journey-map.html"], ["Deen study", "deen-study.html"],
   ["Arabic study", "arabic-study.html"], ["Self-check", "admin-self-check.html"], ["Taglines", "taglines.html"],
 ];
 const REAL_SEED = `
@@ -111,10 +111,13 @@ const MEASURE = (rootSel) => {
     const r = el.getBoundingClientRect();
     const where = `${path(el)} "${txt(el)}"`;
     // clipped: out of the viewport, or cut by a clipping ancestor; inside a sideways scroller it is reachable
-    let bad = "", fixed = false;
-    for (let a = el; a && a !== doc; a = a.parentElement) if (getComputedStyle(a).position === "fixed") { fixed = true; break; }
+    let bad = "", fixed = false, fixedRoot = null;
+    for (let a = el; a && a !== doc; a = a.parentElement) if (getComputedStyle(a).position === "fixed") { fixed = true; fixedRoot = a; break; }
     let boundary = false;
     for (let a = el.parentElement; a && a !== doc; a = a.parentElement) {
+      // A fixed control is placed against the viewport, so an overflow:hidden ancestor ABOVE the fixed element does not clip it.
+      // (Landing's Zab button was reported "cut by <body>" until this stop; looked at in the 1024 screenshot: the button is whole.)
+      if (fixedRoot && a === fixedRoot.parentElement) break;
       const cs = getComputedStyle(a);
       const hx = cs.overflowX === "hidden" || cs.overflowX === "clip", hy = cs.overflowY === "hidden" || cs.overflowY === "clip";
       if (hx || hy) {
@@ -196,7 +199,7 @@ const rows = [];
 const slug = (path) => path.replace(/\?.*$/, "").replace(/\.html$/, "");
 
 async function openAt(path, w, h) {
-  const ctx = await newContext(browser, { appLang: LANG === "bn" ? "bn" : null, banner: false, viewport: { width: w, height: h }, extraSeedJs: REAL_SEED });
+  const ctx = await newContext(browser, { appLang: LANG === "bn" ? "bn" : null, banner: false, viewport: { width: w, height: h }, extraSeedJs: REAL_SEED + (path.startsWith("journey-map") ? NOTE_SEED : "") });
   await ctx.route("**/archive.org/**", (r) => r.abort());
   const sep = path.includes("?") ? "&" : "?";
   const { page: P } = await openPage(ctx, "/app/" + path + sep + (path.startsWith("hadith-collections") ? "back=1" : "navBack=1"));
@@ -206,13 +209,53 @@ async function openAt(path, w, h) {
   return { ctx, P };
 }
 
-const NO_MENU = new Set(["onboarding.html", "accept-invite.html"]);
+// Self-check is an admin tool page: heading, two buttons and the Zab bar; no shared top menu by design (seen in its 768 screenshot).
+const NO_MENU = new Set(["onboarding.html", "accept-invite.html", "admin-self-check.html"]);
+
+// Opened states (round 2): what a reader sees after the first paint.  Each returns a label when the state was reached (the wait is
+// for a STATE, never a number of milliseconds), or throws.  The state is then measured like the page.
+const NOTE_SEED = `(function () {
+  window.__stubApplyBatches = true; window.__stubRecordTxData = true; window.__DATA = DATA;
+  var own = { tenantId: "t1", ownerPersonId: "p1", ownerUid: "test-uid", schemaVersion: 1 };
+  function ts(d) { return { toDate: function () { return new Date(d); }, toMillis: function () { return new Date(d).getTime(); } }; }
+  DATA.noteFolders = []; DATA.notes = []; DATA.notePlacements = []; DATA.noteRevisions = []; DATA.noteSections = []; DATA.noteTags = []; DATA.noteTagLinks = []; DATA.noteLinks = [];
+  DATA.noteFolders.push(Object.assign({ _id: "t1__fA", folderId: "fA", name: "Reflections on Surah Al-Baqarah and the Verse of the Throne", parentFolderId: null, semanticRole: "user", order: 0, status: "active", updatedAt: ts("2024-09-01T10:00:00Z") }, own));
+  DATA.notes.push(Object.assign({ _id: "t1__n1", noteId: "n1", title: "What Ayat al-Kursi teaches about the greatness of Allah", bodyHtml: "<p>Hello</p>", currentRevisionId: "r1", status: "active", createdAt: ts("2024-09-03T16:45:00Z"), updatedAt: ts("2024-09-03T16:45:00Z") }, own));
+  DATA.noteRevisions.push(Object.assign({ _id: "t1__r1", revisionId: "r1", noteId: "n1", previousRevisionId: null, title: "Note One", bodyHtml: "<p>Hello</p>", revisionReason: "content-update", actorUid: "test-uid", createdAt: new Date("2024-09-03T16:45:00Z") }, own));
+  DATA.notePlacements.push(Object.assign({ _id: "t1__p1", placementId: "p1", noteId: "n1", folderId: "fA", order: 0, status: "active" }, own));
+})();`;
+const STATES = {
+  "index.html": [["study menu open", async (P) => {
+    await P.click("#tabStudyBtn");
+    await P.waitForFunction(() => { const m = document.getElementById("studyPillarMenu"); return m && !m.hidden && m.getBoundingClientRect().height > 0; }, null, { timeout: 8000 });
+  }]],
+  "journey-map.html": [["a note open in the note pane", async (P) => {
+    await P.waitForSelector('.folder-row[data-folder-id="fA"] [data-folder-name]', { state: "visible", timeout: 20000 });
+    await P.click('.folder-row[data-folder-id="fA"] [data-folder-name]');
+    await P.waitForSelector("#folderNotes [data-note-id='n1'] [data-note-open]", { state: "visible", timeout: 15000 });
+    await P.click("#folderNotes [data-note-id='n1'] [data-note-open]");
+    await P.waitForSelector("#notePane [data-pane-title]", { state: "visible", timeout: 15000 });
+  }], ["the note's ⋯ menu open", async (P) => {
+    await P.click("#notePane [data-pane-menu-btn]");
+    await P.waitForSelector("#notePane [data-pane-menu].open", { state: "visible", timeout: 8000 });
+  }]],
+  "notes.html": [["new-note editor open", async (P) => {
+    await P.click("#newNoteBtn");
+    await P.waitForFunction(() => document.querySelector("#newNoteBtn")?.style.display === "none" && document.querySelectorAll("textarea, [contenteditable=true]").length > 0, null, { timeout: 8000 });
+  }]],
+};
 // FOUND BY THIS AUDIT, NOT YET FIXED (printed, not failed; an entry that stops occurring is reported so the fix is seen).
 // Distinct from an accepted finding: nobody has accepted it. The smallest fix is in docs/reports/2026-10-26-audit-part97-tablet.md.
 const KNOWN = [
-  // (empty) The Zab-button finding on onboarding/accept-invite was fixed in v12.72 (zab-bar.js resets its own buttons' margin).
+  // The Zab-button finding on onboarding/accept-invite (round 1) was fixed in v12.72: zab-bar.js resets its own buttons' margin.
+  // Round 2 (pages 13-23): small targets under 32px.  Details and the smallest fixes: docs/reports/2026-10-26-audit-part97-tablet.md.
+  // The two Landing entries are QR's wheel buttons: drawn 28px / 24px on purpose, each with an invisible 40px tap area
+  // (quranrevival.html:854 `.wheel-cta-btn::before`, :1485 `.list-collapse-btn::after`), so they are not faults; the probe measures the drawn box.
+  ["index.html", "small|div.wheel-col>div#wheelStageWrap>div#wheelHubPickers>button#wheelCtaBtn"],
+  ["index.html", "small|div#wheelPopupView>div#wheelSection>div#wheelListSplitter>button#wheelListCollapseBtn", "en"], // 1024 only; Bangla runs 768
 ];
 const knownSeen = new Set();
+const isKnownFor = (path) => (f, kind = f.key.split("|")[0]) => { const i = KNOWN.findIndex(([p, k]) => path.startsWith(p) && f.key === k); if (i >= 0) knownSeen.add(i); return i >= 0; };
 
 const KINDS = ["sideways", "clipped", "cut", "overlap", "small"];
 const pages = selectPages();
@@ -264,6 +307,30 @@ for (const [name, path, num] of toRun) {
     if (w === 1024 && m.width !== null && m.width < 60) console.log(`  NOTE  ${name} / 1024: main column uses ${m.width}% of the viewport`);
     row.seconds = +((Date.now() - t0) / 1000).toFixed(1);
 
+    // Opened states: what the reader sees after the first paint (study menu, a note in the pane, the new-note editor).
+    if (!MUTATE) for (const [label, open] of STATES[path.replace(/\?.*$/, "")] || []) {
+      let reached = true, why = "";
+      try { await open(P); await P.waitForTimeout(300); } catch (e) { reached = false; why = String(e.message || e).split("\n")[0]; }
+      check(`${name} / ${w}: state "${label}" reached (positive control)`, reached, why);
+      if (!reached) continue;
+      const sm = await P.evaluate(MEASURE, null);
+      // A dropdown covers what is beneath it by design (the Study menu over the Legend / Unit drawer buttons, seen in its screenshot);
+      // those are printed, not counted.  Anything else covered still counts.
+      sm.overlap = sm.overlap.filter((f) => { const by = /covered by .*#studyPillarMenu/.test(f.msg); if (by) console.log(`  BY DESIGN  ${name} / ${w} [${label}]: ${f.msg}`); return !by; });
+      await P.screenshot({ path: `${OUT}/${slug(path)}-${label.replace(/[^a-z0-9]+/gi, "-")}-${w}x${h}${LANG === "bn" ? "-bn" : ""}.png`, fullPage: false });
+      row.states = row.states || {};
+      row.states[label] = { controls: sm.controls, counts: {}, smallOk: sm.smallOk.length };
+      for (const kind of KINDS) {
+        row.states[label].counts[kind] = sm[kind].length;
+        const isKnownS = isKnownFor(path), freshS = sm[kind].filter((f) => !isKnownS(f));
+        for (const f of sm[kind].filter(isKnownS)) console.log(`  KNOWN  ${name} / ${w} [${label}]: ${f.msg}`);
+        check(`${name} / ${w} [${label}]: ${kind} (${sm[kind].length}, known ${sm[kind].length - freshS.length})`, freshS.length === 0, "\n      " + freshS.slice(0, 8).map((f) => f.msg).join("\n      "));
+        if (LIST) for (const f of sm[kind]) console.log(`    [${w} ${label} ${kind}] ${f.msg}`);
+      }
+      if (LIST) for (const f of sm.smallOk) console.log(`    [${w} ${label} small, not failing] ${f.msg}`);
+      console.log(`  STATE  ${name} / ${w} [${label}]: controls ${sm.controls}, ${KINDS.map((k) => sm[k].length).join("/")} [${sm.smallOk.length}]`);
+    }
+
     // The shared top menu: once, on classes.html, at each width.
     if (path === "classes.html" && !MUTATE) {
       const menu = { cats: 0, findings: {} };
@@ -294,7 +361,7 @@ for (const [name, path, num] of toRun) {
 if (!MUTATE && !ONLY) fs.writeFileSync(`${OUT}/rows.json`, JSON.stringify(rows, null, 1));
 console.log("\n=== per page and width: sideways/clipped/cut/overlap/small (small 32-39 in brackets), controls, main column %, seconds ===");
 for (const r of rows) console.log(`${r.page.padEnd(20)} ${String(r.width).padStart(4)}  ${r.counts.sideways}/${r.counts.clipped}/${r.counts.cut}/${r.counts.overlap}/${r.counts.small} [${r.smallOk}]  controls ${r.controls}  col ${r.widthShare}%  ${r.seconds}s`);
-for (const [i, [p, k]] of KNOWN.entries()) if (!MUTATE && !knownSeen.has(i) && toRun.some(([, path]) => path.startsWith(p))) console.log(`  NOTE  known finding no longer occurs (fixed? remove the entry): ${p} ${k}`);
+for (const [i, [p, k, only]] of KNOWN.entries()) if (!MUTATE && !knownSeen.has(i) && (!only || only === LANG) && toRun.some(([, path]) => path.startsWith(p))) console.log(`  NOTE  known finding no longer occurs (fixed? remove the entry): ${p} ${k}`);
 console.log(`\n${pass} passed, ${fail} failed${MUTATE ? ` (mutation: ${MUTATE})` : ""}${LANG === "bn" ? " (Bangla)" : ""}`);
 await browser.close();
 process.exit(fail ? 1 : 0);
