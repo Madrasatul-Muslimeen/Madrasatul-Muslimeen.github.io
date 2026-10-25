@@ -99,7 +99,8 @@ export function ayahBytes(walk, ranges) {
  *   - "relock": none does -> the shift from -45 s to +45 s that puts the most of this and the next seven starts inside
  *     pauses; only when all but one of the eight land in pauses (a looser rule found a false +31 s lock in 005, where
  *     pauses are many), the start snaps from there;
- *   - "lost": neither -> the map's time plus the shift so far, and the āyah is counted as NOT TRUSTED.
+ *   - "lost": neither -> NOT TRUSTED: the āyah keeps the map's own times (see the ranges below), and the shift carried on
+ *     is the last one found.
  * The first āyah keeps its start (the file opens with it). Each āyah ends where the next begins; the last at the end.
  */
 export function alignToRecording(file, entries, tmp, n) {
@@ -146,7 +147,12 @@ export function alignToRecording(file, entries, tmp, n) {
   }
   // keep the order strict: a start never comes before the previous one
   for (let i = 1; i < starts.length; i++) if (starts[i] <= starts[i - 1]) { starts[i] = starts[i - 1] + 1; how[i] = "lost"; }
-  const ranges = starts.map((st, i) => [st, i + 1 < starts.length ? starts[i + 1] - 1 : audioMs]);
+  // A trusted āyah runs from its aligned start to the next āyah's start. A "lost" one is NOT given a guess: it keeps
+  // the map's own [timestamp_from, timestamp_to] (exact bytes, no seek, but the map's times, as before), so what a
+  // student hears there stays what the map says until the Owner decides (J95: the MSA Architect's request).
+  const ranges = starts.map((st, i) => (how[i] === "lost"
+    ? [entries[i].timestamp_from, Math.min(entries[i].timestamp_to, audioMs)]
+    : [st, i + 1 < starts.length ? starts[i + 1] - 1 : audioMs]));
   const shifts = starts.map((st, i) => st - entries[i].timestamp_from);
   return { ranges, how, shifts, audioMs, lost: how.filter((h) => h === "lost").length, relocks: how.filter((h) => h === "relock").length, maxShift: Math.max(...shifts.map(Math.abs)) };
 }
