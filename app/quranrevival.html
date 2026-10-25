@@ -25141,6 +25141,7 @@
     function watchPaneOverBackDock() {
       const pane = document.getElementById("readNotePane"), slot = document.getElementById("readBackSlot");
       if (!pane || !slot || pane.__backDockWatch) return;
+      pane.setAttribute("data-back-float-over", ""); // bookmark-nav.js: the floating way back may sit over this pane (a full-screen sheet on a phone)
       const check = () => {
         const p = pane.getBoundingClientRect(), b = slot.parentElement.getBoundingClientRect();
         const over = !pane.hidden && p.width > 0 && b.width > 0 && p.left < b.right && p.right > b.left && p.top < b.bottom && p.bottom > b.top;
