@@ -94,6 +94,11 @@ const FLOWS = {
   // each ⋯ action that opens a form, picker or confirm, listed from the state BEFORE the menu was opened
   ...Object.fromEntries(["rename", "link", "tags", "delete", "versions", "mytools"].map((a) => ["pane-" + a, { path: "journey-map.html", base: 2, steps: ["[data-view=timeline]", "[data-note-open]", "[data-pane-menu-btn]", `[data-pane-menu] [data-pane-${a}]`] }])),
   "pane-edit": { path: "journey-map.html", steps: ["[data-view=timeline]", "[data-note-open]", "[data-pane-edit-toggle]"] },
+  // Part 100: the same pane opened from notes.html (a card's "Open in window"): the lines of note-window.js part 99 did not reach
+  "notes-pane-menu": { path: "notes.html", steps: ["[data-note-window]", "[data-pane-menu-btn]"] },
+  "notes-pane-attach": { path: "notes.html", steps: ["[data-note-window]", "[data-pane-attach]"] },
+  "notes-pane-edit": { path: "notes.html", steps: ["[data-note-window]", "[data-pane-edit-toggle]"] },
+  ...Object.fromEntries(["rename", "link", "tags", "delete", "versions", "mytools"].map((a) => ["notes-pane-" + a, { path: "notes.html", base: 2, steps: ["[data-note-window]", "[data-pane-menu-btn]", `[data-pane-menu] [data-pane-${a}]`] }])),
 };
 const FLOW = arg("flow");
 if (FLOW && !FLOWS[FLOW]) { console.log("unknown --flow=" + FLOW + "; known: " + Object.keys(FLOWS).join(", ")); process.exit(2); }
@@ -115,7 +120,7 @@ const SKIP = /sign.?out|log.?out|সাইন আউট|লগ আউট|সা�
 // English: a failure word together with save/saved/change/write, in either order, or the error code.
 const REFUSED_EN = /permission-denied|(couldn.?t|could not|can.?t|cannot|failed|not been|not|wasn.?t|was not|didn.?t|refused|denied|unable)\b[^.:]{0,40}\b(save|saved|change|changed|write|written|added|created|updated|deleted|removed|renamed|recorded|sent|imported|uploaded)\b|\b(save|change|write)\b[^.:]{0,20}\b(failed|refused|denied)\b|not allowed|nothing was/i;
 // Bangla: the strings of app/js/i18n/bn.js that say a save did not happen (সংরক্ষণ করা যায়নি, সংরক্ষণ হয়নি, সংরক্ষিত হয়নি, ...).
-const REFUSED_BN = /permission-denied|সংরক্ষণ (করা )?(যায়নি|হয়নি)|সংরক্ষিত (হয়নি|নেই)|(যোগ|তৈরি|মুছে ফেলা|পরিবর্তন|পাঠানো|আপলোড|হালনাগাদ) (করা )?(যায়নি|হয়নি)|ব্যর্থ|অনুমতি/;
+const REFUSED_BN = /permission-denied|সংরক্ষণ (করা )?(যায়নি|হয়নি)|সংরক্ষিত (হয়নি|নেই)|(যোগ|তৈরি|মুছে ফেলা|পরিবর্তন|পাঠানো|আপলোড|হালনাগাদ) (করা )?(যায়নি|হয়নি)|রাখা (যায়নি|গেল না)|ব্যর্থ|অনুমতি/;
 const SUCCESS = /\b(saved|success\w*|added|created|updated|renamed|deleted|removed|done|imported|sent)\b|সংরক্ষিত|সফল|যোগ করা হয়েছে|হালনাগাদ/i;
 const quiet = (e) => !/ERR_CERT|net::|archive\.org|api\.quran|Failed to load resource/i.test(e);
 

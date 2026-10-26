@@ -807,7 +807,7 @@ export function createNoteViews(host) {
     onEditInput(v);
     const note = getNote(v.noteId);
     try { await host.flags.link(note, row.noteId); flashStatus(v, t('Linked to "{title}".', { title: row.title?.trim() || t("(untitled)") })); }
-    catch (err) { flashStatus(v, err?.message || t("That did not save.")); } // I15: the text stays; the link says why it did not save
+    catch (err) { flashStatus(v, notSavedText(err)); } // I15: the text stays; the link says why it did not save
   }
   function runEditCommand(v, cmd) {
     const body = editBodyEl(v);
@@ -1546,7 +1546,7 @@ export function createNoteViews(host) {
       box.disabled = true;
       try {
         if (box.checked) await tg.tag(live(), box.dataset.tagPick); else await tg.untag(live(), box.dataset.tagPick);
-      } catch (err) { msg(err?.message || t("That did not save.")); }
+      } catch (err) { msg(notSavedText(err)); }
       rerenderNoteEverywhere(tagPicker?.noteId ?? note.noteId);
       if (tagPicker) paint();
     });
@@ -1560,7 +1560,7 @@ export function createNoteViews(host) {
         const id = await tg.create(name);
         input.value = "";
         if (id && !holdTagTick(live().noteId, id, true)) await tg.tag(live(), id);
-      } catch (err) { msg(err?.message || t("That did not save.")); }
+      } catch (err) { msg(notSavedText(err)); }
       rerenderNoteEverywhere(tagPicker?.noteId ?? note.noteId);
       if (tagPicker) paint();
     };
@@ -2126,7 +2126,7 @@ export function createNoteViews(host) {
           host.status(t("That version was brought back as a new version. The earlier ones are all still in the list."));
         } catch (err) {
           back.disabled = false;
-          msg(err?.message === "Stale Note revision." ? t("This Note changed on another device. Reload it, then try again.") : (err?.message || t("That did not save.")));
+          msg(err?.message === "Stale Note revision." ? t("This Note changed on another device. Reload it, then try again.") : notSavedText(err));
         }
       }
     });
@@ -2157,7 +2157,7 @@ export function createNoteViews(host) {
     try {
       for (const id of staged) if (!have.has(id)) await tg.tag(getNote(noteId), id);
       for (const id of have) if (!staged.has(id)) await tg.untag(getNote(noteId), id);
-    } catch (err) { host.status(err?.message || t("That did not save.")); } // I15
+    } catch (err) { host.status(notSavedText(err)); } // I15
     rerenderNoteEverywhere(noteId);
   }
   /** The tag ids a picker should show ticked: the held set while editing, else what is stored. */
@@ -2206,7 +2206,7 @@ export function createNoteViews(host) {
       if (holdTagTick(noteId, box.dataset.atPick, box.checked)) { paint(); return; } // held until Done
       box.disabled = true;
       try { if (box.checked) await tg.tag(live(), box.dataset.atPick); else await tg.untag(live(), box.dataset.atPick); }
-      catch (err) { msg(err?.message || t("That did not save.")); }
+      catch (err) { msg(notSavedText(err)); }
       rerenderNoteEverywhere(noteId);
       paint();
     });
@@ -2220,7 +2220,7 @@ export function createNoteViews(host) {
         const id = await tg.create(name); input.value = "";
         if (id && !holdTagTick(noteId, id, true)) await tg.tag(live(), id);
       }
-      catch (err) { msg(err?.message || t("That did not save.")); }
+      catch (err) { msg(notSavedText(err)); }
       rerenderNoteEverywhere(noteId);
       paint();
     };
