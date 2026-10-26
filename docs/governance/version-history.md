@@ -975,3 +975,4 @@ total). Allocated by the MMSA Architect.
 12.71: a refused resume write no longer stops a Deen/Arabic topic opening (audit part 96, I15). Allocated by the MMSA Architect.
 12.72: the Zab button fix on Onboarding and Accept invite (audit part 97). Allocated by the MMSA Architect.
 12.73: Know Your Status: the chosen Approach's own wheel; the unit rows under one top-bar button (J100). Allocated by the MMSA Architect.
+12.74: Word Card top: one meaning beside the Arabic; slim transliteration bar with a Forms card (J101). Allocated by the MMSA Architect.

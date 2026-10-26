@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "12.73",
+    "version": "12.74",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -5153,8 +5153,20 @@
     {
       "version": "12.73",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Know Your Status: choosing an Approach shows that Approach's own wheel (one slice per unit, coloured by status, agreeing with the tiles); the two rows of unit buttons fold under one Surah ▾ button on the blue bar (PCF MSA J100, QR Lead).",
+      "integration": {
+        "authorizedOn": "2026-10-26",
+        "integratedOn": "2026-10-26",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.74",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Word Card: one meaning (the app's language) beside the Arabic where the ROOT box was; the bar under it is the transliteration alone with a Forms button opening a new Forms card (the root's verbs by form with past, present and command and their Qur'an counts, then its nouns) (PCF MSA J101, QR Lead).",
       "integration": {
         "authorizedOn": "2026-10-26",
         "integratedOn": "2026-10-26",
@@ -5163,8 +5175,9 @@
       }
     }
   ],
-  "nextUnallocated": "12.74",
+  "nextUnallocated": "12.75",
   "nextUnallocatedNote": [
+    "v12.74 was allocated to Word Card top: one meaning beside the Arabic; slim transliteration bar with a Forms card (J101), 2026-10-26.",
     "v12.73 was allocated to Know Your Status: the chosen Approach's own wheel; the unit rows under one top-bar button (J100), 2026-10-26.",
     "v12.72 was allocated to the Zab button fix on Onboarding and Accept invite (audit part 97), 2026-10-25.",
     "v12.71 was allocated to a refused resume write no longer stops a Deen/Arabic topic opening (audit part 96, I15), 2026-10-25.",
