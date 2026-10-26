@@ -55,7 +55,13 @@ const openKys = async (page) => {
 const rectOf = (page, sel) => page.evaluate((s) => { const r = document.querySelector(s)?.getBoundingClientRect(); return r ? { x: r.x, y: r.y, w: r.width, h: r.height } : null; }, sel);
 const numbers = (page) => page.evaluate(() => {
   const svg = document.querySelector("#myStatusOverviewWheel svg"); const sr = svg.getBoundingClientRect();
+  // PCF MSA J100: the unit rows are closed under the top-bar button until it is tapped, and a closed row measures top 0,
+  // which put EVERY number "under the buttons". The question is still whether the numbers clear the rows when they are
+  // open, so they are opened for the measurement and closed again. Updated in place, reason recorded.
+  const sw = document.getElementById("myStatusWheelSwitch"), wasHidden = !!sw?.hidden;
+  if (sw) sw.hidden = false;
   const pillTop = Math.min(...[...document.querySelectorAll("#myStatusWheelSwitch button")].map((b) => b.getBoundingClientRect().top));
+  if (sw) sw.hidden = wasHidden;
   const nums = [...svg.querySelectorAll("text.wheel-seg-num")].map((t) => t.getBoundingClientRect());
   return { count: nums.length, outside: nums.filter((r) => r.left < sr.left - 0.5 || r.right > sr.right + 0.5 || r.top < sr.top - 0.5 || r.bottom > sr.bottom + 0.5).length,
     overPills: nums.filter((r) => r.bottom > pillTop).length, svgW: sr.width };
