@@ -76,8 +76,8 @@ DATA.userPrefs = [{ _id: "test-uid" }];`;
 const dp = (id, author, status) => ({ _id: "t1__" + id, pageId: id, tenantId: "t1", schemaVersion: 1, authorPersonId: author, sourceNoteId: "n255", sourceRevisionId: "n255-r1", title: "Page " + id, bodyHtml: "<p>Body of " + id + "</p>", sourceUnitKey: null, status, approvedByPersonId: null, approvedAt: null, returnedNote: null });
 const DAWAH_SEED = `DATA.dawahPages = ${JSON.stringify([dp("pDraft", "p1", "draft"), dp("pShared", "p1", "shared"), dp("pWait", "p2", "awaiting-approval")])};`;
 // Part 99: two user folders, the first note filed in the first, and one tag, so file-into / move / tag have something to act on.
-const FLOW_SEED = `DATA.noteFolders = ${JSON.stringify(["A", "B"].map((x, i) => ({ _id: "t1__f" + x, folderId: "f" + x, ...own, name: "Audit folder " + x, parentFolderId: null, semanticRole: "user", order: i, status: "active" })))};
-DATA.notePlacements = ${JSON.stringify([{ _id: "t1__pl1", placementId: "pl1", ...own, noteId: "n255", folderId: "fA", order: 0, status: "active" }])};
+const FLOW_SEED = `DATA.noteFolders = ${JSON.stringify(["A", "B", "C"].map((x, i) => ({ _id: "t1__f" + x, folderId: "f" + x, ...own, name: "Audit folder " + x, parentFolderId: null, semanticRole: "user", order: i, status: "active" })))};
+DATA.notePlacements = ${JSON.stringify(["A", "B"].map((x, i) => ({ _id: "t1__pl" + x, placementId: "pl" + x, ...own, noteId: "n255", folderId: "f" + x, order: 0, status: "active" })))};
 DATA.noteTags = ${JSON.stringify([{ _id: "t1__tg1", tagId: "tg1", ...own, name: "Audit tag", status: "active" }])};`;
 const SEEDS = { "notes.html": NOTES_SEED, "journey-map.html": NOTES_SEED, "dawah.html": NOTES_SEED + DAWAH_SEED };
 // Part 99: --flow=<name> opens one place directly instead of sweeping. Each flow is a page plus clicks that reach the state; the
@@ -89,6 +89,8 @@ const SEEDS = { "notes.html": NOTES_SEED, "journey-map.html": NOTES_SEED, "dawah
 const FLOWS = {
   "pane-menu": { path: "journey-map.html", steps: ["[data-view=timeline]", "[data-note-open]", "[data-pane-menu-btn]"] },
   "pane-attach": { path: "journey-map.html", steps: ["[data-view=timeline]", "[data-note-open]", "[data-pane-attach]"] },
+  // the dialog's Rename / Move to Trash act on the HIGHLIGHTED folder, so one is highlighted first (a tap on its name)
+  "pane-attach-hl": { path: "journey-map.html", base: 2, steps: ["[data-view=timeline]", "[data-note-open]", "[data-pane-attach]", "[data-pick=fC] .folder-row-name"] }, // fC is empty, so Move to Trash really writes (A and B hold the note: that is refused without a write)
   "pane-edit": { path: "journey-map.html", steps: ["[data-view=timeline]", "[data-note-open]", "[data-pane-edit-toggle]"] },
 };
 const FLOW = arg("flow");
@@ -210,7 +212,8 @@ async function openFresh(path, w, h, lang) {
 // Part 99: click the flow's steps (all, or all but the last) to reach the state whose controls are audited.
 async function flowSteps(page, mode) { // "all" | "butlast" | "last"
   const all = FLOWS[FLOW].steps;
-  const steps = mode === "butlast" ? all.slice(0, -1) : mode === "last" ? all.slice(-1) : all;
+  const base = FLOWS[FLOW].base ?? all.length - 1; // the controls pressed are those that appear after step number `base`
+  const steps = mode === "butlast" ? all.slice(0, base) : mode === "last" ? all.slice(base) : all;
   for (const s of steps) {
     await page.waitForSelector(s, { state: "visible", timeout: 8000 });
     await page.evaluate((sel) => { const el = [...document.querySelectorAll(sel)].find(window.__aud.vis); el.click(); }, s);
