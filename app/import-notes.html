@@ -38,6 +38,7 @@
   .refusal-list { font-size: 0.8rem; color: #a3352b; margin: 0.4rem 0 0; padding-left: 1.1rem; max-height: 12rem; overflow-y: auto; }
   #progressLine { font-size: 0.88rem; color: #1F3A6E; margin: 0.5rem 0; }
   #resultLine { font-size: 0.9rem; margin: 0.5rem 0; }
+  #resultLine.result-refused { color: #a3352b; font-weight: 600; }
   #sourceBar { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; margin: 0.6rem 0; }
   #stackNameRow { margin: 0.5rem 0; }
   #stackNameRow input[type="text"] { width: 16rem; max-width: 100%; }
@@ -452,12 +453,19 @@
           },
         });
         progressLine.style.display = "none";
-        resultLine.style.display = "block";
-        resultLine.textContent = t("Done. Folders: {fc} created, {fs} already there. Notes: {nc} created, {ns} already there.", {
+        const counts = {
           fc: num(result.folders.created), fs: num(result.folders.skipped),
           nc: num(result.notes.created), ns: num(result.notes.skipped),
-        });
+        };
         const refusals = [...result.folders.refusals, ...result.notes.refusals];
+        // Audit part 98 (I15, PCF MSA J29): a refused item is NOT saved, so the line must not open with "Done." -- it
+        // read "Done. … 0 created" while the only sign of the refusal was the small list below it.
+        if (refusals.length) {
+          showResult(t("Not saved: {n} could not be saved (listed below). Folders: {fc} created, {fs} already there. Notes: {nc} created, {ns} already there.",
+            { n: num(refusals.length), ...counts }), true);
+        } else {
+          showResult(t("Done. Folders: {fc} created, {fs} already there. Notes: {nc} created, {ns} already there.", counts));
+        }
         if (refusals.length) {
           refusalListEl.style.display = "block";
           refusalListEl.innerHTML = refusals.map((r) =>
@@ -466,14 +474,16 @@
       } catch (err) {
         console.error(err);
         progressLine.style.display = "none";
-        showResult(t("The import stopped early: {message}. It is safe to try again — anything already created will be skipped.", { message: err.message }));
+        showResult(t("The import stopped early: {message}. It is safe to try again — anything already created will be skipped.", { message: err.message }), true);
       }
       refreshImportGate();
     });
 
-    function showResult(text) {
+    function showResult(text, refused = false) {
       resultLine.style.display = "block";
       resultLine.textContent = text;
+      resultLine.classList.toggle("result-refused", refused);
+      if (refused) resultLine.setAttribute("role", "alert"); else resultLine.removeAttribute("role");
     }
 
     // -----------------------------------------------------------------------
