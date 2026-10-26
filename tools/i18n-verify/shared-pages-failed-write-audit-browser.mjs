@@ -91,6 +91,8 @@ const FLOWS = {
   "pane-attach": { path: "journey-map.html", steps: ["[data-view=timeline]", "[data-note-open]", "[data-pane-attach]"] },
   // the dialog's Rename / Move to Trash act on the HIGHLIGHTED folder, so one is highlighted first (a tap on its name)
   "pane-attach-hl": { path: "journey-map.html", base: 2, steps: ["[data-view=timeline]", "[data-note-open]", "[data-pane-attach]", "[data-pick=fC] .folder-row-name"] }, // fC is empty, so Move to Trash really writes (A and B hold the note: that is refused without a write)
+  // each ⋯ action that opens a form, picker or confirm, listed from the state BEFORE the menu was opened
+  ...Object.fromEntries(["rename", "link", "tags", "delete", "versions", "mytools"].map((a) => ["pane-" + a, { path: "journey-map.html", base: 2, steps: ["[data-view=timeline]", "[data-note-open]", "[data-pane-menu-btn]", `[data-pane-menu] [data-pane-${a}]`] }])),
   "pane-edit": { path: "journey-map.html", steps: ["[data-view=timeline]", "[data-note-open]", "[data-pane-edit-toggle]"] },
 };
 const FLOW = arg("flow");
@@ -149,7 +151,10 @@ const INSTALL = () => {
     for (const el of document.querySelectorAll("input, textarea, select")) {
       if (!vis(el) || el.disabled || el.readOnly) continue;
       if (el.closest("nav, header, [class*=nav-], [id*=nav]") || /lang|tenant|preview|viewas/i.test(el.id + " " + el.name)) continue; // shell pickers reload the page
-      if (window.__flow && el.matches("[data-picker-search], .folder-search-input")) continue; // Part 99: a filled search box hides the very folders / tick boxes under test
+      // Part 99: a filled search box hides the very folders / tags / notes under test; and a Rename form is prefilled, so an
+      // unchanged name would make Save a no-op: in a flow, a title / name box always gets the audit text.
+      if (window.__flow && (el.matches("[data-picker-search], .folder-search-input") || /search/i.test((el.placeholder || "") + (el.getAttribute("aria-label") || "")))) continue;
+      if (window.__flow && el.tagName === "INPUT" && (el.type || "text") === "text" && /title|name/i.test((el.placeholder || "") + (el.getAttribute("aria-label") || ""))) { set(el, "Audit Test 4821"); continue; }
       if (/import-notes/.test(location.pathname) && el.tagName === "SELECT") continue; // Part 98: Import is enabled only for "yourself" in the Person picker; leave it on yourself
       if (el.tagName === "SELECT") { const o = [...el.options].find((x) => x.value && !x.disabled && x.index !== el.selectedIndex) || [...el.options].find((x) => x.value && !x.disabled); if (o && (!el.value || el.selectedIndex <= 0)) { el.value = o.value; el.dispatchEvent(new Event("change", { bubbles: true })); } continue; }
       const t = (el.type || "text").toLowerCase();
@@ -215,6 +220,14 @@ async function flowSteps(page, mode) { // "all" | "butlast" | "last"
   const base = FLOWS[FLOW].base ?? all.length - 1; // the controls pressed are those that appear after step number `base`
   const steps = mode === "butlast" ? all.slice(0, base) : mode === "last" ? all.slice(base) : all;
   for (const s of steps) {
+    // on a phone the pane's 📎 is folded into the ⋯ menu: open it when the step's control is not on the bar
+    if (/^\[data-pane-attach\]/.test(s) && !(await page.locator(s).first().isVisible().catch(() => false))) {
+      await page.evaluate(() => { [...document.querySelectorAll("[data-pane-menu-btn]")].find(window.__aud.vis)?.click(); });
+      await page.waitForTimeout(500);
+      await page.evaluate((sel) => { [...document.querySelectorAll("[data-pane-menu] " + sel)].find(window.__aud.vis)?.click(); }, s);
+      await page.waitForTimeout(700);
+      continue;
+    }
     await page.waitForSelector(s, { state: "visible", timeout: 8000 });
     await page.evaluate((sel) => { const el = [...document.querySelectorAll(sel)].find(window.__aud.vis); el.click(); }, s);
     await page.waitForTimeout(700);
@@ -321,7 +334,7 @@ for (const [name, path] of PAGES) {
         else queue.push({ via: [], c });
       }
       const done = new Set(); let n = 0, nMenu = 0;
-      const cap = w < 800 ? Math.min(CAP, 10) : CAP; // the phone width repeats the same code paths: fewer controls, to fit the time
+      const cap = w < 800 && !FLOW ? Math.min(CAP, 10) : CAP; // the phone width repeats the same code paths: fewer controls, to fit the time
       while ((queue.length && n < cap) || (menuQueue.length && nMenu < MENU_CAP)) {
         const fromMenu = !(queue.length && n < cap);
         const q = fromMenu ? menuQueue : queue;
