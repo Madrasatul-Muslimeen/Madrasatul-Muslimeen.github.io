@@ -5009,6 +5009,22 @@
      the box on every card look: measured on the Night look, on the header itself they fell to 1.2:1. */
   .quran-word-card header > .word-card-head-gloss { flex: 0 1 auto; min-width: 0; max-width: 50%; margin: 0; padding: 0.3rem 0.6rem; border: 1px solid var(--card-line); border-radius: 0.4rem; background: var(--card-bg-inset); font-size: 1.22rem; font-weight: 700; line-height: 1.3; text-align: start; overflow-wrap: anywhere; }
   .quran-word-card header > .word-card-head-gloss.word-card-meaning-bn { font-family: 'Noto Sans Bengali', sans-serif; }
+  /* The Owner, 26 Oct 2026, a tablet screenshot (the chip crowded the Arabic onto ⓘ): "For Tab, keep only Arabic on top
+     bar. Bring translation on the bar below with transliteration. You might try fit form button on the top bar." On a
+     card wider than 30rem (the one-row header) the meaning is the slim bar's, beside the transliteration, and Forms ▸ sits
+     on the top bar; on a phone card (two-row header, below) it is the J101 layout: the meaning beside the Arabic, Forms ▸
+     in the slim bar. Both copies are drawn; the card's own width shows one. */
+  .quran-word-card header > .word-card-head-gloss { display: none; }
+  .word-card-slim-bar .word-card-forms-bar { display: none; }
+  .quran-word-card header button.word-card-forms-btn { width: auto; min-width: 40px; height: 40px; padding: 0 0.6rem; gap: 0.25rem; font-size: 0.88rem; font-weight: 700; flex: 0 0 auto; }
+  .quran-word-card .word-card-slim-bar .word-card-meaning-text > p.word-card-bar-gloss { margin: 0; }
+  .quran-word-card .word-card-slim-bar .word-card-meaning-text > p.word-card-bar-gloss.word-card-meaning-bn { font-family: 'Noto Sans Bengali', sans-serif; }
+  @container wordcard (max-width: 30rem) {
+    .quran-word-card header > .word-card-head-gloss { display: block; }
+    .quran-word-card header > button.word-card-forms-head { display: none; }
+    .word-card-slim-bar .word-card-forms-bar { display: inline-flex; align-items: center; }
+    .quran-word-card .word-card-slim-bar .word-card-meaning-text > p.word-card-bar-gloss { display: none; }
+  }
   @container wordcard (max-width: 30rem) {
     .quran-word-card header:has(> .word-card-head-gloss) > .word-card-head-word { flex: 0 1 auto; max-width: 55%; }
     .quran-word-card header > .word-card-head-gloss { order: 6; flex: 1 1 0; max-width: none; }
@@ -20296,7 +20312,8 @@
         wordCardFormsFocus = opening;
         renderPersistentWordCard();
         const mount = activeWordCardMount();
-        (opening ? mount?.querySelector(".word-card-forms-back") : mount?.querySelector(".word-card-forms-btn"))?.focus({ preventScroll: true });
+        const shownForms = [...(mount?.querySelectorAll(".word-card-forms-btn") ?? [])].find((b) => b.getClientRects().length > 0);
+        (opening ? mount?.querySelector(".word-card-forms-back") : shownForms)?.focus({ preventScroll: true });
         return;
       }
       const conjBasicBtn = event.target.closest("[data-word-card-conj-basic]");

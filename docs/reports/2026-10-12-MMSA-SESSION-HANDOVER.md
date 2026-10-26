@@ -1909,3 +1909,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v12.73** (2026-10-26): Know Your Status: the chosen Approach's own wheel; the unit rows under one top-bar button (J100).
 - **v12.74** (2026-10-26): Word Card top: one meaning beside the Arabic; slim transliteration bar with a Forms card (J101).
 - **v12.75** (2026-10-26): Import notes: a refused import says Not saved, never Done (audit part 98, J29).
+- **v12.76** (2026-10-26): Word Card on a tablet: only the Arabic on the top bar; the meaning on the bar below (J101 follow-up).
