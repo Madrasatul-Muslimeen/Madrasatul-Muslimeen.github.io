@@ -3156,6 +3156,24 @@
   .word-card-dpop-close { flex: 0 0 auto; width: 40px; height: 40px; padding: 0; border-radius: 0.5rem; background: #f1f4f2; color: #13241f; border: 1px solid #d6ddd9; font-size: 1rem; }
   .word-card-dpop-hint { margin: 0 0 0.4rem; font-size: 0.8rem; color: #5b6d66; }
   .word-card-dpop .word-card-occurrences { flex-direction: column; }
+  /* PCF MSA J101: the Forms card (the same pop-up as a derived form's places). Each verb is one line of three tiles
+     (past, present, command); the nouns are tiles two across; the tile this very word is has a green ring. */
+  .word-card-forms-head { flex-wrap: wrap; }
+  .word-card-forms-back { flex: 0 0 auto; min-height: 40px; padding: 0 0.6rem; border-radius: 0.5rem; border: 1px solid #c9a24a; background: #fff7e6; color: #6b4e12; font: inherit; font-weight: 700; font-size: 0.85rem; cursor: pointer; }
+  .word-card-forms-pop h4 { margin: 0.75rem 0 0.35rem; font-size: 0.74rem; letter-spacing: 0.08em; text-transform: uppercase; color: #8a6a1f; }
+  .word-card-fv-list, .word-card-fn-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.6rem; }
+  .word-card-fn-list { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.4rem; }
+  .word-card-fv-head { margin: 0 0 0.3rem; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.2rem 0.5rem; }
+  .word-card-fv-form { font-weight: 800; font-size: 0.8rem; color: #8a6a1f; }
+  .word-card-fv-ar, .word-card-fc b { font-family: var(--quran-font); font-size: 1.45rem; font-weight: 400; line-height: 1.55; color: #1d6b4a; }
+  .word-card-fv-m, .word-card-fn-m { font-size: 0.85rem; color: #2f3d38; overflow-wrap: anywhere; }
+  .word-card-fc-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.4rem; }
+  .word-card-fc { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; padding: 0.35rem 0.5rem; border: 1px solid #d6ddd9; border-radius: 0.55rem; background: #f7faf8; }
+  .word-card-fc small { font-size: 0.68rem; letter-spacing: 0.04em; text-transform: uppercase; color: #5b6d66; font-weight: 700; overflow-wrap: anywhere; }
+  .word-card-fc b { text-align: right; direction: rtl; }
+  .word-card-fc-n { font-size: 0.72rem; color: #5b6d66; font-variant-numeric: tabular-nums; }
+  .word-card-fc.word-card-fc-here { border: 2px solid #1d6b4a; background: #e8f4ee; }
+  .word-card-forms-pop .word-card-forms-note { font-size: 0.78rem; color: #5b6d66; margin: 0.7rem 0 0; }
   .word-card-dpop .word-card-occurrence-link:hover { background: #e8f1ec; }
   @media (max-width: 520px) { .word-card-dcards { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.4rem; } .word-card-dcard-ar { font-size: 1.35rem; } }
   .word-card-forms-note { margin: 0.35rem 0 0; font-size: 0.74rem; line-height: 1.35; color: var(--card-text-muted); }
@@ -4985,6 +5003,25 @@
     .quran-word-card header { column-gap: 0.1rem; }
     .quran-word-card header button.word-card-ayah-action-btn { padding: 0 2px; max-width: 5.5rem; white-space: normal; line-height: 1.1; }
   }
+  /* PCF MSA J101: one meaning beside the Arabic, in the ROOT box's old place (WbW); on a narrow card it shares the word's
+     second row, the word taking only its own width. */
+  .quran-word-card header > .word-card-head-gloss { flex: 0 1 auto; min-width: 0; max-width: 50%; margin: 0; font-size: 1.15rem; font-weight: 700; line-height: 1.3; text-align: start; overflow-wrap: anywhere; }
+  .quran-word-card header > .word-card-head-gloss.word-card-meaning-bn { font-family: 'Noto Sans Bengali', sans-serif; }
+  @container wordcard (max-width: 30rem) {
+    .quran-word-card header:has(> .word-card-head-gloss) > .word-card-head-word { flex: 0 1 auto; max-width: 55%; }
+    .quran-word-card header > .word-card-head-gloss { order: 6; flex: 1 1 0; max-width: none; }
+    /* A line break after × (order 4), so the word and its meaning always share the second row together: measured in
+       Bangla at 390px, the shorter "This āyah" left room for the word alone on the first row and the meaning fell to a
+       row of its own. */
+    .quran-word-card header:has(> .word-card-head-gloss)::after { content: ""; order: 4; flex: 0 0 100%; height: 0; }
+  }
+  /* PCF MSA J101: the slim bar -- the transliteration, and "Forms ▸" sharing its row. */
+  .word-card-meaning-bar.word-card-slim-bar { min-height: 44px; box-sizing: border-box; padding: 0.15rem 0.25rem 0.15rem 0.7rem; align-items: center; }
+  .word-card-slim-bar .word-card-meaning-text { align-items: center; }
+  .quran-word-card .word-card-slim-bar .word-card-meaning-text > p.word-card-transliteration { font-size: 0.98rem; margin: 0; }
+  .word-card-forms-btn { flex: 0 0 auto; min-height: 40px; padding: 0 0.7rem; border: 1.5px solid #c9a24a; border-radius: 0.45rem; background: var(--card-bg-inset); color: #c9a24a; font: inherit; font-weight: 700; font-size: 0.88rem; white-space: nowrap; cursor: pointer; }
+  .word-card-forms-btn[aria-expanded="true"] { background: #c9a24a; color: #1b2a41; }
+  .word-card-forms-btn:focus-visible, .word-card-forms-back:focus-visible { outline: 3px solid #c9a24a; outline-offset: 2px; }
   /* J23: the WbW meaning line. J60: the Colour tick left it (the word parts are always coloured). */
   .word-card-meaning-bar { flex-wrap: nowrap; align-items: center; justify-content: space-between; gap: 0.5rem; }
   .word-card-meaning-text { flex: 1 1 auto; min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 1.1rem; }
@@ -8368,12 +8405,14 @@
     // visit, across words; null = not chosen yet (All three, or this āyah's tense on a narrow card).
     let wordCardConjView = null;
     let wordCardConjBasic = null; // PCF MSA J69: the occurrence whose Taṣrīf is showing the basic form فَعَلَ (null: none)
+    let wordCardFormsOpen = null; // PCF MSA J101: the occurrence whose Forms card is open (null: none)
+    let wordCardFormsFocus = false; // ...and its ← Back keeps the focus until the card's data has drawn (it redraws once loaded)
     let lemmaFormsLoading = false;
     function ensureLemmaForms() {
       if (lemmaFormsTable || lemmaFormsLoading) return;
       lemmaFormsLoading = true;
       loadLemmaForms().then((d) => { lemmaFormsTable = d.values; }).catch((e) => console.warn("lemma forms unavailable", e))
-        .finally(() => { lemmaFormsLoading = false; if (lemmaFormsTable && quranWordCardState.open && quranWordCardState.level !== "wbw") renderPersistentWordCard(); });
+        .finally(() => { lemmaFormsLoading = false; if (lemmaFormsTable && quranWordCardState.open && (quranWordCardState.level !== "wbw" || wordCardFormsOpen === quranWordCardState.occurrenceId)) renderPersistentWordCard(); });
     }
     // Round 5 -- the Verb Conjugation section's data, fetched the FIRST time a verb's Depth tab is drawn (I9).
     let verbFormsTable = null;
@@ -8383,7 +8422,7 @@
       if (verbFormsTable || verbFormsLoading || verbFormsFailed) return;
       verbFormsLoading = true;
       loadVerbForms().then((d) => { verbFormsTable = d.values; }).catch((e) => { verbFormsFailed = true; console.warn("verb forms unavailable", e); })
-        .finally(() => { verbFormsLoading = false; if (quranWordCardState.open && quranWordCardState.level === "tasrif") renderPersistentWordCard(); });
+        .finally(() => { verbFormsLoading = false; if (quranWordCardState.open && (quranWordCardState.level === "tasrif" || wordCardFormsOpen === quranWordCardState.occurrenceId)) renderPersistentWordCard(); });
     }
     // J41 round 2 -- Taṣrīf for nouns. noun-forms.json is fetched the FIRST time the Taṣrīf level is drawn for a word with
     // no tense (I9); word-forms-index.json (the written form at each place) only once that word turns out to be a noun.
@@ -19159,13 +19198,20 @@
       if (quranWordCardState.level === "intermediate" || quranWordCardState.level === "basic") ensureIntermediateData();
       // J69: the basic form فَعَلَ is a verb table too, so a noun's Taṣrīf fetches the verb forms when it is opened.
       if (quranWordCardState.level === "tasrif" && (quranWordCardContext.wordFeatures?.tense || wordCardConjBasic === quranWordCardState.occurrenceId)) ensureVerbForms();
+      // PCF MSA J101: the Forms card reads the verb and lemma tables, fetched the first time it is opened (I9).
+      const formsOpen = quranWordCardState.level === "wbw" && wordCardFormsOpen === quranWordCardState.occurrenceId;
+      if (formsOpen) { ensureVerbForms(); ensureLemmaForms(); }
       else if (quranWordCardState.level === "tasrif") ensureNounData(word);
       // Round 4 -- an accordion the reader opened or closed stays that way: read the open state off the DOM before it is replaced.
       content.querySelectorAll("details[data-word-card-sec]").forEach((d) => { wordCardDepthOpen[d.dataset.wordCardSec] = d.open; });
       // Round 6 -- what was typed in the Search row stays, however often the card is redrawn.
       const typed = content.querySelector("[data-word-card-search-input]");
       if (typed) wordCardSearch.value = typed.value;
-      content.innerHTML = renderQuranWordCard({ state: quranWordCardState, chapter: currentSurahData, ayah, word, context: { ...quranWordCardContext, search: wordCardSearch, lemmaForms: lemmaFormsTable, verbForms: verbFormsTable, verbFormsFailed, nounForms: nounFormsTable, nounFormsFailed, formTexts: nounFormTexts, nounBox: wordCardNounBox?.id === quranWordCardState.occurrenceId ? wordCardNounBox.key : null, depthOpen: wordCardDepthOpen, conjView: wordCardConjView, conjBasic: wordCardConjBasic === quranWordCardState.occurrenceId, conjNarrow: window.matchMedia("(max-width: 640px)").matches, needsSource: needsSourceContext(word, currentSurahData.surahNumber), ...wordCardDictionaryContext(word), ...intermediateContext(word), ...wordProgressContext(ref), ...quranWordCardLemmaContext, hasPrevious: at > 0, hasNext: at >= 0 && at < ids.length - 1, rootOccurrenceCount: quranWordCardContext.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0, colourWordPartsEnabled: true, translitScript: getTransliterationScript(), displayRef: wordRefFor }, labels: { ...wordCardLabels(), ...wordProgressLabels() }, formatNumber: num });
+      content.innerHTML = renderQuranWordCard({ state: quranWordCardState, chapter: currentSurahData, ayah, word, context: { ...quranWordCardContext, search: wordCardSearch, lemmaForms: lemmaFormsTable, verbForms: verbFormsTable, verbFormsFailed, nounForms: nounFormsTable, nounFormsFailed, formTexts: nounFormTexts, nounBox: wordCardNounBox?.id === quranWordCardState.occurrenceId ? wordCardNounBox.key : null, depthOpen: wordCardDepthOpen, conjView: wordCardConjView, conjBasic: wordCardConjBasic === quranWordCardState.occurrenceId, formsOpen, meaningLang: getAppLang() === "bn" ? "bn" : "en", conjNarrow: window.matchMedia("(max-width: 640px)").matches, needsSource: needsSourceContext(word, currentSurahData.surahNumber), ...wordCardDictionaryContext(word), ...intermediateContext(word), ...wordProgressContext(ref), ...quranWordCardLemmaContext, hasPrevious: at > 0, hasNext: at >= 0 && at < ids.length - 1, rootOccurrenceCount: quranWordCardContext.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0, colourWordPartsEnabled: true, translitScript: getTransliterationScript(), displayRef: wordRefFor }, labels: { ...wordCardLabels(), ...wordProgressLabels() }, formatNumber: num });
+      if (formsOpen && wordCardFormsFocus) {
+        const back = content.querySelector(".word-card-forms-back");
+        if (back) { back.focus({ preventScroll: true }); if (!content.querySelector("[data-word-card-forms-loading]")) wordCardFormsFocus = false; }
+      }
       // Decision 61 -- opening a section is what fetches its data.
       content.querySelectorAll("details[data-word-card-sec]").forEach((d) => {
         d.addEventListener("toggle", () => {
@@ -20239,6 +20285,18 @@
       if (searchForm) { listWordCardSearchPlaces(Number(searchForm.dataset.wordCardSearchForm)); return; }
       const searchPlace = event.target.closest("[data-word-card-search-place]");
       if (searchPlace) { openWordCardSearchPlace(Number(searchPlace.dataset.wordCardSearchPlace)); return; }
+      const formsBtn = event.target.closest("[data-word-card-forms]");
+      if (formsBtn) {
+        // PCF MSA J101: "Forms ▸" opens the Forms card over the word; its ← Back to the word, ✕ and the backdrop close it,
+        // and the focus goes back to "Forms ▸" (the way-back law: the reader is where they were).
+        const opening = wordCardFormsOpen !== quranWordCardState.occurrenceId;
+        wordCardFormsOpen = opening ? quranWordCardState.occurrenceId : null;
+        wordCardFormsFocus = opening;
+        renderPersistentWordCard();
+        const mount = activeWordCardMount();
+        (opening ? mount?.querySelector(".word-card-forms-back") : mount?.querySelector(".word-card-forms-btn"))?.focus({ preventScroll: true });
+        return;
+      }
       const conjBasicBtn = event.target.closest("[data-word-card-conj-basic]");
       if (conjBasicBtn) {
         // PCF MSA J69: open the basic form فَعَلَ from this word's Taṣrīf; ← Back returns to the word's own (the way-back law).
@@ -20310,6 +20368,9 @@
       if (event.key === "Enter" && event.target.closest("[data-word-card-search-input]")) { event.preventDefault(); runWordCardSearch(); return; }
       if (event.key === "Escape" && event.target.closest("[data-word-card-content]")) {
         event.preventDefault();
+        // PCF MSA J101: Escape closes the Forms card first (back to the word), as its ← Back does.
+        const formsBack = activeWordCardMount()?.querySelector("[data-word-card-forms-pop] .word-card-forms-back");
+        if (formsBack) { formsBack.click(); return; }
         const legendBtn = activeWordCardMount()?.querySelector("[data-word-card-legend-toggle][aria-expanded='true']");
         if (legendBtn) { setWordCardLegend(false); legendBtn.focus({ preventScroll: true }); return; }
         activeWordCardMount()?.querySelector("[data-word-card-close]")?.click();

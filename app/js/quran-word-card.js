@@ -10,6 +10,7 @@ import { stageColourStyle } from "./ayah-action-sheet.js";
 import { lemmaText } from "./lemma-text.js";
 import { banglaTranslit, BANGLA_TRANSLIT_NOTE } from "./quran-translit-bn.js";
 import { isTasrifLevelPersistenceReady } from "./study-tasrif-level-readiness.js";
+import { conjugate } from "./verb-conjugation.js";
 
 // PCF MSA J38 + J39 (19 Oct 2026): FIVE tabs, in tab order: WbW · Root · Family · Taṣrīf · Depth. The STORED level ids
 // are unchanged -- Root is `intermediate`, Family is `basic` -- so every saved mark stays valid under its new name;
@@ -1492,21 +1493,134 @@ function translitLinesHtml(word, context, text) {
 }
 
 /**
- * J23 layout B -- the WbW meaning line, above the level tabs. PCF MSA J60 (the Owner, 21 Oct 2026: "removing the color
- * tick/ untick option, it should be always coloured … And also remove 'stem, particle' that line"): no Colour tick here
- * and no colour-key row under it (the parts are named under the word); the page always asks for coloured word parts.
+ * PCF MSA J101 (the Owner, 26 Oct 2026, a phone screenshot of the Word Card: "We only show one chosen language beside
+ * the arabic in the same row"; ticked B, the app's own language): ONE meaning, in the reader's app language
+ * (`context.meaningLang`, "en" | "bn"), in the header beside the Arabic, where the ROOT box was ("we take the root
+ * button off from that row": the root is under WbW and in Root, Family and Taṣrīf). English keeps its colour by word
+ * part (J60, ticked "keep"); the Bangla gloss has no part alignment to colour by, so it is plain, as it always was.
  */
-function meaningBarHtml(word, context, text) {
+function headGlossHtml(word, context, text) {
+  if ((context.meaningLang === "bn" ? "bn" : "en") === "bn") {
+    return `<p class="word-card-head-gloss word-card-meaning word-card-meaning-bn" lang="bn" data-word-card-head-gloss>${escapeHtml(word.translation?.bn || text.meaningUnavailableBn)}</p>`;
+  }
   const showSegmentColour = context.colourWordPartsEnabled && validSegments(context.wordSegments);
   const enGloss = word.translation?.en || text.meaningUnavailableEn;
-  const enGlossHtml = showSegmentColour ? segmentedGlossHtml(enGloss, context.wordSegments) : escapeHtml(enGloss);
-  return `<div class="word-card-meaning-bar" data-word-card-meaning-bar>
-    <div class="word-card-meaning-text">
-      <p class="word-card-meaning word-card-meaning-en" lang="en">${enGlossHtml}</p>
-      <p class="word-card-meaning word-card-meaning-bn" lang="bn">${escapeHtml(word.translation?.bn || text.meaningUnavailableBn)}</p>
-      ${translitLinesHtml(word, context, text)}
-    </div>
+  return `<p class="word-card-head-gloss word-card-meaning word-card-meaning-en" lang="en" data-word-card-head-gloss>${showSegmentColour ? segmentedGlossHtml(enGloss, context.wordSegments) : escapeHtml(enGloss)}</p>`;
+}
+
+/**
+ * J23 layout B was the WbW meaning line, above the level tabs (English, Bangla and the transliteration). PCF MSA J101
+ * ("let the transliteration only stays with little slim bar at the current place … and place the button in the same
+ * row to share space with transliteration"): the meanings moved up beside the Arabic, so the bar is the transliteration
+ * alone, slim, with "Forms ▸" sharing its row (a word with a root only: the forms are the root's).
+ */
+function meaningBarHtml(word, layers, context, text) {
+  const ft = formsText(context);
+  const translit = translitLinesHtml(word, context, text);
+  const btn = layers.root
+    ? `<button type="button" class="word-card-forms-btn" data-word-card-forms aria-haspopup="dialog" aria-expanded="${context.formsOpen ? "true" : "false"}">${escapeHtml(ft.button)} <span aria-hidden="true">▸</span></button>`
+    : "";
+  if (!translit && !btn) return "";
+  return `<div class="word-card-meaning-bar word-card-slim-bar" data-word-card-meaning-bar>
+    <div class="word-card-meaning-text">${translit}</div>${btn}
   </div>`;
+}
+
+// PCF MSA J101 -- the Forms card's own words, in the reader's app language (the card is pure; the page passes
+// `context.meaningLang`). Kept here, like word-card-depth.js's own table, so this card needs no shared catalogue edit.
+const FORMS_TEXT = Object.freeze({
+  en: {
+    button: "Forms", title: "Forms of {root}", back: "← Back to the word", close: "Close",
+    verbs: "Verbs of this root in the Qur'an", nouns: "Nouns made from them",
+    past: "Past", present: "Present", command: "Command", form: "Form", thisWord: "this word",
+    times: "{n}× in the Qur'an", loading: "Loading the forms…", failed: "The forms could not be loaded.",
+    none: "No verb or noun forms of this root are listed.",
+    note: "Every person (I, you, they…) is in the Taṣrīf tab; the root's other words are in Family.",
+    groups: { masdar: "Verbal noun", doer: "Doer", done: "Done to", intens: "Intensive", elative: "Comparative" },
+  },
+  bn: {
+    button: "রূপ", title: "{root} মূলের রূপ", back: "← শব্দে ফিরে যান", close: "বন্ধ করুন",
+    verbs: "কুরআনে এই মূলের ক্রিয়া", nouns: "এগুলো থেকে তৈরি বিশেষ্য",
+    past: "অতীত", present: "বর্তমান", command: "আদেশ", form: "রূপ", thisWord: "এই শব্দ",
+    times: "কুরআনে {n} বার", loading: "রূপগুলো আসছে…", failed: "রূপগুলো আনা গেল না।",
+    none: "এই মূলের কোনো ক্রিয়া বা বিশেষ্য রূপ তালিকায় নেই।",
+    note: "প্রতিটি পুরুষ (আমি, তুমি, তারা…) তাসরীফ ট্যাবে; মূলের অন্য শব্দ পরিবার ট্যাবে।",
+    groups: { masdar: "ক্রিয়াবাচক বিশেষ্য", doer: "কর্তাবাচক বিশেষ্য", done: "কর্মবাচক বিশেষ্য", intens: "আধিক্যবাচক", elative: "তুলনাবাচক" },
+  },
+});
+function formsText(context) { return FORMS_TEXT[context.meaningLang === "bn" ? "bn" : "en"]; }
+const FORMS_NOUN_GROUPS = ["masdar", "doer", "done", "intens", "elative"];
+
+/**
+ * PCF MSA J101 ("can we build a card/ form for all word/ verb forms"; ticked A, a new card): every verb of this word's
+ * root in the Qur'an, by form, each with its past, present and command (he, he, you: the engine that draws Taṣrīf,
+ * conjugate()), and how often each tense occurs (verb-forms.json's own counts); then the nouns made from them (verbal
+ * noun, doer, done to, intensive, comparative: lemma-forms.json's groups), each with its meaning and count. The part
+ * this very word is gets a ring. Nothing is invented: a form the engine does not produce shows "—".
+ */
+function formsCardHtml(word, layers, context, formatNumber) {
+  const ft = formsText(context);
+  const lang = context.meaningLang === "bn" ? "bn" : "en";
+  const rootAr = `<span dir="rtl" lang="ar">${escapeHtml(spacedRoot(layers.root))}</span>`;
+  const head = `<div class="word-card-dpop-head word-card-forms-head">` +
+    `<button type="button" class="word-card-forms-back" data-word-card-forms>${escapeHtml(ft.back)}</button>` +
+    `<span class="word-card-dpop-title">${escapeHtml(ft.title).replace("{root}", rootAr)}</span>` +
+    `<button type="button" class="word-card-dpop-close" data-word-card-forms aria-label="${escapeHtml(ft.close)}">✕</button></div>`;
+  const forms = context.rootForms?.forms, lf = context.lemmaForms, vf = context.verbForms;
+  let body;
+  if (context.verbFormsFailed) body = `<p role="status">${escapeHtml(ft.failed)}</p>`;
+  else if (!forms || !lf || !vf) body = `<p role="status" data-word-card-forms-loading>${escapeHtml(ft.loading)}</p>`;
+  else body = formsBodyHtml(word, forms, lf, vf, context, ft, lang, formatNumber);
+  return `<div class="word-card-dpop word-card-forms-pop" data-word-card-forms-pop>` +
+    `<button type="button" class="word-card-dpop-backdrop" data-word-card-forms tabindex="-1" aria-hidden="true"></button>` +
+    `<div class="word-card-dpop-box" role="dialog" aria-label="${escapeHtml(ft.title.replace("{root}", spacedRoot(layers.root)))}">${head}${body}</div></div>`;
+}
+
+function formsBodyHtml(word, forms, lf, vf, context, ft, lang, formatNumber) {
+  const myLemma = word.morphology?.lemma;
+  const myTense = context.wordFeatures?.tense; // PERF | IMPF | IMPV, or none for a noun
+  const times = (n) => escapeHtml(ft.times.replace("{n}", formatNumber(n)));
+  const meaningOf = (f) => (lang === "bn" ? f.meaning?.bn || f.meaning?.en : f.meaning?.en || f.meaning?.bn) || "";
+  const formName = (n) => (n > 0 ? `${ft.form} ${lang === "bn" ? formatNumber(n) : FORM_NAMES[n]?.roman ?? n}` : "");
+  const verbs = forms.filter((f) => lf[f.lemma]?.[0] === "verb" && vf[f.lemma])
+    .sort((a, b) => vf[a.lemma].f - vf[b.lemma].f || b.count - a.count);
+  const verbItems = verbs.map((f) => {
+    const e = vf[f.lemma];
+    const res = conjugate({ root: e.r, form: e.f, pastVowel: e.pv ?? null, presentVowel: e.sv ?? null });
+    const counts = Object.entries(e.n ?? {});
+    const sum = (tense) => counts.filter(([k]) => k.startsWith(`${tense}.`) || k === tense).reduce((s, [, v]) => s + v, 0);
+    const ok = res.supported;
+    const parts = [
+      ["PERF", ft.past, ok && res.pastKnown ? res.past?.[0]?.ar : null],
+      ["IMPF", ft.present, ok && res.presentKnown ? res.present?.[0]?.ar : null],
+      ["IMPV", ft.command, ok && res.presentKnown ? res.command?.[6]?.ar : null],
+    ];
+    const cells = parts.map(([tense, label, ar]) => {
+      const here = f.lemma === myLemma && myTense === tense;
+      return `<div class="word-card-fc${here ? " word-card-fc-here" : ""}" data-word-card-forms-tense="${tense}"${here ? " data-word-card-forms-here" : ""}>` +
+        `<small>${escapeHtml(label)}${here ? ` · ${escapeHtml(ft.thisWord)}` : ""}</small>` +
+        `<b dir="rtl" lang="ar">${ar ? escapeHtml(ar) : "—"}</b><span class="word-card-fc-n">${times(sum(tense))}</span></div>`;
+    }).join("");
+    return `<li class="word-card-fv" data-word-card-forms-verb="${escapeHtml(f.lemma)}">` +
+      `<p class="word-card-fv-head"><span class="word-card-fv-form">${escapeHtml(formName(e.f))}</span> ` +
+      `<span class="word-card-fv-ar" dir="rtl" lang="ar">${escapeHtml(lemmaText(f.lemma))}</span> ` +
+      `<span class="word-card-fv-m" lang="${lang}">${escapeHtml(meaningOf(f))}</span></p>` +
+      `<div class="word-card-fc-row">${cells}</div></li>`;
+  }).join("");
+  const nouns = forms.filter((f) => FORMS_NOUN_GROUPS.includes(lf[f.lemma]?.[0]))
+    .sort((a, b) => FORMS_NOUN_GROUPS.indexOf(lf[a.lemma][0]) - FORMS_NOUN_GROUPS.indexOf(lf[b.lemma][0]) || (lf[a.lemma][1] ?? 0) - (lf[b.lemma][1] ?? 0) || b.count - a.count);
+  const nounItems = nouns.map((f) => {
+    const [group, form] = lf[f.lemma];
+    const here = f.lemma === myLemma;
+    return `<li class="word-card-fc word-card-fn${here ? " word-card-fc-here" : ""}" data-word-card-forms-noun="${escapeHtml(group)}"${here ? " data-word-card-forms-here" : ""}>` +
+      `<small>${escapeHtml(ft.groups[group])}${form > 0 ? ` · ${escapeHtml(formName(form))}` : ""}${here ? ` · ${escapeHtml(ft.thisWord)}` : ""}</small>` +
+      `<b dir="rtl" lang="ar">${escapeHtml(lemmaText(f.lemma))}</b>` +
+      `<span class="word-card-fn-m" lang="${lang}">${escapeHtml(meaningOf(f))}</span><span class="word-card-fc-n">${times(f.count)}</span></li>`;
+  }).join("");
+  if (!verbItems && !nounItems) return `<p role="status" data-word-card-forms-none>${escapeHtml(ft.none)}</p>`;
+  return (verbItems ? `<h4>${escapeHtml(ft.verbs)}</h4><ol class="word-card-fv-list">${verbItems}</ol>` : "") +
+    (nounItems ? `<h4>${escapeHtml(ft.nouns)}</h4><ul class="word-card-fn-list">${nounItems}</ul>` : "") +
+    `<p class="word-card-forms-note">${escapeHtml(ft.note)}</p>`;
 }
 
 /**
@@ -1603,12 +1717,13 @@ export function renderQuranWordCard({ state, chapter, ayah, word, context = {}, 
       <button type="button" class="word-card-ayah-action-btn" data-word-card-ayah-action="${chapter.surahNumber}:${ayah.ayah}">${escapeHtml(text.ayahActionsButton)}</button>
       ${legendButtonHtml(text)}
       <div class="word-card-head-word"><div class="word-card-arabic" dir="rtl" lang="ar">${arabicHtml}</div><div class="word-card-reference">${escapeHtml(refText(chapter.surahNumber, ayah.ayah, word.position))}</div></div>
-      ${layers.root ? `<div class="word-card-root-box" data-word-card-root-box><small>${escapeHtml(text.rootBoxLabel)}</small><span dir="rtl" lang="ar">${escapeHtml(spacedRoot(layers.root))}</span></div>` : ""}
+      ${state.level === "wbw" ? headGlossHtml(word, context, text) : ""}
       <button type="button" data-word-card-move="next" aria-label="${escapeHtml(text.next)}"${context.hasNext ? "" : " disabled"}>›</button>
       <button type="button" data-word-card-close aria-label="${escapeHtml(text.close)}">×</button></header>
     ${legendBalloonHtml(state.level, text)}
     ${searchOpen ? searchRowHtml(context.search, text, formatNumber, refText) : ""}
-    ${state.level === "wbw" ? meaningBarHtml(word, context, text) : ""}
+    ${state.level === "wbw" ? meaningBarHtml(word, layers, context, text) : ""}
+    ${state.level === "wbw" && context.formsOpen && layers.root ? formsCardHtml(word, layers, context, formatNumber) : ""}
     ${originBar(context.origin, text)}
     <div role="tablist" aria-label="${escapeHtml(text.tablist)}">${tabsHtml(state.level, text)}</div>
     ${levelPanel(state.level, word, layers, context, text, formatNumber)}
