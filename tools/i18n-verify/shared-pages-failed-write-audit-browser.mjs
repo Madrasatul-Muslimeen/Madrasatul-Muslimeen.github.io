@@ -128,6 +128,7 @@ const INSTALL = () => {
     for (const el of document.querySelectorAll("input, textarea, select")) {
       if (!vis(el) || el.disabled || el.readOnly) continue;
       if (el.closest("nav, header, [class*=nav-], [id*=nav]") || /lang|tenant|preview|viewas/i.test(el.id + " " + el.name)) continue; // shell pickers reload the page
+      if (/import-notes/.test(location.pathname) && el.tagName === "SELECT") continue; // Part 98: Import is enabled only for "yourself" in the Person picker; leave it on yourself
       if (el.tagName === "SELECT") { const o = [...el.options].find((x) => x.value && !x.disabled && x.index !== el.selectedIndex) || [...el.options].find((x) => x.value && !x.disabled); if (o && (!el.value || el.selectedIndex <= 0)) { el.value = o.value; el.dispatchEvent(new Event("change", { bubbles: true })); } continue; }
       const t = (el.type || "text").toLowerCase();
       if (["checkbox", "radio", "file", "hidden", "button", "submit", "range", "color"].includes(t)) { if (t === "checkbox" && el.required && !el.checked) el.click(); if (t === "radio" && !document.querySelector(`input[type=radio][name="${el.name}"]:checked`)) el.click(); continue; }
@@ -171,7 +172,8 @@ async function openFresh(path, w, h, lang) {
   await page.evaluate(INSTALL);
   if (path.startsWith("import-notes.html")) {
     await page.setInputFiles("#fileInput", { name: "Audit.xml", mimeType: "application/xml", buffer: Buffer.from(WXR) });
-    await page.waitForFunction(() => getComputedStyle(document.getElementById("previewSection")).display !== "none", null, { timeout: 15000 }).catch(() => {});
+    await page.waitForFunction(() => getComputedStyle(document.getElementById("previewSection")).display !== "none" && document.getElementById("importBtn").getAttribute("aria-disabled") === "false", null, { timeout: 15000 }).catch(() => {});
+    if (VERBOSE) console.log("   import-notes state:", await page.evaluate(() => ({ prev: getComputedStyle(document.getElementById("previewSection")).display, aria: document.getElementById("importBtn").getAttribute("aria-disabled"), gate: document.getElementById("gateNotice")?.textContent, parsing: document.getElementById("parsingMsg")?.textContent })));
     await page.waitForTimeout(300);
   }
   if (MUTATE === "silent" && path.startsWith(MUTATE_PAGE)) {
