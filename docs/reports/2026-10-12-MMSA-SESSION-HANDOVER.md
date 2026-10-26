@@ -1906,3 +1906,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v12.70** (2026-10-25): one 📖 switch Āyah → Meaning → Mushaf; the three study buttons in the ⋯ on a phone (J99).
 - **v12.71** (2026-10-25): a refused resume write no longer stops a Deen/Arabic topic opening (audit part 96, I15).
 - **v12.72** (2026-10-25): the Zab button fix on Onboarding and Accept invite (audit part 97).
+- **v12.73** (2026-10-26): Know Your Status: the chosen Approach's own wheel; the unit rows under one top-bar button (J100).
