@@ -1479,7 +1479,7 @@ export function createNoteViews(host) {
         rerenderNoteEverywhere(note.noteId);
         rerenderNoteEverywhere(pick.dataset.linkPick);
       } catch (err) {
-        const m = q("[data-link-msg]"); m.textContent = err?.message || t("That did not save."); m.hidden = false;
+        const m = q("[data-link-msg]"); m.textContent = notSavedText(err); m.hidden = false;
       }
     });
     q("[data-link-search]").addEventListener("input", paint);
@@ -2493,10 +2493,16 @@ export function createNoteViews(host) {
       } catch (err) {
         save.disabled = false;
         console.error("[note rename]", err);
-        d.msg(err?.message === "Stale Note revision." ? t("This Note changed on another device. Reload it, then try again.") : (err?.message || t("That did not save.")));
+        d.msg(err?.message === "Stale Note revision." ? t("This Note changed on another device. Reload it, then try again.") : notSavedText(err));
       }
     });
     input.focus(); input.select();
+  }
+
+  /** Audit part 99 (I15, PCF MSA J29): a refused save says in words that it was NOT saved, then why. The raw error
+   *  alone ("permission-denied", "transaction denied …") never told the reader the change was lost. */
+  function notSavedText(err) {
+    return err?.message ? t("Not saved: {why}", { why: err.message }) : t("That did not save.");
   }
 
   /** Item 15 -- ⋯ Make a copy: what is typed is saved first, then the page makes the copy; it opens where the original was. */
