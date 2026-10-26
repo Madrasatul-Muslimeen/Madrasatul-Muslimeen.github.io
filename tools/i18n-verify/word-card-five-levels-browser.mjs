@@ -46,7 +46,8 @@ const MUT = {
   grouplemma: ["app/js/quran-word-card.js", "familyGroupMarkHtml(context.familyGroups, head.lemma,", "familyGroupMarkHtml(context.familyGroups, layers.lemma,"],
   noroots: ["app/js/quran-word-card.js", 'if (unit === "roots") {', 'if (false) {'],
   // J43 mutations, added by the Architect in review (19 Oct 2026): the round shipped its checks unproven.
-  smallgloss: ["app/quranrevival.html", "p.word-card-meaning { font-size: 1.22rem; font-weight: 700;", "p.word-card-meaning { font-size: 0.9rem; font-weight: 400;"],
+  // PCF MSA J101: the meaning moved beside the Arabic (one, in the app's language); its J43 size lives in that rule now.
+  smallgloss: ["app/quranrevival.html", "background: var(--card-bg-inset); font-size: 1.22rem; font-weight: 700;", "background: var(--card-bg-inset); font-size: 0.9rem; font-weight: 400;"],
   // UPDATED IN PLACE (J59, 21 Oct 2026): the ⓘ moved from the colour row into the header, so these two mutations follow it.
   nolegend: ["app/js/quran-word-card.js", "      ${legendButtonHtml(text)}\n", ""],
   threestate: ["app/js/quran-word-card.js", "${button(\"not_started\")}${button(\"learning\")}", "${button(\"learning\")}"],
@@ -207,7 +208,11 @@ async function j43Checks(page, tag, lang, width) {
     const cs = (s) => bar?.querySelector(s) ? getComputedStyle(bar.querySelector(s)) : null;
     const body = parseFloat(getComputedStyle(document.querySelector("#quranWordCardMount .word-card-reference")).fontSize);
     const br = bar?.getBoundingClientRect(), cr = document.querySelector("#quranWordCardMount .quran-word-card").getBoundingClientRect();
-    return { body, en: fs(".word-card-meaning-en"), bn: fs(".word-card-meaning-bn"), tr: fs(".word-card-transliteration"), enW: Number(cs(".word-card-meaning-en")?.fontWeight), trStyle: cs(".word-card-transliteration")?.fontStyle, inside: !!br && br.left >= cr.left - 1 && br.right <= cr.right + 1, over: document.documentElement.scrollWidth - innerWidth };
+    // PCF MSA J101: ONE meaning, beside the Arabic (data-word-card-head-gloss), in the app's own language; the bar keeps
+    // the transliteration. "Bangla the same" is now "the one meaning, whichever language it is". Updated in place.
+    const g1 = document.querySelector("#quranWordCardMount [data-word-card-head-gloss]");
+    const gs = g1 ? getComputedStyle(g1) : null;
+    return { body, en: gs ? parseFloat(gs.fontSize) : null, bn: gs ? parseFloat(gs.fontSize) : null, tr: fs(".word-card-transliteration"), enW: Number(gs?.fontWeight), trStyle: cs(".word-card-transliteration")?.fontStyle, inside: !!br && br.left >= cr.left - 1 && br.right <= cr.right + 1, over: document.documentElement.scrollWidth - innerWidth };
   });
   check(`${tag} J43 gloss: English ~1.35x body (${g.en}px vs ${g.body}px), bold; Bangla the same; transliteration smaller and italic; fits, no sideways scroll`,
     g.en >= g.body * 1.3 && g.enW >= 700 && g.bn === g.en && g.tr < g.en && g.tr >= g.body && g.trStyle === "italic" && g.inside && g.over <= 0, JSON.stringify(g));
