@@ -2578,6 +2578,8 @@ export const BN = {
     "ফোল্ডার: {created}টি তৈরি হয়েছে, {skipped}টি আগে থেকেই আছে ({total}-এর মধ্যে {done})…", // ?
   "Notes: {created} created, {skipped} already there ({done} of {total})…":
     "নোট: {created}টি তৈরি হয়েছে, {skipped}টি আগে থেকেই আছে ({total}-এর মধ্যে {done})…", // ?
+  "Not saved: {n} could not be saved (listed below). Folders: {fc} created, {fs} already there. Notes: {nc} created, {ns} already there.":
+    "সংরক্ষণ হয়নি: {n}টি সংরক্ষণ করা যায়নি (নিচে তালিকা)। ফোল্ডার: {fc}টি তৈরি হয়েছে, {fs}টি আগে থেকেই ছিল। নোট: {nc}টি তৈরি হয়েছে, {ns}টি আগে থেকেই ছিল।",
   "Done. Folders: {fc} created, {fs} already there. Notes: {nc} created, {ns} already there.":
     "সম্পন্ন। ফোল্ডার: {fc}টি তৈরি হয়েছে, {fs}টি আগে থেকেই ছিল। নোট: {nc}টি তৈরি হয়েছে, {ns}টি আগে থেকেই ছিল।",
   "The import stopped early: {message}. It is safe to try again — anything already created will be skipped.":

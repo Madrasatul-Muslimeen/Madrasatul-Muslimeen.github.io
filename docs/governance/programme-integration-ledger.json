@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "12.74",
+    "version": "12.75",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -5165,8 +5165,20 @@
     {
       "version": "12.74",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Word Card: one meaning (the app's language) beside the Arabic where the ROOT box was; the bar under it is the transliteration alone with a Forms button opening a new Forms card (the root's verbs by form with past, present and command and their Qur'an counts, then its nouns) (PCF MSA J101, QR Lead).",
+      "integration": {
+        "authorizedOn": "2026-10-26",
+        "integratedOn": "2026-10-26",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.75",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Import notes: when any folder or note is refused, the result line says 'Not saved: N could not be saved' in red (role=alert) instead of 'Done.'; audit part 98's one real finding (I15, PCF MSA J29).",
       "integration": {
         "authorizedOn": "2026-10-26",
         "integratedOn": "2026-10-26",
@@ -5175,8 +5187,9 @@
       }
     }
   ],
-  "nextUnallocated": "12.75",
+  "nextUnallocated": "12.76",
   "nextUnallocatedNote": [
+    "v12.75 was allocated to Import notes: a refused import says Not saved, never Done (audit part 98, J29), 2026-10-26.",
     "v12.74 was allocated to Word Card top: one meaning beside the Arabic; slim transliteration bar with a Forms card (J101), 2026-10-26.",
     "v12.73 was allocated to Know Your Status: the chosen Approach's own wheel; the unit rows under one top-bar button (J100), 2026-10-26.",
     "v12.72 was allocated to the Zab button fix on Onboarding and Accept invite (audit part 97), 2026-10-25.",
