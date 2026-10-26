@@ -75,7 +75,25 @@ DATA.noteRevisions = [...(DATA.noteRevisions ?? []), ...${JSON.stringify(REVS)}]
 DATA.userPrefs = [{ _id: "test-uid" }];`;
 const dp = (id, author, status) => ({ _id: "t1__" + id, pageId: id, tenantId: "t1", schemaVersion: 1, authorPersonId: author, sourceNoteId: "n255", sourceRevisionId: "n255-r1", title: "Page " + id, bodyHtml: "<p>Body of " + id + "</p>", sourceUnitKey: null, status, approvedByPersonId: null, approvedAt: null, returnedNote: null });
 const DAWAH_SEED = `DATA.dawahPages = ${JSON.stringify([dp("pDraft", "p1", "draft"), dp("pShared", "p1", "shared"), dp("pWait", "p2", "awaiting-approval")])};`;
+// Part 99: two user folders, the first note filed in the first, and one tag, so file-into / move / tag have something to act on.
+const FLOW_SEED = `DATA.noteFolders = ${JSON.stringify(["A", "B"].map((x, i) => ({ _id: "t1__f" + x, folderId: "f" + x, ...own, name: "Audit folder " + x, parentFolderId: null, semanticRole: "user", order: i, status: "active" })))};
+DATA.notePlacements = ${JSON.stringify([{ _id: "t1__pl1", placementId: "pl1", ...own, noteId: "n255", folderId: "fA", order: 0, status: "active" }])};
+DATA.noteTags = ${JSON.stringify([{ _id: "t1__tg1", tagId: "tg1", ...own, name: "Audit tag", status: "active" }])};`;
 const SEEDS = { "notes.html": NOTES_SEED, "journey-map.html": NOTES_SEED, "dawah.html": NOTES_SEED + DAWAH_SEED };
+// Part 99: --flow=<name> opens one place directly instead of sweeping. Each flow is a page plus clicks that reach the state; the
+// controls pressed are those that appear with the LAST click (so the ⋯ menu, or the Folders-and-tags dialog), followed DEPTH levels.
+//   pane-menu    journey-map.html: Timeline > the seeded note > the pane's ⋯ menu (Mark, Organise, Change, Settings ...)
+//   pane-attach  journey-map.html: Timeline > the seeded note > 📎 Folders and tags (file into / tick folders and tags / New folder)
+//   pane-edit    journey-map.html: Timeline > the seeded note > ✏️ Edit (the editor's own saves)
+//   notes-menu   notes.html?unit=ayah:2:255: the whole page, controls beyond the part 98 cap (use --cap=100 --from=...)
+const FLOWS = {
+  "pane-menu": { path: "journey-map.html", steps: ["[data-view=timeline]", "[data-note-open]", "[data-pane-menu-btn]"] },
+  "pane-attach": { path: "journey-map.html", steps: ["[data-view=timeline]", "[data-note-open]", "[data-pane-attach]"] },
+  "pane-edit": { path: "journey-map.html", steps: ["[data-view=timeline]", "[data-note-open]", "[data-pane-edit-toggle]"] },
+};
+const FLOW = arg("flow");
+if (FLOW && !FLOWS[FLOW]) { console.log("unknown --flow=" + FLOW + "; known: " + Object.keys(FLOWS).join(", ")); process.exit(2); }
+if (FLOW) for (const k of ["notes.html", "journey-map.html"]) SEEDS[k] += "\n" + FLOW_SEED;
 // One small valid WordPress export, chosen in the file picker before the page's controls are listed.
 const WXR = `<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:wp="http://wordpress.org/export/1.2/"><channel>
 <wp:category><wp:term_id>5</wp:term_id><wp:category_nicename>audit-cat</wp:category_nicename><wp:category_parent></wp:category_parent><wp:cat_name><![CDATA[Audit WP Folder]]></wp:cat_name></wp:category>
@@ -83,7 +101,7 @@ const WXR = `<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:cont
 </channel></rss>`;
 // The refusal flags are getters that count each read, and answer true only once the suite has armed them.
 const FLAGS = `
-window.__armed = false; window.__refHits = 0;
+window.__armed = false; window.__refHits = 0; window.__flow = ${!!FLOW};
 for (const f of ["__stubFailWrites", "__stubFailBatch", "__stubFailTx"]) Object.defineProperty(window, f, { configurable: true, get() { if (!window.__armed) return false; window.__refHits++; return true; } });
 `;
 const VIEWPORTS = [[1440, 900], [390, 844]];
@@ -108,8 +126,9 @@ const INSTALL = () => {
     const r = el.getBoundingClientRect();
     return r.width > 1 && r.height > 1;
   };
-  const label = (el) => ((el.getAttribute("aria-label") || el.textContent || el.value || el.name || "") + "").replace(/\s+/g, " ").trim().slice(0, 40);
-  const SEL = "button, [role=button], input[type=submit], input[type=button], summary";
+  const label = (el) => ((el.getAttribute("aria-label") || el.textContent || (el.type === "checkbox" && el.closest("label")?.textContent) || el.value || el.name || "") + "").replace(/\s+/g, " ").trim().slice(0, 40);
+  // Part 99 (--flow): the tick boxes of the file-into / tag dialogs are controls too
+  const SEL = "button, [role=button], input[type=submit], input[type=button], summary" + (window.__flow ? ", input[type=checkbox]" : "");
   // the shared top menu: the same code on every page (nav.js / bookmark-nav.js / account-card.js)
   const MENU = ".nav-cat, .nav-cat-links, .nav-cat-group, .nav-link, .nav-setting, .nav-account-btn, .nav-bm-sheet-head, #navBookmarkList, .nav-preview-notice, [class*=nav-bm], [class*=account-card], #navAppLangSelect, [id^=zab], [class*=zab-], #mmSaver, #mmSaverSettings, [class*=bm-pop], [class*=bm-back]";
   // (a body / wrapper class such as "nav-bm-open" must not turn the whole page into "menu": an ancestor that holds <main> / #app is not the menu)
@@ -128,6 +147,7 @@ const INSTALL = () => {
     for (const el of document.querySelectorAll("input, textarea, select")) {
       if (!vis(el) || el.disabled || el.readOnly) continue;
       if (el.closest("nav, header, [class*=nav-], [id*=nav]") || /lang|tenant|preview|viewas/i.test(el.id + " " + el.name)) continue; // shell pickers reload the page
+      if (window.__flow && el.matches("[data-picker-search], .folder-search-input")) continue; // Part 99: a filled search box hides the very folders / tick boxes under test
       if (/import-notes/.test(location.pathname) && el.tagName === "SELECT") continue; // Part 98: Import is enabled only for "yourself" in the Person picker; leave it on yourself
       if (el.tagName === "SELECT") { const o = [...el.options].find((x) => x.value && !x.disabled && x.index !== el.selectedIndex) || [...el.options].find((x) => x.value && !x.disabled); if (o && (!el.value || el.selectedIndex <= 0)) { el.value = o.value; el.dispatchEvent(new Event("change", { bubbles: true })); } continue; }
       const t = (el.type || "text").toLowerCase();
@@ -187,9 +207,21 @@ async function openFresh(path, w, h, lang) {
   return { ctx, page, errors };
 }
 
+// Part 99: click the flow's steps (all, or all but the last) to reach the state whose controls are audited.
+async function flowSteps(page, mode) { // "all" | "butlast" | "last"
+  const all = FLOWS[FLOW].steps;
+  const steps = mode === "butlast" ? all.slice(0, -1) : mode === "last" ? all.slice(-1) : all;
+  for (const s of steps) {
+    await page.waitForSelector(s, { state: "visible", timeout: 8000 });
+    await page.evaluate((sel) => { const el = [...document.querySelectorAll(sel)].find(window.__aud.vis); el.click(); }, s);
+    await page.waitForTimeout(700);
+  }
+}
+
 // Press one control (after pressing the `via` menu controls that reach it) and judge what happens.
 async function probe(path, w, h, lang, via, ctl) {
   const { ctx, page, errors } = await openFresh(path, w, h, lang);
+  if (FLOW) await flowSteps(page, "all");
   const out = { attempted: false, nav: false, newControls: [] };
   const settle = async () => { for (let i = 0; i < 6; i++) { try { await page.evaluate(() => window.__aud.fill()); return; } catch (e) { await page.waitForLoadState("load").catch(() => {}); await page.waitForTimeout(700); } } };
   try {
@@ -259,7 +291,7 @@ function judge(o, lang) {
 
 const isMenu = (c) => c.key.endsWith("|MENU");
 for (const [name, path] of PAGES) {
-  if (ONLY && !ONLY.split(",").some((p) => path.startsWith(p))) continue;
+  if (FLOW ? !path.startsWith(FLOWS[FLOW].path) : (ONLY && !ONLY.split(",").some((p) => path.startsWith(p)))) continue;
   const tPage = Date.now();
   for (const [w, h] of VIEWPORTS) {
     if (VP && w !== VP) continue;
@@ -270,9 +302,12 @@ for (const [name, path] of PAGES) {
       console.log(`== ${tag}`);
       // enumerate
       const { ctx, page } = await openFresh(path, w, h, lang);
+      let baseKeys = null;
+      if (FLOW) { await flowSteps(page, "butlast"); baseKeys = new Set((await page.evaluate(() => window.__aud.list())).map((c) => c.key)); await flowSteps(page, "last").catch(() => {}); }
       await page.evaluate(() => window.__aud.fill());
       await page.waitForTimeout(200);
-      const top = await page.evaluate(() => window.__aud.list());
+      let top = await page.evaluate(() => window.__aud.list());
+      if (FLOW) { top = top.filter((c) => !baseKeys.has(c.key) && !isMenu(c)); console.log(`   flow ${FLOW}: ${top.length} controls: ${top.map((c) => c.label).join(" | ")}`); }
       await ctx.close();
       // The page's own controls come first (cap CAP); the menu's are pressed after them, on the menu page at 1440 / en only (cap MENU_CAP).
       const auditMenu = !NOMENU && onMenuPage && lang === "en" && w === 1440;
