@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "12.76",
+    "version": "12.77",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -5189,8 +5189,20 @@
     {
       "version": "12.76",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Word Card: on a tablet or computer card (wider than 30rem) the top bar holds only the Arabic, Forms and the arrows, and the meaning moves to the slim bar beside the transliteration; a phone keeps the J101 layout (the Owner's tablet screenshot of 14:11, PCF MSA J101, QR Lead).",
+      "integration": {
+        "authorizedOn": "2026-10-26",
+        "integratedOn": "2026-10-26",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.77",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Note pane (shared in-page script): a refused Rename, and a refused link to another Note, now say 'Not saved: …' instead of the raw error alone; audit part 99's one real finding (I15, PCF MSA J29).",
       "integration": {
         "authorizedOn": "2026-10-26",
         "integratedOn": "2026-10-26",
@@ -5199,8 +5211,9 @@
       }
     }
   ],
-  "nextUnallocated": "12.77",
+  "nextUnallocated": "12.78",
   "nextUnallocatedNote": [
+    "v12.77 was allocated to Note pane: a refused Rename says Not saved (audit part 99, J29), 2026-10-26.",
     "v12.76 was allocated to Word Card on a tablet: only the Arabic on the top bar; the meaning on the bar below (J101 follow-up), 2026-10-26.",
     "v12.75 was allocated to Import notes: a refused import says Not saved, never Done (audit part 98, J29), 2026-10-26.",
     "v12.74 was allocated to Word Card top: one meaning beside the Arabic; slim transliteration bar with a Forms card (J101), 2026-10-26.",
