@@ -60,6 +60,13 @@ const check = (n, ok, d = "") => ok ? (pass++, console.log(`  PASS  ${n}`)) : (f
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH });
 
 const SEED_TEMPLATES = { SUBJECT_TEMPLATES, MODULE_TEMPLATES, APPROACH_TEMPLATES, TOPIC_TRACKABLE_TEMPLATES };
+// PCF MSA J100 (the Owner, 26 Oct 2026: "moving these selections of 2 rows buttons under one button on the top bar"): the
+// unit buttons are closed under #myStatusUnitBtn until it is tapped, so a tap on one opens them first, as a reader does.
+// Updated in place, reason recorded.
+async function tapKysUnit(page, sel) {
+  if (!(await page.evaluate(() => (document.getElementById("myStatusWheelSwitch")?.getBoundingClientRect().height ?? 0) > 0))) { await page.click("#myStatusUnitBtn"); await page.waitForTimeout(200); }
+  await page.click(sel);
+}
 
 // approach_02 = "Hifz / Memorising", Yes by default. approach_06 =
 // "Language Learning (Basic Grammar)", No by default (not in
@@ -706,7 +713,7 @@ async function runKnowYourStatusUnits(lang, width) {
     const expectedProgress = { juz: 1, surah: 2, hizb: 1, ruku: 1, page: 1, ayah: 2 };
     const seen = new Set();
     for (const unit of Object.keys(expectedProgress)) {
-      await page.click(`[data-kys-wheel-unit="${unit}"]`);
+      await tapKysUnit(page, `[data-kys-wheel-unit="${unit}"]`);
       const st = await page.evaluate(() => ({ progress: document.querySelectorAll("#myStatusOverviewWheel .wheel-seg-progress").length, rings: document.querySelectorAll("#myStatusOverviewWheel .wheel-ring-seg").length, pressed: document.querySelector('[data-kys-wheel-unit][aria-pressed="true"]')?.dataset.kysWheelUnit, sig: [...document.querySelectorAll("#myStatusOverviewWheel .wheel-seg-progress")].map((p) => p.getAttribute("d")).join("|") }));
       seen.add(st.sig);
       check(`${tag} the ${unit} button shows ${expectedProgress[unit]} filled slice(s) and no rings`, st.pressed === unit && st.rings === 0 && st.progress === expectedProgress[unit], JSON.stringify({ ...st, sig: "" }));
@@ -718,13 +725,13 @@ async function runKnowYourStatusUnits(lang, width) {
     check(`${tag} a single unit's centre reads "by …" (Āyah)`, centreUnit.includes(sp(lang === "bn" ? "আয়াত অনুযায়ী" : "by Āyah")), centreUnit.slice(-60));
     const stored = await page.evaluate(() => localStorage.getItem("kysWheelUnit"));
     check(`${tag} the choice is stored under kysWheelUnit`, stored === "ayah", String(stored));
-    await page.click('[data-kys-wheel-unit="surah"]');
+    await tapKysUnit(page, '[data-kys-wheel-unit="surah"]');
     await page.reload();
     await waitForWheelReady(page);
     await openKys(page, width);
     const afterReload = await page.evaluate(() => document.querySelector('[data-kys-wheel-unit][aria-pressed="true"]')?.dataset.kysWheelUnit);
     check(`${tag} the choice survives a reload`, afterReload === "surah", String(afterReload));
-    await page.click('[data-kys-wheel-unit="all"]');
+    await tapKysUnit(page, '[data-kys-wheel-unit="all"]');
   }
 
   if (width === 390) {
