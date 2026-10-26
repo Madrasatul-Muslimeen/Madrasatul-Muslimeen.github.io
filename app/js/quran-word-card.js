@@ -1514,15 +1514,24 @@ function headGlossHtml(word, context, text) {
  * row to share space with transliteration"): the meanings moved up beside the Arabic, so the bar is the transliteration
  * alone, slim, with "Forms ▸" sharing its row (a word with a root only: the forms are the root's).
  */
-function meaningBarHtml(word, layers, context, text) {
+/** "Forms ▸" -- drawn in the header (a tablet or computer card) and in the slim bar (a phone card); the page's CSS shows
+ *  the one for the card's width (container wordcard), so a reader only ever has one. */
+function formsButtonHtml(layers, context, place) {
+  if (!layers.root) return "";
   const ft = formsText(context);
+  return `<button type="button" class="word-card-forms-btn word-card-forms-${place}" data-word-card-forms aria-haspopup="dialog" aria-expanded="${context.formsOpen ? "true" : "false"}">${escapeHtml(ft.button)} <span aria-hidden="true">▸</span></button>`;
+}
+
+function meaningBarHtml(word, layers, context, text) {
   const translit = translitLinesHtml(word, context, text);
-  const btn = layers.root
-    ? `<button type="button" class="word-card-forms-btn" data-word-card-forms aria-haspopup="dialog" aria-expanded="${context.formsOpen ? "true" : "false"}">${escapeHtml(ft.button)} <span aria-hidden="true">▸</span></button>`
-    : "";
-  if (!translit && !btn) return "";
+  // The Owner, 26 Oct 2026 (a tablet screenshot: the meaning chip in the header crowded the Arabic onto ⓘ): "For Tab, keep
+  // only Arabic on top bar. Bring translation on the bar below with transliteration. You might try fit form button on the
+  // top bar." So the meaning is drawn here too, shown on a tablet or computer card; on a phone card the header's copy
+  // shows (beside the Arabic, as J101 built it) and this one is hidden. CSS decides, by the card's own width.
+  const gloss = headGlossHtml(word, context, text).replace('class="word-card-head-gloss ', 'class="word-card-bar-gloss ').replace(" data-word-card-head-gloss", " data-word-card-bar-gloss");
+  const btn = formsButtonHtml(layers, context, "bar");
   return `<div class="word-card-meaning-bar word-card-slim-bar" data-word-card-meaning-bar>
-    <div class="word-card-meaning-text">${translit}</div>${btn}
+    <div class="word-card-meaning-text">${gloss}${translit}</div>${btn}
   </div>`;
 }
 
@@ -1717,7 +1726,7 @@ export function renderQuranWordCard({ state, chapter, ayah, word, context = {}, 
       <button type="button" class="word-card-ayah-action-btn" data-word-card-ayah-action="${chapter.surahNumber}:${ayah.ayah}">${escapeHtml(text.ayahActionsButton)}</button>
       ${legendButtonHtml(text)}
       <div class="word-card-head-word"><div class="word-card-arabic" dir="rtl" lang="ar">${arabicHtml}</div><div class="word-card-reference">${escapeHtml(refText(chapter.surahNumber, ayah.ayah, word.position))}</div></div>
-      ${state.level === "wbw" ? headGlossHtml(word, context, text) : ""}
+      ${state.level === "wbw" ? headGlossHtml(word, context, text) + formsButtonHtml(layers, context, "head") : ""}
       <button type="button" data-word-card-move="next" aria-label="${escapeHtml(text.next)}"${context.hasNext ? "" : " disabled"}>›</button>
       <button type="button" data-word-card-close aria-label="${escapeHtml(text.close)}">×</button></header>
     ${legendBalloonHtml(state.level, text)}
