@@ -102,10 +102,15 @@ for (const lang of ["en", "bn"]) {
     // mechanism against a synthetic gloss that does contain it.
     const glossInfo = await page.evaluate(() => {
       const p = document.querySelector(".word-card-meaning-en");
-      const and = [...p.querySelectorAll(".word-card-gloss-segment")].find((s) => s.textContent.toLowerCase() === "and");
+      const and = [...(p?.querySelectorAll(".word-card-gloss-segment") ?? [])].find((s) => s.textContent.toLowerCase() === "and");
       return { html: p?.innerHTML || "", andColor: and ? getComputedStyle(and).color : null, andClass: and ? [...and.classList] : null };
     });
-    check(`${lang}/${viewport.width}: the gloss word "and" is coloured (word-card-segment-particle)`,
+    // Updated in place 26 Oct 2026 (PCF MSA J101, the Owner ticked B: one meaning, in the app's own language): a Bangla
+    // app shows the Bangla meaning alone (it has no part alignment to colour, as before), so "and" is checked in English.
+    if (lang === "bn") {
+      const bnOnly = await page.evaluate(() => ({ en: !!document.querySelector("#quranWordCardMount .word-card-meaning-en"), bn: !!document.querySelector("#quranWordCardMount [data-word-card-head-gloss][lang='bn']") }));
+      check(`${lang}/${viewport.width}: a Bangla app shows the one meaning in Bangla, no English line (J101)`, bnOnly.bn && !bnOnly.en, JSON.stringify(bnOnly));
+    } else check(`${lang}/${viewport.width}: the gloss word "and" is coloured (word-card-segment-particle)`,
       !!glossInfo.andClass?.includes("word-card-segment-particle"), JSON.stringify(glossInfo));
 
     // Direct proof of the person-cue gloss mechanism, via the real exported

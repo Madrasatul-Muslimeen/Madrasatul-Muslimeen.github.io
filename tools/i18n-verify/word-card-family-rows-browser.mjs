@@ -96,13 +96,15 @@ for (const [lang, width] of runs) {
       tick: !!m.querySelector("[data-word-card-colour-toggle], .word-card-segment-toggle"),
       keyRow: m.querySelectorAll(".word-card-segment-controls, .word-card-segment-legend").length,
       colouredAr: m.querySelectorAll(".word-card-arabic [class*='word-card-segment-']").length,
-      colouredGloss: m.querySelectorAll("[data-word-card-meaning-bar] [class*='word-card-segment-']").length,
+      // PCF MSA J101: the meaning moved beside the Arabic, in the app's own language; English is the one coloured by part
+      // (the Bangla gloss has no part alignment, as before). Updated in place, reason recorded.
+      colouredGloss: m.querySelectorAll("[data-word-card-head-gloss] [class*='word-card-segment-']").length,
       bar: (() => { const b = m.querySelector("[data-word-card-meaning-bar]")?.getBoundingClientRect(); const c = m.querySelector(".quran-word-card")?.getBoundingClientRect(); return b && c ? { l: b.left - c.left, r: c.right - b.right } : null; })(),
     };
   });
   check(`${tag} WbW: no Colour tick on the meaning line`, !wbw.tick, JSON.stringify(wbw));
   check(`${tag} WbW: no colour-key ("particle · stem") row`, wbw.keyRow === 0, JSON.stringify(wbw));
-  check(`${tag} WbW: the word parts are coloured even with Colour stored off (Arabic and the meaning)`, wbw.colouredAr >= 2 && wbw.colouredGloss >= 1, JSON.stringify(wbw));
+  check(`${tag} WbW: the word parts are coloured even with Colour stored off (Arabic and the meaning)`, wbw.colouredAr >= 2 && (lang === "bn" || wbw.colouredGloss >= 1), JSON.stringify(wbw));
   check(`${tag} WbW: the meaning line sits inside the card`, !!wbw.bar && wbw.bar.l >= -0.5 && wbw.bar.r >= -0.5, JSON.stringify(wbw.bar));
 
   await page.click(`${MOUNT} [data-word-card-level="basic"]`).catch(() => {});

@@ -11,6 +11,7 @@
 //   noforms    no Forms button                                   -> the Forms checks fail
 //   nohere     the "this word" ring is never drawn               -> "this word is marked" fails
 //   escshut    Escape closes the whole Word Card                 -> "Escape returns to the word" fails
+//   nochip     the meaning sits on the header with no background -> the contrast check fails (Night look)
 import { chromium, newContext, openPage } from "./harness.mjs";
 import fs from "node:fs";
 
@@ -27,6 +28,7 @@ const MUT = {
   twolang: [CARD, '    <div class="word-card-meaning-text">${translit}</div>${btn}', '    <div class="word-card-meaning-text"><p class="word-card-meaning word-card-meaning-en" lang="en">${escapeHtml(word.translation?.en ?? "")}</p><p class="word-card-meaning word-card-meaning-bn" lang="bn">${escapeHtml(word.translation?.bn ?? "")}</p>${translit}</div>${btn}'],
   noforms: [CARD, "  const btn = layers.root\n", "  const btn = false\n"],
   nohere: [CARD, "const here = f.lemma === myLemma && myTense === tense;", "const here = false;"],
+  nochip: [PAGE, "padding: 0.3rem 0.6rem; border: 1px solid var(--card-line); border-radius: 0.4rem; background: var(--card-bg-inset); font-size: 1.22rem;", "font-size: 1.22rem;"],
   escshut: [PAGE, "        if (formsBack) { formsBack.click(); return; }", "        void formsBack;"],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
@@ -105,8 +107,32 @@ for (const lang of LANGS) for (const width of WIDTHS) {
   if (lang === "en") check(`${tag} ...the English keeps its colour by word part`, a.glossColoured, a.gloss);
   check(`${tag} the transliteration is one slim bar (≤ 52px), and Forms ▸ shares its row, ≥ 40px, tappable`, a.barH > 0 && a.barH <= 52 && a.translit.length > 0 && a.btnRow && a.btnH >= 40 && a.btnHit, JSON.stringify(a));
   check(`${tag} nothing cut or outside the card, no sideways scroll`, a.clipped === 0 && a.glossWhole && a.over <= 0, JSON.stringify(a));
+  if (width === 390) {
+    // The meaning beside the Arabic, and each coloured word part, read at >= 4.5:1 on every card look (the first build
+    // measured 1.2:1 on Night, where the header behind it is light).
+    const ratios = await page.evaluate(() => {
+      const rgb = (s) => (s.match(/[\d.]+/g) || []).map(Number);
+      const lum = ([r, g, b]) => { const f = (c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; }; return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b); };
+      const out = [];
+      for (const look of ["light", "dark", "night"]) {
+        if (look === "dark") document.documentElement.removeAttribute("data-card-look"); else document.documentElement.setAttribute("data-card-look", look);
+        const g = document.querySelector("#quranWordCardMount [data-word-card-head-gloss]");
+        for (const el of [g, ...(g ? g.querySelectorAll("*") : [])]) {
+          if (!el || !el.textContent.trim()) continue;
+          let bg = null;
+          for (let n = el; n && !bg; n = n.parentElement) { const c = rgb(getComputedStyle(n).backgroundColor); if (c.length === 3 || (c.length === 4 && c[3] === 1)) bg = c; }
+          const a = lum(rgb(getComputedStyle(el).color)), b = lum(bg ?? [255, 255, 255]);
+          out.push({ look, r: (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05) });
+        }
+      }
+      document.documentElement.removeAttribute("data-card-look");
+      return out;
+    });
+    check(`${tag} the meaning and its coloured parts read at >= 4.5:1 on the light, dark and Night looks`, ratios.length > 0 && ratios.every((x) => x.r >= 4.5), JSON.stringify(ratios.filter((x) => x.r < 4.5)));
+  }
   if (width === 390 || width === 1280) await page.screenshot({ path: `${process.env.SHOT_DIR || "/tmp"}/j101-${lang}-${width}.png` });
 
+  if (!(await page.$("#quranWordCardMount [data-word-card-forms]"))) { check(`${tag} POSITIVE CONTROL: the Forms button exists`, false); await ctx.close(); continue; }
   await page.click("#quranWordCardMount [data-word-card-forms]"); await waitPop(page);
   const p1 = await pop(page);
   // The data writes shadda and fatḥa in its own order; compared after canonical ordering (NFD), as Unicode means them.

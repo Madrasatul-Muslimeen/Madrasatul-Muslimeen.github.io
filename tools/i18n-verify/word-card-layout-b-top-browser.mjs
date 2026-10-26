@@ -67,7 +67,7 @@ const read = (page) => page.evaluate(() => {
     header: R(header), headWord: R(header.querySelector(".word-card-head-word")), ayah: R(m.querySelector("[data-word-card-ayah-action]")), search: R(m.querySelector("[data-word-card-search-toggle]")),
     bar: R(bar), tickLabel: tick?.getAttribute("aria-label") ?? null, tickBox: R(tick?.closest("label")),
     labelShown: !!label && getComputedStyle(label).display !== "none" && label.getBoundingClientRect().width > 0,
-    compact: bar?.hasAttribute("data-compact") ?? null, tabs: R(m.querySelector('[role="tablist"]')), text: R(bar?.querySelector(".word-card-meaning-text")),
+    compact: bar?.hasAttribute("data-compact") ?? null, tabs: R(m.querySelector('[role="tablist"]')), text: R(bar?.querySelector(".word-card-meaning-text")), forms: R(bar?.querySelector("[data-word-card-forms]")),
     ayahRows: m.querySelectorAll(".word-card-ayah-action-row").length, clipped,
     page: document.documentElement.scrollWidth - document.documentElement.clientWidth, cardScroll: card.scrollWidth - card.clientWidth,
   };
@@ -102,7 +102,9 @@ for (const lang of ["en", "bn"]) {
       check(`${tag} the meaning line is above the level tabs`, d.bar.b <= d.tabs.t + 0.5, `${d.bar.b} vs ${d.tabs.t}`);
       check(`${tag} the meaning line is below the header`, d.bar.t >= d.header.b - 0.5);
       check(`${tag} J60: no Colour tick on the meaning line`, d.tickBox === null && d.tickLabel === null, JSON.stringify({ t: d.tickBox, l: d.tickLabel }));
-      check(`${tag} J60: the meaning text has the whole line (within 30px of the bar's width)`, !!d.text && d.text.w >= d.bar.w - 30, JSON.stringify({ t: d.text, b: d.bar }));
+      // PCF MSA J101 (the Owner: "place the button in the same row to share space with transliteration"): the line is the
+      // transliteration's and Forms ▸'s together, so the text has the whole line BESIDE that button. Updated in place.
+      check(`${tag} J60/J101: the line's text has the whole line beside Forms ▸ (within 30px)`, !!d.text && d.text.w >= d.bar.w - (d.forms?.w ?? 0) - 30, JSON.stringify({ t: d.text, b: d.bar, f: d.forms }));
       check(`${tag} nothing clipped past the card, no sideways scroll`, d.clipped === 0 && d.page <= 0 && d.cardScroll <= 0, JSON.stringify({ c: d.clipped, p: d.page, s: d.cardScroll }));
       if (SHOT && !long && !MUTATE && width === 390) await page.screenshot({ path: `${SHOT}/layout-b-${lang}-390.png` });
       await ctx.close();

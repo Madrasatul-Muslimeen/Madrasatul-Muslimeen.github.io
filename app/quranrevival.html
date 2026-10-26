@@ -5005,7 +5005,9 @@
   }
   /* PCF MSA J101: one meaning beside the Arabic, in the ROOT box's old place (WbW); on a narrow card it shares the word's
      second row, the word taking only its own width. */
-  .quran-word-card header > .word-card-head-gloss { flex: 0 1 auto; min-width: 0; max-width: 50%; margin: 0; font-size: 1.15rem; font-weight: 700; line-height: 1.3; text-align: start; overflow-wrap: anywhere; }
+  /* On the meaning box's own background (a chip), so its colours -- and each word part's -- read exactly as they did in
+     the box on every card look: measured on the Night look, on the header itself they fell to 1.2:1. */
+  .quran-word-card header > .word-card-head-gloss { flex: 0 1 auto; min-width: 0; max-width: 50%; margin: 0; padding: 0.3rem 0.6rem; border: 1px solid var(--card-line); border-radius: 0.4rem; background: var(--card-bg-inset); font-size: 1.22rem; font-weight: 700; line-height: 1.3; text-align: start; overflow-wrap: anywhere; }
   .quran-word-card header > .word-card-head-gloss.word-card-meaning-bn { font-family: 'Noto Sans Bengali', sans-serif; }
   @container wordcard (max-width: 30rem) {
     .quran-word-card header:has(> .word-card-head-gloss) > .word-card-head-word { flex: 0 1 auto; max-width: 55%; }

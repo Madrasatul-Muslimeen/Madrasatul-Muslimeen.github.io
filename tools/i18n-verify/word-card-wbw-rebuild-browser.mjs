@@ -47,8 +47,10 @@ for (const lang of ["en", "bn"]) {
     if (process.argv.includes("--mutate-header")) await page.evaluate(() => document.querySelectorAll("[data-word-card-root-box]").forEach((e) => e.remove()));
     const L = `${lang}/${width}`;
 
-    check(`${L}: header ROOT box says "ع ل م"`, (await text(page, "header [data-word-card-root-box] span"))[0] === "ع ل م");
-    check(`${L}: ROOT label`, (await text(page, "header [data-word-card-root-box] small"))[0] === (lang === "bn" ? "ধাতু" : "ROOT"));
+    // Updated in place 26 Oct 2026 (PCF MSA J101, the Owner: "we take the root button off from that row … root already
+    // exists under the WbW"): no ROOT box in the header; the Root fact below (checked next) carries ع ل م.
+    check(`${L}: no ROOT box in the header (J101)`, (await text(page, "header [data-word-card-root-box]")).length === 0);
+    check(`${L}: the header carries the one meaning beside the Arabic instead (J101)`, (await text(page, "header [data-word-card-head-gloss]")).length === 1);
     const facts = await page.evaluate(() => Object.fromEntries([...document.querySelectorAll("[data-word-card-fact]")].map((f) => [f.dataset.wordCardFact, { label: f.querySelector("small").textContent, value: f.querySelector("b").textContent, sub: f.querySelector(".word-card-fact-sub")?.textContent || "" }])));
     check(`${L}: Root fact "ع ل م"`, facts.root?.value === "ع ل م", JSON.stringify(facts));
     check(`${L}: Dictionary word fact "يَتَعَلَّمُ"`, facts.dict?.value.normalize("NFC") === "يَتَعَلَّمُ".normalize("NFC"), JSON.stringify(facts));
@@ -79,8 +81,9 @@ for (const lang of ["en", "bn"]) {
     // Updated in place 24 Oct 2026 (audit part 82): the items are `align-items: baseline` with different font sizes
     // (meaning 1.22rem, transliteration 1.02rem), so their TOPS differ by up to 4px on one row. "One row" now means
     // every item's vertical span overlaps the first item's span; a wrapped item would sit wholly below it.
-    if (width >= 1000) check(`${L}: meaning bar is one row`, mb.length === 3 && mb.every((r) => r.y < mb[0].b - 1 && r.b > mb[0].y + 1), JSON.stringify(mb.map((r) => [r.y, r.b])));
-    else check(`${L}: meaning bar items inside the card`, mb.length === 3 && mb.every((r) => r.r <= width));
+    // Updated in place 26 Oct 2026 (PCF MSA J101: "let the transliteration only stays with little slim bar"): the bar's
+    // text is the transliteration alone (the meanings moved beside the Arabic), one row, inside the card.
+    check(`${L}: the slim bar holds the transliteration only, on one row, inside the card (J101)`, mb.length >= 1 && mb.every((r) => r.r <= width && r.y < mb[0].b - 1 && r.b > mb[0].y + 1) && (await text(page, ".word-card-meaning-bar .word-card-meaning")).length === 0, JSON.stringify(mb.map((r) => [r.y, r.b, r.r])));
 
     const hdr = await page.evaluate(() => [...document.querySelector(".quran-word-card header").children].map((e) => { const r = e.getBoundingClientRect(); return { n: e.className || e.tagName, x: r.x, y: r.y, w: r.width, h: r.height, r: r.right, b: r.bottom }; }));
     let ov = [];
@@ -119,7 +122,9 @@ for (const lang of ["en", "bn"]) for (const width of [320, 1280]) {
   // header has six children without a root box (‹ 🔍 This-āyah word › ×), not five.
   // Updated in place 21 Oct 2026 (PCF MSA J59): the ⓘ Legend moved into the header beside "This āyah", so seven
   // (‹ 🔍 This-āyah ⓘ word › ×).
-  check(`${lang}/${width}: word with no root has no ROOT box and no overlap`, !has && hdr.length === 7 && ov === 0, `root=${has} children=${hdr.length} overlaps=${ov}`);
+  // Updated in place 26 Oct 2026 (PCF MSA J101): the one meaning sits in the header beside the word, so eight
+  // (‹ 🔍 This-āyah ⓘ word meaning › ×).
+  check(`${lang}/${width}: word with no root has no ROOT box and no overlap`, !has && hdr.length === 8 && ov === 0, `root=${has} children=${hdr.length} overlaps=${ov}`);
   await ctx.close();
 }
 
