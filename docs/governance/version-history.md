@@ -976,3 +976,4 @@ total). Allocated by the MMSA Architect.
 12.72: the Zab button fix on Onboarding and Accept invite (audit part 97). Allocated by the MMSA Architect.
 12.73: Know Your Status: the chosen Approach's own wheel; the unit rows under one top-bar button (J100). Allocated by the MMSA Architect.
 12.74: Word Card top: one meaning beside the Arabic; slim transliteration bar with a Forms card (J101). Allocated by the MMSA Architect.
+12.75: Import notes: a refused import says Not saved, never Done (audit part 98, J29). Allocated by the MMSA Architect.
