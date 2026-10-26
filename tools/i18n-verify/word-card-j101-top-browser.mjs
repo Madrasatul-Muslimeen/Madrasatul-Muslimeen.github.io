@@ -78,6 +78,12 @@ async function start(lang, width, at = [1, 5, 2]) {
   await page.waitForTimeout(900);
   return { ctx, page, errors };
 }
+// The Architect's review note (v12.76): the 390 picture showed the card over the page. The cause was the look check
+// below leaving no card look set (fixed there); this wait also keeps a picture from catching a sheet mid-slide.
+async function settled(page) {
+  await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== "running" || a.effect?.getTiming?.().iterations === Infinity), null, { timeout: 3000 }).catch(() => {});
+  await page.waitForTimeout(100);
+}
 const top = (page) => page.evaluate(() => {
   const m = document.getElementById("quranWordCardMount"), card = m.querySelector(".quran-word-card"), header = card.querySelector("header");
   const R = (el) => { if (!el) return null; const r = el.getBoundingClientRect(); return { l: r.left, r: r.right, t: r.top, b: r.bottom, w: r.width, h: r.height, mid: (r.top + r.bottom) / 2 }; };
@@ -145,6 +151,7 @@ for (const lang of LANGS) for (const width of WIDTHS) {
       const rgb = (s) => (s.match(/[\d.]+/g) || []).map(Number);
       const lum = ([r, g, b]) => { const f = (c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; }; return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b); };
       const out = [];
+      const was = document.documentElement.getAttribute("data-card-look");
       for (const look of ["light", "dark", "night"]) {
         if (look === "dark") document.documentElement.removeAttribute("data-card-look"); else document.documentElement.setAttribute("data-card-look", look);
         const g = [...document.querySelectorAll("#quranWordCardMount [data-word-card-head-gloss], #quranWordCardMount [data-word-card-bar-gloss]")].find((e) => e.getClientRects().length > 0);
@@ -156,12 +163,14 @@ for (const lang of LANGS) for (const width of WIDTHS) {
           out.push({ look, r: (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05) });
         }
       }
-      document.documentElement.removeAttribute("data-card-look");
+      // Put the reader's own look back. The app has only Light and Night; with no look set the phone sheet has no
+      // background, which is what the Architect's v12.76 review saw in the 390 picture (the card over the page).
+      if (was === null) document.documentElement.removeAttribute("data-card-look"); else document.documentElement.setAttribute("data-card-look", was);
       return out;
     });
     check(`${tag} the meaning and its coloured parts read at >= 4.5:1 on the light, dark and Night looks`, ratios.length > 0 && ratios.every((x) => x.r >= 4.5), JSON.stringify(ratios.filter((x) => x.r < 4.5)));
   }
-  if (width === 390 || width === 600 || width === 1280) await page.screenshot({ path: `${process.env.SHOT_DIR || "/tmp"}/j101-${lang}-${width}.png` });
+  if (width === 390 || width === 600 || width === 1280) await settled(page), await page.screenshot({ path: `${process.env.SHOT_DIR || "/tmp"}/j101-${lang}-${width}.png` });
 
   if (!a.btnCount) { check(`${tag} POSITIVE CONTROL: the Forms button exists`, false); await ctx.close(); continue; }
   await page.click("#quranWordCardMount [data-word-card-forms] >> visible=true"); await waitPop(page);
@@ -173,7 +182,7 @@ for (const lang of LANGS) for (const width of WIDTHS) {
   // From lemma-forms.json: ع ب د has a doer (عَابِد) and a Form II verb (عَبَّد) in the Qur'an, and no verbal noun.
   check(`${tag} ...this word (present) is the one marked; the Form II verb and the doer are listed`, p1.here.length === 1 && p1.here[0] === "IMPF" && p1.doer >= 1 && p1.form2, JSON.stringify({ here: p1.here, doer: p1.doer, form2: p1.form2, verbs: p1.verbs }));
   check(`${tag} ...inside the screen, the focus on ← Back to the word`, p1.inside && /word-card-forms-back/.test(p1.focus), JSON.stringify({ inside: p1.inside, focus: p1.focus }));
-  if (width === 390) await page.screenshot({ path: `${process.env.SHOT_DIR || "/tmp"}/j101-${lang}-${width}-forms.png` });
+  if (width === 390) await settled(page), await page.screenshot({ path: `${process.env.SHOT_DIR || "/tmp"}/j101-${lang}-${width}-forms.png` });
   await page.click("#quranWordCardMount .word-card-forms-back"); await page.waitForTimeout(400);
   const back = await page.evaluate(() => ({ pop: !!document.querySelector("#quranWordCardMount [data-word-card-forms-pop]"), card: !!document.querySelector("#quranWordCardMount .quran-word-card"), focus: document.activeElement?.className ?? "" }));
   check(`${tag} ← Back to the word: the card closes, the word is where it was, the focus on Forms ▸`, !back.pop && back.card && /word-card-forms-btn/.test(back.focus), JSON.stringify(back));
@@ -192,7 +201,7 @@ if (!arg("width")) for (const lang of LANGS) for (const width of [320, 390, 520,
   const a = await top(page);
   check(`${tag} the drawn Arabic touches no other control on the header, and is not cut`, a.glyphHits.length === 0 && !a.glyphCut && a.translit.length > 0, JSON.stringify({ hits: a.glyphHits, cut: a.glyphCut, tr: a.translit }));
   check(`${tag} the meaning is where it belongs (${a.wide ? "the slim bar" : "beside the Arabic"}), whole, one Forms ▸, nothing outside the card`, a.meanings.length === 1 && (a.wide ? a.glossInBar && a.headerMeaning === 0 && a.btnInHeader : a.glossInHeader) && a.btnCount === 1 && a.glossWhole && a.clipped === 0 && a.over <= 0, JSON.stringify(a));
-  if (width === 600) await page.screenshot({ path: `${process.env.SHOT_DIR || "/tmp"}/j101-${lang}-${width}-14-11.png`, clip: { x: 0, y: 0, width, height: 420 } });
+  if (width === 600) await settled(page), await page.screenshot({ path: `${process.env.SHOT_DIR || "/tmp"}/j101-${lang}-${width}-14-11.png`, clip: { x: 0, y: 0, width, height: 420 } });
   check(`${tag} no page errors`, errors.filter((e) => !/ERR_CERT|archive\.org|net::|api\.quran/.test(e)).length === 0, errors.slice(0, 2).join(" | "));
   await ctx.close();
 }
