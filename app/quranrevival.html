@@ -3532,6 +3532,17 @@
     border-radius: 0.35rem; background: transparent; color: #fff; cursor: pointer; white-space: nowrap;
   }
   .ms-wheel-switch { flex-wrap: wrap; }
+  #myStatusWheelSwitch[hidden] { display: none; } /* the class sets display: flex (the [hidden] trap) */
+  /* PCF MSA J100: the unit button on the blue bar, the same face as ← Back; the title takes what is left and wraps
+     rather than being cut. */
+  .my-status-unit-btn {
+    flex: 0 0 auto; min-height: 40px; display: inline-flex; align-items: center; gap: 0.3rem; margin-left: auto; padding: 0 0.6rem;
+    font: inherit; font-size: 0.9rem; font-weight: 600; line-height: 1; border: 1px solid #d8c68a; border-radius: 0.35rem;
+    background: rgba(255,255,255,0.12); color: #fff; cursor: pointer; white-space: nowrap;
+  }
+  .my-status-unit-btn[hidden] { display: none; }
+  .my-status-unit-btn[aria-expanded="true"] { background: #d8c68a; color: #1F3A6E; }
+  .my-status-card header h2#myStatusTitle { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
   /* PCF MSA J50 -- the Approach pull-down sits at the top of the list and stays there while the list scrolls. */
   /* flex: 1 1 100% + min-width: 0: below 620px the list's row wraps, and a <select>'s natural width is its LONGEST
      option (a real Approach name), which pushed the list 93px sideways at 320px. */
@@ -7188,6 +7199,8 @@
       <header>
         <button type="button" id="myStatusBackBtn" class="my-status-back-btn" data-home-back>← Back</button><!-- PCF MSA J72 -->
         <h2 id="myStatusTitle">Know Your Status</h2>
+        <!-- PCF MSA J100: the unit switch folds under this one button (paintMyStatusUnitBtn()). -->
+        <button type="button" id="myStatusUnitBtn" class="my-status-unit-btn" aria-haspopup="true" aria-expanded="false" aria-controls="myStatusWheelSwitch" hidden><span data-ms-unit-word>All units</span><span aria-hidden="true">▾</span></button>
         <button type="button" id="myStatusCloseBtn" class="my-status-close-btn">&times;</button>
       </header>
       <div id="myStatusBody" class="my-status-body"></div>
@@ -12643,7 +12656,77 @@
       return `#${pa.map((v, i) => Math.round(v + (pb[i] - v) * k).toString(16).padStart(2, "0")).join("")}`;
     }
 
-    /** Wheel + switch + key. All units = six rings per slice; one unit = the slice filled outward by that unit's share. */
+    // PCF MSA J100 (the Owner, 26 Oct 2026: "When select an approach in this status view, the wheel should display the
+    // status of that approach"; ticked A): with one Approach chosen, the wheel is THAT Approach's own wheel, one slice per
+    // unit of the chosen unit type, each coloured by its status. Every slice goes through summarizeUnitCoverage()'s own
+    // per-unit rule (poolStatus, else a direct claim on the unit, else Not started), so the slices that read Achieved or
+    // Mastered are exactly the units the tile counts. Āyah: one slice per Surah, filled by the share of its āyāt Achieved
+    // or Mastered, through the headline's own summarizeApproachAyahCoverage() (the 114 add up to the Āyah tile).
+    const MY_STATUS_UNIT_LABEL = { juz: "Juz {n}", surah: "Surah {n}", hizb: "Hizb {n}", ruku: "Ruku' {n}", page: "Page {n}" };
+    function myStatusOneUnitItems(trackableId, type, cache) {
+      cache.unitItems ??= new Map();
+      const memo = `${trackableId}|${type}`;
+      if (cache.unitItems.has(memo)) return cache.unitItems.get(memo);
+      const trackable = quranTrackables.find((x) => x.id === trackableId);
+      const labelsById = statusLabelsById();
+      let out;
+      if (type === "ayah") {
+        const own = cache.ownAyahByTrackable.get(trackableId), spans = cache.wideSpansByTrackable.get(trackableId);
+        out = surahIndex.map((s) => {
+          const sum = summarizeApproachAyahCoverage({ trackable, surahAyahCounts: [{ surahNumber: s.surahNumber, ayahCount: s.ayahCount }], ownAyahStatusesBySurahAyah: own, wideSpans: spans, fatihaOn: fatihaOn() });
+          const share = sum.countedTotal > 0 ? sum.achievedOrMastered / sum.countedTotal : 0;
+          const label = t("Surah {n}", { n: num(s.surahNumber) });
+          return { unit: s.surahNumber, n: sum.achievedOrMastered, share, title: `${label} — ${t("Achieved + Mastered: {n} of {total} āyāt ({percent}%)", { n: num(sum.achievedOrMastered), total: num(sum.countedTotal), percent: num(percentRounded(sum.achievedOrMastered, sum.countedTotal)) })}` };
+        });
+      } else {
+        const ownStatus = myStatusOwnReader(cache.ownAyahByTrackable.get(trackableId));
+        const spans = cache.wideSpansByTrackable.get(trackableId), direct = cache.directWideStatusByTrackable.get(trackableId);
+        out = (myStatusUnitLists(cache)[type] ?? []).map((u, i) => {
+          const statusId = poolStatus(u.coverage, { ownStatus, spans, trackable, fatihaOn: fatihaOn() }) ?? (direct?.get(u.key) ?? "not_started");
+          return { unit: i + 1, statusId, title: segTitle(t(MY_STATUS_UNIT_LABEL[type], { n: num(i + 1) }), statusId, labelsById) };
+        });
+      }
+      cache.unitItems.set(memo, out);
+      return out;
+    }
+    /** One Approach's own wheel: one unit type (slices), All units (six rings, the overview's order), or Word by Word
+     *  (words known, by Juz: it is counted in words, not in units). Every slice opens the Approach's card. */
+    function myStatusOneApproachWheelHtml(trackableId, mode, cache) {
+      const trackable = quranTrackables.find((x) => x.id === trackableId);
+      const centerLabel = trackable ? wheelShortLabel(trackable) : t("Know Your Status");
+      const done = STATUS_COLORS.mastered, none = STATUS_COLORS.not_started;
+      if (trackableId === WBW_TRACKABLE_ID) {
+        const items = (juzWordTotalsData?.byJuz ?? []).map((row) => {
+          const known = Number(cache.wordTotals?.byJuz?.[String(row.juz)]?.known ?? 0);
+          const share = row.totalWords > 0 ? known / row.totalWords : 0;
+          return { key: trackableId, number: num(row.juz), statusId: "not_started", fill: none, progress: share, progressFill: done, title: escapeHtml(`${t("Juz {juz}", { juz: num(row.juz) })} — ${t("{n} of {total} words ({percent}%)", { n: num(known), total: num(row.totalWords), percent: num(percentRounded(known, row.totalWords)) })}`) };
+        });
+        return renderScopedWheel(items, { centerLabel, centerSub: `${t("Words known")} · ${t("Juz")}`, roomForNumbers: true });
+      }
+      const slicesFor = (type) => myStatusOneUnitItems(trackableId, type, cache);
+      if (mode === "all") {
+        const rings = MY_STATUS_UNIT_ORDER.map((type) => {
+          const list = slicesFor(type), per = 360 / (list.length || 1), gap = Math.min(0.6, per * 0.08);
+          return list.map((s, i) => ({
+            key: trackableId, ringKind: type, statusId: s.statusId ?? "not_started",
+            fill: type === "ayah" ? (s.share > 0 ? mixHex(none, done, 0.35 + 0.65 * s.share) : none) : (STATUS_COLORS[s.statusId] ?? none),
+            a0: i * per, a1: i * per + per - gap, title: escapeHtml(s.title),
+          }));
+        });
+        return renderRingWheel(rings, { centerLabel, centerSub: t("All units") });
+      }
+      const list = slicesFor(mode);
+      // Numbers outside the ring only where they fit (Juz 30, Hizb 60); elsewhere none -- an empty one, because
+      // renderScopedWheel() prints the slice's key where a number is missing (it printed "approach_02" 114 times).
+      const numbered = mode !== "ayah" && list.length <= 60;
+      const items = list.map((s) => mode === "ayah"
+        ? { key: trackableId, number: "", statusId: "not_started", fill: none, progress: s.share, progressFill: done, title: escapeHtml(s.title) }
+        : { key: trackableId, number: numbered ? num(s.unit) : "", statusId: s.statusId, title: escapeHtml(s.title) });
+      return renderScopedWheel(items, { centerLabel, centerSub: t("by {unit}", { unit: t(RING_TYPE_NAMES[mode]) }), roomForNumbers: numbered });
+    }
+
+    /** Wheel + switch + key. All units = six rings per slice; one unit = the slice filled outward by that unit's share.
+     *  PCF MSA J100: with one Approach chosen in the pull-down, that Approach's own wheel (above). */
     function myStatusWheelBoxHtml(cache) {
       const mode = getMyStatusWheelUnit();
       const n = quranTrackables.length || 1;
@@ -12652,7 +12735,9 @@
       const centerSub = mode === "all" ? t("All units") : t("by {unit}", { unit: t(RING_TYPE_NAMES[mode]) });
       const centerLabel = t("Know Your Status");
       let wheelHtml;
-      if (mode === "all") {
+      if (myStatusPick && quranTrackables.some((x) => x.id === myStatusPick)) {
+        wheelHtml = myStatusOneApproachWheelHtml(myStatusPick, mode, cache);
+      } else if (mode === "all") {
         const rings = MY_STATUS_UNIT_ORDER.map((type, k) => quranTrackables.map((tr, i) => {
           const name = langText(tr.name, getAppLang(), tr.id);
           let lit, strength;
@@ -12694,7 +12779,7 @@
         ? `<p class="ms-ring-key">${escapeHtml(t("Rings, from the middle out"))}: ${MY_STATUS_UNIT_ORDER.map((v) => escapeHtml(t(RING_TYPE_NAMES[v]))).join(" → ")}</p>` : "";
       return `<div id="myStatusWheelBox" data-mode="${mode}">
         <div id="myStatusOverviewWheel">${wheelHtml}</div>
-        <div class="wheel-look-switch wheel-show-switch ms-wheel-switch" id="myStatusWheelSwitch" role="group" aria-label="${escapeHtml(t("Show"))}">${buttons}</div>
+        <div class="wheel-look-switch wheel-show-switch ms-wheel-switch" id="myStatusWheelSwitch" role="group" aria-label="${escapeHtml(t("Show"))}"${myStatusSwitchOpen ? "" : " hidden"}>${buttons}</div>
         ${keyLine}
       </div>`;
     }
@@ -12714,15 +12799,42 @@
         const card = document.getElementById("myStatusCard").getBoundingClientRect();
         wheelBox.set(Math.min(card.width - 80, card.height * 0.62));
       }
+      paintMyStatusUnitBtn();
       box.querySelectorAll("[data-kys-wheel-unit]").forEach((btn) => {
         btn.addEventListener("click", () => {
           setMyStatusWheelUnit(btn.dataset.kysWheelUnit);
+          myStatusSwitchOpen = false; // PCF MSA J100: picking a unit closes the two rows again
           if (!myStatusCache) return;
           box.outerHTML = myStatusWheelBoxHtml(myStatusCache);
           attachMyStatusWheel();
         });
       });
     }
+
+    // PCF MSA J100 (the Owner, 26 Oct 2026: "moving these selections of 2 rows buttons under one button on the top bar,
+    // one click shows the 2 bars as it is now, otherwise remain hidden under one button, saves two rows"; ticked A): the
+    // unit switch (All units · Juz · Surah · Hizb · Ruku' · Page · Āyah) stays where it was, closed, and the one button on
+    // the blue top bar, named by the unit shown ("Surah ▾"), opens it; picking a unit closes it.
+    let myStatusSwitchOpen = false;
+    function paintMyStatusUnitBtn() {
+      const btn = document.getElementById("myStatusUnitBtn");
+      if (!btn) return;
+      const mode = getMyStatusWheelUnit();
+      const word = mode === "all" ? t("All units") : t(RING_TYPE_NAMES[mode]);
+      btn.querySelector("[data-ms-unit-word]").textContent = word;
+      btn.setAttribute("aria-expanded", String(myStatusSwitchOpen));
+      btn.setAttribute("aria-label", `${t("Show")}: ${word}`);
+      btn.title = `${t("Show")}: ${word}`;
+      btn.hidden = !document.getElementById("myStatusWheelSwitch");
+    }
+    document.getElementById("myStatusUnitBtn")?.addEventListener("click", () => {
+      const sw = document.getElementById("myStatusWheelSwitch");
+      if (!sw) return;
+      myStatusSwitchOpen = !myStatusSwitchOpen;
+      sw.hidden = !myStatusSwitchOpen;
+      paintMyStatusUnitBtn();
+      if (myStatusSwitchOpen) sw.scrollIntoView({ block: "nearest", behavior: "instant" });
+    });
 
     /** The wheel + list body, before any Approach is expanded. */
     function renderMyStatusOverview(cache) {
@@ -12868,8 +12980,12 @@
         const list = myStatusBodyEl.querySelector("[data-ms-list]");
         list.classList.toggle("ms-one", !!myStatusPick);
         list.querySelectorAll("[data-ms-row]").forEach((li) => { li.hidden = !!myStatusPick && li.dataset.msRow !== myStatusPick; });
-        // The chosen Approach comes into view right under the pull-down.
-        myStatusBodyEl.querySelector("[data-ms-pick-bar]")?.scrollIntoView({ block: "start", behavior: "instant" });
+        // PCF MSA J100: the wheel becomes the chosen Approach's own wheel (or the 35-Approach wheel again for "All").
+        const box = document.getElementById("myStatusWheelBox");
+        if (box) { box.outerHTML = myStatusWheelBoxHtml(cache); attachMyStatusWheel(); }
+        // The chosen Approach's wheel comes into view, with the pull-down and its row under it (J50 scrolled to the
+        // pull-down, which put the wheel above the screen just when it starts to say something new).
+        (document.getElementById("myStatusWheelBox") ?? myStatusBodyEl.querySelector("[data-ms-pick-bar]"))?.scrollIntoView({ block: "start", behavior: "instant" });
       });
       attachMyStatusWheel();
     }
