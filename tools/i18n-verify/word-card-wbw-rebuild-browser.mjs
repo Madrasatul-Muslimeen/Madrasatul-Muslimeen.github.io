@@ -83,7 +83,12 @@ for (const lang of ["en", "bn"]) {
     // every item's vertical span overlaps the first item's span; a wrapped item would sit wholly below it.
     // Updated in place 26 Oct 2026 (PCF MSA J101: "let the transliteration only stays with little slim bar"): the bar's
     // text is the transliteration alone (the meanings moved beside the Arabic), one row, inside the card.
-    check(`${L}: the slim bar holds the transliteration only, on one row, inside the card (J101)`, mb.length >= 1 && mb.every((r) => r.r <= width && r.y < mb[0].b - 1 && r.b > mb[0].y + 1) && (await text(page, ".word-card-meaning-bar .word-card-meaning")).length === 0, JSON.stringify(mb.map((r) => [r.y, r.b, r.r])));
+    // Updated again 26 Oct 2026 (the Owner's tablet fix): on a tablet or computer card the ONE meaning moved down here,
+    // beside the transliteration; on a phone card it stays beside the Arabic and this bar is the transliteration alone.
+    // Only drawn items are measured (the hidden copy is 0x0, not "on another row").
+    const drawn = mb.filter((r) => r.r > 0 || r.b > 0);
+    const barMeanings = await page.evaluate(() => [...document.querySelectorAll(".word-card-meaning-bar .word-card-meaning")].filter((e) => e.getClientRects().length > 0).length);
+    check(`${L}: the slim bar is one row inside the card: the transliteration${width > 500 ? " and the one meaning" : " only"} (J101)`, drawn.length >= 1 && drawn.every((r) => r.r <= width && r.y < drawn[0].b - 1 && r.b > drawn[0].y + 1) && barMeanings === (width > 500 ? 1 : 0), JSON.stringify({ items: drawn.map((r) => [r.y, r.b, r.r]), barMeanings }));
 
     const hdr = await page.evaluate(() => [...document.querySelector(".quran-word-card header").children].map((e) => { const r = e.getBoundingClientRect(); return { n: e.className || e.tagName, x: r.x, y: r.y, w: r.width, h: r.height, r: r.right, b: r.bottom }; }));
     let ov = [];

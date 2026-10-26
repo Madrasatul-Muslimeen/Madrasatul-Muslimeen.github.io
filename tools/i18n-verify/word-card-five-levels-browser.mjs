@@ -189,7 +189,10 @@ const legendState = (page) => page.evaluate(() => {
     arrowOff: vis(bal) ? (() => { const cs = getComputedStyle(bal, "::before"); const left = er.left + parseFloat(cs.left) + parseFloat(cs.width) / 2 + 2; return Math.abs(left - (br.left + br.width / 2)); })() : null,
     rowEmpty: !!row && row.children.length === 0,
     // J59: ‹ 🔍 This āyah ⓘ › × stay on ONE row (the 320px phone was the tight one: × wrapped before the fix)
-    oneRow: !!head && new Set([...head.querySelectorAll(":scope > button")].map((b) => Math.round(b.getBoundingClientRect().top))).size === 1,
+    // Updated in place 26 Oct 2026 (the Owner's tablet fix after J101): the header also carries a "Forms ▸" that only a
+    // tablet or computer card shows (display: none on a phone card); a control not drawn is not on any row, so only the
+    // drawn buttons are counted, here and in audit part 78 below.
+    oneRow: !!head && new Set([...head.querySelectorAll(":scope > button")].filter((b) => b.getClientRects().length > 0).map((b) => Math.round(b.getBoundingClientRect().top))).size === 1,
     insideCard: !!br && !!cr && br.left >= cr.left - 1 && br.right <= cr.right + 1 && (!vis(bal) || (er.left >= cr.left - 1 && er.right <= cr.right + 1)),
     cando: bal?.querySelector("[data-word-card-cando]")?.textContent.trim() ?? null,
     order: bal?.querySelector("[data-word-card-ordernote]")?.textContent.trim() ?? null,
@@ -247,10 +250,10 @@ async function j43Checks(page, tag, lang, width) {
         const before = natural();
         btn.style.letterSpacing = `${Math.ceil(17 / Math.max(1, [...btn.textContent.trim()].length))}px`; // 16px+ wider in either language
         const after = natural();
-        const tops = [...head.querySelectorAll(":scope > button")].filter((b) => !b.classList.contains("word-card-app-back")).map((b) => Math.round(b.getBoundingClientRect().top));
+        const tops = [...head.querySelectorAll(":scope > button")].filter((b) => b.getClientRects().length > 0).filter((b) => !b.classList.contains("word-card-app-back")).map((b) => Math.round(b.getBoundingClientRect().top));
         const r = btn.getBoundingClientRect();
         const out = { before: Math.round(before), after: Math.round(after), rows: new Set(tops).size, h: Math.round(r.height), whole: btn.scrollWidth <= btn.clientWidth + 1 && btn.scrollHeight <= btn.clientHeight + 1,
-          tall: [...head.querySelectorAll(":scope > button")].every((b) => b.getBoundingClientRect().height >= 39.5) };
+          tall: [...head.querySelectorAll(":scope > button")].filter((b) => b.getClientRects().length > 0).every((b) => b.getBoundingClientRect().height >= 39.5) };
         btn.style.letterSpacing = "";
         return out;
       });
