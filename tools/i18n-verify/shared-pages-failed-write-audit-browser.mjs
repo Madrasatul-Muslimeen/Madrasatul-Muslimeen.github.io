@@ -33,6 +33,10 @@ const ONLY = arg("page"), MUTATE = arg("mutate"), CAP = +arg("cap") || 25, BN = 
 const MUTATE_PAGE = arg("mutate-page") || "about.html";
 const LIST = process.argv.includes("--list"), VERBOSE = process.argv.includes("--verbose");
 const MENU_PAGE = "classes.html", MENU_CAP = 40;
+// Part 98: --from=<n> skips the first n controls (so a page too long for one call can be run in slices), --vp=<w> runs one width,
+// --depth=<n> follows a control that opens more controls n levels deep (default 1), --nomenu skips the shared-menu pass.
+const FROM = +arg("from") || 0, VP = +arg("vp") || 0, DEPTH = +arg("depth") || 1;
+const NOMENU = process.argv.includes("--nomenu");
 
 // Copied from shared-pages-keyboard-audit-browser.mjs (not edited there).
 const PAGES = [
@@ -42,7 +46,7 @@ const PAGES = [
   ["Monitor", "monitor.html"], ["Homework", "homework.html"], ["People", "people.html"], ["Records", "records.html"],
   ["Catalogue", "catalogue.html"], ["About", "about.html"], ["Bookmarks", "bookmarks.html"],
   ["Hadith collections", "hadith-collections.html"],
-  ["Landing", "index.html"], ["Notes", "notes.html"], ["Journey map", "journey-map.html"], ["Deen study", "deen-study.html"],
+  ["Landing", "index.html"], ["Notes", "notes.html?unit=ayah:2:255&label=Al-Baqarah%202:255"], ["Journey map", "journey-map.html"], ["Deen study", "deen-study.html"],
   ["Arabic study", "arabic-study.html"], ["Self-check", "admin-self-check.html"], ["Taglines", "taglines.html"],
 ];
 const REAL_SEED = `
@@ -54,6 +58,29 @@ DATA.classes[0].name = lang("Weekend Qur'an Memorisation and Tajweed Circle (Yea
 DATA.courseOffers[0].name = lang("Weekend Qur'an Memorisation and Tajweed Circle (Year 7–9)");
 DATA.bookmarks[0].saved[0].name = "Ayat al-Kursi and the last two āyāt of Al-Baqarah";
 `;
+// Part 98 seeds, so the saves on Notes / Journey map / Dawah are reachable: two Notes on 2:255 (one origin, one reference) with
+// their revisions and source links, and Dawah pages (a draft and a shared one of the signed-in person p1, one waiting for approval).
+const TS = "2026-01-01T00:00:00.000Z";
+const own = { tenantId: "t1", ownerPersonId: "p1", ownerUid: "test-uid", schemaVersion: 1, createdAt: TS, updatedAt: TS, createdBy: "test-uid" };
+const NOTES = [
+  { _id: "t1__n255", noteId: "n255", ...own, title: "Started on 2:255", bodyHtml: "<p>Ayat al-Kursi, a first note.</p>", status: "active", visibility: "private", currentRevisionId: "n255-r1" },
+  { _id: "t1__n7", noteId: "n7", ...own, title: "A second note", bodyHtml: "<p>Another body.</p>", status: "active", visibility: "private", currentRevisionId: "n7-r1" },
+];
+const SOURCES = NOTES.map((n, i) => ({ _id: "t1__s" + n.noteId, sourceLinkId: "s" + n.noteId, ...own, noteId: n.noteId, sourceKey: "ayah:2:255", sourceKind: "quran-unit", relationshipKind: i ? "reference" : "origin", approachId: null, provenanceKind: "study-note", status: "active" }));
+const REVS = NOTES.map((n) => ({ _id: "t1__" + n.noteId + "-r1", revisionId: n.noteId + "-r1", noteId: n.noteId, previousRevisionId: null, title: n.title, bodyHtml: n.bodyHtml, revisionReason: "content-update", actorUid: "test-uid", ...own }));
+const NOTES_SEED = `window.__DATA = DATA;
+DATA.notes = [...(DATA.notes ?? []), ...${JSON.stringify(NOTES)}];
+DATA.noteSources = [...(DATA.noteSources ?? []), ...${JSON.stringify(SOURCES)}];
+DATA.noteRevisions = [...(DATA.noteRevisions ?? []), ...${JSON.stringify(REVS)}];
+DATA.userPrefs = [{ _id: "test-uid" }];`;
+const dp = (id, author, status) => ({ _id: "t1__" + id, pageId: id, tenantId: "t1", schemaVersion: 1, authorPersonId: author, sourceNoteId: "n255", sourceRevisionId: "n255-r1", title: "Page " + id, bodyHtml: "<p>Body of " + id + "</p>", sourceUnitKey: null, status, approvedByPersonId: null, approvedAt: null, returnedNote: null });
+const DAWAH_SEED = `DATA.dawahPages = ${JSON.stringify([dp("pDraft", "p1", "draft"), dp("pShared", "p1", "shared"), dp("pWait", "p2", "awaiting-approval")])};`;
+const SEEDS = { "notes.html": NOTES_SEED, "journey-map.html": NOTES_SEED, "dawah.html": NOTES_SEED + DAWAH_SEED };
+// One small valid WordPress export, chosen in the file picker before the page's controls are listed.
+const WXR = `<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:wp="http://wordpress.org/export/1.2/"><channel>
+<wp:category><wp:term_id>5</wp:term_id><wp:category_nicename>audit-cat</wp:category_nicename><wp:category_parent></wp:category_parent><wp:cat_name><![CDATA[Audit WP Folder]]></wp:cat_name></wp:category>
+<item><title><![CDATA[Audit WP one]]></title><link>https://example.com/one</link><content:encoded><![CDATA[<p>Hello from WordPress</p>]]></content:encoded><wp:post_id>101</wp:post_id><wp:post_date>2026-01-01 10:00:00</wp:post_date><wp:post_date_gmt>2026-01-01 10:00:00</wp:post_date_gmt><wp:post_modified>2026-01-02 10:00:00</wp:post_modified><wp:post_modified_gmt>2026-01-02 10:00:00</wp:post_modified_gmt><wp:status>publish</wp:status><wp:post_type>post</wp:post_type><category domain="category" nicename="audit-cat"><![CDATA[Audit WP Folder]]></category></item>
+</channel></rss>`;
 // The refusal flags are getters that count each read, and answer true only once the suite has armed them.
 const FLAGS = `
 window.__armed = false; window.__refHits = 0;
@@ -93,9 +120,15 @@ const INSTALL = () => {
   const fill = () => {
     document.querySelectorAll("details").forEach((d) => { d.open = true; });
     const set = (el, v) => { const proto = el.tagName === "TEXTAREA" ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype; Object.getOwnPropertyDescriptor(proto, "value").set.call(el, v); el.dispatchEvent(new Event("input", { bubbles: true })); el.dispatchEvent(new Event("change", { bubbles: true })); };
+    // Part 98: rich-text editors (the Notes body) are contenteditable, not inputs
+    for (const el of document.querySelectorAll("[contenteditable=true], [contenteditable='']")) {
+      if (!vis(el) || (el.textContent || "").trim()) continue;
+      el.textContent = "Audit Test 4821"; el.dispatchEvent(new Event("input", { bubbles: true }));
+    }
     for (const el of document.querySelectorAll("input, textarea, select")) {
       if (!vis(el) || el.disabled || el.readOnly) continue;
       if (el.closest("nav, header, [class*=nav-], [id*=nav]") || /lang|tenant|preview|viewas/i.test(el.id + " " + el.name)) continue; // shell pickers reload the page
+      if (/import-notes/.test(location.pathname) && el.tagName === "SELECT") continue; // Part 98: Import is enabled only for "yourself" in the Person picker; leave it on yourself
       if (el.tagName === "SELECT") { const o = [...el.options].find((x) => x.value && !x.disabled && x.index !== el.selectedIndex) || [...el.options].find((x) => x.value && !x.disabled); if (o && (!el.value || el.selectedIndex <= 0)) { el.value = o.value; el.dispatchEvent(new Event("change", { bubbles: true })); } continue; }
       const t = (el.type || "text").toLowerCase();
       if (["checkbox", "radio", "file", "hidden", "button", "submit", "range", "color"].includes(t)) { if (t === "checkbox" && el.required && !el.checked) el.click(); if (t === "radio" && !document.querySelector(`input[type=radio][name="${el.name}"]:checked`)) el.click(); continue; }
@@ -129,7 +162,7 @@ const skipped = [];
 const pageSeconds = new Map();
 
 async function openFresh(path, w, h, lang) {
-  const ctx = await newContext(browser, { appLang: lang, accountLang: lang, banner: false, viewport: { width: w, height: h }, extraSeedJs: REAL_SEED + FLAGS });
+  const ctx = await newContext(browser, { appLang: lang, accountLang: lang, banner: false, viewport: { width: w, height: h }, extraSeedJs: REAL_SEED + (SEEDS[path.split("?")[0]] || "") + FLAGS });
   await ctx.route("**/archive.org/**", (r) => r.abort());
   await ctx.addInitScript(INSTALL); // every navigation, so a page that reloads itself keeps the helpers
   const sep = path.includes("?") ? "&" : "?";
@@ -137,6 +170,12 @@ async function openFresh(path, w, h, lang) {
   page.on("dialog", (d) => d.accept(d.type() === "prompt" ? MARK : undefined).catch(() => {}));
   await page.waitForTimeout(1000);
   await page.evaluate(INSTALL);
+  if (path.startsWith("import-notes.html")) {
+    await page.setInputFiles("#fileInput", { name: "Audit.xml", mimeType: "application/xml", buffer: Buffer.from(WXR) });
+    await page.waitForFunction(() => getComputedStyle(document.getElementById("previewSection")).display !== "none" && document.getElementById("importBtn").getAttribute("aria-disabled") === "false", null, { timeout: 15000 }).catch(() => {});
+    if (VERBOSE) console.log("   import-notes state:", await page.evaluate(() => ({ prev: getComputedStyle(document.getElementById("previewSection")).display, aria: document.getElementById("importBtn").getAttribute("aria-disabled"), gate: document.getElementById("gateNotice")?.textContent, parsing: document.getElementById("parsingMsg")?.textContent })));
+    await page.waitForTimeout(300);
+  }
   if (MUTATE === "silent" && path.startsWith(MUTATE_PAGE)) {
     // The page's refusal message is replaced by console.error only: any new text that says "not saved" is stripped as it appears.
     await page.evaluate(([en, bn]) => {
@@ -223,6 +262,7 @@ for (const [name, path] of PAGES) {
   if (ONLY && !ONLY.split(",").some((p) => path.startsWith(p))) continue;
   const tPage = Date.now();
   for (const [w, h] of VIEWPORTS) {
+    if (VP && w !== VP) continue;
     for (const lang of ["en", "bn"]) {
       if (lang === "bn" && !(BN === "all" || (BN !== "none" && BN_PAGES.has(path.split("?")[0])))) continue;
       const tag = `${name} / ${w} / ${lang}`;
@@ -235,7 +275,7 @@ for (const [name, path] of PAGES) {
       const top = await page.evaluate(() => window.__aud.list());
       await ctx.close();
       // The page's own controls come first (cap CAP); the menu's are pressed after them, on the menu page at 1440 / en only (cap MENU_CAP).
-      const auditMenu = onMenuPage && lang === "en" && w === 1440;
+      const auditMenu = !NOMENU && onMenuPage && lang === "en" && w === 1440;
       const queue = [], menuQueue = [];
       for (const c of top) {
         if (SKIP.test(c.label)) skipped.push(`${tag}: ${c.label} (sign-out)`);
@@ -249,6 +289,7 @@ for (const [name, path] of PAGES) {
         const q = fromMenu ? menuQueue : queue;
         if (fromMenu) nMenu++; else n++;
         const { via, c } = q.shift();
+        if (!via.length && !fromMenu && n <= FROM) continue; // slice: --from=<n> skips the first n top-level controls
         const id = via.map((v) => v.key).join(">") + ">" + c.key + "#" + c.nth;
         if (done.has(id)) continue; done.add(id);
         let o;
@@ -258,7 +299,7 @@ for (const [name, path] of PAGES) {
         if (j.status === "NAV") skipped.push(`${tag}: ${c.label} (navigates away)`);
         if (j.status !== "NOSAVE" && j.status !== "NAV") results.push({ page: name, path, w, lang, control: c.label || c.key, menu: isMenu(c), ...j });
         if (LIST || VERBOSE || !["NOSAVE", "NAV", "OK"].includes(j.status)) console.log(`   ${j.status.padEnd(10)} ${c.label || c.key}${j.detail ? "  — " + j.detail : ""}`);
-        if (!o.attempted && !o.nav && o.newControls.length && via.length < 1) for (const k of o.newControls.slice(0, 12)) {
+        if (!o.attempted && !o.nav && o.newControls.length && via.length < DEPTH) for (const k of o.newControls.slice(0, 12)) {
           const nc = { key: k, nth: 1, label: k.split("|")[1] || k };
           if (isMenu(nc) && !auditMenu) continue;
           if (isMenu(nc)) menuQueue.unshift({ via: [...via, c], c: nc }); else queue.push({ via: [...via, c], c: nc });
