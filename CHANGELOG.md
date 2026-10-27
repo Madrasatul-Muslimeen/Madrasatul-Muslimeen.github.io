@@ -22522,3 +22522,11 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 - **New flows:** `notes-pane-menu`, `notes-pane-attach`, `notes-pane-edit`, `notes-pane-{rename,link,tags,delete,versions,mytools}` on notes.html.
 - **Measured (Architect, 27 Oct):** `--flow=pane-mytools --bn=all --vp=1440` 30/30; `--flow=pane-tags --bn=all --vp=1440` 3/3; `--flow=notes-pane-menu --bn=all --vp=390` 8/8; `--flow=pane-tags --mutate=silent --mutate-page=journey-map.html` 2 MISSING, caught, exit 1. Version restore, @-mention and staged Done could not be reached by a flow (one revision only; typed @; tick while editing) and were changed by reading.
 - Nothing stored, no Rules changed.
+
+## v12.79 — 27 Oct 2026 — Hadith: a refused bookmark or Studied save says "Not saved: …" (audit part 101)
+
+- **Audit part 101** (PCF MSA J29, invariant I15; issue #1214, Builder run 2059, PR #1215; merged as the test-only #1216). Report: `docs/reports/2026-10-27-audit-part101-hadith-failed-writes.md`. New `--flow=` flows `hadith-card`, `dua-card`, `dua-word`, `dua-check` and `--vp=820`. Every Dua write (status buttons, 🔖, word card progress, Check this dua → Save) already said "Not saved". Two faults on a HadeethEnc hadith card: 🔖 Bookmark and the Studied select showed only the raw error (English on the Bangla page), and Studied kept showing the choice that was not saved. No Seerah page exists yet.
+- **Fix (Hadith Lead, `app/js/hadith-browser.js`, branch `claude/hadith-lead-01q2`, 99db1ad):** a `notSaved(err)` helper in `renderHadeethEncStudyActions` gives `t("Not saved: {why}")` (already in `bn.js`) with `role="status"`; both catches use it, and the Studied catch first sets `studiedSelect.value = studiedStatusId ?? ""`.
+- **Measured (Architect, 27 Oct):** `--flow=hadith-card --bn=all --nomenu` 4/4 OK at 390, 820 and 1440 (on main: 4 MISSING); `hadeethenc-browser` 82/0; `behaviour.mjs` alone (below in the PR).
+- **Correction to v12.77 and v12.78:** those entries say Builder runs 2053 (audit part 100) and 2046 opened no pull request. Run 2046 was truly refused (401); run 2053 did open #1212, and run 2059 opened #1215. The Architect looked only at the issue comments, which stay empty by design (the Builder may create a pull request but not comment).
+- Nothing stored, no Rules changed.
