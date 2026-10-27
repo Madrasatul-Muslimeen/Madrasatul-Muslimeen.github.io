@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "12.82",
+    "version": "12.83",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -5261,8 +5261,20 @@
     {
       "version": "12.82",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "The Owner's rule saw128 (28 Oct): the English catalogue seed reads 'Learning to love Rasulullah Sallallahu A'laihi Wa Sallam'; six dead duplicate bn.js keys removed.",
+      "integration": {
+        "authorizedOn": "2026-10-27",
+        "integratedOn": "2026-10-27",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.83",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "J102 (the Owner, 28 Oct 5:44 am): Word Card Root tab's meaning line and 'How the root grows' chips ~20% larger in one bordered panel (QR Lead).",
       "integration": {
         "authorizedOn": "2026-10-27",
         "integratedOn": "2026-10-27",
@@ -5271,8 +5283,9 @@
       }
     }
   ],
-  "nextUnallocated": "12.83",
+  "nextUnallocated": "12.84",
   "nextUnallocatedNote": [
+    "v12.83 was allocated to Word Card Root tab: the root's meaning and how it grows in one larger, elegant panel (J102), 2026-10-27.",
     "v12.82 was allocated to Rasulullah Sallallahu A'laihi Wa Sallam in the English catalogue (the Owner's rule); bn.js dead duplicate keys removed, 2026-10-27.",
     "v12.81 was allocated to topic names keep their width beside a long gloss (Hadith, Deen, Arabic); catalogue seed Rasulullah ﷺ, 2026-10-27.",
     "v12.80 was allocated to topic open: a refused 'where was I' save says plain translated words (audit part 102), 2026-10-27.",

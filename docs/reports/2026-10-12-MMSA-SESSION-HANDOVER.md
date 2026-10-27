@@ -1916,3 +1916,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v12.80** (2026-10-27): topic open: a refused 'where was I' save says plain translated words (audit part 102).
 - **v12.81** (2026-10-27): topic names keep their width beside a long gloss (Hadith, Deen, Arabic); catalogue seed Rasulullah ﷺ.
 - **v12.82** (2026-10-27): Rasulullah Sallallahu A'laihi Wa Sallam in the English catalogue (the Owner's rule); bn.js dead duplicate keys removed.
+- **v12.83** (2026-10-27): Word Card Root tab: the root's meaning and how it grows in one larger, elegant panel (J102).
