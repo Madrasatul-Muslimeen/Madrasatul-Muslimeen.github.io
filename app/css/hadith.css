@@ -356,3 +356,8 @@ a.hadeethenc-study-btn[aria-disabled="true"], button.hadeethenc-study-btn[aria-d
 .dua-check-winfo, .dua-check-fixbox { display: grid; gap: 0.35rem; min-width: 0; }
 .dua-check-input { min-height: 40px; min-width: 0; width: 100%; box-sizing: border-box; padding: 0.3rem 0.6rem; font: 1.3rem 'Amiri', 'Noto Naskh Arabic', serif; border-radius: 0.4rem; border: 1px solid var(--hadith-field); }
 @media (max-width: 480px) { .dua-check-word { grid-template-columns: minmax(0, 1fr); } .dua-check-ar { text-align: right; } }
+/* PCF MSA J103: a HadeethEnc card's proven references (book, standard number, chapter). */
+.hadith-refs { margin: 0.2rem 0 0.4rem; }
+.hadith-ref { margin: 0.1rem 0; }
+.hadith-ref-open { text-align: start; }
+.hadith-ref-chapter { margin-top: 0; }

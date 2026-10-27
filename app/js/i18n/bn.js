@@ -4489,4 +4489,22 @@ export const BN = {
   "What it means": "এর অর্থ", // ?
   "All clear. {n} checks ran, nothing needs attention. ({e} write failures logged this session.)": "সব ঠিক আছে। {n}টি পরীক্ষা চলেছে, কিছুতেই মনোযোগ দরকার নেই। (এই সেশনে {e}টি লেখা ব্যর্থ হয়েছে।)", // ?
   "{n} check(s) need attention — see the FAIL rows above. ({e} write failures logged this session.)": "{n}টি পরীক্ষায় মনোযোগ দরকার — ওপরের FAIL সারিগুলো দেখুন। (এই সেশনে {e}টি লেখা ব্যর্থ হয়েছে।)", // ?
+  // PCF MSA J103 Round 3: a HadeethEnc card's proven references.
+  "Bukhārī": "বুখারী", // ?
+  "Muslim": "মুসলিম", // ?
+  "Abū Dāwūd": "আবু দাউদ", // ?
+  "Tirmidhī": "তিরমিযী", // ?
+  "Nasāʾī": "নাসাঈ", // ?
+  "Ibn Mājah": "ইবনু মাজাহ", // ?
+  "Muwaṭṭaʾ Mālik": "মুয়াত্তা মালিক", // ?
+  "Musnad Aḥmad": "মুসনাদ আহমাদ", // ?
+  "Dārimī": "দারিমী", // ?
+  "al-Adab al-Mufrad": "আল-আদাবুল মুফরাদ", // ?
+  "Nasāʾī, ʿAmal al-Yawm wa-l-Layla": "নাসাঈ, আমালুল ইয়াওমি ওয়াল লাইলাহ", // ?
+  "Ibn al-Sunnī": "ইবনুস সুন্নী", // ?
+  "{book} {n} (this edition's number)": "{book} {n} (এই সংস্করণের নম্বর)", // ?
+  "Open {ref} in the book": "{ref} বইয়ে খুলুন", // ?
+  "{books}: number not yet found": "{books}: নম্বর এখনো পাওয়া যায়নি", // ?
+  "← Back to the hadith card": "← হাদীস কার্ডে ফিরে যান", // ?
+  "Not loaded: {why}": "লোড হয়নি: {why}", // ?
 };

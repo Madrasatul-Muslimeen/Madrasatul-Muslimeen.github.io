@@ -208,6 +208,31 @@ export async function loadOpenitiHadeethEncLinks(versionUri, { fetchImpl = fetch
 }
 
 // ---------------------------------------------------------------------------
+// HadeethEnc references (PCF MSA J103, Round 3): for one HadeethEnc hadith, the books its "Narrated by" line names,
+// each with its standard number and chapter where that is PROVEN (tools/hadith-data-pull/hadeethenc-references*.mjs),
+// and the named books whose number is not yet found. One small shard per 200 ids, loaded when a card opens (I9).
+// ---------------------------------------------------------------------------
+
+const REFS_BASE_URL = "../tools/hadith-data-pull/output/hadeethenc-references/display/";
+export const REFS_SHARD = 200;
+const refsCache = new Map();
+
+/** { refs: [{ book, cite, n, enBook, kitab, bab }], notFound: [book, ...] } for one HadeethEnc id (empty if none). */
+export async function loadHadeethEncReferences(id, { fetchImpl = fetch, baseUrl = REFS_BASE_URL } = {}) {
+  const key = Math.floor(Number(id) / REFS_SHARD);
+  const data = await cached(refsCache, `${baseUrl}${key}`, async () => {
+    const res = await fetchImpl(`${baseUrl}${key}.json`);
+    if (res.status === 404) return { refs: {}, notFound: {} };
+    if (!res.ok) throw new Error(`Could not load the hadith references (${res.status}).`);
+    const d = await res.json();
+    if (!d.refs || !d.notFound) throw new Error("Invalid hadith references shape.");
+    return d;
+  });
+  const refs = (data.refs[String(id)] ?? []).map(([book, cite, n, enBook, kitab, bab]) => ({ book, cite, n, enBook, kitab, bab }));
+  return { refs, notFound: data.notFound[String(id)] ?? [] };
+}
+
+// ---------------------------------------------------------------------------
 // The Dua index, first cut (decision 87, round H-DB4): the books' Dua chapters and the narrations of one dua grouped
 // across books by shared words (tools/hadith-data-pull/dua-index.mjs). Loaded when the Dua tab or a Dua book is
 // opened, never at startup (I9). The groups are a PROPOSAL for a person to confirm; the screen says so.

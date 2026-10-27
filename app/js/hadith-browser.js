@@ -36,7 +36,7 @@ import {
 import {
   OPENITI_CREDIT_URL,
   loadOpenitiBookSummaries, loadOpenitiBookIndex, loadOpenitiChapter, chapterForHadithNumber,
-  loadOpenitiConcordance, loadOpenitiHadeethEncLinks, loadDuaIndex, loadDuaCardsSummary, loadDuaCardsPage, loadDuaWordLinks, loadDuaVowels, loadDuaWordGrammar, loadDuaFit,
+  loadOpenitiConcordance, loadOpenitiHadeethEncLinks, loadHadeethEncReferences, loadDuaIndex, loadDuaCardsSummary, loadDuaCardsPage, loadDuaWordLinks, loadDuaVowels, loadDuaWordGrammar, loadDuaFit,
 } from "./openiti-corpus.js";
 import { buildCheckPanel, loadMemberTexts, applyMembers, checkChipText, checkState } from "./dua-check.js";
 
@@ -116,6 +116,8 @@ export function mountHadithBrowser(root, { mount = "standalone", initialHadeethE
     focusPendingOccurrence(body, state);
   }
 
+  // A HadeethEnc card's reference opens the passage in the OpenITI section below it, which needs the whole page redrawn.
+  state.render = render;
   render();
   return { render, state };
 }
@@ -408,6 +410,89 @@ function hadeethEncHadithRow(id, resolvedRecord, onOpen) {
   return row;
 }
 
+// PCF MSA J103 (Owner, 28 Oct 2026): the book, standard number and chapter of each book a HadeethEnc hadith's
+// "Narrated by" line names -- only where two independent searches proved it (hadeethenc-references-check.mjs).
+// The books in the library, by the key the data uses; `standard` = cited by the number on sunnah.com (Muslim by
+// Abdul-Baqi's), otherwise by this edition's own number.
+const REF_BOOKS = {
+  bukhari: { name: "Bukhārī", uri: "0256Bukhari.Sahih.JK000110-ara1", standard: true },
+  muslim: { name: "Muslim", uri: "0261Muslim.Sahih.Shamela0001727-ara1", standard: true },
+  abudawud: { name: "Abū Dāwūd", uri: "0275AbuDawudSijistani.Sunan.JK000142-ara1", standard: true },
+  tirmidhi: { name: "Tirmidhī", uri: "0279Tirmidhi.Sunan.JK000140-ara1", standard: true },
+  nasai: { name: "Nasāʾī", uri: "0303Nasai.SunanSughra.JK000130-ara1", standard: true },
+  ibnmajah: { name: "Ibn Mājah", uri: "0273IbnMaja.Sunan.JK000141-ara1", standard: true },
+  malik: { name: "Muwaṭṭaʾ Mālik", uri: "0179MalikIbnAnas.Muwatta.Shamela0028107-ara1", standard: true },
+  ahmad: { name: "Musnad Aḥmad", uri: "0241IbnHanbal.Musnad.Shamela0025794-ara1", standard: false },
+  darimi: { name: "Dārimī", uri: "0255CabdAllahDarimi.Sunan.JK000842-ara1", standard: false },
+  adab: { name: "al-Adab al-Mufrad", uri: "0256Bukhari.AdabMufrad.JK000011-ara1", standard: false },
+  nasaiAmal: { name: "Nasāʾī, ʿAmal al-Yawm wa-l-Layla", uri: "0303Nasai.CamalYawmWaLayla.JK000735-ara1", standard: false },
+  ibnsunni: { name: "Ibn al-Sunnī", uri: "0364IbnSunniDinawari.CamalYawmWaLayl.JK000943-ara1", standard: false },
+};
+
+/** Pure: one proven reference -> its label, e.g. "Bukhārī 5033 · Virtues of the Qur'an". */
+export function hadithRefLabel(ref) {
+  const b = REF_BOOKS[ref.book];
+  const name = t(b?.name ?? ref.book);
+  const head = b?.standard ? `${name} ${num(ref.cite)}` : t("{book} {n} (this edition's number)", { book: name, n: num(ref.cite) });
+  // The book's name comes in English only (the standard edition's sections): shown to an English reader; a Bangla
+  // reader has the Arabic chapter beneath instead (audit part 16: no English left on a Bangla screen).
+  return ref.enBook && getAppLang() === "en" ? `${head} · ${ref.enBook}` : head;
+}
+
+function hadeethEncReferences(id, state) {
+  const box = el("div", "hadith-refs");
+  box.dataset.hadeethencRefs = String(id);
+  loadHadeethEncReferences(id).then(({ refs, notFound }) => {
+    for (const ref of refs) {
+      const b = REF_BOOKS[ref.book];
+      const item = el("div", "hadith-ref");
+      const label = hadithRefLabel(ref);
+      if (b && ref.n != null) {
+        const btn = el("button", "hadeethenc-crumb hadith-ref-open", label);
+        btn.type = "button";
+        btn.dataset.hadithRef = `${ref.book}:${ref.cite}`;
+        btn.dataset.hadithRefPassage = `${b.uri}:${ref.n}`;
+        btn.setAttribute("aria-label", t("Open {ref} in the book", { ref: label }));
+        btn.addEventListener("click", () => openReferenceInBook(state, id, b.uri, ref.n));
+        item.appendChild(btn);
+      } else {
+        const span = el("span", "hadith-attribution", label);
+        span.dataset.hadithRef = `${ref.book}:${ref.cite}`;
+        item.appendChild(span);
+      }
+      const chapter = [ref.kitab, ref.bab].filter(Boolean).map(openitiDisplayTitle).join(" · ");
+      if (chapter) {
+        const ch = el("p", "hadith-attribution hadith-ref-chapter", chapter);
+        ch.lang = "ar"; ch.dir = "rtl";
+        item.appendChild(ch);
+      }
+      box.appendChild(item);
+    }
+    const missing = notFound.map((k) => t(REF_BOOKS[k]?.name ?? k));
+    if (missing.length) {
+      const p = el("p", "hadith-attribution hadith-ref-missing", t("{books}: number not yet found", { books: missing.join(", ") }));
+      p.dataset.hadithRefMissing = notFound.join(",");
+      box.appendChild(p);
+    }
+  }).catch((err) => {
+    box.appendChild(el("p", "hadith-attribution", t("Not loaded: {why}", { why: String(err?.message ?? err) })));
+  });
+  return box;
+}
+
+/** Opens a proven reference's passage in the OpenITI section, with "← Back to the hadith card" (decision 86). */
+function openReferenceInBook(state, id, versionUri, n) {
+  state.view = "collections";
+  state.editionId = null;
+  state.oi = { bookUri: versionUri, chapterId: null, books: null, showAllChapters: false, focusPassage: Number(n),
+    trail: [{ label: t("← Back to the hadith card"), toDua: () => {
+      state.hc = { ...(state.hc ?? { path: [], catsByLang: {} }), hadithId: String(id), scrollToCard: true };
+      state.oi = { bookUri: null, chapterId: null, books: null, showAllChapters: false };
+      state.render();
+    } }] };
+  state.render();
+}
+
 /** Renders every closed-set/array/string shape `words_meanings` might carry, without ever fabricating or reordering it. */
 function hadeethEncWordsMeanings(wordsMeanings) {
   const box = el("div", "hadeethenc-words-meanings");
@@ -464,6 +549,7 @@ function hadeethEncCard(id, resolvedRecord, state, localRefresh) {
 
   if (record.grade) card.appendChild(el("p", "hadith-attribution", t("Grade: {grade}", { grade: record.grade })));
   if (record.attribution) card.appendChild(el("p", "hadith-attribution", record.attribution));
+  card.appendChild(hadeethEncReferences(id, state));
 
   const hasMore = record.explanation || (record.hints && record.hints.length) || record.words_meanings;
   if (hasMore) {
