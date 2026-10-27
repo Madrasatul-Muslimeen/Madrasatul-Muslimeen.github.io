@@ -119,7 +119,8 @@ for (const lang of ["en", "bn"]) {
     await page.click('[data-bm-remove-bookmark="b3"]');
     await page.waitForTimeout(300);
     const err = await page.evaluate(() => { const e = document.querySelector("[data-bm-nav-error]"); return e && !e.hidden ? e.textContent : ""; });
-    check(`${tag}: a refused save says so in words and the bookmark stays`, (lang === "bn" ? /সংরক্ষণ করা যায়নি/ : /Couldn't save the change/).test(err) && /permission-denied/.test(err) && (await ids(page, "#navBookmarkList [data-bm-row-id]")).split(",").includes("b3"), err);
+    // Audit part 103: the refusal is now the plain translated sentence (plainMessageFor), so the raw code must NOT show; was: "Couldn't save the change: permission-denied".
+    check(`${tag}: a refused save says so in words and the bookmark stays`, (lang === "bn" ? /সংরক্ষণ হয়নি/ : /it did not save/).test(err) && !/permission-denied/.test(err) && (await ids(page, "#navBookmarkList [data-bm-row-id]")).split(",").includes("b3"), err);
     await page.evaluate(() => { window.__failBookmarkWrites = false; });
     check(`${tag}: no page errors`, errors.filter((e) => !/ERR_CERT|net::|archive\.org|api\.quran/i.test(e)).length === 0, errors.slice(0, 2).join(" | "));
     await ctx.close();

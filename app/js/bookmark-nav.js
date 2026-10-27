@@ -75,6 +75,7 @@ import {
 } from "./prefs.js";
 import { langText } from "./lang.js";
 import { t, surahName, num } from "./i18n.js";
+import { plainMessageFor } from "./errors.js";
 
 function escapeHtml(s) {
   return (s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -160,7 +161,7 @@ export async function noteBookmarkOpened(db, { tenantId, personId, bookmarkId, h
   let refused = null;
   const write = markBookmarkUsed(db, tenantId, personId, bookmarkId).catch((err) => { refused = err; });
   await Promise.race([write, new Promise((r) => setTimeout(r, 700))]);
-  return refused ? t("The time this bookmark was opened was not saved: {error}", { error: refused?.code || refused?.message || String(refused) }) : null;
+  return refused ? plainMessageFor(refused) : null;
 }
 /** On the page a bookmark opened: "← Back to <page>", once, floating bottom-left. */
 export function mountBookmarkBack(navBarEl) {
@@ -628,7 +629,8 @@ export function mountBookmarkMenu(navBarEl, { db, getTenantId, getPersonId, getB
   function showError(err, general = false) {
     const el = listEl.querySelector("[data-bm-nav-error]");
     if (!el) return;
-    el.textContent = t(general ? "Couldn't save the change: {error}" : "Couldn't save the folder change: {error}", { error: err?.code || err?.message || String(err) });
+    // Audit part 103: the plain, translated sentence every safeWrite failure shows, never a bare "permission-denied".
+    el.textContent = plainMessageFor(err);
     el.hidden = false;
   }
 
