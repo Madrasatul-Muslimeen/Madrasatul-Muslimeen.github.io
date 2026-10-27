@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "12.87",
+    "version": "12.88",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -5321,8 +5321,20 @@
     {
       "version": "12.87",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Audit part 104 (Builder run 2084, PR #1230): note-window.js, wordpress- and evernote-import-service.js say plainMessageFor(err) for a Firestore refusal.",
+      "integration": {
+        "authorizedOn": "2026-10-27",
+        "integratedOn": "2026-10-27",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.88",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Hadith Lead's J103 Round 4 part 2: the concordance's second-search proof; 27 passages joining two hadith now cite the first (Bukhari 17, Muslim 10); hadith-source-rights names the references folder.",
       "integration": {
         "authorizedOn": "2026-10-27",
         "integratedOn": "2026-10-27",
@@ -5331,8 +5343,9 @@
       }
     }
   ],
-  "nextUnallocated": "12.88",
+  "nextUnallocated": "12.89",
   "nextUnallocatedNote": [
+    "v12.88 was allocated to Hadith: 27 joined passages cited by their first hadith, and a red source-rights check fixed (J103 Round 4 part 2), 2026-10-27.",
     "v12.87 was allocated to Note pane and import services: a refused save says plain translated words (audit part 104), 2026-10-27.",
     "v12.86 was allocated to Hadith: a failed load of the book numbers says so in plain words (J103), 2026-10-27.",
     "v12.85 was allocated to HadeethEnc cards show their proven book, standard number and chapter (Hadith J103 Rounds 1-4 part 1), 2026-10-27.",

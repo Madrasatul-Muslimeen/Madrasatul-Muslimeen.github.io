@@ -305,6 +305,9 @@ const OUTPUT_FOLDER_SOURCES = {
   "concordance": ["openiti-release", "hadith-api"], // hadith-concordance.mjs: OpenITI matched to hadith-api's numbering
   "dua": ["hadeethenc", "openiti-release"], // dua-index.mjs
   "hadeethenc-links": ["hadeethenc", "openiti-release"], // hadeethenc-openiti-links.mjs
+  // PCF MSA J103 (v12.85): hadeethenc-references*.mjs -- which OpenITI passage and hadith-api standard number each
+  // HadeethEnc hadith's named books hold. Numbers, ids and OpenITI's own chapter headings; no HadeethEnc text copied.
+  "hadeethenc-references": ["hadeethenc", "openiti-release", "hadith-api"],
   "translations": ["hadith-api"], // hadith-translations-pull.mjs
 };
 const OWNER_GRANTS_OUTSIDE_MANIFEST = { "hadith-api": 89 };

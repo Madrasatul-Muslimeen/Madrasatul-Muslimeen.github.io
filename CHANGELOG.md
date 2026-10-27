@@ -22596,3 +22596,11 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 - **QR:** `note-window.js` is in QR's pinned copy; change notice sent to the PCA with this release's commit.
 - **Measured (Architect, 28 Oct):** refused saves via `shared-pages-failed-write-audit-browser --flow=pane-mytools` at 390, 820, 1440, en and bn: 15/15 plain sentences, no raw code; `wordpress-import-screen` 21/0, `journey-note-actions-browser` 184/0, `journey-tags-browser` 363/0, `notes-note-windows-browser` 218/0, `zab-bar-browser` 370/0, `journey-map-screen` 47/0, `stub-parity` 4/0, `build-app qr` and `strip-comments-check` 34/0, `apps-build-check` 48/0, `behaviour.mjs` 971/0.
 - Nothing stored, no Rules changed.
+
+## v12.88 — 28 Oct 2026 — Hadith: joined passages cited by their first hadith; source-rights check green again (J103 Round 4 part 2)
+
+- **PCF MSA J103 Round 4 part 2** (Hadith Lead, `claude/hadith-lead-01q2` at 2ecf58d, commits 16392a3 and 24efce6). `tools/hadith-data-pull/hadith-concordance.mjs` gains `fixJoins` (pass 3): a passage joining hadith A and A+1 is cited A (sunnah.com's citation), 27 passages (Bukhārī 17, Muslim 10), each read by the Lead; none in the four printed-number books. Knock-on: `ayah-hadith/3, 6, 17.json` one number each (17:78 → Bukhārī 648); `hadeethenc-references` 3,769. The other concordance files change only their `method` text.
+- **Red check fixed:** `tools/i18n-verify/hadith-source-rights.mjs` (17/1 on `main` since v12.85: `output/hadeethenc-references/` had no named source) names it as derived from hadeethenc + openiti-release + hadith-api; a probe folder is still refused.
+- **QR change notice** (onehome71): content change in `concordance/*.json` and `ayah-hadith/3, 6, 17.json`; no path moved.
+- **Measured (Architect, 28 Oct):** `hadith-source-rights` 18/0, `hadith-concordance` 91/0, `ayah-hadith-index` 133/0, `ayah-related-hadith-browser` 104/0, `ayah-related-hadith-mutations` 14 proven / 0 not caught, `asma-cited-hadith-browser` 66/0, `hadeethenc-references` 10/0, `hadeethenc-references-browser` 33/0, `hadith-translations` 17/0, `hadeethenc-openiti-links` 34/0, `bn-duplicate-keys` 6/0, `apps-build-check` 48/0, `behaviour.mjs` 971/0.
+- No app code changed. Nothing stored, no Rules changed.
