@@ -112,6 +112,18 @@ for (const [pagePath, lang, width] of [["/app/hadith-collections.html", "en", 39
   await ctx.close();
 }
 
+// A failed load says so in plain words (en and bn), never the browser's error text.
+for (const lang of ["en", "bn"]) {
+  const ctx = await newContext(browser, { appLang: lang, banner: false, viewport: { width: 390, height: 860 } });
+  await ctx.route("**/archive.org/**", (r) => r.abort());
+  await ctx.route("**/hadeethenc-references/display/**", (r) => r.fulfill({ status: 500, body: "boom" }));
+  const { page: P } = await openPage(ctx, "/app/hadith-collections.html?resume=hadith:hadeethenc:4560");
+  const msg = await P.waitForSelector('[data-hadeethenc-card="4560"] [data-hadith-refs-error]', { timeout: 20000 }).then((e) => e.textContent()).catch(() => null);
+  const want = lang === "bn" ? "বইয়ের নম্বরগুলো লোড করা যায়নি" : "The book numbers could not be loaded";
+  check(`[${lang}] a failed load says "${want}…", with no raw error text`, !!msg && msg.startsWith(want) && !/500|Error|boom|Could not load/.test(msg), JSON.stringify(msg));
+  await ctx.close();
+}
+
 // The spread: every book's first proven reference opens a passage whose own printed standard number is the one shown.
 {
   const ctx = await newContext(browser, { appLang: "en", banner: false, viewport: { width: 1024, height: 860 } });
