@@ -830,6 +830,8 @@ export const BN = {
   "Learning Akhlaq before knowledge": "জ্ঞানের আগে আখলাক শেখা",
   "Shamayyl Muhammadiya": "শামায়িলে মুহাম্মাদিয়া",
   "Learning to love Rasulullah △": "রাসূলুল্লাহ ﷺ-কে ভালোবাসতে শেখা",
+  "Learning to love Rasulullah ﷺ": "রাসূলুল্লাহ ﷺ-কে ভালোবাসতে শেখা", // the seed's corrected text (approved catalogue v3); the △ key above stays for tenants seeded before the fix
+  "Learning to love Rasulullah Sallallahu A'laihi Wa Sallam": "রাসূলুল্লাহ ﷺ-কে ভালোবাসতে শেখা", // the Owner's rule (28 Oct 2026): in English, "Rasulullah" is always followed by "Sallallahu A'laihi Wa Sallam"; the two keys above stay for tenants seeded earlier
   "Hadith — Al-Ghayb": "হাদীস — আল-গায়ব",
   "Knowledge of Allah, Malaikah, Jannah, Jahannam, Qiyamah, Qabr, Shaitan — awareness of the unseen, for mindfulness and focus on Akhirah":
     "আল্লাহ, মালাইকা, জান্নাত, জাহান্নাম, কিয়ামত, কবর, শয়তান সম্পর্কে জ্ঞান — অদৃশ্য সম্পর্কে সচেতনতা, মনোযোগ ও আখিরাতমুখিতার জন্য", // ?
@@ -1543,8 +1545,6 @@ export const BN = {
   "Module": "মডিউল",
   "Renderer": "যেভাবে দেখানো হয়", // ?
   "Move": "সরান",
-  "Move up": "উপরে সরান",
-  "Move down": "নিচে সরান",
   "Move to a different parent": "অন্য কোনো মূল বিষয়ের নিচে সরান",
   "Move here": "এখানে সরান",
   "Expand": "খুলুন",
@@ -2711,7 +2711,6 @@ export const BN = {
   "All {n}": "সব {n}টি",
   "Only the new {n}": "শুধু নতুন {n}টি",
   "Learning this word adds {p}% of the Qur'an's words": "এই শব্দটি শিখলে কুরআনের শব্দের {p}% যোগ হয়",
-  "Steps": "ধাপ",
   "Hide words I know ({n} known)": "আমার জানা শব্দ লুকান ({n}টি জানা)",
   "The words that occur most often come first. Learn these and you will meet them everywhere in the Qur'an.": "যে শব্দগুলো সবচেয়ে বেশি আসে সেগুলো আগে। এগুলো শিখলে কুরআনের সর্বত্র এদের চিনতে পারবেন।",
   "Back to the word you came from": "আপনি যে শব্দ থেকে এসেছেন সেখানে ফিরে যান",
@@ -2919,7 +2918,6 @@ export const BN = {
   "Text language": "পাঠের ভাষা",
   "Synthetic": "কৃত্রিম",
   "This edition has no chapter level.": "এই সংস্করণে কোনো পরিচ্ছেদ স্তর নেই।",
-  "Nothing here yet.": "এখানে এখনো কিছু নেই।",
   "Repeat occurrence of {id}": "{id}-এর পুনরাবৃত্ত সংঘটন",
   "No {lang} translation for this narration. Showing the Arabic source.":
     "এই বর্ণনার জন্য {lang} অনুবাদ নেই। আরবি মূল পাঠ দেখানো হচ্ছে।",
@@ -2992,7 +2990,6 @@ export const BN = {
   "All folders": "সব ফোল্ডার",
   "+ File a Note here…": "+ এখানে একটি নোট ফাইল করুন…",
   "File in a folder…": "একটি ফোল্ডারে ফাইল করুন…",
-  "Move to…": "সরান…",
   "(untitled folder)": "(শিরোনামহীন ফোল্ডার)",
   "Personal Journey Map": "ব্যক্তিগত যাত্রা মানচিত্র",
   "Reflection Archive": "প্রতিফলন আর্কাইভ",
@@ -3614,7 +3611,6 @@ export const BN = {
   "Move \"{title}\" to…": "\"{title}\" যেখানে সরাবেন…",
   "Nothing here is erased. Restore brings a folder or Note back where it was.": "এখানে কিছুই মুছে ফেলা হয় না। ফিরিয়ে আনলে ফোল্ডার বা নোট আগের জায়গায় ফিরে যায়।",
   "Loading Trash…": "ট্র্যাশ খোলা হচ্ছে…",
-  "Trash is empty.": "ট্র্যাশ খালি।",
   "Couldn't load Trash — please try again.": "ট্র্যাশ খোলা যায়নি — আবার চেষ্টা করুন।",
   "Was in: {place}": "আগে ছিল: {place}",
   "(no folder)": "(কোনো ফোল্ডার নেই)",

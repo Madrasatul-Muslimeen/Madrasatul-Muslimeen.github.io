@@ -86,7 +86,7 @@ export const SUBJECT_TEMPLATES = [
   // 2. Hadith [own module -- see moduleIds note above]
   { id: "hadith", name: en("Hadith"), parentId: null, order: 2, moduleIds: ["hadith"] },
   { id: "hadith_adab_al_mufrad", name: en("Adab Al-Mufrad"), gloss: en("Learning Akhlaq before knowledge"), parentId: "hadith", order: 1, moduleIds: ["hadith"] },
-  { id: "hadith_shamayyl_muhammadiya", name: en("Shamayyl Muhammadiya"), gloss: en("Learning to love Rasulullah △"), parentId: "hadith", order: 2, moduleIds: ["hadith"] },
+  { id: "hadith_shamayyl_muhammadiya", name: en("Shamayyl Muhammadiya"), gloss: en("Learning to love Rasulullah Sallallahu A'laihi Wa Sallam"), parentId: "hadith", order: 2, moduleIds: ["hadith"] },
   { id: "hadith_al_ghayb", name: en("Hadith — Al-Ghayb"), gloss: en("Knowledge of Allah, Malaikah, Jannah, Jahannam, Qiyamah, Qabr, Shaitan — awareness of the unseen, for mindfulness and focus on Akhirah"), parentId: "hadith", order: 3, moduleIds: ["hadith"] },
   { id: "hadith_reading", name: en("Hadith Reading"), gloss: en("Reading in Arabic"), parentId: "hadith", order: 4, moduleIds: ["hadith"] },
   { id: "hadith_stories", name: en("Hadith — Stories"), parentId: "hadith", order: 5, moduleIds: ["hadith"] },
