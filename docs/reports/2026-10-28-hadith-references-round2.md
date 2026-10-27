@@ -98,3 +98,31 @@ The check script now stores `agree` on each row, and the check requires it.
 - QR reads Hadith data from `/tools/hadith-data-pull/output/…`. This round only **adds** a folder,
   `output/hadeethenc-references/` (`candidates.json`, `references.json`, `summary.json`), and moves nothing.
 - The fawazahmed0 editions are never committed.
+
+## Round 3: on the card (`app/js/hadith-browser.js`, `app/js/openiti-corpus.js`)
+
+- **The data.** `tools/hadith-data-pull/hadeethenc-references-display.mjs` writes `output/hadeethenc-references/display/`:
+  46 shards, one per 200 ids, each 40 KB at most.
+  - Each shard holds the proven references: book, cited number, library passage, the English book name from the
+    standard edition's sections, and the Arabic kitab and bab from the OpenITI chapter headings.
+  - It also lists the named books whose number is not yet found.
+  - A card loads only its own shard, and only when the card is opened (I9).
+- **The card.** Under the "Narrated by" line, the card shows each reference, e.g. "Muslim 1907 · The Book on
+  Government". Under it is the Arabic chapter, "33 - كتاب الإمارة · 45 - باب قوله …".
+  - Tapping the reference opens that passage in the OpenITI library below and highlights it. A sticky
+    "← Back to the hadith card" button returns to the card (decision 86).
+  - A named book without a proven number reads "Bukhārī: number not yet found". No number is guessed.
+  - Books with no standard numbering (Ahmad, Darimi …) are marked "(this edition's number)".
+- **The check.** `tools/i18n-verify/hadeethenc-references-browser.mjs` has 28 checks. It covers
+  hadith-collections.html in en at 390 and bn at 820, and hadith-study.html in en at 1280. It checks that:
+  - 4560 shows Muslim 1907, at least 40 px tall, with its Arabic chapter and "not yet found" for Bukhārī, and the
+    page has no sideways scroll;
+  - the tap opens a passage that the **library itself numbers** 1907 (from the concordance, a different file);
+  - ← Back lands on the card, on screen;
+  - the first proven reference of each of seven more books opens the passage numbered the same.
+
+  Each guard was mutation-proven, and each run exited 1:
+  - opening the next passage: 9 checks fail;
+  - no way back: 6 fail;
+  - not-yet-found hidden: 3 fail.
+- **Screenshots looked at:** en at 390 and bn at 820.
