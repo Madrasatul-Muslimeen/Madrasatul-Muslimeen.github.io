@@ -987,3 +987,4 @@ total). Allocated by the MMSA Architect.
 12.83: Word Card Root tab: the root's meaning and how it grows in one larger, elegant panel (J102). Allocated by the MMSA Architect.
 12.84: Bookmark menu: a refused save says plain translated words (audit part 103). Allocated by the MMSA Architect.
 12.85: HadeethEnc cards show their proven book, standard number and chapter (Hadith J103 Rounds 1-4 part 1). Allocated by the MMSA Architect.
+12.86: Hadith: a failed load of the book numbers says so in plain words (J103). Allocated by the MMSA Architect.
