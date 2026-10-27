@@ -42,13 +42,13 @@ const MUTATIONS = {
   // The 👥 list is ignored: Studied is written for the page's person only.
   "selfonly": ["app/js/hadith-study-actions.js", "**/js/hadith-study-actions.js*", "const targets = personIds?.length ? personIds : [session.personId];", "const targets = [session.personId];"],
   // The Dua list's Next › does nothing.
-  "nonext": ["app/js/hadith-browser.js", "**/js/hadith-browser.js*", "next.addEventListener(\"click\", () => { state.dua.page = page + 1; render(); document.getElementById(\"duaCards\")?.scrollIntoView({ block: \"start\" }); });", ""],
+  "nonext": ["app/js/dua-browser.js", "**/js/dua-browser.js*", "next.addEventListener(\"click\", () => { state.dua.page = page + 1; render(); document.getElementById(\"duaCards\")?.scrollIntoView({ block: \"start\" }); });", ""],
   // ← Back to Dua drops the dua the reader came from.
-  "noduaback": ["app/js/hadith-browser.js", "**/js/hadith-browser.js*", "state.dua.page = page; state.dua.focusDua = c.dua; render(); } }] };", "state.dua.page = page; render(); } }] };"],
+  "noduaback": ["app/js/dua-browser.js", "**/js/dua-browser.js*", "state.dua.page = page; state.dua.focusDua = c.dua; render(); } }] };", "state.dua.page = page; render(); } }] };"],
   // The vowels switch changes nothing.
-  "notoggle": ["app/js/hadith-browser.js", "**/js/hadith-browser.js*", "words.querySelectorAll(\"[data-dua-word]\").forEach((w) => { w.textContent = plain ? w.dataset.plain : w.dataset.vowelled; });", ""],
+  "notoggle": ["app/js/dua-browser.js", "**/js/dua-browser.js*", "words.querySelectorAll(\"[data-dua-word]\").forEach((w) => { w.textContent = plain ? w.dataset.plain : w.dataset.vowelled; });", ""],
   // ✓ Check this dua is offered to a reader too.
-  "checkforall": ["app/js/hadith-browser.js", "**/js/hadith-browser.js*", "if (checkEnv?.session?.canCheck) card.appendChild(", "if (true) card.appendChild("],
+  "checkforall": ["app/js/dua-browser.js", "**/js/dua-browser.js*", "if (checkEnv?.session?.canCheck) card.appendChild(", "if (true) card.appendChild("],
   // The Check panel loses its Back button.
   "nocheckback": ["app/js/dua-check.js", "**/js/dua-check.js*", "  panel.appendChild(back);\n", "\n"],
 };

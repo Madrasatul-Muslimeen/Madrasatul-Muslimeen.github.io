@@ -17,9 +17,9 @@ const check = (name, ok, detail = "") => {
 };
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
 const MUT = {
-  nogram: ["js/hadith-browser.js", "    if (grammar) panel.appendChild(duaGrammarBlock(grammar));\n", "\n"],
-  nofp: ["js/hadith-browser.js", "idx < 0 && gram?.f === links.f ?", "idx < 0 && gram ?"],
-  rawpos: ["js/hadith-browser.js", "t(duaGrammarPosLabel(pos))", "pos"],
+  nogram: ["js/dua-browser.js", "    if (grammar) panel.appendChild(duaGrammarBlock(grammar));\n", "\n"],
+  nofp: ["js/dua-browser.js", "idx < 0 && gram?.f === links.f ?", "idx < 0 && gram ?"],
+  rawpos: ["js/dua-browser.js", "t(duaGrammarPosLabel(pos))", "pos"],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
 const fp = JSON.parse(fs.readFileSync("tools/hadith-data-pull/output/dua/words-1.json", "utf8")).duas;

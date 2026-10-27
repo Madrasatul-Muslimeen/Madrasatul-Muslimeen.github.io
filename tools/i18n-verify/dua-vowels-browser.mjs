@@ -15,8 +15,8 @@ const check = (name, ok, detail = "") => {
 };
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
 const MUT = {
-  novowels: ["js/hadith-browser.js", "const vowelled = !!vow && vow.f ===", "const vowelled = false && vow.f ==="],
-  notoggle: ["js/hadith-browser.js", "words.querySelectorAll(\"[data-dua-word]\").forEach((w) => { w.textContent = plain ? w.dataset.plain : w.dataset.vowelled; });", ""],
+  novowels: ["js/dua-browser.js", "const vowelled = !!vow && vow.f ===", "const vowelled = false && vow.f ==="],
+  notoggle: ["js/dua-browser.js", "words.querySelectorAll(\"[data-dua-word]\").forEach((w) => { w.textContent = plain ? w.dataset.plain : w.dataset.vowelled; });", ""],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
 const N = (x) => String(x ?? "").normalize("NFC");

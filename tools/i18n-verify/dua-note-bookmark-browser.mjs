@@ -27,8 +27,8 @@ const MUT = {
   wrongkey: ["js/hadith-study-actions.js", "    subjectId: DUA_BOOKMARK_SUBJECT_ID, name, position: unitKey, uid: session.uid,", "    subjectId: DUA_BOOKMARK_SUBJECT_ID, name, position: `hadith:${unitKey}`, uid: session.uid,"],
   noresume: ["hadith-study.html", '/^dua:(\\d{1,5})$/.exec(resumeParam ?? "")', "null"],
   contentbox: ["css/hadith.css", "  box-sizing: border-box;\n  display: inline-flex;", "  display: inline-flex;"],
-  nokeep: ["js/hadith-browser.js", "    if (target) keepCardInView(target, list);\n", "\n"],
-  noplace: ["js/hadith-browser.js", " return; } rememberDuaPlace(page, dua); });", " return; } });"],
+  nokeep: ["js/dua-browser.js", "    if (target) keepCardInView(target, list);\n", "\n"],
+  noplace: ["js/dua-browser.js", " return; } rememberDuaPlace(page, dua); });", " return; } });"],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
 const KEY = buildUnitKey.dua(20);
