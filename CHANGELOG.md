@@ -22562,3 +22562,11 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 - **Measured (Architect, 28 Oct):** `word-card-j102-root-grows-browser` 106/0 (360, 390, 768, 820, 1024, 1180, 1440 × en/bn × Night/Light; the Lead reports the old code scoring 2/16 at 390 and four mutations each failing it); `word-card-j101-top` 196/0; `behaviour.mjs` 971/0. Screenshots looked at: 390 en Night (chips wrap as a tidy group, 3 rows), 820 bn Night (one row), 1180 en Light. The Lead also ran five-levels 290/0, family-rows 152/0, wbw-rebuild 136/0, layout-b-top 180/0, segments 40/0.
 - **Not changed:** the root meaning comes from English Wiktionary, so on the Bangla page it is still English (pre-existing; a Bangla source would be its own job).
 - Nothing stored, no Rules changed.
+
+## v12.84 — 28 Oct 2026 — Bookmark menu: a refused save says plain, translated words (audit part 103)
+
+- **Audit part 103** (PCF MSA J29, invariant I15; issue #1221, Builder run 2073, PR #1222). Report: `docs/reports/2026-10-28-audit-part103-raw-error-codes.md`, one row per site with its owner.
+- **Fix (shared `app/js/bookmark-nav.js`):** `showError` (🗑 remove, drag, rename and folder changes in the shared Bookmark menu) and `noteBookmarkOpened` (the "time this bookmark was opened" write) call `plainMessageFor(err)` instead of building "Couldn't save the change: {raw code}" (English code inside the Bangla sentence). `tools/i18n-verify/bookmark-remove-browser.mjs` and `bookmark-folder-edit-browser.mjs` now require the plain sentence and assert the raw code is absent (updated in place, reason in a comment).
+- **Listed for others, not changed:** `note-window.js` service-text messages (shared, QR pins a copy), backup and import services (shared), `hadith-browser.js` (Hadith Lead), `dua-check.js:331` (Dua Lead, J104), `quranrevival.html` (frozen, QR).
+- **Measured (Architect, 28 Oct):** `bookmark-remove-browser` 60/0, `bookmark-folder-edit-browser` 68/0 (en and bn); `behaviour.mjs` 971/0 on the branch (two earlier runs failed only the intermittent 38e audio check, and one of them had been disturbed by a checkout during the run).
+- Nothing stored, no Rules changed.
