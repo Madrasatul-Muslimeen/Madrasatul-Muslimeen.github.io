@@ -1,0 +1,109 @@
+{
+ "schemaVersion": 1,
+ "hadeethencArabic": 3574,
+ "withInLibraryBook": 3497,
+ "withAProvenReference": 2887,
+ "books": {
+  "bukhari": {
+   "pairs": 1799,
+   "proven": 1259,
+   "recovered": 12,
+   "reasons": {
+    "unproven:not-found": 501,
+    "unproven:english": 20,
+    "unproven:numbers-disagree": 12,
+    "unproven:no-english-to-confirm": 7
+   }
+  },
+  "muslim": {
+   "pairs": 2080,
+   "proven": 1072,
+   "recovered": 17,
+   "reasons": {
+    "unproven:not-found": 951,
+    "unproven:numbers-disagree": 10,
+    "unproven:english": 30,
+    "unproven:no-standard-number": 12,
+    "unproven:no-english-to-confirm": 5
+   }
+  },
+  "abudawud": {
+   "pairs": 565,
+   "proven": 394,
+   "recovered": 0,
+   "reasons": {
+    "unproven:not-found": 162,
+    "unproven:english": 7,
+    "unproven:numbers-disagree": 2
+   }
+  },
+  "ahmad": {
+   "pairs": 501,
+   "proven": 167,
+   "recovered": 0,
+   "reasons": {
+    "unproven:not-found": 309,
+    "unproven:second-method": 25
+   }
+  },
+  "tirmidhi": {
+   "pairs": 477,
+   "proven": 242,
+   "recovered": 1,
+   "reasons": {
+    "unproven:not-found": 223,
+    "unproven:no-standard-number": 7,
+    "unproven:numbers-disagree": 3,
+    "unproven:english": 1,
+    "unproven:no-english-to-confirm": 1
+   }
+  },
+  "nasai": {
+   "pairs": 213,
+   "proven": 72,
+   "recovered": 0,
+   "reasons": {
+    "unproven:not-found": 138,
+    "unproven:english": 2,
+    "unproven:no-standard-number": 1
+   }
+  },
+  "ibnmajah": {
+   "pairs": 352,
+   "proven": 99,
+   "recovered": 0,
+   "reasons": {
+    "unproven:not-found": 251,
+    "unproven:no-english-to-confirm": 2
+   }
+  },
+  "malik": {
+   "pairs": 18,
+   "proven": 6,
+   "recovered": 0,
+   "reasons": {
+    "unproven:not-found": 10,
+    "unproven:no-standard-number": 1,
+    "unproven:english": 1
+   }
+  },
+  "darimi": {
+   "pairs": 50,
+   "proven": 5,
+   "recovered": 0,
+   "reasons": {
+    "unproven:not-found": 44,
+    "unproven:second-method": 1
+   }
+  },
+  "adab": {
+   "pairs": 3,
+   "proven": 0,
+   "recovered": 0,
+   "reasons": {
+    "unproven:not-found": 2,
+    "unproven:second-method": 1
+   }
+  }
+ }
+}
