@@ -761,7 +761,9 @@ function rootSection(word, layers, features, ctx) {
       for (const v of verbs) { const e = ctx.dictionaryLookup(v.lemma); if (e?.m) { meaning = e.m; break; } }
     }
     const used = fill(pick(meaning ? "usedTimes" : "usedTimesNoMeaning", lang), { n: formatNumber(data.totalOccurrences), f: formatNumber(data.formCount ?? data.forms.length) });
-    out.push(line("data", lang, `${meaning ? `${esc(fill(pick("rootMeans", lang), { m: "\u0000" }).split("\u0000")[0])}<b lang="en" data-word-card-root-meaning>${esc(meaning)}</b>${esc(fill(pick("rootMeans", lang), { m: "\u0000" }).split("\u0000")[1])} <span class="word-card-m">${esc(pick("rootCredit", lang))}</span>. ` : ""}${esc(used)}`));
+    // PCF MSA J102 (the Owner, 28 Oct 2026: "Enable the marked section 20% bigger, more eye-catching, noticeable, elegant
+    // looking"): the root's meaning and how it grows (ctx.rootGrowsHtml, the Root tab's chips) share one calm panel.
+    out.push(`<div class="word-card-root-panel" data-word-card-root-panel>${line("data", lang, `${meaning ? `${esc(fill(pick("rootMeans", lang), { m: "\u0000" }).split("\u0000")[0])}<b lang="en" data-word-card-root-meaning>${esc(meaning)}</b>${esc(fill(pick("rootMeans", lang), { m: "\u0000" }).split("\u0000")[1])} <span class="word-card-m">${esc(pick("rootCredit", lang))}</span>. ` : ""}${esc(used)}`, "word-card-root-meaning-line")}${ctx.rootGrowsHtml ?? ""}</div>`);
   }
   if (layers.root) {
     const same = (ctx.ayahWords ?? []).filter((w) => w.morphology?.root === word.morphology?.root);

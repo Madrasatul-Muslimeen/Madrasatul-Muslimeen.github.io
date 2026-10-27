@@ -4077,9 +4077,24 @@
   .word-card-whowhen-item b { font-weight: 800; }
   .word-card-does { font-size: 0.72rem; font-weight: 700; color: #4b2a85; background: #f1e9fb; border-radius: 999px; padding: 0.05rem 0.45rem; justify-self: center; }
   .word-card-reach { margin: 0.4rem 0 0; font-size: 0.85rem; color: var(--card-text); }
-  .word-card-grow-chips { display: flex; flex-wrap: wrap; gap: 0.35rem; }
-  .word-card-grow-chip { background: #f7f8f6; color: #13241f; border: 1px solid #d6ddd9; border-radius: 999px; padding: 0.2rem 0.6rem; font-size: 0.82rem; min-width: 0; overflow-wrap: anywhere; }
-  .word-card-grow-chip-current { background: #fff4d6; border-color: #c9a24a; }
+  /* PCF MSA J102 (the Owner, 28 Oct 2026: "Enable the marked section 20% bigger, more eye-catching, noticeable, elegant
+     looking"): the root's meaning and how it grows are one calm panel on the card, in the card's own look (Night: the
+     inset navy with a gold edge; Light: the cream inset), every size 20% up from before (the line 16 -> 19.2px, the
+     heading 14.08 -> 16.9px, the chips 13.12 -> 15.74px, and taller). The root's meaning is marked in the card's
+     heading colour; this word's own meaning chip is gold. Measured by word-card-j102-root-grows-browser.mjs. */
+  .word-card-root-panel { margin: 0.7rem 0 0.2rem; padding: 0.85rem 1rem 0.95rem; display: grid; gap: 0.75rem; min-width: 0;
+    background: var(--card-bg-inset); color: var(--card-text); border: 1px solid var(--card-line); border-inline-start: 4px solid var(--card-heading);
+    border-radius: 14px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12); }
+  .word-card-root-panel .word-card-root-meaning-line { font-size: 1.2rem; line-height: 1.55; overflow-wrap: anywhere; }
+  .word-card-root-panel [data-word-card-root-meaning] { color: var(--card-heading); font-weight: 800; }
+  .word-card-root-panel .word-card-m { color: var(--card-text-muted); font-size: 0.85em; }
+  .word-card-root-panel .word-card-root-grows { padding-top: 0.75rem; border-top: 1px solid var(--card-line); min-width: 0; }
+  .word-card-root-panel .word-card-root-grows h4 { margin: 0 0 0.6rem; font-size: 1.056rem; font-weight: 800; color: var(--card-heading); letter-spacing: 0.01em; }
+  .word-card-grow-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .word-card-grow-chip { background: #fff; color: #13241f; border: 1px solid #d9c690; border-radius: 999px; padding: 0.35rem 0.85rem; font-size: 0.984rem; line-height: 1.35; font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+  .word-card-grow-chip-current { background: #fff4d6; border-color: #c9a24a; box-shadow: inset 0 0 0 1px #c9a24a; }
+  [data-card-look="night"] .word-card-grow-chip { background: rgba(201, 162, 75, 0.1); color: #F2E8D5; border-color: rgba(201, 162, 75, 0.45); }
+  [data-card-look="night"] .word-card-grow-chip-current { background: linear-gradient(180deg, #ecd49a, #C9A24B); color: #221904; border-color: #C9A24B; box-shadow: none; }
   .word-card-meaning-group .word-card-dcards { margin-top: 0.3rem; }
   /* PCF MSA J45 (20 Oct 2026, 1A 2A 3A) -- Family: one row per meaning group. The DOM order (top, cards, renderings,
      mark) is the phone's one column, renderings under the row's cards; a section at least 700px wide puts the purple
