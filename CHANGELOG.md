@@ -22570,3 +22570,11 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 - **Listed for others, not changed:** `note-window.js` service-text messages (shared, QR pins a copy), backup and import services (shared), `hadith-browser.js` (Hadith Lead), `dua-check.js:331` (Dua Lead, J104), `quranrevival.html` (frozen, QR).
 - **Measured (Architect, 28 Oct):** `bookmark-remove-browser` 60/0, `bookmark-folder-edit-browser` 68/0 (en and bn); `behaviour.mjs` 971/0 on the branch (two earlier runs failed only the intermittent 38e audio check, and one of them had been disturbed by a checkout during the run).
 - Nothing stored, no Rules changed.
+
+## v12.85 — 28 Oct 2026 — Hadith: HadeethEnc cards show their proven book, number and chapter (J103)
+
+- **PCF MSA J103** (Hadith Lead, `claude/hadith-lead-01q2` at 0ffbbfc). Rounds 1–2 (data, double-checked; report `docs/reports/2026-10-28-hadith-references-round2.md`), Round 3 (on screen: `hadith-browser.js`, `openiti-corpus.js` `loadHadeethEncReferences`, `hadith.css`, 17 new `bn.js` keys), Round 4 part 1 (search by quoted words too: 3,768 proven references).
+- A tap on a reference opens the passage in the book with "← Back to the hadith card" (way-back law, decision 86). The English book section name shows only on an English screen.
+- **Measured (Architect, 28 Oct):** `hadeethenc-references` 10/0, `hadeethenc-references-browser` 31/0 (mutations caught), `bn-duplicate-keys` green, governance suites green, `apps-build-check` green, `behaviour.mjs` 971/0; 7 widths × en/bn measured and looked at.
+- **Noted for the Hadith Lead (not blocking):** a reference that fails to load shows "Not loaded: {raw message}", the same raw-text shape as the rest of `hadith-browser.js` listed in audit part 103; carry it into that fix.
+- Nothing stored, no Rules changed.

@@ -1942,3 +1942,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v12.82** (2026-10-27): Rasulullah Sallallahu A'laihi Wa Sallam in the English catalogue (the Owner's rule); bn.js dead duplicate keys removed.
 - **v12.83** (2026-10-27): Word Card Root tab: the root's meaning and how it grows in one larger, elegant panel (J102).
 - **v12.84** (2026-10-27): Bookmark menu: a refused save says plain translated words (audit part 103).
+- **v12.85** (2026-10-27): HadeethEnc cards show their proven book, standard number and chapter (Hadith J103 Rounds 1-4 part 1).
