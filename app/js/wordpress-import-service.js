@@ -66,6 +66,11 @@ import {
   listNotePlacementsForOwnerPage,
 } from "./note-foundation.js";
 
+import { plainMessageFor } from "./errors.js";
+
+/** Audit part 104 (I15): a Firestore refusal carries a `code` and prints as plain translated words; an error this service threw itself has no code and keeps its own readable sentence. */
+const refusalText = (err) => (err?.code ? plainMessageFor(err) : (err?.message ?? String(err)));
+
 /** A blocked-write result shape, shared by every gated function below. */
 const BLOCKED_RESULT = Object.freeze({ created: 0, skipped: 0, refused: 0, blocked: true, refusals: [] });
 
@@ -154,7 +159,7 @@ export async function importWordpressFolders(db, {
         created += 1;
       } catch (err) {
         refused += 1;
-        refusals.push({ folderId: folder.folderId, name: folder.name, message: err?.message ?? String(err) });
+        refusals.push({ folderId: folder.folderId, name: folder.name, message: refusalText(err) });
       }
     }
     onProgress?.({ phase: "folders", created, skipped, refused, total: folders.length });
@@ -206,7 +211,7 @@ export async function importWordpressNotes(db, {
         noteReady = true;
       } catch (err) {
         refused += 1;
-        refusals.push({ postId: note.postId, title: note.title, stage: "note", message: err?.message ?? String(err) });
+        refusals.push({ postId: note.postId, title: note.title, stage: "note", message: refusalText(err) });
       }
     }
     if (!noteReady) {
@@ -231,7 +236,7 @@ export async function importWordpressNotes(db, {
           });
           sourceIds.add(sourceLinkId);
         } catch (err) {
-          refusals.push({ postId: note.postId, title: note.title, stage: "source", message: err?.message ?? String(err) });
+          refusals.push({ postId: note.postId, title: note.title, stage: "source", message: refusalText(err) });
         }
       }
     }
@@ -245,7 +250,7 @@ export async function importWordpressNotes(db, {
         });
         placementIds.add(placementId);
       } catch (err) {
-        refusals.push({ postId: note.postId, title: note.title, stage: "placement", folderId, message: err?.message ?? String(err) });
+        refusals.push({ postId: note.postId, title: note.title, stage: "placement", folderId, message: refusalText(err) });
       }
     }
 
