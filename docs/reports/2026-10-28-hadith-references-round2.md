@@ -178,3 +178,63 @@ Per book (proven / pairs):
 - Most are "agreed upon" hadith whose wording follows only one of the two Sahihs (e.g. "من حج لله فلم يرفث …" is
   al-Bukhari's wording; Muslim 1350 reads "من أتى هذا البيت …").
 - Proving those needs a different kind of evidence, not looser words. They stay "number not yet found".
+
+## Round 4, part 2: the same proof over the library's own standard numbers (28 Oct 2026)
+
+**Why it matters.** The standard numbers the library shows on its passages are used in four places: the Āyah card's
+related hadith, the Dua tab's "Also narrated in", "go to hadith number", and the Asmaul Husna links. They all come from
+the concordance (H-DB2, `hadith-concordance.mjs`).
+
+**Second search over every number.** The independent second search (the passage's own 3-grams, chains ignored)
+confirms the concordance for 99.75% of numbers (sub-numbers such as 1424 and 1424.2 count as the same):
+
+| Book | confirmed | disputed | too weak to judge |
+|---|---|---|---|
+| al-Bukhari | 7,059 of 7,119 | 52 | 8 |
+| Muslim | 7,513 of 7,546 | 19 | 14 |
+| Abu Dawud | 5,263 of 5,269 | 1 | 5 |
+| al-Tirmidhi | 3,892 of 3,903 | 9 | 2 |
+| al-Nasa'i | 5,674 of 5,681 | 2 | 5 |
+| Ibn Majah | 4,321 of 4,335 | 1 | 13 |
+| Malik | 2,370 of 2,388 | 5 | 13 |
+
+**What the printed numbers say about the disputed ones.** Four books print their own numbers. On those:
+- where the two searches disagree, the concordance was right 10 times and the second search 3 times;
+- of the "too weak" ones, the concordance was right 24 times in 25.
+
+So the second search **must not overrule** the concordance in general. A blanket correction would have made things
+worse.
+
+**The one pattern that is a real error.** Some passages in the library join two hadith: A, then A+1, a follow-on
+such as "وقال أبو موسى …" or "وباسناده …". The concordance cited such a passage by A+1, and sunnah.com cites it by A.
+`fixJoins` moves a match to A only when all of these hold:
+- the second search does not confirm the matched number;
+- its best is exactly the hadith before;
+- the passage begins with A's own first six words;
+- the two numbers have different whole numbers.
+
+**Result.**
+- Exactly **27 passages** move: al-Bukhari 17 and Muslim 10. None are in the four printed-number books.
+- I read all 27 side by side. Each opens with A's chain and words and then runs into A+1.
+- Example: Bukhari's passage on 17:78 ("إن قرآن الفجر كان مشهودا") was labelled 649, the follow-on with Ibn ʿUmar's "27
+  degrees". It is now **648**, the hadith that quotes the āyah.
+- Everything else the second search disputes is left as it was. The printed numbers show the concordance is usually
+  right there.
+
+**Knock-on, measured.**
+- Re-running every generator on the **old** concordance gives byte-identical files.
+- On the new concordance, only these change:
+  - `ayah-hadith/3.json`, `6.json` and `17.json`, one number each;
+  - the HadeethEnc references: 3,769 proven, one more.
+- The Dua index and the HadeethEnc links are unchanged.
+- For the 27 joined passages, typing A+1's number into "go to hadith number" now finds nothing rather than the wrong
+  passage.
+
+**Checks.**
+- `hadith-concordance.mjs` treats pass 3 as a deliberate new value; that check was updated in place, with the reason
+  recorded.
+- It gains two checks:
+  - by hand: Bukhari n=209 is 187 and Muslim n=176 is 136, with exactly 27 rows at pass 3;
+  - `fixJoins` on its own: A+B moves to A, and B alone stays.
+- Data suite: 51/0.
+- **QR reads `ayah-hadith/` and `concordance/`**: the PCA gets a change notice with the commit. No path moved.

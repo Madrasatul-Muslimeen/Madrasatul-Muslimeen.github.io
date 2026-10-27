@@ -2,12 +2,12 @@
  "schemaVersion": 1,
  "hadeethencArabic": 3574,
  "withInLibraryBook": 3497,
- "withAProvenReference": 3055,
+ "withAProvenReference": 3056,
  "books": {
   "bukhari": {
    "pairs": 1799,
    "proven": 1327,
-   "recovered": 19,
+   "recovered": 16,
    "reasons": {
     "unproven:not-found": 426,
     "unproven:english": 30,
@@ -17,12 +17,12 @@
   },
   "muslim": {
    "pairs": 2080,
-   "proven": 1237,
-   "recovered": 14,
+   "proven": 1238,
+   "recovered": 13,
    "reasons": {
     "unproven:not-found": 772,
-    "unproven:numbers-disagree": 7,
     "unproven:english": 50,
+    "unproven:numbers-disagree": 6,
     "unproven:no-standard-number": 11,
     "unproven:no-english-to-confirm": 3
    }
