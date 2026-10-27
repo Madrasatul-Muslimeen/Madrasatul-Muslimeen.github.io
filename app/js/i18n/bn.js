@@ -830,6 +830,7 @@ export const BN = {
   "Learning Akhlaq before knowledge": "জ্ঞানের আগে আখলাক শেখা",
   "Shamayyl Muhammadiya": "শামায়িলে মুহাম্মাদিয়া",
   "Learning to love Rasulullah △": "রাসূলুল্লাহ ﷺ-কে ভালোবাসতে শেখা",
+  "Learning to love Rasulullah ﷺ": "রাসূলুল্লাহ ﷺ-কে ভালোবাসতে শেখা", // the seed's corrected text (approved catalogue v3); the △ key above stays for tenants seeded before the fix
   "Hadith — Al-Ghayb": "হাদীস — আল-গায়ব",
   "Knowledge of Allah, Malaikah, Jannah, Jahannam, Qiyamah, Qabr, Shaitan — awareness of the unseen, for mindfulness and focus on Akhirah":
     "আল্লাহ, মালাইকা, জান্নাত, জাহান্নাম, কিয়ামত, কবর, শয়তান সম্পর্কে জ্ঞান — অদৃশ্য সম্পর্কে সচেতনতা, মনোযোগ ও আখিরাতমুখিতার জন্য", // ?
