@@ -980,3 +980,4 @@ total). Allocated by the MMSA Architect.
 12.76: Word Card on a tablet: only the Arabic on the top bar; the meaning on the bar below (J101 follow-up). Allocated by the MMSA Architect.
 12.77: Note pane: a refused Rename says Not saved (audit part 99, J29). Allocated by the MMSA Architect.
 12.78: the note pane's tag, link and version saves say Not saved (audit part 100). Allocated by the MMSA Architect.
+12.79: Hadith: a refused bookmark or Studied save on a HadeethEnc card says Not saved (audit part 101). Allocated by the MMSA Architect.

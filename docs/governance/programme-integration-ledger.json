@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "12.78",
+    "version": "12.79",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -5213,7 +5213,7 @@
     {
       "version": "12.78",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Audit part 100 (J29, issue #1211, Builder run 2053): the seven remaining raw-error catches in note-window.js use notSavedText; the failed-write detector knows the Bangla 'রাখা গেল না'; notes.html note pane flows.",
       "integration": {
         "authorizedOn": "2026-10-26",
@@ -5221,10 +5221,23 @@
         "method": "MERGE_PR",
         "reference": "CHANGELOG.md"
       }
+    },
+    {
+      "version": "12.79",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Audit part 101 fix (J29, issue #1214): hadith-browser.js's two HadeethEnc save catches say Not saved in the reader's language (Hadith Lead, branch claude/hadith-lead-01q2).",
+      "integration": {
+        "authorizedOn": "2026-10-27",
+        "integratedOn": "2026-10-27",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
     }
   ],
-  "nextUnallocated": "12.79",
+  "nextUnallocated": "12.80",
   "nextUnallocatedNote": [
+    "v12.79 was allocated to Hadith: a refused bookmark or Studied save on a HadeethEnc card says Not saved (audit part 101), 2026-10-27.",
     "v12.78 was allocated to the note pane's tag, link and version saves say Not saved (audit part 100), 2026-10-26.",
     "v12.77 was allocated to Note pane: a refused Rename says Not saved (audit part 99, J29), 2026-10-26.",
     "v12.76 was allocated to Word Card on a tablet: only the Arabic on the top bar; the meaning on the bar below (J101 follow-up), 2026-10-26.",

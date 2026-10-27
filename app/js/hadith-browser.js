@@ -609,6 +609,12 @@ async function renderHadeethEncStudyActions(container, id, title) {
     return;
   }
 
+  // A refused save says so in the reader's language and is announced (I15; audit part 101).
+  const notSaved = (err) => {
+    const p = el("p", "hadeethenc-study-reason", t("Not saved: {why}", { why: String(err?.message ?? err) }));
+    p.setAttribute("role", "status");
+    return p;
+  };
   let bookmarked = false;
   let studiedStatusId = null;
   try {
@@ -631,7 +637,7 @@ async function renderHadeethEncStudyActions(container, id, title) {
     try {
       bookmarked = await actions.toggleHadeethEncBookmark(session, id, title || String(id));
     } catch (err) {
-      row.appendChild(el("p", "hadeethenc-study-reason", String(err?.message ?? err)));
+      row.appendChild(notSaved(err));
     }
     refreshBookmarkBtn();
   });
@@ -694,7 +700,8 @@ async function renderHadeethEncStudyActions(container, id, title) {
         studiedItem.querySelector("[data-hadeethenc-recorded]")?.remove();
       }
     } catch (err) {
-      row.appendChild(el("p", "hadeethenc-study-reason", String(err?.message ?? err)));
+      studiedSelect.value = studiedStatusId ?? ""; // back to what is stored
+      row.appendChild(notSaved(err));
     }
     studiedSelect.disabled = false;
   });
