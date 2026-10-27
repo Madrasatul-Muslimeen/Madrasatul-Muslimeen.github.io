@@ -1915,3 +1915,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v12.79** (2026-10-27): Hadith: a refused bookmark or Studied save on a HadeethEnc card says Not saved (audit part 101).
 - **v12.80** (2026-10-27): topic open: a refused 'where was I' save says plain translated words (audit part 102).
 - **v12.81** (2026-10-27): topic names keep their width beside a long gloss (Hadith, Deen, Arabic); catalogue seed Rasulullah ﷺ.
+- **v12.82** (2026-10-27): Rasulullah Sallallahu A'laihi Wa Sallam in the English catalogue (the Owner's rule); bn.js dead duplicate keys removed.
