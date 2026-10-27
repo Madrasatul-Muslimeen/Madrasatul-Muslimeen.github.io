@@ -112,9 +112,32 @@ Object.assign(FLOWS, {
   "dua-word": { path: "hadith-study.html", settle: 2500, only: "[data-dua-word-state]", steps: ['[data-hadith-tab="dua"]', ".dua-word[role=button]"] },
   "dua-check": { path: "hadith-study.html", settle: 2500, only: "[data-dua-check-save]", base: 2, steps: ['[data-hadith-tab="dua"]', "[data-dua-check-open]", '[data-dua-check-step="3"]'] },
 });
+// Part 102: Hadith Study's topic saves (topic-study.js, the shared topic renderer), on a SEEDED topic: synthetic-topic-audit-leaf
+// (name and ids inside the synthetic namespace) with the stub's resource r1, so Track my progress is enabled.
+//   hadith-topic-open        pressing the topic row: the "where was I" write (touchResume, topic-study.js:414-424)
+//   hadith-topic-bookmark    the topic's ☆ > the name pop-over's Save (toggleTopicBookmark, :481-531)
+//   hadith-topic-track[-X]   Track my progress > Claim, with status X chosen first (openWayModal, :559-602); default / each of the others
+const LEAF = '.topic-row-leaf[data-id="synthetic-topic-audit-leaf"]';
+Object.assign(FLOWS, {
+  "hadith-topic-open": { path: "hadith-study.html", settle: 1500, only: LEAF, base: 0, steps: [] },
+  "hadith-topic-bookmark": { keepMenu: true, closes: true, path: "hadith-study.html", settle: 1500, only: "[data-bm-pop-save]", steps: [LEAF, "#bookmarkTopicBtn"] },
+  "hadith-topic-track": { path: "hadith-study.html", settle: 1500, only: ".way-claim-btn", steps: [LEAF, "#trackTopicBtn"] },
+  ...Object.fromEntries(["not_applicable", "not_started", "learning", "practising", "achieved", "mastered"].map((v) => ["hadith-topic-track-" + v, { path: "hadith-study.html", settle: 1500, only: ".way-claim-btn", base: 4, steps: [LEAF, "#trackTopicBtn", "wait:.way-status-select", "select:.way-status-select=" + v] }])),
+});
+const HADITH_TOPIC_SEED = `(function () {
+  window.__stubApplyBatches = true;
+  const id = (s) => TENANT_ID + "__" + s;
+  DATA.trackables = DATA.trackables.filter((t) => t._id !== id("studied_hadith"));
+  DATA.trackables.push({ _id: id("studied_hadith"), tenantId: TENANT_ID, subjectId: "hadith", order: 0, status: "active", name: lang("Studied", "অধ্যয়ন করা হয়েছে"), groupName: lang("Understanding", "অনুধাবন"), guide: { what: lang("What it is", "এটি কী"), how: lang("How to do it", "কীভাবে করবেন"), measure: lang("How to measure", "কীভাবে মাপবেন") }, panels: ["text"] });
+  DATA.subjects = DATA.subjects.filter((s) => !(s.moduleIds || []).includes("hadith"));
+  const node = (sid, parent, anc, en, bn, order, leaf) => DATA.subjects.push({ _id: id(sid), tenantId: TENANT_ID, subjectId: sid, parentId: parent, name: lang(en, bn), moduleIds: ["hadith"], ancestorIds: anc, status: "active", order, ...(leaf ? { isTrackable: true, resourceIds: ["r1"] } : {}) });
+  node("hadith", null, [], "hadith", "hadith", 1, false);
+  node("synthetic-topic-audit-leaf", "hadith", ["hadith"], "Synthetic audit topic", "কৃত্রিম নিরীক্ষা বিষয়", 1, true);
+})();`;
 const FLOW = arg("flow");
 if (FLOW && !FLOWS[FLOW]) { console.log("unknown --flow=" + FLOW + "; known: " + Object.keys(FLOWS).join(", ")); process.exit(2); }
 if (FLOW) for (const k of ["notes.html", "journey-map.html"]) SEEDS[k] += "\n" + FLOW_SEED;
+if (FLOW && FLOW.startsWith("hadith-topic")) SEEDS["hadith-study.html"] = HADITH_TOPIC_SEED;
 // One small valid WordPress export, chosen in the file picker before the page's controls are listed.
 const WXR = `<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:wp="http://wordpress.org/export/1.2/"><channel>
 <wp:category><wp:term_id>5</wp:term_id><wp:category_nicename>audit-cat</wp:category_nicename><wp:category_parent></wp:category_parent><wp:cat_name><![CDATA[Audit WP Folder]]></wp:cat_name></wp:category>
@@ -240,6 +263,13 @@ async function flowSteps(page, mode) { // "all" | "butlast" | "last"
   const base = FLOWS[FLOW].base ?? all.length - 1; // the controls pressed are those that appear after step number `base`
   const steps = mode === "butlast" ? all.slice(0, base) : mode === "last" ? all.slice(base) : all;
   for (const s of steps) {
+    if (s.startsWith("wait:")) { await page.waitForFunction((sel) => [...document.querySelectorAll(sel)].some(window.__aud.vis), s.slice(5), { timeout: 15000 }); continue; }
+    if (s.startsWith("select:")) { // part 102: "select:<css>=<value>" chooses an option of a <select> before the control is pressed
+      const [sel, val] = s.slice(7).split("=");
+      await page.evaluate(([q, v]) => { const e = [...document.querySelectorAll(q)].find(window.__aud.vis); e.value = v; e.dispatchEvent(new Event("change", { bubbles: true })); }, [sel, val]);
+      await page.waitForTimeout(300);
+      continue;
+    }
     // on a phone the pane's 📎 is folded into the ⋯ menu: open it when the step's control is not on the bar
     if (/^\[data-pane-attach\]/.test(s) && !(await page.locator(s).first().isVisible().catch(() => false))) {
       await page.evaluate(() => { [...document.querySelectorAll("[data-pane-menu-btn]")].find(window.__aud.vis)?.click(); });
@@ -314,7 +344,7 @@ async function probe(path, w, h, lang, via, ctl) {
       return { present: !!el, savingText: L.some((l) => /saving|সংরক্ষণ করা হচ্ছে/i.test(l) && l.length < 60), markerInPage: L.some((l) => l.includes(mark)), keys: window.__aud.list().map((c) => c.key), lines: L };
     }, [ctl.key, ctl.nth, MARK]).catch(() => null);
     if (after) {
-      out.stuck = after.savingText || (!after.present && !out.nav && before.keys.includes(ctl.key) && after.keys.length === 0);
+      out.stuck = after.savingText || (!(FLOW && FLOWS[FLOW].closes) && !after.present && !out.nav && before.keys.includes(ctl.key) && after.keys.length === 0);
       out.markerAdded = after.markerInPage && !before.lines.some((l) => l.includes(MARK));
       out.newControls = after.keys.filter((k) => !before.keys.includes(k));
       out.lang = { bnOk: REFUSED_BN.test(msg) && /[ঀ-৿]/.test(msg), enOk: !/[ঀ-৿]/.test(msg) };
@@ -338,7 +368,8 @@ function judge(o, lang) {
   return { status: "OK", detail: o.msg.slice(0, 60) };
 }
 
-const isMenu = (c) => c.key.endsWith("|MENU");
+// (part 102: the bookmark name pop-over, class bm-popover, matches the shared-menu selector but is the page's own save: keepMenu)
+const isMenu = (c) => c.key.endsWith("|MENU") && !(FLOW && FLOWS[FLOW].keepMenu);
 for (const [name, path] of PAGES) {
   if (FLOW ? !path.startsWith(FLOWS[FLOW].path) : (ONLY && !ONLY.split(",").some((p) => path.startsWith(p)))) continue;
   const tPage = Date.now();
