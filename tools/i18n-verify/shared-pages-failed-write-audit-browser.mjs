@@ -45,7 +45,7 @@ const PAGES = [
   ["Onboarding", "onboarding.html"], ["Accept invite", "accept-invite.html?token=not-a-real-link"],
   ["Monitor", "monitor.html"], ["Homework", "homework.html"], ["People", "people.html"], ["Records", "records.html"],
   ["Catalogue", "catalogue.html"], ["About", "about.html"], ["Bookmarks", "bookmarks.html"],
-  ["Hadith collections", "hadith-collections.html"],
+  ["Hadith collections", "hadith-collections.html"], ["Hadith Study", "hadith-study.html"],
   ["Landing", "index.html"], ["Notes", "notes.html?unit=ayah:2:255&label=Al-Baqarah%202:255"], ["Journey map", "journey-map.html"], ["Deen study", "deen-study.html"],
   ["Arabic study", "arabic-study.html"], ["Self-check", "admin-self-check.html"], ["Taglines", "taglines.html"],
 ];
@@ -100,6 +100,18 @@ const FLOWS = {
   "notes-pane-edit": { path: "notes.html", steps: ["[data-note-window]", "[data-pane-edit-toggle]"] },
   ...Object.fromEntries(["rename", "link", "tags", "delete", "versions", "mytools"].map((a) => ["notes-pane-" + a, { path: "notes.html", base: 2, steps: ["[data-note-window]", "[data-pane-menu-btn]", `[data-pane-menu] [data-pane-${a}]`] }])),
 };
+// Part 101: Hadith Study (hadith-study.html) and its Dua tab. The HadeethEnc card (category 3 > hadith 4563, a real packaged hadith) and
+// the Dua tab's first cards. Studied is a <select>, so a flow also "presses" it (picks another option).
+//   hadith-card   Collections > category 3 > hadith 4563: 🔖 Bookmark, Studied, 👥, My Notes
+//   dua-card      Dua tab: each card's status buttons, 🔖 Bookmark, ✓ Check this dua (use --cap=12: the cards repeat one code path)
+//   dua-word      Dua tab > the first tappable word: the word card's own progress buttons (My progress on this word)
+//   dua-check     Dua tab > ✓ Check this dua: the check panel's Save
+Object.assign(FLOWS, {
+  "hadith-card": { path: "hadith-study.html", settle: 2500, only: "[data-hadeethenc-bookmark], [data-hadeethenc-studied]", steps: ['[data-hadith-tab="collections"]', '[data-hadeethenc-category="3"]', '[data-hadeethenc-hadith="4563"]'] },
+  "dua-card": { path: "hadith-study.html", settle: 2500, only: "[data-dua-status], [data-dua-bookmark], [data-dua-check-open]", steps: ['[data-hadith-tab="dua"]'] },
+  "dua-word": { path: "hadith-study.html", settle: 2500, only: "[data-dua-word-state]", steps: ['[data-hadith-tab="dua"]', ".dua-word[role=button]"] },
+  "dua-check": { path: "hadith-study.html", settle: 2500, only: "[data-dua-check-save]", base: 2, steps: ['[data-hadith-tab="dua"]', "[data-dua-check-open]", '[data-dua-check-step="3"]'] },
+});
 const FLOW = arg("flow");
 if (FLOW && !FLOWS[FLOW]) { console.log("unknown --flow=" + FLOW + "; known: " + Object.keys(FLOWS).join(", ")); process.exit(2); }
 if (FLOW) for (const k of ["notes.html", "journey-map.html"]) SEEDS[k] += "\n" + FLOW_SEED;
@@ -113,7 +125,7 @@ const FLAGS = `
 window.__armed = false; window.__refHits = 0; window.__flow = ${!!FLOW};
 for (const f of ["__stubFailWrites", "__stubFailBatch", "__stubFailTx"]) Object.defineProperty(window, f, { configurable: true, get() { if (!window.__armed) return false; window.__refHits++; return true; } });
 `;
-const VIEWPORTS = [[1440, 900], [390, 844]];
+const VIEWPORTS = [[1440, 900], [390, 844], ...(+arg("vp") === 820 ? [[820, 1180]] : [])]; // 820 (tablet) only when asked for: --vp=820
 const BN_PAGES = new Set(["bookmarks.html", "people.html", "classes.html"]); // the 3 pages with the most save controls
 const MARK = "Audit Test 4821";
 const SKIP = /sign.?out|log.?out|সাইন আউট|লগ আউট|সাইন-আউট/i;
@@ -137,16 +149,16 @@ const INSTALL = () => {
   };
   const label = (el) => ((el.getAttribute("aria-label") || el.textContent || (el.type === "checkbox" && el.closest("label")?.textContent) || el.value || el.name || "") + "").replace(/\s+/g, " ").trim().slice(0, 40);
   // Part 99 (--flow): the tick boxes of the file-into / tag dialogs are controls too
-  const SEL = "button, [role=button], input[type=submit], input[type=button], summary" + (window.__flow ? ", input[type=checkbox]" : "");
+  const SEL = "button, [role=button], input[type=submit], input[type=button], summary" + (window.__flow ? ", input[type=checkbox], select[data-hadeethenc-studied]" : "");
   // the shared top menu: the same code on every page (nav.js / bookmark-nav.js / account-card.js)
   const MENU = ".nav-cat, .nav-cat-links, .nav-cat-group, .nav-link, .nav-setting, .nav-account-btn, .nav-bm-sheet-head, #navBookmarkList, .nav-preview-notice, [class*=nav-bm], [class*=account-card], #navAppLangSelect, [id^=zab], [class*=zab-], #mmSaver, #mmSaverSettings, [class*=bm-pop], [class*=bm-back]";
   // (a body / wrapper class such as "nav-bm-open" must not turn the whole page into "menu": an ancestor that holds <main> / #app is not the menu)
   const inMenu = (el) => { const m = el.closest(MENU); return !!m && m !== document.body && m !== document.documentElement && !m.querySelector("#app, main, #appRoot"); };
   const keyOf = (el) => `${el.tagName.toLowerCase()}#${el.id || ""}|${label(el)}|${el.getAttribute("data-action") || ""}${inMenu(el) ? "|MENU" : ""}`;
-  const list = () => { const seen = {}; return [...document.querySelectorAll(SEL)].filter((el) => vis(el) && !el.disabled && el.getAttribute("aria-disabled") !== "true").map((el) => { const k = keyOf(el); seen[k] = (seen[k] || 0) + 1; return { key: k, nth: seen[k], label: label(el) }; }); };
-  const pick = (key, nth) => { let n = 0; for (const el of document.querySelectorAll(SEL)) { if (vis(el) && keyOf(el) === key && ++n === nth) return el; } return null; };
+  const list = () => { const seen = {}; return [...document.querySelectorAll(SEL)].filter((el) => vis(el) && !el.disabled && el.getAttribute("aria-disabled") !== "true" && (!window.__only || el.matches(window.__only))).map((el) => { const k = keyOf(el); seen[k] = (seen[k] || 0) + 1; return { key: k, nth: seen[k], label: label(el) }; }); };
+  const pick = (key, nth) => { let n = 0; for (const el of document.querySelectorAll(SEL)) { if (vis(el) && (!window.__only || el.matches(window.__only)) && keyOf(el) === key && ++n === nth) return el; } return null; };
   const fill = () => {
-    document.querySelectorAll("details").forEach((d) => { d.open = true; });
+    document.querySelectorAll("details").forEach((d) => { if (window.__flow && d.closest("#hadithCorpusRoot") && !d.closest(".dua-check-host, .dua-word-panel")) return; d.open = true; }); // (part 101: not the Dua cards' own folds, which load and redraw)
     const set = (el, v) => { const proto = el.tagName === "TEXTAREA" ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype; Object.getOwnPropertyDescriptor(proto, "value").set.call(el, v); el.dispatchEvent(new Event("input", { bubbles: true })); el.dispatchEvent(new Event("change", { bubbles: true })); };
     // Part 98: rich-text editors (the Notes body) are contenteditable, not inputs
     for (const el of document.querySelectorAll("[contenteditable=true], [contenteditable='']")) {
@@ -155,6 +167,9 @@ const INSTALL = () => {
     }
     for (const el of document.querySelectorAll("input, textarea, select")) {
       if (!vis(el) || el.disabled || el.readOnly) continue;
+      // part 101: on Hadith Study the library's own pickers (Dua page jump, text language, search) re-render the whole tab when changed; only the card / word card / check panel are filled
+      if (window.__flow && /hadith-study/.test(location.pathname) && !el.closest(".dua-check-host, .dua-word-panel, [data-hadeethenc-card]")) continue;
+      if (el.matches("[data-hadeethenc-studied]")) continue; // part 101: this select SAVES on change, so only the audit's own press may change it
       if (el.closest("nav, header, [class*=nav-], [id*=nav]") || /lang|tenant|preview|viewas/i.test(el.id + " " + el.name)) continue; // shell pickers reload the page
       // Part 99: a filled search box hides the very folders / tags / notes under test; and a Rename form is prefilled, so an
       // unchanged name would make Save a no-op: in a flow, a title / name box always gets the audit text.
@@ -233,10 +248,13 @@ async function flowSteps(page, mode) { // "all" | "butlast" | "last"
       await page.waitForTimeout(700);
       continue;
     }
-    await page.waitForSelector(s, { state: "visible", timeout: 8000 });
+    await page.waitForFunction((sel) => [...document.querySelectorAll(sel)].some(window.__aud.vis), s, { timeout: 15000 }); // part 101: a match that is also laid out (a dua card's words arrive late)
     await page.evaluate((sel) => { const el = [...document.querySelectorAll(sel)].find(window.__aud.vis); el.click(); }, s);
     await page.waitForTimeout(700);
   }
+  // part 101: a card loads its text and study state after the last click; wait, so the "before" lines hold the finished card
+  if (FLOWS[FLOW].settle && mode !== "butlast") await page.waitForTimeout(FLOWS[FLOW].settle);
+  if (mode !== "butlast") await page.evaluate((s) => { window.__only = s; }, FLOWS[FLOW].only || null); // part 101: list only the controls that save
 }
 
 // Press one control (after pressing the `via` menu controls that reach it) and judge what happens.
@@ -251,11 +269,20 @@ async function probe(path, w, h, lang, via, ctl) {
       const ok = await page.evaluate(([k, n]) => { const el = window.__aud.pick(k, n); if (!el) return false; el.scrollIntoView({ block: "center" }); return true; }, [c.key, c.nth]);
       if (!ok) return false;
       const handle = await page.evaluateHandle(([k, n]) => window.__aud.pick(k, n), [c.key, c.nth]);
+      if (await handle.evaluate((e) => e.tagName === "SELECT")) { // part 101: Studied saves on change
+        await handle.evaluate((e) => { const o = [...e.options].find((x) => x.value && x.value !== e.value); e.value = o.value; e.dispatchEvent(new Event("change", { bubbles: true })); });
+        return true;
+      }
       await handle.asElement().click({ timeout: 2500, noWaitAfter: true }).catch(async () => { await page.evaluate(([k, n]) => window.__aud.pick(k, n)?.click(), [c.key, c.nth]); });
       return true;
     };
     for (const c of via) { if (!(await press(c))) { out.gone = true; return out; } await page.waitForTimeout(250); }
     await settle();
+    // part 101: fill() opens every <details>, and a card loads its text when its fold opens: let that text arrive, or it reads as "new" below
+    if (FLOW && FLOWS[FLOW].settle) { // ... wait until the page text has held still for 1.5 s (at most 15 s)
+      let prev = -1, still = 0;
+      for (let i = 0; i < 30 && still < 3; i++) { await page.waitForTimeout(500); const n = await page.evaluate(() => window.__aud.lines().join("\n").length).catch(() => -2); still = n === prev ? still + 1 : 0; prev = n; await page.evaluate(() => window.__aud.fill()).catch(() => {}); }
+    }
     const before = await page.evaluate(() => ({ lines: window.__aud.lines(), keys: window.__aud.list().map((c) => c.key) }));
     const url0 = page.url();
     const nErr0 = errors.length;
@@ -274,6 +301,7 @@ async function probe(path, w, h, lang, via, ctl) {
       if (hit) { if (first === null) { first = Date.now(); msg = hit; } last = Date.now(); }
       else if (first !== null && now.includes(msg)) last = Date.now();
       if (!hit && !success) success = fresh.find((l) => SUCCESS.test(l)) || "";
+      if (VERBOSE && fresh.length && !hit && Date.now() - t0 < 400) console.log("      fresh lines:", JSON.stringify(fresh.map((l) => l.slice(0, 90)).slice(0, 4)));
       if (first !== null && Date.now() - first > 2300) break;
     }
     out.hits = await page.evaluate(() => window.__refHits).catch(() => 0);
@@ -324,11 +352,14 @@ for (const [name, path] of PAGES) {
       // enumerate
       const { ctx, page } = await openFresh(path, w, h, lang);
       let baseKeys = null;
-      if (FLOW) { await flowSteps(page, "butlast"); baseKeys = new Set((await page.evaluate(() => window.__aud.list())).map((c) => c.key)); await flowSteps(page, "last").catch(() => {}); }
+      if (FLOW) { await flowSteps(page, "butlast"); baseKeys = new Set((await page.evaluate(() => window.__aud.list())).map((c) => c.key)); await flowSteps(page, "last").catch((e) => { if (VERBOSE) console.log("   flow step failed:", String(e).slice(0, 200)); }); }
+      if (VERBOSE && FLOW) console.log("   before fill:", await page.evaluate(() => ({ states: document.querySelectorAll("[data-dua-word-state]").length, open: document.querySelectorAll(".dua-word[aria-pressed=true]").length, panels: [...document.querySelectorAll(".dua-word-panel")].filter((p) => !p.hidden).length })).catch((e) => String(e)));
       await page.evaluate(() => window.__aud.fill());
       await page.waitForTimeout(200);
       let top = await page.evaluate(() => window.__aud.list());
-      if (FLOW) { top = top.filter((c) => !baseKeys.has(c.key) && !isMenu(c)); console.log(`   flow ${FLOW}: ${top.length} controls: ${top.map((c) => c.label).join(" | ")}`); }
+      if (VERBOSE && FLOW) console.log("   only:", FLOWS[FLOW].only, "->", await page.evaluate(() => ({ only: window.__only, n: window.__only ? document.querySelectorAll(window.__only).length : -1, vis: window.__only ? [...document.querySelectorAll(window.__only)].filter(window.__aud.vis).length : -1 })).catch((e) => String(e)));
+      // (an `only` flow already lists just the saves: a Learning button on the card and in the word card share a key)
+      if (FLOW) { top = top.filter((c) => (FLOWS[FLOW].only || !baseKeys.has(c.key)) && !isMenu(c)); console.log(`   flow ${FLOW}: ${top.length} controls: ${top.slice(0, 12).map((c) => c.label).join(" | ")}`); }
       await ctx.close();
       // The page's own controls come first (cap CAP); the menu's are pressed after them, on the menu page at 1440 / en only (cap MENU_CAP).
       const auditMenu = !NOMENU && onMenuPage && lang === "en" && w === 1440;
