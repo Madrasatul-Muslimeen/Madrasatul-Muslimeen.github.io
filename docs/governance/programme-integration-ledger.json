@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "12.79",
+    "version": "12.80",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -5225,8 +5225,20 @@
     {
       "version": "12.79",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Audit part 101 fix (J29, issue #1214): hadith-browser.js's two HadeethEnc save catches say Not saved in the reader's language (Hadith Lead, branch claude/hadith-lead-01q2).",
+      "integration": {
+        "authorizedOn": "2026-10-27",
+        "integratedOn": "2026-10-27",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.80",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Audit part 102 (J29, issue #1217): topic-study.js's resume warning uses errors.js plainMessageFor instead of a raw error code.",
       "integration": {
         "authorizedOn": "2026-10-27",
         "integratedOn": "2026-10-27",
@@ -5235,8 +5247,9 @@
       }
     }
   ],
-  "nextUnallocated": "12.80",
+  "nextUnallocated": "12.81",
   "nextUnallocatedNote": [
+    "v12.80 was allocated to topic open: a refused 'where was I' save says plain translated words (audit part 102), 2026-10-27.",
     "v12.79 was allocated to Hadith: a refused bookmark or Studied save on a HadeethEnc card says Not saved (audit part 101), 2026-10-27.",
     "v12.78 was allocated to the note pane's tag, link and version saves say Not saved (audit part 100), 2026-10-26.",
     "v12.77 was allocated to Note pane: a refused Rename says Not saved (audit part 99, J29), 2026-10-26.",
