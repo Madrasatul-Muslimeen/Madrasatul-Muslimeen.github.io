@@ -1914,3 +1914,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v12.78** (2026-10-26): the note pane's tag, link and version saves say Not saved (audit part 100).
 - **v12.79** (2026-10-27): Hadith: a refused bookmark or Studied save on a HadeethEnc card says Not saved (audit part 101).
 - **v12.80** (2026-10-27): topic open: a refused 'where was I' save says plain translated words (audit part 102).
+- **v12.81** (2026-10-27): topic names keep their width beside a long gloss (Hadith, Deen, Arabic); catalogue seed Rasulullah ﷺ.

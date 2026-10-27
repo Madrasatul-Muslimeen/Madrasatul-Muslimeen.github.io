@@ -36,6 +36,11 @@
   .topic-row-name { font-weight: 600; flex: 1; }
   .topic-row-name, .topic-gloss { min-width: 0; overflow-wrap: anywhere; } /* audit part 34: with a reader's wider text spacing the status chip was pushed past a 320px screen */
   .topic-gloss { color: #666; font-size: 0.85rem; }
+  /* A long gloss took the whole row and squeezed the name to a one-letter column ("Hadith — Al-Ghayb" at every width,
+     audit part 102): the name keeps 10rem, the gloss wraps under it when the row is too narrow for both. */
+  .topic-row { flex-wrap: wrap; }
+  .topic-row-name { flex: 1 1 10rem; }
+  .topic-gloss { flex: 999 1 14rem; }
   .topic-row-arrow { color: #666; font-size: 1.1rem; }
   .topic-status-chip { color: white; padding: 0.15rem 0.55rem; border-radius: 0.8rem; font-size: 0.78rem; }
   .topic-status-unclaimed { background: #6b6b6b !important; }
