@@ -21,6 +21,7 @@
 // it can never write around the page's own write path (I2: pure UI).
 
 import { t, num } from "./i18n.js";
+import { plainMessageFor } from "./errors.js";
 import { sanitizeNoteHtml, isSafeNoteHref, NOTE_STATUS_COLOURS, NOTE_ANN_TEXT_MAX, NOTE_STATUS_LABEL_MAX } from "./note-sanitize.js";
 import { isOn as previewsOn, setOn as setPreviewsOn, pickLinks, loadPreview, hostOf } from "./note-link-preview.js";
 import { closeAllBarPalettes } from "./bar-palette.js";
@@ -191,7 +192,7 @@ export function createNoteViews(host) {
   const saveCollapsed = (noteId, set) => {
     const store = S();
     if (!store) { saveCollapsedLocal(noteId, set); return; }
-    store.setFold(noteId, [...set]).catch((err) => host.status(t("Your folded sections could not be saved to your account: {why}", { why: err?.message || String(err) })));
+    store.setFold(noteId, [...set]).catch((err) => host.status(t("Your folded sections could not be saved to your account: {why}", { why: whyText(err) })));
   };
   let settingsOpened = false, headingStyleEl = null;
   function paintHeadingStyles() {
@@ -1819,7 +1820,7 @@ export function createNoteViews(host) {
     let path;
     try {
       path = await host.images.upload(host.images.uid(), file, { onStage: (st) => say(st === "uploading" ? t("Uploading the picture…") : t("Making the picture small…")) });
-    } catch (err) { say(err?.message || t("The picture was not saved. Your Note is unchanged.")); return; } // I15: said in words, nothing inserted
+    } catch (err) { say(err?.code ? plainMessageFor(err) : (err?.message || t("The picture was not saved. Your Note is unchanged."))); return; } // I15: said in words, nothing inserted
     if (!v.ed || !editBodyEl(v)) return;
     restoreRange(v);
     const img = document.createElement("img");
@@ -2333,7 +2334,7 @@ export function createNoteViews(host) {
   /** One save of one part, with its failure said in words (I15). Resolves true when it saved. */
   async function saveSetting(d, part, value) {
     try { await S().set(part, value); d.msg(""); return true; }
-    catch (err) { d.msg(t("That could not be saved to your account: {why}", { why: err?.message || String(err) })); return false; }
+    catch (err) { d.msg(t("That could not be saved to your account: {why}", { why: whyText(err) })); return false; }
   }
   function swatchRow(attr, level, current) {
     const chips = PALETTE.map(([hex, name]) => `<button type="button" class="secondary mt-chip" ${attr}="${level}" data-mt-hex="${hex}" aria-pressed="${current === hex}" aria-label="${escapeHtml(t(name))}" title="${escapeHtml(t(name))}" style="background:${hex}"></button>`).join("");
@@ -2502,8 +2503,11 @@ export function createNoteViews(host) {
   /** Audit part 99 (I15, PCF MSA J29): a refused save says in words that it was NOT saved, then why. The raw error
    *  alone ("permission-denied", "transaction denied …") never told the reader the change was lost. */
   function notSavedText(err) {
+    if (err?.code) return plainMessageFor(err); // part 104: a Firestore refusal says the plain translated sentence, not its raw code
     return err?.message ? t("Not saved: {why}", { why: err.message }) : t("That did not save.");
   }
+  /** Part 104: the reason half of a "could not be saved" line -- plain words for a Firestore refusal, the service's own sentence otherwise. */
+  function whyText(err) { return err?.code ? plainMessageFor(err) : (err?.message || String(err)); }
 
   /** Item 15 -- ⋯ Make a copy: what is typed is saved first, then the page makes the copy; it opens where the original was. */
   async function duplicateNote(v, note) {
