@@ -22530,3 +22530,11 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 - **Measured (Architect, 27 Oct):** `--flow=hadith-card --bn=all --nomenu` 4/4 OK at 390, 820 and 1440 (on main: 4 MISSING); `hadeethenc-browser` 82/0; `behaviour.mjs` alone (below in the PR).
 - **Correction to v12.77 and v12.78:** those entries say Builder runs 2053 (audit part 100) and 2046 opened no pull request. Run 2046 was truly refused (401); run 2053 did open #1212, and run 2059 opened #1215. The Architect looked only at the issue comments, which stay empty by design (the Builder may create a pull request but not comment).
 - Nothing stored, no Rules changed.
+
+## v12.80 — 27 Oct 2026 — Topic open: a refused "where was I" save says plain, translated words (audit part 102)
+
+- **Audit part 102** (PCF MSA J29, invariant I15; issue #1217, Builder run 2064, PR #1218, merged test-only). Report: `docs/reports/2026-10-27-audit-part102-hadith-topic-failed-writes.md`. A seeded `synthetic-topic-audit-leaf` and flows `hadith-topic-open`, `hadith-topic-bookmark`, `hadith-topic-track(-<status>)`. Every topic write OK at 390, 820 and 1440, English and Bangla; `--mutate=silent` caught. Note 1: the topic-open warning printed "Couldn't save the change: permission-denied", a raw English code inside the Bangla sentence.
+- **Fix (Architect; shared `app/js/errors.js`, `app/js/topic-study.js`):** `plainMessageFor()` is exported (it already gave every `safeWrite` failure its plain, translated sentence), and the topic-open warning uses it. The topic still opens; the warning keeps `role="alert"`.
+- **Measured (Architect, 27 Oct):** `--flow=hadith-topic-open --bn=all --nomenu` 2/2 OK at 390, 820 and 1440; the Bangla line reads "অনুমতির নিয়মে সংরক্ষণটি আটকে গেছে। …" with no English code; `--page=deen-study.html --bn=all --vp=390` 4/4; `audit-part26-topic-study` 840/0; `behaviour.mjs` 971/0.
+- Not changed: `bookmark-nav.js:631` has the same raw-code shape in the shared Bookmark menu (left for the next audit, with its own suite).
+- Nothing stored, no Rules changed.
