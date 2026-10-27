@@ -434,7 +434,9 @@ export function hadithRefLabel(ref) {
   const b = REF_BOOKS[ref.book];
   const name = t(b?.name ?? ref.book);
   const head = b?.standard ? `${name} ${num(ref.cite)}` : t("{book} {n} (this edition's number)", { book: name, n: num(ref.cite) });
-  return ref.enBook ? `${head} · ${ref.enBook}` : head;
+  // The book's name comes in English only (the standard edition's sections): shown to an English reader; a Bangla
+  // reader has the Arabic chapter beneath instead (audit part 16: no English left on a Bangla screen).
+  return ref.enBook && getAppLang() === "en" ? `${head} · ${ref.enBook}` : head;
 }
 
 function hadeethEncReferences(id, state) {
