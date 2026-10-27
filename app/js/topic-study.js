@@ -30,7 +30,7 @@ import { roleListLabel } from "./labels.js";
 import { getAppLang, mountCardLookControl } from "./prefs.js";
 import { adoptAppLangFromUserIndex, mountSyncedAppLangControl } from "./lang-sync.js";
 import { t, translateStatic } from "./i18n.js";
-import { safeWrite } from "./errors.js";
+import { safeWrite, plainMessageFor } from "./errors.js";
 import {
   getMyMembershipRoles, hydrateMemberships, pickContext, getActiveContext, setActiveContext,
   effectiveRoles, scopedRoster, getSelectedPersonId, setSelectedPersonId,
@@ -445,7 +445,7 @@ export function initTopicStudyPage({ moduleId, trackableId, rootSubjectId }) {
     if (resumeError) {
       const note = document.createElement("p");
       note.className = "topic-empty"; note.setAttribute("role", "alert"); note.dataset.topicResumeError = "";
-      note.textContent = t("Couldn't save the change: {error}", { error: resumeError?.code || resumeError?.message || String(resumeError) });
+      note.textContent = plainMessageFor(resumeError); // audit part 102: the same plain, translated words as every other save, never a bare code
       detailContainer.querySelector(".topic-detail")?.prepend(note);
     }
     const trackBtn = document.getElementById("trackTopicBtn");
