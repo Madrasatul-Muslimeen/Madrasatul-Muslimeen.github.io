@@ -983,3 +983,4 @@ total). Allocated by the MMSA Architect.
 12.79: Hadith: a refused bookmark or Studied save on a HadeethEnc card says Not saved (audit part 101). Allocated by the MMSA Architect.
 12.80: topic open: a refused 'where was I' save says plain translated words (audit part 102). Allocated by the MMSA Architect.
 12.81: topic names keep their width beside a long gloss (Hadith, Deen, Arabic); catalogue seed Rasulullah ﷺ. Allocated by the MMSA Architect.
+12.82: Rasulullah Sallallahu A'laihi Wa Sallam in the English catalogue (the Owner's rule); bn.js dead duplicate keys removed. Allocated by the MMSA Architect.
