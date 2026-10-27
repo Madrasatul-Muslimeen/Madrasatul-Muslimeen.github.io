@@ -22586,3 +22586,13 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 - The Architect's v12.85 note about the Arabic chapter line's number was a misreading of a cropped screenshot; the Hadith Lead measured it at the right edge (dir=rtl). Withdrawn.
 - **Measured (Architect, 28 Oct):** `hadeethenc-references-browser` 33/0, `hadeethenc-browser` 82/0, `behaviour.mjs` 971/0.
 - Nothing stored, no Rules changed.
+
+## v12.87 — 28 Oct 2026 — Note pane and import services: a refused save says plain translated words (audit part 104)
+
+- **Audit part 104** (PCF MSA J29, invariant I15; issue #1227, Builder run 2084, PR #1230). Report: `docs/reports/2026-10-28-audit-part104-shared-raw-codes.md`.
+- **Fix:** `note-window.js` (fold save, picture save, `saveSetting`, `notSavedText`, new `whyText`) and the 8 refusal pushes in `wordpress-import-service.js` and `evernote-import-service.js` say `plainMessageFor(err)` when the error carries a Firestore `code`; an error the app threw itself keeps its own sentence. Read failures and boot lines unchanged (`backup.js`, `backup.html`).
+- **Architect's addition:** `tools/firestore-emulator/wordpress-import-real-function.rules.test.mjs` and `evernote-import-real-function.rules.test.mjs` rewrite `./errors.js` (real module, i18n stubbed); without it their loader refuses the service (proven by running without the line).
+- **Found, NOT fixed (pre-existing on `main`):** both import emulator tests stop at their first guard, "the live firestore.rules notes block is not the candidate's": the live notes block has drifted from the 25 Sep candidate. A test-side question for a later round; no Rules changed here.
+- **QR:** `note-window.js` is in QR's pinned copy; change notice sent to the PCA with this release's commit.
+- **Measured (Architect, 28 Oct):** refused saves via `shared-pages-failed-write-audit-browser --flow=pane-mytools` at 390, 820, 1440, en and bn: 15/15 plain sentences, no raw code; `wordpress-import-screen` 21/0, `journey-note-actions-browser` 184/0, `journey-tags-browser` 363/0, `notes-note-windows-browser` 218/0, `zab-bar-browser` 370/0, `journey-map-screen` 47/0, `stub-parity` 4/0, `build-app qr` and `strip-comments-check` 34/0, `apps-build-check` 48/0, `behaviour.mjs` 971/0.
+- Nothing stored, no Rules changed.

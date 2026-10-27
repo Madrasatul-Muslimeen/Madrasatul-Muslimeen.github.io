@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "12.86",
+    "version": "12.87",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -5309,8 +5309,20 @@
     {
       "version": "12.86",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Hadith Lead's J103 follow-up: the references box says in plain, translated words when the book numbers cannot load, instead of the browser's error text.",
+      "integration": {
+        "authorizedOn": "2026-10-27",
+        "integratedOn": "2026-10-27",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.87",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Audit part 104 (Builder run 2084, PR #1230): note-window.js, wordpress- and evernote-import-service.js say plainMessageFor(err) for a Firestore refusal.",
       "integration": {
         "authorizedOn": "2026-10-27",
         "integratedOn": "2026-10-27",
@@ -5319,8 +5331,9 @@
       }
     }
   ],
-  "nextUnallocated": "12.87",
+  "nextUnallocated": "12.88",
   "nextUnallocatedNote": [
+    "v12.87 was allocated to Note pane and import services: a refused save says plain translated words (audit part 104), 2026-10-27.",
     "v12.86 was allocated to Hadith: a failed load of the book numbers says so in plain words (J103), 2026-10-27.",
     "v12.85 was allocated to HadeethEnc cards show their proven book, standard number and chapter (Hadith J103 Rounds 1-4 part 1), 2026-10-27.",
     "v12.84 was allocated to Bookmark menu: a refused save says plain translated words (audit part 103), 2026-10-27.",

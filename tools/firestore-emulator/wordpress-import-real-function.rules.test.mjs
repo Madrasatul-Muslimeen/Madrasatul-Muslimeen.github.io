@@ -120,6 +120,8 @@ svc = spec(svc, "./unit-keys.js", unitKeysUrl, "service");
 svc = spec(svc, "./wordpress-import-parser.js", parserUrl, "service");
 svc = spec(svc, "./study-wordpress-import-readiness.js", readyStub, "service");
 svc = spec(svc, "./note-foundation.js", nfUrl, "service");
+// Audit part 104 (v12.87): the service imports errors.js for plainMessageFor; the real module, with i18n stubbed.
+svc = spec(svc, "./errors.js", toDataUrl(spec(read("errors.js"), "./i18n.js", i18nStub, "errors.js")), "service");
 assert.ok(!/from "\.\//.test(svc), "wordpress-import-service.js has a relative import this loader did not rewrite");
 
 const { parseWxrXml, analyzeWxrImport } = await import(parserUrl);
