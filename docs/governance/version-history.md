@@ -986,3 +986,4 @@ total). Allocated by the MMSA Architect.
 12.82: Rasulullah Sallallahu A'laihi Wa Sallam in the English catalogue (the Owner's rule); bn.js dead duplicate keys removed. Allocated by the MMSA Architect.
 12.83: Word Card Root tab: the root's meaning and how it grows in one larger, elegant panel (J102). Allocated by the MMSA Architect.
 12.84: Bookmark menu: a refused save says plain translated words (audit part 103). Allocated by the MMSA Architect.
+12.85: HadeethEnc cards show their proven book, standard number and chapter (Hadith J103 Rounds 1-4 part 1). Allocated by the MMSA Architect.

@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "12.84",
+    "version": "12.85",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -5285,8 +5285,20 @@
     {
       "version": "12.84",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Audit part 103 (J29, issue #1221, Builder PR #1222): bookmark-nav.js showError and noteBookmarkOpened use plainMessageFor instead of a raw error code.",
+      "integration": {
+        "authorizedOn": "2026-10-27",
+        "integratedOn": "2026-10-27",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.85",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Hadith Lead's J103: each HadeethEnc card names the book, standard number and chapter its Narrated-by line cites, where two independent searches proved it; a tap opens the passage with a way back.",
       "integration": {
         "authorizedOn": "2026-10-27",
         "integratedOn": "2026-10-27",
@@ -5295,8 +5307,9 @@
       }
     }
   ],
-  "nextUnallocated": "12.85",
+  "nextUnallocated": "12.86",
   "nextUnallocatedNote": [
+    "v12.85 was allocated to HadeethEnc cards show their proven book, standard number and chapter (Hadith J103 Rounds 1-4 part 1), 2026-10-27.",
     "v12.84 was allocated to Bookmark menu: a refused save says plain translated words (audit part 103), 2026-10-27.",
     "v12.83 was allocated to Word Card Root tab: the root's meaning and how it grows in one larger, elegant panel (J102), 2026-10-27.",
     "v12.82 was allocated to Rasulullah Sallallahu A'laihi Wa Sallam in the English catalogue (the Owner's rule); bn.js dead duplicate keys removed, 2026-10-27.",
