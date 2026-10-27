@@ -15,7 +15,7 @@
 // Exits 0 only if every check passed.
 import fs from "node:fs";
 import path from "node:path";
-import { matchBook } from "../hadith-data-pull/hadith-concordance.mjs";
+import { matchBook, fixJoins } from "../hadith-data-pull/hadith-concordance.mjs";
 
 const root = process.cwd();
 const CONC = path.join(root, "tools", "hadith-data-pull", "output", "concordance");
@@ -70,7 +70,8 @@ for (const { b, data, byN } of files) {
       prev = row[0];
       const p = byN.get(row[0]);
       if (!p || !["hadith", "passage"].includes(p.kind)) throw new Error(`n=${row[0]} is not a hadith/passage`);
-      if (!(row[2] >= 30 && row[2] <= 100) || ![1, 2].includes(row[3])) throw new Error(`bad score/pass at n=${row[0]}`);
+      // pass 3 (J103 Round 4, 28 Oct 2026): a passage joining two hadith, cited by the first (fixJoins).
+      if (!(row[2] >= 30 && row[2] <= 100) || ![1, 2, 3].includes(row[3])) throw new Error(`bad score/pass at n=${row[0]}`);
     }
   });
   check(`${b.label}: language-keyed label (I11) and only numbers stored, no text`, () => {
@@ -140,6 +141,28 @@ check("matchBook: in order, a repeat taken near its neighbours, an unrelated pas
   const m = matchBook(passages, standard, { maxPosting: 10 });
   const got = Object.fromEntries(m.map((x) => [x.n, x.index]));
   if (got[1] !== 0 || got[2] !== 1 || got[3] !== 2 || got[4] !== 3 || 5 in got) throw new Error(JSON.stringify(got));
+});
+
+// J103 Round 4: joined passages are cited by their FIRST hadith. Read by hand, 28 Oct 2026: Bukhari's passage n=209
+// opens with Abu Juhayfa's hadith (standard 187) and runs into Abu Musa's follow-on (188); Muslim's n=176 opens with
+// 'Uthman's "man mata wa huwa ya'lamu" (standard 136) and runs into its second chain (137).
+check("joined passages: Bukhari n=209 is cited 187 and Muslim n=176 is 136 (by hand), and exactly 27 rows are pass 3", () => {
+  const row = (label, n) => files.find((f) => f.b.label === label).data.entries.find((r) => r[0] === n);
+  const b = row("Bukhari", 209), m = row("Muslim", 176);
+  if (b?.[1] !== 187 || b[3] !== 3) throw new Error(`Bukhari n=209 ${JSON.stringify(b)}`);
+  if (m?.[1] !== 136 || m[3] !== 3) throw new Error(`Muslim n=176 ${JSON.stringify(m)}`);
+  const n3 = files.reduce((k, f) => k + f.data.entries.filter((r) => r[3] === 3).length, 0);
+  if (n3 !== 27) throw new Error(`${n3} pass-3 rows`);
+});
+check("fixJoins (pure): a passage A+B matched to B moves to A; one opening with B stays", () => {
+  const W = (s) => s;
+  const A = "حدثنا فلان عن فلان قال قال رسول الله صلى الله عليه وسلم انما الاعمال بالنيات وانما لكل امرئ ما نوى فمن كانت هجرته";
+  const B = "وقال ابو موسى دعا النبي بقدح فيه ماء فغسل يديه ووجهه ومج فيه ثم قال اشربا منه";
+  const standard = [{ number: 1, text: A }, { number: 2, text: B }];
+  const joined = { n: 10, text: `${A} ${B}` }, alone = { n: 11, text: B };
+  const ms = [{ n: 10, index: 1, score: 1, pass: 1 }, { n: 11, index: 1, score: 1, pass: 1 }];
+  const moved = fixJoins([joined, alone], standard, ms, { maxPosting: 10 });
+  if (moved !== 1 || ms[0].index !== 0 || ms[0].pass !== 3 || ms[1].index !== 1) throw new Error(JSON.stringify({ moved, ms }));
 });
 
 // ---------------------------------------------------------------------------
