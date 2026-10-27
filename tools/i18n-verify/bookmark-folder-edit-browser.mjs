@@ -143,7 +143,7 @@ for (const lang of ["en", "bn"]) {
     await page.keyboard.press("ArrowUp");
     await page.waitForTimeout(600);
     const err = await page.evaluate(() => { const e = document.querySelector("[data-bm-nav-error]"); return e && !e.hidden ? e.textContent : ""; });
-    check(`${tag}: a refused save says so, in ${lang === "bn" ? "Bangla" : "English"}`, (lang === "bn" ? /সংরক্ষণ করা যায়নি/ : /Couldn't save the folder change/).test(err) && /permission-denied/.test(err), err);
+    check(`${tag}: a refused save says so, in ${lang === "bn" ? "Bangla" : "English"}`, (lang === "bn" ? /সংরক্ষণ হয়নি/ : /it did not save/).test(err) && !/permission-denied/.test(err), err);
     check(`${tag}: ...and the refused move snaps back (the screen never shows an unsaved order)`, (await rootOrder(page)) === "fC,fB,fA", await rootOrder(page));
     await page.evaluate(() => { window.__failBookmarkWrites = false; });
     check(`${tag}: no page errors`, errors.filter((e) => !/ERR_CERT|net::|archive\.org|api\.quran/i.test(e)).length === 0, errors.slice(0, 2).join(" | "));
