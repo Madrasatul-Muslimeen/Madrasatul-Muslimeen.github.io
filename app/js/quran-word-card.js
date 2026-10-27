@@ -1412,8 +1412,7 @@ function levelPanel(level, word, layers, context, text, formatNumber) {
     // (moved here from Depth), and how the root grows. The mark is keyed by the root.
     return `<div role="tabpanel" data-word-card-panel="intermediate"><div class="word-card-main">
       ${wordFactsHtml(word, layers, context.wordFeatures ?? null, text, formatNumber)}
-      <div class="word-card-root-family" data-word-card-root-family>${rootFamilyHtml({ word, layers, features: context.wordFeatures ?? null, ctx: depthCtx })}</div>
-      ${rootGrowsSection(layers, context, text, formatNumber)}
+      <div class="word-card-root-family" data-word-card-root-family>${rootFamilyHtml({ word, layers, features: context.wordFeatures ?? null, ctx: { ...depthCtx, rootGrowsHtml: rootGrowsSection(layers, context, text, formatNumber) } })}</div>
       </div><div class="word-card-side">
       ${progressBlock(context.progress, context.authority, null, text, formatNumber, { levelTotals: context.levelTotals, learnNext: context.learnNext, level, where, notApplicable: !layers.lemma })}
       <p class="word-card-reach" data-word-card-reach="root">${escapeHtml(text.reachRoot)}</p>
