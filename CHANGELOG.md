@@ -22578,3 +22578,11 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 - **Measured (Architect, 28 Oct):** `hadeethenc-references` 10/0, `hadeethenc-references-browser` 31/0 (mutations caught), `bn-duplicate-keys` green, governance suites green, `apps-build-check` green, `behaviour.mjs` 971/0; 7 widths × en/bn measured and looked at.
 - **Noted for the Hadith Lead (not blocking):** a reference that fails to load shows "Not loaded: {raw message}", the same raw-text shape as the rest of `hadith-browser.js` listed in audit part 103; carry it into that fix.
 - Nothing stored, no Rules changed.
+
+## v12.86 — 28 Oct 2026 — Hadith: a failed load of the book numbers says so in plain words (J103)
+
+- **PCF MSA J103 follow-up** (Hadith Lead, `claude/hadith-lead-01q2` at 22c630d), answering the Architect's v12.85 review note: `hadith-browser.js` `hadeethEncReferences` shows a plain, translated sentence on a load failure, with no `err.message` (I15).
+- `bn.js`: the unused `"Not loaded: {why}"` key (added in v12.85) is replaced by the new sentence's key. `bn-duplicate-keys`' existing-value check names it as removed; accepted as a dead-key removal (no caller anywhere in `app/`), as in v12.82.
+- The Architect's v12.85 note about the Arabic chapter line's number was a misreading of a cropped screenshot; the Hadith Lead measured it at the right edge (dir=rtl). Withdrawn.
+- **Measured (Architect, 28 Oct):** `hadeethenc-references-browser` 33/0, `hadeethenc-browser` 82/0, `behaviour.mjs` 971/0.
+- Nothing stored, no Rules changed.

@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "12.85",
+    "version": "12.86",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -5297,8 +5297,20 @@
     {
       "version": "12.85",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Hadith Lead's J103: each HadeethEnc card names the book, standard number and chapter its Narrated-by line cites, where two independent searches proved it; a tap opens the passage with a way back.",
+      "integration": {
+        "authorizedOn": "2026-10-27",
+        "integratedOn": "2026-10-27",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.86",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Hadith Lead's J103 follow-up: the references box says in plain, translated words when the book numbers cannot load, instead of the browser's error text.",
       "integration": {
         "authorizedOn": "2026-10-27",
         "integratedOn": "2026-10-27",
@@ -5307,8 +5319,9 @@
       }
     }
   ],
-  "nextUnallocated": "12.86",
+  "nextUnallocated": "12.87",
   "nextUnallocatedNote": [
+    "v12.86 was allocated to Hadith: a failed load of the book numbers says so in plain words (J103), 2026-10-27.",
     "v12.85 was allocated to HadeethEnc cards show their proven book, standard number and chapter (Hadith J103 Rounds 1-4 part 1), 2026-10-27.",
     "v12.84 was allocated to Bookmark menu: a refused save says plain translated words (audit part 103), 2026-10-27.",
     "v12.83 was allocated to Word Card Root tab: the root's meaning and how it grows in one larger, elegant panel (J102), 2026-10-27.",

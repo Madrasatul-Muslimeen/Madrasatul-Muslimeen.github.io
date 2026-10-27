@@ -474,8 +474,11 @@ function hadeethEncReferences(id, state) {
       p.dataset.hadithRefMissing = notFound.join(",");
       box.appendChild(p);
     }
-  }).catch((err) => {
-    box.appendChild(el("p", "hadith-attribution", t("Not loaded: {why}", { why: String(err?.message ?? err) })));
+  }).catch(() => {
+    // Plain words, not the browser's error text (audit part 103's raw-text rule).
+    const p = el("p", "hadith-attribution", t("The book numbers could not be loaded. Check the connection and open this hadith again."));
+    p.dataset.hadithRefsError = "true";
+    box.appendChild(p);
   });
   return box;
 }

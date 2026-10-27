@@ -4506,5 +4506,5 @@ export const BN = {
   "Open {ref} in the book": "{ref} বইয়ে খুলুন", // ?
   "{books}: number not yet found": "{books}: নম্বর এখনো পাওয়া যায়নি", // ?
   "← Back to the hadith card": "← হাদীস কার্ডে ফিরে যান", // ?
-  "Not loaded: {why}": "লোড হয়নি: {why}", // ?
+  "The book numbers could not be loaded. Check the connection and open this hadith again.": "বইয়ের নম্বরগুলো লোড করা যায়নি। সংযোগ দেখে এই হাদীসটি আবার খুলুন।", // ?
 };
