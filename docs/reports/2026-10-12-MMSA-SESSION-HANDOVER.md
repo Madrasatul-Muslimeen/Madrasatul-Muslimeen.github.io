@@ -1945,3 +1945,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v12.85** (2026-10-27): HadeethEnc cards show their proven book, standard number and chapter (Hadith J103 Rounds 1-4 part 1).
 - **v12.86** (2026-10-27): Hadith: a failed load of the book numbers says so in plain words (J103).
 - **v12.87** (2026-10-27): Note pane and import services: a refused save says plain translated words (audit part 104).
+- **v12.88** (2026-10-27): Hadith: 27 joined passages cited by their first hadith, and a red source-rights check fixed (J103 Round 4 part 2).
