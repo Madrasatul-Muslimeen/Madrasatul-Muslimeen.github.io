@@ -126,3 +126,55 @@ The check script now stores `agree` on each row, and the check requires it.
   - no way back: 6 fail;
   - not-yet-found hidden: 3 fail.
 - **Screenshots looked at:** en at 390 and bn at 820.
+
+## Round 4, part 1: searching by the quoted words (28 Oct 2026)
+
+**Why references were missed.** Most "not found" rows failed for one reason. HadeethEnc gives the narrator's lead-in in
+its own words ("عن أبي هريرة رضي الله عنه قال …") and puts the Prophet's words inside «…». The book has the same words
+but wraps them in its own chain of narrators. HadeethEnc's lead-in therefore counted against a match that was really
+there.
+
+**What changed.**
+- Round 1 now also searches by the quoted words alone (`matnOf`, at least 6 words) and keeps the better match. The row
+  records which one it used (`via`).
+- Round 2 runs its second, independent search on the same words. Every rule is unchanged:
+  - the two searches must agree on the number;
+  - the English must not be against it;
+  - a book without standard numbers still needs a second method and a 10-point margin.
+
+**Result.**
+
+| | before | after |
+|---|---|---|
+| Proven references | 3,316 | 3,768 |
+| Hadith with at least one proven reference | 2,887 | 3,055 |
+| Hadith with every named book proven | 1,598 | 1,841 |
+| English hadith with a proven reference (of 2,328) | 1,730 | 1,884 |
+
+Per book (proven / pairs):
+
+| Book | proven / pairs |
+|---|---|
+| al-Bukhari | 1,327 / 1,799 |
+| Muslim | 1,237 / 2,080 |
+| Abu Dawud | 435 / 565 |
+| al-Tirmidhi | 284 / 477 |
+| Ahmad | 238 / 501 |
+| Ibn Majah | 131 / 352 |
+| al-Nasa'i | 89 / 213 |
+| al-Darimi | 17 / 50 |
+| Malik | 9 / 18 |
+| al-Adab al-Mufrad | 1 / 3 |
+
+**Re-checked.**
+- I read 50 randomly chosen **new** matches (seed 104) side by side with the book's text. All 50 are the same hadith.
+- The independent checks still hold:
+  - all 939 proven Sunan references equal the editions' printed numbers;
+  - 3,734 of 3,756 proven passages beat their neighbours, and only 2 do so once moved by one passage.
+- "Actions are by intentions" (HadeethEnc 4560) now also shows **Bukhārī 6689**, in the Book of Oaths and Vows, as
+  on sunnah.com.
+
+**Still not found: 2,292 named-book pairs.**
+- Most are "agreed upon" hadith whose wording follows only one of the two Sahihs (e.g. "من حج لله فلم يرفث …" is
+  al-Bukhari's wording; Muslim 1350 reads "من أتى هذا البيت …").
+- Proving those needs a different kind of evidence, not looser words. They stay "number not yet found".

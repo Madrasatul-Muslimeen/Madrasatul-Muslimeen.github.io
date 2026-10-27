@@ -29,7 +29,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { shingles, normaliseArabic } from "./hadith-concordance.mjs";
 import { readHadeethEncArabic } from "./hadeethenc-openiti-links.mjs";
-import { BOOKS } from "./hadeethenc-references.mjs";
+import { BOOKS, matnOf } from "./hadeethenc-references.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const OUT = path.join(__dirname, "output");
@@ -160,9 +160,11 @@ async function main() {
   const passages = {};
   const out = [];
   for (const r of rows) {
-    const text = heAr.get(String(r.hadeethencId))?.text ?? "";
+    const full = heAr.get(String(r.hadeethencId))?.text ?? "";
+    // Round 1 matched by the whole text or by the quoted words alone (Round 4); the second search uses the same.
+    const text = r.via === "matn" ? (matnOf(full) ?? full) : full;
     const heEn = en.he.get(String(r.hadeethencId)) ?? null;
-    const rec = { id: r.hadeethencId, book: r.book, n: r.n, edition: r.editionNumber, standard: r.standardNumber, cite: r.citeNumber, r1: r.score };
+    const rec = { id: r.hadeethencId, book: r.book, n: r.n, edition: r.editionNumber, standard: r.standardNumber, cite: r.citeNumber, r1: r.score, via: r.via ?? "full" };
     if (STANDARD[r.book]) {
       const ranked = direct[r.book](text);
       const top = ranked[0]?.score ?? 0;

@@ -31,6 +31,13 @@ for (const f of fs.readdirSync(DISPLAY).sort((a, b) => parseInt(a) - parseInt(b)
     for (const r of refs) if (r[2] != null && !firstOf[r[0]] && id !== "4560") firstOf[r[0]] = { id, book: r[0], cite: r[1] };
   }
 }
+// A card with a named book not yet proven (the first such id with a proven reference too), for the "not yet found" line.
+let UNPROVEN = null;
+for (const f of fs.readdirSync(DISPLAY).sort((a, b) => parseInt(a) - parseInt(b))) {
+  const d = JSON.parse(fs.readFileSync(`${DISPLAY}/${f}`, "utf8"));
+  const id = Object.keys(d.notFound).find((k) => d.refs[k]?.length);
+  if (id) { UNPROVEN = { id, books: d.notFound[id].join(",") }; break; }
+}
 const SPREAD = [{ id: "4560", book: "muslim", cite: "1907" }, ...["bukhari", "abudawud", "tirmidhi", "nasai", "ibnmajah", "malik", "ahmad"].map((b) => firstOf[b]).filter(Boolean)];
 const STANDARD = new Set(["bukhari", "muslim", "abudawud", "tirmidhi", "nasai", "ibnmajah", "malik"]);
 
@@ -61,13 +68,26 @@ for (const [pagePath, lang, width] of [["/app/hadith-collections.html", "en", 39
     const btn = box?.querySelector('[data-hadith-ref="muslim:1907"]');
     const r = btn?.getBoundingClientRect();
     return { btn: btn?.textContent ?? null, h: r?.height ?? 0, inside: !!r && r.left >= 0 && r.right <= innerWidth,
-      chapter: box?.querySelector(".hadith-ref-chapter")?.textContent ?? "", missing: box?.querySelector("[data-hadith-ref-missing]")?.dataset.hadithRefMissing ?? null,
+      chapter: btn?.closest(".hadith-ref")?.querySelector(".hadith-ref-chapter")?.textContent ?? "", bukhari: !!box?.querySelector('[data-hadith-ref="bukhari:6689"]'),
+      missing: box?.querySelector("[data-hadith-ref-missing]")?.dataset.hadithRefMissing ?? null,
       sideways: document.documentElement.scrollWidth - document.documentElement.clientWidth };
   });
   check(`${tag} hadith 4560 shows Muslim 1907 as a tappable reference, at least 40px tall, on screen`, !!card.btn && /1907|১৯০৭/.test(card.btn) && card.h >= 40 && card.inside, JSON.stringify(card));
   check(`${tag} its Arabic chapter is shown (كتاب الإمارة)`, card.chapter.includes("كتاب الإمارة"), card.chapter);
-  check(`${tag} Bukhārī, named but not yet proven, is said to be "not yet found" (no guessed number)`, card.missing === "bukhari", JSON.stringify(card.missing));
+  // By hand (sunnah.com): "innamal a'malu bin-niyyah" is also Bukhari 6689 (Book of Oaths and Vows), found by its
+  // quoted words (Round 4); both books its line names are proven, so nothing is "not yet found" on this card.
+  check(`${tag} it shows Bukhārī 6689 too, and no "not yet found" line`, card.bukhari && card.missing === null, JSON.stringify(card));
   check(`${tag} no sideways scroll`, card.sideways <= 0, String(card.sideways));
+  // A card whose line names a book not yet proven says so, and shows no number for it.
+  {
+    const { P: Q } = await openCard(ctx, pagePath, UNPROVEN.id);
+    const miss = await Q.evaluate((id) => {
+      const box = document.querySelector(`[data-hadeethenc-card="${id}"] [data-hadeethenc-refs]`);
+      return box?.querySelector("[data-hadith-ref-missing]")?.dataset.hadithRefMissing ?? null;
+    }, UNPROVEN.id);
+    check(`${tag} hadith ${UNPROVEN.id}: ${UNPROVEN.books}, named but not yet proven, is said to be "not yet found" (no guessed number)`, miss === UNPROVEN.books, JSON.stringify(miss));
+    await Q.close();
+  }
   if (width === 390 || lang === "bn") {
     fs.mkdirSync("/tmp/claude-0/shots", { recursive: true });
     await P.locator('[data-hadeethenc-card="4560"] [data-hadeethenc-refs]').screenshot({ path: `/tmp/claude-0/shots/refs-${lang}-${width}.png` }).catch(() => {});

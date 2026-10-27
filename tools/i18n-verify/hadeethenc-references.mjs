@@ -14,7 +14,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { shingles } from "../hadith-data-pull/hadith-concordance.mjs";
 import { readHadeethEncArabic } from "../hadith-data-pull/hadeethenc-openiti-links.mjs";
-import { BOOKS, parseAttribution } from "../hadith-data-pull/hadeethenc-references.mjs";
+import { BOOKS, parseAttribution, matnOf } from "../hadith-data-pull/hadeethenc-references.mjs";
 
 const root = process.cwd();
 const OUT = path.join(root, "tools", "hadith-data-pull", "output");
@@ -79,6 +79,11 @@ check("the attribution reader: متفق عليه is both Sahihs; al-Adab al-Mufr
   if (!eq(parseAttribution("رواه أبو داود والترمذي وابن ماجه").books, ["abudawud", "tirmidhi", "ibnmajah"])) throw new Error("three");
 });
 
+check("the quoted-words reader: only the «…» parts, and nothing when they are too short to search by", () => {
+  if (matnOf("عن أبي هريرة قال: «لا يؤمن أحدكم حتى يحب لأخيه ما يحب لنفسه»") !== "لا يؤمن أحدكم حتى يحب لأخيه ما يحب لنفسه") throw new Error("quote");
+  if (matnOf("قال: «نعم»") !== null || matnOf("بلا علامات اقتباس هنا أبدا في هذا النص الطويل") !== null) throw new Error("short or none");
+});
+
 console.log("\nThe words themselves: the proven passage beats its neighbours");
 const he = readHadeethEncArabic();
 const passagesCache = {};
@@ -95,7 +100,8 @@ function neighbourTest(shift) {
   let n = 0, beaten = 0;
   for (const r of proven) {
     if (r.n == null || !he.has(String(r.id))) continue;
-    const a = shingles(he.get(String(r.id)).text);
+    const full = he.get(String(r.id)).text;
+    const a = shingles(r.via === "matn" ? (matnOf(full) ?? full) : full);
     const p = passages(r.book);
     const own = share(a, p.get(r.n + shift));
     const near = Math.max(share(a, p.get(r.n + shift - 1)), share(a, p.get(r.n + shift + 1)));
