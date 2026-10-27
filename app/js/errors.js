@@ -43,7 +43,7 @@ const PLAIN_MESSAGES = {
   "quota-exceeded": () => t("You've used all the invites allowed for this account. Ask the admin to raise the limit if you need more."),
 };
 
-function plainMessageFor(error) {
+export function plainMessageFor(error) {
   const code = error?.code ?? "unknown";
   const known = PLAIN_MESSAGES[code];
   if (known) return known();
