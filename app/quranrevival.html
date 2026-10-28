@@ -7542,6 +7542,7 @@
       readTaglineState, writeTaglineState, TAGLINE_SETTING_DEFAULTS,
     } from "./js/taglines.js";
     import { attachTaglineScroll } from "./js/tagline-scroll.js";
+    import { safeHref } from "./js/html-escape.js";
     import { adoptAppLangFromUserIndex, mountSyncedAppLangControl } from "./js/lang-sync.js";
     import { showBootSplash, showQuranSplash } from "./js/splash.js";
     import { APP_VERSION } from "./js/version.js";
@@ -9059,11 +9060,11 @@
     }
 
     function buildTaglineEl(line) {
-      const hasLink = !!line.link?.url;
+      const hasLink = !!safeHref(line.link?.url);
       const el = document.createElement(hasLink ? "a" : "span");
       el.className = "tagline-line";
       if (hasLink) {
-        el.href = line.link.url;
+        el.href = safeHref(line.link.url);
         if (line.link.target === "external") {
           // An outside site opens in a new tab and never gets a handle on
           // this one -- the owner's own "external browser, new tab".

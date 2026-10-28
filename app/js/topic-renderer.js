@@ -17,6 +17,7 @@ import { getAppLang } from "./prefs.js";
 import { STATUS_COLORS } from "./mastery-wheel.js";
 import { statusLabel } from "./unit-keys.js";
 import { t } from "./i18n.js";
+import { safeHref } from "./html-escape.js";
 
 function escapeHtml(s) {
   return (s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -93,8 +94,10 @@ export function renderTopicResource(resource) {
     </div>`;
   }
   if (resource.type === "link") {
+    const href = safeHref(resource.url);
+    if (!href) return `<div class="topic-resource"><p class="topic-resource-text">${escapeHtml(resource.url)}</p></div>`;
     return `<div class="topic-resource">
-      <a class="topic-resource-link" href="${escapeHtml(resource.url)}" target="_blank" rel="noopener">${escapeHtml(resource.url)}</a>
+      <a class="topic-resource-link" href="${escapeHtml(href)}" target="_blank" rel="noopener">${escapeHtml(resource.url)}</a>
     </div>`;
   }
   return `<div class="topic-resource"><p class="topic-resource-text">${escapeHtml(resource.body).replace(/\n/g, "<br>")}</p></div>`;
