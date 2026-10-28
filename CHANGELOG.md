@@ -22633,3 +22633,11 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 - **Measured (Architect, 28 Oct):** the new check 120/0 and its mutation 84/36 reproduced; a probe of all six pages at 7 widths × en/bn 294/0 (crumb inside the screen, not cut, no sideways scroll; screenshots looked at); `bn-duplicate-keys` 6/0; `behaviour.mjs` 971/0.
 - **Not this round's:** `app/js/routine-study.js` (Health, LDOG) has the same fallback shape; next audit part.
 - Nothing stored, no Rules changed.
+
+## v12.92 — 28 Oct 2026 — Hadith Study: the book opening's text readable in the night look
+
+- **The Architect's finding in the v12.90 review**, fixed by the Hadith Lead (`claude/hadith-lead-01q2` at 98dc926): in the Text pane, a book opening's chapter text (e.g. Bukhari's «صحيح البخاري بسم الله الرحمن الرحيم») was the light look's grey on the dark panel, **2.95:1** in the night look (the default).
+- One rule in `app/css/hadith.css`: in the night look it uses the night palette's muted text (`--card-text-muted`), **9.77:1**. Light look unchanged at 5.83:1.
+- The reader suite now measures every text element on a chapter-text, hadith, passage and editor's-note card, in light and night (8 new checks).
+- **Measured (Architect, 28 Oct):** `hadith-study-reader-browser` 116/0 (115/1 with the rule removed: the opening text 2.95); a probe at 7 widths × en/bn: 9.77:1 everywhere, inside the screen, no sideways scroll, screenshots looked at; `card-look-browser` 96/0; `behaviour.mjs` 971/0.
+- Nothing stored, no Rules changed.

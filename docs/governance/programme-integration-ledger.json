@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "12.91",
+    "version": "12.92",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -5369,8 +5369,20 @@
     {
       "version": "12.91",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Builder run 2100 (#1236, PR #1239): the shared topic page's breadcrumb falls back to the subject's name, translated, never its raw id; Landing failed-save sweep finished, 0 saves.",
+      "integration": {
+        "authorizedOn": "2026-10-28",
+        "integratedOn": "2026-10-28",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.92",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Hadith Lead (claude/hadith-lead-01q2 at 98dc926): a book opening's chapter text in the night look uses the night palette's muted text, 2.95:1 -> 9.77:1.",
       "integration": {
         "authorizedOn": "2026-10-28",
         "integratedOn": "2026-10-28",
@@ -5379,8 +5391,9 @@
       }
     }
   ],
-  "nextUnallocated": "12.92",
+  "nextUnallocated": "12.93",
   "nextUnallocatedNote": [
+    "v12.92 was allocated to the Hadith reader's book-opening text readable in the night look, 2026-10-28.",
     "v12.91 was allocated to topic pages' breadcrumb never shows a raw subject id (audit part 106), 2026-10-28.",
     "v12.90 was allocated to the Hadith reader's book opening named in words (J106 finding), 2026-10-28.",
     "v12.89 was allocated to Hadith Study: its own menu bar and Hadith Books in three panes; the Dua tab's code moved into its own file (J106 round 1), 2026-10-28.",
