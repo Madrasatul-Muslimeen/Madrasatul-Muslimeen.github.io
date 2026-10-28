@@ -1,4 +1,4 @@
-// Audit part 88 (PCF MSA J29): keyboard, focus ring and Esc on the 23 shared pages, at 1440x900 and 390x844, English only.
+// Audit part 88 (PCF MSA J29): keyboard, focus ring and Esc on the 23 shared pages, at 1440x900 and 390x844, in English and (audit part 117) Bangla; --no-bn skips the Bangla pass.
 //
 // For each page the suite drives the REAL keyboard (page.keyboard.press) and checks:
 //   tab    - Tab reaches every visible, enabled button / a[href] / input / select / textarea / [tabindex=0] (cap 150 presses)
@@ -25,7 +25,7 @@ const check = (name, ok, detail = "") => {
   if (ok) { pass++; if (process.argv.includes("--verbose")) console.log(`  PASS  ${name}`); } else { fail++; console.log(`  FAIL  ${name} ${detail}`); }
 };
 const arg = (k) => (process.argv.find((a) => a.startsWith("--" + k + "=")) || "").slice(k.length + 3);
-const ONLY = arg("page"), MUTATE = arg("mutate"), LIST = process.argv.includes("--list");
+const ONLY = arg("page"), MUTATE = arg("mutate"), LIST = process.argv.includes("--list"), NO_BN = process.argv.includes("--no-bn");
 
 // Copied from unchecked-pages-screen-audit-browser.mjs (not edited there).
 const PAGES = [
@@ -104,17 +104,20 @@ const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PAT
 const quiet = (errors) => errors.filter((e) => !/ERR_CERT|net::|archive\.org|api\.quran|Failed to load resource/i.test(e));
 const rows = [];
 
+for (const lang of NO_BN ? ["en"] : ["en", "bn"])
 for (const [name, path] of PAGES) {
   if (ONLY && !path.startsWith(ONLY)) continue;
-  console.log(`\n== ${name} (${path}) ==`);
+  console.log(`\n== ${name} (${path})${lang === "bn" ? " [Bangla]" : ""} ==`);
   for (const [w, h] of VIEWPORTS) {
-    const tag = `${name} / ${w}`;
-    const ctx = await newContext(browser, { banner: false, viewport: { width: w, height: h }, extraSeedJs: REAL_SEED });
+    const tag = `${name} / ${w}${lang === "bn" ? " / bn" : ""}`;
+    const ctx = await newContext(browser, { banner: false, viewport: { width: w, height: h }, extraSeedJs: REAL_SEED, appLang: lang === "bn" ? "bn" : null });
     await ctx.route("**/archive.org/**", (r) => r.abort());
     const sep = path.includes("?") ? "&" : "?";
     const { page: P, errors } = await openPage(ctx, "/app/" + path + sep + (path.startsWith("hadith-collections") ? "back=1" : "navBack=1"));
     await P.waitForTimeout(1000);
     await P.evaluate(INSTALL);
+    // Positive control: a Bangla pass over a page that is still in English would pass vacuously.
+    if (lang === "bn") check(`${tag} / page really rendered in Bangla`, await P.evaluate(() => /[ঀ-৿]/.test(document.body.innerText)), "no Bengali text on the page");
     if (MUTATE === "outline") await P.addStyleTag({ content: "*,*:focus,*:focus-visible{outline:none!important;box-shadow:none!important}" });
     if (MUTATE === "esc") await P.evaluate(() => window.addEventListener("keydown", (e) => { if (e.key === "Escape") e.stopImmediatePropagation(); }, true));
     if (MUTATE === "tabindex") await P.evaluate(() => { const b = [...document.querySelectorAll("button")].find((x) => window.__kb.vis(x) && !x.disabled); if (b) b.tabIndex = -1; });
@@ -262,7 +265,7 @@ for (const [name, path] of PAGES) {
       }
     }
     check(`${tag} / Enter and Space activate role=button (${roles.length} found)`, roleBad.length === 0, roleBad.slice(0, 5).join(" | "));
-    rows.push({ page: name, w, targets: targets.length, stops: seq.length, never: never.length, ringBad: ringBad.length, opened, roles: roles.length, roleBad: roleBad.length, escBad: escBad.length });
+    rows.push({ lang, page: name, w, targets: targets.length, stops: seq.length, never: never.length, ringBad: ringBad.length, opened, roles: roles.length, roleBad: roleBad.length, escBad: escBad.length });
     await ctx.close();
   }
 }
