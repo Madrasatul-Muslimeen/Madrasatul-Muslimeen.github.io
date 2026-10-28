@@ -16,8 +16,10 @@
 //   --report=<path>    write the rows (JSON)  --verbose  print passes   --no-qr  skip the quranrevival.html measurement
 //   --mutate=<name>    bring a removed slow path back (each must FAIL); names are in MUTATIONS below
 import { chromium, newContext, BASE } from "./harness.mjs";
-import { writeFileSync, mkdirSync } from "node:fs";
-import { dirname } from "node:path";
+import { writeFileSync, mkdirSync, readFileSync, existsSync, statSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
+import { gzipSync } from "node:zlib";
+import { createServer } from "node:http";
 
 let pass = 0, fail = 0;
 const check = (name, ok, detail = "") => {
@@ -93,7 +95,42 @@ const SEED = `
 `;
 
 // Mutations are filled in as slow paths are fixed (see the report). Each one routes a page file back to its old text.
-const MUTATIONS = {};
+// A mutation is a text replacement the suite's own gzip server applies to one served file.
+const MUTATIONS = {
+  // bookmarks.html builds every row's two selects with the full option list again (6,700 nodes, 140-190 ms long task).
+  "eager-selects": { file: "bookmarks.html", from: "const LAZY_ROW_SELECTS = true;", to: "const LAZY_ROW_SELECTS = false;" },
+};
+if (MUTATE && !MUTATIONS[MUTATE]) throw new Error(`unknown --mutate=${MUTATE}`);
+const MUT = MUTATE ? MUTATIONS[MUTATE] : null;
+
+// Pages sends text files gzip-compressed and serve.js does not, so (as part 94 did for the part 91 suite) the app's files
+// are fetched through this suite's own gzip server; the browser still sees the page's own URL.
+const ROOT = resolve("."), TEXT = new Set(["html", "js", "mjs", "css", "json", "svg", "txt", "xml"]);
+const MIME = { html: "text/html; charset=utf-8", js: "text/javascript; charset=utf-8", mjs: "text/javascript; charset=utf-8", css: "text/css; charset=utf-8", json: "application/json; charset=utf-8", svg: "image/svg+xml", png: "image/png", jpg: "image/jpeg", webp: "image/webp", woff2: "font/woff2", ico: "image/x-icon" };
+const extOf = (u) => (u.split("?")[0].match(/\.([a-z0-9]+)$/i) || [])[1]?.toLowerCase() || "";
+let gzipPort = 0;
+const gzipServer = createServer((req, res) => {
+  const u = new URL(req.url, "http://x"), e = extOf(u.pathname);
+  const file = join(ROOT, decodeURIComponent(u.pathname));
+  if (!file.startsWith(ROOT) || !existsSync(file) || !statSync(file).isFile()) { res.writeHead(404); return res.end("not found"); }
+  let body = readFileSync(file);
+  if (MUT && u.pathname === `/app/${MUT.file}`) {
+    const text = body.toString();
+    if (!text.includes(MUT.from)) { res.writeHead(500); return res.end(`mutation text not found in ${MUT.file}`); }
+    body = Buffer.from(text.split(MUT.from).join(MUT.to));
+  }
+  const headers = { "content-type": MIME[e] || "application/octet-stream", "cache-control": "no-store", "access-control-allow-origin": "*" };
+  if (TEXT.has(e)) { headers["content-encoding"] = "gzip"; body = gzipSync(body); }
+  res.writeHead(200, headers); res.end(body);
+});
+await new Promise((ok) => gzipServer.listen(0, "127.0.0.1", () => { gzipPort = gzipServer.address().port; ok(); }));
+async function routeGzip(ctx) {
+  await ctx.route(`${BASE}/app/**`, (route) => {
+    const u = new URL(route.request().url());
+    if (u.pathname.endsWith("/js/firebase-init.js")) return route.fallback();
+    return route.continue({ url: `http://127.0.0.1:${gzipPort}${u.pathname}${u.search}` });
+  });
+}
 
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
 const rows = [];
@@ -107,10 +144,11 @@ async function openAndMeasure(path, prof, lang, { scroll = true } = {}) {
   const ctx = await newContext(browser, { banner: false, appLang: lang === "bn" ? "bn" : null, viewport: { width: prof.w, height: prof.h }, latencyMs: LATENCY, extraSeedJs: SEED });
   await ctx.route("**/archive.org/**", (r) => r.abort());
   await ctx.addInitScript(LONGTASK_INIT);
-  if (MUTATE && MUTATIONS[MUTATE]) await MUTATIONS[MUTATE](ctx, path);
+  await routeGzip(ctx);
   const page = await ctx.newPage();
   const errors = [];
   page.on("pageerror", (e) => errors.push(String(e)));
+  if (process.argv.includes("--debug")) { page.on("console", (m) => console.log("   [console]", m.text())); page.on("requestfailed", (r) => console.log("   [failed]", r.url())); }
   const cdp = await ctx.newCDPSession(page);
   await cdp.send("Network.enable");
   await cdp.send("Network.setCacheDisabled", { cacheDisabled: true });
@@ -166,12 +204,29 @@ for (const [name, path] of PAGES) {
       check(`${tag}: no read returns more than ${READ_DOC_CAP} documents`, Object.values(m.byCol).every((v) => v.maxDocs <= READ_DOC_CAP), JSON.stringify(m.byCol));
       check(`${tag}: no main-thread long task over ${LONG_TASK_MAX} ms`, m.maxLong <= LONG_TASK_MAX, `${Math.round(m.maxLong)} ms`);
       check(`${tag}: scroll-to-frame <= ${SCROLL_MAX} ms at every step`, m.scrollMax <= SCROLL_MAX, `${Math.round(m.scrollMax)} ms`);
+      if (path === "bookmarks.html") check(`${tag}: 200 bookmarks in 15 folders draw in under 4,000 DOM nodes (6,767 with a full option list in every row)`, m.nodes < 4000, `${m.nodes} nodes`);
       if (prof.throttle) {
         check(`${tag}: FCP <= ${FCP_MAX} ms`, m.fcp != null && m.fcp <= FCP_MAX, `${Math.round(m.fcp)} ms`);
         check(`${tag}: ready <= ${READY_MAX} ms`, m.ready <= READY_MAX, `${Math.round(m.ready)} ms`);
       }
     }
   }
+}
+
+// bookmarks.html: a lazy select must still work. Reaching for it fills the full list and keeps the chosen value.
+if (!ONLY || "bookmarks.html".startsWith(ONLY)) {
+  const ctx = await newContext(browser, { banner: false, viewport: { width: 1440, height: 900 }, latencyMs: 0, extraSeedJs: SEED });
+  await routeGzip(ctx);
+  const page = await ctx.newPage();
+  await page.goto(`${BASE}/app/bookmarks.html?navBack=1`, { waitUntil: "networkidle", timeout: 60000 });
+  await page.waitForSelector("[data-bm-move]");
+  const before = await page.evaluate(() => { const s = document.querySelector("[data-bm-move]"); return { n: s.options.length, v: s.value }; });
+  await page.locator("[data-bm-move]").first().focus();
+  const after = await page.evaluate(() => { const s = document.querySelector("[data-bm-move]"); return { n: s.options.length, v: s.value }; });
+  check("bookmarks: a row's Move select opens with every folder (16) and keeps its chosen folder", after.n === 16 && after.v === before.v && before.v !== "", JSON.stringify({ before, after }));
+  const person = await page.evaluate(() => { const s = document.querySelector("[data-bm-person]"); s.dispatchEvent(new Event("pointerdown", { bubbles: true })); return s.options.length; });
+  check("bookmarks: a row's For select lists the whole roster after a touch", person >= 2, `${person} options`);
+  await ctx.close();
 }
 
 // quranrevival.html: the Notes pane's open time beside the Read view. Measure only; nothing is asserted on that frozen page.
@@ -201,5 +256,6 @@ if (!process.argv.includes("--no-qr") && (!ONLY || "quranrevival.html".startsWit
 
 if (REPORT) { mkdirSync(dirname(REPORT), { recursive: true }); writeFileSync(REPORT, JSON.stringify({ rows, qr }, null, 1)); }
 await browser.close();
+gzipServer.close();
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
