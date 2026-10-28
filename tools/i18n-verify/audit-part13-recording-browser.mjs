@@ -295,6 +295,9 @@ for (const lang of LANGS) for (const width of WIDTHS) {
 
   // 6: Monitor reports.
   await flow("monitor", lang, width, async (t, page, ctx, errors) => {
+    // Audit part 120: the Qur'an breakdown is read on a tap (it reads every records chunk of the student).
+    await page.click("#quranLoadBtn");
+    await page.waitForFunction(() => document.querySelectorAll("#quranBody table").length > 0, null, { timeout: 15000 });
     const m = await ev(page, () => ({ range: document.getElementById("rangeLabel").textContent, body: document.getElementById("reportBody").innerText, quran: document.getElementById("quranBody").innerText, sw: document.documentElement.scrollWidth, vw: innerWidth }));
     if (PROBE) console.log(t, JSON.stringify(m).slice(0, 400));
     check(`${t}: POSITIVE CONTROL the weekly report renders a range and Ahsan's entries`, m.range.length > 5 && m.body.includes(NAMES[lang][0]), m.range);
