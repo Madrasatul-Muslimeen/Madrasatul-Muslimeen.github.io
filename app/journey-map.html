@@ -4466,7 +4466,7 @@
         const hydrationDone = hydratedMembershipsPromise.then((hydrated) => {
           myMemberships = hydrated;
           tenantSelect.innerHTML = myMemberships
-            .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${roleListLabel(m.roles)})</option>`)
+            .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${escapeHtml(m.tenantName)} (${roleListLabel(m.roles)})</option>`)
             .join("");
         });
 

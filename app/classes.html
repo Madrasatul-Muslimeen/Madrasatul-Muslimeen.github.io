@@ -203,7 +203,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       subjectTree = tree;
       myMemberships = hydrated;
       tenantSelect.innerHTML = myMemberships
-        .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${roleListLabel(m.roles)})</option>`)
+        .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${escapeHtml(m.tenantName)} (${roleListLabel(m.roles)})</option>`)
         .join("");
 
       const preview = currentPreview();
@@ -218,7 +218,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
 
       const leaves = subjectTree.filter((n) => n.isTrackable && n.status !== "archived");
       subjectChecks.innerHTML = leaves
-        .map((n) => `<label><input type="checkbox" value="${n.id}" /> ${langText(n.name, getAppLang(), n.id)}</label>`)
+        .map((n) => `<label><input type="checkbox" value="${n.id}" /> ${escapeHtml(langText(n.name, getAppLang(), n.id))}</label>`)
         .join("") || `<span class="muted">${t("No subjects yet.")}</span>`;
 
       classes = classesRaw.filter((c) => canAdmin || c.status === "active");
@@ -227,6 +227,10 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     }
 
     function subjectName(id) { const n = subjectTree.find((s) => s.id === id); return n ? langText(n.name, getAppLang(), id) : id; }
+    // User-written and tenant-authored text goes into an HTML string only through this (audit part 110).
+    function escapeHtml(s) {
+      return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    }
     function personName(id) { const p = roster.find((r) => r.id === id); return p ? langText(p.name, getAppLang(), id) : id; }
 
     // -----------------------------------------------------------------------
@@ -264,13 +268,13 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
         : "";
       const enrolControls = canAdmin && c.status === "active" ? renderEnrolControls(c) : "";
       return `<div class="card">
-        <h3>${langText(c.name, getAppLang(), c.id)} <span class="pill pill-${c.status}">${entityStatusLabel(c.status)}</span></h3>
+        <h3>${escapeHtml(langText(c.name, getAppLang(), c.id))} <span class="pill pill-${c.status}">${entityStatusLabel(c.status)}</span></h3>
         <div class="muted">${subjectsLine}</div>
         <!-- The gloss is tenant-authored, language-keyed data (I11). It was
              read straight off .en, so a tenant that HAD authored Bangla for
              it still saw English -- a real pre-existing bug, not a
              translation gap. -->
-        ${c.gloss ? `<div class="muted">${langText(c.gloss, getAppLang(), "")}</div>` : ""}
+        ${c.gloss ? `<div class="muted">${escapeHtml(langText(c.gloss, getAppLang(), ""))}</div>` : ""}
         ${enrolControls}
         ${rosterHtml}
         ${c.status === "active" ? `<div style="margin-top:0.5rem;">${bulkConfirmBtn} ${archiveBtn}</div>` : ""}
@@ -279,7 +283,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     }
 
     function renderEnrolControls(c) {
-      const personOptions = roster.map((p) => `<option value="${p.id}">${langText(p.name, getAppLang(), p.id)}</option>`).join("");
+      const personOptions = roster.map((p) => `<option value="${p.id}">${escapeHtml(langText(p.name, getAppLang(), p.id))}</option>`).join("");
       return `<div class="row" style="margin-top:0.5rem;">
         <div><label>${t("Person")}</label><select class="enrolPersonSelect" data-class="${c.id}">${personOptions}</select></div>
         <div><label>${t("Role")}</label><select class="enrolRoleSelect" data-class="${c.id}">
@@ -295,7 +299,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       if (!active.length) return `<div class="muted" style="margin-top:0.4rem;">${t("No one enrolled yet.")}</div>`;
       const rows = active.map((e) => {
         const endBtn = canAdmin ? `<button class="small secondary endEnrolBtn" data-class="${c.id}" data-person="${e.personId}">${t("End")}</button>` : "";
-        return `<div class="muted">${personName(e.personId)} <span class="pill pill-${e.roleInClass}">${roleInClassLabel(e.roleInClass)}</span> ${endBtn}</div>`;
+        return `<div class="muted">${escapeHtml(personName(e.personId))} <span class="pill pill-${e.roleInClass}">${roleInClassLabel(e.roleInClass)}</span> ${endBtn}</div>`;
       }).join("");
       return `<div style="margin-top:0.5rem;">${rows}</div>`;
     }
