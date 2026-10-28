@@ -1006,3 +1006,4 @@ total). Allocated by the MMSA Architect.
 12.102: way-back: Bookmarks' Back keeps your place on a phone in Bangla (audit part 115). Allocated by the MMSA Architect.
 12.103: table buttons fully in view with the Tab key on a small phone (audit part 116). Allocated by the MMSA Architect.
 12.104: the way back shares a row: Read bar at 320 and 360, Word card header at 360 (QR Lead). Allocated by the MMSA Architect.
+12.105: Bookmarks opens faster with hundreds of bookmarks (audit part 119). Allocated by the MMSA Architect.

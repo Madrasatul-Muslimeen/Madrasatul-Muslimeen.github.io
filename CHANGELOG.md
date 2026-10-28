@@ -22754,3 +22754,12 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 - Suites: `qr-word-card-back-row-browser.mjs` reads the CARD's width, adds bn 360 and en 348, `--mutate=tight-row`; `bookmark-marks-back-browser.mjs` adds 360 to its widths, `--mutate=narrow-transport`, `--mutate=list-icon`.
 - **Measured (Architect, 29 Oct, merged with v12.103):** `bookmark-marks-back` 426/0 (v12.103: 336/6); `narrow-transport` 420/6; `qr-word-card-back-row` 54/0 (v12.103: 41/1); `tight-row` 53/1; screenshots Read bar en 320 and bn 360 (two lines), Word card en 360 (← beside ⓘ, › × on the top row). QR Lead's guards (as sent): `behaviour` 971/0, word-card suites 196/290/136/180/152/0, read-bar suites 67/72/30/40/56/44/74/0, 8-width sweep 688/0 and 96/0. The Architect's `behaviour.mjs` alone: 970/1, the one failure **38e**, an older intermittent defect: a focused probe of that block (8 runs each) fails 5/8 on v12.101, 1/8 and 3/8 on v12.103, 5/8 here — the second Play after a finished run is swallowed (āyah stays 7, button stays Play for 6 s). Sent to the QR Lead (frozen page).
 - QR carries it at its next rebuild. Nothing stored, no Rules changed.
+
+## v12.105 — 29 Oct 2026 — Bookmarks opens faster with hundreds of bookmarks (audit part 119)
+
+- **PCF MSA J29, audit part 119** (Builder run 2163, issue #1274, PR #1278). Report (written by the Architect; the round left none): `docs/reports/2026-10-29-audit-part119-heavy-account-speed.md`.
+- New `tools/i18n-verify/heavy-account-speed-browser.mjs`; `firebase-stub.mjs` records how many documents each read returned (additive).
+- `app/bookmarks.html`: a row's and a folder header's For / Move lists fill when the reader reaches for them (6,767 → 3,333 nodes; longest task 327 → 117 ms in Bangla). `--mutate=eager-selects`.
+- **Architect's review commit:** behaviour 44c and 50h, and audit-part40's bookmarks flow, focus the list before reading its options (updated in place, with the reason).
+- **Measured (Architect, 29 Oct, merged with v12.104):** heavy 78/0 (eager-selects 24/6); audit-part32 896/0, part36 1184/0, part38 503/0, part40 3562/0; journey-map-screen 47/0; bookmark-folder-edit 68/0, bookmarks-page-new-assign 44/0, bookmark-remove 60/0; way-back and keyboard on Bookmarks 16/0 and 22/0; `behaviour.mjs` alone 971/0. Finding: Mapping My Journey reads 1,184 documents at open (part 121).
+- Nothing stored, no Rules changed.
