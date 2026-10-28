@@ -236,7 +236,17 @@ function controls(state, render) {
   bar.setAttribute("aria-label", t("Hadith Study"));
 
   const tabs = el("div", "hadith-tabs");
-  tabs.appendChild(menuButton(state, render, "books", t("Hadith Books"), (list, close) => fillBooksMenu(list, close, state, render)));
+  // Hadith Books (J106 step 1a): from any other view the button goes straight to the shelf of every book; once the
+  // reader is already on Books it opens the quick list for switching book.
+  const toShelf = () => {
+    if (state.view === "books") return false;
+    state.view = "books";
+    state.oi = { bookUri: null, chapterId: null, books: state.oi?.books ?? null, showAllChapters: false };
+    render();
+    focusActiveTab();
+    return true;
+  };
+  tabs.appendChild(menuButton(state, render, "books", t("Hadith Books"), (list, close) => fillBooksMenu(list, close, state, render), toShelf));
   tabs.appendChild(menuButton(state, render, "subjects", t("Subjects|Hadith Study menu"), (list, close) => fillSubjectsMenu(list, close, state, render)));
   tabs.appendChild(el("span", "hadith-menubar-sep"));
   for (const [view, label] of [
@@ -287,9 +297,10 @@ export const HADITH_SUBJECTS = [
 /**
  * A menu-bar button that opens a small list under it (Hadith Books, Subjects). The list closes on a choice, on a
  * second tap of the button, on a tap anywhere else and on Escape (which returns focus to the button). Its items are
- * ordinary 40px buttons, so a keyboard Tabs through them.
+ * ordinary 40px buttons, so a keyboard Tabs through them. `before`, when given, runs first on a tap and returns true
+ * when it has handled the tap itself, so no list opens.
  */
-function menuButton(state, render, view, label, fill) {
+function menuButton(state, render, view, label, fill, before = null) {
   const wrap = el("div", "hadith-menu");
   const btn = el("button", `hadith-tab hadith-menu-btn${state.view === view ? " active" : ""}`);
   btn.type = "button";
@@ -316,6 +327,7 @@ function menuButton(state, render, view, label, fill) {
   }
   btn.addEventListener("click", () => {
     if (!panel.hidden) { close(); return; }
+    if (before && before()) return;
     panel.textContent = "";
     fill(panel, close);
     panel.hidden = false;
