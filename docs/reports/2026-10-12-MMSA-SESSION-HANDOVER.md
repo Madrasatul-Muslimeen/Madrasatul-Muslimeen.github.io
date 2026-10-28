@@ -1975,3 +1975,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v12.89** (2026-10-28): Hadith Study: its own menu bar and Hadith Books in three panes; the Dua tab's code moved into its own file (J106 round 1).
 - **v12.90** (2026-10-28): the Hadith reader's book opening named in words (J106 finding).
 - **v12.91** (2026-10-28): topic pages' breadcrumb never shows a raw subject id (audit part 106).
+- **v12.92** (2026-10-28): the Hadith reader's book-opening text readable in the night look.
