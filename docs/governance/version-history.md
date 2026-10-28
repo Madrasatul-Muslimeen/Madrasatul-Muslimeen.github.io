@@ -992,3 +992,4 @@ total). Allocated by the MMSA Architect.
 12.88: Hadith: 27 joined passages cited by their first hadith, and a red source-rights check fixed (J103 Round 4 part 2). Allocated by the MMSA Architect.
 12.89: Hadith Study: its own menu bar and Hadith Books in three panes; the Dua tab's code moved into its own file (J106 round 1). Allocated by the MMSA Architect.
 12.90: the Hadith reader's book opening named in words (J106 finding). Allocated by the MMSA Architect.
+12.91: topic pages' breadcrumb never shows a raw subject id (audit part 106). Allocated by the MMSA Architect.
