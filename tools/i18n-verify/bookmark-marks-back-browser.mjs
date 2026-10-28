@@ -14,6 +14,8 @@
 //                       removed from the SERVED page, routed; app/ is untouched -> the slot checks (issue #760)
 //   --mutate=narrow-basis  the 6.5rem / 5.5rem basis rules for narrow phones (issue #891) removed -> the 320 and 390 en line-sharing checks fail
 //   --mutate=one-row    the one-row rules (25 Oct 2026: Meaning as its icon while a way-back is docked) removed -> the 390 line-sharing checks fail
+//   --mutate=narrow-transport  the 28 Oct 2026 320px rule (⏮ ⏭ ▶ ■ 36px wide, 4px gaps, while a way-back is docked)
+//                       removed -> the 320 line-sharing checks fail (■ wraps, and 🔖 📖 ⤢ ⋯ ⋮ fall to a third line)
 //   --mutate=raw-label  the page name is the heading's whole text -> the name check fails
 import { chromium, newContext, openPage } from "./harness.mjs";
 import fs from "node:fs";
@@ -40,6 +42,13 @@ async function routeMutation(ctx) {
     let html = fs.readFileSync("app/quranrevival.html", "utf8");
     html = swap(html, "#readBar:has(#readBackSlot:not(:empty)) #readMeaningBtn .read-meaning-word { display: none; }", "");
     html = swap(html, "#readBar:has(#readBackSlot:not(:empty)) #readMeaningBtn { padding: 0; width: 40px; }", "");
+    await ctx.route(/\/app\/quranrevival\.html(\?.*)?$/, (r) => r.fulfill({ status: 200, contentType: "text/html; charset=utf-8", body: html }));
+    return;
+  }
+  if (MUTATE === "narrow-transport") {
+    let html = fs.readFileSync("app/quranrevival.html", "utf8");
+    html = swap(html, "#readBar:has(#readBackSlot:not(:empty)) { gap: 0.25rem; }", "");
+    html = swap(html, "#readBar:has(#readBackSlot:not(:empty)) :is(#prevUnitBtn, #nextUnitBtn, #readPlayBtn, #readStopBtn) { width: 36px; min-width: 36px; padding-left: 0; padding-right: 0; }", "");
     await ctx.route(/\/app\/quranrevival\.html(\?.*)?$/, (r) => r.fulfill({ status: 200, contentType: "text/html; charset=utf-8", body: html }));
     return;
   }

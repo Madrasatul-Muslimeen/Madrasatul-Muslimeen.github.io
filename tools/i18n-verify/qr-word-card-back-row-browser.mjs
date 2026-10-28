@@ -11,6 +11,10 @@
 // Route: a Word card (rank 2 of Learn next), then its purple "Learn next" line, which offers "Back to Word Card".
 //   node tools/i18n-verify/qr-word-card-back-row-browser.mjs [--mutate=own-row]      (serve.js on :8080, or QR_BASE)
 //   --mutate=own-row   the way back put above the card again (content.prepend)  -> the row checks FAIL
+//   --mutate=tight-row the 28 Oct 2026 tight row (gaps 0.1rem, "This āyah" padding, up to a 22rem card) removed
+//                      -> en 360's "adds no line" FAILS (× takes a line of its own again)
+// QR Lead (28 Oct 2026): the first row holds ← only on a card of 20.5rem (328px) or more, so the row-or-row-below check
+// reads the CARD's width, not the screen's: a 348px phone (card 327px) puts ← beside the word, a 360px phone beside ⓘ.
 import { chromium, newContext, openPage } from "./harness.mjs";
 import fs from "node:fs";
 
@@ -20,7 +24,10 @@ const check = (name, ok, detail = "") => {
   if (ok) { pass++; console.log(`  PASS  ${name}`); } else { fail++; console.log(`  FAIL  ${name} ${detail}`); }
 };
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
-const MUT = { "own-row": ["if (head && before) head.insertBefore(back, before); else content.prepend(back);", "content.prepend(back);"] };
+const MUT = {
+  "own-row": ["if (head && before) head.insertBefore(back, before); else content.prepend(back);", "content.prepend(back);"],
+  "tight-row": ["@container wordcard (max-width: 22rem) {\n    .quran-word-card header:has(> .word-card-app-back) { column-gap: 0.1rem; }", "@container wordcard (max-width: 0.1rem) {\n    .quran-word-card header:has(> .word-card-app-back) { column-gap: 0.1rem; }"],
+};
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
 const rows = JSON.parse(fs.readFileSync("tools/quran-data-pull/output/learn-next.json", "utf8")).rows;
@@ -28,7 +35,7 @@ const first = rows[1];
 const S = Math.floor(first.o / 1000000), A = Math.floor((first.o % 1000000) / 1000), P = first.o % 1000;
 const setSel = (page, id, v) => page.evaluate(([i, val]) => { const s = document.getElementById(i); s.value = val; s.dispatchEvent(new Event("change", { bubbles: true })); }, [id, v]);
 
-for (const [w, h, lang] of [[1280, 900, "en"], [1280, 900, "bn"], [768, 1000, "en"], [390, 844, "en"], [390, 844, "bn"], [360, 740, "en"], [320, 640, "bn"]]) {
+for (const [w, h, lang] of [[1280, 900, "en"], [1280, 900, "bn"], [768, 1000, "en"], [390, 844, "en"], [390, 844, "bn"], [360, 740, "en"], [360, 740, "bn"], [348, 740, "en"], [320, 640, "bn"]]) {
   const tag = `[${lang} ${w}]`;
   const ctx = await newContext(browser, { appLang: lang, banner: false, viewport: { width: w, height: h } });
   await ctx.route("**/archive.org/**", (r) => r.abort());
@@ -64,24 +71,24 @@ for (const [w, h, lang] of [[1280, 900, "en"], [1280, 900, "bn"], [768, 1000, "e
     const overlaps = others.filter((o) => Math.min(o.right, r.right) - Math.max(o.left, r.left) > 0.5 && Math.min(o.bottom, r.bottom) - Math.max(o.top, r.top) > 0.5).length;
     const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
     const text = b.querySelector(".word-card-app-back-text");
-    const out = { found: true, inHead: head.contains(b), sameLine: Math.abs(mid(r) - mid(prev)) < 4, wordLine: Math.abs(mid(r) - mid(word)) < 12, nextToInfo: !!info && Math.abs(mid(r) - mid(info)) < 4 && r.left - info.right >= 0 && r.left - info.right < 12, narrow: card.getBoundingClientRect().width <= 480, w: Math.round(r.width), h: Math.round(r.height), headH: Math.round(hr.height), inCard: r.left >= cr.left - 0.5 && r.right <= cr.right + 0.5, overlaps, hit: !!hit && b.contains(hit), textShown: !!text && text.getBoundingClientRect().width > 0, title: b.title, label: b.textContent.trim() };
+    const out = { found: true, inHead: head.contains(b), sameLine: Math.abs(mid(r) - mid(prev)) < 4, wordLine: Math.abs(mid(r) - mid(word)) < 12, nextToInfo: !!info && Math.abs(mid(r) - mid(info)) < 4 && r.left - info.right >= 0 && r.left - info.right < 12, narrow: card.getBoundingClientRect().width <= 480, firstRow: hr.width >= 328, w: Math.round(r.width), h: Math.round(r.height), headH: Math.round(hr.height), inCard: r.left >= cr.left - 0.5 && r.right <= cr.right + 0.5, overlaps, hit: !!hit && b.contains(hit), textShown: !!text && text.getBoundingClientRect().width > 0, title: b.title, label: b.textContent.trim() };
     b.style.display = "none"; out.headWithout = Math.round(head.getBoundingClientRect().height); b.style.display = "";
     return out;
   });
   check(`${tag} POSITIVE CONTROL: after "Learn next" the Word card offers its way back`, m.found, JSON.stringify(m));
   if (m.found) {
-    if (w > 340) check(`${tag} the way back is in the card's top row, on ‹'s line ("${m.label}")`, m.inHead && m.sameLine, JSON.stringify(m));
-    else check(`${tag} on a 320px phone it is on the row below, beside the word ("${m.label}")`, m.inHead && m.wordLine, JSON.stringify(m));
+    if (m.firstRow) check(`${tag} the way back is in the card's top row, on ‹'s line ("${m.label}")`, m.inHead && m.sameLine, JSON.stringify(m));
+    else check(`${tag} on a card under 328px (a 320-348px phone) it is on the row below, beside the word ("${m.label}")`, m.inHead && m.wordLine, JSON.stringify(m));
     check(`${tag} ...and adds no line: header ${m.headH}px, ${m.headWithout}px without it`, m.headH <= m.headWithout + 1, JSON.stringify(m));
     check(`${tag} a 40px target, a tap reaches it, inside the card, over no other control`, m.h >= 40 && m.w >= 40 && m.hit && m.inCard && m.overlaps === 0, JSON.stringify(m));
-    if (m.narrow) check(`${tag} on a narrow card it is the ← alone, 40px square (its tip keeps the words)${w > 340 ? ", right after ⓘ" : ""}`, m.w === 40 && !m.textShown && m.title.length > 3 && (w <= 340 || m.nextToInfo), JSON.stringify(m));
+    if (m.narrow) check(`${tag} on a narrow card it is the ← alone, 40px square (its tip keeps the words)${m.firstRow ? ", right after ⓘ" : ""}`, m.w === 40 && !m.textShown && m.title.length > 3 && (!m.firstRow || m.nextToInfo), JSON.stringify(m));
     else check(`${tag} on a computer its words show`, m.textShown, JSON.stringify(m));
     await page.click("#quranWordCardMount [data-word-card-app-back]");
     let now = await headWord();
     for (let i = 0; i < 80 && now !== before; i++) { await page.waitForTimeout(100); now = await headWord(); }
     check(`${tag} pressing it goes back to the previous word's card (${before})`, !!before && now === before, `${now} vs ${before}`);
   }
-  if (w === 1280 && lang === "en" || w === 390 && lang === "bn" || w === 320) {
+  if (w === 1280 && lang === "en" || w === 390 && lang === "bn" || w === 320 || w === 360 || w === 348) {
     await page.evaluate(() => document.querySelector("#quranWordCardMount [data-learn-next-open]")?.click());
     await page.waitForTimeout(1500);
     await page.screenshot({ path: `${process.env.SHOT_DIR || "/tmp"}/qr-word-card-back-${lang}-${w}.png` });
