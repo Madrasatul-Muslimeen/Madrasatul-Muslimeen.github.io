@@ -7,7 +7,34 @@ v10.28). Read `CLAUDE.md` first. The prompt that starts the next session is
 
 This session was summarised once (its context compacted), which is why it hands over here.
 
-## LATEST UPDATE — 28 Oct 2026, ~2:50 pm Sydney, session `session_01PL2xbLexYe2DUFQk1jwKoX` (v12.85–v12.89 live on MSA AND QR; HANDOVER) — READ THIS FIRST
+## LATEST UPDATE — 28 Oct 2026, ~7:00 pm Sydney, session `session_01PL2xbMHduuqAb3piTztCJ4` (v12.90–v12.96 live on MSA, NOT on QR; HANDOVER) — READ THIS FIRST
+
+Took over 2:52 pm 28 Oct from `session_01PL2xbLexYe2DUFQk1jwKoX`. Handing over at ~40% context (hand119). PCA `session_01PL2xbMoGds3DRVRoe4TA2j`; MSA keep-alive `trig_01Dt4kseLMQfupz6t2w2KFeh` (asked the PCA to repoint it at each takeover). Leads unchanged: Hadith `session_01PL2xbJ9t1PMhK5GNBspYu6`, Dua `session_01PL2xbKP72HWprM8HCvkdD2`, QR `session_01P9kXNhunapXY6K3Snj7nt8`, Health `session_01SPFtgC4vwVzby6PR12Z9ek`.
+
+**State:** `main` is **v12.96** (8a0fa7a), live on MSA 7:00 pm 28 Oct. Next release **v12.97**. **QR is still on v12.89**: `add_repo QuranRevival/QuranRevival.github.io` (push) was REFUSED in this session by the permission check, as in every fresh session; the Owner was asked (PCF monitor line) to allow it. FIRST job of the next session: add_repo, then dispatch QR's `build-from-msa.yml` (ref main, `msa_ref=main`) and confirm `quranrevival.github.io/app/js/version.js` reads the latest MSA version (it carries v12.90–v12.96 at once).
+
+**Released this session (each: `behaviour.mjs` 971/0 alone, its own suites + mutation, 7 widths × en/bn with screenshots, PCF What's New + Done + monitor):**
+- v12.90 Hadith Books' untitled first chapter reads "The book's opening" (Hadith Lead, 0381ddb).
+- v12.91 `topic-study.js` breadcrumb never a raw subject id (audit 106, #1236).
+- v12.92 the book opening's text 2.95→9.77:1 in the night look (Hadith Lead, 98dc926).
+- v12.93 `routine-study.js` breadcrumb: "Learn Deen On-the-Go"/"Health", never "ldog"/"Ldog" (audit 107, #1241; LDOG safety notice sent to the PCA).
+- v12.94 Records' chunk label in words + the raw-id sweep `audit-part108-raw-id-sweep-browser.mjs` (audit 108, #1244; the Architect restored audit-part24's check on the VISIBLE label).
+- v12.95 Records and Monitor name a topic, never "t42" (audit 109, #1247; the Architect added Monitor).
+- v12.96 **SECURITY**: typed and tenant-authored text HTML-escaped on 11 shared pages (audit 110, #1250; the Architect fixed Classes/Course offers' subjects line, found by his own payload probe, and two lost spaces in `monitor.js`).
+
+**In flight:** Builder round **#1253** (audit part 111, SECURITY, dispatched 7:00 pm): the remaining unescaped names. These are Curriculum, the person/tenant pickers in `topic-study.js`, `routine-study.js` and `quranrevival.html` (Landing; frozen Quran Study, a safety fix, so send the PCA a notice), `asma-study.js` tenant options, and `migrate.html`. It also adds `audit-part111-escape-all-pages-browser.mjs`. Find its PR on `builder/issue-1253-run-*`. **Review it with the payload probe** (seed `<img src=x onerror="window.__xss=…">` into p2's name, subjects 0–2, classes and the tenant via `extraSeedJs`, open every page, assert no `img[src="x"]`). The Builder's own checks covered only 2 of the pages it changed in part 110, and the probe found the rest.
+
+**Waiting on the Owner (no change this session; no new Owner comments came in):** allow QuranRevival for the session; J105 demo https://claude.ai/artifact/57TjwZ6qzgCEjPijFgK4BM; J104 Dua Lead's ticks; J106 question 5 (Subject lists; round 2 waits); J29 j29p102q, j29p128q.
+
+**Found and recorded, not fixed:** `behaviour.mjs` 38e ("pressing Play again starts the unit over") is intermittent (2 of 3 runs on the v12.96 branch, passes on main); its Landing page loaded no changed file. `claude/hadith-lead-01q2-next` (merged, d5f4c72) could not be deleted by the Lead (403); harmless, left. The part 110 escaper is a page-local copy in each page; #1253 adds one shared module, and moving the copies onto it is a later tidy-up.
+
+**Lessons:** (1) A Builder's escaping round can be green on its own check and still leave holes: probe every page it claims, not just the pages its suite opens. (2) A Builder "updating a check in place" can quietly weaken it (part 108 moved "the chunk is named on the page" to a hidden attribute): read every changed assertion. (3) A failure on a release branch that passes on main is not "this round's" until a rerun says so, and not "flaky" until the changed files are shown not to reach it.
+
+**Next session's opening message:**
+
+> Bismillah. You are the MSA Master Architect, taking over from session_01PL2xbMHduuqAb3piTztCJ4 (hand119, 28 Oct ~7:00 pm Sydney). Your session title is "📌 (03) MSA Master Architect" (num128). Read CLAUDE.md, ARCHITECT.md, then docs/reports/2026-10-12-MMSA-SESSION-HANDOVER.md, its LATEST UPDATE block of 28 Oct 7:00 pm first. The Owner's standing words (PCF MSA rule qrallow129): "Allowed QuranRevival, rebuild QR now. Don't wait for permission anymore. Always allowed." FIRST: test GitHub write (git push --dry-run origin HEAD:refs/heads/claude/access-probe) and add_repo QuranRevival/QuranRevival.github.io with push access, then rebuild QR (build-from-msa.yml, ref main, msa_ref=main): QR is on v12.89 and MSA on v12.96. Read the PMS (https://claude.ai/artifact/PhW1KKX28qrqj9dE7Ha8dZ): meta/global General rules and p/mmsa; answer any new Owner comments. Set p/mmsa.sessionUrl to your session link (pin with if_version). Send the PCA (session_01PL2xbMoGds3DRVRoe4TA2j) "PCA ▸ taken over" and ask it to repoint the MSA keep-alive (trig_01Dt4kseLMQfupz6t2w2KFeh). main is v12.96; next v12.97. In flight: Builder round #1253 (audit part 111, SECURITY): find its PR on builder/issue-1253-run-*, review with the payload probe on every page it touches, release, rebuild QR, send the PCA a notice for quranrevival.html/asma-study.js (frozen, safety fix). J105, J104 and J106 round 2 wait on the Owner: build or assign NOTHING of them until approved. Review rule: 360, 390, 768, 820, 1024, 1180, 1440, English and Bangla, screenshots looked at, real-length data. Run behaviour.mjs alone. Keep-alive every 12 hours (ka122). No self wake-ups (cost86). Hand over at ~40% context (hand119). After "Rasulullah" always write "Sallallahu A'laihi Wa Sallam" (saw128). Write "Siyagah" in full.
+
+## LATEST UPDATE — 28 Oct 2026, ~2:50 pm Sydney, session `session_01PL2xbLexYe2DUFQk1jwKoX` (v12.85–v12.89 live on MSA AND QR; HANDOVER) (superseded 28 Oct 7:00 pm)
 
 Took over 7:28 am 28 Oct from `session_01GUuxpASkYHoCy9YrWLSWyo`. Handing over at ~40% context (hand119). **PCA moved to `session_01PL2xbMoGds3DRVRoe4TA2j`** (9:27 am 28 Oct). MSA keep-alive is `trig_01Dt4kseLMQfupz6t2w2KFeh` (8:07 am/pm Sydney). Leads: **Hadith Lead now `session_01PL2xbJ9t1PMhK5GNBspYu6`** ("(03B) MSA - Hadith Lead"), Dua Lead `session_01PL2xbKP72HWprM8HCvkdD2`, QR Lead `session_01P9kXNhunapXY6K3Snj7nt8`, Health Lead `session_01SPFtgC4vwVzby6PR12Z9ek`.
 
