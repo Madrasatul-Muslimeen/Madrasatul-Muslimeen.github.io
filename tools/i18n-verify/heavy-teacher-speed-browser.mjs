@@ -111,7 +111,7 @@ const MUTATIONS = {
   // monitor.html reads every records chunk of the selected student on load and on every change of student.
   "eager-quran-breakdown": { file: "monitor.html", from: "const QURAN_ON_TAP = true;", to: "const QURAN_ON_TAP = false;" },
   // monitor.html builds every raw report row in one task again.
-  "one-shot-raw-rows": { file: "monitor.html", from: "const RAW_ROWS_FIRST = 100, RAW_ROWS_SLICE = 100;", to: "const RAW_ROWS_FIRST = 100000, RAW_ROWS_SLICE = 100;" },
+  "one-shot-raw-rows": { file: "monitor.html", from: "const RAW_ROWS_FIRST = 40, RAW_ROWS_SLICE = 40;", to: "const RAW_ROWS_FIRST = 100000, RAW_ROWS_SLICE = 40;" },
 };
 if (MUTATE && !MUTATIONS[MUTATE]) throw new Error(`unknown --mutate=${MUTATE}`);
 const MUT = MUTATE ? MUTATIONS[MUTATE] : null;
