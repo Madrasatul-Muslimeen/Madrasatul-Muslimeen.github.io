@@ -994,3 +994,8 @@ total). Allocated by the MMSA Architect.
 12.90: the Hadith reader's book opening named in words (J106 finding). Allocated by the MMSA Architect.
 12.91: topic pages' breadcrumb never shows a raw subject id (audit part 106). Allocated by the MMSA Architect.
 12.92: the Hadith reader's book-opening text readable in the night look. Allocated by the MMSA Architect.
+12.93: Health and LDOG pages' breadcrumb never shows a raw subject id (audit part 107). Allocated by the MMSA Architect.
+12.94: Records names its chunk in words; raw-id sweep of every shared page in Bangla (audit part 108). Allocated by the MMSA Architect.
+12.95: Records and Monitor name a topic instead of printing its id (audit part 109). Allocated by the MMSA Architect.
+12.96: typed and tenant-authored text escaped on Records, Monitor and eight more shared pages (audit part 110, security). Allocated by the MMSA Architect.
+12.97: SECURITY: names escaped on every page (audit part 111). Allocated by the MMSA Architect.

@@ -233,7 +233,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       enrollmentsAll = enrollments;
       myMemberships = hydrated;
       tenantSelect.innerHTML = myMemberships
-        .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${roleListLabel(m.roles)})</option>`)
+        .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${escapeHtml(m.tenantName)} (${roleListLabel(m.roles)})</option>`)
         .join("");
 
       const { viewAsRole, effRoles, myPersonId } = currentPreview();
@@ -241,7 +241,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
 
       visibleRoster = scopedRoster(roster, effRoles, myPersonId).filter((p) => p.status !== "archived");
       personSelect.innerHTML = visibleRoster
-        .map((p) => `<option value="${p.id}">${langText(p.name, getAppLang(), p.id)}</option>`)
+        .map((p) => `<option value="${p.id}">${escapeHtml(langText(p.name, getAppLang(), p.id))}</option>`)
         .join("");
       // Fix round (25 Aug 2026): a Person selection now stays chosen across
       // pages and reloads, until manually changed. Bookmark-issues round:
@@ -257,7 +257,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
 
       const leaves = subjectTree.filter((n) => n.isTrackable && n.status !== "archived");
       subjectChecks.innerHTML = leaves
-        .map((n) => `<label><input type="checkbox" value="${n.id}" /> ${langText(n.name, getAppLang(), n.id)}</label>`)
+        .map((n) => `<label><input type="checkbox" value="${n.id}" /> ${escapeHtml(langText(n.name, getAppLang(), n.id))}</label>`)
         .join("") || `<span class="muted">${t("No subjects yet.")}</span>`;
 
       renderOffers();
@@ -265,6 +265,10 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     }
 
     function subjectName(id) { const n = subjectTree.find((s) => s.id === id); return n ? langText(n.name, getAppLang(), id) : id; }
+    // User-written and tenant-authored text goes into an HTML string only through this (audit part 110).
+    function escapeHtml(s) {
+      return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    }
     function personName(id) { const p = roster.find((r) => r.id === id); return p ? langText(p.name, getAppLang(), id) : id; }
     function routineLine(routine) {
       const days = (routine?.daysOfWeek ?? []).map(dayName).join(", ");
@@ -298,7 +302,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     }
 
     function renderOfferCard(o) {
-      const subjectsLine = (o.subjectIds ?? []).map(subjectName).join(", ") || t("(no subjects set)");
+      const subjectsLine = (o.subjectIds ?? []).map((id) => escapeHtml(subjectName(id))).join(", ") || t("(no subjects set)");
       const rosterHtml = canAdmin ? renderOfferRoster(o) : "";
       // The whole button caption is one translatable sentence -- Bangla puts
       // the name before the verb, so "Enrol " + name cannot be assembled.
@@ -307,7 +311,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
         ? `<button class="small secondary archiveOfferBtn" data-offer="${o.id}">${t("Archive")}</button>`
         : "";
       return `<div class="card">
-        <h3>${langText(o.name, getAppLang(), o.id)} <span class="pill pill-${o.status}">${contextStatusLabel(o.status)}</span></h3>
+        <h3>${escapeHtml(langText(o.name, getAppLang(), o.id))} <span class="pill pill-${o.status}">${contextStatusLabel(o.status)}</span></h3>
         <div class="muted">${subjectsLine}</div>
         <div class="muted">${routineLine(o.routine)}</div>
         ${o.status === "active" ? `<div style="margin-top:0.5rem;">${enrolBtn} ${archiveBtn}</div>` : ""}
@@ -318,7 +322,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     function renderOfferRoster(o) {
       const active = enrollmentsAll.filter((e) => e.contextId === o.id && e.status === "active");
       if (!active.length) return `<div class="muted" style="margin-top:0.4rem;">${t("No one enrolled yet.")}</div>`;
-      const rows = active.map((e) => `<div class="muted">${personName(e.personId)} (${roleInClassLabel(e.roleInClass)}) <button class="small secondary endEnrolBtn" data-offer="${o.id}" data-person="${e.personId}">${t("End")}</button></div>`).join("");
+      const rows = active.map((e) => `<div class="muted">${escapeHtml(personName(e.personId))} (${roleInClassLabel(e.roleInClass)}) <button class="small secondary endEnrolBtn" data-offer="${o.id}" data-person="${e.personId}">${t("End")}</button></div>`).join("");
       return `<div style="margin-top:0.5rem;">${rows}</div>`;
     }
 
@@ -406,7 +410,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       enrolmentsBody.innerHTML = active.length
         ? active.map((e) => {
             const offer = offers.find((o) => o.id === e.contextId);
-            return `<div class="card"><strong>${offer ? langText(offer.name, getAppLang(), e.contextId) : e.contextId}</strong> — ${roleInClassLabel(e.roleInClass)}</div>`;
+            return `<div class="card"><strong>${escapeHtml(offer ? langText(offer.name, getAppLang(), e.contextId) : e.contextId)}</strong> — ${roleInClassLabel(e.roleInClass)}</div>`;
           }).join("")
         : `<p class="muted">${t("Not enrolled in anything yet.")}</p>`;
     }

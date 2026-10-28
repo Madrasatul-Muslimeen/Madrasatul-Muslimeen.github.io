@@ -22641,3 +22641,53 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 - The reader suite now measures every text element on a chapter-text, hadith, passage and editor's-note card, in light and night (8 new checks).
 - **Measured (Architect, 28 Oct):** `hadith-study-reader-browser` 116/0 (115/1 with the rule removed: the opening text 2.95); a probe at 7 widths × en/bn: 9.77:1 everywhere, inside the screen, no sideways scroll, screenshots looked at; `card-look-browser` 96/0; `behaviour.mjs` 971/0.
 - Nothing stored, no Rules changed.
+
+## v12.93 — 28 Oct 2026 — Health and LDOG: the breadcrumb never shows a raw subject id (audit part 107)
+
+- **PCF MSA J29, audit part 107** (Builder run 2109, issue #1241, PR #1242). Report: `docs/reports/2026-10-28-audit-part107-routine-crumb.md`.
+- `app/js/routine-study.js` had the same fallback v12.91 fixed in `topic-study.js`: the raw module id (`health`, `ldog`) as the breadcrumb root when the root subject was missing or unnamed (I11). It now falls back to the module's real name through `t()` ("Health", "Learn Deen On-the-Go"; both already in `bn.js`), so `ldog` never becomes "Ldog".
+- New check `tools/i18n-verify/audit-part107-routine-crumb-browser.mjs`: 2 pages × bn/en × 390/1440 × root missing/named, 64/0; `--mutate=rawid` 48/16.
+- **Measured (Architect, 28 Oct):** the new check 64/0 and its mutation reproduced; the Architect's own mutation (the name map emptied) 56/8, "Ldog" caught; a probe at 7 widths × en/bn 280/0, screenshots looked at; `behaviour.mjs` 971/0.
+- LDOG is frozen in MSA (it lives in QuranRevival): an I11 safety fix in a shared file, reported to the PCA.
+- Nothing stored, no Rules changed.
+
+## v12.94 — 28 Oct 2026 — Records names its chunk in words; a raw-id sweep of every shared page in Bangla (audit part 108)
+
+- **PCF MSA J29, audit part 108** (Builder run 2114, issue #1244, PR #1246). Report: `docs/reports/2026-10-28-audit-part108-raw-id-sweep.md`.
+- New `tools/i18n-verify/audit-part108-raw-id-sweep-browser.mjs`: the 24 shared pages (the failed-write audit's list and seeds) plus `deen-study.html` with its root subject absent, in Bangla at 390 and 1440, before and after opening the first menu, folds and card; flags snake_case, kebab ids, module/subject ids (read from `catalogue-data.js`) and error codes. `--mutate=rawid` caught; positive control `about.html` clean.
+- **Found and fixed (1):** `app/records.html` printed "খণ্ড: surah_1", the stored chunk key. The label now reads "Surah N" / "Quran" / the subject's name through `t()` (existing strings); the stored key is kept in `data-chunk-key`, which three suites now read for the key.
+- **Architect's change:** `audit-part24-records-continue-browser.mjs`'s "the chunk is named on the page" had been moved to read `data-chunk-key`, which proves nothing is named on the page. Kept as "the chunk read is surah_1", and a new check reads the visible label in words (Surah 1 / সূরা ১, never `surah_`/`subject_`); 178/6 with the old label restored.
+- **Measured (Architect, 28 Oct):** sweep 0 findings, its mutation caught; `audit-part24` 184/0; `audit-part13` 494/0; Records at 7 widths × en/bn for a surah and a subject, screenshots looked at; `bn-duplicate-keys` 6/0; `behaviour.mjs` 971/0.
+- **Found in this review, next round (#1247):** Records' "This week's activity" shows a topic as "বিষয় t42" (`unitKeyLabel` prints the topic's id).
+- Nothing stored, no Rules changed.
+
+## v12.95 — 28 Oct 2026 — Records and Monitor name a topic instead of printing its id (audit part 109)
+
+- **PCF MSA J29, audit part 109** (Builder run 2120, issue #1247, PR #1249). Report: `docs/reports/2026-10-28-audit-part109-records-topic-name.md`.
+- `unitKeyLabel(unitKey, resolveName)` (`app/js/unit-keys.js`) no longer prints a topic's id (I5 key, I11 name): with a resolver it shows "Topic: <name>" (বিষয়: <name>), without one just the translated word. Records passes a resolver over the subject tree it already loads (no new read).
+- **Architect's commit:** Monitor's activity table loads the same subject tree but showed a bare "Topic"; it now passes the same resolver. The part 109 suite gains a Monitor block and `--mutate=monitornoname`.
+- The part 108 sweep also flags a short letters-plus-digits id after a unit word (self-test 4/4 ids, 10/10 real texts clean).
+- **Measured (Architect, 28 Oct):** `audit-part109` 8 runs, 0 failed; `--mutate=oldlabel` 20 caught, `--mutate=monitornoname` 4 caught; Records and Monitor at 7 widths × en/bn, screenshots looked at; part 108 sweep 0 findings; `bn-duplicate-keys` 6/0; `behaviour.mjs` 971/0.
+- **Found in this review, next round (#1250, security):** Records' rows insert the return note, notes, domain and trackable names into `innerHTML` unescaped.
+- Nothing stored, no Rules changed.
+
+## v12.96 — 28 Oct 2026 — SECURITY: typed and tenant-authored text shown as plain text on eleven shared pages (audit part 110)
+
+- **PCF MSA J29, audit part 110** (Builder run 2125, issue #1250, PR #1252). Report: `docs/reports/2026-10-28-audit-part110-escape.md`. Found by the Architect in the part 109 review: Records' rows put `returnNote`, `notes`, domain and trackable names into `innerHTML` unescaped (stored script injection, tenant-internal).
+- Each insertion now goes through a page-local `escapeHtml` (`esc` on Catalogue): Records, Monitor (+ `js/monitor.js`), Homework, Classes, Course offers, People, Catalogue, and the tenant options on Bookmarks, Notes, Journey map and Import notes.
+- **Architect's commits:** (1) the subjects line on Classes and Course offers still injected under the Architect's payload probe; escaped. (2) `js/monitor.js` had lost two spaces (" — " before the date); restored.
+- New `tools/i18n-verify/audit-part110-escape-browser.mjs` (Records and Monitor, en/bn, 390/1440): 8 runs, 0 failed; `--mutate=records` and `--mutate=monitor` 16 caught each.
+- **Measured (Architect, 28 Oct):** the payload probe (a person, three subjects, a class and the tenant named `<img onerror>`) clean on the 11 fixed pages in en and bn; `audit-part24` 184/0; `audit-part13` 494/0; `audit-part109` 8/0; `bn-duplicate-keys` 6/0; `behaviour.mjs` 971/0. **38e** ("pressing Play again starts the unit over") failed in 2 of 3 runs on this branch and passed on main (971/0) and the third run; the Landing page it drives loads no file this round changed: intermittent, recorded.
+- **Still open, next round #1253:** Curriculum; the person and tenant pickers in `topic-study.js`, `routine-study.js` and `quranrevival.html`; `asma-study.js` tenant options; `migrate.html`.
+- Nothing stored, no Rules changed.
+
+## v12.97 — 28 Oct 2026 — SECURITY: tenant-written names shown as plain text on every page (audit part 111)
+
+- **PCF MSA J29, audit part 111** (Builder run 2130, issue #1253, PR #1256). Report: `docs/reports/2026-10-28-audit-part111-escape-all.md`.
+- New shared `app/js/html-escape.js` (`escapeHtml`, no imports, no side effects). Escaped: Curriculum (tenant, person, class, subject, ladder, level and unit names; its name helpers now return escaped text), the person and tenant pickers in `js/topic-study.js`, `js/routine-study.js` and `js/asma-study.js`, `quranrevival.html` (person and tenant pickers; frozen Quran Study, safety fix), `migrate.html` tenant picker.
+- **Architect's release commit:** the Architect's payload probe (every page in `app/`, also p1, every Approach and section name) found five more: `hadith-collections.html` person and tenant pickers; People's "managed by" cell; Catalogue's Approaches section heading; on the Landing page the Approach picker (`trackableSelect`), the Mastery Wheel's segment titles, the Approach list's names and section labels, and the percentage view; `js/mastery-wheel.js` escapes `&` and `"` in `data-group`. One comment line the round had un-indented in `quranrevival.html` was restored. The check now seeds p1 and every Approach, and `KNOWN_OPEN` is empty.
+- New `tools/i18n-verify/audit-part111-escape-all-pages-browser.mjs`: 104 runs, 0 failed; `--mutate` 4/4 caught.
+- **Measured (Architect, 28 Oct):** payload probe over every page 0 open (15 pages on v12.96); rendered text, options and page size identical to v12.96 on 9 changed pages × 7 widths × en/bn (126/126); `behaviour.mjs` 971/0 alone; `audit-part110` 8/0; `bn-duplicate-keys` 6/0; `brief-integrity` 13/0; `apps-build-check` 48/0; QR build applies its edits.
+- **Next, round #1257 (part 112):** Curriculum prints a Resource's `url` and `body` unescaped, and a typed link (Resource, tagline) is not checked for a `javascript:` scheme.
+- Notices: PCA (frozen `quranrevival.html`, `mastery-wheel.js`, `asma-study.js`), Hadith Lead (`hadith-collections.html`).
+- Nothing stored, no Rules changed.

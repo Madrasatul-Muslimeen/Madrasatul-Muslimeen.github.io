@@ -283,7 +283,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       subjectTree = tree;
       myMemberships = hydrated;
       tenantSelect.innerHTML = myMemberships
-        .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${roleListLabel(m.roles)})</option>`)
+        .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${escapeHtml(m.tenantName)} (${roleListLabel(m.roles)})</option>`)
         .join("");
 
       const { viewAsRole, effRoles, myPersonId: myPersonIdFromPreview } = currentPreview();
@@ -291,7 +291,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
 
       visibleRoster = scopedRoster(roster, effRoles, myPersonIdFromPreview).filter((p) => p.status !== "archived");
       personSelect.innerHTML = visibleRoster
-        .map((p) => `<option value="${p.id}">${langText(p.name, getAppLang(), p.id)}</option>`)
+        .map((p) => `<option value="${p.id}">${escapeHtml(langText(p.name, getAppLang(), p.id))}</option>`)
         .join("");
       // Fix round (25 Aug 2026): a Person selection now stays chosen across
       // pages and reloads, until manually changed. Bookmark-issues round:
@@ -318,11 +318,11 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       renderContextPicker(classes, offers, isAdmin, effRoles.includes("teacher"));
 
       noteAboutSelect.innerHTML = visibleRoster
-        .map((p) => `<option value="${p.id}">${langText(p.name, getAppLang(), p.id)}</option>`)
+        .map((p) => `<option value="${p.id}">${escapeHtml(langText(p.name, getAppLang(), p.id))}</option>`)
         .join("");
       const leaves = subjectTree.filter((n) => n.isTrackable && n.status !== "archived");
       subjectSelect.innerHTML = `<option value="">${t("(none)")}</option>` + leaves
-        .map((n) => `<option value="${n.id}">${langText(n.name, getAppLang(), n.id)}</option>`)
+        .map((n) => `<option value="${n.id}">${escapeHtml(langText(n.name, getAppLang(), n.id))}</option>`)
         .join("");
 
       if (!canCreate) notesBody.innerHTML = "";
@@ -336,6 +336,10 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       ]);
     }
 
+    // User-written and tenant-authored text goes into an HTML string only through this (audit part 110).
+    function escapeHtml(s) {
+      return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    }
     function subjectName(id) { const n = subjectTree.find((s) => s.id === id); return n ? langText(n.name, getAppLang(), id) : id; }
     function personName(id) { const p = roster.find((r) => r.id === id); return p ? langText(p.name, getAppLang(), id) : id; }
 
@@ -360,7 +364,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       availableContexts = isAdmin ? allContexts : allContexts.filter((c) => myActiveTeacherContextIds.includes(c.id));
 
       const options = availableContexts
-        .map((c) => `<option value="${c.id}">${c.name} (${c.type === "class" ? t("Class") : t("Course Offer")})</option>`)
+        .map((c) => `<option value="${c.id}">${escapeHtml(c.name)} (${c.type === "class" ? t("Class") : t("Course Offer")})</option>`)
         .join("");
       contextSelect.innerHTML = isPureTeacher ? options : `<option value="">${t("(none — any visible person)")}</option>${options}`;
 
@@ -386,7 +390,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
         contextTeacherIds = [];
       }
       assignToChecks.innerHTML = contextRoster
-        .map((p) => `<label><input type="checkbox" value="${p.id}" /> ${langText(p.name, getAppLang(), p.id)}</label>`)
+        .map((p) => `<label><input type="checkbox" value="${p.id}" /> ${escapeHtml(langText(p.name, getAppLang(), p.id))}</label>`)
         .join("") || `<span class="muted">${t("No students in this context yet.")}</span>`;
     }
 
@@ -439,11 +443,11 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
 
     function renderAssignmentCard(a, personId, sub) {
       const status = sub?.status ?? "not_submitted";
-      const subjectLine = a.subjectId ? `<div class="muted">${t("Subject:")} ${subjectName(a.subjectId)}</div>` : "";
+      const subjectLine = a.subjectId ? `<div class="muted">${t("Subject:")} ${escapeHtml(subjectName(a.subjectId))}</div>` : "";
       const dueLine = a.dueDate ? `<div class="muted">${t("Due:")} ${num(a.dueDate)}</div>` : "";
       const maxLine = a.maxScore != null ? `<div class="muted">${t("Max score:")} ${num(a.maxScore)}</div>` : "";
       const scoreLine = sub?.status === "marked"
-        ? `<div>${t("Score:")} <strong>${sub.score == null ? "—" : num(sub.score)}${sub.maxScoreAtMark != null ? ` / ${num(sub.maxScoreAtMark)}` : ""}</strong>${sub.comment ? ` — ${sub.comment}` : ""}</div>`
+        ? `<div>${t("Score:")} <strong>${sub.score == null ? "—" : num(sub.score)}${sub.maxScoreAtMark != null ? ` / ${num(sub.maxScoreAtMark)}` : ""}</strong>${sub.comment ? ` — ${escapeHtml(sub.comment)}` : ""}</div>`
         : "";
 
       const submitAction = status === "not_submitted"
@@ -464,7 +468,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
         : "";
 
       return `<div class="card">
-        <h3>${a.instructions ? langText(a.instructions, getAppLang(), "") : t("(no instructions)")} <span class="pill pill-${status}">${submissionStatusLabel(status)}</span></h3>
+        <h3>${a.instructions ? escapeHtml(langText(a.instructions, getAppLang(), "")) : t("(no instructions)")} <span class="pill pill-${status}">${submissionStatusLabel(status)}</span></h3>
         ${subjectLine}${dueLine}${maxLine}${scoreLine}
         ${submitAction}${scoreAction}
       </div>`;
@@ -572,7 +576,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       try {
         const notes = await listMyTeachingNotes(db, activeTenantId, currentUser.uid);
         notesBody.innerHTML = notes.length
-          ? notes.map((n) => `<div class="card"><div class="muted">${t("About|person")}: ${personName(n.aboutPersonId)}</div><div>${n.body}</div></div>`).join("")
+          ? notes.map((n) => `<div class="card"><div class="muted">${t("About|person")}: ${escapeHtml(personName(n.aboutPersonId))}</div><div>${escapeHtml(n.body)}</div></div>`).join("")
           : `<p class="muted">${t("No notes yet.")}</p>`;
       } catch (err) {
         notesBody.innerHTML = `<p style="color:#9c3b2e;">${t("Couldn't load notes:")} ${err.code ?? ""} ${err.message}</p>`;

@@ -262,7 +262,7 @@ for (const lang of LANGS) for (const width of WIDTHS) {
 
   // 5: Records page.
   await flow("records", lang, width, async (t, page, ctx, errors) => {
-    const r = await ev(page, () => ({ rows: [...document.querySelectorAll("#entriesBody tr")].map((x) => x.innerText.replace(/\s+/g, " ").trim()), chunk: document.getElementById("chunkLabel").textContent, people: [...document.getElementById("personSelect").options].map((o) => o.value), sw: document.documentElement.scrollWidth, vw: innerWidth }));
+    const r = await ev(page, () => ({ rows: [...document.querySelectorAll("#entriesBody tr")].map((x) => x.innerText.replace(/\s+/g, " ").trim()), chunk: document.getElementById("chunkLabel").dataset.chunkKey, people: [...document.getElementById("personSelect").options].map((o) => o.value), sw: document.documentElement.scrollWidth, vw: innerWidth }));
     if (PROBE) console.log(t, JSON.stringify(r));
     check(`${t}: POSITIVE CONTROL the Records page lists Ahsan's three seeded records`, r.rows.length === 3, JSON.stringify(r.rows));
     check(`${t}: the rows name the unit, Approach and stage`, r.rows[0].includes(refText(lang, "1:1")) && r.rows[1].includes(refText(lang, "1:2")), r.rows[0]);
@@ -276,7 +276,7 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     check(`${t}: unticking brings all three back`, back === 3, String(back));
     // filter: another chunk (surah 2 has no records)
     await page.fill("#unitRef", "2:255"); await page.dispatchEvent("#unitRef", "change"); await settle(page, 700);
-    const s2 = await ev(page, () => ({ chunk: document.getElementById("chunkLabel").textContent, rows: [...document.querySelectorAll("#entriesBody tr")].map((x) => x.innerText.replace(/\s+/g, " ").trim()) }));
+    const s2 = await ev(page, () => ({ chunk: document.getElementById("chunkLabel").dataset.chunkKey, rows: [...document.querySelectorAll("#entriesBody tr")].map((x) => x.innerText.replace(/\s+/g, " ").trim()) }));
     check(`${t}: a reference in another surah (2:255) switches the chunk and the list`, s2.chunk.includes("surah_2") && !s2.rows.some((x) => x.includes(refText(lang, "1:1"))), JSON.stringify(s2));
     // filter: another person
     await page.fill("#unitRef", "1:1"); await page.dispatchEvent("#unitRef", "change"); await settle(page, 500);

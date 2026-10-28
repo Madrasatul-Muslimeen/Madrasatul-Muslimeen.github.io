@@ -239,6 +239,11 @@ export function printReportHtml(title, innerHtml) {
 // calls nothing in records.js or activity.js.
 // ---------------------------------------------------------------------------
 
+/** A stored unit key can carry typed text (a Hadith or Name reference), so it is escaped where it enters HTML (audit part 110). */
+function escapeHtml(s) {
+  return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
 const STUDY_ACTIVITY_KIND_ORDER = ["reading", "listening", "journaling", "wbw"];
 
 /** ADR-008's five automatic eventTypes, mapped to the four kinds Monitor shows. Both Journaling eventTypes (a Note's first save and every later revision) collapse into one kind -- the reader wants "did I journal that day", not "was this a create or a revise". */
@@ -302,7 +307,7 @@ export function studyActivitySectionHtml(rows, truncated) {
   }
   const sections = groups.map((g) => `
     <h3 style="font-size:1rem;">${studyActivityKindLabel(g.kind)} (${num(g.count)})</h3>
-    <ul>${g.items.map((it) => `<li>${unitKeyLabel(it.unitKey)} — ${num(it.dateIso)}</li>`).join("")}</ul>
+    <ul>${g.items.map((it) => `<li>${escapeHtml(unitKeyLabel(it.unitKey))} — ${num(it.dateIso)}</li>`).join("")}</ul>
   `).join("");
   const note = truncated
     ? `<p class="muted">${t("More study activity was recorded this week than is shown here.")}</p>`

@@ -40,6 +40,7 @@ import { getSubjectTree, getTrackables } from "./catalogue.js";
 import { catalogueNeedsSeeding, seedCatalogueNow, repairCatalogueInBackground } from "./catalogue-repair.js";
 import { buildUnitKey } from "./unit-keys.js";
 import { chunkKeyFor, getRecordsChunk, claimStatus } from "./records.js";
+import { escapeHtml } from "./html-escape.js";
 import {
   logActivity, weekKeyFor, getWeekActivity, hasLoggedOn, getRecentWeeksActivity, computeStreak,
 } from "./activity.js";
@@ -102,7 +103,7 @@ export function initRoutineStudyPage({ moduleId, trackableId, rootSubjectId }) {
   // called again the moment real names are in.
   function renderTenantSelect(memberships) {
     tenantSelect.innerHTML = memberships
-      .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName ?? m.tenantId} (${roleListLabel(m.roles)})</option>`)
+      .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${escapeHtml(m.tenantName ?? m.tenantId)} (${roleListLabel(m.roles)})</option>`)
       .join("");
   }
 
@@ -206,7 +207,7 @@ export function initRoutineStudyPage({ moduleId, trackableId, rootSubjectId }) {
 
     const visibleRoster = (viewAsRole ? scopedRoster(roster, effRoles, myPersonId) : roster).filter((p) => p.status !== "archived");
     personSelect.innerHTML = visibleRoster
-      .map((p) => `<option value="${p.id}">${langText(p.name, getAppLang(), p.id)}</option>`)
+      .map((p) => `<option value="${p.id}">${escapeHtml(langText(p.name, getAppLang(), p.id))}</option>`)
       .join("");
     // Fix round (25 Aug 2026): a Person selection now stays chosen across
     // pages and reloads, until manually changed -- see topic-study.js's own
@@ -223,7 +224,10 @@ export function initRoutineStudyPage({ moduleId, trackableId, rootSubjectId }) {
     const root = moduleSubjects.find((n) => n.id === rootSubjectId);
     currentParentId = rootSubjectId;
     chunkSubjectId = rootSubjectId;
-    rootLabel = root ? langText(root.name, getAppLang(), moduleId) : moduleId;
+    // I11: never show a raw id. Fall back to the module's real display name, translated.
+    const MODULE_NAMES = { health: "Health", ldog: "Learn Deen On-the-Go" };
+    const idAsName = t(MODULE_NAMES[moduleId] ?? String(rootSubjectId || moduleId).split("_").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" "));
+    rootLabel = root ? langText(root.name, getAppLang(), idAsName) : idAsName;
 
     // Five independent reads (records, this week's activity, enrolments,
     // teacher scoping, bookmarks) -- fired together instead of one at a

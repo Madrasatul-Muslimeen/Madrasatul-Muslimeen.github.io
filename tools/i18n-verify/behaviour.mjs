@@ -619,7 +619,7 @@ console.log("\n=== 14. PHASE 4: Records — pickers, tables and the typed refere
   await page.fill("#unitRef", "২:২৫৫");
   await page.dispatchEvent("#unitRef", "change");
   await page.waitForTimeout(400);
-  const chunk = await page.evaluate(() => document.getElementById("chunkLabel").textContent.trim());
+  const chunk = await page.evaluate(() => document.getElementById("chunkLabel").dataset.chunkKey);
   check("14h typing Bengali digits in Reference is understood", chunk.includes("surah_2"), chunk);
   check("14 no page errors", errors.length === 0, errors.slice(0, 2).join(" | "));
   await page.close();

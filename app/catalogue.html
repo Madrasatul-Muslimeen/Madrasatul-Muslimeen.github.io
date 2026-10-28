@@ -510,7 +510,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
               </td>`
             : "";
           return `<tr class="module-row" data-module-id="${m.id}" title="${t("Click to open this module's subjects")}">
-            <td>${m.icon ?? ""} ${langText(m.name, getAppLang(), m.id)}</td><td>${rendererLabel(m.renderer)}</td><td>${entityStatusLabel(m.status)}</td>${moveCell}
+            <td>${m.icon ?? ""} ${esc(langText(m.name, getAppLang(), m.id))}</td><td>${rendererLabel(m.renderer)}</td><td>${entityStatusLabel(m.status)}</td>${moveCell}
           </tr>`;
         })
         .join("");
@@ -588,7 +588,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       // branch without noticing).
       const options = subjectTree
         .filter((n) => !excludeIds.has(n.id) && (n.status !== "archived" || n.id === selectedParentId))
-        .map((n) => `<option value="${n.id}" ${n.id === selectedParentId ? "selected" : ""}>${"— ".repeat(depthOf(n))}${langText(n.name, getAppLang(), n.id)} [${(n.moduleIds ?? []).map(moduleName).join(", ") || t("no module")}]</option>`)
+        .map((n) => `<option value="${n.id}" ${n.id === selectedParentId ? "selected" : ""}>${"— ".repeat(depthOf(n))}${esc(langText(n.name, getAppLang(), n.id))} [${(n.moduleIds ?? []).map(moduleName).join(", ") || t("no module")}]</option>`)
         .join("");
       return `<option value="" ${!selectedParentId ? "selected" : ""}>${t("(top level)")}</option>${options}`;
     }
@@ -648,7 +648,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
 
       if (canEdit && movingSubjectId === node.id) {
         return `<tr id="subj-row-${node.id}">
-          <td class="depth-${depthOf(node)}">${langText(node.name, getAppLang(), node.id)}</td>
+          <td class="depth-${depthOf(node)}">${esc(langText(node.name, getAppLang(), node.id))}</td>
           <td>${node.gloss ? langText(node.gloss, getAppLang(), "") : ""}</td>
           <td>${modules}</td>
           <td><select class="movingParentSelect">${parentOptionsHtml(node.parentId, node.id)}</select></td>
@@ -698,7 +698,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
         ? `<td class="row-actions">${moveButtons} <button class="small secondary editSubjBtn" data-id="${node.id}">${t("Edit")}</button> ${archiveBtn}</td>`
         : "";
       return `<tr id="subj-row-${node.id}">
-        <td class="depth-${depthOf(node)}">${subjectToggleHtml(node)}${langText(node.name, getAppLang(), node.id)}</td>
+        <td class="depth-${depthOf(node)}">${subjectToggleHtml(node)}${esc(langText(node.name, getAppLang(), node.id))}</td>
         <td>${node.gloss ? langText(node.gloss, getAppLang(), "") : ""}</td>
         <td>${modules}</td>
         <td>${parentDisplayName(node)}</td>
@@ -946,7 +946,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
                </div>
              </div>
            </td>`
-        : `<td>${langText(sec.name, getAppLang(), "")}</td>`;
+        : `<td>${esc(langText(sec.name, getAppLang(), ""))}</td>`;
       return `<tr class="sec-row" data-sec-i="${i}">
         <td class="sec-n">${num(i + 1)}</td>
         ${nameCell.replace("<td>", '<td class="sec-name">')}
@@ -1370,7 +1370,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
           </div>`
         : "";
       const sectionOptions = sectionOptionNumbers()
-        .map((n) => `<option value="${n}" ${sectionOf(row) === n ? "selected" : ""}>${num(n)} — ${langText(sectionNameFor(n), getAppLang(), "")}</option>`)
+        .map((n) => `<option value="${n}" ${sectionOf(row) === n ? "selected" : ""}>${num(n)} — ${esc(langText(sectionNameFor(n), getAppLang(), ""))}</option>`)
         .join("");
       const noSection = sectionOf(row) === null
         ? `<option value="" selected>${t("(not set)")}</option>` : "";
@@ -1424,16 +1424,16 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
         : `<td>${row.subjectId === "quran" ? (yes ? t("Yes") : t("No")) : t("No")}</td>`;
       return `<tr id="trk-row-${row.id}">
         <td>${row.subjectId === "quran" && row.status !== "archived" ? num(visibleTrackables().findIndex((x) => x.id === row.id) + 1) : ""}</td>
-        <td>${langText(row.name, getAppLang(), row.id)}</td>
+        <td>${esc(langText(row.name, getAppLang(), row.id))}</td>
         <td class="trk-short-name">${row.subjectId === "quran" ? esc(approachShortName(row, getAppLang())) : ""}</td>
         <td>${approachStatusLabel(row.status)}</td>
         ${countsCell}
         <td>
           <button class="small secondary guideBtn" data-id="${row.id}">${t("Guide")}</button>
           <div class="guideBox" id="guide-${row.id}" style="display:none;">
-            <strong>${t("What:")}</strong> ${langText(row.guide?.what, getAppLang(), "")}<br/>
-            <strong>${t("How:")}</strong> ${langText(row.guide?.how, getAppLang(), "")}<br/>
-            <strong>${t("Measure:")}</strong> ${langText(row.guide?.measure, getAppLang(), "")}
+            <strong>${t("What:")}</strong> ${esc(langText(row.guide?.what, getAppLang(), ""))}<br/>
+            <strong>${t("How:")}</strong> ${esc(langText(row.guide?.how, getAppLang(), ""))}<br/>
+            <strong>${t("Measure:")}</strong> ${esc(langText(row.guide?.measure, getAppLang(), ""))}
           </div>
         </td>
         ${actionCell}
@@ -1509,7 +1509,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
           ${handle}
           <button class="trk-sec-toggle" type="button" data-sec-key="${esc(key)}" aria-expanded="${open}">
             <span class="trk-sec-caret" aria-hidden="true">${open ? "▾" : "▸"}</span>
-            <strong style="font-size:0.95rem;">${label}</strong>
+            <strong style="font-size:0.95rem;">${esc(label)}</strong>
             <span class="trk-sec-count"> — ${t("{n} Approaches", { n: num(count) })}</span>
           </button>
         </div>
@@ -1794,7 +1794,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
 
       levelLadderSelect.innerHTML = allLadders
         .filter((l) => l.status !== "archived")
-        .map((l) => `<option value="${l.id}">${langText(l.name, getAppLang(), l.id)}</option>`)
+        .map((l) => `<option value="${l.id}">${esc(langText(l.name, getAppLang(), l.id))}</option>`)
         .join("");
 
       const rows = [];
@@ -1806,14 +1806,14 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
               const archiveBtn = canEdit
                 ? `<button class="small secondary archiveLevelBtn" data-id="${lv.id}" data-next="${lv.status === "archived" ? "active" : "archived"}">${lv.status === "archived" ? t("Restore") : t("Archive")}</button>`
                 : "";
-              return `<span style="display:inline-block; margin:0.15rem 0.4rem 0.15rem 0;">${langText(lv.name, getAppLang(), lv.id)}${lv.status === "archived" ? ` (${t("archived")})` : ""} ${archiveBtn}</span>`;
+              return `<span style="display:inline-block; margin:0.15rem 0.4rem 0.15rem 0;">${esc(langText(lv.name, getAppLang(), lv.id))}${lv.status === "archived" ? ` (${t("archived")})` : ""} ${archiveBtn}</span>`;
             }).join("")
           : t("(no levels yet)");
         const ladderArchiveBtn = canEdit
           ? `<button class="small secondary archiveLadderBtn" data-id="${ladder.id}" data-next="${ladder.status === "archived" ? "active" : "archived"}">${ladder.status === "archived" ? t("Restore") : t("Archive")}</button>`
           : "";
         rows.push(`<tr>
-          <td>${langText(ladder.name, getAppLang(), ladder.id)}${ladder.status === "archived" ? ` (${t("archived")})` : ""}</td>
+          <td>${esc(langText(ladder.name, getAppLang(), ladder.id))}${ladder.status === "archived" ? ` (${t("archived")})` : ""}</td>
           <td class="row-actions">${ladderArchiveBtn}</td>
           <td>${levelChips}</td>
         </tr>`);
@@ -1937,7 +1937,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
 
       myMemberships = hydrated;
       tenantSelect.innerHTML = myMemberships
-        .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${roleListLabel(m.roles)})</option>`)
+        .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${esc(m.tenantName)} (${roleListLabel(m.roles)})</option>`)
         .join("");
 
       const activeMembership = myMemberships.find((m) => m.tenantId === activeTenantId);
