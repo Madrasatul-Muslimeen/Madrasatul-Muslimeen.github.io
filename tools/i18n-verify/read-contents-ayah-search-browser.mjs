@@ -4,8 +4,10 @@
 // surah; Enter or a tap opens the Read view on that āyah; a number past the surah's end says so in words.
 //
 // Run from the repository root, with serve.js on :8080. Expected values are written by hand (Al-An'aam has 165 āyāt).
-// Mutations (each must fail it): noref (no reference parsing), noenter (Enter does nothing), noscroll (the āyah is
-// not brought into view), nogo (the row is drawn but tapping it opens the surah instead).
+// Mutations (each must fail it): noref (no reference parsing), noenter (Enter does nothing), nogo (the row is drawn
+// but tapping it opens the surah instead). Not a mutation: dropping openReadContentsAyah's scrollFlowToCurrentAyah()
+// leaves every check green (measured 28 Oct 2026, the flow and the Mushaf view at 390): the Read view's own render
+// already brings the current āyah into view. The call stays, as goToAyahFromQcr() has it, a no-op belt and braces.
 import { chromium, newContext, openPage } from "./harness.mjs";
 import fs from "node:fs";
 
@@ -20,7 +22,6 @@ const PAGE = "app/quranrevival.html";
 const MUT = {
   noref: ["const ref = /[:.]/.test(typed) ? parseJumpText(typed) : null;", "const ref = null;"],
   noenter: ['      readContentsBodyEl.querySelector("[data-rc-kind]")?.click();\n', ""],
-  noscroll: ["      openReadingScreen();\n      await scrollFlowToCurrentAyah();\n    }", "      openReadingScreen();\n    }"],
   nogo: ['const go = row.dataset.rcKind === "ayah" ? openReadContentsAyah(row) :', 'const go = row.dataset.rcKind === "ayah" ? openReadContentsRow("surah", Number(row.dataset.rcN)) :'],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
@@ -43,6 +44,7 @@ async function start(lang, width) {
   return { ctx, page, errors };
 }
 async function openList(page) {
+  if (await page.evaluate(() => !document.getElementById("readContentsMount").hidden)) return;
   // The landing's Read capsule, or (in the Read view) the Read bar's list button: whichever is on screen.
   const id = await page.evaluate(() => ["readContentsBtn", "readListBtn"].find((i) => { const e = document.getElementById(i); return e && e.getClientRects().length && e.offsetParent !== null; }));
   if (id) await page.click(`#${id}`);
@@ -107,7 +109,7 @@ for (const lang of ["en", "bn"]) for (const width of WIDTHS) {
   // 2. A tap on the row, a range.
   const r = await type(page, D("2:255-257"));
   check(`${tag} "${D("2:255-257")}" offers the range first`, r.rows[0]?.kind === "ayah" && r.rows[0].text.includes(D("2:255")) && r.rows[0].text.includes(D("257")) && r.rows[1]?.n === "2", JSON.stringify(r.rows));
-  await page.click("#readContentsBody .rc-goto");
+  if (await page.$("#readContentsBody .rc-goto")) await page.click("#readContentsBody .rc-goto");
   await page.waitForTimeout(1500);
   const wr = await where(page, "2:255");
   check(`${tag} ...a tap opens it as a Range from 2:255, its words on screen`, !wr.listOpen && wr.surah === "2" && wr.type === "range" && wr.ayah === "255" && wr.seen, JSON.stringify(wr));
@@ -121,6 +123,20 @@ for (const lang of ["en", "bn"]) for (const width of WIDTHS) {
   const z = await type(page, D("115:1"));
   check(`${tag} "${D("115:1")}" says there is no Surah 115`, z.rows.length === 0 && (lang === "en" ? /no Surah 115/.test(z.empty) : z.empty.includes("১১৫")), JSON.stringify(z));
   check(`${tag} no page errors (range, end, names)`, errors.length === 0, errors.join(" | "));
+  await ctx.close();
+
+  // 5. In the Mushaf (page) view: 6:161 sits on page 150, part-way down the surah's pages; it must be brought into view.
+  ({ ctx, page, errors } = await start(lang, width));
+  await page.evaluate(() => { const m = document.getElementById("mushafToggle"); if (!m.checked) { m.checked = true; m.dispatchEvent(new Event("change")); } });
+  await page.waitForTimeout(500);
+  await openList(page);
+  await type(page, D("6:161"));
+  await page.press("#readContentsSearch", "Enter");
+  await page.waitForTimeout(2500);
+  const wm = await where(page, "6:161");
+  check(`${tag} Mushaf view: Enter lands on 6:161, its words on screen`, !wm.listOpen && wm.surah === "6" && wm.ayah === "161" && wm.words > 0 && wm.seen, JSON.stringify(wm));
+  if (SHOTS) await page.screenshot({ path: `${SHOTS}/rc-ayah-${lang}-${width}-mushaf.png` });
+  check(`${tag} no page errors (Mushaf)`, errors.length === 0, errors.join(" | "));
   await ctx.close();
 }
 await browser.close();
