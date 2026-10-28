@@ -16,6 +16,8 @@
 //   --mutate=one-row    the one-row rules (25 Oct 2026: Meaning as its icon while a way-back is docked) removed -> the 390 line-sharing checks fail
 //   --mutate=narrow-transport  the 28 Oct 2026 320px rule (⏮ ⏭ ▶ ■ 36px wide, 4px gaps, while a way-back is docked)
 //                       removed -> the 320 line-sharing checks fail (■ wraps, and 🔖 📖 ⤢ ⋯ ⋮ fall to a third line)
+//   --mutate=list-icon  the 28 Oct 2026 rule (☰ its icon alone while a way-back is docked below 380px) removed
+//                       -> the en 360 line-sharing checks fail (360 is in the default widths since 28 Oct 2026)
 //   --mutate=raw-label  the page name is the heading's whole text -> the name check fails
 import { chromium, newContext, openPage } from "./harness.mjs";
 import fs from "node:fs";
@@ -42,6 +44,13 @@ async function routeMutation(ctx) {
     let html = fs.readFileSync("app/quranrevival.html", "utf8");
     html = swap(html, "#readBar:has(#readBackSlot:not(:empty)) #readMeaningBtn .read-meaning-word { display: none; }", "");
     html = swap(html, "#readBar:has(#readBackSlot:not(:empty)) #readMeaningBtn { padding: 0; width: 40px; }", "");
+    await ctx.route(/\/app\/quranrevival\.html(\?.*)?$/, (r) => r.fulfill({ status: 200, contentType: "text/html; charset=utf-8", body: html }));
+    return;
+  }
+  if (MUTATE === "list-icon") {
+    let html = fs.readFileSync("app/quranrevival.html", "utf8");
+    html = swap(html, "body.read-from-contents #readBar:has(#readBackSlot:not(:empty)) #readListBtn { padding: 0; width: 40px; }", "");
+    html = swap(html, "#readBar:has(#readBackSlot:not(:empty)) #readListBtn .read-list-word { display: none; }", "");
     await ctx.route(/\/app\/quranrevival\.html(\?.*)?$/, (r) => r.fulfill({ status: 200, contentType: "text/html; charset=utf-8", body: html }));
     return;
   }
@@ -80,7 +89,7 @@ async function routeMutation(ctx) {
 
 const SEED = `DATA.bookmarks[0].usedAt = { bm1: "2026-10-04T09:30:00.000Z" };`;
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH });
-for (const lang of ["en", "bn"]) for (const width of (process.env.WIDTHS ? process.env.WIDTHS.split(",").map(Number) : [320, 390, 768, 1280])) {
+for (const lang of ["en", "bn"]) for (const width of (process.env.WIDTHS ? process.env.WIDTHS.split(",").map(Number) : [320, 360, 390, 768, 1280])) {
   const tag = `${lang}/${width}`;
   console.log(`\n=== ${tag} ===`);
   const ctx = await newContext(browser, { appLang: lang, banner: false, viewport: { width, height: 900 }, extraSeedJs: SEED });
