@@ -72,7 +72,7 @@ export function renderDua(body, state, render) {
       row.appendChild(openitiArabicRowName(openitiDisplayTitle(c.title)));
       row.appendChild(el("span", "hadith-row-meta", t("{n} narrations", { n: num(c.hadithCount || c.passageCount) })));
       row.addEventListener("click", () => {
-        state.view = "collections";
+        state.view = "books"; // PCF MSA J106: the library is now Hadith Books
         state.editionId = null;
         state.oi = { bookUri: book.versionUri, chapterId: id, books: null, showAllChapters: false,
           scrollTo: true, trail: [{ label: t("← Back to Dua"), toDua: () => { state.view = "dua"; render(); } }] };
@@ -307,7 +307,7 @@ export function duaCard(c, summary, state, render, progressRows, wordLinks = nul
     r.type = "button";
     r.dataset.duaRef = `${versionUri}:${n}`;
     r.addEventListener("click", () => {
-      state.view = "collections";
+      state.view = "books"; // PCF MSA J106: the library is now Hadith Books
       state.editionId = null;
       const page = state.dua.page;
       state.oi = { bookUri: versionUri, chapterId: null, books: null, showAllChapters: false, focusPassage: n,

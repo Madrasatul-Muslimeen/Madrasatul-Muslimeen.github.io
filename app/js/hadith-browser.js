@@ -24,6 +24,7 @@ import { HADEETHENC_LANGS, HADEETHENC_STRUCTURE_LANG, loadHadeethEncCategories, 
 import { OPENITI_CREDIT_URL, loadOpenitiBookSummaries, loadOpenitiBookIndex, loadOpenitiChapter, chapterForHadithNumber, loadOpenitiConcordance, loadOpenitiHadeethEncLinks, loadHadeethEncReferences, loadDuaIndex } from "./openiti-corpus.js";
 import { el, HADEETHENC_LANG_LABELS, loadHadithStudyActions, openitiDisplayTitle, openitiArabicRowName, duaRefLabel, standardTranslationFolds, openitiTranslationFold } from "./hadith-shared-ui.js";
 import { renderDua } from "./dua-browser.js";
+import { hadithReader, removeReaderWindows } from "./hadith-reader.js";
 
 const CONTENT_LANG_LABELS = { ar: "العربية", en: "English", bn: "বাংলা" };
 
@@ -37,7 +38,8 @@ function langText(map, lang) {
 
 export function mountHadithBrowser(root, { mount = "standalone", initialHadeethEncId = null, initialOpenitiPassage = null, initialDua = null } = {}) {
   const state = {
-    view: "collections",
+    // PCF MSA J106 (the Owner, 28 Oct 2026): Hadith Study opens on its Hadith Books.
+    view: "books",
     contentLang: getAppLang() === "bn" ? "bn" : "en",
     editionId: null, bookId: null, chapterId: null, query: "", topicId: null,
     // Set by jumpToSource() (Topic/Search "View in source", and a repeat
@@ -53,6 +55,7 @@ export function mountHadithBrowser(root, { mount = "standalone", initialHadeethE
   // unset, so this survives that lazy init untouched.
   if (initialHadeethEncId) {
     state.hc = { path: [], hadithId: String(initialHadeethEncId), catsByLang: {}, scrollToCard: true };
+    state.view = "collections";
   }
   // Decision 85 (7 Oct 2026): an Asmaul Husna poster's Hadith reference opens that narration here --
   // { versionUri, n } = the OpenITI book and the passage's permanent position (asma-poster.js's POSTER_HADITH).
@@ -70,6 +73,7 @@ export function mountHadithBrowser(root, { mount = "standalone", initialHadeethE
 
   function render() {
     root.textContent = "";
+    removeReaderWindows(); // a popped-out Hadith Books pane closes with the view it belongs to
     // The Collections landing now leads with REAL HadeethEnc text (#309), so
     // the "not real narrations" notice there sits directly above the
     // synthetic pilot list it describes (renderCollections), not above the
@@ -84,6 +88,8 @@ export function mountHadithBrowser(root, { mount = "standalone", initialHadeethE
     body.id = "hadithBody";
     root.appendChild(body);
     ({
+      books: () => renderBooks(body, state, render),
+      subjects: () => renderSubjects(body, state, render),
       collections: () => renderCollections(body, state, render),
       topic: () => renderTopic(body, state, render),
       search: () => renderSearch(body, state, render),
@@ -197,7 +203,7 @@ function focusActiveTab() {
 // The notice that is never conditional
 // ---------------------------------------------------------------------------
 
-const REAL_DATA_VIEWS = new Set(["dua", "commentary"]);
+const REAL_DATA_VIEWS = new Set(["dua", "commentary", "books", "subjects"]);
 
 function showsSyntheticAtTop(state) {
   if (REAL_DATA_VIEWS.has(state.view)) return false;
@@ -223,11 +229,18 @@ function syntheticBanner() {
 // ---------------------------------------------------------------------------
 
 function controls(state, render) {
-  const bar = el("div", "hadith-controls");
+  // PCF MSA J106 (the Owner, 28 Oct 2026, demo approved): one clean menu bar for Hadith Study. Hadith Books and
+  // Subjects open a menu; then the former corpus tabs (Collections is now "Encyclopedia"); the text language last.
+  // Every button keeps its data-hadith-tab, and the night look still styles them (.hadith-tab, card-look.css).
+  const bar = el("nav", "hadith-controls hadith-menubar");
+  bar.setAttribute("aria-label", t("Hadith Study"));
 
   const tabs = el("div", "hadith-tabs");
+  tabs.appendChild(menuButton(state, render, "books", t("Hadith Books"), (list, close) => fillBooksMenu(list, close, state, render)));
+  tabs.appendChild(menuButton(state, render, "subjects", t("Subjects|Hadith Study menu"), (list, close) => fillSubjectsMenu(list, close, state, render)));
+  tabs.appendChild(el("span", "hadith-menubar-sep"));
   for (const [view, label] of [
-    ["collections", t("Collections")],
+    ["collections", t("Encyclopedia")],
     ["topic", t("Topics")],
     ["search", t("Search")],
     ["explore", t("Explore")],
@@ -235,7 +248,9 @@ function controls(state, render) {
     ["dua", t("Dua")],
   ]) {
     const b = el("button", `hadith-tab${state.view === view ? " active" : ""}`, label);
+    b.type = "button";
     b.dataset.hadithTab = view;
+    if (state.view === view) b.setAttribute("aria-current", "page");
     b.addEventListener("click", () => { state.view = view; render(); focusActiveTab(); });
     tabs.appendChild(b);
   }
@@ -260,6 +275,125 @@ function controls(state, render) {
   langWrap.appendChild(sel);
   bar.appendChild(langWrap);
   return bar;
+}
+
+/** PCF MSA J106: the three Subjects (the Owner's names). Each becomes a list of hadith the Owner files (answer 3A). */
+export const HADITH_SUBJECTS = [
+  { id: "akhlaq", name: "Learning Akhlaq", about: "Good character: how a Muslim treats people, speaks, and loves for others what he loves for himself." },
+  { id: "ghayb", name: "Knowing Al-Ghayb", about: "The unseen: belief in Allah, the angels, the Last Day, and what only Allah knows." },
+  { id: "stories", name: "Stories from Hadith", about: "The events of the life of Rasulullah Sallallahu A'laihi Wa Sallam and his Companions, as the hadith tell them." },
+];
+
+/**
+ * A menu-bar button that opens a small list under it (Hadith Books, Subjects). The list closes on a choice, on a
+ * second tap of the button, on a tap anywhere else and on Escape (which returns focus to the button). Its items are
+ * ordinary 40px buttons, so a keyboard Tabs through them.
+ */
+function menuButton(state, render, view, label, fill) {
+  const wrap = el("div", "hadith-menu");
+  const btn = el("button", `hadith-tab hadith-menu-btn${state.view === view ? " active" : ""}`);
+  btn.type = "button";
+  btn.dataset.hadithTab = view;
+  btn.appendChild(document.createTextNode(label));
+  const caret = el("span", "hadith-menu-caret", "▾");
+  caret.setAttribute("aria-hidden", "true");
+  btn.appendChild(caret);
+  if (state.view === view) btn.setAttribute("aria-current", "page");
+  const panel = el("div", "hadith-card hadith-menu-panel");
+  panel.id = `hadithMenu-${view}`;
+  panel.dataset.hadithMenu = view;
+  panel.hidden = true;
+  btn.setAttribute("aria-haspopup", "true");
+  btn.setAttribute("aria-expanded", "false");
+  btn.setAttribute("aria-controls", panel.id);
+  const onDoc = (e) => { if (!wrap.contains(e.target)) close(); };
+  const onKey = (e) => { if (e.key === "Escape") { close(); btn.focus(); } };
+  function close() {
+    panel.hidden = true;
+    btn.setAttribute("aria-expanded", "false");
+    document.removeEventListener("pointerdown", onDoc, true);
+    document.removeEventListener("keydown", onKey, true);
+  }
+  btn.addEventListener("click", () => {
+    if (!panel.hidden) { close(); return; }
+    panel.textContent = "";
+    fill(panel, close);
+    panel.hidden = false;
+    btn.setAttribute("aria-expanded", "true");
+    document.addEventListener("pointerdown", onDoc, true);
+    document.addEventListener("keydown", onKey, true);
+    panel.querySelector("button")?.focus({ preventScroll: true });
+  });
+  wrap.append(btn, panel);
+  return wrap;
+}
+
+function fillBooksMenu(panel, close, state, render) {
+  const pick = (uri) => {
+    close();
+    state.view = "books";
+    state.oi = { bookUri: uri, chapterId: null, books: state.oi?.books ?? null, showAllChapters: false };
+    render();
+  };
+  const all = el("button", "hadith-row hadith-menu-item");
+  all.type = "button";
+  all.dataset.hadithBookPick = "";
+  all.appendChild(el("span", "hadith-row-name", t("All Hadith Books")));
+  all.addEventListener("click", () => pick(null));
+  panel.appendChild(all);
+  const wait = el("p", "hadith-note", t("Loading…"));
+  panel.appendChild(wait);
+  loadOpenitiBookSummaries().then((books) => {
+    wait.remove();
+    if (!state.oi) state.oi = { bookUri: null, chapterId: null, books: null, showAllChapters: false };
+    state.oi.books = books;
+    for (const [versionUri, index] of books) {
+      const row = el("button", "hadith-row hadith-menu-item");
+      row.type = "button";
+      row.dataset.hadithBookPick = versionUri;
+      const name = el("span", "hadith-row-name");
+      const ar = el("span", "openiti-title-ar", index.titleAr);
+      ar.lang = "ar"; ar.dir = "rtl";
+      name.append(ar, document.createTextNode(` — ${index.titleEn}`));
+      row.appendChild(name);
+      row.appendChild(el("span", "hadith-row-meta", index.numbering === "sequential-by-paragraph"
+        ? t("{n} passages (this edition has no hadith numbers)", { n: num(index.passageCount) })
+        : t("{n} hadith", { n: num(index.hadithCount) })));
+      row.addEventListener("click", () => pick(versionUri));
+      panel.appendChild(row);
+    }
+  }).catch(() => { wait.textContent = t("The list of books could not be loaded. Check the connection and try again."); });
+}
+
+function fillSubjectsMenu(panel, close, state, render) {
+  for (const sub of HADITH_SUBJECTS) {
+    const row = el("button", "hadith-row hadith-menu-item");
+    row.type = "button";
+    row.dataset.hadithSubjectPick = sub.id;
+    row.appendChild(el("span", "hadith-row-name", t(sub.name)));
+    row.appendChild(el("span", "hadith-row-meta", t(sub.about)));
+    row.addEventListener("click", () => { close(); state.view = "subjects"; state.subjectId = sub.id; render(); });
+    panel.appendChild(row);
+  }
+}
+
+/** Hadith Books: every book in the library, each opening on its chapters (PCF MSA J106). */
+function renderBooks(body, state, render) {
+  body.appendChild(renderOpenitiSource(state));
+}
+
+/** A Subject: its list of hadith, each Book · Chapter · Hadith No. · Title, opening the original (PCF MSA J106). */
+function renderSubjects(body, state, render) {
+  const sub = HADITH_SUBJECTS.find((x) => x.id === state.subjectId) ?? HADITH_SUBJECTS[0];
+  state.subjectId = sub.id;
+  const box = el("section", "hadith-subject");
+  box.dataset.hadithSubject = sub.id;
+  box.appendChild(el("h2", null, t(sub.name)));
+  box.appendChild(el("p", "hadith-note", t(sub.about)));
+  const empty = el("p", "hadith-note hadith-subject-empty", t("No hadith in this list yet. Open a hadith in Hadith Books and choose “Add to subject” (coming next)."));
+  empty.dataset.hadithSubjectEmpty = "true";
+  box.appendChild(empty);
+  body.appendChild(box);
 }
 
 /**
@@ -461,10 +595,11 @@ function hadeethEncReferences(id, state) {
 
 /** Opens a proven reference's passage in the OpenITI section, with "← Back to the hadith card" (decision 86). */
 function openReferenceInBook(state, id, versionUri, n) {
-  state.view = "collections";
+  state.view = "books";
   state.editionId = null;
   state.oi = { bookUri: versionUri, chapterId: null, books: null, showAllChapters: false, focusPassage: Number(n),
     trail: [{ label: t("← Back to the hadith card"), toDua: () => {
+      state.view = "collections";
       state.hc = { ...(state.hc ?? { path: [], catsByLang: {} }), hadithId: String(id), scrollToCard: true };
       state.oi = { bookUri: null, chapterId: null, books: null, showAllChapters: false };
       state.render();
@@ -863,7 +998,7 @@ const OPENITI_CHAPTER_PAGE = 100;
 function renderOpenitiSource(state) {
   const section = el("section", "openiti-section");
   section.id = "openitiSection";
-  section.appendChild(el("h2", null, t("OpenITI — Arabic Hadith collections")));
+  section.appendChild(el("h2", null, t("Hadith Books")));
   section.appendChild(el("p", "openiti-study-soon",
     t("Notes, bookmarking and marking a hadith or passage as studied are not enabled here yet — the Owner has only decided this for HadeethEnc so far.")));
   const body = el("div", "openiti-body");
@@ -933,29 +1068,97 @@ async function renderOpenitiBody(body, oi, localRefresh) {
   const versionUri = oi.bookUri;
   if (missingPassage) body.appendChild(el("p", "hadith-note", t("That passage is not in this book.")));
 
-  if (!oi.chapterId) {
-    renderOpenitiChapterList(body, oi, index, localRefresh, conc);
-    return;
+  // PCF MSA J106 (the Owner, 28 Oct 2026, demo approved): the book opens in three panes -- Chapters | the chapter's
+  // hadith | the hadith's text -- each resizable, expandable and able to pop out as a window (hadith-reader).
+  const chapter = oi.chapterId ? index.chapters.find((c) => c.id === oi.chapterId) : null;
+  if (oi.chapterId && !chapter) { body.appendChild(el("p", "hadith-note", t("Nothing here yet."))); return; }
+  let passages = [], babs = [];
+  if (chapter) {
+    const wait = el("p", "hadith-note", t("Loading…"));
+    body.appendChild(wait);
+    const loaded = await loadOpenitiChapter(versionUri, chapter);
+    wait.remove();
+    babs = chapterBabs(loaded, chapter);
+    if (oi.pickBab) { oi.phone = babs.length > 1 ? "chapters" : "hadiths"; oi.pickBab = false; }
+    const jump = oi.focusPassage != null ? loaded.hadiths.find((h) => h.n === oi.focusPassage) : null;
+    if (jump) { oi.bab = jump.p; oi.passageN = jump.n; oi.phone = "text"; }
+    if (oi.bab == null || !babs.some((b) => b.p === oi.bab)) oi.bab = babs[0]?.p ?? null;
+    passages = babs.length > 1 ? loaded.hadiths.filter((h) => h.p === oi.bab) : loaded.hadiths;
+    if (!passages.some((h) => h.n === oi.passageN)) oi.passageN = (passages.find((h) => h.kind === "hadith" || h.kind === "passage") ?? passages[0])?.n ?? null;
   }
+  const duaCtx = dua && chapter ? { dua, oi, localRefresh, chapterId: chapter.id, versionUri } : null;
+  const jumped = oi.focusPassage != null;
+  const reader = hadithReader({
+    oi, localRefresh,
+    chapters: (pane) => renderOpenitiChapterList(pane, oi, index, localRefresh, conc, babs),
+    hadiths: (pane) => renderReaderHadithList(pane, passages, oi, localRefresh, conc),
+    text: (pane, head) => renderReaderText(pane, head, passages, oi, localRefresh, conc, heLinks, duaCtx, versionUri, jumped),
+    titles: { chapters: t("Chapters"), hadiths: chapter ? t("Hadith · {n}", { n: num(passages.length) }) : t("Hadith"), text: t("Text") },
+  });
+  body.appendChild(reader);
+  // Opened from the Dua tab, a reference or a link: bring the reader into view.
+  if (oi.scrollTo || jumped) { oi.scrollTo = false; reader.scrollIntoView({ block: "start" }); }
+  oi.focusPassage = null;
+}
 
-  const chapter = index.chapters.find((c) => c.id === oi.chapterId);
-  if (!chapter) { body.appendChild(el("p", "hadith-note", t("Nothing here yet."))); return; }
-  body.appendChild(el("p", "hadith-note", t("Loading…")));
-  const { hadiths } = await loadOpenitiChapter(versionUri, chapter);
-  body.lastChild.remove();
-  renderOpenitiPassages(body, hadiths, conc, heLinks, dua ? { dua, oi, localRefresh, chapterId: chapter.id, versionUri } : null, versionUri);
-  // Opened from the Dua tab: the library's book shelf sits below HadeethEnc on this page, so bring it into view.
-  if (oi.scrollTo && oi.focusPassage == null) { oi.scrollTo = false; body.scrollIntoView({ block: "start" }); }
-  if (oi.focusPassage != null) {
-    const target = body.querySelector(`[data-openiti-passage="${oi.focusPassage}"]`);
-    oi.focusPassage = null;
-    if (target) {
-      target.classList.add("hadith-card-focused");
-      target.dataset.openitiFocused = "true";
-      // A narration taller than the screen is shown from its top (its number and standard number first), not from its middle.
-      target.scrollIntoView({ block: target.getBoundingClientRect().height > innerHeight ? "start" : "center" });
-    }
+/** The chapter's sub-chapters (bab) in order: the last heading of each path its passages carry. One entry when flat. */
+function chapterBabs(loaded, chapter) {
+  const seen = new Map();
+  for (const h of loaded.hadiths) {
+    if (seen.has(h.p)) { seen.get(h.p).count += (h.kind === "hadith" || h.kind === "passage") ? 1 : 0; continue; }
+    const path = loaded.paths[h.p] ?? [];
+    seen.set(h.p, { p: h.p, title: path.length > 1 ? path[path.length - 1] : (path[0] ?? chapter.title), count: (h.kind === "hadith" || h.kind === "passage") ? 1 : 0 });
   }
+  return [...seen.values()];
+}
+
+/** First words of a narration's own text (after the chain of narrators where the source marks it with "*"). */
+function passageSnippet(text, words = 12) {
+  const s = String(text ?? "");
+  const cut = s.indexOf("*");
+  const matn = (cut >= 0 && cut < s.length - 20 ? s.slice(cut + 1) : s).trim().split(/\s+/);
+  return matn.slice(0, words).join(" ") + (matn.length > words ? " …" : "");
+}
+
+function renderReaderHadithList(pane, passages, oi, localRefresh, conc) {
+  if (!oi.chapterId) { pane.appendChild(el("p", "hadith-note hadith-pane-empty", t("Choose a chapter."))); return; }
+  if (!passages.length) { pane.appendChild(el("p", "hadith-note hadith-pane-empty", t("Nothing here yet."))); return; }
+  const list = el("div", "hadith-reader-list");
+  list.dataset.openitiRows = String(passages.length);
+  for (const h of passages) {
+    const row = el("button", `hadith-reader-row${h.n === oi.passageN ? " on" : ""}`);
+    row.type = "button";
+    row.dataset.openitiRow = String(h.n);
+    if (h.n === oi.passageN) row.setAttribute("aria-current", "true");
+    const cite = conc?.byN.get(h.n);
+    const no = h.kind === "chapter-text" ? t("Chapter text") : h.kind === "editorial" ? t("Editor's note") : num(cite ?? h.number ?? "");
+    row.appendChild(el("span", "hadith-reader-no", no));
+    const snip = el("span", "hadith-reader-snippet", passageSnippet(h.text));
+    snip.lang = "ar"; snip.dir = "rtl";
+    row.appendChild(snip);
+    row.addEventListener("click", () => { oi.passageN = h.n; oi.phone = "text"; localRefresh(); });
+    list.appendChild(row);
+  }
+  pane.appendChild(list);
+}
+
+function renderReaderText(pane, head, passages, oi, localRefresh, conc, heLinks, duaCtx, versionUri, jumped) {
+  const i = passages.findIndex((h) => h.n === oi.passageN);
+  if (i < 0) { pane.appendChild(el("p", "hadith-note hadith-pane-empty", t(oi.chapterId ? "Choose a hadith." : "Choose a chapter."))); return; }
+  // ‹ › step through the chapter's hadith without going back to the list.
+  for (const [d, label, glyph] of [[-1, t("Previous hadith"), "‹"], [1, t("Next hadith"), "›"]]) {
+    const b = el("button", "hadith-pane-btn", glyph);
+    b.type = "button";
+    b.title = label; b.setAttribute("aria-label", label);
+    b.dataset.readerStep = String(d);
+    const to = passages[i + d];
+    b.disabled = !to;
+    b.addEventListener("click", () => { if (to) { oi.passageN = to.n; localRefresh(); } });
+    head.insertBefore(b, head.querySelector(".hadith-pane-tools"));
+  }
+  const card = openitiPassageCard(passages[i], conc, heLinks, duaCtx, versionUri);
+  if (jumped) { card.classList.add("hadith-card-focused"); card.dataset.openitiFocused = "true"; }
+  pane.appendChild(card);
 }
 
 /** "PageV01P013" -> "Vol. 1, p. 13" (the source's own page marker, made readable). */
@@ -978,7 +1181,7 @@ function openitiCrumbs(oi, index, localRefresh) {
       bar.appendChild(cur);
     }
   };
-  add(t("OpenITI"), () => { oi.bookUri = null; oi.chapterId = null; oi.showAllChapters = false; localRefresh(); });
+  add(t("Hadith Books"), () => { oi.bookUri = null; oi.chapterId = null; oi.showAllChapters = false; localRefresh(); });
   if (index) {
     add(index.titleEn, oi.chapterId ? () => { oi.chapterId = null; localRefresh(); } : null);
     if (oi.chapterId) {
@@ -1010,7 +1213,7 @@ function renderOpenitiBookList(body, oi, localRefresh) {
   body.appendChild(list);
 }
 
-function renderOpenitiChapterList(body, oi, index, localRefresh, conc = null) {
+function renderOpenitiChapterList(body, oi, index, localRefresh, conc = null, babs = null) {
   const goBox = el("div", "openiti-goto");
   const editionNumbers = index.numbering !== "sequential-by-paragraph";
   if (!editionNumbers && !conc) {
@@ -1080,15 +1283,39 @@ function renderOpenitiChapterList(body, oi, index, localRefresh, conc = null) {
   const shown = oi.showAllChapters ? index.chapters.length : Math.min(OPENITI_CHAPTER_PAGE, index.chapters.length);
   const list = el("div", "hadith-list");
   list.dataset.openitiChapterList = String(shown);
-  for (const c of index.chapters.slice(0, shown)) {
-    const row = el("button", "hadith-row");
+  // The open chapter shows even when it lies beyond the first page of chapters.
+  const rows = index.chapters.slice(0, shown);
+  const cur = index.chapters.find((c) => c.id === oi.chapterId);
+  if (cur && !rows.includes(cur)) rows.push(cur);
+  for (const c of rows) {
+    const open = c.id === oi.chapterId;
+    const row = el("button", `hadith-row${open ? " on" : ""}`);
+    row.type = "button";
     row.dataset.openitiChapter = c.id;
+    if (open) row.setAttribute("aria-current", "true");
     row.appendChild(openitiArabicRowName(openitiDisplayTitle(c.title)));
     if (c.firstNumber != null) {
       row.appendChild(el("span", "hadith-row-meta", `${num(c.firstNumber)}–${num(c.lastNumber)}`));
     }
-    row.addEventListener("click", () => { oi.chapterId = c.id; localRefresh(); });
+    // On a phone, a chapter with sub-chapters stays on Chapters so one can be picked; a flat one opens its hadith.
+    row.addEventListener("click", () => { oi.chapterId = c.id; oi.bab = null; oi.passageN = null; oi.pickBab = true; localRefresh(); });
     list.appendChild(row);
+    // PCF MSA J106: a chapter of a book (kitab) lists its own chapters (bab) under it, each opening its hadith.
+    if (open && babs?.length > 1) {
+      const sub = el("div", "hadith-bab-list");
+      for (const b of babs) {
+        const on = b.p === oi.bab;
+        const bb = el("button", `hadith-bab${on ? " on" : ""}`);
+        bb.type = "button";
+        bb.dataset.openitiBab = String(b.p);
+        if (on) bb.setAttribute("aria-current", "true");
+        bb.appendChild(openitiArabicRowName(openitiDisplayTitle(b.title)));
+        if (b.count) bb.appendChild(el("span", "hadith-row-meta", num(b.count)));
+        bb.addEventListener("click", () => { oi.bab = b.p; oi.passageN = null; oi.phone = "hadiths"; localRefresh(); });
+        sub.appendChild(bb);
+      }
+      list.appendChild(sub);
+    }
   }
   body.appendChild(list);
 
@@ -1237,7 +1464,7 @@ function renderCollections(body, state, render) {
 
   if (!state.editionId) {
     body.appendChild(renderHadeethEncSource(state));
-    body.appendChild(renderOpenitiSource(state));
+    // PCF MSA J106: the Arabic books are their own view now, "Hadith Books" (renderBooks).
     body.appendChild(el("h2", null, t("Synthetic pilot collections")));
     body.appendChild(syntheticBanner());
     const list = el("div", "hadith-list");

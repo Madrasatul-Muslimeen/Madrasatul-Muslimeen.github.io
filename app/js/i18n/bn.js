@@ -4507,4 +4507,32 @@ export const BN = {
   "{books}: number not yet found": "{books}: নম্বর এখনো পাওয়া যায়নি", // ?
   "← Back to the hadith card": "← হাদীস কার্ডে ফিরে যান", // ?
   "The book numbers could not be loaded. Check the connection and open this hadith again.": "বইয়ের নম্বরগুলো লোড করা যায়নি। সংযোগ দেখে এই হাদীসটি আবার খুলুন।", // ?
+  // PCF MSA J106: Hadith Study's menu bar and Subjects.
+  "Hadith Study": "হাদীস অধ্যয়ন", // ?
+  "MSA — Hadith Study": "MSA — হাদীস অধ্যয়ন", // ?
+  "Hadith Books": "হাদীসের কিতাবসমূহ", // ?
+  "All Hadith Books": "সব হাদীসের কিতাব", // ?
+  "Encyclopedia": "বিশ্বকোষ", // ?
+  "Subjects|Hadith Study menu": "পাঠ্য বিষয়", // ? (distinct from Topics, বিষয়সমূহ, on the same bar)
+  "Learning Akhlaq": "আখলাক শেখা", // ?
+  "Knowing Al-Ghayb": "আল-গায়ব জানা", // ?
+  "Stories from Hadith": "হাদীসের কাহিনি", // ?
+  "Good character: how a Muslim treats people, speaks, and loves for others what he loves for himself.": "উত্তম চরিত্র: একজন মুসলিম কীভাবে মানুষের সাথে আচরণ করে, কথা বলে, এবং নিজের জন্য যা ভালোবাসে অন্যের জন্যও তা ভালোবাসে।", // ?
+  "The unseen: belief in Allah, the angels, the Last Day, and what only Allah knows.": "অদৃশ্য জগৎ: আল্লাহ, ফেরেশতা, শেষ দিবসের প্রতি ঈমান, এবং যা কেবল আল্লাহই জানেন।", // ?
+  "The events of the life of Rasulullah Sallallahu A'laihi Wa Sallam and his Companions, as the hadith tell them.": "রাসূলুল্লাহ ﷺ ও তাঁর সাহাবীদের জীবনের ঘটনা, যেমন হাদীসে বর্ণিত হয়েছে।", // ?
+  "No hadith in this list yet. Open a hadith in Hadith Books and choose “Add to subject” (coming next).": "এই তালিকায় এখনো কোনো হাদীস নেই। হাদীসের কিতাবসমূহে একটি হাদীস খুলে “বিষয়ে যোগ করুন” বেছে নিন (শীঘ্রই আসছে)।", // ?
+  "The list of books could not be loaded. Check the connection and try again.": "কিতাবের তালিকা লোড করা যায়নি। সংযোগ দেখে আবার চেষ্টা করুন।", // ?
+  // PCF MSA J106: the Hadith Books reader.
+  "Hadith · {n}": "হাদীস · {n}", // ?
+  "Choose a chapter.": "একটি অধ্যায় বেছে নিন।", // ?
+  "Choose a hadith.": "একটি হাদীস বেছে নিন।", // ?
+  "Previous hadith": "আগের হাদীস", // ?
+  "Next hadith": "পরের হাদীস", // ?
+  "Chapter text": "অধ্যায়ের পাঠ", // ?
+  "This pane is open as a window.": "এই অংশটি আলাদা জানালায় খোলা আছে।", // ?
+  "Put it back here": "এখানে ফিরিয়ে আনুন", // ?
+  "Back to three panes": "তিন অংশে ফিরে যান", // ?
+  "Expand this pane": "এই অংশটি বড় করুন", // ?
+  "Pop out as a window": "আলাদা জানালায় খুলুন", // ?
+  "Put it back in its place": "আগের জায়গায় ফিরিয়ে দিন", // ?
 };
