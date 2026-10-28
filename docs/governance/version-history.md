@@ -1009,3 +1009,4 @@ total). Allocated by the MMSA Architect.
 12.105: Bookmarks opens faster with hundreds of bookmarks (audit part 119). Allocated by the MMSA Architect.
 12.106: during a recitation the Play button stays Pause between ayat, and a tap there pauses (QR Lead). Allocated by the MMSA Architect.
 12.107: Monitor opens faster for a teacher with a real class (audit part 120). Allocated by the MMSA Architect.
+12.108: the QR Lead's Mushaf page that stays at its end. Allocated by the MMSA Architect.
