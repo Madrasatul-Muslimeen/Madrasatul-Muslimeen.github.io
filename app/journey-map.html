@@ -1351,6 +1351,26 @@
     const noteLayoutEl = document.getElementById("noteLayout");
     const notePaneEl = document.getElementById("notePane");
     let pendingOpenNoteId = new URLSearchParams(location.search).get("note"); // "Open full page" from the tray
+    // Audit part 123 (the way-back law): a reader who leaves this page with a Note open in the pane (e.g. ⋯ → Import Notes…)
+    // and presses ← Back there is put back on the same Note. Session only, per address, one device; nothing is stored on a
+    // server. Only a back/forward arrival restores it, so a fresh visit never opens a Note by itself.
+    const JM_NOTE_KEY = "mmsa.wayBackJmNote";
+    window.addEventListener("pagehide", () => {
+      try {
+        const id = typeof paneView !== "undefined" ? paneView.noteId : null;
+        const all = JSON.parse(sessionStorage.getItem(JM_NOTE_KEY) || "{}") || {};
+        if (id) all[location.href] = { id, at: Date.now() }; else delete all[location.href];
+        sessionStorage.setItem(JM_NOTE_KEY, JSON.stringify(all));
+      } catch { /* private mode: nothing to keep */ }
+    });
+    if (!pendingOpenNoteId && !isEmbeddedEarly()) {
+      try {
+        const nav = performance.getEntriesByType("navigation")[0];
+        const kept = (JSON.parse(sessionStorage.getItem(JM_NOTE_KEY) || "{}") || {})[location.href];
+        if (nav?.type === "back_forward" && kept?.id && Date.now() - kept.at < 30 * 60 * 1000) pendingOpenNoteId = kept.id;
+      } catch { /* none kept */ }
+    }
+    function isEmbeddedEarly() { return document.documentElement.classList.contains("embed"); }
     // The way-back law (decision 86): a visit that arrives with back=1 (Zab's "Open" after → Note, Z5) shows a visible
     // ← Back to exactly where the reader came from. Not inside the tray (embed), which has its own close.
     if (new URLSearchParams(location.search).get("back") === "1" && !isEmbedded && !document.getElementById("jmBackBtn")) {
