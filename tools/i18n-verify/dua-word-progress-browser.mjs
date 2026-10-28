@@ -18,9 +18,9 @@ const check = (name, ok, detail = "") => {
 };
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
 const MUT = {
-  wrongpos: ["js/hadith-browser.js", "  const position = pos + 1;\n", "  const position = pos;\n"],
-  nosave: ["js/hadith-browser.js", "      try { await actions.claimDuaWord(session, dua, position, id); }", "      try { /* not saved */ }"],
-  nofollow: ["js/hadith-browser.js", "        location.href = `${wordCardHref(place, dua)}&progress=${id}`;\n", "\n"],
+  wrongpos: ["js/dua-browser.js", "  const position = pos + 1;\n", "  const position = pos;\n"],
+  nosave: ["js/dua-browser.js", "      try { await actions.claimDuaWord(session, dua, position, id); }", "      try { /* not saved */ }"],
+  nofollow: ["js/dua-browser.js", "        location.href = `${wordCardHref(place, dua)}&progress=${id}`;\n", "\n"],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
 const KEY5 = `${buildUnitKey.duaWord(1, 5)}::studied_hadith`, KEY2 = `${buildUnitKey.duaWord(1, 2)}::studied_hadith`;
@@ -84,7 +84,7 @@ for (const [lang, width, look] of [["en", 390, "light"], ["bn", 390, "night"], [
   await ctx.close();
 
   // The linked word's own record is written BEFORE leaving (read from a page that does not leave: the follow-on is cut).
-  const ctx2 = await context(lang, width, look, ["js/hadith-browser.js", "        location.href = `${wordCardHref(place, dua)}&progress=${id}`;\n", "        window.__wouldGo = `${wordCardHref(place, dua)}&progress=${id}`;\n"]);
+  const ctx2 = await context(lang, width, look, ["js/dua-browser.js", "        location.href = `${wordCardHref(place, dua)}&progress=${id}`;\n", "        window.__wouldGo = `${wordCardHref(place, dua)}&progress=${id}`;\n"]);
   const { page: Q } = await openPage(ctx2, "/app/hadith-collections.html");
   await Q.click('[data-hadith-tab="dua"]');
   await Q.waitForSelector('[data-dua-card="1"] [data-dua-word="1"]');

@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="./css/admin-touch.css" />
   <script>(function(){try{document.documentElement.setAttribute('data-card-look',localStorage.getItem('mm_card_look')==='light'?'light':'night');}catch(e){document.documentElement.setAttribute('data-card-look','night');}})();</script>
 <link rel="stylesheet" href="./css/hadith.css" />
-<title>MSA — Hadith</title>
+<title>MSA — Hadith Study</title>
 <style>
   body { font-family: system-ui, sans-serif; max-width: 48rem; margin: 2rem auto; padding: 0 1rem 4rem; color: #222; }
   h1 { font-size: 1.4rem; }
@@ -112,10 +112,7 @@
 </style>
 </head>
 <body class="admin-touch">
-  <h1>Hadith</h1>
-  <p>Adab Al-Mufrad, Shamayyl Muhammadiya, Al-Ghayb, Hadith Reading, and
-     Stories — each topic only appears here once it has a real resource
-     attached, added subject by subject from the Catalogue page.</p>
+  <h1>Hadith Study</h1>
 
   <nav class="app-nav" id="topNav">
     <details class="nav-cat nav-cat-home">
@@ -137,6 +134,15 @@
     <div id="navBar"></div>
   </nav>
 
+  <!-- PCF MSA J106 (the Owner, 28 Oct 2026, demo approved 1A 2A 3A 4A): "Hadith Study" opens on its own menu bar
+       (Hadith Books, Subjects, then the former corpus tabs), directly under the page name and outside #app, so the
+       books read without signing in. The "Hadith Corpus" heading and its note are gone with the old tab row; the
+       shared topic surface (topic-study.js, used by eight pages) stays below, untouched. One component, two routes:
+       hadith-collections.html mounts the same browser. -->
+  <section id="hadithCorpusSection" aria-label="Hadith Study">
+    <div id="hadithCorpusRoot"></div>
+  </section>
+
   <div id="app" style="display:none;">
     <div id="continueStrip"></div>
     <div id="contextBar" style="display:flex; gap:1rem; align-items:center; flex-wrap:wrap; margin:1rem 0; font-size:0.9rem;">
@@ -152,18 +158,6 @@
     <div id="listContainer"></div>
     <div id="detailContainer"></div>
 
-    <!-- H2-B: the Hadith corpus, mounted INSIDE the Hadith module rather than
-         replacing it. The Approach/Track surface above is the SHARED topic
-         renderer (topic-study.js), used by eight pages; it is deliberately
-         untouched, and this section sits beneath it as its own region. The
-         standalone route at hadith-collections.html still exists and mounts
-         the identical component -- one component, two routes, so the two
-         cannot silently diverge. -->
-    <section id="hadithCorpusSection" aria-labelledby="hadithCorpusHeading">
-      <h2 id="hadithCorpusHeading"></h2>
-      <p class="hadith-note" id="hadithCorpusNote"></p>
-      <div id="hadithCorpusRoot"></div>
-    </section>
   </div>
 
   <div id="wayModalOverlay"><div id="wayModalMount"></div></div>
@@ -200,9 +194,7 @@
     import { mountHadithBrowser } from "./js/hadith-browser.js";
     import { t } from "./js/i18n.js";
 
-    document.getElementById("hadithCorpusHeading").textContent = t("Hadith Corpus");
-    document.getElementById("hadithCorpusNote").textContent =
-      t("Browse the collections, books and chapters. Every narration below is invented for development and is not a hadith.");
+    document.getElementById("hadithCorpusSection").setAttribute("aria-label", t("Hadith Study"));
     try {
       // Issue #311 -- a HadeethEnc bookmark's own resume value
       // ("hadith:hadeethenc:<id>") reopens this exact hadith. bookmarks.html

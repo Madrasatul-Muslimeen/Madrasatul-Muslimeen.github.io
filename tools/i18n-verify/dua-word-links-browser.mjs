@@ -16,9 +16,11 @@ const check = (name, ok, detail = "") => {
 };
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
 const MUT = {
-  nolinks: ["js/hadith-browser.js", "const linked = !!links && links.f === duaWordsFingerprint(picked.words);", "const linked = false;"],
+  nolinks: ["js/dua-browser.js", "const linked = !!links && links.f === duaWordsFingerprint(picked.words);", "const linked = false;"],
   noincard: ["quranrevival.html", '"", () => history.back(), { inWordCard: true });', '"", () => history.back());'],
-  noreturn: ["js/hadith-browser.js", "      history.replaceState(history.state, \"\", u);\n", "\n"],
+  // Re-anchored 28 Oct 2026 (J106): the old anchor had 6 spaces where the code has 4, so this mutation threw "anchor missing"
+  // and never ran; the code itself moved to dua-browser.js the same day.
+  noreturn: ["js/dua-browser.js", "    history.replaceState(history.state, \"\", u);\n", "\n"],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
 const W1 = JSON.parse(fs.readFileSync("tools/hadith-data-pull/output/dua/words-1.json", "utf8"));

@@ -78,7 +78,10 @@ async function runAtWidth(width) {
   const { page, errors } = await openPage(ctx, "/app/hadith-collections.html");
   const settle = () => page.waitForTimeout(150);
 
-  await page.click('[data-hadith-tab="collections"]');
+  // Updated in place 28 Oct 2026 (PCF MSA J106 round 1): the library moved out of Collections (now "Encyclopedia")
+  // into Hadith Books, which is the page's default view -- so the shelf is already open on load, and tapping the
+  // Hadith Books button there would open its quick list instead. No click is needed.
+  await page.waitForSelector("[data-openiti-book]");
   await settle();
 
   // --- I9: opening Collections loads the book list's own small summary and
@@ -170,13 +173,29 @@ async function runAtWidth(width) {
 
   // --- The passages themselves: the first HADITH shown is number 1, its text
   // equals the shard record exactly; a chapter-text passage shows with no
-  // number. -------------------------------------------------------------
-  const passageKinds = await page.evaluate(() =>
-    [...document.querySelectorAll("[data-openiti-passage]")].map((p) => ({
-      kind: p.dataset.openitiKind,
-      hasHead: !!p.querySelector(".hadith-card-head"),
-      text: p.querySelector(".hadith-arabic")?.textContent ?? "",
-    })));
+  // number. Updated in place 28 Oct 2026 (PCF MSA J106 round 1): the book opens in three panes and the Text pane
+  // shows ONE passage. Bukhari's ch-2 opens on its first sub-chapter, "باب بدء الوحي", which holds only the chapter
+  // text; hadith 1 is the first passage of sub-chapter 1. So each is read by choosing it. On a phone one pane shows at
+  // a time, so the pane is chosen first with its step button ([data-reader-show]). ---------------------------------
+  const showPane = async (key) => {
+    const step = await page.$(`[data-reader-show="${key}"]`);
+    if (step && await step.isVisible()) { await step.click(); await settle(); }
+  };
+  const readCard = () => page.evaluate(() => {
+    const p = document.querySelector("[data-openiti-passage]");
+    return p ? { kind: p.dataset.openitiKind, hasHead: !!p.querySelector(".hadith-card-head"),
+      text: p.querySelector(".hadith-arabic")?.textContent ?? "" } : null;
+  });
+  const passageKinds = [];
+  await showPane("text");
+  const openedOn = await readCard();
+  if (openedOn) passageKinds.push(openedOn);
+  await showPane("chapters");
+  await page.click('[data-openiti-bab="1"]');
+  await settle();
+  await showPane("text");
+  const firstOfBab1 = await readCard();
+  if (firstOfBab1) passageKinds.push(firstOfBab1);
   check("a chapter-text passage renders with NO number/head label",
     passageKinds.some((p) => p.kind === "chapter-text" && !p.hasHead));
   check("the chapter-text passage's own text equals the shard record exactly",
@@ -235,6 +254,7 @@ async function runAtWidth(width) {
   const muslimGotoMsg = await page.evaluate(() => document.querySelector(".openiti-goto-hint")?.textContent ?? "");
   check("Sahih Muslim's box says, in words, that it takes the standard number",
     muslimGotoMsg.length > 0);
+  await showPane("chapters"); // a phone still shows the Text pane last chosen (J106 round 1)
   await page.click("[data-openiti-chapter]");
   await settle();
   const muslimPassageHead = await page.evaluate(() =>
@@ -244,6 +264,9 @@ async function runAtWidth(width) {
     muslimPassageHead.includes(positionPhrase));
 
   // --- The existing HadeethEnc section is untouched by all of the above. ---
+  // Updated in place 28 Oct 2026 (PCF MSA J106 round 1): it is its own view now, "Encyclopedia".
+  await page.click('[data-hadith-tab="collections"]');
+  await settle();
   const hadeethEncCategoryCount = await page.evaluate(() => document.querySelectorAll("[data-hadeethenc-category]").length);
   check("the pre-existing HadeethEnc section still renders its 7 root categories",
     hadeethEncCategoryCount === 7);

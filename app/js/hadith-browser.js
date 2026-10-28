@@ -14,43 +14,22 @@
 
 import { t, num } from "./i18n.js";
 import { loadHadithAyat } from "./ayah-hadith.js";
-import { getAppLang, quranFontStack } from "./prefs.js";
-import { duaWords, duaNarration, duaWordTokens, duaWordsFingerprint, duaGrammarPosLabel } from "./dua-words.js";
-import { loadHadithTranslation, TRANSLATED_BOOKS } from "./hadith-translations.js";
+import { getAppLang } from "./prefs.js";
 import { STATUSES, statusLabel } from "./unit-keys.js";
 import { renderAssignDropdown } from "./assign-picker.js";
-import {
-  listCollections, booksOf, chaptersOf, occurrencesIn, editionHasChapterLevel,
-  occurrenceById, chapterById, collectionOf, sourcePathOf, externalReferencesFor, resolveText,
-  availableLanguages, searchCorpus, listTopics, topicIndex, exploreAggregate,
-  translationCoverage, topicCoverage,
-  CONTENT_LANGUAGES, SOURCE_LANGUAGE,
-} from "./hadith-corpus.js";
+import { listCollections, booksOf, chaptersOf, occurrencesIn, editionHasChapterLevel, chapterById, collectionOf, sourcePathOf, externalReferencesFor, resolveText, availableLanguages, searchCorpus, listTopics, topicIndex, exploreAggregate, translationCoverage, topicCoverage, CONTENT_LANGUAGES, SOURCE_LANGUAGE } from "./hadith-corpus.js";
 import { SYNTHETIC_NOTICE, TAXONOMY_REVISION } from "./hadith-fixture-data.js";
 import { PANEL_TITLE, verifiedRegisterEntries, commentaryForOccurrence, renderPermission, NEVER_DO } from "./hadith-commentary.js";
-import {
-  HADEETHENC_LANGS, HADEETHENC_STRUCTURE_LANG,
-  loadHadeethEncCategories, childCategories, directHadithIds, resolveCategoryTitle,
-  loadHadithRecords, hadithArabicText, hadeethEncSourceUrl,
-} from "./hadeethenc-corpus.js";
-import {
-  OPENITI_CREDIT_URL,
-  loadOpenitiBookSummaries, loadOpenitiBookIndex, loadOpenitiChapter, chapterForHadithNumber,
-  loadOpenitiConcordance, loadOpenitiHadeethEncLinks, loadHadeethEncReferences, loadDuaIndex, loadDuaCardsSummary, loadDuaCardsPage, loadDuaWordLinks, loadDuaVowels, loadDuaWordGrammar, loadDuaFit,
-} from "./openiti-corpus.js";
-import { buildCheckPanel, loadMemberTexts, applyMembers, checkChipText, checkState } from "./dua-check.js";
+import { HADEETHENC_LANGS, HADEETHENC_STRUCTURE_LANG, loadHadeethEncCategories, childCategories, directHadithIds, resolveCategoryTitle, loadHadithRecords, hadithArabicText, hadeethEncSourceUrl } from "./hadeethenc-corpus.js";
+import { OPENITI_CREDIT_URL, loadOpenitiBookSummaries, loadOpenitiBookIndex, loadOpenitiChapter, chapterForHadithNumber, loadOpenitiConcordance, loadOpenitiHadeethEncLinks, loadHadeethEncReferences, loadDuaIndex } from "./openiti-corpus.js";
+import { el, HADEETHENC_LANG_LABELS, loadHadithStudyActions, openitiDisplayTitle, openitiArabicRowName, duaRefLabel, standardTranslationFolds, openitiTranslationFold } from "./hadith-shared-ui.js";
+import { renderDua } from "./dua-browser.js";
+import { hadithReader, removeReaderWindows } from "./hadith-reader.js";
 
 const CONTENT_LANG_LABELS = { ar: "العربية", en: "English", bn: "বাংলা" };
 
 /** Demo-only Track state. Never written anywhere. Cleared by a reload, deliberately. */
 const demoTrack = new Map();
-
-const el = (tag, cls, text) => {
-  const n = document.createElement(tag);
-  if (cls) n.className = cls;
-  if (text != null) n.textContent = text;
-  return n;
-};
 
 function langText(map, lang) {
   if (!map) return "";
@@ -59,7 +38,8 @@ function langText(map, lang) {
 
 export function mountHadithBrowser(root, { mount = "standalone", initialHadeethEncId = null, initialOpenitiPassage = null, initialDua = null } = {}) {
   const state = {
-    view: "collections",
+    // PCF MSA J106 (the Owner, 28 Oct 2026): Hadith Study opens on its Hadith Books.
+    view: "books",
     contentLang: getAppLang() === "bn" ? "bn" : "en",
     editionId: null, bookId: null, chapterId: null, query: "", topicId: null,
     // Set by jumpToSource() (Topic/Search "View in source", and a repeat
@@ -75,6 +55,7 @@ export function mountHadithBrowser(root, { mount = "standalone", initialHadeethE
   // unset, so this survives that lazy init untouched.
   if (initialHadeethEncId) {
     state.hc = { path: [], hadithId: String(initialHadeethEncId), catsByLang: {}, scrollToCard: true };
+    state.view = "collections";
   }
   // Decision 85 (7 Oct 2026): an Asmaul Husna poster's Hadith reference opens that narration here --
   // { versionUri, n } = the OpenITI book and the passage's permanent position (asma-poster.js's POSTER_HADITH).
@@ -92,6 +73,7 @@ export function mountHadithBrowser(root, { mount = "standalone", initialHadeethE
 
   function render() {
     root.textContent = "";
+    removeReaderWindows(); // a popped-out Hadith Books pane closes with the view it belongs to
     // The Collections landing now leads with REAL HadeethEnc text (#309), so
     // the "not real narrations" notice there sits directly above the
     // synthetic pilot list it describes (renderCollections), not above the
@@ -106,6 +88,8 @@ export function mountHadithBrowser(root, { mount = "standalone", initialHadeethE
     body.id = "hadithBody";
     root.appendChild(body);
     ({
+      books: () => renderBooks(body, state, render),
+      subjects: () => renderSubjects(body, state, render),
       collections: () => renderCollections(body, state, render),
       topic: () => renderTopic(body, state, render),
       search: () => renderSearch(body, state, render),
@@ -219,7 +203,7 @@ function focusActiveTab() {
 // The notice that is never conditional
 // ---------------------------------------------------------------------------
 
-const REAL_DATA_VIEWS = new Set(["dua", "commentary"]);
+const REAL_DATA_VIEWS = new Set(["dua", "commentary", "books", "subjects"]);
 
 function showsSyntheticAtTop(state) {
   if (REAL_DATA_VIEWS.has(state.view)) return false;
@@ -245,11 +229,28 @@ function syntheticBanner() {
 // ---------------------------------------------------------------------------
 
 function controls(state, render) {
-  const bar = el("div", "hadith-controls");
+  // PCF MSA J106 (the Owner, 28 Oct 2026, demo approved): one clean menu bar for Hadith Study. Hadith Books and
+  // Subjects open a menu; then the former corpus tabs (Collections is now "Encyclopedia"); the text language last.
+  // Every button keeps its data-hadith-tab, and the night look still styles them (.hadith-tab, card-look.css).
+  const bar = el("nav", "hadith-controls hadith-menubar");
+  bar.setAttribute("aria-label", t("Hadith Study"));
 
   const tabs = el("div", "hadith-tabs");
+  // Hadith Books (J106 step 1a): from any other view the button goes straight to the shelf of every book; once the
+  // reader is already on Books it opens the quick list for switching book.
+  const toShelf = () => {
+    if (state.view === "books") return false;
+    state.view = "books";
+    state.oi = { bookUri: null, chapterId: null, books: state.oi?.books ?? null, showAllChapters: false };
+    render();
+    focusActiveTab();
+    return true;
+  };
+  tabs.appendChild(menuButton(state, render, "books", t("Hadith Books"), (list, close) => fillBooksMenu(list, close, state, render), toShelf));
+  tabs.appendChild(menuButton(state, render, "subjects", t("Subjects|Hadith Study menu"), (list, close) => fillSubjectsMenu(list, close, state, render)));
+  tabs.appendChild(el("span", "hadith-menubar-sep"));
   for (const [view, label] of [
-    ["collections", t("Collections")],
+    ["collections", t("Encyclopedia")],
     ["topic", t("Topics")],
     ["search", t("Search")],
     ["explore", t("Explore")],
@@ -257,7 +258,9 @@ function controls(state, render) {
     ["dua", t("Dua")],
   ]) {
     const b = el("button", `hadith-tab${state.view === view ? " active" : ""}`, label);
+    b.type = "button";
     b.dataset.hadithTab = view;
+    if (state.view === view) b.setAttribute("aria-current", "page");
     b.addEventListener("click", () => { state.view = view; render(); focusActiveTab(); });
     tabs.appendChild(b);
   }
@@ -282,6 +285,127 @@ function controls(state, render) {
   langWrap.appendChild(sel);
   bar.appendChild(langWrap);
   return bar;
+}
+
+/** PCF MSA J106: the three Subjects (the Owner's names). Each becomes a list of hadith the Owner files (answer 3A). */
+export const HADITH_SUBJECTS = [
+  { id: "akhlaq", name: "Learning Akhlaq", about: "Good character: how a Muslim treats people, speaks, and loves for others what he loves for himself." },
+  { id: "ghayb", name: "Knowing Al-Ghayb", about: "The unseen: belief in Allah, the angels, the Last Day, and what only Allah knows." },
+  { id: "stories", name: "Stories from Hadith", about: "The events of the life of Rasulullah Sallallahu A'laihi Wa Sallam and his Companions, as the hadith tell them." },
+];
+
+/**
+ * A menu-bar button that opens a small list under it (Hadith Books, Subjects). The list closes on a choice, on a
+ * second tap of the button, on a tap anywhere else and on Escape (which returns focus to the button). Its items are
+ * ordinary 40px buttons, so a keyboard Tabs through them. `before`, when given, runs first on a tap and returns true
+ * when it has handled the tap itself, so no list opens.
+ */
+function menuButton(state, render, view, label, fill, before = null) {
+  const wrap = el("div", "hadith-menu");
+  const btn = el("button", `hadith-tab hadith-menu-btn${state.view === view ? " active" : ""}`);
+  btn.type = "button";
+  btn.dataset.hadithTab = view;
+  btn.appendChild(document.createTextNode(label));
+  const caret = el("span", "hadith-menu-caret", "▾");
+  caret.setAttribute("aria-hidden", "true");
+  btn.appendChild(caret);
+  if (state.view === view) btn.setAttribute("aria-current", "page");
+  const panel = el("div", "hadith-card hadith-menu-panel");
+  panel.id = `hadithMenu-${view}`;
+  panel.dataset.hadithMenu = view;
+  panel.hidden = true;
+  btn.setAttribute("aria-haspopup", "true");
+  btn.setAttribute("aria-expanded", "false");
+  btn.setAttribute("aria-controls", panel.id);
+  const onDoc = (e) => { if (!wrap.contains(e.target)) close(); };
+  const onKey = (e) => { if (e.key === "Escape") { close(); btn.focus(); } };
+  function close() {
+    panel.hidden = true;
+    btn.setAttribute("aria-expanded", "false");
+    document.removeEventListener("pointerdown", onDoc, true);
+    document.removeEventListener("keydown", onKey, true);
+  }
+  btn.addEventListener("click", () => {
+    if (!panel.hidden) { close(); return; }
+    if (before && before()) return;
+    panel.textContent = "";
+    fill(panel, close);
+    panel.hidden = false;
+    btn.setAttribute("aria-expanded", "true");
+    document.addEventListener("pointerdown", onDoc, true);
+    document.addEventListener("keydown", onKey, true);
+    panel.querySelector("button")?.focus({ preventScroll: true });
+  });
+  wrap.append(btn, panel);
+  return wrap;
+}
+
+function fillBooksMenu(panel, close, state, render) {
+  const pick = (uri) => {
+    close();
+    state.view = "books";
+    state.oi = { bookUri: uri, chapterId: null, books: state.oi?.books ?? null, showAllChapters: false };
+    render();
+  };
+  const all = el("button", "hadith-row hadith-menu-item");
+  all.type = "button";
+  all.dataset.hadithBookPick = "";
+  all.appendChild(el("span", "hadith-row-name", t("All Hadith Books")));
+  all.addEventListener("click", () => pick(null));
+  panel.appendChild(all);
+  const wait = el("p", "hadith-note", t("Loading…"));
+  panel.appendChild(wait);
+  loadOpenitiBookSummaries().then((books) => {
+    wait.remove();
+    if (!state.oi) state.oi = { bookUri: null, chapterId: null, books: null, showAllChapters: false };
+    state.oi.books = books;
+    for (const [versionUri, index] of books) {
+      const row = el("button", "hadith-row hadith-menu-item");
+      row.type = "button";
+      row.dataset.hadithBookPick = versionUri;
+      const name = el("span", "hadith-row-name");
+      const ar = el("span", "openiti-title-ar", index.titleAr);
+      ar.lang = "ar"; ar.dir = "rtl";
+      name.append(ar, document.createTextNode(` — ${index.titleEn}`));
+      row.appendChild(name);
+      row.appendChild(el("span", "hadith-row-meta", index.numbering === "sequential-by-paragraph"
+        ? t("{n} passages (this edition has no hadith numbers)", { n: num(index.passageCount) })
+        : t("{n} hadith", { n: num(index.hadithCount) })));
+      row.addEventListener("click", () => pick(versionUri));
+      panel.appendChild(row);
+    }
+  }).catch(() => { wait.textContent = t("The list of books could not be loaded. Check the connection and try again."); });
+}
+
+function fillSubjectsMenu(panel, close, state, render) {
+  for (const sub of HADITH_SUBJECTS) {
+    const row = el("button", "hadith-row hadith-menu-item");
+    row.type = "button";
+    row.dataset.hadithSubjectPick = sub.id;
+    row.appendChild(el("span", "hadith-row-name", t(sub.name)));
+    row.appendChild(el("span", "hadith-row-meta", t(sub.about)));
+    row.addEventListener("click", () => { close(); state.view = "subjects"; state.subjectId = sub.id; render(); });
+    panel.appendChild(row);
+  }
+}
+
+/** Hadith Books: every book in the library, each opening on its chapters (PCF MSA J106). */
+function renderBooks(body, state, render) {
+  body.appendChild(renderOpenitiSource(state));
+}
+
+/** A Subject: its list of hadith, each Book · Chapter · Hadith No. · Title, opening the original (PCF MSA J106). */
+function renderSubjects(body, state, render) {
+  const sub = HADITH_SUBJECTS.find((x) => x.id === state.subjectId) ?? HADITH_SUBJECTS[0];
+  state.subjectId = sub.id;
+  const box = el("section", "hadith-subject");
+  box.dataset.hadithSubject = sub.id;
+  box.appendChild(el("h2", null, t(sub.name)));
+  box.appendChild(el("p", "hadith-note", t(sub.about)));
+  const empty = el("p", "hadith-note hadith-subject-empty", t("No hadith in this list yet. Open a hadith in Hadith Books and choose “Add to subject” (coming next)."));
+  empty.dataset.hadithSubjectEmpty = "true";
+  box.appendChild(empty);
+  body.appendChild(box);
 }
 
 /**
@@ -335,8 +459,6 @@ function rawHeadingSpan(rawHeading) {
 // core -- a Firebase/CDN failure disables the study actions, never the
 // Collections/Topics/Search/Explore browsing around them.
 // ---------------------------------------------------------------------------
-
-const HADEETHENC_LANG_LABELS = { ar: "العربية", en: "English", bn: "বাংলা" };
 
 /** Loads ar (structure) + en + the reader's own content language's categories.json -- cheap (a few hundred KB total), and it is what lets a category's title/count fall back contentLang -> en -> ar without a second round trip mid-browse. */
 async function loadHadeethEncStructure(contentLang, opts) {
@@ -485,10 +607,11 @@ function hadeethEncReferences(id, state) {
 
 /** Opens a proven reference's passage in the OpenITI section, with "← Back to the hadith card" (decision 86). */
 function openReferenceInBook(state, id, versionUri, n) {
-  state.view = "collections";
+  state.view = "books";
   state.editionId = null;
   state.oi = { bookUri: versionUri, chapterId: null, books: null, showAllChapters: false, focusPassage: Number(n),
     trail: [{ label: t("← Back to the hadith card"), toDua: () => {
+      state.view = "collections";
       state.hc = { ...(state.hc ?? { path: [], catsByLang: {} }), hadithId: String(id), scrollToCard: true };
       state.oi = { bookUri: null, chapterId: null, books: null, showAllChapters: false };
       state.render();
@@ -599,12 +722,6 @@ function hadeethEncCard(id, resolvedRecord, state, localRefresh) {
 // silently absent: every disabled state below says why, in words, rather
 // than hiding the control (this project's own standing rule).
 // ---------------------------------------------------------------------------
-
-let hadithStudyActionsPromise = null;
-function loadHadithStudyActions() {
-  if (!hadithStudyActionsPromise) hadithStudyActionsPromise = import("./hadith-study-actions.js");
-  return hadithStudyActionsPromise;
-}
 
 async function renderHadeethEncStudyActions(container, id, title) {
   container.textContent = "";
@@ -893,7 +1010,7 @@ const OPENITI_CHAPTER_PAGE = 100;
 function renderOpenitiSource(state) {
   const section = el("section", "openiti-section");
   section.id = "openitiSection";
-  section.appendChild(el("h2", null, t("OpenITI — Arabic Hadith collections")));
+  section.appendChild(el("h2", null, t("Hadith Books")));
   section.appendChild(el("p", "openiti-study-soon",
     t("Notes, bookmarking and marking a hadith or passage as studied are not enabled here yet — the Owner has only decided this for HadeethEnc so far.")));
   const body = el("div", "openiti-body");
@@ -963,44 +1080,107 @@ async function renderOpenitiBody(body, oi, localRefresh) {
   const versionUri = oi.bookUri;
   if (missingPassage) body.appendChild(el("p", "hadith-note", t("That passage is not in this book.")));
 
-  if (!oi.chapterId) {
-    renderOpenitiChapterList(body, oi, index, localRefresh, conc);
-    return;
-  }
-
-  const chapter = index.chapters.find((c) => c.id === oi.chapterId);
-  if (!chapter) { body.appendChild(el("p", "hadith-note", t("Nothing here yet."))); return; }
-  body.appendChild(el("p", "hadith-note", t("Loading…")));
-  const { hadiths } = await loadOpenitiChapter(versionUri, chapter);
-  body.lastChild.remove();
-  renderOpenitiPassages(body, hadiths, conc, heLinks, dua ? { dua, oi, localRefresh, chapterId: chapter.id, versionUri } : null, versionUri);
-  // Opened from the Dua tab: the library's book shelf sits below HadeethEnc on this page, so bring it into view.
-  if (oi.scrollTo && oi.focusPassage == null) { oi.scrollTo = false; body.scrollIntoView({ block: "start" }); }
-  if (oi.focusPassage != null) {
-    const target = body.querySelector(`[data-openiti-passage="${oi.focusPassage}"]`);
-    oi.focusPassage = null;
-    if (target) {
-      target.classList.add("hadith-card-focused");
-      target.dataset.openitiFocused = "true";
-      // A narration taller than the screen is shown from its top (its number and standard number first), not from its middle.
-      target.scrollIntoView({ block: target.getBoundingClientRect().height > innerHeight ? "start" : "center" });
+  // PCF MSA J106 (the Owner, 28 Oct 2026, demo approved): the book opens in three panes -- Chapters | the chapter's
+  // hadith | the hadith's text -- each resizable, expandable and able to pop out as a window (hadith-reader).
+  const chapter = oi.chapterId ? index.chapters.find((c) => c.id === oi.chapterId) : null;
+  if (oi.chapterId && !chapter) { body.appendChild(el("p", "hadith-note", t("Nothing here yet."))); return; }
+  let passages = [], babs = [];
+  // With no chapter chosen, Chapters is the only pane with anything in it: a phone shows it (the book's name in the
+  // breadcrumbs, a new book, a jump to a number the book does not hold), never an empty "Choose a chapter." pane.
+  if (!chapter) oi.phone = "chapters";
+  if (chapter) {
+    const wait = el("p", "hadith-note", t("Loading…"));
+    body.appendChild(wait);
+    const loaded = await loadOpenitiChapter(versionUri, chapter);
+    wait.remove();
+    babs = chapterBabs(loaded, chapter);
+    if (oi.pickBab) { oi.phone = babs.length > 1 ? "chapters" : "hadiths"; oi.pickBab = false; }
+    // "Go to hadith number" by this edition's own number: find that hadith in the chapter just opened.
+    if (oi.focusNumber != null) {
+      const byNumber = loaded.hadiths.find((h) => h.kind === "hadith" && Number(h.number) === oi.focusNumber);
+      if (byNumber) oi.focusPassage = byNumber.n;
+      oi.focusNumber = null;
     }
+    const jump = oi.focusPassage != null ? loaded.hadiths.find((h) => h.n === oi.focusPassage) : null;
+    if (jump) { oi.bab = jump.p; oi.passageN = jump.n; oi.phone = "text"; }
+    if (oi.bab == null || !babs.some((b) => b.p === oi.bab)) oi.bab = babs[0]?.p ?? null;
+    passages = babs.length > 1 ? loaded.hadiths.filter((h) => h.p === oi.bab) : loaded.hadiths;
+    if (!passages.some((h) => h.n === oi.passageN)) oi.passageN = (passages.find((h) => h.kind === "hadith" || h.kind === "passage") ?? passages[0])?.n ?? null;
   }
+  const duaCtx = dua && chapter ? { dua, oi, localRefresh, chapterId: chapter.id, versionUri } : null;
+  const jumped = oi.focusPassage != null;
+  const reader = hadithReader({
+    oi, localRefresh,
+    chapters: (pane) => renderOpenitiChapterList(pane, oi, index, localRefresh, conc, babs),
+    hadiths: (pane) => renderReaderHadithList(pane, passages, oi, localRefresh, conc),
+    text: (pane, head) => renderReaderText(pane, head, passages, oi, localRefresh, conc, heLinks, duaCtx, versionUri, jumped),
+    titles: { chapters: t("Chapters"), hadiths: chapter ? t("Hadith · {n}", { n: num(passages.length) }) : t("Hadith"), text: t("Text") },
+  });
+  body.appendChild(reader);
+  // Opened from the Dua tab, a reference or a link: bring the reader into view.
+  if (oi.scrollTo || jumped) { oi.scrollTo = false; reader.scrollIntoView({ block: "start" }); }
+  oi.focusPassage = null;
 }
 
-/**
- * Architect review (#316): a chapter title is shown TIDIED, never stored
- * tidied -- the split data keeps the source's heading as written. Twenty of
- * 5,191 source headings carry an unbalanced bracket ("( 5 كتاب الغسل") or an
- * inline "\\ 390 \\" cross-reference; those marks are dropped for display
- * only, and an empty title reads "(untitled)" rather than a file id.
- */
-function openitiDisplayTitle(title) {
-  let s = String(title ?? "").replace(/\\\s*\d+\s*\\/g, " ").replace(/\s+/g, " ").trim();
-  const opens = (s.match(/\(/g) || []).length, closes = (s.match(/\)/g) || []).length;
-  if (opens > closes) s = s.replace(/^\(\s*/, "");
-  if (closes > opens) s = s.replace(/\s*\)$/, "");
-  return s || t("(untitled)");
+/** The chapter's sub-chapters (bab) in order: the last heading of each path its passages carry. One entry when flat. */
+function chapterBabs(loaded, chapter) {
+  const seen = new Map();
+  for (const h of loaded.hadiths) {
+    if (seen.has(h.p)) { seen.get(h.p).count += (h.kind === "hadith" || h.kind === "passage") ? 1 : 0; continue; }
+    const path = loaded.paths[h.p] ?? [];
+    seen.set(h.p, { p: h.p, title: path.length > 1 ? path[path.length - 1] : (path[0] ?? chapter.title), count: (h.kind === "hadith" || h.kind === "passage") ? 1 : 0 });
+  }
+  return [...seen.values()];
+}
+
+/** First words of a narration's own text (after the chain of narrators where the source marks it with "*"). */
+function passageSnippet(text, words = 12) {
+  const s = String(text ?? "");
+  const cut = s.indexOf("*");
+  const matn = (cut >= 0 && cut < s.length - 20 ? s.slice(cut + 1) : s).trim().split(/\s+/);
+  return matn.slice(0, words).join(" ") + (matn.length > words ? " …" : "");
+}
+
+function renderReaderHadithList(pane, passages, oi, localRefresh, conc) {
+  if (!oi.chapterId) { pane.appendChild(el("p", "hadith-note hadith-pane-empty", t("Choose a chapter."))); return; }
+  if (!passages.length) { pane.appendChild(el("p", "hadith-note hadith-pane-empty", t("Nothing here yet."))); return; }
+  const list = el("div", "hadith-reader-list");
+  list.dataset.openitiRows = String(passages.length);
+  for (const h of passages) {
+    const row = el("button", `hadith-reader-row${h.n === oi.passageN ? " on" : ""}`);
+    row.type = "button";
+    row.dataset.openitiRow = String(h.n);
+    row.dataset.openitiKind = h.kind;
+    if (h.n === oi.passageN) row.setAttribute("aria-current", "true");
+    const cite = conc?.byN.get(h.n);
+    const no = h.kind === "chapter-text" ? t("Chapter text") : h.kind === "editorial" ? t("Editor's note") : num(cite ?? h.number ?? "");
+    row.appendChild(el("span", "hadith-reader-no", no));
+    const snip = el("span", "hadith-reader-snippet", passageSnippet(h.text));
+    snip.lang = "ar"; snip.dir = "rtl";
+    row.appendChild(snip);
+    row.addEventListener("click", () => { oi.passageN = h.n; oi.phone = "text"; localRefresh(); });
+    list.appendChild(row);
+  }
+  pane.appendChild(list);
+}
+
+function renderReaderText(pane, head, passages, oi, localRefresh, conc, heLinks, duaCtx, versionUri, jumped) {
+  const i = passages.findIndex((h) => h.n === oi.passageN);
+  if (i < 0) { pane.appendChild(el("p", "hadith-note hadith-pane-empty", t(oi.chapterId ? "Choose a hadith." : "Choose a chapter."))); return; }
+  // ‹ › step through the chapter's hadith without going back to the list.
+  for (const [d, label, glyph] of [[-1, t("Previous hadith"), "‹"], [1, t("Next hadith"), "›"]]) {
+    const b = el("button", "hadith-pane-btn", glyph);
+    b.type = "button";
+    b.title = label; b.setAttribute("aria-label", label);
+    b.dataset.readerStep = String(d);
+    const to = passages[i + d];
+    b.disabled = !to;
+    b.addEventListener("click", () => { if (to) { oi.passageN = to.n; localRefresh(); } });
+    head.insertBefore(b, head.querySelector(".hadith-pane-tools"));
+  }
+  const card = openitiPassageCard(passages[i], conc, heLinks, duaCtx, versionUri);
+  if (jumped) { card.classList.add("hadith-card-focused"); card.dataset.openitiFocused = "true"; }
+  pane.appendChild(card);
 }
 
 /** "PageV01P013" -> "Vol. 1, p. 13" (the source's own page marker, made readable). */
@@ -1023,7 +1203,7 @@ function openitiCrumbs(oi, index, localRefresh) {
       bar.appendChild(cur);
     }
   };
-  add(t("OpenITI"), () => { oi.bookUri = null; oi.chapterId = null; oi.showAllChapters = false; localRefresh(); });
+  add(t("Hadith Books"), () => { oi.bookUri = null; oi.chapterId = null; oi.showAllChapters = false; localRefresh(); });
   if (index) {
     add(index.titleEn, oi.chapterId ? () => { oi.chapterId = null; localRefresh(); } : null);
     if (oi.chapterId) {
@@ -1055,7 +1235,7 @@ function renderOpenitiBookList(body, oi, localRefresh) {
   body.appendChild(list);
 }
 
-function renderOpenitiChapterList(body, oi, index, localRefresh, conc = null) {
+function renderOpenitiChapterList(body, oi, index, localRefresh, conc = null, babs = null) {
   const goBox = el("div", "openiti-goto");
   const editionNumbers = index.numbering !== "sequential-by-paragraph";
   if (!editionNumbers && !conc) {
@@ -1114,6 +1294,7 @@ function renderOpenitiChapterList(body, oi, index, localRefresh, conc = null) {
         return;
       }
       oi.chapterId = chapter.id;
+      oi.focusNumber = Math.trunc(Number(input.value)); // J106: the reader opens on that hadith, not the chapter's first
       localRefresh();
     };
     goBtn.addEventListener("click", doGo);
@@ -1125,15 +1306,39 @@ function renderOpenitiChapterList(body, oi, index, localRefresh, conc = null) {
   const shown = oi.showAllChapters ? index.chapters.length : Math.min(OPENITI_CHAPTER_PAGE, index.chapters.length);
   const list = el("div", "hadith-list");
   list.dataset.openitiChapterList = String(shown);
-  for (const c of index.chapters.slice(0, shown)) {
-    const row = el("button", "hadith-row");
+  // The open chapter shows even when it lies beyond the first page of chapters.
+  const rows = index.chapters.slice(0, shown);
+  const cur = index.chapters.find((c) => c.id === oi.chapterId);
+  if (cur && !rows.includes(cur)) rows.push(cur);
+  for (const c of rows) {
+    const open = c.id === oi.chapterId;
+    const row = el("button", `hadith-row${open ? " on" : ""}`);
+    row.type = "button";
     row.dataset.openitiChapter = c.id;
+    if (open) row.setAttribute("aria-current", "true");
     row.appendChild(openitiArabicRowName(openitiDisplayTitle(c.title)));
     if (c.firstNumber != null) {
       row.appendChild(el("span", "hadith-row-meta", `${num(c.firstNumber)}–${num(c.lastNumber)}`));
     }
-    row.addEventListener("click", () => { oi.chapterId = c.id; localRefresh(); });
+    // On a phone, a chapter with sub-chapters stays on Chapters so one can be picked; a flat one opens its hadith.
+    row.addEventListener("click", () => { oi.chapterId = c.id; oi.bab = null; oi.passageN = null; oi.pickBab = true; localRefresh(); });
     list.appendChild(row);
+    // PCF MSA J106: a chapter of a book (kitab) lists its own chapters (bab) under it, each opening its hadith.
+    if (open && babs?.length > 1) {
+      const sub = el("div", "hadith-bab-list");
+      for (const b of babs) {
+        const on = b.p === oi.bab;
+        const bb = el("button", `hadith-bab${on ? " on" : ""}`);
+        bb.type = "button";
+        bb.dataset.openitiBab = String(b.p);
+        if (on) bb.setAttribute("aria-current", "true");
+        bb.appendChild(openitiArabicRowName(openitiDisplayTitle(b.title)));
+        if (b.count) bb.appendChild(el("span", "hadith-row-meta", num(b.count)));
+        bb.addEventListener("click", () => { oi.bab = b.p; oi.passageN = null; oi.phone = "hadiths"; localRefresh(); });
+        sub.appendChild(bb);
+      }
+      list.appendChild(sub);
+    }
   }
   body.appendChild(list);
 
@@ -1144,12 +1349,6 @@ function renderOpenitiChapterList(body, oi, index, localRefresh, conc = null) {
     more.addEventListener("click", () => { oi.showAllChapters = true; localRefresh(); });
     body.appendChild(more);
   }
-}
-
-function openitiArabicRowName(text) {
-  const span = el("span", "hadith-row-name openiti-row-name-ar", text);
-  span.lang = "ar"; span.dir = "rtl";
-  return span;
 }
 
 function renderOpenitiPassages(body, hadiths, conc = null, heLinks = null, duaCtx = null, versionUri = null) {
@@ -1235,13 +1434,6 @@ function openitiPassageCard(h, conc = null, heLinks = null, duaCtx = null, versi
 }
 
 /** The cited name of a Dua-index book in the reader's language, with its standard number when it has one. */
-function duaRefLabel(dua, versionUri, std, n, number = null) {
-  const book = dua.books.find((b) => b.versionUri === versionUri);
-  const name = (getAppLang() === "bn" ? book?.short?.bn : book?.short?.en) ?? book?.titleEn ?? versionUri;
-  if (std != null && std !== "") return `${name} ${num(String(std))}`;
-  if (number != null) return `${name} ${num(number)}`;
-  return t("{book}, passage {n}", { book: name, n: num(n) });
-}
 
 /**
  * Round H-DB4 (decision 87): the other places this dua is narrated, found by shared words, each a button that opens
@@ -1290,778 +1482,12 @@ function duaAlsoNarrated(h, group, { dua, oi, localRefresh, chapterId, versionUr
   return box;
 }
 
-/**
- * Round H-DB4 (decision 87), the Dua tab, first cut: the Dua chapters of eleven books (research report §2), each
- * opening in the library with "← Back to Dua". The narrations of one dua are linked across books on each card.
- */
-function renderDua(body, state, render) {
-  if (!state.dua) state.dua = { bookUri: null, mode: "duas", page: 1 };
-  // Round H-DB5 (decision 88): two views of the same data -- one card per dua (the demo the Owner approved), and the
-  // books' own Dua chapters (v09.119).
-  const modes = el("div", "dua-modes");
-  modes.setAttribute("role", "group");
-  modes.setAttribute("aria-label", t("Dua"));
-  for (const [mode, label] of [["duas", t("Duas")], ["chapters", t("Dua chapters")]]) {
-    const b = el("button", "dua-mode", label);
-    b.type = "button";
-    b.dataset.duaMode = mode;
-    b.setAttribute("aria-pressed", String(state.dua.mode === mode));
-    b.addEventListener("click", () => { state.dua.mode = mode; render(); });
-    modes.appendChild(b);
-  }
-  body.appendChild(modes);
-  if (state.dua.mode !== "chapters") { renderDuaCards(body, state, render); return; }
-  const section = el("section", "dua-section");
-  section.id = "duaSection";
-  section.appendChild(el("h2", null, t("Dua — the Dua chapters of the Hadith books")));
-  section.appendChild(el("p", "hadith-note", t("Each narration shows its standard number, a Bangla or English translation where HadeethEnc has one, and the other books that narrate the same dua.")));
-  const list = el("div", "hadith-list");
-  section.appendChild(list);
-  body.appendChild(section);
-  list.appendChild(el("p", "hadith-note", t("Loading…")));
-  loadDuaIndex().then(async (dua) => {
-    list.textContent = "";
-    if (!state.dua.bookUri) {
-      for (const b of dua.books) {
-        const row = el("button", "hadith-row");
-        row.dataset.duaBook = b.versionUri;
-        const name = el("span", "hadith-row-name");
-        const ar = el("span", "openiti-title-ar", b.titleAr); ar.lang = "ar"; ar.dir = "rtl";
-        name.appendChild(ar);
-        name.appendChild(document.createTextNode(` — ${b.titleEn}`));
-        row.appendChild(name);
-        row.appendChild(el("span", "hadith-row-meta", t("{n} narrations", { n: num(b.narrations) })));
-        row.addEventListener("click", () => { state.dua.bookUri = b.versionUri; render(); });
-        list.appendChild(row);
-      }
-      return;
-    }
-    const book = dua.books.find((b) => b.versionUri === state.dua.bookUri);
-    const back = el("button", "hadeethenc-crumb", t("← All Dua books"));
-    back.type = "button";
-    back.dataset.duaBack = "true";
-    back.addEventListener("click", () => { state.dua.bookUri = null; render(); });
-    list.appendChild(back);
-    list.appendChild(el("h3", "hadith-row-name", book.titleEn));
-    const index = await loadOpenitiBookIndex(book.versionUri);
-    for (const id of book.chapterIds) {
-      const c = index.chapters.find((x) => x.id === id);
-      if (!c) continue;
-      const row = el("button", "hadith-row");
-      row.dataset.duaChapter = id;
-      row.appendChild(openitiArabicRowName(openitiDisplayTitle(c.title)));
-      row.appendChild(el("span", "hadith-row-meta", t("{n} narrations", { n: num(c.hadithCount || c.passageCount) })));
-      row.addEventListener("click", () => {
-        state.view = "collections";
-        state.editionId = null;
-        state.oi = { bookUri: book.versionUri, chapterId: id, books: null, showAllChapters: false,
-          scrollTo: true, trail: [{ label: t("← Back to Dua"), toDua: () => { state.view = "dua"; render(); } }] };
-        render();
-      });
-      list.appendChild(row);
-    }
-  }).catch((err) => { list.textContent = ""; list.appendChild(el("p", "hadith-note", String(err?.message ?? err))); });
-}
-
-/**
- * Round H-DB5 (decision 88), the Duas view: one card per dua, most-narrated first, 40 to a page. Each card: its
- * number and the bab heading of its first standard-numbered narration, that narration's Arabic, HadeethEnc's
- * translation where it has the hadith, every place it is narrated (each opening in the library with a way back to
- * this page), and the reader's progress, saved ONCE per dua (dua:<n>).
- */
-/**
- * The way back (decision 86) lands ON the card, and stays there: after the jump, the cards above it keep growing (their
- * progress rows fill in, the Quranic font arrives) and would push it off the screen. For a few seconds, whenever the
- * list changes size the card is centred again -- until the reader scrolls, taps or types themselves.
- */
-function keepCardInView(target, list, ms = 5000) {
-  if (typeof ResizeObserver !== "function") return;
-  let done = false;
-  const stop = () => { if (done) return; done = true; ro.disconnect(); for (const ev of ["wheel", "touchstart", "keydown", "pointerdown"]) window.removeEventListener(ev, stop, true); };
-  const ro = new ResizeObserver(() => { if (!done && target.isConnected) target.scrollIntoView({ block: "center" }); });
-  ro.observe(list);
-  for (const ev of ["wheel", "touchstart", "keydown", "pointerdown"]) window.addEventListener(ev, stop, true);
-  setTimeout(stop, ms);
-}
-
-/**
- * A bookmark knows a dua by its permanent number, not its page. Pages hold cardsPerFile cards "most narrated first", so
- * the number's own page is tried first, then every page in turn (a re-run of the index can reorder them); null if none.
- */
-async function findDuaPage(dua) {
-  const summary = await loadDuaCardsSummary();
-  const guess = Math.min(Math.max(1, Math.ceil(dua / summary.cardsPerFile)), summary.files);
-  const order = [guess, ...Array.from({ length: summary.files }, (_, i) => i + 1).filter((p) => p !== guess)];
-  for (const p of order) if ((await loadDuaCardsPage(p)).some((c) => c.dua === dua)) return p;
-  return null;
-}
-
-function renderDuaCards(body, state, render) {
-  const section = el("section", "dua-section dua-cards");
-  section.id = "duaCards";
-  body.appendChild(section);
-  section.appendChild(el("p", "hadith-note", t("Loading…")));
-  if (state.dua.findPage) {
-    state.dua.findPage = false;
-    findDuaPage(state.dua.focusDua).then((p) => {
-      if (p) { state.dua.page = p; render(); return; }
-      section.textContent = "";
-      section.appendChild(el("p", "hadith-note", t("Dua {n} was not found.", { n: num(state.dua.focusDua) })));
-    }).catch((err) => { section.textContent = ""; section.appendChild(el("p", "hadith-note", String(err?.message ?? err))); });
-    return;
-  }
-  Promise.all([loadDuaCardsSummary(), loadDuaCardsPage(state.dua.page || 1), loadDuaWordLinks(state.dua.page || 1).catch(() => null),
-    loadDuaVowels(state.dua.page || 1).catch(() => null), loadDuaWordGrammar(state.dua.page || 1).catch(() => null),
-    loadDuaCheckEnv(state)]).then(([summary, cards, wordLinks, vowels, wordGrammar, checkEnv]) => {
-    section.textContent = "";
-    const page = state.dua.page || 1;
-    const first = (page - 1) * summary.cardsPerFile + 1;
-    section.appendChild(el("p", "hadith-note dua-cards-count", t("Duas {from}–{to} of {total}, most narrated first. Each dua's narrations were found by matching words and are still to be checked.",
-      { from: num(first), to: num(first + cards.length - 1), total: num(summary.cards) })));
-    const pager = () => {
-      const nav = el("div", "dua-pager");
-      const prev = el("button", "dua-ref", `‹ ${t("Previous")}`);
-      prev.type = "button"; prev.disabled = page <= 1; prev.dataset.duaPrev = "true";
-      prev.addEventListener("click", () => { state.dua.page = page - 1; render(); document.getElementById("duaCards")?.scrollIntoView({ block: "start" }); });
-      const next = el("button", "dua-ref", `${t("Next")} ›`);
-      next.type = "button"; next.disabled = page >= summary.files; next.dataset.duaNext = "true";
-      next.addEventListener("click", () => { state.dua.page = page + 1; render(); document.getElementById("duaCards")?.scrollIntoView({ block: "start" }); });
-      nav.append(prev, el("span", "hadith-note", t("Page {n} of {total}", { n: num(page), total: num(summary.files) })), next);
-      return nav;
-    };
-    section.appendChild(pager());
-    const list = el("div", "hadith-occurrences");
-    section.appendChild(list);
-    const progressRows = [];
-    for (const c of cards) list.appendChild(duaCard(c, summary, state, render, progressRows, wordLinks, page, vowels, wordGrammar, checkEnv));
-    section.appendChild(pager());
-    let target = null;
-    if (state.dua.focusDua != null) {
-      target = list.querySelector(`[data-dua-card="${state.dua.focusDua}"]`);
-      state.dua.focusDua = null;
-      if (target) { target.classList.add("hadith-card-focused"); target.scrollIntoView({ block: "center" }); target.tabIndex = -1; target.focus({ preventScroll: true }); }
-    }
-    fillDuaProgress(progressRows);
-    if (target) keepCardInView(target, list);
-  }).catch((err) => { section.textContent = ""; section.appendChild(el("p", "hadith-note", String(err?.message ?? err))); });
-}
-
-/**
- * Decision 96 (Check a dua): the madrasah's checks and who may make one, read ONCE when the Dua tab first opens (never
- * at startup, I9) and kept on state.dua. null when nobody is signed in or the read failed -- the cards then show as
- * before, nothing breaks. env = { data, session, exists, checks }.
- */
-async function loadDuaCheckEnv(state) {
-  if (state.dua.checkEnv !== undefined) return state.dua.checkEnv;
-  try {
-    const data = await import("./dua-check-data.js");
-    const session = data.getDuaCheckSession();
-    if (!session) return (state.dua.checkEnv = null);
-    const { exists, checks } = await data.loadDuaChecks(session);
-    return (state.dua.checkEnv = { data, session, exists, checks });
-  } catch { return (state.dua.checkEnv = null); }
-}
-
-function duaCard(c, summary, state, render, progressRows, wordLinks = null, page = 1, vowels = null, wordGrammar = null, checkEnv = null) {
-  const check = checkEnv?.checks?.[c.dua] ?? null;
-  const baseWords = [];
-  const card = el("article", "hadith-card dua-card");
-  card.dataset.duaCard = String(c.dua);
-  const head = el("p", "hadith-card-head", t("Dua {n}", { n: num(c.dua) }));
-  card.appendChild(head);
-  if (c.heading) {
-    const h = el("h3", "dua-card-heading", c.heading);
-    h.lang = "ar"; h.dir = "rtl";
-    card.appendChild(h);
-  }
-  const dua = { books: summary.books };
-  const [ab, an, astd, anum] = c.anchor;
-  card.appendChild(el("p", "openiti-standard-number", duaRefLabel(dua, summary.books[ab].versionUri, astd, an, anum)));
-  // The Owner, 8 Oct 2026: "clean dua words on each card" and "For Dua, I want same Quranic font". The words are
-  // picked out of the narration by dua-words.js (a suggestion until checked); the narration stays one tap away with
-  // the words marked in it. Where none are picked out, the narration shows as before.
-  const picked = duaWords(c.text);
-  if (picked) {
-    const words = el("p", "dua-words");
-    words.lang = "ar"; words.dir = "rtl";
-    words.dataset.duaWords = String(c.dua);
-    words.style.fontFamily = quranFontStack();
-    card.appendChild(words);
-    card.appendChild(el("p", "dua-words-note", t("Words picked out by the computer · a person checks them")));
-    // Decision 90, round 1: each word opens what the Qur'an's own data knows about the same spelling. The links file
-    // is only used when it was built from these very words (its fingerprint), so a changed picker never mislinks.
-    const links = wordLinks?.duas?.[c.dua];
-    const linked = !!links && links.f === duaWordsFingerprint(picked.words);
-    const gram = wordGrammar?.duas?.[c.dua];
-    // Round 5a (decision 90): the same words with vowels, where a vowelled text holds this whole dua word for word.
-    const vow = vowels?.duas?.[c.dua];
-    const vowelled = !!vow && vow.f === duaWordsFingerprint(picked.words) && vow.v.length === duaWordTokens(picked.words).length ? vow : null;
-    const panel = el("div", "dua-word-panel");
-    panel.hidden = true;
-    panel.dataset.duaWordPanel = String(c.dua);
-    duaWordTokens(picked.words).forEach((tok, i) => {
-      if (i) words.appendChild(document.createTextNode(" "));
-      // Decision 96: a word fixed in a check shows its fixed vowels; "not this Qur'an word" shows it unlinked.
-      const fixedTxt = typeof check?.fix?.[i] === "string" ? check.fix[i] : null;
-      const unlinked = Array.isArray(check?.unlink) && check.unlink.includes(i);
-      baseWords.push({ i, text: vowelled ? vowelled.v[i] : tok, link: linked && (links.w[i] ?? -1) >= 0 ? wordLinks.entries[links.w[i]] : null,
-        grammar: linked && gram?.f === links.f ? gram?.g?.[i] ?? null : null });
-      const span = el("span", "dua-word", fixedTxt ?? (vowelled ? vowelled.v[i] : tok));
-      span.dataset.duaWord = String(i);
-      span.dataset.plain = tok;
-      if (fixedTxt) span.dataset.duaWordFixed = "true";
-      if (vowelled || fixedTxt) span.dataset.vowelled = fixedTxt ?? vowelled.v[i];
-      if (linked) {
-        const idx = unlinked ? -1 : (links.w[i] ?? -1);
-        span.setAttribute("role", "button");
-        span.tabIndex = 0;
-        span.setAttribute("aria-pressed", "false");
-        if (idx >= 0) span.classList.add("dua-word-linked");
-        const open = () => showDuaWord(panel, words, span, span.textContent, idx >= 0 ? wordLinks.entries[idx] : null, c.dua, page, links.x?.[i] ?? "", idx < 0 && gram?.f === links.f ? gram.g?.[i] ?? null : null, i);
-        span.addEventListener("click", open);
-        span.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } });
-      }
-      words.appendChild(span);
-    });
-    if (vowelled) {
-      // Where the vowels come from, and a switch to see the words without them (one tap, both ways).
-      const src = vowelled.s.startsWith("hisn:") ? t("Hisn al-Muslim") : t("HadeethEnc");
-      const row = el("p", "dua-words-note dua-vowels-note");
-      row.dataset.duaVowels = vowelled.s;
-      row.appendChild(document.createTextNode(t("Vowels from {source}, matched word for word by the computer · a person checks them", { source: src })));
-      const sw = el("button", "dua-ref dua-vowels-toggle", t("Without vowels"));
-      sw.type = "button";
-      sw.dataset.duaVowelsToggle = "";
-      sw.setAttribute("aria-pressed", "false");
-      sw.addEventListener("click", () => {
-        const plain = sw.getAttribute("aria-pressed") !== "true";
-        sw.setAttribute("aria-pressed", String(plain));
-        sw.textContent = plain ? t("With vowels") : t("Without vowels");
-        words.querySelectorAll("[data-dua-word]").forEach((w) => { w.textContent = plain ? w.dataset.plain : w.dataset.vowelled; });
-      });
-      row.appendChild(sw);
-      card.appendChild(row);
-    }
-    if (linked) card.appendChild(el("p", "dua-words-note dua-words-tap", t("Tap a word to see it in the Qur'an's words.")));
-    card.appendChild(panel);
-    const fold = document.createElement("details");
-    fold.className = "dua-narration";
-    fold.dataset.duaNarration = String(c.dua);
-    const sum = document.createElement("summary");
-    sum.textContent = t("The whole narration");
-    fold.appendChild(sum);
-    const full = duaNarration(c.text);
-    const text = el("p", "hadith-arabic");
-    text.lang = "ar"; text.dir = "rtl";
-    const mark = document.createElement("mark");
-    mark.className = "dua-words-mark";
-    mark.textContent = full.slice(picked.start, picked.end);
-    text.append(full.slice(0, picked.start), mark, full.slice(picked.end));
-    fold.appendChild(text);
-    card.appendChild(fold);
-  } else {
-    const text = el("p", "hadith-arabic", c.text);
-    text.lang = "ar"; text.dir = "rtl";
-    card.appendChild(text);
-    card.appendChild(el("p", "dua-words-note", t("The dua's own words are not picked out of this narration yet.")));
-  }
-  if (c.hadeethenc?.length) card.appendChild(openitiTranslationFold(c.hadeethenc.map(String)));
-  const anchorUri = summary.books[ab].versionUri;
-  if (TRANSLATED_BOOKS.has(anchorUri)) card.appendChild(standardTranslationFolds(anchorUri, () => loadOpenitiConcordance(anchorUri).then((cc) => cc?.stdByN?.get(an) ?? null).catch(() => null)));
-
-  const box = el("div", "dua-also");
-  // Decision 96: members a check moved out are left out of the count and listed below it.
-  const { kept, movedOut } = applyMembers(c.members, c.anchor, summary.books, check);
-  const headP = el("p", "dua-also-head", t("Narrated in {n} places", { n: num(kept.length) }));
-  headP.dataset.duaNarratedCount = String(kept.length);
-  const chipText = checkChipText(check);
-  const chip = el("span", chipText ? `dua-check-chip dua-check-${checkState(check)}` : "dua-proposed", chipText ?? t("found by matching words, to be checked"));
-  chip.dataset.duaCheckStatus = checkState(check);
-  headP.appendChild(chip);
-  box.appendChild(headP);
-  const mainRow = el("div", "dua-also-refs");
-  const restRow = el("div", "dua-also-refs");
-  const btn = ([b, n, std, number]) => {
-    const versionUri = summary.books[b].versionUri;
-    const r = el("button", "dua-ref", duaRefLabel(dua, versionUri, std, n, number));
-    r.type = "button";
-    r.dataset.duaRef = `${versionUri}:${n}`;
-    r.addEventListener("click", () => {
-      state.view = "collections";
-      state.editionId = null;
-      const page = state.dua.page;
-      state.oi = { bookUri: versionUri, chapterId: null, books: null, showAllChapters: false, focusPassage: n,
-        trail: [{ label: t("← Back to Dua {n}", { n: num(c.dua) }), toDua: () => { state.view = "dua"; state.dua.mode = "duas"; state.dua.page = page; state.dua.focusDua = c.dua; render(); } }] };
-      render();
-    });
-    return r;
-  };
-  const withStd = kept.filter((m) => m[2] != null && m[2] !== "");
-  const rest = kept.filter((m) => !(m[2] != null && m[2] !== ""));
-  for (const m of withStd) mainRow.appendChild(btn(m));
-  if (withStd.length) box.appendChild(mainRow);
-  if (rest.length && !withStd.length) { for (const m of rest) mainRow.appendChild(btn(m)); box.appendChild(mainRow); }
-  else if (rest.length) {
-    const more = document.createElement("details");
-    more.className = "dua-also-more";
-    const sum = document.createElement("summary");
-    sum.textContent = t("+{n} more in other books", { n: num(rest.length) });
-    more.appendChild(sum);
-    for (const m of rest) restRow.appendChild(btn(m));
-    more.appendChild(restRow);
-    box.appendChild(more);
-  }
-  if (movedOut.length) {
-    const mv = el("div", "dua-also dua-check-moved");
-    mv.dataset.duaMovedOut = String(movedOut.length);
-    mv.appendChild(el("p", "dua-also-head", t("Moved out, new number coming ({n})", { n: num(movedOut.length) })));
-    const mvRow = el("div", "dua-also-refs");
-    for (const m of movedOut) mvRow.appendChild(btn(m));
-    mv.appendChild(mvRow);
-    box.appendChild(mv);
-  }
-  card.appendChild(box);
-  if (checkEnv?.session?.canCheck) card.appendChild(duaCheckButton(card, c, summary, state, render, page, checkEnv, check, baseWords));
-
-  const prog = el("div", "dua-progress");
-  prog.dataset.duaProgress = String(c.dua);
-  prog.appendChild(el("p", "dua-also-head", t("My progress on this dua")));
-  prog.appendChild(el("p", "hadith-note", t("Loading…")));
-  card.appendChild(prog);
-  progressRows.push({ dua: c.dua, el: prog, page });
-  return card;
-}
-
-/**
- * Decision 96: "✓ Check this dua" -- only for Owner and Prime (a non-admin preview gets no button, the status chip
- * still shows). It opens the check panel under the card; ← Back closes it and returns focus to the card. Saving writes
- * duaChecks.<dua> alone, patches the in-memory copy and redraws the page on this card.
- */
-function duaCheckButton(card, c, summary, state, render, page, env, check, baseWords) {
-  const open = el("button", "dua-ref dua-check-open", check ? t("✓ Check this dua again") : t("✓ Check this dua"));
-  open.type = "button";
-  open.dataset.duaCheckOpen = String(c.dua);
-  open.addEventListener("click", () => {
-    if (card.nextElementSibling?.classList.contains("dua-check-host")) return;
-    const fit = loadDuaFit(page).then((f) => f?.duas?.[c.dua] ?? null).catch(() => null);
-    const panelHost = el("div", "dua-check-host");
-    card.after(panelHost);
-    const close = () => { panelHost.remove(); card.tabIndex = -1; card.focus({ preventScroll: true }); card.scrollIntoView({ block: "center" }); };
-    fit.then((fitRows) => {
-      const texts = loadMemberTexts(c, summary.books);
-      panelHost.appendChild(buildCheckPanel({
-        card: c, books: summary.books, fit: fitRows, words: baseWords, existing: check, textsPromise: texts, onBack: close,
-        onSave: async (made) => {
-          const stored = await env.data.saveDuaCheck(env.session, c.dua, made, env.exists);
-          env.exists = true; env.checks[c.dua] = stored;
-          state.dua.focusDua = c.dua;
-          render();
-        },
-      }));
-      panelHost.firstChild.scrollIntoView({ block: "start" });
-    });
-  });
-  const row = el("div", "dua-check-row");
-  row.appendChild(open);
-  return row;
-}
-
-/** Decision 90, rounds 3-4: "S:A:W" from a packed place (surah*1000000 + ayah*1000 + word). */
-function placeOf(n) { return `${Math.floor(n / 1000000)}:${Math.floor(n / 1000) % 1000}:${n % 1000}`; }
-
-/**
- * The way to a Qur'an word's Word card from a Dua card (decision 86): this page's address is first set to reopen this
- * page of Duas on this card, so the Word card's "Back to Dua n" (history.back) lands here. `progress` (round 4) asks
- * the Word card to record that Word-by-Word state for the word on arrival -- with a one-use token in this tab's
- * sessionStorage, so the address alone can never record anything.
- */
-function wordCardHref(place, dua) { return `./quranrevival.html?word=${place}&back=1&from=dua-${dua}`; }
-function rememberDuaPlace(page, dua) {
-  try {
-    const u = new URL(location.href);
-    u.searchParams.set("view", "dua"); u.searchParams.set("duaPage", String(page)); u.searchParams.set("dua", String(dua));
-    history.replaceState(history.state, "", u);
-  } catch { /* the link still opens the Word card */ }
-}
-export const DUA_WORD_PROGRESS_TOKEN = "mmsa-dua-word-progress";
-const WBW_STATES = ["not_started", "learning", "practising", "achieved"];
-
-/**
- * Round 5b (decision 91): the computer's grammar suggestion for a word no Qur'an word is spelled like -- dictionary
- * word, root, part of speech, and the two dictionaries opened at the root. g = [lemma, root, pos, vowelled].
- */
-function duaGrammarBlock([lemma, root, pos]) {
-  const box = el("div", "dua-word-grammar");
-  box.dataset.duaWordGrammar = "";
-  box.appendChild(el("p", "dua-also-head", t("Grammar suggestion (computer, to be checked)")));
-  const line = (label, value, cls, ar) => {
-    const p = el("p", `dua-word-line ${cls}`);
-    p.appendChild(el("span", "dua-word-label", label));
-    const v = el("span", "dua-word-value", value);
-    if (ar) { v.lang = "ar"; v.dir = "rtl"; v.style.fontFamily = quranFontStack(); }
-    p.appendChild(v);
-    return p;
-  };
-  if (lemma) box.appendChild(line(t("Dictionary word"), lemma, "dua-word-lemma", true));
-  if (root) box.appendChild(line(t("Root"), root, "dua-word-root", true));
-  if (pos) box.appendChild(line(t("Part of speech"), t(duaGrammarPosLabel(pos)), "dua-word-pos", false));
-  if (root) {
-    const dict = el("div", "dua-word-dicts");
-    dict.dataset.duaWordDicts = "";
-    box.appendChild(dict);
-    Promise.all([import("./quran-word-card.js"), import("./buckwalter.js")]).then(([wc, bw]) => {
-      const links = [[t("Quranic Arabic Corpus"), `https://corpus.quran.com/qurandictionary.jsp?q=${encodeURIComponent(bw.arabicToBuckwalter(root))}`, "corpus"],
-        [t("Lane · Hans Wehr"), wc.ejtaalUrl(root), "ejtaal"]];
-      for (const [label, href, kind] of links) {
-        if (!href) continue;
-        const a = el("a", "dua-ref dua-word-dict", `${label} ↗`);
-        a.href = href; a.target = "_blank"; a.rel = "noopener noreferrer"; a.dataset.duaWordDict = kind;
-        dict.appendChild(a);
-      }
-    }).catch(() => dict.remove());
-  }
-  return box;
-}
-
-/**
- * Decision 90, rounds 1-4: the Dua word card under a dua's words, for the word tapped. `entry` is the links file's
- * row [place, count, arabic, translit, en, bn, root, lemma, lemmaCount, wbwKey, places], or null when no Qur'an word
- * is spelled this way; `how` says a leading «و»/«ف» was set aside and/or the Qur'an's own spelling was used (round
- * 2). Round 3: the card on this page -- meanings, root, dictionary word, dictionary links, its places in the Qur'an.
- * Round 4 (Q1 answered yes): "Achieved" here counts for the same Qur'an word. Tapping the same word again closes it.
- */
-function showDuaWord(panel, words, span, tok, entry, dua, page, how = "", grammar = null, pos = null) {
-  const wasOpen = span.getAttribute("aria-pressed") === "true";
-  words.querySelectorAll(".dua-word[aria-pressed]").forEach((s) => s.setAttribute("aria-pressed", "false"));
-  panel.textContent = "";
-  if (wasOpen) { panel.hidden = true; return; }
-  span.setAttribute("aria-pressed", "true");
-  panel.hidden = false;
-  const head = el("div", "dua-word-panel-head");
-  const ar = el("span", "dua-word-panel-ar", tok);
-  ar.lang = "ar"; ar.dir = "rtl"; ar.style.fontFamily = quranFontStack();
-  const close = el("button", "dua-word-panel-close", "×");
-  close.type = "button";
-  close.setAttribute("aria-label", t("Close"));
-  close.addEventListener("click", () => { span.setAttribute("aria-pressed", "false"); panel.hidden = true; span.focus({ preventScroll: true }); });
-  head.append(ar, close);
-  panel.appendChild(head);
-  if (!entry) {
-    panel.appendChild(el("p", "hadith-note", t("No word of the Qur'an is spelled this way, so it is not linked yet.")));
-    if (grammar) panel.appendChild(duaGrammarBlock(grammar));
-    if (pos != null) panel.appendChild(duaWordProgressBlock({ dua, pos, page }));
-    return;
-  }
-  const [place, count, qar, tr, en, bn, root, lemma, lemmaCount, wbwKey, places = []] = entry;
-  const line = (label, value, cls = "", lang = "") => {
-    const p = el("p", `dua-word-line ${cls}`.trim());
-    p.appendChild(el("span", "dua-word-label", label));
-    const v = el("span", "dua-word-value", value);
-    if (lang) { v.lang = lang; if (lang === "ar") { v.dir = "rtl"; v.style.fontFamily = quranFontStack(); } }
-    p.appendChild(v);
-    return p;
-  };
-  panel.appendChild(line(t("In the Qur'an"), qar, "dua-word-quran", "ar"));
-  // Round 2: how the dua's word met the Qur'an's.
-  const prefix = how.replace("~", "");
-  if (prefix) panel.appendChild(el("p", "dua-word-how", prefix === "\u0648" ? t("Read as «و» (and) + this word") : t("Read as «ف» (so) + this word")));
-  if (how.includes("~")) panel.appendChild(el("p", "dua-word-how", t("The Qur'an spells this word its own way")));
-  if (tr) panel.appendChild(line(t("Sounds like"), tr, "dua-word-translit"));
-  const means = getAppLang() === "bn" ? [[bn, "bn"], [en, "en"]] : [[en, "en"], [bn, "bn"]];
-  for (const [m, l] of means) if (m) panel.appendChild(line(l === "bn" ? t("Meaning (Bangla)") : t("Meaning (English)"), m, `dua-word-meaning-${l}`, l));
-  if (root) panel.appendChild(line(t("Root"), root, "dua-word-root", "ar"));
-  if (lemma) {
-    const p = line(t("Dictionary word"), lemma, "dua-word-lemma", "ar");
-    if (lemmaCount > 1) p.appendChild(el("span", "dua-proposed", t("one of {n} possible, to be checked", { n: num(lemmaCount) })));
-    panel.appendChild(p);
-  }
-  // Round 3: the dictionaries, opened at the root (the Word card's own links, loaded on first use).
-  if (root) {
-    const dict = el("div", "dua-word-dicts");
-    dict.dataset.duaWordDicts = "";
-    panel.appendChild(dict);
-    Promise.all([import("./quran-word-card.js"), import("./buckwalter.js")]).then(([wc, bw]) => {
-      const links = [[t("Quranic Arabic Corpus"), `https://corpus.quran.com/qurandictionary.jsp?q=${encodeURIComponent(bw.arabicToBuckwalter(root))}`, "corpus"],
-        [t("Lane · Hans Wehr"), wc.ejtaalUrl(root), "ejtaal"]];
-      for (const [label, href, kind] of links) {
-        if (!href) continue;
-        const a = el("a", "dua-ref dua-word-dict", `${label} ↗`);
-        a.href = href; a.target = "_blank"; a.rel = "noopener noreferrer"; a.dataset.duaWordDict = kind;
-        dict.appendChild(a);
-      }
-    }).catch(() => dict.remove());
-  }
-  // Round 3: where the word is in the Qur'an -- each place opens its Word card, with the way back.
-  panel.appendChild(el("p", "dua-word-count", t("{n} times in the Qur'an, spelled this way", { n: num(count) })));
-  if (places.length) {
-    const row = el("div", "dua-word-places");
-    for (const n of places) {
-      const ref = placeOf(n);
-      const a = el("a", "dua-ref dua-word-place", num(ref));
-      a.href = wordCardHref(ref, dua);
-      a.dataset.duaWordPlace = ref;
-      a.addEventListener("click", () => rememberDuaPlace(page, dua));
-      row.appendChild(a);
-    }
-    if (count > places.length) row.appendChild(el("span", "hadith-note", t("+{n} more in the Word card", { n: num(count - places.length) })));
-    panel.appendChild(row);
-  }
-  const go = el("a", "dua-ref dua-word-open", `${t("Open in the Word card")} ›`);
-  go.dataset.duaWordOpen = place;
-  go.href = wordCardHref(place, dua);
-  go.addEventListener("click", () => rememberDuaPlace(page, dua));
-  panel.appendChild(go);
-  if (pos != null) panel.appendChild(duaWordProgressBlock({ dua, pos, page, place, wbwKey }));
-  panel.appendChild(el("p", "dua-words-note", t("Linked by the computer by spelling · to be checked")));
-}
-
-/**
- * Decision 92, round 6 ("Go ahead with round 6"): progress on this word IN THIS DUA, its own record
- * (duaword:<dua>:<position>, position counted from 1), saved here at once. For a word linked to the Qur'an (round 4,
- * decision 90 Q1 = yes) the same press then opens the Word card to count it for the same Qur'an word, through the Word
- * card's own saving, with a one-use token. A failed save says so and opens nothing (I15).
- */
-function duaWordProgressBlock({ dua, pos, page, place = null, wbwKey = "" }) {
-  const position = pos + 1;
-  const prog = el("div", "dua-word-progress");
-  prog.dataset.duaWordProgress = wbwKey;
-  prog.dataset.duaWordPosition = String(position);
-  prog.appendChild(el("p", "dua-also-head", t("My progress on this word")));
-  const here = el("p", "hadith-note dua-word-progress-dua", t("Loading…"));
-  prog.appendChild(here);
-  const quran = wbwKey ? el("p", "hadith-note dua-word-progress-now", "") : null;
-  if (quran) prog.appendChild(quran);
-  const row = el("div", "dua-progress-row");
-  const msg = el("p", "hadeethenc-study-reason");
-  msg.setAttribute("role", "status");
-  let session = null, actions = null, current = null;
-  const paint = () => row.querySelectorAll("[data-dua-word-state]").forEach((b) => b.setAttribute("aria-current", String(b.dataset.duaWordState === (current ?? "not_started"))));
-  for (const id of WBW_STATES) {
-    const b = el("button", "dua-status", statusLabel(id));
-    b.type = "button";
-    b.dataset.duaWordState = id;
-    b.addEventListener("click", async () => {
-      msg.textContent = "";
-      if (!session) { msg.textContent = t("Sign in and choose who you're studying as to record progress."); return; }
-      if (!session.canRecordFor) { msg.textContent = t("You can view this, but only the person's own record can record progress."); return; }
-      const before = current;
-      current = id; paint();
-      here.textContent = t("In this dua: {state}", { state: statusLabel(id) });
-      try { await actions.claimDuaWord(session, dua, position, id); }
-      catch (err) { current = before; paint(); here.textContent = t("In this dua: {state}", { state: statusLabel(before ?? "not_started") }); msg.textContent = t("Not saved: {why}", { why: String(err?.message ?? err) }); return; }
-      here.dataset.duaWordDuaStateNow = id;
-      if (wbwKey) {
-        rememberDuaPlace(page, dua);
-        try { sessionStorage.setItem(DUA_WORD_PROGRESS_TOKEN, `${place}|${id}`); } catch { /* the Word card opens without recording */ }
-        location.href = `${wordCardHref(place, dua)}&progress=${id}`;
-      }
-    });
-    row.appendChild(b);
-  }
-  prog.appendChild(row);
-  prog.appendChild(msg);
-  prog.appendChild(el("p", "dua-words-note", wbwKey
-    ? t("Saved for this word in this dua; the Word card then opens to count it for the same word in the Qur'an too.")
-    : t("Saved for this word in this dua.")));
-  loadHadithStudyActions().then(async (a) => {
-    actions = a;
-    session = await a.getHadeethEncSession();
-    if (!session) { here.textContent = t("Sign in and choose who you're studying as to record progress."); return; }
-    const [mine, q] = await Promise.all([a.duaWordStatuses(session, dua), wbwKey ? a.duaWordProgress(session, wbwKey) : null]);
-    current = mine.get(position) ?? null;
-    here.textContent = t("In this dua: {state}", { state: statusLabel(current ?? "not_started") });
-    here.dataset.duaWordDuaStateNow = current ?? "not_started";
-    if (quran) { quran.textContent = t("The same word in the Qur'an (Word-by-Word): {state}", { state: statusLabel(q) }); quran.dataset.duaWordStateNow = q; }
-    paint();
-  }).catch(() => { here.textContent = t("Progress could not be loaded right now."); });
-  return prog;
-}
-
-/** The progress rows of one page: one session, one read of the person's statuses, then a row of status buttons each. */
-async function fillDuaProgress(rows) {
-  const say = (msg) => rows.forEach(({ el: p }) => { p.lastChild.remove(); p.appendChild(el("p", "hadeethenc-study-reason", msg)); });
-  let actions, session = null;
-  try { actions = await loadHadithStudyActions(); session = await actions.getHadeethEncSession(); }
-  catch { say(t("Progress could not be loaded right now.")); return; }
-  if (!session) { say(t("Sign in and choose who you're studying as to record progress.")); return; }
-  if (!session.canRecordFor) { say(t("You can view this, but only the person's own record can record progress.")); return; }
-  let statuses = new Map();
-  try { statuses = await actions.duaStatuses(session); } catch (err) { say(String(err?.message ?? err)); return; }
-  let bookmarked = new Set();
-  try { bookmarked = await actions.duaBookmarkedSet(session); } catch { /* the buttons still toggle; a read hiccup is not a write (I15) */ }
-  const onRamp = STATUSES.filter((s) => s.onRamp);
-  for (const { dua, el: p, page } of rows) {
-    p.lastChild.remove();
-    const row = el("div", "dua-progress-row");
-    row.setAttribute("role", "group");
-    row.setAttribute("aria-label", t("My progress on this dua"));
-    const msg = el("p", "hadeethenc-study-reason");
-    msg.setAttribute("role", "status");
-    let current = statuses.get(dua) ?? null;
-    const paint = () => row.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.duaStatus === (current ?? "not_started"))));
-    for (const s of onRamp) {
-      const b = el("button", "dua-status", statusLabel(s.id));
-      b.type = "button";
-      b.dataset.duaStatus = s.id;
-      b.addEventListener("click", async () => {
-        const before = current;
-        current = s.id; paint(); msg.textContent = "";
-        try { await actions.claimDua(session, dua, s.id); }
-        catch (err) { current = before; paint(); msg.textContent = t("Not saved: {why}", { why: String(err?.message ?? err) }); }
-      });
-      row.appendChild(b);
-    }
-    paint();
-    p.append(row, msg, duaNoteBookmarkRow(actions, session, dua, page, bookmarked.has(dua)));
-  }
-}
-
-/**
- * 9 Oct 2026: 📝 My Notes and 🔖 Bookmark on a dua card, the same pair (and look) a HadeethEnc hadith card has. Notes
- * open notes.html for dua:<n> with ← Back (this page's address is first set to reopen this card); the bookmark reopens
- * this card from the Bookmarks page (?resume=dua:<n>). Only the person's own record writes a Note.
- */
-function duaNoteBookmarkRow(actions, session, dua, page, isBookmarked) {
-  const box = el("div", "hadeethenc-study-row dua-note-bookmark");
-  box.dataset.duaNoteBookmark = String(dua);
-  const name = t("Dua {n}", { n: num(dua) });
-  const noteItem = el("div", "hadeethenc-study-item");
-  const note = document.createElement("a");
-  note.className = "hadeethenc-study-btn";
-  note.href = actions.duaNoteHrefFor(dua, name);
-  note.dataset.duaNoteLink = String(dua);
-  note.textContent = `📝 ${t("My Notes")}`;
-  note.setAttribute("aria-disabled", session.isSelf ? "false" : "true");
-  note.addEventListener("click", (e) => { if (!session.isSelf) { e.preventDefault(); return; } rememberDuaPlace(page, dua); });
-  noteItem.appendChild(note);
-  if (!session.isSelf) noteItem.appendChild(el("p", "hadeethenc-study-reason", t("Only your own record can create or file a Note.")));
-  const markItem = el("div", "hadeethenc-study-item");
-  const mark = el("button", "hadeethenc-study-btn");
-  mark.type = "button";
-  mark.dataset.duaBookmark = String(dua);
-  const msg = el("p", "hadeethenc-study-reason");
-  msg.setAttribute("role", "status");
-  let on = isBookmarked;
-  const paint = () => { mark.textContent = on ? `★ ${t("Remove bookmark")}` : `🔖 ${t("Bookmark this")}`; mark.setAttribute("aria-pressed", String(on)); };
-  paint();
-  mark.addEventListener("click", async () => {
-    if (mark.getAttribute("aria-disabled") === "true") return;
-    mark.setAttribute("aria-disabled", "true");
-    msg.textContent = "";
-    try { on = await actions.toggleDuaBookmark(session, dua, name); }
-    catch (err) { msg.textContent = t("Not saved: {why}", { why: String(err?.message ?? err) }); }
-    mark.setAttribute("aria-disabled", "false");
-    paint();
-  });
-  markItem.append(mark, msg);
-  box.append(noteItem, markItem);
-  return box;
-}
-
-/**
- * Decision 89 (the Owner, 8 Oct 2026: "include the Hadith Eng n Bangla languages"): the English and Bangla
- * translations from hadith-api, found by the narration's standard number. Two folds, the reader's language first,
- * each closed and loaded only when opened. `resolveStd` gives the standard number (or null) when first needed.
- */
-const STANDARD_TRANSLATION_LABELS = { en: "English", bn: "বাংলা" };
-// "English" goes through t() so a Bangla reader sees ইংরেজি, not a Latin word in the middle of a Bangla label.
-const standardLangLabel = (lang) => (lang === "en" ? t("English") : STANDARD_TRANSLATION_LABELS[lang]);
-function standardTranslationFolds(versionUri, resolveStd) {
-  const frag = document.createDocumentFragment();
-  const langs = getAppLang() === "bn" ? ["bn", "en"] : ["en", "bn"];
-  for (const lang of langs) {
-    const details = document.createElement("details");
-    details.className = "hadeethenc-explanation standard-translation";
-    details.dataset.standardTranslation = lang;
-    const summary = document.createElement("summary");
-    summary.textContent = t("{lang} translation", { lang: standardLangLabel(lang) });
-    details.appendChild(summary);
-    let loaded = false;
-    details.addEventListener("toggle", () => {
-      if (!details.open || loaded) return;
-      loaded = true;
-      const wait = el("p", "hadith-note", t("Loading…"));
-      details.appendChild(wait);
-      Promise.resolve(resolveStd()).then((std) => (std ? loadHadithTranslation(versionUri, std, lang) : null)).then((tr) => {
-        wait.remove();
-        if (!tr) { details.appendChild(el("p", "hadith-note", t("No {lang} translation was found for this narration.", { lang: standardLangLabel(lang) }))); return; }
-        const text = el("p", "hadith-translation-text standard-translation-text", tr.text);
-        text.lang = lang;
-        text.dataset.standardTranslationText = lang;
-        details.appendChild(text);
-        const credit = document.createElement("a");
-        credit.className = "hadith-view-source standard-translation-credit";
-        credit.href = tr.sourceUrl;
-        credit.target = "_blank";
-        credit.rel = "noopener noreferrer";
-        credit.textContent = tr.translator
-          ? t("Translation: {who} · from hadith-api (fawazahmed0), matched by the standard number", { who: tr.translator })
-          : t("Translation from hadith-api (fawazahmed0), matched by the standard number");
-        details.appendChild(credit);
-      }).catch(() => { wait.remove(); details.appendChild(el("p", "hadith-note", t("The translation could not be loaded right now."))); loaded = false; });
-    });
-    frag.appendChild(details);
-  }
-  return frag;
-}
-
-/**
- * Round H-DB3 (decision 87): HadeethEnc's translation of this narration, in the reader's language (Bangla or
- * English), closed until opened and loaded only then. HadeethEnc's conditions (decision 7): its words unchanged,
- * named, linked. Its wording can follow another narration of the same hadith, and the fold says so.
- */
-function openitiTranslationFold(ids) {
-  const want = getAppLang() === "bn" ? "bn" : "en";
-  const details = document.createElement("details");
-  details.className = "hadeethenc-explanation openiti-translation";
-  details.dataset.openitiTranslation = ids.join(",");
-  const summary = document.createElement("summary");
-  summary.textContent = t("{lang} translation (HadeethEnc)", { lang: HADEETHENC_LANG_LABELS[want] ?? want });
-  details.appendChild(summary);
-  let loaded = false;
-  details.addEventListener("toggle", () => {
-    if (!details.open || loaded) return;
-    loaded = true;
-    const wait = el("p", "hadith-note", t("Loading…"));
-    details.appendChild(wait);
-    loadHadithRecords(ids, want).then((records) => {
-      wait.remove();
-      details.appendChild(el("p", "hadith-note openiti-translation-note", t("HadeethEnc's wording may follow another narration of this hadith.")));
-      for (const id of ids) {
-        const r = records.get(String(id));
-        if (!r) continue;
-        const box = el("div", "hadith-translation");
-        if (r.lang === "ar") {
-          box.appendChild(el("p", "hadith-fallback", t("No {lang} translation for this hadith. Showing the Arabic source only.", { lang: HADEETHENC_LANG_LABELS[want] ?? want })));
-        } else {
-          if (r.isFallback) box.appendChild(el("p", "hadith-fallback", t("No {lang} translation for this hadith. Showing {shown}.", { lang: HADEETHENC_LANG_LABELS[want] ?? want, shown: HADEETHENC_LANG_LABELS[r.lang] ?? r.lang })));
-          const text = el("p", "hadith-translation-text", r.record.hadeeth ?? "");
-          text.lang = r.lang;
-          text.dataset.openitiTranslationText = id;
-          box.appendChild(text);
-        }
-        if (r.record.grade) box.appendChild(el("p", "hadith-attribution", t("Grade: {grade}", { grade: r.record.grade })));
-        if (r.record.attribution) box.appendChild(el("p", "hadith-attribution", r.record.attribution));
-        const src = document.createElement("a");
-        src.className = "hadith-view-source";
-        src.href = hadeethEncSourceUrl(r.lang, id);
-        src.target = "_blank";
-        src.rel = "noopener noreferrer";
-        src.textContent = t("Source: HadeethEnc.com");
-        box.appendChild(src);
-        details.appendChild(box);
-      }
-    }).catch((err) => { wait.textContent = String(err?.message ?? err); loaded = false; });
-  });
-  return details;
-}
-
 function renderCollections(body, state, render) {
   const uiLang = getAppLang();
 
   if (!state.editionId) {
     body.appendChild(renderHadeethEncSource(state));
-    body.appendChild(renderOpenitiSource(state));
+    // PCF MSA J106: the Arabic books are their own view now, "Hadith Books" (renderBooks).
     body.appendChild(el("h2", null, t("Synthetic pilot collections")));
     body.appendChild(syntheticBanner());
     const list = el("div", "hadith-list");

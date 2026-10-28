@@ -177,7 +177,7 @@ if (!process.argv.includes("--data")) {
     const ctx = await newContext(browser, { appLang: lang, viewport: { width, height: 900 } });
     const { page, errors } = await openPage(ctx, "/app/hadith-collections.html");
     await page.evaluate((l) => document.documentElement.setAttribute("data-card-look", l), look);
-    await page.click('[data-hadith-tab="collections"]');
+    // Updated in place 28 Oct 2026 (PCF MSA J106 round 1): the library is the default view, Hadith Books; no click.
     await page.waitForSelector("[data-openiti-book]");
     const digits = (s) => lang === "bn" ? String(s).replace(/\d/g, (d) => "০১২৩৪৫৬৭৮৯"[d]) : String(s);
 
@@ -207,7 +207,19 @@ if (!process.argv.includes("--data")) {
       const r = ratio(c[0], c[1]);
       if (r < 4.5) throw new Error(`${r.toFixed(2)} ${JSON.stringify(c)}`);
     });
+    // Updated in place 28 Oct 2026 (PCF MSA J106 round 1): the Text pane shows one narration at a time.
+    // 6578 is the only narration of its sub-chapter, so 6579 is the first of the next one: chosen in the Chapters pane
+    // (on a phone, after its step button), then its row in the middle pane, which carries the same number.
     await acheck("the neighbouring narration says 6307", async () => {
+      const show = async (key) => { const s = await page.$(`[data-reader-show="${key}"]`); if (s && await s.isVisible()) await s.click(); };
+      await show("chapters");
+      await page.click('[data-openiti-bab][aria-current] + [data-openiti-bab]');
+      await page.waitForSelector('[data-openiti-row="6579"]', { state: "attached" });
+      const row = await page.$eval('[data-openiti-row="6579"] .hadith-reader-no', (n) => n.textContent);
+      if (!row.includes(digits(6307))) throw new Error(`row: ${row}`);
+      await show("hadiths");
+      await page.click('[data-openiti-row="6579"]');
+      await page.waitForSelector('[data-openiti-passage="6579"]');
       const t = await page.$eval('[data-openiti-passage="6579"] [data-openiti-standard]', (n) => n.textContent);
       if (!t.includes(digits(6307))) throw new Error(t);
     });

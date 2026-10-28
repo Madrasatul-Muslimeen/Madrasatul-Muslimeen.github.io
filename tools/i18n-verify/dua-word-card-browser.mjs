@@ -20,8 +20,8 @@ const check = (name, ok, detail = "") => {
 };
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
 const MUT = {
-  nohow: ["js/hadith-browser.js", "  const prefix = how.replace(\"~\", \"\");\n", "  const prefix = \"\"; how = \"\";\n"],
-  noplaces: ["js/hadith-browser.js", "  if (places.length) {\n    const row = el(\"div\", \"dua-word-places\");", "  if (false) {\n    const row = el(\"div\", \"dua-word-places\");"],
+  nohow: ["js/dua-browser.js", "  const prefix = how.replace(\"~\", \"\");\n", "  const prefix = \"\"; how = \"\";\n"],
+  noplaces: ["js/dua-browser.js", "  if (places.length) {\n    const row = el(\"div\", \"dua-word-places\");", "  if (false) {\n    const row = el(\"div\", \"dua-word-places\");"],
   notoken: ["quranrevival.html", '&& sessionStorage.getItem("mmsa-dua-word-progress") === `${raw}|${want}`) record = want;', ") record = want;"],
   norecord: ["quranrevival.html", "      if (record) await runWordProgressAction({ kind: \"state\", state: record });\n", "\n"],
 };

@@ -155,6 +155,12 @@ async function mk(lang, width = 390) {
   await P.waitForSelector("[data-dua-chapter]");
   await sweep(P, "Dua chapter list of one book");
   await P.click("[data-dua-chapter]");
+  // Updated in place 28 Oct 2026 (PCF MSA J106 round 1): the chapter opens in the three-pane reader on its first
+  // narration; 6578 (standard 6306) is reached with the reader's own "Go to hadith number" box.
+  await P.waitForSelector("[data-openiti-goto-input]", { state: "attached" });
+  { const step = await P.$('[data-reader-show="chapters"]'); if (step && await step.isVisible()) await step.click(); }
+  await P.fill("[data-openiti-goto-input]", "6306");
+  await P.click("[data-openiti-goto-btn]");
   await P.waitForSelector('[data-openiti-passage="6578"]');
   await settle(P, 600);
   await sweep(P, "Library narration (standard number, Also narrated in)");

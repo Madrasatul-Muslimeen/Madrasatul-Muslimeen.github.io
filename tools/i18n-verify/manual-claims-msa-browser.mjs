@@ -1210,7 +1210,9 @@ if (want("hadith")) {
     await Promise.all([page.waitForURL(/hadith-study\.html/, { timeout: 15000 }), page.click('#navBar a[href^="hadith-study.html"]')]);
     await page.waitForSelector(`[data-hadith-tab="${tab}"]`, { timeout: 25000 });
     await page.evaluate(() => document.querySelectorAll('[id*="splash"], .app-splash-overlay').forEach((e) => e.remove()));
-    await page.click(`[data-hadith-tab="${tab}"]`);
+    // Updated in place 28 Oct 2026 (PCF MSA J106 round 1): the page opens on Hadith Books, whose button opens its quick
+    // list when Books is already the view -- so a tab already current is not tapped again.
+    if (!(await page.$eval(`[data-hadith-tab="${tab}"]`, (b) => b.getAttribute("aria-current") === "page"))) await page.click(`[data-hadith-tab="${tab}"]`);
   };
   const openHE = async (page) => {
     await page.waitForSelector('[data-hadeethenc-category="3"]', { timeout: 25000 });
@@ -1243,8 +1245,11 @@ if (want("hadith")) {
     try {
       const { ctx, page, errors } = await hopen(w, h);
       await toHadith(page, "collections");
-      const head = await page.evaluate(() => document.getElementById("hadithCorpusHeading")?.textContent.trim());
-      check(`[${tag}] Hadith library: HadeethEnc: Modules ▾ → Hadith → "Hadith Corpus" → Collections`, head === "Hadith Corpus", String(head));
+      // Updated in place 28 Oct 2026 (PCF MSA J106 round 1): the Owner had the "Hadith Corpus" heading's tabs moved into
+      // one menu bar, where Collections is now "Encyclopedia" (the PCF User Manual's line is the Architect's to update
+      // at release).
+      const head = await page.evaluate(() => { const b = document.querySelector('.hadith-menubar [data-hadith-tab="collections"]'); return b ? { text: b.textContent.trim(), cur: b.getAttribute("aria-current") } : null; });
+      check(`[${tag}] Hadith library: HadeethEnc: Modules ▾ → Hadith → the menu bar's "Encyclopedia"`, head?.text === "Encyclopedia" && head.cur === "page", JSON.stringify(head));
       await openHE(page);
       const c = await page.evaluate(() => { const k = document.querySelector('[data-hadeethenc-card="4563"]'); return { ar: k.querySelector(".hadith-arabic")?.textContent, tr: k.querySelector(".hadith-translation-text")?.textContent, grade: k.querySelector(".hadith-attribution")?.textContent ?? "", sel: document.getElementById("hadithContentLang")?.value, ex: !!k.querySelector("[data-hadeethenc-explanation-toggle]") }; });
       check(`[${tag}] Hadith library: HadeethEnc: a hadith opens with its Arabic and English, its grade and an explanation (verbatim from the packaged record)`, c.ar === R.ar.hadeeth && c.tr === R.en.hadeeth && c.grade.includes(R.en.grade) && c.ex, JSON.stringify(c).slice(0, 200));
@@ -1262,11 +1267,11 @@ if (want("hadith")) {
     // ### Hadith library: Arabic books (OpenITI)
     try {
       const { ctx, page, errors } = await hopen(w, h);
-      await toHadith(page, "collections");
+      await toHadith(page, "books"); // J106 round 1: the Arabic books are Hadith Books now
       await page.waitForSelector("[data-openiti-book]", { timeout: 25000 });
       const bookN = await page.evaluate(() => document.querySelectorAll("[data-openiti-book]").length);
       const names = await page.evaluate(() => [...document.querySelectorAll("[data-openiti-book]")].map((b) => b.textContent.replace(/\s+/g, " ")).join(" | "));
-      check(`[${tag}] Hadith library: Arabic books (OpenITI): the Collections tab lists the Arabic books (the Manual says fifteen; the page lists ${bookN})`, bookN === 15, `${bookN}: ${names.slice(0, 300)}`);
+      check(`[${tag}] Hadith library: Arabic books (OpenITI): Hadith Books lists the Arabic books (the Manual says fifteen; the page lists ${bookN})`, bookN === 15, `${bookN}: ${names.slice(0, 300)}`);
       check(`[${tag}] Hadith library: Arabic books (OpenITI): Bukhari, Muslim, the Sunan, Malik, Riyad as-Salihin and al-Adhkar are among them`, ["Bukhari", "Muslim", "Sunan", "Malik|Muwatta", "Riyad", "Adhkar"].every((n) => new RegExp(n, "i").test(names)), names.slice(0, 300));
       await gotoBukhari(page);
       await page.waitForSelector('[data-openiti-passage="6578"]', { timeout: 20000 }).catch(() => {});
@@ -1277,8 +1282,7 @@ if (want("hadith")) {
       check(`[${tag}] Hadith library: Arabic books (OpenITI): "Which numbering" offers Standard number and This edition's number`, s.opts.length === 2 && /^Standard number$/i.test(s.opts[0]) && /edition/i.test(s.opts[1]), JSON.stringify(s.opts));
       // Back to the book's chapter list (the Manual's route), then the edition's own number.
       await page.reload();
-      await page.waitForSelector('[data-hadith-tab="collections"]', { timeout: 25000 });
-      await page.click('[data-hadith-tab="collections"]');
+      // Updated in place 28 Oct 2026 (PCF MSA J106 round 1): the page opens on Hadith Books, the shelf of every book.
       await page.waitForSelector(`[data-openiti-book="${BUKHARI}"]`, { timeout: 25000 });
       await page.click(`[data-openiti-book="${BUKHARI}"]`);
       await page.waitForSelector("[data-openiti-goto-input]", { timeout: 15000 });
@@ -1335,7 +1339,7 @@ if (want("hadith")) {
       check(`[${tag}] Hadith "Studied" and notes: Bookmark this saves the hadith (button then reads "${bt}")`, bw.some((p) => String(p).startsWith("hadith:hadeethenc:4563")), JSON.stringify([bw, bt]));
       const nl = await page.evaluate(() => { const a = document.querySelector('[data-hadeethenc-note-link="4563"]'); return { text: a?.textContent.trim(), href: a?.getAttribute("href") }; });
       check(`[${tag}] Hadith "Studied" and notes: 📝 My Notes links the hadith to its notes (the Manual's label: "📝 My Notes"; the page says "${nl.text}")`, /My Notes/.test(nl.text || "") && /unit=hadith:hadeethenc:4563|unit=hadith%3Ahadeethenc%3A4563/.test(nl.href || ""), JSON.stringify(nl));
-      await page.click('[data-hadith-tab="collections"]');
+      await page.click('[data-hadith-tab="books"]'); // J106 round 1: from the Encyclopedia, Hadith Books goes to the shelf
       await page.waitForSelector("#openitiSection .openiti-study-soon", { timeout: 25000 });
       const soon = await page.evaluate(() => document.querySelector("#openitiSection .openiti-study-soon")?.textContent ?? "");
       check(`[${tag}] Hadith "Studied" and notes: the OpenITI Arabic books say "not enabled here yet"`, /not enabled here yet/.test(soon), soon.slice(0, 120));

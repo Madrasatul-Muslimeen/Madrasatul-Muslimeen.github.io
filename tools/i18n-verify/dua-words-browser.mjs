@@ -18,9 +18,9 @@ const check = (name, ok, detail = "") => {
 };
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
 const MUT = {
-  nowire: ["js/hadith-browser.js", "const picked = duaWords(c.text);", "const picked = null;"],
-  nofont: ["js/hadith-browser.js", "words.style.fontFamily = quranFontStack();", ""],
-  nomark: ["js/hadith-browser.js", "text.append(full.slice(0, picked.start), mark, full.slice(picked.end));", "text.append(full);"],
+  nowire: ["js/dua-browser.js", "const picked = duaWords(c.text);", "const picked = null;"],
+  nofont: ["js/dua-browser.js", "words.style.fontFamily = quranFontStack();", ""],
+  nomark: ["js/dua-browser.js", "text.append(full.slice(0, picked.start), mark, full.slice(picked.end));", "text.append(full);"],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
 const dir = "tools/hadith-data-pull/output/dua";

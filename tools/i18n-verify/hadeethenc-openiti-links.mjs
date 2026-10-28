@@ -129,7 +129,8 @@ if (!process.argv.includes("--data")) {
     const browser = await chromium.launch(EXE ? { executablePath: EXE } : {});
     const ctx = await newContext(browser, { appLang: lang, viewport: { width, height: 900 } });
     const { page, errors } = await openPage(ctx, "/app/hadith-collections.html");
-    await page.click('[data-hadith-tab="collections"]');
+    // Updated in place 28 Oct 2026 (PCF MSA J106 round 1): the library is the page's default view, Hadith Books, so
+    // the shelf is already open; it no longer lives under Collections (now "Encyclopedia").
     await page.waitForSelector("[data-openiti-book]");
     await page.click('[data-openiti-book="0256Bukhari.Sahih.JK000110-ara1"]');
     await page.waitForSelector("[data-openiti-goto-input]");
