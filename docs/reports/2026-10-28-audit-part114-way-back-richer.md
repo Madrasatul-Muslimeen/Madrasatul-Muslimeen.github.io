@@ -50,3 +50,10 @@ existing `notes-way-back-browser.mjs` already covers the three Quran-side links.
 ## Checks run
 
 See the pull request body for the pasted totals (audit, both mutations, behaviour, notes-way-back, bn-duplicate-keys, part 111).
+
+## Added by the Architect at release (28 Oct 2026)
+
+- `journey-map.html` `#backLink`: the round wrote `href="quranrevival.html?navBack=1"title=…` with no space between the attributes (an HTML parse error); the space is restored.
+- `.gitignore` now ignores `tools/i18n-verify/out/`; the suites said it was ignored, and it was not.
+- **The Bangla pass, which the round skipped for time, was run** (`--max=30`): 24 OK, 0 NO BACK, **4 WRONG PLACE**, all Bookmarks at 390 in Bangla: Open → ← Back lands at the top (scrollY 0) instead of 105 or 319. **The same 4 fail on `main` v12.100** with this check, so they predate this round. Next round: part 115 (diagnose and fix the scroll restore).
+- `behaviour.mjs` 971/0 alone; `apps-build-check` 48/0.
