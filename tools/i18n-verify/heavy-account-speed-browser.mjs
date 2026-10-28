@@ -101,6 +101,10 @@ const SEED = `
 const MUTATIONS = {
   // bookmarks.html builds every row's two selects with the full option list again (6,700 nodes, 140-190 ms long task).
   // journey-map.html no longer hints the browser to fetch its deep modules (and the Bangla catalogue) at once.
+  // a stale hint: the list names a module that does not exist (a rename the list did not follow)
+  "stale-hint": { file: "journey-map.html", from: "var deep=['envelope',", to: "var deep=['envelope-renamed'," },
+  // a hint for a module this page does not import (a download the reader never needed)
+  "unused-hint": { file: "journey-map.html", from: "var deep=['envelope',", to: "var deep=['envelope','monitor'," },
   "no-preload": { file: "journey-map.html", from: "l.rel='modulepreload'", to: "l.rel='prefetch'" },
   "eager-selects": { file: "bookmarks.html", from: "const LAZY_ROW_SELECTS = true;", to: "const LAZY_ROW_SELECTS = false;" },
 };
@@ -134,6 +138,31 @@ async function routeGzip(ctx) {
     if (u.pathname.endsWith("/js/firebase-init.js")) return route.fallback();
     return route.continue({ url: `http://127.0.0.1:${gzipPort}${u.pathname}${u.search}` });
   });
+}
+
+// Architect's review (audit part 122): the modulepreload list in journey-map.html is typed by hand, so it can drift.
+// Every hinted file must exist AND be reached by the page's own import graph (a hint for a module the page no longer
+// imports is a wasted download on a slow phone; a renamed one is a 404). Walked statically from the page's own
+// <script type="module"> blocks, so a renamed import fails here the day it is renamed.
+{
+  const appDir = join(ROOT, "app");
+  let html = readFileSync(join(appDir, "journey-map.html"), "utf8");
+  if (MUT && MUT.file === "journey-map.html" && html.includes(MUT.from)) html = html.split(MUT.from).join(MUT.to);
+  const listM = html.match(/var deep=\[([^\]]*)\]/);
+  const hinted = listM ? [...listM[1].matchAll(/'([^']+)'/g)].map((x) => `js/${x[1]}.js`) : [];
+  if (/localStorage\.getItem\('mm_app_lang'\)==='bn'/.test(html)) for (const x of html.matchAll(/add\('(js\/i18n\/[^']+\.js)'\)/g)) hinted.push(x[1]);
+  const SPEC = /(?:import|export)\s[^"';]*?from\s*["']([^"']+)["']|import\s*\(\s*["']([^"']+)["']\s*\)|import\s*["']([^"']+)["']/g;
+  const seen = new Set(), queue = [];
+  const enqueue = (fromDir, spec) => { if (!spec || !spec.startsWith(".")) return; const f = resolve(fromDir, spec.split("?")[0]); if (!seen.has(f) && existsSync(f)) { seen.add(f); queue.push(f); } };
+  for (const blk of html.matchAll(/<script[^>]*type=["']module["'][^>]*>([\s\S]*?)<\/script>/g)) for (const x of blk[1].matchAll(SPEC)) enqueue(appDir, x[1] || x[2] || x[3]);
+  for (const src of html.matchAll(/<script[^>]*type=["']module["'][^>]*src=["']([^"']+)["']/g)) enqueue(appDir, "./" + src[1]);
+  while (queue.length) { const f = queue.shift(); for (const x of readFileSync(f, "utf8").matchAll(SPEC)) enqueue(dirname(f), x[1] || x[2] || x[3]); }
+  check("journey-map.html: POSITIVE CONTROL: the static import walk reaches journey-map-shard.js", seen.has(join(appDir, "js/journey-map-shard.js")), `${seen.size} modules`);
+  check("journey-map.html: the preload list was found (20+ deep modules and the Bangla catalogue)", hinted.length >= 23 && hinted.some((h) => h.endsWith("i18n/bn.js")), `${hinted.length} hints`);
+  const missing = hinted.filter((h) => !existsSync(join(appDir, h)));
+  const unreached = hinted.filter((h) => existsSync(join(appDir, h)) && !seen.has(join(appDir, h)));
+  check("journey-map.html: every preloaded file exists (no 404 on a slow phone)", missing.length === 0, missing.join(", "));
+  check("journey-map.html: every preloaded file is one the page really imports (no wasted download)", unreached.length === 0, unreached.join(", "));
 }
 
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
