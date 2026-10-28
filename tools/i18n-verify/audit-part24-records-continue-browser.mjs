@@ -95,7 +95,10 @@ for (const lang of LANGS) for (const width of WIDTHS.filter((w) => w !== 320)) {
     // Load-speed contract: one chunk per read, never all of a person's records.
     const reads = await recordReads(page);
     check(`${tag}: ONE records chunk was read to draw the page (surah_1), not all of the person's records`, reads.length >= 1 && reads.every((id) => /__p1__surah_1$/.test(id || "")) , JSON.stringify(reads));
-    check(`${tag}: the chunk is named on the page`, /surah_1/.test(await ev(page, () => document.getElementById("chunkLabel").dataset.chunkKey)));
+    check(`${tag}: the chunk read is surah_1 (data-chunk-key)`, /surah_1/.test(await ev(page, () => document.getElementById("chunkLabel").dataset.chunkKey)));
+    // The visible label names it in WORDS (audit part 108, I11): "Surah 1" / "সূরা ১", never the stored key.
+    const chunkText = await ev(page, () => document.getElementById("chunkLabel").textContent);
+    check(`${tag}: the chunk is named on the page in words, not as its key`, (lang === "bn" ? /সূরা ১/ : /Surah 1\b/).test(chunkText) && !/surah_|subject_/.test(chunkText), JSON.stringify(chunkText));
     // I6: the stored confirmation is shown as stored. The pending entry was claimed "learning", never confirmed.
     const pending = rows.find((r) => /Try again/.test(r[4]) === false && r[4] && !/Try again/.test(r[4]) && r[7].length > 0 && r[3] === "—");
     check(`${tag}: a pending entry shows its claimed status and NO confirmed status (—), as stored`, !!pending && pending[2] !== "—", JSON.stringify(rows.map((r) => [r[2], r[3]])));
