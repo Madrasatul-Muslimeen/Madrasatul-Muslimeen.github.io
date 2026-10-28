@@ -592,7 +592,11 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       const personId = personSelect.value;
       if (!personId) { quranBody.innerHTML = `<p class="muted">${t("Pick a student first.")}</p>`; quranStudentName.textContent = ""; return; }
       quranStudentName.textContent = personName(personId);
-      if (!quranShown) return;
+      // Not yet asked for: keep (or bring back, after "Pick a student first") the button that reads it.
+      if (!quranShown) {
+        if (!quranBody.querySelector("#quranLoadBtn")) quranBody.innerHTML = `<button type="button" id="quranLoadBtn">${t("Show the Quran Approach breakdown")}</button>`;
+        return;
+      }
       quranBody.innerHTML = `<p class="muted">${t("Loading…")}</p>`;
       try {
         const entries = await listAllRecordsForPerson(db, activeTenantId, personId);
