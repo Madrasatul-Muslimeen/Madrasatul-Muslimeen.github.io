@@ -46,3 +46,16 @@ Mutations (each fails on the fixed code's suite): `--mutate=eager-quran-breakdow
 - **People reads 246 `memberships` documents on load** (6 roles x 41 people, one get() each, by design: Rules cannot prove a list query). Parallel, so ready stays ~2 s throttled. A single query needs a Rules/index decision.
 - **Classes reads all enrolments of the tenant in one list**: 81 documents here; a tenant with more than 100 enrolments goes over the cap.
 - Monitor "whole roster" month is 246 activity reads (one per person per week), contract-compliant but read-heavy.
+
+## Architect's review (29 Oct 2026)
+
+- **Slices of 40, not 100.** Re-measured on the Architect's machine, the fixed code still held the page 51–90 ms in Bangla
+  (whole roster, week and month; phone and desktop) against this suite's own 50 ms action limit (the one-shot build
+  measured 237–251 ms). With 40-row slices the longest task is 0 in every cell. `--mutate=one-shot-raw-rows` follows the
+  new text and still fails (6).
+- **The breakdown button comes back after "Pick a student first."** With no student picked the box said so, and picking
+  one returned early with no button left to read the breakdown; it now draws the button.
+- Results on the branch merged with v12.106: heavy-teacher-speed 240/0; `--mutate=eager-quran-breakdown` 11 failed;
+  `audit-part13-recording` 494/0; `behaviour.mjs` alone 971/0; Monitor at 390 in Bangla looked at (the button matches the
+  Vocabulary one; a tap shows the table).
+- The three "for the Owner" items above are recorded in the PCF for a later decision; none slows a page today.

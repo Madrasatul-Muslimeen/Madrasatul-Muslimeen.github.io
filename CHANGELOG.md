@@ -22771,3 +22771,13 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 - `app/js/audio-player.js`: `isRunContinuing()`, `userPaused` (set by `pause()` in the gap, cleared by `resume()`, `stop()`, `playDrill()`), `startPlayback` holds a held pause, `isPaused()` true for a held pause before the next file loads. `app/quranrevival.html`: the label and the Play tap count the gap as playing. New `tools/i18n-verify/qr-play-run-gap-browser.mjs` (mutations label-flash, tap-resumes, no-hold, no-held-pause).
 - **Measured (Architect, 29 Oct, merged with v12.105):** qr-play-run-gap 21/0 (x3); `--mutate=label-flash` 18/3; the Architect's 38e probe (8 runs) 8 restarted, 0 swallowed; `behaviour.mjs` alone 971/0. QR Lead's guards (as sent): 11 audio and reading suites 0 failed, `apps-build-check` 48/0.
 - QR carries it at its next rebuild. Nothing stored, no Rules changed.
+
+## v12.107 — 29 Oct 2026 — Monitor opens faster for a teacher with a real class (audit part 120)
+
+- **PCF MSA J29, audit part 120** (Builder run 2169, issue #1277, PR #1278). Report: `docs/reports/2026-10-29-audit-part120-heavy-teacher-speed.md`.
+- New `tools/i18n-verify/heavy-teacher-speed-browser.mjs` (mutations eager-quran-breakdown, one-shot-raw-rows).
+- `app/monitor.html`: the Quran Approach breakdown is read on a tap (it reads every records chunk of a student), then follows the student; raw entries drawn in slices (Print draws the rest first; CSV unchanged). `bn.js`: one string. `behaviour.mjs` 15 and `audit-part13-recording-browser.mjs` tap the button first.
+- **Architect's review commits:** slices of 40 (100 still held the page 51–90 ms in Bangla); the button is drawn again after "Pick a student first".
+- **Measured (Architect, 29 Oct, merged with v12.106):** heavy-teacher 240/0 (eager-quran-breakdown 11 failed, one-shot-raw-rows 6 failed); audit-part13 494/0; `behaviour.mjs` alone 971/0; Monitor at 390 Bangla looked at.
+- Left for the Owner (each needs a Rules or stored-field decision; none slows a page today): People reads 246 `memberships` documents; Classes lists every enrolment (a tenant over 100 hits the cap); the breakdown, when asked, still reads every records chunk.
+- Nothing stored, no Rules changed.
