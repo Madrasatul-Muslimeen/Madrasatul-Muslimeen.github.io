@@ -9,7 +9,7 @@
 //   small     a control under 32px on either side (FAILS); 32-39px is listed as "small, not failing" (40px is the target)
 //   width     the main column's share of the viewport (report only; under 60% at 1024 landscape earns a line)
 // The shared top menu (Home / Modules / Operation / Bookmark) is opened ONCE, on classes.html, at each width, and each open panel
-// is measured the same way.  Bangla (--lang=bn) runs at 768 only, on the 3 pages with the most controls.
+// is measured the same way.  Both languages run on all 23 pages at 768, 820, 1024 and 1180 (part 118); --lang=bn / --lang=en / --no-bn pick one.
 //
 // Run from the repository root with node serve.js on 8080:  node tools/i18n-verify/shared-pages-tablet-audit-browser.mjs
 //   --page=<name|file|N|N-M>   a page, or a 1-based range of the 23 (default all)      --lang=bn   Bangla at 768, top 3 pages
@@ -26,7 +26,9 @@ const check = (name, ok, detail = "") => {
   if (ok) { pass++; if (process.argv.includes("--verbose")) console.log(`  PASS  ${name}`); } else { fail++; console.log(`  FAIL  ${name} ${detail}`); }
 };
 const arg = (k) => (process.argv.find((a) => a.startsWith("--" + k + "=")) || "").slice(k.length + 3);
-const ONLY = arg("page"), MUTATE = arg("mutate"), LANG = arg("lang") === "bn" ? "bn" : "en", LIST = process.argv.includes("--list");
+let LANG = "en";
+const LANGS = arg("lang") === "bn" ? ["bn"] : arg("lang") === "en" || process.argv.includes("--no-bn") ? ["en"] : ["en", "bn"];
+const ONLY = arg("page"), MUTATE = arg("mutate"), LIST = process.argv.includes("--list");
 
 // Same order as shared-pages-failed-write-audit-browser.mjs / the Bangla layout audit (copied, not edited there).
 const PAGES = [
@@ -48,8 +50,7 @@ DATA.classes[0].name = lang("Weekend Qur'an Memorisation and Tajweed Circle (Yea
 DATA.courseOffers[0].name = lang("Weekend Qur'an Memorisation and Tajweed Circle (Year 7–9)");
 DATA.bookmarks[0].saved[0].name = "Ayat al-Kursi and the last two āyāt of Al-Baqarah";
 `;
-const ALL_VIEWPORTS = [[768, 1024], [820, 1180], [1024, 768]];
-const VIEWPORTS = LANG === "bn" ? [[768, 1024]] : ALL_VIEWPORTS;
+const VIEWPORTS = [[768, 1024], [820, 1180], [1024, 768], [1180, 820]];
 const OUT = "tools/i18n-verify/out/tablet";
 fs.mkdirSync(OUT, { recursive: true });
 
@@ -252,7 +253,7 @@ const KNOWN = [
   // The two Landing entries are QR's wheel buttons: drawn 28px / 24px on purpose, each with an invisible 40px tap area
   // (quranrevival.html:854 `.wheel-cta-btn::before`, :1485 `.list-collapse-btn::after`), so they are not faults; the probe measures the drawn box.
   ["index.html", "small|div.wheel-col>div#wheelStageWrap>div#wheelHubPickers>button#wheelCtaBtn"],
-  ["index.html", "small|div#wheelPopupView>div#wheelSection>div#wheelListSplitter>button#wheelListCollapseBtn", "en"], // 1024 only; Bangla runs 768
+  ["index.html", "small|div#wheelPopupView>div#wheelSection>div#wheelListSplitter>button#wheelListCollapseBtn"], // 1024 and 1180, both languages
 ];
 const knownSeen = new Set();
 const isKnownFor = (path) => (f, kind = f.key.split("|")[0]) => { const i = KNOWN.findIndex(([p, k]) => path.startsWith(p) && f.key === k); if (i >= 0) knownSeen.add(i); return i >= 0; };
@@ -261,22 +262,11 @@ const KINDS = ["sideways", "clipped", "cut", "overlap", "small"];
 const pages = selectPages();
 if (!pages.length) throw new Error(`--page=${ONLY} matches no page`);
 
-let toRun = pages;
-if (LANG === "bn") { // the 3 pages with the most controls (counted in English at 768)
-  const counts = [];
-  for (const [name, path] of pages) {
-    const { ctx, P } = await openAt(path, 768, 1024);
-    counts.push([name, path, await P.evaluate(() => document.querySelectorAll("button, a[href], select, input:not([type=hidden]), textarea, summary").length)]);
-    await ctx.close();
-  }
-  counts.sort((a, b) => b[2] - a[2]);
-  toRun = counts.slice(0, 3).map(([name, path]) => pages.find((p) => p[1] === path));
-  console.log("Bangla, the 3 pages with the most controls: " + counts.slice(0, 3).map(([n, , c]) => `${n} (${c})`).join(", "));
-}
-
+const toRun = pages;
 let mutated = false;
-for (const [name, path, num] of toRun) {
-  console.log(`\n== ${num}. ${name} (${path}) ==`);
+for (LANG of LANGS) for (const [name, path, num] of toRun) {
+  const tag = LANG === "bn" ? " (bn)" : "";
+  console.log(`\n== ${num}. ${name} (${path})${tag} ==`);
   for (const [w, h] of VIEWPORTS) {
     const t0 = Date.now();
     const { ctx, P } = await openAt(path, w, h);
@@ -287,19 +277,20 @@ for (const [name, path, num] of toRun) {
     // "Open the app" link); there the positive control is that the page's own heading rendered and the menu is truly absent.
     if (NO_MENU.has(path.replace(/\?.*$/, ""))) check(`${name} / ${w}: page booted, no shared menu by design (positive control, heading ${m.headings}, menu ${m.menuButtons})`, m.headings > 0 && m.menuButtons === 0);
     else check(`${name} / ${w}: shared menu found (positive control, ${m.menuButtons})`, m.menuButtons > 0);
-    check(`${name} / ${w}: page has controls (positive control, ${m.controls})`, m.controls > 0);
+    if (LANG === "bn") { const bnN = await P.evaluate(() => (document.body.innerText.match(/[ঀ-৿]/g) || []).length); check(`${name} / ${w} (bn): body really contains Bengali script (positive control, ${bnN})`, bnN > 0); }
+    check(`${name}${tag} / ${w}: page has controls (positive control, ${m.controls})`, m.controls > 0);
     // v12.72: a broken zab-bar.js (a backtick in its CSS template) stopped the bar mounting and every check above stayed green.
     // So the shared Zab bar is a positive control of its own: its button, the corner 🧰 or a page's own dock must be on screen.
     const zab = await P.evaluate(() => [...document.querySelectorAll("#zabBar button, #zabCorner, .zab-dock-btn")].some((e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(e).visibility !== "hidden"; }));
     check(`${name} / ${w}: the Zab bar mounted (positive control)`, zab);
-    const row = { page: name, path, width: w, viewport: `${w}x${h}`, controls: m.controls, widthShare: m.width, counts: {}, smallOk: m.smallOk.length, findings: {} };
+    const row = { tag, page: name, path, width: w, viewport: `${w}x${h}`, controls: m.controls, widthShare: m.width, counts: {}, smallOk: m.smallOk.length, findings: {} };
     for (const kind of KINDS) {
       const isKnown = (f) => { const i = KNOWN.findIndex(([p, k]) => path.startsWith(p) && f.key === k); if (i >= 0) knownSeen.add(i); return i >= 0; };
       for (const f of m[kind].filter(isKnown)) console.log(`  KNOWN  ${name} / ${w}: ${f.msg}`);
       const fresh = m[kind].filter((f) => !isKnown(f));
       row.counts[kind] = m[kind].length;
       row.findings[kind] = m[kind].map((f) => f.msg);
-      check(`${name} / ${w}: ${kind} (${m[kind].length}, known ${m[kind].length - fresh.length})`, fresh.length === 0, "\n      " + fresh.slice(0, 8).map((f) => f.msg).join("\n      "));
+      check(`${name}${tag} / ${w}: ${kind} (${m[kind].length}, known ${m[kind].length - fresh.length})`, fresh.length === 0, "\n      " + fresh.slice(0, 8).map((f) => f.msg).join("\n      "));
       if (LIST) for (const f of m[kind]) console.log(`    [${w} ${kind}] ${f.msg}`);
     }
     row.findings.smallOk = m.smallOk.map((f) => f.msg);
@@ -344,7 +335,7 @@ for (const [name, path, num] of toRun) {
         const mm = await P.evaluate((i) => { document.querySelectorAll("details.nav-cat")[i].setAttribute("data-tablet-menu", "1"); return true; }, i);
         const mr = await P.evaluate(MEASURE, "details.nav-cat[data-tablet-menu]");
         await P.evaluate(() => document.querySelectorAll("details.nav-cat[data-tablet-menu]").forEach((d) => d.removeAttribute("data-tablet-menu")));
-        if (i === 0 || label) await P.screenshot({ path: `${OUT}/menu-${label.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-${w}x${h}.png` });
+        if (i === 0 || label) await P.screenshot({ path: `${OUT}/menu-${label.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-${w}x${h}${LANG === "bn" ? "-bn" : ""}.png` });
         check(`menu "${label}" / ${w}: opens with controls (${mr.controls})`, mm && mr.controls > 0);
         for (const kind of ["clipped", "cut", "overlap", "small"]) {
           menu.findings[`${label}|${kind}`] = mr[kind].map((f) => f.msg);
@@ -360,8 +351,8 @@ for (const [name, path, num] of toRun) {
 }
 if (!MUTATE && !ONLY) fs.writeFileSync(`${OUT}/rows.json`, JSON.stringify(rows, null, 1));
 console.log("\n=== per page and width: sideways/clipped/cut/overlap/small (small 32-39 in brackets), controls, main column %, seconds ===");
-for (const r of rows) console.log(`${r.page.padEnd(20)} ${String(r.width).padStart(4)}  ${r.counts.sideways}/${r.counts.clipped}/${r.counts.cut}/${r.counts.overlap}/${r.counts.small} [${r.smallOk}]  controls ${r.controls}  col ${r.widthShare}%  ${r.seconds}s`);
-for (const [i, [p, k, only]] of KNOWN.entries()) if (!MUTATE && !knownSeen.has(i) && (!only || only === LANG) && toRun.some(([, path]) => path.startsWith(p))) console.log(`  NOTE  known finding no longer occurs (fixed? remove the entry): ${p} ${k}`);
-console.log(`\n${pass} passed, ${fail} failed${MUTATE ? ` (mutation: ${MUTATE})` : ""}${LANG === "bn" ? " (Bangla)" : ""}`);
+for (const r of rows) console.log(`${(r.page + r.tag).padEnd(24)} ${String(r.width).padStart(4)}  ${r.counts.sideways}/${r.counts.clipped}/${r.counts.cut}/${r.counts.overlap}/${r.counts.small} [${r.smallOk}]  controls ${r.controls}  col ${r.widthShare}%  ${r.seconds}s`);
+for (const [i, [p, k, only]] of KNOWN.entries()) if (!MUTATE && !knownSeen.has(i) && (!only || LANGS.includes(only)) && toRun.some(([, path]) => path.startsWith(p))) console.log(`  NOTE  known finding no longer occurs (fixed? remove the entry): ${p} ${k}`);
+console.log(`\n${pass} passed, ${fail} failed${MUTATE ? ` (mutation: ${MUTATE})` : ""}${LANGS.length === 1 && LANGS[0] === "bn" ? " (Bangla)" : ""}`);
 await browser.close();
 process.exit(fail ? 1 : 0);
