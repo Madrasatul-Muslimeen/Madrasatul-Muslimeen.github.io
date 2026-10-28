@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "12.97",
+    "version": "12.98",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -5441,8 +5441,20 @@
     {
       "version": "12.97",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Audit part 111 (#1253, PR #1256) plus the Architect's release commit: every tenant-written name escaped on every page.",
+      "integration": {
+        "authorizedOn": "2026-10-28",
+        "integratedOn": "2026-10-28",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.98",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Audit part 112 (#1257, PR #1258) plus the Architect's merge fix: Resource text escaped and safeHref on typed links.",
       "integration": {
         "authorizedOn": "2026-10-28",
         "integratedOn": "2026-10-28",
@@ -5451,8 +5463,9 @@
       }
     }
   ],
-  "nextUnallocated": "12.98",
+  "nextUnallocated": "12.99",
   "nextUnallocatedNote": [
+    "v12.98 was allocated to SECURITY: Resource text escaped, typed links only open if web or mail (audit part 112), 2026-10-28.",
     "v12.97 was allocated to SECURITY: names escaped on every page (audit part 111), 2026-10-28.",
     "v12.96 was allocated to typed and tenant-authored text escaped on Records, Monitor and eight more shared pages (audit part 110, security), 2026-10-28.",
     "v12.95 was allocated to Records and Monitor name a topic instead of printing its id (audit part 109), 2026-10-28.",

@@ -59,9 +59,12 @@ try {
     for (const lang of ["en", "bn"]) for (const w of [390, 1440]) {
       const ctx = await newContext(browser, { appLang: lang, accountLang: lang, banner: false, viewport: { width: w, height: 900 }, extraSeedJs: REAL_SEED + (SEEDS[file] || "") + SEED });
       await ctx.route("**/archive.org/**", (r) => r.abort());
+      // POSITIVE CONTROL (the Architect, v12.98): a page whose script fails to load runs no payload either, so "no __xss" would pass
+      // it vacuously. A merge once imported escapeHtml twice in curriculum.html (a SyntaxError) and this check stayed green.
+      let errors = [];
       let page;
       const sep = path.includes("?") ? "&" : "?";
-      try { ({ page } = await openPage(ctx, "/app/" + path + sep + (path.startsWith("hadith-collections") ? "back=1" : "navBack=1"))); } catch (e) { console.log(`?? ${file} ${lang} ${w}: ${String(e).slice(0, 80)}`); await ctx.close(); continue; }
+      try { ({ page, errors } = await openPage(ctx, "/app/" + path + sep + (path.startsWith("hadith-collections") ? "back=1" : "navBack=1"))); } catch (e) { console.log(`?? ${file} ${lang} ${w}: ${String(e).slice(0, 80)}`); await ctx.close(); continue; }
       await page.waitForTimeout(1500);
       const r = await page.evaluate(() => {
         const bad = [...document.querySelectorAll('img[src="x"], b')].filter((e) => e.tagName === "IMG" || e.textContent === "bold");
@@ -71,7 +74,9 @@ try {
         };
       });
       runs++;
-      const good = r.xss === null && r.bad.length === 0;
+      const pageErrors = errors.filter((m) => /SyntaxError|ReferenceError|is not defined|does not provide an export/.test(m)).map((m) => m.slice(0, 120));
+      if (pageErrors.length) console.log(`        script error: ${pageErrors[0]}`);
+      const good = r.xss === null && r.bad.length === 0 && pageErrors.length === 0;
       if (!good) {
         if (KNOWN_OPEN.has(file)) knownOpenHits++; else fails++;
         hits[file] = (hits[file] || 0) + 1;

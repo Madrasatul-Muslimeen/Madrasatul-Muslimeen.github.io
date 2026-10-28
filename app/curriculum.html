@@ -213,6 +213,14 @@
     import { TENANT } from "./js/collections.js";
     import { getTenantRosterSnap } from "./js/roster-access.js";
     import { langText } from "./js/lang.js";
+    import { escapeHtml, safeHref } from "./js/html-escape.js";
+
+    // A Resource as safe markup: a link only when its address is a web or mail link, else plain text.
+    function resourceHtml(r, max) {
+      if (r.type !== "link") return escapeHtml(max ? (r.body ?? "").slice(0, max) : (r.body ?? ""));
+      const href = safeHref(r.url);
+      return href ? `<a href="${escapeHtml(href)}" target="_blank" rel="noopener">${escapeHtml(r.url)}</a>` : escapeHtml(r.url);
+    }
     import { roleListLabel, entityStatusLabel } from "./js/labels.js";
     import { getAppLang, mountCardLookControl } from "./js/prefs.js";
     import { adoptAppLangFromUserIndex, mountSyncedAppLangControl } from "./js/lang-sync.js";
@@ -237,7 +245,6 @@
     import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
 import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     import { translateStatic, t, num } from "./js/i18n.js";
-    import { escapeHtml } from "./js/html-escape.js";
     import { registerServiceWorker } from "./js/sw-register.js";
     import { armScreensaver } from "./js/screensaver-idle.js";
 
@@ -467,10 +474,10 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       const attached = (u.resourceIds ?? []).map((rid) => {
         const r = resources.find((x) => x.id === rid);
         if (!r) return "";
-        return `<div class="muted">${r.type === "link" ? `<a href="${r.url}" target="_blank" rel="noopener">${r.url}</a>` : (r.body ?? "").slice(0, 60)}</div>`;
+        return `<div class="muted">${resourceHtml(r, 60)}</div>`;
       }).join("");
       const existingOptions = resources.filter((r) => r.status === "active" && !(u.resourceIds ?? []).includes(r.id))
-        .map((r) => `<option value="${r.id}">${r.type === "link" ? r.url : (r.body ?? "").slice(0, 40)}</option>`).join("");
+        .map((r) => `<option value="${r.id}">${escapeHtml(r.type === "link" ? r.url : (r.body ?? "").slice(0, 40))}</option>`).join("");
       return `<div class="card">
         <h3>${escapeHtml(langText(u.name, getAppLang(), u.id))} <span class="pill pill-${u.status}">${entityStatusLabel(u.status)}</span></h3>
         <div class="muted">${subjectsLine}</div>
@@ -631,7 +638,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
         const visible = resources.filter((r) => r.status === "active");
         resourcesBody.innerHTML = visible.length
           ? visible.map((r) => `<div class="card">
-              <div>${r.type === "link" ? `<a href="${r.url}" target="_blank" rel="noopener">${r.url}</a>` : (r.body ?? "")}</div>
+              <div>${resourceHtml(r)}</div>
               <div class="muted">${t("added by {name}", { name: personName(r.addedByPersonId) })}</div>
               <button class="small secondary archiveResourceBtn" data-resource="${r.id}" style="margin-top:0.4rem;">${t("Archive")}</button>
             </div>`).join("")

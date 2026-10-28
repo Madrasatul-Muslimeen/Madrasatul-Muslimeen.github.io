@@ -22691,3 +22691,15 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 - **Next, round #1257 (part 112):** Curriculum prints a Resource's `url` and `body` unescaped, and a typed link (Resource, tagline) is not checked for a `javascript:` scheme.
 - Notices: PCA (frozen `quranrevival.html`, `mastery-wheel.js`, `asma-study.js`), Hadith Lead (`hadith-collections.html`).
 - Nothing stored, no Rules changed.
+
+## v12.98 — 28 Oct 2026 — SECURITY: Resource text escaped, typed links only open if web or mail (audit part 112)
+
+- **PCF MSA J29, audit part 112** (Builder run 2136, issue #1257, PR #1258). Report: `docs/reports/2026-10-28-audit-part112-link-safety.md`.
+- New `safeHref(url)` in `app/js/html-escape.js`: http, https, mailto and scheme-less relative links pass; anything else becomes "" (controls, whitespace and zero-width characters are stripped before the scheme is read). `curriculum.html` escapes a Resource's url and body on the unit card, the Resources list and the attach picker, and draws an unsafe link as text; `js/topic-renderer.js`, `taglines.html` and `quranrevival.html` (frozen Quran Study, the href lines and import only) build a link only when `safeHref` allows it.
+- **Architect's release commits:** merged `main` (v12.97) in (`html-escape.js` keeps `escapeHtml`, adds `safeHref`); **the merge left `curriculum.html` importing `escapeHtml` twice, a SyntaxError that stops the whole page**; fixed. **Part 111's check passed that broken page 4 of 4** (a page whose script never loads runs no payload); it now fails any page reporting a SyntaxError or ReferenceError, proven by restoring the double import.
+- New `tools/i18n-verify/audit-part112-link-safety-browser.mjs`: 13 pure `safeHref` cases + 16 browser runs, 0 failed; `--mutate=escape` (16 failed) and `--mutate=href` (31 failed) caught.
+- Test-only, merged before it (PR #1259): `tools/apps/qr-verify/student-browser.mjs` opens the Read bar's ⋯ card below 600px (J99 part 2 moved the three study buttons there): 479/4 → 501/0; `student-tools-browser.mjs` bookmarkgo reads the page text safely while Mapping My Journey loads: 1980/16 → 2012/0. Both failed identically on v12.96.
+- **Measured (Architect, 28 Oct):** part 112 16/0; part 111 104/0; rendered text, links and page size identical to v12.97 on 4 changed pages × 7 widths × en/bn (56/56); `behaviour.mjs` 971/0 alone; `bn-duplicate-keys` 6/0; `stub-parity` 4/0; `apps-build-check` 48/0; QR build applies its edits.
+- Left (the reader's own links only): `note-window.js`, `zab-bar.js` (QR keeps pinned copies).
+- Notices: PCA (frozen `quranrevival.html`).
+- Nothing stored, no Rules changed.
