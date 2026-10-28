@@ -40,11 +40,15 @@ const SEED = `
   for (const s of DATA.subjects.slice(0, 3)) s.name = nm;
   for (const c of DATA.classes) c.name = nm;
   DATA.tenants[0].name = nm;
+  // The Architect, at release: p1 too (People's "managed by" cell names p2's manager, p1) and every Approach and section name
+  // (the Mastery Wheel's segment titles and its Approach list on the Landing page).
+  const p1 = DATA.tenantPeople.find((p) => /p1$/.test(p._id || p.personId || p.id || ""));
+  if (p1) p1.name = nm;
+  for (const tr of DATA.trackables) { tr.name = nm; if (tr.groupName) tr.groupName = nm; }
 `;
 
-// Known open, by name: hadith-collections.html is a hadith-* page file, which this round was told not to change (its personSelect
-// and tenantSelect still inject). It is reported on every run, not hidden, and the check fails if it ever starts passing.
-const KNOWN_OPEN = new Set(["hadith-collections.html"]);
+// Known open, by name: none. hadith-collections.html (open in the Builder's run) was fixed by the Architect at release.
+const KNOWN_OPEN = new Set([]);
 let fails = 0, runs = 0, knownOpenHits = 0;
 const hits = {};
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
@@ -82,7 +86,7 @@ try {
   await browser.close();
 }
 for (const f of KNOWN_OPEN) if (!ONLY && !hits[f]) { fails++; console.log(`FAIL  ${f} no longer injects: remove it from KNOWN_OPEN`); }
-console.log(`\n==== Audit part 111: ${runs} runs, ${fails} failed, ${knownOpenHits} known-open (hadith-collections.html) ====`);
+console.log(`\n==== Audit part 111: ${runs} runs, ${fails} failed, ${knownOpenHits} known-open ====`);
 if (MUTATE) {
   const caught = (hits["curriculum.html"] || 0) > 0;
   console.log(`MUTATION curriculum: ${caught ? "caught (the check CAN fail)" : "NOT caught"}`);

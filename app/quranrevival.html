@@ -8918,7 +8918,7 @@
       const { viewAsRole, effRoles, myPersonId } = currentPreview();
       const visibleRoster = (viewAsRole ? scopedRoster(roster, effRoles, myPersonId) : roster).filter((p) => p.status !== "archived");
       personSelect.innerHTML = visibleRoster.map((p) => `<option value="${p.id}">${escapeHtml(langText(p.name, getAppLang(), p.id))}</option>`).join("");
-// Fix round (25 Aug 2026): prefer whatever this page's own re-render
+      // Fix round (25 Aug 2026): prefer whatever this page's own re-render
       // already had selected; failing that (a fresh page load), fall back
       // to the last Person chosen anywhere in the app rather than always
       // the first roster row.
@@ -8946,7 +8946,7 @@
         .map(({ name: groupName, items }) => {
           const label = groupName ? escapeHtml(langText(groupName, getAppLang(), "")) : "";
           const options = items
-            .map((item) => `<option value="${item.id}">${langText(item.name, getAppLang(), item.id)}</option>`)
+            .map((item) => `<option value="${item.id}">${escapeHtml(langText(item.name, getAppLang(), item.id))}</option>`)
             .join("");
           return label ? `<optgroup label="${label}">${options}</optgroup>` : options;
         })
@@ -10499,7 +10499,7 @@
           number: num(approachNo(trackable)),
           shortLabel: wheelShortLabel(trackable),
           statusId,
-          title: segTitle(langText(trackable.name, getAppLang(), trackable.id), statusId, wheelLabels),
+          title: escapeHtml(segTitle(langText(trackable.name, getAppLang(), trackable.id), statusId, wheelLabels)),
         };
         if (wordFrac && trackable.id === WBW_TRACKABLE_ID) {
           item.progress = wordFrac.total ? wordFrac.known / wordFrac.total : 0;
@@ -10599,17 +10599,17 @@
         // survives a section being added, moved or renamed.
         const groupKey = sec.n != null ? `s${sec.n}` : `n${gi}:${groupLabel}`;
         if (sec.empty) {
-          sidebarItems.push({ groupKey, groupNumber: sec.n, groupLabel: groupLabel || t("Section {n}", { n: num(sec.n) }), emptyNote: t("No Approaches in this section yet.") });
+          sidebarItems.push({ groupKey, groupNumber: sec.n, groupLabel: escapeHtml(groupLabel || t("Section {n}", { n: num(sec.n) })), emptyNote: t("No Approaches in this section yet.") });
           return;
         }
         for (const { trackable, statusId } of sec.items) {
           sidebarItems.push({
             key: trackable.id,
             number: num(approachNo(trackable)),
-            label: langText(trackable.name, getAppLang(), trackable.id),
+            label: escapeHtml(langText(trackable.name, getAppLang(), trackable.id)),
             groupKey,
             groupNumber: sec.n,
-            groupLabel,
+            groupLabel: escapeHtml(groupLabel),
             statusId,
           });
         }
@@ -12841,7 +12841,7 @@
         const items = quranTrackables.map((trackable) => {
           const name = langText(trackable.name, getAppLang(), trackable.id);
           const ratio = trackable.id === WBW_TRACKABLE_ID ? myStatusRatio(trackable.id, null, cache.wordTotals) : myStatusUnitFigure(trackable.id, mode, cache).share;
-          return { key: trackable.id, number: num(approachNo(trackable)), shortLabel: wheelShortLabel(trackable), statusId: "not_started", fill: STATUS_COLORS.not_started, progress: ratio, progressFill: STATUS_COLORS.mastered, label: name, title: `${name} — ${num(percentRounded(ratio, 1))}%` };
+          return { key: trackable.id, number: num(approachNo(trackable)), shortLabel: wheelShortLabel(trackable), statusId: "not_started", fill: STATUS_COLORS.not_started, progress: ratio, progressFill: STATUS_COLORS.mastered, label: escapeHtml(name), title: escapeHtml(`${name} — ${num(percentRounded(ratio, 1))}%`) };
         });
         wheelHtml = renderScopedWheel(items, { centerLabel, centerSub, roomForNumbers: true });
       }

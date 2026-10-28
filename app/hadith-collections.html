@@ -67,6 +67,7 @@
     import { TENANT } from "./js/collections.js";
     import { getTenantRosterSnap } from "./js/roster-access.js";
     import { langText } from "./js/lang.js";
+    import { escapeHtml } from "./js/html-escape.js";
     import { getAppLang } from "./js/prefs.js";
     import { t } from "./js/i18n.js";
     import {
@@ -103,7 +104,7 @@
       const candidate = roster.some((p) => p.id === stored) ? stored
         : (roster.some((p) => p.id === membership?.personId) ? membership.personId : (roster[0]?.id ?? null));
       personSelect.innerHTML = roster
-        .map((p) => `<option value="${p.id}">${langText(p.name, getAppLang(), p.id)}</option>`)
+        .map((p) => `<option value="${p.id}">${escapeHtml(langText(p.name, getAppLang(), p.id))}</option>`)
         .join("");
       if (candidate) personSelect.value = candidate;
     }
@@ -111,7 +112,7 @@
     async function loadContextData(hydratedMembershipsPromise) {
       myMemberships = await (hydratedMembershipsPromise ?? Promise.resolve(myMemberships));
       tenantSelect.innerHTML = myMemberships
-        .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName ?? m.tenantId}</option>`)
+        .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${escapeHtml(m.tenantName ?? m.tenantId)}</option>`)
         .join("");
       await loadRoster();
       contextBar.style.display = "flex";
