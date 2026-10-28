@@ -22680,3 +22680,14 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 - **Measured (Architect, 28 Oct):** the payload probe (a person, three subjects, a class and the tenant named `<img onerror>`) clean on the 11 fixed pages in en and bn; `audit-part24` 184/0; `audit-part13` 494/0; `audit-part109` 8/0; `bn-duplicate-keys` 6/0; `behaviour.mjs` 971/0. **38e** ("pressing Play again starts the unit over") failed in 2 of 3 runs on this branch and passed on main (971/0) and the third run; the Landing page it drives loads no file this round changed: intermittent, recorded.
 - **Still open, next round #1253:** Curriculum; the person and tenant pickers in `topic-study.js`, `routine-study.js` and `quranrevival.html`; `asma-study.js` tenant options; `migrate.html`.
 - Nothing stored, no Rules changed.
+
+## v12.97 — 28 Oct 2026 — SECURITY: tenant-written names shown as plain text on every page (audit part 111)
+
+- **PCF MSA J29, audit part 111** (Builder run 2130, issue #1253, PR #1256). Report: `docs/reports/2026-10-28-audit-part111-escape-all.md`.
+- New shared `app/js/html-escape.js` (`escapeHtml`, no imports, no side effects). Escaped: Curriculum (tenant, person, class, subject, ladder, level and unit names; its name helpers now return escaped text), the person and tenant pickers in `js/topic-study.js`, `js/routine-study.js` and `js/asma-study.js`, `quranrevival.html` (person and tenant pickers; frozen Quran Study, safety fix), `migrate.html` tenant picker.
+- **Architect's release commit:** the Architect's payload probe (every page in `app/`, also p1, every Approach and section name) found five more: `hadith-collections.html` person and tenant pickers; People's "managed by" cell; Catalogue's Approaches section heading; on the Landing page the Approach picker (`trackableSelect`), the Mastery Wheel's segment titles, the Approach list's names and section labels, and the percentage view; `js/mastery-wheel.js` escapes `&` and `"` in `data-group`. One comment line the round had un-indented in `quranrevival.html` was restored. The check now seeds p1 and every Approach, and `KNOWN_OPEN` is empty.
+- New `tools/i18n-verify/audit-part111-escape-all-pages-browser.mjs`: 104 runs, 0 failed; `--mutate` 4/4 caught.
+- **Measured (Architect, 28 Oct):** payload probe over every page 0 open (15 pages on v12.96); rendered text, options and page size identical to v12.96 on 9 changed pages × 7 widths × en/bn (126/126); `behaviour.mjs` 971/0 alone; `audit-part110` 8/0; `bn-duplicate-keys` 6/0; `brief-integrity` 13/0; `apps-build-check` 48/0; QR build applies its edits.
+- **Next, round #1257 (part 112):** Curriculum prints a Resource's `url` and `body` unescaped, and a typed link (Resource, tagline) is not checked for a `javascript:` scheme.
+- Notices: PCA (frozen `quranrevival.html`, `mastery-wheel.js`, `asma-study.js`), Hadith Lead (`hadith-collections.html`).
+- Nothing stored, no Rules changed.
