@@ -146,13 +146,22 @@ for (const [lang, width, look] of [["bn", 390, "light"], ["en", 1280, "night"], 
     await page.click('[data-dua-book="0256Bukhari.Sahih.JK000110-ara1"]');
     await page.waitForSelector("[data-dua-chapter]");
     await page.click("[data-dua-chapter]");
-    await page.waitForSelector('[data-openiti-passage="6578"]');
+    // Updated in place 28 Oct 2026 (PCF MSA J106 round 1): the chapter opens in the three-pane reader on its first
+    // narration, one at a time; Bukhari 6306 (passage 6578), which the checks below read, is reached with the
+    // reader's own "Go to hadith number" box (on a phone after the Chapters step button). ← Back to Dua is checked
+    // first, as the chapter opens.
+    await page.waitForSelector("[data-openiti-passage]", { state: "attached" });
     const r = await page.evaluate(() => {
       const back = document.querySelector("[data-openiti-trail-back]");
       const body = back?.getBoundingClientRect();
       return { back: back?.textContent ?? "", inView: !!body && body.top >= -1 && body.top < innerHeight };
     });
     if (!r.back.includes(lang === "bn" ? "দুআয়" : "Back to Dua") || !r.inView) throw new Error(JSON.stringify(r));
+    const step = await page.$('[data-reader-show="chapters"]');
+    if (step && await step.isVisible()) await step.click();
+    await page.fill("[data-openiti-goto-input]", "6306");
+    await page.click("[data-openiti-goto-btn]");
+    await page.waitForSelector('[data-openiti-passage="6578"]');
   });
   await acheck("Bukhari 6306 shows 'Also narrated in' with Tirmidhi, Nasa'i, Ibn Majah, Abu Dawud, said to be a proposal", async () => {
     const r = await page.$eval('[data-openiti-passage="6578"] [data-dua-also]', (d) => ({ text: d.textContent, refs: [...d.querySelectorAll("[data-dua-ref]")].map((b) => b.textContent) }));
