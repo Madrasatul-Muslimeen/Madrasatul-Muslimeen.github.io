@@ -1085,6 +1085,9 @@ async function renderOpenitiBody(body, oi, localRefresh) {
   const chapter = oi.chapterId ? index.chapters.find((c) => c.id === oi.chapterId) : null;
   if (oi.chapterId && !chapter) { body.appendChild(el("p", "hadith-note", t("Nothing here yet."))); return; }
   let passages = [], babs = [];
+  // With no chapter chosen, Chapters is the only pane with anything in it: a phone shows it (the book's name in the
+  // breadcrumbs, a new book, a jump to a number the book does not hold), never an empty "Choose a chapter." pane.
+  if (!chapter) oi.phone = "chapters";
   if (chapter) {
     const wait = el("p", "hadith-note", t("Loading…"));
     body.appendChild(wait);
@@ -1092,6 +1095,12 @@ async function renderOpenitiBody(body, oi, localRefresh) {
     wait.remove();
     babs = chapterBabs(loaded, chapter);
     if (oi.pickBab) { oi.phone = babs.length > 1 ? "chapters" : "hadiths"; oi.pickBab = false; }
+    // "Go to hadith number" by this edition's own number: find that hadith in the chapter just opened.
+    if (oi.focusNumber != null) {
+      const byNumber = loaded.hadiths.find((h) => h.kind === "hadith" && Number(h.number) === oi.focusNumber);
+      if (byNumber) oi.focusPassage = byNumber.n;
+      oi.focusNumber = null;
+    }
     const jump = oi.focusPassage != null ? loaded.hadiths.find((h) => h.n === oi.focusPassage) : null;
     if (jump) { oi.bab = jump.p; oi.passageN = jump.n; oi.phone = "text"; }
     if (oi.bab == null || !babs.some((b) => b.p === oi.bab)) oi.bab = babs[0]?.p ?? null;
@@ -1141,6 +1150,7 @@ function renderReaderHadithList(pane, passages, oi, localRefresh, conc) {
     const row = el("button", `hadith-reader-row${h.n === oi.passageN ? " on" : ""}`);
     row.type = "button";
     row.dataset.openitiRow = String(h.n);
+    row.dataset.openitiKind = h.kind;
     if (h.n === oi.passageN) row.setAttribute("aria-current", "true");
     const cite = conc?.byN.get(h.n);
     const no = h.kind === "chapter-text" ? t("Chapter text") : h.kind === "editorial" ? t("Editor's note") : num(cite ?? h.number ?? "");
@@ -1284,6 +1294,7 @@ function renderOpenitiChapterList(body, oi, index, localRefresh, conc = null, ba
         return;
       }
       oi.chapterId = chapter.id;
+      oi.focusNumber = Math.trunc(Number(input.value)); // J106: the reader opens on that hadith, not the chapter's first
       localRefresh();
     };
     goBtn.addEventListener("click", doGo);

@@ -58,6 +58,14 @@ for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 1280]]) {
   await P.click('[data-dua-book="0256Bukhari.Sahih.JK000110-ara1"]');
   await P.waitForSelector("[data-dua-chapter]");
   await P.click("[data-dua-chapter]");
+  // Updated in place 28 Oct 2026 (PCF MSA J106 round 1): the chapter now opens in the three-pane reader on its
+  // first sub-chapter, showing one narration; 6578 sits in sub-chapter 2. It is reached with the reader's own "Go to
+  // hadith number" box by its standard number, 6306 (on a phone, after the Chapters step button).
+  await P.waitForSelector("[data-openiti-goto-input]", { state: "attached" });
+  const chaptersStep = await P.$('[data-reader-show="chapters"]');
+  if (chaptersStep && await chaptersStep.isVisible()) await chaptersStep.click();
+  await P.fill("[data-openiti-goto-input]", "6306");
+  await P.click("[data-openiti-goto-btn]");
   await P.waitForSelector('[data-openiti-passage="6578"]');
   const has = await P.$$eval('[data-openiti-passage="6578"] [data-standard-translation]', (ds) => ds.map((d) => d.dataset.standardTranslation));
   check(`${tag} a library narration with a standard number has the two folds (${first} first)`, has.length === 2 && has[0] === first, JSON.stringify(has));
