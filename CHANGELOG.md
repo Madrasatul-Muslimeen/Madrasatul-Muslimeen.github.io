@@ -22670,3 +22670,13 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 - **Measured (Architect, 28 Oct):** `audit-part109` 8 runs, 0 failed; `--mutate=oldlabel` 20 caught, `--mutate=monitornoname` 4 caught; Records and Monitor at 7 widths × en/bn, screenshots looked at; part 108 sweep 0 findings; `bn-duplicate-keys` 6/0; `behaviour.mjs` 971/0.
 - **Found in this review, next round (#1250, security):** Records' rows insert the return note, notes, domain and trackable names into `innerHTML` unescaped.
 - Nothing stored, no Rules changed.
+
+## v12.96 — 28 Oct 2026 — SECURITY: typed and tenant-authored text shown as plain text on eleven shared pages (audit part 110)
+
+- **PCF MSA J29, audit part 110** (Builder run 2125, issue #1250, PR #1252). Report: `docs/reports/2026-10-28-audit-part110-escape.md`. Found by the Architect in the part 109 review: Records' rows put `returnNote`, `notes`, domain and trackable names into `innerHTML` unescaped (stored script injection, tenant-internal).
+- Each insertion now goes through a page-local `escapeHtml` (`esc` on Catalogue): Records, Monitor (+ `js/monitor.js`), Homework, Classes, Course offers, People, Catalogue, and the tenant options on Bookmarks, Notes, Journey map and Import notes.
+- **Architect's commits:** (1) the subjects line on Classes and Course offers still injected under the Architect's payload probe; escaped. (2) `js/monitor.js` had lost two spaces (" — " before the date); restored.
+- New `tools/i18n-verify/audit-part110-escape-browser.mjs` (Records and Monitor, en/bn, 390/1440): 8 runs, 0 failed; `--mutate=records` and `--mutate=monitor` 16 caught each.
+- **Measured (Architect, 28 Oct):** the payload probe (a person, three subjects, a class and the tenant named `<img onerror>`) clean on the 11 fixed pages in en and bn; `audit-part24` 184/0; `audit-part13` 494/0; `audit-part109` 8/0; `bn-duplicate-keys` 6/0; `behaviour.mjs` 971/0. **38e** ("pressing Play again starts the unit over") failed in 2 of 3 runs on this branch and passed on main (971/0) and the third run; the Landing page it drives loads no file this round changed: intermittent, recorded.
+- **Still open, next round #1253:** Curriculum; the person and tenant pickers in `topic-study.js`, `routine-study.js` and `quranrevival.html`; `asma-study.js` tenant options; `migrate.html`.
+- Nothing stored, no Rules changed.
