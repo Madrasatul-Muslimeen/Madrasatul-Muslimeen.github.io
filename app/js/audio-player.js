@@ -262,6 +262,7 @@ let onAyahChange = null;
 let onPlaybackState = null; // shell round 21 -- see setPlaybackStateHandler()
 let oneShotActive = false; // true only while playOneAndWait() owns the shared <audio> element -- see handleEnded() below
 let atEndOfRun = false; // shell round 26 -- see isPaused()
+let userPaused = false; // QR Lead, 28 Oct 2026 -- see isRunContinuing()
 let currentMediaUrl = null; // shell round 26 -- the ONE record of what the shared element was last pointed at; see setMediaSource()
 let nowPlaying = null; // { surahNum, ayahNum, reciterId } -- what a failure message names
 let lastFailure = { key: "", at: 0 }; // shell round 26 -- see reportFailure()
@@ -462,6 +463,9 @@ function playUrl(el, url) {
 
 function startPlayback(el) {
   atEndOfRun = false;
+  // A pause taken while a run was between two āyāt (isRunContinuing) holds: the next āyah, arriving after its seek,
+  // waits for ▶ (resume() clears the flag) instead of starting by itself.
+  if (userPaused && drillAbortController) return Promise.resolve();
   const p = el.play();
   if (!p || typeof p.catch !== "function") return Promise.resolve();
   return p.catch((err) => {
@@ -933,6 +937,7 @@ export function stop() {
   clearBoundaryListener();
   if (audioEl) audioEl.pause();
   atEndOfRun = true; // Stop means stop: the next Play starts the unit again, it does not resume
+  userPaused = false;
 }
 
 export function isPlaying() {
@@ -955,13 +960,26 @@ export function isPlaying() {
  * surah playlist continues to the next ayah exactly as if nothing happened.
  */
 export function pause() {
+  if (isRunContinuing() || (audioEl && !audioEl.paused)) userPaused = true;
   if (audioEl && !audioEl.paused) audioEl.pause();
 }
 
 /** Resumes whatever pause() left loaded. Safe to call when nothing is paused. */
 export function resume() {
   if (!audioEl || !audioEl.paused || !audioEl.src || isSilentUnlock()) return Promise.resolve(false);
+  userPaused = false;
   return startPlayback(audioEl).then(() => true);
+}
+
+/**
+ * QR Lead (28 Oct 2026, behaviour 38e's intermittent failure, measured): between two āyāt of a run the element is
+ * PAUSED while the next āyah seeks or loads (a segmented reciter's boundary pause, a direct reciter's new file), so
+ * isPlaying() is false for that moment and the reading screen's ▶/⏸ flashed "▶ Play" at every āyah -- long enough on
+ * a phone streaming a big surah file to be seen, and a tap in it "resumed" rather than paused. True while a run is
+ * going and nothing but that gap has paused it: the run will sound again by itself, so the button still means Pause.
+ */
+export function isRunContinuing() {
+  return !!drillAbortController && !userPaused && !!audioEl && audioEl.paused && !audioEl.error && !atEndOfRun;
 }
 
 /**
@@ -1015,6 +1033,9 @@ export function unlockAudio() {
     used to make the next Play carry on into the rest of the surah. */
 export function isPaused() {
   if (isSilentUnlock()) return false;
+  // A pause held while a run was between āyāt (28 Oct 2026) is a pause even before the next āyah's file has loaded
+  // (currentTime still 0): ▶ resumes it rather than starting the unit over.
+  if (userPaused && drillAbortController && audioEl && !audioEl.error) return true;
   return !!audioEl && audioEl.paused && !!audioEl.src && audioEl.currentTime > 0
     && !audioEl.ended && !audioEl.error && !atEndOfRun;
 }
@@ -1126,6 +1147,7 @@ export async function playDrill({ surahNum, fromAyah, toAyah, reciterIds, repeat
   if (drillAbortController) drillAbortController.abort();
   const controller = new AbortController();
   drillAbortController = controller;
+  userPaused = false;
   const { signal } = controller;
   const ayahs = [];
   for (let a = fromAyah; a <= toAyah; a++) ayahs.push(a);

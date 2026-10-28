@@ -22763,3 +22763,11 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 - **Architect's review commit:** behaviour 44c and 50h, and audit-part40's bookmarks flow, focus the list before reading its options (updated in place, with the reason).
 - **Measured (Architect, 29 Oct, merged with v12.104):** heavy 78/0 (eager-selects 24/6); audit-part32 896/0, part36 1184/0, part38 503/0, part40 3562/0; journey-map-screen 47/0; bookmark-folder-edit 68/0, bookmarks-page-new-assign 44/0, bookmark-remove 60/0; way-back and keyboard on Bookmarks 16/0 and 22/0; `behaviour.mjs` alone 971/0. Finding: Mapping My Journey reads 1,184 documents at open (part 121).
 - Nothing stored, no Rules changed.
+
+## v12.106 — 29 Oct 2026 — during a recitation Play stays Pause between āyāt, and a tap there pauses (QR Lead)
+
+- **PCF MSA J29, the QR Lead's round** (branch `claude/qr-lead-play-again`, PR #1281), from the v12.104 review's 38e finding.
+- Cause (measured by the QR Lead with a 10 ms trace): every failing 38e run clicked 2–6 ms after āyah 7 began, in the paused gap between āyāt where the label flashed "▶ Play"; that click paused the run (right for a click mid-run). The reported "Play after the end does nothing" did not reproduce: after the real end Play restarted every time.
+- `app/js/audio-player.js`: `isRunContinuing()`, `userPaused` (set by `pause()` in the gap, cleared by `resume()`, `stop()`, `playDrill()`), `startPlayback` holds a held pause, `isPaused()` true for a held pause before the next file loads. `app/quranrevival.html`: the label and the Play tap count the gap as playing. New `tools/i18n-verify/qr-play-run-gap-browser.mjs` (mutations label-flash, tap-resumes, no-hold, no-held-pause).
+- **Measured (Architect, 29 Oct, merged with v12.105):** qr-play-run-gap 21/0 (x3); `--mutate=label-flash` 18/3; the Architect's 38e probe (8 runs) 8 restarted, 0 swallowed; `behaviour.mjs` alone 971/0. QR Lead's guards (as sent): 11 audio and reading suites 0 failed, `apps-build-check` 48/0.
+- QR carries it at its next rebuild. Nothing stored, no Rules changed.
