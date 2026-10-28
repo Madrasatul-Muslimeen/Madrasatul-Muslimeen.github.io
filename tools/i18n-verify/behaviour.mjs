@@ -4168,9 +4168,18 @@ console.log("\n=== 40. Shell round 28: the Mushaf page ===");
   await page.waitForTimeout(700);
   await page.evaluate(() => { for (const el of document.querySelectorAll("#readScroll, #pageViewContainer, .hifz-page")) el.scrollTop = el.scrollHeight; });
   await page.waitForTimeout(200);
+  // UPDATED IN PLACE 29 Oct 2026 (QR Lead), not deleted: the Owner, "Whenever the page scrolling touches the end of
+  // the page ... it moves/ flips to the next page without intending it to ... It needs to stay unless deliberately
+  // scrolls for the next page." An ordinary 160px slide at the foot now STAYS; a deliberate long pull (35% of the
+  // screen's height, 220px minimum) still turns it. qr-mushaf-edge-stay-browser.mjs proves both at 390/600 and by wheel.
   await swipe(page, "#pageViewContainer", 0, -160);
   await page.waitForTimeout(1800);
-  check("40d a slide up at the foot of the page turns it too", (await shown()).unitNum === "51");
+  check("40d an ordinary slide up at the foot of the page STAYS on it (29 Oct 2026)", (await shown()).unitNum === "50");
+  const pull = await page.evaluate(() => Math.ceil(Math.max(220, innerHeight * 0.35)) + 40);
+  await page.evaluate(() => { for (const el of document.querySelectorAll("#readScroll, #pageViewContainer, .hifz-page")) el.scrollTop = el.scrollHeight; });
+  await swipe(page, "#pageViewContainer", 0, -pull);
+  await page.waitForTimeout(1800);
+  check("40d ...and a deliberate long pull up at the foot turns it", (await shown()).unitNum === "51");
   check("40d no page errors", errors.filter((e) => !/archive\.org/.test(e)).length === 0, JSON.stringify(errors.slice(0, 3)));
   await page.close();
   await ctx.close();
