@@ -11,6 +11,11 @@
 //   into-view   ‹ › scroll with scrollIntoView again          -> part 1 fails at 1280/1520
 //   no-fit      the strip is not sized to whole pages          -> part 2 fails at 1280/1520
 //   one-route   only Read -> list gets the Surah-list bar      -> part 3 fails
+//   no-hold     a ‹ › turn into another surah is not held      -> part 1's "no other page on the way" fails (262 flashes)
+// QR Lead, 29 Oct 2026 (the Architect: "‹ from 267 lands on 262" in 2 of 4 runs): measured, ‹ from An-Nahl's first page
+// redrew Al-Hijr page by page from ITS first page, so 262 showed (and the Read bar named it) for 0.4-1.3s before 266 --
+// a slow machine read the suite's page while it was still 262. Every press now records every page the Read bar names on
+// the way, and must name only the target.
 import { chromium, newContext, openPage } from "./harness.mjs";
 
 let pass = 0, fail = 0;
@@ -22,6 +27,7 @@ const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice
 const MUT = {
   "into-view": ["if (el) { scrollToMushafPage(el); updateMushafPageRef(); }", "if (el) { el.scrollIntoView({ inline: \"start\", block: \"start\", behavior: \"instant\" }); updateMushafPageRef(); }"],
   "no-fit": ["    function fitMushafStrip() {\n", "    function fitMushafStrip() { return;\n"],
+  "no-hold": ["const release = holdMushafStripFor(target);", "const release = () => {};"],
   "one-route": ["document.body.classList.toggle(\"read-from-contents\", reading); // issue #419", "if (!reading) document.body.classList.remove(\"read-from-contents\"); // issue #419"],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
@@ -71,8 +77,16 @@ for (const [width, height] of [[1520, 1000], [1280, 800], [390, 844]]) {
   // Part 1: › three times, ‹ four times (the fourth crosses into An-Nahl's previous surah, page 266).
   let cur = p0;
   for (const [btn, dir, n] of [["#mushafPageNextBtn", 1, 3], ["#mushafPagePrevBtn", -1, 4]]) for (let i = 0; i < n; i++) {
+    await page.evaluate(() => {
+      const ref = document.getElementById("mushafPageRef"); window.__refSeen = [];
+      window.__refWatch?.disconnect();
+      window.__refWatch = new MutationObserver(() => { const p = ref.dataset.page; if (p && p !== window.__refSeen.at(-1)) window.__refSeen.push(p); });
+      window.__refWatch.observe(ref, { attributes: true, attributeFilter: ["data-page"] });
+    });
     await page.click(btn); await settle(page, cur);
+    const seen = await page.evaluate(() => window.__refSeen.map(Number));
     const now = await pageNow(page), st = await strip(page);
+    check(`${tag} part 1: ${dir > 0 ? "›" : "‹"} from ${cur}: the Read bar names no other page on the way (${seen.join(" → ") || "—"})`, seen.length > 0 && seen.every((p) => p === cur + dir), JSON.stringify(seen));
     check(`${tag} part 1: ${dir > 0 ? "›" : "‹"} moves exactly one page (${cur} → ${now}) and that page is on screen, whole`, now === cur + dir && st.pages.includes(now) && st.cut.length === 0, JSON.stringify(st));
     cur = now;
   }

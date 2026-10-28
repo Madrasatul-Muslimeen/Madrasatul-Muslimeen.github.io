@@ -4377,6 +4377,9 @@
 
   /* ---------- Mushaf page view (Phase 5 round 7) — Whole Surah / Range ---------- */
   #pageViewContainer { margin-top: 0.6rem; }
+  /* QR Lead, 29 Oct 2026: a ‹ › turn into another surah keeps the strip's pages hidden until the target page is drawn
+     and placed (holdMushafStripFor), so the other surah's first page never flashes. Layout is kept, so it can be placed. */
+  #pageViewContainer.mushaf-turning > * { visibility: hidden; }
   /* box-sizing is the whole of round 28's item 1, and it was measured, not
      guessed: `width: 100%` plus `padding: 18px 16px` with the page's default
      content-box sizing makes this element 32px WIDER than the column it sits
@@ -21203,7 +21206,42 @@
       mushafPagePrevBtn.setAttribute("aria-label", t("Previous page")); mushafPagePrevBtn.title = t("Previous page");
       mushafPageNextBtn.setAttribute("aria-label", t("Next page")); mushafPageNextBtn.title = t("Next page");
     }
+    /** QR Lead (29 Oct 2026, the Architect's finding: qr-mushaf-page-nav part 1 "‹ from 267 lands on 262" in 2 of 4
+        runs). Measured: ‹ on An-Nahl's first page (267) opens Al-Hijr, and the strip is redrawn page by page from
+        Al-Hijr's FIRST page -- the reader saw page 262, and the Read bar named it, for 0.4-1.3s before the turn reached
+        266 (longer on a phone fetching page fonts). While a ‹ › turn into another surah draws, the strip's pages stay
+        hidden and the reference keeps the page the reader left; the strip is shown the moment the target page is drawn
+        and put on it. A turn that never finds its page still shows the strip within 8s. */
+    let mushafPageHold = null;
+    function holdMushafStripFor(target) {
+      const strip = pageViewContainer;
+      mushafPageHold = target;
+      strip.classList.add("mushaf-turning");
+      let done = false;
+      const release = () => {
+        if (done) return;
+        done = true; watch.disconnect(); clearTimeout(timer);
+        strip.classList.remove("mushaf-turning");
+        mushafPageHold = null;
+        updateMushafPageRef();
+      };
+      // Shown only once the target really sits where a page is read: on a computer's two-page spread the strip cannot
+      // scroll that far until the page after it is drawn too, and stopping short showed 265 beside 266 (measured).
+      const place = () => {
+        const el = strip.querySelector(`:scope > .hifz-page[data-mushaf-page="${target}"]`);
+        if (!el) return;
+        scrollToMushafPage(el);
+        if (!document.body.classList.contains("read-sideways")) { release(); return; }
+        const r = strip.getBoundingClientRect(), right = r.left + strip.clientLeft + strip.clientWidth;
+        if (Math.abs(el.getBoundingClientRect().right - right) <= 2) release();
+      };
+      const watch = new MutationObserver(place);
+      watch.observe(strip, { childList: true });
+      const timer = setTimeout(release, 8000);
+      return release;
+    }
     async function stepMushafPage(dir) {
+      if (mushafPageHold !== null) return; // still turning; a second press would aim from the old page again
       const cur = Number(mushafPageRef?.dataset.page);
       const target = cur + dir;
       if (!Number.isFinite(cur) || target < 1 || target > 604) return;
@@ -21215,17 +21253,20 @@
       if (show()) return;
       const first = mushafPageAyahGroups(target)[0];
       if (!first) return;
-      // The same unit choice: a Page unit moves to the page; a range keeps its length; every other unit follows the āyah.
-      if (currentUnitType === "page") { await goToUnitNumber(target); renderUnitNav(); }
-      else {
-        if (currentUnitType === "range") {
-          if (first.surah !== currentSurahNum) { currentSurahNum = first.surah; surahSelect.value = String(first.surah); await loadSurah(); }
-          const span = Math.max(1, rangeSpan);
-          rangeFrom = first.firstAyah; rangeTo = Math.min(first.firstAyah + span - 1, currentSurahData.ayahCount);
+      const release = holdMushafStripFor(target);
+      try {
+        // The same unit choice: a Page unit moves to the page; a range keeps its length; every other unit follows the āyah.
+        if (currentUnitType === "page") { await goToUnitNumber(target); renderUnitNav(); }
+        else {
+          if (currentUnitType === "range") {
+            if (first.surah !== currentSurahNum) { currentSurahNum = first.surah; surahSelect.value = String(first.surah); await loadSurah(); }
+            const span = Math.max(1, rangeSpan);
+            rangeFrom = first.firstAyah; rangeTo = Math.min(first.firstAyah + span - 1, currentSurahData.ayahCount);
+          }
+          await navigateToAyah(first.surah, first.firstAyah, stageView);
         }
-        await navigateToAyah(first.surah, first.firstAyah, stageView);
-      }
-      try { await flowRenderPromise; } catch { /* renderFlowView() reports its own failure on-screen. */ }
+        try { await flowRenderPromise; } catch { /* renderFlowView() reports its own failure on-screen. */ }
+      } finally { release(); }
       show();
     }
     /** QR Lead (the Owner, 23 Oct 2026: "the right nav button doesn't work at all, the left nav button does things
@@ -21268,6 +21309,7 @@
     function updateMushafPageRef() {
       fitMushafStrip();
       if (!mushafPageRef) return;
+      if (mushafPageHold !== null) return; // a ‹ › turn into another surah is still drawing (holdMushafStripFor)
       if (!mushafToggle.checked || getComputedStyle(pageViewContainer).display === "none") {
         clearMushafPageRef(); return;
       }
