@@ -766,3 +766,55 @@ export function mountBookmarkMenu(navBarEl, { db, getTenantId, getPersonId, getB
     if (details.open && !loading) load();
   });
 }
+
+/**
+ * Audit part 115 (PCF MSA J29, the way-back law): ← Back returns to the place the reader LEFT. Going back through
+ * history the browser restores the scroll position at once, but a page that draws its content later (Bookmarks reads
+ * its list first) is still only one screen tall at that moment, so the position clamps to 0. Measured at 390px in
+ * Bangla: scrollHeight 844 at first paint against a saved 105, 1163 some 250ms later (English happens to draw sooner).
+ * So every page that loads this module keeps {scrollY, open <details>} for the address it is leaving, and on a
+ * back/forward arrival waits for the content to be tall enough, then puts the reader back. A reader who scrolls first
+ * is never overruled. Session only, nothing stored on a server.
+ */
+const PLACE_KEY = "mmsa.wayBackPlace";
+const PLACE_MAX_AGE_MS = 30 * 60 * 1000;
+const placeDetails = () => [...document.querySelectorAll("details")].filter((d) => !d.closest("nav, #navBar, .nav-bar, .nav-cat"));
+function readPlaces() { try { return JSON.parse(sessionStorage.getItem(PLACE_KEY) || "{}") || {}; } catch { return {}; } }
+function keepPlace() {
+  try {
+    const all = readPlaces();
+    all[location.href] = { y: Math.round(window.scrollY), open: placeDetails().map((d, i) => (d.open ? i : -1)).filter((i) => i >= 0), at: Date.now() };
+    const keep = Object.entries(all).sort((a, b) => b[1].at - a[1].at).slice(0, 20);
+    sessionStorage.setItem(PLACE_KEY, JSON.stringify(Object.fromEntries(keep)));
+  } catch { /* private mode: the browser's own restoration is all there is */ }
+}
+function restorePlace() {
+  if (window.__mmsaNoPlaceRestore) return; // the audit's --mutate=no-place-restore
+  let nav = null;
+  try { nav = performance.getEntriesByType("navigation")[0]; } catch { nav = null; }
+  if (!nav || nav.type !== "back_forward") return;
+  const p = readPlaces()[location.href];
+  if (!p || !(p.y > 0) || Date.now() - p.at > PLACE_MAX_AGE_MS) return;
+  let moved = false, done = false, timer = 0;
+  const USER = ["wheel", "touchstart", "keydown", "pointerdown"];
+  const stop = () => { done = true; clearInterval(timer); USER.forEach((e) => window.removeEventListener(e, onUser)); };
+  const onUser = () => { moved = true; stop(); };
+  USER.forEach((e) => window.addEventListener(e, onUser, { passive: true }));
+  const startedAt = Date.now();
+  const tick = () => {
+    if (done) return;
+    const dets = placeDetails();
+    for (const i of p.open || []) if (dets[i] && !dets[i].open) dets[i].open = true;
+    const tall = document.documentElement.scrollHeight >= p.y + window.innerHeight;
+    if (tall && !moved) {
+      if (Math.abs(window.scrollY - p.y) > 2) window.scrollTo(0, p.y);
+      // done once it has held a moment: content still arriving may move it again
+      if (Math.abs(window.scrollY - p.y) <= 2 && Date.now() - startedAt > 600) stop();
+    }
+    if (Date.now() - startedAt > 6000) stop();
+  };
+  timer = setInterval(tick, 100);
+  tick();
+}
+window.addEventListener("pagehide", keepPlace);
+if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", restorePlace, { once: true }); else restorePlace();
