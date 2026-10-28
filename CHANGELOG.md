@@ -22660,3 +22660,13 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 - **Measured (Architect, 28 Oct):** sweep 0 findings, its mutation caught; `audit-part24` 184/0; `audit-part13` 494/0; Records at 7 widths × en/bn for a surah and a subject, screenshots looked at; `bn-duplicate-keys` 6/0; `behaviour.mjs` 971/0.
 - **Found in this review, next round (#1247):** Records' "This week's activity" shows a topic as "বিষয় t42" (`unitKeyLabel` prints the topic's id).
 - Nothing stored, no Rules changed.
+
+## v12.95 — 28 Oct 2026 — Records and Monitor name a topic instead of printing its id (audit part 109)
+
+- **PCF MSA J29, audit part 109** (Builder run 2120, issue #1247, PR #1249). Report: `docs/reports/2026-10-28-audit-part109-records-topic-name.md`.
+- `unitKeyLabel(unitKey, resolveName)` (`app/js/unit-keys.js`) no longer prints a topic's id (I5 key, I11 name): with a resolver it shows "Topic: <name>" (বিষয়: <name>), without one just the translated word. Records passes a resolver over the subject tree it already loads (no new read).
+- **Architect's commit:** Monitor's activity table loads the same subject tree but showed a bare "Topic"; it now passes the same resolver. The part 109 suite gains a Monitor block and `--mutate=monitornoname`.
+- The part 108 sweep also flags a short letters-plus-digits id after a unit word (self-test 4/4 ids, 10/10 real texts clean).
+- **Measured (Architect, 28 Oct):** `audit-part109` 8 runs, 0 failed; `--mutate=oldlabel` 20 caught, `--mutate=monitornoname` 4 caught; Records and Monitor at 7 widths × en/bn, screenshots looked at; part 108 sweep 0 findings; `bn-duplicate-keys` 6/0; `behaviour.mjs` 971/0.
+- **Found in this review, next round (#1250, security):** Records' rows insert the return note, notes, domain and trackable names into `innerHTML` unescaped.
+- Nothing stored, no Rules changed.
