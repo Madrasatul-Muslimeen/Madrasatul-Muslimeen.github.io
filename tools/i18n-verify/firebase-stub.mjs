@@ -34,7 +34,10 @@ async function __trip(kind, col, id, produce) {
     }
   } catch (e) {}
   rec.t1 = performance.now();
-  return produce();
+  var out = produce();
+  // Audit part 119: how many documents this read returned (heavy-account-speed-browser.mjs counts them). Additive.
+  try { rec.docs = out && typeof out.size === "number" ? out.size : (out && typeof out.exists === "function" && out.exists() ? 1 : 0); } catch (e) {}
+  return out;
 }
 
 try { window.__stubRelease = function () { var held = window.__stubHeld || []; window.__stubHeld = []; window.__stubHold = []; held.forEach(function (r) { r(); }); }; } catch (e) {}
