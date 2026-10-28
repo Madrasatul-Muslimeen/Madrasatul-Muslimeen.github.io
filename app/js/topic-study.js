@@ -255,7 +255,11 @@ export function initTopicStudyPage({ moduleId, trackableId, rootSubjectId }) {
     const root = moduleSubjects.find((n) => n.id === rootSubjectId);
     currentParentId = rootSubjectId;
     chunkSubjectId = rootSubjectId;
-    rootLabel = root ? langText(root.name, getAppLang(), moduleId) : moduleId;
+    // Never a raw id (I11): when the root subject is absent, or has no name,
+    // fall back to the id read as an English name ("deen_study" -> "Deen Study")
+    // and run it through the translation catalogue.
+    const idAsName = t(String(rootSubjectId || moduleId).split("_").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" "));
+    rootLabel = root ? langText(root.name, getAppLang(), idAsName) : idAsName;
 
     // Four independent reads (records, enrolments, teacher scoping,
     // bookmarks) -- fired together instead of one at a time.
