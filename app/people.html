@@ -405,7 +405,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
         <td>${displayName}</td>
         <td data-person-age>${ageFromBirthYear(person.birthYear) === null ? "—" : num(ageFromBirthYear(person.birthYear))}</td>
         <td>${roleText}</td>
-        <td>${managerName}</td>
+        <td>${escapeHtml(managerName)}</td>
         ${actionCell}
       </tr>`;
     }

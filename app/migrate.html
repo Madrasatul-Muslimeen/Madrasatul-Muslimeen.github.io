@@ -98,7 +98,7 @@
         whoEl.textContent += " — you're not owner/prime on any tenant, so there's nothing you're allowed to migrate into. Create a tenant on onboarding.html first.";
         return;
       }
-      tenantSelect.innerHTML = myMemberships.map((m) => `<option value="${m.tenantId}">${m.tenantName} (${m.roles.join(", ")})</option>`).join("");
+      tenantSelect.innerHTML = myMemberships.map((m) => `<option value="${m.tenantId}">${String(m.tenantName ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")} (${m.roles.join(", ")})</option>`).join("");
       activeTenantId = myMemberships[0].tenantId;
       appEl.style.display = "block";
     });

@@ -1509,7 +1509,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
           ${handle}
           <button class="trk-sec-toggle" type="button" data-sec-key="${esc(key)}" aria-expanded="${open}">
             <span class="trk-sec-caret" aria-hidden="true">${open ? "▾" : "▸"}</span>
-            <strong style="font-size:0.95rem;">${label}</strong>
+            <strong style="font-size:0.95rem;">${esc(label)}</strong>
             <span class="trk-sec-count"> — ${t("{n} Approaches", { n: num(count) })}</span>
           </button>
         </div>

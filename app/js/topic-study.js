@@ -45,6 +45,7 @@ import { NO_PROGRAM } from "./bookmarks.js";
 import { buildUnitKey, statusLabel } from "./unit-keys.js";
 import { confirmStateLabel } from "./labels.js";
 import { chunkKeyFor, getRecordsChunk, claimStatus } from "./records.js";
+import { escapeHtml } from "./html-escape.js";
 import { logActivity } from "./activity.js";
 import { getResourcesByIds } from "./resources.js";
 import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./nav.js";
@@ -110,7 +111,7 @@ export function initTopicStudyPage({ moduleId, trackableId, rootSubjectId }) {
   // a whole extra round trip.
   function renderTenantSelect(memberships) {
     tenantSelect.innerHTML = memberships
-      .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName ?? m.tenantId} (${roleListLabel(m.roles)})</option>`)
+      .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${escapeHtml(m.tenantName ?? m.tenantId)} (${roleListLabel(m.roles)})</option>`)
       .join("");
   }
 
@@ -237,7 +238,7 @@ export function initTopicStudyPage({ moduleId, trackableId, rootSubjectId }) {
 
     const visibleRoster = (viewAsRole ? scopedRoster(roster, effRoles, myPersonId) : roster).filter((p) => p.status !== "archived");
     personSelect.innerHTML = visibleRoster
-      .map((p) => `<option value="${p.id}">${langText(p.name, getAppLang(), p.id)}</option>`)
+      .map((p) => `<option value="${p.id}">${escapeHtml(langText(p.name, getAppLang(), p.id))}</option>`)
       .join("");
     // Fix round (25 Aug 2026): a Person selection now stays chosen across
     // pages and reloads, until manually changed -- fall back to the first
