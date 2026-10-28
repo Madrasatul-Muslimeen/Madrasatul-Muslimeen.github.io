@@ -541,7 +541,7 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
     import { langText } from "./js/lang.js";
     import { getAppLang, mountCardLookControl } from "./js/prefs.js";
     import { adoptAppLangFromUserIndex, mountSyncedAppLangControl } from "./js/lang-sync.js";
-    import { safeWrite, reportWriteFailure } from "./js/errors.js";
+    import { safeWrite, reportWriteFailure, noteIfSavedOffline } from "./js/errors.js";
     import { getMyMembershipRoles, hydrateMemberships, pickContext, setActiveContext, getSelectedPersonId, setSelectedPersonId } from "./js/session-context.js";
     import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
     import { translateStatic, t } from "./js/i18n.js";
@@ -768,6 +768,7 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
     async function runFolderWrite(writeFn, context) {
       try {
         const result = await writeFn();
+        noteIfSavedOffline();
         return { ok: true, result };
       } catch (err) {
         const known = folderBusinessRefusal(err);

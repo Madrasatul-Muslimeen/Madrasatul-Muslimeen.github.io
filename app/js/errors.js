@@ -133,6 +133,39 @@ export function reportWriteFailure(error, context = {}) {
   return entry;
 }
 
+/**
+ * Audit part 124: offline persistence (D5) lets a write "succeed" against the device's own copy while nothing has
+ * left the device. When the line is down, say so plainly -- a calm notice (not the red failure banner), dismissible,
+ * never blocking further writing. Shows nothing while online. Safe to call after any successful save.
+ */
+export function noteIfSavedOffline() {
+  if (typeof window === "undefined" || typeof navigator === "undefined" || navigator.onLine !== false) return;
+  let box = document.getElementById("qr-offline-save-notice");
+  if (!box) {
+    box = document.createElement("div");
+    box.id = "qr-offline-save-notice";
+    box.setAttribute("role", "status");
+    box.style.cssText =
+      "position:fixed;bottom:0;left:0;right:0;background:#fff3cd;color:#533f03;border-top:1px solid #e0c36a;" +
+      "padding:0.75rem 1rem;font-family:system-ui,sans-serif;font-size:0.95rem;z-index:9998;display:flex;align-items:flex-start;gap:0.75rem;";
+    const text = document.createElement("div");
+    text.setAttribute("data-offline-save-text", "");
+    text.style.cssText = "flex:1 1 auto;min-width:0;overflow-wrap:anywhere;";
+    const close = document.createElement("button");
+    close.type = "button";
+    close.setAttribute("data-offline-save-close", "");
+    close.setAttribute("aria-label", t("Close"));
+    close.textContent = "✕";
+    close.style.cssText = "flex:0 0 auto;width:44px;height:44px;border:1px solid #cdb36a;border-radius:8px;background:#fff;color:#533f03;font-size:1.1rem;cursor:pointer;";
+    close.addEventListener("click", () => { box.style.display = "none"; });
+    box.append(text, close);
+    document.body.appendChild(box);
+    window.addEventListener("online", () => { box.style.display = "none"; });
+  }
+  box.querySelector("[data-offline-save-text]").textContent = t("Saved on this device — it will be sent when you are online.");
+  box.style.display = "flex";
+}
+
 /** Read-only view of every write failure recorded this session (for F-008). */
 export function getSessionErrorBuffer() {
   return [...sessionErrorBuffer];
@@ -146,6 +179,7 @@ export function getSessionErrorBuffer() {
 export async function safeWrite(writeFn, context = {}) {
   try {
     const result = await writeFn();
+    noteIfSavedOffline();
     return { ok: true, result };
   } catch (error) {
     const entry = reportWriteFailure(error, context);

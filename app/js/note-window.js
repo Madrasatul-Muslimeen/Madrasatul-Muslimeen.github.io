@@ -298,7 +298,7 @@ export function createNoteViews(host) {
   function setEditStatus(v, kind) {
     const text = {
       device: t("Saved on this device"),
-      saved: t("Saved"),
+      saved: navigator.onLine === false ? t("Saved on this device — will be sent when you are online") : t("Saved"),
       unsaved: t("Not saved yet — will try again"),
       conflict: t("This Note changed on another device. Your text is kept on this device — copy it before reloading."),
     }[kind] || "";
