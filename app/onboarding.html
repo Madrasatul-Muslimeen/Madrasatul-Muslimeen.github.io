@@ -83,7 +83,7 @@
 
   <div id="result"></div>
   <!-- Audit part 64: the way back. A person who is not making a family account would otherwise have no way into the app from here. -->
-  <p><a id="backLink" href="index.html">Open the app</a></p>
+  <p><a id="backLink" href="index.html?navBack=1">Open the app</a></p>
 
   <section id="familyStep" class="family-step" aria-labelledby="familyHeading" hidden>
     <p class="step-label">Step 2 of 2</p>
@@ -246,7 +246,7 @@
       paintFamily();
       document.getElementById(`famName${familyRows.length - 1}`)?.focus();
     });
-    const appLink = () => `<a href="index.html">${esc(t("Open the app"))}</a>`;
+    const appLink = () => `<a href="index.html?navBack=1">${esc(t("Open the app"))}</a>`;
     document.getElementById("familySkip").addEventListener("click", () => {
       familyResult.innerHTML = `${esc(t("You can add family members any time on the People page."))} ${appLink()}`;
     });

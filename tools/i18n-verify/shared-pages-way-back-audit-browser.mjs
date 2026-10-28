@@ -46,6 +46,28 @@ DATA.trackables[0].name = lang("Reading (with Tajweed)");
 DATA.classes[0].name = lang("Weekend Qur'an Memorisation and Tajweed Circle (Year 7–9)");
 DATA.courseOffers[0].name = lang("Weekend Qur'an Memorisation and Tajweed Circle (Year 7–9)");
 DATA.bookmarks[0].saved[0].name = "Ayat al-Kursi and the last two āyāt of Al-Baqarah";
+// Audit part 114 (PCF MSA J29): the links a real tenant sees. Built here, never in firebase-stub.mjs's shared DATA.
+(function () {
+  window.__stubApplyBatches = true; window.__stubRecordTxData = true; window.__DATA = DATA;
+  var own = { tenantId: TENANT_ID, ownerPersonId: "p1", ownerUid: "test-uid", schemaVersion: 1 };
+  function ts(d) { return { toDate: function () { return new Date(d || "2026-09-01T10:00:00Z"); }, toMillis: function () { return new Date(d || "2026-09-01T10:00:00Z").getTime(); } }; }
+  function hx(l) { return l.slice(1).repeat(32); }
+  DATA.noteFolders = [Object.assign({ _id: TENANT_ID + "__fA", folderId: "fA", name: "Reflections", parentFolderId: null, semanticRole: "user", order: 0, status: "active", updatedAt: ts() }, own)];
+  DATA.notes = []; DATA.notePlacements = []; DATA.noteRevisions = []; DATA.noteSections = []; DATA.noteTags = []; DATA.noteTagLinks = []; DATA.noteSources = []; DATA.noteLinks = [];
+  [["n1", "A note filed to Ayat al-Kursi", "ayah:2:255", "quran-unit"], ["n2", "A note filed to a hadith", "hadith:synthetic-collection-1:1", "hadith-unit"]].forEach(function (r, i) {
+    var id = hx(r[0]);
+    DATA.notes.push(Object.assign({ _id: TENANT_ID + "__" + id, noteId: id, title: r[1], bodyHtml: "<p>Body</p>", currentRevisionId: "rev-" + id, status: "active", visibility: "private", createdAt: ts(), updatedAt: ts() }, own));
+    DATA.noteSources.push(Object.assign({ _id: TENANT_ID + "__s-" + id, sourceLinkId: "s-" + id, noteId: id, sourceKey: r[2], sourceKind: r[3], relationshipKind: "origin", approachId: null, provenanceKind: "study-note", status: "active", createdAt: ts(), updatedAt: ts() }, own));
+    DATA.notePlacements.push(Object.assign({ _id: TENANT_ID + "__p" + i, placementId: "p" + i, noteId: id, folderId: "fA", order: i, status: "active" }, own));
+  });
+  function BM(id, mod, subj, name, pos, folder, extra) { return Object.assign({ id: id, programId: "none", moduleId: mod, subjectId: subj, name: name, position: pos, folderId: folder, removed: false, createdAt: "2026-09-01T00:00:00.000Z" }, extra || {}); }
+  var b = DATA.bookmarks[0];
+  b.folders = [{ id: "bA", name: "Daily reading", parentId: null, personTagId: null, removed: false, createdAt: "2026-09-01T00:00:00.000Z" }];
+  b.saved.push(BM("b2", "hadith", "hadith", "A saved hadith", "hadith:synthetic-collection-1:1", "bA"));
+  b.saved.push(BM("b3", "dua", "dua", "A saved dua", "dua:1", "bA"));
+  DATA.assignments[0].unitKeys = ["ayah:1:1", "ayah:1:2"];
+  DATA.resources[0].url = "https://example.org/lesson";
+})();
 `;
 const VIEWPORTS = [[1440, 900], [390, 844]];
 const TOL = 80;
@@ -264,7 +286,8 @@ async function runPage(name, path, w, h, lang) {
     const errs = quiet([]).length;
     summary.push({ page: name, path, w, lang, found: total + navButtons.length, links: total, buttons: navButtons.length, checked: todo.length, ok: n.ok, noback: n.noback, wrong: n.wrong, menu: menu.length, external: external.length });
     findings.push({ page: name, path, w, lang, rows: rowsHere, menu: menu.map((m) => m.href || m.text), external: external.map((m) => m.href || m.text) });
-    if (LIST) console.log(`   ${tag}: ${total} links, ${navButtons.length} navigating buttons, ${menu.length} menu, ${external.length} external; ok ${n.ok}, no back ${n.noback}, wrong place ${n.wrong}`);
+    // Audit part 114: always printed, so a page that still finds 0 in-page controls is visible
+    console.log(`   ${tag}: ${total} links, ${navButtons.length} navigating buttons${total + navButtons.length === 0 ? " (NO IN-PAGE CONTROLS FOUND)" : ""}, ${menu.length} menu, ${external.length} external; ok ${n.ok}, no back ${n.noback}, wrong place ${n.wrong}`);
     return total;
   } finally { await ctx.close(); }
 }

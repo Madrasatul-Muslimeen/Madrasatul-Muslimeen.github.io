@@ -2011,3 +2011,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v12.98** (2026-10-28): SECURITY: Resource text escaped, typed links only open if web or mail (audit part 112).
 - **v12.99** (2026-10-28): SECURITY: names inside attributes escaped (audit part 113).
 - **v12.100** (2026-10-28): the Read contents search takes an ayah (J107).
+- **v12.101** (2026-10-28): way-back: Open the app and Journey map back leave a way back (audit part 114).

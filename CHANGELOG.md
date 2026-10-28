@@ -22720,3 +22720,12 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 - New `tools/i18n-verify/read-contents-ayah-search-browser.mjs` (QR Lead): 74/0; mutations noref/noenter/nogo caught (the Architect re-ran noref: 41 failed).
 - **Measured (Architect, 28 Oct):** 74/0 on the merged branch; `read-contents-browser` 248/0; screenshots looked at (Bangla 390 list with ৬:১৬১, English 390 Read view on 6:161); `behaviour.mjs` 971/0 alone; `bn-duplicate-keys` 6/0; `apps-build-check` 48/0; QR build applies.
 - Nothing stored, no Rules changed.
+
+## v12.101 — 28 Oct 2026 — the way-back law: "Open the app" and Mapping My Journey's ← leave a way back (audit part 114)
+
+- **PCF MSA J29, audit part 114** (Builder run 2145, issue #1263, PR #1264). Report: `docs/reports/2026-10-28-audit-part114-way-back-richer.md`.
+- `onboarding.html` (2 links) and `accept-invite.html`: "Open the app" → `index.html?navBack=1` (part 95 finding 2). `index.html` (the redirect stub) forwards `location.search` and `location.hash` to `quranrevival.html`, so the marker is kept. `journey-map.html` `#backLink` → `quranrevival.html?navBack=1` (part 95 finding 4).
+- `shared-pages-way-back-audit-browser.mjs`: richer seed in the check (notes filed to an āyah and a hadith, Hadith and Dua bookmarks in a folder, homework `unitKeys`); prints each page's in-page control count and flags 0. Most pages (Records, Monitor, Homework, Classes, …) draw buttons only and have no link to a study page, so they still find 0; recorded in the report.
+- **Architect's release commit:** a missing space between two attributes on the Journey map link (a parse error); `.gitignore` adds `tools/i18n-verify/out/`.
+- **Measured (Architect, 28 Oct):** the audit with the Bangla pass (`--max=30`): 24 OK, 0 NO BACK, 4 WRONG PLACE, all Bookmarks 390 bn (Open → ← Back lands at scrollY 0, was 105/319), **identical on v12.100**: next round part 115. `--mutate=noback` and `--mutate=lose-scroll` fail (Builder); `behaviour.mjs` 971/0 alone; `notes-way-back` 33/0 (Builder); `apps-build-check` 48/0; QR keeps its own `index.html`.
+- Nothing stored, no Rules changed.
