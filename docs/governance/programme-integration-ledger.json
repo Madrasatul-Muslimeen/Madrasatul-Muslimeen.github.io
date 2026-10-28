@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "12.103",
+    "version": "12.104",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -5513,8 +5513,20 @@
     {
       "version": "12.103",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Audit part 116 (PCF MSA J29): js/table-focus.js finds the scrolling box by its computed overflow; Taglines, Monitor, Records and About load it.",
+      "integration": {
+        "authorizedOn": "2026-10-28",
+        "integratedOn": "2026-10-28",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.104",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "QR Lead (PCF MSA J29, from the v12.102 review): while a way back is docked, the Read bar keeps two lines at 320/360 and the Word card's back sits on its top row at 360; CSS only in quranrevival.html.",
       "integration": {
         "authorizedOn": "2026-10-28",
         "integratedOn": "2026-10-28",
@@ -5523,8 +5535,9 @@
       }
     }
   ],
-  "nextUnallocated": "12.104",
+  "nextUnallocated": "12.105",
   "nextUnallocatedNote": [
+    "v12.104 was allocated to the way back shares a row: Read bar at 320 and 360, Word card header at 360 (QR Lead), 2026-10-28.",
     "v12.103 was allocated to table buttons fully in view with the Tab key on a small phone (audit part 116), 2026-10-28.",
     "v12.102 was allocated to way-back: Bookmarks' Back keeps your place on a phone in Bangla (audit part 115), 2026-10-28.",
     "v12.101 was allocated to way-back: Open the app and Journey map back leave a way back (audit part 114), 2026-10-28.",
