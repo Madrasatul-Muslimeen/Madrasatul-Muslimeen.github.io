@@ -33,6 +33,8 @@ const FCP_MAX = 3000, READY_MAX = 6000, LONG_TASK_MAX = 200, SCROLL_MAX = 100;
 // Reads that fetch "everything for a person" are judged per collection: a single read may return at most 100 documents
 // (the deployed Rules' listIsBounded cap) and a page may not issue more than this many reads in all.
 const READ_DOC_CAP = 100;
+// Audit part 122: the slow phone line, time the last folder read lands (the tree can be drawn and tapped then).
+const TREE_MAX = { bn: 3700, en: 3400 };
 
 const PAGES = [["Notes", "notes.html?unit=ayah:2:255"], ["Journey map", "journey-map.html"], ["Bookmarks", "bookmarks.html"]];
 const PROFILES = [
@@ -98,6 +100,8 @@ const SEED = `
 // A mutation is a text replacement the suite's own gzip server applies to one served file.
 const MUTATIONS = {
   // bookmarks.html builds every row's two selects with the full option list again (6,700 nodes, 140-190 ms long task).
+  // journey-map.html no longer hints the browser to fetch its deep modules (and the Bangla catalogue) at once.
+  "no-preload": { file: "journey-map.html", from: "l.rel='modulepreload'", to: "l.rel='prefetch'" },
   "eager-selects": { file: "bookmarks.html", from: "const LAZY_ROW_SELECTS = true;", to: "const LAZY_ROW_SELECTS = false;" },
 };
 if (MUTATE && !MUTATIONS[MUTATE]) throw new Error(`unknown --mutate=${MUTATE}`);
@@ -159,8 +163,11 @@ async function openAndMeasure(path, prof, lang, { scroll = true } = {}) {
     const paint = performance.getEntriesByType("paint").find((p) => p.name === "first-contentful-paint");
     const log = (window.__fsLog || []).map((r) => ({ kind: r.kind, col: r.col, t0: r.t0, t1: r.t1, docs: r.docs ?? 0 }));
     const lastRead = Math.max(0, ...log.map((r) => r.t1 || 0));
-    return { fcp: paint ? paint.startTime : null, log, lastRead, long: window.__long || [], nodes: document.getElementsByTagName("*").length, height: document.documentElement.scrollHeight };
+    const hints = [...document.querySelectorAll('link[rel="modulepreload"]')].map((l) => l.getAttribute("href"));
+    return { hints, fcp: paint ? paint.startTime : null, log, lastRead, long: window.__long || [], nodes: document.getElementsByTagName("*").length, height: document.documentElement.scrollHeight };
   });
+  if (process.argv.includes("--dump")) console.log((await page.evaluate(() => performance.getEntriesByType("resource").filter((e) => /\.(js|html)/.test(e.name)).map((e) => `${e.name.split("/app/")[1] || e.name.slice(-40)} ${Math.round(e.startTime)}-${Math.round(e.responseEnd)}`))).join("\n"));
+  if (process.argv.includes("--dump")) console.log(data.log.map((r) => `${r.col} ${Math.round(r.t0)}-${Math.round(r.t1)} ${r.docs}`).join("\n"));
   // Scroll: 20 steps to the end; time from the scroll to the next painted frame.
   let scrollMs = [];
   if (scroll) {
@@ -181,11 +188,13 @@ async function openAndMeasure(path, prof, lang, { scroll = true } = {}) {
   const longAfter = await page.evaluate(() => window.__long || []);
   await ctx.close();
   const reads = data.log.filter((r) => ["getDoc", "getDocs", "getCount", "txGet"].includes(r.kind));
+  const folderRead = reads.filter((r) => r.col === "noteFolders").map((r) => r.t1 || 0);
+  const treeAt = folderRead.length ? Math.max(...folderRead) : null; // the folder tree can be drawn (and tapped) from here
   const ready = Math.max(data.fcp || 0, data.lastRead);
   const byCol = {};
   for (const r of reads) { const c = String(r.col); byCol[c] = byCol[c] || { reads: 0, docs: 0, maxDocs: 0 }; byCol[c].reads++; byCol[c].docs += r.docs; byCol[c].maxDocs = Math.max(byCol[c].maxDocs, r.docs); }
   const longTasks = longAfter.filter((t) => t.s < ready + 1500).map((t) => t.d);
-  return { fcp: data.fcp, ready, reads: reads.length, docs: reads.reduce((a, r) => a + r.docs, 0), byCol, maxLong: Math.max(0, ...longTasks), longTasks: longTasks.length, scrollMax: Math.max(0, ...scrollMs), scrollAvg: scrollMs.length ? scrollMs.reduce((a, b) => a + b, 0) / scrollMs.length : 0, nodes: data.nodes, height: data.height, errors: errors.length };
+  return { hints: data.hints, treeAt, fcp: data.fcp, ready, reads: reads.length, docs: reads.reduce((a, r) => a + r.docs, 0), byCol, maxLong: Math.max(0, ...longTasks), longTasks: longTasks.length, scrollMax: Math.max(0, ...scrollMs), scrollAvg: scrollMs.length ? scrollMs.reduce((a, b) => a + b, 0) / scrollMs.length : 0, nodes: data.nodes, height: data.height, errors: errors.length };
 }
 
 for (const [name, path] of PAGES) {
@@ -197,7 +206,7 @@ for (const [name, path] of PAGES) {
       const m = { name, path, prof: prof.key, lang, ...(await openAndMeasure(path, prof, lang)) };
       rows.push(m);
       const tag = `${name} / ${prof.key} / ${lang}`;
-      console.log(`   ${tag.padEnd(34)} FCP ${String(Math.round(m.fcp ?? -1)).padStart(5)}  ready ${String(Math.round(m.ready)).padStart(5)}  reads ${String(m.reads).padStart(3)}  docs ${String(m.docs).padStart(4)}  long ${m.longTasks} (max ${Math.round(m.maxLong)})  scroll max ${Math.round(m.scrollMax)} avg ${Math.round(m.scrollAvg)}  nodes ${m.nodes}`);
+      console.log(`   ${tag.padEnd(34)} FCP ${String(Math.round(m.fcp ?? -1)).padStart(5)}  ready ${String(Math.round(m.ready)).padStart(5)}  tree ${String(Math.round(m.treeAt ?? -1)).padStart(5)}  reads ${String(m.reads).padStart(3)}  docs ${String(m.docs).padStart(4)}  long ${m.longTasks} (max ${Math.round(m.maxLong)})  scroll max ${Math.round(m.scrollMax)} avg ${Math.round(m.scrollAvg)}  nodes ${m.nodes}`);
       console.log(`      reads by collection: ${Object.entries(m.byCol).map(([c, v]) => `${c} ${v.reads}x/${v.docs}d`).join(", ")}`);
       check(`${tag}: no page error`, m.errors === 0, `${m.errors} page errors`);
       check(`${tag}: FCP was measured`, m.fcp != null);
@@ -205,6 +214,10 @@ for (const [name, path] of PAGES) {
       check(`${tag}: no main-thread long task over ${LONG_TASK_MAX} ms`, m.maxLong <= LONG_TASK_MAX, `${Math.round(m.maxLong)} ms`);
       check(`${tag}: scroll-to-frame <= ${SCROLL_MAX} ms at every step`, m.scrollMax <= SCROLL_MAX, `${Math.round(m.scrollMax)} ms`);
       if (path === "bookmarks.html") check(`${tag}: 200 bookmarks in 15 folders draw in under 4,000 DOM nodes (6,767 with a full option list in every row)`, m.nodes < 4000, `${m.nodes} nodes`);
+      if (path === "journey-map.html") {
+        check(`${tag}: the page hints its deep modules${lang === "bn" ? " and the Bangla catalogue" : ""} (modulepreload)`, m.hints.length >= 20 && (lang !== "bn" || m.hints.some((h) => h.endsWith("i18n/bn.js"))), `${m.hints.length} hints`);
+        if (prof.throttle) check(`${tag}: the folder tree has its folders by ${TREE_MAX[lang]} ms`, m.treeAt != null && m.treeAt <= TREE_MAX[lang], `${Math.round(m.treeAt)} ms`);
+      }
       if (prof.throttle) {
         check(`${tag}: FCP <= ${FCP_MAX} ms`, m.fcp != null && m.fcp <= FCP_MAX, `${Math.round(m.fcp)} ms`);
         check(`${tag}: ready <= ${READY_MAX} ms`, m.ready <= READY_MAX, `${Math.round(m.ready)} ms`);

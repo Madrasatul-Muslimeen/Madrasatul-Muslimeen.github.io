@@ -11,6 +11,14 @@
      here too (the same read path notes.html already uses), so it goes
      through the same DOMPurify allow-list before ever touching innerHTML. -->
 <script src="vendor/purify.min.js" defer></script>
+<!-- Audit part 122: LOAD SPEED. A module is only discovered once its importer has arrived, so this page's 60-odd modules
+     arrived five levels deep (~2.6 s on the slow phone line) and, in Bangla, the 460 KB catalogue (i18n.js awaits it at
+     evaluation, which starts only after the WHOLE graph is fetched) began last. These hints start every deep module and the
+     catalogue at once. They fetch only files this page imports anyway; nothing is read or shown differently. -->
+<script>(function(){try{var d=document,h=d.head,add=function(u){var l=d.createElement('link');l.rel='modulepreload';l.href=u;h.appendChild(l);};
+var deep=['envelope','journey-tray','zab-readiness','hidden-modules','note-image-path','note-sheet-engine','activity','note-journal-evidence','study-note-binding','study-event-wiring','note-user-settings','journey-map-contract','journey-map-shard','float-window','minimise','note-link-preview','note-sheet-ui','unit-keys','fatiha-count','study-activity-evidence-store','study-evidence-readiness','study-activity-evidence-id','study-reading-units-readiness'];
+for(var i=0;i<deep.length;i++)add('js/'+deep[i]+'.js');
+if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n/surah-names-bn.js');add('js/i18n/asma-names-bn.js');}}catch(e){}})();</script>
 <style>
   body { font-family: system-ui, sans-serif; max-width: 46rem; margin: 2rem auto; padding: 0 1rem 4rem; color: #222; }
   h1 { font-size: 1.4rem; margin-bottom: 0.2rem; }
