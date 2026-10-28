@@ -22766,7 +22766,7 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 
 ## v12.106 — 29 Oct 2026 — during a recitation Play stays Pause between āyāt, and a tap there pauses (QR Lead)
 
-- **PCF MSA J29, the QR Lead's round** (branch `claude/qr-lead-play-again`, PR #1280), from the v12.104 review's 38e finding.
+- **PCF MSA J29, the QR Lead's round** (branch `claude/qr-lead-play-again`, PR #1281), from the v12.104 review's 38e finding.
 - Cause (measured by the QR Lead with a 10 ms trace): every failing 38e run clicked 2–6 ms after āyah 7 began, in the paused gap between āyāt where the label flashed "▶ Play"; that click paused the run (right for a click mid-run). The reported "Play after the end does nothing" did not reproduce: after the real end Play restarted every time.
 - `app/js/audio-player.js`: `isRunContinuing()`, `userPaused` (set by `pause()` in the gap, cleared by `resume()`, `stop()`, `playDrill()`), `startPlayback` holds a held pause, `isPaused()` true for a held pause before the next file loads. `app/quranrevival.html`: the label and the Play tap count the gap as playing. New `tools/i18n-verify/qr-play-run-gap-browser.mjs` (mutations label-flash, tap-resumes, no-hold, no-held-pause).
 - **Measured (Architect, 29 Oct, merged with v12.105):** qr-play-run-gap 21/0 (x3); `--mutate=label-flash` 18/3; the Architect's 38e probe (8 runs) 8 restarted, 0 swallowed; `behaviour.mjs` alone 971/0. QR Lead's guards (as sent): 11 audio and reading suites 0 failed, `apps-build-check` 48/0.
