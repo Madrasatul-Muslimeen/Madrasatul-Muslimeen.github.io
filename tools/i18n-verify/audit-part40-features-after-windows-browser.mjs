@@ -282,7 +282,8 @@ async function bookmarksPage(t, p) {
   await state(t, p, "Manage bookmarks", "[data-bm-open-id]");
   check(`${t}: the page lists the seeded bookmarks`, (await ev(p, () => document.querySelectorAll("[data-bm-open-id]").length)) >= 2);
   await ev(p, () => { window.__stubWriteData = []; });
-  await ev(p, () => { const s = document.querySelector("select[data-bm-person]"); const o = [...s.options].find((x) => x.value && x.value !== s.value); s.value = o.value; s.dispatchEvent(new Event("change", { bubbles: true })); });
+  // Audit part 119: a row's For list is filled when the reader reaches for it; focus it first, as a tap or Tab does.
+  await ev(p, () => { const s = document.querySelector("select[data-bm-person]"); s.focus(); const o = [...s.options].find((x) => x.value && x.value !== s.value); s.value = o.value; s.dispatchEvent(new Event("change", { bubbles: true })); });
   await settle(p, 800);
   check(`${t}: tagging a bookmark for a family member is written`, (await writes(p)) >= 1);
   await ev(p, () => { window.__stubWriteData = []; });

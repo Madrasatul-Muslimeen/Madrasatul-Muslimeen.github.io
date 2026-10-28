@@ -5199,6 +5199,9 @@ console.log("\n=== 44. The Bookmark Manager (bookmarks.html) -- items 2/3/5 ==="
   check("44b creating a folder (item 3, \"multilayered\") really adds it", afterFolder.includes("Tafsir notes"), JSON.stringify(afterFolder));
 
   // Move the seeded bookmark into the new folder (item 3: "moveable among layers").
+  // Audit part 119: a row's Move list holds only its current choice until the reader reaches for it (a tap, a click or
+  // Tab), so the check reaches for it first, as a reader does, before reading its options.
+  await page.focus('.bm-row[data-bm-id="bm1"] [data-bm-move]');
   const folderOptVal = await page.evaluate(() => {
     const sel = document.querySelector('.bm-row[data-bm-id="bm1"] [data-bm-move]');
     return [...sel.options].find((o) => o.textContent.trim() === "Tafsir notes")?.value ?? null;
@@ -5839,6 +5842,8 @@ console.log("\n=== 50h-k. The person tag on the Manager page, and both in Bangla
   const ctx = await ctxFor({ banner: false });
   const { page, errors } = await openPage(ctx, "/app/bookmarks.html");
   await page.waitForTimeout(800);
+  // Audit part 119: the For list is filled when the reader reaches for it (tap, click or Tab); reach for it first.
+  await page.focus(".bm-row [data-bm-person]");
   const managerRow = await page.evaluate(() => {
     const sel = document.querySelector(".bm-row [data-bm-person]");
     return {
