@@ -22614,3 +22614,12 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 - **Pre-existing, not this round's:** the shared topic breadcrumb under the reader shows the subject id "hadith" untranslated on a Bangla page (same on main); `manual-claims-msa` keeps 3 failures that are red on main too (People-page way back at 390px; the hand-over lock at 390/1440).
 - **Measured (Architect, 28 Oct):** `hadith-study-reader-browser` 106/0 (Lead: 16 of 16 mutations caught), `dua-tab-browser` 63/0, `bn-duplicate-keys` 6/0, `stub-parity` 4/0, `apps-build-check` 48/0, `build-app qr`, `behaviour.mjs` 971/0; the reader at 7 widths × en/bn: no sideways scroll, panes and menu inside the screen, buttons ≥40px, screenshots looked at.
 - Nothing stored, no Rules changed.
+
+## v12.90 — 28 Oct 2026 — Hadith Study: a book's untitled opening named in words
+
+- **The Architect's finding after v12.89**, fixed by the Hadith Lead (`claude/hadith-lead-01q2` at 0381ddb): the first entry in Bukhari's Chapters list read "(untitled)". It is data, not a missing label: in 11 of the 15 books the first "chapter" is the book's opening (title page and Bismillah) and the source gives it no title.
+- A first chapter with no title now reads **"The book's opening"** (Bangla **কিতাবের শুরু**) in the Chapters list and the breadcrumbs; any other untitled chapter (only Malik's Muwatta ch-2) keeps "(untitled)". Both are words of the reader's language, so they are no longer marked `lang="ar"`.
+- Files: `app/js/hadith-browser.js`, one Hadith key in `app/js/i18n/bn.js`, a new check in `hadith-study-reader-browser.mjs`.
+- **Measured (Architect, 28 Oct):** `hadith-study-reader-browser` 108/0 (the new check fails under the Architect's mutation, en and bn), `openiti-browser` 76/0, `bn-duplicate-keys` 6/0, `apps-build-check` 48/0, `behaviour.mjs` 971/0; row and crumb at 7 widths × en/bn, screenshots looked at.
+- **Found, not this round's:** the book opening's chapter text in the Text pane was 2.95:1 in the night look (pre-existing since v12.89); the Lead has a fix (9.77:1) for the next round.
+- Nothing stored, no Rules changed.
