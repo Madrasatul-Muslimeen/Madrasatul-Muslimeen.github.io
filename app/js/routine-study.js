@@ -223,7 +223,10 @@ export function initRoutineStudyPage({ moduleId, trackableId, rootSubjectId }) {
     const root = moduleSubjects.find((n) => n.id === rootSubjectId);
     currentParentId = rootSubjectId;
     chunkSubjectId = rootSubjectId;
-    rootLabel = root ? langText(root.name, getAppLang(), moduleId) : moduleId;
+    // I11: never show a raw id. Fall back to the module's real display name, translated.
+    const MODULE_NAMES = { health: "Health", ldog: "Learn Deen On-the-Go" };
+    const idAsName = t(MODULE_NAMES[moduleId] ?? String(rootSubjectId || moduleId).split("_").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" "));
+    rootLabel = root ? langText(root.name, getAppLang(), idAsName) : idAsName;
 
     // Five independent reads (records, this week's activity, enrolments,
     // teacher scoping, bookmarks) -- fired together instead of one at a
