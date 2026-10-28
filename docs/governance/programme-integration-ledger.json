@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "12.89",
+    "version": "12.90",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -5345,8 +5345,20 @@
     {
       "version": "12.89",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Hadith Lead's J106 round 1 (Owner approved the demo 1A 2A 3A 4A, 11:53 am 28 Oct): the page is Hadith Study with its own menu bar; Hadith Books read in three resizable, pop-out panes (one at a time on a phone); the Dua tab's code moved unchanged into dua-browser.js.",
+      "integration": {
+        "authorizedOn": "2026-10-28",
+        "integratedOn": "2026-10-28",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.90",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Hadith Lead (claude/hadith-lead-01q2 at 0381ddb): a book's untitled first chapter reads \"The book's opening\" in the reader's language, not \"(untitled)\".",
       "integration": {
         "authorizedOn": "2026-10-28",
         "integratedOn": "2026-10-28",
@@ -5355,8 +5367,9 @@
       }
     }
   ],
-  "nextUnallocated": "12.90",
+  "nextUnallocated": "12.91",
   "nextUnallocatedNote": [
+    "v12.90 was allocated to the Hadith reader's book opening named in words (J106 finding), 2026-10-28.",
     "v12.89 was allocated to Hadith Study: its own menu bar and Hadith Books in three panes; the Dua tab's code moved into its own file (J106 round 1), 2026-10-28.",
     "v12.88 was allocated to Hadith: 27 joined passages cited by their first hadith, and a red source-rights check fixed (J103 Round 4 part 2), 2026-10-27.",
     "v12.87 was allocated to Note pane and import services: a refused save says plain translated words (audit part 104), 2026-10-27.",
