@@ -52,6 +52,7 @@ export const BN = {
   "Hadith": "হাদীস",
   "General Study": "সাধারণ শিক্ষা",
   "Nature-Life": "প্রকৃতি ও জীবন", // ?
+  "Nature Life": "প্রকৃতি ও জীবন", // topic page's breadcrumb when the root subject is absent (id read as a name)
   "Life Skill": "জীবন দক্ষতা",
   "Health": "স্বাস্থ্য",
   "Learn Deen On-the-Go": "চলার পথে দ্বীন শিক্ষা", // ?

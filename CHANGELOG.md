@@ -22623,3 +22623,13 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 - **Measured (Architect, 28 Oct):** `hadith-study-reader-browser` 108/0 (the new check fails under the Architect's mutation, en and bn), `openiti-browser` 76/0, `bn-duplicate-keys` 6/0, `apps-build-check` 48/0, `behaviour.mjs` 971/0; row and crumb at 7 widths × en/bn, screenshots looked at.
 - **Found, not this round's:** the book opening's chapter text in the Text pane was 2.95:1 in the night look (pre-existing since v12.89); the Lead has a fix (9.77:1) for the next round.
 - Nothing stored, no Rules changed.
+
+## v12.91 — 28 Oct 2026 — Topic pages: the breadcrumb never shows a raw subject id (audit part 106)
+
+- **PCF MSA J29, audit part 106** (Builder run 2100, issue #1236, PR #1239). Report: `docs/reports/2026-10-28-audit-part106-crumb-and-landing.md`.
+- `app/js/topic-study.js` fell back to the raw module id (`hadith`, `deen`, `naturelife`…) as the breadcrumb's root whenever the root subject was missing from the tenant's list or had no name, in every language (I11). It now falls back to the page's root subject id read as an English name (`deen_study` → "Deen Study") through `t()`, so a Bangla page reads হাদীস, দ্বীন শিক্ষা…; one new `bn.js` string, "Nature Life".
+- New check `tools/i18n-verify/audit-part106-topic-crumb-browser.mjs`: 6 pages × bn/en × 390/1440 × root missing/named, 120/0; `--mutate=rawid` (the old fallback) 84/36.
+- **Landing failed-save sweep finished**: every control reached at 1440 (111), nothing past 25 at 820, the phone cap at 390 by design: 0 saves, nothing to fix.
+- **Measured (Architect, 28 Oct):** the new check 120/0 and its mutation 84/36 reproduced; a probe of all six pages at 7 widths × en/bn 294/0 (crumb inside the screen, not cut, no sideways scroll; screenshots looked at); `bn-duplicate-keys` 6/0; `behaviour.mjs` 971/0.
+- **Not this round's:** `app/js/routine-study.js` (Health, LDOG) has the same fallback shape; next audit part.
+- Nothing stored, no Rules changed.
