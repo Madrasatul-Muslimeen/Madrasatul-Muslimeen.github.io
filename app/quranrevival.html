@@ -14946,7 +14946,7 @@
     // handful of surahs, not all 114, and the same static, cached-after-
     // first-load fetch Explore's own Surah/Ruku levels already accept.
     function escapeHtml(s) {
-      return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
     }
 
     let qcrCollectionsTenantId = null; // which tenant qcrCollections was loaded for -- re-fetched if the person switches tenants while it's already cached

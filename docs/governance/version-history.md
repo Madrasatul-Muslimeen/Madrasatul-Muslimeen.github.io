@@ -1000,3 +1000,4 @@ total). Allocated by the MMSA Architect.
 12.96: typed and tenant-authored text escaped on Records, Monitor and eight more shared pages (audit part 110, security). Allocated by the MMSA Architect.
 12.97: SECURITY: names escaped on every page (audit part 111). Allocated by the MMSA Architect.
 12.98: SECURITY: Resource text escaped, typed links only open if web or mail (audit part 112). Allocated by the MMSA Architect.
+12.99: SECURITY: names inside attributes escaped (audit part 113). Allocated by the MMSA Architect.
