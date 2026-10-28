@@ -631,6 +631,9 @@ console.log("\n=== 15. PHASE 4: Monitor, Homework and Course Offers ===");
   const ctx = await ctxFor({ banner: true, appLang: "bn" });
 
   const mon = await openPage(ctx, "/app/monitor.html");
+  // Audit part 120: the Quran breakdown reads every records chunk of the student, so it is read on a tap.
+  await mon.page.click("#quranLoadBtn");
+  await mon.page.waitForFunction(() => document.querySelectorAll("#quranBody table").length > 0, null, { timeout: 15000 });
   const m = await mon.page.evaluate(async () => {
     const { entriesToCsvRows } = await import("/app/js/monitor.js");
     return {

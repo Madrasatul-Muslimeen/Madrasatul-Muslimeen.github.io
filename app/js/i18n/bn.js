@@ -4472,6 +4472,7 @@ export const BN = {
   "{k} of {n} steps passed · next: First {next}": "{n}টি ধাপের {k}টি উত্তীর্ণ · পরেরটি: প্রথম {next}",
   "All {n} steps passed": "{n}টি ধাপই উত্তীর্ণ",
   "Show the Vocabulary table": "শব্দভান্ডারের তালিকা দেখান",
+  "Show the Quran Approach breakdown": "কুরআন পদ্ধতির বিশ্লেষণ দেখান",
   "The Qur'an's words each student knows (the Word card's own marks), the Learn next steps passed, and the review schedule. Not scoped to the week/month above.": "প্রত্যেক ছাত্র কুরআনের কোন শব্দগুলো জানে (শব্দ কার্ডের নিজস্ব চিহ্ন), “এরপর শিখুন”-এর কোন ধাপ উত্তীর্ণ, এবং পুনরালোচনার সূচি। উপরের সপ্তাহ/মাসে সীমাবদ্ধ নয়।",
   "Share of the Qur'an": "কুরআনের অংশ",
   "Steps passed": "উত্তীর্ণ ধাপ",
