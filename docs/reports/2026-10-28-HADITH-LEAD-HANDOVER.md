@@ -3,6 +3,26 @@
 Written by Hadith Lead session `01Q2HmCeWjo1vVYV5kgMBvC9` at about 77% context, on the PCA's word (hand119).
 The next session is titled **"📌 (03B) MSA - Hadith Lead"**.
 
+## LATEST UPDATE, 2:31 pm 28 Oct (session `01PL2xbJ9t1PMhK5GNBspYu6`, "📌 (03B) MSA - Hadith Lead")
+
+- **J106 round 1 and the Dua split are HANDED IN** to the MSA Architect at `a39d572`, with
+  `docs/reports/2026-10-28-hadith-study-round1.md`. Nothing of round 1 is left to build; the Architect releases it.
+- Done since the block below was written: the Hadith Books button (shelf from another view, quick list on Books); 18
+  suites updated in place; the new `tools/i18n-verify/hadith-study-reader-browser.mjs` (106/0, `--prove` 16 of 16
+  mutations caught, served through the browser route so no file is swapped on disk); three reader faults fixed (a
+  phone's empty pane after the book-name breadcrumb, "Go to" by the edition's own number, row numbers 3.24:1 in light
+  look). Every suite naming the Hadith page is green apart from failures measured identical on `main`.
+- **Waiting on the Owner:** J106 question 5 (`n106e`, where the Subject lists are saved: A shared Firestore list with
+  Rules the Owner publishes, recommended / B in the app's code / C this device only). Then build round 2, "Add to
+  subject". Also still waiting: J97, the My Notes link, J06.
+- Sandbox lessons from this session: **never `pkill -f` a pattern that also appears in your own command** (it killed the
+  shell twice); stop a process by its pid, picked by `pgrep -f "^node …"` and its cwd. A `main` worktree on
+  `PORT=8081` with `QR_BASE=http://localhost:8081` gives a side-by-side "is it red on main too" in one run. Give the
+  long audits (part 16, part 40, shared-pages-failed-write) no 25-minute timeout. The clone is shallow, so
+  `study-note-boundary` fails one history check here.
+
+The blocks below are kept as history.
+
 ## Who you are
 
 You are the **MSA · Hadith Lead** (lead120).

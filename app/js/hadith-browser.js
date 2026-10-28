@@ -1183,6 +1183,17 @@ function renderReaderText(pane, head, passages, oi, localRefresh, conc, heLinks,
   pane.appendChild(card);
 }
 
+/**
+ * A chapter's name as shown. The source gives no heading to the book's opening -- its title page and Bismillah, before
+ * the first heading (11 of the 15 books; Bukhari's reads «صحيح البخاري بسم الله الرحمن الرحيم») -- so the first chapter
+ * with no title is named "The book's opening", and any other untitled one "(untitled)". Those two are words of the
+ * reader's language, so they are not marked as Arabic (`ar: false`).
+ */
+function openitiChapterLabel(c, index) {
+  if (String(c?.title ?? "").trim()) return { text: openitiDisplayTitle(c.title), ar: true };
+  return { text: index?.chapters?.[0]?.id === c?.id ? t("The book's opening") : t("(untitled)"), ar: false };
+}
+
 /** "PageV01P013" -> "Vol. 1, p. 13" (the source's own page marker, made readable). */
 function openitiPageRef(ref) {
   const m = /^PageV(\d+)P(\d+)$/.exec(ref);
@@ -1208,7 +1219,7 @@ function openitiCrumbs(oi, index, localRefresh) {
     add(index.titleEn, oi.chapterId ? () => { oi.chapterId = null; localRefresh(); } : null);
     if (oi.chapterId) {
       const chapter = index.chapters.find((c) => c.id === oi.chapterId);
-      add(openitiDisplayTitle(chapter?.title), null);
+      add(openitiChapterLabel(chapter, index).text, null);
     }
   }
   return bar;
@@ -1316,7 +1327,8 @@ function renderOpenitiChapterList(body, oi, index, localRefresh, conc = null, ba
     row.type = "button";
     row.dataset.openitiChapter = c.id;
     if (open) row.setAttribute("aria-current", "true");
-    row.appendChild(openitiArabicRowName(openitiDisplayTitle(c.title)));
+    const label = openitiChapterLabel(c, index);
+    row.appendChild(label.ar ? openitiArabicRowName(label.text) : el("span", "hadith-row-name", label.text));
     if (c.firstNumber != null) {
       row.appendChild(el("span", "hadith-row-meta", `${num(c.firstNumber)}–${num(c.lastNumber)}`));
     }
