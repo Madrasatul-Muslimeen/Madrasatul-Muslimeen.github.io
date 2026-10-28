@@ -21,6 +21,10 @@ The next session is titled **"📌 (03B) MSA - Hadith Lead"**.
   long audits (part 16, part 40, shared-pages-failed-write) no 25-minute timeout. The clone is shallow, so
   `study-note-boundary` fails one history check here.
 
+- **3:00 pm:** round 1 is LIVE as **v12.89** (merged 88e9d9e, PR #1235). The Architect is now session
+  **`01PL2xbMHduuqAb3piTztCJ4`** ("📌 (03) MSA Master Architect"). Handed in since, for its next release: `0381ddb`, the
+  book's opening (no heading in the source, 11 of 15 books) reads "The book's opening", not "(untitled)".
+
 The blocks below are kept as history.
 
 ## Who you are

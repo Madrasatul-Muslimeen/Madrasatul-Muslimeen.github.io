@@ -221,6 +221,9 @@
    its normal background so the credit link's own measured contrast/tap
    target (below) is unaffected by a card-level background change. */
 .openiti-chapter-text .hadith-arabic { font-style: italic; color: var(--hadith-muted); }
+/* Night: the light grey above was 2.95:1 on the dark panel (the Architect's finding of 28 Oct); the night palette's own
+   muted text is 9.8:1 there. */
+[data-card-look="night"] .openiti-chapter-text .hadith-arabic { color: var(--card-text-muted); }
 
 /* The OpenITI credit link, same measured fix as HadeethEnc's own "Source"
    link (see the block above): the default .hadith-view-source gold measures
