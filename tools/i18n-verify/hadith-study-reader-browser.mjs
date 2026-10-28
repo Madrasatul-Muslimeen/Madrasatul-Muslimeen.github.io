@@ -74,7 +74,9 @@ const check = (name, ok, detail = "") => {
   if (ok) { pass++; console.log(`  PASS  ${name}`); } else { fail++; console.log(`  FAIL  ${name} ${detail}`); }
 };
 async function acheck(name, fn) {
-  try { const r = await fn(); check(name, r !== false, typeof r === "string" ? r : ""); }
+  // Passes only on true (or nothing returned). A body returns `cond || "why"`, so a string is a FAILURE with its reason
+  // -- counting it as a pass made every such check unable to fail, which the "nomax" mutation found on its first run.
+  try { const r = await fn(); check(name, r === true || r === undefined, typeof r === "string" ? r : JSON.stringify(r)); }
   catch (e) { check(name, false, `-- ${String(e.message).split("\n")[0]}`); }
 }
 
