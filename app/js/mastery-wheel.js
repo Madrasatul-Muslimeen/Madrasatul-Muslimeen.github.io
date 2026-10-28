@@ -687,7 +687,7 @@ export function renderWheelSidebar(items, labelsById, options = {}) {
     const badge = item.groupNumber != null && options.formatBadge
       ? `<span class="ways-sec-badge">${options.formatBadge(item.groupNumber)}</span>`
       : "";
-    return `<div class="ways-group"><button type="button" class="ways-group-btn" data-group="${groupKey}" aria-expanded="${isOpen}"><span class="ways-caret" aria-hidden="true">${isOpen ? "▾" : "▸"}</span>${badge}<span class="ways-group-name">${head}<span class="ways-group-tail">${last}<span class="ways-count"${aria}>${countText(groupKey)}</span></span></span></button></div>`;
+    return `<div class="ways-group"><button type="button" class="ways-group-btn" data-group="${String(groupKey).replace(/&/g, "&amp;").replace(/"/g, "&quot;")}" aria-expanded="${isOpen}"><span class="ways-caret" aria-hidden="true">${isOpen ? "▾" : "▸"}</span>${badge}<span class="ways-group-name">${head}<span class="ways-group-tail">${last}<span class="ways-count"${aria}>${countText(groupKey)}</span></span></span></button></div>`;
   };
   let lastGroup = null;
   const rows = items
@@ -702,7 +702,7 @@ export function renderWheelSidebar(items, labelsById, options = {}) {
           ? groupHeading(item, groupKey, isOpen)
           : `<div class="ways-group">${item.groupLabel}</div>`;
       }
-      const hiddenAttr = grouped ? ` data-group="${groupKey}"${isOpen ? "" : " hidden"}` : "";
+      const hiddenAttr = grouped ? ` data-group="${String(groupKey).replace(/&/g, "&amp;").replace(/"/g, "&quot;")}"${isOpen ? "" : " hidden"}` : "";
       if (item.emptyNote) return `${heading}<div class="ways-group-empty"${hiddenAttr}>${item.emptyNote}</div>`;
       return `${heading}<div class="way-row" data-key="${item.key}"${hiddenAttr}>
         <span class="badge">${item.number ?? item.key}</span>

@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "12.96",
+    "version": "12.97",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -5429,8 +5429,20 @@
     {
       "version": "12.96",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Builder run 2125 (#1250, PR #1252) + the Architect's Classes/Course offers and monitor.js fixes: user-written and tenant-authored text is HTML-escaped where it enters innerHTML (stored script injection closed on these pages).",
+      "integration": {
+        "authorizedOn": "2026-10-28",
+        "integratedOn": "2026-10-28",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.97",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Audit part 111 (#1253, PR #1256) plus the Architect's release commit: every tenant-written name escaped on every page.",
       "integration": {
         "authorizedOn": "2026-10-28",
         "integratedOn": "2026-10-28",
@@ -5439,8 +5451,9 @@
       }
     }
   ],
-  "nextUnallocated": "12.97",
+  "nextUnallocated": "12.98",
   "nextUnallocatedNote": [
+    "v12.97 was allocated to SECURITY: names escaped on every page (audit part 111), 2026-10-28.",
     "v12.96 was allocated to typed and tenant-authored text escaped on Records, Monitor and eight more shared pages (audit part 110, security), 2026-10-28.",
     "v12.95 was allocated to Records and Monitor name a topic instead of printing its id (audit part 109), 2026-10-28.",
     "v12.94 was allocated to Records names its chunk in words; raw-id sweep of every shared page in Bangla (audit part 108), 2026-10-28.",
