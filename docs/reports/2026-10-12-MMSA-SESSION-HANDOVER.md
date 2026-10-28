@@ -1973,3 +1973,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v12.87** (2026-10-27): Note pane and import services: a refused save says plain translated words (audit part 104).
 - **v12.88** (2026-10-27): Hadith: 27 joined passages cited by their first hadith, and a red source-rights check fixed (J103 Round 4 part 2).
 - **v12.89** (2026-10-28): Hadith Study: its own menu bar and Hadith Books in three panes; the Dua tab's code moved into its own file (J106 round 1).
+- **v12.90** (2026-10-28): the Hadith reader's book opening named in words (J106 finding).
