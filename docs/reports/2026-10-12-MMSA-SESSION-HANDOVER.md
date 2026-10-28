@@ -2071,3 +2071,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v12.105** (2026-10-28): Bookmarks opens faster with hundreds of bookmarks (audit part 119).
 - **v12.106** (2026-10-28): during a recitation the Play button stays Pause between ayat, and a tap there pauses (QR Lead).
 - **v12.107** (2026-10-28): Monitor opens faster for a teacher with a real class (audit part 120).
+- **v12.108** (2026-10-28): the QR Lead's Mushaf page that stays at its end.

@@ -22781,3 +22781,12 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 - **Measured (Architect, 29 Oct, merged with v12.106):** heavy-teacher 240/0 (eager-quran-breakdown 11 failed, one-shot-raw-rows 6 failed); audit-part13 494/0; `behaviour.mjs` alone 971/0; Monitor at 390 Bangla looked at.
 - Left for the Owner (each needs a Rules or stored-field decision; none slows a page today): People reads 246 `memberships` documents; Classes lists every enrolment (a tenant over 100 hits the cap); the breakdown, when asked, still reads every records chunk.
 - Nothing stored, no Rules changed.
+
+## v12.108 — 29 Oct 2026 — a Mushaf page stays at its end; a page turns only on a deliberate pull (QR Lead)
+
+- **The Owner's ask** (QR Lead chat, 29 Oct, Al-Hijr on a phone): "Whenever the page scrolling touches the end of the page, either way it moves/ flips to the next page without intending it to. FIX. It needs to stay unless deliberately scrolls for the next page."
+- `app/quranrevival.html` `wireScrollSwipeAyahNav`, page strip (`#pageViewContainer`) only: a touch turn needs a swipe from the end of at least max(220px, 35% of the screen's height); a wheel turn needs a burst adding up to 600px that starts at the end; one burst turns one page at most. The single-āyah view keeps the 9 Oct rule.
+- New `tools/i18n-verify/qr-mushaf-edge-stay-browser.mjs` (390/600, touch and wheel, en and bn; mutations old-pull, no-strip-wheel, wheel-many). `behaviour.mjs` 40d updated in place: an ordinary slide at the foot stays, a long pull turns.
+- **Measured (Architect, 29 Oct, merged with v12.107):** qr-mushaf-edge-stay 18/0; old-pull 8 failed, no-strip-wheel 3 failed, wheel-many 1 failed; read-scroll-end-stays 10/0, mushaf-page-ref-steady 48/0, mushaf-render-responsive 24/0, read-quick-buttons 254/0, mushaf-no-sideways-overflow 648/0; `behaviour.mjs` 972/0.
+- **Pre-existing, not this round's:** `qr-mushaf-page-nav-browser.mjs` part 1 fails intermittently (‹ from 267 lands on 262) on `main` as well, 2 of 4 runs; `mushaf-chosen-unit-browser.mjs` crashes at line 88 (`#readBarRecordBtn` now sits inside the Study ▾ menu). Both given to the QR Lead.
+- QR carries it at its next rebuild. Nothing stored, no Rules changed.
