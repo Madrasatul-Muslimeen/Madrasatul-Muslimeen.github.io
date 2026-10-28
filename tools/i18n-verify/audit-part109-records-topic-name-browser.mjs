@@ -2,6 +2,7 @@
 // The harness seeds activity "topic:t42" and a subject-tree node t42 named "Honesty in trade and daily dealings" /
 // "ব্যবসা ও দৈনন্দিন লেনদেনে সততা". At 390 and 1440, in en and bn, the "This week's activity" table (and the entries table,
 // given a topic entry) must show that NAME in the Unit cell, and never "t42" or "topic:".
+// Monitor's activity table (390, 1440, en, bn) is held to the same rule; --mutate=monitornoname drops its resolver.
 // Mutation: --mutate=oldlabel restores unitKeyLabel()'s old topic line (word + raw id); every run must then fail.
 // Run from the repository root with serve.js on :8080:
 //   node tools/i18n-verify/audit-part109-records-topic-name-browser.mjs [--mutate=oldlabel]
@@ -11,6 +12,13 @@ import { chromium, newContext, openPage } from "./harness.mjs";
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
 const UK = "app/js/unit-keys.js";
 const ORIG = fs.readFileSync(UK, "utf8");
+const MON = "app/monitor.html";
+const MON_ORIG = fs.readFileSync(MON, "utf8");
+if (MUTATE === "monitornoname") { // the Architect's: Monitor stops passing its name resolver (a bare "Topic" again)
+  const m = MON_ORIG.replace("unitKeyLabel(e.unitKey, unitNameOf)", "unitKeyLabel(e.unitKey)");
+  if (m === MON_ORIG) throw new Error("mutation did not apply");
+  fs.writeFileSync(MON, m);
+}
 if (MUTATE === "oldlabel") {
   const m = ORIG.replace('if (unitType === "topic") {', 'if (false) {');
   if (m === ORIG) throw new Error("mutation did not apply");
@@ -54,8 +62,21 @@ try {
     await page.screenshot({ path: `tools/i18n-verify/out/part109-${lang}-${w}.png`, fullPage: false }).catch(() => {});
     await ctx.close();
   }
+  // Monitor's activity table names the topic too (it loads the same subject tree; the Architect's addition to part 109).
+  for (const lang of ["en", "bn"]) for (const w of [390, 1440]) {
+    const ctx = await newContext(browser, { appLang: lang, accountLang: lang, banner: false, viewport: { width: w, height: 900 } });
+    const { page } = await openPage(ctx, "/app/monitor.html");
+    await page.waitForFunction((word) => [...document.querySelectorAll("td")].some((c) => c.textContent.trim().startsWith(word)), WORDS[lang], { timeout: 10000 }).catch(() => {});
+    const cells = await page.evaluate(() => [...document.querySelectorAll("td")].map((c) => c.textContent.trim()));
+    const tag = `monitor ${lang} ${w}`;
+    runs++;
+    const act = cells.find((t) => t.startsWith(WORDS[lang]));
+    ok(!!act && act.includes(NAMES[lang]), `${tag}: activity table Unit cell shows the topic's name ("${act}")`);
+    ok(!cells.some((t) => /\bt42\b|topic:/.test(t)), `${tag}: no cell shows t42 or "topic:"`);
+    await ctx.close();
+  }
 } finally {
-  if (MUTATE) fs.writeFileSync(UK, ORIG);
+  if (MUTATE) { fs.writeFileSync(UK, ORIG); fs.writeFileSync(MON, MON_ORIG); }
   await browser.close();
 }
 console.log(`\n==== Audit part 109: ${runs} runs, ${fails} failed ====`);
