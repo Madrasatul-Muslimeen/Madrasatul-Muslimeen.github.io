@@ -9821,11 +9821,17 @@
         await runSearch();
         return;
       }
+      const target = resolveJumpTarget(parsed);
+      if (target.error) { showJumpMessage(target.error); return; }
+      showJumpMessage(null);
+      await goToReference(target.surah, target.from, target.to, target.half);
+    }
+
+    /** A parsed reference -> the stored surah/āyah to go to, or { error } in words. Shared by the "Go to" box and
+        (the Owner, 28 Oct 2026, a phone photo of "6:161 — Nothing matches.") the Read contents list's search. */
+    function resolveJumpTarget(parsed) {
       const surahMeta = surahIndex.find((s) => s.surahNumber === parsed.surah);
-      if (!surahMeta) {
-        showJumpMessage(t("There is no Surah {surah}. Surah numbers run 1–114.", { surah: num(parsed.surah) }));
-        return;
-      }
+      if (!surahMeta) return { error: t("There is no Surah {surah}. Surah numbers run 1–114.", { surah: num(parsed.surah) }) };
       // Issue #482 -- a TYPED reference is in the reader's own count ("1:1" is
       // ٱلْحَمْدُ when the Al-Fātiḥah setting is on); it is translated to the
       // stored (internal) number here. ?goto= links are built from stored
@@ -9834,24 +9840,18 @@
       let from = parsed.from;
       let to = parsed.to;
       let fromHalf = null; // issue #606 -- which displayed Ayat a typed 1:6 / 1:7 means
+      const tooFar = () => ({ error: t("Surah {surah} has {count} ayahs.", { surah: num(parsed.surah), count: num(lastAyah) }) });
       if (fatihaCountApplies(parsed.surah, fatihaOn())) {
         lastAyah = displayAyahCount(parsed.surah, lastAyah);
         const f = internalForDisplayedAyah(parsed.surah, from, true);
         const e = to === null ? null : internalForDisplayedAyah(parsed.surah, to, true);
-        if (!f || (to !== null && !e)) {
-          showJumpMessage(t("Surah {surah} has {count} ayahs.", { surah: num(parsed.surah), count: num(lastAyah) }));
-          return;
-        }
+        if (!f || (to !== null && !e)) return tooFar();
         from = f.ayah;
         fromHalf = f.half;
         to = e ? e.ayah : null;
       }
-      if (from < 1 || from > lastAyah || (to !== null && (to < 1 || to > lastAyah))) {
-        showJumpMessage(t("Surah {surah} has {count} ayahs.", { surah: num(parsed.surah), count: num(lastAyah) }));
-        return;
-      }
-      showJumpMessage(null);
-      await goToReference(parsed.surah, from, to, fromHalf);
+      if (from < 1 || from > lastAyah || (to !== null && (to < 1 || to > lastAyah))) return tooFar();
+      return { surah: parsed.surah, from, to, half: fromHalf };
     }
 
     /** Move the screen to a surah and ayah (or a range). Split out of
@@ -13312,14 +13312,29 @@
       const T = readContentsTables;
       readContentsSearchEl.hidden = kind !== "surah";
       let html = "";
+      let note = "";
       if (kind === "surah") {
-        const q = parseNum(readContentsSearchEl.value).trim().toLowerCase();
+        const typed = parseNum(readContentsSearchEl.value).trim();
+        const q = typed.toLowerCase();
+        // The Owner, 28 Oct 2026 (a phone photo: "6:161" -> "Nothing matches." -- "How does search work here? Fix it."):
+        // a reference typed here (6:161, 2:255-260, ৬:১৬১) offers that āyah first, through the "Go to" box's own
+        // parser and checks, above its surah's row.
+        const ref = /[:.]/.test(typed) ? parseJumpText(typed) : null;
+        const target = ref ? resolveJumpTarget(ref) : null;
+        if (target?.error) note = `<p class="rc-empty" role="status" data-rc-ref-error>${rcEsc(target.error)}</p>`;
+        else if (target) {
+          const label = target.to !== null ? `${searchRefFor(target.surah, target.from)}–${num(ref.to)}` : searchRefFor(target.surah, target.from);
+          html += `<button type="button" class="rc-row rc-goto" data-rc-kind="ayah" data-rc-n="${target.surah}" data-rc-from="${target.from}" data-rc-to="${target.to ?? ""}" data-rc-half="${target.half ?? ""}">` +
+            `<span class="rc-num" aria-hidden="true">→</span><span class="rc-main"><span class="rc-name">${rcEsc(t("Go to {ref}", { ref: label }))}</span>` +
+            `<span class="rc-sub">${rcEsc(rcSurahName(target.surah))}</span></span></button>`;
+        }
         const rows = surahIndex.filter((s) => {
           if (!q) return true;
+          if (ref) return s.surahNumber === ref.surah;
           if (/^\d+$/.test(q)) return String(s.surahNumber) === q;
           return [s.nameEnglish, s.nameTranslation, s.nameTranslationBn, s.nameArabic, rcSurahName(s.surahNumber)].some((x) => x && String(x).toLowerCase().includes(q));
         });
-        html = rows.map((s) => rcRow("surah", s.surahNumber,
+        html += rows.map((s) => rcRow("surah", s.surahNumber,
           `<span class="rc-num">${num(s.surahNumber)}</span>` +
           `<span class="rc-main"><span class="rc-name">${rcEsc(rcSurahName(s.surahNumber))}</span><span class="rc-sub">${rcEsc((isBn && s.nameTranslationBn) || s.nameTranslation || "")}</span></span>` +
           `<span class="rc-side">${rcEsc(t("{n} verses", { n: num(s.ayahCount) }))}</span>` +
@@ -13336,15 +13351,15 @@
           `<span class="rc-sub">${rcEsc(t("Verses {from}–{to}", { from: num(r.fromAyah), to: num(r.toAyah) }))}</span></span>` +
           `<span class="rc-side">${rcEsc(t("Page {n}", { n: num(rcHolder(T.page, "page", r.surah, r.fromAyah)) }))}</span>`)).join("");
       }
-      readContentsBodyEl.innerHTML = html || `<p class="rc-empty">${rcEsc(t("Nothing matches."))}</p>`;
+      readContentsBodyEl.innerHTML = (note + html) || `<p class="rc-empty">${rcEsc(t("Nothing matches."))}</p>`;
     }
 
     function renderReadContents() {
       document.getElementById("readContentsTitle").textContent = t("Read");
       document.getElementById("readContentsCloseBtn").setAttribute("aria-label", t("Close"));
       document.getElementById("readContentsHomeBtn").setAttribute("aria-label", t("Home"));
-      readContentsSearchEl.placeholder = t("Search by name or number");
-      readContentsSearchEl.setAttribute("aria-label", t("Search by name or number"));
+      readContentsSearchEl.placeholder = t("Sūrah name or number, or an āyah like 2:255");
+      readContentsSearchEl.setAttribute("aria-label", t("Sūrah name or number, or an āyah like 2:255"));
       // How many of each unit, read off the same lists the rows come from.
       const T = readContentsTables;
       const counts = { surah: surahIndex.length, juz: T?.juz?.length, hizb: T?.hizb?.length, page: T?.page?.length, ruku: T?.ruku?.length };
@@ -13449,9 +13464,25 @@
       readContentsBodyEl.scrollTop = 0;
     });
     readContentsSearchEl?.addEventListener("input", renderReadContentsBody);
+    // Enter opens the first row (the āyah, when a reference was typed).
+    readContentsSearchEl?.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter") return;
+      e.preventDefault();
+      readContentsBodyEl.querySelector("[data-rc-kind]")?.click();
+    });
+    /** The typed āyah (or range): the "Go to" box's own jump, then the Read view on it. */
+    async function openReadContentsAyah(row) {
+      closeReadContents({ restoreFocus: false });
+      const to = row.dataset.rcTo ? Number(row.dataset.rcTo) : null;
+      await goToReference(Number(row.dataset.rcN), Number(row.dataset.rcFrom), to, row.dataset.rcHalf || null);
+      openReadingScreen();
+      await scrollFlowToCurrentAyah();
+    }
     readContentsBodyEl?.addEventListener("click", (e) => {
       const row = e.target.closest("[data-rc-kind]");
-      if (row) openReadContentsRow(row.dataset.rcKind, Number(row.dataset.rcN)).catch((error) => reportWriteFailure(error, { what: "open that place" }));
+      if (!row) return;
+      const go = row.dataset.rcKind === "ayah" ? openReadContentsAyah(row) : openReadContentsRow(row.dataset.rcKind, Number(row.dataset.rcN));
+      go.catch((error) => reportWriteFailure(error, { what: "open that place" }));
     });
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape" && readContentsMountEl && !readContentsMountEl.hidden) closeReadContents();

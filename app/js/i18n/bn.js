@@ -3552,6 +3552,7 @@ export const BN = {
   "Verses {from}–{to}": "আয়াত {from}–{to}",
   "Pages {from}–{to}": "পৃষ্ঠা {from}–{to}",
   "Search by name or number": "নাম বা নম্বর দিয়ে খুঁজুন",
+  "Sūrah name or number, or an āyah like 2:255": "সূরার নাম বা নম্বর, অথবা ২:২৫৫-এর মতো আয়াত",
   "Nothing matches.": "কিছু মেলেনি।",
   "{surah} {from}–{to}": "{surah} {from}–{to}",
   "{fromSurah} {from} → {toSurah} {to}": "{fromSurah} {from} → {toSurah} {to}",
