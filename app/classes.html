@@ -258,7 +258,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     }
 
     function renderClassCard(c) {
-      const subjectsLine = (c.subjectIds ?? []).map(subjectName).join(", ") || t("(no subjects set)");
+      const subjectsLine = (c.subjectIds ?? []).map((id) => escapeHtml(subjectName(id))).join(", ") || t("(no subjects set)");
       const rosterHtml = renderClassRoster(c);
       const archiveBtn = canAdmin && c.status === "active"
         ? `<button class="small secondary archiveClassBtn" data-class="${c.id}">${t("Archive")}</button>`

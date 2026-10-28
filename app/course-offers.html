@@ -302,7 +302,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     }
 
     function renderOfferCard(o) {
-      const subjectsLine = (o.subjectIds ?? []).map(subjectName).join(", ") || t("(no subjects set)");
+      const subjectsLine = (o.subjectIds ?? []).map((id) => escapeHtml(subjectName(id))).join(", ") || t("(no subjects set)");
       const rosterHtml = canAdmin ? renderOfferRoster(o) : "";
       // The whole button caption is one translatable sentence -- Bangla puts
       // the name before the verb, so "Enrol " + name cannot be assembled.
