@@ -22810,3 +22810,11 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 - **Architect's review commit:** leading repeats of the start page are dropped before that check (the bar re-stating the page the reader is still on; seen once, 1520, a same-surah › from 268).
 - **Measured (Architect, 29 Oct, merged with v12.109):** page-nav 61/0 (×4); no-hold 58/3 (exactly ‹ from 267 at 1520, 1280, 390); qr-mushaf-edge-stay 18/0, mushaf-chosen-unit 25/0, mushaf-page-ref-steady 48/0, read-scroll-end-stays 10/0, mushaf-render-responsive 24/0; `behaviour.mjs` alone 972/0; `apps-build-check` 48/0.
 - QR carries it at its next rebuild. Nothing stored, no Rules changed.
+
+## v12.111 — 29 Oct 2026 — the regression sweep: Catalogue's Add subject fits a phone again
+
+- **PCF MSA J29, the Architect's regression sweep**: audit parts 31, 32, 33, 34, 36, 38, 40, 41, 43 and 54–65 re-run on today's app (v12.109–v12.110). 19 of 21 suites green.
+- **Found and fixed:** on Catalogue → Subjects, Add subject ran 128px off a 320px phone (58px at 390, en; 320 bn too): the "Parent" `<select>` takes the width of its longest option and a `fieldset` does not shrink below its content. `app/catalogue.html`: `fieldset { min-width: 0 }` and `fieldset select { max-width: 100% }`.
+- **Stale check updated in place:** `audit-part64-people-backup-browser.mjs` "the way back — an Open the app link to index.html" now accepts the way-back marker `?navBack=1` (added by audit part 114); 32 failures were the check, not the page.
+- **Measured (Architect, 29 Oct):** audit part 65 472/0 (was 469/3), part 64 620/0 (was 588/32); screenshots of Add subject at 320 and 390, en and bn, looked at; `behaviour.mjs` alone 972/0; `apps-build-check` 48/0.
+- Nothing stored, no Rules changed.

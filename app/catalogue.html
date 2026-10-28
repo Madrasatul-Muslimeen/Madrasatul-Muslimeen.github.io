@@ -37,7 +37,11 @@
   #seedStatus { margin: 0.8rem 0; padding: 0.6rem; border-radius: 0.4rem; font-size: 0.88rem; display: none; }
   #seedStatus.ok { background: #d7f4d7; }
   #seedStatus.fail { background: #f8d7da; }
-  fieldset { border: 1px solid #ddd; border-radius: 0.5rem; margin-top: 1rem; }
+  fieldset { border: 1px solid #ddd; border-radius: 0.5rem; margin-top: 1rem; min-width: 0; }
+  /* Regression sweep, 29 Oct 2026 (audit part 65 re-run): a <select> is as wide as its LONGEST option, and a fieldset will
+     not shrink below its content by default, so a long subject name in "Parent" pushed Add subject 128px off a 320px phone.
+     The select now fits its box; the full option text still shows when the list opens. */
+  fieldset select { max-width: 100%; }
   .guideBox { font-size: 0.85rem; color: #444; background: #fafafa; padding: 0.5rem; border-radius: 0.3rem; margin-top: 0.3rem; }
   .readonly-note { font-size: 0.85rem; color: #666; margin-top: 0.4rem; }
 

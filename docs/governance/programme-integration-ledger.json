@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "12.110",
+    "version": "12.111",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -5597,8 +5597,20 @@
     {
       "version": "12.110",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "QR Lead (Architect's finding): a Mushaf ‹ › turn into another surah holds the strip hidden until the target page is drawn and placed (holdMushafStripFor), so the other surah's first page no longer flashes; mushaf-chosen-unit's stale route fixed.",
+      "integration": {
+        "authorizedOn": "2026-10-28",
+        "integratedOn": "2026-10-28",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.111",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Regression sweep (audit parts 31-65 re-run on v12.110, PCF MSA J29): Catalogue's Add subject box fits a phone again (fieldset min-width 0, its select max-width 100%); part 64's way-back check updated in place for ?navBack=1.",
       "integration": {
         "authorizedOn": "2026-10-28",
         "integratedOn": "2026-10-28",
@@ -5607,8 +5619,9 @@
       }
     }
   ],
-  "nextUnallocated": "12.111",
+  "nextUnallocated": "12.112",
   "nextUnallocatedNote": [
+    "v12.111 was allocated to the regression sweep fixes (Catalogue Add subject on a phone), 2026-10-28.",
     "v12.110 was allocated to the QR Lead's Mushaf turn into another surah with no other page on the way, 2026-10-28.",
     "v12.109 was allocated to audit part 122 (Mapping My Journey starts its parts at once), 2026-10-28.",
     "v12.108 was allocated to the QR Lead's Mushaf page that stays at its end, 2026-10-28.",
