@@ -67,13 +67,18 @@ const COLLECT = () => {
   return out;
 };
 
-const SNAKE = /^[a-z][a-z0-9]*(_[a-z0-9]+)+$/, KEBAB = /^[a-z][a-z0-9]*(-[a-z0-9]+)+$/;
+const UNIT_WORDS = "Topic|Name|Hadith|Dua|Ayah|Range|Surah|Page|Ruku|Juz|Hizb|Rub|Manzil|বিষয়|নাম|হাদিস|দুআ|আয়াত|সূরা|পৃষ্ঠা|রুকু|জুয";
+const UNIT_WORD_ID = new RegExp("(?:^|[\\s(])(" + UNIT_WORDS + ")[:\\s]+([a-z]{1,3}\\d{1,4})(?![\\w:.\\-])");
+const SNAKE =/^[a-z][a-z0-9]*(_[a-z0-9]+)+$/, KEBAB = /^[a-z][a-z0-9]*(-[a-z0-9]+)+$/;
 function judge(text) {
   if (/[؀-ۿݐ-ݿ]/.test(text)) return null; // Arabic text
   const whole = text.toLowerCase();
   if (IDS.includes(text) ) return "module/subject id";
   if (ERROR_CODES.includes(whole) && whole === text) return "error code";
-  for (const raw of text.split(/\s+/)) {
+  // Audit part 109: a short letters-plus-digits id (t42, h7) straight after a unit word ("বিষয় t42", "Topic t42")
+  if (UNIT_WORD_ID.test(text)) return "short id after a unit word: " + text.match(UNIT_WORD_ID)[2];
+  const toks = text.split(/\s+/);
+  for (const raw of toks) {
     const tok = raw.replace(/^[("'\[]+|[)"'\].,:;!?]+$/g, "");
     if (SNAKE.test(tok)) return "snake_case: " + tok;
     if (KEBAB.test(tok) && (ERROR_CODES.includes(tok) || text === tok || /^(syn|synthetic)-/.test(tok) || /^topic-/.test(tok))) return "kebab id: " + tok;
@@ -82,7 +87,16 @@ function judge(text) {
   return null;
 }
 
-const findings = []; // { page, w, text, el, why, stage }
+// Audit part 109: the short-id rule must flag ids and leave real text alone (checked both ways before the browser runs)
+{
+  const mustFlag = ["বিষয় t42", "Topic t42", "Topic: t42", "হাদিস h7"];
+  const mustPass = ["Juz 3", "জুয ৩", "2:255", "সূরা ১", "আয়াত ১:১", "Ayah 2:255", "Topic: Honesty in trade", "বিষয়: ব্যবসা ও দৈনন্দিন লেনদেনে সততা", "Page 12", "Dua 4"];
+  const bad = [...mustFlag.filter((s) => !judge(s)).map((s) => "missed: " + s), ...mustPass.filter((s) => judge(s)).map((s) => "false alarm: " + s)];
+  if (bad.length) { console.log("SELF-TEST of the short-id rule FAILED:\n  " + bad.join("\n  ")); process.exit(1); }
+  console.log(`self-test: short-id rule flags ${mustFlag.length}/${mustFlag.length} ids and passes ${mustPass.length}/${mustPass.length} real texts`);
+}
+
+const findings = []; //{ page, w, text, el, why, stage }
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
 const clean = new Map(); // page -> findings count (for the positive control)
 try {

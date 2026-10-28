@@ -398,7 +398,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       const entryRows = entries.length
         ? [...entries].sort((a, b) => a.date.localeCompare(b.date)).map((e) => `<tr>
             <td>${num(e.date)}</td><td>${personName(e.personId)}</td><td>${subjectName(e.subjectId)}</td>
-            <td>${unitKeyLabel(e.unitKey)}</td><td>${trackableName(e.trackableId)}</td><td>${activityActionLabel(e.action)}</td>
+            <td>${unitKeyLabel(e.unitKey, unitNameOf)}</td><td>${trackableName(e.trackableId)}</td><td>${activityActionLabel(e.action)}</td>
           </tr>`).join("")
         : `<tr><td colspan="6" class="muted">${t("Nothing logged in this range.")}</td></tr>`;
 
@@ -447,6 +447,8 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
 
     function personName(id) { const p = roster.find((r) => r.id === id); return p ? langText(p.name, getAppLang(), id) : id; }
     function subjectName(id) { const n = subjectTree.find((s) => s.id === id); return n ? langText(n.name, getAppLang(), id) : id; }
+    // A topic key carries a subject-tree node id; its name comes from the tree this page already loaded (I11, audit part 109).
+    function unitNameOf(unitType, ref) { if (unitType !== "topic") return null; const n = subjectTree.find((s) => s.id === ref); return n ? langText(n.name, getAppLang(), "") : null; }
     function trackableName(id) { const t = trackableList.find((tr) => tr.id === id); return t ? langText(t.name, getAppLang(), id) : (id ?? "—"); }
 
     weekTabBtn.addEventListener("click", () => {

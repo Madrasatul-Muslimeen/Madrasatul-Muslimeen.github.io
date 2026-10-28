@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "12.94",
+    "version": "12.95",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -5405,8 +5405,20 @@
     {
       "version": "12.94",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Builder run 2114 (#1244, PR #1246): a raw-id sweep of the shared pages in Bangla; Records' chunk label reads 'Surah 1' / the subject's name instead of 'surah_1'.",
+      "integration": {
+        "authorizedOn": "2026-10-28",
+        "integratedOn": "2026-10-28",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.95",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Builder run 2120 (#1247, PR #1249) + the Architect's Monitor addition: unitKeyLabel() never prints a topic's id; Records and Monitor show the topic's name from the subject tree they already load.",
       "integration": {
         "authorizedOn": "2026-10-28",
         "integratedOn": "2026-10-28",
@@ -5415,8 +5427,9 @@
       }
     }
   ],
-  "nextUnallocated": "12.95",
+  "nextUnallocated": "12.96",
   "nextUnallocatedNote": [
+    "v12.95 was allocated to Records and Monitor name a topic instead of printing its id (audit part 109), 2026-10-28.",
     "v12.94 was allocated to Records names its chunk in words; raw-id sweep of every shared page in Bangla (audit part 108), 2026-10-28.",
     "v12.93 was allocated to Health and LDOG pages' breadcrumb never shows a raw subject id (audit part 107), 2026-10-28.",
     "v12.92 was allocated to the Hadith reader's book-opening text readable in the night look, 2026-10-28.",

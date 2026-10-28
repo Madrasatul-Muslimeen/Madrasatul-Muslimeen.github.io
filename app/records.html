@@ -531,6 +531,13 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       });
     }
 
+    // A topic key carries a subject-tree node id; its name comes from the tree this page already loaded.
+    function unitNameOf(unitType, ref) {
+      if (unitType !== "topic") return null;
+      const node = subjectTree.find((n) => n.id === ref);
+      return node ? langText(node.name, getAppLang(), "") : null;
+    }
+
     function entryRowHtml(chunkKey, entryKey, e) {
       const trackableName = trackableList.find((t) => t.id === e.trackableId);
       const domainNames = (e.domainIds ?? []).map((id) => domainList.find((d) => d.id === id)).filter(Boolean)
@@ -548,7 +555,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
             ? `<button class="small confirmBtn" data-chunk="${chunkKey}" data-entry="${entryKey}">${t("Confirm anyway")}</button>`
             : "";
       return `<tr>
-        <td>${unitKeyLabel(entryKey.split("::")[0])}</td>
+        <td>${unitKeyLabel(entryKey.split("::")[0], unitNameOf)}</td>
         <td>${trackableName ? langText(trackableName.name, getAppLang(), e.trackableId) : e.trackableId}</td>
         <td class="status-${e.claimedStatus}">${statusLabel(e.claimedStatus)}</td>
         <td class="status-${e.confirmedStatus}">${e.confirmedStatus ? statusLabel(e.confirmedStatus) : "—"}</td>
@@ -577,7 +584,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
             return `<tr>
               <td>${num(e.date)}</td>
               <td>${subj ? langText(subj.name, getAppLang(), e.subjectId) : e.subjectId}</td>
-              <td>${unitKeyLabel(e.unitKey)}</td>
+              <td>${unitKeyLabel(e.unitKey, unitNameOf)}</td>
               <td>${trk ? langText(trk.name, getAppLang(), e.trackableId) : e.trackableId}</td>
               <td>${activityActionLabel(e.action)}</td>
             </tr>`;

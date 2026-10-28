@@ -108,6 +108,10 @@ const DATA = {
       name: lang("Ethics"), gloss: lang("Social conduct"), moduleIds: ["deen"], ancestorIds: ["deen_study"], status: "active", order: 1, isTrackable: true },
     { _id: TENANT_ID + "__deen_akhlaq", tenantId: TENANT_ID, subjectId: "deen_akhlaq", parentId: "deen_study",
       name: lang("Akhlaq"), gloss: lang("Behaviour — personal character"), moduleIds: ["deen"], ancestorIds: ["deen_study"], status: "active", order: 2, isTrackable: true },
+    // Audit part 109: a topic NODE whose permanent id (t42) is what activity's "topic:t42" unit key carries.
+    // A real-length name in both languages, so a check proves a name was shown and not a fallback.
+    { _id: TENANT_ID + "__t42", tenantId: TENANT_ID, subjectId: "t42", parentId: "deen_ethics",
+      name: lang("Honesty in trade and daily dealings", "ব্যবসা ও দৈনন্দিন লেনদেনে সততা"), moduleIds: ["deen"], ancestorIds: ["deen_study", "deen_ethics"], status: "active", order: 1 },
   ],
   // PHASE 4 (tracking & feedback) needs real ROWS, not empty collections --
   // a status pill, an activity action or a submission state can only be

@@ -122,11 +122,18 @@ export function unitTypeLabel(unitType) {
  * its digits into Bengali would make it unrecognisable next to the same id
  * shown anywhere else.
  */
-export function unitKeyLabel(unitKey) {
+export function unitKeyLabel(unitKey, resolveName) {
   if (!unitKey) return "";
   const { unitType, parts } = parseUnitKey(unitKey);
   const ref = parts.join(":");
   if (!ref) return unitTypeLabel(unitType);
+  // A topic is keyed by a permanent id (I5), which is never something to read out (I11):
+  // show its name when the page can supply one (resolveName(unitType, ref) -> string|null),
+  // else just the translated word "Topic".
+  if (unitType === "topic") {
+    const name = typeof resolveName === "function" ? resolveName(unitType, ref) : null;
+    return name ? `${unitTypeLabel(unitType)}: ${name}` : unitTypeLabel(unitType);
+  }
   if (unitType === "opening" && OPENING_LABELS[ref]) return `${unitTypeLabel(unitType)}: ${t(OPENING_LABELS[ref])}`;
   return `${unitTypeLabel(unitType)} ${/^[0-9:\-]+$/.test(ref) ? num(ref) : ref}`;
 }
