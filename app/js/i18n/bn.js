@@ -4512,6 +4512,7 @@ export const BN = {
   "MSA — Hadith Study": "MSA — হাদীস অধ্যয়ন", // ?
   "Hadith Books": "হাদীসের কিতাবসমূহ", // ?
   "All Hadith Books": "সব হাদীসের কিতাব", // ?
+  "The book's opening": "কিতাবের শুরু", // ? (the title page and Bismillah before a book's first heading)
   "Encyclopedia": "বিশ্বকোষ", // ?
   "Subjects|Hadith Study menu": "পাঠ্য বিষয়", // ? (distinct from Topics, বিষয়সমূহ, on the same bar)
   "Learning Akhlaq": "আখলাক শেখা", // ?

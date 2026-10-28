@@ -33,6 +33,7 @@ const MUT = {
   nohandles: ["js/hadith-reader.js", "    g.addEventListener(\"pointerdown\", (e) => startDrag(e, h, ctx));", ""],
   nomove: ["js/hadith-reader.js", "if (!e.target.closest(\"button\")) startDrag(e, \"move\", ctx);", "void 0;"],
   nodock: ["js/hadith-reader.js", "    close.addEventListener(\"click\", () => { delete oi.float[key]; localRefresh(); });", ""],
+  noopening: ["js/hadith-browser.js", "? t(\"The book's opening\") : t(\"(untitled)\")", "? t(\"(untitled)\") : t(\"(untitled)\")"],
   faintno: ["css/hadith.css", "font-weight: 600; color: #7a5a17; font-size: 0.85rem;", "font-weight: 600; color: var(--hadith-gold); font-size: 0.85rem;"],
   nophonesteps: ["js/hadith-reader.js", "    b.addEventListener(\"click\", () => { oi.phone = key; localRefresh(); });", ""],
 };
@@ -297,6 +298,12 @@ for (const [lang, look] of [["en", "light"], ["bn", "night"]]) {
   const only = () => P.evaluate(() => ["chapters", "hadiths", "text"].filter((k) => { const n = document.querySelector(`.hadith-reader-grid > [data-reader-pane="${k}"]`); return n && getComputedStyle(n).display !== "none" && n.getBoundingClientRect().width > 0; }).join());
   await tap(P, `[data-openiti-book="${BUKHARI}"]`);
   await P.waitForSelector('[data-openiti-chapter="ch-2"]');
+  // The book's opening (no heading in the source) is named in words, in the reader's language and not marked Arabic;
+  // a titled chapter stays the source's Arabic heading (the Architect's finding of 28 Oct: "(untitled)" at the top).
+  await acheck(`${tag} Bukhari's first chapter, which has no heading, reads "${lang === "bn" ? "কিতাবের শুরু" : "The book's opening"}"`, () => P.evaluate((want) => {
+    const one = document.querySelector('[data-openiti-chapter="ch-1"] .hadith-row-name'), two = document.querySelector('[data-openiti-chapter="ch-2"] .hadith-row-name');
+    return (one?.textContent === want && one.lang !== "ar" && two?.lang === "ar") || JSON.stringify([one?.textContent, one?.lang, two?.lang]);
+  }, lang === "bn" ? "কিতাবের শুরু" : "The book's opening"));
   check(`${tag} the step buttons show, and a book opens on Chapters alone`, await shown(P, '[data-reader-show="text"]') && (await only()) === "chapters", await only());
   await tap(P, '[data-openiti-chapter="ch-2"]');
   await settle(P);
