@@ -85,7 +85,7 @@ export function initAsmaStudyPage() {
   // again the moment real names are in.
   function renderTenantSelect(memberships) {
     tenantSelect.innerHTML = memberships
-      .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName ?? m.tenantId} (${roleListLabel(m.roles)})</option>`)
+      .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${escapeHtml(m.tenantName ?? m.tenantId)} (${roleListLabel(m.roles)})</option>`)
       .join("");
   }
   const tenantSelect = document.getElementById("tenantSelect");
@@ -558,7 +558,7 @@ export function initAsmaStudyPage() {
 
     const visibleRoster = (viewAsRole ? scopedRoster(roster, effRoles, myPersonId) : roster).filter((p) => p.status !== "archived");
     personSelect.innerHTML = visibleRoster
-      .map((p) => `<option value="${p.id}">${langText(p.name, getAppLang(), p.id)}</option>`)
+      .map((p) => `<option value="${p.id}">${escapeHtml(langText(p.name, getAppLang(), p.id))}</option>`)
       .join("");
     // Fix round (25 Aug 2026): a Person selection now stays chosen across
     // pages and reloads, until manually changed -- see topic-study.js's own
