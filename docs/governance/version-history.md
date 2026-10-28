@@ -1003,3 +1003,4 @@ total). Allocated by the MMSA Architect.
 12.99: SECURITY: names inside attributes escaped (audit part 113). Allocated by the MMSA Architect.
 12.100: the Read contents search takes an ayah (J107). Allocated by the MMSA Architect.
 12.101: way-back: Open the app and Journey map back leave a way back (audit part 114). Allocated by the MMSA Architect.
+12.102: way-back: Bookmarks' Back keeps your place on a phone in Bangla (audit part 115). Allocated by the MMSA Architect.
