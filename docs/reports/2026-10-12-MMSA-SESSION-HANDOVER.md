@@ -20,7 +20,7 @@ Took over 2:52 pm 28 Oct from `session_01PL2xbLexYe2DUFQk1jwKoX`. Handing over a
 - v12.93 `routine-study.js` breadcrumb: "Learn Deen On-the-Go"/"Health", never "ldog"/"Ldog" (audit 107, #1241; LDOG safety notice sent to the PCA).
 - v12.94 Records' chunk label in words + the raw-id sweep `audit-part108-raw-id-sweep-browser.mjs` (audit 108, #1244; the Architect restored audit-part24's check on the VISIBLE label).
 - v12.95 Records and Monitor name a topic, never "t42" (audit 109, #1247; the Architect added Monitor).
-- v12.96 **SECURITY**: typed and tenant-authored text HTML-escaped on 11 shared pages (audit 110, #1250; the Architect fixed Classes/Course offers' subjects line, found by his own payload probe, and two lost spaces in `monitor.js`).
+- v12.96 **SECURITY**: typed and tenant-authored text HTML-escaped on 11 shared pages (audit 110, #1250; the Architect fixed Classes/Course offers' subjects line, found by the Architect's own payload probe, and two lost spaces in `monitor.js`).
 
 **In flight:** Builder round **#1253** (audit part 111, SECURITY, dispatched 7:00 pm): the remaining unescaped names. These are Curriculum, the person/tenant pickers in `topic-study.js`, `routine-study.js` and `quranrevival.html` (Landing; frozen Quran Study, a safety fix, so send the PCA a notice), `asma-study.js` tenant options, and `migrate.html`. It also adds `audit-part111-escape-all-pages-browser.mjs`. Find its PR on `builder/issue-1253-run-*`. **Review it with the payload probe** (seed `<img src=x onerror="window.__xss=…">` into p2's name, subjects 0–2, classes and the tenant via `extraSeedJs`, open every page, assert no `img[src="x"]`). The Builder's own checks covered only 2 of the pages it changed in part 110, and the probe found the rest.
 
