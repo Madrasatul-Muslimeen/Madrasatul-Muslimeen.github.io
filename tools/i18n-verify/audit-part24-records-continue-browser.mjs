@@ -95,7 +95,7 @@ for (const lang of LANGS) for (const width of WIDTHS.filter((w) => w !== 320)) {
     // Load-speed contract: one chunk per read, never all of a person's records.
     const reads = await recordReads(page);
     check(`${tag}: ONE records chunk was read to draw the page (surah_1), not all of the person's records`, reads.length >= 1 && reads.every((id) => /__p1__surah_1$/.test(id || "")) , JSON.stringify(reads));
-    check(`${tag}: the chunk is named on the page`, /surah_1/.test(await ev(page, () => document.getElementById("chunkLabel").textContent)));
+    check(`${tag}: the chunk is named on the page`, /surah_1/.test(await ev(page, () => document.getElementById("chunkLabel").dataset.chunkKey)));
     // I6: the stored confirmation is shown as stored. The pending entry was claimed "learning", never confirmed.
     const pending = rows.find((r) => /Try again/.test(r[4]) === false && r[4] && !/Try again/.test(r[4]) && r[7].length > 0 && r[3] === "—");
     check(`${tag}: a pending entry shows its claimed status and NO confirmed status (—), as stored`, !!pending && pending[2] !== "—", JSON.stringify(rows.map((r) => [r[2], r[3]])));
@@ -128,7 +128,7 @@ for (const lang of LANGS) for (const width of WIDTHS.filter((w) => w !== 320)) {
     await page.selectOption("#unitTypeSelect", "juz");
     await page.fill("#unitRef", "1");
     await page.dispatchEvent("#unitRef", "change");
-    await page.waitForFunction(() => /subject_quran|subject_/.test(document.getElementById("chunkLabel").textContent), null, { timeout: 8000 }).catch(() => {});
+    await page.waitForFunction(() => /subject_quran|subject_/.test(document.getElementById("chunkLabel").dataset.chunkKey), null, { timeout: 8000 }).catch(() => {});
     const empty = await rowsText(page);
     check(`${tag}: a unit with no entries says so in words`, empty.length === 1 && empty[0][0].length > 3 && (lang === "bn" ? BN.test(empty[0][0]) : /Nothing here yet/.test(empty[0][0])), JSON.stringify(empty));
     const reads2 = await recordReads(page);
