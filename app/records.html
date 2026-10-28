@@ -477,10 +477,15 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       const unitKey = (() => { try { return buildUnitKeyFromInput(unitTypeSelect.value, unitRef.value || placeholderFor(unitTypeSelect.value)); } catch { return null; } })();
       if (!unitKey) return;
       const chunkKey = chunkKeyFor(unitKey, subjectSelect.value);
-      // The chunk key itself is an identifier (surah_1 / subject_quran),
-      // so only the word around it is translated -- turning the key into
-      // Bengali digits would stop it matching what is stored.
-      chunkLabel.textContent = t("Chunk: {chunkKey}", { chunkKey });
+      // The chunk key itself is an identifier (surah_1 / subject_quran) and is
+      // what is read and stored; the LABEL shows it as words (I11, audit part 108):
+      // "Surah 1", "Quran", or the chosen subject's own name.
+      const m = /^surah_(\d+)$/.exec(chunkKey);
+      const chunkName = m ? t("Surah {surah}", { surah: num(+m[1]) })
+        : chunkKey === "subject_quran" ? t("Quran")
+        : (subjectSelect.selectedOptions[0]?.textContent?.trim() || t("Subject"));
+      chunkLabel.textContent = t("Chunk: {chunkKey}", { chunkKey: chunkName });
+      chunkLabel.dataset.chunkKey = chunkKey; // the stored key, for tools and checks (the label above is words)
       const chunk = await getRecordsChunk(db, activeTenantId, selectedPersonId, chunkKey);
       renderEntries(chunk, chunkKey);
     }

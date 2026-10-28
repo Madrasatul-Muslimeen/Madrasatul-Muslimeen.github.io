@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "12.93",
+    "version": "12.94",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -5393,8 +5393,20 @@
     {
       "version": "12.93",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Builder run 2109 (#1241, PR #1242): routine-study.js's breadcrumb falls back to the module's real name (Health, Learn Deen On-the-Go), translated, never its raw id.",
+      "integration": {
+        "authorizedOn": "2026-10-28",
+        "integratedOn": "2026-10-28",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.94",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Builder run 2114 (#1244, PR #1246): a raw-id sweep of the shared pages in Bangla; Records' chunk label reads 'Surah 1' / the subject's name instead of 'surah_1'.",
       "integration": {
         "authorizedOn": "2026-10-28",
         "integratedOn": "2026-10-28",
@@ -5403,8 +5415,9 @@
       }
     }
   ],
-  "nextUnallocated": "12.94",
+  "nextUnallocated": "12.95",
   "nextUnallocatedNote": [
+    "v12.94 was allocated to Records names its chunk in words; raw-id sweep of every shared page in Bangla (audit part 108), 2026-10-28.",
     "v12.93 was allocated to Health and LDOG pages' breadcrumb never shows a raw subject id (audit part 107), 2026-10-28.",
     "v12.92 was allocated to the Hadith reader's book-opening text readable in the night look, 2026-10-28.",
     "v12.91 was allocated to topic pages' breadcrumb never shows a raw subject id (audit part 106), 2026-10-28.",

@@ -22650,3 +22650,13 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 - **Measured (Architect, 28 Oct):** the new check 64/0 and its mutation reproduced; the Architect's own mutation (the name map emptied) 56/8, "Ldog" caught; a probe at 7 widths × en/bn 280/0, screenshots looked at; `behaviour.mjs` 971/0.
 - LDOG is frozen in MSA (it lives in QuranRevival): an I11 safety fix in a shared file, reported to the PCA.
 - Nothing stored, no Rules changed.
+
+## v12.94 — 28 Oct 2026 — Records names its chunk in words; a raw-id sweep of every shared page in Bangla (audit part 108)
+
+- **PCF MSA J29, audit part 108** (Builder run 2114, issue #1244, PR #1246). Report: `docs/reports/2026-10-28-audit-part108-raw-id-sweep.md`.
+- New `tools/i18n-verify/audit-part108-raw-id-sweep-browser.mjs`: the 24 shared pages (the failed-write audit's list and seeds) plus `deen-study.html` with its root subject absent, in Bangla at 390 and 1440, before and after opening the first menu, folds and card; flags snake_case, kebab ids, module/subject ids (read from `catalogue-data.js`) and error codes. `--mutate=rawid` caught; positive control `about.html` clean.
+- **Found and fixed (1):** `app/records.html` printed "খণ্ড: surah_1", the stored chunk key. The label now reads "Surah N" / "Quran" / the subject's name through `t()` (existing strings); the stored key is kept in `data-chunk-key`, which three suites now read for the key.
+- **Architect's change:** `audit-part24-records-continue-browser.mjs`'s "the chunk is named on the page" had been moved to read `data-chunk-key`, which proves nothing is named on the page. Kept as "the chunk read is surah_1", and a new check reads the visible label in words (Surah 1 / সূরা ১, never `surah_`/`subject_`); 178/6 with the old label restored.
+- **Measured (Architect, 28 Oct):** sweep 0 findings, its mutation caught; `audit-part24` 184/0; `audit-part13` 494/0; Records at 7 widths × en/bn for a surah and a subject, screenshots looked at; `bn-duplicate-keys` 6/0; `behaviour.mjs` 971/0.
+- **Found in this review, next round (#1247):** Records' "This week's activity" shows a topic as "বিষয় t42" (`unitKeyLabel` prints the topic's id).
+- Nothing stored, no Rules changed.

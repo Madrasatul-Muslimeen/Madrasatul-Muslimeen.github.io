@@ -995,3 +995,4 @@ total). Allocated by the MMSA Architect.
 12.91: topic pages' breadcrumb never shows a raw subject id (audit part 106). Allocated by the MMSA Architect.
 12.92: the Hadith reader's book-opening text readable in the night look. Allocated by the MMSA Architect.
 12.93: Health and LDOG pages' breadcrumb never shows a raw subject id (audit part 107). Allocated by the MMSA Architect.
+12.94: Records names its chunk in words; raw-id sweep of every shared page in Bangla (audit part 108). Allocated by the MMSA Architect.
