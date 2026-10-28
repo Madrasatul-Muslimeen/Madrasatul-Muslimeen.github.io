@@ -34,6 +34,7 @@ const MUT = {
   nomove: ["js/hadith-reader.js", "if (!e.target.closest(\"button\")) startDrag(e, \"move\", ctx);", "void 0;"],
   nodock: ["js/hadith-reader.js", "    close.addEventListener(\"click\", () => { delete oi.float[key]; localRefresh(); });", ""],
   noopening: ["js/hadith-browser.js", "? t(\"The book's opening\") : t(\"(untitled)\")", "? t(\"(untitled)\") : t(\"(untitled)\")"],
+  nightopening: ["css/hadith.css", "[data-card-look=\"night\"] .openiti-chapter-text .hadith-arabic { color: var(--card-text-muted); }", ""],
   faintno: ["css/hadith.css", "font-weight: 600; color: #7a5a17; font-size: 0.85rem;", "font-weight: 600; color: var(--hadith-gold); font-size: 0.85rem;"],
   nophonesteps: ["js/hadith-reader.js", "    b.addEventListener(\"click\", () => { oi.phone = key; localRefresh(); });", ""],
 };
@@ -407,6 +408,36 @@ for (const [lang, width] of [["en", 1280], ["bn", 390]]) {
     });
     check(`${tag} no page errors (reference jump)`, errors.filter((e) => !/ERR_CERT|net::|archive\.org|api\.quran|Failed to load resource/i.test(e)).length === 0, errors.slice(0, 2).join(" | "));
     await ctx.close();
+  }
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// Every kind of passage reads clearly in the Text pane, in both looks: each text element of the card >= 4.5:1.
+// (The Architect's finding of 28 Oct: the book opening's chapter text was 2.95:1 in night look.)
+// ---------------------------------------------------------------------------------------------------------------
+{
+  const opening = bIndex.chapters[0].hadithPositions[0];
+  const KINDS = [["chapter text (the book's opening)", BUKHARI, opening], ["hadith", BUKHARI, H1.n],
+    ["passage (Muslim)", MUSLIM, 1], ["editor's note (Malik)", "0179MalikIbnAnas.Muwatta.Shamela0028107-ara1", 1]];
+  for (const look of ["light", "night"]) {
+    console.log(`\n===== hadith-study reader: every kind of passage reads clearly [en 1280 ${look}] =====`);
+    for (const [name, uri, n] of KINDS) {
+      const { ctx, page: P } = await open("en", 1280, `/app/hadith-collections.html?openiti=${uri}&passage=${n}`, look);
+      await P.waitForSelector("[data-openiti-focused]", { state: "attached", timeout: 20000 }).catch(() => {});
+      await P.mouse.move(2, 2);
+      await acheck(`[${look}] the ${name} card: every text on it reads clearly (>= 4.5:1)`, () => P.evaluate(() => {
+        const lum = (s) => { const c = s.match(/[\d.]+/g).slice(0, 3).map((v) => { v = Number(v) / 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
+        const seeThrough = (bg) => bg === "transparent" || (/^rgba/.test(bg) && Number(bg.match(/[\d.]+/g)[3]) < 0.5);
+        const bgOf = (n) => { let e = n, bg; while (e && seeThrough(bg = getComputedStyle(e).backgroundColor)) e = e.parentElement; return e ? bg : "rgb(255, 255, 255)"; };
+        const card = document.querySelector("[data-openiti-focused]");
+        if (!card) return "no card opened";
+        const texts = [...card.querySelectorAll("*")].filter((n) => [...n.childNodes].some((c) => c.nodeType === 3 && c.textContent.trim()) && n.getBoundingClientRect().width > 0);
+        if (!texts.length) return "no text measured";
+        const bad = texts.map((n) => { const [a, b] = [lum(getComputedStyle(n).color), lum(bgOf(n))].sort((x, y) => y - x); return [(a + 0.05) / (b + 0.05), n.className || n.tagName]; }).filter(([r]) => r < 4.5);
+        return bad.length === 0 || bad.map(([r, c]) => `${c} ${r.toFixed(2)}`).join("; ");
+      }));
+      await ctx.close();
+    }
   }
 }
 
