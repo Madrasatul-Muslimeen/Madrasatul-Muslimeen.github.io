@@ -1979,3 +1979,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v12.93** (2026-10-28): Health and LDOG pages' breadcrumb never shows a raw subject id (audit part 107).
 - **v12.94** (2026-10-28): Records names its chunk in words; raw-id sweep of every shared page in Bangla (audit part 108).
 - **v12.95** (2026-10-28): Records and Monitor name a topic instead of printing its id (audit part 109).
+- **v12.96** (2026-10-28): typed and tenant-authored text escaped on Records, Monitor and eight more shared pages (audit part 110, security).

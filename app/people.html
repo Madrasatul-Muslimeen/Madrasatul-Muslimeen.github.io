@@ -313,7 +313,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       roster = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
       myMemberships = hydrated;
       tenantSelect.innerHTML = myMemberships
-        .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${roleListLabel(m.roles)})</option>`)
+        .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${escapeHtml(m.tenantName)} (${roleListLabel(m.roles)})</option>`)
         .join("");
       // Fix round (25 Aug 2026): tenantPeople never carried a `roles` field
       // (only memberships/tenantMemberUids do) -- this roster table's own
@@ -333,12 +333,12 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
 
       managedBySelect.innerHTML = roster
         .filter((p) => p.status !== "archived")
-        .map((p) => `<option value="${p.id}">${langText(p.name, getAppLang(), p.id)}</option>`)
+        .map((p) => `<option value="${p.id}">${escapeHtml(langText(p.name, getAppLang(), p.id))}</option>`)
         .join("");
 
       const children = roster.filter((p) => p.isMinor && p.status !== "archived");
       studyPersonSelect.innerHTML = children
-        .map((p) => `<option value="${p.id}">${langText(p.name, getAppLang(), p.id)}</option>`)
+        .map((p) => `<option value="${p.id}">${escapeHtml(langText(p.name, getAppLang(), p.id))}</option>`)
         .join("");
       renderStudyLockState();
     }
@@ -357,9 +357,14 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       attachRosterRowHandlers();
     }
 
+    // User-written and tenant-authored text goes into an HTML string only through this (audit part 110).
+    function escapeHtml(s) {
+      return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    }
+
     function personRowHtml(person) {
       const isArchived = person.status === "archived";
-      const displayName = `${langText(person.name, getAppLang(), person.id)}${isArchived ? ` (${t("archived")})` : ""}`;
+      const displayName = `${escapeHtml(langText(person.name, getAppLang(), person.id))}${isArchived ? ` (${t("archived")})` : ""}`;
 
       if (canAdmin && editingPersonId === person.id) {
         const roles = rosterRoles.get(person.id) ?? [];
@@ -369,7 +374,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
           .join("");
         const managedOptions = roster
           .filter((p) => p.id !== person.id && p.status !== "archived")
-          .map((p) => `<option value="${p.id}" ${p.id === person.managedByPersonId ? "selected" : ""}>${langText(p.name, getAppLang(), p.id)}</option>`)
+          .map((p) => `<option value="${p.id}" ${p.id === person.managedByPersonId ? "selected" : ""}>${escapeHtml(langText(p.name, getAppLang(), p.id))}</option>`)
           .join("");
         return `<tr data-person-id="${person.id}">
           <td><input type="text" class="editNameInput" maxlength="80" value="${escapedName}" /></td>
@@ -507,12 +512,12 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       const invites = await listInvitesForTenant(db, activeTenantId);
       inviteBody.innerHTML = "";
       for (const inv of invites) {
-        const linkCell = inv.status === "pending" ? `<button data-email="${inv.email}" class="getLinkBtn">${t("Copy link")}</button>` : "—";
+        const linkCell = inv.status === "pending" ? `<button data-email="${escapeHtml(inv.email)}" class="getLinkBtn">${t("Copy link")}</button>` : "—";
         const tr = document.createElement("tr");
         // The email address is the person's own -- never translated. The role
         // and the invite's state are stored identifiers, so both go through
         // their shared label helpers.
-        tr.innerHTML = `<td>${inv.email}</td><td>${roleLabel(inv.role)}</td><td>${entityStatusLabel(inv.status)}</td><td>${linkCell}</td>`;
+        tr.innerHTML = `<td>${escapeHtml(inv.email)}</td><td>${roleLabel(inv.role)}</td><td>${entityStatusLabel(inv.status)}</td><td>${linkCell}</td>`;
         inviteBody.appendChild(tr);
       }
       inviteBody.querySelectorAll(".getLinkBtn").forEach((btn) => {

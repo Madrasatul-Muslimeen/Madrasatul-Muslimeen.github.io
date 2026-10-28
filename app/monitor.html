@@ -302,7 +302,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       const activeMembership = myMemberships.find((m) => m.tenantId === activeTenantId);
       tenantWeekStartsOn = activeMembership?.tenantData?.weekStartsOn ?? 6;
       tenantSelect.innerHTML = myMemberships
-        .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${roleListLabel(m.roles)})</option>`)
+        .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${escapeHtml(m.tenantName)} (${roleListLabel(m.roles)})</option>`)
         .join("");
 
       const { viewAsRole, effRoles, myPersonId } = currentPreview();
@@ -315,7 +315,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       // front avoids a batch of denied reads breaking the whole report.
       visibleRoster = scopedRoster(roster, effRoles, myPersonId).filter((p) => p.status !== "archived");
       personSelect.innerHTML = visibleRoster
-        .map((p) => `<option value="${p.id}">${langText(p.name, getAppLang(), p.id)}</option>`)
+        .map((p) => `<option value="${escapeHtml(p.id)}">${escapeHtml(langText(p.name, getAppLang(), p.id))}</option>`)
         .join("");
       // Fix round (25 Aug 2026): a Person selection now stays chosen across
       // pages and reloads, until manually changed. Bookmark-issues round:
@@ -384,21 +384,21 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
 
       const studentRows = byStudent.length
         ? byStudent.map((s) => `<tr>
-            <td>${s.name}</td>
+            <td>${escapeHtml(s.name)}</td>
             <td>${num(s.dayCount)}</td>
             <td>${num(s.entryCount)}</td>
-            <td>${s.subjectBreakdown.map(([id, n]) => `${subjectName(id)} (${num(n)})`).join(", ") || "—"}</td>
+            <td>${s.subjectBreakdown.map(([id, n]) => `${escapeHtml(subjectName(id))} (${num(n)})`).join(", ") || "—"}</td>
           </tr>`).join("")
         : `<tr><td colspan="4" class="muted">${t("No students in scope.")}</td></tr>`;
 
       const subjectRows = bySubject.length
-        ? bySubject.map((s) => `<tr><td>${s.name}</td><td>${num(s.entryCount)}</td><td>${num(s.studentCount)}</td><td>${num(s.unitCount)}</td></tr>`).join("")
+        ? bySubject.map((s) => `<tr><td>${escapeHtml(s.name)}</td><td>${num(s.entryCount)}</td><td>${num(s.studentCount)}</td><td>${num(s.unitCount)}</td></tr>`).join("")
         : `<tr><td colspan="4" class="muted">${t("Nothing logged in this range.")}</td></tr>`;
 
       const entryRows = entries.length
         ? [...entries].sort((a, b) => a.date.localeCompare(b.date)).map((e) => `<tr>
-            <td>${num(e.date)}</td><td>${personName(e.personId)}</td><td>${subjectName(e.subjectId)}</td>
-            <td>${unitKeyLabel(e.unitKey, unitNameOf)}</td><td>${trackableName(e.trackableId)}</td><td>${activityActionLabel(e.action)}</td>
+            <td>${num(e.date)}</td><td>${escapeHtml(personName(e.personId))}</td><td>${escapeHtml(subjectName(e.subjectId))}</td>
+            <td>${escapeHtml(unitKeyLabel(e.unitKey, unitNameOf))}</td><td>${escapeHtml(trackableName(e.trackableId))}</td><td>${activityActionLabel(e.action)}</td>
           </tr>`).join("")
         : `<tr><td colspan="6" class="muted">${t("Nothing logged in this range.")}</td></tr>`;
 
@@ -445,6 +445,10 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       }
     }
 
+    // User-written and tenant-authored text goes into an HTML string only through this (audit part 110).
+    function escapeHtml(s) {
+      return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    }
     function personName(id) { const p = roster.find((r) => r.id === id); return p ? langText(p.name, getAppLang(), id) : id; }
     function subjectName(id) { const n = subjectTree.find((s) => s.id === id); return n ? langText(n.name, getAppLang(), id) : id; }
     // A topic key carries a subject-tree node id; its name comes from the tree this page already loaded (I11, audit part 109).
@@ -496,7 +500,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     const vocabBody = document.getElementById("vocabBody");
     let vocabShown = false;
     async function vocabRowFor(person, data, override, today) {
-      const name = langText(person.name, getAppLang(), person.id);
+      const name = escapeHtml(langText(person.name, getAppLang(), person.id));
       try {
         const confirmationRequired = await computeConfirmationRequired(db, activeTenantId, person.id, override);
         const [, review] = await Promise.all([
@@ -573,8 +577,8 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
 
     function approachRowHtml(r) {
       return `<tr>
-        <td>${r.name}</td>
-        <td>${r.groupName}</td>
+        <td>${escapeHtml(r.name)}</td>
+        <td>${escapeHtml(r.groupName)}</td>
         <td class="status-not_started">${num(r.byStatus.not_started)}</td>
         <td class="status-learning">${num(r.byStatus.learning)}</td>
         <td class="status-practising">${num(r.byStatus.practising)}</td>
