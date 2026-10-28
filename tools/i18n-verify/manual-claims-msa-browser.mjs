@@ -1282,8 +1282,7 @@ if (want("hadith")) {
       check(`[${tag}] Hadith library: Arabic books (OpenITI): "Which numbering" offers Standard number and This edition's number`, s.opts.length === 2 && /^Standard number$/i.test(s.opts[0]) && /edition/i.test(s.opts[1]), JSON.stringify(s.opts));
       // Back to the book's chapter list (the Manual's route), then the edition's own number.
       await page.reload();
-      await page.waitForSelector('[data-hadith-tab="collections"]', { timeout: 25000 });
-      await page.click('[data-hadith-tab="collections"]');
+      // Updated in place 28 Oct 2026 (PCF MSA J106 round 1): the page opens on Hadith Books, the shelf of every book.
       await page.waitForSelector(`[data-openiti-book="${BUKHARI}"]`, { timeout: 25000 });
       await page.click(`[data-openiti-book="${BUKHARI}"]`);
       await page.waitForSelector("[data-openiti-goto-input]", { timeout: 15000 });
