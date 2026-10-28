@@ -56,7 +56,9 @@ for (const lang of ["en", "bn"]) {
   const ctx = await newContext(browser, { viewport: { width: 390, height: 800 } });
   const { page } = await openPage(ctx, "/app/journey-map.html");
   const href = await page.getAttribute("#backLink", "href");
-  check("opened directly: the Back button points at Quran Study", href === "quranrevival.html", `href ${href}`);
+  // UPDATED IN PLACE 29 Oct 2026 (audit part 122 review), not deleted: since audit part 114 (#1263) the link carries
+  // the way-back marker `?navBack=1`, so the exact-string test went red on main unseen. Quran Study, with or without it.
+  check("opened directly: the Back button points at Quran Study", /^quranrevival\.html(\?navBack=1)?$/.test(href || ""), `href ${href}`);
   await Promise.all([page.waitForURL(/quranrevival\.html/), page.click("#backLink")]);
   check("opened directly: pressing it lands on Quran Study", /quranrevival\.html/.test(page.url()), page.url());
   await ctx.close();
