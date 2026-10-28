@@ -1001,3 +1001,4 @@ total). Allocated by the MMSA Architect.
 12.97: SECURITY: names escaped on every page (audit part 111). Allocated by the MMSA Architect.
 12.98: SECURITY: Resource text escaped, typed links only open if web or mail (audit part 112). Allocated by the MMSA Architect.
 12.99: SECURITY: names inside attributes escaped (audit part 113). Allocated by the MMSA Architect.
+12.100: the Read contents search takes an ayah (J107). Allocated by the MMSA Architect.

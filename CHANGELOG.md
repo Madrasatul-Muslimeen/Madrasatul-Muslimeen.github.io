@@ -22712,3 +22712,11 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 - **Measured (Architect, 28 Oct):** the Architect's wider attribute probe over every page in `app/` (also notes, folders, instructions, resources) 0 open; because the changed `escapeHtml` is used across the Landing page, every visible text, title, aria-label and option on the Landing page, Read, Explore, Approach and Know Your Status was searched for a literal `&#39;`, `&quot;` or `&amp;`: none, and the apostrophe count is identical to v12.98 (en/bn, 390/1440); `behaviour.mjs` 971/0 alone; `bn-duplicate-keys` 6/0; `apps-build-check` 48/0; QR build applies.
 - Notices: PCA (frozen `quranrevival.html`).
 - Nothing stored, no Rules changed.
+
+## v12.100 — 28 Oct 2026 — the Read contents search takes an āyah (J107)
+
+- **PCF MSA J107** (the Owner, 9:57 am 28 Oct, a photo of the Read contents list: "6:161" typed, "Nothing matches." — "How does search work here? Fix it."). Built by the QR Lead, branch `claude/qr-lead-read-search` (c21abe60, 01f25ed4); released by the Architect with `main` (v12.99) merged in.
+- `quranrevival.html`: the box matched only a sūrah name or number. A typed reference (anything with ":" or ".", e.g. 6:161, 2:255-257, ৬:১৬১) is parsed by the "Go to" box's own `parseJumpText()` and checked by `resolveJumpTarget()` (the "Go to" box's validation, split out unchanged), offering a first row "Go to 6:161 · Al-An'aam" above that sūrah's row; Enter opens the first row; the row runs the Go-to jump, opens the Read view and scrolls to the āyah. A number past the end shows the message and still offers the sūrah. Placeholder: "Sūrah name or number, or an āyah like 2:255" (one new `bn.js` key, old key kept).
+- New `tools/i18n-verify/read-contents-ayah-search-browser.mjs` (QR Lead): 74/0; mutations noref/noenter/nogo caught (the Architect re-ran noref: 41 failed).
+- **Measured (Architect, 28 Oct):** 74/0 on the merged branch; `read-contents-browser` 248/0; screenshots looked at (Bangla 390 list with ৬:১৬১, English 390 Read view on 6:161); `behaviour.mjs` 971/0 alone; `bn-duplicate-keys` 6/0; `apps-build-check` 48/0; QR build applies.
+- Nothing stored, no Rules changed.
