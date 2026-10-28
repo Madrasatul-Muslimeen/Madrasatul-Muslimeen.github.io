@@ -45,7 +45,7 @@
   .vt-due { display: inline-block; border-radius: 999px; padding: 0 0.5rem; font-weight: 700; font-variant-numeric: tabular-nums; }
   .vt-due-some { background: #fdecc8; color: #7a4b00; }
   .vt-due-none { background: #d7efdf; color: #1d5a3c; }
-  #vocabLoadBtn { min-height: 44px; }
+  #vocabLoadBtn, #quranLoadBtn { min-height: 44px; }
   #reportBody, #quranBody { }
 
   /* Issue #293 -- at phone width a wide table scrolls inside its own box
@@ -139,9 +139,7 @@
 
     <h2>Quran Approach breakdown — <span id="quranStudentName"></span></h2>
     <p class="muted">Current claimed status per Approach, across every ayah/juz/page this student has ever touched — not scoped to the week/month above (this is a status snapshot, not an activity log).</p>
-    <div id="quranBody">
-      <p class="muted">Loading…</p>
-    </div>
+    <div id="quranBody"><button type="button" id="quranLoadBtn">Show the Quran Approach breakdown</button></div>
   </div>
 
   <script type="module">import { keepFocusInTables } from "./js/table-focus.js"; keepFocusInTables();</script>
@@ -396,11 +394,11 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
         ? bySubject.map((s) => `<tr><td>${escapeHtml(s.name)}</td><td>${num(s.entryCount)}</td><td>${num(s.studentCount)}</td><td>${num(s.unitCount)}</td></tr>`).join("")
         : `<tr><td colspan="4" class="muted">${t("Nothing logged in this range.")}</td></tr>`;
 
-      const entryRows = entries.length
-        ? [...entries].sort((a, b) => a.date.localeCompare(b.date)).map((e) => `<tr>
-            <td>${num(e.date)}</td><td>${escapeHtml(personName(e.personId))}</td><td>${escapeHtml(subjectName(e.subjectId))}</td>
-            <td>${escapeHtml(unitKeyLabel(e.unitKey, unitNameOf))}</td><td>${escapeHtml(trackableName(e.trackableId))}</td><td>${activityActionLabel(e.action)}</td>
-          </tr>`).join("")
+      // Audit part 120: a whole-roster month is ~1,200 raw rows; building them all in one task was a 170-240 ms long task.
+      // The first slice is drawn with the report and the rest follow in slices, one macrotask each (flushRawEntries() finishes them at once for a print).
+      const sortedEntries = [...entries].sort((a, b) => a.date.localeCompare(b.date));
+      const entryRows = sortedEntries.length
+        ? sortedEntries.slice(0, RAW_ROWS_FIRST).map(rawEntryRowHtml).join("")
         : `<tr><td colspan="6" class="muted">${t("Nothing logged in this range.")}</td></tr>`;
 
       reportBody.innerHTML = `
@@ -414,8 +412,35 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
 
         <h3 style="font-size:1rem; margin-top:1.4rem;">${t("Raw entries")}</h3>
         <table><thead><tr><th>${t("Date")}</th><th>${t("Student")}</th><th>${t("Subject")}</th><th>${t("Unit")}</th><th>${t("Approach")}</th><th>${t("Action")}</th></tr></thead>
-        <tbody>${entryRows}</tbody></table>
+        <tbody id="rawEntriesBody">${entryRows}</tbody></table>
       `;
+      rawPending = sortedEntries.slice(RAW_ROWS_FIRST);
+      rawToken++;
+      if (rawPending.length && !RAW_ROWS_ALL_AT_ONCE) scheduleRawSlice(rawToken);
+    }
+
+    const RAW_ROWS_ALL_AT_ONCE = false;
+    const RAW_ROWS_FIRST = 100, RAW_ROWS_SLICE = 100;
+    let rawPending = [], rawToken = 0;
+    function rawEntryRowHtml(e) {
+      return `<tr>
+            <td>${num(e.date)}</td><td>${escapeHtml(personName(e.personId))}</td><td>${escapeHtml(subjectName(e.subjectId))}</td>
+            <td>${escapeHtml(unitKeyLabel(e.unitKey, unitNameOf))}</td><td>${escapeHtml(trackableName(e.trackableId))}</td><td>${activityActionLabel(e.action)}</td>
+          </tr>`;
+    }
+    function scheduleRawSlice(token) {
+      setTimeout(() => {
+        if (token !== rawToken || !rawPending.length) return;
+        const body = document.getElementById("rawEntriesBody");
+        if (!body) return;
+        body.insertAdjacentHTML("beforeend", rawPending.splice(0, RAW_ROWS_SLICE).map(rawEntryRowHtml).join(""));
+        if (rawPending.length) scheduleRawSlice(token);
+      }, 0);
+    }
+    /** Draws every raw row still waiting (a print must carry the whole report). */
+    function flushRawEntries() {
+      const body = document.getElementById("rawEntriesBody");
+      if (body && rawPending.length) body.insertAdjacentHTML("beforeend", rawPending.splice(0).map(rawEntryRowHtml).join(""));
     }
 
     // ---------------------------------------------------------------------
@@ -547,6 +572,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       downloadCsv(filename, lastCsvRows);
     });
     printBtn.addEventListener("click", () => {
+      flushRawEntries();
       const heading = t("Monitor report");
       printReportHtml(`${heading} — ${rangeLabel.textContent}`, `<h1>${heading}</h1><p>${rangeLabel.textContent}</p>${reportBody.innerHTML}`);
     });
@@ -555,10 +581,18 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     // Quran Approach breakdown -- single selected student, status snapshot.
     // ---------------------------------------------------------------------
 
+    // Audit part 120: the breakdown reads EVERY records chunk of one student (a year of study: 30+ documents, one per
+    // surah and subject) -- the one place that breaks "one chunk per surah, never all of a person's records". Like the
+    // Vocabulary table above, it is read on the teacher's tap (and then follows the student), not on every page load
+    // and every change of student. QURAN_ON_TAP = false brings the old always-read behaviour back.
+    const QURAN_ON_TAP = true;
+    let quranShown = !QURAN_ON_TAP;
+    quranBody.addEventListener("click", (e) => { if (e.target.closest("#quranLoadBtn")) { quranShown = true; refreshQuranBreakdown(); } });
     async function refreshQuranBreakdown() {
       const personId = personSelect.value;
       if (!personId) { quranBody.innerHTML = `<p class="muted">${t("Pick a student first.")}</p>`; quranStudentName.textContent = ""; return; }
       quranStudentName.textContent = personName(personId);
+      if (!quranShown) return;
       quranBody.innerHTML = `<p class="muted">${t("Loading…")}</p>`;
       try {
         const entries = await listAllRecordsForPerson(db, activeTenantId, personId);
