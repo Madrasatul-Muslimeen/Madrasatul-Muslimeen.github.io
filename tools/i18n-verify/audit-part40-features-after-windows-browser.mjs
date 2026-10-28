@@ -209,6 +209,10 @@ async function popoverState(t, p, label) {
 }
 
 async function hadeethenc(t, p) {
+  // Updated in place 28 Oct 2026 (PCF MSA J106 round 1): the page now opens on Hadith Books; HadeethEnc is its own
+  // menu-bar button, "Encyclopedia" (data-hadith-tab="collections"), so it is opened first.
+  await waitFor(p, '[data-hadith-tab="collections"]', 25000);
+  await jsClick(p, '[data-hadith-tab="collections"]');
   await waitFor(p, '[data-hadeethenc-category="1"]', 25000);
   await state(t, p, "HadeethEnc categories", '[data-hadeethenc-category="1"]');
   await jsClick(p, '[data-hadeethenc-category="1"]'); await waitFor(p, '[data-hadeethenc-category="12"]');
@@ -241,6 +245,11 @@ async function openiti(t, p) {
   await state(t, p, "OpenITI chapters", '[data-openiti-chapter="ch-3"]');
   check(`${t}: the book lists its chapters`, (await ev(p, () => document.querySelectorAll("[data-openiti-chapter]").length)) > 30);
   await jsClick(p, '[data-openiti-chapter="ch-3"]'); await waitFor(p, "[data-openiti-credit]"); await settle(p, 500);
+  // Updated in place 28 Oct 2026 (PCF MSA J106 round 1): the chapter opens in the three-pane reader. On a phone one
+  // pane shows at a time and a chapter opens on its hadith list, so the passage (Text pane) is shown by its step
+  // button before it is measured; on wider screens all three panes are already side by side.
+  await ev(p, () => { const s = document.querySelector('[data-reader-show="text"]'); if (s && s.getBoundingClientRect().width > 0) s.click(); });
+  await settle(p, 400);
   await state(t, p, "OpenITI passages", "[data-openiti-credit]");
   check(`${t}: the chapter shows Arabic text`, await ev(p, () => /[؀-ۿ]{8,}/.test(document.body.innerText)));
   // the way back: the book's crumb returns to its chapters

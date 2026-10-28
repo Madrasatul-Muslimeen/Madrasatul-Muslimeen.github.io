@@ -33,6 +33,7 @@ const MUT = {
   nohandles: ["js/hadith-reader.js", "    g.addEventListener(\"pointerdown\", (e) => startDrag(e, h, ctx));", ""],
   nomove: ["js/hadith-reader.js", "if (!e.target.closest(\"button\")) startDrag(e, \"move\", ctx);", "void 0;"],
   nodock: ["js/hadith-reader.js", "    close.addEventListener(\"click\", () => { delete oi.float[key]; localRefresh(); });", ""],
+  faintno: ["css/hadith.css", "font-weight: 600; color: #7a5a17; font-size: 0.85rem;", "font-weight: 600; color: var(--hadith-gold); font-size: 0.85rem;"],
   nophonesteps: ["js/hadith-reader.js", "    b.addEventListener(\"click\", () => { oi.phone = key; localRefresh(); });", ""],
 };
 const arg = (k) => (process.argv.find((a) => a.startsWith(`--${k}=`)) || "").slice(k.length + 3);
@@ -89,11 +90,13 @@ async function open(lang, width, path, look = "light") {
     await ctx.route(`**/app/${file}*`, async (r) => {
       const src = fs.readFileSync(`app/${file}`, "utf8");
       if (!src.includes(a)) throw new Error(`mutation anchor missing: ${MUTATE}`);
-      await r.fulfill({ status: 200, contentType: "text/javascript; charset=utf-8", body: src.split(a).join(b) });
+      await r.fulfill({ status: 200, contentType: file.endsWith(".css") ? "text/css; charset=utf-8" : "text/javascript; charset=utf-8", body: src.split(a).join(b) });
     });
   }
+  // The look is the reader's saved preference (prefs.js reads it at load): setting the attribute by hand was undone
+  // by the app, so every "light" run had really been night (found by "the look really is").
+  await ctx.addInitScript((lk) => { try { localStorage.setItem("mm_card_look", lk); } catch { /* storage blocked */ } }, look);
   const { page, errors } = await openPage(ctx, path);
-  if (look === "night") await page.evaluate(() => document.documentElement.setAttribute("data-card-look", "night"));
   return { ctx, page, errors };
 }
 const settle = (p) => p.waitForTimeout(150);
@@ -199,14 +202,23 @@ for (const [lang, width, look] of [["en", 1280, "light"], ["bn", 820, "night"]])
   await tap(P, `[data-openiti-row="${H2.n}"]`);
   await settle(P);
   check(`${tag} a tap on a row in the middle pane opens that hadith`, (await card(P))?.n === H2.n);
-  await acheck(`${tag} the reader's own text reads clearly (row, title and hadith text >= 4.5:1)`, () => P.evaluate(() => {
+  await P.mouse.move(2, 2); // no row under the pointer: its hover look is not the row's own
+  await acheck(`${tag} the look really is ${look}`, () => P.evaluate((l) => document.documentElement.getAttribute("data-card-look") === l || document.documentElement.getAttribute("data-card-look"), look));
+  await acheck(`${tag} the reader's own text reads clearly (every row, the titles and the hadith text >= 4.5:1)`, () => P.evaluate(() => {
     const lum = (s) => { const c = s.match(/\d+(\.\d+)?/g).slice(0, 3).map((v) => { v = Number(v) / 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
-    const bgOf = (n) => { let e = n, bg; while (e && ((bg = getComputedStyle(e).backgroundColor) === "rgba(0, 0, 0, 0)" || bg === "transparent")) e = e.parentElement; return bg || "rgb(255, 255, 255)"; };
+    // A mostly see-through background (a row's 8% hover tint) is looked through to the solid one behind it; read as
+    // solid, it made a hovered row's own gold number measure 1.00:1 against itself.
+    const seeThrough = (bg) => bg === "transparent" || (/^rgba/.test(bg) && Number(bg.match(/[\d.]+/g)[3]) < 0.5);
+    const bgOf = (n) => { let e = n, bg; while (e && seeThrough(bg = getComputedStyle(e).backgroundColor)) e = e.parentElement; return e ? bg : "rgb(255, 255, 255)"; };
     const bad = [];
     for (const sel of [".hadith-reader-row .hadith-reader-snippet", ".hadith-reader-row .hadith-reader-no", ".hadith-pane-title", "[data-openiti-passage] .hadith-arabic"]) {
-      const n = document.querySelector(sel); if (!n) { bad.push(`${sel} missing`); continue; }
-      const [a, b] = [lum(getComputedStyle(n).color), lum(bgOf(n))].sort((x, y) => y - x);
-      const r = (a + 0.05) / (b + 0.05); if (r < 4.5) bad.push(`${sel} ${r.toFixed(2)}`);
+      // EVERY match, not the first: the first row is the open one, styled differently (audit part 40 found an unopened
+      // row's number at 3.24:1 that a first-only measurement passed).
+      const ns = [...document.querySelectorAll(sel)]; if (!ns.length) { bad.push(`${sel} missing`); continue; }
+      for (const n of ns) {
+        const [a, b] = [lum(getComputedStyle(n).color), lum(bgOf(n))].sort((x, y) => y - x);
+        const r = (a + 0.05) / (b + 0.05); if (r < 4.5) { bad.push(`${sel} ${r.toFixed(2)}`); break; }
+      }
     }
     return bad.length === 0 || bad.join("; ");
   }));
