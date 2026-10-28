@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "12.108",
+    "version": "12.110",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -5573,8 +5573,32 @@
     {
       "version": "12.108",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "QR Lead (Owner's ask, Al-Hijr on a phone): in the Mushaf page strip a page turns only on a deliberate pull from its end (a swipe of 35% of the screen, 220px minimum, or a 600px wheel burst), one page per burst.",
+      "integration": {
+        "authorizedOn": "2026-10-28",
+        "integratedOn": "2026-10-28",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.109",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Audit part 122 (PCF MSA J29): journey-map.html hints its 23 deep modules and, in Bangla, the catalogue (modulepreload), so a slow phone has the folder tree ~1 s sooner; nothing read or shown changes.",
+      "integration": {
+        "authorizedOn": "2026-10-28",
+        "integratedOn": "2026-10-28",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.110",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "QR Lead (Architect's finding): a Mushaf ‹ › turn into another surah holds the strip hidden until the target page is drawn and placed (holdMushafStripFor), so the other surah's first page no longer flashes; mushaf-chosen-unit's stale route fixed.",
       "integration": {
         "authorizedOn": "2026-10-28",
         "integratedOn": "2026-10-28",
@@ -5583,8 +5607,10 @@
       }
     }
   ],
-  "nextUnallocated": "12.109",
+  "nextUnallocated": "12.111",
   "nextUnallocatedNote": [
+    "v12.110 was allocated to the QR Lead's Mushaf turn into another surah with no other page on the way, 2026-10-28.",
+    "v12.109 was allocated to audit part 122 (Mapping My Journey starts its parts at once), 2026-10-28.",
     "v12.108 was allocated to the QR Lead's Mushaf page that stays at its end, 2026-10-28.",
     "v12.107 was allocated to Monitor opens faster for a teacher with a real class (audit part 120), 2026-10-28.",
     "v12.106 was allocated to during a recitation the Play button stays Pause between ayat, and a tap there pauses (QR Lead), 2026-10-28.",

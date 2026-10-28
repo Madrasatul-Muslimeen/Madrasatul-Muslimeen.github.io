@@ -22790,3 +22790,23 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 - **Measured (Architect, 29 Oct, merged with v12.107):** qr-mushaf-edge-stay 18/0; old-pull 8 failed, no-strip-wheel 3 failed, wheel-many 1 failed; read-scroll-end-stays 10/0, mushaf-page-ref-steady 48/0, mushaf-render-responsive 24/0, read-quick-buttons 254/0, mushaf-no-sideways-overflow 648/0; `behaviour.mjs` 972/0.
 - **Pre-existing, not this round's:** `qr-mushaf-page-nav-browser.mjs` part 1 fails intermittently (‹ from 267 lands on 262) on `main` as well, 2 of 4 runs; `mushaf-chosen-unit-browser.mjs` crashes at line 88 (`#readBarRecordBtn` now sits inside the Study ▾ menu). Both given to the QR Lead.
 - QR carries it at its next rebuild. Nothing stored, no Rules changed.
+
+## v12.109 — 29 Oct 2026 — Mapping My Journey has its folder tree sooner on a slow phone (audit part 122)
+
+- **PCF MSA J29, audit part 122** (Builder run 2179, issue #1283, PR #1284). Report: `docs/reports/2026-10-29-audit-part122-journey-map-usable-sooner.md`.
+- Measured cause: no long tasks; ~3.4 s of 4.7 s (phone, Bangla) was downloading modules discovered five import levels deep, with `i18n/bn.js` (460 KB) last.
+- `app/journey-map.html`: a head script adds `modulepreload` hints for 23 deep modules and, in Bangla, `i18n/bn.js`, `surah-names-bn.js`, `asma-names-bn.js`. Nothing read or shown changes.
+- `heavy-account-speed-browser.mjs`: hint checks, "tree by N ms" on the phone line, `--mutate=no-preload`, `--dump`.
+- **Architect's review commits:** a static check that every preloaded file exists and is reached by the page's own import graph (positive control; `--mutate=stale-hint`, `--mutate=unused-hint`); `journey-map-back.mjs` "opened directly" updated in place for `?navBack=1` (red on `main` since audit part 114).
+- **Measured (Architect, 29 Oct, merged with v12.108):** heavy-account (Journey map) 34/0; no-preload 5 failed (phone bn tree 3,511 → 4,620 ms); stale-hint and unused-hint 1 failed each; journey-map-screen 47/0, notes-way-back 33/0, journey-map-counts 9/0, journey-map-path 32/0, journey-map-back 38/0, journey-tray 227/0, note-opens-in-journey 60/0; `apps-build-check` 48/0, QR build applies; `behaviour.mjs` alone 972/0.
+- Found: `shared-pages-way-back-audit-browser.mjs` finds no in-page controls on Journey map (0 checked); audit part 123 (#1286).
+- Nothing stored, no Rules changed.
+
+## v12.110 — 29 Oct 2026 — a Mushaf ‹ › turn into another surah shows no other page on the way (QR Lead)
+
+- **The Architect's finding at v12.108**: `qr-mushaf-page-nav-browser.mjs` part 1 failed intermittently on `main` (‹ from 267 read 262). The QR Lead measured it as a REAL visible flash: ‹ on An-Nahl's first page opens Al-Hijr, the strip is redrawn from Al-Hijr's first page (262) and the Read bar named it for 0.4–1.3 s before the turn reached 266.
+- `app/quranrevival.html`: `holdMushafStripFor(target)`, used only on `stepMushafPage`'s other-surah path: the strip's pages stay hidden (layout kept) and `updateMushafPageRef()` is held until the target page is drawn and sits at the strip's reading edge; 8 s fail-safe; `finally` always releases; a ‹ › press during the hold is ignored.
+- `qr-mushaf-page-nav-browser.mjs`: every press records every page the Read bar names on the way and must name only the target (`--mutate=no-hold`). `mushaf-chosen-unit-browser.mjs`: both click sites reach the Approach bar through ⋯ below 900px, updated in place.
+- **Architect's review commit:** leading repeats of the start page are dropped before that check (the bar re-stating the page the reader is still on; seen once, 1520, a same-surah › from 268).
+- **Measured (Architect, 29 Oct, merged with v12.109):** page-nav 61/0 (×4); no-hold 58/3 (exactly ‹ from 267 at 1520, 1280, 390); qr-mushaf-edge-stay 18/0, mushaf-chosen-unit 25/0, mushaf-page-ref-steady 48/0, read-scroll-end-stays 10/0, mushaf-render-responsive 24/0; `behaviour.mjs` alone 972/0; `apps-build-check` 48/0.
+- QR carries it at its next rebuild. Nothing stored, no Rules changed.
