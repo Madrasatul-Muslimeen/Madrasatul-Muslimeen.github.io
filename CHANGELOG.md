@@ -22757,7 +22757,7 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 
 ## v12.105 — 29 Oct 2026 — Bookmarks opens faster with hundreds of bookmarks (audit part 119)
 
-- **PCF MSA J29, audit part 119** (Builder run 2163, issue #1274, PR #1278). Report (written by the Architect; the round left none): `docs/reports/2026-10-29-audit-part119-heavy-account-speed.md`.
+- **PCF MSA J29, audit part 119** (Builder run 2163, issue #1274, PR #1275). Report (written by the Architect; the round left none): `docs/reports/2026-10-29-audit-part119-heavy-account-speed.md`.
 - New `tools/i18n-verify/heavy-account-speed-browser.mjs`; `firebase-stub.mjs` records how many documents each read returned (additive).
 - `app/bookmarks.html`: a row's and a folder header's For / Move lists fill when the reader reaches for them (6,767 → 3,333 nodes; longest task 327 → 117 ms in Bangla). `--mutate=eager-selects`.
 - **Architect's review commit:** behaviour 44c and 50h, and audit-part40's bookmarks flow, focus the list before reading its options (updated in place, with the reason).

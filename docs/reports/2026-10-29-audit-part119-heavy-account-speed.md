@@ -1,6 +1,6 @@
 # Audit part 119: loading speed with a heavy account (PCF MSA J29, issue #1274)
 
-Builder run 2163 built the suite and the fix and pushed them, but opened no PR and wrote no report. This report was
+Builder run 2163 built the suite and the fix (PR #1275) but wrote no report. This report was
 written by the Architect from the suite's own output, run on the branch merged with v12.104.
 
 ## The seed (`tools/i18n-verify/heavy-account-speed-browser.mjs`)
