@@ -2040,3 +2040,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v12.101** (2026-10-28): way-back: Open the app and Journey map back leave a way back (audit part 114).
 - **v12.102** (2026-10-28): way-back: Bookmarks' Back keeps your place on a phone in Bangla (audit part 115).
 - **v12.103** (2026-10-28): table buttons fully in view with the Tab key on a small phone (audit part 116).
+- **v12.104** (2026-10-28): the way back shares a row: Read bar at 320 and 360, Word card header at 360 (QR Lead).

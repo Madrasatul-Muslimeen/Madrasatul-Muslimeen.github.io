@@ -4629,6 +4629,21 @@
     #readBar:has(#readBackSlot:not(:empty)) #readBarEnd { gap: 0.15rem; }
     #readBar:has(#readBackSlot:not(:empty)) #readBarEnd > button { width: 36px; min-width: 36px; padding-left: 0; padding-right: 0; }
   }
+  /* QR Lead (PCF MSA J29, open since 16 Oct; measured 28 Oct 2026): at 320 the bar is 288px. Its first line (☰ 40, the
+     unit chip 76, ⏮ ⏭ ▶ 40 each, 6.4px gaps) is full, so ■ wrapped to the second line, and ■ + ← ✕ (85) + 🔖 📖 ⤢ ⋯ ⋮ (194)
+     need 331px: the tools fell to a THIRD line. While a way-back is docked, the transport tiles are 36px wide (40 tall, as
+     the Mushaf bar's below 360px) and the gaps 4px, so ■ rejoins the first line (280px) and ← ✕ share the second with
+     🔖 📖 ⤢ ⋯ ⋮ (283px). At 360 (en) the same third line came from ☰'s words ("☰ Surah list" 89px, which shows its
+     words from 360px): while a way-back is docked below 380px ☰ is its icon alone (its spoken name stays), so the first
+     line is 308 of 328px and ← ✕ share the second with the tools. */
+  @media (max-width: 379.98px) {
+    body.read-from-contents #readBar:has(#readBackSlot:not(:empty)) #readListBtn { padding: 0; width: 40px; }
+    #readBar:has(#readBackSlot:not(:empty)) #readListBtn .read-list-word { display: none; }
+  }
+  @media (max-width: 340px) {
+    #readBar:has(#readBackSlot:not(:empty)) { gap: 0.25rem; }
+    #readBar:has(#readBackSlot:not(:empty)) :is(#prevUnitBtn, #nextUnitBtn, #readPlayBtn, #readStopBtn) { width: 36px; min-width: 36px; padding-left: 0; padding-right: 0; }
+  }
   .ayah-card-back-x { width: 40px; height: 40px; flex: 0 0 auto; padding: 0; border: 0; border-radius: 50%; background: rgba(255, 255, 255, 0.08); color: #f2e8d5; font-size: 1.2rem; cursor: pointer; }
   /* 📖 Note view pop-up: the āyah as the Note view shows it, over the card. */
   /* The Owner, 9 Oct 2026 (a tablet): "no way back or it is covered". 100vh is the screen with the browser's bars
@@ -5002,7 +5017,15 @@
   }
   /* ...and on the narrowest card (a 320px phone: the first row is 296 of 299px), it goes to the second row, before the
      word, the push back on ⓘ, and the word gives up 40px of its basis so the root box stays on that row. */
-  @container wordcard (max-width: 20rem) {
+  /* QR Lead (28 Oct 2026, measured): a 360px phone's card is 339px, and ‹ 🔍 [This āyah 88] ⓘ ← › × are 328px of
+     buttons + six 4px gaps = 352px, so × took a line of its own (149px header, 105 without ←). While the way back is in
+     the header on a card up to 22rem, the row takes the 320px card's tight gaps and "This āyah" padding (below):
+     240 + 76 + 6 × 1.6 = 325.6px. Below 20.5rem (328px), where even that does not fit, ← goes to the second row. */
+  @container wordcard (max-width: 22rem) {
+    .quran-word-card header:has(> .word-card-app-back) { column-gap: 0.1rem; }
+    .quran-word-card header:has(> .word-card-app-back) button.word-card-ayah-action-btn { padding: 0 2px; max-width: 5.5rem; white-space: normal; line-height: 1.1; }
+  }
+  @container wordcard (max-width: 20.5rem) {
     .quran-word-card header > button.word-card-app-back { order: 5; margin-inline-end: 0; }
     .quran-word-card header:has(> .word-card-app-back) button.word-card-legend-btn { margin-inline-end: auto; }
     .quran-word-card header:has(> .word-card-app-back) > .word-card-head-word { flex-basis: calc(100% - 9rem); }
