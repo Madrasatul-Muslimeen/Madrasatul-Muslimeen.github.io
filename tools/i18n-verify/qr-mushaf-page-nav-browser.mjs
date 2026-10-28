@@ -84,9 +84,13 @@ for (const [width, height] of [[1520, 1000], [1280, 800], [390, 844]]) {
       window.__refWatch.observe(ref, { attributes: true, attributeFilter: ["data-page"] });
     });
     await page.click(btn); await settle(page, cur);
-    const seen = await page.evaluate(() => window.__refSeen.map(Number));
+    // Architect's review (29 Oct): the bar may re-state the page the reader is still on before it moves (seen once at
+    // 1520, a same-surah › from 268: [268,269]); that is not another page, so leading repeats of `cur` are dropped.
+    // Any other page on the way still fails, as does a turn that ends anywhere but the target.
+    const seenAll = await page.evaluate(() => window.__refSeen.map(Number));
+    const seen = seenAll.slice(seenAll.findIndex((p) => p !== cur) < 0 ? seenAll.length : seenAll.findIndex((p) => p !== cur));
     const now = await pageNow(page), st = await strip(page);
-    check(`${tag} part 1: ${dir > 0 ? "›" : "‹"} from ${cur}: the Read bar names no other page on the way (${seen.join(" → ") || "—"})`, seen.length > 0 && seen.every((p) => p === cur + dir), JSON.stringify(seen));
+    check(`${tag} part 1: ${dir > 0 ? "›" : "‹"} from ${cur}: the Read bar names no other page on the way (${seen.join(" → ") || "—"})`, seen.length > 0 && seen.every((p) => p === cur + dir), JSON.stringify(seenAll));
     check(`${tag} part 1: ${dir > 0 ? "›" : "‹"} moves exactly one page (${cur} → ${now}) and that page is on screen, whole`, now === cur + dir && st.pages.includes(now) && st.cut.length === 0, JSON.stringify(st));
     cur = now;
   }
