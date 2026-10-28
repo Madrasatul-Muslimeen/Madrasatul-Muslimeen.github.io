@@ -779,11 +779,14 @@ export function mountBookmarkMenu(navBarEl, { db, getTenantId, getPersonId, getB
 const PLACE_KEY = "mmsa.wayBackPlace";
 const PLACE_MAX_AGE_MS = 30 * 60 * 1000;
 const placeDetails = () => [...document.querySelectorAll("details")].filter((d) => !d.closest("nav, #navBar, .nav-bar, .nav-cat"));
+// A pop-up is remembered by WHO it is (its id, else its summary's words), never by its position: on a late page the
+// list is not drawn yet when the restore starts, so position 5 can briefly be a different, static <details>.
+const detailsSig = (d) => d.id ? `#${d.id}` : (d.querySelector(":scope > summary")?.textContent || "").replace(/\s+/g, " ").trim().slice(0, 120);
 function readPlaces() { try { return JSON.parse(sessionStorage.getItem(PLACE_KEY) || "{}") || {}; } catch { return {}; } }
 function keepPlace() {
   try {
     const all = readPlaces();
-    all[location.href] = { y: Math.round(window.scrollY), open: placeDetails().map((d, i) => (d.open ? i : -1)).filter((i) => i >= 0), at: Date.now() };
+    all[location.href] = { y: Math.round(window.scrollY), open: placeDetails().filter((d) => d.open).map(detailsSig).filter(Boolean), at: Date.now() };
     const keep = Object.entries(all).sort((a, b) => b[1].at - a[1].at).slice(0, 20);
     sessionStorage.setItem(PLACE_KEY, JSON.stringify(Object.fromEntries(keep)));
   } catch { /* private mode: the browser's own restoration is all there is */ }
@@ -801,10 +804,11 @@ function restorePlace() {
   const onUser = () => { moved = true; stop(); };
   USER.forEach((e) => window.addEventListener(e, onUser, { passive: true }));
   const startedAt = Date.now();
+  const want = new Set((p.open || []).filter((x) => typeof x === "string"));
   const tick = () => {
     if (done) return;
-    const dets = placeDetails();
-    for (const i of p.open || []) if (dets[i] && !dets[i].open) dets[i].open = true;
+    // reopen first (identity-matched, so safe before the list is drawn): a place inside a pop-up needs it open to exist
+    if (!moved && want.size) for (const d of placeDetails()) if (!d.open && want.has(detailsSig(d))) d.open = true;
     const tall = document.documentElement.scrollHeight >= p.y + window.innerHeight;
     if (tall && !moved) {
       if (Math.abs(window.scrollY - p.y) > 2) window.scrollTo(0, p.y);
