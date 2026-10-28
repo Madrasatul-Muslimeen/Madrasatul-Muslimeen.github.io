@@ -2074,3 +2074,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v12.108** (2026-10-28): the QR Lead's Mushaf page that stays at its end.
 - **v12.109** (2026-10-28): audit part 122 (Mapping My Journey starts its parts at once).
 - **v12.110** (2026-10-28): the QR Lead's Mushaf turn into another surah with no other page on the way.
+- **v12.111** (2026-10-28): the regression sweep fixes (Catalogue Add subject on a phone).
