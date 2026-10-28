@@ -22703,3 +22703,12 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 - Left (the reader's own links only): `note-window.js`, `zab-bar.js` (QR keeps pinned copies).
 - Notices: PCA (frozen `quranrevival.html`).
 - Nothing stored, no Rules changed.
+
+## v12.99 — 28 Oct 2026 — SECURITY: names inside attributes escaped (audit part 113)
+
+- **PCF MSA J29, audit part 113** (Builder run 2140, issue #1260, PR #1261). Report: `docs/reports/2026-10-28-audit-part113-attribute-escape.md`.
+- Parts 110–112 planted `<img onerror>`, which cannot leave a quoted attribute. Part 113 plants `x" data-pwn="1" autofocus onfocus="…" y="`. One place broke out: `quranrevival.html`'s local `escapeHtml()` escaped only `& < >`, so an Approach section name escaped the Approach picker's `<optgroup label="…">`. It now escapes `"` and `'` too (one line; frozen Quran Study, safety fix). Every other page, plus People → Edit and Catalogue → Edit: nothing found.
+- New `tools/i18n-verify/audit-part113-attribute-escape-browser.mjs`: 108 runs, 0 failed; `--mutate` 4/4 caught; carries part 111's script-error POSITIVE CONTROL.
+- **Measured (Architect, 28 Oct):** the Architect's wider attribute probe over every page in `app/` (also notes, folders, instructions, resources) 0 open; because the changed `escapeHtml` is used across the Landing page, every visible text, title, aria-label and option on the Landing page, Read, Explore, Approach and Know Your Status was searched for a literal `&#39;`, `&quot;` or `&amp;`: none, and the apostrophe count is identical to v12.98 (en/bn, 390/1440); `behaviour.mjs` 971/0 alone; `bn-duplicate-keys` 6/0; `apps-build-check` 48/0; QR build applies.
+- Notices: PCA (frozen `quranrevival.html`).
+- Nothing stored, no Rules changed.
