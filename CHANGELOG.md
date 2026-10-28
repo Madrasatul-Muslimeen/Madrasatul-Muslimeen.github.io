@@ -22641,3 +22641,12 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 - The reader suite now measures every text element on a chapter-text, hadith, passage and editor's-note card, in light and night (8 new checks).
 - **Measured (Architect, 28 Oct):** `hadith-study-reader-browser` 116/0 (115/1 with the rule removed: the opening text 2.95); a probe at 7 widths × en/bn: 9.77:1 everywhere, inside the screen, no sideways scroll, screenshots looked at; `card-look-browser` 96/0; `behaviour.mjs` 971/0.
 - Nothing stored, no Rules changed.
+
+## v12.93 — 28 Oct 2026 — Health and LDOG: the breadcrumb never shows a raw subject id (audit part 107)
+
+- **PCF MSA J29, audit part 107** (Builder run 2109, issue #1241, PR #1242). Report: `docs/reports/2026-10-28-audit-part107-routine-crumb.md`.
+- `app/js/routine-study.js` had the same fallback v12.91 fixed in `topic-study.js`: the raw module id (`health`, `ldog`) as the breadcrumb root when the root subject was missing or unnamed (I11). It now falls back to the module's real name through `t()` ("Health", "Learn Deen On-the-Go"; both already in `bn.js`), so `ldog` never becomes "Ldog".
+- New check `tools/i18n-verify/audit-part107-routine-crumb-browser.mjs`: 2 pages × bn/en × 390/1440 × root missing/named, 64/0; `--mutate=rawid` 48/16.
+- **Measured (Architect, 28 Oct):** the new check 64/0 and its mutation reproduced; the Architect's own mutation (the name map emptied) 56/8, "Ldog" caught; a probe at 7 widths × en/bn 280/0, screenshots looked at; `behaviour.mjs` 971/0.
+- LDOG is frozen in MSA (it lives in QuranRevival): an I11 safety fix in a shared file, reported to the PCA.
+- Nothing stored, no Rules changed.
