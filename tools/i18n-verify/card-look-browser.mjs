@@ -218,6 +218,9 @@ async function checkContrast(page, label, selector, { minRatio = 4.5, gradientHo
 
 // ===========================================================================
 // 3. Hadith cards -- real navigation into a real chapter, both looks.
+// Updated in place 28 Oct 2026 (PCF MSA J106 round 1): the menu bar's Hadith Books / Subjects lists are hidden panels
+// that also carry .hadith-card (for the card look) and come FIRST in the page, so a bare ".hadith-card" measured a
+// hidden menu panel -- and "a real .hadith-card is on screen" passed on it. These checks name the hadith card itself.
 // ===========================================================================
 {
   const ctx = await newContext(browser, { appLang: "en", viewport: { width: 390, height: 844 } });
@@ -231,7 +234,7 @@ async function checkContrast(page, label, selector, { minRatio = 4.5, gradientHo
   await page.waitForTimeout(150);
   await clickSafely(page, '[data-hadith-chapter="synthetic-alpha-b1-c1"]');
   await page.waitForTimeout(150);
-  const hasCard = await page.evaluate(() => !!document.querySelector(".hadith-card"));
+  const hasCard = await page.evaluate(() => !!document.querySelector(".hadith-card:not(.hadith-menu-panel)"));
   check("en: a real .hadith-card is on screen after navigating into a chapter", hasCard);
 
   // A synthetic .hadith-fallback ("no Bangla for this narration") injected
@@ -239,7 +242,7 @@ async function checkContrast(page, label, selector, { minRatio = 4.5, gradientHo
   // than seeding a narration this fixture's own data happens not to need
   // one for. See this suite's own header note on the method.
   await page.evaluate(() => {
-    const host = document.querySelector(".hadith-card") || document.body;
+    const host = document.querySelector(".hadith-card:not(.hadith-menu-panel)") || document.body;
     const fb = document.createElement("p");
     fb.className = "hadith-fallback";
     fb.id = "__cardLookFallbackProbe";
@@ -250,14 +253,14 @@ async function checkContrast(page, label, selector, { minRatio = 4.5, gradientHo
   for (const look of ["night", "light"]) {
     await setLook(page, look);
     await page.waitForTimeout(80);
-    await checkContrast(page, `en [${look}]: .hadith-row-name / .hadith-card text`, ".hadith-card, .hadith-arabic");
+    await checkContrast(page, `en [${look}]: .hadith-row-name / .hadith-card text`, ".hadith-card:not(.hadith-menu-panel), .hadith-arabic");
     await checkContrast(page, `en [${look}]: .hadith-synthetic-banner warning text`, ".hadith-synthetic-banner p");
     await checkContrast(page, `en [${look}]: .hadith-fallback notice text`, "#__cardLookFallbackProbe");
     if (look === "night") {
-      const cardBg = await page.evaluate(() => getComputedStyle(document.querySelector(".hadith-card")).backgroundColor);
+      const cardBg = await page.evaluate(() => getComputedStyle(document.querySelector(".hadith-card:not(.hadith-menu-panel)")).backgroundColor);
       check(`en [night]: .hadith-card background is dark (${cardBg}), not the old literal #fffdf8`, cardBg !== "rgb(255, 253, 248)");
     } else {
-      const cardBg = await page.evaluate(() => getComputedStyle(document.querySelector(".hadith-card")).backgroundColor);
+      const cardBg = await page.evaluate(() => getComputedStyle(document.querySelector(".hadith-card:not(.hadith-menu-panel)")).backgroundColor);
       check(`en [light]: .hadith-card background unchanged from before this round (${cardBg})`, cardBg === "rgb(255, 253, 248)");
     }
   }
@@ -298,7 +301,7 @@ async function checkContrast(page, label, selector, { minRatio = 4.5, gradientHo
   for (const look of ["night", "light"]) {
     await setLook(page, look);
     await page.waitForTimeout(80);
-    await checkContrast(page, `bn [${look}]: .hadith-card text`, ".hadith-card, .hadith-arabic");
+    await checkContrast(page, `bn [${look}]: .hadith-card text`, ".hadith-card:not(.hadith-menu-panel), .hadith-arabic");
   }
   const realErrors = errors.filter((e) => !/Failed to load resource: net::ERR_(TUNNEL_CONNECTION_FAILED|CERT_AUTHORITY_INVALID)/.test(e));
   check("bn: no page errors (Hadith section)", realErrors.length === 0, JSON.stringify(realErrors));
