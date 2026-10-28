@@ -7593,7 +7593,7 @@
     import {
       RECITERS, reciterIsReady, reciterSupportsSingleAyah, playSurah,
       setLoop, setPlaybackErrorHandler, setAyahChangeHandler, stop as stopAudio, playDrill, stopDrill,
-      warmSegmentedTimestamps, pause as pauseAudio, resume as resumeAudio, isPlaying, isPaused, unlockAudio,
+      warmSegmentedTimestamps, pause as pauseAudio, resume as resumeAudio, isPlaying, isPaused, isRunContinuing, unlockAudio,
       setPlaybackStateHandler, playOneAndWait, setTimingNoteHandler,
     } from "./js/audio-player.js";
     import { translateStatic, t, num, parseNum, surahName, ensureCatalogueReady } from "./js/i18n.js";
@@ -25715,14 +25715,15 @@
       // recitation still sounding (a bookmark's, say) made that Play a PAUSE,
       // and a paused one was resumed with its OLD settings. Only the reading
       // screen's own ▶/⏸ button keeps the toggle below.
-      if (fresh && (isPlaying() || isPaused())) {
+      if (fresh && (isPlaying() || isPaused() || isRunContinuing())) {
         stopDrill(); stopAudio();
         settleListeningSession("stopped");
       }
       // Checked FIRST, and deliberately before unlockAudio(): that helper
       // touches the shared element to claim the gesture, which would undo the
       // pause we are here to perform.
-      if (isPlaying()) { pauseAudio(); renderReadTransport(); return; }
+      // ...and so is a run between two āyāt (isRunContinuing): the button reads ⏸ there, so a tap there pauses.
+      if (isPlaying() || isRunContinuing()) { pauseAudio(); renderReadTransport(); return; }
       hideContinueListening(); // a tap that reached Play is the tap the button was offering
       // SYNCHRONOUS, before any await: marks the shared <audio> element as
       // user-activated so the timing-map fetch below cannot cost us the
@@ -25797,7 +25798,8 @@
       // (setPlaybackStateHandler below re-renders on every play/pause/end/error
       // from ANY cause), so it can never sit there reading "Pause" with nothing
       // playing -- including after a failed load, which is round 22's own fix.
-      const playing = isPlaying();
+      // A run between two āyāt is still playing (isRunContinuing, 28 Oct 2026): no "▶ Play" flash at every āyah.
+      const playing = isPlaying() || isRunContinuing();
       readPlayBtn.textContent = playing ? "⏸" : "▶";
       const label = playing ? t("⏸ Pause") : t("▶ Play");
       readPlayBtn.setAttribute("aria-label", label);
