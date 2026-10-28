@@ -1013,3 +1013,4 @@ total). Allocated by the MMSA Architect.
 12.109: audit part 122 (Mapping My Journey starts its parts at once). Allocated by the MMSA Architect.
 12.110: the QR Lead's Mushaf turn into another surah with no other page on the way. Allocated by the MMSA Architect.
 12.111: the regression sweep fixes (Catalogue Add subject on a phone). Allocated by the MMSA Architect.
+12.112: audit part 123 (the way back from Mapping My Journey). Allocated by the MMSA Architect.

@@ -22818,3 +22818,12 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 - **Stale check updated in place:** `audit-part64-people-backup-browser.mjs` "the way back — an Open the app link to index.html" now accepts the way-back marker `?navBack=1` (added by audit part 114); 32 failures were the check, not the page.
 - **Measured (Architect, 29 Oct):** audit part 65 472/0 (was 469/3), part 64 620/0 (was 588/32); screenshots of Add subject at 320 and 390, en and bn, looked at; `behaviour.mjs` alone 972/0; `apps-build-check` 48/0.
 - Nothing stored, no Rules changed.
+
+## v12.112 — 29 Oct 2026 — the way back from Mapping My Journey is checked, and Import Notes ← Back reopens the Note (audit part 123)
+
+- **PCF MSA J29, audit part 123** (Builder run 2184, issue #1286, PR #1287). Report: `docs/reports/2026-10-29-audit-part123-journey-map-way-back.md`.
+- Found in the Architect's review of part 122: the way-back audit found NO in-page controls on `journey-map.html` (0 checked), because its one outward control (⋯ → Import Notes…) is inside a closed menu.
+- `tools/i18n-verify/shared-pages-way-back-audit-browser.mjs`: opens a folder, a Note and the ⋯ menu with real clicks; records folder and open Note; positive control (at least 1 control per viewport and language); `--mutate=no-reach`, `--mutate=lose-note`; the Bangla back label is recognised.
+- `app/journey-map.html`: the open Note id is kept per address in sessionStorage (`mmsa.wayBackJmNote`) on pagehide and reopened only on a back/forward arrival within 30 minutes; not in the tray (embed).
+- **Measured (Architect, 29 Oct, merged with v12.111):** Journey map audit 8/0 (no-reach 0/4, lose-note 6/2 at 1440 en and bn); whole audit 32 OK of 32, 36/0; journey-map-screen 47/0, notes-way-back 33/0, note-opens-in-journey 60/0, journey-map-back 38/0, journey-map-counts 9/0; `behaviour.mjs` alone 972/0; `apps-build-check` 48/0.
+- Nothing stored on a server, no Rules changed.
