@@ -13,7 +13,8 @@
 //   --page=<file>   one page only      --list  print every control      --verbose  print passes
 //   --max=<n>       distinct controls per page/viewport (default 12)    --no-bn  skip the Bangla pass
 //   --mutate=noback       strip back=1 / navBack=1 from every link on about.html before clicking (NO BACK must appear)
-//   --mutate=lose-scroll  on the destination, rewrite Back to location.href = source path + query with no scroll or pop-up restore
+//   --mutate=no-place-restore  switch off bookmark-nav.js's late place restore (Bookmarks / 390 / bn must FAIL; audit part 115)
+//   --mutate=lose-scroll on the destination, rewrite Back to location.href = source path + query with no scroll or pop-up restore
 // Findings are written to tools/i18n-verify/out/way-back-audit.json (git-ignored) for the report.
 import fs from "node:fs";
 import { chromium, newContext, openPage } from "./harness.mjs";
@@ -181,6 +182,7 @@ async function runPage(name, path, w, h, lang) {
   const tag = `${name} / ${w} / ${lang}`;
   const ctx = await newContext(browser, { banner: false, viewport: { width: w, height: h }, extraSeedJs: REAL_SEED, appLang: lang === "bn" ? "bn" : null });
   await ctx.route("**/archive.org/**", (r) => r.abort());
+  if (MUTATE === "no-place-restore") await ctx.addInitScript(() => { window.__mmsaNoPlaceRestore = true; });
   try {
     let { page: P } = await open(ctx, path, lang);
     const mutateAbout = MUTATE === "noback" && path.startsWith("about.html");

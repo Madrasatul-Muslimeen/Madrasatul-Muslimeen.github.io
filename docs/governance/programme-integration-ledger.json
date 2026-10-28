@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "12.101",
+    "version": "12.102",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -5489,8 +5489,20 @@
     {
       "version": "12.101",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Audit part 114 (#1263, PR #1264): way-back markers on Onboarding, Accept invite and Journey map; richer audit seed.",
+      "integration": {
+        "authorizedOn": "2026-10-28",
+        "integratedOn": "2026-10-28",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.102",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Audit part 115 (PCF MSA J29): a page that draws its content late (Bookmarks) keeps the reader's place and open pop-ups on a Back, in bookmark-nav.js.",
       "integration": {
         "authorizedOn": "2026-10-28",
         "integratedOn": "2026-10-28",
@@ -5499,8 +5511,9 @@
       }
     }
   ],
-  "nextUnallocated": "12.102",
+  "nextUnallocated": "12.103",
   "nextUnallocatedNote": [
+    "v12.102 was allocated to way-back: Bookmarks' Back keeps your place on a phone in Bangla (audit part 115), 2026-10-28.",
     "v12.101 was allocated to way-back: Open the app and Journey map back leave a way back (audit part 114), 2026-10-28.",
     "v12.100 was allocated to the Read contents search takes an ayah (J107), 2026-10-28.",
     "v12.99 was allocated to SECURITY: names inside attributes escaped (audit part 113), 2026-10-28.",
