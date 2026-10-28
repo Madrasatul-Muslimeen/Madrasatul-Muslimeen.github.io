@@ -127,8 +127,15 @@ async function hadeethencOpen(page, cat, id) {
   await page.waitForSelector(`[data-hadeethenc-card="${id}"]`, { timeout: 15000 });
 }
 const BUKHARI = "0256Bukhari.Sahih.JK000110-ara1";
+// Updated in place 28 Oct 2026 (PCF MSA J106 round 1): the library moved out of Collections (now "Encyclopedia") into
+// Hadith Books, the page's default view. From another view its button goes to the shelf; on Books it would open the
+// quick list instead, so it is tapped only when Books is not already the view.
+async function toBooks(page) {
+  const on = await page.$eval('[data-hadith-tab="books"]', (b) => b.getAttribute("aria-current") === "page").catch(() => false);
+  if (!on) await page.click('[data-hadith-tab="books"]');
+}
 async function openBukhari(page) {
-  await page.click('[data-hadith-tab="collections"]');
+  await toBooks(page);
   await page.waitForSelector(`[data-openiti-book="${BUKHARI}"]`, { timeout: 25000 });
   await page.click(`[data-openiti-book="${BUKHARI}"]`);
   await page.waitForSelector("[data-openiti-goto-input]", { timeout: 15000 });
@@ -193,8 +200,11 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     await page.fill("[data-openiti-goto-input]", "5947");
     await page.click("[data-openiti-goto-btn]");
     await page.waitForSelector('[data-openiti-passage="6578"]', { timeout: 20000 }).catch(() => {});
-    const e = await ev(page, () => ({ text: document.querySelector('[data-openiti-passage="6578"]')?.innerText ?? "", chapter: document.querySelectorAll("[data-openiti-passage]").length }));
-    check(`${t}: Go to This edition's number 5947 opens the chapter holding that narration («Hadith 5947», standard 6306)`, /(5947|৫৯৪৭)/.test(e.text.split("\n")[0]) && /(6306|৬৩০৬)/.test(e.text) && e.chapter > 5, JSON.stringify({ head: e.text.slice(0, 60), n: e.chapter }));
+    // Updated in place 28 Oct 2026 (PCF MSA J106 round 1): the reader shows one narration at a time, so "the chapter
+    // holding it" is now read as the narration itself, highlighted, with its chapter marked open in the Chapters pane
+    // (it used to count the chapter's passage cards, > 5).
+    const e = await ev(page, () => ({ text: document.querySelector('[data-openiti-passage="6578"]')?.innerText ?? "", focused: document.querySelector("[data-openiti-focused]")?.dataset.openitiPassage ?? null, chapter: document.querySelector('[data-openiti-chapter][aria-current="true"]')?.dataset.openitiChapter ?? null }));
+    check(`${t}: Go to This edition's number 5947 opens that narration («Hadith 5947», standard 6306), highlighted, its chapter marked`, /(5947|৫৯৪৭)/.test(e.text.split("\n")[0]) && /(6306|৬৩০৬)/.test(e.text) && e.focused === "6578" && !!e.chapter, JSON.stringify({ head: e.text.slice(0, 60), focused: e.focused, chapter: e.chapter }));
     check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
   });
   await flow("openiti-missing", lang, width, async (t, page, ctx, errors) => {
@@ -276,7 +286,7 @@ for (const lang of LANGS) for (const width of WIDTHS) {
   }, { seed: SEED_FAMILY });
 
   await flow("studied-openiti", lang, width, async (t, page, ctx, errors) => {
-    await page.click('[data-hadith-tab="collections"]');
+    await toBooks(page); // J106 round 1: the library is Hadith Books now (see toBooks)
     await page.waitForSelector("#openitiSection .openiti-study-soon", { timeout: 25000 });
     const soon = await leftIn(page, "#openitiSection .openiti-study-soon");
     check(`${t}: an OpenITI book says in words that Studied is "not enabled here yet" (${bn ? "Bangla" : "English"})`, soon.trim().length > 20 && (bn ? BN.test(soon) : /not enabled here yet/.test(soon)), soon);
@@ -348,7 +358,9 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     await page.click(`[data-dua-book="${BUKHARI}"]`);
     await page.waitForSelector("[data-dua-chapter]");
     await page.click("[data-dua-chapter]");
-    await page.waitForSelector('[data-openiti-passage="6578"]', { timeout: 25000 });
+    // Updated in place 28 Oct 2026 (PCF MSA J106 round 1): the chapter opens in the three-pane reader on its first
+    // sub-chapter's first narration (6578 is further in), so any narration of it on screen is what is waited for.
+    await page.waitForSelector("[data-openiti-passage]", { state: "attached", timeout: 25000 });
     const cb = await ev(page, () => document.querySelector("[data-openiti-trail-back]")?.textContent ?? "");
     check(`${t}: a Dua chapter opens its narrations with a visible ${bn ? "দুআ-এ ফিরুন" : "← Back to Dua"}`, cb.startsWith("←") && (bn ? BN.test(cb) : /Back to Dua/.test(cb)), cb);
     await page.click("[data-openiti-trail-back]");
