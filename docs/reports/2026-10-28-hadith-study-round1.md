@@ -67,6 +67,8 @@ build (156 files with the new ones).
   `hadith-translations-browser` 33/0, `audit-part16-hadith-dua` 276/0 (en) and 288/0 (bn), `card-look` 96/0,
   `dua-tab` 63/0, `audit-part40` openiti 700/0, hadeethenc 728/0, openiti-hs 300/0, hadeethenc-hs 312/0,
   `manual-claims-msa --section=hadith` 85/0.
+- `shared-pages-failed-write-audit` 125 of 125 saves OK. `behaviour.mjs` 970/1 — **the same 970/1 on `main`**, run side by
+  side (38e, the recitation Play button; not a Hadith screen).
 - `node tools/apps/build-app.mjs qr` builds; `apps-build-check` 48/0.
 
 ## Not this round's, reported rather than fixed
