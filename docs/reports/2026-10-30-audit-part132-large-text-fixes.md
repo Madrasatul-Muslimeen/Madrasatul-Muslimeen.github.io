@@ -38,7 +38,7 @@ changing a working layout. From 390px up, and on a tablet or computer, the table
   pages** (records 15, homework 15, people 30, journey-map 12, curriculum 11, classes 7, course-offers 6, bookmarks 5, about 2,
   onboarding 2, import-notes 2).
 - `behaviour.mjs` alone: **972 passed, 0 failed**. `stub-parity.mjs` 4/0. `apps-build-check.mjs` 48/0; QR builds.
-- The other 12 pages and the earlier shared-page suites: see the PR.
+- The other 12 pages: 290/0. `shared-pages-bangla-layout-audit` 460/0, `shared-tools-long-names` 202/0, `floating-overlays-reach` 360/0, `audit-part57-records-monitor` 468/0.
 - Screenshots looked at: Records 360 bn at 100% before and after.
 
 ## Known and left

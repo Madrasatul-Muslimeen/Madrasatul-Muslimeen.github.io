@@ -2144,3 +2144,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v12.121** (2026-10-29): A Hadith book or the Encyclopedia that cannot open offline says so in plain words with Try again (audit part 130 F1/F3/F5, Hadith Lead).
 - **v12.122** (2026-10-29): On the Qur'an Study landing the way back has a row of its own above the tabs (audit part 127, QR Lead).
 - **v12.123** (2026-10-29): The Qur'an Study landing works with the phone's text made larger (audit part 131 findings 3-4, QR Lead).
+- **v12.124** (2026-10-29): The shared pages work with the phone's text made larger (audit part 132).
