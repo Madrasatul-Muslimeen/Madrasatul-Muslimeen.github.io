@@ -61,10 +61,52 @@
 .dua-card-steps .dua-ref:disabled { opacity: 0.45; cursor: default; }
 .dua-card-pos { font-variant-numeric: tabular-nums; white-space: nowrap; }
 .dua-study-ar { font-size: 1.45rem; line-height: 2.1; overflow-wrap: anywhere; }
-.dua-study-title { margin: 0.4rem 0; }
+.dua-row-title { font-weight: 700; color: var(--card-heading, #1F3A6E); overflow-wrap: anywhere; }
 .dua-hisn-count { font-weight: 600; color: var(--hadith-gold, #B8862F); }
 .dua-quran-meaning { line-height: 1.6; }
 .dua-quran-open { display: inline-flex; align-items: center; text-decoration: none; }
-[data-card-look="night"] .dua-study-title,
 [data-card-look="night"] .dua-quran-meaning,
 [data-card-look="night"] .dua-hisn-ref { color: var(--card-text); }
+
+/* Round R2. D12 the top banner frame, D05 the title and D11 the bottom banner (cut from the Asma ul Husna poster
+   template): the frame every Dua Card sits in, drawn like the poster (green frame, gold line, green arch). */
+.dua-frame {
+  margin: 0.6rem 0 0; padding: 0 0 0.6rem; border: 6px solid #123f2c; border-radius: 0.9rem;
+  box-shadow: inset 0 0 0 2px #e2662b; background: var(--card-bg, #fbf6ea); overflow: hidden; min-width: 0;
+}
+.dua-arch {
+  position: relative; width: min(92%, 34rem); margin: 0 auto 0.4rem; padding: 0.6rem 1rem 0.7rem; box-sizing: border-box;
+  background: #123f2c; color: #f6e7b6; text-align: center; border-radius: 0 0 50% 50% / 0 0 1.6rem 1.6rem;
+  box-shadow: 0 0 0 2px #d9a94a inset;
+}
+.dua-arch-ph {
+  display: flex; flex-direction: column; align-items: center; gap: 0.1rem; padding: 0.3rem 0.6rem;
+  border: 1px dashed rgba(246, 231, 182, 0.6); border-radius: 0.5rem; font-size: 0.78rem; letter-spacing: 0.08em;
+}
+.dua-arch-ph b { font-family: 'Amiri', 'Traditional Arabic', serif; font-size: 1.3rem; letter-spacing: 0; }
+.dua-card-title { margin: 0.5rem 0.9rem 0.2rem; font-size: 1.1rem; color: var(--card-heading, #1F3A6E); overflow-wrap: anywhere; }
+.dua-card-title-ar { font-size: 1.15rem; font-weight: 600; }
+.dua-card-slot { padding: 0 0.6rem; min-width: 0; }
+.dua-card-slot > .dua-card { margin: 0.4rem 0; }
+.dua-banner-bottom { display: block; width: calc(100% - 1.2rem); max-width: 40rem; height: auto; margin: 0.3rem auto 0; border-radius: 0.5rem; }
+
+/* D22 the card's menu, and the pop-up card each of its buttons opens (✕ back to the Dua). */
+.dua-card-menu {
+  display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.6rem 0; padding: 0.45rem;
+  border: 1px solid var(--card-line, #e2ddcd); border-radius: 0.6rem; background: var(--card-bg-inset, #fff);
+}
+.dua-menu-btn { min-height: 44px; }
+.dua-pop-stash[hidden] { display: none; }
+.dua-pop {
+  position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 0.8rem; box-sizing: border-box;
+  background: rgba(4, 8, 18, 0.6);
+}
+.dua-popcard {
+  width: min(100%, 36rem); max-height: 86vh; overflow: auto; box-sizing: border-box; padding: 0.8rem 0.9rem;
+  display: flex; flex-direction: column; gap: 0.6rem; border: 3px solid #123f2c; box-shadow: inset 0 0 0 2px #e2662b;
+  border-radius: 0.9rem; background: var(--card-bg, #fbf6ea); color: var(--card-text, #1B2A41);
+}
+.dua-pophead { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; }
+.dua-pophead h3 { margin: 0; color: var(--card-heading, #1F3A6E); overflow-wrap: anywhere; min-width: 0; }
+.dua-pop-close { flex-shrink: 0; min-height: 44px; }
+.dua-popcard .dua-also, .dua-popcard details { margin: 0; }

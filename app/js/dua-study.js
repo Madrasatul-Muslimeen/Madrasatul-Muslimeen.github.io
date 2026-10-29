@@ -3,6 +3,12 @@
 //   D01 the seven Dua groups, D21 the groups and a group's parts as pull-down menus,
 //   D02 numbers in every group, in the group's own order,
 //   D04 every Dua opens in its Dua Card, with ‹ › through its group and ← Back to the group.
+// Build round R2:
+//   D22 on the Dua Card only the Dua itself and the progress stay open; every other block (meaning, source, the whole
+//       narration, ✓ Check) opens from the card's menu as a pop-up card with ✕ back to the Dua,
+//   D11 the Asma ul Husna poster's bottom banner under every Dua Card, D12 a top banner frame above it,
+//   D05 a title for every Dua that has one (groups.json `titles`, English and Bangla), until D03 can save titles.
+// The re-layout is done here, around the card Hadith Study's Dua tab also uses, so that tab is unchanged.
 // The groups come from tools/hadith-data-pull/output/dua/groups.json (dua-groups.mjs), read when this page opens, never
 // at the app's startup (I9). A Dua from the Hadith books opens the same Dua card as Hadith Study's Dua tab (duaCard in
 // dua-browser.js), with its progress, notes, bookmark and checks. Where the reader is (group, part, list page, open
@@ -14,6 +20,7 @@ import { duaCard, duaLoadFailed, fillDuaProgress, loadDuaCheckEnv } from "./dua-
 import { el } from "./hadith-shared-ui.js";
 
 const GROUPS_URL = "../tools/hadith-data-pull/output/dua/groups.json";
+const BANNER_URL = "./img/dua-banner-bottom.webp";
 export const PER_PAGE = 50;
 export const GROUP_IDS = ["occasions", "books", "prophets", "rasul", "sahaba", "salaf", "ulama"];
 
@@ -58,10 +65,24 @@ export function buildDuaGroups(data) {
     else groups.set(g.id, { id: g.id, items: entries(g.items, "dua") });
   }
   for (const id of GROUP_IDS) if (!groups.has(id)) throw new Error(`Dua group ${id} is missing.`);
-  return { groups, duaRow, credits: data.credits ?? [] };
+  return { groups, duaRow, titles: data.titles ?? {}, credits: data.credits ?? [] };
 }
 
 const partName = (p) => (getAppLang() === "bn" && p.bn) || p.en;
+
+/**
+ * Pure (D05): a list entry's title in the reader's language -- { text, ar } -- or null. Bangla falls back to English;
+ * with neither, a Hisn dhikr's chapter or a Hadith dua's book chapter heading stands in, in Arabic (ar: true).
+ */
+export function titleOf(data, e, lang = getAppLang()) {
+  const pick = (tt) => (tt ? (lang === "bn" && tt.bn) || tt.en || null : null);
+  if (e.kind === "quran") { const x = pick(e.title); return x ? { text: x, ar: false } : null; }
+  if (e.kind === "hisn") { const x = pick(e.title); return x ? { text: x, ar: false } : e.chapter ? { text: e.chapter, ar: true } : null; }
+  const x = pick(data.titles?.[e.n]);
+  if (x) return { text: x, ar: false };
+  const line = data.duaRow?.get(e.n)?.[3];
+  return Array.isArray(line) ? { text: line[0], ar: true } : null;
+}
 /** The list a place names: a part's items, a group's items, or null (a group with parts, none chosen). */
 export function listOf(data, where) {
   const g = data.groups.get(where.g);
@@ -105,6 +126,7 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
   const detourOf = () => (where.tie != null ? { n: where.tie, from: listOf(data, where)?.[where.open - 1]?.h } : null);
 
   function render() {
+    closePop();
     root.textContent = "";
     closePull();
     const menu = el("div", "dua-pd-row");
@@ -275,6 +297,8 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
       b.appendChild(el("span", "dua-row-no", num(i)));
       const main = el("span", "dua-row-main");
       const [line, meta] = rowText(e);
+      const tt = titleOf(data, e);
+      if (tt && !tt.ar) { const ts = el("span", "dua-row-title", tt.text); ts.dataset.duaRowTitle = ""; main.appendChild(ts); }
       if (line) {
         const ar = el("span", `dua-row-ar${line.heading ? " dua-row-heading" : ""}`, line.text);
         ar.lang = "ar"; ar.dir = "rtl";
@@ -312,7 +336,7 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
     }
     // A Qur'anic dua of a Prophet.
     const L = getAppLang() === "bn" ? "bn" : "en";
-    return [{ text: e.ar.length > 90 ? `${e.ar.slice(0, 90)} …` : e.ar }, `${e.who[L]}: ${e.title[L]} · ${t("Qur'an {ref}", { ref: num(e.ref) })}`];
+    return [{ text: e.ar.length > 90 ? `${e.ar.slice(0, 90)} …` : e.ar }, `${e.who[L]} · ${t("Qur'an {ref}", { ref: num(e.ref) })}`];
   }
 
   // ---- D04: the Dua Card, with ‹ › through its group and ← Back to the group ----
@@ -352,21 +376,122 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
     const cur = g.parts?.find((p) => p.id === where.part);
     const name = cur ? partName(cur) : groupName(where.g);
     body.appendChild(cardBar(list, i, t("← Back to {name}", { name }), backToList));
-    const host = el("div", "dua-card-host");
-    host.dataset.duaOpen = String(i);
-    body.appendChild(host);
     const e = list[i - 1];
-    if (e.kind === "dua") return mountHadithDuaCard(host, e.n);
-    if (e.kind === "hisn") return host.appendChild(hisnCard(e));
-    host.appendChild(quranCard(e));
+    const slot = framedHost(body, titleOf(data, e));
+    slot.parentElement.dataset.duaOpen = String(i);
+    if (e.kind === "dua") return mountHadithDuaCard(slot, e.n);
+    if (e.kind === "hisn") return slot.appendChild(hisnCard(e));
+    slot.appendChild(quranCard(e));
   }
   function renderDetour(body) {
     const detour = detourOf();
     body.appendChild(cardBar(null, 0, t("← Back to Hisn al-Muslim {ref}", { ref: num(detour.from) }), () => { where.tie = null; render(); }));
-    const host = el("div", "dua-card-host");
-    host.dataset.duaTieOpen = String(detour.n);
+    const slot = framedHost(body, titleOf(data, { kind: "dua", n: detour.n }));
+    slot.parentElement.dataset.duaTieOpen = String(detour.n);
+    mountHadithDuaCard(slot, detour.n);
+  }
+
+  // ---- D12 the top banner frame, D05 the title, D11 the bottom banner: the frame every Dua Card sits in ----
+  function framedHost(body, title) {
+    const host = el("div", "dua-card-host dua-frame");
+    const arch = el("div", "dua-arch");
+    arch.dataset.duaTopBanner = "";
+    const ph = el("div", "dua-arch-ph");
+    const b = el("b", null, "بِسْمِ ٱللَّهِ"); b.lang = "ar"; b.dir = "rtl";
+    ph.append(b, el("span", null, t("Top banner · text to come")));
+    arch.appendChild(ph);
+    host.appendChild(arch);
+    if (title) {
+      const h = el("h2", `dua-card-title${title.ar ? " dua-card-title-ar" : ""}`, title.text);
+      h.dataset.duaTitle = title.ar ? "ar" : "text";
+      if (title.ar) { h.lang = "ar"; h.dir = "rtl"; }
+      host.appendChild(h);
+    }
+    const slot = el("div", "dua-card-slot");
+    host.appendChild(slot);
+    const img = el("img", "dua-banner-bottom");
+    img.src = BANNER_URL;
+    img.alt = "Learn Deen On-the-Go · Madrasatul Muslimeen · Quran Revival · Aqhlaq · Ilm · Tawheed · Dawah · Hukm";
+    img.loading = "lazy";
+    img.dataset.duaBottomBanner = "";
+    host.appendChild(img);
     body.appendChild(host);
-    mountHadithDuaCard(host, detour.n);
+    return slot;
+  }
+
+  // ---- D22: the card's menu; each block it names opens as a pop-up card with ✕ back to the Dua ----
+  let pop = null;
+  function closePop() {
+    if (!pop) return;
+    const { box, nodes, stash, from, esc } = pop;
+    pop = null;
+    for (const n of nodes) stash.appendChild(n);
+    box.remove();
+    document.removeEventListener("keydown", esc, true);
+    if (from?.isConnected) from.focus();
+  }
+  function openPop(from, label, nodes, stash, { openFirst = false, empty = null } = {}) {
+    closePop();
+    const box = el("div", "dua-pop");
+    box.setAttribute("role", "dialog");
+    box.setAttribute("aria-modal", "true");
+    box.setAttribute("aria-label", label);
+    box.dataset.duaPop = from.dataset.duaMenu;
+    const card = el("section", "dua-popcard");
+    const head = el("div", "dua-pophead");
+    const close = el("button", "dua-ref dua-pop-close", `✕ ${t("Close")}`);
+    close.type = "button";
+    close.dataset.duaPopClose = "";
+    close.addEventListener("click", closePop);
+    head.append(el("h3", null, label), close);
+    card.appendChild(head);
+    for (const n of nodes) card.appendChild(n);
+    if (!nodes.length && empty) card.appendChild(el("p", "hadith-note", empty));
+    box.appendChild(card);
+    box.addEventListener("click", (ev) => {
+      if (ev.target === box) closePop();
+      // ✓ Check opens its panel under the card: the pop-up closes so the panel is in view.
+      else if (ev.target.closest?.("[data-dua-check-open]")) closePop();
+    });
+    const esc = (ev) => { if (ev.key === "Escape" && pop?.box === box) { ev.stopPropagation(); closePop(); } };
+    document.addEventListener("keydown", esc, true);
+    root.appendChild(box);
+    pop = { box, nodes, stash, from, esc };
+    if (openFirst) { const d = card.querySelector("details"); if (d) d.open = true; }
+    close.focus();
+  }
+  /**
+   * Moves each section's blocks out of `article` into a hidden stash and puts the card's menu where `before` is (or at
+   * the end). sections: [{ key, label, nodes, openFirst?, empty? }]; a section with no blocks and no `empty` is left out.
+   */
+  function cardMenu(article, sections, before = null) {
+    const stash = el("div", "dua-pop-stash");
+    stash.hidden = true;
+    const menu = el("nav", "dua-card-menu");
+    menu.setAttribute("aria-label", t("Dua Card menu"));
+    for (const s of sections) {
+      if (!s.nodes.length && !s.empty) continue;
+      for (const n of s.nodes) stash.appendChild(n);
+      const b = el("button", "dua-ref dua-menu-btn", s.label);
+      b.type = "button";
+      b.dataset.duaMenu = s.key;
+      b.setAttribute("aria-haspopup", "dialog");
+      b.addEventListener("click", () => openPop(b, s.label, s.nodes, stash, s));
+      menu.appendChild(b);
+    }
+    if (before?.parentElement === article) article.insertBefore(menu, before); else article.appendChild(menu);
+    article.appendChild(stash);
+    return menu;
+  }
+  const kids = (article, sel) => [...article.children].filter((c) => c.matches(sel));
+  /** D22 for the Hadith books' Dua card: words and progress stay; meaning, source, narration and ✓ Check pop up. */
+  function layoutHadithCard(article) {
+    cardMenu(article, [
+      { key: "meaning", label: t("Meaning"), nodes: kids(article, ".hadeethenc-explanation"), openFirst: true, empty: t("No meaning for this dua in the app yet.") },
+      { key: "source", label: t("Source"), nodes: kids(article, ".openiti-standard-number, .dua-also") },
+      { key: "narration", label: t("The whole narration"), nodes: kids(article, "details.dua-narration") },
+      { key: "check", label: t("✓ Check"), nodes: kids(article, ".dua-check-row") },
+    ], article.querySelector(":scope > .dua-progress"));
   }
 
   /** A Dua from the Hadith books: the same card as Hadith Study's Dua tab (progress, notes, bookmark, checks). */
@@ -389,7 +514,9 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
       host.textContent = "";
       if (!c) { host.appendChild(el("p", "hadith-note", t("Dua {n} was not found.", { n: num(n) }))); return; }
       const rows = [];
-      host.appendChild(duaCard(c, summary, state, cardRender, rows, links, page, vowels, grammar, checkEnv));
+      const article = duaCard(c, summary, state, cardRender, rows, links, page, vowels, grammar, checkEnv);
+      layoutHadithCard(article);
+      host.appendChild(article);
       fillDuaProgress(rows);
     }).catch((err) => duaLoadFailed(host, render, err));
   }
@@ -429,6 +556,7 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
       card.appendChild(box);
     }
     card.appendChild(el("p", "dua-words-note", t("Source: Hisn al-Muslim, typed by Abdellah Sellam (MIT licence).")));
+    cardMenu(card, [{ key: "source", label: t("Source"), nodes: kids(card, ".dua-hisn-ref, .dua-also, .dua-words-note") }]);
     return card;
   }
   /** A Qur'anic dua of a Prophet: who, the āyah, its meaning, and the āyah in Quran Study with ← Back. */
@@ -437,12 +565,15 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
     const card = el("article", "hadith-card dua-card dua-quran-card");
     card.dataset.duaQuran = e.ref;
     card.appendChild(el("p", "hadith-card-head", `${e.who[L]} · ${t("Qur'an {ref}", { ref: num(e.ref) })}`));
-    card.appendChild(el("h3", "dua-study-title", e.title[L]));
     card.appendChild(arabicBlock(e.ar));
     card.appendChild(el("p", "dua-quran-meaning", e[L]));
     const a = el("a", "dua-ref dua-quran-open", t("Open in Quran Study ↗"));
     a.href = `./quranrevival.html?goto=${e.ref}&back=1`;
     card.appendChild(a);
+    cardMenu(card, [
+      { key: "meaning", label: t("Meaning"), nodes: kids(card, ".dua-quran-meaning") },
+      { key: "source", label: t("Source"), nodes: kids(card, ".dua-quran-open") },
+    ]);
     return card;
   }
 
