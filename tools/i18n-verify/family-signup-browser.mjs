@@ -92,7 +92,8 @@ for (const lang of ["en", "bn"]) for (const width of [390, 1280]) {
   check(`${tag}: the child is managed by the new owner; the adult by no one`, mar?.isMinor === true && mar?.managedByPersonId === owner && umm?.isMinor === false && umm?.managedByPersonId === null, JSON.stringify({ owner, mar: [mar?.isMinor, mar?.managedByPersonId], umm: [umm?.isMinor, umm?.managedByPersonId] }));
   const mem = await P.evaluate(() => (window.__stubWriteData || []).filter((w) => w.col === "memberships").map((w) => w.data.role));
   check(`${tag}: each is a Student`, mem.filter((r) => r === "student").length === 2, JSON.stringify(mem));
-  check(`${tag}: it says how many were added, with a way into the app`, (await P.textContent("#familyResult")).includes(T[lang].added) && !!(await P.$('#familyResult a[href="index.html"]')), await P.textContent("#familyResult"));
+  // Updated in place (29 Oct 2026, regression sweep): audit part 114 added ?navBack=1 to "Open the app"; either href is the way in.
+  check(`${tag}: it says how many were added, with a way into the app`, (await P.textContent("#familyResult")).includes(T[lang].added) && !!(await P.$('#familyResult a[href="index.html"], #familyResult a[href="index.html?navBack=1"]')), await P.textContent("#familyResult"));
 
   // ---- the People page ----
   await P.goto(`${new URL(P.url()).origin}/app/people.html`);
