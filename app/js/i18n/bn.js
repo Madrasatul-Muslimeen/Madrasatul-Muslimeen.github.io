@@ -1153,6 +1153,8 @@ export const BN = {
     "এই অ্যাকাউন্টের জন্য অনুমোদিত সব আমন্ত্রণ ব্যবহার হয়ে গেছে। আরও প্রয়োজন হলে প্রশাসককে সীমা বাড়াতে বলুন।",
   "That save did not go through ({code}). Please try again, and tell the admin if it keeps happening.":
     "সংরক্ষণটি সম্পন্ন হয়নি ({code})। অনুগ্রহ করে আবার চেষ্টা করুন, এবং বারবার হতে থাকলে প্রশাসককে জানান।",
+  "That information could not be loaded ({code}). Please check your connection and try again.":
+    "এই তথ্য লোড করা যায়নি ({code})। অনুগ্রহ করে আপনার সংযোগ পরীক্ষা করে আবার চেষ্টা করুন।",
 
   // --- Role names (js/labels.js) -----------------------------------------
   // Shown in every page's tenant picker -- "Madrasatul Muslimeen (Owner,
