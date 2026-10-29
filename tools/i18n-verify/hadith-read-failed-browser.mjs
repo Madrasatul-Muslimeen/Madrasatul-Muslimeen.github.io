@@ -17,6 +17,8 @@ const MUT = {
   ownwords: ["js/hadith-shared-ui.js", 'plainMessageFor(err, { read: true })', '"Could not load. Check the connection."'],
   noretry: ["js/hadith-shared-ui.js", "btn.addEventListener(\"click\", () => { btn.disabled = true; retry(); });", ""],
   synshown: ["js/hadith-browser.js", "const s = synthetic(); if (s) s.hidden = true;", ""],
+  // Note b: a Bangla category "title" that is only a copy of the English one passes as Bangla again.
+  copytitle: ["js/hadeethenc-corpus.js", "if (enNode && enNode.title === node.title) continue;", ""],
   synstays: ["js/hadith-browser.js", "const s = synthetic(); if (s) s.hidden = false;", ""],
 };
 const arg = (k) => (process.argv.find((a) => a.startsWith(`--${k}=`)) || "").slice(k.length + 3);
@@ -151,6 +153,35 @@ for (const path of ["/app/hadith-study.html", "/app/hadith-collections.html"]) {
         await ctx.close();
       }
     }
+  }
+}
+
+// Note b (the MSA Architect, v12.120 review): HadeethEnc's own Bangla file gives category 13 the English title. On the
+// Bangla page it must show WITH the "showing English" label; category 14 beside it, really translated, must not.
+{
+  const BNCATS = JSON.parse(fs.readFileSync("tools/hadith-data-pull/output/hadeethenc/bn/categories.json", "utf8")).categories;
+  const ENCATS = JSON.parse(fs.readFileSync("tools/hadith-data-pull/output/hadeethenc/en/categories.json", "utf8"));
+  const enList = Array.isArray(ENCATS) ? ENCATS : ENCATS.categories;
+  const c13 = BNCATS.find((c) => c.id === "13"), c14 = BNCATS.find((c) => c.id === "14");
+  if (!c13 || c13.parent_id !== "8" || c13.title !== enList.find((c) => c.id === "13")?.title || !/[\u0980-\u09FF]/.test(c14?.title ?? "")) {
+    throw new Error("fixture: bn category 13 is expected to be an English copy and 14 Bangla, both under 8 -- re-derive");
+  }
+  for (const width of [390, 1440]) {
+    const tag = `[hadith-study.html bn ${width}]`;
+    const { ctx, page } = await open("bn", width, "/app/hadith-study.html");
+    await tab(page, "collections");
+    for (const id of ["1", "8"]) {
+      await waitFor(page, `[data-hadeethenc-category="${id}"]`);
+      await page.click(`[data-hadeethenc-category="${id}"]`, { timeout: 6000 }).catch(() => console.log(`  note: could not open category ${id}`));
+    }
+    const got = await waitFor(page, '[data-hadeethenc-category="13"]');
+    const rows = got ? await page.evaluate(() => Object.fromEntries(["13", "14"].map((id) => {
+      const r = document.querySelector(`[data-hadeethenc-category="${id}"]`);
+      return [id, { label: r?.querySelector("[data-hadeethenc-category-fallback]")?.dataset.hadeethencCategoryFallback ?? null }];
+    }))) : null;
+    check(`${tag} category 14 (translated) carries no fallback label (positive control)`, !!rows && rows["14"].label === null, JSON.stringify(rows));
+    check(`${tag} category 13 (an English copy in the Bangla file) is labelled "showing English"`, !!rows && rows["13"].label === "en", JSON.stringify(rows));
+    await ctx.close();
   }
 }
 
