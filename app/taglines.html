@@ -34,13 +34,22 @@
   .cell-text { min-width: 12rem; }
   .cell-narrow { width: 5.5rem; min-width: 5.5rem; } /* audit part 97: in Bangla the cell shrank its input to 31.6px */
   .cell-link { min-width: 10rem; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: 0.6rem; align-items: end; }
+  /* Audit part 134: min(9rem, 100%) so one column never needs more than the card has, and .span2 asks for two columns only when
+     the card is wide enough to HAVE two (otherwise span 2 made a second, squeezed column at large text). */
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(9rem, 100%), 1fr)); gap: 0.6rem; align-items: end; container-type: inline-size; }
+  .grid > * { min-width: 0; }
+  .grid .span2 { grid-column: span 2; }
+  @container (max-width: 18.5rem) { .grid .span2 { grid-column: span 1; } }
+  input[type="checkbox"], input[type="range"] { max-width: 100%; }
   .card { border: 1px solid #e5e5e5; border-radius: 0.6rem; padding: 0.9rem; margin-top: 0.6rem; }
   .note { font-size: 0.85rem; color: #666; margin: 0.4rem 0 0; }
   .warn { background: #fff8e6; border: 1px solid #f0d9a0; border-radius: 0.5rem; padding: 0.6rem 0.8rem; font-size: 0.88rem; }
   .saveBar {
-    position: sticky; bottom: 0; background: white; border-top: 1px solid #e5e5e5;
-    padding: 0.7rem 0; margin-top: 1.4rem; display: flex; gap: 0.8rem; align-items: center;
+    /* Audit part 134: was position:sticky; bottom:0, which laid the bar OVER whatever field was at the foot of the screen
+       (and over the last fields of the form at larger text). It now sits in the flow at the end of the form; the body's own
+       bottom padding leaves room for the Zab bar under it. */
+    background: white; border-top: 1px solid #e5e5e5;
+    padding: 0.7rem 0; margin-top: 1.4rem; display: flex; flex-wrap: wrap; gap: 0.8rem; align-items: center;
   }
   #saveState { font-size: 0.88rem; color: #666; }
   /* The preview is the same strip the landing page shows, at the same size,
@@ -147,7 +156,7 @@
 
       <h2>Add a line</h2>
       <div class="card grid">
-        <div style="grid-column: span 2;">
+        <div class="span2">
           <label for="newText">Line</label>
           <input type="text" id="newText" placeholder="What it says" />
         </div>
@@ -204,7 +213,10 @@
     import { attachTaglineScroll } from "./js/tagline-scroll.js";
     import { safeHref } from "./js/html-escape.js";
 
+    import { keepSelectTitles } from "./js/select-title.js";
+
     translateStatic();
+    keepSelectTitles(); // audit part 134: a row's chosen "Inside the app" is cut in a narrow cell; its full value is the title
     registerServiceWorker();
     armScreensaver();
 
@@ -240,7 +252,13 @@
       previewScroller?.stop();
       previewScroller = null;
       const el = previewStrip.querySelector(".tagline-line:not(.tagline-leaving)");
-      if (el) previewScroller = attachTaglineScroll(el, { enabled: settings.scroll, speed: settings.scrollSpeed });
+      if (el) {
+        previewScroller = attachTaglineScroll(el, { enabled: settings.scroll, speed: settings.scrollSpeed });
+        // Audit part 134: attachTaglineScroll clears the title; a line wider than the strip is cut (ellipsis, or clipped while it
+        // scrolls), so its whole text is the title again, whether or not it is scrolling.
+        const full = (el.textContent || "").trim();
+        if (full) el.title = full;
+      }
     }
 
     let activeTenantId = null;
