@@ -43,8 +43,20 @@ const PLAIN_MESSAGES = {
   "quota-exceeded": () => t("You've used all the invites allowed for this account. Ask the admin to raise the limit if you need more."),
 };
 
+// Audit part 128: reportWriteFailure() is also called for failed READS. A read is marked by context.read === true, or
+// by context.what / context.action starting with a reading verb ("read ...", "load ...", "count ..."), or by one of
+// the named read actions below (journey-map.html's reads, which carry only an action name).
+const READ_ACTIONS = new Set(["ownerFolderTree", "notesForStudyUnit", "notesPaneRetry"]);
+export function isReadFailure(context = {}) {
+  if (context.read === true) return true;
+  const label = String(context.what || context.action || "");
+  if (/^(read|load|count)\b/i.test(label.trim())) return true;
+  return READ_ACTIONS.has(context.action);
+}
+
 export function plainMessageFor(error, context = {}) {
   const code = error?.code ?? "unknown";
+  if (isReadFailure(context)) return t("That information could not be loaded ({code}). Please check your connection and try again.", { code });
   // A Note save is a transaction: offline it keeps nothing and does NOT "save automatically" (audit part 124).
   if (code === "unavailable" && context.noDeviceCopy) return t("Could not reach the server. Nothing was saved — your text is still here, so press Save again when you are online.");
   const known = PLAIN_MESSAGES[code];
