@@ -56,10 +56,18 @@ const MEASURE = async ({ probes, mutate }) => {
     endProbe.id = "__endProbe"; endProbe.textContent = "end-of-flow probe"; endProbe.style.cssText = "display:block;height:44px;width:160px;margin:0;padding:0";
     document.body.appendChild(endProbe);
     if (pillShown) {
+      // Architect review: a control under a pill that FLOATS above the screen's bottom edge can always be reached by
+      // scrolling a little less, so a probe placed "under the pill" was reachable or not by chance (it flickered on
+      // Monitor). The control is unreachable BY CONSTRUCTION instead: a fixed cover flush with the screen's bottom-right,
+      // and a probe in the page's last pixels under it -- at the end it is covered, and scrolling up only moves it lower.
+      const cover = document.createElement("div");
+      cover.id = "__posCover";
+      cover.style.cssText = "position:fixed;right:0;bottom:0;width:120px;height:70px;z-index:2147483647;background:rgba(0,0,0,0.01)";
+      document.body.appendChild(cover);
       posProbe = document.createElement("button");
-      posProbe.id = "__posProbe"; posProbe.textContent = "under-pill probe";
-      const pr = pill.getBoundingClientRect();
-      posProbe.style.cssText = `position:absolute;z-index:0;width:${Math.max(20, pr.width - 8)}px;height:${Math.max(20, pr.height - 8)}px;left:${pr.left + 4}px;top:${Math.max(h.scrollHeight, document.body.scrollHeight) - pr.height + 4}px;padding:0`;
+      posProbe.id = "__posProbe"; posProbe.textContent = "under-cover probe";
+      const pageEnd = Math.max(h.scrollHeight, document.body.scrollHeight);
+      posProbe.style.cssText = `position:absolute;z-index:0;width:80px;height:30px;left:${innerWidth - 100}px;top:${pageEnd - 50}px;padding:0;margin:0`;
       document.body.appendChild(posProbe);
     }
   }
@@ -129,7 +137,7 @@ for (const lang of LANGS) {
           check(`${tag}: no unreachable control`, res.unreachable.length === 0, JSON.stringify(res.unreachable));
           check(`${tag}: nothing covered at the bottom`, res.coveredAtBottom.length === 0, JSON.stringify(res.coveredAtBottom));
           check(`${tag}: a button at the very end of the page can be reached`, res.endProbe === true, `endProbe=${res.endProbe}`);
-          if (pill) check(`${tag}: POSITIVE CONTROL a button under the pill at the page end is reported unreachable`, res.posProbe === false, `posProbe=${res.posProbe}`);
+          if (pill) check(`${tag}: POSITIVE CONTROL a button under a bottom-flush cover at the page end is reported unreachable`, res.posProbe === false, `posProbe=${res.posProbe}`);
           if (LIST && (res.unreachable.length || res.coveredAtBottom.length)) console.log(tag, JSON.stringify(res));
         }
         await page.close();

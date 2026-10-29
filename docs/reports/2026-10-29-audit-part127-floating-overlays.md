@@ -6,7 +6,7 @@ Re-run (builder run 2220) of run 2217, which measured the same thing but could n
 
 `tools/i18n-verify/floating-overlays-reach-browser.mjs`. Pages `bookmarks`, `records`, `notes`, `journey-map`, `monitor`, `people` (checked) and the Quran Study landing `index.html` (measured and printed only; it is frozen, so it goes to the QR Lead). Widths 360, 390, 768; English and Bangla; with the ← ✕ way-back pill (`?navBack=1`) and without. For every visible, non-fixed interactive control the page is scrolled through top, every half-screen and the very bottom; at each stop `document.elementFromPoint` at the control's centre must return the control or a descendant. A control inside a sideways-scrolling box (the Records table) has that box scrolled to it first. **Unreachable** = no stop works. **Covered at the bottom** = reachable somewhere but covered at the last stop.
 
-Positive control: a button placed absolutely at the very end of the document under the pill must be reported unreachable. End-of-flow probe: a button that is the last child of `<body>` must be reachable.
+Positive control (Architect review, 30 Oct): a button in the page's last pixels under a fixed cover flush with the screen's bottom-right must be reported unreachable. The first version put it "under the pill", but a pill floating above the bottom edge leaves room to scroll a control out from under it, so that control flickered (Monitor 390 bn, Monitor 360 en); this one is unreachable by construction. End-of-flow probe: a button that is the last child of `<body>` must be reachable.
 
 ## Result (before = after, nothing was changed)
 
@@ -24,7 +24,8 @@ None to the app. The clearance on the shared pages is already sufficient. The la
 ## Checks
 
 - `node tools/i18n-verify/floating-overlays-reach-browser.mjs`: 360 passed, 0 failed.
-- `--mutate=no-page-end-clearance` (removes the body's end padding and margin): 331 passed, 29 failed, all "a button at the very end of the page can be reached". One extra failure (people.html 360px bn, positive control) appears only under the mutation, where the layout shifts.
+- Architect re-run with the corrected control: 360/0 twice; `--mutate=no-page-end-clearance` 332 passed, 28 failed.
+- `--mutate=no-page-end-clearance` (removes the body's end padding and margin, Builder's run): 331 passed, 29 failed, all "a button at the very end of the page can be reached". One extra failure (people.html 360px bn, positive control) appears only under the mutation, where the layout shifts.
 - Run 2217 regression suites (no app change): zab-bar 370/0, journey-map-back 38/0, notes-way-back 33/0, offline-save-shared-tools 119/0, shared-tools-read-failure 225/0.
 
 W-T-P-E-O: measured with `elementFromPoint` on phone and tablet widths; nothing stored; no Rules change.
