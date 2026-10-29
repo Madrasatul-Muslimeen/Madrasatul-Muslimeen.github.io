@@ -22919,3 +22919,13 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 - New `tools/i18n-verify/hadith-read-failed-browser.mjs` 100/0 (both Hadith pages, en/bn, 390/1440; Try again really loads books, al-Muwatta's chapters and categories); `--prove` 6 of 6 mutations caught; `--mutate=copytitle` 2 fail. `hadeethenc-corpus-model.mjs` updated in place (its bn fixture shared en's object, so its "bn title" was an English copy): 22/0, 21/1 without the fix.
 - **Measured (Architect, merged with v12.120):** `hadith-offline-cache-browser.mjs` 68/0; `hadith-study-reader-browser.mjs` 116/0; `dua-load-failed-browser.mjs` 42/0; `behaviour.mjs` alone 972/0; stub-parity 4/0; apps-build-check 48/0; QR builds. Screenshots looked at: offline Musnad Ahmad at bn 390 and en 1440 — the sentence and Try again, nothing raw.
 - Nothing stored, no Rules changed.
+
+## v12.122 — 30 Oct 2026 — The Qur'an landing's way back has its own row above the tabs (audit part 127; QR Lead)
+
+- **Found by audit part 127** (PR #1307): on the Qur'an Study landing the floating "← ✕" lay over the Study and Explore tabs at every width, and over Legend and Unit at 320–390.
+- `app/quranrevival.html`: a row of its own, `#landingBackSlot` (`data-back-dock`), above `#tabRow`; `watchLandingBackDock()` docks the chip there only while the Read view is hidden and the landing bar is really on top (`elementsFromPoint`); otherwise it floats as before. Three "open …" load failures (Read contents, the Notes pane twice) pass `{ read: true }` (audit part 128's wording).
+- New `tools/i18n-verify/qr-landing-back-reach-browser.mjs` 114/0; `--mutate=no-slot` 53, `--mutate=no-cover-watch` 5, `--mutate=no-read-guard` 2 fail.
+- Updated in place, reasons recorded: `audit-part18-getting-started-browser.mjs` 1028/0 and `bookmark-marks-back-browser.mjs` 426/0 accept the docked chip and require it to be reachable.
+- Also merged since v12.121 (tests only, no version): PR #1322, `floating-overlays-reach-browser.mjs`'s under-pill positive control moved under the pill at every scroll stop (it failed on `main` at Monitor 390 bn with nothing wrong in the page; new `--mutate=pill-lets-taps-through`); PR #1319, audit part 131 (larger text, 22 findings, report and `large-text-shared-pages-browser.mjs`; the Architect's full run added Mapping My Journey at 360 bn 150%).
+- **Measured (Architect):** floating-overlays-reach 360/0; `behaviour.mjs` alone 972/0; apps-build-check 48/0; QR built from this branch, qr-verify 27/28 (upgrade-browser needs a QR clone). Screenshots looked at: 360 en, 390 bn (arrow-only chip below 600px, the Owner's J63 rule), 768 en ("← Back to Āyah card 114:1").
+- Nothing stored, no Rules changed.

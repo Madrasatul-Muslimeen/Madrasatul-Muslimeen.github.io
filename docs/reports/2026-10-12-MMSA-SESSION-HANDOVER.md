@@ -2142,3 +2142,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v12.119** (2026-10-29): Monitor CSV BOM and A4 print (audit part 129).
 - **v12.120** (2026-10-29): Hadith Books, Dua and the Encyclopedia open with no internet after one visit; a Dua that cannot load says so in plain words with Try again (audit part 130).
 - **v12.121** (2026-10-29): A Hadith book or the Encyclopedia that cannot open offline says so in plain words with Try again (audit part 130 F1/F3/F5, Hadith Lead).
+- **v12.122** (2026-10-29): On the Qur'an Study landing the way back has a row of its own above the tabs (audit part 127, QR Lead).
