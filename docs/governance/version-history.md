@@ -1017,3 +1017,4 @@ total). Allocated by the MMSA Architect.
 12.113: the QR Lead's wheel tap without a blue block. Allocated by the MMSA Architect.
 12.114: offline saves say Saved on this device (audit part 124). Allocated by the MMSA Architect.
 12.115: a page that cannot load says so, with Try again (audit part 125). Allocated by the MMSA Architect.
+12.116: long folder names readable in Bookmarks pickers (audit part 126). Allocated by the MMSA Architect.
