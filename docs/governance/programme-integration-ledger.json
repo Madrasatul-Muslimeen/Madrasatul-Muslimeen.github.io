@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "12.114",
+    "version": "12.115",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -5645,8 +5645,20 @@
     {
       "version": "12.114",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Audit part 124: settleWrite shows a saved-on-device notice offline; early return opt-in (deviceCopyOk); Note transactions say nothing was saved.",
+      "integration": {
+        "authorizedOn": "2026-10-29",
+        "integratedOn": "2026-10-29",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.115",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Audit part 125: read-failure.js shows Loading and a plain-words failure with Try again on Records, Bookmarks, Notes, Mapping My Journey and Monitor; the retry re-hydrates memberships.",
       "integration": {
         "authorizedOn": "2026-10-29",
         "integratedOn": "2026-10-29",
@@ -5655,8 +5667,9 @@
       }
     }
   ],
-  "nextUnallocated": "12.115",
+  "nextUnallocated": "12.116",
   "nextUnallocatedNote": [
+    "v12.115 was allocated to a page that cannot load says so, with Try again (audit part 125), 2026-10-29.",
     "v12.114 was allocated to offline saves say Saved on this device (audit part 124), 2026-10-29.",
     "v12.113 was allocated to the QR Lead's wheel tap without a blue block, 2026-10-29.",
     "v12.112 was allocated to audit part 123 (the way back from Mapping My Journey), 2026-10-28.",
