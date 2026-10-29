@@ -1041,6 +1041,11 @@
   }
 
   .wheel-seg { cursor: pointer; stroke: #0c1320; stroke-width: 1; transition: stroke .15s, stroke-width .15s; }
+  /* QR Lead (the Owner, 29 Oct 2026, a phone screenshot of the Mastery Wheel: "Any click on slice shows/ highlight this
+     block, it should only highlighted the clicked slice"). The blue block was the phone browser's own tap highlight: it
+     paints the tapped element's bounding RECTANGLE, and a wedge's rectangle spans several slices. Off for every wheel's
+     drawing; the wheel's own selection still marks exactly the slice chosen. */
+  .wheel-seg, svg:has(.wheel-seg), svg:has(.wheel-seg) * { -webkit-tap-highlight-color: transparent; }
   .wheel-seg:hover { stroke: var(--card-text); stroke-width: 1.5; }
   /* Issue #385 -- an Approach's short name along its slice: white with a dark
      halo behind it, so it reads on every status colour in all three looks. */
