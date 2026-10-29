@@ -47,6 +47,22 @@
   /* Audit part 67: 600 -> 700px; at a 640px screen (200% zoom) the table was 642px wide and dragged the page sideways (audit-part38). */
   @media (max-width: 700px) { table { display: block; overflow-x: auto; } }
   #newDomainName { max-width: 100%; box-sizing: border-box; }
+
+  /* Audit part 132 (findings 5, 6): with the phone's text enlarged the form and the tables must reflow inside the screen.
+     A fieldset's default min-width is its content's, which is what made the whole claim form wider than a 360px screen. */
+  fieldset { min-width: 0; }
+  .row > div { min-width: min(10rem, 100%); }
+  #contextBar select { max-width: 100%; }
+  /* When a table cannot fit its box at the reader's text size, each row becomes a block of labelled fields, with the
+     actions on a line of their own, so Confirm / Return / Confirm anyway never sit behind a sideways scroll. */
+  table.stacked { display: block; overflow: visible; }
+  table.stacked thead { display: none; } /* each cell carries its column's name (data-label) */
+  table.stacked tbody { display: block; }
+  table.stacked tr { display: flex; flex-wrap: wrap; gap: 0.1rem 0.8rem; padding: 0.4rem 0; border-bottom: 1px solid #ddd; }
+  table.stacked td { display: block; border: 0; padding: 0.1rem 0.3rem; flex: 1 1 40%; min-width: 0; overflow-wrap: anywhere; }
+  table.stacked td[data-label]::before { content: attr(data-label) ": "; font-weight: 600; }
+  table.stacked td:last-child { flex-basis: 100%; }
+  table.stacked td:last-child:empty { display: none; }
 </style>
 </head>
 <body class="admin-touch">
@@ -153,6 +169,31 @@
   </div>
 
   <script type="module">import { keepFocusInTables } from "./js/table-focus.js"; keepFocusInTables();</script>
+  <script type="module">import { keepSelectTitles } from "./js/select-title.js"; keepSelectTitles();</script>
+  <script>
+    // Audit part 132 (finding 6): a table that does not fit its box at the reader's text size is shown as stacked, labelled rows.
+    (function () {
+      function fit(table) {
+        const heads = [...table.querySelectorAll("thead th")].map((th) => th.textContent.trim());
+        table.querySelectorAll("tbody tr").forEach((tr) => {
+          if (tr.querySelector("td[colspan]")) return;
+          [...tr.children].forEach((td, i) => { if (heads[i]) td.setAttribute("data-label", heads[i]); });
+        });
+        table.classList.remove("stacked");
+        const box = table.parentElement.clientWidth;
+        if (Math.max(table.offsetWidth, table.scrollWidth) > box + 1) table.classList.add("stacked");
+      }
+      function all() { document.querySelectorAll("table").forEach(fit); }
+      window.addEventListener("resize", all);
+      window.addEventListener("load", function () {
+        all();
+        new MutationObserver(all).observe(document.documentElement, { attributes: true, attributeFilter: ["style", "lang", "class"] });
+        const app = document.getElementById("app");
+        if (app) new MutationObserver(all).observe(app, { attributes: true, attributeFilter: ["style", "hidden"] });
+        document.querySelectorAll("tbody").forEach((b) => new MutationObserver(function () { fit(b.closest("table")); }).observe(b, { childList: true }));
+      });
+    })();
+  </script>
   <script type="module">
     import { auth, db } from "./js/firebase-init.js";
     import {
