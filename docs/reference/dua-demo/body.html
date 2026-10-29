@@ -1,0 +1,586 @@
+<div class="wrap">
+  <header class="sec">
+    <div class="toprow">
+      <h1><span id="hTitle">Dua module</span> <span class="ver" id="verBadge">Demo v1.04</span></h1>
+      <a class="btn gold ownwin" id="ownWin" href="https://claude.ai/artifact/9R9UYsxz5r7JoM38jF7PZ8" target="_blank" rel="noopener">↗ Open in its own window</a>
+      <div class="seg" role="group" aria-label="Language">
+        <button id="langEn" aria-pressed="true">English</button>
+        <button id="langBn" aria-pressed="false">বাংলা</button>
+      </div>
+    </div>
+    <p class="lead" id="hLead"></p>
+  </header>
+  <div class="menubar"><nav id="menu" aria-label="Dua groups"></nav></div>
+  <div class="crumb" id="crumb"></div>
+  <main id="view" class="sec" aria-live="polite"></main>
+  <section class="planbox" id="planbox"></section>
+  <p class="note" id="foot"></p>
+</div>
+<div class="sheet" id="sheet" hidden role="dialog" aria-modal="true"><div class="sheet-in" id="sheetIn"></div></div>
+<div class="saver" id="saver" hidden role="dialog" aria-modal="true" aria-label="Screensaver"></div>
+<script>
+const D = __DATA__;
+const VERSION = "1.04";
+let lang = "en";
+const T = {
+ en:{title:"Dua module", ownWin:"↗ Open in its own window", pickSub:"Choose a part", allGroups:"Dua groups", mMeaning:"📖 Meaning", mSource:"📚 Source", mPlan:"🗓 Memorising plan", close:"✕ Close", lead:"A picture of the new Dua page for your approval, made from real data. Nothing here is in the app. Changes you make here (moving, marking, sharing) are only kept until you close the page.",
+  g_occ:"Dua by Occasions", g_books:"Dua by Hadith Books", g_prophets:"Dua of Prophets", g_rasul:"Dua of Rasulullah Sallallahu A'laihi Wa Sallam", g_sahaba:"Dua of the Sahaba", g_salaf:"Dua of the Salaf", g_ulama:"Dua of the Ulama",
+  back:"← Back", manage:"✎ Manage (Owner, Prime)", manageOn:"✓ Managing", add:"+ Add a Dua", move:"Move to…", also:"Also add to…", del:"Delete", undel:"Bring back", archived:"Deleted ({n}), kept so they can come back", edit:"✎ Title",
+  save:"Save", cancel:"Cancel", tEn:"Title (English)", tBn:"Title (Bangla)", arLbl:"The Dua in Arabic", srcLbl:"Source (book and number, or āyah)", grpLbl:"Put it in these groups", pick:"Choose a group",
+  emptySahaba:"No duas here yet. Each one needs a checked source: which Companion said it, and the book that reports it.", emptySalaf:"No duas here yet. Each one needs a checked source (for example from an-Nawawi's al-Adhkār or Ibn Abī ad-Dunyā).", emptyUlama:"No duas here yet. Each one needs the scholar's name and the book it is from.",
+  duas:"{n} duas", chapters:"{n} chapters", places:"narrated in {n} places", place1:"narrated in 1 place", of:"{i} of {n}", duaN:"Dua {n}",
+  morning:"Morning and evening adhkār (tap to count)", morningSub:"34 adhkār",
+  open:"Open", bm:"Bookmark", bmOn:"Bookmarked", bmToast:"Added to your Bookmarks, the same list as Quran Study. Open it from 🔖 in the menu.", bmOff:"Removed from your Bookmarks.",
+  planH:"My memorising plan", pToday:"Memorising Today", pNext:"Memorising Next", pUrgent:"Memorising URGENT", pImportant:"Important Dua", pRevise:"Revising", pDone:"Memorised ✓", pNone:"No plan",
+  prog:"My progress on this dua", stages:["Not started","Learning","Practising","Achieved","Mastered"],
+  poster:"🖼 Poster (A4)", share:"📤 Copy / Share", listen:"🔊 Listen", saverBtn:"▶ Screensaver",
+  meaning:"Meaning", noMeaning:"No English or Bangla meaning yet (Arabic only).", quranRef:"Qur'an reference", hadithRef:"Hadith reference", source:"Source",
+  wq:"opens the Qur'an's Word Card", wd:"opens this Dua's own word card", wn:"Word-by-word links for this dua come with the build (D08, D09)",
+  topText:"Top banner · text to come", fromDua:"From {t}", backTo:"← Back to the Dua", wcQ:"Word Card (from Quran Study)", wcD:"Dua word card", wPlace:"First in the Qur'an at {p} · {n} times in all", wMean:"Meaning", wTr:"Transliteration", wRoot:"Root", wLemma:"Dictionary word", wPos:"Kind of word", wMeanTodo:"Meaning: to be added (no free dictionary yet)", openFull:"Open the full Word Card in Quran Study ↗", wNote:"In the app this opens Quran Study's own Word Card, with “From Dua” and ← Back at the top (J105). Your progress on the word is shared with the same Qur'an word.", dNote:"This word is not spelled like any word in the Qur'an, so it gets the Dua's own word card. What it can show: the word as written, its dictionary form, its root and its kind. Its meaning needs a dictionary we may use.", look:"Look it up in Almaany ↗",
+  pos:{noun:"noun",verb:"verb",adj:"adjective",prep:"particle"},
+  aTitle:"Listen", aNote:"Demo: no sound yet. Which recordings to use is your choice (D16). The words light up as they would with sound.", play:"▶", pause:"⏸", speed:"Speed", repeat:"Repeat", times:"×{n}", inf:"∞", part:"✂ Choose part", partOn:"Tap the first word, then the last word", partSel:"Part chosen: words {a}–{b}", partClear:"Whole dua", loopG:"🔁 Play the whole group",
+  pTitle:"Poster", pAr:"Arabic", pEn:"English", pBn:"Bangla", pWbw:"Word by word", pPrint:"🖨 Print A4", pPrintNote:"In the app this opens the print window at A4 size; a demo page is not allowed to print.", sDua:"▶ Screensaver: Duas only", sMix:"▶ Screensaver: Duas and Asma ul Husna", sClose:"✕ Close", ahPh:"Asma ul Husna poster (from Quran Study)",
+  shTitle:"Copy or share this Dua", shWhat:"What to include", shAr:"Arabic", shEn:"English", shBn:"Bangla", shWbw:"Word by word", shSrc:"Source", shAs:"Share as", shText:"Text", shImg:"Poster picture", shCopy:"Copy", shCopied:"Copied.", shCopyFail:"Copy was refused here: select the text above and copy it.", shTrack:"Who is it for? (kept for you, Owner and Prime only)", shMedia:"Where", shWho:"Who", shOcc:"Occasion", shWhen:"Date", shLog:"Record this share", shLogged:"Recorded.", shLogH:"Shared so far",
+  mWhats:"WhatsApp", mFb:"Facebook", mMail:"Email", mPrint:"Printed", mMasjid:"Masjid notice board", mOther:"Other",
+  wFam:"Family", wStu:"Students", wTea:"Teachers", wMas:"Masjid community", wPub:"Public", wOther:"Other",
+  rDone:"{d} of {n} done today", rTap:"Tap", rReset:"Start again", rNote:"In the app today's count is kept on your device and starts fresh each day.",
+  planTitle:"Build plan for your approval · every build has a number", planSub:"Tags: in this demo · needs the MSA Architect (a shared part) · needs your answer in J105 or J104 · needs you to publish a Rules change.",
+  tDemo:"in this demo", tArch:"MSA Architect", tGate:"your Rules", tAns:"your answer",
+  foot:"Sources: the app's own 3,126 Dua cards (11 Arabic hadith books, OpenITI); Hisn al-Muslim in Arabic with al-Qaḥṭānī's references (asellam/HisnElMuslim, MIT); meanings from HadeethEnc.com; morning and evening adhkār in English (Seen-Arabic, MIT); the Qur'an text and translations already in the app; the banner at the bottom of each card is cut from your Asma ul Husna poster template. A computer matched Hisn al-Muslim duas to Dua cards and Dua words to Qur'an words; every match is checked by a person before it shows in the app."},
+ bn:{title:"দুআ মডিউল", ownWin:"↗ নিজের জানালায় খুলুন", pickSub:"একটি অংশ বেছে নিন", allGroups:"দুআর গ্রুপ", mMeaning:"📖 অর্থ", mSource:"📚 সূত্র", mPlan:"🗓 মুখস্থের পরিকল্পনা", close:"✕ বন্ধ", lead:"আপনার অনুমোদনের জন্য নতুন দুআ পৃষ্ঠার একটি ছবি, আসল তথ্য দিয়ে বানানো। এখনও অ্যাপে কিছুই নেই। এখানে যা বদলাবেন (সরানো, চিহ্ন দেওয়া, শেয়ার) তা পৃষ্ঠা বন্ধ করা পর্যন্তই থাকবে।",
+  g_occ:"উপলক্ষ অনুযায়ী দুআ", g_books:"হাদীস গ্রন্থ অনুযায়ী দুআ", g_prophets:"নবীদের দুআ", g_rasul:"রাসূলুল্লাহ সাল্লাল্লাহু আলাইহি ওয়া সাল্লামের দুআ", g_sahaba:"সাহাবীদের দুআ", g_salaf:"সালাফের দুআ", g_ulama:"উলামাদের দুআ",
+  back:"← ফিরে যান", manage:"✎ পরিচালনা (মালিক, প্রাইম)", manageOn:"✓ পরিচালনা চলছে", add:"+ দুআ যোগ করুন", move:"সরান…", also:"আরও যোগ করুন…", del:"মুছুন", undel:"ফিরিয়ে আনুন", archived:"মোছা হয়েছে ({n}টি), রাখা আছে যাতে ফিরিয়ে আনা যায়", edit:"✎ শিরোনাম",
+  save:"সংরক্ষণ", cancel:"বাতিল", tEn:"শিরোনাম (ইংরেজি)", tBn:"শিরোনাম (বাংলা)", arLbl:"আরবিতে দুআটি", srcLbl:"সূত্র (গ্রন্থ ও নম্বর, অথবা আয়াত)", grpLbl:"এই গ্রুপগুলোতে রাখুন", pick:"একটি গ্রুপ বেছে নিন",
+  emptySahaba:"এখনও কোনো দুআ নেই। প্রতিটির যাচাই করা সূত্র লাগবে: কোন সাহাবী বলেছেন, আর কোন গ্রন্থে আছে।", emptySalaf:"এখনও কোনো দুআ নেই। প্রতিটির যাচাই করা সূত্র লাগবে (যেমন নববীর আল-আযকার বা ইবনু আবিদ-দুনইয়া)।", emptyUlama:"এখনও কোনো দুআ নেই। প্রতিটির জন্য আলিমের নাম ও গ্রন্থ লাগবে।",
+  duas:"{n}টি দুআ", chapters:"{n}টি অধ্যায়", places:"{n}টি স্থানে বর্ণিত", place1:"১টি স্থানে বর্ণিত", of:"{n}টির মধ্যে {i}", duaN:"দুআ {n}",
+  morning:"সকাল ও সন্ধ্যার যিকর (গুনতে চাপুন)", morningSub:"৩৪টি যিকর",
+  open:"খুলুন", bm:"বুকমার্ক", bmOn:"বুকমার্ক করা", bmToast:"আপনার বুকমার্কে যোগ হলো, কুরআন অধ্যয়নের একই তালিকায়। মেনুর 🔖 থেকে খুলুন।", bmOff:"বুকমার্ক থেকে সরানো হলো।",
+  planH:"আমার মুখস্থ করার পরিকল্পনা", pToday:"আজ মুখস্থ করছি", pNext:"পরে মুখস্থ করব", pUrgent:"জরুরি মুখস্থ", pImportant:"গুরুত্বপূর্ণ দুআ", pRevise:"পুনরাবৃত্তি করছি", pDone:"মুখস্থ হয়েছে ✓", pNone:"পরিকল্পনা নেই",
+  prog:"এই দুআয় আমার অগ্রগতি", stages:["শুরু হয়নি","শিখছি","অনুশীলন করছি","অর্জিত হয়েছে","পূর্ণ দক্ষতা"],
+  poster:"🖼 পোস্টার (A4)", share:"📤 কপি / শেয়ার", listen:"🔊 শুনুন", saverBtn:"▶ স্ক্রিনসেভার",
+  meaning:"অর্থ", noMeaning:"এখনও ইংরেজি বা বাংলা অর্থ নেই (শুধু আরবি)।", quranRef:"কুরআনের সূত্র", hadithRef:"হাদীসের সূত্র", source:"সূত্র",
+  wq:"কুরআনের শব্দ-কার্ড খোলে", wd:"দুআর নিজের শব্দ-কার্ড খোলে", wn:"এই দুআর শব্দে শব্দে সংযোগ তৈরির সময় আসবে (D08, D09)",
+  topText:"উপরের ব্যানার · লেখা পরে আসবে", fromDua:"{t} থেকে", backTo:"← দুআয় ফিরে যান", wcQ:"শব্দ-কার্ড (কুরআন অধ্যয়ন থেকে)", wcD:"দুআর শব্দ-কার্ড", wPlace:"কুরআনে প্রথম {p}-এ · মোট {n} বার", wMean:"অর্থ", wTr:"উচ্চারণ", wRoot:"মূল", wLemma:"অভিধানের শব্দ", wPos:"শব্দের ধরন", wMeanTodo:"অর্থ: পরে যোগ হবে (এখনও মুক্ত অভিধান নেই)", openFull:"কুরআন অধ্যয়নে পুরো শব্দ-কার্ড খুলুন ↗", wNote:"অ্যাপে এটি কুরআন অধ্যয়নের নিজের শব্দ-কার্ড খোলে, উপরে “দুআ থেকে” ও ← ফিরে যান সহ (J105)। শব্দটিতে আপনার অগ্রগতি একই কুরআনের শব্দের সাথে ভাগ হয়।", dNote:"এই শব্দটি কুরআনের কোনো শব্দের বানানে নেই, তাই এটি দুআর নিজের শব্দ-কার্ড পায়। যা দেখাতে পারে: লেখা শব্দ, অভিধানের রূপ, মূল ও ধরন। অর্থের জন্য ব্যবহারযোগ্য একটি অভিধান লাগবে।", look:"Almaany-তে দেখুন ↗",
+  pos:{noun:"বিশেষ্য",verb:"ক্রিয়া",adj:"বিশেষণ",prep:"অব্যয়"},
+  aTitle:"শুনুন", aNote:"নমুনা: এখনও শব্দ নেই। কোন রেকর্ডিং ব্যবহার হবে তা আপনার সিদ্ধান্ত (D16)। শব্দ থাকলে যেমন হতো, শব্দগুলো তেমনই আলোকিত হয়।", play:"▶", pause:"⏸", speed:"গতি", repeat:"পুনরাবৃত্তি", times:"×{n}", inf:"∞", part:"✂ অংশ বাছুন", partOn:"প্রথম শব্দে, তারপর শেষ শব্দে চাপুন", partSel:"বাছা অংশ: শব্দ {a}–{b}", partClear:"পুরো দুআ", loopG:"🔁 পুরো গ্রুপ শুনুন",
+  pTitle:"পোস্টার", pAr:"আরবি", pEn:"ইংরেজি", pBn:"বাংলা", pWbw:"শব্দে শব্দে", pPrint:"🖨 A4 প্রিন্ট", pPrintNote:"অ্যাপে এটি A4 আকারে প্রিন্টের জানালা খোলে; নমুনা পৃষ্ঠায় প্রিন্ট করা যায় না।", sDua:"▶ স্ক্রিনসেভার: শুধু দুআ", sMix:"▶ স্ক্রিনসেভার: দুআ ও আসমাউল হুসনা", sClose:"✕ বন্ধ", ahPh:"আসমাউল হুসনা পোস্টার (কুরআন অধ্যয়ন থেকে)",
+  shTitle:"এই দুআ কপি বা শেয়ার করুন", shWhat:"কী থাকবে", shAr:"আরবি", shEn:"ইংরেজি", shBn:"বাংলা", shWbw:"শব্দে শব্দে", shSrc:"সূত্র", shAs:"কীভাবে শেয়ার", shText:"লেখা", shImg:"পোস্টারের ছবি", shCopy:"কপি", shCopied:"কপি হয়েছে।", shCopyFail:"এখানে কপি করতে দেওয়া হয়নি: উপরের লেখা বেছে নিয়ে কপি করুন।", shTrack:"কার জন্য? (শুধু আপনার জন্য রাখা, মালিক ও প্রাইম)", shMedia:"কোথায়", shWho:"কারা", shOcc:"উপলক্ষ", shWhen:"তারিখ", shLog:"এই শেয়ারটি লিখে রাখুন", shLogged:"লেখা হলো।", shLogH:"এ পর্যন্ত শেয়ার",
+  mWhats:"হোয়াটসঅ্যাপ", mFb:"ফেসবুক", mMail:"ইমেইল", mPrint:"প্রিন্ট", mMasjid:"মসজিদের নোটিশ বোর্ড", mOther:"অন্যান্য",
+  wFam:"পরিবার", wStu:"ছাত্রছাত্রী", wTea:"শিক্ষক", wMas:"মসজিদের মানুষ", wPub:"সবাই", wOther:"অন্যান্য",
+  rDone:"আজ {n}টির মধ্যে {d}টি সম্পন্ন", rTap:"চাপুন", rReset:"আবার শুরু", rNote:"অ্যাপে আজকের গোনা আপনার ডিভাইসে থাকে এবং প্রতিদিন নতুন করে শুরু হয়।",
+  planTitle:"আপনার অনুমোদনের জন্য তৈরির পরিকল্পনা · প্রতিটির একটি নম্বর", planSub:"চিহ্ন: এই নমুনায় আছে · MSA আর্কিটেক্ট লাগবে (ভাগের অংশ) · J105 বা J104-এ আপনার উত্তর লাগবে · আপনাকে Rules প্রকাশ করতে হবে।",
+  tDemo:"নমুনায় আছে", tArch:"MSA আর্কিটেক্ট", tGate:"আপনার Rules", tAns:"আপনার উত্তর",
+  foot:"উৎস: অ্যাপের নিজের ৩,১২৬টি দুআ কার্ড (১১টি আরবি হাদীস গ্রন্থ, OpenITI); আরবি হিসনুল মুসলিম, আল-কাহতানীর সূত্রসহ (asellam/HisnElMuslim, MIT); অর্থ HadeethEnc.com থেকে; ইংরেজিতে সকাল-সন্ধ্যার যিকর (Seen-Arabic, MIT); অ্যাপে থাকা কুরআনের পাঠ ও অনুবাদ; প্রতিটি কার্ডের নিচের ব্যানার আপনার আসমাউল হুসনা পোস্টারের নকশা থেকে কাটা। হিসনুল মুসলিমের দুআ ও কুরআনের শব্দের সাথে মিল কম্পিউটারের কাজ; অ্যাপে দেখানোর আগে প্রতিটি একজন মানুষ যাচাই করবেন।"}
+};
+const PLAN = [
+ ["D01","Menu bar of the seven groups","সাতটি গ্রুপের মেনু বার",["demo"]],
+ ["D02","Numbers in every group (1, 2, 3 …)","প্রতিটি গ্রুপে নম্বর (১, ২, ৩ …)",["demo"]],
+ ["D03","Add a Dua, move it, put it in several groups, delete it (kept so it can come back)","দুআ যোগ, সরানো, একাধিক গ্রুপে রাখা, মোছা (ফিরিয়ে আনা যায়)",["demo","gate"]],
+ ["D04","Every Dua opens in its Dua Card","প্রতিটি দুআ নিজের দুআ কার্ডে খোলে",["demo"]],
+ ["D05","A title for every Dua (English and Bangla)","প্রতিটি দুআর শিরোনাম (ইংরেজি ও বাংলা)",["demo","gate"]],
+ ["D06","🔖 Bookmark, the same Bookmarks as Quran Study","🔖 বুকমার্ক, কুরআন অধ্যয়নের একই বুকমার্ক",["demo","arch"]],
+ ["D07","Dua Card as an A4 poster to print: Arabic, English, Bangla, word by word","দুআ কার্ড A4 পোস্টার হিসেবে প্রিন্ট: আরবি, ইংরেজি, বাংলা, শব্দে শব্দে",["demo"]],
+ ["D08","Words that are also in the Qur'an open the Qur'an's Word Card","কুরআনেও থাকা শব্দ কুরআনের শব্দ-কার্ড খোলে",["demo","arch","ans"]],
+ ["D09","Other words open the Dua's own word card","অন্য শব্দ দুআর নিজের শব্দ-কার্ড খোলে",["demo","arch","ans"]],
+ ["D10","Memorising plan marks, each with its own colour","মুখস্থের পরিকল্পনার চিহ্ন, প্রতিটির নিজের রং",["demo","gate","ans"]],
+ ["D11","Bottom banner like the Asma ul Husna card","আসমাউল হুসনা কার্ডের মতো নিচের ব্যানার",["demo"]],
+ ["D12","Top banner frame (your text later)","উপরের ব্যানারের ফ্রেম (লেখা পরে)",["demo"]],
+ ["D13","Screensaver: Dua posters alone, or mixed with Asma ul Husna","স্ক্রিনসেভার: শুধু দুআ পোস্টার, অথবা আসমাউল হুসনার সাথে",["demo","arch"]],
+ ["D14","Copy / share menu: Arabic only, chosen languages, word by word, text or poster picture","কপি / শেয়ার মেনু: শুধু আরবি, বাছাই করা ভাষা, শব্দে শব্দে, লেখা বা পোস্টারের ছবি",["demo"]],
+ ["D15","Record each share: where, who for, which occasion, when","প্রতিটি শেয়ার লিখে রাখা: কোথায়, কার জন্য, কোন উপলক্ষে, কবে",["demo","gate"]],
+ ["D16","Dua audio for every Dua: the source (your choice)","প্রতিটি দুআর অডিও: উৎস (আপনার সিদ্ধান্ত)",["ans"]],
+ ["D17","Audio buttons: play, pause, previous, next, speed, repeat ×1 to ∞, play a whole group","অডিও বোতাম: চালু, থামা, আগের, পরের, গতি, পুনরাবৃত্তি ×১ থেকে ∞, পুরো গ্রুপ",["demo"]],
+ ["D18","Choose part of a Dua and repeat only that part","দুআর একটি অংশ বেছে শুধু সেটুকু বারবার শোনা",["demo","ans"]],
+ ["D19","The Dua page itself (app/dua-study.html), the Dua link in Hadith Study and the menu","দুআ পৃষ্ঠা নিজে (app/dua-study.html), হাদীস অধ্যয়নে দুআর লিংক ও মেনু",["arch"]],
+ ["D20","Plain words when a Dua save fails (J104 j104q1)","দুআ সংরক্ষণ ব্যর্থ হলে সহজ ভাষায় জানানো (J104 j104q1)",[]],
+ ["D21","Dua groups and their parts as pull-down menus","দুআর গ্রুপ ও তাদের অংশ পুল-ডাউন মেনুতে",["demo"]],
+ ["D22","On the Dua Card only progress and listening stay open; every other block opens from the card's menu as a pop-up card","দুআ কার্ডে শুধু অগ্রগতি ও শোনার অংশ খোলা থাকে; বাকি সব কার্ডের মেনু থেকে পপ-আপ কার্ডে খোলে",["demo"]]
+];
+const MARKS = [["today","pToday","--m-today"],["next","pNext","--m-next"],["urgent","pUrgent","--m-urgent"],["revise","pRevise","--m-revise"],["done","pDone","--m-done"]];
+const ON = "#fff";
+
+/* ------- the Dua registry and the groups (all kept in this page only) ------- */
+const duas = {}; let seq = 0;
+function addDua(o){ const id = "d" + (++seq); duas[id] = { id, archived:false, ...o }; return id; }
+const groups = { occ:{ subs:[] }, books:{ subs:[] }, prophets:{ items:[] }, rasul:{ items:[] }, sahaba:{ items:[] }, salaf:{ items:[] }, ulama:{ items:[] } };
+for (const g of D.groups) {
+  const sub = { key:"occ:" + g.id, en:g.en, bn:g.bn, icon:g.icon, items:[] };
+  for (const c of g.chapters) for (const it of c.items) {
+    sub.items.push(addDua({ kind:"hisn", titleAr:c.title, titleEn:it.mean?.en ?? null, titleBn:it.mean?.bn ?? null, ar:it.ar, count:it.count, ref:it.ref,
+      meanEn:it.mean?.en, meanBn:it.mean?.bn, meanSrc:it.mean ? ("HadeethEnc " + it.mean.id) : null, card:it.card, chap:c.i }));
+  }
+  groups.occ.subs.push(sub);
+}
+D.books.forEach((b, i) => {
+  const sub = { key:"books:" + i, en:b.en, bn:b.bn, ar:b.ar, total:b.count, items:[] };
+  for (const it of b.items) sub.items.push(addDua({ kind:"hadith", titleEn:null, titleBn:null, titleAr:null, ar:it.ar, card:{ n:it.n, places:it.places }, ref:b.en + (it.std ? " " + it.std : "") }));
+  groups.books.subs.push(sub);
+});
+for (const p of D.prophets) groups.prophets.items.push(addDua({ kind:"quran", titleEn:p.who + ": " + p.titleEn, titleBn:p.whoBn + ": " + p.titleBn, ar:p.ar, meanEn:p.en, meanBn:p.bn, quran:p.ref, sEn:p.sEn }));
+const featId = addDua({ kind:"hadith", titleEn:D.feat.titleEn, titleBn:D.feat.titleBn, ar:D.feat.tokens.map(t => t.ar).join(" "), tokens:D.feat.tokens, meanEn:D.feat.en, meanBn:D.feat.bn, meanSrc:"HadeethEnc 5503 · " , enAttr:D.feat.enAttr, bnAttr:D.feat.bnAttr, card:{ n:2, places:D.feat.places }, ref:"Sahih al-Bukhari 6306" });
+groups.rasul.items.push(featId);
+for (const r of D.rasul) if (r.n !== 2) groups.rasul.items.push(addDua({ kind:"hadith", titleEn:r.mean?.en ?? null, titleBn:r.mean?.bn ?? null, ar:r.ar, card:{ n:r.n, places:r.places }, meanEn:null, meanBn:null }));
+// The featured dua is also in Occasions > Forgiveness and dhikr, and in Bukhari's list: one Dua, several groups (D03).
+groups.occ.subs.find(s => s.key === "occ:forgive").items.unshift(featId);
+groups.books.subs[0].items.unshift(featId);
+const marks = {}, important = {}, stage = {}, bookmarked = {}, shareLog = [];
+const counts = {};
+
+/* ------- helpers ------- */
+const L = (k, v) => { let s = T[lang][k] ?? T.en[k]; if (v) for (const [a, b] of Object.entries(v)) s = s.replace(`{${a}}`, digits(b)); return s; };
+const digits = (s) => lang === "bn" ? String(s).replace(/\d/g, d => "০১২৩৪৫৬৭৮৯"[d]) : String(s);
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+const btn = (cls, text, fn) => { const b = el("button", cls, text); b.type = "button"; if (fn) b.addEventListener("click", fn); return b; };
+const arEl = (cls, text) => { const e = el("div", cls, text); e.lang = "ar"; e.dir = "rtl"; return e; };
+// A HadeethEnc title is sometimes the whole hadith: only a short one is used as the Dua's title (D05).
+const short = (s) => s && s.length <= 90 ? s : null;
+const title = (d) => short(lang === "bn" ? d.titleBn : d.titleEn) || short(d.titleEn) || d.titleAr || (d.card ? L("duaN", { n:d.card.n }) : "");
+const groupName = (k) => L("g_" + k);
+const placesText = (n) => n === 1 ? L("place1") : L("places", { n });
+function toast(msg){ const t = el("div", "note", msg); t.setAttribute("role", "status"); t.style.cssText = "position:fixed;left:50%;transform:translateX(-50%);bottom:max(16px,env(safe-area-inset-bottom,0px));background:var(--panel2);z-index:60;padding:10px 14px;border-radius:10px;border:1px solid var(--gold);max-width:min(92vw,520px)"; document.body.appendChild(t); setTimeout(() => t.remove(), 2600); }
+
+/* ------- where we are ------- */
+let cur = { g:"rasul", sub:null };
+let managing = false, adding = false;
+const listOf = (g, sub) => sub ? groups[g].subs.find(s => s.key === sub).items : groups[g].items;
+function allLists(){ const out = []; for (const g of ["occ","books"]) for (const s of groups[g].subs) out.push({ g, sub:s.key, label:groupName(g) + " › " + (lang === "bn" ? s.bn : s.en) }); for (const g of ["prophets","rasul","sahaba","salaf","ulama"]) out.push({ g, sub:null, label:groupName(g) }); return out; }
+
+// D21: the groups, and a group's parts, are pull-down menus.
+const countOf = (g, sub) => (sub ? groups[g].subs.find(s => s.key === sub).items : g === "occ" || g === "books" ? groups[g].subs.flatMap(s => s.items) : groups[g].items).filter(id => !duas[id].archived).length;
+const subName = (s) => lang === "bn" ? s.bn : s.en;
+let pullOpen = null;
+function closePull(){ if (pullOpen) { pullOpen.box.remove(); pullOpen.btn.setAttribute("aria-expanded", "false"); pullOpen = null; } }
+function openPull(anchor, fill){
+  if (pullOpen && pullOpen.btn === anchor) return closePull();
+  closePull();
+  const box = el("div", "pull"); box.setAttribute("role", "menu"); fill(box);
+  anchor.parentElement.appendChild(box); anchor.setAttribute("aria-expanded", "true");
+  box.style.left = Math.min(anchor.offsetLeft, Math.max(0, anchor.parentElement.clientWidth - box.offsetWidth)) + "px";
+  pullOpen = { btn:anchor, box }; box.querySelector("button")?.focus();
+}
+const pullItem = (label, n, on, fn, cls = "") => { const b = btn("pitem " + cls, null, () => { closePull(); fn(); }); b.setAttribute("role", "menuitem"); b.append(el("span", null, label), el("span", "c", digits(n))); if (on) b.setAttribute("aria-current", "true"); return b; };
+function renderMenu(){
+  const m = document.getElementById("menu"); m.textContent = "";
+  const gb = btn("pd", null); gb.setAttribute("aria-haspopup", "menu"); gb.setAttribute("aria-expanded", "false");
+  gb.append(el("small", null, L("allGroups")), el("b", null, groupName(cur.g) + " ▾"));
+  gb.addEventListener("click", () => openPull(gb, (box) => {
+    for (const g of ["occ","books","prophets","rasul","sahaba","salaf","ulama"]) {
+      box.appendChild(pullItem(groupName(g), countOf(g), cur.g === g, () => { cur = { g, sub:null }; adding = false; render(); window.scrollTo({ top:0 }); }));
+      if (groups[g].subs) { const sub = el("div", "psub"); for (const s of groups[g].subs) sub.appendChild(pullItem(subName(s), s.total ?? countOf(g, s.key), cur.sub === s.key, () => { cur = { g, sub:s.key }; adding = false; render(); window.scrollTo({ top:0 }); }, "small")); box.appendChild(sub); }
+    }
+  }));
+  m.appendChild(gb);
+  if (groups[cur.g].subs) {
+    const s = cur.sub ? groups[cur.g].subs.find(x => x.key === cur.sub) : null;
+    const sb = btn("pd", null); sb.setAttribute("aria-haspopup", "menu"); sb.setAttribute("aria-expanded", "false");
+    sb.append(el("small", null, groupName(cur.g)), el("b", null, (s ? subName(s) : L("pickSub")) + " ▾"));
+    sb.addEventListener("click", () => openPull(sb, (box) => { for (const x of groups[cur.g].subs) box.appendChild(pullItem(subName(x), x.total ?? countOf(cur.g, x.key), cur.sub === x.key, () => { cur = { g:cur.g, sub:x.key }; render(); window.scrollTo({ top:0 }); })); }));
+    m.appendChild(sb);
+  }
+}
+document.addEventListener("click", (e) => { if (pullOpen && !pullOpen.box.contains(e.target) && !pullOpen.btn.contains(e.target)) closePull(); });
+function renderCrumb(){
+  const c = document.getElementById("crumb"); c.textContent = "";
+  if (cur.sub) c.appendChild(btn("back", L("back"), () => { cur = { g:cur.g, sub:null }; render(); }));
+  const sub = cur.sub ? groups[cur.g].subs.find(s => s.key === cur.sub) : null;
+  c.appendChild(el("span", "where", groupName(cur.g) + (sub ? " › " + (lang === "bn" ? sub.bn : sub.en) : "")));
+}
+function render(){
+  document.getElementById("hTitle").textContent = L("title");
+  document.getElementById("verBadge").textContent = (lang === "bn" ? "নমুনা v" : "Demo v") + VERSION;
+  document.getElementById("hLead").textContent = L("lead");
+  document.getElementById("ownWin").textContent = L("ownWin");
+  document.getElementById("foot").textContent = L("foot");
+  document.body.classList.toggle("bn", lang === "bn"); document.documentElement.lang = lang;
+  renderMenu(); renderCrumb();
+  const v = document.getElementById("view"); v.textContent = "";
+  const head = el("div", "sec-head");
+  const sub = cur.sub ? groups[cur.g].subs.find(s => s.key === cur.sub) : null;
+  head.appendChild(el("h2", null, sub ? (lang === "bn" ? sub.bn : sub.en) : groupName(cur.g)));
+  const tools = el("div", "toprow");
+  if (cur.sub || !["occ","books"].includes(cur.g)) {
+    tools.appendChild(btn("btn gold", L("add"), () => { adding = !adding; render(); }));
+    const mg = btn("btn", managing ? L("manageOn") : L("manage"), () => { managing = !managing; render(); });
+    mg.setAttribute("aria-pressed", String(managing)); tools.appendChild(mg);
+  }
+  head.appendChild(tools); v.appendChild(head);
+  if (adding) v.appendChild(addForm());
+  if ((cur.g === "occ" || cur.g === "books") && !cur.sub) return subTiles(v);
+  const items = listOf(cur.g, cur.sub);
+  if (cur.g === "occ" && cur.sub === "occ:morning") {
+    const r = btn("tile", null, () => openRoutine()); r.append(el("span", "ic", "☀")); const x = el("span"); x.append(el("b", null, L("morning")), el("span", null, L("morningSub"))); r.appendChild(x); v.appendChild(r);
+  }
+  if (cur.g === "books" && sub) v.appendChild(el("p", "gap", (lang === "bn" ? `নমুনায় প্রথম ${digits(sub.items.length)}টি দেখানো হলো, এই গ্রন্থে মোট ${digits(sub.total)}টি।` : `The demo shows the first ${sub.items.length}; this book has ${sub.total} in all.`)));
+  const live = items.filter(id => !duas[id].archived), gone = items.filter(id => duas[id].archived);
+  if (!live.length) { const e = el("div", "empty"); e.appendChild(el("p", null, L("empty" + cur.g[0].toUpperCase() + cur.g.slice(1)))); e.appendChild(btn("btn gold", L("add"), () => { adding = true; render(); })); v.appendChild(e); }
+  const list = el("div", "list");
+  live.forEach((id, i) => list.appendChild(row(id, i + 1, live.length, items)));
+  v.appendChild(list);
+  if (gone.length) {
+    const dt = el("details"); dt.appendChild(el("summary", "gap", L("archived", { n:gone.length })));
+    for (const id of gone) { const r = el("div", "row"); r.append(el("span", "no", "–"), el("span", "t", title(duas[id])), btn("btn", L("undel"), () => { duas[id].archived = false; render(); })); dt.appendChild(r); }
+    v.appendChild(dt);
+  }
+}
+function subTiles(v){
+  const t = el("div", "tiles");
+  for (const s of groups[cur.g].subs) {
+    const b = btn("tile", null, () => { cur = { g:cur.g, sub:s.key }; render(); window.scrollTo({ top:0 }); });
+    b.appendChild(el("span", "ic", s.icon || "📖"));
+    const x = el("span"); x.appendChild(el("b", null, lang === "bn" ? s.bn : s.en));
+    if (s.ar) { const a = el("span", "arb", s.ar); a.lang = "ar"; x.appendChild(a); }
+    x.appendChild(el("span", null, L("duas", { n:s.total ?? s.items.filter(id => !duas[id].archived).length })));
+    b.appendChild(x); t.appendChild(b);
+  }
+  v.appendChild(t);
+}
+function markChip(id){
+  const k = marks[id]; const out = el("span"); out.style.display = "inline-flex"; out.style.gap = "4px";
+  if (k) { const m = MARKS.find(x => x[0] === k); const c = el("span", "mk", L(m[1])); c.style.background = `var(${m[2]})`; out.appendChild(c); }
+  if (important[id]) { const c = el("span", "mk", "★ " + L("pImportant")); c.style.background = "var(--m-important)"; out.appendChild(c); }
+  return out;
+}
+function row(id, n, total, items){
+  const d = duas[id];
+  const wrap = el("div"); const r = el("div", "row");
+  r.appendChild(el("span", "no", digits(n)));
+  const o = btn("open", null, () => openCard(id, n, total));
+  o.appendChild(el("span", "t", title(d)));
+  o.appendChild(arEl("a", d.ar));
+  const meta = el("span", "m"); meta.textContent = d.card ? `${L("duaN", { n:d.card.n })} · ${placesText(d.card.places)}` : (d.quran ? `${d.sEn} ${digits(d.quran)}` : (d.ref || ""));
+  meta.appendChild(document.createTextNode(" ")); meta.appendChild(markChip(id));
+  o.appendChild(meta); r.appendChild(o);
+  const side = el("div", "side");
+  const b = btn("icon", "🔖", () => { bookmarked[id] = !bookmarked[id]; toast(bookmarked[id] ? L("bmToast") : L("bmOff")); render(); });
+  b.setAttribute("aria-pressed", String(!!bookmarked[id])); b.setAttribute("aria-label", L("bm")); side.appendChild(b);
+  r.appendChild(side); wrap.appendChild(r);
+  if (managing) wrap.appendChild(manageRow(id, items, n));
+  return wrap;
+}
+function manageRow(id, items, n){
+  const m = el("div", "manage");
+  const up = btn("btn", "▲", () => { const i = items.indexOf(id); if (i > 0) { [items[i - 1], items[i]] = [items[i], items[i - 1]]; render(); } }); up.setAttribute("aria-label", "Up");
+  const dn = btn("btn", "▼", () => { const i = items.indexOf(id); if (i < items.length - 1) { [items[i + 1], items[i]] = [items[i], items[i + 1]]; render(); } }); dn.setAttribute("aria-label", "Down");
+  const pick = (labelKey, after) => { const s = el("select", "btn"); s.setAttribute("aria-label", L(labelKey)); s.appendChild(new Option(L(labelKey), ""));
+    for (const x of allLists()) if (!(x.g === cur.g && x.sub === cur.sub)) s.appendChild(new Option(x.label, `${x.g}|${x.sub ?? ""}`));
+    s.addEventListener("change", () => { if (!s.value) return; const [g, sub] = s.value.split("|"); const target = listOf(g, sub || null); if (!target.includes(id)) target.push(id); after(); render(); }); return s; };
+  m.append(up, dn, pick("move", () => items.splice(items.indexOf(id), 1)), pick("also", () => {}),
+    btn("btn", L("edit"), () => editTitle(id)), btn("btn", L("del"), () => { duas[id].archived = true; render(); }));
+  return m;
+}
+function editTitle(id){
+  const d = duas[id]; const f = el("form", "add");
+  const a = el("label", null, L("tEn")); const ia = el("input"); ia.value = d.titleEn ?? ""; ia.id = "t-en-" + id; a.appendChild(ia);
+  const b = el("label", null, L("tBn")); const ib = el("input"); ib.value = d.titleBn ?? ""; ib.id = "t-bn-" + id; b.appendChild(ib);
+  const row = el("div", "toprow"); row.append(btn("btn solid", L("save"), () => { d.titleEn = ia.value.trim() || null; d.titleBn = ib.value.trim() || null; closeSheet(); render(); }), btn("btn", L("cancel"), closeSheet));
+  f.append(a, b, row); f.addEventListener("submit", (e) => e.preventDefault());
+  openSheet([f]);
+}
+function addForm(){
+  const f = el("form", "add");
+  const mk = (k, tag = "input") => { const l = el("label", null, L(k)); const i = el(tag); i.id = "add-" + k; l.appendChild(i); f.appendChild(l); return i; };
+  const te = mk("tEn"), tb = mk("tBn"), ar = mk("arLbl", "textarea"), src = mk("srcLbl");
+  f.appendChild(el("span", "gap", L("grpLbl")));
+  const ch = el("div", "checks");
+  for (const x of allLists()) { const l = el("label"); const c = el("input"); c.type = "checkbox"; c.value = `${x.g}|${x.sub ?? ""}`; c.checked = x.g === cur.g && x.sub === cur.sub; l.append(c, document.createTextNode(x.label)); ch.appendChild(l); }
+  f.appendChild(ch);
+  const row = el("div", "toprow");
+  row.append(btn("btn solid", L("save"), () => {
+    if (!ar.value.trim()) { ar.focus(); return; }
+    const id = addDua({ kind:"own", titleEn:te.value.trim() || null, titleBn:tb.value.trim() || null, ar:ar.value.trim(), ref:src.value.trim() });
+    for (const c of ch.querySelectorAll("input:checked")) { const [g, sub] = c.value.split("|"); listOf(g, sub || null).push(id); }
+    adding = false; render();
+  }), btn("btn", L("cancel"), () => { adding = false; render(); }));
+  f.appendChild(row); f.addEventListener("submit", (e) => e.preventDefault());
+  return f;
+}
+
+/* ------- sheets ------- */
+let sheetStack = [];
+function openSheet(nodes, keep){
+  if (!keep) sheetStack = [];
+  const s = document.getElementById("sheet"), i = document.getElementById("sheetIn"); i.textContent = ""; nodes.forEach(n => i.appendChild(n)); s.hidden = false; s.scrollTop = 0;
+  document.body.style.overflow = "hidden";
+}
+function closeSheet(){ stopAudio(); document.getElementById("sheet").hidden = true; document.body.style.overflow = ""; }
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") { if (pullOpen) closePull(); else if (document.getElementById("pop")) closePop(); else if (!document.getElementById("saver").hidden) closeSaver(); else if (!document.getElementById("sheet").hidden) { if (sheetStack.length) sheetStack.pop()(); else closeSheet(); } } });
+
+/* ------- the Dua Card ------- */
+let open = null; // { id, n, total }
+let part = null, choosing = false, picking = [];
+function topArch(){ const a = el("div", "arch"); const ph = el("div", "ph"); const b = el("b", null, "بِسْمِ ٱللَّهِ"); b.lang = "ar"; ph.append(b, document.createTextNode(L("topText"))); a.appendChild(ph); return a; }
+function bottomBanner(){ const im = el("img", "bottombanner"); im.src = D.banner; im.alt = "Learn Deen On-the-Go · Madrasatul Muslimeen · Quran Revival · Aqhlaq · Ilm · Tawheed · Dawah · Hukm"; return im; }
+function openCard(id, n, total){
+  open = { id, n, total }; part = null; choosing = false; picking = [];
+  const d = duas[id];
+  const bar = el("div", "sheetbar");
+  bar.append(btn("back", L("back") + " · " + groupName(cur.g), closeSheet), el("span", "sp"),
+    btn("btn", "‹", () => step(-1)), el("span", "where", L("of", { i:n, n:total })), btn("btn", "›", () => step(1)));
+  const card = el("article", "card");
+  card.appendChild(topArch());
+  const ci = el("div", "cardin");
+  const t = el("div", "ctitle"); t.appendChild(el("h2", null, title(d)));
+  const sub = d.card ? `${L("duaN", { n:d.card.n })} · ${placesText(d.card.places)}` : (d.quran ? `${d.sEn} ${digits(d.quran)}` : "");
+  if (sub) t.appendChild(el("span", null, sub));
+  t.appendChild(el("small", null, groupName(cur.g) + " · " + digits(n)));
+  ci.appendChild(t);
+  const ar = el("div", "duaar"); ar.lang = "ar"; ar.id = "duaAr";
+  const toks = d.tokens ?? d.ar.split(/\s+/).map(w => ({ ar:w }));
+  toks.forEach((tk, i) => {
+    const s = el("span", "w" + (tk.q ? "" : tk.d ? " d" : (d.tokens ? " d" : " n")), tk.ar); s.dataset.i = i;
+    if (d.tokens || tk.q || tk.d) { s.tabIndex = 0; s.setAttribute("role", "button"); }
+    const go = () => { if (choosing) return pickWord(i); if (d.tokens) openWord(d, tk); };
+    s.addEventListener("click", go); s.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } });
+    ar.append(s, " ");
+  });
+  ci.appendChild(ar);
+  const lg = el("div", "wlegend");
+  if (d.tokens) { const a = el("span"); a.append(el("i"), document.createTextNode(L("wq"))); const b = el("span"); b.append(el("i", "d"), document.createTextNode(L("wd"))); lg.append(a, b); }
+  else lg.appendChild(el("span", null, L("wn")));
+  ci.appendChild(lg);
+  // D22: on the card itself only the progress and the listening stay open; every other block opens from the card's
+  // menu as a pop-up card, with ✕ back to the Dua.
+  const chip = el("div", "ctitle"); chip.appendChild(markChip(id)); t.appendChild(chip);
+  const meaningNode = () => { const mean = el("div", "mean"); const mt = lang === "bn" ? d.meanBn : d.meanEn;
+    mean.appendChild(el("p", null, mt || L("noMeaning")));
+    if (mt && (d.meanSrc || d.enAttr)) mean.appendChild(el("small", null, (d.meanSrc || "") + ((lang === "bn" ? d.bnAttr : d.enAttr) || ""))); return mean; };
+  const refsNode = () => { const refs = el("div", "refs");
+    const rb = (h, v) => { const b = el("div", "refbox"); b.append(el("b", null, h), el("div", null, v)); return b; };
+    if (d.quran) refs.appendChild(rb(L("quranRef"), `Qur'an ${digits(d.quran)}, Surah ${d.sEn}`));
+    if (d.ref) refs.appendChild(rb(d.kind === "hisn" ? L("source") : L("hadithRef"), d.ref));
+    if (d.card) refs.appendChild(rb(L("source"), `${L("duaN", { n:d.card.n })} · ${placesText(d.card.places)}`));
+    if (d.count > 1) refs.appendChild(rb(L("repeat"), L("times", { n:d.count })));
+    if (!refs.childNodes.length) refs.appendChild(el("p", "gap", "—")); return refs; };
+  const planNode = () => { const plan = el("div", "plan"); const pr = el("div", "planrow");
+    const repaint = () => { pr.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.k === "imp" ? !!important[id] : marks[id] === b.dataset.k))); chip.textContent = ""; chip.appendChild(markChip(id)); render(); };
+    for (const [k, lab, c] of MARKS) { const b = btn("pbtn", L(lab), () => { marks[id] = marks[id] === k ? null : k; repaint(); }); b.style.setProperty("--c", `var(${c})`); b.dataset.k = k; pr.appendChild(b); }
+    const imp = btn("pbtn", "★ " + L("pImportant"), () => { important[id] = !important[id]; repaint(); }); imp.style.setProperty("--c", "var(--m-important)"); imp.dataset.k = "imp"; pr.appendChild(imp);
+    plan.appendChild(pr); pr.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.k === "imp" ? !!important[id] : marks[id] === b.dataset.k))); return plan; };
+  const bmNode = () => { const w = el("div", "cbar"); const b = btn("cbtn", "🔖 " + (bookmarked[id] ? L("bmOn") : L("bm")), () => { bookmarked[id] = !bookmarked[id]; b.textContent = "🔖 " + (bookmarked[id] ? L("bmOn") : L("bm")); b.setAttribute("aria-pressed", String(!!bookmarked[id])); toast(bookmarked[id] ? L("bmToast") : L("bmOff")); render(); }); b.setAttribute("aria-pressed", String(!!bookmarked[id])); w.appendChild(b); return w; };
+  const cm = el("nav", "cbar cardmenu"); cm.setAttribute("aria-label", "Dua Card menu");
+  cm.append(btn("cbtn", L("mMeaning"), () => popCard(L("mMeaning"), meaningNode())), btn("cbtn", L("mSource"), () => popCard(L("mSource"), refsNode())),
+    btn("cbtn", L("mPlan"), () => popCard(L("mPlan"), planNode())), btn("cbtn", "🔖 " + L("bm"), () => popCard("🔖 " + L("bm"), bmNode())),
+    btn("cbtn", L("poster"), () => openPoster(id)), btn("cbtn", L("share"), () => openShare(id)), btn("cbtn", L("saverBtn"), () => startSaver("mix")));
+  ci.appendChild(cm);
+  const pg = el("div", "plan"); pg.appendChild(el("h3", null, L("prog")));
+  const st = el("div", "stages"); T[lang].stages.forEach((x, i) => { const b = btn(null, x, () => { stage[id] = i; st.querySelectorAll("button").forEach((y, j) => y.setAttribute("aria-pressed", String(j === i))); }); b.setAttribute("aria-pressed", String((stage[id] ?? 0) === i)); st.appendChild(b); });
+  pg.appendChild(st); ci.appendChild(pg);
+  ci.appendChild(audioBox(toks.length));
+  card.appendChild(ci);
+  card.appendChild(bottomBanner());
+  openSheet([bar, card]);
+}
+function popCard(head, node){
+  closePop();
+  const o = el("div", "pop"); o.id = "pop"; o.setAttribute("role", "dialog"); o.setAttribute("aria-modal", "true"); o.setAttribute("aria-label", head);
+  const c = el("section", "popcard"); const hd = el("div", "pophead"); hd.append(el("h3", null, head), btn("btn", L("close"), closePop));
+  c.append(hd, node); o.appendChild(c); o.addEventListener("click", (e) => { if (e.target === o) closePop(); });
+  document.body.appendChild(o); hd.querySelector("button").focus();
+}
+function closePop(){ document.getElementById("pop")?.remove(); }
+function step(dir){
+  const items = listOf(cur.g, cur.sub).filter(id => !duas[id].archived);
+  const i = items.indexOf(open.id) + dir; if (i < 0 || i >= items.length) return;
+  openCard(items[i], i + 1, items.length);
+}
+function openWord(d, tk){
+  const reopen = () => openCard(open.id, open.n, open.total);
+  const from = el("div", "wc-from"); from.append(el("span", null, L("fromDua", { t:title(d) })), btn(null, L("backTo"), reopen));
+  const p = el("section", "panel");
+  if (tk.q) {
+    const q = tk.q;
+    p.append(el("h2", null, L("wcQ")), arEl("wc-ar", tk.ar), el("p", "where", L("wPlace", { p:q.place, n:q.count })));
+    const cells = el("div", "cells");
+    const cell = (k, v, ar) => { const c = el("div", "cell"); c.append(el("small", null, L(k))); const b = el("div", "v" + (ar ? " ar" : ""), v || "—"); if (ar) b.lang = "ar"; c.appendChild(b); cells.appendChild(c); };
+    cell("wMean", lang === "bn" ? (q.bn || q.en) : q.en); cell("wTr", q.translit); cell("wRoot", q.root, true); cell("wLemma", q.lemma, true);
+    p.append(cells, el("p", "note", L("wNote")), btn("btn gold", L("openFull"), () => toast(L("wNote"))));
+  } else {
+    const g = tk.d ?? {};
+    p.append(el("h2", null, L("wcD")), arEl("wc-ar", tk.ar));
+    const cells = el("div", "cells");
+    const cell = (k, v, ar) => { const c = el("div", "cell"); c.append(el("small", null, L(k))); const b = el("div", "v" + (ar ? " ar" : ""), v || "—"); if (ar) b.lang = "ar"; c.appendChild(b); cells.appendChild(c); };
+    cell("wLemma", g.lemma, true); cell("wRoot", g.root, true); cell("wPos", g.pos ? (T[lang].pos[g.pos] ?? g.pos) : null); cell("wMean", L("wMeanTodo"));
+    const a = el("a", "btn gold", L("look")); a.href = "https://www.almaany.com/ar/dict/ar-en/" + encodeURIComponent(tk.ar.replace(/[ً-ْ]/g, "")) + "/"; a.target = "_blank"; a.rel = "noopener"; a.style.cssText = "display:inline-flex;align-items:center;text-decoration:none";
+    p.append(cells, el("p", "note", L("dNote")), a);
+  }
+  sheetStack = [reopen];
+  openSheet([from, p], true);
+  sheetStack = [reopen];
+}
+
+/* ------- audio (a picture of it: the words light up, there is no sound) ------- */
+let timer = null, playing = false, pos = 0, rep = 1, repLeft = 1, speed = 1;
+function stopAudio(){ clearInterval(timer); timer = null; playing = false; }
+function audioBox(nWords){
+  const box = el("section", "audio"); box.appendChild(el("h3", null, L("aTitle"))); box.lastChild.style.cssText = "text-align:center;color:var(--green)";
+  const r1 = el("div", "arow");
+  const prev = btn("abtn", "⏮", () => step(-1)); prev.setAttribute("aria-label", "Previous dua");
+  const pl = btn("abtn play", L("play")); pl.setAttribute("aria-label", "Play");
+  const nx = btn("abtn", "⏭", () => step(1)); nx.setAttribute("aria-label", "Next dua");
+  const tr = el("div", "track"); const fill = el("i"); tr.appendChild(fill);
+  r1.append(prev, pl, nx, tr); box.appendChild(r1);
+  const r2 = el("div", "arow"); r2.appendChild(el("span", "alabel", L("speed")));
+  for (const s of [0.75, 1, 1.25, 1.5]) { const b = btn("abtn", digits(s) + "×", () => { speed = s; r2.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x === b))); }); b.setAttribute("aria-pressed", String(s === speed)); r2.appendChild(b); }
+  box.appendChild(r2);
+  const r3 = el("div", "arow"); r3.appendChild(el("span", "alabel", L("repeat")));
+  for (const n of [1, 3, 7, 10, 33, Infinity]) { const b = btn("abtn", n === Infinity ? L("inf") : L("times", { n }), () => { rep = n; repLeft = n; r3.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x === b))); }); b.setAttribute("aria-pressed", String(n === rep)); r3.appendChild(b); }
+  box.appendChild(r3);
+  const r4 = el("div", "arow"); const ps = btn("abtn", L("part"), () => { choosing = !choosing; picking = []; ps.setAttribute("aria-pressed", String(choosing)); lab.textContent = choosing ? L("partOn") : (part ? L("partSel", { a:part[0] + 1, b:part[1] + 1 }) : ""); });
+  const clr = btn("abtn", L("partClear"), () => { part = null; choosing = false; picking = []; ps.setAttribute("aria-pressed", "false"); paintSel(); lab.textContent = ""; });
+  const lg = btn("abtn", L("loopG"), (e) => { const on = e.currentTarget.getAttribute("aria-pressed") !== "true"; e.currentTarget.setAttribute("aria-pressed", String(on)); });
+  r4.append(ps, clr, lg); box.appendChild(r4);
+  const lab = el("p", "alabel"); lab.id = "partLabel"; box.appendChild(lab);
+  box.appendChild(el("p", "alabel", L("aNote")));
+  const words = () => [...document.querySelectorAll("#duaAr .w")];
+  pl.addEventListener("click", () => {
+    if (playing) { stopAudio(); pl.textContent = L("play"); return; }
+    playing = true; pl.textContent = L("pause"); repLeft = rep;
+    const [a, b] = part ?? [0, nWords - 1]; if (pos < a || pos > b) pos = a;
+    timer = setInterval(() => {
+      words().forEach(w => w.classList.toggle("now", Number(w.dataset.i) === pos));
+      fill.style.width = (100 * (pos - a + 1) / (b - a + 1)) + "%";
+      pos++;
+      if (pos > b) { repLeft--; pos = a; if (repLeft <= 0) { stopAudio(); pl.textContent = L("play"); setTimeout(() => words().forEach(w => w.classList.remove("now")), 400); } }
+    }, 480 / speed);
+  });
+  return box;
+}
+function pickWord(i){
+  picking.push(i);
+  if (picking.length === 2) { const a = Math.min(...picking), b = Math.max(...picking); part = [a, b]; choosing = false; picking = []; document.querySelectorAll(".audio .abtn")[0]; const lab = document.getElementById("partLabel"); if (lab) lab.textContent = L("partSel", { a:a + 1, b:b + 1 }); document.querySelectorAll(".audio .abtn").forEach(x => { if (x.textContent === L("part")) x.setAttribute("aria-pressed", "false"); }); pos = a; }
+  paintSel();
+}
+function paintSel(){ document.querySelectorAll("#duaAr .w").forEach(w => { const i = Number(w.dataset.i); w.classList.toggle("sel", part ? i >= part[0] && i <= part[1] : picking.includes(i)); }); }
+
+/* ------- poster (A4) ------- */
+const posterOpt = { ar:true, en:true, bn:false, wbw:false };
+function posterEl(d){
+  const a4 = el("div", "a4");
+  a4.appendChild(topArch());
+  const pt = el("div", "pt"); pt.appendChild(el("h2", null, title(d))); if (d.card || d.quran) pt.appendChild(el("span", null, d.card ? L("duaN", { n:d.card.n }) : `${d.sEn} ${digits(d.quran)}`)); a4.appendChild(pt);
+  const len = d.ar.length;
+  if (posterOpt.ar) { const p = arEl("par", d.ar); p.style.setProperty("--arfs", (len > 260 ? 3.2 : len > 140 ? 3.9 : 4.8) + "cqw"); a4.appendChild(p); }
+  if (posterOpt.wbw && d.tokens) { const w = el("div", "pwbw"); for (const t of d.tokens) { const s = el("span"); const b = el("b", null, t.ar); b.lang = "ar"; const m = t.q ? (lang === "bn" ? t.q.bn : t.q.en) : (t.d ? t.d.lemma : ""); s.append(b, el("small", null, m || "·")); w.appendChild(s); } a4.appendChild(w); }
+  const fs = (s) => (s?.length ?? 0) > 420 ? "2.2cqw" : (s?.length ?? 0) > 220 ? "2.6cqw" : "3cqw";
+  if (posterOpt.en && d.meanEn) { const x = el("p", "ptx", d.meanEn); x.style.setProperty("--txfs", fs(d.meanEn)); a4.appendChild(x); }
+  if (posterOpt.bn && d.meanBn) { const x = el("p", "ptx bn", d.meanBn); x.style.setProperty("--txfs", fs(d.meanBn)); a4.appendChild(x); }
+  a4.appendChild(el("p", "pref", d.quran ? `Qur'an ${digits(d.quran)}` : (d.ref || "")));
+  const im = el("img"); im.src = D.banner; im.alt = ""; a4.appendChild(im);
+  requestAnimationFrame(() => fitPoster(a4));
+  return a4;
+}
+/** The poster is one A4 page: shrink the text (never the frame or the banners) until everything fits. */
+function fitPoster(a4){
+  let k = 1;
+  const parts = [...a4.querySelectorAll(".par,.ptx,.pwbw")];
+  const base = parts.map(p => parseFloat(getComputedStyle(p).fontSize));
+  while (a4.scrollHeight > a4.clientHeight + 1 && k > 0.45) { k -= 0.05; parts.forEach((p, i) => p.style.fontSize = (base[i] * k) + "px"); }
+}
+function openPoster(id){
+  const d = duas[id]; const reopen = () => openCard(open.id, open.n, open.total);
+  const bar = el("div", "sheetbar"); bar.append(btn("back", L("backTo"), reopen), el("span", "sp"));
+  const opts = el("div", "cbar");
+  for (const [k, lab] of [["ar","pAr"],["en","pEn"],["bn","pBn"],["wbw","pWbw"]]) { const b = btn("cbtn", L(lab), () => { posterOpt[k] = !posterOpt[k]; openPoster(id); }); b.setAttribute("aria-pressed", String(posterOpt[k])); if (k === "wbw" && !d.tokens) b.disabled = true; opts.appendChild(b); }
+  const wrap = el("div", "posterwrap"); wrap.append(opts, posterEl(d));
+  const acts = el("div", "cbar"); acts.append(btn("cbtn", L("pPrint"), () => toast(L("pPrintNote"))), btn("cbtn", L("sDua"), () => startSaver("dua")), btn("cbtn", L("sMix"), () => startSaver("mix")));
+  wrap.appendChild(acts);
+  sheetStack = [reopen]; openSheet([bar, wrap], true); sheetStack = [reopen];
+}
+
+/* ------- screensaver ------- */
+let saverT = null;
+function startSaver(mode){
+  const pool = [featId, ...groups.prophets.items.slice(0, 4)];
+  const seqs = mode === "mix" ? pool.flatMap(id => [id, "AH"]) : pool;
+  let i = 0; const s = document.getElementById("saver");
+  const show = () => { s.textContent = ""; const x = seqs[i % seqs.length]; let node;
+    if (x === "AH") { node = el("div", "a4"); const p = el("div", "ahph"); const b = el("b", null, "ٱلْأَسْمَاءُ ٱلْحُسْنَىٰ"); b.lang = "ar"; p.append(b, el("span", null, L("ahPh"))); node.appendChild(p); }
+    else { const keep = { ...posterOpt }; Object.assign(posterOpt, { ar:true, en:lang === "en", bn:lang === "bn", wbw:false }); node = posterEl(duas[x]); Object.assign(posterOpt, keep); }
+    s.append(node, btn("btn solid close", L("sClose"), closeSaver)); i++; };
+  show(); s.hidden = false; saverT = setInterval(show, 5000);
+  s.onclick = (e) => { if (e.target === s) closeSaver(); };
+}
+function closeSaver(){ clearInterval(saverT); document.getElementById("saver").hidden = true; }
+
+/* ------- copy / share ------- */
+const shareOpt = { ar:true, en:false, bn:false, wbw:false, src:true, as:"text" };
+function shareText(d){
+  const out = [title(d)];
+  if (shareOpt.ar) out.push(d.ar);
+  if (shareOpt.wbw && d.tokens) out.push(d.tokens.map(t => `${t.ar} = ${t.q ? (lang === "bn" ? t.q.bn : t.q.en) : (t.d?.lemma ?? "")}`).join("\n"));
+  if (shareOpt.en && d.meanEn) out.push(d.meanEn);
+  if (shareOpt.bn && d.meanBn) out.push(d.meanBn);
+  if (shareOpt.src) out.push(d.quran ? `Qur'an ${d.quran}` : (d.ref || (d.card ? `Dua ${d.card.n}` : "")));
+  return out.filter(Boolean).join("\n\n");
+}
+function openShare(id){
+  const d = duas[id]; const reopen = () => openCard(open.id, open.n, open.total);
+  const bar = el("div", "sheetbar"); bar.append(btn("back", L("backTo"), reopen), el("span", "sp"));
+  const p = el("section", "panel"); p.appendChild(el("h2", null, L("shTitle")));
+  p.appendChild(el("h3", null, L("shWhat")));
+  const o = el("div", "opts");
+  for (const [k, lab] of [["ar","shAr"],["en","shEn"],["bn","shBn"],["wbw","shWbw"],["src","shSrc"]]) { const l = el("label"); const c = el("input"); c.type = "checkbox"; c.id = "sh-" + k; c.checked = shareOpt[k]; if (k === "wbw" && !d.tokens) c.disabled = true; c.addEventListener("change", () => { shareOpt[k] = c.checked; pv.textContent = shareText(d); }); l.append(c, document.createTextNode(L(lab))); o.appendChild(l); }
+  p.appendChild(o);
+  p.appendChild(el("h3", null, L("shAs")));
+  const as = el("div", "opts");
+  for (const [k, lab] of [["text","shText"],["img","shImg"]]) { const l = el("label"); const r = el("input"); r.type = "radio"; r.name = "shas"; r.id = "shas-" + k; r.checked = shareOpt.as === k; r.addEventListener("change", () => { shareOpt.as = k; openShare(id); }); l.append(r, document.createTextNode(L(lab))); as.appendChild(l); }
+  p.appendChild(as);
+  const pv = el("div", "preview"); pv.dir = "auto"; pv.textContent = shareText(d);
+  if (shareOpt.as === "img") { const keep = { ...posterOpt }; Object.assign(posterOpt, { ar:shareOpt.ar, en:shareOpt.en, bn:shareOpt.bn, wbw:shareOpt.wbw }); const w = el("div", "posterwrap"); const a = posterEl(d); a.style.width = "min(100%,320px)"; w.appendChild(a); p.appendChild(w); Object.assign(posterOpt, keep); }
+  else p.appendChild(pv);
+  const cp = btn("btn solid", L("shCopy"), () => { navigator.clipboard?.writeText(shareText(d)).then(() => toast(L("shCopied")), () => { toast(L("shCopyFail")); const r = document.createRange(); r.selectNodeContents(pv); getSelection().removeAllRanges(); getSelection().addRange(r); }) ?? toast(L("shCopyFail")); });
+  p.appendChild(cp);
+  // D15 who it is for
+  const t = el("section", "panel"); t.appendChild(el("h3", null, L("shTrack")));
+  const mk = (lab, opts, id) => { const l = el("label"); l.style.cssText = "display:grid;gap:4px;color:var(--muted);font-size:.88rem"; l.appendChild(document.createTextNode(L(lab))); const s = el("select", "btn"); s.id = id; for (const k of opts) s.appendChild(new Option(L(k), k)); l.appendChild(s); return [l, s]; };
+  const [lm, sm] = mk("shMedia", ["mWhats","mFb","mMail","mPrint","mMasjid","mOther"], "sh-media");
+  const [lw, sw] = mk("shWho", ["wFam","wStu","wTea","wMas","wPub","wOther"], "sh-who");
+  const lo = el("label"); lo.style.cssText = "display:grid;gap:4px;color:var(--muted);font-size:.88rem"; lo.appendChild(document.createTextNode(L("shOcc"))); const io = el("input", "btn"); io.id = "sh-occ"; io.placeholder = lang === "bn" ? "যেমন জুমুআ, রমাদান, পরীক্ষা" : "e.g. Jumu'ah, Ramadan, exams"; lo.appendChild(io);
+  const ld = el("label"); ld.style.cssText = lo.style.cssText; ld.appendChild(document.createTextNode(L("shWhen"))); const idt = el("input", "btn"); idt.type = "date"; idt.id = "sh-date"; idt.valueAsDate = new Date(); ld.appendChild(idt);
+  const grid = el("div", "tiles"); grid.append(lm, lw, lo, ld); t.appendChild(grid);
+  t.appendChild(btn("btn gold", L("shLog"), () => { shareLog.unshift({ t:title(d), m:sm.value, w:sw.value, o:io.value, d:idt.value, what:Object.keys(shareOpt).filter(k => shareOpt[k] === true).join("+"), as:shareOpt.as }); toast(L("shLogged")); openShare(id); }));
+  if (shareLog.length) {
+    t.appendChild(el("h3", null, L("shLogH")));
+    const tw = el("div", "tblwrap"); const tb = el("table", "logtbl"); const hr = el("tr"); for (const h of [L("shWhen"), lang === "bn" ? "দুআ" : "Dua", L("shMedia"), L("shWho"), L("shOcc"), L("shWhat")]) hr.appendChild(el("th", null, h)); tb.appendChild(hr);
+    for (const x of shareLog) { const r = el("tr"); for (const v of [digits(x.d), x.t, L(x.m), L(x.w), x.o || "—", x.what + " · " + (x.as === "img" ? L("shImg") : L("shText"))]) r.appendChild(el("td", null, v)); tb.appendChild(r); }
+    tw.appendChild(tb); t.appendChild(tw);
+  }
+  sheetStack = [reopen]; openSheet([bar, p, t], true); sheetStack = [reopen];
+}
+
+/* ------- morning and evening routine (from v1.01) ------- */
+function openRoutine(){
+  const bar = el("div", "sheetbar"); bar.append(btn("back", L("back"), closeSheet), el("span", "sp"));
+  const p = el("section", "panel"); p.appendChild(el("h2", null, L("morning")));
+  const lbl = el("p", "where"); p.appendChild(lbl); p.appendChild(el("p", "note", L("rNote")));
+  const paint = () => { const d = D.adhkar.filter((a, i) => (counts[i] || 0) >= a.count).length; lbl.textContent = L("rDone", { d, n:D.adhkar.length }); };
+  D.adhkar.forEach((a, i) => {
+    const c = el("div", "panel"); c.style.background = "var(--panel2)";
+    c.appendChild(arEl("duaar", a.ar)); c.lastChild.style.fontSize = "1.35rem";
+    c.appendChild(el("p", null, a.en));
+    const b = btn("btn gold"); const pb = () => { const n = counts[i] || 0; b.textContent = n >= a.count ? "✓" : `${L("rTap")} ${digits(n)} / ${digits(a.count)}`; };
+    b.addEventListener("click", () => { counts[i] = Math.min(a.count, (counts[i] || 0) + 1); pb(); paint(); }); pb(); c.appendChild(b); p.appendChild(c);
+  });
+  p.appendChild(btn("btn", L("rReset"), () => { for (const k in counts) delete counts[k]; openRoutine(); }));
+  paint(); openSheet([bar, p]);
+}
+
+/* ------- the build plan ------- */
+function renderPlan(){
+  const p = document.getElementById("planbox"); p.textContent = "";
+  p.append(el("h2", null, L("planTitle")), el("p", "where", L("planSub")));
+  const ol = el("ol");
+  for (const [id, en, bn, tags] of PLAN) {
+    const li = el("li"); li.append(el("b", "id", id), el("span", null, lang === "bn" ? bn : en));
+    const tg = el("span"); tg.style.cssText = "display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end";
+    for (const t of tags) tg.appendChild(el("span", "tag " + (t === "demo" ? "demo" : t === "gate" ? "gate" : t === "arch" ? "tarch" : ""), L(t === "demo" ? "tDemo" : t === "gate" ? "tGate" : t === "arch" ? "tArch" : "tAns")));
+    li.appendChild(tg); ol.appendChild(li);
+  }
+  p.appendChild(ol);
+}
+
+const setPressed = (a, b) => { a.setAttribute("aria-pressed", "true"); b.setAttribute("aria-pressed", "false"); };
+document.getElementById("langEn").onclick = (e) => { lang = "en"; setPressed(e.currentTarget, document.getElementById("langBn")); render(); renderPlan(); };
+document.getElementById("langBn").onclick = (e) => { lang = "bn"; setPressed(e.currentTarget, document.getElementById("langEn")); render(); renderPlan(); };
+render(); renderPlan();
+</script>
