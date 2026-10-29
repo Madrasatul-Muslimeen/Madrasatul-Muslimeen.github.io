@@ -40,6 +40,10 @@
   #resultLine { font-size: 0.9rem; margin: 0.5rem 0; }
   #resultLine.result-refused { color: #a3352b; font-weight: 600; }
   #sourceBar { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; margin: 0.6rem 0; }
+  /* Audit part 132 (finding 17): at larger text a select stays inside the screen (a select's width is its longest option's). */
+  select { max-width: 100%; min-width: 0; }
+  #sourceBar > label { min-width: 0; max-width: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; }
+  #contextBar select { max-width: 100%; }
   #stackNameRow { margin: 0.5rem 0; }
   #stackNameRow input[type="text"] { width: 16rem; max-width: 100%; }
   .file-preview-list { list-style: none; padding: 0; margin: 0.6rem 0 0; }

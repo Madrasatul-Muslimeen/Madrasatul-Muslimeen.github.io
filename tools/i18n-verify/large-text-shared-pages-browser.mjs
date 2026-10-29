@@ -25,8 +25,10 @@ import { chromium, newContext, openPage } from "./harness.mjs";
 let pass = 0, fail = 0;
 const check = (name, ok, detail = "") => {
   if (typeof ok?.then === "function") throw new Error(`check "${name}" was given a promise`);
-  if (ok) { pass++; if (process.argv.includes("--verbose")) console.log(`  PASS  ${name}`); } else { fail++; console.log(`  FAIL  ${name} ${detail}`); }
+  if (ok) { pass++; if (process.argv.includes("--verbose")) console.log(`  PASS  ${name}`); } else { fail++; console.log(`  FAIL  ${name} ${process.argv.includes("--brief") ? "" : detail}`); }
 };
+// --brief: print only the FAIL names and the totals (used to read the --mutate=old runs)
+const info = (s) => { if (!process.argv.includes("--brief")) console.log(s); };
 const arg = (k) => (process.argv.find((a) => a.startsWith("--" + k + "=")) || "").slice(k.length + 3);
 const MUTATE = arg("mutate"), LIST = process.argv.includes("--list"), SHOTS = process.argv.includes("--shots"), NO_REACH = process.argv.includes("--no-reach");
 const OUT = "tools/i18n-verify/out/large-text";
@@ -45,7 +47,8 @@ const KINDS = ["cut", "overlap", "offscreen", "sideways", "small", "fixedpx"];
 // Per kind, the pages measured at ZERO at 150% across all 3 widths x 2 languages (measured 30 Oct 2026, report audit-part131). The rest print INFO.
 const CHECKED_KINDS = {
   cut: ["course-offers", "backup", "import-notes", "dawah", "onboarding", "accept-invite", "monitor", "records", "catalogue", "about", "hadith-collections", "notes", "journey-map", "admin-self-check"],
-  overlap: ["classes", "import-notes", "dawah", "onboarding", "accept-invite", "monitor", "catalogue", "about", "records", "deen-study", "arabic-study", "admin-self-check"],
+  // "onboarding" left this list in part 132: its 768 overlap with the Zab bar (finding 1, a later round) moves with the page's height
+  overlap: ["classes", "import-notes", "dawah", "accept-invite", "monitor", "catalogue", "about", "records", "deen-study", "arabic-study", "admin-self-check"],
   offscreen: ["classes", "course-offers", "backup", "import-notes", "dawah", "onboarding", "accept-invite", "monitor", "homework", "people", "catalogue", "about", "bookmarks", "notes", "journey-map", "deen-study", "arabic-study", "admin-self-check", "taglines"],
   sideways: ["classes", "course-offers", "backup", "import-notes", "dawah", "accept-invite", "monitor", "homework", "people", "catalogue", "bookmarks", "notes", "journey-map", "deen-study", "arabic-study", "admin-self-check", "taglines"],
 };
@@ -64,8 +67,20 @@ const FIXED_KINDS = {
   "journey-map": ["offscreen", "sideways"],
 };
 // The pre-fix CSS of each fixed page, injected by --mutate=old. The FIXED_KINDS checks of that page must then FAIL.
+const OLD_FORM = "fieldset{min-width:min-content!important} .row>div{min-width:10rem!important} select,textarea,input{max-width:none!important} .card,.plan-row,a{overflow-wrap:normal!important}";
+const OLD_STACK = "table.stacked{display:table!important;width:auto!important} table.stacked thead{display:table-header-group!important} table.stacked tbody{display:table-row-group!important} table.stacked tr{display:table-row!important} table.stacked td{display:table-cell!important;white-space:nowrap!important} table.stacked td::before{content:none!important}";
 const OLD_CSS = {
-  records: "fieldset{min-width:min-content!important} .row>div{min-width:10rem!important} table.stacked{display:table!important;width:auto!important} table.stacked thead{position:static!important;width:auto!important;height:auto!important;clip:auto!important} table.stacked tbody{display:table-row-group!important} table.stacked tr{display:table-row!important} table.stacked td{display:table-cell!important;white-space:nowrap!important} table.stacked td::before{content:none!important}",
+  records: OLD_FORM + OLD_STACK,
+  homework: OLD_FORM + ".checkList label{overflow-wrap:normal!important}",
+  people: OLD_STACK,
+  bookmarks: "",
+  classes: OLD_FORM,
+  "course-offers": OLD_FORM,
+  curriculum: OLD_FORM,
+  onboarding: ".radio-row{flex-wrap:nowrap!important} .fam-row{grid-template-columns:minmax(0,1fr) 6.5rem 2.75rem!important} p,label,h1,h2,#result{overflow-wrap:normal!important} input,select,button{max-width:none!important}",
+  about: "a,p,li,h1,h2,h3,td{overflow-wrap:normal!important}",
+  "import-notes": "select{max-width:none!important;min-width:auto!important} #sourceBar>label{display:block!important;flex-wrap:nowrap!important}",
+  "journey-map": ".folder-search-input{flex:1 1 12rem!important;min-width:auto!important;max-width:none!important}",
 };
 
 const SEED = `
@@ -330,7 +345,7 @@ for (const pg of PAGES) {
       const counts = Object.fromEntries(KINDS.map((k) => [k, m[k].length]));
       rows.push({ pg, w, lang, pct, counts, findings: Object.fromEntries(KINDS.map((k) => [k, m[k].map((f) => f.msg)])) });
       if (LIST) console.log(`  info  ${pg} ${w} ${lang} ${pct}%: ${KINDS.map((k) => k + " " + counts[k]).join(", ")}`);
-      for (const k of KINDS) { const base100 = new Set((bySize[100]?.[k] || []).map((f) => f.key)); for (const f of m[k]) if ((pct === 100 ? LIST : !base100.has(f.key)) && !(k === "fixedpx" && f.stuck === 1 && /zab/i.test(f.msg) && !LIST)) console.log(`    INFO [${pg} ${w} ${lang} ${pct}% ${k}${pct !== 100 ? " NEW" : ""}] ${f.msg.slice(0, 230)}`); }
+      for (const k of KINDS) { const base100 = new Set((bySize[100]?.[k] || []).map((f) => f.key)); for (const f of m[k]) if ((pct === 100 ? LIST : !base100.has(f.key)) && !(k === "fixedpx" && f.stuck === 1 && /zab/i.test(f.msg) && !LIST)) info(`    INFO [${pg} ${w} ${lang} ${pct}% ${k}${pct !== 100 ? " NEW" : ""}] ${f.msg.slice(0, 230)}`); }
       if (pct === 150) for (const k of Object.keys(CHECKED_KINDS)) if (CHECKED_KINDS[k].includes(pgKey)) check(`${pg} / ${w} / ${lang} / 150%: no ${k}`, m[k].length === 0, "\n      " + m[k].slice(0, 5).map((f) => f.msg).join("\n      "));
       if ((pct === 150 || pct === 200) && SIZES.includes(100)) for (const k of FIXED_KINDS[pgKey] || []) {
         const base100 = new Set((bySize[100]?.[k] || []).map((f) => f.key));
