@@ -13,7 +13,7 @@
 //   reach     a control that elementFromPoint never returns at any scroll stop (the floating <- X pill or the toolbox covers it); pill shown via ?navBack=1
 //   fixedpx   text elements whose computed font-size did NOT grow with the root (fixed px: they will not grow on a phone either)
 // DEFECTS ARE PRINTED AS "INFO" LINES AND ARE NOT FAILURES, EXCEPT the kinds below (part 131's CHECKED_KINDS at 150%, and part 132's FIXED_KINDS at 150% AND 200%:
-// a finding that was NEW at that size, absent at 100% on the same element, now fails). The Zab bar findings (1, 2) and the front page (3, 4) are not checked here.
+// a finding that was NEW at that size, absent at 100% on the same element, now fails). The Zab bar findings (1, 2, 20, 21) are checked since part 133 (ZABCHECK; --mutate=zabold and --mutate=zabnospace must FAIL); the front page (3, 4) is not checked here.
 // Run from the repository root with node serve.js on 8080:  node tools/i18n-verify/large-text-shared-pages-browser.mjs
 //   --pages=a.html,b.html   a subset   --no-reach  skip the reach pass   --list  print every finding   --verbose  print passes
 //   --shots  save 200% screenshots (360, bn) to tools/i18n-verify/out/large-text/   --sizes=100,150  only some sizes
