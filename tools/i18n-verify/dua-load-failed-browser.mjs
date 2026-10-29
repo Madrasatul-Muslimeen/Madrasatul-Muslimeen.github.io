@@ -67,6 +67,7 @@ for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 1440], ["bn", 1440
 
   // The chapter list: the eleven books come from the Dua index; each book's chapters from that book's own index.
   // First the index itself cut off, then (books listed) one book's index.
+  offline = true;
   await page.click('[data-dua-mode="chapters"]');
   await page.waitForSelector("[data-dua-load-failed]", { timeout: 15000 }).catch(() => {});
   const idx = await failedBox();
