@@ -545,6 +545,7 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
     import { getMyMembershipRoles, hydrateMemberships, pickContext, setActiveContext, getSelectedPersonId, setSelectedPersonId } from "./js/session-context.js";
     import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
     import { translateStatic, t } from "./js/i18n.js";
+    import { showReadLoading, clearReadStatus, showReadFailure } from "./js/read-failure.js";
     import { mountAccountCard } from "./js/account-card.js";
     import { registerServiceWorker } from "./js/sw-register.js";
     import { armScreensaver } from "./js/screensaver-idle.js";
@@ -4471,6 +4472,7 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
       whoEl.textContent = t("Signed in as {email}", { email: user.email });
       signInBtn.style.display = "none";
       signOutBtn.style.display = "inline-block";
+      if (!unitMode) showReadLoading();
 
       try {
         // Audit part 52 (the notes.html pattern, issue #291): userIndex and the ROLES-ONLY membership query are
@@ -4501,9 +4503,10 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
         renderToggle();
         appEl.style.display = "block";
         await Promise.all([loadContextData(), hydrationDone]);
+        clearReadStatus();
       } catch (err) {
         console.error(err);
-        whoEl.textContent += ` — ${err.message}`;
+        if (!unitMode) showReadFailure(err, () => (appEl.style.display === "block" ? loadContextData() : Promise.resolve(location.reload())));
         if (unitMode) { renderToggle(); appEl.style.display = "block"; renderUnitView(); unitCannotLoad(viewUnit.querySelector("[data-unit-body]"), unitLabel()); }
       }
     });

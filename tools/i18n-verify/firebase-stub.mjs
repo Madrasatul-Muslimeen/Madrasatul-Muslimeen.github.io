@@ -34,6 +34,14 @@ async function __trip(kind, col, id, produce) {
     }
   } catch (e) {}
   rec.t1 = performance.now();
+  // Audit part 125: OPT-IN (window.__stubFailReads = ["bookmarks", ...]). A read (getDoc/getDocs) of a named collection
+  // rejects the way the real SDK does with a weak line: { code: "unavailable" }. Default off; "*" names every collection.
+  try {
+    var fr = window.__stubFailReads;
+    if ((kind === "getDoc" || kind === "getDocs") && Array.isArray(fr) && (fr.indexOf("*") >= 0 || fr.indexOf(col) >= 0)) {
+      throw Object.assign(new Error("Failed to get document because the client is offline."), { code: "unavailable" });
+    }
+  } catch (e) { if (e && e.code === "unavailable") throw e; }
   var out = produce();
   // Audit part 119: how many documents this read returned (heavy-account-speed-browser.mjs counts them). Additive.
   try { rec.docs = out && typeof out.size === "number" ? out.size : (out && typeof out.exists === "function" && out.exists() ? 1 : 0); } catch (e) {}

@@ -4541,4 +4541,6 @@ export const BN = {
   "Expand this pane": "এই অংশটি বড় করুন", // ?
   "Pop out as a window": "আলাদা জানালায় খুলুন", // ?
   "Put it back in its place": "আগের জায়গায় ফিরিয়ে দিন", // ?
+  "This page could not load its data. Please check your connection and try again.": "এই পাতা তার তথ্য লোড করতে পারেনি। অনুগ্রহ করে আপনার ইন্টারনেট সংযোগ দেখে আবার চেষ্টা করুন।",
+  "Ref: {code}": "সূত্র: {code}",
 };
