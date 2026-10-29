@@ -43,8 +43,10 @@ const PLAIN_MESSAGES = {
   "quota-exceeded": () => t("You've used all the invites allowed for this account. Ask the admin to raise the limit if you need more."),
 };
 
-export function plainMessageFor(error) {
+export function plainMessageFor(error, context = {}) {
   const code = error?.code ?? "unknown";
+  // A Note save is a transaction: offline it keeps nothing and does NOT "save automatically" (audit part 124).
+  if (code === "unavailable" && context.noDeviceCopy) return t("Could not reach the server. Nothing was saved — your text is still here, so press Save again when you are online.");
   const known = PLAIN_MESSAGES[code];
   if (known) return known();
   // The code itself stays as-is: it is a diagnostic for whoever is helping,
@@ -124,13 +126,85 @@ export function reportWriteFailure(error, context = {}) {
     at: new Date().toISOString(),
     context,
     code: error?.code ?? "unknown",
-    message: plainMessageFor(error),
+    message: plainMessageFor(error, context),
     technicalMessage: error?.message ?? String(error),
   };
   sessionErrorBuffer.push(entry);
   console.error("[write failure]", context, error);
   if (typeof window !== "undefined") surfaceToUser(entry);
   return entry;
+}
+
+/**
+ * Audit part 124: offline persistence (D5) lets a write "succeed" against the device's own copy while nothing has
+ * left the device. When the line is down, say so plainly -- a calm notice (not the red failure banner), dismissible,
+ * never blocking further writing. Shows nothing while online. Safe to call after any successful save.
+ */
+export function noteIfSavedOffline() {
+  if (typeof window === "undefined" || typeof navigator === "undefined" || navigator.onLine !== false) return;
+  let box = document.getElementById("qr-offline-save-notice");
+  if (!box) {
+    box = document.createElement("div");
+    box.id = "qr-offline-save-notice";
+    box.setAttribute("role", "status");
+    box.style.cssText =
+      "position:fixed;bottom:0;left:0;right:0;background:#fff3cd;color:#533f03;border-top:1px solid #e0c36a;" +
+      "padding:0.75rem 1rem;font-family:system-ui,sans-serif;font-size:0.95rem;z-index:9998;display:flex;align-items:flex-start;gap:0.75rem;";
+    const text = document.createElement("div");
+    text.setAttribute("data-offline-save-text", "");
+    text.style.cssText = "flex:1 1 auto;min-width:0;overflow-wrap:anywhere;";
+    const close = document.createElement("button");
+    close.type = "button";
+    close.setAttribute("data-offline-save-close", "");
+    close.setAttribute("aria-label", t("Close"));
+    close.textContent = "✕";
+    close.style.cssText = "flex:0 0 auto;width:44px;height:44px;border:1px solid #cdb36a;border-radius:8px;background:#fff;color:#533f03;font-size:1.1rem;cursor:pointer;";
+    close.addEventListener("click", () => { box.style.display = "none"; });
+    box.append(text, close);
+    document.body.appendChild(box);
+    window.addEventListener("online", () => { box.style.display = "none"; });
+  }
+  box.querySelector("[data-offline-save-text]").textContent = t("Saved on this device — it will be sent when you are online.");
+  box.style.display = "flex";
+}
+
+/** How long a write may stay unacknowledged, with the line down, before the reader is told it is saved on the device. */
+export const OFFLINE_SETTLE_MS = 1500;
+
+/**
+ * Runs a write and waits for it. With offline persistence (D5) the real SDK resolves a write's promise only when the
+ * SERVER acknowledges, so with the line down it stays pending (it does not reject). If it has not settled within
+ * OFFLINE_SETTLE_MS while navigator.onLine is false, the "saved on this device" notice is shown (the device does hold
+ * the change), and then:
+ *  - OPT-IN: when the caller passes context.deviceCopyOk === true -- meaning the code after the call never reads
+ *    `outcome.result` -- this RETURNS { ok: true, result: undefined, savedOnDevice: true } so the page carries on; the
+ *    real promise keeps running and a later failure still reaches the reader through reportWriteFailure (I15).
+ *  - OTHERWISE it keeps awaiting the real promise and returns the real { ok: true, result }, never `undefined`.
+ * context.noDeviceCopy marks a transaction (needs the server, keeps no local copy): no notice, no early return.
+ * A thrown error propagates exactly as before.
+ */
+export async function settleWrite(writeFn, context = {}) {
+  const pending = Promise.resolve().then(writeFn);
+  let timer;
+  const PENDING = Symbol("pending");
+  const first = await Promise.race([
+    pending,
+    new Promise((res) => { timer = setTimeout(() => res(PENDING), OFFLINE_SETTLE_MS); }),
+  ]);
+  clearTimeout(timer);
+  if (first !== PENDING) {
+    if (!context.noDeviceCopy) noteIfSavedOffline();
+    return { ok: true, result: first };
+  }
+  if (!context.noDeviceCopy && typeof navigator !== "undefined" && navigator.onLine === false) {
+    noteIfSavedOffline();
+    if (context.deviceCopyOk === true) {
+      pending.catch((error) => { reportWriteFailure(error, context); });
+      return { ok: true, result: undefined, savedOnDevice: true };
+    }
+  }
+  const result = await pending; // slow, or offline without the opt-in: keep waiting for the real answer
+  return { ok: true, result };
 }
 
 /** Read-only view of every write failure recorded this session (for F-008). */
@@ -145,8 +219,7 @@ export function getSessionErrorBuffer() {
  */
 export async function safeWrite(writeFn, context = {}) {
   try {
-    const result = await writeFn();
-    return { ok: true, result };
+    return await settleWrite(writeFn, context);
   } catch (error) {
     const entry = reportWriteFailure(error, context);
     return { ok: false, entry };

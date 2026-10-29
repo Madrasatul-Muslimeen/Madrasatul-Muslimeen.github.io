@@ -2104,3 +2104,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v12.111** (2026-10-28): the regression sweep fixes (Catalogue Add subject on a phone).
 - **v12.112** (2026-10-28): audit part 123 (the way back from Mapping My Journey).
 - **v12.113** (2026-10-29): the QR Lead's wheel tap without a blue block.
+- **v12.114** (2026-10-29): offline saves say Saved on this device (audit part 124).
