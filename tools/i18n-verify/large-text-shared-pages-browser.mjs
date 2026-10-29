@@ -52,6 +52,16 @@ const CHECKED_KINDS = {
 // Audit part 132: pages whose part-131 findings 5-18 are fixed. For these kinds, at 150% AND 200%, no finding NEW at that size (absent at 100%) may remain.
 const FIXED_KINDS = {
   records: ["cut", "offscreen", "sideways"],
+  homework: ["cut", "offscreen", "sideways"],
+  people: ["cut", "offscreen", "sideways"],
+  bookmarks: ["cut"],
+  classes: ["cut", "offscreen", "sideways"],
+  "course-offers": ["offscreen", "sideways"],
+  curriculum: ["cut", "offscreen", "sideways"],
+  onboarding: ["offscreen", "sideways"],
+  about: ["sideways"],
+  "import-notes": ["offscreen", "sideways"],
+  "journey-map": ["offscreen", "sideways"],
 };
 // The pre-fix CSS of each fixed page, injected by --mutate=old. The FIXED_KINDS checks of that page must then FAIL.
 const OLD_CSS = {

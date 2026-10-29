@@ -459,5 +459,6 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     import { mountPageAccountCard } from "./js/account-card.js";
     mountPageAccountCard({ movePerson: false, getEmail: () => auth.currentUser?.email || "" });
   </script>
+<script type="module">import { keepSelectTitles } from "./js/select-title.js"; keepSelectTitles();</script>
 </body>
 </html>
