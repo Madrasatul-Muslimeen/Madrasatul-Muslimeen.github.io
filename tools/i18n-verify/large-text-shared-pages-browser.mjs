@@ -17,7 +17,7 @@
 // Run from the repository root with node serve.js on 8080:  node tools/i18n-verify/large-text-shared-pages-browser.mjs
 //   --pages=a.html,b.html   a subset   --no-reach  skip the reach pass   --list  print every finding   --verbose  print passes
 //   --shots  save 200% screenshots (360, bn) to tools/i18n-verify/out/large-text/   --sizes=100,150  only some sizes
-//   --mutate=<name>  puts a defect in; the matching positive control / check must FAIL (cut, overlap, offscreen, small, fixedpx)
+//   --mutate=<name>  puts a defect in; the matching check must FAIL (cut, overlap, offscreen; the small and fixedpx kinds are INFO only, proven by their positive controls)
 import fs from "node:fs";
 import { chromium, newContext, openPage } from "./harness.mjs";
 
@@ -42,7 +42,13 @@ const WIDTHS = [[360, 740], [390, 844], [768, 1024]];
 const SIZES = (arg("sizes") || "100,150,200").split(",").map(Number);
 const KINDS = ["cut", "overlap", "offscreen", "sideways", "small", "fixedpx"];
 // Kinds measured at ZERO on every one of the 23 pages at 150% (all widths, both languages): these must stay zero. Filled in from the run.
-const CHECKED_KINDS = [];
+// Per kind, the pages measured at ZERO at 150% across all 3 widths x 2 languages (measured 30 Oct 2026, report audit-part131). The rest print INFO.
+const CHECKED_KINDS = {
+  cut: ["course-offers", "backup", "import-notes", "dawah", "onboarding", "accept-invite", "monitor", "records", "catalogue", "about", "hadith-collections", "notes", "journey-map", "admin-self-check"],
+  overlap: ["classes", "import-notes", "dawah", "onboarding", "accept-invite", "monitor", "catalogue", "about", "records", "deen-study", "arabic-study", "admin-self-check"],
+  offscreen: ["classes", "course-offers", "backup", "import-notes", "dawah", "onboarding", "accept-invite", "monitor", "homework", "people", "catalogue", "about", "bookmarks", "notes", "journey-map", "deen-study", "arabic-study", "admin-self-check", "taglines"],
+  sideways: ["classes", "course-offers", "backup", "import-notes", "dawah", "accept-invite", "monitor", "homework", "people", "catalogue", "bookmarks", "notes", "journey-map", "deen-study", "arabic-study", "admin-self-check", "taglines"],
+};
 
 const SEED = `
 (function () {
@@ -71,7 +77,7 @@ const SEED = `
 })();`;
 
 // Runs in the page. `baseline` is the list of font sizes (by element index) at 100%, or null on the first pass.
-const MEASURE = ({ baseline, minH }) => {
+const MEASURE = ({ baseline, baselineRoot, minH }) => {
   const W = document.documentElement.clientWidth;
   const vis = (el) => {
     for (let e = el; e && e !== document.documentElement; e = e.parentElement) {
@@ -162,7 +168,7 @@ const MEASURE = ({ baseline, minH }) => {
   const withText = all.filter((el) => [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim()));
   res.fontSizes = withText.map((el) => parseFloat(getComputedStyle(el).fontSize));
   if (baseline && baseline.length === res.fontSizes.length) {
-    const rootNow = parseFloat(getComputedStyle(doc).fontSize), rootBase = baseline.root;
+    const rootNow = parseFloat(getComputedStyle(doc).fontSize), rootBase = baselineRoot;
     const want = rootNow / rootBase;
     let stuck = 0;
     const samples = [];
@@ -261,10 +267,10 @@ const setRoot = (P, pct) => P.evaluate((p) => { document.documentElement.style.f
   await P.evaluate(INJECT);
   await P.waitForTimeout(100);
   const base = await P.evaluate(MEASURE, { baseline: null, minH: 36 });
-  const bl = base.fontSizes; bl.root = base.rootSize;
+  const bl = base.fontSizes;
   await setRoot(P, 150);
   await P.waitForTimeout(150);
-  const big = await P.evaluate(MEASURE, { baseline: bl, minH: 36 });
+  const big = await P.evaluate(MEASURE, { baseline: bl, baselineRoot: base.rootSize, minH: 36 });
   const newOf = (kind, tag) => base[kind].filter((f) => f.msg.includes(tag)).length;
   check("positive control (100%): an injected over-long ellipsis button measures as CUT", newOf("cut", "far too long") + base.cut.filter((f) => f.msg.includes("Tafsir")).length >= 1, JSON.stringify(base.cut.slice(0, 3)));
   check("positive control (100%): two injected overlapping buttons measure as OVERLAP", base.overlap.some((f) => f.msg.includes("overlap A") && f.msg.includes("overlap B")), JSON.stringify(base.overlap.slice(0, 3)));
@@ -290,20 +296,20 @@ for (const pg of PAGES) {
     if (MUTATE) { await P.evaluate(MUTATIONS[MUTATE]); await P.waitForTimeout(100); }
     const textLen = await P.evaluate(() => document.body.innerText.length);
     check(`${pg} / ${w} / ${lang}: page rendered text (positive control)`, textLen > 20, `innerText length ${textLen}`);
-    let baseline = null;
+    let baseline = null, baselineRoot = 16;
     const bySize = {};
     for (const pct of SIZES) {
       await setRoot(P, pct);
       await P.waitForTimeout(250);
-      const m = await P.evaluate(MEASURE, { baseline, minH: 36 });
-      if (pct === 100) { baseline = m.fontSizes; baseline.root = m.rootSize; }
+      const m = await P.evaluate(MEASURE, { baseline, baselineRoot, minH: 36 });
+      if (pct === 100) { baseline = m.fontSizes; baselineRoot = m.rootSize; }
       bySize[pct] = m;
       if (SHOTS && lang === "bn" && w === 360 && pct === 200) await P.screenshot({ path: `${OUT}/${pg.replace(/[.?=].*$/, "")}-360-bn-200.png`, fullPage: true });
       const counts = Object.fromEntries(KINDS.map((k) => [k, m[k].length]));
       rows.push({ pg, w, lang, pct, counts, findings: Object.fromEntries(KINDS.map((k) => [k, m[k].map((f) => f.msg)])) });
-      console.log(`  info  ${pg} ${w} ${lang} ${pct}%: ${KINDS.map((k) => k + " " + counts[k]).join(", ")}`);
-      if (LIST) for (const k of KINDS) { const base100 = new Set((bySize[100]?.[k] || []).map((f) => f.key)); for (const f of m[k]) console.log(`    INFO [${w} ${lang} ${pct}% ${k}${pct !== 100 && !base100.has(f.key) ? " NEW" : ""}] ${f.msg}`); }
-      if (CHECKED_KINDS.length && pct === 150) for (const k of CHECKED_KINDS) check(`${pg} / ${w} / ${lang} / 150%: no ${k}`, m[k].length === 0, "\n      " + m[k].slice(0, 5).map((f) => f.msg).join("\n      "));
+      if (LIST) console.log(`  info  ${pg} ${w} ${lang} ${pct}%: ${KINDS.map((k) => k + " " + counts[k]).join(", ")}`);
+      for (const k of KINDS) { const base100 = new Set((bySize[100]?.[k] || []).map((f) => f.key)); for (const f of m[k]) if ((pct === 100 ? LIST : !base100.has(f.key)) && !(k === "fixedpx" && f.stuck === 1 && /zab/i.test(f.msg) && !LIST)) console.log(`    INFO [${pg} ${w} ${lang} ${pct}% ${k}${pct !== 100 ? " NEW" : ""}] ${f.msg.slice(0, 230)}`); }
+      if (pct === 150) for (const k of Object.keys(CHECKED_KINDS)) if (CHECKED_KINDS[k].includes(pg.replace(/\.html.*$/, ""))) check(`${pg} / ${w} / ${lang} / 150%: no ${k}`, m[k].length === 0, "\n      " + m[k].slice(0, 5).map((f) => f.msg).join("\n      "));
     }
     await ctx.close();
 
@@ -321,7 +327,7 @@ for (const pg of PAGES) {
     }
   }
 }
-if (!MUTATE && !arg("pages")) { fs.writeFileSync(`${OUT}/rows.json`, JSON.stringify({ rows, reachRows }, null, 1)); }
+if (!MUTATE) { fs.writeFileSync(`${OUT}/rows${arg("tag") ? "-" + arg("tag") : ""}.json`, JSON.stringify({ rows, reachRows }, null, 1)); }
 
 console.log("\n=== summary: pages x (findings at 100 / 150 / 200), per kind, summed over widths and languages ===");
 for (const pg of PAGES) {
