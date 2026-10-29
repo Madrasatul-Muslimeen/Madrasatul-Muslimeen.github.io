@@ -45,6 +45,13 @@
   .family-actions button, #familyAdd { min-height: 44px; }
   #familyResult { margin: 0; }
   #backLink { display: inline-flex; align-items: center; min-height: 40px; }
+  /* Audit part 132 (finding 14): with the phone's text enlarged the radio row wraps and everything stays inside the screen. */
+  .radio-row { flex-wrap: wrap; }
+  .radio-row label { min-width: 0; overflow-wrap: anywhere; }
+  input, select, button { max-width: 100%; }
+  .family-step, .fam-row { min-width: 0; }
+  .fam-row { grid-template-columns: minmax(0, 1fr) minmax(0, 6.5rem) 2.75rem; }
+  p, label, h1, h2, #result { overflow-wrap: anywhere; }
 </style>
 <link rel="stylesheet" href="./css/admin-touch.css" />
 </head>
@@ -277,5 +284,6 @@
         : `${esc(t("Added {n} to your family.", { n: num(added) }))} ${appLink()}`;
     });
   </script>
+<script type="module">import { keepSelectTitles } from "./js/select-title.js"; keepSelectTitles();</script>
 </body>
 </html>

@@ -38,6 +38,14 @@
   .contextBar { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; margin: 1rem 0; font-size: 0.9rem; }
   .contextBar label { margin: 0; }
 
+  /* Audit part 132 (findings 7, 8): with the phone's text enlarged the form stays inside the screen. A fieldset's default
+     min-width is its content's, so a long select pushed the whole page wider than the screen. */
+  fieldset { min-width: 0; }
+  .row > div { min-width: min(10rem, 100%); }
+  select, textarea, input { max-width: 100%; }
+  .contextBar select { max-width: 100%; }
+  .checkList label { overflow-wrap: anywhere; min-width: 0; }
+
 </style>
 </head>
 <body class="admin-touch">
@@ -670,5 +678,6 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     import { mountPageAccountCard } from "./js/account-card.js";
     mountPageAccountCard({ movePerson: true, getEmail: () => auth.currentUser?.email || "" });
   </script>
+<script type="module">import { keepSelectTitles } from "./js/select-title.js"; keepSelectTitles();</script>
 </body>
 </html>
