@@ -6,7 +6,8 @@
 // slice and every slice label, with a positive control (an ordinary button keeps the browser default, so the check can
 // fail), and that a tap still selects exactly the slice tapped.
 //   node tools/i18n-verify/qr-wheel-tap-highlight-browser.mjs [--mutate=no-rule]   (serve.js on :8080)
-//   --mutate=no-rule   the 29 Oct rule removed from the served page -> every "no tap block" check FAILS
+//   --mutate=no-rule        the 29 Oct rule removed from the served page AND shell.css -> every "no tap block" check FAILS
+//   --mutate=no-shell-rule  the shell.css rule removed -> the shell.css check (Asma, topic pages) FAILS
 import { chromium, newContext, openPage } from "./harness.mjs";
 import fs from "node:fs";
 
@@ -17,7 +18,8 @@ const check = (name, ok, detail = "") => {
 };
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
 const RULE = "  .wheel-seg, svg:has(.wheel-seg), svg:has(.wheel-seg) * { -webkit-tap-highlight-color: transparent; }";
-if (MUTATE && MUTATE !== "no-rule") throw new Error(`unknown mutation ${MUTATE}`);
+const SHELL_RULE = ".wheel-seg, svg:has(.wheel-seg), svg:has(.wheel-seg) * { -webkit-tap-highlight-color: transparent; }";
+if (MUTATE && MUTATE !== "no-rule" && MUTATE !== "no-shell-rule") throw new Error(`unknown mutation ${MUTATE}`);
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
 const CLEAR = /^(transparent|rgba\(0, 0, 0, 0\))$/;
 
@@ -25,10 +27,14 @@ for (const [w, h, lang] of [[360, 780, "en"], [390, 844, "bn"], [768, 1024, "en"
   const tag = `[${lang} ${w}]`;
   const touch = w < 1000;
   const ctx = await newContext(browser, { appLang: lang, viewport: { width: w, height: h }, hasTouch: touch, isMobile: touch });
-  if (MUTATE) {
+  if (MUTATE === "no-rule") {
     const html = fs.readFileSync("app/quranrevival.html", "utf8");
     if (html.split(RULE).length !== 2) throw new Error("mutation anchor not found exactly once");
     await ctx.route(/\/app\/quranrevival\.html(\?.*)?$/, (r) => r.fulfill({ status: 200, contentType: "text/html; charset=utf-8", body: html.replace(RULE, "") }));
+    // quranrevival.html also loads shell.css, whose identical rule (Architect's review) would cover it: remove both.
+    const css = fs.readFileSync("app/css/shell.css", "utf8");
+    if (css.split(SHELL_RULE).length !== 2) throw new Error("shell.css mutation anchor not found exactly once");
+    await ctx.route(/\/app\/css\/shell\.css(\?.*)?$/, (r) => r.fulfill({ status: 200, contentType: "text/css; charset=utf-8", body: css.replace(SHELL_RULE, "") }));
   }
   const { page } = await openPage(ctx, "/app/quranrevival.html");
   await page.waitForFunction(() => document.querySelectorAll("#wheelContainer .wheel-seg").length >= 8, null, { timeout: 15000 }).catch(() => {});
@@ -77,6 +83,19 @@ for (const [w, h, lang] of [[360, 780, "en"], [390, 844, "bn"], [768, 1024, "en"
   }
   if (w === 390) await page.screenshot({ path: `${process.env.SHOT_DIR || "/tmp"}/qr-wheel-tap-${lang}-${w}.png` });
   await ctx.close();
+}
+// Architect's review (29 Oct): Asma and the topic pages draw the same Mastery Wheel from shell.css, not quranrevival.html.
+// The shared rule is checked by loading the real shell.css beside a wheel slice and reading what Chrome reads.
+{
+  const css = fs.readFileSync("app/css/shell.css", "utf8");
+  if (css.split(SHELL_RULE).length !== 2) throw new Error("shell.css wheel rule not found exactly once");
+  const served = MUTATE === "no-shell-rule" ? css.replace(SHELL_RULE, "") : css;
+  const page = await browser.newPage();
+  await page.setContent(`<style>${served}</style><button id="b">b</button><svg width="100" height="100"><path class="wheel-seg" d="M50 50 L100 50 A50 50 0 0 1 50 100 Z"/><text class="wheel-seg-name" x="70" y="70">x</text></svg>`);
+  const t = await page.evaluate(() => { const c = (e) => getComputedStyle(e).webkitTapHighlightColor; return { seg: c(document.querySelector(".wheel-seg")), name: c(document.querySelector(".wheel-seg-name")), svg: c(document.querySelector("svg")), btn: c(document.getElementById("b")) }; });
+  check("shell.css POSITIVE CONTROL: an ordinary button keeps the browser's tap highlight", !CLEAR.test(t.btn), JSON.stringify(t));
+  check("shell.css: no tap block on a wheel slice, its name or the wheel (Asma, topic pages)", CLEAR.test(t.seg) && CLEAR.test(t.name) && CLEAR.test(t.svg), JSON.stringify(t));
+  await page.close();
 }
 await browser.close();
 console.log(`\n==== QR wheel: no tap block over the slices${MUTATE ? ` [mutated: ${MUTATE}]` : ""}: ${pass} passed, ${fail} failed ====`);
