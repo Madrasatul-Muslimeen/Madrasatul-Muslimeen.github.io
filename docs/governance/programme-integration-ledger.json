@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "12.97",
+    "version": "12.119",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -5441,7 +5441,7 @@
     {
       "version": "12.97",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Audit part 111 (#1253, PR #1256) plus the Architect's release commit: every tenant-written name escaped on every page.",
       "integration": {
         "authorizedOn": "2026-10-28",
@@ -5449,10 +5449,296 @@
         "method": "MERGE_PR",
         "reference": "CHANGELOG.md"
       }
+    },
+    {
+      "version": "12.98",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Audit part 112 (#1257, PR #1258) plus the Architect's merge fix: Resource text escaped and safeHref on typed links.",
+      "integration": {
+        "authorizedOn": "2026-10-28",
+        "integratedOn": "2026-10-28",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.99",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Audit part 113 (#1260, PR #1261): quranrevival.html escapeHtml escapes quotes; attribute-breakout check on every page.",
+      "integration": {
+        "authorizedOn": "2026-10-28",
+        "integratedOn": "2026-10-28",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.100",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "J107 (QR Lead, claude/qr-lead-read-search): the Read contents search offers a typed ayah like 6:161 first.",
+      "integration": {
+        "authorizedOn": "2026-10-28",
+        "integratedOn": "2026-10-28",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.101",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Audit part 114 (#1263, PR #1264): way-back markers on Onboarding, Accept invite and Journey map; richer audit seed.",
+      "integration": {
+        "authorizedOn": "2026-10-28",
+        "integratedOn": "2026-10-28",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.102",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Audit part 115 (PCF MSA J29): a page that draws its content late (Bookmarks) keeps the reader's place and open pop-ups on a Back, in bookmark-nav.js.",
+      "integration": {
+        "authorizedOn": "2026-10-28",
+        "integratedOn": "2026-10-28",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.103",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Audit part 116 (PCF MSA J29): js/table-focus.js finds the scrolling box by its computed overflow; Taglines, Monitor, Records and About load it.",
+      "integration": {
+        "authorizedOn": "2026-10-28",
+        "integratedOn": "2026-10-28",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.104",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "QR Lead (PCF MSA J29, from the v12.102 review): while a way back is docked, the Read bar keeps two lines at 320/360 and the Word card's back sits on its top row at 360; CSS only in quranrevival.html.",
+      "integration": {
+        "authorizedOn": "2026-10-28",
+        "integratedOn": "2026-10-28",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.105",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Audit part 119 (PCF MSA J29): Bookmarks fills a row's For and Move lists only when the reader reaches for them; heavy-account speed suite.",
+      "integration": {
+        "authorizedOn": "2026-10-28",
+        "integratedOn": "2026-10-28",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.106",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "QR Lead (PCF MSA J29, behaviour 38e diagnosed): a run between two ayat counts as playing (isRunContinuing in audio-player.js); a tap there pauses and holds.",
+      "integration": {
+        "authorizedOn": "2026-10-28",
+        "integratedOn": "2026-10-28",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.107",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Audit part 120 (PCF MSA J29): Monitor reads the Quran breakdown on a tap and draws raw rows in slices; teacher-scale speed suite.",
+      "integration": {
+        "authorizedOn": "2026-10-28",
+        "integratedOn": "2026-10-28",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.108",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "QR Lead (Owner's ask, Al-Hijr on a phone): in the Mushaf page strip a page turns only on a deliberate pull from its end (a swipe of 35% of the screen, 220px minimum, or a 600px wheel burst), one page per burst.",
+      "integration": {
+        "authorizedOn": "2026-10-28",
+        "integratedOn": "2026-10-28",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.109",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Audit part 122 (PCF MSA J29): journey-map.html hints its 23 deep modules and, in Bangla, the catalogue (modulepreload), so a slow phone has the folder tree ~1 s sooner; nothing read or shown changes.",
+      "integration": {
+        "authorizedOn": "2026-10-28",
+        "integratedOn": "2026-10-28",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.110",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "QR Lead (Architect's finding): a Mushaf ‹ › turn into another surah holds the strip hidden until the target page is drawn and placed (holdMushafStripFor), so the other surah's first page no longer flashes; mushaf-chosen-unit's stale route fixed.",
+      "integration": {
+        "authorizedOn": "2026-10-28",
+        "integratedOn": "2026-10-28",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.111",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Regression sweep (audit parts 31-65 re-run on v12.110, PCF MSA J29): Catalogue's Add subject box fits a phone again (fieldset min-width 0, its select max-width 100%); part 64's way-back check updated in place for ?navBack=1.",
+      "integration": {
+        "authorizedOn": "2026-10-28",
+        "integratedOn": "2026-10-28",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.112",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Audit part 123 (PCF MSA J29): the way-back audit reaches Mapping My Journey (it found no controls there); ← Back from Import Notes reopens the Note that was open (sessionStorage, back/forward arrival only).",
+      "integration": {
+        "authorizedOn": "2026-10-28",
+        "integratedOn": "2026-10-28",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.113",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "QR Lead (the Owner's ask, 29 Oct): tapping a Mastery Wheel slice no longer shows the phone's tap-highlight block across several slices (-webkit-tap-highlight-color transparent on the wheel, quranrevival.html and shell.css).",
+      "integration": {
+        "authorizedOn": "2026-10-29",
+        "integratedOn": "2026-10-29",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.114",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Audit part 124: settleWrite shows a saved-on-device notice offline; early return opt-in (deviceCopyOk); Note transactions say nothing was saved.",
+      "integration": {
+        "authorizedOn": "2026-10-29",
+        "integratedOn": "2026-10-29",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.115",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Audit part 125: read-failure.js shows Loading and a plain-words failure with Try again on Records, Bookmarks, Notes, Mapping My Journey and Monitor; the retry re-hydrates memberships.",
+      "integration": {
+        "authorizedOn": "2026-10-29",
+        "integratedOn": "2026-10-29",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.116",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Audit part 126: real-length names measured on the shared tools; Bookmarks folder selects carry the full chosen name as title.",
+      "integration": {
+        "authorizedOn": "2026-10-29",
+        "integratedOn": "2026-10-29",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.117",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "QR Lead: openAyahActionSheet refuses a broken key; ayah poster prev/next; poster Back reopens the Ayah card; Surah list above the Zab bar from 768px.",
+      "integration": {
+        "authorizedOn": "2026-10-29",
+        "integratedOn": "2026-10-29",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.118",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Audit part 128: errors.js isReadFailure; a failed read is worded as a failed load, writes unchanged.",
+      "integration": {
+        "authorizedOn": "2026-10-29",
+        "integratedOn": "2026-10-29",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.119",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Audit part 129: Monitor CSV gets a UTF-8 BOM; print fits A4 with wrapped names.",
+      "integration": {
+        "authorizedOn": "2026-10-29",
+        "integratedOn": "2026-10-29",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
     }
   ],
-  "nextUnallocated": "12.98",
+  "nextUnallocated": "12.120",
   "nextUnallocatedNote": [
+    "v12.119 was allocated to Monitor CSV BOM and A4 print (audit part 129), 2026-10-29.",
+    "v12.118 was allocated to a failed read says could not be loaded (audit part 128), 2026-10-29.",
+    "v12.117 was allocated to Ayah card NaN guard, poster prev/next and Back to its card (QR Lead), 2026-10-29.",
+    "v12.116 was allocated to long folder names readable in Bookmarks pickers (audit part 126), 2026-10-29.",
+    "v12.115 was allocated to a page that cannot load says so, with Try again (audit part 125), 2026-10-29.",
+    "v12.114 was allocated to offline saves say Saved on this device (audit part 124), 2026-10-29.",
+    "v12.113 was allocated to the QR Lead's wheel tap without a blue block, 2026-10-29.",
+    "v12.112 was allocated to audit part 123 (the way back from Mapping My Journey), 2026-10-28.",
+    "v12.111 was allocated to the regression sweep fixes (Catalogue Add subject on a phone), 2026-10-28.",
+    "v12.110 was allocated to the QR Lead's Mushaf turn into another surah with no other page on the way, 2026-10-28.",
+    "v12.109 was allocated to audit part 122 (Mapping My Journey starts its parts at once), 2026-10-28.",
+    "v12.108 was allocated to the QR Lead's Mushaf page that stays at its end, 2026-10-28.",
+    "v12.107 was allocated to Monitor opens faster for a teacher with a real class (audit part 120), 2026-10-28.",
+    "v12.106 was allocated to during a recitation the Play button stays Pause between ayat, and a tap there pauses (QR Lead), 2026-10-28.",
+    "v12.105 was allocated to Bookmarks opens faster with hundreds of bookmarks (audit part 119), 2026-10-28.",
+    "v12.104 was allocated to the way back shares a row: Read bar at 320 and 360, Word card header at 360 (QR Lead), 2026-10-28.",
+    "v12.103 was allocated to table buttons fully in view with the Tab key on a small phone (audit part 116), 2026-10-28.",
+    "v12.102 was allocated to way-back: Bookmarks' Back keeps your place on a phone in Bangla (audit part 115), 2026-10-28.",
+    "v12.101 was allocated to way-back: Open the app and Journey map back leave a way back (audit part 114), 2026-10-28.",
+    "v12.100 was allocated to the Read contents search takes an ayah (J107), 2026-10-28.",
+    "v12.99 was allocated to SECURITY: names inside attributes escaped (audit part 113), 2026-10-28.",
+    "v12.98 was allocated to SECURITY: Resource text escaped, typed links only open if web or mail (audit part 112), 2026-10-28.",
     "v12.97 was allocated to SECURITY: names escaped on every page (audit part 111), 2026-10-28.",
     "v12.96 was allocated to typed and tenant-authored text escaped on Records, Monitor and eight more shared pages (audit part 110, security), 2026-10-28.",
     "v12.95 was allocated to Records and Monitor name a topic instead of printing its id (audit part 109), 2026-10-28.",

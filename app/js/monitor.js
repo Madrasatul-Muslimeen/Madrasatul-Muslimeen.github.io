@@ -194,7 +194,8 @@ export function entriesToCsvRows(entries, { roster, subjectTree, trackables }) {
 export function downloadCsv(filename, rows) {
   const csv = rows.map((r) => r.map(csvEscape).join(",")).join("\n");
   const a = Object.assign(document.createElement("a"), {
-    href: URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" })),
+    // Audit part 129: a leading UTF-8 byte-order mark, or Excel opens Bangla names as garbage.
+    href: URL.createObjectURL(new Blob([String.fromCharCode(0xFEFF) + csv], { type: "text/csv;charset=utf-8;" })),
     download: filename,
   });
   document.body.appendChild(a);
@@ -212,10 +213,11 @@ export function printReportHtml(title, innerHtml) {
   win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title><style>
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:'Segoe UI',system-ui,sans-serif;padding:24px;color:#0f172a;font-size:12px}
-    table{border-collapse:collapse;width:100%;margin-bottom:1.4rem}
-    th,td{text-align:left;padding:0.3rem 0.5rem;border-bottom:1px solid #ddd}
+    table{border-collapse:collapse;width:100%;max-width:100%;table-layout:auto;margin-bottom:1.4rem}
+    th,td{text-align:left;padding:0.3rem 0.5rem;border-bottom:1px solid #ddd;overflow-wrap:anywhere;word-break:break-word}
     h1,h2{margin:0 0 0.6rem}
-    tr{page-break-inside:avoid} @page{margin:1.5cm}
+    @media print{body{padding:0;font-size:10.5px}th,td{padding:0.2rem 0.3rem}}
+    tr{page-break-inside:avoid} @page{size:A4;margin:1.5cm}
   </style></head><body>${innerHtml}</body></html>`);
   win.document.close();
   win.focus();

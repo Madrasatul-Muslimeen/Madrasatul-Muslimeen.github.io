@@ -214,7 +214,9 @@ for (const lang of LANGS) {
         check(`${t}: says what is wrong or what to do, in words (${bn ? "Bangla" : "English"})`, f.box.length > 15 && f.box !== "Checking your invite link…" && (!bn || BN.test(f.box)), f.box);
         if (name === "signedout") check(`${t}: signed out, it offers "Sign in with Google" and no Accept`, f.signIn !== "none" && f.accept === "none", JSON.stringify(f));
         if (name === "wrongaccount") check(`${t}: wrong account, it offers Sign out and no Accept`, f.signOut !== "none" && f.accept === "none" && f.cls === "fail", JSON.stringify(f));
-        check(`${t}: the way back — an "Open the app" link to index.html, at least 40px tall`, !!f.back && f.back.href === "index.html" && f.back.h >= 40 && f.back.w > 0, JSON.stringify(f.back));
+        // UPDATED IN PLACE 29 Oct 2026 (regression sweep), not deleted: audit part 114 (#1263) added the way-back marker
+        // `?navBack=1` to this link, so the exact-string test went red unseen. index.html, with or without the marker.
+        check(`${t}: the way back — an "Open the app" link to index.html, at least 40px tall`, !!f.back && /^index\.html(\?navBack=1)?$/.test(f.back.href || "") && f.back.h >= 40 && f.back.w > 0, JSON.stringify(f.back));
         check(`${t}: no sideways scroll, finger controls 40px or more`, f.sideways <= 0 && f.small.length === 0, JSON.stringify({ s: f.sideways, small: f.small }));
         check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
       }, { seed: TOKENS, ...o });

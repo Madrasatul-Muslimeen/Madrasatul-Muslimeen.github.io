@@ -209,6 +209,7 @@
     import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
 import { mountBookmarkMenu, noteBookmarkOpened, getBookmarkTimesShown, bookmarkTimeText } from "./js/bookmark-nav.js";
     import { translateStatic, t, num, surahName } from "./js/i18n.js";
+    import { showReadLoading, clearReadStatus, showReadFailure } from "./js/read-failure.js";
     import { registerServiceWorker } from "./js/sw-register.js";
     import { armScreensaver } from "./js/screensaver-idle.js";
     import { MODULE_PAGES, MODULE_LABELS } from "./js/continue-strip.js";
@@ -469,10 +470,18 @@ import { mountBookmarkMenu, noteBookmarkOpened, getBookmarkTimesShown, bookmarkT
         : `${page}?resume=${encodeURIComponent(b.position ?? "")}`;
     }
 
-    function folderOptionsHtml(excludeId, selectedId) {
+    // Audit part 119 (heavy account): every bookmark row and folder header carries a "For" select and a "Move" select,
+    // and with 200 bookmarks in 15 folders that was ~6,700 DOM nodes and a 140-190 ms long task at every render. A row's
+    // selects now hold only their current choice until the reader reaches for one (pointer, focus or key), when the full
+    // list is filled in just before the picker opens. `lean` builds the one-or-two-option form.
+    const LAZY_ROW_SELECTS = true;
+    const lazyAttr = (kind) => (LAZY_ROW_SELECTS ? `data-lazy-opts="${kind}"` : "");
+
+    function folderOptionsHtml(excludeId, selectedId, lean = false) {
       const options = [`<option value="">${t("Top level")}</option>`];
       for (const f of allFolders()) {
         if (f.removed) continue;
+        if (lean && f.id !== selectedId) continue;
         if (excludeId && isFolderOrDescendant(allFolders(), f.id, excludeId)) continue; // never offer moving a folder into itself or its own descendant
         options.push(`<option value="${f.id}" ${f.id === selectedId ? "selected" : ""}>${escapeHtml(f.name)}</option>`);
       }
@@ -482,18 +491,20 @@ import { mountBookmarkMenu, noteBookmarkOpened, getBookmarkTimesShown, bookmarkT
     // Fixes round 2 -- who a bookmark is FOR (a student, a family member).
     // Distinct from whose list it lives in; see bookmarks.js's own
     // setBookmarkPersonTag() comment for why those are two different things.
-    function personTagOptionsHtml(selectedPersonTagId) {
+    function personTagOptionsHtml(selectedPersonTagId, lean = false) {
       const options = [`<option value="">${t("No one in particular")}</option>`];
       for (const p of roster) {
+        if (lean && p.id !== selectedPersonTagId) continue;
         options.push(`<option value="${p.id}" ${p.id === selectedPersonTagId ? "selected" : ""}>${escapeHtml(langText(p.name, getAppLang(), p.id))}</option>`);
       }
       return options.join("");
     }
 
-    function moveBookmarkOptionsHtml(selectedFolderId) {
+    function moveBookmarkOptionsHtml(selectedFolderId, lean = false) {
       const options = [`<option value="">${t("Unfiled")}</option>`];
       for (const f of allFolders()) {
         if (f.removed) continue;
+        if (lean && f.id !== selectedFolderId) continue;
         options.push(`<option value="${f.id}" ${f.id === selectedFolderId ? "selected" : ""}>${escapeHtml(f.name)}</option>`);
       }
       return options.join("");
@@ -517,8 +528,8 @@ import { mountBookmarkMenu, noteBookmarkOpened, getBookmarkTimesShown, bookmarkT
         <span class="bm-row-module">${escapeHtml(moduleLabel)}</span>
         ${href ? `<a href="${href}" data-bm-open-id="${escapeHtml(b.id)}"><button type="button" class="tiny" ${b.removed ? "disabled" : ""}>${t("Open")}</button></a>` : ""}
         <button type="button" class="secondary tiny" data-bm-rename ${b.removed ? "disabled" : ""}>${t("Rename")}</button>
-        <select data-bm-person title="${t("For")}" ${b.removed ? "disabled" : ""}>${personTagOptionsHtml(b.personTagId ?? null)}</select>
-        <select data-bm-move ${b.removed ? "disabled" : ""}>${moveBookmarkOptionsHtml(liveFolderIdFor(b))}</select>
+        <select data-bm-person ${lazyAttr("person")} title="${t("For")}" ${b.removed ? "disabled" : ""}>${personTagOptionsHtml(b.personTagId ?? null, LAZY_ROW_SELECTS)}</select>
+        <select data-bm-move ${lazyAttr("move")} ${b.removed ? "disabled" : ""}>${moveBookmarkOptionsHtml(liveFolderIdFor(b), LAZY_ROW_SELECTS)}</select>
         <button type="button" class="secondary tiny" data-bm-toggle>${b.removed ? t("Restore") : t("Retire")}</button>
       </div>`;
     }
@@ -530,8 +541,8 @@ import { mountBookmarkMenu, noteBookmarkOpened, getBookmarkTimesShown, bookmarkT
         <div class="bm-folder-header">
           📁 <span class="bm-folder-name">${escapeHtml(folder.name)}</span>
           <button type="button" class="secondary tiny" data-folder-rename ${folder.removed ? "disabled" : ""}>${t("Rename")}</button>
-          <select data-folder-person title="${t("For")}" ${folder.removed ? "disabled" : ""}>${personTagOptionsHtml(folder.personTagId ?? null)}</select>
-          <select data-folder-move ${folder.removed ? "disabled" : ""}>${folderOptionsHtml(folder.id, folder.parentId)}</select>
+          <select data-folder-person ${lazyAttr("person")} title="${t("For")}" ${folder.removed ? "disabled" : ""}>${personTagOptionsHtml(folder.personTagId ?? null, LAZY_ROW_SELECTS)}</select>
+          <select data-folder-move ${lazyAttr("foldermove")} ${folder.removed ? "disabled" : ""}>${folderOptionsHtml(folder.id, folder.parentId, LAZY_ROW_SELECTS)}</select>
           <button type="button" class="secondary tiny" data-folder-toggle>${folder.removed ? t("Restore") : t("Retire")}</button>
         </div>
         ${bookmarks.map(bookmarkRowHtml).join("")}
@@ -639,7 +650,33 @@ import { mountBookmarkMenu, noteBookmarkOpened, getBookmarkTimesShown, bookmarkT
       bookmarksDoc = { ...bookmarksDoc, folders: (bookmarksDoc.folders ?? []).map((f) => (f.id === id ? { ...f, ...patch } : f)) };
     }
 
+    // Fill a lazy select's full option list the moment the reader reaches for it (see LAZY_ROW_SELECTS above). The
+    // current value is kept, so every change handler reads exactly what it read before.
+    function fillLazySelect(sel) {
+      const kind = sel.dataset.lazyOpts;
+      if (!kind) return;
+      delete sel.dataset.lazyOpts;
+      const v = sel.value;
+      if (kind === "person") sel.innerHTML = personTagOptionsHtml(v || null);
+      else if (kind === "move") sel.innerHTML = moveBookmarkOptionsHtml(v || null);
+      else if (kind === "foldermove") sel.innerHTML = folderOptionsHtml(sel.closest("[data-folder-id]")?.dataset.folderId, v || null);
+      sel.value = v;
+    }
+    for (const ev of ["pointerdown", "focusin", "keydown"]) {
+      document.addEventListener(ev, (e) => { const s = e.target?.closest?.("select[data-lazy-opts]"); if (s) fillLazySelect(s); }, true);
+    }
+
+    // A long folder name is cut inside a narrow native <select>; the full chosen name stays readable as its title (audit 126).
+    function syncMoveSelectTitles() {
+      document.querySelectorAll("select[data-bm-move], select[data-folder-move]").forEach((sel) => {
+        const o = sel.options[sel.selectedIndex];
+        if (o && o.textContent.trim()) sel.title = o.textContent.trim(); else sel.removeAttribute("title");
+      });
+    }
+    document.addEventListener("change", (e) => { if (e.target?.matches?.("select[data-bm-move], select[data-folder-move]")) syncMoveSelectTitles(); });
+
     function wireRowHandlers() {
+      syncMoveSelectTitles();
       document.querySelectorAll(".bm-row").forEach((row) => {
         const id = row.dataset.bmId;
         const bookmark = (bookmarksDoc.saved ?? []).find((b) => b.id === id);
@@ -1048,6 +1085,7 @@ import { mountBookmarkMenu, noteBookmarkOpened, getBookmarkTimesShown, bookmarkT
       whoEl.textContent = t("Signed in as {email}", { email: user.email });
       signInBtn.style.display = "none";
       signOutBtn.style.display = "inline-block";
+      showReadLoading();
 
       try {
         // Speed, part 7 (issue #291), the same pattern issue #278's own fix
@@ -1077,9 +1115,14 @@ import { mountBookmarkMenu, noteBookmarkOpened, getBookmarkTimesShown, bookmarkT
 
         appEl.style.display = "block";
         await loadContextData(hydratedMembershipsPromise);
+        clearReadStatus();
       } catch (err) {
         console.error(err);
-        whoEl.textContent += ` — ${err.message}`;
+        // Architect review (part 125): a retry re-hydrates the memberships, as the first load does -- loadContextData() with
+        // no argument keeps an empty myMemberships, so Records and Monitor came back with no student to show.
+        showReadFailure(err, () => (appEl.style.display === "block"
+          ? getMyMembershipRoles(db, user.uid).then((roles) => loadContextData(hydrateMemberships(db, roles)))
+          : Promise.resolve(location.reload())));
       }
     });
 

@@ -22691,3 +22691,209 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 - **Next, round #1257 (part 112):** Curriculum prints a Resource's `url` and `body` unescaped, and a typed link (Resource, tagline) is not checked for a `javascript:` scheme.
 - Notices: PCA (frozen `quranrevival.html`, `mastery-wheel.js`, `asma-study.js`), Hadith Lead (`hadith-collections.html`).
 - Nothing stored, no Rules changed.
+
+## v12.98 — 28 Oct 2026 — SECURITY: Resource text escaped, typed links only open if web or mail (audit part 112)
+
+- **PCF MSA J29, audit part 112** (Builder run 2136, issue #1257, PR #1258). Report: `docs/reports/2026-10-28-audit-part112-link-safety.md`.
+- New `safeHref(url)` in `app/js/html-escape.js`: http, https, mailto and scheme-less relative links pass; anything else becomes "" (controls, whitespace and zero-width characters are stripped before the scheme is read). `curriculum.html` escapes a Resource's url and body on the unit card, the Resources list and the attach picker, and draws an unsafe link as text; `js/topic-renderer.js`, `taglines.html` and `quranrevival.html` (frozen Quran Study, the href lines and import only) build a link only when `safeHref` allows it.
+- **Architect's release commits:** merged `main` (v12.97) in (`html-escape.js` keeps `escapeHtml`, adds `safeHref`); **the merge left `curriculum.html` importing `escapeHtml` twice, a SyntaxError that stops the whole page**; fixed. **Part 111's check passed that broken page 4 of 4** (a page whose script never loads runs no payload); it now fails any page reporting a SyntaxError or ReferenceError, proven by restoring the double import.
+- New `tools/i18n-verify/audit-part112-link-safety-browser.mjs`: 13 pure `safeHref` cases + 16 browser runs, 0 failed; `--mutate=escape` (16 failed) and `--mutate=href` (31 failed) caught.
+- Test-only, merged before it (PR #1259): `tools/apps/qr-verify/student-browser.mjs` opens the Read bar's ⋯ card below 600px (J99 part 2 moved the three study buttons there): 479/4 → 501/0; `student-tools-browser.mjs` bookmarkgo reads the page text safely while Mapping My Journey loads: 1980/16 → 2012/0. Both failed identically on v12.96.
+- **Measured (Architect, 28 Oct):** part 112 16/0; part 111 104/0; rendered text, links and page size identical to v12.97 on 4 changed pages × 7 widths × en/bn (56/56); `behaviour.mjs` 971/0 alone; `bn-duplicate-keys` 6/0; `stub-parity` 4/0; `apps-build-check` 48/0; QR build applies its edits.
+- Left (the reader's own links only): `note-window.js`, `zab-bar.js` (QR keeps pinned copies).
+- Notices: PCA (frozen `quranrevival.html`).
+- Nothing stored, no Rules changed.
+
+## v12.99 — 28 Oct 2026 — SECURITY: names inside attributes escaped (audit part 113)
+
+- **PCF MSA J29, audit part 113** (Builder run 2140, issue #1260, PR #1261). Report: `docs/reports/2026-10-28-audit-part113-attribute-escape.md`.
+- Parts 110–112 planted `<img onerror>`, which cannot leave a quoted attribute. Part 113 plants `x" data-pwn="1" autofocus onfocus="…" y="`. One place broke out: `quranrevival.html`'s local `escapeHtml()` escaped only `& < >`, so an Approach section name escaped the Approach picker's `<optgroup label="…">`. It now escapes `"` and `'` too (one line; frozen Quran Study, safety fix). Every other page, plus People → Edit and Catalogue → Edit: nothing found.
+- New `tools/i18n-verify/audit-part113-attribute-escape-browser.mjs`: 108 runs, 0 failed; `--mutate` 4/4 caught; carries part 111's script-error POSITIVE CONTROL.
+- **Measured (Architect, 28 Oct):** the Architect's wider attribute probe over every page in `app/` (also notes, folders, instructions, resources) 0 open; because the changed `escapeHtml` is used across the Landing page, every visible text, title, aria-label and option on the Landing page, Read, Explore, Approach and Know Your Status was searched for a literal `&#39;`, `&quot;` or `&amp;`: none, and the apostrophe count is identical to v12.98 (en/bn, 390/1440); `behaviour.mjs` 971/0 alone; `bn-duplicate-keys` 6/0; `apps-build-check` 48/0; QR build applies.
+- Notices: PCA (frozen `quranrevival.html`).
+- Nothing stored, no Rules changed.
+
+## v12.100 — 28 Oct 2026 — the Read contents search takes an āyah (J107)
+
+- **PCF MSA J107** (the Owner, 9:57 am 28 Oct, a photo of the Read contents list: "6:161" typed, "Nothing matches." — "How does search work here? Fix it."). Built by the QR Lead, branch `claude/qr-lead-read-search` (c21abe60, 01f25ed4); released by the Architect with `main` (v12.99) merged in.
+- `quranrevival.html`: the box matched only a sūrah name or number. A typed reference (anything with ":" or ".", e.g. 6:161, 2:255-257, ৬:১৬১) is parsed by the "Go to" box's own `parseJumpText()` and checked by `resolveJumpTarget()` (the "Go to" box's validation, split out unchanged), offering a first row "Go to 6:161 · Al-An'aam" above that sūrah's row; Enter opens the first row; the row runs the Go-to jump, opens the Read view and scrolls to the āyah. A number past the end shows the message and still offers the sūrah. Placeholder: "Sūrah name or number, or an āyah like 2:255" (one new `bn.js` key, old key kept).
+- New `tools/i18n-verify/read-contents-ayah-search-browser.mjs` (QR Lead): 74/0; mutations noref/noenter/nogo caught (the Architect re-ran noref: 41 failed).
+- **Measured (Architect, 28 Oct):** 74/0 on the merged branch; `read-contents-browser` 248/0; screenshots looked at (Bangla 390 list with ৬:১৬১, English 390 Read view on 6:161); `behaviour.mjs` 971/0 alone; `bn-duplicate-keys` 6/0; `apps-build-check` 48/0; QR build applies.
+- Nothing stored, no Rules changed.
+
+## v12.101 — 28 Oct 2026 — the way-back law: "Open the app" and Mapping My Journey's ← leave a way back (audit part 114)
+
+- **PCF MSA J29, audit part 114** (Builder run 2145, issue #1263, PR #1264). Report: `docs/reports/2026-10-28-audit-part114-way-back-richer.md`.
+- `onboarding.html` (2 links) and `accept-invite.html`: "Open the app" → `index.html?navBack=1` (part 95 finding 2). `index.html` (the redirect stub) forwards `location.search` and `location.hash` to `quranrevival.html`, so the marker is kept. `journey-map.html` `#backLink` → `quranrevival.html?navBack=1` (part 95 finding 4).
+- `shared-pages-way-back-audit-browser.mjs`: richer seed in the check (notes filed to an āyah and a hadith, Hadith and Dua bookmarks in a folder, homework `unitKeys`); prints each page's in-page control count and flags 0. Most pages (Records, Monitor, Homework, Classes, …) draw buttons only and have no link to a study page, so they still find 0; recorded in the report.
+- **Architect's release commit:** a missing space between two attributes on the Journey map link (a parse error); `.gitignore` adds `tools/i18n-verify/out/`.
+- **Measured (Architect, 28 Oct):** the audit with the Bangla pass (`--max=30`): 24 OK, 0 NO BACK, 4 WRONG PLACE, all Bookmarks 390 bn (Open → ← Back lands at scrollY 0, was 105/319), **identical on v12.100**: next round part 115. `--mutate=noback` and `--mutate=lose-scroll` fail (Builder); `behaviour.mjs` 971/0 alone; `notes-way-back` 33/0 (Builder); `apps-build-check` 48/0; QR keeps its own `index.html`.
+- Nothing stored, no Rules changed.
+
+## v12.102 — 29 Oct 2026 — the way-back law: Bookmarks' ← Back keeps your place on a phone in Bangla (audit part 115)
+
+- **PCF MSA J29, audit part 115** (Builder run 2148, issue #1265, PR #1270; the Builder opened no PR, the Architect opened it). Report: `docs/reports/2026-10-29-audit-part115-way-back-scroll.md`.
+- Cause (measured): Bookmarks draws its list after an async read; in Bangla at 390 the browser restored the scroll while the page was one screen tall (844px vs a saved 105), clamped to 0 and never retried.
+- `app/js/bookmark-nav.js`: keeps `{scrollY, open <details>}` per address in `sessionStorage` (`mmsa.wayBackPlace`, newest 20, 30 minutes) on `pagehide`; on a `back_forward` arrival polls up to 6 s, reopens the same pop-ups and scrolls back once the page is tall enough; any wheel/touch/key/pointer input stops it. Audit `--mutate=no-place-restore` added.
+- **Architect's review commit:** pop-ups remembered by id or summary words instead of position (on a late page position N can briefly be a different, static `<details>`), reopened every tick.
+- **Measured (Architect, 29 Oct):** way-back audit with the Bangla pass `--max=30`: 28 OK, 0 NO BACK, 0 WRONG PLACE (v12.101: 24/0/4); `--mutate=no-place-restore` 3–4 WRONG PLACE, `noback` 4 NO BACK, `lose-scroll` fails; `behaviour.mjs` 971/0 alone; `notes-way-back` 33/0, `bookmark-open` 77/0, `bookmark-last-place` 68/0, `bookmark-remove` 60/0, `bookmark-sheet` 176/0, `bookmarks-page-new-assign` 44/0, `bookmark-folder-edit` 68/0, `audit-part25-continue-back` 112/0, `asma-ways-back` 66/0, `hadeethenc-note-back` 12/0, `word-card-ayah-card-ways-back` 80/0; `bookmark-marks-back` 336/6 and `qr-word-card-back-row` 41/1 **identical on v12.101** (frozen Qur'an page: the 320 Read bar, a J29 item since 16 Oct; the Word Card's ← Back adds a line at en 360, new, to the PCA); `apps-build-check` 48/0; `bn-duplicate-keys` 6/0; screenshots 390 bn/en before and after the Back identical.
+- Nothing stored on a server, no Rules changed.
+
+## v12.103 — 29 Oct 2026 — the Tab key brings table buttons fully into view on a small phone (audit part 116)
+
+- **PCF MSA J29, audit part 116** (Builder run 2153, issue #1267, PR #1268). Report: `docs/reports/2026-10-29-audit-part116-table-focus-in-view.md`.
+- `app/js/table-focus.js` finds the scrolling box by computed `overflow-x` (it recognised only `table`/`.table-wrap`); `taglines.html` (the live gap: a select 44% in view at 320, Yes 16% at 390), `monitor.html`, `records.html`, `about.html` load it. RTL works (relative `scrollLeft`).
+- New `tools/i18n-verify/table-focus-in-view-browser.mjs` with `--mutate=nofix`.
+- **Measured (Architect, 29 Oct, merged with v12.102):** table-focus-in-view 40/0, `--mutate=nofix` 11 failed; `shared-tables-phone-fit` 324/0; `shared-pages-keyboard-audit` 230/0; `behaviour.mjs` alone 971/0 on the re-run (the first run's one failure, 38e Qur'an audio restart within 5 s, is intermittent: `quranrevival.html` does not load `table-focus.js`); `apps-build-check` 48/0; `bn-duplicate-keys` 6/0; no doubled imports in the merged pages; screenshots at 320 Bangla (Taglines, Catalogue: the focused ▼ fully inside its box).
+- Nothing stored, no Rules changed.
+
+## v12.104 — 29 Oct 2026 — the way back shares a row: Read bar at 320/360, Word card header at 360 (QR Lead)
+
+- **PCF MSA J29, the QR Lead's round** (branch `claude/qr-lead-back-rows`, PR #1276), closing two findings of the v12.102 review (both the same on v12.101), one of them the J29 item open since 16 Oct.
+- `app/quranrevival.html`, CSS only, scoped to "a way back is docked": Read bar at ≤340px, ⏮ ⏭ ▶ ■ 36px wide (40 tall), 4px gaps (■ rejoins line 1; ← ✕ share line 2 with 🔖 📖 ⤢ ⋯ ⋮); below 380px ☰ shows its icon alone. Word card: on a card up to 22rem the header takes the tight gaps and "This āyah" padding (325.6px of 339); ← moves to row 2 only below 20.5rem (was 20rem).
+- Suites: `qr-word-card-back-row-browser.mjs` reads the CARD's width, adds bn 360 and en 348, `--mutate=tight-row`; `bookmark-marks-back-browser.mjs` adds 360 to its widths, `--mutate=narrow-transport`, `--mutate=list-icon`.
+- **Measured (Architect, 29 Oct, merged with v12.103):** `bookmark-marks-back` 426/0 (v12.103: 336/6); `narrow-transport` 420/6; `qr-word-card-back-row` 54/0 (v12.103: 41/1); `tight-row` 53/1; screenshots Read bar en 320 and bn 360 (two lines), Word card en 360 (← beside ⓘ, › × on the top row). QR Lead's guards (as sent): `behaviour` 971/0, word-card suites 196/290/136/180/152/0, read-bar suites 67/72/30/40/56/44/74/0, 8-width sweep 688/0 and 96/0. The Architect's `behaviour.mjs` alone: 970/1, the one failure **38e**, an older intermittent defect: a focused probe of that block (8 runs each) fails 5/8 on v12.101, 1/8 and 3/8 on v12.103, 5/8 here — the second Play after a finished run is swallowed (āyah stays 7, button stays Play for 6 s). Sent to the QR Lead (frozen page).
+- QR carries it at its next rebuild. Nothing stored, no Rules changed.
+
+## v12.105 — 29 Oct 2026 — Bookmarks opens faster with hundreds of bookmarks (audit part 119)
+
+- **PCF MSA J29, audit part 119** (Builder run 2163, issue #1274, PR #1275). Report (written by the Architect; the round left none): `docs/reports/2026-10-29-audit-part119-heavy-account-speed.md`.
+- New `tools/i18n-verify/heavy-account-speed-browser.mjs`; `firebase-stub.mjs` records how many documents each read returned (additive).
+- `app/bookmarks.html`: a row's and a folder header's For / Move lists fill when the reader reaches for them (6,767 → 3,333 nodes; longest task 327 → 117 ms in Bangla). `--mutate=eager-selects`.
+- **Architect's review commit:** behaviour 44c and 50h, and audit-part40's bookmarks flow, focus the list before reading its options (updated in place, with the reason).
+- **Measured (Architect, 29 Oct, merged with v12.104):** heavy 78/0 (eager-selects 24/6); audit-part32 896/0, part36 1184/0, part38 503/0, part40 3562/0; journey-map-screen 47/0; bookmark-folder-edit 68/0, bookmarks-page-new-assign 44/0, bookmark-remove 60/0; way-back and keyboard on Bookmarks 16/0 and 22/0; `behaviour.mjs` alone 971/0. Finding: Mapping My Journey reads 1,184 documents at open (part 121).
+- Nothing stored, no Rules changed.
+
+## v12.106 — 29 Oct 2026 — during a recitation Play stays Pause between āyāt, and a tap there pauses (QR Lead)
+
+- **PCF MSA J29, the QR Lead's round** (branch `claude/qr-lead-play-again`, PR #1281), from the v12.104 review's 38e finding.
+- Cause (measured by the QR Lead with a 10 ms trace): every failing 38e run clicked 2–6 ms after āyah 7 began, in the paused gap between āyāt where the label flashed "▶ Play"; that click paused the run (right for a click mid-run). The reported "Play after the end does nothing" did not reproduce: after the real end Play restarted every time.
+- `app/js/audio-player.js`: `isRunContinuing()`, `userPaused` (set by `pause()` in the gap, cleared by `resume()`, `stop()`, `playDrill()`), `startPlayback` holds a held pause, `isPaused()` true for a held pause before the next file loads. `app/quranrevival.html`: the label and the Play tap count the gap as playing. New `tools/i18n-verify/qr-play-run-gap-browser.mjs` (mutations label-flash, tap-resumes, no-hold, no-held-pause).
+- **Measured (Architect, 29 Oct, merged with v12.105):** qr-play-run-gap 21/0 (x3); `--mutate=label-flash` 18/3; the Architect's 38e probe (8 runs) 8 restarted, 0 swallowed; `behaviour.mjs` alone 971/0. QR Lead's guards (as sent): 11 audio and reading suites 0 failed, `apps-build-check` 48/0.
+- QR carries it at its next rebuild. Nothing stored, no Rules changed.
+
+## v12.107 — 29 Oct 2026 — Monitor opens faster for a teacher with a real class (audit part 120)
+
+- **PCF MSA J29, audit part 120** (Builder run 2169, issue #1277, PR #1278). Report: `docs/reports/2026-10-29-audit-part120-heavy-teacher-speed.md`.
+- New `tools/i18n-verify/heavy-teacher-speed-browser.mjs` (mutations eager-quran-breakdown, one-shot-raw-rows).
+- `app/monitor.html`: the Quran Approach breakdown is read on a tap (it reads every records chunk of a student), then follows the student; raw entries drawn in slices (Print draws the rest first; CSV unchanged). `bn.js`: one string. `behaviour.mjs` 15 and `audit-part13-recording-browser.mjs` tap the button first.
+- **Architect's review commits:** slices of 40 (100 still held the page 51–90 ms in Bangla); the button is drawn again after "Pick a student first".
+- **Measured (Architect, 29 Oct, merged with v12.106):** heavy-teacher 240/0 (eager-quran-breakdown 11 failed, one-shot-raw-rows 6 failed); audit-part13 494/0; `behaviour.mjs` alone 971/0; Monitor at 390 Bangla looked at.
+- Left for the Owner (each needs a Rules or stored-field decision; none slows a page today): People reads 246 `memberships` documents; Classes lists every enrolment (a tenant over 100 hits the cap); the breakdown, when asked, still reads every records chunk.
+- Nothing stored, no Rules changed.
+
+## v12.108 — 29 Oct 2026 — a Mushaf page stays at its end; a page turns only on a deliberate pull (QR Lead)
+
+- **The Owner's ask** (QR Lead chat, 29 Oct, Al-Hijr on a phone): "Whenever the page scrolling touches the end of the page, either way it moves/ flips to the next page without intending it to. FIX. It needs to stay unless deliberately scrolls for the next page."
+- `app/quranrevival.html` `wireScrollSwipeAyahNav`, page strip (`#pageViewContainer`) only: a touch turn needs a swipe from the end of at least max(220px, 35% of the screen's height); a wheel turn needs a burst adding up to 600px that starts at the end; one burst turns one page at most. The single-āyah view keeps the 9 Oct rule.
+- New `tools/i18n-verify/qr-mushaf-edge-stay-browser.mjs` (390/600, touch and wheel, en and bn; mutations old-pull, no-strip-wheel, wheel-many). `behaviour.mjs` 40d updated in place: an ordinary slide at the foot stays, a long pull turns.
+- **Measured (Architect, 29 Oct, merged with v12.107):** qr-mushaf-edge-stay 18/0; old-pull 8 failed, no-strip-wheel 3 failed, wheel-many 1 failed; read-scroll-end-stays 10/0, mushaf-page-ref-steady 48/0, mushaf-render-responsive 24/0, read-quick-buttons 254/0, mushaf-no-sideways-overflow 648/0; `behaviour.mjs` 972/0.
+- **Pre-existing, not this round's:** `qr-mushaf-page-nav-browser.mjs` part 1 fails intermittently (‹ from 267 lands on 262) on `main` as well, 2 of 4 runs; `mushaf-chosen-unit-browser.mjs` crashes at line 88 (`#readBarRecordBtn` now sits inside the Study ▾ menu). Both given to the QR Lead.
+- QR carries it at its next rebuild. Nothing stored, no Rules changed.
+
+## v12.109 — 29 Oct 2026 — Mapping My Journey has its folder tree sooner on a slow phone (audit part 122)
+
+- **PCF MSA J29, audit part 122** (Builder run 2179, issue #1283, PR #1284). Report: `docs/reports/2026-10-29-audit-part122-journey-map-usable-sooner.md`.
+- Measured cause: no long tasks; ~3.4 s of 4.7 s (phone, Bangla) was downloading modules discovered five import levels deep, with `i18n/bn.js` (460 KB) last.
+- `app/journey-map.html`: a head script adds `modulepreload` hints for 23 deep modules and, in Bangla, `i18n/bn.js`, `surah-names-bn.js`, `asma-names-bn.js`. Nothing read or shown changes.
+- `heavy-account-speed-browser.mjs`: hint checks, "tree by N ms" on the phone line, `--mutate=no-preload`, `--dump`.
+- **Architect's review commits:** a static check that every preloaded file exists and is reached by the page's own import graph (positive control; `--mutate=stale-hint`, `--mutate=unused-hint`); `journey-map-back.mjs` "opened directly" updated in place for `?navBack=1` (red on `main` since audit part 114).
+- **Measured (Architect, 29 Oct, merged with v12.108):** heavy-account (Journey map) 34/0; no-preload 5 failed (phone bn tree 3,511 → 4,620 ms); stale-hint and unused-hint 1 failed each; journey-map-screen 47/0, notes-way-back 33/0, journey-map-counts 9/0, journey-map-path 32/0, journey-map-back 38/0, journey-tray 227/0, note-opens-in-journey 60/0; `apps-build-check` 48/0, QR build applies; `behaviour.mjs` alone 972/0.
+- Found: `shared-pages-way-back-audit-browser.mjs` finds no in-page controls on Journey map (0 checked); audit part 123 (#1286).
+- Nothing stored, no Rules changed.
+
+## v12.110 — 29 Oct 2026 — a Mushaf ‹ › turn into another surah shows no other page on the way (QR Lead)
+
+- **The Architect's finding at v12.108**: `qr-mushaf-page-nav-browser.mjs` part 1 failed intermittently on `main` (‹ from 267 read 262). The QR Lead measured it as a REAL visible flash: ‹ on An-Nahl's first page opens Al-Hijr, the strip is redrawn from Al-Hijr's first page (262) and the Read bar named it for 0.4–1.3 s before the turn reached 266.
+- `app/quranrevival.html`: `holdMushafStripFor(target)`, used only on `stepMushafPage`'s other-surah path: the strip's pages stay hidden (layout kept) and `updateMushafPageRef()` is held until the target page is drawn and sits at the strip's reading edge; 8 s fail-safe; `finally` always releases; a ‹ › press during the hold is ignored.
+- `qr-mushaf-page-nav-browser.mjs`: every press records every page the Read bar names on the way and must name only the target (`--mutate=no-hold`). `mushaf-chosen-unit-browser.mjs`: both click sites reach the Approach bar through ⋯ below 900px, updated in place.
+- **Architect's review commit:** leading repeats of the start page are dropped before that check (the bar re-stating the page the reader is still on; seen once, 1520, a same-surah › from 268).
+- **Measured (Architect, 29 Oct, merged with v12.109):** page-nav 61/0 (×4); no-hold 58/3 (exactly ‹ from 267 at 1520, 1280, 390); qr-mushaf-edge-stay 18/0, mushaf-chosen-unit 25/0, mushaf-page-ref-steady 48/0, read-scroll-end-stays 10/0, mushaf-render-responsive 24/0; `behaviour.mjs` alone 972/0; `apps-build-check` 48/0.
+- QR carries it at its next rebuild. Nothing stored, no Rules changed.
+
+## v12.111 — 29 Oct 2026 — the regression sweep: Catalogue's Add subject fits a phone again
+
+- **PCF MSA J29, the Architect's regression sweep**: audit parts 31, 32, 33, 34, 36, 38, 40, 41, 43 and 54–65 re-run on today's app (v12.109–v12.110). 19 of 21 suites green.
+- **Found and fixed:** on Catalogue → Subjects, Add subject ran 128px off a 320px phone (58px at 390, en; 320 bn too): the "Parent" `<select>` takes the width of its longest option and a `fieldset` does not shrink below its content. `app/catalogue.html`: `fieldset { min-width: 0 }` and `fieldset select { max-width: 100% }`.
+- **Stale check updated in place:** `audit-part64-people-backup-browser.mjs` "the way back — an Open the app link to index.html" now accepts the way-back marker `?navBack=1` (added by audit part 114); 32 failures were the check, not the page.
+- **Measured (Architect, 29 Oct):** audit part 65 472/0 (was 469/3), part 64 620/0 (was 588/32); screenshots of Add subject at 320 and 390, en and bn, looked at; `behaviour.mjs` alone 972/0; `apps-build-check` 48/0.
+- Nothing stored, no Rules changed.
+
+## v12.112 — 29 Oct 2026 — the way back from Mapping My Journey is checked, and Import Notes ← Back reopens the Note (audit part 123)
+
+- **PCF MSA J29, audit part 123** (Builder run 2184, issue #1286, PR #1287). Report: `docs/reports/2026-10-29-audit-part123-journey-map-way-back.md`.
+- Found in the Architect's review of part 122: the way-back audit found NO in-page controls on `journey-map.html` (0 checked), because its one outward control (⋯ → Import Notes…) is inside a closed menu.
+- `tools/i18n-verify/shared-pages-way-back-audit-browser.mjs`: opens a folder, a Note and the ⋯ menu with real clicks; records folder and open Note; positive control (at least 1 control per viewport and language); `--mutate=no-reach`, `--mutate=lose-note`; the Bangla back label is recognised.
+- `app/journey-map.html`: the open Note id is kept per address in sessionStorage (`mmsa.wayBackJmNote`) on pagehide and reopened only on a back/forward arrival within 30 minutes; not in the tray (embed).
+- **Measured (Architect, 29 Oct, merged with v12.111):** Journey map audit 8/0 (no-reach 0/4, lose-note 6/2 at 1440 en and bn); whole audit 32 OK of 32, 36/0; journey-map-screen 47/0, notes-way-back 33/0, note-opens-in-journey 60/0, journey-map-back 38/0, journey-map-counts 9/0; `behaviour.mjs` alone 972/0; `apps-build-check` 48/0.
+- Nothing stored on a server, no Rules changed.
+
+## v12.113 — 29 Oct 2026 — no blue block over the Mastery Wheel when a slice is tapped (QR Lead)
+
+- **The Owner's ask** (QR Lead chat, 29 Oct, a phone screenshot): "Any click on slice shows/ highlight this block, it should only highlighted the clicked slice."
+- Cause: the phone browser's tap highlight (`-webkit-tap-highlight-color`) paints the tapped element's bounding rectangle, and a slice is an SVG wedge whose rectangle spans its neighbours.
+- `app/quranrevival.html` (QR Lead) and `app/css/shell.css` (Architect's review, for Asma and topic wheels): `.wheel-seg, svg:has(.wheel-seg), svg:has(.wheel-seg) * { -webkit-tap-highlight-color: transparent; }`. Selection is unchanged: a tap still chooses that slice's Approach.
+- New `tools/i18n-verify/qr-wheel-tap-highlight-browser.mjs` (en 360, bn 390, en 768, en 1280; plus a shell.css check): `--mutate=no-rule` (both rules) and `--mutate=no-shell-rule`.
+- **Measured (Architect, 29 Oct, merged with v12.112):** 22/0; no-rule 14/8; no-shell-rule 21/1; qr-wheel-tap-size 14/0, wheel-slice-opens-track 96/0, wheel-centre 645/0, kys-one-approach-wheel 152/0, vocab-wheel 114/0; `behaviour.mjs` alone 972/0; `apps-build-check` 48/0.
+- QR carries it at its next rebuild. Nothing stored, no Rules changed.
+
+## v12.114 — 29 Oct 2026 — a save made offline says "Saved on this device" and no longer leaves the page stuck (audit part 124)
+
+- **The audit** (PCF MSA J29 part 124, issue #1289): with the internet off, a save on the shared tools (Bookmarks, Mapping My Journey, Notes) either hung for ever or said nothing. The real Firestore SDK with offline persistence (D5) applies a write to the device at once but resolves its promise only when the server answers; the test stub resolved it at once, so round 1 (PR #1290) proved nothing.
+- `app/js/errors.js`: `settleWrite()` behind `safeWrite` (and `journey-map.html`'s `runFolderWrite`). Unanswered after 1.5 s with the line down → a calm, dismissible notice "Saved on this device — it will be sent when you are online." (en + bn, 44px close, goes when the line returns). It returns early (`{ ok, savedOnDevice: true }`) only for a caller passing `deviceCopyOk: true` (Journey New folder); every other caller still gets the real result. Round 2 (PR #1294) returned `undefined` to every caller: offline, Bookmarks "New folder" threw `reading 'removed'` and never showed the folder (Architect's probe); sent back.
+- `app/notes.html`: Note saves are transactions (`noDeviceCopy`), which reject offline; they now say "Could not reach the server. Nothing was saved — your text is still here, so press Save again when you are online." instead of promising an automatic save.
+- `tools/i18n-verify/firebase-stub.mjs`: opt-in `window.__stubHoldWritesWhileOffline` (writes held until `online`; `runTransaction` rejects `unavailable`). Default off.
+- New `tools/i18n-verify/offline-save-shared-tools-browser.mjs` 119/0; `--mutate=no-notice` 20, `no-unhang` 4, `flag-on-reader` 14, `no-optin` 20 fail.
+- **Measured (Architect, 29 Oct):** the above re-run; `behaviour.mjs` alone 972/0; shared-pages-failed-write-audit 121/121 OK; journey-map-back 38/0, note-opens-in-journey 60/0, bookmark-folder-edit 68/0, bookmark-sheet 176/0, bookmark-remove 60/0, audit-part23 185/0, stub-parity 4/0, apps-build-check 48/0. Stale on `main` as well, carried to the next round: bookmark-assign-unit 80/13, bookmark-family-unit 34/12 (they expect five unit choices; Range makes six).
+- `note-window.js` unchanged (QR's copy unaffected). QR carries it at its next rebuild. Nothing stored, no Rules changed.
+
+## v12.115 — 29 Oct 2026 — a page that cannot load says so in plain words, with Try again (audit part 125)
+
+- **The audit** (PCF MSA J29 part 125, issue #1297): a READ that is slow or fails on the shared tools. Before: Records and Monitor printed a raw English line beside the sign-in email (`— failed at "…": unavailable …`), Bookmarks, Notes and Mapping My Journey printed the raw error text, and Monitor could sit on "Loading…" for ever; no way to try again but reloading.
+- New `app/js/read-failure.js`, wired into `records.html`, `bookmarks.html`, `notes.html`, `journey-map.html` (not in unit mode, which has its own message) and `monitor.html`: "Loading…" while the first read is on its way; on failure "This page could not load its data. Please check your connection and try again." (en + bn), a 44px **Try again** that re-runs the read, and the code only in a small "Ref:" line.
+- **Architect's review:** Try again called `loadContextData()` with no argument, which keeps `myMemberships` empty: Records and Monitor came back with "Pick a student first." (measured 653 vs 1050 and 746 vs 1163 characters of page content). The retry now re-reads the roles and hydrates them, as the first load does. New check: the retried page's content equals a normal load's; `--mutate=retry-no-hydrate` (8 fail).
+- `tools/i18n-verify/firebase-stub.mjs`: opt-in `window.__stubFailReads` (collections, or `"*"`), rejecting `getDoc`/`getDocs` with `unavailable`. Default off.
+- New `tools/i18n-verify/shared-tools-read-failure-browser.mjs` 225/0; `--mutate=no-retry` 45, `no-message` 25, `retry-no-hydrate` 8 fail.
+- **Measured (Architect, 29 Oct):** `behaviour.mjs` alone 972/0; shared-pages-failed-write-audit 121/121 OK; offline-save 119/0; audit-part57 468/0; audit-part24 184/0; journey-map-screen 47/0; journey-map-back 38/0; notes-way-back 33/0; note-opens-in-journey 60/0; bookmark-sheet 176/0, bookmarks-page-new-assign 44/0, bookmark-folder-edit 68/0, bookmark-remove 60/0; stub-parity 4/0; apps-build-check 48/0. Bangla 390 screenshots of the five pages looked at.
+- `note-window.js` unchanged (QR's copy unaffected). QR carries it at its next rebuild. Nothing stored, no Rules changed.
+
+## v12.116 — 29 Oct 2026 — a long folder name in a Bookmarks folder picker can be read in full (audit part 126)
+
+- **The audit** (PCF MSA J29 part 126, issue #1300): the shared tools had never been measured with real-length text. Seeded in the suite only: a long tenant name, three people with long English/Bangla names, 12 folders and 40 bookmarks with 60–70-character names, 30 Notes with ~75-character titles in folders four deep. Bookmarks, Records, Notes, Mapping My Journey, Monitor × 360/390/768/1280 × en/bn: sideways overflow, cut text with nothing else showing it, cut `<select>` choice (probe with the select's computed font), overlaps, controls under 40px.
+- Found: only Bookmarks at 360 and 390 — 13 folder selects (move-to-folder, parent-folder) cut their chosen name (needs 448–500px, has 220–294px). Everything else clean; Notes and Mapping My Journey wrap long titles.
+- `app/bookmarks.html`: `syncMoveSelectTitles()` sets each folder select's `title` to its chosen option's full text, on render and on change.
+- **For the Owner (j29p126q), not built:** on a phone a title is a long-press hint only; showing the full chosen name inline is a layout choice.
+- New `tools/i18n-verify/shared-tools-long-names-browser.mjs` 202/0; `--mutate=notitle` 4, `overflow` 40, `cut` 40, `select` 40 fail.
+- **Measured (Architect, 29 Oct):** the suite and mutations re-run; merged with v12.115 (no doubled imports), read-failure 225/0 and long-names 202/0 on the merge; `behaviour.mjs` alone 972/0; bookmark-sheet 176/0, bookmarks-page-new-assign 44/0, bookmark-folder-edit 68/0, bookmark-remove 60/0, audit-part23 185/0; offline-save 119/0; apps-build-check 48/0. 360px Bangla screenshots looked at.
+- `note-window.js` unchanged. Nothing stored, no Rules changed.
+
+## v12.117 — 29 Oct 2026 — the Āyah card never opens on a broken āyah; the āyah poster gets ‹ › and Back to its card (QR Lead)
+
+- **The Owner's asks** (29 Oct, QR Lead chat): a phone screenshot of page 604 showing "Ayah NaN", "Quran 114:NaN — Surah An-Naas" and a pink "That save did not go through (unknown) · Ref: read Arabic word progress"; "This Study/ Dawah poster, should have a NAV buttons for next/previous Ayah"; the poster's ← Back "should take to the Ayah card where this poster came from, instead it takes to the App Home page".
+- `app/quranrevival.html` `openAyahActionSheet`: a key that is not a sūrah is refused; an āyah outside the sūrah falls back to the reader's āyah in that sūrah (else āyah 1), and the bad key is kept in `window.__badAyahCardKeys` with where it came from. The route that produced it is not yet found.
+- `app/ayah-poster.html`: ‹ › at the bar's end (44px tiles, labelled "Previous āyah"/"Next āyah"), one āyah per step, across sūrah edges; the reference ("114 : 1") never breaks over two lines.
+- `rememberQuranPlace()` writes the CARD's āyah and `qpCard`; `openPlaceFromQueryString()` reopens that Āyah card once on the way back (the way-back law).
+- Tablet: from 768px the full-screen Surah list ran under the Zab bar (An-Naas 31 of 48px under it); `@media (min-width: 768px) { body.zab-bar-on #readContentsMount { bottom: 44px } }`.
+- New `qr-ayah-card-no-nan-browser.mjs` 15/0 (`--mutate=no-guard` 12 fail) and `qr-ayah-poster-nav-back-browser.mjs` 29/0 (`no-card` 3, `no-nav` 5, `under-zab` 4 fail); `ayah-card-window-browser.mjs` updated in place (264/0).
+- **Measured (Architect, 29 Oct, merged with v12.116):** `behaviour.mjs` alone 972/0; all of the above re-run; zab-bar 370/0; qr-wheel-tap-highlight 22/0; apps-build-check 48/0; QR built from this tree, `qr-verify` 27 of 28 (upgrade-browser needs a QR clone). Poster bar looked at, 360 bn and 390 en. Pre-existing on `main`: quran-ayah-action-sheet 143/2 (1100×800 heading in view), passed to the QR Lead.
+- Nothing stored, no Rules changed. QR carries it at its next rebuild.
+
+## v12.118 — 30 Oct 2026 — a failed read says "could not be loaded", not "That save did not go through" (audit part 128)
+
+- **The audit** (PCF MSA J29 part 128, issue #1308; the QR Lead's suggestion): on 29 Oct the Owner saw a pink "That save did not go through (unknown) · Ref: read Arabic word progress" on page 604, where nothing was being saved. `reportWriteFailure()` is also called for failed reads, and `plainMessageFor()` always used the save sentence.
+- `app/js/errors.js`: `isReadFailure(context)` — `context.read === true`, or `what`/`action` beginning with the whole word read/load/count, or Mapping My Journey's named read actions (`ownerFolderTree`, `notesForStudyUnit`, `notesPaneRetry`). A read now says "That information could not be loaded ({code}). Please check your connection and try again." (en + bn). Writes unchanged.
+- `app/quranrevival.html` (the QR Lead's) was not edited; its read sites are all covered by the rule and listed in the report.
+- New `tools/i18n-verify/read-failure-wording-browser.mjs` 45/0 (static classification of every read site, positive control a write site; browser at 390 en and bn); `--mutate=no-read-words` 12 fail, write checks still pass.
+- **Measured (Architect, 30 Oct, merged with v12.117):** `behaviour.mjs` alone 972/0; shared-pages-failed-write-audit 121/121 OK; shared-tools-read-failure 225/0; offline-save 119/0; stub-parity 4/0; apps-build-check 48/0; every read/load/count `what` in `app/` checked by hand; the Bangla 390 banner looked at.
+- Also merged since v12.117 (tests only, no version): audit part 127, `tools/i18n-verify/floating-overlays-reach-browser.mjs` (PR #1307) — no control on Bookmarks, Records, Notes, Mapping My Journey, Monitor or People is unreachable under the floating ← ✕ pill or 🧰 at 360/390/768; the Quran landing's "Approach" tab covered at the bottom with the pill went to the QR Lead. The Architect replaced its positive control ("under the pill", which flickered because a floating pill leaves room to scroll) with one unreachable by construction; 360/0 twice, no-page-end-clearance 28 fail.
+- Nothing stored, no Rules changed.
+
+## v12.119 — 30 Oct 2026 — Monitor's CSV keeps Bangla readable in a spreadsheet; its printed report fits A4 (audit part 129)
+
+- **The audit** (PCF MSA J29 part 129, issue #1310): Monitor's "📥 Download CSV" (week, month) and Print, with real-length names (a ~35-character Bangla name, `Ahmad "Abu Zayd", Jr.`), en and bn.
+- Found: the CSV had no UTF-8 byte-order mark, so Excel opens Bangla names as garbage. Quoting of commas and quotes (RFC 4180) and translated headings were already right. The print window set no A4 size and did not wrap long names.
+- `app/js/monitor.js`: `downloadCsv` writes a leading BOM (U+FEFF); `printReportHtml` adds `@page { size: A4 }`, cell wrapping (`overflow-wrap: anywhere`) and smaller print type.
+- **For the Owner (j29p129q), not built:** Bangla or English digits in a file meant for a spreadsheet; it keeps the stored values.
+- New `tools/i18n-verify/monitor-export-print-browser.mjs` 32/0; `--mutate=bom` 4, `printcss` 2 fail (the old CSS did not overflow with this seed, so `printcss` proves the check can fail).
+- **Measured (Architect, 30 Oct, merged with v12.118):** `behaviour.mjs` alone 972/0; audit-part57-records-monitor 468/0; shared-tools-read-failure 225/0; read-failure-wording 45/0; apps-build-check 48/0. The Bangla A4 print looked at: fits, names intact. It shows the subject `asma_ul_husna` as a raw id — pre-existing, recorded for the next round (fixture or a real raw-id leak).
+- Nothing stored, no Rules changed.

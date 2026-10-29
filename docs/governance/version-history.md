@@ -999,3 +999,25 @@ total). Allocated by the MMSA Architect.
 12.95: Records and Monitor name a topic instead of printing its id (audit part 109). Allocated by the MMSA Architect.
 12.96: typed and tenant-authored text escaped on Records, Monitor and eight more shared pages (audit part 110, security). Allocated by the MMSA Architect.
 12.97: SECURITY: names escaped on every page (audit part 111). Allocated by the MMSA Architect.
+12.98: SECURITY: Resource text escaped, typed links only open if web or mail (audit part 112). Allocated by the MMSA Architect.
+12.99: SECURITY: names inside attributes escaped (audit part 113). Allocated by the MMSA Architect.
+12.100: the Read contents search takes an ayah (J107). Allocated by the MMSA Architect.
+12.101: way-back: Open the app and Journey map back leave a way back (audit part 114). Allocated by the MMSA Architect.
+12.102: way-back: Bookmarks' Back keeps your place on a phone in Bangla (audit part 115). Allocated by the MMSA Architect.
+12.103: table buttons fully in view with the Tab key on a small phone (audit part 116). Allocated by the MMSA Architect.
+12.104: the way back shares a row: Read bar at 320 and 360, Word card header at 360 (QR Lead). Allocated by the MMSA Architect.
+12.105: Bookmarks opens faster with hundreds of bookmarks (audit part 119). Allocated by the MMSA Architect.
+12.106: during a recitation the Play button stays Pause between ayat, and a tap there pauses (QR Lead). Allocated by the MMSA Architect.
+12.107: Monitor opens faster for a teacher with a real class (audit part 120). Allocated by the MMSA Architect.
+12.108: the QR Lead's Mushaf page that stays at its end. Allocated by the MMSA Architect.
+12.109: audit part 122 (Mapping My Journey starts its parts at once). Allocated by the MMSA Architect.
+12.110: the QR Lead's Mushaf turn into another surah with no other page on the way. Allocated by the MMSA Architect.
+12.111: the regression sweep fixes (Catalogue Add subject on a phone). Allocated by the MMSA Architect.
+12.112: audit part 123 (the way back from Mapping My Journey). Allocated by the MMSA Architect.
+12.113: the QR Lead's wheel tap without a blue block. Allocated by the MMSA Architect.
+12.114: offline saves say Saved on this device (audit part 124). Allocated by the MMSA Architect.
+12.115: a page that cannot load says so, with Try again (audit part 125). Allocated by the MMSA Architect.
+12.116: long folder names readable in Bookmarks pickers (audit part 126). Allocated by the MMSA Architect.
+12.117: Ayah card NaN guard, poster prev/next and Back to its card (QR Lead). Allocated by the MMSA Architect.
+12.118: a failed read says could not be loaded (audit part 128). Allocated by the MMSA Architect.
+12.119: Monitor CSV BOM and A4 print (audit part 129). Allocated by the MMSA Architect.

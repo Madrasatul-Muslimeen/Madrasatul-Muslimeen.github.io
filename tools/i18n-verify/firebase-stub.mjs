@@ -34,7 +34,18 @@ async function __trip(kind, col, id, produce) {
     }
   } catch (e) {}
   rec.t1 = performance.now();
-  return produce();
+  // Audit part 125: OPT-IN (window.__stubFailReads = ["bookmarks", ...]). A read (getDoc/getDocs) of a named collection
+  // rejects the way the real SDK does with a weak line: { code: "unavailable" }. Default off; "*" names every collection.
+  try {
+    var fr = window.__stubFailReads;
+    if ((kind === "getDoc" || kind === "getDocs") && Array.isArray(fr) && (fr.indexOf("*") >= 0 || fr.indexOf(col) >= 0)) {
+      throw Object.assign(new Error("Failed to get document because the client is offline."), { code: "unavailable" });
+    }
+  } catch (e) { if (e && e.code === "unavailable") throw e; }
+  var out = produce();
+  // Audit part 119: how many documents this read returned (heavy-account-speed-browser.mjs counts them). Additive.
+  try { rec.docs = out && typeof out.size === "number" ? out.size : (out && typeof out.exists === "function" && out.exists() ? 1 : 0); } catch (e) {}
+  return out;
 }
 
 try { window.__stubRelease = function () { var held = window.__stubHeld || []; window.__stubHeld = []; window.__stubHold = []; held.forEach(function (r) { r(); }); }; } catch (e) {}
@@ -397,7 +408,17 @@ function __recordWriteData(kind, ref, data, opts) {
   } catch (e) {}
 }
 
-export async function setDoc(ref, data, opts) {
+// Audit part 124: OPT-IN (window.__stubHoldWritesWhileOffline = true). The real SDK with offline persistence (D5)
+// applies a write to the device's own copy at once but resolves the PROMISE only when the server acknowledges, so
+// offline it stays pending (it does not reject). Under this switch, while navigator.onLine is false, a write's
+// local effects still happen and are readable, but its promise resolves only after the page's online event.
+function __held(p) {
+  if (typeof window === "undefined" || !window.__stubHoldWritesWhileOffline || navigator.onLine !== false) return p;
+  return p.then(function (v) { return new Promise(function (res) { window.addEventListener("online", function () { res(v); }, { once: true }); }); });
+}
+export function setDoc(ref, data, opts) { return __held(__setDoc0(ref, data, opts)); }
+export async function updateDoc(ref, data) { return __held(__updateDoc0(ref, data)); } // signature kept: bookmark-folder-edit patches it by text
+async function __setDoc0(ref, data, opts) {
   return __trip("setDoc", ref && ref.__col, ref && ref.__id, function () {
     if (typeof window !== "undefined" && window.__stubFailWrites) throw Object.assign(new Error("denied by the test"), { code: "permission-denied" });
     __recordWriteData("set", ref, data, opts);
@@ -429,7 +450,7 @@ export async function setDoc(ref, data, opts) {
 // Kept in sessionStorage, not on window: the language sync RELOADS the page
 // on success, which would wipe an in-memory array before a test could read
 // it -- the write would look as though it never happened.
-export async function updateDoc(ref, data) {
+async function __updateDoc0(ref, data) {
   return __trip("updateDoc", ref && ref.__col, ref && ref.__id, function () {
     if (typeof window !== "undefined" && window.__stubFailWrites) throw Object.assign(new Error("denied by the test"), { code: "permission-denied" });
     try {
@@ -464,7 +485,8 @@ export function writeBatch() {
   return {
     set(ref, data) { staged.push(["set", ref, data]); },
     update(ref, data) { staged.push(["update", ref, data]); },
-    async commit() {
+    commit() { return __held(this.__commit0()); },
+    async __commit0() {
       // OPT-IN (audit-part43): a suite sets window.__stubFailBatch to see how a page words a refused batch.
       if (typeof window !== "undefined" && window.__stubFailBatch) throw Object.assign(new Error("batch denied by the test"), { code: "permission-denied" });
       return __trip("batchCommit", "(batch of " + staged.length + ")", null, function () {
@@ -503,6 +525,9 @@ export function writeBatch() {
 // so a throwing transaction leaves DATA untouched, as a real abort does.
 export async function runTransaction(db, callback) {
   if (typeof window !== "undefined" && window.__stubFailTx) throw Object.assign(new Error("transaction denied by the test"), { code: "permission-denied" });
+  // Audit part 124: the real SDK's runTransaction needs the server, so offline it REJECTS (code "unavailable") --
+  // it is never queued. Modelled only under the opt-in hold switch (see __held), so no other suite changes.
+  if (typeof window !== "undefined" && window.__stubHoldWritesWhileOffline && navigator.onLine === false) throw Object.assign(new Error("offline: a transaction needs the server"), { code: "unavailable" });
   const staged = [];
   const rowFor = (ref) => (DATA[ref && ref.__col] || []).find((d) => d._id === (ref && ref.__id));
   const tx = {

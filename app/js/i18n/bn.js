@@ -1153,6 +1153,8 @@ export const BN = {
     "এই অ্যাকাউন্টের জন্য অনুমোদিত সব আমন্ত্রণ ব্যবহার হয়ে গেছে। আরও প্রয়োজন হলে প্রশাসককে সীমা বাড়াতে বলুন।",
   "That save did not go through ({code}). Please try again, and tell the admin if it keeps happening.":
     "সংরক্ষণটি সম্পন্ন হয়নি ({code})। অনুগ্রহ করে আবার চেষ্টা করুন, এবং বারবার হতে থাকলে প্রশাসককে জানান।",
+  "That information could not be loaded ({code}). Please check your connection and try again.":
+    "এই তথ্য লোড করা যায়নি ({code})। অনুগ্রহ করে আপনার সংযোগ পরীক্ষা করে আবার চেষ্টা করুন।",
 
   // --- Role names (js/labels.js) -----------------------------------------
   // Shown in every page's tenant picker -- "Madrasatul Muslimeen (Owner,
@@ -3552,6 +3554,7 @@ export const BN = {
   "Verses {from}–{to}": "আয়াত {from}–{to}",
   "Pages {from}–{to}": "পৃষ্ঠা {from}–{to}",
   "Search by name or number": "নাম বা নম্বর দিয়ে খুঁজুন",
+  "Sūrah name or number, or an āyah like 2:255": "সূরার নাম বা নম্বর, অথবা ২:২৫৫-এর মতো আয়াত",
   "Nothing matches.": "কিছু মেলেনি।",
   "{surah} {from}–{to}": "{surah} {from}–{to}",
   "{fromSurah} {from} → {toSurah} {to}": "{fromSurah} {from} → {toSurah} {to}",
@@ -3634,6 +3637,8 @@ export const BN = {
   "\"{title}\" moved to Trash. Open 🗑 Trash from the ⋯ menu to restore it.": "\"{title}\" ট্র্যাশে গেছে। ফিরিয়ে আনতে ⋯ মেনু থেকে 🗑 ট্র্যাশ খুলুন।",
   "Done": "সম্পন্ন",
   "Saved on this device": "এই ডিভাইসে সংরক্ষিত",
+  "Could not reach the server. Nothing was saved — your text is still here, so press Save again when you are online.": "সার্ভারে পৌঁছানো যায়নি। কিছুই সংরক্ষিত হয়নি — আপনার লেখা এখানেই আছে, ইন্টারনেট এলে আবার সংরক্ষণ চাপুন।",
+  "Saved on this device — it will be sent when you are online.": "এই ডিভাইসে সংরক্ষিত হয়েছে — ইন্টারনেট এলে পাঠানো হবে।",
   "Not saved yet — will try again": "এখনও সংরক্ষিত হয়নি — আবার চেষ্টা করা হবে",
   "This Note changed on another device. Your text is kept on this device — copy it before reloading.": "এই নোটটি অন্য ডিভাইসে বদলেছে। আপনার লেখা এই ডিভাইসে রাখা আছে — পেজ রিলোড করার আগে এটি কপি করে নিন।",
   "You have unsaved text on this device, from {date}.": "এই ডিভাইসে {date} তারিখের একটি অসংরক্ষিত লেখা আছে।",
@@ -4471,6 +4476,7 @@ export const BN = {
   "{k} of {n} steps passed · next: First {next}": "{n}টি ধাপের {k}টি উত্তীর্ণ · পরেরটি: প্রথম {next}",
   "All {n} steps passed": "{n}টি ধাপই উত্তীর্ণ",
   "Show the Vocabulary table": "শব্দভান্ডারের তালিকা দেখান",
+  "Show the Quran Approach breakdown": "কুরআন পদ্ধতির বিশ্লেষণ দেখান",
   "The Qur'an's words each student knows (the Word card's own marks), the Learn next steps passed, and the review schedule. Not scoped to the week/month above.": "প্রত্যেক ছাত্র কুরআনের কোন শব্দগুলো জানে (শব্দ কার্ডের নিজস্ব চিহ্ন), “এরপর শিখুন”-এর কোন ধাপ উত্তীর্ণ, এবং পুনরালোচনার সূচি। উপরের সপ্তাহ/মাসে সীমাবদ্ধ নয়।",
   "Share of the Qur'an": "কুরআনের অংশ",
   "Steps passed": "উত্তীর্ণ ধাপ",
@@ -4537,4 +4543,6 @@ export const BN = {
   "Expand this pane": "এই অংশটি বড় করুন", // ?
   "Pop out as a window": "আলাদা জানালায় খুলুন", // ?
   "Put it back in its place": "আগের জায়গায় ফিরিয়ে দিন", // ?
+  "This page could not load its data. Please check your connection and try again.": "এই পাতা তার তথ্য লোড করতে পারেনি। অনুগ্রহ করে আপনার ইন্টারনেট সংযোগ দেখে আবার চেষ্টা করুন।",
+  "Ref: {code}": "সূত্র: {code}",
 };

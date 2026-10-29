@@ -369,3 +369,9 @@ button.nav-bm-preset { background: none; border: 0; font: inherit; font-size: 0.
 .nav-bm-control select, .nav-bm-expand-toggle { box-sizing: border-box; min-height: 40px; }
 .nav-bm-folder > summary, .nav-bm-item { min-height: 40px; box-sizing: border-box; }
 .nav-cat:not(.nav-cat-bookmark) > .nav-cat-links { max-height: min(max(calc(100vh - 22rem), 14rem), 38rem); overflow-y: auto; overscroll-behavior: contain; } /* audit4 navscroll */
+
+/* The Owner, 29 Oct 2026 (a phone screenshot of the Mastery Wheel: "Any click on slice shows/ highlight this block, it
+   should only highlighted the clicked slice"). A phone browser paints its tap highlight over the tapped element's
+   bounding RECTANGLE, and a wheel wedge's rectangle spans several slices. Off for every Mastery Wheel on every page
+   (Asma, topic study); quranrevival.html carries the same rule for its own wheels. */
+.wheel-seg, svg:has(.wheel-seg), svg:has(.wheel-seg) * { -webkit-tap-highlight-color: transparent; }

@@ -13,7 +13,10 @@
 //   --page=<file>   one page only      --list  print every control      --verbose  print passes
 //   --max=<n>       distinct controls per page/viewport (default 12)    --no-bn  skip the Bangla pass
 //   --mutate=noback       strip back=1 / navBack=1 from every link on about.html before clicking (NO BACK must appear)
-//   --mutate=lose-scroll  on the destination, rewrite Back to location.href = source path + query with no scroll or pop-up restore
+//   --mutate=no-place-restore  switch off bookmark-nav.js's late place restore (Bookmarks / 390 / bn must FAIL; audit part 115)
+//   --mutate=no-reach     do not open a folder, a Note or the ⋯ menu on journey-map.html (the positive control must FAIL; part 123)
+//   --mutate=lose-note    drop the open-Note record while on the next page (journey-map.html, 1440 must FAIL with a WRONG PLACE)
+//   --mutate=lose-scroll on the destination, rewrite Back to location.href = source path + query with no scroll or pop-up restore
 // Findings are written to tools/i18n-verify/out/way-back-audit.json (git-ignored) for the report.
 import fs from "node:fs";
 import { chromium, newContext, openPage } from "./harness.mjs";
@@ -46,6 +49,28 @@ DATA.trackables[0].name = lang("Reading (with Tajweed)");
 DATA.classes[0].name = lang("Weekend Qur'an Memorisation and Tajweed Circle (Year 7–9)");
 DATA.courseOffers[0].name = lang("Weekend Qur'an Memorisation and Tajweed Circle (Year 7–9)");
 DATA.bookmarks[0].saved[0].name = "Ayat al-Kursi and the last two āyāt of Al-Baqarah";
+// Audit part 114 (PCF MSA J29): the links a real tenant sees. Built here, never in firebase-stub.mjs's shared DATA.
+(function () {
+  window.__stubApplyBatches = true; window.__stubRecordTxData = true; window.__DATA = DATA;
+  var own = { tenantId: TENANT_ID, ownerPersonId: "p1", ownerUid: "test-uid", schemaVersion: 1 };
+  function ts(d) { return { toDate: function () { return new Date(d || "2026-09-01T10:00:00Z"); }, toMillis: function () { return new Date(d || "2026-09-01T10:00:00Z").getTime(); } }; }
+  function hx(l) { return l.slice(1).repeat(32); }
+  DATA.noteFolders = [Object.assign({ _id: TENANT_ID + "__fA", folderId: "fA", name: "Reflections", parentFolderId: null, semanticRole: "user", order: 0, status: "active", updatedAt: ts() }, own)];
+  DATA.notes = []; DATA.notePlacements = []; DATA.noteRevisions = []; DATA.noteSections = []; DATA.noteTags = []; DATA.noteTagLinks = []; DATA.noteSources = []; DATA.noteLinks = [];
+  [["n1", "A note filed to Ayat al-Kursi", "ayah:2:255", "quran-unit"], ["n2", "A note filed to a hadith", "hadith:synthetic-collection-1:1", "hadith-unit"]].forEach(function (r, i) {
+    var id = hx(r[0]);
+    DATA.notes.push(Object.assign({ _id: TENANT_ID + "__" + id, noteId: id, title: r[1], bodyHtml: "<p>Body</p>", currentRevisionId: "rev-" + id, status: "active", visibility: "private", createdAt: ts(), updatedAt: ts() }, own));
+    DATA.noteSources.push(Object.assign({ _id: TENANT_ID + "__s-" + id, sourceLinkId: "s-" + id, noteId: id, sourceKey: r[2], sourceKind: r[3], relationshipKind: "origin", approachId: null, provenanceKind: "study-note", status: "active", createdAt: ts(), updatedAt: ts() }, own));
+    DATA.notePlacements.push(Object.assign({ _id: TENANT_ID + "__p" + i, placementId: "p" + i, noteId: id, folderId: "fA", order: i, status: "active" }, own));
+  });
+  function BM(id, mod, subj, name, pos, folder, extra) { return Object.assign({ id: id, programId: "none", moduleId: mod, subjectId: subj, name: name, position: pos, folderId: folder, removed: false, createdAt: "2026-09-01T00:00:00.000Z" }, extra || {}); }
+  var b = DATA.bookmarks[0];
+  b.folders = [{ id: "bA", name: "Daily reading", parentId: null, personTagId: null, removed: false, createdAt: "2026-09-01T00:00:00.000Z" }];
+  b.saved.push(BM("b2", "hadith", "hadith", "A saved hadith", "hadith:synthetic-collection-1:1", "bA"));
+  b.saved.push(BM("b3", "dua", "dua", "A saved dua", "dua:1", "bA"));
+  DATA.assignments[0].unitKeys = ["ayah:1:1", "ayah:1:2"];
+  DATA.resources[0].url = "https://example.org/lesson";
+})();
 `;
 const VIEWPORTS = [[1440, 900], [390, 844]];
 const TOL = 80;
@@ -119,7 +144,8 @@ const FIND_BACK = () => {
   const re = /^(←|‹|<|⬅|←\s)?\s*(back|ফিরে যান|পেছনে|ফিরে)/i;
   const cands = [...document.querySelectorAll("[data-bm-back-link], a, button, [role=button]")].filter((el) => {
     const label = ((el.getAttribute("aria-label") || "") + " " + (el.textContent || "")).replace(/\s+/g, " ").trim();
-    return el.matches("[data-bm-back-link]") || re.test(label.replace(/^[^\p{L}←]+/u, (m) => (m.includes("←") ? "←" : "")).trim()) || re.test(label) || /^←/.test(label);
+    // Bangla puts the verb last: "Mapping My Journey-তে ফিরে যান" (audit part 123)
+    return el.matches("[data-bm-back-link]") || /-তে ফিরে যান\s*←?$/.test(label) || re.test(label.replace(/^[^\p{L}←]+/u, (m) => (m.includes("←") ? "←" : "")).trim()) || re.test(label) || /^←/.test(label);
   }).filter((el) => {
     if (el.closest("nav, #navBar, .nav-bar, .nav-cat")) return false;
     for (let e = el; e && e !== document.documentElement; e = e.parentElement) {
@@ -138,7 +164,14 @@ const FIND_BACK = () => {
 
 const STATE_NOW = () => {
   const dets = [...document.querySelectorAll("details")].filter((d) => !d.closest("nav, #navBar, .nav-bar, .nav-cat"));
-  return { scrollY: Math.round(scrollY), opened: dets.map((d, i) => (d.open ? i : -1)).filter((i) => i >= 0) };
+  const out = { scrollY: Math.round(scrollY), opened: dets.map((d, i) => (d.open ? i : -1)).filter((i) => i >= 0) };
+  // Audit part 123: Mapping My Journey's view state: the selected folder and the note open in the pane (empty elsewhere)
+  const vis = (e) => !!e && e.getBoundingClientRect().width > 1;
+  if (document.querySelector("[data-folder-id]")) {
+    const pm = document.querySelector("[data-pane-menu-btn]");
+    out.jm = { folder: document.querySelector(".folder-row.selected")?.dataset.folderId || "", pane: vis(pm) ? (pm.closest("[data-note-id]")?.dataset.noteId || pm.closest("[data-pane-note]")?.dataset.paneNote || document.querySelector("[data-pane-chip]")?.dataset.paneChip || "open") : "closed", title: vis(pm) ? (document.querySelector("[data-pane-title], .note-title, [data-note-title]")?.textContent || "").trim().slice(0, 40) : "" };
+  }
+  return out;
 };
 
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
@@ -159,10 +192,30 @@ async function runPage(name, path, w, h, lang) {
   const tag = `${name} / ${w} / ${lang}`;
   const ctx = await newContext(browser, { banner: false, viewport: { width: w, height: h }, extraSeedJs: REAL_SEED, appLang: lang === "bn" ? "bn" : null });
   await ctx.route("**/archive.org/**", (r) => r.abort());
+  if (MUTATE === "no-place-restore") await ctx.addInitScript(() => { window.__mmsaNoPlaceRestore = true; });
+  // audit part 123: the note-keeper's record is dropped as soon as the next page loads, so the open Note cannot come back
+  if (MUTATE === "lose-note") await ctx.addInitScript(() => { if (!/journey-map/.test(location.pathname)) sessionStorage.removeItem("mmsa.wayBackJmNote"); });
   try {
     let { page: P } = await open(ctx, path, lang);
     const mutateAbout = MUTATE === "noback" && path.startsWith("about.html");
-    const stripLinks = async (pg) => { if (mutateAbout) await pg.evaluate(() => document.querySelectorAll("a[href]").forEach((a) => { const h = a.getAttribute("href"); if (/(navBack|back)=1/.test(h)) a.setAttribute("href", h.replace(/([?&])(navBack|back)=1(&|$)/g, (m, x, y) => (y ? x : "")).replace(/[?&]$/, "")); })); };
+    // Audit part 123: Mapping My Journey keeps every control that leaves the page behind something a reader opens: a folder, a
+    // note, and the page's own ⋯ menu ("Import Notes…"). Open them the way a reader does (real clicks), after every load.
+    // --mutate=no-reach leaves the page as it loads, which is what the audit did before and found nothing.
+    const reach = async (pg) => {
+      if (!path.startsWith("journey-map.html") || MUTATE === "no-reach") return;
+      try {
+        const T = { timeout: 8000 };
+        await pg.waitForSelector('[data-folder-id="fA"]', { state: "visible", ...T }); await pg.waitForTimeout(500);
+        await pg.click('[data-folder-id="fA"]', T); await pg.waitForSelector("[data-note-open]", { state: "visible", ...T });
+        await pg.click("[data-note-open]", T); await pg.waitForSelector("[data-pane-menu-btn]", { state: "visible", ...T }); await pg.waitForTimeout(800);
+        // at phone width the tree, the list and the Note are three screens and the page's ⋯ menu is on the first: step back out
+        for (const stepBack of ["[data-pane-back]", "[data-list-back]"]) {
+          if (!(await pg.isVisible("[data-bar-palette-toggle=pageMenu]")) && (await pg.isVisible(stepBack))) { await pg.click(stepBack, T); await pg.waitForTimeout(500); }
+        }
+        await pg.click("[data-bar-palette-toggle=pageMenu]", T); await pg.waitForTimeout(500);
+      } catch (e) { console.log("   reach failed:", String(e.message).split("\n")[0]); }
+    };
+    const stripLinks = async (pg) => { await reach(pg); if (mutateAbout) await pg.evaluate(() => document.querySelectorAll("a[href]").forEach((a) => { const h = a.getAttribute("href"); if (/(navBack|back)=1/.test(h)) a.setAttribute("href", h.replace(/([?&])(navBack|back)=1(&|$)/g, (m, x, y) => (y ? x : "")).replace(/[?&]$/, "")); })); };
     await stripLinks(P);
     const cands = await P.evaluate(COLLECT);
     const sourceUrl = P.url();
@@ -176,9 +229,15 @@ async function runPage(name, path, w, h, lang) {
       else buttons.push(c);
     }
     const total = links.length;
+    // Audit part 123 POSITIVE CONTROL: Mapping My Journey once reported 0 controls and passed. It has one way out ("Import Notes…",
+    // read in app/journey-map.html), so fewer than 1 means the audit has stopped reaching it. --mutate=no-reach must trip this.
+    if (path.startsWith("journey-map.html")) check(`${tag} reports at least 1 in-page control (positive control)`, total >= 1, `found ${total}`);
     // buttons: click each, watch for a main-frame navigation; a button that does not navigate is not a way out
     const navButtons = [];
-    const bcap = buttons.slice(0, 60);
+    // Mapping My Journey: its ~50 buttons all act in the page (read in app/journey-map.html: no button sets location), and
+    // clicking them one after another on a page held open on a folder + note changes that state under the next index. So the
+    // click-and-watch probe is skipped there; its one outward control is the "Import Notes…" link (audit part 123).
+    const bcap = path.startsWith("journey-map.html") ? [] : buttons.slice(0, 60);
     for (const b of bcap) {
       const prep = await P.evaluate(PREPARE, b.idx).catch(() => null);
       if (!prep || !prep.onScreen) continue;
@@ -257,14 +316,17 @@ async function runPage(name, path, w, h, lang) {
       const samePlace = stripMarks(norm(backUrl)) === stripMarks(sourceKey);
       const scrollOk = Math.abs(now.scrollY - st.scrollY) <= TOL;
       const popOk = st.opened.every((i) => now.opened.includes(i));
-      const why = [!samePlace && `went to ${norm(backUrl)}`, samePlace && !scrollOk && `scrollY ${now.scrollY}, was ${st.scrollY}`, samePlace && !popOk && `pop-up ${st.opened.join(",")} not open again (open: ${now.opened.join(",") || "none"})`].filter(Boolean).join("; ");
-      if (samePlace && scrollOk && popOk) { n.ok++; rowsHere.push({ label, status: "OK" }); check(`${tag} / ${label} returns to where it was`, true); }
+      // Mapping My Journey: the same folder selected and the same note open in the pane
+      const jmOk = !st.jm || (now.jm && now.jm.folder === st.jm.folder && now.jm.pane === st.jm.pane && now.jm.title === st.jm.title);
+      const why = [!samePlace && `went to ${norm(backUrl)}`, samePlace && !scrollOk && `scrollY ${now.scrollY}, was ${st.scrollY}`, samePlace && !popOk && `pop-up ${st.opened.join(",")} not open again (open: ${now.opened.join(",") || "none"})`, samePlace && !jmOk && `view ${JSON.stringify(now.jm)}, was ${JSON.stringify(st.jm)}`].filter(Boolean).join("; ");
+      if (samePlace && scrollOk && popOk && jmOk) { n.ok++; rowsHere.push({ label, status: "OK" }); check(`${tag} / ${label} returns to where it was`, true); }
       else { n.wrong++; rowsHere.push({ label, status: "WRONG PLACE", why, back: back.label }); check(`${tag} / ${label} returns to where it was`, false, why); }
     }
     const errs = quiet([]).length;
     summary.push({ page: name, path, w, lang, found: total + navButtons.length, links: total, buttons: navButtons.length, checked: todo.length, ok: n.ok, noback: n.noback, wrong: n.wrong, menu: menu.length, external: external.length });
     findings.push({ page: name, path, w, lang, rows: rowsHere, menu: menu.map((m) => m.href || m.text), external: external.map((m) => m.href || m.text) });
-    if (LIST) console.log(`   ${tag}: ${total} links, ${navButtons.length} navigating buttons, ${menu.length} menu, ${external.length} external; ok ${n.ok}, no back ${n.noback}, wrong place ${n.wrong}`);
+    // Audit part 114: always printed, so a page that still finds 0 in-page controls is visible
+    console.log(`   ${tag}: ${total} links, ${navButtons.length} navigating buttons${total + navButtons.length === 0 ? " (NO IN-PAGE CONTROLS FOUND)" : ""}, ${menu.length} menu, ${external.length} external; ok ${n.ok}, no back ${n.noback}, wrong place ${n.wrong}`);
     return total;
   } finally { await ctx.close(); }
 }

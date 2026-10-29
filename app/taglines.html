@@ -177,6 +177,7 @@
     </div>
   </div>
 
+  <script type="module">import { keepFocusInTables } from "./js/table-focus.js"; keepFocusInTables();</script>
   <script type="module">
     import { auth, db } from "./js/firebase-init.js";
     import {
@@ -201,6 +202,7 @@
       normalizeAyahRef, activeTaglines,
     } from "./js/taglines.js";
     import { attachTaglineScroll } from "./js/tagline-scroll.js";
+    import { safeHref } from "./js/html-escape.js";
 
     translateStatic();
     registerServiceWorker();
@@ -419,11 +421,11 @@
     }
 
     function buildPreviewEl(line) {
-      const hasLink = !!line.link?.url;
+      const hasLink = !!safeHref(line.link?.url);
       const el = document.createElement(hasLink ? "a" : "span");
       el.className = "tagline-line";
       if (hasLink) {
-        el.href = line.link.url;
+        el.href = safeHref(line.link.url);
         if (line.link.target === "external") { el.target = "_blank"; el.rel = "noopener noreferrer"; }
       }
       const label = document.createElement("span");

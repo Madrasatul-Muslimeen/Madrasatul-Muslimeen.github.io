@@ -331,7 +331,7 @@ async function bookmarkGo(t, p, errors, lang) {
   if (back) {
     const href = await ev(p, () => { const b = document.querySelector("[data-bm-back-link]"); return b.tagName + " " + (b.getAttribute("href") ?? "(button)") + " | " + b.textContent.trim(); });
     await p.click("[data-bm-back-link]");
-    check(`${t}: ← Back returns to the page the student came from (Mapping My Journey)`, await until("back on Mapping My Journey (the page, or its window over this one)", async () => /journey-map\.html/.test(p.url()) || await visible(p, "#journeyTray iframe, .mm-window iframe, .page-win iframe"), 15000), p.url() + " <- " + href + " | page says: " + (await ev(p, () => document.body.innerText.replace(/\s+/g, " ").slice(0, 200))));
+    check(`${t}: ← Back returns to the page the student came from (Mapping My Journey)`, await until("back on Mapping My Journey (the page, or its window over this one)", async () => /journey-map\.html/.test(p.url()) || await visible(p, "#journeyTray iframe, .mm-window iframe, .page-win iframe"), 15000), p.url() + " <- " + href + " | page says: " + (await ev(p, () => (document.body?.innerText ?? "(the page is still loading)").replace(/\s+/g, " ").slice(0, 200)).catch((e) => "(read failed: " + String(e).slice(0, 60) + ")")));
   }
   check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 3).join(" | "));
 }

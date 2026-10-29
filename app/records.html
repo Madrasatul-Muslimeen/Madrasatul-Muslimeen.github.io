@@ -152,6 +152,7 @@
     <div id="activityResult"></div>
   </div>
 
+  <script type="module">import { keepFocusInTables } from "./js/table-focus.js"; keepFocusInTables();</script>
   <script type="module">
     import { auth, db } from "./js/firebase-init.js";
     import {
@@ -199,6 +200,7 @@
     import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
 import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     import { translateStatic, t, num, parseNum } from "./js/i18n.js";
+    import { showReadLoading, clearReadStatus, showReadFailure } from "./js/read-failure.js";
     import { registerServiceWorker } from "./js/sw-register.js";
     import { armScreensaver } from "./js/screensaver-idle.js";
 
@@ -729,6 +731,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       whoEl.textContent = t("Signed in as {email}", { email: user.email });
       signInBtn.style.display = "none";
       signOutBtn.style.display = "inline-block";
+      showReadLoading();
 
       async function step(name, fn) {
         try { return await fn(); }
@@ -773,9 +776,14 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
         appEl.style.display = "block";
         // reads the current preview state and renders navBar itself
         await step("load context data", () => loadContextData(hydratedMembershipsPromise));
+        clearReadStatus();
       } catch (err) {
-        whoEl.textContent += ` — failed at "${err.stepName ?? "unknown step"}": ${err.code ?? ""} ${err.message}`;
         console.error(err);
+        // Architect review (part 125): a retry re-hydrates the memberships, as the first load does -- loadContextData() with
+        // no argument keeps an empty myMemberships, so Records and Monitor came back with no student to show.
+        showReadFailure(err, () => (appEl.style.display === "block"
+          ? getMyMembershipRoles(db, user.uid).then((roles) => loadContextData(hydrateMemberships(db, roles)))
+          : Promise.resolve(location.reload())));
       }
     });
 

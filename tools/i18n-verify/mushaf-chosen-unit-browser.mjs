@@ -7,7 +7,7 @@
 // Run from the repository root, serve.js on :8080.
 //   --mutate=pagewins   the chosen unit is ignored (the old behaviour) -> every Range check fails
 import fs from "node:fs";
-import { chromium, newContext, openPage } from "./harness.mjs";
+import { chromium, newContext, openPage, clickReadTool } from "./harness.mjs";
 const { buildUnitKey } = await import("../../app/js/unit-keys.js");
 
 let pass = 0, fail = 0;
@@ -85,7 +85,10 @@ for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 1280]]) {
   check(`${tag} Mushaf view, Range 3:55–60 chosen: the page on screen is 50 (fixture)`, ref.page === "50", JSON.stringify(ref));
   check(`${tag} ...and the Read bar's reference names the Range ("${R}"), not the page's āyāt`, ref.text.includes(R), JSON.stringify(ref));
 
-  await click(page, "#readBarRecordBtn");
+  // Route updated in place 29 Oct 2026 (QR Lead): below 900px the Approach bar (Take / Record / Status) lives inside the
+  // Read bar's ⋯ panel (#readToolsMenu), so a direct click timed out on a 0x0 button and the suite died at 390 with no
+  // total. clickReadTool opens ⋯ first when it has to; what the checks assert is unchanged.
+  await clickReadTool(page, "#readBarRecordBtn");
   await page.waitForTimeout(900);
   const rec = await overlay(page);
   check(`${tag} Record Your Progress opens the Range's card, not the page card`, rec.unit === 1 && rec.page === 0 && rec.head.includes(R), JSON.stringify(rec));
@@ -109,7 +112,7 @@ for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 1280]]) {
   await openMushaf(page, "page");
   const pref = await page.evaluate(() => document.querySelector("#mushafPageRef .mushaf-page-ref-text")?.textContent ?? "");
   check(`${tag} with Page chosen, the reference names the page's own āyāt ("· ${bn ? "৫৫" : "55"}")`, pref.endsWith(bn ? "৫৫" : "55") && !pref.includes(R), pref);
-  await click(page, "#readBarRecordBtn");
+  await clickReadTool(page, "#readBarRecordBtn"); // inside ⋯ below 900px, as above
   await page.waitForTimeout(900);
   const pc = await overlay(page);
   check(`${tag} ...and Record Your Progress opens the page card (Page ${bn ? "৫০" : "50"})`, pc.page === 1 && pc.unit === 0 && pc.head.includes(bn ? "৫০" : "50"), JSON.stringify(pc));

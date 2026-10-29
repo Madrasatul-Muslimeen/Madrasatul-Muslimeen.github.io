@@ -153,6 +153,7 @@
     import { getMyMembershipRoles, hydrateMemberships, pickContext, setActiveContext, getSelectedPersonId, setSelectedPersonId } from "./js/session-context.js";
     import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
     import { translateStatic, t } from "./js/i18n.js";
+    import { showReadLoading, clearReadStatus, showReadFailure } from "./js/read-failure.js";
     import { registerServiceWorker } from "./js/sw-register.js";
     import { armScreensaver } from "./js/screensaver-idle.js";
     import { roleListLabel } from "./js/labels.js";
@@ -581,7 +582,7 @@
           unitKey, title, bodyHtml, actorUid: auth.currentUser.uid,
           weekStartsOn: currentTenantDoc?.weekStartsOn ?? 6,
         }),
-        { collection: TENANT.NOTES, action: "createStudyNote" }
+        { collection: TENANT.NOTES, action: "createStudyNote", noDeviceCopy: true }
       );
       if (!outcome.ok) return;
       newNoteForm.style.display = "none";
@@ -623,7 +624,7 @@
             expectedRevisionId: note.currentRevisionId, title: newTitle, bodyHtml: newBody,
             actorUid: auth.currentUser.uid, weekStartsOn: currentTenantDoc?.weekStartsOn ?? 6,
           }),
-          { collection: TENANT.NOTES, action: "reviseStudyNote" }
+          { collection: TENANT.NOTES, action: "reviseStudyNote", noDeviceCopy: true }
         );
         if (!outcome.ok) return false;
         showPageStatus(t("Saved as a new revision ({revisionId}).", { revisionId: outcome.result.commit.revisionId }));
@@ -690,7 +691,7 @@
           tenantId: activeTenantId, noteId: note.noteId, expectedRevisionId: note.currentRevisionId,
           actorUid: auth.currentUser.uid,
         }),
-        { collection: TENANT.NOTES, action: "retireStudyNote" }
+        { collection: TENANT.NOTES, action: "retireStudyNote", noDeviceCopy: true }
       );
       if (!outcome.ok) return;
       await refreshView();
@@ -791,6 +792,7 @@
       whoEl.textContent = t("Signed in as {email}", { email: user.email });
       signInBtn.style.display = "none";
       signOutBtn.style.display = "inline-block";
+      showReadLoading();
 
       try {
         // Speed, part 7 (issue #291), the same pattern issue #278's own fix
@@ -820,9 +822,14 @@
 
         appEl.style.display = "block";
         await loadContextData(hydratedMembershipsPromise);
+        clearReadStatus();
       } catch (err) {
         console.error(err);
-        whoEl.textContent += ` — ${err.message}`;
+        // Architect review (part 125): a retry re-hydrates the memberships, as the first load does -- loadContextData() with
+        // no argument keeps an empty myMemberships, so Records and Monitor came back with no student to show.
+        showReadFailure(err, () => (appEl.style.display === "block"
+          ? getMyMembershipRoles(db, user.uid).then((roles) => loadContextData(hydrateMemberships(db, roles)))
+          : Promise.resolve(location.reload())));
       }
     });
   </script>

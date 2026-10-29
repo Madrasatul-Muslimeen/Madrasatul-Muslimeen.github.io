@@ -46,3 +46,4 @@ tools/i18n-verify/out/phone-tables/
 
 # Tablet audit screenshots and row dump (audit part 97): regenerated on every run, never committed
 tools/i18n-verify/out/tablet/
+tools/i18n-verify/out/

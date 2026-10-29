@@ -1041,6 +1041,11 @@
   }
 
   .wheel-seg { cursor: pointer; stroke: #0c1320; stroke-width: 1; transition: stroke .15s, stroke-width .15s; }
+  /* QR Lead (the Owner, 29 Oct 2026, a phone screenshot of the Mastery Wheel: "Any click on slice shows/ highlight this
+     block, it should only highlighted the clicked slice"). The blue block was the phone browser's own tap highlight: it
+     paints the tapped element's bounding RECTANGLE, and a wedge's rectangle spans several slices. Off for every wheel's
+     drawing; the wheel's own selection still marks exactly the slice chosen. */
+  .wheel-seg, svg:has(.wheel-seg), svg:has(.wheel-seg) * { -webkit-tap-highlight-color: transparent; }
   .wheel-seg:hover { stroke: var(--card-text); stroke-width: 1.5; }
   /* Issue #385 -- an Approach's short name along its slice: white with a dark
      halo behind it, so it reads on every status colour in all three looks. */
@@ -3386,6 +3391,10 @@
      full screen on a phone, a centred reading-width window from 900px. */
   #readContentsMount[hidden] { display: none !important; }
   #readContentsMount { position: fixed; inset: 0; z-index: 900; display: flex; flex-direction: column; background: rgba(19,25,42,0.55); }
+  /* QR Lead (29 Oct 2026, found testing the Owner's poster route): from 768px the Zab bar (44px, see the zab-reserve rule
+     above) is pinned over the page's foot, and the full-screen list ran under it -- at 768 and 820 the last row,
+     An-Naas, was 31 of its 48px under the bar and its middle could not be tapped. The list stops above the bar. */
+  @media (min-width: 768px) { body.zab-bar-on #readContentsMount { bottom: 44px; } }
   .rc-card { background: var(--card-bg); color: var(--card-text); display: flex; flex-direction: column; min-height: 0; flex: 1 1 auto; min-width: 0; }
   .rc-card header {
     background: #1F3A6E; color: #fff; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.6rem 0.8rem;
@@ -4377,6 +4386,9 @@
 
   /* ---------- Mushaf page view (Phase 5 round 7) — Whole Surah / Range ---------- */
   #pageViewContainer { margin-top: 0.6rem; }
+  /* QR Lead, 29 Oct 2026: a ‹ › turn into another surah keeps the strip's pages hidden until the target page is drawn
+     and placed (holdMushafStripFor), so the other surah's first page never flashes. Layout is kept, so it can be placed. */
+  #pageViewContainer.mushaf-turning > * { visibility: hidden; }
   /* box-sizing is the whole of round 28's item 1, and it was measured, not
      guessed: `width: 100%` plus `padding: 18px 16px` with the page's default
      content-box sizing makes this element 32px WIDER than the column it sits
@@ -4628,6 +4640,21 @@
   @media (max-width: 379.98px) {
     #readBar:has(#readBackSlot:not(:empty)) #readBarEnd { gap: 0.15rem; }
     #readBar:has(#readBackSlot:not(:empty)) #readBarEnd > button { width: 36px; min-width: 36px; padding-left: 0; padding-right: 0; }
+  }
+  /* QR Lead (PCF MSA J29, open since 16 Oct; measured 28 Oct 2026): at 320 the bar is 288px. Its first line (☰ 40, the
+     unit chip 76, ⏮ ⏭ ▶ 40 each, 6.4px gaps) is full, so ■ wrapped to the second line, and ■ + ← ✕ (85) + 🔖 📖 ⤢ ⋯ ⋮ (194)
+     need 331px: the tools fell to a THIRD line. While a way-back is docked, the transport tiles are 36px wide (40 tall, as
+     the Mushaf bar's below 360px) and the gaps 4px, so ■ rejoins the first line (280px) and ← ✕ share the second with
+     🔖 📖 ⤢ ⋯ ⋮ (283px). At 360 (en) the same third line came from ☰'s words ("☰ Surah list" 89px, which shows its
+     words from 360px): while a way-back is docked below 380px ☰ is its icon alone (its spoken name stays), so the first
+     line is 308 of 328px and ← ✕ share the second with the tools. */
+  @media (max-width: 379.98px) {
+    body.read-from-contents #readBar:has(#readBackSlot:not(:empty)) #readListBtn { padding: 0; width: 40px; }
+    #readBar:has(#readBackSlot:not(:empty)) #readListBtn .read-list-word { display: none; }
+  }
+  @media (max-width: 340px) {
+    #readBar:has(#readBackSlot:not(:empty)) { gap: 0.25rem; }
+    #readBar:has(#readBackSlot:not(:empty)) :is(#prevUnitBtn, #nextUnitBtn, #readPlayBtn, #readStopBtn) { width: 36px; min-width: 36px; padding-left: 0; padding-right: 0; }
   }
   .ayah-card-back-x { width: 40px; height: 40px; flex: 0 0 auto; padding: 0; border: 0; border-radius: 50%; background: rgba(255, 255, 255, 0.08); color: #f2e8d5; font-size: 1.2rem; cursor: pointer; }
   /* 📖 Note view pop-up: the āyah as the Note view shows it, over the card. */
@@ -5002,7 +5029,15 @@
   }
   /* ...and on the narrowest card (a 320px phone: the first row is 296 of 299px), it goes to the second row, before the
      word, the push back on ⓘ, and the word gives up 40px of its basis so the root box stays on that row. */
-  @container wordcard (max-width: 20rem) {
+  /* QR Lead (28 Oct 2026, measured): a 360px phone's card is 339px, and ‹ 🔍 [This āyah 88] ⓘ ← › × are 328px of
+     buttons + six 4px gaps = 352px, so × took a line of its own (149px header, 105 without ←). While the way back is in
+     the header on a card up to 22rem, the row takes the 320px card's tight gaps and "This āyah" padding (below):
+     240 + 76 + 6 × 1.6 = 325.6px. Below 20.5rem (328px), where even that does not fit, ← goes to the second row. */
+  @container wordcard (max-width: 22rem) {
+    .quran-word-card header:has(> .word-card-app-back) { column-gap: 0.1rem; }
+    .quran-word-card header:has(> .word-card-app-back) button.word-card-ayah-action-btn { padding: 0 2px; max-width: 5.5rem; white-space: normal; line-height: 1.1; }
+  }
+  @container wordcard (max-width: 20.5rem) {
     .quran-word-card header > button.word-card-app-back { order: 5; margin-inline-end: 0; }
     .quran-word-card header:has(> .word-card-app-back) button.word-card-legend-btn { margin-inline-end: auto; }
     .quran-word-card header:has(> .word-card-app-back) > .word-card-head-word { flex-basis: calc(100% - 9rem); }
@@ -7542,6 +7577,7 @@
       readTaglineState, writeTaglineState, TAGLINE_SETTING_DEFAULTS,
     } from "./js/taglines.js";
     import { attachTaglineScroll } from "./js/tagline-scroll.js";
+    import { safeHref } from "./js/html-escape.js";
     import { adoptAppLangFromUserIndex, mountSyncedAppLangControl } from "./js/lang-sync.js";
     import { showBootSplash, showQuranSplash } from "./js/splash.js";
     import { APP_VERSION } from "./js/version.js";
@@ -7569,7 +7605,7 @@
     import {
       RECITERS, reciterIsReady, reciterSupportsSingleAyah, playSurah,
       setLoop, setPlaybackErrorHandler, setAyahChangeHandler, stop as stopAudio, playDrill, stopDrill,
-      warmSegmentedTimestamps, pause as pauseAudio, resume as resumeAudio, isPlaying, isPaused, unlockAudio,
+      warmSegmentedTimestamps, pause as pauseAudio, resume as resumeAudio, isPlaying, isPaused, isRunContinuing, unlockAudio,
       setPlaybackStateHandler, playOneAndWait, setTimingNoteHandler,
     } from "./js/audio-player.js";
     import { translateStatic, t, num, parseNum, surahName, ensureCatalogueReady } from "./js/i18n.js";
@@ -9059,11 +9095,11 @@
     }
 
     function buildTaglineEl(line) {
-      const hasLink = !!line.link?.url;
+      const hasLink = !!safeHref(line.link?.url);
       const el = document.createElement(hasLink ? "a" : "span");
       el.className = "tagline-line";
       if (hasLink) {
-        el.href = line.link.url;
+        el.href = safeHref(line.link.url);
         if (line.link.target === "external") {
           // An outside site opens in a new tab and never gets a handle on
           // this one -- the owner's own "external browser, new tab".
@@ -9820,11 +9856,17 @@
         await runSearch();
         return;
       }
+      const target = resolveJumpTarget(parsed);
+      if (target.error) { showJumpMessage(target.error); return; }
+      showJumpMessage(null);
+      await goToReference(target.surah, target.from, target.to, target.half);
+    }
+
+    /** A parsed reference -> the stored surah/āyah to go to, or { error } in words. Shared by the "Go to" box and
+        (the Owner, 28 Oct 2026, a phone photo of "6:161 — Nothing matches.") the Read contents list's search. */
+    function resolveJumpTarget(parsed) {
       const surahMeta = surahIndex.find((s) => s.surahNumber === parsed.surah);
-      if (!surahMeta) {
-        showJumpMessage(t("There is no Surah {surah}. Surah numbers run 1–114.", { surah: num(parsed.surah) }));
-        return;
-      }
+      if (!surahMeta) return { error: t("There is no Surah {surah}. Surah numbers run 1–114.", { surah: num(parsed.surah) }) };
       // Issue #482 -- a TYPED reference is in the reader's own count ("1:1" is
       // ٱلْحَمْدُ when the Al-Fātiḥah setting is on); it is translated to the
       // stored (internal) number here. ?goto= links are built from stored
@@ -9833,24 +9875,18 @@
       let from = parsed.from;
       let to = parsed.to;
       let fromHalf = null; // issue #606 -- which displayed Ayat a typed 1:6 / 1:7 means
+      const tooFar = () => ({ error: t("Surah {surah} has {count} ayahs.", { surah: num(parsed.surah), count: num(lastAyah) }) });
       if (fatihaCountApplies(parsed.surah, fatihaOn())) {
         lastAyah = displayAyahCount(parsed.surah, lastAyah);
         const f = internalForDisplayedAyah(parsed.surah, from, true);
         const e = to === null ? null : internalForDisplayedAyah(parsed.surah, to, true);
-        if (!f || (to !== null && !e)) {
-          showJumpMessage(t("Surah {surah} has {count} ayahs.", { surah: num(parsed.surah), count: num(lastAyah) }));
-          return;
-        }
+        if (!f || (to !== null && !e)) return tooFar();
         from = f.ayah;
         fromHalf = f.half;
         to = e ? e.ayah : null;
       }
-      if (from < 1 || from > lastAyah || (to !== null && (to < 1 || to > lastAyah))) {
-        showJumpMessage(t("Surah {surah} has {count} ayahs.", { surah: num(parsed.surah), count: num(lastAyah) }));
-        return;
-      }
-      showJumpMessage(null);
-      await goToReference(parsed.surah, from, to, fromHalf);
+      if (from < 1 || from > lastAyah || (to !== null && (to < 1 || to > lastAyah))) return tooFar();
+      return { surah: parsed.surah, from, to, half: fromHalf };
     }
 
     /** Move the screen to a surah and ayah (or a range). Split out of
@@ -13311,14 +13347,29 @@
       const T = readContentsTables;
       readContentsSearchEl.hidden = kind !== "surah";
       let html = "";
+      let note = "";
       if (kind === "surah") {
-        const q = parseNum(readContentsSearchEl.value).trim().toLowerCase();
+        const typed = parseNum(readContentsSearchEl.value).trim();
+        const q = typed.toLowerCase();
+        // The Owner, 28 Oct 2026 (a phone photo: "6:161" -> "Nothing matches." -- "How does search work here? Fix it."):
+        // a reference typed here (6:161, 2:255-260, ৬:১৬১) offers that āyah first, through the "Go to" box's own
+        // parser and checks, above its surah's row.
+        const ref = /[:.]/.test(typed) ? parseJumpText(typed) : null;
+        const target = ref ? resolveJumpTarget(ref) : null;
+        if (target?.error) note = `<p class="rc-empty" role="status" data-rc-ref-error>${rcEsc(target.error)}</p>`;
+        else if (target) {
+          const label = target.to !== null ? `${searchRefFor(target.surah, target.from)}–${num(ref.to)}` : searchRefFor(target.surah, target.from);
+          html += `<button type="button" class="rc-row rc-goto" data-rc-kind="ayah" data-rc-n="${target.surah}" data-rc-from="${target.from}" data-rc-to="${target.to ?? ""}" data-rc-half="${target.half ?? ""}">` +
+            `<span class="rc-num" aria-hidden="true">→</span><span class="rc-main"><span class="rc-name">${rcEsc(t("Go to {ref}", { ref: label }))}</span>` +
+            `<span class="rc-sub">${rcEsc(rcSurahName(target.surah))}</span></span></button>`;
+        }
         const rows = surahIndex.filter((s) => {
           if (!q) return true;
+          if (ref) return s.surahNumber === ref.surah;
           if (/^\d+$/.test(q)) return String(s.surahNumber) === q;
           return [s.nameEnglish, s.nameTranslation, s.nameTranslationBn, s.nameArabic, rcSurahName(s.surahNumber)].some((x) => x && String(x).toLowerCase().includes(q));
         });
-        html = rows.map((s) => rcRow("surah", s.surahNumber,
+        html += rows.map((s) => rcRow("surah", s.surahNumber,
           `<span class="rc-num">${num(s.surahNumber)}</span>` +
           `<span class="rc-main"><span class="rc-name">${rcEsc(rcSurahName(s.surahNumber))}</span><span class="rc-sub">${rcEsc((isBn && s.nameTranslationBn) || s.nameTranslation || "")}</span></span>` +
           `<span class="rc-side">${rcEsc(t("{n} verses", { n: num(s.ayahCount) }))}</span>` +
@@ -13335,15 +13386,15 @@
           `<span class="rc-sub">${rcEsc(t("Verses {from}–{to}", { from: num(r.fromAyah), to: num(r.toAyah) }))}</span></span>` +
           `<span class="rc-side">${rcEsc(t("Page {n}", { n: num(rcHolder(T.page, "page", r.surah, r.fromAyah)) }))}</span>`)).join("");
       }
-      readContentsBodyEl.innerHTML = html || `<p class="rc-empty">${rcEsc(t("Nothing matches."))}</p>`;
+      readContentsBodyEl.innerHTML = (note + html) || `<p class="rc-empty">${rcEsc(t("Nothing matches."))}</p>`;
     }
 
     function renderReadContents() {
       document.getElementById("readContentsTitle").textContent = t("Read");
       document.getElementById("readContentsCloseBtn").setAttribute("aria-label", t("Close"));
       document.getElementById("readContentsHomeBtn").setAttribute("aria-label", t("Home"));
-      readContentsSearchEl.placeholder = t("Search by name or number");
-      readContentsSearchEl.setAttribute("aria-label", t("Search by name or number"));
+      readContentsSearchEl.placeholder = t("Sūrah name or number, or an āyah like 2:255");
+      readContentsSearchEl.setAttribute("aria-label", t("Sūrah name or number, or an āyah like 2:255"));
       // How many of each unit, read off the same lists the rows come from.
       const T = readContentsTables;
       const counts = { surah: surahIndex.length, juz: T?.juz?.length, hizb: T?.hizb?.length, page: T?.page?.length, ruku: T?.ruku?.length };
@@ -13448,9 +13499,25 @@
       readContentsBodyEl.scrollTop = 0;
     });
     readContentsSearchEl?.addEventListener("input", renderReadContentsBody);
+    // Enter opens the first row (the āyah, when a reference was typed).
+    readContentsSearchEl?.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter") return;
+      e.preventDefault();
+      readContentsBodyEl.querySelector("[data-rc-kind]")?.click();
+    });
+    /** The typed āyah (or range): the "Go to" box's own jump, then the Read view on it. */
+    async function openReadContentsAyah(row) {
+      closeReadContents({ restoreFocus: false });
+      const to = row.dataset.rcTo ? Number(row.dataset.rcTo) : null;
+      await goToReference(Number(row.dataset.rcN), Number(row.dataset.rcFrom), to, row.dataset.rcHalf || null);
+      openReadingScreen();
+      await scrollFlowToCurrentAyah();
+    }
     readContentsBodyEl?.addEventListener("click", (e) => {
       const row = e.target.closest("[data-rc-kind]");
-      if (row) openReadContentsRow(row.dataset.rcKind, Number(row.dataset.rcN)).catch((error) => reportWriteFailure(error, { what: "open that place" }));
+      if (!row) return;
+      const go = row.dataset.rcKind === "ayah" ? openReadContentsAyah(row) : openReadContentsRow(row.dataset.rcKind, Number(row.dataset.rcN));
+      go.catch((error) => reportWriteFailure(error, { what: "open that place" }));
     });
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape" && readContentsMountEl && !readContentsMountEl.hidden) closeReadContents();
@@ -14914,7 +14981,7 @@
     // handful of surahs, not all 114, and the same static, cached-after-
     // first-load fetch Explore's own Surah/Ruku levels already accept.
     function escapeHtml(s) {
-      return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
     }
 
     let qcrCollectionsTenantId = null; // which tenant qcrCollections was loaded for -- re-fetched if the person switches tenants while it's already cached
@@ -21148,7 +21215,42 @@
       mushafPagePrevBtn.setAttribute("aria-label", t("Previous page")); mushafPagePrevBtn.title = t("Previous page");
       mushafPageNextBtn.setAttribute("aria-label", t("Next page")); mushafPageNextBtn.title = t("Next page");
     }
+    /** QR Lead (29 Oct 2026, the Architect's finding: qr-mushaf-page-nav part 1 "‹ from 267 lands on 262" in 2 of 4
+        runs). Measured: ‹ on An-Nahl's first page (267) opens Al-Hijr, and the strip is redrawn page by page from
+        Al-Hijr's FIRST page -- the reader saw page 262, and the Read bar named it, for 0.4-1.3s before the turn reached
+        266 (longer on a phone fetching page fonts). While a ‹ › turn into another surah draws, the strip's pages stay
+        hidden and the reference keeps the page the reader left; the strip is shown the moment the target page is drawn
+        and put on it. A turn that never finds its page still shows the strip within 8s. */
+    let mushafPageHold = null;
+    function holdMushafStripFor(target) {
+      const strip = pageViewContainer;
+      mushafPageHold = target;
+      strip.classList.add("mushaf-turning");
+      let done = false;
+      const release = () => {
+        if (done) return;
+        done = true; watch.disconnect(); clearTimeout(timer);
+        strip.classList.remove("mushaf-turning");
+        mushafPageHold = null;
+        updateMushafPageRef();
+      };
+      // Shown only once the target really sits where a page is read: on a computer's two-page spread the strip cannot
+      // scroll that far until the page after it is drawn too, and stopping short showed 265 beside 266 (measured).
+      const place = () => {
+        const el = strip.querySelector(`:scope > .hifz-page[data-mushaf-page="${target}"]`);
+        if (!el) return;
+        scrollToMushafPage(el);
+        if (!document.body.classList.contains("read-sideways")) { release(); return; }
+        const r = strip.getBoundingClientRect(), right = r.left + strip.clientLeft + strip.clientWidth;
+        if (Math.abs(el.getBoundingClientRect().right - right) <= 2) release();
+      };
+      const watch = new MutationObserver(place);
+      watch.observe(strip, { childList: true });
+      const timer = setTimeout(release, 8000);
+      return release;
+    }
     async function stepMushafPage(dir) {
+      if (mushafPageHold !== null) return; // still turning; a second press would aim from the old page again
       const cur = Number(mushafPageRef?.dataset.page);
       const target = cur + dir;
       if (!Number.isFinite(cur) || target < 1 || target > 604) return;
@@ -21160,17 +21262,20 @@
       if (show()) return;
       const first = mushafPageAyahGroups(target)[0];
       if (!first) return;
-      // The same unit choice: a Page unit moves to the page; a range keeps its length; every other unit follows the āyah.
-      if (currentUnitType === "page") { await goToUnitNumber(target); renderUnitNav(); }
-      else {
-        if (currentUnitType === "range") {
-          if (first.surah !== currentSurahNum) { currentSurahNum = first.surah; surahSelect.value = String(first.surah); await loadSurah(); }
-          const span = Math.max(1, rangeSpan);
-          rangeFrom = first.firstAyah; rangeTo = Math.min(first.firstAyah + span - 1, currentSurahData.ayahCount);
+      const release = holdMushafStripFor(target);
+      try {
+        // The same unit choice: a Page unit moves to the page; a range keeps its length; every other unit follows the āyah.
+        if (currentUnitType === "page") { await goToUnitNumber(target); renderUnitNav(); }
+        else {
+          if (currentUnitType === "range") {
+            if (first.surah !== currentSurahNum) { currentSurahNum = first.surah; surahSelect.value = String(first.surah); await loadSurah(); }
+            const span = Math.max(1, rangeSpan);
+            rangeFrom = first.firstAyah; rangeTo = Math.min(first.firstAyah + span - 1, currentSurahData.ayahCount);
+          }
+          await navigateToAyah(first.surah, first.firstAyah, stageView);
         }
-        await navigateToAyah(first.surah, first.firstAyah, stageView);
-      }
-      try { await flowRenderPromise; } catch { /* renderFlowView() reports its own failure on-screen. */ }
+        try { await flowRenderPromise; } catch { /* renderFlowView() reports its own failure on-screen. */ }
+      } finally { release(); }
       show();
     }
     /** QR Lead (the Owner, 23 Oct 2026: "the right nav button doesn't work at all, the left nav button does things
@@ -21213,6 +21318,7 @@
     function updateMushafPageRef() {
       fitMushafStrip();
       if (!mushafPageRef) return;
+      if (mushafPageHold !== null) return; // a ‹ › turn into another surah is still drawing (holdMushafStripFor)
       if (!mushafToggle.checked || getComputedStyle(pageViewContainer).display === "none") {
         clearMushafPageRef(); return;
       }
@@ -22636,10 +22742,17 @@
     /** The way-back law (decision 86): before leaving for notes.html, write the place into THIS page's own address
         (the rememberDuaPlace() pattern), so ← Back (history.back()) reopens the same surah and āyah -- and the Note
         view, if that is what was open. Read by openPlaceFromQueryString() on load. */
+    // QR Lead (the Owner, 29 Oct 2026: the poster's ← Back "should take to the Ayah card where this poster came from,
+    // instead it takes to the App Home page"): the place written is the CARD's āyah (the reader's own position can be
+    // something else, and a bad one made openPlaceFromQueryString() give up and leave the reader on the landing page),
+    // and qpCard asks for the Āyah card to be opened again on the way back.
     function rememberQuranPlace(unitKey) {
       try {
         const u = new URL(location.href);
-        u.searchParams.set("qpSurah", String(currentSurahNum)); u.searchParams.set("qpAyah", String(currentAyahNum));
+        const card = unitKey && unitKey.startsWith("ayah:") ? parseAyahUnitKey(unitKey) : null;
+        const okCard = card && Number.isInteger(card.surah) && Number.isInteger(card.ayah) && card.ayah >= 1;
+        u.searchParams.set("qpSurah", String(okCard ? card.surah : currentSurahNum)); u.searchParams.set("qpAyah", String(okCard ? card.ayah : currentAyahNum));
+        if (okCard) u.searchParams.set("qpCard", unitKey); else u.searchParams.delete("qpCard");
         u.searchParams.set("qpView", "read"); u.searchParams.delete("qpUnit");
         history.replaceState(history.state, "", u);
       } catch { /* the link still opens the Notes page */ }
@@ -23049,9 +23162,23 @@
       prefetchAyahFolderTree(); // "File in folder(s)" then usually opens with the folders already there
       ayahSheetIntro = intro; // PCF J26
       if (intro?.opening) { openOpeningSheetCore(ayahKey); return; }
-      const [surahStr, ayahStr] = ayahKey.split(":");
+      const [surahStr, ayahStr] = String(ayahKey ?? "").split(":");
       const surahNum = Number(surahStr);
-      const ayahNum = Number(ayahStr);
+      let ayahNum = Number(ayahStr);
+      // QR Lead (the Owner, 29 Oct 2026, a phone screenshot: "Ayah NaN", "Quran 114:NaN — Surah An-Naas", and the pink
+      // "That save did not go through (unknown) · Ref: read Arabic word progress"): some route handed the card a key
+      // with no real āyah number, and the card then asked for that āyah's word progress, which threw. The card never
+      // opens on a broken āyah: inside a real surah it falls back to the āyah the reader is on there (else āyah 1), and
+      // the key that came in is kept in window.__badAyahCardKeys (with where it came from) so the route can be named.
+      const surahMeta = surahIndex.find((x) => x.surahNumber === surahNum);
+      if (!Number.isInteger(surahNum) || surahNum < 1 || surahNum > 114 || (surahIndex.length && !surahMeta)) { console.warn("Āyah card: not a sūrah", ayahKey); return; }
+      const ayahCount = surahMeta?.ayahCount ?? Infinity; // before the sūrah list has loaded, only "a whole number from 1" is checked
+      if (!Number.isInteger(ayahNum) || ayahNum < 1 || ayahNum > ayahCount) {
+        try { (window.__badAyahCardKeys ||= []).push({ key: String(ayahKey), at: new Date().toISOString(), from: (new Error().stack || "").split("\n").slice(2, 5).join(" | ") }); } catch { /* diagnostic only */ }
+        console.warn("Āyah card: not an āyah of this sūrah, opening a real one instead", ayahKey);
+        ayahNum = currentSurahNum === surahNum && Number.isInteger(currentAyahNum) && currentAyahNum >= 1 && currentAyahNum <= ayahCount ? currentAyahNum : 1;
+        half = null;
+      }
       // Issue #606 -- Al-Fātiḥah's internal 1:7 is two Ayat with the count on: the
       // caller says which (the Mushaf ⑥/⑦ marker, the number badge); a caller that
       // cannot (the Word Card's own button) gets the half the reader is on, else 6.
@@ -24362,6 +24489,16 @@
       // read from its first event; a swipe's is read at touchstart.
       const WHEEL_GAP = 350;
       let wheelLastAt = 0, wheelBurstAtBottom = false, wheelBurstAtTop = false;
+      // QR Lead (the Owner, 29 Oct 2026, a Mushaf page on a phone: "Whenever the page scrolling touches the end of the
+      // page, either way it moves/ flips to the next page without intending it to ... It needs to stay unless
+      // deliberately scrolls for the next page"). Measured at 600px, Al-Hijr: a printed page is 1230px tall in a 700px
+      // box, so a reader reaches its end with ordinary flicks, and the NEXT ordinary 200px flick (starting at the end)
+      // turned the page. In the page strip (#pageViewContainer) the turn now needs a DELIBERATE pull from the end: a
+      // swipe of at least 35% of the screen's height (220px minimum), or a wheel burst adding up to 600px (about six
+      // notches), and a burst turns one page at most. The single-āyah view keeps the 9 Oct rule.
+      const STRIP_WHEEL_PULL = 600;
+      const stripSwipePull = () => Math.max(220, window.innerHeight * 0.35);
+      let wheelBurstInStrip = false, wheelBurstSum = 0, wheelBurstTurned = false;
       document.addEventListener("wheel", (e) => {
         if (e.target.closest?.(INTERACTIVE)) return;
         const boundary = scrollBoundary(e.target);
@@ -24371,8 +24508,18 @@
         if (now - wheelLastAt > WHEEL_GAP) {
           wheelBurstAtBottom = !scroller || nearBottom(scroller);
           wheelBurstAtTop = !scroller || nearTop(scroller);
+          wheelBurstInStrip = !!e.target.closest?.("#pageViewContainer");
+          wheelBurstSum = 0; wheelBurstTurned = false;
         }
         wheelLastAt = now;
+        if (wheelBurstInStrip) {
+          // a page turn is one deliberate pull: the burst's own travel, once, in the direction its start allows
+          wheelBurstSum += e.deltaY;
+          if (wheelBurstTurned || Math.abs(wheelBurstSum) < STRIP_WHEEL_PULL) return;
+          if (wheelBurstSum > 0 && wheelBurstAtBottom) { wheelBurstTurned = true; advance(1); }
+          else if (wheelBurstSum < 0 && wheelBurstAtTop) { wheelBurstTurned = true; advance(-1); }
+          return;
+        }
         if (Math.abs(e.deltaY) < 12) return;
         if (e.deltaY > 0 && wheelBurstAtBottom) advance(1);
         else if (e.deltaY < 0 && wheelBurstAtTop) advance(-1);
@@ -24388,7 +24535,7 @@
       // owner's own "swiping right should bring next Ayah"). This reverses
       // the earlier reading, which advanced on a left swipe.
       const SWIPE = 55;
-      let touchStartX = null, touchStartY = null, touchBoundary = null, touchStartAtBottom = false, touchStartAtTop = false;
+      let touchStartX = null, touchStartY = null, touchBoundary = null, touchStartAtBottom = false, touchStartAtTop = false, touchStartInStrip = false;
       let dragEl = null, dragging = false, dragWidth = 0;
 
       document.addEventListener("touchstart", (e) => {
@@ -24400,6 +24547,7 @@
         const startScroller = nearestScroller(e.target, touchBoundary);
         touchStartAtBottom = !startScroller || nearBottom(startScroller);
         touchStartAtTop = !startScroller || nearTop(startScroller);
+        touchStartInStrip = !!e.target.closest?.("#pageViewContainer");
         dragging = false;
         // Never drag the flow view's own native strip (swipeDragEl returns
         // null there), and never a gesture that started inside it.
@@ -24476,8 +24624,9 @@
           // slide right"). advance() decides what one page means.
           if (e.target.closest?.("#pageViewContainer") && flowStripPages() >= 2) return;
           advance(dx > 0 ? 1 : -1);
-        } else if (Math.abs(dy) > SWIPE) {
-          // Only a swipe that STARTED at that end moves on (the Owner, 9 Oct 2026; see the wheel listener).
+        } else if (Math.abs(dy) > (touchStartInStrip ? stripSwipePull() : SWIPE)) {
+          // Only a swipe that STARTED at that end moves on (the Owner, 9 Oct 2026; see the wheel listener), and in
+          // the page strip only a long, deliberate one (29 Oct 2026, stripSwipePull above).
           if (dy < 0 && touchStartAtBottom) advance(1);
           else if (dy > 0 && touchStartAtTop) advance(-1);
         }
@@ -24974,6 +25123,13 @@
       const surahMeta = surahIndex.find((s) => s.surahNumber === surah);
       if (!surahMeta || !Number.isInteger(ayah) || ayah < 1 || ayah > surahMeta.ayahCount) return;
       await goToReference(surah, ayah, null);
+      // ...and the Āyah card the reader left from (a poster's ← Back), once: the key leaves the address as it is used.
+      const card = params.get("qpCard");
+      if (card && card.startsWith("ayah:")) {
+        try { const u = new URL(location.href); u.searchParams.delete("qpCard"); history.replaceState(history.state, "", u); } catch { /* opens once anyway */ }
+        const c = parseAyahUnitKey(card);
+        if (c.surah === surah && c.ayah === ayah) openAyahActionSheet(`${c.surah}:${c.ayah}`, c.half);
+      }
       const unit = params.get("qpUnit");
       if (params.get("qpView") === "note" && unit) {
         try { parseUnitKey(unit); } catch { return; }
@@ -25660,14 +25816,15 @@
       // recitation still sounding (a bookmark's, say) made that Play a PAUSE,
       // and a paused one was resumed with its OLD settings. Only the reading
       // screen's own ▶/⏸ button keeps the toggle below.
-      if (fresh && (isPlaying() || isPaused())) {
+      if (fresh && (isPlaying() || isPaused() || isRunContinuing())) {
         stopDrill(); stopAudio();
         settleListeningSession("stopped");
       }
       // Checked FIRST, and deliberately before unlockAudio(): that helper
       // touches the shared element to claim the gesture, which would undo the
       // pause we are here to perform.
-      if (isPlaying()) { pauseAudio(); renderReadTransport(); return; }
+      // ...and so is a run between two āyāt (isRunContinuing): the button reads ⏸ there, so a tap there pauses.
+      if (isPlaying() || isRunContinuing()) { pauseAudio(); renderReadTransport(); return; }
       hideContinueListening(); // a tap that reached Play is the tap the button was offering
       // SYNCHRONOUS, before any await: marks the shared <audio> element as
       // user-activated so the timing-map fetch below cannot cost us the
@@ -25742,7 +25899,8 @@
       // (setPlaybackStateHandler below re-renders on every play/pause/end/error
       // from ANY cause), so it can never sit there reading "Pause" with nothing
       // playing -- including after a failed load, which is round 22's own fix.
-      const playing = isPlaying();
+      // A run between two āyāt is still playing (isRunContinuing, 28 Oct 2026): no "▶ Play" flash at every āyah.
+      const playing = isPlaying() || isRunContinuing();
       readPlayBtn.textContent = playing ? "⏸" : "▶";
       const label = playing ? t("⏸ Pause") : t("▶ Play");
       readPlayBtn.setAttribute("aria-label", label);

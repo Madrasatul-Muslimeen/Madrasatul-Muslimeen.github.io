@@ -11,6 +11,14 @@
      here too (the same read path notes.html already uses), so it goes
      through the same DOMPurify allow-list before ever touching innerHTML. -->
 <script src="vendor/purify.min.js" defer></script>
+<!-- Audit part 122: LOAD SPEED. A module is only discovered once its importer has arrived, so this page's 60-odd modules
+     arrived five levels deep (~2.6 s on the slow phone line) and, in Bangla, the 460 KB catalogue (i18n.js awaits it at
+     evaluation, which starts only after the WHOLE graph is fetched) began last. These hints start every deep module and the
+     catalogue at once. They fetch only files this page imports anyway; nothing is read or shown differently. -->
+<script>(function(){try{var d=document,h=d.head,add=function(u){var l=d.createElement('link');l.rel='modulepreload';l.href=u;h.appendChild(l);};
+var deep=['envelope','journey-tray','zab-readiness','hidden-modules','note-image-path','note-sheet-engine','activity','note-journal-evidence','study-note-binding','study-event-wiring','note-user-settings','journey-map-contract','journey-map-shard','float-window','minimise','note-link-preview','note-sheet-ui','unit-keys','fatiha-count','study-activity-evidence-store','study-evidence-readiness','study-activity-evidence-id','study-reading-units-readiness'];
+for(var i=0;i<deep.length;i++)add('js/'+deep[i]+'.js');
+if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n/surah-names-bn.js');add('js/i18n/asma-names-bn.js');}}catch(e){}})();</script>
 <style>
   body { font-family: system-ui, sans-serif; max-width: 46rem; margin: 2rem auto; padding: 0 1rem 4rem; color: #222; }
   h1 { font-size: 1.4rem; margin-bottom: 0.2rem; }
@@ -494,7 +502,7 @@
     <div id="noteLayout">
     <div id="listPane">
     <div id="viewToggle" role="group" aria-label="View">
-      <a id="backLink" href="quranrevival.html" title="Go back" aria-label="Go back"><span aria-hidden="true">←</span></a>
+      <a id="backLink" href="quranrevival.html?navBack=1" title="Go back" aria-label="Go back"><span aria-hidden="true">←</span></a>
       <button type="button" class="view-toggle-btn" data-view="folders">Folders</button>
       <button type="button" class="view-toggle-btn" data-view="timeline">Timeline</button>
       <button type="button" class="view-toggle-btn" data-view="path">Path</button>
@@ -533,10 +541,11 @@
     import { langText } from "./js/lang.js";
     import { getAppLang, mountCardLookControl } from "./js/prefs.js";
     import { adoptAppLangFromUserIndex, mountSyncedAppLangControl } from "./js/lang-sync.js";
-    import { safeWrite, reportWriteFailure } from "./js/errors.js";
+    import { safeWrite, reportWriteFailure, settleWrite } from "./js/errors.js";
     import { getMyMembershipRoles, hydrateMemberships, pickContext, setActiveContext, getSelectedPersonId, setSelectedPersonId } from "./js/session-context.js";
     import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
     import { translateStatic, t } from "./js/i18n.js";
+    import { showReadLoading, clearReadStatus, showReadFailure } from "./js/read-failure.js";
     import { mountAccountCard } from "./js/account-card.js";
     import { registerServiceWorker } from "./js/sw-register.js";
     import { armScreensaver } from "./js/screensaver-idle.js";
@@ -759,8 +768,8 @@
      */
     async function runFolderWrite(writeFn, context) {
       try {
-        const result = await writeFn();
-        return { ok: true, result };
+        // { ok, result }, or { ok, savedOnDevice: true } offline when the caller set context.deviceCopyOk (errors.js)
+        return await settleWrite(writeFn, context);
       } catch (err) {
         const known = folderBusinessRefusal(err);
         if (known) {
@@ -1351,6 +1360,26 @@
     const noteLayoutEl = document.getElementById("noteLayout");
     const notePaneEl = document.getElementById("notePane");
     let pendingOpenNoteId = new URLSearchParams(location.search).get("note"); // "Open full page" from the tray
+    // Audit part 123 (the way-back law): a reader who leaves this page with a Note open in the pane (e.g. ⋯ → Import Notes…)
+    // and presses ← Back there is put back on the same Note. Session only, per address, one device; nothing is stored on a
+    // server. Only a back/forward arrival restores it, so a fresh visit never opens a Note by itself.
+    const JM_NOTE_KEY = "mmsa.wayBackJmNote";
+    window.addEventListener("pagehide", () => {
+      try {
+        const id = typeof paneView !== "undefined" ? paneView.noteId : null;
+        const all = JSON.parse(sessionStorage.getItem(JM_NOTE_KEY) || "{}") || {};
+        if (id) all[location.href] = { id, at: Date.now() }; else delete all[location.href];
+        sessionStorage.setItem(JM_NOTE_KEY, JSON.stringify(all));
+      } catch { /* private mode: nothing to keep */ }
+    });
+    if (!pendingOpenNoteId && !isEmbeddedEarly()) {
+      try {
+        const nav = performance.getEntriesByType("navigation")[0];
+        const kept = (JSON.parse(sessionStorage.getItem(JM_NOTE_KEY) || "{}") || {})[location.href];
+        if (nav?.type === "back_forward" && kept?.id && Date.now() - kept.at < 30 * 60 * 1000) pendingOpenNoteId = kept.id;
+      } catch { /* none kept */ }
+    }
+    function isEmbeddedEarly() { return document.documentElement.classList.contains("embed"); }
     // The way-back law (decision 86): a visit that arrives with back=1 (Zab's "Open" after → Note, Z5) shows a visible
     // ← Back to exactly where the reader came from. Not inside the tray (embed), which has its own close.
     if (new URLSearchParams(location.search).get("back") === "1" && !isEmbedded && !document.getElementById("jmBackBtn")) {
@@ -3850,7 +3879,7 @@
             tenantId: activeTenantId, ownerPersonId: selectedPersonId, ownerUid: auth.currentUser.uid,
             name, semanticRole: "user", parentFolderId, order, actorUid: auth.currentUser.uid,
           }),
-          { collection: TENANT.NOTE_FOLDERS, action: "createNoteFolder" }
+          { collection: TENANT.NOTE_FOLDERS, action: "createNoteFolder", deviceCopyOk: true } // nothing below reads outcome.result
         );
         if (!outcome.ok) return;
         if (parentFolderId) { expandedFolderIds.add(parentFolderId); saveExpandedIds(); }
@@ -4443,6 +4472,7 @@
       whoEl.textContent = t("Signed in as {email}", { email: user.email });
       signInBtn.style.display = "none";
       signOutBtn.style.display = "inline-block";
+      if (!unitMode) showReadLoading();
 
       try {
         // Audit part 52 (the notes.html pattern, issue #291): userIndex and the ROLES-ONLY membership query are
@@ -4473,9 +4503,10 @@
         renderToggle();
         appEl.style.display = "block";
         await Promise.all([loadContextData(), hydrationDone]);
+        clearReadStatus();
       } catch (err) {
         console.error(err);
-        whoEl.textContent += ` — ${err.message}`;
+        if (!unitMode) showReadFailure(err, () => (appEl.style.display === "block" ? loadContextData() : Promise.resolve(location.reload())));
         if (unitMode) { renderToggle(); appEl.style.display = "block"; renderUnitView(); unitCannotLoad(viewUnit.querySelector("[data-unit-body]"), unitLabel()); }
       }
     });

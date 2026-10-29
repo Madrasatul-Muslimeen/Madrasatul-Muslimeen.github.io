@@ -631,6 +631,9 @@ console.log("\n=== 15. PHASE 4: Monitor, Homework and Course Offers ===");
   const ctx = await ctxFor({ banner: true, appLang: "bn" });
 
   const mon = await openPage(ctx, "/app/monitor.html");
+  // Audit part 120: the Quran breakdown reads every records chunk of the student, so it is read on a tap.
+  await mon.page.click("#quranLoadBtn");
+  await mon.page.waitForFunction(() => document.querySelectorAll("#quranBody table").length > 0, null, { timeout: 15000 });
   const m = await mon.page.evaluate(async () => {
     const { entriesToCsvRows } = await import("/app/js/monitor.js");
     return {
@@ -4165,9 +4168,18 @@ console.log("\n=== 40. Shell round 28: the Mushaf page ===");
   await page.waitForTimeout(700);
   await page.evaluate(() => { for (const el of document.querySelectorAll("#readScroll, #pageViewContainer, .hifz-page")) el.scrollTop = el.scrollHeight; });
   await page.waitForTimeout(200);
+  // UPDATED IN PLACE 29 Oct 2026 (QR Lead), not deleted: the Owner, "Whenever the page scrolling touches the end of
+  // the page ... it moves/ flips to the next page without intending it to ... It needs to stay unless deliberately
+  // scrolls for the next page." An ordinary 160px slide at the foot now STAYS; a deliberate long pull (35% of the
+  // screen's height, 220px minimum) still turns it. qr-mushaf-edge-stay-browser.mjs proves both at 390/600 and by wheel.
   await swipe(page, "#pageViewContainer", 0, -160);
   await page.waitForTimeout(1800);
-  check("40d a slide up at the foot of the page turns it too", (await shown()).unitNum === "51");
+  check("40d an ordinary slide up at the foot of the page STAYS on it (29 Oct 2026)", (await shown()).unitNum === "50");
+  const pull = await page.evaluate(() => Math.ceil(Math.max(220, innerHeight * 0.35)) + 40);
+  await page.evaluate(() => { for (const el of document.querySelectorAll("#readScroll, #pageViewContainer, .hifz-page")) el.scrollTop = el.scrollHeight; });
+  await swipe(page, "#pageViewContainer", 0, -pull);
+  await page.waitForTimeout(1800);
+  check("40d ...and a deliberate long pull up at the foot turns it", (await shown()).unitNum === "51");
   check("40d no page errors", errors.filter((e) => !/archive\.org/.test(e)).length === 0, JSON.stringify(errors.slice(0, 3)));
   await page.close();
   await ctx.close();
@@ -5196,6 +5208,9 @@ console.log("\n=== 44. The Bookmark Manager (bookmarks.html) -- items 2/3/5 ==="
   check("44b creating a folder (item 3, \"multilayered\") really adds it", afterFolder.includes("Tafsir notes"), JSON.stringify(afterFolder));
 
   // Move the seeded bookmark into the new folder (item 3: "moveable among layers").
+  // Audit part 119: a row's Move list holds only its current choice until the reader reaches for it (a tap, a click or
+  // Tab), so the check reaches for it first, as a reader does, before reading its options.
+  await page.focus('.bm-row[data-bm-id="bm1"] [data-bm-move]');
   const folderOptVal = await page.evaluate(() => {
     const sel = document.querySelector('.bm-row[data-bm-id="bm1"] [data-bm-move]');
     return [...sel.options].find((o) => o.textContent.trim() === "Tafsir notes")?.value ?? null;
@@ -5836,6 +5851,8 @@ console.log("\n=== 50h-k. The person tag on the Manager page, and both in Bangla
   const ctx = await ctxFor({ banner: false });
   const { page, errors } = await openPage(ctx, "/app/bookmarks.html");
   await page.waitForTimeout(800);
+  // Audit part 119: the For list is filled when the reader reaches for it (tap, click or Tab); reach for it first.
+  await page.focus(".bm-row [data-bm-person]");
   const managerRow = await page.evaluate(() => {
     const sel = document.querySelector(".bm-row [data-bm-person]");
     return {
