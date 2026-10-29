@@ -23300,7 +23300,10 @@
       if (!slot || !bar || !tabs) return;
       const check = () => {
         const r = tabs.getBoundingClientRect();
-        let free = r.width > 0 && r.height > 0 && r.top < innerHeight && r.bottom > 0;
+        // With the Read view open (a window over the landing on a computer) the landing row is never the place: the Read bar's
+        // slot is, and while the Notes pane covers that bar the way back floats above the pane (watchPaneOverBackDock).
+        const read = document.getElementById("readView");
+        let free = !!read?.hidden && r.width > 0 && r.height > 0 && r.top < innerHeight && r.bottom > 0;
         // Looking through the way-back chips themselves: one still floating may lie over the tabs, and is not a window.
         if (free) { const el = document.elementsFromPoint(r.left + r.width / 2, Math.min(r.top + r.height / 2, innerHeight - 1)).find((e) => !e.closest("#ayahCardBackPill, .bm-back-row")); free = !!el && bar.contains(el); }
         if (free !== slot.classList.contains("back-dock-covered")) return;

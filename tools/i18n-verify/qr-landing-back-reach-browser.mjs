@@ -8,6 +8,7 @@
 //   node tools/i18n-verify/qr-landing-back-reach-browser.mjs [--mutate=NAME]   (serve.js on :8080, from the repo root)
 //   no-slot        the landing slot removed          -> "docks in the landing's own row" and "covers nothing" FAIL
 //   no-cover-watch the cover watcher not started     -> "floats ABOVE the window" FAILS (it docks under it)
+//   no-read-guard  the slot docks with the Read view open -> "Bookmarks -> Open at 1440 ... reachable" FAILS (under the Notes pane)
 import { chromium, newContext, openPage } from "./harness.mjs";
 
 let pass = 0, fail = 0;
@@ -19,6 +20,7 @@ const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice
 const MUT = {
   "no-slot": ['      <div id="landingBackSlot" class="landing-back-slot" data-back-dock></div>\n', ""],
   "no-cover-watch": ["    watchLandingBackDock();\n", ""],
+  "no-read-guard": ["let free = !!read?.hidden && r.width", "let free = r.width"],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
@@ -110,6 +112,34 @@ for (const [w, h, lang] of VIEWS) {
     const back = await page.evaluate(() => { const c = document.querySelector("[data-ayah-sheet]"); return { open: !!c, text: (c?.textContent || "").includes("114") }; });
     check(`${tag} its ← still goes back to Āyah card 114:1`, back.open && back.text, JSON.stringify(back));
   }
+  await ctx.close();
+}
+// Bookmarks -> Open on a computer: the Read view opens over the landing with the Notes pane over its bar, so the Read bar's
+// slot is not a dock; the "Back to Bookmarks" chip must then float above the pane, not dock in the landing row beneath it.
+for (const lang of ["en", "bn"]) {
+  const tag = `[${lang} 1440 Bookmarks -> Open]`;
+  const ctx = await newContext(browser, { appLang: lang, viewport: { width: 1440, height: 900 } });
+  if (MUTATE) {
+    const [from, to] = MUT[MUTATE];
+    await ctx.route("**/app/quranrevival.html*", async (r) => {
+      const res = await r.fetch(); const body = await res.text();
+      if (body.split(from).length !== 2) throw new Error(`mutation ${MUTATE}: anchor not found exactly once`);
+      r.fulfill({ response: res, body: body.replace(from, to) });
+    });
+  }
+  const { page } = await openPage(ctx, "/app/bookmarks.html");
+  await page.waitForFunction(() => [...document.querySelectorAll("a[href]")].some((a) => /quranrevival\.html\?bookmark=bm1/.test(a.getAttribute("href"))), null, { timeout: 15000 });
+  await page.evaluate(() => [...document.querySelectorAll("a[href]")].find((a) => /quranrevival\.html\?bookmark=bm1/.test(a.getAttribute("href"))).click());
+  await page.waitForFunction(() => !!document.querySelector("[data-bm-back]"), null, { timeout: 15000 }).catch(() => {});
+  await page.waitForTimeout(3000);
+  const b = await page.evaluate(() => {
+    const row = document.querySelector("[data-bm-back]"), read = document.getElementById("readView"), pane = document.getElementById("readNotePane");
+    if (!row) return null;
+    const r = row.getBoundingClientRect(), e = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+    return { readOpen: !!read && !read.hidden, paneOpen: !!pane && !pane.hidden, parent: row.parentElement?.id || row.parentElement?.tagName, shown: r.width > 0 && getComputedStyle(row).display !== "none", reach: !!e && row.contains(e) };
+  });
+  check(`${tag} POSITIVE CONTROL: the Read view and its Notes pane are open, with the "Back to Bookmarks" chip`, !!b && b.readOpen && b.paneOpen, JSON.stringify(b));
+  check(`${tag} the chip is not docked in the landing row under the pane, and a finger can reach it`, !!b && b.parent !== "landingBackSlot" && b.shown && b.reach, JSON.stringify(b));
   await ctx.close();
 }
 await browser.close();
