@@ -397,7 +397,8 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     const w1 = await writeCount(page);
     await page.fill("#famName0", "Should Not Save");
     await page.click("#familySkip"); await settle(page, 500);
-    const sk = await ev(page, () => ({ text: document.getElementById("familyResult").textContent, link: !!document.querySelector('#familyResult a[href="index.html"]') }));
+    // Updated in place (29 Oct 2026, regression sweep): audit part 114 added ?navBack=1 to "Open the app"; either href is the way in.
+    const sk = await ev(page, () => ({ text: document.getElementById("familyResult").textContent, link: !!document.querySelector('#familyResult a[href="index.html"], #familyResult a[href="index.html?navBack=1"]') }));
     check(`${t}: Skip for now writes no person and leads on with a way into the app (${bn ? "Bangla" : "English"})`, (await writes(page, w1)).filter((x) => x.col === "tenantPeople").length === 0 && sk.link && (bn ? BN.test(sk.text) : /^You can add family members any time on the People page\./.test(sk.text)), JSON.stringify(sk));
     check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
   }, { extraSeed: "window.__stubApplyBatches = true;" });
