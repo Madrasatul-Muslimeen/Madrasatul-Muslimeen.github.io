@@ -253,7 +253,9 @@
     flex: 0 0 auto; position: sticky; bottom: 0; z-index: 60; background: white;
     border-top: 1px solid #e3e8f2; padding: 0.5rem 0 0.55rem; margin-top: 0.55rem;
   }
-  #tabRow { display: flex; gap: 0.4rem; }
+  /* Audit part 131: with large text the four tabs need more than the row; they wrap onto a second line rather than push
+     the page sideways. At ordinary sizes they fit on one line, as before. */
+  #tabRow { display: flex; flex-wrap: wrap; gap: 0.4rem; }
   #studyPillarWrap { position: relative; flex: 1 1 0; display: flex; }
   #studyPillarWrap > .qr-tab { width: 100%; }
   #studyPillarMenu {
@@ -742,6 +744,20 @@
     body.landing-view #wheelSection .wheel-sidebar { height: auto; }
     body.landing-view #wheelSection .ways-list { flex: 0 0 auto; overflow: visible; max-height: none; }
   }
+  /* Audit part 131 (29 Oct 2026): with the reader's text at 150-200%, above 720px the fixed-height landing could not hold
+     its content -- the wheel area spilled under the docked tabs, where no scroll could reach Read, Unit or Know Your Status.
+     While the content really does not fit (watchLandingFit() measures it in the fixed layout), the landing scrolls the way
+     it does on a phone. At ordinary text sizes it fits, the class is never set, and nothing here applies. */
+  /* 721-899px only (watchLandingFit sets it there): from 900px the wheel is a window (#wheelPopupView) that scrolls itself. */
+  body.landing-view.landing-tall { height: auto; min-height: 100vh; min-height: 100dvh; overflow: visible; }
+  body.landing-view.landing-tall #app { flex: 1 0 auto; }
+  body.landing-view.landing-tall #stage,
+  body.landing-view.landing-tall #wheelPopupView,
+  body.landing-view.landing-tall #wheelSection { flex: 0 0 auto; }
+  body.landing-view.landing-tall #wheelSection .wheel-sidebar { height: auto; }
+  body.landing-view.landing-tall #wheelSection .ways-list { flex: 0 0 auto; overflow: visible; max-height: none; }
+  /* ...and from 768px the Zab bar (44px, fixed at the bottom) is there too: the scrolling page's docked tabs stick above it. */
+  @media (min-width: 768px) { body.zab-bar-on.landing-view.landing-tall #dock { bottom: 44px; } }
 
   /* The wheel look behind "Study Quran" (see #wheelLookSwitch). "dark" is the
      long-standing veil above; "light" is a light-grey veil; "colour" lifts
@@ -756,7 +772,7 @@
   .wheel-drawer-panel[hidden] { display: none; }
   /* Owner, 1 Oct 2026 (the same photo, arrows drawn): Wheel to the left
      edge, Unit to the right, Legend in the middle. */
-  .wheel-drawer-row { display: flex; justify-content: space-between; gap: 0.35rem; align-self: stretch; box-sizing: border-box; padding: 0; }
+  .wheel-drawer-row { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.35rem; align-self: stretch; box-sizing: border-box; padding: 0; } /* wrap: audit part 131, large text */
   .wheel-drawer-row .wheel-drawer-btn { flex: 0 0 auto; min-width: 5.5rem; }
   /* The Owner, 15 Oct 2026 (PCF J25): Wheel, Legend and Unit shift left and the 🧰 takes the right end. */
   .wheel-zab-dock { display: inline-flex; align-items: center; flex: 0 0 auto; }
@@ -8369,6 +8385,32 @@
         (and its Open all button) starts just past the bottom of the visible
         area. Measured, never guessed: the header's height changes with the
         tagline and the language. */
+    /** Audit part 131: above 720px the landing is a fixed-height screen. When the reader's text is large enough that its
+        content spills out of that height (under the docked tabs), body.landing-tall lets it scroll as on a phone. Measured
+        in the fixed layout each time (class off, measure, class on if needed), within one frame, so nothing flickers. */
+    function checkLandingFit() {
+      const body = document.body, ws = document.getElementById("wheelSection"), stage = document.getElementById("stage");
+      // 721-899px only: below, the phone landing scrolls already; from 900px the wheel is a window that scrolls itself.
+      if (!ws || !stage || innerWidth <= 720 || innerWidth >= 900 || !body.classList.contains("landing-view")) { body.classList.remove("landing-tall"); return; }
+      const had = body.classList.contains("landing-tall");
+      body.classList.remove("landing-tall");
+      const spill = [stage, ws].some((e) => e.clientHeight > 0 && e.scrollHeight > e.clientHeight + 4);
+      body.classList.toggle("landing-tall", spill);
+      if (had !== spill) requestAnimationFrame(() => fitLandingFirstScreen());
+    }
+    function watchLandingFit() {
+      let queued = false;
+      const later = () => { if (queued) return; queued = true; requestAnimationFrame(() => { queued = false; checkLandingFit(); }); };
+      const ro = new ResizeObserver(later);
+      for (const id of ["dock", "tabRow", "wheelDrawerRow", "readContentsBtn"]) { const e = document.getElementById(id); if (e) ro.observe(e); }
+      window.addEventListener("resize", later);
+      // Only entering or leaving the landing view matters here; this function's own landing-tall changes must not re-wake it.
+      let wasLanding = document.body.classList.contains("landing-view");
+      new MutationObserver(() => { const now = document.body.classList.contains("landing-view"); if (now !== wasLanding) { wasLanding = now; later(); } })
+        .observe(document.body, { attributes: true, attributeFilter: ["class"] });
+      new MutationObserver(later).observe(document.documentElement, { attributes: true, attributeFilter: ["style", "class"] });
+      later();
+    }
     function fitLandingFirstScreen() {
       const col = document.querySelector("#wheelSection .wheel-col");
       const wheel = document.querySelector("#wheelSection .mastery-wheel");
@@ -8403,7 +8445,11 @@
       for (let pass = 0; pass < 3; pass++) {
         const over = row.getBoundingClientRect().bottom + scrollY - panelsH + 6 - fold;
         if (over <= 1) break;
-        const cap = Math.floor(wheel.getBoundingClientRect().width - over) + "px";
+        // Audit part 131: with large text the header and the docked tabs leave almost no room, and an unbounded cap shrank the
+        // wheel to a stub whose labels spilled under the buttons. It never goes below 60% of its column (200px at least); past
+        // that the row sits below the fold and the page scrolls to it, as it does on any phone.
+        const floor = Math.min(col.getBoundingClientRect().width, Math.max(200, col.getBoundingClientRect().width * 0.6));
+        const cap = Math.floor(Math.max(floor, wheel.getBoundingClientRect().width - over)) + "px";
         capEls.forEach((el) => el.style.setProperty("--landing-wheel-max", cap));
       }
       const want = Math.max(0, Math.round(fold - (col.getBoundingClientRect().top + scrollY) + 8)) + "px";
@@ -8414,6 +8460,7 @@
       ["topNav", "taglineStrip", "dock", "wheelPopupView"].forEach((id) => { const el = document.getElementById(id); if (el) fitRO.observe(el, { box: "border-box" }); });
     }
     addEventListener("resize", () => { document.querySelector("#wheelSection .mastery-wheel")?.style.removeProperty("--landing-wheel-max"); fitLandingFirstScreen(); });
+    if (typeof ResizeObserver === "function") watchLandingFit(); // audit part 131: large text above 720px
     // Follow-up round: Map(subjectId -> courseOffer contextId) for
     // selectedPersonId -- same mechanism topic-study.js/routine-study.js
     // already use (course-offers.js's programSubjectMapFromEnrollments()).
