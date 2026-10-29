@@ -242,7 +242,18 @@ for (const look of ["night", "light"]) for (const lang of ["en", "bn"]) {
         const fd = await P.evaluate(() => { const f = document.querySelector("[data-ayah-win-frame]"); return f ? getComputedStyle(f).display : "none"; });
         check(`${tag} the ${name} tile acts as before (card closes, handles go with it)`, present && gone && fd === "none", `present=${present} gone=${gone} frame=${fd}`);
         if (name === "Note") check(`${tag} Note opens the note pane`, await P.evaluate(() => !document.getElementById("readNotePane")?.hidden));
-        if (!/quranrevival\.html/.test(P.url())) { await P.goBack({ waitUntil: "networkidle" }); await P.waitForTimeout(500); await toRead(P); }
+        if (!/quranrevival\.html/.test(P.url())) {
+          await P.goBack({ waitUntil: "networkidle" }); await P.waitForTimeout(500);
+          // UPDATED IN PLACE 29 Oct 2026 (QR Lead; the Owner: the poster's ← Back "should take to the Ayah card where this
+          // poster came from"): coming back from the Poster page now reopens the Āyah card, so it is checked open and
+          // closed before the next tile (it used to come back with no card, and this route clicked straight on).
+          if (name === "Poster") {
+            await P.waitForFunction(() => !!document.getElementById("ayahActionSheetOverlay")?.classList.contains("open"), null, { timeout: 12000 }).catch(() => {});
+            check(`${tag} coming back from the Poster page reopens the Āyah card`, await isOpen(P));
+          }
+          if (await isOpen(P)) { await P.keyboard.press("Escape"); await P.waitForTimeout(300); }
+          await toRead(P);
+        }
         else await P.keyboard.press("Escape");
       }
     }

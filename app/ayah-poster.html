@@ -17,6 +17,14 @@
   .ap-bar { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 0.6rem; padding: 0.5rem 0.75rem; background: var(--ap-navy); color: #fff; }
   .ap-back { min-height: 44px; padding: 0 0.9rem; border-radius: 999px; border: 2px solid var(--ap-gold); background: #fff; color: var(--ap-navy); font: inherit; font-weight: 700; cursor: pointer; flex: 0 0 auto; }
   .ap-title { margin: 0; font-size: 1.1rem; min-width: 0; overflow-wrap: anywhere; }
+  /* QR Lead (the Owner, 29 Oct 2026: "This Study/ Dawah poster, should have a NAV buttons for next/previous Ayah"):
+     ‹ › at the bar's end, two 44px tiles; the title takes the room left. */
+  .ap-title { flex: 1 1 auto; }
+  .ap-title-ref { white-space: nowrap; }
+  .ap-nav { flex: 0 0 auto; width: 44px; height: 44px; padding: 0; border-radius: 0.6rem; border: 2px solid var(--ap-gold); background: #fff; color: var(--ap-navy); font: inherit; font-size: 1.3rem; font-weight: 700; line-height: 1; cursor: pointer; }
+  .ap-nav:disabled { opacity: 0.4; cursor: default; }
+  .ap-nav[hidden] { display: none; }
+  .ap-nav:focus-visible { outline: 3px solid var(--ap-gold); outline-offset: 2px; }
   .ap-wrap { max-width: 1200px; margin: 0 auto; padding: 0.9rem 16px 1.5rem; box-sizing: border-box; display: grid; gap: 0.9rem; }
   .ap-choose { display: grid; gap: 0.7rem; max-width: 640px; margin: 1.2rem auto; }
   .ap-choose[hidden], #apEditor[hidden] { display: none; } /* a class rule's display beats [hidden] (the brief's trap) */
@@ -105,7 +113,7 @@
 <style id="apPageSize">@page { size: A4 portrait; margin: 0; }</style>
 </head>
 <body>
-  <div class="ap-bar"><button type="button" class="ap-back" id="apBack">← Back</button><h1 class="ap-title" id="apTitle">Āyah poster</h1></div>
+  <div class="ap-bar"><button type="button" class="ap-back" id="apBack">← Back</button><h1 class="ap-title" id="apTitle">Āyah poster</h1><button type="button" class="ap-nav" id="apPrev" hidden>‹</button><button type="button" class="ap-nav" id="apNext" hidden>›</button></div>
   <main class="ap-wrap">
     <section class="ap-choose" id="apChoose" hidden>
       <h2 id="apChooseTitle">Which poster?</h2>
@@ -161,6 +169,30 @@
     $("apBack").textContent = `← ${t("Back")}`;
     $("apBack").addEventListener("click", () => { if (history.length > 1) history.back(); else location.href = "./quranrevival.html"; });
     $("apTitle").textContent = t("Āyah poster");
+    // ‹ › (the Owner, 29 Oct 2026): the previous / next āyah, one āyah per poster, across a sūrah's edge; ← Back still
+    // returns to the Āyah card the poster was opened from (history.back(), unchanged).
+    for (const [id, label] of [["apPrev", t("Previous āyah")], ["apNext", t("Next āyah")]]) { $(id).setAttribute("aria-label", label); $(id).title = label; }
+    async function stepAyah(dir) {
+      let s = state.surah, a = state.ayah + dir, data = surahData;
+      if (a < 1) { if (s <= 1) return; s -= 1; data = await getSurah(s); a = data.ayahCount; }
+      else if (a > surahData.ayahCount) { if (s >= 114) return; s += 1; data = await getSurah(s); a = 1; }
+      surahData = data; state.surah = s; state.ayah = a; state.from = a; state.to = a; state.custom = false;
+      render();
+    }
+    let stepping = false;
+    for (const [id, dir] of [["apPrev", -1], ["apNext", 1]]) $(id).addEventListener("click", async () => {
+      if (stepping) return;
+      stepping = true;
+      try { await stepAyah(dir); } catch (err) { setStatus(t("The āyah could not be loaded: {why}", { why: err?.message ?? String(err) }), true); } finally { stepping = false; }
+    });
+    function paintNav() {
+      const on = !!state.kind && !!surahData;
+      $("apPrev").hidden = $("apNext").hidden = !on;
+      if (!on) return;
+      const first = state.from ?? state.ayah, last = state.to ?? state.ayah;
+      $("apPrev").disabled = state.surah === 1 && first <= 1;
+      $("apNext").disabled = state.surah === 114 && last >= surahData.ayahCount;
+    }
     $("apChooseTitle").textContent = t("Which poster?");
     $("apChooseStudy").textContent = t("Study poster");
     $("apChooseStudyHint").textContent = t("For children: every word with its meaning, for the wall");
@@ -280,10 +312,12 @@
 
     function render() {
       writeAddress();
+      paintNav();
       if (!state.kind) { $("apChoose").hidden = false; $("apEditor").hidden = true; return; }
       $("apChoose").hidden = true; $("apEditor").hidden = false;
       const model = posterModel(surahData, state.from, state.to);
-      $("apTitle").textContent = `${t(state.kind === "study" ? "Study poster" : "Dawah poster")} · ${rangeRef(model, num)}`;
+      // the reference never breaks inside itself ("114 : 1" split over two lines at 390px, measured 29 Oct 2026)
+      $("apTitle").innerHTML = `${escapeHtml(t(state.kind === "study" ? "Study poster" : "Dawah poster"))} · <span class="ap-title-ref">${escapeHtml(rangeRef(model, num))}</span>`;
       $("apTools").innerHTML = toolsHtml();
       paintMenu(model);
       $("apActs").innerHTML = `<button type="button" class="ap-act" data-ap-print>🖨 ${escapeHtml(t("Print"))}</button><button type="button" class="ap-act ap-act-2" data-ap-picture>🖼 ${escapeHtml(t("Save as picture"))}</button>`;
