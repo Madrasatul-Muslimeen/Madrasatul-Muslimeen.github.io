@@ -581,7 +581,7 @@
           unitKey, title, bodyHtml, actorUid: auth.currentUser.uid,
           weekStartsOn: currentTenantDoc?.weekStartsOn ?? 6,
         }),
-        { collection: TENANT.NOTES, action: "createStudyNote" }
+        { collection: TENANT.NOTES, action: "createStudyNote", noDeviceCopy: true }
       );
       if (!outcome.ok) return;
       newNoteForm.style.display = "none";
@@ -623,7 +623,7 @@
             expectedRevisionId: note.currentRevisionId, title: newTitle, bodyHtml: newBody,
             actorUid: auth.currentUser.uid, weekStartsOn: currentTenantDoc?.weekStartsOn ?? 6,
           }),
-          { collection: TENANT.NOTES, action: "reviseStudyNote" }
+          { collection: TENANT.NOTES, action: "reviseStudyNote", noDeviceCopy: true }
         );
         if (!outcome.ok) return false;
         showPageStatus(t("Saved as a new revision ({revisionId}).", { revisionId: outcome.result.commit.revisionId }));
@@ -690,7 +690,7 @@
           tenantId: activeTenantId, noteId: note.noteId, expectedRevisionId: note.currentRevisionId,
           actorUid: auth.currentUser.uid,
         }),
-        { collection: TENANT.NOTES, action: "retireStudyNote" }
+        { collection: TENANT.NOTES, action: "retireStudyNote", noDeviceCopy: true }
       );
       if (!outcome.ok) return;
       await refreshView();

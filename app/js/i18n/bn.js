@@ -3635,6 +3635,8 @@ export const BN = {
   "\"{title}\" moved to Trash. Open 🗑 Trash from the ⋯ menu to restore it.": "\"{title}\" ট্র্যাশে গেছে। ফিরিয়ে আনতে ⋯ মেনু থেকে 🗑 ট্র্যাশ খুলুন।",
   "Done": "সম্পন্ন",
   "Saved on this device": "এই ডিভাইসে সংরক্ষিত",
+  "Could not reach the server. Nothing was saved — your text is still here, so press Save again when you are online.": "সার্ভারে পৌঁছানো যায়নি। কিছুই সংরক্ষিত হয়নি — আপনার লেখা এখানেই আছে, ইন্টারনেট এলে আবার সংরক্ষণ চাপুন।",
+  "Saved on this device — it will be sent when you are online.": "এই ডিভাইসে সংরক্ষিত হয়েছে — ইন্টারনেট এলে পাঠানো হবে।",
   "Not saved yet — will try again": "এখনও সংরক্ষিত হয়নি — আবার চেষ্টা করা হবে",
   "This Note changed on another device. Your text is kept on this device — copy it before reloading.": "এই নোটটি অন্য ডিভাইসে বদলেছে। আপনার লেখা এই ডিভাইসে রাখা আছে — পেজ রিলোড করার আগে এটি কপি করে নিন।",
   "You have unsaved text on this device, from {date}.": "এই ডিভাইসে {date} তারিখের একটি অসংরক্ষিত লেখা আছে।",

@@ -541,7 +541,7 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
     import { langText } from "./js/lang.js";
     import { getAppLang, mountCardLookControl } from "./js/prefs.js";
     import { adoptAppLangFromUserIndex, mountSyncedAppLangControl } from "./js/lang-sync.js";
-    import { safeWrite, reportWriteFailure } from "./js/errors.js";
+    import { safeWrite, reportWriteFailure, settleWrite } from "./js/errors.js";
     import { getMyMembershipRoles, hydrateMemberships, pickContext, setActiveContext, getSelectedPersonId, setSelectedPersonId } from "./js/session-context.js";
     import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
     import { translateStatic, t } from "./js/i18n.js";
@@ -767,8 +767,8 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
      */
     async function runFolderWrite(writeFn, context) {
       try {
-        const result = await writeFn();
-        return { ok: true, result };
+        // { ok, result }, or { ok, savedOnDevice: true } offline when the caller set context.deviceCopyOk (errors.js)
+        return await settleWrite(writeFn, context);
       } catch (err) {
         const known = folderBusinessRefusal(err);
         if (known) {
@@ -3878,7 +3878,7 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
             tenantId: activeTenantId, ownerPersonId: selectedPersonId, ownerUid: auth.currentUser.uid,
             name, semanticRole: "user", parentFolderId, order, actorUid: auth.currentUser.uid,
           }),
-          { collection: TENANT.NOTE_FOLDERS, action: "createNoteFolder" }
+          { collection: TENANT.NOTE_FOLDERS, action: "createNoteFolder", deviceCopyOk: true } // nothing below reads outcome.result
         );
         if (!outcome.ok) return;
         if (parentFolderId) { expandedFolderIds.add(parentFolderId); saveExpandedIds(); }
