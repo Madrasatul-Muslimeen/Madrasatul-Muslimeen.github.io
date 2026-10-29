@@ -22939,3 +22939,15 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 - **Measured (Architect, on main v12.122 + #1324):** qr-landing-back-reach 114/0; landing-drawers 294/0; `behaviour.mjs` alone 972/0; apps-build-check 48/0; QR built, qr-verify 27/28 (upgrade-browser needs an older QR commit; student-browser failed once while sharing the CPU, 501/0 alone). Screenshots looked at: 360 bn 200% (tabs wrap to two lines, page scrolls, no sideways), 768 en 200% (tabs above the Zab bar).
 - Also merged since v12.122 (no app change, no version): PR #1324, `apps/qr/qr-repo-workflow.yml` mirrors QR's `build-from-msa.yml`, which now rebuilds QR from MSA's main every 3 hours (QR PR #1, the Owner's request of 30 Oct).
 - Nothing stored, no Rules changed.
+
+## v12.124 — 30 Oct 2026 — The shared pages with larger text (audit part 132, part 131 findings 5–18)
+
+- **Found by audit part 131** (PR #1319): with the root text at 150%/200%, forms on Records, Homework, People, Classes, Course offers, Curriculum and Onboarding ran past the screen, Records' Confirm / Return went off the side of a tablet, long names in pickers were cut, long links pushed pages sideways, and Mapping My Journey's search box was 2px too wide.
+- Page CSS (no text, no stored data) on Records, Homework, People, Bookmarks, Classes, Course offers, Curriculum, Onboarding, About, Import notes and Mapping My Journey: `min-width: 0` on fieldsets and flex children, inputs `max-width: 100%`, wrapping rows, `overflow-wrap: anywhere` on long links.
+- New `app/js/select-title.js` (`keepSelectTitles`): a select's full chosen value is its `title` ("For: …" where it already had a label). New `app/js/table-stack.js` (`keepTablesFitting`): a table wider than its box is shown as stacked rows, each cell labelled from the table's own heading, the last cell (the actions) on its own line; nothing changes while it fits.
+- At 100% on a 360px phone Records' and People's entry tables stack as well: on `main` the Records entries table already ran past the right edge with its Confirm / Return column off screen (before/after looked at).
+- The Builder (run 2248) lost its GitHub credentials after its third push: no PR and no report. The Architect merged its branch, kept its extended suite (`large-text-shared-pages-browser.mjs`, `FIXED_KINDS` at 150% and 200%, `--mutate=old`), and wrote `docs/reports/2026-10-30-audit-part132-large-text-fixes.md`.
+- **Measured (Architect):** the suite 530/0 on the 11 fixed pages (with the reach pass), 290/0 on the other 12; `--mutate=old` 107 failures across all 11 pages; `behaviour.mjs` alone 972/0; `shared-pages-bangla-layout-audit` 460/0; `shared-tools-long-names` 202/0; `floating-overlays-reach` 360/0; `audit-part57-records-monitor` 468/0; stub-parity 4/0; apps-build-check 48/0; QR builds.
+- Also merged since v12.123 (docs only): PR #1326, the Dua module plan (`docs/governance/dua-module-plan.md`, rule dua130) with its CLAUDE.md pointer; its update for rule dua131 (demo in its own window) rides this release.
+- Not in this round: the 🧰 Zab bar with larger text (findings 1–2, 20–21), taglines (19).
+- Nothing stored, no Rules changed.

@@ -47,6 +47,13 @@
   /* Audit part 67: 600 -> 700px; at a 640px screen (200% zoom) the table was 642px wide and dragged the page sideways (audit-part38). */
   @media (max-width: 700px) { table { display: block; overflow-x: auto; } }
   #newDomainName { max-width: 100%; box-sizing: border-box; }
+
+  /* Audit part 132 (findings 5, 6): with the phone's text enlarged the form and the tables must reflow inside the screen.
+     A fieldset's default min-width is its content's, which is what made the whole claim form wider than a 360px screen. */
+  fieldset { min-width: 0; }
+  .row > div { min-width: min(10rem, 100%); }
+  #contextBar select { max-width: 100%; }
+  /* A table that cannot fit at the reader's text size is stacked into labelled rows by js/table-stack.js (finding 6). */
 </style>
 </head>
 <body class="admin-touch">
@@ -153,6 +160,8 @@
   </div>
 
   <script type="module">import { keepFocusInTables } from "./js/table-focus.js"; keepFocusInTables();</script>
+  <script type="module">import { keepSelectTitles } from "./js/select-title.js"; keepSelectTitles();</script>
+  <script type="module">import { keepTablesFitting } from "./js/table-stack.js"; keepTablesFitting();</script>
   <script type="module">
     import { auth, db } from "./js/firebase-init.js";
     import {

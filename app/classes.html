@@ -37,6 +37,11 @@
   #who { margin: 1rem 0; font-size: 0.95rem; color: #555; }
   .contextBar { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; margin: 1rem 0; font-size: 0.9rem; }
   .contextBar label { margin: 0; }
+  /* Audit part 132 (finding 11): with the phone's text enlarged a row stays inside the screen (a fieldset's default min-width is its content's). */
+  fieldset { min-width: 0; }
+  .row > div { min-width: min(10rem, 100%); }
+  select, textarea, input { max-width: 100%; }
+  .card { overflow-wrap: anywhere; }
 </style>
 </head>
 <body class="admin-touch">
@@ -459,5 +464,6 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     import { mountPageAccountCard } from "./js/account-card.js";
     mountPageAccountCard({ movePerson: false, getEmail: () => auth.currentUser?.email || "" });
   </script>
+<script type="module">import { keepSelectTitles } from "./js/select-title.js"; keepSelectTitles();</script>
 </body>
 </html>

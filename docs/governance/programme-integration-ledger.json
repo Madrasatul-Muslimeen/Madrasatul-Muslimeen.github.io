@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "12.123",
+    "version": "12.124",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -5753,8 +5753,20 @@
     {
       "version": "12.123",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Audit part 131 findings 3-4 (QR Lead): tabs and drawer row wrap; body.landing-tall at 721-899px; wheel floor only with enlarged text.",
+      "integration": {
+        "authorizedOn": "2026-10-29",
+        "integratedOn": "2026-10-29",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.124",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Audit part 132: part 131 findings 5-18 on 11 shared pages; select-title.js and table-stack.js.",
       "integration": {
         "authorizedOn": "2026-10-29",
         "integratedOn": "2026-10-29",
@@ -5763,8 +5775,9 @@
       }
     }
   ],
-  "nextUnallocated": "12.124",
+  "nextUnallocated": "12.125",
   "nextUnallocatedNote": [
+    "v12.124 was allocated to The shared pages work with the phone's text made larger (audit part 132), 2026-10-29.",
     "v12.123 was allocated to The Qur'an Study landing works with the phone's text made larger (audit part 131 findings 3-4, QR Lead), 2026-10-29.",
     "v12.122 was allocated to On the Qur'an Study landing the way back has a row of its own above the tabs (audit part 127, QR Lead), 2026-10-29.",
     "v12.121 was allocated to A Hadith book or the Encyclopedia that cannot open offline says so in plain words with Try again (audit part 130 F1/F3/F5, Hadith Lead), 2026-10-29.",

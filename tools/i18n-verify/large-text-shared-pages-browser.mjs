@@ -1,4 +1,4 @@
-// Audit part 131 (PCF MSA J29, issue #1318): the 23 shared pages with the phone's text made LARGER. Every earlier check ran at the
+// Audit part 131 (PCF MSA J29, issue #1318) and part 132 (issue #1321): the 23 shared pages with the phone's text made LARGER. Every earlier check ran at the
 // default 16px. Here each page is opened once per width (360, 390, 768) and language (en, bn) with REAL-LENGTH data (the part-126
 // seed: a ~35-character Bangla person name, long folder / bookmark / note names), measured at 100%, then
 // document.documentElement.style.fontSize is set to 150% and measured, then 200% and measured. The page list is the 23 pages of
@@ -12,20 +12,23 @@
 //   small     a visible button / link / select / input under 36px tall
 //   reach     a control that elementFromPoint never returns at any scroll stop (the floating <- X pill or the toolbox covers it); pill shown via ?navBack=1
 //   fixedpx   text elements whose computed font-size did NOT grow with the root (fixed px: they will not grow on a phone either)
-// DEFECTS ARE PRINTED AS "INFO" LINES AND ARE NOT FAILURES. The CHECKS are (1) a positive control per kind, proven at 100% on injected
-// elements that are correct by construction, and (2) CHECKED_KINDS, the kinds that were measured at zero on every page at 150% and must stay so.
+// DEFECTS ARE PRINTED AS "INFO" LINES AND ARE NOT FAILURES, EXCEPT the kinds below (part 131's CHECKED_KINDS at 150%, and part 132's FIXED_KINDS at 150% AND 200%:
+// a finding that was NEW at that size, absent at 100% on the same element, now fails). The Zab bar findings (1, 2) and the front page (3, 4) are not checked here.
 // Run from the repository root with node serve.js on 8080:  node tools/i18n-verify/large-text-shared-pages-browser.mjs
 //   --pages=a.html,b.html   a subset   --no-reach  skip the reach pass   --list  print every finding   --verbose  print passes
 //   --shots  save 200% screenshots (360, bn) to tools/i18n-verify/out/large-text/   --sizes=100,150  only some sizes
-//   --mutate=<name>  puts a defect in; the matching check must FAIL (cut, overlap, offscreen; the small and fixedpx kinds are INFO only, proven by their positive controls)
+//   --mutate=<name>  puts a defect in; the matching check must FAIL (cut, overlap, offscreen; small and fixedpx are INFO only, proven by their positive controls)
+//   --mutate=old     puts the PRE-FIX CSS of each page back (OLD_CSS below); the FIXED_KINDS checks for that page must FAIL
 import fs from "node:fs";
 import { chromium, newContext, openPage } from "./harness.mjs";
 
 let pass = 0, fail = 0;
 const check = (name, ok, detail = "") => {
   if (typeof ok?.then === "function") throw new Error(`check "${name}" was given a promise`);
-  if (ok) { pass++; if (process.argv.includes("--verbose")) console.log(`  PASS  ${name}`); } else { fail++; console.log(`  FAIL  ${name} ${detail}`); }
+  if (ok) { pass++; if (process.argv.includes("--verbose")) console.log(`  PASS  ${name}`); } else { fail++; console.log(`  FAIL  ${name} ${process.argv.includes("--brief") ? "" : detail}`); }
 };
+// --brief: print only the FAIL names and the totals (used to read the --mutate=old runs)
+const info = (s) => { if (!process.argv.includes("--brief")) console.log(s); };
 const arg = (k) => (process.argv.find((a) => a.startsWith("--" + k + "=")) || "").slice(k.length + 3);
 const MUTATE = arg("mutate"), LIST = process.argv.includes("--list"), SHOTS = process.argv.includes("--shots"), NO_REACH = process.argv.includes("--no-reach");
 const OUT = "tools/i18n-verify/out/large-text";
@@ -41,15 +44,43 @@ const PAGES = arg("pages") ? arg("pages").split(",") : ALL_PAGES;
 const WIDTHS = [[360, 740], [390, 844], [768, 1024]];
 const SIZES = (arg("sizes") || "100,150,200").split(",").map(Number);
 const KINDS = ["cut", "overlap", "offscreen", "sideways", "small", "fixedpx"];
-// Kinds measured at ZERO on every one of the 23 pages at 150% (all widths, both languages): these must stay zero. Filled in from the run.
 // Per kind, the pages measured at ZERO at 150% across all 3 widths x 2 languages (measured 30 Oct 2026, report audit-part131). The rest print INFO.
 const CHECKED_KINDS = {
-  // Architect review, 30 Oct 2026: journey-map left the offscreen and sideways lists -- at 360 bn 150% its folder search box
-  // spans 24..362 (page 362 wide), steady in three runs; it is finding 18, measured at 200% only in the batches.
   cut: ["course-offers", "backup", "import-notes", "dawah", "onboarding", "accept-invite", "monitor", "records", "catalogue", "about", "hadith-collections", "notes", "journey-map", "admin-self-check"],
-  overlap: ["classes", "import-notes", "dawah", "onboarding", "accept-invite", "monitor", "catalogue", "about", "records", "deen-study", "arabic-study", "admin-self-check"],
-  offscreen: ["classes", "course-offers", "backup", "import-notes", "dawah", "onboarding", "accept-invite", "monitor", "homework", "people", "catalogue", "about", "bookmarks", "notes", "deen-study", "arabic-study", "admin-self-check", "taglines"],
-  sideways: ["classes", "course-offers", "backup", "import-notes", "dawah", "accept-invite", "monitor", "homework", "people", "catalogue", "bookmarks", "notes", "deen-study", "arabic-study", "admin-self-check", "taglines"],
+  // "onboarding" left this list in part 132: its 768 overlap with the Zab bar (finding 1, a later round) moves with the page's height
+  overlap: ["classes", "import-notes", "dawah", "accept-invite", "monitor", "catalogue", "about", "records", "deen-study", "arabic-study", "admin-self-check"],
+  offscreen: ["classes", "course-offers", "backup", "import-notes", "dawah", "onboarding", "accept-invite", "monitor", "homework", "people", "catalogue", "about", "bookmarks", "notes", "journey-map", "deen-study", "arabic-study", "admin-self-check", "taglines"],
+  sideways: ["classes", "course-offers", "backup", "import-notes", "dawah", "accept-invite", "monitor", "homework", "people", "catalogue", "bookmarks", "notes", "journey-map", "deen-study", "arabic-study", "admin-self-check", "taglines"],
+};
+// Audit part 132: pages whose part-131 findings 5-18 are fixed. For these kinds, at 150% AND 200%, no finding NEW at that size (absent at 100%) may remain.
+const FIXED_KINDS = {
+  records: ["cut", "offscreen", "sideways"],
+  homework: ["cut", "offscreen", "sideways"],
+  people: ["cut", "offscreen", "sideways"],
+  bookmarks: ["cut"],
+  classes: ["cut", "offscreen", "sideways"],
+  "course-offers": ["offscreen", "sideways"],
+  curriculum: ["cut", "offscreen", "sideways"],
+  onboarding: ["offscreen", "sideways"],
+  about: ["sideways"],
+  "import-notes": ["offscreen", "sideways"],
+  "journey-map": ["offscreen", "sideways"],
+};
+// The pre-fix CSS of each fixed page, injected by --mutate=old. The FIXED_KINDS checks of that page must then FAIL.
+const OLD_FORM = "fieldset{min-width:min-content!important} .row>div{min-width:10rem!important} select,textarea,input{max-width:none!important} .card,.plan-row,a{overflow-wrap:normal!important}";
+const OLD_STACK = "table.stacked{display:table!important;width:auto!important} table.stacked thead{display:table-header-group!important} table.stacked tbody{display:table-row-group!important} table.stacked tr{display:table-row!important} table.stacked td{display:table-cell!important;white-space:nowrap!important} table.stacked td::before{content:none!important}";
+const OLD_CSS = {
+  records: OLD_FORM + OLD_STACK,
+  homework: OLD_FORM + ".checkList label{overflow-wrap:normal!important}",
+  people: OLD_STACK,
+  bookmarks: "",
+  classes: OLD_FORM,
+  "course-offers": OLD_FORM,
+  curriculum: OLD_FORM,
+  onboarding: ".radio-row{flex-wrap:nowrap!important} .fam-row{grid-template-columns:minmax(0,1fr) 6.5rem 2.75rem!important} p,label,h1,h2,#result{overflow-wrap:normal!important} input,select,button{max-width:none!important}",
+  about: "a,p,li,h1,h2,h3,td{overflow-wrap:normal!important}",
+  "import-notes": "select{max-width:none!important;min-width:auto!important} #sourceBar>label{display:block!important;flex-wrap:nowrap!important}",
+  "journey-map": ".folder-search-input{flex:1 1 12rem!important;min-width:auto!important;max-width:none!important}",
 };
 
 const SEED = `
@@ -251,6 +282,8 @@ const MUTATIONS = {
   offscreen: () => { const s = document.createElement("button"); s.textContent = "off"; s.style.cssText = "position:absolute;left:" + (document.documentElement.clientWidth + 300) + "px;top:0;width:80px;height:44px"; document.body.appendChild(s); document.documentElement.style.overflowX = "hidden"; },
   small: () => { const s = document.createElement("button"); s.textContent = "tiny"; s.style.cssText = "display:block;height:18px"; document.body.appendChild(s); },
   fixedpx: () => { document.body.insertAdjacentHTML("beforeend", "<style>body *{font-size:11px!important}</style>"); },
+  // the pre-fix page also had no select titles: make the title property of a select do nothing, and drop any already set
+  old: (css) => { Object.defineProperty(HTMLSelectElement.prototype, "title", { configurable: true, get() { return ""; }, set() {} }); document.querySelectorAll("select").forEach((s) => s.removeAttribute("title")); if (css) { const s = document.createElement("style"); s.textContent = css; document.head.appendChild(s); } },
 };
 if (MUTATE && !MUTATIONS[MUTATE]) throw new Error(`unknown --mutate=${MUTATE}`);
 
@@ -288,6 +321,7 @@ const setRoot = (P, pct) => P.evaluate((p) => { document.documentElement.style.f
 // ---- the sweep ----
 for (const pg of PAGES) {
   console.log(`\n== ${pg} ==`);
+  const pgKey = pg.replace(/\.html.*$/, "");
   for (const [w, h] of WIDTHS) for (const lang of ["en", "bn"]) {
     const ctx = await newContext(browser, { appLang: lang === "bn" ? "bn" : null, banner: false, viewport: { width: w, height: h }, extraSeedJs: SEED });
     await ctx.route("**/archive.org/**", (r) => r.abort());
@@ -295,7 +329,7 @@ for (const pg of PAGES) {
     const { page: P } = await openPage(ctx, url);
     await P.waitForTimeout(1000);
     if (pg === "journey-map.html") for (let i = 0; i < 6; i++) { await P.evaluate(() => document.querySelectorAll("[data-folder-toggle][aria-expanded=false]").forEach((b) => b.click())); await P.waitForTimeout(200); }
-    if (MUTATE) { await P.evaluate(MUTATIONS[MUTATE]); await P.waitForTimeout(100); }
+    if (MUTATE) { await P.evaluate(MUTATIONS[MUTATE], MUTATE === "old" ? OLD_CSS[pgKey] || "" : undefined); await P.waitForTimeout(100); }
     const textLen = await P.evaluate(() => document.body.innerText.length);
     check(`${pg} / ${w} / ${lang}: page rendered text (positive control)`, textLen > 20, `innerText length ${textLen}`);
     let baseline = null, baselineRoot = 16;
@@ -307,11 +341,17 @@ for (const pg of PAGES) {
       if (pct === 100) { baseline = m.fontSizes; baselineRoot = m.rootSize; }
       bySize[pct] = m;
       if (SHOTS && lang === "bn" && w === 360 && pct === 200) await P.screenshot({ path: `${OUT}/${pg.replace(/[.?=].*$/, "")}-360-bn-200.png`, fullPage: true });
+      if (SHOTS && pct === 200 && ((lang === "en" && w === 768) || (lang === "bn" && w === 360))) await P.screenshot({ path: `${OUT}/${pg.replace(/[.?=].*$/, "")}-${w}-${lang}-200${MUTATE ? "-" + MUTATE : ""}.png`, fullPage: true });
       const counts = Object.fromEntries(KINDS.map((k) => [k, m[k].length]));
       rows.push({ pg, w, lang, pct, counts, findings: Object.fromEntries(KINDS.map((k) => [k, m[k].map((f) => f.msg)])) });
       if (LIST) console.log(`  info  ${pg} ${w} ${lang} ${pct}%: ${KINDS.map((k) => k + " " + counts[k]).join(", ")}`);
-      for (const k of KINDS) { const base100 = new Set((bySize[100]?.[k] || []).map((f) => f.key)); for (const f of m[k]) if ((pct === 100 ? LIST : !base100.has(f.key)) && !(k === "fixedpx" && f.stuck === 1 && /zab/i.test(f.msg) && !LIST)) console.log(`    INFO [${pg} ${w} ${lang} ${pct}% ${k}${pct !== 100 ? " NEW" : ""}] ${f.msg.slice(0, 230)}`); }
-      if (pct === 150) for (const k of Object.keys(CHECKED_KINDS)) if (CHECKED_KINDS[k].includes(pg.replace(/\.html.*$/, ""))) check(`${pg} / ${w} / ${lang} / 150%: no ${k}`, m[k].length === 0, "\n      " + m[k].slice(0, 5).map((f) => f.msg).join("\n      "));
+      for (const k of KINDS) { const base100 = new Set((bySize[100]?.[k] || []).map((f) => f.key)); for (const f of m[k]) if ((pct === 100 ? LIST : !base100.has(f.key)) && !(k === "fixedpx" && f.stuck === 1 && /zab/i.test(f.msg) && !LIST)) info(`    INFO [${pg} ${w} ${lang} ${pct}% ${k}${pct !== 100 ? " NEW" : ""}] ${f.msg.slice(0, 230)}`); }
+      if (pct === 150) for (const k of Object.keys(CHECKED_KINDS)) if (CHECKED_KINDS[k].includes(pgKey)) check(`${pg} / ${w} / ${lang} / 150%: no ${k}`, m[k].length === 0, "\n      " + m[k].slice(0, 5).map((f) => f.msg).join("\n      "));
+      if ((pct === 150 || pct === 200) && SIZES.includes(100)) for (const k of FIXED_KINDS[pgKey] || []) {
+        const base100 = new Set((bySize[100]?.[k] || []).map((f) => f.key));
+        const fresh = m[k].filter((f) => !base100.has(f.key));
+        check(`${pg} / ${w} / ${lang} / ${pct}%: no NEW ${k} (audit part 131 finding fixed in part 132)`, fresh.length === 0, "\n      " + fresh.slice(0, 5).map((f) => f.msg).join("\n      "));
+      }
     }
     await ctx.close();
 

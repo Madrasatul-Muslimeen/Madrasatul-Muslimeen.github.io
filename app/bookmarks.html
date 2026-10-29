@@ -1142,5 +1142,6 @@ import { mountBookmarkMenu, noteBookmarkOpened, getBookmarkTimesShown, bookmarkT
     import { mountPageAccountCard } from "./js/account-card.js";
     mountPageAccountCard({ movePerson: true, getEmail: () => auth.currentUser?.email || "" });
   </script>
+<script type="module">import { keepSelectTitles } from "./js/select-title.js"; keepSelectTitles("select[data-bm-person], select[data-folder-person]", document, { withLabel: true });</script>
 </body>
 </html>
