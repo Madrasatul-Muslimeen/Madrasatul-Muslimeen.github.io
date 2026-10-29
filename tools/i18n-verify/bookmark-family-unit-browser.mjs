@@ -1,12 +1,13 @@
 // PCF MSA J42 (the Owner, 19 Oct 2026, Read view on Yā-Sīn 36:8, Single Ayah): "Enable Bookmark here for entire
 // family and enable choice of unit."
 //   * The bookmark dialog's "Assign to" starts with a one-tap "Everyone in the family" (2+ people).
-//   * The unit choice is offered on Single Ayah too: This āyah, This page, This rukūʿ, Whole sūrah, This juz.
+//   * The unit choice is offered on Single Ayah too: This āyah, This page, This rukūʿ, Whole sūrah, This juz -- and,
+//     since v12.68 (the Owner, 25 Oct: "Range is missing here. Enable."), Range as a sixth, last choice.
 //
 // Run from the repository root with serve.js running. SHOT_DIR=... saves screenshots.
 // Mutations (--mutate=NAME) each put the old behaviour back; the checks named beside each must FAIL:
-//   ayahonly    Single Ayah gets no choices (as before)       -> the five-choices checks
-//   noruku      the rukūʿ choice is left out                   -> "five choices in order"
+//   ayahonly    Single Ayah gets no choices (as before)       -> the six-choices checks
+//   noruku      the rukūʿ choice is left out                   -> "six choices in order"
 //   unitpos     the picked unit's position ignored             -> "Whole sūrah saves surah:36"
 //   noeveryone  ticking Everyone ticks nobody                  -> "Everyone ticks all"
 //   nosync      Everyone never shows ticked when all are       -> "shows as ticked when all are ticked by hand"
@@ -80,16 +81,16 @@ const lastSaved = (ws, docId) => { const w = ws.filter((x) => x.id === docId && 
 const chips = (page) => page.evaluate(() => [...document.querySelectorAll("[data-bm-pop-unit]")].map((b) => ({ id: b.dataset.bmPopUnit, text: b.textContent, on: b.getAttribute("aria-checked"), h: b.getBoundingClientRect().height })));
 const nameOf = (page) => page.evaluate(() => document.querySelector("[data-bm-pop-name]").value);
 
-// ---- Single Ayah: five choices in order, names, keys -------------------------------------------------------------
+// ---- Single Ayah: six choices in order (Range last, v12.68), names, keys -------------------------------------------------------------
 {
   const tag = "[en 390 Yā-Sīn 36:8]";
   const { ctx, page, errors } = await open({});
   await readView(page);
   await openDialog(page);
   const cs = await chips(page);
-  check(`${tag} Single Ayah offers five choices in order: āyah, page, rukūʿ, sūrah, juz (āyah picked)`, cs.map((c) => `${c.id}:${c.on}`).join(",") === "ayah:true,page:false,ruku:false,surah:false,juz:false"
-    && cs.map((c) => c.text).join("|") === "This āyah|This page|This rukūʿ|Whole sūrah|This juz", JSON.stringify(cs));
-  check(`${tag} every choice is 40px tall`, cs.length === 5 && cs.every((c) => c.h >= 40), JSON.stringify(cs));
+  check(`${tag} Single Ayah offers six choices in order: āyah, page, rukūʿ, sūrah, juz, Range (āyah picked)`, cs.map((c) => `${c.id}:${c.on}`).join(",") === "ayah:true,page:false,ruku:false,surah:false,juz:false,range:false"
+    && cs.map((c) => c.text).join("|") === "This āyah|This page|This rukūʿ|Whole sūrah|This juz|Range", JSON.stringify(cs));
+  check(`${tag} every choice is 40px tall`, cs.length === 6 && cs.every((c) => c.h >= 40), JSON.stringify(cs));
   check(`${tag} the default Name is the āyah's`, /36:8/.test(await nameOf(page)), await nameOf(page));
   await pickUnit(page, "page");
   check(`${tag} This page names Page ${rec8.page}`, (await nameOf(page)) === `Page ${rec8.page}`, await nameOf(page));
@@ -111,14 +112,14 @@ const nameOf = (page) => page.evaluate(() => document.querySelector("[data-bm-po
   await ctx.close();
 }
 
-// ---- A wider selected unit keeps its place first (a Range is not one of the five) ----------------------------------
+// ---- A wider selected unit keeps its place first (Range, v12.68, comes last) ----------------------------------
 {
   const { ctx, page } = await open({});
   await readView(page);
   await setSel(page, "unitTypeSelect", "juz"); await page.waitForTimeout(800);
   await openDialog(page);
   const cs = await chips(page);
-  check("[en 390 Juz unit] the selected unit (juz) is first and picked, the rest follow", cs[0]?.id === "juz" && cs[0]?.on === "true" && cs.length === 5, JSON.stringify(cs));
+  check("[en 390 Juz unit] the selected unit (juz) is first and picked, the rest follow", cs[0]?.id === "juz" && cs[0]?.on === "true" && cs.length === 6, JSON.stringify(cs));
   await ctx.close();
 }
 
@@ -169,7 +170,7 @@ const nameOf = (page) => page.evaluate(() => document.querySelector("[data-bm-po
   if (asked) {
     await page.click("[data-bm-exists-add]");
     await page.waitForSelector("[data-bm-pop-save]", { timeout: 5000 });
-    check(`${tag} "Add a bookmark…" opens the same dialog with the five choices`, (await chips(page)).length === 5);
+    check(`${tag} "Add a bookmark…" opens the same dialog with the six choices (Range, v12.68)`, (await chips(page)).length === 6);
   }
   await ctx.close();
 }
@@ -209,7 +210,7 @@ for (const lang of ["en", "bn"]) {
       return { sx: document.documentElement.scrollWidth - innerWidth, popSx: pop.scrollWidth - pop.clientWidth, pop: [pr.left, pr.right, pr.top, pr.bottom], W: innerWidth, H: innerHeight, btns, popR: pr.right, saveVisible: sr.top >= 0 && sr.bottom <= innerHeight + 0.5 && sr.width > 0 };
     });
     check(`${tag} no sideways scroll, the dialog inside the screen`, m.sx <= 0 && m.popSx <= 0 && m.pop[0] >= 0 && m.pop[1] <= m.W + 0.5 && m.pop[3] <= m.H + 0.5, JSON.stringify(m));
-    check(`${tag} five chips, each 40px tall, whole (nothing cut, inside the dialog)`, m.btns.length === 5 && m.btns.every((b) => b.h >= 40 && b.w > 0 && b.cutX <= 1 && b.l >= m.pop[0] - 0.5 && b.r <= m.popR + 0.5), JSON.stringify(m.btns));
+    check(`${tag} six chips (Range, v12.68), each 40px tall, whole (nothing cut, inside the dialog)`, m.btns.length === 6 && m.btns.every((b) => b.h >= 40 && b.w > 0 && b.cutX <= 1 && b.l >= m.pop[0] - 0.5 && b.r <= m.popR + 0.5), JSON.stringify(m.btns));
     check(`${tag} Save is reachable`, m.saveVisible, JSON.stringify(m));
     if (SHOTS) await page.screenshot({ path: `${SHOTS}/bm-family-${lang}-${w}.png` });
     await ctx.close();
