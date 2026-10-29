@@ -100,7 +100,8 @@ export function directHadithIds(structureCats, catId) {
  * A category's title in the reader's own language, falling back to English
  * then Arabic when that language's own pull has no entry for this id at
  * all (a category with no translated content in that language is simply
- * absent from its own categories.json -- measured, not assumed). Returns
+ * absent from its own categories.json -- measured, not assumed), or when its
+ * entry there is only a copy of the English title (untranslated). Returns
  * null only for an id that is not in ANY of the three pulls, which given
  * Arabic is the structural superset means the id itself does not exist.
  */
@@ -110,6 +111,13 @@ export function resolveCategoryTitle(catsByLang, catId, contentLang) {
     const cats = catsByLang[lang];
     if (!cats) continue;
     const node = categoryById(cats, catId);
+    // HadeethEnc's own translated files carry some titles it never translated, as a copy of the English (24 of the
+    // 414 Bangla ones, e.g. "Meanings and Attributes of the Qur'an"). Such a copy is no translation: it is skipped so
+    // the English shows WITH its "showing English" label, instead of passing as Bangla (audit part 130, note b).
+    if (node && node.title && lang !== "en" && lang !== "ar") {
+      const enNode = catsByLang.en ? categoryById(catsByLang.en, catId) : null;
+      if (enNode && enNode.title === node.title) continue;
+    }
     if (node && node.title) {
       return { title: node.title, lang, isFallback: lang !== contentLang, count: node.hadeeths_count ?? null };
     }

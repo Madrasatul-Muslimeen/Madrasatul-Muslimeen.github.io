@@ -22,7 +22,7 @@ import { SYNTHETIC_NOTICE, TAXONOMY_REVISION } from "./hadith-fixture-data.js";
 import { PANEL_TITLE, verifiedRegisterEntries, commentaryForOccurrence, renderPermission, NEVER_DO } from "./hadith-commentary.js";
 import { HADEETHENC_LANGS, HADEETHENC_STRUCTURE_LANG, loadHadeethEncCategories, childCategories, directHadithIds, resolveCategoryTitle, loadHadithRecords, hadithArabicText, hadeethEncSourceUrl } from "./hadeethenc-corpus.js";
 import { OPENITI_CREDIT_URL, loadOpenitiBookSummaries, loadOpenitiBookIndex, loadOpenitiChapter, chapterForHadithNumber, loadOpenitiConcordance, loadOpenitiHadeethEncLinks, loadHadeethEncReferences, loadDuaIndex } from "./openiti-corpus.js";
-import { el, HADEETHENC_LANG_LABELS, loadHadithStudyActions, openitiDisplayTitle, openitiArabicRowName, duaRefLabel, standardTranslationFolds, openitiTranslationFold } from "./hadith-shared-ui.js";
+import { el, readFailedNote, HADEETHENC_LANG_LABELS, loadHadithStudyActions, openitiDisplayTitle, openitiArabicRowName, duaRefLabel, standardTranslationFolds, openitiTranslationFold } from "./hadith-shared-ui.js";
 import { renderDua } from "./dua-browser.js";
 import { hadithReader, removeReaderWindows } from "./hadith-reader.js";
 
@@ -829,7 +829,8 @@ async function renderHadeethEncStudyActions(container, id, title) {
       actions.hadeethEncStudiedStatus(session, id),
     ]);
   } catch (err) {
-    row.appendChild(el("p", "hadeethenc-study-reason", String(err?.message ?? err)));
+    console.error(err); // audit part 130 F5: plain words, not the raw error
+    row.appendChild(el("p", "hadeethenc-study-reason", t("Notes, bookmarking and Studied could not be loaded right now.")));
   }
 
   function refreshBookmarkBtn() {
@@ -975,11 +976,18 @@ function renderHadeethEncSource(state) {
   function localRefresh() {
     body.textContent = "";
     body.appendChild(el("p", "hadith-note", t("Loading…")));
-    renderHadeethEncBody(body, state, localRefresh).catch((err) => {
+    // Audit part 130 F3: while the real library cannot be read (offline), the synthetic sample collections below
+    // are hidden, so they are never the only thing on the tab; they come back when the library loads.
+    const synthetic = () => section.parentNode?.querySelector("[data-hadith-synthetic-block]");
+    renderHadeethEncBody(body, state, localRefresh).then(() => {
+      const s = synthetic(); if (s) s.hidden = false;
+    }).catch((err) => {
+      console.error(err);
       body.textContent = "";
-      const p = el("p", "hadith-note", String(err?.message ?? err));
+      const p = readFailedNote(err, localRefresh);
       p.dataset.hadeethencError = "true";
       body.appendChild(p);
+      const s = synthetic(); if (s) s.hidden = true;
     });
   }
   localRefresh();
@@ -1022,8 +1030,10 @@ function renderOpenitiSource(state) {
     body.textContent = "";
     body.appendChild(el("p", "hadith-note", t("Loading…")));
     renderOpenitiBody(body, state.oi, localRefresh).catch((err) => {
+      console.error(err);
       body.textContent = "";
-      const p = el("p", "hadith-note", String(err?.message ?? err));
+      // Audit part 130 F1: the plain read-failure words and Try again, never the browser's "Failed to fetch".
+      const p = readFailedNote(err, localRefresh);
       p.dataset.openitiError = "true";
       body.appendChild(p);
     });
@@ -1500,8 +1510,10 @@ function renderCollections(body, state, render) {
   if (!state.editionId) {
     body.appendChild(renderHadeethEncSource(state));
     // PCF MSA J106: the Arabic books are their own view now, "Hadith Books" (renderBooks).
-    body.appendChild(el("h2", null, t("Synthetic pilot collections")));
-    body.appendChild(syntheticBanner());
+    const syn = el("div");
+    syn.dataset.hadithSyntheticBlock = "";
+    syn.appendChild(el("h2", null, t("Synthetic pilot collections")));
+    syn.appendChild(syntheticBanner());
     const list = el("div", "hadith-list");
     for (const c of listCollections()) {
       for (const e of c.editions) {
@@ -1513,7 +1525,8 @@ function renderCollections(body, state, render) {
         list.appendChild(row);
       }
     }
-    body.appendChild(list);
+    syn.appendChild(list);
+    body.appendChild(syn);
     return;
   }
 
