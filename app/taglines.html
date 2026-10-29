@@ -27,6 +27,9 @@
   /* Audit part 86: in Bangla at 390px the table squeezed these row selects to 25-27px wide (unreadable); the table is inside an
      overflow-x:auto wrapper, so a floor on the select just lets the table scroll instead. */
   .cell-narrow select { min-width: 7rem; }
+  /* Audit part 134: in the stacked layout (js/table-stack.js) a cell is as wide as its share of the line, so its field fits it. */
+  table.stacked td, table.stacked td.cell-text, table.stacked td.cell-link, table.stacked td.cell-narrow { min-width: 0; width: auto; }
+  table.stacked td select, table.stacked td input[type="text"] { min-width: 0; max-width: 100%; box-sizing: border-box; }
   table { width: 100%; border-collapse: collapse; margin-top: 0.6rem; }
   th, td { text-align: left; padding: 0.4rem 0.45rem; border-bottom: 1px solid #eee; font-size: 0.86rem; vertical-align: top; }
   th { font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.04em; color: #666; }
@@ -214,9 +217,11 @@
     import { safeHref } from "./js/html-escape.js";
 
     import { keepSelectTitles } from "./js/select-title.js";
+    import { keepTablesFitting } from "./js/table-stack.js";
 
     translateStatic();
     keepSelectTitles(); // audit part 134: a row's chosen "Inside the app" is cut in a narrow cell; its full value is the title
+    keepTablesFitting(); // audit part 134: a table wider than its box becomes labelled rows, so no field sits behind a sideways scroll
     registerServiceWorker();
     armScreensaver();
 
