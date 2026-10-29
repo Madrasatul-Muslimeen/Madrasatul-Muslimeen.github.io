@@ -1023,3 +1023,4 @@ total). Allocated by the MMSA Architect.
 12.119: Monitor CSV BOM and A4 print (audit part 129). Allocated by the MMSA Architect.
 12.120: Hadith Books, Dua and the Encyclopedia open with no internet after one visit; a Dua that cannot load says so in plain words with Try again (audit part 130). Allocated by the MMSA Architect.
 12.121: A Hadith book or the Encyclopedia that cannot open offline says so in plain words with Try again (audit part 130 F1/F3/F5, Hadith Lead). Allocated by the MMSA Architect.
+12.122: On the Qur'an Study landing the way back has a row of its own above the tabs (audit part 127, QR Lead). Allocated by the MMSA Architect.

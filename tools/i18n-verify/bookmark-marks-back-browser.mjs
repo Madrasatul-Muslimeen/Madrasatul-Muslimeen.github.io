@@ -228,12 +228,16 @@ for (const lang of ["en", "bn"]) for (const width of (process.env.WIDTHS ? proce
   await P.click("#tabStudyBtn"); await P.waitForTimeout(200);
   // Off the Read view (the Approach view has no Read bar) the chip floats again, so the way back is never lost.
   await P.click("#tabApproachBtn").catch(() => {}); await P.waitForTimeout(400);
-  const off = await P.evaluate(() => { const row = document.querySelector("[data-bm-back]"), r = row?.getBoundingClientRect(); return { docked: row?.classList.contains("bm-back-docked"), parent: row?.parentElement?.tagName, shown: !!row && getComputedStyle(row).display !== "none" && r.width > 0 }; });
+  // UPDATED IN PLACE 29 Oct 2026 (audit part 127, QR Lead): off the Read view the landing now has its own place for the way
+  // back (#landingBackSlot, above the tabs), so the chip docks there -- covering no tab -- instead of floating, unless a window
+  // covers that row. The checks below accept either, and require a finger to reach a docked chip.
+  const off = await P.evaluate(() => { const row = document.querySelector("[data-bm-back]"), r = row?.getBoundingClientRect(); const e = r ? document.elementFromPoint((r.left + r.right) / 2, (r.top + r.bottom) / 2) : null; return { docked: row?.classList.contains("bm-back-docked"), parent: row?.parentElement?.tagName, slot: row?.parentElement?.id, shown: !!row && getComputedStyle(row).display !== "none" && r.width > 0, reach: !!e && row.contains(e) }; });
+  const inLanding = off.slot === "landingBackSlot" && off.shown && off.reach;
   // On a phone the Approach view is the page itself, so the chip floats there. On a PC that view is a window laid over
   // the page, and the floating chip's own rule (6 Oct 2026) steps aside under a window until it goes -- so there the
   // check is that it has left the dock, and that it comes back beside ✓ on the Read view (below).
-  if (width < 900) check(`${tag}: off the Read view the chip floats again and is still there`, off.docked === false && off.parent === "BODY" && off.shown, JSON.stringify(off));
-  else check(`${tag}: off the Read view the chip leaves the Read bar`, off.docked === false && off.parent === "BODY", JSON.stringify(off));
+  if (width < 900) check(`${tag}: off the Read view the chip leaves the Read bar for the landing's row (reachable), or floats, and is still there`, inLanding || (off.docked === false && off.parent === "BODY" && off.shown), JSON.stringify(off));
+  else check(`${tag}: off the Read view the chip leaves the Read bar (for the landing's row, reachable, or floating)`, off.slot !== "readBackSlot" && (inLanding || (off.docked === false && off.parent === "BODY")), JSON.stringify(off));
   await P.click("#tabStudyBtn").catch(() => {}); await P.waitForTimeout(150);
   await P.click("#tabReadBtn").catch(() => {}); await P.waitForTimeout(400);
   const again = await P.evaluate(() => { const row = document.querySelector("[data-bm-back]"), r = row?.getBoundingClientRect(); return { docked: row?.classList.contains("bm-back-docked"), slot: row?.parentElement?.id, shown: !!row && r.width > 0 && getComputedStyle(row).display !== "none" }; });
