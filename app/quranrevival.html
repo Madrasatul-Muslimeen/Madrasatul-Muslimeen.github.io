@@ -8446,9 +8446,10 @@
         const over = row.getBoundingClientRect().bottom + scrollY - panelsH + 6 - fold;
         if (over <= 1) break;
         // Audit part 131: with large text the header and the docked tabs leave almost no room, and an unbounded cap shrank the
-        // wheel to a stub whose labels spilled under the buttons. It never goes below 60% of its column (200px at least); past
-        // that the row sits below the fold and the page scrolls to it, as it does on any phone.
-        const floor = Math.min(col.getBoundingClientRect().width, Math.max(200, col.getBoundingClientRect().width * 0.6));
+        // wheel to a stub whose labels spilled under the buttons. It never goes below 45% of its column (160px at least); past
+        // that the row sits below the fold and the page scrolls to it, as it does on any phone. (45%, not more: a tall Bangla
+        // header at ordinary text, landing-drawers' "squeeze 390x700", rightly needs the wheel at ~57% of its column.)
+        const floor = Math.min(col.getBoundingClientRect().width, Math.max(160, col.getBoundingClientRect().width * 0.45));
         const cap = Math.floor(Math.max(floor, wheel.getBoundingClientRect().width - over)) + "px";
         capEls.forEach((el) => el.style.setProperty("--landing-wheel-max", cap));
       }
