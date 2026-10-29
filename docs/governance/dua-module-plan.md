@@ -29,8 +29,9 @@ easy). Keep the building plan and the rule in Project memory as well as in PMS f
 | v1.01 | 28 Oct 2026, 8:11 pm | First Dua page: occasions (Hisn al-Muslim), Qur'anic duas, morning and evening adhkār with counts, the full list | https://claude.ai/artifact/9R9UYsxz5r7JoM38jF7PZ8 (version 1) |
 | v1.02 | 30 Oct 2026, 7:19 am | The seven-group menu bar and the Dua Card: D01–D18 | https://claude.ai/artifact/9R9UYsxz5r7JoM38jF7PZ8 (version 2) |
 | v1.03 | 30 Oct 2026, 7:38 am | v1.02 plus "↗ Open in its own window" (rule 4) | https://claude.ai/artifact/9R9UYsxz5r7JoM38jF7PZ8 (version 3) |
+| v1.04 | 30 Oct 2026, 7:47 am | The groups and their parts as pull-down menus (D21); on the Dua Card only progress and listening stay open, everything else opens from the card's menu as a pop-up card (D22) | https://claude.ai/artifact/9R9UYsxz5r7JoM38jF7PZ8 (version 4) |
 
-## The build plan (waiting for the Owner's approval of demo v1.03)
+## The build plan (the Owner said "Plan me and start build", 30 Oct 2026, about 7:45 am)
 
 Tags: **Rules** = needs a Firestore Rules change the Owner publishes (an Owner Control Gate); **Architect** = touches
 a shared part, done by or with the MSA Architect; **Answer** = waits on an Owner answer in J104 or J105.
@@ -57,6 +58,25 @@ a shared part, done by or with the MSA Architect; **Answer** = waits on an Owner
 | D18 | Choose part of a Dua (first word, last word) and repeat only that part | Answer (needs word timings in the audio) |
 | D19 | The Dua page itself (`app/dua-study.html`), mounting `app/js/dua-browser.js`; its menu entry, app settings and offline cache | Architect |
 | D20 | Plain words when a Dua save fails (J104 j104q1; `dua-browser.js` and `dua-check.js:331`) | – |
+| D21 | The Dua groups, and a group's parts (the 15 occasions, the 11 books), as pull-down menus (the Owner, 30 Oct, about 7:45 am) | – |
+| D22 | On the Dua Card only the progress block and the listening buttons stay open; every other block (meaning, source, memorising plan, bookmark, poster, share, screensaver) opens from the card's menu as a pop-up card with ✕ back to the Dua (the Owner, same message) | – |
+
+### Build rounds, in order (each round is handed to the MSA Architect on its own branch)
+
+The Owner's answers still open in J104 (6 Sahaba/Salaf/Ulama sources, 7 audio, 8 memorising marks, 9 the Rules change)
+hold back only the builds that need them; everything else goes ahead.
+
+| Round | Builds | Waits on |
+|---|---|---|
+| R1 | D19 the page `app/dua-study.html` (Dua-owned; its menu entry, apps json and `sw.js` are the MSA Architect's), D01 + D21 the groups as pull-down menus, D02 numbers, D04 each Dua opens in its Dua Card. Groups come from a new data file `tools/hadith-data-pull/output/dua/groups.json` built by a Dua-owned script from data already in the repository plus Hisn al-Muslim (asellam/HisnElMuslim, MIT, credited) | – |
+| R2 | D22 the card layout with its menu and pop-up cards, D11 bottom banner (cut from the Owner's Asma ul Husna template), D12 top banner frame, D05 titles shown (written in the data file until D03 can save them) | – |
+| R3 | D07 A4 poster with Arabic / English / Bangla / word-by-word switches; D14 copy and share as text or poster picture | – |
+| R4 | D20 plain words when a save fails; D06 Bookmark, with the MSA Architect | MSA Architect |
+| R5 | D17 audio buttons and D18 repeating a part | Owner tick 7 (audio source) |
+| R6 | D03 add/move/delete, D05 saved titles, D10 memorising marks, D15 the share record | Owner tick 9 (Rules), tick 8 |
+| R7 | D08 / D09 word links (follows J105), D13 screensaver with Asma ul Husna (PCA change request) | J105, MSA Architect, PCA |
+| R8 | The Sahaba, Salaf and Ulama groups filled | Owner tick 6 |
+
 
 Done before this plan: the offline "could not be loaded" words and Try again (MSA audit part 130 F2, released in v12.120).
 
