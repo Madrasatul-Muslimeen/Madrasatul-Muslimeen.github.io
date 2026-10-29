@@ -3,6 +3,30 @@
 Written by Hadith Lead session `01Q2HmCeWjo1vVYV5kgMBvC9` at about 77% context, on the PCA's word (hand119).
 The next session is titled **"📌 (03B) MSA - Hadith Lead"**.
 
+## HANDOVER, 3:56 pm 28 Oct (session `01PL2xbJ9t1PMhK5GNBspYu6` → a fresh "📌 (03B) MSA - Hadith Lead")
+
+**Nothing is in flight.** Everything this session built is merged and live; the branch `claude/hadith-lead-01q2` is at
+`main` (v12.92) plus nothing of its own.
+
+- **Live:** v12.89 (J106 round 1: Hadith Study, the menu bar, Hadith Books in three panes, and the Dua code split),
+  v12.90 ("The book's opening" for a book's untitled first chapter), v12.92 (the opening's text readable in night look,
+  2.95:1 → 9.77:1). Round report: `docs/reports/2026-10-28-hadith-study-round1.md`.
+- **The reader suite** `tools/i18n-verify/hadith-study-reader-browser.mjs`: 116/0; `--prove` runs 18 mutations served
+  through the browser route (no file swapped on disk; `--only=a,b` runs some). Keep it green with every Hadith change.
+- **Next, J106 round 2 (Subjects): waits on the Owner's tick on J106 question 5 (`n106e`)**, where the lists are saved:
+  A a shared Firestore list (candidate Rules the Owner publishes; recommended) / B in the app's code / C this device
+  only. Then build "Add to subject" on every hadith and the three lists (Book · Chapter · Hadith No. · Title, opening the
+  original, ← Back). `HADITH_SUBJECTS` in `app/js/hadith-browser.js` holds the three, and `renderSubjects` the empty
+  view. For A, the Rules are an Owner Control Gate: write a candidate, test it in the emulator, and guide the Owner.
+- **Still with the Owner:** J97 (Bukhari Bangla chapter heading A/B/C), the My Notes link (A keep / B open the panel),
+  J06 (permanent key, HadeethEnc permission). A later question: does the shared topic list under the reader fold into
+  Subjects?
+- **The Architect** is session `01PL2xbMHduuqAb3piTztCJ4`; the PCA `01PL2xbMoGds3DRVRoe4TA2j`. A leftover branch
+  `claude/hadith-lead-01q2-next` (fully merged) stays until the Owner says to delete it; this sandbox cannot delete
+  branches (HTTP 403).
+- **Sandbox:** start `node serve.js` yourself in a fresh container and check it with `curl` (a `pgrep -f "node serve.js"`
+  matches its own command line and lies); never `pkill -f` a pattern that is in your own command.
+
 ## LATEST UPDATE, 2:31 pm 28 Oct (session `01PL2xbJ9t1PMhK5GNBspYu6`, "📌 (03B) MSA - Hadith Lead")
 
 - **J106 round 1 and the Dua split are HANDED IN** to the MSA Architect at `a39d572`, with
