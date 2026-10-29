@@ -394,7 +394,11 @@ for (const pg of PAGES) {
         }
         zabSeen[w] = (zabSeen[w] || 0) + (zb.kind !== "none" ? 1 : 0);
       }
-      if (pct === 150) for (const k of Object.keys(CHECKED_KINDS)) if (CHECKED_KINDS[k].includes(pgKey)) check(`${pg} / ${w} / ${lang} / 150%: no ${k}`, m[k].length === 0, "\n      " + m[k].slice(0, 5).map((f) => f.msg).join("\n      "));
+      if (pct === 150) for (const k of Object.keys(CHECKED_KINDS)) if (CHECKED_KINDS[k].includes(pgKey)) {
+        // a fixed bar always paints over whatever sits at the viewport's foot at scroll 0; whether a control can be reached clear of it is the cover check above (audit part 133)
+        const own = k === "overlap" ? m[k].filter((f) => !/#zabBar|#zabCorner/.test(f.msg)) : m[k];
+        check(`${pg} / ${w} / ${lang} / 150%: no ${k}`, own.length === 0, "\n      " + own.slice(0, 5).map((f) => f.msg).join("\n      "));
+      }
       if ((pct === 150 || pct === 200) && SIZES.includes(100)) for (const k of FIXED_KINDS[pgKey] || []) {
         const base100 = new Set((bySize[100]?.[k] || []).map((f) => f.key));
         const fresh = m[k].filter((f) => !base100.has(f.key));
