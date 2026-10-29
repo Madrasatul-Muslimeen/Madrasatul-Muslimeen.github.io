@@ -3391,6 +3391,10 @@
      full screen on a phone, a centred reading-width window from 900px. */
   #readContentsMount[hidden] { display: none !important; }
   #readContentsMount { position: fixed; inset: 0; z-index: 900; display: flex; flex-direction: column; background: rgba(19,25,42,0.55); }
+  /* QR Lead (29 Oct 2026, found testing the Owner's poster route): from 768px the Zab bar (44px, see the zab-reserve rule
+     above) is pinned over the page's foot, and the full-screen list ran under it -- at 768 and 820 the last row,
+     An-Naas, was 31 of its 48px under the bar and its middle could not be tapped. The list stops above the bar. */
+  @media (min-width: 768px) { body.zab-bar-on #readContentsMount { bottom: 44px; } }
   .rc-card { background: var(--card-bg); color: var(--card-text); display: flex; flex-direction: column; min-height: 0; flex: 1 1 auto; min-width: 0; }
   .rc-card header {
     background: #1F3A6E; color: #fff; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.6rem 0.8rem;
@@ -22745,10 +22749,17 @@
     /** The way-back law (decision 86): before leaving for notes.html, write the place into THIS page's own address
         (the rememberDuaPlace() pattern), so ← Back (history.back()) reopens the same surah and āyah -- and the Note
         view, if that is what was open. Read by openPlaceFromQueryString() on load. */
+    // QR Lead (the Owner, 29 Oct 2026: the poster's ← Back "should take to the Ayah card where this poster came from,
+    // instead it takes to the App Home page"): the place written is the CARD's āyah (the reader's own position can be
+    // something else, and a bad one made openPlaceFromQueryString() give up and leave the reader on the landing page),
+    // and qpCard asks for the Āyah card to be opened again on the way back.
     function rememberQuranPlace(unitKey) {
       try {
         const u = new URL(location.href);
-        u.searchParams.set("qpSurah", String(currentSurahNum)); u.searchParams.set("qpAyah", String(currentAyahNum));
+        const card = unitKey && unitKey.startsWith("ayah:") ? parseAyahUnitKey(unitKey) : null;
+        const okCard = card && Number.isInteger(card.surah) && Number.isInteger(card.ayah) && card.ayah >= 1;
+        u.searchParams.set("qpSurah", String(okCard ? card.surah : currentSurahNum)); u.searchParams.set("qpAyah", String(okCard ? card.ayah : currentAyahNum));
+        if (okCard) u.searchParams.set("qpCard", unitKey); else u.searchParams.delete("qpCard");
         u.searchParams.set("qpView", "read"); u.searchParams.delete("qpUnit");
         history.replaceState(history.state, "", u);
       } catch { /* the link still opens the Notes page */ }
@@ -23158,9 +23169,23 @@
       prefetchAyahFolderTree(); // "File in folder(s)" then usually opens with the folders already there
       ayahSheetIntro = intro; // PCF J26
       if (intro?.opening) { openOpeningSheetCore(ayahKey); return; }
-      const [surahStr, ayahStr] = ayahKey.split(":");
+      const [surahStr, ayahStr] = String(ayahKey ?? "").split(":");
       const surahNum = Number(surahStr);
-      const ayahNum = Number(ayahStr);
+      let ayahNum = Number(ayahStr);
+      // QR Lead (the Owner, 29 Oct 2026, a phone screenshot: "Ayah NaN", "Quran 114:NaN — Surah An-Naas", and the pink
+      // "That save did not go through (unknown) · Ref: read Arabic word progress"): some route handed the card a key
+      // with no real āyah number, and the card then asked for that āyah's word progress, which threw. The card never
+      // opens on a broken āyah: inside a real surah it falls back to the āyah the reader is on there (else āyah 1), and
+      // the key that came in is kept in window.__badAyahCardKeys (with where it came from) so the route can be named.
+      const surahMeta = surahIndex.find((x) => x.surahNumber === surahNum);
+      if (!Number.isInteger(surahNum) || surahNum < 1 || surahNum > 114 || (surahIndex.length && !surahMeta)) { console.warn("Āyah card: not a sūrah", ayahKey); return; }
+      const ayahCount = surahMeta?.ayahCount ?? Infinity; // before the sūrah list has loaded, only "a whole number from 1" is checked
+      if (!Number.isInteger(ayahNum) || ayahNum < 1 || ayahNum > ayahCount) {
+        try { (window.__badAyahCardKeys ||= []).push({ key: String(ayahKey), at: new Date().toISOString(), from: (new Error().stack || "").split("\n").slice(2, 5).join(" | ") }); } catch { /* diagnostic only */ }
+        console.warn("Āyah card: not an āyah of this sūrah, opening a real one instead", ayahKey);
+        ayahNum = currentSurahNum === surahNum && Number.isInteger(currentAyahNum) && currentAyahNum >= 1 && currentAyahNum <= ayahCount ? currentAyahNum : 1;
+        half = null;
+      }
       // Issue #606 -- Al-Fātiḥah's internal 1:7 is two Ayat with the count on: the
       // caller says which (the Mushaf ⑥/⑦ marker, the number badge); a caller that
       // cannot (the Word Card's own button) gets the half the reader is on, else 6.
@@ -25131,6 +25156,13 @@
       const surahMeta = surahIndex.find((s) => s.surahNumber === surah);
       if (!surahMeta || !Number.isInteger(ayah) || ayah < 1 || ayah > surahMeta.ayahCount) return;
       await goToReference(surah, ayah, null);
+      // ...and the Āyah card the reader left from (a poster's ← Back), once: the key leaves the address as it is used.
+      const card = params.get("qpCard");
+      if (card && card.startsWith("ayah:")) {
+        try { const u = new URL(location.href); u.searchParams.delete("qpCard"); history.replaceState(history.state, "", u); } catch { /* opens once anyway */ }
+        const c = parseAyahUnitKey(card);
+        if (c.surah === surah && c.ayah === ayah) openAyahActionSheet(`${c.surah}:${c.ayah}`, c.half);
+      }
       const unit = params.get("qpUnit");
       if (params.get("qpView") === "note" && unit) {
         try { parseUnitKey(unit); } catch { return; }

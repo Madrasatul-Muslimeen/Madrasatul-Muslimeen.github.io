@@ -22866,3 +22866,14 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 - New `tools/i18n-verify/shared-tools-long-names-browser.mjs` 202/0; `--mutate=notitle` 4, `overflow` 40, `cut` 40, `select` 40 fail.
 - **Measured (Architect, 29 Oct):** the suite and mutations re-run; merged with v12.115 (no doubled imports), read-failure 225/0 and long-names 202/0 on the merge; `behaviour.mjs` alone 972/0; bookmark-sheet 176/0, bookmarks-page-new-assign 44/0, bookmark-folder-edit 68/0, bookmark-remove 60/0, audit-part23 185/0; offline-save 119/0; apps-build-check 48/0. 360px Bangla screenshots looked at.
 - `note-window.js` unchanged. Nothing stored, no Rules changed.
+
+## v12.117 — 29 Oct 2026 — the Āyah card never opens on a broken āyah; the āyah poster gets ‹ › and Back to its card (QR Lead)
+
+- **The Owner's asks** (29 Oct, QR Lead chat): a phone screenshot of page 604 showing "Ayah NaN", "Quran 114:NaN — Surah An-Naas" and a pink "That save did not go through (unknown) · Ref: read Arabic word progress"; "This Study/ Dawah poster, should have a NAV buttons for next/previous Ayah"; the poster's ← Back "should take to the Ayah card where this poster came from, instead it takes to the App Home page".
+- `app/quranrevival.html` `openAyahActionSheet`: a key that is not a sūrah is refused; an āyah outside the sūrah falls back to the reader's āyah in that sūrah (else āyah 1), and the bad key is kept in `window.__badAyahCardKeys` with where it came from. The route that produced it is not yet found.
+- `app/ayah-poster.html`: ‹ › at the bar's end (44px tiles, labelled "Previous āyah"/"Next āyah"), one āyah per step, across sūrah edges; the reference ("114 : 1") never breaks over two lines.
+- `rememberQuranPlace()` writes the CARD's āyah and `qpCard`; `openPlaceFromQueryString()` reopens that Āyah card once on the way back (the way-back law).
+- Tablet: from 768px the full-screen Surah list ran under the Zab bar (An-Naas 31 of 48px under it); `@media (min-width: 768px) { body.zab-bar-on #readContentsMount { bottom: 44px } }`.
+- New `qr-ayah-card-no-nan-browser.mjs` 15/0 (`--mutate=no-guard` 12 fail) and `qr-ayah-poster-nav-back-browser.mjs` 29/0 (`no-card` 3, `no-nav` 5, `under-zab` 4 fail); `ayah-card-window-browser.mjs` updated in place (264/0).
+- **Measured (Architect, 29 Oct, merged with v12.116):** `behaviour.mjs` alone 972/0; all of the above re-run; zab-bar 370/0; qr-wheel-tap-highlight 22/0; apps-build-check 48/0; QR built from this tree, `qr-verify` 27 of 28 (upgrade-browser needs a QR clone). Poster bar looked at, 360 bn and 390 en. Pre-existing on `main`: quran-ayah-action-sheet 143/2 (1100×800 heading in view), passed to the QR Lead.
+- Nothing stored, no Rules changed. QR carries it at its next rebuild.
