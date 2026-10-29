@@ -682,7 +682,11 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
         clearReadStatus();
       } catch (err) {
         console.error(err);
-        showReadFailure(err, () => (appEl.style.display === "block" ? loadContextData() : Promise.resolve(location.reload())));
+        // Architect review (part 125): a retry re-hydrates the memberships, as the first load does -- loadContextData() with
+        // no argument keeps an empty myMemberships, so Records and Monitor came back with no student to show.
+        showReadFailure(err, () => (appEl.style.display === "block"
+          ? getMyMembershipRoles(db, user.uid).then((roles) => loadContextData(hydrateMemberships(db, roles)))
+          : Promise.resolve(location.reload())));
       }
     });
 

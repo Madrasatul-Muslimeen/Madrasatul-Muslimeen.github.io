@@ -7,6 +7,7 @@
 //   node tools/i18n-verify/shared-tools-read-failure-browser.mjs [--mutate=<name>] [--shots=/tmp/dir]
 //   --mutate=no-retry    the Try again button is not built      -> the retry checks FAIL
 //   --mutate=no-message  the plain words are removed            -> the message checks FAIL
+//   --mutate=retry-no-hydrate  Try again calls loadContextData() bare  -> "the page then shows exactly what a normal load shows" FAILS (Records, Monitor)
 import fs from "node:fs";
 import { chromium, newContext, openPage } from "./harness.mjs";
 
@@ -19,6 +20,8 @@ const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice
 const SHOT = (process.argv.find((a) => a.startsWith("--shots=")) || "").slice(8);
 const MUT = {
   "no-retry": [["app/js/read-failure.js", "box.append(msg, btn);", "box.append(msg);"]],
+  // Architect review: the retry must re-hydrate the memberships; a bare loadContextData() left Records/Monitor with no student.
+  "retry-no-hydrate": ["records", "monitor", "bookmarks", "notes"].map((p) => [`app/${p}.html`, "getMyMembershipRoles(db, user.uid).then((roles) => loadContextData(hydrateMemberships(db, roles)))", "loadContextData()"]),
   "no-message": [["app/js/read-failure.js", 'msg.textContent = t("This page could not load its data. Please check your connection and try again.");', 'msg.textContent = "";']],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
@@ -48,6 +51,9 @@ async function open(url, { lang, w, fail: failList = [], latencyMs = 0 }) {
   await ctx.addInitScript((c) => { window.__stubFailReads = c; }, failList);
   await ctx.route("**/archive.org/**", (r) => r.abort());
   if (MUTATE) await ctx.route("**/js/read-failure.js*", (r) => r.fulfill({ status: 200, contentType: "text/javascript; charset=utf-8", body: source("app/js/read-failure.js") }));
+  for (const f of new Set((MUT[MUTATE] || []).map((m) => m[0]).filter((f) => f.endsWith(".html")))) {
+    await ctx.route(`**/${f.replace(/^app\//, "")}*`, (r) => r.fulfill({ status: 200, contentType: "text/html; charset=utf-8", body: source(f) }));
+  }
   const { page } = await openPage(ctx, url);
   page.__errors = [];
   page.on("pageerror", (e) => page.__errors.push(e.message));
@@ -77,6 +83,9 @@ async function statusWithin(page, pred, ms) {
   return await status(page);
 }
 
+// The page's own content, clock times dropped, to compare a retried page with a normal load (Architect review).
+const appText = (page) => page.evaluate(() => (document.getElementById("app")?.innerText || "").replace(/\d{1,2}:\d\d(:\d\d)?/g, "").trim());
+let normalText = "";
 for (const lang of ["en", "bn"]) for (const w of [390, 1280]) for (const [name, url] of Object.entries(PAGES)) {
   const tag = `[${name} ${lang} ${w}]`;
   const W = WORDS[lang];
@@ -86,6 +95,8 @@ for (const lang of ["en", "bn"]) for (const w of [390, 1280]) for (const [name, 
     await page.waitForFunction(() => document.getElementById("app")?.style.display === "block", null, { timeout: 20000 });
     await page.waitForTimeout(1200);
     check(`${tag} positive control: the read succeeds -> no failure banner and no stuck "Loading…"`, (await status(page)) === null, JSON.stringify(await status(page)));
+    normalText = await appText(page);
+    check(`${tag} positive control: the page shows its content (${normalText.length} chars)`, normalText.length > 100, normalText.slice(0, 80));
     await ctx.close();
   }
   // slow line: "Loading…" in words while waiting, then it fills in
@@ -114,6 +125,9 @@ for (const lang of ["en", "bn"]) for (const w of [390, 1280]) for (const [name, 
     if (clicked) {
       await page.waitForFunction(() => !document.getElementById("qr-read-status"), null, { timeout: 15000 }).catch(() => {});
       check(`${tag} retry: once the line is back the read runs again and the page is filled in (no banner)`, (await status(page)) === null && (await page.evaluate(() => document.getElementById("app")?.style.display)) === "block", JSON.stringify(await status(page)));
+      await page.waitForTimeout(1200);
+      const after = await appText(page);
+      check(`${tag} retry: the page then shows exactly what a normal load shows (same students, same records)`, after === normalText, `normal ${normalText.length} chars, after retry ${after.length}: ${after.slice(0, 120)}`);
     }
     await ctx.close();
   }
