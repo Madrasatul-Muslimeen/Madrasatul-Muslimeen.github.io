@@ -68,8 +68,11 @@ function threeLangFixture() {
   // Bangla only ever pulled the "Child A" subtree -- root "1" and "11" simply
   // do not exist in its own categories.json, matching the real corpus shape
   // (every bn id measured to be a subset of en's).
+  // Its title is really translated: an entry that only copies the English title is treated as untranslated
+  // (audit part 130 note b), so a fixture sharing en's object would be testing that case instead.
+  const bnChildA = { ...cats[1], title: "শাখা ক" };
   const bnCats = categoriesFixture("bn", {
-    categories: [cats[1]], roots: [cats[1]],
+    categories: [bnChildA], roots: [bnChildA],
     categoryHadithIds: { 10: ["a10"] }, hadithFile: { a10: "bn/cat-10.json" },
   });
 
@@ -172,10 +175,21 @@ await asyncCheck("resolveCategoryTitle prefers the reader's own language, verbat
     bn: await loadHadeethEncCategories("bn", opts),
   };
   const r = resolveCategoryTitle(catsByLang, "10", "bn");
-  assert.equal(r.title, "Child A", "bn's own categories.json does carry id 10 -- its title, not en's or ar's, should win");
+  assert.equal(r.title, "শাখা ক", "bn's own categories.json does carry id 10 -- its title, not en's or ar's, should win");
   assert.equal(r.isFallback, false);
   assert.equal(r.lang, "bn");
   assert.equal(r.count, "1");
+});
+
+await asyncCheck("resolveCategoryTitle treats a translated title that only copies the English as untranslated, and SAYS SO", async () => {
+  const { opts } = threeLangFixture();
+  const en = await loadHadeethEncCategories("en", opts);
+  const bnCopy = await loadHadeethEncCategories("bn", opts);
+  categoryById(bnCopy, "10").title = categoryById(en, "10").title; // HadeethEnc's own bn file does this for 24 of 414
+  const r = resolveCategoryTitle({ ar: await loadHadeethEncCategories("ar", opts), en, bn: bnCopy }, "10", "bn");
+  assert.equal(r.title, "Child A");
+  assert.equal(r.lang, "en");
+  assert.equal(r.isFallback, true, "an English copy must not pass as Bangla");
 });
 
 await asyncCheck("resolveCategoryTitle falls back en -> ar when the reader's own pull lacks the id, and SAYS SO", async () => {

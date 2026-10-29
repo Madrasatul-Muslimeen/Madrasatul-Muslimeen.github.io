@@ -2,6 +2,7 @@
 // from hadith-browser.js (PCF MSA J106, at the MSA Architect's request) so the Dua module can mount its own file
 // without importing the whole library. Pure UI helpers: no Firebase, no state.
 import { t, num } from "./i18n.js";
+import { plainMessageFor } from "./errors.js";
 import { getAppLang } from "./prefs.js";
 import { loadHadithTranslation } from "./hadith-translations.js";
 import { loadHadithRecords, hadeethEncSourceUrl } from "./hadeethenc-corpus.js";
@@ -15,16 +16,16 @@ export const el = (tag, cls, text) => {
 
 export const HADEETHENC_LANG_LABELS = { ar: "العربية", en: "English", bn: "বাংলা" };
 
-// Audit part 130 (F1, F3, F5): a pane whose data could not be read (offline, most often) says so in plain words in
-// the page's language, with a "Try again" button (44px) that re-runs the read. The browser's own error text
-// ("Failed to fetch") is never shown: a "Ref:" line appears only for an error that carries a real code (a Firebase
-// code), since an offline fetch's English message helps no reader and would print English on a Bangla page.
-export function readFailedNote(err, message, retry) {
+// Audit part 130 (F1, F3, F5): a pane whose data could not be read (offline, most often) says so in the app's one
+// plain read-failure sentence (errors.js plainMessageFor with { read: true }, the same words the Dua tab and the
+// shared tools use, in the page's language), with a "Try again" button (44px) that re-runs the read. The browser's
+// own error text ("Failed to fetch") is never shown.
+export function readFailedNote(err, retry) {
   const box = el("div", "hadith-read-failed");
   box.dataset.hadithReadFailed = "";
   box.setAttribute("role", "alert");
   box.style.cssText = "background:#fff4e0;color:#4a2f00;border:1px solid #d9a441;border-radius:10px;padding:12px 14px;margin:10px 0;line-height:1.45;font-size:.95rem;";
-  const msg = el("p", null, message);
+  const msg = el("p", null, plainMessageFor(err, { read: true }));
   msg.style.cssText = "margin:0 0 10px;";
   box.appendChild(msg);
   if (retry) {
@@ -34,12 +35,6 @@ export function readFailedNote(err, message, retry) {
     btn.style.cssText = "min-height:44px;min-width:120px;padding:8px 18px;font-size:1rem;border-radius:8px;border:1px solid #8a5a00;background:#fff;color:#4a2f00;cursor:pointer;";
     btn.addEventListener("click", () => { btn.disabled = true; retry(); });
     box.appendChild(btn);
-  }
-  const code = err && err.code ? String(err.code) : "";
-  if (code) {
-    const ref = el("p", null, t("Ref: {code}", { code: code.slice(0, 80) }));
-    ref.style.cssText = "margin:10px 0 0;font-size:.75rem;opacity:.8;";
-    box.appendChild(ref);
   }
   return box;
 }

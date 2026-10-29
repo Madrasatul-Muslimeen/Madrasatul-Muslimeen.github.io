@@ -984,7 +984,7 @@ function renderHadeethEncSource(state) {
     }).catch((err) => {
       console.error(err);
       body.textContent = "";
-      const p = readFailedNote(err, t("The Encyclopedia could not be loaded. Check the connection and try again."), localRefresh);
+      const p = readFailedNote(err, localRefresh);
       p.dataset.hadeethencError = "true";
       body.appendChild(p);
       const s = synthetic(); if (s) s.hidden = true;
@@ -1032,10 +1032,8 @@ function renderOpenitiSource(state) {
     renderOpenitiBody(body, state.oi, localRefresh).catch((err) => {
       console.error(err);
       body.textContent = "";
-      // Audit part 130 F1: plain words in the page's language and Try again, never the browser's "Failed to fetch".
-      const p = readFailedNote(err, state.oi.books
-        ? t("This book could not be opened. Check the connection and try again.")
-        : t("The list of books could not be loaded. Check the connection and try again."), localRefresh);
+      // Audit part 130 F1: the plain read-failure words and Try again, never the browser's "Failed to fetch".
+      const p = readFailedNote(err, localRefresh);
       p.dataset.openitiError = "true";
       body.appendChild(p);
     });
