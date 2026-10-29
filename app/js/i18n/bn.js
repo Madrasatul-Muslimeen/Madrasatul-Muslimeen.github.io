@@ -4545,4 +4545,7 @@ export const BN = {
   "Put it back in its place": "আগের জায়গায় ফিরিয়ে দিন", // ?
   "This page could not load its data. Please check your connection and try again.": "এই পাতা তার তথ্য লোড করতে পারেনি। অনুগ্রহ করে আপনার ইন্টারনেট সংযোগ দেখে আবার চেষ্টা করুন।",
   "Ref: {code}": "সূত্র: {code}",
+  // Audit part 130 (Hadith Lead): a Hadith pane that could not read its data, offline.
+  "This book could not be opened. Check the connection and try again.": "এই কিতাবটি খোলা যায়নি। সংযোগ দেখে আবার চেষ্টা করুন।",
+  "The Encyclopedia could not be loaded. Check the connection and try again.": "বিশ্বকোষ লোড করা যায়নি। সংযোগ দেখে আবার চেষ্টা করুন।",
 };
