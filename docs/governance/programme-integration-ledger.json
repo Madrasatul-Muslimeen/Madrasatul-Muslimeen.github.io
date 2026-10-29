@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "12.117",
+    "version": "12.118",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -5681,8 +5681,20 @@
     {
       "version": "12.117",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "QR Lead: openAyahActionSheet refuses a broken key; ayah poster prev/next; poster Back reopens the Ayah card; Surah list above the Zab bar from 768px.",
+      "integration": {
+        "authorizedOn": "2026-10-29",
+        "integratedOn": "2026-10-29",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.118",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Audit part 128: errors.js isReadFailure; a failed read is worded as a failed load, writes unchanged.",
       "integration": {
         "authorizedOn": "2026-10-29",
         "integratedOn": "2026-10-29",
@@ -5691,8 +5703,9 @@
       }
     }
   ],
-  "nextUnallocated": "12.118",
+  "nextUnallocated": "12.119",
   "nextUnallocatedNote": [
+    "v12.118 was allocated to a failed read says could not be loaded (audit part 128), 2026-10-29.",
     "v12.117 was allocated to Ayah card NaN guard, poster prev/next and Back to its card (QR Lead), 2026-10-29.",
     "v12.116 was allocated to long folder names readable in Bookmarks pickers (audit part 126), 2026-10-29.",
     "v12.115 was allocated to a page that cannot load says so, with Try again (audit part 125), 2026-10-29.",
