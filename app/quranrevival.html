@@ -23151,9 +23151,23 @@
       prefetchAyahFolderTree(); // "File in folder(s)" then usually opens with the folders already there
       ayahSheetIntro = intro; // PCF J26
       if (intro?.opening) { openOpeningSheetCore(ayahKey); return; }
-      const [surahStr, ayahStr] = ayahKey.split(":");
+      const [surahStr, ayahStr] = String(ayahKey ?? "").split(":");
       const surahNum = Number(surahStr);
-      const ayahNum = Number(ayahStr);
+      let ayahNum = Number(ayahStr);
+      // QR Lead (the Owner, 29 Oct 2026, a phone screenshot: "Ayah NaN", "Quran 114:NaN — Surah An-Naas", and the pink
+      // "That save did not go through (unknown) · Ref: read Arabic word progress"): some route handed the card a key
+      // with no real āyah number, and the card then asked for that āyah's word progress, which threw. The card never
+      // opens on a broken āyah: inside a real surah it falls back to the āyah the reader is on there (else āyah 1), and
+      // the key that came in is kept in window.__badAyahCardKeys (with where it came from) so the route can be named.
+      const surahMeta = surahIndex.find((x) => x.surahNumber === surahNum);
+      if (!Number.isInteger(surahNum) || surahNum < 1 || surahNum > 114 || (surahIndex.length && !surahMeta)) { console.warn("Āyah card: not a sūrah", ayahKey); return; }
+      const ayahCount = surahMeta?.ayahCount ?? Infinity; // before the sūrah list has loaded, only "a whole number from 1" is checked
+      if (!Number.isInteger(ayahNum) || ayahNum < 1 || ayahNum > ayahCount) {
+        try { (window.__badAyahCardKeys ||= []).push({ key: String(ayahKey), at: new Date().toISOString(), from: (new Error().stack || "").split("\n").slice(2, 5).join(" | ") }); } catch { /* diagnostic only */ }
+        console.warn("Āyah card: not an āyah of this sūrah, opening a real one instead", ayahKey);
+        ayahNum = currentSurahNum === surahNum && Number.isInteger(currentAyahNum) && currentAyahNum >= 1 && currentAyahNum <= ayahCount ? currentAyahNum : 1;
+        half = null;
+      }
       // Issue #606 -- Al-Fātiḥah's internal 1:7 is two Ayat with the count on: the
       // caller says which (the Mushaf ⑥/⑦ marker, the number badge); a caller that
       // cannot (the Word Card's own button) gets the half the reader is on, else 6.
