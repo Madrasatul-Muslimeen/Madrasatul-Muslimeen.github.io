@@ -8,6 +8,7 @@ import { TRANSLATED_BOOKS } from "./hadith-translations.js";
 import { STATUSES, statusLabel } from "./unit-keys.js";
 import { loadOpenitiBookIndex, loadOpenitiConcordance, loadDuaIndex, loadDuaCardsSummary, loadDuaCardsPage, loadDuaWordLinks, loadDuaVowels, loadDuaWordGrammar, loadDuaFit } from "./openiti-corpus.js";
 import { buildCheckPanel, loadMemberTexts, applyMembers, checkChipText, checkState } from "./dua-check.js";
+import { plainMessageFor } from "./errors.js";
 import { el, loadHadithStudyActions, openitiDisplayTitle, openitiArabicRowName, duaRefLabel, standardTranslationFolds, openitiTranslationFold } from "./hadith-shared-ui.js";
 
 /**
@@ -80,7 +81,27 @@ export function renderDua(body, state, render) {
       });
       list.appendChild(row);
     }
-  }).catch((err) => { list.textContent = ""; list.appendChild(el("p", "hadith-note", String(err?.message ?? err))); });
+  }).catch((err) => duaLoadFailed(list, render, err));
+}
+
+/**
+ * MSA audit part 130 (F2): when Dua data cannot be loaded (offline, a dropped connection), the reader sees the app's one
+ * plain read-failure sentence (errors.js, audit part 128) in their language and a Try again button, never the browser's
+ * own English ("Failed to fetch"). A failed load is not kept (openiti-corpus.js drops it from its cache), so Try again
+ * really asks again.
+ */
+export function duaLoadFailed(container, retry, err) {
+  container.textContent = "";
+  const box = el("div", "dua-load-failed");
+  box.setAttribute("role", "status");
+  box.dataset.duaLoadFailed = "true";
+  box.appendChild(el("p", "hadith-note", plainMessageFor(err, { read: true })));
+  const again = el("button", "dua-ref", t("Try again"));
+  again.type = "button";
+  again.dataset.duaRetry = "true";
+  again.addEventListener("click", retry);
+  box.appendChild(again);
+  container.appendChild(box);
 }
 
 /**
@@ -127,7 +148,7 @@ export function renderDuaCards(body, state, render) {
       if (p) { state.dua.page = p; render(); return; }
       section.textContent = "";
       section.appendChild(el("p", "hadith-note", t("Dua {n} was not found.", { n: num(state.dua.focusDua) })));
-    }).catch((err) => { section.textContent = ""; section.appendChild(el("p", "hadith-note", String(err?.message ?? err))); });
+    }).catch((err) => duaLoadFailed(section, () => { state.dua.findPage = true; render(); }, err));
     return;
   }
   Promise.all([loadDuaCardsSummary(), loadDuaCardsPage(state.dua.page || 1), loadDuaWordLinks(state.dua.page || 1).catch(() => null),
@@ -163,7 +184,7 @@ export function renderDuaCards(body, state, render) {
     }
     fillDuaProgress(progressRows);
     if (target) keepCardInView(target, list);
-  }).catch((err) => { section.textContent = ""; section.appendChild(el("p", "hadith-note", String(err?.message ?? err))); });
+  }).catch((err) => duaLoadFailed(section, render, err));
 }
 
 /**
@@ -606,7 +627,7 @@ export async function fillDuaProgress(rows) {
   if (!session) { say(t("Sign in and choose who you're studying as to record progress.")); return; }
   if (!session.canRecordFor) { say(t("You can view this, but only the person's own record can record progress.")); return; }
   let statuses = new Map();
-  try { statuses = await actions.duaStatuses(session); } catch (err) { say(String(err?.message ?? err)); return; }
+  try { statuses = await actions.duaStatuses(session); } catch { say(t("Progress could not be loaded right now.")); return; }
   let bookmarked = new Set();
   try { bookmarked = await actions.duaBookmarkedSet(session); } catch { /* the buttons still toggle; a read hiccup is not a write (I15) */ }
   const onRamp = STATUSES.filter((s) => s.onRamp);
