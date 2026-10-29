@@ -22887,3 +22887,13 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 - **Measured (Architect, 30 Oct, merged with v12.117):** `behaviour.mjs` alone 972/0; shared-pages-failed-write-audit 121/121 OK; shared-tools-read-failure 225/0; offline-save 119/0; stub-parity 4/0; apps-build-check 48/0; every read/load/count `what` in `app/` checked by hand; the Bangla 390 banner looked at.
 - Also merged since v12.117 (tests only, no version): audit part 127, `tools/i18n-verify/floating-overlays-reach-browser.mjs` (PR #1307) — no control on Bookmarks, Records, Notes, Mapping My Journey, Monitor or People is unreachable under the floating ← ✕ pill or 🧰 at 360/390/768; the Quran landing's "Approach" tab covered at the bottom with the pill went to the QR Lead. The Architect replaced its positive control ("under the pill", which flickered because a floating pill leaves room to scroll) with one unreachable by construction; 360/0 twice, no-page-end-clearance 28 fail.
 - Nothing stored, no Rules changed.
+
+## v12.119 — 30 Oct 2026 — Monitor's CSV keeps Bangla readable in a spreadsheet; its printed report fits A4 (audit part 129)
+
+- **The audit** (PCF MSA J29 part 129, issue #1310): Monitor's "📥 Download CSV" (week, month) and Print, with real-length names (a ~35-character Bangla name, `Ahmad "Abu Zayd", Jr.`), en and bn.
+- Found: the CSV had no UTF-8 byte-order mark, so Excel opens Bangla names as garbage. Quoting of commas and quotes (RFC 4180) and translated headings were already right. The print window set no A4 size and did not wrap long names.
+- `app/js/monitor.js`: `downloadCsv` writes a leading BOM (U+FEFF); `printReportHtml` adds `@page { size: A4 }`, cell wrapping (`overflow-wrap: anywhere`) and smaller print type.
+- **For the Owner (j29p129q), not built:** Bangla or English digits in a file meant for a spreadsheet; it keeps the stored values.
+- New `tools/i18n-verify/monitor-export-print-browser.mjs` 32/0; `--mutate=bom` 4, `printcss` 2 fail (the old CSS did not overflow with this seed, so `printcss` proves the check can fail).
+- **Measured (Architect, 30 Oct, merged with v12.118):** `behaviour.mjs` alone 972/0; audit-part57-records-monitor 468/0; shared-tools-read-failure 225/0; read-failure-wording 45/0; apps-build-check 48/0. The Bangla A4 print looked at: fits, names intact. It shows the subject `asma_ul_husna` as a raw id — pre-existing, recorded for the next round (fixture or a real raw-id leak).
+- Nothing stored, no Rules changed.

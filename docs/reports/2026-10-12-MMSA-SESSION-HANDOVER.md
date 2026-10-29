@@ -2109,3 +2109,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v12.116** (2026-10-29): long folder names readable in Bookmarks pickers (audit part 126).
 - **v12.117** (2026-10-29): Ayah card NaN guard, poster prev/next and Back to its card (QR Lead).
 - **v12.118** (2026-10-29): a failed read says could not be loaded (audit part 128).
+- **v12.119** (2026-10-29): Monitor CSV BOM and A4 print (audit part 129).
