@@ -15,7 +15,11 @@ easy). Keep the building plan and the rule in Project memory as well as in PMS f
    only the MSA Architect allocates.
 3. **Every build has a number, D01, D02 …** The numbers below never change meaning; a new request gets the next free
    number. Every report, commit, hand-in and PMS line names its build number(s).
-4. Lead rules (lead120) still hold: the Lead builds only Dua's own files on its own branch, and hands each finished
+4. **Every demo opens in a separate window** (the Owner, 30 Oct 2026, 7:38 am Sydney: "Enable the demo to be opened in
+   a separate window always. Rule."). Every demo page carries a "↗ Open in its own window" link (a plain link to its own
+   address, opening a new tab or window), and every report gives the demo's full link to open on its own, never only
+   a panel beside the chat.
+5. Lead rules (lead120) still hold: the Lead builds only Dua's own files on its own branch, and hands each finished
    build to the MSA Architect ("MSA-DUA LEAD ▸ ready for release"). Shared parts go to the MSA Architect.
 
 ## Demo versions
@@ -24,8 +28,9 @@ easy). Keep the building plan and the rule in Project memory as well as in PMS f
 |---|---|---|---|
 | v1.01 | 28 Oct 2026, 8:11 pm | First Dua page: occasions (Hisn al-Muslim), Qur'anic duas, morning and evening adhkār with counts, the full list | https://claude.ai/artifact/9R9UYsxz5r7JoM38jF7PZ8 (version 1) |
 | v1.02 | 30 Oct 2026, 7:19 am | The seven-group menu bar and the Dua Card: D01–D18 | https://claude.ai/artifact/9R9UYsxz5r7JoM38jF7PZ8 (version 2) |
+| v1.03 | 30 Oct 2026, 7:38 am | v1.02 plus "↗ Open in its own window" (rule 4) | https://claude.ai/artifact/9R9UYsxz5r7JoM38jF7PZ8 (version 3) |
 
-## The build plan (waiting for the Owner's approval of demo v1.02)
+## The build plan (waiting for the Owner's approval of demo v1.03)
 
 Tags: **Rules** = needs a Firestore Rules change the Owner publishes (an Owner Control Gate); **Architect** = touches
 a shared part, done by or with the MSA Architect; **Answer** = waits on an Owner answer in J104 or J105.
