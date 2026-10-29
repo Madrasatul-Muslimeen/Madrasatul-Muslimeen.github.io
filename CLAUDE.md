@@ -160,6 +160,12 @@ Read this first, every session. It is the standing brief.
 > - Leads have no keep-alive; a Lead idle 3 days is closed by the PCA after a clean handover (hand119). cost86, rec118,
 >   carry1 and hand119 apply to Leads too. A Builder round started by a Lead follows the Builder's contract below.
 
+> ## ⇢ DUA MODULE — plan and rules (the Owner, 30 Oct 2026, via the Dua Lead)
+>
+> **The Dua module's plan (D01–D20) and the Owner's rule dua130** live in `docs/governance/dua-module-plan.md`: demo first,
+> then the Owner's approval, then build; demo versions go up v1.01, v1.02…; every build is numbered D01…. Nothing is built
+> until the Owner ticks it in PCF MSA J104.
+
 > ## ⇢ HADITH STUDY is being built on `feature/hadith-study` — READ IF YOU TOUCH HADITH
 >
 > **This branch's final application version is `v08.29`, and it is now MERGED TO `main`.** The
