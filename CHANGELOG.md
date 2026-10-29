@@ -22897,3 +22897,15 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 - New `tools/i18n-verify/monitor-export-print-browser.mjs` 32/0; `--mutate=bom` 4, `printcss` 2 fail (the old CSS did not overflow with this seed, so `printcss` proves the check can fail).
 - **Measured (Architect, 30 Oct, merged with v12.118):** `behaviour.mjs` alone 972/0; audit-part57-records-monitor 468/0; shared-tools-read-failure 225/0; read-failure-wording 45/0; apps-build-check 48/0. The Bangla A4 print looked at: fits, names intact. It shows the subject `asma_ul_husna` as a raw id — pre-existing, recorded for the next round (fixture or a real raw-id leak).
 - Nothing stored, no Rules changed.
+
+## v12.120 — 30 Oct 2026 — Hadith Books, Dua and the Encyclopedia open with no internet after one visit (audit part 130, F4 + F2)
+
+- **The audit** (PCF MSA J29 part 130, issue #1313, PR #1314, report only): with no internet after one visit, every Hadith book, Dua and the Encyclopedia failed with the browser's English "Failed to fetch". Root cause F4: `app/sw.js`'s `CACHEABLE_PATH_PREFIXES` omitted `/tools/hadith-data-pull/output/`.
+- `app/sw.js`: same-origin `.json`/`.txt` files under `/tools/hadith-data-pull/output/` are kept on first use in their own cache `mm-hadith-v1` (cache-first, background refresh at most every 7 days, the existing `cacheFirstWithBackgroundRefresh`). Not `CACHE_NAME`, which every release empties: a several-MB book should not be fetched again after each update. The activate clean-up spares it. Never pre-downloaded (I9).
+- `tools/apps/build-app.mjs`: the new cache name is counted (`hadith: 2`) so an app with its own prefix renames it; `app/apps/msa.json` unchanged (same prefix). QR keeps its own worker with `qr-hadith-v1`.
+- **The Dua Lead's F2** (branch `claude/dua-lead-offline-words`): `app/js/dua-browser.js` — a failed load shows the plain read-failure sentence (`plainMessageFor`, audit part 128) and a Try again button; "← All Dua books" stays (decision 86); a progress read failure says "Progress could not be loaded right now." No new strings.
+- New `tools/i18n-verify/hadith-offline-cache-browser.mjs` 68/0 (both Hadith pages, en/bn, 390/1440; online positive controls; offline the same book, Dua and Encyclopedia list; a release keeps the cache). `--mutate=dispatch` and `--mutate=cleanup` both fail it. Part 130's audit walk clicked the shelf's first row, "All Hadith Books", so its "a book opens" control never opened a book; this suite clicks al-Muwatta' by name.
+- `tools/i18n-verify/dua-load-failed-browser.mjs` 42/0; on the old `dua-browser.js` it fails.
+- **Measured (Architect):** `behaviour.mjs` alone 972/0; service-worker 18/0; app-offline-boot 15/0; mushaf-font-offline-cache 29/0; stub-parity 4/0; apps-build-check 48/0. Offline Bangla screenshot looked at: a real HadeethEnc hadith shows (its sub-category heading is English in Bangla: data, for the Hadith Lead).
+- Still for the Hadith Lead: F1/F3/F5 wording on the Hadith renderers (a book never opened still fails offline, in raw English).
+- Nothing stored, no Rules changed.
