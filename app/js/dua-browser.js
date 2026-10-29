@@ -81,7 +81,16 @@ export function renderDua(body, state, render) {
       });
       list.appendChild(row);
     }
-  }).catch((err) => duaLoadFailed(list, render, err));
+  }).catch((err) => {
+    duaLoadFailed(list, render, err);
+    if (!state.dua.bookUri) return;
+    // The way back (decision 86) stays when a book's chapters cannot load.
+    const back = el("button", "hadeethenc-crumb", t("← All Dua books"));
+    back.type = "button";
+    back.dataset.duaBack = "true";
+    back.addEventListener("click", () => { state.dua.bookUri = null; render(); });
+    list.prepend(back);
+  });
 }
 
 /**

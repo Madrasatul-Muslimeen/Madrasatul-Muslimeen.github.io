@@ -65,15 +65,29 @@ for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 1440], ["bn", 1440
     if (n !== 40 || await page.$("[data-dua-load-failed]")) throw new Error(`${n}`);
   });
 
-  offline = true;
-  // The chapter list reads the Dua index (cached by now) and then each book's own index -- cut that off.
+  // The chapter list: the eleven books come from the Dua index; each book's chapters from that book's own index.
+  // First the index itself cut off, then (books listed) one book's index.
   await page.click('[data-dua-mode="chapters"]');
-  await page.waitForSelector("[data-dua-book]", { timeout: 15000 }).catch(() => {});
-  await page.click("[data-dua-book]").catch(() => {});
+  await page.waitForSelector("[data-dua-load-failed]", { timeout: 15000 }).catch(() => {});
+  const idx = await failedBox();
+  await acheck("Dua chapters: the book list that cannot load shows the same plain sentence and Try again", () => { if ((one?.text ?? "") !== (idx?.text ?? "-") || !idx?.btn) throw new Error(JSON.stringify(idx)); });
+  offline = false;
+  await page.click("[data-dua-retry]");
+  await acheck("Dua chapters: Try again lists the eleven books", async () => {
+    await page.waitForSelector("[data-dua-book]", { timeout: 20000 });
+    const n = await page.$$eval("[data-dua-book]", (r) => r.length);
+    if (n !== 11) throw new Error(`${n}`);
+  });
+  offline = true;
+  await page.click("[data-dua-book]");
   await page.waitForSelector("[data-dua-load-failed]", { timeout: 15000 }).catch(() => {});
   const two = await failedBox();
   await acheck("Dua chapters: a book whose index cannot load shows the same plain sentence and Try again", () => { if ((one?.text ?? "") !== (two?.text ?? "-") || !two?.btn) throw new Error(JSON.stringify(two)); });
   await acheck("Dua chapters: no 'Failed to fetch' either", async () => { if (await pageHasRaw()) throw new Error("raw text shown"); });
+  await acheck("Dua chapters: the way back '← All Dua books' is still there (decision 86)", async () => {
+    const b = await page.$("[data-dua-back]");
+    if (!b || !(await b.isVisible())) throw new Error("missing");
+  });
   offline = false;
   await page.click("[data-dua-retry]").catch(() => {});
   await acheck("Dua chapters: Try again loads the book's Dua chapters", async () => {
