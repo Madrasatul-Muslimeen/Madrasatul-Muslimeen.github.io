@@ -249,6 +249,29 @@ function handleMushafAsset(event) {
   return cacheFirstWithBackgroundRefresh(event, MUSHAF_CACHE_NAME, MUSHAF_MAX_AGE_MS);
 }
 
+// The Hadith and Dua data (audit part 130 finding F4, v12.120): Hadith Books,
+// Dua, the Encyclopedia and the translations all read same-origin files under
+// /tools/hadith-data-pull/output/, and nothing kept them, so with no internet
+// every book showed an error even after it had been opened. Kept on first use,
+// file by file, as a reader opens it -- never pre-downloaded (I9; the whole
+// folder is over 200 MB). Its OWN cache, not CACHE_NAME: CACHE_NAME is emptied
+// on every release, and a book of several MB should not be fetched again
+// after each update. Refreshed in the background at most weekly.
+const HADITH_CACHE_NAME = "mm-hadith-v1";
+const HADITH_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+const HADITH_DATA_PREFIX = "/tools/hadith-data-pull/output/";
+
+function isHadithData(request) {
+  if (request.method !== "GET") return false;
+  let url;
+  try { url = new URL(request.url); } catch { return false; }
+  return url.origin === self.location.origin && url.pathname.startsWith(HADITH_DATA_PREFIX) && /\.(?:json|txt)$/i.test(url.pathname);
+}
+
+function handleHadithData(event) {
+  return cacheFirstWithBackgroundRefresh(event, HADITH_CACHE_NAME, HADITH_MAX_AGE_MS);
+}
+
 // The Owner, 6 Oct 2026: "opening of all files, modules takes ages". The
 // cause, measured: every release made a new, EMPTY CACHE_NAME and deleted the
 // old one on activate, so the first opens after each update (several a day at
@@ -350,7 +373,8 @@ self.addEventListener("activate", (event) => {
             // not by CACHE_NAME, so this only fires on a future format bump
             // of one of THESE, never on an ordinary app update.
             (n.startsWith("mm-ext-") && n !== EXT_SDK_CACHE_NAME) ||
-            (n.startsWith("mm-mushaf-") && n !== MUSHAF_CACHE_NAME)
+            (n.startsWith("mm-mushaf-") && n !== MUSHAF_CACHE_NAME) ||
+            (n.startsWith("mm-hadith-") && n !== HADITH_CACHE_NAME)
           )
           .map((n) => caches.delete(n))
       );
@@ -417,6 +441,11 @@ self.addEventListener("fetch", (event) => {
 
   if (isMushafAsset(request)) {
     event.respondWith(handleMushafAsset(event));
+    return;
+  }
+
+  if (isHadithData(request)) {
+    event.respondWith(handleHadithData(event));
     return;
   }
 

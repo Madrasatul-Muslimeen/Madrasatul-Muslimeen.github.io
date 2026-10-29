@@ -1021,3 +1021,4 @@ total). Allocated by the MMSA Architect.
 12.117: Ayah card NaN guard, poster prev/next and Back to its card (QR Lead). Allocated by the MMSA Architect.
 12.118: a failed read says could not be loaded (audit part 128). Allocated by the MMSA Architect.
 12.119: Monitor CSV BOM and A4 print (audit part 129). Allocated by the MMSA Architect.
+12.120: Hadith Books, Dua and the Encyclopedia open with no internet after one visit; a Dua that cannot load says so in plain words with Try again (audit part 130). Allocated by the MMSA Architect.

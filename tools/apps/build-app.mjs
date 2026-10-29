@@ -120,7 +120,7 @@ function rules(base, s) {
 
   // Exact counts: each cache's name, its clean-up test, and (for the fonts) one comment.
   // A cache renamed or added in sw.js must be counted here, or an app would keep MSA's name.
-  const CACHES = { '"': { app: 2, "qf-fonts": 3, ext: 2, mushaf: 2 }, "`": { app: 1, "qf-fonts": 0, ext: 0, mushaf: 0 } };
+  const CACHES = { '"': { app: 2, "qf-fonts": 3, ext: 2, mushaf: 2, hadith: 2 }, "`": { app: 1, "qf-fonts": 0, ext: 0, mushaf: 0, hadith: 0 } };
   for (const [q, names] of Object.entries(CACHES)) {
     for (const [name, n] of Object.entries(names)) {
       add((p) => p === "app/sw.js", `${q}${base.cachePrefix}-${name}-`, `${q}${s.cachePrefix}-${name}-`, { exact: n }, `offline cache "${name}"`);
@@ -137,7 +137,7 @@ function rules(base, s) {
 function msaOnlyValues(base, s) {
   const v = [];
   if (s.name.full.en !== base.name.full.en) v.push(base.name.full.en);
-  if (s.cachePrefix !== base.cachePrefix) for (const n of ["app", "qf-fonts", "ext", "mushaf"]) v.push(`${base.cachePrefix}-${n}-`);
+  if (s.cachePrefix !== base.cachePrefix) for (const n of ["app", "qf-fonts", "ext", "mushaf", "hadith"]) v.push(`${base.cachePrefix}-${n}-`);
   if (s.titlePrefix !== base.titlePrefix) v.push(`${base.titlePrefix}${DASH}`);
   return v;
 }

@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "12.119",
+    "version": "12.120",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -5705,8 +5705,20 @@
     {
       "version": "12.119",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Audit part 129: Monitor CSV gets a UTF-8 BOM; print fits A4 with wrapped names.",
+      "integration": {
+        "authorizedOn": "2026-10-29",
+        "integratedOn": "2026-10-29",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.120",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Audit part 130 F4 + F2: app/sw.js keeps /tools/hadith-data-pull/output/ in its own cache mm-hadith-v1 on first use; dua-browser.js read-failure sentence and Try again (Dua Lead).",
       "integration": {
         "authorizedOn": "2026-10-29",
         "integratedOn": "2026-10-29",
@@ -5715,8 +5727,9 @@
       }
     }
   ],
-  "nextUnallocated": "12.120",
+  "nextUnallocated": "12.121",
   "nextUnallocatedNote": [
+    "v12.120 was allocated to Hadith Books, Dua and the Encyclopedia open with no internet after one visit; a Dua that cannot load says so in plain words with Try again (audit part 130), 2026-10-29.",
     "v12.119 was allocated to Monitor CSV BOM and A4 print (audit part 129), 2026-10-29.",
     "v12.118 was allocated to a failed read says could not be loaded (audit part 128), 2026-10-29.",
     "v12.117 was allocated to Ayah card NaN guard, poster prev/next and Back to its card (QR Lead), 2026-10-29.",
