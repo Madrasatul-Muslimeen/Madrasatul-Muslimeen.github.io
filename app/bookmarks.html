@@ -665,7 +665,17 @@ import { mountBookmarkMenu, noteBookmarkOpened, getBookmarkTimesShown, bookmarkT
       document.addEventListener(ev, (e) => { const s = e.target?.closest?.("select[data-lazy-opts]"); if (s) fillLazySelect(s); }, true);
     }
 
+    // A long folder name is cut inside a narrow native <select>; the full chosen name stays readable as its title (audit 126).
+    function syncMoveSelectTitles() {
+      document.querySelectorAll("select[data-bm-move], select[data-folder-move]").forEach((sel) => {
+        const o = sel.options[sel.selectedIndex];
+        if (o && o.textContent.trim()) sel.title = o.textContent.trim(); else sel.removeAttribute("title");
+      });
+    }
+    document.addEventListener("change", (e) => { if (e.target?.matches?.("select[data-bm-move], select[data-folder-move]")) syncMoveSelectTitles(); });
+
     function wireRowHandlers() {
+      syncMoveSelectTitles();
       document.querySelectorAll(".bm-row").forEach((row) => {
         const id = row.dataset.bmId;
         const bookmark = (bookmarksDoc.saved ?? []).find((b) => b.id === id);
