@@ -44,10 +44,12 @@ const KINDS = ["cut", "overlap", "offscreen", "sideways", "small", "fixedpx"];
 // Kinds measured at ZERO on every one of the 23 pages at 150% (all widths, both languages): these must stay zero. Filled in from the run.
 // Per kind, the pages measured at ZERO at 150% across all 3 widths x 2 languages (measured 30 Oct 2026, report audit-part131). The rest print INFO.
 const CHECKED_KINDS = {
+  // Architect review, 30 Oct 2026: journey-map left the offscreen and sideways lists -- at 360 bn 150% its folder search box
+  // spans 24..362 (page 362 wide), steady in three runs; it is finding 18, measured at 200% only in the batches.
   cut: ["course-offers", "backup", "import-notes", "dawah", "onboarding", "accept-invite", "monitor", "records", "catalogue", "about", "hadith-collections", "notes", "journey-map", "admin-self-check"],
   overlap: ["classes", "import-notes", "dawah", "onboarding", "accept-invite", "monitor", "catalogue", "about", "records", "deen-study", "arabic-study", "admin-self-check"],
-  offscreen: ["classes", "course-offers", "backup", "import-notes", "dawah", "onboarding", "accept-invite", "monitor", "homework", "people", "catalogue", "about", "bookmarks", "notes", "journey-map", "deen-study", "arabic-study", "admin-self-check", "taglines"],
-  sideways: ["classes", "course-offers", "backup", "import-notes", "dawah", "accept-invite", "monitor", "homework", "people", "catalogue", "bookmarks", "notes", "journey-map", "deen-study", "arabic-study", "admin-self-check", "taglines"],
+  offscreen: ["classes", "course-offers", "backup", "import-notes", "dawah", "onboarding", "accept-invite", "monitor", "homework", "people", "catalogue", "about", "bookmarks", "notes", "deen-study", "arabic-study", "admin-self-check", "taglines"],
+  sideways: ["classes", "course-offers", "backup", "import-notes", "dawah", "accept-invite", "monitor", "homework", "people", "catalogue", "bookmarks", "notes", "deen-study", "arabic-study", "admin-self-check", "taglines"],
 };
 
 const SEED = `

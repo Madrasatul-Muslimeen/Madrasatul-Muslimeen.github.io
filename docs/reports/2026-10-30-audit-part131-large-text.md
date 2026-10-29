@@ -64,7 +64,7 @@ Owner of each: **S** = shared page (the Architect's). None is inside Hadith/Dua 
 15. **S. about.html 360/390 en 200%, 768 en 150%/200%, 768 bn 200%: the page scrolls sideways** (401 at phone, 1030 at 768 en 200%): a long unbroken acknowledgements link. bn 150% at 360/390: the "Qura…" and "OpenITI" links are never reachable with the pill.
 16. **S. bookmarks.html 360, 150% and 200% (both languages): the "No one in particular" person-tag select is cut on every folder and bookmark row** (needs 236px, has 107..211px; 38 occurrences at 200%). The folder-name selects already carry the full name as a title (part 126); this one does not.
 17. **S. import-notes.html 360 en 200%: the source select is past the edge** (373 on 360).
-18. **S. journey-map.html 360/390 200%: the page scrolls sideways** (414 en, 403 bn).
+18. **S. journey-map.html 360/390 200%: the page scrolls sideways** (414 en, 403 bn). *Architect review, 30 Oct:* also at **360 bn 150%** (page 362 wide: the folder search box spans 24..362), steady in three runs; the batches had missed it, so journey-map is no longer in the suite's "zero at 150%" lists for offscreen and sideways.
 19. **S. taglines.html (admin), all widths: the "Save" bar overlaps the form fields** (360 bn 150%: the motion select overlaps Save by 103x46; 768 bn 200%: the scroll-speed input overlaps Save by 145x40) and **5-8 inputs, selects and "Yes" buttons are never reachable with the pill** at 150%/200% (reach pass). 15 cut at 100% already.
 20. **Hadith (its Lead's): hadith-collections.html 768 200%: the "Hadith Books" crumb is covered by the Zab bar** (finding 1). No Dua-page finding was in scope (the list is the 23 shared pages).
 21. **S. deen-study / arabic-study 768 200%: topic rows are covered by the Zab bar** (finding 1) and 2 cut at 100% grow to 5 at 200%.
@@ -87,6 +87,10 @@ Larger text should reflow, not clip: selects should show their full chosen value
 - Mutations (put a defect in; the matching check must fail): `--mutate=cut` 6 failures, `--mutate=overlap` 6, `--mutate=offscreen` 12.
 
 Results of the runs: large-text suite batches 44 + 56 + 62 passed, 0 failed (before the per-page checks were added); with them, four pages 116 passed, 0 failed. `behaviour.mjs` alone: **972 passed, 0 failed**. `stub-parity.mjs`: **4 passed, 0 failed**.
+
+## Architect review (30 Oct 2026)
+
+The full one-go run of all 23 pages, which the round could not repeat: **516 passed, 2 failed** — both journey-map 360 bn 150% (offscreen, sideways), steady when re-run alone (twice). Corrected as finding 18 above and in the suite; after the correction the run is clean.
 
 ## Not done
 
