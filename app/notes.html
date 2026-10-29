@@ -153,6 +153,7 @@
     import { getMyMembershipRoles, hydrateMemberships, pickContext, setActiveContext, getSelectedPersonId, setSelectedPersonId } from "./js/session-context.js";
     import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
     import { translateStatic, t } from "./js/i18n.js";
+    import { showReadLoading, clearReadStatus, showReadFailure } from "./js/read-failure.js";
     import { registerServiceWorker } from "./js/sw-register.js";
     import { armScreensaver } from "./js/screensaver-idle.js";
     import { roleListLabel } from "./js/labels.js";
@@ -791,6 +792,7 @@
       whoEl.textContent = t("Signed in as {email}", { email: user.email });
       signInBtn.style.display = "none";
       signOutBtn.style.display = "inline-block";
+      showReadLoading();
 
       try {
         // Speed, part 7 (issue #291), the same pattern issue #278's own fix
@@ -820,9 +822,10 @@
 
         appEl.style.display = "block";
         await loadContextData(hydratedMembershipsPromise);
+        clearReadStatus();
       } catch (err) {
         console.error(err);
-        whoEl.textContent += ` — ${err.message}`;
+        showReadFailure(err, () => (appEl.style.display === "block" ? loadContextData() : Promise.resolve(location.reload())));
       }
     });
   </script>
