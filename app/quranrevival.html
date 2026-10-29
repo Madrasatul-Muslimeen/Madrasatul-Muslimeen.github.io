@@ -13524,7 +13524,7 @@
       const row = e.target.closest("[data-rc-kind]");
       if (!row) return;
       const go = row.dataset.rcKind === "ayah" ? openReadContentsAyah(row) : openReadContentsRow(row.dataset.rcKind, Number(row.dataset.rcN));
-      go.catch((error) => reportWriteFailure(error, { what: "open that place" }));
+      go.catch((error) => reportWriteFailure(error, { what: "open that place", read: true }));
     });
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape" && readContentsMountEl && !readContentsMountEl.hidden) closeReadContents();
@@ -25564,7 +25564,7 @@
       try {
         readNotePaneMod ??= await import("./js/read-note-pane.js");
       } catch (error) {
-        reportWriteFailure(error, { what: "open the Notes pane" }); // I15
+        reportWriteFailure(error, { what: "open the Notes pane", read: true }); // I15
         return;
       }
       if (readNotePaneMod.isReadNotePaneOpen()) { readNotePaneMod.closeReadNotePane(); return; }
@@ -25585,7 +25585,7 @@
     /** Opens the pane on the Read view's āyah. `opts` as openReadNotePane()'s; `whenClosed` defaults to the focus back on 📝. */
     async function openReadNotesPane(u = readNotesUnit(), opts = {}, whenClosed = null) {
       if (!u) return;
-      try { await loadReadNotePane(); } catch (error) { reportWriteFailure(error, { what: "open the Notes pane" }); return; } // I15
+      try { await loadReadNotePane(); } catch (error) { reportWriteFailure(error, { what: "open the Notes pane", read: true }); return; } // I15
       // 10 Oct 2026: below 900px 📝 sits behind ⋯, so the focus goes back to ⋯ (which carries the same count).
       readNotePaneMod.openReadNotePane(u, whenClosed ?? (() => { paintReadNotesBtn(); (readNotesBtn.getBoundingClientRect().width ? readNotesBtn : readToolsBtn).focus(); }), opts);
       paintReadNotesBtn();
