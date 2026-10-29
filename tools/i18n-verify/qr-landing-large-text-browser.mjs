@@ -4,7 +4,8 @@
 // and at 768 200% the wheel area spilled under the docked tabs, where no scroll could reach Read, Unit, Know Your Status or
 // the folder groups. Measured before the fix on main v12.121 with this suite's own probe.
 // Now: the tabs and the Wheel / Legend / Unit row wrap; above 720px a landing whose content does not fit scrolls as on a phone
-// (body.landing-tall, set only while it really spills); and the phone wheel never shrinks below 45% of its column (160px).
+// (body.landing-tall, set only while it really spills); and, with enlarged text, the phone wheel never shrinks below 45% of its
+// column (160px at least). At ordinary text the old shrink-to-fit stands (the way-back row at 320px, v12.122, needs it).
 // At 100% the landing is unchanged: 480 measurements at 20 width/language pairs were identical to main.
 //   node tools/i18n-verify/qr-landing-large-text-browser.mjs [--mutate=NAME]   (serve.js on :8080, from the repo root)
 //   no-wrap   the tab row does not wrap        -> "no sideways scroll" FAILS at 360/390
@@ -72,7 +73,7 @@ for (const [w, h, lang] of [[360, 780, "en"], [360, 780, "bn"], [390, 844, "en"]
     check(`${tag} no sideways scroll (scrollWidth ${m.sw} vs ${m.cw})`, m.sw <= m.cw + 1, JSON.stringify(m));
     check(`${tag} every control is reachable by a finger once scrolled to (tabs, Wheel / Legend / Unit, 🧰, Read, Know Your Status, the groups)`, m.stuck.length === 0, JSON.stringify(m.stuck));
     if (m.zabTop !== null) check(`${tag} the docked tabs sit above the Zab bar (dock bottom ${m.dockBottom}, bar top ${m.zabTop})`, m.dockBottom <= m.zabTop + 1, JSON.stringify(m));
-    if (w <= 720) check(`${tag} the wheel keeps a real size (${m.wheelW}px of a ${m.colW}px column; floor 45%, 160px at least)`, m.wheelW >= Math.min(m.colW, Math.max(160, m.colW * 0.45)) - 1, JSON.stringify(m));
+    if (w <= 720 && size !== "100%") check(`${tag} the wheel keeps a real size (${m.wheelW}px of a ${m.colW}px column; floor 45%, 160px at least)`, m.wheelW >= Math.min(m.colW, Math.max(160, m.colW * 0.45)) - 1, JSON.stringify(m));
     // above 720px the fixed screen stays fixed while the content fits, and scrolls only when it does not
     if (w > 720 && size === "100%") check(`${tag} at ordinary text the landing keeps its fixed screen (no landing-tall)`, !m.tall, JSON.stringify(m));
     if (w > 720 && size === "200%" && w === 768) check(`${tag} with the content spilling, the landing scrolls (landing-tall)`, m.tall, JSON.stringify(m));

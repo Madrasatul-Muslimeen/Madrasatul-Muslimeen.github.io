@@ -8456,7 +8456,10 @@
         // wheel to a stub whose labels spilled under the buttons. It never goes below 45% of its column (160px at least); past
         // that the row sits below the fold and the page scrolls to it, as it does on any phone. (45%, not more: a tall Bangla
         // header at ordinary text, landing-drawers' "squeeze 390x700", rightly needs the wheel at ~57% of its column.)
-        const floor = Math.min(col.getBoundingClientRect().width, Math.max(160, col.getBoundingClientRect().width * 0.45));
+        // Only with enlarged text (root above 16px): at ordinary size the old shrink-to-fit stands, which a tall dock (the
+        // way-back row at 320px, v12.122) still needs, and which never produced a stub there.
+        const bigText = parseFloat(getComputedStyle(document.documentElement).fontSize) > 16.5;
+        const floor = bigText ? Math.min(col.getBoundingClientRect().width, Math.max(160, col.getBoundingClientRect().width * 0.45)) : -Infinity;
         const cap = Math.floor(Math.max(floor, wheel.getBoundingClientRect().width - over)) + "px";
         capEls.forEach((el) => el.style.setProperty("--landing-wheel-max", cap));
       }
