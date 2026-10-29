@@ -22827,3 +22827,12 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 - `app/journey-map.html`: the open Note id is kept per address in sessionStorage (`mmsa.wayBackJmNote`) on pagehide and reopened only on a back/forward arrival within 30 minutes; not in the tray (embed).
 - **Measured (Architect, 29 Oct, merged with v12.111):** Journey map audit 8/0 (no-reach 0/4, lose-note 6/2 at 1440 en and bn); whole audit 32 OK of 32, 36/0; journey-map-screen 47/0, notes-way-back 33/0, note-opens-in-journey 60/0, journey-map-back 38/0, journey-map-counts 9/0; `behaviour.mjs` alone 972/0; `apps-build-check` 48/0.
 - Nothing stored on a server, no Rules changed.
+
+## v12.113 — 29 Oct 2026 — no blue block over the Mastery Wheel when a slice is tapped (QR Lead)
+
+- **The Owner's ask** (QR Lead chat, 29 Oct, a phone screenshot): "Any click on slice shows/ highlight this block, it should only highlighted the clicked slice."
+- Cause: the phone browser's tap highlight (`-webkit-tap-highlight-color`) paints the tapped element's bounding rectangle, and a slice is an SVG wedge whose rectangle spans its neighbours.
+- `app/quranrevival.html` (QR Lead) and `app/css/shell.css` (Architect's review, for Asma and topic wheels): `.wheel-seg, svg:has(.wheel-seg), svg:has(.wheel-seg) * { -webkit-tap-highlight-color: transparent; }`. Selection is unchanged: a tap still chooses that slice's Approach.
+- New `tools/i18n-verify/qr-wheel-tap-highlight-browser.mjs` (en 360, bn 390, en 768, en 1280; plus a shell.css check): `--mutate=no-rule` (both rules) and `--mutate=no-shell-rule`.
+- **Measured (Architect, 29 Oct, merged with v12.112):** 22/0; no-rule 14/8; no-shell-rule 21/1; qr-wheel-tap-size 14/0, wheel-slice-opens-track 96/0, wheel-centre 645/0, kys-one-approach-wheel 152/0, vocab-wheel 114/0; `behaviour.mjs` alone 972/0; `apps-build-check` 48/0.
+- QR carries it at its next rebuild. Nothing stored, no Rules changed.
