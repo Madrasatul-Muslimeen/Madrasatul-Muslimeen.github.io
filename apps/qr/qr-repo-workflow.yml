@@ -5,6 +5,8 @@
 # What it does: checks out MSA (public, no password needed) at a given commit, runs
 # `node tools/apps/build-app.mjs qr`, and publishes build/qr as QR's site with GitHub Pages.
 #
+# Every 3 hours (schedule, the Owner 30 Oct 2026) it also rebuilds from MSA's main by itself.
+#
 # Turning it on (step 5, after the Owner has looked at the built QR side by side with today's):
 #   QR repository → Settings → Pages → Source: "GitHub Actions", then run this workflow.
 # THE WAY BACK (minutes): Settings → Pages → Source: "Deploy from a branch", main, / (root). Today's frozen QR
@@ -21,6 +23,10 @@ on:
         description: "MSA commit or branch to build (default: main)"
         required: false
         default: "main"
+  # The Owner, 30 Oct 2026: QR updates itself from MSA's main every 3 hours (at :17, off the busy :00).
+  # A scheduled run has no inputs, so the checkout below falls back to main.
+  schedule:
+    - cron: "17 */3 * * *"
 
 permissions:
   contents: read
@@ -40,7 +46,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io
-          ref: ${{ inputs.msa_ref }}
+          ref: ${{ inputs.msa_ref || 'main' }}
           path: msa
           lfs: false
       - uses: actions/setup-node@v4
