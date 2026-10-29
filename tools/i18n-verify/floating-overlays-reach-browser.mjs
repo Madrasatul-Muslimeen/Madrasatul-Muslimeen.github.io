@@ -5,12 +5,13 @@
 // control (or a descendant). No such position = UNREACHABLE. Also reported: covered at the bottom-most position only.
 // Pages x widths x languages x (pill shown via ?navBack=1 / not shown). The shared pages are CHECKED; the frozen Quran
 // Study landing (app/index.html) is MEASURED AND PRINTED only (it goes to the QR Lead, not fixed here).
-// Positive control: a button the suite places, absolutely, at the very end of the document under the pill must be
+// Positive control: a button the suite places, absolutely, under the pill (moved there at every scroll stop) must be
 // reported unreachable. End-of-flow probe: a button that is the last thing in <body> must be reachable (this is what the
 // page's bottom clearance guarantees).
 // Run from the repository root with node serve.js on 8080:  node tools/i18n-verify/floating-overlays-reach-browser.mjs
 //   --page=<file>  one page   --list  print every finding   --verbose  print passes
 //   --mutate=no-page-end-clearance  removes the body's end clearance; the end-of-flow check must FAIL
+//   --mutate=pill-lets-taps-through  the pill stops catching taps; the under-pill POSITIVE CONTROL must FAIL
 import { chromium, newContext, openPage } from "./harness.mjs";
 
 let pass = 0, fail = 0;
@@ -26,7 +27,7 @@ const INFO_PAGES = ["index.html"]; // frozen Quran Study landing: printed, not c
 const WIDTHS = [[360, 740], [390, 844], [768, 1024]];
 const LANGS = ["en", "bn"];
 
-const MEASURE = async ({ probes, mutate }) => {
+const MEASURE = async ({ probes, mutate, pillThrough }) => {
   const vis = (el) => {
     for (let e = el; e && e !== document.documentElement; e = e.parentElement) {
       if (e.hidden || e.inert) return false;
@@ -42,8 +43,9 @@ const MEASURE = async ({ probes, mutate }) => {
   const name = (el) => el.tagName.toLowerCase() + (el.id ? "#" + el.id : (typeof el.className === "string" && el.className.trim() ? "." + el.className.trim().split(/\s+/)[0] : "")) + ` "${txt(el)}"`;
   const pill = document.querySelector("[data-bm-back]");
   const pillShown = !!(pill && vis(pill));
+  if (pillThrough && pill) pill.style.setProperty("pointer-events", "none", "important");
 
-  if (mutate) {
+  if (mutate && !pillThrough) {
     const s = document.createElement("style");
     s.textContent = "html,body{padding-bottom:0!important;margin-bottom:0!important}body>*:last-child{margin-bottom:0!important}";
     document.head.appendChild(s);
@@ -58,9 +60,21 @@ const MEASURE = async ({ probes, mutate }) => {
     if (pillShown) {
       posProbe = document.createElement("button");
       posProbe.id = "__posProbe"; posProbe.textContent = "under-pill probe";
-      const pr = pill.getBoundingClientRect();
-      posProbe.style.cssText = `position:absolute;z-index:0;width:${Math.max(20, pr.width - 8)}px;height:${Math.max(20, pr.height - 8)}px;left:${pr.left + 4}px;top:${Math.max(h.scrollHeight, document.body.scrollHeight) - pr.height + 4}px;padding:0`;
       document.body.appendChild(posProbe);
+    }
+  }
+  // The under-pill probe is moved under the pill at EVERY scroll stop, after scrolling, so it is covered by construction
+  // wherever the page is scrolled. Placed once at the page end (until 30 Oct 2026), a stop 16px short of the end (Monitor,
+  // Bangla, 390: stops 844 and 860) showed its centre 1px below the pill, which rightly counts as reachable: the control
+  // failed with nothing wrong in the page. It proves the checker reports a covered button as unreachable.
+  const placePosProbe = () => {
+    if (!posProbe) return;
+    const pr = pill.getBoundingClientRect();
+    posProbe.style.cssText = `position:absolute;z-index:0;width:${Math.max(20, pr.width - 8)}px;height:${Math.max(20, pr.height - 8)}px;left:${pr.left + scrollX + 4}px;top:${pr.top + scrollY + 4}px;padding:0`;
+  };
+  if (probes) {
+    if (posProbe) {
+      placePosProbe();
     }
   }
   const controls = [...document.querySelectorAll(sel)].filter((el) => vis(el) && getComputedStyle(el).position !== "fixed");
@@ -70,8 +84,9 @@ const MEASURE = async ({ probes, mutate }) => {
   stops.push(maxY());
   const state = new Map(controls.map((el) => [el, { any: false, atBottom: false }]));
   for (const y of stops) {
-    scrollTo(0, y);
+    scrollTo(0, Math.min(y, maxY()));
     await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+    placePosProbe();
     const atBottom = Math.abs(scrollY - maxY()) < 2;
     for (const el of controls) {
       let r = el.getBoundingClientRect();
@@ -118,7 +133,7 @@ for (const lang of LANGS) {
       for (const pill of [false, true]) {
         const { page } = await openPage(ctx, `./app/${pg}${pill ? "?navBack=1" : ""}`.replace("./app/", "/app/"));
         await page.waitForTimeout(600);
-        const res = await page.evaluate(MEASURE, { probes: !info, mutate: !!MUTATE && !info });
+        const res = await page.evaluate(MEASURE, { probes: !info, mutate: !!MUTATE && !info, pillThrough: MUTATE === "pill-lets-taps-through" && !info });
         const tag = `${pg} ${w}px ${lang} ${pill ? "pill" : "no-pill"}`;
         maxControls = Math.max(maxControls, res.n);
         if (info) {
