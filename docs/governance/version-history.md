@@ -1015,3 +1015,4 @@ total). Allocated by the MMSA Architect.
 12.111: the regression sweep fixes (Catalogue Add subject on a phone). Allocated by the MMSA Architect.
 12.112: audit part 123 (the way back from Mapping My Journey). Allocated by the MMSA Architect.
 12.113: the QR Lead's wheel tap without a blue block. Allocated by the MMSA Architect.
+12.114: offline saves say Saved on this device (audit part 124). Allocated by the MMSA Architect.
