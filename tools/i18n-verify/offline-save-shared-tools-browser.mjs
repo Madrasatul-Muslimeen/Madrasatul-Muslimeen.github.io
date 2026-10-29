@@ -166,6 +166,10 @@ for (const lang of ["en", "bn"]) for (const w of [390, 1280]) {
     check(`${tag} ${what}: no page error while offline`, page.__errors.length === 0, JSON.stringify(page.__errors));
     if (SHOT && lang === "bn" && w === 390) await page.screenshot({ path: `${SHOT}/offline-${what.split(" ")[0]}-bn-390.png` });
     if (unhung) {
+      // The caller carried on past the held write (its "created" status line follows the await) -- the unhang proof.
+      let carried = false;
+      for (let i = 0; i < 30 && !carried; i++) { carried = (await statusWords(page)).includes("Folder 2"); if (!carried) await page.waitForTimeout(100); }
+      check(`${tag} ${what}: the page carried on past the held write (status names the new folder)`, carried, JSON.stringify(await statusWords(page)));
       // Writing is not blocked: a further save goes ahead.
       const b2 = await fsLen(page);
       await act(page, 3).catch(() => {});
