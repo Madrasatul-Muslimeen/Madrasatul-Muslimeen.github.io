@@ -22856,3 +22856,13 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 - New `tools/i18n-verify/shared-tools-read-failure-browser.mjs` 225/0; `--mutate=no-retry` 45, `no-message` 25, `retry-no-hydrate` 8 fail.
 - **Measured (Architect, 29 Oct):** `behaviour.mjs` alone 972/0; shared-pages-failed-write-audit 121/121 OK; offline-save 119/0; audit-part57 468/0; audit-part24 184/0; journey-map-screen 47/0; journey-map-back 38/0; notes-way-back 33/0; note-opens-in-journey 60/0; bookmark-sheet 176/0, bookmarks-page-new-assign 44/0, bookmark-folder-edit 68/0, bookmark-remove 60/0; stub-parity 4/0; apps-build-check 48/0. Bangla 390 screenshots of the five pages looked at.
 - `note-window.js` unchanged (QR's copy unaffected). QR carries it at its next rebuild. Nothing stored, no Rules changed.
+
+## v12.116 — 29 Oct 2026 — a long folder name in a Bookmarks folder picker can be read in full (audit part 126)
+
+- **The audit** (PCF MSA J29 part 126, issue #1300): the shared tools had never been measured with real-length text. Seeded in the suite only: a long tenant name, three people with long English/Bangla names, 12 folders and 40 bookmarks with 60–70-character names, 30 Notes with ~75-character titles in folders four deep. Bookmarks, Records, Notes, Mapping My Journey, Monitor × 360/390/768/1280 × en/bn: sideways overflow, cut text with nothing else showing it, cut `<select>` choice (probe with the select's computed font), overlaps, controls under 40px.
+- Found: only Bookmarks at 360 and 390 — 13 folder selects (move-to-folder, parent-folder) cut their chosen name (needs 448–500px, has 220–294px). Everything else clean; Notes and Mapping My Journey wrap long titles.
+- `app/bookmarks.html`: `syncMoveSelectTitles()` sets each folder select's `title` to its chosen option's full text, on render and on change.
+- **For the Owner (j29p126q), not built:** on a phone a title is a long-press hint only; showing the full chosen name inline is a layout choice.
+- New `tools/i18n-verify/shared-tools-long-names-browser.mjs` 202/0; `--mutate=notitle` 4, `overflow` 40, `cut` 40, `select` 40 fail.
+- **Measured (Architect, 29 Oct):** the suite and mutations re-run; merged with v12.115 (no doubled imports), read-failure 225/0 and long-names 202/0 on the merge; `behaviour.mjs` alone 972/0; bookmark-sheet 176/0, bookmarks-page-new-assign 44/0, bookmark-folder-edit 68/0, bookmark-remove 60/0, audit-part23 185/0; offline-save 119/0; apps-build-check 48/0. 360px Bangla screenshots looked at.
+- `note-window.js` unchanged. Nothing stored, no Rules changed.

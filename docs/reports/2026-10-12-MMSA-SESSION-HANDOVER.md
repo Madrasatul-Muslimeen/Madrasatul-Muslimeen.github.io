@@ -2106,3 +2106,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v12.113** (2026-10-29): the QR Lead's wheel tap without a blue block.
 - **v12.114** (2026-10-29): offline saves say Saved on this device (audit part 124).
 - **v12.115** (2026-10-29): a page that cannot load says so, with Try again (audit part 125).
+- **v12.116** (2026-10-29): long folder names readable in Bookmarks pickers (audit part 126).
