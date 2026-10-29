@@ -1,5 +1,5 @@
 // Audit part 130, F1 / F3 / F5 (Hadith Lead): when a Hadith pane cannot read its data (offline, most often), it says so in
-// plain words in the page's language with a "Try again" button, never the browser's "Failed to fetch"; and the
+// the app's one plain read-failure sentence (errors.js), in the page's language, with a "Try again" button, never the browser's "Failed to fetch"; and the
 // Encyclopedia hides the synthetic sample collections while the real library cannot load (F3).
 // The Hadith data files are blocked by a route (the same TypeError a phone offline gets), so no service worker is needed;
 // then the route is lifted and "Try again" must load the real content. hadith-study.html and hadith-collections.html,
@@ -12,12 +12,12 @@ import { spawnSync } from "node:child_process";
 import { chromium, newContext, openPage } from "./harness.mjs";
 
 const MUT = {
-  rawmsg: ["js/hadith-shared-ui.js", 'const msg = el("p", null, message);', 'const msg = el("p", null, String(err?.message ?? err));'],
+  rawmsg: ["js/hadith-shared-ui.js", 'const msg = el("p", null, plainMessageFor(err, { read: true }));', 'const msg = el("p", null, String(err?.message ?? err));'],
+  // A Hadith-only English sentence instead of the shared, translated one.
+  ownwords: ["js/hadith-shared-ui.js", 'plainMessageFor(err, { read: true })', '"Could not load. Check the connection."'],
   noretry: ["js/hadith-shared-ui.js", "btn.addEventListener(\"click\", () => { btn.disabled = true; retry(); });", ""],
-  rawref: ["js/hadith-shared-ui.js", "const code = err && err.code ? String(err.code) : \"\";", "const code = err && (err.code || err.message) ? String(err.code || err.message) : \"\";"],
   synshown: ["js/hadith-browser.js", "const s = synthetic(); if (s) s.hidden = true;", ""],
   synstays: ["js/hadith-browser.js", "const s = synthetic(); if (s) s.hidden = false;", ""],
-  bookmsg: ["js/hadith-browser.js", "? t(\"This book could not be opened. Check the connection and try again.\")", "? t(\"The list of books could not be loaded. Check the connection and try again.\")"],
 };
 const arg = (k) => (process.argv.find((a) => a.startsWith(`--${k}=`)) || "").slice(k.length + 3);
 const MUTATE = arg("mutate");
@@ -46,10 +46,12 @@ const bnOf = (en) => {
   if (!m) throw new Error(`fixture: no Bangla for "${en}"`);
   return m[1];
 };
-const SHELF = "The list of books could not be loaded. Check the connection and try again.";
-const BOOK = "This book could not be opened. Check the connection and try again.";
-const ENCYC = "The Encyclopedia could not be loaded. Check the connection and try again.";
-const words = (lang, en) => (lang === "bn" ? bnOf(en) : en);
+// The app's one read-failure sentence (errors.js plainMessageFor, { read: true }). A failed fetch carries no code,
+// so plainMessageFor fills {code} with "unknown".
+const READ = "That information could not be loaded ({code}). Please check your connection and try again.";
+const words = (lang) => (lang === "bn" ? bnOf(READ) : READ).replace("{code}", "unknown");
+const MUWATTA = "0179MalikIbnAnas.Muwatta.Shamela0028107-ara1";
+if (!fs.readFileSync("tools/hadith-data-pull/output/openiti-release/split/books-summary.json", "utf8").includes(MUWATTA)) throw new Error("fixture: al-Muwatta' is not in books-summary.json -- re-derive");
 const RAW = /Failed to fetch|TypeError|NetworkError|ERR_|undefined|\[object/i;
 
 let pass = 0, fail = 0;
@@ -102,7 +104,7 @@ for (const path of ["/app/hadith-study.html", "/app/hadith-collections.html"]) {
         const { ctx, page, net } = await open(lang, width, path, true);
         const got = await waitFor(page, "[data-openiti-error] [data-hadith-read-retry]");
         const n = got ? await note(page, "[data-openiti-error]", width) : null;
-        check(`${tag} shelf offline: the plain sentence in the page's language`, !!n && n.text.includes(words(lang, SHELF)), JSON.stringify(n?.text));
+        check(`${tag} shelf offline: the shared read-failure sentence in the page's language`, !!n && n.text.includes(words(lang)), JSON.stringify(n?.text));
         check(`${tag} shelf offline: no raw browser text anywhere on the pane`, !RAW.test(await bodyText(page)));
         check(`${tag} shelf offline: Try again is 44px+ and on screen`, !!n && n.btnH >= 44 && n.btnIn, JSON.stringify(n));
         net.blocked = false;
@@ -115,12 +117,13 @@ for (const path of ["/app/hadith-study.html", "/app/hadith-collections.html"]) {
       // F1, a book: the shelf loads, then the connection drops before a book is opened.
       {
         const { ctx, page, net } = await open(lang, width, path);
-        await waitFor(page, "[data-openiti-book]");
+        await waitFor(page, `[data-openiti-book="${MUWATTA}"]`);
         net.blocked = true;
-        await page.locator("[data-openiti-book]").first().click({ timeout: 4000 }).catch(() => console.log("  note: could not tap a book"));
+        // A named book (al-Muwatta'), never "the first row": the Books menu's first row is "All Hadith Books", which opens none.
+        await page.locator(`[data-openiti-book="${MUWATTA}"]`).click({ timeout: 4000 }).catch(() => console.log("  note: could not tap al-Muwatta'"));
         const got = await waitFor(page, "[data-openiti-error] [data-hadith-read-retry]");
         const n = got ? await note(page, "[data-openiti-error]", width) : null;
-        check(`${tag} book offline: "this book could not be opened" in the page's language`, !!n && n.text.includes(words(lang, BOOK)), JSON.stringify(n?.text));
+        check(`${tag} book offline: the shared read-failure sentence in the page's language`, !!n && n.text.includes(words(lang)), JSON.stringify(n?.text));
         check(`${tag} book offline: no raw browser text`, !RAW.test(await bodyText(page)));
         net.blocked = false;
         await page.click("[data-openiti-error] [data-hadith-read-retry]", { timeout: 4000 }).catch(() => {});
@@ -137,7 +140,7 @@ for (const path of ["/app/hadith-study.html", "/app/hadith-collections.html"]) {
         await tab(page, "collections");
         const got = await waitFor(page, "[data-hadeethenc-error] [data-hadith-read-retry]");
         const n = got ? await note(page, "[data-hadeethenc-error]", width) : null;
-        check(`${tag} Encyclopedia offline: the plain sentence in the page's language`, !!n && n.text.includes(words(lang, ENCYC)), JSON.stringify(n?.text));
+        check(`${tag} Encyclopedia offline: the shared read-failure sentence in the page's language`, !!n && n.text.includes(words(lang)), JSON.stringify(n?.text));
         check(`${tag} Encyclopedia offline: no raw browser text`, !RAW.test(await bodyText(page)));
         check(`${tag} Encyclopedia offline: the synthetic samples are hidden`, (await synHidden(page)) === true);
         net.blocked = false;
