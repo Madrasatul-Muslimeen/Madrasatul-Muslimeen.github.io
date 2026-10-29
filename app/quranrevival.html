@@ -4595,6 +4595,10 @@
      and take what is left; the chip's own ellipsis shortens the words, the ✕ and the tap target stay. */
   #readBackSlot { display: inline-flex; align-items: center; gap: 0.4rem; min-width: 0; flex: 1 1 7rem; max-width: 100%; }
   #readBackSlot:empty { display: none; }
+  /* Audit part 127 (29 Oct 2026): floating at the bottom, the way back lay over the landing's Study / Explore tabs (360-1280px)
+     and, at some widths, the Wheel / Legend / Unit buttons. On the landing it docks in a row of its own above the tabs. */
+  .landing-back-slot { display: flex; justify-content: center; align-items: center; gap: 0.4rem; min-width: 0; margin: 0 0 0.4rem; }
+  .landing-back-slot:empty { display: none; }
   .ayah-card-back-pill.back-docked { position: static; transform: none; left: auto; bottom: auto; z-index: auto; box-shadow: none; max-width: 100%; min-width: 0; flex: 0 1 auto; }
   .ayah-card-back-pill.back-docked .ayah-card-back-btn { min-height: 40px; font-size: 0.82rem; min-width: 0; }
   .ayah-card-back-pill.back-docked .ayah-card-back-x { width: 40px; height: 40px; }
@@ -7149,6 +7153,9 @@
         </div><!-- /.study-options-body -->
       </div><!-- /#panelStudyOptions -->
 
+      <!-- Audit part 127 (29 Oct 2026): the landing's place for the way back (js/back-dock.js), a row of its own above the
+           tabs, so a "← Back" chip shown on the landing covers no tab and no drawer button. Empty, it takes no room. -->
+      <div id="landingBackSlot" class="landing-back-slot" data-back-dock></div>
       <div id="tabRow" data-zab-lift>
         <!-- Enhancement round -- five tabs, one line, per the owner's own
              brief. "Options" is only a shorter label for this same tab
@@ -23259,6 +23266,32 @@
         window.addEventListener("resize", () => { if (!pill.hidden) placeInDock(pill, "back-docked"); });
       }
     }
+    /** Audit part 127: the landing's slot (#landingBackSlot, above the tabs) is a dock only while the landing's bottom bar
+        is really on top. A Word Card or other window opened over the landing covers it, and a way back docked there would
+        be hidden under that window, so the slot stops being a dock and the way back floats above the window as before.
+        The class change is what wakes the chips' watchers (the same pattern as watchPaneOverBackDock). */
+    function watchLandingBackDock() {
+      const slot = document.getElementById("landingBackSlot"), bar = document.getElementById("dock"), tabs = document.getElementById("tabRow");
+      if (!slot || !bar || !tabs) return;
+      const check = () => {
+        const r = tabs.getBoundingClientRect();
+        let free = r.width > 0 && r.height > 0 && r.top < innerHeight && r.bottom > 0;
+        // Looking through the way-back chips themselves: one still floating may lie over the tabs, and is not a window.
+        if (free) { const el = document.elementsFromPoint(r.left + r.width / 2, Math.min(r.top + r.height / 2, innerHeight - 1)).find((e) => !e.closest("#ayahCardBackPill, .bm-back-row")); free = !!el && bar.contains(el); }
+        if (free !== slot.classList.contains("back-dock-covered")) return;
+        slot.classList.toggle("back-dock-covered", !free);
+        if (free) slot.setAttribute("data-back-dock", ""); else slot.removeAttribute("data-back-dock");
+      };
+      let queued = false;
+      new MutationObserver((list) => {
+        if (queued || list.every((m) => m.target === slot)) return;
+        queued = true;
+        requestAnimationFrame(() => { queued = false; check(); });
+      }).observe(document.body, { subtree: true, attributes: true, attributeFilter: ["hidden", "class", "style"] });
+      window.addEventListener("resize", check);
+      check();
+    }
+    watchLandingBackDock();
     async function returnToAyahCard(r) {
       if (!r) return;
       // A Word card opened from the Āyah card's own word chips is closed first.
