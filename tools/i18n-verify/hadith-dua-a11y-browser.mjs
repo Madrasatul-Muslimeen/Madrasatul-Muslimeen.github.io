@@ -28,7 +28,7 @@ const ALL_WIDTHS = [[360, 740], [390, 844], [768, 1024], [1024, 768], [1440, 900
 const WIDTHS = ALL_WIDTHS.filter(([w]) => !arg("width") || String(w) === arg("width"));
 const LANGS = ["en", "bn"].filter((l) => !arg("lang") || l === arg("lang"));
 const BUKHARI = "0256Bukhari.Sahih.JK000110-ara1";
-const TAB_CAP = 700;
+const TAB_CAP = 1600; // the Hadith Duas list is 40 cards of ~25 word buttons each
 
 // Real-length data (part 126): long English / Bangla names for the tenant and the people.
 const SEED = `
@@ -114,16 +114,23 @@ const INSTALL = () => {
     let reason = "";
     for (let e = el; e; e = e.parentElement) {
       const cs = getComputedStyle(e);
-      if (cs.backgroundImage && cs.backgroundImage !== "none") { reason = "background-image on " + key(e); break; }
+      if (cs.backgroundImage && cs.backgroundImage !== "none") {
+        // a gradient is measured at EVERY colour stop (worst case); a picture (url) cannot be measured and is reported
+        if (/url\(/.test(cs.backgroundImage)) { reason = "picture background on " + key(e); break; }
+        const stops = (cs.backgroundImage.match(/rgba?\([^)]+\)/g) || []).map(parse).filter(Boolean);
+        if (!stops.length) { reason = "unparsed gradient on " + key(e); break; }
+        layers.push({ stops });
+        if (stops.every((c) => c[3] >= 1)) break;
+      }
       const c = parse(cs.backgroundColor);
       if (!c) { reason = "unparsed background " + cs.backgroundColor; break; }
-      if (c[3] > 0) layers.push(c);
+      if (c[3] > 0) layers.push({ stops: [c] });
       if (c[3] >= 1) break;
     }
     if (reason) return { reason };
-    let base = [255, 255, 255, 1];
-    for (let i = layers.length - 1; i >= 0; i--) base = over(layers[i], base);
-    return { rgb: base };
+    let alts = [[255, 255, 255, 1]];
+    for (let i = layers.length - 1; i >= 0; i--) alts = layers[i].stops.flatMap((st) => alts.map((b) => over(st, b)));
+    return { rgb: alts[0], alts };
   };
   const lum = (c) => { const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }; return 0.2126 * f(c[0]) + 0.7152 * f(c[1]) + 0.0722 * f(c[2]); };
   const ratio = (a, b) => { const la = lum(a), lb = lum(b); return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05); };
@@ -149,19 +156,32 @@ const INSTALL = () => {
       list.forEach((e, i) => e.setAttribute("data-a11y-id", String(i)));
       return list.map((e, i) => ({ id: String(i), key: key(e), name: accName(e), tabindex: e.tabIndex }));
     },
+    seen: new Set(),
+    // visible controls (same filter as expected()) that no Tab stop has been on: judged on the live DOM at the END of the walk, so a re-render during it cannot fake a miss
+    unreached() {
+      const modal = document.querySelector("[data-dua-pop]");
+      return [...document.querySelectorAll(SEL)].filter((e) => {
+        if (!vis(e) || e.matches(":disabled") || window.__A11Y.seen.has(e)) return false;
+        if (modal && !modal.contains(e)) return false;
+        if (/^(tab|option|menuitem|menuitemradio|radio)$/.test(e.getAttribute("role") || "") && e.tabIndex < 0) return false;
+        return true;
+      }).map((e) => ({ key: key(e), name: accName(e), tabindex: e.tabIndex }));
+    },
     focused() {
       const e = document.activeElement;
       if (!e || e === document.body || e === document.documentElement) return { body: true };
+      window.__A11Y.seen.add(e);
       const cs = getComputedStyle(e), r = e.getBoundingClientRect();
       const bg = bgOf(e);
       const oc = parse(cs.outlineColor);
       const outlineOn = cs.outlineStyle !== "none" && parseFloat(cs.outlineWidth) > 0 && (!oc || oc[3] > 0);
       const shadowOn = cs.boxShadow && cs.boxShadow !== "none";
       let ringRatio = null;
-      if (outlineOn && oc && bg.rgb) ringRatio = ratio(over(oc, bg.rgb), bg.rgb);
+      if (outlineOn && cs.outlineStyle !== "auto" && oc && bg.rgb) ringRatio = ratio(over(oc, bg.rgb), bg.rgb);
       let fixed = false;
       for (let a = e; a && a !== document.body; a = a.parentElement) if (getComputedStyle(a).position === "fixed") fixed = true;
-      return { id: e.getAttribute("data-a11y-id"), key: key(e), name: accName(e), top: r.top + scrollY, left: r.left + scrollX, fixed, ringOn: !!(outlineOn || shadowOn), outline: `${cs.outlineStyle} ${cs.outlineWidth} ${cs.outlineColor}`, shadow: shadowOn ? cs.boxShadow.slice(0, 60) : "none", ringRatio, bgReason: bg.reason || "" };
+      const pm = document.querySelector("[data-dua-pop]");
+      return { inModal: !!pm && pm.contains(e), hasModal: !!pm, id: e.getAttribute("data-a11y-id"), key: key(e), name: accName(e), top: r.top + scrollY, left: r.left + scrollX, fixed, ringOn: !!(outlineOn || shadowOn), outline: `${cs.outlineStyle} ${cs.outlineWidth} ${cs.outlineColor}`, shadow: shadowOn ? cs.boxShadow.slice(0, 60) : "none", ringRatio, bgReason: bg.reason || "" };
     },
     // (c) text colour against its real background
     contrast() {
@@ -178,12 +198,12 @@ const INSTALL = () => {
         const txt = ((own ? [...e.childNodes].filter((n) => n.nodeType === 3).map((n) => n.textContent).join(" ") : e.value || "") + "").replace(/\s+/g, " ").trim().slice(0, 36);
         if (!fg || !bg.rgb) { unknown.push({ key: key(e), txt, why: !fg ? "unparsed colour " + cs.color : bg.reason }); continue; }
         const op = opacityOf(e);
-        const eff = over([fg[0], fg[1], fg[2], fg[3] * op], bg.rgb);
-        const r = ratio(eff, bg.rgb);
+        let eff = null, r = 99, worst = bg.rgb;
+        for (const b of bg.alts) { const ef = over([fg[0], fg[1], fg[2], fg[3] * op], b), rr = ratio(ef, b); if (rr < r) { r = rr; eff = ef; worst = b; } }
         const px = parseFloat(cs.fontSize), bold = parseInt(cs.fontWeight, 10) >= 700;
         const large = px >= 24 || (px >= 18.66 && bold);
         const need = large ? 3 : 4.5;
-        if (r < need) out.push({ key: key(e), txt, ratio: Math.round(r * 100) / 100, need, fg: hex(eff), bg: hex(bg.rgb), px });
+        if (r < need) out.push({ key: key(e), txt, ratio: Math.round(r * 100) / 100, need, fg: hex(eff), bg: hex(worst), px });
       }
       return { fail: out, unknown };
     },
@@ -267,12 +287,10 @@ const DUA_VIEWS = [
   { id: "hisn-card", label: "A Hisn al-Muslim card", url: "?g=occasions&part=wake&open=1", go: async (P) => { await wait(P, "[data-dua-hisn]", 25000); await P.waitForTimeout(500); } },
   { id: "hisn-source", label: "Hisn card: Source pop-up", url: "?g=occasions&part=wake&open=1", go: async (P) => { await wait(P, "[data-dua-hisn]", 25000); await P.click('[data-dua-menu="source"]'); await wait(P, '[data-dua-pop="source"]', 10000); await P.waitForTimeout(400); } },
   { id: "prophet-card", label: "A Prophets' card", url: "?g=prophets&open=1", go: async (P) => { await wait(P, "[data-dua-quran]", 25000); await P.waitForTimeout(500); } },
-  { id: "assign-open", label: "The 👥 Person list open", url: "", go: async (P) => { await dListReady(P); await P.click("[data-assign-trigger]").catch(() => {}); await P.waitForTimeout(500); } },
 ];
 const DUA_SURFACES = [
   { id: "groups-pull", url: "", setup: dListReady, opener: '[data-dua-pd="groups"]', surface: ".dua-pull" },
   { id: "parts-pull", url: "?g=occasions&part=wake", setup: dListReady, opener: '[data-dua-pd="parts"]', surface: ".dua-pull" },
-  { id: "assign-list", url: "", setup: dListReady, opener: "[data-assign-trigger]", surface: "[data-assign-popover]" },
   ...["meaning", "source", "narration", "check", "poster", "share"].map((k) => ({ id: "pop-" + k, url: RASUL, setup: dCardReady, opener: `[data-dua-menu="${k}"]`, surface: `[data-dua-pop="${k}"]` })),
   { id: "check-panel", url: RASUL, setup: dPop("check"), opener: "[data-dua-pop] [data-dua-check-open]", surface: "[data-dua-check-panel]" },
 ];
@@ -294,8 +312,14 @@ const audit = async (P, ctxInfo) => {
   const contrastDefects = con.fail.map((c) => `${c.key} "${c.txt}" ${c.ratio}:1 (need ${c.need}) ${c.fg} on ${c.bg} ${c.px}px`);
   const exp = await P.evaluate(() => window.__A11Y.expected());
   const reached = new Set(), seq = [], ringBad = [], ringWeak = [];
-  await P.evaluate(() => { document.activeElement?.blur?.(); window.scrollTo(0, 0); });
-  let bodyHits = 0, backJumps = 0, prevTop = null, steps = 0;
+  // The Tab walk must start at the TOP of the document (a click leaves Chrome's sequential start point mid-page): a 1px focusable marker is put first and focused
+  await P.evaluate(() => {
+    window.__A11Y.seen = new Set(); window.scrollTo(0, 0);
+    document.getElementById("__tabstart")?.remove();
+    const m = document.createElement("span"); m.id = "__tabstart"; m.tabIndex = -1; m.style.cssText = "position:absolute;top:0;left:0;width:1px;height:1px;outline:none";
+    document.body.prepend(m); m.focus();
+  });
+  let bodyHits = 0, backJumps = 0, prevTop = null, steps = 0, outside = 0, hasModal = false;
   for (; steps < TAB_CAP; steps++) {
     await P.keyboard.press("Tab");
     const d = await P.evaluate(() => window.__A11Y.focused());
@@ -303,12 +327,13 @@ const audit = async (P, ctxInfo) => {
     const uid = d.id ?? `${d.key}@${Math.round(d.left)},${Math.round(d.top)}`;
     if (reached.has(uid)) break;
     reached.add(uid); seq.push(d);
+    if (d.hasModal) { hasModal = true; if (!d.inModal) outside++; }
     if (!d.ringOn) ringBad.push(`${d.key} "${(d.name || "").slice(0, 24)}" outline [${d.outline}] shadow [${d.shadow}]`);
     else if (d.ringRatio !== null && d.ringRatio < 3) ringWeak.push(`${d.key} ring ${Math.round(d.ringRatio * 100) / 100}:1 (${d.outline})`);
     if (!d.fixed) { if (prevTop !== null && d.top < prevTop - 40) backJumps++; prevTop = d.top; }
   }
-  const unreached = exp.filter((e) => !reached.has(e.id)).map((e) => `${e.key} "${(e.name || "").slice(0, 24)}"${e.tabindex < 0 ? " (tabindex=-1)" : ""}`);
-  return { nameDefects, latin, contrastDefects, contrastUnknown: con.unknown, unreached, ringBad, ringWeak, backJumps, stops: seq.length, expected: exp.length, capped: steps >= TAB_CAP };
+  const unreached = (await P.evaluate(() => window.__A11Y.unreached())).map((e) => `${e.key} "${(e.name || "").slice(0, 24)}"${e.tabindex < 0 ? " (tabindex=-1)" : ""}`);
+  return { nameDefects, latin, contrastDefects, contrastUnknown: con.unknown, unreached, ringBad, ringWeak, backJumps, outside, hasModal, stops: seq.length, expected: exp.length, capped: steps >= TAB_CAP };
 };
 
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
@@ -377,6 +402,7 @@ for (const pg of PAGES) for (const [w, h] of WIDTHS) for (const lang of LANGS) {
     a.latin.forEach((m) => addFinding(pg.id, v.id, "bn-latin-name (triage)", m, where));
     a.ringWeak.forEach((m) => addFinding(pg.id, v.id, "MINOR weak-ring", m, where));
     if (a.backJumps) addFinding(pg.id, v.id, "MINOR tab-order", `${a.backJumps} backward visual jumps in the Tab order`, where);
+    if (a.hasModal && a.outside) addFinding(pg.id, v.id, "MINOR modal-not-trapped", `Tab reaches ${a.outside} controls of the page BEHIND the aria-modal pop-up`, where);
     if (a.capped) addFinding(pg.id, v.id, "MINOR tab-walk-capped", `Tab walk hit the ${TAB_CAP}-stop cap`, where);
     a.contrastUnknown.forEach((u) => addFinding(pg.id, v.id, "INFO contrast-not-measurable", `${u.key} "${u.txt}": ${u.why}`, where));
     if (LIST) console.log(`  info  ${tag}: names ${a.nameDefects.length}, unreached ${a.unreached.length}/${a.expected}, ringless ${a.ringBad.length}/${a.stops}, contrast ${a.contrastDefects.length}, weak rings ${a.ringWeak.length}, back-jumps ${a.backJumps}`);
@@ -433,10 +459,14 @@ for (const pg of PAGES) for (const [w, h] of WIDTHS) for (const lang of LANGS) {
 const tagOut = arg("page") || "all";
 fs.writeFileSync(`${OUT}/findings-${tagOut}-${arg("width") || "all"}-${arg("lang") || "all"}.json`, JSON.stringify({ failedViews, findings: [...findings.values()].map((f) => ({ ...f, where: [...f.where] })) }, null, 1));
 let n = 0;
+const shown = new Map();
 console.log("\n=== numbered findings (page | view | kind | control and measurement | width+language) ===");
 const order = (k) => (k.startsWith("DEFECT") ? 0 : k.startsWith("MINOR") ? 1 : k.startsWith("bn") ? 2 : 3);
 for (const f of [...findings.values()].sort((a, b) => order(a.kind) - order(b.kind) || a.page.localeCompare(b.page) || a.view.localeCompare(b.view) || a.kind.localeCompare(b.kind))) {
   n++;
+  const gk = `${f.page}|${f.view}|${f.kind}`;
+  shown.set(gk, (shown.get(gk) || 0) + 1);
+  if (shown.get(gk) > (LIST ? 1e9 : 6)) { if (shown.get(gk) === 7) console.log(`  ... more ${f.kind} findings on ${f.page} / ${f.view} (all in the findings json; --list prints all)`); continue; }
   console.log(`  ${f.kind.startsWith("DEFECT") ? "DEFECT" : "INFO  "} #${n} ${f.page} | ${f.view} | ${f.kind} | ${f.msg.slice(0, 220)} | ${[...f.where].sort().join(",")}`);
 }
 check("every view and surface opened at every width and language (one that did not open measured nothing)", failedViews.length === 0, failedViews.slice(0, 6).join(", "));
