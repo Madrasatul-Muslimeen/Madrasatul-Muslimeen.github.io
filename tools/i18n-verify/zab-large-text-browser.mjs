@@ -166,6 +166,22 @@ const REACH = async () => {
       }
     }
   }
+  // A reader scrolls continuously, not in steps of half a screen: a control the coarse stops only ever caught under the corner (a right-hand "▼" at 360)
+  // gets one more try, brought to the middle of the screen the way a finger scroll or Tab would. (A control that is under the bar at EVERY position still fails.)
+  for (const [el, ok] of state) {
+    if (ok) continue;
+    for (const block of ["center", "start", "end"]) {
+      el.scrollIntoView({ block, inline: "nearest", behavior: "instant" });
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+      for (const q of el.getClientRects()) {
+        const cx = q.left + q.width / 2, cy = q.top + q.height / 2;
+        if (q.width <= 0 || cx < 0 || cy < 0 || cx > innerWidth || cy > innerHeight) continue;
+        const h = document.elementFromPoint(cx, cy);
+        if (h && (h === el || el.contains(h))) { state.set(el, true); break; }
+      }
+      if (state.get(el)) break;
+    }
+  }
   scrollTo(0, 0);
   return [...state].filter(([, ok]) => !ok).map(([el]) => name(el));
 };
