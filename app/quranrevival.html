@@ -28,7 +28,7 @@
   html { height: 100%; }
   /* QR Lead (24 Oct 2026, audit part 73): the Zab bar's 44px held from the first paint on a computer until the bar itself
      (body.zab-bar-on, its own #zabSpacer) takes it over, so the dock never moves when it arrives. */
-  @media (min-width: 768px) { html.zab-reserve body:not(.zab-bar-on)::after { content: ""; display: block; height: 44px; flex: 0 0 44px; } }
+  @media (min-width: 768px) { html.zab-reserve body:not(.zab-bar-on)::after { content: ""; display: block; height: 2.75rem; flex: 0 0 2.75rem; } }
   body {
     font-family: system-ui, sans-serif; max-width: 60rem; margin: 0 auto;
     padding: 0.5rem 1rem 0; color: #222; box-sizing: border-box;
@@ -756,8 +756,8 @@
   body.landing-view.landing-tall #wheelSection { flex: 0 0 auto; }
   body.landing-view.landing-tall #wheelSection .wheel-sidebar { height: auto; }
   body.landing-view.landing-tall #wheelSection .ways-list { flex: 0 0 auto; overflow: visible; max-height: none; }
-  /* ...and from 768px the Zab bar (44px, fixed at the bottom) is there too: the scrolling page's docked tabs stick above it. */
-  @media (min-width: 768px) { body.zab-bar-on.landing-view.landing-tall #dock { bottom: 44px; } }
+  /* ...and from 768px the Zab bar (2.75rem since v12.125, fixed at the bottom) is there too: the scrolling page's docked tabs stick above it. */
+  @media (min-width: 768px) { body.zab-bar-on.landing-view.landing-tall #dock { bottom: 2.75rem; } }
 
   /* The wheel look behind "Study Quran" (see #wheelLookSwitch). "dark" is the
      long-standing veil above; "light" is a light-grey veil; "colour" lifts
@@ -3410,7 +3410,7 @@
   /* QR Lead (29 Oct 2026, found testing the Owner's poster route): from 768px the Zab bar (44px, see the zab-reserve rule
      above) is pinned over the page's foot, and the full-screen list ran under it -- at 768 and 820 the last row,
      An-Naas, was 31 of its 48px under the bar and its middle could not be tapped. The list stops above the bar. */
-  @media (min-width: 768px) { body.zab-bar-on #readContentsMount { bottom: 44px; } }
+  @media (min-width: 768px) { body.zab-bar-on #readContentsMount { bottom: 2.75rem; } }
   .rc-card { background: var(--card-bg); color: var(--card-text); display: flex; flex-direction: column; min-height: 0; flex: 1 1 auto; min-width: 0; }
   .rc-card header {
     background: #1F3A6E; color: #fff; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.6rem 0.8rem;
@@ -15171,9 +15171,13 @@
       // QR Lead (24 Oct 2026, the MSA Architect's sweep, audit part 73): the Zab bar (loaded after the page since v12.38) lifts
       // #dock by moving it, not resizing it, so the ResizeObserver below never heard of it and a window first sized for the
       // un-lifted dock kept its bottom edge (and its s / se / sw handles) under the tab row. Its switching on or off refits too.
+      // QR Lead (30 Oct 2026, v12.125): the bar is sized in rem now, so larger text makes it TALLER, which lifts #dock further
+      // without resizing it either -- the bar's own size is watched too.
       { let zabOn = document.body.classList.contains("zab-bar-on");
-        new MutationObserver(() => { const on = document.body.classList.contains("zab-bar-on"); if (on !== zabOn) { zabOn = on; queueFit(); } })
-          .observe(document.body, { attributes: true, attributeFilter: ["class"] }); }
+        const zabRO = new ResizeObserver(queueFit), watchZab = () => { const zb = document.getElementById("zabBar"); if (zb && !zabRO.__on) { zabRO.observe(zb); zabRO.__on = true; } };
+        new MutationObserver(() => { const on = document.body.classList.contains("zab-bar-on"); if (on !== zabOn) { zabOn = on; watchZab(); queueFit(); } })
+          .observe(document.body, { attributes: true, attributeFilter: ["class"] });
+        watchZab(); }
       const fitRO = new ResizeObserver(queueFit);
       fitRO.observe(document.getElementById("wheelSection"));
       fitRO.observe(document.getElementById("dock"));
@@ -15215,9 +15219,13 @@
       // QR Lead (24 Oct 2026, the MSA Architect's sweep, audit part 73): the Zab bar (loaded after the page since v12.38) lifts
       // #dock by moving it, not resizing it, so the ResizeObserver below never heard of it and a window first sized for the
       // un-lifted dock kept its bottom edge (and its s / se / sw handles) under the tab row. Its switching on or off refits too.
+      // QR Lead (30 Oct 2026, v12.125): the bar is sized in rem now, so larger text makes it TALLER, which lifts #dock further
+      // without resizing it either -- the bar's own size is watched too.
       { let zabOn = document.body.classList.contains("zab-bar-on");
-        new MutationObserver(() => { const on = document.body.classList.contains("zab-bar-on"); if (on !== zabOn) { zabOn = on; queueFit(); } })
-          .observe(document.body, { attributes: true, attributeFilter: ["class"] }); }
+        const zabRO = new ResizeObserver(queueFit), watchZab = () => { const zb = document.getElementById("zabBar"); if (zb && !zabRO.__on) { zabRO.observe(zb); zabRO.__on = true; } };
+        new MutationObserver(() => { const on = document.body.classList.contains("zab-bar-on"); if (on !== zabOn) { zabOn = on; watchZab(); queueFit(); } })
+          .observe(document.body, { attributes: true, attributeFilter: ["class"] });
+        watchZab(); }
       const fitRO = new ResizeObserver(queueFit);
       fitRO.observe(exploreView);
       fitRO.observe(document.getElementById("exploreCtlBar"));
