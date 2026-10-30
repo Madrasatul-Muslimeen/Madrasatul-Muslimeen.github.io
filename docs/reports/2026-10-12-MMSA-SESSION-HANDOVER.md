@@ -2179,3 +2179,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v12.126** (2026-10-30): the Dua Study page (Dua round R1).
 - **v12.127** (2026-10-30): the Qur'an page follows the larger Zab bar (QR Lead).
 - **v12.128** (2026-10-30): Dua rounds R2-R4 (card menu and pop-ups, banners, poster and copy/share, plain save failures, Dua bookmarks open the Dua page).
+- **v12.129** (2026-10-30): the Taglines page with larger text (audit part 134).
