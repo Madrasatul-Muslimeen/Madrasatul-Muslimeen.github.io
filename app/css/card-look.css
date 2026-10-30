@@ -376,3 +376,8 @@
    white card (was 3.24:1); on Night's dark card that would be 2.75:1, so Night
    takes its own heading gold. */
 [data-card-look="night"] .hadith-commentary-link { color: var(--card-heading); }
+
+/* Audit part 137 (#1340): a checkbox or radio is pressed through its label, so the label is the 40px tap target
+   (the box itself stays small). Part 131's "small" debt on the shared pages. */
+label:has(> input[type="checkbox"]), label:has(> input[type="radio"]) { display: inline-flex; align-items: center; gap: 0.4rem; min-height: 2.5rem; box-sizing: border-box; }
+label > input[type="checkbox"], label > input[type="radio"] { flex: 0 0 auto; }

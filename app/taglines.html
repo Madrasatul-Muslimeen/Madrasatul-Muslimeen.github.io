@@ -68,6 +68,8 @@
   .tagline-line.tagline-scrolling { text-overflow: clip; }
   .tagline-line.tagline-scrolling .tagline-track { display: inline-block; will-change: transform; }
   @media (prefers-reduced-motion: reduce) { .tagline-line { animation-duration: 0.001s !important; } }
+  /* Audit part 137: the two toggles are pressed through their `for` label, a 40px tap target */
+  label[for="pauseOnHoldToggle"], label[for="scrollToggle"] { display: inline-flex; align-items: center; min-height: 2.5rem; box-sizing: border-box; }
 </style>
 <link rel="stylesheet" href="./css/admin-touch.css" />
 </head>

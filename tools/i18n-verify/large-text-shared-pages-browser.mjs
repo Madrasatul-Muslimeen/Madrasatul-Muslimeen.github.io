@@ -183,8 +183,15 @@ const MEASURE = ({ baseline, baselineRoot, minH }) => {
   for (const el of ctlAll) {
     const cs = getComputedStyle(el);
     if (cs.display === "inline" || getComputedStyle(el).position === "fixed") continue;
-    const r = el.getBoundingClientRect();
-    if (r.height < minH && (txt(el) || el.tagName !== "A")) res.small.push({ key: "small|" + path(el), msg: `${path(el)} "${txt(el)}" is ${Math.round(r.height)}px tall` });
+    // audit part 137: a checkbox / radio is pressed through its wrapping or `for` label, so that label is its tap target
+    let tgt = el;
+    if (el.tagName === "INPUT" && /^(checkbox|radio)$/.test(el.type)) {
+      const lab = el.closest("label") || (el.id && document.querySelector(`label[for="${CSS.escape(el.id)}"]`));
+      if (lab && vis(lab)) tgt = lab;
+    }
+    if (el.disabled) continue;
+    const r = tgt.getBoundingClientRect();
+    if (r.height < minH && (txt(el) || el.tagName !== "A")) res.small.push({ key: "small|" + path(el), msg: `${path(el)} "${txt(el)}" is ${Math.round(r.height)}px tall${tgt !== el ? " (its label)" : ""}` });
   }
 
   // overlap: any two non-nested, non-fixed controls whose boxes intersect
@@ -313,7 +320,9 @@ const MUTATIONS = {
   cut: () => { const s = document.createElement("button"); s.textContent = "A name that is far too long to fit one line in this narrow box at any size at all"; s.style.cssText = "width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"; document.body.appendChild(s); },
   overlap: () => { for (const [l, t] of [[10, 0], [40, 10]]) { const s = document.createElement("button"); s.textContent = "ov"; s.style.cssText = `position:absolute;left:${l}px;top:${t}px;width:90px;height:44px`; document.body.appendChild(s); } },
   offscreen: () => { const s = document.createElement("button"); s.textContent = "off"; s.style.cssText = "position:absolute;left:" + (document.documentElement.clientWidth + 300) + "px;top:0;width:80px;height:44px"; document.body.appendChild(s); document.documentElement.style.overflowX = "hidden"; },
-  small: () => { const s = document.createElement("button"); s.textContent = "tiny"; s.style.cssText = "display:block;height:18px"; document.body.appendChild(s); },
+  // audit part 137: the pre-fix CSS (labels as tall as their text) put back; the SMALL check must fail on the pages with checkboxes / radios
+  small: () => { const s = document.createElement("style"); s.textContent = "label:has(> input){display:inline!important;min-height:0!important}"; document.head.appendChild(s); },
+  smallbtn: () => { const s = document.createElement("button"); s.textContent = "tiny"; s.style.cssText = "display:block;height:18px"; document.body.appendChild(s); },
   fixedpx: () => { document.body.insertAdjacentHTML("beforeend", "<style>body *{font-size:11px!important}</style>"); },
   // audit part 133: the pre-fix Zab CSS (fixed px sizes) put back; the growth checks must fail
   zabold: () => { const s = document.createElement("style"); s.textContent = "#zabBar{height:44px!important;font-size:14px!important} #zabBar button{font-size:14px!important;min-height:40px!important} #zabCorner{width:48px!important;height:48px!important;font-size:22px!important} #zabSpacer{height:44px!important}"; document.head.appendChild(s); },
@@ -394,6 +403,9 @@ for (const pg of PAGES) {
         }
         zabSeen[w] = (zabSeen[w] || 0) + (zb.kind !== "none" ? 1 : 0);
       }
+      // audit part 137: every control a finger presses is >= 36px by its tap target, at every size. Excluded: index.html (Quran Study's page, frozen),
+      // and hidden / disabled controls (not measured: not visible, or not pressable).
+      if (pgKey !== "index") check(`${pg} / ${w} / ${lang} / ${pct}%: no control under 36px (tap target, audit part 137)`, m.small.length === 0, "\n      " + m.small.slice(0, 5).map((f) => f.msg).join("\n      "));
       if (pct === 150) for (const k of Object.keys(CHECKED_KINDS)) if (CHECKED_KINDS[k].includes(pgKey)) {
         // a fixed bar always paints over whatever sits at the viewport's foot at scroll 0; whether a control can be reached clear of it is the cover check above (audit part 133)
         const own = k === "overlap" ? m[k].filter((f) => !/#zabBar|#zabCorner/.test(f.msg)) : m[k];
