@@ -22970,3 +22970,12 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 - **Shared parts, by the Architect:** "Dua Study" in the Modules menu (`app/js/nav.js`); a "Dua Study ↗" link (`./dua-study.html?back=1`) in Hadith Study's Dua tab (`app/js/dua-browser.js` renderDua, `.dua-study-link` in `app/css/hadith.css`); `bn.js` +33 strings (no duplicates). `app/sw.js` needs nothing: `/app/` files are kept on use and the groups file is under the Hadith data kept since v12.120.
 - **Measured (Architect, on v12.125):** dua-study-page 132/0; dua-tab 63/0; dua-load-failed 42/0; dua-note-bookmark 35/0; dua-check 49/0; dua-words 37/0; unchecked-pages screen audit 963/0; navcheck green; zab-bar 370/0; `behaviour.mjs` alone 972/0; apps-build-check 48/0; QR builds, qr-verify 28/28. Screenshots at 360, 390, 768, 820, 1024, 1180, 1440, en and bn: the group tiles, the open parts menu and a Dua Card; nothing scrolls sideways.
 - Nothing stored, no Rules changed.
+
+## v12.127 — 30 Oct 2026 — The Qur'an Study page follows the larger 🧰 Zab bar (QR Lead)
+
+- After v12.125 sized the Zab bar in rem, the Qur'an page still kept 44px of room for it in three places, and its wheel and Explore windows only refit when the bar switched on or off, not when it grew.
+- `app/quranrevival.html`: the zab-reserve spacer, the landing-tall `#dock` bottom and `#readContentsMount` bottom are 2.75rem (the same size at 100%); a ResizeObserver on `#zabBar` refits the wheel and Explore windows when the bar grows with the text.
+- `app/js/note-popup.js` (**QR copies it byte for byte; change notice sent to the PCA**): `fillGeometry` — when the room is smaller than the window's minimum, the window fills the room (never below 200px) and scrolls inside, instead of keeping its minimum with its bottom and last controls under the dock.
+- Two suites' mutations re-anchored by the QR Lead.
+- **Measured (Architect, on v12.126):** qr-landing-large-text 116/0, `--mutate=no-zab-lift` 5 failures; qr-ayah-poster-nav-back 29/0, `--mutate=under-zab` 4 failures; popup-home-size 61/0; popup-home-sweep 44/0; tablet-wheel 74/0; landing-drawers 294/0; qr-landing-back-reach 114/0; minimise-windows 48/0; audit-part14-explore 650/0; read-contents 248/0; startup-paint 60/0; zab-bar 370/0; `behaviour.mjs` alone 972/0; QR builds, qr-verify 28/28 (the first QR run was lost to a container restart and re-run).
+- Nothing stored, no Rules changed.
