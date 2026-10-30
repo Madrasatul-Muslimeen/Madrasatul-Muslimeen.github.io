@@ -321,22 +321,17 @@ for (const [w, h] of WIDTHS) for (const lang of LANGS) {
       if (pct === 100) for (const k of ["cut", "overlap", "offscreen", "sideways"]) {
         // NAMED 100% FINDINGS (measured 30 Oct 2026, the Architect finishing this round). Each is a finding at ORDINARY text size, reported
         // as INFO under its name in the report and handed to its Lead; anything else at 100% still FAILS.
-        //   B1  the Person picker (#personSelect / #tenantSelect, `width:auto`) is as wide as the part-126 seed's ~40-character name, wider
-        //       than a phone, so the page scrolls sideways.
-        //   B2  the 👥 "who is this for" button (.assign-trigger) on an Encyclopedia card carries the same long name and runs past a phone.
+        //   B1, B2 (the Person picker and the 👥 button carrying a ~40-character name past a phone) were FIXED by the Hadith Lead
+        //       (30 Oct 2026, part 136) and their baselines removed: a recurrence now FAILS.
         //   B3  a Dua word's Word card panel makes the page 3px wider than a 390px phone.
         //       (A page so widened can open scrolled sideways; its left-hand controls at a negative x are counted under the same name.)
         //   Z   the fixed 🧰 Zab bar over a row at the foot of the screen at scroll 0: not a defect (v12.125, part 133: every page keeps room
         //       at its end for the bar, so any row can be scrolled clear of it); the same exclusion the shared-pages suite makes.
-        const named = (f) => (LONG_NAMES && /#personSelect|#tenantSelect/.test(f.msg)) ? "B1"
-          : (LONG_NAMES && /button\.assign-trigger/.test(f.msg)) ? "B2"
-          : (/#zabBar|#zabCorner/.test(f.msg) && k === "overlap") ? "Z"
+        const named = (f) => (/#zabBar|#zabCorner/.test(f.msg) && k === "overlap") ? "Z"
           : null;
-        const sidewaysBy = () => (LONG_NAMES && m.offscreen.some((o) => /#personSelect|#tenantSelect/.test(o.msg))) ? "B1"
-          : (LONG_NAMES && m.offscreen.some((o) => /button\.assign-trigger/.test(o.msg))) ? "B2"
-          : (v.id === "dua-word" && m.sideways.every((f) => { const g = /scrollWidth (\d+) > (\d+)/.exec(f.msg); return g && +g[1] - +g[2] <= 4; })) ? "B3"
+        const sidewaysBy = () => (v.id === "dua-word" && m.sideways.every((f) => { const g = /scrollWidth (\d+) > (\d+)/.exec(f.msg); return g && +g[1] - +g[2] <= 4; })) ? "B3"
           : null;
-        // A page widened by B1 / B2 can open scrolled sideways, which puts the LEFT-hand controls at a negative x: the same finding, not a new one.
+        // A page widened by B3 can open scrolled sideways, which puts the LEFT-hand controls at a negative x: the same finding, not a new one.
         const tagOf = (f) => (k === "sideways" ? sidewaysBy() : named(f) || (k === "offscreen" && / spans -\d/.test(f.msg) ? sidewaysBy() : null));
         const own = m[k].filter((f) => !tagOf(f));
         for (const f of m[k].filter((x) => tagOf(x))) info(`    INFO [${tag} 100% ${k} BASELINE ${tagOf(f)}] ${f.msg.slice(0, 200)}`);
