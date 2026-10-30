@@ -7,7 +7,7 @@ import { duaWords, duaNarration, duaWordTokens, duaWordsFingerprint, duaGrammarP
 import { TRANSLATED_BOOKS } from "./hadith-translations.js";
 import { STATUSES, statusLabel } from "./unit-keys.js";
 import { loadOpenitiBookIndex, loadOpenitiConcordance, loadDuaIndex, loadDuaCardsSummary, loadDuaCardsPage, loadDuaWordLinks, loadDuaVowels, loadDuaWordGrammar, loadDuaFit } from "./openiti-corpus.js";
-import { buildCheckPanel, loadMemberTexts, applyMembers, checkChipText, checkState } from "./dua-check.js";
+import { buildCheckPanel, loadMemberTexts, applyMembers, checkChipText, checkState, duaSaveFailed } from "./dua-check.js";
 import { plainMessageFor } from "./errors.js";
 import { el, loadHadithStudyActions, openitiDisplayTitle, openitiArabicRowName, duaRefLabel, standardTranslationFolds, openitiTranslationFold } from "./hadith-shared-ui.js";
 
@@ -602,7 +602,7 @@ export function duaWordProgressBlock({ dua, pos, page, place = null, wbwKey = ""
       current = id; paint();
       here.textContent = t("In this dua: {state}", { state: statusLabel(id) });
       try { await actions.claimDuaWord(session, dua, position, id); }
-      catch (err) { current = before; paint(); here.textContent = t("In this dua: {state}", { state: statusLabel(before ?? "not_started") }); msg.textContent = t("Not saved: {why}", { why: String(err?.message ?? err) }); return; }
+      catch (err) { current = before; paint(); here.textContent = t("In this dua: {state}", { state: statusLabel(before ?? "not_started") }); msg.textContent = duaSaveFailed(err); return; }
       here.dataset.duaWordDuaStateNow = id;
       if (wbwKey) {
         rememberDuaPlace(page, dua);
@@ -661,7 +661,7 @@ export async function fillDuaProgress(rows) {
         const before = current;
         current = s.id; paint(); msg.textContent = "";
         try { await actions.claimDua(session, dua, s.id); }
-        catch (err) { current = before; paint(); msg.textContent = t("Not saved: {why}", { why: String(err?.message ?? err) }); }
+        catch (err) { current = before; paint(); msg.textContent = duaSaveFailed(err); }
       });
       row.appendChild(b);
     }
@@ -703,7 +703,7 @@ export function duaNoteBookmarkRow(actions, session, dua, page, isBookmarked) {
     mark.setAttribute("aria-disabled", "true");
     msg.textContent = "";
     try { on = await actions.toggleDuaBookmark(session, dua, name); }
-    catch (err) { msg.textContent = t("Not saved: {why}", { why: String(err?.message ?? err) }); }
+    catch (err) { msg.textContent = duaSaveFailed(err); }
     mark.setAttribute("aria-disabled", "false");
     paint();
   });

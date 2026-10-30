@@ -13,6 +13,9 @@
 //   --mutate=noplace   the card's place is not remembered    -> the Back-lands check fails
 import fs from "node:fs";
 import { chromium, newContext, openPage } from "./harness.mjs";
+// D20 (Dua round R4): a failed save now says WHY in plain words (errors.js), never the computer's own error text.
+const PERM_EN = "That save was blocked by a permissions rule. Nothing was lost, but it did not save — please tell the admin.";
+const PERM_BN = (() => { const s = fs.readFileSync("app/js/i18n/bn.js", "utf8"); const k = JSON.stringify(PERM_EN) + ":"; const i = s.indexOf(k); return JSON.parse(/^\s*("(?:[^"\\]|\\.)*")/.exec(s.slice(i + k.length))[1]); })();
 const { buildUnitKey } = await import("../../app/js/unit-keys.js");
 const { sourceKindForUnitKey } = await import("../../app/js/study-note-binding.js");
 
@@ -117,14 +120,14 @@ for (const [lang, width, look] of [["en", 390, "light"], ["bn", 390, "night"], [
   await ctx2.close();
 
   // I15: a failed bookmark save says so and keeps the old state.
-  const ctx3 = await context(lang, width, look, ["js/hadith-study-actions.js", "  const unitKey = duaUnitKey(number);\n  const existing", "  throw new Error(\"permission-denied\");\n  const unitKey = duaUnitKey(number);\n  const existing"]);
+  const ctx3 = await context(lang, width, look, ["js/hadith-study-actions.js", "  const unitKey = duaUnitKey(number);\n  const existing", "  throw Object.assign(new Error(\"permission-denied\"), { code: \"permission-denied\" });\n  const unitKey = duaUnitKey(number);\n  const existing"]);
   const { page: F } = await openPage(ctx3, "/app/hadith-collections.html");
   await F.click('[data-hadith-tab="dua"]');
   await F.waitForSelector(`${ROW} [data-dua-bookmark]`, { timeout: 15000 }).catch(() => {});
   await F.click(`${ROW} [data-dua-bookmark]`);
   await F.waitForTimeout(600);
   const bad = await F.evaluate((sel) => ({ msg: document.querySelector(`${sel} [role="status"]`)?.textContent ?? "", mark: document.querySelector(`${sel} [data-dua-bookmark]`)?.textContent }), ROW);
-  check(`${tag} I15: a failed bookmark says "${bn ? "সংরক্ষিত হয়নি" : "Not saved"}" and keeps ${bn ? "🔖 এটি বুকমার্ক করুন" : "🔖 Bookmark this"}`, bad.msg.startsWith(bn ? "সংরক্ষিত হয়নি" : "Not saved") && /permission-denied/.test(bad.msg) && bad.mark === (bn ? "🔖 এটি বুকমার্ক করুন" : "🔖 Bookmark this"), JSON.stringify(bad));
+  check(`${tag} I15 + D20: a failed bookmark says in plain words why (not the computer's error text) and keeps ${bn ? "🔖 এটি বুকমার্ক করুন" : "🔖 Bookmark this"}`, bad.msg === (bn ? PERM_BN : PERM_EN) && !/permission-denied/.test(bad.msg) && bad.mark === (bn ? "🔖 এটি বুকমার্ক করুন" : "🔖 Bookmark this"), JSON.stringify(bad));
   await ctx3.close();
 }
 await browser.close();
