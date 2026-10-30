@@ -4584,4 +4584,13 @@ export const BN = {
   "Dua Card menu": "দুআ কার্ডের মেনু",
   "No meaning for this dua in the app yet.": "এই দুআর অর্থ এখনও অ্যাপে নেই।",
   "✓ Check": "✓ যাচাই",
+  // Dua module, build round R3 (PCF MSA J104: D07, D14).
+  "Copy / share": "কপি / শেয়ার",
+  "This dua's own meaning in English and Bangla is not in the app yet.": "এই দুআর নিজস্ব অর্থ ইংরেজি ও বাংলায় এখনও অ্যাপে নেই।",
+  "Word by word needs words matched to the Qur'an's words; this dua has none yet.": "শব্দে শব্দে দেখাতে কুরআনের শব্দের সঙ্গে মেলানো শব্দ লাগে; এই দুআর এখনও তা নেই।",
+  "Prints on one A4 page.": "এক পাতা A4-এ প্রিন্ট হয়।",
+  "What to include": "কী কী থাকবে",
+  "Share it as": "যেভাবে শেয়ার করবেন",
+  "A poster picture": "পোস্টারের ছবি",
+  "The text is selected: copy it with your device's Copy.": "লেখাটি বাছাই করা আছে: আপনার ডিভাইসের কপি দিয়ে কপি করুন।",
 };

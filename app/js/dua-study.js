@@ -9,6 +9,8 @@
 //   D11 the Asma ul Husna poster's bottom banner under every Dua Card, D12 a top banner frame above it,
 //   D05 a title for every Dua that has one (groups.json `titles`, English and Bangla), until D03 can save titles.
 // The re-layout is done here, around the card Hadith Study's Dua tab also uses, so that tab is unchanged.
+// Build round R3: D07 the poster and D14 copy / share, both from the card's menu (dua-poster.js draws them from the
+// "sheet" each card hands over here).
 // The groups come from tools/hadith-data-pull/output/dua/groups.json (dua-groups.mjs), read when this page opens, never
 // at the app's startup (I9). A Dua from the Hadith books opens the same Dua card as Hadith Study's Dua tab (duaCard in
 // dua-browser.js), with its progress, notes, bookmark and checks. Where the reader is (group, part, list page, open
@@ -18,6 +20,8 @@ import { getAppLang, quranFontStack } from "./prefs.js";
 import { loadDuaCardsSummary, loadDuaCardsPage, loadDuaWordLinks, loadDuaVowels, loadDuaWordGrammar } from "./openiti-corpus.js";
 import { duaCard, duaLoadFailed, fillDuaProgress, loadDuaCheckEnv } from "./dua-browser.js";
 import { el } from "./hadith-shared-ui.js";
+import { duaWords, duaWordsFingerprint } from "./dua-words.js";
+import { posterNodes, shareNodes } from "./dua-poster.js";
 
 const GROUPS_URL = "../tools/hadith-data-pull/output/dua/groups.json";
 const BANNER_URL = "./img/dua-banner-bottom.webp";
@@ -425,7 +429,7 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
     if (!pop) return;
     const { box, nodes, stash, from, esc } = pop;
     pop = null;
-    for (const n of nodes) stash.appendChild(n);
+    if (stash) for (const n of nodes) stash.appendChild(n);
     box.remove();
     document.removeEventListener("keydown", esc, true);
     if (from?.isConnected) from.focus();
@@ -470,6 +474,16 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
     const menu = el("nav", "dua-card-menu");
     menu.setAttribute("aria-label", t("Dua Card menu"));
     for (const s of sections) {
+      if (s.build) {
+        // D07 / D14: drawn fresh each time it opens, from what the card shows now.
+        const b = el("button", "dua-ref dua-menu-btn", s.label);
+        b.type = "button";
+        b.dataset.duaMenu = s.key;
+        b.setAttribute("aria-haspopup", "dialog");
+        b.addEventListener("click", () => openPop(b, s.label, s.build(), null, s));
+        menu.appendChild(b);
+        continue;
+      }
       if (!s.nodes.length && !s.empty) continue;
       for (const n of s.nodes) stash.appendChild(n);
       const b = el("button", "dua-ref dua-menu-btn", s.label);
@@ -484,13 +498,20 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
     return menu;
   }
   const kids = (article, sel) => [...article.children].filter((c) => c.matches(sel));
+  /** D07 / D14: the poster and copy / share entries of a card's menu, for the sheet `sheetOf()` gives when opened. */
+  const sheetSections = (sheetOf) => [
+    { key: "poster", label: `🖼 ${t("Poster")}`, build: () => posterNodes(sheetOf()) },
+    { key: "share", label: `${t("Copy / share")}`, build: () => shareNodes(sheetOf()) },
+  ];
+  const titled = (tt) => ({ title: tt && !tt.ar ? tt.text : null, titleAr: tt?.ar ? tt.text : null });
   /** D22 for the Hadith books' Dua card: words and progress stay; meaning, source, narration and ✓ Check pop up. */
-  function layoutHadithCard(article) {
+  function layoutHadithCard(article, sheetOf) {
     cardMenu(article, [
       { key: "meaning", label: t("Meaning"), nodes: kids(article, ".hadeethenc-explanation"), openFirst: true, empty: t("No meaning for this dua in the app yet.") },
       { key: "source", label: t("Source"), nodes: kids(article, ".openiti-standard-number, .dua-also") },
       { key: "narration", label: t("The whole narration"), nodes: kids(article, "details.dua-narration") },
       { key: "check", label: t("✓ Check"), nodes: kids(article, ".dua-check-row") },
+      ...sheetSections(sheetOf),
     ], article.querySelector(":scope > .dua-progress"));
   }
 
@@ -515,10 +536,32 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
       if (!c) { host.appendChild(el("p", "hadith-note", t("Dua {n} was not found.", { n: num(n) }))); return; }
       const rows = [];
       const article = duaCard(c, summary, state, cardRender, rows, links, page, vowels, grammar, checkEnv);
-      layoutHadithCard(article);
+      layoutHadithCard(article, () => hadithSheet(article, c, links, n));
       host.appendChild(article);
       fillDuaProgress(rows);
     }).catch((err) => duaLoadFailed(host, render, err));
+  }
+
+  /**
+   * D07 / D14: what a Hadith-book Dua card holds, read when the poster or share opens (so the vowels switch is
+   * respected). Word meanings come from the same Qur'an word links the card's word panel uses, only when those links
+   * were made from these very words (their fingerprint).
+   */
+  function hadithSheet(article, c, wordLinks, n) {
+    const spans = [...article.querySelectorAll(".dua-words [data-dua-word]")];
+    const picked = duaWords(c.text);
+    const links = wordLinks?.duas?.[c.dua];
+    const ok = !!picked && !!links && links.f === duaWordsFingerprint(picked.words);
+    const words = spans.length ? spans.map((s, i) => {
+      const e = ok && (links.w[i] ?? -1) >= 0 ? wordLinks.entries[links.w[i]] : null;
+      return [s.textContent, e?.[4] ?? "", e?.[5] ?? ""];
+    }) : null;
+    return {
+      ...titled(titleOf(data, { kind: "dua", n })),
+      ar: spans.length ? spans.map((s) => s.textContent).join(" ") : c.text,
+      words, en: null, bn: null,
+      ref: article.querySelector(".openiti-standard-number")?.textContent || t("Dua {n}", { n: num(n) }),
+    };
   }
 
   function arabicBlock(text) {
@@ -556,7 +599,11 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
       card.appendChild(box);
     }
     card.appendChild(el("p", "dua-words-note", t("Source: Hisn al-Muslim, typed by Abdellah Sellam (MIT licence).")));
-    cardMenu(card, [{ key: "source", label: t("Source"), nodes: kids(card, ".dua-hisn-ref, .dua-also, .dua-words-note") }]);
+    cardMenu(card, [
+      { key: "source", label: t("Source"), nodes: kids(card, ".dua-hisn-ref, .dua-also, .dua-words-note") },
+      ...sheetSections(() => ({ ...titled(titleOf(data, e)), ar: e.ar, words: null, en: null, bn: null,
+        ref: `${t("Hisn al-Muslim {ref}", { ref: num(e.h) })}${e.ref ? ` · ${e.ref}` : ""}` })),
+    ]);
     return card;
   }
   /** A Qur'anic dua of a Prophet: who, the āyah, its meaning, and the āyah in Quran Study with ← Back. */
@@ -573,6 +620,8 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
     cardMenu(card, [
       { key: "meaning", label: t("Meaning"), nodes: kids(card, ".dua-quran-meaning") },
       { key: "source", label: t("Source"), nodes: kids(card, ".dua-quran-open") },
+      ...sheetSections(() => ({ ...titled(titleOf(data, e)), ar: e.ar, words: e.words ?? null, en: e.en, bn: e.bn,
+        ref: `${t("Qur'an {ref}", { ref: num(e.ref) })} · ${e.surah?.en ?? ""}` })),
     ]);
     return card;
   }

@@ -110,3 +110,53 @@
 .dua-pophead h3 { margin: 0; color: var(--card-heading, #1F3A6E); overflow-wrap: anywhere; min-width: 0; }
 .dua-pop-close { flex-shrink: 0; min-height: 44px; }
 .dua-popcard .dua-also, .dua-popcard details { margin: 0; }
+
+/* Round R3. D07 the A4 poster (the text shrinks to fit; never the frame or the banners) and its print, D14 copy and
+   share. The page is always cream paper, whatever the card look, as the Asma ul Husna poster is. */
+.dua-popcard:has(.dua-poster-wrap) { width: min(100%, 44rem); }
+.dua-switches { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; }
+.dua-switch { min-height: 44px; }
+.dua-switch[aria-pressed="true"] { background: #d9a94a; color: #1a1405; border-color: #d9a94a; font-weight: 700; }
+.dua-switch:disabled { opacity: 0.45; cursor: default; }
+.dua-gap-note { margin: 0; }
+.dua-poster-wrap { display: flex; flex-direction: column; gap: 0.6rem; align-items: stretch; }
+.dua-a4 {
+  width: min(100%, 34rem); margin: 0 auto; aspect-ratio: 210 / 297; box-sizing: border-box; overflow: hidden;
+  display: flex; flex-direction: column; container-type: inline-size; background: #fbf6ea; color: #22201a;
+  border: 2.2cqw solid #123f2c; box-shadow: inset 0 0 0 0.4cqw #e2662b; border-radius: 1cqw; font-family: 'Tinos', 'Times New Roman', serif;
+}
+.dua-a4 .dua-arch { width: 80%; margin-bottom: 0; padding: 2cqw 3cqw; border-radius: 0 0 50% 50% / 0 0 4cqw 4cqw; }
+.dua-a4 .dua-arch-ph { font-size: 2.1cqw; padding: 0.8cqw 1.6cqw; }
+.dua-a4 .dua-arch-ph b { font-size: 3.6cqw; }
+.dua-a4-head { text-align: center; margin: 3cqw 5cqw 0; }
+.dua-a4-head h2 { margin: 0; font-size: 4.4cqw; color: #123f2c; overflow-wrap: anywhere; }
+.dua-a4-ar {
+  margin: 2.4cqw 5cqw 0; padding: 2cqw 3cqw; border: 0.4cqw solid #e2662b; border-radius: 3cqw; background: #fffdf6;
+  color: #0f3a28; text-align: center; line-height: 1.95; font-size: var(--arfs, 4.6cqw); overflow-wrap: anywhere;
+}
+.dua-a4-wbw { display: flex; flex-wrap: wrap; justify-content: center; gap: 1cqw; margin: 2cqw 5cqw 0; font-size: 1.7cqw; }
+.dua-a4-wbw span { display: grid; text-align: center; min-width: 9cqw; padding: 0.6cqw 1cqw; border: 0.25cqw solid #e0c9a5; border-radius: 1.4cqw; }
+.dua-a4-wbw b { font-size: 1.9em; font-weight: 400; color: #0f3a28; }
+.dua-a4-wbw small { font-size: 1em; color: #6b5f45; }
+.dua-a4-tx { margin: 2cqw 6cqw 0; font-size: var(--txfs, 2.9cqw); line-height: 1.4; text-align: justify; }
+.dua-a4-bn { font-family: 'Hind Siliguri', system-ui, sans-serif; }
+.dua-a4-ref { margin: auto 6cqw 0; padding-top: 1.5cqw; text-align: center; font-size: 2.2cqw; color: #6b5f45; font-family: system-ui, sans-serif; }
+.dua-a4-banner { flex: 0 0 auto; display: block; width: 94%; margin: 1.5cqw auto; }
+.dua-share { display: flex; flex-direction: column; gap: 0.5rem; }
+.dua-share h4 { margin: 0.3rem 0 0; font-size: 0.92rem; }
+.dua-share-preview {
+  white-space: pre-wrap; overflow-wrap: anywhere; max-height: 16rem; overflow: auto; padding: 0.6rem 0.7rem; border-radius: 0.5rem;
+  border: 1px solid var(--card-line, #e2ddcd); background: var(--card-bg-inset, #fff); line-height: 1.7;
+}
+.dua-share-picture { display: flex; justify-content: center; }
+.dua-share-img { width: min(100%, 20rem); height: auto; border-radius: 0.4rem; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25); }
+.dua-share a.dua-ref { display: inline-flex; align-items: center; min-height: 44px; text-decoration: none; }
+.dua-share a.dua-ref[aria-disabled="true"] { opacity: 0.45; pointer-events: none; }
+#duaPrint { display: none; }
+@media print {
+  @page { size: A4; margin: 8mm; }
+  body.dua-printing { padding: 0 !important; margin: 0 !important; max-width: none !important; background: #fff !important; }
+  body.dua-printing > *:not(#duaPrint) { display: none !important; }
+  body.dua-printing #duaPrint { display: block; }
+  body.dua-printing #duaPrint .dua-a4 { width: 190mm; margin: 0 auto; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+}
