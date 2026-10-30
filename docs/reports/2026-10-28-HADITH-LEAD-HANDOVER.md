@@ -3,6 +3,16 @@
 Written by Hadith Lead session `01Q2HmCeWjo1vVYV5kgMBvC9` at about 77% context, on the PCA's word (hand119).
 The next session is titled **"📌 (03B) MSA - Hadith Lead"**.
 
+## UPDATE, 6:30 pm 30 Oct (this "📌 (03B) MSA - Hadith Lead" session)
+
+- **Audit part 136 is DONE and LIVE as v12.130** (merge `99bba01b`, PR #1347; Hadith work `877099a`). B1 the Tenant/Person
+  pickers fit the screen (full name as title); B2 the 👥 button cuts a long name with "…" (full names as title), the 👥
+  rows are 40px; H1 the text-language picker wraps; H2–H4 pane headings, the Go-to mode picker and reader snippets carry
+  their full text as title. The suite's B1/B2 baselines are gone (B3 withdrawn by the Architect: it was B1). Measured
+  201/0 at 360, 390, 768, 1024, 1440; old code with the new suite 163/38 FAIL; reader 116/0.
+- **Nothing is in flight.** Next Hadith work: J106 round 2 (Subjects) after the Owner's tick on question 5 (`n106e`).
+  The MSA Architect who released v12.130 handed over; send hand-ins to the next MSA Architect (ask the PCA).
+
 ## HANDOVER, 3:41 pm 30 Oct (session `01PL2xbM3qDHBrLKbW6yzZKe` → a fresh "📌 (03B) MSA - Hadith Lead")
 
 Handed over at 40% context (cost86). **Nothing is half-built.** The branch `claude/hadith-lead-01q2` is at `main`
