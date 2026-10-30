@@ -35,7 +35,7 @@
   <button id="signInBtn" style="display:none;">Sign in with Google</button>
 
   <div id="app" style="display:none;">
-    <div><label>Migrate old data into which of your tenants?</label><select id="tenantSelect"></select></div>
+    <div><label>Migrate old data into which of your tenants?</label><select id="tenantSelect" style="width:auto; max-width:100%; min-width:0;"></select></div>
 
     <h2>1. Preview</h2>
     <button type="button" id="previewBtn">Load old data &amp; build preview</button>
@@ -428,5 +428,6 @@
     import { mountPageAccountCard } from "./js/account-card.js";
     mountPageAccountCard({ movePerson: false, getEmail: () => auth.currentUser?.email || "" });
   </script>
+  <script type="module">import { keepSelectTitles } from "./js/select-title.js"; keepSelectTitles("#tenantSelect, #personSelect");</script>
 </body>
 </html>
