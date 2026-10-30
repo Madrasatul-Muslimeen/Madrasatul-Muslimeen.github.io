@@ -22,7 +22,7 @@ const check = (name, ok, detail = "") => {
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
 const MUT = {
   "no-card": ["app/quranrevival.html", "        if (c.surah === surah && c.ayah === ayah) openAyahActionSheet(`${c.surah}:${c.ayah}`, c.half);", ""],
-  "under-zab": ["app/quranrevival.html", "  @media (min-width: 768px) { body.zab-bar-on #readContentsMount { bottom: 44px; } }", ""],
+  "under-zab": ["app/quranrevival.html", "  @media (min-width: 768px) { body.zab-bar-on #readContentsMount { bottom: 2.75rem; } }", ""],
   "no-nav": ["app/ayah-poster.html", "      const on = !!state.kind && !!surahData;", "      const on = false;"],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
