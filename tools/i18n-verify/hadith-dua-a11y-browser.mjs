@@ -467,15 +467,18 @@ const tagOut = arg("page") || "all";
 fs.writeFileSync(`${OUT}/findings-${tagOut}-${arg("width") || "all"}-${arg("lang") || "all"}.json`, JSON.stringify({ failedViews, findings: [...findings.values()].map((f) => ({ ...f, where: [...f.where] })) }, null, 1));
 let n = 0;
 const shown = new Map();
+let triaged = 0;
 console.log("\n=== numbered findings (page | view | kind | control and measurement | width+language) ===");
 const order = (k) => (k.startsWith("DEFECT") ? 0 : k.startsWith("MINOR") ? 1 : k.startsWith("bn") ? 2 : 3);
 for (const f of [...findings.values()].sort((a, b) => order(a.kind) - order(b.kind) || a.page.localeCompare(b.page) || a.view.localeCompare(b.view) || a.kind.localeCompare(b.kind))) {
   n++;
+  if (!LIST && /^(bn-latin|INFO)/.test(f.kind)) { triaged++; continue; } // triage lists are in the findings json; --list prints them
   const gk = `${f.page}|${f.view}|${f.kind}`;
   shown.set(gk, (shown.get(gk) || 0) + 1);
   if (shown.get(gk) > (LIST ? 1e9 : 6)) { if (shown.get(gk) === 7) console.log(`  ... more ${f.kind} findings on ${f.page} / ${f.view} (all in the findings json; --list prints all)`); continue; }
   console.log(`  ${f.kind.startsWith("DEFECT") ? "DEFECT" : "INFO  "} #${n} ${f.page} | ${f.view} | ${f.kind} | ${f.msg.slice(0, 220)} | ${[...f.where].sort().join(",")}`);
 }
+console.log(`  (${triaged} bn-Latin-name / not-measurable triage entries not printed: they are in ${OUT}/findings-*.json, or run with --list)`);
 check("every view and surface opened at every width and language (one that did not open measured nothing)", failedViews.length === 0, failedViews.slice(0, 6).join(", "));
 console.log(`\n${pass} passed, ${fail} failed`);
 await browser.close();
