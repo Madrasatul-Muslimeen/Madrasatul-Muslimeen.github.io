@@ -23028,3 +23028,9 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 - **Builder audit part 139** (issue #1349, PR #1350): the same fix on 21 shared and module pages: `max-width:100%; min-width:0` on both selects and their labels, and `keepSelectTitles("#tenantSelect, #personSelect")` for the full name. HTML only; frozen pages, `hadith-study.html` and `dua-study.html` (the Dua Lead's) left out.
 - **The check:** new `tools/i18n-verify/person-picker-fit-browser.mjs` (21 pages, 360–1440, en and bn, real-length seed; the long name is really selected; picker inside the screen; no sideways scroll; `title` holds the full name). `--mutate=wide` fails 30.
 - **Measured (Architect, main merged in):** suite 1290/0; picker rects unchanged with the ordinary fixture at 360/768/1440 en/bn; behaviour.mjs alone 972/0; shared-tools-long-names 202/0; stub-parity 4/0; QR builds. Report: `docs/reports/2026-10-30-audit-part139-person-picker-fit.md`.
+
+## v12.134 — 30 Oct 2026 — Dua Study fits a phone with a long name (audit part 138 A1, Dua Lead)
+
+- **Found by audit part 138 (A1/B1):** on Dua Study, the Person picker was as wide as a 45-character name, so the page scrolled sideways at 360px.
+- **The Dua Lead's fix** (`claude/dua-person-picker-2` bc7ec67): `app/dua-study.html` selects `width:auto; max-width:100%; min-width:0; box-sizing:border-box`, labels capped, `keepSelectTitles("#tenantSelect, #personSelect")` — the same shape as v12.130 (Hadith) and v12.133 (21 other pages). The suite drops B1 and checks both pickers inside the screen at every size.
+- **Measured (Architect):** large-text-dua-study 360 en 186/0, 390 363/0 (old page 88 FAIL); dua-study-page 137/0; dua-tab 63/0; behaviour.mjs alone 972/0.
