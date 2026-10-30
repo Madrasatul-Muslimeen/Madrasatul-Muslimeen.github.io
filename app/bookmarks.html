@@ -212,7 +212,7 @@ import { mountBookmarkMenu, noteBookmarkOpened, getBookmarkTimesShown, bookmarkT
     import { showReadLoading, clearReadStatus, showReadFailure } from "./js/read-failure.js";
     import { registerServiceWorker } from "./js/sw-register.js";
     import { armScreensaver } from "./js/screensaver-idle.js";
-    import { MODULE_PAGES, MODULE_LABELS } from "./js/continue-strip.js";
+    import { MODULE_PAGES, MODULE_LABELS, resumePageFor } from "./js/continue-strip.js";
     import { buildUnitKey, rukuIndexInSurah } from "./js/unit-keys.js";
     import { getSurah, getSurahIndex, getJuzIndex, getHizbIndex, getPageIndex } from "./js/quran-data.js";
     import {
@@ -457,7 +457,7 @@ import { mountBookmarkMenu, noteBookmarkOpened, getBookmarkTimesShown, bookmarkT
     // selectedPersonId's own doc) omits it, unchanged from before. See
     // quranrevival.html's own openBookmarkFromQueryString() for the read side.
     function bookmarkHref(b, ownerPersonId = null) {
-      const page = MODULE_PAGES[b.moduleId];
+      const page = resumePageFor(b.moduleId, b.position);
       if (!page) return null;
       // Quran carries a full `settings` snapshot worth restoring by id;
       // every other module has no comparable per-position state yet, so it
