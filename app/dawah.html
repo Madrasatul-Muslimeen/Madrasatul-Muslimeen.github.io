@@ -109,7 +109,7 @@
   <div id="app" style="display:none;">
     <div id="contextBar">
       <label>Tenant
-        <select id="tenantSelect" style="width:auto;"></select>
+        <select id="tenantSelect" style="width:auto; max-width:100%; min-width:0;"></select>
       </label>
     </div>
 
@@ -640,5 +640,6 @@
     import { mountPageAccountCard } from "./js/account-card.js";
     mountPageAccountCard({ movePerson: false, getEmail: () => auth.currentUser?.email || "" });
   </script>
+  <script type="module">import { keepSelectTitles } from "./js/select-title.js"; keepSelectTitles("#tenantSelect, #personSelect");</script>
 </body>
 </html>
