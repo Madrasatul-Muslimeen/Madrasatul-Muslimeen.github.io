@@ -15,6 +15,11 @@ Handed over at about 40% context (cost86). Contacts now: **PCA** `session_01PL2x
   unchanged. Checks: `hadith-translations.mjs` 22/0, `hadith-translations-browser.mjs` 45/0 (`--mutate=nosplit` 9 fail,
   `--shots` saves the fold), `hadith-study-reader` 116/0. When it is released, write J97's Done line (PCF) and the User
   Manual "What's New" line is the Architect's.
+- **Also handed in (10:55 am 31 Oct), commit `46dd7e2`:** the Architect's check `bangla-sweep-newer-screens` (23/0; old code
+  22/1): `langNameInProse()` in `app/js/hadith-shared-ui.js` names a language inside a sentence in the reader's language.
+- **J108 (MSA Architect, via the PCA, 10:18 am 31 Oct):** every Note button, the Hadith card's included, will open one
+  real Mapping My Journey Note in ONE release v13.01. **Do NOT build a Hadith Note window meanwhile**; nothing is built
+  until the Owner ticks J108 Q3. Demo: https://claude.ai/artifact/EpdQd5aX2yoUpWenVceTan
 - **J106 question 5 answered A at 10:20 am 31 Oct: the Subject lists are a SHARED ONLINE LIST. Round 2 is NOT STARTED.**
   The plan (agree it with the MSA Architect first: `firestore.rules` is a protected, shared path and Rules are an Owner
   Control Gate):
