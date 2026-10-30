@@ -141,7 +141,10 @@ const MEASURE = ({ baseline, baselineRoot, minH }) => {
     }
     return { left: L, top: T, right: R, bottom: B };
   };
-  const ctl = ctlAll.filter((e) => getComputedStyle(e).position !== "fixed" && !popup(e));
+  // (3) CHANGED for this page: while a Dua pop-up card (a modal dialog, aria-modal) is open the page behind it is covered by design, so only the
+  // pop-up's own controls are compared with each other.
+  const modal = document.querySelector("[data-dua-pop]");
+  const ctl = ctlAll.filter((e) => getComputedStyle(e).position !== "fixed" && !popup(e) && (!modal || modal.contains(e)));
   for (let i = 0; i < ctl.length; i++) for (let j = i + 1; j < ctl.length; j++) {
     const a = ctl[i], b = ctl[j];
     if (a.contains(b) || b.contains(a)) continue;
@@ -215,7 +218,8 @@ const REACH = async () => {
 const INJECT = () => {
   const host = document.createElement("div");
   host.id = "__inject"; host.style.cssText = "position:relative;width:100%";
-  const mk = (tag, text, css) => { const e = document.createElement(tag); e.textContent = text; e.style.cssText = css; host.appendChild(e); return e; };
+  const mk = (tag, text, css) => { const e = document.createElement(tag); e.textContent = text; e.style.cssText = css + (tag === "button" ? ";font-size:1rem" : ""); host.appendChild(e); return e; };
+  // (this page's buttons keep the browser's 13.33px, so the injected buttons get rem text; the "fixed px" control is the <p>)
   mk("button", "Tafsir notes from Shaykh's Ramadan halaqah 2026 — Surah Al-Baqarah, far too long for this box", "display:block;width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap");
   const a = mk("button", "overlap A", "position:absolute;left:10px;top:60px;width:100px;height:44px");
   const b = mk("button", "overlap B", "position:absolute;left:50px;top:70px;width:100px;height:44px");
