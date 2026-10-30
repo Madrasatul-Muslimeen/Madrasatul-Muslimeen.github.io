@@ -2218,3 +2218,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v12.128** (2026-10-30): Dua rounds R2-R4 (card menu and pop-ups, banners, poster and copy/share, plain save failures, Dua bookmarks open the Dua page).
 - **v12.129** (2026-10-30): the Taglines page with larger text (audit part 134).
 - **v12.130** (2026-10-30): Hadith Study fits a phone with long names (audit part 136 fixes, Hadith Lead).
+- **v12.131** (2026-10-30): audit part 137 (tick-box tap targets).
