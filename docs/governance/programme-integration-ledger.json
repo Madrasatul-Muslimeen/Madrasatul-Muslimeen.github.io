@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "12.128",
+    "version": "12.129",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -5813,8 +5813,20 @@
     {
       "version": "12.128",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Dua rounds R2 (D22, D11, D12, D05), R3 (D07, D14) and R4 (D20, D06) released together, with the Architect's shared part: a Dua bookmark opens the Dua page (PCF MSA J104).",
+      "integration": {
+        "authorizedOn": "2026-10-30",
+        "integratedOn": "2026-10-30",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.129",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "The Taglines admin page reflows with the reader's text: Save sits at the end of the form instead of over the fields, the lines table stacks on a narrow screen, and cut values show in full (audit part 134, part 131 finding 19).",
       "integration": {
         "authorizedOn": "2026-10-30",
         "integratedOn": "2026-10-30",
@@ -5823,8 +5835,9 @@
       }
     }
   ],
-  "nextUnallocated": "12.129",
+  "nextUnallocated": "12.130",
   "nextUnallocatedNote": [
+    "v12.129 was allocated to the Taglines page with larger text (audit part 134), 2026-10-30.",
     "v12.128 was allocated to Dua rounds R2-R4 (card menu and pop-ups, banners, poster and copy/share, plain save failures, Dua bookmarks open the Dua page), 2026-10-30.",
     "v12.127 was allocated to the Qur'an page follows the larger Zab bar (QR Lead), 2026-10-30.",
     "v12.126 was allocated to the Dua Study page (Dua round R1), 2026-10-30.",

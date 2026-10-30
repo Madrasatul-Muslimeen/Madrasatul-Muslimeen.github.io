@@ -65,6 +65,7 @@ const FIXED_KINDS = {
   about: ["sideways"],
   "import-notes": ["offscreen", "sideways"],
   "journey-map": ["offscreen", "sideways"],
+  taglines: ["cut", "offscreen", "sideways"], // part 134
 };
 // The pre-fix CSS of each fixed page, injected by --mutate=old. The FIXED_KINDS checks of that page must then FAIL.
 const OLD_FORM = "fieldset{min-width:min-content!important} .row>div{min-width:10rem!important} select,textarea,input{max-width:none!important} .card,.plan-row,a{overflow-wrap:normal!important}";
@@ -81,7 +82,18 @@ const OLD_CSS = {
   about: "a,p,li,h1,h2,h3,td{overflow-wrap:normal!important}",
   "import-notes": "select{max-width:none!important;min-width:auto!important} #sourceBar>label{display:block!important;flex-wrap:nowrap!important}",
   "journey-map": ".folder-search-input{flex:1 1 12rem!important;min-width:auto!important;max-width:none!important}",
+  // audit part 134: the sticky Save bar, the grid that could be wider than its card with span-2 making a squeezed second column, and the sideways-scrolling table
+  taglines: ".saveBar{position:sticky!important;bottom:0!important;flex-wrap:nowrap!important} .grid{grid-template-columns:repeat(auto-fit,minmax(9rem,1fr))!important;container-type:normal!important} .grid>*{min-width:auto!important} .grid .span2{grid-column:span 2!important} .cell-narrow select{min-width:7rem!important}" + OLD_STACK,
 };
+// Audit part 134: the Taglines admin page, with real-length lines (a long English one, a long Bangla one, a linked one, a retired one),
+// is also measured at 1024 and 1440 and gets its own checks (Save overlaps no field, no cut control, every control reachable) at 100/150/200%.
+const TAGLINE_SEED = `(function(){DATA.tenants[0].taglines=[
+{id:"tl1",text:{en:"Reviving the Quran, one ayah at a time, with understanding, reflection and daily practice for every family in the community",bn:"কুরআনকে পুনরুজ্জীবিত করা, প্রতিদিন একটি আয়াত, বোঝাপড়া, চিন্তাভাবনা ও নিয়মিত অনুশীলনের মাধ্যমে সমাজের প্রতিটি পরিবারের জন্য"},link:null,order:10,status:"active",holdDays:7,ayahRef:null},
+{id:"tl2",text:{en:"The 99 Names of Allah",bn:"আল্লাহর ৯৯টি নাম"},link:{url:"asma-study.html",target:"internal"},order:20,status:"active",holdDays:1,ayahRef:"2:255"},
+{id:"tl3",text:{en:"Names and Attributes posters",bn:"আল্লাহর নাম ও গুণাবলির পোস্টার সংগ্রহ"},link:{url:"https://archive.org/details/NamesAndAttributesOfAllah",target:"external"},order:30,status:"archived",holdDays:30,ayahRef:null}];
+DATA.tenants[0].taglineSettings={motion:"slide",changeAfterSeconds:8,pauseOnHold:true,scroll:true,scrollSpeed:5};})();`;
+const TL_WIDTHS = [[360, 740], [390, 844], [768, 1024], [1024, 768], [1440, 900]];
+const notZab = (f) => !/zab/i.test(f.msg);
 
 const SEED = `
 (function () {
@@ -360,8 +372,9 @@ const setRoot = (P, pct) => P.evaluate((p) => { document.documentElement.style.f
 for (const pg of PAGES) {
   console.log(`\n== ${pg} ==`);
   const pgKey = pg.replace(/\.html.*$/, "");
-  for (const [w, h] of WIDTHS) for (const lang of ["en", "bn"]) {
-    const ctx = await newContext(browser, { appLang: lang === "bn" ? "bn" : null, banner: false, viewport: { width: w, height: h }, extraSeedJs: SEED });
+  const seedFor = pgKey === "taglines" ? SEED + TAGLINE_SEED : SEED;
+  for (const [w, h] of pgKey === "taglines" ? TL_WIDTHS : WIDTHS) for (const lang of ["en", "bn"]) {
+    const ctx = await newContext(browser, { appLang: lang === "bn" ? "bn" : null, banner: false, viewport: { width: w, height: h }, extraSeedJs: seedFor });
     await ctx.route("**/archive.org/**", (r) => r.abort());
     const url = pg === "notes.html" ? "/app/notes.html?unit=ayah:2:255&label=Ayat%20al-Kursi%20with%20tajweed%20practice%20(morning)" : urlFor(pg, false);
     const { page: P } = await openPage(ctx, url);
@@ -370,6 +383,7 @@ for (const pg of PAGES) {
     if (MUTATE) { await P.evaluate(MUTATIONS[MUTATE], MUTATE === "old" ? OLD_CSS[pgKey] || "" : undefined); await P.waitForTimeout(100); }
     const textLen = await P.evaluate(() => document.body.innerText.length);
     check(`${pg} / ${w} / ${lang}: page rendered text (positive control)`, textLen > 20, `innerText length ${textLen}`);
+    const tlRows = await P.evaluate(() => document.querySelectorAll("#lineRows tr").length);
     let baseline = null, baselineRoot = 16;
     const bySize = {};
     for (const pct of SIZES) {
@@ -384,6 +398,17 @@ for (const pg of PAGES) {
       rows.push({ pg, w, lang, pct, counts, findings: Object.fromEntries(KINDS.map((k) => [k, m[k].map((f) => f.msg)])) });
       if (LIST) console.log(`  info  ${pg} ${w} ${lang} ${pct}%: ${KINDS.map((k) => k + " " + counts[k]).join(", ")}`);
       for (const k of KINDS) { const base100 = new Set((bySize[100]?.[k] || []).map((f) => f.key)); for (const f of m[k]) if ((pct === 100 ? LIST : !base100.has(f.key)) && !(k === "fixedpx" && f.stuck === 1 && /zab/i.test(f.msg) && !LIST)) info(`    INFO [${pg} ${w} ${lang} ${pct}% ${k}${pct !== 100 ? " NEW" : ""}] ${f.msg.slice(0, 230)}`); }
+      if (pgKey === "taglines") {
+        // part 134: absolute checks (not "new since 100%"): the Zab bar's own overlaps (finding 1) are not this page's
+        const tag = `${pg} / ${w} / ${lang} / ${pct}%`;
+        const saveHits = m.overlap.filter((f) => /saveBtn|saveBar/.test(f.msg) && notZab(f));
+        check(`${tag}: the Save bar overlaps no field (part 134)`, saveHits.length === 0, "\n      " + saveHits.slice(0, 5).map((f) => f.msg).join("\n      "));
+        const cutHits = m.cut.filter(notZab);
+        check(`${tag}: no control or line is cut without its full text as a title (part 134)`, cutHits.length === 0, "\n      " + cutHits.slice(0, 5).map((f) => f.msg).join("\n      "));
+        const sideHits = m.sideways.concat(m.offscreen);
+        check(`${tag}: nothing is past the screen edge (part 134)`, sideHits.length === 0, "\n      " + sideHits.slice(0, 5).map((f) => f.msg).join("\n      "));
+        check(`${tag}: the page rendered the seeded lines (positive control)`, tlRows >= 3, `rows ${tlRows}`);
+      }
       {
         const zb = await P.evaluate(ZABCHECK);
         if (zb.kind !== "none") {
@@ -407,15 +432,17 @@ for (const pg of PAGES) {
     }
     await ctx.close();
 
-    if (!NO_REACH && !MUTATE) for (const pct of SIZES.filter((s) => s > 100)) {
-      const c2 = await newContext(browser, { appLang: lang === "bn" ? "bn" : null, banner: false, viewport: { width: w, height: h }, extraSeedJs: SEED });
+    if (!NO_REACH && (!MUTATE || (MUTATE === "old" && pgKey === "taglines"))) for (const pct of SIZES.filter((s) => s > 100)) {
+      const c2 = await newContext(browser, { appLang: lang === "bn" ? "bn" : null, banner: false, viewport: { width: w, height: h }, extraSeedJs: seedFor });
       await c2.route("**/archive.org/**", (r) => r.abort());
       const { page: Q } = await openPage(c2, pg === "notes.html" ? "/app/notes.html?unit=ayah:2:255&navBack=1" : urlFor(pg, true));
       await Q.waitForTimeout(800);
+      if (MUTATE) { await Q.evaluate(MUTATIONS[MUTATE], OLD_CSS[pgKey] || ""); await Q.waitForTimeout(100); }
       await setRoot(Q, pct);
       await Q.waitForTimeout(250);
       const r = await Q.evaluate(REACH);
       reachRows.push({ pg, w, lang, pct, ...r });
+      if (pgKey === "taglines") check(`${pg} / ${w} / ${lang} / ${pct}%: every control is reachable with the floating way-back pill showing (part 134)`, r.pillShown && r.unreachable.length === 0, `${r.pillShown ? "" : "pill not shown; "}${r.unreachable.slice(0, 5).join(" | ")}`);
       if (r.unreachable.length) console.log(`  info  ${pg} ${w} ${lang} ${pct}% REACH: ${r.unreachable.length} control(s) never reachable with the pill${r.pillShown ? "" : " (pill not shown)"}: ${r.unreachable.slice(0, 5).join(" | ")}`);
       await c2.close();
     }
