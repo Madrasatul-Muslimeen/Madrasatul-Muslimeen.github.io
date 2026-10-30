@@ -3,6 +3,42 @@
 Written by Hadith Lead session `01Q2HmCeWjo1vVYV5kgMBvC9` at about 77% context, on the PCA's word (hand119).
 The next session is titled **"📌 (03B) MSA - Hadith Lead"**.
 
+## HANDOVER, about 10:40 am 31 Oct (session `01PL2xbJbrDFWUd52n8gRbHi` → a fresh "📌 (03B) MSA - Hadith Lead")
+
+Handed over at about 40% context (cost86). Contacts now: **PCA** `session_01PL2xbNViE9udUe3FUJjKBE`, **MSA Architect**
+`session_01PL2xbNKZ2gQsFCCR3KyyeV`.
+
+- **J97, answered A by the Owner at 10:14 am 31 Oct, is BUILT and HANDED to the Architect** (branch
+  `claude/hadith-lead-01q2`, `9dacd79`). `splitChapterHeading()` in `app/js/hadith-translations.js`; the Bangla fold in
+  `standardTranslationFolds` (`app/js/hadith-shared-ui.js`) shows "Chapter: …" small and grey above the hadith; CSS in
+  `app/css/hadith.css`; one string in `app/js/i18n/bn.js` ("Chapter:"). 1,133 Bukhārī Bangla texts split, data files
+  unchanged. Checks: `hadith-translations.mjs` 22/0, `hadith-translations-browser.mjs` 45/0 (`--mutate=nosplit` 9 fail,
+  `--shots` saves the fold), `hadith-study-reader` 116/0. When it is released, write J97's Done line (PCF) and the User
+  Manual "What's New" line is the Architect's.
+- **J106 question 5 answered A at 10:20 am 31 Oct: the Subject lists are a SHARED ONLINE LIST. Round 2 is NOT STARTED.**
+  The plan (agree it with the MSA Architect first: `firestore.rules` is a protected, shared path and Rules are an Owner
+  Control Gate):
+  1. **Storage, the same pattern as `asmaCollections/{tenantId}`** (`firestore.rules` ~line 733): a new collection
+     `hadithSubjects/{tenantId}`, one document per madrasah; any member reads, only `canAdminCatalogue(tenantId)` (owner/
+     prime) creates or updates, `tenantId` field must equal the doc id, **no delete** (I4/D6: an entry is retired with a
+     `status`, never removed). Fields: `tenantId`, `schemaVersion: 1`, `createdAt`, `updatedAt`, `createdBy` (I17),
+     `subjects: { akhlaq: [...], ghayb: [...], stories: [...] }` (ids from `HADITH_SUBJECTS`, `app/js/hadith-browser.js`
+     ~line 291). Each entry is a REFERENCE, not a progress record: `{ versionUri, n, std, book, chapter, title, addedAt,
+     addedBy, status: "active" | "retired" }`. It deliberately mints NO permanent Study Unit key (J06, the OpenITI key, is
+     still the Owner's).
+  2. **Candidate rule** `tests/firestore/hadith-subjects-v1.proposed.rules` (self-contained extract, like
+     `word-progress-v1.proposed.rules`), an emulator test beside `tools/firestore-emulator/word-progress-v1.rules.test.mjs`
+     (each denial paired with an allow differing in one fact: member reads; non-member denied; prime writes; teacher/
+     student denied; other tenant denied; delete denied; wrong `tenantId` denied), and `rules-authorisation-executable.mjs`
+     kept green. The Architect merges the rule into `firestore.rules`; the **Owner publishes it once in the Firebase
+     Console, guided click by click** (as on 20 Oct).
+  3. **App (Hadith files only):** "Add to subject" on every Hadith Books narration (owner/prime only; others see why it
+     is off), choosing one of the three; the Subjects view lists Book · Chapter · Hadith No. · Title, each opening the
+     original with ← Back (way-back law); "Remove" retires the entry. Read on first use only (I9); a failed write is shown
+     (I15); the harness stub never mutates its DATA, so patch the in-memory copy after a write.
+  4. Every demo gets a `p/mmsa.databases` card (mydb128) and opens in its own window with its full link (win130).
+- **Still with the Owner:** the My Notes link (A keep / B open the panel), J06. `claude/hadith-lead-01q2-next` stays.
+
 ## UPDATE, 6:30 pm 30 Oct (this "📌 (03B) MSA - Hadith Lead" session)
 
 - **Audit part 136 is DONE and LIVE as v12.130** (merge `99bba01b`, PR #1347; Hadith work `877099a`). B1 the Tenant/Person
