@@ -53,3 +53,17 @@ Every combination above measures `small 0` at 100/150/200%, 360/390/768, en and 
 | shared-tables-phone-fit-browser | 300 passed, 0 failed |
 | floating-overlays-reach-browser | 360 passed, 0 failed |
 | shared-pages-keyboard-audit-browser | 506 passed, 0 failed |
+
+## Architect review (30 Oct 2026, released as v12.131)
+
+**The global rule was narrowed before release.** Measured before/after (every element's rect and computed `display`, with the new rule deleted through the CSSOM) on all 30 pages that link `card-look.css`, at 360 and 1440, en and bn:
+
+- On the eight `admin-touch` pages (classes, course-offers, curriculum, onboarding, monitor, homework, people, records) the new rule changed **nothing**: `admin-touch.css` line 9 already makes a label wrapping a checkbox/radio a 40px flex row (`body.admin-touch label:has(> input…)`, more specific). Their "13px" in the before table was the check measuring the box, not the label; the fix there is the check.
+- On the **frozen Quran Study page** (`quranrevival.html`) it changed **ten labels** from `flex` to `inline-flex` (`.qcr-archived-toggle` and the QCR/Asma manage panels): a change to a frozen page, and a global rule would also reach every hidden dialog on Notes, Hadith and Dua.
+- Its only wanted effects were Mapping My Journey's "Show numbers" (`.folder-toolbar-check`) and Bookmarks' "Show retired" (`#showRetiredCk`), the two shared pages without `admin-touch`.
+
+So the rule is now named: `.folder-toolbar-check, label:has(> #showRetiredCk)`. After: `quranrevival.html` and every other page unchanged (0 rects moved, 0 display changes); journey-map 3 to 6 rects (the label row), taglines its toggle rows (its own rule, kept).
+
+`--mutate=small` now puts back `label{display:inline;min-height:0}` (wrapping AND `for` labels), so taglines fails under it too: bookmarks 6, classes 6, journey-map 6, taglines 10 FAIL.
+
+**Measured on the review branch (main merged in, no conflict):** the toggles' labels 40px tall at 360, 390, 768, 820, 1024, 1180, 1440, en and bn, scrollWidth equal to the screen at each; screenshots of Bookmarks 360 bn, Mapping My Journey 360 en and 1440 bn, Taglines 1440 en looked at (box and text centred on one 40px row, nothing wraps). `large-text-shared-pages-browser.mjs --no-reach` 2651 passed, 0 failed; the three changed pages 560/0; `behaviour.mjs` alone 972/0; `stub-parity` 4/0; `shared-pages-bangla-layout-audit-browser` 460/0; `shared-tables-phone-fit-browser` 300/0; `floating-overlays-reach-browser` 360/0; `shared-pages-keyboard-audit-browser` 506/0; `shared-tools-long-names-browser` 202/0; QR builds; `apps-build-check` 48/0.
