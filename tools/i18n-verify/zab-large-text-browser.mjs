@@ -52,6 +52,13 @@ const MEASURE = ({ mutate }) => {
     const s = document.createElement("style");
     s.textContent = "#zabSpacer{display:none!important} html,html:has(.nw-switch){scroll-padding-bottom:0!important}";
     document.head.appendChild(s);
+    // a page whose content runs to its very end (no room of its own below the last control): the spacer is then the ONLY thing keeping it clear
+    const st = document.createElement("style");
+    st.textContent = "html,body{padding-bottom:0!important;margin-bottom:0!important}";
+    document.head.appendChild(st);
+    const b = document.createElement("button");
+    b.textContent = "last control of the page"; b.style.cssText = "display:block;height:44px;margin:0";
+    document.body.appendChild(b);
   }
   if (kind === "none") return res;
   const box = kind === "bar" ? bar : corner;
@@ -223,12 +230,17 @@ for (const pg of PAGES) {
       rows.push({ pg, w, lang, pct, kind: r.kind, a: r.a, b: r.b, c: r.c, spacerOk: r.spacerOk, spacerGap: r.spacerGap, d: unreachable, n: r.n });
       if (r.kind === "none") { if (LIST) console.log(`  info  ${tag}: no Zab bar or corner shown`); continue; }
       const grew = Math.abs(r.a.hRem - (r.kind === "bar" ? 2.75 : 3)) < 0.01;
-      console.log(`  INFO [${tag}] ${r.kind} ${r.a.w}x${r.a.h}px (${r.a.hRem}rem, ${grew ? "grew with text" : "DID NOT grow"}), spacer ${r.a.spacerPx}px (${r.a.spacerRem}rem), (b) covers ${r.b.length} at scroll 0${r.b.length && LIST ? ": " + r.b.slice(0, 4).join("; ") : ""}`);
+      if (LIST) console.log(`  INFO [${tag}] ${r.kind} ${r.a.w}x${r.a.h}px (${r.a.hRem}rem, ${grew ? "grew with text" : "DID NOT grow"}), spacer ${r.a.spacerPx}px (${r.a.spacerRem}rem), (b) covers ${r.b.length} at scroll 0${r.b.length && LIST ? ": " + r.b.slice(0, 4).join("; ") : ""}`);
       check(`${tag}: nothing is under the ${r.kind} at the end of the page (c; ${r.n} controls, spacer gap ${r.spacerGap}px)`, r.c.length === 0, "\n      " + r.c.slice(0, 4).join("\n      "));
       check(`${tag}: every control is reachable by elementFromPoint at some scroll stop (d)`, unreachable.length === 0, "\n      " + unreachable.slice(0, 4).join("\n      "));
     }
     await ctx.close();
   }
+  // one INFO line per page: (b) cosmetic coverage at scroll 0, by size, and the largest spacer shortfall seen
+  const mine = rows.filter((r) => r.pg === pg && r.kind !== "none");
+  const bySz = SIZES.map((s) => { const x = mine.filter((r) => r.pct === s); return `${s}%: covers ${x.reduce((n, r) => n + r.b.length, 0)} in ${x.filter((r) => r.b.length).length}/${x.length}`; });
+  const grewAll = mine.every((r) => Math.abs(r.a.hRem - (r.kind === "bar" ? 2.75 : 3)) < 0.01);
+  console.log(`  INFO ${pg}: (b) ${bySz.join("; ")}; box grew with text everywhere: ${grewAll}; spacer shortfall max ${Math.max(0, ...mine.map((r) => r.spacerGap))}px; (c) ${mine.filter((r) => r.c.length).length}, (d) ${mine.filter((r) => r.d.length).length} failing combinations`);
 }
 fs.writeFileSync(`${OUT}/rows${arg("tag") ? "-" + arg("tag") : ""}.json`, JSON.stringify(rows, null, 1));
 console.log(`\nINFO: bar seen ${barSeen} times, corner ${cornerSeen} times; (b) covered something in ${rows.filter((r) => r.b.length).length} of ${rows.length} combinations.`);
