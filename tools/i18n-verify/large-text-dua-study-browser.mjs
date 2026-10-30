@@ -316,10 +316,11 @@ for (const [w, h] of WIDTHS) for (const lang of LANGS) {
       await setRoot(P, pct);
       await P.waitForTimeout(250);
       const m = await P.evaluate(MEASURE, { baseline, baselineRoot, minH: 36 });
-      // B1 by its own edge, any amount: the offscreen measure has a threshold, so a picker 3px past the screen is not "offscreen" yet
-      // still makes the page scroll sideways.
+      // The Person and Tenant pickers by their own edge, any amount: the offscreen measure has a threshold, so a picker 3px past the
+      // screen is not "offscreen" yet still makes the page scroll sideways (the old B1, fixed).
       const pickerPast = await P.evaluate(() => [...document.querySelectorAll("#personSelect, #tenantSelect")].some((e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.right > document.documentElement.clientWidth; }));
       if (pct === 100) { baseline = m.fontSizes; baselineRoot = m.rootSize; }
+      check(`${tag} / ${pct}%: the Person and Tenant pickers stay inside the screen`, !pickerPast, "a picker runs past the right edge");
       bySize[pct] = m;
       if (SHOTS && pct === 200 && ((lang === "bn" && w === 360) || (lang === "en" && w === 768))) await P.screenshot({ path: `${OUT}/${v.id}-${w}-${lang}-200.png`, fullPage: !v.id.startsWith("pop-") });
       const counts = Object.fromEntries(KINDS.map((k) => [k, m[k].length]));
@@ -334,17 +335,15 @@ for (const [w, h] of WIDTHS) for (const lang of LANGS) {
       if (pct === 100) for (const k of ["cut", "overlap", "offscreen", "sideways"]) {
         // NAMED 100% FINDINGS. Each is a finding at ORDINARY text size, reported as INFO under its name in the report and handed to its
         // Lead; anything else at 100% still FAILS.
-        //   B1  the Person picker (#personSelect / #tenantSelect, `width:auto`) is as wide as the part-126 seed's ~40-character name, wider
-        //       than a phone, so the page scrolls sideways. (Shared: the account card.)
+        //   (B1, the Person picker as wide as a ~40-character name, is FIXED: the pickers are capped at the screen and carry their full text
+        //    as a title, as Hadith's are since v12.130. Its baseline is gone, so a recurrence fails.)
         //   B2  the 👥 "who is this for" button (.assign-trigger) carries the same long name and runs past a phone.
         //   Z   the fixed 🧰 Zab bar over a row at the foot of the screen at scroll 0: not a defect (v12.125, part 133: every page keeps room
         //       at its end for the bar, so any row can be scrolled clear of it); the same exclusion the other two suites make.
-        const named = (f) => (LONG_NAMES && /#personSelect|#tenantSelect/.test(f.msg)) ? "B1"
-          : (LONG_NAMES && /button\.assign-trigger/.test(f.msg)) ? "B2"
+        const named = (f) => (LONG_NAMES && /button\.assign-trigger/.test(f.msg)) ? "B2"
           : (/#zabBar|#zabCorner/.test(f.msg) && k === "overlap") ? "Z"
           : null;
-        const sidewaysBy = () => (LONG_NAMES && (pickerPast || m.offscreen.some((o) => /#personSelect|#tenantSelect/.test(o.msg)))) ? "B1"
-          : (LONG_NAMES && m.offscreen.some((o) => /button\.assign-trigger/.test(o.msg))) ? "B2"
+        const sidewaysBy = () => (LONG_NAMES && m.offscreen.some((o) => /button\.assign-trigger/.test(o.msg))) ? "B2"
           : null;
         // A page widened by B1 / B2 can open scrolled sideways, which puts the LEFT-hand controls at a negative x: the same finding, not a new one.
         const tagOf = (f) => (k === "sideways" ? sidewaysBy() : named(f) || (k === "offscreen" && / spans -\d/.test(f.msg) ? sidewaysBy() : null));
