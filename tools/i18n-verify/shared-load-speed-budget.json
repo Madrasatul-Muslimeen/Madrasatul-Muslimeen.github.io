@@ -1,5 +1,5 @@
 {
-  "notes": { "owner": { "modulesToUsable": 52, "readsToUsable": 4, "readsTotal": 4, "secondVisitNetwork": 61 }, "student": { "modulesToUsable": 52, "readsToUsable": 4, "readsTotal": 4, "secondVisitNetwork": 61 } },
-  "notesUnit": { "owner": { "modulesToUsable": 55, "readsToUsable": 7, "readsTotal": 7, "secondVisitNetwork": 61 }, "student": { "modulesToUsable": 55, "readsToUsable": 7, "readsTotal": 7, "secondVisitNetwork": 61 } },
-  "journey": { "owner": { "modulesToUsable": 56, "readsToUsable": 23, "readsTotal": 23, "secondVisitNetwork": 62 }, "student": { "modulesToUsable": 56, "readsToUsable": 23, "readsTotal": 23, "secondVisitNetwork": 62 } }
+  "notes": { "owner": { "modulesToUsable": 52, "readsToUsable": 4, "readsTotal": 4, "secondVisitNetwork": 63 }, "student": { "modulesToUsable": 52, "readsToUsable": 4, "readsTotal": 4, "secondVisitNetwork": 63 } },
+  "notesUnit": { "owner": { "modulesToUsable": 55, "readsToUsable": 7, "readsTotal": 7, "secondVisitNetwork": 63 }, "student": { "modulesToUsable": 55, "readsToUsable": 7, "readsTotal": 7, "secondVisitNetwork": 63 } },
+  "journey": { "owner": { "modulesToUsable": 56, "readsToUsable": 23, "readsTotal": 23, "secondVisitNetwork": 64 }, "student": { "modulesToUsable": 56, "readsToUsable": 23, "readsTotal": 23, "secondVisitNetwork": 64 } }
 }

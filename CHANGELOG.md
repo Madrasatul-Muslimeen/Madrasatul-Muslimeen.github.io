@@ -23034,3 +23034,12 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 - **Found by audit part 138 (A1/B1):** on Dua Study, the Person picker was as wide as a 45-character name, so the page scrolled sideways at 360px.
 - **The Dua Lead's fix** (`claude/dua-person-picker-2` bc7ec67): `app/dua-study.html` selects `width:auto; max-width:100%; min-width:0; box-sizing:border-box`, labels capped, `keepSelectTitles("#tenantSelect, #personSelect")` — the same shape as v12.130 (Hadith) and v12.133 (21 other pages). The suite drops B1 and checks both pickers inside the screen at every size.
 - **Measured (Architect):** large-text-dua-study 360 en 186/0, 390 363/0 (old page 88 FAIL); dua-study-page 137/0; dua-tab 63/0; behaviour.mjs alone 972/0.
+
+## v12.135 — 31 Oct 2026 — Bangla picker tips said once; the parts 67–83 sweep re-run
+
+- **The sweep:** all 191 suites of audit parts 67–83 re-run on v12.134 (3 at a time): 186 clean. offline-boot and journey-sheet pass alone (the parallel run's artefacts).
+- **Fixed (real):** `app/js/select-title.js` (part 132). In Bangla the translator rewrites a select's own title into Bangla and `keepSelectTitles` took it for a label of the page's own, so four selects read "X: X" ("শিক্ষক: শিক্ষক" on People; View as; Homework's subject; import-notes' source). A retitle that is just the chosen value is no longer taken as a label.
+- **audit-part31:** a select's title repeats its chosen option since part 132; only words the title adds are judged now. New check "no select title says its chosen value twice", with two positive controls. Fixed tree 817/0; unfixed main 803/14.
+- **shared-load-speed budget:** notes/notesUnit 61→63, journey 62→64 — read-failure.js (part 128) and select-title.js (part 139). The page fetches 0 files on a second visit; the count is the worker's quiet background refresh, one per module.
+- **Passed to their owners, not fixed here:** quran-ayah-action-sheet 2 (the Āyah card window's "Status of this āyah" heading out of view at 1100x800 — Quran Study, QR Lead); bangla-sweep-newer-screens 1 (HadeethEnc fallback note says "English" in Bangla — Hadith Lead).
+- **Measured:** behaviour.mjs alone 972/0; person-picker-fit 1290/0; shared-load-speed 176/0; stub-parity 4/0; apps-build-check 48/0; QR builds.
