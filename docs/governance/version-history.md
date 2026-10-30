@@ -1032,3 +1032,5 @@ total). Allocated by the MMSA Architect.
 12.128: Dua rounds R2-R4 (card menu and pop-ups, banners, poster and copy/share, plain save failures, Dua bookmarks open the Dua page). Allocated by the MMSA Architect.
 12.129: the Taglines page with larger text (audit part 134). Allocated by the MMSA Architect.
 12.130: Hadith Study fits a phone with long names (audit part 136 fixes, Hadith Lead). Allocated by the MMSA Architect.
+12.131: audit part 137 (tick-box tap targets). Allocated by the MMSA Architect.
+12.132: the Dua Lead's audit part 138 fixes and D05 A1. Allocated by the MMSA Architect.

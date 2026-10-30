@@ -290,7 +290,9 @@ a.hadeethenc-study-btn[aria-disabled="true"], button.hadeethenc-study-btn[aria-d
 @font-face { font-family: 'QR Scheherazade'; src: url('../fonts/scheherazade.woff2') format('woff2'); font-display: swap; }
 @font-face { font-family: 'QR Noto Naskh';   src: url('../fonts/notonaskh.woff2')   format('woff2'); font-display: swap; }
 @font-face { font-family: 'QR Amiri Quran';  src: url('../fonts/amiriquran.woff2')  format('woff2'); font-display: swap; }
-.dua-words { font-size: 2.1em; line-height: 2; direction: rtl; text-align: right; margin: 0.4rem 0 0.1rem; color: var(--hadith-ink); overflow-wrap: anywhere; }
+/* Audit part 138 D1: a word's own box is about 2.04 times its font size in this Arabic font, so a line height of 2 let each
+   row of words overlap the next by 1-3px; 2.1 (in em, so it grows with the text) keeps them clear at every text size. */
+.dua-words { font-size: 2.1em; line-height: 2.1; direction: rtl; text-align: right; margin: 0.4rem 0 0.1rem; color: var(--hadith-ink); overflow-wrap: anywhere; }
 .dua-words-note { margin: 0 0 0.3rem; font-size: 0.8rem; color: var(--hadith-muted); }
 .dua-narration summary { min-height: 40px; display: flex; align-items: center; cursor: pointer; font-size: 0.85rem; font-weight: 600; color: var(--hadith-ink); }
 .dua-narration .hadith-arabic { font-size: 1.5em; }
@@ -346,7 +348,10 @@ a.hadeethenc-study-btn[aria-disabled="true"], button.hadeethenc-study-btn[aria-d
 .dua-check-steps { display: flex; flex-wrap: wrap; gap: 0.35rem; }
 .dua-check-tab[aria-selected="true"] { background: var(--hadith-ink); color: #fff; border-color: var(--hadith-ink); }
 .dua-check-body, .dua-check-list, .dua-check-members, .dua-check-words { display: grid; gap: 0.5rem; min-width: 0; }
-.dua-check-member, .dua-check-word { border: 1px solid var(--hadith-rule); border-radius: 0.6rem; padding: 0.55rem 0.7rem; display: grid; gap: 0.35rem; min-width: 0; }
+.dua-check-member, .dua-check-word { border: 1px solid var(--hadith-rule); border-radius: 0.6rem; padding: 0.55rem 0.7rem; display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.35rem; min-width: 0; }
+/* Audit part 138 D4: with large text the one column is the box's width, never its widest word; long labels wrap. */
+.dua-check-member .dua-ref, .dua-check-word .dua-ref { white-space: normal; overflow-wrap: anywhere; text-align: start; }
+.dua-check-mhead > * { min-width: 0; overflow-wrap: anywhere; }
 .dua-check-member[data-v="same"], .dua-check-word[data-v="ok"] { border-color: #1e7a45; }
 .dua-check-member[data-v="cut"] { border-color: #a3302a; background: rgba(163, 48, 42, 0.07); }
 .dua-check-member[data-v="unsure"], .dua-check-word[data-v="fix"] { border-color: #b8860b; }
