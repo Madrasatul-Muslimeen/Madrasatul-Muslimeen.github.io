@@ -13,7 +13,7 @@
 //   reach     a control that elementFromPoint never returns at any scroll stop (the floating <- X pill or the toolbox covers it); pill shown via ?navBack=1
 //   fixedpx   text elements whose computed font-size did NOT grow with the root (fixed px: they will not grow on a phone either)
 // DEFECTS ARE PRINTED AS "INFO" LINES AND ARE NOT FAILURES, EXCEPT the kinds below (part 131's CHECKED_KINDS at 150%, and part 132's FIXED_KINDS at 150% AND 200%:
-// a finding that was NEW at that size, absent at 100% on the same element, now fails). The Zab bar findings (1, 2) and the front page (3, 4) are not checked here.
+// a finding that was NEW at that size, absent at 100% on the same element, now fails). The Zab bar findings (1, 2, 20, 21) are checked since part 133 (ZABCHECK; --mutate=zabold and --mutate=zabnospace must FAIL); the front page (3, 4) is not checked here.
 // Run from the repository root with node serve.js on 8080:  node tools/i18n-verify/large-text-shared-pages-browser.mjs
 //   --pages=a.html,b.html   a subset   --no-reach  skip the reach pass   --list  print every finding   --verbose  print passes
 //   --shots  save 200% screenshots (360, bn) to tools/i18n-verify/out/large-text/   --sizes=100,150  only some sizes
@@ -271,6 +271,39 @@ const REACH = async () => {
   return { pillShown: !!(pill && vis(pill)), n: controls.length, unreachable: [...state].filter(([, ok]) => !ok).map(([el]) => name(el)) };
 };
 
+// Audit part 133 (part 131 findings 1, 2, 20, 21): the 🧰 Zab bar (>= 768px) or corner button (phone).
+//  growth: its text and its size are a fixed multiple of the root font-size (bar 0.875rem text and 2.75rem tall; corner 1.375rem text and 3rem square), so they grow with the reader's text.
+//  cover:  every ordinary control, brought into view the way Tab brings it (scrollIntoView, which honours scroll-padding), ends up clear of the bar / corner;
+//          that needs the spacer and scroll-padding to be as tall as the bar really is at this text size (the bar's own measured height is the yardstick).
+const ZABCHECK = () => {
+  const root = parseFloat(getComputedStyle(document.documentElement).fontSize);
+  const shown = (e) => e && e.getClientRects().length > 0 && e.getBoundingClientRect().width > 0 && getComputedStyle(e).visibility !== "hidden";
+  const bar = document.querySelector("#zabBar"), corner = document.querySelector("#zabCorner");
+  const kind = shown(bar) ? "bar" : shown(corner) ? "corner" : "none";
+  const res = { kind, root, problems: [], n: 0 };
+  if (kind === "none") return res;
+  const box = kind === "bar" ? bar : corner;
+  const fs = parseFloat(getComputedStyle(kind === "bar" ? bar.querySelector("button") : corner).fontSize);
+  res.textRem = fs / root;
+  const r0 = box.getBoundingClientRect();
+  res.sizeRem = (kind === "bar" ? r0.height : r0.width) / root;
+  const spacer = document.querySelector("#zabSpacer");
+  res.spacerRem = spacer.getBoundingClientRect().height / root;
+  if (kind === "bar" && Math.abs(spacer.getBoundingClientRect().height - r0.height) > 1) res.problems.push(`the spacer is ${spacer.getBoundingClientRect().height}px but the bar is ${r0.height}px tall`);
+  const closed = (el) => { for (let d = el.parentElement?.closest("details"); d; d = d.parentElement?.closest("details")) if (!d.open && !el.closest("summary")) return true; return false; };
+  const nested = (el) => { if (closed(el)) return true; for (let a = el.parentElement; a && a !== document.body && a !== document.documentElement; a = a.parentElement) { const cs = getComputedStyle(a); if (/(auto|scroll)/.test(cs.overflowY) && a.scrollHeight > a.clientHeight + 1) return true; if (cs.position === "fixed" || cs.position === "sticky") return true; } return false; };
+  const controls = [...document.querySelectorAll("button, a[href], select, input:not([type=hidden]), textarea, summary")].filter((e) => !e.closest("#zabRoot") && !e.closest("[data-bm-back]") && !e.classList.contains("zab-dock-btn") && shown(e) && getComputedStyle(e).position !== "fixed" && !nested(e));
+  res.n = controls.length;
+  for (const e of controls) {
+    e.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "instant" });
+    const b = e.getBoundingClientRect(), z = box.getBoundingClientRect();
+    if (b.width > 0 && b.left < z.right && b.right > z.left && b.top < z.bottom - 1 && b.bottom > z.top + 1 && b.top < innerHeight && b.bottom > 0)
+      res.problems.push(`${e.tagName.toLowerCase()} "${(e.textContent || e.getAttribute("aria-label") || e.id || "").replace(/\s+/g, " ").trim().slice(0, 28)}" (${Math.round(b.top)}-${Math.round(b.bottom)}) is under the ${kind} (${Math.round(z.top)}-${Math.round(z.bottom)})`);
+  }
+  scrollTo(0, 0);
+  return res;
+};
+
 // Positive controls: injected elements that are correct (defective) by construction, measured at 100%.
 const INJECT = () => {
   const host = document.createElement("div");
@@ -294,6 +327,10 @@ const MUTATIONS = {
   offscreen: () => { const s = document.createElement("button"); s.textContent = "off"; s.style.cssText = "position:absolute;left:" + (document.documentElement.clientWidth + 300) + "px;top:0;width:80px;height:44px"; document.body.appendChild(s); document.documentElement.style.overflowX = "hidden"; },
   small: () => { const s = document.createElement("button"); s.textContent = "tiny"; s.style.cssText = "display:block;height:18px"; document.body.appendChild(s); },
   fixedpx: () => { document.body.insertAdjacentHTML("beforeend", "<style>body *{font-size:11px!important}</style>"); },
+  // audit part 133: the pre-fix Zab CSS (fixed px sizes) put back; the growth checks must fail
+  zabold: () => { const s = document.createElement("style"); s.textContent = "#zabBar{height:44px!important;font-size:14px!important} #zabBar button{font-size:14px!important;min-height:40px!important} #zabCorner{width:48px!important;height:48px!important;font-size:22px!important} #zabSpacer{height:44px!important}"; document.head.appendChild(s); },
+  // no room kept for the bar at the end of the page and none when Tab scrolls: the cover checks must fail
+  zabnospace: () => { const s = document.createElement("style"); s.textContent = "#zabSpacer{display:none!important} html,html:has(.nw-switch){scroll-padding-bottom:0!important}"; document.head.appendChild(s); },
   // the pre-fix page also had no select titles: make the title property of a select do nothing, and drop any already set
   old: (css) => { Object.defineProperty(HTMLSelectElement.prototype, "title", { configurable: true, get() { return ""; }, set() {} }); document.querySelectorAll("select").forEach((s) => s.removeAttribute("title")); if (css) { const s = document.createElement("style"); s.textContent = css; document.head.appendChild(s); } },
 };
@@ -302,6 +339,7 @@ if (MUTATE && !MUTATIONS[MUTATE]) throw new Error(`unknown --mutate=${MUTATE}`);
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
 const rows = [];
 const reachRows = [];
+const zabSeen = {};
 const urlFor = (pg, pill) => "/app/" + pg + (pill ? (pg.includes("?") ? "&" : "?") + "navBack=1" : "") ;
 const setRoot = (P, pct) => P.evaluate((p) => { document.documentElement.style.fontSize = p + "%"; }, pct);
 
@@ -371,7 +409,21 @@ for (const pg of PAGES) {
         check(`${tag}: nothing is past the screen edge (part 134)`, sideHits.length === 0, "\n      " + sideHits.slice(0, 5).map((f) => f.msg).join("\n      "));
         check(`${tag}: the page rendered the seeded lines (positive control)`, tlRows >= 3, `rows ${tlRows}`);
       }
-      if (pct === 150) for (const k of Object.keys(CHECKED_KINDS)) if (CHECKED_KINDS[k].includes(pgKey)) check(`${pg} / ${w} / ${lang} / 150%: no ${k}`, m[k].length === 0, "\n      " + m[k].slice(0, 5).map((f) => f.msg).join("\n      "));
+      {
+        const zb = await P.evaluate(ZABCHECK);
+        if (zb.kind !== "none") {
+          const tag = `${pg} / ${w} / ${lang} / ${pct}%`;
+          check(`${tag}: the ${zb.kind === "bar" ? "bar" : "🧰 corner"}'s text grows with the root (audit part 133 finding 2)`, Math.abs(zb.textRem - (zb.kind === "bar" ? 0.875 : 1.375)) < 0.01, `text ${zb.textRem} of root ${zb.root}px`);
+          check(`${tag}: the ${zb.kind === "bar" ? "bar" : "🧰 corner"} itself grows with the root`, Math.abs(zb.sizeRem - (zb.kind === "bar" ? 2.75 : 3)) < 0.01, `size ${zb.sizeRem} root-sizes`);
+          if (pgKey !== "index") check(`${tag}: no control is left under the ${zb.kind === "bar" ? "bar" : "🧰 corner"} once scrolled to (audit part 133 findings 1, 20, 21; ${zb.n} controls)`, zb.problems.length === 0, "\n      " + zb.problems.slice(0, 4).join("\n      "));
+        }
+        zabSeen[w] = (zabSeen[w] || 0) + (zb.kind !== "none" ? 1 : 0);
+      }
+      if (pct === 150) for (const k of Object.keys(CHECKED_KINDS)) if (CHECKED_KINDS[k].includes(pgKey)) {
+        // a fixed bar always paints over whatever sits at the viewport's foot at scroll 0; whether a control can be reached clear of it is the cover check above (audit part 133)
+        const own = k === "overlap" ? m[k].filter((f) => !/#zabBar|#zabCorner/.test(f.msg)) : m[k];
+        check(`${pg} / ${w} / ${lang} / 150%: no ${k}`, own.length === 0, "\n      " + own.slice(0, 5).map((f) => f.msg).join("\n      "));
+      }
       if ((pct === 150 || pct === 200) && SIZES.includes(100)) for (const k of FIXED_KINDS[pgKey] || []) {
         const base100 = new Set((bySize[100]?.[k] || []).map((f) => f.key));
         const fresh = m[k].filter((f) => !base100.has(f.key));
@@ -404,6 +456,8 @@ for (const pg of PAGES) {
   console.log(`${pg.padEnd(40)} ${parts.join("  ")}`);
 }
 console.log(`\nINFO: reach pass found ${reachRows.filter((r) => r.unreachable.length).length} page/width/language/size combinations with a never-reachable control (of ${reachRows.length}).`);
+// positive control for the Zab checks: the bar / corner really was found at each width (a missing bar would make every Zab check vanish)
+if (!arg("pages")) for (const [w] of WIDTHS) check(`the Zab bar or corner was found at ${w} on most pages (positive control for the Zab checks)`, (zabSeen[w] || 0) >= PAGES.length * 2 * SIZES.length * 0.8, `found ${zabSeen[w] || 0}`);
 console.log(`\n${pass} passed, ${fail} failed${MUTATE ? ` (mutation: ${MUTATE})` : ""}`);
 await browser.close();
 process.exit(fail ? 1 : 0);

@@ -13,6 +13,17 @@ import { t, num } from "./i18n.js";
 import { getAppLang } from "./prefs.js";
 import { duaWords, duaWordTokens } from "./dua-words.js";
 import { loadOpenitiBookIndex, loadOpenitiChapter } from "./openiti-corpus.js";
+import { plainMessageFor } from "./errors.js";
+
+/**
+ * D20 (PCF MSA J104 j104q1; audit part 103): a Dua save that fails says in plain words why -- offline, not allowed,
+ * signed out -- in the reader's language, never the computer's own error text. A failure with no Firestore code that
+ * is a network failure ("Failed to fetch") is read as offline.
+ */
+export function duaSaveFailed(err) {
+  const net = err instanceof TypeError || /network|failed to fetch|offline/i.test(String(err?.message ?? ""));
+  return plainMessageFor({ code: err?.code ?? (net ? "unavailable" : "unknown") });
+}
 
 export const DUA_CHECK_SCHEMA_VERSION = 1;
 
@@ -328,7 +339,7 @@ export function buildCheckPanel({ card, books, fit, words, existing, textsPromis
       save.disabled = true;
       saveMsg.textContent = "";
       try { await onSave(buildCheck({ members, words: wordRows, together, originals })); }
-      catch (err) { save.disabled = false; saveMsg.textContent = t("Not saved: {why}", { why: String(err?.message ?? err) }); }
+      catch (err) { save.disabled = false; saveMsg.textContent = duaSaveFailed(err); }
     });
     save.dataset.duaCheckSave = check.done ? "done" : "partly";
     box.append(save, saveMsg);

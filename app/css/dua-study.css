@@ -1,0 +1,162 @@
+/* The Dua module's own page (app/dua-study.html, app/js/dua-study.js), round R1: D21 pull-down menus, D02 numbered
+   lists, D04 the Dua Card's bar. The card itself is Hadith Study's (hadith.css); rows, menus and tiles take the card
+   look's own palette (card-look.css), light or night. Every control a finger presses is at least 40px. */
+.dua-pd-row { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.6rem 0 0.4rem; }
+.dua-pd-wrap { position: relative; min-width: 0; flex: 1 1 14rem; }
+.dua-pd {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 0.05rem; width: 100%; min-height: 48px; min-width: 0;
+  padding: 0.35rem 0.8rem; border: 1px solid var(--card-line, #e2ddcd); border-radius: 0.6rem; cursor: pointer; text-align: start;
+  background: var(--card-bg-inset, #fff); color: var(--card-text, #1B2A41); font: inherit;
+}
+.dua-pd small { font-size: 0.72rem; color: var(--card-text-muted, #5f6470); }
+.dua-pd b { font-size: 0.95rem; max-width: 100%; overflow-wrap: anywhere; color: var(--card-heading, #1F3A6E); }
+.dua-pd[aria-expanded="true"] { border-color: var(--card-heading, #1F3A6E); }
+.dua-pull {
+  position: absolute; z-index: 40; top: calc(100% + 0.3rem); inset-inline-start: 0; width: max(100%, min(22rem, 92vw));
+  max-width: calc(100vw - 2rem); max-height: min(70vh, 32rem); overflow-y: auto; padding: 0.35rem;
+  background: var(--card-bg-inset, #fff); border: 1px solid var(--card-line, #e2ddcd); border-radius: 0.6rem;
+  box-shadow: 0 10px 26px rgba(20, 40, 80, 0.22); box-sizing: border-box;
+}
+.dua-pull-item {
+  display: flex; align-items: center; gap: 0.6rem; width: 100%; min-height: 44px; padding: 0.35rem 0.6rem;
+  border: 0; border-radius: 0.45rem; background: transparent; color: var(--card-text, #1B2A41); font: inherit; text-align: start; cursor: pointer;
+}
+.dua-pull-item:hover, .dua-pull-item:focus-visible { background: rgba(201, 162, 75, 0.18); }
+.dua-pull-item[aria-current="true"] { font-weight: 700; color: var(--card-heading, #1F3A6E); }
+.dua-pull-label { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.dua-pull-count { flex-shrink: 0; font-size: 0.8rem; color: var(--card-text-muted, #5f6470); font-variant-numeric: tabular-nums; }
+
+.dua-study-h { margin: 0.9rem 0 0.4rem; }
+.dua-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr)); gap: 0.5rem; }
+.dua-tile {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 0.2rem; min-height: 56px; min-width: 0; padding: 0.6rem 0.8rem;
+  border: 1px solid var(--card-line, #e2ddcd); border-radius: 0.6rem; background: var(--card-bg-inset, #fff); color: var(--card-text, #1B2A41);
+  font: inherit; text-align: start; cursor: pointer;
+}
+.dua-tile b { overflow-wrap: anywhere; color: var(--card-heading, #1F3A6E); }
+.dua-tile-ar { font-size: 0.95rem; }
+.dua-tile-n { font-size: 0.8rem; color: var(--card-text-muted, #5f6470); }
+
+.dua-list { list-style: none; margin: 0.4rem 0; padding: 0; display: flex; flex-direction: column; gap: 0.4rem; }
+.dua-row {
+  display: flex; align-items: flex-start; gap: 0.7rem; width: 100%; min-height: 48px; padding: 0.55rem 0.7rem;
+  border: 1px solid var(--card-line, #e2ddcd); border-radius: 0.55rem; background: var(--card-bg-inset, #fff); color: var(--card-text, #1B2A41);
+  font: inherit; text-align: start; cursor: pointer;
+}
+.dua-row:hover { border-color: var(--card-heading, #1F3A6E); }
+.dua-row-no {
+  flex-shrink: 0; min-width: 2.2rem; padding: 0.15rem 0.35rem; border-radius: 0.4rem; text-align: center;
+  background: rgba(201, 162, 75, 0.2); color: var(--card-heading, #1F3A6E); font-weight: 700; font-variant-numeric: tabular-nums;
+}
+.dua-row-main { display: flex; flex-direction: column; gap: 0.2rem; flex: 1; min-width: 0; }
+.dua-row-ar { font-size: 1.2rem; line-height: 1.9; overflow-wrap: anywhere; }
+.dua-row-heading { font-size: 0.95rem; line-height: 1.6; color: var(--card-text-muted, #5f6470); }
+.dua-row-meta { font-size: 0.8rem; color: var(--card-text-muted, #5f6470); overflow-wrap: anywhere; }
+.dua-empty { padding: 0.8rem; border: 1px dashed var(--hadith-rule, #e2ddcd); border-radius: 0.6rem; }
+
+.dua-card-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; margin: 0.6rem 0 0; }
+.dua-card-back { min-height: 40px; text-align: start; overflow-wrap: anywhere; }
+.dua-card-steps { display: flex; align-items: center; gap: 0.5rem; margin-inline-start: auto; }
+.dua-card-steps .dua-ref { min-width: 44px; font-size: 1.1rem; }
+.dua-card-steps .dua-ref:disabled { opacity: 0.45; cursor: default; }
+.dua-card-pos { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.dua-study-ar { font-size: 1.45rem; line-height: 2.1; overflow-wrap: anywhere; }
+.dua-row-title { font-weight: 700; color: var(--card-heading, #1F3A6E); overflow-wrap: anywhere; }
+.dua-hisn-count { font-weight: 600; color: var(--hadith-gold, #B8862F); }
+.dua-quran-meaning { line-height: 1.6; }
+.dua-quran-open { display: inline-flex; align-items: center; text-decoration: none; }
+[data-card-look="night"] .dua-quran-meaning,
+[data-card-look="night"] .dua-hisn-ref { color: var(--card-text); }
+
+/* Round R2. D12 the top banner frame, D05 the title and D11 the bottom banner (cut from the Asma ul Husna poster
+   template): the frame every Dua Card sits in, drawn like the poster (green frame, gold line, green arch). */
+.dua-frame {
+  margin: 0.6rem 0 0; padding: 0 0 0.6rem; border: 6px solid #123f2c; border-radius: 0.9rem;
+  box-shadow: inset 0 0 0 2px #e2662b; background: var(--card-bg, #fbf6ea); overflow: hidden; min-width: 0;
+}
+.dua-arch {
+  position: relative; width: min(92%, 34rem); margin: 0 auto 0.4rem; padding: 0.6rem 1rem 0.7rem; box-sizing: border-box;
+  background: #123f2c; color: #f6e7b6; text-align: center; border-radius: 0 0 50% 50% / 0 0 1.6rem 1.6rem;
+  box-shadow: 0 0 0 2px #d9a94a inset;
+}
+.dua-arch-ph {
+  display: flex; flex-direction: column; align-items: center; gap: 0.1rem; padding: 0.3rem 0.6rem;
+  border: 1px dashed rgba(246, 231, 182, 0.6); border-radius: 0.5rem; font-size: 0.78rem; letter-spacing: 0.08em;
+}
+.dua-arch-ph b { font-family: 'Amiri', 'Traditional Arabic', serif; font-size: 1.3rem; letter-spacing: 0; }
+.dua-card-title { margin: 0.5rem 0.9rem 0.2rem; font-size: 1.1rem; color: var(--card-heading, #1F3A6E); overflow-wrap: anywhere; }
+.dua-card-title-ar { font-size: 1.15rem; font-weight: 600; }
+.dua-card-slot { padding: 0 0.6rem; min-width: 0; }
+.dua-card-slot > .dua-card { margin: 0.4rem 0; }
+.dua-banner-bottom { display: block; width: calc(100% - 1.2rem); max-width: 40rem; height: auto; margin: 0.3rem auto 0; border-radius: 0.5rem; }
+
+/* D22 the card's menu, and the pop-up card each of its buttons opens (✕ back to the Dua). */
+.dua-card-menu {
+  display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.6rem 0; padding: 0.45rem;
+  border: 1px solid var(--card-line, #e2ddcd); border-radius: 0.6rem; background: var(--card-bg-inset, #fff);
+}
+.dua-menu-btn { min-height: 44px; }
+.dua-pop-stash[hidden] { display: none; }
+.dua-pop {
+  position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 0.8rem; box-sizing: border-box;
+  background: rgba(4, 8, 18, 0.6);
+}
+.dua-popcard {
+  width: min(100%, 36rem); max-height: 86vh; overflow: auto; box-sizing: border-box; padding: 0.8rem 0.9rem;
+  display: flex; flex-direction: column; gap: 0.6rem; border: 3px solid #123f2c; box-shadow: inset 0 0 0 2px #e2662b;
+  border-radius: 0.9rem; background: var(--card-bg, #fbf6ea); color: var(--card-text, #1B2A41);
+}
+.dua-pophead { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; }
+.dua-pophead h3 { margin: 0; color: var(--card-heading, #1F3A6E); overflow-wrap: anywhere; min-width: 0; }
+.dua-pop-close { flex-shrink: 0; min-height: 44px; }
+.dua-popcard .dua-also, .dua-popcard details { margin: 0; }
+
+/* Round R3. D07 the A4 poster (the text shrinks to fit; never the frame or the banners) and its print, D14 copy and
+   share. The page is always cream paper, whatever the card look, as the Asma ul Husna poster is. */
+.dua-popcard:has(.dua-poster-wrap) { width: min(100%, 44rem); }
+.dua-switches { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; }
+.dua-switch { min-height: 44px; }
+.dua-switch[aria-pressed="true"] { background: #d9a94a; color: #1a1405; border-color: #d9a94a; font-weight: 700; }
+.dua-switch:disabled { opacity: 0.45; cursor: default; }
+.dua-gap-note { margin: 0; }
+.dua-poster-wrap { display: flex; flex-direction: column; gap: 0.6rem; align-items: stretch; }
+.dua-a4 {
+  width: min(100%, 34rem); margin: 0 auto; aspect-ratio: 210 / 297; box-sizing: border-box; overflow: hidden;
+  display: flex; flex-direction: column; container-type: inline-size; background: #fbf6ea; color: #22201a;
+  border: 2.2cqw solid #123f2c; box-shadow: inset 0 0 0 0.4cqw #e2662b; border-radius: 1cqw; font-family: 'Tinos', 'Times New Roman', serif;
+}
+.dua-a4 .dua-arch { width: 80%; margin-bottom: 0; padding: 2cqw 3cqw; border-radius: 0 0 50% 50% / 0 0 4cqw 4cqw; }
+.dua-a4 .dua-arch-ph { font-size: 2.1cqw; padding: 0.8cqw 1.6cqw; }
+.dua-a4 .dua-arch-ph b { font-size: 3.6cqw; }
+.dua-a4-head { text-align: center; margin: 3cqw 5cqw 0; }
+.dua-a4-head h2 { margin: 0; font-size: 4.4cqw; color: #123f2c; overflow-wrap: anywhere; }
+.dua-a4-ar {
+  margin: 2.4cqw 5cqw 0; padding: 2cqw 3cqw; border: 0.4cqw solid #e2662b; border-radius: 3cqw; background: #fffdf6;
+  color: #0f3a28; text-align: center; line-height: 1.95; font-size: var(--arfs, 4.6cqw); overflow-wrap: anywhere;
+}
+.dua-a4-wbw { display: flex; flex-wrap: wrap; justify-content: center; gap: 1cqw; margin: 2cqw 5cqw 0; font-size: 1.7cqw; }
+.dua-a4-wbw span { display: grid; text-align: center; min-width: 9cqw; padding: 0.6cqw 1cqw; border: 0.25cqw solid #e0c9a5; border-radius: 1.4cqw; }
+.dua-a4-wbw b { font-size: 1.9em; font-weight: 400; color: #0f3a28; }
+.dua-a4-wbw small { font-size: 1em; color: #6b5f45; }
+.dua-a4-tx { margin: 2cqw 6cqw 0; font-size: var(--txfs, 2.9cqw); line-height: 1.4; text-align: justify; }
+.dua-a4-bn { font-family: 'Hind Siliguri', system-ui, sans-serif; }
+.dua-a4-ref { margin: auto 6cqw 0; padding-top: 1.5cqw; text-align: center; font-size: 2.2cqw; color: #6b5f45; font-family: system-ui, sans-serif; }
+.dua-a4-banner { flex: 0 0 auto; display: block; width: 94%; margin: 1.5cqw auto; }
+.dua-share { display: flex; flex-direction: column; gap: 0.5rem; }
+.dua-share h4 { margin: 0.3rem 0 0; font-size: 0.92rem; }
+.dua-share-preview {
+  white-space: pre-wrap; overflow-wrap: anywhere; max-height: 16rem; overflow: auto; padding: 0.6rem 0.7rem; border-radius: 0.5rem;
+  border: 1px solid var(--card-line, #e2ddcd); background: var(--card-bg-inset, #fff); line-height: 1.7;
+}
+.dua-share-picture { display: flex; justify-content: center; }
+.dua-share-img { width: min(100%, 20rem); height: auto; border-radius: 0.4rem; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25); }
+.dua-share a.dua-ref { display: inline-flex; align-items: center; min-height: 44px; text-decoration: none; }
+.dua-share a.dua-ref[aria-disabled="true"] { opacity: 0.45; pointer-events: none; }
+#duaPrint { display: none; }
+@media print {
+  @page { size: A4; margin: 8mm; }
+  body.dua-printing { padding: 0 !important; margin: 0 !important; max-width: none !important; background: #fff !important; }
+  body.dua-printing > *:not(#duaPrint) { display: none !important; }
+  body.dua-printing #duaPrint { display: block; }
+  body.dua-printing #duaPrint .dua-a4 { width: 190mm; margin: 0 auto; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+}

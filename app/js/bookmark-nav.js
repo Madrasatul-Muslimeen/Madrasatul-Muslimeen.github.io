@@ -68,7 +68,7 @@ import {
   groupBookmarksByModule, livePresets, renameFolder, saveFolderOrder, lastPlaceOf, lastActOf, markBookmarkUsed,
   setSavedBookmarkRemoved, setFolderRemoved,
 } from "./bookmarks.js";
-import { MODULE_PAGES, MODULE_LABELS } from "./continue-strip.js";
+import { MODULE_PAGES, MODULE_LABELS, resumePageFor } from "./continue-strip.js";
 import {
   getBookmarkMenuExpanded, setBookmarkMenuExpanded,
   getBookmarkMenuGroupBy, setBookmarkMenuGroupBy, BOOKMARK_GROUP_BYS, getAppLang,
@@ -82,7 +82,7 @@ function escapeHtml(s) {
 }
 
 function bookmarkHref(b) {
-  const page = MODULE_PAGES[b.moduleId];
+  const page = resumePageFor(b.moduleId, b.position);
   if (!page) return null;
   // Same split quranrevival.html's own bookmarkHref()/bookmarks.html use:
   // Quran carries a full settings snapshot worth restoring by id, every

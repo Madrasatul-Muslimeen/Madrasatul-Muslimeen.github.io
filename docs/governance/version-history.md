@@ -1026,3 +1026,7 @@ total). Allocated by the MMSA Architect.
 12.122: On the Qur'an Study landing the way back has a row of its own above the tabs (audit part 127, QR Lead). Allocated by the MMSA Architect.
 12.123: The Qur'an Study landing works with the phone's text made larger (audit part 131 findings 3-4, QR Lead). Allocated by the MMSA Architect.
 12.124: The shared pages work with the phone's text made larger (audit part 132). Allocated by the MMSA Architect.
+12.125: the Zab bar with larger text (audit part 133). Allocated by the MMSA Architect.
+12.126: the Dua Study page (Dua round R1). Allocated by the MMSA Architect.
+12.127: the Qur'an page follows the larger Zab bar (QR Lead). Allocated by the MMSA Architect.
+12.128: Dua rounds R2-R4 (card menu and pop-ups, banners, poster and copy/share, plain save failures, Dua bookmarks open the Dua page). Allocated by the MMSA Architect.

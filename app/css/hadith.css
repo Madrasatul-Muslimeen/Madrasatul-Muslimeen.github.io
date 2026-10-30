@@ -200,9 +200,11 @@
 .openiti-trail-back { margin-bottom: 0.4rem; position: sticky; top: 0; z-index: 5; background: #fff; border: 1px solid var(--hadith-rule); border-radius: 0.4rem; padding: 0.3rem 0.7rem; }
 .dua-also-more summary { min-height: 40px; display: flex; align-items: center; cursor: pointer; font-size: 0.85rem; font-weight: 600; color: var(--hadith-ink); }
 /* Round H-DB5: the Duas / Dua chapters switch, a dua card's bab heading, the pager and the progress buttons. */
-.dua-modes { display: inline-flex; gap: 4px; padding: 4px; margin: 0.4rem 0 0.6rem; border-radius: 0.6rem; background: #f1ede1; }
+.dua-modes { display: inline-flex; flex-wrap: wrap; max-width: 100%; gap: 4px; padding: 4px; margin: 0.4rem 0 0.6rem; border-radius: 0.6rem; background: #f1ede1; } /* audit part 136 A1: with larger text the row wraps instead of pushing "Dua Study ↗" off a phone */
 .dua-mode { min-height: 40px; padding: 0 1rem; border: 0; border-radius: 0.45rem; background: transparent; color: var(--hadith-ink); font: inherit; cursor: pointer; }
 .dua-mode[aria-pressed="true"] { background: var(--hadith-ink); color: #fff; font-weight: 600; }
+/* The link to the Dua module's own page (J104 1-A): a tab-sized link, never pressed. */
+.dua-study-link { display: inline-flex; align-items: center; text-decoration: none; margin-inline-start: auto; }
 .dua-card-heading { margin: 0.1rem 0 0.2rem; font-family: 'Amiri', 'Noto Naskh Arabic', serif; font-size: 1.15rem; color: var(--hadith-ink); }
 .dua-pager { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap; margin: 0.5rem 0; }
 .dua-pager .dua-ref:disabled { opacity: 0.45; cursor: default; }
