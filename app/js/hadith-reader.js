@@ -104,7 +104,9 @@ function buildPane(key, opts) {
   pane.dataset.readerPane = key;
   pane.setAttribute("aria-label", titles[key]);
   const head = el("div", "hadith-pane-head");
-  head.appendChild(el("span", "hadith-pane-title", titles[key]));
+  const title = el("span", "hadith-pane-title", titles[key]);
+  title.title = titles[key]; // a narrow pane cuts its heading with large text (audit part 136 H2)
+  head.appendChild(title);
   const tools = el("span", "hadith-pane-tools");
   if (!oi.float[key]) {
     const maxed = oi.max === key;

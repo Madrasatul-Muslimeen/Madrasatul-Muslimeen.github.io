@@ -306,9 +306,6 @@ for (const [w, h] of WIDTHS) for (const lang of LANGS) {
       await setRoot(P, pct);
       await P.waitForTimeout(250);
       const m = await P.evaluate(MEASURE, { baseline, baselineRoot, minH: 36 });
-      // B1 by its own edge, any amount: the offscreen measure has a threshold, so a picker 3px past the screen is not "offscreen" yet
-      // still makes the page scroll sideways (the Dua Lead's measurement, 30 Oct: this was first misfiled as a Dua word finding, "B3").
-      const pickerPast = await P.evaluate(() => [...document.querySelectorAll("#personSelect, #tenantSelect")].some((e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.right > document.documentElement.clientWidth; }));
       if (pct === 100) { baseline = m.fontSizes; baselineRoot = m.rootSize; }
       bySize[pct] = m;
       if (SHOTS && pct === 200 && ((lang === "bn" && w === 360) || (lang === "en" && w === 768))) await P.screenshot({ path: `${OUT}/${v.id}-${w}-${lang}-200.png`, fullPage: true });
@@ -324,21 +321,13 @@ for (const [w, h] of WIDTHS) for (const lang of LANGS) {
       if (pct === 100) for (const k of ["cut", "overlap", "offscreen", "sideways"]) {
         // NAMED 100% FINDINGS (measured 30 Oct 2026, the Architect finishing this round). Each is a finding at ORDINARY text size, reported
         // as INFO under its name in the report and handed to its Lead; anything else at 100% still FAILS.
-        //   B1  the Person picker (#personSelect / #tenantSelect, `width:auto`) is as wide as the part-126 seed's ~40-character name, wider
-        //       than a phone, so the page scrolls sideways.
-        //   B2  the 👥 "who is this for" button (.assign-trigger) on an Encyclopedia card carries the same long name and runs past a phone.
-        //       (A page so widened can open scrolled sideways; its left-hand controls at a negative x are counted under the same name.)
+        //   B1, B2 (the Person picker and the 👥 button carrying a ~40-character name past a phone) were FIXED by the Hadith Lead
+        //       (30 Oct 2026, part 136) and their baselines removed: a recurrence now FAILS. (B3 was withdrawn the same day: it was B1.)
         //   Z   the fixed 🧰 Zab bar over a row at the foot of the screen at scroll 0: not a defect (v12.125, part 133: every page keeps room
         //       at its end for the bar, so any row can be scrolled clear of it); the same exclusion the shared-pages suite makes.
-        const named = (f) => (LONG_NAMES && /#personSelect|#tenantSelect/.test(f.msg)) ? "B1"
-          : (LONG_NAMES && /button\.assign-trigger/.test(f.msg)) ? "B2"
-          : (/#zabBar|#zabCorner/.test(f.msg) && k === "overlap") ? "Z"
+        const named = (f) => (/#zabBar|#zabCorner/.test(f.msg) && k === "overlap") ? "Z"
           : null;
-        const sidewaysBy = () => (LONG_NAMES && (pickerPast || m.offscreen.some((o) => /#personSelect|#tenantSelect/.test(o.msg)))) ? "B1"
-          : (LONG_NAMES && m.offscreen.some((o) => /button\.assign-trigger/.test(o.msg))) ? "B2"
-          : null;
-        // A page widened by B1 / B2 can open scrolled sideways, which puts the LEFT-hand controls at a negative x: the same finding, not a new one.
-        const tagOf = (f) => (k === "sideways" ? sidewaysBy() : named(f) || (k === "offscreen" && / spans -\d/.test(f.msg) ? sidewaysBy() : null));
+        const tagOf = (f) => named(f); // only Z is named now: any other 100% finding (sideways included) fails
         const own = m[k].filter((f) => !tagOf(f));
         for (const f of m[k].filter((x) => tagOf(x))) info(`    INFO [${tag} 100% ${k} BASELINE ${tagOf(f)}] ${f.msg.slice(0, 200)}`);
         check(`${tag} / 100%: no ${k}`, own.length === 0, "\n      " + own.slice(0, 5).map((f) => f.msg).join("\n      "));
