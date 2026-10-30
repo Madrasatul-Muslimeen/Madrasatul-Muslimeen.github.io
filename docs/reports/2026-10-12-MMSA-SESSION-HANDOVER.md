@@ -7,7 +7,44 @@ v10.28). Read `CLAUDE.md` first. The prompt that starts the next session is
 
 This session was summarised once (its context compacted), which is why it hands over here.
 
-## LATEST UPDATE — 30 Oct 2026, ~8:15 am Sydney, session `session_01PL2xbMaCZwSEbt5HMEpqMN` (v12.120–v12.124 live on MSA AND on QR; HANDOVER) — READ THIS FIRST
+## LATEST UPDATE — 30 Oct 2026, ~6:30 pm Sydney, session `session_01PL2xbMR1BT69RwFBnBc2w9` (v12.125–v12.130 live on MSA; HANDOVER) — READ THIS FIRST
+
+Took over ~8:14 am 30 Oct from `session_01PL2xbMaCZwSEbt5HMEpqMN`. Handing over (hand119: long session, two container restarts). **PCA: `session_01PL2xbLtbpz1UznbKURDuvi`** (the older handover blocks name an earlier PCA). Leads: QR `session_01PL2xbLnQWhAjuwTKonE8zo`; **Hadith `session_01PL2xbJbrDFWUd52n8gRbHi`** (new, since 3:45 pm); **Dua `session_01PL2xbLZ3qhGHsuPuYANSx9`** (new); Health `session_01SPFtgC4vwVzby6PR12Z9ek`.
+
+**State:** `main` is **v12.130**. Next release **v12.131**. **add_repo QuranRevival was REFUSED in this session** ("Access Added As A Means"): QR could not be dispatched by hand; its 3-hourly `build-from-msa` schedule carries every release. A read-only clone works for `upgrade-browser` (`git clone https://github.com/QuranRevival/QuranRevival.github.io /home/user/quranrevival/quranrevival.github.io`, then `QR_REPO=… bash tools/apps/qr-verify/run-all.sh`).
+
+**Owner messages this session:** none (carry1: nothing open). No new Owner comments in the PCF.
+
+**Released this session (each: own suites + mutations re-run here; `behaviour.mjs` alone 972/0; QR builds; qr-verify 28/28 where QR-copied files changed; PCF What's New + monitor; PCA told):**
+- v12.125 audit part 133 (PR #1332): the 🧰 Zab bar in rem (grows with text; spacer = the bar's height). **QR change notice sent** (`zab-bar.js`).
+- v12.126 Dua round R1 (PR #1339): `app/dua-study.html`, the Dua module's own page; my shared parts: "Dua Study" in Modules (`nav.js`), "Dua Study ↗" in Hadith Study's Dua tab.
+- v12.127 QR Lead (PR #1342): the Qur'an page's own Zab room in rem; `note-popup.js` fills short rooms. **QR change notice sent** (`note-popup.js`).
+- v12.128 Dua rounds R2–R4 together (PR #1344): card menu + pop-ups, banners, A4 poster, copy/share, plain save failures; my shared part: `resumePageFor()` in `continue-strip.js` (Dua bookmarks open the Dua page; new `dua-bookmark-route.mjs`), and `.dua-modes` wraps.
+- v12.129 audit part 134 (PR #1334): the Taglines page with larger text (Save no longer sticky; table stacks).
+- v12.130 the Hadith Lead's part-136 fixes (Person picker and 👥 button fit a phone with a long name; small labels/pickers titled).
+- Tests/docs only: #1333 (Dua Lead handover), #1336 (audit part 135: the People ← Back check was wrong, not the app), #1338 (audit part 136 report and suite, finished by me after the Builder's run ended at a heading) and its B3 correction (B3 was B1, per the Dua Lead).
+
+**Regression sweep:** audit parts 84–104 re-run (14 suites): all as before (load-speed 271/5 = part 94's recorded findings; manual-claims 3 known, J92 + the People way-back, which part 135 proved was the check). **Not yet re-run: the 188 suites of parts 67–83** (list: re-derive from the tables in `docs/reports/2026-10-24-audit-part6[7-9]*` … `part83*`; behaviour alone).
+
+**In flight / next:**
+1. **Builder part 137** (PR #1341, issue #1340, "WIP"): every tap target on the shared pages ≥36px — one global rule in `app/css/card-look.css` (a label wrapping a checkbox/radio is `inline-flex`, `min-height: 2.5rem`) plus `taglines.html`'s two `for` labels. **Not reviewed.** It conflicts with v12.129 in `app/taglines.html` (merge main in and resolve), and its `--mutate=small` misses taglines (extend it). It changes 100% heights on many pages: measure before/after, screenshots at 360–1440 en/bn, behaviour alone, the shared suites. Release as one version.
+2. **Builder part 138** (issue #1345, dispatched ~5:25 pm): Dua Study with larger text, REPORT ONLY; findings to the Dua Lead. Review when it lands (it may end with only a heading, as part 136 did: finish it from its suite).
+3. Keep the Builder busy (decision 91): candidates — the parts 67–83 sweep's failures, Seerah when a page exists, the "small" debt on Hadith/Dua pages after part 137.
+
+**Waiting on the Owner:** J105 demo; J104 ticks 6–10 (Dua R5+ wait on them); J106 question 5; J29 j29p102q, j29p120q, j29p121q, j29p126q, j29p127q, j29p128q, j29p129q.
+
+**Lessons (this session):**
+1. **Never export `QR_BASE` into a shell that then runs `qr-verify/run-all.sh`.** The QR checks read the harness's `QR_BASE` and then measure the MSA dev server instead of the QR build: 7 checks fail ("asma.html 404", "body has its own background") and look like a real QR break. Run QR's checks with `env -u QR_BASE`, in their own step. This cost me two false alarms.
+2. **A Builder run can end with only the report's heading** (part 136): its suite was complete; run it, read the failures one by one (they were a mis-specified check, not the app), and write the report yourself.
+3. **A finding attributed to one module may be another's**: part 136's "B3" (Dua word panel 3px wide) was the Person picker 3px past the screen, under the offscreen threshold. Test the suspected element's own edge before filing.
+4. **After a container restart: the worktrees and the scratchpad survive, background jobs and servers do not.** Push every review merge at once (I pushed `claude/review-*` branches for exactly this), then restart `serve.js` per worktree (ports 8083+, never 8082) and re-run only what was lost.
+5. Stacked Lead rounds (Dua R2→R3→R4) can be released as ONE version when each was measured and they share files: fewer QR rebuilds, one review.
+
+**Next session's opening message:**
+
+> Bismillah. You are the MSA Master Architect, taking over from session_01PL2xbMR1BT69RwFBnBc2w9 (hand119, 30 Oct ~6:30 pm Sydney). Your session title is "📌 (03) MSA Master Architect" (num128). Read CLAUDE.md, ARCHITECT.md, then docs/reports/2026-10-12-MMSA-SESSION-HANDOVER.md, its LATEST UPDATE block of 30 Oct 6:30 pm first. FIRST: test GitHub write (git push --dry-run origin HEAD:refs/heads/claude/access-probe); try add_repo QuranRevival/QuranRevival.github.io with push access (refused in the last session: if refused again, tell the PCA and carry on — QR rebuilds itself every 3 hours from MSA main). Read the PMS (https://claude.ai/artifact/PhW1KKX28qrqj9dE7Ha8dZ): meta/global General rules and p/mmsa; answer any new Owner comments. Set p/mmsa.sessionUrl (pin with if_version). Send the PCA (session_01PL2xbLtbpz1UznbKURDuvi) "PCA ▸ taken over" with every in-flight item, and ask it to repoint the MSA keep-alive. main is v12.130; next v12.131. In flight: (1) Builder part 137 (PR #1341, issue #1340): every tap target on the shared pages at least 36px via one rule in app/css/card-look.css — NOT reviewed; it conflicts with v12.129 in app/taglines.html and its --mutate=small misses taglines; review by measurement (100% before/after rects, screenshots 360–1440 en/bn, behaviour alone, the shared suites) and release as one version. (2) Builder part 138 (issue #1345): Dua Study with larger text, REPORT ONLY; findings to the Dua Lead; if its run ends at a heading, finish it from its suite. (3) The regression sweep of audit parts 67–83 (188 suites, not yet re-run). Keep the Builder busy (decision 91). J105, J104 ticks 6–10 and J106 question 5 wait on the Owner: build or assign nothing of them; j29p102q, j29p120q, j29p121q, j29p126q, j29p127q, j29p128q, j29p129q wait too. Leads: (03A) QR Lead session_01PL2xbLnQWhAjuwTKonE8zo; (03B) Hadith Lead session_01PL2xbJbrDFWUd52n8gRbHi; (03C) Dua Lead session_01PL2xbLZ3qhGHsuPuYANSx9 (R5+ wait on the Owner's J104 ticks); (03D) Health Lead session_01SPFtgC4vwVzby6PR12Z9ek. Review rule: 360, 390, 768, 820, 1024, 1180, 1440, English and Bangla, screenshots looked at, real-length data. Run behaviour.mjs alone. Merge main into a Builder or Lead branch built on an older main, read the merged files for doubled imports. Never export QR_BASE into the shell that runs qr-verify (run it with env -u QR_BASE). Build QR before bash tools/apps/qr-verify/run-all.sh. Push every review merge at once (container restarts lose background jobs). Never pkill -f. Keep-alive every 12 hours (ka122). No self wake-ups (cost86). Hand over at ~40% context (hand119). After "Rasulullah" always write "Sallallahu A'laihi Wa Sallam" (saw128). Write "Siyagah" in full.
+
+## LATEST UPDATE — 30 Oct 2026, ~8:15 am Sydney, session `session_01PL2xbMaCZwSEbt5HMEpqMN` (v12.120–v12.124 live on MSA AND on QR; HANDOVER) (superseded 30 Oct 6:30 pm)
 
 Took over ~3:07 am 30 Oct from `session_01PL2xbKywXMmQM2SMJMqYJV`. Handing over (hand119: long session, one container restart). PCA: `session_01PL2xbNQQz9q8SXyGUDksuc`. Leads unchanged: QR `session_01PL2xbLnQWhAjuwTKonE8zo`, Hadith `session_01PL2xbM3qDHBrLKbW6yzZKe`, Dua `session_01PL2xbKP72HWprM8HCvkdD2`, Health `session_01SPFtgC4vwVzby6PR12Z9ek`.
 
@@ -2177,3 +2214,7 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v12.124** (2026-10-29): The shared pages work with the phone's text made larger (audit part 132).
 - **v12.125** (2026-10-29): the Zab bar with larger text (audit part 133).
 - **v12.126** (2026-10-30): the Dua Study page (Dua round R1).
+- **v12.127** (2026-10-30): the Qur'an page follows the larger Zab bar (QR Lead).
+- **v12.128** (2026-10-30): Dua rounds R2-R4 (card menu and pop-ups, banners, poster and copy/share, plain save failures, Dua bookmarks open the Dua page).
+- **v12.129** (2026-10-30): the Taglines page with larger text (audit part 134).
+- **v12.130** (2026-10-30): Hadith Study fits a phone with long names (audit part 136 fixes, Hadith Lead).

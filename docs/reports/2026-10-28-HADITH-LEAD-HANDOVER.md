@@ -3,6 +3,43 @@
 Written by Hadith Lead session `01Q2HmCeWjo1vVYV5kgMBvC9` at about 77% context, on the PCA's word (hand119).
 The next session is titled **"📌 (03B) MSA - Hadith Lead"**.
 
+## HANDOVER, 3:41 pm 30 Oct (session `01PL2xbM3qDHBrLKbW6yzZKe` → a fresh "📌 (03B) MSA - Hadith Lead")
+
+Handed over at 40% context (cost86). **Nothing is half-built.** The branch `claude/hadith-lead-01q2` is at `main`
+(v12.127, merge `ac8ccea`) plus this file only.
+
+- **Done and live since 28 Oct:** **v12.121** (audit part 130 F1/F3/F5: `readFailedNote(err, retry)` in
+  `app/js/hadith-shared-ui.js` shows `plainMessageFor(err, { read: true })` + a 44px Try again on Hadith Books and the
+  Encyclopedia; the synthetic samples hide while the library fails; `resolveCategoryTitle` labels the 24 Bangla
+  category titles that HadeethEnc left as English copies). Suite `tools/i18n-verify/hadith-read-failed-browser.mjs`
+  100/0, `--prove` 6 of 6. Part 131 finding 20 (crumb under the Zab bar at 768, 200%): measured, no Hadith change, left
+  to the Architect's Zab-bar round.
+- **THE JOB IN HAND, NOT STARTED: audit part 136** (the Architect's message, 3:41 pm 30 Oct; report
+  `docs/reports/2026-10-30-audit-part136-hadith-study-large-text.md`, suite
+  `tools/i18n-verify/large-text-hadith-study-browser.mjs`, 201/0 per width, run ONE width at a time). Fix on
+  `hadith-study.html`, most important first:
+  - **B1** (ordinary text size, a 40-character person name): `#personSelect` (`width:auto`) is as wide as the longest
+    name and pushes the page sideways on a 360px phone. Fix as the shared pages do: `max-width:100%`, `min-width:0`,
+    and `keepSelectTitles` from `app/js/select-title.js` for the full name.
+  - **B2:** the 👥 `.assign-trigger` on an Encyclopedia card carries the same long name and runs to x 435; ellipsis
+    inside the screen, full name as `title`. **Small:** the 👥 list's checkboxes are 25px; make `label.assign-row` the
+    40px target. (`assign-picker.js` may be SHARED; check its owner before editing; if shared, ask the Architect.)
+  - Larger text only: **H1** `#hadithContentLang` cut at 200% on 360; **H2** the reader's "Chapters" pane title cut at
+    150/200 (no title); **H3** the Go-to mode select cut ("Standard number"); **H4** a narration snippet cut at 200% with
+    no title.
+  - When B1/B2 are fixed, the suite's named baselines B1/B2 stop occurring: **remove them in the same round**. Then hand
+    the branch to the Architect for release.
+- **Sessions now:** the MSA Architect is `session_01PL2xbMR1BT69RwFBnBc2w9`; the PCA is
+  `session_01PL2xbLtbpz1UznbKURDuvi`.
+- **Still with the Owner:** J106 question 5 (`n106e`, where the Subject lists are saved: A shared Firestore list,
+  recommended / B in the app's code / C this device only; unticked at 3:41 pm 30 Oct; then build round 2, "Add to
+  subject"), J97, the My Notes link, J06. The merged branch `claude/hadith-lead-01q2-next` stays until the Owner says.
+- **New General rule win130** (30 Oct): every demo opens in its own window ("↗ Open in its own window", `target=_blank`,
+  `rel=noopener`) and every mention of a demo gives its full https:// link.
+- **Sandbox:** the container restarts often: re-start `node serve.js` and check with `curl`; `node_modules` is a
+  git-ignored symlink to `/opt/node22/lib/node_modules` (Playwright), so re-create it if missing. Never commit while a
+  `--prove` run is going. `behaviour.mjs` 8e (Quran Go-to, Bengali digits) can fail once on timing and pass on a re-run.
+
 ## HANDOVER, 3:56 pm 28 Oct (session `01PL2xbJ9t1PMhK5GNBspYu6` → a fresh "📌 (03B) MSA - Hadith Lead")
 
 **Nothing is in flight.** Everything this session built is merged and live; the branch `claude/hadith-lead-01q2` is at

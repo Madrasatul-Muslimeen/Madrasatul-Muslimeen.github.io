@@ -33,8 +33,8 @@
     color: var(--hadith-ink); border-radius: 0.4rem; cursor: pointer; font-size: 0.9rem;
   }
   .hadith-tab.active { background: var(--hadith-ink); color: #fff; border-color: var(--hadith-ink); }
-  .hadith-lang-wrap { display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; min-width: 0; }
-  .hadith-lang-select { min-height: 40px; min-width: 0; padding: 0.3rem 0.5rem; border-radius: 0.35rem; border: 1px solid var(--hadith-field); }
+  .hadith-lang-wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; font-size: 0.85rem; min-width: 0; max-width: 100%; } /* with large text the picker takes a line of its own rather than being cut (audit part 136 H1) */
+  .hadith-lang-select { min-height: 40px; min-width: 0; max-width: 100%; padding: 0.3rem 0.5rem; border-radius: 0.35rem; border: 1px solid var(--hadith-field); }
 
   /* ---- Lists ---- */
   .hadith-list { display: flex; flex-direction: column; gap: 0.4rem; }
@@ -200,7 +200,7 @@
 .openiti-trail-back { margin-bottom: 0.4rem; position: sticky; top: 0; z-index: 5; background: #fff; border: 1px solid var(--hadith-rule); border-radius: 0.4rem; padding: 0.3rem 0.7rem; }
 .dua-also-more summary { min-height: 40px; display: flex; align-items: center; cursor: pointer; font-size: 0.85rem; font-weight: 600; color: var(--hadith-ink); }
 /* Round H-DB5: the Duas / Dua chapters switch, a dua card's bab heading, the pager and the progress buttons. */
-.dua-modes { display: inline-flex; gap: 4px; padding: 4px; margin: 0.4rem 0 0.6rem; border-radius: 0.6rem; background: #f1ede1; }
+.dua-modes { display: inline-flex; flex-wrap: wrap; max-width: 100%; gap: 4px; padding: 4px; margin: 0.4rem 0 0.6rem; border-radius: 0.6rem; background: #f1ede1; } /* audit part 136 A1: with larger text the row wraps instead of pushing "Dua Study ↗" off a phone */
 .dua-mode { min-height: 40px; padding: 0 1rem; border: 0; border-radius: 0.45rem; background: transparent; color: var(--hadith-ink); font: inherit; cursor: pointer; }
 .dua-mode[aria-pressed="true"] { background: var(--hadith-ink); color: #fff; font-weight: 600; }
 /* The link to the Dua module's own page (J104 1-A): a tab-sized link, never pressed. */
@@ -259,12 +259,17 @@ a.hadeethenc-study-btn[aria-disabled="true"], button.hadeethenc-study-btn[aria-d
    no copy of the picker's styles (each study page inlines its own), so the list rendered unstyled and always open.
    The same look as the Qur'an page's, scoped here, with its own dark ink on its white box. */
 .hadeethenc-study-item .claim-for-row { display: flex; align-items: center; position: relative; max-width: 100%; }
-.hadeethenc-study-item .assign-trigger-wrap { position: relative; flex-shrink: 0; }
+/* Audit part 136 B2: a long name is cut with an ellipsis inside the screen (the full names are the button's title), never pushed past it. */
+.hadeethenc-study-item .claim-for-row { min-width: 0; }
+.hadeethenc-study-item .assign-trigger-wrap { position: relative; min-width: 0; max-width: 100%; }
 .hadeethenc-study-item .assign-trigger {
   display: flex; align-items: center; gap: 0.3rem; min-height: 40px; max-width: 100%;
   background: #fff; border: 1.5px solid rgba(31,58,110,0.35); color: #1F3A6E; font-weight: 700; font-size: 0.85rem;
-  padding: 0.28rem 0.7rem; border-radius: 1.2rem; cursor: pointer; white-space: nowrap; font-family: inherit;
+  padding: 0.28rem 0.7rem; border-radius: 1.2rem; cursor: pointer; white-space: nowrap; font-family: inherit; min-width: 0;
 }
+.hadeethenc-study-item .assign-trigger [data-assign-trigger-label] { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.hadeethenc-study-item .assign-trigger > span { flex-shrink: 0; }
+.hadeethenc-study-item .assign-trigger > [data-assign-trigger-label] { flex-shrink: 1; }
 .hadeethenc-study-item .assign-trigger .caret { font-size: 0.65rem; opacity: 0.7; }
 .hadeethenc-study-item .assign-popover {
   position: absolute; top: calc(100% + 0.35rem); left: 0; right: auto; width: 12.5rem; max-width: calc(100vw - 32px);
@@ -275,7 +280,7 @@ a.hadeethenc-study-btn[aria-disabled="true"], button.hadeethenc-study-btn[aria-d
 .hadeethenc-study-item .assign-popover-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; color: #555; margin: 0 0 0.4rem; }
 .hadeethenc-study-item .assign-hint { font-size: 0.76rem; color: #555; margin: 0 0 0.55rem; }
 .hadeethenc-study-item .assign-list { display: flex; flex-direction: column; gap: 0.3rem; }
-.hadeethenc-study-item .assign-row { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; cursor: pointer; user-select: none; padding: 0.1rem 0; min-height: 32px; }
+.hadeethenc-study-item .assign-row { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; cursor: pointer; user-select: none; padding: 0.1rem 0; min-height: 40px; } /* the whole row is the 40px target (part 136) */
 .hadeethenc-study-item .assign-row input[type="checkbox"] { width: 1.05rem; height: 1.05rem; accent-color: #1F3A6E; cursor: pointer; flex-shrink: 0; }
 .hadeethenc-study-item .assign-row .who-name { flex: 1; }
 .hadeethenc-study-item .assign-row .who-tag { font-size: 0.66rem; color: #555; background: #f6f7fb; border: 1px solid #eee; border-radius: 0.6rem; padding: 0.02rem 0.4rem; }

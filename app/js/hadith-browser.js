@@ -867,6 +867,7 @@ async function renderHadeethEncStudyActions(container, id, title) {
     const paint = () => {
       const checked = [...pickerList.querySelectorAll("input:checked")];
       label.textContent = checked.length === 1 ? (checked[0].dataset.name ?? "1") : num(checked.length);
+      trigger.title = checked.map((c) => c.dataset.name).join(", "); // a long name is cut on a phone (part 136 B2): the full names stay readable
       trigger.setAttribute("aria-label", t("Record for: {names}", { names: checked.map((c) => c.dataset.name).join(", ") || "—" }));
     };
     trigger.addEventListener("click", (e) => {
@@ -1166,6 +1167,7 @@ function renderReaderHadithList(pane, passages, oi, localRefresh, conc) {
     const no = h.kind === "chapter-text" ? t("Chapter text") : h.kind === "editorial" ? t("Editor's note") : num(cite ?? h.number ?? "");
     row.appendChild(el("span", "hadith-reader-no", no));
     const snip = el("span", "hadith-reader-snippet", passageSnippet(h.text));
+    snip.title = snip.textContent; // two lines with large text cut it (part 136 H4); the whole snippet stays readable
     snip.lang = "ar"; snip.dir = "rtl";
     row.appendChild(snip);
     row.addEventListener("click", () => { oi.passageN = h.n; oi.phone = "text"; localRefresh(); });
@@ -1285,7 +1287,9 @@ function renderOpenitiChapterList(body, oi, index, localRefresh, conc = null, ba
       for (const [value, text] of [["standard", t("Standard number")], ["edition", t("This edition's number")]]) {
         const o = el("option", null, text); o.value = value; pick.appendChild(o);
       }
-      pick.addEventListener("change", () => { mode = pick.value; });
+      const titleIt = () => { pick.title = pick.options[pick.selectedIndex]?.textContent ?? ""; }; // cut with large text (part 136 H3)
+      titleIt();
+      pick.addEventListener("change", () => { mode = pick.value; titleIt(); });
       goBox.appendChild(pick);
     } else if (conc) {
       goBox.appendChild(el("span", "openiti-goto-hint", t("Standard number")));
