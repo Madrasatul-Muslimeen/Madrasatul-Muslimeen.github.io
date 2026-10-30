@@ -15,6 +15,9 @@ export const el = (tag, cls, text) => {
 };
 
 export const HADEETHENC_LANG_LABELS = { ar: "العربية", en: "English", bn: "বাংলা" };
+// A language named INSIDE a sentence is named in the reader's language ("— ইংরেজি দেখানো হচ্ছে", not "— English …"),
+// unlike a language picker, which names each language in its own script (bangla-sweep-newer-screens, 31 Oct 2026).
+export const langNameInProse = (lang) => ({ ar: t("Arabic"), en: t("English"), bn: t("Bangla") })[lang] ?? lang;
 
 // Audit part 130 (F1, F3, F5): a pane whose data could not be read (offline, most often) says so in the app's one
 // plain read-failure sentence (errors.js plainMessageFor with { read: true }, the same words the Dua tab and the
@@ -144,7 +147,7 @@ export function openitiTranslationFold(ids) {
   details.className = "hadeethenc-explanation openiti-translation";
   details.dataset.openitiTranslation = ids.join(",");
   const summary = document.createElement("summary");
-  summary.textContent = t("{lang} translation (HadeethEnc)", { lang: HADEETHENC_LANG_LABELS[want] ?? want });
+  summary.textContent = t("{lang} translation (HadeethEnc)", { lang: langNameInProse(want) });
   details.appendChild(summary);
   let loaded = false;
   details.addEventListener("toggle", () => {
@@ -160,9 +163,9 @@ export function openitiTranslationFold(ids) {
         if (!r) continue;
         const box = el("div", "hadith-translation");
         if (r.lang === "ar") {
-          box.appendChild(el("p", "hadith-fallback", t("No {lang} translation for this hadith. Showing the Arabic source only.", { lang: HADEETHENC_LANG_LABELS[want] ?? want })));
+          box.appendChild(el("p", "hadith-fallback", t("No {lang} translation for this hadith. Showing the Arabic source only.", { lang: langNameInProse(want) })));
         } else {
-          if (r.isFallback) box.appendChild(el("p", "hadith-fallback", t("No {lang} translation for this hadith. Showing {shown}.", { lang: HADEETHENC_LANG_LABELS[want] ?? want, shown: HADEETHENC_LANG_LABELS[r.lang] ?? r.lang })));
+          if (r.isFallback) box.appendChild(el("p", "hadith-fallback", t("No {lang} translation for this hadith. Showing {shown}.", { lang: langNameInProse(want), shown: langNameInProse(r.lang) })));
           const text = el("p", "hadith-translation-text", r.record.hadeeth ?? "");
           text.lang = r.lang;
           text.dataset.openitiTranslationText = id;
