@@ -300,14 +300,19 @@ const PAGES = [
 ].filter((p) => !arg("page") || p.id === arg("page"));
 const VIEWSEL = arg("views") ? arg("views").split(",") : null;
 
-// bn chrome that is legitimately Latin because it is DATA (a book's own transliterated title, a user's saved text) is listed here, never a button label
-const BN_DATA = /^$/;
+// bn: a name with a Latin word is either DATA (a book's own transliterated title, a source's proper name HadeethEnc / OpenITI, a language's own name:
+// listed as INFO "bn-latin-name (triage)" and read by hand) or an English CHROME word. The latter is decided by this list of the words the two pages
+// use for their own buttons, headings and states; any of them standing in a bn name is a DEFECT.
+const ENGLISH_CHROME = /\b(Close|Back|Next|Previous|Check|Search|Home|Modules|Operation|Bookmark|Bookmarks|Save|Open|Copy|Share|Poster|Meaning|Source|My Notes|Notes|Studied|Learning|Practising|Achieved|Mastered|Not started|Menu|Show|Hide|Print|Edit|Delete|Cancel|Done|Page|Members|Explore|Topics|Subjects|Encyclopedia|translation|narration|vowels|Go to|Occasions|Prophets|Books)\b/i;
 
 // ---- the three audits for one loaded state ----
 const audit = async (P, ctxInfo) => {
   const names = await P.evaluate(() => window.__A11Y.names());
   const nameDefects = names.filter((n) => !n.name).map((n) => `${n.key} has no accessible name`);
-  const latin = ctxInfo.lang === "bn" ? names.filter((n) => n.name && /[A-Za-z]{3,}/.test(n.name) && !BN_DATA.test(n.name)).map((n) => `${n.key} "${n.name.slice(0, 40)}"`) : [];
+  const bnNames = ctxInfo.lang === "bn" ? names.filter((n) => n.name && /[A-Za-z]{3,}/.test(n.name)) : [];
+  // (only short names: a long one is a row carrying a dua's or hadith's own text, which is data and is triaged by hand)
+  const english = bnNames.filter((n) => n.name.length <= 45 && ENGLISH_CHROME.test(n.name)).map((n) => `${n.key} "${n.name.slice(0, 50)}"`);
+  const latin = bnNames.filter((n) => !(n.name.length <= 45 && ENGLISH_CHROME.test(n.name))).map((n) => `${n.key} "${n.name.slice(0, 40)}"`);
   const con = await P.evaluate(() => window.__A11Y.contrast());
   const contrastDefects = con.fail.map((c) => `${c.key} "${c.txt}" ${c.ratio}:1 (need ${c.need}) ${c.fg} on ${c.bg} ${c.px}px`);
   const exp = await P.evaluate(() => window.__A11Y.expected());
@@ -333,7 +338,7 @@ const audit = async (P, ctxInfo) => {
     if (!d.fixed) { if (prevTop !== null && d.top < prevTop - 40) backJumps++; prevTop = d.top; }
   }
   const unreached = (await P.evaluate(() => window.__A11Y.unreached())).map((e) => `${e.key} "${(e.name || "").slice(0, 24)}"${e.tabindex < 0 ? " (tabindex=-1)" : ""}`);
-  return { nameDefects, latin, contrastDefects, contrastUnknown: con.unknown, unreached, ringBad, ringWeak, backJumps, outside, hasModal, stops: seq.length, expected: exp.length, capped: steps >= TAB_CAP };
+  return { nameDefects, english, latin, contrastDefects, contrastUnknown: con.unknown, unreached, ringBad, ringWeak, backJumps, outside, hasModal, stops: seq.length, expected: exp.length, capped: steps >= TAB_CAP };
 };
 
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
@@ -392,6 +397,8 @@ for (const pg of PAGES) for (const [w, h] of WIDTHS) for (const lang of LANGS) {
     const a = await audit(P, { lang });
     const where = `${w}${lang}`;
     check(`${tag}: (a) every visible control has a name`, a.nameDefects.length === 0, "\n      " + a.nameDefects.slice(0, 4).join("\n      "));
+    if (lang === "bn") check(`${tag}: (a) no chrome name is English`, a.english.length === 0, "\n      " + a.english.slice(0, 4).join("\n      "));
+    a.english.forEach((m) => addFinding(pg.id, v.id, "DEFECT bn-english-chrome", m, where));
     check(`${tag}: (b) Tab reaches every visible control`, a.unreached.length === 0, "\n      " + a.unreached.slice(0, 4).join("\n      "));
     check(`${tag}: (b) every focused control shows a ring`, a.ringBad.length === 0, "\n      " + a.ringBad.slice(0, 4).join("\n      "));
     check(`${tag}: (c) all text meets its ratio`, a.contrastDefects.length === 0, "\n      " + a.contrastDefects.slice(0, 4).join("\n      "));
