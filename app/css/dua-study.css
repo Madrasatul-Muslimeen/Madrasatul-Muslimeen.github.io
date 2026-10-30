@@ -12,8 +12,9 @@
 .dua-pd b { font-size: 0.95rem; max-width: 100%; overflow-wrap: anywhere; color: var(--card-heading, #1F3A6E); }
 .dua-pd[aria-expanded="true"] { border-color: var(--card-heading, #1F3A6E); }
 .dua-pull {
-  position: absolute; z-index: 40; top: calc(100% + 0.3rem); inset-inline-start: 0; width: max(100%, min(22rem, 92vw));
-  max-width: calc(100vw - 2rem); max-height: min(70vh, 32rem); overflow-y: auto; padding: 0.35rem;
+  /* Audit part 138 D3: as wide as its own button, so it never reaches past the screen; long names wrap. D5: dua-study.js
+     shortens it on opening so it ends inside the screen and scrolls within itself. */
+  position: absolute; z-index: 40; top: calc(100% + 0.3rem); inset-inline-start: 0; width: 100%; max-height: min(70vh, 32rem); overflow-y: auto; padding: 0.35rem;
   background: var(--card-bg-inset, #fff); border: 1px solid var(--card-line, #e2ddcd); border-radius: 0.6rem;
   box-shadow: 0 10px 26px rgba(20, 40, 80, 0.22); box-sizing: border-box;
 }
@@ -27,7 +28,8 @@
 .dua-pull-count { flex-shrink: 0; font-size: 0.8rem; color: var(--card-text-muted, #5f6470); font-variant-numeric: tabular-nums; }
 
 .dua-study-h { margin: 0.9rem 0 0.4rem; }
-.dua-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr)); gap: 0.5rem; }
+/* Audit part 138 D2: a column is never wider than the screen, so at large text the tiles go one per row. */
+.dua-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(13rem, 100%), 1fr)); gap: 0.5rem; }
 .dua-tile {
   display: flex; flex-direction: column; align-items: flex-start; gap: 0.2rem; min-height: 56px; min-width: 0; padding: 0.6rem 0.8rem;
   border: 1px solid var(--card-line, #e2ddcd); border-radius: 0.6rem; background: var(--card-bg-inset, #fff); color: var(--card-text, #1B2A41);

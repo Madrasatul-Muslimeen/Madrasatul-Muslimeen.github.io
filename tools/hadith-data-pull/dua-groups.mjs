@@ -100,10 +100,15 @@ export function duaTitle(card, he) {
   return null;
 }
 
-/** Pure: a title without the quotation marks and the trailing comma or colon HadeethEnc's titles sometimes carry. */
+/**
+ * Pure: a title without the quotation marks and the trailing comma or colon HadeethEnc's titles sometimes carry, and
+ * without a dangling Bangla "is" (হচ্ছে, হলো, হল) left where HadeethEnc's title is the first half of a sentence:
+ * dua 2's "সাইয়্যেদুল ইস্তেগফার হচ্ছে" ("Sayyid al-Istighfar is") read as cut off (Dua audit, 30 Oct 2026).
+ */
 export function cleanTitle(s) {
   if (typeof s !== "string") return "";
-  return s.trim().replace(/^[“”‘’"'«»\s]+/u, "").replace(/[“”‘’"'«»,،:;।.\s]+$/u, "").trim();
+  const trim = (x) => x.trim().replace(/^[“”‘’"'«»\s]+/u, "").replace(/[“”‘’"'«»,،:;।.\s]+$/u, "").trim();
+  return trim(trim(s).replace(/\s+(?:হচ্ছে|হলো|হল)$/u, ""));
 }
 
 function readHadeethencTitles() {

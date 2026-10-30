@@ -74,6 +74,16 @@ async function run(mutation) {
       const bad = entries.find(([, x]) => !x.en || x.en.length > 90 || (x.bn && x.bn.length > 110) || [x.en, x.bn ?? "x"].some((s) => /^[“”‘’"'«»]|[“”‘’"'«»,،:;।.]$/u.test(s)));
       if (bad) throw new Error(JSON.stringify(bad));
     });
+    await check("no Bangla title ends on a dangling \"is\" (হচ্ছে / হলো / হল), as dua 2's once did", () => {
+      const bad = entries.find(([, x]) => /\s(?:হচ্ছে|হলো|হল)$/u.test(x.bn ?? ""));
+      if (bad) throw new Error(JSON.stringify(bad));
+    });
+    await check("cleanTitle drops a dangling Bangla \"is\" and keeps one inside a title", async () => {
+      const { cleanTitle } = await import("../hadith-data-pull/dua-groups.mjs");
+      const got = [cleanTitle("সাইয়্যেদুল ইস্তেগফার হচ্ছে"), cleanTitle("“এটা হলো দুআ”,"), cleanTitle("যা হল ভালো")];
+      const want = ["সাইয়্যেদুল ইস্তেগফার", "এটা হলো দুআ", "যা হল ভালো"];
+      if (JSON.stringify(got) !== JSON.stringify(want)) throw new Error(JSON.stringify(got));
+    });
     await check("Prophets keep their titles in both languages", () => { if (group("prophets").items.some((p) => !p.title?.en || !p.title?.bn)) throw new Error("missing"); });
     await check("the data file credits HadeethEnc for the titles", () => { if (!DATA.credits.some((c) => /titles.*HadeethEnc/i.test(c))) throw new Error("no credit"); });
     await check("the bottom banner is a Dua-owned WebP file", () => { const b = fs.readFileSync(BANNER); if (b.toString("latin1", 8, 12) !== "WEBP") throw new Error("not webp"); });
