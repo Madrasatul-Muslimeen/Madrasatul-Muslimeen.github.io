@@ -186,7 +186,9 @@ if (want("start")) {
     await page.waitForSelector("[data-bm-back]", { state: "visible", timeout: 15000 }).catch(() => {});
     const bk = await page.evaluate(() => { const b = document.querySelector("[data-bm-back]"); return { text: b?.textContent.replace(/\s+/g, " ").trim(), url: location.pathname.split("/").pop() }; });
     check(`[${tag}] The way back: Home ▾ → About shows a "← Back" button (the Manual says "← Back to …"; a menu link's button reads just "← Back" -- Manual wording to correct)`, bk.url === "about.html" && /^←\s*Back\s*✕?$/.test(bk.text || ""), JSON.stringify(bk));
-    await page.click("[data-bm-back]"); await page.waitForTimeout(1500);
+    // Audit part 135: [data-bm-back] is the ROW (← button + ✕). Below 600px the button's words are hidden, so the row's centre
+    // falls in the gap between ← and ✕ (elementFromPoint there is the row itself) and clicking it presses nothing. Press the button.
+    await page.click("[data-bm-back-link]"); await page.waitForTimeout(1500);
     check(`[${tag}] The way back: pressing it returns to the People page`, page.url().includes("/people.html"), page.url());
     await ctx.close();
   }
