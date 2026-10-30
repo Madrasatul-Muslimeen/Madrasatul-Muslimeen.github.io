@@ -24,7 +24,7 @@ The Builder's 100% checks failed at every width (3 / 3 / 21 / 2 / 2 failures). R
    since v12.125 (part 133) every page keeps room at its end for the bar, so any row can be scrolled clear of it. The 100%
    overlap check now names this **Z** and leaves it out, the same exclusion `large-text-shared-pages-browser.mjs` makes.
 2. **Real findings at ordinary text size**, now named so the suite is green while they stand (each is INFO, printed under its
-   name, and any OTHER 100% finding still fails): **B1** (the Builder's), **B2** and **B3** below. A page widened by B1/B2 can
+   name, and any OTHER 100% finding still fails): **B1** (the Builder's) and **B2** below. A page widened by B1/B2 can
    open scrolled sideways, so its left-hand controls sit at a negative x: counted under the same name.
 
 After the corrections: **201 passed, 0 failed at each of the five widths** (360, 390, 768, 1024, 1440), positive controls
@@ -44,8 +44,10 @@ included.
   to x 435 on a 360px phone (650 at 200%); opening the card then leaves the page scrolled sideways, with Home, the tabs and the
   "HadeethEnc" crumb at negative x. *Should:* the name is cut with an ellipsis inside the screen and shows in full as the
   button's title.
-- **B3 (D). A Dua word's Word card panel makes the page 3px wider than a 390px phone** (scrollWidth 393). *Should:* the panel
-  fits (`max-width: 100%`, its links wrap).
+- ~~**B3 (D).** A Dua word's Word card panel makes the page 3px wider than a 390px phone.~~ **Withdrawn (30 Oct, the Dua Lead's
+  measurement):** the only element past the edge in that view is the Person picker (16..393), 3px over — under the offscreen
+  measure's threshold, so the first version of the suite filed the sideways scroll under the Dua word. It is **B1**. The suite
+  now tests the picker's own right edge (any amount) and names it B1; with `--names=short` the Dua word view is clean.
 - **Small (H).** The 👥 list's check boxes are 25px tall (`label.assign-row > input`), at every size. *Should:* the row's label
   is the 40px tap target (part 137 does this on the shared pages).
 
@@ -76,7 +78,7 @@ measurements stand on their own.
 ## Hand-offs
 
 - Hadith Lead: B1, B2, Small, H1–H4.
-- Dua Lead: B3.
+- Dua Lead: nothing (B3 withdrawn; it was B1).
 - The Architect: A1 (fixed in v12.128).
 
 ## Run it
