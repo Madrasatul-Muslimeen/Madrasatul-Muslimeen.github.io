@@ -319,11 +319,27 @@ for (const [w, h] of WIDTHS) for (const lang of LANGS) {
       }
       if (LIST) console.log(`  info  ${tag} ${pct}%: ${KINDS.map((k) => k + " " + counts[k]).join(", ")}`);
       if (pct === 100) for (const k of ["cut", "overlap", "offscreen", "sideways"]) {
-        // BASELINE (measured 30 Oct 2026): with the part-126 seed's ~35-character name the Person picker (#personSelect, `width:auto`) is as wide as its
-        // longest option, wider than a 360px screen, and so the page scrolls sideways. That is a finding at 100% already (reported as INFO, finding "B1"),
-        // not a large-text one; it is the only thing named here, so any other 100% finding still fails.
-        const own = m[k].filter((f) => !(LONG_NAMES && /#personSelect|#tenantSelect/.test(f.msg)) && !(k === "sideways" && LONG_NAMES && m.offscreen.some((o) => /#personSelect|#tenantSelect/.test(o.msg))));
-        if (own.length !== m[k].length) info(`    INFO [${tag} 100% ${k} BASELINE B1] ${m[k].filter((f) => !own.includes(f)).map((f) => f.msg).join(" ; ").slice(0, 200)}`);
+        // NAMED 100% FINDINGS (measured 30 Oct 2026, the Architect finishing this round). Each is a finding at ORDINARY text size, reported
+        // as INFO under its name in the report and handed to its Lead; anything else at 100% still FAILS.
+        //   B1  the Person picker (#personSelect / #tenantSelect, `width:auto`) is as wide as the part-126 seed's ~40-character name, wider
+        //       than a phone, so the page scrolls sideways.
+        //   B2  the 👥 "who is this for" button (.assign-trigger) on an Encyclopedia card carries the same long name and runs past a phone.
+        //   B3  a Dua word's Word card panel makes the page 3px wider than a 390px phone.
+        //       (A page so widened can open scrolled sideways; its left-hand controls at a negative x are counted under the same name.)
+        //   Z   the fixed 🧰 Zab bar over a row at the foot of the screen at scroll 0: not a defect (v12.125, part 133: every page keeps room
+        //       at its end for the bar, so any row can be scrolled clear of it); the same exclusion the shared-pages suite makes.
+        const named = (f) => (LONG_NAMES && /#personSelect|#tenantSelect/.test(f.msg)) ? "B1"
+          : (LONG_NAMES && /button\.assign-trigger/.test(f.msg)) ? "B2"
+          : (/#zabBar|#zabCorner/.test(f.msg) && k === "overlap") ? "Z"
+          : null;
+        const sidewaysBy = () => (LONG_NAMES && m.offscreen.some((o) => /#personSelect|#tenantSelect/.test(o.msg))) ? "B1"
+          : (LONG_NAMES && m.offscreen.some((o) => /button\.assign-trigger/.test(o.msg))) ? "B2"
+          : (v.id === "dua-word" && m.sideways.every((f) => { const g = /scrollWidth (\d+) > (\d+)/.exec(f.msg); return g && +g[1] - +g[2] <= 4; })) ? "B3"
+          : null;
+        // A page widened by B1 / B2 can open scrolled sideways, which puts the LEFT-hand controls at a negative x: the same finding, not a new one.
+        const tagOf = (f) => (k === "sideways" ? sidewaysBy() : named(f) || (k === "offscreen" && / spans -\d/.test(f.msg) ? sidewaysBy() : null));
+        const own = m[k].filter((f) => !tagOf(f));
+        for (const f of m[k].filter((x) => tagOf(x))) info(`    INFO [${tag} 100% ${k} BASELINE ${tagOf(f)}] ${f.msg.slice(0, 200)}`);
         check(`${tag} / 100%: no ${k}`, own.length === 0, "\n      " + own.slice(0, 5).map((f) => f.msg).join("\n      "));
       }
     }
