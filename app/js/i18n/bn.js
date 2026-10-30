@@ -4578,6 +4578,7 @@ export const BN = {
   "Open Dua {n} ›": "দুআ {n} খুলুন ›",
   "Source: Hisn al-Muslim, typed by Abdellah Sellam (MIT licence).": "সূত্র: হিসনুল মুসলিম, আব্দুল্লাহ সাল্লামের টাইপ করা (MIT লাইসেন্স)।",
   "Open in Quran Study ↗": "কুরআন স্টাডিতে খুলুন ↗",
+  "Dua Study ↗": "দুআ স্টাডি ↗",
   // Dua module, build round R2 (PCF MSA J104: D22, D11, D12, D05).
   "Top banner · text to come": "উপরের ব্যানার · লেখা পরে আসবে",
   "Dua Card menu": "দুআ কার্ডের মেনু",

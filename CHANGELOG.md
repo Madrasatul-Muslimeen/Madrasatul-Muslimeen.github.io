@@ -22951,3 +22951,22 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 - Also merged since v12.123 (docs only): PR #1326, the Dua module plan (`docs/governance/dua-module-plan.md`, rule dua130) with its CLAUDE.md pointer; its update for rule dua131 (demo in its own window) rides this release.
 - Not in this round: the 🧰 Zab bar with larger text (findings 1–2, 20–21), taglines (19).
 - Nothing stored, no Rules changed.
+
+## v12.125 — 30 Oct 2026 — The 🧰 Zab bar with larger text (audit part 133, part 131 findings 1, 2, 20, 21)
+
+- **Found by audit part 131** (PR #1319): with the root text at 150%/200% the 🧰 bar and its phone corner stayed at fixed px (44px bar, 14px text, 22px glyph), so they became the smallest thing on the page, and the spacer and scroll padding could no longer keep the foot of a page clear of the taller bar.
+- `app/js/zab-bar.js` only: the bar (2.75rem tall, .875rem text, 2.5rem buttons), corner (3rem, 1.375rem glyph), dock button (2.5rem), spacer (2.75rem / 4.25rem), `scroll-padding-bottom` (4.75rem / 8rem), and the panel, toast and lifted items all use one rem bar height. Same size at 100% (the Builder's probe: 30 page/width/language combinations identical).
+- `tools/i18n-verify/large-text-shared-pages-browser.mjs`: the bar's and corner's text grow with the root; every ordinary control brought into view as Tab does is clear of the bar or corner; the spacer equals the bar; `--mutate=zabold` and `--mutate=zabnospace`. The old scroll-0 overlap check no longer counts a fixed bar over content (a fixed bar always paints over the screen's foot; what matters is that the control can be brought clear).
+- **Measured (Architect):** the suite 2015/0 with the reach pass; mutations zabold 536, zabnospace 326, old 107 failures; `behaviour.mjs` alone 972/0; zab-bar 370/0; zab-dock 74/0; floating-overlays-reach 360/0; shared-tools-long-names 202/0; stub-parity 4/0; QR builds, qr-verify green. Screenshots looked at (Monitor 768 en 200%, People 768 bn 200%, Records 390 bn 150%, Monitor 1440 en 100%).
+- Built by the Builder (run 2261, PR #1332). Also merged since v12.124 (docs only): PR #1330 (Dua plan approved, D21/D22, demo v1.04 sources), PR #1333 (Dua Lead handover 2).
+- **QR change notice:** `app/js/zab-bar.js` is one of the scripts QR copies byte for byte.
+- Nothing stored, no Rules changed.
+
+## v12.126 — 30 Oct 2026 — Dua Study, the Dua module's own page (Dua round R1: D19, D01, D21, D02, D04)
+
+- **The Owner's approval:** PCF MSA J104 question 5, about 7:45 am 30 Oct: "Plan me and start build" (with D21 and D22 added). Built by the Dua Lead on `claude/dua-r1`; report `docs/reports/2026-10-30-dua-r1-build.md`.
+- New page `app/dua-study.html` ("MSA — Dua Study"), `app/js/dua-study.js`, `app/css/dua-study.css`; data `tools/hadith-data-pull/output/dua/groups.json` from new `tools/hadith-data-pull/dua-groups.mjs` (nothing moved; QR's Hadith paths unchanged).
+- D19 the page; D01 the seven groups; D21 the groups and their parts as pull-down menus (Occasions 15 parts, Hadith Books 11); D02 numbered lists in the group's own order; D04 every Dua in its Dua Card with ‹ › through its group and ← Back to the group. 78 Hisn al-Muslim adhkār show "the same dua in the Hadith books" (computer-matched, marked to be checked). Sahaba, Salaf and Ulama are empty and say why (J104 tick 6 waits on the Owner).
+- **Shared parts, by the Architect:** "Dua Study" in the Modules menu (`app/js/nav.js`); a "Dua Study ↗" link (`./dua-study.html?back=1`) in Hadith Study's Dua tab (`app/js/dua-browser.js` renderDua, `.dua-study-link` in `app/css/hadith.css`); `bn.js` +33 strings (no duplicates). `app/sw.js` needs nothing: `/app/` files are kept on use and the groups file is under the Hadith data kept since v12.120.
+- **Measured (Architect, on v12.125):** dua-study-page 132/0; dua-tab 63/0; dua-load-failed 42/0; dua-note-bookmark 35/0; dua-check 49/0; dua-words 37/0; unchecked-pages screen audit 963/0; navcheck green; zab-bar 370/0; `behaviour.mjs` alone 972/0; apps-build-check 48/0; QR builds, qr-verify 28/28. Screenshots at 360, 390, 768, 820, 1024, 1180, 1440, en and bn: the group tiles, the open parts menu and a Dua Card; nothing scrolls sideways.
+- Nothing stored, no Rules changed.

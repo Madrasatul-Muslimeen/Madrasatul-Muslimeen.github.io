@@ -2175,3 +2175,5 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v12.122** (2026-10-29): On the Qur'an Study landing the way back has a row of its own above the tabs (audit part 127, QR Lead).
 - **v12.123** (2026-10-29): The Qur'an Study landing works with the phone's text made larger (audit part 131 findings 3-4, QR Lead).
 - **v12.124** (2026-10-29): The shared pages work with the phone's text made larger (audit part 132).
+- **v12.125** (2026-10-29): the Zab bar with larger text (audit part 133).
+- **v12.126** (2026-10-30): the Dua Study page (Dua round R1).
