@@ -7,7 +7,40 @@ v10.28). Read `CLAUDE.md` first. The prompt that starts the next session is
 
 This session was summarised once (its context compacted), which is why it hands over here.
 
-## LATEST UPDATE — 30 Oct 2026, ~6:30 pm Sydney, session `session_01PL2xbMR1BT69RwFBnBc2w9` (v12.125–v12.130 live on MSA; HANDOVER) — READ THIS FIRST
+## LATEST UPDATE — 30 Oct 2026, ~10:45 pm Sydney, session `session_01PL2xbLHf8J8PcAiWWgNEWD` (v12.131–v12.134 live on MSA; HANDOVER) — READ THIS FIRST
+
+Took over ~6:30 pm 30 Oct from `session_01PL2xbMR1BT69RwFBnBc2w9`. Handing over at ~40% context (hand119). **PCA: `session_01PL2xbNViE9udUe3FUJjKBE`** (moved 6:46 pm; the older `…LtbpzUznbKURDuvi` is retired). Leads: QR `session_01PL2xbLnQWhAjuwTKonE8zo`; Hadith `session_01PL2xbJbrDFWUd52n8gRbHi`; **Dua `session_01PL2xbK8HnnaBgqeNJMJs36`** (new since 6:44 pm); Health `session_01SPFtgC4vwVzby6PR12Z9ek`.
+
+**State:** `main` is **v12.134**. Next release **v12.135**. **add_repo QuranRevival was REFUSED twice this session** (push AND read, "Access Added As A Means") — do not retry it; QR cannot be dispatched or inspected from here. **QR stalled for ~6 hours** (last deploy 01:06Z = v12.125; the 03:17Z and 06:17Z schedules deployed nothing), then caught up by itself at 10:08Z (v12.132). Check `curl -sS https://quranrevival.github.io/app/js/qr-version.js` after each release; if it lags more than one schedule, tell the PCA (it holds the Owner's one-tap "Run workflow" line). The build itself is proven locally: `node tools/apps/apps-build-check.mjs && node tools/apps/build-app.mjs qr`.
+
+**Owner messages this session:** none. No new Owner comments in the PCF.
+
+**Released this session (each measured here; `behaviour.mjs` alone 972/0; QR builds; PCF Done line + What's New + monitor; PCA told):**
+- v12.131 (PR #1351) Builder part 137: tick-box labels 40px. **The Builder's GLOBAL `label:has(> input)` rule in `card-look.css` was narrowed** to `.folder-toolbar-check, label:has(> #showRetiredCk)`: measured on all 30 card-look pages, it changed ten labels on the FROZEN `quranrevival.html` and nothing on the eight `admin-touch` pages (`admin-touch.css` line 9 already does it). `--mutate=small` now covers `for` labels (taglines).
+- v12.132 (PR #1352) the Dua Lead's part-138 fixes D1–D5 + D05 A1 (Dua 2's Bangla title) + Dua Lead handover 3.
+- v12.133 (PR #1353) Builder part 139: Person/Tenant pickers fit on 21 pages; new `person-picker-fit-browser.mjs` (1290/0; `--mutate=wide` 30 FAIL).
+- v12.134 the Dua Lead's Dua Study pickers (part-138 A1; `claude/dua-person-picker-2`): large-text-dua-study 360 en 186/0, 390 363/0; the old page fails 88 under it.
+- Docs only: #1346 (part 138 report, merged by the unattended Architect before I arrived).
+
+**In flight / next:**
+1. **Builder part 140** (issue #1354, dispatched ~10:00 pm): the 🧰 Zab bar at 150/200% text, REPORT ONLY + a suite. Review when it lands; any `zab-bar.js` fix is the Architect's (QR-pinned: send the PCA a change notice).
+2. **The regression sweep of audit parts 67–83** was started in a background agent of this session at ~7:35 pm; **its result did not arrive before handover** — re-run it (re-derive the list from `docs/reports/*audit-part6[7-9]*` … `part83*`; one suite at a time; behaviour alone).
+3. Keep the Builder busy (decision 91): candidates — part 140's defects; tap targets under 36px on Hadith/Dua pages (their Leads'); a Seerah page when the Owner starts it.
+
+**Waiting on the Owner:** J105 demo; J104 ticks 6–10 (Dua R5+); J106 question 5; J29 j29p102q, j29p120q, j29p121q, j29p126q, j29p127q, j29p128q, j29p129q.
+
+**Lessons (this session):**
+1. **Check that your review server really started.** `PORT=8085 node serve.js` died with EADDRINUSE (something else held 8085) and every "after" run went to another tree — 8 false failures that looked like a regression. `curl` a changed file from the port before measuring, and read the serve log.
+2. **A global CSS rule in a shared file reaches the frozen pages.** Measure every page that links the file (rects + computed display, rule deleted through the CSSOM), not only the pages the round named.
+3. **A "before" table can be the check's error, not the app's**: part 137's "13px" on eight pages was the suite measuring the box; their labels were already 40px.
+4. **Equal rects with the ordinary fixture prove little when the control is hidden** (single-tenant pickers are 0×0); use the round's own long-name seed.
+
+**Next session's opening message:**
+
+> Bismillah. You are the MSA Master Architect, taking over from session_01PL2xbLHf8J8PcAiWWgNEWD (hand119, 30 Oct ~10:45 pm Sydney). Your session title is "📌 (03) MSA Master Architect" (num128). Read CLAUDE.md, ARCHITECT.md, then docs/reports/2026-10-12-MMSA-SESSION-HANDOVER.md, its LATEST UPDATE block of 30 Oct 10:45 pm first. FIRST: test GitHub write (git push --dry-run origin HEAD:refs/heads/claude/access-probe). Do NOT retry add_repo QuranRevival (refused twice for push and read); check QR's live version with curl after each release and tell the PCA if it lags. Read the PMS (https://claude.ai/artifact/PhW1KKX28qrqj9dE7Ha8dZ): meta/global General rules and p/mmsa; answer any new Owner comments. Set p/mmsa.sessionUrl (pin with if_version). Send the PCA (session_01PL2xbNViE9udUe3FUJjKBE) "PCA ▸ taken over" with every in-flight item, and ask it to repoint the MSA keep-alive. main is v12.134; next v12.135. In flight: (1) Builder part 140 (issue #1354): the Zab bar at 150/200% text, REPORT ONLY + suite; review; any zab-bar.js fix is yours, with a QR change notice. (2) The regression sweep of audit parts 67–83 (re-run it; the last session's background agent did not report). Keep the Builder busy (decision 91). J105, J104 ticks 6–10 and J106 question 5 wait on the Owner: build or assign nothing of them; j29p102q, j29p120q, j29p121q, j29p126q, j29p127q, j29p128q, j29p129q wait too. Leads: (03A) QR Lead session_01PL2xbLnQWhAjuwTKonE8zo; (03B) Hadith Lead session_01PL2xbJbrDFWUd52n8gRbHi; (03C) Dua Lead session_01PL2xbK8HnnaBgqeNJMJs36; (03D) Health Lead session_01SPFtgC4vwVzby6PR12Z9ek. Review rule: 360, 390, 768, 820, 1024, 1180, 1440, English and Bangla, screenshots looked at, real-length data; a shared CSS change is measured on every page that links the file. Curl a changed file from your review server's port before measuring (a port already in use silently serves another tree). Run behaviour.mjs alone. Merge main into a Builder or Lead branch built on an older main, read the merged files for doubled imports. Never export QR_BASE into the shell that runs qr-verify (run it with env -u QR_BASE). Build QR before bash tools/apps/qr-verify/run-all.sh. Push every review merge at once. Never pkill -f. Keep-alive every 12 hours (ka122). No self wake-ups (cost86). Hand over at ~40% context (hand119). After "Rasulullah" always write "Sallallahu A'laihi Wa Sallam" (saw128). Write "Siyagah" in full.
+
+
+## LATEST UPDATE — 30 Oct 2026, ~6:30 pm Sydney, session `session_01PL2xbMR1BT69RwFBnBc2w9` (v12.125–v12.130 live on MSA; HANDOVER) (superseded 30 Oct 10:45 pm)
 
 Took over ~8:14 am 30 Oct from `session_01PL2xbMaCZwSEbt5HMEpqMN`. Handing over (hand119: long session, two container restarts). **PCA: `session_01PL2xbLtbpz1UznbKURDuvi`** (the older handover blocks name an earlier PCA). Leads: QR `session_01PL2xbLnQWhAjuwTKonE8zo`; **Hadith `session_01PL2xbJbrDFWUd52n8gRbHi`** (new, since 3:45 pm); **Dua `session_01PL2xbLZ3qhGHsuPuYANSx9`** (new); Health `session_01SPFtgC4vwVzby6PR12Z9ek`.
 
@@ -2221,3 +2254,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v12.131** (2026-10-30): audit part 137 (tick-box tap targets).
 - **v12.132** (2026-10-30): the Dua Lead's audit part 138 fixes and D05 A1.
 - **v12.133** (2026-10-30): audit part 139 (person picker fit).
+- **v12.134** (2026-10-30): the Dua Lead's Dua Study picker fix (part 138 A1).

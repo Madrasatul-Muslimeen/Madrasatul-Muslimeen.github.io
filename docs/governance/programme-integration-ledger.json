@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "12.133",
+    "version": "12.134",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -5873,8 +5873,20 @@
     {
       "version": "12.133",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Audit part 139: the Person and Tenant pickers never wider than the screen on 21 pages; person-picker-fit suite.",
+      "integration": {
+        "authorizedOn": "2026-10-30",
+        "integratedOn": "2026-10-30",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.134",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Dua Study's Person and Tenant pickers fit a phone with a long name (part 138 A1), Dua Lead.",
       "integration": {
         "authorizedOn": "2026-10-30",
         "integratedOn": "2026-10-30",
@@ -5883,8 +5895,9 @@
       }
     }
   ],
-  "nextUnallocated": "12.134",
+  "nextUnallocated": "12.135",
   "nextUnallocatedNote": [
+    "v12.134 was allocated to the Dua Lead's Dua Study picker fix (part 138 A1), 2026-10-30.",
     "v12.133 was allocated to audit part 139 (person picker fit), 2026-10-30.",
     "v12.132 was allocated to the Dua Lead's audit part 138 fixes and D05 A1, 2026-10-30.",
     "v12.131 was allocated to audit part 137 (tick-box tap targets), 2026-10-30.",
