@@ -193,6 +193,10 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
     fill(box);
     btn.after(box);
     btn.setAttribute("aria-expanded", "true");
+    // Audit part 138 D5: with large text the menu could run past the bottom of the screen; it ends inside it and scrolls
+    // within itself (never shorter than about four rows).
+    const room = innerHeight - box.getBoundingClientRect().top - 8;
+    if (room < box.offsetHeight) box.style.maxHeight = `${Math.max(room, Math.min(box.offsetHeight, 12 * parseFloat(getComputedStyle(box).fontSize)))}px`;
     const outside = (e) => { if (!box.contains(e.target) && !btn.contains(e.target)) closePull(); };
     const esc = (e) => { if (e.key === "Escape") { closePull(); btn.focus(); } };
     document.addEventListener("click", outside, true);
