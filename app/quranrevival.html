@@ -15171,9 +15171,13 @@
       // QR Lead (24 Oct 2026, the MSA Architect's sweep, audit part 73): the Zab bar (loaded after the page since v12.38) lifts
       // #dock by moving it, not resizing it, so the ResizeObserver below never heard of it and a window first sized for the
       // un-lifted dock kept its bottom edge (and its s / se / sw handles) under the tab row. Its switching on or off refits too.
+      // QR Lead (30 Oct 2026, v12.125): the bar is sized in rem now, so larger text makes it TALLER, which lifts #dock further
+      // without resizing it either -- the bar's own size is watched too.
       { let zabOn = document.body.classList.contains("zab-bar-on");
-        new MutationObserver(() => { const on = document.body.classList.contains("zab-bar-on"); if (on !== zabOn) { zabOn = on; queueFit(); } })
-          .observe(document.body, { attributes: true, attributeFilter: ["class"] }); }
+        const zabRO = new ResizeObserver(queueFit), watchZab = () => { const zb = document.getElementById("zabBar"); if (zb && !zabRO.__on) { zabRO.observe(zb); zabRO.__on = true; } };
+        new MutationObserver(() => { const on = document.body.classList.contains("zab-bar-on"); if (on !== zabOn) { zabOn = on; watchZab(); queueFit(); } })
+          .observe(document.body, { attributes: true, attributeFilter: ["class"] });
+        watchZab(); }
       const fitRO = new ResizeObserver(queueFit);
       fitRO.observe(document.getElementById("wheelSection"));
       fitRO.observe(document.getElementById("dock"));
@@ -15215,9 +15219,13 @@
       // QR Lead (24 Oct 2026, the MSA Architect's sweep, audit part 73): the Zab bar (loaded after the page since v12.38) lifts
       // #dock by moving it, not resizing it, so the ResizeObserver below never heard of it and a window first sized for the
       // un-lifted dock kept its bottom edge (and its s / se / sw handles) under the tab row. Its switching on or off refits too.
+      // QR Lead (30 Oct 2026, v12.125): the bar is sized in rem now, so larger text makes it TALLER, which lifts #dock further
+      // without resizing it either -- the bar's own size is watched too.
       { let zabOn = document.body.classList.contains("zab-bar-on");
-        new MutationObserver(() => { const on = document.body.classList.contains("zab-bar-on"); if (on !== zabOn) { zabOn = on; queueFit(); } })
-          .observe(document.body, { attributes: true, attributeFilter: ["class"] }); }
+        const zabRO = new ResizeObserver(queueFit), watchZab = () => { const zb = document.getElementById("zabBar"); if (zb && !zabRO.__on) { zabRO.observe(zb); zabRO.__on = true; } };
+        new MutationObserver(() => { const on = document.body.classList.contains("zab-bar-on"); if (on !== zabOn) { zabOn = on; watchZab(); queueFit(); } })
+          .observe(document.body, { attributes: true, attributeFilter: ["class"] });
+        watchZab(); }
       const fitRO = new ResizeObserver(queueFit);
       fitRO.observe(exploreView);
       fitRO.observe(document.getElementById("exploreCtlBar"));
