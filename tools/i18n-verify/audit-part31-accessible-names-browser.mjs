@@ -31,7 +31,7 @@ const PAGES = ["notes", "journey-map", "bookmarks", "records", "monitor", "hadit
 
 // Runs in the page. Returns { attrs, unnamed, entities } for everything currently in the DOM.
 function scan(bn) {
-  const out = { attrs: [], unnamed: [], entities: [] };
+  const out = { attrs: [], unnamed: [], entities: [], doubled: [] };
   const desc = (e) => (e.tagName.toLowerCase() + (e.id ? "#" + e.id : "") + (e.className && typeof e.className === "string" ? "." + e.className.trim().split(/\s+/)[0] : "")).slice(0, 48);
   const latin = (s) => /[A-Za-z]{3,}/.test(s.replace(/Mapping My Journey|https?:\/\/\S*|e\.g\.|MMSA/g, "")); // product names and URL hints stay Latin
   const ent = /&(?:[a-z]+|#\d+);/i;
@@ -41,7 +41,12 @@ function scan(bn) {
       const v = e.getAttribute(a); if (v == null) continue;
       if (ent.test(v)) out.entities.push(`${desc(e)}[${a}]=${v}`);
       // Part 67: a bookmark's delete label is "<Bangla words>: <the bookmark's own saved name>"; the name is the reader's data (the fixture's "Ayat al-Kursi"), not chrome, so only the words before ": " are judged.
-      const judged = e.matches(".nav-bm-del") ? v.split(": ")[0] : v;
+      let judged = e.matches(".nav-bm-del") ? v.split(": ")[0] : v;
+      // Part 141 sweep: since part 132 a select's title repeats its chosen option (select-title.js). That text is what the select already shows, judged as page text
+      // elsewhere ("বাংলা (Bangla)" is the language picker's own deliberate name; ".xml" a file type), so only words the title adds are judged here.
+      if (e.tagName === "SELECT" && a === "title" && e.selectedIndex >= 0) judged = judged.split(e.options[e.selectedIndex].textContent.trim()).join("");
+      // ...and the title never says the chosen value twice ("শিক্ষক: শিক্ষক", the translator's copy taken for a label).
+      if (e.tagName === "SELECT" && a === "title") { const m = v.match(/^(.+): (.+)$/); if (m && m[1].trim() === m[2].trim()) out.doubled.push(`${desc(e)}[title]=${v.slice(0, 40)}`); }
       if (bn && v.trim() && latin(judged)) out.attrs.push(`${desc(e)}[${a}]=${v.slice(0, 40)}`);
     }
     if (!["TEXTAREA", "SCRIPT", "STYLE"].includes(e.tagName)) {
@@ -113,6 +118,10 @@ await flow("control", "bn", 390, 800, "/app/about.html", "", async (t, page) => 
   const r = await runScan(page, true);
   check(`${t}: POSITIVE CONTROL finds a seeded English aria-label`, r.attrs.some((a) => a.includes("sb1") && a.includes("Show details")), JSON.stringify(r.attrs.slice(0, 3)));
   check(`${t}: POSITIVE CONTROL finds a seeded empty button`, r.unnamed.some((a) => a.includes("sb2")), JSON.stringify(r.unnamed.slice(0, 3)));
+  await ev(page, () => { const d = document.createElement("div"); d.innerHTML = '<select id="sb5" title="Pick one: আহসান"><option>আহসান</option></select><select id="sb6" title="আহসান: আহসান"><option>আহসান</option></select>'; document.body.appendChild(d); });
+  const r2 = await runScan(page, true);
+  check(`${t}: POSITIVE CONTROL finds English a select title adds beyond its chosen value`, r2.attrs.some((a) => a.includes("sb5")), JSON.stringify(r2.attrs.slice(0, 3)));
+  check(`${t}: POSITIVE CONTROL finds a select title that says its value twice`, r2.doubled.some((a) => a.includes("sb6")), JSON.stringify(r2.doubled.slice(0, 3)));
   check(`${t}: POSITIVE CONTROL finds a seeded literal entity`, r.entities.some((a) => a.includes("&rarr;")) && r.entities.some((a) => a.includes("&mdash;")), JSON.stringify(r.entities.slice(0, 3)));
 });
 
@@ -192,6 +201,7 @@ for (const lang of LANGS) for (const width of WIDTHS) {
       const res = await runScan(page, bn);
       check(`${t}: POSITIVE CONTROL page rendered controls`, await ev(page, () => document.querySelectorAll("button, a[href]").length > 2));
       if (bn) check(`${t}: no English aria-label / title / alt / placeholder`, res.attrs.length === 0, res.attrs.slice(0, 8).join(" | "));
+      check(`${t}: no select title says its chosen value twice`, res.doubled.length === 0, res.doubled.slice(0, 8).join(" | "));
       check(`${t}: every button, link and field has a name`, res.unnamed.length === 0, res.unnamed.slice(0, 8).join(" | "));
       check(`${t}: no literal entity in an attribute or text`, res.entities.length === 0, res.entities.slice(0, 8).join(" | "));
     });

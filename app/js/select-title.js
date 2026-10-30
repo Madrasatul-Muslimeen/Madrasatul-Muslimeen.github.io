@@ -5,11 +5,12 @@
 export function keepSelectTitles(selector = "select", root = document, { withLabel = false } = {}) {
   const apply = () => {
     root.querySelectorAll(selector).forEach((sel) => {
-      if (sel.dataset.titleBase === undefined) sel.dataset.titleBase = withLabel ? sel.title : "";
-      else if (sel.dataset.autoTitle !== undefined && sel.title !== sel.dataset.autoTitle) sel.dataset.titleBase = sel.title; // the page retitled it
-      if (!withLabel && sel.title && sel.dataset.autoTitle === undefined) return; // someone gave it a title of their own: leave it
       const o = sel.options[sel.selectedIndex];
       const text = o ? o.textContent.trim() : "";
+      // A title that is just the chosen value in the page's language is the translator rewriting our own title, not a label (part 141 sweep: "শিক্ষক: শিক্ষক").
+      if (sel.dataset.titleBase === undefined) sel.dataset.titleBase = withLabel ? sel.title : "";
+      else if (sel.dataset.autoTitle !== undefined && sel.title !== sel.dataset.autoTitle && sel.title.trim() !== text) sel.dataset.titleBase = sel.title; // the page retitled it
+      if (!withLabel && sel.title && sel.dataset.autoTitle === undefined) return; // someone gave it a title of their own: leave it
       const base = sel.dataset.titleBase;
       const next = text ? (base ? base + ": " + text : text) : base;
       if (next !== sel.title) sel.title = next;
