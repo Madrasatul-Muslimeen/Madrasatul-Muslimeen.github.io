@@ -332,8 +332,8 @@ const MUTATIONS = {
   cut: () => { const s = document.createElement("button"); s.textContent = "A name that is far too long to fit one line in this narrow box at any size at all"; s.style.cssText = "width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"; document.body.appendChild(s); },
   overlap: () => { for (const [l, t] of [[10, 0], [40, 10]]) { const s = document.createElement("button"); s.textContent = "ov"; s.style.cssText = `position:absolute;left:${l}px;top:${t}px;width:90px;height:44px`; document.body.appendChild(s); } },
   offscreen: () => { const s = document.createElement("button"); s.textContent = "off"; s.style.cssText = "position:absolute;left:" + (document.documentElement.clientWidth + 300) + "px;top:0;width:80px;height:44px"; document.body.appendChild(s); document.documentElement.style.overflowX = "hidden"; },
-  // audit part 137: the pre-fix CSS (labels as tall as their text) put back; the SMALL check must fail on the pages with checkboxes / radios
-  small: () => { const s = document.createElement("style"); s.textContent = "label:has(> input){display:inline!important;min-height:0!important}"; document.head.appendChild(s); },
+  // audit part 137: the pre-fix CSS (labels as tall as their text, wrapping AND `for` labels, so taglines too) put back; the SMALL check must fail on the pages with checkboxes / radios
+  small: () => { const s = document.createElement("style"); s.textContent = "label{display:inline!important;min-height:0!important}"; document.head.appendChild(s); },
   smallbtn: () => { const s = document.createElement("button"); s.textContent = "tiny"; s.style.cssText = "display:block;height:18px"; document.body.appendChild(s); },
   fixedpx: () => { document.body.insertAdjacentHTML("beforeend", "<style>body *{font-size:11px!important}</style>"); },
   // audit part 133: the pre-fix Zab CSS (fixed px sizes) put back; the growth checks must fail
