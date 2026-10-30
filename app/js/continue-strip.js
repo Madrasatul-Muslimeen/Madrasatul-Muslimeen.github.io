@@ -32,6 +32,13 @@ export const MODULE_PAGES = {
   ldog: "ldog-study.html",
 };
 
+// A Dua bookmark is a Hadith-module bookmark at position "dua:<n>" (hadith-study-actions.js): since the Dua page
+// (v12.126, Dua round R4 / D06) it opens there, at that Dua; every other bookmark opens its module's own page.
+export function resumePageFor(moduleId, position) {
+  if (moduleId === "hadith" && /^dua:\d{1,5}$/.test(position ?? "")) return "dua-study.html";
+  return MODULE_PAGES[moduleId];
+}
+
 // Small display-label mirror (matches catalogue-data.js's MODULE_TEMPLATES
 // names) -- avoids an extra blocking modules-collection read on every study
 // page just to label a strip; ensureModulesSeeded already reads that
