@@ -78,6 +78,9 @@
   }
   .hadith-isnad { font-size: 0.88rem; color: var(--hadith-muted); margin: 0.3rem 0; }
   .hadith-translation-text { margin: 0.4rem 0 0.2rem; }
+  /* J97: a Bukhārī Bangla chapter heading, set apart above the hadith (small, grey; unicode-bidi keeps its Arabic in order). */
+  .hadeethenc-explanation .standard-translation-heading { font-size: 0.8rem; line-height: 1.55; color: var(--hadith-muted); margin: 0.45rem 0 0.1rem; padding-left: 0.6rem; border-left: 2px solid var(--hadith-rule); unicode-bidi: plaintext; overflow-wrap: anywhere; }
+  .standard-translation-heading-label { font-weight: 600; }
   .hadith-attribution, .hadith-availability { font-size: 0.8rem; color: var(--hadith-muted); margin: 0.15rem 0; }
   .hadith-fallback {
     font-size: 0.85rem; color: #7d5a00; background: #fdf6e3; border: 1px solid #e8d9a8;
@@ -460,6 +463,7 @@ body.hadith-pane-dragging { user-select: none; }
 [data-card-look="night"] .hadith-pane-head { border-color: var(--card-line); }
 [data-card-look="night"] .hadith-pane-float .hadith-pane-head { background: var(--card-bg-inset); }
 [data-card-look="night"] .hadith-pane-title, [data-card-look="night"] .hadith-pane-btn { color: var(--card-text-muted); }
+[data-card-look="night"] .standard-translation-heading { color: var(--card-text-muted); }
 [data-card-look="night"] .hadith-pane-btn:hover:not(:disabled) { background: var(--card-bg-inset); color: var(--card-text); }
 [data-card-look="night"] .hadith-reader-row, [data-card-look="night"] .hadith-bab, [data-card-look="night"] .hadith-reader-step, [data-card-look="night"] .hadith-pane-putback { color: var(--card-text); background: transparent; border-color: var(--card-line); }
 [data-card-look="night"] .hadith-reader-row { border-color: transparent; border-bottom-color: var(--card-line); }

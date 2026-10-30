@@ -4,7 +4,7 @@
 import { t, num } from "./i18n.js";
 import { plainMessageFor } from "./errors.js";
 import { getAppLang } from "./prefs.js";
-import { loadHadithTranslation } from "./hadith-translations.js";
+import { loadHadithTranslation, splitChapterHeading } from "./hadith-translations.js";
 import { loadHadithRecords, hadeethEncSourceUrl } from "./hadeethenc-corpus.js";
 
 export const el = (tag, cls, text) => {
@@ -98,10 +98,22 @@ export function standardTranslationFolds(versionUri, resolveStd) {
       loaded = true;
       const wait = el("p", "hadith-note", t("Loading…"));
       details.appendChild(wait);
-      Promise.resolve(resolveStd()).then((std) => (std ? loadHadithTranslation(versionUri, std, lang) : null)).then((tr) => {
+      let stdNo = null;
+      Promise.resolve(resolveStd()).then((std) => { stdNo = std; return std ? loadHadithTranslation(versionUri, std, lang) : null; }).then((tr) => {
         wait.remove();
         if (!tr) { details.appendChild(el("p", "hadith-note", t("No {lang} translation was found for this narration.", { lang: standardLangLabel(lang) }))); return; }
-        const text = el("p", "hadith-translation-text standard-translation-text", tr.text);
+        // J97 (the Owner, answer A): where Bukhārī's Bangla begins with its chapter heading, the heading is its own small
+        // grey line and the hadith starts with its number and narrator. The words are all kept, only placed.
+        const { heading, text: body } = splitChapterHeading(tr.edition, stdNo, tr.text);
+        if (heading) {
+          const head = el("p", "standard-translation-heading");
+          head.lang = lang;
+          head.dataset.standardTranslationHeading = lang;
+          head.appendChild(el("span", "standard-translation-heading-label", t("Chapter:") + " "));
+          head.appendChild(document.createTextNode(heading));
+          details.appendChild(head);
+        }
+        const text = el("p", "hadith-translation-text standard-translation-text", body);
         text.lang = lang;
         text.dataset.standardTranslationText = lang;
         details.appendChild(text);

@@ -48,3 +48,31 @@ export async function loadHadithTranslation(versionUri, standardNumber, lang, op
   const text = chunk[n];
   return text ? { text, translator: info.translator, edition: info.edition, source: summary.source, sourceUrl: summary.sourceUrl } : null;
 }
+
+/**
+ * PCF MSA J97 (the Owner, 31 Oct 2026, answer A): in Bukhārī's Bangla (ben-bukhari) about 1,130 texts begin with
+ * their CHAPTER heading (Arabic, often a Qur'an verse in Bangla) and only then the hadith, "৬৩০৬. শাদ্দাদ …".
+ * Returns { heading, text }: the heading before the hadith's own number, and the hadith from its number on.
+ * The number is the hadith's standard number in Bangla digits; failing that (a few texts carry the edition's
+ * own number, e.g. 200 → ১৮৩), a 2–4 digit number with ". " that is not a publisher's reference ("প্রকাশনীঃ ১৬০২.").
+ * Any other book or language, or no such number after the start: { heading: null, text } unchanged.
+ * The data file is never changed; this only decides how the fold shows it.
+ */
+export function splitChapterHeading(edition, standardNumber, text) {
+  const s = String(text ?? "");
+  if (edition !== "ben-bukhari") return { heading: null, text: s };
+  const bnDigits = String(Math.trunc(Number(standardNumber))).replace(/\d/g, (d) => "০১২৩৪৫৬৭৮৯"[d]);
+  const own = new RegExp(`(^|\\s)${bnDigits}\\s*[.।]`).exec(s); // 434 has no space after its full stop
+  let at = own ? own.index + own[1].length : -1;
+  if (at < 0) {
+    const other = /(^|\s)[০-৯]{2,4}\.\s/g;
+    for (let m; (m = other.exec(s));) {
+      const i = m.index + m[1].length;
+      if (/ঃ\s*$/.test(s.slice(Math.max(0, i - 3), i))) continue; // "আধুনিক প্রকাশনীঃ ১৬০২." is a reference, not the start
+      at = i; break;
+    }
+  }
+  if (at <= 0) return { heading: null, text: s };
+  const heading = s.slice(0, at).trim();
+  return heading ? { heading, text: s.slice(at).trim() } : { heading: null, text: s };
+}
