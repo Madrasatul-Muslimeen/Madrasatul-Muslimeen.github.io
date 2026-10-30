@@ -1,0 +1,74 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // =====================================================================
+    // PCF MSA J106 round 2 -- CANDIDATE Rules for the Hadith Subject lists
+    // ("Add to subject": Akhlaq, Ghayb, Stories). The Owner answered A on
+    // question 5 (31 Oct 2026): ONE SHARED ONLINE LIST per madrasah.
+    //
+    // STATUS: CANDIDATE. NOT DEPLOYED. NOT MERGED INTO firestore.rules.
+    // Rules are an Owner Control Gate and firestore.rules is a protected,
+    // shared path: the MSA Architect merges it, the Owner publishes it.
+    //
+    // A SELF-CONTAINED extract: the helpers below are reproduced from the
+    // deployed rules unchanged, so the emulator can run this in isolation.
+    // It must never be deployed as a whole file.
+    //
+    // THE SHAPE is the deployed asmaCollections/{tenantId} rule (one
+    // document per tenant, docId IS the tenantId; any member reads, only
+    // owner/prime writes, no delete), with ONE deliberate tightening:
+    // asmaCollections' update does not pin the identity fields, so an
+    // owner/prime update could repoint `tenantId` at another madrasah's id.
+    // Here `tenantId`, `createdBy` and `createdAt` are write-once.
+    //
+    // WHAT IS NOT ENFORCED HERE, stated rather than hidden: the shape of
+    // each entry inside `subjects` (versionUri, n, std, book, chapter,
+    // title, addedAt, addedBy, status) is validated client-side, the same
+    // accepted trust boundary as asmaCollections and records.entries. An
+    // entry is a REFERENCE to a narration, not a progress record, and
+    // mints no permanent Study Unit key (J06 is still the Owner's).
+    // =====================================================================
+
+    function signedIn() { return request.auth != null; }
+    function myUid() { return request.auth.uid; }
+
+    function tenantMemberRef(tenantId) {
+      return /databases/$(database)/documents/tenantMemberUids/$(tenantId + '__' + myUid());
+    }
+    function tenantMemberHeld(tenantId) { return signedIn() && exists(tenantMemberRef(tenantId)); }
+    function tenantMemberDoc(tenantId)  { return get(tenantMemberRef(tenantId)).data; }
+    function myRolesIn(tenantId)        { return tenantMemberHeld(tenantId) ? tenantMemberDoc(tenantId).roles : []; }
+    function hasRoleIn(tenantId, role)  { return role in myRolesIn(tenantId); }
+    function isPlatformAdmin() {
+      return signedIn()
+          && exists(/databases/$(database)/documents/userIndex/$(myUid()))
+          && get(/databases/$(database)/documents/userIndex/$(myUid())).data.get('platformAdmin', false) == true;
+    }
+    function isOwnerIn(tenantId) { return hasRoleIn(tenantId, 'owner'); }
+    function isPrimeIn(tenantId) { return hasRoleIn(tenantId, 'prime'); }
+    function canAdminIdentity(tenantId) { return isOwnerIn(tenantId) || isPrimeIn(tenantId) || isPlatformAdmin(); }
+    function canAdminCatalogue(tenantId) { return canAdminIdentity(tenantId); }
+    function anyMemberOf(tenantId) { return myRolesIn(tenantId).size() > 0; }
+
+    // hadithSubjects/{tenantId} -- NEW. One document per madrasah.
+    match /hadithSubjects/{tenantId} {
+      allow read: if isPlatformAdmin();
+      allow read: if anyMemberOf(tenantId);
+      allow create: if canAdminCatalogue(tenantId)
+                    && request.resource.data.tenantId == tenantId
+                    && request.resource.data.get('schemaVersion', 0) == 1
+                    && request.resource.data.get('subjects', null) is map;
+      // `resource != null` keeps a create from tripping this clause into an
+      // evaluation error (Firestore evaluates every matching allow).
+      allow update: if resource != null
+                    && canAdminCatalogue(tenantId)
+                    && request.resource.data.tenantId == resource.data.tenantId
+                    && request.resource.data.get('createdBy', null) == resource.data.get('createdBy', null)
+                    && request.resource.data.get('createdAt', null) == resource.data.get('createdAt', null)
+                    && request.resource.data.get('subjects', null) is map;
+      // No delete (I4/D6) -- an entry is retired with status: "retired"
+      // inside the document, never removed from Firestore.
+    }
+  }
+}
