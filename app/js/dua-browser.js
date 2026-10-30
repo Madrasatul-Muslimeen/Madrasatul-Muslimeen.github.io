@@ -30,6 +30,10 @@ export function renderDua(body, state, render) {
     b.addEventListener("click", () => { state.dua.mode = mode; render(); });
     modes.appendChild(b);
   }
+  // The Dua module's own page (PCF MSA J104 1-A, round R1): every Dua by its group, with ← Back to exactly here.
+  const own = el("a", "dua-mode dua-study-link", t("Dua Study ↗"));
+  own.href = "./dua-study.html?back=1";
+  modes.appendChild(own);
   body.appendChild(modes);
   if (state.dua.mode !== "chapters") { renderDuaCards(body, state, render); return; }
   const section = el("section", "dua-section");

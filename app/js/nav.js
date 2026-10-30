@@ -80,6 +80,7 @@ const STUDY_LINKS = [
   { href: "deen-study.html", label: "Deen Study" },
   { href: "arabic-study.html", label: "Arabic" },
   { href: "hadith-study.html", label: "Hadith" },
+  { href: "dua-study.html", label: "Dua Study" }, // the Dua module's own page (PCF MSA J104, round R1: D19)
   // The next four are hidden by the one list in hidden-modules.js (QR Stage 1, PCF J30).
   { href: "general-study.html", moduleId: "general", label: "General Study" },
   { href: "naturelife-study.html", moduleId: "naturelife", label: "Nature-Life" },
