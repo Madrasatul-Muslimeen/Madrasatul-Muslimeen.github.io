@@ -2220,3 +2220,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v12.130** (2026-10-30): Hadith Study fits a phone with long names (audit part 136 fixes, Hadith Lead).
 - **v12.131** (2026-10-30): audit part 137 (tick-box tap targets).
 - **v12.132** (2026-10-30): the Dua Lead's audit part 138 fixes and D05 A1.
+- **v12.133** (2026-10-30): audit part 139 (person picker fit).
