@@ -33,7 +33,8 @@ import { getAppLang, onAppLangChange } from "./prefs.js";
 import * as zab from "./zab-data.js";
 import * as zabNote from "./zab-to-note.js";
 
-const BAR_H = 44;
+// Audit part 133: the bar, the corner and the spacer are sized in rem (16px = 1rem, so the same size at 100%) and grow with the reader's text.
+const BAR = "2.75rem"; // was 44px
 // A row keeps its actions beside the text only when the PANEL is this wide (measured, not the window). The 380px
 // side panel and a phone are both narrower: the actions take their own line under the text. (Measured: beside the
 // text at 380px the text column was squeezed to ~40px.)
@@ -61,22 +62,22 @@ const pocketById = (id) => S.pockets.find((p) => p.pocketId === id);
 const CSS = `
 #zabRoot { font: 14px/1.35 system-ui, sans-serif; color: #1b2a41; }
 #zabRoot *, #zabRoot *::before, #zabRoot *::after { box-sizing: border-box; }
-#zabBar { position: fixed; left: 0; right: 0; bottom: 0; height: ${BAR_H}px; z-index: 900; display: none; align-items: center; gap: 4px; padding: 0 6px; background: #1f3a6e; color: #fff; }
+#zabBar { position: fixed; left: 0; right: 0; bottom: 0; height: ${BAR}; z-index: 900; display: none; align-items: center; gap: .25rem; padding: 0 .375rem; background: #1f3a6e; color: #fff; font: .875rem/1.35 system-ui, sans-serif; }
 #zabBar .zab-bar-scroll { display: flex; gap: 4px; flex: 1 1 auto; min-width: 0; overflow-x: auto; scrollbar-width: none; }
 /* audit part 97: a page's bare "button { margin-top }" rule (onboarding, accept-invite) pushed the bar's button 10px off screen. */
-#zabBar button { margin: 0; min-height: 40px; min-width: 40px; border: 0; border-radius: 8px; background: rgba(255,255,255,.14); color: #fff; font: inherit; padding: 0 12px; cursor: pointer; white-space: nowrap; flex: 0 0 auto; }
+#zabBar button { margin: 0; min-height: 2.5rem; min-width: 2.5rem; border: 0; border-radius: .5rem; background: rgba(255,255,255,.14); color: #fff; font: inherit; padding: 0 .75rem; cursor: pointer; white-space: nowrap; flex: 0 0 auto; }
 #zabBar button[aria-pressed="true"] { background: #fff; color: #1f3a6e; }
-#zabSpacer { display: block; height: 68px; } /* audit4 zab-spacer: phone, clears the 48px corner button */
-#zabCorner { margin: 0; position: fixed; right: 12px; bottom: calc(12px + var(--zab-lift, 0px)); width: 48px; height: 48px; border-radius: 50%; border: 0; z-index: 900; background: #1f3a6e; color: #fff; font-size: 22px; box-shadow: 0 2px 10px rgba(0,0,0,.3); cursor: pointer; }
-body:has(.nw-switch) #zabCorner { bottom: 68px; }
+#zabSpacer { display: block; height: 4.25rem; } /* audit4 zab-spacer: phone, clears the 48px corner button */
+#zabCorner { margin: 0; position: fixed; right: .75rem; bottom: calc(.75rem + var(--zab-lift, 0px)); width: 3rem; height: 3rem; border-radius: 50%; border: 0; z-index: 900; background: #1f3a6e; color: #fff; font-size: 1.375rem; box-shadow: 0 2px 10px rgba(0,0,0,.3); cursor: pointer; }
+body:has(.nw-switch) #zabCorner { bottom: 4.25rem; }
 /* audit part 33: Tab scrolls a control into view, and it must stop above the fixed corner or bar, not under it. */
-html { scroll-padding-bottom: 76px; }
-html:has(.nw-switch) { scroll-padding-bottom: 128px; }
+html { scroll-padding-bottom: 4.75rem; }
+html:has(.nw-switch) { scroll-padding-bottom: 8rem; }
 /* The Owner, 15 Oct 2026 (PCF J25, with a photo): the corner 🧰 covered the Qur'an page's "Mapping My Journey" tab.
    A page may give the 🧰 a place of its own ([data-zab-dock]); while that place is on screen the corner hides.
    Wherever the corner does show, it sits above a page's pinned bottom bar ([data-zab-lift]). */
 body.zab-docked #zabCorner { display: none; } /* audit-zab dock-hides-corner */
-.zab-dock-btn { flex: 0 0 auto; width: 40px; height: 40px; min-width: 40px; padding: 0; border: 0; border-radius: 50%; background: #1f3a6e; color: #fff; font-size: 19px; line-height: 1; box-shadow: 0 1px 5px rgba(0,0,0,.3); cursor: pointer; }
+.zab-dock-btn { flex: 0 0 auto; width: 2.5rem; height: 2.5rem; min-width: 2.5rem; padding: 0; border: 0; border-radius: 50%; background: #1f3a6e; color: #fff; font-size: 1.1875rem; line-height: 1; box-shadow: 0 1px 5px rgba(0,0,0,.3); cursor: pointer; }
 .zab-dock-btn[aria-pressed="true"] { background: #fff; color: #1f3a6e; }
 #zabBackdrop { position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 940; }
 #zabPanel { position: fixed; z-index: 950; background: #fff; color: #1b2a41; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 -2px 18px rgba(0,0,0,.28); left: 0; right: 0; bottom: 0; max-height: 78vh; border-radius: 16px 16px 0 0; }
@@ -158,17 +159,17 @@ body.zab-docked #zabCorner { display: none; } /* audit-zab dock-hides-corner */
 .zab-foot { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
 @media (min-width: 768px) {
   #zabBar { display: flex; }
-  #zabSpacer { display: block; height: ${BAR_H}px; }
+  #zabSpacer { display: block; height: ${BAR}; }
   #zabCorner { display: none; }
   .zab-dock-btn { display: none; }
   #zabBackdrop { display: none; }
-  #zabToast { left: auto; right: 12px; width: 380px; max-width: calc(100vw - 24px); bottom: ${BAR_H + 12}px; }
-  #zabPanel { left: auto; right: 0; top: 0; bottom: ${BAR_H}px; width: 380px; max-width: 100vw; max-height: none; border-radius: 0; box-shadow: -2px 0 18px rgba(0,0,0,.22); }
-  body.zab-bar-on .nw-switch { bottom: ${BAR_H}px; }
-  body.zab-bar-on #swUpdateNotice { bottom: calc(1rem + ${BAR_H}px) !important; }
-  body.zab-bar-on .aa-toast { bottom: calc(24px + ${BAR_H}px); }
-  body.zab-bar-on #qrStudyNotice { bottom: calc(4.6rem + ${BAR_H}px); }
-  body.zab-bar-on .ayah-sheet { bottom: ${BAR_H}px; }
+  #zabToast { left: auto; right: 12px; width: 380px; max-width: calc(100vw - 24px); bottom: calc(${BAR} + .75rem); }
+  #zabPanel { left: auto; right: 0; top: 0; bottom: ${BAR}; width: 380px; max-width: 100vw; max-height: none; border-radius: 0; box-shadow: -2px 0 18px rgba(0,0,0,.22); }
+  body.zab-bar-on .nw-switch { bottom: ${BAR}; }
+  body.zab-bar-on #swUpdateNotice { bottom: calc(1rem + ${BAR}) !important; }
+  body.zab-bar-on .aa-toast { bottom: calc(24px + ${BAR}); }
+  body.zab-bar-on #qrStudyNotice { bottom: calc(4.6rem + ${BAR}); }
+  body.zab-bar-on .ayah-sheet { bottom: ${BAR}; }
 }
 `;
 

@@ -22951,3 +22951,13 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 - Also merged since v12.123 (docs only): PR #1326, the Dua module plan (`docs/governance/dua-module-plan.md`, rule dua130) with its CLAUDE.md pointer; its update for rule dua131 (demo in its own window) rides this release.
 - Not in this round: the 🧰 Zab bar with larger text (findings 1–2, 20–21), taglines (19).
 - Nothing stored, no Rules changed.
+
+## v12.125 — 30 Oct 2026 — The 🧰 Zab bar with larger text (audit part 133, part 131 findings 1, 2, 20, 21)
+
+- **Found by audit part 131** (PR #1319): with the root text at 150%/200% the 🧰 bar and its phone corner stayed at fixed px (44px bar, 14px text, 22px glyph), so they became the smallest thing on the page, and the spacer and scroll padding could no longer keep the foot of a page clear of the taller bar.
+- `app/js/zab-bar.js` only: the bar (2.75rem tall, .875rem text, 2.5rem buttons), corner (3rem, 1.375rem glyph), dock button (2.5rem), spacer (2.75rem / 4.25rem), `scroll-padding-bottom` (4.75rem / 8rem), and the panel, toast and lifted items all use one rem bar height. Same size at 100% (the Builder's probe: 30 page/width/language combinations identical).
+- `tools/i18n-verify/large-text-shared-pages-browser.mjs`: the bar's and corner's text grow with the root; every ordinary control brought into view as Tab does is clear of the bar or corner; the spacer equals the bar; `--mutate=zabold` and `--mutate=zabnospace`. The old scroll-0 overlap check no longer counts a fixed bar over content (a fixed bar always paints over the screen's foot; what matters is that the control can be brought clear).
+- **Measured (Architect):** the suite 2015/0 with the reach pass; mutations zabold 536, zabnospace 326, old 107 failures; `behaviour.mjs` alone 972/0; zab-bar 370/0; zab-dock 74/0; floating-overlays-reach 360/0; shared-tools-long-names 202/0; stub-parity 4/0; QR builds, qr-verify green. Screenshots looked at (Monitor 768 en 200%, People 768 bn 200%, Records 390 bn 150%, Monitor 1440 en 100%).
+- Built by the Builder (run 2261, PR #1332). Also merged since v12.124 (docs only): PR #1330 (Dua plan approved, D21/D22, demo v1.04 sources), PR #1333 (Dua Lead handover 2).
+- **QR change notice:** `app/js/zab-bar.js` is one of the scripts QR copies byte for byte.
+- Nothing stored, no Rules changed.
