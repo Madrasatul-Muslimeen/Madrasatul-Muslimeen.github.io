@@ -23,7 +23,7 @@ const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice
 const MUT = {
   "no-wrap": ["  #tabRow { display: flex; flex-wrap: wrap; gap: 0.4rem; }\n", "  #tabRow { display: flex; gap: 0.4rem; }\n"],
   "no-tall": ["    if (typeof ResizeObserver === \"function\") watchLandingFit(); // audit part 131: large text above 720px\n", ""],
-  "no-zab-lift": ["  @media (min-width: 768px) { body.zab-bar-on.landing-view.landing-tall #dock { bottom: 44px; } }\n", ""],
+  "no-zab-lift": ["  @media (min-width: 768px) { body.zab-bar-on.landing-view.landing-tall #dock { bottom: 2.75rem; } }\n", ""],
   "no-floor": ["const cap = Math.floor(Math.max(floor, wheel.getBoundingClientRect().width - over)) + \"px\";", "const cap = Math.floor(wheel.getBoundingClientRect().width - over) + \"px\";"],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);

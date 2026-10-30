@@ -126,7 +126,11 @@ function fillGeometry(minW = MIN_WIDTH, minH = MIN_HEIGHT, topInset = 0, bottomI
   const floor = window.innerHeight - insetOf(bottomInset) - 8;
   const side = Math.max(16, Math.round(window.innerWidth * 0.02));
   const width = Math.max(minW, window.innerWidth - 2 * side);
-  const height = Math.max(minH, floor - inset);
+  // QR Lead (30 Oct 2026, audit part 131/133): with large text the header and the dock (lifted by the taller Zab bar) can
+  // leave less room than the minimum; holding the minimum then put the window's bottom -- and its last controls -- under
+  // the dock. Short of room, the window fills the room it has (never below 200px) and scrolls inside, as it already can.
+  const room = floor - inset;
+  const height = room >= minH ? room : Math.max(Math.min(minH, 200), room);
   return { width, height, top: inset, left: Math.max(0, Math.round((window.innerWidth - width) / 2)) };
 }
 

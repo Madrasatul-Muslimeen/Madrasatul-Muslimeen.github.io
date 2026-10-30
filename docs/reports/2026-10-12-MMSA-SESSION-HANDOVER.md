@@ -2177,3 +2177,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v12.124** (2026-10-29): The shared pages work with the phone's text made larger (audit part 132).
 - **v12.125** (2026-10-29): the Zab bar with larger text (audit part 133).
 - **v12.126** (2026-10-30): the Dua Study page (Dua round R1).
+- **v12.127** (2026-10-30): the Qur'an page follows the larger Zab bar (QR Lead).
