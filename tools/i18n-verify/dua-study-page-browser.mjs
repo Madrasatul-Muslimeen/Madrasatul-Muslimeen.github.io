@@ -27,6 +27,8 @@ const MUTATIONS = {
   saw: ['rasul: t("Dua of Rasulullah Sallallahu A\'laihi Wa Sallam")', 'rasul: t("Dua of Rasulullah")'],
   // A Hisn dhikr's tied Dua card never opens.
   tie: ['b.addEventListener("click", () => { where.tie = e.card; render();', 'b.addEventListener("click", () => { render();'],
+  // D06: a Dua bookmark's ?resume=dua:<n> is ignored.
+  resume: ["resume ? Number(resume[1]) : null;", "null;"],
 };
 const arg = process.argv.find((a) => a.startsWith("--mutate="))?.slice(9) ?? null;
 
@@ -158,6 +160,14 @@ async function run(mutation) {
     await page.waitForSelector("[data-dua-card]", { timeout: 20000 }).catch(() => {});
     await check("the Word card's way back (?view=dua&dua=4) reopens Dua 4's card", async () => { const n = await page.$eval("[data-dua-card]", (e) => e.dataset.duaCard).catch(() => null); if (n !== "4") throw new Error(n); });
     await check("the Dua card's own progress row shows", async () => { if (!(await page.$("[data-dua-progress]"))) throw new Error("none"); });
+    // D06 (round R4): a Dua bookmark's address, ?resume=dua:<n>, opens that Dua's card in Rasulullah's list.
+    await page.goto(new URL("/app/dua-study.html?resume=dua:7", page.url()).href);
+    await page.waitForSelector("[data-dua-card]", { timeout: 20000 }).catch(() => {});
+    await check("a Dua bookmark (?resume=dua:7) opens Dua 7's card, and the address then names its place", async () => {
+      const n = await page.$eval("[data-dua-card]", (e) => e.dataset.duaCard).catch(() => null);
+      const u = new URL(page.url());
+      if (n !== "7" || u.searchParams.get("resume") || u.searchParams.get("g") !== "rasul") throw new Error(`${n} ${page.url()}`);
+    });
 
     // Prophets: the āyah opens in Quran Study with ← Back.
     await page.goto(new URL("/app/dua-study.html?g=prophets&open=1", page.url()).href);

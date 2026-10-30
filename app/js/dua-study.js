@@ -106,7 +106,9 @@ export function readPlace(search) {
   const lp = Math.max(1, Number.parseInt(q.get("lp"), 10) || 1);
   const open = /^\d{1,5}$/.test(q.get("open") ?? "") ? Number(q.get("open")) : null;
   // Decision 90's way back from a dua word's Word card: ?view=dua&dua=<n> reopens that Dua's card.
-  const dua = q.get("view") === "dua" && /^\d{1,5}$/.test(q.get("dua") ?? "") ? Number(q.get("dua")) : null;
+  // D06 (round R4): a Dua bookmark, or the Continue strip, opens ?resume=dua:<n> -- the same Dua's card.
+  const resume = /^dua:(\d{1,5})$/.exec(q.get("resume") ?? "");
+  const dua = q.get("view") === "dua" && /^\d{1,5}$/.test(q.get("dua") ?? "") ? Number(q.get("dua")) : resume ? Number(resume[1]) : null;
   // A Hisn dhikr's tied Dua card, opened from that dhikr (open names the dhikr).
   const tie = /^\d{1,5}$/.test(q.get("tie") ?? "") ? Number(q.get("tie")) : null;
   return { g, part, lp, open, dua, tie };
@@ -114,7 +116,7 @@ export function readPlace(search) {
 function writePlace(where) {
   try {
     const u = new URL(location.href);
-    for (const k of ["g", "part", "lp", "open", "tie", "view", "duaPage", "dua"]) u.searchParams.delete(k);
+    for (const k of ["g", "part", "lp", "open", "tie", "view", "duaPage", "dua", "resume"]) u.searchParams.delete(k);
     u.searchParams.set("g", where.g);
     if (where.part) u.searchParams.set("part", where.part);
     if (where.lp > 1) u.searchParams.set("lp", String(where.lp));
