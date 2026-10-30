@@ -306,6 +306,9 @@ for (const [w, h] of WIDTHS) for (const lang of LANGS) {
       await setRoot(P, pct);
       await P.waitForTimeout(250);
       const m = await P.evaluate(MEASURE, { baseline, baselineRoot, minH: 36 });
+      // B1 by its own edge, any amount: the offscreen measure has a threshold, so a picker 3px past the screen is not "offscreen" yet
+      // still makes the page scroll sideways (the Dua Lead's measurement, 30 Oct: this was first misfiled as a Dua word finding, "B3").
+      const pickerPast = await P.evaluate(() => [...document.querySelectorAll("#personSelect, #tenantSelect")].some((e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.right > document.documentElement.clientWidth; }));
       if (pct === 100) { baseline = m.fontSizes; baselineRoot = m.rootSize; }
       bySize[pct] = m;
       if (SHOTS && pct === 200 && ((lang === "bn" && w === 360) || (lang === "en" && w === 768))) await P.screenshot({ path: `${OUT}/${v.id}-${w}-${lang}-200.png`, fullPage: true });
@@ -324,7 +327,6 @@ for (const [w, h] of WIDTHS) for (const lang of LANGS) {
         //   B1  the Person picker (#personSelect / #tenantSelect, `width:auto`) is as wide as the part-126 seed's ~40-character name, wider
         //       than a phone, so the page scrolls sideways.
         //   B2  the 👥 "who is this for" button (.assign-trigger) on an Encyclopedia card carries the same long name and runs past a phone.
-        //   B3  a Dua word's Word card panel makes the page 3px wider than a 390px phone.
         //       (A page so widened can open scrolled sideways; its left-hand controls at a negative x are counted under the same name.)
         //   Z   the fixed 🧰 Zab bar over a row at the foot of the screen at scroll 0: not a defect (v12.125, part 133: every page keeps room
         //       at its end for the bar, so any row can be scrolled clear of it); the same exclusion the shared-pages suite makes.
@@ -332,9 +334,8 @@ for (const [w, h] of WIDTHS) for (const lang of LANGS) {
           : (LONG_NAMES && /button\.assign-trigger/.test(f.msg)) ? "B2"
           : (/#zabBar|#zabCorner/.test(f.msg) && k === "overlap") ? "Z"
           : null;
-        const sidewaysBy = () => (LONG_NAMES && m.offscreen.some((o) => /#personSelect|#tenantSelect/.test(o.msg))) ? "B1"
+        const sidewaysBy = () => (LONG_NAMES && (pickerPast || m.offscreen.some((o) => /#personSelect|#tenantSelect/.test(o.msg)))) ? "B1"
           : (LONG_NAMES && m.offscreen.some((o) => /button\.assign-trigger/.test(o.msg))) ? "B2"
-          : (v.id === "dua-word" && m.sideways.every((f) => { const g = /scrollWidth (\d+) > (\d+)/.exec(f.msg); return g && +g[1] - +g[2] <= 4; })) ? "B3"
           : null;
         // A page widened by B1 / B2 can open scrolled sideways, which puts the LEFT-hand controls at a negative x: the same finding, not a new one.
         const tagOf = (f) => (k === "sideways" ? sidewaysBy() : named(f) || (k === "offscreen" && / spans -\d/.test(f.msg) ? sidewaysBy() : null));
