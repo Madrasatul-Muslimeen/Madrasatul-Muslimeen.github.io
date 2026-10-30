@@ -4578,4 +4578,5 @@ export const BN = {
   "Open Dua {n} ›": "দুআ {n} খুলুন ›",
   "Source: Hisn al-Muslim, typed by Abdellah Sellam (MIT licence).": "সূত্র: হিসনুল মুসলিম, আব্দুল্লাহ সাল্লামের টাইপ করা (MIT লাইসেন্স)।",
   "Open in Quran Study ↗": "কুরআন স্টাডিতে খুলুন ↗",
+  "Dua Study ↗": "দুআ স্টাডি ↗",
 };
