@@ -2328,3 +2328,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v12.138** (2026-10-31): the Escape fixes from audit part 141 and the Read view at large text.
 - **v12.139** (2026-10-31): Quran Study: the A± text-size controls stay on screen at large text.
 - **v13.01** (2026-10-31): J108: one Note from every Note button (v13 begins).
+- **v13.02** (2026-10-31): Quran Study: Listening and the Mushaf full screen at large text (QR Lead audits 4 and 5).
