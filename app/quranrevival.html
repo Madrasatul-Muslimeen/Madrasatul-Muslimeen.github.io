@@ -336,8 +336,12 @@
   .qr-panel-head.qr-panel-head-stacked { flex-wrap: wrap; row-gap: 0.4rem; }
   /* QR Lead audit 4: on a phone turned sideways at 200% the drawer has ~245px and the stacked head took 177 of it, so the
      options showed through a slit and the reciter ticks could not be tapped. Where stacking would leave the options less
-     than 6rem, Save stays on the title's line and wraps its words there instead (never cut); the head stays where it is,
+     than 6rem, Save and ✕ share one line and Save wraps its words there instead (never cut); the head stays where it is,
      so ✕ stays on screen. */
+  /* The title gives way here (it stays in the page for a screen reader; the open tab already names the drawer): the words
+     "Study options" cannot shrink below their longest word, which left Save ~60px on a 360px phone at 200%. */
+  .qr-panel-head.qr-panel-head-tight { font-size: 0; }
+  .qr-panel-head.qr-panel-head-tight .qr-panel-head-actions { flex: 1 1 auto; margin-left: 0; }
   .qr-panel-head.qr-panel-head-tight .preset-save-btn { flex: 1 1 auto; white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.15; }
   .qr-panel-head.qr-panel-head-stacked .qr-panel-head-actions { display: contents; }
   .qr-panel-head.qr-panel-head-stacked .qr-panel-x { order: 1; margin-left: auto; }
