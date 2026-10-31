@@ -454,13 +454,35 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
   html.pane-tabs-hosted #notePane .pane-edit-toolbar.tb-grouped { flex-wrap: wrap; overflow-x: visible; }
   html.pane-tabs-hosted #notePane .pane-edit-toolbar.tb-grouped .tb-tabs { flex: 0 0 auto; grid-template-columns: repeat(5, auto); margin-inline-end: 0.4rem; padding-inline-end: 0.6rem; border-inline-end: 1px solid #c9a24b; }
   html.pane-tabs-hosted #notePane .pane-edit-toolbar .tb-tab { padding: 2px 0.7rem; white-space: nowrap; }
+  /* J108 (v13.01): the shared Note opener's page (?embed=1&new=1). One Note, the whole window; its bar is ONE line of
+     six >=40px icon buttons (the words beside them from 640px); the pane bar's own buttons give way to them, the ⋯ menu stays. */
+  html.new-mode #viewToggle, html.new-mode #contextBar, html.new-mode #readOnlyMsg { display: none !important; }
+  html.new-mode #notePane [data-pane-bar] > :not([data-nn-tool]):not([data-pane-menu-wrap]) { display: none !important; }
+  html.new-mode #notePane [data-pane-bar] { gap: 6px; flex-wrap: nowrap; min-width: 0; }
+  html.new-mode #notePane [data-pane-bar] > .nn-tb, html.new-mode #notePane [data-pane-bar] > [data-pane-menu-wrap] { flex: 1 1 0; min-width: 0; }
+  html.new-mode .nn-tb { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 44px; min-height: 44px; padding: 0 6px; box-sizing: border-box;
+    border: 1px solid #c9d0dc; border-radius: 10px; background: #fff; color: #1d2433; font: inherit; font-size: 1.05rem; cursor: pointer; white-space: nowrap; overflow: hidden; }
+  html.new-mode .nn-tb[data-nn-tool="folders"] { border-color: #2a5bb8; color: #2a5bb8; font-weight: 600; }
+  html.new-mode .nn-tb[aria-pressed="true"] { background: #1F3A6E; color: #fff; border-color: #1F3A6E; }
+  html.new-mode .nn-tb:focus-visible { outline: 3px solid #2a5bb8; outline-offset: 2px; }
+  html.new-mode .nn-lbl { display: none; font-size: 0.95rem; }
+  html.new-mode #notePane [data-pane-menu-wrap] > [data-pane-menu-btn] { width: 100%; height: 44px; min-height: 44px; min-width: 0; box-sizing: border-box; }
+  @media (min-width: 640px) {
+    html.new-mode .nn-lbl { display: inline; }
+    html.new-mode #notePane [data-pane-bar] > .nn-tb, html.new-mode #notePane [data-pane-bar] > [data-pane-menu-wrap] { flex: 0 0 auto; }
+    html.new-mode .nn-tb { padding: 0 12px; }
+    html.new-mode #notePane [data-pane-menu-wrap] > [data-pane-menu-btn] { width: 44px; }
+  }
+  /* 🗂 Folders: the Map's own picker (folder tree, search, ＋ New folder, ticks for several) fills the opener's window. */
+  html.new-mode .folder-picker-overlay, html.new-mode .folder-picker-overlay.fp-sheet, html.new-mode .folder-picker-overlay.fp-pop { display: flex; align-items: stretch; justify-content: stretch; background: #fff; }
+  html.new-mode .folder-picker-overlay .folder-picker { position: static; width: 100%; height: 100%; max-width: none; max-height: none; border-radius: 0; border: 0; box-shadow: none; }
   .unit-old-note { border: 1px dashed #c9a24b; border-radius: 0.6rem; padding: 0.6rem 0.8rem; margin: 0.6rem 0; background: #fffdf6; }
   .unit-old-note h3 { margin: 0 0 0.3rem; font-size: 0.9rem; color: #6b4e10; }
   .unit-old-note .unit-old-body { font-size: 0.92rem; line-height: 1.5; max-height: 14rem; overflow: auto; }
 </style>
 </head>
 <body>
-  <script>(function(){try{var q=new URLSearchParams(location.search);if(q.get('embed')==='1'){document.documentElement.classList.add('embed');if(q.get('unit'))document.documentElement.classList.add('unit-mode');}}catch(e){}})();</script>
+  <script>(function(){try{var q=new URLSearchParams(location.search);if(q.get('embed')==='1'){document.documentElement.classList.add('embed');if(q.get('new')==='1')document.documentElement.classList.add('new-mode');else if(q.get('unit'))document.documentElement.classList.add('unit-mode');}}catch(e){}})();</script>
   <script>/* In the tray, a link that leaves this screen (Import Notes, a note) opens as a full page, not inside the tray. */
   document.addEventListener('click',function(e){if(!document.documentElement.classList.contains('embed'))return;var a=e.target.closest&&e.target.closest('a[href]');if(!a)return;var h=a.getAttribute('href');if(!h||h.charAt(0)==='#'||/journey-map\.html/.test(h))return;a.setAttribute('target','_top');},true);</script>
   <h1>Mapping My Journey</h1>
@@ -554,6 +576,7 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
     import { closeAllBarPalettes } from "./js/bar-palette.js";
     import { trapModal } from "./js/modal-focus.js";
     import { createNoteViews } from "./js/note-window.js";
+    import { refBlockHtml } from "./js/note-ref-block.js";
     import { attachStudyNoteToUnit, createStudyNote, notesForStudyUnit } from "./js/study-note-service.js";
     import { getAyahNotes, ayahNoteHtml } from "./js/ayah-notes.js";
     import { createFirestoreSettingsStore } from "./js/note-user-settings-fs.js";
@@ -861,9 +884,24 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
     let unitKeyParam = null, unitLabelParam = "", noteTitleParam = ""; // J68: noteTitle, a new Note's first title
     try {
       const q = new URLSearchParams(location.search);
-      if (q.get("embed") === "1" && isPaneUnitKey(q.get("unit"))) { unitKeyParam = q.get("unit"); unitLabelParam = q.get("unitLabel") || ""; noteTitleParam = q.get("noteTitle") || ""; }
+      if (q.get("embed") === "1" && q.get("new") !== "1" && isPaneUnitKey(q.get("unit"))) { unitKeyParam = q.get("unit"); unitLabelParam = q.get("unitLabel") || ""; noteTitleParam = q.get("noteTitle") || ""; }
     } catch { /* no unit: the ordinary page */ }
     const unitMode = unitKeyParam !== null;
+    // J108 (v13.01): the shared Note opener (js/note-opener.js) loads this page as journey-map.html?embed=1&new=1 -- a NEW
+    // blank Note, made at once and open for writing; with `unit` (an āyah or a hadith key) it is started on that unit
+    // (createStudyNote, the noteSources link the Notes pane makes) and with `noteTitle` it has its first title.
+    const NEW_UNIT_SHAPES = [...PANE_UNIT_SHAPES, /^hadith:[A-Za-z0-9_-]+:\d{1,6}$/];
+    let newMode = false, newUnitKey = null, newTitleParam = "", newWaitRefs = false;
+    try {
+      const q = new URLSearchParams(location.search);
+      if (q.get("embed") === "1" && q.get("new") === "1") {
+        newMode = true;
+        const u = q.get("unit");
+        if (typeof u === "string" && NEW_UNIT_SHAPES.some((re) => re.test(u))) newUnitKey = u;
+        newTitleParam = q.get("noteTitle") || "";
+        newWaitRefs = q.get("refs") === "1";
+      }
+    } catch { /* the ordinary page */ }
     let currentView = unitMode ? "unit" : viewFromHash()
       ?? (VALID_VIEWS.includes(localStorage.getItem(VIEW_KEY)) ? localStorage.getItem(VIEW_KEY) : "folders");
 
@@ -1349,7 +1387,7 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
     // PCF MSA J82 part 3: a pop-up opened ON a Note (?embed=1&note=<id>: every "open this Note" since J81) is the note
     // window -- the Note the whole width, as in a narrower pop-up -- not a 350px third column beside the folders at 1440.
     // Once that Note is closed (← Back), the pop-up is Mapping My Journey again, with its panels.
-    let noteFocus = document.documentElement.classList.contains("embed") && !!new URLSearchParams(location.search).get("note");
+    let noteFocus = document.documentElement.classList.contains("embed") && (!!new URLSearchParams(location.search).get("note") || newMode); // J108: the opener's Note, the whole width
     let noteFocusShown = false;
     function noteLayoutTier() {
       if (noteFocus) return "narrow";
@@ -1810,6 +1848,7 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
 
     /** After every full load: keep every open view honest, close one whose Note left (Trash, or gone), and open the Note a full-page link named. */
     function syncNotePane() {
+      if (newMode) startNewNote(); // J108: once, after the first full load
       if (pendingOpenNoteId) {
         const wanted = pendingOpenNoteId;
         if (allNotes.some((n) => n.noteId === wanted && n.status !== NOTE_STATUS.RETIRED)) {
@@ -4201,6 +4240,152 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
     // The pane may have spoken before this listener existed (the page loads, then may reload once in the reader's
     // language): say so, and it tells again where the tabs go.
     if (unitMode) try { window.parent?.postMessage({ type: "mmsa-pane-hello" }, location.origin); } catch { /* not embedded */ }
+
+    // =====================================================================
+    // J108 (v13.01, the Owner: "Q2:A. Q3. Build it.") -- the shared Note opener's page: ONE new blank Note
+    // =====================================================================
+    // js/note-opener.js loads this page as ?embed=1&new=1 in its window. Once the folders and Notes are loaded, a NEW Note
+    // is made at once (Q2 = A: always a new one) -- with `unit`, started on it (createStudyNote: the same noteSources link
+    // the Notes pane's ✚ New note makes); else a plain Note (createPermanentNote) -- filed in the folder chosen last in
+    // Mapping My Journey, else "Mapping My Journey" itself (never derived from the unit: ADR-010), and opened for writing.
+    // An Āyah / Hadith the opener hands over (note-ref-block.js) is in its text from the first write: the Note's own
+    // `bodyHtml`, no new field. The toolbar is ONE line: ← 🗂 📎 🔍 ✏️ ⋯ (words beside the icons from 640px).
+    // Messages, all same-origin: to the opener "mmsa-new-note-hello" / "-ready" / "-count" / "-back" / "-attach" /
+    // "-closed" / "-ref-added"; from it "mmsa-new-note-refs" {refs, noteId, backLabel}, "-add-ref" {ref}, "-close".
+    let newStarted = false, newNoteId = null, newRefs = null, newRefsWaiters = [], newBackLabel = "";
+    const toOpener = (m) => { try { window.parent?.postMessage(m, location.origin); } catch { /* not embedded */ } };
+    function newRefsArrived() { return new Promise((resolve) => { if (newRefs !== null || !newWaitRefs) { resolve(); return; } newRefsWaiters.push(resolve); setTimeout(resolve, 8000); }); }
+    async function startNewNote() {
+      if (newStarted) return;
+      newStarted = true;
+      if (!isSelfSelected()) { showPageStatus(t("Only your own record can create or file a Note.")); toOpener({ type: "mmsa-new-note-ready", ok: false }); return; }
+      await newRefsArrived();
+      if (newNoteId && allNotes.some((n) => n.noteId === newNoteId)) { openNewNoteForWriting(newNoteId); return; } // the page reloaded once: the same Note
+      const node = selectedFolderNode() ?? mergedRoots()[0];
+      const folderId = node ? await ensureRealFolder(node) : null;
+      if (!folderId) { toOpener({ type: "mmsa-new-note-ready", ok: false }); return; }
+      const ownerArgs = { tenantId: activeTenantId, ownerPersonId: selectedPersonId, ownerUid: auth.currentUser.uid, actorUid: auth.currentUser.uid };
+      const bodyHtml = (newRefs || []).map((r) => refBlockHtml(r)).filter(Boolean).join("");
+      const body = bodyHtml ? sanitizeNoteHtml(`${bodyHtml}<p><br></p>`) : "";
+      const title = newTitleParam;
+      const order = nextOrder(notesInFolder(node).map((r) => r.placement));
+      const outcome = await safeWrite(async () => {
+        const created = newUnitKey ? (await createStudyNote(db, { ...ownerArgs, unitKey: newUnitKey, title, bodyHtml: body })).note
+          : await createPermanentNote(db, { ...ownerArgs, title, bodyHtml: body });
+        let placementId;
+        try {
+          placementId = await createNotePlacement(db, { ...ownerArgs, noteId: created.noteId, folderId, order });
+        } catch (error) {
+          const wrapped = new Error(`The Note was saved, but filing it in this folder failed: ${error?.message ?? error}`);
+          wrapped.cause = error; wrapped.code = error?.code;
+          throw wrapped;
+        }
+        return { created, placementId };
+      }, { collection: TENANT.NOTE_PLACEMENTS, action: newUnitKey ? "createStudyNote+createNotePlacement" : "createPermanentNote+createNotePlacement" });
+      if (!outcome.ok) { toOpener({ type: "mmsa-new-note-ready", ok: false }); return; }
+      const { created, placementId } = outcome.result;
+      // The page's own copy of what was just written, until a full load reads it back (the stub never mutates its DATA).
+      const made = { noteId: created.noteId, tenantId: activeTenantId, ownerPersonId: selectedPersonId, ownerUid: auth.currentUser.uid,
+        title, bodyHtml: body, status: NOTE_STATUS.ACTIVE, currentRevisionId: created.revisionId, unitKey: newUnitKey,
+        createdAt: { toDate: () => new Date(), toMillis: () => Date.now() }, updatedAt: { toDate: () => new Date(), toMillis: () => Date.now() } };
+      allNotes.push(made);
+      unitMadeHere.push(made); // a full load in this page keeps it (refreshAll)
+      allPlacements.push({ placementId, noteId: made.noteId, folderId, order, status: NOTE_STATUS.ACTIVE, tenantId: activeTenantId, ownerPersonId: selectedPersonId });
+      newNoteId = made.noteId;
+      openNewNoteForWriting(made.noteId);
+      toOpener({ type: "mmsa-new-note-ready", ok: true, noteId: made.noteId, folder: folderDisplayName(node) });
+      if (newUnitKey) countEarlierNotes();
+    }
+    function openNewNoteForWriting(noteId) {
+      openNotePaneHere(noteId, null);
+      if (paneView.noteId === noteId && !paneView.ed) notePaneEl.querySelector("[data-pane-edit-toggle]")?.click();
+      paintNewTools();
+      requestAnimationFrame(() => { const b = notePaneEl.querySelector("[data-edit-body]"); if (b) { b.focus({ preventScroll: true }); const r = document.createRange(); r.selectNodeContents(b); r.collapse(false); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); } });
+    }
+    /** Q2 = A: "You have N Notes on this āyah — open". The earlier Notes on the unit, read once (notesForStudyUnit), not counting the new one. */
+    async function countEarlierNotes() {
+      try {
+        const { rows } = await notesForStudyUnit(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, unitKey: newUnitKey });
+        const ids = new Set(rows.filter(({ note }) => note.noteId !== newNoteId && note.status !== NOTE_STATUS.RETIRED).map(({ note }) => note.noteId));
+        toOpener({ type: "mmsa-new-note-count", unit: newUnitKey, count: ids.size });
+      } catch (error) { console.error("[new note: earlier notes]", error); /* a count is not worth an error line; the Note itself is made */ }
+    }
+    // The toolbar: the pane bar's own buttons give way to ONE line of six (CSS: html.new-mode); each maps onto what the
+    // editor already does -- 🔍 its Find, ✏️ its Edit / Done, ⋯ its own menu (left in place) -- and ← 🗂 📎 are new here.
+    const NEW_TOOLS = [["back", "←", "Back"], ["folders", "🗂", "Folders"], ["attach", "📎", "Attach"], ["search", "🔍", "Search"], ["edit", "✏️", "Edit"]];
+    function buildNewTools() {
+      const bar = notePaneEl.querySelector("[data-pane-bar]");
+      if (!bar || bar.querySelector("[data-nn-tool]")) return;
+      const wrap = bar.querySelector("[data-pane-menu-wrap]");
+      for (const [key, icon] of NEW_TOOLS) {
+        const b = document.createElement("button");
+        b.type = "button"; b.className = "nn-tb"; b.dataset.nnTool = key;
+        b.innerHTML = `<span class="nn-ic" aria-hidden="true">${icon}</span><span class="nn-lbl"></span>`;
+        b.addEventListener("click", () => onNewTool(key, b));
+        bar.insertBefore(b, wrap);
+      }
+      bar.setAttribute("role", "toolbar");
+      paintNewTools();
+      new MutationObserver(() => paintNewTools()).observe(notePaneEl, { attributes: true, attributeFilter: ["class"] });
+    }
+    function paintNewTools() {
+      const bar = notePaneEl.querySelector("[data-pane-bar]");
+      if (!bar) return;
+      bar.setAttribute("aria-label", t("Note tools"));
+      const editing = !!paneView.ed;
+      const words = { back: newBackLabel || t("Back"), folders: t("Folders"), attach: t("Attach"), search: t("Search"), edit: editing ? t("Done") : t("Edit") };
+      const names = { back: newBackLabel || t("Back"), folders: t("Folders: file this Note"), attach: t("Attach an Āyah or Hadith"), search: t("Search this Note"), edit: editing ? t("Done") : t("Edit") };
+      for (const b of bar.querySelectorAll("[data-nn-tool]")) {
+        const k = b.dataset.nnTool;
+        b.querySelector(".nn-lbl").textContent = k === "back" ? t("Back") : words[k];
+        if (k === "edit") { b.querySelector(".nn-ic").textContent = editing ? "✓" : "✏️"; b.setAttribute("aria-pressed", String(editing)); }
+        b.setAttribute("aria-label", names[k]); b.title = names[k];
+      }
+      const more = bar.querySelector("[data-pane-menu-btn]");
+      if (more) { more.setAttribute("aria-label", t("More")); more.title = t("More"); }
+    }
+    async function onNewTool(key, btn) {
+      const note = paneView.noteId ? allNotes.find((n) => n.noteId === paneView.noteId) : null;
+      if (key === "back") { await closeNewNote(); toOpener({ type: "mmsa-new-note-back" }); return; }
+      if (key === "edit") { notePaneEl.querySelector("[data-pane-edit-toggle]")?.click(); paintNewTools(); return; }
+      if (key === "search") { notePaneEl.querySelector("[data-pane-find-toggle]")?.click(); return; }
+      if (!note) { showPageStatus(t("Loading your folders…")); return; }
+      if (key === "folders") { await openFilingPicker({ mode: "ticks", note, anchor: btn, withTags: true }); paintNewTools(); noteViews.renderView?.(paneView, { keepScroll: true }); return; }
+      if (key === "attach") toOpener({ type: "mmsa-new-note-attach" });
+    }
+    /** Every way out: the Note being written is saved first (a revision), and the opener is told whether it was. */
+    async function closeNewNote() {
+      let ok = true;
+      try {
+        const e = await endEdit(paneView);
+        if (e && (e.failed || e.conflict)) ok = false;
+      } catch { ok = false; }
+      return ok;
+    }
+    if (newMode) {
+      buildNewTools();
+      window.addEventListener("message", async (ev) => {
+        if (ev.origin !== location.origin || ev.source !== window.parent) return;
+        const m = ev.data || {};
+        if (m.type === "mmsa-new-note-refs") {
+          newRefs = Array.isArray(m.refs) ? m.refs.slice(0, 20) : [];
+          if (typeof m.noteId === "string" && m.noteId) newNoteId = m.noteId;
+          newBackLabel = typeof m.backLabel === "string" ? m.backLabel.slice(0, 80) : "";
+          paintNewTools();
+          const w = newRefsWaiters; newRefsWaiters = []; for (const f of w) f();
+        } else if (m.type === "mmsa-new-note-add-ref" && m.ref) {
+          if (!paneView.ed && paneView.noteId) notePaneEl.querySelector("[data-pane-edit-toggle]")?.click();
+          const ok = !!paneView.ed && noteViews.insertRef(paneView, m.ref);
+          if (!ok) showPageStatus(t("Open the Note for editing to attach an Āyah or Hadith."));
+          toOpener({ type: "mmsa-new-note-ref-added", ok });
+        } else if (m.type === "mmsa-new-note-close") {
+          const ok = await closeNewNote();
+          if (!ok) { showPageStatus(t("Not saved yet — will try again")); if (paneView.noteId && !paneView.ed) notePaneEl.querySelector("[data-pane-edit-toggle]")?.click(); }
+          toOpener({ type: "mmsa-new-note-closed", ok });
+        }
+      });
+      toOpener({ type: "mmsa-new-note-hello" });
+    }
 
     // =====================================================================
     // OPTION C -- Path: a BRANCHING tree with links (issue #267)

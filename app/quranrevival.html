@@ -11967,10 +11967,10 @@
       closeAllPanels();
       await openNotesPaneForKey(currentUnitInfo().unitKey);
     }
-    tabNoteBtn.addEventListener("click", () => {
-      if (stageView === "read" && readNotePaneMod?.isReadNotePaneOpen()) { readNotePaneMod.closeReadNotePane(); return; } // the old close idiom
-      openNoteForCurrentAyah();
-    });
+    // J108 (v13.01, the Owner: "Q2:A. Q3. Build it."): Study ▸ Notes opens a NEW blank Note at once, in the shared Note
+    // opener (js/note-opener.js) -- the reader stays exactly where they were underneath. The Notes pane route above
+    // (openNoteForCurrentAyah) is kept, unhooked from this button (I4); the Read bar's 📝 still opens the āyah's Notes.
+    tabNoteBtn.addEventListener("click", () => { openNewNoteHere({ backLabel: t("Back"), focusBack: tabNoteBtn }); });
 
     // Enhancement round -- Approach as its own dock tab: the same Mastery
     // Wheel + full Approaches list that has always been #stage's own default
@@ -11988,7 +11988,8 @@
     });
     // Issue #419 -- the Read contents list's three quick buttons, same routes.
     // Decision 95: the Read bar's quick "Notes" opens the Notes pane (it opened the Note view).
-    document.getElementById("readQuickNoteBtn").addEventListener("click", () => openReadNotesPane());
+    // J108: the same route as Study ▸ Notes -- a new blank Note (the Read bar's 📝 still opens this āyah's Notes).
+    document.getElementById("readQuickNoteBtn").addEventListener("click", () => openNewNoteHere({ backLabel: t("Back"), focusBack: document.getElementById("readQuickNoteBtn") }));
     document.getElementById("readQuickTrackBtn").addEventListener("click", openChosenUnitCard);
     document.getElementById("readQuickApproachBtn").addEventListener("click", openApproachWheel);
     // QR Lead (the Owner, 24 Oct 2026): "Study ▾" opens the three on a tablet; choosing one, tapping elsewhere or Esc closes it.
@@ -22632,7 +22633,18 @@
         setting it first is what makes this reliable for a ladder rung that
         is not the āyah currently on screen. */
     // Decision 95, round 2b: a Unit card's 📝 Note opens the Notes pane on that unit, and ← Back reopens the card.
-    function unitCardOpenNote(unitKey) {
+    // J108 (v13.01): a Unit card's 📝 Note opens a NEW Note started on that unit (the shared Note opener); ← Back reopens
+    // the card. The Notes pane on the unit (unitCardOpenNotesPane, below) is kept: it is the opener's "open".
+    async function unitCardOpenNote(unitKey) {
+      const from = unitCardOpenedFromAyah ? { surah: unitCardOpenedFromAyah.surah, ayah: unitCardOpenedFromAyah.ayah } : { surah: currentSurahNum, ayah: currentAyahNum };
+      const label = readNotesLabelFor(unitKey);
+      closeUnitCard();
+      const reopen = () => { paintReadNotesBtn(); openUnitCard(unitKey, from); };
+      await openNewNoteHere({ unitKey, unitLabel: label, title: `${label}:`, backLabel: t("Back to the unit card"), onClosed: reopen,
+        onOpenExisting: () => unitCardOpenNotesPane(unitKey, from) });
+    }
+    function unitCardOpenNotesPane(unitKey, fromIn = null) {
+      if (fromIn) unitCardOpenedFromAyah = fromIn;
       if (unitCardOpenedFromAyah && unitCardOpenedFromAyah.surah === currentSurahNum) currentAyahNum = unitCardOpenedFromAyah.ayah;
       const from = unitCardOpenedFromAyah ? { surah: unitCardOpenedFromAyah.surah, ayah: unitCardOpenedFromAyah.ayah } : { surah: currentSurahNum, ayah: currentAyahNum };
       closeUnitCard();
@@ -22968,10 +22980,12 @@
           }
         },
         // Decision 95: the Note is the Notes pane now (Mapping My Journey's own Note), on the Read view.
-        onNote: (unitKey) => { openNotesPaneFromAyahCard(unitKey); },
+        // J108 (v13.01): 📝 Note opens a NEW Note with this Āyah inside it (the shared Note opener); ← Back reopens the card.
+        // The Notes pane on the āyah (openNotesPaneFromAyahCard) is kept: it is the opener's "open" for earlier Notes.
+        onNote: (unitKey) => { openNewNoteFromAyahCard(unitKey, { half: halfAtRender, intro: introAtRender }); },
         // ✍ Take Note: the same view, ready to write -- its Notes box open, in sight, the cursor in it (a phone's
         // keyboard comes up). The Owner, 8 Oct 2026: "Note n Take Note both takes to the same view ... Fix."
-        onTakeNote: (unitKey) => { openNotesPaneFromAyahCard(unitKey, { fresh: true }); },
+        onTakeNote: (unitKey) => { openNewNoteFromAyahCard(unitKey, { half: halfAtRender, intro: introAtRender }); },
         onAsma: (unitKey) => {
           const { surah: s, ayah: a } = parseAyahUnitKey(unitKey);
           openAsmaXAttachPopover({ prefillRef: ayahRefLabel(s, a, { internal: true }) });
@@ -25765,6 +25779,44 @@
       record: (u) => { const { surah, ayah, half } = parseAyahUnitKey(u.unitKey); openAyahActionSheet(`${surah}:${ayah}`, half); backToReadNotes(u, "track"); },
       status: (u) => { backToReadNotes(u, "track"); openMyStatus(); },
     };
+    // -----------------------------------------------------------------------
+    // J108 (v13.01, the Owner: "Q2:A. Q3. Build it."; demo v3) -- every Note button opens the shared Note opener
+    // (js/note-opener.js, loaded on the first press, never at start-up: I9): a NEW Mapping My Journey Note in one window,
+    // over the page, which is never moved -- so closing it leaves the reader exactly where they were (decision 86).
+    // -----------------------------------------------------------------------
+    let noteOpenerMod = null;
+    async function openNewNoteHere({ focusBack = null, onClosed = null, ...opts } = {}) {
+      try { noteOpenerMod ??= await import("./js/note-opener.js"); }
+      catch (error) { reportWriteFailure(error, { what: "open a new Note", read: true }); return; } // I15
+      if (readNotePaneMod?.isReadNotePaneOpen()) readNotePaneMod.closeReadNotePane({ quiet: true });
+      await noteOpenerMod.openNewNote({ ...opts, onClosed: onClosed ?? (() => { paintReadNotesBtn(); focusBack?.focus?.({ preventScroll: true }); }) });
+    }
+    /** The Āyah card's 📝 Note: a new Note with the Āyah inside it, its first title "Quran 15:32 - Al-Hijr:", started on the
+        āyah; "You have N Notes on this āyah — open" opens the Notes pane on it (openNotesPaneFromAyahCard). */
+    async function openNewNoteFromAyahCard(unitKey, { half = null, intro = null } = {}) {
+      const reopen = () => {
+        paintReadNotesBtn();
+        if (intro?.opening) openAyahActionSheet(unitKey, null, intro);
+        else { const p = parseAyahUnitKey(unitKey); openAyahActionSheet(`${p.surah}:${p.ayah}`, half, intro); }
+      };
+      closeAyahActionSheet();
+      if (unitKey.startsWith("opening:")) { // PCF J26: Aʿūdhu billāh is no āyah: a new Note with its name as the first title
+        await openNewNoteHere({ title: `${t("Aʿūdhu billāh")}:`, backLabel: t("Back to Āyah card"), onClosed: reopen });
+        return;
+      }
+      const { surah, ayah } = parseAyahUnitKey(unitKey);
+      let ref = null;
+      try {
+        noteOpenerMod ??= await import("./js/note-opener.js");
+        const data = surah === currentSurahNum && currentSurahData ? currentSurahData : await getSurah(surah);
+        const ay = data?.ayahs?.find((x) => Number(x.ayah) === ayah);
+        if (ay) ref = noteOpenerMod.ayahRef(surah, ayah, data, ay);
+      } catch (error) { console.error("[new note: the āyah's text]", error); /* the Note still opens, on the āyah, with its title */ }
+      const label = readNotesLabelFor(unitKey);
+      const known = readNotePaneMod?.readNotePaneCount(unitKey);
+      await openNewNoteHere({ ref, unitKey, unitLabel: label, title: noteTitleFor(surah, label), backLabel: t("Back to Āyah card"), onClosed: reopen,
+        count: Number.isFinite(known) ? known : null, onOpenExisting: () => openNotesPaneFromAyahCard(unitKey) });
+    }
     /** The Āyah card's 📝 Note (decisions 94, 95): the Notes pane on that āyah, in the Read view, with "← Back to Āyah
         card". With no Note yet (`fresh`), ✚ New note is put in focus, ready to press. */
     async function openNotesPaneFromAyahCard(unitKey, { fresh = false } = {}) {
