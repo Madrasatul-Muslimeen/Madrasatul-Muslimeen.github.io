@@ -118,13 +118,24 @@ export function mountAccountCard({ tenantRow, personRow = null, getSummary = () 
   close.addEventListener("click", shut);
   overlay.addEventListener("click", (e) => { if (e.target === overlay) shut(); });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && overlay.classList.contains("open")) shut(); });
+  // Audit part 142 (D3): the card is aria-modal, so Tab and Shift+Tab stay inside it while it is open.
+  sheet.addEventListener("keydown", (e) => {
+    if (e.key !== "Tab" || !overlay.classList.contains("open")) return;
+    const f = [...sheet.querySelectorAll("button, select, input, a[href], [tabindex]:not([tabindex='-1'])")]
+      .filter((x) => !x.disabled && x.getClientRects().length);
+    if (!f.length) return;
+    const first = f[0], last = f[f.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  });
   document.addEventListener("click", (e) => {
     const btn = e.target.closest && e.target.closest("[data-open-account-card]");
     if (!btn) return;
     // The Home <details> closes behind the card.
     const home = btn.closest("details");
     if (home) home.open = false;
-    open(btn);
+    // Audit part 142 (D1): the button is hidden inside the closed menu now, so focus returns to the menu's own summary.
+    open(home ? home.querySelector("summary") || btn : btn);
   });
   return { open, close: shut, overlay };
 }

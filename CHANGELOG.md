@@ -23090,3 +23090,10 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 - **Mushaf bare full screen (Manual d9d78ub):** `fitReadBareBar()` (run by `checkReadFit()`) gives `#mushafPageRef` a line of its own only when its words are cut below 3.5 letters' room, and below 600px lets Notes / Record / Approach wrap only when a word is cut, the reading keeping the row's measured height (`--rq-h`).
 - **Suites (QR Lead, mutation-proven):** `qr-listening-large-text-browser.mjs` (unfixed 126/50, 6 mutations), `qr-mushaf-large-text-browser.mjs` (unfixed 125/16, 5 mutations).
 - **Measured by the Architect:** see the milestone line in `CLAUDE.md` (now in `docs/governance/brief-history.md`). Nothing stored, no Rules change.
+
+## v13.03 — 31 Oct 2026 — Keyboard fixes from audit part 142 (My account card, New bookmark)
+
+- **D1** `account-card.js`: when the card is opened from the Home menu, focus returns to that menu's own summary on close (the opener is hidden once the menu shuts, so focus used to drop to `<body>`).
+- **D3** `account-card.js`: the `aria-modal` card holds Tab and Shift+Tab inside itself while open (9–27 controls behind it were reachable).
+- **D2** `bookmarks.html`: Escape closes the New bookmark form like Cancel, also while focus is still on + New bookmark, and focus returns to that button.
+- **Suites:** `audit142-focus-browser.mjs` (Architect; mutations no-d1/no-d2/no-d3), and the Builder's `shared-tools-a11y-browser.mjs` (first version; run 2324 lost its GitHub token before its later fixes and report were pushed — findings are on issue #1363). D4–D6 (contrast in `quranrevival.html`, frozen Quran Study) sent to the QR Lead.
