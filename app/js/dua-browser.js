@@ -413,14 +413,15 @@ export function duaCheckButton(card, c, summary, state, render, page, env, check
     const fit = loadDuaFit(page).then((f) => f?.duas?.[c.dua] ?? null).catch(() => null);
     const panelHost = el("div", "dua-check-host");
     card.after(panelHost);
-    const close = () => { panelHost.remove(); card.tabIndex = -1; card.focus({ preventScroll: true }); card.scrollIntoView({ block: "center" }); };
-    // Audit part 141 H4: Escape closes the check panel (nothing is saved) and gives the focus back to this button.
-    panelHost.addEventListener("keydown", (e) => {
-      if (e.key !== "Escape") return;
-      e.preventDefault(); e.stopPropagation();
+    // Audit part 141 H4: Escape is handled in dua-check.js (the Dua Lead's, both pages), which calls onBack = close.
+    // The focus goes back to the button that opened the panel where it shows, else Dua Study's card-menu ✓ Check,
+    // else the card (agreed with the Dua Lead, 31 Oct).
+    const close = () => {
       panelHost.remove();
-      open.focus({ preventScroll: true });
-    });
+      const to = open.getClientRects().length ? open : card.querySelector('[data-dua-menu="check"]');
+      if (to) to.focus({ preventScroll: true }); else { card.tabIndex = -1; card.focus({ preventScroll: true }); }
+      card.scrollIntoView({ block: "center" });
+    };
     fit.then((fitRows) => {
       const texts = loadMemberTexts(c, summary.books);
       panelHost.appendChild(buildCheckPanel({
