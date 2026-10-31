@@ -48,8 +48,24 @@ for (const [pagePath, lang, width] of [["/app/hadith-collections.html", "en", 39
   const href = await P.evaluate(() => document.querySelector('[data-hadeethenc-note-link="4563"]')?.getAttribute("href") ?? "");
   const q = new URLSearchParams(href.split("?")[1] ?? "");
   check(`${tag} 📝 My Notes opens notes.html for hadith:hadeethenc:4563 with back=1`, href.startsWith("notes.html?") && q.get("unit") === "hadith:hadeethenc:4563" && q.get("back") === "1", href);
+  // UPDATED IN PLACE (J108, v13.01, the Owner: "Q2:A. Q3. Build it."): a plain press on 📝 now opens a NEW Note with this
+  // hadith inside it in the shared Note opener, over this page -- the page is never left, so closing it IS the way back.
+  // The link's address (notes.html, this hadith's Notes, back=1) is kept for a modified click and for "open"; its own
+  // way back is still checked below by following that address.
+  const url0 = P.url();
+  await P.click('[data-hadeethenc-note-link="4563"]');
+  const fEl = await P.waitForSelector("#noteOpener:not([hidden]) iframe", { timeout: 10000 }).catch(() => null);
+  let F = null;
+  for (let i = 0; i < 100 && fEl && !F; i++) { const f = await fEl.contentFrame(); if (f && /new=1/.test(f.url())) F = f; else await P.waitForTimeout(100); }
+  await F?.waitForSelector("[data-edit-body] .mm-ref", { timeout: 20000 }).catch(() => {});
+  const nn = F ? await F.evaluate(() => ({ id: JSON.parse(document.querySelector("[data-edit-body] .mm-ref")?.getAttribute("data-mmsa-ref") || "{}").id, title: document.querySelector("[data-edit-title]")?.value })) : null;
+  check(`${tag} 📝 opens a NEW Note with hadith 4563 inside it, over the page (the address unchanged but for ?resume)`, nn?.id === "hadith:hadeethenc:4563" && /:$/.test(nn?.title || "") && P.url().split("?")[0] === url0.split("?")[0], JSON.stringify(nn));
+  await F?.click('[data-nn-tool="back"]').catch(() => {});
+  await P.waitForFunction(() => document.getElementById("noteOpener")?.hidden, null, { timeout: 8000 }).catch(() => {});
+  const closed = await P.evaluate(() => { const c = document.querySelector('[data-hadeethenc-card="4563"]')?.getBoundingClientRect(); return { hidden: document.getElementById("noteOpener")?.hidden, onScreen: !!c && c.bottom > 0 && c.top < innerHeight }; });
+  check(`${tag} ← Back closes the Note; hadith 4563's card is still on screen`, closed.hidden && closed.onScreen, JSON.stringify(closed));
   let went = true;
-  await Promise.all([P.waitForURL(/notes\.html\?/, { timeout: 15000 }), P.click('[data-hadeethenc-note-link="4563"]')]).catch(() => { went = false; });
+  await P.goto(new URL(href, P.url()).href, { waitUntil: "load" }).catch(() => { went = false; });
   const back = went ? await P.waitForSelector("#notesBackBtn:not([hidden])", { timeout: 10000 }).then(() => P.evaluate(() => ({ text: document.getElementById("notesBackBtn").textContent, h: document.getElementById("notesBackBtn").getBoundingClientRect().height }))).catch(() => null) : null;
   check(`${tag} the Notes page shows ${bn ? "← পেছনে" : "← Back"}, 40px tall`, back?.text === (bn ? "← পেছনে" : "← Back") && back.h >= 40, JSON.stringify(back));
   if (back) {
