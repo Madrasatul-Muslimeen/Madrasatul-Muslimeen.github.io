@@ -1023,6 +1023,13 @@ import { mountBookmarkMenu, noteBookmarkOpened, getBookmarkTimesShown, bookmarkT
     });
 
     nbCancelBtn.addEventListener("click", () => { newBookmarkForm.style.display = "none"; });
+    // Audit part 142 (D2): Escape closes the New bookmark form like Cancel, and focus goes back to the button that opened it.
+    newBookmarkForm.addEventListener("keydown", (e) => {
+      if (e.key !== "Escape" || newBookmarkForm.style.display === "none") return;
+      e.preventDefault();
+      newBookmarkForm.style.display = "none";
+      newBookmarkBtn.focus();
+    });
 
     nbCreateBtn.addEventListener("click", async () => {
       if (!selectedPersonId || nbModuleSelect.value !== "quranrevival") return;
