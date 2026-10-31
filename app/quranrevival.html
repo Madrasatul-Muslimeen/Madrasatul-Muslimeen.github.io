@@ -20698,6 +20698,24 @@
       // ran off the LEFT of a 320px screen. Its left edge is held at 8px at the most.
       const rightMax = Math.max(8, Math.round(window.innerWidth - readToolsMenu.offsetWidth - 8));
       readToolsMenu.style.right = `${Math.min(rightMax, Math.max(8, Math.round(window.innerWidth - r.right)))}px`; /* audit11 toolsplace */
+      // QR Lead audit 3: with large text the Read page scrolls (body.read-tall), and this panel is fixed, so a panel taller
+      // than the room under ⋯ ran off the screen for good (360x740 200%: 707px tall from 602px; a phone turned sideways at
+      // 200%: opened below the screen). It opens on the side of ⋯ with more room, above the tabs and the Zab bar, and
+      // scrolls inside itself when that side is still short. Where it fitted, it is where it was.
+      const s = readToolsMenu.style;
+      s.bottom = s.maxHeight = s.overflowY = "";
+      let floor = window.innerHeight - 8;
+      for (const id of ["dock", "zabBar"]) {
+        const el = document.getElementById(id);
+        if (!el || !el.getClientRects().length) continue;
+        const d = el.getBoundingClientRect();
+        if (d.top > r.bottom && d.top < floor + 4) floor = d.top - 4;
+      }
+      const need = readToolsMenu.offsetHeight, below = floor - (r.bottom + 6), above = r.top - 6 - 8;
+      if (need <= below) return;
+      s.overflowY = "auto";
+      if (below >= above) s.maxHeight = `${Math.max(0, Math.round(below))}px`;
+      else { s.top = "auto"; s.bottom = `${Math.round(window.innerHeight - r.top + 6)}px`; if (need > above) s.maxHeight = `${Math.round(above)}px`; }
     }
     function closeReadTools({ focus = false } = {}) {
       if (!readToolsMenu?.classList.contains("open")) return;
@@ -20731,6 +20749,39 @@
     });
     document.addEventListener("keydown", (e) => { if (e.key === "Escape" && readToolsMenu?.classList.contains("open")) closeReadTools({ focus: true }); });
     window.addEventListener("resize", placeReadTools);
+    // QR Lead audit 3 (Text size, PCF User Manual o5a3205): A±'s sliders hang 13.5rem wide under their button, and the ⋯ panel
+    // is position: fixed, so what falls past the screen can never be scrolled to. Measured on v12.138: at 200% text on a
+    // 360px phone the sliders were 472px wide and began 121px BELOW the screen; on a phone turned sideways none of the six
+    // controls was on screen even at ordinary text; on a computer at 200% Reset lay under the tabs. Now the sliders are held
+    // on screen, above the tabs and the Zab bar, on the side of A± with more room (never over A±, so a second tap still
+    // closes them), and scroll inside themselves when even that side is short. Where they already fitted, nothing moves.
+    function fitReadTextSize() {
+      const pop = readTextSizeSlot?.querySelector(".text-size-popover");
+      if (!pop) return;
+      const s = pop.style;
+      s.position = s.left = s.right = s.top = s.bottom = s.width = s.maxHeight = s.overflowY = s.boxSizing = "";
+      if (!pop.classList.contains("open")) return;
+      const btn = readTextSizeSlot.querySelector("[data-text-size-toggle]").getBoundingClientRect(), p = pop.getBoundingClientRect();
+      let floor = window.innerHeight - 8;
+      for (const id of ["dock", "zabBar"]) {
+        const el = document.getElementById(id);
+        if (!el || !el.getClientRects().length) continue;
+        const r = el.getBoundingClientRect();
+        if (r.top > btn.bottom && r.top < floor + 4) floor = r.top - 4;
+      }
+      // Inside a panel that scrolls, a hanging popover would be cut by the panel, so it is always held on screen there.
+      if (!readToolsMenu.style.overflowY && p.left >= 8 && p.right <= window.innerWidth - 8 && p.top >= 8 && p.bottom <= floor) return;
+      const width = Math.min(p.width, window.innerWidth - 16), below = floor - (btn.bottom + 4), above = btn.top - 4 - 8;
+      s.position = "fixed"; s.boxSizing = "border-box"; s.right = "auto"; s.overflowY = "auto"; s.width = `${Math.round(width)}px`;
+      s.left = `${Math.round(Math.min(Math.max(8, p.left), window.innerWidth - 8 - width))}px`;
+      if (below >= p.height || below >= above) { s.top = `${Math.round(btn.bottom + 4)}px`; s.bottom = "auto"; s.maxHeight = `${Math.max(0, Math.round(below))}px`; }
+      else { s.top = "auto"; s.bottom = `${Math.round(window.innerHeight - btn.top + 4)}px`; s.maxHeight = `${Math.round(above)}px`; }
+    }
+    readTextSizeSlot?.addEventListener("click", () => requestAnimationFrame(fitReadTextSize));
+    window.addEventListener("resize", () => requestAnimationFrame(fitReadTextSize));
+    // The panel and the sliders are fixed while the page under them scrolls (read-tall), so they follow ⋯ and A±.
+    window.addEventListener("scroll", () => { placeReadTools(); fitReadTextSize(); }, { passive: true });
+    readToolsMenu?.addEventListener("scroll", () => fitReadTextSize(), { passive: true });
     // PCF MSA J99: below 600px Take an Approach | Record Your Progress | Know Your Status live in the ⋯ card (see its CSS);
     // from 600px they go back to their own place on the bar, before the unit chip. Same buttons, ids and handlers, so each
     // opens exactly what it did (and the card closes behind it, as for every tool).
