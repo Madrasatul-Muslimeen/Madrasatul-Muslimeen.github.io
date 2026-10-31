@@ -132,11 +132,11 @@ async function openWindow(P, lang, viaMenu) {
     if (!(await P.evaluate(() => document.getElementById("tabNoteBtn")?.getBoundingClientRect().width > 0))) { await P.click("#tabStudyBtn"); await P.waitForTimeout(250); }
     await P.click("#tabNoteBtn");
   } else {
-    await P.evaluate(async ({ title, label }) => {
+    await P.evaluate(async ({ title, label, back }) => {
       const m = await import("/app/js/note-opener.js");
       const ref = await m.loadRefFor("ayah", "2:255");
-      m.openNewNote({ ref, unitKey: "ayah:2:255", unitLabel: label, title, backLabel: "Back to Āyah card", count: 3, onOpenExisting: () => {} });
-    }, { title: lang === "bn" ? LONG_BN : LONG, label: lang === "bn" ? LONG_BN.slice(0, 40) : LONG.slice(0, 60) });
+      m.openNewNote({ ref, unitKey: "ayah:2:255", unitLabel: label, title, backLabel: back, count: 3, onOpenExisting: () => {} });
+    }, { back: lang === "bn" ? "আয়াত কার্ডে ফিরুন" : "Back to Āyah card", title: lang === "bn" ? LONG_BN : LONG, label: lang === "bn" ? LONG_BN.slice(0, 40) : LONG.slice(0, 60) });
   }
   const el = await P.waitForSelector("#noteOpener:not([hidden]) iframe", { timeout: 15000 });
   let f = null;
