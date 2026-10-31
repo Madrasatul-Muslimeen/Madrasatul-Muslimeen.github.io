@@ -8510,11 +8510,13 @@
       }
       body.classList.remove("read-tall");
       const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
-      const barUnder = !!bar && bar.getClientRects().length > 0 && bar.getBoundingClientRect().bottom > dockEl.getBoundingClientRect().top + 1;
+      // Only while the tabs are on screen: a hidden dock measures top 0, which every bar would be "under".
+      const dockShown = dockEl.getClientRects().length > 0 && dockEl.getBoundingClientRect().height > 0;
+      const barUnder = dockShown && !!bar && bar.getClientRects().length > 0 && bar.getBoundingClientRect().bottom > dockEl.getBoundingClientRect().top + 1;
       const spill = rs.clientHeight < 12 * rem || barUnder;
       if (spill) {
         // The page of text never reaches under the tabs (the Read view pages sideways, so a hidden line could not be scrolled to).
-        body.style.setProperty("--read-tall-h", Math.max(Math.round(4 * rem), innerHeight - (dockEl.getClientRects().length ? dockEl.offsetHeight : 0) - 8) + "px");
+        body.style.setProperty("--read-tall-h", Math.max(Math.round(4 * rem), innerHeight - (dockShown ? dockEl.offsetHeight : 0) - 8) + "px");
         body.classList.add("read-tall");
       }
     }

@@ -8,7 +8,7 @@
 // could never be scrolled to). At ordinary text on a phone held upright, a tablet or a computer nothing changes.
 //   node tools/i18n-verify/qr-read-tall-browser.mjs [--mutate=NAME]   (serve.js on :8080, from the repo root)
 //   no-watch  the watcher is not started             -> "every read-bar button can be reached" and "text has room" FAIL
-//   no-css    body.read-tall's page scroll removed    -> the same FAIL (the class is set, nothing scrolls)
+//   no-css    body.read-tall's page scroll removed    -> the same FAIL (the class is set, nothing scrolls for a finger)
 //   no-cap    the reading area floored at 12rem       -> "the page of text ends above the tabs" FAILS sideways at 150/200%
 //   no-full   full screen excluded from read-tall      -> "in full screen the text has room" FAILS sideways at 200% (0px, as on main)
 import { chromium, newContext, openPage } from "./harness.mjs";
@@ -52,15 +52,23 @@ async function boot(lang, w, h, size) {
 const measure = (page) => page.evaluate(() => {
   const R = (e) => e.getBoundingClientRect(), dock = document.getElementById("dock"), rsEl = document.getElementById("readScroll");
   const btns = [...document.querySelectorAll("#readBar button, #readListBtn")].filter((e) => R(e).width > 0);
+  // A script can scroll a page a finger cannot (overflow: hidden still scrolls by script), so scrolling to a control
+  // counts only if the page really scrolls for a reader.
+  const html = getComputedStyle(document.documentElement).overflowY, bodyO = getComputedStyle(document.body).overflowY;
+  const userScroll = /auto|scroll/.test(html) || (html === "visible" && !/hidden|clip/.test(bodyO));
+  const hitNow = (e) => { const r = R(e), x = r.left + r.width / 2, y = r.top + r.height / 2; if (y < 0 || y > innerHeight || x < 0 || x > innerWidth) return false; const at = document.elementFromPoint(x, y); return !!at && e.contains(at); };
+  document.scrollingElement.scrollTop = 0;
   const unreachable = btns.filter((e) => {
+    if (hitNow(e)) return false;
+    if (!userScroll) return true;
     e.scrollIntoView({ block: "center" });
     const r = R(e), x = r.left + r.width / 2, y = r.top + r.height / 2;
     if (y < 0 || y > innerHeight || x < 0 || x > innerWidth) return true;
     const at = document.elementFromPoint(x, y); return !at || !e.contains(at);
   }).map((e) => (e.id || e.getAttribute("aria-label") || e.textContent).trim().slice(0, 18));
-  rsEl.scrollIntoView({ block: "start" });
+  if (userScroll) rsEl.scrollIntoView({ block: "start" }); else document.scrollingElement.scrollTop = 0;
   const rs = R(rsEl), d = R(dock), rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
-  const r = { tall: document.body.classList.contains("read-tall"), n: btns.length, unreachable, rsH: Math.round(rs.height),
+  const r = { userScroll, tall: document.body.classList.contains("read-tall"), n: btns.length, unreachable, rsH: Math.round(rs.height),
     textRoom: Math.round(Math.min(rs.bottom, d.top) - Math.max(rs.top, 0)), rsBottom: Math.round(rs.bottom), dockTop: Math.round(d.top), rem,
     sideways: document.scrollingElement.scrollWidth > innerWidth };
   document.scrollingElement.scrollTop = 0; return r;
@@ -85,12 +93,14 @@ for (const [w, h, lang] of [[360, 740, "en"], [360, 740, "bn"], [390, 844, "en"]
 // took the whole height and the text had 0px. In full screen the text gets the screen (no tabs to leave room for).
 for (const [w, h, size] of [[360, 740, "200%"], [740, 360, "150%"], [740, 360, "200%"], [740, 360, "100%"]]) {
   const { ctx, page } = await boot("en", w, h, size);
-  await page.evaluate(() => document.getElementById("hideChromeBtn").scrollIntoView({ block: "center" }));
-  await page.click("#hideChromeBtn"); await page.waitForTimeout(700);
+  // A script tap, so a covered button (as on main) cannot hang the run; whether a finger reaches it is checked above.
+  await page.evaluate(() => document.getElementById("hideChromeBtn").click()); await page.waitForTimeout(700);
   const m = await page.evaluate(() => {
-    const rs = document.getElementById("readScroll"); rs.scrollIntoView({ block: "start" });
+    const html = getComputedStyle(document.documentElement).overflowY, bodyO = getComputedStyle(document.body).overflowY;
+    const userScroll = /auto|scroll/.test(html) || (html === "visible" && !/hidden|clip/.test(bodyO));
+    const rs = document.getElementById("readScroll"); if (userScroll) rs.scrollIntoView({ block: "start" });
     const r = rs.getBoundingClientRect(), rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
-    const x = document.getElementById("hideChromeBtn"); x.scrollIntoView({ block: "center" }); const xr = x.getBoundingClientRect();
+    const x = document.getElementById("hideChromeBtn"); if (userScroll) x.scrollIntoView({ block: "center" }); else document.scrollingElement.scrollTop = 0; const xr = x.getBoundingClientRect();
     const at = document.elementFromPoint(xr.left + xr.width / 2, xr.top + xr.height / 2);
     return { imm: document.body.classList.contains("immersive-read"), rsH: Math.round(r.height), inView: Math.round(Math.min(r.bottom, innerHeight) - Math.max(r.top, 0)), rem, exitReach: !!at && x.contains(at) };
   });
