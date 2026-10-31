@@ -149,8 +149,8 @@ check("the brief's own version claim matches app/js/version.js", () => {
     "the milestone line is claiming a merge state that is not real");
 });
 
-check("the seven reachable lines the brief names are all present", () => {
-  for (const p of ["legacy/index.html", "legacy-v07/index.html", "legacy-v08/index.html", "legacy-v09/index.html", "legacy-v10/index.html", "legacy-v11/index.html", "app/index.html"]) {
+check("the eight reachable lines the brief names are all present", () => {
+  for (const p of ["legacy/index.html", "legacy-v07/index.html", "legacy-v08/index.html", "legacy-v09/index.html", "legacy-v10/index.html", "legacy-v11/index.html", "legacy-v12/index.html", "app/index.html"]) {
     assert.ok(fs.existsSync(path.join(root, p)), `${p} is named in the brief's own table and is missing`);
   }
 });
@@ -173,6 +173,9 @@ const LEGACY_ARCHIVES = [
   // 19 Oct 2026: legacy-v11/ is app/ as RELEASED at v11.39 (merge commit 2bfad051),
   // archived on the Owner's tick PCF MSA J39 7A, with the same one change and README.
   { dir: "legacy-v11", release: "v11.39", source: "2bfad051b7080b2954f434c271fa8e8503fbdb82" },
+  // 31 Oct 2026: legacy-v12/ is app/ as at v12.137, the last v12 release (merge commit 1120247),
+  // archived when v13.01 opened the v13 line (PCF MSA J108), with the same one change and README.
+  { dir: "legacy-v12", release: "v12.137", source: "11202473535a7e1988cff53f10ebf6648640cec7" },
 ];
 for (const { dir: archive, release, source } of LEGACY_ARCHIVES) {
 check(`${archive}/ is still exactly the ${release} release, apart from its one documented change`, () => {
