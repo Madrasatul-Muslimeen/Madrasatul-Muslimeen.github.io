@@ -23097,3 +23097,9 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 - **D3** `account-card.js`: the `aria-modal` card holds Tab and Shift+Tab inside itself while open (9–27 controls behind it were reachable).
 - **D2** `bookmarks.html`: Escape closes the New bookmark form like Cancel, also while focus is still on + New bookmark, and focus returns to that button.
 - **Suites:** `audit142-focus-browser.mjs` (Architect; mutations no-d1/no-d2/no-d3), and the Builder's `shared-tools-a11y-browser.mjs` (first version; run 2324 lost its GitHub token before its later fixes and report were pushed — findings are on issue #1363). D4–D6 (contrast in `quranrevival.html`, frozen Quran Study) sent to the QR Lead.
+
+## v13.04 — 31 Oct 2026 — Quran Study: the Word card's Taṣrīf table at large text, and three contrast fixes (QR Lead audits 6 and 7)
+
+- **Audit 6 (Word card, Manual 9a6dqv8):** under `@container wordcard (max-width: 18rem)` the Taṣrīf noun table stacks: each row's name on its own line, its three cells in a 3-column grid; case heads may hyphenate; "not in the Qur'an" a little smaller. Suite `qr-word-card-tasrif-fit-browser.mjs` (unfixed 50/18; mutations no-stack, no-grid, wide).
+- **Audit 7 (Builder part 142 D4–D6):** Night `.wheel-heading` on the page `#7a5410`; `.wheel-unit-capsule-caret` opacity 0.9; Light `.ways-caret` `#7a5410`. Suite `qr-wheel-contrast-browser.mjs` (mutations heading 2.40, caret 4.49, ways 1.45 reproduce the Builder's numbers).
+- Also the QR Lead's handover D (docs). Nothing stored, no Rules.
