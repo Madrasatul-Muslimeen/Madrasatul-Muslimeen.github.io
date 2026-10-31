@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "13.04",
+    "version": "13.05",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -5993,8 +5993,20 @@
     {
       "version": "13.04",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "QR Lead audits 6 (Word card Taṣrīf case table at large text) and 7 (Builder part 142 D4-D6 contrast on the Quran Study landing); Quran Study only, no data or Rules.",
+      "integration": {
+        "authorizedOn": "2026-10-31",
+        "integratedOn": "2026-10-31",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.05",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "QR Lead: fitReadTextSize gets a ceiling under the top nav so the A± sliders are never covered at large text on a computer (a QR-only fault); Quran Study only, no data or Rules.",
       "integration": {
         "authorizedOn": "2026-10-31",
         "integratedOn": "2026-10-31",
@@ -6003,8 +6015,9 @@
       }
     }
   ],
-  "nextUnallocated": "13.05",
+  "nextUnallocated": "13.06",
   "nextUnallocatedNote": [
+    "v13.05 was allocated to Quran Study: the A± text-size sliders open below the top bar on QR (QR Lead), 2026-10-31.",
     "v13.04 was allocated to Quran Study: the Word card's Taṣrīf table at large text, and three contrast fixes on the landing (QR Lead audits 6 and 7), 2026-10-31.",
     "v13.03 was allocated to audit part 142 fixes: the My account card and New bookmark keyboard focus, 2026-10-31.",
     "v13.02 was allocated to Quran Study: Listening and the Mushaf full screen at large text (QR Lead audits 4 and 5), 2026-10-31.",
