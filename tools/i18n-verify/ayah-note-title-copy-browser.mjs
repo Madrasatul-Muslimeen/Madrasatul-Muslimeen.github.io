@@ -27,7 +27,8 @@ const check = (name, ok, detail = "") => {
 };
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
 const MUT = {
-  notitle: ["journey-map.html", "      const label = noteTitleParam || unitLabel();", "      const label = unitLabel();"],
+  // UPDATED IN PLACE (J108): the new Note is made by the opener's page now, so the mutation drops ITS first title.
+  notitle: ["journey-map.html", "      const title = newTitleParam;", "      const title = \"\";"],
   input: ["js/note-window.js", '<textarea class="pane-edit-title" data-edit-title rows="1" hidden></textarea>', '<input type="text" class="pane-edit-title" data-edit-title hidden>'],
   fit: ["js/note-window.js", "  function fitEditTitle(el) {\n", "  function fitEditTitle(el) { return;\n"],
   enter: ["js/note-window.js", 'else if (ev.key === "Enter" && ev.target.matches?.("[data-edit-title]"))', 'else if (false)'],
@@ -81,32 +82,32 @@ for (const lang of ["en", "bn"]) for (const [width, height] of [[1280, 800], [39
   const { ctx, P, ev } = await setup(lang, width, height);
   // (1) the first title
   await openCard(P, 255);
+  // UPDATED IN PLACE (J108, v13.01): the card's 📝 Note opens the shared Note opener -- a NEW Note at once -- so (1) reads the
+  // title off that Note's first write (createStudyNote, as before) and off its title box.
   await P.click("[data-ayah-sheet] [data-ayah-sheet-note]");
   let F = null;
-  for (let i = 0; i < 80 && !F; i++) { F = P.frames().find((x) => /journey-map\.html\?embed=1&unit=ayah%3A2%3A255/.test(x.url())) ?? null; if (!F) await P.waitForTimeout(100); }
-  await F?.waitForFunction(() => document.activeElement?.matches?.("[data-unit-new].unit-new-ready"), null, { timeout: 15000 }).catch(() => {});
-  // UPDATED IN PLACE (J81 part 3, v12.26: every note opens in the Mapping My Journey window): ✚ New note now writes the Note and
-  // opens #journeyTray on it, in a fresh page the stub cannot give the new Note to. So (1) reads the title off the Note's own
-  // write (the same createStudyNote the real app makes), and (2) runs in the tray on a seeded Note (2:256), via its ✏️ Edit.
-  await F?.click("[data-unit-new]");
-  await P.waitForFunction(() => /embed=1&note=[0-9a-f]{16,}/.test(document.querySelector("#journeyTray:not([hidden]) iframe")?.getAttribute("src") ?? ""), null, { timeout: 10000 }).catch(() => {});
+  for (let i = 0; i < 80 && !F; i++) { F = P.frames().find((x) => /journey-map\.html\?embed=1&new=1&unit=ayah%3A2%3A255/.test(x.url())) ?? null; if (!F) await P.waitForTimeout(100); }
+  await F?.waitForSelector("[data-edit-title]:not([hidden])", { timeout: 20000 }).catch(() => {});
+  await P.waitForTimeout(500);
   const title = F ? await F.evaluate(() => (window.__stubWriteData || []).filter((x) => x.col === "notes").map((x) => x.data?.title ?? null)[0] ?? null).catch(() => null) : null;
-  const closeTray = async () => { await P.click("#journeyTray .jt-close", { timeout: 5000 }).catch(() => {}); await P.waitForTimeout(400); };
-  await closeTray();
+  await F?.click('[data-nn-tool="back"]').catch(() => {});
+  await P.waitForFunction(() => document.getElementById("noteOpener")?.hidden, null, { timeout: 8000 }).catch(() => {});
   const want = lang === "en" ? TITLE.en : `কুরআন ২:২৫৫ - ${await ev(() => document.querySelector('#surahSelect option[value="2"]')?.textContent.replace(/^[\d০-৯]+\.\s*/, "").trim())}:`;
   check(`${tag} (1) the new Note's title is "${want}" (got "${title}")`, title === want, String(title));
   // (2) a long title wraps, nothing cut; Enter goes on to the body
   const long = "Quran 2:255 - Al-Baqara: Ayat al-Kursi, the greatest ayah in the Book of Allah, read it after every prayer and before sleep";
-  await P.click("#readNotePane [data-rnp-back]").catch(() => {});
   await P.waitForFunction(() => document.getElementById("ayahActionSheetOverlay")?.classList.contains("open"), null, { timeout: 8000 }).catch(() => {});
   await P.waitForTimeout(300);
   await P.click('[data-ayah-sheet] [data-ayah-sheet-step="1"]');
   await P.waitForFunction(() => /2:256|২:২৫৬/.test(document.querySelector("[data-ayah-sheet] .ayah-sheet-ref")?.textContent ?? ""), null, { timeout: 8000 }).catch(() => {});
   await P.waitForTimeout(500);
   await P.click("[data-ayah-sheet] [data-ayah-sheet-note]");
+  // J108: the new Note's "You have 1 other Note on this āyah — open" is the way to the Notes pane listing "On 2:256".
+  await P.waitForSelector("#noteOpener:not([hidden]) [data-no-count-open]", { timeout: 20000 }).catch(() => {});
+  await P.click("#noteOpener [data-no-count-open]").catch(() => {});
   let F2 = null;
   // the pane may reuse its page and be told the new āyah by message, so its address can still name 2:255
-  for (let i = 0; i < 80 && !F2; i++) { F2 = P.frames().find((x) => /journey-map\.html\?embed=1&unit=ayah%3A2%3A/.test(x.url())) ?? null; if (!F2) await P.waitForTimeout(100); }
+  for (let i = 0; i < 80 && !F2; i++) { F2 = P.frames().find((x) => /journey-map\.html\?embed=1&unit=ayah%3A2%3A/.test(x.url()) && !/new=1/.test(x.url())) ?? null; if (!F2) await P.waitForTimeout(100); }
   await F2?.waitForSelector('[data-unit-body] [data-note-id="n256"] [data-note-open]', { timeout: 15000 }).catch(() => {});
   await F2?.click('[data-unit-body] [data-note-id="n256"] [data-note-open]').catch(() => {});
   let T = null;

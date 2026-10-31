@@ -28,7 +28,10 @@ const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PAT
 for (const [pagePath, lang, width] of [["/app/hadith-collections.html", "en", 390], ["/app/hadith-collections.html", "bn", 1280], ["/app/hadith-study.html", "en", 390]]) {
   const tag = `[${pagePath.slice(5)} ${lang} ${width}]`;
   const bn = lang === "bn";
-  const ctx = await newContext(browser, { appLang: lang, banner: false, viewport: { width, height: 860 } });
+  // UPDATED IN PLACE (J108, v13.01): 📝 Note now MAKES a new Note at once (a folder, the Note, its filing). The stub applies
+  // those writes to its own data only with __stubApplyBatches -- without it the filing reads a folder it never kept and
+  // logs "Note and Folder must exist", which real Firestore never does.
+  const ctx = await newContext(browser, { appLang: lang, banner: false, viewport: { width, height: 860 }, extraSeedJs: "window.__stubApplyBatches = true;" });
   await ctx.route("**/archive.org/**", (r) => r.abort());
   if (MUTATE) {
     const [file, a, b] = MUT[MUTATE];
