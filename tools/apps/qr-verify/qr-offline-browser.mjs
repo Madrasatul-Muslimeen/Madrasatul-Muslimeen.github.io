@@ -182,7 +182,7 @@ async function run(width) {
   await page.goto(`${base}/app/quranrevival.html`, { waitUntil: "load" }).catch(() => {});
   await fresh(page);
   const ver = await page.locator("#appVersion").innerText().catch(() => "");
-  check(/^v\d+\.\d+$/.test(ver), `${tag} offline: Quran Study opens and its code runs (${ver || "nothing"})`);
+  check(/^v\d+\.\d+(?:-\d\d\.\d\d\.\d\d)?$/.test(ver), `${tag} offline: Quran Study opens and its code runs (${ver || "nothing"})`);
   await page.waitForSelector("#wheelSection .wheel-seg", { timeout: 15000 }).catch(() => {});
   check(await page.locator("#wheelSection .wheel-seg").count() > 0, `${tag} offline: the wheel`);
   const r2 = await readFatiha(page);

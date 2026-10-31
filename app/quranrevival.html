@@ -7619,9 +7619,9 @@
     import { safeHref } from "./js/html-escape.js";
     import { adoptAppLangFromUserIndex, mountSyncedAppLangControl } from "./js/lang-sync.js";
     import { showBootSplash, showQuranSplash } from "./js/splash.js";
-    import { APP_VERSION } from "./js/version.js";
+    import { APP_VERSION_LABEL } from "./js/version.js";
 
-    document.getElementById("appVersion").textContent = `v${APP_VERSION}`;
+    document.getElementById("appVersion").textContent = `v${APP_VERSION_LABEL}`; // J108: "v13.01-31.10.26"
 
     // Shell round 4 (12 Aug 2026) -- index.html used to fire the boot splash
     // (Ta'awwudh/Basmala) on first load, independent of sign-in, then

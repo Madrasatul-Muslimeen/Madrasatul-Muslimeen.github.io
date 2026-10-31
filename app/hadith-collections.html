@@ -158,13 +158,13 @@
     import { translateStatic, t } from "./js/i18n.js";
     import { registerServiceWorker } from "./js/sw-register.js";
     import { armScreensaver } from "./js/screensaver-idle.js";
-    import { APP_VERSION } from "./js/version.js";
+    import { APP_VERSION_LABEL } from "./js/version.js";
 
     const params = new URLSearchParams(location.search);
     const mount = params.get("mount") === "quranrevival" ? "quranrevival" : "standalone";
     document.body.dataset.mount = mount;
 
-    document.getElementById("qrVersionBadge").textContent = `v${APP_VERSION}`;
+    document.getElementById("qrVersionBadge").textContent = `v${APP_VERSION_LABEL}`;
     document.getElementById("hadithPageTitle").textContent = t("Hadith Collections");
     document.getElementById("hadithPilotNote").textContent =
       t("HadeethEnc hadiths are real, published text. Everything marked Synthetic is invented for development.");

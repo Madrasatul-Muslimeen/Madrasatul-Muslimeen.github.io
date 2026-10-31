@@ -107,7 +107,7 @@
     import { adoptAppLangFromUserIndex, mountSyncedAppLangControl } from "./js/lang-sync.js";
     import { mountCardLookControl } from "./js/prefs.js";
     import { getFullRegistry } from "./js/feature-registry.js";
-    import { APP_VERSION } from "./js/version.js";
+    import { APP_VERSION_LABEL } from "./js/version.js";
     import { translateStatic, t } from "./js/i18n.js";
     import { registerServiceWorker } from "./js/sw-register.js";
     import { armScreensaver } from "./js/screensaver-idle.js";
@@ -148,7 +148,7 @@
 
     function renderRegistry() {
       const { features, phaseReservations } = getFullRegistry();
-      document.getElementById("versionLine").textContent = `QuranRevival v${APP_VERSION}`;
+      document.getElementById("versionLine").textContent = `QuranRevival v${APP_VERSION_LABEL}`;
       document.getElementById("featureRows").innerHTML = features
         .map((f) => `<tr><td>${f.id}</td><td>${t(f.name)}</td><td><span class="tag tag-${f.status}">${t(f.status)}</span></td></tr>`)
         .join("");
