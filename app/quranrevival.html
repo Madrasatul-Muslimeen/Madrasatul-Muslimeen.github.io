@@ -334,10 +334,11 @@
      label really is cut: the title and ✕ keep the first line and Save takes a full line of its own, wrapping its words
      rather than cutting them. At ordinary text nothing is cut, so nothing changes. */
   .qr-panel-head.qr-panel-head-stacked { flex-wrap: wrap; row-gap: 0.4rem; }
-  /* QR Lead audit 4: on a phone turned sideways at 200% the drawer has ~190px and the stacked head took ~180 of it, so the
-     options showed through a 10px slit. Where the head would take more than half the drawer, it scrolls with the options
-     (still first, so ✕ and Save are one scroll up) instead of standing over them. */
-  .qr-panel-head.qr-panel-head-scrolls { position: static; }
+  /* QR Lead audit 4: on a phone turned sideways at 200% the drawer has ~245px and the stacked head took 177 of it, so the
+     options showed through a slit and the reciter ticks could not be tapped. Where stacking would leave the options less
+     than 6rem, Save stays on the title's line and wraps its words there instead (never cut); the head stays where it is,
+     so ✕ stays on screen. */
+  .qr-panel-head.qr-panel-head-tight .preset-save-btn { flex: 1 1 auto; white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.15; }
   .qr-panel-head.qr-panel-head-stacked .qr-panel-head-actions { display: contents; }
   .qr-panel-head.qr-panel-head-stacked .qr-panel-x { order: 1; margin-left: auto; }
   .qr-panel-head.qr-panel-head-stacked .preset-save-btn { order: 2; flex: 1 1 100%; white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.15; }
@@ -11608,8 +11609,10 @@
         panel.style.setProperty("--qr-panel-room", Math.max(96, top - 6 - Math.ceil(box)) + "px");
         const head = panel.querySelector(".qr-panel-head");
         if (!head || panel.hidden) return;
-        head.classList.remove("qr-panel-head-scrolls");
-        if (head.offsetHeight > panel.clientHeight / 2) head.classList.add("qr-panel-head-scrolls");
+        head.classList.remove("qr-panel-head-tight");
+        if (head.classList.contains("qr-panel-head-stacked") && panel.clientHeight - head.offsetHeight < 6 * parseFloat(getComputedStyle(document.documentElement).fontSize)) {
+          head.classList.replace("qr-panel-head-stacked", "qr-panel-head-tight");
+        }
       });
     }
     addEventListener("resize", fitPanelRoom);

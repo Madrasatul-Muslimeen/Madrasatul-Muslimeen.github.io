@@ -9,7 +9,7 @@
 //   no-wrap     the buttons forced to share a line   -> "Read / Play show their whole words" FAILS on phones at 150/200%
 //   no-min      the Mode picker's 8rem minimum kept   -> "every control lies inside the card" FAILS at 360/390 200%
 //   no-cq       the card-width wrap removed           -> "the Mode picker shows its whole choice" FAILS at 768 200%
-//   no-scroll   the head always stands over the drawer -> "every control can be tapped" FAILS sideways at 200%
+//   no-tight    the head stays stacked however short -> "every control can be tapped" FAILS sideways at 200%
 //   no-dup      the duplicate note put back           -> "(whole surah only) is said once" FAILS everywhere
 import { chromium, newContext, openPage } from "./harness.mjs";
 
@@ -21,10 +21,10 @@ const check = (name, ok, detail = "") => {
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9), RECORD = process.argv.includes("--record");
 const MUT = {
   "no-height": ["  .opt-act-btn { height: auto; }\n", ""],
-  "no-wrap": ["    .opt-actions .opt-act-btn { flex: 1 1 0; min-width: max-content; }\n  }\n  /* The 480px", "    .opt-actions .opt-act-btn { flex: 1 1 0; min-width: 0; }\n  }\n  /* The 480px"],
-  "no-min": ["    .opt-bar-listen > .opt-cell-mode { flex: 1 1 auto; min-width: min(8rem, 100%); }\n  }\n  /* The 480px", "    .opt-bar-listen > .opt-cell-mode { flex: 1 1 auto; min-width: 8rem; }\n  }\n  /* The 480px"],
+  "no-wrap": ["    .opt-actions .opt-act-btn { flex: 1 1 0; min-width: max-content; }\n", "    .opt-actions .opt-act-btn { flex: 1 1 0; min-width: 0; }\n", 2],
+  "no-min": ["    .opt-bar-listen > .opt-cell-mode { flex: 1 1 auto; min-width: min(8rem, 100%); }\n", "    .opt-bar-listen > .opt-cell-mode { flex: 1 1 auto; min-width: 8rem; }\n", 2],
   "no-cq": ["  #drillControls { container-type: inline-size; }\n", ""],
-  "no-scroll": ['        if (head.offsetHeight > panel.clientHeight / 2) head.classList.add("qr-panel-head-scrolls");\n', ""],
+  "no-tight": ['head.classList.replace("qr-panel-head-stacked", "qr-panel-head-tight");', ""],
   "no-dup": ["reciterSupportsSingleAyah(r.id) || /whole surah only/i.test(r.label) ?", "reciterSupportsSingleAyah(r.id) ?"],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
@@ -44,11 +44,11 @@ for (const [w, h, lang] of [[360, 740, "en"], [360, 740, "bn"], [390, 844, "en"]
     const ctx = await newContext(browser, { appLang: lang, banner: false, viewport: { width: w, height: h } });
     await ctx.route("**/archive.org/**", (r) => r.abort());
     if (MUTATE) {
-      const [from, to] = MUT[MUTATE];
+      const [from, to, times = 1] = MUT[MUTATE]; // times: every copy of a rule is changed, and the count is checked
       await ctx.route("**/app/quranrevival.html*", async (r) => {
         const res = await r.fetch(); const body = await res.text();
-        if (body.split(from).length !== 2) throw new Error(`mutation ${MUTATE}: anchor not found exactly once`);
-        r.fulfill({ response: res, body: body.replace(from, to) });
+        if (body.split(from).length !== times + 1) throw new Error(`mutation ${MUTATE}: anchor not found exactly ${times} time(s)`);
+        r.fulfill({ response: res, body: body.split(from).join(to) });
       });
     }
     const { page } = await openPage(ctx, "/app/quranrevival.html");
