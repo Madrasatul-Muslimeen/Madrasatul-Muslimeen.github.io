@@ -3,13 +3,16 @@
 // could never be scrolled to. Measured on main v12.138 with this suite's probe: at 360x740 200% the sliders were 472px wide
 // and began 121px below the screen (all six controls off it); 390x844 200% the same; 360x740 150% Reset off the bottom; on a
 // phone turned sideways (740x360) five of six off even at ordinary text, all six at 150/200%; 768x1024 200% Reset under the
-// Zab bar; 1280x800 200% Reset under the tabs. fitReadTextSize() now holds them on screen, above the tabs and the Zab bar,
+// Zab bar; 1280x800 200% Reset under the tabs. And the ⋯ panel itself (fixed, while read-tall lets the page scroll) ran
+// off the screen: 360x740 200% 707px tall from 602px; sideways at 200% it opened below the screen. placeReadTools() holds it.
+// fitReadTextSize() now holds them on screen, above the tabs and the Zab bar,
 // on the side of A± with more room, scrolling inside themselves when that is still short. Where they fitted, nothing moves.
 //   node tools/i18n-verify/qr-text-size-reach-browser.mjs [--mutate=NAME]   (serve.js on :8080, from the repo root)
 //   no-fit    the fit is never run                -> "every control can be reached" / "inside the screen" FAIL
 //   no-floor  the tabs and Zab bar are ignored    -> "every control can be reached" FAILS at 768/1280 200%
 //   no-width  the width is not held to the screen -> "inside the screen sideways" FAILS at 360/390 200%
 //   always    the fit runs where it already fitted -> "nothing moves where it fitted" FAILS at 100%
+//   no-panel  the ⋯ panel is never held on screen -> "every tool in the ⋯ panel can be reached" FAILS at 200% and sideways
 import { chromium, newContext, openPage } from "./harness.mjs";
 
 let pass = 0, fail = 0;
@@ -22,7 +25,8 @@ const MUT = {
   "no-fit": ['    readTextSizeSlot?.addEventListener("click", () => requestAnimationFrame(fitReadTextSize));\n', ""],
   "no-floor": ['for (const id of ["dock", "zabBar"]) {', "for (const id of []) {"],
   "no-width": ["const width = Math.min(p.width, window.innerWidth - 16),", "const width = p.width,"],
-  "always": ["if (p.left >= 8 && p.right <= window.innerWidth - 8 && p.top >= 8 && p.bottom <= floor) return;", ""],
+  "always": ["if (!readToolsMenu.style.overflowY && p.left >= 8 && p.right <= window.innerWidth - 8 && p.top >= 8 && p.bottom <= floor) return;", ""],
+  "no-panel": ["      if (need <= below) return;\n", "      return;\n"],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
 const SHOT_DIR = process.env.SHOT_DIR || "";
@@ -51,7 +55,19 @@ async function boot(lang, w, h, size) {
 // Opens A± the way a finger does (⋯ first where it lives in the panel) and measures its sliders.
 async function openAndMeasure(page) {
   const inMenu = await page.evaluate(() => !document.querySelector("#readTextSizeSlot [data-text-size-toggle]").getClientRects().length);
-  if (inMenu) { await page.evaluate(() => document.getElementById("readToolsBtn").click()); await page.waitForTimeout(250); }
+  let panel = null;
+  if (inMenu) {
+    await page.locator("#readToolsBtn").click(); await page.waitForTimeout(250);
+    panel = await page.evaluate(() => {
+      const R = (e) => e.getBoundingClientRect(), m = document.getElementById("readToolsMenu"), scrolls = /auto|scroll/.test(getComputedStyle(m).overflowY);
+      const hit = (e) => { const r = R(e), x = r.left + r.width / 2, y = r.top + r.height / 2; if (y < 0 || y > innerHeight || x < 0 || x > innerWidth) return false; const at = document.elementFromPoint(x, y); return !!at && e.contains(at); };
+      const tiles = [...m.querySelectorAll("button")].filter((e) => e.getClientRects().length && R(e).width > 0 && !e.closest(".text-size-popover"));
+      const unreachable = tiles.filter((e) => { if (hit(e)) return false; if (!scrolls) return true; e.scrollIntoView({ block: "nearest" }); return !hit(e); })
+        .map((e) => (e.getAttribute("aria-label") || e.id || e.textContent).trim().slice(0, 14));
+      m.scrollTop = 0; const p = R(m);
+      return { n: tiles.length, unreachable, top: Math.round(p.top), bottom: Math.round(p.bottom), moved: !!m.style.overflowY };
+    });
+  }
   const tg = page.locator("#readTextSizeSlot [data-text-size-toggle]");
   await tg.scrollIntoViewIfNeeded(); await tg.click(); await page.waitForTimeout(250);
   return page.evaluate(() => {
@@ -66,7 +82,7 @@ async function openAndMeasure(page) {
     const at = document.elementFromPoint(tr.left + tr.width / 2, tr.top + tr.height / 2);
     return { open: pop.classList.contains("open"), n: ctrls.length, unreachable, left: Math.round(p.left), right: Math.round(p.right), top: Math.round(p.top),
       bottom: Math.round(p.bottom), width: Math.round(p.width), moved: !!pop.style.position, toggleFree: !!at && toggle.contains(at),
-      sliderW: Math.round(Math.min(...[...pop.querySelectorAll('input[type="range"]')].map((e) => R(e).width))) };
+      panel, sliderW: Math.round(Math.min(...[...pop.querySelectorAll('input[type="range"]')].map((e) => R(e).width))) };
   });
 }
 
@@ -74,6 +90,10 @@ for (const [w, h, lang] of [[360, 740, "en"], [360, 740, "bn"], [390, 844, "en"]
   for (const size of ["100%", "150%", "200%"]) {
     const { ctx, page } = await boot(lang, w, h, size);
     const m = await openAndMeasure(page), tag = `${lang} ${w}x${h} ${size}`, d = JSON.stringify(m);
+    if (m.panel) {
+      check(`${tag}: every tool in the ⋯ panel can be reached`, m.panel.n >= 3 && m.panel.unreachable.length === 0, JSON.stringify(m.panel));
+      if (size === "100%" && PLAIN[`${w}x${h}`]) check(`${tag}: the ⋯ panel is where it was`, !m.panel.moved, JSON.stringify(m.panel));
+    }
     check(`${tag}: A± opens its sliders`, m.open && m.n >= 6, d);
     check(`${tag}: the sliders lie inside the screen sideways`, m.left >= 0 && m.right <= w, d);
     check(`${tag}: every control can be reached`, m.unreachable.length === 0, d);
