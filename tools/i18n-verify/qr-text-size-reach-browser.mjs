@@ -70,7 +70,7 @@ async function openAndMeasure(page) {
   }
   const tg = page.locator("#readTextSizeSlot [data-text-size-toggle]");
   await tg.scrollIntoViewIfNeeded(); await tg.click(); await page.waitForTimeout(250);
-  return page.evaluate(() => {
+  return page.evaluate((panel) => {
     const R = (e) => e.getBoundingClientRect(), pop = document.querySelector("#readTextSizeSlot .text-size-popover"), p = R(pop);
     const toggle = document.querySelector("#readTextSizeSlot [data-text-size-toggle]"), tr = R(toggle);
     const popScrolls = /auto|scroll/.test(getComputedStyle(pop).overflowY);
@@ -83,7 +83,7 @@ async function openAndMeasure(page) {
     return { open: pop.classList.contains("open"), n: ctrls.length, unreachable, left: Math.round(p.left), right: Math.round(p.right), top: Math.round(p.top),
       bottom: Math.round(p.bottom), width: Math.round(p.width), moved: !!pop.style.position, toggleFree: !!at && toggle.contains(at),
       panel, sliderW: Math.round(Math.min(...[...pop.querySelectorAll('input[type="range"]')].map((e) => R(e).width))) };
-  });
+  }, panel);
 }
 
 for (const [w, h, lang] of [[360, 740, "en"], [360, 740, "bn"], [390, 844, "en"], [414, 896, "bn"], [768, 1024, "en"], [768, 1024, "bn"], [1280, 800, "en"], [1280, 800, "bn"], [740, 360, "en"], [740, 360, "bn"], [844, 390, "en"]]) {
