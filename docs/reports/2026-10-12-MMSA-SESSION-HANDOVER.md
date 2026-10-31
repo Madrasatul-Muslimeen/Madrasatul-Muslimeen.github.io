@@ -2332,3 +2332,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v13.03** (2026-10-31): audit part 142 fixes: the My account card and New bookmark keyboard focus.
 - **v13.04** (2026-10-31): Quran Study: the Word card's Taṣrīf table at large text, and three contrast fixes on the landing (QR Lead audits 6 and 7).
 - **v13.05** (2026-10-31): Quran Study: the A± text-size sliders open below the top bar on QR (QR Lead).
+- **v13.06** (2026-10-31): Quran Study: the Word card's level tabs at large text (QR Lead).

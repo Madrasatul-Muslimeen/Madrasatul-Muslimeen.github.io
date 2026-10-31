@@ -23108,3 +23108,8 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 
 - `fitReadTextSize()` keeps a ceiling under `#topNav` when the nav is on screen above A±, so on QR at 1280x800 200% the first slider is no longer covered by the top nav. Nothing changes on MSA.
 - `qr-text-size-reach-browser.mjs`: mutation no-ceil (proven on the QR build). Also QR Lead handover E (docs; carries the design of audit 6b, a Qur'an word never split in the Taṣrīf cells). Nothing stored, no Rules.
+
+## v13.06 — 31 Oct 2026 — Quran Study: the Word card's level tabs at large text (QR Lead)
+
+- Below 600px: `[role=tab]` `min-width: min-content`, `overflow-wrap: normal`, the tab list wraps; under `@container wordcard (max-width: 11.5rem)` each tab takes `flex-basis: 28%` (three and two). `.word-card-tab-sub` wraps instead of being cut.
+- Suite `qr-word-card-tabs-large-text-browser.mjs` (en+bn; 320–1280; 100/150/200%; mutations no-minw, no-sub, no-three). Nothing stored, no Rules.
