@@ -2862,6 +2862,18 @@
     }
     body.read-from-contents.immersive-read.fs-hide-readbar.fs-hide-transport #readBar:has(#mushafPagePrevBtn:not([hidden])) #readQuickRow { padding-left: calc(0.5rem + 44px); }
   }
+  /* QR Lead audit 5, 31 Oct 2026 (Mushaf view, PCF User Manual d9d78ub): with large text a phone's bare full screen kept
+     ☰ ‹ › and the tiles and left the page reference 48px (360 at 200%): only ▾ showed, so it no longer said where the reader
+     is. fitReadBareBar() measures it, and only when its words are cut below 3.5 letters' room does it take a line of its own
+     under the tools. Below 600px Notes / Record / Approach then cut "Approach" at the screen's edge; only when a word is cut
+     do they take their own widths and wrap, and the reading keeps that row's measured height (--rq-h) at its foot. */
+  body.qr-ref-own-line.immersive-read.fs-hide-readbar.fs-hide-transport #readBar:has(#mushafPagePrevBtn) #mushafPageRef#mushafPageRef { order: 99; flex: 1 0 100%; }
+  @media (max-width: 599.98px) {
+    body.rq-wrap.read-from-contents.immersive-read.fs-hide-readbar.fs-hide-transport #readQuickRow { flex-wrap: wrap; }
+    body.rq-wrap #readQuickRow .rq-btn { flex: 1 1 auto; }
+    body.rq-wrap.read-from-contents.immersive-read.fs-hide-readbar.fs-hide-transport #readScroll { padding-bottom: var(--rq-h, 52px); }
+    body.rq-wrap.read-from-contents.immersive-read.fs-hide-readbar.fs-hide-transport #readHint { bottom: calc(var(--rq-h, 52px) + 0.75rem); }
+  }
   @media (max-width: 479px) {
     #readBar:has(#readMeaningLayersSlot:not([hidden])) #readMeaningBtn { padding: 0; width: 40px; }
     #readBar:has(#readMeaningLayersSlot:not([hidden])) #readMeaningBtn .read-meaning-word { display: none; }
@@ -8500,6 +8512,21 @@
     if (typeof ResizeObserver === "function") watchLandingFit(); // audit part 131: large text above 720px
     /** QR Lead audit, 31 Oct 2026: see body.read-tall in the CSS. Measured, never guessed: the header, the read bar and
         the dock all change height with the text size, the language and the width. */
+    /** QR Lead audit 5: see body.qr-ref-own-line / body.rq-wrap in the CSS. Both are cleared before measuring, so each
+        run measures the bar as it would be without them. */
+    function fitReadBareBar() {
+      const body = document.body, ref = document.getElementById("mushafPageRef"), row = document.getElementById("readQuickRow");
+      body.classList.remove("qr-ref-own-line", "rq-wrap");
+      if (!["immersive-read", "fs-hide-readbar", "fs-hide-transport"].every((c) => body.classList.contains(c))) return;
+      const text = ref && !ref.hidden ? ref.querySelector(".mushaf-page-ref-text") : null;
+      if (text && text.getClientRects().length && text.scrollWidth > text.clientWidth + 1
+        && text.clientWidth < 3.5 * (parseFloat(getComputedStyle(text).fontSize) || 12)) body.classList.add("qr-ref-own-line");
+      const cut = row && row.getClientRects().length && [...row.querySelectorAll(".rq-btn")].some((b) => b.getClientRects().length && b.scrollWidth > b.clientWidth + 1);
+      if (cut && getComputedStyle(row).position === "fixed") {
+        body.classList.add("rq-wrap");
+        body.style.setProperty("--rq-h", row.offsetHeight + "px");
+      }
+    }
     function checkReadFit() {
       const body = document.body, rv = document.getElementById("readView"), rs = document.getElementById("readScroll");
       const bar = document.getElementById("readBar"), dockEl = document.getElementById("dock");
@@ -8509,6 +8536,7 @@
         body.classList.remove("read-tall"); return;
       }
       body.classList.remove("read-tall");
+      fitReadBareBar();
       const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
       // Only while the tabs are on screen: a hidden dock measures top 0, which every bar would be "under".
       const dockShown = dockEl.getClientRects().length > 0 && dockEl.getBoundingClientRect().height > 0;
@@ -8527,10 +8555,13 @@
       for (const id of ["dock", "readBar", "readView"]) { const e = document.getElementById(id); if (e) ro.observe(e); }
       window.addEventListener("resize", later);
       // Only the classes that change the answer re-wake it; its own read-tall changes must not.
-      const sig = () => ["immersive-read", "read-windowed", "read-sideways", "landing-view"].map((c) => +document.body.classList.contains(c)).join("");
+      const sig = () => ["immersive-read", "read-windowed", "read-sideways", "landing-view", "fs-hide-readbar", "fs-hide-transport"].map((c) => +document.body.classList.contains(c)).join("");
       let was = sig();
       new MutationObserver(() => { const now = sig(); if (now !== was) { was = now; later(); } }).observe(document.body, { attributes: true, attributeFilter: ["class"] });
       new MutationObserver(later).observe(document.getElementById("readView"), { attributes: true, attributeFilter: ["hidden"] });
+      // The page reference is filled in after the bar is laid out, and its words decide fitReadBareBar().
+      const refEl = document.getElementById("mushafPageRef");
+      if (refEl) new MutationObserver(later).observe(refEl, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ["hidden"] });
       new MutationObserver(later).observe(document.documentElement, { attributes: true, attributeFilter: ["style", "class"] });
       later();
     }
