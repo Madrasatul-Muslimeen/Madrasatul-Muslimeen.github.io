@@ -25,7 +25,10 @@ PCF J29 lines `j29qrl3`, `j29qrl4`.
 
 ## Open
 
-1. **Audit 4** waits on the Architect's review; answer any change asked on the branch above.
+1. **Audit 4 is HELD by the Architect until v13.01 (J108) is released** (3:36 pm: no more v12 releases; legacy-v12 stays at
+   v12.139). When v13.01 lands, **rebase `claude/qr-lead-audit4-listening` onto it** (`quranrevival.html` changes there for
+   `#tabNoteBtn` and the Āyah card Note), re-run `qr-listening-large-text`, `qr-panel-head-reach`, `qr-text-size-reach`, and
+   tell the Architect: it is the first release after v13.01.
 2. **J108 v13.01** (Architect, `claude/j108-v13-note-opener`): keep holding `#tabNoteBtn`, `onTakeNote`/`onNote`,
    `app/js/ayah-action-sheet.js`; review the Quran Study side when asked (re-run `read-note-pane`, `read-window`,
    `qr-read-tall`, and now `qr-text-size-reach`).
