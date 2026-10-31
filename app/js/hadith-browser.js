@@ -22,7 +22,7 @@ import { SYNTHETIC_NOTICE, TAXONOMY_REVISION } from "./hadith-fixture-data.js";
 import { PANEL_TITLE, verifiedRegisterEntries, commentaryForOccurrence, renderPermission, NEVER_DO } from "./hadith-commentary.js";
 import { HADEETHENC_LANGS, HADEETHENC_STRUCTURE_LANG, loadHadeethEncCategories, childCategories, directHadithIds, resolveCategoryTitle, loadHadithRecords, hadithArabicText, hadeethEncSourceUrl } from "./hadeethenc-corpus.js";
 import { OPENITI_CREDIT_URL, loadOpenitiBookSummaries, loadOpenitiBookIndex, loadOpenitiChapter, chapterForHadithNumber, loadOpenitiConcordance, loadOpenitiHadeethEncLinks, loadHadeethEncReferences, loadDuaIndex } from "./openiti-corpus.js";
-import { el, readFailedNote, HADEETHENC_LANG_LABELS, loadHadithStudyActions, openitiDisplayTitle, openitiArabicRowName, duaRefLabel, standardTranslationFolds, openitiTranslationFold } from "./hadith-shared-ui.js";
+import { el, readFailedNote, langNameInProse, loadHadithStudyActions, openitiDisplayTitle, openitiArabicRowName, duaRefLabel, standardTranslationFolds, openitiTranslationFold } from "./hadith-shared-ui.js";
 import { renderDua } from "./dua-browser.js";
 import { hadithReader, removeReaderWindows } from "./hadith-reader.js";
 
@@ -508,7 +508,7 @@ function hadeethEncCategoryRow(catId, catsByLang, contentLang, onOpen) {
   if (resolved?.isFallback) {
     const fb = el("span", "hadith-fallback");
     fb.dataset.hadeethencCategoryFallback = resolved.lang;
-    fb.textContent = t("Not available in your language here — showing {lang}.", { lang: HADEETHENC_LANG_LABELS[resolved.lang] ?? resolved.lang });
+    fb.textContent = t("Not available in your language here — showing {lang}.", { lang: langNameInProse(resolved.lang) });
     row.appendChild(fb);
   }
   row.addEventListener("click", onOpen);
@@ -524,7 +524,7 @@ function hadeethEncHadithRow(id, resolvedRecord, onOpen) {
     const fb = el("span", "hadith-fallback");
     fb.dataset.hadeethencHadithFallback = lang;
     fb.textContent = t("Not available in {reqLang} — showing {lang}.", {
-      reqLang: HADEETHENC_LANG_LABELS[requestedLang] ?? requestedLang, lang: HADEETHENC_LANG_LABELS[lang] ?? lang,
+      reqLang: langNameInProse(requestedLang), lang: langNameInProse(lang),
     });
     row.appendChild(fb);
   }
@@ -657,7 +657,7 @@ function hadeethEncCard(id, resolvedRecord, state, localRefresh) {
       const warn = el("p", "hadith-fallback");
       warn.dataset.hadeethencFallback = requestedLang;
       warn.textContent = t("No {lang} translation for this hadith. Showing {shown}.",
-        { lang: HADEETHENC_LANG_LABELS[requestedLang] ?? requestedLang, shown: HADEETHENC_LANG_LABELS[lang] ?? lang });
+        { lang: langNameInProse(requestedLang), shown: langNameInProse(lang) });
       block.appendChild(warn);
     }
     block.appendChild(el("p", "hadith-translation-text", record.hadeeth ?? ""));
@@ -669,7 +669,7 @@ function hadeethEncCard(id, resolvedRecord, state, localRefresh) {
     const warn = el("p", "hadith-fallback");
     warn.dataset.hadeethencFallback = requestedLang;
     warn.textContent = t("No {lang} translation for this hadith. Showing the Arabic source only.",
-      { lang: HADEETHENC_LANG_LABELS[requestedLang] ?? requestedLang });
+      { lang: langNameInProse(requestedLang) });
     card.appendChild(warn);
   }
 

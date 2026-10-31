@@ -16,6 +16,7 @@ const check = (name, ok, detail = "") => {
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
 const MUT = {
   nofold: ["js/hadith-browser.js", "if (std) card.appendChild(standardTranslationFolds(conc.versionUri, async () => std));", ""],
+  nosplit: ["js/hadith-shared-ui.js", "splitChapterHeading(tr.edition, stdNo, tr.text)", "({ heading: null, text: tr.text })"],
   bypos: ["js/hadith-browser.js", "const std = conc?.stdByN?.get(h.n);", "const std = conc?.stdByN?.get(h.n) && h.n;"],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
@@ -50,6 +51,7 @@ for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 1280]]) {
   await openFold(P, '[data-dua-card="1"] [data-standard-translation="bn"]');
   const bn = await foldText(P, '[data-dua-card="1"] [data-standard-translation="bn"]');
   check(`${tag} Bangla: «বারাআ ইবনু ‘আযিব (রাঃ) হতে বর্ণিত …»`, bn.text?.startsWith("বারাআ ইবনু ‘আযিব (রাঃ) হতে বর্ণিত") && bn.lang === "bn", String(bn.text).slice(0, 60));
+  check(`${tag} J97: Bukhari 6311 (no chapter heading in the source) shows no heading line`, await P.$('[data-dua-card="1"] [data-standard-translation="bn"] [data-standard-translation-heading]') === null);
   check(`${tag} ...credited to hadith-api, no translator invented`, bn.credit.includes("hadith-api") && !bn.credit.includes("Muhsin"), bn.credit);
 
   // The library: Bukhari's Kitab ad-Da'awat, passage 6578 = standard 6306.
@@ -73,6 +75,20 @@ for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 1280]]) {
     await openFold(P, '[data-openiti-passage="6578"] [data-standard-translation="en"]');
     const lib = await foldText(P, '[data-openiti-passage="6578"] [data-standard-translation="en"]');
     check(`${tag} ...Bukhari 6306 in English: Shaddad bin Aus, «the most superior way of asking for forgiveness»`, !!lib.text && /Shaddad bin Aus/.test(lib.text) && /forgiveness/i.test(lib.text), String(lib.text).slice(0, 90));
+    // PCF MSA J97 (the Owner, answer A): Bukhārī's Bangla 6306 begins with its chapter heading; it is its own small grey line.
+    const bnSel = '[data-openiti-passage="6578"] [data-standard-translation="bn"]';
+    await openFold(P, bnSel);
+    const lb = await foldText(P, bnSel);
+    const head = await P.evaluate((s) => {
+      const d = document.querySelector(s), h = d.querySelector("[data-standard-translation-heading]"), t = d.querySelector("[data-standard-translation-text]");
+      if (!h || !t) return null;
+      const hc = getComputedStyle(h), tc = getComputedStyle(t);
+      return { text: h.textContent, before: !!(h.compareDocumentPosition(t) & Node.DOCUMENT_POSITION_FOLLOWING), hs: parseFloat(hc.fontSize), ts: parseFloat(tc.fontSize), color: hc.color, tcolor: tc.color, w: h.scrollWidth - h.clientWidth };
+    }, bnSel);
+    check(`${tag} J97: Bangla 6306 starts with its number and narrator «৬৩০৬. শাদ্দাদ ইবনু আউস»`, !!lb.text?.startsWith("৬৩০৬. শাদ্দাদ ইবনু আউস"), String(lb.text).slice(0, 40));
+    check(`${tag} J97: ...its chapter heading sits above it as one line «${lang === "bn" ? "অধ্যায়:" : "Chapter:"} وَقَوْلِهِ تَعَالَى …»`, !!head && head.before && head.text.startsWith(lang === "bn" ? "অধ্যায়: " : "Chapter: ") && head.text.includes("وَقَوْلِهِ تَعَالَى") && head.text.includes("(সূরা আলে ‘ইমরান ৩/১৩৫)"), JSON.stringify(head && { t: head.text.slice(0, 40), before: head.before }));
+    if (process.argv.includes("--shots")) { fs.mkdirSync("tools/i18n-verify/out", { recursive: true }); await (await P.$(bnSel)).screenshot({ path: `tools/i18n-verify/out/j97-6306-${lang}-${width}.png` }); }
+    check(`${tag} J97: ...small and grey (smaller than the hadith, a different colour), inside its fold`, !!head && head.hs < head.ts && head.color !== head.tcolor && head.w <= 1, JSON.stringify(head && { hs: head.hs, ts: head.ts, c: head.color, tc: head.tcolor, w: head.w }));
   }
   const wide = await P.evaluate(() => [...document.querySelectorAll("[data-standard-translation][open]")].filter((d) => d.scrollWidth > d.clientWidth + 1).length);
   check(`${tag} no open fold is wider than its card`, wide === 0, String(wide));

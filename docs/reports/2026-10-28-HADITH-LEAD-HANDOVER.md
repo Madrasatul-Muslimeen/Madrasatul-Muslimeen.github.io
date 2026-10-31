@@ -3,6 +3,57 @@
 Written by Hadith Lead session `01Q2HmCeWjo1vVYV5kgMBvC9` at about 77% context, on the PCA's word (hand119).
 The next session is titled **"📌 (03B) MSA - Hadith Lead"**.
 
+## HANDOVER, about 10:40 am 31 Oct (session `01PL2xbJbrDFWUd52n8gRbHi` → a fresh "📌 (03B) MSA - Hadith Lead")
+
+Handed over at about 40% context (cost86). Contacts now: **PCA** `session_01PL2xbNViE9udUe3FUJjKBE`, **MSA Architect**
+`session_01PL2xbNKZ2gQsFCCR3KyyeV`.
+
+- **J97, answered A by the Owner at 10:14 am 31 Oct, is BUILT and HANDED to the Architect** (branch
+  `claude/hadith-lead-01q2`, `9dacd79`). `splitChapterHeading()` in `app/js/hadith-translations.js`; the Bangla fold in
+  `standardTranslationFolds` (`app/js/hadith-shared-ui.js`) shows "Chapter: …" small and grey above the hadith; CSS in
+  `app/css/hadith.css`; one string in `app/js/i18n/bn.js` ("Chapter:"). 1,133 Bukhārī Bangla texts split, data files
+  unchanged. Checks: `hadith-translations.mjs` 22/0, `hadith-translations-browser.mjs` 45/0 (`--mutate=nosplit` 9 fail,
+  `--shots` saves the fold), `hadith-study-reader` 116/0. When it is released, write J97's Done line (PCF) and the User
+  Manual "What's New" line is the Architect's.
+- **Also handed in (10:55 am 31 Oct), commit `46dd7e2`:** the Architect's check `bangla-sweep-newer-screens` (23/0; old code
+  22/1): `langNameInProse()` in `app/js/hadith-shared-ui.js` names a language inside a sentence in the reader's language.
+- **J108 (MSA Architect, via the PCA, 10:18 am 31 Oct):** every Note button, the Hadith card's included, will open one
+  real Mapping My Journey Note in ONE release v13.01. **Do NOT build a Hadith Note window meanwhile**; nothing is built
+  until the Owner ticks J108 Q3. Demo: https://claude.ai/artifact/EpdQd5aX2yoUpWenVceTan
+- **J106 question 5 answered A at 10:20 am 31 Oct: the Subject lists are a SHARED ONLINE LIST. Round 2 is NOT STARTED.**
+  The plan (agree it with the MSA Architect first: `firestore.rules` is a protected, shared path and Rules are an Owner
+  Control Gate):
+  1. **Storage, the same pattern as `asmaCollections/{tenantId}`** (`firestore.rules` ~line 733): a new collection
+     `hadithSubjects/{tenantId}`, one document per madrasah; any member reads, only `canAdminCatalogue(tenantId)` (owner/
+     prime) creates or updates, `tenantId` field must equal the doc id, **no delete** (I4/D6: an entry is retired with a
+     `status`, never removed). Fields: `tenantId`, `schemaVersion: 1`, `createdAt`, `updatedAt`, `createdBy` (I17),
+     `subjects: { akhlaq: [...], ghayb: [...], stories: [...] }` (ids from `HADITH_SUBJECTS`, `app/js/hadith-browser.js`
+     ~line 291). Each entry is a REFERENCE, not a progress record: `{ versionUri, n, std, book, chapter, title, addedAt,
+     addedBy, status: "active" | "retired" }`. It deliberately mints NO permanent Study Unit key (J06, the OpenITI key, is
+     still the Owner's).
+  2. **Candidate rule** `tests/firestore/hadith-subjects-v1.proposed.rules` (self-contained extract, like
+     `word-progress-v1.proposed.rules`), an emulator test beside `tools/firestore-emulator/word-progress-v1.rules.test.mjs`
+     (each denial paired with an allow differing in one fact: member reads; non-member denied; prime writes; teacher/
+     student denied; other tenant denied; delete denied; wrong `tenantId` denied), and `rules-authorisation-executable.mjs`
+     kept green. The Architect merges the rule into `firestore.rules`; the **Owner publishes it once in the Firebase
+     Console, guided click by click** (as on 20 Oct).
+  3. **App (Hadith files only):** "Add to subject" on every Hadith Books narration (owner/prime only; others see why it
+     is off), choosing one of the three; the Subjects view lists Book · Chapter · Hadith No. · Title, each opening the
+     original with ← Back (way-back law); "Remove" retires the entry. Read on first use only (I9); a failed write is shown
+     (I15); the harness stub never mutates its DATA, so patch the in-memory copy after a write.
+  4. Every demo gets a `p/mmsa.databases` card (mydb128) and opens in its own window with its full link (win130).
+- **Still with the Owner:** the My Notes link (A keep / B open the panel), J06. `claude/hadith-lead-01q2-next` stays.
+
+## UPDATE, 6:30 pm 30 Oct (this "📌 (03B) MSA - Hadith Lead" session)
+
+- **Audit part 136 is DONE and LIVE as v12.130** (merge `99bba01b`, PR #1347; Hadith work `877099a`). B1 the Tenant/Person
+  pickers fit the screen (full name as title); B2 the 👥 button cuts a long name with "…" (full names as title), the 👥
+  rows are 40px; H1 the text-language picker wraps; H2–H4 pane headings, the Go-to mode picker and reader snippets carry
+  their full text as title. The suite's B1/B2 baselines are gone (B3 withdrawn by the Architect: it was B1). Measured
+  201/0 at 360, 390, 768, 1024, 1440; old code with the new suite 163/38 FAIL; reader 116/0.
+- **Nothing is in flight.** Next Hadith work: J106 round 2 (Subjects) after the Owner's tick on question 5 (`n106e`).
+  The MSA Architect who released v12.130 handed over; send hand-ins to the next MSA Architect (ask the PCA).
+
 ## HANDOVER, 3:41 pm 30 Oct (session `01PL2xbM3qDHBrLKbW6yzZKe` → a fresh "📌 (03B) MSA - Hadith Lead")
 
 Handed over at 40% context (cost86). **Nothing is half-built.** The branch `claude/hadith-lead-01q2` is at `main`

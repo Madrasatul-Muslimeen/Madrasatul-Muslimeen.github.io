@@ -2903,6 +2903,7 @@ export const BN = {
   "Source hierarchy": "উৎসের স্তরবিন্যাস",
   "Books": "কিতাব",
   "Chapters": "অধ্যায়",
+  "Chapter:": "অধ্যায়:",
   "no chapter level": "অধ্যায় স্তর নেই",
   "Distinct narrations": "স্বতন্ত্র বর্ণনা",
   "Topic mappings": "বিষয় সংযোগ",

@@ -3,7 +3,7 @@
 // Dua 1). Run from the repository root.
 import fs from "node:fs";
 const { chunkEdition, translatorOf, BOOKS, CHUNK } = await import("../hadith-data-pull/hadith-translations-pull.mjs");
-const { TRANSLATED_BOOKS, loadHadithTranslation } = await import("../../app/js/hadith-translations.js");
+const { TRANSLATED_BOOKS, loadHadithTranslation, splitChapterHeading } = await import("../../app/js/hadith-translations.js");
 const { buildConcordance } = await import("../../app/js/openiti-corpus.js");
 
 let pass = 0, fail = 0;
@@ -43,5 +43,32 @@ check("a number with no translation, or a book without translations, gives null"
 // The concordance's standard number (what translations are keyed by) differs from Muslim's cited Abdul-Baqi number.
 const mus = buildConcordance(JSON.parse(fs.readFileSync("tools/hadith-data-pull/output/concordance/0261Muslim.Sahih.Shamela0001727-ara1.json", "utf8")));
 check("buildConcordance gives stdByN: Muslim passage 17 is standard 2158 while cited as Abdul-Baqi 933", mus.stdByN.get(17) === 2158 && mus.byN.get(17) === "933", JSON.stringify([mus.stdByN.get(17), mus.byN.get(17)]));
+// PCF MSA J97 (the Owner, answer A, 31 Oct 2026): Bukhārī's Bangla texts that begin with their chapter heading. Expected
+// values written by hand from reading the files (6306 Sayyid al-Istighfār; 200 and 434 the two odd number shapes; 1717 a
+// publisher's reference that must NOT split).
+const bnText = (ed, n) => JSON.parse(fs.readFileSync(`${DIR}/${ed}/bn/${Math.floor(n / CHUNK)}.json`, "utf8"))[n];
+const s6306 = splitChapterHeading("ben-bukhari", 6306, bnText("bukhari", 6306));
+check("J97 INDEPENDENT -- 6306: the heading is the chapter's Arabic and verses, the hadith starts «৬৩০৬. শাদ্দাদ ইবনু আউস (রাঃ) হতে বর্ণিত»",
+  s6306.heading?.startsWith("وَقَوْلِهِ تَعَالَى") && s6306.heading.endsWith("(সূরা আলে ‘ইমরান ৩/১৩৫)") && s6306.text.startsWith("৬৩০৬. শাদ্দাদ ইবনু আউস (রাঃ) হতে বর্ণিত"), JSON.stringify([s6306.heading?.slice(-30), s6306.text.slice(0, 30)]));
+check("J97 INDEPENDENT -- 200 (the edition's own number ১৮৩) and 434 (no space after the stop) split at the narrator",
+  splitChapterHeading("ben-bukhari", 200, bnText("bukhari", 200)).text.startsWith("১৮৩. ‘আবদুল্লাহ্ ইবনু") && splitChapterHeading("ben-bukhari", 434, bnText("bukhari", 434)).text.startsWith("৪৩৪.‘আ"));
+check("J97 -- 1717 (a «আধুনিক প্রকাশনীঃ ১৫৯৯.» reference) and 6311 (starts with its narrator) are left whole",
+  splitChapterHeading("ben-bukhari", 1717, bnText("bukhari", 1717)).heading === null && splitChapterHeading("ben-bukhari", 6311, bnText("bukhari", 6311)).heading === null);
+{
+  let split = 0, lost = 0, notDigit = 0, others = 0;
+  for (const b of S.books) for (const lang of ["en", "bn"]) for (const k of b.langs[lang].chunks) {
+    const chunk = JSON.parse(fs.readFileSync(`${DIR}/${b.edition}/${lang}/${k}.json`, "utf8"));
+    for (const [n, txt] of Object.entries(chunk)) {
+      const r = splitChapterHeading(b.langs[lang].edition, n, txt);
+      if (!r.heading) { if (r.text !== txt) lost++; continue; }
+      if (b.langs[lang].edition !== "ben-bukhari") { others++; continue; }
+      split++;
+      if ((r.heading + " " + r.text).replace(/\s+/g, " ") !== txt.trim().replace(/\s+/g, " ")) lost++;
+      if (!/^[০-৯]/.test(r.text)) notDigit++;
+    }
+  }
+  check("J97 -- over every translation file: 1,133 Bukhārī Bangla texts split (counted 31 Oct 2026), no other book or language", split === 1133 && others === 0, JSON.stringify({ split, others }));
+  check("J97 -- every split keeps every word (heading + hadith = the text as the source gave it) and every hadith starts with its number", lost === 0 && notDigit === 0, JSON.stringify({ lost, notDigit }));
+}
 console.log(`\n==== Hadith translations (English, Bangla): ${pass} passed, ${fail} failed ====`);
 process.exit(fail ? 1 : 0);
