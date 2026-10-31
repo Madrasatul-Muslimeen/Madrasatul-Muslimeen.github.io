@@ -51,11 +51,14 @@ const addFinding = (page, view, kind, msg, where) => {
 
 // ---- audit one document (E = a Page or a Frame; P = the Page that owns the keyboard) ----
 const ENGLISH = /\b(Close|Back|Next|Search|Save|Open|Copy|Show|Hide|Edit|Delete|Cancel|Done|Folders?|Attach|Note|Notes|Menu|New|Find|Move|Rename)\b/i;
-async function audit(P, E, lang) {
+async function audit(P, E, lang, scoped = false) {
   const names = await E.evaluate(() => window.__A11Y.names());
   const nameDefects = names.filter((n) => !n.name).map((n) => `${n.key} has no accessible name`);
   const english = lang === "bn" ? names.filter((n) => n.name && /[A-Za-z]{3,}/.test(n.name) && n.name.length <= 45 && ENGLISH.test(n.name)).map((n) => `${n.key} "${n.name.slice(0, 40)}"`) : [];
+  // scoped: only the Note window's own text (the page behind it is covered, so its text is not what the reader sees)
+  if (scoped) await E.evaluate(() => { for (const e of document.body.children) if (e.id !== "noteOpener") { e.dataset.a11yPrevVis = e.style.visibility; e.style.visibility = "hidden"; } });
   const con = await E.evaluate(() => window.__A11Y.contrast());
+  if (scoped) await E.evaluate(() => { for (const e of document.body.children) if (e.id !== "noteOpener" && "a11yPrevVis" in e.dataset) { e.style.visibility = e.dataset.a11yPrevVis; delete e.dataset.a11yPrevVis; } });
   const contrastDefects = con.fail.map((c) => `${c.key} "${c.txt}" ${c.ratio}:1 (need ${c.need}) ${c.fg} on ${c.bg} ${c.px}px`);
   const exp = await E.evaluate(() => window.__A11Y.expected());
   const reached = new Set(), ringBad = [], ringWeak = [];
@@ -72,10 +75,12 @@ async function audit(P, E, lang) {
     const uid = d.id ?? `${d.key}@${Math.round(d.left)},${Math.round(d.top)}`;
     if (reached.has(uid)) break;
     reached.add(uid);
+    if (d.key.startsWith("iframe")) continue; // focus passing through the frame element; the frame's own controls are audited in the frame
     if (!d.ringOn) ringBad.push(`${d.key} "${(d.name || "").slice(0, 24)}"`);
     else if (d.ringRatio !== null && d.ringRatio < 3) ringWeak.push(`${d.key} ring ${Math.round(d.ringRatio * 100) / 100}:1`);
   }
-  const unreached = (await E.evaluate(() => window.__A11Y.unreached())).map((e) => `${e.key} "${(e.name || "").slice(0, 24)}"${e.tabindex < 0 ? " (tabindex=-1)" : ""}`);
+  // the block's "▾ hide" text is an aria-hidden, tabindex=-1 twin of the switch beside it (note-ref-ui.js:26): not a control of its own
+  const unreached = (await E.evaluate(() => window.__A11Y.unreached())).filter((e) => !(e.key.includes("data-ref-sw") && /^[▾▸]/.test(e.name || ""))).map((e) => `${e.key} "${(e.name || "").slice(0, 24)}"${e.tabindex < 0 ? " (tabindex=-1)" : ""}`);
   return { nameDefects, english, contrastDefects, unknown: con.unknown, unreached, ringBad, ringWeak, stops: reached.size, expected: exp.length };
 }
 const report = (tag, pg, view, where, r) => {
@@ -170,7 +175,7 @@ for (const [w, h] of WIDTHS) for (const lang of LANGS) {
     const full = await P.evaluate(() => document.getElementById("noteOpener").classList.contains("no-full"));
     check(`${tag}: the window is ${w < 1024 ? "full screen" : "floating"} (positive control)`, full === (w < 1024));
     if (SHOTS && (w === 390 || w === 1180)) await P.screenshot({ path: `${OUT}/qr-note-${via}-${w}-${lang}.png` });
-    report(`${tag} [parent chrome]`, "qr-note", `${via}-parent`, where, await audit(P, P, lang));
+    report(`${tag} [parent chrome]`, "qr-note", `${via}-parent`, where, await audit(P, P, lang, true));
     const fa = await audit(P, f, lang);
     check(`${tag} [iframe]: the Tab walk moved (positive control)`, fa.stops > 3 || MUTATE === "trapfix", `stops ${fa.stops}`);
     report(`${tag} [Note page in iframe]`, "qr-note", `${via}-frame`, where, fa);
@@ -194,8 +199,8 @@ for (const [w, h] of WIDTHS) for (const lang of LANGS) {
     if (!closed) addFinding("qr-note", "window", "DEFECT escape-no-close", "Escape on the X does not close the Note window", where);
     else if (via === "menu") {
       const act = await P.evaluate(() => { const e = document.activeElement; return e && e !== document.body ? (e.id || e.tagName) : "body"; });
-      check(`${tag}: (s) focus returns to the Notes button after Escape`, act === "tabNoteBtn", `focus is on ${act}`);
-      if (act !== "tabNoteBtn") addFinding("qr-note", "window", "DEFECT focus-not-returned", `after closing the Note window focus is on ${act}, not the Notes button that opened it (the button sits in the Study menu, quranrevival.html:25949)`, where);
+      check(`${tag}: (s) focus returns to the Notes button (or the Study button whose menu holds it) after Escape`, /^(tabNoteBtn|tabStudyBtn)$/.test(act), `focus is on ${act}`);
+      if (!/^(tabNoteBtn|tabStudyBtn)$/.test(act)) addFinding("qr-note", "window", "DEFECT focus-not-returned", `after closing the Note window focus is on ${act}, not the Notes button that opened it (the button sits in the Study menu, quranrevival.html:25949)`, where);
     }
     const pe = errors.filter((e) => !NOISE.test(e));
     check(`${tag}: no page errors`, pe.length === 0, pe.slice(0, 2).join(" | "));
