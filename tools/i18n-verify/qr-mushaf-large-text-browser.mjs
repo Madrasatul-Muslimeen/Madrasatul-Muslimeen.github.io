@@ -7,7 +7,7 @@
 // nothing moves (PLAIN, recorded from unfixed main by --record).
 //   node tools/i18n-verify/qr-mushaf-large-text-browser.mjs [--mutate=NAME] [--record | --main]   (serve.js on :8080, repo root)
 //   no-ref     the reference never takes its own line    -> "the page reference shows its words" FAILS at 150/200%
-//   always     the reference moves even when it fitted   -> "nothing moves where it fitted" FAILS at 100%
+//   always     the reference moves when only partly cut  -> "a long reference keeps its line" FAILS at 100% on phones
 //   no-wrap    the three keep equal cells                -> "every word of Notes / Record / Approach shows" FAILS at 200%
 //   no-pad     the reading ignores the taller row        -> "the last line can scroll above the row" FAILS at 360 200% en
 //   no-run     fitReadBareBar is never run               -> words and reach FAIL
@@ -23,7 +23,7 @@ const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice
 const RECORD = process.argv.includes("--record"), ON_MAIN = RECORD || process.argv.includes("--main");
 // [from, to, copies]: every copy is replaced, and the count must be exactly as written.
 const MUT = {
-  "no-ref": ['body.classList.add("qr-ref-own-line");', "", 1],
+  "no-ref": ['body.classList.add("qr-ref-own-line");', "void 0;", 1],
   "always": ["&& text.clientWidth < 3.5 * (parseFloat(getComputedStyle(text).fontSize) || 12)", "", 1],
   "no-wrap": ["body.rq-wrap #readQuickRow .rq-btn { flex: 1 1 auto; }", "", 1],
   "no-pad": ["#readScroll { padding-bottom: var(--rq-h, 52px); }", "#readScroll { }", 1],
@@ -101,6 +101,17 @@ for (const [w, h, lang] of [[320, 640, "en"], [360, 740, "en"], [360, 740, "bn"]
     }
     if (m.rowH) check(`${tag}: the last line can scroll above the row (${m.pad}px at the foot for a ${m.rowH}px row)`, m.pad >= m.rowH - 1);
     if (size === "100%") check(`${tag}: nothing moves where it fitted`, JSON.stringify([m.refW, m.rowH]) === JSON.stringify(PLAIN[key]), `${JSON.stringify([m.refW, m.rowH])} vs ${JSON.stringify(PLAIN[key])}`);
+    if (size === "100%" && w < 600) {
+      // A real reference longer than the bar (a later page's surah and āyāt): its words are cut but readable, so it stays.
+      const long = await page.evaluate(async () => {
+        const ref = document.getElementById("mushafPageRef"), t = ref.querySelector(".mushaf-page-ref-text"), top = ref.getBoundingClientRect().top;
+        t.textContent = "Aal-i-Imraan 3:92-100 · Juz 4";
+        await new Promise((r) => setTimeout(r, 400));
+        return { cut: t.scrollWidth > t.clientWidth + 1, own: document.body.classList.contains("qr-ref-own-line"), moved: Math.abs(ref.getBoundingClientRect().top - top) > 1 };
+      });
+      check(`${tag}: POSITIVE CONTROL the long reference really is cut`, long.cut, JSON.stringify(long));
+      check(`${tag}: a long reference keeps its line (its words are cut, not lost)`, !long.own && !long.moved, JSON.stringify(long));
+    }
     if (SHOT_DIR && size === "200%") await page.screenshot({ path: `${SHOT_DIR}/qr-mushaf-large-${w}x${h}-${lang}.png` });
     await ctx.close();
   }
