@@ -572,6 +572,10 @@
      is untouched, per the owner's own scope call this round. */
   @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cormorant+Garamond:wght@400;500;600;700&display=swap');
   .wheel-heading { font-family: 'Cormorant Garamond', serif; font-weight: 600; color: var(--card-heading); margin-bottom: 0.4rem; }
+  /* QR Lead audit 7, 31 Oct 2026 (Builder audit part 142 D4): under 900px this heading sits on the white page above the
+     wheel, not on the Night card, so Night's gold card heading (#C9A24B) read 2.4:1 there. A deep gold keeps the family
+     and reads 6.8:1 on white (at 900px and up the heading is hidden and the window's title bar shows it instead). */
+  [data-card-look="night"] #wheelPopupView > .wheel-heading { color: #7a5410; }
   /* Owner decision 46 -- the heading line holds the two TITLES only:
      "Mastery Wheel" | separator | the Approach list's title, centred, one
      line (fitWheelHeading() steps the size down until it fits). */
@@ -682,7 +686,9 @@
   /* Wraps rather than truncating -- nowrap + ellipsis fails SILENTLY, this
      page's own most-repeated layout trap. */
   .wheel-unit-capsule-word { min-width: 0; white-space: normal; }
-  .wheel-unit-capsule-caret { flex: none; font-size: 0.7rem; opacity: 0.75; }
+  /* Audit 7 (part 142 D5): at 0.75 the caret read 4.49:1 on the gold pill's darker end; 0.9 keeps it a shade softer
+     than the word and reads over 6:1. */
+  .wheel-unit-capsule-caret { flex: none; font-size: 0.7rem; opacity: 0.9; }
   /* Centred on the ROW (see the position:static rule above), never on the
      pill's own right edge: .bar-palette's own default is `right: 0`, which
      would hang this off whichever end the pill happens to sit at. */
@@ -1152,6 +1158,9 @@
                     cursor: pointer; line-height: 1.2; }
   .ways-group-btn:hover { background: rgba(255,255,255,0.08); }
   .ways-caret { flex: 0 0 auto; width: 1em; color: #ecd49a; }
+  /* Audit 7 (part 142 D6): the Light look turned the section name deep gold (card-look.css) but left its caret pale
+     gold on white, 1.45:1; it follows the name now (6.8:1). */
+  [data-card-look="light"] .ways-caret { color: #7a5410; }
   /* 29 Sep 2026, Owner: S1.. in the round badge (sized for two characters), the
      count in a square box at the END of the name, and the section name in gold
      so it is not mistaken for an Approach name. */
