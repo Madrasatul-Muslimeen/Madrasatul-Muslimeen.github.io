@@ -1047,3 +1047,4 @@ total). Allocated by the MMSA Architect.
 13.04: Quran Study: the Word card's Taṣrīf table at large text, and three contrast fixes on the landing (QR Lead audits 6 and 7). Allocated by the MMSA Architect.
 13.05: Quran Study: the A± text-size sliders open below the top bar on QR (QR Lead). Allocated by the MMSA Architect.
 13.06: Quran Study: the Word card's level tabs at large text (QR Lead). Allocated by the MMSA Architect.
+13.07: the v13 Note window keyboard fixes (audit part 143). Allocated by the MMSA Architect.
