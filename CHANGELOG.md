@@ -23049,3 +23049,11 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 - **J97 (the Owner's answer A):** Bukhārī's Bangla texts that begin with their chapter heading (1,133 of 7,529) show it as a small grey "অধ্যায়: …" line above the hadith, which starts with its number and narrator ("৬৩০৬. শাদ্দাদ ইবনু আউস …"). `splitChapterHeading()` in `app/js/hadith-translations.js` (QR's edit anchor untouched); the fold in `hadith-shared-ui.js`; `hadith.css` (+ night); one `bn.js` string "Chapter:". Data files unchanged; every split rejoins to its source text.
 - **Bangla prose:** `langNameInProse()` names a language inside a sentence in the reader's language (ইংরেজি, আরবি, বাংলা) in the HadeethEnc fallback notes and fold labels; pickers keep each language's own script. Closes the v12.135 sweep's bangla-sweep-newer-screens finding.
 - **Measured (Architect):** hadith-translations 22/0; hadith-translations-browser 45/0, and 75/0 at 360/768/1180/1440 bn + 1024 en with screenshots looked at; bangla-sweep-newer-screens 23/0; hadith-study-reader 116/0; large-text-hadith-study 969/0; stub-parity 4/0; behaviour.mjs alone 972/0; apps-build-check 48/0; QR builds.
+
+## v12.137 — 31 Oct 2026 — Quran Study: the Study options head stays on screen at large text (QR Lead)
+
+- **Found (QR Lead audit 1, Search the Qur'an):** at 200% text on a phone (150% sideways), 🔍 Search opened Study options with its head above the screen (-80px at 360x740) where no scroll reaches; "Save these settings" was cut at 9 of 42 sizes; the ✕ was a fixed 26px.
+- **Fix (`app/quranrevival.html` only):** `fitPanelRoom()` writes the room above the dock to `--qr-panel-room` (on open, resize, scroll, and a dock ResizeObserver); `fitPanelHead()` stacks the head only when Save is really cut; ✕ 2.5rem. At 100% nothing moves.
+- **New suite** `qr-panel-head-reach-browser.mjs`: 258/0 fixed, 194/64 on unfixed main; five mutations each caught.
+- **Also merged:** the QR Lead's handover file (docs only).
+- **Measured (Architect):** head-search 94/0; study-presets 84/0; qr-landing-large-text 116/0; landing-drawers 294/0; study-options-go-track 104/0; behaviour.mjs alone 972/0; qr-verify 27/28 (upgrade-browser needs a QR repository clone — environmental); apps-build-check 48/0; QR builds.
