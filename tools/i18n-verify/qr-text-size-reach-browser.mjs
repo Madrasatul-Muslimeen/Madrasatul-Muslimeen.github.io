@@ -13,6 +13,8 @@
 //   no-width  the width is not held to the screen -> "inside the screen sideways" FAILS at 360/390 200%
 //   always    the fit runs where it already fitted -> "nothing moves where it fitted" FAILS at 100%
 //   no-panel  the ⋯ panel is never held on screen -> "every tool in the ⋯ panel can be reached" FAILS at 200% and sideways
+//   no-ceil   the top nav is ignored (QR Lead, 31 Oct: on QR at 1280x800 200% the nav covered the first slider)
+//             -> "every control can be reached" FAILS at 1280x800 200% on the QR build
 import { chromium, newContext, openPage } from "./harness.mjs";
 
 let pass = 0, fail = 0;
@@ -27,6 +29,7 @@ const MUT = {
   "no-width": ["const width = Math.min(p.width, window.innerWidth - 16),", "const width = p.width,"],
   "always": ["if (!readToolsMenu.style.overflowY && p.left >= 8 && p.right <= window.innerWidth - 8 && p.top >= 8 && p.bottom <= floor) return;", ""],
   "no-panel": ["      if (need <= below) return;\n", "      return;\n"],
+  "no-ceil": ["if (r.bottom > ceil && r.bottom < btn.top) ceil = r.bottom + 4;", ""],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
 const SHOT_DIR = process.env.SHOT_DIR || "";

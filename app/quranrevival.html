@@ -20855,9 +20855,14 @@
         const r = el.getBoundingClientRect();
         if (r.top > btn.bottom && r.top < floor + 4) floor = r.top - 4;
       }
+      // QR Lead, 31 Oct 2026: and a CEILING under the top nav when it is on screen above A±. On a computer at 200% the
+      // sliders opened upwards to 8px from the top, and the nav (z-index 61, above the panel) covered the first of them.
+      let ceil = 8;
+      const nav = document.getElementById("topNav");
+      if (nav && nav.getClientRects().length) { const r = nav.getBoundingClientRect(); if (r.bottom > ceil && r.bottom < btn.top) ceil = r.bottom + 4; }
       // Inside a panel that scrolls, a hanging popover would be cut by the panel, so it is always held on screen there.
-      if (!readToolsMenu.style.overflowY && p.left >= 8 && p.right <= window.innerWidth - 8 && p.top >= 8 && p.bottom <= floor) return;
-      const width = Math.min(p.width, window.innerWidth - 16), below = floor - (btn.bottom + 4), above = btn.top - 4 - 8;
+      if (!readToolsMenu.style.overflowY && p.left >= 8 && p.right <= window.innerWidth - 8 && p.top >= ceil && p.bottom <= floor) return;
+      const width = Math.min(p.width, window.innerWidth - 16), below = floor - (btn.bottom + 4), above = btn.top - 4 - ceil;
       s.position = "fixed"; s.boxSizing = "border-box"; s.right = "auto"; s.overflowY = "auto"; s.width = `${Math.round(width)}px`;
       s.left = `${Math.round(Math.min(Math.max(8, p.left), window.innerWidth - 8 - width))}px`;
       if (below >= p.height || below >= above) { s.top = `${Math.round(btn.bottom + 4)}px`; s.bottom = "auto"; s.maxHeight = `${Math.max(0, Math.round(below))}px`; }

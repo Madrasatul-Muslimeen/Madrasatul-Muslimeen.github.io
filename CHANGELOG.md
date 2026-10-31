@@ -23103,3 +23103,8 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 - **Audit 6 (Word card, Manual 9a6dqv8):** under `@container wordcard (max-width: 18rem)` the Taṣrīf noun table stacks: each row's name on its own line, its three cells in a 3-column grid; case heads may hyphenate; "not in the Qur'an" a little smaller. Suite `qr-word-card-tasrif-fit-browser.mjs` (unfixed 50/18; mutations no-stack, no-grid, wide).
 - **Audit 7 (Builder part 142 D4–D6):** Night `.wheel-heading` on the page `#7a5410`; `.wheel-unit-capsule-caret` opacity 0.9; Light `.ways-caret` `#7a5410`. Suite `qr-wheel-contrast-browser.mjs` (mutations heading 2.40, caret 4.49, ways 1.45 reproduce the Builder's numbers).
 - Also the QR Lead's handover D (docs). Nothing stored, no Rules.
+
+## v13.05 — 31 Oct 2026 — Quran Study: the A± text-size sliders stay below the top bar (QR Lead)
+
+- `fitReadTextSize()` keeps a ceiling under `#topNav` when the nav is on screen above A±, so on QR at 1280x800 200% the first slider is no longer covered by the top nav. Nothing changes on MSA.
+- `qr-text-size-reach-browser.mjs`: mutation no-ceil (proven on the QR build). Also QR Lead handover E (docs; carries the design of audit 6b, a Qur'an word never split in the Taṣrīf cells). Nothing stored, no Rules.
