@@ -38,6 +38,10 @@ from `session_01PL2xbLGPyYo53GXRKWojym` (its handover: `2026-10-31-QR-LEAD-HANDO
    sits in an auto table: nowrap there widens the td, so measure the table against its box, not the td). Build it on
    `main` (v13.04 carries audit 6). **The Architect (7:29 pm): if the floor cannot reach a word, nowrap overflows the cell instead of splitting it. Let a too-long word take the whole row of the grid before shrinking, and the check must assert the word lies inside its box at 320 200%, not only that it is unbroken.** Probe: the scratchpad's `probeAr.mjs` pattern (a word is broken when its own Range has
    line boxes at two heights).
+3a. **PCA change notice (7:30 pm): v13.07 (PR #1376) makes the full-screen Note window (<1024px) aria-modal with the rest of
+   `<body>` inert (minimise frees it); floating (>=1024) stays non-modal.** Once it is on `main`, re-run the Quran Study
+   suites where a control opens or sits behind the Note window (`read-note-pane`, `read-note-pane-window`, `note-opener`,
+   `read-quick-buttons`) at 390 and 768; report to the PCA only if one fails.
 4. j29p127q (PCF J29) still waits on the Owner; build the same day it is answered.
 5. Then Explore (Manual 8lle31u) at 150/200% and sideways, en + bn.
 
