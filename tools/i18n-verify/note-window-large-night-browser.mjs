@@ -33,7 +33,7 @@ const FIT = (rootSel) => {
   const root = document.querySelector(rootSel) || document.body, out = [];
   const vw = innerWidth;
   const desc = (e) => e.tagName.toLowerCase() + (e.id ? "#" + e.id : "") + (typeof e.className === "string" && e.className ? "." + e.className.trim().split(/\s+/)[0] : "");
-  const shown = (e) => { for (let x = e; x && x !== document.documentElement; x = x.parentElement) { const c = getComputedStyle(x); if (x.hidden || c.display === "none" || c.visibility === "hidden") return false; } const r = e.getBoundingClientRect(); return r.width > 1 && r.height > 1; };
+  const shown = (e) => { for (let x = e; x && x !== document.documentElement; x = x.parentElement) { const c = getComputedStyle(x); if (x.hidden || c.display === "none" || c.visibility === "hidden") return false; if (x.tagName === "DETAILS" && !x.open && !(e.tagName === "SUMMARY" && e.parentElement === x)) return false; } const r = e.getBoundingClientRect(); return r.width > 1 && r.height > 1; };
   const de = document.documentElement;
   if (de.scrollWidth > vw + 1) out.push("sideways scroll: document " + de.scrollWidth + " > viewport " + vw);
   for (const e of root.querySelectorAll("button, a[href], select, input:not([type=hidden]), textarea, summary, [role=button]")) {
