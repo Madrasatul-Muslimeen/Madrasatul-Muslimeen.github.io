@@ -2257,3 +2257,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v12.134** (2026-10-30): the Dua Lead's Dua Study picker fix (part 138 A1).
 - **v12.135** (2026-10-30): the parts 67-83 regression sweep fixes.
 - **v12.136** (2026-10-31): the Hadith Lead's J97 chapter line and Bangla language names.
+- **v12.137** (2026-10-31): the QR Lead's Study options head at large text.
