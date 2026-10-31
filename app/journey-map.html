@@ -4262,6 +4262,7 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
       await newRefsArrived();
       if (newNoteId && allNotes.some((n) => n.noteId === newNoteId)) { openNewNoteForWriting(newNoteId); return; } // the page reloaded once: the same Note
       const node = selectedFolderNode() ?? mergedRoots()[0];
+      const wasVirtual = !!node && !node.folderId;
       const folderId = node ? await ensureRealFolder(node) : null;
       if (!folderId) { toOpener({ type: "mmsa-new-note-ready", ok: false }); return; }
       const ownerArgs = { tenantId: activeTenantId, ownerPersonId: selectedPersonId, ownerUid: auth.currentUser.uid, actorUid: auth.currentUser.uid };
@@ -4292,6 +4293,10 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
       unitMadeHere.push(made); // a full load in this page keeps it (refreshAll)
       allPlacements.push({ placementId, noteId: made.noteId, folderId, order, status: NOTE_STATUS.ACTIVE, tenantId: activeTenantId, ownerPersonId: selectedPersonId });
       newNoteId = made.noteId;
+      // A system folder made real just now is still the page's virtual one: read the tree again first, so 🗂 Folders and
+      // the chips show the Note ticked in it (the Note itself is kept by unitMadeHere through the reload).
+      if (wasVirtual) { try { await refreshAll(); } catch { /* the Note is made; the tick shows on the next load */ } }
+      if (!allPlacements.some((p) => p.noteId === made.noteId)) allPlacements.push({ placementId, noteId: made.noteId, folderId, order, status: NOTE_STATUS.ACTIVE, tenantId: activeTenantId, ownerPersonId: selectedPersonId });
       openNewNoteForWriting(made.noteId);
       toOpener({ type: "mmsa-new-note-ready", ok: true, noteId: made.noteId, folder: folderDisplayName(node) });
       if (newUnitKey) countEarlierNotes();

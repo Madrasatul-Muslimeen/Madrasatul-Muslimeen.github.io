@@ -122,6 +122,14 @@ for (const lang of ["en", "bn"]) for (const width of WIDTHS) {
     const wordsOn = tb && tb.items.filter((x) => x.k !== "more").every((x) => x.lbl !== "none" && x.lbl !== "-"), wordsOff = tb && tb.items.filter((x) => x.k !== "more").every((x) => x.lbl === "none");
     check(`${tag} A toolbar: words beside the icons ${tb?.frameW >= 640 ? "shown (640px and up)" : "hidden (below 640px)"}`, tb && (tb.frameW >= 640 ? wordsOn : wordsOff), JSON.stringify(tb?.items.map((x) => x.lbl)));
     if (SHOTS) await page.screenshot({ path: `${SHOTS}/opener-study-${width}-${lang}.png` });
+    // 🗂 Folders: the Map's own picker (search, ＋ New folder, a tick per folder) fills the window; the new Note is ticked in one.
+    await f?.click('[data-nn-tool="folders"]').catch(() => {});
+    await f?.waitForSelector("#folderPicker .folder-picker", { timeout: 5000 }).catch(() => {});
+    const fp = f ? await f.evaluate(() => { const p = document.querySelector("#folderPicker .folder-picker"); if (!p) return null; const r = p.getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height, vw: innerWidth, vh: innerHeight, ticked: p.querySelectorAll("input[type=checkbox]:checked").length, search: !!p.querySelector("[data-picker-search]"), newFolder: !!p.querySelector("[data-fp-newfolder]") }; }) : null;
+    check(`${tag} A 🗂 Folders opens the Map's picker over the whole window, with search and ＋ New folder, the Note ticked in one folder`,
+      fp && fp.x === 0 && fp.y === 0 && Math.abs(fp.w - fp.vw) <= 1 && Math.abs(fp.h - fp.vh) <= 1 && fp.search && fp.newFolder && fp.ticked === 1, JSON.stringify(fp));
+    await f?.click("#folderPicker [data-picker-cancel]").catch(() => {});
+    await page.waitForTimeout(200);
     await f?.click('[data-nn-tool="back"]').catch(() => {});
     await page.waitForFunction(() => document.getElementById("noteOpener")?.hidden, null, { timeout: 8000 }).catch(() => {});
     const after = await page.evaluate(() => ({ hidden: document.getElementById("noteOpener").hidden, marker: window.__marker, y: scrollY, focus: document.activeElement?.id }));
