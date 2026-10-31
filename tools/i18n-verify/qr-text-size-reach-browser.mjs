@@ -100,7 +100,8 @@ for (const [w, h, lang] of [[360, 740, "en"], [360, 740, "bn"], [390, 844, "en"]
     check(`${tag}: A± is not covered, so a second tap can close them`, m.toggleFree, d);
     check(`${tag}: each slider is wide enough to drag (>= 40px)`, m.sliderW >= 40, d);
     const plain = PLAIN[`${w}x${h}`];
-    if (size === "100%" && plain) check(`${tag}: nothing moves where it fitted`, !m.moved && Math.abs(m.left - plain[0]) <= 2 && Math.abs(m.top - plain[1]) <= 2, d);
+    // The places were measured in English; in Bangla the rows differ, so there it is only "not moved".
+    if (size === "100%" && plain) check(`${tag}: nothing moves where it fitted`, !m.moved && (lang !== "en" || (Math.abs(m.left - plain[0]) <= 2 && Math.abs(m.top - plain[1]) <= 2)), d);
     if (SHOT_DIR) await page.screenshot({ path: `${SHOT_DIR}/ts-${lang}-${w}x${h}-${size.replace("%", "")}.png` });
     if (size === "200%" && w === 360 && lang === "en") {
       await page.locator("#readTextSizeSlot [data-text-size-toggle]").click(); await page.waitForTimeout(200);

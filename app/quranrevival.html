@@ -20708,7 +20708,7 @@
         const el = document.getElementById(id);
         if (!el || !el.getClientRects().length) continue;
         const d = el.getBoundingClientRect();
-        if (d.top > r.bottom && d.top < floor + 8) floor = d.top - 8;
+        if (d.top > r.bottom && d.top < floor + 4) floor = d.top - 4;
       }
       const need = readToolsMenu.offsetHeight, below = floor - (r.bottom + 6), above = r.top - 6 - 8;
       if (need <= below) return;
@@ -20766,7 +20766,7 @@
         const el = document.getElementById(id);
         if (!el || !el.getClientRects().length) continue;
         const r = el.getBoundingClientRect();
-        if (r.top > btn.bottom && r.top < floor + 8) floor = r.top - 8;
+        if (r.top > btn.bottom && r.top < floor + 4) floor = r.top - 4;
       }
       // Inside a panel that scrolls, a hanging popover would be cut by the panel, so it is always held on screen there.
       if (!readToolsMenu.style.overflowY && p.left >= 8 && p.right <= window.innerWidth - 8 && p.top >= 8 && p.bottom <= floor) return;
