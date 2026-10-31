@@ -23,7 +23,7 @@ const check = (name, ok, detail = "") => {
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
 const MUT = {
   "no-fit": ['    readTextSizeSlot?.addEventListener("click", () => requestAnimationFrame(fitReadTextSize));\n', ""],
-  "no-floor": ['for (const id of ["dock", "zabBar"]) {', "for (const id of []) {"],
+  "no-floor": ["if (r.top > btn.bottom && r.top < floor + 4) floor = r.top - 4;", ""],
   "no-width": ["const width = Math.min(p.width, window.innerWidth - 16),", "const width = p.width,"],
   "always": ["if (!readToolsMenu.style.overflowY && p.left >= 8 && p.right <= window.innerWidth - 8 && p.top >= 8 && p.bottom <= floor) return;", ""],
   "no-panel": ["      if (need <= below) return;\n", "      return;\n"],
@@ -69,7 +69,8 @@ async function openAndMeasure(page) {
     });
   }
   const tg = page.locator("#readTextSizeSlot [data-text-size-toggle]");
-  await tg.scrollIntoViewIfNeeded(); await tg.click(); await page.waitForTimeout(250);
+  try { await tg.click({ timeout: 5000 }); } catch { return { tapped: false, panel }; }
+  await page.waitForTimeout(250);
   return page.evaluate((panel) => {
     const R = (e) => e.getBoundingClientRect(), pop = document.querySelector("#readTextSizeSlot .text-size-popover"), p = R(pop);
     const toggle = document.querySelector("#readTextSizeSlot [data-text-size-toggle]"), tr = R(toggle);
@@ -80,7 +81,7 @@ async function openAndMeasure(page) {
       .map((e) => (e.dataset.textSizeSlider || e.textContent || e.tagName).trim().slice(0, 12));
     pop.scrollTop = 0;
     const at = document.elementFromPoint(tr.left + tr.width / 2, tr.top + tr.height / 2);
-    return { open: pop.classList.contains("open"), n: ctrls.length, unreachable, left: Math.round(p.left), right: Math.round(p.right), top: Math.round(p.top),
+    return { tapped: true, open: pop.classList.contains("open"), n: ctrls.length, unreachable, left: Math.round(p.left), right: Math.round(p.right), top: Math.round(p.top),
       bottom: Math.round(p.bottom), width: Math.round(p.width), moved: !!pop.style.position, toggleFree: !!at && toggle.contains(at),
       panel, sliderW: Math.round(Math.min(...[...pop.querySelectorAll('input[type="range"]')].map((e) => R(e).width))) };
   }, panel);
@@ -94,6 +95,8 @@ for (const [w, h, lang] of [[360, 740, "en"], [360, 740, "bn"], [390, 844, "en"]
       check(`${tag}: every tool in the ⋯ panel can be reached`, m.panel.n >= 3 && m.panel.unreachable.length === 0, JSON.stringify(m.panel));
       if (size === "100%" && PLAIN[`${w}x${h}`]) check(`${tag}: the ⋯ panel is where it was`, !m.panel.moved, JSON.stringify(m.panel));
     }
+    check(`${tag}: A± can be tapped`, m.tapped, d);
+    if (!m.tapped) { await ctx.close(); continue; }
     check(`${tag}: A± opens its sliders`, m.open && m.n >= 6, d);
     check(`${tag}: the sliders lie inside the screen sideways`, m.left >= 0 && m.right <= w, d);
     check(`${tag}: every control can be reached`, m.unreachable.length === 0, d);
