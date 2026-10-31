@@ -179,14 +179,32 @@ for (const [w, h] of WIDTHS) for (const lang of LANGS) {
     const fa = await audit(P, f, lang);
     check(`${tag} [iframe]: the Tab walk moved (positive control)`, fa.stops > 3 || MUTATE === "trapfix", `stops ${fa.stops}`);
     report(`${tag} [Note page in iframe]`, "qr-note", `${via}-frame`, where, fa);
-    // (b2) the window holds Tab: the page behind must never take focus
+    // (b2) the FULL-SCREEN window holds Tab: the page behind must never take focus. v13.07 (audit 143 D1/D2, the Architect):
+    // the FLOATING window (from 1024px) is non-modal on purpose -- the page beside it stays usable (J81, J108) -- so there
+    // it must NOT claim aria-modal, and Tab may move on to the page.
+    const floating = w >= 1024;
+    if (floating) {
+      const amF = await P.evaluate(() => document.getElementById("noteOpener").getAttribute("aria-modal"));
+      check(`${tag}: (b2) the floating window is non-modal (no aria-modal, page not inert)`, amF !== "true" && await P.evaluate(() => ![...document.body.children].some((e) => e.inert)), `aria-modal ${amF}`);
+    } else {
+      // minimised, the window is a chip: the page is usable again; brought back, it is held again
+      const inertNow = () => P.evaluate(() => [...document.body.children].filter((e) => e.inert).length);
+      const before = await inertNow();
+      await P.evaluate(() => document.querySelector("#noteOpener .mm-min-btn")?.click());
+      await P.waitForTimeout(300);
+      const minimised = await inertNow();
+      await P.evaluate(() => document.querySelector('[data-mm-min-chip="newnote"]')?.click());
+      await P.waitForTimeout(300);
+      const back = await inertNow();
+      check(`${tag}: (b2) minimising the full-screen window frees the page; bringing it back holds it again`, before > 0 && minimised === 0 && back >= before /* >=: an element the page added after the first hold (its late splash) is held too */, `inert ${before} -> ${minimised} -> ${back}`);
+    }
     await P.evaluate(() => document.querySelector("#noteOpener .no-close").focus());
     let leaked = null;
-    for (let i = 0; i < 60 && !leaked; i++) {
+    for (let i = 0; i < 60 && !leaked && !floating; i++) {
       await P.keyboard.press("Tab");
       leaked = await P.evaluate(() => { const e = document.activeElement, wn = document.getElementById("noteOpener"); return e && e !== document.body && !wn.contains(e) ? (e.id || e.tagName) : null; });
     }
-    check(`${tag}: (b2) Tab never reaches the page behind the Note window`, !leaked, `focus reached ${leaked}`);
+    if (!floating) check(`${tag}: (b2) Tab never reaches the page behind the Note window`, !leaked, `focus reached ${leaked}`);
     if (leaked) addFinding("qr-note", "window", "DEFECT window-does-not-hold-tab", `Tab leaves #noteOpener onto the page behind (${leaked}): role=dialog with no aria-modal and no trap (note-opener.js:94)`, where);
     const am = await P.evaluate(() => document.getElementById("noteOpener").getAttribute("aria-modal"));
     if (w < 1024 && am !== "true") addFinding("qr-note", "window", "DEFECT full-screen-not-aria-modal", "the full-screen Note window covers the whole page but is role=dialog without aria-modal=true (note-opener.js:94)", where);

@@ -23113,3 +23113,11 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 
 - Below 600px: `[role=tab]` `min-width: min-content`, `overflow-wrap: normal`, the tab list wraps; under `@container wordcard (max-width: 11.5rem)` each tab takes `flex-basis: 28%` (three and two). `.word-card-tab-sub` wraps instead of being cut.
 - Suite `qr-word-card-tabs-large-text-browser.mjs` (en+bn; 320–1280; 100/150/200%; mutations no-minw, no-sub, no-three). Nothing stored, no Rules.
+
+## v13.07 — 31 Oct 2026 — Keyboard fixes from audit part 143 on the v13 Note window (the Architect)
+
+- **D1/D2** `note-opener.js`: below 1024px (full screen) the Note window is `aria-modal="true"` and every other child of `<body>` is `inert` while it is open (`syncHold()`; the iframe cannot pass Tab up, so a key handler alone could not wrap it). Minimised (`data-mm-min`) or floating (from 1024px, non-modal by design: J81, J108) it holds nothing; `#mmMinDock` is never held.
+- **D3** the 📎 Attach sheet wraps Tab/Shift+Tab inside itself; the Note iframe is inert while the sheet is open.
+- **D4** closing Attach by Escape, Cancel, the backdrop or a done Attach focuses the Note's own 📎 (`mmsa-new-note-focus-tool` → `journey-map.html`).
+- **M1** `journey-map.html`: the pressed ✏️/✓ tool's focus ring is gold (`#c9a24b`).
+- `note-window-a11y-browser.mjs` updated in place: (b2) asserts the floating window is non-modal, and that minimising frees the page. Nothing stored, no Rules.
