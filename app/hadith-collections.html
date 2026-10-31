@@ -164,7 +164,7 @@
     const mount = params.get("mount") === "quranrevival" ? "quranrevival" : "standalone";
     document.body.dataset.mount = mount;
 
-    document.getElementById("qrVersionBadge").textContent = `v${APP_VERSION_LABEL}`;
+    document.getElementById("qrVersionBadge").textContent = APP_VERSION_LABEL;
     document.getElementById("hadithPageTitle").textContent = t("Hadith Collections");
     document.getElementById("hadithPilotNote").textContent =
       t("HadeethEnc hadiths are real, published text. Everything marked Synthetic is invented for development.");

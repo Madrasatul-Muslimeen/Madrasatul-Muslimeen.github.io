@@ -148,7 +148,7 @@
 
     function renderRegistry() {
       const { features, phaseReservations } = getFullRegistry();
-      document.getElementById("versionLine").textContent = `QuranRevival v${APP_VERSION_LABEL}`;
+      document.getElementById("versionLine").textContent = `QuranRevival ${APP_VERSION_LABEL}`;
       document.getElementById("featureRows").innerHTML = features
         .map((f) => `<tr><td>${f.id}</td><td>${t(f.name)}</td><td><span class="tag tag-${f.status}">${t(f.status)}</span></td></tr>`)
         .join("");

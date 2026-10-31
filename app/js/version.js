@@ -3,6 +3,6 @@
 export const APP_VERSION = "12.137";
 // J108 (v13.01, the Owner: the app SHOWS "v13.01-31.10.26"): the release's date (Sydney, dd.mm.yy) is DISPLAY only.
 // APP_VERSION stays the plain number -- caches (sw.js), QR's worker and every vNN.NN check read it -- and every place
-// that PRINTS the version prints APP_VERSION_LABEL. allocate-version.py rewrites the date with the number.
+// that PRINTS the version prints APP_VERSION_LABEL (it carries its own "v"). allocate-version.py rewrites the date with the number.
 export const APP_VERSION_DATE = "31.10.26";
-export const APP_VERSION_LABEL = `${APP_VERSION}-${APP_VERSION_DATE}`;
+export const APP_VERSION_LABEL = `v${APP_VERSION}-${APP_VERSION_DATE}`;
