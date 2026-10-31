@@ -20,7 +20,11 @@ service cloud.firestore {
     // owner/prime writes, no delete), with ONE deliberate tightening:
     // asmaCollections' update does not pin the identity fields, so an
     // owner/prime update could repoint `tenantId` at another madrasah's id.
-    // Here `tenantId`, `createdBy` and `createdAt` are write-once.
+    // Here `tenantId`, `createdBy`, `createdAt` and `schemaVersion` are write-once, and a create must
+    // carry its origin facts (I17): createdBy is the signed-in uid, createdAt a timestamp (the client's
+    // serverTimestamp(), envelope.js createDocument). The writer is app/js/hadith-study-actions.js
+    // saveHadithSubjects(): create = { tenantId, subjects } + createDocument's stamps; update =
+    // { subjects } + updateDocument's updatedAt.
     //
     // WHAT IS NOT ENFORCED HERE, stated rather than hidden: the shape of
     // each entry inside `subjects` (versionUri, n, std, book, chapter,
@@ -58,6 +62,8 @@ service cloud.firestore {
       allow create: if canAdminCatalogue(tenantId)
                     && request.resource.data.tenantId == tenantId
                     && request.resource.data.get('schemaVersion', 0) == 1
+                    && request.resource.data.get('createdBy', null) == myUid()
+                    && request.resource.data.get('createdAt', null) is timestamp
                     && request.resource.data.get('subjects', null) is map;
       // `resource != null` keeps a create from tripping this clause into an
       // evaluation error (Firestore evaluates every matching allow).
@@ -66,6 +72,7 @@ service cloud.firestore {
                     && request.resource.data.tenantId == resource.data.tenantId
                     && request.resource.data.get('createdBy', null) == resource.data.get('createdBy', null)
                     && request.resource.data.get('createdAt', null) == resource.data.get('createdAt', null)
+                    && request.resource.data.get('schemaVersion', null) == resource.data.get('schemaVersion', null)
                     && request.resource.data.get('subjects', null) is map;
       // No delete (I4/D6) -- an entry is retired with status: "retired"
       // inside the document, never removed from Firestore.

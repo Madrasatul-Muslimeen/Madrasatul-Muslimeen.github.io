@@ -28,6 +28,9 @@ mutate read-any-signed-in   "allow read: if anyMemberOf(tenantId);" "allow read:
 mutate create-any-member    "allow create: if canAdminCatalogue(tenantId)" "allow create: if anyMemberOf(tenantId)"
 mutate create-tenant-free   "&& request.resource.data.tenantId == tenantId" ""
 mutate create-schema-free   "&& request.resource.data.get('schemaVersion', 0) == 1" ""
+mutate create-createdby-free "&& request.resource.data.get('createdBy', null) == myUid()" ""
+mutate create-createdat-free "&& request.resource.data.get('createdAt', null) is timestamp" ""
+mutate update-schema-free   "&& request.resource.data.get('schemaVersion', null) == resource.data.get('schemaVersion', null)" ""
 mutate create-map-free      "&& request.resource.data.get('subjects', null) is map;
       // \`resource" ";
       // \`resource"

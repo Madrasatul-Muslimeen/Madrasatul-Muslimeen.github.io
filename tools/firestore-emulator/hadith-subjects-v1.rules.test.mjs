@@ -49,13 +49,21 @@ const entry = (n) => ({
   chapter: "Chapter", title: "Title", addedAt: "2026-10-31T00:00:00.000Z", addedBy: "pO", status: "active",
 });
 const subjectsDoc = (tenantId, over = {}) => ({
-  tenantId, schemaVersion: 1, createdBy: "uid-owner", createdAt: "2026-10-31T00:00:00.000Z",
-  updatedAt: "2026-10-31T00:00:00.000Z", subjects: { akhlaq: [entry(1)], ghayb: [], stories: [] }, ...over,
+  tenantId, schemaVersion: 1, createdBy: "uid-owner", createdAt: new Date("2026-10-31T00:00:00.000Z"),
+  updatedAt: new Date("2026-10-31T00:00:00.000Z"), subjects: { akhlaq: [entry(1)], ghayb: [], stories: [] }, ...over,
 });
 
 test("candidate hadithSubjects Rules: isolated allow/deny cases", async () => {
   const env = await initializeTestEnvironment({ projectId: PROJECT, firestore: { host: HOST, port: PORT, rules: candidate } });
   try {
+    // Start from an EMPTY emulator every run. The emulator keeps data between runs in one session, so without this
+    // hadithSubjects/t1 already existed from the previous run, every "create" below was really judged by the UPDATE
+    // rule, and the create mutations went unproven -- a denial made by a different rule (found by the mutate script).
+    await env.clearFirestore();
+    // Positive control: the document under test is really absent, so the setDoc calls below are creates.
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      assert.equal((await getDoc(doc(ctx.firestore(), "hadithSubjects", T))).exists(), false, "hadithSubjects/t1 must not exist before the create cases");
+    });
     await env.withSecurityRulesDisabled(async (ctx) => {
       const db = ctx.firestore();
       const member = (uid, personId, roles, tenantId = T) =>
@@ -78,13 +86,19 @@ test("candidate hadithSubjects Rules: isolated allow/deny cases", async () => {
     const anon = env.unauthenticatedContext().firestore();
 
     // --- 1. Create: owner/prime only, tenantId must be the doc id ---------
-    await assertFails(setDoc(doc(teacher, "hadithSubjects", T), subjectsDoc(T)));
-    await assertFails(setDoc(doc(student, "hadithSubjects", T), subjectsDoc(T)));
-    await assertFails(setDoc(doc(other, "hadithSubjects", T), subjectsDoc(T)));   // prime, but of t2
+    // Each carries its OWN uid as createdBy, so only the role test can refuse it (not the createdBy == myUid() test).
+    await assertFails(setDoc(doc(teacher, "hadithSubjects", T), subjectsDoc(T, { createdBy: "uid-teacher" })));
+    await assertFails(setDoc(doc(student, "hadithSubjects", T), subjectsDoc(T, { createdBy: "uid-student" })));
+    await assertFails(setDoc(doc(other, "hadithSubjects", T), subjectsDoc(T, { createdBy: "uid-other" })));   // prime, but of t2
     // PAIRED: the owner's create with the WRONG tenantId field is refused...
     await assertFails(setDoc(doc(owner, "hadithSubjects", T), subjectsDoc(T2)));
     // ...a wrong schemaVersion is refused...
     await assertFails(setDoc(doc(owner, "hadithSubjects", T), subjectsDoc(T, { schemaVersion: 2 })));
+    // ...createdBy must be the signed-in uid (I17): another uid, or none, is refused...
+    await assertFails(setDoc(doc(owner, "hadithSubjects", T), subjectsDoc(T, { createdBy: "uid-prime" })));
+    await assertFails(setDoc(doc(owner, "hadithSubjects", T), (({ createdBy, ...rest }) => rest)(subjectsDoc(T))));
+    // ...createdAt must be a timestamp, not a string...
+    await assertFails(setDoc(doc(owner, "hadithSubjects", T), subjectsDoc(T, { createdAt: "2026-10-31T00:00:00.000Z" })));
     // ...a missing subjects map is refused...
     await assertFails(setDoc(doc(owner, "hadithSubjects", T), subjectsDoc(T, { subjects: "akhlaq" })));
     // ...and the same create, right in every fact, succeeds.
@@ -113,6 +127,9 @@ test("candidate hadithSubjects Rules: isolated allow/deny cases", async () => {
     await assertFails(updateDoc(doc(owner, "hadithSubjects", T), { createdBy: "uid-prime" }));
     await assertFails(updateDoc(doc(owner, "hadithSubjects", T), { createdAt: "2020-01-01" }));
     await assertFails(updateDoc(doc(owner, "hadithSubjects", T), { subjects: null }));
+    await assertFails(updateDoc(doc(owner, "hadithSubjects", T), { schemaVersion: 2 }));
+    // PAIRED ALLOW for the schemaVersion pin: the same actor writing schemaVersion UNCHANGED (1) succeeds.
+    await assertSucceeds(updateDoc(doc(owner, "hadithSubjects", T), { schemaVersion: 1 }));
     // PAIRED ALLOW: the same actor changing only updatedAt still works.
     await assertSucceeds(updateDoc(doc(owner, "hadithSubjects", T), { updatedAt: "w" }));
 
