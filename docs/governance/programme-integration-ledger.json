@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "13.01",
+    "version": "13.02",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -5957,8 +5957,20 @@
     {
       "version": "13.01",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "J108 v13.01-31.10.26: every Note button opens one new Mapping My Journey Note in a shared window; Āyah/Hadith blocks inside the Note; legacy-v12 archived.",
+      "integration": {
+        "authorizedOn": "2026-10-31",
+        "integratedOn": "2026-10-31",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.02",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "QR Lead audits 4 (Listening) and 5 (Mushaf bare full screen) at large text; Quran Study only, no data or Rules.",
       "integration": {
         "authorizedOn": "2026-10-31",
         "integratedOn": "2026-10-31",
@@ -5967,8 +5979,9 @@
       }
     }
   ],
-  "nextUnallocated": "13.02",
+  "nextUnallocated": "13.03",
   "nextUnallocatedNote": [
+    "v13.02 was allocated to Quran Study: Listening and the Mushaf full screen at large text (QR Lead audits 4 and 5), 2026-10-31.",
     "v13.01 was allocated to J108: one Note from every Note button (v13 begins), 2026-10-31.",
     "v12.139 was allocated to Quran Study: the A± text-size controls stay on screen at large text, 2026-10-31.",
     "v12.138 was allocated to the Escape fixes from audit part 141 and the Read view at large text, 2026-10-31.",
