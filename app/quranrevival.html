@@ -11596,7 +11596,7 @@
     function fitPanelHead(panel) {
       const head = panel.querySelector(".qr-panel-head"), save = head?.querySelector(".preset-save-btn");
       if (!save || panel.hidden) return;
-      head.classList.remove("qr-panel-head-stacked");
+      head.classList.remove("qr-panel-head-stacked", "qr-panel-head-tight");
       if (save.scrollWidth > save.clientWidth + 1) head.classList.add("qr-panel-head-stacked");
     }
     function fitPanelRoom() {
@@ -11613,7 +11613,7 @@
         panel.style.setProperty("--qr-panel-room", Math.max(96, top - 6 - Math.ceil(box)) + "px");
         const head = panel.querySelector(".qr-panel-head");
         if (!head || panel.hidden) return;
-        head.classList.remove("qr-panel-head-tight");
+        // fitPanelHead() above has just cleared "tight" and measured afresh, so a tight head here is decided anew each time.
         if (head.classList.contains("qr-panel-head-stacked") && panel.clientHeight - head.offsetHeight < 6 * parseFloat(getComputedStyle(document.documentElement).fontSize)) {
           head.classList.replace("qr-panel-head-stacked", "qr-panel-head-tight");
         }
