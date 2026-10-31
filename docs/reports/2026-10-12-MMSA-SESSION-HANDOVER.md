@@ -2329,3 +2329,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v12.139** (2026-10-31): Quran Study: the A± text-size controls stay on screen at large text.
 - **v13.01** (2026-10-31): J108: one Note from every Note button (v13 begins).
 - **v13.02** (2026-10-31): Quran Study: Listening and the Mushaf full screen at large text (QR Lead audits 4 and 5).
+- **v13.03** (2026-10-31): audit part 142 fixes: the My account card and New bookmark keyboard focus.
