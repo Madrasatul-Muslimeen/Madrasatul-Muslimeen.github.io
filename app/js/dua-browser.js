@@ -67,7 +67,8 @@ export function renderDua(body, state, render) {
     back.dataset.duaBack = "true";
     back.addEventListener("click", () => { state.dua.bookUri = null; render(); });
     list.appendChild(back);
-    list.appendChild(el("h3", "hadith-row-name", book.titleEn));
+    // Audit part 141 H1: not .hadith-row-name, which card-look.css paints cream for dark rows; this heading sits on the page.
+    list.appendChild(el("h3", "dua-book-heading", book.titleEn));
     const index = await loadOpenitiBookIndex(book.versionUri);
     for (const id of book.chapterIds) {
       const c = index.chapters.find((x) => x.id === id);
@@ -253,6 +254,18 @@ export function duaCard(c, summary, state, render, progressRows, wordLinks = nul
     const panel = el("div", "dua-word-panel");
     panel.hidden = true;
     panel.dataset.duaWordPanel = String(c.dua);
+    // Audit part 141 H3: Escape closes an open word card, from the word or from inside the card, and gives the focus back
+    // to the word that opened it (as its × does).
+    const escWord = (e) => {
+      if (e.key !== "Escape" || panel.hidden) return;
+      e.preventDefault(); e.stopPropagation();
+      const opener = words.querySelector('.dua-word[aria-pressed="true"]');
+      opener?.setAttribute("aria-pressed", "false");
+      panel.hidden = true;
+      opener?.focus({ preventScroll: true });
+    };
+    panel.addEventListener("keydown", escWord);
+    words.addEventListener("keydown", escWord);
     duaWordTokens(picked.words).forEach((tok, i) => {
       if (i) words.appendChild(document.createTextNode(" "));
       // Decision 96: a word fixed in a check shows its fixed vowels; "not this Qur'an word" shows it unlinked.
@@ -401,6 +414,13 @@ export function duaCheckButton(card, c, summary, state, render, page, env, check
     const panelHost = el("div", "dua-check-host");
     card.after(panelHost);
     const close = () => { panelHost.remove(); card.tabIndex = -1; card.focus({ preventScroll: true }); card.scrollIntoView({ block: "center" }); };
+    // Audit part 141 H4: Escape closes the check panel (nothing is saved) and gives the focus back to this button.
+    panelHost.addEventListener("keydown", (e) => {
+      if (e.key !== "Escape") return;
+      e.preventDefault(); e.stopPropagation();
+      panelHost.remove();
+      open.focus({ preventScroll: true });
+    });
     fit.then((fitRows) => {
       const texts = loadMemberTexts(c, summary.books);
       panelHost.appendChild(buildCheckPanel({
