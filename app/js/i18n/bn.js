@@ -4529,7 +4529,20 @@ export const BN = {
   "Good character: how a Muslim treats people, speaks, and loves for others what he loves for himself.": "উত্তম চরিত্র: একজন মুসলিম কীভাবে মানুষের সাথে আচরণ করে, কথা বলে, এবং নিজের জন্য যা ভালোবাসে অন্যের জন্যও তা ভালোবাসে।", // ?
   "The unseen: belief in Allah, the angels, the Last Day, and what only Allah knows.": "অদৃশ্য জগৎ: আল্লাহ, ফেরেশতা, শেষ দিবসের প্রতি ঈমান, এবং যা কেবল আল্লাহই জানেন।", // ?
   "The events of the life of Rasulullah Sallallahu A'laihi Wa Sallam and his Companions, as the hadith tell them.": "রাসূলুল্লাহ ﷺ ও তাঁর সাহাবীদের জীবনের ঘটনা, যেমন হাদীসে বর্ণিত হয়েছে।", // ?
-  "No hadith in this list yet. Open a hadith in Hadith Books and choose “Add to subject” (coming next).": "এই তালিকায় এখনো কোনো হাদীস নেই। হাদীসের কিতাবসমূহে একটি হাদীস খুলে “বিষয়ে যোগ করুন” বেছে নিন (শীঘ্রই আসছে)।", // ?
+  "No hadith in this list yet. Open a hadith in Hadith Books and choose “Add to subject”.": "এই তালিকায় এখনো কোনো হাদীস নেই। হাদীসের কিতাবসমূহে একটি হাদীস খুলে “পাঠ্য বিষয়ে যোগ করুন” বেছে নিন।", // ?
+  "No hadith in this list yet. The madrasah's owner or a prime adds them.": "এই তালিকায় এখনো কোনো হাদীস নেই। মাদরাসার মালিক বা একজন প্রাইম এগুলো যোগ করেন।", // ?
+  // PCF MSA J106 round 2: "Add to subject" and the shared lists.
+  "Add to subject": "পাঠ্য বিষয়ে যোগ করুন", // ?
+  "Add to this Subject": "এই পাঠ্য বিষয়ে যোগ করুন", // ?
+  "Already in this Subject": "এই পাঠ্য বিষয়ে আগেই আছে", // ?
+  "Added to {name}.": "{name}-এ যোগ করা হয়েছে।", // ?
+  "Remove from {name}": "{name} থেকে সরান", // ?
+  "Passage {n}": "অনুচ্ছেদ {n}", // ?
+  "Sign in to add a hadith to a Subject.": "পাঠ্য বিষয়ে হাদীস যোগ করতে সাইন ইন করুন।", // ?
+  "Only the madrasah's owner or a prime can add a hadith to a Subject.": "কেবল মাদরাসার মালিক বা একজন প্রাইম পাঠ্য বিষয়ে হাদীস যোগ করতে পারেন।", // ?
+  "Sign in to see your madrasah's Subjects.": "আপনার মাদরাসার পাঠ্য বিষয়গুলো দেখতে সাইন ইন করুন।", // ?
+  "It could not be added. Check the connection and try again.": "যোগ করা যায়নি। সংযোগ দেখে আবার চেষ্টা করুন।", // ?
+  "It could not be removed. Check the connection and try again.": "সরানো যায়নি। সংযোগ দেখে আবার চেষ্টা করুন।", // ?
   "The list of books could not be loaded. Check the connection and try again.": "কিতাবের তালিকা লোড করা যায়নি। সংযোগ দেখে আবার চেষ্টা করুন।", // ?
   // PCF MSA J106: the Hadith Books reader.
   "Hadith · {n}": "হাদীস · {n}", // ?

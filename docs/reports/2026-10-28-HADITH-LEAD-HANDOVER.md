@@ -3,10 +3,31 @@
 Written by Hadith Lead session `01Q2HmCeWjo1vVYV5kgMBvC9` at about 77% context, on the PCA's word (hand119).
 The next session is titled **"📌 (03B) MSA - Hadith Lead"**.
 
+## UPDATE, about 11 am 31 Oct (session `01PL2xbKWeTSDEBJV5UWZTcQ`, "📌 (03B) MSA - Hadith Lead")
+
+- **J106 round 2, the candidate rule: DONE and with the MSA Architect** (now on its own branch `claude/hadith-subjects-rule`, `44da873`, from `main`; the Architect's
+  force-push for v12.136 had dropped `43fe06c` from this branch). `tests/firestore/hadith-subjects-v1.proposed.rules`
+  (`hadithSubjects/{tenantId}`: asmaCollections' shape, plus `tenantId`/`createdBy`/`createdAt` write-once, `schemaVersion`
+  1 on create, `subjects` a map; no delete). Emulator: `cd tools/firestore-emulator && npm run hadith-subjects` 1/1;
+  `npm run hadith-subjects-mutate` 11 of 11 caught. `rules-authorisation-executable.mjs` 80/0. `firestore.rules` untouched.
+- **J106 round 2, the app: BUILT on this branch, NOT yet handed in as a release** (Hadith files only). `app/js/hadith-subjects.js`
+  (pure list logic + "Add to subject" + the list), the read/write in `app/js/hadith-study-actions.js`
+  (`getHadithSubjectsSession`, `getHadithSubjectsDoc`, `saveHadithSubjects`; the collection name is here, not in the shared
+  `collections.js`), wiring in `app/js/hadith-browser.js` (`subjectAddRow` under the Text pane's narration;
+  `renderSubjects` → `renderSubjectList`; `openSubjectEntry` with "← Back to <Subject>"), CSS in `app/css/hadith.css`,
+  13 Bangla strings in `bn.js`. Suite `tools/i18n-verify/hadith-subjects-browser.mjs` 58/0, `--prove` 11 of 11
+  (the button-size mutation must break `admin-touch.css` too: that shared rule keeps every button 40px by itself).
+  Reader 116/0, translations 45/0, stub-parity 4/0.
+- **It cannot SAVE for real until the rule is live** (the deployed Rules have no `hadithSubjects` match, so production
+  denies it, and the page says "It could not be added"). So the order is: the Architect merges the rule → the Owner
+  publishes it, guided → the Architect releases the app part. Not covered by the suite: signed out (the stub is always
+  signed in).
+- **Open item from the Architect (bangla-sweep "English দেখানো হচ্ছে")**: already fixed by `46dd7e2`; nothing more.
 ## UPDATE, 11:25 am 31 Oct: J97 and the Bangla prose fix are LIVE as v12.136 (PR #1360); the Architect wrote J97's Done
 line. J108 grew (each Hadith/Āyah on the new Note gets its own show/hide, per-language buttons, delete, one switch for all;
 demo v3 https://claude.ai/artifact/EpdQd5aX2yoUpWenVceTan) — still nothing to build until the Owner's J108 Q3. The Architect
 confirmed: send the hadithSubjects/{tenantId} candidate rule for review before anything touches `firestore.rules`.
+
 
 ## HANDOVER, about 10:40 am 31 Oct (session `01PL2xbJbrDFWUd52n8gRbHi` → a fresh "📌 (03B) MSA - Hadith Lead")
 

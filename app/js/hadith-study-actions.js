@@ -28,7 +28,9 @@
 // to load it degrades to "not available right now" instead of breaking the
 // whole corpus.
 import { auth, db } from "./firebase-init.js";
-import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { collection, query, where, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { createDocument, updateDocument } from "./envelope.js";
+import { safeWrite } from "./errors.js";
 import { TENANT } from "./collections.js";
 import { getTenantRosterSnap } from "./roster-access.js";
 import { getActiveContext, getSelectedPersonId, effectiveRoles, scopedRoster } from "./session-context.js";
@@ -384,4 +386,43 @@ export async function toggleDuaBookmark(session, number, name) {
   });
   savedBookmarks.set(memoKey(session, unitKey), saved);
   return true;
+}
+
+// ---------------------------------------------------------------------------
+// PCF MSA J106 round 2 -- the shared Subject lists (hadith-subjects.js). One document per madrasah,
+// hadithSubjects/{tenantId}; the candidate rule is tests/firestore/hadith-subjects-v1.proposed.rules (any member
+// reads; owner/prime create and update; tenantId, createdBy and createdAt never change; no delete). The name lives
+// here rather than in collections.js (a shared file) until the MSA Architect merges the rule.
+// ---------------------------------------------------------------------------
+
+export const HADITH_SUBJECTS_COLLECTION = "hadithSubjects";
+
+/**
+ * Who is reading, for the Subject lists: null when signed out or with no madrasah chosen. `canManage` is the
+ * owner/prime test the rule makes (a "View as" preview counts as the role it previews, as everywhere else).
+ */
+export async function getHadithSubjectsSession() {
+  const uid = auth.currentUser?.uid ?? null;
+  if (!uid) return null;
+  const ctx = getActiveContext();
+  if (!ctx?.tenantId) return null;
+  const effRoles = effectiveRoles(ctx.roles ?? [], ctx.viewAsRole ?? null);
+  const canManage = effRoles.some((r) => r === "owner" || r === "prime");
+  return { uid, tenantId: ctx.tenantId, myPersonId: ctx.personId ?? null, canManage };
+}
+
+export async function getHadithSubjectsDoc(tenantId) {
+  const snap = await getDoc(doc(db, HADITH_SUBJECTS_COLLECTION, tenantId));
+  return snap.exists() ? snap.data() : null;
+}
+
+/** Writes the three lists. I15: a failure reaches the user through safeWrite(); returns true only when saved. */
+export async function saveHadithSubjects({ tenantId, subjects, docExists, uid }) {
+  const res = await safeWrite(
+    () => (docExists
+      ? updateDocument(db, HADITH_SUBJECTS_COLLECTION, tenantId, { subjects })
+      : createDocument(db, HADITH_SUBJECTS_COLLECTION, tenantId, { tenantId, subjects }, uid)),
+    { action: "save the Hadith Subject lists", collection: HADITH_SUBJECTS_COLLECTION, docId: tenantId },
+  );
+  return !!res?.ok;
 }

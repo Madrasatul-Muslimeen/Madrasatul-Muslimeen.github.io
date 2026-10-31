@@ -25,6 +25,7 @@ import { OPENITI_CREDIT_URL, loadOpenitiBookSummaries, loadOpenitiBookIndex, loa
 import { el, readFailedNote, langNameInProse, loadHadithStudyActions, openitiDisplayTitle, openitiArabicRowName, duaRefLabel, standardTranslationFolds, openitiTranslationFold } from "./hadith-shared-ui.js";
 import { renderDua } from "./dua-browser.js";
 import { hadithReader, removeReaderWindows } from "./hadith-reader.js";
+import { subjectAddRow, renderSubjectList } from "./hadith-subjects.js";
 
 const CONTENT_LANG_LABELS = { ar: "العربية", en: "English", bn: "বাংলা" };
 
@@ -402,10 +403,25 @@ function renderSubjects(body, state, render) {
   box.dataset.hadithSubject = sub.id;
   box.appendChild(el("h2", null, t(sub.name)));
   box.appendChild(el("p", "hadith-note", t(sub.about)));
-  const empty = el("p", "hadith-note hadith-subject-empty", t("No hadith in this list yet. Open a hadith in Hadith Books and choose “Add to subject” (coming next)."));
-  empty.dataset.hadithSubjectEmpty = "true";
-  box.appendChild(empty);
   body.appendChild(box);
+  // Round 2 (the Owner's answer A on question 5): the madrasah's shared list, read on first use.
+  renderSubjectList(box, sub.id, subjectNameOf, (e) => openSubjectEntry(state, sub, e));
+}
+
+const subjectNameOf = (id) => t(HADITH_SUBJECTS.find((x) => x.id === id)?.name ?? id);
+
+/** Opens a Subject's hadith in Hadith Books, highlighted, with "← Back to <Subject>" (the way-back law, decision 86). */
+function openSubjectEntry(state, sub, e) {
+  state.view = "books";
+  state.editionId = null;
+  state.oi = { bookUri: e.versionUri, chapterId: null, books: state.oi?.books ?? null, showAllChapters: false, focusPassage: Number(e.n), scrollTo: true,
+    trail: [{ label: t("← Back to {ref}", { ref: t(sub.name) }), toDua: () => {
+      state.view = "subjects";
+      state.subjectId = sub.id;
+      state.oi = { bookUri: null, chapterId: null, books: state.oi?.books ?? null, showAllChapters: false };
+      state.render();
+    } }] };
+  state.render();
 }
 
 /**
@@ -1120,11 +1136,21 @@ async function renderOpenitiBody(body, oi, localRefresh) {
   }
   const duaCtx = dua && chapter ? { dua, oi, localRefresh, chapterId: chapter.id, versionUri } : null;
   const jumped = oi.focusPassage != null;
+  // PCF MSA J106 round 2: what "Add to subject" files -- the narration's place, and the names its list shows.
+  const subjectRef = (h) => {
+    const cite = conc?.byN.get(h.n);
+    const bookLabel = conc ? (getAppLang() === "bn" ? (conc.label.bn ?? conc.label.en) : conc.label.en) : null;
+    const words = String(h.text ?? "").trim().split(/\s+/);
+    return { versionUri, n: h.n, number: h.number ?? null, kind: h.kind, std: cite && bookLabel ? `${bookLabel} ${cite}` : null,
+      book: found[1].titleEn ?? null, bookAr: found[1].titleAr ?? null, chapterId: chapter?.id ?? null,
+      chapter: chapter ? openitiChapterLabel(chapter, index).text : null,
+      title: words.slice(0, 12).join(" ") + (words.length > 12 ? " …" : "") };
+  };
   const reader = hadithReader({
     oi, localRefresh,
     chapters: (pane) => renderOpenitiChapterList(pane, oi, index, localRefresh, conc, babs),
     hadiths: (pane) => renderReaderHadithList(pane, passages, oi, localRefresh, conc),
-    text: (pane, head) => renderReaderText(pane, head, passages, oi, localRefresh, conc, heLinks, duaCtx, versionUri, jumped),
+    text: (pane, head) => renderReaderText(pane, head, passages, oi, localRefresh, conc, heLinks, duaCtx, versionUri, jumped, subjectRef),
     titles: { chapters: t("Chapters"), hadiths: chapter ? t("Hadith · {n}", { n: num(passages.length) }) : t("Hadith"), text: t("Text") },
   });
   body.appendChild(reader);
@@ -1176,7 +1202,7 @@ function renderReaderHadithList(pane, passages, oi, localRefresh, conc) {
   pane.appendChild(list);
 }
 
-function renderReaderText(pane, head, passages, oi, localRefresh, conc, heLinks, duaCtx, versionUri, jumped) {
+function renderReaderText(pane, head, passages, oi, localRefresh, conc, heLinks, duaCtx, versionUri, jumped, subjectRef = null) {
   const i = passages.findIndex((h) => h.n === oi.passageN);
   if (i < 0) { pane.appendChild(el("p", "hadith-note hadith-pane-empty", t(oi.chapterId ? "Choose a hadith." : "Choose a chapter."))); return; }
   // ‹ › step through the chapter's hadith without going back to the list.
@@ -1193,6 +1219,8 @@ function renderReaderText(pane, head, passages, oi, localRefresh, conc, heLinks,
   const card = openitiPassageCard(passages[i], conc, heLinks, duaCtx, versionUri);
   if (jumped) { card.classList.add("hadith-card-focused"); card.dataset.openitiFocused = "true"; }
   pane.appendChild(card);
+  const h = passages[i];
+  if (subjectRef && (h.kind === "hadith" || h.kind === "passage")) pane.appendChild(subjectAddRow(subjectRef(h), subjectNameOf));
 }
 
 /**
