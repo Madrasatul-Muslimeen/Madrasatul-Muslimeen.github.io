@@ -3,6 +3,18 @@
 Written by Hadith Lead session `01Q2HmCeWjo1vVYV5kgMBvC9` at about 77% context, on the PCA's word (hand119).
 The next session is titled **"📌 (03B) MSA - Hadith Lead"**.
 
+## UPDATE, about 12:50 pm 31 Oct (same session)
+
+- **The rule has the Architect's two tightenings** (`claude/hadith-subjects-rule` `b203f70`; carried into this branch):
+  create needs `createdBy == myUid()` and `createdAt is timestamp`; update pins `schemaVersion`. Emulator 1/1, mutations
+  14 of 14. The suite now clears the emulator first: it had kept data between runs, so every "create" was judged by the
+  update rule. The app's create writes createdBy/createdAt (envelope.js), checked in `hadith-subjects-browser.mjs` 58/0.
+- **Audit part 141 is NOT ours**: the Architect gave all of H1/H3/H4 to the Dua Lead, who cherry-picked my two commits into
+  `claude/dua-audit141`. `claude/hadith-audit141` is spent. **`app/js/dua-browser.js` and `dua-check.js` are Dua files**
+  (`docs/governance/dua-module-plan.md`): ask the Dua Lead (`session_01PL2xbK8HnnaBgqeNJMJs36`) before touching them.
+- **MSA Architect is now `session_01PL2xbJ2ncUt43CiJpHVZJf`.** J108 v13.01 wires the HadeethEnc card's Note link; do not
+  touch that link until it lands. The Architect reviews this app branch next, then asks the Owner about the Rules.
+
 ## UPDATE, about 11 am 31 Oct (session `01PL2xbKWeTSDEBJV5UWZTcQ`, "📌 (03B) MSA - Hadith Lead")
 
 - **J106 round 2, the candidate rule: DONE and with the MSA Architect** (now on its own branch `claude/hadith-subjects-rule`, `44da873`, from `main`; the Architect's

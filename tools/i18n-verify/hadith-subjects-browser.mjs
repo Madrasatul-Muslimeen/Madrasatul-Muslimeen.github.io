@@ -160,7 +160,8 @@ for (const [lang, width] of [["en", 1280], ["bn", 390]]) {
   const created = w1.find((w) => w.kind === "set");
   const e1 = created?.data?.subjects?.akhlaq?.[0];
   check(`${tag} adding writes the madrasah's document hadithSubjects/t1 (a create)`, w1.length === 1 && created?.id === "t1", JSON.stringify(w1.map((w) => [w.kind, w.id])));
-  check(`${tag} ...carrying tenantId and the I17 stamps`, created?.data?.tenantId === "t1" && created?.data?.schemaVersion === 1 && created?.data?.createdBy === "test-uid");
+  check(`${tag} ...carrying tenantId and the I17 stamps`, created?.data?.tenantId === "t1" && created?.data?.schemaVersion === 1 && created?.data?.createdBy === "test-uid"
+    && !!created?.data?.createdAt && !!created?.data?.updatedAt, JSON.stringify({ createdBy: created?.data?.createdBy, createdAt: created?.data?.createdAt }));
   check(`${tag} ...the narration's place and names`, e1?.versionUri === BUKHARI && e1?.n === H1.n && e1?.number === 1 && e1?.status === "active" && !!e1?.book && !!e1?.chapter && !!e1?.title,
     JSON.stringify(e1));
   check(`${tag} ...and only Learning Akhlaq holds it`, (created?.data?.subjects?.ghayb ?? []).length === 0 && (created?.data?.subjects?.stories ?? []).length === 0);
