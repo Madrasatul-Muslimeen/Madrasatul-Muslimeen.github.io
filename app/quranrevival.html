@@ -4046,6 +4046,19 @@
      between words, so the case names take room from the narrower row-head column instead (measured whole with the names
      drawn 18% wider, at 320 and 360, nothing spilling). */
   @container wordcard (max-width: 26rem) { .word-card-ntable { table-layout: auto; } .word-card-ntable th { overflow-wrap: break-word; } }
+  /* QR Lead audit 6, 31 Oct 2026 (Word card, PCF User Manual 9a6dqv8): with larger text on a phone the table above needed
+     about 15rem and ran past the card (474px in 316 at 360x740 200%, 359 in 357 at 390 150%), so the whole card slid sideways
+     and its top bar was cut. Under 18rem (only ever reached with larger text: a 320px phone at ordinary text is 18.6rem) each
+     row's name takes a line of its own above its three cells, so the three cases share the card's whole width, and a case
+     name too long for its third breaks with a hyphen rather than pushing the card wider. */
+  @container wordcard (max-width: 18rem) {
+    .word-card-ntable, .word-card-ntable thead, .word-card-ntable tbody { display: block; }
+    .word-card-ntable tr { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3px; margin-bottom: 3px; }
+    .word-card-ntable thead th:first-child { display: none; }
+    .word-card-ntable tbody th { grid-column: 1 / -1; padding-top: 0.3rem; }
+    .word-card-ntable tbody th > span { display: inline; margin-inline-end: 0.4em; }
+    .word-card-ntable thead th { overflow-wrap: anywhere; hyphens: auto; }
+  }
   .word-card-ncell { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.1rem; box-sizing: border-box; width: 100%; min-height: 44px; margin: 0; padding: 0.25rem 0.15rem; font: inherit; font-size: 0.8rem; text-align: center; border: 1px solid var(--wc-purple-line); border-radius: 0.4rem; background: transparent; color: inherit; overflow-wrap: anywhere; min-width: 0; }
   button.word-card-ncell { cursor: pointer; }
   .word-card-ncell-ar { font-family: var(--quran-font); font-size: 0.95rem; line-height: 1.3; }
