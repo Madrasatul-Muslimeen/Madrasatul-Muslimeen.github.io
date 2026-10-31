@@ -1042,3 +1042,4 @@ total). Allocated by the MMSA Architect.
 12.138: the Escape fixes from audit part 141 and the Read view at large text. Allocated by the MMSA Architect.
 12.139: Quran Study: the A± text-size controls stay on screen at large text. Allocated by the MMSA Architect.
 13.01: J108: one Note from every Note button (v13 begins). Allocated by the MMSA Architect.
+13.02: Quran Study: Listening and the Mushaf full screen at large text (QR Lead audits 4 and 5). Allocated by the MMSA Architect.
