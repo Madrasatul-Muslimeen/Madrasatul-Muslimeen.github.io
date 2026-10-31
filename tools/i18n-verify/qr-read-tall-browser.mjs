@@ -10,7 +10,7 @@
 //   no-watch  the watcher is not started             -> "every read-bar button can be reached" and "text has room" FAIL
 //   no-css    body.read-tall's page scroll removed    -> the same FAIL (the class is set, nothing scrolls)
 //   no-cap    the reading area floored at 12rem       -> "the page of text ends above the tabs" FAILS sideways at 150/200%
-//   no-full   full screen does not switch it off      -> "full screen is not read-tall" FAILS
+//   no-full   full screen excluded from read-tall      -> "in full screen the text has room" FAILS sideways at 200% (0px, as on main)
 import { chromium, newContext, openPage } from "./harness.mjs";
 
 let pass = 0, fail = 0;
@@ -22,8 +22,8 @@ const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice
 const MUT = {
   "no-watch": ['    if (typeof ResizeObserver === "function" && document.getElementById("readView")) watchReadFit();\n', ""],
   "no-css": ["  body.read-tall { height: auto; min-height: 100vh; min-height: 100dvh; overflow: visible; }\n", ""],
-  "no-cap": ["Math.max(Math.round(4 * rem), innerHeight - dockEl.offsetHeight - 8)", "Math.max(Math.round(12 * rem), innerHeight - dockEl.offsetHeight - 8)"],
-  "no-full": ['body.classList.contains("immersive-read") || body.classList.contains("read-windowed")', 'body.classList.contains("read-windowed")'],
+  "no-cap": ["Math.max(Math.round(4 * rem), innerHeight", "Math.max(Math.round(12 * rem), innerHeight"],
+  "no-full": ['if (!reading || !dockEl || body.classList.contains("read-windowed")) {', 'if (!reading || !dockEl || body.classList.contains("immersive-read") || body.classList.contains("read-windowed")) {'],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
 const SHOT_DIR = process.env.SHOT_DIR || "";
@@ -81,14 +81,22 @@ for (const [w, h, lang] of [[360, 740, "en"], [360, 740, "bn"], [390, 844, "en"]
     await ctx.close();
   }
 }
-// Full screen (the read bar's own button) hands the whole screen to the text: the page must not scroll there.
-for (const [w, h] of [[360, 740], [740, 360]]) {
-  const { ctx, page } = await boot("en", w, h, "200%");
-  check(`[en ${w}x${h} 200%] read-tall is on before full screen`, await page.evaluate(() => document.body.classList.contains("read-tall")));
+// Full screen (the read bar's own button) hides the tabs but not the read bar: on main, at 740x360 200%, the wrapped read bar
+// took the whole height and the text had 0px. In full screen the text gets the screen (no tabs to leave room for).
+for (const [w, h, size] of [[360, 740, "200%"], [740, 360, "150%"], [740, 360, "200%"], [740, 360, "100%"]]) {
+  const { ctx, page } = await boot("en", w, h, size);
   await page.evaluate(() => document.getElementById("hideChromeBtn").scrollIntoView({ block: "center" }));
-  await page.click("#hideChromeBtn"); await page.waitForTimeout(600);
-  const m = await page.evaluate(() => ({ imm: document.body.classList.contains("immersive-read"), tall: document.body.classList.contains("read-tall"), rsH: Math.round(document.getElementById("readScroll").getBoundingClientRect().height) }));
-  check(`[en ${w}x${h} 200%] full screen is not read-tall, and the text has the screen`, m.imm && !m.tall && m.rsH > 100, JSON.stringify(m));
+  await page.click("#hideChromeBtn"); await page.waitForTimeout(700);
+  const m = await page.evaluate(() => {
+    const rs = document.getElementById("readScroll"); rs.scrollIntoView({ block: "start" });
+    const r = rs.getBoundingClientRect(), rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
+    const x = document.getElementById("hideChromeBtn"); x.scrollIntoView({ block: "center" }); const xr = x.getBoundingClientRect();
+    const at = document.elementFromPoint(xr.left + xr.width / 2, xr.top + xr.height / 2);
+    return { imm: document.body.classList.contains("immersive-read"), rsH: Math.round(r.height), inView: Math.round(Math.min(r.bottom, innerHeight) - Math.max(r.top, 0)), rem, exitReach: !!at && x.contains(at) };
+  });
+  const tag = `[en ${w}x${h} ${size}] full screen:`;
+  check(`${tag} the text has room (at least 4rem, all of it on screen when scrolled to)`, m.imm && m.rsH >= 4 * m.rem - 1 && m.inView >= m.rsH - 1, JSON.stringify(m));
+  check(`${tag} the button that leaves full screen can be reached`, m.exitReach, JSON.stringify(m));
   await ctx.close();
 }
 await browser.close();

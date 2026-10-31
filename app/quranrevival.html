@@ -779,7 +779,7 @@
      the reading area was 0px (no Qur'an text at all at 360x740 200%) and the read bar's buttons lay under the tabs where
      nothing could reach them. checkReadFit() sets body.read-tall only while that is really so: the page then scrolls as the
      landing does, and the reading area keeps the screen's height less the tabs (--read-tall-h), so one scroll down shows a
-     whole page of text above the tabs. Never in full screen or in the Āyah window. */
+     whole page of text above the tabs (in full screen, where the tabs are hidden, the whole screen). Never in the Āyah window. */
   body.read-tall { height: auto; min-height: 100vh; min-height: 100dvh; overflow: visible; }
   body.read-tall #app, body.read-tall #stage, body.read-tall #readView { flex: 0 0 auto; }
   body.read-tall #studyScreen { height: auto; }
@@ -8504,7 +8504,8 @@
       const body = document.body, rv = document.getElementById("readView"), rs = document.getElementById("readScroll");
       const bar = document.getElementById("readBar"), dockEl = document.getElementById("dock");
       const reading = rv && !rv.hidden && rs && rs.getClientRects().length > 0;
-      if (!reading || !dockEl || body.classList.contains("immersive-read") || body.classList.contains("read-windowed")) {
+      // Full screen too: it hides the tabs but not the read bar, which at 200% on a phone turned sideways left the text 0px.
+      if (!reading || !dockEl || body.classList.contains("read-windowed")) {
         body.classList.remove("read-tall"); return;
       }
       body.classList.remove("read-tall");
@@ -8513,7 +8514,7 @@
       const spill = rs.clientHeight < 12 * rem || barUnder;
       if (spill) {
         // The page of text never reaches under the tabs (the Read view pages sideways, so a hidden line could not be scrolled to).
-        body.style.setProperty("--read-tall-h", Math.max(Math.round(4 * rem), innerHeight - dockEl.offsetHeight - 8) + "px");
+        body.style.setProperty("--read-tall-h", Math.max(Math.round(4 * rem), innerHeight - (dockEl.getClientRects().length ? dockEl.offsetHeight : 0) - 8) + "px");
         body.classList.add("read-tall");
       }
     }
