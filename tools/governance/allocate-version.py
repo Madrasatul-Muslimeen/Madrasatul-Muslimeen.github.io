@@ -39,6 +39,13 @@ d['nextUnallocatedNote'].insert(0,f"v{ver} was allocated to {short}, {TODAY}.")
 open(L,'w').write(json.dumps(d,indent=2,ensure_ascii=False)+'\n')
 v=open('app/js/version.js').read()
 v=re.sub(r'export const APP_VERSION = "[\d.]+";',f'export const APP_VERSION = "{ver}";',v)
+# J108 (v13.01): the version is SHOWN with its release date, Sydney time, dd.mm.yy ("v13.01-31.10.26").
+try:
+  from zoneinfo import ZoneInfo
+  SYD=datetime.datetime.now(ZoneInfo('Australia/Sydney')).date()
+except Exception:
+  SYD=datetime.date.today()
+v=re.sub(r'export const APP_VERSION_DATE = "[\d.]+";',f'export const APP_VERSION_DATE = "{SYD:%d.%m.%y}";',v)
 open('app/js/version.js','w').write(v)
 open('docs/governance/version-history.md','a').write(f'{ver}: {short}. Allocated by the MMSA Architect.\n')
 # The outgoing milestone moves to docs/governance/brief-history.md (newest

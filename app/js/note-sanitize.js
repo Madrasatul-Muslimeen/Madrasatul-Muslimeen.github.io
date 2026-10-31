@@ -20,6 +20,7 @@
 
 import { NOTE_IMAGE_WIDTHS, NOTE_IMAGE_ALT_MAX, isNoteImagePath } from "./note-image-path.js";
 import { cleanSheetState, serializeSheetState, sheetStaticHtml } from "./note-sheet-engine.js";
+import { cleanRefState, serializeRefState, refStaticHtml } from "./note-ref-block.js";
 
 /** Formatting a Note editor can actually produce (bold/italic/underline/
     strike, headings, paragraphs, lists), PLUS `img` (issue #265 -- a
@@ -67,6 +68,9 @@ export const NOTE_ALLOWED_ATTR = Object.freeze([
   // 6 Oct 2026 (Part C, item 35): a picture in a Note. `data-mmsa-image` is a Storage path, checked EXACTLY by
   // narrowOutput(); `width` is let past DOMPurify only so narrowOutput() can cut it to 25/50/75/100 on that <img>.
   "data-mmsa-image", "width",
+  // J108 (v13.01): an Āyah or Hadith block inside a Note (note-ref-block.js). Let past DOMPurify ONLY so narrowOutput()
+  // can read it: the element is then REBUILT whole from cleanRefState(), its attributes and its inside alike.
+  "data-mmsa-ref",
 ]);
 
 /** Heading status (item 39): the closed set, and the only colours a custom status may take (the editor's text-colour palette). */
@@ -114,6 +118,15 @@ function narrowOutput(html) {
     for (const a of [...el.attributes]) el.removeAttribute(a.name);
     el.setAttribute("class", "mm-sheet"); el.setAttribute("contenteditable", "false"); el.setAttribute("data-sheet", serializeSheetState(state));
     el.innerHTML = sheetStaticHtml(state);
+  }
+  // J108: an Āyah / Hadith block, rebuilt WHOLE from its strictly cleaned state (note-ref-block.js) -- its attributes,
+  // its text and nothing else; a state that is not exactly one of the allowed shapes removes the block.
+  for (const el of [...tpl.content.querySelectorAll("[data-mmsa-ref]")]) {
+    const state = el.tagName === "DIV" ? cleanRefState(el.getAttribute("data-mmsa-ref")) : null;
+    if (!state) { el.remove(); continue; }
+    for (const a of [...el.attributes]) el.removeAttribute(a.name);
+    el.setAttribute("class", "mm-ref"); el.setAttribute("contenteditable", "false"); el.setAttribute("data-mmsa-ref", serializeRefState(state));
+    el.innerHTML = refStaticHtml(state);
   }
   for (const el of tpl.content.querySelectorAll("[style]")) {
     const kept = [];

@@ -354,8 +354,10 @@ console.log("\n=== 6. Bengali numerals available, and never applied to identifie
   // test of what release we were on: it failed the moment v07.39 became
   // v07.40, reporting the correct value as wrong. Written against the shape
   // now, so a version bump can never fail it again.
+  // UPDATED IN PLACE (J108, v13.01): the badge now SHOWS the release date too ("v13.01-31.10.26"), on the Owner's word;
+  // the shape takes the optional "-dd.mm.yy" and still refuses any Bengali digit.
   check("6 the version badge is NOT mangled into Bengali digits",
-        /^v?\d+\.\d+$/.test(r.version || "") && !/[০-৯]/.test(r.version || ""), r.version);
+        /^v?\d+\.\d+(?:-\d\d\.\d\d\.\d\d)?$/.test(r.version || "") && !/[০-৯]/.test(r.version || ""), r.version);
   await page.close();
   await ctx.close();
 }
