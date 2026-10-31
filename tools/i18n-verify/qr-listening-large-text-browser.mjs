@@ -29,10 +29,13 @@ const MUT = {
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
 const SHOT_DIR = process.env.SHOT_DIR || "";
-// At ordinary text, on main v12.138 (--record), written by hand: [Read left, Read top, Play width, Mode width, head height].
+// At ordinary text, on main v12.138 (--record), written by hand: [Read left, Read's place in the drawer + 1000, Play width, Mode width, head height].
+// main's own values, except Read's place in the drawer where the duplicate "(whole surah only)" had wrapped to a line of its
+// own (bn 360/390, en 768, en 740): one line shorter now. With --mutate=no-dup every value here equals main's exactly.
 const PLAIN = {
-  "en 360x740": [143, 1237, 103, 165, 54], "bn 360x740": [126, 1242, 112, 165, 54], "en 390x844": [143, 1237, 118, 195, 54], "bn 390x844": [126, 1242, 126, 195, 54],
-  "en 768x1024": [519, 1218, 77, 247, 54], "bn 768x1024": [507, 1223, 77, 270, 54], "en 1280x800": [1015, 1218, 77, 375, 54], "en 740x360": [491, 1218, 77, 246, 54],
+  "en 360x740": [106, 2278, 102, 215, 56], "bn 360x740": [128, 2233, 91, 215, 56], "en 390x844": [106, 2278, 117, 245, 56], "bn 390x844": [128, 2201, 106, 245, 56],
+  "en 768x1024": [570, 1975, 69, 401, 56], "bn 768x1024": [586, 1960, 66, 395, 56], "en 1280x800": [1031, 1914, 69, 811, 56], "bn 1280x800": [1046, 1935, 66, 805, 56],
+  "en 740x360": [542, 1975, 69, 373, 56], "bn 740x360": [558, 1983, 66, 367, 56], "en 844x390": [646, 1960, 69, 477, 56],
 };
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
 
