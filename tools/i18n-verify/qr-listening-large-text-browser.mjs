@@ -66,9 +66,11 @@ for (const [w, h, lang] of [[360, 740, "en"], [360, 740, "bn"], [390, 844, "en"]
       const s = document.getElementById("drillModeSelect"), cs = getComputedStyle(s), probe = document.createElement("span");
       Object.assign(probe.style, { font: cs.font, position: "absolute", whiteSpace: "pre" }); probe.textContent = s.options[s.selectedIndex].text; document.body.appendChild(probe);
       const modeNeed = Math.round(R(probe).width), modeRoom = Math.round(s.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - 16); probe.remove();
-      // A tap counts if the page or the drawer can be scrolled to it by a finger (the drawer scrolls; the page here does not).
+      // A tap counts if a finger can scroll the drawer to it: the drawer is scrolled so the control sits just below the
+      // drawer's sticky head (centring it would put a control near either end under that head and call it untappable).
       const hit = (e) => { const r = R(e), x = r.left + r.width / 2, y = r.top + r.height / 2; if (y < 0 || y > innerHeight || x < 0 || x > innerWidth) return false; const at = document.elementFromPoint(x, y); return !!at && (e.contains(at) || (at.tagName === "LABEL" && at.contains(e))); };
-      const untappable = ctrls.filter((e) => { if (hit(e)) return false; e.scrollIntoView({ block: "center" }); return !hit(e); }).map(name);
+      const headEl = panel.querySelector(".qr-panel-head");
+      const untappable = ctrls.filter((e) => { if (hit(e)) return false; panel.scrollTop += R(e).top - R(headEl).bottom - 4; return !hit(e); }).map(name);
       panel.scrollTop = 0;
       const dup = [...card.querySelectorAll("#drillReciterChecks label")].filter((l) => (l.textContent.match(/whole surah only|শুধু পুরো সূরা/gi) || []).length > 1).length;
       const read = R(document.getElementById("drillReadBtn")), head = panel.querySelector(".qr-panel-head");
