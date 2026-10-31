@@ -400,14 +400,7 @@ export function duaCheckButton(card, c, summary, state, render, page, env, check
     const fit = loadDuaFit(page).then((f) => f?.duas?.[c.dua] ?? null).catch(() => null);
     const panelHost = el("div", "dua-check-host");
     card.after(panelHost);
-    // Focus goes back to what opened the panel: this button where it shows (Hadith's Dua tab), or the card menu's ✓ Check on
-    // Dua Study, where the button sat in a pop-up that has closed (audit part 141 D2 / H4); else the card itself.
-    const close = () => {
-      panelHost.remove();
-      const to = open.getClientRects().length ? open : card.querySelector('[data-dua-menu="check"]');
-      if (to) to.focus({ preventScroll: true }); else { card.tabIndex = -1; card.focus({ preventScroll: true }); }
-      card.scrollIntoView({ block: "center" });
-    };
+    const close = () => { panelHost.remove(); card.tabIndex = -1; card.focus({ preventScroll: true }); card.scrollIntoView({ block: "center" }); };
     fit.then((fitRows) => {
       const texts = loadMemberTexts(c, summary.books);
       panelHost.appendChild(buildCheckPanel({
