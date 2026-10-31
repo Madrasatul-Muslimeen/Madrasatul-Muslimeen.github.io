@@ -165,7 +165,7 @@ check("the eight reachable lines the brief names are all present", () => {
 // archived on the Owner's word (decision 98) with the same one change and the same
 // README. One function checks both archives, so the second cannot be weaker.
 // J108: legacy-v12's release and source commit, in ONE place, so the Architect can repoint it (e.g. to a later v12 merge).
-const LEGACY_V12_RELEASE = "v12.137", LEGACY_V12_SOURCE = "11202473535a7e1988cff53f10ebf6648640cec7";
+const LEGACY_V12_RELEASE = "v12.138", LEGACY_V12_SOURCE = "b205a72474b54274b0f172d634e16a9c69e99d14";
 const LEGACY_ARCHIVES = [
   { dir: "legacy-v08", release: "v08.103", source: "54f930989cde81317d3c01b2adaaebe66b16f0eb" },
   { dir: "legacy-v09", release: "v09.151", source: "f027a24efa240ace2304c4570cd4885e178eeaad" },
@@ -175,7 +175,7 @@ const LEGACY_ARCHIVES = [
   // 19 Oct 2026: legacy-v11/ is app/ as RELEASED at v11.39 (merge commit 2bfad051),
   // archived on the Owner's tick PCF MSA J39 7A, with the same one change and README.
   { dir: "legacy-v11", release: "v11.39", source: "2bfad051b7080b2954f434c271fa8e8503fbdb82" },
-  // 31 Oct 2026: legacy-v12/ is app/ as at v12.137, the last v12 release (merge commit 1120247),
+  // 31 Oct 2026: legacy-v12/ is app/ as at v12.138, the last v12 release (merge commit b205a72),
   // archived when v13.01 opened the v13 line (PCF MSA J108), with the same one change and README.
   { dir: "legacy-v12", release: LEGACY_V12_RELEASE, source: LEGACY_V12_SOURCE },
 ];

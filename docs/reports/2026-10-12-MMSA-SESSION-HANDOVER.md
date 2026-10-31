@@ -2297,3 +2297,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v12.135** (2026-10-30): the parts 67-83 regression sweep fixes.
 - **v12.136** (2026-10-31): the Hadith Lead's J97 chapter line and Bangla language names.
 - **v12.137** (2026-10-31): the QR Lead's Study options head at large text.
+- **v12.138** (2026-10-31): the Escape fixes from audit part 141 and the Read view at large text.
