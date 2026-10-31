@@ -418,3 +418,30 @@ span.note-status { min-height: 0; min-width: 0; padding: 0.15rem 0.6rem; cursor:
 .mt-chip { width: 40px; height: 40px; min-height: 40px; padding: 0; border: 2px solid #889; border-radius: 0.4rem; }
 .mt-chip[aria-pressed="true"] { outline: 3px solid #1F3A6E; outline-offset: 1px; }
 .pane-edit-panel .mt-phrase { white-space: normal; text-align: start; max-width: 100%; overflow-wrap: anywhere; min-height: 44px; }
+
+/* J108 (v13.01): an Āyah or Hadith inside a Note (note-ref-block.js; its controls while editing, note-ref-ui.js).
+   The demo the Owner approved (demo v3): a warm card; a teal switch; عربي · EN · বাং pills, dashed and struck through when off. */
+.mm-ref { margin: 0.6rem 0; padding: 0.6rem 0.75rem; border: 1px solid #e2d7b8; border-radius: 10px; background: #f7f3e8; color: #1d2433; display: grid; gap: 0.35rem; max-width: 100%; min-width: 0; box-sizing: border-box; overflow-wrap: anywhere; }
+.mm-ref .mm-ref-head { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; min-width: 0; }
+.mm-ref .mm-ref-label { font-size: 0.95rem; color: #1d2433; min-width: 0; }
+.mm-ref .mm-ref-kind { font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: #7a5f1e; }
+.mm-ref .mm-ref-closed { color: #5d6678; }
+.mm-ref .mm-ref-ar { margin: 0; font-family: "Amiri", "Traditional Arabic", "Noto Naskh Arabic", serif; font-size: 1.5rem; line-height: 1.9; direction: rtl; text-align: right; }
+.mm-ref .mm-ref-tr { margin: 0; line-height: 1.5; }
+.mm-ref .mm-ref-tag { font-size: 0.75rem; color: #5d6678; margin-inline-end: 0.3rem; }
+.mm-ref .mm-ref-none { margin: 0; color: #5d6678; font-size: 0.85rem; }
+.mm-ref.mm-ref-off { opacity: 0.85; }
+.mm-ref-live { user-select: none; -webkit-user-select: none; }
+.mm-ref-live .mm-ref-ar, .mm-ref-live .mm-ref-tr { user-select: text; -webkit-user-select: text; }
+.mm-ref-tools { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
+.mm-ref-sw { flex: 0 0 auto; width: 52px; height: 40px; padding: 0; border: 0; background: transparent; cursor: pointer; position: relative; }
+.mm-ref-sw > span { position: absolute; left: 0; top: 5px; width: 52px; height: 30px; border-radius: 15px; background: #c9d0dc; border: 1px solid #b4bccb; box-sizing: border-box; }
+.mm-ref-sw > span::after { content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgb(0 0 0 / 0.25); transition: left 0.15s; }
+.mm-ref-sw[aria-checked="true"] > span { background: #1f8a7e; border-color: #1f8a7e; }
+.mm-ref-sw[aria-checked="true"] > span::after { left: 25px; }
+.mm-ref-sw:focus-visible, .mm-ref-lang:focus-visible, .mm-ref-x:focus-visible, .mm-ref-showhide:focus-visible { outline: 3px solid #2a5bb8; outline-offset: 2px; }
+.mm-ref-showhide { min-height: 40px; padding: 0 0.4rem; border: 0; background: transparent; color: #4f5868; font: inherit; cursor: pointer; }
+.mm-ref-lang { min-width: 52px; min-height: 40px; padding: 0 0.75rem; border: 1px solid #1f8a7e; border-radius: 20px; background: #dff1ee; color: #155f57; font: inherit; cursor: pointer; }
+.mm-ref-lang[aria-pressed="false"] { background: transparent; border-style: dashed; border-color: #9aa3b2; color: #4f5868; text-decoration: line-through; }
+.mm-ref-x { margin-inline-start: auto; min-width: 40px; min-height: 40px; border: 1px solid #c9d0dc; border-radius: 10px; background: #fff; color: #1d2433; font: inherit; cursor: pointer; }
+.mm-ref-allbar { display: flex; align-items: center; gap: 0.6rem; color: #4f5868; font-size: 0.9rem; margin: 0 0 0.3rem; }

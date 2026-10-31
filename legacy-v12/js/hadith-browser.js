@@ -1,0 +1,2096 @@
+// Hadith H2 -- the browsing component, shared by BOTH entry points.
+//
+// One component, two routes: `hadith-collections.html` mounts it standalone,
+// and `?mount=quranrevival` mounts the same component inside the QuranRevival
+// shell. Nothing about the component knows which it is in, which is the point
+// -- a second copy for the mounted case is how the two silently diverge.
+//
+// THIS COMPONENT PERSISTS NOTHING. Track state lives in a plain Map for the
+// life of the page. Every Hadith collection is unruled in `firestore.rules`,
+// so a write would be denied by default -- and a screen that offered a Save
+// which silently failed would be worse than one that says it cannot.
+// `renderTrack()` therefore says so on screen, in the reader's own language,
+// every time.
+
+import { t, num } from "./i18n.js";
+import { loadHadithAyat } from "./ayah-hadith.js";
+import { getAppLang } from "./prefs.js";
+import { STATUSES, statusLabel } from "./unit-keys.js";
+import { renderAssignDropdown } from "./assign-picker.js";
+import { listCollections, booksOf, chaptersOf, occurrencesIn, editionHasChapterLevel, chapterById, collectionOf, sourcePathOf, externalReferencesFor, resolveText, availableLanguages, searchCorpus, listTopics, topicIndex, exploreAggregate, translationCoverage, topicCoverage, CONTENT_LANGUAGES, SOURCE_LANGUAGE } from "./hadith-corpus.js";
+import { SYNTHETIC_NOTICE, TAXONOMY_REVISION } from "./hadith-fixture-data.js";
+import { PANEL_TITLE, verifiedRegisterEntries, commentaryForOccurrence, renderPermission, NEVER_DO } from "./hadith-commentary.js";
+import { HADEETHENC_LANGS, HADEETHENC_STRUCTURE_LANG, loadHadeethEncCategories, childCategories, directHadithIds, resolveCategoryTitle, loadHadithRecords, hadithArabicText, hadeethEncSourceUrl } from "./hadeethenc-corpus.js";
+import { OPENITI_CREDIT_URL, loadOpenitiBookSummaries, loadOpenitiBookIndex, loadOpenitiChapter, chapterForHadithNumber, loadOpenitiConcordance, loadOpenitiHadeethEncLinks, loadHadeethEncReferences, loadDuaIndex } from "./openiti-corpus.js";
+import { el, readFailedNote, langNameInProse, loadHadithStudyActions, openitiDisplayTitle, openitiArabicRowName, duaRefLabel, standardTranslationFolds, openitiTranslationFold } from "./hadith-shared-ui.js";
+import { renderDua } from "./dua-browser.js";
+import { hadithReader, removeReaderWindows } from "./hadith-reader.js";
+
+const CONTENT_LANG_LABELS = { ar: "العربية", en: "English", bn: "বাংলা" };
+
+/** Demo-only Track state. Never written anywhere. Cleared by a reload, deliberately. */
+const demoTrack = new Map();
+
+function langText(map, lang) {
+  if (!map) return "";
+  return map[lang] ?? map.en ?? map.ar ?? "";
+}
+
+export function mountHadithBrowser(root, { mount = "standalone", initialHadeethEncId = null, initialOpenitiPassage = null, initialDua = null } = {}) {
+  const state = {
+    // PCF MSA J106 (the Owner, 28 Oct 2026): Hadith Study opens on its Hadith Books.
+    view: "books",
+    contentLang: getAppLang() === "bn" ? "bn" : "en",
+    editionId: null, bookId: null, chapterId: null, query: "", topicId: null,
+    // Set by jumpToSource() (Topic/Search "View in source", and a repeat
+    // badge's "view the original") and consumed exactly once by render():
+    // it names the occurrence the Collections view should scroll to and
+    // highlight on the render this navigation causes, then it is cleared.
+    focusOccurrenceId: null,
+    mount,
+  };
+  // Issue #311 -- a bookmark's own resume value ("hadith:hadeethenc:<id>")
+  // reopens directly on that hadith, bypassing the category browse path.
+  // renderHadeethEncSource() only ever seeds state.hc when it is still
+  // unset, so this survives that lazy init untouched.
+  if (initialHadeethEncId) {
+    state.hc = { path: [], hadithId: String(initialHadeethEncId), catsByLang: {}, scrollToCard: true };
+    state.view = "collections";
+  }
+  // Decision 85 (7 Oct 2026): an Asmaul Husna poster's Hadith reference opens that narration here --
+  // { versionUri, n } = the OpenITI book and the passage's permanent position (asma-poster.js's POSTER_HADITH).
+  if (initialOpenitiPassage?.versionUri && Number.isFinite(Number(initialOpenitiPassage.n))) {
+    state.oi = { bookUri: initialOpenitiPassage.versionUri, chapterId: null, books: null, showAllChapters: false, focusPassage: Number(initialOpenitiPassage.n) };
+  }
+
+  // Decision 90, round 1: coming back from a dua word's Word card (?view=dua&duaPage=<p>&dua=<n>) reopens that page of
+  // Duas on that card (the way-back law, decision 86).
+  if (initialDua && Number.isInteger(initialDua.page) && initialDua.page > 0) {
+    state.view = "dua";
+    state.dua = { bookUri: null, mode: "duas", page: initialDua.page, focusDua: Number.isInteger(initialDua.dua) ? initialDua.dua : null,
+      findPage: !!initialDua.findPage && Number.isInteger(initialDua.dua) };
+  }
+
+  function render() {
+    root.textContent = "";
+    removeReaderWindows(); // a popped-out Hadith Books pane closes with the view it belongs to
+    // The Collections landing now leads with REAL HadeethEnc text (#309), so
+    // the "not real narrations" notice there sits directly above the
+    // synthetic pilot list it describes (renderCollections), not above the
+    // real source. The Dua tab (real duas from the Arabic books) and the
+    // Explanations tab (verified outbound links to real narrations) show no
+    // synthetic data at all, so the notice there told a reader that real
+    // duas were "not real narrations" (audit part 40, #1028). Every other
+    // view still shows only synthetic data, so it keeps the notice at the top.
+    if (showsSyntheticAtTop(state)) root.appendChild(syntheticBanner());
+    root.appendChild(controls(state, render));
+    const body = el("div", "hadith-body");
+    body.id = "hadithBody";
+    root.appendChild(body);
+    ({
+      books: () => renderBooks(body, state, render),
+      subjects: () => renderSubjects(body, state, render),
+      collections: () => renderCollections(body, state, render),
+      topic: () => renderTopic(body, state, render),
+      search: () => renderSearch(body, state, render),
+      explore: () => renderExplore(body),
+      commentary: () => renderCommentary(body, state),
+      dua: () => renderDua(body, state, render),
+    })[state.view]();
+    focusPendingOccurrence(body, state);
+  }
+
+  // A HadeethEnc card's reference opens the passage in the OpenITI section below it, which needs the whole page redrawn.
+  state.render = render;
+  render();
+  return { render, state };
+}
+
+/**
+ * "View in source" / "view the original" -- the Books <-> Topics bridge.
+ *
+ * Sets the Collections view's own edition/book/chapter to the occurrence's
+ * REAL source location (via `sourcePathOf()`, the same fact `renderCollections`
+ * already navigates by) and switches to it. This does not change the Topics
+ * index and does not give the Books view any notion of "topic" -- it only
+ * lets a reader who found a narration through an index (or through a repeat
+ * badge) go SEE it in the book it actually belongs to, preserving the
+ * documented split ("[the topic view] is an index across collections. It
+ * does not change any book.").
+ */
+function jumpToSource(state, render, occurrenceId) {
+  const path = sourcePathOf(occurrenceId);
+  if (!path) return; // Data defect, not a navigation failure to throw over.
+  state.view = "collections";
+  state.editionId = path.edition.editionId;
+  state.bookId = path.book.bookChapterId;
+  state.chapterId = path.chapter ? path.chapter.bookChapterId : null;
+  state.focusOccurrenceId = occurrenceId;
+  render();
+}
+
+/** Scrolls to and highlights the occurrence `jumpToSource()` navigated to, once. */
+function focusPendingOccurrence(body, state) {
+  if (state.view !== "collections" || !state.focusOccurrenceId) return;
+  const target = [...body.querySelectorAll("[data-hadith-occurrence]")]
+    .find((n) => n.dataset.hadithOccurrence === state.focusOccurrenceId);
+  if (target) {
+    target.classList.add("hadith-card-focused");
+    target.dataset.hadithFocused = "true";
+    target.scrollIntoView({ block: "center" });
+  }
+  state.focusOccurrenceId = null;
+}
+
+/**
+ * Moves KEYBOARD focus to the new landing spot after a Collections-tab step
+ * (edition, book or chapter picked; or a breadcrumb step back). Every such
+ * step calls `render()`, which does `root.textContent = ""` and rebuilds the
+ * whole subtree -- so the button a keyboard user just pressed no longer
+ * exists, and without this the browser drops focus to `<body>`, silently
+ * sending a Tab-only reader back to the very top of the page on every single
+ * step through collection -> book -> chapter. `focusPendingOccurrence()`
+ * (above) solves a different problem -- the one-shot highlight after a
+ * Topics/Search "View in source" jump -- and never calls `.focus()` at all,
+ * so it does not cover ordinary in-tab navigation.
+ *
+ * Lands on the breadcrumb's own current-location crumb where one exists
+ * (every state with an edition chosen), or the "Collections" heading at the
+ * top level -- the one landing element every Collections render already has,
+ * so a keyboard user is told where they arrived rather than losing their
+ * place, and the very next Tab continues from there instead of from the
+ * page's top.
+ */
+function focusCollectionsLanding() {
+  const body = document.getElementById("hadithBody");
+  if (!body) return;
+  // The breadcrumb's own last crumb names exactly where this render landed --
+  // the (non-clickable) current location where one exists (book or chapter
+  // chosen), or otherwise the still-clickable "Collections" crumb itself (an
+  // edition was just chosen, so there is no deeper "current" yet). Only the
+  // very top level -- no edition chosen at all -- has no breadcrumb; there
+  // the "Collections" heading is the one landing element every render has.
+  // Architect review (#316): the HadeethEnc and OpenITI sources render their
+  // own breadcrumb bars on the same page, so "the last crumb" must be the
+  // synthetic collection's own bar -- otherwise returning to the top level
+  // landed focus inside the OpenITI section.
+  const SYNTHETIC_CRUMBS = ".hadith-crumbs:not([data-hadeethenc-crumbs]):not([data-openiti-crumbs])";
+  const landing = body.querySelector(`${SYNTHETIC_CRUMBS} > :last-child`) || body.querySelector("h2");
+  if (!landing) return;
+  if (!landing.hasAttribute("tabindex")) landing.setAttribute("tabindex", "-1");
+  landing.focus({ preventScroll: true });
+}
+
+/**
+ * Moves KEYBOARD focus to the newly-active tab button after switching
+ * Collections/Topics/Search/Explore/Commentary (issue #114, found by
+ * reproduction: `render()` tears down and rebuilds the whole subtree on
+ * every tab click, same as every in-tab Collections step -- but unlike
+ * those steps, nothing restored focus afterward, so a keyboard user lost
+ * their place to `<body>` on every single tab switch, not just Search's).
+ * `focusCollectionsLanding()` covers steps WITHIN the Collections tab and
+ * `focusPendingOccurrence()` covers the one-shot Topics/Search "View in
+ * source" jump; neither runs on a plain tab switch. The tab button itself
+ * is already a real, always-focusable control, so this needs no tabindex
+ * hack -- the standard ARIA-tabs pattern of leaving focus on the tab list.
+ */
+function focusActiveTab() {
+  const btn = document.querySelector(".hadith-tab.active");
+  if (btn) btn.focus({ preventScroll: true });
+}
+
+// ---------------------------------------------------------------------------
+// The notice that is never conditional
+// ---------------------------------------------------------------------------
+
+const REAL_DATA_VIEWS = new Set(["dua", "commentary", "books", "subjects"]);
+
+function showsSyntheticAtTop(state) {
+  if (REAL_DATA_VIEWS.has(state.view)) return false;
+  return !(state.view === "collections" && !state.editionId);
+}
+
+function syntheticBanner() {
+  const box = el("div", "hadith-synthetic-banner");
+  box.id = "hadithSyntheticBanner";
+  box.setAttribute("role", "note");
+  // All three languages, always -- a reader in any one of them must be able to
+  // tell this is not real, without changing their language setting first.
+  const arNotice = el("p", "hadith-synth-ar", SYNTHETIC_NOTICE.ar);
+  arNotice.setAttribute("lang", "ar"); // marks the Arabic so a reader's widened letter-spacing does not break its joining (audit part 34)
+  box.appendChild(arNotice);
+  box.appendChild(el("p", "hadith-synth-en", SYNTHETIC_NOTICE.en));
+  box.appendChild(el("p", "hadith-synth-bn", SYNTHETIC_NOTICE.bn));
+  return box;
+}
+
+// ---------------------------------------------------------------------------
+// Controls: which view, and which CONTENT language (distinct from UI language)
+// ---------------------------------------------------------------------------
+
+function controls(state, render) {
+  // PCF MSA J106 (the Owner, 28 Oct 2026, demo approved): one clean menu bar for Hadith Study. Hadith Books and
+  // Subjects open a menu; then the former corpus tabs (Collections is now "Encyclopedia"); the text language last.
+  // Every button keeps its data-hadith-tab, and the night look still styles them (.hadith-tab, card-look.css).
+  const bar = el("nav", "hadith-controls hadith-menubar");
+  bar.setAttribute("aria-label", t("Hadith Study"));
+
+  const tabs = el("div", "hadith-tabs");
+  // Hadith Books (J106 step 1a): from any other view the button goes straight to the shelf of every book; once the
+  // reader is already on Books it opens the quick list for switching book.
+  const toShelf = () => {
+    if (state.view === "books") return false;
+    state.view = "books";
+    state.oi = { bookUri: null, chapterId: null, books: state.oi?.books ?? null, showAllChapters: false };
+    render();
+    focusActiveTab();
+    return true;
+  };
+  tabs.appendChild(menuButton(state, render, "books", t("Hadith Books"), (list, close) => fillBooksMenu(list, close, state, render), toShelf));
+  tabs.appendChild(menuButton(state, render, "subjects", t("Subjects|Hadith Study menu"), (list, close) => fillSubjectsMenu(list, close, state, render)));
+  tabs.appendChild(el("span", "hadith-menubar-sep"));
+  for (const [view, label] of [
+    ["collections", t("Encyclopedia")],
+    ["topic", t("Topics")],
+    ["search", t("Search")],
+    ["explore", t("Explore")],
+    ["commentary", PANEL_TITLE[getAppLang()] ?? PANEL_TITLE.en],
+    ["dua", t("Dua")],
+  ]) {
+    const b = el("button", `hadith-tab${state.view === view ? " active" : ""}`, label);
+    b.type = "button";
+    b.dataset.hadithTab = view;
+    if (state.view === view) b.setAttribute("aria-current", "page");
+    b.addEventListener("click", () => { state.view = view; render(); focusActiveTab(); });
+    tabs.appendChild(b);
+  }
+  bar.appendChild(tabs);
+
+  const langWrap = el("label", "hadith-lang-wrap");
+  langWrap.appendChild(el("span", "hadith-lang-label", t("Text language")));
+  const sel = el("select", "hadith-lang-select");
+  // It already carries this id. Named here because a language-leak check
+  // excludes it BY NAME: like every other language picker in the app, it
+  // names each language in that language's own script, in every UI language,
+  // on purpose -- that is how a reader of one of them finds the setting.
+  sel.id = "hadithContentLang";
+  for (const l of CONTENT_LANGUAGES) {
+    const o = el("option", null, CONTENT_LANG_LABELS[l]);
+    o.value = l;
+    o.lang = l; // each language is named in its own script; marking it keeps a reader's widened letter-spacing off the Arabic (audit part 34)
+    if (l === state.contentLang) o.selected = true;
+    sel.appendChild(o);
+  }
+  sel.addEventListener("change", () => { state.contentLang = sel.value; render(); });
+  langWrap.appendChild(sel);
+  bar.appendChild(langWrap);
+  return bar;
+}
+
+/** PCF MSA J106: the three Subjects (the Owner's names). Each becomes a list of hadith the Owner files (answer 3A). */
+export const HADITH_SUBJECTS = [
+  { id: "akhlaq", name: "Learning Akhlaq", about: "Good character: how a Muslim treats people, speaks, and loves for others what he loves for himself." },
+  { id: "ghayb", name: "Knowing Al-Ghayb", about: "The unseen: belief in Allah, the angels, the Last Day, and what only Allah knows." },
+  { id: "stories", name: "Stories from Hadith", about: "The events of the life of Rasulullah Sallallahu A'laihi Wa Sallam and his Companions, as the hadith tell them." },
+];
+
+/**
+ * A menu-bar button that opens a small list under it (Hadith Books, Subjects). The list closes on a choice, on a
+ * second tap of the button, on a tap anywhere else and on Escape (which returns focus to the button). Its items are
+ * ordinary 40px buttons, so a keyboard Tabs through them. `before`, when given, runs first on a tap and returns true
+ * when it has handled the tap itself, so no list opens.
+ */
+function menuButton(state, render, view, label, fill, before = null) {
+  const wrap = el("div", "hadith-menu");
+  const btn = el("button", `hadith-tab hadith-menu-btn${state.view === view ? " active" : ""}`);
+  btn.type = "button";
+  btn.dataset.hadithTab = view;
+  btn.appendChild(document.createTextNode(label));
+  const caret = el("span", "hadith-menu-caret", "▾");
+  caret.setAttribute("aria-hidden", "true");
+  btn.appendChild(caret);
+  if (state.view === view) btn.setAttribute("aria-current", "page");
+  const panel = el("div", "hadith-card hadith-menu-panel");
+  panel.id = `hadithMenu-${view}`;
+  panel.dataset.hadithMenu = view;
+  panel.hidden = true;
+  btn.setAttribute("aria-haspopup", "true");
+  btn.setAttribute("aria-expanded", "false");
+  btn.setAttribute("aria-controls", panel.id);
+  const onDoc = (e) => { if (!wrap.contains(e.target)) close(); };
+  const onKey = (e) => { if (e.key === "Escape") { close(); btn.focus(); } };
+  function close() {
+    panel.hidden = true;
+    btn.setAttribute("aria-expanded", "false");
+    document.removeEventListener("pointerdown", onDoc, true);
+    document.removeEventListener("keydown", onKey, true);
+  }
+  btn.addEventListener("click", () => {
+    if (!panel.hidden) { close(); return; }
+    if (before && before()) return;
+    panel.textContent = "";
+    fill(panel, close);
+    panel.hidden = false;
+    btn.setAttribute("aria-expanded", "true");
+    document.addEventListener("pointerdown", onDoc, true);
+    document.addEventListener("keydown", onKey, true);
+    panel.querySelector("button")?.focus({ preventScroll: true });
+  });
+  wrap.append(btn, panel);
+  return wrap;
+}
+
+function fillBooksMenu(panel, close, state, render) {
+  const pick = (uri) => {
+    close();
+    state.view = "books";
+    state.oi = { bookUri: uri, chapterId: null, books: state.oi?.books ?? null, showAllChapters: false };
+    render();
+  };
+  const all = el("button", "hadith-row hadith-menu-item");
+  all.type = "button";
+  all.dataset.hadithBookPick = "";
+  all.appendChild(el("span", "hadith-row-name", t("All Hadith Books")));
+  all.addEventListener("click", () => pick(null));
+  panel.appendChild(all);
+  const wait = el("p", "hadith-note", t("Loading…"));
+  panel.appendChild(wait);
+  loadOpenitiBookSummaries().then((books) => {
+    wait.remove();
+    if (!state.oi) state.oi = { bookUri: null, chapterId: null, books: null, showAllChapters: false };
+    state.oi.books = books;
+    for (const [versionUri, index] of books) {
+      const row = el("button", "hadith-row hadith-menu-item");
+      row.type = "button";
+      row.dataset.hadithBookPick = versionUri;
+      const name = el("span", "hadith-row-name");
+      const ar = el("span", "openiti-title-ar", index.titleAr);
+      ar.lang = "ar"; ar.dir = "rtl";
+      name.append(ar, document.createTextNode(` — ${index.titleEn}`));
+      row.appendChild(name);
+      row.appendChild(el("span", "hadith-row-meta", index.numbering === "sequential-by-paragraph"
+        ? t("{n} passages (this edition has no hadith numbers)", { n: num(index.passageCount) })
+        : t("{n} hadith", { n: num(index.hadithCount) })));
+      row.addEventListener("click", () => pick(versionUri));
+      panel.appendChild(row);
+    }
+  }).catch(() => { wait.textContent = t("The list of books could not be loaded. Check the connection and try again."); });
+}
+
+function fillSubjectsMenu(panel, close, state, render) {
+  for (const sub of HADITH_SUBJECTS) {
+    const row = el("button", "hadith-row hadith-menu-item");
+    row.type = "button";
+    row.dataset.hadithSubjectPick = sub.id;
+    row.appendChild(el("span", "hadith-row-name", t(sub.name)));
+    row.appendChild(el("span", "hadith-row-meta", t(sub.about)));
+    row.addEventListener("click", () => { close(); state.view = "subjects"; state.subjectId = sub.id; render(); });
+    panel.appendChild(row);
+  }
+}
+
+/** Hadith Books: every book in the library, each opening on its chapters (PCF MSA J106). */
+function renderBooks(body, state, render) {
+  body.appendChild(renderOpenitiSource(state));
+}
+
+/** A Subject: its list of hadith, each Book · Chapter · Hadith No. · Title, opening the original (PCF MSA J106). */
+function renderSubjects(body, state, render) {
+  const sub = HADITH_SUBJECTS.find((x) => x.id === state.subjectId) ?? HADITH_SUBJECTS[0];
+  state.subjectId = sub.id;
+  const box = el("section", "hadith-subject");
+  box.dataset.hadithSubject = sub.id;
+  box.appendChild(el("h2", null, t(sub.name)));
+  box.appendChild(el("p", "hadith-note", t(sub.about)));
+  const empty = el("p", "hadith-note hadith-subject-empty", t("No hadith in this list yet. Open a hadith in Hadith Books and choose “Add to subject” (coming next)."));
+  empty.dataset.hadithSubjectEmpty = "true";
+  box.appendChild(empty);
+  body.appendChild(box);
+}
+
+/**
+ * A book/chapter row's own native-script heading (e.g. "كتاب البداية"),
+ * always the SOURCE edition's own text -- never translated, by design (the
+ * translated title sits beside it in its own span). Every OTHER source-script
+ * surface in this file stamps `lang`/`dir` (the occurrence card's Arabic
+ * paragraph, the commentary panel's Arabic title) so a screen reader uses the
+ * right pronunciation rules and a reader's browser applies the right
+ * direction; this one, reproduced live in the real rendered Books/chapters
+ * list, did not (issue #114 Gate B). `getComputedStyle().direction` still
+ * came out "rtl" because the Unicode Bidi Algorithm auto-detects a run of
+ * pure Arabic characters -- so it LOOKS right and a sighted mouse-only check
+ * would never catch this -- but `lang` has no such fallback: a screen reader
+ * with no language cue reads it in the page's UI language (English/Bangla)
+ * voice and pronunciation rules, mispronouncing every book and chapter
+ * heading in the list. Current-location semantics, breadcrumb ancestry and
+ * focus handling are all untouched by this fix.
+ */
+function rawHeadingSpan(rawHeading) {
+  const span = el("span", "hadith-row-heading", rawHeading);
+  span.lang = SOURCE_LANGUAGE;
+  span.dir = "rtl";
+  return span;
+}
+
+// ---------------------------------------------------------------------------
+// Source view -- collection -> book -> chapter -> occurrence, in source order
+// ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// HadeethEnc -- the REAL corpus (issue #309, part 2 of #306). Browse root
+// categories -> sub-categories -> hadith list -> one hadith, over the
+// packaged files tools/hadith-data-pull/output/hadeethenc/ (I9: nothing
+// loads until this section actually mounts; a shard loads only when its
+// category is opened, via hadeethenc-corpus.js's own per-file cache).
+//
+// STUDY WIRING (Notes/bookmark/"Studied") IS NOW BUILT, FOR HADEETHENC ONLY
+// (issue #311). Gate C2 asked whether a HadeethEnc hadith's permanent unit
+// key should be name-keyed (`hadith:hadeethenc:<id>`) or a proposed
+// permanent edition/ordinal form; the Owner decided it (owner-decisions row
+// 7, "Use HadeethEnc number"): `hadith:hadeethenc:<id>`, built with
+// `buildUnitKey.hadith("hadeethenc", id)`. That decision covers HadeethEnc
+// ONLY -- the legacy name-keyed form app/records.html builds for the
+// synthetic pilot editions is untouched, and
+// tools/i18n-verify/hadith-gate-contracts.mjs's C2 check now admits exactly
+// one new caller (hadith-study-actions.js) and only when its first argument
+// is the literal "hadeethenc"; a hadith-owned file naming any OTHER edition
+// still fails it. The three actions are built in hadith-study-actions.js,
+// loaded lazily (`import()`) so this file stays Firebase-free at its own
+// core -- a Firebase/CDN failure disables the study actions, never the
+// Collections/Topics/Search/Explore browsing around them.
+// ---------------------------------------------------------------------------
+
+/** Loads ar (structure) + en + the reader's own content language's categories.json -- cheap (a few hundred KB total), and it is what lets a category's title/count fall back contentLang -> en -> ar without a second round trip mid-browse. */
+async function loadHadeethEncStructure(contentLang, opts) {
+  const langs = [...new Set([HADEETHENC_STRUCTURE_LANG, "en", contentLang])].filter((l) => HADEETHENC_LANGS.includes(l));
+  const entries = await Promise.all(langs.map(async (l) => [l, await loadHadeethEncCategories(l, opts).catch(() => null)]));
+  return Object.fromEntries(entries);
+}
+
+function hadeethEncCrumbs(state, localRefresh) {
+  // A DELIBERATELY DIFFERENT class from the synthetic Collections
+  // breadcrumb's own `.hadith-crumb`/`.hadith-crumb-current` (styled
+  // identically in hadith.css) -- the two breadcrumbs are mutually exclusive
+  // in the DOM today (this one only renders while `!state.editionId`, the
+  // other only while it is set), but hadith-source-navigation-browser.mjs
+  // clicks the BARE `.hadith-crumb` class by name; sharing it would make
+  // that click ambiguous the moment the two ever coexist.
+  const bar = el("nav", "hadith-crumbs");
+  bar.dataset.hadeethencCrumbs = "true";
+  const add = (label, onClick) => {
+    if (onClick) {
+      const b = el("button", "hadeethenc-crumb", label);
+      b.addEventListener("click", onClick);
+      bar.appendChild(b);
+    } else {
+      const cur = el("span", "hadeethenc-crumb-current", label);
+      cur.setAttribute("aria-current", "page");
+      bar.appendChild(cur);
+    }
+  };
+  add(t("HadeethEnc"), () => { state.hc.path = []; state.hc.hadithId = null; localRefresh(); });
+  const path = state.hc.path;
+  path.forEach((catId, i) => {
+    const title = resolveCategoryTitle(state.hc.catsByLang, catId, state.contentLang)?.title ?? catId;
+    const isLast = i === path.length - 1 && !state.hc.hadithId;
+    add(title, isLast ? null : () => { state.hc.path = path.slice(0, i + 1); state.hc.hadithId = null; localRefresh(); });
+  });
+  return bar;
+}
+
+function hadeethEncCategoryRow(catId, catsByLang, contentLang, onOpen) {
+  const resolved = resolveCategoryTitle(catsByLang, catId, contentLang);
+  const row = el("button", "hadith-row");
+  row.dataset.hadeethencCategory = catId;
+  row.appendChild(el("span", "hadith-row-name", resolved?.title ?? catId));
+  const meta = resolved?.count != null ? num(resolved.count) : "";
+  row.appendChild(el("span", "hadith-row-meta", meta));
+  if (resolved?.isFallback) {
+    const fb = el("span", "hadith-fallback");
+    fb.dataset.hadeethencCategoryFallback = resolved.lang;
+    fb.textContent = t("Not available in your language here — showing {lang}.", { lang: langNameInProse(resolved.lang) });
+    row.appendChild(fb);
+  }
+  row.addEventListener("click", onOpen);
+  return row;
+}
+
+function hadeethEncHadithRow(id, resolvedRecord, onOpen) {
+  const { record, lang, isFallback, requestedLang } = resolvedRecord;
+  const row = el("button", "hadith-row");
+  row.dataset.hadeethencHadith = id;
+  row.appendChild(el("span", "hadith-row-name", record.title ?? id));
+  if (isFallback) {
+    const fb = el("span", "hadith-fallback");
+    fb.dataset.hadeethencHadithFallback = lang;
+    fb.textContent = t("Not available in {reqLang} — showing {lang}.", {
+      reqLang: langNameInProse(requestedLang), lang: langNameInProse(lang),
+    });
+    row.appendChild(fb);
+  }
+  row.addEventListener("click", onOpen);
+  return row;
+}
+
+// PCF MSA J103 (Owner, 28 Oct 2026): the book, standard number and chapter of each book a HadeethEnc hadith's
+// "Narrated by" line names -- only where two independent searches proved it (hadeethenc-references-check.mjs).
+// The books in the library, by the key the data uses; `standard` = cited by the number on sunnah.com (Muslim by
+// Abdul-Baqi's), otherwise by this edition's own number.
+const REF_BOOKS = {
+  bukhari: { name: "Bukhārī", uri: "0256Bukhari.Sahih.JK000110-ara1", standard: true },
+  muslim: { name: "Muslim", uri: "0261Muslim.Sahih.Shamela0001727-ara1", standard: true },
+  abudawud: { name: "Abū Dāwūd", uri: "0275AbuDawudSijistani.Sunan.JK000142-ara1", standard: true },
+  tirmidhi: { name: "Tirmidhī", uri: "0279Tirmidhi.Sunan.JK000140-ara1", standard: true },
+  nasai: { name: "Nasāʾī", uri: "0303Nasai.SunanSughra.JK000130-ara1", standard: true },
+  ibnmajah: { name: "Ibn Mājah", uri: "0273IbnMaja.Sunan.JK000141-ara1", standard: true },
+  malik: { name: "Muwaṭṭaʾ Mālik", uri: "0179MalikIbnAnas.Muwatta.Shamela0028107-ara1", standard: true },
+  ahmad: { name: "Musnad Aḥmad", uri: "0241IbnHanbal.Musnad.Shamela0025794-ara1", standard: false },
+  darimi: { name: "Dārimī", uri: "0255CabdAllahDarimi.Sunan.JK000842-ara1", standard: false },
+  adab: { name: "al-Adab al-Mufrad", uri: "0256Bukhari.AdabMufrad.JK000011-ara1", standard: false },
+  nasaiAmal: { name: "Nasāʾī, ʿAmal al-Yawm wa-l-Layla", uri: "0303Nasai.CamalYawmWaLayla.JK000735-ara1", standard: false },
+  ibnsunni: { name: "Ibn al-Sunnī", uri: "0364IbnSunniDinawari.CamalYawmWaLayl.JK000943-ara1", standard: false },
+};
+
+/** Pure: one proven reference -> its label, e.g. "Bukhārī 5033 · Virtues of the Qur'an". */
+export function hadithRefLabel(ref) {
+  const b = REF_BOOKS[ref.book];
+  const name = t(b?.name ?? ref.book);
+  const head = b?.standard ? `${name} ${num(ref.cite)}` : t("{book} {n} (this edition's number)", { book: name, n: num(ref.cite) });
+  // The book's name comes in English only (the standard edition's sections): shown to an English reader; a Bangla
+  // reader has the Arabic chapter beneath instead (audit part 16: no English left on a Bangla screen).
+  return ref.enBook && getAppLang() === "en" ? `${head} · ${ref.enBook}` : head;
+}
+
+function hadeethEncReferences(id, state) {
+  const box = el("div", "hadith-refs");
+  box.dataset.hadeethencRefs = String(id);
+  loadHadeethEncReferences(id).then(({ refs, notFound }) => {
+    for (const ref of refs) {
+      const b = REF_BOOKS[ref.book];
+      const item = el("div", "hadith-ref");
+      const label = hadithRefLabel(ref);
+      if (b && ref.n != null) {
+        const btn = el("button", "hadeethenc-crumb hadith-ref-open", label);
+        btn.type = "button";
+        btn.dataset.hadithRef = `${ref.book}:${ref.cite}`;
+        btn.dataset.hadithRefPassage = `${b.uri}:${ref.n}`;
+        btn.setAttribute("aria-label", t("Open {ref} in the book", { ref: label }));
+        btn.addEventListener("click", () => openReferenceInBook(state, id, b.uri, ref.n));
+        item.appendChild(btn);
+      } else {
+        const span = el("span", "hadith-attribution", label);
+        span.dataset.hadithRef = `${ref.book}:${ref.cite}`;
+        item.appendChild(span);
+      }
+      const chapter = [ref.kitab, ref.bab].filter(Boolean).map(openitiDisplayTitle).join(" · ");
+      if (chapter) {
+        const ch = el("p", "hadith-attribution hadith-ref-chapter", chapter);
+        ch.lang = "ar"; ch.dir = "rtl";
+        item.appendChild(ch);
+      }
+      box.appendChild(item);
+    }
+    const missing = notFound.map((k) => t(REF_BOOKS[k]?.name ?? k));
+    if (missing.length) {
+      const p = el("p", "hadith-attribution hadith-ref-missing", t("{books}: number not yet found", { books: missing.join(", ") }));
+      p.dataset.hadithRefMissing = notFound.join(",");
+      box.appendChild(p);
+    }
+  }).catch(() => {
+    // Plain words, not the browser's error text (audit part 103's raw-text rule).
+    const p = el("p", "hadith-attribution", t("The book numbers could not be loaded. Check the connection and open this hadith again."));
+    p.dataset.hadithRefsError = "true";
+    box.appendChild(p);
+  });
+  return box;
+}
+
+/** Opens a proven reference's passage in the OpenITI section, with "← Back to the hadith card" (decision 86). */
+function openReferenceInBook(state, id, versionUri, n) {
+  state.view = "books";
+  state.editionId = null;
+  state.oi = { bookUri: versionUri, chapterId: null, books: null, showAllChapters: false, focusPassage: Number(n),
+    trail: [{ label: t("← Back to the hadith card"), toDua: () => {
+      state.view = "collections";
+      state.hc = { ...(state.hc ?? { path: [], catsByLang: {} }), hadithId: String(id), scrollToCard: true };
+      state.oi = { bookUri: null, chapterId: null, books: null, showAllChapters: false };
+      state.render();
+    } }] };
+  state.render();
+}
+
+/** Renders every closed-set/array/string shape `words_meanings` might carry, without ever fabricating or reordering it. */
+function hadeethEncWordsMeanings(wordsMeanings) {
+  const box = el("div", "hadeethenc-words-meanings");
+  if (!wordsMeanings) return box;
+  if (Array.isArray(wordsMeanings)) {
+    for (const item of wordsMeanings) box.appendChild(el("p", null, typeof item === "string" ? item : JSON.stringify(item)));
+  } else if (typeof wordsMeanings === "object") {
+    for (const [word, meaning] of Object.entries(wordsMeanings)) box.appendChild(el("p", null, `${word} — ${meaning}`));
+  } else {
+    box.appendChild(el("p", null, String(wordsMeanings)));
+  }
+  return box;
+}
+
+function hadeethEncCard(id, resolvedRecord, state, localRefresh) {
+  const { record, lang, isFallback, requestedLang } = resolvedRecord;
+  const card = el("article", "hadith-card");
+  card.dataset.hadeethencCard = id;
+
+  const back = el("button", "hadeethenc-crumb", t("← Back to the list"));
+  back.dataset.hadeethencBack = "true";
+  back.addEventListener("click", () => { state.hc.hadithId = null; localRefresh(); });
+  card.appendChild(back);
+
+  if (record.title) card.appendChild(el("h3", "hadith-row-name", record.title));
+
+  const ar = el("p", "hadith-arabic", hadithArabicText(record, lang) ?? "");
+  ar.lang = "ar"; ar.dir = "rtl";
+  card.appendChild(ar);
+
+  if (lang !== "ar") {
+    // A genuine fallback (contentLang -> en), not just "this is the source
+    // language" -- shown alongside the translation it actually landed on.
+    const block = el("div", "hadith-translation");
+    if (isFallback) {
+      const warn = el("p", "hadith-fallback");
+      warn.dataset.hadeethencFallback = requestedLang;
+      warn.textContent = t("No {lang} translation for this hadith. Showing {shown}.",
+        { lang: langNameInProse(requestedLang), shown: langNameInProse(lang) });
+      block.appendChild(warn);
+    }
+    block.appendChild(el("p", "hadith-translation-text", record.hadeeth ?? ""));
+    card.appendChild(block);
+  } else if (isFallback) {
+    // Fell all the way back to Arabic -- requestedLang has no translation at
+    // all (not even English's), so there is no translation block to show
+    // beside the notice, unlike the case above.
+    const warn = el("p", "hadith-fallback");
+    warn.dataset.hadeethencFallback = requestedLang;
+    warn.textContent = t("No {lang} translation for this hadith. Showing the Arabic source only.",
+      { lang: langNameInProse(requestedLang) });
+    card.appendChild(warn);
+  }
+
+  if (record.grade) card.appendChild(el("p", "hadith-attribution", t("Grade: {grade}", { grade: record.grade })));
+  if (record.attribution) card.appendChild(el("p", "hadith-attribution", record.attribution));
+  card.appendChild(hadeethEncReferences(id, state));
+
+  const hasMore = record.explanation || (record.hints && record.hints.length) || record.words_meanings;
+  if (hasMore) {
+    const details = document.createElement("details");
+    details.className = "hadeethenc-explanation";
+    const summary = document.createElement("summary");
+    summary.textContent = t("Show explanation");
+    summary.dataset.hadeethencExplanationToggle = "true";
+    details.appendChild(summary);
+    if (record.explanation) details.appendChild(el("p", null, record.explanation));
+    if (record.hints && record.hints.length) {
+      const ul = document.createElement("ul");
+      ul.dataset.hadeethencHints = String(record.hints.length);
+      for (const hint of record.hints) ul.appendChild(el("li", null, hint));
+      details.appendChild(ul);
+    }
+    if (record.words_meanings) details.appendChild(hadeethEncWordsMeanings(record.words_meanings));
+    card.appendChild(details);
+  }
+
+  const src = document.createElement("a");
+  src.className = "hadith-view-source";
+  src.dataset.hadeethencSourceLink = id;
+  src.href = hadeethEncSourceUrl(lang, id);
+  src.target = "_blank";
+  src.rel = "noopener noreferrer";
+  src.textContent = t("Source: HadeethEnc.com");
+  card.appendChild(src);
+
+  // Notes/bookmark/"Studied" -- see the section header comment above.
+  const studyBox = el("div", "hadeethenc-study-actions");
+  studyBox.dataset.hadeethencStudyActions = String(id);
+  card.appendChild(studyBox);
+  renderHadeethEncStudyActions(studyBox, id, record.title ?? "");
+
+  return card;
+}
+
+// ---------------------------------------------------------------------------
+// HadeethEnc study actions (issue #311) -- Notes/bookmark/"Studied", built on
+// hadith-study-actions.js, loaded lazily so a Firebase/CDN failure disables
+// only these three actions rather than the whole corpus (see the section
+// header comment above). A control that explains itself beats one that is
+// silently absent: every disabled state below says why, in words, rather
+// than hiding the control (this project's own standing rule).
+// ---------------------------------------------------------------------------
+
+async function renderHadeethEncStudyActions(container, id, title) {
+  container.textContent = "";
+  container.appendChild(el("p", "hadith-note", t("Loading…")));
+
+  let actions;
+  try {
+    actions = await loadHadithStudyActions();
+  } catch {
+    container.textContent = "";
+    container.appendChild(el("p", "hadeethenc-study-reason", t("Notes, bookmarking and Studied could not be loaded right now.")));
+    return;
+  }
+
+  let session = null;
+  try {
+    session = await actions.getHadeethEncSession();
+  } catch {
+    session = null;
+  }
+
+  container.textContent = "";
+  if (!session) {
+    container.appendChild(el("p", "hadeethenc-study-reason", t("Sign in and choose who you're studying as to use Notes, bookmarking and Studied.")));
+    return;
+  }
+
+  const row = el("div", "hadeethenc-study-row");
+  container.appendChild(row);
+
+  // --- Note: a link into notes.html, which already does the real work. ----
+  const noteItem = el("div", "hadeethenc-study-item");
+  const noteLink = document.createElement("a");
+  noteLink.className = "hadeethenc-study-btn";
+  noteLink.href = actions.noteHrefFor(id, title);
+  noteLink.dataset.hadeethencNoteLink = String(id);
+  noteLink.textContent = `📝 ${t("My Notes")}`;
+  noteLink.setAttribute("aria-disabled", session.isSelf ? "false" : "true");
+  if (!session.isSelf) {
+    noteLink.addEventListener("click", (e) => e.preventDefault());
+  } else {
+    // The way back (decision 86): this page's address is first set to reopen this hadith (the same ?resume= a
+    // bookmark uses), so notes.html's ← Back lands on this card rather than at the top of the library.
+    noteLink.addEventListener("click", () => {
+      try { const u = new URL(location.href); u.searchParams.set("resume", `hadith:hadeethenc:${id}`); history.replaceState(history.state, "", u); } catch { /* the link still opens */ }
+    });
+  }
+  noteItem.appendChild(noteLink);
+  if (!session.isSelf) {
+    noteItem.appendChild(el("p", "hadeethenc-study-reason", t("Only your own record can create or file a Note.")));
+  } else {
+    try {
+      const count = await actions.noteCountFor(session, id);
+      if (count > 0) noteItem.appendChild(el("p", "hadith-note", t("{count} Note(s) on this hadith", { count })));
+    } catch {
+      // A read-side hiccup here is not worth surfacing (I15's rethrow is for
+      // WRITES) -- the link itself still opens notes.html either way.
+    }
+  }
+  row.appendChild(noteItem);
+
+  // --- Bookmark and Studied, both gated on the broader canRecordFor(). -----
+  const bookmarkItem = el("div", "hadeethenc-study-item");
+  const bookmarkBtn = el("button", "hadeethenc-study-btn");
+  bookmarkBtn.type = "button";
+  bookmarkBtn.dataset.hadeethencBookmark = String(id);
+  bookmarkItem.appendChild(bookmarkBtn);
+  row.appendChild(bookmarkItem);
+
+  const studiedItem = el("div", "hadeethenc-study-item");
+  studiedItem.appendChild(el("span", "hadeethenc-study-label", t("Studied")));
+  const studiedSelect = el("select", "hadeethenc-study-select");
+  studiedSelect.dataset.hadeethencStudied = String(id);
+  studiedSelect.setAttribute("aria-label", t("Studied"));
+  const placeholder = el("option", null, t("Not tracked"));
+  placeholder.value = "";
+  studiedSelect.appendChild(placeholder);
+  for (const s of STATUSES) {
+    const o = el("option", null, statusLabel(s.id));
+    o.value = s.id;
+    studiedSelect.appendChild(o);
+  }
+  studiedItem.appendChild(studiedSelect);
+  row.appendChild(studiedItem);
+
+  if (!session.canRecordFor) {
+    bookmarkBtn.textContent = `🔖 ${t("Bookmark this")}`;
+    bookmarkBtn.setAttribute("aria-disabled", "true");
+    studiedSelect.disabled = true;
+    row.appendChild(el("p", "hadeethenc-study-reason", t("You can view this, but only the person's own record can bookmark or mark it as studied.")));
+    return;
+  }
+
+  // A refused save says so in the reader's language and is announced (I15; audit part 101).
+  const notSaved = (err) => {
+    const p = el("p", "hadeethenc-study-reason", t("Not saved: {why}", { why: String(err?.message ?? err) }));
+    p.setAttribute("role", "status");
+    return p;
+  };
+  let bookmarked = false;
+  let studiedStatusId = null;
+  try {
+    [bookmarked, studiedStatusId] = await Promise.all([
+      actions.isHadeethEncBookmarked(session, id),
+      actions.hadeethEncStudiedStatus(session, id),
+    ]);
+  } catch (err) {
+    console.error(err); // audit part 130 F5: plain words, not the raw error
+    row.appendChild(el("p", "hadeethenc-study-reason", t("Notes, bookmarking and Studied could not be loaded right now.")));
+  }
+
+  function refreshBookmarkBtn() {
+    bookmarkBtn.textContent = bookmarked ? `★ ${t("Remove bookmark")}` : `🔖 ${t("Bookmark this")}`;
+    bookmarkBtn.setAttribute("aria-disabled", "false");
+  }
+  refreshBookmarkBtn();
+  bookmarkBtn.addEventListener("click", async () => {
+    if (bookmarkBtn.getAttribute("aria-disabled") === "true") return;
+    bookmarkBtn.setAttribute("aria-disabled", "true");
+    try {
+      bookmarked = await actions.toggleHadeethEncBookmark(session, id, title || String(id));
+    } catch (err) {
+      row.appendChild(notSaved(err));
+    }
+    refreshBookmarkBtn();
+  });
+
+  // 👥 Record for family members too (decision 71): the same picker as the
+  // Qur'an page's Record cards. Read on first use only (I9); nothing for a lone person.
+  let pickerRoster = [];
+  try { pickerRoster = await actions.getHadeethEncRoster(session); } catch { pickerRoster = []; }
+  const pickerHtml = renderAssignDropdown(pickerRoster, session.personId);
+  let pickerList = null;
+  if (pickerHtml) {
+    const pickerRow = el("div", "claim-for-row");
+    pickerRow.dataset.claimFor = "";
+    pickerRow.innerHTML = pickerHtml;
+    studiedItem.appendChild(pickerRow);
+    pickerList = pickerRow.querySelector("[data-assign-list]");
+    const label = pickerRow.querySelector("[data-assign-trigger-label]");
+    const trigger = pickerRow.querySelector("[data-assign-trigger]");
+    const popover = pickerRow.querySelector("[data-assign-popover]");
+    const paint = () => {
+      const checked = [...pickerList.querySelectorAll("input:checked")];
+      label.textContent = checked.length === 1 ? (checked[0].dataset.name ?? "1") : num(checked.length);
+      trigger.title = checked.map((c) => c.dataset.name).join(", "); // a long name is cut on a phone (part 136 B2): the full names stay readable
+      trigger.setAttribute("aria-label", t("Record for: {names}", { names: checked.map((c) => c.dataset.name).join(", ") || "—" }));
+    };
+    trigger.addEventListener("click", (e) => {
+      // way-modal.js's one document listener toggles every [data-assign-trigger] too; without this the same tap
+      // opened the list here and closed it there, so 👥 never opened on a HadeethEnc hadith (audit part 89, #1172).
+      e.stopPropagation();
+      const open = !popover.classList.contains("open");
+      popover.classList.toggle("open", open);
+      trigger.setAttribute("aria-expanded", String(open));
+    });
+    pickerList.addEventListener("change", () => {
+      if (!pickerList.querySelector("input:checked")) pickerList.querySelector(`input[value="${CSS.escape(session.personId)}"]`)?.click(); // never nobody: back to the page's person
+      paint();
+    });
+    paint();
+  }
+  const ticked = () => (pickerList ? [...pickerList.querySelectorAll("input:checked")].map((c) => c.value) : [session.personId]);
+
+  studiedSelect.value = studiedStatusId ?? "";
+  studiedSelect.addEventListener("change", async () => {
+    if (!studiedSelect.value) return;
+    studiedSelect.disabled = true;
+    try {
+      const ids = ticked();
+      // Others first, the page's person last (the Qur'an cards' order).
+      const ordered = [...ids.filter((x) => x !== session.personId), ...ids.filter((x) => x === session.personId)];
+      await actions.claimHadeethEncStudied(session, id, studiedSelect.value, ordered);
+      if (!ids.includes(session.personId)) {
+        const names = pickerRoster.filter((p) => ids.includes(p.id)).map((p) => p.name).join(", ");
+        studiedItem.querySelector("[data-hadeethenc-recorded]")?.remove();
+        const note = el("p", "hadeethenc-study-reason", t("Recorded for {names}.", { names }));
+        note.dataset.hadeethencRecorded = "";
+        note.setAttribute("role", "status");
+        studiedItem.appendChild(note);
+        studiedSelect.value = studiedStatusId ?? ""; // the shown status stays the page person's own
+      } else {
+        studiedStatusId = studiedSelect.value;
+        studiedItem.querySelector("[data-hadeethenc-recorded]")?.remove();
+      }
+    } catch (err) {
+      studiedSelect.value = studiedStatusId ?? ""; // back to what is stored
+      row.appendChild(notSaved(err));
+    }
+    studiedSelect.disabled = false;
+  });
+}
+
+async function renderHadeethEncBody(body, state, localRefresh, opts) {
+  const contentLang = state.contentLang;
+  const catsByLang = await loadHadeethEncStructure(contentLang, opts);
+  state.hc.catsByLang = catsByLang;
+  const arCats = catsByLang[HADEETHENC_STRUCTURE_LANG];
+  if (!arCats) throw new Error("HadeethEnc structure (Arabic) could not be loaded.");
+
+  body.textContent = "";
+  body.appendChild(hadeethEncCrumbs(state, localRefresh));
+
+  if (state.hc.hadithId) {
+    const map = await loadHadithRecords([state.hc.hadithId], contentLang, opts);
+    const resolved = map.get(String(state.hc.hadithId));
+    const card = hadeethEncCard(state.hc.hadithId, resolved, state, localRefresh);
+    body.appendChild(card);
+    // Reopened by its address (a bookmark, or ← Back from its Notes): the card sits below the library's header, so it
+    // is brought on screen once (the way-back law, decision 86).
+    if (state.hc.scrollToCard) { state.hc.scrollToCard = false; card.scrollIntoView({ block: "start" }); }
+    return;
+  }
+
+  const currentId = state.hc.path.at(-1) ?? null;
+  const children = currentId == null ? arCats.roots : childCategories(arCats, currentId);
+  const list = el("div", "hadith-list");
+  for (const child of children) {
+    list.appendChild(hadeethEncCategoryRow(String(child.id), catsByLang, contentLang, () => {
+      state.hc.path = [...state.hc.path, String(child.id)];
+      localRefresh();
+    }));
+  }
+  body.appendChild(list);
+
+  if (currentId != null) {
+    const direct = directHadithIds(arCats, currentId);
+    if (direct.length) {
+      const recordMap = await loadHadithRecords(direct, contentLang, opts);
+      const hadithList = el("div", "hadith-occurrences");
+      hadithList.dataset.hadeethencHadithList = String(direct.length);
+      for (const id of direct) {
+        const resolved = recordMap.get(String(id));
+        if (!resolved) continue;
+        hadithList.appendChild(hadeethEncHadithRow(id, resolved, () => { state.hc.hadithId = String(id); localRefresh(); }));
+      }
+      body.appendChild(hadithList);
+    } else if (!children.length) {
+      body.appendChild(el("p", "hadith-note", t("Nothing here yet.")));
+    }
+  }
+}
+
+function renderHadeethEncSource(state) {
+  const section = el("section", "hadeethenc-section");
+  section.id = "hadeethencSection";
+  section.appendChild(el("h2", null, t("HadeethEnc — Encyclopedia of Translated Hadiths")));
+  const body = el("div", "hadeethenc-body");
+  section.appendChild(body);
+
+  if (!state.hc) state.hc = { path: [], hadithId: null, catsByLang: {} };
+
+  function localRefresh() {
+    body.textContent = "";
+    body.appendChild(el("p", "hadith-note", t("Loading…")));
+    // Audit part 130 F3: while the real library cannot be read (offline), the synthetic sample collections below
+    // are hidden, so they are never the only thing on the tab; they come back when the library loads.
+    const synthetic = () => section.parentNode?.querySelector("[data-hadith-synthetic-block]");
+    renderHadeethEncBody(body, state, localRefresh).then(() => {
+      const s = synthetic(); if (s) s.hidden = false;
+    }).catch((err) => {
+      console.error(err);
+      body.textContent = "";
+      const p = readFailedNote(err, localRefresh);
+      p.dataset.hadeethencError = "true";
+      body.appendChild(p);
+      const s = synthetic(); if (s) s.hidden = true;
+    });
+  }
+  localRefresh();
+  return section;
+}
+
+// ---------------------------------------------------------------------------
+// OpenITI -- 11 real, untranslated Arabic hadith collections (issue #316,
+// part 2 of #314). Book -> chapter -> passage, over the packaged files
+// tools/hadith-data-pull/output/openiti-release/ (I9: nothing loads until
+// this section mounts; see openiti-corpus.js's own header comment for
+// exactly what loads at each step). This corpus carries no translation of
+// its own -- every book/chapter/passage is Arabic-only, so unlike HadeethEnc
+// there is no content-language fallback here; state.contentLang is not
+// consulted.
+//
+// NOT BUILT THIS ROUND, DELIBERATELY (issue #316 point 6): Notes, bookmark
+// and "Studied". Owner decision 7 (see hadith-browser.js's own HadeethEnc
+// section comment above) covers `hadith:hadeethenc:<id>` only -- a permanent
+// key for an OpenITI passage is proposed in this round's own PR description
+// (`hadith:openiti:<versionUri>:<n>`, mirroring buildUnitKey.hadith's
+// `hadith:${collectionName}:${number}` shape with the versionUri:n pair
+// standing in for `number`), not decided or built here.
+// ---------------------------------------------------------------------------
+
+const OPENITI_CHAPTER_PAGE = 100;
+
+function renderOpenitiSource(state) {
+  const section = el("section", "openiti-section");
+  section.id = "openitiSection";
+  section.appendChild(el("h2", null, t("Hadith Books")));
+  section.appendChild(el("p", "openiti-study-soon",
+    t("Notes, bookmarking and marking a hadith or passage as studied are not enabled here yet — the Owner has only decided this for HadeethEnc so far.")));
+  const body = el("div", "openiti-body");
+  section.appendChild(body);
+
+  if (!state.oi) state.oi = { bookUri: null, chapterId: null, books: null, showAllChapters: false };
+
+  function localRefresh() {
+    body.textContent = "";
+    body.appendChild(el("p", "hadith-note", t("Loading…")));
+    renderOpenitiBody(body, state.oi, localRefresh).catch((err) => {
+      console.error(err);
+      body.textContent = "";
+      // Audit part 130 F1: the plain read-failure words and Try again, never the browser's "Failed to fetch".
+      const p = readFailedNote(err, localRefresh);
+      p.dataset.openitiError = "true";
+      body.appendChild(p);
+    });
+  }
+  localRefresh();
+  return section;
+}
+
+async function renderOpenitiBody(body, oi, localRefresh) {
+  // The list draws from the small summary; a book's own index loads only when that book is opened.
+  if (!oi.books) oi.books = await loadOpenitiBookSummaries();
+  const found = oi.bookUri ? oi.books.find(([uri]) => uri === oi.bookUri) : null;
+  const index = found ? await loadOpenitiBookIndex(oi.bookUri) : null;
+  // Round H-DB2: the book's standard numbers, if it has them (null otherwise; a failed load only hides them).
+  const conc = found ? await loadOpenitiConcordance(oi.bookUri).catch(() => null) : null;
+  // Round H-DB3: which HadeethEnc hadith translate a passage of this book (ids only; null if none).
+  const heLinks = found ? await loadOpenitiHadeethEncLinks(oi.bookUri).catch(() => null) : null;
+  // Round H-DB4: for a book with Dua chapters, the other places the same dua is narrated.
+  const duaIdx = found ? await loadDuaIndex().catch(() => null) : null;
+  const dua = duaIdx?.books.some((b) => b.versionUri === oi.bookUri) ? duaIdx : null;
+
+  body.textContent = "";
+  // A link to one passage (decision 85) or a jump by standard number (H-DB2): find the chapter that holds it
+  // BEFORE the breadcrumbs are drawn, so they carry the way back to the book's chapter list (decision 86).
+  let missingPassage = false;
+  if (index && oi.focusPassage != null && !oi.chapterId) {
+    const holder = index.chapters.find((c) => (c.hadithPositions ?? []).includes(oi.focusPassage));
+    if (holder) oi.chapterId = holder.id;
+    else { missingPassage = true; oi.focusPassage = null; }
+  }
+  body.appendChild(openitiCrumbs(oi, index, localRefresh));
+
+  // The way back (decision 86): to the Dua tab it came from, and back along "Also narrated in" jumps.
+  if (oi.trail?.length) {
+    const prev = oi.trail[oi.trail.length - 1];
+    const b = el("button", "hadeethenc-crumb openiti-trail-back", prev.label);
+    b.type = "button";
+    b.dataset.openitiTrailBack = "true";
+    b.addEventListener("click", () => {
+      oi.trail.pop();
+      if (prev.toDua) { oi.trail = []; prev.toDua(); return; }
+      oi.bookUri = prev.bookUri; oi.chapterId = prev.chapterId; oi.focusPassage = prev.focusPassage ?? null;
+      localRefresh();
+    });
+    body.appendChild(b);
+  }
+
+  if (!oi.bookUri) {
+    renderOpenitiBookList(body, oi, localRefresh);
+    return;
+  }
+
+  if (!found) { body.appendChild(el("p", "hadith-note", t("Nothing here yet."))); return; }
+  const versionUri = oi.bookUri;
+  if (missingPassage) body.appendChild(el("p", "hadith-note", t("That passage is not in this book.")));
+
+  // PCF MSA J106 (the Owner, 28 Oct 2026, demo approved): the book opens in three panes -- Chapters | the chapter's
+  // hadith | the hadith's text -- each resizable, expandable and able to pop out as a window (hadith-reader).
+  const chapter = oi.chapterId ? index.chapters.find((c) => c.id === oi.chapterId) : null;
+  if (oi.chapterId && !chapter) { body.appendChild(el("p", "hadith-note", t("Nothing here yet."))); return; }
+  let passages = [], babs = [];
+  // With no chapter chosen, Chapters is the only pane with anything in it: a phone shows it (the book's name in the
+  // breadcrumbs, a new book, a jump to a number the book does not hold), never an empty "Choose a chapter." pane.
+  if (!chapter) oi.phone = "chapters";
+  if (chapter) {
+    const wait = el("p", "hadith-note", t("Loading…"));
+    body.appendChild(wait);
+    const loaded = await loadOpenitiChapter(versionUri, chapter);
+    wait.remove();
+    babs = chapterBabs(loaded, chapter);
+    if (oi.pickBab) { oi.phone = babs.length > 1 ? "chapters" : "hadiths"; oi.pickBab = false; }
+    // "Go to hadith number" by this edition's own number: find that hadith in the chapter just opened.
+    if (oi.focusNumber != null) {
+      const byNumber = loaded.hadiths.find((h) => h.kind === "hadith" && Number(h.number) === oi.focusNumber);
+      if (byNumber) oi.focusPassage = byNumber.n;
+      oi.focusNumber = null;
+    }
+    const jump = oi.focusPassage != null ? loaded.hadiths.find((h) => h.n === oi.focusPassage) : null;
+    if (jump) { oi.bab = jump.p; oi.passageN = jump.n; oi.phone = "text"; }
+    if (oi.bab == null || !babs.some((b) => b.p === oi.bab)) oi.bab = babs[0]?.p ?? null;
+    passages = babs.length > 1 ? loaded.hadiths.filter((h) => h.p === oi.bab) : loaded.hadiths;
+    if (!passages.some((h) => h.n === oi.passageN)) oi.passageN = (passages.find((h) => h.kind === "hadith" || h.kind === "passage") ?? passages[0])?.n ?? null;
+  }
+  const duaCtx = dua && chapter ? { dua, oi, localRefresh, chapterId: chapter.id, versionUri } : null;
+  const jumped = oi.focusPassage != null;
+  const reader = hadithReader({
+    oi, localRefresh,
+    chapters: (pane) => renderOpenitiChapterList(pane, oi, index, localRefresh, conc, babs),
+    hadiths: (pane) => renderReaderHadithList(pane, passages, oi, localRefresh, conc),
+    text: (pane, head) => renderReaderText(pane, head, passages, oi, localRefresh, conc, heLinks, duaCtx, versionUri, jumped),
+    titles: { chapters: t("Chapters"), hadiths: chapter ? t("Hadith · {n}", { n: num(passages.length) }) : t("Hadith"), text: t("Text") },
+  });
+  body.appendChild(reader);
+  // Opened from the Dua tab, a reference or a link: bring the reader into view.
+  if (oi.scrollTo || jumped) { oi.scrollTo = false; reader.scrollIntoView({ block: "start" }); }
+  oi.focusPassage = null;
+}
+
+/** The chapter's sub-chapters (bab) in order: the last heading of each path its passages carry. One entry when flat. */
+function chapterBabs(loaded, chapter) {
+  const seen = new Map();
+  for (const h of loaded.hadiths) {
+    if (seen.has(h.p)) { seen.get(h.p).count += (h.kind === "hadith" || h.kind === "passage") ? 1 : 0; continue; }
+    const path = loaded.paths[h.p] ?? [];
+    seen.set(h.p, { p: h.p, title: path.length > 1 ? path[path.length - 1] : (path[0] ?? chapter.title), count: (h.kind === "hadith" || h.kind === "passage") ? 1 : 0 });
+  }
+  return [...seen.values()];
+}
+
+/** First words of a narration's own text (after the chain of narrators where the source marks it with "*"). */
+function passageSnippet(text, words = 12) {
+  const s = String(text ?? "");
+  const cut = s.indexOf("*");
+  const matn = (cut >= 0 && cut < s.length - 20 ? s.slice(cut + 1) : s).trim().split(/\s+/);
+  return matn.slice(0, words).join(" ") + (matn.length > words ? " …" : "");
+}
+
+function renderReaderHadithList(pane, passages, oi, localRefresh, conc) {
+  if (!oi.chapterId) { pane.appendChild(el("p", "hadith-note hadith-pane-empty", t("Choose a chapter."))); return; }
+  if (!passages.length) { pane.appendChild(el("p", "hadith-note hadith-pane-empty", t("Nothing here yet."))); return; }
+  const list = el("div", "hadith-reader-list");
+  list.dataset.openitiRows = String(passages.length);
+  for (const h of passages) {
+    const row = el("button", `hadith-reader-row${h.n === oi.passageN ? " on" : ""}`);
+    row.type = "button";
+    row.dataset.openitiRow = String(h.n);
+    row.dataset.openitiKind = h.kind;
+    if (h.n === oi.passageN) row.setAttribute("aria-current", "true");
+    const cite = conc?.byN.get(h.n);
+    const no = h.kind === "chapter-text" ? t("Chapter text") : h.kind === "editorial" ? t("Editor's note") : num(cite ?? h.number ?? "");
+    row.appendChild(el("span", "hadith-reader-no", no));
+    const snip = el("span", "hadith-reader-snippet", passageSnippet(h.text));
+    snip.title = snip.textContent; // two lines with large text cut it (part 136 H4); the whole snippet stays readable
+    snip.lang = "ar"; snip.dir = "rtl";
+    row.appendChild(snip);
+    row.addEventListener("click", () => { oi.passageN = h.n; oi.phone = "text"; localRefresh(); });
+    list.appendChild(row);
+  }
+  pane.appendChild(list);
+}
+
+function renderReaderText(pane, head, passages, oi, localRefresh, conc, heLinks, duaCtx, versionUri, jumped) {
+  const i = passages.findIndex((h) => h.n === oi.passageN);
+  if (i < 0) { pane.appendChild(el("p", "hadith-note hadith-pane-empty", t(oi.chapterId ? "Choose a hadith." : "Choose a chapter."))); return; }
+  // ‹ › step through the chapter's hadith without going back to the list.
+  for (const [d, label, glyph] of [[-1, t("Previous hadith"), "‹"], [1, t("Next hadith"), "›"]]) {
+    const b = el("button", "hadith-pane-btn", glyph);
+    b.type = "button";
+    b.title = label; b.setAttribute("aria-label", label);
+    b.dataset.readerStep = String(d);
+    const to = passages[i + d];
+    b.disabled = !to;
+    b.addEventListener("click", () => { if (to) { oi.passageN = to.n; localRefresh(); } });
+    head.insertBefore(b, head.querySelector(".hadith-pane-tools"));
+  }
+  const card = openitiPassageCard(passages[i], conc, heLinks, duaCtx, versionUri);
+  if (jumped) { card.classList.add("hadith-card-focused"); card.dataset.openitiFocused = "true"; }
+  pane.appendChild(card);
+}
+
+/**
+ * A chapter's name as shown. The source gives no heading to the book's opening -- its title page and Bismillah, before
+ * the first heading (11 of the 15 books; Bukhari's reads «صحيح البخاري بسم الله الرحمن الرحيم») -- so the first chapter
+ * with no title is named "The book's opening", and any other untitled one "(untitled)". Those two are words of the
+ * reader's language, so they are not marked as Arabic (`ar: false`).
+ */
+function openitiChapterLabel(c, index) {
+  if (String(c?.title ?? "").trim()) return { text: openitiDisplayTitle(c.title), ar: true };
+  return { text: index?.chapters?.[0]?.id === c?.id ? t("The book's opening") : t("(untitled)"), ar: false };
+}
+
+/** "PageV01P013" -> "Vol. 1, p. 13" (the source's own page marker, made readable). */
+function openitiPageRef(ref) {
+  const m = /^PageV(\d+)P(\d+)$/.exec(ref);
+  return m ? t("Vol. {v}, p. {p}", { v: num(Number(m[1])), p: num(Number(m[2])) }) : ref;
+}
+
+function openitiCrumbs(oi, index, localRefresh) {
+  const bar = el("nav", "hadith-crumbs");
+  bar.dataset.openitiCrumbs = "true";
+  const add = (label, onClick) => {
+    if (onClick) {
+      const b = el("button", "openiti-crumb", label);
+      b.addEventListener("click", onClick);
+      bar.appendChild(b);
+    } else {
+      const cur = el("span", "openiti-crumb-current", label);
+      cur.setAttribute("aria-current", "page");
+      bar.appendChild(cur);
+    }
+  };
+  add(t("Hadith Books"), () => { oi.bookUri = null; oi.chapterId = null; oi.showAllChapters = false; localRefresh(); });
+  if (index) {
+    add(index.titleEn, oi.chapterId ? () => { oi.chapterId = null; localRefresh(); } : null);
+    if (oi.chapterId) {
+      const chapter = index.chapters.find((c) => c.id === oi.chapterId);
+      add(openitiChapterLabel(chapter, index).text, null);
+    }
+  }
+  return bar;
+}
+
+function renderOpenitiBookList(body, oi, localRefresh) {
+  const list = el("div", "hadith-list");
+  for (const [versionUri, index] of oi.books) {
+    const row = el("button", "hadith-row");
+    row.dataset.openitiBook = versionUri;
+    const nameWrap = el("span", "hadith-row-name");
+    const ar = el("span", "openiti-title-ar", index.titleAr);
+    ar.lang = "ar"; ar.dir = "rtl";
+    nameWrap.appendChild(ar);
+    nameWrap.appendChild(document.createTextNode(` — ${index.titleEn}`));
+    row.appendChild(nameWrap);
+    const count = index.numbering === "sequential-by-paragraph"
+      ? t("{n} passages (this edition has no hadith numbers)", { n: num(index.passageCount) })
+      : t("{n} hadith", { n: num(index.hadithCount) });
+    row.appendChild(el("span", "hadith-row-meta", count));
+    row.addEventListener("click", () => { oi.bookUri = versionUri; oi.chapterId = null; oi.showAllChapters = false; localRefresh(); });
+    list.appendChild(row);
+  }
+  body.appendChild(list);
+}
+
+function renderOpenitiChapterList(body, oi, index, localRefresh, conc = null, babs = null) {
+  const goBox = el("div", "openiti-goto");
+  const editionNumbers = index.numbering !== "sequential-by-paragraph";
+  if (!editionNumbers && !conc) {
+    // A control that can never work is worse than none -- say so instead
+    // (this repository's own standing rule: a control that opens and
+    // explains itself beats a control that is silently absent or broken).
+    goBox.appendChild(el("p", "hadith-note", t("This edition has no hadith numbers to jump to.")));
+  } else {
+    const inputLabel = el("label", "openiti-goto-label");
+    inputLabel.appendChild(el("span", null, t("Go to hadith number")));
+    const input = el("input", "openiti-goto-input");
+    input.type = "number";
+    input.min = "1";
+    input.inputMode = "numeric";
+    input.dataset.openitiGotoInput = "true";
+    input.setAttribute("aria-label", t("Go to hadith number"));
+    inputLabel.appendChild(input);
+    goBox.appendChild(inputLabel);
+    // Round H-DB2: with a concordance the number typed is the STANDARD one by default (the number people cite);
+    // where the edition has numbers of its own, a choice offers those too.
+    let mode = conc ? "standard" : "edition";
+    if (conc && editionNumbers) {
+      const pick = el("select", "openiti-goto-mode");
+      pick.dataset.openitiGotoMode = "true";
+      pick.setAttribute("aria-label", t("Which numbering"));
+      for (const [value, text] of [["standard", t("Standard number")], ["edition", t("This edition's number")]]) {
+        const o = el("option", null, text); o.value = value; pick.appendChild(o);
+      }
+      const titleIt = () => { pick.title = pick.options[pick.selectedIndex]?.textContent ?? ""; }; // cut with large text (part 136 H3)
+      titleIt();
+      pick.addEventListener("change", () => { mode = pick.value; titleIt(); });
+      goBox.appendChild(pick);
+    } else if (conc) {
+      goBox.appendChild(el("span", "openiti-goto-hint", t("Standard number")));
+    }
+    const goBtn = el("button", "openiti-goto-btn", t("Go"));
+    goBtn.type = "button";
+    goBtn.dataset.openitiGotoBtn = "true";
+    goBox.appendChild(goBtn);
+    const goMsg = el("p", "hadith-note openiti-goto-msg");
+    goMsg.dataset.openitiGotoMsg = "true";
+    goMsg.setAttribute("role", "status");
+    const doGo = () => {
+      if (mode === "standard") {
+        const n = conc.firstNByCite.get(Math.trunc(Number(input.value)));
+        if (n == null) {
+          goMsg.textContent = t("No hadith found with standard number {n}.", { n: num(input.value) });
+          return;
+        }
+        oi.chapterId = null;
+        oi.focusPassage = n;
+        localRefresh();
+        return;
+      }
+      const chapter = chapterForHadithNumber(index, input.value);
+      if (!chapter) {
+        goMsg.textContent = t("No chapter found for hadith number {n}.", { n: num(input.value) });
+        return;
+      }
+      oi.chapterId = chapter.id;
+      oi.focusNumber = Math.trunc(Number(input.value)); // J106: the reader opens on that hadith, not the chapter's first
+      localRefresh();
+    };
+    goBtn.addEventListener("click", doGo);
+    input.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); doGo(); } });
+    goBox.appendChild(goMsg);
+  }
+  body.appendChild(goBox);
+
+  const shown = oi.showAllChapters ? index.chapters.length : Math.min(OPENITI_CHAPTER_PAGE, index.chapters.length);
+  const list = el("div", "hadith-list");
+  list.dataset.openitiChapterList = String(shown);
+  // The open chapter shows even when it lies beyond the first page of chapters.
+  const rows = index.chapters.slice(0, shown);
+  const cur = index.chapters.find((c) => c.id === oi.chapterId);
+  if (cur && !rows.includes(cur)) rows.push(cur);
+  for (const c of rows) {
+    const open = c.id === oi.chapterId;
+    const row = el("button", `hadith-row${open ? " on" : ""}`);
+    row.type = "button";
+    row.dataset.openitiChapter = c.id;
+    if (open) row.setAttribute("aria-current", "true");
+    const label = openitiChapterLabel(c, index);
+    row.appendChild(label.ar ? openitiArabicRowName(label.text) : el("span", "hadith-row-name", label.text));
+    if (c.firstNumber != null) {
+      row.appendChild(el("span", "hadith-row-meta", `${num(c.firstNumber)}–${num(c.lastNumber)}`));
+    }
+    // On a phone, a chapter with sub-chapters stays on Chapters so one can be picked; a flat one opens its hadith.
+    row.addEventListener("click", () => { oi.chapterId = c.id; oi.bab = null; oi.passageN = null; oi.pickBab = true; localRefresh(); });
+    list.appendChild(row);
+    // PCF MSA J106: a chapter of a book (kitab) lists its own chapters (bab) under it, each opening its hadith.
+    if (open && babs?.length > 1) {
+      const sub = el("div", "hadith-bab-list");
+      for (const b of babs) {
+        const on = b.p === oi.bab;
+        const bb = el("button", `hadith-bab${on ? " on" : ""}`);
+        bb.type = "button";
+        bb.dataset.openitiBab = String(b.p);
+        if (on) bb.setAttribute("aria-current", "true");
+        bb.appendChild(openitiArabicRowName(openitiDisplayTitle(b.title)));
+        if (b.count) bb.appendChild(el("span", "hadith-row-meta", num(b.count)));
+        bb.addEventListener("click", () => { oi.bab = b.p; oi.passageN = null; oi.phone = "hadiths"; localRefresh(); });
+        sub.appendChild(bb);
+      }
+      list.appendChild(sub);
+    }
+  }
+  body.appendChild(list);
+
+  if (!oi.showAllChapters && index.chapters.length > OPENITI_CHAPTER_PAGE) {
+    const more = el("button", "openiti-show-more", t("Show more ({remaining} more)", { remaining: num(index.chapters.length - OPENITI_CHAPTER_PAGE) }));
+    more.type = "button";
+    more.dataset.openitiShowMore = "true";
+    more.addEventListener("click", () => { oi.showAllChapters = true; localRefresh(); });
+    body.appendChild(more);
+  }
+}
+
+function renderOpenitiPassages(body, hadiths, conc = null, heLinks = null, duaCtx = null, versionUri = null) {
+  if (!hadiths.length) { body.appendChild(el("p", "hadith-note", t("Nothing here yet."))); return; }
+  const list = el("div", "hadith-occurrences");
+  for (const h of hadiths) list.appendChild(openitiPassageCard(h, conc, heLinks, duaCtx, versionUri));
+  body.appendChild(list);
+}
+
+/** Keys Round 1: "Āyāt this hadith quotes" -- only on a narration the āyah–hadith index has hits for (the book's file
+ *  is fetched when a chapter is shown, never at startup). Each āyah opens the Read view there, with ← Back to the hadith. */
+function ayatQuotedSection(versionUri, n) {
+  const box = el("div", "hadith-ayat-quoted");
+  box.hidden = true;
+  loadHadithAyat(versionUri, n).then((hits) => {
+    if (!hits.length) return;
+    box.dataset.ayatQuoted = String(n);
+    box.appendChild(el("p", "hadith-ayat-quoted-head", t("Āyāt this hadith quotes")));
+    const row = el("div", "hadith-ayat-quoted-list");
+    for (const [s, a] of hits) {
+      const link = el("a", "hadith-ayat-quoted-link", `${num(s)}:${num(a)}`);
+      link.href = `./quranrevival.html?goto=${s}:${a}&back=1&backTo=hadith`;
+      link.dataset.ayatQuotedLink = `${s}:${a}`;
+      row.appendChild(link);
+    }
+    box.appendChild(row);
+    box.hidden = false;
+  }).catch(() => { /* no index file: the section simply does not appear */ });
+  return box;
+}
+
+function openitiPassageCard(h, conc = null, heLinks = null, duaCtx = null, versionUri = null) {
+  const card = el("article", "hadith-card openiti-passage");
+  card.dataset.openitiPassage = String(h.n);
+  card.dataset.openitiKind = h.kind;
+
+  if (h.kind === "hadith") {
+    card.appendChild(el("p", "hadith-card-head", t("Hadith {n}", { n: num(h.number) })));
+  } else if (h.kind === "passage") {
+    card.appendChild(el("p", "hadith-card-head", t("Passage {n} (position in this edition, not the book's own number)", { n: num(h.number) })));
+  } else if (h.kind === "editorial") {
+    card.appendChild(el("p", "hadith-card-head openiti-editorial-label", t("Editor's note")));
+  } else if (h.kind === "chapter-text") {
+    card.classList.add("openiti-chapter-text");
+  }
+
+  // Round H-DB2: the number this narration has in the standard numbering, matched by its words.
+  const cite = conc?.byN.get(h.n);
+  if (cite) {
+    const book = getAppLang() === "bn" ? (conc.label.bn ?? conc.label.en) : conc.label.en;
+    const line = el("p", "openiti-standard-number", t("Standard number: {ref}", { ref: `${book} ${num(cite)}` }));
+    line.dataset.openitiStandard = cite;
+    card.appendChild(line);
+  }
+
+  const text = el("p", "hadith-arabic", h.text);
+  text.lang = "ar"; text.dir = "rtl";
+  card.appendChild(text);
+
+  if (h.pageRefs && h.pageRefs.length) {
+    card.appendChild(el("p", "hadith-availability openiti-page-refs", h.pageRefs.map(openitiPageRef).join(" · ")));
+  }
+
+  if (versionUri && (h.kind === "hadith" || h.kind === "passage")) card.appendChild(ayatQuotedSection(versionUri, h.n));
+
+  const heIds = heLinks?.get(h.n);
+  if (heIds?.length) card.appendChild(openitiTranslationFold(heIds));
+  const std = conc?.stdByN?.get(h.n);
+  if (std) card.appendChild(standardTranslationFolds(conc.versionUri, async () => std));
+  const group = duaCtx?.dua.groupOf.get(`${duaCtx.versionUri}:${h.n}`);
+  if (group) card.appendChild(duaAlsoNarrated(h, group, duaCtx, conc));
+
+  const credit = document.createElement("a");
+  credit.className = "hadith-view-source openiti-credit";
+  credit.dataset.openitiCredit = String(h.n);
+  credit.href = OPENITI_CREDIT_URL;
+  credit.target = "_blank";
+  credit.rel = "noopener noreferrer";
+  credit.textContent = t("Source: OpenITI (CC BY-NC-SA 4.0)");
+  card.appendChild(credit);
+
+  return card;
+}
+
+/** The cited name of a Dua-index book in the reader's language, with its standard number when it has one. */
+
+/**
+ * Round H-DB4 (decision 87): the other places this dua is narrated, found by shared words, each a button that opens
+ * that narration in its book, highlighted, with a way back to here (decision 86). Said to be a proposal.
+ */
+function duaAlsoNarrated(h, group, { dua, oi, localRefresh, chapterId, versionUri }, conc) {
+  const box = el("div", "dua-also");
+  box.dataset.duaAlso = String(group.length - 1);
+  const head = el("p", "dua-also-head", t("Also narrated in ({n} more)", { n: num(group.length - 1) }));
+  head.appendChild(el("span", "dua-proposed", t("found by matching words, to be checked")));
+  box.appendChild(head);
+  const row = el("div", "dua-also-refs");
+  const self = group.find((m) => m.versionUri === versionUri && m.n === h.n);
+  const here = duaRefLabel(dua, versionUri, conc?.byN.get(h.n) ?? self?.std, h.n, self?.number ?? (h.kind === "hadith" ? h.number : null));
+  // The books cited by a standard number first; the rest (the Day-and-Night books, al-Adhkar, Riyad) behind one
+  // "+N more" fold, so a much-narrated dua does not bury the card under twenty buttons.
+  const others = group.filter((m) => m !== self);
+  const main = others.filter((m) => m.std != null && m.std !== "");
+  const rest = others.filter((m) => !(m.std != null && m.std !== ""));
+  const restBox = el("div", "dua-also-refs");
+  const makeBtn = (m) => {
+    const b = el("button", "dua-ref", duaRefLabel(dua, m.versionUri, m.std, m.n, m.number));
+    b.type = "button";
+    b.dataset.duaRef = `${m.versionUri}:${m.n}`;
+    b.addEventListener("click", () => {
+      oi.trail = [...(oi.trail ?? []), { bookUri: versionUri, chapterId, focusPassage: h.n, label: t("← Back to {ref}", { ref: here }) }];
+      oi.bookUri = m.versionUri; oi.chapterId = null; oi.focusPassage = m.n; oi.showAllChapters = false;
+      localRefresh();
+    });
+    return b;
+  };
+  for (const m of main) row.appendChild(makeBtn(m));
+  if (main.length) box.appendChild(row);
+  if (rest.length) {
+    if (!main.length) { for (const m of rest) row.appendChild(makeBtn(m)); box.appendChild(row); return box; }
+    const more = document.createElement("details");
+    more.className = "dua-also-more";
+    const sum = document.createElement("summary");
+    sum.textContent = t("+{n} more in other books", { n: num(rest.length) });
+    sum.dataset.duaMore = String(rest.length);
+    more.appendChild(sum);
+    for (const m of rest) restBox.appendChild(makeBtn(m));
+    more.appendChild(restBox);
+    box.appendChild(more);
+  }
+  return box;
+}
+
+function renderCollections(body, state, render) {
+  const uiLang = getAppLang();
+
+  if (!state.editionId) {
+    body.appendChild(renderHadeethEncSource(state));
+    // PCF MSA J106: the Arabic books are their own view now, "Hadith Books" (renderBooks).
+    const syn = el("div");
+    syn.dataset.hadithSyntheticBlock = "";
+    syn.appendChild(el("h2", null, t("Synthetic pilot collections")));
+    syn.appendChild(syntheticBanner());
+    const list = el("div", "hadith-list");
+    for (const c of listCollections()) {
+      for (const e of c.editions) {
+        const row = el("button", "hadith-row");
+        row.dataset.hadithEdition = e.editionId;
+        row.appendChild(el("span", "hadith-row-name", langText(c.name, uiLang)));
+        row.appendChild(el("span", "hadith-row-meta", `${e.editionId} · ${t("Synthetic")}`));
+        row.addEventListener("click", () => { state.editionId = e.editionId; state.bookId = null; state.chapterId = null; render(); focusCollectionsLanding(); });
+        list.appendChild(row);
+      }
+    }
+    syn.appendChild(list);
+    body.appendChild(syn);
+    return;
+  }
+
+  body.appendChild(breadcrumb(state, render, uiLang));
+
+  if (!state.bookId) {
+    const list = el("div", "hadith-list");
+    for (const b of booksOf(state.editionId)) {
+      const row = el("button", "hadith-row");
+      row.dataset.hadithBook = b.bookChapterId;
+      row.appendChild(el("span", "hadith-row-name", langText(b.title, uiLang)));
+      row.appendChild(rawHeadingSpan(b.rawHeading));
+      row.addEventListener("click", () => { state.bookId = b.bookChapterId; state.chapterId = null; render(); focusCollectionsLanding(); });
+      list.appendChild(row);
+    }
+    body.appendChild(list);
+    return;
+  }
+
+  // An edition with no chapter level steps book -> occurrence directly. That
+  // is a legitimate source shape, not a missing level, and the UI says so
+  // rather than rendering an empty chapter list.
+  if (!editionHasChapterLevel(state.editionId)) {
+    body.appendChild(el("p", "hadith-note", t("This edition has no chapter level.")));
+    renderOccurrenceList(body, state, occurrencesIn(state.bookId), render);
+    return;
+  }
+
+  if (!state.chapterId) {
+    const list = el("div", "hadith-list");
+    for (const c of chaptersOf(state.bookId)) {
+      const row = el("button", "hadith-row");
+      row.dataset.hadithChapter = c.bookChapterId;
+      row.appendChild(el("span", "hadith-row-name", langText(c.title, uiLang)));
+      row.appendChild(rawHeadingSpan(c.rawHeading));
+      row.addEventListener("click", () => { state.chapterId = c.bookChapterId; render(); focusCollectionsLanding(); });
+      list.appendChild(row);
+    }
+    body.appendChild(list);
+    const direct = occurrencesIn(state.bookId);
+    if (direct.length) renderOccurrenceList(body, state, direct, render);
+    return;
+  }
+
+  renderOccurrenceList(body, state, occurrencesIn(state.chapterId), render);
+}
+
+function breadcrumb(state, render, uiLang) {
+  const bar = el("nav", "hadith-crumbs");
+  const add = (label, onClick) => {
+    if (onClick) {
+      const b = el("button", "hadith-crumb", label);
+      b.addEventListener("click", onClick);
+      bar.appendChild(b);
+    } else {
+      // aria-current marks the trail's own current location for assistive
+      // tech (issue #114 Gate A/B, found by reproduction: neither this crumb
+      // nor its containing <nav> carried any accessible signal for which
+      // level is "here", and that grew more load-bearing the moment the
+      // edition crumb above made the trail two levels deeper). No new
+      // translatable string: aria-current's value is a fixed ARIA token, not
+      // user-facing text.
+      const cur = el("span", "hadith-crumb-current", label);
+      cur.setAttribute("aria-current", "page");
+      bar.appendChild(cur);
+    }
+  };
+  add(t("Collections"), () => { state.editionId = null; state.bookId = null; state.chapterId = null; render(); focusCollectionsLanding(); });
+  // The edition itself was never named in this breadcrumb at all (issue #114,
+  // Gate A, found by reproduction against PR #144's own focus fix): right
+  // after picking an edition, `focusCollectionsLanding()`'s landing element
+  // was this bar's OWN LAST CHILD, which at that point was the "Collections"
+  // crumb above -- so a keyboard/screen-reader user who had just chosen an
+  // edition heard "Collections" again, learning nothing about which one they
+  // landed in. Read via `collectionOf()`, never through an occurrence -- the
+  // same fragile detour the book/chapter-title fix below already retired.
+  // This also fixes a second, related defect for free: with the edition now
+  // its own crumb, the "Collections" button above is no longer ever this
+  // bar's last child while sitting at edition level, so it never has
+  // `focusCollectionsLanding()`'s `tabindex="-1"` stamped onto it -- an
+  // already-interactive control was losing its normal Tab/Shift+Tab
+  // reachability purely because it happened to land last in the bar.
+  const collection = collectionOf(state.editionId);
+  add(collection ? langText(collection.name, uiLang) : state.editionId,
+    state.bookId ? () => { state.bookId = null; state.chapterId = null; render(); focusCollectionsLanding(); } : null);
+  // Read the book/chapter's own record directly (`chapterById()`), never
+  // through an occurrence's `sourcePathOf()` -- a book that HAS a chapter
+  // level never holds an occurrence attached to the book id itself (every
+  // occurrence sits under one of its chapters), so deriving the book's title
+  // from `occurrencesIn(state.bookId)[0]` was silently empty at the
+  // chapter-list level and fell through to the raw internal id. Reproduced on
+  // both books of the `synthetic-alpha` edition; a book with no chapter level
+  // (`synthetic-beta`) was unaffected, because there `occurrencesIn(bookId)`
+  // is never empty.
+  if (state.bookId) add(langText(chapterById(state.bookId)?.title, uiLang) || state.bookId, state.chapterId ? () => { state.chapterId = null; render(); focusCollectionsLanding(); } : null);
+  if (state.chapterId) add(langText(chapterById(state.chapterId)?.title, uiLang) || state.chapterId, null);
+  return bar;
+}
+
+function renderOccurrenceList(body, state, occurrences, render) {
+  if (!occurrences.length) { body.appendChild(el("p", "hadith-note", t("Nothing here yet."))); return; }
+  const list = el("div", "hadith-occurrences");
+  for (const o of occurrences) list.appendChild(occurrenceCard(o, state, render));
+  body.appendChild(list);
+}
+
+// ---------------------------------------------------------------------------
+// The occurrence card
+// ---------------------------------------------------------------------------
+
+export function occurrenceCard(occurrence, state, render, { showSourceLink = false } = {}) {
+  const uiLang = getAppLang();
+  const card = el("article", "hadith-card");
+  card.dataset.hadithOccurrence = occurrence.occurrenceId;
+
+  const head = el("header", "hadith-card-head");
+  const refs = externalReferencesFor(occurrence.occurrenceId);
+  head.appendChild(el("span", "hadith-card-ref",
+    refs.map((r) => `${r.scheme} ${r.displayedNumber}`).join(" · ") || occurrence.occurrenceId));
+  // The opaque internal id is shown, deliberately: it is the identity, and the
+  // displayed number above it is only a reference (schema §2).
+  head.appendChild(el("code", "hadith-card-id", occurrence.occurrenceId));
+  if (occurrence.repeatOfOccurrenceId) {
+    // Clickable: a repeat's whole point is that the original is a DIFFERENT
+    // occurrence with its own place in the source, and a reader told that
+    // should be able to go see it rather than just read its bare id.
+    const rep = el("button", "hadith-card-repeat hadith-view-source",
+      t("Repeat occurrence of {id}", { id: occurrence.repeatOfOccurrenceId }));
+    rep.dataset.hadithRepeat = occurrence.repeatOfOccurrenceId;
+    rep.addEventListener("click", () => jumpToSource(state, render, occurrence.repeatOfOccurrenceId));
+    head.appendChild(rep);
+  }
+  // Only where the occurrence is reached OUTSIDE its own book/chapter context
+  // (a Topic index entry, a Search hit) -- inside the Collections tab the
+  // reader is already looking at its source location, and the control would
+  // be pure self-referential chrome.
+  if (showSourceLink) {
+    const src = el("button", "hadith-view-source", t("View in source"));
+    src.dataset.hadithViewSource = occurrence.occurrenceId;
+    src.addEventListener("click", () => jumpToSource(state, render, occurrence.occurrenceId));
+    head.appendChild(src);
+  }
+  card.appendChild(head);
+
+  // Arabic source text, at roughly twice the English size (see the stylesheet).
+  const src = resolveText(occurrence, SOURCE_LANGUAGE);
+  const ar = el("p", "hadith-arabic", src?.text ?? "");
+  ar.lang = "ar"; ar.dir = "rtl";
+  card.appendChild(ar);
+
+  const isnad = el("p", "hadith-isnad", langText(occurrence.isnad, state.contentLang));
+  if (state.contentLang === "ar") { isnad.lang = "ar"; isnad.dir = "rtl"; }
+  card.appendChild(isnad);
+
+  // The reader's chosen content language, with an honest fallback.
+  if (state.contentLang !== SOURCE_LANGUAGE) {
+    const r = resolveText(occurrence, state.contentLang);
+    const block = el("div", "hadith-translation");
+    if (r.isFallback) {
+      const warn = el("p", "hadith-fallback");
+      warn.dataset.hadithFallback = r.requestedLang;
+      warn.textContent = t("No {lang} translation for this narration. Showing the Arabic source.",
+        { lang: CONTENT_LANG_LABELS[r.requestedLang] });
+      block.appendChild(warn);
+    } else {
+      block.appendChild(el("p", "hadith-translation-text", r.text));
+      const a = r.attribution;
+      block.appendChild(el("p", "hadith-attribution",
+        t("Translation: {who}", { who: a?.translator ?? t("unattributed") })));
+    }
+    card.appendChild(block);
+  }
+
+  const avail = el("p", "hadith-availability",
+    t("Available languages: {langs}", { langs: availableLanguages(occurrence).map((l) => CONTENT_LANG_LABELS[l]).join(", ") }));
+  card.appendChild(avail);
+
+  card.appendChild(renderTrack(occurrence, render));
+  card.appendChild(renderCardCommentary(occurrence));
+  return card;
+}
+
+/** Track, demo-only, and it says so every single time. */
+function renderTrack(occurrence, render) {
+  const box = el("div", "hadith-track");
+  box.dataset.hadithTrack = occurrence.occurrenceId;
+  box.appendChild(el("span", "hadith-track-label", t("Track")));
+
+  const sel = el("select", "hadith-track-select");
+  sel.setAttribute("aria-label", t("Track"));
+  const current = demoTrack.get(occurrence.occurrenceId) ?? "";
+  // A placeholder first, NOT the first status. STATUSES begins with
+  // "not_applicable", which under I7 means "excluded from totals" -- a real
+  // claim about the unit. An untracked narration must not appear to be making
+  // it just because a <select> shows its first option.
+  const placeholder = el("option", null, t("Not tracked"));
+  placeholder.value = "";
+  if (!current) placeholder.selected = true;
+  sel.appendChild(placeholder);
+  for (const s of STATUSES) {
+    const o = el("option", null, statusLabel(s.id));
+    o.value = s.id;
+    if (current === s.id) o.selected = true;
+    sel.appendChild(o);
+  }
+  sel.addEventListener("change", () => {
+    if (sel.value) demoTrack.set(occurrence.occurrenceId, sel.value);
+    else demoTrack.delete(occurrence.occurrenceId);
+    render();
+  });
+  box.appendChild(sel);
+
+  const warn = el("p", "hadith-not-saved");
+  warn.dataset.hadithNotSaved = "true";
+  warn.textContent = t("Preview only — nothing is saved. Hadith storage is not enabled yet.");
+  box.appendChild(warn);
+  return box;
+}
+
+/** Always the honest empty state, by construction -- see hadith-commentary.js. */
+function renderCardCommentary(occurrence) {
+  const { entries, reason } = commentaryForOccurrence(occurrence.occurrenceId);
+  const box = el("div", "hadith-card-commentary");
+  box.dataset.hadithCardCommentary = String(entries.length);
+  box.appendChild(el("p", "hadith-note",
+    entries.length === 0
+      ? t("No classical explanation is linked to this narration, because it is synthetic.")
+      : ""));
+  box.dataset.hadithCommentaryReason = reason ?? "";
+  return box;
+}
+
+// ---------------------------------------------------------------------------
+// Topic view -- an additional index across collections
+// ---------------------------------------------------------------------------
+
+function renderTopic(body, state, render) {
+  const uiLang = getAppLang();
+
+  // No topic chosen yet -- list every topic, the same shape as the
+  // Collections tab's own edition list, rather than opening straight into a
+  // single hardcoded one. `listTopics()` already drives Explore's own
+  // per-topic cards; this is the first place it also drives NAVIGATION.
+  if (!state.topicId) {
+    body.appendChild(el("h2", null, t("Topics")));
+    const list = el("div", "hadith-list");
+    for (const tp of listTopics()) {
+      const row = el("button", "hadith-row");
+      row.dataset.hadithTopicRow = tp.topicId;
+      row.appendChild(el("span", "hadith-row-name", langText(tp.label, uiLang)));
+      row.appendChild(el("span", "hadith-row-meta", `${tp.topicId} · ${t("Synthetic")}`));
+      row.addEventListener("click", () => { state.topicId = tp.topicId; render(); });
+      list.appendChild(row);
+    }
+    body.appendChild(list);
+    return;
+  }
+
+  const idx = topicIndex(state.topicId);
+  if (!idx) { body.appendChild(el("p", "hadith-note", t("Nothing here yet."))); return; }
+
+  const crumbs = el("nav", "hadith-crumbs");
+  const back = el("button", "hadith-crumb", t("Topics"));
+  back.dataset.hadithTopicBack = "true";
+  back.addEventListener("click", () => { state.topicId = null; render(); });
+  crumbs.appendChild(back);
+  const topicCur = el("span", "hadith-crumb-current", langText(idx.topic.label, uiLang));
+  topicCur.setAttribute("aria-current", "page");
+  crumbs.appendChild(topicCur);
+  body.appendChild(crumbs);
+
+  body.appendChild(el("h2", null, langText(idx.topic.label, uiLang)));
+
+  const meta = el("div", "hadith-topic-meta");
+  meta.id = "hadithTopicMeta";
+  meta.appendChild(el("p", null, t("This is an index across collections. It does not change any book.")));
+  // Distinct occurrences and mapping count are reported SEPARATELY and named,
+  // because one occurrence reachable by two mappings must never be counted twice.
+  meta.appendChild(el("p", "hadith-topic-counts",
+    t("{n} distinct narrations, from {m} mappings.", { n: idx.distinctOccurrences, m: idx.mappingCount })));
+  meta.appendChild(el("p", "hadith-taxonomy-revision",
+    t("Taxonomy revision: {rev}", { rev: idx.taxonomyRevision })));
+  if (!idx.allMappingsReviewed) {
+    const w = el("p", "hadith-unreviewed");
+    w.dataset.hadithUnreviewed = "true";
+    w.textContent = t("These mappings have not been reviewed by a scholar.");
+    meta.appendChild(w);
+  }
+  body.appendChild(meta);
+
+  for (const group of idx.collections) {
+    const sec = el("section", "hadith-topic-group");
+    sec.dataset.hadithTopicCollection = group.collection.collectionId;
+    sec.appendChild(el("h3", null, langText(group.collection.name, uiLang)));
+    for (const entry of group.entries) {
+      const row = el("div", "hadith-topic-entry");
+      // The SOURCE heading stays visible beside the mapped topic (plan §3.1).
+      row.appendChild(el("p", "hadith-topic-heading", langText(entry.sourceHeading, uiLang)));
+      row.appendChild(occurrenceCard(entry.occurrence, state, render, { showSourceLink: true }));
+      sec.appendChild(row);
+    }
+    body.appendChild(sec);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Search
+// ---------------------------------------------------------------------------
+
+function renderSearch(body, state, render) {
+  const form = el("div", "hadith-search");
+  const input = el("input", "hadith-search-input");
+  input.id = "hadithSearchInput";
+  input.type = "search";
+  input.value = state.query;
+  input.setAttribute("aria-label", t("Search"));
+  input.placeholder = t("Search in Arabic, English or Bangla");
+  input.addEventListener("input", () => { state.query = input.value; renderResults(); });
+  form.appendChild(input);
+  body.appendChild(form);
+
+  // The result-count announcer (issue #114 Gate B). A screen reader only
+  // reliably announces a change to a live region that was ALREADY in the DOM
+  // before the mutation, so this element is created ONCE and updated by
+  // `textContent` below -- never removed and recreated the way `out` is on
+  // every keystroke. It carries ONLY the count, never a result card: putting
+  // `aria-live` on `out` itself would make a screen reader announce every
+  // interactive card on every keystroke too, which nobody asked for and
+  // nobody wants. No new translation key -- it reuses the same "{n} results"
+  // string the visible line already carried.
+  const status = el("p", "hadith-note hadith-search-status");
+  status.id = "hadithSearchStatus";
+  status.dataset.hadithSearchStatus = "true";
+  status.setAttribute("role", "status");
+  status.setAttribute("aria-live", "polite");
+  body.appendChild(status);
+
+  const out = el("div", "hadith-search-results");
+  out.id = "hadithSearchResults";
+  body.appendChild(out);
+
+  function renderResults() {
+    out.textContent = "";
+    const r = searchCorpus(state.query);
+    if (!state.query.trim()) { status.textContent = ""; return; }
+    out.dataset.hadithResultCount = String(r.results.length);
+    status.textContent = t("{n} results", { n: r.results.length });
+    if (r.truncated) out.appendChild(el("p", "hadith-note", t("Showing the first results only.")));
+    for (const hit of r.results) {
+      const wrap = el("div", "hadith-search-hit");
+      // WHERE it matched, not just that it did.
+      const where = [];
+      if (hit.matchedLangs.length) where.push(t("in the text ({langs})", { langs: hit.matchedLangs.map((l) => CONTENT_LANG_LABELS[l]).join(", ") }));
+      if (hit.matchedHeadingLangs.length) where.push(t("in the source heading ({langs})", { langs: hit.matchedHeadingLangs.map((l) => CONTENT_LANG_LABELS[l]).join(", ") }));
+      const w = el("p", "hadith-match-where", where.join(" · "));
+      w.dataset.hadithMatchWhere = [...hit.matchedLangs.map((l) => `text:${l}`), ...hit.matchedHeadingLangs.map((l) => `heading:${l}`)].join(",");
+      wrap.appendChild(w);
+      wrap.appendChild(occurrenceCard(hit.occurrence, state, render, { showSourceLink: true }));
+      out.appendChild(wrap);
+    }
+  }
+  renderResults();
+}
+
+// ---------------------------------------------------------------------------
+// Explore -- demo aggregation over the synthetic corpus. It counts the SOURCE
+// and the TAXONOMY, and deliberately counts no progress at all.
+// ---------------------------------------------------------------------------
+
+function renderExplore(body) {
+  const agg = exploreAggregate();
+
+  const meta = el("div", "hadith-topic-meta");
+  meta.appendChild(el("p", "", t("Counts across the synthetic corpus. These describe the source and the topic index only.")));
+  meta.appendChild(el("p", "", `${t("Collections")}: ${agg.totals.collections} \u00b7 ${t("Editions")}: ${agg.totals.editions} \u00b7 ${t("Narrations")}: ${agg.totals.occurrences}`));
+  meta.appendChild(el("p", "", `${t("Of those, repeat occurrences")}: ${agg.totals.repeats} \u2014 ${t("a repeat is counted as its own narration, never merged by text.")}`));
+  meta.appendChild(el("p", "", `${t("Taxonomy revision")}: ${agg.taxonomyRevision}`));
+  body.appendChild(meta);
+
+  // The untracked state, stated in words rather than shown as a zero. A zero
+  // would read as "nothing studied yet"; the truth is that nothing durable
+  // exists to count.
+  const untracked = el("p", "hadith-unreviewed",
+    t("No progress is counted here. Track is a preview that a reload clears, so there is nothing durable to aggregate."));
+  untracked.dataset.hadithProgressAvailable = String(agg.progress.available);
+  body.appendChild(untracked);
+
+  body.appendChild(el("h3", "", t("Source hierarchy")));
+  for (const c of agg.collections) {
+    const row = el("div", "hadith-card");
+    row.appendChild(el("p", "hadith-row-name", c.collectionId));
+    for (const ed of c.editions) {
+      const detail = ed.hasChapterLevel
+        ? `${t("Books")}: ${ed.books} \u00b7 ${t("Chapters")}: ${ed.chapters} \u00b7 ${t("Narrations")}: ${ed.occurrences}`
+        : `${t("Books")}: ${ed.books} \u00b7 ${t("no chapter level")} \u00b7 ${t("Narrations")}: ${ed.occurrences}`;
+      row.appendChild(el("p", "hadith-card-head", `${ed.editionId} \u2014 ${detail}`));
+    }
+    body.appendChild(row);
+  }
+
+  body.appendChild(el("h3", "", t("Topics")));
+  for (const tp of agg.topics) {
+    const card = el("div", "hadith-card");
+    card.dataset.hadithExploreTopic = tp.topicId;
+    card.appendChild(el("p", "hadith-row-name", tp.topicId));
+    // The two figures side by side, each labelled, with the reason they differ
+    // in words -- a reader seeing 5 and 3 must not have to guess which is which.
+    card.appendChild(el("p", "", `${t("Distinct narrations")}: ${tp.distinctOccurrences}`));
+    card.appendChild(el("p", "", `${t("Topic mappings")}: ${tp.mappingCount}`));
+    // Why the two figures differ, in words. A mapping may target a whole book
+    // or chapter, so a few curatorial decisions reach many narrations --
+    // mappings are normally FEWER than narrations, not more.
+    card.appendChild(el("p", "hadith-topic-heading",
+      t("A mapping may cover a whole book or chapter, so a few mappings can reach many narrations. The two figures are kept apart because one counts curatorial decisions and the other counts narrations.")));
+    // And whether any narration was reached twice -- stated either way, so a
+    // clean index is visibly clean rather than merely silent.
+    card.appendChild(el("p", "hadith-topic-heading",
+      tp.duplicateReaches > 0
+        ? `${t("Narrations reached by more than one mapping")}: ${tp.duplicateReaches} \u2014 ${t("counted once, never twice.")}`
+        : t("No narration here is reached by more than one mapping.")));
+    card.appendChild(el("p", "", `${t("Spans collections")}: ${tp.spansCollections}`));
+    if (!tp.allMappingsReviewed) {
+      card.appendChild(el("p", "hadith-unreviewed", t("These mappings have not been reviewed by a scholar.")));
+    }
+    body.appendChild(card);
+  }
+
+  renderTranslationCoverage(body);
+  renderTopicCoverage(body);
+}
+
+/**
+ * TRANSLATION COVERAGE -- per edition and overall, how many synthetic
+ * narrations carry an English or a Bangla version alongside the Arabic
+ * source. Additive only -- every existing Explore row above this is
+ * untouched. Extracted into its own function (integration merge of PR #103
+ * and PR #118, 20 Sep 2026) to match `renderTopicCoverage()`'s own shape --
+ * the two were built independently and originally differed in structure
+ * only, not in what either shows.
+ */
+function renderTranslationCoverage(body) {
+  body.appendChild(el("h3", "", t("Translation coverage")));
+  const cov = translationCoverage();
+  const covMeta = el("div", "hadith-topic-meta");
+  covMeta.dataset.hadithCoverageTotal = String(cov.totals.occurrences);
+  covMeta.appendChild(el("p", "",
+    t("How many synthetic narrations carry an English or a Bangla version, alongside the Arabic source. This describes the fixture only -- it is not a measure of a real corpus.")));
+  covMeta.appendChild(el("p", "hadith-topic-counts", t("Overall: {en} of {n} have English, {bn} of {n} have Bangla.",
+    { en: cov.totals.withEnglish, bn: cov.totals.withBangla, n: cov.totals.occurrences })));
+  body.appendChild(covMeta);
+  for (const ed of cov.perEdition) {
+    const row = el("div", "hadith-card");
+    // Renamed from `hadithCoverageEdition` at integration (was ambiguous
+    // with `renderTopicCoverage()`'s own per-edition rows, which independently
+    // picked the identical attribute name for a different fact about the
+    // same edition id -- see the integration report's conflict-resolution
+    // section). A selector on the old bare name would now match two
+    // differently-shaped elements per edition.
+    row.dataset.hadithTranslationCoverageEdition = ed.editionId;
+    row.appendChild(el("p", "hadith-row-name", ed.editionId));
+    row.appendChild(el("p", "", t("{en} of {n} have English, {bn} of {n} have Bangla.",
+      { en: ed.withEnglish, bn: ed.withBangla, n: ed.occurrences })));
+    body.appendChild(row);
+  }
+}
+
+/**
+ * TOPIC COVERAGE -- a different question from the per-topic cards above: of
+ * every narration in the corpus, how many are reached by ANY topic mapping
+ * at all, and how many are not mapped to a topic yet. Additive only -- every
+ * existing Explore row above this is untouched.
+ */
+function renderTopicCoverage(body) {
+  const cov = topicCoverage();
+
+  body.appendChild(el("h3", "", t("Topic coverage")));
+  const wrap = el("div", "hadith-topic-coverage");
+  wrap.dataset.hadithTopicCoverage = "true";
+  wrap.appendChild(el("p", "",
+    t("Of the {total} narrations in the corpus, {covered} are reachable through at least one topic mapping and {uncovered} are not mapped to any topic yet. This is distinct from the per-topic counts above, which count within one topic only.",
+      { total: cov.totals.occurrences, covered: cov.totals.covered, uncovered: cov.totals.uncovered })));
+
+  for (const ed of cov.editions) {
+    const row = el("p", "hadith-topic-coverage-edition");
+    // Renamed from `hadithCoverageEdition` at integration -- see
+    // `renderTranslationCoverage()`'s own note above.
+    row.dataset.hadithTopicCoverageEdition = ed.editionId;
+    row.appendChild(document.createTextNode(`${ed.editionId} — `));
+    row.appendChild(document.createTextNode(
+      t("{covered} of {total} narrations in this edition are mapped to at least one topic; {uncovered} are not.",
+        { covered: ed.covered, total: ed.occurrences, uncovered: ed.uncovered })));
+    wrap.appendChild(row);
+  }
+
+  body.appendChild(wrap);
+}
+
+// ---------------------------------------------------------------------------
+// Classical Explanations -- its OWN surface, beside the synthetic corpus
+// ---------------------------------------------------------------------------
+
+function renderCommentary(body, state) {
+  const uiLang = getAppLang();
+  const title = el("h2", null, PANEL_TITLE[uiLang] ?? PANEL_TITLE.en);
+  body.appendChild(title);
+  const ar = el("p", "hadith-panel-title-ar", PANEL_TITLE.ar);
+  ar.lang = "ar"; ar.dir = "rtl";
+  body.appendChild(ar);
+
+  const why = el("p", "hadith-note");
+  why.id = "hadithCommentaryScope";
+  why.textContent = t("These are verified links to real narrations. They are NOT linked to the synthetic narrations above, which are not real.");
+  body.appendChild(why);
+
+  for (const entry of verifiedRegisterEntries()) {
+    const perm = renderPermission(entry);
+    const card = el("article", "hadith-commentary-card");
+    card.dataset.hadithCommentaryMatch = entry.commentary_match_id;
+
+    card.appendChild(el("p", "hadith-commentary-source", entry.source_reference_display));
+    card.appendChild(el("p", "hadith-commentary-author", entry.author_display));
+    const work = el("p", "hadith-commentary-work");
+    work.appendChild(el("span", "hadith-work-en", entry.commentary_work_title_en));
+    const workAr = el("span", "hadith-work-ar", entry.commentary_work_title_ar);
+    workAr.lang = "ar"; workAr.dir = "rtl";
+    work.appendChild(workAr);
+    card.appendChild(work);
+    card.appendChild(el("p", "hadith-commentary-location", entry.commentary_location));
+    card.appendChild(el("p", "hadith-commentary-review", entry.review_status));
+
+    const a = document.createElement("a");
+    a.className = "hadith-commentary-link";
+    a.href = entry.source_url;
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    // A non-breaking space before the arrow: without it the glyph wraps onto a
+    // line of its own at phone width, in both languages.
+    a.textContent = t("Open the commentary at the source ↗").replace(/\s+↗$/, "\u00A0↗");
+    a.dataset.hadithCommentaryLink = entry.commentary_match_id;
+    card.appendChild(a);
+
+    const rights = el("p", "hadith-commentary-rights");
+    rights.dataset.hadithMayShowText = String(perm.mayShowText);
+    rights.textContent = t("Link only — the commentary text is not reproduced here.");
+    card.appendChild(rights);
+
+    // occurrence binding, stated rather than left to be assumed
+    const bind = el("p", "hadith-commentary-binding");
+    bind.dataset.hadithOccurrenceId = String(entry.narration_occurrence_id);
+    bind.textContent = t("Matched by reference ({scheme} {ref}). No occurrence ID until an edition is approved.",
+      { scheme: entry.source_reference_scheme, ref: entry.source_reference });
+    card.appendChild(bind);
+
+    body.appendChild(card);
+  }
+
+  const never = el("ul", "hadith-never-do");
+  never.id = "hadithNeverDo";
+  for (const line of NEVER_DO) never.appendChild(el("li", null, line));
+  body.appendChild(never);
+}
+
+export { TAXONOMY_REVISION };

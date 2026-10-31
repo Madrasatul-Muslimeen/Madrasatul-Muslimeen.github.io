@@ -1,0 +1,239 @@
+// F-007 — Write-failure surface (Phase 0, Foundation)
+//
+// I15: a failed write must reach the user. Never console.error alone.
+// This is how bug B1 hid for months — four collections failed silently
+// while the app looked healthy.
+//
+// Every write in the new app goes through envelope.js, and envelope.js
+// errors should be passed through safeWrite() here so failures always:
+//   1. get translated into a plain sentence (no error codes, no jargon)
+//   2. get logged to an in-memory session buffer (so F-008's self-check
+//      screen can report "N failures this session" even after the on-screen
+//      banner has been dismissed)
+//   3. get shown on screen immediately, not just written to the console
+
+import { t } from "./i18n.js";
+
+const sessionErrorBuffer = [];
+
+// Full app translation, phase 4: these eight sentences are the ONLY thing a
+// person ever sees when a save fails, on every screen in the app -- so a
+// Bangla-only reader seeing them in English is I15 half-done: the failure
+// reaches them, but not in a language they can act on.
+//
+// They were invisible to tools/i18n-coverage.mjs (a plain object literal
+// matches none of its extractor patterns), which is the fourth time the
+// report has been quietly optimistic. Routing them through t() is what makes
+// them countable as well as translated.
+//
+// Each message is a FUNCTION, not a string, for two reasons: it is
+// translated at CALL time (the language can change while a page is open,
+// same reason statusLabel() is a function), and writing the English inside a
+// literal t("...") is what makes tools/i18n-coverage.mjs able to see it at
+// all -- a bare object of strings handed to t() through a variable is
+// invisible to every one of its extractor patterns.
+const PLAIN_MESSAGES = {
+  "permission-denied": () => t("That save was blocked by a permissions rule. Nothing was lost, but it did not save — please tell the admin."),
+  unavailable: () => t("Could not reach the server. This will save automatically once the connection is back."),
+  unauthenticated: () => t("You're signed out, so that could not be saved. Please sign in again."),
+  "not-found": () => t("That record could not be found to update. Please refresh and try again."),
+  "deadline-exceeded": () => t("That save took too long and was stopped. Please try again."),
+  cancelled: () => t("That save was interrupted before it finished. Please try again."),
+  "resource-exhausted": () => t("The server is too busy right now. Please try again in a moment."),
+  "quota-exceeded": () => t("You've used all the invites allowed for this account. Ask the admin to raise the limit if you need more."),
+};
+
+// Audit part 128: reportWriteFailure() is also called for failed READS. A read is marked by context.read === true, or
+// by context.what / context.action starting with a reading verb ("read ...", "load ...", "count ..."), or by one of
+// the named read actions below (journey-map.html's reads, which carry only an action name).
+const READ_ACTIONS = new Set(["ownerFolderTree", "notesForStudyUnit", "notesPaneRetry"]);
+export function isReadFailure(context = {}) {
+  if (context.read === true) return true;
+  const label = String(context.what || context.action || "");
+  if (/^(read|load|count)\b/i.test(label.trim())) return true;
+  return READ_ACTIONS.has(context.action);
+}
+
+export function plainMessageFor(error, context = {}) {
+  const code = error?.code ?? "unknown";
+  if (isReadFailure(context)) return t("That information could not be loaded ({code}). Please check your connection and try again.", { code });
+  // A Note save is a transaction: offline it keeps nothing and does NOT "save automatically" (audit part 124).
+  if (code === "unavailable" && context.noDeviceCopy) return t("Could not reach the server. Nothing was saved — your text is still here, so press Save again when you are online.");
+  const known = PLAIN_MESSAGES[code];
+  if (known) return known();
+  // The code itself stays as-is: it is a diagnostic for whoever is helping,
+  // and it is the one part of this sentence that must not be translated.
+  return t("That save did not go through ({code}). Please try again, and tell the admin if it keeps happening.", { code });
+}
+
+/**
+ * Shows a failure to the user right now. Looks for a page-level listener
+ * first (so a real UI can render it however it likes); if nothing is
+ * listening, falls back to an on-page banner so the message is never only
+ * in the console.
+ */
+function surfaceToUser(entry) {
+  const handled = window.dispatchEvent(
+    new CustomEvent("qr:write-failure", { detail: entry, cancelable: true })
+  );
+  if (!handled) return; // a listener called preventDefault() -- it took over display
+
+  let banner = document.getElementById("qr-write-failure-banner");
+  if (!banner) {
+    banner = document.createElement("div");
+    banner.id = "qr-write-failure-banner";
+    banner.style.cssText =
+      "position:fixed;bottom:0;left:0;right:0;background:#f8d7da;color:#58151c;" +
+      "padding:0.75rem 1rem;font-family:system-ui,sans-serif;font-size:0.95rem;z-index:9999;";
+    document.body.appendChild(banner);
+  }
+  // 1 Oct 2026 (Owner, from a phone: "What's this shows up at the bottom?"):
+  // the banner could not be closed and did not say WHICH save failed, so the
+  // Owner could neither dismiss it nor tell the Architect what had happened.
+  // It now names the save in a short reference line -- left untranslated on
+  // purpose, like the error code, because it is a diagnostic for whoever is
+  // helping -- and carries a 44px close button. The message itself is still
+  // the first and only translated sentence.
+  banner.textContent = "";
+  banner.style.display = "flex";
+  banner.style.alignItems = "flex-start";
+  banner.style.gap = "0.75rem";
+  const text = document.createElement("div");
+  text.style.flex = "1 1 auto";
+  text.style.minWidth = "0";
+  const msg = document.createElement("div");
+  msg.textContent = entry.message;
+  text.appendChild(msg);
+  const ref = failureReference(entry);
+  if (ref) {
+    const refEl = document.createElement("div");
+    refEl.setAttribute("data-write-failure-ref", "");
+    refEl.style.cssText = "font-size:0.78rem;opacity:0.8;margin-top:0.25rem;overflow-wrap:anywhere;";
+    refEl.textContent = `Ref: ${ref}`;
+    text.appendChild(refEl);
+  }
+  const close = document.createElement("button");
+  close.type = "button";
+  close.setAttribute("data-write-failure-close", "");
+  close.setAttribute("aria-label", t("Close"));
+  close.textContent = "\u2715";
+  close.style.cssText = "flex:0 0 auto;width:44px;height:44px;border:1px solid #c58a91;border-radius:8px;background:#fff;color:#58151c;font-size:1.1rem;cursor:pointer;";
+  close.addEventListener("click", () => { banner.style.display = "none"; });
+  banner.append(text, close);
+}
+
+/** A short, language-neutral name for the save that failed, from its context, plus the error code. */
+function failureReference(entry) {
+  const c = entry.context || {};
+  const what = c.what || [c.collection, c.action].filter(Boolean).join("/");
+  return [what, entry.code].filter(Boolean).join(" · ");
+}
+
+/**
+ * Records a write failure: logs it (still, in addition, not instead of),
+ * saves it to the session buffer, and surfaces it to the user.
+ */
+export function reportWriteFailure(error, context = {}) {
+  const entry = {
+    at: new Date().toISOString(),
+    context,
+    code: error?.code ?? "unknown",
+    message: plainMessageFor(error, context),
+    technicalMessage: error?.message ?? String(error),
+  };
+  sessionErrorBuffer.push(entry);
+  console.error("[write failure]", context, error);
+  if (typeof window !== "undefined") surfaceToUser(entry);
+  return entry;
+}
+
+/**
+ * Audit part 124: offline persistence (D5) lets a write "succeed" against the device's own copy while nothing has
+ * left the device. When the line is down, say so plainly -- a calm notice (not the red failure banner), dismissible,
+ * never blocking further writing. Shows nothing while online. Safe to call after any successful save.
+ */
+export function noteIfSavedOffline() {
+  if (typeof window === "undefined" || typeof navigator === "undefined" || navigator.onLine !== false) return;
+  let box = document.getElementById("qr-offline-save-notice");
+  if (!box) {
+    box = document.createElement("div");
+    box.id = "qr-offline-save-notice";
+    box.setAttribute("role", "status");
+    box.style.cssText =
+      "position:fixed;bottom:0;left:0;right:0;background:#fff3cd;color:#533f03;border-top:1px solid #e0c36a;" +
+      "padding:0.75rem 1rem;font-family:system-ui,sans-serif;font-size:0.95rem;z-index:9998;display:flex;align-items:flex-start;gap:0.75rem;";
+    const text = document.createElement("div");
+    text.setAttribute("data-offline-save-text", "");
+    text.style.cssText = "flex:1 1 auto;min-width:0;overflow-wrap:anywhere;";
+    const close = document.createElement("button");
+    close.type = "button";
+    close.setAttribute("data-offline-save-close", "");
+    close.setAttribute("aria-label", t("Close"));
+    close.textContent = "✕";
+    close.style.cssText = "flex:0 0 auto;width:44px;height:44px;border:1px solid #cdb36a;border-radius:8px;background:#fff;color:#533f03;font-size:1.1rem;cursor:pointer;";
+    close.addEventListener("click", () => { box.style.display = "none"; });
+    box.append(text, close);
+    document.body.appendChild(box);
+    window.addEventListener("online", () => { box.style.display = "none"; });
+  }
+  box.querySelector("[data-offline-save-text]").textContent = t("Saved on this device — it will be sent when you are online.");
+  box.style.display = "flex";
+}
+
+/** How long a write may stay unacknowledged, with the line down, before the reader is told it is saved on the device. */
+export const OFFLINE_SETTLE_MS = 1500;
+
+/**
+ * Runs a write and waits for it. With offline persistence (D5) the real SDK resolves a write's promise only when the
+ * SERVER acknowledges, so with the line down it stays pending (it does not reject). If it has not settled within
+ * OFFLINE_SETTLE_MS while navigator.onLine is false, the "saved on this device" notice is shown (the device does hold
+ * the change), and then:
+ *  - OPT-IN: when the caller passes context.deviceCopyOk === true -- meaning the code after the call never reads
+ *    `outcome.result` -- this RETURNS { ok: true, result: undefined, savedOnDevice: true } so the page carries on; the
+ *    real promise keeps running and a later failure still reaches the reader through reportWriteFailure (I15).
+ *  - OTHERWISE it keeps awaiting the real promise and returns the real { ok: true, result }, never `undefined`.
+ * context.noDeviceCopy marks a transaction (needs the server, keeps no local copy): no notice, no early return.
+ * A thrown error propagates exactly as before.
+ */
+export async function settleWrite(writeFn, context = {}) {
+  const pending = Promise.resolve().then(writeFn);
+  let timer;
+  const PENDING = Symbol("pending");
+  const first = await Promise.race([
+    pending,
+    new Promise((res) => { timer = setTimeout(() => res(PENDING), OFFLINE_SETTLE_MS); }),
+  ]);
+  clearTimeout(timer);
+  if (first !== PENDING) {
+    if (!context.noDeviceCopy) noteIfSavedOffline();
+    return { ok: true, result: first };
+  }
+  if (!context.noDeviceCopy && typeof navigator !== "undefined" && navigator.onLine === false) {
+    noteIfSavedOffline();
+    if (context.deviceCopyOk === true) {
+      pending.catch((error) => { reportWriteFailure(error, context); });
+      return { ok: true, result: undefined, savedOnDevice: true };
+    }
+  }
+  const result = await pending; // slow, or offline without the opt-in: keep waiting for the real answer
+  return { ok: true, result };
+}
+
+/** Read-only view of every write failure recorded this session (for F-008). */
+export function getSessionErrorBuffer() {
+  return [...sessionErrorBuffer];
+}
+
+/**
+ * Wraps any write function (e.g. envelope.js's createDocument /
+ * updateDocument) so a thrown error is always surfaced, never left to
+ * silently reject. Returns { ok: true, result } or { ok: false, entry }.
+ */
+export async function safeWrite(writeFn, context = {}) {
+  try {
+    return await settleWrite(writeFn, context);
+  } catch (error) {
+    const entry = reportWriteFailure(error, context);
+    return { ok: false, entry };
+  }
+}

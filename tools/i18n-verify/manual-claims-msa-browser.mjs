@@ -612,8 +612,12 @@ if (want("notes")) {
     await page.click("#tabStudyBtn", { timeout: 5000 }).catch((e) => console.log("   (Study click: " + String(e).split("\n")[0].slice(0, 160) + ")")); await page.waitForTimeout(200);
     const studyNote = await shown(page, "#tabNoteBtn");
     if (studyNote) { await page.click("#tabNoteBtn"); await page.waitForTimeout(900); }
-    const viaStudy = await page.evaluate(() => !document.getElementById("readNotePane")?.hidden);
-    check(`[${tag}] Notes pane in the Read view: Study ▾ → Notes also opens it`, studyNote && viaStudy, JSON.stringify({ studyNote, viaStudy }));
+    // UPDATED IN PLACE (J108, v13.01, the Owner: "Q2:A. Q3. Build it."): Study ▾ → Notes opens a NEW blank Note in the shared
+    // Note opener (the Read bar's 📝 still opens this pane); the claim is reworded to what the app now does.
+    const viaStudy = await page.evaluate(() => !document.getElementById("noteOpener")?.hidden);
+    check(`[${tag}] Study ▾ → Notes opens a new blank Note (the shared Note opener)`, studyNote && viaStudy, JSON.stringify({ studyNote, viaStudy }));
+    await page.evaluate(() => document.querySelector("#noteOpener .no-close")?.click());
+    await page.waitForFunction(() => document.getElementById("noteOpener")?.hidden, null, { timeout: 8000 }).catch(() => {});
     check(`[${tag}] Notes pane in the Read view / Track this āyah: no page error`, quiet(errors).length === 0, JSON.stringify(quiet(errors)));
     await ctx.close();
   } catch (e) { crash(e); }

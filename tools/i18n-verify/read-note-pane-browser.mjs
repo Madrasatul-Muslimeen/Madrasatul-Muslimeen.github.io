@@ -224,11 +224,15 @@ for (const lang of ["en", "bn"]) for (const [width, height, mode] of [[390, 844,
   await openCard(256);
   await P.waitForFunction(() => document.querySelector("[data-ayah-sheet] [data-ayah-sheet-note]") && !document.querySelector("[data-ayah-sheet] [data-ayah-sheet-note-new]"), null, { timeout: 8000 }).catch(() => {});
   await P.click("[data-ayah-sheet] [data-ayah-sheet-note]");
+  // UPDATED IN PLACE (J108, v13.01, the Owner: "Q2:A. Q3. Build it."): the card's 📝 Note opens the shared Note opener -- a
+  // NEW Note -- and its line "You have N Notes on this āyah — open" opens THIS pane on the āyah, "← Back to Āyah card" as before.
+  await P.waitForSelector("#noteOpener:not([hidden]) [data-no-count-open]", { timeout: 20000 }).catch(() => {});
+  await P.click("#noteOpener [data-no-count-open]").catch(() => {});
   await P.waitForFunction(() => !document.getElementById("readNotePane")?.hidden, null, { timeout: 8000 }).catch(() => {});
   await P.waitForTimeout(600);
   const fromCard = await ev(() => ({ pane: !document.getElementById("readNotePane").hidden, card: document.getElementById("ayahActionSheetOverlay")?.classList.contains("open"), title: document.querySelector("#readNotePane .rnp-title")?.textContent,
     back: document.querySelector("#readNotePane [data-rnp-back]")?.textContent, noteView: !document.getElementById("noteView")?.hidden && document.getElementById("noteView")?.getBoundingClientRect().height > 0 }));
-  check(`${tag} the Āyah card's 📝 Note opens the Notes pane on 2:256 (not the Note view), the card closed`, fromCard.pane && !fromCard.card && fromCard.title === W.title256 && !fromCard.noteView, JSON.stringify(fromCard));
+  check(`${tag} the Āyah card's 📝 Note → "You have N Notes — open" opens the Notes pane on 2:256 (not the Note view), the card closed`, fromCard.pane && !fromCard.card && fromCard.title === W.title256 && !fromCard.noteView, JSON.stringify(fromCard));
   check(`${tag} ...with "${W.backCard}" on its bar`, fromCard.back === W.backCard, fromCard.back);
   await P.click('#readNotePane [data-rnp-back]');
   await P.waitForFunction(() => document.getElementById("ayahActionSheetOverlay")?.classList.contains("open"), null, { timeout: 8000 }).catch(() => {});
@@ -238,15 +242,20 @@ for (const lang of ["en", "bn"]) for (const [width, height, mode] of [[390, 844,
   await ev(() => document.querySelector("[data-ayah-sheet] [data-ayah-sheet-close], [data-ayah-sheet-close]")?.click());
   await P.keyboard.press("Escape");
   await P.waitForTimeout(300);
-  // 10. On an āyah with no Note yet, the card's 📝 Note opens the pane with ✚ New note in focus (nothing is created).
+  // 10. UPDATED IN PLACE (J108, v13.01, Q2 = A): on an āyah with no Note yet, the card's 📝 Note opens a NEW Note on it at
+  // once, the Āyah inside it, with no "You have N Notes" line (there are none). (It opened the pane with ✚ New note in focus.)
   await openCard(258);
   await P.waitForFunction(() => document.querySelector("[data-ayah-sheet] [data-ayah-sheet-note-new]"), null, { timeout: 8000 }).catch(() => {});
   await P.click("[data-ayah-sheet] [data-ayah-sheet-note]");
-  const F2 = await (async () => { for (let i = 0; i < 60; i++) { const f = P.frames().find((x) => /journey-map\.html\?embed=1&unit=/.test(x.url())); if (f) return f; await P.waitForTimeout(100); } return null; })();
-  await F2?.waitForFunction(() => document.activeElement?.matches?.("[data-unit-new].unit-new-ready"), null, { timeout: 15000 }).catch(() => {});
-  const ready = F2 ? await F2.evaluate(() => ({ title: document.querySelector("[data-unit-title]")?.textContent, focus: !!document.activeElement?.matches?.("[data-unit-new].unit-new-ready") })) : null;
-  check(`${tag} on 2:258 (no Note yet) the card's 📝 Note opens the pane with ✚ New note in focus, ready to press`, ready?.focus && ready.title === W.title258, JSON.stringify(ready));
-  check(`${tag} ...and nothing was written just by opening it`, F2 ? await F2.evaluate(() => !(window.__stubWriteData || []).some((x) => x.col === "noteSources" && /2:258/.test(JSON.stringify(x.data)))) : false);
+  const F2 = await (async () => { for (let i = 0; i < 80; i++) { const f = P.frames().find((x) => /journey-map\.html\?embed=1&new=1&unit=ayah%3A2%3A258/.test(x.url())); if (f) return f; await P.waitForTimeout(100); } return null; })();
+  await F2?.waitForSelector("[data-edit-body] .mm-ref", { timeout: 20000 }).catch(() => {});
+  await P.waitForTimeout(800);
+  const ready = F2 ? await F2.evaluate(() => ({ id: JSON.parse(document.querySelector("[data-edit-body] .mm-ref")?.getAttribute("data-mmsa-ref") || "{}").id, src: (window.__stubWriteData || []).filter((x) => x.col === "noteSources" && x.data?.sourceKey === "ayah:2:258").length })) : null;
+  const countLine = await ev(() => !document.querySelector("#noteOpener [data-no-count]")?.hidden);
+  check(`${tag} on 2:258 (no Note yet) the card's 📝 Note opens a NEW Note on it with the Āyah inside, and no "You have N Notes" line`, ready?.id === "ayah:2:258" && !countLine, JSON.stringify({ ready, countLine }));
+  check(`${tag} ...started on 2:258: one noteSources link written`, ready?.src === 1, JSON.stringify(ready));
+  await F2?.click('[data-nn-tool="back"]').catch(() => {});
+  await P.waitForFunction(() => document.getElementById("noteOpener")?.hidden, null, { timeout: 8000 }).catch(() => {});
   // 11. Round 2b (decision 95): the Note view's other doors for notes open the pane instead.
   await ev(() => { if (!document.getElementById("readNotePane").hidden) document.querySelector("#readNotePane [data-rnp-back]").click(); });
   await ev(() => document.getElementById("ayahActionSheetOverlay")?.classList.remove("open"));
@@ -268,16 +277,16 @@ for (const lang of ["en", "bn"]) for (const [width, height, mode] of [[390, 844,
   await ev(() => document.getElementById("readUnitChip")?.click());
   await P.waitForFunction(() => document.querySelector("[data-unit-card-note]"), null, { timeout: 8000 }).catch(() => {});
   await ev(() => document.querySelector("[data-unit-card-note]")?.click());
-  await P.waitForFunction(() => !document.getElementById("readNotePane")?.hidden, null, { timeout: 8000 }).catch(() => {});
-  await P.waitForTimeout(500);
-  const unitPane = await ev(() => ({ pane: !document.getElementById("readNotePane").hidden, src: decodeURIComponent(document.querySelector("#readNotePane iframe")?.getAttribute("src") ?? ""), unitNow: document.querySelector("#readNotePane .rnp-title")?.textContent, back: document.querySelector("#readNotePane [data-rnp-back]")?.textContent, note: !!document.getElementById("noteView") }));
-  const Fu = P.frames().find((x) => /journey-map\.html\?embed=1&unit=/.test(x.url()));
-  await Fu?.waitForFunction(() => /surah|সূরা/i.test(document.querySelector("[data-unit-title]")?.textContent ?? ""), null, { timeout: 8000 }).catch(() => {});
-  const unitTitle = Fu ? await Fu.evaluate(() => document.querySelector("[data-unit-title]")?.textContent ?? "") : "";
-  check(`${tag} a Unit card's 📝 Note opens the Notes pane on the whole Surah (not the Note view), "${W.backUnit}"`, unitPane.pane && !unitPane.note && unitPane.back === W.backUnit && /surah|সূরা/i.test(unitTitle), JSON.stringify({ ...unitPane, unitTitle }));
-  await P.click("#readNotePane [data-rnp-back]");
+  // UPDATED IN PLACE (J108): a Unit card's 📝 Note opens a NEW Note on the unit in the shared Note opener; ← Back reopens the card.
+  const Fn = await (async () => { for (let i = 0; i < 80; i++) { const f = P.frames().find((x) => /journey-map\.html\?embed=1&new=1&unit=surah%3A2/.test(x.url())); if (f) return f; await P.waitForTimeout(100); } return null; })();
+  await Fn?.waitForSelector('[data-nn-tool="back"]', { timeout: 20000 }).catch(() => {});
+  await Fn?.waitForSelector("[data-edit-body]", { timeout: 20000 }).catch(() => {});
+  const unitNew = Fn ? await Fn.evaluate(() => ({ back: document.querySelector('[data-nn-tool="back"]')?.getAttribute("aria-label"), title: document.querySelector("[data-edit-title]")?.value })) : null;
+  check(`${tag} a Unit card's 📝 Note opens a NEW Note on the whole Surah, "${W.backUnit}"`, !!Fn && unitNew?.back === W.backUnit.replace(/^← /, "") && /:$/.test(unitNew?.title || ""), JSON.stringify(unitNew));
+  await Fn?.click('[data-nn-tool="back"]').catch(() => {});
   await P.waitForFunction(() => document.querySelector("[data-unit-card-note]"), null, { timeout: 8000 }).catch(() => {});
-  check(`${tag} ...and ← Back reopens the unit card`, await ev(() => !!document.querySelector("[data-unit-card-note]") && document.getElementById("readNotePane").hidden));
+  check(`${tag} ...and ← Back reopens the unit card`, await ev(() => !!document.querySelector("[data-unit-card-note]") && document.getElementById("noteOpener").hidden));
+  // (The two checks that read the Notes pane on the unit from here were replaced by the two above: the card no longer opens it.)
   await P.keyboard.press("Escape");
   await ev(() => { const s = document.getElementById("unitTypeSelect"); s.value = "ayah"; s.dispatchEvent(new Event("change", { bubbles: true })); });
   await P.waitForTimeout(500);

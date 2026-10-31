@@ -1038,3 +1038,7 @@ total). Allocated by the MMSA Architect.
 12.134: the Dua Lead's Dua Study picker fix (part 138 A1). Allocated by the MMSA Architect.
 12.135: the parts 67-83 regression sweep fixes. Allocated by the MMSA Architect.
 12.136: the Hadith Lead's J97 chapter line and Bangla language names. Allocated by the MMSA Architect.
+12.137: the QR Lead's Study options head at large text. Allocated by the MMSA Architect.
+12.138: the Escape fixes from audit part 141 and the Read view at large text. Allocated by the MMSA Architect.
+12.139: Quran Study: the A± text-size controls stay on screen at large text. Allocated by the MMSA Architect.
+13.01: J108: one Note from every Note button (v13 begins). Allocated by the MMSA Architect.

@@ -314,6 +314,11 @@
     border-radius: 0.8rem 0.8rem 0 0; box-shadow: 0 -12px 30px rgba(20,30,55,0.16);
     max-height: 74vh; max-height: 74dvh; overflow-y: auto; padding: 0 0.9rem 0.9rem;
   }
+  /* QR Lead audit, 31 Oct 2026: the panel opens UP from the dock, so 74% of the screen is only room when the dock is
+     short. With large text the dock's tabs wrap to two rows (~243px at 360px 200%) and the panel's head -- its title,
+     Save these settings and the ✕ -- went above the screen, where no scroll reaches it. fitPanelRoom() measures the room
+     above the dock into --qr-panel-room. */
+  .qr-panel { max-height: min(74dvh, var(--qr-panel-room, 74dvh)); }
   .qr-panel[hidden] { display: none; }
   .qr-panel-head {
     position: sticky; top: 0; background: white; z-index: 1;
@@ -324,11 +329,22 @@
   .qr-panel-head-actions { display: flex; align-items: center; gap: 0.5rem; margin-left: auto; min-width: 0; }
   .qr-panel-head .preset-save-btn { width: auto; min-height: 40px; padding: 0.3rem 0.75rem; font-size: 0.85rem; white-space: nowrap; flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
   .qr-panel-head .qr-panel-x { flex: 0 0 auto; }
+  /* QR Lead audit, 31 Oct 2026: with large text (150/200%) "☆ Save these settings" was cut to "Save these setti…" beside the
+     title at 390-414px (and to one letter column at 360px 200%). fitPanelHead() sets .qr-panel-head-stacked ONLY when the
+     label really is cut: the title and ✕ keep the first line and Save takes a full line of its own, wrapping its words
+     rather than cutting them. At ordinary text nothing is cut, so nothing changes. */
+  .qr-panel-head.qr-panel-head-stacked { flex-wrap: wrap; row-gap: 0.4rem; }
+  .qr-panel-head.qr-panel-head-stacked .qr-panel-head-actions { display: contents; }
+  .qr-panel-head.qr-panel-head-stacked .qr-panel-x { order: 1; margin-left: auto; }
+  .qr-panel-head.qr-panel-head-stacked .preset-save-btn { order: 2; flex: 1 1 100%; white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.15; }
   /* Below 390px the title line cannot hold the whole label on one line (measured:
      it needs 169px, 131px is left at 320px), so it wraps to two short lines
      rather than being cut or reworded. */
   @media (max-width: 389.98px) { .qr-panel-head .preset-save-btn { white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.12; font-size: 0.8rem; padding: 0.2rem 0.6rem; text-align: center; } }
-  .qr-panel-x { background: #f2f5fa; color: #667; border: none; border-radius: 50%; width: 26px; height: 26px; font-size: 15px; line-height: 1; padding: 0; }
+  /* QR Lead audit, 31 Oct 2026: was a fixed 26x26px with a 15px glyph -- below the ~40px a finger needs, and it stayed 26px
+     at 200% text while everything around it doubled. Now 2.5rem: 40px at ordinary text (the Save button beside it is
+     already 40px tall, so the head row does not grow), and it grows with the reader's text. */
+  .qr-panel-x { background: #f2f5fa; color: #667; border: none; border-radius: 50%; width: 2.5rem; height: 2.5rem; font-size: 1.25rem; line-height: 1; padding: 0; }
   .qr-panel h2 { margin-top: 1rem; }
   .study-options-body .row:first-child { margin-top: 0; }
 
@@ -758,6 +774,16 @@
   body.landing-view.landing-tall #wheelSection .ways-list { flex: 0 0 auto; overflow: visible; max-height: none; }
   /* ...and from 768px the Zab bar (2.75rem since v12.125, fixed at the bottom) is there too: the scrolling page's docked tabs stick above it. */
   @media (min-width: 768px) { body.zab-bar-on.landing-view.landing-tall #dock { bottom: 2.75rem; } }
+  /* QR Lead audit, 31 Oct 2026: the Read view is a fixed-height screen too, and with large text (200% on a phone; a phone
+     turned sideways even at 100%) the header, the wrapped read bar and the docked tabs together passed the screen height:
+     the reading area was 0px (no Qur'an text at all at 360x740 200%) and the read bar's buttons lay under the tabs where
+     nothing could reach them. checkReadFit() sets body.read-tall only while that is really so: the page then scrolls as the
+     landing does, and the reading area keeps the screen's height less the tabs (--read-tall-h), so one scroll down shows a
+     whole page of text above the tabs (in full screen, where the tabs are hidden, the whole screen). Never in the Āyah window. */
+  body.read-tall { height: auto; min-height: 100vh; min-height: 100dvh; overflow: visible; }
+  body.read-tall #app, body.read-tall #stage, body.read-tall #readView { flex: 0 0 auto; }
+  body.read-tall #studyScreen { height: auto; }
+  body.read-tall #readScroll { flex: 0 0 auto; height: var(--read-tall-h, 60vh); }
 
   /* The wheel look behind "Study Quran" (see #wheelLookSwitch). "dark" is the
      long-standing veil above; "light" is a light-grey veil; "colour" lifts
@@ -7603,9 +7629,9 @@
     import { safeHref } from "./js/html-escape.js";
     import { adoptAppLangFromUserIndex, mountSyncedAppLangControl } from "./js/lang-sync.js";
     import { showBootSplash, showQuranSplash } from "./js/splash.js";
-    import { APP_VERSION } from "./js/version.js";
+    import { APP_VERSION_LABEL } from "./js/version.js";
 
-    document.getElementById("appVersion").textContent = `v${APP_VERSION}`;
+    document.getElementById("appVersion").textContent = APP_VERSION_LABEL; // J108: "v13.01-31.10.26"
 
     // Shell round 4 (12 Aug 2026) -- index.html used to fire the boot splash
     // (Ta'awwudh/Basmala) on first load, independent of sign-in, then
@@ -8472,6 +8498,43 @@
     }
     addEventListener("resize", () => { document.querySelector("#wheelSection .mastery-wheel")?.style.removeProperty("--landing-wheel-max"); fitLandingFirstScreen(); });
     if (typeof ResizeObserver === "function") watchLandingFit(); // audit part 131: large text above 720px
+    /** QR Lead audit, 31 Oct 2026: see body.read-tall in the CSS. Measured, never guessed: the header, the read bar and
+        the dock all change height with the text size, the language and the width. */
+    function checkReadFit() {
+      const body = document.body, rv = document.getElementById("readView"), rs = document.getElementById("readScroll");
+      const bar = document.getElementById("readBar"), dockEl = document.getElementById("dock");
+      const reading = rv && !rv.hidden && rs && rs.getClientRects().length > 0;
+      // Full screen too: it hides the tabs but not the read bar, which at 200% on a phone turned sideways left the text 0px.
+      if (!reading || !dockEl || body.classList.contains("read-windowed")) {
+        body.classList.remove("read-tall"); return;
+      }
+      body.classList.remove("read-tall");
+      const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+      // Only while the tabs are on screen: a hidden dock measures top 0, which every bar would be "under".
+      const dockShown = dockEl.getClientRects().length > 0 && dockEl.getBoundingClientRect().height > 0;
+      const barUnder = dockShown && !!bar && bar.getClientRects().length > 0 && bar.getBoundingClientRect().bottom > dockEl.getBoundingClientRect().top + 1;
+      const spill = rs.clientHeight < 12 * rem || barUnder;
+      if (spill) {
+        // The page of text never reaches under the tabs (the Read view pages sideways, so a hidden line could not be scrolled to).
+        body.style.setProperty("--read-tall-h", Math.max(Math.round(4 * rem), innerHeight - (dockShown ? dockEl.offsetHeight : 0) - 8) + "px");
+        body.classList.add("read-tall");
+      }
+    }
+    function watchReadFit() {
+      let queued = false;
+      const later = () => { if (queued) return; queued = true; requestAnimationFrame(() => { queued = false; checkReadFit(); }); };
+      const ro = new ResizeObserver(later);
+      for (const id of ["dock", "readBar", "readView"]) { const e = document.getElementById(id); if (e) ro.observe(e); }
+      window.addEventListener("resize", later);
+      // Only the classes that change the answer re-wake it; its own read-tall changes must not.
+      const sig = () => ["immersive-read", "read-windowed", "read-sideways", "landing-view"].map((c) => +document.body.classList.contains(c)).join("");
+      let was = sig();
+      new MutationObserver(() => { const now = sig(); if (now !== was) { was = now; later(); } }).observe(document.body, { attributes: true, attributeFilter: ["class"] });
+      new MutationObserver(later).observe(document.getElementById("readView"), { attributes: true, attributeFilter: ["hidden"] });
+      new MutationObserver(later).observe(document.documentElement, { attributes: true, attributeFilter: ["style", "class"] });
+      later();
+    }
+    if (typeof ResizeObserver === "function" && document.getElementById("readView")) watchReadFit();
     // Follow-up round: Map(subjectId -> courseOffer contextId) for
     // selectedPersonId -- same mechanism topic-study.js/routine-study.js
     // already use (course-offers.js's programSubjectMapFromEnrollments()).
@@ -11501,6 +11564,33 @@
       await renderExplore();
     }
 
+    /** QR Lead audit, 31 Oct 2026: a drawer opens upward from the dock, so its height may not pass the dock's top, or its
+        head (title and ✕) leaves the screen. Measured, never guessed: the dock's height changes with the text size and
+        the language. 96px floor so a very short landscape screen still shows the head and one line. */
+    function fitPanelHead(panel) {
+      const head = panel.querySelector(".qr-panel-head"), save = head?.querySelector(".preset-save-btn");
+      if (!save || panel.hidden) return;
+      head.classList.remove("qr-panel-head-stacked");
+      if (save.scrollWidth > save.clientWidth + 1) head.classList.add("qr-panel-head-stacked");
+    }
+    function fitPanelRoom() {
+      dockTabs.forEach((tab) => { const p = document.getElementById(tab.dataset.panel); if (p) fitPanelHead(p); });
+      const dockEl = document.getElementById("dock");
+      if (!dockEl) return;
+      const top = Math.floor(dockEl.getBoundingClientRect().top);
+      dockTabs.forEach((tab) => {
+        const panel = document.getElementById(tab.dataset.panel);
+        if (!panel) return;
+        // max-height is the CONTENT box; the panel's own padding and border sit on top of it.
+        const cs = getComputedStyle(panel);
+        const box = ["paddingTop", "paddingBottom", "borderTopWidth", "borderBottomWidth"].reduce((n, k) => n + (parseFloat(cs[k]) || 0), 0);
+        panel.style.setProperty("--qr-panel-room", Math.max(96, top - 6 - Math.ceil(box)) + "px");
+      });
+    }
+    addEventListener("resize", fitPanelRoom);
+    addEventListener("scroll", () => { if (dockTabs.some((t) => t.getAttribute("aria-expanded") === "true")) fitPanelRoom(); }, { passive: true });
+    if (typeof ResizeObserver === "function") new ResizeObserver(() => fitPanelRoom()).observe(document.getElementById("dock"));
+
     dockTabs.forEach((tab) => {
       tab.addEventListener("click", async () => {
         const wasOpen = tab.getAttribute("aria-expanded") === "true";
@@ -11509,6 +11599,7 @@
         if (wasOpen) return;
         tab.setAttribute("aria-expanded", "true");
         document.getElementById(tab.dataset.panel).hidden = false;
+        fitPanelRoom();
         tabStudyBtn.setAttribute("aria-pressed", "true");
         // Study options holds the reciters, so opening it is another real
         // gesture that may precede Play -- warm the timing map here too.
@@ -11923,10 +12014,10 @@
       closeAllPanels();
       await openNotesPaneForKey(currentUnitInfo().unitKey);
     }
-    tabNoteBtn.addEventListener("click", () => {
-      if (stageView === "read" && readNotePaneMod?.isReadNotePaneOpen()) { readNotePaneMod.closeReadNotePane(); return; } // the old close idiom
-      openNoteForCurrentAyah();
-    });
+    // J108 (v13.01, the Owner: "Q2:A. Q3. Build it."): Study ▸ Notes opens a NEW blank Note at once, in the shared Note
+    // opener (js/note-opener.js) -- the reader stays exactly where they were underneath. The Notes pane route above
+    // (openNoteForCurrentAyah) is kept, unhooked from this button (I4); the Read bar's 📝 still opens the āyah's Notes.
+    tabNoteBtn.addEventListener("click", () => { openNewNoteHere({ backLabel: t("Back"), focusBack: tabNoteBtn }); });
 
     // Enhancement round -- Approach as its own dock tab: the same Mastery
     // Wheel + full Approaches list that has always been #stage's own default
@@ -11944,7 +12035,8 @@
     });
     // Issue #419 -- the Read contents list's three quick buttons, same routes.
     // Decision 95: the Read bar's quick "Notes" opens the Notes pane (it opened the Note view).
-    document.getElementById("readQuickNoteBtn").addEventListener("click", () => openReadNotesPane());
+    // J108: the same route as Study ▸ Notes -- a new blank Note (the Read bar's 📝 still opens this āyah's Notes).
+    document.getElementById("readQuickNoteBtn").addEventListener("click", () => openNewNoteHere({ backLabel: t("Back"), focusBack: document.getElementById("readQuickNoteBtn") }));
     document.getElementById("readQuickTrackBtn").addEventListener("click", openChosenUnitCard);
     document.getElementById("readQuickApproachBtn").addEventListener("click", openApproachWheel);
     // QR Lead (the Owner, 24 Oct 2026): "Study ▾" opens the three on a tablet; choosing one, tapping elsewhere or Esc closes it.
@@ -20606,6 +20698,24 @@
       // ran off the LEFT of a 320px screen. Its left edge is held at 8px at the most.
       const rightMax = Math.max(8, Math.round(window.innerWidth - readToolsMenu.offsetWidth - 8));
       readToolsMenu.style.right = `${Math.min(rightMax, Math.max(8, Math.round(window.innerWidth - r.right)))}px`; /* audit11 toolsplace */
+      // QR Lead audit 3: with large text the Read page scrolls (body.read-tall), and this panel is fixed, so a panel taller
+      // than the room under ⋯ ran off the screen for good (360x740 200%: 707px tall from 602px; a phone turned sideways at
+      // 200%: opened below the screen). It opens on the side of ⋯ with more room, above the tabs and the Zab bar, and
+      // scrolls inside itself when that side is still short. Where it fitted, it is where it was.
+      const s = readToolsMenu.style;
+      s.bottom = s.maxHeight = s.overflowY = "";
+      let floor = window.innerHeight - 8;
+      for (const id of ["dock", "zabBar"]) {
+        const el = document.getElementById(id);
+        if (!el || !el.getClientRects().length) continue;
+        const d = el.getBoundingClientRect();
+        if (d.top > r.bottom && d.top < floor + 4) floor = d.top - 4;
+      }
+      const need = readToolsMenu.offsetHeight, below = floor - (r.bottom + 6), above = r.top - 6 - 8;
+      if (need <= below) return;
+      s.overflowY = "auto";
+      if (below >= above) s.maxHeight = `${Math.max(0, Math.round(below))}px`;
+      else { s.top = "auto"; s.bottom = `${Math.round(window.innerHeight - r.top + 6)}px`; if (need > above) s.maxHeight = `${Math.round(above)}px`; }
     }
     function closeReadTools({ focus = false } = {}) {
       if (!readToolsMenu?.classList.contains("open")) return;
@@ -20639,6 +20749,39 @@
     });
     document.addEventListener("keydown", (e) => { if (e.key === "Escape" && readToolsMenu?.classList.contains("open")) closeReadTools({ focus: true }); });
     window.addEventListener("resize", placeReadTools);
+    // QR Lead audit 3 (Text size, PCF User Manual o5a3205): A±'s sliders hang 13.5rem wide under their button, and the ⋯ panel
+    // is position: fixed, so what falls past the screen can never be scrolled to. Measured on v12.138: at 200% text on a
+    // 360px phone the sliders were 472px wide and began 121px BELOW the screen; on a phone turned sideways none of the six
+    // controls was on screen even at ordinary text; on a computer at 200% Reset lay under the tabs. Now the sliders are held
+    // on screen, above the tabs and the Zab bar, on the side of A± with more room (never over A±, so a second tap still
+    // closes them), and scroll inside themselves when even that side is short. Where they already fitted, nothing moves.
+    function fitReadTextSize() {
+      const pop = readTextSizeSlot?.querySelector(".text-size-popover");
+      if (!pop) return;
+      const s = pop.style;
+      s.position = s.left = s.right = s.top = s.bottom = s.width = s.maxHeight = s.overflowY = s.boxSizing = "";
+      if (!pop.classList.contains("open")) return;
+      const btn = readTextSizeSlot.querySelector("[data-text-size-toggle]").getBoundingClientRect(), p = pop.getBoundingClientRect();
+      let floor = window.innerHeight - 8;
+      for (const id of ["dock", "zabBar"]) {
+        const el = document.getElementById(id);
+        if (!el || !el.getClientRects().length) continue;
+        const r = el.getBoundingClientRect();
+        if (r.top > btn.bottom && r.top < floor + 4) floor = r.top - 4;
+      }
+      // Inside a panel that scrolls, a hanging popover would be cut by the panel, so it is always held on screen there.
+      if (!readToolsMenu.style.overflowY && p.left >= 8 && p.right <= window.innerWidth - 8 && p.top >= 8 && p.bottom <= floor) return;
+      const width = Math.min(p.width, window.innerWidth - 16), below = floor - (btn.bottom + 4), above = btn.top - 4 - 8;
+      s.position = "fixed"; s.boxSizing = "border-box"; s.right = "auto"; s.overflowY = "auto"; s.width = `${Math.round(width)}px`;
+      s.left = `${Math.round(Math.min(Math.max(8, p.left), window.innerWidth - 8 - width))}px`;
+      if (below >= p.height || below >= above) { s.top = `${Math.round(btn.bottom + 4)}px`; s.bottom = "auto"; s.maxHeight = `${Math.max(0, Math.round(below))}px`; }
+      else { s.top = "auto"; s.bottom = `${Math.round(window.innerHeight - btn.top + 4)}px`; s.maxHeight = `${Math.round(above)}px`; }
+    }
+    readTextSizeSlot?.addEventListener("click", () => requestAnimationFrame(fitReadTextSize));
+    window.addEventListener("resize", () => requestAnimationFrame(fitReadTextSize));
+    // The panel and the sliders are fixed while the page under them scrolls (read-tall), so they follow ⋯ and A±.
+    window.addEventListener("scroll", () => { placeReadTools(); fitReadTextSize(); }, { passive: true });
+    readToolsMenu?.addEventListener("scroll", () => fitReadTextSize(), { passive: true });
     // PCF MSA J99: below 600px Take an Approach | Record Your Progress | Know Your Status live in the ⋯ card (see its CSS);
     // from 600px they go back to their own place on the bar, before the unit chip. Same buttons, ids and handlers, so each
     // opens exactly what it did (and the card closes behind it, as for every tool).
@@ -22588,7 +22731,18 @@
         setting it first is what makes this reliable for a ladder rung that
         is not the āyah currently on screen. */
     // Decision 95, round 2b: a Unit card's 📝 Note opens the Notes pane on that unit, and ← Back reopens the card.
-    function unitCardOpenNote(unitKey) {
+    // J108 (v13.01): a Unit card's 📝 Note opens a NEW Note started on that unit (the shared Note opener); ← Back reopens
+    // the card. The Notes pane on the unit (unitCardOpenNotesPane, below) is kept: it is the opener's "open".
+    async function unitCardOpenNote(unitKey) {
+      const from = unitCardOpenedFromAyah ? { surah: unitCardOpenedFromAyah.surah, ayah: unitCardOpenedFromAyah.ayah } : { surah: currentSurahNum, ayah: currentAyahNum };
+      const label = readNotesLabelFor(unitKey);
+      closeUnitCard();
+      const reopen = () => { paintReadNotesBtn(); openUnitCard(unitKey, from); };
+      await openNewNoteHere({ unitKey, unitLabel: label, title: `${label}:`, backLabel: t("Back to the unit card"), onClosed: reopen,
+        onOpenExisting: () => unitCardOpenNotesPane(unitKey, from) });
+    }
+    function unitCardOpenNotesPane(unitKey, fromIn = null) {
+      if (fromIn) unitCardOpenedFromAyah = fromIn;
       if (unitCardOpenedFromAyah && unitCardOpenedFromAyah.surah === currentSurahNum) currentAyahNum = unitCardOpenedFromAyah.ayah;
       const from = unitCardOpenedFromAyah ? { surah: unitCardOpenedFromAyah.surah, ayah: unitCardOpenedFromAyah.ayah } : { surah: currentSurahNum, ayah: currentAyahNum };
       closeUnitCard();
@@ -22924,10 +23078,12 @@
           }
         },
         // Decision 95: the Note is the Notes pane now (Mapping My Journey's own Note), on the Read view.
-        onNote: (unitKey) => { openNotesPaneFromAyahCard(unitKey); },
+        // J108 (v13.01): 📝 Note opens a NEW Note with this Āyah inside it (the shared Note opener); ← Back reopens the card.
+        // The Notes pane on the āyah (openNotesPaneFromAyahCard) is kept: it is the opener's "open" for earlier Notes.
+        onNote: (unitKey) => { openNewNoteFromAyahCard(unitKey, { half: halfAtRender, intro: introAtRender }); },
         // ✍ Take Note: the same view, ready to write -- its Notes box open, in sight, the cursor in it (a phone's
         // keyboard comes up). The Owner, 8 Oct 2026: "Note n Take Note both takes to the same view ... Fix."
-        onTakeNote: (unitKey) => { openNotesPaneFromAyahCard(unitKey, { fresh: true }); },
+        onTakeNote: (unitKey) => { openNewNoteFromAyahCard(unitKey, { half: halfAtRender, intro: introAtRender }); },
         onAsma: (unitKey) => {
           const { surah: s, ayah: a } = parseAyahUnitKey(unitKey);
           openAsmaXAttachPopover({ prefillRef: ayahRefLabel(s, a, { internal: true }) });
@@ -25721,6 +25877,49 @@
       record: (u) => { const { surah, ayah, half } = parseAyahUnitKey(u.unitKey); openAyahActionSheet(`${surah}:${ayah}`, half); backToReadNotes(u, "track"); },
       status: (u) => { backToReadNotes(u, "track"); openMyStatus(); },
     };
+    // -----------------------------------------------------------------------
+    // J108 (v13.01, the Owner: "Q2:A. Q3. Build it."; demo v3) -- every Note button opens the shared Note opener
+    // (js/note-opener.js, loaded on the first press, never at start-up: I9): a NEW Mapping My Journey Note in one window,
+    // over the page, which is never moved -- so closing it leaves the reader exactly where they were (decision 86).
+    // -----------------------------------------------------------------------
+    let noteOpenerMod = null;
+    async function openNewNoteHere({ focusBack = null, onClosed = null, ...opts } = {}) {
+      try { noteOpenerMod ??= await import("./js/note-opener.js"); }
+      catch (error) { reportWriteFailure(error, { what: "open a new Note", read: true }); return; } // I15
+      if (readNotePaneMod?.isReadNotePaneOpen()) readNotePaneMod.closeReadNotePane({ quiet: true });
+      await noteOpenerMod.openNewNote({ ...opts, onClosed: onClosed ?? (() => {
+        paintReadNotesBtn();
+        // Notes sits in the Study menu, which closed when it was chosen: the focus goes back to Study then.
+        const to = focusBack?.getBoundingClientRect().width ? focusBack : document.getElementById("tabStudyBtn");
+        to?.focus?.({ preventScroll: true });
+      }) });
+    }
+    /** The Āyah card's 📝 Note: a new Note with the Āyah inside it, its first title "Quran 15:32 - Al-Hijr:", started on the
+        āyah; "You have N Notes on this āyah — open" opens the Notes pane on it (openNotesPaneFromAyahCard). */
+    async function openNewNoteFromAyahCard(unitKey, { half = null, intro = null } = {}) {
+      const reopen = () => {
+        paintReadNotesBtn();
+        if (intro?.opening) openAyahActionSheet(unitKey, null, intro);
+        else { const p = parseAyahUnitKey(unitKey); openAyahActionSheet(`${p.surah}:${p.ayah}`, half, intro); }
+      };
+      closeAyahActionSheet();
+      if (unitKey.startsWith("opening:")) { // PCF J26: Aʿūdhu billāh is no āyah: a new Note with its name as the first title
+        await openNewNoteHere({ title: `${t("Aʿūdhu billāh")}:`, backLabel: t("Back to Āyah card"), onClosed: reopen });
+        return;
+      }
+      const { surah, ayah } = parseAyahUnitKey(unitKey);
+      let ref = null;
+      try {
+        noteOpenerMod ??= await import("./js/note-opener.js");
+        const data = surah === currentSurahNum && currentSurahData ? currentSurahData : await getSurah(surah);
+        const ay = data?.ayahs?.find((x) => Number(x.ayah) === ayah);
+        if (ay) ref = noteOpenerMod.ayahRef(surah, ayah, data, ay);
+      } catch (error) { console.error("[new note: the āyah's text]", error); /* the Note still opens, on the āyah, with its title */ }
+      const label = readNotesLabelFor(unitKey);
+      const known = readNotePaneMod?.readNotePaneCount(unitKey);
+      await openNewNoteHere({ ref, unitKey, unitLabel: label, title: noteTitleFor(surah, label), backLabel: t("Back to Āyah card"), onClosed: reopen,
+        count: Number.isFinite(known) ? known : null, onOpenExisting: () => openNotesPaneFromAyahCard(unitKey) });
+    }
     /** The Āyah card's 📝 Note (decisions 94, 95): the Notes pane on that āyah, in the Read view, with "← Back to Āyah
         card". With no Note yet (`fresh`), ✚ New note is put in focus, ready to press. */
     async function openNotesPaneFromAyahCard(unitKey, { fresh = false } = {}) {

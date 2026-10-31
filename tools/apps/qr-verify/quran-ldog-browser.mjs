@@ -55,7 +55,8 @@ async function quran(width) {
   await page.goto(`${process.env.QR_BASE}/app/quranrevival.html`, { waitUntil: "networkidle" });
   await page.waitForTimeout(1500);
   await page.evaluate(() => document.querySelectorAll('[id*="splash"], .app-splash-overlay, .mm-splash-overlay').forEach((e) => e.remove()));
-  check(/^v\d+\.\d+$/.test(await page.locator("#appVersion").innerText().catch(() => "")), `${tag} the page's code runs (version ${await page.locator("#appVersion").innerText().catch(() => "?")})`);
+  // UPDATED IN PLACE (J108, v13.01): the badge shows the release date too ("v13.01-31.10.26").
+  check(/^v\d+\.\d+(?:-\d\d\.\d\d\.\d\d)?$/.test(await page.locator("#appVersion").innerText().catch(() => "")), `${tag} the page's code runs (version ${await page.locator("#appVersion").innerText().catch(() => "?")})`);
   const signedIn = await page.evaluate(() => !/Checking sign-in/.test(document.getElementById("who")?.textContent ?? ""));
   check(signedIn, `${tag} signed in (faked)`);
   await page.waitForSelector("#wheelSection svg.mastery-wheel .wheel-seg, #wheelSection svg .wheel-seg", { timeout: 15000 }).catch(() => {});

@@ -149,8 +149,8 @@ check("the brief's own version claim matches app/js/version.js", () => {
     "the milestone line is claiming a merge state that is not real");
 });
 
-check("the seven reachable lines the brief names are all present", () => {
-  for (const p of ["legacy/index.html", "legacy-v07/index.html", "legacy-v08/index.html", "legacy-v09/index.html", "legacy-v10/index.html", "legacy-v11/index.html", "app/index.html"]) {
+check("the eight reachable lines the brief names are all present", () => {
+  for (const p of ["legacy/index.html", "legacy-v07/index.html", "legacy-v08/index.html", "legacy-v09/index.html", "legacy-v10/index.html", "legacy-v11/index.html", "legacy-v12/index.html", "app/index.html"]) {
     assert.ok(fs.existsSync(path.join(root, p)), `${p} is named in the brief's own table and is missing`);
   }
 });
@@ -164,6 +164,8 @@ check("the seven reachable lines the brief names are all present", () => {
 // 10 Oct 2026: legacy-v09/ is app/ as RELEASED at v09.151 (merge commit f027a24e),
 // archived on the Owner's word (decision 98) with the same one change and the same
 // README. One function checks both archives, so the second cannot be weaker.
+// J108: legacy-v12's release and source commit, in ONE place, so the Architect can repoint it (e.g. to a later v12 merge).
+const LEGACY_V12_RELEASE = "v12.139", LEGACY_V12_SOURCE = "d74628954c5e267969e637dc2932ca38282c265c";
 const LEGACY_ARCHIVES = [
   { dir: "legacy-v08", release: "v08.103", source: "54f930989cde81317d3c01b2adaaebe66b16f0eb" },
   { dir: "legacy-v09", release: "v09.151", source: "f027a24efa240ace2304c4570cd4885e178eeaad" },
@@ -173,6 +175,9 @@ const LEGACY_ARCHIVES = [
   // 19 Oct 2026: legacy-v11/ is app/ as RELEASED at v11.39 (merge commit 2bfad051),
   // archived on the Owner's tick PCF MSA J39 7A, with the same one change and README.
   { dir: "legacy-v11", release: "v11.39", source: "2bfad051b7080b2954f434c271fa8e8503fbdb82" },
+  // 31 Oct 2026: legacy-v12/ is app/ as at v12.139, the last v12 release (merge commit d746289),
+  // archived when v13.01 opened the v13 line (PCF MSA J108), with the same one change and README.
+  { dir: "legacy-v12", release: LEGACY_V12_RELEASE, source: LEGACY_V12_SOURCE },
 ];
 for (const { dir: archive, release, source } of LEGACY_ARCHIVES) {
 check(`${archive}/ is still exactly the ${release} release, apart from its one documented change`, () => {

@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "12.136",
+    "version": "13.01",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -5909,8 +5909,56 @@
     {
       "version": "12.136",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Hadith: Bukhari's Bangla chapter heading as its own small grey line (J97 answer A); a language named in a sentence is named in the reader's language.",
+      "integration": {
+        "authorizedOn": "2026-10-31",
+        "integratedOn": "2026-10-31",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.137",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Quran Study: the Study options drawer's head stays on screen at large text; its close button is 40px and grows with text.",
+      "integration": {
+        "authorizedOn": "2026-10-31",
+        "integratedOn": "2026-10-31",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.138",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Audit part 141 fixes (Escape closes the 👥 list, Dua word cards and the ✓ Check panel; two contrast fixes) and QR Lead audit 2 (the Read view reachable with large text).",
+      "integration": {
+        "authorizedOn": "2026-10-31",
+        "integratedOn": "2026-10-31",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.139",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "QR Lead audit 3: the Read view's ⋯ panel and A± sliders stay on screen at large text and sideways.",
+      "integration": {
+        "authorizedOn": "2026-10-31",
+        "integratedOn": "2026-10-31",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.01",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "J108 v13.01-31.10.26: every Note button opens one new Mapping My Journey Note in a shared window; Āyah/Hadith blocks inside the Note; legacy-v12 archived.",
       "integration": {
         "authorizedOn": "2026-10-31",
         "integratedOn": "2026-10-31",
@@ -5919,8 +5967,12 @@
       }
     }
   ],
-  "nextUnallocated": "12.137",
+  "nextUnallocated": "13.02",
   "nextUnallocatedNote": [
+    "v13.01 was allocated to J108: one Note from every Note button (v13 begins), 2026-10-31.",
+    "v12.139 was allocated to Quran Study: the A± text-size controls stay on screen at large text, 2026-10-31.",
+    "v12.138 was allocated to the Escape fixes from audit part 141 and the Read view at large text, 2026-10-31.",
+    "v12.137 was allocated to the QR Lead's Study options head at large text, 2026-10-31.",
     "v12.136 was allocated to the Hadith Lead's J97 chapter line and Bangla language names, 2026-10-31.",
     "v12.135 was allocated to the parts 67-83 regression sweep fixes, 2026-10-30.",
     "v12.134 was allocated to the Dua Lead's Dua Study picker fix (part 138 A1), 2026-10-30.",
