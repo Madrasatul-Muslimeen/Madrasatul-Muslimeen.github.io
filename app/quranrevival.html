@@ -774,6 +774,16 @@
   body.landing-view.landing-tall #wheelSection .ways-list { flex: 0 0 auto; overflow: visible; max-height: none; }
   /* ...and from 768px the Zab bar (2.75rem since v12.125, fixed at the bottom) is there too: the scrolling page's docked tabs stick above it. */
   @media (min-width: 768px) { body.zab-bar-on.landing-view.landing-tall #dock { bottom: 2.75rem; } }
+  /* QR Lead audit, 31 Oct 2026: the Read view is a fixed-height screen too, and with large text (200% on a phone; a phone
+     turned sideways even at 100%) the header, the wrapped read bar and the docked tabs together passed the screen height:
+     the reading area was 0px (no Qur'an text at all at 360x740 200%) and the read bar's buttons lay under the tabs where
+     nothing could reach them. checkReadFit() sets body.read-tall only while that is really so: the page then scrolls as the
+     landing does, and the reading area keeps the screen's height less the tabs (--read-tall-h), so one scroll down shows a
+     whole page of text above the tabs. Never in full screen or in the Āyah window. */
+  body.read-tall { height: auto; min-height: 100vh; min-height: 100dvh; overflow: visible; }
+  body.read-tall #app, body.read-tall #stage, body.read-tall #readView { flex: 0 0 auto; }
+  body.read-tall #studyScreen { height: auto; }
+  body.read-tall #readScroll { flex: 0 0 auto; height: var(--read-tall-h, 60vh); }
 
   /* The wheel look behind "Study Quran" (see #wheelLookSwitch). "dark" is the
      long-standing veil above; "light" is a light-grey veil; "colour" lifts
@@ -8488,6 +8498,40 @@
     }
     addEventListener("resize", () => { document.querySelector("#wheelSection .mastery-wheel")?.style.removeProperty("--landing-wheel-max"); fitLandingFirstScreen(); });
     if (typeof ResizeObserver === "function") watchLandingFit(); // audit part 131: large text above 720px
+    /** QR Lead audit, 31 Oct 2026: see body.read-tall in the CSS. Measured, never guessed: the header, the read bar and
+        the dock all change height with the text size, the language and the width. */
+    function checkReadFit() {
+      const body = document.body, rv = document.getElementById("readView"), rs = document.getElementById("readScroll");
+      const bar = document.getElementById("readBar"), dockEl = document.getElementById("dock");
+      const reading = rv && !rv.hidden && rs && rs.getClientRects().length > 0;
+      if (!reading || !dockEl || body.classList.contains("immersive-read") || body.classList.contains("read-windowed")) {
+        body.classList.remove("read-tall"); return;
+      }
+      body.classList.remove("read-tall");
+      const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+      const barUnder = !!bar && bar.getClientRects().length > 0 && bar.getBoundingClientRect().bottom > dockEl.getBoundingClientRect().top + 1;
+      const spill = rs.clientHeight < 12 * rem || barUnder;
+      if (spill) {
+        // The page of text never reaches under the tabs (the Read view pages sideways, so a hidden line could not be scrolled to).
+        body.style.setProperty("--read-tall-h", Math.max(Math.round(4 * rem), innerHeight - dockEl.offsetHeight - 8) + "px");
+        body.classList.add("read-tall");
+      }
+    }
+    function watchReadFit() {
+      let queued = false;
+      const later = () => { if (queued) return; queued = true; requestAnimationFrame(() => { queued = false; checkReadFit(); }); };
+      const ro = new ResizeObserver(later);
+      for (const id of ["dock", "readBar", "readView"]) { const e = document.getElementById(id); if (e) ro.observe(e); }
+      window.addEventListener("resize", later);
+      // Only the classes that change the answer re-wake it; its own read-tall changes must not.
+      const sig = () => ["immersive-read", "read-windowed", "read-sideways", "landing-view"].map((c) => +document.body.classList.contains(c)).join("");
+      let was = sig();
+      new MutationObserver(() => { const now = sig(); if (now !== was) { was = now; later(); } }).observe(document.body, { attributes: true, attributeFilter: ["class"] });
+      new MutationObserver(later).observe(document.getElementById("readView"), { attributes: true, attributeFilter: ["hidden"] });
+      new MutationObserver(later).observe(document.documentElement, { attributes: true, attributeFilter: ["style", "class"] });
+      later();
+    }
+    if (typeof ResizeObserver === "function" && document.getElementById("readView")) watchReadFit();
     // Follow-up round: Map(subjectId -> courseOffer contextId) for
     // selectedPersonId -- same mechanism topic-study.js/routine-study.js
     // already use (course-offers.js's programSubjectMapFromEnrollments()).
