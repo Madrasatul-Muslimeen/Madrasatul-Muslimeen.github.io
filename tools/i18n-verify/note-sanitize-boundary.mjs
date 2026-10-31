@@ -85,7 +85,12 @@ const DANGEROUS_ATTR_PATTERN = /^on|xlink/i;
 // narrowOutput() keeps `data-mmsa-image` only when it is EXACTLY noteImages/{uid}/{id}.webp, strips everything but it,
 // `alt` and a 25/50/75/100 `width` from such an <img>, and removes `width` from every other element -- proven by
 // note-image-sanitize.mjs (real DOMPurify, hostile inputs) and journey-note-images-browser.mjs.
-const S12_ATTRS = ["data-mmsa-image", "width","class", "contenteditable", "data-sheet", "colspan", "data-ann", "data-ann-ref", "data-ann-text", "data-box", "data-check", "data-checked", "data-done", "data-status", "data-status-colour", "data-status-label", "dir", "href", "rowspan", "style"];
+// UPDATED IN PLACE, 31 Oct 2026 (J108, v13.01), reason recorded: `data-mmsa-ref` joined -- an Āyah or Hadith block inside a
+// Note (note-ref-block.js). narrowOutput() strips the element's attributes and REBUILDS it whole from cleanRefState(), its
+// inside included, so no markup put inside a block survives -- the check "narrowOutput rebuilds each Āyah / Hadith block"
+// below reads that, note-ref-block.mjs proves the schema in Node, and note-opener-browser.mjs (D) runs a hostile block
+// through the real DOMPurify.
+const S12_ATTRS = ["data-mmsa-ref", "data-mmsa-image", "width","class", "contenteditable", "data-sheet", "colspan", "data-ann", "data-ann-ref", "data-ann-text", "data-box", "data-check", "data-checked", "data-done", "data-status", "data-status-colour", "data-status-label", "dir", "href", "rowspan", "style"];
 
 // UPDATED IN PLACE, 28 Sep 2026, reason recorded: DOMPurify used to load from
 // the jsdelivr CDN, so with no internet a Note's body was refused (sanitize
@@ -167,6 +172,19 @@ check("narrowOutput strips class and contenteditable everywhere, then rebuilds e
   assert.ok(/querySelectorAll\("\[class\],\[contenteditable\]"\)[\s\S]{0,60}removeAttribute\("class"\)[\s\S]{0,20}removeAttribute\("contenteditable"\)/.test(body), "class / contenteditable are not stripped from every element");
   assert.ok(/cleanSheetState\(el\.getAttribute\("data-sheet"\)\)/.test(body) && /el\.innerHTML\s*=\s*sheetStaticHtml\(state\)/.test(body), "a spreadsheet's inside is not re-derived from its cleaned state");
   assert.ok(/if \(!state\) \{ el\.remove\(\)/.test(body), "an invalid spreadsheet is not dropped");
+});
+
+check("narrowOutput rebuilds each Āyah / Hadith block whole from its cleaned state (J108), and drops one that is not exactly a div with a valid state", () => {
+  const body = sanitizeSrc.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+  const at = body.indexOf('querySelectorAll("[data-mmsa-ref]")');
+  assert.ok(at > 0, "narrowOutput does not look for Āyah / Hadith blocks at all");
+  const loop = body.slice(at, at + 700);
+  assert.ok(/el\.tagName === "DIV" \? cleanRefState\(el\.getAttribute\("data-mmsa-ref"\)\) : null/.test(loop), "a block's state is not read through cleanRefState(), or a non-div is not refused");
+  assert.ok(/if \(!state\) \{ el\.remove\(\); continue; \}/.test(loop), "a block with no valid state is not removed");
+  assert.ok(/for \(const a of \[\.\.\.el\.attributes\]\) el\.removeAttribute\(a\.name\)/.test(loop), "a block's own attributes are not all stripped before it is rebuilt");
+  assert.ok(/el\.innerHTML = refStaticHtml\(state\)/.test(loop), "a block's inside is not re-derived from its cleaned state");
+  // ...and it runs AFTER the global class / contenteditable strip, or the rebuilt class would be stripped again.
+  assert.ok(body.indexOf('querySelectorAll("[class],[contenteditable]")') < at, "the block rebuild runs before the class strip");
 });
 
 check("img is allowed, but ONLY with src restricted to http(s) -- no javascript: or data: URI", () => {

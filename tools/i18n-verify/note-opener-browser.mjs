@@ -160,6 +160,24 @@ for (const lang of ["en", "bn"]) for (const width of WIDTHS) {
     const first = w0.filter((w) => w.col === "notes" && w.data && "bodyHtml" in w.data).pop();
     check(`${tag} B the block is in the Note's first write (bodyHtml, no other field)`, blockState(first?.data?.bodyHtml)?.id === "ayah:15:32", (first?.data?.bodyHtml || "").slice(0, 160));
     if (SHOTS) await P.screenshot({ path: `${SHOTS}/opener-ayah-${width}-${lang}.png` });
+    // ------------------------------------------------------------ D. the real sanitiser, once per language
+    if (width === 360 && f) {
+      const d = await f.evaluate(async () => { // inside the Note page, which loads the real DOMPurify
+        const { sanitizeNoteHtml } = await import("/app/js/note-sanitize.js");
+        const hostile = `<div data-mmsa-ref='{"kind":"ayah","id":"ayah:1:1","label":"<b>One</b>","text":{"ar":"بِسْمِ","en":"In the name <b>x</b>","bn":""},"flags":{"on":true,"ar":true,"en":true,"bn":"yes"}}' onclick="alert(2)" style="color:red" class="evil"><script>alert(3)</script><a href="javascript:alert(4)">x</a><img src=x onerror=alert(5)><b>INNERTEXT</b></div>`
+          + `<div data-mmsa-ref='{"kind":"ayah","id":"topic-salah","label":"x","text":{"en":"y"}}'>GONETEXT</div><span data-mmsa-ref='{"kind":"ayah","id":"ayah:1:1","label":"x","text":{"en":"y"}}'>SPANTEXT</span>`;
+        const out = sanitizeNoteHtml(hostile);
+        const t = document.createElement("template"); t.innerHTML = out;
+        const blocks = t.content.querySelectorAll("[data-mmsa-ref]");
+        const b = blocks[0];
+        return { out, n: blocks.length, attrs: b ? [...b.attributes].map((a) => a.name).sort().join() : "", cls: b?.getAttribute("class"), inner: b ? [...b.querySelectorAll("*")].map((e) => e.tagName).join() : "", state: b ? JSON.parse(b.getAttribute("data-mmsa-ref")) : null };
+      });
+      const bad = /<script|onerror|onclick|javascript:|<img|<a |INNERTEXT|GONETEXT|SPANTEXT|evil|color:red/i.test(d.out);
+      check(`${tag} D a hostile block is rebuilt clean: one block, its own three attributes, no markup from inside, no bad id or tag`,
+        !bad && d.n === 1 && d.attrs === "class,contenteditable,data-mmsa-ref" && d.cls === "mm-ref" && /^(DIV|SPAN|B|P)(,(DIV|SPAN|B|P))*$/.test(d.inner),
+        JSON.stringify(d).slice(0, 400));
+      check(`${tag} D the state itself is cleaned (no "<" in the label, flags only true/false)`, d.state && !/[<>]/.test(d.state.label) && d.state.flags.bn === true && typeof d.state.flags.en === "boolean", JSON.stringify(d.state));
+    }
     await f?.click('[data-edit-body] .mm-ref [data-ref-lang="en"]').catch(() => {});
     await P.waitForTimeout(200);
     await f?.evaluate(() => window.postMessage({ type: "mmsa-journey-flush" }, location.origin)).catch(() => {});
@@ -192,24 +210,6 @@ for (const lang of ["en", "bn"]) for (const width of WIDTHS) {
       check(`${tag} C the one switch hides both`, off.length === 2 && off.every((x) => x === false), JSON.stringify(off));
       await g?.click('[data-nn-tool="back"]').catch(() => {});
       await P.waitForTimeout(800);
-    }
-    // ------------------------------------------------------------ D. the real sanitiser, once per language
-    if (width === 360) {
-      const d = await ev(async () => {
-        const { sanitizeNoteHtml } = await import("/app/js/note-sanitize.js");
-        const hostile = `<div data-mmsa-ref='{"kind":"ayah","id":"ayah:1:1","label":"<b>One</b>","text":{"ar":"بِسْمِ","en":"In the name <b>x</b>","bn":""},"flags":{"on":true,"ar":true,"en":true,"bn":"yes"}}' onclick="alert(2)" style="color:red" class="evil"><script>alert(3)</script><a href="javascript:alert(4)">x</a><img src=x onerror=alert(5)><b>INNERTEXT</b></div>`
-          + `<div data-mmsa-ref='{"kind":"ayah","id":"topic-salah","label":"x","text":{"en":"y"}}'>GONETEXT</div><span data-mmsa-ref='{"kind":"ayah","id":"ayah:1:1","label":"x","text":{"en":"y"}}'>SPANTEXT</span>`;
-        const out = sanitizeNoteHtml(hostile);
-        const t = document.createElement("template"); t.innerHTML = out;
-        const blocks = t.content.querySelectorAll("[data-mmsa-ref]");
-        const b = blocks[0];
-        return { out, n: blocks.length, attrs: b ? [...b.attributes].map((a) => a.name).sort().join() : "", cls: b?.getAttribute("class"), inner: b ? [...b.querySelectorAll("*")].map((e) => e.tagName).join() : "", state: b ? JSON.parse(b.getAttribute("data-mmsa-ref")) : null };
-      });
-      const bad = /<script|onerror|onclick|javascript:|<img|<a |INNERTEXT|GONETEXT|SPANTEXT|evil|color:red/i.test(d.out);
-      check(`${tag} D a hostile block is rebuilt clean: one block, its own three attributes, no markup from inside, no bad id or tag`,
-        !bad && d.n === 1 && d.attrs === "class,contenteditable,data-mmsa-ref" && d.cls === "mm-ref" && /^(DIV|SPAN|B|P)(,(DIV|SPAN|B|P))*$/.test(d.inner),
-        JSON.stringify(d).slice(0, 400));
-      check(`${tag} D the state itself is cleaned (no "<" in the label, flags only true/false)`, d.state && !/[<>]/.test(d.state.label) && d.state.flags.bn === true && typeof d.state.flags.en === "boolean", JSON.stringify(d.state));
     }
     await ctx.close();
   }
