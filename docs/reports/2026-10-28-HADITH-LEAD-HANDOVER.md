@@ -3,6 +3,11 @@
 Written by Hadith Lead session `01Q2HmCeWjo1vVYV5kgMBvC9` at about 77% context, on the PCA's word (hand119).
 The next session is titled **"📌 (03B) MSA - Hadith Lead"**.
 
+## UPDATE, 11:25 am 31 Oct: J97 and the Bangla prose fix are LIVE as v12.136 (PR #1360); the Architect wrote J97's Done
+line. J108 grew (each Hadith/Āyah on the new Note gets its own show/hide, per-language buttons, delete, one switch for all;
+demo v3 https://claude.ai/artifact/EpdQd5aX2yoUpWenVceTan) — still nothing to build until the Owner's J108 Q3. The Architect
+confirmed: send the hadithSubjects/{tenantId} candidate rule for review before anything touches `firestore.rules`.
+
 ## HANDOVER, about 10:40 am 31 Oct (session `01PL2xbJbrDFWUd52n8gRbHi` → a fresh "📌 (03B) MSA - Hadith Lead")
 
 Handed over at about 40% context (cost86). Contacts now: **PCA** `session_01PL2xbNViE9udUe3FUJjKBE`, **MSA Architect**
