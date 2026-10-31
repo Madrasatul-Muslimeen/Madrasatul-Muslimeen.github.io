@@ -334,6 +334,10 @@
      label really is cut: the title and ✕ keep the first line and Save takes a full line of its own, wrapping its words
      rather than cutting them. At ordinary text nothing is cut, so nothing changes. */
   .qr-panel-head.qr-panel-head-stacked { flex-wrap: wrap; row-gap: 0.4rem; }
+  /* QR Lead audit 4: on a phone turned sideways at 200% the drawer has ~190px and the stacked head took ~180 of it, so the
+     options showed through a 10px slit. Where the head would take more than half the drawer, it scrolls with the options
+     (still first, so ✕ and Save are one scroll up) instead of standing over them. */
+  .qr-panel-head.qr-panel-head-scrolls { position: static; }
   .qr-panel-head.qr-panel-head-stacked .qr-panel-head-actions { display: contents; }
   .qr-panel-head.qr-panel-head-stacked .qr-panel-x { order: 1; margin-left: auto; }
   .qr-panel-head.qr-panel-head-stacked .preset-save-btn { order: 2; flex: 1 1 100%; white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.15; }
@@ -2681,6 +2685,12 @@
   .opt-actions { display: flex; align-items: center; gap: 0.4rem; }
   .opt-actions-spacer { margin: 0; }
   .opt-act-btn { min-height: 40px; height: 40px; padding: 0.2rem 0.7rem; white-space: nowrap; flex: 0 0 auto; }
+  /* QR Lead audit 4 (Listening, PCF User Manual 9m107jl): with large text the fixed 40px cut 📖 Read / ▶ Play at the bottom
+     (768px 200%), and below 480px the two buttons were made to share one line even where their words did not fit, so
+     each was cut (360px 200%: "▶ Play" needs 111px, got 45). They grow with the text and take a line each only when one
+     line cannot hold them; the Mode picker never asks for more than the line has. At ordinary text nothing moves. */
+  .opt-act-btn { height: auto; }
+  .opt-actions { flex-wrap: wrap; }
   /* MEASURED 22 Sep 2026, running panel.mjs in Bangla (it had only ever been
      run in English before -- a check that runs in one language measures one
      language): #drillModeSelect is the one cell here that actually absorbs
@@ -2691,10 +2701,21 @@
      English is unaffected either way -- it was never short. */
   @media (max-width: 480px) {
     .opt-bar-listen { flex-wrap: wrap; }
-    .opt-bar-listen > .opt-cell-mode { flex: 1 1 auto; min-width: 8rem; }
+    .opt-bar-listen > .opt-cell-mode { flex: 1 1 auto; min-width: min(8rem, 100%); }
     .opt-bar-listen > .opt-cell-actions { flex: 1 1 100%; }
     .opt-actions-spacer { display: none; }
-    .opt-actions .opt-act-btn { flex: 1 1 0; min-width: 0; }
+    .opt-actions .opt-act-btn { flex: 1 1 0; min-width: max-content; }
+  }
+  /* The 480px line above is a screen width, so it ignores text size: at 200% a 768px tablet squeezed "Each Ayah" to 30px
+     ("Ea"). The same wrap, measured against the Listening card itself in rem; 22rem is where the 480px screen line falls
+     at ordinary text, so at ordinary text it adds nothing. */
+  #drillControls { container-type: inline-size; }
+  @container (max-width: 22rem) {
+    .opt-bar-listen { flex-wrap: wrap; }
+    .opt-bar-listen > .opt-cell-mode { flex: 1 1 auto; min-width: min(8rem, 100%); }
+    .opt-bar-listen > .opt-cell-actions { flex: 1 1 100%; }
+    .opt-actions-spacer { display: none; }
+    .opt-actions .opt-act-btn { flex: 1 1 0; min-width: max-content; }
   }
   .loop-inline { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.8rem; font-weight: 400; white-space: nowrap; height: 1.85rem; margin: 0; }
   .reading-ticks label, .reciter-ticks label, .fs-ticks label { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.82rem; font-weight: 400; margin: 0; }
@@ -11585,6 +11606,10 @@
         const cs = getComputedStyle(panel);
         const box = ["paddingTop", "paddingBottom", "borderTopWidth", "borderBottomWidth"].reduce((n, k) => n + (parseFloat(cs[k]) || 0), 0);
         panel.style.setProperty("--qr-panel-room", Math.max(96, top - 6 - Math.ceil(box)) + "px");
+        const head = panel.querySelector(".qr-panel-head");
+        if (!head || panel.hidden) return;
+        head.classList.remove("qr-panel-head-scrolls");
+        if (head.offsetHeight > panel.clientHeight / 2) head.classList.add("qr-panel-head-scrolls");
       });
     }
     addEventListener("resize", fitPanelRoom);
@@ -26016,7 +26041,8 @@
       audioControls.innerHTML = `
         <div id="drillReciterChecks" class="reciter-ticks">
           ${reciters.map((r) => {
-            const note = reciterSupportsSingleAyah(r.id) ? "" : ` <span style="color:#888;">${t("(whole surah only)")}</span>`;
+            // QR Lead audit 4: a reciter whose own name already says "whole surah only" read it twice.
+            const note = reciterSupportsSingleAyah(r.id) || /whole surah only/i.test(r.label) ? "" : ` <span style="color:#888;">${t("(whole surah only)")}</span>`;
             return `<label><input type="checkbox" class="drill-reciter-check" value="${r.id}" ${drillSelectedReciterIds.includes(r.id) ? "checked" : ""}/> ${t(r.label)}${note}</label>`;
           }).join("")}
         </div>`;
