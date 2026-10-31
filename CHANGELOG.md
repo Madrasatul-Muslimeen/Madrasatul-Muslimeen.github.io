@@ -23057,3 +23057,10 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 - **New suite** `qr-panel-head-reach-browser.mjs`: 258/0 fixed, 194/64 on unfixed main; five mutations each caught.
 - **Also merged:** the QR Lead's handover file (docs only).
 - **Measured (Architect):** head-search 94/0; study-presets 84/0; qr-landing-large-text 116/0; landing-drawers 294/0; study-options-go-track 104/0; behaviour.mjs alone 972/0; qr-verify 27/28 (upgrade-browser needs a QR repository clone — environmental); apps-build-check 48/0; QR builds.
+
+## v12.138 — 31 Oct 2026 — Escape closes what it opened; the Read view fits large text (audit part 141 fixes, QR Lead audit 2)
+
+- **Audit part 141 H2 (Architect, `app/js/assign-picker.js`):** Escape closes an open 👥 Assign list and returns focus to its trigger — one document keydown listener at module load, so every page that shows the list gets it. Mutation: with the fix removed the assign-list case fails.
+- **Dua Lead (`claude/dua-audit141`):** H1 the Dua-chapters book heading gets `dua-book-heading` (was cream on white, 1.22:1); H3 Escape closes a Dua word card, focus back to the word; H4+D2 one Escape handler in `dua-check.js` closes the ✓ Check panel and focuses its opener; D1 the Poster/Share pop-up notes take the card text colour at night (was 1.92:1). The Hadith Lead's two commits carried with their authorship.
+- **QR Lead audit 2 (`claude/qr-lead-landscape-dock`, `app/quranrevival.html`):** at 360x740 200% the Read view's reading area was 0px and 10 of 11 read-bar buttons sat under the tabs; sideways, Take/Record/Status were under the tabs even at 100%. `checkReadFit()`/`watchReadFit()` set `body.read-tall` only while needed; the page scrolls and `#readScroll` keeps the screen less the dock. New suite `qr-read-tall-browser.mjs` 160/0 (116/44 on unfixed main; four mutations caught). Plus the QR Lead's handover file.
+- **Measured (Architect):** hadith-dua-a11y 360 en 251/0, bn 288/0; qr-read-tall 160/0; read-note-pane 204/0; read-quick-buttons 254/0; behaviour.mjs alone 972/0; apps-build-check 48/0; stub-parity 4/0; QR builds.

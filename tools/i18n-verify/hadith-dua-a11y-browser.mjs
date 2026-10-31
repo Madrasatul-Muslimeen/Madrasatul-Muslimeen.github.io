@@ -292,7 +292,10 @@ const DUA_SURFACES = [
   { id: "groups-pull", url: "", setup: dListReady, opener: '[data-dua-pd="groups"]', surface: ".dua-pull" },
   { id: "parts-pull", url: "?g=occasions&part=wake", setup: dListReady, opener: '[data-dua-pd="parts"]', surface: ".dua-pull" },
   ...["meaning", "source", "narration", "check", "poster", "share"].map((k) => ({ id: "pop-" + k, url: RASUL, setup: dCardReady, opener: `[data-dua-menu="${k}"]`, surface: `[data-dua-pop="${k}"]` })),
-  { id: "check-panel", url: RASUL, setup: dPop("check"), opener: "[data-dua-pop] [data-dua-check-open]", surface: "[data-dua-check-panel]" },
+  // The panel's opener sits in the ✓ Check pop-up, which closes as the panel opens (by design): Escape returns focus to the card
+  // menu's ✓ Check (`returnTo`), and the pop-up is opened again before Space (`reopen`), as a reader would.
+  { id: "check-panel", url: RASUL, setup: dPop("check"), opener: "[data-dua-pop] [data-dua-check-open]", surface: "[data-dua-check-panel]",
+    returnTo: '[data-dua-menu="check"]', reopen: dPop("check") },
 ];
 const PAGES = [
   { id: "hadith", path: "/app/hadith-study.html", views: HADITH_VIEWS, surfaces: HADITH_SURFACES },
@@ -447,10 +450,11 @@ for (const pg of PAGES) for (const [w, h] of WIDTHS) for (const lang of LANGS) {
     const stillOpen = await isOpen();
     check(`${tag}: Escape closes the surface`, !stillOpen, `still open (focus on ${heldFocus})`);
     if (stillOpen) { addFinding(pg.id, s.id, "DEFECT escape-no-close", `Escape does not close it (focus was on ${heldFocus})`, where); continue; }
-    const back = await P.evaluate((q) => window.__A11Y.activeIn(q), s.opener);
+    const back = await P.evaluate((q) => window.__A11Y.activeIn(q), s.returnTo || s.opener);
     const now = await P.evaluate(() => window.__A11Y.activeKey());
     if (!back) addFinding(pg.id, s.id, "MINOR focus-not-returned", `after Escape focus is on ${now}, not the opener`, where);
     // Space
+    if (s.reopen) await s.reopen(P);
     await P.evaluate((q) => document.querySelector(q)?.focus(), s.opener);
     await P.keyboard.press("Space");
     await P.waitForTimeout(700);
