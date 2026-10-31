@@ -738,12 +738,14 @@ async function openHadithNewNote(id, title, link, count, unitKey) {
   try { ref = await opener.hadithRefById(id, { unitKey, label: head ? (title ? `${head} · ${title}` : head) : "" }); } catch { ref = null; }
   const unitLabel = head || t("Hadith {n}", { n: num(id) });
   const first = head && title ? `${head} - ${title}:` : `${head || title || unitLabel}:`;
-  await opener.openNewNote({
-    ref, unitKey, unitLabel, title: first, backLabel: t("Back to the hadith"),
-    count: Number.isFinite(count) ? count : null,
-    onOpenExisting: () => { window.location.href = link.href; },
-    onClosed: () => link.focus?.({ preventScroll: true }),
-  });
+  try {
+    await opener.openNewNote({
+      ref, unitKey, unitLabel, title: first, backLabel: t("Back to the hadith"),
+      count: Number.isFinite(count) ? count : null,
+      onOpenExisting: () => { window.location.href = link.href; },
+      onClosed: () => link.focus?.({ preventScroll: true }),
+    });
+  } catch { window.location.href = link.href; } // never a dead tap (I15): the opener failed, so take the old Notes route
 }
 
 async function renderHadeethEncStudyActions(container, id, title) {
