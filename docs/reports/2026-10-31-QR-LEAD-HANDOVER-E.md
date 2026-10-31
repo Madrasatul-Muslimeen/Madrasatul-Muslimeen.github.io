@@ -2,7 +2,7 @@
 
 Written by the QR Lead session `session_01PL2xbHxdLPRKi4KNVXpGHX` (hand119), which took over at about 5:40 pm 31 Oct Sydney
 from `session_01PL2xbLGPyYo53GXRKWojym` (its handover: `2026-10-31-QR-LEAD-HANDOVER-D.md`; `-C.md` and the older
-`-HANDOVER.md` still hold the sandbox lessons). `main` is at **v13.04** (6:08 pm): audits 6 + 7 RELEASED (#1372). The A± fix was handed in at ~6:10 pm (neighbours: read-quick-buttons 254/0, qr-panel-head-reach 258/0, read-note-pane 204/0, qr-read-tall 160/0).
+`-HANDOVER.md` still hold the sandbox lessons). `main` is at **v13.05** (6:28 pm: the A± ceiling released; v13.04 at 6:08 pm): audits 6 + 7 RELEASED (#1372). The A± fix was handed in at ~6:10 pm (neighbours: read-quick-buttons 254/0, qr-panel-head-reach 258/0, read-note-pane 204/0, qr-read-tall 160/0).
 
 ## Who to talk to
 
@@ -22,11 +22,11 @@ from `session_01PL2xbLGPyYo53GXRKWojym` (its handover: `2026-10-31-QR-LEAD-HANDO
 
 ## Open, in order
 
-1. Read the tabs suite (fixed must be 0 failed; each mutation must fail), look at a screenshot at 320x640 200% en and bn,
+1. **DONE (7:35 pm): the tabs fix was handed in as `claude/qr-lead-wordcard-200-v1304` (on v13.04): 188/0, mutations 2/4/3, neighbours 0 failed.** Formerly: read the tabs suite (fixed must be 0 failed; each mutation must fail), look at a screenshot at 320x640 200% en and bn,
    commit the suite with the CSS on `claude/qr-lead-wordcard-200` (the suite file is written but NOT committed), run the
    Word card neighbours (`word-card-five-levels`, `word-card-basic-rebuild`, `text-size-wbw`, `quran-word-card-fullscreen`,
    `apps-build-check`) and hand in.
-2. Hand in `claude/qr-lead-as-ceiling` (see the table).
+2. **DONE: A± ceiling released as v13.05.** The PCA asks: once quranrevival.github.io serves v13.05 (its build-from-msa self-run ~8:17 pm, or the Owner's tap), re-check the A± sliders there at 1280x800 200% en+bn and file the result in PCF J29.
 3. **AUDIT 6b, asked by the Architect after v13.04 (7:09 pm): a Qur'an word must never split in the stacked Taṣrīf table (ٱلْأَسْ / مَآءُ, بِأَسْمَ / آئِهِم: `.word-card-ncell` has overflow-wrap:anywhere), with a check. = D item 2b, measured, not built.** On audit 6's layout (port 8080 = that branch) Arabic words
    break inside the word in `.word-card-ncell-ar` (e.g. "بِأَسْمَآئِهِمْ" even at 320 100%; at 320 200% it needs ~120px of a
    65px cell at 37px type) and in the case heads `.word-card-ntable-ar` ("مَرْفُوع / مَنْصُوب / مَجْرُور" at 150/200%).
@@ -36,7 +36,7 @@ from `session_01PL2xbLGPyYo53GXRKWojym` (its handover: `2026-10-31-QR-LEAD-HANDO
    200% that is 20px, still larger than ordinary. Refit on a MutationObserver (childList, subtree) of
    `#quranWordCardMount` plus a ResizeObserver, in `requestAnimationFrame`. Check verb words too (`.word-card-cj-vb`
    sits in an auto table: nowrap there widens the td, so measure the table against its box, not the td). Build it on
-   `main` (v13.04 carries audit 6). Probe: the scratchpad's `probeAr.mjs` pattern (a word is broken when its own Range has
+   `main` (v13.04 carries audit 6). **The Architect (7:29 pm): if the floor cannot reach a word, nowrap overflows the cell instead of splitting it. Let a too-long word take the whole row of the grid before shrinking, and the check must assert the word lies inside its box at 320 200%, not only that it is unbroken.** Probe: the scratchpad's `probeAr.mjs` pattern (a word is broken when its own Range has
    line boxes at two heights).
 4. j29p127q (PCF J29) still waits on the Owner; build the same day it is answered.
 5. Then Explore (Manual 8lle31u) at 150/200% and sideways, en + bn.
