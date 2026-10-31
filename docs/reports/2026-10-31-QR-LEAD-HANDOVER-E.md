@@ -2,7 +2,7 @@
 
 Written by the QR Lead session `session_01PL2xbHxdLPRKi4KNVXpGHX` (hand119), which took over at about 5:40 pm 31 Oct Sydney
 from `session_01PL2xbLGPyYo53GXRKWojym` (its handover: `2026-10-31-QR-LEAD-HANDOVER-D.md`; `-C.md` and the older
-`-HANDOVER.md` still hold the sandbox lessons). `main` is at **v13.05** (6:28 pm: the A± ceiling released; v13.04 at 6:08 pm): audits 6 + 7 RELEASED (#1372). The A± fix was handed in at ~6:10 pm (neighbours: read-quick-buttons 254/0, qr-panel-head-reach 258/0, read-note-pane 204/0, qr-read-tall 160/0).
+`-HANDOVER.md` still hold the sandbox lessons). `main` is at **v13.06** (6:50 pm: the Word card tabs released; v13.05 6:28 pm the A± ceiling; v13.04 6:08 pm audits 6 + 7). **Everything this session built is released; audit 6b is the next job.**: audits 6 + 7 RELEASED (#1372). The A± fix was handed in at ~6:10 pm (neighbours: read-quick-buttons 254/0, qr-panel-head-reach 258/0, read-note-pane 204/0, qr-read-tall 160/0).
 
 ## Who to talk to
 
