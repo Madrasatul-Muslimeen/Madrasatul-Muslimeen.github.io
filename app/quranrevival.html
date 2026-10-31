@@ -4014,6 +4014,19 @@
     .quran-word-card [role="tablist"] { flex-wrap: nowrap; gap: 0.2rem; }
     .quran-word-card [role="tab"] { flex: 1 1 0; padding: 0.4rem 0.1rem; font-size: 0.74rem; white-space: normal; overflow-wrap: anywhere; text-align: center; }
   }
+  /* QR Lead, 31 Oct 2026 (Word card at large text): at 150/200% on a phone the five equal cells were narrower than their
+     names, so "Family", "Depth", "তাসরীফ" broke INSIDE the word ("Fa / mily"). A tab is never narrower than its longest
+     word now, and the row wraps only when the words cannot all fit on one line (each row still fills the card). Between
+     words a name may still break ("শব্দে / শব্দে"). From 600px the small line under a name may take two lines rather than
+     be cut ("Root where it c…" at 768px 200%). At ordinary text every name fits, so nothing moves. */
+  @media (max-width: 599px) {
+    .quran-word-card [role="tablist"] { flex-wrap: wrap; }
+    .quran-word-card [role="tab"] { min-width: min-content; overflow-wrap: normal; }
+  }
+  .word-card-tab-sub { white-space: normal; overflow-wrap: normal; }
+  /* And where the five names cannot share one line at all (a phone at 200%: the card is under 11.5rem), they take two
+     tidy rows, three and two, rather than four and a lone fifth across the whole card. */
+  @container wordcard (max-width: 11.5rem) { .quran-word-card [role="tab"] { flex-basis: 28%; } }
   @media (min-width: 600px) {
     .quran-word-card [role="tablist"] { flex-wrap: nowrap; }
     .quran-word-card [role="tab"] { flex: 1 1 0; min-height: 52px; }
