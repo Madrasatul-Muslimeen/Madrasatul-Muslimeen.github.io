@@ -1045,3 +1045,4 @@ total). Allocated by the MMSA Architect.
 13.02: Quran Study: Listening and the Mushaf full screen at large text (QR Lead audits 4 and 5). Allocated by the MMSA Architect.
 13.03: audit part 142 fixes: the My account card and New bookmark keyboard focus. Allocated by the MMSA Architect.
 13.04: Quran Study: the Word card's Taṣrīf table at large text, and three contrast fixes on the landing (QR Lead audits 6 and 7). Allocated by the MMSA Architect.
+13.05: Quran Study: the A± text-size sliders open below the top bar on QR (QR Lead). Allocated by the MMSA Architect.
