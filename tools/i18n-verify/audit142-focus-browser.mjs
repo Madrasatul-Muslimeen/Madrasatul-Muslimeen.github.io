@@ -16,7 +16,7 @@ const check = (name, ok, detail = "") => {
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
 const MUT = {
   "no-d1": ["/app/js/account-card.js", 'open(home ? home.querySelector("summary") || btn : btn);', "open(btn);"],
-  "no-d2": ["/app/bookmarks.html", 'if (e.key !== "Escape" || newBookmarkForm.style.display === "none") return;', "return;"],
+  "no-d2": ["/app/bookmarks.html", "if (!newBookmarkForm.contains(document.activeElement) && document.activeElement !== newBookmarkBtn) return;", "return;"],
   "no-d3": ["/app/js/account-card.js", 'if (e.key !== "Tab" || !overlay.classList.contains("open")) return;', "return;"],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);

@@ -1024,8 +1024,10 @@ import { mountBookmarkMenu, noteBookmarkOpened, getBookmarkTimesShown, bookmarkT
 
     nbCancelBtn.addEventListener("click", () => { newBookmarkForm.style.display = "none"; });
     // Audit part 142 (D2): Escape closes the New bookmark form like Cancel, and focus goes back to the button that opened it.
-    newBookmarkForm.addEventListener("keydown", (e) => {
+    // Listened for on the page, so it also works while focus is still on + New bookmark itself.
+    document.addEventListener("keydown", (e) => {
       if (e.key !== "Escape" || newBookmarkForm.style.display === "none") return;
+      if (!newBookmarkForm.contains(document.activeElement) && document.activeElement !== newBookmarkBtn) return;
       e.preventDefault();
       newBookmarkForm.style.display = "none";
       newBookmarkBtn.focus();
