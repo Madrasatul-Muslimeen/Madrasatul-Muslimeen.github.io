@@ -1040,3 +1040,4 @@ total). Allocated by the MMSA Architect.
 12.136: the Hadith Lead's J97 chapter line and Bangla language names. Allocated by the MMSA Architect.
 12.137: the QR Lead's Study options head at large text. Allocated by the MMSA Architect.
 12.138: the Escape fixes from audit part 141 and the Read view at large text. Allocated by the MMSA Architect.
+12.139: Quran Study: the A± text-size controls stay on screen at large text. Allocated by the MMSA Architect.
