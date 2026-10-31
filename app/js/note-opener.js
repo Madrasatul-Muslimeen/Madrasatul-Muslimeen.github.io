@@ -250,6 +250,9 @@ export function closeNewNote({ quiet = false, thenRun = null } = {}) {
 }
 function finishClose(runOnClosed = true, thenRun = null) {
   if (!win || win.hidden) return;
+  // The focus was in the Note (inside the frame): let it go, or the keys (Esc on the card it reopens) keep going to a frame
+  // that is no longer on screen. `onClosed` then puts it where the reader came from.
+  if (win.contains(document.activeElement)) document.activeElement.blur();
   win.hidden = true;
   closeAttach();
   frame.removeAttribute("src"); // fresh every time: a new Note each opening

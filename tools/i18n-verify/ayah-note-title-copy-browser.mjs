@@ -90,6 +90,7 @@ for (const lang of ["en", "bn"]) for (const [width, height] of [[1280, 800], [39
   await F?.waitForSelector("[data-edit-title]:not([hidden])", { timeout: 20000 }).catch(() => {});
   await P.waitForTimeout(500);
   const title = F ? await F.evaluate(() => (window.__stubWriteData || []).filter((x) => x.col === "notes").map((x) => x.data?.title ?? null)[0] ?? null).catch(() => null) : null;
+  const closeTray = async () => { await P.click("#journeyTray .jt-close", { timeout: 5000 }).catch(() => {}); await P.waitForTimeout(400); };
   await F?.click('[data-nn-tool="back"]').catch(() => {});
   await P.waitForFunction(() => document.getElementById("noteOpener")?.hidden, null, { timeout: 8000 }).catch(() => {});
   const want = lang === "en" ? TITLE.en : `কুরআন ২:২৫৫ - ${await ev(() => document.querySelector('#surahSelect option[value="2"]')?.textContent.replace(/^[\d০-৯]+\.\s*/, "").trim())}:`;

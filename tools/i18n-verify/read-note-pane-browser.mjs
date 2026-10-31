@@ -282,7 +282,7 @@ for (const lang of ["en", "bn"]) for (const [width, height, mode] of [[390, 844,
   await Fn?.waitForSelector('[data-nn-tool="back"]', { timeout: 20000 }).catch(() => {});
   await Fn?.waitForSelector("[data-edit-body]", { timeout: 20000 }).catch(() => {});
   const unitNew = Fn ? await Fn.evaluate(() => ({ back: document.querySelector('[data-nn-tool="back"]')?.getAttribute("aria-label"), title: document.querySelector("[data-edit-title]")?.value })) : null;
-  check(`${tag} a Unit card's 📝 Note opens a NEW Note on the whole Surah, "${W.backUnit}"`, !!Fn && unitNew?.back === W.backUnit && /:$/.test(unitNew?.title || ""), JSON.stringify(unitNew));
+  check(`${tag} a Unit card's 📝 Note opens a NEW Note on the whole Surah, "${W.backUnit}"`, !!Fn && unitNew?.back === W.backUnit.replace(/^← /, "") && /:$/.test(unitNew?.title || ""), JSON.stringify(unitNew));
   await Fn?.click('[data-nn-tool="back"]').catch(() => {});
   await P.waitForFunction(() => document.querySelector("[data-unit-card-note]"), null, { timeout: 8000 }).catch(() => {});
   check(`${tag} ...and ← Back reopens the unit card`, await ev(() => !!document.querySelector("[data-unit-card-note]") && document.getElementById("noteOpener").hidden));
