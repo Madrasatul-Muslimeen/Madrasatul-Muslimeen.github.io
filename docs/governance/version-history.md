@@ -1061,3 +1061,4 @@ total). Allocated by the MMSA Architect.
 13.18: note window at large text. Allocated by the MMSA Architect.
 13.19: Details switch in the note window. Allocated by the MMSA Architect.
 13.20: Open full page leaves a way back (audit part 153). Allocated by the MMSA Architect.
+13.21: The ⋯ menus work from the keyboard (audit part 154). Allocated by the MMSA Architect.
