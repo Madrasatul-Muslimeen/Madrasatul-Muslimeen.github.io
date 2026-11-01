@@ -25,7 +25,8 @@ const check = (n, ok, d = "") => {
 };
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
 const MUT = {
-  ayahonly: ["app/quranrevival.html", 'if (stageView !== "read" || !currentSurahData) return [];', 'if (stageView !== "read" || !currentSurahData || info.unitType === "ayah") return [];'],
+  // Re-anchored 1 Nov 2026 (QR Lead 3c): the guard now also lets the Āyah card hand in its own āyah (`at`).
+  ayahonly: ["app/quranrevival.html", 'if ((!at && stageView !== "read") || !currentSurahData) return [];', 'if ((!at && stageView !== "read") || !currentSurahData || info.unitType === "ayah") return [];'],
   noruku: ["app/quranrevival.html", "if (idx && inRuku.length) {", "if (false) {"],
   unitpos: ["app/quranrevival.html", "position: picked?.position ?? unitKey,", "position: unitKey,"],
   noeveryone: ["app/js/bookmark-popover.js", "b.checked = everyoneBox.checked || b.value === selectedPersonId;", "b.checked = b.value === selectedPersonId;"],
