@@ -99,9 +99,12 @@ const measure = (page) => page.evaluate(() => {
   const tab = document.getElementById("tabExploreBtn"), tr = R(tab), atTab = dockShown ? document.elementFromPoint(tr.left + tr.width / 2, tr.top + tr.height / 2) : null;
   // ...at both ends of the page's scroll: scrolled fully down the tabs sit above the Zab bar's spacer anyway, so only the top shows it.
   document.scrollingElement.scrollTop = 0;
-  const tr0 = R(tab), atTab0 = dockShown ? document.elementFromPoint(tr0.left + tr0.width / 2, tr0.top + tr0.height / 2) : null;
+  const parentTop0 = R(dock.parentElement).top, tr0 = R(tab), atTab0 = dockShown ? document.elementFromPoint(tr0.left + tr0.width / 2, tr0.top + tr0.height / 2) : null;
   if (userScroll) es.scrollIntoView({ block: "start" });
-  const tabCovered = dockShown && (!(atTab && tab.contains(atTab)) || !(atTab0 && tab.contains(atTab0)));
+  // (A sticky element never leaves its parent: when the header alone nearly fills the screen -- 330px of 390 at 844x390 200% --
+  // the tabs cannot rise above where #app starts, and the first scroll shows them. Only the top of a page they CAN stick in counts.)
+  const canStick = parentTop0 <= innerHeight - zabH - dock.offsetHeight;
+  const tabCovered = dockShown && (!(atTab && tab.contains(atTab)) || (canStick && !(atTab0 && tab.contains(atTab0))));
   const r = { userScroll, tall: document.body.classList.contains("explore-tall"), popup: getComputedStyle(ev).position === "fixed",
     evH: Math.round(evR.height), room: Math.round((dockShown ? Math.min(s.bottom, d.top) : Math.min(s.bottom, innerHeight)) - Math.max(s.top, 0)),
     esBottom: Math.round(s.bottom), dockTop: dockShown ? Math.round(d.top) : innerHeight, want: Math.round(Math.min(12 * rem, innerHeight - (dockShown ? dock.offsetHeight : 0) - zabH - 8)),
