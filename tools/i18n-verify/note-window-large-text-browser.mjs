@@ -41,6 +41,9 @@ const PAGES = [
 const CSS_MUT = {
   "fix-refit": { file: "app/js/note-window.js", from: 'attributeFilter: ["style", "class"]', to: 'attributeFilter: ["data-never"]' },
   "fix-title": { file: "app/css/note-window.css", from: ".note-win .nw-title { flex: 1 1 8rem; max-height: 30vh; overflow-y: auto; }", to: ".note-win .nw-title-off { flex: 1 1 8rem; }", also: [".note-win .nw-bar { flex-wrap: wrap; }", ".note-win .nw-bar-off { flex-wrap: wrap; }"] },
+  "fix-switch": { file: "app/js/note-window.js", from: 'detailsSw.className = "note-sec-arrow";', to: 'detailsSw.className = "nw-sw-off";' },
+  "fix-glyph": { file: "app/js/note-window.js", from: "detailsBtn.append(detailsLabel, detailsSw);", to: 'detailsBtn.append(detailsLabel, detailsSw, " ▾");' },
+  "fix-aria": { file: "app/js/note-window.js", from: 'on("[data-win-details]").setAttribute("aria-expanded", String(open));', to: "void 0;" },
   "fix-row": { file: "app/css/note-window.css", from: ".note-win .nw-details-row { flex-wrap: wrap; }", to: ".note-win .nw-details-row-off { flex-wrap: wrap; }" },
 };
 
@@ -88,6 +91,59 @@ const MEASURE = ({ inject }) => {
   return out;
 };
 
+// Part 152 (issue #1408): the Details control wears the shared J109 ON/OFF switch (shell.css `button > .note-sec-arrow`, read off aria-expanded).
+// DETAILS returns problems for the control as it is now; with `toggle` it also clicks / presses Enter / Space and reads the switch each time.
+const DETAILS = async ({ inject, toggle }) => {
+  const out = [];
+  const win = document.querySelector(".note-win:not(.sheet-hidden)");
+  const b = win && win.querySelector("[data-win-details]");
+  if (!b) return ["no Details control"];
+  if (inject === "glyph") b.append(" ▾");
+  if (inject === "contrast") { const l = b.querySelector("span:not(.note-sec-arrow)"); if (l) l.style.color = "#f3f4f6"; b.style.background = "#ffffff"; }
+  const sw = b.querySelector(".note-sec-arrow");
+  const rgb = (e) => getComputedStyle(e).backgroundColor;
+  const lum = (c) => { const m = (c.match(/[\d.]+/g) || [0, 0, 0]).slice(0, 3).map((v) => { v = v / 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }); return 0.2126 * m[0] + 0.7152 * m[1] + 0.0722 * m[2]; };
+  const ratio = (a, c) => { const x = lum(a), y = lum(c); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+  if (!sw) out.push("no switch element"); else {
+    const r = sw.getBoundingClientRect(), br = b.getBoundingClientRect(), wr = win.getBoundingClientRect();
+    if (Math.round(r.width) !== 40 || Math.round(r.height) !== 24) out.push("switch is " + Math.round(r.width) + "x" + Math.round(r.height) + " (the shared drawing is 40x24)");
+    if (br.height < 39.5) out.push("control is " + Math.round(br.height) + "px high");
+    if (br.left < wr.left - 1 || br.right > wr.right + 1) out.push("control " + Math.round(br.left) + ".." + Math.round(br.right) + " outside window " + Math.round(wr.left) + ".." + Math.round(wr.right));
+    const row = b.closest(".nw-details-row");
+    if (row) for (const c of row.children) { const cr = c.getBoundingClientRect(); if (cr.width > 0 && (cr.right > wr.right + 1 || cr.left < wr.left - 1)) out.push("Details row child outside the window"); }
+  }
+  if (/[▸▶►▼▲◂◀▴▾▿▹]/.test(b.textContent || "")) out.push("an arrow glyph is in the control: " + (b.textContent || "").trim());
+  if (!/\S/.test((b.textContent || "").replace(/[▸▾]/g, ""))) out.push("no label");
+  const state = () => ({ ex: b.getAttribute("aria-expanded"), open: !!win.querySelector(".nw-details.open"), bg: sw ? rgb(sw) : "" });
+  const ON = "rgb(31, 138, 126)";
+  const read = (s) => (s.bg === ON ? "true" : "false");
+  const s0 = state();
+  if (sw && read(s0) !== s0.ex) out.push("switch reads " + read(s0) + " but aria-expanded is " + s0.ex);
+  if ((s0.ex === "true") !== s0.open) out.push("aria-expanded " + s0.ex + " but details open=" + s0.open);
+  if (sw) {
+    let bgEl = b, back = "rgba(0, 0, 0, 0)";
+    while (bgEl && /rgba\(0, 0, 0, 0\)|transparent/.test(back = rgb(bgEl))) bgEl = bgEl.parentElement;
+    if (!bgEl) back = "rgb(255, 255, 255)";
+    const edge = getComputedStyle(sw).borderTopColor;
+    if (ratio(edge, back) < 3) out.push("switch edge " + edge + " on " + back + " is " + ratio(edge, back).toFixed(2) + ":1 (< 3:1)");
+    const lbl = b.querySelector("span:not(.note-sec-arrow)") || b, fg = getComputedStyle(lbl).color, bb = (() => { let e = b, c; while (e && /rgba\(0, 0, 0, 0\)|transparent/.test(c = rgb(e))) e = e.parentElement; return e ? c : "rgb(255, 255, 255)"; })();
+    if (ratio(fg, bb) < 4.5) out.push("label " + fg + " on " + bb + " is " + ratio(fg, bb).toFixed(2) + ":1 (< 4.5:1)");
+  }
+  if (toggle) {
+    const wait = () => new Promise((r) => setTimeout(r, 80));
+    const steps = [["click", () => b.click()], ["Enter", () => { b.focus(); b.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true })); b.click(); }], ["Space", () => { b.focus(); b.click(); }]];
+    let prev = state();
+    for (const [nm, go] of steps) {
+      go(); await wait();
+      const s = state();
+      if (s.ex === prev.ex) out.push(nm + " did not toggle aria-expanded"); else if (s.open === prev.open) out.push(nm + " did not toggle the Details");
+      if (read(s) !== s.ex) out.push(nm + ": switch reads " + read(s) + " but aria-expanded is " + s.ex);
+      prev = s;
+    }
+  }
+  return out;
+};
+
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
 const KINDS = ["toolbar", "sheet", "sideways", "target"];
 let views = 0;
@@ -107,6 +163,12 @@ let views = 0;
   for (const k of KINDS) {
     const r = await P.evaluate(MEASURE, { inject: k });
     check("positive control (" + k + "): the injected defect is reported", r[k].length > 0, JSON.stringify(r));
+  }
+  const d0 = await P.evaluate(DETAILS, { inject: "", toggle: false });
+  check("positive control: the Details control is found and passes in its shipped state", d0.length === 0 || MUTATE.startsWith("fix-"), JSON.stringify(d0));
+  for (const k of ["glyph", "contrast"]) {
+    const r = await P.evaluate(DETAILS, { inject: k, toggle: false });
+    check("positive control (details " + k + "): the injected defect is reported", r.length > 0, JSON.stringify(r));
   }
   await ctx.close();
 }
@@ -136,6 +198,13 @@ for (const pg of PAGES) for (const [w, h] of WIDTHS) for (const lang of LANGS) {
     } catch (e) { check(`${tag}: the window opened (positive control)`, false, String(e.message).slice(0, 140)); continue; }
     views++;
     const closed = await P.evaluate(MEASURE, { inject: MUTATE });
+    // Part 152: the Details switch, day look then night look (state and contrast), then click / Enter / Space toggling (day only)
+    const dDay = await P.evaluate(DETAILS, { inject: MUTATE, toggle: true });
+    check(`${tag}: (details) the Details control wears the J109 switch, toggles by click/Enter/Space, fits, is 40px, day look`, dDay.length === 0, "\n      " + dDay.slice(0, 4).join("\n      "));
+    await P.evaluate(() => document.documentElement.setAttribute("data-card-look", "night")); await P.waitForTimeout(150);
+    const dNight = await P.evaluate(DETAILS, { inject: MUTATE, toggle: false });
+    check(`${tag}: (details) night look: switch state, fit and contrast`, dNight.length === 0, "\n      " + dNight.slice(0, 4).join("\n      "));
+    await P.evaluate(() => document.documentElement.removeAttribute("data-card-look")); await P.waitForTimeout(100);
     await P.click(".note-win [data-pane-menu-btn]").catch(() => {}); await P.waitForTimeout(400);
     const open = await P.evaluate(MEASURE, { inject: MUTATE });
     if (SHOTS) await P.screenshot({ path: `${OUT}/${pg.id}-${w}-${lang}-${scale}.png` });
