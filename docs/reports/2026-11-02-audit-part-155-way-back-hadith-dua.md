@@ -114,3 +114,8 @@ card), and the hadith bookmark's Open (it returns to bookmarks.html, same row).
 Part 1: found 8, back present 8, back tappable 5, back works 8, place 7, card 7.
 Part 2: Open links 3, back present 2, back tappable 2, back works 2, place 2, card 2; scan 65 links read, 6 into Hadith/Dua pages (menu entries only).
 Totals per run: 80 passed, 9 failed. Seven mutations: every one fails its checks.
+
+## Architect review (2 Nov 2026, ~10:50 am Sydney)
+- Reproduced on port 8080: en 390 and bn 1024 each 80 passed, 9 failed (the same 9); mutation `duaref` adds its own 3 failures.
+- **Defect 1, measured further:** on arrival at 390 the Notes pane fills the screen. Its own top-left button reads "← Back to 36:38": it closes the pane and returns to the āyah, not to the hadith. After that tap, `#ayahCardBackPill` ("← Back to the hadith") is uncovered and tappable. So the way back exists, but it is hidden on arrival and costs an extra tap. The defect stands.
+- **Routing:** defect 1 → the PCA as a change request (`quranrevival.html` is Quran Study, frozen in MSA); defects 2 and 3 → the Dua Lead; defect 4 → the Hadith Lead.
