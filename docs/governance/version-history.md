@@ -1058,3 +1058,4 @@ total). Allocated by the MMSA Architect.
 13.15: QR Lead 3c (Āyah card 🔖 every unit) and QR's title at 320px. Allocated by the MMSA Architect.
 13.16: night journey-map page menu. Allocated by the MMSA Architect.
 13.17: night note-window menu. Allocated by the MMSA Architect.
+13.18: note window at large text. Allocated by the MMSA Architect.
