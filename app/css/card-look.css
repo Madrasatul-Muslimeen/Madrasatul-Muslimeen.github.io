@@ -353,6 +353,9 @@
 [data-card-look="night"] .bar-palette { background: var(--card-bg-inset); border-color: var(--card-line); color: var(--card-text); box-shadow: var(--card-shadow); }
 /* Audit part 37: the ⋯ sheet's group labels (#6b7280) were 3.62:1 on this navy; on the Light sheet they are 4.83:1 and stay. */
 [data-card-look="night"] .pane-menu-gl { color: #9ca3af; }
+/* Audit part 150 (night only, the day look is untouched): the note window's ⋯ sheet kept day-look white tiles on the navy sheet. */
+[data-card-look="night"] .bar-palette.pane-menu button.secondary { background: var(--card-bg); border-color: var(--card-line); color: var(--card-text); } /* a150 pane-menu */
+[data-card-look="night"] .bar-palette.pane-menu button.danger { background: var(--card-bg); border-color: #e0786f; color: #ffb4ab; } /* a150 pane-menu-danger */
 [data-card-look="night"] .bar-palette .qcr-icon-btn { background: var(--card-bg); border-color: var(--card-line); color: var(--card-text); }
 [data-card-look="night"] .bar-palette .qcr-archived-toggle { color: var(--card-text); }
 [data-card-look="night"] .bar-palette-divider { background: var(--card-line); }
