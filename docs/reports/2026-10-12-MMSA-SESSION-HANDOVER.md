@@ -2474,3 +2474,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v13.14** (2026-11-01): the night look on Hadith/Dua/Collections (audit 146) and the Word card's 🧰 (QR audit 11).
 - **v13.15** (2026-11-01): QR Lead 3c (Āyah card 🔖 every unit) and QR's title at 320px.
 - **v13.16** (2026-11-01): night journey-map page menu.
+- **v13.17** (2026-11-01): night note-window menu.
