@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "13.16",
+    "version": "13.17",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -6137,8 +6137,20 @@
     {
       "version": "13.16",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Audit part 149 (#1398/#1399): Mapping My Journey's ⋯ page menu reads clearly in the night look.",
+      "integration": {
+        "authorizedOn": "2026-11-01",
+        "integratedOn": "2026-11-01",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.17",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Audit part 150 (#1401/#1402): the note window's ⋯ sheet reads clearly in the night look.",
       "integration": {
         "authorizedOn": "2026-11-01",
         "integratedOn": "2026-11-01",
@@ -6147,8 +6159,9 @@
       }
     }
   ],
-  "nextUnallocated": "13.17",
+  "nextUnallocated": "13.18",
   "nextUnallocatedNote": [
+    "v13.17 was allocated to night note-window menu, 2026-11-01.",
     "v13.16 was allocated to night journey-map page menu, 2026-11-01.",
     "v13.15 was allocated to QR Lead 3c (Āyah card 🔖 every unit) and QR's title at 320px, 2026-11-01.",
     "v13.14 was allocated to the night look on Hadith/Dua/Collections (audit 146) and the Word card's 🧰 (QR audit 11), 2026-11-01.",
