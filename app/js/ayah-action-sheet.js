@@ -620,10 +620,46 @@ function watchAyahActionRow(row) {
   if (document.fonts?.ready) document.fonts.ready.then(() => fitAyahActionRow(row));
 }
 
+/* QR Lead audit 10 (1 Nov 2026): the pinned header's lines, counted rather than guessed. The header is first laid out as
+   ever; only if its items fall on three lines or more does it get .ayah-head-stack (the buttons on line one, the
+   reference on line two), and it keeps that only if the header is then really shorter. Never in the computer window
+   (data-ayah-win), whose header is one line. */
+function headerLines(header) {
+  const items = [];
+  for (const c of header.children) {
+    if (c.classList.contains("ayah-sheet-head-tools") && getComputedStyle(c).display === "contents") items.push(...[...c.children].filter((k) => k.getClientRects().length));
+    else if (c.getClientRects().length) items.push(c);
+  }
+  const boxes = items.map((el) => el.getBoundingClientRect()).sort((a, b) => a.top - b.top);
+  let lines = 0, bottom = -Infinity;
+  for (const b of boxes) { if (b.top >= bottom - 1) { lines++; bottom = b.bottom; } else bottom = Math.max(bottom, b.bottom); }
+  return lines;
+}
+export function fitAyahSheetHeader(header) {
+  if (!header) return;
+  header.classList.remove("ayah-head-stack");
+  if (!header.getClientRects().length || header.closest("[data-ayah-win]")) return;
+  if (headerLines(header) < 3) return;
+  const before = header.getBoundingClientRect().height;
+  header.classList.add("ayah-head-stack");
+  if (header.getBoundingClientRect().height >= before - 1) header.classList.remove("ayah-head-stack");
+}
+function watchAyahSheetHeader(header) {
+  if (!header || typeof ResizeObserver !== "function") return;
+  let lastW = -1;
+  // A change of WIDTH re-fits it (A± too: the card's sides are rem), and so does a button joining it (– Minimise is
+  // added by minimise.js after the card opens). The fit itself changes only the header's height and class.
+  new ResizeObserver(() => { const w = Math.round(header.getBoundingClientRect().width); if (w !== lastW) { lastW = w; fitAyahSheetHeader(header); } }).observe(header);
+  new MutationObserver(() => fitAyahSheetHeader(header)).observe(header, { childList: true });
+  requestAnimationFrame(() => fitAyahSheetHeader(header));
+  if (document.fonts?.ready) document.fonts.ready.then(() => fitAyahSheetHeader(header));
+}
+
 export function attachAyahActionSheetHandlers(container, callbacks = {}) {
   const sheet = container.querySelector("[data-ayah-sheet]");
   if (!sheet) return;
   watchAyahActionRow(sheet.querySelector("[data-ayah-sheet-actions]"));
+  watchAyahSheetHeader(sheet.querySelector(".ayah-sheet-header"));
   const unitKey = sheet.dataset.unitKey;
   const fire = (fn) => { callbacks.onClose?.(); fn?.(unitKey); };
   const fireUnlessDisabled = (btn, fn) => {
