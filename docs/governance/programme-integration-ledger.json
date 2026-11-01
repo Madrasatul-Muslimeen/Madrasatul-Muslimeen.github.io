@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "13.08",
+    "version": "13.09",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -6041,8 +6041,20 @@
     {
       "version": "13.08",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "PCF MSA J109: every section that shows or hides content wears the shared ON/OFF switch instead of an arrow (the Owner, 1 Nov 2026).",
+      "integration": {
+        "authorizedOn": "2026-11-01",
+        "integratedOn": "2026-11-01",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.09",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Builder audit part 144 D1-D3 fixed by the Architect: the Note page toolbar's words come from the bar's width in em; the window title carries its whole text.",
       "integration": {
         "authorizedOn": "2026-11-01",
         "integratedOn": "2026-11-01",
@@ -6051,8 +6063,9 @@
       }
     }
   ],
-  "nextUnallocated": "13.09",
+  "nextUnallocated": "13.10",
   "nextUnallocatedNote": [
+    "v13.09 was allocated to the Note page at large text (audit part 144), 2026-11-01.",
     "v13.08 was allocated to every show/hide as an ON/OFF switch (J109), 2026-11-01.",
     "v13.07 was allocated to the v13 Note window keyboard fixes (audit part 143), 2026-10-31.",
     "v13.06 was allocated to Quran Study: the Word card's level tabs at large text (QR Lead), 2026-10-31.",
