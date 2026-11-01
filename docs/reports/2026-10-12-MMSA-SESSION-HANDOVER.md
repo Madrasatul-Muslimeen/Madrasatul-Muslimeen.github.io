@@ -7,7 +7,36 @@ v10.28). Read `CLAUDE.md` first. The prompt that starts the next session is
 
 This session was summarised once (its context compacted), which is why it hands over here.
 
-## LATEST UPDATE — 31 Oct 2026, ~6:55 pm Sydney, session `session_01PL2xbLYSNq3VaA8Hi5jFfq` (v13.02–v13.06 live on MSA; HANDOVER) — READ THIS FIRST
+## LATEST UPDATE — 1 Nov 2026, ~3:35 pm Sydney, session `session_01PL2xbJLoLeqUmMm2mzfN7D` (v13.07–v13.09 live on MSA; HANDOVER) — READ THIS FIRST
+
+Took over 6:54 pm 31 Oct from `session_01PL2xbLYSNq3VaA8Hi5jFfq`. Handing over at ~51% context (hand119). **PCA: `session_01PL2xbN7ENRBkhtTNxJAt2L`**. Keep-alive **`trig_013ZmsQdsHkvRHdFMSy3DW7g`** (8:07 am/pm) — ask the PCA to repoint it.
+
+**State:** `main` is **v13.09** (shown "v13.09-01.11.26"). Next version **v13.10**. QR caught up to v13.07 overnight; it needs a build-from-msa run for v13.08 + v13.09 (PCA told).
+
+**Released this session:** v13.07 (#1376, Builder part 143 D1–D4 + M1: the full-screen Note window is modal with the page inert, minimising frees it, the floating window stays non-modal; Attach holds Tab and returns focus to 📎; gold pressed-tool ring) · **v13.08 (#1379, PCF MSA J109, the Owner 1 Nov: "Instead arrow to on/off, i want the toggle way to on/off, everywhere"): one shared ON/OFF switch in `css/shell.css` replaces every show/hide arrow; menus keep ▾, folder trees keep ▸ (the Owner ticked A); suite `show-hide-switch-browser.mjs`** · v13.09 (#1381, Builder part 144 D1–D3: the new-Note toolbar's words come from `@container nnbar (min-width: 36em)`; window title carries `title`). Also merged #1378 (part 144 report, unattended), #1380 (Dua plan rule 6, docs).
+
+**In flight:** Builder round 145 (#1382, report only), dispatched 3:28 pm 1 Nov.
+
+**Next, in order:**
+1. Review round 145 when its PR lands (re-dispatch with a cherry-pick note if the run dies early); fix its defects as v13.10.
+2. QR Lead audit 6b when the next QR Lead hands it in.
+3. `word-card-ayah-card-ways-back` 71/6, pre-existing on `main` (identical before v13.08): "Note & more… also leaves Back to Āyah card" and a stub `notePlacements` write failure. Diagnose stale-test vs real way-back gap (the way-back law).
+4. Hadith J106 round 2: ready, waits ONLY on the Owner's n106f; release only after the Owner publishes the rule.
+
+**Waiting on the Owner:** J106 n106f · J27 n27s2p · J105 · J104 ticks 6–10 · J29 questions.
+
+**Lessons (this session):**
+1. **A CSS fix that depends on screen width is wrong at large text**: the toolbar's words came from `@media (min-width: 640px)` and overflowed at 200%. A container query on the bar in `em` (`container: x / inline-size`; `@container x (min-width: 36em)`) scales with the text.
+2. **Page `<style>` blocks load after `shell.css` and win at equal specificity**: a shared rule over a page's own class needs a stronger selector (`button > .caret`).
+3. **A 30-minute background run killed a 15-suite batch**: pass a long `timeout` for suite batches.
+4. **A Builder run can stop after 4 minutes having pushed only its first commits**: re-dispatch with a `note` telling it to cherry-pick them.
+5. **A failure under a busy machine (a drag test) can be load, not code**: re-run it alone and on unchanged `main` before believing it.
+
+**Next session's opening message:**
+
+> Bismillah. You are the MSA Master Architect, taking over from session_01PL2xbJLoLeqUmMm2mzfN7D (hand119, 1 Nov ~3:35 pm Sydney). Your session title is "📌 (03) MSA Master Architect" (num128). Read CLAUDE.md, ARCHITECT.md, then docs/reports/2026-10-12-MMSA-SESSION-HANDOVER.md, its LATEST UPDATE block of 1 Nov 3:35 pm first. FIRST: test GitHub write (git push --dry-run origin HEAD:refs/heads/claude/access-probe). Do NOT retry add_repo QuranRevival; check QR's live version with curl (https://quranrevival.github.io/app/js/qr-version.js) after each release and tell the PCA if it lags. Read the PMS (https://claude.ai/artifact/PhW1KKX28qrqj9dE7Ha8dZ): meta/global General rules and p/mmsa; answer any new Owner comments. Set p/mmsa.sessionUrl (pin with if_version). Send the PCA (session_01PL2xbN7ENRBkhtTNxJAt2L) "PCA ▸ taken over" and ask it to repoint the MSA keep-alive (trig_013ZmsQdsHkvRHdFMSy3DW7g). main is v13.09; next v13.10. FIRST JOB: review Builder round 145 (#1382, report only: the Note's sheets and the Hadith route at large text) when its PR lands; if the run dies early (it did twice on #1377), re-dispatch with a note to cherry-pick its pushed commits; then fix its defects yourself as v13.10. Also open: QR Lead audit 6b (a Qur'an word never split in the Taṣrīf cells) when the next QR Lead hands it in; the pre-existing word-card-ayah-card-ways-back 71/6 ("Note & more… also leaves Back to Āyah card" + a notePlacements write failure in the stub; identical on main since before v13.08) — diagnose: stale test after v13.01 or a real way-back gap. Waiting on the Owner: J106 n106f (Hadith Subjects rule; app branch claude/hadith-lead-01q2 97434cf and rule branch claude/hadith-subjects-rule b203f70 ready, release ONLY after the Owner publishes), J27 n27s2p, J105, J104 ticks 6–10, the J29 questions. Leads: (03A) QR session_01PL2xbHxdLPRKi4KNVXpGHX (at handover; the PCA opens the next); (03B) Hadith session_01PL2xbKWeTSDEBJV5UWZTcQ; (03C) Dua session_01PL2xbMaXuwbA6usFZSB5kr; (03D) Health session_01SPFtgC4vwVzby6PR12Z9ek. Rule J109 (the Owner, 1 Nov): every show/hide section wears the shared ON/OFF switch (css/shell.css J109 block), never an arrow; menus keep ▾, folder trees keep ▸ (the Owner ticked A). Review rule: 360, 390, 768, 820, 1024, 1180, 1440, English and Bangla, screenshots looked at, real-length data; a shared CSS change is measured on every page that links the file. Curl a changed file from your review server's port before measuring; restart serve.js for each review. Link Playwright into the repo (node_modules/playwright → the global one) and into any new worktree. Run behaviour.mjs alone, and suite batches with a long background timeout (a 30-minute default killed one). Prove a QR-only fix on the QR build. Never export QR_BASE into the shell that runs qr-verify. Push every review merge at once. Never pkill -f. Keep-alive every 12 hours (ka122). No self wake-ups (cost86). Hand over at ~40% context (hand119). After "Rasulullah" always write "Sallallahu A'laihi Wa Sallam" (saw128). Write "Siyagah" in full.
+
+## LATEST UPDATE — 31 Oct 2026, ~6:55 pm Sydney, session `session_01PL2xbLYSNq3VaA8Hi5jFfq` (v13.02–v13.06 live on MSA; HANDOVER) (superseded 1 Nov 3:35 pm)
 
 Took over 4:55 pm 31 Oct from `session_01PL2xbJ2ncUt43CiJpHVZJf`. Handing over at ~40% context (hand119). **PCA: `session_01PL2xbN7ENRBkhtTNxJAt2L`**. Leads: **QR `session_01PL2xbHxdLPRKi4KNVXpGHX`** (took over from `…LGPyYo53GXRKWojym` ~5:45 pm); **Hadith `session_01PL2xbKWeTSDEBJV5UWZTcQ`**; **Dua `session_01PL2xbMaXuwbA6usFZSB5kr`**; Health `session_01SPFtgC4vwVzby6PR12Z9ek`. Keep-alive **`trig_01JRTVVtRwJbX7s5cjxUcBjM`** (8:07 am/pm) — ask the PCA to repoint it.
 
