@@ -396,6 +396,9 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
   #newFolderForm input { flex: 1 1 8rem; min-width: 0; box-sizing: border-box; min-height: 40px; } /* audit2 newfolder */
   #newFolderForm button { flex: 0 0 auto; min-height: 40px; } /* audit2 newfolder-btn */
   #openTrashBtn, .page-menu-wrap .bar-palette a { box-sizing: border-box; min-height: 40px; display: flex; align-items: center; } /* audit2 menu */
+  /* Audit part 149 (night only, the day look is untouched): the page's ⋯ menu entries kept the day colours (white buttons, a default-blue link) on the navy sheet. */
+  [data-card-look="night"] .page-menu-wrap .bar-palette button.secondary { background: var(--card-bg); border-color: var(--card-line); color: var(--card-text); } /* a149 menu-buttons */
+  [data-card-look="night"] .page-menu-wrap .bar-palette a.secondary { color: var(--card-text); } /* a149 menu-links */
 </style>
 <link rel="stylesheet" href="./css/note-window.css" />
 <style>
