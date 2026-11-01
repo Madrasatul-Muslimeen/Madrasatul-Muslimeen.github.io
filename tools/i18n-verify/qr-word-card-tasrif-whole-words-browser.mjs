@@ -10,7 +10,7 @@
 //   no-fit        fitTasrifArabic() does nothing         -> "every word lies inside its box" FAILS at 320 200%
 //   no-wide       a word never takes the whole row       -> the forced long-word case FAILS
 //   low-floor     the floor is 0.3, not 0.8              -> "never below 0.8" and the forced case FAIL
-//   px-stack      the verb tables stack at 640px again   -> verb words at 768 200% are shrunk to the floor and spill
+//   px-stack      the verb tables stack at 640px again   -> "no verb word has to be shrunk" FAILS at 768/740/1280 with larger text
 import { chromium, newContext, openPage } from "./harness.mjs";
 
 let pass = 0, fail = 0;
@@ -80,7 +80,7 @@ const measure = (page) => page.evaluate(() => {
     const own = e.style.fontSize; e.style.removeProperty("font-size");
     const base = parseFloat(getComputedStyle(parts[0]).fontSize); if (own) e.style.fontSize = own;
     out.push({ t: e.textContent.trim().slice(0, 16), split, outBox: Math.round(Math.max(box.left - rr.left, rr.right - box.right)),
-      outCard: Math.round(Math.max(card.left - rr.left, rr.right - card.right)), fs: Math.round(fs * 10) / 10, floor: Math.round(0.8 * base * 16 / rootPx * 10) / 10 });
+      outCard: Math.round(Math.max(card.left - rr.left, rr.right - card.right)), shrunk: !!own, fs: Math.round(fs * 10) / 10, floor: Math.round(0.8 * base * 16 / rootPx * 10) / 10 });
   }
   const over = [...mount.querySelectorAll(".word-card-ntable, .word-card-cj table")].filter((t) => t.getClientRects().length).map((t) => Math.round(t.getBoundingClientRect().width - t.parentElement.clientWidth)).filter((d) => d > 1);
   return { words: out, nouns: mount.querySelectorAll("[data-noun-cell]").length, verbs: mount.querySelectorAll("td.word-card-cj-vb").length,
@@ -98,6 +98,8 @@ for (const [word, kind] of [["1:1:1", "noun"], ["1:5:2", "verb"]]) for (const [w
   check(`${tag}: every word lies inside its box`, !outBox.length, short(outBox));
   check(`${tag}: every word lies inside the card, and no table is wider than its box`, !outCard.length && !m.over.length, short(outCard) + " " + m.over);
   check(`${tag}: no word is below 0.8 of its ordinary-text size`, !low.length, short(low));
+  // The verb tables stack under 40rem, so their words keep the size J61 gives them; shrinking is only a safety net there.
+  if (kind === "verb") { const sh = m.words.filter((x) => x.shrunk); check(`${tag}: no verb word has to be shrunk (the tables stack instead)`, !sh.length, short(sh)); }
   await ctx.close();
 }
 // A word too long even at its floor (the last box's word made three times as long) takes the whole row of the stacked grid.
