@@ -23121,3 +23121,9 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 - **D4** closing Attach by Escape, Cancel, the backdrop or a done Attach focuses the Note's own 📎 (`mmsa-new-note-focus-tool` → `journey-map.html`).
 - **M1** `journey-map.html`: the pressed ✏️/✓ tool's focus ring is gold (`#c9a24b`).
 - `note-window-a11y-browser.mjs` updated in place: (b2) asserts the floating window is non-modal, and that minimising frees the page. Nothing stored, no Rules.
+
+## v13.08 — 1 Nov 2026 — Every show/hide is an ON/OFF switch, not an arrow (PCF MSA J109, the Architect)
+
+- `css/shell.css`: one shared switch (teal ON, grey OFF, 40x24) replaces the ▸/▾ arrow on every section that shows or hides content: `details.ayah-nv-sec`, `.ayah-ft-sec`, `.ayah-related-more`, `.word-card-dict-more`, `.word-card-more-entries` (summary ::before; the marker hidden); `button > .ways-caret`, `.trk-sec-caret`, `.word-card-form-caret`, `.note-sec-arrow` and `button[data-sec-fold]` (glyph at font-size 0, state from `aria-expanded`); `.mm-sw`.
+- `quranrevival.html`: the Word card's section chevron (⌄/⌃) is the switch; its grid column 20px → 40px. `writing-sheet.js`: Tools is the switch beside "Tools".
+- Menus keep ▾ and folder trees keep ▸ (J109 Q1, the Owner: A). New suite `show-hide-switch-browser.mjs` (mutation nocss); `writing-sheet-browser.mjs` updated in place. Display only; nothing stored, no Rules.
