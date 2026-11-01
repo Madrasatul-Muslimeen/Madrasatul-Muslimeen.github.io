@@ -2392,3 +2392,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v13.07** (2026-10-31): the v13 Note window keyboard fixes (audit part 143).
 - **v13.08** (2026-11-01): every show/hide as an ON/OFF switch (J109).
 - **v13.09** (2026-11-01): the Note page at large text (audit part 144).
+- **v13.10** (2026-11-01): the v13 Note's sheets at large text (audit part 145 fixes).

@@ -1050,3 +1050,4 @@ total). Allocated by the MMSA Architect.
 13.07: the v13 Note window keyboard fixes (audit part 143). Allocated by the MMSA Architect.
 13.08: every show/hide as an ON/OFF switch (J109). Allocated by the MMSA Architect.
 13.09: the Note page at large text (audit part 144). Allocated by the MMSA Architect.
+13.10: the v13 Note's sheets at large text (audit part 145 fixes). Allocated by the MMSA Architect.
