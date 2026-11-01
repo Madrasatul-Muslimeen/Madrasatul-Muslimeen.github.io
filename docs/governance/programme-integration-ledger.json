@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "13.12",
+    "version": "13.13",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -6089,8 +6089,20 @@
     {
       "version": "13.12",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "QR Lead audit 8: Explore usable at large text and on a phone turned sideways, reviewed and released by the Architect.",
+      "integration": {
+        "authorizedOn": "2026-11-01",
+        "integratedOn": "2026-11-01",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.13",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Phone 🧰 corner lifted only while a bar reaches its spot (J25); QR Lead audits 9 (Āyah tiles) and 10 (Āyah header) at large text.",
       "integration": {
         "authorizedOn": "2026-11-01",
         "integratedOn": "2026-11-01",
@@ -6099,8 +6111,9 @@
       }
     }
   ],
-  "nextUnallocated": "13.13",
+  "nextUnallocated": "13.14",
   "nextUnallocatedNote": [
+    "v13.13 was allocated to the phone 🧰 corner off Mapping My Journey; QR Lead audits 9 and 10, 2026-11-01.",
     "v13.12 was allocated to Explore at large text (QR Lead audit 8), 2026-11-01.",
     "v13.11 was allocated to a Qur'an word never splits in Tasrif (QR Lead audit 6b), 2026-11-01.",
     "v13.10 was allocated to the v13 Note's sheets at large text (audit part 145 fixes), 2026-11-01.",

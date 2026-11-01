@@ -21,7 +21,14 @@ const MUTATIONS = {
   // the three drawer buttons keep their wide size: the row of four runs past a 320px phone
   "dock-row-fit": ["app/quranrevival.html", "**/quranrevival.html*", ".wheel-drawer-btn { min-width: 4.6rem; } }", ".wheel-drawer-btn { } }"],
   // the corner ignores the pinned bottom bar: it covers the Read view's quick buttons
-  "lift": ["app/js/zab-bar.js", "**/js/zab-bar.js*", "bottom: calc(12px + var(--zab-lift, 0px));", "bottom: 12px;"],
+  // (updated in place 1 Nov 2026, v13.13: the anchor had read "12px", which the CSS stopped saying when it moved to rem, so
+  //  this mutation threw "found 0 times" and had not run since)
+  "lift": ["app/js/zab-bar.js", "**/js/zab-bar.js*", "bottom: calc(.75rem + var(--zab-lift, 0px));", "bottom: .75rem;"],
+  // v13.13: the corner is lifted by the bar's HEIGHT wherever the bar is (the old rule): with the page fitting the screen
+  // the tabs sit above the spacer and the lifted corner lands on "Mapping My Journey" (J25's complaint, back on every phone)
+  "lift-by-height": ["app/js/zab-bar.js", "**/js/zab-bar.js*", "if (b.top < spotBottom && b.bottom > spotTop) lift = Math.max(lift, vh - b.top);", "lift = Math.max(lift, b.height);"],
+  // v13.13: the lift is not re-read on scroll: a sticky bar that unsticks at the page's end leaves the corner on the tabs
+  "no-scroll-update": ["app/js/zab-bar.js", "**/js/zab-bar.js*", 'window.addEventListener("scroll", soon, { passive: true });', ""],
   // no dock slot on the page: the 🧰 floats over the tabs as before
   "no-dock": ["app/quranrevival.html", "**/quranrevival.html*", '<span class="wheel-zab-dock" data-zab-dock></span>', ""],
 };
@@ -102,6 +109,40 @@ for (const lang of ["en", "bn"]) for (const width of [320, 360, 390, 740, 820]) 
       check(`${tag}: POSITIVE CONTROL the Read view's quick buttons are on screen`, r.qVis, JSON.stringify(r));
       check(`${tag}: in the Read view the corner 🧰 is back`, r.shown, JSON.stringify(r));
       check(`${tag}: ...above the quick buttons, covering none of them`, r.gap >= 0 && r.covered.length === 0, JSON.stringify(r));
+    }
+  } catch (e) { check(`${tag}: flow ran`, false, String(e.stack || e).split("\n").slice(0, 3).join(" | ")); }
+  await ctx.close();
+}
+
+// v13.13 (1 Nov 2026): the Read and Explore views on a phone, where the docked 🧰 is hidden and the corner shows. The tabs
+// stick to the bottom only while the page scrolls (#dock is sticky); when the page fits the screen they sit ABOVE the spacer.
+// Either way the corner must never sit on a tab, and while the tabs are pinned it stands above them.
+const tabsProbe = (page) => page.evaluate(() => {
+  const c = document.getElementById("zabCorner"), row = document.getElementById("tabRow");
+  const cr = c.getBoundingClientRect(), rr = row.getBoundingClientRect();
+  const shown = c.getClientRects().length > 0 && cr.width > 0;
+  const tabs = [...row.querySelectorAll("button")].filter((b) => b.getClientRects().length > 0 && b.getBoundingClientRect().width > 0);
+  // every tab, sampled across its width: what the finger finds there must be the tab
+  const covered = tabs.filter((b) => { const br = b.getBoundingClientRect(); return [0.15, 0.5, 0.85, 0.97].some((f) => { const h = document.elementFromPoint(br.left + br.width * f, br.top + br.height / 2); return !(h && b.contains(h)); }); }).map((b) => b.id || b.textContent.trim());
+  const overlap = shown && cr.left < rr.right && cr.right > rr.left && cr.top < rr.bottom && cr.bottom > rr.top;
+  const pinned = Math.abs(document.getElementById("dock").getBoundingClientRect().bottom - innerHeight) <= 1;
+  return { shown, overlap, covered, pinned, n: tabs.length, corner: [Math.round(cr.top), Math.round(cr.bottom)], row: [Math.round(rr.top), Math.round(rr.bottom)] };
+});
+for (const lang of ["en", "bn"]) for (const width of [320, 360, 390]) for (const size of ["100%", "200%"]) for (const view of ["tabReadBtn", "tabExploreBtn"]) {
+  const tag = `${lang} ${width}px ${size} ${view === "tabReadBtn" ? "Read" : "Explore"}`;
+  const { ctx, page } = await open(lang, width);
+  try {
+    await page.evaluate((s) => { document.documentElement.style.fontSize = s; }, size);
+    await page.evaluate((v) => document.getElementById(v).click(), view);
+    await page.waitForTimeout(1500);
+    for (const at of ["top", "end"]) {
+      await page.evaluate((a) => { document.scrollingElement.scrollTop = a === "top" ? 0 : 1e7; }, at);
+      await page.waitForTimeout(400);
+      const m = await tabsProbe(page);
+      const t = `${tag} (page ${at}${m.pinned ? ", tabs pinned" : ""})`;
+      check(`${t}: POSITIVE CONTROL the tabs and the corner 🧰 are on screen`, m.n >= 3 && m.shown, JSON.stringify(m));
+      check(`${t}: the corner 🧰 covers no tab ("Mapping My Journey" included)`, !m.overlap && m.covered.length === 0, JSON.stringify(m));
+      if (m.pinned) check(`${t}: ...it stands above the pinned tabs`, m.corner[1] <= m.row[0], JSON.stringify(m));
     }
   } catch (e) { check(`${tag}: flow ran`, false, String(e.stack || e).split("\n").slice(0, 3).join(" | ")); }
   await ctx.close();
