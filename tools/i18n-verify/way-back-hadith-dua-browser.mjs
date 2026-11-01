@@ -27,7 +27,7 @@ const MUT = {
   duapage: ["js/dua-browser.js", 'own.href = "./dua-study.html?back=1";', 'own.href = "./dua-study.html";'],
   duaquran: ["js/dua-study.js", "?goto=${e.ref}&back=1", "?goto=${e.ref}"],
   duaref: ["js/dua-study.js", "&passage=${state.oi.focusPassage}&back=1", "&passage=${state.oi.focusPassage}"],
-  bmreturn: ["js/bookmark-nav.js", "sessionStorage.setItem(RETURN_KEY, JSON.stringify({ from: location.href", "void ({ from: location.href"],
+  bmreturn: ["js/bookmark-nav.js", "sessionStorage.setItem(RETURN_KEY, JSON.stringify({ from: location.href", "void (JSON.stringify({ from: location.href"],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
 
@@ -212,7 +212,7 @@ for (const lang of ["en", "bn"]) for (const [width, height] of [[390, 844], [102
   check(`${tag} POSITIVE CONTROL: some controls were found (${n.found})`, ONLY ? true : n.found > 0);
 
   // ---------- Part 2: arrivals from the shared tools ----------
-  if (ONLY) continue;
+  if (ONLY && ONLY !== "arrivals") continue; // --only=arrivals runs Part 2 alone
   const m = { found: 0, backPresent: 0, reach: 0, backWorks: 0, place: 0, card: 0, attempted: 0 };
   for (const [id, label, destRe, isControl] of [["bmHadith", "hadith bookmark (resume=hadith:hadeethenc:4563)", /hadith-study\.html/, false], ["bmDua", "dua bookmark (resume=dua:20)", /dua-study\.html/, false], ["bmQuran", "Quran bookmark (POSITIVE CONTROL for the pill)", /quranrevival\.html/, true]]) {
     const ctag = `${tag} arrival ${id}`;
