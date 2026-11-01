@@ -98,8 +98,9 @@ for (const [word, kind] of [["1:1:1", "noun"], ["1:5:2", "verb"]]) for (const [w
   check(`${tag}: every word lies inside its box`, !outBox.length, short(outBox));
   check(`${tag}: every word lies inside the card, and no table is wider than its box`, !outCard.length && !m.over.length, short(outCard) + " " + m.over);
   check(`${tag}: no word is below 0.8 of its ordinary-text size`, !low.length, short(low));
-  // The verb tables stack under 40rem, so their words keep the size J61 gives them; shrinking is only a safety net there.
-  if (kind === "verb") { const sh = m.words.filter((x) => x.shrunk); check(`${tag}: no verb word has to be shrunk (the tables stack instead)`, !sh.length, short(sh)); }
+  // The verb tables stack under 40rem, so from a tablet up their words keep the size J61 gives them. (On a 320px phone at
+  // 200% one table is itself narrower than "تَعْبُدُ", and there the measured shrink is what keeps the word whole.)
+  if (kind === "verb" && w >= 600) { const sh = m.words.filter((x) => x.shrunk); check(`${tag}: no verb word has to be shrunk (the tables stack instead)`, !sh.length, short(sh)); }
   await ctx.close();
 }
 // A word too long even at its floor (the last box's word made three times as long) takes the whole row of the stacked grid.
