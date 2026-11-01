@@ -22,6 +22,12 @@ easy). Keep the building plan and the rule in Project memory as well as in PMS f
 5. Lead rules (lead120) still hold: the Lead builds only Dua's own files on its own branch, and hands each finished
    build to the MSA Architect ("MSA-DUA LEAD ▸ ready for release"). Shared parts go to the MSA Architect.
 
+6. **Show/hide sections use the shared ON/OFF switch, never an arrow** (the Owner's PCF MSA J109, released in v13.08,
+   1 Nov 2026, 2:41 pm Sydney; passed on by the PCA). Any new show/hide section in Dua uses the shared switch in
+   `app/css/shell.css` (the J109 block: a `<details>` summary it already lists, or a `.mm-sw` span, `.on` or the
+   parent's `aria-expanded="true"` for on), never a ▸/▾ arrow. Menus and folder trees keep their arrows. Merge `main`
+   into the Dua branch before each hand-in.
+
 ## Demo versions
 
 | Demo | Date (Sydney) | What it shows | Link |
