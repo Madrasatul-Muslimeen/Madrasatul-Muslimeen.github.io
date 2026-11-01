@@ -389,7 +389,7 @@ export async function openWritingSheet({ fatihaCount = false, pages, range = nul
     root.dataset.shade = shade;
     root.classList.toggle("ws-tools-hidden", toolsHidden);
     const tg = $('[data-ws="tools"]');
-    tg.textContent = toolsHidden ? `▾ ${t("Tools")}` : `▴ ${t("Hide")}`;
+    tg.innerHTML = `<span class="mm-sw" aria-hidden="true"></span> ${t("Tools")}`; // PCF MSA J109: an ON/OFF switch, not ▾/▴ (css/shell.css)
     tg.setAttribute("aria-expanded", String(!toolsHidden));
     tg.setAttribute("aria-label", toolsHidden ? t("Show the tools") : t("Hide the tools"));
     tg.title = tg.getAttribute("aria-label");
