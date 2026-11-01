@@ -12,8 +12,10 @@
 //   no-cap    the area floored at 12rem, not 4rem      -> "the Explore area ends above the tabs" FAILS sideways at 150/200%
 //   no-wrap   .aa-nav-wrap never set                   -> "no control's words are cut" FAILS at the Surah level
 //   no-break  the steps never break inside a name      -> the same FAIL at 320x640 200%
-//   no-pad    the 24px cap on the panel's sides gone   -> "the controls keep the panel's width less 24px a side" FAILS at 150/200%
+//   no-pad    the 24px cap on the panel's sides gone   -> "the Explore panel's sides are never more than 24px" FAILS at 150/200%
 //   no-seg    All / One Approach never stack           -> "no control's words are cut" FAILS at the Surah level at 150/200%
+//   no-zab    the tabs not lifted above the Zab bar    -> "the docked tabs are not covered" FAILS at 768x1024 200% and 844x390
+//   no-stack  Take ▸ never goes under the name         -> "no Approach name breaks inside a word" FAILS at 768x1024 200%
 //   no-max    the Juz / Surahs / Hizb row not capped   -> "no control runs past the Explore view's sides" FAILS at 320x640 200%
 import { chromium, newContext, openPage } from "./harness.mjs";
 
@@ -31,6 +33,8 @@ const MUT = {
   "no-break": ["max-width: 100%; white-space: normal; text-overflow: clip;", "max-width: 100%;"],
   "no-seg": ['b.scrollWidth > b.clientWidth + 1)) seg.classList.add("aa-seg-stack");', 'b.scrollWidth > b.clientWidth + 1)) void 0;'],
   "no-max": ["flex: 0 0 auto; margin: 0; max-width: 100%; }", "flex: 0 0 auto; margin: 0; }"],
+  "no-zab": ["  @media (min-width: 768px) { body.zab-bar-on.explore-tall #dock, body.zab-bar-on.read-tall #dock { bottom: 2.75rem; } }\n", ""],
+  "no-stack": ['if (broken) rows.classList.add("aa-rows-stack");', 'if (broken) void 0;'],
   "no-pad": ["  #explorePanel { padding-left: min(1.5rem, 24px); padding-right: min(1.5rem, 24px); }\n", ""],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
@@ -86,14 +90,19 @@ const measure = (page) => page.evaluate(() => {
   const all = [...ev.querySelectorAll("button")].filter((b) => b.getClientRects().length && R(b).width > 0 && b.textContent.trim());
   const cut = all.filter((b) => b.scrollWidth > b.clientWidth + 1).map((b) => name(b) + " " + b.scrollWidth + "/" + b.clientWidth);
   const evR = R(ev), outside = all.filter((b) => R(b).right > evR.right + 1 || R(b).left < evR.left - 1).map(name);
-  const panel = document.getElementById("explorePanel"), ctlW = Math.round(R(document.getElementById("exploreCtlBar")).width), panelW = Math.round(R(panel).width);
+  const pcs = getComputedStyle(document.getElementById("explorePanel")), padL = parseFloat(pcs.paddingLeft), padR = parseFloat(pcs.paddingRight);
   const steps = [...ev.querySelectorAll("#exploreNavBar .aa-pn button")].map((b) => Math.round(b.clientWidth));
+  const names = [...ev.querySelectorAll(".aa-nm")].filter((n) => n.getClientRects().length);
+  const brokenNames = names.filter((n) => { const was = n.style.overflowWrap; n.style.overflowWrap = "normal"; const b = n.scrollWidth > n.clientWidth + 1; n.style.overflowWrap = was; return b; }).map((n) => n.firstChild.textContent.slice(0, 20));
   if (userScroll) es.scrollIntoView({ block: "start" });
   const s = R(es), d = R(dock);
+  // The tabs are a finger's way out of Explore: the one under the finger must be the tab itself, not the Zab bar on top of it.
+  const tab = document.getElementById("tabExploreBtn"), tr = R(tab), atTab = dockShown ? document.elementFromPoint(tr.left + tr.width / 2, Math.min(tr.bottom - 4, innerHeight - 1)) : null;
+  const tabCovered = dockShown && !(atTab && tab.contains(atTab));
   const r = { userScroll, tall: document.body.classList.contains("explore-tall"), popup: getComputedStyle(ev).position === "fixed",
     evH: Math.round(evR.height), room: Math.round((dockShown ? Math.min(s.bottom, d.top) : Math.min(s.bottom, innerHeight)) - Math.max(s.top, 0)),
     esBottom: Math.round(s.bottom), dockTop: dockShown ? Math.round(d.top) : innerHeight, want: Math.round(Math.min(12 * rem, innerHeight - (dockShown ? dock.offsetHeight : 0) - 8)),
-    rem, unreachable, cut, outside, steps, ctlW, panelW, sideways: document.scrollingElement.scrollWidth > innerWidth };
+    rem, unreachable, cut, outside, steps, padL, padR, names: names.length, brokenNames, tabCovered, sideways: document.scrollingElement.scrollWidth > innerWidth };
   document.scrollingElement.scrollTop = 0; return r;
 });
 
@@ -110,8 +119,10 @@ for (const [w, h, lang] of CASES) {
       check(`${tl}: every Explore control can be reached`, m.unreachable.length === 0, m.unreachable.join(", "));
       check(`${tl}: no control's words are cut`, m.cut.length === 0, m.cut.join(", "));
       check(`${tl}: no control runs past the Explore view's sides`, m.outside.length === 0 && !m.sideways, m.outside.join(", "));
+      if (!m.popup) check(`${tl}: the docked tabs are not covered (the Zab bar from 768px)`, !m.tabCovered);
+      if (level === "Surah 2") check(`${tl}: no Approach name breaks inside a word (${m.names} rows)`, m.names > 0 && m.brokenNames.length === 0, m.brokenNames.join(", "));
       if (level === "Surah 2") check(`${tl}: both steps are on screen`, m.steps.length === 2 && m.steps.every((x) => x >= 44), JSON.stringify(m.steps));
-      if (w < 900) check(`${tl}: the controls keep the panel's width less 24px a side (${m.ctlW}px of ${m.panelW})`, m.ctlW >= m.panelW - 2 * 24 - 4);
+      check(`${tl}: the Explore panel's sides are never more than 24px (${m.padL}/${m.padR})`, m.padL <= 24.5 && m.padR <= 24.5);
       if (w >= 900) check(`${tl}: on a PC Explore stays a window and the page never scrolls`, m.popup && !m.tall && !m.userScroll);
       const k = `${lang} ${w}x${h}`;
       if (size === "100%" && level === "Whole Quran" && PLAIN[k]) check(`${tl}: at ordinary text nothing moves (Explore ${m.evH}px, was ${PLAIN[k]})`, !m.tall && Math.abs(m.evH - PLAIN[k]) <= 1);
