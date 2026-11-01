@@ -117,6 +117,10 @@ jobs:
       - name: Run the seven deterministic governance suites
         id: suites
         run: |
+          # GitHub runs `run:` under `bash -e`, so without this the first suite that
+          # exits non-zero ends the step inside `out=$(...)`, the other suites never
+          # run and the recap is never printed (seen on release PR #1414, 2 Nov 2026).
+          set +e
           set -uo pipefail
           suites="programme-ledger programme-ledger-mutations brief-integrity study-activity-evidence-boundary study-activity-evidence-boundary-mutations study-event-wiring rules-authorisation-executable workflow-expressions"
           failed=0
