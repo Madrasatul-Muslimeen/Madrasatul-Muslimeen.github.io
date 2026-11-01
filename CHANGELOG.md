@@ -23203,3 +23203,9 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 - **Both files are shared in-page note scripts that QR pins byte for byte; the PCA was sent a change notice.**
 - `tools/i18n-verify/note-window-large-text-browser.mjs` gains switch checks, day and night: switch present and no ▾/▸ glyph, ON/OFF in step with `aria-expanded` and the Details, click/Enter/Space toggle, ≥40px and inside the window, contrast. Builder: 84 views, 541/0.
 - Measured by the Architect: 768 85/0, journey-note-windows 254/0, journey-note-folds-windows 82/0, journey-tags 363/0. Mutations: fix-glyph at 1440 bn fails 12, fix-aria at 360 fails 24. Close-up screenshots of the switch shut and open (390 en day, 1024 bn night) looked at.
+
+## v13.20 — 2 Nov 2026 — Mapping My Journey's "Open full page" leaves a way back (audit part 153)
+
+- `app/journey-map.html` (audit part 153, issue #1411, Builder PR #1413, the way-back law, decision 86): the note pane's ⋯ → "Open full page" opened `journey-map.html?note=…#view` in `_top` with no `back=1`, so the reader landed on the full page with no ← Back. It now adds `&back=1`; the page's existing `back=1` handler shows ← Back. No shared note script changed.
+- New `tools/i18n-verify/way-back-shared-tools-browser.mjs`: inventories 87 in-app links on Notes, Mapping My Journey, Bookmarks and Records (83 page-leaving, all with `back=1`/`navBack=1`), and checks back present, back works and the page restored for Import Notes, Open full page and a bookmark's Open, at 390 and 1024.
+- Measured by the Architect: en 24/0, bn 24/0; mutations fullpage fails 2 per language, import fails 4; journey-note-pane 327/0; ← Back looked at (390 en, 1440 bn). Large-text shared pages at 820/1024/1180/1440 (Import Notes, Notes, Mapping My Journey, Bookmarks, Records): 768/0, every control reachable.
