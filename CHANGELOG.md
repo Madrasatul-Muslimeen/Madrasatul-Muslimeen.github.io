@@ -23083,3 +23083,47 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 - **The v12 line is archived as `legacy-v12/`** (v12.139, d746289), checked file by file by `brief-integrity.mjs`.
 - **Measured (Architect):** note-opener-browser 290/0 (8 mutations proven by the builder) at 360/390/768/820/1024/1180/1440 en+bn; note-ref-block 12/0; note-sanitize-boundary 14/0; ayah-card-window 264/0; hadeethenc-note-back 18/0; read-quick-buttons 254/0 (two decision-95 assertions updated in place); behaviour.mjs alone 972/0; brief-integrity 14/0; rules-authorisation-executable 80/0; stub-parity 4/0; apps-build-check 48/0; screenshots 360 bn and 1180 en looked at. QR Lead and Hadith Lead reviewed their sides: OK. Builder's further suites: journey-editor 577/0, journey-sheet 962/0, journey-tray 227/0, qr-verify 27/28 (upgrade-browser needs a QR clone).
 - **Known, for a later round:** on a phone the editor's two formatting rows push the Note text ~440px down (the demo had none); the Read bar's 📝 and other "open existing Notes" doors still open the Notes list.
+
+## v13.02 — 31 Oct 2026 — Quran Study: Listening and the Mushaf full screen at large text (QR Lead audits 4 and 5)
+
+- **Listening (PCF User Manual 9m107jl):** 📖 Read / ▶ Play no longer have a fixed 40px height and wrap a line each only when they cannot share one (360px at 200%: "▶ Play" needed 111px, got 45); the Mode picker's minimum is `min(8rem, 100%)`, so it never runs past the card; the 480px wrap is repeated as a `@container (max-width: 22rem)` on `#drillControls`, so text size counts too; a stacked drawer head that would leave the options under 6rem becomes `qr-panel-head-tight` (title hidden visually, Save beside ✕); a reciter whose name already says "whole surah only" no longer reads it twice.
+- **Mushaf bare full screen (Manual d9d78ub):** `fitReadBareBar()` (run by `checkReadFit()`) gives `#mushafPageRef` a line of its own only when its words are cut below 3.5 letters' room, and below 600px lets Notes / Record / Approach wrap only when a word is cut, the reading keeping the row's measured height (`--rq-h`).
+- **Suites (QR Lead, mutation-proven):** `qr-listening-large-text-browser.mjs` (unfixed 126/50, 6 mutations), `qr-mushaf-large-text-browser.mjs` (unfixed 125/16, 5 mutations).
+- **Measured by the Architect:** see the milestone line in `CLAUDE.md` (now in `docs/governance/brief-history.md`). Nothing stored, no Rules change.
+
+## v13.03 — 31 Oct 2026 — Keyboard fixes from audit part 142 (My account card, New bookmark)
+
+- **D1** `account-card.js`: when the card is opened from the Home menu, focus returns to that menu's own summary on close (the opener is hidden once the menu shuts, so focus used to drop to `<body>`).
+- **D3** `account-card.js`: the `aria-modal` card holds Tab and Shift+Tab inside itself while open (9–27 controls behind it were reachable).
+- **D2** `bookmarks.html`: Escape closes the New bookmark form like Cancel, also while focus is still on + New bookmark, and focus returns to that button.
+- **Suites:** `audit142-focus-browser.mjs` (Architect; mutations no-d1/no-d2/no-d3), and the Builder's `shared-tools-a11y-browser.mjs` (first version; run 2324 lost its GitHub token before its later fixes and report were pushed — findings are on issue #1363). D4–D6 (contrast in `quranrevival.html`, frozen Quran Study) sent to the QR Lead.
+
+## v13.04 — 31 Oct 2026 — Quran Study: the Word card's Taṣrīf table at large text, and three contrast fixes (QR Lead audits 6 and 7)
+
+- **Audit 6 (Word card, Manual 9a6dqv8):** under `@container wordcard (max-width: 18rem)` the Taṣrīf noun table stacks: each row's name on its own line, its three cells in a 3-column grid; case heads may hyphenate; "not in the Qur'an" a little smaller. Suite `qr-word-card-tasrif-fit-browser.mjs` (unfixed 50/18; mutations no-stack, no-grid, wide).
+- **Audit 7 (Builder part 142 D4–D6):** Night `.wheel-heading` on the page `#7a5410`; `.wheel-unit-capsule-caret` opacity 0.9; Light `.ways-caret` `#7a5410`. Suite `qr-wheel-contrast-browser.mjs` (mutations heading 2.40, caret 4.49, ways 1.45 reproduce the Builder's numbers).
+- Also the QR Lead's handover D (docs). Nothing stored, no Rules.
+
+## v13.05 — 31 Oct 2026 — Quran Study: the A± text-size sliders stay below the top bar (QR Lead)
+
+- `fitReadTextSize()` keeps a ceiling under `#topNav` when the nav is on screen above A±, so on QR at 1280x800 200% the first slider is no longer covered by the top nav. Nothing changes on MSA.
+- `qr-text-size-reach-browser.mjs`: mutation no-ceil (proven on the QR build). Also QR Lead handover E (docs; carries the design of audit 6b, a Qur'an word never split in the Taṣrīf cells). Nothing stored, no Rules.
+
+## v13.06 — 31 Oct 2026 — Quran Study: the Word card's level tabs at large text (QR Lead)
+
+- Below 600px: `[role=tab]` `min-width: min-content`, `overflow-wrap: normal`, the tab list wraps; under `@container wordcard (max-width: 11.5rem)` each tab takes `flex-basis: 28%` (three and two). `.word-card-tab-sub` wraps instead of being cut.
+- Suite `qr-word-card-tabs-large-text-browser.mjs` (en+bn; 320–1280; 100/150/200%; mutations no-minw, no-sub, no-three). Nothing stored, no Rules.
+
+## v13.07 — 31 Oct 2026 — Keyboard fixes from audit part 143 on the v13 Note window (the Architect)
+
+- **D1/D2** `note-opener.js`: below 1024px (full screen) the Note window is `aria-modal="true"` and every other child of `<body>` is `inert` while it is open (`syncHold()`; the iframe cannot pass Tab up, so a key handler alone could not wrap it). Minimised (`data-mm-min`) or floating (from 1024px, non-modal by design: J81, J108) it holds nothing; `#mmMinDock` is never held.
+- **D3** the 📎 Attach sheet wraps Tab/Shift+Tab inside itself; the Note iframe is inert while the sheet is open.
+- **D4** closing Attach by Escape, Cancel, the backdrop or a done Attach focuses the Note's own 📎 (`mmsa-new-note-focus-tool` → `journey-map.html`).
+- **M1** `journey-map.html`: the pressed ✏️/✓ tool's focus ring is gold (`#c9a24b`).
+- `note-window-a11y-browser.mjs` updated in place: (b2) asserts the floating window is non-modal, and that minimising frees the page. Nothing stored, no Rules.
+
+## v13.08 — 1 Nov 2026 — Every show/hide is an ON/OFF switch, not an arrow (PCF MSA J109, the Architect)
+
+- `css/shell.css`: one shared switch (teal ON, grey OFF, 40x24) replaces the ▸/▾ arrow on every section that shows or hides content: `details.ayah-nv-sec`, `.ayah-ft-sec`, `.ayah-related-more`, `.word-card-dict-more`, `.word-card-more-entries` (summary ::before; the marker hidden); `button > .ways-caret`, `.trk-sec-caret`, `.word-card-form-caret`, `.note-sec-arrow` and `button[data-sec-fold]` (glyph at font-size 0, state from `aria-expanded`); `.mm-sw`.
+- `quranrevival.html`: the Word card's section chevron (⌄/⌃) is the switch; its grid column 20px → 40px. `writing-sheet.js`: Tools is the switch beside "Tools".
+- Menus keep ▾ and folder trees keep ▸ (J109 Q1, the Owner: A). New suite `show-hide-switch-browser.mjs` (mutation nocss); `writing-sheet-browser.mjs` updated in place. Display only; nothing stored, no Rules.

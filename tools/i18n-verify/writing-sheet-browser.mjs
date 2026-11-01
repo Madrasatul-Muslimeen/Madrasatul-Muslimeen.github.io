@@ -490,10 +490,12 @@ for (const lang of ["en", "bn"]) {
   // Owner asked "Need a bookmark button here", so 🔖 Bookmark joined row 2 and the toolbar holds 12.
   // UPDATED IN PLACE (the Owner, 9 Oct 2026, "a progress record button for All family"; #719/#720): ✅ Record joined
   // row 2, so 13 controls now. Reason recorded rather than the count loosened.
-  check(`[${lang}] toolbar shown by default: 13 controls, toggle reads ${lang === "bn" ? "▴ লুকান" : "▴ Hide"}`, a.shown === 13 && a.toggle === (lang === "bn" ? "▴ লুকান" : "▴ Hide") && a.expanded === "true", JSON.stringify(a));
+  // UPDATED IN PLACE (PCF MSA J109, the Owner 1 Nov 2026: "Instead arrow to on/off, i want the toggle way"): the toggle is the
+  // shared ON/OFF switch (.mm-sw) beside the word "Tools"; its state is aria-expanded, no longer "▴ Hide" / "▾ Tools".
+  check(`[${lang}] toolbar shown by default: 13 controls, toggle reads ${lang === "bn" ? "সরঞ্জাম" : "Tools"} with its switch ON`, a.shown === 13 && a.toggle === (lang === "bn" ? "সরঞ্জাম" : "Tools") && a.expanded === "true", JSON.stringify(a));
   await page.click('#writingSheet [data-ws="tools"]'); await page.waitForTimeout(150);
   const b = await tb();
-  check(`[${lang}] Hide leaves only the Tools button, on screen`, b.shown === 1 && b.toggle === (lang === "bn" ? "▾ সরঞ্জাম" : "▾ Tools") && b.expanded === "false" && b.inView, JSON.stringify(b));
+  check(`[${lang}] Hide leaves only the Tools button, on screen`, b.shown === 1 && b.toggle === (lang === "bn" ? "সরঞ্জাম" : "Tools") && b.expanded === "false" && b.inView, JSON.stringify(b));
   await closeSheet(page); await openSheet(page);
   const c = await tb();
   check(`[${lang}] the hidden choice is remembered when the sheet opens again`, c.shown === 1, JSON.stringify(c));

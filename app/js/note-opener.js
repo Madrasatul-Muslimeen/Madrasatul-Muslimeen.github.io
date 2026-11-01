@@ -60,6 +60,23 @@ body.no-dragging { user-select: none; }
 let win = null, frame = null, titleEl = null, countEl = null, msgEl = null, attachEl = null, rect = null;
 let cur = null; // the opening on screen: { refs, unitKey, unitLabel, title, backLabel, onClosed, onOpenExisting, noteId, count }
 let closing = null;
+let heldInert = []; // audit 143 D1: the page's own elements made inert while the window holds it (only ones that were not already)
+
+/** Audit 143 D1/D2. FULL SCREEN (below WINDOW_FROM) the window covers the whole page, so it is modal: aria-modal="true" and
+    every other child of <body> inert, so neither Tab nor a screen reader reaches the page behind (the window's iframe cannot
+    pass its Tab keys up, so a key handler alone could not wrap it). FLOATING (from WINDOW_FROM) it is a non-modal window on
+    purpose -- the page beside it stays usable (J81, J108) -- and minimised it is only a chip, so neither holds the page.
+    The minimised-windows dock (#mmMinDock) is never held: its chips bring other windows back. */
+function syncHold() {
+  const hold = !!win && !win.hidden && !win.hasAttribute("data-mm-min") && isFull();
+  if (hold) win.setAttribute("aria-modal", "true"); else win?.removeAttribute("aria-modal");
+  if (!hold) { releasePage(); return; }
+  for (const el of document.body.children) {
+    if (el === win || el.id === "mmMinDock" || el.inert || el.tagName === "SCRIPT" || el.tagName === "STYLE") continue;
+    el.inert = true; heldInert.push(el);
+  }
+}
+function releasePage() { for (const el of heldInert) el.inert = false; heldInert = []; }
 
 const isFull = () => window.innerWidth < WINDOW_FROM;
 function loadRect() {
@@ -75,6 +92,7 @@ function apply() {
   if (!win) return;
   const full = isFull();
   win.classList.toggle("no-full", full);
+  syncHold();
   if (full) { for (const p of ["left", "top", "width", "height"]) win.style.removeProperty(p); return; }
   rect = clampRect(rect ?? loadRect() ?? defaultRect(), LIMITS);
   Object.assign(win.style, { left: `${rect.x}px`, top: `${rect.y}px`, width: `${rect.w}px`, height: `${rect.h}px` });
@@ -131,9 +149,10 @@ function build() {
   }
   document.body.appendChild(win);
   window.addEventListener("resize", apply);
+  new MutationObserver(syncHold).observe(win, { attributes: true, attributeFilter: ["hidden", "data-mm-min"] }); // minimise / bring back
   document.addEventListener("keydown", (e) => {
     if (e.key !== "Escape" || !win || win.hidden) return;
-    if (!attachEl.hidden) { e.preventDefault(); closeAttach(); return; }
+    if (!attachEl.hidden) { e.preventDefault(); closeAttach({ restore: true }); return; }
     closeNewNote();
   });
   window.addEventListener("message", onMessage);
@@ -219,7 +238,7 @@ export async function openNewNote({ ref = null, unitKey = null, unitLabel = "", 
   win.hidden = false;
   restoreWindow(win);
   rect = null;
-  apply();
+  apply(); // ...which also holds the page when full screen (syncHold)
   win.querySelector(".no-close").focus({ preventScroll: true });
 }
 
@@ -254,6 +273,7 @@ function finishClose(runOnClosed = true, thenRun = null) {
   // that is no longer on screen. `onClosed` then puts it where the reader came from.
   if (win.contains(document.activeElement)) document.activeElement.blur();
   win.hidden = true;
+  releasePage(); // before onClosed, which puts the focus back on the page
   closeAttach();
   frame.removeAttribute("src"); // fresh every time: a new Note each opening
   const fn = cur?.onClosed;
@@ -291,14 +311,14 @@ function openAttach() {
     q("[data-no-attach-err]").textContent = "";
   };
   attachEl.querySelectorAll("[data-no-attach-kind]").forEach((b) => b.addEventListener("click", () => { attachKind = b.dataset.noAttachKind; paintKind(); q("[data-no-attach-input]").focus(); }));
-  q("[data-no-attach-cancel]").addEventListener("click", closeAttach);
+  q("[data-no-attach-cancel]").addEventListener("click", () => closeAttach({ restore: true }));
   const go = async () => {
     const btn = q("[data-no-attach-go]"), err = q("[data-no-attach-err]");
     btn.disabled = true; err.textContent = "";
     try {
       const ref = await loadRefFor(attachKind, q("[data-no-attach-input]").value);
       toFrame({ type: "mmsa-new-note-add-ref", ref });
-      closeAttach();
+      closeAttach({ restore: true });
     } catch (e) {
       err.textContent = e?.userMessage || t("That could not be found. Please check it and try again.");
       btn.disabled = false;
@@ -306,11 +326,31 @@ function openAttach() {
   };
   q("[data-no-attach-go]").addEventListener("click", go);
   q("[data-no-attach-input]").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); go(); } });
-  attachEl.addEventListener("click", (e) => { if (e.target === attachEl) closeAttach(); });
+  attachEl.onclick = (e) => { if (e.target === attachEl) closeAttach({ restore: true }); };
+  // audit 143 D3: the sheet is aria-modal, so Tab wraps inside it (the Note behind is inert while it is open)
+  attachEl.onkeydown = (e) => {
+    if (e.key !== "Tab") return;
+    const all = [...attachEl.querySelectorAll("button, input")].filter((x) => !x.disabled && x.offsetParent !== null);
+    if (!all.length) return;
+    const first = all[0], last = all[all.length - 1], at = document.activeElement;
+    if (e.shiftKey ? (at === first || !attachEl.contains(at)) : (at === last || !attachEl.contains(at))) { e.preventDefault(); (e.shiftKey ? last : first).focus(); }
+  };
+  frame.inert = true;
   paintKind();
   q("[data-no-attach-input]").focus();
 }
-function closeAttach() { if (!attachEl) return; attachEl.hidden = true; attachEl.replaceChildren(); }
+/** `restore`: the reader closed it (Escape, Cancel, the backdrop, or a done Attach) -- the focus goes back to the Note's own 📎,
+    which opened it (audit 143 D4; it used to drop to <body>, sending a keyboard reader back to the top of the page). */
+function closeAttach({ restore = false } = {}) {
+  if (!attachEl) return;
+  const wasOpen = !attachEl.hidden;
+  attachEl.hidden = true; attachEl.replaceChildren();
+  if (frame) frame.inert = false;
+  if (restore && wasOpen && win && !win.hidden) {
+    try { frame.contentWindow?.focus(); } catch { /* not loaded */ }
+    toFrame({ type: "mmsa-new-note-focus-tool", tool: "attach" });
+  }
+}
 
 const westernDigits = (s) => String(s ?? "").replace(/[০-৯]/g, (d) => String("০১২৩৪৫৬৭৮৯".indexOf(d))).replace(/[٠-٩]/g, (d) => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)));
 const userError = (key, vars) => Object.assign(new Error(key), { userMessage: t(key, vars) });

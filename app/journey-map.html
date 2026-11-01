@@ -465,6 +465,7 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
   html.new-mode .nn-tb[data-nn-tool="folders"] { border-color: #2a5bb8; color: #2a5bb8; font-weight: 600; }
   html.new-mode .nn-tb[aria-pressed="true"] { background: #1F3A6E; color: #fff; border-color: #1F3A6E; }
   html.new-mode .nn-tb:focus-visible { outline: 3px solid #2a5bb8; outline-offset: 2px; }
+  html.new-mode .nn-tb[aria-pressed="true"]:focus-visible { outline-color: #c9a24b; } /* audit 143 M1: the blue ring was 1.74:1 on the pressed navy */
   html.new-mode .nn-lbl { display: none; font-size: 0.95rem; }
   html.new-mode #notePane [data-pane-menu-wrap] > [data-pane-menu-btn] { width: 100%; height: 44px; min-height: 44px; min-width: 0; box-sizing: border-box; }
   @media (min-width: 640px) {
@@ -4383,6 +4384,9 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
           const ok = !!paneView.ed && noteViews.insertRef(paneView, m.ref);
           if (!ok) showPageStatus(t("Open the Note for editing to attach an Āyah or Hadith."));
           toOpener({ type: "mmsa-new-note-ref-added", ok });
+        } else if (m.type === "mmsa-new-note-focus-tool" && typeof m.tool === "string") {
+          // audit 143 D4: the opener's 📎 sheet closed -- the focus comes back to the tool that opened it
+          notePaneEl.querySelector(`[data-nn-tool="${CSS.escape(m.tool)}"]`)?.focus();
         } else if (m.type === "mmsa-new-note-close") {
           const ok = await closeNewNote();
           if (!ok) { showPageStatus(t("Not saved yet — will try again")); if (paneView.noteId && !paneView.ed) notePaneEl.querySelector("[data-pane-edit-toggle]")?.click(); }

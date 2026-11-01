@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "13.01",
+    "version": "13.08",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -5957,7 +5957,7 @@
     {
       "version": "13.01",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "J108 v13.01-31.10.26: every Note button opens one new Mapping My Journey Note in a shared window; Āyah/Hadith blocks inside the Note; legacy-v12 archived.",
       "integration": {
         "authorizedOn": "2026-10-31",
@@ -5965,10 +5965,101 @@
         "method": "MERGE_PR",
         "reference": "CHANGELOG.md"
       }
+    },
+    {
+      "version": "13.02",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "QR Lead audits 4 (Listening) and 5 (Mushaf bare full screen) at large text; Quran Study only, no data or Rules.",
+      "integration": {
+        "authorizedOn": "2026-10-31",
+        "integratedOn": "2026-10-31",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.03",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Builder audit part 142 (#1363) findings D1-D3 fixed by the Architect: account card focus return and Tab hold, Escape on New bookmark; shared tools only, no data or Rules.",
+      "integration": {
+        "authorizedOn": "2026-10-31",
+        "integratedOn": "2026-10-31",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.04",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "QR Lead audits 6 (Word card Taṣrīf case table at large text) and 7 (Builder part 142 D4-D6 contrast on the Quran Study landing); Quran Study only, no data or Rules.",
+      "integration": {
+        "authorizedOn": "2026-10-31",
+        "integratedOn": "2026-10-31",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.05",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "QR Lead: fitReadTextSize gets a ceiling under the top nav so the A± sliders are never covered at large text on a computer (a QR-only fault); Quran Study only, no data or Rules.",
+      "integration": {
+        "authorizedOn": "2026-10-31",
+        "integratedOn": "2026-10-31",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.06",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "QR Lead: Word card level tabs never break a name inside a word at large text on a phone (two rows, three and two, under an 11.5rem card) and the sub-line wraps rather than being cut from 600px; CSS only, Quran Study, no data or Rules.",
+      "integration": {
+        "authorizedOn": "2026-10-31",
+        "integratedOn": "2026-10-31",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.07",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Audit part 143 D1-D4 + M1 fixed by the Architect: the full-screen Note window holds the page, Attach holds Tab and returns focus to its button, the pressed-tool ring is gold.",
+      "integration": {
+        "authorizedOn": "2026-10-31",
+        "integratedOn": "2026-10-31",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.08",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "PCF MSA J109: every section that shows or hides content wears the shared ON/OFF switch instead of an arrow (the Owner, 1 Nov 2026).",
+      "integration": {
+        "authorizedOn": "2026-11-01",
+        "integratedOn": "2026-11-01",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
     }
   ],
-  "nextUnallocated": "13.02",
+  "nextUnallocated": "13.09",
   "nextUnallocatedNote": [
+    "v13.08 was allocated to every show/hide as an ON/OFF switch (J109), 2026-11-01.",
+    "v13.07 was allocated to the v13 Note window keyboard fixes (audit part 143), 2026-10-31.",
+    "v13.06 was allocated to Quran Study: the Word card's level tabs at large text (QR Lead), 2026-10-31.",
+    "v13.05 was allocated to Quran Study: the A± text-size sliders open below the top bar on QR (QR Lead), 2026-10-31.",
+    "v13.04 was allocated to Quran Study: the Word card's Taṣrīf table at large text, and three contrast fixes on the landing (QR Lead audits 6 and 7), 2026-10-31.",
+    "v13.03 was allocated to audit part 142 fixes: the My account card and New bookmark keyboard focus, 2026-10-31.",
+    "v13.02 was allocated to Quran Study: Listening and the Mushaf full screen at large text (QR Lead audits 4 and 5), 2026-10-31.",
     "v13.01 was allocated to J108: one Note from every Note button (v13 begins), 2026-10-31.",
     "v12.139 was allocated to Quran Study: the A± text-size controls stay on screen at large text, 2026-10-31.",
     "v12.138 was allocated to the Escape fixes from audit part 141 and the Read view at large text, 2026-10-31.",

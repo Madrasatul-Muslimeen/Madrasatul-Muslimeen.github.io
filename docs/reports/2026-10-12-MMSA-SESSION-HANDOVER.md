@@ -7,7 +7,62 @@ v10.28). Read `CLAUDE.md` first. The prompt that starts the next session is
 
 This session was summarised once (its context compacted), which is why it hands over here.
 
-## LATEST UPDATE — 31 Oct 2026, ~12:25 pm Sydney, session `session_01PL2xbNKZ2gQsFCCR3KyyeV` (v12.135–v12.137 live on MSA; HANDOVER) — READ THIS FIRST
+## LATEST UPDATE — 31 Oct 2026, ~6:55 pm Sydney, session `session_01PL2xbLYSNq3VaA8Hi5jFfq` (v13.02–v13.06 live on MSA; HANDOVER) — READ THIS FIRST
+
+Took over 4:55 pm 31 Oct from `session_01PL2xbJ2ncUt43CiJpHVZJf`. Handing over at ~40% context (hand119). **PCA: `session_01PL2xbN7ENRBkhtTNxJAt2L`**. Leads: **QR `session_01PL2xbHxdLPRKi4KNVXpGHX`** (took over from `…LGPyYo53GXRKWojym` ~5:45 pm); **Hadith `session_01PL2xbKWeTSDEBJV5UWZTcQ`**; **Dua `session_01PL2xbMaXuwbA6usFZSB5kr`**; Health `session_01SPFtgC4vwVzby6PR12Z9ek`. Keep-alive **`trig_01JRTVVtRwJbX7s5cjxUcBjM`** (8:07 am/pm) — ask the PCA to repoint it.
+
+**State:** `main` is **v13.06** (shown "v13.06-31.10.26"). Next version **v13.07**. MSA served 13.05 at 6:52 pm (13.06 publishing). **QR still serves 13.01** — its build-from-msa needs one Run (PCA told twice; v13.05 is a QR-only fix).
+
+**Released this session:** v13.02 (#1368, QR Lead audits 4+5: Listening + Mushaf full screen at large text) · v13.03 (#1369, Builder part 142 findings D1–D3 fixed by the Architect: account card focus return + Tab hold, Escape on New bookmark; `audit142-focus-browser.mjs`, the Builder's run lost its token) · v13.04 (#1372, QR Lead audit 6 Taṣrīf table at large text + audit 7 contrast D4–D6) · v13.05 (#1373, QR-only A± ceiling under QR's top nav; proven on the QR build with `serve-app.mjs build/qr` PORT=8094) · v13.06 (#1374, Word card level tabs at large text).
+
+**Next, in order:**
+1. **QR Lead audit 6b** (a Qur'an word never split in the Taṣrīf cells; design in QR handover E). Check that a word too long even at the 0.8 floor takes the whole grid row and stays inside its box at 320 200% (not only "not split").
+2. **Builder round 143** (#1370, report only: the v13 Note window, notes.html, journey-map.html a11y) — dispatched 5:35 pm; no PR yet. If its run dies again, recover findings from the issue comment and open the PR from its branch.
+3. J108 follow-ups (offer only): phone editor's two format rows push the Note text down; the Read bar's 📝/⋮/bookmark doors still open the Notes list.
+4. **hadithSubjects rule** waits on the Owner's J106 n106f (see the 4:50 pm block below for the steps; app branch `claude/hadith-lead-01q2` 738e689 is release-ready only after the Owner publishes).
+5. **BWN J27 Stage 2**: MSA's plan is filed as `j27c-msa-s2`; the Owner's tick list is `n27s2p`. Build nothing until approved.
+
+**Waiting on the Owner:** J106 n106f · J27 n27s2p · J105 · J104 ticks 6–10 · J29 questions · QR's build-from-msa Run.
+
+**Lessons (this session):**
+1. **A QR-only fault cannot be mutation-proven on MSA**: `--mutate` passed green on MSA; build QR (`node tools/apps/build-app.mjs qr`) and serve it with `PORT=8094 node tools/apps/serve-app.mjs build/qr`, then run the suite with `QR_BASE` inline.
+2. **A suite with no screenshot option**: copy it to a temporary `_shot.mjs` with `sed` (narrow the width list, add `page.screenshot` before `ctx.close()`), scroll every scroller to the top for headers, run, delete it.
+3. **A Builder suite can catch what your own probe misses**: my D2 fix listened on the form only; the Builder's suite pressed Escape with focus still on the opener. Run the Builder's suite on the pages you fixed, not only your own.
+4. **PCF writes of `manual`/`done` need the whole array**: re-get the doc, insert/append in a script, write with `file_path` pinned by `if_version`.
+
+**Next session's opening message:**
+
+> Bismillah. You are the MSA Master Architect, taking over from session_01PL2xbLYSNq3VaA8Hi5jFfq (hand119, 31 Oct ~6:55 pm Sydney). Your session title is "📌 (03) MSA Master Architect" (num128). Read CLAUDE.md, ARCHITECT.md, then docs/reports/2026-10-12-MMSA-SESSION-HANDOVER.md, its LATEST UPDATE block of 31 Oct 6:55 pm first. FIRST: test GitHub write (git push --dry-run origin HEAD:refs/heads/claude/access-probe). Do NOT retry add_repo QuranRevival; check QR's live version with curl (https://quranrevival.github.io/app/js/qr-version.js) after each release and tell the PCA if it lags. Read the PMS (https://claude.ai/artifact/PhW1KKX28qrqj9dE7Ha8dZ): meta/global General rules and p/mmsa; answer any new Owner comments. Set p/mmsa.sessionUrl (pin with if_version). Send the PCA (session_01PL2xbN7ENRBkhtTNxJAt2L) "PCA ▸ taken over" and ask it to repoint the MSA keep-alive (trig_01JRTVVtRwJbX7s5cjxUcBjM). main is v13.06; next v13.07. FIRST JOB: review the QR Lead's audit 6b (session_01PL2xbHxdLPRKi4KNVXpGHX) when handed in; then Builder round 143 (#1370). Waiting on the Owner: J106 n106f, J27 n27s2p, J105, J104 ticks 6–10, the J29 questions, QR's one-tap build. Leads: (03A) QR session_01PL2xbHxdLPRKi4KNVXpGHX; (03B) Hadith session_01PL2xbKWeTSDEBJV5UWZTcQ; (03C) Dua session_01PL2xbMaXuwbA6usFZSB5kr; (03D) Health session_01SPFtgC4vwVzby6PR12Z9ek. Review rule: 360, 390, 768, 820, 1024, 1180, 1440, English and Bangla, screenshots looked at, real-length data; a shared CSS change is measured on every page that links the file. Curl a changed file from your review server's port before measuring; restart serve.js for each review (2-hour limit). Link Playwright into any new worktree. Run behaviour.mjs alone. Prove a QR-only fix on the QR build. Never export QR_BASE into the shell that runs qr-verify (env -u QR_BASE). Push every review merge at once. Never pkill -f. Keep-alive every 12 hours (ka122). No self wake-ups (cost86). Hand over at ~40% context (hand119). After "Rasulullah" always write "Sallallahu A'laihi Wa Sallam" (saw128). Write "Siyagah" in full.
+
+## LATEST UPDATE — 31 Oct 2026, ~4:50 pm Sydney, session `session_01PL2xbJ2ncUt43CiJpHVZJf` (v12.138, v12.139, v13.01 live on MSA; HANDOVER) (superseded 31 Oct 6:55 pm)
+
+Took over 12:27 pm 31 Oct from `session_01PL2xbNKZ2gQsFCCR3KyyeV`. Handing over at ~40% context (hand119). **PCA: `session_01PL2xbN7ENRBkhtTNxJAt2L`** (moved 1:24 pm). Leads: **QR `session_01PL2xbLGPyYo53GXRKWojym`**; **Hadith `session_01PL2xbKWeTSDEBJV5UWZTcQ`**; **Dua `session_01PL2xbMaXuwbA6usFZSB5kr`**; Health `session_01SPFtgC4vwVzby6PR12Z9ek`. Keep-alive `trig_012cgCLZUJbLx27yH4QuRubF` (8:07 am/pm) — ask the PCA to repoint it.
+
+**State:** `main` is **v13.01** (shown "v13.01-31.10.26"), served (curl'd 4:44 pm), `legacy-v12/` served at v12.139. Next version **v13.02**. QR still served **12.134** at 4:10 pm: its build-from-msa did not run; the PCA asked the Owner for the one-tap Run.
+
+**Released this session:** v12.138 (#1364: audit 141 fixes — `assign-picker.js` Escape (Architect), Dua Lead's `claude/dua-audit141`; QR Lead audit 2 read-tall; QR handover B) · v12.139 (#1365: QR Lead audit 3, A± on screen at large text; Dua handover 4) · **v13.01 (#1366: J108, every Note button opens one new Note via `app/js/note-opener.js`; `div[data-mmsa-ref]` blocks in `bodyHtml` rebuilt by `note-sanitize.js`/`note-ref-block.js`; legacy-v12)**. J108 is DONE in the PCF; "J27 Stage 2 can start" sent to the PCA.
+
+**Next, in order:**
+1. **QR Lead audits 4 (Listening) + 5 (Mushaf at large text) as v13.02** — the QR Lead rebases both onto v13.01 and hands in with `claude/qr-lead-handover-1031c` (docs). Review: their suites + read-note-pane + read-quick-buttons + behaviour alone.
+2. **Builder part 142** (#1363, shared tools a11y, report only) — review when its PR lands; shared-tool fixes are the Architect's.
+3. **J108 follow-ups (offer the Owner, build nothing unasked beyond safety):** on a phone the editor's two formatting rows push the Note text ~440px down (demo had none) — fold them until writing; the Read bar's 📝 / ⋮ / bookmark doors still open the Notes list (the builder read "every Note button" as the listed ones).
+4. **hadithSubjects rule** (`claude/hadith-subjects-rule` b203f70, ACCEPTED: suite 1/1, mutate 14/14, re-run by me): waits on the Owner's **J106 n106f**. On A: merge the extract's `match /hadithSubjects/{tenantId}` into `firestore.rules`, re-run rules-authorisation-executable with `claude/hadith-lead-01q2` in place, the Owner publishes with the Lead's guide (`docs/governance/2026-10-31-hadith-subjects-owner-publish-guide.md` on that branch), then release the app branch.
+5. `claude/dua-person-picker` is superseded (both commits in main) but this session's auto-mode refused the branch delete — leave it or ask the Owner.
+
+**Waiting on the Owner:** J106 n106f; try v13.01 (the J108 done line asks); J105; J104 ticks 6–10; J29 j29p102q/120q/121q/126q/127q/128q/129q; QR's one-tap build-from-msa Run.
+
+**Lessons (this session):**
+1. **A background `serve.js` dies at the 2-hour harness limit** and takes any suite still using it down mid-run (behaviour crashed at section 19 with ERR_CONNECTION_REFUSED). Start the server for each review, and re-run any suite whose run overlapped the limit.
+2. **Hold module releases while a new major is being archived.** legacy-v12 was rebuilt twice (v12.138, v12.139) because Lead releases kept landing; I then held audits 4 and 5 until v13.01. Tell the Leads the hold at the start.
+3. **A shallow clone makes `programme-ledger.mjs` report "baseline not an ancestor"** (3 FAILs on main before and after every release this session) — environmental; `git rev-parse --is-shallow-repository` says true.
+4. **The emulator keeps data between runs** (Hadith Lead's find): a rules suite must clearFirestore() and assert absence first, or its create cases are judged by the update rule and create mutations go unproven.
+5. **A delegated build agent works in the main checkout**, so the stop hook reports its WIP as uncommitted; ask it to push WIP after each part rather than committing for it.
+
+**Next session's opening message:**
+
+> Bismillah. You are the MSA Master Architect, taking over from session_01PL2xbJ2ncUt43CiJpHVZJf (hand119, 31 Oct ~4:50 pm Sydney). Your session title is "📌 (03) MSA Master Architect" (num128). Read CLAUDE.md, ARCHITECT.md, then docs/reports/2026-10-12-MMSA-SESSION-HANDOVER.md, its LATEST UPDATE block of 31 Oct 4:50 pm first. FIRST: test GitHub write (git push --dry-run origin HEAD:refs/heads/claude/access-probe). Do NOT retry add_repo QuranRevival; check QR's live version with curl (https://quranrevival.github.io/app/js/qr-version.js) after each release and tell the PCA if it lags. Read the PMS (https://claude.ai/artifact/PhW1KKX28qrqj9dE7Ha8dZ): meta/global General rules and p/mmsa; answer any new Owner comments. Set p/mmsa.sessionUrl (pin with if_version). Send the PCA (session_01PL2xbN7ENRBkhtTNxJAt2L) "PCA ▸ taken over" and ask it to repoint the MSA keep-alive (trig_012cgCLZUJbLx27yH4QuRubF). main is v13.01 (shown v13.01-31.10.26); next v13.02. FIRST JOB: review the QR Lead's audits 4 + 5 (rebased onto v13.01) as v13.02. Then Builder part 142 (#1363). Waiting on the Owner: J106 n106f (hadithSubjects rule, accepted and ready), J105, J104 ticks 6–10, the J29 questions, QR's one-tap build. Leads: (03A) QR session_01PL2xbLGPyYo53GXRKWojym; (03B) Hadith session_01PL2xbKWeTSDEBJV5UWZTcQ; (03C) Dua session_01PL2xbMaXuwbA6usFZSB5kr; (03D) Health session_01SPFtgC4vwVzby6PR12Z9ek. Review rule: 360, 390, 768, 820, 1024, 1180, 1440, English and Bangla, screenshots looked at, real-length data; a shared CSS change is measured on every page that links the file. Curl a changed file from your review server's port before measuring; restart serve.js for each review (2-hour limit). Link Playwright into any new worktree. Run behaviour.mjs alone. Merge main into a Lead branch built on an older main and read the merged files for doubled imports. Never export QR_BASE into the shell that runs qr-verify (env -u QR_BASE). Build QR before bash tools/apps/qr-verify/run-all.sh. Push every review merge at once. Never pkill -f. Keep-alive every 12 hours (ka122). No self wake-ups (cost86). Hand over at ~40% context (hand119). After "Rasulullah" always write "Sallallahu A'laihi Wa Sallam" (saw128). Write "Siyagah" in full.
+
+## LATEST UPDATE — 31 Oct 2026, ~12:25 pm Sydney, session `session_01PL2xbNKZ2gQsFCCR3KyyeV` (v12.135–v12.137 live on MSA; HANDOVER) (superseded 31 Oct 4:50 pm)
 
 Took over 10:22 pm 30 Oct from `session_01PL2xbLHf8J8PcAiWWgNEWD`. Handing over at ~40% context (hand119). **PCA: `session_01PL2xbNViE9udUe3FUJjKBE`.** Leads (new sessions today): **QR `session_01PL2xbJjpvu9ZBaaRQ9AntC`** (10:35 am); **Hadith `session_01PL2xbKWeTSDEBJV5UWZTcQ`** (10:31 am); Dua `session_01PL2xbK8HnnaBgqeNJMJs36`; Health `session_01SPFtgC4vwVzby6PR12Z9ek`. Keep-alive trigger `trig_01K1tRyMNZynZw5Hk6GSrW2v` (8:07 am/pm) — ask the PCA to repoint it.
 
@@ -2300,3 +2355,10 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v12.138** (2026-10-31): the Escape fixes from audit part 141 and the Read view at large text.
 - **v12.139** (2026-10-31): Quran Study: the A± text-size controls stay on screen at large text.
 - **v13.01** (2026-10-31): J108: one Note from every Note button (v13 begins).
+- **v13.02** (2026-10-31): Quran Study: Listening and the Mushaf full screen at large text (QR Lead audits 4 and 5).
+- **v13.03** (2026-10-31): audit part 142 fixes: the My account card and New bookmark keyboard focus.
+- **v13.04** (2026-10-31): Quran Study: the Word card's Taṣrīf table at large text, and three contrast fixes on the landing (QR Lead audits 6 and 7).
+- **v13.05** (2026-10-31): Quran Study: the A± text-size sliders open below the top bar on QR (QR Lead).
+- **v13.06** (2026-10-31): Quran Study: the Word card's level tabs at large text (QR Lead).
+- **v13.07** (2026-10-31): the v13 Note window keyboard fixes (audit part 143).
+- **v13.08** (2026-11-01): every show/hide as an ON/OFF switch (J109).
