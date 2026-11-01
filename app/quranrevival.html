@@ -799,6 +799,18 @@
   body.read-tall #app, body.read-tall #stage, body.read-tall #readView { flex: 0 0 auto; }
   body.read-tall #studyScreen { height: auto; }
   body.read-tall #readScroll { flex: 0 0 auto; height: var(--read-tall-h, 60vh); }
+  /* QR Lead audit 8, 1 Nov 2026: Explore is the same fixed-height screen below 900px, and with large text (200% on a phone; a
+     phone turned sideways even at 100%) the header, the palette rows and the docked tabs took the whole screen: #exploreView
+     measured 0px at 320x640 200% and on every phone turned sideways at 150-200% (no wheel, no list, nothing to tap).
+     checkExploreFit() sets body.explore-tall only while the Explore area is really under 12rem: the page then scrolls as the
+     Read view's read-tall does, and the Explore area keeps the screen's height less the tabs (--explore-tall-h), so one scroll
+     down shows a whole screen of Explore above them; it still scrolls inside itself. Never on a PC, where Explore is a window. */
+  body.explore-tall { height: auto; min-height: 100vh; min-height: 100dvh; overflow: visible; }
+  body.explore-tall #app, body.explore-tall #stage, body.explore-tall #exploreView { flex: 0 0 auto; }
+  body.explore-tall #exploreScroll { flex: 0 0 auto; height: var(--explore-tall-h, 60vh); }
+  /* From 768px the Zab bar (2.75rem, fixed at the bottom) is there too: while Explore or the Read view scrolls, the docked tabs
+     stick above it, as the landing's do (landing-tall). Before this the bar covered the lower half of the tabs (844x390, 768x1024). */
+  @media (min-width: 768px) { body.zab-bar-on.explore-tall #dock, body.zab-bar-on.read-tall #dock { bottom: 2.75rem; } }
 
   /* The wheel look behind "Study Quran" (see #wheelLookSwitch). "dark" is the
      long-standing veil above; "light" is a light-grey veil; "colour" lifts
@@ -1230,7 +1242,7 @@
      project tests except 320px, where the switch takes a tidy line of its own
      rather than anything being cut. */
   .explore-head-row #exploreBreadcrumb { flex: 1 1 auto; min-width: 0; }
-  .explore-head-row #exploreViewToggle { flex: 0 0 auto; margin: 0; }
+  .explore-head-row #exploreViewToggle { flex: 0 0 auto; margin: 0; max-width: 100%; } /* QR Lead audit 8: never wider than its row (Juz / Surahs / Hizb ran 25px past a 320px phone at 200%); its buttons wrap instead */
   /* Issue #342 -- a third button (Hizb) at the Quran level. Measured,
      English, both together on the trail's own row: "Whole Quran" + Juz +
      Surahs + Hizb needs more than the two-button pair ever did, and does not
@@ -1274,6 +1286,14 @@
   .aa-pn { display: flex; gap: 8px; justify-content: flex-end; min-width: 0; }
   /* Architect, 7 Oct 2026: 8px sides, not 12 -- at 390px the Ayah level's "‹ Ayah 28" / "Next Ayah ›" were 3-5px short with a wider fallback font (the page never loads Inter), so they were cut. */
   .aa-pn button { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 42vw; padding: 0 8px; }
+  /* QR Lead audit 8: at the Surah and Ayah levels the steps ("‹ Al-Faatiha", "Aal-i-Imraan ›") were cut to "‹ Al-Fa…" at 320px
+     and to "‹…" (44px) on a phone at 200%. checkExploreFit() sets .aa-nav-wrap only while a step's words really are cut: the
+     two steps then take a line of their own under Back, sharing it, and each its own line only when one line cannot hold both. */
+  .aa-nav.aa-nav-wrap { grid-template-columns: auto 1fr; flex-wrap: wrap; }
+  .aa-nav.aa-nav-wrap > .aa-pn { grid-column: 1 / -1; flex: 1 1 100%; flex-wrap: wrap; }
+  /* ...and All Approaches / One Approach stack, each a whole line, only while a word of theirs is cut (at 150-200% on a phone). */
+  .aa-seg.aa-seg-stack { grid-template-columns: 1fr; }
+  .aa-nav.aa-nav-wrap > .aa-pn button { flex: 1 1 auto; max-width: 100%; }
   .aa-seg { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; background: rgba(0,0,0,.25); padding: 4px; border-radius: 14px; margin: 6px 0 2px; }
   .aa-seg button { background: transparent; color: var(--card-text-muted); border: 0; min-width: 0; }
   .aa-seg button[aria-pressed="true"] { background: linear-gradient(#e8cf8c, #c9a24b); color: #1d2a44; font-weight: 700; }
@@ -1289,6 +1309,11 @@
   .aa-row .aa-nm { font-size: 0.85rem; line-height: 1.3; min-width: 0; color: var(--card-text); overflow-wrap: anywhere; }
   .aa-row .aa-nm small { display: block; color: var(--card-text-muted); font-size: 0.74rem; margin-top: 2px; }
   .aa-row-top { display: flex; gap: 8px; align-items: center; justify-content: flex-end; }
+  /* QR Lead audit 8: at 768x1024 200% the list beside the wheel was so narrow that a name broke inside a word ("Memoris / e
+     (Hifz)"). checkExploreFit() sets .aa-rows-stack only while a word really would not fit beside Take ▸: Take then goes under
+     the name, at the row's end. */
+  .aa-rows.aa-rows-stack .aa-row { grid-template-columns: minmax(0, 1fr); }
+  .aa-rows.aa-rows-probe .aa-nm { overflow-wrap: normal; }
   .aa-strip { grid-column: 1 / -1; display: grid; gap: 1px; min-width: 0; }
   .aa-strip i { height: 8px; border-radius: 2px; min-width: 0; }
   .aa-take { background: linear-gradient(#ecd497, #c9a24b); color: #1d2a44; border: 0; padding: 0 14px; font-weight: 700; white-space: nowrap; }
@@ -1356,6 +1381,9 @@
 
   /* ---------- Explore (Phase 5) ---------- */
   #explorePanel { margin-top: 0; } /* border/background/padding come from .wheel-box (Phase 5 round 12); lives inside the Explore dock panel since shell round 7 */
+  /* QR Lead audit 8: .wheel-box's 1.5rem sides grew to 48px each at 200%, leaving a 320px phone's Explore 158px to write in. Never more
+     than 24px (its size at ordinary text, so nothing moves there). */
+  #explorePanel { padding-left: min(1.5rem, 24px); padding-right: min(1.5rem, 24px); }
 
   /* ---------- Explore, the stage's 4th view (Ayah Collections round 2) ----------
      The owner's own ask: "the Explore panel should increase to the entire
@@ -8606,6 +8634,8 @@
         body.style.setProperty("--rq-h", row.offsetHeight + "px");
       }
     }
+    // The Zab bar's height while it is on screen (fixed at the bottom from 768px; below that it is a corner button).
+    function zabBarH() { const z = document.getElementById("zabBar"); return z && z.getClientRects().length && getComputedStyle(z).position === "fixed" ? z.offsetHeight : 0; }
     function checkReadFit() {
       const body = document.body, rv = document.getElementById("readView"), rs = document.getElementById("readScroll");
       const bar = document.getElementById("readBar"), dockEl = document.getElementById("dock");
@@ -8623,7 +8653,7 @@
       const spill = rs.clientHeight < 12 * rem || barUnder;
       if (spill) {
         // The page of text never reaches under the tabs (the Read view pages sideways, so a hidden line could not be scrolled to).
-        body.style.setProperty("--read-tall-h", Math.max(Math.round(4 * rem), innerHeight - (dockShown ? dockEl.offsetHeight : 0) - 8) + "px");
+        body.style.setProperty("--read-tall-h", Math.max(Math.round(4 * rem), innerHeight - (dockShown ? dockEl.offsetHeight : 0) - zabBarH() - 8) + "px");
         body.classList.add("read-tall");
       }
     }
@@ -8706,6 +8736,59 @@
       if (document.fonts?.ready) document.fonts.ready.then(later);
     }
     if (typeof ResizeObserver === "function" && document.getElementById("quranWordCardMount")) watchTasrifFit();
+    /** QR Lead audit 8: see body.explore-tall in the CSS. The class is cleared before measuring, so each run measures
+        Explore as it would be without it. */
+    function checkExploreFit() {
+      const body = document.body, ev = document.getElementById("exploreView"), es = document.getElementById("exploreScroll"), dockEl = document.getElementById("dock");
+      body.classList.remove("explore-tall");
+      const nav = document.getElementById("exploreNavBar");
+      if (nav) {
+        nav.classList.remove("aa-nav-wrap");
+        if (!nav.hidden && [...nav.querySelectorAll(".aa-pn button")].some((b) => b.getClientRects().length && b.scrollWidth > b.clientWidth + 1)) nav.classList.add("aa-nav-wrap");
+      }
+      const seg = document.getElementById("exploreModeRow");
+      if (seg) {
+        seg.classList.remove("aa-seg-stack");
+        if (!seg.hidden && [...seg.querySelectorAll("button")].some((b) => b.getClientRects().length && b.scrollWidth > b.clientWidth + 1)) seg.classList.add("aa-seg-stack");
+      }
+      for (const rows of document.querySelectorAll("#exploreView .aa-rows")) {
+        rows.classList.remove("aa-rows-stack");
+        if (!rows.getClientRects().length) continue;
+        rows.classList.add("aa-rows-probe");
+        const broken = [...rows.querySelectorAll(".aa-nm")].some((n) => n.scrollWidth > n.clientWidth + 1);
+        rows.classList.remove("aa-rows-probe");
+        if (broken) rows.classList.add("aa-rows-stack");
+      }
+      if (!ev || ev.hidden || !es || !dockEl || getComputedStyle(ev).position === "fixed") return;
+      const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+      const dockShown = dockEl.getClientRects().length > 0 && dockEl.getBoundingClientRect().height > 0;
+      if (es.clientHeight >= 12 * rem) return;
+      body.style.setProperty("--explore-tall-h", Math.max(Math.round(4 * rem), innerHeight - (dockShown ? dockEl.offsetHeight : 0) - zabBarH() - 8) + "px");
+      body.classList.add("explore-tall");
+    }
+    function watchExploreFit() {
+      let queued = false;
+      const later = () => { if (queued) return; queued = true; requestAnimationFrame(() => { queued = false; checkExploreFit(); }); };
+      const ro = new ResizeObserver(later);
+      for (const id of ["dock", "exploreBar", "exploreView"]) { const e = document.getElementById(id); if (e) ro.observe(e); }
+      window.addEventListener("resize", later);
+      // Only the classes that change the answer re-wake it; its own explore-tall changes must not.
+      const sig = () => ["explore-immersive", "landing-view"].map((c) => +document.body.classList.contains(c)).join("");
+      let was = sig();
+      new MutationObserver(() => { const now = sig(); if (now !== was) { was = now; later(); } }).observe(document.body, { attributes: true, attributeFilter: ["class"] });
+      new MutationObserver(later).observe(document.getElementById("exploreView"), { attributes: true, attributeFilter: ["hidden"] });
+      // The steps are written in when a sūrah or āyah opens, and their words decide .aa-nav-wrap.
+      const navEl = document.getElementById("exploreNavBar");
+      if (navEl) new MutationObserver(later).observe(navEl, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ["hidden"] });
+      // The Approach rows are written in when a sūrah opens or the Approach changes, and their words decide .aa-rows-stack.
+      const sideEl = document.getElementById("exploreSidebarContainer");
+      if (sideEl) new MutationObserver(later).observe(sideEl, { childList: true });
+      const segEl = document.getElementById("exploreModeRow");
+      if (segEl) new MutationObserver(later).observe(segEl, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ["hidden"] });
+      new MutationObserver(later).observe(document.documentElement, { attributes: true, attributeFilter: ["style", "class"] });
+      later();
+    }
+    if (typeof ResizeObserver === "function" && document.getElementById("exploreView")) watchExploreFit();
     // Follow-up round: Map(subjectId -> courseOffer contextId) for
     // selectedPersonId -- same mechanism topic-study.js/routine-study.js
     // already use (course-offers.js's programSubjectMapFromEnrollments()).
