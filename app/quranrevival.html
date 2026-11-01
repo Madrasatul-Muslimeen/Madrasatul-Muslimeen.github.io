@@ -4687,7 +4687,9 @@
   .ayah-sheet-ref { font-size: 0.9rem; color: var(--card-heading); font-weight: 600; }
   .ayah-sheet-close { background: none; border: none; color: var(--card-text-muted); font-size: 1.5rem; line-height: 1; min-width: 40px; min-height: 40px; padding: 0.2rem 0.5rem; cursor: pointer; }
   /* PCF MSA J72: the card's ← Back, first in its header (the same as × : back to where the card was opened) */
-  .ayah-sheet-homeback { order: -1; flex: 0 0 auto; width: 40px; height: 40px; border: 1px solid #c9a24b; border-radius: 0.6rem; background: transparent; color: var(--card-heading); font-size: 1.2rem; line-height: 1; cursor: pointer; }
+  /* QR Lead audit 9: a fixed 40x40 box let its arrow (1.2rem) slip out at its bottom-right at 150-200%, leaving an empty oval.
+     The box now grows with its arrow from 40px (the same 40x40 at ordinary text), the arrow in its middle. */
+  .ayah-sheet-homeback { order: -1; flex: 0 0 auto; min-width: 40px; min-height: 40px; padding: 0.15rem 0.35rem; display: inline-flex; align-items: center; justify-content: center; border: 1px solid #c9a24b; border-radius: 0.6rem; background: transparent; color: var(--card-heading); font-size: 1.2rem; line-height: 1; cursor: pointer; }
   /* Owner, 7 Oct 2026 (a photo of the Āyah card, two boxes drawn after the reference): ‹ › step the card
      to the previous / next āyah, then 📖 Note view. One tidy cluster beside the reference, 40px targets. */
   .ayah-sheet-header { gap: 0.4rem; }
