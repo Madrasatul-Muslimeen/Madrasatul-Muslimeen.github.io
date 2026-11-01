@@ -201,7 +201,7 @@ for (const pg of PAGES) for (const [w, h] of WIDTHS) for (const lang of LANGS) {
       if (scale !== 100) { await P.evaluate((s) => { document.documentElement.style.fontSize = s + "%"; }, scale); await P.waitForTimeout(300); }
       await P.evaluate(INSTALL, "#none");
       if (MUTATE === "contrast") await P.evaluate(() => { const p = document.createElement("p"); p.textContent = "Injected grey on grey line"; p.style.cssText = "position:fixed;top:60px;left:10px;margin:0;color:#999;background:#aaa;font-size:16px;z-index:9999"; document.body.appendChild(p); });
-      if (MUTATE === "day") await P.evaluate(() => { const p = document.createElement("div"); p.textContent = "Injected white panel"; p.style.cssText = "width:200px;height:60px;background:#fff;color:#000"; const dark = [...document.body.querySelectorAll("*")].find((e) => { const m = /rgba?\(([^)]+)\)/.exec(getComputedStyle(e).backgroundColor); if (!m) return false; const c = m[1].split(/[ ,/]+/).map(parseFloat); const r = e.getBoundingClientRect(); return (c.length < 4 || c[3] >= 0.95) && (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]) < 60 && r.width > 220 && r.height > 40; }); if (!dark) throw new Error("mutation day: no dark box on this view"); dark.appendChild(p); });
+      if (MUTATE === "day") await P.evaluate(() => { const p = document.createElement("div"); p.textContent = "Injected white panel"; p.style.cssText = "width:200px;height:60px;background:#fff;color:#000"; const dark = [...document.body.querySelectorAll("*")].find((e) => { const m = /rgba?\(([^)]+)\)/.exec(getComputedStyle(e).backgroundColor); if (!m) return false; const c = m[1].split(/[ ,/]+/).map(parseFloat); const r = e.getBoundingClientRect(); return (c.length < 4 || c[3] >= 0.95) && (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]) < 60 && r.width > 220 && r.height > 40; }); if (dark) dark.appendChild(p); else { const d = document.createElement("div"); d.style.cssText = "background:#0b1530;padding:8px;width:260px"; d.appendChild(p); document.body.appendChild(d); } });
       if (MUTATE === "arrow") await P.evaluate(() => { const d = document.createElement("details"); d.innerHTML = "<summary>▸ Injected arrow toggle</summary>x"; d.style.cssText = "position:fixed;top:170px;left:10px;z-index:9999;color:#fff"; document.body.appendChild(d); });
       const look = await P.evaluate(() => document.documentElement.getAttribute("data-card-look"));
       check(t2 + ": night look is on (positive control)", look === "night", "data-card-look=" + look);
@@ -219,7 +219,7 @@ for (const pg of PAGES) for (const [w, h] of WIDTHS) for (const lang of LANGS) {
       check(t2 + ": (focus) every focused control has a ring >= 3:1", tw.bad.length === 0, "\n      " + tw.bad.slice(0, 3).join("\n      "));
       tw.bad.forEach((m) => add("DEFECT focus", `${pg.id}:${v.id}: ` + m, where));
       checksRun += 4;
-      if (SHOTS && ((scale === 100 && w === 360 && lang === "en") || (scale === 200 && w === 768 && lang === "bn"))) await P.screenshot({ path: `${OUT}/${pg.id}-${v.id}-${w}-${lang}-${scale}.png` });
+      if (SHOTS && ((scale === 100 && w === 360 && lang === "en") || (scale === 200 && w === 768 && lang === "bn"))) await P.evaluate(() => scrollTo(0, 0)), await P.screenshot({ path: `${OUT}/${pg.id}-${v.id}-${w}-${lang}-${scale}.png` });
     }
     await P.evaluate(() => { document.documentElement.style.fontSize = ""; });
   }
