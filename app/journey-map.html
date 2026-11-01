@@ -1678,7 +1678,7 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
           return true;
         }
         if (on("[data-pane-delete]")) { deleteNoteFromPane(v, note); return true; }
-        if (on("[data-pane-fullpage]")) { window.open(`journey-map.html?note=${encodeURIComponent(note.noteId)}#${currentView}`, "_top"); return true; }
+        if (on("[data-pane-fullpage]")) { window.open(`journey-map.html?note=${encodeURIComponent(note.noteId)}&back=1#${currentView}`, "_top"); return true; }
         return false;
       },
       tagging: {

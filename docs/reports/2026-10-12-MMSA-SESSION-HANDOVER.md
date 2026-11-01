@@ -2570,3 +2570,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v13.17** (2026-11-01): night note-window menu.
 - **v13.18** (2026-11-01): note window at large text.
 - **v13.19** (2026-11-01): Details switch in the note window.
+- **v13.20** (2026-11-01): Open full page leaves a way back (audit part 153).
