@@ -100,10 +100,14 @@ for (const [word, kind] of [["1:1:1", "noun"], ["1:5:2", "verb"]]) for (const [w
   check(`${tag}: no word is below 0.8 of its ordinary-text size`, !low.length, short(low));
   await ctx.close();
 }
-// A word too long even at its floor (made so by spacing its letters 12px apart, which no shrinking can undo) takes the whole row of the stacked grid.
+// A word too long even at its floor (the last box's word made three times as long) takes the whole row of the stacked grid.
 for (const lang of ["en", "bn"]) {
   const tag = `noun 320x640 ${lang} 200% with a word too long for its third`;
-  const { ctx, page } = await open(320, 640, lang, "200%", "1:1:1", ".word-card-ncell-ar { letter-spacing: 12px; }");
+  const { ctx, page } = await open(320, 640, lang, "200%", "1:1:1");
+  // The last box's word written three times over with no space: about 147px at its floor in a 66px third, and 250px of
+  // row. (letter-spacing cannot make it: Chromium ignores it on joined Arabic.) The card's observer refits on the change.
+  await page.evaluate(() => { const w = [...document.querySelectorAll("#quranWordCardMount .word-card-ncell-ar")].pop(); w.textContent = w.textContent.repeat(3); });
+  await page.waitForTimeout(600);
   const m = await measure(page);
   check(`${tag}: POSITIVE CONTROL the noun table is shown`, m.nouns >= 9, `${m.nouns}`);
   check(`${tag}: the word takes the whole row`, m.wide >= 1, `${m.wide} wide cells`);
