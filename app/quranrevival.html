@@ -99,6 +99,18 @@
   .app-name-short { display: none; }
   .app-name-short::before { content: "MSA"; }
   @media (max-width: 699px) { .app-name-full { display: none; } .app-name-short { display: inline; } }
+  /* v13.15 (QR's title at 320px): an app whose short name is long ("QuranRevival", 146px against MSA's 52px) sets
+     these three through its build rule (tools/apps/build-app.mjs). --app-title-flex: 1 1 min-content lets the title
+     shrink to its longest word, so the Search button keeps the first line and the version (kept whole by
+     --app-version-wrap: nowrap) takes a line of its own only when it does not fit (QR's heading was 72px tall at
+     320px, MSA's 40px). --app-name-em is the short name's width in em (0.6em a letter), so the name is never wider
+     than the screen (QR's ran 5px off a 320px screen at 200% text). MSA sets none of them: the defaults (0 1 auto,
+     the flex default; normal; 2) change nothing at any width or text size. */
+  @media (max-width: 699px) {
+    #appTitleText { flex: var(--app-title-flex, 0 1 auto); }
+    #appTitleText .app-version { white-space: var(--app-version-wrap, normal); }
+    .app-name-short { font-size: min(1em, calc((100vw - 2rem) / var(--app-name-em, 2))); }
+  }
   h1 .head-search-btn svg { flex: 0 0 auto; }
   /* Measured at 360px in English: "QuranRevival v09.13" plus the 99px button
      needed 334px of a 328px line, so the button broke onto its own line.
