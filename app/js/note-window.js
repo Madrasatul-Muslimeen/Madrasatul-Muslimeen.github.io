@@ -2939,7 +2939,13 @@ export function createNoteViews(host) {
     // Item 26: open or closed as it was last left, on this device.
     const detailsOpen = detailsOpenPref();
     detailsBtn.setAttribute("aria-expanded", String(detailsOpen));
-    detailsBtn.textContent = `${t("Details")} ▾`;
+    // J109: the shared ON/OFF switch (shell.css `button > .note-sec-arrow`, read off aria-expanded), not a ▾ arrow.
+    const detailsLabel = document.createElement("span");
+    detailsLabel.textContent = t("Details");
+    const detailsSw = document.createElement("span");
+    detailsSw.className = "note-sec-arrow";
+    detailsSw.setAttribute("aria-hidden", "true");
+    detailsBtn.append(detailsLabel, detailsSw);
     const details = document.createElement("div");
     details.className = detailsOpen ? "nw-details open" : "nw-details";
     // The version line lives in the shared template now (the inline pane shows
