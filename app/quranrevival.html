@@ -830,13 +830,6 @@
   /* The Owner, 15 Oct 2026 (PCF J25): Wheel, Legend and Unit shift left and the 🧰 takes the right end. */
   .wheel-zab-dock { display: inline-flex; align-items: center; flex: 0 0 auto; }
   .wheel-zab-dock:empty { display: none; }
-  /* QR Lead audit 11: the Word card's 🧰, the last item of its header (after × on one row; the end of the word's row on a
-     phone's two rows). Only the full-screen card below 900px docks it: the window on a computer keeps the corner. */
-  .word-card-zab-dock { display: inline-flex; align-items: center; flex: 0 0 auto; order: 7; }
-  .word-card-zab-dock:empty, #quranWordCardMount > .word-card-zab-dock { display: none; }
-  /* The header's own 40px tiles (px, not rem), so at 200% text it takes no more room than ‹ or ×. */
-  .word-card-zab-dock .zab-dock-btn { width: 40px; height: 40px; min-width: 40px; font-size: 19px; }
-  @media (min-width: 900px) { .word-card-zab-dock { display: none; } }
   @media (max-width: 767px) { .wheel-drawer-row:has(.zab-dock-btn) .wheel-drawer-btn { min-width: 4.6rem; } } /* audit-zab dock-row-fit */
   .wheel-drawer-btn {
     flex: 1 1 0; min-width: 0; min-height: 40px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem;
@@ -3519,6 +3512,18 @@
      above) is pinned over the page's foot, and the full-screen list ran under it -- at 768 and 820 the last row,
      An-Naas, was 31 of its 48px under the bar and its middle could not be tapped. The list stops above the bar. */
   @media (min-width: 768px) { body.zab-bar-on #readContentsMount { bottom: 2.75rem; } }
+  /* QR Lead audit 11 (the MSA Architect, 1 Nov 2026): on a phone the floating 🧰 corner covered the full-screen Word card's
+     last Taṣrīf cells ("×5") at the end of its scroll, and from 768px the Zab bar covered the card's bottom. The scroll now
+     ends with room under the corner (its 3rem + 0.75rem, a little more, and any lift), and from 768px the card stops above
+     the bar, as Contents does. A dock in the card's header was measured first and not used: both of its rows are full on a
+     phone, so a 🧰 there made the WbW header up to 101px taller (320px, 200%). */
+  @media (max-width: 767.98px) {
+    body:has(#zabCorner) #quranWordCardMount .word-card-content { padding-bottom: 4.25rem; }
+    /* The Read bar the corner is lifted over ([data-zab-lift]) is under the full-screen card, so the corner comes down to
+       the screen's corner while the card is open; lifted, it floated mid-card (308px up at 200% text on a 320px phone). */
+    body:has(#quranWordCardMount:not([hidden])) #zabCorner { bottom: 0.75rem; }
+  }
+  @media (min-width: 768px) and (max-width: 899.98px) { body.zab-bar-on #quranWordCardMount:not([hidden]) { bottom: 2.75rem; } }
   .rc-card { background: var(--card-bg); color: var(--card-text); display: flex; flex-direction: column; min-height: 0; flex: 1 1 auto; min-width: 0; }
   .rc-card header {
     background: #1F3A6E; color: #fff; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.6rem 0.8rem;
@@ -6566,10 +6571,6 @@
              untouched and no new CSS decides when they appear. -->
         <div id="quranWordCardMount" hidden>
           <div class="word-card-content" data-word-card-content aria-live="polite"></div>
-          <!-- QR Lead audit 11: the Zab's own place in the Word card. zab-bar.js scans for [data-zab-dock] once, at load, so
-               it lives here, outside the content that every render replaces; renderPersistentWordCard() moves it into the
-               card's header after each render. While it is on screen the floating 🧰 corner hides. -->
-          <span class="word-card-zab-dock" id="wordCardZabDock" data-zab-dock></span>
           <div class="note-popup-resize" data-note-resize="n"></div>
           <div class="note-popup-resize" data-note-resize="s"></div>
           <div class="note-popup-resize" data-note-resize="e"></div>
@@ -19643,14 +19644,6 @@
     function activeWordCardMount() {
       return document.getElementById("quranWordCardMount");
     }
-    // QR Lead audit 11 (the MSA Architect, 1 Nov 2026): on a phone the floating 🧰 corner covered the last Taṣrīf cells
-    // ("×5") at the end of the card's scroll. The card gives the 🧰 a place in its own header ([data-zab-dock]); the
-    // element is held here because a render or a close (innerHTML) takes it out of the document with the old header.
-    const wordCardZabSlot = document.getElementById("wordCardZabDock");
-    function placeWordCardZab(content) {
-      const head = content.querySelector(".quran-word-card > header");
-      if (wordCardZabSlot && head && wordCardZabSlot.parentElement !== head) head.append(wordCardZabSlot);
-    }
     // J43 -- the ⓘ Legend balloon. Plain DOM state (the balloon is always in the markup, hidden), so nothing is written.
     // A second tap, a tap anywhere outside the balloon, or Esc closes it.
     function setWordCardLegend(open) {
@@ -19773,7 +19766,6 @@
         const before = head?.querySelector(".word-card-head-word");
         if (head && before) head.insertBefore(back, before); else content.prepend(back);
       }
-      placeWordCardZab(content);
       // J60: Family shows one measured row of places per meaning, then "+N more"; re-measured when the width changes.
       fitWordCardFamily(content);
       if (typeof ResizeObserver === "function" && !content._familyFitRO) {
