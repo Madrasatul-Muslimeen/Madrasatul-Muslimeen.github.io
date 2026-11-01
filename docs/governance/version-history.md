@@ -1056,3 +1056,4 @@ total). Allocated by the MMSA Architect.
 13.13: the phone 🧰 corner off Mapping My Journey; QR Lead audits 9 and 10. Allocated by the MMSA Architect.
 13.14: the night look on Hadith/Dua/Collections (audit 146) and the Word card's 🧰 (QR audit 11). Allocated by the MMSA Architect.
 13.15: QR Lead 3c (Āyah card 🔖 every unit) and QR's title at 320px. Allocated by the MMSA Architect.
+13.16: night journey-map page menu. Allocated by the MMSA Architect.
