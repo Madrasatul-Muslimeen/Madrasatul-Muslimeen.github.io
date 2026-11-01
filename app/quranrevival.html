@@ -3850,7 +3850,9 @@
   @media (max-width: 520px) { .word-card-acc > summary:has(.word-card-acc-ar) { grid-template-columns: 32px minmax(0, 1fr) 40px; row-gap: 0; } .word-card-acc-ar { grid-column: 2; grid-row: 2; } .word-card-acc-dot { display: none; } .word-card-acc > summary:has(.word-card-acc-ar)::after { grid-column: 3; grid-row: 1; } }
   .word-card-conj-wrap { container-type: inline-size; min-width: 0; }
   .word-card-conj { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; direction: rtl; }
-  @container (max-width: 640px) { .word-card-conj { grid-template-columns: minmax(0, 1fr); } }
+  /* QR Lead audit 6b: 40rem, not 640px (the same at ordinary text): at 768px 200% three tables of 57px Arabic side by side
+     overflowed each other and the card, so with larger text they stack as they do on a phone. */
+  @container (max-width: 40rem) { .word-card-conj { grid-template-columns: minmax(0, 1fr); } }
   .word-card-cj { direction: ltr; border-radius: 10px; padding: 8px; display: grid; gap: 6px; align-content: start; min-width: 0; }
   .word-card-cj-past { background: #fdeceb; } .word-card-cj-pres { background: #e8f2fc; } .word-card-cj-imp { background: #ecf7e6; }
   .word-card-cj h4 { margin: 0; font-size: 0.9rem; text-align: center; color: #b3261e; }
@@ -3907,7 +3909,7 @@
   .word-card-cj-onehead { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; gap: 8px; align-items: center; }
   .word-card-cj-step { width: 44px; height: 44px; border-radius: 10px; border: 1px solid var(--wc-purple-line); background: var(--wc-purple-bg); color: var(--wc-purple-ink); font: inherit; font-weight: 800; font-size: 1.2rem; cursor: pointer; }
   .word-card-cj-groups { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; direction: rtl; align-items: start; }
-  @container (max-width: 640px) { .word-card-cj-groups { grid-template-columns: minmax(0, 1fr); } }
+  @container (max-width: 40rem) { .word-card-cj-groups { grid-template-columns: minmax(0, 1fr); } } /* audit 6b: as .word-card-conj */
   .word-card-cj-group { direction: ltr; min-width: 0; display: grid; gap: 2px; }
   .word-card-cj-gname { margin: 0; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #5b6d66; }
   .word-card-cj-one .word-card-cj-vb { font-size: 2rem; line-height: 1.6; }
@@ -4084,6 +4086,19 @@
     .word-card-ntable thead th { overflow-wrap: anywhere; hyphens: auto; }
     .word-card-ntable .word-card-ncell-empty { font-size: 0.58rem; }
   }
+  /* QR Lead audit 6b, 1 Nov 2026 (asked by the MSA Architect after v13.04): a Qur'an word never splits. The cells carry
+     overflow-wrap:anywhere for their English, and it broke the Arabic inside the word ("بِأَسْمَ / آئِهِمْ" even at 320px
+     ordinary text, "مَنْصُو / ب" in the heads at 200%). The Arabic now never wraps; a word too wide for its box is shrunk
+     to fit by fitTasrifArabic(), never below 0.8 of its ordinary-text size, and a word too wide even then takes the whole
+     row of the stacked grid (.word-card-ntd-wide) before it is shrunk again. */
+  .word-card-ncell-ar, .word-card-ntable-ar { white-space: nowrap; overflow-wrap: normal; }
+  .word-card-ntable td.word-card-ntd-wide { grid-column: 1 / -1; }
+  /* The same in the verb tables, where it was worse: their cells sit in .word-card-acc-body (overflow-wrap:anywhere), so in
+     three tables side by side at 768px 200% even هُمْ broke as هُ / مْ. The verb (its three coloured parts) and the pronoun
+     never wrap; the count and mood lines under the verb still wrap, between words; the lead breaks only between words. */
+  .word-card-cj-pr .word-card-ar, td.word-card-cj-vb { white-space: nowrap; overflow-wrap: normal; }
+  td.word-card-cj-vb .word-card-cj-q, td.word-card-cj-vb .word-card-cj-mood { white-space: normal; overflow-wrap: break-word; }
+  .word-card-cj-lead { overflow-wrap: normal; }
   .word-card-ncell { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.1rem; box-sizing: border-box; width: 100%; min-height: 44px; margin: 0; padding: 0.25rem 0.15rem; font: inherit; font-size: 0.8rem; text-align: center; border: 1px solid var(--wc-purple-line); border-radius: 0.4rem; background: transparent; color: inherit; overflow-wrap: anywhere; min-width: 0; }
   button.word-card-ncell { cursor: pointer; }
   .word-card-ncell-ar { font-family: var(--quran-font); font-size: 0.95rem; line-height: 1.3; }
@@ -8630,6 +8645,67 @@
       later();
     }
     if (typeof ResizeObserver === "function" && document.getElementById("readView")) watchReadFit();
+    /** QR Lead audit 6b: see .word-card-ncell-ar in the CSS. Measured, never guessed: each run first clears its own sizes,
+        so it measures every word at the size the card gives it. A word is shrunk only when it is wider than the inside of
+        its box, never below 0.8 of the size it would have at ordinary text (its size x 16 / the root size). */
+    function fitTasrifArabic() {
+      const mount = document.getElementById("quranWordCardMount");
+      if (!mount || mount.hidden) return;
+      const words = [...mount.querySelectorAll(".word-card-ncell-ar, .word-card-ntable-ar")];
+      const verbTables = [...mount.querySelectorAll(".word-card-cj table")];
+      if (!words.length && !verbTables.length) return;
+      for (const w of [...words, ...mount.querySelectorAll("td.word-card-cj-vb, .word-card-cj-pr .word-card-ar")]) w.style.removeProperty("font-size");
+      mount.querySelectorAll(".word-card-ntd-wide").forEach((td) => td.classList.remove("word-card-ntd-wide"));
+      const rootPx = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+      const room = (w) => {
+        const box = w.closest("button, th, td") || w.parentElement, cs = getComputedStyle(box);
+        return box.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0);
+      };
+      const need = (w) => { const r = document.createRange(); r.selectNodeContents(w); return r.getBoundingClientRect().width; };
+      const shrink = (w, base) => {
+        const has = room(w), wants = need(w);
+        if (!(wants > has + 0.5) || has <= 0) return true;
+        const floor = 0.8 * base * 16 / rootPx;
+        const size = Math.max(floor, Math.floor(base * has / wants * 0.97 * 10) / 10);
+        w.style.fontSize = size + "px";
+        return need(w) <= room(w) + 0.5;
+      };
+      for (const w of words) {
+        const base = parseFloat(getComputedStyle(w).fontSize) || 16;
+        if (shrink(w, base)) continue;
+        // Too wide even at the floor: in the stacked grid its cell takes the whole row, and it is fitted again there.
+        const td = w.closest("td"), tr = td && td.parentElement;
+        if (td && tr && getComputedStyle(tr).display === "grid") {
+          w.style.removeProperty("font-size");
+          td.classList.add("word-card-ntd-wide");
+          shrink(w, base);
+        }
+      }
+      // A verb table sizes its columns to its words, so a word that does not fit widens the table instead: measure the
+      // table against its box and shrink its Arabic (the verb and the pronoun) together, each never below its floor.
+      for (const t of verbTables) {
+        const box = t.parentElement, ar = [...t.querySelectorAll("td.word-card-cj-vb, .word-card-cj-pr .word-card-ar")];
+        if (!box || !ar.length) continue;
+        const base = new Map(ar.map((e) => [e, parseFloat(getComputedStyle(e).fontSize) || 16]));
+        let scale = 1;
+        for (let i = 0; i < 6 && t.getBoundingClientRect().width > box.clientWidth + 0.5; i++) {
+          scale *= Math.max(0.5, box.clientWidth / t.getBoundingClientRect().width) * 0.98;
+          for (const e of ar) { const b = base.get(e); e.style.fontSize = Math.max(0.8 * b * 16 / rootPx, b * scale) + "px"; }
+        }
+      }
+    }
+    function watchTasrifFit() {
+      const mount = document.getElementById("quranWordCardMount");
+      let queued = false, width = -1;
+      const later = () => { if (queued) return; queued = true; requestAnimationFrame(() => { queued = false; fitTasrifArabic(); }); };
+      // Its own size changes are style/class attributes, never childList, so they do not wake it again.
+      new MutationObserver(later).observe(mount, { childList: true, subtree: true, attributes: true, attributeFilter: ["hidden"] });
+      // Only a change of WIDTH re-measures; the card growing taller because a word took a whole row must not.
+      new ResizeObserver(() => { const now = mount.clientWidth; if (now !== width) { width = now; later(); } }).observe(mount);
+      new MutationObserver(later).observe(document.documentElement, { attributes: true, attributeFilter: ["style", "class"] });
+      if (document.fonts?.ready) document.fonts.ready.then(later);
+    }
+    if (typeof ResizeObserver === "function" && document.getElementById("quranWordCardMount")) watchTasrifFit();
     // Follow-up round: Map(subjectId -> courseOffer contextId) for
     // selectedPersonId -- same mechanism topic-study.js/routine-study.js
     // already use (course-offers.js's programSubjectMapFromEnrollments()).

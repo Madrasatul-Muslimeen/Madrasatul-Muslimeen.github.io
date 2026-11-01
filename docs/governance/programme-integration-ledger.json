@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "13.10",
+    "version": "13.11",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -6065,8 +6065,20 @@
     {
       "version": "13.10",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Audit part 145 D1-D4 and the J109 arrow on the Note's Ayah/Hadith block, by the Architect.",
+      "integration": {
+        "authorizedOn": "2026-11-01",
+        "integratedOn": "2026-11-01",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.11",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "QR Lead audit 6b (whole Arabic words in the Tasrif tables), QR Lead handover F (docs) and the Dua Lead's audit-part32 test update, reviewed and released by the Architect.",
       "integration": {
         "authorizedOn": "2026-11-01",
         "integratedOn": "2026-11-01",
@@ -6075,8 +6087,9 @@
       }
     }
   ],
-  "nextUnallocated": "13.11",
+  "nextUnallocated": "13.12",
   "nextUnallocatedNote": [
+    "v13.11 was allocated to a Qur'an word never splits in Tasrif (QR Lead audit 6b), 2026-11-01.",
     "v13.10 was allocated to the v13 Note's sheets at large text (audit part 145 fixes), 2026-11-01.",
     "v13.09 was allocated to the Note page at large text (audit part 144), 2026-11-01.",
     "v13.08 was allocated to every show/hide as an ON/OFF switch (J109), 2026-11-01.",

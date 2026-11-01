@@ -2,13 +2,13 @@
 
 Written by the QR Lead session `session_01PL2xbHxdLPRKi4KNVXpGHX` (hand119), which took over at about 5:40 pm 31 Oct Sydney
 from `session_01PL2xbLGPyYo53GXRKWojym` (its handover: `2026-10-31-QR-LEAD-HANDOVER-D.md`; `-C.md` and the older
-`-HANDOVER.md` still hold the sandbox lessons). `main` is at **v13.04** (6:08 pm): audits 6 + 7 RELEASED (#1372). The A± fix was handed in at ~6:10 pm (neighbours: read-quick-buttons 254/0, qr-panel-head-reach 258/0, read-note-pane 204/0, qr-read-tall 160/0).
+`-HANDOVER.md` still hold the sandbox lessons). `main` is at **v13.06** (6:50 pm: the Word card tabs released; v13.05 6:28 pm the A± ceiling; v13.04 6:08 pm audits 6 + 7). **Everything this session built is released; audit 6b is the next job.**: audits 6 + 7 RELEASED (#1372). The A± fix was handed in at ~6:10 pm (neighbours: read-quick-buttons 254/0, qr-panel-head-reach 258/0, read-note-pane 204/0, qr-read-tall 160/0).
 
 ## Who to talk to
 
 | Role | Session |
 |---|---|
-| MSA Master Architect | `session_01PL2xbLYSNq3VaA8Hi5jFfq` |
+| MSA Master Architect | `session_01PL2xbLEHixF5Ai2VPJhMiL` (since 1 Nov 3:35 pm; the old `…LYSNq3VaA8Hi5jFfq` is retired) |
 | PCA | `session_01PL2xbN7ENRBkhtTNxJAt2L` |
 
 ## This session
@@ -22,11 +22,11 @@ from `session_01PL2xbLGPyYo53GXRKWojym` (its handover: `2026-10-31-QR-LEAD-HANDO
 
 ## Open, in order
 
-1. Read the tabs suite (fixed must be 0 failed; each mutation must fail), look at a screenshot at 320x640 200% en and bn,
+1. **DONE (7:35 pm): the tabs fix was handed in as `claude/qr-lead-wordcard-200-v1304` (on v13.04): 188/0, mutations 2/4/3, neighbours 0 failed.** Formerly: read the tabs suite (fixed must be 0 failed; each mutation must fail), look at a screenshot at 320x640 200% en and bn,
    commit the suite with the CSS on `claude/qr-lead-wordcard-200` (the suite file is written but NOT committed), run the
    Word card neighbours (`word-card-five-levels`, `word-card-basic-rebuild`, `text-size-wbw`, `quran-word-card-fullscreen`,
    `apps-build-check`) and hand in.
-2. Hand in `claude/qr-lead-as-ceiling` (see the table).
+2. **DONE: A± ceiling released as v13.05.** The PCA asks: once quranrevival.github.io serves v13.05 (its build-from-msa self-run ~8:17 pm, or the Owner's tap), re-check the A± sliders there at 1280x800 200% en+bn and file the result in PCF J29.
 3. **AUDIT 6b, asked by the Architect after v13.04 (7:09 pm): a Qur'an word must never split in the stacked Taṣrīf table (ٱلْأَسْ / مَآءُ, بِأَسْمَ / آئِهِم: `.word-card-ncell` has overflow-wrap:anywhere), with a check. = D item 2b, measured, not built.** On audit 6's layout (port 8080 = that branch) Arabic words
    break inside the word in `.word-card-ncell-ar` (e.g. "بِأَسْمَآئِهِمْ" even at 320 100%; at 320 200% it needs ~120px of a
    65px cell at 37px type) and in the case heads `.word-card-ntable-ar` ("مَرْفُوع / مَنْصُوب / مَجْرُور" at 150/200%).
@@ -36,8 +36,23 @@ from `session_01PL2xbLGPyYo53GXRKWojym` (its handover: `2026-10-31-QR-LEAD-HANDO
    200% that is 20px, still larger than ordinary. Refit on a MutationObserver (childList, subtree) of
    `#quranWordCardMount` plus a ResizeObserver, in `requestAnimationFrame`. Check verb words too (`.word-card-cj-vb`
    sits in an auto table: nowrap there widens the td, so measure the table against its box, not the td). Build it on
-   `main` (v13.04 carries audit 6). Probe: the scratchpad's `probeAr.mjs` pattern (a word is broken when its own Range has
+   `main` (v13.04 carries audit 6). **The Architect (7:29 pm): if the floor cannot reach a word, nowrap overflows the cell instead of splitting it. Let a too-long word take the whole row of the grid before shrinking, and the check must assert the word lies inside its box at 320 200%, not only that it is unbroken.** Probe: the scratchpad's `probeAr.mjs` pattern (a word is broken when its own Range has
    line boxes at two heights).
+3a. **PCA change notice (7:30 pm): v13.07 (PR #1376) makes the full-screen Note window (<1024px) aria-modal with the rest of
+   `<body>` inert (minimise frees it); floating (>=1024) stays non-modal.** Once it is on `main`, re-run the Quran Study
+   suites where a control opens or sits behind the Note window (`read-note-pane`, `read-note-pane-window`, `note-opener`,
+   `read-quick-buttons`) at 390 and 768; report to the PCA only if one fails.
+3b. **PCA change notice (1 Nov 2:42 pm Sydney): v13.08 (#1379, Owner's J109) replaces every ▸/▾ show/hide arrow with one
+   shared ON/OFF switch (`app/css/shell.css`), including Quran Study (Āyah full view, Āyah/Unit card, Word card sections,
+   Mastery Wheel groups). RULE from now: any new show/hide section uses the shared switch (shell.css J109 selectors or a
+   `.mm-sw` span), never an arrow.** Check the Quran Study screens at 100/150/200% (en+bn, phone/tablet/desktop) once QR serves it.
+3c. **The Owner asked (1 Nov 5:37 pm, photo): "Wasn't bookmark enabled for all units before?"** Answered: yes. The bar's
+   🔖/★ still offers every unit (measured on v13.07, Range 15:1–5: unit, This āyah, This page, This rukūʿ, Whole sūrah, This
+   juz, Range). The photo's window (name "Quran 15:40 — Surah Al-Hijr", no "Bookmark" row) is the **Āyah card's** 🔖
+   (`onBookmark` → `toggleAyahBookmark(unitKey)` with no `unitChoices`, `quranrevival.html` ~23176), which has always been
+   āyah-only. **Asked the Owner with ticks: A = give the Āyah card's 🔖 the same unit choices (This āyah preselected),
+   recommended; B = keep as is.** On A: pass `{ unitChoices: readBookmarkUnitChoices({ unitType: "ayah", ... }) }` built
+   for that card's own āyah (not `bookmarkAyahOnScreen()`), keep the way back to the card (J82 part 2), suite + mutation.
 4. j29p127q (PCF J29) still waits on the Owner; build the same day it is answered.
 5. Then Explore (Manual 8lle31u) at 150/200% and sideways, en + bn.
 

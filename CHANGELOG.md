@@ -23142,3 +23142,9 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 - **D4** `journey-map.html`: the folder search box shows a cut as "…".
 - **J109** `note-ref-ui.js`: the Note's Āyah/Hadith block says "hide" / "show" beside its ON/OFF switch, no arrow.
 - Suites: NEW `note-sheets-large-browser.mjs`; `word-card-ayah-card-ways-back` updated in place for J108 (71/6 → 80/0, a stale test); `note-window-a11y`'s twin exemption updated in place. Report: `docs/reports/2026-11-01-audit-part145-note-sheets-hadith.md`. Nothing stored, no Rules.
+
+## v13.11 — 1 Nov 2026 — A Qur'an word never splits in Taṣrīf (QR Lead audit 6b)
+
+- `quranrevival.html`: the Arabic in the Taṣrīf noun cells, case heads, verb pronouns and verbs never wraps inside a word. `fitTasrifArabic()` / `watchTasrifFit()` shrink a word wider than its box (floor 0.8 of its ordinary-text size); a word too wide even then takes the whole row of the stacked grid. The verb tables stack under `40rem` (was 640px; identical at ordinary text).
+- Suites: NEW `qr-word-card-tasrif-whole-words-browser.mjs`; `qr-word-card-tasrif-fit` column widths updated in place (QR Lead). `audit-part32` Dua ← Back check updated in place (Dua Lead: stale since audit 141 H4).
+- Docs: QR Lead handover F. Nothing stored, no Rules.
