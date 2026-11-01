@@ -18,7 +18,7 @@ const check = (name, ok, detail = "") => {
 const arg = (k) => (process.argv.find((a) => a.startsWith("--" + k + "=")) || "").slice(k.length + 3);
 const MUTATE = arg("mutate"), SHOTS = process.argv.includes("--shots");
 const OUT = "tools/i18n-verify/out/night-hadith-dua"; fs.mkdirSync(OUT, { recursive: true });
-const WIDTHS = [[390, 844], [1440, 900]].filter(([w]) => !arg("width") || String(w) === arg("width"));
+const WIDTHS = [[360, 740], [390, 844], [768, 1024], [1024, 768], [1440, 900]].filter(([w]) => !arg("width") || String(w) === arg("width"));
 const LANGS = ["en", "bn"].filter((l) => !arg("lang") || l === arg("lang"));
 const SCALES = [100, 200].filter((s) => !arg("scale") || String(s) === arg("scale"));
 const BUKHARI = "0256Bukhari.Sahih.JK000110-ara1";
