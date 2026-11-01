@@ -23161,3 +23161,10 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 - QR Lead audit 10 (`fitAyahSheetHeader`, `.ayah-head-stack`): the pinned Āyah card header on a phone at large text takes two lines instead of three or four. NEW `qr-ayah-card-header-large-text-browser.mjs`.
 - `zab-dock-browser.mjs`: Read/Explore phone checks (corner covers no tab; above the tabs while they are pinned); mutations `lift-by-height`, `no-scroll-update`; `lift` anchor updated in place (it read `12px`, which the CSS stopped saying, so it had not run).
 - Docs: QR Lead handovers G and H. Nothing stored, no Rules.
+
+## v13.14 — 1 Nov 2026 — The night look on Hadith, Dua and Collections (audit part 146); the 🧰 off the Word card's last Taṣrīf cells (QR Lead audit 11)
+
+- `app/css/hadith.css`: night-only rules for `.hadeethenc-study-item .assign-trigger` / `.assign-popover` (and its label, hint, "you" tag, tick boxes, caret): the 👥 pill and its sheet take the card's colours instead of hard white (audit 146 D1).
+- `tools/i18n-verify/night-hadith-dua-browser.mjs` (Builder run 2374, finished by the Architect): night-look contrast, focus, day colours and arrows on the three pages; deliberate marks skipped by the day check; the `day` mutation injects into a dark card; NEW `d1` mutation. Report `docs/reports/2026-11-01-audit-part146-night-hadith-dua.md`.
+- QR Lead audit 11 (`app/quranrevival.html`, CSS): Word card scroll room under the phone corner; corner at the screen corner while the card is open; 768–899px card above the Zab bar. NEW `qr-word-card-zab-dock-browser.mjs`.
+- Nothing stored, no Rules.
