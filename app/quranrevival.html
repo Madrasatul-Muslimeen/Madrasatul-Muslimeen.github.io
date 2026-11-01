@@ -830,6 +830,13 @@
   /* The Owner, 15 Oct 2026 (PCF J25): Wheel, Legend and Unit shift left and the 🧰 takes the right end. */
   .wheel-zab-dock { display: inline-flex; align-items: center; flex: 0 0 auto; }
   .wheel-zab-dock:empty { display: none; }
+  /* QR Lead audit 11: the Word card's 🧰, the last item of its header (after × on one row; the end of the word's row on a
+     phone's two rows). Only the full-screen card below 900px docks it: the window on a computer keeps the corner. */
+  .word-card-zab-dock { display: inline-flex; align-items: center; flex: 0 0 auto; order: 7; }
+  .word-card-zab-dock:empty, #quranWordCardMount > .word-card-zab-dock { display: none; }
+  /* The header's own 40px tiles (px, not rem), so at 200% text it takes no more room than ‹ or ×. */
+  .word-card-zab-dock .zab-dock-btn { width: 40px; height: 40px; min-width: 40px; font-size: 19px; }
+  @media (min-width: 900px) { .word-card-zab-dock { display: none; } }
   @media (max-width: 767px) { .wheel-drawer-row:has(.zab-dock-btn) .wheel-drawer-btn { min-width: 4.6rem; } } /* audit-zab dock-row-fit */
   .wheel-drawer-btn {
     flex: 1 1 0; min-width: 0; min-height: 40px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem;
@@ -6559,6 +6566,10 @@
              untouched and no new CSS decides when they appear. -->
         <div id="quranWordCardMount" hidden>
           <div class="word-card-content" data-word-card-content aria-live="polite"></div>
+          <!-- QR Lead audit 11: the Zab's own place in the Word card. zab-bar.js scans for [data-zab-dock] once, at load, so
+               it lives here, outside the content that every render replaces; renderPersistentWordCard() moves it into the
+               card's header after each render. While it is on screen the floating 🧰 corner hides. -->
+          <span class="word-card-zab-dock" id="wordCardZabDock" data-zab-dock></span>
           <div class="note-popup-resize" data-note-resize="n"></div>
           <div class="note-popup-resize" data-note-resize="s"></div>
           <div class="note-popup-resize" data-note-resize="e"></div>
@@ -19632,6 +19643,14 @@
     function activeWordCardMount() {
       return document.getElementById("quranWordCardMount");
     }
+    // QR Lead audit 11 (the MSA Architect, 1 Nov 2026): on a phone the floating 🧰 corner covered the last Taṣrīf cells
+    // ("×5") at the end of the card's scroll. The card gives the 🧰 a place in its own header ([data-zab-dock]); the
+    // element is held here because a render or a close (innerHTML) takes it out of the document with the old header.
+    const wordCardZabSlot = document.getElementById("wordCardZabDock");
+    function placeWordCardZab(content) {
+      const head = content.querySelector(".quran-word-card > header");
+      if (wordCardZabSlot && head && wordCardZabSlot.parentElement !== head) head.append(wordCardZabSlot);
+    }
     // J43 -- the ⓘ Legend balloon. Plain DOM state (the balloon is always in the markup, hidden), so nothing is written.
     // A second tap, a tap anywhere outside the balloon, or Esc closes it.
     function setWordCardLegend(open) {
@@ -19754,6 +19773,7 @@
         const before = head?.querySelector(".word-card-head-word");
         if (head && before) head.insertBefore(back, before); else content.prepend(back);
       }
+      placeWordCardZab(content);
       // J60: Family shows one measured row of places per meaning, then "+N more"; re-measured when the width changes.
       fitWordCardFamily(content);
       if (typeof ResizeObserver === "function" && !content._familyFitRO) {
