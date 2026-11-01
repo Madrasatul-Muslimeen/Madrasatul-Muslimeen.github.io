@@ -1,5 +1,6 @@
 // J108 (v13.01) -- the controls of an Āyah / Hadith block while its Note is being EDITED (note-window.js).
-// The demo the Owner approved (demo v3): a show/hide switch (role=switch) with "▾ hide" / "▸ show", عربي · EN · বাং
+// The demo the Owner approved (demo v3): a show/hide switch (role=switch) with "hide" / "show" (its ▾/▸ arrows taken off in
+// v13.10 by PCF MSA J109: every show/hide wears the ON/OFF switch, never an arrow; audit part 145), عربي · EN · বাং
 // buttons (aria-pressed, each language on its own), ✕ to take the block out of the Note; with two or more blocks one
 // switch above them shows or hides them all.
 //
@@ -23,7 +24,7 @@ function paintBlock(el, state) {
   let html = `<div class="mm-ref-head mm-ref-live-head">
       <button type="button" class="mm-ref-sw" role="switch" data-ref-sw aria-checked="${s.flags.on}" aria-label="${esc(t("Show {ref}", { ref: s.label }))}" title="${esc(t("Show {ref}", { ref: s.label }))}"><span aria-hidden="true"></span></button>
       <span class="mm-ref-kind">${esc(kind)}</span><b class="mm-ref-label">${esc(s.label)}</b>
-      <button type="button" class="mm-ref-showhide" data-ref-sw aria-hidden="true" tabindex="-1">${esc(s.flags.on ? `▾ ${t("hide")}` : `▸ ${t("show")}`)}</button>
+      <button type="button" class="mm-ref-showhide" data-ref-sw aria-hidden="true" tabindex="-1">${esc(t(s.flags.on ? "hide" : "show"))}</button>
     </div>
     <div class="mm-ref-tools">${langBtn("ar")}${langBtn("en")}${langBtn("bn")}
       <button type="button" class="mm-ref-x" data-ref-x aria-label="${esc(t("Delete {ref} from this Note", { ref: s.label }))}" title="${esc(t("Delete {ref} from this Note", { ref: s.label }))}">✕</button></div>`;

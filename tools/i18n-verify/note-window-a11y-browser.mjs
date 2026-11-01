@@ -79,7 +79,7 @@ async function audit(P, E, lang, scoped = false) {
     if (!d.ringOn) ringBad.push(`${d.key} "${(d.name || "").slice(0, 24)}"`);
     else if (d.ringRatio !== null && d.ringRatio < 3) ringWeak.push(`${d.key} ring ${Math.round(d.ringRatio * 100) / 100}:1`);
   }
-  // the block's "▾ hide" text is an aria-hidden, tabindex=-1 twin of the switch beside it (note-ref-ui.js:26): not a control of its own
+  // the block's "hide" text (no arrow since v13.10, J109) is an aria-hidden, tabindex=-1 twin of the switch beside it (note-ref-ui.js:26): not a control of its own
   const unreached = (await E.evaluate(() => window.__A11Y.unreached())).filter((e) => !(e.key.includes("data-ref-sw") && /^[▾▸]/.test(e.name || ""))).map((e) => `${e.key} "${(e.name || "").slice(0, 24)}"${e.tabindex < 0 ? " (tabindex=-1)" : ""}`);
   return { nameDefects, english, contrastDefects, unknown: con.unknown, unreached, ringBad, ringWeak, stops: reached.size, expected: exp.length };
 }
