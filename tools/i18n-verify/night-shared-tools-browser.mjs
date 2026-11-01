@@ -39,6 +39,24 @@ const openHome = async (P) => { await settle(P); await P.evaluate(() => { const 
 const openCard = async (P) => { await openHome(P); await P.click("[data-open-account-card]"); await P.waitForSelector("#accountCardOverlay.open", { timeout: 5000 }); await P.waitForTimeout(300); };
 const expandTree = async (P) => { await settle(P); for (let i = 0; i < 6; i++) { await P.evaluate(() => document.querySelectorAll("[data-folder-toggle][aria-expanded=false]").forEach((b) => b.click())); await P.waitForTimeout(150); } };
 const pickView = (v) => async (P) => { await expandTree(P); await P.click('.view-toggle-btn[data-view="' + v + '"]'); await P.waitForTimeout(500); };
+const openWin = async (P) => { await settle(P); await P.click(".note-card[data-note-id] [data-note-window]"); await P.waitForSelector(".note-win", { timeout: 8000 }); await P.waitForTimeout(500); };
+// Notes seed (part 150): real-length titles/bodies on one unit, with real-shaped 32-hex ids (as notes-note-windows-browser.mjs)
+const NOTES_SEED = `(function () {
+  var own = { tenantId: "t1", ownerPersonId: "p1", ownerUid: "test-uid", schemaVersion: 1, createdBy: "test-uid" }, TS = "2026-09-01T10:00:00.000Z";
+  DATA.notes = DATA.notes || []; DATA.noteSources = DATA.noteSources || []; DATA.noteRevisions = DATA.noteRevisions || [];
+  function N(c, title, body) {
+    var id = c.repeat(32);
+    DATA.notes.push(Object.assign({ _id: "t1__" + id, noteId: id, title: title, bodyHtml: body, currentRevisionId: "rev-" + id, status: "active", visibility: "private", createdAt: TS, updatedAt: TS }, own));
+    DATA.noteSources.push(Object.assign({ _id: "t1__s-" + id, sourceLinkId: "s-" + id, noteId: id, sourceKey: "ayah:2:255", sourceKind: "quran-unit", relationshipKind: "origin", approachId: null, provenanceKind: "study-note", status: "active", createdAt: TS, updatedAt: TS }, own));
+  }
+  N("a", "Reflections on the throne verse and what my teacher said after Fajr about its virtues", "<p>First body with a long line of text that wraps over several lines on a phone screen so the card is a realistic height.</p><h1>Heading one</h1><p>x</p><h2>Heading two</h2><p>y</p>");
+  N("b", "Second note: memorisation plan for the month of Rajab, with the revision schedule", "<p>Second body.</p>");
+  N("c", "আয়াতুল কুরসির তাফসির ও আমার ব্যক্তিগত অনুধাবন নিয়ে একটি দীর্ঘ নোট", "<p>তৃতীয় নোটের বিবরণ।</p>");
+})();`;
+const WXR = `<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:wp="http://wordpress.org/export/1.2/"><channel>
+<wp:category><wp:term_id>5</wp:term_id><wp:category_nicename>audit-cat</wp:category_nicename><wp:category_parent></wp:category_parent><wp:cat_name><![CDATA[Audit WP Folder with a rather long name]]></wp:cat_name></wp:category>
+<item><title><![CDATA[Audit WP one]]></title><link>https://example.com/one</link><content:encoded><![CDATA[<p>Hello from WordPress</p>]]></content:encoded><wp:post_id>101</wp:post_id><wp:post_date>2026-01-01 10:00:00</wp:post_date><wp:post_date_gmt>2026-01-01 10:00:00</wp:post_date_gmt><wp:post_modified>2026-01-02 10:00:00</wp:post_modified><wp:post_modified_gmt>2026-01-02 10:00:00</wp:post_modified_gmt><wp:status>publish</wp:status><wp:post_type>post</wp:post_type><category domain="category" nicename="audit-cat"><![CDATA[Audit WP Folder with a rather long name]]></category></item>
+</channel></rss>`;
 const PAGES = [
   { id: "bookmarks", path: "/app/bookmarks.html", views: [
     { id: "opens", go: settle }, { id: "home-menu", go: openHome }, { id: "account-card", go: openCard },
@@ -53,6 +71,17 @@ const PAGES = [
     { id: "page-menu", go: async (P) => { await expandTree(P); await P.click("[data-bar-palette-toggle=pageMenu]"); await P.waitForSelector("#openTrashBtn", { state: "visible" }); } },
     { id: "trash", go: async (P) => { await expandTree(P); await P.click("[data-bar-palette-toggle=pageMenu]"); await P.click("#openTrashBtn"); await P.waitForTimeout(600); } },
     { id: "favourites", go: async (P) => { await expandTree(P); await P.click("[data-bar-palette-toggle=pageMenu]"); await P.click("#openFavouritesBtn"); await P.waitForTimeout(600); } }] },
+  // Audit part 150: Notes (one unit's notes + the note window), Import Notes.
+  { id: "notes", path: "/app/notes.html?unit=" + encodeURIComponent("ayah:2:255") + "&label=" + encodeURIComponent("Al-Baqarah 2:255, Ayat al-Kursi with tajweed practice (morning)") + "&back=1", seed: NOTES_SEED, views: [
+    { id: "opens", go: settle }, { id: "home-menu", go: openHome }, { id: "account-card", go: openCard },
+    { id: "new-note", go: async (P) => { await settle(P); await P.click("#newNoteBtn"); await P.waitForTimeout(500); } },
+    { id: "note-window", go: openWin },
+    { id: "window-menu", go: async (P) => { await openWin(P); await P.click(".note-win [data-pane-menu-btn]"); await P.waitForTimeout(400); } },
+    { id: "window-edit", go: async (P) => { await openWin(P); await P.evaluate(() => (document.querySelector(".note-win [data-pane-edit-toggle]") || document.querySelector(".note-win [data-pane-menu-btn]"))?.click()); await P.waitForTimeout(300); await P.evaluate(() => document.querySelector(".note-win [data-pane-menu] [data-pane-edit-toggle]")?.click()); await P.waitForTimeout(500); } }] },
+  { id: "import", path: "/app/import-notes.html", views: [
+    { id: "opens", go: settle }, { id: "home-menu", go: openHome }, { id: "account-card", go: openCard },
+    { id: "evernote", go: async (P) => { await settle(P); await P.selectOption("#sourceSelect", { index: 1 }); await P.waitForTimeout(400); } },
+    { id: "preview", go: async (P) => { await settle(P); await P.setInputFiles("#fileInput", { name: "A long export file name for the audit of the night look.xml", mimeType: "application/xml", buffer: Buffer.from(WXR) }); await P.waitForFunction(() => getComputedStyle(document.getElementById("previewSection")).display !== "none", null, { timeout: 15000 }); await P.waitForTimeout(400); } }] },
 ].filter((p) => !arg("page") || p.id === arg("page"));
 const VIEWSEL = arg("views") ? arg("views").split(",") : null;
 
@@ -60,6 +89,8 @@ const VIEWSEL = arg("views") ? arg("views").split(",") : null;
 // (filled in with the fixes found by this audit; see the report)
 const MUTATE_CSS = {
   "menu-buttons": { page: "journey", file: "app/journey-map.html", from: '[data-card-look="night"] .page-menu-wrap .bar-palette button.secondary {', to: '[data-card-look="off"] .page-menu-wrap .bar-palette button.secondary {' },
+  "pane-menu": { page: "notes", file: "app/css/card-look.css", from: '[data-card-look="night"] .bar-palette.pane-menu button.secondary {', to: '[data-card-look="off"] .bar-palette.pane-menu button.secondary {' },
+  "pane-menu-danger": { page: "notes", file: "app/css/card-look.css", from: '[data-card-look="night"] .bar-palette.pane-menu button.danger {', to: '[data-card-look="off"] .bar-palette.pane-menu button.danger {' },
   "menu-links": { page: "journey", file: "app/journey-map.html", from: '[data-card-look="night"] .page-menu-wrap .bar-palette a.secondary {', to: '[data-card-look="off"] .page-menu-wrap .bar-palette a.secondary {' },
 };
 
@@ -69,7 +100,7 @@ const SCAN = () => {
   const lum = (c) => { const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }; return 0.2126 * f(c[0]) + 0.7152 * f(c[1]) + 0.0722 * f(c[2]); };
   const bodyBg = parse(getComputedStyle(document.body).backgroundColor), htmlBg = parse(getComputedStyle(document.documentElement).backgroundColor);
   const pageLum = lum(bodyBg && bodyBg[3] > 0 ? bodyBg : htmlBg && htmlBg[3] > 0 ? htmlBg : [255, 255, 255]);
-  const day = [], arrows = [];
+  const day = [], arrows = [], known = [];
   const key = (e) => window.__A11Y.key(e);
   const darkAround = (e) => { for (let a = e.parentElement; a; a = a.parentElement) { const c = parse(getComputedStyle(a).backgroundColor); if (c && c[3] >= 0.95) return lum(c) < 0.2; } return pageLum < 0.2; };
   for (const e of document.body.querySelectorAll("*")) {
@@ -89,9 +120,13 @@ const SCAN = () => {
     // Part 149, measured: Path's [data-path-branch-toggle] expands a FOLDER branch (a tree: keeps its arrow) and [data-note-toggle] is the note card's
     // "More" actions button (a menu opener: keeps ▾). Neither is a show/hide of content, so the first run's 5 arrow findings were a stale check.
     if (e.matches("[data-path-branch-toggle]") || (e.matches("[data-note-toggle]") && /^(more|আরও)/i.test(e.getAttribute("aria-label") || ""))) continue;
+    // Part 150: shell.css J109 draws a child arrow glyph (.note-sec-arrow, .ways-caret ...) as an ON/OFF switch with its text colour made transparent: that IS the switch.
+    if ([...e.querySelectorAll("*")].some((c) => /[▸▶►▼▲◂◀▴▾▿▹]/.test(c.textContent || "") && (parse(getComputedStyle(c).color) || [0, 0, 0, 1])[3] === 0)) continue;
+    // Part 150, recorded not fixed: the note window's "Details ▾" (js/note-window.js, a pinned shared script) is a show/hide drawn as an arrow in BOTH looks.
+    if (e.matches("[data-win-details]")) { known.push(key(e)); continue; }
     if (e.tagName === "SUMMARY" || e.hasAttribute("aria-expanded")) arrows.push(key(e) + ' "' + t.slice(0, 30) + '"');
   }
-  return { day: [...new Set(day)], arrows: [...new Set(arrows)], pageLum: Math.round(pageLum * 1000) / 1000 };
+  return { day: [...new Set(day)], arrows: [...new Set(arrows)], known: [...new Set(known)], pageLum: Math.round(pageLum * 1000) / 1000 };
 };
 // the day look signature: computed colours of the first visible elements, in document order
 const SIG = () => {
@@ -125,7 +160,7 @@ const NORING_CSS = "*,*:focus,*:focus-visible{outline:none!important;box-shadow:
 const mk = (look, o) => withLook(newContext(browser, { banner: false, extraSeedJs: SEED, ...o }), look);
 let checksRun = 0;
 const RECORD = process.argv.includes("--record-day"), BASE_FILE = "tools/i18n-verify/night-shared-tools-day-baseline.json";
-const DAY = RECORD || !fs.existsSync(BASE_FILE) ? {} : JSON.parse(fs.readFileSync(BASE_FILE, "utf8"));
+const DAY = !fs.existsSync(BASE_FILE) ? {} : JSON.parse(fs.readFileSync(BASE_FILE, "utf8")); // --record-day MERGES: only the selected pages' keys are rewritten
 
 // ---- positive controls, correct by construction ----
 {
@@ -133,7 +168,7 @@ const DAY = RECORD || !fs.existsSync(BASE_FILE) ? {} : JSON.parse(fs.readFileSyn
   const { page: P } = await openPage(ctx, "/app/records.html"); await P.waitForTimeout(1200);
   await P.evaluate(INSTALL, "#none");
   check("positive control: night look attribute is on", (await P.evaluate(() => document.documentElement.getAttribute("data-card-look"))) === "night");
-  await P.evaluate(() => { document.body.innerHTML = '<div style="background:#0b1530;padding:8px"><p style="color:#fff;font-size:16px">Light on navy line</p><p style="color:#999;background:#aaa;font-size:16px">Grey on grey line</p><div id="wh" style="background:#fff;width:120px;height:40px">white panel</div><details><summary>▸ Show things</summary>x</details><button aria-haspopup="menu">Books ▾</button></div>'; document.body.style.background = "#0b1530"; });
+  await P.evaluate(() => { document.body.innerHTML = '<div style="background:#0b1530;padding:8px"><p style="color:#fff;font-size:16px">Light on navy line</p><p style="color:#999;background:#aaa;font-size:16px">Grey on grey line</p><div id="wh" style="background:#fff;width:120px;height:40px">white panel</div><details><summary>▸ Show things</summary>x</details><button aria-haspopup="menu">Books ▾</button><button aria-expanded="false"><span style="color:transparent;background:#1f8a7e">▾</span> Switch drawn</button></div>'; document.body.style.background = "#0b1530"; });
   const c = await P.evaluate(() => window.__A11Y.contrast());
   check("positive control (contrast): grey-on-grey is reported, light-on-navy is not", c.fail.some((x) => x.txt.includes("Grey on grey")) && !c.fail.some((x) => x.txt.includes("Light on navy")));
   const s = await P.evaluate(SCAN);
@@ -148,7 +183,7 @@ const DAY = RECORD || !fs.existsSync(BASE_FILE) ? {} : JSON.parse(fs.readFileSyn
   for (const pg of PAGES) {
     const bgs = {};
     for (const look of ["light", "night"]) {
-      const cx = await withLook(await newContext(browser, { banner: false, viewport: { width: 390, height: 844 }, extraSeedJs: SEED }), look);
+      const cx = await withLook(await newContext(browser, { banner: false, viewport: { width: 390, height: 844 }, extraSeedJs: SEED + (pg.seed || "") }), look);
       const { page: Q } = await openPage(cx, pg.path); await Q.waitForTimeout(1500);
       bgs[look] = await Q.evaluate(SIG);
       bgs[look + "-attr"] = await Q.evaluate(() => document.documentElement.getAttribute("data-card-look"));
@@ -161,7 +196,7 @@ const DAY = RECORD || !fs.existsSync(BASE_FILE) ? {} : JSON.parse(fs.readFileSyn
 }
 
 for (const pg of PAGES) for (const [w, h] of WIDTHS) for (const lang of LANGS) {
-  const ctx = await withLook(await newContext(browser, { appLang: lang === "bn" ? "bn" : null, banner: false, viewport: { width: w, height: h }, extraSeedJs: SEED }), "night");
+  const ctx = await withLook(await newContext(browser, { appLang: lang === "bn" ? "bn" : null, banner: false, viewport: { width: w, height: h }, extraSeedJs: SEED + (pg.seed || "") }), "night");
   await ctx.route("**/archive.org/**", (r) => r.abort());
   for (const [name, m] of Object.entries(MUTATE_CSS)) if (MUTATE === name && m.page === pg.id) {
     const css = fs.readFileSync(m.file, "utf8");
@@ -182,7 +217,7 @@ for (const pg of PAGES) for (const [w, h] of WIDTHS) for (const lang of LANGS) {
     // NOTE: with no key stored the app wears the NIGHT look (the head script treats anything but "light" as night), so the day look is compared with a
     // recorded BASELINE (tools/i18n-verify/night-shared-tools-day-baseline.json, recorded on unmodified main with --record-day), element by element.
     if (w === 390 && lang === "en" && SCALES.includes(100)) {
-      const cx = await withLook(await newContext(browser, { banner: false, viewport: { width: w, height: h }, extraSeedJs: SEED }), "light");
+      const cx = await withLook(await newContext(browser, { banner: false, viewport: { width: w, height: h }, extraSeedJs: SEED + (pg.seed || "") }), "light");
       const { page: Q } = await openPage(cx, pg.path);
       let sig;
       try { await Q.waitForTimeout(500); await Q.evaluate(() => document.querySelectorAll('[id*="splash"], .mm-splash-overlay, .app-splash-overlay').forEach((e) => e.remove())); await v.go(Q); await Q.waitForTimeout(300); sig = await Q.evaluate(SIG); } catch (e) { sig = "ERR " + e.message; }
@@ -206,6 +241,9 @@ for (const pg of PAGES) for (const [w, h] of WIDTHS) for (const lang of LANGS) {
       const look = await P.evaluate(() => document.documentElement.getAttribute("data-card-look"));
       check(t2 + ": night look is on (positive control)", look === "night", "data-card-look=" + look);
       const con = await P.evaluate(() => window.__A11Y.contrast());
+      // a J109 switch's glyph is transparent text, not text: drop a lone arrow glyph only when EVERY such glyph element on the page is transparent
+      const swOnly = await P.evaluate(() => [...document.querySelectorAll(".note-sec-arrow,.ways-caret,.trk-sec-caret,.word-card-form-caret")].every((e) => /rgba\(0, 0, 0, 0\)|transparent/.test(getComputedStyle(e).color)));
+      if (swOnly) con.fail = con.fail.filter((c) => !/^span\.(note-sec-arrow|ways-caret|trk-sec-caret|word-card-form-caret)$/.test(c.key) || !/^[▸▶►▼▲▴▾]$/.test(c.txt));
       const bad = con.fail.map((c) => c.key + ' "' + c.txt + '" ' + c.ratio + ":1 (need " + c.need + ") " + c.fg + " on " + c.bg);
       check(t2 + ": (contrast) all text meets its ratio", bad.length === 0, "\n      " + bad.slice(0, 3).join("\n      "));
       bad.forEach((m) => add("DEFECT contrast", `${pg.id}:${v.id}: ` + m, where));
@@ -214,6 +252,7 @@ for (const pg of PAGES) for (const [w, h] of WIDTHS) for (const lang of LANGS) {
       sc.day.forEach((m) => add("DEFECT day-colour", `${pg.id}:${v.id}: ` + m, where));
       check(t2 + ": (arrow) no show/hide arrow", sc.arrows.length === 0, "\n      " + sc.arrows.slice(0, 3).join("\n      "));
       sc.arrows.forEach((m) => add("DEFECT arrow", `${pg.id}:${v.id}: ` + m, where));
+      sc.known.forEach((m) => add("RECORDED arrow (both looks, pinned script)", `${pg.id}:${v.id}: ` + m, where));
       if (MUTATE === "focus") await P.addStyleTag({ content: NORING_CSS });
       const tw = await tabWalk(P);
       check(t2 + ": (focus) every focused control has a ring >= 3:1", tw.bad.length === 0, "\n      " + tw.bad.slice(0, 3).join("\n      "));
