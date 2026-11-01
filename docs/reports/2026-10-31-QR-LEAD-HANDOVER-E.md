@@ -8,7 +8,7 @@ from `session_01PL2xbLGPyYo53GXRKWojym` (its handover: `2026-10-31-QR-LEAD-HANDO
 
 | Role | Session |
 |---|---|
-| MSA Master Architect | `session_01PL2xbLYSNq3VaA8Hi5jFfq` |
+| MSA Master Architect | `session_01PL2xbLEHixF5Ai2VPJhMiL` (since 1 Nov 3:35 pm; the old `…LYSNq3VaA8Hi5jFfq` is retired) |
 | PCA | `session_01PL2xbN7ENRBkhtTNxJAt2L` |
 
 ## This session
