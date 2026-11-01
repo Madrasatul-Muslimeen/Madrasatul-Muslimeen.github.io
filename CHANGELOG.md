@@ -23133,3 +23133,12 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 - **D1/D2** `journey-map.html`: the new-Note toolbar's words come from `@container nnbar (min-width: 36em)` on the bar instead of `@media (min-width: 640px)`, so at 150–200% text the bar is the icon row and never runs past its window (it reached 905px in 768 and cut the last tools and the ⋯).
 - **D3** `note-opener.js`: the window's bar title carries its whole text as `title`.
 - `note-window-large-night-browser.mjs`: its cut-label check accepts a label whose `title` holds the whole text (updated in place). Night look: no defect. Nothing stored, no Rules.
+
+## v13.10 — 1 Nov 2026 — The v13 Note's sheets at large text (audit part 145, the Architect)
+
+- **D1** `journey-map.html`: at 150–200% text the 🗂 Folders list shrank to 0px (no folder could be seen or ticked) and the sheet did not scroll. The list keeps `min-height: min(9em, 40vh)`; `.folder-picker` scrolls. At 100% every list measured is unchanged.
+- **D2** `note-opener.js`: 📎 Attach's wording is a visible `<label for>`; the field keeps only "2:255" / "3062" in the reader's digits (the placeholder was cut to a wrong example at 150–200% on a phone).
+- **D3** `css/note-window.css`: the Tags "New tag name" row wraps, so "＋ New tag" goes under the field at large text.
+- **D4** `journey-map.html`: the folder search box shows a cut as "…".
+- **J109** `note-ref-ui.js`: the Note's Āyah/Hadith block says "hide" / "show" beside its ON/OFF switch, no arrow.
+- Suites: NEW `note-sheets-large-browser.mjs`; `word-card-ayah-card-ways-back` updated in place for J108 (71/6 → 80/0, a stale test); `note-window-a11y`'s twin exemption updated in place. Report: `docs/reports/2026-11-01-audit-part145-note-sheets-hadith.md`. Nothing stored, no Rules.
