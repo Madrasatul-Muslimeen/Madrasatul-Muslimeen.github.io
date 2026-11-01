@@ -7,7 +7,7 @@
 //   (day) a near-white (luminance > 0.8) panel/card/sheet/input painted inside the dark page; (arrow) a show/hide toggle drawn as an arrow, not the J109 switch.
 // Run from repo root with node serve.js on 8080:
 //   node tools/i18n-verify/night-hadith-dua-browser.mjs [--page=hadith|dua|collections] [--views=a,b] [--width=390] [--lang=bn] [--scale=200] [--shots] [--list]
-//   --mutate=contrast|focus|day|arrow   (each must FAIL)
+//   --mutate=contrast|focus|day|arrow|d1   (each must FAIL; d1 takes out the night rules for the 👥 pill, part 146 D1)
 import fs from "node:fs";
 import { chromium, newContext, openPage } from "./harness.mjs";
 let pass = 0, fail = 0;
@@ -55,6 +55,9 @@ const SCAN = () => {
   const darkAround = (e) => { for (let a = e.parentElement; a; a = a.parentElement) { const c = parse(getComputedStyle(a).backgroundColor); if (c && c[3] >= 0.95) return lum(c) < 0.2; } return pageLum < 0.2; };
   for (const e of document.body.querySelectorAll("*")) {
     if (!vis(e) || /^(IMG|SVG|CANVAS|VIDEO|OPTION)$/i.test(e.tagName)) continue;
+    // A deliberate MARK is not a day colour left behind: the selected Dua word (aria-pressed) and a matched word (.dua-words-mark) wear a
+    // gold highlight with dark ink on purpose (hadith.css .dua-word[aria-pressed="true"], .dua-words-mark). Their text is still measured by (contrast).
+    if (e.matches('[aria-pressed="true"], [aria-current]:not([aria-current="false"]), mark, .dua-words-mark')) continue;
     const c = parse(getComputedStyle(e).backgroundColor);
     if (!c || c[3] < 0.95 || lum(c) <= 0.8 || !darkAround(e)) continue;
     const r = e.getBoundingClientRect();
@@ -128,6 +131,13 @@ const NORING_CSS = "*,*:focus,*:focus-visible{outline:none!important;box-shadow:
 for (const pg of PAGES) for (const [w, h] of WIDTHS) for (const lang of LANGS) {
   const ctx = await withLook(await newContext(browser, { appLang: lang === "bn" ? "bn" : null, banner: false, viewport: { width: w, height: h }, extraSeedJs: SEED_BASE }), "night");
   await ctx.route("**/archive.org/**", (r) => r.abort());
+  // --mutate=d1: the night rules for the 👥 pill and its sheet are taken out again (hadith.css, audit part 146 D1): (day) must FAIL.
+  if (MUTATE === "d1") {
+    const css = fs.readFileSync("app/css/hadith.css", "utf8"), from = '[data-card-look="night"] .hadeethenc-study-item .assign-trigger {', to = '[data-card-look="off"] .hadeethenc-study-item .assign-trigger {';
+    const from2 = '[data-card-look="night"] .hadeethenc-study-item .assign-popover {', to2 = '[data-card-look="off"] .hadeethenc-study-item .assign-popover {';
+    if (css.split(from).length !== 2 || css.split(from2).length !== 2) throw new Error("mutation d1: anchor not found exactly once");
+    await ctx.route((u) => new URL(u).pathname.endsWith("/css/hadith.css"), (r) => r.fulfill({ status: 200, contentType: "text/css", body: css.replace(from, to).replace(from2, to2) }));
+  }
   const { page: P, errors } = await openPage(ctx, pg.path);
   for (const v of pg.views.filter((x) => !VIEWSEL || VIEWSEL.includes(x.id))) {
     const tag = `${pg.id}:${v.id} / ${w} / ${lang}`;
@@ -143,7 +153,7 @@ for (const pg of PAGES) for (const [w, h] of WIDTHS) for (const lang of LANGS) {
       if (scale !== 100) { await P.evaluate((s) => { document.documentElement.style.fontSize = s + "%"; }, scale); await P.waitForTimeout(300); }
       await P.evaluate(INSTALL, "#none");
       if (MUTATE === "contrast") await P.evaluate(() => { const p = document.createElement("p"); p.textContent = "Injected grey on grey line"; p.style.cssText = "position:fixed;top:60px;left:10px;margin:0;color:#999;background:#aaa;font-size:16px;z-index:9999"; document.body.appendChild(p); });
-      if (MUTATE === "day") await P.evaluate(() => { const p = document.createElement("div"); p.textContent = "Injected white panel"; p.style.cssText = "position:fixed;top:100px;left:10px;width:200px;height:60px;background:#fff;color:#000;z-index:9999"; document.body.appendChild(p); });
+      if (MUTATE === "day") await P.evaluate(() => { const p = document.createElement("div"); p.textContent = "Injected white panel"; p.style.cssText = "width:200px;height:60px;background:#fff;color:#000"; /* inside the first DARK painted box: the check is about day colours on a dark card (a white box on the light page canvas is the ordinary page) */ const dark = [...document.body.querySelectorAll("*")].find((e) => { const m = /rgba?\(([^)]+)\)/.exec(getComputedStyle(e).backgroundColor); if (!m) return false; const c = m[1].split(/[ ,/]+/).map(parseFloat); const r = e.getBoundingClientRect(); return (c.length < 4 || c[3] >= 0.95) && (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]) < 60 && r.width > 220 && r.height > 40; }); if (!dark) throw new Error("mutation day: no dark card on this view"); dark.appendChild(p); });
       if (MUTATE === "arrow") await P.evaluate(() => { const d = document.createElement("details"); d.innerHTML = "<summary>▸ Injected arrow toggle</summary>x"; d.style.cssText = "position:fixed;top:170px;left:10px;z-index:9999;color:#fff"; document.body.appendChild(d); });
       const look = await P.evaluate(() => document.documentElement.getAttribute("data-card-look"));
       check(t2 + ": night look is on (positive control)", look === "night", "data-card-look=" + look);
