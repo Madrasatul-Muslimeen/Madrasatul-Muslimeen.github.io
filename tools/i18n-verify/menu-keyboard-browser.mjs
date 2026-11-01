@@ -52,7 +52,7 @@ const FILE_MUT = {
 // ---- in-page helpers (serialised into each evaluate) ----
 const HELP = () => {
   const vis = (e) => e.getClientRects().length > 0 && !e.closest("[hidden]") && getComputedStyle(e).visibility !== "hidden" && getComputedStyle(e).display !== "none";
-  window.__items = (menu, toggle) => [...menu.querySelectorAll("button, a[href], input, select, textarea, [tabindex]")].filter((e) => !e.disabled && e !== toggle && e.getAttribute("tabindex") !== "-1" && vis(e));
+  window.__items = (menu, toggle) => [...menu.querySelectorAll("button, a[href], input, select, textarea, [tabindex]")].filter((e) => !e.disabled && e !== toggle && vis(e));
   const lum = (c) => { const m = (c.match(/[\d.]+/g) || [0, 0, 0]).slice(0, 3).map((v) => { v = v / 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }); return 0.2126 * m[0] + 0.7152 * m[1] + 0.0722 * m[2]; };
   const ratio = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
   window.__back = (e) => { for (let el = e; el; el = el.parentElement) { const c = getComputedStyle(el).backgroundColor; if (!/rgba\(0, 0, 0, 0\)|transparent/.test(c)) return c; } return "rgb(255, 255, 255)"; };
