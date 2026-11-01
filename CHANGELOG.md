@@ -23196,3 +23196,10 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 - **Both files are shared in-page note scripts that QR pins byte for byte; the PCA was sent a change notice.**
 - NEW `tools/i18n-verify/note-window-large-text-browser.mjs`: 360/390/768/820/1024/1180/1440 × en/bn × 100/150/200%, the window on Notes and on Mapping My Journey, with the ⋯ sheet open and closed. Checks: toolbar inside the window, sheet inside the screen, no sideways scroll, targets ≥40px. Builder: notes 188/0, notes --order=before 188/0, journey 188/0.
 - Measured by the Architect: 820 58/0 (screenshots looked at), 360 bn 32/0, night notes 390 155/0. Mutations: fix-refit at 1180 fails 16, fix-title at 390 200% fails 1, fix-row at 360 en 200% fails 1.
+
+## v13.19 — 2 Nov 2026 — The note window's Details button wears the shared ON/OFF switch (audit part 152)
+
+- `app/js/note-window.js` (audit part 152, issue #1408, Builder PR #1409, the Owner's rule J109: every show/hide wears the shared ON/OFF switch): the note window's Details button (`[data-win-details]`) was "Details ▾". It is now a "Details" label plus the existing `<span class="note-sec-arrow">` switch the Note's section toggles use, drawn by `shell.css` and read off `aria-expanded`. `app/css/note-window.css`: `.nw-details-btn` is inline-flex with a gap. `aria-expanded`, the remembered open/shut state (`detailsOpenPref`/`saveDetailsOpen`) and the 40px height are unchanged.
+- **Both files are shared in-page note scripts that QR pins byte for byte; the PCA was sent a change notice.**
+- `tools/i18n-verify/note-window-large-text-browser.mjs` gains switch checks, day and night: switch present and no ▾/▸ glyph, ON/OFF in step with `aria-expanded` and the Details, click/Enter/Space toggle, ≥40px and inside the window, contrast. Builder: 84 views, 541/0.
+- Measured by the Architect: 768 85/0, journey-note-windows 254/0, journey-note-folds-windows 82/0, journey-tags 363/0. Mutations: fix-glyph at 1440 bn fails 12, fix-aria at 360 fails 24. Close-up screenshots of the switch shut and open (390 en day, 1024 bn night) looked at.
