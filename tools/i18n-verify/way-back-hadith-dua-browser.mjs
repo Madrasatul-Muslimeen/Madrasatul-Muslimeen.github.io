@@ -42,7 +42,7 @@ const seedBookmarks = `
 `;
 
 const BACKS = [
-  ["notes", "#notesBackBtn:not([hidden])"], ["page", "#hadithBackBtn:not([hidden])"], ["bookmark", "[data-bm-back-link], [data-bm-back]"],
+  ["notes", "#notesBackBtn:not([hidden])"], ["page", "#hadithBackBtn:not([hidden])"], ["bookmark", "[data-bm-back-link]"],
   ["wordcard", "[data-word-card-app-back]"], ["pill", "#ayahCardBackPill:not([hidden]) [data-ayah-card-back]"],
 ];
 /** The visible way-back control on the current page, or null. */
@@ -137,6 +137,8 @@ const CASES = [
 ];
 
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
+const scan = [];
+const totals2 = { found: 0, backPresent: 0, reach: 0, backWorks: 0, place: 0, card: 0, attempted: 0 };
 const totals = { found: 0, backPresent: 0, reach: 0, backWorks: 0, place: 0, card: 0, attempted: 0 };
 for (const lang of ["en", "bn"]) for (const [width, height] of [[390, 844], [1024, 768]]) {
   if ((LANG && LANG !== lang) || (WIDTH && Number(WIDTH) !== width)) continue;
@@ -208,8 +210,72 @@ for (const lang of ["en", "bn"]) for (const [width, height] of [[390, 844], [102
   console.log(`  ${tag} PART 1 COUNTS: attempted ${n.attempted}, links found ${n.found}, back present ${n.backPresent}, back tappable ${n.reach}, back works ${n.backWorks}, place restored ${n.place}, card restored ${n.card}`);
   for (const k of Object.keys(totals)) totals[k] += n[k];
   check(`${tag} POSITIVE CONTROL: some controls were found (${n.found})`, ONLY ? true : n.found > 0);
+
+  // ---------- Part 2: arrivals from the shared tools ----------
+  if (ONLY) continue;
+  const m = { found: 0, backPresent: 0, reach: 0, backWorks: 0, place: 0, card: 0, attempted: 0 };
+  for (const [id, label, destRe, isControl] of [["bmHadith", "hadith bookmark (resume=hadith:hadeethenc:4563)", /hadith-study\.html/, false], ["bmDua", "dua bookmark (resume=dua:20)", /dua-study\.html/, false], ["bmQuran", "Quran bookmark (POSITIVE CONTROL for the pill)", /quranrevival\.html/, true]]) {
+    const ctag = `${tag} arrival ${id}`;
+    const ctx = await newContext(browser, { ...base, extraSeedJs: seedBookmarks });
+    await ctx.route("**/archive.org/**", (r) => r.abort());
+    await mutate(ctx);
+    const { page: P, errors } = await openPage(ctx, "/app/bookmarks.html");
+    const sel = `.bm-row a[data-bm-open-id="${id}"]`;
+    await P.waitForSelector(sel, { timeout: 15000 }).catch(() => {});
+    m.attempted++;
+    const exists = !!(await P.$(sel));
+    check(`${ctag} Open link found: ${label}`, exists);
+    if (!exists) { await ctx.close(); continue; }
+    m.found++;
+    const href = await P.getAttribute(sel, "href");
+    await Promise.all([P.waitForURL(destRe, { timeout: 15000 }).catch(() => {}), P.click(sel)]);
+    await P.waitForTimeout(2500);
+    check(`${ctag} Open leaves for ${destRe}`, destRe.test(P.url()), `${href} -> ${P.url()}`);
+    let back = null;
+    for (let i = 0; i < 24 && !back; i++) { back = await findBack(P); if (!back) await P.waitForTimeout(250); }
+    if (back) m.backPresent++;
+    check(`${ctag} the destination offers a visible way back`, !!back, P.url());
+    if (back) {
+      if (back.reach) m.reach++;
+      check(`${ctag} the way back can be tapped (nothing covers it)`, back.reach, `covered by ${back.covered}`);
+      if (back.reach) await P.click(back.sel, { timeout: 8000 }).catch(() => {}); else await P.evaluate((s) => document.querySelector(s)?.click(), back.sel).catch(() => {});
+      await P.waitForURL(/bookmarks\.html/, { timeout: 15000 }).catch(() => {});
+      await P.waitForTimeout(1500);
+      const there = /bookmarks\.html/.test(P.url());
+      if (there) m.backWorks++;
+      check(`${ctag} the way back returns to bookmarks.html`, there, P.url());
+      const row = there ? await P.evaluate((s) => { const r = document.querySelector(s)?.getBoundingClientRect(); return r ? r.bottom > -innerHeight && r.top < 2 * innerHeight : false; }, sel) : false;
+      if (row) m.place++;
+      check(`${ctag} place restored (the bookmark's row is within one screen height)`, row);
+      if (there && !!(await P.$(sel))) m.card++;
+      check(`${ctag} card restored (the bookmark's row is listed again)`, there && !!(await P.$(sel)));
+    } else for (const w of ["returns to bookmarks.html", "place restored", "card restored"]) check(`${ctag} ${w}`, false, "no way back to follow");
+    check(`${ctag} no page errors`, errors.filter((e) => !/ERR_CERT|net::|archive\.org|api\.quran|Failed to load resource/i.test(e)).length === 0, errors.slice(0, 2).join(" | "));
+    await ctx.close();
+  }
+  console.log(`  ${tag} PART 2 BOOKMARK ARRIVALS: attempted ${m.attempted}, Open links found ${m.found}, back present ${m.backPresent}, back tappable ${m.reach}, back works ${m.backWorks}, place restored ${m.place}, card restored ${m.card}`);
+  for (const k of Object.keys(totals2)) totals2[k] += m[k];
+  // Notes / Mapping My Journey / Records: any link into the three pages? (scan, with a positive control that links are read at all)
+  {
+    const ctx = await newContext(browser, base);
+    await ctx.route("**/archive.org/**", (r) => r.abort());
+    let all = 0, into = [];
+    for (const p of ["notes.html", "journey-map.html", "records.html"]) {
+      const { page } = await openPage(ctx, `/app/${p}`);
+      await page.waitForTimeout(1200);
+      const hrefs = await page.evaluate(() => [...document.querySelectorAll("a[href]")].map((a) => a.getAttribute("href")));
+      all += hrefs.filter((h) => /\.html/.test(h) && !/legacy/.test(h)).length;
+      into.push(...hrefs.filter((h) => /(hadith-study|hadith-collections|dua-study)\.html/.test(h)).map((h) => `${p} -> ${h}`));
+      await page.close();
+    }
+    console.log(`  ${tag} SCAN notes/journey-map/records: in-app links ${all}, links into Hadith/Dua pages ${into.length} ${JSON.stringify(into)}`);
+    check(`${tag} scan POSITIVE CONTROL: in-app links are read on notes / journey-map / records (${all})`, all > 0);
+    scan.push({ tag, all, into: into.length });
+    await ctx.close();
+  }
 }
 console.log(`\nPART 1 TOTAL: attempted ${totals.attempted}, found ${totals.found}, back present ${totals.backPresent}, back tappable ${totals.reach}, back works ${totals.backWorks}, place ${totals.place}, card ${totals.card}`);
+console.log(`PART 2 TOTAL: attempted ${totals2.attempted}, Open links found ${totals2.found}, back present ${totals2.backPresent}, back tappable ${totals2.reach}, back works ${totals2.backWorks}, place ${totals2.place}, card ${totals2.card}; links from notes/journey-map/records into Hadith/Dua pages: ${scan.reduce((s, x) => s + x.into, 0)}`);
 await browser.close();
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
