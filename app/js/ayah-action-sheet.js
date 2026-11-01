@@ -581,9 +581,85 @@ export function renderAyahActionSheetHtml({
  * without reopening the card), so they are wired straight to
  * wireApproachStagePicker() below rather than through fire().
  */
+/** QR Lead audit 9, 1 Nov 2026: the tool tiles' columns are a fixed 58px (64px in the window) while their words grow with
+    the text, so at 150% "Bookmark" was cut on every phone and tablet, and at 200% Poster, Folder, Share and Asma too
+    (320-390px). Measured, never guessed: the row's own sizes are cleared first; only while a word is really wider than
+    its tile are all the words made a little smaller together (to 7/10 of their size at most, never below ordinary), and
+    only if one is still cut does the row get columns as wide as its widest word, so the tiles take more lines. At ordinary text, on a computer and in Bangla (whose two-word labels wrap at their space)
+    nothing is cut and nothing changes. */
+export function fitAyahActionRow(row) {
+  if (!row) return;
+  row.style.removeProperty("grid-template-columns");
+  const labels = [...row.querySelectorAll(".ayah-sheet-act-label")];
+  labels.forEach((l) => l.style.removeProperty("font-size"));
+  if (!row.getClientRects().length) return;
+  const shown = labels.filter((l) => l.getClientRects().length);
+  const isCut = () => shown.some((l) => l.scrollWidth > l.clientWidth + 1);
+  if (!shown.length || !isCut()) return;
+  // 1. Every word together a little smaller: no less than 7/10 of its large size, and never below its ordinary size.
+  const px = parseFloat(getComputedStyle(shown[0]).fontSize), ordinary = 0.68 * 16;
+  const widest = Math.max(...shown.map((l) => l.scrollWidth)), room = Math.min(...shown.map((l) => l.clientWidth));
+  const scale = Math.min(1, Math.max(0.7, ordinary / px, room / widest));
+  if (scale < 1) shown.forEach((l) => { l.style.fontSize = (px * scale).toFixed(2) + "px"; });
+  if (!isCut()) return;
+  // 2. Still cut: columns as wide as the widest word (never wider than the row), so the tiles take more lines.
+  let need = 0;
+  for (const l of shown) {
+    const cs = getComputedStyle(l.closest(".ayah-sheet-act"));
+    need = Math.max(need, l.scrollWidth + parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight) + parseFloat(cs.borderLeftWidth) + parseFloat(cs.borderRightWidth));
+  }
+  row.style.gridTemplateColumns = `repeat(auto-fit, minmax(min(100%, ${Math.ceil(need) + 2}px), 1fr))`;
+}
+function watchAyahActionRow(row) {
+  if (!row || typeof ResizeObserver !== "function") return;
+  let lastW = -1;
+  // Only a change of the row's WIDTH re-fits it: the fit itself changes only its height. A± changes it too (the card's
+  // sides are in rem), so the words are fitted again after A± with no watcher of their own.
+  new ResizeObserver(() => { const w = Math.round(row.getBoundingClientRect().width); if (w !== lastW) { lastW = w; fitAyahActionRow(row); } }).observe(row);
+  requestAnimationFrame(() => fitAyahActionRow(row));
+  if (document.fonts?.ready) document.fonts.ready.then(() => fitAyahActionRow(row));
+}
+
+/* QR Lead audit 10 (1 Nov 2026): the pinned header's lines, counted rather than guessed. The header is first laid out as
+   ever; only if its items fall on three lines or more does it get .ayah-head-stack (the buttons on line one, the
+   reference on line two), and it keeps that only if the header is then really shorter. Never in the computer window
+   (data-ayah-win), whose header is one line. */
+function headerLines(header) {
+  const items = [];
+  for (const c of header.children) {
+    if (c.classList.contains("ayah-sheet-head-tools") && getComputedStyle(c).display === "contents") items.push(...[...c.children].filter((k) => k.getClientRects().length));
+    else if (c.getClientRects().length) items.push(c);
+  }
+  const boxes = items.map((el) => el.getBoundingClientRect()).sort((a, b) => a.top - b.top);
+  let lines = 0, bottom = -Infinity;
+  for (const b of boxes) { if (b.top >= bottom - 1) { lines++; bottom = b.bottom; } else bottom = Math.max(bottom, b.bottom); }
+  return lines;
+}
+export function fitAyahSheetHeader(header) {
+  if (!header) return;
+  header.classList.remove("ayah-head-stack");
+  if (!header.getClientRects().length || header.closest("[data-ayah-win]")) return;
+  if (headerLines(header) < 3) return;
+  const before = header.getBoundingClientRect().height;
+  header.classList.add("ayah-head-stack");
+  if (header.getBoundingClientRect().height >= before - 1) header.classList.remove("ayah-head-stack");
+}
+function watchAyahSheetHeader(header) {
+  if (!header || typeof ResizeObserver !== "function") return;
+  let lastW = -1;
+  // A change of WIDTH re-fits it (A± too: the card's sides are rem), and so does a button joining it (– Minimise is
+  // added by minimise.js after the card opens). The fit itself changes only the header's height and class.
+  new ResizeObserver(() => { const w = Math.round(header.getBoundingClientRect().width); if (w !== lastW) { lastW = w; fitAyahSheetHeader(header); } }).observe(header);
+  new MutationObserver(() => fitAyahSheetHeader(header)).observe(header, { childList: true });
+  requestAnimationFrame(() => fitAyahSheetHeader(header));
+  if (document.fonts?.ready) document.fonts.ready.then(() => fitAyahSheetHeader(header));
+}
+
 export function attachAyahActionSheetHandlers(container, callbacks = {}) {
   const sheet = container.querySelector("[data-ayah-sheet]");
   if (!sheet) return;
+  watchAyahActionRow(sheet.querySelector("[data-ayah-sheet-actions]"));
+  watchAyahSheetHeader(sheet.querySelector(".ayah-sheet-header"));
   const unitKey = sheet.dataset.unitKey;
   const fire = (fn) => { callbacks.onClose?.(); fn?.(unitKey); };
   const fireUnlessDisabled = (btn, fn) => {

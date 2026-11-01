@@ -4727,7 +4727,9 @@
   .ayah-sheet-ref { font-size: 0.9rem; color: var(--card-heading); font-weight: 600; }
   .ayah-sheet-close { background: none; border: none; color: var(--card-text-muted); font-size: 1.5rem; line-height: 1; min-width: 40px; min-height: 40px; padding: 0.2rem 0.5rem; cursor: pointer; }
   /* PCF MSA J72: the card's ← Back, first in its header (the same as × : back to where the card was opened) */
-  .ayah-sheet-homeback { order: -1; flex: 0 0 auto; width: 40px; height: 40px; border: 1px solid #c9a24b; border-radius: 0.6rem; background: transparent; color: var(--card-heading); font-size: 1.2rem; line-height: 1; cursor: pointer; }
+  /* QR Lead audit 9: a fixed 40x40 box let its arrow (1.2rem) slip out at its bottom-right at 150-200%, leaving an empty oval.
+     The box now grows with its arrow from 40px (the same 40x40 at ordinary text), the arrow in its middle. */
+  .ayah-sheet-homeback { order: -1; flex: 0 0 auto; min-width: 40px; min-height: 40px; padding: 0.15rem 0.35rem; display: inline-flex; align-items: center; justify-content: center; border: 1px solid #c9a24b; border-radius: 0.6rem; background: transparent; color: var(--card-heading); font-size: 1.2rem; line-height: 1; cursor: pointer; }
   /* Owner, 7 Oct 2026 (a photo of the Āyah card, two boxes drawn after the reference): ‹ › step the card
      to the previous / next āyah, then 📖 Note view. One tidy cluster beside the reference, 40px targets. */
   .ayah-sheet-header { gap: 0.4rem; }
@@ -4748,6 +4750,23 @@
     .ayah-sheet-header .ayah-sheet-head-tools { order: 3; flex: 1 0 100%; justify-content: flex-end; }
   }
   .ayah-sheet-head-tools { display: flex; align-items: center; gap: 0.4rem; flex: 0 0 auto; }
+  /* QR Lead audit 10 (1 Nov 2026): on a 320px phone the pinned header took three lines at ordinary text (150px) and four
+     at 200% (281px of a 640px screen): ← alone, the reference, – ×, then ‹ › Full text. fitAyahSheetHeader() sets
+     .ayah-head-stack only while the header would take three lines or more: then every button shares line one
+     (← ‹ ›  … – ×), the reference has line two to itself, and Full text joins it when it fits or takes line three. Where
+     the header takes one or two lines (390px and wider at ordinary text) nothing changes. */
+  .ayah-sheet .ayah-sheet-header.ayah-head-stack { flex-wrap: wrap; column-gap: 0.25rem; row-gap: 0.3rem; }
+  .ayah-sheet-header.ayah-head-stack::after { content: ""; order: 5; flex: 0 0 100%; height: 0; }
+  .ayah-sheet-header.ayah-head-stack .ayah-sheet-head-tools:not([hidden]) { display: contents; }
+  .ayah-sheet-header.ayah-head-stack .ayah-sheet-homeback { order: 1; }
+  .ayah-sheet-header.ayah-head-stack .ayah-sheet-nav-pair { order: 2; }
+  .ayah-sheet-header.ayah-head-stack .mm-min-btn { order: 3; margin-inline-start: auto; }
+  .ayah-sheet-header.ayah-head-stack .ayah-sheet-close { order: 4; margin-inline-start: auto; }
+  .ayah-sheet-header.ayah-head-stack .mm-min-btn + .ayah-sheet-close { margin-inline-start: 0; }
+  /* line one has to hold four buttons at 200% on a 320px phone: – and × keep their 40px boxes and their glyphs stop at 32px */
+  .ayah-sheet-header.ayah-head-stack .mm-min-btn, .ayah-sheet-header.ayah-head-stack .ayah-sheet-close { font-size: min(1.5rem, 32px); padding: 0; min-width: 40px; }
+  .ayah-sheet-header.ayah-head-stack .ayah-sheet-ref { order: 6; flex: 1 1 auto; min-width: 0; }
+  .ayah-sheet-header.ayah-head-stack .ayah-sheet-noteview { order: 7; margin-inline-start: auto; }
   .ayah-sheet-nav-pair { display: inline-flex; border: 1px solid var(--card-line); border-radius: 0.6rem; overflow: hidden; }
   .ayah-sheet-nav { width: 40px; height: 40px; padding: 0; margin: 0; border: 0; border-radius: 0; background: var(--card-bg-inset); color: var(--card-heading); font-size: 1.45rem; line-height: 1; cursor: pointer; }
   .ayah-sheet-nav + .ayah-sheet-nav { border-left: 1px solid var(--card-line); }
