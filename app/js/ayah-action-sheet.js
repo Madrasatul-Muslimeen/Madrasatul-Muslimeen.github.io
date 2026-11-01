@@ -610,20 +610,14 @@ export function fitAyahActionRow(row) {
   }
   row.style.gridTemplateColumns = `repeat(auto-fit, minmax(min(100%, ${Math.ceil(need) + 2}px), 1fr))`;
 }
-let ayahRowTextWatch = false;
 function watchAyahActionRow(row) {
   if (!row || typeof ResizeObserver !== "function") return;
   let lastW = -1;
-  // Only a change of the row's WIDTH re-fits it: the fit itself changes only its height.
+  // Only a change of the row's WIDTH re-fits it: the fit itself changes only its height. A± changes it too (the card's
+  // sides are in rem), so the words are fitted again after A± with no watcher of their own.
   new ResizeObserver(() => { const w = Math.round(row.getBoundingClientRect().width); if (w !== lastW) { lastW = w; fitAyahActionRow(row); } }).observe(row);
   requestAnimationFrame(() => fitAyahActionRow(row));
   if (document.fonts?.ready) document.fonts.ready.then(() => fitAyahActionRow(row));
-  // A± changes the root text size, which grows the words without changing the row's width.
-  if (!ayahRowTextWatch) {
-    ayahRowTextWatch = true;
-    new MutationObserver(() => requestAnimationFrame(() => document.querySelectorAll("[data-ayah-sheet-actions]").forEach(fitAyahActionRow)))
-      .observe(document.documentElement, { attributes: true, attributeFilter: ["style", "class"] });
-  }
 }
 
 export function attachAyahActionSheetHandlers(container, callbacks = {}) {

@@ -10,7 +10,7 @@
 //   no-shrink the words are never made smaller        -> "the tiles take at most 3 rows" FAILS at 320/390 200%
 //   no-cols   the columns are never widened           -> "no tile's word is cut" FAILS at 320/390 200%
 //   no-floor  the 7/10 floor lowered to 4/10          -> "tile words keep at least 7/10 of their size" FAILS at 200%
-//   no-watch  A± changes are not followed             -> "after A± to 200% no word is cut" FAILS
+//   no-ro     the row's width is not watched          -> "after A± to 200% no word is cut" FAILS (A± widens the row)
 //   no-back   the ← Back box fixed at 40x40 again     -> "the ← Back arrow sits inside its box" FAILS at 150/200%
 import { chromium, newContext, openPage } from "./harness.mjs";
 
@@ -25,7 +25,7 @@ const MUT = {
   "no-shrink": ["js", "const scale = Math.min(1, Math.max(0.7, ordinary / px, room / widest));", "const scale = 1;"],
   "no-cols": ["js", "  row.style.gridTemplateColumns = `repeat(auto-fit, minmax(min(100%, ${Math.ceil(need) + 2}px), 1fr))`;", "  void need;"],
   "no-floor": ["js", "Math.max(0.7, ordinary / px, room / widest)", "Math.max(0.4, room / widest)"],
-  "no-watch": ["js", "    new MutationObserver(() => requestAnimationFrame(() => document.querySelectorAll(\"[data-ayah-sheet-actions]\").forEach(fitAyahActionRow)))", "    ({ observe() {} })"],
+  "no-ro": ["js", "  new ResizeObserver(() => { const w = Math.round(row.getBoundingClientRect().width); if (w !== lastW) { lastW = w; fitAyahActionRow(row); } }).observe(row);", "  void lastW;"],
   "no-back": ["html", "min-width: 40px; min-height: 40px; padding: 0.15rem 0.35rem; display: inline-flex; align-items: center; justify-content: center; border: 1px solid #c9a24b;", "width: 40px; height: 40px; border: 1px solid #c9a24b;"],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
