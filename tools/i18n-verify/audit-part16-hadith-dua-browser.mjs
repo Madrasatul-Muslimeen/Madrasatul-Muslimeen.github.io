@@ -268,8 +268,21 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     const href = await ev(page, () => document.querySelector('[data-hadeethenc-note-link="4563"]')?.getAttribute("href") ?? "");
     const q = new URLSearchParams(href.split("?")[1] ?? "");
     check(`${t}: 📝 My Notes opens notes.html for hadith:hadeethenc:4563 with back=1`, href.startsWith("notes.html?") && q.get("unit") === "hadith:hadeethenc:4563" && q.get("back") === "1", href);
+    // UPDATED IN PLACE (audit part 147; stale since J108, v13.01): a plain press on 📝 no longer navigates to notes.html.
+    // It opens a NEW Note in the shared Note opener over this page, and closing it is the way back. The old check waited
+    // for a navigation that never comes, so it failed; the stub also logged "Note and Folder must exist" because it only
+    // keeps the Note's folder when __stubApplyBatches is on (seeded below), which real Firestore never needs.
+    // The link's own address (notes.html, back=1) is still followed below, so the Notes page's ← Back stays covered.
+    await page.click('[data-hadeethenc-note-link="4563"]');
+    const fEl = await page.waitForSelector("#noteOpener:not([hidden]) iframe", { timeout: 10000 }).catch(() => null);
+    let nf = null;
+    for (let i = 0; i < 100 && fEl && !nf; i++) { const f = await fEl.contentFrame(); if (f && /new=1/.test(f.url())) nf = f; else await page.waitForTimeout(100); }
+    await nf?.waitForSelector("[data-edit-body] .mm-ref", { timeout: 20000 }).catch(() => {});
+    check(`${t}: 📝 opens a NEW Note with hadith 4563 inside it, over the page`, !!nf && (await nf.evaluate(() => JSON.parse(document.querySelector("[data-edit-body] .mm-ref")?.getAttribute("data-mmsa-ref") || "{}").id).catch(() => null)) === "hadith:hadeethenc:4563");
+    await nf?.click('[data-nn-tool="back"]').catch(() => {});
+    await page.waitForFunction(() => document.getElementById("noteOpener")?.hidden, null, { timeout: 8000 }).catch(() => {});
     let went = true;
-    await Promise.all([page.waitForURL(/notes\.html\?/, { timeout: 15000 }), page.click('[data-hadeethenc-note-link="4563"]')]).catch(() => { went = false; });
+    await page.goto(new URL(href, page.url()).href, { waitUntil: "load" }).catch(() => { went = false; });
     if (went) {
       await page.waitForSelector("#notesBackBtn:not([hidden])", { timeout: 15000 }).catch(() => {});
       const bk = await ev(page, () => { const b = document.getElementById("notesBackBtn"); return b && !b.hidden ? { text: b.textContent, h: b.getBoundingClientRect().height } : null; });
@@ -283,7 +296,7 @@ for (const lang of LANGS) for (const width of WIDTHS) {
       }
     } else check(`${t}: My Notes opens the Notes page`, false);
     check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
-  }, { seed: SEED_FAMILY });
+  }, { seed: SEED_FAMILY + " window.__stubApplyBatches = true;" });
 
   await flow("studied-openiti", lang, width, async (t, page, ctx, errors) => {
     await toBooks(page); // J106 round 1: the library is Hadith Books now (see toBooks)
@@ -469,8 +482,11 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     await page.waitForSelector("[data-dua-check-panel]");
     await page.click("[data-dua-check-back]");
     await settle(page, 300);
-    const bk = await ev(page, () => ({ panel: !!document.querySelector("[data-dua-check-panel]"), focus: document.activeElement?.dataset?.duaCard ?? null }));
-    check(`${t}: ← Back to Dua closes the panel and returns to Dua 2's card`, !bk.panel && bk.focus === "2", JSON.stringify(bk));
+    // UPDATED IN PLACE (audit part 147; stale since audit part 141 H4, v13.0x): ← Back deliberately returns focus to the
+    // button that opened the panel (✓ Check this dua, data-dua-check-open), not to the card itself (data-dua-card), so the old
+    // check read a null dataset.duaCard. The card must still be on screen: that is the way back.
+    const bk = await ev(page, () => { const a = document.activeElement; const c = document.querySelector('[data-dua-card="2"]')?.getBoundingClientRect(); return { panel: !!document.querySelector("[data-dua-check-panel]"), focus: a?.dataset?.duaCheckOpen ?? a?.dataset?.duaCard ?? null, on: !!c && c.bottom > 0 && c.top < innerHeight }; });
+    check(`${t}: ← Back to Dua closes the panel and returns focus to Dua 2's ✓ Check button, the card on screen`, !bk.panel && bk.focus === "2" && bk.on, JSON.stringify(bk));
     check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
   }, { seed: SEED_CHECK });
 
