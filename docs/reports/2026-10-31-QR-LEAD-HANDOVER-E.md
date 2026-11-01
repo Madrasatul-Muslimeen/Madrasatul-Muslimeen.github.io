@@ -42,6 +42,17 @@ from `session_01PL2xbLGPyYo53GXRKWojym` (its handover: `2026-10-31-QR-LEAD-HANDO
    `<body>` inert (minimise frees it); floating (>=1024) stays non-modal.** Once it is on `main`, re-run the Quran Study
    suites where a control opens or sits behind the Note window (`read-note-pane`, `read-note-pane-window`, `note-opener`,
    `read-quick-buttons`) at 390 and 768; report to the PCA only if one fails.
+3b. **PCA change notice (1 Nov 2:42 pm Sydney): v13.08 (#1379, Owner's J109) replaces every ▸/▾ show/hide arrow with one
+   shared ON/OFF switch (`app/css/shell.css`), including Quran Study (Āyah full view, Āyah/Unit card, Word card sections,
+   Mastery Wheel groups). RULE from now: any new show/hide section uses the shared switch (shell.css J109 selectors or a
+   `.mm-sw` span), never an arrow.** Check the Quran Study screens at 100/150/200% (en+bn, phone/tablet/desktop) once QR serves it.
+3c. **The Owner asked (1 Nov 5:37 pm, photo): "Wasn't bookmark enabled for all units before?"** Answered: yes. The bar's
+   🔖/★ still offers every unit (measured on v13.07, Range 15:1–5: unit, This āyah, This page, This rukūʿ, Whole sūrah, This
+   juz, Range). The photo's window (name "Quran 15:40 — Surah Al-Hijr", no "Bookmark" row) is the **Āyah card's** 🔖
+   (`onBookmark` → `toggleAyahBookmark(unitKey)` with no `unitChoices`, `quranrevival.html` ~23176), which has always been
+   āyah-only. **Asked the Owner with ticks: A = give the Āyah card's 🔖 the same unit choices (This āyah preselected),
+   recommended; B = keep as is.** On A: pass `{ unitChoices: readBookmarkUnitChoices({ unitType: "ayah", ... }) }` built
+   for that card's own āyah (not `bookmarkAyahOnScreen()`), keep the way back to the card (J82 part 2), suite + mutation.
 4. j29p127q (PCF J29) still waits on the Owner; build the same day it is answered.
 5. Then Explore (Manual 8lle31u) at 150/200% and sideways, en + bn.
 
