@@ -61,7 +61,7 @@ const measure = (page) => page.evaluate(async () => {
     if (r(e).bottom > bottom) { bottom = r(e).bottom; last = (e.className || e.tagName).toString().slice(0, 30); } }
   return { open: !m.hidden && shown(m), level: m.querySelector('[data-word-card-level][aria-selected="true"]')?.dataset.wordCardLevel,
     corner: shown(corner) ? Math.round(r(corner).top) : null, cornerBottom: shown(corner) ? Math.round(r(corner).bottom) : null, bar: shown(bar) && getComputedStyle(bar).position === "fixed" ? Math.round(r(bar).top) : null,
-    bottom: Math.round(bottom), last, mountBottom: Math.round(r(m).bottom), pad: getComputedStyle(sc).paddingBottom, vh: innerHeight };
+    bottom: Math.round(bottom), last, mountBottom: Math.round(r(m).bottom), pad: getComputedStyle(sc).paddingBottom, vh: innerHeight, rem: parseFloat(getComputedStyle(document.documentElement).fontSize) };
 });
 
 // Phones (the corner): the last thing the card draws ends above the corner, at every size, in both languages.
@@ -71,7 +71,7 @@ for (const [w, h, lang] of [[320, 640, "en"], [320, 640, "bn"], [360, 740, "en"]
   const m = await measure(page);
   check(`${tag}: POSITIVE CONTROL the Word card is open full screen on its tab, the corner 🧰 on screen`, m.open && m.level === level && m.corner !== null && m.mountBottom === m.vh, JSON.stringify(m));
   check(`${tag}: at the end of the scroll the corner lies on nothing the card draws`, m.bottom <= m.corner, JSON.stringify(m));
-  check(`${tag}: the corner sits in the screen's corner (not lifted over the Read bar the card covers)`, m.cornerBottom >= m.vh - 16, JSON.stringify(m));
+  check(`${tag}: the corner sits in the screen's corner (not lifted over the Read bar the card covers)`, m.cornerBottom >= m.vh - 0.75 * m.rem - 2, JSON.stringify(m));
   await ctx.close();
 }
 
