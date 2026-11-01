@@ -174,12 +174,11 @@ async function measureSet(tag, where, scale, P, F, shotName) {
   await fits("[window]", P, "#noteOpener");
   await fits("[Note page]", F, "body");
   // focus ring in the night look: Tab through the Note page tools, every focused one must show a ring >= 3:1
+  if (MUTATE === "ring") await F.evaluate(() => { const s = document.createElement("style"); s.textContent = "*:focus,*:focus-visible{outline:2px solid #fefefe !important;background-color:#fff !important;box-shadow:none !important}"; document.head.appendChild(s); });
   await F.evaluate(() => document.querySelector("[data-nn-tool]")?.focus());
   const rings = [];
   for (let i = 0; i < 4; i++) { rings.push(await F.evaluate(RING)); await P.keyboard.press("Tab"); }
-  if (MUTATE === "ring") await F.evaluate(() => { const s = document.createElement("style"); s.textContent = "*:focus,*:focus-visible{outline:2px solid #0b1530 !important;box-shadow:none !important}"; document.head.appendChild(s); });
-  const rings2 = MUTATE === "ring" ? [await F.evaluate(RING)] : [];
-  const badRing = [...rings, ...rings2].filter((r) => !r.none && (r.ring === false || r.ratio < 3));
+  const badRing = [...rings].filter((r) => !r.none && (r.ring === false || r.ratio < 3));
   check(tag + " [Note page] (night) focus ring >= 3:1 on every tool tabbed to", badRing.length === 0 && rings.some((r) => !r.none), JSON.stringify(badRing.slice(0, 2)));
   badRing.forEach((r) => add("DEFECT focus-ring", tag.split(" / ")[0] + " Note page: " + JSON.stringify(r).replace(/\d+\.\d+/g, "N"), where + "@" + scale));
   // 🗂 Folders (the Map's picker in new mode)
