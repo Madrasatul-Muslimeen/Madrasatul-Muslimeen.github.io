@@ -24,9 +24,11 @@ const MUT = {
   "wide": ["@container wordcard (max-width: 18rem) {", "@container wordcard (max-width: 26rem) {", 1],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
-// Recorded from unfixed main v13.01 at 100%: the table's width and its first row's cell widths.
-const PLAIN = { "320x640 en": [276, "50,73,73,65,50"], "360x740 en": [316, "50,85,85,80,50"], "360x740 bn": [316, "51,78,78,94,51"],
-  "390x844 en": [346, "50,94,94,93,50"], "768x1024 en": [724, "177,177,177,177,177"], "740x360 bn": [696, "170,170,170,170,170"] };
+// Recorded from unfixed main v13.01 at 100%: the table's width and its first row's cell widths. Updated in place by audit 6b
+// (1 Nov 2026, the table width unchanged): the Arabic no longer wraps, so the Genitive column, which had split بِأَسْمَآئِهِمْ
+// inside the word at ordinary text, now takes the room the whole word needs from the other two (was 73,73,65 / 85,85,80 / 94,94,93).
+const PLAIN = { "320x640 en": [276, "50,69,68,75,50"], "360x740 en": [316, "50,82,82,87,50"], "360x740 bn": [316, "51,78,78,94,51"],
+  "390x844 en": [346, "50,93,93,94,50"], "768x1024 en": [724, "177,177,177,177,177"], "740x360 bn": [696, "170,170,170,170,170"] };
 const MAIN = ON_MAIN ? execSync("git show origin/main:app/quranrevival.html", { maxBuffer: 1 << 26 }).toString() : "";
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
 
