@@ -23153,3 +23153,11 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 
 - `quranrevival.html`: `checkExploreFit()` / `watchExploreFit()` set `body.explore-tall` while the Explore area would be under 12rem (phones at 150–200%, phones turned sideways): the page scrolls and the area scrolls inside itself. Sūrah steps (`.aa-nav-wrap`), All/One (`.aa-seg-stack`) and Approach rows (`.aa-rows-stack`) stack only while words are cut; `#explorePanel` sides `min(1.5rem, 24px)`; `#exploreViewToggle` `max-width: 100%`; from 768px the docked tabs sit above the Zab bar in explore-tall and read-tall.
 - Suite: NEW `qr-explore-large-text-browser.mjs`. Nothing stored, no Rules.
+
+## v13.13 — 1 Nov 2026 — The phone 🧰 corner off "Mapping My Journey" again; QR Lead audits 9 and 10
+
+- `app/js/zab-bar.js` (`dockAndLift`): the corner is lifted only while a `[data-zab-lift]` bar overlaps its spot, to just above that bar (`innerHeight - bar.top`), not by the bar's height wherever it is; re-read on scroll (rAF), after a tap, and on a page resize. On a phone the Qur'an page's tabs are sticky only while the page scrolls; when it fits the screen they sit above `#zabSpacer` and the old lift put the corner on "Mapping My Journey" (J25).
+- QR Lead audit 9 (`app/js/ayah-action-sheet.js` `fitAyahActionRow`, `.ayah-sheet-homeback`): tool tiles never cut a word at large text; ← Back grows with its arrow. NEW `qr-ayah-card-tiles-large-text-browser.mjs`.
+- QR Lead audit 10 (`fitAyahSheetHeader`, `.ayah-head-stack`): the pinned Āyah card header on a phone at large text takes two lines instead of three or four. NEW `qr-ayah-card-header-large-text-browser.mjs`.
+- `zab-dock-browser.mjs`: Read/Explore phone checks (corner covers no tab; above the tabs while they are pinned); mutations `lift-by-height`, `no-scroll-update`; `lift` anchor updated in place (it read `12px`, which the CSS stopped saying, so it had not run).
+- Docs: QR Lead handovers G and H. Nothing stored, no Rules.
