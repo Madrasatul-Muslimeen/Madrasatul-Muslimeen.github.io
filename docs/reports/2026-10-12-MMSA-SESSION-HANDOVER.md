@@ -7,7 +7,37 @@ v10.28). Read `CLAUDE.md` first. The prompt that starts the next session is
 
 This session was summarised once (its context compacted), which is why it hands over here.
 
-## LATEST UPDATE — 1 Nov 2026, ~3:35 pm Sydney, session `session_01PL2xbJLoLeqUmMm2mzfN7D` (v13.07–v13.09 live on MSA; HANDOVER) — READ THIS FIRST
+## LATEST UPDATE — 1 Nov 2026, ~8:45 pm Sydney, session `session_01PL2xbLEHixF5Ai2VPJhMiL` (v13.10–v13.12 live on MSA; HANDOVER) — READ THIS FIRST
+
+Took over 3:35 pm 1 Nov from `session_01PL2xbJLoLeqUmMm2mzfN7D`. Handing over at ~40% context (hand119). **PCA: `session_01PL2xbN7ENRBkhtTNxJAt2L`**. Keep-alive **`trig_01Hprt4qbzEV3k4Pif8c5DCB`** (fired 8:07 pm) — ask the PCA to repoint it.
+
+**State:** `main` is **v13.12** (shown "v13.12-01.11.26"). Next version **v13.13**. **Nothing in flight.** QR still serves **v13.07**: it needs a build-from-msa run for v13.08–v13.12 (PCA told after each release).
+
+**Released this session:**
+- **v13.10** (#1384) — audit part 145, the v13 Note's sheets at large text. The Builder died twice (runs 2361, 2364: only a heading), so the Architect finished the audit from its first suite: **D1** the 🗂 Folders list was **0px** at 150–200% on most widths (`journey-map.html`: list `min-height: min(9em, 40vh)`, sheet scrolls); D2 Attach label; D3 Tags row wraps; D4 search ellipsis; **J109** no arrow on the Note's Āyah/Hadith block (`note-ref-ui.js`). NEW `note-sheets-large-browser.mjs` 337/0 (5 mutations). `word-card-ayah-card-ways-back` 71/6 → 80/0 (stale after J108). Report `docs/reports/2026-11-01-audit-part145-note-sheets-hadith.md`. Builder branches `builder/issue-1382-run-2361`/`-2364` are superseded (not merged); issue #1382 closed by #1384.
+- **v13.11** (#1385) — QR Lead audit 6b: a Qur'an word never splits in Taṣrīf; plus QR Lead handover F and the Dua Lead's `audit-part32` stale-check fix (890/6 → 896/0).
+- **v13.12** (#1386) — QR Lead audit 8: Explore at large text and on a phone turned sideways (`body.explore-tall`). Known limit (in the suite): at 844×390 200% the tabs sit partly under the Zab bar at the very top until the first scroll.
+
+**Next, in order:**
+1. Keep a Builder round running (decision 91): dispatch an audit round (Hadith / Dua / Seerah / shared tools at large text and night look, by the User Manual checklist), push-after-each-page note.
+2. The floating 🧰 Zab button covers content on phones (pre-existing; seen in the Taṣrīf and Explore screenshots) — measure, offer a fix.
+3. `manual-claims-msa` 514/2 ("Hand the device to a child" study lock, 390/1440), identical on `main` — diagnose stale test vs real gap.
+4. Hadith J106 round 2: ready, waits ONLY on the Owner's n106f; release only after the Owner publishes the rule.
+
+**Waiting on the Owner:** J106 n106f · BWN J27 (WFMD: build nothing) · J105 · J104 ticks 6–10 · J29 questions. No Owner message in the PCF since 6:50 pm.
+
+**Lessons (this session):**
+1. **A suite's "no defect" can miss the biggest one**: the Builder's fit probe never measured the folder LIST's own height, which was 0px. Measure the thing the reader uses (a list's visible rows), not only whether its controls overlap.
+2. **Playwright runs only the NEWEST route handler for a request**: a mutation with two edits to one file applied only the last one, and the check looked unproven. One route per file, applying every edit.
+3. **A route glob without `*` misses a page loaded with a query** (`journey-map.html?embed=1&new=1`): match the pathname.
+4. **`serve.js`'s background run stops at 2 hours** — it died mid-batch and voided every suite after it. Restart it before a long batch, and rerun everything after a death.
+5. **A probe that opens an embedded page on its own measures a page no reader sees** (the Zab bar showed on `journey-map.html?embed=1&new=1` top-level). Measure it in its real frame.
+
+**Next session's opening message:**
+
+> Bismillah. You are the MSA Master Architect, taking over from session_01PL2xbLEHixF5Ai2VPJhMiL (hand119, 1 Nov ~8:45 pm Sydney). Your session title is "📌 (03) MSA Master Architect" (num128). Read CLAUDE.md, ARCHITECT.md, then docs/reports/2026-10-12-MMSA-SESSION-HANDOVER.md, its LATEST UPDATE block of 1 Nov 8:45 pm first. FIRST: test GitHub write (git push --dry-run origin HEAD:refs/heads/claude/access-probe). Do NOT retry add_repo QuranRevival; check QR's live version with curl (https://quranrevival.github.io/app/js/qr-version.js) after each release and tell the PCA if it lags (it served v13.07 at 8:45 pm 1 Nov). Read the PMS (https://claude.ai/artifact/PhW1KKX28qrqj9dE7Ha8dZ): meta/global General rules and p/mmsa; answer any new Owner comments. Set p/mmsa.sessionUrl (pin with if_version). Send the PCA (session_01PL2xbN7ENRBkhtTNxJAt2L) "PCA ▸ taken over" and ask it to repoint the MSA keep-alive (trig_01Hprt4qbzEV3k4Pif8c5DCB). main is v13.12; next v13.13. NOTHING IS IN FLIGHT. FIRST JOB: keep a Builder round running (decision 91): dispatch the next audit round (claude.yml workflow_dispatch, issue_number + note) — candidates: the Hadith/Dua/Seerah pages and shared tools at large text and night look, by the PCF User Manual checklist; tell the Builder to push after EACH page (runs 2361/2364 died after ~20 min with only a heading; if it dies again, finish the audit yourself as this session did for part 145). Also open: the floating 🧰 Zab button covers content on a phone (pre-existing, seen in the Taṣrīf and Explore screenshots) — measure and offer a fix; manual-claims-msa 514/2 ("Hand the device to a child" study lock, 390/1440) fails identically on main — diagnose (stale test or real gap). Waiting on the Owner: J106 n106f (Hadith Subjects rule; app branch claude/hadith-lead-01q2 97434cf and rule branch claude/hadith-subjects-rule b203f70 ready, release ONLY after the Owner publishes), BWN J27 (WFMD discussion: build nothing until asked), J105, J104 ticks 6–10, the J29 questions. Leads: (03A) QR session_01PL2xbMtDnPbo7oMetwQZGS; (03B) Hadith session_01PL2xbKWeTSDEBJV5UWZTcQ; (03C) Dua session_01PL2xbMaXuwbA6usFZSB5kr; (03D) Health session_01SPFtgC4vwVzby6PR12Z9ek. Rule J109: every show/hide wears the shared ON/OFF switch, never an arrow; menus keep ▾, folder trees keep ▸. Review rule: 360, 390, 768, 820, 1024, 1180, 1440, English and Bangla, 100/150/200% text, screenshots looked at, real-length data; a shared CSS change is measured on every page that links the file. Restart serve.js for each review AND before any batch that may pass its 2-hour limit (it died mid-batch once: rerun every suite after the death). Mutations through ctx.route: ONE route per file (Playwright runs only the newest handler), and match the pathname (pages load with ?query). Link Playwright into the repo and any worktree. Run behaviour.mjs alone; suite batches in the background with a long timeout (foreground tool calls stop at 10 minutes). Compare any failure against unchanged main (a worktree on PORT=8081 with QR_BASE per command, never exported). Push every review merge at once. Never pkill -f (use TaskStop). Keep-alive every 12 hours (ka122). No self wake-ups (cost86). Hand over at ~40% context (hand119). After "Rasulullah" always write "Sallallahu A'laihi Wa Sallam" (saw128). Write "Siyagah" in full. QuranRevival push access: the Owner, 28 Oct: "always allowed, don't wait for permission anymore".
+
+## LATEST UPDATE — 1 Nov 2026, ~3:35 pm Sydney, session `session_01PL2xbJLoLeqUmMm2mzfN7D` (v13.07–v13.09 live on MSA; HANDOVER) (superseded 1 Nov 8:45 pm)
 
 Took over 6:54 pm 31 Oct from `session_01PL2xbLYSNq3VaA8Hi5jFfq`. Handing over at ~51% context (hand119). **PCA: `session_01PL2xbN7ENRBkhtTNxJAt2L`**. Keep-alive **`trig_013ZmsQdsHkvRHdFMSy3DW7g`** (8:07 am/pm) — ask the PCA to repoint it.
 
