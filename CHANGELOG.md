@@ -23127,3 +23127,9 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 - `css/shell.css`: one shared switch (teal ON, grey OFF, 40x24) replaces the ▸/▾ arrow on every section that shows or hides content: `details.ayah-nv-sec`, `.ayah-ft-sec`, `.ayah-related-more`, `.word-card-dict-more`, `.word-card-more-entries` (summary ::before; the marker hidden); `button > .ways-caret`, `.trk-sec-caret`, `.word-card-form-caret`, `.note-sec-arrow` and `button[data-sec-fold]` (glyph at font-size 0, state from `aria-expanded`); `.mm-sw`.
 - `quranrevival.html`: the Word card's section chevron (⌄/⌃) is the switch; its grid column 20px → 40px. `writing-sheet.js`: Tools is the switch beside "Tools".
 - Menus keep ▾ and folder trees keep ▸ (J109 Q1, the Owner: A). New suite `show-hide-switch-browser.mjs` (mutation nocss); `writing-sheet-browser.mjs` updated in place. Display only; nothing stored, no Rules.
+
+## v13.09 — 1 Nov 2026 — The Note page at large text (Builder audit part 144, the Architect)
+
+- **D1/D2** `journey-map.html`: the new-Note toolbar's words come from `@container nnbar (min-width: 36em)` on the bar instead of `@media (min-width: 640px)`, so at 150–200% text the bar is the icon row and never runs past its window (it reached 905px in 768 and cut the last tools and the ⋯).
+- **D3** `note-opener.js`: the window's bar title carries its whole text as `title`.
+- `note-window-large-night-browser.mjs`: its cut-label check accepts a label whose `title` holds the whole text (updated in place). Night look: no defect. Nothing stored, no Rules.
