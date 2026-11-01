@@ -1052,3 +1052,4 @@ total). Allocated by the MMSA Architect.
 13.09: the Note page at large text (audit part 144). Allocated by the MMSA Architect.
 13.10: the v13 Note's sheets at large text (audit part 145 fixes). Allocated by the MMSA Architect.
 13.11: a Qur'an word never splits in Tasrif (QR Lead audit 6b). Allocated by the MMSA Architect.
+13.12: Explore at large text (QR Lead audit 8). Allocated by the MMSA Architect.

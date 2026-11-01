@@ -23148,3 +23148,8 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 - `quranrevival.html`: the Arabic in the Taṣrīf noun cells, case heads, verb pronouns and verbs never wraps inside a word. `fitTasrifArabic()` / `watchTasrifFit()` shrink a word wider than its box (floor 0.8 of its ordinary-text size); a word too wide even then takes the whole row of the stacked grid. The verb tables stack under `40rem` (was 640px; identical at ordinary text).
 - Suites: NEW `qr-word-card-tasrif-whole-words-browser.mjs`; `qr-word-card-tasrif-fit` column widths updated in place (QR Lead). `audit-part32` Dua ← Back check updated in place (Dua Lead: stale since audit 141 H4).
 - Docs: QR Lead handover F. Nothing stored, no Rules.
+
+## v13.12 — 1 Nov 2026 — Explore at large text (QR Lead audit 8)
+
+- `quranrevival.html`: `checkExploreFit()` / `watchExploreFit()` set `body.explore-tall` while the Explore area would be under 12rem (phones at 150–200%, phones turned sideways): the page scrolls and the area scrolls inside itself. Sūrah steps (`.aa-nav-wrap`), All/One (`.aa-seg-stack`) and Approach rows (`.aa-rows-stack`) stack only while words are cut; `#explorePanel` sides `min(1.5rem, 24px)`; `#exploreViewToggle` `max-width: 100%`; from 768px the docked tabs sit above the Zab bar in explore-tall and read-tall.
+- Suite: NEW `qr-explore-large-text-browser.mjs`. Nothing stored, no Rules.
