@@ -324,8 +324,12 @@ for (const lang of LANGS) for (const [width, height] of TABLETS) {
     const bk = await page.$("[data-dua-check-back]");
     if (bk) { await bk.scrollIntoViewIfNeeded(); await bk.click(); }
     await settle(page, 400);
-    const back = await ev(page, (c) => { const b = document.querySelector(c).getBoundingClientRect(); return { panel: !!document.querySelector("[data-dua-check-panel]"), inView: b.bottom > 0 && b.top < innerHeight, focus: document.activeElement?.dataset?.duaCard }; }, CARD);
-    check(`${t}: ← Back returns to the same card, in view`, !!bk && !back.panel && back.inView && back.focus === "2", JSON.stringify(back));
+    // Updated in place (Dua Lead, 1 Nov 2026): since audit part 141 H4 (95311bb, agreed between the Hadith and Dua
+    // Leads) ← Back puts focus back on the ✓ Check button that opened the panel -- inside this same card -- and only on
+    // the card itself when that button is not on screen. The old check required the card element and failed on the
+    // better behaviour. It still fails when focus lands anywhere outside card 2 (another card, the body, the gone panel).
+    const back = await ev(page, (c) => { const e = document.querySelector(c), b = e.getBoundingClientRect(), a = document.activeElement; return { panel: !!document.querySelector("[data-dua-check-panel]"), inView: b.bottom > 0 && b.top < innerHeight, focus: a === e ? "card" : a?.dataset?.duaCheckOpen && e.contains(a) ? "opener:" + a.dataset.duaCheckOpen : (a?.tagName || "none") }; }, CARD);
+    check(`${t}: ← Back returns to the same card, in view`, !!bk && !back.panel && back.inView && (back.focus === "card" || back.focus === "opener:2"), JSON.stringify(back));
     check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
   });
 }
