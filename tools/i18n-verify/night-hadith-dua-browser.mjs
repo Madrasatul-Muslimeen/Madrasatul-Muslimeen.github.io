@@ -47,13 +47,16 @@ const SCAN = () => {
   const parse = (s) => { const m = /rgba?\(([^)]+)\)/.exec(s); if (!m) return null; const p = m[1].split(/[ ,/]+/).filter(Boolean).map(parseFloat); return [p[0], p[1], p[2], p.length > 3 ? p[3] : 1]; };
   const lum = (c) => { const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }; return 0.2126 * f(c[0]) + 0.7152 * f(c[1]) + 0.0722 * f(c[2]); };
   const bodyBg = parse(getComputedStyle(document.body).backgroundColor), htmlBg = parse(getComputedStyle(document.documentElement).backgroundColor);
-  const pageLum = lum((bodyBg && bodyBg[3] > 0 ? bodyBg : htmlBg) || [255, 255, 255]);
+  const pageLum = lum(bodyBg && bodyBg[3] > 0 ? bodyBg : htmlBg && htmlBg[3] > 0 ? htmlBg : [255, 255, 255]);
   const day = [], arrows = [];
   const key = (e) => window.__A11Y.key(e);
-  if (pageLum < 0.2) for (const e of document.body.querySelectorAll("*")) {
+  // The night look darkens CARDS (data-card-look), not the page canvas, so "a dark page" is read per element: a near-white box is a day colour left
+  // behind when the nearest painted ancestor (alpha >= .95) is dark. A near-white box on the white canvas is the app's ordinary page, not a finding.
+  const darkAround = (e) => { for (let a = e.parentElement; a; a = a.parentElement) { const c = parse(getComputedStyle(a).backgroundColor); if (c && c[3] >= 0.95) return lum(c) < 0.2; } return pageLum < 0.2; };
+  for (const e of document.body.querySelectorAll("*")) {
     if (!vis(e) || /^(IMG|SVG|CANVAS|VIDEO|OPTION)$/i.test(e.tagName)) continue;
     const c = parse(getComputedStyle(e).backgroundColor);
-    if (!c || c[3] < 0.95 || lum(c) <= 0.8) continue;
+    if (!c || c[3] < 0.95 || lum(c) <= 0.8 || !darkAround(e)) continue;
     const r = e.getBoundingClientRect();
     if (r.width < 40 || r.height < 18) continue;
     const kind = /^(INPUT|SELECT|TEXTAREA|BUTTON)$/.test(e.tagName) ? "control" : "panel";
