@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "13.14",
+    "version": "13.15",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -6113,8 +6113,20 @@
     {
       "version": "13.14",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Audit 146 D1: the 👥 pill and sheet in night colours (hadith.css); QR Lead audit 11: Word card scroll room under the phone 🧰.",
+      "integration": {
+        "authorizedOn": "2026-11-01",
+        "integratedOn": "2026-11-01",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.15",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "The Āyah card's 🔖 offers every unit for its āyah (QR Lead 3c, J29 tick A); QR's title fits a 320px phone.",
       "integration": {
         "authorizedOn": "2026-11-01",
         "integratedOn": "2026-11-01",
@@ -6123,8 +6135,9 @@
       }
     }
   ],
-  "nextUnallocated": "13.15",
+  "nextUnallocated": "13.16",
   "nextUnallocatedNote": [
+    "v13.15 was allocated to QR Lead 3c (Āyah card 🔖 every unit) and QR's title at 320px, 2026-11-01.",
     "v13.14 was allocated to the night look on Hadith/Dua/Collections (audit 146) and the Word card's 🧰 (QR audit 11), 2026-11-01.",
     "v13.13 was allocated to the phone 🧰 corner off Mapping My Journey; QR Lead audits 9 and 10, 2026-11-01.",
     "v13.12 was allocated to Explore at large text (QR Lead audit 8), 2026-11-01.",
