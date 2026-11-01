@@ -112,10 +112,12 @@ const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PAT
 for (const lang of LANGS) for (const [w, h] of WIDTHS) for (const scale of SCALES) {
   const tag = `${w} / ${lang} / ${scale}%`;
   const ctx = await newContext(browser, { appLang: lang, banner: false, viewport: { width: w, height: h }, extraSeedJs: seedFor(lang) });
-  if (MUTATE) for (const [file, a, b] of MUTATIONS[MUTATE]) await ctx.route(`**/app/${file}`, async (r) => {
-    const res = await r.fetch(); const s = await res.text();
-    if (!s.includes(a)) throw new Error("mutation target not found: " + MUTATE + " in " + file);
-    await r.fulfill({ response: res, body: s.split(a).join(b) });
+  // One route per FILE, applying every edit of the mutation to it: Playwright runs only the newest handler for a request,
+  // so two routes on one file would apply only the last edit.
+  if (MUTATE) for (const file of new Set(MUTATIONS[MUTATE].map(([f]) => f))) await ctx.route((u) => new URL(u).pathname === "/app/" + file, async (r) => {
+    const res = await r.fetch(); let s = await res.text();
+    for (const [f, a, b] of MUTATIONS[MUTATE]) { if (f !== file) continue; if (!s.includes(a)) throw new Error("mutation target not found: " + MUTATE + " in " + file); s = s.split(a).join(b); }
+    await r.fulfill({ response: res, body: s });
   });
   const { page: P, errors } = await openPage(ctx, "/app/hadith-study.html");
   try {
@@ -140,6 +142,7 @@ for (const lang of LANGS) for (const [w, h] of WIDTHS) for (const scale of SCALE
     check(`${tag} D1: 🗂 scrolled to its end, the sheet's last control is on screen`, !!end && end.inside, JSON.stringify(end));
     await F.evaluate(() => { const pk = document.querySelector(".folder-picker"); if (pk) pk.scrollTop = 0; });
     const tg = await F.evaluate(PH, ".folder-picker .tag-picker-new input");
+    if (process.env.NSL_DEBUG) console.log("DBG", tag, JSON.stringify({ L, tg, wrap: await F.evaluate(() => getComputedStyle(document.querySelector(".folder-picker .tag-picker-new")).flexWrap) }));
     check(`${tag} D3: 🗂 Tags: "New tag name" fits its box`, !!tg && tg.need <= tg.have + 1, JSON.stringify(tg));
     const se = await F.evaluate(PH, ".folder-picker .folder-search-input");
     check(`${tag} D4: 🗂 the search placeholder fits, or its cut ends in "…"`, !!se && (se.need <= se.have + 1 || se.ellipsis), JSON.stringify(se));
