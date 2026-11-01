@@ -2426,3 +2426,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v13.11** (2026-11-01): a Qur'an word never splits in Tasrif (QR Lead audit 6b).
 - **v13.12** (2026-11-01): Explore at large text (QR Lead audit 8).
 - **v13.13** (2026-11-01): the phone 🧰 corner off Mapping My Journey; QR Lead audits 9 and 10.
+- **v13.14** (2026-11-01): the night look on Hadith/Dua/Collections (audit 146) and the Word card's 🧰 (QR audit 11).
