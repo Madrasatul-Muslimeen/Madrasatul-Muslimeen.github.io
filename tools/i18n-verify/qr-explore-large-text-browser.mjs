@@ -11,7 +11,6 @@
 //   no-css    body.explore-tall's page scroll removed  -> the same FAIL (the class is set, nothing scrolls for a finger)
 //   no-cap    the area floored at 12rem, not 4rem      -> "the Explore area ends above the tabs" FAILS sideways at 150/200%
 //   no-wrap   .aa-nav-wrap never set                   -> "no control's words are cut" FAILS at the Surah level
-//   no-break  the steps never break inside a name      -> the same FAIL at 320x640 200%
 //   no-pad    the 24px cap on the panel's sides gone   -> "the Explore panel's sides are never more than 24px" FAILS at 150/200%
 //   no-seg    All / One Approach never stack           -> "no control's words are cut" FAILS at the Surah level at 150/200%
 //   no-zab    the tabs not lifted above the Zab bar    -> "the docked tabs are not covered" FAILS at 768x1024 200% and 844x390
@@ -30,7 +29,6 @@ const MUT = {
   "no-css": ["  body.explore-tall { height: auto; min-height: 100vh; min-height: 100dvh; overflow: visible; }\n", ""],
   "no-cap": ['body.style.setProperty("--explore-tall-h", Math.max(Math.round(4 * rem)', 'body.style.setProperty("--explore-tall-h", Math.max(Math.round(12 * rem)'],
   "no-wrap": ['b.scrollWidth > b.clientWidth + 1)) nav.classList.add("aa-nav-wrap");', 'b.scrollWidth > b.clientWidth + 1)) void 0;'],
-  "no-break": ["max-width: 100%; white-space: normal; text-overflow: clip;", "max-width: 100%;"],
   "no-seg": ['b.scrollWidth > b.clientWidth + 1)) seg.classList.add("aa-seg-stack");', 'b.scrollWidth > b.clientWidth + 1)) void 0;'],
   "no-max": ["flex: 0 0 auto; margin: 0; max-width: 100%; }", "flex: 0 0 auto; margin: 0; }"],
   "no-zab": ["  @media (min-width: 768px) { body.zab-bar-on.explore-tall #dock, body.zab-bar-on.read-tall #dock { bottom: 2.75rem; } }\n", ""],
@@ -92,22 +90,28 @@ const measure = (page) => page.evaluate(() => {
   const evR = R(ev), outside = all.filter((b) => R(b).right > evR.right + 1 || R(b).left < evR.left - 1).map(name);
   const pcs = getComputedStyle(document.getElementById("explorePanel")), padL = parseFloat(pcs.paddingLeft), padR = parseFloat(pcs.paddingRight);
   const steps = [...ev.querySelectorAll("#exploreNavBar .aa-pn button")].map((b) => Math.round(b.clientWidth));
+  const zb = document.getElementById("zabBar"), zabH = zb && zb.getClientRects().length && getComputedStyle(zb).position === "fixed" ? zb.offsetHeight : 0;
   const names = [...ev.querySelectorAll(".aa-nm")].filter((n) => n.getClientRects().length);
   const brokenNames = names.filter((n) => { const was = n.style.overflowWrap; n.style.overflowWrap = "normal"; const b = n.scrollWidth > n.clientWidth + 1; n.style.overflowWrap = was; return b; }).map((n) => n.firstChild.textContent.slice(0, 20));
   if (userScroll) es.scrollIntoView({ block: "start" });
   const s = R(es), d = R(dock);
   // The tabs are a finger's way out of Explore: the one under the finger must be the tab itself, not the Zab bar on top of it.
-  const tab = document.getElementById("tabExploreBtn"), tr = R(tab), atTab = dockShown ? document.elementFromPoint(tr.left + tr.width / 2, Math.min(tr.bottom - 4, innerHeight - 1)) : null;
-  const tabCovered = dockShown && !(atTab && tab.contains(atTab));
+  const tab = document.getElementById("tabExploreBtn"), tr = R(tab), atTab = dockShown ? document.elementFromPoint(tr.left + tr.width / 2, tr.top + tr.height / 2) : null;
+  // ...at both ends of the page's scroll: scrolled fully down the tabs sit above the Zab bar's spacer anyway, so only the top shows it.
+  document.scrollingElement.scrollTop = 0;
+  const tr0 = R(tab), atTab0 = dockShown ? document.elementFromPoint(tr0.left + tr0.width / 2, tr0.top + tr0.height / 2) : null;
+  if (userScroll) es.scrollIntoView({ block: "start" });
+  const tabCovered = dockShown && (!(atTab && tab.contains(atTab)) || !(atTab0 && tab.contains(atTab0)));
   const r = { userScroll, tall: document.body.classList.contains("explore-tall"), popup: getComputedStyle(ev).position === "fixed",
     evH: Math.round(evR.height), room: Math.round((dockShown ? Math.min(s.bottom, d.top) : Math.min(s.bottom, innerHeight)) - Math.max(s.top, 0)),
-    esBottom: Math.round(s.bottom), dockTop: dockShown ? Math.round(d.top) : innerHeight, want: Math.round(Math.min(12 * rem, innerHeight - (dockShown ? dock.offsetHeight : 0) - 8)),
-    rem, unreachable, cut, outside, steps, padL, padR, names: names.length, brokenNames, tabCovered, sideways: document.scrollingElement.scrollWidth > innerWidth };
+    esBottom: Math.round(s.bottom), dockTop: dockShown ? Math.round(d.top) : innerHeight, want: Math.round(Math.min(12 * rem, innerHeight - (dockShown ? dock.offsetHeight : 0) - zabH - 8)),
+    zabH, tabMid: Math.round(tr.top + tr.height / 2), rem, unreachable, cut, outside, steps, padL, padR, names: names.length, brokenNames, tabCovered, sideways: document.scrollingElement.scrollWidth > innerWidth };
   document.scrollingElement.scrollTop = 0; return r;
 });
 
-const CASES = [[320, 640, "en"], [360, 740, "bn"], [390, 844, "en"], [390, 844, "bn"], [414, 896, "en"], [768, 1024, "en"], [768, 1024, "bn"], [1280, 800, "en"], [1440, 900, "bn"], [640, 360, "en"], [740, 360, "bn"], [844, 390, "en"]];
-for (const [w, h, lang] of CASES) {
+const CASES = [[320, 640, "en"], [320, 640, "bn"], [360, 740, "bn"], [390, 844, "en"], [390, 844, "bn"], [414, 896, "en"], [768, 1024, "en"], [768, 1024, "bn"], [1280, 800, "en"], [1440, 900, "bn"], [640, 360, "en"], [740, 360, "bn"], [844, 390, "en"]];
+const ONLY = process.env.ONLY || "";
+for (const [w, h, lang] of CASES.filter(([w, h, l]) => !ONLY || ONLY.split(",").includes(`${l} ${w}x${h}`))) {
   for (const size of ["100%", "150%", "200%"]) {
     const t = `${lang} ${w}x${h} ${size}`, { ctx, page } = await boot(lang, w, h, size);
     for (const level of ["Whole Quran", "Surah 2"]) {

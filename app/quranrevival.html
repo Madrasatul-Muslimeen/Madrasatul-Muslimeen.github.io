@@ -1288,13 +1288,12 @@
   .aa-pn button { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 42vw; padding: 0 8px; }
   /* QR Lead audit 8: at the Surah and Ayah levels the steps ("‹ Al-Faatiha", "Aal-i-Imraan ›") were cut to "‹ Al-Fa…" at 320px
      and to "‹…" (44px) on a phone at 200%. checkExploreFit() sets .aa-nav-wrap only while a step's words really are cut: the
-     two steps then take a line of their own under Back, sharing it, each its own line only when one line cannot hold both, and
-     a name too long for a whole line (Aal-i-Imraan at 200% on a 320px phone) breaks at its hyphen rather than being cut. */
+     two steps then take a line of their own under Back, sharing it, and each its own line only when one line cannot hold both. */
   .aa-nav.aa-nav-wrap { grid-template-columns: auto 1fr; flex-wrap: wrap; }
   .aa-nav.aa-nav-wrap > .aa-pn { grid-column: 1 / -1; flex: 1 1 100%; flex-wrap: wrap; }
   /* ...and All Approaches / One Approach stack, each a whole line, only while a word of theirs is cut (at 150-200% on a phone). */
   .aa-seg.aa-seg-stack { grid-template-columns: 1fr; }
-  .aa-nav.aa-nav-wrap > .aa-pn button { flex: 1 1 auto; max-width: 100%; white-space: normal; text-overflow: clip; line-height: 1.25; padding: 4px 8px; }
+  .aa-nav.aa-nav-wrap > .aa-pn button { flex: 1 1 auto; max-width: 100%; }
   .aa-seg { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; background: rgba(0,0,0,.25); padding: 4px; border-radius: 14px; margin: 6px 0 2px; }
   .aa-seg button { background: transparent; color: var(--card-text-muted); border: 0; min-width: 0; }
   .aa-seg button[aria-pressed="true"] { background: linear-gradient(#e8cf8c, #c9a24b); color: #1d2a44; font-weight: 700; }
