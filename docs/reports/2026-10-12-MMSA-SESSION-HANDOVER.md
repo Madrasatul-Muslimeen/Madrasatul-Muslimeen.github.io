@@ -7,7 +7,100 @@ v10.28). Read `CLAUDE.md` first. The prompt that starts the next session is
 
 This session was summarised once (its context compacted), which is why it hands over here.
 
-## LATEST UPDATE — 2 Nov 2026, ~12:55 am Sydney, session `session_01PL2xbMmi7WNLzsPkGM6XVu` (v13.13–v13.14 live on MSA; HANDOVER) — READ THIS FIRST
+## LATEST UPDATE — 2 Nov 2026, ~8:30 am Sydney, session `session_01PL2xbJYZkkmy5RB4fZAR3k` (v13.15–v13.19 live on MSA; HANDOVER) — READ THIS FIRST
+
+This session ("📌 (03) MSA Master Architect") took over at 12:55 am 2 Nov and hands over at ~8:30 am (hand119, after one context summary).
+
+**Released (all reviewed by measurement, all live on `main`):**
+- v13.15: QR Lead 3c (the Āyah card's 🔖 offers every unit) and QR's title fits a 320px phone.
+- v13.16: Mapping My Journey's ⋯ page menu reads clearly in the night look (audit part 149, #1399).
+- v13.17: the note window's ⋯ sheet in the night look (audit part 150, #1402; shared `card-look.css`).
+- v13.18: the note window fits at large text (audit part 151, #1406; `note-window.js` + `.css`; PCA change notice sent). A MutationObserver refits on `<html>` style/class changes. A probe showed one resize per change and none while idle.
+- v13.19: the note window's Details button wears the shared J109 switch (audit part 152, #1409; `note-window.js` + `.css`; PCA change notice sent).
+
+**Also merged:**
+- #1392: the Builder allowlist plus "one simple command per call". This fixed the early-dying runs; every run since has finished.
+- #1397: audit 148 (test only).
+- #1403: `apps/qr/qr-repo-workflow.yml` mirrors QR's hourly build-from-msa (QR 23a95c4).
+
+**NEW RULE (PCA, 2 Nov 7:39 am):** at EVERY MSA release, send the PCA "PCA ▸ released vX.YY" (add a change notice if shared note files changed). The PCA then runs QR's build-from-msa at once; GitHub drops QR's scheduled runs. QR served v13.18 at 7:38 am; v13.19 was sent to the PCA at ~8:25 am. Check `https://quranrevival.github.io/app/js/qr-version.js`.
+
+**In flight:** Builder round #1411, audit part 153: the way-back law on Notes, Mapping My Journey, Bookmarks and Records. Review it by measurement when its PR lands, and never merge while its run is still going. Release a version only if `app/` changed.
+
+**Next audit ideas** (keep a Builder round running; the Architect audits Hadith, Dua, Seerah and the shared tools):
+- the Records and Bookmarks pages at 820/1180;
+- a keyboard walk of the note window's ⋯ sheet;
+- Import Notes at large text.
+
+**Review lessons from this session:**
+- `night-shared-tools-browser.mjs` page ids are `bookmarks`, `records`, `journey`, `notes`, `import`. A wrong id runs 0 view checks and exits 1.
+- A sheet open in a suite's screenshot can hide the control under review, so take a close-up probe (`locator.screenshot`).
+- serve.js stops at its 2-hour limit. Restart it with `run_in_background` and timeout 7200000. A `(node serve.js &)` started inside a Bash call dies with that call.
+
+**Waiting on the Owner (unchanged):**
+- J106 n106f: Hadith Subjects rule. Release ONLY after the Owner publishes it.
+- J92 A or B.
+- BWN J27: build nothing.
+- J105.
+- J104 ticks 6–10.
+- The J29 questions.
+
+**Leads:**
+- (03A) QR: session_01PL2xbMyR5g8rRKQnA2JdLW
+- (03B) Hadith: session_01PL2xbKWeTSDEBJV5UWZTcQ
+- (03C) Dua: session_01PL2xbMaXuwbA6usFZSB5kr
+- (03D) Health: session_01SPFtgC4vwVzby6PR12Z9ek
+
+The keep-alive is trig_01VgsCZnbjmLxmEtkszz4Pdg (every 12 hours). The PCA repoints it to the new session.
+
+**Opening message for the next session** (title "📌 (03) MSA Master Architect"):
+
+> Bismillah. You are the MSA Master Architect, taking over from session_01PL2xbJYZkkmy5RB4fZAR3k (hand119, 2 Nov ~8:30 am Sydney). Your session title is "📌 (03) MSA Master Architect" (num128).
+>
+> Read CLAUDE.md, then ARCHITECT.md, then docs/reports/2026-10-12-MMSA-SESSION-HANDOVER.md, starting with its LATEST UPDATE block of 2 Nov 8:30 am.
+>
+> First steps:
+> - Test GitHub write: `git push --dry-run origin HEAD:refs/heads/claude/access-probe`. Do NOT retry add_repo for QuranRevival.
+> - Read the PMS (https://claude.ai/artifact/PhW1KKX28qrqj9dE7Ha8dZ): the meta/global General rules and p/mmsa. Answer any new Owner comments.
+> - Set p/mmsa.sessionUrl, pinned with if_version.
+> - Send the PCA (session_01PL2xbMi4bJQNaakJbg7GtF) "PCA ▸ taken over", and ask it to repoint the keep-alive trig_01VgsCZnbjmLxmEtkszz4Pdg.
+>
+> State: main is v13.19; the next version is v13.20.
+>
+> At EVERY release, send the PCA "PCA ▸ released vX.YY", with a change notice if note-window.js, note-window.css or another shared in-page note script changed. The PCA runs QR's build-from-msa. Then check https://quranrevival.github.io/app/js/qr-version.js.
+>
+> First job: review Builder round #1411 (audit part 153, the way-back law on the shared tools) by measurement when its PR lands. Never merge while its run is still going. Release a version only if app/ changed. Then keep a Builder round running (decision 91): audit Hadith, Dua, Seerah and the shared tools feature by feature.
+>
+> Waiting on the Owner:
+> - J106 n106f: the Hadith Subjects rule. App branch claude/hadith-lead-01q2; rule branch claude/hadith-subjects-rule b203f70. Release ONLY after the Owner publishes the rule.
+> - J92 A or B.
+> - BWN J27: build nothing until asked.
+> - J105.
+> - J104 ticks 6–10.
+> - The J29 questions.
+>
+> Leads:
+> - (03A) QR: session_01PL2xbMyR5g8rRKQnA2JdLW
+> - (03B) Hadith: session_01PL2xbKWeTSDEBJV5UWZTcQ
+> - (03C) Dua: session_01PL2xbMaXuwbA6usFZSB5kr
+> - (03D) Health: session_01SPFtgC4vwVzby6PR12Z9ek
+>
+> Rules:
+> - Rule J109: every show/hide wears the shared ON/OFF switch; menus keep ▾, folder trees keep ▸.
+> - Review rule: widths 360, 390, 768, 820, 1024, 1180 and 1440; English and Bangla; text at 100/150/200%. Look at the screenshots, and use real-length data. Measure a shared CSS change on every page that links the file.
+> - Restart serve.js for each review (2-hour limit).
+> - Mutations go through ctx.route, ONE route per file, matching the pathname.
+> - Run behaviour.mjs alone.
+> - Compare any failure against unchanged main.
+> - Push every review merge at once.
+> - Never pkill -f (use TaskStop).
+> - Keep-alive every 12 hours (ka122). No self wake-ups (cost86).
+> - Hand over at ~40% context (hand119).
+> - After "Rasulullah" always write "Sallallahu A'laihi Wa Sallam" (saw128).
+> - Write "Siyagah" in full.
+> - QuranRevival push access is always allowed.
+
+## LATEST UPDATE — 2 Nov 2026, ~12:55 am Sydney, session `session_01PL2xbMmi7WNLzsPkGM6XVu` (v13.13–v13.14 live on MSA; HANDOVER) (superseded 2 Nov 8:30 am)
 
 Took over 8:45 pm 1 Nov from `session_01PL2xbLEHixF5Ai2VPJhMiL`. Handing over at ~40% context (hand119). **PCA: `session_01PL2xbMi4bJQNaakJbg7GtF`** (new, 10:54 pm 1 Nov). Keep-alive **`trig_013QcLnqctk39EeSibzeJAYB`** (8:07 am/pm; the PCA repoints it). **QR Lead: `session_01PL2xbMyR5g8rRKQnA2JdLW`.**
 
