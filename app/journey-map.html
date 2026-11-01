@@ -468,7 +468,11 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
   html.new-mode .nn-tb[aria-pressed="true"]:focus-visible { outline-color: #c9a24b; } /* audit 143 M1: the blue ring was 1.74:1 on the pressed navy */
   html.new-mode .nn-lbl { display: none; font-size: 0.95rem; }
   html.new-mode #notePane [data-pane-menu-wrap] > [data-pane-menu-btn] { width: 100%; height: 44px; min-height: 44px; min-width: 0; box-sizing: border-box; }
-  @media (min-width: 640px) {
+  /* Builder audit 144 D1/D2 (v13.09): the words beside the icons were shown from a 640px SCREEN, so at 150-200% text the bar
+     outgrew its window (905px in 768) and cut its last tools and the ⋯. They now come from the BAR's own width in em, which
+     grows with the text size: below 36em the bar is the icon row a phone has (each tool keeps its spoken name). */
+  html.new-mode #notePane [data-pane-bar] { container: nnbar / inline-size; }
+  @container nnbar (min-width: 36em) {
     html.new-mode .nn-lbl { display: inline; }
     html.new-mode #notePane [data-pane-bar] > .nn-tb, html.new-mode #notePane [data-pane-bar] > [data-pane-menu-wrap] { flex: 0 0 auto; }
     html.new-mode .nn-tb { padding: 0 12px; }

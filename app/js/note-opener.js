@@ -163,6 +163,7 @@ function paint() {
   const label = cur.unitLabel;
   titleEl.textContent = label ? `📝 ${t("New note on {unit}", { unit: label })}` : `📝 ${t("New note")}`;
   win.setAttribute("aria-label", titleEl.textContent.replace(/^📝 /, ""));
+  titleEl.title = titleEl.textContent.replace(/^📝 /, ""); // audit 144 D3: a long title is cut in the bar; its whole text on hover
   frame.title = t("New note");
   const close = win.querySelector(".no-close");
   const name = cur.backLabel || t("Close");
