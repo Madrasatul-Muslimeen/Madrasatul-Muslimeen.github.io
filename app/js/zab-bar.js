@@ -239,17 +239,39 @@ function dockAndLift() {
   });
   const lifts = [...document.querySelectorAll("[data-zab-lift]")];
   const shown = (el) => el.getClientRects().length > 0 && el.getBoundingClientRect().width > 0;
+  // v13.13: the lift is measured from where the bar REALLY is, not its height. The Qur'an page's tabs stick to the bottom
+  // only while the page scrolls; when the page fits the screen they sit ABOVE the #zabSpacer, and lifting the corner by the
+  // tabs' height put it on "Mapping My Journey" (J25's complaint, back on every phone). The corner rises only when a bar
+  // reaches the spot it would take, and then stands just above that bar. Scrolling moves a sticky bar, so it is re-read then.
+  const corner = () => document.getElementById("zabCorner");
   const update = () => {
     document.body.classList.toggle("zab-docked", docks.some(shown));
-    const h = Math.max(0, ...lifts.filter(shown).map((el) => el.getBoundingClientRect().height));
-    document.body.style.setProperty("--zab-lift", `${Math.ceil(h)}px`);
+    const c = corner(), vh = window.innerHeight;
+    const gap = parseFloat(getComputedStyle(document.documentElement).fontSize) * 0.75;
+    const ch = c && c.offsetHeight ? c.offsetHeight : 48;
+    const spotTop = vh - gap - ch, spotBottom = vh - gap;
+    let lift = 0;
+    for (const el of lifts) {
+      if (!shown(el)) continue;
+      const b = el.getBoundingClientRect();
+      if (b.top < spotBottom && b.bottom > spotTop) lift = Math.max(lift, vh - b.top);
+    }
+    document.body.style.setProperty("--zab-lift", `${Math.ceil(lift)}px`);
   };
   update();
   if (typeof ResizeObserver !== "undefined" && (docks.length || lifts.length)) {
     const r = new ResizeObserver(update);
     docks.forEach((el) => r.observe(el)); lifts.forEach((el) => r.observe(el));
+    if (lifts.length) { r.observe(document.documentElement); r.observe(document.body); }
   }
   window.addEventListener("resize", update);
+  if (lifts.length) {
+    // a bar that MOVES without changing size (a scroll, or a view switch above it) is seen here
+    let queued = false;
+    const soon = () => { if (queued) return; queued = true; requestAnimationFrame(() => { queued = false; update(); }); };
+    window.addEventListener("scroll", soon, { passive: true });
+    document.addEventListener("click", () => { soon(); setTimeout(update, 400); });
+  }
 }
 
 // ---------- loading (only when first opened) ---------------------------------
