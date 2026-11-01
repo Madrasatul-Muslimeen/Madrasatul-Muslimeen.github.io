@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "13.08",
+    "version": "13.14",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -6041,8 +6041,80 @@
     {
       "version": "13.08",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "PCF MSA J109: every section that shows or hides content wears the shared ON/OFF switch instead of an arrow (the Owner, 1 Nov 2026).",
+      "integration": {
+        "authorizedOn": "2026-11-01",
+        "integratedOn": "2026-11-01",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.09",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Builder audit part 144 D1-D3 fixed by the Architect: the Note page toolbar's words come from the bar's width in em; the window title carries its whole text.",
+      "integration": {
+        "authorizedOn": "2026-11-01",
+        "integratedOn": "2026-11-01",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.10",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Audit part 145 D1-D4 and the J109 arrow on the Note's Ayah/Hadith block, by the Architect.",
+      "integration": {
+        "authorizedOn": "2026-11-01",
+        "integratedOn": "2026-11-01",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.11",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "QR Lead audit 6b (whole Arabic words in the Tasrif tables), QR Lead handover F (docs) and the Dua Lead's audit-part32 test update, reviewed and released by the Architect.",
+      "integration": {
+        "authorizedOn": "2026-11-01",
+        "integratedOn": "2026-11-01",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.12",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "QR Lead audit 8: Explore usable at large text and on a phone turned sideways, reviewed and released by the Architect.",
+      "integration": {
+        "authorizedOn": "2026-11-01",
+        "integratedOn": "2026-11-01",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.13",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Phone 🧰 corner lifted only while a bar reaches its spot (J25); QR Lead audits 9 (Āyah tiles) and 10 (Āyah header) at large text.",
+      "integration": {
+        "authorizedOn": "2026-11-01",
+        "integratedOn": "2026-11-01",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.14",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Audit 146 D1: the 👥 pill and sheet in night colours (hadith.css); QR Lead audit 11: Word card scroll room under the phone 🧰.",
       "integration": {
         "authorizedOn": "2026-11-01",
         "integratedOn": "2026-11-01",
@@ -6051,8 +6123,14 @@
       }
     }
   ],
-  "nextUnallocated": "13.09",
+  "nextUnallocated": "13.15",
   "nextUnallocatedNote": [
+    "v13.14 was allocated to the night look on Hadith/Dua/Collections (audit 146) and the Word card's 🧰 (QR audit 11), 2026-11-01.",
+    "v13.13 was allocated to the phone 🧰 corner off Mapping My Journey; QR Lead audits 9 and 10, 2026-11-01.",
+    "v13.12 was allocated to Explore at large text (QR Lead audit 8), 2026-11-01.",
+    "v13.11 was allocated to a Qur'an word never splits in Tasrif (QR Lead audit 6b), 2026-11-01.",
+    "v13.10 was allocated to the v13 Note's sheets at large text (audit part 145 fixes), 2026-11-01.",
+    "v13.09 was allocated to the Note page at large text (audit part 144), 2026-11-01.",
     "v13.08 was allocated to every show/hide as an ON/OFF switch (J109), 2026-11-01.",
     "v13.07 was allocated to the v13 Note window keyboard fixes (audit part 143), 2026-10-31.",
     "v13.06 was allocated to Quran Study: the Word card's level tabs at large text (QR Lead), 2026-10-31.",

@@ -48,6 +48,7 @@ body.no-dragging { user-select: none; }
 .no-attach-kinds { display: flex; gap: 0.5rem; flex-wrap: wrap; }
 .no-attach-kind { min-height: 40px; padding: 0 0.9rem; border: 1px solid #1F3A6E; border-radius: 20px; background: #fff; color: #1F3A6E; font: inherit; font-weight: 600; cursor: pointer; }
 .no-attach-kind[aria-pressed="true"] { background: #1F3A6E; color: #fff; }
+.no-attach-label { font-weight: 600; margin-bottom: -0.3rem; }
 .no-attach-input { min-height: 44px; width: 100%; box-sizing: border-box; padding: 0 0.8rem; border: 1px solid #9aa3b2; border-radius: 10px; font: inherit; }
 .no-attach-hint { margin: 0; color: #4f5868; font-size: 0.85rem; }
 .no-attach-err { margin: 0; color: #8a1c13; font-size: 0.9rem; }
@@ -163,6 +164,7 @@ function paint() {
   const label = cur.unitLabel;
   titleEl.textContent = label ? `📝 ${t("New note on {unit}", { unit: label })}` : `📝 ${t("New note")}`;
   win.setAttribute("aria-label", titleEl.textContent.replace(/^📝 /, ""));
+  titleEl.title = titleEl.textContent.replace(/^📝 /, ""); // audit 144 D3: a long title is cut in the bar; its whole text on hover
   frame.title = t("New note");
   const close = win.querySelector(".no-close");
   const name = cur.backLabel || t("Close");
@@ -291,7 +293,8 @@ function openAttach() {
   attachEl.innerHTML = `<div class="no-attach-box" role="dialog" aria-modal="true" aria-labelledby="noAttachTitle">
     <h2 id="noAttachTitle"></h2>
     <div class="no-attach-kinds" role="group"><button type="button" class="no-attach-kind" data-no-attach-kind="ayah"></button><button type="button" class="no-attach-kind" data-no-attach-kind="hadith"></button></div>
-    <input type="text" class="no-attach-input" data-no-attach-input inputmode="text" autocomplete="off">
+    <label class="no-attach-label" for="noAttachInput" data-no-attach-label></label>
+    <input type="text" class="no-attach-input" id="noAttachInput" data-no-attach-input inputmode="text" autocomplete="off">
     <p class="no-attach-hint" data-no-attach-hint></p>
     <p class="no-attach-err" data-no-attach-err role="alert"></p>
     <div class="no-attach-acts"><button type="button" data-no-attach-cancel></button><button type="button" data-no-attach-go></button></div>
@@ -305,8 +308,10 @@ function openAttach() {
   const paintKind = () => {
     for (const b of attachEl.querySelectorAll("[data-no-attach-kind]")) b.setAttribute("aria-pressed", String(b.dataset.noAttachKind === attachKind));
     const input = q("[data-no-attach-input]");
-    const ph = attachKind === "ayah" ? t("Surah:Āyah, e.g. 2:255") : t("The hadith's number, e.g. 3062");
-    input.placeholder = ph; input.setAttribute("aria-label", ph);
+    // v13.10 (audit part 145 D2): the whole wording is a visible label now, which wraps; the box keeps only the short
+    // example. As a placeholder it was cut at 150-200% text on a phone ("সূরা:আয়াত, যেমন ২:২" -- a wrong example).
+    q("[data-no-attach-label]").textContent = attachKind === "ayah" ? t("Surah:Āyah, e.g. 2:255") : t("The hadith's number, e.g. 3062");
+    input.placeholder = attachKind === "ayah" ? `${num(2)}:${num(255)}` : num(3062);
     q("[data-no-attach-hint]").textContent = attachKind === "ayah" ? t("The Arabic, English and Bangla of the āyah are added; you can hide any of them.") : t("A hadith from the HadeethEnc collection, by its number on the Hadith page.");
     q("[data-no-attach-err]").textContent = "";
   };

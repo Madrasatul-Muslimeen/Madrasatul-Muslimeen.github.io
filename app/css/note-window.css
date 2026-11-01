@@ -160,7 +160,8 @@ button.tag-chip-btn:hover, button.tag-chip-btn:focus-visible { background: #dde6
 .tag-pick-row { display: flex; align-items: center; gap: 0.5rem; min-height: 44px; padding: 0 0.2rem; cursor: pointer; }
 .tag-pick-row input { width: 22px; height: 22px; flex: 0 0 auto; }
 .tag-pick-name { min-width: 0; overflow-wrap: anywhere; }
-.tag-picker-new { display: flex; gap: 0.4rem; align-items: center; }
+.tag-picker-new { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; } /* v13.10 (audit 145 D3): at 150-200% text on a phone "＋ New tag" goes under the field, which then has the row and its placeholder is never cut */
+.tag-picker-new input { flex: 1 1 10em; width: auto; }
 .tag-picker-new button { flex: 0 0 auto; min-height: 40px; white-space: nowrap; }
 
 /* S11 -- reading tools. The bar stays on one line: 🔍 and ⇅ fold into ⋯ first, then Edit, then 📎 (js fitPaneBar). */

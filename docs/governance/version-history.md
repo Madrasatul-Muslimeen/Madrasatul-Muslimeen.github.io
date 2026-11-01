@@ -1049,3 +1049,9 @@ total). Allocated by the MMSA Architect.
 13.06: Quran Study: the Word card's level tabs at large text (QR Lead). Allocated by the MMSA Architect.
 13.07: the v13 Note window keyboard fixes (audit part 143). Allocated by the MMSA Architect.
 13.08: every show/hide as an ON/OFF switch (J109). Allocated by the MMSA Architect.
+13.09: the Note page at large text (audit part 144). Allocated by the MMSA Architect.
+13.10: the v13 Note's sheets at large text (audit part 145 fixes). Allocated by the MMSA Architect.
+13.11: a Qur'an word never splits in Tasrif (QR Lead audit 6b). Allocated by the MMSA Architect.
+13.12: Explore at large text (QR Lead audit 8). Allocated by the MMSA Architect.
+13.13: the phone 🧰 corner off Mapping My Journey; QR Lead audits 9 and 10. Allocated by the MMSA Architect.
+13.14: the night look on Hadith/Dua/Collections (audit 146) and the Word card's 🧰 (QR audit 11). Allocated by the MMSA Architect.

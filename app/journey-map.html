@@ -139,9 +139,14 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
   .folder-picker-title { margin: 0; font-size: 1.05rem; }
   /* The toolbar's .folder-search-input is `flex: 1 1 12rem` for a ROW; in this
      column it became a 12rem-TALL box (seen at 390px, 1 Oct 2026). */
-  .folder-picker .folder-search-input { flex: 0 0 auto; min-height: 40px; }
+  .folder-picker .folder-search-input { flex: 0 0 auto; min-height: 40px; text-overflow: ellipsis; } /* v13.10 (audit 145 D4): at 200% on a phone its placeholder is cut; the cut now shows "…" */
   .folder-picker-msg { margin: 0; }
-  .folder-picker-list { list-style: none; margin: 0; padding: 0; overflow-y: auto; flex: 1 1 auto; min-height: 0; }
+  .folder-picker-list { list-style: none; margin: 0; padding: 0; overflow-y: auto; flex: 1 1 auto; min-height: min(9em, 40vh); }
+  /* v13.10 (audit part 145 D1): at 150-200% text the title, search, buttons and Tags took the whole sheet and the list
+     (min-height: 0) shrank to 0px -- no folder could be seen or ticked, and the rest was cut off below a sheet that did not
+     scroll. The list now keeps about three rows (9em grows with the text; never over 40% of the screen) and the sheet
+     scrolls as a whole when it must. At 100% every list measured was already taller than 9em, so nothing moves there. */
+  .folder-picker { overflow-y: auto; }
   .folder-picker-row { display: flex; align-items: center; gap: 0.4rem; width: 100%; min-height: 44px; text-align: left; background: #fff; color: #1F3A6E; border: 1px solid #ddd; border-radius: 0.4rem; margin: 0 0 0.25rem; padding: 0.4rem 0.6rem; box-sizing: border-box; cursor: pointer; }
   .folder-picker-row .folder-row-name { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
   .folder-picker-row.refused { opacity: 0.45; }
@@ -468,7 +473,11 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
   html.new-mode .nn-tb[aria-pressed="true"]:focus-visible { outline-color: #c9a24b; } /* audit 143 M1: the blue ring was 1.74:1 on the pressed navy */
   html.new-mode .nn-lbl { display: none; font-size: 0.95rem; }
   html.new-mode #notePane [data-pane-menu-wrap] > [data-pane-menu-btn] { width: 100%; height: 44px; min-height: 44px; min-width: 0; box-sizing: border-box; }
-  @media (min-width: 640px) {
+  /* Builder audit 144 D1/D2 (v13.09): the words beside the icons were shown from a 640px SCREEN, so at 150-200% text the bar
+     outgrew its window (905px in 768) and cut its last tools and the ⋯. They now come from the BAR's own width in em, which
+     grows with the text size: below 36em the bar is the icon row a phone has (each tool keeps its spoken name). */
+  html.new-mode #notePane [data-pane-bar] { container: nnbar / inline-size; }
+  @container nnbar (min-width: 36em) {
     html.new-mode .nn-lbl { display: inline; }
     html.new-mode #notePane [data-pane-bar] > .nn-tb, html.new-mode #notePane [data-pane-bar] > [data-pane-menu-wrap] { flex: 0 0 auto; }
     html.new-mode .nn-tb { padding: 0 12px; }

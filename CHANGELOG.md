@@ -23127,3 +23127,44 @@ The Owner, 23 Oct 2026 (J82 part 3): "Look at the note view … How many rows ar
 - `css/shell.css`: one shared switch (teal ON, grey OFF, 40x24) replaces the ▸/▾ arrow on every section that shows or hides content: `details.ayah-nv-sec`, `.ayah-ft-sec`, `.ayah-related-more`, `.word-card-dict-more`, `.word-card-more-entries` (summary ::before; the marker hidden); `button > .ways-caret`, `.trk-sec-caret`, `.word-card-form-caret`, `.note-sec-arrow` and `button[data-sec-fold]` (glyph at font-size 0, state from `aria-expanded`); `.mm-sw`.
 - `quranrevival.html`: the Word card's section chevron (⌄/⌃) is the switch; its grid column 20px → 40px. `writing-sheet.js`: Tools is the switch beside "Tools".
 - Menus keep ▾ and folder trees keep ▸ (J109 Q1, the Owner: A). New suite `show-hide-switch-browser.mjs` (mutation nocss); `writing-sheet-browser.mjs` updated in place. Display only; nothing stored, no Rules.
+
+## v13.09 — 1 Nov 2026 — The Note page at large text (Builder audit part 144, the Architect)
+
+- **D1/D2** `journey-map.html`: the new-Note toolbar's words come from `@container nnbar (min-width: 36em)` on the bar instead of `@media (min-width: 640px)`, so at 150–200% text the bar is the icon row and never runs past its window (it reached 905px in 768 and cut the last tools and the ⋯).
+- **D3** `note-opener.js`: the window's bar title carries its whole text as `title`.
+- `note-window-large-night-browser.mjs`: its cut-label check accepts a label whose `title` holds the whole text (updated in place). Night look: no defect. Nothing stored, no Rules.
+
+## v13.10 — 1 Nov 2026 — The v13 Note's sheets at large text (audit part 145, the Architect)
+
+- **D1** `journey-map.html`: at 150–200% text the 🗂 Folders list shrank to 0px (no folder could be seen or ticked) and the sheet did not scroll. The list keeps `min-height: min(9em, 40vh)`; `.folder-picker` scrolls. At 100% every list measured is unchanged.
+- **D2** `note-opener.js`: 📎 Attach's wording is a visible `<label for>`; the field keeps only "2:255" / "3062" in the reader's digits (the placeholder was cut to a wrong example at 150–200% on a phone).
+- **D3** `css/note-window.css`: the Tags "New tag name" row wraps, so "＋ New tag" goes under the field at large text.
+- **D4** `journey-map.html`: the folder search box shows a cut as "…".
+- **J109** `note-ref-ui.js`: the Note's Āyah/Hadith block says "hide" / "show" beside its ON/OFF switch, no arrow.
+- Suites: NEW `note-sheets-large-browser.mjs`; `word-card-ayah-card-ways-back` updated in place for J108 (71/6 → 80/0, a stale test); `note-window-a11y`'s twin exemption updated in place. Report: `docs/reports/2026-11-01-audit-part145-note-sheets-hadith.md`. Nothing stored, no Rules.
+
+## v13.11 — 1 Nov 2026 — A Qur'an word never splits in Taṣrīf (QR Lead audit 6b)
+
+- `quranrevival.html`: the Arabic in the Taṣrīf noun cells, case heads, verb pronouns and verbs never wraps inside a word. `fitTasrifArabic()` / `watchTasrifFit()` shrink a word wider than its box (floor 0.8 of its ordinary-text size); a word too wide even then takes the whole row of the stacked grid. The verb tables stack under `40rem` (was 640px; identical at ordinary text).
+- Suites: NEW `qr-word-card-tasrif-whole-words-browser.mjs`; `qr-word-card-tasrif-fit` column widths updated in place (QR Lead). `audit-part32` Dua ← Back check updated in place (Dua Lead: stale since audit 141 H4).
+- Docs: QR Lead handover F. Nothing stored, no Rules.
+
+## v13.12 — 1 Nov 2026 — Explore at large text (QR Lead audit 8)
+
+- `quranrevival.html`: `checkExploreFit()` / `watchExploreFit()` set `body.explore-tall` while the Explore area would be under 12rem (phones at 150–200%, phones turned sideways): the page scrolls and the area scrolls inside itself. Sūrah steps (`.aa-nav-wrap`), All/One (`.aa-seg-stack`) and Approach rows (`.aa-rows-stack`) stack only while words are cut; `#explorePanel` sides `min(1.5rem, 24px)`; `#exploreViewToggle` `max-width: 100%`; from 768px the docked tabs sit above the Zab bar in explore-tall and read-tall.
+- Suite: NEW `qr-explore-large-text-browser.mjs`. Nothing stored, no Rules.
+
+## v13.13 — 1 Nov 2026 — The phone 🧰 corner off "Mapping My Journey" again; QR Lead audits 9 and 10
+
+- `app/js/zab-bar.js` (`dockAndLift`): the corner is lifted only while a `[data-zab-lift]` bar overlaps its spot, to just above that bar (`innerHeight - bar.top`), not by the bar's height wherever it is; re-read on scroll (rAF), after a tap, and on a page resize. On a phone the Qur'an page's tabs are sticky only while the page scrolls; when it fits the screen they sit above `#zabSpacer` and the old lift put the corner on "Mapping My Journey" (J25).
+- QR Lead audit 9 (`app/js/ayah-action-sheet.js` `fitAyahActionRow`, `.ayah-sheet-homeback`): tool tiles never cut a word at large text; ← Back grows with its arrow. NEW `qr-ayah-card-tiles-large-text-browser.mjs`.
+- QR Lead audit 10 (`fitAyahSheetHeader`, `.ayah-head-stack`): the pinned Āyah card header on a phone at large text takes two lines instead of three or four. NEW `qr-ayah-card-header-large-text-browser.mjs`.
+- `zab-dock-browser.mjs`: Read/Explore phone checks (corner covers no tab; above the tabs while they are pinned); mutations `lift-by-height`, `no-scroll-update`; `lift` anchor updated in place (it read `12px`, which the CSS stopped saying, so it had not run).
+- Docs: QR Lead handovers G and H. Nothing stored, no Rules.
+
+## v13.14 — 1 Nov 2026 — The night look on Hadith, Dua and Collections (audit part 146); the 🧰 off the Word card's last Taṣrīf cells (QR Lead audit 11)
+
+- `app/css/hadith.css`: night-only rules for `.hadeethenc-study-item .assign-trigger` / `.assign-popover` (and its label, hint, "you" tag, tick boxes, caret): the 👥 pill and its sheet take the card's colours instead of hard white (audit 146 D1).
+- `tools/i18n-verify/night-hadith-dua-browser.mjs` (Builder run 2374, finished by the Architect): night-look contrast, focus, day colours and arrows on the three pages; deliberate marks skipped by the day check; the `day` mutation injects into a dark card; NEW `d1` mutation. Report `docs/reports/2026-11-01-audit-part146-night-hadith-dua.md`.
+- QR Lead audit 11 (`app/quranrevival.html`, CSS): Word card scroll room under the phone corner; corner at the screen corner while the card is open; 768–899px card above the Zab bar. NEW `qr-word-card-zab-dock-browser.mjs`.
+- Nothing stored, no Rules.

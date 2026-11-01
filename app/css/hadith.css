@@ -287,6 +287,14 @@ a.hadeethenc-study-btn[aria-disabled="true"], button.hadeethenc-study-btn[aria-d
 .hadeethenc-study-item .assign-row input[type="checkbox"] { width: 1.05rem; height: 1.05rem; accent-color: #1F3A6E; cursor: pointer; flex-shrink: 0; }
 .hadeethenc-study-item .assign-row .who-name { flex: 1; }
 .hadeethenc-study-item .assign-row .who-tag { font-size: 0.66rem; color: #555; background: #f6f7fb; border: 1px solid #eee; border-radius: 0.6rem; padding: 0.02rem 0.4rem; }
+/* Audit part 146 D1 (night look): the 👥 pill and its "Assign to" sheet were hard white on the dark card, beside a Studied picker
+   already in night colours. In the night look they take the card's own colours, as the menubar and reader do (lines ~399-471). */
+[data-card-look="night"] .hadeethenc-study-item .assign-trigger { background: var(--card-bg-inset); color: var(--card-heading); border-color: var(--card-line); }
+[data-card-look="night"] .hadeethenc-study-item .assign-popover { background: var(--card-bg); color: var(--card-text); border-color: var(--card-line); box-shadow: 0 10px 26px rgba(0,0,0,0.45); }
+[data-card-look="night"] .hadeethenc-study-item .assign-popover-label, [data-card-look="night"] .hadeethenc-study-item .assign-hint { color: var(--card-text-muted); }
+[data-card-look="night"] .hadeethenc-study-item .assign-row .who-tag { background: var(--card-bg-inset); color: var(--card-text-muted); border-color: var(--card-line); }
+[data-card-look="night"] .hadeethenc-study-item .assign-trigger .caret { opacity: 1; }
+[data-card-look="night"] .hadeethenc-study-item .assign-row input[type="checkbox"] { accent-color: var(--card-heading); color: var(--card-text); }
 .hadeethenc-study-reason { flex-basis: 100%; font-size: 0.8rem; color: #7d1f1e; margin: 0.1rem 0 0; font-weight: 600; }
 
 /* The Owner, 8 Oct 2026: a dua's own words, large, in the Quranic font chosen in Options (quranFontStack()). */

@@ -52,7 +52,10 @@ const FIT = (rootSel) => {
   }
   for (const e of root.querySelectorAll("*")) {
     const c = getComputedStyle(e);
-    if (c.textOverflow === "ellipsis" && c.whiteSpace === "nowrap" && e.scrollWidth > e.clientWidth + 1 && shown(e) && (e.textContent || "").trim()) out.push("label " + desc(e) + " is cut by ellipsis (" + e.scrollWidth + " > " + e.clientWidth + "): " + e.textContent.trim().slice(0, 30));
+    // UPDATED IN PLACE (v13.09, the Architect, audit 144 D3): a cut label whose `title` carries its whole text is the accepted
+    // shape for the Note window's bar title (the full title is also the window's name and stands in the Note below).
+    const whole = (e.textContent || "").trim(), tip = (e.getAttribute("title") || "").trim();
+    if (c.textOverflow === "ellipsis" && c.whiteSpace === "nowrap" && e.scrollWidth > e.clientWidth + 1 && shown(e) && whole && !(tip && whole.endsWith(tip))) out.push("label " + desc(e) + " is cut by ellipsis (" + e.scrollWidth + " > " + e.clientWidth + "): " + e.textContent.trim().slice(0, 30));
   }
   return [...new Set(out)];
 };

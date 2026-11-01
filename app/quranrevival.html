@@ -799,6 +799,18 @@
   body.read-tall #app, body.read-tall #stage, body.read-tall #readView { flex: 0 0 auto; }
   body.read-tall #studyScreen { height: auto; }
   body.read-tall #readScroll { flex: 0 0 auto; height: var(--read-tall-h, 60vh); }
+  /* QR Lead audit 8, 1 Nov 2026: Explore is the same fixed-height screen below 900px, and with large text (200% on a phone; a
+     phone turned sideways even at 100%) the header, the palette rows and the docked tabs took the whole screen: #exploreView
+     measured 0px at 320x640 200% and on every phone turned sideways at 150-200% (no wheel, no list, nothing to tap).
+     checkExploreFit() sets body.explore-tall only while the Explore area is really under 12rem: the page then scrolls as the
+     Read view's read-tall does, and the Explore area keeps the screen's height less the tabs (--explore-tall-h), so one scroll
+     down shows a whole screen of Explore above them; it still scrolls inside itself. Never on a PC, where Explore is a window. */
+  body.explore-tall { height: auto; min-height: 100vh; min-height: 100dvh; overflow: visible; }
+  body.explore-tall #app, body.explore-tall #stage, body.explore-tall #exploreView { flex: 0 0 auto; }
+  body.explore-tall #exploreScroll { flex: 0 0 auto; height: var(--explore-tall-h, 60vh); }
+  /* From 768px the Zab bar (2.75rem, fixed at the bottom) is there too: while Explore or the Read view scrolls, the docked tabs
+     stick above it, as the landing's do (landing-tall). Before this the bar covered the lower half of the tabs (844x390, 768x1024). */
+  @media (min-width: 768px) { body.zab-bar-on.explore-tall #dock, body.zab-bar-on.read-tall #dock { bottom: 2.75rem; } }
 
   /* The wheel look behind "Study Quran" (see #wheelLookSwitch). "dark" is the
      long-standing veil above; "light" is a light-grey veil; "colour" lifts
@@ -1230,7 +1242,7 @@
      project tests except 320px, where the switch takes a tidy line of its own
      rather than anything being cut. */
   .explore-head-row #exploreBreadcrumb { flex: 1 1 auto; min-width: 0; }
-  .explore-head-row #exploreViewToggle { flex: 0 0 auto; margin: 0; }
+  .explore-head-row #exploreViewToggle { flex: 0 0 auto; margin: 0; max-width: 100%; } /* QR Lead audit 8: never wider than its row (Juz / Surahs / Hizb ran 25px past a 320px phone at 200%); its buttons wrap instead */
   /* Issue #342 -- a third button (Hizb) at the Quran level. Measured,
      English, both together on the trail's own row: "Whole Quran" + Juz +
      Surahs + Hizb needs more than the two-button pair ever did, and does not
@@ -1274,6 +1286,14 @@
   .aa-pn { display: flex; gap: 8px; justify-content: flex-end; min-width: 0; }
   /* Architect, 7 Oct 2026: 8px sides, not 12 -- at 390px the Ayah level's "‹ Ayah 28" / "Next Ayah ›" were 3-5px short with a wider fallback font (the page never loads Inter), so they were cut. */
   .aa-pn button { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 42vw; padding: 0 8px; }
+  /* QR Lead audit 8: at the Surah and Ayah levels the steps ("‹ Al-Faatiha", "Aal-i-Imraan ›") were cut to "‹ Al-Fa…" at 320px
+     and to "‹…" (44px) on a phone at 200%. checkExploreFit() sets .aa-nav-wrap only while a step's words really are cut: the
+     two steps then take a line of their own under Back, sharing it, and each its own line only when one line cannot hold both. */
+  .aa-nav.aa-nav-wrap { grid-template-columns: auto 1fr; flex-wrap: wrap; }
+  .aa-nav.aa-nav-wrap > .aa-pn { grid-column: 1 / -1; flex: 1 1 100%; flex-wrap: wrap; }
+  /* ...and All Approaches / One Approach stack, each a whole line, only while a word of theirs is cut (at 150-200% on a phone). */
+  .aa-seg.aa-seg-stack { grid-template-columns: 1fr; }
+  .aa-nav.aa-nav-wrap > .aa-pn button { flex: 1 1 auto; max-width: 100%; }
   .aa-seg { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; background: rgba(0,0,0,.25); padding: 4px; border-radius: 14px; margin: 6px 0 2px; }
   .aa-seg button { background: transparent; color: var(--card-text-muted); border: 0; min-width: 0; }
   .aa-seg button[aria-pressed="true"] { background: linear-gradient(#e8cf8c, #c9a24b); color: #1d2a44; font-weight: 700; }
@@ -1289,6 +1309,11 @@
   .aa-row .aa-nm { font-size: 0.85rem; line-height: 1.3; min-width: 0; color: var(--card-text); overflow-wrap: anywhere; }
   .aa-row .aa-nm small { display: block; color: var(--card-text-muted); font-size: 0.74rem; margin-top: 2px; }
   .aa-row-top { display: flex; gap: 8px; align-items: center; justify-content: flex-end; }
+  /* QR Lead audit 8: at 768x1024 200% the list beside the wheel was so narrow that a name broke inside a word ("Memoris / e
+     (Hifz)"). checkExploreFit() sets .aa-rows-stack only while a word really would not fit beside Take ▸: Take then goes under
+     the name, at the row's end. */
+  .aa-rows.aa-rows-stack .aa-row { grid-template-columns: minmax(0, 1fr); }
+  .aa-rows.aa-rows-probe .aa-nm { overflow-wrap: normal; }
   .aa-strip { grid-column: 1 / -1; display: grid; gap: 1px; min-width: 0; }
   .aa-strip i { height: 8px; border-radius: 2px; min-width: 0; }
   .aa-take { background: linear-gradient(#ecd497, #c9a24b); color: #1d2a44; border: 0; padding: 0 14px; font-weight: 700; white-space: nowrap; }
@@ -1356,6 +1381,9 @@
 
   /* ---------- Explore (Phase 5) ---------- */
   #explorePanel { margin-top: 0; } /* border/background/padding come from .wheel-box (Phase 5 round 12); lives inside the Explore dock panel since shell round 7 */
+  /* QR Lead audit 8: .wheel-box's 1.5rem sides grew to 48px each at 200%, leaving a 320px phone's Explore 158px to write in. Never more
+     than 24px (its size at ordinary text, so nothing moves there). */
+  #explorePanel { padding-left: min(1.5rem, 24px); padding-right: min(1.5rem, 24px); }
 
   /* ---------- Explore, the stage's 4th view (Ayah Collections round 2) ----------
      The owner's own ask: "the Explore panel should increase to the entire
@@ -3484,6 +3512,18 @@
      above) is pinned over the page's foot, and the full-screen list ran under it -- at 768 and 820 the last row,
      An-Naas, was 31 of its 48px under the bar and its middle could not be tapped. The list stops above the bar. */
   @media (min-width: 768px) { body.zab-bar-on #readContentsMount { bottom: 2.75rem; } }
+  /* QR Lead audit 11 (the MSA Architect, 1 Nov 2026): on a phone the floating 🧰 corner covered the full-screen Word card's
+     last Taṣrīf cells ("×5") at the end of its scroll, and from 768px the Zab bar covered the card's bottom. The scroll now
+     ends with room under the corner (its 3rem + 0.75rem, a little more, and any lift), and from 768px the card stops above
+     the bar, as Contents does. A dock in the card's header was measured first and not used: both of its rows are full on a
+     phone, so a 🧰 there made the WbW header up to 101px taller (320px, 200%). */
+  @media (max-width: 767.98px) {
+    body:has(#zabCorner) #quranWordCardMount .word-card-content { padding-bottom: 4.25rem; }
+    /* The Read bar the corner is lifted over ([data-zab-lift]) is under the full-screen card, so the corner comes down to
+       the screen's corner while the card is open; lifted, it floated mid-card (308px up at 200% text on a 320px phone). */
+    body:has(#quranWordCardMount:not([hidden])) #zabCorner { bottom: 0.75rem; }
+  }
+  @media (min-width: 768px) and (max-width: 899.98px) { body.zab-bar-on #quranWordCardMount:not([hidden]) { bottom: 2.75rem; } }
   .rc-card { background: var(--card-bg); color: var(--card-text); display: flex; flex-direction: column; min-height: 0; flex: 1 1 auto; min-width: 0; }
   .rc-card header {
     background: #1F3A6E; color: #fff; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.6rem 0.8rem;
@@ -3850,7 +3890,9 @@
   @media (max-width: 520px) { .word-card-acc > summary:has(.word-card-acc-ar) { grid-template-columns: 32px minmax(0, 1fr) 40px; row-gap: 0; } .word-card-acc-ar { grid-column: 2; grid-row: 2; } .word-card-acc-dot { display: none; } .word-card-acc > summary:has(.word-card-acc-ar)::after { grid-column: 3; grid-row: 1; } }
   .word-card-conj-wrap { container-type: inline-size; min-width: 0; }
   .word-card-conj { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; direction: rtl; }
-  @container (max-width: 640px) { .word-card-conj { grid-template-columns: minmax(0, 1fr); } }
+  /* QR Lead audit 6b: 40rem, not 640px (the same at ordinary text): at 768px 200% three tables of 57px Arabic side by side
+     overflowed each other and the card, so with larger text they stack as they do on a phone. */
+  @container (max-width: 40rem) { .word-card-conj { grid-template-columns: minmax(0, 1fr); } }
   .word-card-cj { direction: ltr; border-radius: 10px; padding: 8px; display: grid; gap: 6px; align-content: start; min-width: 0; }
   .word-card-cj-past { background: #fdeceb; } .word-card-cj-pres { background: #e8f2fc; } .word-card-cj-imp { background: #ecf7e6; }
   .word-card-cj h4 { margin: 0; font-size: 0.9rem; text-align: center; color: #b3261e; }
@@ -3907,7 +3949,7 @@
   .word-card-cj-onehead { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; gap: 8px; align-items: center; }
   .word-card-cj-step { width: 44px; height: 44px; border-radius: 10px; border: 1px solid var(--wc-purple-line); background: var(--wc-purple-bg); color: var(--wc-purple-ink); font: inherit; font-weight: 800; font-size: 1.2rem; cursor: pointer; }
   .word-card-cj-groups { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; direction: rtl; align-items: start; }
-  @container (max-width: 640px) { .word-card-cj-groups { grid-template-columns: minmax(0, 1fr); } }
+  @container (max-width: 40rem) { .word-card-cj-groups { grid-template-columns: minmax(0, 1fr); } } /* audit 6b: as .word-card-conj */
   .word-card-cj-group { direction: ltr; min-width: 0; display: grid; gap: 2px; }
   .word-card-cj-gname { margin: 0; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #5b6d66; }
   .word-card-cj-one .word-card-cj-vb { font-size: 2rem; line-height: 1.6; }
@@ -4084,6 +4126,19 @@
     .word-card-ntable thead th { overflow-wrap: anywhere; hyphens: auto; }
     .word-card-ntable .word-card-ncell-empty { font-size: 0.58rem; }
   }
+  /* QR Lead audit 6b, 1 Nov 2026 (asked by the MSA Architect after v13.04): a Qur'an word never splits. The cells carry
+     overflow-wrap:anywhere for their English, and it broke the Arabic inside the word ("بِأَسْمَ / آئِهِمْ" even at 320px
+     ordinary text, "مَنْصُو / ب" in the heads at 200%). The Arabic now never wraps; a word too wide for its box is shrunk
+     to fit by fitTasrifArabic(), never below 0.8 of its ordinary-text size, and a word too wide even then takes the whole
+     row of the stacked grid (.word-card-ntd-wide) before it is shrunk again. */
+  .word-card-ncell-ar, .word-card-ntable-ar { white-space: nowrap; overflow-wrap: normal; }
+  .word-card-ntable td.word-card-ntd-wide { grid-column: 1 / -1; }
+  /* The same in the verb tables, where it was worse: their cells sit in .word-card-acc-body (overflow-wrap:anywhere), so in
+     three tables side by side at 768px 200% even هُمْ broke as هُ / مْ. The verb (its three coloured parts) and the pronoun
+     never wrap; the count and mood lines under the verb still wrap, between words; the lead breaks only between words. */
+  .word-card-cj-pr .word-card-ar, td.word-card-cj-vb { white-space: nowrap; overflow-wrap: normal; }
+  td.word-card-cj-vb .word-card-cj-q, td.word-card-cj-vb .word-card-cj-mood { white-space: normal; overflow-wrap: break-word; }
+  .word-card-cj-lead { overflow-wrap: normal; }
   .word-card-ncell { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.1rem; box-sizing: border-box; width: 100%; min-height: 44px; margin: 0; padding: 0.25rem 0.15rem; font: inherit; font-size: 0.8rem; text-align: center; border: 1px solid var(--wc-purple-line); border-radius: 0.4rem; background: transparent; color: inherit; overflow-wrap: anywhere; min-width: 0; }
   button.word-card-ncell { cursor: pointer; }
   .word-card-ncell-ar { font-family: var(--quran-font); font-size: 0.95rem; line-height: 1.3; }
@@ -4672,7 +4727,9 @@
   .ayah-sheet-ref { font-size: 0.9rem; color: var(--card-heading); font-weight: 600; }
   .ayah-sheet-close { background: none; border: none; color: var(--card-text-muted); font-size: 1.5rem; line-height: 1; min-width: 40px; min-height: 40px; padding: 0.2rem 0.5rem; cursor: pointer; }
   /* PCF MSA J72: the card's ← Back, first in its header (the same as × : back to where the card was opened) */
-  .ayah-sheet-homeback { order: -1; flex: 0 0 auto; width: 40px; height: 40px; border: 1px solid #c9a24b; border-radius: 0.6rem; background: transparent; color: var(--card-heading); font-size: 1.2rem; line-height: 1; cursor: pointer; }
+  /* QR Lead audit 9: a fixed 40x40 box let its arrow (1.2rem) slip out at its bottom-right at 150-200%, leaving an empty oval.
+     The box now grows with its arrow from 40px (the same 40x40 at ordinary text), the arrow in its middle. */
+  .ayah-sheet-homeback { order: -1; flex: 0 0 auto; min-width: 40px; min-height: 40px; padding: 0.15rem 0.35rem; display: inline-flex; align-items: center; justify-content: center; border: 1px solid #c9a24b; border-radius: 0.6rem; background: transparent; color: var(--card-heading); font-size: 1.2rem; line-height: 1; cursor: pointer; }
   /* Owner, 7 Oct 2026 (a photo of the Āyah card, two boxes drawn after the reference): ‹ › step the card
      to the previous / next āyah, then 📖 Note view. One tidy cluster beside the reference, 40px targets. */
   .ayah-sheet-header { gap: 0.4rem; }
@@ -4693,6 +4750,23 @@
     .ayah-sheet-header .ayah-sheet-head-tools { order: 3; flex: 1 0 100%; justify-content: flex-end; }
   }
   .ayah-sheet-head-tools { display: flex; align-items: center; gap: 0.4rem; flex: 0 0 auto; }
+  /* QR Lead audit 10 (1 Nov 2026): on a 320px phone the pinned header took three lines at ordinary text (150px) and four
+     at 200% (281px of a 640px screen): ← alone, the reference, – ×, then ‹ › Full text. fitAyahSheetHeader() sets
+     .ayah-head-stack only while the header would take three lines or more: then every button shares line one
+     (← ‹ ›  … – ×), the reference has line two to itself, and Full text joins it when it fits or takes line three. Where
+     the header takes one or two lines (390px and wider at ordinary text) nothing changes. */
+  .ayah-sheet .ayah-sheet-header.ayah-head-stack { flex-wrap: wrap; column-gap: 0.25rem; row-gap: 0.3rem; }
+  .ayah-sheet-header.ayah-head-stack::after { content: ""; order: 5; flex: 0 0 100%; height: 0; }
+  .ayah-sheet-header.ayah-head-stack .ayah-sheet-head-tools:not([hidden]) { display: contents; }
+  .ayah-sheet-header.ayah-head-stack .ayah-sheet-homeback { order: 1; }
+  .ayah-sheet-header.ayah-head-stack .ayah-sheet-nav-pair { order: 2; }
+  .ayah-sheet-header.ayah-head-stack .mm-min-btn { order: 3; margin-inline-start: auto; }
+  .ayah-sheet-header.ayah-head-stack .ayah-sheet-close { order: 4; margin-inline-start: auto; }
+  .ayah-sheet-header.ayah-head-stack .mm-min-btn + .ayah-sheet-close { margin-inline-start: 0; }
+  /* line one has to hold four buttons at 200% on a 320px phone: – and × keep their 40px boxes and their glyphs stop at 32px */
+  .ayah-sheet-header.ayah-head-stack .mm-min-btn, .ayah-sheet-header.ayah-head-stack .ayah-sheet-close { font-size: min(1.5rem, 32px); padding: 0; min-width: 40px; }
+  .ayah-sheet-header.ayah-head-stack .ayah-sheet-ref { order: 6; flex: 1 1 auto; min-width: 0; }
+  .ayah-sheet-header.ayah-head-stack .ayah-sheet-noteview { order: 7; margin-inline-start: auto; }
   .ayah-sheet-nav-pair { display: inline-flex; border: 1px solid var(--card-line); border-radius: 0.6rem; overflow: hidden; }
   .ayah-sheet-nav { width: 40px; height: 40px; padding: 0; margin: 0; border: 0; border-radius: 0; background: var(--card-bg-inset); color: var(--card-heading); font-size: 1.45rem; line-height: 1; cursor: pointer; }
   .ayah-sheet-nav + .ayah-sheet-nav { border-left: 1px solid var(--card-line); }
@@ -8591,6 +8665,8 @@
         body.style.setProperty("--rq-h", row.offsetHeight + "px");
       }
     }
+    // The Zab bar's height while it is on screen (fixed at the bottom from 768px; below that it is a corner button).
+    function zabBarH() { const z = document.getElementById("zabBar"); return z && z.getClientRects().length && getComputedStyle(z).position === "fixed" ? z.offsetHeight : 0; }
     function checkReadFit() {
       const body = document.body, rv = document.getElementById("readView"), rs = document.getElementById("readScroll");
       const bar = document.getElementById("readBar"), dockEl = document.getElementById("dock");
@@ -8608,7 +8684,7 @@
       const spill = rs.clientHeight < 12 * rem || barUnder;
       if (spill) {
         // The page of text never reaches under the tabs (the Read view pages sideways, so a hidden line could not be scrolled to).
-        body.style.setProperty("--read-tall-h", Math.max(Math.round(4 * rem), innerHeight - (dockShown ? dockEl.offsetHeight : 0) - 8) + "px");
+        body.style.setProperty("--read-tall-h", Math.max(Math.round(4 * rem), innerHeight - (dockShown ? dockEl.offsetHeight : 0) - zabBarH() - 8) + "px");
         body.classList.add("read-tall");
       }
     }
@@ -8630,6 +8706,120 @@
       later();
     }
     if (typeof ResizeObserver === "function" && document.getElementById("readView")) watchReadFit();
+    /** QR Lead audit 6b: see .word-card-ncell-ar in the CSS. Measured, never guessed: each run first clears its own sizes,
+        so it measures every word at the size the card gives it. A word is shrunk only when it is wider than the inside of
+        its box, never below 0.8 of the size it would have at ordinary text (its size x 16 / the root size). */
+    function fitTasrifArabic() {
+      const mount = document.getElementById("quranWordCardMount");
+      if (!mount || mount.hidden) return;
+      const words = [...mount.querySelectorAll(".word-card-ncell-ar, .word-card-ntable-ar")];
+      const verbTables = [...mount.querySelectorAll(".word-card-cj table")];
+      if (!words.length && !verbTables.length) return;
+      for (const w of [...words, ...mount.querySelectorAll("td.word-card-cj-vb, .word-card-cj-pr .word-card-ar")]) w.style.removeProperty("font-size");
+      mount.querySelectorAll(".word-card-ntd-wide").forEach((td) => td.classList.remove("word-card-ntd-wide"));
+      const rootPx = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+      const room = (w) => {
+        const box = w.closest("button, th, td") || w.parentElement, cs = getComputedStyle(box);
+        return box.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0);
+      };
+      const need = (w) => { const r = document.createRange(); r.selectNodeContents(w); return r.getBoundingClientRect().width; };
+      const shrink = (w, base) => {
+        const has = room(w), wants = need(w);
+        if (!(wants > has + 0.5) || has <= 0) return true;
+        const floor = 0.8 * base * 16 / rootPx;
+        const size = Math.max(floor, Math.floor(base * has / wants * 0.97 * 10) / 10);
+        w.style.fontSize = size + "px";
+        return need(w) <= room(w) + 0.5;
+      };
+      for (const w of words) {
+        const base = parseFloat(getComputedStyle(w).fontSize) || 16;
+        if (shrink(w, base)) continue;
+        // Too wide even at the floor: in the stacked grid its cell takes the whole row, and it is fitted again there.
+        const td = w.closest("td"), tr = td && td.parentElement;
+        if (td && tr && getComputedStyle(tr).display === "grid") {
+          w.style.removeProperty("font-size");
+          td.classList.add("word-card-ntd-wide");
+          shrink(w, base);
+        }
+      }
+      // A verb table sizes its columns to its words, so a word that does not fit widens the table instead: measure the
+      // table against its box and shrink its Arabic (the verb and the pronoun) together, each never below its floor.
+      for (const t of verbTables) {
+        const box = t.parentElement, ar = [...t.querySelectorAll("td.word-card-cj-vb, .word-card-cj-pr .word-card-ar")];
+        if (!box || !ar.length) continue;
+        const base = new Map(ar.map((e) => [e, parseFloat(getComputedStyle(e).fontSize) || 16]));
+        let scale = 1;
+        for (let i = 0; i < 6 && t.getBoundingClientRect().width > box.clientWidth + 0.5; i++) {
+          scale *= Math.max(0.5, box.clientWidth / t.getBoundingClientRect().width) * 0.98;
+          for (const e of ar) { const b = base.get(e); e.style.fontSize = Math.max(0.8 * b * 16 / rootPx, b * scale) + "px"; }
+        }
+      }
+    }
+    function watchTasrifFit() {
+      const mount = document.getElementById("quranWordCardMount");
+      let queued = false, width = -1;
+      const later = () => { if (queued) return; queued = true; requestAnimationFrame(() => { queued = false; fitTasrifArabic(); }); };
+      // Its own size changes are style/class attributes, never childList, so they do not wake it again.
+      new MutationObserver(later).observe(mount, { childList: true, subtree: true, attributes: true, attributeFilter: ["hidden"] });
+      // Only a change of WIDTH re-measures; the card growing taller because a word took a whole row must not.
+      new ResizeObserver(() => { const now = mount.clientWidth; if (now !== width) { width = now; later(); } }).observe(mount);
+      new MutationObserver(later).observe(document.documentElement, { attributes: true, attributeFilter: ["style", "class"] });
+      if (document.fonts?.ready) document.fonts.ready.then(later);
+    }
+    if (typeof ResizeObserver === "function" && document.getElementById("quranWordCardMount")) watchTasrifFit();
+    /** QR Lead audit 8: see body.explore-tall in the CSS. The class is cleared before measuring, so each run measures
+        Explore as it would be without it. */
+    function checkExploreFit() {
+      const body = document.body, ev = document.getElementById("exploreView"), es = document.getElementById("exploreScroll"), dockEl = document.getElementById("dock");
+      body.classList.remove("explore-tall");
+      const nav = document.getElementById("exploreNavBar");
+      if (nav) {
+        nav.classList.remove("aa-nav-wrap");
+        if (!nav.hidden && [...nav.querySelectorAll(".aa-pn button")].some((b) => b.getClientRects().length && b.scrollWidth > b.clientWidth + 1)) nav.classList.add("aa-nav-wrap");
+      }
+      const seg = document.getElementById("exploreModeRow");
+      if (seg) {
+        seg.classList.remove("aa-seg-stack");
+        if (!seg.hidden && [...seg.querySelectorAll("button")].some((b) => b.getClientRects().length && b.scrollWidth > b.clientWidth + 1)) seg.classList.add("aa-seg-stack");
+      }
+      for (const rows of document.querySelectorAll("#exploreView .aa-rows")) {
+        rows.classList.remove("aa-rows-stack");
+        if (!rows.getClientRects().length) continue;
+        rows.classList.add("aa-rows-probe");
+        const broken = [...rows.querySelectorAll(".aa-nm")].some((n) => n.scrollWidth > n.clientWidth + 1);
+        rows.classList.remove("aa-rows-probe");
+        if (broken) rows.classList.add("aa-rows-stack");
+      }
+      if (!ev || ev.hidden || !es || !dockEl || getComputedStyle(ev).position === "fixed") return;
+      const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+      const dockShown = dockEl.getClientRects().length > 0 && dockEl.getBoundingClientRect().height > 0;
+      if (es.clientHeight >= 12 * rem) return;
+      body.style.setProperty("--explore-tall-h", Math.max(Math.round(4 * rem), innerHeight - (dockShown ? dockEl.offsetHeight : 0) - zabBarH() - 8) + "px");
+      body.classList.add("explore-tall");
+    }
+    function watchExploreFit() {
+      let queued = false;
+      const later = () => { if (queued) return; queued = true; requestAnimationFrame(() => { queued = false; checkExploreFit(); }); };
+      const ro = new ResizeObserver(later);
+      for (const id of ["dock", "exploreBar", "exploreView"]) { const e = document.getElementById(id); if (e) ro.observe(e); }
+      window.addEventListener("resize", later);
+      // Only the classes that change the answer re-wake it; its own explore-tall changes must not.
+      const sig = () => ["explore-immersive", "landing-view"].map((c) => +document.body.classList.contains(c)).join("");
+      let was = sig();
+      new MutationObserver(() => { const now = sig(); if (now !== was) { was = now; later(); } }).observe(document.body, { attributes: true, attributeFilter: ["class"] });
+      new MutationObserver(later).observe(document.getElementById("exploreView"), { attributes: true, attributeFilter: ["hidden"] });
+      // The steps are written in when a sūrah or āyah opens, and their words decide .aa-nav-wrap.
+      const navEl = document.getElementById("exploreNavBar");
+      if (navEl) new MutationObserver(later).observe(navEl, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ["hidden"] });
+      // The Approach rows are written in when a sūrah opens or the Approach changes, and their words decide .aa-rows-stack.
+      const sideEl = document.getElementById("exploreSidebarContainer");
+      if (sideEl) new MutationObserver(later).observe(sideEl, { childList: true });
+      const segEl = document.getElementById("exploreModeRow");
+      if (segEl) new MutationObserver(later).observe(segEl, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ["hidden"] });
+      new MutationObserver(later).observe(document.documentElement, { attributes: true, attributeFilter: ["style", "class"] });
+      later();
+    }
+    if (typeof ResizeObserver === "function" && document.getElementById("exploreView")) watchExploreFit();
     // Follow-up round: Map(subjectId -> courseOffer contextId) for
     // selectedPersonId -- same mechanism topic-study.js/routine-study.js
     // already use (course-offers.js's programSubjectMapFromEnrollments()).
