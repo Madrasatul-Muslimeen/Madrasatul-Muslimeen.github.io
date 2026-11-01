@@ -92,6 +92,9 @@ ul[data-check] > li[data-checked="true"] { color: #555; text-decoration: line-th
 /* audit28/30: a long title wraps in every window, sheet or floating (a 90-character one was cut with an ellipsis and no way to read it); the bar grows to fit */
 .note-win .nw-bar { flex: 0 0 auto; min-height: 44px; padding-block: 2px; }
 .note-win .nw-title { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; line-height: 1.2; }
+/* audit part 151: at large text on a phone the three window buttons left the title ~100px (a 17-line column that filled the screen): the bar wraps, the title keeps a readable width and its own scroll. */
+.note-win .nw-bar { flex-wrap: wrap; }
+.note-win .nw-title { flex: 1 1 8rem; max-height: 30vh; overflow-y: auto; }
 .nw-title { font-weight: 600; font-size: 1rem; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .nw-close { flex: 0 0 auto; min-width: 44px; min-height: 44px; background: none; border: 0; color: #fff; font-size: 1.4rem; line-height: 1; cursor: pointer; }
 .nw-view { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; padding: 0.3rem 0.6rem 0; }
@@ -99,6 +102,10 @@ ul[data-check] > li[data-checked="true"] { color: #555; text-decoration: line-th
 .nw-view [data-pane-back], .nw-view .note-pane-title { display: none; }
 .nw-details-row { flex: 0 0 auto; display: flex; align-items: flex-start; gap: 0.4rem; margin: 0.2rem 0; }
 .nw-details-btn { flex: 0 0 auto; min-height: 40px; white-space: nowrap; }
+/* audit part 151: at large text the Details button, the date line and Pinned cannot share one row of a 360px window; Pinned goes under, never past the frame. */
+.note-win .nw-details-row { flex-wrap: wrap; }
+.note-win .nw-details-row > .nw-details { flex: 1 1 6rem; }
+.note-win .nw-details-row > .nw-pins-btn { max-width: 100%; }
 .nw-details { flex: 1 1 0; min-width: 0; overflow: hidden; align-self: center; }
 .nw-details.open { max-height: none; overflow: visible; }
 .nw-details .note-pane-meta { margin: 0 0 0.2rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

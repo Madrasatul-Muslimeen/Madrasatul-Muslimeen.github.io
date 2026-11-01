@@ -39,8 +39,9 @@ const PAGES = [
 ].filter((p) => !arg("page") || p.id === arg("page"));
 
 const CSS_MUT = {
-  "fix-bar": { file: "app/css/note-window.css", from: "/* audit part 151: bar */", to: "/* removed */" },
-  "fix-sheet": { file: "app/css/note-window.css", from: "/* audit part 151: sheet */", to: "/* removed */" },
+  "fix-refit": { file: "app/js/note-window.js", from: 'attributeFilter: ["style", "class"]', to: 'attributeFilter: ["data-never"]' },
+  "fix-title": { file: "app/css/note-window.css", from: ".note-win .nw-title { flex: 1 1 8rem; max-height: 30vh; overflow-y: auto; }", to: ".note-win .nw-title-off { flex: 1 1 8rem; }", also: [".note-win .nw-bar { flex-wrap: wrap; }", ".note-win .nw-bar-off { flex-wrap: wrap; }"] },
+  "fix-row": { file: "app/css/note-window.css", from: ".note-win .nw-details-row { flex-wrap: wrap; }", to: ".note-win .nw-details-row-off { flex-wrap: wrap; }" },
 };
 
 // All measuring happens in the page. Returns problem strings.
@@ -54,6 +55,7 @@ const MEASURE = ({ inject }) => {
   const wr = win.getBoundingClientRect();
   const bar = win.querySelector(".note-pane-bar");
   if (inject === "toolbar" && bar) { const b = document.createElement("button"); b.className = "pane-btn"; b.textContent = "Injected"; b.style.cssText = "position:absolute;left:" + (wr.right + 10) + "px;top:" + (wr.top + 60) + "px;width:50px;height:40px"; bar.appendChild(b); }
+  if (bar) { const br = bar.getBoundingClientRect(); if (br.bottom > vh * 0.75) out.toolbar.push("toolbar is not reachable: it starts at " + Math.round(br.top) + " and ends at " + Math.round(br.bottom) + " of " + vh); }
   if (bar) for (const e of bar.querySelectorAll("button, a, input, select")) {
     if (!vis(e) || e.closest("[data-pane-menu]")) continue;
     out.n++;
@@ -95,7 +97,8 @@ let views = 0;
   const ctx = await newContext(browser, { banner: false, viewport: { width: 1024, height: 768 }, extraSeedJs: SEED });
   const pg = PAGES[0] || { path: "/app/notes.html?unit=ayah%3A2%3A255", open: ".note-card[data-note-id] [data-note-window]" };
   const { page: P } = await openPage(ctx, pg.path); await P.waitForTimeout(1200);
-  await P.click(pg.open); await P.waitForSelector(".note-win", { timeout: 8000 }); await P.waitForTimeout(500);
+  if (pg.pre) await pg.pre(P);
+  await P.waitForSelector(pg.open, { state: "attached" }); await P.evaluate((s) => document.querySelector(s).click(), pg.open); await P.waitForSelector(".note-win", { timeout: 8000 }); await P.waitForTimeout(500);
   const base = await P.evaluate(MEASURE, { inject: "" });
   check("positive control: the window is found and the bar has controls", !base.missing && base.n >= 3, JSON.stringify(base));
   await P.click(".note-win [data-pane-menu-btn]"); await P.waitForTimeout(400);
@@ -114,7 +117,7 @@ for (const pg of PAGES) for (const [w, h] of WIDTHS) for (const lang of LANGS) {
   if (CSS_MUT[MUTATE]) {
     const m = CSS_MUT[MUTATE], css = fs.readFileSync(m.file, "utf8");
     if (css.split(m.from).length < 2) throw new Error("mutation " + MUTATE + ": anchor not found in " + m.file + " (the fix is not there yet)");
-    await ctx.route((u) => new URL(u).pathname.endsWith(m.file.replace(/^app/, "")), (r) => r.fulfill({ status: 200, contentType: "text/css", body: css.split(m.from).join(m.to) }));
+    await ctx.route((u) => new URL(u).pathname.endsWith(m.file.replace(/^app/, "")), (r) => r.fulfill({ status: 200, contentType: m.file.endsWith(".js") ? "text/javascript" : "text/css", body: (m.also ? css.split(m.also[0]).join(m.also[1]) : css).split(m.from).join(m.to) }));
   }
   const { page: P, errors } = await openPage(ctx, pg.path);
   for (const scale of SCALES) {
@@ -128,7 +131,7 @@ for (const pg of PAGES) for (const [w, h] of WIDTHS) for (const lang of LANGS) {
       // --order=before: text size set, then the window opened (what a reload at 200% does); default "after": window opened, then the size changed with
       // NO resize event (what the audit's screenshot did, and what changing the text size while a window is open does).
       if (ORDER === "before") await setScale();
-      await P.click(pg.open); await P.waitForSelector(".note-win", { timeout: 8000 }); await P.waitForTimeout(600);
+      await P.waitForSelector(pg.open, { state: "attached" }); await P.evaluate((s) => document.querySelector(s).click(), pg.open); await P.waitForSelector(".note-win", { timeout: 8000 }); await P.waitForTimeout(600);
       if (ORDER !== "before") { await setScale(); await P.waitForTimeout(400); }
     } catch (e) { check(`${tag}: the window opened (positive control)`, false, String(e.message).slice(0, 140)); continue; }
     views++;
