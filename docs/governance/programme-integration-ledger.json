@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "13.22",
+    "version": "13.24",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -6209,7 +6209,7 @@
     {
       "version": "13.22",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Gathered release: J110 Reading View, audit 155 ways back, audit 156 keyboard, Tajweed tap fix (use1102).",
       "integration": {
         "authorizedOn": "2026-11-02",
@@ -6217,10 +6217,36 @@
         "method": "MERGE_PR",
         "reference": "CHANGELOG.md"
       }
+    },
+    {
+      "version": "13.23",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Gathered release of the QR Lead's 8d7ebaf (Asma) and 682286f (test), and the hadithSubjects block in firestore.rules (J106 n106f A; the Owner publishes it).",
+      "integration": {
+        "authorizedOn": "2026-11-03",
+        "integratedOn": "2026-11-03",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.24",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Student-blocking fix released at once (use1102 G): SELF_HOSTED_AUTH_HOSTS switched on for MSA and QR after the Owner's Google Cloud step.",
+      "integration": {
+        "authorizedOn": "2026-11-03",
+        "integratedOn": "2026-11-03",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
     }
   ],
-  "nextUnallocated": "13.23",
+  "nextUnallocated": "13.25",
   "nextUnallocatedNote": [
+    "v13.24 was allocated to Google sign-in works on Brave, Safari and Firefox (J88 part 2: the helper pages on the app's own sites), 2026-11-03.",
+    "v13.23 was allocated to a new Dual Name is not asked to be filed under Dual (the Owner's 2 Nov Asma bug); the quick-Notes check fixed; the Hadith Subjects rule in firestore.rules, not deployed, 2026-11-03.",
     "v13.22 was allocated to Reading View (J110), ways back, keyboard fixes, 2026-11-02.",
     "v13.21 was allocated to The ⋯ menus work from the keyboard (audit part 154), 2026-11-01.",
     "v13.20 was allocated to Open full page leaves a way back (audit part 153), 2026-11-01.",

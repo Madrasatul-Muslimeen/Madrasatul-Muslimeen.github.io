@@ -2255,6 +2255,7 @@
   /* 6 Oct 2026: File under -- one row per classification, as one group. */
   #asmaXEditBody .asmaX-file-under { border: 1px solid var(--card-border, rgba(0,0,0,0.15)); border-radius: 8px; padding: 0.5rem 0.7rem 0.7rem; margin: 0; display: flex; flex-direction: column; gap: 0.5rem; min-width: 0; }
   #asmaXEditBody .asmaX-file-under legend { font-size: 0.8rem; font-weight: 600; color: var(--card-text, inherit); padding: 0 0.3rem; }
+  #asmaXEditBody .asmaX-file-hidden, #asmaXEditBody .asmaX-file-newtitle[hidden] { display: none !important; } /* 2 Nov 2026: the Dual row of a new Dual name */
   .asmaX-edit-actions { display: flex; gap: 0.6rem; margin-top: 1rem; }
   #asmaXAttachRefLabel { display: block; font-size: 0.78rem; color: var(--card-text-muted); margin-bottom: 0.25rem; }
   #asmaXAttachRefInput, #asmaXAttachFilterInput {
@@ -17020,7 +17021,7 @@
         other, that lives in a Dual Names collection. That is what makes
         "attach the Ayah as ref to that new name" work for a dual name at
         all: a collection has no `ref` field and never has, a Name does. */
-    function asmaXFileIntoRowHtml(preselect) {
+    function asmaXFileIntoRowHtml(preselect, { hideKind = null } = {}) {
       // The Owner, 6 Oct 2026: "'File under' should have option to file a single/ dual name under which Group, by
       // Act, by Essence." One row PER ACTIVE CLASSIFICATION (Group, Dual Names, and whatever the Owner has added,
       // e.g. By Act and By Essence), each "Not filed" unless chosen, so one new Name -- single or dual -- can be
@@ -17038,11 +17039,15 @@
           .concat(lists.map((col) => `<option value="${escapeHtml(col.id)}"${col.id === pick ? " selected" : ""}>${escapeHtml(langText(col.title, getAppLang()))}</option>`))
           .concat([`<option value="__new__"${pick === "__new__" ? " selected" : ""}>${escapeHtml(t("+ New list…"))}</option>`])
           .join("");
+        // The Owner, 2 Nov 2026: a NEW DUAL name is not asked to be filed under "Dual" -- it already is one. The row stays in
+        // the DOM, hidden, holding its preselection (the first Dual list, or a new one named after the Name), so the
+        // Name still lands in a Dual Names list and is findable as a Dual Name.
+        const hide = hideKind === c.key ? " asmaX-file-hidden" : "";
         return `
-          <label class="asmaX-file-row">${escapeHtml(langText(c.title, getAppLang()))}
+          <label class="asmaX-file-row${hide}">${escapeHtml(langText(c.title, getAppLang()))}
             <select data-asma-file-kind="${escapeHtml(c.key)}">${opts}</select>
           </label>
-          <label class="asmaX-file-newtitle" data-asma-file-new-for="${escapeHtml(c.key)}"${pick === "__new__" ? "" : " hidden"}>${escapeHtml(t("New list title"))}<input type="text" data-asma-file-new-title="${escapeHtml(c.key)}"></label>`;
+          <label class="asmaX-file-newtitle${hide}" data-asma-file-new-for="${escapeHtml(c.key)}"${pick === "__new__" && !hide ? "" : " hidden"}>${escapeHtml(t("New list title"))}<input type="text" data-asma-file-new-title="${escapeHtml(c.key)}"></label>`;
       }).join("");
       return `
         <fieldset class="asmaX-file-under" id="asmaXEditFileUnder">
@@ -17094,7 +17099,7 @@
           <label>${escapeHtml(t("Reference"))}<textarea id="asmaXEditRef">${escapeHtml(refValue)}</textarea></label>
           <label class="asmaX-edit-check"><input type="checkbox" id="asmaXEditWeak" ${entry?.weak ? "checked" : ""}> ${escapeHtml(t("weak"))}</label>
           <label class="asmaX-edit-check"><input type="checkbox" id="asmaXEditIsPhrase" ${entry?.isPhrase ? "checked" : ""}> ${escapeHtml(t("phrase"))}</label>
-          ${mode === "create" ? asmaXFileIntoRowHtml(asmaXFilePreselect(fileInto)) : ""}`;
+          ${mode === "create" ? asmaXFileIntoRowHtml(asmaXFilePreselect(fileInto), { hideKind: fileInto?.kind === "dual" ? "dual" : null }) : ""}`;
         // "+ New list…" in a row reveals that row's own title field -- one form, one Save, one write.
         asmaXEditBodyEl.querySelectorAll("select[data-asma-file-kind]").forEach((sel) => {
           sel.addEventListener("change", () => {

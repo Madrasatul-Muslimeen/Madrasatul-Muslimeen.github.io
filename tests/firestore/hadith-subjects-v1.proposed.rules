@@ -7,7 +7,9 @@ service cloud.firestore {
     // ("Add to subject": Akhlaq, Ghayb, Stories). The Owner answered A on
     // question 5 (31 Oct 2026): ONE SHARED ONLINE LIST per madrasah.
     //
-    // STATUS: CANDIDATE. NOT DEPLOYED. NOT MERGED INTO firestore.rules.
+    // STATUS (3 Nov 2026): MERGED INTO firestore.rules on the Owner's answer
+    // n106f A (byte-identical block); PUBLISHED only when the Owner says so.
+    // (Was: CANDIDATE. NOT DEPLOYED. NOT MERGED INTO firestore.rules.)
     // Rules are an Owner Control Gate and firestore.rules is a protected,
     // shared path: the MSA Architect merges it, the Owner publishes it.
     //
