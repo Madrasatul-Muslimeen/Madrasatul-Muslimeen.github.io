@@ -2250,6 +2250,9 @@
   /* [hidden] on a flex label loses to the `display:flex` rule above it --
      the trap this codebase has been caught by six times. */
   #asmaXEditBody label[hidden] { display: none !important; }
+  /* 2 Nov 2026: at Bangla 200% text on a phone "কোথাও রাখা হয়নি" was 1px too wide for its select (measured 152 > 151px) and was cut;
+     the File-under selects take 0.3rem of side padding instead of 0.5rem, which frees ~13px at that size and changes nothing at 100%. */
+  #asmaXEditFileUnder select { padding-left: 0.3rem; padding-right: 0.3rem; }
   #asmaXEditBody textarea { min-height: 3.4rem; resize: vertical; }
   #asmaXEditBody .asmaX-edit-check { flex-direction: row; align-items: center; gap: 0.4rem; }
   /* 6 Oct 2026: File under -- one row per classification, as one group. */
