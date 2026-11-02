@@ -24,7 +24,9 @@ import {
 // authorised redirect URI of the project's Google OAuth client (the Owner's step in the Google Cloud console, agreed
 // 23 Oct 2026); before that, Google would refuse the sign-in for everyone. Elsewhere (localhost, the test harness)
 // the helper stays on firebaseapp.com, exactly as before.
-const SELF_HOSTED_AUTH_HOSTS = [];
+// ON from v13.24 (3 Nov 2026, PCF MSA J88): the Owner added both handler addresses to the OAuth client
+// (285011621597-343cf…), and Google was checked to accept both (and to refuse an unregistered address).
+const SELF_HOSTED_AUTH_HOSTS = ["madrasatul-muslimeen.github.io", "quranrevival.github.io"];
 const authHost = typeof location !== "undefined" && SELF_HOSTED_AUTH_HOSTS.includes(location.hostname)
   ? location.hostname : "study-monitoring.firebaseapp.com";
 
