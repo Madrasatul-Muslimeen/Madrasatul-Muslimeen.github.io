@@ -19,7 +19,7 @@ const check = (page, n, name, ok, detail = "") => {
   fail++; tally[k][1]++;
   const parts = name.split(" / "), key = `${page} / ${parts[1]} / (${n}) ${name.replace(/^[^:]*: \(\d\) /, "").slice(0, 70)}`;
   (distinct[key] ||= { count: 0, where: [], detail: detail.slice(0, 200) }).count++;
-  distinct[key].where.push(`${parts[2]}/${parts[3]}/${parts[4].split(":")[0]}`);
+  distinct[key].where.push(parts.slice(2).join("/").split(":")[0].replace(/ /g, ""));
   if (!process.argv.includes("--brief")) console.log(`  FAIL  ${name} ${detail}`);
 };
 const distinct = {};
@@ -213,11 +213,12 @@ async function pageWalk(P, page, tag) {
       const inView = b.width > 0 && b.height > 0 && b.bottom > 0 && b.top < vh && b.right > 0 && b.left < vw;
       let covered = false;
       if (inView) { const x = Math.min(Math.max(b.left + b.width / 2, 1), vw - 1), y = Math.min(Math.max(b.top + Math.min(b.height / 2, 20), 1), vh - 1); const top = document.elementFromPoint(x, y); covered = !!top && !(e === top || e.contains(top) || top.contains(e)); }
-      return { label: (e.id || e.tagName + "." + String(e.className).slice(0, 20) + " " + (e.textContent || "").trim().slice(0, 14)), inView, covered };
+      const same = window.__lastTab === e; window.__lastTab = e;
+      return { same, label: (e.id || e.tagName + "." + String(e.className).slice(0, 20) + " " + (e.textContent || "").trim().slice(0, 14)), inView, covered };
     });
     if (r.body) { if (n > 5) break; continue; }
     n++;
-    if (r.label === prev) { bad.push("stuck on " + r.label); break; }
+    if (r.same) { bad.push("stuck on " + r.label); break; }
     prev = r.label;
     if (!r.inView) bad.push("off screen: " + r.label);
     else if (r.covered) bad.push("covered: " + r.label);
