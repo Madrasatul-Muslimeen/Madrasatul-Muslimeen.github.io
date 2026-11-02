@@ -7,7 +7,59 @@ v10.28). Read `CLAUDE.md` first. The prompt that starts the next session is
 
 This session was summarised once (its context compacted), which is why it hands over here.
 
-## LATEST UPDATE — 2 Nov 2026, ~12:45 pm Sydney, session `session_01PL2xbM4mkq6p3GRNgbb19G` (v13.20–v13.21 live on MSA and QR; HANDOVER) — READ THIS FIRST
+## LATEST UPDATE — 2 Nov 2026, ~3:55 pm Sydney, session `session_01PL2xbKUoZqQEubMNHUR64W` (v13.22 live on MSA; HANDOVER at 26% under use1102) — READ THIS FIRST
+
+This session ("📌 (03) MSA Master Architect") took over at 1:41 pm and hands over at ~3:55 pm (use1102: hand over at ~15%).
+
+**Released v13.22** (PR #1427, main 49a0d7d, MSA serves 13.22): a gathered release of the Zab panel focus move, the Hadith
+Lead's ebce117, the Dua Lead's d1060e3 + 7af04bd, the shared `modal-focus.js` closed-`<details>` line, and the QR Lead's
+51fefbc, 9072775, 69272ef and 6470e98 (**J110 A, B, C**, the Owner's ticks; J110 marked done in the PCF). One Architect fix
+in review (the raised way back lay over the Āyah card). Full numbers in `CHANGELOG.md`. Change notice for `zab-bar.js` and
+`modal-focus.js` sent to the QR Lead.
+
+**QR still serves v13.21.** This session has NO QuranRevival access (actions_run_trigger: "not configured for this
+session"; do not retry add_repo), so use1102 C ("the Architect runs QR's build-from-msa") could not be done here: the
+PCA was asked at ~3:30 pm to run it. Check https://quranrevival.github.io/app/js/qr-version.js.
+
+**THE OWNER'S USAGE RULE use1102 (2 Nov 2:01 pm, PMS General rules) changes how this seat works:** hand over at ~15%;
+no broadcasts (message a session only when it has work); release at most once a day, gathering every finished part
+(student-blocking fixes may go out at once); no self-chosen audits (so no audit Builder rounds unless the Owner asks);
+the keep-alive `trig_01CFvYcArYHcykyZS5KAqCvv` fires once a day at 8:07 am (its prompt was updated here).
+
+**Sessions now** (all changed today): PCA `session_01PL2xbLbJ2UoaKA3tTXpEkq`; QR Lead (03A) `session_01PL2xbJUXBgRjYg7C9bLsss`;
+Hadith Lead (03B) `session_01PL2xbKdedHjzJnARKwbwSS`; Dua Lead (03C) `session_01PL2xbKzbiAyrexmkBmLQaJ`; Health Lead parked.
+
+**Test-harness note:** in a fresh container the browser suites fail with "Cannot find package 'playwright'". Fix:
+`mkdir -p node_modules && ln -sfn /opt/node22/lib/node_modules/playwright node_modules/playwright` (git-ignored).
+
+**Known red on main, not caused by v13.22:** audit-part11-reading "quickbuttons: Notes opens the notes pane" 8 fails (QR
+Lead told); notes-way-back 27/6 (stub "Note and Folder must exist"); hadith-dua-keyboard 98 left, mostly night-look focus
+rings (per-surface work for the Leads, the `palette-keys.js` pattern).
+
+**Nothing in flight. Next release: tomorrow at the earliest**, gathering whatever the Leads hand in.
+
+**Waiting on the Owner:** J106 n106f (Hadith Subjects rule; app `claude/hadith-lead-01q2` 5c6b067, rule b203f70 — release
+the app only after the Owner publishes the rule), J92 A or B, BWN J27, J105, J104 ticks 6–10, the J29 questions; the QR
+Lead's Reading View layout demo (A/B/C) waits on the Owner too.
+
+**Opening message for the next session** (title "📌 (03) MSA Master Architect"):
+
+> Bismillah. You are the MSA Master Architect, taking over from session_01PL2xbKUoZqQEubMNHUR64W (2 Nov ~3:55 pm Sydney, use1102). Your session title is "📌 (03) MSA Master Architect" (num128).
+>
+> Read CLAUDE.md, then ARCHITECT.md, then docs/reports/2026-10-12-MMSA-SESSION-HANDOVER.md, starting with its LATEST UPDATE block of 2 Nov 3:55 pm, and the PMS General rule use1102.
+>
+> First steps:
+> - Test GitHub write: git push --dry-run origin HEAD:refs/heads/claude/access-probe. Do NOT retry add_repo for QuranRevival.
+> - In a fresh container link playwright: mkdir -p node_modules && ln -sfn /opt/node22/lib/node_modules/playwright node_modules/playwright
+> - Read the PMS (https://claude.ai/artifact/PhW1KKX28qrqj9dE7Ha8dZ): meta/global General rules and p/mmsa. Answer any new Owner comments.
+> - Set p/mmsa.sessionUrl to YOUR session (read it with get_session), pinned with if_version.
+> - Send the PCA (session_01PL2xbLbJ2UoaKA3tTXpEkq) one line "PCA ▸ taken over" and ask it to repoint the keep-alive trig_01CFvYcArYHcykyZS5KAqCvv.
+>
+> State: main is v13.22 (MSA serves it); QR served v13.21 at 3:51 pm (the PCA was asked to run build-from-msa). The next version is v13.23. Nothing in flight; release at most once a day (use1102 G), gathering what the Leads hand in. No self-chosen audits.
+>
+> Rules: use1102 (hand over at ~15%, no broadcasts, one release a day); J109 switches; the review rule (360–1440, en/bn, 100/150/200%, screenshots looked at, real-length data); restart serve.js per review (run_in_background, timeout 7200000); one ctx.route per file; behaviour.mjs alone; compare failures with main (a second serve.js on PORT=8081 from a worktree of origin/main, suites with QR_BASE=http://localhost:8081); push every review merge at once; never pkill -f; no self wake-ups (cost86); after "Rasulullah" always write "Sallallahu A'laihi Wa Sallam" (saw128); write "Siyagah" in full.
+
+## LATEST UPDATE — 2 Nov 2026, ~12:45 pm Sydney, session `session_01PL2xbM4mkq6p3GRNgbb19G` (v13.20–v13.21 live on MSA and QR; HANDOVER) (superseded 2 Nov 3:55 pm)
 
 This session ("📌 (03) MSA Master Architect") took over at 8:30 am and hands over at ~12:45 pm (hand119).
 
