@@ -1064,3 +1064,4 @@ total). Allocated by the MMSA Architect.
 13.21: The ⋯ menus work from the keyboard (audit part 154). Allocated by the MMSA Architect.
 13.22: Reading View (J110), ways back, keyboard fixes. Allocated by the MMSA Architect.
 13.23: a new Dual Name is not asked to be filed under Dual (the Owner's 2 Nov Asma bug); the quick-Notes check fixed; the Hadith Subjects rule in firestore.rules, not deployed. Allocated by the MMSA Architect.
+13.24: Google sign-in works on Brave, Safari and Firefox (J88 part 2: the helper pages on the app's own sites). Allocated by the MMSA Architect.
