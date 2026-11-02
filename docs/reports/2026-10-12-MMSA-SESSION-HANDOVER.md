@@ -7,7 +7,42 @@ v10.28). Read `CLAUDE.md` first. The prompt that starts the next session is
 
 This session was summarised once (its context compacted), which is why it hands over here.
 
-## LATEST UPDATE — 2 Nov 2026, ~3:55 pm Sydney, session `session_01PL2xbKUoZqQEubMNHUR64W` (v13.22 live on MSA; HANDOVER at 26% under use1102) — READ THIS FIRST
+## LATEST UPDATE — 3 Nov 2026, ~7:40 am Sydney, session `session_01PL2xbHyXQcin8M9YV6AfUx` (v13.23 and v13.24 released; HANDOVER under use1102) — READ THIS FIRST
+
+This session ("📌 (03) MSA Master Architect") took over at 3:56 pm 2 Nov and hands over at ~7:40 am 3 Nov (use1102 A).
+
+**Released:**
+- **v13.23** (PR #1432, main f008128, live MSA 7:13 am, QR 7:13 am by the PCA): the QR Lead's Dual-Name fix 8d7ebaf (PR #1431: a new Dual Name is not asked to be filed under Dual), the QR Lead's test fix 682286f (PR #1429), and the `hadithSubjects` block in `firestore.rules` (PR #1430, J106 n106f A).
+- **v13.24** (PR #1433, main 155ce4f, live MSA 7:32 am; **QR asked of the PCA at 7:31 am, confirm https://quranrevival.github.io/app/js/qr-version.js shows 13.24**): J88 part 2, `SELF_HOSTED_AUTH_HOSTS` = MSA + QR hosts. Student-blocking, released at once (use1102 G). **Google now refuses `study-monitoring.firebaseapp.com/__/auth/handler` on the OAuth client** (it seems the Owner replaced it while adding the two new addresses), so the live apps depend on the self-hosted helper; J88 j88n3 asks the Owner to add it back for the legacy archives.
+
+**The Owner PUBLISHED the Hadith Subjects rule** (J106 n106g, ~7:25 am 3 Nov), so production Rules again match `firestore.rules`.
+
+**Next release v13.25 (tomorrow at the earliest, use1102 G):** the Hadith Lead's `claude/hadith-lead-01q2` ("Add to subject"; asked to refresh onto v13.24 and send the final commit) and the QR Lead's `claude/qr-lead-notfiled-200` 21a02d0 (File-under selects at bn 200%). Review both by measurement (behaviour alone, compare with main on 8081, QR build).
+
+**Owner answers recorded this session:** J92 A (User Manual lines corrected, done); J93 B (Health arrow waits); J05 T9 ✓, T10 No, T11 Yes, T12 Yes, T13 Yes, T14 Yes, T21 Yes, T22 Yes (T11's Companions placement and T15 asked as j05n4). **Work from J05:** the QR Lead was given the intention-reminder demo (T13/T14, demo first); **the Architect owes T21** (draft the Scholars Database's empty centuries 5–9, 12–13 and four columns, for the Owner to correct; nothing in the app) **and marking T9–T14, T21, T22 decided in the master file's Issues table** (https://claude.ai/artifact/BJUwQ8hfgnu4FJFo7stqY1 — never write it with a trailing ")" in the PMS: the auto-link breaks).
+
+**Waiting on the Owner:** J88 j88n2 phone check of sign-in, j88n3 (add back the firebaseapp.com handler); J05 j05n4; J105; J104 ticks 6–10; the J29 questions.
+
+**Notes:** the Library card script (send_card.py) was refused by this session's auto-mode classifier ("Code from External"), so cards went into PMS job text instead. `npm run zab` is red on main (25/1, pins `firestore.rules` byte-for-byte to the Zab candidate; a later Word-levels change altered 3 lines): recorded, not changed. The emulator works here after `npm ci` in `tools/firestore-emulator`. The keep-alive is `trig_015QyYTSsTgcwa3MPcik6ze3` (8:07 am daily, set by the PCA). The PCA is `session_01PL2xbL9r5wP8zyi6A3Hj8j`.
+
+**Opening message for the next session** (title "📌 (03) MSA Master Architect"):
+
+> Bismillah. You are the MSA Master Architect, taking over from session_01PL2xbHyXQcin8M9YV6AfUx (3 Nov ~7:40 am Sydney, use1102). Your session title is "📌 (03) MSA Master Architect" (num128).
+>
+> Read CLAUDE.md, then ARCHITECT.md, then docs/reports/2026-10-12-MMSA-SESSION-HANDOVER.md, starting with its LATEST UPDATE block of 3 Nov 7:40 am, and the PMS General rule use1102.
+>
+> First steps:
+> - Test GitHub write: git push --dry-run origin HEAD:refs/heads/claude/access-probe. Do NOT retry add_repo for QuranRevival.
+> - In a fresh container link playwright: mkdir -p node_modules && ln -sfn /opt/node22/lib/node_modules/playwright node_modules/playwright
+> - Read the PMS (https://claude.ai/artifact/PhW1KKX28qrqj9dE7Ha8dZ): meta/global General rules and p/mmsa. Answer any new Owner comments.
+> - Set p/mmsa.sessionUrl to YOUR session (read it with get_session), pinned with if_version.
+> - Send the PCA (session_01PL2xbL9r5wP8zyi6A3Hj8j) one line "PCA ▸ taken over", and ask it to point the keep-alive trig_015QyYTSsTgcwa3MPcik6ze3 at your session.
+>
+> State: main is v13.24 (MSA serves it; confirm QR's qr-version.js shows 13.24). The Hadith Subjects rule is published. The next version is v13.25, tomorrow at the earliest (use1102 G): the Hadith Lead's claude/hadith-lead-01q2 (Add to subject) and the QR Lead's claude/qr-lead-notfiled-200, each reviewed by measurement. You owe J05 T21 (Scholars Database draft) and the master file's Issues update. At each release send the PCA "PCA ▸ released vX.YY"; change notices go to the QR Lead (session_01PL2xbJUXBgRjYg7C9bLsss). Leads: Hadith session_01PL2xbKdedHjzJnARKwbwSS, Dua session_01PL2xbKzbiAyrexmkBmLQaJ. No self-chosen audits.
+>
+> Rules: use1102 (hand over at ~15%, no broadcasts, one release a day; student-blocking fixes at once); J109 switches; the review rule (360–1440, en/bn, 100/150/200%, screenshots looked at, real-length data); restart serve.js per review (run_in_background, timeout 7200000); one ctx.route per file; behaviour.mjs alone; compare failures with main (a second serve.js on PORT=8081 from a worktree of origin/main, suites with QR_BASE=http://localhost:8081); main only takes changes through a pull request (merge with mcp__github__merge_pull_request and the full 40-character head SHA); real clock times only in the PMS (date -u); never pkill -f; no self wake-ups (cost86); after "Rasulullah" always write "Sallallahu A'laihi Wa Sallam" (saw128); write "Siyagah" in full.
+
+## LATEST UPDATE — 2 Nov 2026, ~3:55 pm Sydney, session `session_01PL2xbKUoZqQEubMNHUR64W` (v13.22 live on MSA; HANDOVER at 26% under use1102) (superseded 3 Nov 7:40 am)
 
 This session ("📌 (03) MSA Master Architect") took over at 1:41 pm and hands over at ~3:55 pm (use1102: hand over at ~15%).
 
