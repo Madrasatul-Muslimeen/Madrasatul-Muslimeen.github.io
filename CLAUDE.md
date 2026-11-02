@@ -166,6 +166,19 @@ Read this first, every session. It is the standing brief.
 > then the Owner's approval, then build; demo versions go up v1.01, v1.02…; every build is numbered D01…. Nothing is built
 > until the Owner ticks it in PCF MSA J104.
 
+> ## ⇢ QURAN STUDY'S TWO READING VIEWS, AND WHAT EACH IS FOR (the Owner, 2 Nov 2026) — BINDING
+>
+> Besides the Mushaf, Quran Study's Read has **two views, and they stay DISTINCT; do not merge them.** The Owner's words:
+> "Ayah view meant to be ONE AYAH view as an invitation to study the 'Quran Study - ONE AYAH a Day' program … keep it
+> distinct for we will refer/ direct the user to this view when they choose to study ONE Ayah."
+> - **ONE Ayah View** (the code's "plain"/Āyah view, `readViewNow() === "plain"`): one āyah to study. Readers who choose to
+>   study ONE Āyah are sent here; it will gain its own features for studying One Āyah ("later, In Shaa Allah").
+> - **Reading View** (the code's "meaning" view, `renderMeaningFlow()`): regular reading with regular reading functions.
+> - **Layer switches** (English, Bangla, WbW, …) in the Reading View: under ONE button on a phone, where there is no space;
+>   shown openly in the EXISTING bar on a tablet or computer where space allows. **Never a new bar.**
+> - Quran Study's home is QuranRevival: the QR Lead builds, and the MSA Architect reviews and releases. Comparison of the two
+>   views (2 Nov): PCF MSA J110.
+
 > ## ⇢ HADITH STUDY is being built on `feature/hadith-study` — READ IF YOU TOUCH HADITH
 >
 > **This branch's final application version is `v08.29`, and it is now MERGED TO `main`.** The
