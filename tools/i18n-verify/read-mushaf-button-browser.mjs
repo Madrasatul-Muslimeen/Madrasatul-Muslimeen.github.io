@@ -41,8 +41,11 @@ const SHOT_DIR = process.env.SHOT_DIR || "/tmp";
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH });
 // What the button names: the view it goes to next.
 const NEXT = {
-  en: { meaning: ["📖", "Meaning", "Show the meaning: translations and word by word"], mushaf: ["📜", "Mushaf", "Mushaf view"], ayah: ["↩", "Āyah", "Back to the reading"], reading: ["↩", "Reading", "Back to the reading"] },
-  bn: { meaning: ["📖", "অর্থ", "অর্থ দেখুন: অনুবাদ ও শব্দে শব্দে"], mushaf: ["📜", "মুসহাফ", "মুসহাফ দৃশ্য"], ayah: ["↩", "আয়াত", "পড়ায় ফিরে যান"], reading: ["↩", "পড়া", "পড়ায় ফিরে যান"] },
+  // PCF MSA J110 B (the Owner ticked B, 2 Nov 2026): the views are named "Reading View" (was "Meaning") and "ONE Ayah View"
+  // (was "Āyah", or "Reading" for a longer unit; one name now for every unit). Updated in place, reason recorded: the
+  // cycle and every tap's destination are unchanged.
+  en: { meaning: ["📖", "Reading View", "Reading View: translations and word by word"], mushaf: ["📜", "Mushaf", "Mushaf view"], ayah: ["↩", "ONE Ayah View", "ONE Ayah View: one āyah to study"], reading: ["↩", "ONE Ayah View", "ONE Ayah View: one āyah to study"] },
+  bn: { meaning: ["📖", "পড়ার দৃশ্য", "পড়ার দৃশ্য: অনুবাদ ও শব্দে শব্দে"], mushaf: ["📜", "মুসহাফ", "মুসহাফ দৃশ্য"], ayah: ["↩", "এক আয়াত দৃশ্য", "এক আয়াত দৃশ্য: অধ্যয়নের জন্য এক আয়াত"], reading: ["↩", "এক আয়াত দৃশ্য", "এক আয়াত দৃশ্য: অধ্যয়নের জন্য এক আয়াত"] },
 };
 
 async function start(lang, width) {
