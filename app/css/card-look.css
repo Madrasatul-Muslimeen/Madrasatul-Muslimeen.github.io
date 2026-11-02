@@ -386,14 +386,3 @@
    ten labels on the frozen Quran Study page (Architect review, 30 Oct 2026). */
 .folder-toolbar-check, label:has(> #showRetiredCk) { display: inline-flex; align-items: center; gap: 0.4rem; min-height: 2.5rem; box-sizing: border-box; }
 .folder-toolbar-check > input, label:has(> #showRetiredCk) > input { flex: 0 0 auto; }
-
-/* Audit part 156 (#1422): a focus ring that shows in the Night look. The browser's default ring is near-black, which is
-   1.09:1 on the navy sheets, pop-ups and menus. Pages stay light, so the ring is two-tone: a cream outline with a navy
-   band outside it, and one of the two always stands out (cream on navy, navy on a light page). Only for controls that
-   show :focus-visible from the keyboard (buttons, links, summaries, tab stops), never text fields, which show focus on
-   every tap. A component's own, more specific :focus-visible rule still wins. */
-[data-card-look="night"] :is(button, a[href], summary, [role="button"], [tabindex]:not([tabindex="-1"])):focus-visible {
-  outline: 3px solid #f2e8d5;
-  outline-offset: 1px;
-  box-shadow: 0 0 0 6px #13192a;
-}
