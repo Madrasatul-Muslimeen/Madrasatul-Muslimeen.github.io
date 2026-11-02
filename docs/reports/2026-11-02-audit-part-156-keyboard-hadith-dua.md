@@ -74,7 +74,7 @@ all **good**. The defects:
    open pop-up, or the rest of the page is made `inert` while it is open. Same applies to every Dua pop-up (the others have fewer items and happen to fit
    at 100%). Fix touches: `app/js/dua-study.js` (`openPop`). **Dua Lead.**
 4. **Dua card "Copy / share" pop-up at 200% text (check 4).** Now: the pop-up's 7th item (Copy) is not reached; Tab leaves the dialog after the poster
-   picture (same cause as 3, here it surfaces at 200% because the Copy button then sits below the fold of the pop-up's own scroll). Fix as 3. **Dua Lead.**
+   picture (Tab left the dialog for the card behind it; probably the same missing containment as 3, but the cause at 200% was not isolated). Fix as 3, then re-run. **Dua Lead.**
 
 Nothing else failed: no control is unreachable, no focus lands on a hidden element, no Tab stop is off screen or under the Zab bar (check 8: 6/6 per page).
 
