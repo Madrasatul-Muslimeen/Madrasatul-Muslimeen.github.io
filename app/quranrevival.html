@@ -23724,7 +23724,7 @@
       // Architect review of #325: open on the Approach last chosen on either
       // card, so moving from one āyah to the next needs no re-picking.
       ayahSheetSelectedApproachId = mushafRingApproachId;
-      clearAyahCardReturn(); // the card is open again: no "back to it" needed
+      if (!ayahCardReturn?.page) clearAyahCardReturn(); // the card is open again: no "back to it" needed (a way back to another page stays)
       renderAyahActionSheetNow();
       ayahActionSheetOverlayEl.classList.add("open"); restoreWindow(ayahActionSheetOverlayEl); // J81: a card opened while minimised is shown
       ensureAyahSheetRelatedLoaded(unitKey, surahNum, ayahNum);
@@ -23745,7 +23745,7 @@
       ayahSheetConnected = null;
       ayahSheetHadith = null;
       ayahSheetSelectedApproachId = mushafRingApproachId || endOfUnitApproachId();
-      clearAyahCardReturn();
+      if (!ayahCardReturn?.page) clearAyahCardReturn();
       renderAyahActionSheetNow();
       ayahActionSheetOverlayEl.classList.add("open"); restoreWindow(ayahActionSheetOverlayEl); // J81: a card opened while minimised is shown
       ensureAyahNoteDataLoaded().then(() => { if (ayahSheetUnitKey === unitKey) renderAyahActionSheetNow(); });
@@ -23775,14 +23775,28 @@
     // short reference, `back()` restores it. Set by the Āyah card's actions and by an Asma Name's references.
     let ayahCardReturn = null;
     // J54: opts.onClear(how) runs once when this way back goes -- "back" (used), "dismiss" (×) or "replaced" (another took its place).
-    function setAppReturn(title, label, back, opts = {}) { ayahCardReturn?.onClear?.("replaced"); ayahCardReturn = { title, label, back, inWordCard: !!opts.inWordCard, onClear: opts.onClear ?? null }; renderAyahCardBackPill(); if (opts.inWordCard) renderPersistentWordCard(); }
+    // QR Lead (the MSA Architect, 2 Nov 2026, decision 86): a way back to ANOTHER PAGE (opts.page: "Back to the hadith", Dua …)
+    // outlives the Āyah card. Opening the card no longer clears it, and a way back set inside this page (e.g. "Back to Āyah
+    // card") only stands in front of it: once that one is used or dismissed, the page's way back shows again.
+    let pageReturn = null;
+    function setAppReturn(title, label, back, opts = {}) {
+      if (ayahCardReturn?.page && !opts.page) pageReturn = ayahCardReturn; // kept behind, not "replaced"
+      else ayahCardReturn?.onClear?.("replaced");
+      if (opts.page) { pageReturn?.onClear?.("replaced"); pageReturn = null; }
+      ayahCardReturn = { title, label, back, inWordCard: !!opts.inWordCard, onClear: opts.onClear ?? null, page: !!opts.page };
+      renderAyahCardBackPill(); if (opts.inWordCard) renderPersistentWordCard();
+    }
     function rememberAyahCardReturn(unitKey) {
       if (!unitKey) return;
       const { surah, ayah, half } = parseAyahUnitKey(unitKey);
       const r = { surah, ayah, half, view: "read", scrollY: readViewScrollTop() };
       setAppReturn(t("Back to Āyah card"), ayahRefLabel(surah, ayah, { half }).replace(/^.*?(\S+:\S+).*$/, "$1"), () => returnToAyahCard(r));
     }
-    function clearAyahCardReturn(how = "dismiss") { const r = ayahCardReturn; ayahCardReturn = null; r?.onClear?.(how); renderAyahCardBackPill(); }
+    function clearAyahCardReturn(how = "dismiss") {
+      const r = ayahCardReturn; ayahCardReturn = null; r?.onClear?.(how);
+      if (r && !r.page && pageReturn) { ayahCardReturn = pageReturn; pageReturn = null; } // the page's way back shows again
+      renderAyahCardBackPill();
+    }
     function renderAyahCardBackPill() {
       let pill = document.getElementById("ayahCardBackPill");
       if (!ayahCardReturn) { if (pill) { pill.hidden = true; pill.innerHTML = ""; } return; }
@@ -25684,7 +25698,7 @@
       await goToReference(parsed.surah, from, to);
       await openNotesPaneForKey(buildUnitKey.ayah(parsed.surah, from)); // R3b (decision 95): the pane, not the Note view
       // The way-back law (decision 86): a link from another page (the Asma study page's poster) carries back=1.
-      if (new URLSearchParams(location.search).get("back") === "1" && history.length > 1) setAppReturn(new URLSearchParams(location.search).get("backTo") === "hadith" ? t("Back to the hadith") : t("Back"), "", () => history.back());
+      if (new URLSearchParams(location.search).get("back") === "1" && history.length > 1) setAppReturn(new URLSearchParams(location.search).get("backTo") === "hadith" ? t("Back to the hadith") : t("Back"), "", () => history.back(), { page: true });
     }
 
     /** The way-back law: ?qpSurah=&qpAyah=&qpView=note&qpUnit= (written by rememberQuranPlace() just before leaving for
