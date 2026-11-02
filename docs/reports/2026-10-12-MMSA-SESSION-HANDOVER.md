@@ -7,7 +7,64 @@ v10.28). Read `CLAUDE.md` first. The prompt that starts the next session is
 
 This session was summarised once (its context compacted), which is why it hands over here.
 
-## LATEST UPDATE — 2 Nov 2026, ~8:30 am Sydney, session `session_01PL2xbJYZkkmy5RB4fZAR3k` (v13.15–v13.19 live on MSA; HANDOVER) — READ THIS FIRST
+## LATEST UPDATE — 2 Nov 2026, ~12:45 pm Sydney, session `session_01PL2xbM4mkq6p3GRNgbb19G` (v13.20–v13.21 live on MSA and QR; HANDOVER) — READ THIS FIRST
+
+This session ("📌 (03) MSA Master Architect") took over at 8:30 am and hands over at ~12:45 pm (hand119).
+
+**Released (reviewed by measurement, live on `main` and QR):**
+- v13.20: Mapping My Journey's "Open full page" carries `back=1` (audit part 153, #1413, release #1414).
+- v13.21: the ⋯ menus on Notes and Mapping My Journey work from the keyboard (`app/js/palette-keys.js`; audit part 154, #1416, release #1417).
+
+**Also merged (no version):**
+- #1419: `verify.yml` `set +e`. GitHub runs `run:` under `bash -e`, so the first failing suite used to end the step and the recap never printed.
+- #1421: audit part 155 (report only), the way-back law on Hadith and Dua. 4 defects, routed: 1 → the PCA/QR Lead, 2 and 3 → the Dua Lead, 4 → the Hadith Lead.
+- #1424: CLAUDE.md block "QURAN STUDY'S TWO READING VIEWS" (the Owner's J110 decision, below).
+- A release PR's `verify` is red before its merge, by design: `programme-ledger` sees the ledger at the new version and main at the old one.
+
+**THE OWNER'S J110 (2 Nov, ~12:00–12:35 pm):**
+- Quran Study's two non-Mushaf views stay DISTINCT: the **ONE Ayah View** (plain) and the **Reading View** (meaning).
+- The Owner ticked n110a A, B and C: the layer switches (one button on a phone, the existing bar on a tablet or computer), the button names, and the regular reading tools in the Reading View (recitation highlight and follow, ⋮ per āyah, last read).
+- The QR Lead builds; the PCA relays it, because the QR Lead session went inactive.
+
+**IN FLIGHT: v13.22, NOT released.** It is branch `claude/v13.22-night-ring-zab-focus` (on main 48c7663). It carries:
+- the audit 156 report merge (#1423: keyboard walk of Hadith/Dua);
+- `zab-bar.js`: focus moves into the Zab panel on open. zab-bar 370/0, zab-dock 182/0, zab-large 1730/0, zab-tree 240/0, zab-to-note 195/0. **QR copies `zab-bar.js` byte for byte: send the PCA a change notice at release.**
+- **A global night-look focus ring in `card-look.css` was tried and TAKEN OUT** (it regressed audit-part33 706/0 → 545/161 and shared-pages-keyboard 506/0 → 444/62: pages are light, the Zab panel is light, gold surfaces). **Re-run audit-part33 and shared-pages-keyboard on the branch now (ring removed); if they still fail, the Zab focus move is the cause, so compare against main.** The night ring is per-surface work: hand Hadith/Dua's navy menus to their Leads (the `palette-keys.js` pattern).
+- To add to v13.22 after review: the Hadith Lead's `claude/hadith-way-back-155` ebce117 (audit 155 defect 4, sticky ← Back on hadith-collections; the Lead measured 36/0) and the QR Lead's `claude/qr-lead-way-back-pill-over-notes` 51fefbc (defect 1, pill z-index 961 over the Notes pane; the Lead measured qr-way-back-over-notes 72/0, behaviour 972/0, and an audit-part12-words test fix).
+
+**Builder:** no round is running. Next audit ideas: Seerah has no page yet; the Records/Bookmarks pages are checked clean at large text (820–1440, 768/0).
+
+**Waiting with the Leads:**
+- Dua Lead: audit 155 defects 2 and 3, and audit 156 defects 3 and 4 (pop-up focus containment, `modal-focus.js`).
+- QR Lead: the Tajweed-colours card fix; the pill lost after the Āyah card; J110 A, B and C.
+
+**Waiting on the Owner:** J106 n106f (the Hadith Subjects rule; app `claude/hadith-lead-01q2` 5c6b067, rule b203f70), J92 A or B, BWN J27, J105, J104 ticks 6–10, the J29 questions.
+
+The keep-alive is `trig_01ChKQ8gvZ4jDASZfF2Jjqtu` (8:07 am/pm); the PCA repoints it.
+
+**Opening message for the next session** (title "📌 (03) MSA Master Architect"):
+
+> Bismillah. You are the MSA Master Architect, taking over from session_01PL2xbM4mkq6p3GRNgbb19G (hand119, 2 Nov ~12:45 pm Sydney). Your session title is "📌 (03) MSA Master Architect" (num128).
+>
+> Read CLAUDE.md, then ARCHITECT.md, then docs/reports/2026-10-12-MMSA-SESSION-HANDOVER.md, starting with its LATEST UPDATE block of 2 Nov 12:45 pm.
+>
+> First steps:
+> - Test GitHub write: git push --dry-run origin HEAD:refs/heads/claude/access-probe. Do NOT retry add_repo for QuranRevival.
+> - Read the PMS (https://claude.ai/artifact/PhW1KKX28qrqj9dE7Ha8dZ): the meta/global General rules and p/mmsa. Answer any new Owner comments.
+> - Set p/mmsa.sessionUrl to YOUR session (read it with get_session), pinned with if_version.
+> - Send the PCA (session_01PL2xbMi4bJQNaakJbg7GtF) "PCA ▸ taken over", and ask it to repoint the keep-alive trig_01ChKQ8gvZ4jDASZfF2Jjqtu.
+>
+> State: main is v13.21; the next version is v13.22.
+>
+> First job: finish v13.22 on branch claude/v13.22-night-ring-zab-focus (see the LATEST UPDATE block).
+> - Re-run audit-part33-keyboard-focus and shared-pages-keyboard-audit (the ring is removed); compare any failure with main.
+> - Review and add the Hadith Lead's claude/hadith-way-back-155 ebce117 and the QR Lead's claude/qr-lead-way-back-pill-over-notes 51fefbc.
+> - Release. Send the PCA "PCA ▸ released v13.22" with a change notice for zab-bar.js.
+> Then keep a Builder round running (decision 91).
+>
+> Rules: J109 switches; the review rule (360–1440, en/bn, 100/150/200%, screenshots looked at, real-length data); restart serve.js per review (run_in_background, timeout 7200000); one ctx.route per file; behaviour.mjs alone; compare failures with main; push every review merge at once; never pkill -f; keep-alive every 12 hours (ka122); no self wake-ups (cost86); hand over at ~40% (hand119); after "Rasulullah" always write "Sallallahu A'laihi Wa Sallam" (saw128); write "Siyagah" in full; QuranRevival push access is always allowed.
+
+## LATEST UPDATE — 2 Nov 2026, ~8:30 am Sydney, session `session_01PL2xbJYZkkmy5RB4fZAR3k` (v13.15–v13.19 live on MSA; HANDOVER) (superseded 2 Nov 12:45 pm)
 
 This session ("📌 (03) MSA Master Architect") took over at 12:55 am 2 Nov and hands over at ~8:30 am (hand119, after one context summary).
 
