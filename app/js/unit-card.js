@@ -218,7 +218,9 @@ export function attachUnitCardHandlers(container, callbacks = {}) {
       fire(fn);
     });
   };
-  card.querySelector("[data-unit-card-close]")?.addEventListener("click", () => callbacks.onClose?.());
+  // The Owner, 2 Nov 2026 (a screenshot: "the corner's cross button doesn't work"): querySelector wired only the FIRST close
+  // button (← Back), so the corner × never closed the Unit card. Every close button is wired.
+  card.querySelectorAll("[data-unit-card-close]").forEach((b) => b.addEventListener("click", () => callbacks.onClose?.()));
   wireUnitLadder(card, (rungUnitKey) => callbacks.onRung?.(rungUnitKey));
   wireApproachStagePicker(card, {
     onApproachPicked: (approachId) => callbacks.onApproachPicked?.(approachId),

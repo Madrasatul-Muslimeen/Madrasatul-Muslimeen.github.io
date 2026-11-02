@@ -4300,6 +4300,12 @@ export const BN = {
   "Back to the Mushaf": "মুসহাফে ফিরে যান",
   "Back to the reading": "পড়ায় ফিরে যান",
   "Show the meaning: translations and word by word": "অর্থ দেখুন: অনুবাদ ও শব্দে শব্দে",
+  // PCF MSA J110 (the Owner, 2 Nov 2026): the Read view's two views, and the phone's one button for the switches.
+  "Reading View": "পড়ার দৃশ্য",
+  "Reading View: translations and word by word": "পড়ার দৃশ্য: অনুবাদ ও শব্দে শব্দে",
+  "ONE Ayah View": "এক আয়াত দৃশ্য",
+  "ONE Ayah View: one āyah to study": "এক আয়াত দৃশ্য: অধ্যয়নের জন্য এক আয়াত",
+  "Show: English, Bangla, Word by Word": "দেখান: ইংরেজি, বাংলা, শব্দে শব্দে",
   // 10 Oct 2026: the Read bar's ⋯ (Text size, Bookmark, Notes, Mark complete, Writing sheet, Attach to Asma).
   "More tools": "আরও সরঞ্জাম",
   // 12 Oct 2026 (the Owner: a bookmark for the children "couldn't add"): the 🔖 dialog now says who it was saved

@@ -166,6 +166,19 @@ Read this first, every session. It is the standing brief.
 > then the Owner's approval, then build; demo versions go up v1.01, v1.02…; every build is numbered D01…. Nothing is built
 > until the Owner ticks it in PCF MSA J104.
 
+> ## ⇢ QURAN STUDY'S TWO READING VIEWS, AND WHAT EACH IS FOR (the Owner, 2 Nov 2026) — BINDING
+>
+> Besides the Mushaf, Quran Study's Read has **two views, and they stay DISTINCT; do not merge them.** The Owner's words:
+> "Ayah view meant to be ONE AYAH view as an invitation to study the 'Quran Study - ONE AYAH a Day' program … keep it
+> distinct for we will refer/ direct the user to this view when they choose to study ONE Ayah."
+> - **ONE Ayah View** (the code's "plain"/Āyah view, `readViewNow() === "plain"`): one āyah to study. Readers who choose to
+>   study ONE Āyah are sent here; it will gain its own features for studying One Āyah ("later, In Shaa Allah").
+> - **Reading View** (the code's "meaning" view, `renderMeaningFlow()`): regular reading with regular reading functions.
+> - **Layer switches** (English, Bangla, WbW, …) in the Reading View: under ONE button on a phone, where there is no space;
+>   shown openly in the EXISTING bar on a tablet or computer where space allows. **Never a new bar.**
+> - Quran Study's home is QuranRevival: the QR Lead builds, and the MSA Architect reviews and releases. Comparison of the two
+>   views (2 Nov): PCF MSA J110.
+
 > ## ⇢ HADITH STUDY is being built on `feature/hadith-study` — READ IF YOU TOUCH HADITH
 >
 > **This branch's final application version is `v08.29`, and it is now MERGED TO `main`.** The
@@ -428,7 +441,7 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v13.14 on `main`** (1 Nov 2026 — **The night look on Hadith, Dua and Collections (audit part 146), and the 🧰 off the Word card's last Taṣrīf cells (QR Lead audit 11), reviewed by measurement and released by the Architect, shown as "v13.14-01.11.26".** Audit 146: Builder runs 2374/2375 stopped early (a heading and a first suite, then nothing), so the Architect finished `night-hadith-dua-browser.mjs` and ran it on hadith-study, dua-study and hadith-collections (390/1440 × en/bn × 100/200%). Contrast, focus rings and arrows were clean everywhere. **D1**: the Encyclopedia card's 👥 pill and its "Assign to" sheet were hard white on the dark card. `app/css/hadith.css` now has night-only rules (card colours, caret at full strength), so the day look is unchanged. The selected Dua word's gold mark is deliberate, so the day check skips marks. QR Lead audit 11 (`app/quranrevival.html`, CSS only): on a phone the Word card's scroll ends with room under the corner and the corner comes down while the card is open; at 768–899px the card stops above the Zab bar. A 🧰 dock in the card header was measured and not used: it made the header up to 101px taller. Measured (Architect, port 8080): night suite dua 1090/0 (was 8 fail), collections 770/0 (24), hadith 570/0 (16); mutations contrast/focus/arrow/day/d1 each fail (day re-anchored into a dark card); large-text-hadith-study 969/0, note-window-large-night 802/0, hadith-study-reader 116/0, audit-part36-contrast 1184/0, qr-word-card-zab-dock 217/0 (the Lead proved its mutations), zab-dock 182/0, qr-word-card-tasrif-whole-words 225/0, quran-word-card-fullscreen 65/0, qr-word-card-tabs-large-text 188/0; pre-existing and identical on unchanged main 77d0ad0: audit-part16-hadith-dua 532/24 (My Notes opens the Notes page: a notePlacements stub write failure; Back to Dua focus), behaviour.mjs alone 972/0, apps-build-check 48/0; screenshots looked at (the 👥 sheet at 390 en 100% and bn 200%, before and after). Nothing deployed to Firestore.)
+**Current milestone: v13.22 on `main`** (2 Nov 2026 — **A gathered release (the Owner's rule use1102): the Reading View (J110 A, B, C), ways back that stay on screen, and keyboard fixes; reviewed by measurement and released by the Architect, shown as "v13.22-02.11.26".** J110 (QR Lead): below 600px English / Bangla / WbW behind one "Show ▾" in the existing slot; the views named "Reading View" and "ONE Ayah View"; the recited āyah highlighted and followed, ⋮ on every āyah, Last read following the scroll; the ONE Ayah View unchanged. Audit 155 way back: Hadith Collections' ← Back is sticky (Hadith Lead); Dua Study ↗ remembers the place and dua-study.html shows the bookmark way back (Dua Lead); the floating way back sits above the Notes pane but under the Āyah card, and survives the card (QR Lead, with an Architect fix). Audit 156 keyboard: focus moves into the Zab panel (`zab-bar.js`); Dua pop-ups trap Tab (`trapModal`); `modal-focus.js` skips content inside a closed `<details>`. The Owner's 2 Nov bug: a Tajweed-colours tap no longer opens the Whole Surah card, and the Unit card's × closes it. **`zab-bar.js` and `modal-focus.js` changed: change notice to the QR Lead.** Measured: behaviour 972/0, audit-part33 706/0, shared-pages-keyboard 506/0, hadith-dua-keyboard 988/98 vs main 958/128 (30 fixed, none new), qr-j110-reading-view 74/0, QR verify all green but upgrade-browser (needs a QR clone); full list in `CHANGELOG.md`. Nothing deployed to Firestore.)
 
 **Earlier milestones, v08.111 back to v07.139, and the long notes around them**
 (the held Phase 4 wiring, the four deployment states, the Programme Integration

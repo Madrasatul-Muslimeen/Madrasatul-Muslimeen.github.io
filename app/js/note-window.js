@@ -1170,6 +1170,12 @@ export function createNoteViews(host) {
     if (over()) v.barEl.classList.add("edit-folded");
   }
   function fitPaneBarTwice(v) { fitPaneBar(v); requestAnimationFrame(() => fitPaneBar(v)); }
+  // Audit part 151: a change of text size (the root's font-size, set inline or by a class) moves no window edge and fires no "resize", so a bar fitted at 100% ran past the window at 200%. Refit on that change too.
+  try {
+    let refitQueued = false;
+    new MutationObserver(() => { if (refitQueued) return; refitQueued = true; requestAnimationFrame(() => { refitQueued = false; window.dispatchEvent(new Event("resize")); }); })
+      .observe(document.documentElement, { attributes: true, attributeFilter: ["style", "class"] });
+  } catch (e) { /* no MutationObserver: the next resize refits */ }
   window.addEventListener("resize", () => {
     if (notePane) host.paneApply();
     for (const v of allViews()) if (v.noteId !== null) { if (v.kind === "window") applyWindowGeometry(v); renderPaneBar(v); fitPaneBarTwice(v); }
@@ -2933,7 +2939,13 @@ export function createNoteViews(host) {
     // Item 26: open or closed as it was last left, on this device.
     const detailsOpen = detailsOpenPref();
     detailsBtn.setAttribute("aria-expanded", String(detailsOpen));
-    detailsBtn.textContent = `${t("Details")} ▾`;
+    // J109: the shared ON/OFF switch (shell.css `button > .note-sec-arrow`, read off aria-expanded), not a ▾ arrow.
+    const detailsLabel = document.createElement("span");
+    detailsLabel.textContent = t("Details");
+    const detailsSw = document.createElement("span");
+    detailsSw.className = "note-sec-arrow";
+    detailsSw.setAttribute("aria-hidden", "true");
+    detailsBtn.append(detailsLabel, detailsSw);
     const details = document.createElement("div");
     details.className = detailsOpen ? "nw-details open" : "nw-details";
     // The version line lives in the shared template now (the inline pane shows

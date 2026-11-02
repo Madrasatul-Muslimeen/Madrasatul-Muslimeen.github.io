@@ -335,7 +335,10 @@ for (const lang of ["en", "bn"]) for (const width of WIDTHS) {
     check(`${t}: POSITIVE CONTROL three quick buttons are on screen`, labels.length === 3 && labels.every((l) => l.w > 0 && l.h >= 30 && l.inView), JSON.stringify(labels));
     if (lang === "bn") check(`${t}: their labels are Bangla`, labels.every((l) => BN.test(l.txt)), labels.map((l) => l.txt).join());
     await click(page, "readQuickNoteBtn"); await settle(page, 1200);
-    check(`${t}: Notes opens the notes pane`, await ev(page, () => document.getElementById("readNotesBtn").getAttribute("aria-expanded") === "true" || !!document.querySelector("#readNotePane, .read-note-pane, [data-read-note-pane]")));
+    // UPDATED IN PLACE (QR Lead, 2 Nov 2026): since J108 the quick Notes button opens the shared new-Note window (#noteOpener,
+    // js/note-opener.js), not the Notes pane (that is the 📝 readNotesBtn). It is on screen, then closed so the next step starts clean.
+    check(`${t}: Notes opens a new Note (the shared Note window)`, await ev(page, () => { const w = document.getElementById("noteOpener"); return !!w && !w.hidden && w.getBoundingClientRect().width > 0; }));
+    await ev(page, () => document.querySelector("#noteOpener .no-close")?.click()); await settle(page, 500);
     await click(page, "readNotesBtn"); await settle(page, 500);
     await click(page, "readQuickTrackBtn"); await settle(page, 900);
     check(`${t}: Record opens the Unit card`, await ev(page, () => !!document.querySelector("[data-unit-card]")));

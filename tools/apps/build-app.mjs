@@ -110,7 +110,7 @@ function rules(base, s) {
   const namePage = `app/${base.frontPage}`;
   add((p) => p === namePage, `<title>${fb.en}</title>`, `<title>${fs_.en}</title>`, { exact: 1 }, "front page title");
   add((p) => p === namePage, `<span class="app-name-full">${fb.en}</span>`, `<span class="app-name-full">${fs_.en}</span>`, { exact: 1 }, "front page heading");
-  add((p) => p === namePage, `.app-name-short::before { content: ${JSON.stringify(base.name.short)}; }`, `.app-name-short::before { content: ${JSON.stringify(s.name.short)}; }`, { exact: 1 }, "the heading's short name below 700px");
+  add((p) => p === namePage, `.app-name-short::before { content: ${JSON.stringify(base.name.short)}; }`, `.app-name-short::before { content: ${JSON.stringify(s.name.short)}; }${s.name.short === base.name.short ? "" : ` :root { --app-name-em: ${(s.name.short.length * 0.6).toFixed(1)}; --app-title-flex: 1 1 min-content; --app-version-wrap: nowrap; }`}`, { exact: 1 }, "the heading's short name below 700px (a longer name also fits its line: v13.15)");
 
   add((p) => p === "index.html", `<title>${base.siteRootName}</title>`, `<title>${s.siteRootName}</title>`, { exact: 1 }, "site root title");
   add((p) => p === "index.html", `Taking you to ${base.siteRootName}…`, `Taking you to ${s.siteRootName}…`, { exact: 1 }, "site root text");

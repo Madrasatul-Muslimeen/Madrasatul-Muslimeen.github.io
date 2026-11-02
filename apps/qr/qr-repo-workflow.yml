@@ -6,6 +6,9 @@
 # `node tools/apps/build-app.mjs qr`, and publishes build/qr as QR's site with GitHub Pages.
 #
 # Every 3 hours (schedule, the Owner 30 Oct 2026) it also rebuilds from MSA's main by itself.
+# Since 2 Nov 2026 (the Owner: "Can you make it auto?", PCA J86): GitHub ran the 3-hourly schedule only every
+# 6-7 hours and dropped some runs, so QR fell two releases behind. It now looks EVERY HOUR; a scheduled run
+# builds only when MSA main's version differs from what quranrevival.github.io serves, so most runs take seconds.
 #
 # Turning it on (step 5, after the Owner has looked at the built QR side by side with today's):
 #   QR repository → Settings → Pages → Source: "GitHub Actions", then run this workflow.
@@ -23,10 +26,12 @@ on:
         description: "MSA commit or branch to build (default: main)"
         required: false
         default: "main"
-  # The Owner, 30 Oct 2026: QR updates itself from MSA's main every 3 hours (at :17, off the busy :00).
-  # A scheduled run has no inputs, so the checkout below falls back to main.
+  # The Owner, 30 Oct 2026: QR updates itself from MSA's main (at :17, off the busy :00).
+  # 2 Nov 2026 (PCA J86): every hour, because GitHub delays and drops scheduled runs; the check job skips
+  # the build when QR already serves MSA main's version. A scheduled run has no inputs, so the checkout
+  # below falls back to main.
   schedule:
-    - cron: "17 */3 * * *"
+    - cron: "17 * * * *"
 
 permissions:
   contents: read
@@ -38,7 +43,25 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      go: ${{ steps.v.outputs.go }}
+    steps:
+      - id: v
+        name: Build only if QR is behind MSA main (a run started by hand always builds)
+        run: |
+          set -u
+          if [ "${{ github.event_name }}" != "schedule" ]; then echo "go=true" >> "$GITHUB_OUTPUT"; exit 0; fi
+          ver() { curl -fsSL --retry 3 "$1" | grep -o 'APP_VERSION = "[0-9.]*"' | head -1 | grep -o '[0-9][0-9.]*' || true; }
+          msa=$(ver "https://raw.githubusercontent.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/main/app/js/version.js?t=$(date +%s)")
+          qr=$(ver "https://quranrevival.github.io/app/js/qr-version.js?t=$(date +%s)")
+          echo "MSA main: ${msa:-unknown} · QR live: ${qr:-unknown}"
+          if [ -n "$msa" ] && [ "$msa" = "$qr" ]; then echo "go=false" >> "$GITHUB_OUTPUT"; else echo "go=true" >> "$GITHUB_OUTPUT"; fi
   build:
+    needs: check
+    if: needs.check.outputs.go == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
