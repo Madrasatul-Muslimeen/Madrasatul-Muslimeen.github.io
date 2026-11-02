@@ -32,11 +32,19 @@ This session ("📌 (03) MSA Master Architect") took over at 8:30 am and hands o
 - **A global night-look focus ring in `card-look.css` was tried and TAKEN OUT** (it regressed audit-part33 706/0 → 545/161 and shared-pages-keyboard 506/0 → 444/62: pages are light, the Zab panel is light, gold surfaces). **Re-run audit-part33 and shared-pages-keyboard on the branch now (ring removed); if they still fail, the Zab focus move is the cause, so compare against main.** The night ring is per-surface work: hand Hadith/Dua's navy menus to their Leads (the `palette-keys.js` pattern).
 - To add to v13.22 after review: the Hadith Lead's `claude/hadith-way-back-155` ebce117 (audit 155 defect 4, sticky ← Back on hadith-collections; the Lead measured 36/0) and the QR Lead's `claude/qr-lead-way-back-pill-over-notes` 51fefbc (defect 1, pill z-index 961 over the Notes pane; the Lead measured qr-way-back-over-notes 72/0, behaviour 972/0, and an audit-part12-words test fix).
 
+**ADDENDUM, 1:45 pm: hand-ins that arrived after the handover. All are from main v13.21 and independent; review each for v13.22:**
+- Dua Lead `claude/dua-way-back-155` d1060e3: audit 155 defects 2 and 3. way-back-hadith-dua 348/12; the 12 left are defects 1 and 4.
+- Dua Lead `claude/dua-keyboard-156` 7af04bd: audit 156 defects 3 and 4 (`trapModal` in openPop). It **needs a one-line change in the shared `app/js/modal-focus.js` (yours)**: `shown()` must skip content inside a closed `<details>`. The Lead's line: `const shown = (e) => e.getClientRects().length > 0 && getComputedStyle(e).visibility !== "hidden" && !e.closest("details:not([open]) > :not(summary)");` Run `hadith-dua-keyboard-browser.mjs --page=dua` on A, B and that change together, plus the journey-map suites (modal-focus is shared).
+- QR Lead `claude/qr-lead-tajweed-tap-unit-card-close` 9072775: the Owner's bug of today (a Tajweed-colours tap opened the Surah card; its × did not close). quranrevival.html clip-path plus unit-card.js querySelectorAll. 144/0.
+- QR Lead `claude/qr-lead-page-way-back-survives-card` 69272ef: the page way back survives opening the Āyah card. 48/0.
+- QR Lead's handover doc `claude/qr-lead-handover-1102i` f07cff0 (docs only; may be merged).
+- **The new QR Lead is session_01PL2xbNa6eWiBadbJM7SCCV.** The PCA relayed J110 to it.
+- **Overlap to watch:** at ~11:55 am the Owner asked the QR Lead directly for a DEMO of four Reading View layout changes: Aʿūdhu billāh as its own line; ⋮ on the Arabic line; ⋮ then the number then the Arabic; Root and Derivatives as one word block. It waits on the Owner's A, B or C. Keep it consistent with J110 C (the ⋮ on each āyah).
+
 **Builder:** no round is running. Next audit ideas: Seerah has no page yet; the Records/Bookmarks pages are checked clean at large text (820–1440, 768/0).
 
 **Waiting with the Leads:**
-- Dua Lead: audit 155 defects 2 and 3, and audit 156 defects 3 and 4 (pop-up focus containment, `modal-focus.js`).
-- QR Lead: the Tajweed-colours card fix; the pill lost after the Āyah card; J110 A, B and C.
+- QR Lead: J110 A, B and C (everything else is handed in; see the addendum).
 
 **Waiting on the Owner:** J106 n106f (the Hadith Subjects rule; app `claude/hadith-lead-01q2` 5c6b067, rule b203f70), J92 A or B, BWN J27, J105, J104 ticks 6–10, the J29 questions.
 
