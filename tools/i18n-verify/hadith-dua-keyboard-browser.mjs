@@ -53,7 +53,7 @@ for (const pg of ["hcol", "hstudy"]) {
 const HELP = () => {
   const vis = (e) => { const r = e.getBoundingClientRect(), cs = getComputedStyle(e); return r.width > 0 && r.height > 0 && !e.closest("[hidden]") && cs.visibility !== "hidden" && cs.display !== "none"; };
   window.__vis = vis;
-  window.__items = (panel, toggle) => [...panel.querySelectorAll("button, a[href], input, select, textarea, summary, [tabindex]")].filter((e) => !e.disabled && e !== toggle && e.tabIndex >= 0 && vis(e)).slice(0, 10);
+  window.__items = (panel, toggle) => [...panel.querySelectorAll("button, a[href], input, select, textarea, summary, [tabindex]")].filter((e) => !e.disabled && e !== toggle && (e.tabIndex >= 0 || e.matches("button, a[href], input, select, textarea, summary")) && vis(e)).slice(0, 10);
   const lum = (c) => { const m = (c.match(/[\d.]+/g) || [0, 0, 0]).slice(0, 3).map((v) => { v = v / 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }); return 0.2126 * m[0] + 0.7152 * m[1] + 0.0722 * m[2]; };
   const ratio = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
   window.__back = (e) => { for (let el = e; el; el = el.parentElement) { const c = getComputedStyle(el).backgroundColor; if (!/rgba\(0, 0, 0, 0\)|transparent/.test(c)) return c; } return "rgb(255, 255, 255)"; };
@@ -71,9 +71,9 @@ const HELP = () => {
 };
 
 // ---- mutations, injected into the page ----
-const MUT_INIT = (m, c) => {
+const MUT_INIT = ([m, c]) => {
   const q = (s) => document.querySelector(s);
-  if (m === "no-reach") new MutationObserver(() => q(c.toggle)?.setAttribute("tabindex", "-1")).observe(document.documentElement, { childList: true, subtree: true });
+  if (m === "no-reach") { const f = () => q(c.toggle)?.setAttribute("tabindex", "-1"); f(); new MutationObserver(f).observe(document.documentElement, { childList: true, subtree: true }); }
   if (m === "no-open") for (const t of ["keydown", "keyup"]) window.addEventListener(t, (e) => { if ((e.key === "Enter" || e.key === " ") && e.target.matches?.(c.toggle)) e.preventDefault(); }, true);
   if (m === "no-aria") new MutationObserver(() => { const t = q(c.toggle); if (t && t.getAttribute("aria-expanded") === "true") t.setAttribute("aria-expanded", "false"); }).observe(document.documentElement, { attributes: true, subtree: true, attributeFilter: ["aria-expanded"] });
   if (m === "no-focus-in") window.addEventListener("keyup", (e) => { if (e.key === "Enter" || e.key === " ") setTimeout(() => document.activeElement?.blur(), 60); }, true);
@@ -84,11 +84,11 @@ const MUT_INIT = (m, c) => {
   if (m === "offscreen") { const b = document.createElement("button"); b.textContent = "off"; b.style.cssText = "position:fixed;top:-300px;left:0"; document.body.prepend(b); }
   if (m === "covered") { const d = document.createElement("div"); d.style.cssText = "position:fixed;left:0;right:0;top:0;height:100vh;z-index:99999;background:rgba(0,0,0,.01)"; document.body.appendChild(d); }
 };
-const MUT_OPEN = (m, c) => {
+const MUT_OPEN = ([m, c]) => {
   const q = (s) => document.querySelector(s);
   const panel = q(c.panel);
   if (m === "no-walk" && panel) { const l = window.__items(panel, q(c.toggle)); if (l[1]) l[1].setAttribute("tabindex", "-1"); }
-  if (m === "hidden-item" && panel) { const a = document.createElement("a"); a.href = "#"; a.setAttribute("aria-label", "ghost"); a.style.cssText = "display:inline-block;width:0;height:0;overflow:hidden;padding:0;border:0"; const l = window.__items(panel, q(c.toggle)); (l[0]?.parentElement || panel).insertBefore(a, l[0] || null); }
+  if (m === "hidden-item" && panel) { const a = document.createElement("a"); a.href = "#"; a.setAttribute("aria-label", "ghost"); a.style.cssText = "display:inline-block;width:0;height:0;overflow:hidden;padding:0;border:0"; const l = window.__items(panel, q(c.toggle)); (l[1]?.parentElement || panel).insertBefore(a, l[1] || null); }
   if (m === "trap" && panel) { const l = window.__items(panel, q(c.toggle)); window.__trapLast = l[l.length - 1]; }
 };
 
