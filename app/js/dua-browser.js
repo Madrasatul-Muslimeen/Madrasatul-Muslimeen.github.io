@@ -33,6 +33,14 @@ export function renderDua(body, state, render) {
   // The Dua module's own page (PCF MSA J104 1-A, round R1): every Dua by its group, with ← Back to exactly here.
   const own = el("a", "dua-mode dua-study-link", t("Dua Study ↗"));
   own.href = "./dua-study.html?back=1";
+  // Audit part 155 (decision 86): before leaving, this page's address is set to reopen the Dua tab on this page of
+  // Duas and the card at the top of the screen, so Dua Study's ← Back (history.back) lands here, not on the default view.
+  own.addEventListener("click", () => {
+    if (state.dua.mode === "chapters") { rememberDuaView(1); return; }
+    const cards = [...document.querySelectorAll("#duaCards [data-dua-card]")];
+    const top = cards.find((c) => c.getBoundingClientRect().bottom > 0) ?? cards[0];
+    if (top) rememberDuaPlace(state.dua.page || 1, top.dataset.duaCard); else rememberDuaView(state.dua.page || 1);
+  });
   modes.appendChild(own);
   body.appendChild(modes);
   if (state.dua.mode !== "chapters") { renderDuaCards(body, state, render); return; }
@@ -457,6 +465,18 @@ export function rememberDuaPlace(page, dua) {
     u.searchParams.set("view", "dua"); u.searchParams.set("duaPage", String(page)); u.searchParams.set("dua", String(dua));
     history.replaceState(history.state, "", u);
   } catch { /* the link still opens the Word card */ }
+}
+/**
+ * The Dua tab without a card (before the cards have drawn, or from the Dua chapters view): ?view=dua&duaPage=<p>, which
+ * hadith-collections.html reads to reopen the Dua tab. From the chapters view it reopens the Duas, not the chapter
+ * list: reopening a chapter would need hadith-browser.js (the Hadith Lead's) to read one more parameter.
+ */
+function rememberDuaView(page) {
+  try {
+    const u = new URL(location.href);
+    u.searchParams.set("view", "dua"); u.searchParams.set("duaPage", String(page)); u.searchParams.delete("dua");
+    history.replaceState(history.state, "", u);
+  } catch { /* the link still opens Dua Study */ }
 }
 export const DUA_WORD_PROGRESS_TOKEN = "mmsa-dua-word-progress";
 const WBW_STATES = ["not_started", "learning", "practising", "achieved"];

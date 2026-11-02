@@ -137,6 +137,7 @@
     import { translateStatic, t } from "./js/i18n.js";
     import { registerServiceWorker } from "./js/sw-register.js";
     import { armScreensaver } from "./js/screensaver-idle.js";
+    import { mountBookmarkBack } from "./js/bookmark-nav.js";
 
     const params = new URLSearchParams(location.search);
     document.getElementById("duaPageTitle").textContent = t("Dua Study");
@@ -145,6 +146,10 @@
       backBtn.textContent = `← ${t("Back")}`;
       backBtn.hidden = false;
       backBtn.addEventListener("click", () => { if (history.length > 1) history.back(); else location.href = "./index.html"; });
+    } else {
+      // Audit part 155 (decision 86): a Dua bookmark's Open on bookmarks.html (?resume=dua:<n>) arrives without back=1;
+      // like hadith-study.html (through nav.js), this page shows the shared "← Back to <page>" the bookmark left.
+      mountBookmarkBack(null);
     }
     translateStatic();
     registerServiceWorker();
