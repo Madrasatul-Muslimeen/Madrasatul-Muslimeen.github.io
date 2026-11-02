@@ -324,7 +324,8 @@ async function loadItems(pocketId) {
 // ---------- open / close ------------------------------------------------------
 
 async function openPanel(view = "list", pocketId = null) {
-  if (S.view === "closed") { S.opener = document.activeElement; S.scrollY = window.scrollY; }
+  const wasClosed = S.view === "closed";
+  if (wasClosed) { S.opener = document.activeElement; S.scrollY = window.scrollY; }
   S.view = "list";
   S.msg = "";
   panel().hidden = false;
@@ -334,6 +335,12 @@ async function openPanel(view = "list", pocketId = null) {
   if (S.loaded && pocketId) await openPocket(pocketId);
   else if (S.loaded && view === "trash") await openTrash();
   else render();
+  // Audit part 156 (#1422): focus moves INTO the panel when it opens, so a keyboard reader is not left on the 🧰 with the
+  // panel at the end of the page. The first visible button or link, never a text field (that would raise a phone's keyboard).
+  if (wasClosed && S.view !== "closed") {
+    const first = [...panel().querySelectorAll("button, a[href]")].find((e) => !e.disabled && e.getClientRects().length > 0);
+    if (first && !panel().contains(document.activeElement)) { try { first.focus({ preventScroll: true }); } catch { /* ignore */ } }
+  }
 }
 
 function closePanel() {
