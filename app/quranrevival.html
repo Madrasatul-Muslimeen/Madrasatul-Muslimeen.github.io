@@ -5338,6 +5338,12 @@
      text line tall, as in the printed 15-line Mushaf: 6.07cqw x 2.05 line-height + 0.3em padding = 14.26cqw.
      The banner (still 30cqw wide, edge to edge, 28 Sep) and the Bismillah are centred in theirs. */
   .hifz-surah-header.glyph-loaded { height: 14.26cqw; padding: 0; line-height: 1; align-items: center; overflow: visible; }
+  /* The Owner, 2 Nov 2026 (a screenshot: "Clicking on the 'Tajweed Color' pops up this page sometimes"): the banner's glyph is
+     drawn at 30cqw in a 14.26cqw button with overflow visible, so the button's invisible line box reached ~8cqw above it and
+     took the taps meant for the page's "Tajweed colours" switch, opening the Whole Surah card. Measured: every point just
+     above the banner (pages 1 and 2) was the banner; clipping to the box changes no pixel of the drawing (1283 and 390px).
+     4px of room keep the focus ring visible. */
+  .hifz-surah-header.glyph-loaded { clip-path: inset(-4px); }
   .hifz-basmallah { height: 14.26cqw; padding: 0; line-height: 1; align-items: center; font-size: 5.6cqw; }
   .hifz-line-error { font-size: 13px; color: #a33; text-align: center; }
   .page-flow-ayah { border-bottom: 1px solid #eee; padding-bottom: 0.6rem; margin-bottom: 0.6rem; }
