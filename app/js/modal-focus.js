@@ -5,7 +5,8 @@
 // The control that opened it is whatever had focus when trapModal() ran. If that control is gone or hidden by then (a ⋯ menu item
 // whose menu closed first), focus goes to the ⋯ button of the menu it sat in.
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]):not([type=hidden]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])';
-const shown = (e) => e.getClientRects().length > 0 && getComputedStyle(e).visibility !== "hidden";
+// Audit part 156 (Dua Lead): content inside a CLOSED <details> can still report client rects, so it is skipped by name.
+const shown = (e) => e.getClientRects().length > 0 && getComputedStyle(e).visibility !== "hidden" && !e.closest("details:not([open]) > :not(summary)");
 
 export function trapModal(root) {
   const opener = document.activeElement && document.activeElement !== document.body ? document.activeElement : null;

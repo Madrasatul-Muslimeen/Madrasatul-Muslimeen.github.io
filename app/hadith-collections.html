@@ -22,6 +22,9 @@
   #contextBar select { min-height: 40px; padding: 0.3rem 0.4rem; border: 1px solid var(--hadith-field); border-radius: 0.35rem; }
   .hadith-back-btn { min-height: 40px; padding: 0 0.9rem; margin: 0.6rem 0 0; border: 1px solid #c9a24b; border-radius: 0.6rem; background: #1F3A6E; color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
   .hadith-back-btn[hidden] { display: none; }
+  /* Audit part 155, defect 4 (the way-back law, decision 86): a link that lands on a passage scrolls the page, so
+     ← Back stays pinned at the top of the screen instead of scrolling away with the page header. */
+  .hadith-back-btn { position: sticky; top: 0.5rem; z-index: 20; box-shadow: 0 2px 8px rgb(15 30 60 / 0.25); }
 </style>
 </head>
 <body>
@@ -176,6 +179,8 @@
       // Keys Round 1: coming from an āyah's card, the button says where it goes.
       backBtn.textContent = `← ${params.get("backTo") === "ayah" ? t("Back to the āyah") : t("Back")}`;
       backBtn.hidden = false;
+      // The pinned ← Back sits over the top of the screen: a passage scrolled into view stops below it, not under it.
+      document.documentElement.style.scrollPaddingTop = "6.5rem";
       // Back to exactly where the reader was (the page they came from keeps its own state); with no history (a link
       // opened in a new tab), the app's landing page.
       backBtn.addEventListener("click", () => { if (history.length > 1) history.back(); else location.href = "./quranrevival.html"; });

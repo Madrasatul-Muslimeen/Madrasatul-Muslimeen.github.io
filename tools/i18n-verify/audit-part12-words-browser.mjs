@@ -289,7 +289,10 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     check(`${t}: POSITIVE CONTROL the Word card opened for 2:42:8`, top.id === "quran-word-occurrence:v1:2:42:8", JSON.stringify(top));
     check(`${t}: the top shows the word (Arabic), its reference (${refText(lang, "2:42:8")}) and its translation`, /[؀-ۿ]{2,}/.test(top.ar) && top.ref === refText(lang, "2:42:8") && (lang === "bn" ? BN.test(top.bn) : /know/i.test(top.en)), JSON.stringify(top));
     // Below 900px the card is the full-screen sheet (issue #322, by design); from 900px it floats BELOW the nav row.
-    check(`${t}: the card sits inside the screen (${top.vw < 900 ? "full-screen sheet" : "floating, below the nav row"}) with its close button on screen`, top.l >= -1 && top.r <= top.vw + 1 && top.b <= top.vh + 1 && top.close && (top.vw < 900 ? top.t === 0 && top.b === top.vh : top.t >= nb - 1), `${JSON.stringify(top)} nav ${nb}`);
+    // Updated in place, 2 Nov 2026 (QR Lead audit 11, v13.14): from 768px to 899px the full-screen card stops at the top of
+    // the Zab bar when the bar shows (it covered the card's bottom), so "full screen" ends at the bar, not the screen's edge.
+    const zabTop = await ev(page, () => { const z = document.getElementById("zabBar"); return z && z.getClientRects().length && getComputedStyle(z).position === "fixed" && z.getBoundingClientRect().height > 0 ? Math.round(z.getBoundingClientRect().top) : null; });
+    check(`${t}: the card sits inside the screen (${top.vw < 900 ? "full-screen sheet" : "floating, below the nav row"}) with its close button on screen`, top.l >= -1 && top.r <= top.vw + 1 && top.b <= top.vh + 1 && top.close && (top.vw < 900 ? top.t === 0 && Math.abs(top.b - (zabTop ?? top.vh)) <= 1 : top.t >= nb - 1), `${JSON.stringify(top)} nav ${nb} zab ${zabTop}`);
     // 8 + 12: set a mark; the write is asserted, and the mark is still there when the card is closed and opened again.
     const pressed = () => ev(page, () => [...document.querySelectorAll("#quranWordCardMount [data-word-progress] [data-word-progress-state]")].filter((e) => e.getAttribute("aria-pressed") === "true").map((e) => e.dataset.wordProgressState).join());
     const n = await writeCount(page);
