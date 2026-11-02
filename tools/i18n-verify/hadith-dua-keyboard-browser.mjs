@@ -51,7 +51,9 @@ for (const pg of ["hcol", "hstudy"]) {
 
 // ---- in-page helpers ----
 const HELP = () => {
-  const vis = (e) => { const r = e.getBoundingClientRect(), cs = getComputedStyle(e); return r.width > 0 && r.height > 0 && !e.closest("[hidden]") && cs.visibility !== "hidden" && cs.display !== "none"; };
+  // Updated in place, Architect v13.22: content inside a CLOSED <details> still reports a box in this Chromium, so it is not
+  // visible by name (the same rule app/js/modal-focus.js now uses); before, "+17 more"'s hidden rows were "expected" stops.
+  const vis = (e) => { const r = e.getBoundingClientRect(), cs = getComputedStyle(e); return r.width > 0 && r.height > 0 && !e.closest("[hidden]") && !e.closest("details:not([open]) > :not(summary)") && cs.visibility !== "hidden" && cs.display !== "none"; };
   window.__vis = vis;
   window.__items = (panel, toggle) => [...panel.querySelectorAll("button, a[href], input, select, textarea, summary, [tabindex]")].filter((e) => !e.disabled && e !== toggle && (e.tabIndex >= 0 || e.matches("button, a[href], input, select, textarea, summary")) && vis(e)).slice(0, 10);
   const lum = (c) => { const m = (c.match(/[\d.]+/g) || [0, 0, 0]).slice(0, 3).map((v) => { v = v / 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }); return 0.2126 * m[0] + 0.7152 * m[1] + 0.0722 * m[2]; };

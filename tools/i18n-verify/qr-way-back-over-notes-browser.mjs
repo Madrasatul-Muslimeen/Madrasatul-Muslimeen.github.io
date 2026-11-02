@@ -56,7 +56,9 @@ for (const [w, h] of [[390, 844], [1024, 768], [320, 640]]) for (const lang of [
   await page.waitForFunction(() => document.getElementById("ayahActionSheetOverlay")?.classList.contains("open"), null, { timeout: 8000 }).catch(() => {});
   await page.waitForTimeout(400);
   m = await probe(page);
-  check(`${tag} the Āyah card opens over the pane, and nothing of the way back shows over it`, m.card && !m.onPill && !m.pill, JSON.stringify(m));
+  // Updated in place, Architect v13.22: a way back to another page now OUTLIVES the Āyah card (qr-page-way-back-survives-card,
+  // decision 86), so the pill may still exist; what must hold is that it lies UNDER the card (below its 960), never over it.
+  check(`${tag} the Āyah card opens over the pane, and nothing of the way back shows over it`, m.card && !m.onPill && (!m.pill || Number(m.z) < 960), JSON.stringify(m));
   await page.evaluate(() => document.querySelector("#ayahActionSheetMount [data-ayah-sheet-close]")?.click()); await page.waitForTimeout(400);
   // Closing the pane: the raised layer goes with it.
   await page.evaluate(() => document.querySelector("#readNotePane [data-rnp-close], #readNotePane .rnp-close, #readNotePane [aria-label='Close']")?.click());

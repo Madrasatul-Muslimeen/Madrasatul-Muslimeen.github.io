@@ -4799,8 +4799,9 @@
   /* QR Lead (audit part 155 defect 1, MSA #1421, 2 Nov 2026): arriving in the Read view from a Hadith or Dua link opens the
      Notes pane (#readNotePane, z-index 960, read-note-pane.js) over the floating way back (955), so "← Back to the hadith"
      could not be tapped until the pane's own way back was. While the pane is open and the way back floats, it sits above the
-     pane. (Opening the Āyah card hides the way back, so it never lies over the card.) */
-  body:has(#readNotePane:not([hidden])) #ayahCardBackPill:not(.back-docked) { z-index: 961; }
+     pane. Architect, v13.22: a way back to another page now outlives the Āyah card (#ayahActionSheetOverlay, also 960), so
+     while that card is open the way back stays at 955, under it. */
+  body:has(#readNotePane:not([hidden])):not(:has(#ayahActionSheetOverlay.open)) #ayahCardBackPill:not(.back-docked) { z-index: 961; }
   .ayah-card-back-pill[hidden] { display: none; }
   /* Docked beside ✓ on the Read bar (js/back-dock.js): part of the row, not floating. */
   /* Issue #750: a long way-back ("← Back to About QuranRevival", 292px) used to make the slot wider than the room left
