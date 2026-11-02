@@ -1,7 +1,8 @@
 // The Architect's note, 3 Nov 2026: at Bangla 200% text the "Not filed" choice was cut inside the File-under selects (measured
 // 152px of text in 151px, on a 390px phone). Every File-under select must show its chosen text whole at 100% and 200%.
 // Run from the repository root with serve.js on :8080 (QR_BASE for another port).
-//   --mutate=old-padding   the selects get their old side padding back -> the bn/390/200% checks fail
+//   --mutate=old-padding   the selects and the group get their old side padding back -> the bn 360/390 200% checks fail
+// Widths 360 to 1440, text 100/150/200% (the Architect's widening, 3 Nov 2026: bn/360/200% still cut at 134px of 152px).
 import { chromium, newContext, openPage } from "./harness.mjs";
 import fs from "node:fs";
 
@@ -24,14 +25,15 @@ DATA.asmaCollections = [{ _id: TENANT_ID, tenantId: TENANT_ID, schemaVersion: 1,
     { id: "e1", title: { en: "His Essence" }, kind: "by-essence", badge: "", order: 10, status: "active", items: [] } ],
   extraNames: [], overrides: {}, overridesEn: {}, refOverrides: {} }];`;
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
-for (const lang of ["bn", "en"]) for (const width of [390, 1280]) for (const pct of [100, 200]) {
+for (const lang of ["bn", "en"]) for (const width of [360, 390, 768, 1024, 1440]) for (const pct of [100, 150, 200]) {
   const tag = `${lang}/${width}/${pct}%`;
   const ctx = await newContext(browser, { appLang: lang, banner: false, viewport: { width, height: 900 }, extraSeedJs: SEED });
   if (MUTATE) {
     let body = fs.readFileSync("app/quranrevival.html", "utf8");
     const a = "#asmaXEditFileUnder select { padding-left: 0.3rem; padding-right: 0.3rem; }";
-    if (MUTATE !== "old-padding" || !body.includes(a)) throw new Error(`mutation anchor missing: ${MUTATE}`);
-    body = body.split(a).join("");
+    const b = "padding: 0.5rem min(0.7rem, 8px) 0.7rem; margin: 0; display: flex;";
+    if (MUTATE !== "old-padding" || !body.includes(a) || !body.includes(b)) throw new Error(`mutation anchor missing: ${MUTATE}`);
+    body = body.split(a).join("").split(b).join("padding: 0.5rem 0.7rem 0.7rem; margin: 0; display: flex;");
     await ctx.route("**/app/quranrevival.html*", (r) => r.fulfill({ status: 200, contentType: "text/html; charset=utf-8", body }));
   }
   const { page } = await openPage(ctx, "/app/quranrevival.html");
