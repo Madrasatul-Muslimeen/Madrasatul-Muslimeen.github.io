@@ -2846,6 +2846,17 @@
   /* PCF MSA J99 (the Owner ticked B): 📖 is the one switch for Āyah, Meaning and Mushaf; on a phone it is its icon alone,
      the next view's words its tip and spoken name. */
   @media (max-width: 599.98px) { #readMeaningBtn { padding: 0; width: 40px; } #readMeaningBtn .read-meaning-word { display: none; } }
+  /* PCF MSA J110 B (the Owner ticked B, 2 Nov 2026): the names "Reading View" and "ONE Ayah View". Measured (en, the ONE
+     Ayah View): the bar's button row had 0px to spare at 700px (668 of 668) and at 1024px (910 of 910), so "Reading View"
+     (+30px) took the bar to a fourth line (146px vs 100px). From 600 to 1279px a name of two or more words sits on two
+     short lines inside the same 40px button (paintReadMeaningBtn() puts each line in its own span), so the button is no
+     wider than "Meaning" was and the whole name still shows. */
+  #readMeaningBtn .rmw-line { display: inline; }
+  @media (min-width: 600px) and (max-width: 1279.98px) {
+    #readMeaningBtn:has(.rmw-line + .rmw-line) { padding: 0 0.45rem; gap: 0.25rem; }
+    #readMeaningBtn .read-meaning-word:has(.rmw-line + .rmw-line) { display: inline-flex; flex-direction: column; align-items: flex-start; font-size: 0.7rem; line-height: 1.05; }
+    #readMeaningBtn .rmw-line { display: block; }
+  }
   /* Measured at 820px (en): in the Meaning view, "📜 Mushaf" beside the English / Bangla / WbW switches took the bar to a
      second line (146px vs 100px), as 📖 Meaning did on main; with the switches on the bar it is the icon alone up to 1023px. */
   @media (max-width: 1023.98px) {
@@ -2977,16 +2988,43 @@
   @media (max-width: 379px) { #readMeaningLayersSlot label { padding: 0 0.3rem; font-size: 0.7rem; } }
   #readMeaningLayersSlot label:has(input:checked) { background: #1F3A6E; color: #fff; }
   #readMeaningLayersSlot input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+  /* PCF MSA J110 A (the Owner, 2 Nov 2026): on a phone (below 600px) the switches sit behind ONE "Show ▾" button in this
+     same slot, never a new bar; from 600px the wrapper is display: contents and they stand open on the bar as before. */
+  #readMeaningLayersSlot .ml-items { display: contents; }
+  #readMeaningLayersSlot .ml-menu-btn { display: none; }
+  @media (max-width: 599.98px) {
+    #readMeaningLayersSlot { position: relative; overflow: visible; }
+    #readMeaningLayersSlot .ml-menu-btn {
+      display: inline-flex; align-items: center; gap: 0.3rem; height: 40px; box-sizing: border-box; margin: 0; padding: 0 0.7rem;
+      border: 1.5px solid #1F3A6E; border-radius: 999px; background: #fff; color: #1F3A6E; font: inherit; font-size: 0.82rem;
+      font-weight: 600; white-space: nowrap; cursor: pointer;
+    }
+    #readMeaningLayersSlot.ml-open .ml-menu-btn { background: #1F3A6E; color: #fff; }
+    #readMeaningLayersSlot .ml-menu-btn:focus-visible { outline: 3px solid #B8862F; outline-offset: 2px; }
+    #readMeaningLayersSlot .ml-count { min-width: 1.2rem; height: 1.2rem; border-radius: 999px; background: #1F3A6E; color: #fff; font-size: 0.7rem; display: inline-flex; align-items: center; justify-content: center; }
+    #readMeaningLayersSlot.ml-open .ml-count { background: #fff; color: #1F3A6E; }
+    #readMeaningLayersSlot .ml-items {
+      display: none; position: absolute; top: calc(100% + 6px); left: 0; z-index: 70; flex-direction: column; gap: 0.4rem;
+      min-width: 10rem; padding: 0.5rem; box-sizing: border-box; background: #fff; border: 1px solid #e3d6b0;
+      border-radius: 0.75rem; box-shadow: 0 6px 20px rgba(19, 25, 42, 0.22);
+    }
+    #readMeaningLayersSlot.ml-open .ml-items { display: flex; }
+    #readMeaningLayersSlot .ml-items label { height: 40px; padding: 0 0.8rem; font-size: 0.85rem; }
+  }
   #readMeaningLayersSlot label:has(input:focus-visible) { outline: 3px solid #B8862F; outline-offset: 2px; }
   .meaning-page-rule { text-align: center; font-size: 0.8rem; color: #7b6a45; letter-spacing: 0.04em; border-top: 1px dashed #d9cfb6; padding-top: 0.4rem; }
   /* PCF MSA J75 ("Page number twice", "Tiny line takes space"): the first page's label sits right under ↑ Previous page,
      so it carries no dashed line above it (the lines stay where they divide one page from the next). */
-  [data-meaning-pages] > .meaning-page-rule:first-child { border-top: 0; padding-top: 0; }
+  [data-meaning-pages] > .meaning-page-rule:first-child, [data-meaning-pages] > [data-meaning-page-box]:first-child > .meaning-page-rule:first-child { border-top: 0; padding-top: 0; }
   .meaning-ayah { border: 1px solid #ece4d0; border-radius: 0.8rem; background: #fffdf7; padding: 0.6rem 0.8rem 0.8rem; scroll-margin-top: 3.4rem; }
   .meaning-ayah.out { opacity: 0.62; }
   .meaning-ayah.out:focus-within, .meaning-ayah.out:hover { opacity: 1; }
   .meaning-ayah-head { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; font-size: 0.8rem; color: #7b6a45; }
   .meaning-ayah-ref { font-weight: 700; color: #1F3A6E; }
+  /* PCF MSA J110 C (the Owner ticked C, 2 Nov 2026): the Reading View's āyah being recited wears the same gold band
+     and edge as the ONE Ayah View's (.page-flow-ayah.now-playing), so the reader sees which āyah is sounding. */
+  .meaning-ayah.now-playing { background: #fff8e1; border-color: #c8a227; box-shadow: inset 4px 0 0 #c8a227; opacity: 1; }
+  .meaning-ayah-head .ayah-quick-wrap { margin-left: auto; }
   .meaning-more { min-height: 44px; border: 1px dashed #c9b98f; border-radius: 0.6rem; background: #fdf8ea; color: #5e4418; font: inherit; font-weight: 600; cursor: pointer; }
   .meaning-more[disabled] { opacity: 0.5; cursor: default; }
   /* Owner, 2 Oct 2026 -- "☰ Surah list", the way back from a Read view opened
@@ -12031,7 +12069,7 @@
         // The Owner, 5 Oct 2026: 📖 Last read. In the scrolling flow view the
         // row the reader has scrolled to is noted by updateFlowInView(); this
         // covers the one-ayah view, and must not overwrite that row.
-        if (stageView === "read" && !isPlaying() && !pageViewContainer.querySelector(".page-flow-ayah.in-view")) noteLastPlace("read");
+        if (stageView === "read" && !isPlaying() && !pageViewContainer.querySelector(".page-flow-ayah.in-view, [data-meaning-flow]")) noteLastPlace("read");
         setQuranLastSession({
           stageView,
           settings: captureQuranBookmarkSettings(),
@@ -21166,16 +21204,28 @@
       readMeaningBtn.setAttribute("aria-pressed", String(readMeaningOn));
       // The button names where it takes you NEXT (its icon too); on a phone it is the icon alone, the words its tip.
       const view = readViewNow();
-      const [icon, word, tip] = view === "plain" ? ["📖", t("Meaning"), t("Show the meaning: translations and word by word")]
+      // PCF MSA J110 B (the Owner ticked B, 2 Nov 2026): the two views are called "Reading View" and "ONE Ayah View".
+      const [icon, word, tip] = view === "plain" ? ["📖", t("Reading View"), t("Reading View: translations and word by word")]
         : view === "meaning" ? ["📜", t("Mushaf"), t("Mushaf view")]
-        : ["↩", currentUnitType === "ayah" ? t("Āyah") : t("Reading"), t("Back to the reading")];
+        : ["↩", t("ONE Ayah View"), t("ONE Ayah View: one āyah to study")];
       readMeaningBtn.querySelector('[aria-hidden="true"]').textContent = icon;
-      readMeaningBtn.querySelector(".read-meaning-word").textContent = word;
+      // J110 B: the name's last word on a line of its own (see the .rmw-line CSS); the text read out stays the whole name.
+      const parts = word.split(" "), tail = parts.length > 1 ? parts.pop() : null;
+      readMeaningBtn.querySelector(".read-meaning-word").innerHTML = tail
+        ? `<span class="rmw-line">${escapeHtml(parts.join(" "))}</span> <span class="rmw-line">${escapeHtml(tail)}</span>` : escapeHtml(word);
       readMeaningBtn.dataset.readNext = view === "plain" ? "meaning" : view === "meaning" ? "mushaf" : "plain";
       readMeaningBtn.setAttribute("aria-label", tip);
       readMeaningBtn.title = tip;
       const mushafBtn = document.getElementById("readMushafBtn");
       if (mushafBtn) mushafBtn.hidden = true; // J99: 📖 is the one switch now (its own handler is kept for the Options tick's sake below)
+    }
+
+    /** PCF MSA J110 C: the same ⋮ the ONE Ayah View carries on every āyah (Copy, Share, Play this āyah, Bookmark,
+        Note & more…, QCR), without its Word by Word / Root / Derivatives rows: the Reading View has its own switches. */
+    function meaningQuickMenuHtml(surahNum, ayahNum) {
+      const unitKey = buildUnitKey.ayah(surahNum, ayahNum);
+      const isBookmarked = !!findSavedBookmark(bookmarksDoc, { moduleId: "quranrevival", subjectId: "quran", position: unitKey });
+      return renderQuickMenu(unitKey, { hasNote: ayahHasAnyNote(unitKey), isBookmarked });
     }
 
     async function meaningPageHtml(pageNum) {
@@ -21191,7 +21241,7 @@
           const key = `${g.surah}:${a.ayah}`;
           const out = meaningInUnit && !meaningInUnit.has(key);
           html += `<article class="meaning-ayah${out ? " out" : ""}" data-meaning-key="${key}" data-meaning-page="${pageNum}">
-            <div class="meaning-ayah-head"><span class="meaning-ayah-ref">${escapeHtml(surahName(g.surah, meta?.nameEnglish))} ${num(g.surah)}:${escapeHtml(ayahLabelFor(g.surah, a.ayah, null))}</span></div>
+            <div class="meaning-ayah-head"><span class="meaning-ayah-ref">${escapeHtml(surahName(g.surah, meta?.nameEnglish))} ${num(g.surah)}:${escapeHtml(ayahLabelFor(g.surah, a.ayah, null))}</span>${meaningQuickMenuHtml(g.surah, a.ayah)}</div>
             ${surahFlowHeadingHtml(g.surah, a.ayah)}${bismillahHtmlFor(g.surah, a.ayah)}${layoutAParts(a, panels, {
               tajweedOn: tajweedToggle.checked, langs, wbwLangs: langs.length ? langs : ["en"], wordCardInteractive: true, surahNumber: g.surah,
             })}</article>`;
@@ -21235,7 +21285,12 @@
         const layersSlot = document.getElementById("readMeaningLayersSlot");
         if (layersSlot) {
           // PCF MSA J75 (the Owner: "For English, write only Eng"): on a phone the English switch reads "Eng" (paintShortReadLabels).
-          layersSlot.innerHTML = `${layer("en", shortReadLabels() ? t("Eng") : t("English"))}${layer("bn", t("Bangla"))}${layer("wbw", t("WbW"))}`;
+          // PCF MSA J110 A (the Owner ticked A, 2 Nov 2026): "Under a button where no space (Mob). or in open bar in PC and
+          // tab where space is available (but not to make another bar)." Below 600px the three sit behind one "Show ▾"
+          // button in the same slot; from 600px the wrapper is display: contents and they stand open on the bar as before.
+          const onCount = ["en", "bn", "wbw"].filter((k) => readMeaningLayers[k]).length;
+          layersSlot.innerHTML = `<button type="button" class="ml-menu-btn" data-ml-menu aria-haspopup="true" aria-expanded="false" title="${escapeHtml(t("Show: English, Bangla, Word by Word"))}">${escapeHtml(t("Show"))}<span class="ml-count">${num(onCount)}</span><span aria-hidden="true">▾</span></button><div class="ml-items" data-ml-items>${layer("en", shortReadLabels() ? t("Eng") : t("English"))}${layer("bn", t("Bangla"))}${layer("wbw", t("WbW"))}</div>`;
+          setMeaningLayersOpen(meaningLayersOpen);
           layersSlot.querySelector('[data-meaning-layer="wbw"]')?.parentElement.setAttribute("title", t("Word by Word"));
           layersSlot.setAttribute("aria-label", t("Show"));
           layersSlot.hidden = false;
@@ -21246,9 +21301,12 @@
           <button type="button" class="meaning-more" data-meaning-next${last < MUSHAF_LAST_PAGE ? "" : " disabled"} title="${escapeHtml(t("Page {page}", { page: num(Math.min(MUSHAF_LAST_PAGE, last + 1)) }))}">↓ ${escapeHtml(t("Next page"))}</button>
         </div>`;
         wireMeaningFlow();
-        const focus = meaningFocusKey ?? (pageViewContainer.querySelector(".meaning-ayah:not(.out)")?.dataset.meaningKey ?? null);
+        attachAyahQuickMenus(pageViewContainer);
+        const playingKey = (isPlaying() || isPaused()) ? `${currentSurahNum}:${currentAyahNum}` : null;
+        const focus = meaningFocusKey ?? playingKey ?? (pageViewContainer.querySelector(".meaning-ayah:not(.out)")?.dataset.meaningKey ?? null);
         meaningFocusKey = null;
-        if (focus) requestAnimationFrame(() => meaningScrollTo(focus));
+        if (playingKey) markPlayingAyah(currentAyahNum, { scroll: false });
+        if (focus) requestAnimationFrame(() => { meaningScrollTo(focus); noteMeaningLastRead(); });
       } catch (err) {
         if (token !== meaningRenderToken) return;
         pageViewContainer.innerHTML = `<p style="color:#a33;">${escapeHtml(t("Couldn't load Mushaf page data ({reason}).", { reason: err.message }))}</p>`;
@@ -21268,8 +21326,16 @@
         if (token !== meaningRenderToken) return;
         const root = meaningScroller();
         const before = root?.scrollHeight ?? 0;
-        flow.insertAdjacentHTML(dir > 0 ? "beforeend" : "afterbegin", html);
+        // J110 C: the new page sits in its own box (display: contents, so the flow lays out exactly as before), and only
+        // ITS ⋮ are wired: wiring the whole flow again would bind the earlier pages' ⋮ twice (a tap would open and close).
+        const pageBox = document.createElement("div");
+        pageBox.style.display = "contents";
+        pageBox.dataset.meaningPageBox = String(target);
+        pageBox.innerHTML = html;
+        if (dir > 0) flow.append(pageBox); else flow.prepend(pageBox);
         if (dir > 0) meaningPagesShown.push(target); else meaningPagesShown.unshift(target);
+        attachAyahQuickMenus(pageBox);
+        if (isPlaying() || isPaused()) markPlayingAyah(currentAyahNum, { scroll: false });
         if (dir < 0 && root) root.scrollTop += root.scrollHeight - before;
         const prevBtn = pageViewContainer.querySelector("[data-meaning-prev]"), nextBtn = pageViewContainer.querySelector("[data-meaning-next]");
         const first = meaningPagesShown[0], last = meaningPagesShown[meaningPagesShown.length - 1];
@@ -21278,8 +21344,51 @@
       } finally { meaningAddPage.busy = false; }
     }
 
+    /** PCF MSA J110 C: 📖 Last read follows the reader's scroll in the Reading View too: the āyah at the top of what
+        they see (meaningTopKey()), while nothing is reciting (then ▶ Last played is the one that moves). Only an āyah
+        of the surah being read is noted: the flow can show a neighbouring surah's āyāt on the same printed page. */
+    function noteMeaningLastRead() {
+      if (stageView !== "read" || readViewNow() !== "meaning" || isPlaying()) return;
+      const [s, a] = String(meaningTopKey() ?? "").split(":").map(Number);
+      if (s === currentSurahNum && a) noteLastPlace("read", a);
+    }
+    let meaningScrollRoot = null, meaningScrollPending = false;
+
+    // J110 A: the phone's "Show ▾" stays open while the reader ticks the switches (each tick re-renders the flow), and
+    // closes on a tap elsewhere or Esc. From 600px the button is not shown and the open state changes nothing.
+    var meaningLayersOpen = false, meaningLayerRefocus = null;
+    function setMeaningLayersOpen(open) {
+      meaningLayersOpen = !!open;
+      const slot = document.getElementById("readMeaningLayersSlot");
+      slot?.classList.toggle("ml-open", meaningLayersOpen);
+      slot?.querySelector("[data-ml-menu]")?.setAttribute("aria-expanded", String(meaningLayersOpen));
+    }
+    document.addEventListener("click", (e) => {
+      if (meaningLayersOpen && !document.getElementById("readMeaningLayersSlot")?.contains(e.target)) setMeaningLayersOpen(false);
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key !== "Escape" || !meaningLayersOpen) return;
+      setMeaningLayersOpen(false);
+      document.querySelector("#readMeaningLayersSlot [data-ml-menu]")?.focus();
+    });
+    function onMeaningScroll() {
+      if (meaningScrollPending) return;
+      meaningScrollPending = true;
+      requestAnimationFrame(() => { meaningScrollPending = false; noteMeaningLastRead(); });
+    }
+
     function wireMeaningFlow() {
+      meaningScrollRoot?.removeEventListener("scroll", onMeaningScroll);
+      meaningScrollRoot = meaningScroller();
+      meaningScrollRoot?.addEventListener("scroll", onMeaningScroll, { passive: true });
+      const layersSlot = document.getElementById("readMeaningLayersSlot");
+      layersSlot?.querySelector("[data-ml-menu]")?.addEventListener("click", () => {
+        setMeaningLayersOpen(!meaningLayersOpen);
+        if (meaningLayersOpen) layersSlot.querySelector("[data-meaning-layer]")?.focus();
+      });
+      if (meaningLayerRefocus) { layersSlot?.querySelector(`[data-meaning-layer="${meaningLayerRefocus}"]`)?.focus({ preventScroll: true }); meaningLayerRefocus = null; }
       document.querySelectorAll("#readMeaningLayersSlot [data-meaning-layer]").forEach((box) => box.addEventListener("change", () => {
+        meaningLayerRefocus = box.dataset.meaningLayer; // the re-render below rebuilds the switches: keep the reader's place on them
         const keep = meaningTopKey();
         readMeaningLayers = { ...readMeaningLayers, [box.dataset.meaningLayer]: box.checked };
         try { localStorage.setItem(READ_MEANING_LAYERS_KEY, JSON.stringify(readMeaningLayers)); } catch { /* per device only */ }
@@ -21548,6 +21657,21 @@
      */
     function markPlayingAyah(ayahNum, { scroll = true } = {}) {
       if (getComputedStyle(pageViewContainer).display === "none") return false;
+      // PCF MSA J110 C: the Reading View's rows are .meaning-ayah, keyed "surah:ayah". Finding none here used to send
+      // every recited āyah to renderStudyScreen(), which rebuilt the flow at the unit's start each time (the jump back).
+      // When the sounding āyah is not on the pages shown, re-render ONCE with the flow opening at it.
+      if (pageViewContainer.querySelector("[data-meaning-flow]")) {
+        const key = `${currentSurahNum}:${ayahNum}`;
+        let hit = null;
+        pageViewContainer.querySelectorAll(".meaning-ayah").forEach((row) => {
+          const on = row.dataset.meaningKey === key;
+          row.classList.toggle("now-playing", on);
+          if (on) hit = row;
+        });
+        if (!hit) { meaningFocusKey = key; return false; }
+        if (scroll && stageView === "read") hit.scrollIntoView({ block: "nearest", behavior: "smooth" });
+        return true;
+      }
       const rows = pageViewContainer.querySelectorAll(".page-flow-ayah");
       if (!rows.length) return false;
       let target = null;
@@ -22122,9 +22246,10 @@
     }
 
     /** Ref line + whichever of Arabic/English/Bangla/Notes were checked -- the same shape for the quick menu's Copy/Share and the Note view's own row, so ticking the same boxes in either place produces the same text (spec: "these options also have to be there where they are now for those using the note"). */
-    function buildAyahText(unitKey, langs) {
+    function buildAyahText(unitKey, langs, otherSurahData = null) {
       const { surah, ayah: ayahNum, half } = parseAyahUnitKey(unitKey);
-      const ayah = surah === currentSurahNum ? currentSurahData?.ayahs.find((a) => a.ayah === ayahNum) : null;
+      const source = surah === currentSurahNum ? currentSurahData : otherSurahData;
+      const ayah = source?.ayahs.find((a) => a.ayah === ayahNum) ?? null;
       if (!ayah) return "";
       const parts = [ayahRefLabel(surah, ayahNum, { half })];
       if (langs.includes("ar")) parts.push(ayah.uthmaniText);
@@ -22225,7 +22350,12 @@
       attachQuickMenuHandlers(el, {
         // #758: "My note" can be lit by the Notes pane's count before its text was read; read it once, on the tap that
         // opens Copy / Share, and wait for that same read at Copy if it has not landed.
-        buildText: async (unitKey, langs) => { if (langs.includes("notes")) await ensurePanePlainNotes(unitKey); return buildAyahText(unitKey, langs); },
+        buildText: async (unitKey, langs) => {
+          if (langs.includes("notes")) await ensurePanePlainNotes(unitKey);
+          // J110 C: the Reading View's ⋮ can sit on another surah's āyah (a printed page shared by two surahs).
+          const { surah } = parseAyahUnitKey(unitKey);
+          return buildAyahText(unitKey, langs, surah === currentSurahNum ? null : await getSurah(surah));
+        },
         onTextMenuOpen: (unitKey) => { ensurePanePlainNotes(unitKey); },
         onPlay: quickPlayAyah,
         onOpenNote: (unitKey) => openNotesPaneForKey(unitKey), // decision 95: the Notes pane, not the Note view

@@ -93,7 +93,8 @@ for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 1280]]) {
   const { ctx, page, errors } = await start(lang, width);
   await openRange57(page);
   const b0 = await btn(page);
-  check(`${tag} 📖 sits on the Read bar beside ⤢, tappable, unpressed; in the Mushaf it names the plain reading next (J99: "${lang === "bn" ? "পড়া" : "Reading"}")`, b0.shown && b0.tappable && b0.h >= 36 && b0.pressed === "false" && b0.word === (lang === "bn" ? "পড়া" : "Reading"), JSON.stringify(b0));
+  // PCF MSA J110 B (the Owner ticked B, 2 Nov 2026): the plain reading is the "ONE Ayah View". Updated in place, reason recorded.
+  check(`${tag} 📖 sits on the Read bar beside ⤢, tappable, unpressed; in the Mushaf it names the plain reading next (J110: "${lang === "bn" ? "এক আয়াত দৃশ্য" : "ONE Ayah View"}")`, b0.shown && b0.tappable && b0.h >= 36 && b0.pressed === "false" && b0.word === (lang === "bn" ? "এক আয়াত দৃশ্য" : "ONE Ayah View"), JSON.stringify(b0));
   const pageInView = await page.evaluate(() => Number(document.getElementById("mushafPageRef")?.dataset.page || 0));
 
   await toMeaning(page);
@@ -112,12 +113,18 @@ for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 1280]]) {
 
   // A layer off: Bangla goes, the place stays.
   const topBefore = (await flow(page)).topKey;
+  // PCF MSA J110 A (the Owner ticked A, 2 Nov 2026): below 600px the switches are behind "Show ▾"; open it first.
+  // Updated in place, reason recorded: what a switch does is unchanged.
+  const openShow = () => page.evaluate(() => { const b = document.querySelector("#readMeaningLayersSlot [data-ml-menu]"); if (b && b.getBoundingClientRect().width > 0 && b.getAttribute("aria-expanded") !== "true") b.click(); });
+  await openShow();
   await page.click('[data-meaning-layer="bn"]');
   await page.waitForTimeout(1200);
   const g = await flow(page);
   check(`${tag} unticking Bangla takes the Bangla meaning away and keeps the place (${topBefore})`, !!g.a571 && !g.a571.bn && g.a571.en && g.topKey === topBefore, JSON.stringify({ a571: g.a571, top: g.topKey }));
+  await openShow();
   await page.click('[data-meaning-layer="bn"]');
   await page.waitForTimeout(1200);
+  await page.keyboard.press("Escape");
 
   // "and continue"
   const before = (await flow(page)).pages;

@@ -99,7 +99,9 @@ for (const lang of ["en", "bn"]) {
   await P.waitForTimeout(600);
   const m = await ev(() => {
     const vis = (e) => e.getBoundingClientRect().width > 0;
-    const items = [document.getElementById("readListBtn"), ...document.querySelectorAll("#readMeaningLayersSlot label"), ...[...document.querySelectorAll("#readBarEnd > button")].filter(vis)];
+    // PCF MSA J110 A (the Owner ticked A, 2 Nov 2026): on a phone the switches are behind ONE "Show ▾" in the same slot, so
+    // the row holds that button instead of the three. Updated in place, reason recorded: "one row" is what is checked.
+    const items = [document.getElementById("readListBtn"), ...[...document.querySelectorAll("#readMeaningLayersSlot label, #readMeaningLayersSlot [data-ml-menu]")].filter(vis), ...[...document.querySelectorAll("#readBarEnd > button")].filter(vis)];
     const mids = items.map((e) => { const r = e.getBoundingClientRect(); return Math.round((r.top + r.bottom) / 2); });
     return { mids, surah: document.querySelector("#readListBtn .read-list-word")?.innerText.trim(), eng: document.querySelector('#readMeaningLayersSlot [data-meaning-layer="en"]')?.parentElement.innerText.trim(), mushafWord: document.querySelector("#readMeaningBtn .read-meaning-word")?.getBoundingClientRect().width ?? 0, sw: document.documentElement.scrollWidth };
   });
