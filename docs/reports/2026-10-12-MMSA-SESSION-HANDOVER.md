@@ -7,7 +7,53 @@ v10.28). Read `CLAUDE.md` first. The prompt that starts the next session is
 
 This session was summarised once (its context compacted), which is why it hands over here.
 
-## LATEST UPDATE — 3 Nov 2026, ~7:40 am Sydney, session `session_01PL2xbHyXQcin8M9YV6AfUx` (v13.23 and v13.24 released; HANDOVER under use1102) — READ THIS FIRST
+## LATEST UPDATE — 4 Nov 2026, ~7:05 am Sydney, session `session_01PL2xbLsgGMUQUy1C4dRceg` (v13.25, v13.26 and v13.27 released; HANDOVER under use1102) — READ THIS FIRST
+
+This session ("📌 (03) MSA Master Architect") took over at ~7:45 am on 3 Nov and hands over at ~7:05 am on 4 Nov (use1102 A; summarised once).
+
+**use1102 G is LIFTED** (the Owner, 3 Nov 8:25 pm, via the PCA, confirmed in meta/global): releases no longer wait a day. Release whenever a reviewed part is ready, and keep the ~15% handovers.
+
+**Released (MSA and QR both confirmed by the PCA):**
+- **v13.25** (PRs #1435 + #1436 + release #1437, main 643c47a, 9:38 pm 3 Nov): Hadith "Add to subject" (J106, the Hadith Lead) and the Asma File-under fix at Bangla 200% text (the QR Lead).
+- **v13.26** (PR #1438 + release #1439, main cf52490, 10:26 pm): Quran Study's ⋮ "Take Note" opens a new Note on an āyah with no Note (the Owner's 3 Nov report, the QR Lead). The first try was sent back: behaviour was 969/3, with 42d/42h describing the old item; they were updated in place, giving 975/0.
+- **v13.27** (PR #1440 + release #1441, main 16418aa, 11:51 pm): the ⋮ reads "Note & more…" straight after a Note is made from it (`noteMadeFromQuickMenu`, the QR Lead).
+- behaviour.mjs on main is now **975/0** (it was 972/0).
+
+**THE NEXT JOB — PCF MSA J112 (BWN J27 Stage 2, the Owner's GO at ~11:55 pm 3 Nov):** MSA and QR work on Siyagah's REAL Mapping My Journey folders AND notes through Siyagah's R1 API: add, rename/edit, move and delete both; delete goes to Mapping My Journey's Trash with Undo; a visitor switch on each folder and note, private by default; no new MSA folder system ("Older MSA folders" only shows what is already there; the Owner moves things by hand, with no automatic moves). The plan is j112p1, **about 5 days once R1 is live.** Siyagah started R1 on 4 Nov and **will message the MSA Architect the read/write API.** **Prepare now what does not need R1**: the lazy second sign-in to Siyagah's Firebase (loaded only when the Map opens, never at startup, I9; helper pages self-hosted on both hosts, as in J88; the Owner does 3 free sign-in steps at build time) and the Map wiring in `journey-map.html`, behind a switch that stays off. These are SHARED note scripts, so every change gets a change notice to the PCA and the QR Lead (QR pins them).
+
+**PCA notes this session:**
+- **Do not republish the Scholars Database (51AC…) or the feature-discussions file (BJUw…).** The Owner now edits them in the BwN Library, and the claude.ai copies are old.
+- **T21 waits for the Owner to Export the current Scholars Database page.**
+- **BWN J27:** MSA's three points went to BwN; the Owner answered them (no lock on folders; the Owner moves old things by hand).
+
+**Writes outside p/mmsa:** this session wrote ONLY to p/mmsa. The PCA asked for a line on BWN J27, and this session filed it as MSA J112 instead and asked the PCA to link it.
+
+**Review lessons from this session:**
+- A sweep in an unseeded context fails the new-Note write. Seed `window.__stubApplyBatches = true; window.__stubRecordTxData = true;`, as read-note-pane and behaviour section 42 now do.
+- `!el?.hidden` is TRUE when the element is absent. Use `el?.hidden === false`.
+- The ⋮ menu at 200% text is wider than a 360px phone, and its items are 24.6px tall. This predates v13.26 and is not yet a job.
+- Release PR CI shows exactly three pre-merge failures that read origin/main (ledger at the new version, the ledger positive control, the version claim). That is expected; after the merge, brief-integrity is 12/2 here, the usual missing-branch pair.
+
+**Waiting on the Owner:** J88 j88n2 (phone sign-in check) and j88n3; J05 j05n4 (T11 Companions, T15) and j05n5 (the QR Lead's demo ticks, J111); T21's Export; J105; J104 ticks 6–10; the J29 questions.
+
+**Opening message for the next session** (title "📌 (03) MSA Master Architect"):
+
+> Bismillah. You are the MSA Master Architect, taking over from session_01PL2xbLsgGMUQUy1C4dRceg (4 Nov ~7:05 am Sydney, use1102). Your session title is "📌 (03) MSA Master Architect" (num128).
+>
+> Read CLAUDE.md, then ARCHITECT.md, then docs/reports/2026-10-12-MMSA-SESSION-HANDOVER.md, starting with its LATEST UPDATE block of 4 Nov 7:05 am, and the PMS General rule use1102 (G is lifted).
+>
+> First steps:
+> - Test GitHub write: git push --dry-run origin HEAD:refs/heads/claude/access-probe. Do NOT retry add_repo for QuranRevival.
+> - In a fresh container link playwright: mkdir -p node_modules && ln -sfn /opt/node22/lib/node_modules/playwright node_modules/playwright
+> - Read the PMS (https://claude.ai/artifact/PhW1KKX28qrqj9dE7Ha8dZ): meta/global General rules, p/mmsa, and MSA J112. Answer any new Owner comments.
+> - Set p/mmsa.sessionUrl to YOUR session (read it with get_session), pinned with if_version.
+> - Send the PCA (session_01PL2xbL9r5wP8zyi6A3Hj8j) one line "PCA ▸ taken over", and ask it to point the MSA keep-alive at your session.
+>
+> State: main is v13.27 (MSA and QR serve it). Nothing is in review. THE JOB is PCF MSA J112 (BWN J27 Stage 2, the Owner's go): MSA and QR work on Siyagah's real Mapping My Journey folders and notes through Siyagah's R1 API (add, edit, move, delete; Trash with Undo; a visitor switch, private by default). Siyagah will message you R1's API. Until then, build the parts that do not need R1: the lazy second sign-in and the Map wiring in journey-map.html, behind a switch that stays off. Send a change notice to the PCA and the QR Lead for every shared note-script change. Do not republish the Scholars Database or the feature-discussions artifacts; T21 waits for the Owner's Export. At each release send the PCA "PCA ▸ released vX.YY"; change notices go to the QR Lead (session_01PL2xbJUXBgRjYg7C9bLsss). Leads: Hadith session_01PL2xbKdedHjzJnARKwbwSS, Dua session_01PL2xbKzbiAyrexmkBmLQaJ. No self-chosen audits.
+>
+> Rules: use1102 (hand over at ~15%, no broadcasts; G lifted: release whenever a reviewed part is ready; student-blocking fixes at once); J109 switches; the review rule (360–1440, en/bn, 100/150/200%, screenshots looked at, real-length data); restart serve.js per review (run_in_background, timeout 7200000); one ctx.route per file; behaviour.mjs alone; compare failures with main (a second serve.js on PORT=8081 from a worktree of origin/main, suites with QR_BASE=http://localhost:8081); main only takes changes through a pull request (merge with mcp__github__merge_pull_request and the full 40-character head SHA); write only to p/mmsa in the PMS; real clock times only in the PMS (date -u); never pkill -f; no self wake-ups (cost86); after "Rasulullah" always write "Sallallahu A'laihi Wa Sallam" (saw128); write "Siyagah" in full.
+
+## LATEST UPDATE — 3 Nov 2026, ~7:40 am Sydney, session `session_01PL2xbHyXQcin8M9YV6AfUx` (v13.23 and v13.24 released; HANDOVER under use1102) (superseded 4 Nov 7:05 am)
 
 This session ("📌 (03) MSA Master Architect") took over at 3:56 pm 2 Nov and hands over at ~7:40 am 3 Nov (use1102 A).
 
