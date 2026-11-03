@@ -66,6 +66,10 @@ a shared part, done by or with the MSA Architect; **Answer** = waits on an Owner
 | D20 | Plain words when a Dua save fails (J104 j104q1; `dua-browser.js` and `dua-check.js:331`) | – |
 | D21 | The Dua groups, and a group's parts (the 15 occasions, the 11 books), as pull-down menus (the Owner, 30 Oct, about 7:45 am) | – |
 | D22 | On the Dua Card only the progress block and the listening buttons stay open; every other block (meaning, source, memorising plan, bookmark, poster, share, screensaver) opens from the card's menu as a pop-up card with ✕ back to the Dua (the Owner, same message) | – |
+| D23 | The Dua Card like the Āyah card, with every feature that applies: ‹ ›, progress with 👥, 🔖, Copy / Share, 🖼 Poster, 📝 Note, File in folder(s), Related duas, a Full-text view with language and word-by-word layers, a movable window on a computer (the Owner, 4 Nov 2026, 9:23 am Sydney). Play waits on D16/D17 | Architect (Note, Bookmarks are shared) |
+| D24 | The Dua Word Card (DWC) like Quran Study's Word Card: a word that matches a Qur'an word opens QR's Word Card ("From Dua", ← Back, D08); every other word opens the DWC with the levels that apply (same message) | Architect, Answer (J105, J104 tick 12), Rules for saving word progress |
+| D25 | The Dua poster like the Asma ul Husna poster, with the same settings: one true-copy frame, same fonts, home pop-up size, ← Back, ✕, Print A4/A3, Save as picture, references that open the Āyah or Hadith (same message). Replaces the R3 poster layout | Answer (J104 tick 11) |
+| D26 | One set of choices: what the Dua Card has selected (Arabic, English, Bangla, word by word, vowels, source) decides what the poster shows (same message) | – |
 
 ### Build rounds, in order (each round is handed to the MSA Architect on its own branch)
 
@@ -82,6 +86,9 @@ hold back only the builds that need them; everything else goes ahead.
 | R6 | D03 add/move/delete, D05 saved titles, D10 memorising marks, D15 the share record | Owner tick 9 (Rules), tick 8 |
 | R7 | D08 / D09 word links (follows J105), D13 screensaver with Asma ul Husna (PCA change request) | J105, MSA Architect, PCA |
 | R8 | The Sahaba, Salaf and Ulama groups filled | Owner tick 6 |
+| R9 | D26 one set of choices, D25 the Asma-style poster | Demo v1.05 approved; tick 11 |
+| R10 | D23 the Dua Card like the Āyah card | Demo v1.05 approved; MSA Architect for Note and folders |
+| R11 | D24 the Dua Word Card, with D08 / D09 | Demo v1.05 approved; J105; ticks 9 and 12; MSA Architect |
 
 
 Done before this plan: the offline "could not be loaded" words and Try again (MSA audit part 130 F2, released in v12.120).
