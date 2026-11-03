@@ -57,7 +57,12 @@ const hosts = m ? JSON.parse(m[1].replace(/'/g, '"')) : [];
 const known = { "madrasatul-muslimeen.github.io": msa, "quranrevival.github.io": qr };
 for (const h of hosts) check(`listed host ${h} is a site that publishes __/auth`, !!known[h] && known[h].site.includes("__/auth"));
 check("authDomain comes from authHost, which falls back to firebaseapp.com", /authDomain: authHost,/.test(init) && /: "study-monitoring\.firebaseapp\.com";/.test(init));
-check("no other authDomain is set anywhere in app/", fs.readdirSync("app/js").filter((f) => f.endsWith(".js") && f !== "firebase-init.js").every((f) => !/authDomain\s*:/.test(read(`app/js/${f}`))));
+// Updated in place, PCF MSA J112 (4 Nov 2026): siyagah-cloud.js sets the authDomain of Siyagah's SECOND, separate
+// Firebase app. It is allowed only because it takes the host from this same list (init.SELF_HOSTED_AUTH_HOSTS, read
+// from firebase-init.js, never retyped); any other file setting an authDomain still fails.
+check("firebase-init.js exports SELF_HOSTED_AUTH_HOSTS (siyagah-cloud.js reads the list from it)", /^export const SELF_HOSTED_AUTH_HOSTS = /m.test(init));
+check("siyagah-cloud.js takes Siyagah's authDomain from firebase-init.js's list", /authDomain: siyagahAuthDomain\(hostname, init\.SELF_HOSTED_AUTH_HOSTS,/.test(read("app/js/siyagah-cloud.js")) && /import\("\.\/firebase-init\.js"\)/.test(read("app/js/siyagah-cloud.js")));
+check("no other authDomain is set anywhere in app/", fs.readdirSync("app/js").filter((f) => f.endsWith(".js") && f !== "firebase-init.js" && f !== "siyagah-cloud.js").every((f) => !/authDomain\s*:/.test(read(`app/js/${f}`))));
 console.log(`  (listed now: ${hosts.length ? hosts.join(", ") : "none, the switch is OFF"})`);
 
 console.log("\n=== browser ===");
