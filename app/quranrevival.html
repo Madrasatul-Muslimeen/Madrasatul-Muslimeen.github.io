@@ -2250,10 +2250,14 @@
   /* [hidden] on a flex label loses to the `display:flex` rule above it --
      the trap this codebase has been caught by six times. */
   #asmaXEditBody label[hidden] { display: none !important; }
+  /* 2 Nov 2026: at Bangla 200% text on a phone "কোথাও রাখা হয়নি" was 1px too wide for its select (measured 152 > 151px) and was cut;
+     the File-under selects take 0.3rem of side padding instead of 0.5rem and the group's own side padding stops growing past 8px
+     (rem-based, it was 22px a side at 200% and left the select 177px at 360px wide: Architect's measurement, 3 Nov). */
+  #asmaXEditFileUnder select { padding-left: 0.3rem; padding-right: 0.3rem; }
   #asmaXEditBody textarea { min-height: 3.4rem; resize: vertical; }
   #asmaXEditBody .asmaX-edit-check { flex-direction: row; align-items: center; gap: 0.4rem; }
   /* 6 Oct 2026: File under -- one row per classification, as one group. */
-  #asmaXEditBody .asmaX-file-under { border: 1px solid var(--card-border, rgba(0,0,0,0.15)); border-radius: 8px; padding: 0.5rem 0.7rem 0.7rem; margin: 0; display: flex; flex-direction: column; gap: 0.5rem; min-width: 0; }
+  #asmaXEditBody .asmaX-file-under { border: 1px solid var(--card-border, rgba(0,0,0,0.15)); border-radius: 8px; padding: 0.5rem min(0.7rem, 8px) 0.7rem; margin: 0; display: flex; flex-direction: column; gap: 0.5rem; min-width: 0; }
   #asmaXEditBody .asmaX-file-under legend { font-size: 0.8rem; font-weight: 600; color: var(--card-text, inherit); padding: 0 0.3rem; }
   #asmaXEditBody .asmaX-file-hidden, #asmaXEditBody .asmaX-file-newtitle[hidden] { display: none !important; } /* 2 Nov 2026: the Dual row of a new Dual name */
   .asmaX-edit-actions { display: flex; gap: 0.6rem; margin-top: 1rem; }
