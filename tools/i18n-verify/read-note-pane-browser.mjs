@@ -286,6 +286,11 @@ for (const lang of ["en", "bn"]) for (const [width, height, mode] of [[390, 844,
   check(`${tag} ...it opens a NEW Note on 2:258 (the shared Note window), and the Notes pane stays closed`, !!F3 && qmOpen.opener && !qmOpen.pane, JSON.stringify({ frame: !!F3, ...qmOpen }));
   await F3?.click('[data-nn-tool="back"]').catch(() => {});
   await P.waitForFunction(() => document.getElementById("noteOpener")?.hidden, null, { timeout: 8000 }).catch(() => {});
+  //   ADDED (the Architect's follow-up, 3 Nov 2026): right after that Note is made, the same āyah's ⋮ shows the has-note mark and
+  //   its Note item reads "Note & more…", with no wait for a recount.
+  await P.waitForFunction(() => /Note & more|আরও/.test(document.querySelector("#readQuickMenuSlot [data-qm-note]")?.textContent ?? ""), null, { timeout: 8000 }).catch(() => {});
+  const afterMake = await ev(() => { const b = document.querySelector("#readQuickMenuSlot [data-qm-note]"); return { label: b?.textContent.trim(), isNew: b?.hasAttribute("data-qm-note-new"), mark: document.querySelector("#readQuickMenuSlot .ayah-quick-btn")?.classList.contains("has-note") }; });
+  check(`${tag} right after a Note is made from ⋮ on 2:258 the item reads "Note & more…" and the ⋮ shows the has-note mark`, afterMake.isNew === false && afterMake.mark === true && /Note & more|আরও/.test(afterMake.label ?? ""), JSON.stringify(afterMake));
   await ev(() => { const el = document.getElementById("ayahSelect"); el.value = "256"; el.dispatchEvent(new Event("change", { bubbles: true })); });
   await P.waitForTimeout(400);
   await ev(() => document.querySelector("#readQuickMenuSlot [data-qm-toggle]")?.click());
