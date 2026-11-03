@@ -271,6 +271,27 @@ for (const lang of ["en", "bn"]) for (const [width, height, mode] of [[390, 844,
   const qm = await ev(() => ({ pane: !document.getElementById("readNotePane").hidden, title: document.querySelector("#readNotePane .rnp-title")?.textContent, note: !!document.getElementById("noteView") }));
   check(`${tag} ⋮ Note & more opens the Notes pane on 2:256, not the Note view`, qm.pane && qm.title === W.title256 && !qm.note, JSON.stringify(qm));
   await P.click("#readNotePane [data-rnp-back]");
+  //   ADDED (the Owner, 3 Nov 2026: "A click on note from here was supposed to bring to the plain note page"): on an āyah with
+  //   NO Note yet (2:258) the ⋮ menu's item is "Take Note" and opens a NEW Note at once (the shared Note window, the Āyah
+  //   inside it), not the empty Notes pane. With Notes (2:256, above) it stays "Note & more…" and opens the pane.
+  await ev(() => { const el = document.getElementById("ayahSelect"); el.value = "258"; el.dispatchEvent(new Event("change", { bubbles: true })); });
+  await P.waitForTimeout(600);
+  await ev(() => document.querySelector("#readQuickMenuSlot [data-qm-toggle]")?.click());
+  await P.waitForTimeout(200);
+  const qmNew = await ev(() => { const b = document.querySelector("#readQuickMenuSlot [data-qm-note]"); return { label: b?.textContent.trim(), isNew: b?.hasAttribute("data-qm-note-new") }; });
+  check(`${tag} on 2:258 (no Note yet) the ⋮ menu's Note item is the take-a-note door, not "Note & more…"`, qmNew.isNew === true && !/Note & more|আরও/.test(qmNew.label ?? "") , JSON.stringify(qmNew));
+  await ev(() => document.querySelector("#readQuickMenuSlot [data-qm-note]")?.click());
+  const F3 = await (async () => { for (let i = 0; i < 80; i++) { const f = P.frames().find((x) => /journey-map\.html\?embed=1&new=1&unit=ayah%3A2%3A258/.test(x.url())); if (f) return f; await P.waitForTimeout(100); } return null; })();
+  const qmOpen = await ev(() => ({ opener: !document.getElementById("noteOpener")?.hidden, pane: !document.getElementById("readNotePane")?.hidden }));
+  check(`${tag} ...it opens a NEW Note on 2:258 (the shared Note window), and the Notes pane stays closed`, !!F3 && qmOpen.opener && !qmOpen.pane, JSON.stringify({ frame: !!F3, ...qmOpen }));
+  await F3?.click('[data-nn-tool="back"]').catch(() => {});
+  await P.waitForFunction(() => document.getElementById("noteOpener")?.hidden, null, { timeout: 8000 }).catch(() => {});
+  await ev(() => { const el = document.getElementById("ayahSelect"); el.value = "256"; el.dispatchEvent(new Event("change", { bubbles: true })); });
+  await P.waitForTimeout(400);
+  await ev(() => document.querySelector("#readQuickMenuSlot [data-qm-toggle]")?.click());
+  await ev(() => document.querySelector("#readQuickMenuSlot [data-qm-note]")?.click());
+  await P.waitForFunction(() => !document.getElementById("readNotePane")?.hidden, null, { timeout: 8000 }).catch(() => {});
+  await P.click("#readNotePane [data-rnp-back]");
   //   a Unit card's 📝 Note on this Surah: the pane on surah:2, "← Back to the unit card" reopens the card.
   await ev(() => { const s = document.getElementById("unitTypeSelect"); s.value = "surah"; s.dispatchEvent(new Event("change", { bubbles: true })); });
   await P.waitForTimeout(800);

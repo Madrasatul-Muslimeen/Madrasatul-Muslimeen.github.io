@@ -22368,6 +22368,7 @@
         onTextMenuOpen: (unitKey) => { ensurePanePlainNotes(unitKey); },
         onPlay: quickPlayAyah,
         onOpenNote: (unitKey) => openNotesPaneForKey(unitKey), // decision 95: the Notes pane, not the Note view
+        onTakeNote: (unitKey) => { openNewNoteFromAyahCard(unitKey, { fromQuickMenu: true }); }, // the Owner, 3 Nov 2026: no Note yet, so a new Note
         onToggleBookmark: toggleAyahBookmark,
         // The Owner, 9 Oct 2026 (Read view): "there's no button for attaching this Ayah to QCR." The same route as the
         // Āyah card's 📚 QCR: the QCR pop-up (decision 95) opened on Attach, over the view the reader is on. ← Back
@@ -26382,13 +26383,14 @@
     }
     /** The Āyah card's 📝 Note: a new Note with the Āyah inside it, its first title "Quran 15:32 - Al-Hijr:", started on the
         āyah; "You have N Notes on this āyah — open" opens the Notes pane on it (openNotesPaneFromAyahCard). */
-    async function openNewNoteFromAyahCard(unitKey, { half = null, intro = null } = {}) {
-      const reopen = () => {
+    async function openNewNoteFromAyahCard(unitKey, { half = null, intro = null, fromQuickMenu = false } = {}) {
+      // fromQuickMenu: the ⋮ menu has no card to come back to, so ← Back just closes the Note and the page repaints as it was.
+      const reopen = fromQuickMenu ? null : () => {
         paintReadNotesBtn();
         if (intro?.opening) openAyahActionSheet(unitKey, null, intro);
         else { const p = parseAyahUnitKey(unitKey); openAyahActionSheet(`${p.surah}:${p.ayah}`, half, intro); }
       };
-      closeAyahActionSheet();
+      if (!fromQuickMenu) closeAyahActionSheet();
       if (unitKey.startsWith("opening:")) { // PCF J26: Aʿūdhu billāh is no āyah: a new Note with its name as the first title
         await openNewNoteHere({ title: `${t("Aʿūdhu billāh")}:`, backLabel: t("Back to Āyah card"), onClosed: reopen });
         return;
@@ -26403,7 +26405,7 @@
       } catch (error) { console.error("[new note: the āyah's text]", error); /* the Note still opens, on the āyah, with its title */ }
       const label = readNotesLabelFor(unitKey);
       const known = readNotePaneMod?.readNotePaneCount(unitKey);
-      await openNewNoteHere({ ref, unitKey, unitLabel: label, title: noteTitleFor(surah, label), backLabel: t("Back to Āyah card"), onClosed: reopen,
+      await openNewNoteHere({ ref, unitKey, unitLabel: label, title: noteTitleFor(surah, label), backLabel: fromQuickMenu ? t("Back") : t("Back to Āyah card"), ...(reopen ? { onClosed: reopen } : {}),
         count: Number.isFinite(known) ? known : null, onOpenExisting: () => openNotesPaneFromAyahCard(unitKey) });
     }
     /** The Āyah card's 📝 Note (decisions 94, 95): the Notes pane on that āyah, in the Read view, with "← Back to Āyah
