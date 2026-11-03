@@ -7,7 +7,45 @@ v10.28). Read `CLAUDE.md` first. The prompt that starts the next session is
 
 This session was summarised once (its context compacted), which is why it hands over here.
 
-## LATEST UPDATE — 4 Nov 2026, ~7:05 am Sydney, session `session_01PL2xbLsgGMUQUy1C4dRceg` (v13.25, v13.26 and v13.27 released; HANDOVER under use1102) — READ THIS FIRST
+## LATEST UPDATE — 4 Nov 2026, ~9:10 am Sydney, session `session_01PL2xbJzzF9MrgEQ1xgJ7Mg` (v13.28 released; HANDOVER at 25% under use1102) — READ THIS FIRST
+
+This session ("📌 (03) MSA Master Architect") took over at 7:09 am on 4 Nov and hands over at ~9:10 am (use1102 A; 25%, not summarised).
+
+**Released:** **v13.28** (PR #1443 + release #1444, main 19607a3, 8:15 am; QR confirmed by the PCA at 8:17 am). J112's pre-R1 parts, **switched OFF**: `app/js/siyagah-cloud-readiness.js` (the switch; ON needs a master-architect decision with a date, a reference AND Siyagah's web-app config `{apiKey, projectId, appId}`; refuses study-monitoring), `app/js/siyagah-cloud.js` (a second, named Firebase app "siyagah", dynamic imports only, authDomain from firebase-init.js's now-exported `SELF_HOSTED_AUTH_HOSTS`), `app/js/siyagah-map-link.js` (one Connect / Disconnect bar above `#noteLayout` in journey-map.html). Suite `tools/i18n-verify/siyagah-cloud-browser.mjs` 158/0, with mutations `static-import`, `always-mount` and `own-project`. Also fixed: journey-map-screen's stale unit-mode check (red on main since v13.01). Change notices went to the PCA and the QR Lead.
+
+**THE NEXT JOB — PCF MSA J03 (Keys to Understanding), reopened by the Owner's decision of 4 Nov ~9 am (recorded verbatim in J03 comment `j03own1104`): BUILD THE DEMO FIRST.** It is one demo page (an Artifact; quickstart intent "other", then the artifact-design skill), with real data (Yā-Sīn and the hadith that quote it; J03 Round 1's āyah–hadith index is already live):
+1. "Difficult" can be marked on the Āyah card, the Hadith card and the Word card, and the marks show on the Status wheel (the views already agreed: āyāt of a sūrah; words of one āyah; words of every āyah).
+2. The **Hadith Word Card (HWC)**, with every Quran Word Card feature that applies (WbW, Root, Family, Taṣrīf, Depth). A hadith word that is also in the Qur'an opens QR's Word card instead.
+3. Every card suggests related **Quran, Hadith, Dictionary, Scholars (by Approach), Tafsir**.
+4. The student marks for themselves, and a **teacher's view** shows each student's marks.
+
+Phone, tablet and computer; English and Bangla. Then the Owner's ticks, then the build in rounds: the Āyah card and QWC by the QR Lead, the Hadith card and HWC by the Hadith Lead; MSA reviews and releases. **The teacher seeing a student's own marks is a Firebase Rules step (an Owner Control Gate).** J03 Round 2 (v10.52) already holds an UNPUBLISHED Rules candidate for the keys: read it before proposing anything.
+- The Owner's link was the BwN Library copy of the feature-discussions page (private: it opens only after signing in with the Owner's account). This session read the claude.ai copy's Keys tab (BJUw…, read only; **do not republish it**). Its text is extracted in J03's details and the 10 Oct demo `XeV3WUjEEg4PbGJsafz9Pj`.
+
+**J112 still waits for Siyagah's R1 API.** The Owner answered **B** (4 Nov ~8:20 am, via the PCA): delete a Mapping My Journey folder WITH its notes; they go to Trash and come back with Undo together (J112 idea `j112i1`). To switch on once R1 arrives: fill `SIYAGAH_CLOUD_DECLARATION` (decision + Siyagah's config), and the Owner's 3 free steps (Siyagah's Firebase Authorized domains = both hosts; Siyagah's OAuth client redirect URIs = `https://<host>/__/auth/handler` for both).
+
+**Lesson (cost a near-loss this session):** an ArtifactData `update` REPLACES a top-level array field (`comments`, `plan`, `done`…). It does not append to it. Read the document, append to the array yourself, and write the whole array back, pinned. J03's comments and plan were overwritten once and restored at once (v43).
+
+**Waiting on the Owner:** unchanged (J88 j88n2/j88n3; J05 j05n4/j05n5; T21's Export; J105; J104 ticks 6–10; the J29 questions).
+
+**Opening message for the next session** (title "📌 (03) MSA Master Architect"):
+
+> Bismillah. You are the MSA Master Architect, taking over from session_01PL2xbJzzF9MrgEQ1xgJ7Mg (4 Nov ~9:10 am Sydney, use1102). Your session title is "📌 (03) MSA Master Architect" (num128).
+>
+> Read CLAUDE.md, then ARCHITECT.md, then docs/reports/2026-10-12-MMSA-SESSION-HANDOVER.md, starting with its LATEST UPDATE block of 4 Nov 9:10 am, and the PMS General rule use1102 (G is lifted).
+>
+> First steps:
+> - Test GitHub write: git push --dry-run origin HEAD:refs/heads/claude/access-probe. Do NOT retry add_repo for QuranRevival.
+> - In a fresh container link playwright: mkdir -p node_modules && ln -sfn /opt/node22/lib/node_modules/playwright node_modules/playwright
+> - Read the PMS (https://claude.ai/artifact/PhW1KKX28qrqj9dE7Ha8dZ): meta/global General rules, p/mmsa, MSA J03 and J112. Answer any new Owner comments.
+> - Set p/mmsa.sessionUrl to YOUR session (read it with get_session), pinned with if_version.
+> - Send the PCA (session_01PL2xbL9r5wP8zyi6A3Hj8j) one line "PCA ▸ taken over", and ask it to point the MSA keep-alive at your session.
+>
+> State: main is v13.28 (MSA and QR serve it). Nothing is in review. THE JOB is PCF MSA J03, the Owner's decision of 4 Nov on Keys to Understanding (verbatim in J03 comment j03own1104): build the DEMO first, as the handover lists: Difficult on the Āyah, Hadith and Word cards shown on the Status wheel; the Hadith Word Card with all applicable QWC features (a Quran word opens QR's Word card); related Quran, Hadith, Dictionary, Scholars and Tafsir on every card; a teacher's view of each student's marks. Real data, phone/tablet/computer, en/bn. Nothing is built in the app until the Owner approves. J112 waits for Siyagah's R1 API (the Owner chose B: delete folders with their notes, Trash with Undo); its switched-off sign-in and Map bar are live in v13.28. Send a change notice to the PCA and the QR Lead for every shared note-script change. Do not republish the Scholars Database or the feature-discussions artifacts. At each release send the PCA "PCA ▸ released vX.YY"; change notices go to the QR Lead (session_01PL2xbJUXBgRjYg7C9bLsss). Leads: Hadith session_01PL2xbKdedHjzJnARKwbwSS, Dua session_01PL2xbKzbiAyrexmkBmLQaJ. No self-chosen audits.
+>
+> Rules: use1102 (hand over at ~15%, no broadcasts; G lifted: release whenever a reviewed part is ready; student-blocking fixes at once); J109 switches; the review rule (360–1440, en/bn, 100/150/200%, screenshots looked at, real-length data); restart serve.js per review (run_in_background, timeout 7200000); one ctx.route per file; behaviour.mjs alone; compare failures with main (a second serve.js on PORT=8081 from a worktree of origin/main, suites with QR_BASE=http://localhost:8081); main only takes changes through a pull request (merge with mcp__github__merge_pull_request and the full 40-character head SHA); write only to p/mmsa in the PMS, and an ArtifactData update REPLACES arrays (append yourself); real clock times only in the PMS (date -u); never pkill -f; no self wake-ups (cost86); after "Rasulullah" always write "Sallallahu A'laihi Wa Sallam" (saw128); write "Siyagah" in full.
+
+## LATEST UPDATE — 4 Nov 2026, ~7:05 am Sydney, session `session_01PL2xbLsgGMUQUy1C4dRceg` (v13.25, v13.26 and v13.27 released; HANDOVER under use1102) (superseded 4 Nov 9:10 am)
 
 This session ("📌 (03) MSA Master Architect") took over at ~7:45 am on 3 Nov and hands over at ~7:05 am on 4 Nov (use1102 A; summarised once).
 
