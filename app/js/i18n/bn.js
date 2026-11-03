@@ -4651,4 +4651,15 @@ export const BN = {
   "Sūrah {s} has no āyah {a}.": "সূরা {s}-এ {a} নম্বর আয়াত নেই।",
   "Write the hadith's number, like 3062.": "হাদীসের নম্বর লিখুন, যেমন ৩০৬২।",
   "There is no hadith {n} in the collection.": "সংকলনে {n} নম্বর হাদীস নেই।",
+
+  // --- J112: the Map's bar for Siyagah's Mapping My Journey (off until Siyagah's R1 is live) ---
+  "Siyagah's Mapping My Journey": "সিয়াগাহ-এর ম্যাপিং মাই জার্নি",
+  "Siyagah could not be reached: {reason}": "সিয়াগাহ-তে পৌঁছানো যায়নি: {reason}",
+  "Connected as {email}. Your Siyagah folders will show here once Siyagah's part is ready.": "{email} হিসেবে সংযুক্ত। সিয়াগাহ-এর অংশ তৈরি হলে আপনার সিয়াগাহ ফোল্ডারগুলো এখানে দেখা যাবে।",
+  "Could not disconnect: {reason}": "সংযোগ বিচ্ছিন্ন করা যায়নি: {reason}",
+  "Not connected on this device.": "এই ডিভাইসে সংযুক্ত নয়।",
+  "Could not connect: {reason}": "সংযুক্ত করা যায়নি: {reason}",
+  "Opening…": "খোলা হচ্ছে…",
+  "Connect": "সংযুক্ত করুন",
+  "Disconnect": "সংযোগ বিচ্ছিন্ন করুন",
 };

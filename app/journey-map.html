@@ -607,6 +607,7 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
     } from "./js/journey-map-service.js";
     import { isSiyagahSectionsReady } from "./js/siyagah-sections-readiness.js";
     import { isSiyagahFlagsReady } from "./js/siyagah-flags-readiness.js";
+    import { mountSiyagahMapLink } from "./js/siyagah-map-link.js"; // PCF MSA J112: OFF until Siyagah's R1 is live
 
     translateStatic();
     registerServiceWorker();
@@ -4709,6 +4710,9 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
 
         renderToggle();
         appEl.style.display = "block";
+        // J112: Siyagah's second sign-in loads here, when the Map opens, and only once its switch is on (it returns at
+        // once while off). Its failures are said in its own bar, so the Map never waits on it.
+        if (!unitMode) mountSiyagahMapLink({ beforeEl: document.getElementById("noteLayout"), email: user.email || "" }).catch((err) => console.error(err));
         await Promise.all([loadContextData(), hydrationDone]);
         clearReadStatus();
       } catch (err) {
