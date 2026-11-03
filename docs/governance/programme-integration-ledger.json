@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "13.25",
+    "version": "13.26",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -6245,8 +6245,20 @@
     {
       "version": "13.25",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "v13.25: Hadith Add to subject (J106, PR #1435) and the Asma File-under fix at Bangla 200% text (PR #1436), released 3 Nov after the Owner lifted use1102 G.",
+      "integration": {
+        "authorizedOn": "2026-11-03",
+        "integratedOn": "2026-11-03",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.26",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "v13.26: Quran Study's ⋮ menu offers Take Note (a new Note at once) on an āyah with no Note (the Owner's report, PR #1438).",
       "integration": {
         "authorizedOn": "2026-11-03",
         "integratedOn": "2026-11-03",
@@ -6255,8 +6267,9 @@
       }
     }
   ],
-  "nextUnallocated": "13.26",
+  "nextUnallocated": "13.27",
   "nextUnallocatedNote": [
+    "v13.26 was allocated to Quran Study ⋮ Take Note, 2026-11-03.",
     "v13.25 was allocated to Hadith Add to subject + Asma File-under at large text, 2026-11-03.",
     "v13.24 was allocated to Google sign-in works on Brave, Safari and Firefox (J88 part 2: the helper pages on the app's own sites), 2026-11-03.",
     "v13.23 was allocated to a new Dual Name is not asked to be filed under Dual (the Owner's 2 Nov Asma bug); the quick-Notes check fixed; the Hadith Subjects rule in firestore.rules, not deployed, 2026-11-03.",
