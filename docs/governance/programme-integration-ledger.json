@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "13.27",
+    "version": "13.28",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -6269,8 +6269,20 @@
     {
       "version": "13.27",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "v13.27: Quran Study's ⋮ reads Note & more… straight after a Note is made from it (QR Lead, PR #1440).",
+      "integration": {
+        "authorizedOn": "2026-11-03",
+        "integratedOn": "2026-11-03",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.28",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "J112's pre-R1 parts (PR #1443): a second, lazy sign-in to Siyagah's own Firebase project and one Map bar for it, behind a switch that stays OFF until Siyagah's R1 API is live; nothing changes for readers.",
       "integration": {
         "authorizedOn": "2026-11-03",
         "integratedOn": "2026-11-03",
@@ -6279,8 +6291,9 @@
       }
     }
   ],
-  "nextUnallocated": "13.28",
+  "nextUnallocated": "13.29",
   "nextUnallocatedNote": [
+    "v13.28 was allocated to J112 before R1: Siyagah sign-in and Map hook, switched off, 2026-11-03.",
     "v13.27 was allocated to Quran Study ⋮ Note & more after a new Note, 2026-11-03.",
     "v13.26 was allocated to Quran Study ⋮ Take Note, 2026-11-03.",
     "v13.25 was allocated to Hadith Add to subject + Asma File-under at large text, 2026-11-03.",

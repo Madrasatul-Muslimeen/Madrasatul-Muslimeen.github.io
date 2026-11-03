@@ -2776,3 +2776,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v13.25** (2026-11-03): Hadith Add to subject + Asma File-under at large text.
 - **v13.26** (2026-11-03): Quran Study ⋮ Take Note.
 - **v13.27** (2026-11-03): Quran Study ⋮ Note & more after a new Note.
+- **v13.28** (2026-11-03): J112 before R1: Siyagah sign-in and Map hook, switched off.
