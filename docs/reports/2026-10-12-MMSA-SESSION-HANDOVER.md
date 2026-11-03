@@ -2729,3 +2729,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v13.24** (2026-11-03): Google sign-in works on Brave, Safari and Firefox (J88 part 2: the helper pages on the app's own sites).
 - **v13.25** (2026-11-03): Hadith Add to subject + Asma File-under at large text.
 - **v13.26** (2026-11-03): Quran Study ⋮ Take Note.
+- **v13.27** (2026-11-03): Quran Study ⋮ Note & more after a new Note.

@@ -1067,3 +1067,4 @@ total). Allocated by the MMSA Architect.
 13.24: Google sign-in works on Brave, Safari and Firefox (J88 part 2: the helper pages on the app's own sites). Allocated by the MMSA Architect.
 13.25: Hadith Add to subject + Asma File-under at large text. Allocated by the MMSA Architect.
 13.26: Quran Study ⋮ Take Note. Allocated by the MMSA Architect.
+13.27: Quran Study ⋮ Note & more after a new Note. Allocated by the MMSA Architect.
