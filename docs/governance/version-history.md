@@ -1068,3 +1068,4 @@ total). Allocated by the MMSA Architect.
 13.25: Hadith Add to subject + Asma File-under at large text. Allocated by the MMSA Architect.
 13.26: Quran Study ⋮ Take Note. Allocated by the MMSA Architect.
 13.27: Quran Study ⋮ Note & more after a new Note. Allocated by the MMSA Architect.
+13.28: J112 before R1: Siyagah sign-in and Map hook, switched off. Allocated by the MMSA Architect.
