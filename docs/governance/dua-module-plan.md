@@ -36,6 +36,7 @@ easy). Keep the building plan and the rule in Project memory as well as in PMS f
 | v1.02 | 30 Oct 2026, 7:19 am | The seven-group menu bar and the Dua Card: D01–D18 | https://claude.ai/artifact/9R9UYsxz5r7JoM38jF7PZ8 (version 2) |
 | v1.03 | 30 Oct 2026, 7:38 am | v1.02 plus "↗ Open in its own window" (rule 4) | https://claude.ai/artifact/9R9UYsxz5r7JoM38jF7PZ8 (version 3) |
 | v1.04 | 30 Oct 2026, 7:47 am | The groups and their parts as pull-down menus (D21); on the Dua Card only progress and listening stay open, everything else opens from the card's menu as a pop-up card (D22) | https://claude.ai/artifact/9R9UYsxz5r7JoM38jF7PZ8 (version 4) |
+| v1.05 | 4 Nov 2026, 9:40 am | v1.04 plus D23 the Dua Card like the Āyah card, D24 the Dua Word Card, D25 the Asma-style poster, D26 poster from the card's selections (button "New in v1.05"). Owner's answers 4 Nov: poster frame B, meanings from the dictionary (MSA confirms sources), demo first | https://claude.ai/artifact/9R9UYsxz5r7JoM38jF7PZ8 (version 5) |
 
 ## The build plan (the Owner said "Plan me and start build", 30 Oct 2026, about 7:45 am)
 
