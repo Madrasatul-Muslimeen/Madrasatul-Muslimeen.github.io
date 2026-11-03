@@ -1069,3 +1069,4 @@ total). Allocated by the MMSA Architect.
 13.26: Quran Study ⋮ Take Note. Allocated by the MMSA Architect.
 13.27: Quran Study ⋮ Note & more after a new Note. Allocated by the MMSA Architect.
 13.28: J112 before R1: Siyagah sign-in and Map hook, switched off. Allocated by the MMSA Architect.
+13.29: J88 fix: Sign in with Google's return address without the slash. Allocated by the MMSA Architect.

@@ -7,7 +7,10 @@ option 3 (self-host the helper code). Copied unchanged on 23 Oct 2026 from
 https://study-monitoring.firebaseapp.com/__/auth/{handler,handler.js,experiments.js,iframe,iframe.js}.
 GitHub Pages serves an extensionless file as a download, so `handler` and `iframe` are folders holding index.html
 (Pages redirects /__/auth/handler?... to /__/auth/handler/?... and keeps the query), and their script tags point at
-/__/auth/... absolutely. That is the only change. MSA's root _config.yml includes "__" so that GitHub Pages (Jekyll) serves a
+/__/auth/... absolutely. That was the only change until 4 Nov 2026 (MSA J88, v13.29): the handler page now also runs
+one line before Firebase's scripts that turns /__/auth/handler/ back into /__/auth/handler (history.replaceState, no
+reload). Firebase's helper sends its own address to Google as the sign-in return address, and the OAuth client lists it
+WITHOUT the slash; with the slash Google refused every sign-in ("Error 400: redirect_uri_mismatch"). MSA's root _config.yml includes "__" so that GitHub Pages (Jekyll) serves a
 folder whose name starts with "_"; QR's build is published without Jekyll.
 
 Used only on the hosts listed in app/js/firebase-init.js SELF_HOSTED_AUTH_HOSTS, and a host is listed only once
