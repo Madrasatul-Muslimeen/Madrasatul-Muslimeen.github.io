@@ -21,7 +21,7 @@ import { loadDuaCardsSummary, loadDuaCardsPage, loadDuaWordLinks, loadDuaVowels,
 import { duaCard, duaLoadFailed, fillDuaProgress, loadDuaCheckEnv } from "./dua-browser.js";
 import { el } from "./hadith-shared-ui.js";
 import { duaWords, duaWordsFingerprint } from "./dua-words.js";
-import { posterNodes, shareNodes } from "./dua-poster.js";
+import { posterNodes, shareNodes, selectionBar } from "./dua-poster.js";
 import { trapModal } from "./modal-focus.js";
 
 const GROUPS_URL = "../tools/hadith-data-pull/output/dua/groups.json";
@@ -503,15 +503,19 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
       b.addEventListener("click", () => openPop(b, s.label, s.nodes, stash, s));
       menu.appendChild(b);
     }
-    if (before?.parentElement === article) article.insertBefore(menu, before); else article.appendChild(menu);
+    // D26: the card's own "Your selections" chips sit above its menu; the poster and sharing read them.
+    const withSheet = sections.find((s) => s.sheet);
+    const sel = withSheet ? selectionBar(withSheet.sheet) : null;
+    if (before?.parentElement === article) { if (sel) article.insertBefore(sel, before); article.insertBefore(menu, before); }
+    else { if (sel) article.appendChild(sel); article.appendChild(menu); }
     article.appendChild(stash);
     return menu;
   }
   const kids = (article, sel) => [...article.children].filter((c) => c.matches(sel));
   /** D07 / D14: the poster and copy / share entries of a card's menu, for the sheet `sheetOf()` gives when opened. */
   const sheetSections = (sheetOf) => [
-    { key: "poster", label: `🖼 ${t("Poster")}`, build: () => posterNodes(sheetOf()) },
-    { key: "share", label: `${t("Copy / share")}`, build: () => shareNodes(sheetOf()) },
+    { key: "poster", label: `🖼 ${t("Poster")}`, sheet: sheetOf, build: () => posterNodes(sheetOf(), closePop) },
+    { key: "share", label: `${t("Copy / share")}`, build: () => shareNodes(sheetOf(), closePop) },
   ];
   const titled = (tt) => ({ title: tt && !tt.ar ? tt.text : null, titleAr: tt?.ar ? tt.text : null });
   /** D22 for the Hadith books' Dua card: words and progress stay; meaning, source, narration and ✓ Check pop up. */

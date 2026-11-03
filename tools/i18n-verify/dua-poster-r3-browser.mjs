@@ -32,6 +32,12 @@ const MUTATIONS = {
   copy: ["poster", "try { await navigator.clipboard.writeText(text); status", "try { status"],
   // D07 / D14: a Hadith dua's words never take the Qur'an's word meanings.
   wbw: ["study", 'return [s.textContent, e?.[4] ?? "", e?.[5] ?? ""];', 'return [s.textContent, "", ""];'],
+  // D26: sharing keeps its own copy of the choices, so the card's chips no longer decide what is shared.
+  shared: ["poster", "const shareOpt = duaSel;", "const shareOpt = { ...duaSel };"],
+  // D26: a chip on the card changes nothing.
+  chips: ["poster", "      duaSel[k] = !duaSel[k];\n", ""],
+  // D26: Vowels off leaves the vowel marks on.
+  vowels: ["poster", "(opt.vow === false ? String(s).replace(", "(false ? String(s).replace("],
   // D07 / D14: a Hadith dua's card has no poster or share in its menu.
   menu: ["study", "      ...sheetSections(sheetOf),\n", ""],
 };
@@ -84,6 +90,7 @@ async function run(mutation) {
     }
     try {
       const p0 = prophets[SHORT];
+      const ref0 = `${L("Qur'an {ref}").replace("{ref}", digits(p0.ref, lang))} · ${p0.surah.en}`;
       const { page } = await openPage(ctx, `/app/dua-study.html?g=prophets&open=${SHORT + 1}`);
       page.setDefaultTimeout(10000);
       const errors = [];
@@ -106,17 +113,25 @@ async function run(mutation) {
       await check("D07 it starts with Arabic and the reader's own language", async () => { const p = (await parts()).join(); if (p !== `ar,${lang}`) throw new Error(p); });
       await check("D07 a short dua grows to fill the page, and still fits", () => { if (!(f1.k > 1) || f1.over > 1) throw new Error(JSON.stringify(f1)); });
       const other = lang === "en" ? "bn" : "en";
-      await page.click(`[data-dua-switch="${other}"]`);
-      await page.click('[data-dua-switch="wbw"]');
+      // D26: the choices are made with the chips on the Dua Card; the poster reads them when it opens.
+      await page.click("[data-dua-pop-close]");
+      await page.click(`[data-dua-sel] [data-dua-switch="${other}"]`);
+      await page.click('[data-dua-sel] [data-dua-switch="wbw"]');
+      await page.click('[data-dua-menu="poster"]');
       await settle();
+      await check("D26 the poster's pop-up says what it is showing, from the card's choices", async () => {
+        const line = await page.$eval("[data-dua-showing]", (e) => e.textContent).catch(() => "");
+        for (const k of ["Arabic", "English", "Bangla", "Word by word", "Source"]) if (!line.includes(L(k))) throw new Error(line);
+        if (!(await page.$("[data-dua-change-sel]"))) throw new Error("no way back to the card's choices");
+      });
       const wbw = await page.$$eval("[data-dua-a4] .dua-a4-wbw span", (x) => x.map((s) => [s.querySelector("b").textContent, s.querySelector("small").textContent]));
       await check("D07 word by word shows every word with its meaning in this language", () => {
         if (wbw.length !== p0.words.length || wbw.some((w, i) => w[0] !== p0.words[i][0] || w[1] !== p0.words[i][lang === "bn" ? 2 : 1])) throw new Error(JSON.stringify(wbw[0]));
       });
       await check("D07 the other language switches on too, and all four still fit one page", async () => { const p = (await parts()).sort().join(); const f = await fits(); if (p !== "ar,bn,en,wbw" || f.over > 1) throw new Error(`${p} ${f.over}`); });
-      const sw = await page.$$eval("[data-dua-switch]", (x) => x.map((b) => ({ k: b.dataset.duaSwitch, t: b.textContent, h: b.getBoundingClientRect().height })));
-      await check("D07 the switches are named in this language and finger-sized", () => {
-        const want = { ar: L("Arabic"), en: L("English"), bn: L("Bangla"), wbw: L("Word by word") };
+      const sw = await page.$$eval("[data-dua-sel] [data-dua-switch]", (x) => x.map((b) => ({ k: b.dataset.duaSwitch, t: b.textContent, h: b.getBoundingClientRect().height })));
+      await check("D07 / D26 the card's choices are named in this language and finger-sized", () => {
+        const want = { ar: L("Arabic"), en: L("English"), bn: L("Bangla"), wbw: L("Word by word"), vow: L("Vowels"), src: L("Source") };
         if (sw.some((s) => s.t !== want[s.k] || s.h < 44)) throw new Error(JSON.stringify(sw));
       });
 
@@ -132,14 +147,45 @@ async function run(mutation) {
       await check("after printing, the copy and the print state are gone", async () => { const s = await page.evaluate(() => [!!document.getElementById("duaPrint"), document.body.classList.contains("dua-printing")]); if (s[0] || s[1]) throw new Error(JSON.stringify(s)); });
       await page.click("[data-dua-pop-close]");
 
+      // D26: one set of choices for the poster and for sharing.
+      await page.click('[data-dua-sel] [data-dua-switch="ar"]');
+      await page.click('[data-dua-sel] [data-dua-switch="src"]');
+      await page.click('[data-dua-menu="poster"]');
+      await settle();
+      const without = await page.$$eval("[data-dua-a4] [data-dua-a4-part]", (x) => x.map((e) => e.dataset.duaA4Part).sort().join());
+      const hasRef = await page.$(".dua-a4-ref");
+      await check("D26 turning Arabic and Source off on the card takes them off the poster", () => { if (without !== [lang, other, "wbw"].sort().join() || hasRef) throw new Error(`${without} ref:${!!hasRef}`); });
+      await page.click("[data-dua-pop-close]");
+      await page.click('[data-dua-menu="share"]');
+      const pvOff = await page.$eval("[data-dua-share-preview]", (e) => e.textContent).catch(() => "");
+      await check("D26 sharing uses the same choices: no Arabic, no source", () => { if (pvOff.includes(p0.ar) || pvOff.endsWith(ref0)) throw new Error(pvOff.slice(0, 80)); });
+      await page.click("[data-dua-pop-close]");
+      await page.click('[data-dua-sel] [data-dua-switch="ar"]');
+      await page.click('[data-dua-sel] [data-dua-switch="vow"]');
+      await page.click('[data-dua-menu="poster"]');
+      await settle();
+      const novow = await page.$eval(".dua-a4-ar", (e) => e.textContent).catch(() => "");
+      await check("D26 Vowels off takes the vowel marks off the poster's Arabic", () => { if (!novow || /[\u064B-\u0652\u0670]/.test(novow)) throw new Error(novow.slice(0, 40)); });
+      await page.click("[data-dua-pop-close]");
+      // The choices are kept for this visit only: a fresh page starts again from the defaults.
+      await page.goto(page.url());
+      await page.waitForSelector("[data-dua-quran]", { timeout: 20000 }).catch(() => {});
+
       // D14 as text.
       await page.click('[data-dua-menu="share"]');
-      const ref = `${L("Qur'an {ref}").replace("{ref}", digits(p0.ref, lang))} · ${p0.surah.en}`;
+      const ref = ref0;
       const pv = await page.$eval("[data-dua-share-preview]", (e) => e.textContent).catch(() => null);
-      await check("D14 the text starts as title, Arabic and source", () => { if (pv !== [p0.title[lang], p0.ar, ref].join("\n\n")) throw new Error(JSON.stringify(pv?.slice(0, 80))); });
-      await page.click(`[data-dua-switch="${lang}"]`);
+      await check("D14 / D26 the text starts as title, Arabic, the reader's own language and source", () => { if (pv !== [p0.title[lang], p0.ar, p0[lang], ref].join("\n\n")) throw new Error(JSON.stringify(pv?.slice(0, 80))); });
+      await page.click("[data-dua-pop-close]");
+      await page.click(`[data-dua-sel] [data-dua-switch="${lang}"]`);
+      await page.click('[data-dua-menu="share"]');
+      const pvNo = await page.$eval("[data-dua-share-preview]", (e) => e.textContent).catch(() => "");
+      await check("D14 taking this language off the card takes the dua's meaning off the text", () => { if (pvNo.includes(p0[lang])) throw new Error("still there"); });
+      await page.click("[data-dua-pop-close]");
+      await page.click(`[data-dua-sel] [data-dua-switch="${lang}"]`);
+      await page.click('[data-dua-menu="share"]');
       const pv2 = await page.$eval("[data-dua-share-preview]", (e) => e.textContent).catch(() => "");
-      await check("D14 adding this language adds the dua's meaning", () => { if (!pv2.includes(p0[lang])) throw new Error("missing"); });
+      await check("D14 putting it back on the card puts the meaning back", () => { if (!pv2.includes(p0[lang])) throw new Error("missing"); });
       await page.evaluate(() => { window.__copied = null; Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: async (s) => { window.__copied = s; } } }); });
       await page.click("[data-dua-copy]");
       await page.waitForFunction(() => window.__copied, null, { timeout: 3000 }).catch(() => {});
@@ -185,7 +231,9 @@ async function run(mutation) {
       await page.click('[data-dua-menu="share"]');
       const pv3 = await page.$eval("[data-dua-share-preview]", (e) => e.textContent).catch(() => "");
       await check("D14 a Hadith dua's text holds its own words and its book and number", () => { if (!words || !pv3.includes(words) || !std || !pv3.endsWith(std)) throw new Error(pv3.slice(0, 60)); });
-      await page.click('[data-dua-switch="wbw"]').catch(() => {});
+      await page.click("[data-dua-pop-close]");
+      await page.click('[data-dua-sel] [data-dua-switch="wbw"]').catch(() => {});
+      await page.click('[data-dua-menu="share"]');
       const pv4 = await page.$eval("[data-dua-share-preview]", (e) => e.textContent).catch(() => "");
       await check("D14 word by word gives the Qur'an's meaning of each matched word", () => { const lines = pv4.split("\n").filter((l) => / = /.test(l)); if (lines.length < 5 || !lines.some((l) => /[A-Za-zঀ-৿]/.test(l.split(" = ")[1]))) throw new Error(`${lines.length}`); });
       await page.click("[data-dua-pop-close]");

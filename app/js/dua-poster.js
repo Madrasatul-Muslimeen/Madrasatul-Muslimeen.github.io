@@ -20,17 +20,24 @@ const hasWordMeanings = (sheet) => !!sheet.words?.some((w) => w[1] || w[2]);
 export function available(sheet) {
   return { ar: !!sheet.ar, en: !!sheet.en, bn: !!sheet.bn, wbw: hasWordMeanings(sheet), src: !!sheet.ref };
 }
-/** The reader's choices, kept for this visit: the poster starts with Arabic and the reader's own language. */
-const posterOpt = { ar: true, en: lang() === "en", bn: lang() === "bn", wbw: false };
-const shareOpt = { ar: true, en: false, bn: false, wbw: false, src: true, as: "text" };
+/**
+ * D26: ONE set of choices (the Owner, 4 Nov 2026: "Dua displays in the Dua poster from my selections in Dua Card").
+ * Made with the chips on the Dua Card, kept for this visit, and read by the poster, by Print and by copy / share. It
+ * starts with Arabic, the reader's own language and the source; `as` is only how a share leaves (text or picture).
+ */
+export const duaSel = { ar: true, en: lang() === "en", bn: lang() === "bn", wbw: false, vow: true, src: true, as: "text" };
+const posterOpt = duaSel;
+const shareOpt = duaSel;
+/** Arabic as the reader chose it: with its vowel marks, or without. */
+const arText = (s, opt) => (opt.vow === false ? String(s).replace(/[\u064B-\u0652\u0670]/g, "") : s);
 const wordMeaning = (w, l) => (l === "bn" ? w[2] || w[1] : w[1] || w[2]) || "";
 
 /** Pure (D14): the text to copy or share, in the order the poster shows it. */
 export function shareText(sheet, opt, l = lang()) {
   const can = available(sheet);
   const out = [sheet.title || sheet.titleAr || ""];
-  if (opt.ar && can.ar) out.push(sheet.ar);
-  if (opt.wbw && can.wbw) out.push(sheet.words.map((w) => `${w[0]} = ${wordMeaning(w, l) || "·"}`).join("\n"));
+  if (opt.ar && can.ar) out.push(arText(sheet.ar, opt));
+  if (opt.wbw && can.wbw) out.push(sheet.words.map((w) => `${arText(w[0], opt)} = ${wordMeaning(w, l) || "·"}`).join("\n"));
   if (opt.en && can.en) out.push(sheet.en);
   if (opt.bn && can.bn) out.push(sheet.bn);
   if (opt.src && can.src) out.push(sheet.ref);
@@ -58,7 +65,7 @@ export function posterPage(sheet, opt) {
   head.appendChild(h);
   a4.appendChild(head);
   if (opt.ar && can.ar) {
-    const p = el("p", "dua-a4-ar", sheet.ar);
+    const p = el("p", "dua-a4-ar", arText(sheet.ar, opt));
     p.lang = "ar"; p.dir = "rtl"; p.dataset.duaA4Part = "ar";
     p.style.fontFamily = quranFontStack();
     p.style.setProperty("--arfs", (sheet.ar.length > 260 ? 3.2 : sheet.ar.length > 140 ? 3.9 : 4.8) + "cqw");
@@ -69,7 +76,7 @@ export function posterPage(sheet, opt) {
     w.dir = "rtl"; w.dataset.duaA4Part = "wbw";
     for (const x of sheet.words) {
       const s = el("span");
-      const b = el("b", null, x[0]); b.lang = "ar";
+      const b = el("b", null, arText(x[0], opt)); b.lang = "ar";
       const m = el("small", null, wordMeaning(x, lang()) || "·"); m.dir = "auto";
       s.append(b, m);
       w.appendChild(s);
@@ -84,7 +91,7 @@ export function posterPage(sheet, opt) {
     x.style.setProperty("--txfs", size(sheet[k]));
     a4.appendChild(x);
   }
-  if (sheet.ref) { const r = el("p", "dua-a4-ref", sheet.ref); r.dir = "auto"; a4.appendChild(r); }
+  if (opt.src && sheet.ref) { const r = el("p", "dua-a4-ref", sheet.ref); r.dir = "auto"; a4.appendChild(r); }
   const img = el("img", "dua-a4-banner");
   img.src = BANNER_URL; img.alt = "";
   a4.appendChild(img);
@@ -124,17 +131,49 @@ function gapNote(sheet) {
   return bits.length ? el("p", "hadith-note dua-gap-note", bits.join(" ")) : null;
 }
 
+const SEL_KEYS = [["ar", "Arabic"], ["en", "English"], ["bn", "Bangla"], ["wbw", "Word by word"], ["vow", "Vowels"], ["src", "Source"]];
+/** D26: the Dua Card's "Your selections" chips. They change `duaSel`; the poster and sharing read it when they open. */
+export function selectionBar(sheetOf) {
+  const wrap = el("div", "dua-sel");
+  wrap.dataset.duaSel = "";
+  wrap.appendChild(el("h4", "dua-sel-head", t("Your selections (they decide the poster and sharing)")));
+  const row = el("div", "dua-switches");
+  row.setAttribute("role", "group");
+  row.setAttribute("aria-label", t("Your selections (they decide the poster and sharing)"));
+  const can = available(sheetOf());
+  for (const [k, label] of SEL_KEYS) {
+    const off = k === "vow" ? false : !can[k];
+    row.appendChild(toggle(t(label), duaSel[k], off, (ev) => {
+      duaSel[k] = !duaSel[k];
+      ev.currentTarget.setAttribute("aria-pressed", String(duaSel[k]));
+    }, k));
+  }
+  wrap.appendChild(row);
+  return wrap;
+}
+/** What the poster and sharing are showing, as words, with the way to change it (on the card). */
+function showingNodes(sheet, close) {
+  const can = available(sheet);
+  const on = SEL_KEYS.filter(([k]) => duaSel[k] && (k === "vow" || can[k])).map(([, label]) => t(label));
+  const box = el("div", "dua-showing");
+  const line = el("p", "hadith-note dua-showing-line", `${t("Showing your selections:")} ${on.join(" · ") || "—"}`);
+  line.dataset.duaShowing = "";
+  box.appendChild(line);
+  if (close) {
+    const b = el("button", "dua-ref", t("Change them on the card"));
+    b.type = "button"; b.dataset.duaChangeSel = "";
+    b.addEventListener("click", close);
+    box.appendChild(b);
+  }
+  return box;
+}
+
 /** D07: the poster pop-up's contents: switches, the page, Print. */
-export function posterNodes(sheet) {
+export function posterNodes(sheet, close) {
   const wrap = el("div", "dua-poster-wrap");
   const draw = () => {
     wrap.textContent = "";
-    const can = available(sheet);
-    const sw = el("div", "dua-switches");
-    for (const [k, label] of [["ar", t("Arabic")], ["en", t("English")], ["bn", t("Bangla")], ["wbw", t("Word by word")]]) {
-      sw.appendChild(toggle(label, posterOpt[k], !can[k], () => { posterOpt[k] = !posterOpt[k]; draw(); }, k));
-    }
-    wrap.appendChild(sw);
+    wrap.appendChild(showingNodes(sheet, close));
     const note = gapNote(sheet);
     if (note) wrap.appendChild(note);
     const a4 = posterPage(sheet, posterOpt);
@@ -198,8 +237,8 @@ export async function drawPoster(sheet, opt) {
   try { await document.fonts?.ready; } catch { /* system fonts */ }
   const arFont = quranFontStack();
   const blocks = [];
-  if (opt.ar && can.ar) blocks.push({ text: sheet.ar, font: arFont, size: 64, color: "#0f3a28", rtl: true, lh: 1.8 });
-  if (opt.wbw && can.wbw) blocks.push({ text: sheet.words.map((w) => `${w[0]} = ${wordMeaning(w, lang()) || "·"}`).join("   ·   "), font: "system-ui, sans-serif", size: 30, color: "#3b3426", rtl: false, lh: 1.5 });
+  if (opt.ar && can.ar) blocks.push({ text: arText(sheet.ar, opt), font: arFont, size: 64, color: "#0f3a28", rtl: true, lh: 1.8 });
+  if (opt.wbw && can.wbw) blocks.push({ text: sheet.words.map((w) => `${arText(w[0], opt)} = ${wordMeaning(w, lang()) || "·"}`).join("   ·   "), font: "system-ui, sans-serif", size: 30, color: "#3b3426", rtl: false, lh: 1.5 });
   for (const k of ["en", "bn"]) if (opt[k] && can[k]) blocks.push({ text: sheet[k], font: k === "bn" ? "'Hind Siliguri', system-ui, sans-serif" : "Georgia, 'Times New Roman', serif", size: 38, color: "#22201a", rtl: false, lh: 1.45 });
   const bannerH = banner ? Math.round((W - 120) * banner.height / banner.width) : 0;
   const top = 330, bottom = H - 60 - bannerH - 70, textW = W - 220;
@@ -249,17 +288,12 @@ export async function drawPoster(sheet, opt) {
 }
 
 /** D14: the copy / share pop-up's contents. */
-export function shareNodes(sheet) {
+export function shareNodes(sheet, close) {
   const wrap = el("div", "dua-share");
   const draw = () => {
     wrap.textContent = "";
-    const can = available(sheet);
     wrap.appendChild(el("h4", null, t("What to include")));
-    const opts = el("div", "dua-switches");
-    for (const [k, label] of [["ar", t("Arabic")], ["en", t("English")], ["bn", t("Bangla")], ["wbw", t("Word by word")], ["src", t("Source")]]) {
-      opts.appendChild(toggle(label, shareOpt[k], !can[k], () => { shareOpt[k] = !shareOpt[k]; draw(); }, k));
-    }
-    wrap.appendChild(opts);
+    wrap.appendChild(showingNodes(sheet, close));
     const note = gapNote(sheet);
     if (note) wrap.appendChild(note);
     wrap.appendChild(el("h4", null, t("Share it as")));

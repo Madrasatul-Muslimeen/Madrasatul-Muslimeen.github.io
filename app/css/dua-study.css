@@ -116,6 +116,10 @@
 /* Round R3. D07 the A4 poster (the text shrinks to fit; never the frame or the banners) and its print, D14 copy and
    share. The page is always cream paper, whatever the card look, as the Asma ul Husna poster is. */
 .dua-popcard:has(.dua-poster-wrap) { width: min(100%, 44rem); }
+.dua-sel { display: grid; gap: 0.35rem; margin: 0.5rem 0; }
+.dua-sel-head { margin: 0; font-size: 0.92rem; }
+.dua-showing { display: grid; gap: 0.4rem; justify-items: start; }
+.dua-showing-line { margin: 0; }
 .dua-switches { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; }
 .dua-switch { min-height: 44px; }
 .dua-switch[aria-pressed="true"] { background: #d9a94a; color: #1a1405; border-color: #d9a94a; font-weight: 700; }
