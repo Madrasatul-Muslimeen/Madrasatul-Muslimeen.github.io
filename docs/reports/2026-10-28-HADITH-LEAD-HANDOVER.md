@@ -3,6 +3,81 @@
 Written by Hadith Lead session `01Q2HmCeWjo1vVYV5kgMBvC9` at about 77% context, on the PCA's word (hand119).
 The next session is titled **"📌 (03B) MSA - Hadith Lead"**.
 
+## HANDOVER, 2:03 pm 2 Nov (session `01PL2xbKWeTSDEBJV5UWZTcQ` → a fresh "📌 (03B) MSA - Hadith Lead", on Sonnet)
+
+Handed over on the Owner's usage plan (rule use1102, 2 Nov: hand over at about 15% context; no broadcasts, message
+only when there is work). **Contacts now:** PCA `session_01PL2xbLbJ2UoaKA3tTXpEkq`; MSA Architect
+`session_01PL2xbKUoZqQEubMNHUR64W`; Dua Lead `session_01PL2xbMaXuwbA6usFZSB5kr`. Session ids change often: if a
+message bounces (`session_inactive`), ask the PCA for the current one.
+
+**Two things are open. Nothing is half-built.**
+
+1. **With the MSA Architect to review and merge: audit part 155 defect 4.** Branch `claude/hadith-way-back-155`,
+   `ebce117` (one commit on main `48c7663`, v13.21), `app/hadith-collections.html` only. `#hadithBackBtn` is sticky,
+   so ← Back stays on screen when a Dua card's reference ("Bukhari 6311") opens a passage; with `back=1`,
+   `scroll-padding-top: 6.5rem` keeps the passage and its trail line below the button. Measured:
+   `way-back-hadith-dua --only=ds-ref` 32/4 → 36/0; the full suite main 320/36 vs branch 324/32, failure lists diffed,
+   the only difference is those 4; asma-cited-hadith 66/0, ayah-related-hadith 104/0, audit-part38 503/0,
+   audit-part33 706/0; audit-part36-contrast 1178/6 = the same 6 on unchanged main (Note window ⋯ menu, night).
+   Hand-in sent to the current Architect 2:00 pm 2 Nov.
+2. **Waiting on the Owner: J106 round 2, Subjects ("Add to subject" + three shared lists).** PCF MSA J106 question 6
+   (`n106f`): A = merge the rule and the Owner publishes it once. Rule `claude/hadith-subjects-rule` `b203f70`
+   (ACCEPTED: emulator 1/1, mutate 14/14). App `claude/hadith-lead-01q2` `5c6b067` (main v13.14 merged in;
+   hadith-subjects-browser 58/0, `--prove` 11/11; reader 116/0). Owner's guide
+   `docs/governance/2026-10-31-hadith-subjects-owner-publish-guide.md`. **On the Owner's A:** merge current main into
+   this branch, re-run `hadith-subjects-browser` and `hadith-study-reader-browser`, tell the Architect; the app is
+   released ONLY after the rule is published (otherwise every save is refused).
+
+**Rules picked up this session:** J109 (PCA, 1 Nov) — any new show/hide in Hadith uses the shared ON/OFF switch
+(`shell.css` J109 / `.mm-sw`), never an arrow. `app/js/dua-browser.js` and `dua-check.js` are **Dua files**
+(`docs/governance/dua-module-plan.md`): ask the Dua Lead first. J108 (v13.01) is live: the HadeethEnc 📝 opens the
+shared Note opener (`openHadithNewNote` in `hadith-browser.js`).
+
+**Sandbox lessons:** link Playwright (`mkdir -p node_modules && ln -sfn /opt/node22/lib/node_modules/playwright
+node_modules/playwright`); `node serve.js` dies quietly — a suite printing nothing means check
+`curl localhost:8080` first; `large-text-hadith-study` takes >15 min, run it per `--width`, and its summary line is
+"N passed, M failed" (no `====`); never switch branches while a suite runs (it serves the working tree) — use a
+`git worktree` with `PORT=8081 node serve.js` and `QR_BASE=http://localhost:8081`; the emulator keeps data between
+runs (`clearFirestore()` first); the firestore-emulator suite needs `cd tools/firestore-emulator && npm ci`.
+
+## UPDATE, about 12:50 pm 31 Oct (same session)
+
+- **The rule has the Architect's two tightenings** (`claude/hadith-subjects-rule` `b203f70`; carried into this branch):
+  create needs `createdBy == myUid()` and `createdAt is timestamp`; update pins `schemaVersion`. Emulator 1/1, mutations
+  14 of 14. The suite now clears the emulator first: it had kept data between runs, so every "create" was judged by the
+  update rule. The app's create writes createdBy/createdAt (envelope.js), checked in `hadith-subjects-browser.mjs` 58/0.
+- **Audit part 141 is NOT ours**: the Architect gave all of H1/H3/H4 to the Dua Lead, who cherry-picked my two commits into
+  `claude/dua-audit141`. `claude/hadith-audit141` is spent. **`app/js/dua-browser.js` and `dua-check.js` are Dua files**
+  (`docs/governance/dua-module-plan.md`): ask the Dua Lead (`session_01PL2xbK8HnnaBgqeNJMJs36`) before touching them.
+- **MSA Architect is now `session_01PL2xbJ2ncUt43CiJpHVZJf`.** J108 v13.01 wires the HadeethEnc card's Note link; do not
+  touch that link until it lands. The Architect reviews this app branch next, then asks the Owner about the Rules.
+
+## UPDATE, about 11 am 31 Oct (session `01PL2xbKWeTSDEBJV5UWZTcQ`, "📌 (03B) MSA - Hadith Lead")
+
+- **J106 round 2, the candidate rule: DONE and with the MSA Architect** (now on its own branch `claude/hadith-subjects-rule`, `44da873`, from `main`; the Architect's
+  force-push for v12.136 had dropped `43fe06c` from this branch). `tests/firestore/hadith-subjects-v1.proposed.rules`
+  (`hadithSubjects/{tenantId}`: asmaCollections' shape, plus `tenantId`/`createdBy`/`createdAt` write-once, `schemaVersion`
+  1 on create, `subjects` a map; no delete). Emulator: `cd tools/firestore-emulator && npm run hadith-subjects` 1/1;
+  `npm run hadith-subjects-mutate` 11 of 11 caught. `rules-authorisation-executable.mjs` 80/0. `firestore.rules` untouched.
+- **J106 round 2, the app: BUILT on this branch, NOT yet handed in as a release** (Hadith files only). `app/js/hadith-subjects.js`
+  (pure list logic + "Add to subject" + the list), the read/write in `app/js/hadith-study-actions.js`
+  (`getHadithSubjectsSession`, `getHadithSubjectsDoc`, `saveHadithSubjects`; the collection name is here, not in the shared
+  `collections.js`), wiring in `app/js/hadith-browser.js` (`subjectAddRow` under the Text pane's narration;
+  `renderSubjects` → `renderSubjectList`; `openSubjectEntry` with "← Back to <Subject>"), CSS in `app/css/hadith.css`,
+  13 Bangla strings in `bn.js`. Suite `tools/i18n-verify/hadith-subjects-browser.mjs` 58/0, `--prove` 11 of 11
+  (the button-size mutation must break `admin-touch.css` too: that shared rule keeps every button 40px by itself).
+  Reader 116/0, translations 45/0, stub-parity 4/0.
+- **It cannot SAVE for real until the rule is live** (the deployed Rules have no `hadithSubjects` match, so production
+  denies it, and the page says "It could not be added"). So the order is: the Architect merges the rule → the Owner
+  publishes it, guided → the Architect releases the app part. Not covered by the suite: signed out (the stub is always
+  signed in).
+- **Open item from the Architect (bangla-sweep "English দেখানো হচ্ছে")**: already fixed by `46dd7e2`; nothing more.
+## UPDATE, 11:25 am 31 Oct: J97 and the Bangla prose fix are LIVE as v12.136 (PR #1360); the Architect wrote J97's Done
+line. J108 grew (each Hadith/Āyah on the new Note gets its own show/hide, per-language buttons, delete, one switch for all;
+demo v3 https://claude.ai/artifact/EpdQd5aX2yoUpWenVceTan) — still nothing to build until the Owner's J108 Q3. The Architect
+confirmed: send the hadithSubjects/{tenantId} candidate rule for review before anything touches `firestore.rules`.
+
+
 ## HANDOVER, about 10:40 am 31 Oct (session `01PL2xbJbrDFWUd52n8gRbHi` → a fresh "📌 (03B) MSA - Hadith Lead")
 
 Handed over at about 40% context (cost86). Contacts now: **PCA** `session_01PL2xbNViE9udUe3FUJjKBE`, **MSA Architect**
