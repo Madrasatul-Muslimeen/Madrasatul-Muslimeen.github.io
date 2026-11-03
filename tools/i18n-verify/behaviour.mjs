@@ -4586,7 +4586,7 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   await page.waitForFunction(() => document.getElementById("noteOpener")?.hidden, null, { timeout: 8000 }).catch(() => {});
   const backNote42 = await page.evaluate(() => ({ opener: document.getElementById("noteOpener")?.hidden === false, read: document.getElementById("readView")?.hidden === false, ayah: document.getElementById("ayahSelect")?.value }));
   check("42h ...closing it returns to reading on 1:1", !backNote42.opener && backNote42.read && backNote42.ayah === "1", JSON.stringify(backNote42));
-  await page.click("#readNotesBtn");
+  await clickStudyPillarItem(page, "readNotesBtn"); // 📝 sits in the Study menu on a phone
   await page.waitForFunction(() => { const p = document.getElementById("readNotePane"); return p && !p.hidden && p.getClientRects().length > 0; }, null, { timeout: 8000 }).catch(() => {});
   const pane42 = await page.evaluate(() => {
     const p = document.getElementById("readNotePane");
