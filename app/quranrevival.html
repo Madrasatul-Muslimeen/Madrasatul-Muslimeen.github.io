@@ -26381,6 +26381,27 @@
         to?.focus?.({ preventScroll: true });
       }) });
     }
+    /** The Owner's follow-up, 3 Nov 2026 (the Architect's note): right after a Note is made from the ⋮ menu, that āyah's menu
+        reads "Note & more…" and its ⋮ carries the has-note mark, with no wait for the app to recount. One fresh lookup of the
+        āyah's Notes (the same one the Āyah card makes), then the menus already on screen are brought up to date in place. */
+    async function recountQuickMenuNote(unitKey) {
+      if (!selectedPersonId) return;
+      try {
+        const { rows } = await lookupAyahNotes(unitKey, { fresh: true }).promise;
+        const live = rows.filter((row) => row.note.status !== NOTE_STATUS.RETIRED);
+        const key = `${activeTenantId}|${selectedPersonId}|${unitKey}`;
+        sheetNoteCounts.set(key, live.length);
+        panePlainNotes = { key, texts: live.map((row) => notesToPlainText(row.note.bodyHtml ?? "")).filter(Boolean), count: live.length };
+      } catch { return; } // the menu keeps what it showed; the next lookup corrects it
+      const has = ayahHasAnyNote(unitKey);
+      document.querySelectorAll(`.ayah-quick-wrap[data-unit-key="${CSS.escape(unitKey)}"]`).forEach((wrap) => {
+        wrap.querySelector(".ayah-quick-btn")?.classList.toggle("has-note", has);
+        const item = wrap.querySelector("[data-qm-note]");
+        if (item) { item.toggleAttribute("data-qm-note-new", !has); item.textContent = `📝 ${has ? t("Note & more…") : t("Take Note")}`; }
+        wrap.querySelectorAll('.qm-sub input[data-lang="notes"]').forEach((cb) => { cb.disabled = !has; const sp = cb.parentElement?.querySelector("span"); if (sp) sp.textContent = has ? t("My note") : t("My note (none saved)"); });
+      });
+      document.querySelector(`.ayah-quick-wrap[data-unit-key="${CSS.escape(unitKey)}"] .ayah-quick-btn`)?.focus?.({ preventScroll: true });
+    }
     /** The Āyah card's 📝 Note: a new Note with the Āyah inside it, its first title "Quran 15:32 - Al-Hijr:", started on the
         āyah; "You have N Notes on this āyah — open" opens the Notes pane on it (openNotesPaneFromAyahCard). */
     async function openNewNoteFromAyahCard(unitKey, { half = null, intro = null, fromQuickMenu = false } = {}) {
@@ -26405,7 +26426,8 @@
       } catch (error) { console.error("[new note: the āyah's text]", error); /* the Note still opens, on the āyah, with its title */ }
       const label = readNotesLabelFor(unitKey);
       const known = readNotePaneMod?.readNotePaneCount(unitKey);
-      await openNewNoteHere({ ref, unitKey, unitLabel: label, title: noteTitleFor(surah, label), backLabel: fromQuickMenu ? t("Back") : t("Back to Āyah card"), ...(reopen ? { onClosed: reopen } : {}),
+      await openNewNoteHere({ ref, unitKey, unitLabel: label, title: noteTitleFor(surah, label), backLabel: fromQuickMenu ? t("Back") : t("Back to Āyah card"),
+        ...(reopen ? { onClosed: reopen } : fromQuickMenu ? { onClosed: () => { paintReadNotesBtn(); recountQuickMenuNote(unitKey); } } : {}),
         count: Number.isFinite(known) ? known : null, onOpenExisting: () => openNotesPaneFromAyahCard(unitKey) });
     }
     /** The Āyah card's 📝 Note (decisions 94, 95): the Notes pane on that āyah, in the Read view, with "← Back to Āyah
