@@ -96,16 +96,20 @@ const keysSrc = fs.readFileSync(path.join(appJs, "ayah-keys.js"), "utf8");
 const keys = await import(`data:text/javascript;base64,${Buffer.from(keysSrc).toString("base64")}`);
 
 // The permanent ids and the English names they were accepted with (PCF J03). A renumber or a rename fails here.
+// K0 (4 Nov 2026): `hard` is now NAMED "Difficult" (the Owner's J03 Q1 A; the id is unchanged, I5), and the
+// Owner added "Need practice" (`practice`) and "Done" (`done`, "known / studied").
 const ACCEPTED = {
-  hard: "Hard for me",
+  hard: "Difficult",
   gharib: "The dictionary (Gharīb)",
   hadith: "Hadith",
   scholars: "The scholars, by era",
   "other-ayat": "Other āyāt",
   passage: "Its passage",
   asbab: "The reason it came down",
+  practice: "Need practice",
+  done: "Done",
 };
-check("KEY_IDS holds exactly the seven accepted ids, in order", () => {
+check("KEY_IDS holds exactly the nine accepted ids, in order", () => {
   assert.deepEqual(keys.KEY_IDS.map((k) => k.id), Object.keys(ACCEPTED));
 });
 check("each id is bound to its accepted English name", () => {
@@ -125,17 +129,36 @@ check("ids are unique, lower-case, and never a name", () => {
   for (const id of ids) assert.match(id, /^[a-z]+(-[a-z]+)*$/, id);
 });
 check("KEY_IDS is frozen", () => assert.ok(Object.isFrozen(keys.KEY_IDS)));
-check("isKeyId accepts the seven and refuses everything else", () => {
+check("isKeyId accepts the nine and refuses everything else", () => {
   for (const id of Object.keys(ACCEPTED)) assert.equal(keys.isKeyId(id), true, id);
   for (const bad of ["", "Hard", "hard ", "unknown", null, undefined, 3, {}, ["hard"], "__proto__", "constructor"]) assert.equal(keys.isKeyId(bad), false, String(bad));
 });
 check("keyName reads each language and falls back to English; unknown id is null", () => {
-  assert.equal(keys.keyName("hard", "en"), "Hard for me");
+  assert.equal(keys.keyName("hard", "en"), "Difficult");
   assert.match(keys.keyName("hard", "bn"), /[ঀ-৿]/);
-  assert.equal(keys.keyName("hard", "fr"), "Hard for me");
+  assert.equal(keys.keyName("hard", "fr"), "Difficult");
   assert.equal(keys.keyName("nope"), null);
 });
 check("the madrasah scope word is 'madrasah'", () => assert.equal(keys.MADRASAH_SCOPE, "madrasah"));
+check("K0: MARK_IDS is exactly hard, practice, done (Difficult, Need practice, Done), frozen, each a key id", () => {
+  assert.deepEqual([...keys.MARK_IDS], ["hard", "practice", "done"]);
+  assert.ok(Object.isFrozen(keys.MARK_IDS));
+  for (const m of keys.MARK_IDS) assert.equal(keys.isKeyId(m), true, m);
+});
+check("K0: isMarkId is true for the three marks only", () => {
+  for (const m of ["hard", "practice", "done"]) assert.equal(keys.isMarkId(m), true, m);
+  for (const bad of ["gharib", "asbab", "Done", "", null, undefined]) assert.equal(keys.isMarkId(bad), false, String(bad));
+});
+check("K0: marksIn keeps only the marks, in MARK_IDS order, and tolerates a missing list", () => {
+  assert.deepEqual(keys.marksIn(["done", "gharib", "hard", "x"]), ["hard", "done"]);
+  assert.deepEqual(keys.marksIn(undefined), []);
+  assert.deepEqual(keys.marksIn("hard"), []);
+});
+check("K0: the Bangla mark names are the demo's (কঠিন, অনুশীলন দরকার, সম্পন্ন)", () => {
+  assert.equal(keys.keyName("hard", "bn"), "কঠিন");
+  assert.equal(keys.keyName("practice", "bn"), "অনুশীলন দরকার");
+  assert.equal(keys.keyName("done", "bn"), "সম্পন্ন");
+});
 
 // --- 3. BEHAVIOUR -----------------------------------------------------------
 const store = new Map();     // "collection/docId" -> data (a real, mutating fake)
@@ -183,10 +206,11 @@ globalThis.__akErrors = { safeWrite: async (fn, context) => {
   try { return { ok: true, result: await fn() }; }
   catch (error) { const entry = { code: error.code, context }; failures.push(entry); return { ok: false, entry }; }
 } };
-globalThis.__akCollections = { TENANT: { AYAH_KEY_MARKS: "ayahKeyMarks" } };
+globalThis.__akCollections = { TENANT: { AYAH_KEY_MARKS: "ayahKeyMarks", HADITH_KEY_MARKS: "hadithKeyMarks" } };
 
 const collectionsSrc = fs.readFileSync(path.join(appJs, "collections.js"), "utf8");
 check("collections.js names ayahKeyMarks", () => assert.match(collectionsSrc, /AYAH_KEY_MARKS:\s*"ayahKeyMarks"/));
+check("collections.js names hadithKeyMarks (K0)", () => assert.match(collectionsSrc, /HADITH_KEY_MARKS:\s*"hadithKeyMarks"/));
 
 // The REAL unit-keys.js builds the key; it imports i18n.js, so its own import is replaced and the rest is the real file.
 const unitSrc = fs.readFileSync(path.join(appJs, "unit-keys.js"), "utf8");
@@ -365,6 +389,133 @@ await acheck("loadSurahKeys returns copies: changing the result does not change 
 check("AYAH_KEY_WRITES lists exactly the four fields a create writes (the envelope stamps the rest)", () => {
   assert.deepEqual([...data.AYAH_KEY_WRITES], ["tenantId", "scope", "surah", "entries"]);
   assert.ok(Object.isFrozen(data.AYAH_KEY_WRITES));
+});
+
+// --- 4. K0: WORDS AND HADITH ------------------------------------------------
+const UK = globalThis.__akUnitKeys.buildUnitKey;
+const hstored = (scope, coll) => store.get(`hadithKeyMarks/${T}__${scope}__${coll}`);
+check("K0: the two new permanent key shapes are exactly qword:<s>:<a>:<pos> and hadithword:<collection>:<n>:<pos>", () => {
+  assert.equal(UK.qword(9, 44, 2), "qword:9:44:2");
+  assert.equal(UK.hadithWord("hadeethenc", "65070", 3), "hadithword:hadeethenc:65070:3");
+  assert.equal(UK.hadith("hadeethenc", "65070"), "hadith:hadeethenc:65070");
+  assert.ok(globalThis.__akUnitKeys.UNIT_TYPES.includes("qword") && globalThis.__akUnitKeys.UNIT_TYPES.includes("hadithword"));
+});
+await acheck("K0: a WORD mark lives in its sūrah's ayahKeyMarks document beside the āyah marks, keyed by buildUnitKey.qword", async () => {
+  reset();
+  await data.setAyahKey(db, ctx, { scope: "p1", surah: 36, ayah: 38, keyId: "hard", on: true });
+  const r = await data.setWordKey(db, ctx, { scope: "p1", surah: 36, ayah: 38, position: 2, keyId: "practice", on: true });
+  assert.deepEqual(r, { ok: true, keys: ["practice"] });
+  assert.deepEqual(stored("p1", 36).entries, { "ayah:36:38": ["hard"], "qword:36:38:2": ["practice"] });
+  assert.equal(store.size, 1, "a word mark made a second document");
+  const w = writeLog[writeLog.length - 1];
+  assert.equal(w.kind, "update"); assert.deepEqual(Object.keys(w.data), ["entries.qword:36:38:2"]);
+});
+await acheck("K0: loadSurahKeys returns the word marks too, still in two reads", async () => {
+  reads.length = 0;
+  const r = await data.loadSurahKeys(db, ctx, 36);
+  assert.deepEqual(r.mine, { "ayah:36:38": ["hard"], "qword:36:38:2": ["practice"] });
+  assert.equal(reads.length, 2);
+});
+await acheck("K0: setWordKey refuses a bad position, key, āyah or scope before any read", async () => {
+  reset();
+  const base = { scope: "p1", surah: 36, ayah: 38, position: 2, keyId: "done", on: true };
+  for (const [patch, why] of [[{ position: 0 }, "bad-word"], [{ position: 1.5 }, "bad-word"], [{ position: "2" }, "bad-word"],
+    [{ keyId: "Done" }, "unknown-key"], [{ surah: 115 }, "bad-ayah"], [{ ayah: 0 }, "bad-ayah"], [{ scope: "a__b" }, "bad-scope"]]) {
+    assert.deepEqual(await data.setWordKey(db, ctx, { ...base, ...patch }), { ok: false, refused: why }, JSON.stringify(patch));
+  }
+  assert.equal(reads.length, 0); assert.equal(writeLog.length, 0);
+});
+await acheck("K0: the first HADITH mark creates hadithKeyMarks/{tenant}__{scope}__{collection} with the envelope and its own fields", async () => {
+  reset();
+  const r = await data.setHadithKey(db, ctx, { scope: "p1", collection: "hadeethenc", number: 65070, keyId: "hard", on: true });
+  assert.deepEqual(r, { ok: true, keys: ["hard"] });
+  const d = hstored("p1", "hadeethenc");
+  assert.ok(d, "no hadithKeyMarks document");
+  assert.equal(d.tenantId, T); assert.equal(d.scope, "p1"); assert.equal(d.collection, "hadeethenc");
+  assert.ok(!("surah" in d), "a hadith document carries a surah");
+  assert.deepEqual(d.entries, { [UK.hadith("hadeethenc", "65070")]: ["hard"] });
+  assert.equal(d.createdBy, "uid-p1"); assert.equal(d.schemaVersion, 1);
+  assert.equal(writeLog[0].col, "hadithKeyMarks");
+});
+await acheck("K0: a number given as digits or as a whole number names the SAME hadith", async () => {
+  await data.setHadithKey(db, ctx, { scope: "p1", collection: "hadeethenc", number: "65070", keyId: "done", on: true });
+  assert.deepEqual(hstored("p1", "hadeethenc").entries["hadith:hadeethenc:65070"], ["hard", "done"]);
+});
+await acheck("K0: a hadith WORD mark sits in the same collection document, keyed by buildUnitKey.hadithWord", async () => {
+  const r = await data.setHadithWordKey(db, ctx, { scope: "p1", collection: "hadeethenc", number: 65070, position: 7, keyId: "hard", on: true });
+  assert.deepEqual(r, { ok: true, keys: ["hard"] });
+  assert.deepEqual(Object.keys(hstored("p1", "hadeethenc").entries).sort(), ["hadith:hadeethenc:65070", "hadithword:hadeethenc:65070:7"]);
+  assert.equal(store.size, 1);
+});
+await acheck("K0: removing a hadith mark writes the shorter list; the last one leaves an EMPTY list, never a deletion", async () => {
+  await data.setHadithWordKey(db, ctx, { scope: "p1", collection: "hadeethenc", number: 65070, position: 7, keyId: "hard", on: false });
+  assert.deepEqual(hstored("p1", "hadeethenc").entries["hadithword:hadeethenc:65070:7"], []);
+  assert.equal(store.size, 1);
+});
+await acheck("K0: loadHadithKeys returns { madrasah, mine } in exactly two reads", async () => {
+  reset();
+  await data.setHadithKey(db, ctx, { scope: "madrasah", collection: "hadeethenc", number: 1, keyId: "scholars", on: true });
+  await data.setHadithKey(db, ctx, { scope: "p1", collection: "hadeethenc", number: 2, keyId: "hard", on: true });
+  reads.length = 0;
+  const r = await data.loadHadithKeys(db, ctx, "hadeethenc");
+  assert.deepEqual(r, { madrasah: { "hadith:hadeethenc:1": ["scholars"] }, mine: { "hadith:hadeethenc:2": ["hard"] } });
+  assert.deepEqual(reads.sort(), [`hadithKeyMarks/${T}__madrasah__hadeethenc`, `hadithKeyMarks/${T}__p1__hadeethenc`]);
+});
+await acheck("K0: a bad collection or number is refused before any read; a dot or colon can never reach a field path", async () => {
+  reset();
+  const base = { scope: "p1", collection: "hadeethenc", number: 5, keyId: "hard", on: true };
+  for (const patch of [{ collection: "bukhari" }, { collection: "Bukhari" }, { collection: "a.b" }, { collection: "a:b" }, { collection: "" }, { collection: "a__b" },
+    { number: 0 }, { number: -1 }, { number: 1.5 }, { number: "1.2" }, { number: "1:2" }, { number: "" }, { number: "05" }, { number: undefined }]) {
+    assert.deepEqual(await data.setHadithKey(db, ctx, { ...base, ...patch }), { ok: false, refused: "bad-hadith" }, JSON.stringify(patch));
+    assert.deepEqual(await data.setHadithWordKey(db, ctx, { ...base, position: 1, ...patch }), { ok: false, refused: "bad-hadith" }, JSON.stringify(patch));
+  }
+  assert.deepEqual(await data.setHadithWordKey(db, ctx, { ...base, position: 0 }), { ok: false, refused: "bad-word" });
+  assert.deepEqual(await data.setHadithKey(db, ctx, { ...base, keyId: "nope" }), { ok: false, refused: "unknown-key" });
+  assert.deepEqual(await data.setHadithKey(db, ctx, { ...base, scope: "" }), { ok: false, refused: "bad-scope" });
+  assert.equal(reads.length, 0); assert.equal(writeLog.length, 0);
+  for (const bad of ["bukhari", "Bukhari", "a.b", "", undefined]) await assert.rejects(() => data.loadHadithKeys(db, ctx, bad), /collection must be/);
+});
+await acheck("K0: the teacher's view reads ONE other person's document, one read, and refuses the madrasah scope", async () => {
+  reset();
+  await data.setAyahKey(db, ctx, { scope: "s9", surah: 36, ayah: 1, keyId: "hard", on: true });
+  await data.setHadithKey(db, ctx, { scope: "s9", collection: "hadeethenc", number: 3, keyId: "practice", on: true });
+  reads.length = 0;
+  assert.deepEqual(await data.loadPersonSurahKeys(db, ctx, 36, "s9"), { "ayah:36:1": ["hard"] });
+  assert.deepEqual(await data.loadPersonHadithKeys(db, ctx, "hadeethenc", "s9"), { "hadith:hadeethenc:3": ["practice"] });
+  assert.deepEqual(reads, [`ayahKeyMarks/${T}__s9__36`, `hadithKeyMarks/${T}__s9__hadeethenc`]);
+  for (const bad of ["madrasah", "", "a__b", undefined]) {
+    await assert.rejects(() => data.loadPersonSurahKeys(db, ctx, 36, bad), /personId must be/);
+    await assert.rejects(() => data.loadPersonHadithKeys(db, ctx, "hadeethenc", bad), /personId must be/);
+  }
+});
+await acheck("K0: I15 -- a failed hadith write reaches the user and names hadithKeyMarks", async () => {
+  reset();
+  failNext = true;
+  const r = await data.setHadithKey(db, ctx, { scope: "p1", collection: "hadeethenc", number: 9, keyId: "hard", on: true });
+  assert.equal(r.ok, false); assert.equal(failures.length, 1);
+  assert.equal(failures[0].context.collection, "hadithKeyMarks");
+  assert.equal(failures[0].context.docId, `${T}__p1__hadeethenc`);
+});
+check("K0: HADITH_KEY_COLLECTIONS is exactly [\"hadeethenc\"] (Owner decision 7; another edition is an Owner decision)", () => {
+  assert.deepEqual([...data.HADITH_KEY_COLLECTIONS], ["hadeethenc"]);
+  assert.ok(Object.isFrozen(data.HADITH_KEY_COLLECTIONS));
+});
+check("HADITH_KEY_WRITES lists exactly the four fields a hadith create writes", () => {
+  assert.deepEqual([...data.HADITH_KEY_WRITES], ["tenantId", "scope", "collection", "entries"]);
+  assert.ok(Object.isFrozen(data.HADITH_KEY_WRITES));
+});
+await acheck("every create the source makes carries exactly the declared fields (AYAH_KEY_WRITES / HADITH_KEY_WRITES)", async () => {
+  reset();
+  await data.setAyahKey(db, ctx, { scope: "p1", surah: 1, ayah: 1, keyId: "hard", on: true });
+  await data.setWordKey(db, ctx, { scope: "p1", surah: 2, ayah: 1, position: 1, keyId: "hard", on: true });
+  await data.setHadithKey(db, ctx, { scope: "p1", collection: "hadeethenc", number: 1, keyId: "hard", on: true });
+  await data.setHadithWordKey(db, ctx, { scope: "p2", collection: "hadeethenc", number: 2, position: 1, keyId: "hard", on: true });
+  const creates = writeLog.filter((w) => w.kind === "create");
+  assert.equal(creates.length, 4);
+  for (const w of creates) {
+    const want = w.col === "hadithKeyMarks" ? data.HADITH_KEY_WRITES : data.AYAH_KEY_WRITES;
+    assert.deepEqual(Object.keys(w.data).sort(), [...want].sort(), `${w.col}/${w.id}`);
+  }
 });
 
 console.log(`\n==== Ayah keys: ${passed} passed, ${failed} failed ====`);
