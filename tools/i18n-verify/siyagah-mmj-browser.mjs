@@ -158,7 +158,8 @@ console.log("\n=== small tree ===");
   check("note: it opens in the bar, in place of the tree, with its title", nv.title === "Patience in 2:153" && !nv.treeShown, JSON.stringify(nv.title));
   check("note: the content is sanitised: no <script>, no on* attribute, the text kept", !nv.script && !nv.on && nv.xss === 0 && /patience and prayer/.test(nv.text), nv.html.slice(0, 300));
   check("note: the picture is fetched from its two pieces, sha256-checked and shown", nv.ok.length === 1 && nv.ok[0].sha === SHA && nv.ok[0].blob && nv.ok[0].w === 1, JSON.stringify(nv.ok));
-  check("note: a picture whose bytes fail the check is NOT shown", nv.failed.length === 1 && nv.failed[0].sha === BAD_SHA && /failed its check/.test(nv.failed[0].text) && !nv.ok.some((o) => o.sha === BAD_SHA), JSON.stringify(nv.failed));
+  // UPDATED IN PLACE by the Architect (4 Nov 2026): the reason is now a translated sentence (I11), not the raw error text.
+  check("note: a picture whose bytes fail the check is NOT shown", nv.failed.length === 1 && nv.failed[0].sha === BAD_SHA && /failed its safety check/.test(nv.failed[0].text) && !nv.ok.some((o) => o.sha === BAD_SHA), JSON.stringify(nv.failed));
   check("note: the way back is focused", nv.backFocused);
   if (SHOTS) await (await page.$("#siyagahCloudBar")).screenshot({ path: `${SHOTS}/mmj-note-en-1024.png` });
   await page.click("#siyagahCloudBar [data-mmj-back]");

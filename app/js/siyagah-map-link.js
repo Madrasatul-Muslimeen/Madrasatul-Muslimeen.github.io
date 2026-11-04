@@ -106,7 +106,10 @@ function noteBodyInto(el, html, sanitize, reader) {
           box.replaceWith(img);
         }, (err) => {
           console.error(err);
-          box.textContent = t("Picture (could not be shown: {reason})", { reason: err?.message || String(err) });
+          // The reader sees a reason in their own language (I11); only an unexpected error shows its raw text.
+          const reason = err?.code === "picture-check-failed" ? t("it failed its safety check")
+            : err?.code === "picture-part-missing" ? t("part of it is missing") : (err?.message || String(err));
+          box.textContent = t("Picture (could not be shown: {reason})", { reason });
           box.setAttribute("data-mmj-pic-failed", "1");
         });
       }

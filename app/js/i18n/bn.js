@@ -4677,6 +4677,8 @@ export const BN = {
   "Changed {when}": "পরিবর্তিত {when}",
   "Read-only: change it in Siyagah.": "শুধু পড়ার জন্য: পরিবর্তন করুন সিয়াগাহ-তে।",
   "This note could not be shown: {reason}": "এই নোটটি দেখানো যায়নি: {reason}",
+  "it failed its safety check": "এটি নিরাপত্তা যাচাইয়ে উত্তীর্ণ হয়নি",
+  "part of it is missing": "এর একটি অংশ পাওয়া যায়নি",
   "Picture": "ছবি",
   "Picture…": "ছবি…",
   "Picture (could not be shown: {reason})": "ছবি (দেখানো যায়নি: {reason})",

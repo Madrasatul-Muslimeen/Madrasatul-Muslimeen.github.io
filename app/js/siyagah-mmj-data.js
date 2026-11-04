@@ -165,14 +165,14 @@ export async function openMmjReader({ cloud, nb, uid, onCopy, onState, retryMs =
             const ps = await fs.getDoc(fs.doc(db, `notebooks/${nb}/picparts`, `${plan.want}~${i}`));
             const d = ps.exists() ? ps.data().d : null;
             const u8 = d && typeof d.toUint8Array === "function" ? d.toUint8Array() : null;
-            if (!u8) throw new Error(`picture part ${i} is missing`);
+            if (!u8) throw Object.assign(new Error(`picture part ${i} is missing`), { code: "picture-part-missing" });
             parts.push(u8); total += u8.length;
           }
           const all = new Uint8Array(total);
           let off = 0;
           for (const u of parts) { all.set(u, off); off += u.length; }
           const sum = hex(await crypto.subtle.digest("SHA-256", all));
-          if (!pictureBytesOk(plan, total, sum)) throw new Error("picture failed its check");
+          if (!pictureBytesOk(plan, total, sum)) throw Object.assign(new Error("picture failed its check"), { code: "picture-check-failed" });
           return new Blob([all], { type: plan.type });
         })();
         p.catch(() => pics.delete(sha)); // a failure is not remembered: the next opening tries again
