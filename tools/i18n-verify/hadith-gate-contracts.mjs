@@ -115,7 +115,10 @@ check("C2 -- the 6-digit ordinal bound is EXACT, and an import past it must fail
 // other hadith-owned file, is still undecided and must still fail. Pulled out
 // as a pure function so the mutation check below can prove it refuses a
 // "bukhari" call without needing a second real file on disk.
-const EXPECTED_PLATFORM_CALLERS = ["app/records.html"];
+// PCF J03 K0 (4 Nov 2026): app/js/ayah-keys-data.js, the shared saving layer for the marks (Difficult / Need
+// practice / Done) on a hadith and its words, builds `hadith:<collection>:<n>` from a variable, and is held to
+// decision 7 by its own HADITH_KEY_COLLECTIONS (exactly ["hadeethenc"]), which the check below reads.
+const EXPECTED_PLATFORM_CALLERS = ["app/records.html", "app/js/ayah-keys-data.js"];
 const AUTHORIZED_HADEETHENC_CALLER = "app/js/hadith-study-actions.js";
 
 function evaluateHadithKeyCallers(callsByFile) {
@@ -178,6 +181,14 @@ check("C2 -- the undecided key is applied by the pre-existing PLATFORM surface, 
   for (const platformCaller of EXPECTED_PLATFORM_CALLERS) {
     assert.ok(callsByFile.has(platformCaller), `the recorded platform caller is missing: ${platformCaller}`);
   }
+});
+
+check("C2 -- the shared marks layer (ayah-keys-data.js) saves marks on DECIDED keys only: HADITH_KEY_COLLECTIONS is exactly [\"hadeethenc\"]", () => {
+  const src = read("app/js/ayah-keys-data.js");
+  const m = src.match(/export const HADITH_KEY_COLLECTIONS = Object\.freeze\(\[([^\]]*)\]\)/);
+  assert.ok(m, "HADITH_KEY_COLLECTIONS not found");
+  assert.deepEqual([...m[1].matchAll(/"([^"]*)"/g)].map((x) => x[1]), ["hadeethenc"], "a hadith edition other than HadeethEnc can be marked -- its key is not decided");
+  assert.match(src, /HADITH_KEY_COLLECTIONS\.includes\(c\)/, "the collection list is declared but not enforced");
 });
 
 check("C2 -- MUTATION: a hadith-owned file naming any edition other than \"hadeethenc\" is refused", () => {

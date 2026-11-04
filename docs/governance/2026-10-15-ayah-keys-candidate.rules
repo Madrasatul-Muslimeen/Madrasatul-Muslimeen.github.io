@@ -824,7 +824,7 @@ service cloud.firestore {
       return request.resource.data.get('contractVersion', '') == 'quran-word-progress:v1'
           && request.resource.data.get('identityContract', '') == 'quran-word-occurrence:v1'
           && request.resource.data.get('lane', '') == lane
-          && request.resource.data.get('level', '') in ['wbw', 'basic', 'intermediate', 'depth']
+          && request.resource.data.get('level', '') in ['wbw', 'basic', 'intermediate', 'tasrif', 'depth']
           && request.resource.data.surah is int && request.resource.data.surah >= 1 && request.resource.data.surah <= 114
           && request.resource.data.ayah  is int && request.resource.data.ayah  >= 1 && request.resource.data.ayah  <= 286;
     }
@@ -990,6 +990,8 @@ service cloud.firestore {
           && request.resource.data.lane     == resource.data.lane;
     }
 
+    // 19 Oct 2026 (PCF MSA J39): a fifth level, `tasrif` (the Word card's Tasrif tab: how the word changes),
+    // may be written wherever the other four may; nothing else changes.
     // 12 Oct 2026 (decisions 101 and 103): a fourth level, `intermediate` (the different meanings of the
     // same root and of the same word), may be written wherever the other three may; nothing else changes.
     // 2 Oct 2026 (decision 58): Basic and Depth get their own lemma-wide
@@ -1004,7 +1006,7 @@ service cloud.firestore {
     function isLemmaLaneCreate(lane) {
       return request.resource.data.get('contractVersion', '') == 'quran-lemma-progress:v1'
           && request.resource.data.get('lane', '') == lane
-          && request.resource.data.get('level', '') in ['wbw', 'basic', 'intermediate', 'depth']
+          && request.resource.data.get('level', '') in ['wbw', 'basic', 'intermediate', 'tasrif', 'depth']
           && request.resource.data.lemmaId is string
           && request.resource.data.lemmaId.size() > 0
           && request.resource.data.lemmaId.size() <= 400;
@@ -1041,6 +1043,37 @@ service cloud.firestore {
                     && canSuperviseRecordFor(resource.data.tenantId, resource.data.personId)
                     && lemmaLaneIdentityUnchanged();
       // No delete (I4/D6). A superseded decision is kept in history.
+    }
+
+    // ---------------------------------------------------------------------
+    // PCF MSA J48 round 2 (the Owner's tick 3A, 20 Oct 2026): the Vocabulary module's review schedule, kept in the
+    // account so it follows the student to any computer. ONE document per student,
+    // quranVocabReview/{tenantId}__{personId}, holding `words`, a map from a word's key to its place in the schedule
+    // (its box, when it is next due, its last result). One read loads the whole schedule (load-speed contract); no
+    // query, so no index. Whoever may record for the student may read and write it; who it belongs to never changes;
+    // only `words` and `updatedAt` move; nothing is deleted (I4/D6). It is practice state, never a mark: "known"
+    // stays the Word card's own records.
+    // ---------------------------------------------------------------------
+    function isVocabReviewCreate(reviewKey) {
+      return request.resource.data.get('contractVersion', '') == 'quran-vocab-review:v1'
+          && reviewKey == request.resource.data.tenantId + '__' + request.resource.data.personId
+          && request.resource.data.words is map
+          && request.resource.data.keys().hasOnly(['contractVersion', 'tenantId', 'personId', 'words',
+               'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'])
+          && request.resource.data.keys().hasAll(['schemaVersion', 'createdAt', 'updatedAt', 'createdBy']);
+    }
+    match /quranVocabReview/{reviewKey} {
+      allow read: if isPlatformAdmin();
+      allow read: if signedIn() && !exists(/databases/$(database)/documents/quranVocabReview/$(reviewKey));
+      allow read: if canRecordFor(resource.data.tenantId, resource.data.personId);
+
+      allow create: if canRecordFor(request.resource.data.tenantId, request.resource.data.personId)
+                    && isVocabReviewCreate(reviewKey);
+      allow update: if resource != null
+                    && canRecordFor(resource.data.tenantId, resource.data.personId)
+                    && request.resource.data.words is map
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['words', 'updatedAt']);
+      // No delete (I4/D6). A word leaves the schedule only by its entry changing, never by the document going.
     }
 
     // =====================================================================
@@ -1084,7 +1117,7 @@ service cloud.firestore {
     // that it IS a map, never a client-invented scalar.
     function isLemmaCounterCreate() {
       return request.resource.data.get('contractVersion', '') == 'quran-lemma-occurrence-counter:v1'
-          && request.resource.data.get('level', '') in ['wbw', 'basic', 'intermediate', 'depth']
+          && request.resource.data.get('level', '') in ['wbw', 'basic', 'intermediate', 'tasrif', 'depth']
           && request.resource.data.lemmaId is string
           && request.resource.data.lemmaId.size() > 0
           && request.resource.data.lemmaId.size() <= 400
@@ -2728,6 +2761,149 @@ service cloud.firestore {
     }
 
     // =====================================================================
+    // ZAB (PCF J25, Builder round Z1, 14 Oct 2026) -- CANDIDATE, NOT PUBLISHED.
+    //
+    // One FAMILY Zab per tenant (Owner answer 3 B): a pocket / an item is a
+    // tenant-shared record, so every member of the tenant may read, create
+    // and update it, and nobody outside the tenant can see or touch it.
+    // NO delete, ever (I4, D6): a pocket or item is trashed with
+    // status: 'trashed', never removed. Field names are Siyagah's (guide G05),
+    // kept exactly so data can move between the apps.
+    //
+    //   zabPockets/{tenantId}__{pocketId}
+    //   zabItems/{tenantId}__{itemId}
+    //
+    // Reads are by equality on tenantId only (no composite index needed).
+    // =====================================================================
+
+    // Any member of the tenant -- the same membership mirror every other
+    // tenant-shared collection reads (tenantMemberUids, one get()).
+    function zabMember(tenantId) {
+      return signedIn() && myRolesIn(tenantId).size() > 0;
+    }
+
+    function zabOptString(f)  { return d().get(f, null) == null || d()[f] is string; }
+    function zabOptList(f)    { return d().get(f, null) == null || d()[f] is list; }
+    function zabEnvelopeOk() {
+      return d().schemaVersion is number
+          && d().createdAt is timestamp && d().updatedAt is timestamp
+          && d().createdBy is string && d().createdBy.size() > 0;
+    }
+    function zabStatusOk() { return d().status == 'active' || d().status == 'trashed'; }
+
+    match /zabPockets/{pocketKey} {
+
+      function zabPocketShapeOk() {
+        return d().keys().hasOnly([
+                 'pocketId', 'tenantId', 'addedByPersonId', 'status', 'deletedAt', 'order',
+                 'name', 'icon', 'color', 'ztype', 'parentId', 'names',
+                 'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
+               ])
+            && d().keys().hasAll([
+                 'pocketId', 'tenantId', 'addedByPersonId', 'status', 'order', 'name',
+                 'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
+               ])
+            && d().tenantId is string && d().tenantId.size() > 0
+            && d().pocketId is string && d().pocketId.size() > 0
+            && pocketKey == d().tenantId + '__' + d().pocketId
+            && d().addedByPersonId is string && d().addedByPersonId.size() > 0
+            && zabStatusOk()
+            && (d().get('deletedAt', null) == null || d().deletedAt is timestamp)
+            && d().order is number
+            && d().name is string
+            && zabOptString('icon')
+            && (d().get('color', null) == null || (d().color is string && d().color.matches('^#[0-9a-fA-F]{3,8}$')))
+            && (d().get('ztype', null) == null
+                || d().ztype in ['plain', 'links', 'tasks', 'ideas', 'shop'])
+            && (d().get('parentId', null) == null || d().parentId is string)
+            && (d().get('names', null) == null || d().names is map)
+            && zabEnvelopeOk();
+      }
+
+      allow get: if signedIn() && !exists(/databases/$(database)/documents/zabPockets/$(pocketKey));
+      allow get: if zabMember(resource.data.tenantId);
+      allow list: if zabMember(resource.data.tenantId);
+
+      allow create: if zabPocketShapeOk()
+                    && zabMember(d().tenantId)
+                    && d().addedByPersonId == myPersonIdIn(d().tenantId)
+                    && d().createdBy == myUid();
+
+      allow update: if resource != null
+                    && zabPocketShapeOk()
+                    && zabMember(resource.data.tenantId)
+                    && d().tenantId == resource.data.tenantId
+                    && d().pocketId == resource.data.pocketId
+                    && d().addedByPersonId == resource.data.addedByPersonId
+                    && d().createdBy == resource.data.createdBy;
+
+      allow delete: if false; // I4/D6 -- trash, never destroy.
+    }
+
+    match /zabItems/{itemKey} {
+
+      function zabItemShapeOk() {
+        return d().keys().hasOnly([
+                 'itemId', 'tenantId', 'pocketId', 'addedByPersonId', 'status', 'deletedAt', 'order',
+                 'text', 'done', 'folderIds', 'tags', 'kind', 'journal',
+                 'url', 'ttl', 'ch', 'th', 'people', 'issues',
+                 'due', 'pri', 'steps', 'stars', 'topics', 'qty', 'shop', 'noteId',
+                 'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
+               ])
+            && d().keys().hasAll([
+                 'itemId', 'tenantId', 'pocketId', 'addedByPersonId', 'status', 'order',
+                 'text', 'done',
+                 'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
+               ])
+            && d().tenantId is string && d().tenantId.size() > 0
+            && d().itemId is string && d().itemId.size() > 0
+            && itemKey == d().tenantId + '__' + d().itemId
+            && d().pocketId is string && d().pocketId.size() > 0
+            && d().addedByPersonId is string && d().addedByPersonId.size() > 0
+            && zabStatusOk()
+            && (d().get('deletedAt', null) == null || d().deletedAt is timestamp)
+            && d().order is number
+            && d().text is string
+            && d().done is bool
+            && zabOptList('folderIds') && zabOptList('tags')
+            && zabOptList('people') && zabOptList('issues')
+            && zabOptList('steps') && zabOptList('topics')
+            && zabOptString('kind')
+            && (d().get('journal', null) == null || d().journal is bool || d().journal is string) // G05: "whether it is a journal entry" (Siyagah may store a bool)
+            && zabOptString('url') && zabOptString('ttl')
+            && zabOptString('ch') && zabOptString('th')
+            && zabOptString('shop')
+            && zabOptString('noteId') // Z5: the Note this item became (set when → Note trashes it)
+            && (d().get('due', null) == null
+                || (d().due is string && d().due.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')))
+            && (d().get('pri', null) == null || d().pri is number)
+            && (d().get('stars', null) == null
+                || (d().stars is number && d().stars >= 1 && d().stars <= 3))
+            && (d().get('qty', null) == null || d().qty is number || d().qty is string)
+            && zabEnvelopeOk();
+      }
+
+      allow get: if signedIn() && !exists(/databases/$(database)/documents/zabItems/$(itemKey));
+      allow get: if zabMember(resource.data.tenantId);
+      allow list: if zabMember(resource.data.tenantId);
+
+      allow create: if zabItemShapeOk()
+                    && zabMember(d().tenantId)
+                    && d().addedByPersonId == myPersonIdIn(d().tenantId)
+                    && d().createdBy == myUid();
+
+      allow update: if resource != null
+                    && zabItemShapeOk()
+                    && zabMember(resource.data.tenantId)
+                    && d().tenantId == resource.data.tenantId
+                    && d().itemId == resource.data.itemId
+                    && d().addedByPersonId == resource.data.addedByPersonId
+                    && d().createdBy == resource.data.createdBy;
+
+      allow delete: if false; // I4/D6 -- trash, never destroy.
+    }
+
+    // =====================================================================
     // KEYS TO UNDERSTANDING (PCF J03, Builder round K2, 14 Oct 2026) -- CANDIDATE, NOT PUBLISHED.
     //
     // One document per surah per scope (Owner answers Q2 "Everyone", Q6 "Ok"):
@@ -2793,6 +2969,72 @@ service cloud.firestore {
                     && d().tenantId == resource.data.tenantId
                     && d().scope == resource.data.scope
                     && d().surah == resource.data.surah
+                    && d().createdBy == resource.data.createdBy;
+
+      allow delete: if false; // I4/D6 -- a shorter list, never a deleted document.
+    }
+
+    // =====================================================================
+    // KEYS TO UNDERSTANDING ON HADITH (PCF J03, round K0, 4 Nov 2026) -- CANDIDATE, NOT PUBLISHED.
+    //
+    // The ayahKeyMarks shape, one document per hadith COLLECTION per scope:
+    //   hadithKeyMarks/{tenantId}__madrasah__{collection}
+    //   hadithKeyMarks/{tenantId}__{personId}__{collection}
+    // `entries` maps a hadith's or a hadith word's permanent unit key
+    // (hadith:<collection>:<n>, hadithword:<collection>:<n>:<position>) to a
+    // list of key ids. The same readers and writers as ayahKeyMarks: the
+    // madrasah's document for every member to read; a person's document for
+    // exactly canRecordFor() (so the co-enrolled teacher sees a student's own
+    // marks, the Owner's J03 Q4 A). NO delete, ever (I4, D6).
+    // =====================================================================
+
+    match /hadithKeyMarks/{markKey} {
+
+      function hadithKeysShapeOk() {
+        return d().keys().hasOnly([
+                 'tenantId', 'scope', 'collection', 'entries',
+                 'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
+               ])
+            && d().keys().hasAll([
+                 'tenantId', 'scope', 'collection', 'entries',
+                 'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
+               ])
+            && d().tenantId is string && d().tenantId.size() > 0
+            && d().scope is string && d().scope.size() > 0
+            && d().collection is string && d().collection.matches('^[a-z0-9-]{1,40}$')
+            && markKey == d().tenantId + '__' + d().scope + '__' + d().collection
+            && d().entries is map
+            && d().schemaVersion is number
+            && d().createdAt is timestamp && d().updatedAt is timestamp
+            && d().createdBy is string && d().createdBy.size() > 0;
+      }
+
+      function hadithKeysMayWrite(tenantId, scope) {
+        return scope == 'madrasah'
+            ? (canAdminIdentity(tenantId) || isTeacherIn(tenantId))
+            : (personInTenant(tenantId, scope) && canRecordFor(tenantId, scope));
+      }
+      function hadithKeysMayRead(tenantId, scope) {
+        return scope == 'madrasah'
+            ? (signedIn() && myRolesIn(tenantId).size() > 0)
+            : (personInTenant(tenantId, scope) && canRecordFor(tenantId, scope));
+      }
+
+      // The read-before-create probe: a nonexistent document has no data to expose.
+      allow get: if signedIn() && !exists(/databases/$(database)/documents/hadithKeyMarks/$(markKey));
+      allow get: if hadithKeysMayRead(resource.data.tenantId, resource.data.scope);
+      allow list: if hadithKeysMayRead(resource.data.tenantId, resource.data.scope);
+
+      allow create: if hadithKeysShapeOk()
+                    && hadithKeysMayWrite(d().tenantId, d().scope)
+                    && d().createdBy == myUid();
+
+      allow update: if resource != null
+                    && hadithKeysShapeOk()
+                    && hadithKeysMayWrite(resource.data.tenantId, resource.data.scope)
+                    && d().tenantId == resource.data.tenantId
+                    && d().scope == resource.data.scope
+                    && d().collection == resource.data.collection
                     && d().createdBy == resource.data.createdBy;
 
       allow delete: if false; // I4/D6 -- a shorter list, never a deleted document.
