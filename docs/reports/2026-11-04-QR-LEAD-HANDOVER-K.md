@@ -37,7 +37,7 @@ Message from the Architect (4 Nov 01:23 UTC), kept in full because it is the who
 > Respect the two reading views rule (2 Nov) and J109's on/off switches. Review rule: 360–1440, en/bn, 100/150/200%, screenshots
 > LOOKED at, real-length data, new checks mutation-proven. Hand it over as a ready PR; never merge, never bump version.js.
 
-**Base it on branch `claude/j03-k0-marks` (PR #1450, head e3bfaac)**, which holds the K0 API. It is NOT merged until the Owner ticks
+**Base it on branch `claude/j03-k0-marks` (PR #1450); its head moved to f9f1aa6 on 4 Nov (main 1987b62 merged in, the Rules candidate rebuilt; the API is unchanged), so branch K2 from f9f1aa6 or whatever its head is now**, which holds the K0 API. It is NOT merged until the Owner ticks
 the word-key shape (J03 `k0key1104`), so build there, not on `main`, and hand the PR back to be re-based when K0 lands.
 
 First steps for the next Lead: read PCF MSA J03 (the Owner's ticks, the demo v2 notes); read `docs/reference/2026-11-04-keys-demo/template.html`;
