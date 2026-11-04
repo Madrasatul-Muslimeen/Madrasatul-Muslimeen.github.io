@@ -484,7 +484,10 @@ export function renderAyahActionSheetHtml({
   // the full Arabic and a translation under the header, a visible ← Back, and (opening: true) only the parts that fit a non-āyah.
   intro = null,
   // PCF MSA J70 -- { arabic, en, bn } for the left pane of the card as a window (null: not loaded; the pane says so).
-  fullText = null
+  fullText = null,
+  // PCF MSA J03 K2 -- the three marks (Difficult / Need practice / Done) for this āyah: ready-made HTML from marks-ui.js,
+  // "" when the card has none to show (the Before Al-Fātiḥah item, or the marks not loaded yet).
+  marksHtml = ""
 } = {}) {
   void hasNote; // kept for callers that already pass it (icon/wording decisions belong to isBookmarked/isSelf above, not this flag)
   const noteWhy = t("Only your own record can create or file a Note.");
@@ -535,6 +538,10 @@ export function renderAyahActionSheetHtml({
       <button type="button" class="ayah-sheet-squeezed" data-ayah-sheet-showboth data-squeezed-for="info"><span aria-hidden="true">🎯</span> ${escapeHtml(t("Status, Approach and Info"))} <span class="ayah-sheet-squeezed-hint">${escapeHtml(t("Show both halves"))}</span></button>
       <div class="ayah-sheet-status" data-ayah-sheet-status>
         <h3 class="ayah-sheet-section-title">${escapeHtml(intro?.opening ? t("Status") : t("Status of this āyah"))}</h3>
+        ${marksHtml && !intro?.opening ? `<div class="ayah-status-block" data-ayah-sheet-marks>
+          <h4 class="ayah-status-heading">${escapeHtml(t("Marks"))}</h4>
+          ${marksHtml}
+        </div>` : ""}
         <div class="ayah-status-block">
           <h4 class="ayah-status-heading">${escapeHtml(t("Approach"))}</h4>
           ${approachStatusRowHtml(approachStatuses)}

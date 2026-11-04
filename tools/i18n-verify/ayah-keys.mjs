@@ -72,20 +72,26 @@ check("POSITIVE CONTROL: the reachability walker really does find a wired module
 check("POSITIVE CONTROL: the importer finder really does find an importer", () => {
   assert.ok(importersOf("envelope.js").includes("zab-data.js"), "the importer finder did not see zab-data.js import envelope.js");
 });
-for (const mod of ["ayah-keys.js", "ayah-keys-data.js"]) {
+// K2 (QR Lead, 4 Nov 2026) WIRED THEM ON PURPOSE: the Āyah card, the Word card and the Marks wheel in quranrevival.html.
+// These three checks described "unwired" (K0); they are UPDATED, not deleted, to pin exactly the wiring K2 means to have --
+// reachable from quranrevival.html and from NO other page, through exactly the importers listed (a new one must be audited).
+const PAGES_NAMING = (mod) => fs.readdirSync(appDir).filter((x) => x.endsWith(".html")
+  && new RegExp(mod.replace(".", "\\.")).test(fs.readFileSync(path.join(appDir, x), "utf8")));
+for (const mod of ["ayah-keys.js", "ayah-keys-data.js", "marks-ui.js"]) {
   check(`${mod} exists`, () => assert.ok(fs.existsSync(path.join(appJs, mod)), `app/js/${mod} is missing`));
-  check(`no page reaches ${mod} by any chain of any length`, () => {
-    assert.deepEqual(chainsToTarget(mod), [], `${mod} is wired into a page`);
+  check(`${mod} is reachable from quranrevival.html and from no other page`, () => {
+    const pages = chainsToTarget(mod).map((c) => c.split(" ")[0]);
+    assert.deepEqual(pages, ["app/quranrevival.html"]);
   });
 }
-check("the ONLY importer of ayah-keys.js is ayah-keys-data.js, and nothing imports ayah-keys-data.js (a new importer must be audited deliberately)", () => {
-  assert.deepEqual(importersOf("ayah-keys.js"), ["ayah-keys-data.js"]);
+check("the importers are exactly the audited ones (a new importer must be audited deliberately)", () => {
+  assert.deepEqual(importersOf("ayah-keys.js"), ["ayah-keys-data.js", "marks-ui.js"]);
   assert.deepEqual(importersOf("ayah-keys-data.js"), []);
+  assert.deepEqual(importersOf("marks-ui.js"), []);
 });
-check("no page names either module", () => {
-  for (const f of fs.readdirSync(appDir).filter((x) => x.endsWith(".html"))) {
-    assert.ok(!/ayah-keys/.test(fs.readFileSync(path.join(appDir, f), "utf8")), f + " names an ayah-keys module");
-  }
+check("only quranrevival.html names the ayah-keys data module or marks-ui", () => {
+  assert.deepEqual(PAGES_NAMING("ayah-keys-data.js"), ["quranrevival.html"]);
+  assert.deepEqual(PAGES_NAMING("marks-ui.js"), ["quranrevival.html"]);
 });
 check("ayah-keys.js imports nothing (it is pure)", () => {
   assert.ok(!/^\s*import\s/m.test(fs.readFileSync(path.join(appJs, "ayah-keys.js"), "utf8")));
