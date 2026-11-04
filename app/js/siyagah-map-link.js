@@ -116,9 +116,11 @@ function noteBodyInto(el, html, sanitize, reader) {
   }
 }
 
+/** A time as "2026-11-02 09:00" on this device's clock, in the reader's digits (never an English month name in Bangla). */
 function when(ms) {
-  if (!ms) return "";
-  try { return num(new Date(ms).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })); } catch { return ""; }
+  if (!Number.isFinite(ms) || !ms) return "";
+  const d = new Date(ms), p = (n) => String(n).padStart(2, "0");
+  return num(`${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`);
 }
 
 /** The tree and its notes inside `host`; returns { update(copy), state(s) }. */
