@@ -1,0 +1,264 @@
+// PCF MSA J112 R1 -- THE MAP'S READ-ONLY COPY OF SIYAGAH'S MAPPING MY JOURNEY: THE PURE HALF
+//
+// Siyagah (v05.66+) is the one MASTER of the Mapping My Journey folders and notes. It keeps a shared copy in its own
+// Firebase project, and this module turns that copy's documents into what the Map shows. The contract it follows is
+// Siyagah's "The shared Mapping My Journey copy -- for other apps (read-only)" (R1), checked against Siyagah's own
+// writer (_msTick): the tree in notebooks/{nb}/mmj/t~0 (+ pieces t~1..t~N, joined ONLY when every piece's g equals
+// t~0.g), one note per n~<encodeURIComponent(id) with "." as %2E>, a big note's content in mmjparts as
+// n~<same encoded id>~<g>~<i>, gone:true removes, last `at` wins, the cursor is the largest `at` seen.
+//
+// THIS MODULE IS PURE AND IMPORTS NOTHING: no Firebase, no DOM, no storage. The data module (siyagah-mmj-data.js)
+// reads and listens; this one decides. tools/i18n-verify/siyagah-mmj-model.mjs checks every function here.
+//
+// IT NEVER WRITES ANYTHING OF SIYAGAH'S, and it cannot: it has no way to reach the network at all.
+
+export const MMJ_COPY_VERSION = 1;
+export const MMJ_RETRY_MS = 60000; // permission-denied: retry after one minute, never in a loop (the contract)
+
+/** The note's document id in notebooks/{nb}/mmj, exactly as Siyagah writes it. */
+export function mmjNoteDocId(noteId) {
+  return "n~" + encodeURIComponent(String(noteId)).replace(/\./g, "%2E");
+}
+
+/** One piece of a big note's content, in notebooks/{nb}/mmjparts. */
+export function mmjPartDocId(noteId, g, i) {
+  return mmjNoteDocId(noteId) + "~" + g + "~" + i;
+}
+
+/** A server time as milliseconds: a Firestore Timestamp, a Date, {seconds,nanoseconds}, a number or an ISO string. 0 when unknown. */
+export function atMillis(at) {
+  if (at == null) return 0;
+  if (typeof at === "number") return Number.isFinite(at) ? at : 0;
+  if (typeof at.toMillis === "function") { const v = at.toMillis(); return Number.isFinite(v) ? v : 0; }
+  if (at instanceof Date) { const v = at.getTime(); return Number.isFinite(v) ? v : 0; }
+  if (typeof at === "object" && Number.isFinite(at.seconds)) return at.seconds * 1000 + Math.floor((Number(at.nanoseconds) || 0) / 1e6);
+  if (typeof at === "string") { const v = Date.parse(at); return Number.isFinite(v) ? v : 0; }
+  return 0;
+}
+
+/** What kind of document an mmj doc id is: "tree" (t~0), "piece" (t~1..), "note" (n~...) or null. */
+export function mmjDocKind(docId) {
+  const id = String(docId || "");
+  if (id === "t~0") return "tree";
+  if (/^t~[1-9]\d*$/.test(id)) return "piece";
+  if (id.startsWith("n~") && id.length > 2) return "note";
+  return null;
+}
+
+function cleanFolder(f) {
+  if (!f || typeof f !== "object" || typeof f.id !== "string" || !f.id) return null;
+  return {
+    id: f.id,
+    n: f.n == null ? "" : String(f.n),
+    p: typeof f.p === "string" && f.p ? f.p : null,
+    o: Number.isFinite(Number(f.o)) ? Number(f.o) : 0,
+    u: f.u == null ? null : String(f.u),
+    vis: f.vis === 1 ? 1 : 0,
+  };
+}
+
+/**
+ * Join the tree. `t0` is t~0's data; `pieces` is { "t~1": data, ... } (only needed when t0.n is present).
+ * Returns { ok:true, tree:{ sec, folders, at, b } } or { ok:false, reason } -- "no-tree", "piece-missing" or
+ * "piece-generation" (a write is in progress: read again). Never a half-joined tree.
+ */
+export function joinTree(t0, pieces = {}) {
+  if (!t0 || typeof t0 !== "object") return { ok: false, reason: "no-tree" };
+  const sec = { id: t0.sec?.id || "mmj-sec", n: t0.sec?.n == null ? "Mapping My Journey" : String(t0.sec.n) };
+  let raw;
+  if (Array.isArray(t0.folders)) raw = t0.folders;
+  else {
+    const n = Number(t0.n);
+    if (!Number.isInteger(n) || n < 1) return { ok: false, reason: "no-tree" };
+    raw = [];
+    for (let i = 1; i <= n; i++) {
+      const p = pieces && pieces["t~" + i];
+      if (!p || !Array.isArray(p.folders)) return { ok: false, reason: "piece-missing" };
+      if (p.g !== t0.g) return { ok: false, reason: "piece-generation" };
+      raw.push(...p.folders);
+    }
+  }
+  const seen = new Set(), folders = [];
+  for (const f of raw) { const c = cleanFolder(f); if (c && !seen.has(c.id)) { seen.add(c.id); folders.push(c); } }
+  return { ok: true, tree: { sec, folders, at: atMillis(t0.at), b: t0.b == null ? null : String(t0.b) } };
+}
+
+/** The pieces a big note needs, or null for a note whose content is inline. */
+export function noteParts(data) {
+  if (!data || typeof data !== "object" || data.parts == null) return null;
+  const n = Number(data.parts);
+  if (!Number.isInteger(n) || n < 1 || n > 10000) return null;
+  return { n, g: data.g };
+}
+
+/**
+ * A big note's content from its pieces ({ d, g } in order). null when a piece is missing or of another generation
+ * (a rewrite is in progress: read the note again).
+ */
+export function joinNoteParts(data, partDocs) {
+  const want = noteParts(data);
+  if (!want) return null;
+  if (!Array.isArray(partDocs) || partDocs.length !== want.n) return null;
+  let out = "";
+  for (const p of partDocs) {
+    if (!p || typeof p.d !== "string" || p.g !== want.g) return null;
+    out += p.d;
+  }
+  return out;
+}
+
+/** An empty device copy for notebook `nb`. */
+export function emptyCopy(nb) {
+  return { v: MMJ_COPY_VERSION, nb: String(nb || ""), tree: null, notes: {}, gone: {}, cursor: 0, savedAt: 0 };
+}
+
+/** Read back a stored copy; anything malformed, of another version or another notebook gives an empty one. */
+export function parseCopy(value, nb) {
+  let c = value;
+  if (typeof c === "string") { try { c = JSON.parse(c); } catch { return emptyCopy(nb); } }
+  if (!c || typeof c !== "object" || c.v !== MMJ_COPY_VERSION || c.nb !== String(nb || "")) return emptyCopy(nb);
+  const out = emptyCopy(nb);
+  if (c.tree && Array.isArray(c.tree.folders)) out.tree = { sec: c.tree.sec || { id: "mmj-sec", n: "Mapping My Journey" }, folders: c.tree.folders.map(cleanFolder).filter(Boolean), at: atMillis(c.tree.at), b: c.tree.b ?? null };
+  if (c.notes && typeof c.notes === "object") for (const [id, n] of Object.entries(c.notes)) if (n && typeof n === "object" && n.id === id) out.notes[id] = n;
+  if (c.gone && typeof c.gone === "object") for (const [id, at] of Object.entries(c.gone)) if (Number.isFinite(at)) out.gone[id] = at;
+  out.cursor = Number.isFinite(c.cursor) ? c.cursor : 0;
+  out.savedAt = Number.isFinite(c.savedAt) ? c.savedAt : 0;
+  return out;
+}
+
+function cleanNote(data, content) {
+  return {
+    id: String(data.id),
+    title: data.title == null ? "" : String(data.title),
+    content: typeof content === "string" ? content : (typeof data.content === "string" ? data.content : ""),
+    tags: Array.isArray(data.tags) ? data.tags.map(String) : [],
+    folderIds: Array.isArray(data.folderIds) ? data.folderIds.filter((x) => typeof x === "string") : [],
+    kind: data.kind == null ? null : String(data.kind),
+    createdAt: data.createdAt == null ? null : String(data.createdAt),
+    updatedAt: data.updatedAt == null ? null : String(data.updatedAt),
+    vis: data.vis === 1 ? 1 : 0,
+    at: atMillis(data.at),
+  };
+}
+
+/**
+ * Apply one n~ document to the copy (a NEW copy is returned; the old one is not changed).
+ * `content` is the joined content of a big note (joinNoteParts), required when the doc has `parts`.
+ * Returns { copy, changed, needParts } -- needParts is true when a big note arrived without its content (read the
+ * pieces, then call again). Last `at` wins: a document older than what the copy holds for that id changes nothing.
+ * gone:true removes the note.
+ */
+export function applyNoteDoc(copy, docId, data, content) {
+  if (!data || typeof data !== "object" || data.id == null) return { copy, changed: false, needParts: false };
+  const id = String(data.id);
+  if (mmjNoteDocId(id) !== docId) return { copy, changed: false, needParts: false }; // a doc whose id does not match its note: ignored
+  const at = atMillis(data.at);
+  const held = copy.notes[id];
+  const heldAt = held ? held.at : (copy.gone[id] ?? -1);
+  if (at < heldAt) return { copy, changed: false, needParts: false };
+  if (data.gone === true) {
+    if (!held && copy.gone[id] === at) return { copy, changed: false, needParts: false };
+    const notes = { ...copy.notes }; delete notes[id];
+    return { copy: { ...copy, notes, gone: { ...copy.gone, [id]: at }, cursor: Math.max(copy.cursor, at) }, changed: true, needParts: false };
+  }
+  if (noteParts(data) && typeof content !== "string") return { copy, changed: false, needParts: true };
+  const note = cleanNote(data, noteParts(data) ? content : undefined);
+  const gone = { ...copy.gone }; delete gone[id];
+  return { copy: { ...copy, notes: { ...copy.notes, [id]: note }, gone, cursor: Math.max(copy.cursor, at) }, changed: true, needParts: false };
+}
+
+/** Put a joined tree into the copy (last `at` wins). */
+export function applyTree(copy, tree) {
+  if (!tree || !Array.isArray(tree.folders)) return { copy, changed: false };
+  if (copy.tree && tree.at < copy.tree.at) return { copy, changed: false };
+  return { copy: { ...copy, tree, cursor: Math.max(copy.cursor, tree.at) }, changed: true };
+}
+
+/** Move the cursor forward for a document seen (a t~ piece, say) without changing anything else. */
+export function seeAt(copy, at) {
+  const ms = atMillis(at);
+  return ms > copy.cursor ? { ...copy, cursor: ms } : copy;
+}
+
+function byOrder(a, b) {
+  return a.o - b.o || a.n.localeCompare(b.n) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+}
+
+/**
+ * The folder tree the Map shows: [{ folder, children:[...], notes:[note...] }] ordered by `o`, then name. A folder
+ * whose parent is not in the set sits at the top (never lost). A parent loop is broken, never followed forever.
+ * Notes are sorted newest first (updatedAt), then by title. `loose` holds notes in no folder of the set.
+ */
+export function folderView(copy) {
+  const folders = (copy.tree?.folders || []).slice();
+  const ids = new Set(folders.map((f) => f.id));
+  const kids = new Map();
+  for (const f of folders) {
+    const parent = f.p && ids.has(f.p) && f.p !== f.id ? f.p : null;
+    if (!kids.has(parent)) kids.set(parent, []);
+    kids.get(parent).push(f);
+  }
+  const notesIn = new Map();
+  const loose = [];
+  for (const n of Object.values(copy.notes)) {
+    const own = n.folderIds.filter((x) => ids.has(x));
+    if (!own.length) loose.push(n);
+    for (const fid of own) { if (!notesIn.has(fid)) notesIn.set(fid, []); notesIn.get(fid).push(n); }
+  }
+  const noteOrder = (a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")) || a.title.localeCompare(b.title) || (a.id < b.id ? -1 : 1);
+  const placed = new Set();
+  const build = (parent, path) => (kids.get(parent) || []).slice().sort(byOrder).flatMap((f) => {
+    if (path.has(f.id) || placed.has(f.id)) return [];
+    placed.add(f.id);
+    const next = new Set(path); next.add(f.id);
+    return [{ folder: f, children: build(f.id, next), notes: (notesIn.get(f.id) || []).slice().sort(noteOrder) }];
+  });
+  const roots = build(null, new Set());
+  // Folders caught in a parent loop never reach the top: put them there so nothing the owner made is hidden.
+  for (const f of folders.slice().sort(byOrder)) if (!placed.has(f.id)) { placed.add(f.id); roots.push({ folder: f, children: build(f.id, new Set([f.id])), notes: (notesIn.get(f.id) || []).slice().sort(noteOrder) }); }
+  return { roots, loose: loose.sort(noteOrder), folderCount: folders.length, noteCount: Object.keys(copy.notes).length };
+}
+
+/** A note's pictures, in order: [{ sha, mime }] from <img ... data-pic="<sha256>" data-mime="..."> (only a real sha256). */
+export function pictureRefs(html) {
+  const out = [];
+  for (const m of String(html || "").matchAll(/<img\b[^>]*>/gi)) {
+    const sha = (m[0].match(/\bdata-pic\s*=\s*["']([0-9a-f]{64})["']/i) || [])[1];
+    if (!sha) continue;
+    const mime = (m[0].match(/\bdata-mime\s*=\s*["'](image\/[a-z0-9.+-]+)["']/i) || [])[1] || "";
+    out.push({ sha: sha.toLowerCase(), mime: mime.toLowerCase() });
+  }
+  return out;
+}
+
+/**
+ * What to read for one picture, from its meta doc ({ n, t, p, sm? }). Returns { want, parts, size, type } where
+ * `want` is the sha the BYTES must have (the smaller copy's when `sm` is a sha256) and the picparts ids are want~0..;
+ * throws on a meta that is wrong, exactly as Siyagah's _picFetch refuses one.
+ */
+export function picturePlan(sha, meta, mime = "") {
+  if (!/^[0-9a-f]{64}$/.test(String(sha))) throw new Error("not a picture id");
+  if (!meta || typeof meta !== "object") throw new Error("picture is not in the cloud");
+  const parts = Number(meta.p);
+  if (!(Number.isInteger(parts) && parts >= 1 && parts <= 5000)) throw new Error("picture meta is wrong");
+  const sm = typeof meta.sm === "string" && /^[0-9a-f]{64}$/.test(meta.sm) ? meta.sm : null;
+  const type = typeof meta.t === "string" && /^image\/[a-z0-9.+-]+$/i.test(meta.t) ? meta.t : (mime || "image/jpeg");
+  return { want: sm || sha, parts, size: meta.n == null ? null : Number(meta.n), type };
+}
+
+/** Do these bytes pass? `hex` is their sha256. A picture that fails is never shown. */
+export function pictureBytesOk(plan, total, hex) {
+  if (plan.size != null && plan.size !== total) return false;
+  return typeof hex === "string" && hex === plan.want;
+}
+
+/** Firestore's refusal, in any of the shapes it arrives in. */
+export function isPermissionDenied(err) {
+  const code = String(err?.code || "");
+  return code === "permission-denied" || code === "firestore/permission-denied" || /missing or insufficient permissions/i.test(String(err?.message || ""));
+}
+
+/** May the reader try again now? Only once a minute after a refusal -- never a loop. */
+export function mayRetry(lastTryMs, nowMs, gap = MMJ_RETRY_MS) {
+  return !(Number.isFinite(lastTryMs) && lastTryMs > 0) || nowMs - lastTryMs >= gap;
+}
