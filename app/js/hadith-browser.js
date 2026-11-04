@@ -14,6 +14,8 @@
 
 import { t, num } from "./i18n.js";
 import { loadHadithAyat } from "./ayah-hadith.js";
+import { renderReadNext } from "./read-next-ui.js";
+import { hadithReadNextCtx } from "./hadith-read-next.js";
 import { getAppLang } from "./prefs.js";
 import { STATUSES, statusLabel } from "./unit-keys.js";
 import { renderAssignDropdown } from "./assign-picker.js";
@@ -1510,6 +1512,8 @@ function openitiPassageCard(h, conc = null, heLinks = null, duaCtx = null, versi
   if (std) card.appendChild(standardTranslationFolds(conc.versionUri, async () => std));
   const group = duaCtx?.dua.groupOf.get(`${duaCtx.versionUri}:${h.n}`);
   if (group) card.appendChild(duaAlsoNarrated(h, group, duaCtx, conc));
+  // J03 K3: "Read next" (Qur'an, Hadith, Dictionary, Scholars, Tafsīr); nothing loads until a tab is opened.
+  if (versionUri && (h.kind === "hadith" || h.kind === "passage")) renderReadNext(card, hadithReadNextCtx(versionUri, h.n, heIds ?? null));
 
   const credit = document.createElement("a");
   credit.className = "hadith-view-source openiti-credit";
