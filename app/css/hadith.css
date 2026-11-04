@@ -499,3 +499,34 @@ body.hadith-pane-dragging { user-select: none; }
 [data-card-look="night"] .hadith-reader-step.on { background: var(--card-bg-inset); border-color: var(--card-heading); color: var(--card-heading); }
 /* It had no colour of its own and took the app's white button text on its white face (found while measuring J106). */
 .openiti-show-more { color: var(--hadith-ink); }
+
+/* Keys to Understanding K1 Part A (PCF MSA J03): the hadith's words and the Hadith Word Card.
+   The sheet is the app's dark Word-card palette on every surface (a palette belongs to a surface). */
+.hwc-words { margin: 0.6rem 0; }
+.hwc-switch { min-height: 40px; display: inline-flex; align-items: center; gap: 0.5rem; padding: 0 0.8rem; border: 1px solid var(--hadith-rule); border-radius: 0.4rem; background: transparent; color: var(--hadith-ink); font: inherit; font-weight: 600; cursor: pointer; max-width: 100%; }
+.hwc-key, .hwc-nodata { font-size: 0.85rem; line-height: 1.5; color: var(--hadith-muted); margin: 0.4rem 0; overflow-wrap: anywhere; }
+.hwc-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; direction: rtl; }
+.hwc-chip { min-height: 40px; min-width: 40px; display: inline-flex; align-items: center; justify-content: center; padding: 0 0.7rem; border-radius: 0.4rem; border: 1px solid var(--hadith-rule); background: transparent; color: var(--hadith-ink); font: inherit; font-size: 1.15rem; text-decoration: none; cursor: pointer; }
+.hwc-chip.hwc-q { border-color: #1F6E5A; color: #1F6E5A; }
+.hwc-chip.hwc-h { border-color: var(--hadith-gold); }
+.hwc-overlay { position: fixed; inset: 0; z-index: 60; display: flex; align-items: flex-end; justify-content: center; background: rgba(8, 12, 22, 0.55); padding: 0; }
+.hwc-sheet { box-sizing: border-box; width: min(100%, 560px); max-height: 92vh; overflow-y: auto; overflow-x: hidden; background: #1c2a46; color: #eef1f7; border-radius: 14px 14px 0 0; padding: 0 max(16px, env(safe-area-inset-left, 0px)) calc(5.5rem + env(safe-area-inset-bottom, 0px)); display: grid; gap: 0.7rem; align-content: start; } /* 5.5rem: the round Zab button must never cover the last tab */
+@media (min-width: 700px) { .hwc-overlay { align-items: center; } .hwc-sheet { border-radius: 14px; max-height: 86vh; } }
+.hwc-head { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; position: sticky; top: 0; z-index: 1; background: #1c2a46; padding: 0.8rem 0 0.4rem; }
+.hwc-label { margin: 0; font-size: 0.85rem; color: #a9b3c8; overflow-wrap: anywhere; unicode-bidi: plaintext; }
+.hwc-back { min-height: 40px; padding: 0 0.8rem; border-radius: 20px; border: 1px solid #e3c27a; background: transparent; color: #e3c27a; font: inherit; font-weight: 600; cursor: pointer; }
+.hwc-title { font-weight: 700; overflow-wrap: anywhere; }
+.hwc-big { font-family: "Amiri", "Noto Naskh Arabic", serif; font-size: 2.2rem; line-height: 1.6; margin: 0; text-align: center; overflow-wrap: anywhere; }
+.hwc-draft { font-size: 0.8rem; margin: 0; color: #e3c27a; overflow-wrap: anywhere; }
+.hwc-tabs { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.hwc-tab { flex: 1 1 5.5rem; min-height: 44px; padding: 0.2rem 0.4rem; border-radius: 0.5rem; border: 1px solid #3a4767; background: #111a2e; color: #eef1f7; font: inherit; cursor: pointer; display: grid; justify-items: center; line-height: 1.2; }
+.hwc-tab small { font-size: 0.7rem; color: #a9b3c8; overflow-wrap: anywhere; text-align: center; }
+.hwc-tab[aria-pressed="true"] { background: #e3c27a; color: #1c2a46; border-color: #e3c27a; }
+.hwc-tab[aria-pressed="true"] small { color: #1c2a46; }
+.hwc-body { display: grid; gap: 0.6rem; }
+.hwc-well { background: #111a2e; border: 1px solid #3a4767; border-radius: 0.5rem; padding: 0.6rem 0.8rem; }
+.hwc-well h4 { margin: 0 0 0.3rem; font-size: 0.85rem; color: #e3c27a; }
+.hwc-well p { margin: 0.2rem 0; overflow-wrap: anywhere; }
+.hwc-well .hwc-nodata, .hwc-src { color: #a9b3c8; font-size: 0.85rem; }
+.hwc-ar { font-family: "Amiri", "Noto Naskh Arabic", serif; font-size: 1.4rem; line-height: 1.9; }
+.hwc-here { color: #1c2a46; background: #e3c27a; border-radius: 0.25rem; padding: 0 0.25rem; }
