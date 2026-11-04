@@ -13,7 +13,7 @@ import { t, num } from "./i18n.js";
 
 export const UNIT_TYPES = Object.freeze([
   "ayah", "range", "surah", "page", "ruku", "juz", "hizb", "rub", "manzil",
-  "hadith", "topic", "name", "dua", "duaword", "opening",
+  "hadith", "topic", "name", "dua", "duaword", "opening", "qword", "hadithword",
 ]);
 
 export const buildUnitKey = Object.freeze({
@@ -38,6 +38,13 @@ export const buildUnitKey = Object.freeze({
   // PCF J26 (14 Oct 2026, Owner Q2 "Yes"): a study item recited BEFORE a surah's first āyah that is not an āyah of it.
   // `opening:taawwudh` is Aʿūdhu billāh; fixed once first used. Stored with Al-Fātiḥah's records (chunkKeyFor -> surah_1).
   opening: (id) => `opening:${id}`,
+  // PCF J03 K0 (4 Nov 2026, Owner Control Gate: permanent key shapes, asked in J03 with the recommendation below).
+  // One word of one āyah: its position in the āyah as the Quranic Arabic Corpus counts it, from 1 -- the same
+  // surah:ayah:position the Word card opens at ("9:44:2"). Marks on a word live with its sūrah's āyah marks.
+  qword: (surah, ayah, position) => `qword:${surah}:${ayah}:${position}`,
+  // One word of one hadith: the hadith's own key parts (buildUnitKey.hadith's collection and number) and the word's
+  // position among the hadith's Arabic words as the Hadith card splits them, counted from 1.
+  hadithWord: (collectionName, number, position) => `hadithword:${collectionName}:${number}:${position}`,
 });
 
 /** Splits a unit key into { unitType, parts } — parts is everything after the first namespace segment, still colon-joined for types that carry more than one field (e.g. "2:255-257"). */
@@ -103,6 +110,7 @@ const UNIT_TYPE_LABELS = Object.freeze({
   ayah: "Ayah", range: "Range", surah: "Surah", page: "Page", ruku: "Ruku",
   juz: "Juz", hizb: "Hizb", rub: "Rub", manzil: "Manzil", hadith: "Hadith",
   topic: "Topic", name: "Name", book: "Qur'an", dua: "Dua", duaword: "Dua word", opening: "Before Al-Fātiḥah",
+  qword: "Word", hadithword: "Hadith word",
 });
 
 /** Readable names of the `opening:` ids (J26). The id stays the stored key; this is only what a table prints. */
