@@ -72,19 +72,38 @@ check("POSITIVE CONTROL: the reachability walker really does find a wired module
 check("POSITIVE CONTROL: the importer finder really does find an importer", () => {
   assert.ok(importersOf("envelope.js").includes("zab-data.js"), "the importer finder did not see zab-data.js import envelope.js");
 });
-// UPDATED IN PLACE by J03 round K4 (4 Nov 2026), which wires these modules deliberately: the teacher's view
-// (keys-teacher-view.js) READS students' marks on monitor.html, loaded only when its section is opened. Until K4 the
-// check was "no page reaches either module"; it is now "ONLY monitor.html reaches them, ONLY through the teacher's
-// view", so any other page wiring them (a writer on a card, say) still fails here and must be audited deliberately.
-for (const mod of ["ayah-keys.js", "ayah-keys-data.js"]) {
+// RECONCILED by the MSA Architect for the J03 K4 bundle (4 Nov 2026): K2, K1 Part B and K4 each wire these modules ON
+// PURPOSE, and each round had UPDATED these checks in place from K0's "unwired". The three rounds' pins are joined here,
+// not loosened: each module is reachable from EXACTLY the pages its rounds mean (K2: quranrevival.html -- the Āyah card,
+// the Word card and the Marks wheel; K1B: the two Hadith pages through hadith-key-marks.js; K4: monitor.html through the
+// teacher's view), and the importer sets are pinned, so a new page or importer must be audited deliberately.
+const PAGES_NAMING = (mod) => fs.readdirSync(appDir).filter((x) => x.endsWith(".html")
+  && new RegExp(mod.replace(".", "\\.")).test(fs.readFileSync(path.join(appDir, x), "utf8")));
+const REACHED_FROM = {
+  "ayah-keys.js": ["app/hadith-collections.html", "app/hadith-study.html", "app/monitor.html", "app/quranrevival.html"],
+  "ayah-keys-data.js": ["app/hadith-collections.html", "app/hadith-study.html", "app/monitor.html", "app/quranrevival.html"],
+  "marks-ui.js": ["app/quranrevival.html"],
+  "hadith-key-marks.js": ["app/hadith-collections.html", "app/hadith-study.html"],
+  "keys-teacher-view.js": ["app/monitor.html"],
+};
+for (const [mod, pages] of Object.entries(REACHED_FROM)) {
   check(`${mod} exists`, () => assert.ok(fs.existsSync(path.join(appJs, mod)), `app/js/${mod} is missing`));
-  check(`only monitor.html reaches ${mod}, only through keys-teacher-view.js (K4)`, () => {
-    assert.deepEqual(chainsToTarget(mod), [`app/monitor.html -> keys-teacher-view.js -> ${mod}`], `${mod} is wired into another page`);
+  check(`${mod} is reachable from exactly ${pages.map((x) => x.slice(4)).join(", ")}`, () => {
+    assert.deepEqual(chainsToTarget(mod).map((c) => c.split(" ")[0]).sort(), pages);
   });
 }
-check("the importers are pinned: ayah-keys.js by ayah-keys-data.js and the K4 teacher's view; ayah-keys-data.js by the teacher's view only (a new importer must be audited deliberately)", () => {
-  assert.deepEqual(importersOf("ayah-keys.js").sort(), ["ayah-keys-data.js", "keys-teacher-view-model.js", "keys-teacher-view.js"]);
-  assert.deepEqual(importersOf("ayah-keys-data.js"), ["keys-teacher-view.js"]);
+check("monitor.html reaches the keys modules ONLY through the teacher's view (K4)", () => {
+  for (const mod of ["ayah-keys.js", "ayah-keys-data.js"]) {
+    const c = chainsToTarget(mod).filter((x) => x.startsWith("app/monitor.html"));
+    assert.deepEqual(c, [`app/monitor.html -> keys-teacher-view.js -> ${mod}`]);
+  }
+});
+check("the importers are exactly the audited ones (a new importer must be audited deliberately)", () => {
+  assert.deepEqual(importersOf("ayah-keys.js").sort(), ["ayah-keys-data.js", "hadith-key-marks.js", "keys-teacher-view-model.js", "keys-teacher-view.js", "marks-ui.js"]);
+  assert.deepEqual(importersOf("ayah-keys-data.js").sort(), ["hadith-key-marks.js", "keys-teacher-view.js"]);
+  assert.deepEqual(importersOf("marks-ui.js"), []);
+  assert.deepEqual(importersOf("hadith-key-marks.js").sort(), ["hadith-browser.js", "hadith-word-card.js"]);
+  assert.deepEqual(importersOf("keys-teacher-view.js"), []);
 });
 check("the teacher's view only READS: keys-teacher-view.js imports no set* writer", () => {
   const text = fs.readFileSync(path.join(appJs, "keys-teacher-view.js"), "utf8");
@@ -92,10 +111,9 @@ check("the teacher's view only READS: keys-teacher-view.js imports no set* write
   assert.ok(/loadPersonSurahKeys/.test(imp), "POSITIVE CONTROL: the import line was not found");
   assert.ok(!/\bset[A-Z]/.test(imp), "keys-teacher-view.js imports a writer: " + imp);
 });
-check("no page names either module", () => {
-  for (const f of fs.readdirSync(appDir).filter((x) => x.endsWith(".html"))) {
-    assert.ok(!/ayah-keys/.test(fs.readFileSync(path.join(appDir, f), "utf8")), f + " names an ayah-keys module");
-  }
+check("only quranrevival.html names the ayah-keys data module or marks-ui", () => {
+  assert.deepEqual(PAGES_NAMING("ayah-keys-data.js"), ["quranrevival.html"]);
+  assert.deepEqual(PAGES_NAMING("marks-ui.js"), ["quranrevival.html"]);
 });
 check("ayah-keys.js imports nothing (it is pure)", () => {
   assert.ok(!/^\s*import\s/m.test(fs.readFileSync(path.join(appJs, "ayah-keys.js"), "utf8")));
