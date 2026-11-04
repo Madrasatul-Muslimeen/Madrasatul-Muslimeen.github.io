@@ -739,6 +739,35 @@ service cloud.firestore {
       // own status field inside the document, never removed from Firestore.
     }
 
+    // hadithSubjects/{tenantId} -- PCF MSA J106 round 2 (the Owner's answers:
+    // n106e A, 31 Oct 2026, one shared online list per madrasah; n106f A,
+    // 3 Nov 2026, add it and publish). One document per madrasah, the
+    // asmaCollections shape with the identity fields write-once. Writer:
+    // app/js/hadith-study-actions.js saveHadithSubjects(). Tested by
+    // tools/firestore-emulator/hadith-subjects-v1.rules.test.mjs (extract
+    // AND this file, RULES_FILE=firestore.rules) with 14 mutations.
+    match /hadithSubjects/{tenantId} {
+      allow read: if isPlatformAdmin();
+      allow read: if anyMemberOf(tenantId);
+      allow create: if canAdminCatalogue(tenantId)
+                    && request.resource.data.tenantId == tenantId
+                    && request.resource.data.get('schemaVersion', 0) == 1
+                    && request.resource.data.get('createdBy', null) == myUid()
+                    && request.resource.data.get('createdAt', null) is timestamp
+                    && request.resource.data.get('subjects', null) is map;
+      // `resource != null` keeps a create from tripping this clause into an
+      // evaluation error (Firestore evaluates every matching allow).
+      allow update: if resource != null
+                    && canAdminCatalogue(tenantId)
+                    && request.resource.data.tenantId == resource.data.tenantId
+                    && request.resource.data.get('createdBy', null) == resource.data.get('createdBy', null)
+                    && request.resource.data.get('createdAt', null) == resource.data.get('createdAt', null)
+                    && request.resource.data.get('schemaVersion', null) == resource.data.get('schemaVersion', null)
+                    && request.resource.data.get('subjects', null) is map;
+      // No delete (I4/D6) -- an entry is retired with status: "retired"
+      // inside the document, never removed from Firestore.
+    }
+
     match /levels/{levelKey} {
       allow read: if isPlatformAdmin();
       allow read: if anyMemberOf(resource.data.tenantId);
