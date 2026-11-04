@@ -23443,7 +23443,13 @@
     }
 
     // ===== The intention reminder (PCF MSA J05). Shown when the Read view opens; never at start-up (I9). Per device, per person. =====
-    const intentionStyleEl = document.createElement("style"); intentionStyleEl.textContent = INTENTION_CSS; document.head.appendChild(intentionStyleEl);
+    const intentionStyleEl = document.createElement("style"); // "A page is a page" (shell round 17; the Architect, 4 Nov 2026): above a Mushaf page the card is ONE line (the intention clipped with …,
+    // Bismillah beside it), so it never wraps to several lines and pushes the page down at 360px.
+    intentionStyleEl.textContent = INTENTION_CSS + `
+#intentionHost.intention-one-line .intention-card { display:flex; align-items:center; gap:.5rem; margin:.25rem 0; padding:.2rem .6rem; }
+#intentionHost.intention-one-line .intention-lab { display:none; }
+#intentionHost.intention-one-line .intention-text { flex:1 1 auto; min-width:0; margin:0; font-size:.88rem; line-height:1.3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+#intentionHost.intention-one-line .intention-bismillah { flex:0 0 auto; }`; document.head.appendChild(intentionStyleEl);
     let intentionClosedThisOpening = false;
     const intentionPerson = () => selectedPersonId || null;
     function paintIntentionSetting() {
@@ -23458,11 +23464,13 @@
       const readOpen = !document.getElementById("readView").hidden;
       const person = intentionPerson(), today = localDay();
       const show = readOpen && shouldShowIntention({ mode: getIntentionMode(person), closedDay: getClosedDay(person), today, closedThisOpening: intentionClosedThisOpening });
+      host.classList.toggle("intention-one-line", !!mushafToggle.checked);
       host.innerHTML = show ? intentionCardHtml({ lang: getAppLang() === "bn" ? "bn" : "en", day: today }) : "";
       wireIntention(host, () => { intentionClosedThisOpening = true; markClosedToday(person, today); host.innerHTML = ""; });
     }
     new MutationObserver(() => { if (!document.getElementById("readView").hidden) { intentionClosedThisOpening = false; paintIntention(); } else paintIntention(); })
       .observe(document.getElementById("readView"), { attributes: true, attributeFilter: ["hidden"] });
+    mushafToggle.addEventListener("change", () => document.getElementById("intentionHost")?.classList.toggle("intention-one-line", !!mushafToggle.checked));
     document.getElementById("tabStudyOptionsBtn")?.addEventListener("click", paintIntentionSetting);
     paintIntentionSetting();
     function renderAyahActionSheetNow() {
