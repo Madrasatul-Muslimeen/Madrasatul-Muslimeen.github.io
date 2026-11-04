@@ -3,6 +3,18 @@
 Written by Hadith Lead session `01Q2HmCeWjo1vVYV5kgMBvC9` at about 77% context, on the PCA's word (hand119).
 The next session is titled **"📌 (03B) MSA - Hadith Lead"**.
 
+## UPDATE, 12:38 pm 4 Nov (Hadith Lead after the 12:30 pm handover): K1 PART A IS BUILT AND HANDED IN
+
+PR #1453 (ready, `claude/hadith-keys-k1` `4815dc5`), Hadith files only. The "Words" switch on the HadeethEnc card opens QR's Word card
+(`?word=S:A:W&back=1&from=hadith-<id>`) for a word whose root is in the Qur'an, else the five-level Hadith Word Card (honest "no data"
+notes, draft label). Roots come from `tools/hadith-data-pull/hadith-word-roots.mjs` -> `output/hadith-words/quran-forms.json` (ambiguous
+and particle forms left out). ONE tokeniser: `app/js/hadith-words.js` (`tokeniseHadith`, position from 1 over the Arabic words); Part B's
+marks MUST use it. Suite `hadith-word-card-browser.mjs` 110/0, `--prove` 8/8; reader 116/0, hadeethenc 82/0, translations 45/0.
+**Open:** QR's "Back to the hadith" pill label needs a `quranrevival.html` edit (Architect/QR Lead); thin levels (Root, Taṣrīf, relatives in
+other hadith have no data); Library cards still not sent (send_card.py refused by the permission check); Part B waits on K0 (PR #1450);
+the PMS J03 line was not written (large read; the Architect can note the hand-in). Sandbox: `node serve.js` in the background,
+`SHOTS=<dir>` for screenshots (else they land in the repo root).
+
 ## HANDOVER, 4 Nov 2026 (about 12:30 pm Sydney; session `01PL2xbKWeTSDEBJV5UWZTcQ`'s successor → a fresh Hadith Lead)
 
 Handed over at the context limit (use1102), BEFORE any K1 code was written. State: **nothing in flight except K1.**
