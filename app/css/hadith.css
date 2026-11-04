@@ -503,11 +503,12 @@ body.hadith-pane-dragging { user-select: none; }
 /* Keys to Understanding K1 Part A (PCF MSA J03): the hadith's words and the Hadith Word Card.
    The sheet is the app's dark Word-card palette on every surface (a palette belongs to a surface). */
 .hwc-words { margin: 0.6rem 0; }
-.hwc-switch { min-height: 40px; display: inline-flex; align-items: center; gap: 0.5rem; padding: 0 0.8rem; border: 1px solid var(--hadith-rule); border-radius: 0.4rem; background: transparent; color: var(--hadith-ink); font: inherit; font-weight: 600; cursor: pointer; max-width: 100%; }
-.hwc-key, .hwc-nodata { font-size: 0.85rem; line-height: 1.5; color: var(--hadith-muted); margin: 0.4rem 0; overflow-wrap: anywhere; }
+.hwc-switch { min-height: 40px; display: inline-flex; align-items: center; gap: 0.5rem; padding: 0 0.8rem; border: 1px solid var(--card-line, var(--hadith-rule)); border-radius: 0.4rem; background: transparent; color: var(--card-text, var(--hadith-ink)); font: inherit; font-weight: 600; cursor: pointer; max-width: 100%; }
+.hwc-key, .hwc-nodata { font-size: 0.85rem; line-height: 1.5; color: var(--card-text-muted, var(--hadith-muted)); margin: 0.4rem 0; overflow-wrap: anywhere; }
 .hwc-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; direction: rtl; }
-.hwc-chip { min-height: 40px; min-width: 40px; display: inline-flex; align-items: center; justify-content: center; padding: 0 0.7rem; border-radius: 0.4rem; border: 1px solid var(--hadith-rule); background: transparent; color: var(--hadith-ink); font: inherit; font-size: 1.15rem; text-decoration: none; cursor: pointer; }
+.hwc-chip { min-height: 40px; min-width: 40px; display: inline-flex; align-items: center; justify-content: center; padding: 0 0.7rem; border-radius: 0.4rem; border: 1px solid var(--card-line, var(--hadith-rule)); background: transparent; color: var(--card-text, var(--hadith-ink)); font: inherit; font-size: 1.15rem; text-decoration: none; cursor: pointer; }
 .hwc-chip.hwc-q { border-color: #1F6E5A; color: #1F6E5A; }
+[data-card-look="night"] .hwc-chip.hwc-q { border-color: #7fd3b8; color: #7fd3b8; } /* the card's own surface: a palette belongs to a surface */
 .hwc-chip.hwc-h { border-color: var(--hadith-gold); }
 .hwc-overlay { position: fixed; inset: 0; z-index: 60; display: flex; align-items: flex-end; justify-content: center; background: rgba(8, 12, 22, 0.55); padding: 0; }
 .hwc-sheet { box-sizing: border-box; width: min(100%, 560px); max-height: 92vh; overflow-y: auto; overflow-x: hidden; background: #1c2a46; color: #eef1f7; border-radius: 14px 14px 0 0; padding: 0 max(16px, env(safe-area-inset-left, 0px)) calc(5.5rem + env(safe-area-inset-bottom, 0px)); display: grid; gap: 0.7rem; align-content: start; } /* 5.5rem: the round Zab button must never cover the last tab */

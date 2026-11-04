@@ -19,6 +19,9 @@ const MUT = {
   nofocus: ["js/hadith-word-card.js", "onClose: () => node.focus() }", "onClose: () => {} }"],
   noesc: ["js/hadith-word-card.js", "if (e.key === \"Escape\") close();", ""],
   nodatamsg: ["js/hadith-word-card.js", "t(\"Relatives of this word in other hadith are not listed yet.\")", "\"\""],
+  qgreen: ["css/hadith.css", "[data-card-look=\"night\"] .hwc-chip.hwc-q { border-color: #7fd3b8; color: #7fd3b8; }", "[data-card-look=\"night\"] .hwc-chip.hwc-q { border-color: #1F6E5A; color: #1F6E5A; }"],
+  inkchip: ["css/hadith.css", "color: var(--card-text, var(--hadith-ink)); font: inherit; font-size: 1.15rem;", "color: var(--hadith-ink); font: inherit; font-size: 1.15rem;"],
+  inkswitch: ["css/hadith.css", "color: var(--card-text, var(--hadith-ink)); font: inherit; font-weight: 600;", "color: var(--hadith-ink); font: inherit; font-weight: 600;"],
   smallchip: ["css/hadith.css", ".hwc-chip { min-height: 40px; min-width: 40px;", ".hwc-chip { min-height: 20px; min-width: 20px;"],
 };
 const arg = (k) => (process.argv.find((a) => a.startsWith(`--${k}=`)) || "").slice(k.length + 3);
@@ -78,6 +81,20 @@ for (const [lang, width, zoom] of [["en", 1280, 1], ["bn", 390, 1], ["en", 360, 
   check(`${tag} الشمس (root شمس) is a link into QR's Word card`, byText("الشمس")[0]?.k === "q" && /quranrevival\.html\?word=\d+:\d+:\d+&back=1/.test(byText("الشمس")[0].href), JSON.stringify(byText("الشمس")[0]));
   check(`${tag} every Qur'an link carries back=1 (the way back)`, ks.filter((x) => x.k === "q").every((x) => x.href.includes("&back=1")) && ks.some((x) => x.k === "q"));
   for (const particle of ["عن", "من", "حتى", "أتدري"]) check(`${tag} ${particle} opens the Hadith Word Card, not the Qur'an`, byText(particle).length > 0 && byText(particle).every((x) => x.k === "h"), JSON.stringify(byText(particle)[0]));
+  // Rendered contrast against the REAL background (the Hadith card's own face), in each card look (a palette belongs to a surface).
+  for (const look of ["default", "night", "light"]) {
+    if (look !== "default") await P.evaluate((l) => document.documentElement.setAttribute("data-card-look", l), look);
+    const ratios = await P.evaluate(() => {
+      const parse = (c) => { const m = c.match(/rgba?\(([^)]+)\)/); if (!m) return null; const [r, g, b, a = 1] = m[1].split(/[ ,\/]+/).filter(Boolean).map(Number); return { r, g, b, a }; };
+      const lum = ({ r, g, b }) => { const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }; return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b); };
+      const bgOf = (n) => { for (let e = n; e; e = e.parentElement) { const c = parse(getComputedStyle(e).backgroundColor); if (c && c.a > 0.9) return c; } return { r: 255, g: 255, b: 255, a: 1 }; };
+      const ratio = (n) => { const f = parse(getComputedStyle(n).color), b = bgOf(n.parentElement); const [x, y] = [lum(f), lum(b)].sort((p, q) => q - p); return Math.round(((x + 0.05) / (y + 0.05)) * 100) / 100; };
+      const one = (sel) => { const n = document.querySelector(sel); return n ? ratio(n) : 0; };
+      return { q: one(".hwc-chip.hwc-q"), h: one(".hwc-chip.hwc-h"), sw: one(".hwc-switch"), key: one(".hwc-key") };
+    });
+    for (const [what, r] of Object.entries(ratios)) check(`${tag} [${look} look] ${what === "q" ? "a Qur'an chip" : what === "h" ? "a Hadith chip" : what === "sw" ? "the Words switch" : "the key line"} reads on the card (>= 4.5:1)`, r >= 4.5, String(r));
+  }
+  await P.evaluate(() => document.documentElement.removeAttribute("data-card-look"));
   check(`${tag} chips are at least 40px tall`, ks.every((x) => x.h >= 39.5), String(Math.min(...ks.map((x) => x.h))));
   check(`${tag} no sideways scroll`, (await noSideways(P)) <= 0, String(await noSideways(P)));
   // the sheet, on ويوشك (HadeethEnc glosses يوشك)
