@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "13.29",
+    "version": "13.30",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -6293,7 +6293,7 @@
     {
       "version": "13.29",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "J88 fix: the self-hosted sign-in helper sends Google its address without the trailing slash GitHub Pages adds (redirect_uri_mismatch since v13.24).",
       "integration": {
         "authorizedOn": "2026-11-03",
@@ -6301,10 +6301,23 @@
         "method": "MERGE_PR",
         "reference": "CHANGELOG.md"
       }
+    },
+    {
+      "version": "13.30",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Dua selections and Asma-frame poster, Read next, the intention reminder for all MSA, and the Hadith Word Card, released together.",
+      "integration": {
+        "authorizedOn": "2026-11-04",
+        "integratedOn": "2026-11-04",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
     }
   ],
-  "nextUnallocated": "13.30",
+  "nextUnallocated": "13.31",
   "nextUnallocatedNote": [
+    "v13.30 was allocated to Dua D26+D25, J03 K3 Read next, J05 intention reminder, J03 K1A Hadith Word Card, 2026-11-04.",
     "v13.29 was allocated to J88 fix: Sign in with Google's return address without the slash, 2026-11-03.",
     "v13.28 was allocated to J112 before R1: Siyagah sign-in and Map hook, switched off, 2026-11-03.",
     "v13.27 was allocated to Quran Study ⋮ Note & more after a new Note, 2026-11-03.",

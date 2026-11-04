@@ -2920,3 +2920,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v13.27** (2026-11-03): Quran Study ⋮ Note & more after a new Note.
 - **v13.28** (2026-11-03): J112 before R1: Siyagah sign-in and Map hook, switched off.
 - **v13.29** (2026-11-03): J88 fix: Sign in with Google's return address without the slash.
+- **v13.30** (2026-11-04): Dua D26+D25, J03 K3 Read next, J05 intention reminder, J03 K1A Hadith Word Card.
