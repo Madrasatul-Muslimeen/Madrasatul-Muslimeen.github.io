@@ -1072,3 +1072,4 @@ total). Allocated by the MMSA Architect.
 13.29: J88 fix: Sign in with Google's return address without the slash. Allocated by the MMSA Architect.
 13.30: Dua D26+D25, J03 K3 Read next, J05 intention reminder, J03 K1A Hadith Word Card. Allocated by the MMSA Architect.
 13.31: Read next on QR's Āyah card and Word card (J03 K3), Back to the hadith on the Word card, the one-line intention card above a Mushaf page (J05). Allocated by the MMSA Architect.
+13.32: the three marks Difficult / Need practice / Done on the Āyah card, Word card, Marks wheel and the HadeethEnc card, and the teacher's view on Monitor (J03 K2 + K1 Part B + K4), after the Owner published the Keys Rules. Allocated by the MMSA Architect.

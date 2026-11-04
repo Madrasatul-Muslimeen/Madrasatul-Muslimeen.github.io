@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "13.31",
+    "version": "13.32",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -6317,8 +6317,20 @@
     {
       "version": "13.31",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "QR Lead's three rounds #1465, #1466 and #1467, reviewed together on one tree; no Rules, nothing deployed.",
+      "integration": {
+        "authorizedOn": "2026-11-04",
+        "integratedOn": "2026-11-04",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.32",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "J03 K4 bundle #1464 (K4 #1461, K1 Part B #1453, K2 #1454), released after the Owner published the Keys Rules in study-monitoring on 5 Nov 2026.",
       "integration": {
         "authorizedOn": "2026-11-04",
         "integratedOn": "2026-11-04",
@@ -6327,8 +6339,9 @@
       }
     }
   ],
-  "nextUnallocated": "13.32",
+  "nextUnallocated": "13.33",
   "nextUnallocatedNote": [
+    "v13.32 was allocated to the three marks Difficult / Need practice / Done on the Āyah card, Word card, Marks wheel and the HadeethEnc card, and the teacher's view on Monitor (J03 K2 + K1 Part B + K4), after the Owner published the Keys Rules, 2026-11-04.",
     "v13.31 was allocated to Read next on QR's Āyah card and Word card (J03 K3), Back to the hadith on the Word card, the one-line intention card above a Mushaf page (J05), 2026-11-04.",
     "v13.30 was allocated to Dua D26+D25, J03 K3 Read next, J05 intention reminder, J03 K1A Hadith Word Card, 2026-11-04.",
     "v13.29 was allocated to J88 fix: Sign in with Google's return address without the slash, 2026-11-03.",
