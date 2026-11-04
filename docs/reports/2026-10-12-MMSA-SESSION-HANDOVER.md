@@ -2976,3 +2976,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v13.30** (2026-11-04): Dua D26+D25, J03 K3 Read next, J05 intention reminder, J03 K1A Hadith Word Card.
 - **v13.31** (2026-11-04): Read next on QR's Āyah card and Word card (J03 K3), Back to the hadith on the Word card, the one-line intention card above a Mushaf page (J05).
 - **v13.32** (2026-11-04): the three marks Difficult / Need practice / Done on the Āyah card, Word card, Marks wheel and the HadeethEnc card, and the teacher's view on Monitor (J03 K2 + K1 Part B + K4), after the Owner published the Keys Rules.
+- **v13.33** (2026-11-04): Monitor's Show on wheel opens that student's Marks wheel, read-only, with Back (J03 fix, QR Lead #1474); the intention-card check compares with the line-height (#1472, test only).
