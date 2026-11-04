@@ -4684,4 +4684,9 @@ export const BN = {
   "the sentence": "বাক্য",
   "A word with a root in the Qur'an opens the Qur'an's Word card (↗). Any other word opens the Hadith Word Card.": "যে শব্দের মূল কুরআনে আছে তা কুরআনের শব্দ কার্ড খোলে (↗)। অন্য শব্দ হাদীস শব্দ কার্ড খোলে।",
   "The word list could not be opened. Check the connection and press Words again.": "শব্দের তালিকা খোলা যায়নি। সংযোগ দেখে আবার ‘শব্দ’ চাপুন।",
+  "Marks for this word": "এই শব্দের চিহ্ন",
+  "Marks for this hadith": "এই হাদীসের চিহ্ন",
+  "Sign in to put marks on this.": "এতে চিহ্ন দিতে সাইন ইন করুন।",
+  "Your marks could not be read. Check the connection and open this again.": "আপনার চিহ্ন পড়া যায়নি। সংযোগ দেখে আবার খুলুন।",
+  "That mark was not saved. Check the connection and try again.": "চিহ্নটি সংরক্ষণ হয়নি। সংযোগ দেখে আবার চেষ্টা করুন।",
 };
