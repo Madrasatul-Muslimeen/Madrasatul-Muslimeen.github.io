@@ -1073,3 +1073,4 @@ total). Allocated by the MMSA Architect.
 13.30: Dua D26+D25, J03 K3 Read next, J05 intention reminder, J03 K1A Hadith Word Card. Allocated by the MMSA Architect.
 13.31: Read next on QR's Āyah card and Word card (J03 K3), Back to the hadith on the Word card, the one-line intention card above a Mushaf page (J05). Allocated by the MMSA Architect.
 13.32: the three marks Difficult / Need practice / Done on the Āyah card, Word card, Marks wheel and the HadeethEnc card, and the teacher's view on Monitor (J03 K2 + K1 Part B + K4), after the Owner published the Keys Rules. Allocated by the MMSA Architect.
+13.33: Monitor's Show on wheel opens that student's Marks wheel, read-only, with Back (J03 fix, QR Lead #1474); the intention-card check compares with the line-height (#1472, test only). Allocated by the MMSA Architect.

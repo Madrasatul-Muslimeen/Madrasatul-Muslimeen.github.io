@@ -5951,7 +5951,7 @@
     // Issue #468 -- classic (non-module) script: runs before first paint.
     (function () {
       var q = new URLSearchParams(location.search);
-      if (!(q.get("bookmark") || q.get("goto") || q.get("word") || q.get("resume") || q.get("last"))) return;
+      if (!(q.get("bookmark") || q.get("goto") || q.get("word") || q.get("resume") || q.get("last") || q.get("keysFor"))) return;
       var root = document.documentElement;
       root.classList.add("bm-opening");
       var cover = document.getElementById("bmCover");
@@ -7797,7 +7797,7 @@
     // The intention reminder (the Owner, 4 Nov 2026, PCF MSA J05): one line above the āyāt, a different one of four each day.
     import { INTENTION_CSS, getIntentionMode, setIntentionMode, getClosedDay, markClosedToday, shouldShowIntention, intentionCardHtml, intentionSettingHtml, wireIntention, localDay } from "./js/intention-reminder.js";
     // PCF MSA J03 K2 -- the three marks (Difficult / Need practice / Done) on the Āyah card, the Word card and the Marks wheel.
-    import { loadSurahKeys, setAyahKey, setWordKey } from "./js/ayah-keys-data.js";
+    import { loadSurahKeys, loadPersonSurahKeys, setAyahKey, setWordKey } from "./js/ayah-keys-data.js";
     import { marksRowHtml, wireMarksRow, wheelPieces, marksWheelHtml, wireMarksWheel, marksLegendHtml, MARKS_CSS, MARKS_WHEEL_VIEWS } from "./js/marks-ui.js";
     import { loadAyahHadithHits, describeHit, pickHits, hadithHitHref } from "./js/ayah-hadith.js";
     import { renderReadNext } from "./js/read-next-ui.js"; // J03 K3 "Read next" on the Āyah card and the Word card
@@ -10606,7 +10606,7 @@
       currentSurahNum = surahIndex[0]?.surahNumber ?? 1;
       if (!lastSessionReady) {
         const params = new URLSearchParams(location.search);
-        const deepLinked = params.get("bookmark") || params.get("goto") || params.get("word") || params.get("resume") || params.get("last");
+        const deepLinked = params.get("bookmark") || params.get("goto") || params.get("word") || params.get("resume") || params.get("last") || params.get("keysFor");
         const rememberedSurah = deepLinked ? null : getQuranLastSession()?.settings?.surahNum;
         if (typeof rememberedSurah === "number" && surahIndex.some((sx) => sx.surahNumber === rememberedSurah)) {
           currentSurahNum = rememberedSurah;
@@ -11244,6 +11244,7 @@
       const lang = marksLang();
       wheelLegendContainer.innerHTML = marksLegendHtml(lang);
       const surah = currentSurahData?.surahNumber;
+      if (marksViewFor) { renderStudentMarksWheel(surah, lang); return; }
       if (!marksCtx() || !surah) {
         wheelContainer.innerHTML = `<p class="mk-wheel-msg" data-mk-wheel-msg>${escapeHtml(t("Sign in as yourself to see your marks."))}</p>`;
         return;
@@ -11263,6 +11264,39 @@
         else openWordCardForOccurrenceId(`quran-word-occurrence:v1:${surah}:${p.go.ayah}:${p.go.position}`);
       });
       wheelContainer.querySelectorAll("[data-mk-view]").forEach((b) => b.addEventListener("click", () => { marksWheelView = b.dataset.mkView; renderWheel(); }));
+    }
+    /** A student's marks on the wheel, read-only: a plain line names whose they are; a tap on a piece does nothing (no marks of anyone's
+        are written or opened from here); "Show my own marks" returns to the reader's own wheel. */
+    function renderStudentMarksWheel(surah, lang) {
+      const head = `<p class="mk-wheel-for" data-mk-wheel-for><strong>${escapeHtml(t("Marks of {name}", { name: viewMarksName() }))}</strong> <span class="mk-wheel-for-ro">${escapeHtml(t("(view only)"))}</span> <button type="button" class="wheel-look-btn" data-mk-own>${escapeHtml(t("Show my own marks"))}</button></p>`;
+      const done = () => wheelContainer.querySelector("[data-mk-own]")?.addEventListener("click", () => { marksViewFor = null; renderWheel(); });
+      if (!surah || !auth.currentUser || !selectedPersonId) { wheelContainer.innerHTML = head + `<p class="mk-wheel-msg" data-mk-wheel-msg>${escapeHtml(t("Sign in as yourself to see your marks."))}</p>`; done(); return; }
+      ensureViewMarks(surah);
+      if (viewMarks.state !== "ready") {
+        wheelContainer.innerHTML = head + `<p class="mk-wheel-msg" data-mk-wheel-msg>${escapeHtml(viewMarks.state === "failed" ? t("These marks could not be loaded right now.") : t("Loading the marks…"))}</p>`;
+        done(); return;
+      }
+      const names = { "ayat": t("Āyāt of this sūrah"), "ayah-words": t("Words of this āyah"), "all-words": t("Words of every āyah") };
+      const pieces = wheelPieces(marksWheelView, currentSurahData, currentAyahNum);
+      const switchHtml = `<div class="mk-view-switch wheel-look-switch" data-mk-view-switch role="group" aria-label="${escapeHtml(t("Which view"))}">${MARKS_WHEEL_VIEWS.map((v) => `<button type="button" class="wheel-look-btn" data-mk-view="${v}" aria-pressed="${v === marksWheelView}">${escapeHtml(names[v])}</button>`).join("")}</div>`;
+      const top = marksWheelView === "ayah-words" ? `${surah}:${currentAyahNum}` : `${t("Sūrah")} ${num(surah)}`;
+      wheelContainer.innerHTML = head + `<div class="mk-wheel-wrap">${switchHtml}${marksWheelHtml(pieces, viewMarks.marks, { lang, centreTop: top, centreSub: names[marksWheelView] })}</div>`;
+      wheelContainer.querySelectorAll("[data-mk-view]").forEach((b) => b.addEventListener("click", () => { marksWheelView = b.dataset.mkView; renderWheel(); }));
+      done();
+    }
+    async function openKeysForFromQueryString() {
+      const params = new URLSearchParams(location.search);
+      const who = params.get("keysFor");
+      if (!who) return;
+      const surah = Number(params.get("surah") || 1);
+      if (!surahIndex.some((x) => x.surahNumber === surah)) { bookmarkNotFound(); return; }
+      marksViewFor = who;
+      await goToReference(surah, 1, null);
+      wheelKind = "marks";
+      setStageView("wheel");
+      renderWheel();
+      // The way-back law (decision 86): Monitor's link carries back=1.
+      if (params.get("back") === "1" && history.length > 1) setAppReturn(t("Back"), "", () => history.back());
     }
     function renderVocabWheel() {
       if (wheelRingPanelEl) wheelRingPanelEl.hidden = true;
@@ -12202,7 +12236,7 @@
         exactly where it opened before this existed. */
     async function restoreLastSession() {
       const params = new URLSearchParams(location.search);
-      if (params.get("bookmark") || params.get("goto") || params.get("word") || params.get("resume") || params.get("last") || params.get("qpSurah") || params.get("ayahCard")) return;
+      if (params.get("bookmark") || params.get("goto") || params.get("word") || params.get("resume") || params.get("last") || params.get("keysFor") || params.get("qpSurah") || params.get("ayahCard")) return;
       const saved = getQuranLastSession();
       if (!saved) return;
       // The app ALWAYS opens on the wheel -- the owner's own call, once the
@@ -23533,6 +23567,22 @@
     // ===== PCF MSA J03 K2: the three marks. One read per sūrah, when a card or the Marks wheel first shows (I9); never at start-up. =====
     const marksStyleEl = document.createElement("style"); marksStyleEl.textContent = MARKS_CSS; document.head.appendChild(marksStyleEl);
     let marksStore = { id: "", mine: {}, state: "idle" }, marksBusy = new Set(), marksWheelView = "ayat";
+    // J03 (the Owner, 5 Nov 2026): Monitor's "Show on wheel" opens Quran Study with ?surah=&keysFor=<personId>&back=1: the Marks wheel
+    // shows THAT student's marks, read-only (a teacher / guardian / owner reads them, the Rules' call). Nothing here ever writes.
+    let marksViewFor = null, viewMarks = { id: "", marks: {}, state: "idle" };
+    function viewMarksName() {
+      const o = [...document.querySelectorAll("#personSelect option")].find((x) => x.value === marksViewFor);
+      return (o?.textContent || "").trim() || marksViewFor;
+    }
+    function ensureViewMarks(surah) {
+      if (!marksViewFor || !surah || !activeTenantId || !auth.currentUser || !selectedPersonId) return;
+      const id = `${activeTenantId}|${marksViewFor}|${surah}`;
+      if (viewMarks.id === id && viewMarks.state !== "idle") return;
+      viewMarks = { id, marks: {}, state: "loading" };
+      loadPersonSurahKeys(db, { tenantId: activeTenantId, personId: selectedPersonId, uid: auth.currentUser.uid }, surah, marksViewFor)
+        .then((r) => { if (viewMarks.id !== id) return; viewMarks = { id, marks: r ?? {}, state: "ready" }; if (wheelKind === "marks") renderWheel(); })
+        .catch((err) => { if (viewMarks.id !== id) return; viewMarks = { id, marks: {}, state: "failed" }; console.warn("student's marks not loaded:", err?.code || err?.message || err); if (wheelKind === "marks") renderWheel(); });
+    }
     function marksCtx() {
       if (!isSelfSelectedForAyahActions() || !activeTenantId || !auth.currentUser) return null;
       return { tenantId: activeTenantId, personId: selectedPersonId, uid: auth.currentUser.uid };
@@ -27502,6 +27552,7 @@
         await step("open bookmark", openBookmarkFromQueryString);
         await step("open goto link", openGotoFromQueryString);
         await step("open word link", openWordFromQueryString);
+        await step("open a student's marks wheel", openKeysForFromQueryString);
         await step("open remembered place", openPlaceFromQueryString);
         await step("open remembered Asma Name", openAsmaNameFromQueryString);
         await step("open remembered Āyah card", openAyahCardFromQueryString);
