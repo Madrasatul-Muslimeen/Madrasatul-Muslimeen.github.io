@@ -7094,7 +7094,7 @@
       <div id="panelStudyOptions" class="qr-panel" hidden>
         <div class="qr-panel-head">Study options <span class="qr-panel-head-actions"><button type="button" class="opt-btn preset-save-btn" id="presetSaveBtn"></button><button type="button" class="qr-panel-x" data-close-panel aria-label="Close">&times;</button></span></div>
         <div class="study-options-body">
-        <div id="intentionOpt"></div><!-- the intention reminder setting: every time / once a day / off -->
+        <div id="intentionOpt"></div><div id="questionCardOpt"></div><!-- the Note question card: on / off --><!-- the intention reminder setting: every time / once a day / off -->
         <!-- Shell round 11 (13 Aug 2026) -- the owner's own three-bar layout,
              from their mockup. The controls are grouped by WHAT KIND of choice
              they are, which is the thing the old flat wrap-as-it-fits row
@@ -7795,6 +7795,8 @@
     import { renderAyahActionSheetHtml, attachAyahActionSheetHandlers, approachStageIdsFor, stageColourStyle } from "./js/ayah-action-sheet.js";
     // The intention reminder (the Owner, 4 Nov 2026, PCF MSA J05): one line above the āyāt, a different one of four each day.
     import { INTENTION_CSS, getIntentionMode, setIntentionMode, getClosedDay, markClosedToday, shouldShowIntention, intentionCardHtml, intentionSettingHtml, wireIntention, localDay } from "./js/intention-reminder.js";
+    // The Note's question card toggle (PCF MSA J05, T15 A): the card itself is placed on the Note by the shared Note window.
+    import { QUESTION_CARD_CSS, getQuestionCardMode, setQuestionCardMode, questionCardSettingHtml } from "./js/critical-reasoning-guides.js";
     import { loadAyahHadithHits, describeHit, pickHits, hadithHitHref } from "./js/ayah-hadith.js";
     import { renderReadNext } from "./js/read-next-ui.js"; // J03 K3 "Read next" on the Āyah card and the Word card
     import { renderPageApproachCardHtml, attachPageApproachCardHandlers } from "./js/page-approach-card.js";
@@ -23494,6 +23496,14 @@
     mushafToggle.addEventListener("change", () => document.getElementById("intentionHost")?.classList.toggle("intention-one-line", !!mushafToggle.checked));
     document.getElementById("tabStudyOptionsBtn")?.addEventListener("click", paintIntentionSetting);
     paintIntentionSetting();
+    const questionCardStyleEl = document.createElement("style"); questionCardStyleEl.textContent = QUESTION_CARD_CSS; document.head.appendChild(questionCardStyleEl);
+    function paintQuestionCardSetting() {
+      const host = document.getElementById("questionCardOpt"); if (!host) return;
+      host.innerHTML = questionCardSettingHtml({ mode: getQuestionCardMode(selectedPersonId || null), lang: getAppLang() === "bn" ? "bn" : "en" });
+      host.querySelectorAll("[data-question-card-mode]").forEach((b) => b.addEventListener("click", () => { setQuestionCardMode(selectedPersonId || null, b.dataset.questionCardMode); paintQuestionCardSetting(); }));
+    }
+    document.getElementById("tabStudyOptionsBtn")?.addEventListener("click", paintQuestionCardSetting);
+    paintQuestionCardSetting();
     function renderAyahActionSheetNow() {
       if (!ayahSheetUnitKey) return;
       const { surah, ayah: ayahNum } = parseAyahUnitKey(ayahSheetUnitKey);
