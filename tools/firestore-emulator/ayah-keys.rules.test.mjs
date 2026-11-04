@@ -182,6 +182,16 @@ async function matrix(rules) {
   return bad;
 }
 
+// K0 (4 Nov 2026): the candidate now carries the hadithKeyMarks block AFTER this one; a mutation here touches the
+// ayahKeyMarks block only (hadith-keys.rules.test.mjs mutates the other), so each suite proves its own block.
+function splitAyahBlock() {
+  const start = candidate.indexOf("KEYS TO UNDERSTANDING (PCF J03");
+  const end = candidate.indexOf("KEYS TO UNDERSTANDING ON HADITH");
+  assert.ok(start > 0 && end > start, "the ayahKeyMarks block was not found before the hadithKeyMarks block");
+  const cut = candidate.lastIndexOf("    // ====", end);
+  return [candidate.slice(0, start), candidate.slice(start, cut), candidate.slice(cut)];
+}
+
 // Each mutation removes or inverts ONE check of the candidate. EVERY occurrence is replaced (a partial mutation proves nothing).
 const MUTATIONS = [
   ["madrasah writes open to any member", /\? \(canAdminIdentity\(tenantId\) \|\| isTeacherIn\(tenantId\)\)/g, "? (signedIn() && myRolesIn(tenantId).size() > 0)"],
@@ -220,10 +230,9 @@ const REDUNDANT = [
 ];
 for (const [name, re, replacement] of REDUNDANT) {
   test(`REDUNDANT BY DESIGN (stays green): ${name}`, async () => {
-    const start = candidate.indexOf("KEYS TO UNDERSTANDING (PCF J03");
-    const head = candidate.slice(0, start), block = candidate.slice(start);
+    const [head, block, tail] = splitAyahBlock();
     assert.ok((block.match(re) || []).length >= 1, "the anchor matched nothing");
-    const bad = await matrix(head + block.replace(re, replacement));
+    const bad = await matrix(head + block.replace(re, replacement) + tail);
     assert.deepEqual(bad, [], "expected redundant, but the matrix went red: re-read the comment above");
   });
 }
@@ -235,13 +244,11 @@ test("the candidate behaves exactly as the matrix says", async () => {
 
 for (const [name, re, replacement] of MUTATIONS) {
   test(`MUTATION: ${name} -> the matrix goes red`, async () => {
-    const start = candidate.indexOf("KEYS TO UNDERSTANDING (PCF J03");
-    assert.ok(start > 0);
-    const head = candidate.slice(0, start), block = candidate.slice(start);
+    const [head, block, tail] = splitAyahBlock();
     const count = (block.match(re) || []).length;
     console.log(`    [${name}] occurrences replaced: ${count}`);
     assert.ok(count >= 1, "the mutation matched nothing -- it proves nothing");
-    const bad = await matrix(head + block.replace(re, replacement));
+    const bad = await matrix(head + block.replace(re, replacement) + tail);
     assert.ok(bad.length >= 1, "the matrix stayed green under this mutation: that check is untested");
   });
 }
