@@ -54,7 +54,7 @@ const GOOD = { ready: true, decision: { by: "master-architect", on: "2026-11-10"
 const SHIPPED = R.SIYAGAH_CLOUD_DECLARATION;
 check("the shipped declaration is ON for R1: the master architect's decision, Siyagah's project aaas-notebook, the owner's notebook",
   R.isSiyagahCloudReady() === true && SHIPPED.decision.by === "master-architect" && SHIPPED.config.projectId === "aaas-notebook"
-  && SHIPPED.config.authDomain === "aaas-notebook.firebaseapp.com" && SHIPPED.notebookId === "nb-mriuc27o-f44402" && !("appId" in SHIPPED.config));
+  && !("authDomain" in SHIPPED.config) && SHIPPED.notebookId === "nb-mriuc27o-f44402" && !("appId" in SHIPPED.config));
 check("a config without an appId (Siyagah's own has none) is ON; an EMPTY appId is refused",
   R.isSiyagahCloudReady({ ...GOOD, config: { apiKey: "k", projectId: "siyagah-test" } }) === true
   && R.isSiyagahCloudReady({ ...GOOD, config: { ...CONFIG, appId: "" } }) === false);

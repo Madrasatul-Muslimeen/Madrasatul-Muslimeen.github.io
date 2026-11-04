@@ -26,13 +26,15 @@ export const SIYAGAH_CLOUD_AUTHORITIES = Object.freeze(["master-architect"]);
  * MSA Master Architect's job PCF MSA J112 round R1, built by its builder round on the Architect's instruction.
  * The config is Siyagah's PUBLIC web-app config (an apiKey for a Firebase web app is not a secret; Siyagah's own
  * Firestore Rules are what keep its data to the owner's sign-in). Siyagah has no appId; none is needed to read.
+ * Its authDomain (aaas-notebook.firebaseapp.com) is NOT written here: siyagah-cloud.js works it out per host
+ * (this site's own /__/auth/ on the self-hosted hosts, aaas-notebook.firebaseapp.com elsewhere), and
+ * self-hosted-auth.mjs refuses any other authDomain in app/.
  */
 export const SIYAGAH_CLOUD_DECLARATION = Object.freeze({
   ready: true,
   decision: Object.freeze({ by: "master-architect", on: "2026-11-04", reference: "PCF MSA J112 R1 (Siyagah R1 live, v05.66; MMJ-SHARE reader contract)" }),
   config: Object.freeze({
     apiKey: "AIzaSyBxrQ5uNrerOAFiCmUbUkUM8tjMpjKygsA",
-    authDomain: "aaas-notebook.firebaseapp.com",
     projectId: "aaas-notebook",
     storageBucket: "aaas-notebook.firebasestorage.app",
     messagingSenderId: "32292493079",
