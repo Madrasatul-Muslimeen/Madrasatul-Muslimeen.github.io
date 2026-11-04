@@ -18,7 +18,8 @@
 // Removing a key writes the SHORTER list; the document is never deleted and an empty list stays an empty
 // list (I4, D6).
 //
-// NO PAGE IMPORTS THIS MODULE YET. The Rules it needs are a CANDIDATE only
+// ONE PAGE READS THROUGH THIS MODULE (J03 K4, 4 Nov 2026): monitor.html's teacher's view (keys-teacher-view.js) calls
+// loadPersonSurahKeys/loadPersonHadithKeys when its section is opened; no page writes yet. The Rules it needs are a CANDIDATE only
 // (docs/governance/2026-10-15-ayah-keys-candidate.rules), not published. Nothing here runs at start-up (I9).
 // Every write goes through envelope.js inside safeWrite() (I15: a failed save reaches the user).
 //
