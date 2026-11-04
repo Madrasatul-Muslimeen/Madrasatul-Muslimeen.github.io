@@ -140,6 +140,7 @@
        shared topic surface (topic-study.js, used by eight pages) stays below, untouched. One component, two routes:
        hadith-collections.html mounts the same browser. -->
   <section id="hadithCorpusSection" aria-label="Hadith Study">
+    <div id="intentionHost"></div><!-- the intention reminder (PCF MSA J05), above the hadith -->
     <div id="hadithCorpusRoot"></div>
   </section>
 
@@ -192,6 +193,7 @@
        say so. Separate scripts, separate fates. -->
   <script type="module">
     import { mountHadithBrowser } from "./js/hadith-browser.js";
+    import { mountIntentionReminder } from "./js/intention-mount.js";
     import { t } from "./js/i18n.js";
 
     document.getElementById("hadithCorpusSection").setAttribute("aria-label", t("Hadith Study"));
@@ -213,6 +215,7 @@
       const resumeDua = /^dua:(\d{1,5})$/.exec(resumeParam ?? "");
       const initialDua = duaQs.get("view") === "dua" && Number.isInteger(duaPageParam) && duaPageParam > 0 ? { page: duaPageParam, dua: Number.isInteger(duaParam) ? duaParam : null }
         : resumeDua ? { page: 1, dua: Number(resumeDua[1]), findPage: true } : null;
+      mountIntentionReminder(document.getElementById("intentionHost"));
       const corpus = mountHadithBrowser(document.getElementById("hadithCorpusRoot"), { mount: "hadith-module", initialHadeethEncId, initialDua });
       // The corpus's own study actions (Note/bookmark/Studied, issue #311)
       // read the signed-in session fresh on every render, but nothing tells
