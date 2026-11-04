@@ -11250,7 +11250,7 @@
       const pieces = wheelPieces(marksWheelView, currentSurahData, currentAyahNum);
       const switchHtml = `<div class="mk-view-switch wheel-look-switch" data-mk-view-switch role="group" aria-label="${escapeHtml(t("Which view"))}">${MARKS_WHEEL_VIEWS.map((v) => `<button type="button" class="wheel-look-btn" data-mk-view="${v}" aria-pressed="${v === marksWheelView}">${escapeHtml(names[v])}</button>`).join("")}</div>`;
       const top = marksWheelView === "ayah-words" ? `${surah}:${currentAyahNum}` : `${t("Sūrah")} ${num(surah)}`;
-      wheelContainer.innerHTML = switchHtml + marksWheelHtml(pieces, marksStore.mine, { lang, centreTop: top, centreSub: names[marksWheelView] });
+      wheelContainer.innerHTML = `<div class="mk-wheel-wrap">${switchHtml}${marksWheelHtml(pieces, marksStore.mine, { lang, centreTop: top, centreSub: names[marksWheelView] })}</div>`;
       wireMarksWheel(wheelContainer, pieces, (p) => {
         if (p.go.kind === "ayah") openAyahActionSheet(`${surah}:${p.go.ayah}`);
         else openWordCardForOccurrenceId(`quran-word-occurrence:v1:${surah}:${p.go.ayah}:${p.go.position}`);

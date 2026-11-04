@@ -134,6 +134,7 @@ export const MARKS_CSS = `
 .mk-hard[aria-pressed="true"] { background:#c8553d; color:#fff; border-color:#c8553d; }
 .mk-practice[aria-pressed="true"] { background:#b9770e; color:#fff; border-color:#b9770e; }
 .mk-done[aria-pressed="true"] { background:#2e8b57; color:#fff; border-color:#2e8b57; }
+.mk-wheel-wrap { width:100%; flex:1 1 100%; min-width:0; }
 .mk-wheel { width:100%; max-width:420px; height:auto; display:block; margin:0 auto; }
 .mk-piece { cursor:pointer; outline:none; } .mk-piece:focus-visible .mk-band { stroke:#fff; stroke-width:1.5; }
 .mk-band { fill:rgba(143,160,194,.22); } .mk-band-hard.on { fill:#c8553d; } .mk-band-practice.on { fill:#d99a2b; } .mk-band-done.on { fill:#2e8b57; }
