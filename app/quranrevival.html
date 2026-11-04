@@ -25939,8 +25939,8 @@
     }
 
     /** Decision 90, round 1: "?word=S:A:W" opens the Word card at that Qur'an word in the Read view (a Dua card's
-        "Open in the Word card"). With back=1 the way back is a "Back to …" pill (decision 86); "from=dua-<n>" names
-        the Dua card it returns to. A malformed or unknown place does nothing but say the link was not found. */
+        "Open in the Word card"). With back=1 the way back is a "Back to …" pill (decision 86); "from=dua-<n>" / "from=hadith-<id>" name
+        the Dua card / hadith card it returns to. A malformed or unknown place does nothing but say the link was not found. */
     async function openWordFromQueryString() {
       const params = new URLSearchParams(location.search);
       const raw = params.get("word");
@@ -25963,7 +25963,9 @@
       await openWordOccurrenceAt(Number(m[1]), Number(m[2]), Number(m[3]), "read", record ? { level: "wbw" } : null);
       if (params.get("back") === "1" && history.length > 1) {
         const dua = /^dua-(\d+)$/.exec(params.get("from") ?? "");
-        setAppReturn(dua ? t("Back to Dua {n}", { n: num(Number(dua[1])) }) : t("Back"), "", () => history.back(), { inWordCard: true });
+        // J03 K1 Part A (the Hadith Word Card): "from=hadith-<id>" names the hadith card it returns to.
+        const hadith = /^hadith-[^&\s]+$/.test(params.get("from") ?? "");
+        setAppReturn(dua ? t("Back to Dua {n}", { n: num(Number(dua[1])) }) : hadith ? t("Back to the hadith") : t("Back"), "", () => history.back(), { inWordCard: true });
       }
       if (record) await runWordProgressAction({ kind: "state", state: record });
     }
