@@ -1668,7 +1668,8 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
         const bn = getAppLang() === "bn";
         return questionGuides.questionsFor(newApproachId).map((q) => ({ id: q.id, text: bn ? q.bn : q.en }));
       },
-      get questionCardCss() { return questionGuides?.QUESTION_CARD_CSS ?? ""; },
+      // The table's look is gold on Quran Study's dark surface; this window is white, so its own palette follows (1.8:1 -> 6:1).
+      get questionCardCss() { return questionGuides ? `${questionGuides.QUESTION_CARD_CSS}\n#notePane .question-card-btn { color: #7a5410; border-color: #c9a24a; background: #fdf7e8; }\n` : ""; },
       // Part C3: the person's own note settings (userPrefs/{uid}.mmsaNotes). Built on first use; read only when a Note first shows (I9).
       settings: () => (auth.currentUser ? (noteSettingsStore ??= createFirestoreSettingsStore({ db, uid: auth.currentUser.uid })) : null),
       // Item 35: pictures in Notes. Firebase Storage is loaded only when a picture is first used or shown (I9).
@@ -4306,8 +4307,9 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
       const body = bodyHtml ? sanitizeNoteHtml(`${bodyHtml}<p><br></p>`) : "";
       const title = newTitleParam;
       const order = nextOrder(notesInFolder(node).map((r) => r.placement));
+      // J05: the binding takes approach_NN only (studyNoteSource); any other shape is left off, never a failed Note.
       const outcome = await safeWrite(async () => {
-        const created = newUnitKey ? (await createStudyNote(db, { ...ownerArgs, unitKey: newUnitKey, title, bodyHtml: body, approachId: newApproachId })).note
+        const created = newUnitKey ? (await createStudyNote(db, { ...ownerArgs, unitKey: newUnitKey, title, bodyHtml: body, approachId: /^approach_\d{2}$/.test(newApproachId ?? "") ? newApproachId : null })).note
           : await createPermanentNote(db, { ...ownerArgs, title, bodyHtml: body });
         let placementId;
         try {
