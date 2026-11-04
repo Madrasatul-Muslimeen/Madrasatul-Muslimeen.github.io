@@ -140,6 +140,8 @@ export const MARKS_CSS = `
 .mk-tick { fill:#0e1630; }
 .mk-centre-top { fill:#e8ecf7; font-family:"Amiri Quran","Amiri",serif; } .mk-centre-sub, .mk-count-total { fill:#8fa0c2; }
 .mk-count-hard { fill:#e0806b; } .mk-count-practice { fill:#e3b04b; } .mk-count-done { fill:#5cc58a; }
+.wheel-stage-wrap.wheel-veiled.wheel-marks #wheelContainer svg { filter:none; }
+.mk-view-switch .wheel-look-btn { font-size:.74rem; padding:.2rem .55rem; min-height:36px; }
 .mk-view-switch { display:flex; flex-wrap:wrap; gap:.3rem; justify-content:center; margin:.4rem 0; }
 .mk-legend { display:flex; flex-wrap:wrap; gap:.3rem .9rem; justify-content:center; font-size:.85rem; margin:.4rem 0; }
 .mk-swatch { display:inline-block; width:.8rem; height:.8rem; border-radius:50%; margin-inline-end:.3rem; vertical-align:-1px; }

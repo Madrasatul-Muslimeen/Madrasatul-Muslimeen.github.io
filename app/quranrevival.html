@@ -10978,6 +10978,7 @@
     function renderWheel() {
       dropWheelPaintCopy();
       syncWheelKindSwitch();
+      wheelStageWrapEl?.classList.toggle("wheel-marks", wheelKind === "marks"); // J03 K2: the Marks wheel is never veiled (no Approach to pick)
       if (wheelKind === "vocab") { renderVocabWheel(); return; }
       if (wheelKind === "marks") { renderMarksWheel(); return; }
       if (!quranTrackables.length || !currentSurahData) {

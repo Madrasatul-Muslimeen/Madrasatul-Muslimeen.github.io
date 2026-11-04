@@ -104,10 +104,11 @@ for (const lang of ["en", "bn"]) for (const [width, height] of [[1440, 900], [39
   await settle(page, 400);
   m = await marksState(page);
   check(`${tag} (2) the card shows Difficult and Need practice pressed`, m.length === 3 && m[0].on && m[1].on && !m[2].on, JSON.stringify(m));
-  await ev(page, () => document.querySelector('[data-ayah-sheet] [data-mark-key="hard"]').click());
+  // The stub never mutates its data, so the next read is the seed ([hard]) again: tapping Need practice off writes the shorter list [hard].
+  await ev(page, () => document.querySelector('[data-ayah-sheet] [data-mark-key="practice"]').click());
   await page.waitForFunction((n) => (window.__stubWriteData || []).filter((x) => x.col === "ayahKeyMarks").length > n, before + 1, { timeout: 5000 }).catch(() => {});
   w = (await writesOf(page)).slice(before + 1);
-  check(`${tag} (2) a second tap on Difficult writes the shorter list [practice]`, w.length === 1 && w[0].includes('"practice"') && !w[0].includes('"hard"'), JSON.stringify(w));
+  check(`${tag} (2) a tap on a pressed mark writes the shorter list (the list without it, never a delete)`, w.length === 1 && w[0].includes('"entries.ayah:1:2":["hard"]') && w[0].includes('"kind":"update"'), JSON.stringify(w));
   await ev(page, () => document.querySelector("[data-ayah-sheet-close]")?.click());
   await settle(page, 300);
 
@@ -124,7 +125,7 @@ for (const lang of ["en", "bn"]) for (const [width, height] of [[1440, 900], [39
   m = await marksState(page);
   check(`${tag} (3) the Word card shows the three marks, Done pressed`, m.length === 3 && !m[0].on && !m[1].on && m[2].on, JSON.stringify(m));
   const wb = (await writesOf(page)).length;
-  await ev(page, () => document.querySelector('.quran-word-card [data-mark-key="hard"]').click());
+  await ev(page, () => [...document.querySelectorAll('.quran-word-card [data-mark-key="hard"]')].find((b) => b.getBoundingClientRect().width > 0)?.click());
   await page.waitForFunction((n) => (window.__stubWriteData || []).filter((x) => x.col === "ayahKeyMarks").length > n, wb, { timeout: 5000 }).catch(() => {});
   w = (await writesOf(page)).slice(wb);
   check(`${tag} (3) Difficult on a word saves entries.qword:1:1:1 = [done, hard]`, w.length === 1 && w[0].includes("qword:1:1:1") && w[0].includes('"done","hard"'), JSON.stringify(w));
@@ -132,6 +133,8 @@ for (const lang of ["en", "bn"]) for (const [width, height] of [[1440, 900], [39
   await settle(page, 300);
 
   // (4) the Marks wheel
+  await ev(page, () => document.getElementById("tabApproachBtn")?.click());
+  await settle(page, 500);
   if (width < 900) { await page.click('#wheelDrawerRow [data-wheel-drawer="wheel"]').catch(() => {}); await settle(page, 300); }
   await ev(page, () => document.querySelector('[data-wheel-kind="marks"]')?.click());
   await page.waitForSelector("#wheelContainer svg[data-mk-wheel]", { timeout: 6000 }).catch(() => {});
@@ -139,14 +142,14 @@ for (const lang of ["en", "bn"]) for (const [width, height] of [[1440, 900], [39
   let wh = await wi(page);
   check(`${tag} (4) āyāt view: one piece per āyah (${s1.ayahs.length}), three bands each`, wh.n === s1.ayahs.length && wh.bands === 3, JSON.stringify({ n: wh.n, b: wh.bands }));
   check(`${tag} (4) three views offered, āyāt pressed`, wh.views.length === 3 && wh.views[0][1] === "true", JSON.stringify(wh.views));
-  check(`${tag} (4) the saved mark (Difficult was removed from 1:2, so Need practice) is lit on piece 2 only`, wh.marks[1] === "practice" && wh.marks.filter(Boolean).length === 1, JSON.stringify(wh.marks));
+  check(`${tag} (4) the saved mark (Difficult) is lit on piece 2 only`, wh.marks[1] === "hard" && wh.marks.filter(Boolean).length === 1, JSON.stringify(wh.marks));
   const dones = await ev(page, () => document.querySelectorAll("#wheelContainer .mk-band-done.on").length);
   check(`${tag} (4) the Done band is drawn (and lit nowhere in the āyāt view)`, wh.bands === 3 && dones === 0);
   await ev(page, () => document.querySelector('[data-mk-view="all-words"]').click());
   await settle(page, 400);
   wh = await wi(page);
   const totalWords = s1.ayahs.reduce((n, a) => n + (a.words?.length ?? 0), 0);
-  check(`${tag} (4) all-words view: one piece per word (${totalWords}); 1:1:1 Done and 1:1:1 now Difficult+Done, 1:2:1 Need practice`, wh.n === totalWords && wh.marks[0] === "hard done" && /practice/.test(wh.marks.join("|")), JSON.stringify({ n: wh.n, first: wh.marks.slice(0, 2) }));
+  check(`${tag} (4) all-words view: one piece per word (${totalWords}); 1:1:1 is Difficult+Done, 1:2:1 Need practice`, wh.n === totalWords && wh.marks[0] === "hard done" && /practice/.test(wh.marks.join("|")), JSON.stringify({ n: wh.n, first: wh.marks.slice(0, 2) }));
   await ev(page, () => document.querySelector('[data-mk-view="ayah-words"]').click());
   await settle(page, 400);
   wh = await wi(page);
