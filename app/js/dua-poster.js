@@ -25,6 +25,8 @@ export function available(sheet) {
  * starts with Arabic, the reader's own language and the source; `as` is only how a share leaves (text or picture).
  */
 export const duaSel = { ar: true, en: lang() === "en", bn: lang() === "bn", wbw: false, vow: true, src: true, as: "text" };
+/** D23: fired when Vowels is switched anywhere, so the card and the chip stay one control. */
+export const DUA_VOW_EVENT = "dua-vowels-changed";
 const posterOpt = duaSel;
 const shareOpt = duaSel;
 /** Arabic as the reader chose it: with its vowel marks, or without. */
@@ -173,9 +175,14 @@ export function selectionBar(sheetOf) {
     row.appendChild(toggle(t(label), duaSel[k], off, (ev) => {
       duaSel[k] = !duaSel[k];
       ev.currentTarget.setAttribute("aria-pressed", String(duaSel[k]));
+      if (k === "vow") document.dispatchEvent(new CustomEvent(DUA_VOW_EVENT));
     }, k));
   }
   wrap.appendChild(row);
+  document.addEventListener(DUA_VOW_EVENT, () => {
+    const b = row.querySelector('[data-dua-switch="vow"]');
+    if (b?.isConnected) b.setAttribute("aria-pressed", String(duaSel.vow));
+  });
   return wrap;
 }
 /** What the poster and sharing are showing, as words, with the way to change it (on the card). */
