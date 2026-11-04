@@ -6630,6 +6630,7 @@
              this recording, one small line under the player says so (setTimingNoteHandler() below). Hidden otherwise. -->
         <p id="bnTimingNote" class="bn-timing-note" role="status" aria-live="polite" hidden></p>
         <div id="readScroll">
+          <div id="intentionHost"></div><!-- the intention reminder: one line above the āyāt -->
           <div id="studyScreen">
             <!-- v08.22 -- the way back from an occurrence. It lives HERE, in
                  the study screen above the āyah, and NOT inside the Word Card:
@@ -7093,6 +7094,7 @@
       <div id="panelStudyOptions" class="qr-panel" hidden>
         <div class="qr-panel-head">Study options <span class="qr-panel-head-actions"><button type="button" class="opt-btn preset-save-btn" id="presetSaveBtn"></button><button type="button" class="qr-panel-x" data-close-panel aria-label="Close">&times;</button></span></div>
         <div class="study-options-body">
+        <div id="intentionOpt"></div><!-- the intention reminder setting: every time / once a day / off -->
         <!-- Shell round 11 (13 Aug 2026) -- the owner's own three-bar layout,
              from their mockup. The controls are grouped by WHAT KIND of choice
              they are, which is the thing the old flat wrap-as-it-fits row
@@ -7791,6 +7793,8 @@
     // Card "This āyah ⋯") and its one new action, filing this reader's own
     // Note on the āyah into Mapping My Journey folder(s).
     import { renderAyahActionSheetHtml, attachAyahActionSheetHandlers, approachStageIdsFor, stageColourStyle } from "./js/ayah-action-sheet.js";
+    // The intention reminder (the Owner, 4 Nov 2026, PCF MSA J05): one line above the āyāt, a different one of four each day.
+    import { INTENTION_CSS, getIntentionMode, setIntentionMode, getClosedDay, markClosedToday, shouldShowIntention, intentionCardHtml, intentionSettingHtml, wireIntention, localDay } from "./js/intention-reminder.js";
     import { loadAyahHadithHits, describeHit, pickHits, hadithHitHref } from "./js/ayah-hadith.js";
     import { renderPageApproachCardHtml, attachPageApproachCardHandlers } from "./js/page-approach-card.js";
     // Issue #348 -- the Unit Card (Ruku'/Page/Hizb/Juz/Surah/Range) and the
@@ -23438,6 +23442,29 @@
       } catch { /* the link still opens the Notes page */ }
     }
 
+    // ===== The intention reminder (PCF MSA J05). Shown when the Read view opens; never at start-up (I9). Per device, per person. =====
+    const intentionStyleEl = document.createElement("style"); intentionStyleEl.textContent = INTENTION_CSS; document.head.appendChild(intentionStyleEl);
+    let intentionClosedThisOpening = false;
+    const intentionPerson = () => selectedPersonId || null;
+    function paintIntentionSetting() {
+      const host = document.getElementById("intentionOpt"); if (!host) return;
+      host.innerHTML = intentionSettingHtml({ mode: getIntentionMode(intentionPerson()), lang: getAppLang() === "bn" ? "bn" : "en" });
+      host.querySelectorAll("[data-intention-mode]").forEach((b) => b.addEventListener("click", () => {
+        setIntentionMode(intentionPerson(), b.dataset.intentionMode); intentionClosedThisOpening = false; paintIntentionSetting(); paintIntention();
+      }));
+    }
+    function paintIntention() {
+      const host = document.getElementById("intentionHost"); if (!host) return;
+      const readOpen = !document.getElementById("readView").hidden;
+      const person = intentionPerson(), today = localDay();
+      const show = readOpen && shouldShowIntention({ mode: getIntentionMode(person), closedDay: getClosedDay(person), today, closedThisOpening: intentionClosedThisOpening });
+      host.innerHTML = show ? intentionCardHtml({ lang: getAppLang() === "bn" ? "bn" : "en", day: today }) : "";
+      wireIntention(host, () => { intentionClosedThisOpening = true; markClosedToday(person, today); host.innerHTML = ""; });
+    }
+    new MutationObserver(() => { if (!document.getElementById("readView").hidden) { intentionClosedThisOpening = false; paintIntention(); } else paintIntention(); })
+      .observe(document.getElementById("readView"), { attributes: true, attributeFilter: ["hidden"] });
+    document.getElementById("tabStudyOptionsBtn")?.addEventListener("click", paintIntentionSetting);
+    paintIntentionSetting();
     function renderAyahActionSheetNow() {
       if (!ayahSheetUnitKey) return;
       const { surah, ayah: ayahNum } = parseAyahUnitKey(ayahSheetUnitKey);
