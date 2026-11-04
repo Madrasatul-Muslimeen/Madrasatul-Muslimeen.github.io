@@ -21,17 +21,14 @@ const root = path.resolve(here, "../..");
 const candidate = fs.readFileSync(path.join(root, process.env.RULES_FILE || "docs/governance/2026-10-15-ayah-keys-candidate.rules"), "utf8");
 const live = fs.readFileSync(path.join(root, "firestore.rules"), "utf8");
 
-// The candidate is the live file plus the ayahKeyMarks block: every live line is still there, in order.
-test("the candidate is firestore.rules plus the ayahKeyMarks block and nothing else", () => {
-  const cand = candidate.split("\n");
-  let j = 0; const missing = [];
-  for (const line of live.split("\n")) {
-    let k = j; while (k < cand.length && cand[k] !== line) k++;
-    if (k < cand.length) j = k + 1; else missing.push(line);
-  }
-  assert.deepEqual(missing, [], "live Rules lines missing from the candidate");
+// UPDATED IN PLACE 5 Nov 2026: the Owner PUBLISHED this candidate in study-monitoring (PCF MSA J03 k4rules1104), and the
+// repository's firestore.rules was made the same file. This test used to assert "firestore.rules plus the block, and the
+// live Rules do NOT carry it yet"; it now asserts that firestore.rules IS the published candidate, byte for byte.
+test("firestore.rules is the published candidate, byte for byte, and carries the ayahKeyMarks block", () => {
   assert.ok(/match \/ayahKeyMarks\//.test(candidate));
-  assert.ok(!/match \/ayahKeyMarks/.test(live), "the live Rules already carry ayahKeyMarks: this candidate is superseded");
+  assert.ok(/match \/ayahKeyMarks\//.test(live), "firestore.rules does not carry ayahKeyMarks: the repository no longer matches production");
+  assert.equal(live, fs.readFileSync(path.join(root, "docs/governance/2026-10-15-ayah-keys-candidate.rules"), "utf8"),
+    "firestore.rules differs from the published candidate");
 });
 
 const T = "t1";

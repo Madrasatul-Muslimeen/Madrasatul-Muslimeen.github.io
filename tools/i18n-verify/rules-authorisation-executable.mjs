@@ -632,8 +632,13 @@ check("Phase 4 evidence is frozen after create, in the Rules and in the writer",
     assert.match(matchBlock(akRules, "ayahKeyMarks/"), /allow delete: if false;/);
     assert.ok(!/\bdeleteDoc\b|\.delete\(|deleteField/.test(akSrc), "ayah-keys-data.js must never delete");
   });
-  check("AYAH KEYS: the live firestore.rules is untouched by this round (the candidate is NOT published)", () => {
-    assert.ok(!/ayahKeyMarks/.test(read("firestore.rules")), "firestore.rules already carries ayahKeyMarks");
+  // UPDATED IN PLACE 5 Nov 2026: the Owner PUBLISHED this candidate in study-monitoring (~6:20 am Sydney, PCF MSA J03
+  // k4rules1104), so the repository's firestore.rules was made the same file. This check used to assert the opposite
+  // ("the candidate is NOT published"); it now asserts what production carries, byte for byte.
+  check("AYAH KEYS: firestore.rules IS the published candidate, byte for byte (the Owner published it 5 Nov 2026)", () => {
+    const live = read("firestore.rules");
+    assert.ok(/match \/ayahKeyMarks\//.test(live), "firestore.rules does not carry ayahKeyMarks");
+    assert.equal(live, akRules, "firestore.rules differs from docs/governance/2026-10-15-ayah-keys-candidate.rules, which is what production carries");
   });
 
   // K0 (4 Nov 2026): the same marks on a hadith and its words, hadithKeyMarks, in the SAME candidate file.
@@ -665,8 +670,8 @@ check("Phase 4 evidence is frozen after create, in the Rules and in the writer",
     }
     assert.match(block, /allow delete: if false;/);
   });
-  check("HADITH KEYS: the live firestore.rules does not carry hadithKeyMarks (the candidate is NOT published)", () => {
-    assert.ok(!/hadithKeyMarks/.test(read("firestore.rules")), "firestore.rules already carries hadithKeyMarks");
+  check("HADITH KEYS: firestore.rules carries the published hadithKeyMarks block (the Owner published it 5 Nov 2026)", () => {
+    assert.equal(matchBlock(read("firestore.rules"), "hadithKeyMarks/"), matchBlock(akRules, "hadithKeyMarks/"), "firestore.rules' hadithKeyMarks block differs from the published candidate");
   });
 }
 

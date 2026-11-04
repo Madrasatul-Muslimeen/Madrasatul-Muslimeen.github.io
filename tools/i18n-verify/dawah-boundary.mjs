@@ -445,6 +445,10 @@ const PUBLISHED_DEPLOYMENTS = [
   // report docs/reports/2026-10-15-zab-enabled.md) and firestore.rules has been byte-identical to this file since.
   // Red on main from v10.55 for the same reason as the two entries above; the dawahPages-block half is unchanged.
   "docs/governance/2026-10-14-zab-candidate.rules",
+  // Added 5 Nov 2026 (Architect): the Owner published the Keys to Understanding Rules in study-monitoring (~6:20 am
+  // Sydney, PCF MSA J03 k4rules1104, released as v13.32), and firestore.rules was made this file the same morning.
+  // Red on main before that, because firestore.rules had moved on from the Zab file; the dawahPages-block half is unchanged.
+  "docs/governance/2026-10-15-ayah-keys-candidate.rules",
 ];
 function dawahBlock(text) {
   const start = text.indexOf("match /dawahPages/");
