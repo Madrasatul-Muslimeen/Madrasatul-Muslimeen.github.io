@@ -1,10 +1,15 @@
-// NEEDS docs/reports/2026-11-04-note-window-question-card.patch APPLIED (git apply) -- note-window.js is shared; the MSA Architect applies it.
+// UPDATED IN PLACE (J05 wiring round, 4 Nov 2026): the patch is applied, and journey-map.html now gives its OWN questionCardFor (the
+// Note made in its window from Quran Study). An object literal keeps the LAST of two equal keys, so the route below renames the page's
+// hook before adding this test's, which stays first; "no hook" then means no hook at all, as before. Without the rename the
+// page's hook (no Approach in this address) would answer [] and the "with the hook" checks would test nothing of the window.
+// The hook also hands over QUESTION_CARD_CSS, the shape the applied patch takes (the window no longer imports it).
 // J05 question card in the shared Note window (QR Lead, 4 Nov 2026), against the PATCH app/js/note-window.js carries:
 // a page that gives host.questionCardFor(note) -> [{id,text}] gets those questions as buttons above the toolbar WHILE EDITING;
 // a tap adds the question as an <h3> to answer under (and a paragraph after it); [] / no hook draws nothing; the card is gone
 // when editing ends. The test gives the hook to journey-map.html through a route (the page itself is not changed here).
 // Run from the repository root, serve.js on :8080.
 import { chromium, newContext, openPage } from "./harness.mjs";
+import { QUESTION_CARD_CSS } from "../../app/js/critical-reasoning-guides.js";
 let pass = 0, fail = 0;
 const check = (n, ok, d = "") => { if (ok && typeof ok.then === "function") throw new Error("promise"); if (ok) { pass++; console.log(`  PASS  ${n}`); } else { fail++; console.log(`  FAIL  ${n} ${d}`); } };
 const ev = (page, f, a) => page.evaluate(f, a);
@@ -25,13 +30,15 @@ const SEED = (owner) => `
   N("n1", "Note One"); N("n2", "Note Two"); N("n3", "Note Three");
   P("p1", "n1", "fA", 0); P("p2", "n2", "fA", 1); P("p3", "n3", "fA", 2);
 })();`;
-const HOOKS = ["", "questionCardFor: () => [{ id: 'q1', text: 'What did I read?' }, { id: 'q2', text: 'What would show I am wrong?' }],\n"];
+// The host hands over the card's look too (host.questionCardCss): the shared window imports nothing of Quran Study (I2).
+const HOOKS = ["", "questionCardFor: () => [{ id: 'q1', text: 'What did I read?' }, { id: 'q2', text: 'What would show I am wrong?' }],\n"
+  + `questionCardCss: ${JSON.stringify(QUESTION_CARD_CSS)},\n`];
 for (const [label, hook] of [["with the hook", HOOKS[1]], ["no hook", ""]]) {
   for (const width of [360, 1024]) {
     const tag = `[${label} ${width}]`;
     const ctx = await newContext(browser, { banner: false, viewport: { width, height: 900 }, extraSeedJs: SEED("p1") });
     await ctx.addInitScript(() => { try { localStorage.setItem("qr.journeyMapExpanded", JSON.stringify(["fA"])); } catch {} });
-    await ctx.route("**/app/journey-map.html*", async (r) => { const res = await r.fetch(); const body = await res.text(); r.fulfill({ response: res, body: body.replace("const noteViews = createNoteViews({", "const noteViews = createNoteViews({\n" + hook) }); });
+    await ctx.route("**/app/journey-map.html*", async (r) => { const res = await r.fetch(); const body = await res.text(); r.fulfill({ response: res, body: body.replace("questionCardFor: (note) => {", "questionCardForPage: (note) => {").replace("get questionCardCss()", "get questionCardCssPage()").replace("const noteViews = createNoteViews({", "const noteViews = createNoteViews({\n" + hook) }); });
     const { page } = await openPage(ctx, "/app/journey-map.html");
     await page.waitForTimeout(1200);
     await page.evaluate(() => document.querySelectorAll('[id*="splash"], .app-splash-overlay').forEach((e) => e.remove()));
