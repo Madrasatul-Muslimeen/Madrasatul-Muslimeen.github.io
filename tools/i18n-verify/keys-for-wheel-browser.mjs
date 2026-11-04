@@ -88,6 +88,24 @@ for (const lang of QUICK ? ["en"] : ["en", "bn"]) for (const width of QUICK ? [3
   check("Show my own marks leaves the student's view", (await page.evaluate(() => !document.querySelector("[data-mk-wheel-for]"))));
   await ctx.close();
 }
+// the head line is its own full-width row: at 360px with 200% text it must not squeeze the wheel (it was ~125px beside the switch)
+for (const [pct, width] of [[100, 360], [200, 360], [200, 390], [150, 768]]) {
+  const tag = `[head row ${width}px ${pct}%]`;
+  const { ctx, page } = await open("en", width, "/app/quranrevival.html?surah=1&keysFor=p2");
+  await page.waitForSelector("[data-mk-wheel]", { timeout: 25000 }).catch(() => {});
+  await page.evaluate((p) => { document.documentElement.style.fontSize = p + "%"; }, pct);
+  await page.click("[data-mk-view=\"ayat\"]").catch(() => {});
+  await page.waitForTimeout(700);
+  const m = await page.evaluate(() => {
+    const svg = document.querySelector("#wheelContainer svg[data-mk-wheel]"), head = document.querySelector("[data-mk-wheel-for]"), wrap = document.querySelector("#wheelContainer .mk-wheel-wrap"), sw = document.querySelector("[data-mk-view-switch]");
+    if (!svg || !head || !wrap || !sw) return { none: true };
+    const a = svg.getBoundingClientRect(), h = head.getBoundingClientRect(), w = wrap.getBoundingClientRect(), v = sw.getBoundingClientRect();
+    return { wheel: Math.round(a.width), wrap: Math.round(w.width), headW: Math.round(h.width), aboveSwitch: h.bottom <= v.top + 1, headFull: h.width >= w.width - 2, inside: a.left >= -1 && a.right <= innerWidth + 1, over: document.documentElement.scrollWidth - innerWidth };
+  });
+  check(`${tag} the head line takes its own full-width row, above the view switch`, !m.none && m.aboveSwitch && m.headFull, JSON.stringify(m));
+  check(`${tag} the wheel keeps its size (> 150px and most of its row), on screen, no sideways scroll`, !m.none && m.wheel > 150 && m.wheel >= m.wrap * 0.6 && m.inside && m.over <= 0, JSON.stringify(m));
+  await ctx.close();
+}
 await browser.close();
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

@@ -220,9 +220,11 @@ function onMessage(ev) {
  * Opens a NEW blank Note. `ref` (optional): { kind: "ayah"|"hadith", id, label, text: { ar, en, bn } } -- the Āyah or Hadith
  * the Note starts with; `unitKey` / `unitLabel`: the unit it is started on (an āyah, a wider Qur'an unit, a hadith);
  * `title`: its first title; `backLabel`: the way back's name ("Back to Āyah card"); `onClosed()`: runs after it closes;
- * `onOpenExisting()`: what "open" does on the "You have N Notes" line; `count`: an already known number of earlier Notes.
+ * `onOpenExisting()`: what "open" does on the "You have N Notes" line; `count`: an already known number of earlier Notes;
+ * `approachId` (J05): the Approach the reader has selected where the Note is made ("approach_14"); the Note keeps it on its
+ * source, and the window shows that Approach's question card. Anything not of that shape is left out.
  */
-export async function openNewNote({ ref = null, unitKey = null, unitLabel = "", title = "", backLabel = "", onClosed = null, onOpenExisting = null, count = null } = {}) {
+export async function openNewNote({ ref = null, unitKey = null, unitLabel = "", title = "", backLabel = "", onClosed = null, onOpenExisting = null, count = null, approachId = null } = {}) {
   if (win && !win.hidden) await closeNewNote({ quiet: true }); // one new Note at a time; the one open is saved first
   if (!win) build();
   await ensureCatalogueReady();
@@ -232,6 +234,7 @@ export async function openNewNote({ ref = null, unitKey = null, unitLabel = "", 
   if (cur.unitKey) q.set("unit", cur.unitKey);
   if (unitLabel) q.set("unitLabel", unitLabel);
   if (title) q.set("noteTitle", title);
+  if (typeof approachId === "string" && /^approach_\d{1,2}$/.test(approachId)) q.set("approach", approachId);
   q.set("refs", "1"); // wait for the opener's answer (its refs, and the way back's name) before making the Note
   say("");
   closeAttach();

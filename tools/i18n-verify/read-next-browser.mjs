@@ -25,7 +25,7 @@ const LABELS = {
   en: ["Qur'an", "Hadith", "Dictionary", "Scholars", "Tafsīr"],
   bn: ["কুরআন", "হাদীস", "অভিধান", "আলেমগণ", "তাফসীর"],
 };
-const HEAD = { en: "Read next", bn: "পরে পড়ুন" };
+const HEAD = { en: "Study Next", bn: "পরবর্তী অধ্যয়ন" }; // K3b (5 Nov 2026): renamed from "Read next" / "পরে পড়ুন"
 
 /** Arabic without its marks (and ٱ as ا), so a check can name the words without matching the mark order. */
 const bare = (s) => String(s ?? "").normalize("NFC").replace(/[\u064B-\u065F\u0670\u06D6-\u06ED\u08D3-\u08FF]/g, "").replace(/\u0671/g, "\u0627").replace(/\u06E2/g, "");
@@ -135,7 +135,7 @@ for (const lang of ["en", "bn"]) {
     if (lang === "bn") {
       const leak = await page.evaluate((box) => {
         const b = document.querySelector(box);
-        return [...b.querySelectorAll(".read-next-head, [data-read-next-tab], .read-next-note, .read-next-sub, summary, a.read-next-go")].map((e) => e.textContent).filter((x) => /\b(Read next|Loading|Open the|Where to read|Scholars who|The compiler|From your|Dictionary words|quotes the same)\b/.test(x));
+        return [...b.querySelectorAll(".read-next-head, [data-read-next-tab], .read-next-note, .read-next-sub, summary, a.read-next-go")].map((e) => e.textContent).filter((x) => /\b(Study Next|Read next|Loading|Open the|Where to read|Scholars who|The compiler|From your|Dictionary words|quotes the same)\b/.test(x));
       }, BOX);
       check(`${label} no English chrome left in the Bangla box`, leak.length === 0, leak.join(" | "));
     }

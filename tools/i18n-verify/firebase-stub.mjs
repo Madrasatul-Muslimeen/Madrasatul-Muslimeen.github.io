@@ -20,7 +20,10 @@ const UID = "test-uid";
 // Default latency is 0, so the translation suites behave exactly as before.
 // ---------------------------------------------------------------------------
 const LATENCY = __LATENCY__;
-try { window.__fsLog = []; } catch (e) {}
+// J112 R1: KEPT, not reset, when a second copy of this stub is evaluated in the same page (a module imported late, such
+// as the Map's Siyagah reader importing firebase-app.js under a suite that serves every gstatic URL itself): a reset
+// would erase the reads the page already made. A new page still starts with an empty log.
+try { window.__fsLog = window.__fsLog || []; } catch (e) {}
 let __seq = 0;
 async function __trip(kind, col, id, produce) {
   const rec = { n: ++__seq, kind: kind, col: col, id: id || null, t0: performance.now(), t1: null, stack: (function () { try { return new Error().stack; } catch (e) { return ""; } })() };
@@ -280,6 +283,8 @@ export function signOut() { return Promise.resolve(); }
 export function onAuthStateChanged(auth, cb) { setTimeout(() => cb({ uid: UID, email: "smahk9@gmail.com", displayName: "Owner" }), 0); return () => {}; }
 
 export function initializeFirestore() { return { _stub: true }; }
+// PCF MSA J112 R1: the Siyagah reader (siyagah-mmj-data.js) starts Firestore on Siyagah's named app.
+export function getFirestore() { return { _stub: true }; }
 export function persistentLocalCache() { return {}; }
 export function persistentMultipleTabManager() { return {}; }
 
@@ -354,6 +359,9 @@ function matches(d, c) {
   // everything), and every shard would re-read the WHOLE range rather than
   // its own slice -- correct-looking totals hiding wasted, duplicated reads.
   if (c.op === "<") return v < c.value;
+  // J112 R1: the Siyagah reader's cursor, where("at", ">", <Date>). Nothing in app/ used ">" before it (grepped), so no
+  // earlier suite's numbers move. A Date compares by its time; a seeded number by itself.
+  if (c.op === ">") return (v instanceof Date ? v.getTime() : v) > (c.value instanceof Date ? c.value.getTime() : c.value);
   return true;
 }
 
@@ -383,7 +391,50 @@ export async function getDocs(q) {
     return { docs: rows.map(snapDoc), empty: rows.length === 0, size: rows.length, forEach(f) { this.docs.forEach(f); } };
   });
 }
+// J112 R1: OPT-IN (window.__stubDenyCols = ["notebooks/"]): a read of a collection whose path STARTS WITH a listed
+// prefix is refused the way Siyagah's Rules refuse an app whose host is not authorised: { code: "permission-denied" }.
+function __denied(col) {
+  try { var l = window.__stubDenyCols; if (Array.isArray(l) && l.some(function (p) { return String(col || "").indexOf(p) === 0; })) return true; } catch (e) {}
+  return false;
+}
+function __deny(col) { var e = new Error("Missing or insufficient permissions. (" + col + ")"); e.code = "permission-denied"; return e; }
+// J112 R1: onSnapshot for the Siyagah reader. Answers like getDocs (the same filter and order), then again each time a
+// test calls window.__stubEmit(col, row) -- which also puts the row into DATA -- with only the rows that changed.
+// Every call is counted on window.__stubSnapLog so a suite can prove the reader did not loop.
+export function onSnapshot(q, next, error) {
+  var closed = false;
+  try { (window.__stubSnapLog = window.__stubSnapLog || []).push({ col: q.__col, t: Date.now() }); } catch (e) {}
+  var run = function (onlyIds) {
+    if (closed) return;
+    if (__denied(q.__col)) { if (error) error(__deny(q.__col)); closed = true; return; }
+    getDocs(q).then(function (snap) {
+      if (closed) return;
+      var docs = onlyIds ? snap.docs.filter(function (d) { return onlyIds.indexOf(d.id) >= 0; }) : snap.docs;
+      var type = onlyIds ? "modified" : "added";
+      next({ docs: docs, size: docs.length, empty: docs.length === 0, docChanges: function () { return docs.map(function (d) { return { type: type, doc: d }; }); } });
+    }, function (e) { if (error) error(e); });
+  };
+  setTimeout(function () { run(null); }, 0);
+  var me = { q: q, run: run };
+  try {
+    window.__stubSnapListeners = window.__stubSnapListeners || [];
+    window.__stubSnapListeners.push(me);
+    window.__stubEmit = function (col, row) {
+      DATA[col] = DATA[col] || [];
+      var at = DATA[col].findIndex(function (d) { return d._id === row._id; });
+      if (at >= 0) DATA[col][at] = row; else DATA[col].push(row);
+      window.__stubSnapListeners.forEach(function (l) { if (l.q.__col === col) l.run([row._id]); });
+    };
+    window.__stubPut = function (col, row) { // into DATA only, no notification (a piece that lands before its doc)
+      DATA[col] = DATA[col] || [];
+      var at = DATA[col].findIndex(function (d) { return d._id === row._id; });
+      if (at >= 0) DATA[col][at] = row; else DATA[col].push(row);
+    };
+  } catch (e) {}
+  return function () { closed = true; try { window.__stubSnapListeners = window.__stubSnapListeners.filter(function (l) { return l !== me; }); } catch (e) {} };
+}
 export async function getDoc(ref) {
+  if (__denied(ref.__col)) { try { (window.__stubDeniedLog = window.__stubDeniedLog || []).push({ col: ref.__col, id: ref.__id, t: Date.now() }); } catch (e) {} throw __deny(ref.__col); }
   // PCF MSA J73: a read that never answers (a connection that hangs), for the collections a test names.
   if (typeof window !== "undefined" && Array.isArray(window.__stubHangCols) && window.__stubHangCols.includes(ref.__col)) return new Promise(() => {});
   // PCF MSA J03 K4: a read the Rules refuse (as the real service does until the Owner publishes a candidate), for the
