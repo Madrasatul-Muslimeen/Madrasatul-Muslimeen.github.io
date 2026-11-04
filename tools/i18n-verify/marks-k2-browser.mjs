@@ -92,6 +92,8 @@ for (const lang of ["en", "bn"]) for (const [width, height] of [[1440, 900], [39
   let m = await marksState(page);
   check(`${tag} (1) the Āyah card shows the three marks, in order, in ${lang}`, m.length === 3 && m.map((x) => x.text).join("|") === want.join("|"), JSON.stringify(m));
   check(`${tag} (1) only the saved mark (Difficult) is pressed`, m.length === 3 && m[0].on && !m[1].on && !m[2].on, JSON.stringify(m));
+  const blockText = await ev(page, () => document.querySelector("[data-ayah-sheet-marks]")?.innerText ?? "");
+  check(`${tag} (1) the marks block (heading, label, buttons) is ${lang === "bn" ? "all Bangla, no English" : "English"}`, lang === "bn" ? /[ঀ-৿]/.test(blockText) && !/[A-Za-z]/.test(blockText) : /Marks for this/.test(blockText), JSON.stringify(blockText));
   check(`${tag} (5) every mark button is at least 40px tall`, m.length === 3 && m.every((x) => x.h >= 40), JSON.stringify(m.map((x) => x.h)));
   const fitCard = await ev(page, () => { const row = document.querySelector("[data-marks-row]"); if (!row) return { inside: false, over: 0, none: true }; const r = row.getBoundingClientRect(); const sh = document.querySelector("[data-ayah-sheet]").getBoundingClientRect(); return { inside: r.left >= sh.left - 1 && r.right <= sh.right + 1, over: document.documentElement.scrollWidth - innerWidth }; });
   check(`${tag} (5) the marks row sits inside the card, no sideways scroll`, fitCard.inside && fitCard.over <= 0, JSON.stringify(fitCard));
