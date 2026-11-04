@@ -75,6 +75,14 @@ a.read-next-item { min-height: 40px; }
 a.read-next-item:hover, a.read-next-go:hover { background: #eef2fa; }
 .read-next-group > summary { min-height: 40px; display: flex; align-items: center; cursor: pointer; font-weight: 700; color: inherit; }
 .read-next-group > div { display: grid; gap: 0.4rem; }
+/* The night look (audit part 146): no near-white tab, box or button inside the dark page; the card's own night palette. */
+[data-card-look="night"] .read-next-tabs > button { background: var(--card-bg-inset); color: var(--card-text); border-color: var(--card-line); }
+[data-card-look="night"] .read-next-tabs > button[aria-pressed="true"] { background: var(--card-bg); color: var(--card-heading); border-color: var(--card-heading); }
+[data-card-look="night"] .read-next-item { background: var(--card-bg-inset); color: var(--card-text); border-color: var(--card-line); }
+[data-card-look="night"] .read-next-item .rn-ref, [data-card-look="night"] a.read-next-go, [data-card-look="night"] a.read-next-item { color: var(--card-heading); }
+[data-card-look="night"] .read-next-item .rn-small { color: var(--card-text-muted); }
+[data-card-look="night"] a.read-next-go { border-color: var(--card-heading); }
+[data-card-look="night"] a.read-next-item:hover, [data-card-look="night"] a.read-next-go:hover { background: var(--card-bg); }
 `;
 function ensureStyle(doc) {
   if (doc.getElementById("readNextStyle")) return;
