@@ -6091,6 +6091,7 @@
             <div id="wheelKindSwitch" class="wheel-look-switch" role="group" aria-label="Which Wheel">
               <button type="button" class="wheel-look-btn" data-wheel-kind="approaches" aria-pressed="true">Approaches</button>
               <button type="button" class="wheel-look-btn" data-wheel-kind="vocab" aria-pressed="false">Vocabulary</button>
+              <button type="button" class="wheel-look-btn" data-wheel-kind="marks" aria-pressed="false">Marks</button><!-- PCF MSA J03 K2 -->
             </div>
             <div class="wheel-look-switch" data-vocab-fill-switch role="group" aria-label="How a segment fills" hidden>
               <button type="button" class="wheel-look-btn" data-vocab-fill="new" aria-pressed="true" title="Fill by the step's new words">New words</button>
@@ -7791,6 +7792,9 @@
     // Card "This āyah ⋯") and its one new action, filing this reader's own
     // Note on the āyah into Mapping My Journey folder(s).
     import { renderAyahActionSheetHtml, attachAyahActionSheetHandlers, approachStageIdsFor, stageColourStyle } from "./js/ayah-action-sheet.js";
+    // PCF MSA J03 K2 -- the three marks (Difficult / Need practice / Done) on the Āyah card, the Word card and the Marks wheel.
+    import { loadSurahKeys, setAyahKey, setWordKey } from "./js/ayah-keys-data.js";
+    import { marksRowHtml, wireMarksRow, wheelPieces, marksWheelHtml, wireMarksWheel, marksLegendHtml, MARKS_CSS, MARKS_WHEEL_VIEWS } from "./js/marks-ui.js";
     import { loadAyahHadithHits, describeHit, pickHits, hadithHitHref } from "./js/ayah-hadith.js";
     import { renderPageApproachCardHtml, attachPageApproachCardHandlers } from "./js/page-approach-card.js";
     // Issue #348 -- the Unit Card (Ruku'/Page/Hizb/Juz/Surah/Range) and the
@@ -10975,6 +10979,7 @@
       dropWheelPaintCopy();
       syncWheelKindSwitch();
       if (wheelKind === "vocab") { renderVocabWheel(); return; }
+      if (wheelKind === "marks") { renderMarksWheel(); return; }
       if (!quranTrackables.length || !currentSurahData) {
         wheelContainer.innerHTML = `<p style="color:#8fa0c2;">${t("No Approaches yet.")}</p>`;
         wheelSidebarContainer.innerHTML = "";
@@ -11221,6 +11226,35 @@
     function vocabCtxIsCurrent() {
       const { tenantId, subjectPersonId } = wordProgressActor();
       return !!learnNextCtx && learnNextCtx.tenantId === tenantId && learnNextCtx.personId === subjectPersonId;
+    }
+    /** PCF MSA J03 K2 -- the Marks wheel: three bands per piece (outer Difficult, middle Need practice, inner Done), three views. */
+    function renderMarksWheel() {
+      if (wheelRingPanelEl) wheelRingPanelEl.hidden = true;
+      wheelHubPickers.hidden = true;
+      wheelCtaBtn.hidden = true;
+      wheelSidebarContainer.innerHTML = "";
+      const lang = marksLang();
+      wheelLegendContainer.innerHTML = marksLegendHtml(lang);
+      const surah = currentSurahData?.surahNumber;
+      if (!marksCtx() || !surah) {
+        wheelContainer.innerHTML = `<p class="mk-wheel-msg" data-mk-wheel-msg>${escapeHtml(t("Sign in as yourself to see your marks."))}</p>`;
+        return;
+      }
+      ensureSurahMarks(surah);
+      if (!marksReadyFor(surah)) {
+        wheelContainer.innerHTML = `<p class="mk-wheel-msg" data-mk-wheel-msg>${escapeHtml(marksStore.state === "failed" ? t("Your marks could not be loaded right now.") : t("Loading your marks…"))}</p>`;
+        return;
+      }
+      const names = { "ayat": t("Āyāt of this sūrah"), "ayah-words": t("Words of this āyah"), "all-words": t("Words of every āyah") };
+      const pieces = wheelPieces(marksWheelView, currentSurahData, currentAyahNum);
+      const switchHtml = `<div class="mk-view-switch wheel-look-switch" data-mk-view-switch role="group" aria-label="${escapeHtml(t("Which view"))}">${MARKS_WHEEL_VIEWS.map((v) => `<button type="button" class="wheel-look-btn" data-mk-view="${v}" aria-pressed="${v === marksWheelView}">${escapeHtml(names[v])}</button>`).join("")}</div>`;
+      const top = marksWheelView === "ayah-words" ? `${surah}:${currentAyahNum}` : `${t("Sūrah")} ${num(surah)}`;
+      wheelContainer.innerHTML = switchHtml + marksWheelHtml(pieces, marksStore.mine, { lang, centreTop: top, centreSub: names[marksWheelView] });
+      wireMarksWheel(wheelContainer, pieces, (p) => {
+        if (p.go.kind === "ayah") openAyahActionSheet(`${surah}:${p.go.ayah}`);
+        else openWordCardForOccurrenceId(`quran-word-occurrence:v1:${surah}:${p.go.ayah}:${p.go.position}`);
+      });
+      wheelContainer.querySelectorAll("[data-mk-view]").forEach((b) => b.addEventListener("click", () => { marksWheelView = b.dataset.mkView; renderWheel(); }));
     }
     function renderVocabWheel() {
       if (wheelRingPanelEl) wheelRingPanelEl.hidden = true;
@@ -19824,10 +19858,11 @@
       else if (quranWordCardState.level === "tasrif") ensureNounData(word);
       // Round 4 -- an accordion the reader opened or closed stays that way: read the open state off the DOM before it is replaced.
       content.querySelectorAll("details[data-word-card-sec]").forEach((d) => { wordCardDepthOpen[d.dataset.wordCardSec] = d.open; });
+      wireMarksRow(content, onMarkToggle); // PCF MSA J03 K2
       // Round 6 -- what was typed in the Search row stays, however often the card is redrawn.
       const typed = content.querySelector("[data-word-card-search-input]");
       if (typed) wordCardSearch.value = typed.value;
-      content.innerHTML = renderQuranWordCard({ state: quranWordCardState, chapter: currentSurahData, ayah, word, context: { ...quranWordCardContext, search: wordCardSearch, lemmaForms: lemmaFormsTable, verbForms: verbFormsTable, verbFormsFailed, nounForms: nounFormsTable, nounFormsFailed, formTexts: nounFormTexts, nounBox: wordCardNounBox?.id === quranWordCardState.occurrenceId ? wordCardNounBox.key : null, depthOpen: wordCardDepthOpen, conjView: wordCardConjView, conjBasic: wordCardConjBasic === quranWordCardState.occurrenceId, formsOpen, meaningLang: getAppLang() === "bn" ? "bn" : "en", conjNarrow: window.matchMedia("(max-width: 640px)").matches, needsSource: needsSourceContext(word, currentSurahData.surahNumber), ...wordCardDictionaryContext(word), ...intermediateContext(word), ...wordProgressContext(ref), ...quranWordCardLemmaContext, hasPrevious: at > 0, hasNext: at >= 0 && at < ids.length - 1, rootOccurrenceCount: quranWordCardContext.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0, colourWordPartsEnabled: true, translitScript: getTransliterationScript(), displayRef: wordRefFor }, labels: { ...wordCardLabels(), ...wordProgressLabels() }, formatNumber: num });
+      content.innerHTML = renderQuranWordCard({ state: quranWordCardState, chapter: currentSurahData, ayah, word, context: { ...quranWordCardContext, marksHtml: marksRowFor(`qword:${currentSurahData.surahNumber}:${ayah.ayah}:${word.position}`, currentSurahData.surahNumber, t("Marks for this word")), search: wordCardSearch, lemmaForms: lemmaFormsTable, verbForms: verbFormsTable, verbFormsFailed, nounForms: nounFormsTable, nounFormsFailed, formTexts: nounFormTexts, nounBox: wordCardNounBox?.id === quranWordCardState.occurrenceId ? wordCardNounBox.key : null, depthOpen: wordCardDepthOpen, conjView: wordCardConjView, conjBasic: wordCardConjBasic === quranWordCardState.occurrenceId, formsOpen, meaningLang: getAppLang() === "bn" ? "bn" : "en", conjNarrow: window.matchMedia("(max-width: 640px)").matches, needsSource: needsSourceContext(word, currentSurahData.surahNumber), ...wordCardDictionaryContext(word), ...intermediateContext(word), ...wordProgressContext(ref), ...quranWordCardLemmaContext, hasPrevious: at > 0, hasNext: at >= 0 && at < ids.length - 1, rootOccurrenceCount: quranWordCardContext.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0, colourWordPartsEnabled: true, translitScript: getTransliterationScript(), displayRef: wordRefFor }, labels: { ...wordCardLabels(), ...wordProgressLabels() }, formatNumber: num });
       if (formsOpen && wordCardFormsFocus) {
         const back = content.querySelector(".word-card-forms-back");
         if (back) { back.focus({ preventScroll: true }); if (!content.querySelector("[data-word-card-forms-loading]")) wordCardFormsFocus = false; }
@@ -23438,6 +23473,50 @@
       } catch { /* the link still opens the Notes page */ }
     }
 
+    // ===== PCF MSA J03 K2: the three marks. One read per sūrah, when a card or the Marks wheel first shows (I9); never at start-up. =====
+    const marksStyleEl = document.createElement("style"); marksStyleEl.textContent = MARKS_CSS; document.head.appendChild(marksStyleEl);
+    let marksStore = { id: "", mine: {}, state: "idle" }, marksBusy = new Set(), marksWheelView = "ayat";
+    function marksCtx() {
+      if (!isSelfSelectedForAyahActions() || !activeTenantId || !auth.currentUser) return null;
+      return { tenantId: activeTenantId, personId: selectedPersonId, uid: auth.currentUser.uid };
+    }
+    const marksStoreId = (c, surah) => `${c.tenantId}|${c.personId}|${surah}`;
+    function marksLang() { return getAppLang() === "bn" ? "bn" : "en"; }
+    function repaintMarks() {
+      if (ayahSheetUnitKey) renderAyahActionSheetNow();
+      if (quranWordCardState?.open) renderPersistentWordCard();
+      if (wheelKind === "marks") renderWheel();
+    }
+    function ensureSurahMarks(surah) {
+      const c = marksCtx();
+      if (!c || !surah) return;
+      const id = marksStoreId(c, surah);
+      if (marksStore.id === id && marksStore.state !== "idle") return;
+      marksStore = { id, mine: {}, state: "loading" };
+      loadSurahKeys(db, c, surah).then((r) => { if (marksStore.id !== id) return; marksStore = { id, mine: r.mine ?? {}, state: "ready" }; repaintMarks(); })
+        .catch((err) => { if (marksStore.id !== id) return; marksStore = { id, mine: {}, state: "failed" }; console.warn("marks not loaded:", err?.code || err?.message || err); repaintMarks(); });
+    }
+    function marksReadyFor(surah) { const c = marksCtx(); return !!c && marksStore.id === marksStoreId(c, surah) && marksStore.state === "ready"; }
+    /** The marks row for one unit, or "" while the marks are not loaded (the card says nothing rather than something false). */
+    function marksRowFor(unitKey, surah, heading) {
+      if (!marksCtx()) return "";
+      ensureSurahMarks(surah);
+      if (!marksReadyFor(surah)) return "";
+      return marksRowHtml({ unitKey, keys: marksStore.mine[unitKey] ?? [], lang: marksLang(), heading, busy: marksBusy.has(unitKey) });
+    }
+    async function onMarkToggle(unitKey, keyId, on) {
+      const c = marksCtx();
+      if (!c || marksBusy.has(unitKey)) return;
+      const [type, s, a, w] = unitKey.split(":");
+      const surah = Number(s);
+      marksBusy.add(unitKey); repaintMarks();
+      const base = { scope: c.personId, surah, ayah: Number(a), keyId, on };
+      try {
+        const res = type === "qword" ? await setWordKey(db, c, { ...base, position: Number(w) }) : await setAyahKey(db, c, base);
+        // Failed saves are already reported (I15); the mark simply stays as it was.
+        if (res?.ok && marksStore.id === marksStoreId(c, surah)) marksStore.mine = { ...marksStore.mine, [unitKey]: res.keys };
+      } finally { marksBusy.delete(unitKey); repaintMarks(); }
+    }
     function renderAyahActionSheetNow() {
       if (!ayahSheetUnitKey) return;
       const { surah, ayah: ayahNum } = parseAyahUnitKey(ayahSheetUnitKey);
@@ -23496,6 +23575,7 @@
         connected: ayahSheetConnected,
         hadith: ayahSheetHadith,
         ladderHtml,
+        marksHtml: isOpeningSheet ? "" : (() => { const r = parseAyahUnitKey(ayahSheetUnitKey).record ?? ayahNum; return marksRowFor(`ayah:${surah}:${r}`, surah, t("Marks for this āyah")); })(),
         canPrev: !!ayahCardNeighbour(ayahSheetUnitKey, -1),
         canNext: !!ayahCardNeighbour(ayahSheetUnitKey, 1),
         // PCF MSA J70 -- the left pane of the card as a window: the āyah's own text, from the sūrah already on screen.
@@ -23514,6 +23594,7 @@
       // Owner, 7 Oct 2026: "Enable back button always to come back to the view/ location where it came
       // from" -- an action that takes the reader away from this card leaves a way back to it.
       const sheetKeyAtRender = ayahSheetUnitKey, halfAtRender = ayahSheetHalf, introAtRender = ayahSheetIntro;
+      wireMarksRow(ayahActionSheetMountEl, onMarkToggle);
       attachAyahActionSheetHandlers(ayahActionSheetMountEl, {
         onStep: (unitKey, dir) => { const n = ayahCardNeighbour(unitKey, dir); if (n) openAyahActionSheet(n.key, n.half); },
         onNoteView: (unitKey) => openAyahNoteViewPopup(unitKey),

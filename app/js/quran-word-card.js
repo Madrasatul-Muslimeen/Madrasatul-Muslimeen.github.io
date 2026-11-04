@@ -1732,6 +1732,7 @@ export function renderQuranWordCard({ state, chapter, ayah, word, context = {}, 
     ${searchOpen ? searchRowHtml(context.search, text, formatNumber, refText) : ""}
     ${state.level === "wbw" ? meaningBarHtml(word, layers, context, text) : ""}
     ${state.level === "wbw" && context.formsOpen && layers.root ? formsCardHtml(word, layers, context, formatNumber) : ""}
+    ${context.marksHtml ? `<div class="word-card-marks" data-word-card-marks>${context.marksHtml}</div>` : ""}
     ${originBar(context.origin, text)}
     <div role="tablist" aria-label="${escapeHtml(text.tablist)}">${tabsHtml(state.level, text)}</div>
     ${levelPanel(state.level, word, layers, context, text, formatNumber)}
