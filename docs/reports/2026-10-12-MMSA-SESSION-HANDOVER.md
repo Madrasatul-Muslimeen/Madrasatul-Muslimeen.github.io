@@ -7,7 +7,16 @@ v10.28). Read `CLAUDE.md` first. The prompt that starts the next session is
 
 This session was summarised once (its context compacted), which is why it hands over here.
 
-## LATEST UPDATE — 4 Nov 2026, ~7:10 pm Sydney, session `session_01PL2xbJPnvDaeA61Ef8n4jm` (v13.31 RELEASED; K4 bundle reviewed and waiting on the Owner's Rules; J112 R1 built and reviewed; HANDOVER under use1102) — READ THIS FIRST
+## LATEST UPDATE — 5 Nov 2026, ~6:25 am Sydney, same session `session_01PL2xbJPnvDaeA61Ef8n4jm` (v13.32 RELEASED: the marks) — READ THIS FIRST, then the 4 Nov 7:10 pm block below
+
+**The Owner PUBLISHED the Keys Rules in study-monitoring (~6:20 am 5 Nov)** after first opening Siyagah's project AAAs-NoteBook by mistake (stopped in time; nothing changed there; J03 step 3 now warns). **v13.32 = PR #1464 merged (`2ff44fae`, 6:24 am)**: K2 + K1 Part B + K4. Its re-run on the v13.31-merged tree: marks-k2 76/0, matrix 90/0, read-next-qr-cards 78/0, vocab-wheel 114/0, intention-mushaf 40/0, qr-word-back-hadith 4/0, keys-teacher-view 79/0, hadith-key-marks 52/0, behaviour 974/1 (14a = main), night-hadith-dua 6038/0. What's New line, J03 Done line and the Owner's 2-step check (`k4check1105`) written; PCA told.
+
+**Next, in order (this supersedes item 1 of the 7:10 pm block):**
+1. **Bring `firestore.rules` into line with production:** copy `docs/governance/2026-10-15-ayah-keys-candidate.rules` over `firestore.rules`, and update IN PLACE the guards that assert "the candidate is NOT published" (`rules-authorisation-executable.mjs`'s AYAH KEYS / HADITH KEYS "live firestore.rules is untouched / does not carry hadithKeyMarks"; the emulator tests' "candidate is firestore.rules plus the block"). No version needed unless app files change; no Owner step.
+2. **J112 R1 #1468** (as in the block below).
+3. **QR Lead #1471** (replaces #1456: close #1456): the Critical Reasoning guides' text, the question card and its on/off; plus a READY PATCH for the shared note-window, `docs/reports/2026-11-04-note-window-question-card.patch` (adds `host.questionCardFor(note)`), for you to apply and wire on notes.html and journey-map.html (the Approach is on the note's source link, `noteSources.approachId`; the toggle is `getQuestionCardMode(person)` from `critical-reasoning-guides.js`), then the change notice to the PCA and the QR Lead. **#1472**: test-only line-height fix for intention-mushaf-one-line (60/0).
+
+## LATEST UPDATE — 4 Nov 2026, ~7:10 pm Sydney, session `session_01PL2xbJPnvDaeA61Ef8n4jm` (v13.31 RELEASED; K4 bundle reviewed and waiting on the Owner's Rules; J112 R1 built and reviewed; HANDOVER under use1102) (superseded 5 Nov 6:25 am)
 
 This session took over at 3:45 pm. **`main` is v13.31 (`da127c15`, merged 7:06 pm), released**: the QR Lead's #1465 (Read next on QR's Āyah card and Word card, J03 K3), #1466 (Back to the hadith on the Word card) and #1467 (the one-line intention card above a Mushaf page, J05), reviewed together. User Manual What's New line written; "PCA ▸ released v13.31" sent (the PCA is paused until Thu 5 Nov 7 pm, so QR's build-from-msa waits). `verify` on a release PR is red BEFORE the merge, only on the checks that read origin/main (ledger says 13.31, main reads 13.30): expected; merge with the full head SHA.
 
