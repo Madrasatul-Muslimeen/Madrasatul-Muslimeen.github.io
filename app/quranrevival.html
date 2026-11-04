@@ -7796,6 +7796,7 @@
     // The intention reminder (the Owner, 4 Nov 2026, PCF MSA J05): one line above the āyāt, a different one of four each day.
     import { INTENTION_CSS, getIntentionMode, setIntentionMode, getClosedDay, markClosedToday, shouldShowIntention, intentionCardHtml, intentionSettingHtml, wireIntention, localDay } from "./js/intention-reminder.js";
     import { loadAyahHadithHits, describeHit, pickHits, hadithHitHref } from "./js/ayah-hadith.js";
+    import { renderReadNext } from "./js/read-next-ui.js"; // J03 K3 "Read next" on the Āyah card and the Word card
     import { renderPageApproachCardHtml, attachPageApproachCardHandlers } from "./js/page-approach-card.js";
     // Issue #348 -- the Unit Card (Ruku'/Page/Hizb/Juz/Surah/Range) and the
     // ladder shared with the Ayah Card, both pure renderers reusing the same
@@ -8924,6 +8925,8 @@
     let currentChunkLoadedFor = null;
     let quranWordCardState = createWordCardState();
     let quranWordCardContext = {};
+    let wordReadNext = null; // J03 K3: { id: occurrenceId, box } -- the Word card's "Read next" box, kept across redraws
+    let ayahReadNext = null; // J03 K3: { key, box } -- the Āyah card's
     let quranWordCardRequest = 0;
     let quranWordCardTrigger = null;
     /** Issue #303 -- the whole-Qur'an total, this word's lemma progress and
@@ -19832,6 +19835,24 @@
       const typed = content.querySelector("[data-word-card-search-input]");
       if (typed) wordCardSearch.value = typed.value;
       content.innerHTML = renderQuranWordCard({ state: quranWordCardState, chapter: currentSurahData, ayah, word, context: { ...quranWordCardContext, search: wordCardSearch, lemmaForms: lemmaFormsTable, verbForms: verbFormsTable, verbFormsFailed, nounForms: nounFormsTable, nounFormsFailed, formTexts: nounFormTexts, nounBox: wordCardNounBox?.id === quranWordCardState.occurrenceId ? wordCardNounBox.key : null, depthOpen: wordCardDepthOpen, conjView: wordCardConjView, conjBasic: wordCardConjBasic === quranWordCardState.occurrenceId, formsOpen, meaningLang: getAppLang() === "bn" ? "bn" : "en", conjNarrow: window.matchMedia("(max-width: 640px)").matches, needsSource: needsSourceContext(word, currentSurahData.surahNumber), ...wordCardDictionaryContext(word), ...intermediateContext(word), ...wordProgressContext(ref), ...quranWordCardLemmaContext, hasPrevious: at > 0, hasNext: at >= 0 && at < ids.length - 1, rootOccurrenceCount: quranWordCardContext.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0, colourWordPartsEnabled: true, translitScript: getTransliterationScript(), displayRef: wordRefFor }, labels: { ...wordCardLabels(), ...wordProgressLabels() }, formatNumber: num });
+      // J03 K3 "Read next": Qur'an (this word's places), Dictionary, Scholars and Tafsīr under the card. The box is kept per
+      // word, so the card's many redraws (data arriving) do not close a tab the reader opened. Wired AFTER the innerHTML above.
+      {
+        const cardEl = content.querySelector(".quran-word-card");
+        if (cardEl) {
+          if (wordReadNext?.id !== quranWordCardState.occurrenceId) {
+            const host = document.createElement("div");
+            const lemma = word.morphology?.lemma;
+            renderReadNext(host, {
+              quran: () => quranWordCardContext.lemmaOccurrences ?? [],
+              lemmas: lemma ? [lemma] : [],
+              scholars: "tafsir", tafsir: true, backTo: "word"
+            });
+            wordReadNext = { id: quranWordCardState.occurrenceId, box: host.firstElementChild };
+          }
+          if (wordReadNext.box) cardEl.appendChild(wordReadNext.box);
+        }
+      }
       if (formsOpen && wordCardFormsFocus) {
         const back = content.querySelector(".word-card-forms-back");
         if (back) { back.focus({ preventScroll: true }); if (!content.querySelector("[data-word-card-forms-loading]")) wordCardFormsFocus = false; }
@@ -22403,7 +22424,7 @@
     }
 
     function closeAyahActionSheet() {
-      ayahSheetUnitKey = null;
+      ayahSheetUnitKey = null; ayahReadNext = null;
       ayahSheetWordStatus = null;
       ayahSheetHasPosterNote = null;
       ayahSheetConnected = null;
@@ -23443,7 +23464,13 @@
     }
 
     // ===== The intention reminder (PCF MSA J05). Shown when the Read view opens; never at start-up (I9). Per device, per person. =====
-    const intentionStyleEl = document.createElement("style"); intentionStyleEl.textContent = INTENTION_CSS; document.head.appendChild(intentionStyleEl);
+    const intentionStyleEl = document.createElement("style"); // "A page is a page" (shell round 17; the Architect, 4 Nov 2026): above a Mushaf page the card is ONE line (the intention clipped with …,
+    // Bismillah beside it), so it never wraps to several lines and pushes the page down at 360px.
+    intentionStyleEl.textContent = INTENTION_CSS + `
+#intentionHost.intention-one-line .intention-card { display:flex; align-items:center; gap:.5rem; margin:.25rem 0; padding:.2rem .6rem; }
+#intentionHost.intention-one-line .intention-lab { display:none; }
+#intentionHost.intention-one-line .intention-text { flex:1 1 auto; min-width:0; margin:0; font-size:.88rem; line-height:1.3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+#intentionHost.intention-one-line .intention-bismillah { flex:0 0 auto; }`; document.head.appendChild(intentionStyleEl);
     let intentionClosedThisOpening = false;
     const intentionPerson = () => selectedPersonId || null;
     function paintIntentionSetting() {
@@ -23458,11 +23485,13 @@
       const readOpen = !document.getElementById("readView").hidden;
       const person = intentionPerson(), today = localDay();
       const show = readOpen && shouldShowIntention({ mode: getIntentionMode(person), closedDay: getClosedDay(person), today, closedThisOpening: intentionClosedThisOpening });
+      host.classList.toggle("intention-one-line", !!mushafToggle.checked);
       host.innerHTML = show ? intentionCardHtml({ lang: getAppLang() === "bn" ? "bn" : "en", day: today }) : "";
       wireIntention(host, () => { intentionClosedThisOpening = true; markClosedToday(person, today); host.innerHTML = ""; });
     }
     new MutationObserver(() => { if (!document.getElementById("readView").hidden) { intentionClosedThisOpening = false; paintIntention(); } else paintIntention(); })
       .observe(document.getElementById("readView"), { attributes: true, attributeFilter: ["hidden"] });
+    mushafToggle.addEventListener("change", () => document.getElementById("intentionHost")?.classList.toggle("intention-one-line", !!mushafToggle.checked));
     document.getElementById("tabStudyOptionsBtn")?.addEventListener("click", paintIntentionSetting);
     paintIntentionSetting();
     function renderAyahActionSheetNow() {
@@ -23533,6 +23562,21 @@
             words: (a.words ?? []).map((w) => ({ arabic: w.arabic, translit: w.transliteration ?? "", en: w.translation?.en ?? "", bn: w.translation?.bn ?? "" })) } : null;
         })(),
       });
+      // J03 K3 "Read next" on the Āyah card: Dictionary words of this āyah, Scholars and Tafsīr. NO Qur'an or Hadith tab -- the
+      // card's Info block already has Related āyāt and Related hadith. Kept per āyah across the card's redraws.
+      if (!isOpeningSheet) {
+        const infoEl = ayahActionSheetMountEl.querySelector("[data-ayah-sheet-info]");
+        if (infoEl) {
+          if (ayahReadNext?.key !== ayahSheetUnitKey) {
+            const host = document.createElement("div");
+            const ayahObj = surah === currentSurahNum ? currentSurahData?.ayahs?.find((x) => x.ayah === ayahNum) : null;
+            const lemmas = [...new Set((ayahObj?.words ?? []).map((w) => w.morphology?.lemma).filter(Boolean))];
+            renderReadNext(host, { lemmas, scholars: "tafsir", tafsir: { ayat: [`${surah}:${ayahNum}`] }, backTo: "ayah" });
+            ayahReadNext = { key: ayahSheetUnitKey, box: host.firstElementChild };
+          }
+          if (ayahReadNext.box) infoEl.appendChild(ayahReadNext.box);
+        }
+      }
       // Keep the reader's place: the card re-renders as its data arrives
       // (Status, then Related), and each re-render used to jump to the top.
       if (keepScroll) { const el = ayahActionSheetMountEl.querySelector("[data-ayah-sheet]"); if (el) el.scrollTop = keepScroll; }
@@ -25903,8 +25947,8 @@
     }
 
     /** Decision 90, round 1: "?word=S:A:W" opens the Word card at that Qur'an word in the Read view (a Dua card's
-        "Open in the Word card"). With back=1 the way back is a "Back to …" pill (decision 86); "from=dua-<n>" names
-        the Dua card it returns to. A malformed or unknown place does nothing but say the link was not found. */
+        "Open in the Word card"). With back=1 the way back is a "Back to …" pill (decision 86); "from=dua-<n>" / "from=hadith-<id>" name
+        the Dua card / hadith card it returns to. A malformed or unknown place does nothing but say the link was not found. */
     async function openWordFromQueryString() {
       const params = new URLSearchParams(location.search);
       const raw = params.get("word");
@@ -25927,7 +25971,9 @@
       await openWordOccurrenceAt(Number(m[1]), Number(m[2]), Number(m[3]), "read", record ? { level: "wbw" } : null);
       if (params.get("back") === "1" && history.length > 1) {
         const dua = /^dua-(\d+)$/.exec(params.get("from") ?? "");
-        setAppReturn(dua ? t("Back to Dua {n}", { n: num(Number(dua[1])) }) : t("Back"), "", () => history.back(), { inWordCard: true });
+        // J03 K1 Part A (the Hadith Word Card): "from=hadith-<id>" names the hadith card it returns to.
+        const hadith = /^hadith-[^&\s]+$/.test(params.get("from") ?? "");
+        setAppReturn(dua ? t("Back to Dua {n}", { n: num(Number(dua[1])) }) : hadith ? t("Back to the hadith") : t("Back"), "", () => history.back(), { inWordCard: true });
       }
       if (record) await runWordProgressAction({ kind: "state", state: record });
     }
