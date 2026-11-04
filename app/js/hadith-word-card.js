@@ -11,6 +11,7 @@
 import { t, num } from "./i18n.js";
 import { el } from "./hadith-shared-ui.js";
 import { tokeniseHadith, quranRootOf, normaliseArabic } from "./hadith-words.js";
+import { hadithMarksRow } from "./hadith-key-marks.js";
 
 const FORMS_URL = "../tools/hadith-data-pull/output/hadith-words/quran-forms.json";
 let formsPromise = null;
@@ -69,7 +70,7 @@ function levelBody(i, ctx) {
 }
 
 /** Opens the five-level sheet. `onClose` runs when it closes (focus returns to the word chip). */
-export function openHadithWordCard({ tok, tokens, wordsMeanings, hadithLabel, onClose }) {
+export function openHadithWordCard({ tok, tokens, wordsMeanings, hadithLabel, hadithId = null, onClose }) {
   const overlay = el("div", "hwc-overlay");
   const sheet = el("section", "hwc-sheet"); sheet.setAttribute("role", "dialog"); sheet.setAttribute("aria-modal", "true");
   sheet.dataset.hwcSheet = String(tok.pos);
@@ -92,6 +93,7 @@ export function openHadithWordCard({ tok, tokens, wordsMeanings, hadithLabel, on
     b.addEventListener("click", () => show(i)); tabs.appendChild(b);
   });
   sheet.append(tabs, host); show(0);
+  if (hadithId != null) sheet.appendChild(hadithMarksRow({ number: hadithId, position: tok.pos })); // Part B: one word's marks
   overlay.appendChild(sheet); document.body.appendChild(overlay);
   const close = () => { document.removeEventListener("keydown", onKey); overlay.remove(); onClose?.(); };
   function onKey(e) { if (e.key === "Escape") close(); }
@@ -135,7 +137,7 @@ export function hadithWordsSection({ id, arabic, wordsMeanings, hadithLabel, get
       } else {
         node = el("button", "hwc-chip hwc-h"); node.type = "button"; node.dataset.hwcKind = "h";
         node.textContent = tok.written;
-        node.addEventListener("click", () => openHadithWordCard({ tok, tokens, wordsMeanings, hadithLabel, onClose: () => node.focus() }));
+        node.addEventListener("click", () => openHadithWordCard({ tok, tokens, wordsMeanings, hadithLabel, hadithId: id, onClose: () => node.focus() }));
       }
       node.lang = "ar"; node.dir = "rtl"; node.dataset.hwcPos = String(tok.pos);
       row.appendChild(node);

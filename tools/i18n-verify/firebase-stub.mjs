@@ -386,6 +386,11 @@ export async function getDocs(q) {
 export async function getDoc(ref) {
   // PCF MSA J73: a read that never answers (a connection that hangs), for the collections a test names.
   if (typeof window !== "undefined" && Array.isArray(window.__stubHangCols) && window.__stubHangCols.includes(ref.__col)) return new Promise(() => {});
+  // PCF MSA J03 K4: a read the Rules refuse (as the real service does until the Owner publishes a candidate), for the
+  // collections a test names. Recorded on __fsLog like any other read.
+  if (typeof window !== "undefined" && Array.isArray(window.__stubRefuseCols) && window.__stubRefuseCols.includes(ref.__col)) {
+    return __trip("getDoc", ref.__col, ref.__id, function () { throw Object.assign(new Error("Missing or insufficient permissions."), { code: "permission-denied" }); });
+  }
   return __trip("getDoc", ref.__col, ref.__id, function () {
     const row = (DATA[ref.__col] || []).find((d) => d._id === ref.__id);
     return row ? snapDoc(row) : { id: ref.__id, exists: () => false, data: () => undefined };

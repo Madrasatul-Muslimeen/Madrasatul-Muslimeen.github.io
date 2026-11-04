@@ -531,3 +531,13 @@ body.hadith-pane-dragging { user-select: none; }
 .hwc-well .hwc-nodata, .hwc-src { color: #a9b3c8; font-size: 0.85rem; }
 .hwc-ar { font-family: "Amiri", "Noto Naskh Arabic", serif; font-size: 1.4rem; line-height: 1.9; }
 .hwc-here { color: #1c2a46; background: #e3c27a; border-radius: 0.25rem; padding: 0 0.25rem; }
+
+/* Keys to Understanding K1 Part B: the three marks on a hadith (the card's own face) and on one word (the dark sheet). */
+.hkm-row { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.6rem 0; align-items: center; }
+.hkm-btn { min-height: 40px; padding: 0 0.8rem; border-radius: 20px; border: 1px solid var(--card-line, var(--hadith-rule)); background: transparent; color: var(--card-text, var(--hadith-ink)); font: inherit; font-weight: 600; cursor: pointer; overflow-wrap: anywhere; }
+.hkm-btn[aria-pressed="true"] { background: var(--card-button-bg, var(--hadith-ink)); color: var(--card-button-text, #fff); border-color: var(--card-button-border, var(--hadith-ink)); }
+.hkm-btn:disabled { opacity: 0.6; cursor: default; }
+.hkm-note { flex: 1 1 100%; margin: 0; font-size: 0.85rem; line-height: 1.5; color: var(--card-text-muted, var(--hadith-muted)); overflow-wrap: anywhere; }
+.hwc-sheet .hkm-btn { border-color: #3a4767; background: #111a2e; color: #eef1f7; }
+.hwc-sheet .hkm-btn[aria-pressed="true"] { background: #e3c27a; color: #1c2a46; border-color: #e3c27a; }
+.hwc-sheet .hkm-note { color: #a9b3c8; }

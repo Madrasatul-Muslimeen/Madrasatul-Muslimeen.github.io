@@ -46,6 +46,11 @@
   .vt-due-some { background: #fdecc8; color: #7a4b00; }
   .vt-due-none { background: #d7efdf; color: #1d5a3c; }
   #vocabLoadBtn, #quranLoadBtn { min-height: 44px; }
+  /* PCF MSA J03 K4: the Keys section opens from its heading (a 44px target). */
+  #keysTeacherSection > summary { display: flex; align-items: center; gap: 0.4rem; min-height: 44px; cursor: pointer; margin-top: 2.2rem; border-bottom: 1px solid #eee; }
+  #keysTeacherSection > summary h2 { margin: 0; border: 0; padding: 0; }
+  #keysTeacherSection > summary::before { content: "▸"; color: #1F3A6E; font-size: 1.1rem; }
+  #keysTeacherSection[open] > summary::before { content: "▾"; }
   #reportBody, #quranBody { }
 
   /* Issue #293 -- at phone width a wide table scrolls inside its own box
@@ -128,6 +133,13 @@
       <p class="muted">The Qur'an's words each student knows (the Word card's own marks), the Learn next steps passed, and the review schedule. Not scoped to the week/month above.</p>
       <div id="vocabBody"><button type="button" id="vocabLoadBtn">Show the Vocabulary table</button></div>
     </div>
+
+    <!-- PCF MSA J03 round K4 (the Owner's J03 Q4 A, 4 Nov 2026): each student's Keys marks (Difficult, Need practice, Done).
+         Nothing is read, and its script is not even fetched, until the teacher opens this section (I9). -->
+    <details id="keysTeacherSection">
+      <summary><h2 id="keysTeacherHeading">Keys to Understanding — your students' marks</h2></summary>
+      <div id="keysTeacherBody"></div>
+    </details>
 
     <div id="activitySection">
       <h2>Study activity this week — <span id="activityPersonName"></span></h2>
@@ -324,6 +336,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       const storedPersonId = getSelectedPersonId();
       if (visibleRoster.some((p) => p.id === storedPersonId)) personSelect.value = storedPersonId;
       else if (visibleRoster.some((p) => p.id === myPersonId)) personSelect.value = myPersonId;
+      mountKeysTeacherView(); // J03 K4: an open Keys section (opened before this data arrived, or on another tenant) is drawn now
 
       if (!weekAnchor.value) weekAnchor.value = toDateInputValue(new Date());
       if (!monthAnchor.value) monthAnchor.value = new Date().toISOString().slice(0, 7);
@@ -563,6 +576,28 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       }
     }
     vocabBody.addEventListener("click", (e) => { if (e.target.closest("#vocabLoadBtn")) { vocabShown = true; refreshVocabTable(); } });
+
+    // PCF MSA J03 round K4: the teacher's view of Keys marks, mounted when the section is first opened, and again for
+    // a new tenant while it is open. keys-teacher-view.js is loaded on that first opening, never at start-up (I9).
+    const keysTeacherSection = document.getElementById("keysTeacherSection");
+    const keysTeacherBody = document.getElementById("keysTeacherBody");
+    async function mountKeysTeacherView() {
+      if (!keysTeacherSection.open || !activeTenantId) return;
+      const membership = myMemberships.find((m) => m.tenantId === activeTenantId);
+      keysTeacherBody.innerHTML = `<p class="muted">${t("Loading…")}</p>`;
+      try {
+        const { renderKeysTeacherView } = await import("./js/keys-teacher-view.js");
+        renderKeysTeacherView(keysTeacherBody, {
+          db, lang: getAppLang(),
+          ctx: { tenantId: activeTenantId, personId: membership?.personId ?? null, uid: auth.currentUser?.uid ?? null },
+          people: visibleRoster.map((p) => ({ id: p.id, name: langText(p.name, getAppLang(), p.id) })),
+        });
+      } catch (err) {
+        console.error(err);
+        keysTeacherBody.innerHTML = `<p style="color:#9c3b2e;">${t("Couldn't show your students' marks:")} ${escapeHtml(err.message ?? String(err))}</p>`;
+      }
+    }
+    keysTeacherSection.addEventListener("toggle", () => { if (keysTeacherSection.open && !keysTeacherBody.querySelector("[data-ktv]")) mountKeysTeacherView(); });
 
     personSelect.addEventListener("change", () => { setSelectedPersonId(personSelect.value); refreshReport(); refreshQuranBreakdown(); refreshStudyActivity(); });
     wholeRoster.addEventListener("change", refreshReport);
