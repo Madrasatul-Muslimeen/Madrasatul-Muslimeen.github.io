@@ -28,6 +28,7 @@ function escapeHtml(s) {
 const BAR_CSS = `
 #siyagahCloudBar { display:block; margin:0 0 10px; padding:8px 10px; border:1px solid #c9d3e0; border-radius:8px; background:#f5f8fc; color:#1d2b3a; min-width:0; max-width:100%; box-sizing:border-box; }
 #siyagahCloudBar [data-siyagah-head] { display:flex; flex-wrap:wrap; align-items:center; gap:8px; min-width:0; }
+#siyagahCloudBar [data-siyagah-toggle] { display:inline-flex; align-items:center; gap:8px; }
 #siyagahCloudBar button { font:inherit; color:#1d2b3a; background:#ffffff; border:1px solid #8a9bb0; border-radius:6px; cursor:pointer; }
 #siyagahCloudBar button:focus-visible { outline:3px solid #1f5fa8; outline-offset:1px; }
 #siyagahCloudBar [data-siyagah-mmj] { margin-top:8px; min-width:0; }
@@ -171,7 +172,7 @@ function mountMmjView(host, reader, model, sanitize) {
     let rows = "";
     if (copy.tree) rows += `<h3 data-mmj-sec dir="auto">${escapeHtml(copy.tree.sec?.n || "Mapping My Journey")}</h3>`;
     if (v.roots.length || v.loose.length) {
-      rows += `<ul data-mmj-tree>${v.roots.map(folderRow).join("")}`;
+      rows += `<ul data-mmj-tree data-folder-tree>${v.roots.map(folderRow).join("")}`;
       if (v.loose.length) {
         const isOpen = open.has("~loose");
         rows += `<li><button type="button" data-mmj-folder="~loose" aria-expanded="${isOpen}"><span aria-hidden="true">${isOpen ? "▾" : "▸"}</span><span data-mmj-name>${escapeHtml(t("Not in a folder"))}</span><span data-mmj-count>${escapeHtml(num(v.loose.length))}</span></button>`
@@ -257,14 +258,15 @@ export async function mountSiyagahMapLink({ beforeEl, email = "", declaration = 
   const body = bar.querySelector("[data-siyagah-mmj]");
   // The folders sit behind ONE toggle, shut by default and remembered on this device, so the Map's own Back, views and
   // folders stay in the first screenful (journey-map-back.mjs measures that) however big the owner's Siyagah tree is.
-  // A refusal or a failed read opens it, so the message is never hidden (I15).
+  // A refusal or a failed read opens it, so the message is never hidden (I15). The toggle wears the J109 ON/OFF switch
+  // (shell.css .mm-sw), never an arrow; the folder tree inside keeps its ▸/▾ (a tree, data-folder-tree).
   const OPEN_KEY = "msa-siyagah-mmj-open";
   let isOpen = false;
   try { isOpen = localStorage.getItem(OPEN_KEY) === "1"; } catch { isOpen = false; }
   const say = (statusHtml, button, toggle = false) => {
     head.innerHTML = `<strong style="flex:0 1 auto; min-width:0; overflow-wrap:anywhere;">${escapeHtml(t("Siyagah's Mapping My Journey"))}</strong>`
       + (statusHtml ? `<span data-siyagah-status style="flex:1 1 12em; min-width:0; overflow-wrap:anywhere;">${statusHtml}</span>` : `<span style="flex:1 1 0; min-width:0;"></span>`)
-      + (toggle ? `<button type="button" data-siyagah-toggle aria-controls="siyagahMmjBody" aria-expanded="${isOpen}" style="flex:0 0 auto; max-width:100%; min-height:40px; padding:0 12px;"><span aria-hidden="true">${isOpen ? "▾" : "▸"}</span> ${escapeHtml(t("Siyagah folders"))}</button>` : "")
+      + (toggle ? `<button type="button" data-siyagah-toggle aria-controls="siyagahMmjBody" aria-expanded="${isOpen}" style="flex:0 0 auto; max-width:100%; min-height:40px; padding:0 12px;"><span class="mm-sw" aria-hidden="true"></span> ${escapeHtml(t("Siyagah folders"))}</button>` : "")
       + (button ? `<button type="button" data-siyagah-action="${button.action}" style="flex:0 0 auto; max-width:100%; min-height:40px; padding:0 14px;">${escapeHtml(button.label)}</button>` : "");
   };
   function setOpen(open, remember = true) {
@@ -272,7 +274,7 @@ export async function mountSiyagahMapLink({ beforeEl, email = "", declaration = 
     if (remember) { try { localStorage.setItem(OPEN_KEY, open ? "1" : "0"); } catch {} }
     if (readerFor) body.hidden = !open;
     const tg = head.querySelector("[data-siyagah-toggle]");
-    if (tg) { tg.setAttribute("aria-expanded", String(open)); tg.firstElementChild.textContent = open ? "▾" : "▸"; }
+    if (tg) tg.setAttribute("aria-expanded", String(open)); // J109: the ON/OFF switch (.mm-sw) reads aria-expanded
   }
   head.addEventListener("click", (e) => { if (e.target.closest("[data-siyagah-toggle]")) setOpen(!isOpen); });
   say(escapeHtml(t("Opening…")), null);
