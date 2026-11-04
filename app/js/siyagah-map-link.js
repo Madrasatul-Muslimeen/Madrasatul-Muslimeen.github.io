@@ -249,16 +249,31 @@ export async function mountSiyagahMapLink({ beforeEl, email = "", declaration = 
     bar = document.createElement("section");
     bar.id = SIYAGAH_BAR_ID;
     bar.className = "siyagah-cloud-bar";
-    bar.innerHTML = `<div data-siyagah-head aria-live="polite"></div><div data-siyagah-mmj hidden></div>`;
+    bar.innerHTML = `<div data-siyagah-head aria-live="polite"></div><div data-siyagah-mmj id="siyagahMmjBody" hidden></div>`;
     beforeEl.parentNode.insertBefore(bar, beforeEl);
   }
   const head = bar.querySelector("[data-siyagah-head]");
   const body = bar.querySelector("[data-siyagah-mmj]");
-  const say = (statusHtml, button) => {
+  // The folders sit behind ONE toggle, shut by default and remembered on this device, so the Map's own Back, views and
+  // folders stay in the first screenful (journey-map-back.mjs measures that) however big the owner's Siyagah tree is.
+  // A refusal or a failed read opens it, so the message is never hidden (I15).
+  const OPEN_KEY = "msa-siyagah-mmj-open";
+  let isOpen = false;
+  try { isOpen = localStorage.getItem(OPEN_KEY) === "1"; } catch { isOpen = false; }
+  const say = (statusHtml, button, toggle = false) => {
     head.innerHTML = `<strong style="flex:0 1 auto; min-width:0; overflow-wrap:anywhere;">${escapeHtml(t("Siyagah's Mapping My Journey"))}</strong>`
-      + `<span data-siyagah-status style="flex:1 1 12em; min-width:0; overflow-wrap:anywhere;">${statusHtml}</span>`
+      + (statusHtml ? `<span data-siyagah-status style="flex:1 1 12em; min-width:0; overflow-wrap:anywhere;">${statusHtml}</span>` : `<span style="flex:1 1 0; min-width:0;"></span>`)
+      + (toggle ? `<button type="button" data-siyagah-toggle aria-controls="siyagahMmjBody" aria-expanded="${isOpen}" style="flex:0 0 auto; max-width:100%; min-height:40px; padding:0 12px;"><span aria-hidden="true">${isOpen ? "▾" : "▸"}</span> ${escapeHtml(t("Siyagah folders"))}</button>` : "")
       + (button ? `<button type="button" data-siyagah-action="${button.action}" style="flex:0 0 auto; max-width:100%; min-height:40px; padding:0 14px;">${escapeHtml(button.label)}</button>` : "");
   };
+  function setOpen(open, remember = true) {
+    isOpen = open;
+    if (remember) { try { localStorage.setItem(OPEN_KEY, open ? "1" : "0"); } catch {} }
+    if (readerFor) body.hidden = !open;
+    const tg = head.querySelector("[data-siyagah-toggle]");
+    if (tg) { tg.setAttribute("aria-expanded", String(open)); tg.firstElementChild.textContent = open ? "▾" : "▸"; }
+  }
+  head.addEventListener("click", (e) => { if (e.target.closest("[data-siyagah-toggle]")) setOpen(!isOpen); });
   say(escapeHtml(t("Opening…")), null);
 
   let cloud, mod;
@@ -283,8 +298,10 @@ export async function mountSiyagahMapLink({ beforeEl, email = "", declaration = 
     if (!nb || readerFor === user.uid) return;
     stopReading();
     readerFor = user.uid;
-    body.hidden = false;
-    body.innerHTML = `<p data-mmj-status role="status">${escapeHtml(t("Reading your Siyagah folders…"))}</p>`;
+    body.hidden = !isOpen;
+    body.innerHTML = `<p data-siyagah-who style="margin:0 0 6px; overflow-wrap:anywhere;">${escapeHtml(t("Connected as {email}.", { email: user.email || "" }))}</p>`
+      + `<div data-siyagah-view><p data-mmj-status role="status">${escapeHtml(t("Reading your Siyagah folders…"))}</p></div>`;
+    const viewHost = body.querySelector("[data-siyagah-view]");
     try {
       const [data, model, san] = await Promise.all([import("./siyagah-mmj-data.js"), import("./siyagah-mmj-model.js"), import("./note-sanitize.js")]);
       let view = null;
@@ -292,21 +309,25 @@ export async function mountSiyagahMapLink({ beforeEl, email = "", declaration = 
       const r = await data.openMmjReader({
         cloud, nb, uid: user.uid,
         onCopy: (c) => { if (view) view.update(c); },
-        onState: (s) => { if (view) view.state(s); else pending.state = s; },
+        onState: (s) => {
+          if (s.kind === "denied" || s.kind === "error") setOpen(true, false); // never a hidden refusal (I15)
+          if (view) view.state(s); else pending.state = s;
+        },
       });
       if (readerFor !== user.uid) { r.close(); return; }
       reader = r;
-      view = mountMmjView(body, r, model, san.sanitizeNoteHtml);
+      view = mountMmjView(viewHost, r, model, san.sanitizeNoteHtml);
       if (pending.state) view.state(pending.state);
     } catch (err) {
       console.error(err);
-      body.innerHTML = `<p data-mmj-status role="status" data-kind="error">${escapeHtml(t("Siyagah's folders could not be read: {reason}", { reason: err?.message || String(err) }))}</p>`;
+      viewHost.innerHTML = `<p data-mmj-status role="status" data-kind="error">${escapeHtml(t("Siyagah's folders could not be read: {reason}", { reason: err?.message || String(err) }))}</p>`;
+      setOpen(true, false);
     }
   }
 
   mod.onSiyagahUser(cloud, (user) => {
     if (user) {
-      say(escapeHtml(t("Connected as {email}.", { email: user.email || "" })), { action: "out", label: t("Disconnect") });
+      say("", { action: "out", label: t("Disconnect") }, true);
       head.querySelector("[data-siyagah-action]").addEventListener("click", () => mod.siyagahSignOut(cloud).catch((err) => {
         console.error(err);
         say(escapeHtml(t("Could not disconnect: {reason}", { reason: err?.message || String(err) })), null);

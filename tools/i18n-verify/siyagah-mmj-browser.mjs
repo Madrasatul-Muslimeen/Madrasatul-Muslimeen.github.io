@@ -39,6 +39,8 @@ const MUTATIONS = {
   "no-way-back": ["app/js/siyagah-map-link.js", "      noteId = null;\n      render();", "      noteId = null; open.clear();\n      render();", "back: the same folders are still open"],
   "no-row-focus": ["app/js/siyagah-map-link.js", "if (row) { row.scrollIntoView({ block: \"nearest\" }); row.focus({ preventScroll: true }); }", "", "back: the note's own row is in view and focused"],
   "small-buttons": ["app/js/siyagah-map-link.js", "width:100%; min-height:40px;", "width:100%; min-height:20px;", "layout en/360/100%: every button in the bar is 40px tall or more and inside the bar"],
+  "open-by-default": ["app/js/siyagah-map-link.js", 'isOpen = localStorage.getItem(OPEN_KEY) === "1";', 'isOpen = localStorage.getItem(OPEN_KEY) !== "0";', "small: the folders are shut by default (one toggle in the bar)"],
+  "hidden-refusal": ["app/js/siyagah-map-link.js", 'if (s.kind === "denied" || s.kind === "error") setOpen(true, false);', "", "denied: the refusal opens the folders, so it is never hidden (I15)"],
   "join-any-generation": ["app/js/siyagah-mmj-model.js", 'if (p.g !== t0.g) return { ok: false, reason: "piece-generation" };', "", "pieced: a piece of another generation shows NO tree"],
 };
 if (MUTATE && !MUTATIONS[MUTATE]) throw new Error(`unknown mutation ${MUTATE}; known: ${Object.keys(MUTATIONS).join(", ")}`);
@@ -96,7 +98,8 @@ const browser = await chromium.launch();
 async function openMap({ lang = "en", width = 1024, pct = 100, seed = {}, ctx = null, clock = false, deny = false } = {}) {
   ctx = ctx || await newContext(browser, { appLang: lang, banner: false, viewport: { width, height: 900 }, extraSeedJs: seedJs(seed) });
   for (const [p, body] of Object.entries(SERVED)) await ctx.route(`**${p}`, (r) => r.fulfill({ status: 200, contentType: "text/javascript; charset=utf-8", body }));
-  await ctx.addInitScript((d) => { try { localStorage.setItem("__mmjDeny", d ? "1" : "0"); } catch (e) {} }, deny);
+  // A refused start begins with the folders SHUT on this device, so only the refusal itself can open them.
+  await ctx.addInitScript((d) => { try { localStorage.setItem("__mmjDeny", d ? "1" : "0"); if (d) localStorage.setItem("msa-siyagah-mmj-open", "0"); } catch (e) {} }, deny);
   const page = await ctx.newPage();
   const errors = [];
   page.on("pageerror", (e) => errors.push(String(e)));
@@ -105,6 +108,11 @@ async function openMap({ lang = "en", width = 1024, pct = 100, seed = {}, ctx = 
   await page.waitForFunction(() => document.getElementById("app")?.style.display === "block", null, { timeout: 20000 });
   await page.evaluate((p) => { document.documentElement.style.fontSize = p + "%"; for (const e of document.querySelectorAll('[id*="splash"], .mm-splash-overlay')) e.remove(); }, pct);
   return { ctx, page, errors };
+}
+/** The folders sit behind the bar's one toggle (shut by default, remembered on the device): open it as a reader would. */
+async function showFolders(page) {
+  await page.waitForSelector("#siyagahCloudBar [data-siyagah-toggle]", { timeout: 12000 });
+  if (await page.$('#siyagahCloudBar [data-siyagah-toggle][aria-expanded="false"]')) await page.click("#siyagahCloudBar [data-siyagah-toggle]");
 }
 const waitTree = (page, t = 12000) => page.waitForSelector("#siyagahCloudBar [data-mmj-tree]", { timeout: t }).then(() => true, () => false);
 const names = (page) => page.$$eval("#siyagahCloudBar [data-mmj-folder] [data-mmj-name], #siyagahCloudBar [data-mmj-note] [data-mmj-name]", (els) => els.map((e) => e.textContent));
@@ -115,6 +123,10 @@ const writesTo = (page) => page.evaluate(() => (window.__stubWriteData || []).fi
 console.log("\n=== small tree ===");
 {
   const { ctx, page, errors } = await openMap({});
+  await page.waitForSelector("#siyagahCloudBar [data-siyagah-toggle]", { timeout: 12000 });
+  const shut = await page.evaluate(() => ({ exp: document.querySelector("#siyagahCloudBar [data-siyagah-toggle]").getAttribute("aria-expanded"), shown: getComputedStyle(document.getElementById("siyagahMmjBody")).display !== "none" }));
+  check("small: the folders are shut by default (one toggle in the bar)", shut.exp === "false" && !shut.shown, JSON.stringify(shut));
+  await showFolders(page);
   check("small: the tree shows inside the Siyagah bar (no new bar)", await waitTree(page) && await page.evaluate(() => document.querySelectorAll("#siyagahCloudBar").length === 1 && !!document.querySelector("#siyagahCloudBar [data-mmj-tree]")));
   const status = await page.textContent("#siyagahCloudBar [data-mmj-status]");
   check("small: the status counts 4 folders and 4 notes, and says read-only", /4 folders, 4 notes\. Read-only/.test(status), status);
@@ -184,6 +196,8 @@ console.log("\n=== small tree ===");
   await d.page.waitForSelector('#siyagahCloudBar [data-mmj-status][data-kind="denied"]', { timeout: 12000 }).catch(() => {});
   const ds = await d.page.evaluate(() => ({ text: document.querySelector("#siyagahCloudBar [data-mmj-status]")?.textContent || "", tree: !!document.querySelector("#siyagahCloudBar [data-mmj-tree]"), names: [...document.querySelectorAll("#siyagahCloudBar [data-mmj-name]")].map((e) => e.textContent), denied: (window.__stubDeniedLog || []).length + (window.__stubSnapLog || []).length }));
   check("denied: the bar says Ask the owner to allow this app", /Ask the owner to allow this app\./.test(ds.text), ds.text);
+  check("denied: the refusal opens the folders, so it is never hidden (I15)", await d.page.evaluate(() => getComputedStyle(document.getElementById("siyagahMmjBody")).display !== "none"));
+  if (await d.page.evaluate(() => getComputedStyle(document.getElementById("siyagahMmjBody")).display === "none")) await showFolders(d.page); // (only a hidden refusal needs this)
   if (ds.tree) await openFolder(d.page, "f-quran");
   const kept = await names(d.page);
   check("denied: the copy on this device is kept on screen (with the live rename), and says so", ds.tree && kept.includes("Renamed in Siyagah") && /Showing the copy on this device/.test(ds.text), JSON.stringify({ ...ds, kept }));
@@ -200,15 +214,27 @@ console.log("\n=== small tree ===");
   await ctx.close();
 }
 
+// --- the Map's own Back stays in the first screenful -----------------------------------------------------------------
+console.log("\n=== first screenful ===");
+for (const lang of ["en", "bn"]) {
+  const { ctx, page } = await openMap({ lang, width: 320 });
+  await page.waitForSelector("#siyagahCloudBar [data-siyagah-toggle]", { timeout: 12000 });
+  const top = await page.evaluate(() => document.getElementById("backLink").getBoundingClientRect().top);
+  check(`first screenful ${lang}/320: with the folders shut, the Map's own Back is still in the first screenful (top < 400)`, top >= 0 && top < 400, `top ${top}`);
+  await ctx.close();
+}
+
 // --- pieced -------------------------------------------------------------------------------------------------------------
 console.log("\n=== pieced tree ===");
 {
   const { ctx, page } = await openMap({ seed: { pieced: true } });
+  await showFolders(page);
   check("pieced: t~0 + t~1 + t~2 of one generation are joined", await waitTree(page) && JSON.stringify(await names(page)) === JSON.stringify(["Qur'an reflections", "Hadith", LONG, "Not in a folder"]), JSON.stringify(await names(page)));
   await ctx.close();
 }
 {
   const { ctx, page } = await openMap({ seed: { pieced: true, badPiece: true } });
+  await showFolders(page);
   await page.waitForSelector('#siyagahCloudBar [data-mmj-status][data-kind="live"]', { timeout: 12000 }).catch(() => {});
   await page.waitForTimeout(2500); // readTree's three tries
   check("pieced: a piece of another generation shows NO tree", (await page.$$eval("#siyagahCloudBar [data-mmj-folder]", (e) => e.map((x) => x.getAttribute("data-mmj-folder")))).every((id) => id === "~loose"));
@@ -237,6 +263,7 @@ const WIDTHS = MUTATE ? [360] : [360, 768, 1024, 1440], LANGS = MUTATE ? ["en"] 
 for (const lang of LANGS) for (const width of WIDTHS) for (const pct of PCTS) {
   const tag = `${lang}/${width}/${pct}%`;
   const { ctx, page } = await openMap({ lang, width, pct });
+  await showFolders(page);
   if (!(await waitTree(page))) { check(`layout ${tag}: the tree shows`, false); await ctx.close(); continue; }
   for (const id of ["f-quran", "f-baqarah", "f-long", "~loose"]) await openFolder(page, id);
   for (const view of ["tree", "note"]) {

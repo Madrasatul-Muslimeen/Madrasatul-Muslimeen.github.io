@@ -4672,6 +4672,7 @@ export const BN = {
   "Visitors may see this in Siyagah": "সিয়াগাহ-তে দর্শকেরা এটি দেখতে পারেন",
   "Not in a folder": "কোনো ফোল্ডারে নেই",
   "← Back to Siyagah folders": "← সিয়াগাহ ফোল্ডারে ফিরে যান",
+  "Siyagah folders": "সিয়াগাহ ফোল্ডার",
   "This note is no longer in Mapping My Journey.": "এই নোটটি আর ম্যাপিং মাই জার্নি-তে নেই।",
   "Changed {when}": "পরিবর্তিত {when}",
   "Read-only: change it in Siyagah.": "শুধু পড়ার জন্য: পরিবর্তন করুন সিয়াগাহ-তে।",
