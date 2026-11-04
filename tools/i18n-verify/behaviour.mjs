@@ -4301,6 +4301,11 @@ console.log("\n=== 40. Shell round 28: the Mushaf page ===");
     const { page } = await openPage(ctx, "/app/quranrevival.html");
     page.on("dialog", (d) => d.dismiss().catch(() => {}));
     await openMushaf(page);
+    // v13.30 (PCF MSA J05): the intention reminder now shows one card above the āyāt when Read opens. At 360px it wraps to
+    // several lines and pushed 3:2:1 below an 844px screen, so the glyph-centre tap landed off-screen. This check is about
+    // tap accuracy on a word, not the card: close it with Bismillah first, as a reader does (updated in place, not removed).
+    const closeIntention = (p) => p.evaluate(() => document.querySelector("#intentionHost [data-intention-bismillah]")?.click());
+    await closeIntention(page); await page.waitForTimeout(300);
 
     const target = page.locator('#pageViewContainer [data-word-occurrence$=":3:2:1"]');
     const wantedId = await target.getAttribute("data-word-occurrence");
@@ -4371,17 +4376,18 @@ console.log("\n=== 40. Shell round 28: the Mushaf page ===");
     const { page: page2 } = await openPage(ctx2, "/app/quranrevival.html");
     page2.on("dialog", (d) => d.dismiss().catch(() => {}));
     await openMushaf(page2);
+    await closeIntention(page2); await page2.waitForTimeout(300);
     const gc = await page2.evaluate(() => {
       const t = document.querySelector('#pageViewContainer [data-word-occurrence$=":3:2:1"]');
       const r = t.getBoundingClientRect(), cs = getComputedStyle(t);
       return { x: (r.left + parseFloat(cs.paddingLeft) + r.right - parseFloat(cs.paddingRight)) / 2,
-               y: (r.top + parseFloat(cs.paddingTop) + r.bottom - parseFloat(cs.paddingBottom)) / 2 };
+               y: (r.top + parseFloat(cs.paddingTop) + r.bottom - parseFloat(cs.paddingBottom)) / 2, vh: innerHeight };
     });
     await page2.mouse.click(gc.x, gc.y);
     await page2.waitForTimeout(500);
     const centreId = await page2.evaluate(() => document.querySelector(".quran-word-card")?.getAttribute("data-occurrence-id"));
     check(`40g @${width}px a tap on the visible glyph's centre opens 3:2:1`,
-          centreId === wantedId, `${centreId} vs ${wantedId}`);
+          centreId === wantedId, `${centreId} vs ${wantedId} (tap at ${Math.round(gc.x)},${Math.round(gc.y)} of a ${gc.vh}px-high screen)`);
     await page2.close();
     await ctx2.close();
   }
