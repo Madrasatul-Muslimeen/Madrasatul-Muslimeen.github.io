@@ -62,7 +62,9 @@ async function openRead(page) {
 const marksState = (page) => ev(page, () => [...document.querySelectorAll("[data-marks-row] [data-mark-key]")].filter((b) => b.getBoundingClientRect().width > 0).map((b) => ({ id: b.dataset.markKey, on: b.getAttribute("aria-pressed") === "true", text: b.textContent, h: Math.round(b.getBoundingClientRect().height), dis: b.disabled })));
 const writesOf = (page) => ev(page, () => (window.__stubWriteData || []).filter((x) => x.col === "ayahKeyMarks").map((x) => JSON.stringify(x)));
 
+const QUICK = process.argv.includes("--quick"); // mutation runs: en 1440 and bn 390 only
 for (const lang of ["en", "bn"]) for (const [width, height] of [[1440, 900], [390, 844]]) {
+  if (QUICK && !((lang === "en" && width === 1440) || (lang === "bn" && width === 390))) continue;
   const tag = `[${lang} ${width}]`;
   console.log(`\n=== Marks K2 ${tag} ===`);
   const ctx = await newContext(browser, { appLang: lang === "bn" ? "bn" : null, banner: false, viewport: { width, height }, extraSeedJs: SEED + "window.__stubApplyBatches = true;" });
