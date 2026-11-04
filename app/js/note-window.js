@@ -71,6 +71,7 @@ export const NOTE_VIEW_HTML = `
       <button type="button" class="secondary tiny nw-ver-btn" data-win-ver hidden></button>
       <div class="note-pane-chips" data-pane-chips></div>
       <div class="pane-draft-offer" data-draft-offer hidden></div>
+      <div class="question-card" data-question-card-host hidden></div>
       <div class="pane-edit-toolbar" data-edit-toolbar hidden></div>
       <div class="pane-edit-panel" data-edit-panel hidden></div>
       <p class="pane-edit-status" data-edit-status role="status" aria-live="polite" hidden></p>
@@ -242,6 +243,7 @@ export function createNoteViews(host) {
     // J68: a wider or narrower pane re-wraps the title, so its height follows the box's width.
     if (typeof ResizeObserver === "function") { let w = 0; new ResizeObserver(([e]) => { const nw = Math.round(e.contentRect.width); if (nw && nw !== w) { w = nw; fitEditTitle(v.editTitleEl); } }).observe(v.editTitleEl); }
     v.editToolbarEl = el.querySelector("[data-edit-toolbar]");
+    v.questionCardEl = el.querySelector("[data-question-card-host]");
     v.editStatusEl = el.querySelector("[data-edit-status]");
     v.draftOfferEl = el.querySelector("[data-draft-offer]");
     v.bodyEl = el.querySelector("[data-pane-body]");
@@ -257,7 +259,7 @@ export function createNoteViews(host) {
       if (v.win && ev.target.matches("[data-edit-title]")) v.win.querySelector(".nw-title").textContent = ev.target.value.trim() || t("(untitled)");
       onEditInput(v);
     });
-    el.addEventListener("mousedown", (ev) => { if (ev.target.closest("[data-edit-toolbar] button, [data-edit-panel] button")) ev.preventDefault(); });
+    el.addEventListener("mousedown", (ev) => { if (ev.target.closest("[data-edit-toolbar] button, [data-edit-panel] button, [data-question-card-host] button")) ev.preventDefault(); });
     v.editPanelEl = el.querySelector("[data-edit-panel]");
     // S12: a checklist box is ticked by pressing its box (the left edge of the item, the right edge in right-to-left text); pressing the grip / fold arrow is handled separately.
     el.addEventListener("click", (ev) => tickCheckbox(v, ev));
@@ -441,7 +443,24 @@ export function createNoteViews(host) {
       : `<button type="button" class="secondary tb-btn" data-cmd="${x[0]}" data-tb-g="${g}" aria-label="${label(x[1])}" title="${label(x[1])}">${x[2]}</button>`).join("");
     v.editToolbarEl.setAttribute("role", "toolbar");
     v.editToolbarEl.setAttribute("aria-label", t("Formatting"));
+    renderQuestionCard(v);
     fitToolbar(v);
+  }
+  /** J05 (the Owner, 4 Nov 2026): while editing, the Note's Approach questions as buttons above the toolbar. The PAGE decides which
+      (host.questionCardFor(note) -> [{ id, text }], [] for none or when the Owner's on/off toggle is off; host.questionCardCss its look); a tap adds the question
+      as a heading to answer under. Nothing is drawn, and nothing changes, for a page that does not give the hook. */
+  function renderQuestionCard(v) {
+    const box = v.questionCardEl; if (!box) return;
+    const qs = (host.questionCardFor?.(getNote(v.noteId)) ?? []).filter((q) => q && q.id && q.text);
+    // The page hands over the card's look too (host.questionCardCss), so this shared window imports nothing of Quran Study (I2).
+    if (qs.length && !document.getElementById("questionCardStyle")) { const st = document.createElement("style"); st.id = "questionCardStyle"; st.textContent = (host.questionCardCss ?? "") + ".question-card[hidden]{display:none}"; document.head.appendChild(st); }
+    box.innerHTML = qs.map((q) => `<button type="button" class="question-card-btn" data-question-id="${escapeHtml(q.id)}" data-question-text="${escapeHtml(q.text)}">${escapeHtml(q.text)}</button>`).join("");
+    box.hidden = !qs.length;
+  }
+  function insertQuestion(v, text) {
+    restoreRange(v);
+    document.execCommand("insertHTML", false, `<h3>${escapeHtml(text)}</h3><p><br></p>`);
+    onEditInput(v);
   }
   function fitToolbar(v) {
     const tb = v.editToolbarEl;
@@ -1103,6 +1122,7 @@ export function createNoteViews(host) {
     v.editTitleEl.hidden = true;
     v.el.querySelector("[data-pane-title]").hidden = false;
     v.editToolbarEl.hidden = true;
+    if (v.questionCardEl) v.questionCardEl.hidden = true;
     v.editStatusEl.hidden = true;
     v.el.classList.remove("pane-editing");
     const draft = host.canEdit() ? loadDraft(note.noteId) : null;
@@ -2652,6 +2672,8 @@ export function createNoteViews(host) {
     if (tagChip && host.tagging) { openTagNotes(v, tagChip.dataset.tagChip); return; }
     const tbTab = on("[data-edit-toolbar] [data-tb-tab]");
     if (tbTab && v.ed) { v.tbOpen = Number(tbTab.dataset.tbTab); fitToolbar(v); return; }
+    const qBtn = on("[data-question-id]");
+    if (qBtn && v.ed) { insertQuestion(v, qBtn.dataset.questionText); return; }
     const cmdBtn = on("[data-edit-toolbar] [data-cmd]");
     if (cmdBtn) { closeAllBarPalettes(null); runEditCommand(v, cmdBtn.dataset.cmd); return; }
     if (v.ed) { // S12: the editor's panel and heading controls
