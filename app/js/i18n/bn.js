@@ -4685,8 +4685,15 @@ export const BN = {
   "Opening…": "খোলা হচ্ছে…",
   "Connect": "সংযুক্ত করুন",
   "Disconnect": "সংযোগ বিচ্ছিন্ন করুন",
-  // J03 K3 "Read next" (read-next-ui.js, hadith-read-next.js), 4 Nov 2026.
-  "Read next": "পরে পড়ুন",
+  // J03 K3 "Study Next" (read-next-ui.js, hadith-read-next.js), 4 Nov 2026; renamed from "Read next" in K3b (the Owner,
+  // 5 Nov 2026: "Study Next", Bangla "পরবর্তী অধ্যয়ন").
+  "Study Next": "পরবর্তী অধ্যয়ন",
+  "Open in your Scholars Database (new tab)": "আপনার আলেমদের ডেটাবেসে খুলুন (নতুন ট্যাবে)",
+  "Each link opens that book at the āyah, on a free website, in a new tab.": "প্রতিটি লিংক বইটিকে ওই আয়াতে খোলে, একটি বিনামূল্যের ওয়েবসাইটে, নতুন ট্যাবে।",
+  "Not online yet": "এখনো অনলাইনে নেই",
+  "Read at {ref}": "{ref}-এ পড়ুন",
+  "new tab": "নতুন ট্যাব",
+  "only some āyāt": "শুধু কিছু আয়াত",
   "Qur'an": "কুরআন",
   "Scholars": "আলেমগণ",
   "Tafsīr": "তাফসীর",

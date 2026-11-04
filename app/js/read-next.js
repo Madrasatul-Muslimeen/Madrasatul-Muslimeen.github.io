@@ -1,4 +1,4 @@
-// J03 K3 "Read next" -- the PURE half (no DOM, no fetch). read-next-ui.js draws the box; this file decides what goes
+// J03 K3 "Study Next" (named "Read next" until K3b, 5 Nov 2026) -- the PURE half (no DOM, no fetch). read-next-ui.js draws the box; this file decides what goes
 // in it, so the choices can be checked without a browser (tools/i18n-verify/read-next.mjs).
 //
 // The five tabs, in the order the Owner approved in the keys demo v2 (4 Nov 2026): Qur'an, Hadith, Dictionary,
@@ -148,6 +148,27 @@ export function whereToRead(data) {
   const out = [];
   for (const s of tafsirScholars(data)) for (const title of s.tafsir ?? []) out.push({ title, scholar: s });
   return out;
+}
+
+/** K3b (the Owner, 5 Nov 2026): a scholar's name opens THAT scholar's own row of the Scholars Database (by its fixed
+ *  id, s001…), in a new tab, with ← Back. The database page lives in the repository (docs/reference/scholars-database),
+ *  served by GitHub Pages; the absolute address keeps it working from QR's site too. */
+export const SCHOLARS_DB_PAGE = "https://madrasatul-muslimeen.github.io/docs/reference/scholars-database/Scholars%20Database%20-%20v1.6.html";
+export function scholarHref(id, page = SCHOLARS_DB_PAGE) {
+  return /^s\d{3}$/.test(String(id ?? "")) ? `${page}?s=${id}&back=1` : null;
+}
+
+/** K3b (the Owner, 5 Nov 2026): one tafsīr book's link straight to āyah s:a, from app/data/tafsir-links.json, or null
+ *  when the book has no per-āyah text online (the card then says "not online yet"). */
+export function tafsirLinkHref(links, link, s, a) {
+  const pattern = link?.site ? links?.sites?.[link.site]?.pattern : null;
+  if (!pattern || !link.book || !Number.isInteger(s) || !Number.isInteger(a)) return null;
+  return pattern.replace("{book}", encodeURIComponent(link.book)).replace("{s}", String(s)).replace("{a}", String(a));
+}
+
+/** The link entry for one tafsīr title of one scholar, or null when the list does not name it. */
+export function tafsirLinkFor(links, scholarId, title) {
+  return (links?.links ?? []).find((l) => l.scholar === scholarId && l.title === title) ?? null;
 }
 
 /** A HadeethEnc record's explanation and benefits, or null when it has neither. */
