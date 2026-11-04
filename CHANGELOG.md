@@ -23295,3 +23295,19 @@ The evening's third release, the follow-up to v13.26.
 - **J05: the intention card above a Mushaf page (QR Lead, PR #1467).** A page is a page: above the Mushaf the card is one line (label folded, the intention clipped with …, Bismillah beside it, 44px, still closes it); the full card stays in the Āyah and Reading views. New suite `intention-mushaf-one-line-browser.mjs` (`--mutate=wrap`).
 - **Checks (combined tree, serve.js restarted for the review):** read-next-qr-cards 78/0, and 78/0 at 150% and 200% text; read-next-browser 250/0; read-next 27/0; qr-word-back-hadith 4/0 (2/2 fail on #1465 alone); qr-word-card-back-row 54/0; intention-mushaf-one-line 40/0, 16 fail under --mutate=wrap, and at 200% text 8 fail only on its fixed 30px text-height limit (one line is 37px at a 32px root; card 59px of 64), a follow-up for the QR Lead; intention-reminder 40/0; apps-build-check 48/0; behaviour 974/1 (14a, the same as main). Screenshot looked at: the Word card's Read next at 360px, Bangla, 200% (2×2 tabs, readable).
 - Nothing deployed to Firestore; no Rules changed.
+
+## v13.32 — 5 Nov 2026 — The marks: Difficult, Need practice, Done, and the teacher's view
+
+- **The Owner published the Keys Rules** (PCF MSA J03, `k4rules1104`) in study-monitoring on 5 Nov 2026: `docs/governance/2026-10-15-ayah-keys-candidate.rules`, today's firestore.rules plus the ayahKeyMarks and hadithKeyMarks blocks (137 lines added, none removed). The repository's `firestore.rules` is to be brought into line with it in the next round.
+- **K2 (QR Lead, PR #1454):** the three marks on the Āyah card and the Word card, and the Marks wheel with its view switch (`app/js/marks-ui.js`), saved through `ayah-keys-data.js`.
+- **K1 Part B (Hadith Lead, PR #1453):** the marks on the HadeethEnc card and on one word (`app/js/hadith-key-marks.js`).
+- **K4 (MSA, PR #1461):** the teacher's view on Monitor (`keys-teacher-view.js`, `keys-teacher-view-model.js`), read-only; the Owner's steps `docs/governance/2026-11-04-j03-k4-owner-rules-steps.md`.
+- **Bundle (PR #1464):** bn.js blocks joined; quranrevival.html keeps the J05 intention, K2's marks and #1465's Read next; `ayah-keys.mjs` pins joined (two mutations fail it); collections.js notes updated.
+- **Checks:** marks-k2 76/0, marks-k2-matrix 90/0, read-next-qr-cards 78/0, vocab-wheel 114/0, intention-mushaf-one-line 40/0, qr-word-back-hadith 4/0, keys-teacher-view 79/0, hadith-key-marks 52/0, night-hadith-dua 6038/0, behaviour 974/1 (14a, the same as main), ayah-keys 69/0, keys-teacher-view-model 18/0, hadith-word-card 158/0, read-next 250/0, hadith-dua-a11y 1201/0, rules-authorisation-executable 87/0, stub-parity 4/0, apps-build-check 48/0; emulator 25/0 + 25/0.
+
+## v13.33 — 5 Nov 2026 — Show on wheel opens the student's marks
+
+- **Monitor → Show on wheel (QR Lead, PR #1474; the Owner's report, PCF MSA J03, 5 Nov).** `?surah=&keysFor=&back=1` now opens that sūrah on the Marks wheel with that student's marks, read-only (`loadPersonSurahKeys`; no new importer), a line naming whose marks they are, "Show my own marks", and ← Back to Monitor (way-back law). Five Bangla strings. New suite `keys-for-wheel-browser.mjs` (99/0, starts from the real Monitor link; mutations nostep, noback, ownmarks).
+- **intention-mushaf-one-line (QR Lead, PR #1472, test only):** compares the text with its line-height instead of a fixed 30px, and runs at 200% text (60/0).
+- **Checks:** keys-for-wheel 99/0 (--mutate=noback 24 fail), intention-mushaf-one-line 60/0, keys-teacher-view 79/0, marks-k2 76/0, ayah-keys 69/0, apps-build-check 48/0, behaviour 974/1 (14a, the same as main). 200% text measured at 360/768/1440 en/bn: no sideways scroll, buttons 48px or more; at 360px the wheel is squeezed to about 125px (follow-up).
+- Nothing deployed to Firestore.
