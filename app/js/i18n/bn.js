@@ -711,7 +711,6 @@ export const BN = {
   "Collapse note": "নোট সংক্ষিপ্ত করুন",
   "Expand note": "নোট বড় করুন",
   "{current} of {total}": "{total}-এর মধ্যে {current}", // ?
-  "Nothing to show here yet.": "এখানে দেখানোর মতো কিছু নেই এখনো।",
   "Bangla": "বাংলা",
   "Type notes here…": "এখানে নোট লিখুন…",
   "Couldn't save — will try again.": "সংরক্ষণ করা যায়নি — আবার চেষ্টা করা হবে।",
@@ -4476,7 +4475,6 @@ export const BN = {
   "Green: the words of a step you know. ✓: every word of the step known.": "সবুজ: ধাপের যে শব্দগুলো আপনি জানেন। ✓: ধাপের সব শব্দ জানা।",
   "Marks": "চিহ্ন",
   "Marks for this āyah": "এই আয়াতের চিহ্ন",
-  "Marks for this word": "এই শব্দের চিহ্ন",
   "Marks wheel": "চিহ্নের চাকা",
   "Sign in as yourself to see your marks.": "আপনার চিহ্ন দেখতে নিজের পরিচয়ে সাইন ইন করুন।",
   "Your marks could not be loaded right now.": "এখন আপনার চিহ্ন আনা গেল না।",
@@ -4490,7 +4488,6 @@ export const BN = {
   "Words of this āyah": "এই আয়াতের শব্দ",
   "Words of every āyah": "প্রতিটি আয়াতের শব্দ",
   "Which view": "কোন দৃশ্য",
-  "Sūrah": "সূরা",
   "Nothing to show here yet.": "এখানে এখনো দেখানোর কিছু নেই।",
   "Loading your vocabulary…": "আপনার শব্দভান্ডার আসছে…",
   "Sign in to see your vocabulary.": "আপনার শব্দভান্ডার দেখতে সাইন ইন করুন।",
@@ -4709,6 +4706,10 @@ export const BN = {
   // J03 K3 "Study Next" (read-next-ui.js, hadith-read-next.js), 4 Nov 2026; renamed from "Read next" in K3b (the Owner,
   // 5 Nov 2026: "Study Next", Bangla "পরবর্তী অধ্যয়ন").
   "Study Next": "পরবর্তী অধ্যয়ন",
+  // Retired keys, kept (a key is never removed, bn-duplicate-keys.mjs): "Read next" (renamed "Study Next", K3b) and the
+  // pre-J112-R1 Siyagah bar sentence (replaced in #1468). Nothing reads them now.
+  "Read next": "পরে পড়ুন",
+  "Connected as {email}. Your Siyagah folders will show here once Siyagah's part is ready.": "{email} হিসেবে সংযুক্ত। সিয়াগাহ-এর অংশ তৈরি হলে আপনার সিয়াগাহ ফোল্ডারগুলো এখানে দেখা যাবে।",
   "Open in your Scholars Database (new tab)": "আপনার আলেমদের ডেটাবেসে খুলুন (নতুন ট্যাবে)",
   "Each link opens that book at the āyah, on a free website, in a new tab.": "প্রতিটি লিংক বইটিকে ওই আয়াতে খোলে, একটি বিনামূল্যের ওয়েবসাইটে, নতুন ট্যাবে।",
   "Not online yet": "এখনো অনলাইনে নেই",

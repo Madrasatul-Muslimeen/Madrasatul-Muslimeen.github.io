@@ -181,12 +181,18 @@ check("read-next-ui.js fetches only inside loadTafsirScholars and loadTafsirLink
 
 // ---- K3b "Study Next" (the Owner, 5 Nov 2026) ----
 const links = JSON.parse(fs.readFileSync("app/data/tafsir-links.json", "utf8"));
-check("K3b: the box is called Study Next (পরবর্তী অধ্যয়ন), and \"Read next\" is gone from the box and from bn.js", () => {
+// bn.js KEEPS the retired "Read next" key (a key is never removed: bn-duplicate-keys.mjs), so this checks that no app
+// file USES it any more, not that bn.js lost it.
+check("K3b: the box is called Study Next (পরবর্তী অধ্যয়ন), and no app file asks for \"Read next\" any more", () => {
   assert.match(ui, /el\("h3", "read-next-head", t\("Study Next"\)\)/);
-  assert.doesNotMatch(ui, /t\("Read next"\)/);
   const bn = fs.readFileSync("app/js/i18n/bn.js", "utf8");
   assert.match(bn, /"Study Next": "পরবর্তী অধ্যয়ন"/);
-  assert.doesNotMatch(bn, /"Read next":/);
+  const users = [];
+  for (const dir of ["app", "app/js"]) for (const f of fs.readdirSync(dir)) {
+    if (!/\.(js|html)$/.test(f) || f === "bn.js") continue;
+    if (/t\(\s*"Read next"/.test(fs.readFileSync(`${dir}/${f}`, "utf8"))) users.push(`${dir}/${f}`);
+  }
+  assert.deepEqual(users, []);
 });
 check("K3b: tafsir-links.json names every tafsīr title of tafsir-scholars.json exactly once, and nothing else", () => {
   const want = data.scholars.filter((s) => s.roles.includes("tafsir")).flatMap((s) => s.tafsir.map((t) => `${s.id}|${t}`)).sort();
