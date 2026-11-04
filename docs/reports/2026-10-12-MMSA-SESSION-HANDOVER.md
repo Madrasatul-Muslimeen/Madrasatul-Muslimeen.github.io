@@ -7,7 +7,46 @@ v10.28). Read `CLAUDE.md` first. The prompt that starts the next session is
 
 This session was summarised once (its context compacted), which is why it hands over here.
 
-## LATEST UPDATE — 4 Nov 2026, ~12:20 pm Sydney, session `session_01PL2xbHzwVmNpVyfNE7ysEC` (v13.29 released; J03 build approved; HANDOVER at 37% under use1102) — READ THIS FIRST
+## LATEST UPDATE — 4 Nov 2026, ~12:40 pm Sydney, session `session_01PL2xbKZ3ZRNWgHZAfbrJSx` (J03 K0 built, PR #1450 held for the Owner's tick; HANDOVER at ~15% under use1102) — READ THIS FIRST
+
+This session ("📌 (03) MSA Master Architect") took over at 12:15 pm on 4 Nov and hands over at ~12:40 pm (use1102 A). No release; `main` is still **v13.29**.
+
+**J03 K0 is BUILT: PR #1450 (draft), branch `claude/j03-k0-marks`, head `f9f1aa6`.** Held until the Owner ticks J03 `k0key1104` (how a word's mark is stored, a permanent-key gate; recommended A: `qword:<s>:<a>:<pos>`, `hadithword:<collection>:<n>:<pos>`). Nothing on screen, no page imports it, `firestore.rules` untouched, so **merging it needs no version**. What it has:
+- `ayah-keys.js`: `hard` is now NAMED "Difficult" (the id stays, I5); new ids `practice` (Need practice) and `done` (Done); `MARK_IDS`, `isMarkId`, `marksIn`.
+- `unit-keys.js`: `buildUnitKey.qword`, `buildUnitKey.hadithWord`, both in UNIT_TYPES.
+- `ayah-keys-data.js`: `setWordKey` (word marks in the same per-sūrah `ayahKeyMarks` doc); `hadithKeyMarks/{tenant}__{scope}__{collection}` with `loadHadithKeys`, `setHadithKey`, `setHadithWordKey`; for K4's teacher view, `loadPersonSurahKeys` and `loadPersonHadithKeys`. **Hadith marks only on decided keys: `HADITH_KEY_COLLECTIONS = ["hadeethenc"]` (decision 7)**; `hadith-gate-contracts.mjs` registers the file as a deliberate caller and fails if the list widens or stops being enforced.
+- The Rules candidate (`docs/governance/2026-10-15-ayah-keys-candidate.rules`) is today's `firestore.rules` plus the two blocks. It had fallen behind (publishing the old file would have reverted `hadithSubjects` and others). New emulator suite `tools/firestore-emulator/hadith-keys.rules.test.mjs` (port 8110, `npm run hadith-keys`).
+- Checks: ayah-keys 61/0, rules-authorisation-executable 87/0 (new HADITH KEYS block, and a "required both ways" check that a mutation showed was missing), hadith-gate-contracts 13/0, emulator ayah-keys 25/25 and hadith-keys 25/25 (20 mutations each), apps-build-check 48/0, QR builds. `brief-integrity`, `programme-ledger` and `bn-duplicate-keys` fail identically on `main` in this shallow clone (missing branches/history).
+- **On the Owner's tick A:** mark the PR ready, `verify` green, merge with the full head SHA (no version). On B: change the two builders and the tests to the Owner's shape before merging.
+
+**K1 (Hadith):** sent to the Hadith Lead, who was at its limit and handed over at once: branch `claude/hadith-keys-k1` (54fe4b2), block "HANDOVER, 4 Nov 2026" in `docs/reports/2026-10-28-HADITH-LEAD-HANDOVER.md` holds the full brief. **The PCA was asked to open a fresh Hadith Lead on it.** Part A (the Hadith Word Card) needs nothing from K0 and can ship on its own; Part B (marks) ships with K4.
+**K2 (QR):** sent to the QR Lead (session_01PL2xbJUXBgRjYg7C9bLsss) with the API, branched from K0's head; it ships with K4.
+**K3 (MSA, next for the next session):** "Read next" (Qur'an, Hadith, Dictionary, Scholars by Approach, Tafsīr) on every card; tafsīr texts are not in the app (say so). **K4 (MSA, last):** the teacher's view on `loadPerson*Keys`, then the Owner publishes the candidate (click-by-click steps).
+
+**Also this session:** the Hadith Lead's two Library cards are sent (`mmsa-j106-hadith-study-demo` with its page; `mmsa-j108-note-demo`); `send_card.py` read before running (one PATCH to the Owner's inbox). Audit 155 defect 4 is ON main (v13.25).
+**LESSON (cost a wrong report to the PCA, corrected):** this container's local `origin/main` was stale (31 Oct, v12.137) while the checkout was at the real `main`. `git checkout -b X origin/main` then cut from the old commit. **Run `git fetch origin main` before branching from `origin/main`**, and check `git log origin/main -1` against `version.js`. A force-push is refused here, so recover with a merge of `main`, never a rebase-and-force.
+
+**Waiting on the Owner:** J03 `k0key1104` (tick A); J05 (T11 Companions, T15, the QR Lead's demo ticks); T21 (Scholars Database Export).
+
+**Opening message for the next session** (title "📌 (03) MSA Master Architect"):
+
+> Bismillah. You are the MSA Master Architect, taking over from session_01PL2xbKZ3ZRNWgHZAfbrJSx (4 Nov ~12:40 pm Sydney, use1102). Your session title is "📌 (03) MSA Master Architect" (num128).
+>
+> Read CLAUDE.md, then ARCHITECT.md, then docs/reports/2026-10-12-MMSA-SESSION-HANDOVER.md, starting with its LATEST UPDATE block of 4 Nov 12:40 pm, and the PMS General rule use1102 (G is lifted).
+>
+> First steps:
+> - `git fetch origin main` FIRST (the container's origin/main can be stale), then test GitHub write: git push --dry-run origin HEAD:refs/heads/claude/access-probe. Do NOT retry add_repo for QuranRevival.
+> - In a fresh container link playwright: mkdir -p node_modules && ln -sfn /opt/node22/lib/node_modules/playwright node_modules/playwright
+> - Read the PMS (https://claude.ai/artifact/PhW1KKX28qrqj9dE7Ha8dZ): meta/global General rules, p/mmsa, MSA J03. Answer any new Owner comments.
+> - Set p/mmsa.sessionUrl to YOUR session (read it with get_session), pinned with if_version.
+> - Send the PCA (session_01PL2xbL9r5wP8zyi6A3Hj8j) one line "PCA ▸ taken over", and ask it to point the MSA keep-alive at your session.
+> - subscribe_pr_activity for PR #1450.
+>
+> State: main is v13.29. THE JOB is PCF MSA J03. K0 is built: PR #1450 (claude/j03-k0-marks, f9f1aa6), held for the Owner's tick on J03 k0key1104 (A recommended); on A, mark it ready and merge it with the full head SHA (no version: nothing on screen). K1: the PCA is opening a fresh Hadith Lead on claude/hadith-keys-k1 (its hand-over block holds the brief). K2: with the QR Lead. Next for you: K3 "Read next" on every card, then K4 the teacher's view and the Owner's Rules step. Review and release the Leads' parts as they come in (the Hadith Word Card can ship alone; the marks ship with K4). J112 waits for Siyagah's R1. Change notices for shared note-script changes go to the PCA and the QR Lead. Do not republish the Scholars Database or the feature-discussions artifacts. At each release send the PCA "PCA ▸ released vX.YY". Leads: Hadith (new, ask the PCA), Dua session_01PL2xbKzbiAyrexmkBmLQaJ, QR session_01PL2xbJUXBgRjYg7C9bLsss. Card every demo in the Owner's Library (send_card.py, mydb128). No self-chosen audits.
+>
+> Rules: as in the 12:20 pm block (use1102 15% handover, no broadcasts; the review rule; restart serve.js per review; behaviour.mjs alone; compare failures with main; QR checks in the background; main only through a pull request, merged with the full 40-character head SHA; write only to p/mmsa, arrays are replaced on update; real clock times (date -u); never pkill -f; no self wake-ups; "Rasulullah, Sallallahu A'laihi Wa Sallam" (saw128); "Siyagah" in full).
+
+## LATEST UPDATE — 4 Nov 2026, ~12:20 pm Sydney, session `session_01PL2xbHzwVmNpVyfNE7ysEC` (v13.29 released; J03 build approved; HANDOVER at 37% under use1102) (superseded 4 Nov 12:40 pm)
 
 This session ("📌 (03) MSA Master Architect") took over at 9:12 am on 4 Nov and hands over at ~12:20 pm (use1102 A; 37%, not summarised).
 
