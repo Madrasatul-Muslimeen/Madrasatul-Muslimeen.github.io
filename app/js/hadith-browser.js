@@ -26,6 +26,7 @@ import { HADEETHENC_LANGS, HADEETHENC_STRUCTURE_LANG, loadHadeethEncCategories, 
 import { OPENITI_CREDIT_URL, loadOpenitiBookSummaries, loadOpenitiBookIndex, loadOpenitiChapter, chapterForHadithNumber, loadOpenitiConcordance, loadOpenitiHadeethEncLinks, loadHadeethEncReferences, loadDuaIndex } from "./openiti-corpus.js";
 import { el, readFailedNote, langNameInProse, loadHadithStudyActions, openitiDisplayTitle, openitiArabicRowName, duaRefLabel, standardTranslationFolds, openitiTranslationFold } from "./hadith-shared-ui.js";
 import { renderDua } from "./dua-browser.js";
+import { hadithWordsSection } from "./hadith-word-card.js";
 import { hadithReader, removeReaderWindows } from "./hadith-reader.js";
 import { subjectAddRow, renderSubjectList } from "./hadith-subjects.js";
 
@@ -713,6 +714,10 @@ function hadeethEncCard(id, resolvedRecord, state, localRefresh) {
     if (record.words_meanings) details.appendChild(hadeethEncWordsMeanings(record.words_meanings));
     card.appendChild(details);
   }
+
+  // Keys to Understanding K1 Part A (PCF MSA J03): the hadith's words, each opening QR's Word card or the Hadith Word Card.
+  const arabicText = hadithArabicText(record, lang) ?? record.hadeeth_ar ?? null;
+  if (arabicText) card.appendChild(hadithWordsSection({ id, arabic: arabicText, wordsMeanings: lang === "ar" ? record.words_meanings : (record.words_meanings_ar ?? record.words_meanings), hadithLabel: record.title ?? "" }));
 
   const src = document.createElement("a");
   src.className = "hadith-view-source";
