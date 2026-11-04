@@ -278,6 +278,8 @@ export async function mountSiyagahMapLink({ beforeEl, email = "", declaration = 
   say(escapeHtml(t("Opening…")), null);
   // `after`: the Map's own folders first. Siyagah's code is fetched only once they have loaded (or failed to).
   if (after && typeof after.then === "function") { try { await after; } catch { /* the Map says its own failure */ } }
+  // ...and the browser has drawn them: one idle moment more (at most 2 s), so the Map's first view is never shared.
+  if (after) await new Promise((r) => (typeof requestIdleCallback === "function" ? requestIdleCallback(() => r(), { timeout: 2000 }) : setTimeout(r, 200)));
 
   let cloud, mod;
   try {
