@@ -4,26 +4,29 @@
 // (3) "Show on wheel" opens quranrevival.html?surah=<s>&keysFor=<personId>&back=1.
 // (4) "Marked by most students": the order (distinct students, ties by key), Done never ranks, links carry back=1.
 // (5) Another sūrah reads one document per student and does NOT read the hadith again.
+// (5b) A section opened BEFORE the page's data arrived still draws once it does (found by the 'eager' mutation).
 // (6) A refused read (the Rules not yet published) says so in words on the page (I15).
 // (7) Fit: no sideways scroll, nothing past the screen's edge, at 360/768/1440, en and bn, text 100% and 200%;
 //     every link and the picker at least 40px tall; text contrast at least 4.5:1; Bangla has no English left.
 // Run from the repository root, serve.js on :8080 (QR_BASE for another port).
 //   --mutate=NAME  applies one mutation to the app files (restored after); the suite must FAIL.
 //   --prove        runs every mutation in turn.   --shots  saves screenshots to tools/i18n-verify/out/keys-teacher/
-import { chromium, newContext, openPage } from "./harness.mjs";
+import { chromium, newContext, openPage, BASE } from "./harness.mjs";
 import fs from "node:fs";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 const VIEW = "app/js/keys-teacher-view.js", MON = "app/monitor.html", BN = "app/js/i18n/bn.js";
 const MUT = {
-  eager: [MON, "      if (!keysTeacherSection.open || !activeTenantId) return;", "      if (!activeTenantId) return;"],
+  // the section opens itself as the page loads, so its marks are read at start-up (I9)
+  eager: [MON, '    const keysTeacherSection = document.getElementById("keysTeacherSection");', '    const keysTeacherSection = document.getElementById("keysTeacherSection"); keysTeacherSection.open = true;'],
   noback: [VIEW, "&keysFor=${encodeURIComponent(personId)}&back=1`", "&keysFor=${encodeURIComponent(personId)}`"],
   mostback: [VIEW, "return `./quranrevival.html?goto=${item.surah}:${item.ayah}&back=1`;", "return `./quranrevival.html?goto=${item.surah}:${item.ayah}`;"],
   order: [VIEW, "model.mostMarked.slice(0, MOST_SHOWN)", "model.mostMarked.slice(0, MOST_SHOWN).reverse()"],
   silentrefuse: [VIEW, "if (rows.some((r) => r.refused)) {", "if (false) {"],
   wrongkind: [VIEW, "for (const c of chips(r.counts[kind], lang))", "for (const c of chips(r.counts.ayah, lang))"],
   hadithreread: [VIEW, "if (!hadithCache.has(s.personId)) {", "if (true) {"],
+  earlyopen: [MON, "      mountKeysTeacherView(); // J03 K4: an open Keys section (opened before this data arrived, or on another tenant) is drawn now\n", ""],
   bnleak: [BN, '  "Show on wheel": "চাকায় দেখান",\n', ""],
   wide: [VIEW, "minmax(min(100%, 19rem), 1fr)", "minmax(26rem, 1fr)"],
   lowcontrast: [VIEW, ".ktv-chip-done { background: #d7efdf; color: #1d5a3c;", ".ktv-chip-done { background: #d7efdf; color: #8fc9a3;"],
@@ -97,8 +100,10 @@ async function open({ lang = "en", viewport = { width: 1024, height: 900 }, refu
 }
 const keyReads = (page) => page.evaluate(() => (window.__fsLog || []).filter((r) => r.col === "ayahKeyMarks" || r.col === "hadithKeyMarks").map((r) => `${r.col}/${r.id}`));
 async function openSection(page) {
-  await page.click("#keysTeacherSection > summary");
-  await page.waitForFunction(() => document.querySelector("[data-ktv-body] [data-ktv-person], [data-ktv-body] [data-ktv-refused]"), null, { timeout: 15000 });
+  if (!(await page.evaluate(() => document.getElementById("keysTeacherSection").open))) await page.click("#keysTeacherSection > summary");
+  // A view that never shows students nor a message must FAIL the checks below, not crash the suite.
+  await page.waitForFunction(() => document.querySelector("[data-ktv-body] [data-ktv-person], [data-ktv-body] [data-ktv-refused]"), null, { timeout: 15000 }).catch(() => {});
+  await page.waitForTimeout(300);
 }
 const chipText = (page, person, kind) => page.$$eval(`[data-ktv-person="${person}"] [data-ktv-kind="${kind}"] .ktv-chip`, (els) => els.map((e) => e.textContent.trim()));
 
@@ -146,6 +151,20 @@ try {
     check("(5) another sūrah: one Qur'an read per student, and no hadith read again", newReads.length === 3 && newReads.every((r) => r.startsWith("ayahKeyMarks/") && r.endsWith("__36")) && after.filter((r) => r.startsWith("hadithKeyMarks")).length === hadithBefore, JSON.stringify(newReads));
     const y36 = await chipText(page, "p3", "ayah"), yh = await chipText(page, "p3", "hadith");
     check("(5) on sūrah 36 Yusuf has Difficult 2 āyāt, and his hadith still count (Need practice 1)", y36[0] === "Difficult 2" && yh[1] === "Need practice 1", JSON.stringify([y36, yh]));
+    await ctx.close();
+  }
+
+  // --- (5b) opened before the page's data arrived ---
+  {
+    const ctx = await newContext(browser, { viewport: { width: 1024, height: 900 }, appLang: "en", extraSeedJs: SEED, latencyMs: 300 });
+    const page = await ctx.newPage();
+    await page.goto(`${BASE}/app/monitor.html`, { waitUntil: "domcontentloaded" });
+    await page.waitForSelector("#keysTeacherSection > summary", { state: "attached" });
+    await page.evaluate(() => { document.getElementById("keysTeacherSection").open = true; });
+    const early = await page.evaluate(() => (document.getElementById("personSelect")?.options.length || 0) === 0);
+    await page.waitForFunction(() => document.querySelectorAll("[data-ktv-person]").length === 3, null, { timeout: 20000 }).catch(() => {});
+    check("(5b) POSITIVE CONTROL: the section was opened before the roster loaded", early);
+    check("(5b) a section opened before the page's data arrived shows every student once it does", (await page.$$("[data-ktv-person]")).length === 3);
     await ctx.close();
   }
 

@@ -336,6 +336,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       const storedPersonId = getSelectedPersonId();
       if (visibleRoster.some((p) => p.id === storedPersonId)) personSelect.value = storedPersonId;
       else if (visibleRoster.some((p) => p.id === myPersonId)) personSelect.value = myPersonId;
+      mountKeysTeacherView(); // J03 K4: an open Keys section (opened before this data arrived, or on another tenant) is drawn now
 
       if (!weekAnchor.value) weekAnchor.value = toDateInputValue(new Date());
       if (!monthAnchor.value) monthAnchor.value = new Date().toISOString().slice(0, 7);
@@ -733,7 +734,6 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       // document (fetched once, at sign-in) -- no reason to fetch it again.
       await loadContextData();
       refreshVocabTable(); // J48 round 3: a table already shown follows the tenant
-      mountKeysTeacherView(); // J03 K4: an open Keys section follows the tenant
     });
   </script>
   <script type="module">
