@@ -11,7 +11,7 @@ let pass = 0, fail = 0;
 const check = (n, ok, d = "") => { if (ok) pass++; else { fail++; console.log(`  FAIL  ${n} ${d}`); } };
 const MUT = {
   noclose: ["app/quranrevival.html", "intentionClosedThisOpening = true; markClosedToday(person, today); host.innerHTML = \"\";", "host.innerHTML = \"\";"],
-  startup: ["app/quranrevival.html", "const show = readOpen && shouldShowIntention", "const show = shouldShowIntention"],
+  startup: ["app/quranrevival.html", "    paintIntentionSetting();\n    function renderAyahActionSheetNow", "    paintIntentionSetting(); setTimeout(() => { document.getElementById(\"intentionHost\").innerHTML = intentionCardHtml({}); }, 300);\n    function renderAyahActionSheetNow"],
   nosetting: ["app/quranrevival.html", "setIntentionMode(intentionPerson(), b.dataset.intentionMode);", ""],
 };
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
@@ -44,13 +44,13 @@ for (const [lang, width, pct] of [["en", 1440, 100], ["bn", 1440, 100], ["en", 3
   check(`${tag} (2) opening Read shows today's intention (${lang}), number ${idx + 1} of 4`, !!c && c.idx === idx && c.text === (lang === "bn" ? INTENTIONS[idx].bn : INTENTIONS[idx].en), JSON.stringify(c));
   check(`${tag} (7) the card is inside the screen, whole, its button >= 44px, no sideways scroll`, !!c && c.inside && c.whole && c.btnH >= 44 && c.over <= 0, JSON.stringify(c));
   if (width === 360 && lang === "bn") await page.screenshot({ path: "/tmp/intention-bn-360-200.png" }).catch(() => {});
-  await ev(page, () => document.querySelector("[data-intention-bismillah]").click()); await settle(page, 200);
+  await ev(page, () => document.querySelector("[data-intention-bismillah]")?.click()); await settle(page, 200);
   check(`${tag} (3) Bismillah closes it`, (await card()) === null);
   await leaveRead(); await openRead();
   check(`${tag} (3) once a day (default): reopening Read the same day shows nothing`, (await card()) === null);
   await leaveRead(); await setMode("every"); await openRead();
   check(`${tag} (4) Every time: it shows again`, (await card()) !== null);
-  await ev(page, () => document.querySelector("[data-intention-bismillah]").click()); await leaveRead(); await openRead();
+  await ev(page, () => document.querySelector("[data-intention-bismillah]")?.click()); await leaveRead(); await openRead();
   check(`${tag} (4) Every time: closed, then shown again on the next opening`, (await card()) !== null);
   await leaveRead(); await setMode("off"); await openRead();
   check(`${tag} (5) Off: never`, (await card()) === null);
