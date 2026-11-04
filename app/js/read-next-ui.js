@@ -1,4 +1,4 @@
-// J03 K3 "Read next" -- the shared box any card places with ONE call:
+// J03 K3 "Study Next" (named "Read next" until K3b, 5 Nov 2026) -- the shared box any card places with ONE call:
 //
 //   import { renderReadNext } from "./read-next-ui.js";
 //   renderReadNext(hostElement, ctx);      // appends the box to hostElement and returns it
@@ -28,6 +28,7 @@ import { loadLemmaDictionary, loadBanglaLemmaDictionary } from "./lemma-dictiona
 import {
   tabsFor, uniqueAyahRefs, ayahHref, hadithHref, otherHadith, wordMeanings, dictionaryEntries, entryMeaning,
   groupByApproach, tafsirScholars, compilerOf, scholarName, lifeLine, whereToRead, hadithExplanation,
+  scholarHref, tafsirLinkFor, tafsirLinkHref,
 } from "./read-next.js";
 
 const DATA_URL = new URL("../data/tafsir-scholars.json", import.meta.url).href;
@@ -41,6 +42,19 @@ export function loadTafsirScholars() {
     }).catch((err) => { dataPromise = null; throw err; });
   }
   return dataPromise;
+}
+
+const LINKS_URL = new URL("../data/tafsir-links.json", import.meta.url).href;
+let linksPromise = null;
+/** K3b: each tafsīr book's site, fetched the first time the Tafsīr tab opens. A failure leaves the rows unlinked. */
+export function loadTafsirLinks() {
+  if (!linksPromise) {
+    linksPromise = fetch(LINKS_URL).then((res) => {
+      if (!res.ok) throw new Error(`Couldn't load the tafsīr links (HTTP ${res.status}).`);
+      return res.json();
+    }).catch((err) => { linksPromise = null; throw err; });
+  }
+  return linksPromise;
 }
 
 const NARROW_SPANS = { 1: [6], 2: [3, 3], 3: [2, 2, 2], 4: [3, 3, 3, 3], 5: [2, 2, 2, 3, 3] };
@@ -72,6 +86,10 @@ const CSS = `
 a.read-next-go, a.read-next-item { color: #1F3A6E; text-decoration: none; }
 a.read-next-go { display: inline-flex; align-items: center; justify-self: start; min-height: 40px; padding: 0 0.8rem; border: 1px solid #1F3A6E; border-radius: 10px; font-weight: 600; }
 a.read-next-item { min-height: 40px; }
+/* K3b: a scholar's name is a link to their Scholars Database row; a tafsīr book's āyah links sit in one tidy row. */
+a.rn-scholar { color: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+.rn-links { display: flex; flex-wrap: wrap; gap: 6px; }
+.rn-links a.read-next-go { min-width: 0; }
 a.read-next-item:hover, a.read-next-go:hover { background: #eef2fa; }
 .read-next-group > summary { min-height: 40px; display: flex; align-items: center; cursor: pointer; font-weight: 700; color: inherit; }
 .read-next-group > div { display: grid; gap: 0.4rem; }
@@ -119,10 +137,10 @@ export function renderReadNext(host, ctx = {}) {
   const box = el("section", "read-next");
   box.dataset.readNext = tabs.join(",");
   if (!tabs.length) { box.hidden = true; host.appendChild(box); return box; }
-  const head = el("h3", "read-next-head", t("Read next"));
+  const head = el("h3", "read-next-head", t("Study Next"));
   const bar = el("div", "read-next-tabs");
   bar.setAttribute("role", "group");
-  bar.setAttribute("aria-label", t("Read next"));
+  bar.setAttribute("aria-label", t("Study Next"));
   const body = el("div", "read-next-body");
   body.hidden = true;
   const panels = new Map();
@@ -249,10 +267,24 @@ async function dictionaryPanel(panel, ctx) {
   if (!shownAny) panel.appendChild(note(t("No dictionary words are recorded for this card yet.")));
 }
 
+/** K3b: the scholar's name as a link to THEIR row of the Scholars Database (new tab, ← Back there), or plain text. */
+function scholarLink(s, lang) {
+  const href = scholarHref(s.id);
+  const name = scholarName(s, lang);
+  if (!href) return el("span", null, name);
+  const a = el("a", "rn-scholar", name);
+  a.href = href; a.target = "_blank"; a.rel = "noopener";
+  a.dataset.readNextScholarLink = s.id;
+  a.title = t("Open in your Scholars Database (new tab)");
+  return a;
+}
+
 function scholarRow(s, lang, extra) {
   const item = el("div", "read-next-item");
   item.dataset.readNextScholar = s.id;
-  item.appendChild(el("span", "rn-ref", `${scholarName(s, lang)}${lifeLine(s) ? ` · ${lifeLine(s)}` : ""}`));
+  const ref = el("span", "rn-ref");
+  ref.append(scholarLink(s, lang), lifeLine(s) ? ` · ${lifeLine(s)}` : "");
+  item.appendChild(ref);
   if (s.ar) item.appendChild(arabic("span", "rn-small", s.ar));
   if (extra) item.appendChild(el("span", null, extra));
   item.appendChild(el("span", "rn-small", `${t("Approaches")}: ${s.approaches.join(" · ") || "—"} · ${s.id}`));
@@ -310,13 +342,37 @@ async function tafsirPanel(panel, ctx) {
   panel.appendChild(el("p", "read-next-sub", ayat.length
     ? t("Where to read the tafsīr of {refs}", { refs: ayat.map(([s, a]) => `${num(s)}:${num(a)}`).join(", ") })
     : t("Where to read the tafsīr")));
-  const data = await loadTafsirScholars();
+  const [data, links] = await Promise.all([loadTafsirScholars(), loadTafsirLinks().catch(() => null)]);
   const lang = getAppLang();
+  if (links && ayat.length) panel.appendChild(note(t("Each link opens that book at the āyah, on a free website, in a new tab.")));
   for (const { title, scholar } of whereToRead(data)) {
     const item = el("div", "read-next-item");
     item.dataset.readNextTafsir = scholar.id;
     item.appendChild(el("span", "rn-ref", title));
-    item.appendChild(el("span", "rn-small", `${scholarName(scholar, lang)}${lifeLine(scholar) ? ` · ${lifeLine(scholar)}` : ""}`));
+    const by = el("span", "rn-small");
+    by.append(scholarLink(scholar, lang), lifeLine(scholar) ? ` · ${lifeLine(scholar)}` : "");
+    item.appendChild(by);
+    // K3b (the Owner, 5 Nov 2026): this book at THAT āyah on the best free site that really has it, or "not online yet".
+    const link = links ? tafsirLinkFor(links, scholar.id, title) : null;
+    if (link && !link.site) {
+      const no = el("span", "rn-small", t("Not online yet"));
+      no.dataset.readNextTafsirOffline = "true";
+      item.appendChild(no);
+    } else if (link && ayat.length) {
+      const row = el("span", "rn-links");
+      for (const [s, a] of ayat) {
+        const href = tafsirLinkHref(links, link, s, a);
+        if (!href) continue;
+        const go = el("a", "read-next-go", `${t("Read at {ref}", { ref: `${num(s)}:${num(a)}` })} ↗`);
+        go.href = href; go.target = "_blank"; go.rel = "noopener";
+        go.dataset.readNextTafsirLink = `${s}:${a}`;
+        go.title = `${links.sites[link.site]?.name ?? link.site} (${t("new tab")})`;
+        row.appendChild(go);
+      }
+      item.appendChild(row);
+      const site = el("span", "rn-small", `${links.sites[link.site]?.name ?? link.site}${link.partial ? ` · ${t("only some āyāt")}` : ""}`);
+      item.appendChild(site);
+    }
     panel.appendChild(item);
   }
 }

@@ -167,11 +167,76 @@ check("read-next.js is pure: no document, window, fetch; it imports only lemma-d
   assert.deepEqual([...pure.matchAll(/from\s+"([^"]+)"/g)].map((m) => m[1]), ["./lemma-dictionary.js"]);
 });
 const ui = strip(fs.readFileSync("app/js/read-next-ui.js", "utf8"));
-check("read-next-ui.js fetches only inside loadTafsirScholars (first use), never at import or on drawing the box", () => {
-  assert.equal((ui.match(/\bfetch\(/g) ?? []).length, 1);
+// UPDATED IN PLACE for K3b (5 Nov 2026): a second fetch, loadTafsirLinks (the tafsīr books' sites), first use only.
+check("read-next-ui.js fetches only inside loadTafsirScholars and loadTafsirLinks (first use), never at import or on drawing the box", () => {
+  assert.equal((ui.match(/\bfetch\(/g) ?? []).length, 2);
+  for (const fn of ["loadTafsirScholars", "loadTafsirLinks"]) {
+    const body = ui.slice(ui.indexOf(`export function ${fn}`), ui.indexOf("\n}\n", ui.indexOf(`export function ${fn}`)));
+    assert.equal((body.match(/\bfetch\(/g) ?? []).length, 1, `${fn} holds one fetch`);
+  }
   const render = ui.slice(ui.indexOf("export function renderReadNext"), ui.indexOf("function fillPanel"));
   assert.ok(render.length > 200, "renderReadNext found (positive control)");
-  assert.doesNotMatch(render, /\b(fetch|loadTafsirScholars|getSurah|describeHit|loadLemmaDictionary|resolve)\(/);
+  assert.doesNotMatch(render, /\b(fetch|loadTafsirScholars|loadTafsirLinks|getSurah|describeHit|loadLemmaDictionary|resolve)\(/);
+});
+
+// ---- K3b "Study Next" (the Owner, 5 Nov 2026) ----
+const links = JSON.parse(fs.readFileSync("app/data/tafsir-links.json", "utf8"));
+check("K3b: the box is called Study Next (পরবর্তী অধ্যয়ন), and \"Read next\" is gone from the box and from bn.js", () => {
+  assert.match(ui, /el\("h3", "read-next-head", t\("Study Next"\)\)/);
+  assert.doesNotMatch(ui, /t\("Read next"\)/);
+  const bn = fs.readFileSync("app/js/i18n/bn.js", "utf8");
+  assert.match(bn, /"Study Next": "পরবর্তী অধ্যয়ন"/);
+  assert.doesNotMatch(bn, /"Read next":/);
+});
+check("K3b: tafsir-links.json names every tafsīr title of tafsir-scholars.json exactly once, and nothing else", () => {
+  const want = data.scholars.filter((s) => s.roles.includes("tafsir")).flatMap((s) => s.tafsir.map((t) => `${s.id}|${t}`)).sort();
+  const have = links.links.map((l) => `${l.scholar}|${l.title}`);
+  assert.equal(new Set(have).size, have.length, "a title is listed twice");
+  assert.deepEqual([...have].sort(), want);
+  assert.ok(want.length >= 50, `positive control: ${want.length} titles`);
+});
+check("K3b: every link is a known site with a book and the site's author, or site null with a reason; a partial book has a probe", () => {
+  for (const l of links.links) {
+    if (l.site === null) { assert.ok(["not online", "not per āyah"].includes(l.why), `${l.scholar} ${l.title}: ${l.why}`); assert.ok(!l.book); continue; }
+    assert.ok(links.sites[l.site], `${l.scholar}: unknown site ${l.site}`);
+    assert.ok(l.book && l.author, `${l.scholar} ${l.title}: book and author`);
+    if (l.partial) assert.match(l.probe, /^\d+:\d+$/, `${l.scholar} probe`);
+  }
+});
+check("K3b: quran.com carries exactly the five books it has (al-Ṭabarī, al-Baghawī, al-Qurṭubī, Ibn Kathīr, al-Saʿdī) -- the Owner's order puts it first", () => {
+  assert.deepEqual(links.links.filter((l) => l.site === "quran.com").map((l) => l.scholar).sort(), ["s021", "s032", "s040", "s048", "s066"]);
+});
+check("K3b: the books the Owner named (Ibn ʿĀshūr, al-Jalālayn, al-Rāzī) each link to a site", () => {
+  for (const [id, title] of [["s068", "al-Taḥrīr wa al-Tanwīr"], ["s049", "Tafsīr al-Jalālayn"], ["s038", "Mafātīḥ al-Ghayb"]]) {
+    assert.ok(RN.tafsirLinkFor(links, id, title)?.site, `${id} ${title}`);
+  }
+});
+check("K3b: tafsirLinkHref builds the exact address on each site, at that āyah; null when not online or the āyah is not a number", () => {
+  assert.equal(RN.tafsirLinkHref(links, RN.tafsirLinkFor(links, "s048", "Tafsīr al-Qurʾān al-ʿAẓīm"), 36, 38), "https://quran.com/36:38/tafsirs/ar-tafsir-ibn-kathir");
+  assert.equal(RN.tafsirLinkHref(links, RN.tafsirLinkFor(links, "s068", "al-Taḥrīr wa al-Tanwīr"), 2, 255), "https://tafsir.app/ibn-aashoor/2/255");
+  assert.equal(RN.tafsirLinkHref(links, RN.tafsirLinkFor(links, "s044", "Lubāb al-Taʾwīl"), 36, 38),
+    "https://www.altafsir.com/Tafasir.asp?tMadhNo=0&tTafsirNo=18&tSoraNo=36&tAyahNo=38&tDisplay=yes&UserProfile=0&LanguageId=1");
+  assert.equal(RN.tafsirLinkHref(links, RN.tafsirLinkFor(links, "s065", "Tafsīr al-Marāghī"), 36, 38), null);
+  assert.equal(RN.tafsirLinkHref(links, RN.tafsirLinkFor(links, "s048", "Tafsīr al-Qurʾān al-ʿAẓīm"), "36", 38), null);
+});
+check("K3b: a scholar's name opens THEIR row of the Scholars Database (v1.6, ?s=<id>&back=1); a bad id gives no link", () => {
+  assert.equal(RN.scholarHref("s068"), "https://madrasatul-muslimeen.github.io/docs/reference/scholars-database/Scholars%20Database%20-%20v1.6.html?s=s068&back=1");
+  assert.equal(RN.scholarHref("068"), null);
+  assert.equal(RN.scholarHref(undefined), null);
+  const page = decodeURIComponent(new URL(RN.SCHOLARS_DB_PAGE).pathname).slice(1);
+  assert.ok(fs.existsSync(page), `${page} is in the repository (GitHub Pages serves it)`);
+  const html = fs.readFileSync(page, "utf8");
+  assert.match(html, /new URLSearchParams\(location\.search\)/);
+  assert.match(html, /q\.get\("back"\) === "1"/);
+  for (const s of data.scholars) assert.ok(html.includes(`"id": "${s.id}"`), `${s.id} is a row of the page`);
+});
+check("K3b: every tafsīr row's scholar and every scholar row is a link (new tab), and the Word card passes its āyah", () => {
+  assert.match(ui, /function scholarLink\(s, lang\)/);
+  assert.equal((ui.match(/scholarLink\(/g) ?? []).length, 3, "defined once, used in scholarRow and in the Tafsīr rows");
+  assert.match(ui, /a\.target = "_blank"; a\.rel = "noopener";/);
+  assert.match(ui, /go\.target = "_blank"; go\.rel = "noopener";/);
+  const qr = fs.readFileSync("app/quranrevival.html", "utf8");
+  assert.match(qr, /scholars: "tafsir", tafsir: \{ ayat: \[`\$\{currentSurahData\.surahNumber\}:\$\{ayah\.ayah\}`\] \}, backTo: "word"/);
 });
 const hb = fs.readFileSync("app/js/hadith-browser.js", "utf8");
 check("hadith-browser.js places the box with ONE call, inside the passage card", () => {

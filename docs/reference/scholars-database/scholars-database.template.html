@@ -24,6 +24,11 @@
   --modern: #2a1a33; --modern-edge: #c084fc; --mufassir: #33280f; --mufassir-edge: #f0b44c;
   --draft: #3a3210; --draft-edge: #e3b52a; --accent: #7aa7ff; --danger: #f87171; --ok: #4ade80; color-scheme: dark; }
 body { background: var(--bg); color: var(--fg); font-family: var(--sans); }
+/* v1.6 (5 Nov 2026, MSA J03 K3b): opened from MSA's Study Next at one scholar (?s=<id>): that row is marked, and
+   back=1 shows a ← Back button that returns to the card. Inert on the live claude.ai page, whose address has neither. */
+tr.jump > td { box-shadow: inset 0 3px 0 var(--accent), inset 0 -3px 0 var(--accent); }
+tr.jump > td:first-child { box-shadow: inset 3px 3px 0 var(--accent), inset 0 -3px 0 var(--accent); }
+.backbtn { position: sticky; top: 8px; z-index: 5; box-shadow: 0 2px 8px rgba(0,0,0,0.15); min-height: 40px; padding: 0 14px; margin: 0 0 12px; border: 1px solid var(--accent); border-radius: 10px; background: var(--surface); color: var(--accent); font: inherit; font-weight: 600; cursor: pointer; }
 .wrap { padding-inline: 16px; padding-block: 20px 48px; max-width: 1900px; margin: 0 auto; }
 h1 { text-align: center; font-size: 1.6rem; margin: 0 0 4px; text-wrap: balance; }
 .sub { text-align: center; color: var(--muted); font-size: 0.92rem; margin: 0 0 18px; }
@@ -267,5 +272,20 @@ $("dlBtn").addEventListener("click", async () => {
   } catch (e) { status("The download was not completed.", "warn"); }
 });
 render();
+// v1.6 (MSA J03 K3b): ?s=<id> opens the page AT that scholar; back=1 adds ← Back (to the card that opened it).
+(() => {
+  const q = new URLSearchParams(location.search);
+  if (q.get("back") === "1") {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "backbtn"; b.id = "backBtn"; b.textContent = "← Back";
+    b.addEventListener("click", () => { if (history.length > 1) history.back(); else window.close(); });
+    document.querySelector(".wrap").prepend(b);
+  }
+  const id = q.get("s");
+  const tr = id && [...document.querySelectorAll("#tb tr[data-id]")].find((x) => x.dataset.id === id);
+  if (!tr) { if (id) status(`No scholar with the id ${id} in this version.`, "warn"); return; }
+  tr.classList.add("jump"); tr.tabIndex = -1;
+  requestAnimationFrame(() => { tr.scrollIntoView({ block: "center", inline: "start" }); tr.focus({ preventScroll: true }); });
+})();
 })();
 </script>

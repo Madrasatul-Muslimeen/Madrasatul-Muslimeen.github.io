@@ -7800,7 +7800,7 @@
     import { loadSurahKeys, loadPersonSurahKeys, setAyahKey, setWordKey } from "./js/ayah-keys-data.js";
     import { marksRowHtml, wireMarksRow, wheelPieces, marksWheelHtml, wireMarksWheel, marksLegendHtml, MARKS_CSS, MARKS_WHEEL_VIEWS } from "./js/marks-ui.js";
     import { loadAyahHadithHits, describeHit, pickHits, hadithHitHref } from "./js/ayah-hadith.js";
-    import { renderReadNext } from "./js/read-next-ui.js"; // J03 K3 "Read next" on the Āyah card and the Word card
+    import { renderReadNext } from "./js/read-next-ui.js"; // J03 K3 "Study Next" (was "Read next") on the Āyah card and the Word card
     import { renderPageApproachCardHtml, attachPageApproachCardHandlers } from "./js/page-approach-card.js";
     // Issue #348 -- the Unit Card (Ruku'/Page/Hizb/Juz/Surah/Range) and the
     // ladder shared with the Ayah Card, both pure renderers reusing the same
@@ -19905,7 +19905,7 @@
       if (typed) wordCardSearch.value = typed.value;
       content.innerHTML = renderQuranWordCard({ state: quranWordCardState, chapter: currentSurahData, ayah, word, context: { ...quranWordCardContext, marksHtml: marksRowFor(`qword:${currentSurahData.surahNumber}:${ayah.ayah}:${word.position}`, currentSurahData.surahNumber, t("Marks for this word")), search: wordCardSearch, lemmaForms: lemmaFormsTable, verbForms: verbFormsTable, verbFormsFailed, nounForms: nounFormsTable, nounFormsFailed, formTexts: nounFormTexts, nounBox: wordCardNounBox?.id === quranWordCardState.occurrenceId ? wordCardNounBox.key : null, depthOpen: wordCardDepthOpen, conjView: wordCardConjView, conjBasic: wordCardConjBasic === quranWordCardState.occurrenceId, formsOpen, meaningLang: getAppLang() === "bn" ? "bn" : "en", conjNarrow: window.matchMedia("(max-width: 640px)").matches, needsSource: needsSourceContext(word, currentSurahData.surahNumber), ...wordCardDictionaryContext(word), ...intermediateContext(word), ...wordProgressContext(ref), ...quranWordCardLemmaContext, hasPrevious: at > 0, hasNext: at >= 0 && at < ids.length - 1, rootOccurrenceCount: quranWordCardContext.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0, colourWordPartsEnabled: true, translitScript: getTransliterationScript(), displayRef: wordRefFor }, labels: { ...wordCardLabels(), ...wordProgressLabels() }, formatNumber: num });
       wireMarksRow(content, onMarkToggle); // PCF MSA J03 K2
-      // J03 K3 "Read next": Qur'an (this word's places), Dictionary, Scholars and Tafsīr under the card. The box is kept per
+      // J03 K3 "Study Next" (was "Read next"): Qur'an (this word's places), Dictionary, Scholars and Tafsīr under the card. The box is kept per
       // word, so the card's many redraws (data arriving) do not close a tab the reader opened. Wired AFTER the innerHTML above.
       {
         const cardEl = content.querySelector(".quran-word-card");
@@ -19916,7 +19916,8 @@
             renderReadNext(host, {
               quran: () => quranWordCardContext.lemmaOccurrences ?? [],
               lemmas: lemma ? [lemma] : [],
-              scholars: "tafsir", tafsir: true, backTo: "word"
+              // K3b: the word's āyah, so each tafsīr book links straight to it (the Owner, 5 Nov 2026).
+              scholars: "tafsir", tafsir: { ayat: [`${currentSurahData.surahNumber}:${ayah.ayah}`] }, backTo: "word"
             });
             wordReadNext = { id: quranWordCardState.occurrenceId, box: host.firstElementChild };
           }
@@ -23693,7 +23694,7 @@
             words: (a.words ?? []).map((w) => ({ arabic: w.arabic, translit: w.transliteration ?? "", en: w.translation?.en ?? "", bn: w.translation?.bn ?? "" })) } : null;
         })(),
       });
-      // J03 K3 "Read next" on the Āyah card: Dictionary words of this āyah, Scholars and Tafsīr. NO Qur'an or Hadith tab -- the
+      // J03 K3 "Study Next" (was "Read next") on the Āyah card: Dictionary words of this āyah, Scholars and Tafsīr. NO Qur'an or Hadith tab -- the
       // card's Info block already has Related āyāt and Related hadith. Kept per āyah across the card's redraws.
       if (!isOpeningSheet) {
         const infoEl = ayahActionSheetMountEl.querySelector("[data-ayah-sheet-info]");
