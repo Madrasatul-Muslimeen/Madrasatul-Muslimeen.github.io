@@ -17,9 +17,17 @@ const BN = fs.readFileSync("app/js/i18n/bn.js", "utf8");
 const DATA = JSON.parse(fs.readFileSync("tools/hadith-data-pull/output/dua/groups.json", "utf8"));
 const MUTATIONS = {
   // D07: the text never shrinks, so a long dua runs off the page.
-  fit: ["poster", "  while (a4.scrollHeight > a4.clientHeight + 1 && k > 0.3) { k -= 0.05; size(); }\n", ""],
+  fit: ["poster", "  while (d.scrollHeight > d.clientHeight + 1 && size > BASE_DESC * 0.25) { size -= 0.05; set(); }\n", ""],
   // D07: a short dua never grows to fill the page.
-  grow: ["poster", "  let k = MAX_SCALE;\n", "  let k = 1;\n"],
+  grow: ["poster", "  let size = BASE_DESC * MAX_SCALE;\n", "  let size = BASE_DESC;\n"],
+  // D25: the Quran box is plain text, no way to open the āyah.
+  quranlink: ["poster", "if (interactive) { r.href", "if (false) { r.href"],
+  // D25: the picture is drawn without the Asma frame.
+  frame: ["poster", "  if (frame) ctx.drawImage(frame, 0, 0, W, H);\n", ""],
+  // D25: the cartouche shows the whole Arabic, not its first words.
+  cartouche: ["poster", ".trim().split(/\\s+/).slice(0, 2).join(\" \") : \"\")", ".trim() : \"\")"],
+  // D25: the pop-up keeps "Close" instead of the Asma way's ← Back.
+  back: ["study", 'key === "poster" ? `← ${t("Back")}` :', "false ? `← ${t(\"Back\")}` :"],
   // D07: the poster starts in English for every reader.
   langdefault: ["poster", 'en: lang() === "en", bn: lang() === "bn"', "en: true, bn: false"],
   // D07: a switch with nothing behind it can still be pressed.
@@ -112,6 +120,15 @@ async function run(mutation) {
       await check("D07 the poster is an A4 page (210 × 297), inside the screen", () => { if (Math.abs(f1.h / f1.w - 297 / 210) > 0.02 || f1.l < 0 || f1.r > width) throw new Error(JSON.stringify(f1)); });
       await check("D07 it starts with Arabic and the reader's own language", async () => { const p = (await parts()).join(); if (p !== `ar,${lang}`) throw new Error(p); });
       await check("D07 a short dua grows to fill the page, and still fits", () => { if (!(f1.k > 1) || f1.over > 1) throw new Error(JSON.stringify(f1)); });
+      await check("D25 it is the Asma poster's own frame (ahp), with the dua's title, its line and the cartouche in their slots", async () => {
+        const d = await page.$eval("[data-dua-a4]", (a) => ({ ahp: a.classList.contains("ahp"), bg: getComputedStyle(a).backgroundImage, title: a.querySelector(".ahp-title")?.textContent, line: a.querySelector(".ahp-mean")?.textContent, cart: a.querySelector(".ahp-ar")?.textContent }));
+        if (!d.ahp || !d.bg.includes("asma-poster-frame") || d.title !== p0.title.en.split(",")[0].trim() && d.title !== p0.title[lang].split(/[,،]/)[0].trim() || !d.line || d.cart.split(/\s+/).length > 2 || !p0.ar.startsWith(d.cart.split(/\s+/)[0])) throw new Error(JSON.stringify(d));
+      });
+      await check("D25 the body sits inside its slot (nothing spills) and Quran box links the āyah, with the way back", async () => {
+        const d = await page.$eval("[data-dua-a4]", (a) => { const b = a.querySelector(".ahp-desc"); const q = a.querySelector("[data-dua-a4-quran]"); const hh = a.querySelector(".ahp-ref-h"); return { over: b.scrollHeight - b.clientHeight, href: q?.getAttribute("href"), h: hh.textContent }; });
+        if (d.over > 1 || d.href !== `./quranrevival.html?goto=${p0.ref}&back=1` || !d.h) throw new Error(JSON.stringify(d));
+      });
+      await check("D25 the pop-up's way out is ← Back", async () => { const t0 = await page.$eval("[data-dua-pop-close]", (e) => e.textContent); if (t0 !== `← ${L("Back")}`) throw new Error(t0); });
       const other = lang === "en" ? "bn" : "en";
       // D26: the choices are made with the chips on the Dua Card; the poster reads them when it opens.
       await page.click("[data-dua-pop-close]");
@@ -204,7 +221,8 @@ async function run(mutation) {
       // D14 as a picture.
       await page.click('[data-dua-share-as="img"]');
       await page.waitForSelector(".dua-share-img", { timeout: 15000 }).catch(() => {});
-      const pic = await page.$eval(".dua-share-img", async (i) => { if (!i.complete) await new Promise((r) => { i.onload = r; }); return { w: i.naturalWidth, h: i.naturalHeight, k: Number(i.dataset.duaScale) }; }).catch(() => null);
+      const pic = await page.$eval(".dua-share-img", async (i) => { if (!i.complete) await new Promise((r) => { i.onload = r; }); return { w: i.naturalWidth, h: i.naturalHeight, k: Number(i.dataset.duaScale), len: i.src.length }; }).catch(() => null);
+      await check("D25 the picture carries the Asma frame (a plain page would be small)", () => { if (!(pic?.len > 150000)) throw new Error(String(pic?.len)); });
       const save = await page.$eval("[data-dua-save-picture]", (a) => ({ href: a.getAttribute("href")?.slice(0, 22), dl: a.download })).catch(() => null);
       await check("D14 the poster picture is an A4 PNG (1240 × 1754) to save", () => { if (pic?.w !== 1240 || pic?.h !== 1754 || save?.href !== "data:image/png;base64," || !save.dl.endsWith(".png")) throw new Error(JSON.stringify({ pic, save })); });
       await page.click("[data-dua-pop-close]");
@@ -215,7 +233,8 @@ async function run(mutation) {
       await page.click('[data-dua-menu="poster"]');
       await settle();
       const f2 = await fits();
-      await check("D07 the longest Hisn dhikr shrinks until one page holds it", () => { if (!(f2.k < 1) || f2.over > 1) throw new Error(JSON.stringify(f2)); });
+      const bodyOver = await page.$eval(".ahp-desc", (b) => b.scrollHeight - b.clientHeight);
+      await check("D07 / D25 the longest Hisn dhikr shrinks until the body slot holds it", () => { if (!(f2.k < 1) || f2.over > 1 || bodyOver > 1) throw new Error(JSON.stringify({ f2, bodyOver })); });
       await check("D07 switches with nothing behind them are off, and the page says why", async () => {
         const d = await page.$$eval("[data-dua-switch]", (x) => x.filter((b) => b.disabled).map((b) => b.dataset.duaSwitch).join());
         const n = await page.$eval(".dua-gap-note", (e) => e.textContent).catch(() => "");

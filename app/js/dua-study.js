@@ -21,6 +21,7 @@ import { loadDuaCardsSummary, loadDuaCardsPage, loadDuaWordLinks, loadDuaVowels,
 import { duaCard, duaLoadFailed, fillDuaProgress, loadDuaCheckEnv } from "./dua-browser.js";
 import { el } from "./hadith-shared-ui.js";
 import { duaWords, duaWordsFingerprint } from "./dua-words.js";
+import { placeDialogAtHome } from "./home-window.js";
 import { posterNodes, shareNodes, selectionBar } from "./dua-poster.js";
 import { trapModal } from "./modal-focus.js";
 
@@ -442,7 +443,7 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
     document.removeEventListener("keydown", esc, true);
     if (from?.isConnected) from.focus();
   }
-  function openPop(from, label, nodes, stash, { openFirst = false, empty = null } = {}) {
+  function openPop(from, label, nodes, stash, { openFirst = false, empty = null, key = null } = {}) {
     closePop();
     const box = el("div", "dua-pop");
     box.setAttribute("role", "dialog");
@@ -451,7 +452,7 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
     box.dataset.duaPop = from.dataset.duaMenu;
     const card = el("section", "dua-popcard");
     const head = el("div", "dua-pophead");
-    const close = el("button", "dua-ref dua-pop-close", `✕ ${t("Close")}`);
+    const close = el("button", "dua-ref dua-pop-close", key === "poster" ? `← ${t("Back")}` : `✕ ${t("Close")}`);
     close.type = "button";
     close.dataset.duaPopClose = "";
     close.addEventListener("click", closePop);
@@ -468,6 +469,7 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
     const esc = (ev) => { if (ev.key === "Escape" && pop?.box === box) { ev.stopPropagation(); closePop(); } };
     document.addEventListener("keydown", esc, true);
     root.appendChild(box);
+    if (key === "poster") placeDialogAtHome(card); // the Asma way: at the home window's size on a computer
     // Audit part 156 (3, 4): the pop-up is aria-modal, so Tab and Shift+Tab wrap inside it (the shared trapModal) instead
     // of walking out to the page behind; closing it still returns focus to the menu button that opened it.
     pop = { box, nodes, stash, from, esc, release: trapModal(box) };
@@ -573,7 +575,7 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
     return {
       ...titled(titleOf(data, { kind: "dua", n })),
       ar: spans.length ? spans.map((s) => s.textContent).join(" ") : c.text,
-      words, en: null, bn: null,
+      words, en: null, bn: null, line: t("Dua {n}", { n: num(n) }),
       ref: article.querySelector(".openiti-standard-number")?.textContent || t("Dua {n}", { n: num(n) }),
     };
   }
@@ -615,7 +617,7 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
     card.appendChild(el("p", "dua-words-note", t("Source: Hisn al-Muslim, typed by Abdellah Sellam (MIT licence).")));
     cardMenu(card, [
       { key: "source", label: t("Source"), nodes: kids(card, ".dua-hisn-ref, .dua-also, .dua-words-note") },
-      ...sheetSections(() => ({ ...titled(titleOf(data, e)), ar: e.ar, words: null, en: null, bn: null,
+      ...sheetSections(() => ({ ...titled(titleOf(data, e)), ar: e.ar, words: null, en: null, bn: null, line: t("Hisn al-Muslim {ref}", { ref: num(e.h) }),
         ref: `${t("Hisn al-Muslim {ref}", { ref: num(e.h) })}${e.ref ? ` · ${e.ref}` : ""}` })),
     ]);
     return card;
@@ -634,7 +636,7 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
     cardMenu(card, [
       { key: "meaning", label: t("Meaning"), nodes: kids(card, ".dua-quran-meaning") },
       { key: "source", label: t("Source"), nodes: kids(card, ".dua-quran-open") },
-      ...sheetSections(() => ({ ...titled(titleOf(data, e)), ar: e.ar, words: e.words ?? null, en: e.en, bn: e.bn,
+      ...sheetSections(() => ({ ...titled(titleOf(data, e)), ar: e.ar, words: e.words ?? null, en: e.en, bn: e.bn, line: e.who[L], quran: e.ref,
         ref: `${t("Qur'an {ref}", { ref: num(e.ref) })} · ${e.surah?.en ?? ""}` })),
     ]);
     return card;
