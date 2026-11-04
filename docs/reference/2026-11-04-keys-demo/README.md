@@ -1,5 +1,11 @@
 # J03 Keys to Understanding demo (4 Nov 2026)
 
+**v2 (4 Nov, 12:04 pm Sydney): the Owner's ticks are applied and the build is APPROVED** (J03 `j03own1104b`): Q1 A plus a
+third mark, **Done** (known / studied); **Q2 and Q3 by ROOT**: a hadith word whose root is in the Qur'an opens QR's Word
+card (at the same dictionary word where there is one), and only a word whose root is not in the Qur'an opens the
+Hadith Word Card; Q4 A (the teacher's view, after one Firebase Rules step the Owner publishes); Q5 A (QR Lead: Āyah card
+and QR's Word card; Hadith Lead: Hadith card and HWC; MSA: Read next, the teacher's view, review and release).
+
 The demo of the Owner's decision of 4 Nov 2026 (PCF MSA J03, comment `j03own1104`), published at
 https://claude.ai/artifact/RDDqWeai42MvNaXJcMVx5f. **A demo, not app code:** nothing here is imported by `app/`.
 
