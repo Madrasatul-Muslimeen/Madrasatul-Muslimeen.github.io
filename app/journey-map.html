@@ -4711,9 +4711,13 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
         renderToggle();
         appEl.style.display = "block";
         // J112: Siyagah's second sign-in loads here, when the Map opens, and only once its switch is on (it returns at
-        // once while off). Its failures are said in its own bar, so the Map never waits on it.
-        if (!unitMode) mountSiyagahMapLink({ beforeEl: document.getElementById("noteLayout"), email: user.email || "" }).catch((err) => console.error(err));
-        await Promise.all([loadContextData(), hydrationDone]);
+        // once while off). Its failures are said in its own bar, so the Map never waits on it. R1: its bar is placed at
+        // once, but its code loads only AFTER the Map's own folders have loaded (`after`), so the Map is usable first;
+        // and never in an embedded Map (a Notes pane inside another page).
+        let mapLoaded = () => {};
+        const mapLoadedP = new Promise((r) => { mapLoaded = r; });
+        if (!unitMode && !document.documentElement.classList.contains("embed")) mountSiyagahMapLink({ beforeEl: document.getElementById("noteLayout"), email: user.email || "", after: mapLoadedP }).catch((err) => console.error(err));
+        await Promise.all([loadContextData(), hydrationDone]).finally(() => mapLoaded());
         clearReadStatus();
       } catch (err) {
         console.error(err);
