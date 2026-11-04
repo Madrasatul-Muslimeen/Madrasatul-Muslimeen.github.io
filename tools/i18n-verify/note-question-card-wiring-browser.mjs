@@ -129,6 +129,20 @@ for (const lang of ["en", "bn"]) for (const [width, height] of [[360, 780], [768
       const body = await F.evaluate(() => document.querySelector("#notePane [data-edit-body]")?.innerHTML ?? "");
       const q = want[0].replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       check(`${tag} a tap adds "${want[0]}" as a heading to answer under`, new RegExp(`<h3[^>]*>${q}</h3>\\s*<p>`).test(body), JSON.stringify({ h3: body.match(/<h3[^>]*>[^<]*<\/h3>/g), end: body.slice(-160) }));
+      // Architect review (5 Nov): with the caret parked INSIDE the Āyah block (contenteditable=false) a tap used to add nothing.
+      const parked = await F.evaluate(() => {
+        const b = document.querySelector("#notePane [data-edit-body]"), lock = b?.querySelector("[contenteditable='false']");
+        const tn = lock && document.createTreeWalker(lock, NodeFilter.SHOW_TEXT).nextNode();
+        if (!tn) return false;
+        const r = document.createRange(); r.setStart(tn, 0); r.collapse(true); const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+        b.dispatchEvent(new Event("keyup", { bubbles: true })); b.dispatchEvent(new Event("mouseup", { bubbles: true }));
+        return true;
+      });
+      await F.click(`#notePane [data-question-id="${QUESTIONS[14][1].id}"]`);
+      await P.waitForTimeout(200);
+      const body2 = await F.evaluate(() => document.querySelector("#notePane [data-edit-body]")?.innerHTML ?? "");
+      const q2 = want[1].replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      check(`${tag} caret parked inside the Āyah block: a tap still adds "${want[1]}" (after the block)`, parked && new RegExp(`<h3[^>]*>${q2}</h3>`).test(body2), JSON.stringify({ parked, h3: body2.match(/<h3[^>]*>[^<]*<\/h3>/g) }));
     }
   }
   const real = errors.filter((e) => !/ERR_CERT|ERR_TUNNEL|net::|archive\.org|api\.quran|Failed to load resource/i.test(e));

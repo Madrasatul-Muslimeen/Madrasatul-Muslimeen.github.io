@@ -459,6 +459,17 @@ export function createNoteViews(host) {
   }
   function insertQuestion(v, text) {
     restoreRange(v);
+    // The caret may sit inside a block the reader cannot type in (an Āyah or Hadith block, contenteditable=false), or
+    // nowhere in the body: insertHTML then does nothing. Put it just after that block, or at the end of the body.
+    const body = editBodyEl(v), sel = window.getSelection();
+    const at = sel?.rangeCount ? sel.getRangeAt(0).startContainer : null;
+    const atEl = at && (at.nodeType === 1 ? at : at.parentElement);
+    const locked = atEl && body.contains(atEl) ? atEl.closest("[contenteditable='false']") : null;
+    if (!atEl || !body.contains(atEl) || (locked && body.contains(locked))) {
+      const r = document.createRange();
+      if (locked && body.contains(locked)) r.setStartAfter(locked); else { r.selectNodeContents(body); r.collapse(false); }
+      r.collapse(true); sel.removeAllRanges(); sel.addRange(r);
+    }
     document.execCommand("insertHTML", false, `<h3>${escapeHtml(text)}</h3><p><br></p>`);
     onEditInput(v);
   }
