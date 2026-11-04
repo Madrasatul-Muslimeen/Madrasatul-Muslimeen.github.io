@@ -907,6 +907,9 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
     // (createStudyNote, the noteSources link the Notes pane makes) and with `noteTitle` it has its first title.
     const NEW_UNIT_SHAPES = [...PANE_UNIT_SHAPES, /^hadith:[A-Za-z0-9_-]+:\d{1,6}$/];
     let newMode = false, newUnitKey = null, newTitleParam = "", newWaitRefs = false;
+    // PCF MSA J05: `approach` -- the Approach the reader had selected where the Note was made ("approach_14"). The new Note keeps
+    // it on its noteSources link (createStudyNote's approachId), and while it is written its question card shows above the toolbar.
+    let newApproachId = null;
     try {
       const q = new URLSearchParams(location.search);
       if (q.get("embed") === "1" && q.get("new") === "1") {
@@ -915,8 +918,16 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
         if (typeof u === "string" && NEW_UNIT_SHAPES.some((re) => re.test(u))) newUnitKey = u;
         newTitleParam = q.get("noteTitle") || "";
         newWaitRefs = q.get("refs") === "1";
+        const a = q.get("approach");
+        if (typeof a === "string" && /^approach_\d{1,2}$/.test(a)) newApproachId = a;
       }
     } catch { /* the ordinary page */ }
+    // The question card's table (js/critical-reasoning-guides.js) is loaded ONLY for a new Note that names its Approach, and
+    // before the Note can be opened for writing (startNewNote waits on it): a Map opened any other way loads nothing new (I9).
+    let questionGuides = null;
+    const questionGuidesReady = newApproachId
+      ? import("./js/critical-reasoning-guides.js").then((m) => { questionGuides = m; }).catch((error) => { console.error("[question card]", error); /* the Note is written without it */ })
+      : Promise.resolve();
     let currentView = unitMode ? "unit" : viewFromHash()
       ?? (VALID_VIEWS.includes(localStorage.getItem(VIEW_KEY)) ? localStorage.getItem(VIEW_KEY) : "folders");
 
@@ -1649,6 +1660,15 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
         .map((f) => ({ id: f.folderId, label: folderDisplayName(f) })),
       onChip: revealFolderFromChip,
       newNote: (v, tpl) => newNoteHere(v, tpl),
+      // PCF MSA J05: the Note made in this window from Quran Study gets its Approach's questions (in the app's language), unless
+      // that person's question card toggle is Off. Any other Note (or no Approach, or an Approach with no questions): none.
+      questionCardFor: (note) => {
+        if (!questionGuides || !newApproachId || !note || note.noteId !== newNoteId) return [];
+        if (questionGuides.getQuestionCardMode(selectedPersonId || null) === "off") return [];
+        const bn = getAppLang() === "bn";
+        return questionGuides.questionsFor(newApproachId).map((q) => ({ id: q.id, text: bn ? q.bn : q.en }));
+      },
+      get questionCardCss() { return questionGuides?.QUESTION_CARD_CSS ?? ""; },
       // Part C3: the person's own note settings (userPrefs/{uid}.mmsaNotes). Built on first use; read only when a Note first shows (I9).
       settings: () => (auth.currentUser ? (noteSettingsStore ??= createFirestoreSettingsStore({ db, uid: auth.currentUser.uid })) : null),
       // Item 35: pictures in Notes. Firebase Storage is loaded only when a picture is first used or shown (I9).
@@ -4275,6 +4295,7 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
       newStarted = true;
       if (!isSelfSelected()) { showPageStatus(t("Only your own record can create or file a Note.")); toOpener({ type: "mmsa-new-note-ready", ok: false }); return; }
       await newRefsArrived();
+      await questionGuidesReady;
       if (newNoteId && allNotes.some((n) => n.noteId === newNoteId)) { openNewNoteForWriting(newNoteId); return; } // the page reloaded once: the same Note
       const node = selectedFolderNode() ?? mergedRoots()[0];
       const wasVirtual = !!node && !node.folderId;
@@ -4286,7 +4307,7 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
       const title = newTitleParam;
       const order = nextOrder(notesInFolder(node).map((r) => r.placement));
       const outcome = await safeWrite(async () => {
-        const created = newUnitKey ? (await createStudyNote(db, { ...ownerArgs, unitKey: newUnitKey, title, bodyHtml: body })).note
+        const created = newUnitKey ? (await createStudyNote(db, { ...ownerArgs, unitKey: newUnitKey, title, bodyHtml: body, approachId: newApproachId })).note
           : await createPermanentNote(db, { ...ownerArgs, title, bodyHtml: body });
         let placementId;
         try {

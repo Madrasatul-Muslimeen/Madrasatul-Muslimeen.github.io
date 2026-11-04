@@ -26589,7 +26589,8 @@
       try { noteOpenerMod ??= await import("./js/note-opener.js"); }
       catch (error) { reportWriteFailure(error, { what: "open a new Note", read: true }); return; } // I15
       if (readNotePaneMod?.isReadNotePaneOpen()) readNotePaneMod.closeReadNotePane({ quiet: true });
-      await noteOpenerMod.openNewNote({ ...opts, onClosed: onClosed ?? (() => {
+      // J05: a Note made here takes the Approach selected in Quran Study at this moment (its question card, its source).
+      await noteOpenerMod.openNewNote({ approachId: currentTrackableId, ...opts, onClosed: onClosed ?? (() => {
         paintReadNotesBtn();
         // Notes sits in the Study menu, which closed when it was chosen: the focus goes back to Study then.
         const to = focusBack?.getBoundingClientRect().width ? focusBack : document.getElementById("tabStudyBtn");
