@@ -116,7 +116,7 @@ for (const [lang, width, zoom] of [["en", 1280, 1], ["bn", 390, 1], ["en", 360, 
     check(`${tag} the sheet does not scroll sideways`, await P.$eval(".hwc-sheet", (n) => n.scrollWidth <= n.clientWidth + 1));
     const tabH = await P.$$eval(".hwc-tab, .hwc-back", (ns) => Math.min(...ns.map((n) => n.getBoundingClientRect().height)));
     check(`${tag} tabs and ← Back are at least 40px tall`, tabH >= 39.5, String(tabH));
-    await P.screenshot({ path: `${process.env.SHOTS || "."}/hwc-${lang}-${width}-${zoom}.png` }).catch(() => {});
+    await P.screenshot({ path: `${process.env.SHOTS || (await import("node:os")).tmpdir()}/hwc-${lang}-${width}-${zoom}.png` }).catch(() => {});
     await P.click(".hwc-back");
     check(`${tag} ← Back closes the sheet`, !(await P.$("[data-hwc-sheet]")));
     check(`${tag} ...and focus returns to the word`, await P.evaluate(() => document.activeElement?.dataset?.hwcKind === "h" && /ويوشك/.test(document.activeElement.textContent)));
