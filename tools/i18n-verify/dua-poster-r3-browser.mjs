@@ -31,7 +31,7 @@ const MUTATIONS = {
   // D07: the poster starts in English for every reader.
   langdefault: ["poster", 'en: lang() === "en", bn: lang() === "bn"', "en: true, bn: false"],
   // D07: a switch with nothing behind it can still be pressed.
-  disabled: ["poster", "sw.appendChild(toggle(label, posterOpt[k], !can[k],", "sw.appendChild(toggle(label, posterOpt[k], false,"],
+  disabled: ["poster", "const off = k === \"vow\" ? false : !can[k];", "const off = false;"],
   // D07: after printing, the copy and the print state are left behind.
   printcleanup: ["poster", 'const done = () => { document.body.classList.remove("dua-printing"); host.remove(); ', "const done = () => { "],
   // D14: the source is never in the shared text.
@@ -221,8 +221,8 @@ async function run(mutation) {
       // D14 as a picture.
       await page.click('[data-dua-share-as="img"]');
       await page.waitForSelector(".dua-share-img", { timeout: 15000 }).catch(() => {});
-      const pic = await page.$eval(".dua-share-img", async (i) => { if (!i.complete) await new Promise((r) => { i.onload = r; }); return { w: i.naturalWidth, h: i.naturalHeight, k: Number(i.dataset.duaScale), len: i.src.length }; }).catch(() => null);
-      await check("D25 the picture carries the Asma frame (a plain page would be small)", () => { if (!(pic?.len > 150000)) throw new Error(String(pic?.len)); });
+      const pic = await page.$eval(".dua-share-img", async (i) => { if (!i.complete) await new Promise((r) => { i.onload = r; }); return { w: i.naturalWidth, h: i.naturalHeight, k: Number(i.dataset.duaScale), top: (() => { const c = document.createElement('canvas'); c.width = i.naturalWidth; c.height = i.naturalHeight; const x = c.getContext('2d'); x.drawImage(i, 0, 0); return Array.from(x.getImageData(620, 190, 1, 1).data); })() }; }).catch(() => null);
+      await check("D25 the picture carries the Asma frame (the page's top banner is dark green, not cream paper)", () => { if (!pic?.top || pic.top[0] > 90 || pic.top[1] > 120) throw new Error(JSON.stringify(pic?.top)); });
       const save = await page.$eval("[data-dua-save-picture]", (a) => ({ href: a.getAttribute("href")?.slice(0, 22), dl: a.download })).catch(() => null);
       await check("D14 the poster picture is an A4 PNG (1240 × 1754) to save", () => { if (pic?.w !== 1240 || pic?.h !== 1754 || save?.href !== "data:image/png;base64," || !save.dl.endsWith(".png")) throw new Error(JSON.stringify({ pic, save })); });
       await page.click("[data-dua-pop-close]");
