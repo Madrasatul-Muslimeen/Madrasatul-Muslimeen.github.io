@@ -3,6 +3,49 @@
 Written by Hadith Lead session `01Q2HmCeWjo1vVYV5kgMBvC9` at about 77% context, on the PCA's word (hand119).
 The next session is titled **"📌 (03B) MSA - Hadith Lead"**.
 
+## HANDOVER, 4 Nov 2026 (about 12:30 pm Sydney; session `01PL2xbKWeTSDEBJV5UWZTcQ`'s successor → a fresh Hadith Lead)
+
+Handed over at the context limit (use1102), BEFORE any K1 code was written. State: **nothing in flight except K1.**
+
+**Done since the last block:** J106 round 2 "Add to subject" is RELEASED in v13.25 (PR #1435, main 643c47a); the Subjects rule is
+published by the Owner. Audit part 155 defect 4 (`claude/hadith-way-back-155`, `ebce117`) had no answer from the Architect
+when last checked: ask whether v13.25 carried it.
+
+**Library cards (PCA lib1103 / mydb128): NOT sent.** The permission check refused running the downloaded
+`send_card.py` (https://basheerawanazeera.github.io/BasheeraWaNazeera/library/send_card.py; I read it first: it only PATCHes
+`inbox/<pid>-<cid>` in the BwN Firestore with a public key). Two Hadith demos to card, `pid mmsa`, `kind Demo`, `by "MSA Hadith Lead"`,
+with `page`+`pkey`+`orig`: J106 Hadith Study demo https://claude.ai/artifact/P1WhyMz7R5bJoPAgcwxBXz and J108 Note demo v3
+https://claude.ai/artifact/EpdQd5aX2yoUpWenVceTan. Ask the Owner/Architect to allow it, then send and tell the PCA
+"PCA ▸ cards sent: ...". Tell the PCA it is still open.
+
+**K1 of PCF MSA J03 (Keys to Understanding): BUILD APPROVED (Owner's ticks, 4 Nov 12:04 pm, `j03own1104b`). THE JOB.**
+Branch `claude/hadith-keys-k1` (made from main `1987b62`, empty so far). MSA Architect is `session_01PL2xbKZ3ZRNWgHZAfbrJSx`.
+Hand Part A over on its own as a ready PR; Part B is released only with the Architect's K4 Rules step.
+- **Part A, the Hadith Word Card (HWC)** on the Hadith card, for words whose ROOT is NOT in the Qur'an: five levels WbW, Root,
+  Family, Taṣrīf, Depth (only what the data supports; say in the card where a level has no data; grammar notes are drafts and
+  must be labelled so). A word whose root IS in the Qur'an opens QR's Word card (the Qur'an word of the same dictionary
+  word where there is one, e.g. فتستأذن → 9:44:2, else a word of that root) with ← Back to the hadith card (setAppReturn / back=1).
+  Target: demo v2 https://claude.ai/artifact/RDDqWeai42MvNaXJcMVx5f; source `docs/reference/2026-11-04-keys-demo/`
+  (`template.html`, `build_data.py`). Root matching MUST be computed from the data files (a build step under
+  `tools/hadith-data-pull`), never typed by hand (the demo's `extra_roots` set was hand-typed: that is what not to copy).
+  Known traps: the dictionaries hold Qur'an lemmas only; HadeethEnc `words_meanings` is the only sourced meaning for other
+  words (see `hadeethEncWordsMeanings` in `hadith-browser.js`); matching by written form gave 2 wrong matches in one hadith
+  (أن → إنّ, فتطلع → تَطَّلِعُ), so matches need checking. Qur'an data: `tools/quran-data-pull/output/` (surahs/*.json
+  words have `morphology.root/lemma/pos`; `lemma-dictionary-en/bn.json`, `verb-forms.json`).
+- **Part B, the marks** Difficult / Need practice / Done on the Hadith card (one hadith) and the HWC (one word). Saving layer is the
+  Architect's K0 (branch `claude/j03-k0-marks`): `app/js/ayah-keys-data.js` `loadHadithKeys / setHadithKey / setHadithWordKey`,
+  `app/js/ayah-keys.js` `MARK_IDS keyName marksIn`. scope = personId; collection "hadeethenc"; word position counted from 1
+  by ONE tokeniser used by both the HWC and the marks (tell the Architect which). Word key `hadithword:<collection>:<n>:<pos>`
+  waits on the Owner's tick (J03 `k0key1104`). Rules for `hadithKeyMarks` are a candidate, not published: a refused save must show
+  the I15 message. Read the marks once when the Hadith card first shows (I9).
+- **Rules for the round:** Hadith files only (`hadith-*.js/html`, `tools/hadith-data-pull/**`); never edit `ayah-keys*.js`,
+  `unit-keys.js`, `bn.js` beyond own strings, `sw.js`, `app/apps/*.json`; no merge, no version bump. Review: 360–1440,
+  en/bn, 100/150/200%, screenshots LOOKED at, real-length data, every new check mutation-proven. Hadith card code lives in
+  `app/js/hadith-browser.js` (HadeethEnc cards from ~line 456).
+- **Process notes:** the CLAUDE.md load is about 60k tokens per session start and two Artifact reads of the demos cost another
+  ~60k: read demo sources from `docs/reference/2026-11-04-keys-demo/` on disk (use `Read` with offset/limit), not through the
+  Artifact tool.
+
 ## HANDOVER, 2:03 pm 2 Nov (session `01PL2xbKWeTSDEBJV5UWZTcQ` → a fresh "📌 (03B) MSA - Hadith Lead", on Sonnet)
 
 Handed over on the Owner's usage plan (rule use1102, 2 Nov: hand over at about 15% context; no broadcasts, message
