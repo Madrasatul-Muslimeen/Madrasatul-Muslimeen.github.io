@@ -147,7 +147,7 @@ export function renderQuickMenu(unitKey, {
         <div class="qm-divider"></div>
         <button type="button" class="qm-item" data-qm-play>▶ ${t("Play this āyah")}</button>
         ${showBookmark ? `<button type="button" class="qm-item" data-qm-bookmark>${isBookmarked ? "★" : "🔖"} ${isBookmarked ? t("Remove bookmark") : t("Bookmark this āyah")}</button>` : ""}
-        <button type="button" class="qm-item" data-qm-note>📝 ${t("Note & more…")}</button>
+        <button type="button" class="qm-item" data-qm-note${hasNote ? "" : " data-qm-note-new"}>📝 ${hasNote ? t("Note & more…") : t("Take Note")}</button>
         <button type="button" class="qm-item" data-qm-qcr>📚 ${t("QCR collection(s)…")}</button>
         ${showTextTools ? `
         <div class="qm-divider"></div>
@@ -173,13 +173,14 @@ function closeAllQuickMenus(container) {
  *   buildText(unitKey, langs)  -> string, for Copy/Share
  *   onPlay(unitKey)
  *   onOpenNote(unitKey)
+ *   onTakeNote(unitKey)      the Note item when the āyah has no Note yet ("Take Note"): a new Note at once
  *   onToggleBookmark(unitKey)  -- enhancement round, the READ screen's own Bookmark item
  *   onToggleWbw() / onToggleRoots() / onToggleDerivatives()  -- text-tools round; only wired to anything when showTextTools rendered the rows at all. Take no unitKey: they flip a canonical, screen-wide reading choice (the same Study-options checkbox the Note view's own copies flip), not per-āyah state
  * Re-call after every re-render (innerHTML replace) -- the per-instance
  * listeners below are cheap to re-attach to fresh nodes; only the outside-
  * click listener is guarded against being bound twice on the same container.
  */
-export function attachQuickMenuHandlers(container, { buildText, onPlay, onOpenNote, onToggleBookmark, onToggleWbw, onToggleRoots, onToggleDerivatives, onQcr, onTextMenuOpen }) {
+export function attachQuickMenuHandlers(container, { buildText, onPlay, onOpenNote, onTakeNote, onToggleBookmark, onToggleWbw, onToggleRoots, onToggleDerivatives, onQcr, onTextMenuOpen }) {
   container.querySelectorAll(".ayah-quick-wrap").forEach((wrap) => {
     const unitKey = wrap.dataset.unitKey;
     const btn = wrap.querySelector("[data-qm-toggle]");
@@ -225,9 +226,12 @@ export function attachQuickMenuHandlers(container, { buildText, onPlay, onOpenNo
       closeAllQuickMenus(container);
       onPlay?.(unitKey);
     });
-    wrap.querySelector("[data-qm-note]")?.addEventListener("click", () => {
+    wrap.querySelector("[data-qm-note]")?.addEventListener("click", (e) => {
       closeAllQuickMenus(container);
-      onOpenNote?.(unitKey);
+      // The Owner, 3 Nov 2026: with no Note on the āyah yet, "Note" goes straight to a new Note (the shared Note window), as the
+      // Āyah card's "Take Note" does; with Notes, "Note & more…" opens the Notes pane that lists them.
+      if (e.currentTarget.hasAttribute("data-qm-note-new") && onTakeNote) onTakeNote(unitKey);
+      else onOpenNote?.(unitKey);
     });
     wrap.querySelector("[data-qm-qcr]")?.addEventListener("click", () => {
       closeAllQuickMenus(container);

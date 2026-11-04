@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="./css/shell.css" />
+<link rel="stylesheet" href="./css/card-look.css" />
+  <script>(function(){try{document.documentElement.setAttribute('data-card-look',localStorage.getItem('mm_card_look')==='light'?'light':'night');}catch(e){document.documentElement.setAttribute('data-card-look','night');}})();</script>
+<link rel="stylesheet" href="./css/hadith.css" />
+<link rel="stylesheet" href="./css/dua-study.css" />
+<title>MSA — Dua Study</title>
+<style>
+  /* The Dua module's own page (PCF MSA J104, round R1: D19). This page's chrome only: the Dua card's styles are
+     Hadith Study's (./css/hadith.css) and the page's own lists and menus are ./css/dua-study.css. */
+  body { font-family: system-ui, sans-serif; max-width: 52rem; margin: 0 auto; padding: 1rem 1rem 4rem; color: var(--hadith-ink); }
+  h1 { font-size: 1.35rem; margin: 0.6rem 0; }
+  h2 { font-size: 1.1rem; margin: 1.4rem 0 0.6rem; }
+  h3 { font-size: 0.98rem; margin: 1.1rem 0 0.4rem; color: var(--hadith-muted); }
+  #who { margin: 0.6rem 0; font-size: 0.9rem; color: var(--hadith-muted); }
+  #contextBar { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; margin: 0.6rem 0 1rem; font-size: 0.9rem; }
+  #contextBar label { margin: 0; min-width: 0; max-width: 100%; }
+  #contextBar select { box-sizing: border-box; min-height: 40px; padding: 0.3rem 0.4rem; border: 1px solid var(--hadith-field); border-radius: 0.35rem; }
+  .hadith-back-btn { min-height: 40px; padding: 0 0.9rem; margin: 0.6rem 0 0; border: 1px solid #c9a24b; border-radius: 0.6rem; background: #1F3A6E; color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+  .hadith-back-btn[hidden] { display: none; }
+</style>
+</head>
+<body>
+  <!-- The way-back law (decision 86): opened from somewhere else in the app with back=1, this page offers ← Back. -->
+  <button type="button" id="hadithBackBtn" class="hadith-back-btn" hidden></button>
+  <h1 id="duaPageTitle">Dua Study</h1>
+
+  <!-- A minimal session, the same as hadith-collections.html's, just enough for a Dua card's progress, notes and
+       bookmark to know who they act for. Its own script, so a Firebase failure never stops the duas from showing. -->
+  <div id="who">Checking sign-in…</div>
+  <div id="contextBar" style="display:none;">
+    <label>Tenant
+      <select id="tenantSelect" style="width:auto; max-width:100%; min-width:0;"></select>
+    </label>
+    <label>Person
+      <select id="personSelect" style="width:auto; max-width:100%; min-width:0;"></select>
+    </label>
+  </div>
+
+  <main id="duaRoot"></main>
+
+  <script type="module">
+    import { auth, db } from "./js/firebase-init.js";
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { getDocs, collection, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { TENANT } from "./js/collections.js";
+    import { getTenantRosterSnap } from "./js/roster-access.js";
+    import { langText } from "./js/lang.js";
+    import { escapeHtml } from "./js/html-escape.js";
+    import { getAppLang } from "./js/prefs.js";
+    import { t } from "./js/i18n.js";
+    import {
+      getMyMembershipRoles, hydrateMemberships, pickContext, setActiveContext,
+      getSelectedPersonId, setSelectedPersonId, effectiveRoles, scopedRoster,
+    } from "./js/session-context.js";
+
+    const whoEl = document.getElementById("who");
+    const contextBar = document.getElementById("contextBar");
+    const tenantSelect = document.getElementById("tenantSelect");
+    const personSelect = document.getElementById("personSelect");
+
+    let activeTenantId = null;
+    let myMemberships = [];
+
+    function refreshCorpusActions() {
+      // window.__duaStudy is set by the page-mounting script below, once it
+      // has mounted -- a no-op before that (or if it failed).
+      window.__duaStudy?.render?.();
+    }
+
+    async function loadRoster() {
+      const membership = myMemberships.find((m) => m.tenantId === activeTenantId);
+      const rosterSnap = await getTenantRosterSnap(db, activeTenantId);
+      const fullRoster = rosterSnap.docs.map((d) => ({ id: d.id, ...d.data() })).filter((p) => p.status !== "archived");
+      // Same scoping every other Person picker in the app applies (session-
+      // context.js's own scopedRoster()) -- a plain guardian/student must not
+      // see a roster wider than they would anywhere else in the app, even
+      // though the actions themselves are separately gated by canRecordFor.
+      const effRoles = effectiveRoles(membership?.roles ?? [], null);
+      const roster = scopedRoster(fullRoster, effRoles, membership?.personId ?? null);
+      const stored = getSelectedPersonId();
+      const candidate = roster.some((p) => p.id === stored) ? stored
+        : (roster.some((p) => p.id === membership?.personId) ? membership.personId : (roster[0]?.id ?? null));
+      personSelect.innerHTML = roster
+        .map((p) => `<option value="${p.id}">${escapeHtml(langText(p.name, getAppLang(), p.id))}</option>`)
+        .join("");
+      if (candidate) personSelect.value = candidate;
+    }
+
+    async function loadContextData(hydratedMembershipsPromise) {
+      myMemberships = await (hydratedMembershipsPromise ?? Promise.resolve(myMemberships));
+      tenantSelect.innerHTML = myMemberships
+        .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${escapeHtml(m.tenantName ?? m.tenantId)}</option>`)
+        .join("");
+      await loadRoster();
+      contextBar.style.display = "flex";
+      refreshCorpusActions();
+    }
+
+    tenantSelect.addEventListener("change", async () => {
+      const chosen = myMemberships.find((m) => m.tenantId === tenantSelect.value);
+      if (!chosen) return;
+      activeTenantId = chosen.tenantId;
+      setActiveContext({ tenantId: chosen.tenantId, personId: chosen.personId, roles: chosen.roles, viewAsRole: null });
+      await loadRoster();
+      refreshCorpusActions();
+    });
+    personSelect.addEventListener("change", () => {
+      setSelectedPersonId(personSelect.value);
+      refreshCorpusActions();
+    });
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        whoEl.textContent = t("Not signed in.");
+        return;
+      }
+      try {
+        const membershipRoles = await getMyMembershipRoles(db, user.uid);
+        const context = pickContext(membershipRoles, null);
+        if (!context) { whoEl.textContent = t("Not signed in."); return; }
+        activeTenantId = context.tenantId;
+        whoEl.textContent = t("Signed in as {email}", { email: user.email });
+        await loadContextData(hydrateMemberships(db, membershipRoles));
+      } catch (err) {
+        whoEl.textContent += ` — ${err.message}`;
+      }
+    });
+  </script>
+
+  <script type="module" async>
+    import { mountDuaStudy } from "./js/dua-study.js";
+    import { translateStatic, t } from "./js/i18n.js";
+    import { registerServiceWorker } from "./js/sw-register.js";
+    import { armScreensaver } from "./js/screensaver-idle.js";
+
+    const params = new URLSearchParams(location.search);
+    document.getElementById("duaPageTitle").textContent = t("Dua Study");
+    const backBtn = document.getElementById("hadithBackBtn");
+    if (params.get("back") === "1") {
+      backBtn.textContent = `← ${t("Back")}`;
+      backBtn.hidden = false;
+      backBtn.addEventListener("click", () => { if (history.length > 1) history.back(); else location.href = "./index.html"; });
+    }
+    translateStatic();
+    registerServiceWorker();
+    armScreensaver();
+    try {
+      window.__duaStudy = mountDuaStudy(document.getElementById("duaRoot"));
+    } catch (err) {
+      // I15: a failure reaches the reader rather than only the console.
+      document.getElementById("duaRoot").textContent = String(err && err.message ? err.message : err);
+    }
+  </script>
+  <script type="module">
+    import { auth } from "./js/firebase-init.js";
+    import { mountPageAccountCard } from "./js/account-card.js";
+    mountPageAccountCard({ movePerson: false, getEmail: () => auth.currentUser?.email || "" });
+  </script>
+  <script>
+    // This page does not load nav.js, so the Home menu (account-card.js) gets nav.js's Esc here: Esc closes an open
+    // menu and leaves focus on its own Home button (audit part 88, #1167).
+    document.addEventListener("keydown", (e) => {
+      if (e.key !== "Escape") return;
+      document.querySelectorAll(".nav-cat[open]").forEach((cat) => {
+        const hadFocus = cat.contains(document.activeElement);
+        cat.open = false;
+        if (hadFocus) cat.querySelector("summary")?.focus();
+      });
+    });
+  </script>
+  <script type="module">import { keepSelectTitles } from "./js/select-title.js"; keepSelectTitles("#tenantSelect, #personSelect");</script>
+</body>
+</html>

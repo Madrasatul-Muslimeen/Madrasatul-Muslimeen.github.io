@@ -1039,3 +1039,34 @@ total). Allocated by the MMSA Architect.
 12.135: the parts 67-83 regression sweep fixes. Allocated by the MMSA Architect.
 12.136: the Hadith Lead's J97 chapter line and Bangla language names. Allocated by the MMSA Architect.
 12.137: the QR Lead's Study options head at large text. Allocated by the MMSA Architect.
+12.138: the Escape fixes from audit part 141 and the Read view at large text. Allocated by the MMSA Architect.
+12.139: Quran Study: the A± text-size controls stay on screen at large text. Allocated by the MMSA Architect.
+13.01: J108: one Note from every Note button (v13 begins). Allocated by the MMSA Architect.
+13.02: Quran Study: Listening and the Mushaf full screen at large text (QR Lead audits 4 and 5). Allocated by the MMSA Architect.
+13.03: audit part 142 fixes: the My account card and New bookmark keyboard focus. Allocated by the MMSA Architect.
+13.04: Quran Study: the Word card's Taṣrīf table at large text, and three contrast fixes on the landing (QR Lead audits 6 and 7). Allocated by the MMSA Architect.
+13.05: Quran Study: the A± text-size sliders open below the top bar on QR (QR Lead). Allocated by the MMSA Architect.
+13.06: Quran Study: the Word card's level tabs at large text (QR Lead). Allocated by the MMSA Architect.
+13.07: the v13 Note window keyboard fixes (audit part 143). Allocated by the MMSA Architect.
+13.08: every show/hide as an ON/OFF switch (J109). Allocated by the MMSA Architect.
+13.09: the Note page at large text (audit part 144). Allocated by the MMSA Architect.
+13.10: the v13 Note's sheets at large text (audit part 145 fixes). Allocated by the MMSA Architect.
+13.11: a Qur'an word never splits in Tasrif (QR Lead audit 6b). Allocated by the MMSA Architect.
+13.12: Explore at large text (QR Lead audit 8). Allocated by the MMSA Architect.
+13.13: the phone 🧰 corner off Mapping My Journey; QR Lead audits 9 and 10. Allocated by the MMSA Architect.
+13.14: the night look on Hadith/Dua/Collections (audit 146) and the Word card's 🧰 (QR audit 11). Allocated by the MMSA Architect.
+13.15: QR Lead 3c (Āyah card 🔖 every unit) and QR's title at 320px. Allocated by the MMSA Architect.
+13.16: night journey-map page menu. Allocated by the MMSA Architect.
+13.17: night note-window menu. Allocated by the MMSA Architect.
+13.18: note window at large text. Allocated by the MMSA Architect.
+13.19: Details switch in the note window. Allocated by the MMSA Architect.
+13.20: Open full page leaves a way back (audit part 153). Allocated by the MMSA Architect.
+13.21: The ⋯ menus work from the keyboard (audit part 154). Allocated by the MMSA Architect.
+13.22: Reading View (J110), ways back, keyboard fixes. Allocated by the MMSA Architect.
+13.23: a new Dual Name is not asked to be filed under Dual (the Owner's 2 Nov Asma bug); the quick-Notes check fixed; the Hadith Subjects rule in firestore.rules, not deployed. Allocated by the MMSA Architect.
+13.24: Google sign-in works on Brave, Safari and Firefox (J88 part 2: the helper pages on the app's own sites). Allocated by the MMSA Architect.
+13.25: Hadith Add to subject + Asma File-under at large text. Allocated by the MMSA Architect.
+13.26: Quran Study ⋮ Take Note. Allocated by the MMSA Architect.
+13.27: Quran Study ⋮ Note & more after a new Note. Allocated by the MMSA Architect.
+13.28: J112 before R1: Siyagah sign-in and Map hook, switched off. Allocated by the MMSA Architect.
+13.29: J88 fix: Sign in with Google's return address without the slash. Allocated by the MMSA Architect.

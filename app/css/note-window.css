@@ -92,13 +92,20 @@ ul[data-check] > li[data-checked="true"] { color: #555; text-decoration: line-th
 /* audit28/30: a long title wraps in every window, sheet or floating (a 90-character one was cut with an ellipsis and no way to read it); the bar grows to fit */
 .note-win .nw-bar { flex: 0 0 auto; min-height: 44px; padding-block: 2px; }
 .note-win .nw-title { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; line-height: 1.2; }
+/* audit part 151: at large text on a phone the three window buttons left the title ~100px (a 17-line column that filled the screen): the bar wraps, the title keeps a readable width and its own scroll. */
+.note-win .nw-bar { flex-wrap: wrap; }
+.note-win .nw-title { flex: 1 1 8rem; max-height: 30vh; overflow-y: auto; }
 .nw-title { font-weight: 600; font-size: 1rem; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .nw-close { flex: 0 0 auto; min-width: 44px; min-height: 44px; background: none; border: 0; color: #fff; font-size: 1.4rem; line-height: 1; cursor: pointer; }
 .nw-view { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; padding: 0.3rem 0.6rem 0; }
 .nw-view .note-pane-bar { flex: 0 0 auto; }
 .nw-view [data-pane-back], .nw-view .note-pane-title { display: none; }
 .nw-details-row { flex: 0 0 auto; display: flex; align-items: flex-start; gap: 0.4rem; margin: 0.2rem 0; }
-.nw-details-btn { flex: 0 0 auto; min-height: 40px; white-space: nowrap; }
+.nw-details-btn { flex: 0 0 auto; min-height: 40px; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.5rem; }
+/* audit part 151: at large text the Details button, the date line and Pinned cannot share one row of a 360px window; Pinned goes under, never past the frame. */
+.note-win .nw-details-row { flex-wrap: wrap; }
+.note-win .nw-details-row > .nw-details { flex: 1 1 6rem; }
+.note-win .nw-details-row > .nw-pins-btn { max-width: 100%; }
 .nw-details { flex: 1 1 0; min-width: 0; overflow: hidden; align-self: center; }
 .nw-details.open { max-height: none; overflow: visible; }
 .nw-details .note-pane-meta { margin: 0 0 0.2rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -160,7 +167,8 @@ button.tag-chip-btn:hover, button.tag-chip-btn:focus-visible { background: #dde6
 .tag-pick-row { display: flex; align-items: center; gap: 0.5rem; min-height: 44px; padding: 0 0.2rem; cursor: pointer; }
 .tag-pick-row input { width: 22px; height: 22px; flex: 0 0 auto; }
 .tag-pick-name { min-width: 0; overflow-wrap: anywhere; }
-.tag-picker-new { display: flex; gap: 0.4rem; align-items: center; }
+.tag-picker-new { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; } /* v13.10 (audit 145 D3): at 150-200% text on a phone "＋ New tag" goes under the field, which then has the row and its placeholder is never cut */
+.tag-picker-new input { flex: 1 1 10em; width: auto; }
 .tag-picker-new button { flex: 0 0 auto; min-height: 40px; white-space: nowrap; }
 
 /* S11 -- reading tools. The bar stays on one line: 🔍 and ⇅ fold into ⋯ first, then Edit, then 📎 (js fitPaneBar). */
@@ -418,3 +426,30 @@ span.note-status { min-height: 0; min-width: 0; padding: 0.15rem 0.6rem; cursor:
 .mt-chip { width: 40px; height: 40px; min-height: 40px; padding: 0; border: 2px solid #889; border-radius: 0.4rem; }
 .mt-chip[aria-pressed="true"] { outline: 3px solid #1F3A6E; outline-offset: 1px; }
 .pane-edit-panel .mt-phrase { white-space: normal; text-align: start; max-width: 100%; overflow-wrap: anywhere; min-height: 44px; }
+
+/* J108 (v13.01): an Āyah or Hadith inside a Note (note-ref-block.js; its controls while editing, note-ref-ui.js).
+   The demo the Owner approved (demo v3): a warm card; a teal switch; عربي · EN · বাং pills, dashed and struck through when off. */
+.mm-ref { margin: 0.6rem 0; padding: 0.6rem 0.75rem; border: 1px solid #e2d7b8; border-radius: 10px; background: #f7f3e8; color: #1d2433; display: grid; gap: 0.35rem; max-width: 100%; min-width: 0; box-sizing: border-box; overflow-wrap: anywhere; }
+.mm-ref .mm-ref-head { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; min-width: 0; }
+.mm-ref .mm-ref-label { font-size: 0.95rem; color: #1d2433; min-width: 0; }
+.mm-ref .mm-ref-kind { font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: #7a5f1e; }
+.mm-ref .mm-ref-closed { color: #5d6678; }
+.mm-ref .mm-ref-ar { margin: 0; font-family: "Amiri", "Traditional Arabic", "Noto Naskh Arabic", serif; font-size: 1.5rem; line-height: 1.9; direction: rtl; text-align: right; }
+.mm-ref .mm-ref-tr { margin: 0; line-height: 1.5; }
+.mm-ref .mm-ref-tag { font-size: 0.75rem; color: #5d6678; margin-inline-end: 0.3rem; }
+.mm-ref .mm-ref-none { margin: 0; color: #5d6678; font-size: 0.85rem; }
+.mm-ref.mm-ref-off { opacity: 0.85; }
+.mm-ref-live { user-select: none; -webkit-user-select: none; }
+.mm-ref-live .mm-ref-ar, .mm-ref-live .mm-ref-tr { user-select: text; -webkit-user-select: text; }
+.mm-ref-tools { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
+.mm-ref-sw { flex: 0 0 auto; width: 52px; height: 40px; padding: 0; border: 0; background: transparent; cursor: pointer; position: relative; }
+.mm-ref-sw > span { position: absolute; left: 0; top: 5px; width: 52px; height: 30px; border-radius: 15px; background: #c9d0dc; border: 1px solid #b4bccb; box-sizing: border-box; }
+.mm-ref-sw > span::after { content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgb(0 0 0 / 0.25); transition: left 0.15s; }
+.mm-ref-sw[aria-checked="true"] > span { background: #1f8a7e; border-color: #1f8a7e; }
+.mm-ref-sw[aria-checked="true"] > span::after { left: 25px; }
+.mm-ref-sw:focus-visible, .mm-ref-lang:focus-visible, .mm-ref-x:focus-visible, .mm-ref-showhide:focus-visible { outline: 3px solid #2a5bb8; outline-offset: 2px; }
+.mm-ref-showhide { min-height: 40px; padding: 0 0.4rem; border: 0; background: transparent; color: #4f5868; font: inherit; cursor: pointer; }
+.mm-ref-lang { min-width: 52px; min-height: 40px; padding: 0 0.75rem; border: 1px solid #1f8a7e; border-radius: 20px; background: #dff1ee; color: #155f57; font: inherit; cursor: pointer; }
+.mm-ref-lang[aria-pressed="false"] { background: transparent; border-style: dashed; border-color: #9aa3b2; color: #4f5868; text-decoration: line-through; }
+.mm-ref-x { margin-inline-start: auto; min-width: 40px; min-height: 40px; border: 1px solid #c9d0dc; border-radius: 10px; background: #fff; color: #1d2433; font: inherit; cursor: pointer; }
+.mm-ref-allbar { display: flex; align-items: center; gap: 0.6rem; color: #4f5868; font-size: 0.9rem; margin: 0 0 0.3rem; }

@@ -50,7 +50,10 @@ const near = (a, b, tol = 2) => Math.abs(a - b) <= tol;
 const R = (o) => o && `${Math.round(o.x)},${Math.round(o.y)} ${Math.round(o.w)}x${Math.round(o.h)}`;
 
 async function makePage(lang, look, width, height) {
-  const ctx = await newContext(browser, { appLang: lang, banner: false, viewport: { width, height } });
+  // UPDATED IN PLACE (J108, v13.01): 📝 Note now MAKES a new Note at once (a folder, the Note, its filing). The stub applies
+  // those writes to its own data only with __stubApplyBatches -- without it the filing reads a folder it never kept and
+  // logs "Note and Folder must exist", which real Firestore never does.
+  const ctx = await newContext(browser, { appLang: lang, banner: false, viewport: { width, height }, extraSeedJs: "window.__stubApplyBatches = true;" });
   await ctx.addInitScript((lk) => { try { localStorage.setItem("mm_card_look", lk); } catch { /* */ } }, look);
   await ctx.route("**/archive.org/**", (r) => r.abort());
   if (MUTATE) {

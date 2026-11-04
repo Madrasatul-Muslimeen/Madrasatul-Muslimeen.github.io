@@ -22,6 +22,7 @@ import { duaCard, duaLoadFailed, fillDuaProgress, loadDuaCheckEnv } from "./dua-
 import { el } from "./hadith-shared-ui.js";
 import { duaWords, duaWordsFingerprint } from "./dua-words.js";
 import { posterNodes, shareNodes } from "./dua-poster.js";
+import { trapModal } from "./modal-focus.js";
 
 const GROUPS_URL = "../tools/hadith-data-pull/output/dua/groups.json";
 const BANNER_URL = "./img/dua-banner-bottom.webp";
@@ -433,8 +434,9 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
   let pop = null;
   function closePop() {
     if (!pop) return;
-    const { box, nodes, stash, from, esc } = pop;
+    const { box, nodes, stash, from, esc, release } = pop;
     pop = null;
+    release();
     if (stash) for (const n of nodes) stash.appendChild(n);
     box.remove();
     document.removeEventListener("keydown", esc, true);
@@ -466,7 +468,9 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
     const esc = (ev) => { if (ev.key === "Escape" && pop?.box === box) { ev.stopPropagation(); closePop(); } };
     document.addEventListener("keydown", esc, true);
     root.appendChild(box);
-    pop = { box, nodes, stash, from, esc };
+    // Audit part 156 (3, 4): the pop-up is aria-modal, so Tab and Shift+Tab wrap inside it (the shared trapModal) instead
+    // of walking out to the page behind; closing it still returns focus to the menu button that opened it.
+    pop = { box, nodes, stash, from, esc, release: trapModal(box) };
     if (openFirst) { const d = card.querySelector("details"); if (d) d.open = true; }
     close.focus();
   }

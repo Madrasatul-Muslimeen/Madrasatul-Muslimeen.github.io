@@ -594,7 +594,9 @@ check("the hash wins over the remembered view ONLY when it is actually present -
 check("the only thing that overrides the hash is unit mode, and unit mode means the Notes pane's embed with a valid unit (decision 95)", () => {
   assert.ok(/let currentView = unitMode \? "unit" : viewFromHash\(\)/.test(page), "currentView no longer starts `unitMode ? \"unit\" : viewFromHash()`");
   assert.ok(/const unitMode = unitKeyParam !== null;/.test(page), "unitMode is no longer derived from unitKeyParam alone");
-  assert.ok(/if \(q\.get\("embed"\) === "1" && isPaneUnitKey\(q\.get\("unit"\)\)\) \{ unitKeyParam = q\.get\("unit"\);/.test(page),
+  // Updated in place 4 Nov 2026 (J112 review): J108 (v13.01, 0cb1e2f7) deliberately added `q.get("new") !== "1"`, so the
+  // shared Note opener's new-Note mode (?embed=1&new=1) is NOT unit mode. Stale since then, red on main; the rule is the same.
+  assert.ok(/if \(q\.get\("embed"\) === "1" && q\.get\("new"\) !== "1" && isPaneUnitKey\(q\.get\("unit"\)\)\) \{ unitKeyParam = q\.get\("unit"\);/.test(page),
     "unitKeyParam is no longer set only by ?embed=1 with a valid pane unit key");
 });
 

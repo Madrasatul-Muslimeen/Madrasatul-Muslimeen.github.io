@@ -19,6 +19,7 @@ const WINDOWS = [
   { id: "journey", root: "#journeyTray", close: ".jt-close", title: ".jt-title" },
   { id: "page", root: "#pageWindow", close: ".pgw-close", title: ".pgw-title" },
   { id: "notes", root: "#readNotePane", close: ".rnp-close", title: ".rnp-title" },
+  { id: "newnote", root: "#noteOpener", close: ".no-close", title: ".no-title" }, // J108: the shared Note opener (note-opener.js)
   { id: "note", root: ".note-win", close: "[data-win-close]", title: ".nw-title" },
   { id: "ayah", root: "#ayahActionSheetOverlay.open [data-ayah-sheet], #ayahActionSheetOverlay.open [data-unit-card]", hide: "#ayahActionSheetOverlay", close: ".ayah-sheet-close", title: ".ayah-sheet-ref" },
   { id: "track", root: "#wayModalMount .way-modal", hide: "#wayModalMount", close: ".way-close-btn", title: ".way-modal-header h2, .way-modal-header h3, .way-modal-title" },

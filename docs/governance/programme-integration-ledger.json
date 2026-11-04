@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "12.137",
+    "version": "13.29",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -5921,7 +5921,7 @@
     {
       "version": "12.137",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Quran Study: the Study options drawer's head stays on screen at large text; its close button is 40px and grows with text.",
       "integration": {
         "authorizedOn": "2026-10-31",
@@ -5929,10 +5929,413 @@
         "method": "MERGE_PR",
         "reference": "CHANGELOG.md"
       }
+    },
+    {
+      "version": "12.138",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Audit part 141 fixes (Escape closes the 👥 list, Dua word cards and the ✓ Check panel; two contrast fixes) and QR Lead audit 2 (the Read view reachable with large text).",
+      "integration": {
+        "authorizedOn": "2026-10-31",
+        "integratedOn": "2026-10-31",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "12.139",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "QR Lead audit 3: the Read view's ⋯ panel and A± sliders stay on screen at large text and sideways.",
+      "integration": {
+        "authorizedOn": "2026-10-31",
+        "integratedOn": "2026-10-31",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.01",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "J108 v13.01-31.10.26: every Note button opens one new Mapping My Journey Note in a shared window; Āyah/Hadith blocks inside the Note; legacy-v12 archived.",
+      "integration": {
+        "authorizedOn": "2026-10-31",
+        "integratedOn": "2026-10-31",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.02",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "QR Lead audits 4 (Listening) and 5 (Mushaf bare full screen) at large text; Quran Study only, no data or Rules.",
+      "integration": {
+        "authorizedOn": "2026-10-31",
+        "integratedOn": "2026-10-31",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.03",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Builder audit part 142 (#1363) findings D1-D3 fixed by the Architect: account card focus return and Tab hold, Escape on New bookmark; shared tools only, no data or Rules.",
+      "integration": {
+        "authorizedOn": "2026-10-31",
+        "integratedOn": "2026-10-31",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.04",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "QR Lead audits 6 (Word card Taṣrīf case table at large text) and 7 (Builder part 142 D4-D6 contrast on the Quran Study landing); Quran Study only, no data or Rules.",
+      "integration": {
+        "authorizedOn": "2026-10-31",
+        "integratedOn": "2026-10-31",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.05",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "QR Lead: fitReadTextSize gets a ceiling under the top nav so the A± sliders are never covered at large text on a computer (a QR-only fault); Quran Study only, no data or Rules.",
+      "integration": {
+        "authorizedOn": "2026-10-31",
+        "integratedOn": "2026-10-31",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.06",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "QR Lead: Word card level tabs never break a name inside a word at large text on a phone (two rows, three and two, under an 11.5rem card) and the sub-line wraps rather than being cut from 600px; CSS only, Quran Study, no data or Rules.",
+      "integration": {
+        "authorizedOn": "2026-10-31",
+        "integratedOn": "2026-10-31",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.07",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Audit part 143 D1-D4 + M1 fixed by the Architect: the full-screen Note window holds the page, Attach holds Tab and returns focus to its button, the pressed-tool ring is gold.",
+      "integration": {
+        "authorizedOn": "2026-10-31",
+        "integratedOn": "2026-10-31",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.08",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "PCF MSA J109: every section that shows or hides content wears the shared ON/OFF switch instead of an arrow (the Owner, 1 Nov 2026).",
+      "integration": {
+        "authorizedOn": "2026-11-01",
+        "integratedOn": "2026-11-01",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.09",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Builder audit part 144 D1-D3 fixed by the Architect: the Note page toolbar's words come from the bar's width in em; the window title carries its whole text.",
+      "integration": {
+        "authorizedOn": "2026-11-01",
+        "integratedOn": "2026-11-01",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.10",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Audit part 145 D1-D4 and the J109 arrow on the Note's Ayah/Hadith block, by the Architect.",
+      "integration": {
+        "authorizedOn": "2026-11-01",
+        "integratedOn": "2026-11-01",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.11",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "QR Lead audit 6b (whole Arabic words in the Tasrif tables), QR Lead handover F (docs) and the Dua Lead's audit-part32 test update, reviewed and released by the Architect.",
+      "integration": {
+        "authorizedOn": "2026-11-01",
+        "integratedOn": "2026-11-01",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.12",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "QR Lead audit 8: Explore usable at large text and on a phone turned sideways, reviewed and released by the Architect.",
+      "integration": {
+        "authorizedOn": "2026-11-01",
+        "integratedOn": "2026-11-01",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.13",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Phone 🧰 corner lifted only while a bar reaches its spot (J25); QR Lead audits 9 (Āyah tiles) and 10 (Āyah header) at large text.",
+      "integration": {
+        "authorizedOn": "2026-11-01",
+        "integratedOn": "2026-11-01",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.14",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Audit 146 D1: the 👥 pill and sheet in night colours (hadith.css); QR Lead audit 11: Word card scroll room under the phone 🧰.",
+      "integration": {
+        "authorizedOn": "2026-11-01",
+        "integratedOn": "2026-11-01",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.15",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "The Āyah card's 🔖 offers every unit for its āyah (QR Lead 3c, J29 tick A); QR's title fits a 320px phone.",
+      "integration": {
+        "authorizedOn": "2026-11-01",
+        "integratedOn": "2026-11-01",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.16",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Audit part 149 (#1398/#1399): Mapping My Journey's ⋯ page menu reads clearly in the night look.",
+      "integration": {
+        "authorizedOn": "2026-11-01",
+        "integratedOn": "2026-11-01",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.17",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Audit part 150 (#1401/#1402): the note window's ⋯ sheet reads clearly in the night look.",
+      "integration": {
+        "authorizedOn": "2026-11-01",
+        "integratedOn": "2026-11-01",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.18",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Audit part 151 (#1404/#1406): the note window's toolbar, Details row and title fit the window and the screen at large text.",
+      "integration": {
+        "authorizedOn": "2026-11-01",
+        "integratedOn": "2026-11-01",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.19",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Audit part 152 (#1408/#1409): the note window's Details button wears the shared ON/OFF switch (J109).",
+      "integration": {
+        "authorizedOn": "2026-11-01",
+        "integratedOn": "2026-11-01",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.20",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Mapping My Journey's Open full page carries back=1 (audit part 153, #1413).",
+      "integration": {
+        "authorizedOn": "2026-11-01",
+        "integratedOn": "2026-11-01",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.21",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Notes and Mapping My Journey ⋯ menus: focus in, Escape back, Tab out, visible ring (audit part 154, #1416).",
+      "integration": {
+        "authorizedOn": "2026-11-01",
+        "integratedOn": "2026-11-01",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.22",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Gathered release: J110 Reading View, audit 155 ways back, audit 156 keyboard, Tajweed tap fix (use1102).",
+      "integration": {
+        "authorizedOn": "2026-11-02",
+        "integratedOn": "2026-11-02",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.23",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Gathered release of the QR Lead's 8d7ebaf (Asma) and 682286f (test), and the hadithSubjects block in firestore.rules (J106 n106f A; the Owner publishes it).",
+      "integration": {
+        "authorizedOn": "2026-11-03",
+        "integratedOn": "2026-11-03",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.24",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Student-blocking fix released at once (use1102 G): SELF_HOSTED_AUTH_HOSTS switched on for MSA and QR after the Owner's Google Cloud step.",
+      "integration": {
+        "authorizedOn": "2026-11-03",
+        "integratedOn": "2026-11-03",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.25",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "v13.25: Hadith Add to subject (J106, PR #1435) and the Asma File-under fix at Bangla 200% text (PR #1436), released 3 Nov after the Owner lifted use1102 G.",
+      "integration": {
+        "authorizedOn": "2026-11-03",
+        "integratedOn": "2026-11-03",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.26",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "v13.26: Quran Study's ⋮ menu offers Take Note (a new Note at once) on an āyah with no Note (the Owner's report, PR #1438).",
+      "integration": {
+        "authorizedOn": "2026-11-03",
+        "integratedOn": "2026-11-03",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.27",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "v13.27: Quran Study's ⋮ reads Note & more… straight after a Note is made from it (QR Lead, PR #1440).",
+      "integration": {
+        "authorizedOn": "2026-11-03",
+        "integratedOn": "2026-11-03",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.28",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "J112's pre-R1 parts (PR #1443): a second, lazy sign-in to Siyagah's own Firebase project and one Map bar for it, behind a switch that stays OFF until Siyagah's R1 API is live; nothing changes for readers.",
+      "integration": {
+        "authorizedOn": "2026-11-03",
+        "integratedOn": "2026-11-03",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.29",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "J88 fix: the self-hosted sign-in helper sends Google its address without the trailing slash GitHub Pages adds (redirect_uri_mismatch since v13.24).",
+      "integration": {
+        "authorizedOn": "2026-11-03",
+        "integratedOn": "2026-11-03",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
     }
   ],
-  "nextUnallocated": "12.138",
+  "nextUnallocated": "13.30",
   "nextUnallocatedNote": [
+    "v13.29 was allocated to J88 fix: Sign in with Google's return address without the slash, 2026-11-03.",
+    "v13.28 was allocated to J112 before R1: Siyagah sign-in and Map hook, switched off, 2026-11-03.",
+    "v13.27 was allocated to Quran Study ⋮ Note & more after a new Note, 2026-11-03.",
+    "v13.26 was allocated to Quran Study ⋮ Take Note, 2026-11-03.",
+    "v13.25 was allocated to Hadith Add to subject + Asma File-under at large text, 2026-11-03.",
+    "v13.24 was allocated to Google sign-in works on Brave, Safari and Firefox (J88 part 2: the helper pages on the app's own sites), 2026-11-03.",
+    "v13.23 was allocated to a new Dual Name is not asked to be filed under Dual (the Owner's 2 Nov Asma bug); the quick-Notes check fixed; the Hadith Subjects rule in firestore.rules, not deployed, 2026-11-03.",
+    "v13.22 was allocated to Reading View (J110), ways back, keyboard fixes, 2026-11-02.",
+    "v13.21 was allocated to The ⋯ menus work from the keyboard (audit part 154), 2026-11-01.",
+    "v13.20 was allocated to Open full page leaves a way back (audit part 153), 2026-11-01.",
+    "v13.19 was allocated to Details switch in the note window, 2026-11-01.",
+    "v13.18 was allocated to note window at large text, 2026-11-01.",
+    "v13.17 was allocated to night note-window menu, 2026-11-01.",
+    "v13.16 was allocated to night journey-map page menu, 2026-11-01.",
+    "v13.15 was allocated to QR Lead 3c (Āyah card 🔖 every unit) and QR's title at 320px, 2026-11-01.",
+    "v13.14 was allocated to the night look on Hadith/Dua/Collections (audit 146) and the Word card's 🧰 (QR audit 11), 2026-11-01.",
+    "v13.13 was allocated to the phone 🧰 corner off Mapping My Journey; QR Lead audits 9 and 10, 2026-11-01.",
+    "v13.12 was allocated to Explore at large text (QR Lead audit 8), 2026-11-01.",
+    "v13.11 was allocated to a Qur'an word never splits in Tasrif (QR Lead audit 6b), 2026-11-01.",
+    "v13.10 was allocated to the v13 Note's sheets at large text (audit part 145 fixes), 2026-11-01.",
+    "v13.09 was allocated to the Note page at large text (audit part 144), 2026-11-01.",
+    "v13.08 was allocated to every show/hide as an ON/OFF switch (J109), 2026-11-01.",
+    "v13.07 was allocated to the v13 Note window keyboard fixes (audit part 143), 2026-10-31.",
+    "v13.06 was allocated to Quran Study: the Word card's level tabs at large text (QR Lead), 2026-10-31.",
+    "v13.05 was allocated to Quran Study: the A± text-size sliders open below the top bar on QR (QR Lead), 2026-10-31.",
+    "v13.04 was allocated to Quran Study: the Word card's Taṣrīf table at large text, and three contrast fixes on the landing (QR Lead audits 6 and 7), 2026-10-31.",
+    "v13.03 was allocated to audit part 142 fixes: the My account card and New bookmark keyboard focus, 2026-10-31.",
+    "v13.02 was allocated to Quran Study: Listening and the Mushaf full screen at large text (QR Lead audits 4 and 5), 2026-10-31.",
+    "v13.01 was allocated to J108: one Note from every Note button (v13 begins), 2026-10-31.",
+    "v12.139 was allocated to Quran Study: the A± text-size controls stay on screen at large text, 2026-10-31.",
+    "v12.138 was allocated to the Escape fixes from audit part 141 and the Read view at large text, 2026-10-31.",
     "v12.137 was allocated to the QR Lead's Study options head at large text, 2026-10-31.",
     "v12.136 was allocated to the Hadith Lead's J97 chapter line and Bangla language names, 2026-10-31.",
     "v12.135 was allocated to the parts 67-83 regression sweep fixes, 2026-10-30.",

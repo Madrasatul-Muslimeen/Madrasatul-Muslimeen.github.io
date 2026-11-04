@@ -3,6 +3,12 @@
 <head>
 <meta name=viewport content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<script type="text/javascript">
+// MSA J88 (4 Nov 2026): GitHub Pages serves this page at /__/auth/handler/ (with a slash); Firebase's helper sends its
+// own address to Google as the sign-in return address, and the OAuth client lists it WITHOUT the slash. Drop the slash
+// before the helper reads its address (same page, nothing reloads).
+if (/\/__\/auth\/handler\/(index\.html)?$/.test(location.pathname)) history.replaceState(null, "", location.pathname.replace(/\/(index\.html)?$/, "") + location.search + location.hash);
+</script>
 <script type="text/javascript" src="/__/auth/experiments.js"></script>
 <script type="text/javascript" src="/__/auth/handler.js"></script>
 <script type="text/javascript" nonce="firebase-auth-helper">

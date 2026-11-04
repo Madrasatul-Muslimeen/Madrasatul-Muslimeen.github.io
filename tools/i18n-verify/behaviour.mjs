@@ -354,8 +354,10 @@ console.log("\n=== 6. Bengali numerals available, and never applied to identifie
   // test of what release we were on: it failed the moment v07.39 became
   // v07.40, reporting the correct value as wrong. Written against the shape
   // now, so a version bump can never fail it again.
+  // UPDATED IN PLACE (J108, v13.01): the badge now SHOWS the release date too ("v13.01-31.10.26"), on the Owner's word;
+  // the shape takes the optional "-dd.mm.yy" and still refuses any Bengali digit.
   check("6 the version badge is NOT mangled into Bengali digits",
-        /^v?\d+\.\d+$/.test(r.version || "") && !/[০-৯]/.test(r.version || ""), r.version);
+        /^v?\d+\.\d+(?:-\d\d\.\d\d\.\d\d)?$/.test(r.version || "") && !/[০-৯]/.test(r.version || ""), r.version);
   await page.close();
   await ctx.close();
 }
@@ -4511,7 +4513,9 @@ console.log("\n=== 41. Shell round 28: sideways reading ===");
 // ---------------------------------------------------------------------------
 console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
 {
-  const ctx = await ctxFor({ banner: false });
+  // 3 Nov 2026 (QR Lead): the stub applies what the app writes (opt-in, as read-note-pane-browser.mjs does), so the new Note
+  // the ⋮ "Take Note" opens can write its Note and placement without the stub refusing it; real errors still count below.
+  const ctx = await ctxFor({ banner: false, extraSeedJs: "window.__stubApplyBatches = true; window.__stubRecordTxData = true;" });
   const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
   await clickStudyPillarItem(page, "tabReadBtn");
   await page.waitForTimeout(400); // ensureAyahNoteDataLoaded() is fire-and-forget from this same click
@@ -4566,7 +4570,24 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   // Note view's ayahNotes writer (old 42g/42i) has no successor -- decision 95 chose no copy of old notes.
   check("42d the Note view is gone (#742): #noteView, .note-view and its test seam are absent",
         await page.evaluate(() => document.getElementById("noteView") === null && typeof window.__dormantOpenNoteView === "undefined" && !document.querySelector(".note-view")));
+  // UPDATED IN PLACE 3 Nov 2026 (QR Lead, the Owner: "A click on note from here was supposed to bring to the plain note page"):
+  // 1:1 has no Note yet, so the ⋮ menu's Note item is now "Take Note" and opens a NEW Note on ayah:1:1 (the shared Note
+  // window), not the empty Notes pane; ← Back closes it and the reader is on 1:1. The Notes-pane checks below (42d, 42h) now
+  // open the pane through the Read bar's 📝 Notes button, which is its own door; "Note & more…" with Notes on the āyah is
+  // measured in read-note-pane-browser.mjs (2:256).
+  const take42 = await page.evaluate(() => { const b = document.querySelector("#readQuickMenuSlot [data-qm-note]"); return { isNew: b?.hasAttribute("data-qm-note-new"), label: b?.textContent.trim() }; });
+  check("42d on 1:1 (no Note yet) the ⋮ Note item is \"Take Note\", the take-a-note door", take42.isNew === true && /Take Note/.test(take42.label ?? ""), JSON.stringify(take42));
   await page.click("#readQuickMenuSlot [data-qm-note]");
+  await page.waitForFunction(() => { const o = document.getElementById("noteOpener"); return o && !o.hidden; }, null, { timeout: 15000 }).catch(() => {});
+  const newNote42 = await page.evaluate(() => ({ opener: !!document.getElementById("noteOpener") && !document.getElementById("noteOpener").hidden, pane: document.getElementById("readNotePane")?.hidden === false,
+    frame: [...document.querySelectorAll("#noteOpener iframe")].map((f) => decodeURIComponent(f.getAttribute("src") ?? "")).join(" ") }));
+  check("42d ...it opens a NEW Note on ayah:1:1 (the shared Note window), the Notes pane closed", newNote42.opener && !newNote42.pane && /unit=ayah:1:1/.test(newNote42.frame), JSON.stringify(newNote42));
+  await page.evaluate(() => document.querySelector("#noteOpener .no-close")?.click());
+  await page.waitForFunction(() => document.getElementById("noteOpener")?.hidden, null, { timeout: 8000 }).catch(() => {});
+  const backNote42 = await page.evaluate(() => ({ opener: document.getElementById("noteOpener")?.hidden === false, read: document.getElementById("readView")?.hidden === false, ayah: document.getElementById("ayahSelect")?.value }));
+  check("42h ...closing it returns to reading on 1:1", !backNote42.opener && backNote42.read && backNote42.ayah === "1", JSON.stringify(backNote42));
+  if (await page.evaluate(() => (document.getElementById("readNotesBtn")?.getBoundingClientRect().width ?? 0) === 0)) { await page.click("#readToolsBtn"); await page.waitForTimeout(200); } // 📝 sits behind ⋯ on a phone
+  await page.click("#readNotesBtn");
   await page.waitForFunction(() => { const p = document.getElementById("readNotePane"); return p && !p.hidden && p.getClientRects().length > 0; }, null, { timeout: 8000 }).catch(() => {});
   const pane42 = await page.evaluate(() => {
     const p = document.getElementById("readNotePane");

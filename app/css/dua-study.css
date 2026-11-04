@@ -162,3 +162,5 @@
   body.dua-printing #duaPrint { display: block; }
   body.dua-printing #duaPrint .dua-a4 { width: 190mm; margin: 0 auto; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
 }
+/* Audit part 141 D1: a note in the Poster and Copy/share pop-ups read 1.92:1 in the night look. */
+[data-card-look="night"] .dua-popcard .hadith-note { color: var(--card-text); }

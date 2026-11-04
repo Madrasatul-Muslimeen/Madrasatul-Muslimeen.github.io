@@ -4301,6 +4301,12 @@ export const BN = {
   "Back to the Mushaf": "মুসহাফে ফিরে যান",
   "Back to the reading": "পড়ায় ফিরে যান",
   "Show the meaning: translations and word by word": "অর্থ দেখুন: অনুবাদ ও শব্দে শব্দে",
+  // PCF MSA J110 (the Owner, 2 Nov 2026): the Read view's two views, and the phone's one button for the switches.
+  "Reading View": "পড়ার দৃশ্য",
+  "Reading View: translations and word by word": "পড়ার দৃশ্য: অনুবাদ ও শব্দে শব্দে",
+  "ONE Ayah View": "এক আয়াত দৃশ্য",
+  "ONE Ayah View: one āyah to study": "এক আয়াত দৃশ্য: অধ্যয়নের জন্য এক আয়াত",
+  "Show: English, Bangla, Word by Word": "দেখান: ইংরেজি, বাংলা, শব্দে শব্দে",
   // 10 Oct 2026: the Read bar's ⋯ (Text size, Bookmark, Notes, Mark complete, Writing sheet, Attach to Asma).
   "More tools": "আরও সরঞ্জাম",
   // 12 Oct 2026 (the Owner: a bookmark for the children "couldn't add"): the 🔖 dialog now says who it was saved
@@ -4530,7 +4536,20 @@ export const BN = {
   "Good character: how a Muslim treats people, speaks, and loves for others what he loves for himself.": "উত্তম চরিত্র: একজন মুসলিম কীভাবে মানুষের সাথে আচরণ করে, কথা বলে, এবং নিজের জন্য যা ভালোবাসে অন্যের জন্যও তা ভালোবাসে।", // ?
   "The unseen: belief in Allah, the angels, the Last Day, and what only Allah knows.": "অদৃশ্য জগৎ: আল্লাহ, ফেরেশতা, শেষ দিবসের প্রতি ঈমান, এবং যা কেবল আল্লাহই জানেন।", // ?
   "The events of the life of Rasulullah Sallallahu A'laihi Wa Sallam and his Companions, as the hadith tell them.": "রাসূলুল্লাহ ﷺ ও তাঁর সাহাবীদের জীবনের ঘটনা, যেমন হাদীসে বর্ণিত হয়েছে।", // ?
-  "No hadith in this list yet. Open a hadith in Hadith Books and choose “Add to subject” (coming next).": "এই তালিকায় এখনো কোনো হাদীস নেই। হাদীসের কিতাবসমূহে একটি হাদীস খুলে “বিষয়ে যোগ করুন” বেছে নিন (শীঘ্রই আসছে)।", // ?
+  "No hadith in this list yet. Open a hadith in Hadith Books and choose “Add to subject”.": "এই তালিকায় এখনো কোনো হাদীস নেই। হাদীসের কিতাবসমূহে একটি হাদীস খুলে “পাঠ্য বিষয়ে যোগ করুন” বেছে নিন।", // ?
+  "No hadith in this list yet. The madrasah's owner or a prime adds them.": "এই তালিকায় এখনো কোনো হাদীস নেই। মাদরাসার মালিক বা একজন প্রাইম এগুলো যোগ করেন।", // ?
+  // PCF MSA J106 round 2: "Add to subject" and the shared lists.
+  "Add to subject": "পাঠ্য বিষয়ে যোগ করুন", // ?
+  "Add to this Subject": "এই পাঠ্য বিষয়ে যোগ করুন", // ?
+  "Already in this Subject": "এই পাঠ্য বিষয়ে আগেই আছে", // ?
+  "Added to {name}.": "{name}-এ যোগ করা হয়েছে।", // ?
+  "Remove from {name}": "{name} থেকে সরান", // ?
+  "Passage {n}": "অনুচ্ছেদ {n}", // ?
+  "Sign in to add a hadith to a Subject.": "পাঠ্য বিষয়ে হাদীস যোগ করতে সাইন ইন করুন।", // ?
+  "Only the madrasah's owner or a prime can add a hadith to a Subject.": "কেবল মাদরাসার মালিক বা একজন প্রাইম পাঠ্য বিষয়ে হাদীস যোগ করতে পারেন।", // ?
+  "Sign in to see your madrasah's Subjects.": "আপনার মাদরাসার পাঠ্য বিষয়গুলো দেখতে সাইন ইন করুন।", // ?
+  "It could not be added. Check the connection and try again.": "যোগ করা যায়নি। সংযোগ দেখে আবার চেষ্টা করুন।", // ?
+  "It could not be removed. Check the connection and try again.": "সরানো যায়নি। সংযোগ দেখে আবার চেষ্টা করুন।", // ?
   "The list of books could not be loaded. Check the connection and try again.": "কিতাবের তালিকা লোড করা যায়নি। সংযোগ দেখে আবার চেষ্টা করুন।", // ?
   // PCF MSA J106: the Hadith Books reader.
   "Hadith · {n}": "হাদীস · {n}", // ?
@@ -4595,4 +4614,53 @@ export const BN = {
   "Share it as": "যেভাবে শেয়ার করবেন",
   "A poster picture": "পোস্টারের ছবি",
   "The text is selected: copy it with your device's Copy.": "লেখাটি বাছাই করা আছে: আপনার ডিভাইসের কপি দিয়ে কপি করুন।",
+  // J108 (v13.01): the shared Note opener, its Āyah / Hadith blocks and its Attach.
+  "Note tools": "নোটের সরঞ্জাম",
+  "Folders: file this Note": "ফোল্ডার: এই নোটটি রাখুন",
+  "Attach an Āyah or Hadith": "একটি আয়াত বা হাদীস যুক্ত করুন",
+  "Search this Note": "এই নোটে খুঁজুন",
+  "Open the Note for editing to attach an Āyah or Hadith.": "আয়াত বা হাদীস যুক্ত করতে নোটটি সম্পাদনার জন্য খুলুন।",
+  "open": "খুলুন",
+  "A new Note could not be made just now. Please try again.": "এখন নতুন নোট তৈরি করা গেল না। আবার চেষ্টা করুন।",
+  "Your Note is not saved yet. It is kept on this device; press ✕ again to close anyway.": "আপনার নোট এখনো সংরক্ষিত হয়নি। এটি এই ডিভাইসে রাখা আছে; তবুও বন্ধ করতে আবার ✕ চাপুন।",
+  "Attach to this Note": "এই নোটে যুক্ত করুন",
+  "Surah:Āyah, e.g. 2:255": "সূরা:আয়াত, যেমন ২:২৫৫",
+  "The hadith's number, e.g. 3062": "হাদীসের নম্বর, যেমন ৩০৬২",
+  "The Arabic, English and Bangla of the āyah are added; you can hide any of them.": "আয়াতটির আরবি, ইংরেজি ও বাংলা যুক্ত হয়; যেকোনোটি লুকাতে পারবেন।",
+  "A hadith from the HadeethEnc collection, by its number on the Hadith page.": "হাদীস পাতায় দেওয়া নম্বর দিয়ে HadeethEnc সংকলনের একটি হাদীস।",
+  "That could not be found. Please check it and try again.": "এটি পাওয়া গেল না। দেখে নিয়ে আবার চেষ্টা করুন।",
+  "Quran {ref} · {name}": "কুরআন {ref} · {name}",
+  "Hadith {n} · {title}": "হাদীস {n} · {title}",
+  "Show {ref}": "{ref} দেখান",
+  "hide": "লুকান",
+  "show": "দেখান",
+  "Delete {ref} from this Note": "এই নোট থেকে {ref} মুছুন",
+  "Every language is hidden. Tap عربي, EN or বাং to show one.": "সব ভাষা লুকানো। একটি দেখাতে عربي, EN বা বাং চাপুন।",
+  "Show every Āyah and Hadith": "সব আয়াত ও হাদীস দেখান",
+  "All Āyāt and Hadith: shown ({n})": "সব আয়াত ও হাদীস: দেখানো ({n})",
+  "All Āyāt and Hadith: hidden ({n})": "সব আয়াত ও হাদীস: লুকানো ({n})",
+  "You have 1 other Note on this hadith —": "এই হাদীসে আপনার আরও ১টি নোট আছে —",
+  "You have 1 other Note on this āyah —": "এই আয়াতে আপনার আরও ১টি নোট আছে —",
+  "You have {n} other Notes on this hadith —": "এই হাদীসে আপনার আরও {n}টি নোট আছে —",
+  "You have {n} other Notes on this āyah —": "এই আয়াতে আপনার আরও {n}টি নোট আছে —",
+  "Open your Notes on this hadith": "এই হাদীসে আপনার নোটগুলো খুলুন",
+  "Open your Notes on this āyah": "এই আয়াতে আপনার নোটগুলো খুলুন",
+  "Hide the {lang}": "{lang} লুকান",
+  "Show the {lang}": "{lang} দেখান",
+  "Write the sūrah and āyah like 2:255.": "সূরা ও আয়াত এভাবে লিখুন: ২:২৫৫।",
+  "There is no sūrah {n}.": "{n} নম্বর সূরা নেই।",
+  "Sūrah {s} has no āyah {a}.": "সূরা {s}-এ {a} নম্বর আয়াত নেই।",
+  "Write the hadith's number, like 3062.": "হাদীসের নম্বর লিখুন, যেমন ৩০৬২।",
+  "There is no hadith {n} in the collection.": "সংকলনে {n} নম্বর হাদীস নেই।",
+
+  // --- J112: the Map's bar for Siyagah's Mapping My Journey (off until Siyagah's R1 is live) ---
+  "Siyagah's Mapping My Journey": "সিয়াগাহ-এর ম্যাপিং মাই জার্নি",
+  "Siyagah could not be reached: {reason}": "সিয়াগাহ-তে পৌঁছানো যায়নি: {reason}",
+  "Connected as {email}. Your Siyagah folders will show here once Siyagah's part is ready.": "{email} হিসেবে সংযুক্ত। সিয়াগাহ-এর অংশ তৈরি হলে আপনার সিয়াগাহ ফোল্ডারগুলো এখানে দেখা যাবে।",
+  "Could not disconnect: {reason}": "সংযোগ বিচ্ছিন্ন করা যায়নি: {reason}",
+  "Not connected on this device.": "এই ডিভাইসে সংযুক্ত নয়।",
+  "Could not connect: {reason}": "সংযুক্ত করা যায়নি: {reason}",
+  "Opening…": "খোলা হচ্ছে…",
+  "Connect": "সংযুক্ত করুন",
+  "Disconnect": "সংযোগ বিচ্ছিন্ন করুন",
 };

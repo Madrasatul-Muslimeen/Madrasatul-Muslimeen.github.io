@@ -8,7 +8,8 @@
 // (2) The Āyah card's "✅ Record Your Progress" carries 👥: ticking Maryam too writes the claim for BOTH (read back from
 // the stub's records writes), as the Track card does. Expected values written by hand (fixture p1 Ahsan, p2 Maryam).
 // Run from the repository root, serve.js on :8080.
-//   --mutate=samedoor   with no Note yet, 📝 Note takes the plain door  -> the "ready to write" checks fail
+//   --mutate=samedoor   RETIRED as a proof (J108): both doors now open the same new Note on purpose, so this mutation
+//                       changes nothing the suite can see; kept so its anchor still names the code.
 //   --mutate=self-only  claimApproachStatus writes only for the Student -> the two-person check fails
 import { chromium, newContext, openPage } from "./harness.mjs";
 import fs from "node:fs";
@@ -73,39 +74,40 @@ for (const lang of ["en", "bn"]) for (const [width, height] of [[390, 844], [128
   await openCard(P, 255);
   const doors = await ev(() => ({ note: document.querySelectorAll("[data-ayah-sheet] [data-ayah-sheet-note]").length, isNew: !!document.querySelector("[data-ayah-sheet] [data-ayah-sheet-note-new]"), take: !!document.querySelector("[data-ayah-sheet] [data-ayah-sheet-takenote]"), pen: [...document.querySelectorAll("[data-ayah-sheet] [data-ayah-sheet-actions] button")].some((b) => b.textContent.includes("✍")) }));
   check(`${tag} the card has ONE 📝 Note (no separate ✍ Take Note), and with no Note yet it is the take-a-note door`, doors.note === 1 && doors.isNew && !doors.take && !doors.pen, JSON.stringify(doors));
+  // UPDATED IN PLACE (J108, v13.01, the Owner: "Q2:A. Q3. Build it."), reason recorded: both doors now open the shared Note
+  // opener -- a NEW Note at once, the Āyah inside it, its toolbar's ← carrying "Back to Āyah card". With earlier Notes the
+  // opener says "You have N other Notes on this āyah — open", and "open" is the Notes pane listing them (the old plain door).
+  const openerFrame = async (a) => { for (let i = 0; i < 80; i++) { const f = P.frames().find((x) => new RegExp(`journey-map\\.html\\?embed=1&new=1&unit=ayah%3A2%3A${a}`).test(x.url())); if (f) return f; await P.waitForTimeout(100); } return null; };
+  const backWord = lang === "bn" ? "আয়াত কার্ডে ফিরুন" : "Back to Āyah card";
   await P.click("[data-ayah-sheet] [data-ayah-sheet-note]");
-  const F = await paneFrame();
-  await F?.waitForFunction(() => document.activeElement?.matches?.("[data-unit-new].unit-new-ready"), null, { timeout: 15000 }).catch(() => {});
-  const take = await ev(() => ({ pane: !document.getElementById("readNotePane")?.hidden, back: document.querySelector("#readNotePane [data-rnp-back]")?.textContent ?? "", title: document.querySelector("#readNotePane .rnp-title")?.textContent ?? "" }));
-  const ready = F ? await F.evaluate(() => !!document.activeElement?.matches?.("[data-unit-new].unit-new-ready")) : false;
-  check(`${tag} 📝 Note (no Note yet) opens the Notes pane on 2:255 with ✚ New note in focus`, take.pane && /2:255|২:২৫৫/.test(take.title) && ready, JSON.stringify({ ...take, ready }));
-  // UPDATED IN PLACE (J81 part 3, v12.26: every note opens in the Mapping My Journey window): pressing ✚ New note no longer
-  // puts a cursor in the pane; it writes the Note and opens #journeyTray on it. The stub keeps its data per page, so the
-  // tray's fresh page cannot read the Note back: it is proven by the tray's address naming the Note just written, and the write.
-  await F?.click("[data-unit-new]");
-  await P.waitForFunction(() => /embed=1&note=[0-9a-f]{16,}/.test(document.querySelector("#journeyTray:not([hidden]) iframe")?.getAttribute("src") ?? ""), null, { timeout: 10000 }).catch(() => {});
-  const trayNote = await ev(() => ({ open: !!document.querySelector("#journeyTray:not([hidden])"), src: document.querySelector("#journeyTray iframe")?.getAttribute("src") ?? "" }));
-  const wroteNote = F ? await F.evaluate(() => (window.__stubWriteData || []).some((x) => x.col === "notes")).catch(() => false) : false;
-  check(`${tag} ...pressing it makes the Note and opens it in the Mapping My Journey window (v12.26)`, trayNote.open && /embed=1&note=[0-9a-f]{16,}/.test(trayNote.src) && wroteNote, JSON.stringify({ ...trayNote, wroteNote }));
-  check(`${tag} ...and "Back to Āyah card" is there`, take.back === `← ${lang === "bn" ? "আয়াত কার্ডে ফিরুন" : "Back to Āyah card"}`, take.back);
-  // A reader closes the tray with its ✕, which returns them to the pane.
-  await P.click("#journeyTray .jt-close", { timeout: 5000 }).catch(() => {}); await P.waitForTimeout(400);
-  await P.click("#readNotePane [data-rnp-back]");
+  const F = await openerFrame(255);
+  await F?.waitForSelector("[data-edit-body] .mm-ref", { timeout: 20000 }).catch(() => {});
+  await P.waitForTimeout(500);
+  const take = F ? await F.evaluate(() => ({ id: JSON.parse(document.querySelector("[data-edit-body] .mm-ref")?.getAttribute("data-mmsa-ref") || "{}").id, editing: !!document.querySelector("[data-edit-body]"), back: document.querySelector('[data-nn-tool="back"]')?.getAttribute("aria-label"), wrote: (window.__stubWriteData || []).some((x) => x.col === "notes") })) : null;
+  const count255 = await ev(() => !document.querySelector("#noteOpener [data-no-count]")?.hidden);
+  check(`${tag} 📝 Note (no Note yet) opens a NEW Note on 2:255, the Āyah inside it, ready to write`, take?.id === "ayah:2:255" && take.editing && take.wrote && !count255, JSON.stringify({ ...take, count255 }));
+  check(`${tag} ...and "Back to Āyah card" is its way back`, take?.back === backWord, take?.back);
+  await F?.click('[data-nn-tool="back"]').catch(() => {});
   await P.waitForFunction(() => document.getElementById("ayahActionSheetOverlay")?.classList.contains("open"), null, { timeout: 8000 }).catch(() => {});
   await P.waitForTimeout(300);
+  check(`${tag} ...which closes the Note and reopens the Āyah card on 2:255`, await ev(() => document.getElementById("noteOpener").hidden && /2:255|২:২৫৫/.test(document.querySelector("[data-ayah-sheet] .ayah-sheet-ref")?.textContent ?? "")));
   await ev(() => document.activeElement?.blur?.());
-  // 2:256 has a Note (seeded): the card's one 📝 Note there opens the pane listing it, with nothing put in focus.
+  // 2:256 has a Note (seeded): the card's one 📝 Note there is still a new Note, with the line that opens the earlier one.
   await P.click('[data-ayah-sheet] [data-ayah-sheet-step="1"]');
   await P.waitForFunction(() => /2:256|২:২৫৬/.test(document.querySelector("[data-ayah-sheet] .ayah-sheet-ref")?.textContent ?? "") && document.querySelector("[data-ayah-sheet] [data-ayah-sheet-note]")?.getAttribute("aria-label") !== null, null, { timeout: 8000 }).catch(() => {});
   await P.waitForTimeout(700);
   const nowHas = await ev(() => ({ isNew: !!document.querySelector("[data-ayah-sheet] [data-ayah-sheet-note-new]"), label: document.querySelector("[data-ayah-sheet] [data-ayah-sheet-note]")?.getAttribute("aria-label") }));
   check(`${tag} on 2:256, which has a Note, the card's one 📝 Note is "Note & more…", not the take-a-note door`, !nowHas.isNew && nowHas.label === (lang === "bn" ? "নোট ও আরও…" : "Note & more…"), JSON.stringify(nowHas));
   await P.click("[data-ayah-sheet] [data-ayah-sheet-note]");
+  await P.waitForSelector("#noteOpener:not([hidden]) [data-no-count-open]", { timeout: 20000 }).catch(() => {});
+  const line = await ev(() => document.querySelector("#noteOpener [data-no-count]")?.textContent ?? "");
+  check(`${tag} ...it opens a new Note with "You have 1 other Note on this āyah — open"`, lang === "bn" ? /১টি নোট/.test(line) : /You have 1 other Note on this āyah/.test(line), line);
+  await P.click("#noteOpener [data-no-count-open]").catch(() => {});
   await P.waitForTimeout(600);
   const F2 = await paneFrame();
   await F2?.waitForFunction(() => /2:256|২:২৫৬/.test(document.querySelector("[data-unit-title]")?.textContent ?? "") && document.querySelector('[data-unit-body] [data-note-id="n256"]'), null, { timeout: 15000 }).catch(() => {});
   const plain = F2 ? await F2.evaluate(() => ({ listed: !!document.querySelector('[data-unit-body] [data-note-id="n256"]'), focused: !!document.activeElement?.matches?.("[data-unit-new].unit-new-ready") })) : null;
-  check(`${tag} ...and it opens the pane listing "On 2:256" (✚ not put in focus) -- a different door`, plain?.listed && !plain.focused, JSON.stringify(plain));
+  check(`${tag} ..."open" is the Notes pane listing "On 2:256" (✚ not put in focus)`, plain?.listed && !plain.focused, JSON.stringify(plain));
   await P.click("#readNotePane [data-rnp-back]").catch(() => {});
   await P.waitForFunction(() => document.getElementById("ayahActionSheetOverlay")?.classList.contains("open"), null, { timeout: 8000 }).catch(() => {});
   await P.waitForTimeout(400);

@@ -12,6 +12,12 @@
 // the popover and updating a trigger's own label stay the caller's job
 // (way-modal.js's wireAssignDropdown() is Claim-specific in its own label
 // text, so it stayed there rather than moving here with the rest).
+//
+// The ONE exception (audit part 141 H2, 31 Oct 2026): Escape closes an open
+// popover and puts focus back on its trigger. Every page that shows the 👥
+// list imports this module, while the callers that open it differ
+// (way-modal.js's delegated listener, hadith-browser.js's own), so the close
+// lives here once, as a single document listener registered at module load.
 
 import { t } from "./i18n.js";
 
@@ -68,4 +74,16 @@ export function checkedAssignees(rootEl, fallbackPersonId) {
   return boxes.length
     ? boxes.map((c) => ({ id: c.value, name: c.dataset.name ?? c.value }))
     : [{ id: fallbackPersonId, name: "" }];
+}
+
+if (typeof document !== "undefined") {
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    for (const pop of document.querySelectorAll(".assign-popover.open")) {
+      pop.classList.remove("open");
+      const trigger = pop.parentElement?.querySelector("[data-assign-trigger]");
+      trigger?.setAttribute("aria-expanded", "false");
+      if (pop.contains(document.activeElement) || document.activeElement === trigger) trigger?.focus();
+    }
+  });
 }

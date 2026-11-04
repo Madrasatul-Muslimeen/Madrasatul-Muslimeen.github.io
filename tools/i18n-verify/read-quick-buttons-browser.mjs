@@ -211,10 +211,11 @@ for(const [name, tab, n] of [["surah 67", "surah", 67], ["page 50", "page", 50]]
     const tag = `[${name}] ${which}`;
     if (which === "Note") {
       if (tab === "surah") {
-        // UPDATED IN PLACE (decision 95, v10.03): the quick Notes opens the Notes pane on the āyah on screen.
-        await page.waitForFunction(() => !document.getElementById("readNotePane")?.hidden, null, { timeout: 8000 }).catch(() => {});
-        const s = await page.evaluate(() => ({ pane: !!document.getElementById("readNotePane") && !document.getElementById("readNotePane").hidden, src: document.querySelector("#readNotePane iframe")?.getAttribute("src") ?? "", cur: document.getElementById("ayahSelect").value }));
-        check(`${tag}: opens the Notes pane on the āyah on screen`, s.pane && s.src.includes(`unit=ayah%3A67%3A${s.cur}`) && s.cur === ayah, JSON.stringify(s));
+        // UPDATED IN PLACE (J108, v13.01): the quick Notes opens a NEW blank Note in the shared opener (decision 95's Notes
+        // pane is no longer behind this button); the page underneath does not move -- the āyah on screen stays.
+        await page.waitForFunction(() => { const w = document.getElementById("noteOpener"); return w && !w.hidden && w.getBoundingClientRect().width > 0; }, null, { timeout: 8000 }).catch(() => {});
+        const s = await page.evaluate(() => { const w = document.getElementById("noteOpener"); return { opener: !!w && !w.hidden && w.getBoundingClientRect().width > 0, cur: document.getElementById("ayahSelect").value }; });
+        check(`${tag}: opens a new Note in the opener, the āyah on screen unchanged`, s.opener && s.cur === ayah, JSON.stringify(s));
       }
     } else if (which === "Track") {
       const t = await page.evaluate(() => {
@@ -259,8 +260,9 @@ for (const which of ["Note", "Track", "Approach"]) {
   await page.click(`#readQuick${which}Btn`); await page.waitForTimeout(800);
   const tag = `[tablet 820] Study ▾ -> ${which}`;
   if (which === "Note") {
-    await page.waitForFunction(() => !document.getElementById("readNotePane")?.hidden, null, { timeout: 8000 }).catch(() => {});
-    check(`${tag}: opens the Notes pane`, await page.evaluate(() => !!document.getElementById("readNotePane") && !document.getElementById("readNotePane").hidden));
+    // UPDATED IN PLACE (J108, v13.01): a new Note in the shared opener, not the Notes pane.
+    await page.waitForFunction(() => { const w = document.getElementById("noteOpener"); return w && !w.hidden && w.getBoundingClientRect().width > 0; }, null, { timeout: 8000 }).catch(() => {});
+    check(`${tag}: opens a new Note in the opener`, await page.evaluate(() => { const w = document.getElementById("noteOpener"); return !!w && !w.hidden && w.getBoundingClientRect().width > 0; }));
   } else if (which === "Track") {
     check(`${tag}: opens the Unit Card`, await page.evaluate(() => document.getElementById("ayahActionSheetOverlay").classList.contains("open") && [...document.querySelectorAll("#ayahActionSheetMount [data-unit-card]")].some((e) => e.getBoundingClientRect().width > 0)));
   } else {

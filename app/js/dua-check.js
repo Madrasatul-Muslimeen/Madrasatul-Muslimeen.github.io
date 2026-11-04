@@ -174,7 +174,17 @@ export function buildCheckPanel({ card, books, fit, words, existing, textsPromis
   const panel = el("section", "hadith-card dua-check-panel");
   panel.dataset.duaCheckPanel = String(dua);
   panel.setAttribute("aria-label", t("Check Dua {n}", { n: num(dua) }));
-  const back = btn(t("← Back to Dua {n}", { n: num(dua) }), "dua-ref dua-check-back", () => onBack());
+  // Escape closes the panel like ← Back, wherever focus is (audit part 141 D2 / H4: after "Check this dua" focus can sit
+  // outside the panel). Bubble phase, so a pop-up opened over it (Dua Study's, capture + stopPropagation) closes first.
+  const esc = (e) => {
+    if (!panel.isConnected) { document.removeEventListener("keydown", esc); return; }
+    if (e.key !== "Escape" || e.defaultPrevented) return;
+    e.preventDefault();
+    document.removeEventListener("keydown", esc);
+    onBack();
+  };
+  document.addEventListener("keydown", esc);
+  const back = btn(t("← Back to Dua {n}", { n: num(dua) }), "dua-ref dua-check-back", () => { document.removeEventListener("keydown", esc); onBack(); });
   back.dataset.duaCheckBack = "true";
   panel.appendChild(back);
   panel.appendChild(el("h3", "dua-check-title", t("Check Dua {n}", { n: num(dua) })));

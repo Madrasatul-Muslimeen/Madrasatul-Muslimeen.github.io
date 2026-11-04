@@ -28,6 +28,7 @@ import { closeAllBarPalettes } from "./bar-palette.js";
 import { trapModal } from "./modal-focus.js";
 import { NOTE_IMAGE_WIDTHS, NOTE_IMAGE_ALT_MAX } from "./note-image-path.js";
 import { sheetInsertHtml, mountSheets } from "./note-sheet-ui.js";
+import { mountRefBlocks, insertRefBlock } from "./note-ref-ui.js";
 import { headingStyleCss, PALETTE, LIMITS as SETTING_LIMITS, cleanText as cleanSettingText } from "./note-user-settings.js";
 import { HANDLES, handleCss, clampRect, startDrag } from "./float-window.js";
 import { restoreWindow } from "./minimise.js";
@@ -1066,9 +1067,16 @@ export function createNoteViews(host) {
     wrap.append(body, gutter);
     // Item 44: a spreadsheet in the text gets its live grid; one that appears later (undo, paste) is mounted by the observer.
     mountEditSheets(v, body);
-    v.ed.sheetObs = typeof MutationObserver === "function" ? new MutationObserver(() => { if (v.ed) mountEditSheets(v); }) : null;
+    // J108: an Āyah / Hadith block gets its switch, language buttons and ✕ (note-ref-ui.js); one that appears later
+    // (Attach, undo, paste) is mounted by the same observer. The all-blocks switch sits in a slot above the text.
+    const refSlot = document.createElement("div");
+    refSlot.className = "mm-ref-slot";
+    refSlot.dataset.refSlot = "";
+    v.ed.refSlot = refSlot;
+    mountEditRefs(v, body);
+    v.ed.sheetObs = typeof MutationObserver === "function" ? new MutationObserver(() => { if (v.ed) { mountEditSheets(v); mountEditRefs(v); } }) : null;
     v.ed.sheetObs?.observe(body, { childList: true, subtree: true });
-    v.bodyEl.appendChild(wrap);
+    v.bodyEl.append(refSlot, wrap);
     hydrateImages(v, body);
     Object.assign(v.ed, { wrapEl: wrap, gutterEl: gutter, folded: new Set(), range: null });
     body.addEventListener("paste", (ev) => onEditPaste(v, ev));
@@ -1162,6 +1170,12 @@ export function createNoteViews(host) {
     if (over()) v.barEl.classList.add("edit-folded");
   }
   function fitPaneBarTwice(v) { fitPaneBar(v); requestAnimationFrame(() => fitPaneBar(v)); }
+  // Audit part 151: a change of text size (the root's font-size, set inline or by a class) moves no window edge and fires no "resize", so a bar fitted at 100% ran past the window at 200%. Refit on that change too.
+  try {
+    let refitQueued = false;
+    new MutationObserver(() => { if (refitQueued) return; refitQueued = true; requestAnimationFrame(() => { refitQueued = false; window.dispatchEvent(new Event("resize")); }); })
+      .observe(document.documentElement, { attributes: true, attributeFilter: ["style", "class"] });
+  } catch (e) { /* no MutationObserver: the next resize refits */ }
   window.addEventListener("resize", () => {
     if (notePane) host.paneApply();
     for (const v of allViews()) if (v.noteId !== null) { if (v.kind === "window") applyWindowGeometry(v); renderPaneBar(v); fitPaneBarTwice(v); }
@@ -1777,6 +1791,19 @@ export function createNoteViews(host) {
     refuse: () => (host.flags?.on(getNote(note.noteId) ?? note, "finalised") ? FINALISED_SAY() : t("Open the Note for editing to change the spreadsheet.")),
     status: (s) => host.status(s),
   });
+  /** J108: the editor's Āyah / Hadith blocks; a change goes out through the ordinary autosave. */
+  function mountEditRefs(v, body = editBodyEl(v)) {
+    if (!body || !v.ed) return;
+    mountRefBlocks(body, { slot: v.ed.refSlot, onChange: () => { if (v.ed) onEditInput(v); } });
+  }
+  /** J108: add an Āyah / Hadith block (a note-ref-block.js state) to the Note being edited in `v`; false when it is not being edited. */
+  function insertRef(v, state) {
+    const body = editBodyEl(v);
+    if (!v?.ed || !body || !insertRefBlock(body, state)) return false;
+    mountEditRefs(v, body);
+    onEditInput(v);
+    return true;
+  }
   function mountEditSheets(v, body = editBodyEl(v)) {
     if (!body) return;
     mountSheets(body, {
@@ -2912,7 +2939,13 @@ export function createNoteViews(host) {
     // Item 26: open or closed as it was last left, on this device.
     const detailsOpen = detailsOpenPref();
     detailsBtn.setAttribute("aria-expanded", String(detailsOpen));
-    detailsBtn.textContent = `${t("Details")} ▾`;
+    // J109: the shared ON/OFF switch (shell.css `button > .note-sec-arrow`, read off aria-expanded), not a ▾ arrow.
+    const detailsLabel = document.createElement("span");
+    detailsLabel.textContent = t("Details");
+    const detailsSw = document.createElement("span");
+    detailsSw.className = "note-sec-arrow";
+    detailsSw.setAttribute("aria-hidden", "true");
+    detailsBtn.append(detailsLabel, detailsSw);
     const details = document.createElement("div");
     details.className = detailsOpen ? "nw-details open" : "nw-details";
     // The version line lives in the shared template now (the inline pane shows
@@ -3194,5 +3227,5 @@ export function createNoteViews(host) {
     openWindow(note.noteId, { order, folderId });
   }
 
-  return { paneView, windowViews, allViews, viewShowing, openPane, closePane, closeView, openWindow, openFolderWindow, endEdit, flushActiveEdit, sync, renderView, focusView, windowTier, mountTags };
+  return { paneView, windowViews, allViews, viewShowing, openPane, closePane, closeView, openWindow, openFolderWindow, endEdit, flushActiveEdit, sync, renderView, focusView, windowTier, mountTags, insertRef };
 }

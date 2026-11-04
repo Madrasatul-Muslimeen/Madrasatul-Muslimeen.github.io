@@ -16,6 +16,8 @@
 //   nostep       the Āyah card's ‹ › do nothing                             -> the step checks fail
 //   nopill       nothing remembers the way back to the Āyah card            -> the "back to the card" checks fail
 //   nvcentre     the Note view pop-up centred at 100vh again                -> the "browser bar showing" check fails
+//   nonoteback   the Āyah card's new Note has no way back                    -> the "Note & more…" checks fail
+//   nonotereopen its ← keeps the label but reopens no card                   -> the "…brings back" checks fail
 import { chromium, newContext, openPage, BASE } from "./harness.mjs";
 
 let pass = 0, fail = 0;
@@ -36,6 +38,11 @@ const MUTATIONS = {
   // ‹ › inside Full text do nothing -> the step checks fail.
   nonvstep: ["quranrevival.html", "if (b.dataset.ayahNvStep) openAyahNoteViewPopup(b.dataset.ayahNvStep, { keepReturn: true });", "void 0;"],
   nostep: ["js/ayah-action-sheet.js", "callbacks.onStep?.(unitKey, Number(btn.dataset.ayahSheetStep))", "void 0"],
+  // v13.10: the Āyah card's new Note loses its way back (no "Back to Āyah card" label, nothing reopens the card) -> the
+  // Note & more… checks fail.
+  nonoteback: ["quranrevival.html", 'title: noteTitleFor(surah, label), backLabel: t("Back to Āyah card"), onClosed: reopen,', 'title: noteTitleFor(surah, label), backLabel: "", onClosed: () => {},'],
+  // v13.10: the label stays but closing the Note reopens nothing -> "…brings back the same view … Āyah card" fails.
+  nonotereopen: ["quranrevival.html", 'title: noteTitleFor(surah, label), backLabel: t("Back to Āyah card"), onClosed: reopen,', 'title: noteTitleFor(surah, label), backLabel: t("Back to Āyah card"), onClosed: () => {},'],
   nopill: ["quranrevival.html", "    function setAppReturn(title, label, back) { ayahCardReturn = { title, label, back }; renderAyahCardBackPill(); }", "    function setAppReturn() {}"],
 };
 if (MUTATE && !MUTATIONS[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
@@ -55,7 +62,11 @@ check("lemmaText changes nothing in a lemma that has no mark (the key stays the 
 // ---- 2. In the browser --------------------------------------------------------------------------------------
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
 async function start(lang, width, height) {
-  const ctx = await newContext(browser, { appLang: lang, viewport: { width, height } });
+  // UPDATED IN PLACE (v13.10, reason recorded): since J108 (v13.01) the Āyah card's 📝 Note makes a NEW Note at once and
+  // files it in a system folder it may first have to create (setDoc). The stub applies a setDoc to its own DATA only under
+  // __stubApplyBatches, so without it the next transaction could not see the new folder and the filing failed ("Note and
+  // Folder must exist") -- in the harness only; real Firestore reads its own writes. Same seed as ayah-card-takenote-family.
+  const ctx = await newContext(browser, { appLang: lang, viewport: { width, height }, extraSeedJs: "window.__stubApplyBatches = true; window.__stubRecordTxData = true;" });
   await ctx.route("**/archive.org/**", (r) => r.abort());
   if (MUTATE) {
     const [file, a, b] = MUTATIONS[MUTATE];
@@ -276,17 +287,26 @@ for (const [lang, width, height] of [["en", 390, 844], ["bn", 390, 844], ["en", 
     const again = await page.evaluate(() => ({ card: document.getElementById("ayahActionSheetOverlay")?.classList.contains("open"), ref: document.querySelector("[data-ayah-sheet] .ayah-sheet-ref")?.textContent, word: !!document.querySelector(".quran-word-card"), pill: !!document.querySelector("#ayahCardBackPill:not([hidden])") }));
     check(`${tag} it closes the Word card and reopens the same Āyah card; the pill goes`, again.card && again.ref === ref0 && !again.word && !again.pill, JSON.stringify(again));
   }
-  // Note & more… leaves for the Notes pane (UPDATED IN PLACE, decision 95, v10.03: it left for the Note view); the
-  // pane's own "← Back to Āyah card" returns to the Read view and the card.
+  // Note & more… (UPDATED IN PLACE twice: decision 95, v10.03, it left for the Notes pane; J108, v13.01, the Owner: "Q2:A.
+  // Q3. Build it." -- it opens the shared Note opener, a NEW Note with the Āyah inside it). Its toolbar's ← carries
+  // "Back to Āyah card", and pressing it closes the Note and brings back the Read view with the same Āyah card.
+  const backWord = lang === "bn" ? "আয়াত কার্ডে ফিরুন" : "Back to Āyah card";
+  const viewBefore = await page.evaluate(() => (document.body.classList.contains("landing-view") ? "landing" : "") + ["readView", "exploreView"].filter((id) => document.getElementById(id) && !document.getElementById(id).hidden).join(",") + "|" + Math.round(scrollY));
   await page.evaluate(() => document.querySelector("[data-ayah-sheet] [data-ayah-sheet-note]")?.click());
-  await page.waitForTimeout(1200);
-  const inNote = await page.evaluate(() => /Āyah card|আয়াত কার্ড/.test(document.querySelector("#readNotePane:not([hidden]) [data-rnp-back]")?.textContent ?? ""));
-  check(`${tag} Note & more… also leaves "Back to Āyah card"`, inNote);
+  let F = null;
+  for (let i = 0; i < 100 && !F; i++) { F = page.frames().find((x) => /journey-map\.html\?embed=1&new=1/.test(x.url())) ?? null; if (!F) await page.waitForTimeout(100); }
+  await F?.waitForSelector('[data-nn-tool="back"]', { timeout: 20000 }).catch(() => {});
+  await F?.waitForSelector("[data-edit-body] .mm-ref", { timeout: 20000 }).catch(() => {});
+  const back = F ? await F.evaluate(() => document.querySelector('[data-nn-tool="back"]')?.getAttribute("aria-label")) : null;
+  const inNote = back === backWord;
+  check(`${tag} Note & more… also leaves "Back to Āyah card"`, inNote, String(back));
   if (inNote) {
-    await page.click("#readNotePane [data-rnp-back]");
+    await F.click('[data-nn-tool="back"]');
     await page.waitForFunction(() => document.getElementById("ayahActionSheetOverlay")?.classList.contains("open"), null, { timeout: 8000 }).catch(() => {});
-    const r = await page.evaluate(() => ({ card: document.getElementById("ayahActionSheetOverlay")?.classList.contains("open"), ref: document.querySelector("[data-ayah-sheet] .ayah-sheet-ref")?.textContent, readShown: !!document.getElementById("readView")?.getClientRects().length }));
-    check(`${tag} …and it brings back the Read view with the same Āyah card`, r.card && r.ref === ref0 && r.readShown, JSON.stringify(r));
+    // The new Note opens OVER the view the reader is on (it does not move to the Read view as the old pane did), so the way
+    // back is to that same view, at the same place, with the same Āyah card open.
+    const r = await page.evaluate(() => ({ card: document.getElementById("ayahActionSheetOverlay")?.classList.contains("open"), ref: document.querySelector("[data-ayah-sheet] .ayah-sheet-ref")?.textContent, view: (document.body.classList.contains("landing-view") ? "landing" : "") + ["readView", "exploreView"].filter((id) => document.getElementById(id) && !document.getElementById(id).hidden).join(",") + "|" + Math.round(scrollY), noteGone: !!document.getElementById("noteOpener")?.hidden }));
+    check(`${tag} …and it brings back the same view, at the same place, with the same Āyah card`, r.card && r.ref === ref0 && r.view === viewBefore && /^[a-z,]+\|/i.test(viewBefore) && r.noteGone, JSON.stringify({ ...r, viewBefore }));
   }
   const real = errors.filter((e) => !/ERR_TUNNEL_CONNECTION_FAILED|ERR_CERT_AUTHORITY_INVALID|archive\.org|api\.quran\.com/.test(e));
   check(`${tag} no page errors`, real.length === 0, real.slice(0, 2).join(" | "));

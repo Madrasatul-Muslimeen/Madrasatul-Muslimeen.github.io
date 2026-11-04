@@ -99,6 +99,18 @@
   .app-name-short { display: none; }
   .app-name-short::before { content: "MSA"; }
   @media (max-width: 699px) { .app-name-full { display: none; } .app-name-short { display: inline; } }
+  /* v13.15 (QR's title at 320px): an app whose short name is long ("QuranRevival", 146px against MSA's 52px) sets
+     these three through its build rule (tools/apps/build-app.mjs). --app-title-flex: 1 1 min-content lets the title
+     shrink to its longest word, so the Search button keeps the first line and the version (kept whole by
+     --app-version-wrap: nowrap) takes a line of its own only when it does not fit (QR's heading was 72px tall at
+     320px, MSA's 40px). --app-name-em is the short name's width in em (0.6em a letter), so the name is never wider
+     than the screen (QR's ran 5px off a 320px screen at 200% text). MSA sets none of them: the defaults (0 1 auto,
+     the flex default; normal; 2) change nothing at any width or text size. */
+  @media (max-width: 699px) {
+    #appTitleText { flex: var(--app-title-flex, 0 1 auto); }
+    #appTitleText .app-version { white-space: var(--app-version-wrap, normal); }
+    .app-name-short { font-size: min(1em, calc((100vw - 2rem) / var(--app-name-em, 2))); }
+  }
   h1 .head-search-btn svg { flex: 0 0 auto; }
   /* Measured at 360px in English: "QuranRevival v09.13" plus the 99px button
      needed 334px of a 328px line, so the button broke onto its own line.
@@ -334,6 +346,15 @@
      label really is cut: the title and ✕ keep the first line and Save takes a full line of its own, wrapping its words
      rather than cutting them. At ordinary text nothing is cut, so nothing changes. */
   .qr-panel-head.qr-panel-head-stacked { flex-wrap: wrap; row-gap: 0.4rem; }
+  /* QR Lead audit 4: on a phone turned sideways at 200% the drawer has ~245px and the stacked head took 177 of it, so the
+     options showed through a slit and the reciter ticks could not be tapped. Where stacking would leave the options less
+     than 6rem, Save and ✕ share one line and Save wraps its words there instead (never cut); the head stays where it is,
+     so ✕ stays on screen. */
+  /* The title gives way here (it stays in the page for a screen reader; the open tab already names the drawer): the words
+     "Study options" cannot shrink below their longest word, which left Save ~60px on a 360px phone at 200%. */
+  .qr-panel-head.qr-panel-head-tight { font-size: 0; }
+  .qr-panel-head.qr-panel-head-tight .qr-panel-head-actions { flex: 1 1 auto; margin-left: 0; }
+  .qr-panel-head.qr-panel-head-tight .preset-save-btn { flex: 1 1 auto; white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.15; }
   .qr-panel-head.qr-panel-head-stacked .qr-panel-head-actions { display: contents; }
   .qr-panel-head.qr-panel-head-stacked .qr-panel-x { order: 1; margin-left: auto; }
   .qr-panel-head.qr-panel-head-stacked .preset-save-btn { order: 2; flex: 1 1 100%; white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.15; }
@@ -563,6 +584,10 @@
      is untouched, per the owner's own scope call this round. */
   @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cormorant+Garamond:wght@400;500;600;700&display=swap');
   .wheel-heading { font-family: 'Cormorant Garamond', serif; font-weight: 600; color: var(--card-heading); margin-bottom: 0.4rem; }
+  /* QR Lead audit 7, 31 Oct 2026 (Builder audit part 142 D4): under 900px this heading sits on the white page above the
+     wheel, not on the Night card, so Night's gold card heading (#C9A24B) read 2.4:1 there. A deep gold keeps the family
+     and reads 6.8:1 on white (at 900px and up the heading is hidden and the window's title bar shows it instead). */
+  [data-card-look="night"] #wheelPopupView > .wheel-heading { color: #7a5410; }
   /* Owner decision 46 -- the heading line holds the two TITLES only:
      "Mastery Wheel" | separator | the Approach list's title, centred, one
      line (fitWheelHeading() steps the size down until it fits). */
@@ -673,7 +698,9 @@
   /* Wraps rather than truncating -- nowrap + ellipsis fails SILENTLY, this
      page's own most-repeated layout trap. */
   .wheel-unit-capsule-word { min-width: 0; white-space: normal; }
-  .wheel-unit-capsule-caret { flex: none; font-size: 0.7rem; opacity: 0.75; }
+  /* Audit 7 (part 142 D5): at 0.75 the caret read 4.49:1 on the gold pill's darker end; 0.9 keeps it a shade softer
+     than the word and reads over 6:1. */
+  .wheel-unit-capsule-caret { flex: none; font-size: 0.7rem; opacity: 0.9; }
   /* Centred on the ROW (see the position:static rule above), never on the
      pill's own right edge: .bar-palette's own default is `right: 0`, which
      would hang this off whichever end the pill happens to sit at. */
@@ -774,6 +801,28 @@
   body.landing-view.landing-tall #wheelSection .ways-list { flex: 0 0 auto; overflow: visible; max-height: none; }
   /* ...and from 768px the Zab bar (2.75rem since v12.125, fixed at the bottom) is there too: the scrolling page's docked tabs stick above it. */
   @media (min-width: 768px) { body.zab-bar-on.landing-view.landing-tall #dock { bottom: 2.75rem; } }
+  /* QR Lead audit, 31 Oct 2026: the Read view is a fixed-height screen too, and with large text (200% on a phone; a phone
+     turned sideways even at 100%) the header, the wrapped read bar and the docked tabs together passed the screen height:
+     the reading area was 0px (no Qur'an text at all at 360x740 200%) and the read bar's buttons lay under the tabs where
+     nothing could reach them. checkReadFit() sets body.read-tall only while that is really so: the page then scrolls as the
+     landing does, and the reading area keeps the screen's height less the tabs (--read-tall-h), so one scroll down shows a
+     whole page of text above the tabs (in full screen, where the tabs are hidden, the whole screen). Never in the Āyah window. */
+  body.read-tall { height: auto; min-height: 100vh; min-height: 100dvh; overflow: visible; }
+  body.read-tall #app, body.read-tall #stage, body.read-tall #readView { flex: 0 0 auto; }
+  body.read-tall #studyScreen { height: auto; }
+  body.read-tall #readScroll { flex: 0 0 auto; height: var(--read-tall-h, 60vh); }
+  /* QR Lead audit 8, 1 Nov 2026: Explore is the same fixed-height screen below 900px, and with large text (200% on a phone; a
+     phone turned sideways even at 100%) the header, the palette rows and the docked tabs took the whole screen: #exploreView
+     measured 0px at 320x640 200% and on every phone turned sideways at 150-200% (no wheel, no list, nothing to tap).
+     checkExploreFit() sets body.explore-tall only while the Explore area is really under 12rem: the page then scrolls as the
+     Read view's read-tall does, and the Explore area keeps the screen's height less the tabs (--explore-tall-h), so one scroll
+     down shows a whole screen of Explore above them; it still scrolls inside itself. Never on a PC, where Explore is a window. */
+  body.explore-tall { height: auto; min-height: 100vh; min-height: 100dvh; overflow: visible; }
+  body.explore-tall #app, body.explore-tall #stage, body.explore-tall #exploreView { flex: 0 0 auto; }
+  body.explore-tall #exploreScroll { flex: 0 0 auto; height: var(--explore-tall-h, 60vh); }
+  /* From 768px the Zab bar (2.75rem, fixed at the bottom) is there too: while Explore or the Read view scrolls, the docked tabs
+     stick above it, as the landing's do (landing-tall). Before this the bar covered the lower half of the tabs (844x390, 768x1024). */
+  @media (min-width: 768px) { body.zab-bar-on.explore-tall #dock, body.zab-bar-on.read-tall #dock { bottom: 2.75rem; } }
 
   /* The wheel look behind "Study Quran" (see #wheelLookSwitch). "dark" is the
      long-standing veil above; "light" is a light-grey veil; "colour" lifts
@@ -1133,6 +1182,9 @@
                     cursor: pointer; line-height: 1.2; }
   .ways-group-btn:hover { background: rgba(255,255,255,0.08); }
   .ways-caret { flex: 0 0 auto; width: 1em; color: #ecd49a; }
+  /* Audit 7 (part 142 D6): the Light look turned the section name deep gold (card-look.css) but left its caret pale
+     gold on white, 1.45:1; it follows the name now (6.8:1). */
+  [data-card-look="light"] .ways-caret { color: #7a5410; }
   /* 29 Sep 2026, Owner: S1.. in the round badge (sized for two characters), the
      count in a square box at the END of the name, and the section name in gold
      so it is not mistaken for an Approach name. */
@@ -1202,7 +1254,7 @@
      project tests except 320px, where the switch takes a tidy line of its own
      rather than anything being cut. */
   .explore-head-row #exploreBreadcrumb { flex: 1 1 auto; min-width: 0; }
-  .explore-head-row #exploreViewToggle { flex: 0 0 auto; margin: 0; }
+  .explore-head-row #exploreViewToggle { flex: 0 0 auto; margin: 0; max-width: 100%; } /* QR Lead audit 8: never wider than its row (Juz / Surahs / Hizb ran 25px past a 320px phone at 200%); its buttons wrap instead */
   /* Issue #342 -- a third button (Hizb) at the Quran level. Measured,
      English, both together on the trail's own row: "Whole Quran" + Juz +
      Surahs + Hizb needs more than the two-button pair ever did, and does not
@@ -1246,6 +1298,14 @@
   .aa-pn { display: flex; gap: 8px; justify-content: flex-end; min-width: 0; }
   /* Architect, 7 Oct 2026: 8px sides, not 12 -- at 390px the Ayah level's "‹ Ayah 28" / "Next Ayah ›" were 3-5px short with a wider fallback font (the page never loads Inter), so they were cut. */
   .aa-pn button { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 42vw; padding: 0 8px; }
+  /* QR Lead audit 8: at the Surah and Ayah levels the steps ("‹ Al-Faatiha", "Aal-i-Imraan ›") were cut to "‹ Al-Fa…" at 320px
+     and to "‹…" (44px) on a phone at 200%. checkExploreFit() sets .aa-nav-wrap only while a step's words really are cut: the
+     two steps then take a line of their own under Back, sharing it, and each its own line only when one line cannot hold both. */
+  .aa-nav.aa-nav-wrap { grid-template-columns: auto 1fr; flex-wrap: wrap; }
+  .aa-nav.aa-nav-wrap > .aa-pn { grid-column: 1 / -1; flex: 1 1 100%; flex-wrap: wrap; }
+  /* ...and All Approaches / One Approach stack, each a whole line, only while a word of theirs is cut (at 150-200% on a phone). */
+  .aa-seg.aa-seg-stack { grid-template-columns: 1fr; }
+  .aa-nav.aa-nav-wrap > .aa-pn button { flex: 1 1 auto; max-width: 100%; }
   .aa-seg { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; background: rgba(0,0,0,.25); padding: 4px; border-radius: 14px; margin: 6px 0 2px; }
   .aa-seg button { background: transparent; color: var(--card-text-muted); border: 0; min-width: 0; }
   .aa-seg button[aria-pressed="true"] { background: linear-gradient(#e8cf8c, #c9a24b); color: #1d2a44; font-weight: 700; }
@@ -1261,6 +1321,11 @@
   .aa-row .aa-nm { font-size: 0.85rem; line-height: 1.3; min-width: 0; color: var(--card-text); overflow-wrap: anywhere; }
   .aa-row .aa-nm small { display: block; color: var(--card-text-muted); font-size: 0.74rem; margin-top: 2px; }
   .aa-row-top { display: flex; gap: 8px; align-items: center; justify-content: flex-end; }
+  /* QR Lead audit 8: at 768x1024 200% the list beside the wheel was so narrow that a name broke inside a word ("Memoris / e
+     (Hifz)"). checkExploreFit() sets .aa-rows-stack only while a word really would not fit beside Take ▸: Take then goes under
+     the name, at the row's end. */
+  .aa-rows.aa-rows-stack .aa-row { grid-template-columns: minmax(0, 1fr); }
+  .aa-rows.aa-rows-probe .aa-nm { overflow-wrap: normal; }
   .aa-strip { grid-column: 1 / -1; display: grid; gap: 1px; min-width: 0; }
   .aa-strip i { height: 8px; border-radius: 2px; min-width: 0; }
   .aa-take { background: linear-gradient(#ecd497, #c9a24b); color: #1d2a44; border: 0; padding: 0 14px; font-weight: 700; white-space: nowrap; }
@@ -1328,6 +1393,9 @@
 
   /* ---------- Explore (Phase 5) ---------- */
   #explorePanel { margin-top: 0; } /* border/background/padding come from .wheel-box (Phase 5 round 12); lives inside the Explore dock panel since shell round 7 */
+  /* QR Lead audit 8: .wheel-box's 1.5rem sides grew to 48px each at 200%, leaving a 320px phone's Explore 158px to write in. Never more
+     than 24px (its size at ordinary text, so nothing moves there). */
+  #explorePanel { padding-left: min(1.5rem, 24px); padding-right: min(1.5rem, 24px); }
 
   /* ---------- Explore, the stage's 4th view (Ayah Collections round 2) ----------
      The owner's own ask: "the Explore panel should increase to the entire
@@ -2182,11 +2250,16 @@
   /* [hidden] on a flex label loses to the `display:flex` rule above it --
      the trap this codebase has been caught by six times. */
   #asmaXEditBody label[hidden] { display: none !important; }
+  /* 2 Nov 2026: at Bangla 200% text on a phone "কোথাও রাখা হয়নি" was 1px too wide for its select (measured 152 > 151px) and was cut;
+     the File-under selects take 0.3rem of side padding instead of 0.5rem and the group's own side padding stops growing past 8px
+     (rem-based, it was 22px a side at 200% and left the select 177px at 360px wide: Architect's measurement, 3 Nov). */
+  #asmaXEditFileUnder select { padding-left: 0.3rem; padding-right: 0.3rem; }
   #asmaXEditBody textarea { min-height: 3.4rem; resize: vertical; }
   #asmaXEditBody .asmaX-edit-check { flex-direction: row; align-items: center; gap: 0.4rem; }
   /* 6 Oct 2026: File under -- one row per classification, as one group. */
-  #asmaXEditBody .asmaX-file-under { border: 1px solid var(--card-border, rgba(0,0,0,0.15)); border-radius: 8px; padding: 0.5rem 0.7rem 0.7rem; margin: 0; display: flex; flex-direction: column; gap: 0.5rem; min-width: 0; }
+  #asmaXEditBody .asmaX-file-under { border: 1px solid var(--card-border, rgba(0,0,0,0.15)); border-radius: 8px; padding: 0.5rem min(0.7rem, 8px) 0.7rem; margin: 0; display: flex; flex-direction: column; gap: 0.5rem; min-width: 0; }
   #asmaXEditBody .asmaX-file-under legend { font-size: 0.8rem; font-weight: 600; color: var(--card-text, inherit); padding: 0 0.3rem; }
+  #asmaXEditBody .asmaX-file-hidden, #asmaXEditBody .asmaX-file-newtitle[hidden] { display: none !important; } /* 2 Nov 2026: the Dual row of a new Dual name */
   .asmaX-edit-actions { display: flex; gap: 0.6rem; margin-top: 1rem; }
   #asmaXAttachRefLabel { display: block; font-size: 0.78rem; color: var(--card-text-muted); margin-bottom: 0.25rem; }
   #asmaXAttachRefInput, #asmaXAttachFilterInput {
@@ -2671,6 +2744,12 @@
   .opt-actions { display: flex; align-items: center; gap: 0.4rem; }
   .opt-actions-spacer { margin: 0; }
   .opt-act-btn { min-height: 40px; height: 40px; padding: 0.2rem 0.7rem; white-space: nowrap; flex: 0 0 auto; }
+  /* QR Lead audit 4 (Listening, PCF User Manual 9m107jl): with large text the fixed 40px cut 📖 Read / ▶ Play at the bottom
+     (768px 200%), and below 480px the two buttons were made to share one line even where their words did not fit, so
+     each was cut (360px 200%: "▶ Play" needs 111px, got 45). They grow with the text and take a line each only when one
+     line cannot hold them; the Mode picker never asks for more than the line has. At ordinary text nothing moves. */
+  .opt-act-btn { height: auto; }
+  .opt-actions { flex-wrap: wrap; }
   /* MEASURED 22 Sep 2026, running panel.mjs in Bangla (it had only ever been
      run in English before -- a check that runs in one language measures one
      language): #drillModeSelect is the one cell here that actually absorbs
@@ -2681,10 +2760,21 @@
      English is unaffected either way -- it was never short. */
   @media (max-width: 480px) {
     .opt-bar-listen { flex-wrap: wrap; }
-    .opt-bar-listen > .opt-cell-mode { flex: 1 1 auto; min-width: 8rem; }
+    .opt-bar-listen > .opt-cell-mode { flex: 1 1 auto; min-width: min(8rem, 100%); }
     .opt-bar-listen > .opt-cell-actions { flex: 1 1 100%; }
     .opt-actions-spacer { display: none; }
-    .opt-actions .opt-act-btn { flex: 1 1 0; min-width: 0; }
+    .opt-actions .opt-act-btn { flex: 1 1 0; min-width: max-content; }
+  }
+  /* The 480px line above is a screen width, so it ignores text size: at 200% a 768px tablet squeezed "Each Ayah" to 30px
+     ("Ea"). The same wrap, measured against the Listening card itself in rem; 22rem is where the 480px screen line falls
+     at ordinary text, so at ordinary text it adds nothing. */
+  #drillControls { container-type: inline-size; }
+  @container (max-width: 22rem) {
+    .opt-bar-listen { flex-wrap: wrap; }
+    .opt-bar-listen > .opt-cell-mode { flex: 1 1 auto; min-width: min(8rem, 100%); }
+    .opt-bar-listen > .opt-cell-actions { flex: 1 1 100%; }
+    .opt-actions-spacer { display: none; }
+    .opt-actions .opt-act-btn { flex: 1 1 0; min-width: max-content; }
   }
   .loop-inline { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.8rem; font-weight: 400; white-space: nowrap; height: 1.85rem; margin: 0; }
   .reading-ticks label, .reciter-ticks label, .fs-ticks label { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.82rem; font-weight: 400; margin: 0; }
@@ -2761,6 +2851,17 @@
   /* PCF MSA J99 (the Owner ticked B): 📖 is the one switch for Āyah, Meaning and Mushaf; on a phone it is its icon alone,
      the next view's words its tip and spoken name. */
   @media (max-width: 599.98px) { #readMeaningBtn { padding: 0; width: 40px; } #readMeaningBtn .read-meaning-word { display: none; } }
+  /* PCF MSA J110 B (the Owner ticked B, 2 Nov 2026): the names "Reading View" and "ONE Ayah View". Measured (en, the ONE
+     Ayah View): the bar's button row had 0px to spare at 700px (668 of 668) and at 1024px (910 of 910), so "Reading View"
+     (+30px) took the bar to a fourth line (146px vs 100px). From 600 to 1279px a name of two or more words sits on two
+     short lines inside the same 40px button (paintReadMeaningBtn() puts each line in its own span), so the button is no
+     wider than "Meaning" was and the whole name still shows. */
+  #readMeaningBtn .rmw-line { display: inline; }
+  @media (min-width: 600px) and (max-width: 1279.98px) {
+    #readMeaningBtn:has(.rmw-line + .rmw-line) { padding: 0 0.45rem; gap: 0.25rem; }
+    #readMeaningBtn .read-meaning-word:has(.rmw-line + .rmw-line) { display: inline-flex; flex-direction: column; align-items: flex-start; font-size: 0.7rem; line-height: 1.05; }
+    #readMeaningBtn .rmw-line { display: block; }
+  }
   /* Measured at 820px (en): in the Meaning view, "📜 Mushaf" beside the English / Bangla / WbW switches took the bar to a
      second line (146px vs 100px), as 📖 Meaning did on main; with the switches on the bar it is the icon alone up to 1023px. */
   @media (max-width: 1023.98px) {
@@ -2852,6 +2953,18 @@
     }
     body.read-from-contents.immersive-read.fs-hide-readbar.fs-hide-transport #readBar:has(#mushafPagePrevBtn:not([hidden])) #readQuickRow { padding-left: calc(0.5rem + 44px); }
   }
+  /* QR Lead audit 5, 31 Oct 2026 (Mushaf view, PCF User Manual d9d78ub): with large text a phone's bare full screen kept
+     ☰ ‹ › and the tiles and left the page reference 48px (360 at 200%): only ▾ showed, so it no longer said where the reader
+     is. fitReadBareBar() measures it, and only when its words are cut below 3.5 letters' room does it take a line of its own
+     under the tools. Below 600px Notes / Record / Approach then cut "Approach" at the screen's edge; only when a word is cut
+     do they take their own widths and wrap, and the reading keeps that row's measured height (--rq-h) at its foot. */
+  body.qr-ref-own-line.immersive-read.fs-hide-readbar.fs-hide-transport #readBar:has(#mushafPagePrevBtn) #mushafPageRef#mushafPageRef { order: 99; flex: 1 0 100%; }
+  @media (max-width: 599.98px) {
+    body.rq-wrap.read-from-contents.immersive-read.fs-hide-readbar.fs-hide-transport #readQuickRow { flex-wrap: wrap; }
+    body.rq-wrap #readQuickRow .rq-btn { flex: 1 1 auto; }
+    body.rq-wrap.read-from-contents.immersive-read.fs-hide-readbar.fs-hide-transport #readScroll { padding-bottom: var(--rq-h, 52px); }
+    body.rq-wrap.read-from-contents.immersive-read.fs-hide-readbar.fs-hide-transport #readHint { bottom: calc(var(--rq-h, 52px) + 0.75rem); }
+  }
   @media (max-width: 479px) {
     #readBar:has(#readMeaningLayersSlot:not([hidden])) #readMeaningBtn { padding: 0; width: 40px; }
     #readBar:has(#readMeaningLayersSlot:not([hidden])) #readMeaningBtn .read-meaning-word { display: none; }
@@ -2880,16 +2993,43 @@
   @media (max-width: 379px) { #readMeaningLayersSlot label { padding: 0 0.3rem; font-size: 0.7rem; } }
   #readMeaningLayersSlot label:has(input:checked) { background: #1F3A6E; color: #fff; }
   #readMeaningLayersSlot input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+  /* PCF MSA J110 A (the Owner, 2 Nov 2026): on a phone (below 600px) the switches sit behind ONE "Show ▾" button in this
+     same slot, never a new bar; from 600px the wrapper is display: contents and they stand open on the bar as before. */
+  #readMeaningLayersSlot .ml-items { display: contents; }
+  #readMeaningLayersSlot .ml-menu-btn { display: none; }
+  @media (max-width: 599.98px) {
+    #readMeaningLayersSlot { position: relative; overflow: visible; }
+    #readMeaningLayersSlot .ml-menu-btn {
+      display: inline-flex; align-items: center; gap: 0.3rem; height: 40px; box-sizing: border-box; margin: 0; padding: 0 0.7rem;
+      border: 1.5px solid #1F3A6E; border-radius: 999px; background: #fff; color: #1F3A6E; font: inherit; font-size: 0.82rem;
+      font-weight: 600; white-space: nowrap; cursor: pointer;
+    }
+    #readMeaningLayersSlot.ml-open .ml-menu-btn { background: #1F3A6E; color: #fff; }
+    #readMeaningLayersSlot .ml-menu-btn:focus-visible { outline: 3px solid #B8862F; outline-offset: 2px; }
+    #readMeaningLayersSlot .ml-count { min-width: 1.2rem; height: 1.2rem; border-radius: 999px; background: #1F3A6E; color: #fff; font-size: 0.7rem; display: inline-flex; align-items: center; justify-content: center; }
+    #readMeaningLayersSlot.ml-open .ml-count { background: #fff; color: #1F3A6E; }
+    #readMeaningLayersSlot .ml-items {
+      display: none; position: absolute; top: calc(100% + 6px); left: 0; z-index: 70; flex-direction: column; gap: 0.4rem;
+      min-width: 10rem; padding: 0.5rem; box-sizing: border-box; background: #fff; border: 1px solid #e3d6b0;
+      border-radius: 0.75rem; box-shadow: 0 6px 20px rgba(19, 25, 42, 0.22);
+    }
+    #readMeaningLayersSlot.ml-open .ml-items { display: flex; }
+    #readMeaningLayersSlot .ml-items label { height: 40px; padding: 0 0.8rem; font-size: 0.85rem; }
+  }
   #readMeaningLayersSlot label:has(input:focus-visible) { outline: 3px solid #B8862F; outline-offset: 2px; }
   .meaning-page-rule { text-align: center; font-size: 0.8rem; color: #7b6a45; letter-spacing: 0.04em; border-top: 1px dashed #d9cfb6; padding-top: 0.4rem; }
   /* PCF MSA J75 ("Page number twice", "Tiny line takes space"): the first page's label sits right under ↑ Previous page,
      so it carries no dashed line above it (the lines stay where they divide one page from the next). */
-  [data-meaning-pages] > .meaning-page-rule:first-child { border-top: 0; padding-top: 0; }
+  [data-meaning-pages] > .meaning-page-rule:first-child, [data-meaning-pages] > [data-meaning-page-box]:first-child > .meaning-page-rule:first-child { border-top: 0; padding-top: 0; }
   .meaning-ayah { border: 1px solid #ece4d0; border-radius: 0.8rem; background: #fffdf7; padding: 0.6rem 0.8rem 0.8rem; scroll-margin-top: 3.4rem; }
   .meaning-ayah.out { opacity: 0.62; }
   .meaning-ayah.out:focus-within, .meaning-ayah.out:hover { opacity: 1; }
   .meaning-ayah-head { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; font-size: 0.8rem; color: #7b6a45; }
   .meaning-ayah-ref { font-weight: 700; color: #1F3A6E; }
+  /* PCF MSA J110 C (the Owner ticked C, 2 Nov 2026): the Reading View's āyah being recited wears the same gold band
+     and edge as the ONE Ayah View's (.page-flow-ayah.now-playing), so the reader sees which āyah is sounding. */
+  .meaning-ayah.now-playing { background: #fff8e1; border-color: #c8a227; box-shadow: inset 4px 0 0 #c8a227; opacity: 1; }
+  .meaning-ayah-head .ayah-quick-wrap { margin-left: auto; }
   .meaning-more { min-height: 44px; border: 1px dashed #c9b98f; border-radius: 0.6rem; background: #fdf8ea; color: #5e4418; font: inherit; font-weight: 600; cursor: pointer; }
   .meaning-more[disabled] { opacity: 0.5; cursor: default; }
   /* Owner, 2 Oct 2026 -- "☰ Surah list", the way back from a Read view opened
@@ -3427,6 +3567,18 @@
      above) is pinned over the page's foot, and the full-screen list ran under it -- at 768 and 820 the last row,
      An-Naas, was 31 of its 48px under the bar and its middle could not be tapped. The list stops above the bar. */
   @media (min-width: 768px) { body.zab-bar-on #readContentsMount { bottom: 2.75rem; } }
+  /* QR Lead audit 11 (the MSA Architect, 1 Nov 2026): on a phone the floating 🧰 corner covered the full-screen Word card's
+     last Taṣrīf cells ("×5") at the end of its scroll, and from 768px the Zab bar covered the card's bottom. The scroll now
+     ends with room under the corner (its 3rem + 0.75rem, a little more, and any lift), and from 768px the card stops above
+     the bar, as Contents does. A dock in the card's header was measured first and not used: both of its rows are full on a
+     phone, so a 🧰 there made the WbW header up to 101px taller (320px, 200%). */
+  @media (max-width: 767.98px) {
+    body:has(#zabCorner) #quranWordCardMount .word-card-content { padding-bottom: 4.25rem; }
+    /* The Read bar the corner is lifted over ([data-zab-lift]) is under the full-screen card, so the corner comes down to
+       the screen's corner while the card is open; lifted, it floated mid-card (308px up at 200% text on a 320px phone). */
+    body:has(#quranWordCardMount:not([hidden])) #zabCorner { bottom: 0.75rem; }
+  }
+  @media (min-width: 768px) and (max-width: 899.98px) { body.zab-bar-on #quranWordCardMount:not([hidden]) { bottom: 2.75rem; } }
   .rc-card { background: var(--card-bg); color: var(--card-text); display: flex; flex-direction: column; min-height: 0; flex: 1 1 auto; min-width: 0; }
   .rc-card header {
     background: #1F3A6E; color: #fff; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.6rem 0.8rem;
@@ -3740,10 +3892,12 @@
        tokens but inherited the Night card's dark --card-bg, so an occurrence row was green on navy. Its surface too. */
     --card-bg: #fff; }
   .word-card-acc .word-card-occurrence-link:hover { background: #e8f1ec; }
-  .word-card-acc > summary { list-style: none; cursor: pointer; display: grid; grid-template-columns: 32px minmax(0, 1fr) 20px; gap: 10px; align-items: center; padding: 10px 12px; font-weight: 800; min-height: 44px; }
+  .word-card-acc > summary { list-style: none; cursor: pointer; display: grid; grid-template-columns: 32px minmax(0, 1fr) 40px; gap: 10px; align-items: center; padding: 10px 12px; font-weight: 800; min-height: 44px; }
   .word-card-acc > summary::-webkit-details-marker { display: none; }
-  .word-card-acc > summary::after { content: "⌄"; color: #5b6d66; font-size: 1.1rem; text-align: center; }
-  .word-card-acc[open] > summary::after { content: "⌃"; }
+  /* PCF MSA J109 (the Owner, 1 Nov 2026): the ⌄/⌃ chevron is the shared ON/OFF switch (css/shell.css). */
+  .word-card-acc > summary::after { content: ""; box-sizing: border-box; width: 40px; height: 24px; border-radius: 12px; border: 1px solid #6b7280;
+    background: radial-gradient(circle at 11px 50%, #fff 0 7px, #6b7280 7.5px 8.5px, transparent 9px), #c9d0dc; }
+  .word-card-acc[open] > summary::after { border-color: #1f8a7e; background: radial-gradient(circle at 27px 50%, #fff 0 8px, transparent 8.5px), #1f8a7e; }
   .word-card-acc-ico { width: 32px; height: 32px; border-radius: 8px; background: #dcefe6; display: grid; place-items: center; font-family: var(--quran-font); font-weight: 700; color: #1d6b4a; }
   .word-card-acc-body { padding: 2px 14px 14px; display: grid; gap: 9px; font-size: 0.9rem; line-height: 1.5; min-width: 0; overflow-wrap: anywhere; }
   .word-card-acc .word-card-src-needs { border-color: #6b7c76; color: #3f504a; background: #fff; }
@@ -3785,13 +3939,15 @@
   .word-card-c2-no { border-style: dashed; color: #6b7c76; }
   @media (max-width: 520px) { .word-card-trio { grid-template-columns: minmax(0, 1fr); } .word-card-acc-body { padding: 2px 10px 12px; } }
   /* The conjugation title carries its Arabic name too (Architect review of #515): a fourth summary column, sitting beside the title. */
-  .word-card-acc > summary:has(.word-card-acc-ar) { grid-template-columns: 32px auto minmax(0, 1fr) 20px; }
+  .word-card-acc > summary:has(.word-card-acc-ar) { grid-template-columns: 32px auto minmax(0, 1fr) 40px; }
   .word-card-acc-ar { justify-self: start; min-width: 0; font-weight: 700; }
   .word-card-acc-ar > span[lang] { font-family: var(--quran-font); font-size: 1.05rem; }
-  @media (max-width: 520px) { .word-card-acc > summary:has(.word-card-acc-ar) { grid-template-columns: 32px minmax(0, 1fr) 20px; row-gap: 0; } .word-card-acc-ar { grid-column: 2; grid-row: 2; } .word-card-acc-dot { display: none; } .word-card-acc > summary:has(.word-card-acc-ar)::after { grid-column: 3; grid-row: 1; } }
+  @media (max-width: 520px) { .word-card-acc > summary:has(.word-card-acc-ar) { grid-template-columns: 32px minmax(0, 1fr) 40px; row-gap: 0; } .word-card-acc-ar { grid-column: 2; grid-row: 2; } .word-card-acc-dot { display: none; } .word-card-acc > summary:has(.word-card-acc-ar)::after { grid-column: 3; grid-row: 1; } }
   .word-card-conj-wrap { container-type: inline-size; min-width: 0; }
   .word-card-conj { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; direction: rtl; }
-  @container (max-width: 640px) { .word-card-conj { grid-template-columns: minmax(0, 1fr); } }
+  /* QR Lead audit 6b: 40rem, not 640px (the same at ordinary text): at 768px 200% three tables of 57px Arabic side by side
+     overflowed each other and the card, so with larger text they stack as they do on a phone. */
+  @container (max-width: 40rem) { .word-card-conj { grid-template-columns: minmax(0, 1fr); } }
   .word-card-cj { direction: ltr; border-radius: 10px; padding: 8px; display: grid; gap: 6px; align-content: start; min-width: 0; }
   .word-card-cj-past { background: #fdeceb; } .word-card-cj-pres { background: #e8f2fc; } .word-card-cj-imp { background: #ecf7e6; }
   .word-card-cj h4 { margin: 0; font-size: 0.9rem; text-align: center; color: #b3261e; }
@@ -3848,7 +4004,7 @@
   .word-card-cj-onehead { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; gap: 8px; align-items: center; }
   .word-card-cj-step { width: 44px; height: 44px; border-radius: 10px; border: 1px solid var(--wc-purple-line); background: var(--wc-purple-bg); color: var(--wc-purple-ink); font: inherit; font-weight: 800; font-size: 1.2rem; cursor: pointer; }
   .word-card-cj-groups { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; direction: rtl; align-items: start; }
-  @container (max-width: 640px) { .word-card-cj-groups { grid-template-columns: minmax(0, 1fr); } }
+  @container (max-width: 40rem) { .word-card-cj-groups { grid-template-columns: minmax(0, 1fr); } } /* audit 6b: as .word-card-conj */
   .word-card-cj-group { direction: ltr; min-width: 0; display: grid; gap: 2px; }
   .word-card-cj-gname { margin: 0; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #5b6d66; }
   .word-card-cj-one .word-card-cj-vb { font-size: 2rem; line-height: 1.6; }
@@ -3957,6 +4113,19 @@
     .quran-word-card [role="tablist"] { flex-wrap: nowrap; gap: 0.2rem; }
     .quran-word-card [role="tab"] { flex: 1 1 0; padding: 0.4rem 0.1rem; font-size: 0.74rem; white-space: normal; overflow-wrap: anywhere; text-align: center; }
   }
+  /* QR Lead, 31 Oct 2026 (Word card at large text): at 150/200% on a phone the five equal cells were narrower than their
+     names, so "Family", "Depth", "তাসরীফ" broke INSIDE the word ("Fa / mily"). A tab is never narrower than its longest
+     word now, and the row wraps only when the words cannot all fit on one line (each row still fills the card). Between
+     words a name may still break ("শব্দে / শব্দে"). From 600px the small line under a name may take two lines rather than
+     be cut ("Root where it c…" at 768px 200%). At ordinary text every name fits, so nothing moves. */
+  @media (max-width: 599px) {
+    .quran-word-card [role="tablist"] { flex-wrap: wrap; }
+    .quran-word-card [role="tab"] { min-width: min-content; overflow-wrap: normal; }
+  }
+  .word-card-tab-sub { white-space: normal; overflow-wrap: normal; }
+  /* And where the five names cannot share one line at all (a phone at 200%: the card is under 11.5rem), they take two
+     tidy rows, three and two, rather than four and a lone fifth across the whole card. */
+  @container wordcard (max-width: 11.5rem) { .quran-word-card [role="tab"] { flex-basis: 28%; } }
   @media (min-width: 600px) {
     .quran-word-card [role="tablist"] { flex-wrap: nowrap; }
     .quran-word-card [role="tab"] { flex: 1 1 0; min-height: 52px; }
@@ -3998,6 +4167,33 @@
      between words, so the case names take room from the narrower row-head column instead (measured whole with the names
      drawn 18% wider, at 320 and 360, nothing spilling). */
   @container wordcard (max-width: 26rem) { .word-card-ntable { table-layout: auto; } .word-card-ntable th { overflow-wrap: break-word; } }
+  /* QR Lead audit 6, 31 Oct 2026 (Word card, PCF User Manual 9a6dqv8): with larger text on a phone the table above needed
+     about 15rem and ran past the card (474px in 316 at 360x740 200%, 359 in 357 at 390 150%), so the whole card slid sideways
+     and its top bar was cut. Under 18rem (only ever reached with larger text: a 320px phone at ordinary text is 18.6rem) each
+     row's name takes a line of its own above its three cells, so the three cases share the card's whole width, and a case
+     name too long for its third breaks with a hyphen rather than pushing the card wider. */
+  @container wordcard (max-width: 18rem) {
+    .word-card-ntable, .word-card-ntable thead, .word-card-ntable tbody { display: block; }
+    .word-card-ntable tr { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3px; margin-bottom: 3px; }
+    .word-card-ntable thead th:first-child { display: none; }
+    .word-card-ntable tbody th { grid-column: 1 / -1; padding-top: 0.3rem; }
+    .word-card-ntable tbody th > span { display: inline; margin-inline-end: 0.4em; }
+    .word-card-ntable thead th { overflow-wrap: anywhere; hyphens: auto; }
+    .word-card-ntable .word-card-ncell-empty { font-size: 0.58rem; }
+  }
+  /* QR Lead audit 6b, 1 Nov 2026 (asked by the MSA Architect after v13.04): a Qur'an word never splits. The cells carry
+     overflow-wrap:anywhere for their English, and it broke the Arabic inside the word ("بِأَسْمَ / آئِهِمْ" even at 320px
+     ordinary text, "مَنْصُو / ب" in the heads at 200%). The Arabic now never wraps; a word too wide for its box is shrunk
+     to fit by fitTasrifArabic(), never below 0.8 of its ordinary-text size, and a word too wide even then takes the whole
+     row of the stacked grid (.word-card-ntd-wide) before it is shrunk again. */
+  .word-card-ncell-ar, .word-card-ntable-ar { white-space: nowrap; overflow-wrap: normal; }
+  .word-card-ntable td.word-card-ntd-wide { grid-column: 1 / -1; }
+  /* The same in the verb tables, where it was worse: their cells sit in .word-card-acc-body (overflow-wrap:anywhere), so in
+     three tables side by side at 768px 200% even هُمْ broke as هُ / مْ. The verb (its three coloured parts) and the pronoun
+     never wrap; the count and mood lines under the verb still wrap, between words; the lead breaks only between words. */
+  .word-card-cj-pr .word-card-ar, td.word-card-cj-vb { white-space: nowrap; overflow-wrap: normal; }
+  td.word-card-cj-vb .word-card-cj-q, td.word-card-cj-vb .word-card-cj-mood { white-space: normal; overflow-wrap: break-word; }
+  .word-card-cj-lead { overflow-wrap: normal; }
   .word-card-ncell { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.1rem; box-sizing: border-box; width: 100%; min-height: 44px; margin: 0; padding: 0.25rem 0.15rem; font: inherit; font-size: 0.8rem; text-align: center; border: 1px solid var(--wc-purple-line); border-radius: 0.4rem; background: transparent; color: inherit; overflow-wrap: anywhere; min-width: 0; }
   button.word-card-ncell { cursor: pointer; }
   .word-card-ncell-ar { font-family: var(--quran-font); font-size: 0.95rem; line-height: 1.3; }
@@ -4586,7 +4782,9 @@
   .ayah-sheet-ref { font-size: 0.9rem; color: var(--card-heading); font-weight: 600; }
   .ayah-sheet-close { background: none; border: none; color: var(--card-text-muted); font-size: 1.5rem; line-height: 1; min-width: 40px; min-height: 40px; padding: 0.2rem 0.5rem; cursor: pointer; }
   /* PCF MSA J72: the card's ← Back, first in its header (the same as × : back to where the card was opened) */
-  .ayah-sheet-homeback { order: -1; flex: 0 0 auto; width: 40px; height: 40px; border: 1px solid #c9a24b; border-radius: 0.6rem; background: transparent; color: var(--card-heading); font-size: 1.2rem; line-height: 1; cursor: pointer; }
+  /* QR Lead audit 9: a fixed 40x40 box let its arrow (1.2rem) slip out at its bottom-right at 150-200%, leaving an empty oval.
+     The box now grows with its arrow from 40px (the same 40x40 at ordinary text), the arrow in its middle. */
+  .ayah-sheet-homeback { order: -1; flex: 0 0 auto; min-width: 40px; min-height: 40px; padding: 0.15rem 0.35rem; display: inline-flex; align-items: center; justify-content: center; border: 1px solid #c9a24b; border-radius: 0.6rem; background: transparent; color: var(--card-heading); font-size: 1.2rem; line-height: 1; cursor: pointer; }
   /* Owner, 7 Oct 2026 (a photo of the Āyah card, two boxes drawn after the reference): ‹ › step the card
      to the previous / next āyah, then 📖 Note view. One tidy cluster beside the reference, 40px targets. */
   .ayah-sheet-header { gap: 0.4rem; }
@@ -4607,6 +4805,23 @@
     .ayah-sheet-header .ayah-sheet-head-tools { order: 3; flex: 1 0 100%; justify-content: flex-end; }
   }
   .ayah-sheet-head-tools { display: flex; align-items: center; gap: 0.4rem; flex: 0 0 auto; }
+  /* QR Lead audit 10 (1 Nov 2026): on a 320px phone the pinned header took three lines at ordinary text (150px) and four
+     at 200% (281px of a 640px screen): ← alone, the reference, – ×, then ‹ › Full text. fitAyahSheetHeader() sets
+     .ayah-head-stack only while the header would take three lines or more: then every button shares line one
+     (← ‹ ›  … – ×), the reference has line two to itself, and Full text joins it when it fits or takes line three. Where
+     the header takes one or two lines (390px and wider at ordinary text) nothing changes. */
+  .ayah-sheet .ayah-sheet-header.ayah-head-stack { flex-wrap: wrap; column-gap: 0.25rem; row-gap: 0.3rem; }
+  .ayah-sheet-header.ayah-head-stack::after { content: ""; order: 5; flex: 0 0 100%; height: 0; }
+  .ayah-sheet-header.ayah-head-stack .ayah-sheet-head-tools:not([hidden]) { display: contents; }
+  .ayah-sheet-header.ayah-head-stack .ayah-sheet-homeback { order: 1; }
+  .ayah-sheet-header.ayah-head-stack .ayah-sheet-nav-pair { order: 2; }
+  .ayah-sheet-header.ayah-head-stack .mm-min-btn { order: 3; margin-inline-start: auto; }
+  .ayah-sheet-header.ayah-head-stack .ayah-sheet-close { order: 4; margin-inline-start: auto; }
+  .ayah-sheet-header.ayah-head-stack .mm-min-btn + .ayah-sheet-close { margin-inline-start: 0; }
+  /* line one has to hold four buttons at 200% on a 320px phone: – and × keep their 40px boxes and their glyphs stop at 32px */
+  .ayah-sheet-header.ayah-head-stack .mm-min-btn, .ayah-sheet-header.ayah-head-stack .ayah-sheet-close { font-size: min(1.5rem, 32px); padding: 0; min-width: 40px; }
+  .ayah-sheet-header.ayah-head-stack .ayah-sheet-ref { order: 6; flex: 1 1 auto; min-width: 0; }
+  .ayah-sheet-header.ayah-head-stack .ayah-sheet-noteview { order: 7; margin-inline-start: auto; }
   .ayah-sheet-nav-pair { display: inline-flex; border: 1px solid var(--card-line); border-radius: 0.6rem; overflow: hidden; }
   .ayah-sheet-nav { width: 40px; height: 40px; padding: 0; margin: 0; border: 0; border-radius: 0; background: var(--card-bg-inset); color: var(--card-heading); font-size: 1.45rem; line-height: 1; cursor: pointer; }
   .ayah-sheet-nav + .ayah-sheet-nav { border-left: 1px solid var(--card-line); }
@@ -4624,6 +4839,12 @@
   .ayah-sheet-actrow + .ayah-sheet-hint, .ayah-sheet-actrow ~ .ayah-sheet-hint { margin: 0.3rem 0.2rem 0; }
   /* "Back to Āyah card" -- stays until used or dismissed, above the bottom bar. */
   .ayah-card-back-pill { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(5.2rem + env(safe-area-inset-bottom, 0px)); z-index: 955; display: flex; align-items: center; gap: 0.2rem; padding: 0.2rem; border-radius: 999px; background: #1b2a41; border: 1px solid #c9a24b; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35); max-width: calc(100vw - 32px); }
+  /* QR Lead (audit part 155 defect 1, MSA #1421, 2 Nov 2026): arriving in the Read view from a Hadith or Dua link opens the
+     Notes pane (#readNotePane, z-index 960, read-note-pane.js) over the floating way back (955), so "← Back to the hadith"
+     could not be tapped until the pane's own way back was. While the pane is open and the way back floats, it sits above the
+     pane. Architect, v13.22: a way back to another page now outlives the Āyah card (#ayahActionSheetOverlay, also 960), so
+     while that card is open the way back stays at 955, under it. */
+  body:has(#readNotePane:not([hidden])):not(:has(#ayahActionSheetOverlay.open)) #ayahCardBackPill:not(.back-docked) { z-index: 961; }
   .ayah-card-back-pill[hidden] { display: none; }
   /* Docked beside ✓ on the Read bar (js/back-dock.js): part of the row, not floating. */
   /* Issue #750: a long way-back ("← Back to About QuranRevival", 292px) used to make the slot wider than the room left
@@ -5166,6 +5387,12 @@
      text line tall, as in the printed 15-line Mushaf: 6.07cqw x 2.05 line-height + 0.3em padding = 14.26cqw.
      The banner (still 30cqw wide, edge to edge, 28 Sep) and the Bismillah are centred in theirs. */
   .hifz-surah-header.glyph-loaded { height: 14.26cqw; padding: 0; line-height: 1; align-items: center; overflow: visible; }
+  /* The Owner, 2 Nov 2026 (a screenshot: "Clicking on the 'Tajweed Color' pops up this page sometimes"): the banner's glyph is
+     drawn at 30cqw in a 14.26cqw button with overflow visible, so the button's invisible line box reached ~8cqw above it and
+     took the taps meant for the page's "Tajweed colours" switch, opening the Whole Surah card. Measured: every point just
+     above the banner (pages 1 and 2) was the banner; clipping to the box changes no pixel of the drawing (1283 and 390px).
+     4px of room keep the focus ring visible. */
+  .hifz-surah-header.glyph-loaded { clip-path: inset(-4px); }
   .hifz-basmallah { height: 14.26cqw; padding: 0; line-height: 1; align-items: center; font-size: 5.6cqw; }
   .hifz-line-error { font-size: 13px; color: #a33; text-align: center; }
   .page-flow-ayah { border-bottom: 1px solid #eee; padding-bottom: 0.6rem; margin-bottom: 0.6rem; }
@@ -7619,9 +7846,9 @@
     import { safeHref } from "./js/html-escape.js";
     import { adoptAppLangFromUserIndex, mountSyncedAppLangControl } from "./js/lang-sync.js";
     import { showBootSplash, showQuranSplash } from "./js/splash.js";
-    import { APP_VERSION } from "./js/version.js";
+    import { APP_VERSION_LABEL } from "./js/version.js";
 
-    document.getElementById("appVersion").textContent = `v${APP_VERSION}`;
+    document.getElementById("appVersion").textContent = APP_VERSION_LABEL; // J108: "v13.01-31.10.26"
 
     // Shell round 4 (12 Aug 2026) -- index.html used to fire the boot splash
     // (Ta'awwudh/Basmala) on first load, independent of sign-in, then
@@ -8488,6 +8715,178 @@
     }
     addEventListener("resize", () => { document.querySelector("#wheelSection .mastery-wheel")?.style.removeProperty("--landing-wheel-max"); fitLandingFirstScreen(); });
     if (typeof ResizeObserver === "function") watchLandingFit(); // audit part 131: large text above 720px
+    /** QR Lead audit, 31 Oct 2026: see body.read-tall in the CSS. Measured, never guessed: the header, the read bar and
+        the dock all change height with the text size, the language and the width. */
+    /** QR Lead audit 5: see body.qr-ref-own-line / body.rq-wrap in the CSS. Both are cleared before measuring, so each
+        run measures the bar as it would be without them. */
+    function fitReadBareBar() {
+      const body = document.body, ref = document.getElementById("mushafPageRef"), row = document.getElementById("readQuickRow");
+      body.classList.remove("qr-ref-own-line", "rq-wrap");
+      if (!["immersive-read", "fs-hide-readbar", "fs-hide-transport"].every((c) => body.classList.contains(c))) return;
+      const text = ref && !ref.hidden ? ref.querySelector(".mushaf-page-ref-text") : null;
+      if (text && text.getClientRects().length && text.scrollWidth > text.clientWidth + 1
+        && text.clientWidth < 3.5 * (parseFloat(getComputedStyle(text).fontSize) || 12)) body.classList.add("qr-ref-own-line");
+      const cut = row && row.getClientRects().length && [...row.querySelectorAll(".rq-btn")].some((b) => b.getClientRects().length && b.scrollWidth > b.clientWidth + 1);
+      if (cut && getComputedStyle(row).position === "fixed") {
+        body.classList.add("rq-wrap");
+        body.style.setProperty("--rq-h", row.offsetHeight + "px");
+      }
+    }
+    // The Zab bar's height while it is on screen (fixed at the bottom from 768px; below that it is a corner button).
+    function zabBarH() { const z = document.getElementById("zabBar"); return z && z.getClientRects().length && getComputedStyle(z).position === "fixed" ? z.offsetHeight : 0; }
+    function checkReadFit() {
+      const body = document.body, rv = document.getElementById("readView"), rs = document.getElementById("readScroll");
+      const bar = document.getElementById("readBar"), dockEl = document.getElementById("dock");
+      const reading = rv && !rv.hidden && rs && rs.getClientRects().length > 0;
+      // Full screen too: it hides the tabs but not the read bar, which at 200% on a phone turned sideways left the text 0px.
+      if (!reading || !dockEl || body.classList.contains("read-windowed")) {
+        body.classList.remove("read-tall"); return;
+      }
+      body.classList.remove("read-tall");
+      fitReadBareBar();
+      const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+      // Only while the tabs are on screen: a hidden dock measures top 0, which every bar would be "under".
+      const dockShown = dockEl.getClientRects().length > 0 && dockEl.getBoundingClientRect().height > 0;
+      const barUnder = dockShown && !!bar && bar.getClientRects().length > 0 && bar.getBoundingClientRect().bottom > dockEl.getBoundingClientRect().top + 1;
+      const spill = rs.clientHeight < 12 * rem || barUnder;
+      if (spill) {
+        // The page of text never reaches under the tabs (the Read view pages sideways, so a hidden line could not be scrolled to).
+        body.style.setProperty("--read-tall-h", Math.max(Math.round(4 * rem), innerHeight - (dockShown ? dockEl.offsetHeight : 0) - zabBarH() - 8) + "px");
+        body.classList.add("read-tall");
+      }
+    }
+    function watchReadFit() {
+      let queued = false;
+      const later = () => { if (queued) return; queued = true; requestAnimationFrame(() => { queued = false; checkReadFit(); }); };
+      const ro = new ResizeObserver(later);
+      for (const id of ["dock", "readBar", "readView"]) { const e = document.getElementById(id); if (e) ro.observe(e); }
+      window.addEventListener("resize", later);
+      // Only the classes that change the answer re-wake it; its own read-tall changes must not.
+      const sig = () => ["immersive-read", "read-windowed", "read-sideways", "landing-view", "fs-hide-readbar", "fs-hide-transport"].map((c) => +document.body.classList.contains(c)).join("");
+      let was = sig();
+      new MutationObserver(() => { const now = sig(); if (now !== was) { was = now; later(); } }).observe(document.body, { attributes: true, attributeFilter: ["class"] });
+      new MutationObserver(later).observe(document.getElementById("readView"), { attributes: true, attributeFilter: ["hidden"] });
+      // The page reference is filled in after the bar is laid out, and its words decide fitReadBareBar().
+      const refEl = document.getElementById("mushafPageRef");
+      if (refEl) new MutationObserver(later).observe(refEl, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ["hidden"] });
+      new MutationObserver(later).observe(document.documentElement, { attributes: true, attributeFilter: ["style", "class"] });
+      later();
+    }
+    if (typeof ResizeObserver === "function" && document.getElementById("readView")) watchReadFit();
+    /** QR Lead audit 6b: see .word-card-ncell-ar in the CSS. Measured, never guessed: each run first clears its own sizes,
+        so it measures every word at the size the card gives it. A word is shrunk only when it is wider than the inside of
+        its box, never below 0.8 of the size it would have at ordinary text (its size x 16 / the root size). */
+    function fitTasrifArabic() {
+      const mount = document.getElementById("quranWordCardMount");
+      if (!mount || mount.hidden) return;
+      const words = [...mount.querySelectorAll(".word-card-ncell-ar, .word-card-ntable-ar")];
+      const verbTables = [...mount.querySelectorAll(".word-card-cj table")];
+      if (!words.length && !verbTables.length) return;
+      for (const w of [...words, ...mount.querySelectorAll("td.word-card-cj-vb, .word-card-cj-pr .word-card-ar")]) w.style.removeProperty("font-size");
+      mount.querySelectorAll(".word-card-ntd-wide").forEach((td) => td.classList.remove("word-card-ntd-wide"));
+      const rootPx = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+      const room = (w) => {
+        const box = w.closest("button, th, td") || w.parentElement, cs = getComputedStyle(box);
+        return box.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0);
+      };
+      const need = (w) => { const r = document.createRange(); r.selectNodeContents(w); return r.getBoundingClientRect().width; };
+      const shrink = (w, base) => {
+        const has = room(w), wants = need(w);
+        if (!(wants > has + 0.5) || has <= 0) return true;
+        const floor = 0.8 * base * 16 / rootPx;
+        const size = Math.max(floor, Math.floor(base * has / wants * 0.97 * 10) / 10);
+        w.style.fontSize = size + "px";
+        return need(w) <= room(w) + 0.5;
+      };
+      for (const w of words) {
+        const base = parseFloat(getComputedStyle(w).fontSize) || 16;
+        if (shrink(w, base)) continue;
+        // Too wide even at the floor: in the stacked grid its cell takes the whole row, and it is fitted again there.
+        const td = w.closest("td"), tr = td && td.parentElement;
+        if (td && tr && getComputedStyle(tr).display === "grid") {
+          w.style.removeProperty("font-size");
+          td.classList.add("word-card-ntd-wide");
+          shrink(w, base);
+        }
+      }
+      // A verb table sizes its columns to its words, so a word that does not fit widens the table instead: measure the
+      // table against its box and shrink its Arabic (the verb and the pronoun) together, each never below its floor.
+      for (const t of verbTables) {
+        const box = t.parentElement, ar = [...t.querySelectorAll("td.word-card-cj-vb, .word-card-cj-pr .word-card-ar")];
+        if (!box || !ar.length) continue;
+        const base = new Map(ar.map((e) => [e, parseFloat(getComputedStyle(e).fontSize) || 16]));
+        let scale = 1;
+        for (let i = 0; i < 6 && t.getBoundingClientRect().width > box.clientWidth + 0.5; i++) {
+          scale *= Math.max(0.5, box.clientWidth / t.getBoundingClientRect().width) * 0.98;
+          for (const e of ar) { const b = base.get(e); e.style.fontSize = Math.max(0.8 * b * 16 / rootPx, b * scale) + "px"; }
+        }
+      }
+    }
+    function watchTasrifFit() {
+      const mount = document.getElementById("quranWordCardMount");
+      let queued = false, width = -1;
+      const later = () => { if (queued) return; queued = true; requestAnimationFrame(() => { queued = false; fitTasrifArabic(); }); };
+      // Its own size changes are style/class attributes, never childList, so they do not wake it again.
+      new MutationObserver(later).observe(mount, { childList: true, subtree: true, attributes: true, attributeFilter: ["hidden"] });
+      // Only a change of WIDTH re-measures; the card growing taller because a word took a whole row must not.
+      new ResizeObserver(() => { const now = mount.clientWidth; if (now !== width) { width = now; later(); } }).observe(mount);
+      new MutationObserver(later).observe(document.documentElement, { attributes: true, attributeFilter: ["style", "class"] });
+      if (document.fonts?.ready) document.fonts.ready.then(later);
+    }
+    if (typeof ResizeObserver === "function" && document.getElementById("quranWordCardMount")) watchTasrifFit();
+    /** QR Lead audit 8: see body.explore-tall in the CSS. The class is cleared before measuring, so each run measures
+        Explore as it would be without it. */
+    function checkExploreFit() {
+      const body = document.body, ev = document.getElementById("exploreView"), es = document.getElementById("exploreScroll"), dockEl = document.getElementById("dock");
+      body.classList.remove("explore-tall");
+      const nav = document.getElementById("exploreNavBar");
+      if (nav) {
+        nav.classList.remove("aa-nav-wrap");
+        if (!nav.hidden && [...nav.querySelectorAll(".aa-pn button")].some((b) => b.getClientRects().length && b.scrollWidth > b.clientWidth + 1)) nav.classList.add("aa-nav-wrap");
+      }
+      const seg = document.getElementById("exploreModeRow");
+      if (seg) {
+        seg.classList.remove("aa-seg-stack");
+        if (!seg.hidden && [...seg.querySelectorAll("button")].some((b) => b.getClientRects().length && b.scrollWidth > b.clientWidth + 1)) seg.classList.add("aa-seg-stack");
+      }
+      for (const rows of document.querySelectorAll("#exploreView .aa-rows")) {
+        rows.classList.remove("aa-rows-stack");
+        if (!rows.getClientRects().length) continue;
+        rows.classList.add("aa-rows-probe");
+        const broken = [...rows.querySelectorAll(".aa-nm")].some((n) => n.scrollWidth > n.clientWidth + 1);
+        rows.classList.remove("aa-rows-probe");
+        if (broken) rows.classList.add("aa-rows-stack");
+      }
+      if (!ev || ev.hidden || !es || !dockEl || getComputedStyle(ev).position === "fixed") return;
+      const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+      const dockShown = dockEl.getClientRects().length > 0 && dockEl.getBoundingClientRect().height > 0;
+      if (es.clientHeight >= 12 * rem) return;
+      body.style.setProperty("--explore-tall-h", Math.max(Math.round(4 * rem), innerHeight - (dockShown ? dockEl.offsetHeight : 0) - zabBarH() - 8) + "px");
+      body.classList.add("explore-tall");
+    }
+    function watchExploreFit() {
+      let queued = false;
+      const later = () => { if (queued) return; queued = true; requestAnimationFrame(() => { queued = false; checkExploreFit(); }); };
+      const ro = new ResizeObserver(later);
+      for (const id of ["dock", "exploreBar", "exploreView"]) { const e = document.getElementById(id); if (e) ro.observe(e); }
+      window.addEventListener("resize", later);
+      // Only the classes that change the answer re-wake it; its own explore-tall changes must not.
+      const sig = () => ["explore-immersive", "landing-view"].map((c) => +document.body.classList.contains(c)).join("");
+      let was = sig();
+      new MutationObserver(() => { const now = sig(); if (now !== was) { was = now; later(); } }).observe(document.body, { attributes: true, attributeFilter: ["class"] });
+      new MutationObserver(later).observe(document.getElementById("exploreView"), { attributes: true, attributeFilter: ["hidden"] });
+      // The steps are written in when a sūrah or āyah opens, and their words decide .aa-nav-wrap.
+      const navEl = document.getElementById("exploreNavBar");
+      if (navEl) new MutationObserver(later).observe(navEl, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ["hidden"] });
+      // The Approach rows are written in when a sūrah opens or the Approach changes, and their words decide .aa-rows-stack.
+      const sideEl = document.getElementById("exploreSidebarContainer");
+      if (sideEl) new MutationObserver(later).observe(sideEl, { childList: true });
+      const segEl = document.getElementById("exploreModeRow");
+      if (segEl) new MutationObserver(later).observe(segEl, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ["hidden"] });
+      new MutationObserver(later).observe(document.documentElement, { attributes: true, attributeFilter: ["style", "class"] });
+      later();
+    }
+    if (typeof ResizeObserver === "function" && document.getElementById("exploreView")) watchExploreFit();
     // Follow-up round: Map(subjectId -> courseOffer contextId) for
     // selectedPersonId -- same mechanism topic-study.js/routine-study.js
     // already use (course-offers.js's programSubjectMapFromEnrollments()).
@@ -11523,7 +11922,7 @@
     function fitPanelHead(panel) {
       const head = panel.querySelector(".qr-panel-head"), save = head?.querySelector(".preset-save-btn");
       if (!save || panel.hidden) return;
-      head.classList.remove("qr-panel-head-stacked");
+      head.classList.remove("qr-panel-head-stacked", "qr-panel-head-tight");
       if (save.scrollWidth > save.clientWidth + 1) head.classList.add("qr-panel-head-stacked");
     }
     function fitPanelRoom() {
@@ -11538,6 +11937,12 @@
         const cs = getComputedStyle(panel);
         const box = ["paddingTop", "paddingBottom", "borderTopWidth", "borderBottomWidth"].reduce((n, k) => n + (parseFloat(cs[k]) || 0), 0);
         panel.style.setProperty("--qr-panel-room", Math.max(96, top - 6 - Math.ceil(box)) + "px");
+        const head = panel.querySelector(".qr-panel-head");
+        if (!head || panel.hidden) return;
+        // fitPanelHead() above has just cleared "tight" and measured afresh, so a tight head here is decided anew each time.
+        if (head.classList.contains("qr-panel-head-stacked") && panel.clientHeight - head.offsetHeight < 6 * parseFloat(getComputedStyle(document.documentElement).fontSize)) {
+          head.classList.replace("qr-panel-head-stacked", "qr-panel-head-tight");
+        }
       });
     }
     addEventListener("resize", fitPanelRoom);
@@ -11669,7 +12074,7 @@
         // The Owner, 5 Oct 2026: 📖 Last read. In the scrolling flow view the
         // row the reader has scrolled to is noted by updateFlowInView(); this
         // covers the one-ayah view, and must not overwrite that row.
-        if (stageView === "read" && !isPlaying() && !pageViewContainer.querySelector(".page-flow-ayah.in-view")) noteLastPlace("read");
+        if (stageView === "read" && !isPlaying() && !pageViewContainer.querySelector(".page-flow-ayah.in-view, [data-meaning-flow]")) noteLastPlace("read");
         setQuranLastSession({
           stageView,
           settings: captureQuranBookmarkSettings(),
@@ -11967,10 +12372,10 @@
       closeAllPanels();
       await openNotesPaneForKey(currentUnitInfo().unitKey);
     }
-    tabNoteBtn.addEventListener("click", () => {
-      if (stageView === "read" && readNotePaneMod?.isReadNotePaneOpen()) { readNotePaneMod.closeReadNotePane(); return; } // the old close idiom
-      openNoteForCurrentAyah();
-    });
+    // J108 (v13.01, the Owner: "Q2:A. Q3. Build it."): Study ▸ Notes opens a NEW blank Note at once, in the shared Note
+    // opener (js/note-opener.js) -- the reader stays exactly where they were underneath. The Notes pane route above
+    // (openNoteForCurrentAyah) is kept, unhooked from this button (I4); the Read bar's 📝 still opens the āyah's Notes.
+    tabNoteBtn.addEventListener("click", () => { openNewNoteHere({ backLabel: t("Back"), focusBack: tabNoteBtn }); });
 
     // Enhancement round -- Approach as its own dock tab: the same Mastery
     // Wheel + full Approaches list that has always been #stage's own default
@@ -11988,7 +12393,8 @@
     });
     // Issue #419 -- the Read contents list's three quick buttons, same routes.
     // Decision 95: the Read bar's quick "Notes" opens the Notes pane (it opened the Note view).
-    document.getElementById("readQuickNoteBtn").addEventListener("click", () => openReadNotesPane());
+    // J108: the same route as Study ▸ Notes -- a new blank Note (the Read bar's 📝 still opens this āyah's Notes).
+    document.getElementById("readQuickNoteBtn").addEventListener("click", () => openNewNoteHere({ backLabel: t("Back"), focusBack: document.getElementById("readQuickNoteBtn") }));
     document.getElementById("readQuickTrackBtn").addEventListener("click", openChosenUnitCard);
     document.getElementById("readQuickApproachBtn").addEventListener("click", openApproachWheel);
     // QR Lead (the Owner, 24 Oct 2026): "Study ▾" opens the three on a tablet; choosing one, tapping elsewhere or Esc closes it.
@@ -16619,7 +17025,7 @@
         other, that lives in a Dual Names collection. That is what makes
         "attach the Ayah as ref to that new name" work for a dual name at
         all: a collection has no `ref` field and never has, a Name does. */
-    function asmaXFileIntoRowHtml(preselect) {
+    function asmaXFileIntoRowHtml(preselect, { hideKind = null } = {}) {
       // The Owner, 6 Oct 2026: "'File under' should have option to file a single/ dual name under which Group, by
       // Act, by Essence." One row PER ACTIVE CLASSIFICATION (Group, Dual Names, and whatever the Owner has added,
       // e.g. By Act and By Essence), each "Not filed" unless chosen, so one new Name -- single or dual -- can be
@@ -16637,11 +17043,15 @@
           .concat(lists.map((col) => `<option value="${escapeHtml(col.id)}"${col.id === pick ? " selected" : ""}>${escapeHtml(langText(col.title, getAppLang()))}</option>`))
           .concat([`<option value="__new__"${pick === "__new__" ? " selected" : ""}>${escapeHtml(t("+ New list…"))}</option>`])
           .join("");
+        // The Owner, 2 Nov 2026: a NEW DUAL name is not asked to be filed under "Dual" -- it already is one. The row stays in
+        // the DOM, hidden, holding its preselection (the first Dual list, or a new one named after the Name), so the
+        // Name still lands in a Dual Names list and is findable as a Dual Name.
+        const hide = hideKind === c.key ? " asmaX-file-hidden" : "";
         return `
-          <label class="asmaX-file-row">${escapeHtml(langText(c.title, getAppLang()))}
+          <label class="asmaX-file-row${hide}">${escapeHtml(langText(c.title, getAppLang()))}
             <select data-asma-file-kind="${escapeHtml(c.key)}">${opts}</select>
           </label>
-          <label class="asmaX-file-newtitle" data-asma-file-new-for="${escapeHtml(c.key)}"${pick === "__new__" ? "" : " hidden"}>${escapeHtml(t("New list title"))}<input type="text" data-asma-file-new-title="${escapeHtml(c.key)}"></label>`;
+          <label class="asmaX-file-newtitle${hide}" data-asma-file-new-for="${escapeHtml(c.key)}"${pick === "__new__" && !hide ? "" : " hidden"}>${escapeHtml(t("New list title"))}<input type="text" data-asma-file-new-title="${escapeHtml(c.key)}"></label>`;
       }).join("");
       return `
         <fieldset class="asmaX-file-under" id="asmaXEditFileUnder">
@@ -16693,7 +17103,7 @@
           <label>${escapeHtml(t("Reference"))}<textarea id="asmaXEditRef">${escapeHtml(refValue)}</textarea></label>
           <label class="asmaX-edit-check"><input type="checkbox" id="asmaXEditWeak" ${entry?.weak ? "checked" : ""}> ${escapeHtml(t("weak"))}</label>
           <label class="asmaX-edit-check"><input type="checkbox" id="asmaXEditIsPhrase" ${entry?.isPhrase ? "checked" : ""}> ${escapeHtml(t("phrase"))}</label>
-          ${mode === "create" ? asmaXFileIntoRowHtml(asmaXFilePreselect(fileInto)) : ""}`;
+          ${mode === "create" ? asmaXFileIntoRowHtml(asmaXFilePreselect(fileInto), { hideKind: fileInto?.kind === "dual" ? "dual" : null }) : ""}`;
         // "+ New list…" in a row reveals that row's own title field -- one form, one Save, one write.
         asmaXEditBodyEl.querySelectorAll("select[data-asma-file-kind]").forEach((sel) => {
           sel.addEventListener("change", () => {
@@ -20650,6 +21060,24 @@
       // ran off the LEFT of a 320px screen. Its left edge is held at 8px at the most.
       const rightMax = Math.max(8, Math.round(window.innerWidth - readToolsMenu.offsetWidth - 8));
       readToolsMenu.style.right = `${Math.min(rightMax, Math.max(8, Math.round(window.innerWidth - r.right)))}px`; /* audit11 toolsplace */
+      // QR Lead audit 3: with large text the Read page scrolls (body.read-tall), and this panel is fixed, so a panel taller
+      // than the room under ⋯ ran off the screen for good (360x740 200%: 707px tall from 602px; a phone turned sideways at
+      // 200%: opened below the screen). It opens on the side of ⋯ with more room, above the tabs and the Zab bar, and
+      // scrolls inside itself when that side is still short. Where it fitted, it is where it was.
+      const s = readToolsMenu.style;
+      s.bottom = s.maxHeight = s.overflowY = "";
+      let floor = window.innerHeight - 8;
+      for (const id of ["dock", "zabBar"]) {
+        const el = document.getElementById(id);
+        if (!el || !el.getClientRects().length) continue;
+        const d = el.getBoundingClientRect();
+        if (d.top > r.bottom && d.top < floor + 4) floor = d.top - 4;
+      }
+      const need = readToolsMenu.offsetHeight, below = floor - (r.bottom + 6), above = r.top - 6 - 8;
+      if (need <= below) return;
+      s.overflowY = "auto";
+      if (below >= above) s.maxHeight = `${Math.max(0, Math.round(below))}px`;
+      else { s.top = "auto"; s.bottom = `${Math.round(window.innerHeight - r.top + 6)}px`; if (need > above) s.maxHeight = `${Math.round(above)}px`; }
     }
     function closeReadTools({ focus = false } = {}) {
       if (!readToolsMenu?.classList.contains("open")) return;
@@ -20683,6 +21111,44 @@
     });
     document.addEventListener("keydown", (e) => { if (e.key === "Escape" && readToolsMenu?.classList.contains("open")) closeReadTools({ focus: true }); });
     window.addEventListener("resize", placeReadTools);
+    // QR Lead audit 3 (Text size, PCF User Manual o5a3205): A±'s sliders hang 13.5rem wide under their button, and the ⋯ panel
+    // is position: fixed, so what falls past the screen can never be scrolled to. Measured on v12.138: at 200% text on a
+    // 360px phone the sliders were 472px wide and began 121px BELOW the screen; on a phone turned sideways none of the six
+    // controls was on screen even at ordinary text; on a computer at 200% Reset lay under the tabs. Now the sliders are held
+    // on screen, above the tabs and the Zab bar, on the side of A± with more room (never over A±, so a second tap still
+    // closes them), and scroll inside themselves when even that side is short. Where they already fitted, nothing moves.
+    function fitReadTextSize() {
+      const pop = readTextSizeSlot?.querySelector(".text-size-popover");
+      if (!pop) return;
+      const s = pop.style;
+      s.position = s.left = s.right = s.top = s.bottom = s.width = s.maxHeight = s.overflowY = s.boxSizing = "";
+      if (!pop.classList.contains("open")) return;
+      const btn = readTextSizeSlot.querySelector("[data-text-size-toggle]").getBoundingClientRect(), p = pop.getBoundingClientRect();
+      let floor = window.innerHeight - 8;
+      for (const id of ["dock", "zabBar"]) {
+        const el = document.getElementById(id);
+        if (!el || !el.getClientRects().length) continue;
+        const r = el.getBoundingClientRect();
+        if (r.top > btn.bottom && r.top < floor + 4) floor = r.top - 4;
+      }
+      // QR Lead, 31 Oct 2026: and a CEILING under the top nav when it is on screen above A±. On a computer at 200% the
+      // sliders opened upwards to 8px from the top, and the nav (z-index 61, above the panel) covered the first of them.
+      let ceil = 8;
+      const nav = document.getElementById("topNav");
+      if (nav && nav.getClientRects().length) { const r = nav.getBoundingClientRect(); if (r.bottom > ceil && r.bottom < btn.top) ceil = r.bottom + 4; }
+      // Inside a panel that scrolls, a hanging popover would be cut by the panel, so it is always held on screen there.
+      if (!readToolsMenu.style.overflowY && p.left >= 8 && p.right <= window.innerWidth - 8 && p.top >= ceil && p.bottom <= floor) return;
+      const width = Math.min(p.width, window.innerWidth - 16), below = floor - (btn.bottom + 4), above = btn.top - 4 - ceil;
+      s.position = "fixed"; s.boxSizing = "border-box"; s.right = "auto"; s.overflowY = "auto"; s.width = `${Math.round(width)}px`;
+      s.left = `${Math.round(Math.min(Math.max(8, p.left), window.innerWidth - 8 - width))}px`;
+      if (below >= p.height || below >= above) { s.top = `${Math.round(btn.bottom + 4)}px`; s.bottom = "auto"; s.maxHeight = `${Math.max(0, Math.round(below))}px`; }
+      else { s.top = "auto"; s.bottom = `${Math.round(window.innerHeight - btn.top + 4)}px`; s.maxHeight = `${Math.round(above)}px`; }
+    }
+    readTextSizeSlot?.addEventListener("click", () => requestAnimationFrame(fitReadTextSize));
+    window.addEventListener("resize", () => requestAnimationFrame(fitReadTextSize));
+    // The panel and the sliders are fixed while the page under them scrolls (read-tall), so they follow ⋯ and A±.
+    window.addEventListener("scroll", () => { placeReadTools(); fitReadTextSize(); }, { passive: true });
+    readToolsMenu?.addEventListener("scroll", () => fitReadTextSize(), { passive: true });
     // PCF MSA J99: below 600px Take an Approach | Record Your Progress | Know Your Status live in the ⋯ card (see its CSS);
     // from 600px they go back to their own place on the bar, before the unit chip. Same buttons, ids and handlers, so each
     // opens exactly what it did (and the card closes behind it, as for every tool).
@@ -20747,16 +21213,28 @@
       readMeaningBtn.setAttribute("aria-pressed", String(readMeaningOn));
       // The button names where it takes you NEXT (its icon too); on a phone it is the icon alone, the words its tip.
       const view = readViewNow();
-      const [icon, word, tip] = view === "plain" ? ["📖", t("Meaning"), t("Show the meaning: translations and word by word")]
+      // PCF MSA J110 B (the Owner ticked B, 2 Nov 2026): the two views are called "Reading View" and "ONE Ayah View".
+      const [icon, word, tip] = view === "plain" ? ["📖", t("Reading View"), t("Reading View: translations and word by word")]
         : view === "meaning" ? ["📜", t("Mushaf"), t("Mushaf view")]
-        : ["↩", currentUnitType === "ayah" ? t("Āyah") : t("Reading"), t("Back to the reading")];
+        : ["↩", t("ONE Ayah View"), t("ONE Ayah View: one āyah to study")];
       readMeaningBtn.querySelector('[aria-hidden="true"]').textContent = icon;
-      readMeaningBtn.querySelector(".read-meaning-word").textContent = word;
+      // J110 B: the name's last word on a line of its own (see the .rmw-line CSS); the text read out stays the whole name.
+      const parts = word.split(" "), tail = parts.length > 1 ? parts.pop() : null;
+      readMeaningBtn.querySelector(".read-meaning-word").innerHTML = tail
+        ? `<span class="rmw-line">${escapeHtml(parts.join(" "))}</span> <span class="rmw-line">${escapeHtml(tail)}</span>` : escapeHtml(word);
       readMeaningBtn.dataset.readNext = view === "plain" ? "meaning" : view === "meaning" ? "mushaf" : "plain";
       readMeaningBtn.setAttribute("aria-label", tip);
       readMeaningBtn.title = tip;
       const mushafBtn = document.getElementById("readMushafBtn");
       if (mushafBtn) mushafBtn.hidden = true; // J99: 📖 is the one switch now (its own handler is kept for the Options tick's sake below)
+    }
+
+    /** PCF MSA J110 C: the same ⋮ the ONE Ayah View carries on every āyah (Copy, Share, Play this āyah, Bookmark,
+        Note & more…, QCR), without its Word by Word / Root / Derivatives rows: the Reading View has its own switches. */
+    function meaningQuickMenuHtml(surahNum, ayahNum) {
+      const unitKey = buildUnitKey.ayah(surahNum, ayahNum);
+      const isBookmarked = !!findSavedBookmark(bookmarksDoc, { moduleId: "quranrevival", subjectId: "quran", position: unitKey });
+      return renderQuickMenu(unitKey, { hasNote: ayahHasAnyNote(unitKey), isBookmarked });
     }
 
     async function meaningPageHtml(pageNum) {
@@ -20772,7 +21250,7 @@
           const key = `${g.surah}:${a.ayah}`;
           const out = meaningInUnit && !meaningInUnit.has(key);
           html += `<article class="meaning-ayah${out ? " out" : ""}" data-meaning-key="${key}" data-meaning-page="${pageNum}">
-            <div class="meaning-ayah-head"><span class="meaning-ayah-ref">${escapeHtml(surahName(g.surah, meta?.nameEnglish))} ${num(g.surah)}:${escapeHtml(ayahLabelFor(g.surah, a.ayah, null))}</span></div>
+            <div class="meaning-ayah-head"><span class="meaning-ayah-ref">${escapeHtml(surahName(g.surah, meta?.nameEnglish))} ${num(g.surah)}:${escapeHtml(ayahLabelFor(g.surah, a.ayah, null))}</span>${meaningQuickMenuHtml(g.surah, a.ayah)}</div>
             ${surahFlowHeadingHtml(g.surah, a.ayah)}${bismillahHtmlFor(g.surah, a.ayah)}${layoutAParts(a, panels, {
               tajweedOn: tajweedToggle.checked, langs, wbwLangs: langs.length ? langs : ["en"], wordCardInteractive: true, surahNumber: g.surah,
             })}</article>`;
@@ -20816,7 +21294,12 @@
         const layersSlot = document.getElementById("readMeaningLayersSlot");
         if (layersSlot) {
           // PCF MSA J75 (the Owner: "For English, write only Eng"): on a phone the English switch reads "Eng" (paintShortReadLabels).
-          layersSlot.innerHTML = `${layer("en", shortReadLabels() ? t("Eng") : t("English"))}${layer("bn", t("Bangla"))}${layer("wbw", t("WbW"))}`;
+          // PCF MSA J110 A (the Owner ticked A, 2 Nov 2026): "Under a button where no space (Mob). or in open bar in PC and
+          // tab where space is available (but not to make another bar)." Below 600px the three sit behind one "Show ▾"
+          // button in the same slot; from 600px the wrapper is display: contents and they stand open on the bar as before.
+          const onCount = ["en", "bn", "wbw"].filter((k) => readMeaningLayers[k]).length;
+          layersSlot.innerHTML = `<button type="button" class="ml-menu-btn" data-ml-menu aria-haspopup="true" aria-expanded="false" title="${escapeHtml(t("Show: English, Bangla, Word by Word"))}">${escapeHtml(t("Show"))}<span class="ml-count">${num(onCount)}</span><span aria-hidden="true">▾</span></button><div class="ml-items" data-ml-items>${layer("en", shortReadLabels() ? t("Eng") : t("English"))}${layer("bn", t("Bangla"))}${layer("wbw", t("WbW"))}</div>`;
+          setMeaningLayersOpen(meaningLayersOpen);
           layersSlot.querySelector('[data-meaning-layer="wbw"]')?.parentElement.setAttribute("title", t("Word by Word"));
           layersSlot.setAttribute("aria-label", t("Show"));
           layersSlot.hidden = false;
@@ -20827,9 +21310,12 @@
           <button type="button" class="meaning-more" data-meaning-next${last < MUSHAF_LAST_PAGE ? "" : " disabled"} title="${escapeHtml(t("Page {page}", { page: num(Math.min(MUSHAF_LAST_PAGE, last + 1)) }))}">↓ ${escapeHtml(t("Next page"))}</button>
         </div>`;
         wireMeaningFlow();
-        const focus = meaningFocusKey ?? (pageViewContainer.querySelector(".meaning-ayah:not(.out)")?.dataset.meaningKey ?? null);
+        attachAyahQuickMenus(pageViewContainer);
+        const playingKey = (isPlaying() || isPaused()) ? `${currentSurahNum}:${currentAyahNum}` : null;
+        const focus = meaningFocusKey ?? playingKey ?? (pageViewContainer.querySelector(".meaning-ayah:not(.out)")?.dataset.meaningKey ?? null);
         meaningFocusKey = null;
-        if (focus) requestAnimationFrame(() => meaningScrollTo(focus));
+        if (playingKey) markPlayingAyah(currentAyahNum, { scroll: false });
+        if (focus) requestAnimationFrame(() => { meaningScrollTo(focus); noteMeaningLastRead(); });
       } catch (err) {
         if (token !== meaningRenderToken) return;
         pageViewContainer.innerHTML = `<p style="color:#a33;">${escapeHtml(t("Couldn't load Mushaf page data ({reason}).", { reason: err.message }))}</p>`;
@@ -20849,8 +21335,16 @@
         if (token !== meaningRenderToken) return;
         const root = meaningScroller();
         const before = root?.scrollHeight ?? 0;
-        flow.insertAdjacentHTML(dir > 0 ? "beforeend" : "afterbegin", html);
+        // J110 C: the new page sits in its own box (display: contents, so the flow lays out exactly as before), and only
+        // ITS ⋮ are wired: wiring the whole flow again would bind the earlier pages' ⋮ twice (a tap would open and close).
+        const pageBox = document.createElement("div");
+        pageBox.style.display = "contents";
+        pageBox.dataset.meaningPageBox = String(target);
+        pageBox.innerHTML = html;
+        if (dir > 0) flow.append(pageBox); else flow.prepend(pageBox);
         if (dir > 0) meaningPagesShown.push(target); else meaningPagesShown.unshift(target);
+        attachAyahQuickMenus(pageBox);
+        if (isPlaying() || isPaused()) markPlayingAyah(currentAyahNum, { scroll: false });
         if (dir < 0 && root) root.scrollTop += root.scrollHeight - before;
         const prevBtn = pageViewContainer.querySelector("[data-meaning-prev]"), nextBtn = pageViewContainer.querySelector("[data-meaning-next]");
         const first = meaningPagesShown[0], last = meaningPagesShown[meaningPagesShown.length - 1];
@@ -20859,8 +21353,51 @@
       } finally { meaningAddPage.busy = false; }
     }
 
+    /** PCF MSA J110 C: 📖 Last read follows the reader's scroll in the Reading View too: the āyah at the top of what
+        they see (meaningTopKey()), while nothing is reciting (then ▶ Last played is the one that moves). Only an āyah
+        of the surah being read is noted: the flow can show a neighbouring surah's āyāt on the same printed page. */
+    function noteMeaningLastRead() {
+      if (stageView !== "read" || readViewNow() !== "meaning" || isPlaying()) return;
+      const [s, a] = String(meaningTopKey() ?? "").split(":").map(Number);
+      if (s === currentSurahNum && a) noteLastPlace("read", a);
+    }
+    let meaningScrollRoot = null, meaningScrollPending = false;
+
+    // J110 A: the phone's "Show ▾" stays open while the reader ticks the switches (each tick re-renders the flow), and
+    // closes on a tap elsewhere or Esc. From 600px the button is not shown and the open state changes nothing.
+    var meaningLayersOpen = false, meaningLayerRefocus = null;
+    function setMeaningLayersOpen(open) {
+      meaningLayersOpen = !!open;
+      const slot = document.getElementById("readMeaningLayersSlot");
+      slot?.classList.toggle("ml-open", meaningLayersOpen);
+      slot?.querySelector("[data-ml-menu]")?.setAttribute("aria-expanded", String(meaningLayersOpen));
+    }
+    document.addEventListener("click", (e) => {
+      if (meaningLayersOpen && !document.getElementById("readMeaningLayersSlot")?.contains(e.target)) setMeaningLayersOpen(false);
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key !== "Escape" || !meaningLayersOpen) return;
+      setMeaningLayersOpen(false);
+      document.querySelector("#readMeaningLayersSlot [data-ml-menu]")?.focus();
+    });
+    function onMeaningScroll() {
+      if (meaningScrollPending) return;
+      meaningScrollPending = true;
+      requestAnimationFrame(() => { meaningScrollPending = false; noteMeaningLastRead(); });
+    }
+
     function wireMeaningFlow() {
+      meaningScrollRoot?.removeEventListener("scroll", onMeaningScroll);
+      meaningScrollRoot = meaningScroller();
+      meaningScrollRoot?.addEventListener("scroll", onMeaningScroll, { passive: true });
+      const layersSlot = document.getElementById("readMeaningLayersSlot");
+      layersSlot?.querySelector("[data-ml-menu]")?.addEventListener("click", () => {
+        setMeaningLayersOpen(!meaningLayersOpen);
+        if (meaningLayersOpen) layersSlot.querySelector("[data-meaning-layer]")?.focus();
+      });
+      if (meaningLayerRefocus) { layersSlot?.querySelector(`[data-meaning-layer="${meaningLayerRefocus}"]`)?.focus({ preventScroll: true }); meaningLayerRefocus = null; }
       document.querySelectorAll("#readMeaningLayersSlot [data-meaning-layer]").forEach((box) => box.addEventListener("change", () => {
+        meaningLayerRefocus = box.dataset.meaningLayer; // the re-render below rebuilds the switches: keep the reader's place on them
         const keep = meaningTopKey();
         readMeaningLayers = { ...readMeaningLayers, [box.dataset.meaningLayer]: box.checked };
         try { localStorage.setItem(READ_MEANING_LAYERS_KEY, JSON.stringify(readMeaningLayers)); } catch { /* per device only */ }
@@ -21129,6 +21666,21 @@
      */
     function markPlayingAyah(ayahNum, { scroll = true } = {}) {
       if (getComputedStyle(pageViewContainer).display === "none") return false;
+      // PCF MSA J110 C: the Reading View's rows are .meaning-ayah, keyed "surah:ayah". Finding none here used to send
+      // every recited āyah to renderStudyScreen(), which rebuilt the flow at the unit's start each time (the jump back).
+      // When the sounding āyah is not on the pages shown, re-render ONCE with the flow opening at it.
+      if (pageViewContainer.querySelector("[data-meaning-flow]")) {
+        const key = `${currentSurahNum}:${ayahNum}`;
+        let hit = null;
+        pageViewContainer.querySelectorAll(".meaning-ayah").forEach((row) => {
+          const on = row.dataset.meaningKey === key;
+          row.classList.toggle("now-playing", on);
+          if (on) hit = row;
+        });
+        if (!hit) { meaningFocusKey = key; return false; }
+        if (scroll && stageView === "read") hit.scrollIntoView({ block: "nearest", behavior: "smooth" });
+        return true;
+      }
       const rows = pageViewContainer.querySelectorAll(".page-flow-ayah");
       if (!rows.length) return false;
       let target = null;
@@ -21703,9 +22255,10 @@
     }
 
     /** Ref line + whichever of Arabic/English/Bangla/Notes were checked -- the same shape for the quick menu's Copy/Share and the Note view's own row, so ticking the same boxes in either place produces the same text (spec: "these options also have to be there where they are now for those using the note"). */
-    function buildAyahText(unitKey, langs) {
+    function buildAyahText(unitKey, langs, otherSurahData = null) {
       const { surah, ayah: ayahNum, half } = parseAyahUnitKey(unitKey);
-      const ayah = surah === currentSurahNum ? currentSurahData?.ayahs.find((a) => a.ayah === ayahNum) : null;
+      const source = surah === currentSurahNum ? currentSurahData : otherSurahData;
+      const ayah = source?.ayahs.find((a) => a.ayah === ayahNum) ?? null;
       if (!ayah) return "";
       const parts = [ayahRefLabel(surah, ayahNum, { half })];
       if (langs.includes("ar")) parts.push(ayah.uthmaniText);
@@ -21806,10 +22359,16 @@
       attachQuickMenuHandlers(el, {
         // #758: "My note" can be lit by the Notes pane's count before its text was read; read it once, on the tap that
         // opens Copy / Share, and wait for that same read at Copy if it has not landed.
-        buildText: async (unitKey, langs) => { if (langs.includes("notes")) await ensurePanePlainNotes(unitKey); return buildAyahText(unitKey, langs); },
+        buildText: async (unitKey, langs) => {
+          if (langs.includes("notes")) await ensurePanePlainNotes(unitKey);
+          // J110 C: the Reading View's ⋮ can sit on another surah's āyah (a printed page shared by two surahs).
+          const { surah } = parseAyahUnitKey(unitKey);
+          return buildAyahText(unitKey, langs, surah === currentSurahNum ? null : await getSurah(surah));
+        },
         onTextMenuOpen: (unitKey) => { ensurePanePlainNotes(unitKey); },
         onPlay: quickPlayAyah,
         onOpenNote: (unitKey) => openNotesPaneForKey(unitKey), // decision 95: the Notes pane, not the Note view
+        onTakeNote: (unitKey) => { openNewNoteFromAyahCard(unitKey, { fromQuickMenu: true }); }, // the Owner, 3 Nov 2026: no Note yet, so a new Note
         onToggleBookmark: toggleAyahBookmark,
         // The Owner, 9 Oct 2026 (Read view): "there's no button for attaching this Ayah to QCR." The same route as the
         // Āyah card's 📚 QCR: the QCR pop-up (decision 95) opened on Attach, over the view the reader is on. ← Back
@@ -22632,7 +23191,18 @@
         setting it first is what makes this reliable for a ladder rung that
         is not the āyah currently on screen. */
     // Decision 95, round 2b: a Unit card's 📝 Note opens the Notes pane on that unit, and ← Back reopens the card.
-    function unitCardOpenNote(unitKey) {
+    // J108 (v13.01): a Unit card's 📝 Note opens a NEW Note started on that unit (the shared Note opener); ← Back reopens
+    // the card. The Notes pane on the unit (unitCardOpenNotesPane, below) is kept: it is the opener's "open".
+    async function unitCardOpenNote(unitKey) {
+      const from = unitCardOpenedFromAyah ? { surah: unitCardOpenedFromAyah.surah, ayah: unitCardOpenedFromAyah.ayah } : { surah: currentSurahNum, ayah: currentAyahNum };
+      const label = readNotesLabelFor(unitKey);
+      closeUnitCard();
+      const reopen = () => { paintReadNotesBtn(); openUnitCard(unitKey, from); };
+      await openNewNoteHere({ unitKey, unitLabel: label, title: `${label}:`, backLabel: t("Back to the unit card"), onClosed: reopen,
+        onOpenExisting: () => unitCardOpenNotesPane(unitKey, from) });
+    }
+    function unitCardOpenNotesPane(unitKey, fromIn = null) {
+      if (fromIn) unitCardOpenedFromAyah = fromIn;
       if (unitCardOpenedFromAyah && unitCardOpenedFromAyah.surah === currentSurahNum) currentAyahNum = unitCardOpenedFromAyah.ayah;
       const from = unitCardOpenedFromAyah ? { surah: unitCardOpenedFromAyah.surah, ayah: unitCardOpenedFromAyah.ayah } : { surah: currentSurahNum, ayah: currentAyahNum };
       closeUnitCard();
@@ -22959,7 +23529,7 @@
         // Esc, Save, Remove) brings the same Āyah card back -- the way-back law.
         onBookmark: async (unitKey) => {
           const half = halfAtRender, intro = introAtRender; // fire() closes the card first, which clears ayahSheetIntro
-          try { await toggleAyahBookmark(unitKey); }
+          try { await toggleAyahBookmark(unitKey, undefined, undefined, { unitChoices: ayahCardBookmarkChoices(unitKey, half, intro) }); }
           finally {
             if (!ayahSheetUnitKey) {
               if (intro?.opening) openAyahActionSheet(unitKey, null, intro);
@@ -22968,10 +23538,12 @@
           }
         },
         // Decision 95: the Note is the Notes pane now (Mapping My Journey's own Note), on the Read view.
-        onNote: (unitKey) => { openNotesPaneFromAyahCard(unitKey); },
+        // J108 (v13.01): 📝 Note opens a NEW Note with this Āyah inside it (the shared Note opener); ← Back reopens the card.
+        // The Notes pane on the āyah (openNotesPaneFromAyahCard) is kept: it is the opener's "open" for earlier Notes.
+        onNote: (unitKey) => { openNewNoteFromAyahCard(unitKey, { half: halfAtRender, intro: introAtRender }); },
         // ✍ Take Note: the same view, ready to write -- its Notes box open, in sight, the cursor in it (a phone's
         // keyboard comes up). The Owner, 8 Oct 2026: "Note n Take Note both takes to the same view ... Fix."
-        onTakeNote: (unitKey) => { openNotesPaneFromAyahCard(unitKey, { fresh: true }); },
+        onTakeNote: (unitKey) => { openNewNoteFromAyahCard(unitKey, { half: halfAtRender, intro: introAtRender }); },
         onAsma: (unitKey) => {
           const { surah: s, ayah: a } = parseAyahUnitKey(unitKey);
           openAsmaXAttachPopover({ prefillRef: ayahRefLabel(s, a, { internal: true }) });
@@ -23304,7 +23876,7 @@
       // Architect review of #325: open on the Approach last chosen on either
       // card, so moving from one āyah to the next needs no re-picking.
       ayahSheetSelectedApproachId = mushafRingApproachId;
-      clearAyahCardReturn(); // the card is open again: no "back to it" needed
+      if (!ayahCardReturn?.page) clearAyahCardReturn(); // the card is open again: no "back to it" needed (a way back to another page stays)
       renderAyahActionSheetNow();
       ayahActionSheetOverlayEl.classList.add("open"); restoreWindow(ayahActionSheetOverlayEl); // J81: a card opened while minimised is shown
       ensureAyahSheetRelatedLoaded(unitKey, surahNum, ayahNum);
@@ -23325,7 +23897,7 @@
       ayahSheetConnected = null;
       ayahSheetHadith = null;
       ayahSheetSelectedApproachId = mushafRingApproachId || endOfUnitApproachId();
-      clearAyahCardReturn();
+      if (!ayahCardReturn?.page) clearAyahCardReturn();
       renderAyahActionSheetNow();
       ayahActionSheetOverlayEl.classList.add("open"); restoreWindow(ayahActionSheetOverlayEl); // J81: a card opened while minimised is shown
       ensureAyahNoteDataLoaded().then(() => { if (ayahSheetUnitKey === unitKey) renderAyahActionSheetNow(); });
@@ -23355,14 +23927,28 @@
     // short reference, `back()` restores it. Set by the Āyah card's actions and by an Asma Name's references.
     let ayahCardReturn = null;
     // J54: opts.onClear(how) runs once when this way back goes -- "back" (used), "dismiss" (×) or "replaced" (another took its place).
-    function setAppReturn(title, label, back, opts = {}) { ayahCardReturn?.onClear?.("replaced"); ayahCardReturn = { title, label, back, inWordCard: !!opts.inWordCard, onClear: opts.onClear ?? null }; renderAyahCardBackPill(); if (opts.inWordCard) renderPersistentWordCard(); }
+    // QR Lead (the MSA Architect, 2 Nov 2026, decision 86): a way back to ANOTHER PAGE (opts.page: "Back to the hadith", Dua …)
+    // outlives the Āyah card. Opening the card no longer clears it, and a way back set inside this page (e.g. "Back to Āyah
+    // card") only stands in front of it: once that one is used or dismissed, the page's way back shows again.
+    let pageReturn = null;
+    function setAppReturn(title, label, back, opts = {}) {
+      if (ayahCardReturn?.page && !opts.page) pageReturn = ayahCardReturn; // kept behind, not "replaced"
+      else ayahCardReturn?.onClear?.("replaced");
+      if (opts.page) { pageReturn?.onClear?.("replaced"); pageReturn = null; }
+      ayahCardReturn = { title, label, back, inWordCard: !!opts.inWordCard, onClear: opts.onClear ?? null, page: !!opts.page };
+      renderAyahCardBackPill(); if (opts.inWordCard) renderPersistentWordCard();
+    }
     function rememberAyahCardReturn(unitKey) {
       if (!unitKey) return;
       const { surah, ayah, half } = parseAyahUnitKey(unitKey);
       const r = { surah, ayah, half, view: "read", scrollY: readViewScrollTop() };
       setAppReturn(t("Back to Āyah card"), ayahRefLabel(surah, ayah, { half }).replace(/^.*?(\S+:\S+).*$/, "$1"), () => returnToAyahCard(r));
     }
-    function clearAyahCardReturn(how = "dismiss") { const r = ayahCardReturn; ayahCardReturn = null; r?.onClear?.(how); renderAyahCardBackPill(); }
+    function clearAyahCardReturn(how = "dismiss") {
+      const r = ayahCardReturn; ayahCardReturn = null; r?.onClear?.(how);
+      if (r && !r.page && pageReturn) { ayahCardReturn = pageReturn; pageReturn = null; } // the page's way back shows again
+      renderAyahCardBackPill();
+    }
     function renderAyahCardBackPill() {
       let pill = document.getElementById("ayahCardBackPill");
       if (!ayahCardReturn) { if (pill) { pill.hidden = true; pill.innerHTML = ""; } return; }
@@ -24352,19 +24938,21 @@
         default, as before), This āyah, and -- unless the unit already IS a page -- This page. Every position is a
         buildUnitKey() key, and each choice's settings open it the way a bookmark of that kind always opens: an āyah
         bookmark as the Single Ayah unit at that āyah, a page bookmark as the Page unit at that page. */
-    function readBookmarkUnitChoices(info) {
-      if (stageView !== "read" || !currentSurahData) return [];
+    // QR Lead (the Owner's tick, 3c / PCF MSA J29 j29qrl16q, 1 Nov 2026): the Āyah card's 🔖 offers the same choices for
+    // ITS āyah, handed in as `at` ({ ayah, half, page }), from any view; the Read bar's 🔖 reads the āyah on screen.
+    function readBookmarkUnitChoices(info, at = null) {
+      if ((!at && stageView !== "read") || !currentSurahData) return [];
       const base = captureQuranBookmarkSettings();
-      const { ayah, half, page } = bookmarkAyahOnScreen();
+      const { ayah, half, page } = at ?? bookmarkAyahOnScreen();
       const rec = currentSurahData.ayahs.find((a) => a.ayah === ayah);
-      const at = (unitType) => ({ ...base, unitType, ayahNum: ayah, rangeFrom: null, rangeTo: null });
+      const atUnit = (unitType) => ({ ...base, unitType, ayahNum: ayah, rangeFrom: null, rangeTo: null });
       // PCF MSA J42: every unit that holds the āyah on screen, Single Ayah included, in a fixed order. A boundary
       // that is not known is left out, never guessed.
       const all = [{
         id: "ayah", label: () => t("This āyah"), defaultName: ayahRefLabel(currentSurahNum, ayah, { half }),
-        position: ayahRecordKey(currentSurahNum, ayah, half), settings: at("ayah"),
+        position: ayahRecordKey(currentSurahNum, ayah, half), settings: atUnit("ayah"),
       }];
-      if (page) all.push({ id: "page", label: () => t("This page"), defaultName: t("Page {page}", { page: num(page) }), position: buildUnitKey.page(PAGE_EDITION, page), settings: at("page") });
+      if (page) all.push({ id: "page", label: () => t("This page"), defaultName: t("Page {page}", { page: num(page) }), position: buildUnitKey.page(PAGE_EDITION, page), settings: atUnit("page") });
       if (rec && rec.ruku != null) {
         const idx = rukuIndexInSurah(currentSurahData.ayahs, rec.ruku);
         const inRuku = currentSurahData.ayahs.filter((a) => a.ruku === rec.ruku).map((a) => a.ayah);
@@ -24372,13 +24960,13 @@
           all.push({
             id: "ruku", label: () => t("This rukūʿ"),
             defaultName: t("Ruku' {ruku} of Surah {surah} (ayahs {from}–{to})", { ruku: num(idx), surah: num(currentSurahNum), from: num(Math.min(...inRuku)), to: num(Math.max(...inRuku)) }),
-            position: buildUnitKey.ruku(currentSurahNum, idx), settings: at("ruku"),
+            position: buildUnitKey.ruku(currentSurahNum, idx), settings: atUnit("ruku"),
           });
         }
       }
       const sName = surahName(currentSurahNum, surahIndex.find((s) => s.surahNumber === currentSurahNum)?.nameEnglish);
-      all.push({ id: "surah", label: () => t("Whole sūrah"), defaultName: sName || t("Whole Surah {surah}", { surah: num(currentSurahNum) }), position: buildUnitKey.surah(currentSurahNum), settings: at("surah") });
-      if (rec && rec.juz) all.push({ id: "juz", label: () => t("This juz"), defaultName: t("Juz {juz}", { juz: num(rec.juz) }), position: buildUnitKey.juz(rec.juz), settings: at("juz") });
+      all.push({ id: "surah", label: () => t("Whole sūrah"), defaultName: sName || t("Whole Surah {surah}", { surah: num(currentSurahNum) }), position: buildUnitKey.surah(currentSurahNum), settings: atUnit("surah") });
+      if (rec && rec.juz) all.push({ id: "juz", label: () => t("This juz"), defaultName: t("Juz {juz}", { juz: num(rec.juz) }), position: buildUnitKey.juz(rec.juz), settings: atUnit("juz") });
       // The selected study unit comes first and is preselected, so today's default is unchanged. When it is one of
       // the five it moves to the front; a wider one that is not (Range, Hizb) is added in front.
       const sel = all.find((c) => c.id === info.unitType);
@@ -24397,6 +24985,17 @@
         from, to, surahName: surahName(currentSurahNum, meta?.nameEnglish), settings: base,
       });
       return choices;
+    }
+
+    /** The Āyah card's 🔖 (3c, the Owner's tick A): This āyah (preselected), This page, This rukūʿ, Whole sūrah, This juz
+        and a Range, all for the card's own āyah. Before Al-Fātiḥah (Aʿūdhu billāh), or an āyah of another sūrah than
+        the one loaded, keeps the āyah-only window it always had: a boundary that is not known is never guessed. */
+    function ayahCardBookmarkChoices(unitKey, half, intro) {
+      if (intro?.opening || String(unitKey).startsWith("opening:") || !currentSurahData) return [];
+      let p; try { p = parseAyahUnitKey(unitKey); } catch { return []; }
+      if (p.surah !== currentSurahNum || !currentSurahData.ayahs.some((a) => a.ayah === p.ayah)) return [];
+      const h = half ?? p.half, page = currentSurahData.ayahs.find((a) => a.ayah === p.ayah)?.page ?? null;
+      return readBookmarkUnitChoices({ unitType: "ayah", unitKey, label: ayahRefLabel(p.surah, p.ayah, { half: h }) }, { ayah: p.ayah, half: h, page });
     }
 
     async function toggleAyahBookmark(unitKey, defaultNameOverride, settingsOverride, { toggle = true, unitChoices = [] } = {}) {
@@ -25251,7 +25850,7 @@
       await goToReference(parsed.surah, from, to);
       await openNotesPaneForKey(buildUnitKey.ayah(parsed.surah, from)); // R3b (decision 95): the pane, not the Note view
       // The way-back law (decision 86): a link from another page (the Asma study page's poster) carries back=1.
-      if (new URLSearchParams(location.search).get("back") === "1" && history.length > 1) setAppReturn(new URLSearchParams(location.search).get("backTo") === "hadith" ? t("Back to the hadith") : t("Back"), "", () => history.back());
+      if (new URLSearchParams(location.search).get("back") === "1" && history.length > 1) setAppReturn(new URLSearchParams(location.search).get("backTo") === "hadith" ? t("Back to the hadith") : t("Back"), "", () => history.back(), { page: true });
     }
 
     /** The way-back law: ?qpSurah=&qpAyah=&qpView=note&qpUnit= (written by rememberQuranPlace() just before leaving for
@@ -25765,6 +26364,70 @@
       record: (u) => { const { surah, ayah, half } = parseAyahUnitKey(u.unitKey); openAyahActionSheet(`${surah}:${ayah}`, half); backToReadNotes(u, "track"); },
       status: (u) => { backToReadNotes(u, "track"); openMyStatus(); },
     };
+    // -----------------------------------------------------------------------
+    // J108 (v13.01, the Owner: "Q2:A. Q3. Build it."; demo v3) -- every Note button opens the shared Note opener
+    // (js/note-opener.js, loaded on the first press, never at start-up: I9): a NEW Mapping My Journey Note in one window,
+    // over the page, which is never moved -- so closing it leaves the reader exactly where they were (decision 86).
+    // -----------------------------------------------------------------------
+    let noteOpenerMod = null;
+    async function openNewNoteHere({ focusBack = null, onClosed = null, ...opts } = {}) {
+      try { noteOpenerMod ??= await import("./js/note-opener.js"); }
+      catch (error) { reportWriteFailure(error, { what: "open a new Note", read: true }); return; } // I15
+      if (readNotePaneMod?.isReadNotePaneOpen()) readNotePaneMod.closeReadNotePane({ quiet: true });
+      await noteOpenerMod.openNewNote({ ...opts, onClosed: onClosed ?? (() => {
+        paintReadNotesBtn();
+        // Notes sits in the Study menu, which closed when it was chosen: the focus goes back to Study then.
+        const to = focusBack?.getBoundingClientRect().width ? focusBack : document.getElementById("tabStudyBtn");
+        to?.focus?.({ preventScroll: true });
+      }) });
+    }
+    /** The Architect's follow-up, 3 Nov 2026: right after a Note is made from the ⋮ menu, that āyah's menu reads "Note & more…"
+        and its ⋮ carries the has-note mark, with no wait for the app to recount. The Note window says "ready" the moment the
+        Note exists (mmsa-new-note-ready, same origin); this brings the menus already on screen up to date in place, and keeps
+        the count the later lookups (the pane, the Āyah card) will confirm. */
+    function noteMadeFromQuickMenu(unitKey) {
+      const key = `${activeTenantId}|${selectedPersonId}|${unitKey}`;
+      sheetNoteCounts.set(key, Math.max(1, (sheetNoteCounts.get(key) ?? 0) + 1));
+      if (panePlainNotes?.key === key) panePlainNotes = { ...panePlainNotes, count: Math.max(1, panePlainNotes.count) };
+      const has = true;
+      document.querySelectorAll(`.ayah-quick-wrap[data-unit-key="${CSS.escape(unitKey)}"]`).forEach((wrap) => {
+        wrap.querySelector(".ayah-quick-btn")?.classList.add("has-note");
+        const item = wrap.querySelector("[data-qm-note]");
+        if (item) { item.removeAttribute("data-qm-note-new"); item.textContent = `📝 ${t("Note & more…")}`; }
+        wrap.querySelectorAll('.qm-sub input[data-lang="notes"]').forEach((cb) => { cb.disabled = !has; const sp = cb.parentElement?.querySelector("span"); if (sp) sp.textContent = t("My note"); });
+      });
+    }
+    /** The Āyah card's 📝 Note: a new Note with the Āyah inside it, its first title "Quran 15:32 - Al-Hijr:", started on the
+        āyah; "You have N Notes on this āyah — open" opens the Notes pane on it (openNotesPaneFromAyahCard). */
+    async function openNewNoteFromAyahCard(unitKey, { half = null, intro = null, fromQuickMenu = false } = {}) {
+      // fromQuickMenu: the ⋮ menu has no card to come back to, so ← Back just closes the Note and the page repaints as it was.
+      const reopen = fromQuickMenu ? null : () => {
+        paintReadNotesBtn();
+        if (intro?.opening) openAyahActionSheet(unitKey, null, intro);
+        else { const p = parseAyahUnitKey(unitKey); openAyahActionSheet(`${p.surah}:${p.ayah}`, half, intro); }
+      };
+      if (!fromQuickMenu) closeAyahActionSheet();
+      if (unitKey.startsWith("opening:")) { // PCF J26: Aʿūdhu billāh is no āyah: a new Note with its name as the first title
+        await openNewNoteHere({ title: `${t("Aʿūdhu billāh")}:`, backLabel: t("Back to Āyah card"), onClosed: reopen });
+        return;
+      }
+      const { surah, ayah } = parseAyahUnitKey(unitKey);
+      let ref = null;
+      try {
+        noteOpenerMod ??= await import("./js/note-opener.js");
+        const data = surah === currentSurahNum && currentSurahData ? currentSurahData : await getSurah(surah);
+        const ay = data?.ayahs?.find((x) => Number(x.ayah) === ayah);
+        if (ay) ref = noteOpenerMod.ayahRef(surah, ayah, data, ay);
+      } catch (error) { console.error("[new note: the āyah's text]", error); /* the Note still opens, on the āyah, with its title */ }
+      const label = readNotesLabelFor(unitKey);
+      const known = readNotePaneMod?.readNotePaneCount(unitKey);
+      // From the ⋮ menu: its Note item turns to "Note & more…" the moment the new Note exists (see noteMadeFromQuickMenu).
+      const onMade = (ev) => { if (ev.origin === location.origin && ev.data?.type === "mmsa-new-note-ready" && ev.data.ok) { window.removeEventListener("message", onMade); noteMadeFromQuickMenu(unitKey); } };
+      if (fromQuickMenu) window.addEventListener("message", onMade);
+      await openNewNoteHere({ ref, unitKey, unitLabel: label, title: noteTitleFor(surah, label), backLabel: fromQuickMenu ? t("Back") : t("Back to Āyah card"),
+        ...(reopen ? { onClosed: reopen } : fromQuickMenu ? { onClosed: () => { window.removeEventListener("message", onMade); paintReadNotesBtn(); document.querySelector(`.ayah-quick-wrap[data-unit-key="${CSS.escape(unitKey)}"] .ayah-quick-btn`)?.focus?.({ preventScroll: true }); } } : {}),
+        count: Number.isFinite(known) ? known : null, onOpenExisting: () => openNotesPaneFromAyahCard(unitKey) });
+    }
     /** The Āyah card's 📝 Note (decisions 94, 95): the Notes pane on that āyah, in the Read view, with "← Back to Āyah
         card". With no Note yet (`fresh`), ✚ New note is put in focus, ready to press. */
     async function openNotesPaneFromAyahCard(unitKey, { fresh = false } = {}) {
@@ -25861,7 +26524,8 @@
       audioControls.innerHTML = `
         <div id="drillReciterChecks" class="reciter-ticks">
           ${reciters.map((r) => {
-            const note = reciterSupportsSingleAyah(r.id) ? "" : ` <span style="color:#888;">${t("(whole surah only)")}</span>`;
+            // QR Lead audit 4: a reciter whose own name already says "whole surah only" read it twice.
+            const note = reciterSupportsSingleAyah(r.id) || /whole surah only/i.test(r.label) ? "" : ` <span style="color:#888;">${t("(whole surah only)")}</span>`;
             return `<label><input type="checkbox" class="drill-reciter-check" value="${r.id}" ${drillSelectedReciterIds.includes(r.id) ? "checked" : ""}/> ${t(r.label)}${note}</label>`;
           }).join("")}
         </div>`;

@@ -375,3 +375,34 @@ button.nav-bm-preset { background: none; border: 0; font: inherit; font-size: 0.
    bounding RECTANGLE, and a wheel wedge's rectangle spans several slices. Off for every Mastery Wheel on every page
    (Asma, topic study); quranrevival.html carries the same rule for its own wheels. */
 .wheel-seg, svg:has(.wheel-seg), svg:has(.wheel-seg) * { -webkit-tap-highlight-color: transparent; }
+
+/* PCF MSA J109 (the Owner, 1 Nov 2026: "Instead arrow to on/off, i want the toggle way to on/off, everywhere."): every
+   section that shows or hides its content wears the same ON/OFF switch as the Note's Āyah/Hadith block (note-ref-ui.js
+   .mm-ref-sw), not a ▸/▾ arrow. One drawing, used three ways: a <details> summary's ::before, an old caret span inside a
+   button (its glyph hidden, the switch read off the button's aria-expanded), or a .mm-sw span. Off: grey track, knob left;
+   on: teal track, knob right. Menus (Home ▾, Study ▾) and folder trees keep their arrows. Display only. */
+.mm-sw,
+details.ayah-nv-sec > summary::before, details.ayah-ft-sec > summary::before, details.ayah-related-more > summary::before,
+details.word-card-dict-more > summary::before, details.word-card-more-entries > summary::before,
+button > .ways-caret, button > .trk-sec-caret, button > .word-card-form-caret, button > .note-sec-arrow, button[data-sec-fold]::before {
+  content: ""; display: inline-block; flex: 0 0 auto; box-sizing: border-box; width: 40px; height: 24px; border-radius: 12px;
+  border: 1px solid #6b7280; vertical-align: middle; font-size: 0; line-height: 0; color: transparent;
+  background: radial-gradient(circle at 11px 50%, #fff 0 7px, #6b7280 7.5px 8.5px, transparent 9px), #c9d0dc;
+}
+.mm-sw.on, [aria-expanded="true"] > .mm-sw,
+details.ayah-nv-sec[open] > summary::before, details.ayah-ft-sec[open] > summary::before, details.ayah-related-more[open] > summary::before,
+details.word-card-dict-more[open] > summary::before, details.word-card-more-entries[open] > summary::before,
+[aria-expanded="true"] > .ways-caret, [aria-expanded="true"] > .trk-sec-caret, [aria-expanded="true"] > .word-card-form-caret,
+[aria-expanded="true"] > .note-sec-arrow, button[data-sec-fold][aria-expanded="true"]::before {
+  border-color: #1f8a7e; background: radial-gradient(circle at 27px 50%, #fff 0 8px, transparent 8.5px), #1f8a7e;
+}
+details.ayah-nv-sec > summary, details.ayah-ft-sec > summary, details.ayah-related-more > summary,
+details.word-card-dict-more > summary, details.word-card-more-entries > summary {
+  list-style: none; display: flex; align-items: center; gap: 0.6rem; min-height: 40px; cursor: pointer;
+}
+details.ayah-nv-sec > summary::-webkit-details-marker, details.ayah-ft-sec > summary::-webkit-details-marker,
+details.ayah-related-more > summary::-webkit-details-marker, details.word-card-dict-more > summary::-webkit-details-marker,
+details.word-card-more-entries > summary::-webkit-details-marker { display: none; }
+button > .ways-caret, button > .trk-sec-caret, button > .word-card-form-caret, button > .note-sec-arrow { width: 40px; min-width: 40px; flex: 0 0 40px; }
+.note-sec-toggle > .note-sec-arrow { flex: 0 0 40px; align-self: center; }
+button[data-sec-fold] { font-size: 0; display: inline-flex; align-items: center; justify-content: center; }
