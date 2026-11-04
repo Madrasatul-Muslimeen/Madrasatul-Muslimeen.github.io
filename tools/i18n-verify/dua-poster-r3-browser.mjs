@@ -26,6 +26,10 @@ const MUTATIONS = {
   frame: ["poster", "  if (frame) ctx.drawImage(frame, 0, 0, W, H);\n", ""],
   // D25: the cartouche shows the whole Arabic, not its first words.
   cartouche: ["poster", ".trim().split(/\\s+/).slice(0, 2).join(\" \") : \"\")", ".trim() : \"\")"],
+  // D25: the page keeps the Asma frame's "Al-Asmaul Husna" heading.
+  banner: ["poster", "  a4.append(bn, title, line, cart, body, rq, rh);", "  a4.append(title, line, cart, body, rq, rh);"],
+  // D25: the picture keeps the Asma frame's "Al-Asmaul Husna" heading.
+  bannerpic: ["poster", "  ctx.closePath(); ctx.fill();", "  ctx.closePath();"],
   // D25: the pop-up keeps "Close" instead of the Asma way's ← Back.
   back: ["study", 'key === "poster" ? `← ${t("Back")}` :', "false ? `← ${t(\"Back\")}` :"],
   // D07: the poster starts in English for every reader.
@@ -128,6 +132,10 @@ async function run(mutation) {
         const d = await page.$eval("[data-dua-a4]", (a) => { const b = a.querySelector(".ahp-desc"); const q = a.querySelector("[data-dua-a4-quran]"); const hh = a.querySelector(".ahp-ref-h"); return { over: b.scrollHeight - b.clientHeight, href: q?.getAttribute("href"), h: hh.textContent }; });
         if (d.over > 1 || d.href !== `./quranrevival.html?goto=${p0.ref}&back=1` || !d.h) throw new Error(JSON.stringify(d));
       });
+      await check("D25 the frame's own 'Al-Asmaul Husna' heading is covered and says Dua instead", async () => {
+        const d = await page.$eval("[data-dua-a4] [data-dua-banner]", (b) => ({ bg: getComputedStyle(b).backgroundColor, clip: getComputedStyle(b).clipPath, t: b.textContent })).catch(() => null);
+        if (!d || d.clip === "none" || d.bg !== "rgb(0, 54, 29)" || !d.t.includes(lang === "bn" ? "দুআ" : "Dua") || /Asma/i.test(d.t)) throw new Error(JSON.stringify(d));
+      });
       await check("D25 the pop-up's way out is ← Back", async () => { const t0 = await page.$eval("[data-dua-pop-close]", (e) => e.textContent); if (t0 !== `← ${L("Back")}`) throw new Error(t0); });
       const other = lang === "en" ? "bn" : "en";
       // D26: the choices are made with the chips on the Dua Card; the poster reads them when it opens.
@@ -221,7 +229,8 @@ async function run(mutation) {
       // D14 as a picture.
       await page.click('[data-dua-share-as="img"]');
       await page.waitForSelector(".dua-share-img", { timeout: 15000 }).catch(() => {});
-      const pic = await page.$eval(".dua-share-img", async (i) => { if (!i.complete) await new Promise((r) => { i.onload = r; }); return { w: i.naturalWidth, h: i.naturalHeight, k: Number(i.dataset.duaScale), top: (() => { const c = document.createElement('canvas'); c.width = i.naturalWidth; c.height = i.naturalHeight; const x = c.getContext('2d'); x.drawImage(i, 0, 0); return Array.from(x.getImageData(620, 190, 1, 1).data); })() }; }).catch(() => null);
+      const pic = await page.$eval(".dua-share-img", async (i) => { if (!i.complete) await new Promise((r) => { i.onload = r; }); return { w: i.naturalWidth, h: i.naturalHeight, k: Number(i.dataset.duaScale), bright: (() => { const c = document.createElement('canvas'); c.width = i.naturalWidth; c.height = i.naturalHeight; const x = c.getContext('2d'); x.drawImage(i, 0, 0); const k = i.naturalWidth / 1055; const d = x.getImageData(Math.round(300 * k), Math.round(185 * k), Math.round(110 * k), Math.round(50 * k)).data; let n = 0; for (let j = 0; j < d.length; j += 4) if (d[j] > 200 && d[j + 1] > 200 && d[j + 2] > 200) n++; return n; })(), top: (() => { const c = document.createElement('canvas'); c.width = i.naturalWidth; c.height = i.naturalHeight; const x = c.getContext('2d'); x.drawImage(i, 0, 0); return Array.from(x.getImageData(620, 190, 1, 1).data); })() }; }).catch(() => null);
+      await check("D25 the picture's heading no longer reads Al-Asmaul Husna (the old lettering's white is gone)", () => { if (pic?.bright == null || pic.bright > 30) throw new Error(String(pic?.bright)); });
       await check("D25 the picture carries the Asma frame (the page's top banner is dark green, not cream paper)", () => { if (!pic?.top || pic.top[0] > 90 || pic.top[1] > 120) throw new Error(JSON.stringify(pic?.top)); });
       const save = await page.$eval("[data-dua-save-picture]", (a) => ({ href: a.getAttribute("href")?.slice(0, 22), dl: a.download })).catch(() => null);
       await check("D14 the poster picture is an A4 PNG (1240 × 1754) to save", () => { if (pic?.w !== 1240 || pic?.h !== 1754 || save?.href !== "data:image/png;base64," || !save.dl.endsWith(".png")) throw new Error(JSON.stringify({ pic, save })); });

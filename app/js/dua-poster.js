@@ -45,6 +45,12 @@ export function shareText(sheet, opt, l = lang()) {
 
 const BASE_DESC = 3.28; // cqw: the Asma poster's own body size, the scale's 1.0
 const SHORT_TITLE = (s) => String(s || "").split(/[,،]/)[0].trim();
+// D25: the Asma frame's own heading ("Al-Asmaul Husna · Names and Attributes of Allah") is part of the picture, so a
+// Dua poster covers it with a patch of the frame's own green and says "Dua" there (measured on the 1055 x 1491 frame).
+const BANNER_POLY = [[335, 96], [725, 96], [725, 176], [770, 176], [770, 257], [292, 257], [292, 176], [335, 176]];
+const BANNER_GREEN = "#00361d";
+const BANNER_AR = "الدُّعَاء";
+const bannerWord = () => (lang() === "bn" ? "দুআ" : "Dua");
 const none = () => el("span", "ahp-none", t("None given"));
 /** D25: the Quran box's "s:a", when the sheet is a Qur'anic dua. */
 const quranOf = (sheet) => /^(\d+):(\d+)/.exec(sheet.quran || "");
@@ -96,6 +102,12 @@ export function posterPage(sheet, opt, { interactive = true } = {}) {
     x.lang = k; x.dataset.duaA4Part = k;
     body.appendChild(x);
   }
+  const bn = el("div", "ahp-banner");
+  bn.dataset.duaBanner = "";
+  bn.style.clipPath = `polygon(${BANNER_POLY.map(([x, y]) => `${(x / 10.55).toFixed(2)}% ${(y / 14.91).toFixed(2)}%`).join(",")})`;
+  const bar = el("b", "ahp-banner-ar", BANNER_AR); bar.lang = "ar"; bar.dir = "rtl";
+  const bwd = el("b", "ahp-banner-word", bannerWord()); bwd.lang = lang();
+  bn.append(bar, bwd);
   const rq = el("div", "ahp-ref ahp-ref-q");
   const rh = el("div", "ahp-ref ahp-ref-h");
   if (opt.src) {
@@ -108,7 +120,7 @@ export function posterPage(sheet, opt, { interactive = true } = {}) {
     } else rq.appendChild(none());
     if (sheet.ref && !m) { const r = el("span", "dua-a4-ref ahp-unlinked", sheet.ref); r.dir = "auto"; rh.appendChild(r); } else rh.appendChild(none());
   }
-  a4.append(title, line, cart, body, rq, rh);
+  a4.append(bn, title, line, cart, body, rq, rh);
   return a4;
 }
 
@@ -255,6 +267,11 @@ export async function drawPoster(sheet, opt) {
   ctx.fillStyle = "#fdfdf6"; ctx.fillRect(0, 0, W, H);
   if (frame) ctx.drawImage(frame, 0, 0, W, H);
   ctx.textAlign = "center";
+  // The frame's own Asmaul Husna heading is covered with its green and replaced by "Dua" (as the page does).
+  ctx.fillStyle = BANNER_GREEN;
+  ctx.beginPath();
+  BANNER_POLY.forEach(([x, y], i) => ctx[i ? "lineTo" : "moveTo"](x * W / 1055, y * H / 1491));
+  ctx.closePath(); ctx.fill();
   // One line centred in a room, the type shrunk to fit it.
   const one = (text, font, px, room, x, base, color, rtl, weight = "") => {
     if (!text) return;
@@ -264,6 +281,8 @@ export async function drawPoster(sheet, opt) {
     while (ctx.measureText(text).width > room && size > px * 0.45) { size -= 1; ctx.font = `${weight} ${size}px ${font}`; }
     ctx.fillText(text, x, base);
   };
+  one(BANNER_AR, naskh, 6.6 * u, W * 0.3, W / 2, H * 0.1325, "#f6e7b6", true, "700");
+  one(bannerWord(), lang() === "bn" ? "'Hind Siliguri', system-ui, sans-serif" : serif, 5.4 * u, W * 0.3, W / 2, H * 0.1625, "#f6e7b6", false, "700");
   const titleAr = !sheet.title && sheet.titleAr;
   one(SHORT_TITLE(sheet.title || sheet.titleAr), titleAr ? naskh : serif, 4.85 * u, W * 0.22, W / 2, H * 0.2295 + 4.85 * u, "#141414", !!titleAr);
   one(sheet.line || "", serif, 3.13 * u, W * 0.29, W / 2, H * 0.264 + 3.13 * u, "#f4501a", false);

@@ -128,6 +128,11 @@
 .dua-poster-wrap { display: flex; flex-direction: column; gap: 0.6rem; align-items: stretch; }
 .ahp-dua { width: min(100%, 34rem, calc((86vh - 15.5rem) * 1055 / 1491)); margin: 0 auto; flex: 0 0 auto; }
 .dua-popcard.at-home .ahp-dua { width: min(100%, 34rem, calc((var(--hh, 900px) - 15.5rem) * 1055 / 1491)); }
+.ahp-dua .ahp-banner { position: absolute; inset: 0; background: #00361d; pointer-events: none; }
+.ahp-banner-ar, .ahp-banner-word { position: absolute; left: 27.7%; width: 45.3%; display: flex; align-items: center; justify-content: center; line-height: 1; color: #f6e7b6; white-space: nowrap; }
+.ahp-banner-ar { top: 7%; height: 5.4%; font-family: 'Noto Naskh Arabic', 'Amiri', serif; font-size: 6.6cqw; }
+.ahp-banner-word { top: 12.4%; height: 4.6%; font-family: 'Tinos', 'Times New Roman', serif; font-size: 5.4cqw; }
+.ahp-banner-word[lang="bn"] { font-family: 'Hind Siliguri', system-ui, sans-serif; }
 .ahp-dua .ahp-desc { text-align: center; text-align-last: center; font-size: 3.28cqw; }
 .dua-a4-ar { margin: 0 0 0.5em; font-size: 1.5em; line-height: 1.9; color: #0d3b29; text-align: center; overflow-wrap: anywhere; }
 .dua-a4-wbw { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.3em; margin: 0 0 0.5em; font-size: 0.6em; }
