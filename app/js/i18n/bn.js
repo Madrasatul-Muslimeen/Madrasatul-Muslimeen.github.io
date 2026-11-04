@@ -4733,4 +4733,9 @@ export const BN = {
   "{ref}, word {n}": "{ref}, শব্দ {n}",
   "Hadith {n}, word {w}": "হাদীস {n}, শব্দ {w}",
   "Couldn't show your students' marks:": "আপনার শিক্ষার্থীদের চিহ্ন দেখানো যায়নি:",
+  "Marks for this word": "এই শব্দের চিহ্ন",
+  "Marks for this hadith": "এই হাদীসের চিহ্ন",
+  "Sign in to put marks on this.": "এতে চিহ্ন দিতে সাইন ইন করুন।",
+  "Your marks could not be read. Check the connection and open this again.": "আপনার চিহ্ন পড়া যায়নি। সংযোগ দেখে আবার খুলুন।",
+  "That mark was not saved. Check the connection and try again.": "চিহ্নটি সংরক্ষণ হয়নি। সংযোগ দেখে আবার চেষ্টা করুন।",
 };
