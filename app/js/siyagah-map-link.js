@@ -238,9 +238,10 @@ function mountMmjView(host, reader, model, sanitize) {
 
 /**
  * Mount the bar before `beforeEl` (the Map's #noteLayout). Returns the bar, or null when the switch is off.
- * `email` is the reader's MSA sign-in, offered to Google as the account to use.
+ * `email` is the reader's MSA sign-in, offered to Google as the account to use. `after` (a promise): load nothing of
+ * Siyagah's until it settles -- the Map passes its own folders' load, so the Map is usable first.
  */
-export async function mountSiyagahMapLink({ beforeEl, email = "", declaration = SIYAGAH_CLOUD_DECLARATION } = {}) {
+export async function mountSiyagahMapLink({ beforeEl, email = "", declaration = SIYAGAH_CLOUD_DECLARATION, after = null } = {}) {
   if (!isSiyagahCloudReady(declaration)) return null;
   if (!beforeEl || !beforeEl.parentNode) return null;
   ensureStyle();
@@ -275,6 +276,8 @@ export async function mountSiyagahMapLink({ beforeEl, email = "", declaration = 
   }
   head.addEventListener("click", (e) => { if (e.target.closest("[data-siyagah-toggle]")) setOpen(!isOpen); });
   say(escapeHtml(t("Opening…")), null);
+  // `after`: the Map's own folders first. Siyagah's code is fetched only once they have loaded (or failed to).
+  if (after && typeof after.then === "function") { try { await after; } catch { /* the Map says its own failure */ } }
 
   let cloud, mod;
   try {

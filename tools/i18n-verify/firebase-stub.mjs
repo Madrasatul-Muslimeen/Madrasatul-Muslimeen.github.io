@@ -20,7 +20,10 @@ const UID = "test-uid";
 // Default latency is 0, so the translation suites behave exactly as before.
 // ---------------------------------------------------------------------------
 const LATENCY = __LATENCY__;
-try { window.__fsLog = []; } catch (e) {}
+// J112 R1: KEPT, not reset, when a second copy of this stub is evaluated in the same page (a module imported late, such
+// as the Map's Siyagah reader importing firebase-app.js under a suite that serves every gstatic URL itself): a reset
+// would erase the reads the page already made. A new page still starts with an empty log.
+try { window.__fsLog = window.__fsLog || []; } catch (e) {}
 let __seq = 0;
 async function __trip(kind, col, id, produce) {
   const rec = { n: ++__seq, kind: kind, col: col, id: id || null, t0: performance.now(), t1: null, stack: (function () { try { return new Error().stack; } catch (e) { return ""; } })() };

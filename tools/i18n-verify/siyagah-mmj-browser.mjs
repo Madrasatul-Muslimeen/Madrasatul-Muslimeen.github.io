@@ -41,6 +41,7 @@ const MUTATIONS = {
   "small-buttons": ["app/js/siyagah-map-link.js", "width:100%; min-height:40px;", "width:100%; min-height:20px;", "layout en/360/100%: every button in the bar is 40px tall or more and inside the bar"],
   "open-by-default": ["app/js/siyagah-map-link.js", 'isOpen = localStorage.getItem(OPEN_KEY) === "1";', 'isOpen = localStorage.getItem(OPEN_KEY) !== "0";', "small: the folders are shut by default (one toggle in the bar)"],
   "hidden-refusal": ["app/js/siyagah-map-link.js", 'if (s.kind === "denied" || s.kind === "error") setOpen(true, false);', "", "denied: the refusal opens the folders, so it is never hidden (I15)"],
+  "no-after": ["app/js/siyagah-map-link.js", "if (after && typeof after.then === \"function\") { try { await after; } catch { /* the Map says its own failure */ } }", "", "the Map first: Siyagah's code is fetched only after the Map's own folders and notes have loaded (no Map read in flight)"],
   "join-any-generation": ["app/js/siyagah-mmj-model.js", 'if (p.g !== t0.g) return { ok: false, reason: "piece-generation" };', "", "pieced: a piece of another generation shows NO tree"],
 };
 if (MUTATE && !MUTATIONS[MUTATE]) throw new Error(`unknown mutation ${MUTATE}; known: ${Object.keys(MUTATIONS).join(", ")}`);
@@ -95,8 +96,8 @@ try { if (localStorage.getItem("__mmjDeny") === "1") window.__stubDenyCols = ["n
 }
 
 const browser = await chromium.launch();
-async function openMap({ lang = "en", width = 1024, pct = 100, seed = {}, ctx = null, clock = false, deny = false } = {}) {
-  ctx = ctx || await newContext(browser, { appLang: lang, banner: false, viewport: { width, height: 900 }, extraSeedJs: seedJs(seed) });
+async function openMap({ lang = "en", width = 1024, pct = 100, seed = {}, ctx = null, clock = false, deny = false, latencyMs = 0 } = {}) {
+  ctx = ctx || await newContext(browser, { appLang: lang, banner: false, viewport: { width, height: 900 }, extraSeedJs: seedJs(seed), latencyMs });
   for (const [p, body] of Object.entries(SERVED)) await ctx.route(`**${p}`, (r) => r.fulfill({ status: 200, contentType: "text/javascript; charset=utf-8", body }));
   // A refused start begins with the folders SHUT on this device, so only the refusal itself can open them.
   await ctx.addInitScript((d) => { try { localStorage.setItem("__mmjDeny", d ? "1" : "0"); if (d) localStorage.setItem("msa-siyagah-mmj-open", "0"); } catch (e) {} }, deny);
@@ -221,6 +222,21 @@ for (const lang of ["en", "bn"]) {
   await page.waitForSelector("#siyagahCloudBar [data-siyagah-toggle]", { timeout: 12000 });
   const top = await page.evaluate(() => document.getElementById("backLink").getBoundingClientRect().top);
   check(`first screenful ${lang}/320: with the folders shut, the Map's own Back is still in the first screenful (top < 400)`, top >= 0 && top < 400, `top ${top}`);
+  await ctx.close();
+}
+
+// --- the Map's own folders load first --------------------------------------------------------------------------------
+console.log("\n=== the Map first ===");
+{
+  const { ctx, page } = await openMap({ latencyMs: 150 });
+  await page.waitForSelector("#siyagahCloudBar [data-siyagah-toggle]", { timeout: 15000 });
+  const m = await page.evaluate(() => {
+    const r = performance.getEntriesByType("resource").find((e) => e.name.includes("/js/siyagah-cloud.js"));
+    const own = (window.__fsLog || []).filter((l) => !String(l.col || "").startsWith("notebooks/") && (l.col === "notes" || l.col === "notePlacements" || l.col === "noteFolders"));
+    return { start: r ? r.startTime : null, own: own.map((l) => ({ c: l.col, t0: l.t0, t1: l.t1 })) };
+  });
+  const inFlight = m.own.filter((l) => l.t0 < m.start && (l.t1 == null || l.t1 > m.start));
+  check("the Map first: Siyagah's code is fetched only after the Map's own folders and notes have loaded (no Map read in flight)", m.start != null && m.own.length > 0 && inFlight.length === 0, JSON.stringify({ start: m.start, inFlight, own: m.own.length }));
   await ctx.close();
 }
 
