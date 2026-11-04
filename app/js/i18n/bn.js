@@ -3323,6 +3323,7 @@ export const BN = {
   "With vowels": "হরকতসহ",
   "My progress on this word": "এই শব্দে আমার অগ্রগতি",
   "Dua word": "দুআর শব্দ",
+  "Hadith word": "হাদীসের শব্দ",
   "In this dua: {state}": "এই দুআয়: {state}",
   "The same word in the Qur'an (Word-by-Word): {state}": "কুরআনে একই শব্দ (শব্দে শব্দে): {state}",
   "Saved for this word in this dua; the Word card then opens to count it for the same word in the Qur'an too.": "এই দুআর এই শব্দের জন্য সংরক্ষিত হয়; তারপর কুরআনে একই শব্দের জন্যও গণনা করতে শব্দ কার্ড খোলে।",
