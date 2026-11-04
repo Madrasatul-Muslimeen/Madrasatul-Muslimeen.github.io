@@ -11270,17 +11270,17 @@
     function renderStudentMarksWheel(surah, lang) {
       const head = `<p class="mk-wheel-for" data-mk-wheel-for><strong>${escapeHtml(t("Marks of {name}", { name: viewMarksName() }))}</strong> <span class="mk-wheel-for-ro">${escapeHtml(t("(view only)"))}</span> <button type="button" class="wheel-look-btn" data-mk-own>${escapeHtml(t("Show my own marks"))}</button></p>`;
       const done = () => wheelContainer.querySelector("[data-mk-own]")?.addEventListener("click", () => { marksViewFor = null; renderWheel(); });
-      if (!surah || !auth.currentUser || !selectedPersonId) { wheelContainer.innerHTML = head + `<p class="mk-wheel-msg" data-mk-wheel-msg>${escapeHtml(t("Sign in as yourself to see your marks."))}</p>`; done(); return; }
+      if (!surah || !auth.currentUser || !selectedPersonId) { wheelContainer.innerHTML = `<div class="mk-wheel-wrap">${head}<p class="mk-wheel-msg" data-mk-wheel-msg>${escapeHtml(t("Sign in as yourself to see your marks."))}</p></div>`; done(); return; }
       ensureViewMarks(surah);
       if (viewMarks.state !== "ready") {
-        wheelContainer.innerHTML = head + `<p class="mk-wheel-msg" data-mk-wheel-msg>${escapeHtml(viewMarks.state === "failed" ? t("These marks could not be loaded right now.") : t("Loading the marks…"))}</p>`;
+        wheelContainer.innerHTML = `<div class="mk-wheel-wrap">${head}<p class="mk-wheel-msg" data-mk-wheel-msg>${escapeHtml(viewMarks.state === "failed" ? t("These marks could not be loaded right now.") : t("Loading the marks…"))}</p></div>`;
         done(); return;
       }
       const names = { "ayat": t("Āyāt of this sūrah"), "ayah-words": t("Words of this āyah"), "all-words": t("Words of every āyah") };
       const pieces = wheelPieces(marksWheelView, currentSurahData, currentAyahNum);
       const switchHtml = `<div class="mk-view-switch wheel-look-switch" data-mk-view-switch role="group" aria-label="${escapeHtml(t("Which view"))}">${MARKS_WHEEL_VIEWS.map((v) => `<button type="button" class="wheel-look-btn" data-mk-view="${v}" aria-pressed="${v === marksWheelView}">${escapeHtml(names[v])}</button>`).join("")}</div>`;
       const top = marksWheelView === "ayah-words" ? `${surah}:${currentAyahNum}` : `${t("Sūrah")} ${num(surah)}`;
-      wheelContainer.innerHTML = head + `<div class="mk-wheel-wrap">${switchHtml}${marksWheelHtml(pieces, viewMarks.marks, { lang, centreTop: top, centreSub: names[marksWheelView] })}</div>`;
+      wheelContainer.innerHTML = `<div class="mk-wheel-wrap">${head}${switchHtml}${marksWheelHtml(pieces, viewMarks.marks, { lang, centreTop: top, centreSub: names[marksWheelView] })}</div>`;
       wheelContainer.querySelectorAll("[data-mk-view]").forEach((b) => b.addEventListener("click", () => { marksWheelView = b.dataset.mkView; renderWheel(); }));
       done();
     }
