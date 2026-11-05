@@ -46,30 +46,41 @@ function matchBlock(text, name) {
 }
 const deployed = fs.readFileSync(path.join(root, "firestore.rules"), "utf8");
 const candidate = fs.readFileSync(path.join(root, "docs/governance/2026-09-25-wordpress-import-rules-candidate.rules"), "utf8");
-let rules = deployed.replace(matchBlock(deployed, "notes"), matchBlock(candidate, "notes"));
-rules = rules.replace(matchBlock(deployed, "noteFolders"), matchBlock(candidate, "noteFolders"));
-assert.ok(rules.includes("importFieldsWellFormed") && rules.includes("folderImportFieldsWellFormed"),
-  "the candidate blocks were not substituted -- this suite would be testing the deployed rules");
-// The Owner pastes ONE whole file. It must be exactly the ruleset tested here.
+// The Owner pastes ONE whole file; this is the one they published for the import (25 Sep 2026).
 const DEPLOYMENT_FILE = "docs/governance/2026-09-25-wordpress-import-DEPLOYMENT-candidate.rules";
-// UPDATED IN PLACE, 1 Oct 2026 (Architect cleanup, handover 2c). This compared
-// the assembled ruleset with the 25 Sep DEPLOYMENT file -- right until the Owner
-// published it, then wrong for a correct reason: three later Owner-published
-// whole files (lemma-progress, word-levels, Ruku'/Page) changed OTHER blocks of
-// firestore.rules, so "firestore.rules + the candidate's two blocks" can never
-// again equal that historical file. Regenerating it (WRITE_DEPLOYMENT_FILE)
-// would rewrite the record of what was published, so that path is gone. What
-// still holds, and is checked: the candidate's notes/noteFolders blocks are
-// byte-identical to BOTH the live firestore.rules and the published 25 Sep file,
-// so the ruleset this suite runs IS the live one.
+// UPDATED IN PLACE, 5 Nov 2026. Since 1 Oct this assembled "firestore.rules with its notes/noteFolders blocks
+// replaced by the candidate's" and asserted that (a) the live blocks ARE the candidate's and (b) the assembled
+// ruleset IS the live file -- "so the ruleset this suite runs IS the live one". Both became false for a correct
+// reason: the Owner published Siyagah round 7 (noteFolders: sections) and round 14 (notes: flags) on top of the
+// import Rules, so the live blocks carry the import helpers AND later fields, and substituting the 25 Sep blocks
+// back in would build a ruleset that has never been live anywhere. The suite's own stated intent was always to run
+// the real importer against the LIVE ruleset, so it now does that directly. What is checked about the candidate:
+// the published 25 Sep file's notes/noteFolders blocks are still the candidate's (a fact about the past), and
+// today's firestore.rules still carries the candidate's three import helpers BYTE FOR BYTE, so the published
+// import Rules cannot drift silently while this suite stays green.
+function ruleFunction(text, name) {
+  const start = text.indexOf(`function ${name}(`);
+  assert.notEqual(start, -1, `no function ${name}`);
+  assert.equal(text.indexOf(`function ${name}(`, start + 1), -1, `two functions named ${name}`);
+  let depth = 0;
+  for (let i = text.indexOf("{", start); i < text.length; i++) {
+    if (text[i] === "{") depth++;
+    else if (text[i] === "}" && --depth === 0) return text.slice(start, i + 1);
+  }
+  throw new Error(`unterminated function ${name}`);
+}
 {
   const published = fs.readFileSync(path.join(root, DEPLOYMENT_FILE), "utf8");
   for (const name of ["notes", "noteFolders"]) {
-    assert.equal(matchBlock(deployed, name), matchBlock(candidate, name), `the live firestore.rules ${name} block is not the candidate's`);
     assert.equal(matchBlock(published, name), matchBlock(candidate, name), `the published ${DEPLOYMENT_FILE} ${name} block is not the candidate's`);
   }
-  assert.equal(rules, deployed, "the assembled ruleset differs from the live firestore.rules");
+  for (const [block, name] of [["notes", "importFieldsWellFormed"], ["notes", "importFieldsFrozen"], ["noteFolders", "folderImportFieldsWellFormed"]]) {
+    const fromCandidate = ruleFunction(matchBlock(candidate, block), name);
+    assert.ok(fromCandidate.length > 100, `the candidate's ${name} parsed implausibly short`);
+    assert.equal(ruleFunction(matchBlock(deployed, block), name), fromCandidate, `today's firestore.rules ${block} ${name}() is not the published candidate's`);
+  }
 }
+const rules = deployed;
 
 // --- load the real modules, every relative import rewritten -----------------
 const GSTATIC = /import\s*\{[\s\S]*?\}\s*from\s*"https:\/\/www\.gstatic\.com\/firebasejs\/10\.12\.2\/firebase-firestore\.js";/;

@@ -40,7 +40,31 @@ assert.equal(HOST, "127.0.0.1");
 assert.match(CANDIDATE, /d\(\)\.unitType == 'ruku'/, "the candidate must admit ruku");
 assert.match(CANDIDATE, /d\(\)\.unitType == 'page'/, "the candidate must admit page");
 assert.doesNotMatch(LIVE, /d\(\)\.unitType == 'ruku'/, "the pre-publish rules already admit ruku -- this suite's 'before' half would prove nothing");
-assert.equal(CURRENT_LIVE, CANDIDATE, "firestore.rules is no longer the published Ruku'/Page file");
+// UPDATED IN PLACE 5 Nov 2026. This read "firestore.rules IS the published Ruku'/Page file", true from 29 Sep
+// (6467656f) until the Owner published later Rules into the same file (round 7, Basic/Depth, round 14, the guardian
+// roster rule, Intermediate, Zab, Tasrif, Vocabulary review, hadithSubjects, the Keys blocks), after which it can
+// never again be this file: history tested against the present. What is still true, and checked: the block this
+// publish changed -- activity/{activityKey}/evidence, whose unitIdentityOk() was widened to admit ruku and page --
+// is in today's firestore.rules BYTE FOR BYTE, so the published widening cannot drift silently. (The cases below
+// run on CANDIDATE and on the pinned pre-publish LIVE, as before.)
+function evidenceBlock(text) {
+  const head = "match /activity/{activityKey}/evidence/{eventId} {";
+  const start = text.indexOf(head);
+  assert.notEqual(start, -1, "no activity evidence block found");
+  assert.equal(text.indexOf(head, start + 1), -1, "two activity evidence blocks");
+  let depth = 0;
+  for (let i = start + head.length - 1; i < text.length; i++) {
+    if (text[i] === "{") depth++;
+    else if (text[i] === "}" && --depth === 0) return text.slice(start, i + 1);
+  }
+  throw new Error("unterminated activity evidence block");
+}
+{
+  const published = evidenceBlock(CANDIDATE);
+  assert.match(published, /function unitIdentityOk\(\)[\s\S]*d\(\)\.unitType == 'ruku'/, "the candidate's evidence block does not carry the ruku widening");
+  assert.notEqual(evidenceBlock(LIVE), published, "the pre-publish evidence block already equals the candidate's -- the base is wrong");
+  assert.equal(evidenceBlock(CURRENT_LIVE), published, "today's firestore.rules activity evidence block is not the published Ruku'/Page block");
+}
 
 // --- load the real modules ---------------------------------------------------
 const GSTATIC = /import\s*\{[\s\S]*?\}\s*from\s*"https:\/\/www\.gstatic\.com\/firebasejs\/10\.12\.2\/firebase-firestore\.js";/;
@@ -77,6 +101,11 @@ const OPEN_GATE = toDataUrl("export function isReadingUnitsPersistenceReady() { 
 function loadWiring(gateUrl) {
   let w = read("study-event-wiring.js");
   w = swapSpec(w, "./activity.js", activityUrl, "wiring");
+  // UPDATED IN PLACE 5 Nov 2026: 32c81efb (6 Oct 2026, #606 Al-Fatiha record keys) added an import of
+  // ./fatiha-count.js to study-event-wiring.js, and a `data:` module cannot resolve a relative specifier, so this
+  // suite has failed to LOAD since then (ERR_UNSUPPORTED_RESOLVE_REQUEST, hidden behind the file-equality check
+  // above). The real module is loaded (it imports nothing), so the wiring runs exactly as the app runs it.
+  w = swapSpec(w, "./fatiha-count.js", realUrl("fatiha-count.js"), "wiring");
   w = swapSpec(w, "./study-activity-evidence-store.js", storeUrl, "wiring");
   w = swapSpec(w, "./study-activity-evidence-id.js", realUrl("study-activity-evidence-id.js"), "wiring");
   w = swapSpec(w, "./study-evidence-readiness.js", realUrl("study-evidence-readiness.js"), "wiring");

@@ -13,6 +13,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import test from "node:test";
+import { execSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { initializeTestEnvironment, assertFails, assertSucceeds } from "@firebase/rules-unit-testing";
 import { doc, getDoc, setDoc, updateDoc, deleteDoc } from "firebase/firestore";
@@ -30,6 +31,31 @@ const candidate = fs.readFileSync(path.resolve(here, "../..", RULES_FILE), "utf8
 assert.match(PROJECT, /^demo-/);
 assert.notEqual(PROJECT, "study-monitoring");
 
+// One top-level `match /<name>/{key} { ... }` block, braces balanced (the line-anchored form, so a comment that
+// names the collection is never mistaken for the block).
+function ruleBlock(text, name) {
+  const m = new RegExp(`^[ \\t]*match /${name}/`, "m").exec(text);
+  assert.ok(m, `no ${name} block found`);
+  const start = m.index + m[0].indexOf("match");
+  const open = text.lastIndexOf("{", text.indexOf("\n", start));
+  let depth = 0;
+  for (let i = open; i < text.length; i++) {
+    if (text[i] === "{") depth++;
+    else if (text[i] === "}" && --depth === 0) return text.slice(start, i + 1);
+  }
+  throw new Error(`unterminated ${name} block`);
+}
+// Every line of `older`, in order, in `newer`; returns the lines that are not.
+function linesMissingInOrder(older, newer) {
+  const n = newer.split("\n");
+  let j = 0; const missing = [];
+  for (const line of older.split("\n")) {
+    let k = j; while (k < n.length && n[k] !== line) k++;
+    if (k < n.length) j = k + 1; else missing.push(line);
+  }
+  return missing;
+}
+
 // The deployment candidate must be production PLUS the new block, never a
 // smaller file that only knows about quranWordTotals -- the same integrity
 // guard word-progress-v1.rules.test.mjs and deployment-candidate.rules.test.mjs
@@ -39,9 +65,21 @@ if (RULES_FILE === DEPLOYMENT) {
   for (const required of ["quranWordTotals", "quranWordProgress", "quranWordApprovals", "tenantInvites", "notes"]) {
     assert.ok(matchBlocks.includes(required), `the deployment candidate is missing match /${required}/`);
   }
-  const production = fs.readFileSync(path.resolve(here, "../../firestore.rules"), "utf8").split("\n");
+  // UPDATED IN PLACE 5 Nov 2026. This compared the candidate with TODAY's firestore.rules. The Owner published
+  // quranWordTotals on 24 Sep (9050c84f) and has since published many later Rules into the same file, so the live
+  // file has hundreds of lines this 24 Sep candidate never had ("DROPS 791 production lines"): history tested
+  // against the present. Now: (1) the same comparison against firestore.rules OF THE CANDIDATE'S DAY (3e9c19be,
+  // the commit that assembled it), a fact about the past that does not move; (2) the quranWordTotals block the
+  // Owner published is in today's firestore.rules BYTE FOR BYTE, so it cannot drift silently.
+  const CANDIDATE_BASE_REF = "3e9c19be";
+  const production = execSync(`git show ${CANDIDATE_BASE_REF}:firestore.rules`, { cwd: path.resolve(here, "../.."), encoding: "utf8" }).split("\n");
+  assert.ok(!production.some((line) => /match \/quranWordTotals\//.test(line)), `firestore.rules at ${CANDIDATE_BASE_REF} already carries quranWordTotals: the base is wrong`);
   const missing = production.filter((line) => line.trim() && !candidate.includes(line));
-  assert.deepEqual(missing, [], `the deployment candidate DROPS ${missing.length} production line(s) -- it would remove live rules`);
+  assert.deepEqual(missing, [], `the deployment candidate DROPS ${missing.length} production line(s) of its day -- it would have removed live rules`);
+  const liveNow = fs.readFileSync(path.resolve(here, "../../firestore.rules"), "utf8");
+  const block = ruleBlock(candidate, "quranWordTotals");
+  assert.ok(block.length > 400, "the candidate's quranWordTotals block parsed implausibly short");
+  assert.equal(ruleBlock(liveNow, "quranWordTotals"), block, "today's firestore.rules quranWordTotals block is not the published candidate's");
 } else {
   assert.deepEqual(matchBlocks, ["quranWordTotals"],
     `the isolated extract must govern exactly one collection, saw: ${matchBlocks.join(",")}`);

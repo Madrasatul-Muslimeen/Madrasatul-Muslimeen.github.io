@@ -8,6 +8,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import test from "node:test";
+import { execSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { initializeTestEnvironment, assertFails, assertSucceeds } from "@firebase/rules-unit-testing";
 import { doc, getDoc, setDoc, updateDoc, deleteDoc } from "firebase/firestore";
@@ -23,30 +24,57 @@ const live = fs.readFileSync(path.join(root, "firestore.rules"), "utf8");
 assert.match(PROJECT, /^demo-/);
 assert.equal(HOST, "127.0.0.1");
 
-// The candidate is the live file with exactly three lines widened (and a two-line comment): every other live line
-// is still there, in order. Either state passes -- before publication, or after it (the files are the same).
+// One top-level `match /<name>/{key} { ... }` block, braces balanced (the line-anchored form, so a comment that
+// names the collection is never mistaken for the block).
+function ruleBlock(text, name) {
+  const m = new RegExp(`^[ \\t]*match /${name}/`, "m").exec(text);
+  assert.ok(m, `no ${name} block found`);
+  const start = m.index + m[0].indexOf("match");
+  const open = text.lastIndexOf("{", text.indexOf("\n", start));
+  let depth = 0;
+  for (let i = open; i < text.length; i++) {
+    if (text[i] === "{") depth++;
+    else if (text[i] === "}" && --depth === 0) return text.slice(start, i + 1);
+  }
+  throw new Error(`unterminated ${name} block`);
+}
+// Every line of `older`, in order, in `newer`; returns the lines that are not.
+function linesMissingInOrder(older, newer) {
+  const n = newer.split("\n");
+  let j = 0; const missing = [];
+  for (const line of older.split("\n")) {
+    let k = j; while (k < n.length && n[k] !== line) k++;
+    if (k < n.length) j = k + 1; else missing.push(line);
+  }
+  return missing;
+}
+
+// The candidate is the live file OF ITS DAY with exactly three lines widened (and a two-line comment): every other
+// line of firestore.rules at 1566cef1 (the commit that wrote the candidate) is still there, in order.
+//
+// UPDATED IN PLACE 5 Nov 2026. This compared the candidate with TODAY's firestore.rules, in three accepted states
+// (before publication; published, the same file; published and then extended). It failed in a fourth, legitimate
+// state: the Owner published this widening, then the Tasrif level (d612879a, PCF J39) widened the SAME three lines
+// again to ['wbw', 'basic', 'intermediate', 'tasrif', 'depth'], so a candidate line is no longer in the live file
+// at all. Testing history against the present. Now: (1) the "three lines widened" comparison is pinned to the
+// candidate's own base, which does not move; (2) today's firestore.rules, with ONLY Tasrif's later widening of
+// those three lines undone, still carries every line of this candidate in order -- so the published intermediate
+// level cannot be dropped or drift silently, and the only accepted change on top of it is Tasrif's.
+// A MUTANT run (MUTANT=1) skips this file-level comparison, as before.
+const CANDIDATE_BASE_REF = "1566cef1";
 if (!process.env.MUTANT) {
   const OLD = "          && request.resource.data.get('level', '') in ['wbw', 'basic', 'depth']";
-  const candLines = candidate.split("\n");
-  let j = 0; const missing = [];
-  for (const line of live.split("\n")) {
-    let k = j; while (k < candLines.length && candLines[k] !== line) k++;
-    if (k < candLines.length) j = k + 1; else missing.push(line);
-  }
-  const published = live.trimEnd() === candidate.trimEnd();
-  // A third state (14 Oct 2026, PCF J15): published, and the live file has since gained another published rule
-  // (the guardian roster rule). Then every candidate line must still be in the live file, in order.
+  const NEW = "          && request.resource.data.get('level', '') in ['wbw', 'basic', 'intermediate', 'depth']";
+  const TASRIF = "          && request.resource.data.get('level', '') in ['wbw', 'basic', 'intermediate', 'tasrif', 'depth']";
+  const baseLive = execSync(`git show ${CANDIDATE_BASE_REF}:firestore.rules`, { cwd: root, encoding: "utf8" });
+  const missing = linesMissingInOrder(baseLive, candidate);
+  assert.deepEqual(missing, [OLD, OLD, OLD], `base Rules lines missing from the candidate: ${JSON.stringify(missing)}`);
+  assert.equal(candidate.split("\n").length - baseLive.split("\n").length, 2, "only a two-line comment is added");
+  assert.equal(candidate.split("\n").filter((l) => l === NEW).length, 3, "the candidate widens exactly three lines");
   const liveLines = live.split("\n");
-  let m = 0; const droppedFromLive = [];
-  for (const line of candLines) {
-    let k = m; while (k < liveLines.length && liveLines[k] !== line) k++;
-    if (k < liveLines.length) m = k + 1; else droppedFromLive.push(line);
-  }
-  const publishedThenExtended = !published && droppedFromLive.length === 0;
-  if (!publishedThenExtended) {
-    assert.deepEqual(missing, published ? [] : [OLD, OLD, OLD], `live Rules lines missing from the candidate: ${JSON.stringify(missing)}`);
-    assert.equal(candLines.length - liveLines.length, published ? 0 : 2, "only a two-line comment is added");
-  }
+  assert.equal(liveLines.filter((l) => l === TASRIF).length, 3, "today's firestore.rules does not carry the Tasrif widening of the three lines");
+  const dropped = linesMissingInOrder(candidate, liveLines.map((l) => (l === TASRIF ? NEW : l)).join("\n"));
+  assert.deepEqual(dropped, [], `published candidate lines missing from today's firestore.rules: ${JSON.stringify(dropped)}`);
 }
 
 const T = "t1";

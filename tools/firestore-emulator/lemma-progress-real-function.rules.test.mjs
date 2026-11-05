@@ -107,6 +107,12 @@ dataSource = rewriteSpecifier(dataSource, "./quran-word-total.js", realFileUrl("
 // gate is loaded (open since 2 Oct 2026, the Owner: "Basic and Depth rules are
 // live"), so the WbW cases below run exactly as the app runs them.
 dataSource = rewriteSpecifier(dataSource, "./study-lemma-levels-readiness.js", realFileUrl("study-lemma-levels-readiness.js"), "quran-lemma-progress-data.js");
+// UPDATED IN PLACE 5 Nov 2026: the same failure again. ea989676 (19 Oct 2026, the Word card's five levels, J38)
+// added `import { isTasrifLevelPersistenceReady } from "./study-tasrif-level-readiness.js"` to
+// quran-lemma-progress-data.js, and a `data:` module cannot resolve a relative specifier, so the suite has failed
+// to LOAD since then (ERR_UNSUPPORTED_RESOLVE_REQUEST) and none of its cases ran. The REAL gate module is loaded
+// (it imports nothing), so the cases run exactly as the app runs them.
+dataSource = rewriteSpecifier(dataSource, "./study-tasrif-level-readiness.js", realFileUrl("study-tasrif-level-readiness.js"), "quran-lemma-progress-data.js");
 
 const {
   claimLemmaWordState: realClaimLemmaWordState,
