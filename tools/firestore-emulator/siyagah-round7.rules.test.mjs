@@ -10,6 +10,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import test from "node:test";
+import { execSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { initializeTestEnvironment, assertSucceeds } from "@firebase/rules-unit-testing";
 import { doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, collection, query, where, limit } from "firebase/firestore";
@@ -26,27 +27,59 @@ const live = fs.readFileSync(path.join(root, "firestore.rules"), "utf8");
 assert.match(PROJECT, /^demo-/);
 assert.equal(HOST, "127.0.0.1");
 
-// The candidate is the live file PLUS this round, nothing removed: every line
-// of firestore.rules is still in it, in order -- except the one line this round
-// rewrites in place, twice (noteFolders' `&& parentOneHopOk();`, which now
-// continues with `&& sectionAssignmentOk();`). Any OTHER missing line fails.
+// One top-level `match /<name>/{key} { ... }` block, braces balanced (the line-anchored form, so a comment that
+// names the collection is never mistaken for the block).
+function ruleBlock(text, name) {
+  const m = new RegExp(`^[ \\t]*match /${name}/`, "m").exec(text);
+  assert.ok(m, `no ${name} block found`);
+  const start = m.index + m[0].indexOf("match");
+  const open = text.lastIndexOf("{", text.indexOf("\n", start));
+  let depth = 0;
+  for (let i = open; i < text.length; i++) {
+    if (text[i] === "{") depth++;
+    else if (text[i] === "}" && --depth === 0) return text.slice(start, i + 1);
+  }
+  throw new Error(`unterminated ${name} block`);
+}
+// Every line of `older`, in order, in `newer`; returns the lines that are not.
+function linesMissingInOrder(older, newer) {
+  const n = newer.split("\n");
+  let j = 0; const missing = [];
+  for (const line of older.split("\n")) {
+    let k = j; while (k < n.length && n[k] !== line) k++;
+    if (k < n.length) j = k + 1; else missing.push(line);
+  }
+  return missing;
+}
+
+// The candidate is the live file OF ITS DAY plus this round, nothing removed: every line of firestore.rules at
+// 54793a5a (the commit that wrote the candidate) is still in it, in order -- except the one line this round
+// rewrites in place, twice (noteFolders' `&& parentOneHopOk();`, which now continues with
+// `&& sectionAssignmentOk();`). Any OTHER missing line fails.
 // A MUTANT run (MUTANT=1) skips only this file-level comparison, so a mutated
 // rule is judged by the cases below and not by this check noticing the edit.
+//
+// UPDATED IN PLACE 5 Nov 2026. Since 1 Oct this compared the candidate with TODAY's firestore.rules ("either the
+// rewritten line is missing twice, or the two are the same file"). The Owner published this candidate and then
+// later Rules into the same file (round 14's Note flags and links, the guardian roster rule, Zab, Tasrif,
+// Vocabulary review, hadithSubjects, the Keys blocks), so the live file now has lines this candidate never had and
+// the check was testing history against the present. Now: (1) the comparison is pinned to the candidate's own
+// base, a fact about the past that does not move; (2) the four blocks this round wrote (noteFolders, noteSections,
+// noteTags, noteTagLinks) must be in today's firestore.rules BYTE FOR BYTE, so the published round cannot drift
+// silently. (The notes and tenantPeople blocks were changed after this round by later published Rules, so they
+// are not this round's to pin.)
+const CANDIDATE_BASE_REF = "54793a5a";
+const ROUND7_BLOCKS = ["noteFolders", "noteSections", "noteTags", "noteTagLinks"];
 if (!process.env.MUTANT) {
   const REWRITTEN = new Set(["                    && parentOneHopOk();"]);
-  const candLines = candidate.split("\n");
-  let j = 0; const missing = [];
-  for (const line of live.split("\n")) {
-    let k = j; while (k < candLines.length && candLines[k] !== line) k++;
-    if (k < candLines.length) j = k + 1; else missing.push(line);
+  const baseLive = execSync(`git show ${CANDIDATE_BASE_REF}:firestore.rules`, { cwd: root, encoding: "utf8" });
+  const missing = linesMissingInOrder(baseLive, candidate);
+  assert.deepEqual(missing, [...REWRITTEN, ...REWRITTEN], `base Rules lines missing from the candidate: ${JSON.stringify(missing)}`);
+  for (const name of ROUND7_BLOCKS) {
+    const block = ruleBlock(candidate, name);
+    assert.ok(block.length > 400, `the candidate's ${name} block parsed implausibly short`);
+    assert.equal(ruleBlock(live, name), block, `today's firestore.rules ${name} block is not the published round 7 candidate's`);
   }
-  // UPDATED IN PLACE 1 Oct 2026: the Owner published this candidate and
-  // firestore.rules was synced to it, so the two files are now the SAME file.
-  // Before publication exactly the rewritten line was missing (twice); after
-  // it, nothing is. Either state passes; anything else (a live line lost from
-  // the candidate, or the two drifting apart after publication) fails.
-  const published = live.trimEnd() === candidate.trimEnd();
-  assert.deepEqual(missing, published ? [] : [...REWRITTEN, ...REWRITTEN], `live Rules lines missing from the candidate: ${JSON.stringify(missing)}`);
 }
 
 const T = "t1", T2 = "t2";

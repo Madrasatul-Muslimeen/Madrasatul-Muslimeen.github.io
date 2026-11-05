@@ -23,6 +23,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import test from "node:test";
+import { execSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { initializeTestEnvironment } from "@firebase/rules-unit-testing";
 import { doc, setDoc, updateDoc, writeBatch } from "firebase/firestore";
@@ -36,7 +37,18 @@ const root = path.resolve(here, "../..");
 assert.match(PROJECT, /^demo-/);
 assert.notEqual(PROJECT, "study-monitoring");
 
-const deployed = fs.readFileSync(path.join(root, "firestore.rules"), "utf8");
+// UPDATED IN PLACE 5 Nov 2026. `deployed` was today's firestore.rules. Since this was written the Owner has
+// published Siyagah round 7 (noteFolders) and round 14 (notes) on top of the import Rules, so today's notes and
+// noteFolders blocks carry the import helpers AND later fields, and "the live block mentions the helpers, so it
+// must BE the candidate's block" failed for a correct reason: history tested against the present. The candidate
+// is assembled now, as it was on 25 Sep, into firestore.rules OF ITS DAY (39501f24, the commit that wrote the
+// one-paste file), and the result is asserted to be byte-for-byte the DEPLOYMENT file the Owner published. Today's
+// firestore.rules is checked separately below: it still carries the candidate's three import helpers BYTE FOR
+// BYTE, so the published import Rules cannot drift silently.
+const CANDIDATE_BASE_REF = "39501f24";
+const deployed = execSync(`git show ${CANDIDATE_BASE_REF}:firestore.rules`, { cwd: root, encoding: "utf8" });
+const liveToday = fs.readFileSync(path.join(root, "firestore.rules"), "utf8");
+const PUBLISHED_DEPLOYMENT = fs.readFileSync(path.join(root, "docs/governance/2026-09-25-wordpress-import-DEPLOYMENT-candidate.rules"), "utf8");
 const candidate = fs.readFileSync(
   path.join(root, "docs/governance/2026-09-25-wordpress-import-rules-candidate.rules"), "utf8");
 
@@ -93,6 +105,24 @@ assert.equal(
   assembled.replace(candidateNotes, "<<NOTES>>").replace(candidateFolders, "<<FOLDERS>>"),
   deployed.replace(deployedNotes, "<<NOTES>>").replace(deployedFolders, "<<FOLDERS>>"),
   "the assembled ruleset differs from the deployed one somewhere other than the notes/noteFolders blocks");
+assert.equal(assembled, PUBLISHED_DEPLOYMENT, "the candidate assembled into its day's firestore.rules is not the DEPLOYMENT file the Owner published");
+// A nested `function <name>() { ... }`, braces balanced.
+function ruleFunction(text, name) {
+  const start = text.indexOf(`function ${name}(`);
+  assert.notEqual(start, -1, `no function ${name}`);
+  assert.equal(text.indexOf(`function ${name}(`, start + 1), -1, `two functions named ${name}`);
+  let depth = 0;
+  for (let i = text.indexOf("{", start); i < text.length; i++) {
+    if (text[i] === "{") depth++;
+    else if (text[i] === "}" && --depth === 0) return text.slice(start, i + 1);
+  }
+  throw new Error(`unterminated function ${name}`);
+}
+for (const [block, name] of [["notes", "importFieldsWellFormed"], ["notes", "importFieldsFrozen"], ["noteFolders", "folderImportFieldsWellFormed"]]) {
+  const published = ruleFunction(matchBlock(candidate, block), name);
+  assert.ok(published.length > 100, `the candidate's ${name} parsed implausibly short`);
+  assert.equal(ruleFunction(matchBlock(liveToday, block), name), published, `today's firestore.rules ${block} ${name}() is not the published candidate's`);
+}
 
 const T = "t1";
 const env0 = { schemaVersion: 1, createdAt: new Date(), updatedAt: new Date(), createdBy: "uid-self" };
