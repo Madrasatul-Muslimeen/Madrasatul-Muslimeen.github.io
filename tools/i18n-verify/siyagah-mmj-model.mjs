@@ -26,6 +26,7 @@ const strip = (s) => s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/.*$
 const MODEL_SRC = read("app/js/siyagah-mmj-model.js");
 const DATA_SRC = read("app/js/siyagah-mmj-data.js");
 const LINK_SRC = read("app/js/siyagah-map-link.js");
+const WRITE_SRC = read("app/js/siyagah-mmj-write.js"); // J112 R2a
 
 let passed = 0, failed = 0;
 function check(name, fn) {
@@ -191,6 +192,104 @@ function behaviour(M) {
   run("retry: never sooner than a minute after the last try; the first try is always allowed", () => {
     eq([M.mayRetry(0, 5), M.mayRetry(1000, 1000 + 59999), M.mayRetry(1000, 1000 + 60000), M.MMJ_RETRY_MS], [true, false, true, 60000]);
   });
+
+  // --- J112 R2a: folder requests (Siyagah v05.68 "Writing (R2)", MMJ-SHARE.md) --------------------------------------
+  // A tree:  a (o0) > a1 (o0) > a11 ; a > a2 (o1) ; b (o1) ; c (o2). Notes: n1 in a11 only, n2 in a2 and b, n3 in a only.
+  const F = () => [
+    { id: "a", n: "A", p: null, o: 0, vis: 0 }, { id: "a1", n: "A1", p: "a", o: 0, vis: 0 }, { id: "a11", n: "A11", p: "a1", o: 0, vis: 0 },
+    { id: "a2", n: "A2", p: "a", o: 1, vis: 0 }, { id: "b", n: "B", p: null, o: 1, vis: 1 }, { id: "c", n: "C", p: null, o: 2, vis: 0 },
+  ];
+  const COPY = () => ({ tree: { sec: { id: "mmj-sec", n: "MMJ" }, folders: F(), at: 1 }, notes: {
+    n1: { id: "n1", title: "1", folderIds: ["a11"] }, n2: { id: "n2", title: "2", folderIds: ["a2", "b"] }, n3: { id: "n3", title: "3", folderIds: ["a", "elsewhere"] } } });
+  const CONTRACT = { "folder.add": ["id", "name", "parent"], "folder.rename": ["id", "name"], "folder.move": ["id", "parent", "before"], "folder.delete": ["id"], "folder.vis": ["id", "vis"] };
+  run("requests: the folder ops and their fields are EXACTLY the contract's (no other op, no other field)", () => {
+    eq(Object.keys(M.MMJ_FOLDER_OPS).sort(), Object.keys(CONTRACT).sort());
+    for (const [op, f] of Object.entries(CONTRACT)) eq([...M.MMJ_FOLDER_OPS[op]], f, op);
+    eq([...M.MMJ_REQUEST_ENVELOPE].sort(), ["at", "from", "op", "st", "v"]);
+  });
+  run("requests: every op builds exactly {v:1, op, from, st:'new'} plus its own fields -- nothing else, and never `at` (the writer's server time)", () => {
+    const folders = F();
+    const cases = [
+      ["folder.add", { id: "x-msa-1", name: "  New\u0007 one ", parent: "a" }, { id: "x-msa-1", name: "New one", parent: "a" }],
+      ["folder.add", { id: "x-msa-2", name: "Top", parent: null }, { id: "x-msa-2", name: "Top", parent: null }],
+      ["folder.rename", { id: "b", name: "Bee" }, { id: "b", name: "Bee" }],
+      ["folder.move", { id: "c", parent: "a" }, { id: "c", parent: "a" }],
+      ["folder.move", { id: "c", parent: null, before: "a" }, { id: "c", parent: null, before: "a" }],
+      ["folder.delete", { id: "a1" }, { id: "a1" }],
+      ["folder.vis", { id: "b", vis: 0 }, { id: "b", vis: 0 }],
+    ];
+    for (const [op, fields, want] of cases) {
+      const r = M.buildFolderRequest(op, fields, { folders, from: "msa" });
+      ok(r.ok, `${op} refused: ${r.reason}`);
+      eq(r.req, { v: 1, op, from: "msa", st: "new", ...want }, op);
+      ok(Object.keys(r.req).every((k) => ["v", "op", "from", "st", ...CONTRACT[op]].includes(k)) && !("at" in r.req), `${op} carries a field the contract does not list`);
+    }
+    eq(M.buildFolderRequest("folder.vis", { id: "b", vis: 1 }, { folders, from: "qr" }).req.from, "qr");
+  });
+  run("requests: a move into itself or one of its own subfolders is refused before asking", () => {
+    const folders = F(), why = "cannot move a folder into itself or one of its own subfolders";
+    eq([M.buildFolderRequest("folder.move", { id: "a", parent: "a" }, { folders }).reason, M.buildFolderRequest("folder.move", { id: "a", parent: "a1" }, { folders }).reason,
+      M.buildFolderRequest("folder.move", { id: "a", parent: "a11" }, { folders }).reason], [why, why, why]);
+    ok(M.buildFolderRequest("folder.move", { id: "a11", parent: "b" }, { folders }).ok, "a legal move was refused");
+    eq(M.moveTargets(folders, "a"), [null, "b", "c"]);
+    eq(M.moveTargets(folders, "a11"), [null, "a", "a1", "a2", "b", "c"]);
+  });
+  run("requests: an empty or too long name, a bad id, an unknown folder or parent, an unknown field, a bad vis or a used id is refused", () => {
+    const folders = F(), r = (op, f, from = "msa") => M.buildFolderRequest(op, f, { folders, from }).reason;
+    eq([r("folder.rename", { id: "b", name: "   " }), r("folder.rename", { id: "b", name: "x".repeat(201) }), r("folder.add", { id: "has space", name: "n", parent: null }),
+      r("folder.add", { id: "y".repeat(121), name: "n", parent: null }), r("folder.rename", { id: "nope", name: "n" }), r("folder.add", { id: "x1", name: "n", parent: "nope" }),
+      r("folder.delete", { id: "b", name: "n" }), r("folder.vis", { id: "b", vis: true }), r("folder.add", { id: "a", name: "n", parent: null }), r("folder.copy", { id: "a" }), r("folder.delete", { id: "b" }, "bwn"),
+      r("folder.move", { id: "c", parent: null, before: "a1" })],
+    ["bad name", "bad name", "bad id", "bad id", "not a Mapping My Journey folder", "not a Mapping My Journey folder", 'unknown field "name"', "vis must be 1 or 0", "id already used", "unknown op", "bad from", "before is not beside it"]);
+    ok(M.buildFolderRequest("folder.rename", { id: "b", name: "x".repeat(200) }, { folders }).ok, "200 characters is allowed");
+    ok(M.isMmjId("x-msa-a.b_c:d~e") && !M.isMmjId("") && !M.isMmjId("a/b") && !M.isMmjId(7), "the id alphabet");
+  });
+  run("from: 'qr' on quranrevival.github.io, 'msa' on madrasatul-muslimeen.github.io and everywhere else", () => {
+    eq(["quranrevival.github.io", "QuranRevival.github.io", "madrasatul-muslimeen.github.io", "localhost", "", "notquranrevival.github.io.evil"].map(M.mmjFromForHost), ["qr", "qr", "msa", "msa", "msa", "msa"]);
+  });
+  run("ids: a random id is letters and digits from the bytes, with its prefix, and a valid contract id", () => {
+    const id = M.mmjRandomId(new Uint8Array([0, 35, 36, 255]), "x-msa-");
+    eq(id, "x-msa-0z03"); ok(M.isMmjId(id));
+  });
+  run("move up / down: the `before` among its siblings (down past the end is no before = last); none at the ends", () => {
+    const folders = F();
+    eq([M.siblingStep(folders, "b", -1), M.siblingStep(folders, "a", 1), M.siblingStep(folders, "b", 1), M.siblingStep(folders, "a", -1), M.siblingStep(folders, "c", 1)],
+      [{ parent: null, before: "a" }, { parent: null, before: "c" }, { parent: null, before: null }, undefined, undefined]);
+  });
+  run("delete: what goes to Trash -- the subfolders, and only the notes whose every folder of the set is inside (D6)", () => {
+    eq(M.folderDeleteReach(COPY(), "a"), { folders: 3, notes: 2 }); // n1 (a11), n3 (a; 'elsewhere' is not in the set) -- not n2 (also in b)
+    eq(M.folderDeleteReach(COPY(), "a1"), { folders: 1, notes: 1 });
+    eq(M.folderDeleteReach(COPY(), "c"), { folders: 0, notes: 0 });
+  });
+  run("pending: the change shows at once and is marked; the copy passed in is never changed", () => {
+    const c = COPY(), before = JSON.stringify(c);
+    const r = M.withPending(c, [
+      { reqId: "r1", st: "new", req: { op: "folder.add", id: "x-msa-1", name: "New", parent: "b" } },
+      { reqId: "r2", st: "work", req: { op: "folder.rename", id: "c", name: "See" } },
+      { reqId: "r3", st: "new", still: true, req: { op: "folder.move", id: "a2", parent: null, before: "b" } },
+      { reqId: "r4", st: "new", req: { op: "folder.vis", id: "a", vis: 1 } },
+      { reqId: "r5", st: "done", req: { op: "folder.delete", id: "a11" } },
+    ]);
+    eq(JSON.stringify(c), before, "the copy was changed");
+    const by = Object.fromEntries(r.copy.tree.folders.map((f) => [f.id, f]));
+    eq([by["x-msa-1"]?.p, by["x-msa-1"]?.n, by.c.n, by.a2.p, by.a.vis, !!by.a11], ["b", "New", "See", null, 1, true]);
+    const top = M.folderView(r.copy).roots.map((n) => n.folder.id);
+    eq(top, ["a", "a2", "b", "c"], "a2 moved in front of b");
+    eq(r.marks, { "x-msa-1": { reqId: "r1", op: "folder.add", st: "new", still: false }, c: { reqId: "r2", op: "folder.rename", st: "work", still: false },
+      a2: { reqId: "r3", op: "folder.move", st: "new", still: true }, a: { reqId: "r4", op: "folder.vis", st: "new", still: false }, a11: { reqId: "r5", op: "folder.delete", st: "done", still: false } });
+    eq(M.withPending(c, []).copy, c);
+  });
+  run("reflected: Siyagah's copy has caught up with a request (add, rename, move, delete, vis) -- and not before", () => {
+    const c = COPY();
+    eq([M.requestReflected(c, { op: "folder.add", id: "a" }), M.requestReflected(c, { op: "folder.add", id: "zz" }), M.requestReflected(c, { op: "folder.rename", id: "b", name: "B" }),
+      M.requestReflected(c, { op: "folder.rename", id: "b", name: "Bee" }), M.requestReflected(c, { op: "folder.move", id: "a1", parent: "a" }), M.requestReflected(c, { op: "folder.move", id: "a1", parent: null }),
+      M.requestReflected(c, { op: "folder.delete", id: "zz" }), M.requestReflected(c, { op: "folder.delete", id: "a" }), M.requestReflected(c, { op: "folder.vis", id: "b", vis: 1 }), M.requestReflected(c, { op: "folder.vis", id: "b", vis: 0 })],
+    [true, false, true, false, true, false, true, false, true, false]);
+  });
+  run("outcome: new / work / unseen wait, done is done, refused carries its why", () => {
+    eq([M.requestOutcome(null), M.requestOutcome({ st: "new" }), M.requestOutcome({ st: "work" }), M.requestOutcome({ st: "done", res: { id: "a" } }), M.requestOutcome({ st: "refused", why: "id already used" })],
+      [{ kind: "waiting", st: "new" }, { kind: "waiting", st: "new" }, { kind: "waiting", st: "work" }, { kind: "done" }, { kind: "refused", why: "id already used" }]);
+  });
   return out;
 }
 
@@ -211,7 +310,7 @@ for (const [name, r] of Object.entries(real)) check(name, () => { if (r !== true
 
 console.log("\n=== wiring ===");
 const staticImports = (src) => [...strip(src).matchAll(/^\s*import\s+(?:[^"';]*?\s+from\s+)?["']([^"']+)["']/gm)].map((m) => m[1]);
-function wiring(model, data, link) {
+function wiring(model, data, link, write = WRITE_SRC) {
   const o = {};
   const run = (n, fn) => { try { const r = fn(); if (r === false) throw new Error("false"); o[n] = true; } catch (e) { o[n] = e.message; } };
   run("the model imports nothing, and names no network or storage", () => {
@@ -220,9 +319,33 @@ function wiring(model, data, link) {
     for (const w of ["fetch(", "indexedDB", "localStorage", "XMLHttpRequest", "firebase"]) ok(!s.includes(w), `names ${w}`);
   });
   run("POSITIVE CONTROL the write scan reads the data module (it finds getDoc and onSnapshot)", () => ok(/fs\.getDoc\(/.test(strip(data)) && /fs\.onSnapshot\(/.test(strip(data)), "reads not found"));
+  // UPDATED IN PLACE (J112 R2a, 5 Nov 2026). R1's truth was "nothing here writes". R2a's is narrower and still total:
+  // the READER (data module) and the hook still never write; the ONLY write anywhere in the Siyagah code is the write
+  // module's ONE setDoc of a FRESH document under notebooks/{nb}/mmjin/ (Siyagah's "Writing (R2)" contract: an app only
+  // ever CREATES a request there, never changes one, and never writes anything else of Siyagah's).
   run("the data module NEVER writes anything of Siyagah's", () => {
-    const s = strip(data);
-    for (const w of ["setDoc", "updateDoc", "deleteDoc", "addDoc", "writeBatch", "runTransaction", "arrayUnion", "serverTimestamp", "deleteField", ".commit("]) ok(!s.includes(w), `names ${w}`);
+    for (const [which, src] of [["data", data], ["link", link]]) {
+      const s = strip(src);
+      for (const w of ["setDoc", "updateDoc", "deleteDoc", "addDoc", "writeBatch", "runTransaction", "arrayUnion", "serverTimestamp", "deleteField", ".commit("]) ok(!s.includes(w), `${which} names ${w}`);
+    }
+  });
+  run("POSITIVE CONTROL the write scan reads the write module (it finds its setDoc and its onSnapshot)", () => ok(/fs\.setDoc\(/.test(strip(write)) && /fs\.onSnapshot\(/.test(strip(write)), "the write module's calls were not found"));
+  run("the write module only CREATES a request under notebooks/{nb}/mmjin/: one setDoc of a fresh doc, no merge, no other write or path", () => {
+    const s = strip(write);
+    for (const w of ["updateDoc", "deleteDoc", "addDoc", "writeBatch", "runTransaction", "arrayUnion", "arrayRemove", "deleteField", "increment(", ".commit(", "merge"]) ok(!s.includes(w), `names ${w}`);
+    const sets = [...s.matchAll(/fs\.setDoc\(([^;]*)\);/g)].map((m) => m[1].trim());
+    eq(sets, ["fs.doc(db, MMJIN, reqId), { ...req, at: fs.serverTimestamp() }"], "the setDoc calls");
+    eq([...s.matchAll(/`notebooks\/\$\{nb\}\/(\w+)`/g)].map((m) => m[1]), ["mmjin"], "the only Siyagah path is mmjin");
+    ok(!/["'`]notebooks\//.test(s.replace("`notebooks/${nb}/mmjin`", "")), "another notebooks/ path");
+    ok(/const reqId = randomId\(\);/.test(s) && /crypto\.getRandomValues/.test(s), "the reqId is not a fresh random id");
+    ok(/req\.st !== "new"/.test(s) && /req\.v !== 1/.test(s) && /"at" in req/.test(s), "send() does not refuse a non-request");
+  });
+  run("the write module's only static import is the model, and the hook loads it only by dynamic import, on a request", () => {
+    eq(staticImports(write), ["./siyagah-mmj-model.js"]);
+    ok(/await import\(`\$\{SDK\}firebase-firestore\.js`\)/.test(write), "no dynamic Firestore import");
+    ok(/import\("\.\/siyagah-mmj-write\.js"\)/.test(strip(link)), "the hook does not load the writer dynamically");
+    const at = strip(link).indexOf('import("./siyagah-mmj-write.js")'), ask = strip(link).indexOf("async function ask(");
+    ok(ask > 0 && at > ask, "the writer is loaded somewhere other than inside ask() (the first request)");
   });
   run("the data module's only static import is the model; Firestore comes by dynamic import", () => {
     eq(staticImports(data), ["./siyagah-mmj-model.js"]);
@@ -260,8 +383,8 @@ function graph(file, seen = new Set()) {
 }
 const pages = fs.readdirSync("app").filter((f) => f.endsWith(".html") && !f.startsWith("_prev"));
 check("POSITIVE CONTROL the walker reaches the hook from journey-map.html", () => ok(graph("app/journey-map.html").has(path.normalize("app/js/siyagah-map-link.js"))));
-check("no page reaches the reader or the model through static imports (I9: they load only when the Map connects)", () => {
-  const hit = pages.filter((f) => { const g = graph(`app/${f}`); return g.has(path.normalize("app/js/siyagah-mmj-data.js")) || g.has(path.normalize("app/js/siyagah-mmj-model.js")); });
+check("no page reaches the reader, the model or the writer through static imports (I9: they load only when the Map connects)", () => {
+  const hit = pages.filter((f) => { const g = graph(`app/${f}`); return g.has(path.normalize("app/js/siyagah-mmj-data.js")) || g.has(path.normalize("app/js/siyagah-mmj-model.js")) || g.has(path.normalize("app/js/siyagah-mmj-write.js")); });
   eq(hit, []);
 });
 
@@ -288,6 +411,14 @@ const MUTATIONS = [
   ["trust-bytes", 'return typeof hex === "string" && hex === plan.want;', "return true;", "pictures: bytes of the wrong size or the wrong sha are refused; the right ones pass"],
   ["retry-loop", "return !(Number.isFinite(lastTryMs) && lastTryMs > 0) || nowMs - lastTryMs >= gap;", "return true;", "retry: never sooner than a minute after the last try; the first try is always allowed"],
   ["other-notebook-copy", "c.nb !== String(nb || \"\")", "false", "device copy: a stored copy reads back; another notebook, another version or garbage gives an empty one"],
+  // J112 R2a
+  ["move-cycle-allowed", 'if (op === "folder.move" && parent !== null && folderSubtree(folders, f.id).has(parent)) return', 'if (false) return', "requests: a move into itself or one of its own subfolders is refused before asking"],
+  ["extra-field", 'for (const k of Object.keys(f)) if (!want.includes(k)) return { ok: false, reason: `unknown field "${k}"` };', "", "requests: an empty or too long name, a bad id, an unknown folder or parent, an unknown field, a bad vis or a used id is refused"],
+  ["at-in-request", 'const req = { v: 1, op, from, st: "new", id: f.id };', 'const req = { v: 1, op, from, st: "new", at: 0, id: f.id };', "requests: every op builds exactly {v:1, op, from, st:'new'} plus its own fields -- nothing else, and never `at` (the writer's server time)"],
+  ["qr-is-msa", 'return h === "quranrevival.github.io" || h.endsWith(".quranrevival.github.io") ? "qr" : "msa";', 'return "msa";', "from: 'qr' on quranrevival.github.io, 'msa' on madrasatul-muslimeen.github.io and everywhere else"],
+  ["d6-any-note", "if (own.length && own.every((x) => sub.has(x))) notes++;", "if (own.some((x) => sub.has(x))) notes++;", "delete: what goes to Trash -- the subfolders, and only the notes whose every folder of the set is inside (D6)"],
+  ["pending-not-shown", 'else if (r.op === "folder.rename") f.n = r.name;', "else if (false) f.n = r.name;", "pending: the change shows at once and is marked; the copy passed in is never changed"],
+  ["refused-is-done", 'if (st === "refused") return { kind: "refused", why: data.why == null ? "" : String(data.why) };', 'if (st === "refused") return { kind: "done" };', "outcome: new / work / unseen wait, done is done, refused carries its why"],
 ];
 for (const [label, a, b, target] of MUTATIONS) {
   ok(real[target] === true, `the target "${target}" is not a real passing check`);
@@ -301,13 +432,20 @@ const WIRING_MUTATIONS = [
   ["static-reader", LINK_SRC.replace('import { t, num } from "./i18n.js";', 'import { t, num } from "./i18n.js";\nimport "./siyagah-mmj-data.js";'), "the hook loads the reader, the model and the sanitiser only by dynamic import, and only for a signed-in user", "link"],
   ["unsanitised", LINK_SRC.replace("el.innerHTML = sanitize(tpl.innerHTML);", "el.innerHTML = tpl.innerHTML;"), "a note's content reaches the page only through the sanitiser", "link"],
   ["no-cursor", DATA_SRC.replace('fs.where("at", ">", new Date(Math.floor(copy.cursor))), ', ""), "the data module listens with where('at','>',cursor).orderBy('at') on notebooks/{nb}/mmj", "data"],
+  // J112 R2a: the write module may only CREATE under mmjin/ -- every occurrence replaced (split/join), never the first only
+  ["write-wrong-path", WRITE_SRC.split("`notebooks/${nb}/mmjin`").join("`notebooks/${nb}/mmj`"), "the write module only CREATES a request under notebooks/{nb}/mmjin/: one setDoc of a fresh doc, no merge, no other write or path", "write"],
+  ["write-merge", WRITE_SRC.split("{ ...req, at: fs.serverTimestamp() });").join("{ ...req, at: fs.serverTimestamp() }, { merge: true });"), "the write module only CREATES a request under notebooks/{nb}/mmjin/: one setDoc of a fresh doc, no merge, no other write or path", "write"],
+  ["write-update", WRITE_SRC.split("await fs.setDoc(").join("await fs.updateDoc("), "the write module only CREATES a request under notebooks/{nb}/mmjin/: one setDoc of a fresh doc, no merge, no other write or path", "write"],
+  ["write-fixed-id", WRITE_SRC.split("const reqId = randomId();").join('const reqId = "req";'), "the write module only CREATES a request under notebooks/{nb}/mmjin/: one setDoc of a fresh doc, no merge, no other write or path", "write"],
+  ["link-writes", LINK_SRC.split("render(); focusRow(focusId);").join("render(); focusRow(focusId); write.cloud.fs?.setDoc?.(null, {});"), "the data module NEVER writes anything of Siyagah's", "link"],
+  ["static-writer", LINK_SRC.replace('import { t, num } from "./i18n.js";', 'import { t, num } from "./i18n.js";\nimport "./siyagah-mmj-write.js";'), "the hook loads the reader, the model and the sanitiser only by dynamic import, and only for a signed-in user", "link"],
 ];
 for (const [label, src, target, which] of WIRING_MUTATIONS) {
-  const orig = { model: MODEL_SRC, data: DATA_SRC, link: LINK_SRC }[which];
+  const orig = { model: MODEL_SRC, data: DATA_SRC, link: LINK_SRC, write: WRITE_SRC }[which];
   if (src === orig) throw new Error(`wiring mutation ${label} changed nothing`);
-  const r = wiring(which === "model" ? src : MODEL_SRC, which === "data" ? src : DATA_SRC, which === "link" ? src : LINK_SRC);
+  const r = wiring(which === "model" ? src : MODEL_SRC, which === "data" ? src : DATA_SRC, which === "link" ? src : LINK_SRC, which === "write" ? src : WRITE_SRC);
   check(`mutation ${label} turns "${target}" red`, () => { if (r[target] === true) throw new Error("it stayed green"); });
 }
 
-console.log(`\n==== Siyagah MMJ model (J112 R1): ${passed} passed, ${failed} failed ====`);
+console.log(`\n==== Siyagah MMJ model (J112 R1 + R2a): ${passed} passed, ${failed} failed ====`);
 process.exit(failed ? 1 : 0);

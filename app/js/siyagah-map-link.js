@@ -56,13 +56,13 @@ const BAR_CSS = `
 #siyagahCloudBar [data-mmj-body] { background:#ffffff; color:#1d2b3a; border:1px solid #d7e0ea; border-radius:6px; padding:8px 10px; overflow-x:auto; overflow-wrap:anywhere; min-width:0; }
 #siyagahCloudBar [data-mmj-body] img { max-width:100%; height:auto; }
 #siyagahCloudBar [data-mmj-body] a { color:#1f4f8a; }
-#siyagahCloudBar [data-mmj-row] { display:flex; align-items:center; gap:6px; min-width:0; }
+#siyagahCloudBar [data-mmj-row] { display:flex; align-items:center; gap:6px; min-width:0; position:relative; }
 #siyagahCloudBar [data-mmj-row] > [data-mmj-folder] { flex:1 1 auto; width:auto; min-width:0; }
 #siyagahCloudBar [data-mmj-row][data-mmj-pending] > [data-mmj-folder] { border-style:dashed; border-color:#1f5fa8; font-style:italic; }
 #siyagahCloudBar [data-mmj-row][data-mmj-pending="folder.delete"] [data-mmj-name] { text-decoration:line-through; }
-#siyagahCloudBar .folder-menu-wrap { position:relative; flex:0 0 auto; }
+#siyagahCloudBar .folder-menu-wrap { position:static; flex:0 0 auto; } /* the menu hangs from the ROW, so it is never wider than the row (inside the bar at any width) */
 #siyagahCloudBar .folder-menu-btn { width:40px; height:40px; min-height:40px; padding:0; font-size:1.15rem; line-height:1; }
-#siyagahCloudBar .bar-palette { display:none; position:absolute; top:44px; inset-inline-end:0; z-index:20; flex-direction:column; gap:4px; width:14rem; max-width:calc(100vw - 2rem); box-sizing:border-box; padding:6px; background:#ffffff; color:#1d2b3a; border:1px solid #8a9bb0; border-radius:8px; box-shadow:0 10px 26px rgba(20,30,60,0.25); }
+#siyagahCloudBar .bar-palette { display:none; position:absolute; top:calc(100% + 2px); inset-inline-end:0; inset-inline-start:auto; z-index:20; flex-direction:column; gap:4px; width:14rem; max-width:100%; box-sizing:border-box; padding:6px; background:#ffffff; color:#1d2b3a; border:1px solid #8a9bb0; border-radius:8px; box-shadow:0 10px 26px rgba(20,30,60,0.25); }
 #siyagahCloudBar .bar-palette.open { display:flex; }
 #siyagahCloudBar .bar-palette button { width:100%; }
 #siyagahCloudBar .bar-palette button { min-height:40px; padding:4px 10px; font-size:0.95em; text-align:start; display:flex; align-items:center; gap:6px; overflow-wrap:anywhere; }
@@ -273,6 +273,14 @@ function mountMmjView(host, reader, model, sanitize, write = null) {
     return out + `</li>`;
   }
 
+  /** A selector that finds the same control again after a re-render (the focus is never dropped by a copy update). */
+  function focusKey(el) {
+    if (!el || !treeEl.contains(el)) return null;
+    for (const a of ["data-mmj-folder", "data-mmj-note", "data-mmj-menu-btn", "data-mmj-dismiss"]) if (el.hasAttribute(a)) return `[${a}="${CSS.escape(el.getAttribute(a))}"]`;
+    if (el.hasAttribute("data-mmj-act")) return `[data-mmj-act="${CSS.escape(el.getAttribute("data-mmj-act"))}"]` + (el.hasAttribute("data-for") ? `[data-for="${CSS.escape(el.getAttribute("data-for"))}"]` : "");
+    for (const a of ["data-mmj-input", "data-mmj-parent", "data-mmj-confirm-delete", "data-mmj-cancel"]) if (el.hasAttribute(a)) return `[${a}]`;
+    return null;
+  }
   function renderTree() {
     // A re-render (Siyagah's copy changed under the reader) must not lose what they were doing: the open ⋯ menu, the
     // text typed in a form and where the focus was are read off the page one line before it is replaced.
@@ -280,8 +288,7 @@ function mountMmjView(host, reader, model, sanitize, write = null) {
     const input = treeEl.querySelector("[data-mmj-input]"), sel = treeEl.querySelector("[data-mmj-parent]");
     if (form && input) form.value = input.value;
     if (form && sel) form.value = sel.value || null;
-    const focusSel = document.activeElement && treeEl.contains(document.activeElement)
-      ? (document.activeElement.matches("[data-mmj-input]") ? "[data-mmj-input]" : document.activeElement.matches("[data-mmj-parent]") ? "[data-mmj-parent]" : null) : null;
+    const focusSel = focusKey(document.activeElement);
     const shown = shownNow();
     const v = model.folderView(shown.copy);
     const folders = shown.copy.tree?.folders || [];
