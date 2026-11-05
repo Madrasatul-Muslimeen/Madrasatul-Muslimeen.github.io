@@ -290,6 +290,100 @@ function behaviour(M) {
     eq([M.requestOutcome(null), M.requestOutcome({ st: "new" }), M.requestOutcome({ st: "work" }), M.requestOutcome({ st: "done", res: { id: "a" } }), M.requestOutcome({ st: "refused", why: "id already used" })],
       [{ kind: "waiting", st: "new" }, { kind: "waiting", st: "new" }, { kind: "waiting", st: "work" }, { kind: "done" }, { kind: "refused", why: "id already used" }]);
   });
+  // --- J112 R2b: notes -----------------------------------------------------------------------------------------------
+  const NCONTRACT = { "note.add": ["id", "title", "content", "tags", "folderIds", "kind"], "note.edit": ["id", "base", "title", "content", "tags", "kind"],
+    "note.move": ["id", "base", "folderIds"], "note.delete": ["id", "base"], "note.vis": ["id", "vis"] };
+  const NCOPY = () => ({ tree: { sec: { id: "mmj-sec", n: "MMJ" }, folders: F(), at: 1 }, notes: {
+    n1: { id: "n1", title: "One", content: "<p>1</p>", tags: ["t"], folderIds: ["a11"], updatedAt: "2026-11-01T00:00:00.000Z", vis: 0 },
+    n2: { id: "n2", title: "Two", content: "<p>2</p>", tags: [], folderIds: ["a2", "b", "outside"], updatedAt: "2026-11-02T00:00:00.000Z", vis: 1 },
+    a: { id: "a", title: "A note whose id is a folder's", content: "", tags: [], folderIds: ["c"], updatedAt: "2026-11-03T00:00:00.000Z", vis: 0 } } });
+  run("notes: the note ops and their fields are EXACTLY the contract's (no other op, no other field)", () => {
+    eq(Object.keys(M.MMJ_NOTE_OPS).sort(), Object.keys(NCONTRACT).sort());
+    for (const [op, f] of Object.entries(NCONTRACT)) eq([...M.MMJ_NOTE_OPS[op]], f, op);
+    eq([M.MMJ_TITLE_MAX, M.MMJ_TAGS_MAX, M.MMJ_TAG_MAX, M.MMJ_FOLDER_IDS_MAX, M.MMJ_CONTENT_MAX], [300, 60, 100, 20, 900 * 1024]);
+  });
+  run("notes: every op builds exactly {v:1, op, from, st:'new'} plus the fields given -- nothing else, never `at`", () => {
+    const copy = NCOPY(), B1 = "2026-11-01T00:00:00.000Z", B2 = "2026-11-02T00:00:00.000Z";
+    const cases = [
+      ["note.add", { id: "x-msa-n", title: " New\u0007 note ", content: "<p>hi</p>", tags: ["a", " b ", "a"], folderIds: ["b", "b"] }, { id: "x-msa-n", title: "New note", content: "<p>hi</p>", tags: ["a", "b"], folderIds: ["b"] }],
+      ["note.add", { id: "x-msa-k", title: "", content: "", tags: [], folderIds: ["a", "c"], kind: "note" }, { id: "x-msa-k", title: "", content: "", tags: [], folderIds: ["a", "c"], kind: "note" }],
+      ["note.edit", { id: "n1", base: B1, title: "Uno" }, { id: "n1", base: B1, title: "Uno" }],
+      ["note.edit", { id: "n1", base: B1, content: "<p>new</p>" }, { id: "n1", base: B1, content: "<p>new</p>" }],
+      ["note.edit", { id: "n1", base: B1, tags: ["x"], kind: "note" }, { id: "n1", base: B1, tags: ["x"], kind: "note" }],
+      ["note.move", { id: "n2", base: B2, folderIds: ["c"] }, { id: "n2", base: B2, folderIds: ["c"] }],
+      ["note.delete", { id: "n2", base: B2 }, { id: "n2", base: B2 }],
+      ["note.vis", { id: "n2", vis: 0 }, { id: "n2", vis: 0 }],
+    ];
+    for (const [op, fields, want] of cases) {
+      const r = M.buildNoteRequest(op, fields, { copy, from: "msa" });
+      ok(r.ok, `${op} refused: ${r.reason}`);
+      eq(r.req, { v: 1, op, from: "msa", st: "new", ...want }, op);
+      ok(Object.keys(r.req).every((k) => ["v", "op", "from", "st", ...NCONTRACT[op]].includes(k)) && !("at" in r.req), `${op} carries a field the contract does not list`);
+    }
+    eq(M.buildNoteRequest("note.vis", { id: "n1", vis: 1 }, { copy, from: "qr" }).req.from, "qr");
+  });
+  run("notes: each refusal Siyagah would give is given before asking", () => {
+    const copy = NCOPY(), B1 = "2026-11-01T00:00:00.000Z", r = (op, f, from = "msa") => M.buildNoteRequest(op, f, { copy, from }).reason;
+    const add = (o) => ({ id: "x-1", title: "t", content: "", tags: [], folderIds: ["b"], ...o });
+    eq([
+      r("note.add", add({ id: "n1" })), r("note.add", add({ id: "has space" })), r("note.add", add({ title: "x".repeat(301) })), r("note.add", add({ title: 7 })),
+      r("note.add", add({ content: "é".repeat(460 * 1024) })), r("note.add", add({ content: 5 })),
+      r("note.add", add({ tags: ["a,b"] })), r("note.add", add({ tags: [""] })), r("note.add", add({ tags: ["x".repeat(101)] })), r("note.add", add({ tags: Array.from({ length: 61 }, (_, i) => "t" + i) })), r("note.add", add({ tags: [3] })),
+      r("note.add", add({ folderIds: [] })), r("note.add", add({ folderIds: Array.from({ length: 21 }, (_, i) => "f" + i) })), r("note.add", add({ folderIds: ["outside"] })), r("note.add", add({ folderIds: "b" })),
+      r("note.add", add({ kind: "" })), r("note.add", add({ vis: 1 })),
+      r("note.edit", { id: "nope", base: B1, title: "t" }), r("note.edit", { id: "n1", title: "t" }), r("note.edit", { id: "n1", base: "2026-10-01T00:00:00.000Z", title: "t" }), r("note.edit", { id: "n1", base: B1 }),
+      r("note.edit", { id: "n1", base: B1, folderIds: ["b"] }), r("note.move", { id: "n1", base: B1, folderIds: [] }), r("note.move", { id: "n1", base: B1, folderIds: ["b"], title: "t" }),
+      r("note.delete", { id: "n1" }), r("note.delete", { id: "n1", base: B1, title: "x" }), r("note.vis", { id: "n1", vis: true }), r("note.vis", { id: "n1", vis: 1, base: B1 }),
+      r("note.copy", { id: "n1" }), r("note.vis", { id: "n1", vis: 1 }, "bwn"),
+    ], [
+      "id already used", "bad id", "bad title", "bad title", "bad content", "bad content",
+      "bad tags", "bad tags", "bad tags", "bad tags", "bad tags",
+      "folderIds must be 1 to 20 folders", "folderIds must be 1 to 20 folders", "not a Mapping My Journey folder", "folderIds must be 1 to 20 folders",
+      "bad kind", 'unknown field "vis"',
+      "not a Mapping My Journey note", "base is required", "changed in Siyagah since", "nothing to change",
+      'unknown field "folderIds"', "folderIds must be 1 to 20 folders", 'unknown field "title"',
+      "base is required", 'unknown field "title"', "vis must be 1 or 0", 'unknown field "base"',
+      "unknown op", "bad from",
+    ]);
+    ok(M.buildNoteRequest("note.add", add({ title: "x".repeat(300), content: "a".repeat(900 * 1024), tags: Array.from({ length: 60 }, (_, i) => "t" + i), folderIds: ["a", "a1", "a11", "a2", "b", "c"] }), { copy }).ok, "the limits themselves are allowed");
+    eq([M.utf8Length("aé€😀"), M.utf8Length("")], [1 + 2 + 3 + 4, 0]);
+  });
+  run("notes: typed text becomes <p> paragraphs (a blank line between), a line break <br>, every character escaped", () => {
+    eq(M.textToNoteHtml("Hello <b>&\n\"you\"\n\n\nSecond 'one'\r\n"), "<p>Hello &lt;b&gt;&amp;<br>&quot;you&quot;</p><p>Second &#39;one&#39;</p>");
+    eq([M.textToNoteHtml(""), M.textToNoteHtml("  \n \n"), M.textToNoteHtml(null)], ["", "", ""]);
+  });
+  run("notes pending: each op shows at once in its OWN marks (noteMarks), never a folder's; the copy passed in is never changed", () => {
+    const c = NCOPY(), before = JSON.stringify(c);
+    const r = M.withPending(c, [
+      { reqId: "r1", st: "new", req: { op: "note.add", id: "x-msa-n", title: "New", content: "<p>n</p>", tags: [], folderIds: ["b"] } },
+      { reqId: "r2", st: "work", req: { op: "note.edit", id: "n1", base: "2026-11-01T00:00:00.000Z", title: "Uno", content: "<p>uno</p>" } },
+      { reqId: "r3", st: "new", still: true, req: { op: "note.move", id: "n2", base: "2026-11-02T00:00:00.000Z", folderIds: ["c"] } },
+      { reqId: "r4", st: "new", req: { op: "note.vis", id: "a", vis: 1 } },
+      { reqId: "r5", st: "done", req: { op: "note.delete", id: "n1", base: "2026-11-01T00:00:00.000Z" } },
+      { reqId: "r6", st: "new", req: { op: "note.vis", id: "nope", vis: 1 } },
+    ]);
+    eq(JSON.stringify(c), before, "the copy was changed");
+    const n = r.copy.notes;
+    eq([n["x-msa-n"]?.title, n["x-msa-n"]?.folderIds, n["x-msa-n"]?.updatedAt, n.n1.title, n.n1.content, n.n1.updatedAt, n.n2.folderIds, n.a.vis, !!n.n1],
+      ["New", ["b"], null, "Uno", "<p>uno</p>", "2026-11-01T00:00:00.000Z", ["outside", "c"], 1, true]);
+    eq(r.marks, {}, "a note mark landed among the folder marks");
+    eq(r.noteMarks, { "x-msa-n": { reqId: "r1", op: "note.add", st: "new", still: false }, n1: { reqId: "r5", op: "note.delete", st: "done", still: false },
+      n2: { reqId: "r3", op: "note.move", st: "new", still: true }, a: { reqId: "r4", op: "note.vis", st: "new", still: false } });
+    eq(r.copy.tree.folders.find((f) => f.id === "a").vis, 0, "the note.vis on note 'a' changed FOLDER 'a'");
+    const both = M.withPending(c, [{ reqId: "f", st: "new", req: { op: "folder.rename", id: "a", name: "Folder A" } }]);
+    eq([both.marks.a?.op, both.noteMarks.a, both.copy.notes.a.title], ["folder.rename", undefined, "A note whose id is a folder's"]);
+    eq(M.withPending(c, []).noteMarks, {});
+  });
+  run("notes reflected: Siyagah's copy has caught up (add, edit, move, delete, vis) -- and not before", () => {
+    const c = NCOPY(), B1 = "2026-11-01T00:00:00.000Z";
+    eq([M.requestReflected(c, { op: "note.add", id: "n1" }), M.requestReflected(c, { op: "note.add", id: "zz" }),
+      M.requestReflected(c, { op: "note.edit", id: "n1", base: B1 }), M.requestReflected(c, { op: "note.edit", id: "n1", base: "2026-10-01T00:00:00.000Z" }),
+      M.requestReflected(c, { op: "note.move", id: "n2", base: "x", folderIds: ["b", "a2"] }), M.requestReflected(c, { op: "note.move", id: "n2", base: "x", folderIds: ["c"] }),
+      M.requestReflected(c, { op: "note.delete", id: "zz", base: "x" }), M.requestReflected(c, { op: "note.delete", id: "n1", base: B1 }),
+      M.requestReflected(c, { op: "note.vis", id: "n2", vis: 1 }), M.requestReflected(c, { op: "note.vis", id: "n2", vis: 0 }),
+      M.requestReflected(c, { op: "note.vis", id: "a", vis: 0 }), M.requestReflected(c, { op: "folder.vis", id: "a", vis: 1 })],
+    [true, false, false, true, true, false, true, false, true, false, true, false]);
+  });
   return out;
 }
 
@@ -339,6 +433,20 @@ function wiring(model, data, link, write = WRITE_SRC) {
     ok(!/["'`]notebooks\//.test(s.replace("`notebooks/${nb}/mmjin`", "")), "another notebooks/ path");
     ok(/const reqId = randomId\(\);/.test(s) && /crypto\.getRandomValues/.test(s), "the reqId is not a fresh random id");
     ok(/req\.st !== "new"/.test(s) && /req\.v !== 1/.test(s) && /"at" in req/.test(s), "send() does not refuse a non-request");
+  });
+  // J112 R2b: send() refuses anything that is not one of the contract's ops -- folder (R2a) or note (R2b).
+  run("the write module sends only a folder op or a note op (anything else is refused before writing)", () => {
+    const s = strip(write);
+    ok(/if \(!Object\.hasOwn\(MMJ_FOLDER_OPS, req\.op\) && !Object\.hasOwn\(MMJ_NOTE_OPS, req\.op\)\) throw new Error\("unknown op"\);/.test(s), "no op check in send()");
+    ok(s.indexOf('throw new Error("unknown op")') < s.indexOf("fs.setDoc("), "the op check is not before the write");
+  });
+  // J112 R2b: the edit box's HTML leaves only through the sanitiser, and a picture comes back only as its own plain tag.
+  run("an edited note's text is sent only after the sanitiser; a picture goes back as its own plain <img> tag, or the plain shape", () => {
+    const s = strip(link);
+    ok(/return sanitize\(box\.innerHTML\)\.replace\(PIC_TOKENS, /.test(s), "the edit box is not sanitised before it is sent");
+    ok(/const box = document\.createElement\("template"\);/.test(s), "the edit box is not parsed in an inert <template>");
+    ok(/pic\.tag = own && PIC_TAG_SAFE\.test\(own\) \? own : `<img class="ed-img" data-pic="\$\{sha\}" data-mime="\$\{okMime\}" alt="">`;/.test(s), "a picture's tag is not checked");
+    ok(/fields\.content = html/.test(s) && /if \(html !== f\.baseline\) fields\.content = html;/.test(s), "the text is sent even when it did not change");
   });
   run("the write module's only static import is the model, and the hook loads it only by dynamic import, on a request", () => {
     eq(staticImports(write), ["./siyagah-mmj-model.js"]);
@@ -419,6 +527,25 @@ const MUTATIONS = [
   ["d6-any-note", "if (own.length && own.every((x) => sub.has(x))) notes++;", "if (own.some((x) => sub.has(x))) notes++;", "delete: what goes to Trash -- the subfolders, and only the notes whose every folder of the set is inside (D6)"],
   ["pending-not-shown", 'else if (r.op === "folder.rename") f.n = r.name;', "else if (false) f.n = r.name;", "pending: the change shows at once and is marked; the copy passed in is never changed"],
   ["refused-is-done", 'if (st === "refused") return { kind: "refused", why: data.why == null ? "" : String(data.why) };', 'if (st === "refused") return { kind: "done" };', "outcome: new / work / unseen wait, done is done, refused carries its why"],
+  // J112 R2b: notes
+  ["note-ops-extra", '"note.edit": Object.freeze(["id", "base", "title", "content", "tags", "kind"]),', '"note.edit": Object.freeze(["id", "base", "title", "content", "tags", "kind", "folderIds"]),', "notes: the note ops and their fields are EXACTLY the contract's (no other op, no other field)"],
+  ["note-at-in-request", 'const req = { v: 1, op, from, st: "new", id: f.id };\n  if (op === "note.add")', 'const req = { v: 1, op, from, st: "new", at: 0, id: f.id };\n  if (op === "note.add")', "notes: every op builds exactly {v:1, op, from, st:'new'} plus the fields given -- nothing else, never `at`"],
+  ["note-tags-kept-dupes", "if (!out.includes(c)) out.push(c);", "out.push(c);", "notes: every op builds exactly {v:1, op, from, st:'new'} plus the fields given -- nothing else, never `at`"],
+  ["note-base-unchecked", 'if (f.base !== note.updatedAt) return { ok: false, reason: "changed in Siyagah since" };', "", "notes: each refusal Siyagah would give is given before asking"],
+  ["note-delete-no-base", 'if (op === "note.edit" || op === "note.move" || op === "note.delete") {', 'if (op === "note.edit" || op === "note.move") {', "notes: each refusal Siyagah would give is given before asking"],
+  ["note-content-chars", "utf8Length(c) > MMJ_CONTENT_MAX", "c.length > MMJ_CONTENT_MAX", "notes: each refusal Siyagah would give is given before asking"],
+  ["note-tag-comma", ' || c.includes(",")) return { ok: false, reason: "bad tags" };', ') return { ok: false, reason: "bad tags" };', "notes: each refusal Siyagah would give is given before asking"],
+  ["note-folder-count", "uniq.length > MMJ_FOLDER_IDS_MAX", "false", "notes: each refusal Siyagah would give is given before asking"],
+  ["note-folder-unchecked", 'if (!uniq.every((x) => typeof x === "string" && folderSet.has(x))) return { ok: false, reason: "not a Mapping My Journey folder" };', "", "notes: each refusal Siyagah would give is given before asking"],
+  ["note-edit-empty", 'if (op === "note.edit" && !["title", "content", "tags", "kind"].some((k) => k in f)) return { ok: false, reason: "nothing to change" };', "", "notes: each refusal Siyagah would give is given before asking"],
+  ["text-unescaped", '.map(esc).join("<br>")', '.join("<br>")', "notes: typed text becomes <p> paragraphs (a blank line between), a line break <br>, every character escaped"],
+  ["note-marks-shared", "if (notePending(notes, folders, r)) noteMarks[r.id] =", "if (notePending(notes, folders, r)) marks[r.id] =", "notes pending: each op shows at once in its OWN marks (noteMarks), never a folder's; the copy passed in is never changed"],
+  ["note-ops-as-folder-ops", "if (MMJ_NOTE_OPS[r.op]) {\n      notes = notes", "if (false) {\n      notes = notes", "notes pending: each op shows at once in its OWN marks (noteMarks), never a folder's; the copy passed in is never changed"],
+  ["note-move-drops-others", "m.folderIds = (n.folderIds || []).filter((x) => !mmj.has(x)).concat(r.folderIds);", "m.folderIds = r.folderIds.slice();", "notes pending: each op shows at once in its OWN marks (noteMarks), never a folder's; the copy passed in is never changed"],
+  ["note-pending-mutates", "const m = { ...n };", "const m = n;", "notes pending: each op shows at once in its OWN marks (noteMarks), never a folder's; the copy passed in is never changed"],
+  ["note-edit-reflected-early", 'case "note.edit": return !n || n.updatedAt !== req.base;', 'case "note.edit": return true;', "notes reflected: Siyagah's copy has caught up (add, edit, move, delete, vis) -- and not before"],
+  ["note-move-reflected-early", "return JSON.stringify(have) === JSON.stringify(req.folderIds.slice().sort());", "return true;", "notes reflected: Siyagah's copy has caught up (add, edit, move, delete, vis) -- and not before"],
+  ["note-reflected-as-folder", "if (MMJ_NOTE_OPS[req?.op]) return noteReflected(copy, req);", "", "notes reflected: Siyagah's copy has caught up (add, edit, move, delete, vis) -- and not before"],
 ];
 for (const [label, a, b, target] of MUTATIONS) {
   ok(real[target] === true, `the target "${target}" is not a real passing check`);
@@ -437,7 +564,11 @@ const WIRING_MUTATIONS = [
   ["write-merge", WRITE_SRC.split("{ ...req, at: fs.serverTimestamp() });").join("{ ...req, at: fs.serverTimestamp() }, { merge: true });"), "the write module only CREATES a request under notebooks/{nb}/mmjin/: one setDoc of a fresh doc, no merge, no other write or path", "write"],
   ["write-update", WRITE_SRC.split("await fs.setDoc(").join("await fs.updateDoc("), "the write module only CREATES a request under notebooks/{nb}/mmjin/: one setDoc of a fresh doc, no merge, no other write or path", "write"],
   ["write-fixed-id", WRITE_SRC.split("const reqId = randomId();").join('const reqId = "req";'), "the write module only CREATES a request under notebooks/{nb}/mmjin/: one setDoc of a fresh doc, no merge, no other write or path", "write"],
-  ["link-writes", LINK_SRC.split("render(); focusRow(focusId);").join("render(); focusRow(focusId); write.cloud.fs?.setDoc?.(null, {});"), "the data module NEVER writes anything of Siyagah's", "link"],
+  ["link-writes", LINK_SRC.split("render(); focusKeyed(focusTo);").join("render(); focusKeyed(focusTo); write.cloud.fs?.setDoc?.(null, {});"), "the data module NEVER writes anything of Siyagah's", "link"],
+  // J112 R2b
+  ["write-any-op", WRITE_SRC.split('if (!Object.hasOwn(MMJ_FOLDER_OPS, req.op) && !Object.hasOwn(MMJ_NOTE_OPS, req.op)) throw new Error("unknown op");').join(""), "the write module sends only a folder op or a note op (anything else is refused before writing)", "write"],
+  ["edit-unsanitised", LINK_SRC.split("return sanitize(box.innerHTML).replace(PIC_TOKENS, ").join("return (box.innerHTML).replace(PIC_TOKENS, "), "an edited note's text is sent only after the sanitiser; a picture goes back as its own plain <img> tag, or the plain shape", "link"],
+  ["edit-tag-unchecked", LINK_SRC.split("pic.tag = own && PIC_TAG_SAFE.test(own) ? own :").join("pic.tag = own ? own :"), "an edited note's text is sent only after the sanitiser; a picture goes back as its own plain <img> tag, or the plain shape", "link"],
   ["static-writer", LINK_SRC.replace('import { t, num } from "./i18n.js";', 'import { t, num } from "./i18n.js";\nimport "./siyagah-mmj-write.js";'), "the hook loads the reader, the model and the sanitiser only by dynamic import, and only for a signed-in user", "link"],
 ];
 for (const [label, src, target, which] of WIRING_MUTATIONS) {
@@ -447,5 +578,5 @@ for (const [label, src, target, which] of WIRING_MUTATIONS) {
   check(`mutation ${label} turns "${target}" red`, () => { if (r[target] === true) throw new Error("it stayed green"); });
 }
 
-console.log(`\n==== Siyagah MMJ model (J112 R1 + R2a): ${passed} passed, ${failed} failed ====`);
+console.log(`\n==== Siyagah MMJ model (J112 R1 + R2a + R2b): ${passed} passed, ${failed} failed ====`);
 process.exit(failed ? 1 : 0);

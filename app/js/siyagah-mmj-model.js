@@ -395,6 +395,7 @@ export function siblingStep(folders, id, dir) {
 
 /** Has the copy Siyagah shares caught up with this request? (Its change then shows from the copy, never from us.) */
 export function requestReflected(copy, req) {
+  if (MMJ_NOTE_OPS[req?.op]) return noteReflected(copy, req);
   const folders = copy?.tree?.folders || [];
   const f = folders.find((x) => x.id === req.id);
   switch (req.op) {
@@ -410,17 +411,25 @@ export function requestReflected(copy, req) {
 /**
  * The copy as the reader should see it while requests are out: the contract says show the change AT ONCE, marked as
  * waiting for Siyagah. `pending` is [{ reqId, req, st }] in the order asked; a refused request is never in it (the row
- * goes back as it was). Returns { copy, marks } -- marks[folderId] = { reqId, op, st } for the row that waits. The
- * copy passed in is never changed.
+ * goes back as it was). Returns { copy, marks, noteMarks } -- marks[folderId] = { reqId, op, st, still } for the folder
+ * row that waits, noteMarks[noteId] the same for a note (R2b: their own map, so a folder and a note with the same id
+ * never mark each other). The copy passed in is never changed.
  */
 export function withPending(copy, pending) {
-  if (!copy?.tree || !Array.isArray(pending) || !pending.length) return { copy, marks: {} };
+  if (!copy?.tree || !Array.isArray(pending) || !pending.length) return { copy, marks: {}, noteMarks: {} };
   let folders = copy.tree.folders.map((f) => ({ ...f }));
-  const marks = {};
+  const marks = {}, noteMarks = {};
+  let notes = null;
   const lastO = (parent) => folders.filter((f) => (f.p || null) === parent).reduce((m, f) => Math.max(m, f.o), -1);
   for (const p of pending) {
     const r = p.req;
     if (!r) continue;
+    if (MMJ_NOTE_OPS[r.op]) {
+      notes = notes || { ...(copy.notes || {}) };
+      if (notePending(notes, folders, r)) noteMarks[r.id] = { reqId: p.reqId ?? null, op: r.op, st: p.st || "new", still: !!p.still };
+      continue;
+    }
+    if (!MMJ_FOLDER_OPS[r.op]) continue;
     const f = folders.find((x) => x.id === r.id);
     if (r.op === "folder.add") { if (!f) folders.push({ id: r.id, n: r.name, p: r.parent, o: lastO(r.parent) + 1, u: null, vis: 0 }); }
     else if (!f) continue;
@@ -434,7 +443,7 @@ export function withPending(copy, pending) {
     // folder.delete: the row stays, marked, until Siyagah's copy drops it (it is going to Trash, not gone yet).
     marks[r.id] = { reqId: p.reqId ?? null, op: r.op, st: p.st || "new", still: !!p.still };
   }
-  return { copy: { ...copy, tree: { ...copy.tree, folders } }, marks };
+  return { copy: { ...copy, tree: { ...copy.tree, folders }, ...(notes ? { notes } : {}) }, marks, noteMarks };
 }
 
 /** A request document's outcome as this app reads it: "waiting" (new / work / not seen yet), "done" or "refused". */
@@ -443,4 +452,154 @@ export function requestOutcome(data) {
   if (st === "done") return { kind: "done" };
   if (st === "refused") return { kind: "refused", why: data.why == null ? "" : String(data.why) };
   return { kind: "waiting", st: st === "work" ? "work" : "new" };
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// J112 R2b (5 Nov 2026) -- WRITING BY REQUEST: NOTES. The same contract ("Writing (R2)", MMJ-SHARE.md), its note ops.
+// `base` is the note's updatedAt exactly as read from mmj/n~...; Siyagah refuses a base that is not its note's own
+// ("changed in Siyagah since", with cur) and never overwrites a newer change. Still pure.
+
+/** The fields each note op MAY carry, exactly as the contract lists them (`kind` optional on an add; an edit carries any of title/content/tags/kind). */
+export const MMJ_NOTE_OPS = Object.freeze({
+  "note.add": Object.freeze(["id", "title", "content", "tags", "folderIds", "kind"]),
+  "note.edit": Object.freeze(["id", "base", "title", "content", "tags", "kind"]),
+  "note.move": Object.freeze(["id", "base", "folderIds"]),
+  "note.delete": Object.freeze(["id", "base"]),
+  "note.vis": Object.freeze(["id", "vis"]),
+});
+export const MMJ_TITLE_MAX = 300;
+export const MMJ_TAGS_MAX = 60;
+export const MMJ_TAG_MAX = 100;
+export const MMJ_FOLDER_IDS_MAX = 20;
+export const MMJ_CONTENT_MAX = 900 * 1024; // bytes of UTF-8
+
+/** The UTF-8 length of a string, counted without any browser or Node API. */
+export function utf8Length(s) {
+  let n = 0;
+  const str = String(s);
+  for (let i = 0; i < str.length; i++) {
+    const c = str.charCodeAt(i);
+    if (c < 0x80) n += 1;
+    else if (c < 0x800) n += 2;
+    else if (c >= 0xd800 && c <= 0xdbff && i + 1 < str.length && (str.charCodeAt(i + 1) & 0xfc00) === 0xdc00) { n += 4; i++; }
+    else n += 3;
+  }
+  return n;
+}
+
+/** Plain text typed into a box, as a note's HTML: a blank line starts a new <p>, a single line break is a <br>; every character escaped. */
+export function textToNoteHtml(text) {
+  const esc = (s) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  return String(text == null ? "" : text).replace(/\r\n?/g, "\n").split(/\n[ \t]*\n+/)
+    .map((p) => p.replace(/^\n+|\n+$/g, "")).filter((p) => p.trim() !== "")
+    .map((p) => `<p>${p.split("\n").map(esc).join("<br>")}</p>`).join("");
+}
+
+/** The note's folders that are MMJ folders (in the tree this app holds). */
+export function mmjFolderIdsOf(note, folders) {
+  const ids = new Set((folders || []).map((f) => f.id));
+  return (note?.folderIds || []).filter((x) => ids.has(x));
+}
+
+/**
+ * Build one note request (without `at`). `copy` is the copy as this app shows it (folders and notes); `from` 'msa' or
+ * 'qr'. Returns { ok:true, req } with EXACTLY the envelope (minus `at`) and the fields given (each one the op lists), or
+ * { ok:false, reason } -- the refusals Siyagah would give, said before asking. `base` must be the note's updatedAt as
+ * this copy holds it (a different one is "changed in Siyagah since": the copy is newer than what the reader changed).
+ */
+export function buildNoteRequest(op, fields, { copy = null, from = "msa" } = {}) {
+  const want = MMJ_NOTE_OPS[op];
+  if (!want) return { ok: false, reason: "unknown op" };
+  if (from !== "msa" && from !== "qr") return { ok: false, reason: "bad from" };
+  const f = fields || {};
+  for (const k of Object.keys(f)) if (!want.includes(k)) return { ok: false, reason: `unknown field "${k}"` };
+  if (!isMmjId(f.id)) return { ok: false, reason: "bad id" };
+  const folders = copy?.tree?.folders || [];
+  const folderSet = new Set(folders.map((x) => x.id));
+  const note = copy?.notes?.[f.id] || null;
+  const req = { v: 1, op, from, st: "new", id: f.id };
+  if (op === "note.add") { if (note) return { ok: false, reason: "id already used" }; }
+  else if (!note) return { ok: false, reason: "not a Mapping My Journey note" };
+  if (op === "note.edit" || op === "note.move" || op === "note.delete") {
+    if (typeof f.base !== "string" || !f.base) return { ok: false, reason: "base is required" };
+    if (f.base !== note.updatedAt) return { ok: false, reason: "changed in Siyagah since" };
+    req.base = f.base;
+  }
+  if (op === "note.edit" && !["title", "content", "tags", "kind"].some((k) => k in f)) return { ok: false, reason: "nothing to change" };
+  if ("title" in f || op === "note.add") {
+    if (f.title != null && typeof f.title !== "string") return { ok: false, reason: "bad title" };
+    const title = cleanMmjName(f.title);
+    if (title.length > MMJ_TITLE_MAX) return { ok: false, reason: "bad title" };
+    req.title = title;
+  }
+  if ("content" in f || op === "note.add") {
+    const c = f.content == null ? "" : f.content;
+    if (typeof c !== "string" || utf8Length(c) > MMJ_CONTENT_MAX) return { ok: false, reason: "bad content" };
+    req.content = c;
+  }
+  if ("tags" in f || op === "note.add") {
+    const tags = f.tags == null ? [] : f.tags;
+    if (!Array.isArray(tags) || tags.length > MMJ_TAGS_MAX) return { ok: false, reason: "bad tags" };
+    const out = [];
+    for (const tg of tags) {
+      if (typeof tg !== "string") return { ok: false, reason: "bad tags" };
+      const c = cleanMmjName(tg);
+      if (!c || c.length > MMJ_TAG_MAX || c.includes(",")) return { ok: false, reason: "bad tags" };
+      if (!out.includes(c)) out.push(c);
+    }
+    req.tags = out;
+  }
+  if (op === "note.add" || op === "note.move") {
+    if (!Array.isArray(f.folderIds)) return { ok: false, reason: "folderIds must be 1 to 20 folders" };
+    const uniq = [...new Set(f.folderIds)];
+    if (uniq.length < 1 || uniq.length > MMJ_FOLDER_IDS_MAX) return { ok: false, reason: "folderIds must be 1 to 20 folders" };
+    if (!uniq.every((x) => typeof x === "string" && folderSet.has(x))) return { ok: false, reason: "not a Mapping My Journey folder" };
+    req.folderIds = uniq;
+  }
+  if ("kind" in f && f.kind !== undefined) {
+    if (typeof f.kind !== "string" || !f.kind || f.kind.length > 100) return { ok: false, reason: "bad kind" };
+    req.kind = f.kind;
+  }
+  if (op === "note.vis") {
+    if (f.vis !== 1 && f.vis !== 0) return { ok: false, reason: "vis must be 1 or 0" };
+    req.vis = f.vis;
+  }
+  return { ok: true, req };
+}
+
+/** Has the copy caught up with this note request? (An edit: the copy holds a version other than the one it was based on.) */
+function noteReflected(copy, req) {
+  const n = copy?.notes?.[req.id] || null;
+  switch (req.op) {
+    case "note.add": return !!n;
+    case "note.edit": return !n || n.updatedAt !== req.base;
+    case "note.move": {
+      if (!n) return true;
+      const have = mmjFolderIdsOf(n, copy?.tree?.folders).slice().sort();
+      return JSON.stringify(have) === JSON.stringify(req.folderIds.slice().sort());
+    }
+    case "note.delete": return !n;
+    case "note.vis": return !n || n.vis === req.vis;
+    default: return true;
+  }
+}
+
+/** A note as it shows while its request is out (the copy's own note is never changed). */
+function notePending(notes, folders, r) {
+  const n = notes[r.id];
+  if (r.op === "note.add") {
+    if (!n) notes[r.id] = { id: r.id, title: r.title, content: r.content, tags: r.tags.slice(), folderIds: r.folderIds.slice(), kind: r.kind ?? null, createdAt: null, updatedAt: null, vis: 0, at: 0 };
+    return true;
+  }
+  if (!n) return false;
+  const m = { ...n };
+  if (r.op === "note.edit") { for (const k of ["title", "content", "kind"]) if (k in r) m[k] = r[k]; if ("tags" in r) m.tags = r.tags.slice(); }
+  else if (r.op === "note.move") {
+    // Siyagah sets only the MMJ part; a note's other folders are kept.
+    const mmj = new Set((folders || []).map((f) => f.id));
+    m.folderIds = (n.folderIds || []).filter((x) => !mmj.has(x)).concat(r.folderIds);
+  } else if (r.op === "note.vis") m.vis = r.vis;
+  // note.delete: the row stays, marked, until Siyagah's copy drops it.
+  notes[r.id] = m;
+  return true;
 }
