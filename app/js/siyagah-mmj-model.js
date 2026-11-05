@@ -262,3 +262,185 @@ export function isPermissionDenied(err) {
 export function mayRetry(lastTryMs, nowMs, gap = MMJ_RETRY_MS) {
   return !(Number.isFinite(lastTryMs) && lastTryMs > 0) || nowMs - lastTryMs >= gap;
 }
+
+// ---------------------------------------------------------------------------------------------------------------------
+// J112 R2a (5 Nov 2026) -- WRITING BY REQUEST: FOLDERS ONLY. Siyagah v05.68's "Writing (R2)" contract (MMJ-SHARE.md):
+// an app never writes Siyagah's records; it CREATES one request document notebooks/{nb}/mmjin/{reqId} with
+// {v:1, op, from, at:<serverTimestamp>, st:'new', ...the op's fields} and never changes it after. Siyagah applies it
+// and writes the outcome (st 'done' or 'refused' + why) on the same document. Any field not listed for the op is
+// refused, so the field lists below are exact. Still pure: the write module (siyagah-mmj-write.js) adds `at` and
+// writes; this half decides what may be asked.
+
+/** The fields each folder op carries, exactly as the contract lists them (`before` is optional on a move). */
+export const MMJ_FOLDER_OPS = Object.freeze({
+  "folder.add": Object.freeze(["id", "name", "parent"]),
+  "folder.rename": Object.freeze(["id", "name"]),
+  "folder.move": Object.freeze(["id", "parent", "before"]),
+  "folder.delete": Object.freeze(["id"]),
+  "folder.vis": Object.freeze(["id", "vis"]),
+});
+/** The envelope every request carries, besides the op's own fields (`at` is the server's time, added by the writer). */
+export const MMJ_REQUEST_ENVELOPE = Object.freeze(["v", "op", "from", "at", "st"]);
+export const MMJ_NAME_MAX = 200;
+/** How long a request may stay unanswered before the row says it is still waiting (it never asks again by itself). */
+export const MMJ_STILL_WAITING_MS = 20000;
+
+/** The contract's ids: letters, digits and . _ : ~ -, 1 to 120 characters. */
+export function isMmjId(id) {
+  return typeof id === "string" && /^[A-Za-z0-9._:~-]{1,120}$/.test(id);
+}
+
+/** `from` for this app: 'qr' on QuranRevival's site (built from this repository), 'msa' everywhere else. */
+export function mmjFromForHost(hostname) {
+  const h = String(hostname || "").toLowerCase();
+  return h === "quranrevival.github.io" || h.endsWith(".quranrevival.github.io") ? "qr" : "msa";
+}
+
+/** A random id from `bytes` (a Uint8Array from crypto.getRandomValues): letters and digits only. */
+export function mmjRandomId(bytes, prefix = "") {
+  const abc = "0123456789abcdefghijklmnopqrstuvwxyz";
+  let out = "";
+  for (const b of bytes || []) out += abc[b % 36];
+  return prefix + out;
+}
+
+/** A folder name as Siyagah will keep it: control characters removed, trimmed. */
+export function cleanMmjName(name) {
+  // eslint-disable-next-line no-control-regex
+  return String(name == null ? "" : name).replace(/[\u0000-\u001f\u007f]/g, "").trim();
+}
+
+/** The ids of folder `id` and every folder below it (a parent loop is never followed forever). */
+export function folderSubtree(folders, id) {
+  const kids = new Map();
+  for (const f of folders || []) { if (!kids.has(f.p)) kids.set(f.p, []); kids.get(f.p).push(f.id); }
+  const out = new Set();
+  const walk = (x) => { if (out.has(x)) return; out.add(x); for (const k of kids.get(x) || []) walk(k); };
+  walk(id);
+  return out;
+}
+
+/**
+ * What deleting folder `id` takes to Siyagah's Trash (the D6 rule): its subfolders, and the notes whose ONLY folders
+ * of the set are inside that subtree. { folders: <subfolders, not counting itself>, notes }.
+ */
+export function folderDeleteReach(copy, id) {
+  const folders = copy?.tree?.folders || [];
+  const sub = folderSubtree(folders, id);
+  const ids = new Set(folders.map((f) => f.id));
+  let notes = 0;
+  for (const n of Object.values(copy?.notes || {})) {
+    const own = (n.folderIds || []).filter((x) => ids.has(x));
+    if (own.length && own.every((x) => sub.has(x))) notes++;
+  }
+  return { folders: sub.size - 1, notes };
+}
+
+/** The parents folder `id` may move under: null (the top) and every folder that is not itself or below it. */
+export function moveTargets(folders, id) {
+  const sub = folderSubtree(folders, id);
+  return [null, ...(folders || []).filter((f) => !sub.has(f.id)).map((f) => f.id)];
+}
+
+/**
+ * Build one folder request (without `at`). `fields` are the op's own; `folders` the tree as this app holds it; `from`
+ * 'msa' or 'qr'. Returns { ok:true, req } with EXACTLY the envelope (minus `at`) and the op's listed fields, or
+ * { ok:false, reason } in words the reader can be shown -- the same refusals Siyagah would give, said before asking.
+ */
+export function buildFolderRequest(op, fields, { folders = [], from = "msa" } = {}) {
+  const want = MMJ_FOLDER_OPS[op];
+  if (!want) return { ok: false, reason: "unknown op" };
+  if (from !== "msa" && from !== "qr") return { ok: false, reason: "bad from" };
+  const f = fields || {};
+  for (const k of Object.keys(f)) if (!want.includes(k)) return { ok: false, reason: `unknown field "${k}"` };
+  const byId = new Map((folders || []).map((x) => [x.id, x]));
+  if (!isMmjId(f.id)) return { ok: false, reason: "bad id" };
+  const req = { v: 1, op, from, st: "new", id: f.id };
+  if (op === "folder.add") {
+    if (byId.has(f.id)) return { ok: false, reason: "id already used" };
+  } else if (!byId.has(f.id)) return { ok: false, reason: "not a Mapping My Journey folder" };
+  if (op === "folder.add" || op === "folder.rename") {
+    const name = cleanMmjName(f.name);
+    if (!name || name.length > MMJ_NAME_MAX) return { ok: false, reason: "bad name" };
+    req.name = name;
+  }
+  if (op === "folder.add" || op === "folder.move") {
+    const parent = f.parent == null ? null : f.parent;
+    if (parent !== null && !byId.has(parent)) return { ok: false, reason: "not a Mapping My Journey folder" };
+    if (op === "folder.move" && parent !== null && folderSubtree(folders, f.id).has(parent)) return { ok: false, reason: "cannot move a folder into itself or one of its own subfolders" };
+    req.parent = parent;
+  }
+  if (op === "folder.move" && f.before != null) {
+    const b = byId.get(f.before);
+    if (!b || f.before === f.id || (b.p || null) !== req.parent) return { ok: false, reason: "before is not beside it" };
+    req.before = f.before;
+  }
+  if (op === "folder.vis") {
+    if (f.vis !== 1 && f.vis !== 0) return { ok: false, reason: "vis must be 1 or 0" };
+    req.vis = f.vis;
+  }
+  return { ok: true, req };
+}
+
+/** The `before` that moves folder `id` one place up (dir -1) or down (+1) among its siblings, or undefined when it cannot. */
+export function siblingStep(folders, id, dir) {
+  const me = (folders || []).find((f) => f.id === id);
+  if (!me) return undefined;
+  const sibs = folders.filter((f) => (f.p || null) === (me.p || null)).sort(byOrder);
+  const i = sibs.findIndex((f) => f.id === id);
+  if (dir < 0) return i > 0 ? { parent: me.p || null, before: sibs[i - 1].id } : undefined;
+  if (i < 0 || i >= sibs.length - 1) return undefined;
+  return i + 2 < sibs.length ? { parent: me.p || null, before: sibs[i + 2].id } : { parent: me.p || null, before: null };
+}
+
+/** Has the copy Siyagah shares caught up with this request? (Its change then shows from the copy, never from us.) */
+export function requestReflected(copy, req) {
+  const folders = copy?.tree?.folders || [];
+  const f = folders.find((x) => x.id === req.id);
+  switch (req.op) {
+    case "folder.add": return !!f;
+    case "folder.rename": return !!f && f.n === req.name;
+    case "folder.move": return !!f && (f.p || null) === req.parent;
+    case "folder.delete": return !f;
+    case "folder.vis": return !!f && f.vis === req.vis;
+    default: return true;
+  }
+}
+
+/**
+ * The copy as the reader should see it while requests are out: the contract says show the change AT ONCE, marked as
+ * waiting for Siyagah. `pending` is [{ reqId, req, st }] in the order asked; a refused request is never in it (the row
+ * goes back as it was). Returns { copy, marks } -- marks[folderId] = { reqId, op, st } for the row that waits. The
+ * copy passed in is never changed.
+ */
+export function withPending(copy, pending) {
+  if (!copy?.tree || !Array.isArray(pending) || !pending.length) return { copy, marks: {} };
+  let folders = copy.tree.folders.map((f) => ({ ...f }));
+  const marks = {};
+  const lastO = (parent) => folders.filter((f) => (f.p || null) === parent).reduce((m, f) => Math.max(m, f.o), -1);
+  for (const p of pending) {
+    const r = p.req;
+    if (!r) continue;
+    const f = folders.find((x) => x.id === r.id);
+    if (r.op === "folder.add") { if (!f) folders.push({ id: r.id, n: r.name, p: r.parent, o: lastO(r.parent) + 1, u: null, vis: 0 }); }
+    else if (!f) continue;
+    else if (r.op === "folder.rename") f.n = r.name;
+    else if (r.op === "folder.vis") f.vis = r.vis;
+    else if (r.op === "folder.move") {
+      f.p = r.parent;
+      const b = r.before ? folders.find((x) => x.id === r.before && (x.p || null) === r.parent) : null;
+      f.o = b ? b.o - 0.5 : lastO(r.parent) + 1;
+    }
+    // folder.delete: the row stays, marked, until Siyagah's copy drops it (it is going to Trash, not gone yet).
+    marks[r.id] = { reqId: p.reqId ?? null, op: r.op, st: p.st || "new", still: !!p.still };
+  }
+  return { copy: { ...copy, tree: { ...copy.tree, folders } }, marks };
+}
+
+/** A request document's outcome as this app reads it: "waiting" (new / work / not seen yet), "done" or "refused". */
+export function requestOutcome(data) {
+  const st = data && typeof data === "object" ? data.st : null;
+  if (st === "done") return { kind: "done" };
+  if (st === "refused") return { kind: "refused", why: data.why == null ? "" : String(data.why) };
+  return { kind: "waiting", st: st === "work" ? "work" : "new" };
+}
