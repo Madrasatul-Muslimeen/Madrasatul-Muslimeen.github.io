@@ -567,6 +567,32 @@ export function buildNoteRequest(op, fields, { copy = null, from = "msa" } = {})
   return { ok: true, req };
 }
 
+/**
+ * J112 R2b (Architect's review): a canonical form of parsed HTML, so two pieces of HTML can be compared for what they
+ * HOLD: `node` is a parsed fragment (a <template>'s content in the page; any object with childNodes / nodeType /
+ * tagName / attributes / nodeValue in a test). Attribute order does not count (sorted), nor whitespace-only text nodes,
+ * nor runs of whitespace inside text (one space), nor spacing inside a style attribute (its declarations trimmed, in
+ * order). Everything else counts: every tag, every attribute and value, every comment, every character of text.
+ */
+export function canonicalNodeHtml(node) {
+  const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const styleOf = (v) => v.split(";").map((d) => d.trim()).filter(Boolean).map((d) => { const i = d.indexOf(":"); return i < 0 ? d : d.slice(0, i).trim().toLowerCase() + ":" + d.slice(i + 1).trim(); }).join(";");
+  let out = "";
+  for (const c of Array.from(node?.childNodes || [])) {
+    if (c.nodeType === 3) { const tx = String(c.nodeValue ?? "").replace(/\s+/g, " "); if (tx.trim()) out += esc(tx); }
+    else if (c.nodeType === 8) out += `<!--${String(c.nodeValue ?? "")}-->`;
+    else if (c.nodeType === 1) {
+      const tag = String(c.tagName || c.nodeName || "").toLowerCase();
+      const attrs = Array.from(c.attributes || []).map((a) => {
+        const k = String(a.name).toLowerCase(), v = String(a.value ?? "");
+        return [k, k === "style" ? styleOf(v) : v.trim()];
+      }).sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
+      out += `<${tag}${attrs.map(([k, v]) => ` ${k}="${esc(v)}"`).join("")}>${canonicalNodeHtml(c.content || c)}</${tag}>`;
+    }
+  }
+  return out;
+}
+
 /** Has the copy caught up with this note request? (An edit: the copy holds a version other than the one it was based on.) */
 function noteReflected(copy, req) {
   const n = copy?.notes?.[req.id] || null;

@@ -384,6 +384,26 @@ function behaviour(M) {
       M.requestReflected(c, { op: "note.vis", id: "a", vis: 0 }), M.requestReflected(c, { op: "folder.vis", id: "a", vis: 1 })],
     [true, false, false, true, true, false, true, false, true, false, true, false]);
   });
+  // J112 R2b (Architect's review): the lossless test that decides whether Edit may touch a note's TEXT.
+  const el = (tag, attrs = {}, ...kids) => ({ nodeType: 1, tagName: tag.toUpperCase(), attributes: Object.entries(attrs).map(([name, value]) => ({ name, value })), childNodes: kids });
+  const tx = (v) => ({ nodeType: 3, nodeValue: v }), cm = (v) => ({ nodeType: 8, nodeValue: v }), frag = (...kids) => ({ childNodes: kids });
+  run("lossless: attribute order, whitespace-only text, runs of spaces and style spacing do not count; every tag, attribute, value, comment and character does", () => {
+    const C = M.canonicalNodeHtml;
+    const same = (a, b, what) => eq(C(a), C(b), what);
+    const diff = (a, b, what) => ok(C(a) !== C(b), what);
+    same(frag(el("p", { class: "a", dir: "auto" }, tx("x"))), frag(el("p", { dir: "auto", class: "a" }, tx("x"))), "attribute order");
+    same(frag(tx("\n  "), el("p", {}, tx("a  \n b")), tx(" ")), frag(el("p", {}, tx("a b"))), "whitespace");
+    same(frag(el("p", { style: "color: red; text-align:center ;" })), frag(el("p", { style: "color:red;text-align: center" })), "style spacing");
+    same(frag(el("template", {}, ), el("b")), frag(el("template"), el("b")), "empty");
+    diff(frag(el("p", { class: "hl" }, tx("x"))), frag(el("p", {}, tx("x"))), "a class taken away");
+    diff(frag(el("p", { class: "hl" }, tx("x"))), frag(el("p", { class: "lo" }, tx("x"))), "a value changed");
+    diff(frag(el("p", { style: "font-family: serif" })), frag(el("p", {})), "a style taken away");
+    diff(frag(el("p", {}, tx("one"))), frag(el("p", {}, tx("two"))), "the text");
+    diff(frag(el("b", {}, tx("x"))), frag(el("i", {}, tx("x"))), "the tag");
+    diff(frag(cm("keep"), el("p")), frag(el("p")), "a comment");
+    diff(frag(el("p", {}, el("b", {}, tx("x")))), frag(el("p", {}, tx("x"))), "nesting");
+    eq(C(frag(el("img", { alt: "", "data-pic": "ab", class: "ed-img" }))), '<img alt="" class="ed-img" data-pic="ab"></img>', "the canonical shape");
+  });
   return out;
 }
 
@@ -545,6 +565,10 @@ const MUTATIONS = [
   ["note-pending-mutates", "const m = { ...n };", "const m = n;", "notes pending: each op shows at once in its OWN marks (noteMarks), never a folder's; the copy passed in is never changed"],
   ["note-edit-reflected-early", 'case "note.edit": return !n || n.updatedAt !== req.base;', 'case "note.edit": return true;', "notes reflected: Siyagah's copy has caught up (add, edit, move, delete, vis) -- and not before"],
   ["note-move-reflected-early", "return JSON.stringify(have) === JSON.stringify(req.folderIds.slice().sort());", "return true;", "notes reflected: Siyagah's copy has caught up (add, edit, move, delete, vis) -- and not before"],
+  ["canon-attr-order", ".sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));", ";", "lossless: attribute order, whitespace-only text, runs of spaces and style spacing do not count; every tag, attribute, value, comment and character does"],
+  ["canon-whitespace", 'String(c.nodeValue ?? "").replace(/\\s+/g, " ")', 'String(c.nodeValue ?? "")', "lossless: attribute order, whitespace-only text, runs of spaces and style spacing do not count; every tag, attribute, value, comment and character does"],
+  ["canon-values-ignored", '` ${k}="${esc(v)}"`', '` ${k}`', "lossless: attribute order, whitespace-only text, runs of spaces and style spacing do not count; every tag, attribute, value, comment and character does"],
+  ["canon-comments-ignored", "else if (c.nodeType === 8) out += `<!--${String(c.nodeValue ?? \"\")}-->`;", "", "lossless: attribute order, whitespace-only text, runs of spaces and style spacing do not count; every tag, attribute, value, comment and character does"],
   ["note-reflected-as-folder", "if (MMJ_NOTE_OPS[req?.op]) return noteReflected(copy, req);", "", "notes reflected: Siyagah's copy has caught up (add, edit, move, delete, vis) -- and not before"],
 ];
 for (const [label, a, b, target] of MUTATIONS) {

@@ -199,6 +199,18 @@ function noteBodyInto(el, html, sanitize, reader, edit = false) {
 }
 
 /**
+ * R2b (Architect's review): do two pieces of note HTML hold the same? Each is parsed in an inert <template> (nothing
+ * loads, nothing runs) and compared in the model's canonical form, so attribute order and whitespace-only differences
+ * do not count and everything else does.
+ */
+function sameNoteHtml(a, b, canon) {
+  const ta = document.createElement("template"), tb = document.createElement("template");
+  ta.innerHTML = String(a ?? "");
+  tb.innerHTML = String(b ?? "");
+  return canon(ta.content) === canon(tb.content);
+}
+
+/**
  * R2b: the edit box's HTML as it will be sent. Read as a string and parsed in an inert <template> (nothing loads, nothing
  * runs, even for something pasted in), each picture placeholder becomes a token, the rest goes through the same
  * sanitiser, and each token becomes that picture's own <img> tag again, exactly as Siyagah saved it. A placeholder the
@@ -380,7 +392,7 @@ function mountMmjView(host, reader, model, sanitize, write = null) {
       return `<form data-mmj-form="noteedit" data-mmj-formkey="${escapeHtml(f.key)}">`
         + `<label><span>${escapeHtml(t("Title"))}</span><input type="text" data-mmj-ntitle maxlength="300" dir="auto" value="${escapeHtml(n.title || "")}"></label>`
         + `<div data-mmj-field><span>${escapeHtml(t("Text"))}</span><div data-mmj-neditor contenteditable="true" role="textbox" aria-multiline="true" aria-label="${escapeHtml(t("Text of “{name}”", { name: title }))}" dir="auto"></div></div>`
-        + `<p data-mmj-hint>${escapeHtml(t("Pictures stay as they are. Only the formatting shown here is kept when you change the text; changing only the title keeps the text exactly as it is."))}</p>`
+        + `<p data-mmj-hint data-mmj-pichint>${escapeHtml(t("Pictures stay as they are."))}</p>`
         + `<span data-mmj-formbtns><button type="submit">${escapeHtml(t("Save"))}</button>${cancel}</span></form>`;
     }
     if (f.kind === "notemove") {
@@ -410,9 +422,27 @@ function mountMmjView(host, reader, model, sanitize, write = null) {
         const n = shown.notes[form.id];
         form.title = n.title || "";
         form.base = n.updatedAt;
-        try { form.pics = noteBodyInto(ed, n.content, sanitize, reader, true); }
-        catch (err) { console.error(err); ed.textContent = ""; form.pics = []; form.broken = err?.message || String(err); }
-        form.baseline = editorHtml(ed, form.pics, sanitize);
+        // The TEXT may be edited here only when nothing would be lost: what the box would send back with no typing at
+        // all (sanitised, pictures restored) must hold exactly what Siyagah keeps. Otherwise Edit is the title only.
+        let ok = false;
+        try {
+          form.pics = noteBodyInto(ed, n.content, sanitize, reader, true);
+          form.baseline = editorHtml(ed, form.pics, sanitize);
+          ok = sameNoteHtml(n.content, form.baseline, model.canonicalNodeHtml);
+        } catch (err) { console.error(err); ok = false; }
+        form.textOk = ok;
+        if (!ok) {
+          const msg = document.createElement("p");
+          msg.setAttribute("data-mmj-hint", "");
+          msg.setAttribute("data-mmj-titleonly", "");
+          msg.textContent = t("This note has formatting Mapping My Journey here cannot keep. Edit its text in Siyagah; you can change the title here.");
+          liveForm.querySelector("[data-mmj-field]")?.replaceWith(msg);
+          liveForm.querySelector("[data-mmj-pichint]")?.remove();
+        } else if (form.prefill && typeof form.prefill.content === "string") {
+          // A refused edit reopened: the box holds what the reader sent, not what Siyagah has.
+          try { form.pics = noteBodyInto(ed, form.prefill.content, sanitize, reader, true); } catch (err) { console.error(err); }
+        }
+        if (form.prefill && typeof form.prefill.title === "string") { const ti = liveForm.querySelector("[data-mmj-ntitle]"); if (ti) ti.value = form.prefill.title; }
       }
     }
     slot.replaceWith(liveForm);
@@ -590,6 +620,19 @@ function mountMmjView(host, reader, model, sanitize, write = null) {
     msgs[key] = outcome.kind === "refused"
       ? t("Siyagah did not make this change: {why}", { why: whyWords(outcome.why) })
       : t("Siyagah's answer could not be read: {reason}", { reason: model.isPermissionDenied(outcome.error) ? t("Ask the owner to allow this app.") : (outcome.error?.message || String(outcome.error || "")) });
+    // A refused edit Siyagah says to try again (a newer version, or open there): nothing typed is lost -- the Edit form
+    // opens again beside the reason, holding what the reader sent (its base is read again when they send it).
+    const reopen = outcome.kind === "refused" && entry.req.op === "note.edit" && (outcome.why === "changed in Siyagah since" || outcome.why === "open in Siyagah — try again");
+    if (reopen && !form) {
+      const prefill = {};
+      if ("title" in entry.req) prefill.title = entry.req.title;
+      if ("content" in entry.req) prefill.content = entry.req.content;
+      form = { kind: "noteedit", key, id: entry.req.id, ctx: splitNoteKey(key).ctx, prefill, baseAtSubmit: true };
+      liveForm = null;
+      render();
+      focusFirstField();
+      return;
+    }
     render();
     focusKeyed(key);
   }
@@ -691,11 +734,10 @@ function mountMmjView(host, reader, model, sanitize, write = null) {
       const nid = model.mmjRandomId(crypto.getRandomValues(new Uint8Array(16)), `x-${write.from}-`);
       ask("note.add", { id: nid, title, content: model.textToNoteHtml(text), tags: [], folderIds: [f.folder] }, noteKey(f.folder, nid), f.key);
     } else if (f.kind === "noteedit") {
-      if (f.broken) { sayOnForm(t("This change cannot be sent now: {reason}", { reason: f.broken })); return; }
-      const fields = { id: f.id, base: f.base };
+      const fields = { id: f.id, base: f.baseAtSubmit ? (shownNow().copy.notes[f.id]?.updatedAt ?? "") : f.base };
       const title = liveForm?.querySelector("[data-mmj-ntitle]")?.value ?? "";
       if (model.cleanMmjName(title) !== model.cleanMmjName(f.title)) fields.title = title;
-      const ed = liveForm?.querySelector("[data-mmj-neditor]");
+      const ed = f.textOk ? liveForm?.querySelector("[data-mmj-neditor]") : null; // title-only: the text is never sent
       if (ed) { const html = editorHtml(ed, f.pics, sanitize); if (html !== f.baseline) fields.content = html; }
       if (!("title" in fields) && !("content" in fields)) { sayOnForm(t("Nothing has changed.")); return; }
       ask("note.edit", fields, f.key, f.key);

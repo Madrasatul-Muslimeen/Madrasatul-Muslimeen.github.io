@@ -59,7 +59,11 @@ const MUTATIONS = {
   "pic-lost": ["app/js/siyagah-map-link.js", 'pics[Number(i)]?.tag || ""', '""', "edit text: the picture goes back byte for byte (its own <img> tag, once), the rest kept, the new words in"],
   "pic-editable": ["app/js/siyagah-map-link.js", 'ph.setAttribute("contenteditable", "false");', "", "edit: the form opens with the title and the text; the picture is a placeholder that cannot be typed into (nothing fetched into the box)"],
   "note-no-confirm": ["app/js/siyagah-map-link.js", 'form = { kind: "note" + kind, key, id, ctx };', 'if (kind === "delete") { ask("note.delete", { id, base: n?.updatedAt ?? "" }, key, key); return; } form = { kind: "note" + kind, key, id, ctx };', "note delete: one confirm says it goes to Siyagah's Trash and can be undone there; nothing sent yet"],
-  "note-why-raw": ["app/js/siyagah-map-link.js", '"changed in Siyagah since": "this note was changed', '"changed in Siyagah since (x)": "this note was changed', "edit refused: Siyagah's why in words on the row, the old title back, the row focused (I15)"],
+  "note-why-raw": ["app/js/siyagah-map-link.js", '"changed in Siyagah since": "this note was changed', '"changed in Siyagah since (x)": "this note was changed', "edit refused: Siyagah's why in words on the row, the old title back on the row, the Edit form open again with what was sent (I15)"],
+  "lossless-skipped": ["app/js/siyagah-map-link.js", "ok = sameNoteHtml(n.content, form.baseline, model.canonicalNodeHtml);", "ok = true;", "title only: a note with formatting the box cannot keep offers the title only, and says so in words"],
+  "titleonly-sends-text": ["app/js/siyagah-map-link.js", 'const ed = f.textOk ? liveForm?.querySelector("[data-mmj-neditor]") : null;', 'const ed = liveForm?.querySelector("[data-mmj-neditor]") || liveForm?.querySelector("[data-mmj-titleonly]");', "title only: the title edit is exactly {v,op,from,at,st,id,base,title} -- no content"],
+  "refused-no-reopen": ["app/js/siyagah-map-link.js", "if (reopen && !form) {", "if (false) {", "refused text edit: the Edit form opens again with the words the reader typed and the picture placeholder, beside the reason"],
+  "reopen-no-prefill": ["app/js/siyagah-map-link.js", "try { form.pics = noteBodyInto(ed, form.prefill.content, sanitize, reader, true); } catch (err) { console.error(err); }", "", "refused text edit: the Edit form opens again with the words the reader typed and the picture placeholder, beside the reason"],
   "note-lose-way-back": ["app/js/siyagah-map-link.js", '(ctx && !ctx.startsWith("~") ? host.querySelector(`[data-mmj-folder="${CSS.escape(ctx)}"]`) : null)', "null", "note delete done: the row goes, the focus is on its folder (way back)"],
   "move-none-allowed": ["app/js/siyagah-mmj-model.js", "if (uniq.length < 1 || uniq.length > MMJ_FOLDER_IDS_MAX)", "if (uniq.length > MMJ_FOLDER_IDS_MAX)", "move: none chosen is refused in words, nothing sent, the form still open"],
   "view-no-actions": ["app/js/siyagah-map-link.js", "const acts = write ? `<div data-mmj-tools data-mmj-noteacts>`", "const acts = false ? `<div data-mmj-tools data-mmj-noteacts>`", "view: the opened note shows Edit, Move to…, 👁 and Delete beside the way back, each 40px"],
@@ -76,6 +80,8 @@ check("POSITIVE CONTROL the shipped switch names this notebook", read("app/js/si
 const LONG = "Reflections on the Names of Allah and their meanings in everyday family life";
 // J112 R2b: a note with a picture, saved by Siyagah as a reference (no src)
 const IMG_TAG = '<img class="ed-img" data-pic="5d41402abc4b2a76b9719d911017c5925d41402abc4b2a76b9719d911017c592" data-mime="image/png" alt="">';
+// Architect's review: a note with formatting MSA's sanitiser cannot keep (a class; a style property outside its list), loose.
+const N4 = { id: "n4", title: "Styled note", folderIds: [], updatedAt: "2026-11-04T09:00:00Z", content: '<p class="hl">Kept in Siyagah</p><p style="font-family: serif">Serif</p>' };
 const N3 = { id: "n3", title: "Picture note", folderIds: ["f-hadith"], updatedAt: "2026-11-03T09:00:00Z", content: `<p>Before</p>${IMG_TAG}<p>After <b>bold</b></p>` };
 const TREE = [
   { id: "f-quran", n: "Qur'an reflections", p: null, o: 1 },
@@ -91,6 +97,7 @@ DATA["${MMJ}"] = [
   { _id: "n~n1", id: "n1", title: "Patience in 2:153", folderIds: ["f-baqarah"], updatedAt: "2026-11-02T09:00:00Z", at: TS(1100), content: "<p>x</p>" },
   { _id: "n~n2", id: "n2", title: "In two folders", folderIds: ["f-quran", "f-hadith"], updatedAt: "2026-11-01T09:00:00Z", at: TS(1101), content: "<p>y</p>" },
   Object.assign({ _id: "n~n3", at: TS(1102) }, ${JSON.stringify(N3)}),
+  Object.assign({ _id: "n~n4", at: TS(1103) }, ${JSON.stringify(N4)}),
 ];
 try { if (localStorage.getItem("__mmjDeny") === "1") window.__stubDenyCols = ["notebooks/"]; } catch (e) {}
 `;
@@ -406,8 +413,12 @@ try {
   await answer(page, e1, { st: "refused", why: "changed in Siyagah since", cur: "2026-11-05T09:00:00Z", doneAt: 1 });
   await waitFor(page, () => !!document.querySelector("#siyagahCloudBar [data-mmj-noterow] ~ [data-mmj-msg]"));
   s = await noteState(page, "f-hadith", "n3");
-  check("edit refused: Siyagah's why in words on the row, the old title back, the row focused (I15)",
-    /Siyagah did not make this change: this note was changed in Siyagah since you opened it\. Wait until the copy here shows the newer version, then try again\./.test(s?.msg || "") && s?.name === "Picture note" && !s.pending && s.focused, JSON.stringify(s));
+  // UPDATED IN PLACE (Architect's review of R2b): a refused edit no longer just puts the focus on the row -- the Edit
+  // form opens again beside the reason, holding what the reader sent, its title field focused.
+  const reo = await page.evaluate(() => ({ title: document.querySelector('#siyagahCloudBar [data-mmj-form="noteedit"] [data-mmj-ntitle]')?.value, focused: !!document.activeElement?.closest('[data-mmj-form="noteedit"]') }));
+  check("edit refused: Siyagah's why in words on the row, the old title back on the row, the Edit form open again with what was sent (I15)",
+    /Siyagah did not make this change: this note was changed in Siyagah since you opened it\. Wait until the copy here shows the newer version, then try again\./.test(s?.msg || "") && s?.name === "Picture note" && !s.pending
+    && reo.title === "Picture note, renamed" && reo.focused, JSON.stringify({ s, reo }));
   check("edit refused: nothing was sent again", (await reqCount(page)) === 2);
   await page.click('#siyagahCloudBar [data-mmj-dismiss="n:f-hadith|n3"]');
 
@@ -500,6 +511,49 @@ try {
     && await page.evaluate(() => getComputedStyle(document.querySelector("#siyagahCloudBar [data-mmj-noteview]")).display === "none"), JSON.stringify(s));
   check("notes: no page error", errors.length === 0, errors.join(" | "));
   if (SHOTS) await (await page.$("#siyagahCloudBar")).screenshot({ path: `${SHOTS}/mmj-notes-en-1024.png` });
+  await gather(page);
+  await ctx.close();
+} catch (err) { crashed(err); }
+
+console.log("\n=== notes: title only when the text cannot be kept; a refused edit keeps what was typed ===");
+try {
+  const { ctx, page, errors } = await openMap({});
+  await openFolder(page, "f-quran");
+  await nact(page, "f-quran", "n2", "edit");
+  await page.waitForSelector('#siyagahCloudBar [data-mmj-form="noteedit"]');
+  check("plain note: Edit offers the text box (its content round-trips losslessly)", !!(await page.$("#siyagahCloudBar [data-mmj-neditor]")) && !(await page.$("#siyagahCloudBar [data-mmj-titleonly]")));
+  await page.keyboard.press("Escape");
+  await openFolder(page, "~loose");
+  await nact(page, "~loose", "n4", "edit");
+  await page.waitForSelector('#siyagahCloudBar [data-mmj-form="noteedit"]');
+  const to = await page.evaluate(() => ({ editor: !!document.querySelector("#siyagahCloudBar [data-mmj-neditor]"), text: document.querySelector("#siyagahCloudBar [data-mmj-titleonly]")?.textContent || "", title: document.querySelector("#siyagahCloudBar [data-mmj-ntitle]")?.value }));
+  check("title only: a note with formatting the box cannot keep offers the title only, and says so in words",
+    !to.editor && to.text === "This note has formatting Mapping My Journey here cannot keep. Edit its text in Siyagah; you can change the title here." && to.title === "Styled note", JSON.stringify(to));
+  await page.fill("#siyagahCloudBar [data-mmj-ntitle]", "Styled note, renamed");
+  await page.press("#siyagahCloudBar [data-mmj-ntitle]", "Enter");
+  await waitReqs(page, 1);
+  const t1 = await lastReq(page);
+  check("title only: the title edit is exactly {v,op,from,at,st,id,base,title} -- no content", JSON.stringify(keys(t1?.data)) === JSON.stringify(["at", "base", "from", "id", "op", "st", "title", "v"]) && t1.data.id === "n4" && t1.data.base === N4.updatedAt, JSON.stringify(t1?.data));
+
+  await openFolder(page, "f-hadith");
+  await nact(page, "f-hadith", "n3", "edit");
+  await page.waitForSelector("#siyagahCloudBar [data-mmj-neditor]");
+  await placeCaretAtEnd(page);
+  await page.keyboard.type(" draft words");
+  await page.click('#siyagahCloudBar [data-mmj-form="noteedit"] button[type="submit"]');
+  await waitReqs(page, 2);
+  const t2 = await lastReq(page);
+  await answer(page, t2, { st: "refused", why: "open in Siyagah — try again", doneAt: 1 });
+  await waitFor(page, () => !!document.querySelector("#siyagahCloudBar [data-mmj-neditor]"));
+  const back = await page.evaluate(() => { const ed = document.querySelector("#siyagahCloudBar [data-mmj-neditor]"); return { text: ed?.textContent || "", pic: !!ed?.querySelector("[data-mmj-edpic]"), focused: !!document.activeElement?.closest('[data-mmj-form="noteedit"]') }; });
+  const st3 = await noteState(page, "f-hadith", "n3");
+  check("refused text edit: the Edit form opens again with the words the reader typed and the picture placeholder, beside the reason",
+    /draft words/.test(back.text) && back.pic && back.focused && /Siyagah did not make this change: the note is open in Siyagah on one of your devices\. Try again in a minute\./.test(st3?.msg || ""), JSON.stringify({ back, st3 }));
+  await page.click('#siyagahCloudBar [data-mmj-form="noteedit"] button[type="submit"]');
+  await waitReqs(page, 3);
+  const t3 = await lastReq(page);
+  check("refused text edit: sending again carries the typed words and the picture tag, based on the note as it is now", String(t3?.data.content || "").includes("draft words") && String(t3?.data.content || "").split(IMG_TAG).length === 2 && t3.data.base === N3.updatedAt, JSON.stringify(t3?.data));
+  check("title only / refused: no page error", errors.length === 0, errors.join(" | "));
   await gather(page);
   await ctx.close();
 } catch (err) { crashed(err); }

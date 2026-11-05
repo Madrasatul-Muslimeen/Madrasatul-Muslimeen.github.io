@@ -4836,4 +4836,6 @@ export const BN = {
   "bad tags": "ট্যাগ ঠিক নয়",
   "bad kind": "নোটের ধরন ঠিক নয়",
   "nothing to change": "বদলানোর কিছু নেই",
+  "Pictures stay as they are.": "ছবিগুলো যেমন আছে তেমনই থাকবে।",
+  "This note has formatting Mapping My Journey here cannot keep. Edit its text in Siyagah; you can change the title here.": "এই নোটে এমন বিন্যাস আছে যা এখানকার ম্যাপিং মাই জার্নি রাখতে পারে না। এর লেখা সিয়াগাহ-তে বদলান; শিরোনাম এখানে বদলাতে পারেন।",
 };
