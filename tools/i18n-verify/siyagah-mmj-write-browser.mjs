@@ -254,6 +254,8 @@ try {
   await page.fill("#siyagahCloudBar [data-mmj-input]", "Patient");
   await page.press("#siyagahCloudBar [data-mmj-input]", "Enter");
   await waitFor(page, () => !!document.querySelector("#siyagahCloudBar [data-mmj-wait]"));
+  // the request is really out (sent, and its answer followed) before the clock moves: the 20 s start from the send
+  await waitFor(page, (c) => (window.__stubSnapLog || []).some((l) => l.col === c && l.id), MMJIN);
   await page.clock.runFor(21000);
   await page.waitForTimeout(200);
   const s = await rowState(page, "f-long");
