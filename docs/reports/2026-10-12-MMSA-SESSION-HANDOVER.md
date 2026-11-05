@@ -2999,3 +2999,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v13.33** (2026-11-04): Monitor's Show on wheel opens that student's Marks wheel, read-only, with Back (J03 fix, QR Lead #1474); the intention-card check compares with the line-height (#1472, test only).
 - **v13.34** (2026-11-05): K3b Study Next, J112 R1, J05 question card, the student wheel's head row.
 - **v13.35** (2026-11-05): J112 R2a: change Siyagah folders from the Map.
+- **v13.36** (2026-11-06): J112 R2b: change Siyagah notes from the Map.

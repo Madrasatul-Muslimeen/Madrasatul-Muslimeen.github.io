@@ -132,7 +132,9 @@ console.log("\n=== small tree ===");
   const status = await page.textContent("#siyagahCloudBar [data-mmj-status]");
   // UPDATED IN PLACE (J112 R2a, 5 Nov 2026): folders can now be changed by request (Siyagah's "Writing (R2)"), so the
   // status no longer calls the folders read-only; the NOTES still are, and the sentence must say so.
-  check("small: the status counts 4 folders and 4 notes, and says notes are read-only", /4 folders, 4 notes\. Folder changes are sent to Siyagah; notes are read-only here\./.test(status), status);
+  // UPDATED IN PLACE again (J112 R2b, 5 Nov 2026): notes can now be changed by request too, so the sentence says both
+  // folders and notes are sent to Siyagah -- and must never again call the notes read-only.
+  check("small: the status counts 4 folders and 4 notes, and says changes to both are sent to Siyagah", /4 folders, 4 notes\. Changes to folders and notes are sent to Siyagah\./.test(status) && !/read-only/i.test(status), status);
   check("small: the top folders in Siyagah's order (o), the loose notes last", JSON.stringify(await names(page)) === JSON.stringify(["Qur'an reflections", "Hadith", LONG, "Not in a folder"]), JSON.stringify(await names(page)));
   await openFolder(page, "f-quran"); await openFolder(page, "f-baqarah"); await openFolder(page, "f-hadith"); await openFolder(page, "~loose");
   const all = await names(page);

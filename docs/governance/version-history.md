@@ -1076,3 +1076,4 @@ total). Allocated by the MMSA Architect.
 13.33: Monitor's Show on wheel opens that student's Marks wheel, read-only, with Back (J03 fix, QR Lead #1474); the intention-card check compares with the line-height (#1472, test only). Allocated by the MMSA Architect.
 13.34: K3b Study Next, J112 R1, J05 question card, the student wheel's head row. Allocated by the MMSA Architect.
 13.35: J112 R2a: change Siyagah folders from the Map. Allocated by the MMSA Architect.
+13.36: J112 R2b: change Siyagah notes from the Map. Allocated by the MMSA Architect.

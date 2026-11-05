@@ -1,4 +1,4 @@
-// PCF MSA J112 R2a -- ASKING SIYAGAH TO CHANGE A MAPPING MY JOURNEY FOLDER: THE WRITE HALF, AND ONLY THAT
+// PCF MSA J112 R2a/R2b -- ASKING SIYAGAH TO CHANGE A MAPPING MY JOURNEY FOLDER OR NOTE: THE WRITE HALF, AND ONLY THAT
 //
 // Siyagah v05.68's "Writing (R2)" contract (MMJ-SHARE.md): an app NEVER writes Siyagah's records. It CREATES one
 // request document notebooks/{nb}/mmjin/{reqId} -- reqId its own random id -- holding exactly
@@ -7,12 +7,12 @@
 //
 // So this file has ONE write call: setDoc on a FRESH document under notebooks/{nb}/mmjin/, with no merge. No update, no
 // delete, no batch, no transaction, no other path. tools/i18n-verify/siyagah-mmj-model.mjs fails if any other write
-// call or path appears here. The request itself is built and checked by the pure model (buildFolderRequest), so the
+// call or path appears here. The request itself is built and checked by the pure model (buildFolderRequest, buildNoteRequest), so the
 // fields are the contract's, never more.
 //
 // Loaded ONLY by a dynamic import from siyagah-map-link.js, the first time the reader uses a folder's write control on
 // the Map -- never at startup (I9), never in an embedded Map (the bar is not mounted there).
-import { isMmjId, mmjRandomId, requestOutcome } from "./siyagah-mmj-model.js";
+import { isMmjId, mmjRandomId, requestOutcome, MMJ_FOLDER_OPS, MMJ_NOTE_OPS } from "./siyagah-mmj-model.js";
 
 const SDK = "https://www.gstatic.com/firebasejs/10.12.2/";
 
@@ -37,6 +37,8 @@ export async function openMmjWriter({ cloud, nb }) {
   return {
     async send(req) {
       if (!req || req.v !== 1 || req.st !== "new" || typeof req.op !== "string" || "at" in req) throw new Error("not a request");
+      // R2b: the folder ops (R2a) and the note ops, and nothing else -- a request Siyagah would refuse as "unknown op" is never sent.
+      if (!Object.hasOwn(MMJ_FOLDER_OPS, req.op) && !Object.hasOwn(MMJ_NOTE_OPS, req.op)) throw new Error("unknown op");
       const reqId = randomId();
       await fs.setDoc(fs.doc(db, MMJIN, reqId), { ...req, at: fs.serverTimestamp() });
       return reqId;
