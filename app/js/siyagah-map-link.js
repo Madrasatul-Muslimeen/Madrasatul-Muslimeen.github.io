@@ -612,13 +612,13 @@ function mountMmjView(host, reader, model, sanitize, write = null) {
     const built = isNote ? model.buildNoteRequest(op, fields, { copy: shown, from: write.from })
       : model.buildFolderRequest(op, fields, { folders: shown.tree?.folders || [], from: write.from });
     // A refusal before asking keeps the form open (the reader's text is not lost).
-    if (!built.ok) { msgs[key] = t("This change cannot be sent now: {reason}", { reason: whyWords(built.reason) }); render(); focusKeyed(key); return; }
+    if (!built.ok) { msgs[key] = t("This change cannot be sent now: {reason}", { reason: whyWords(built.reason) }); render(); if (!(liveForm && liveForm.isConnected)) focusKeyed(key); return; } // an open note form keeps its focus
     const entry = { req: built.req, reqId: null, key, st: "sending", still: false, unsub: null, timer: null };
     pending.push(entry);
     form = null; liveForm = null;
     if (op === "folder.add" && fields.parent) open.add(fields.parent);
     if (op === "folder.move" && fields.parent) open.add(fields.parent);
-    if (op === "note.add") for (const fid of built.req.folderIds) open.add(fid);
+    if (op === "note.add" || op === "note.move") for (const fid of built.req.folderIds) open.add(fid); // the note's row stays in view where it now is
     render(); focusKeyed(focusTo);
     try {
       writerP = writerP || import("./siyagah-mmj-write.js").then((m) => m.openMmjWriter({ cloud: write.cloud, nb: write.nb }));
@@ -674,7 +674,7 @@ function mountMmjView(host, reader, model, sanitize, write = null) {
     focusFirstField();
   }
   function cancelForm() { const key = formKey(form); form = null; liveForm = null; render(); focusKeyed(key); }
-  function sayOnForm(text) { msgs[formKey(form)] = text; render(); focusKeyed(formKey(form)); }
+  function sayOnForm(text) { msgs[formKey(form)] = text; render(); } // the form stays open and keeps the focus (keepFocus); the line is role=alert
   function submitForm() {
     if (!form) return;
     const f = form;

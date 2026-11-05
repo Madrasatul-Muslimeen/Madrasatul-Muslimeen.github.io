@@ -18,6 +18,18 @@
 //   qr        on quranrevival.github.io the request says from:'qr'
 //   layout    en/bn at 360/768/1440, text 100/200%, with a menu open and a waiting row: no sideways scroll, every button
 //             40px or more and inside the bar, contrast >= 4.5
+// J112 R2b -- the NOTES, by the same requests:
+//   new note  a folder's ⋯ -> New note: ONE create {v,op,from,at,st,id,title,content,tags,folderIds}, the text as escaped
+//             <p> paragraphs, id x-msa-<random>; it shows at once in its folder, waiting, focused; done -> the copy takes over
+//   edit      title only sends {id, base, title} and NO content; refused "changed in Siyagah since" -> said in words, the old
+//             title back, focused, nothing sent again; a text edit sends {id, base, content} with the picture's own <img>
+//             tag back byte for byte (the box shows it as a placeholder that cannot be typed into); nothing changed -> said
+//   move      every folder offered, the note's own ticked; none -> refused in words, nothing sent; {id, base, folderIds}
+//   vis       the note's 👁 asks note.vis {id, vis}
+//   delete    ONE confirm in words (Siyagah's Trash, undo there); {id, base}; done + gone -> the focus on its folder
+//   view      the opened note shows Edit, Move to…, 👁, Delete; Escape -> focus on Edit; Delete -> back to its row
+//   still     a note request unanswered 20 s says so, and is never sent again
+//   layout    en/bn at 360/768/1440: a note ⋯ menu open, its Edit form, the opened note: inside the bar, 40px, contrast
 // Run from the repository root with serve.js running:  QR_BASE=http://localhost:8151 node tools/i18n-verify/siyagah-mmj-write-browser.mjs
 //   [--mutate=<name>]   SHOTS_DIR=<dir> saves screenshots
 import fs from "node:fs";
@@ -40,8 +52,19 @@ const MUTATIONS = {
   "no-refused-message": ["app/js/siyagah-map-link.js", 't("Siyagah did not make this change: {why}", { why: whyWords(outcome.why) })', '""', "add: refused -> Siyagah's why is said in words on the parent's row"],
   "no-wait-mark": ["app/js/siyagah-map-link.js", 't("Waiting for Siyagah…")', '""', "rename: the row says Waiting for Siyagah…"],
   "retry-on-still": ["app/js/siyagah-map-link.js", "entry.still = true; render();", "entry.still = true; render(); w.send(built.req);", "still: nothing was sent again"],
-  "lose-open": ["app/js/siyagah-map-link.js", "render(); focusRow(focusId);", "open.clear(); render(); focusRow(focusId);", "rename: the folders stay open and the row is focused and in view (way-back law)"],
+  "lose-open": ["app/js/siyagah-map-link.js", "render(); focusKeyed(focusTo);", "open.clear(); render(); focusKeyed(focusTo);", "rename: the folders stay open and the row is focused and in view (way-back law)"],
   "no-confirm": ["app/js/siyagah-map-link.js", 'else if (kind === "delete") { form = { kind: "delete", id }; }', 'else if (kind === "delete") { ask("folder.delete", { id }, id); return; }', "delete: one confirm says the folder AND its notes go to Siyagah's Trash, undoable there, with the counts"],
+  // J112 R2b
+  "edit-sends-all": ["app/js/siyagah-map-link.js", "if (html !== f.baseline) fields.content = html;", "fields.content = html;", "edit title only: exactly {v,op,from,at,st,id,base,title} -- base the note's updatedAt as read, and NO content"],
+  "pic-lost": ["app/js/siyagah-map-link.js", 'pics[Number(i)]?.tag || ""', '""', "edit text: the picture goes back byte for byte (its own <img> tag, once), the rest kept, the new words in"],
+  "pic-editable": ["app/js/siyagah-map-link.js", 'ph.setAttribute("contenteditable", "false");', "", "edit: the form opens with the title and the text; the picture is a placeholder that cannot be typed into (nothing fetched into the box)"],
+  "note-no-confirm": ["app/js/siyagah-map-link.js", 'form = { kind: "note" + kind, key, id, ctx };', 'if (kind === "delete") { ask("note.delete", { id, base: n?.updatedAt ?? "" }, key, key); return; } form = { kind: "note" + kind, key, id, ctx };', "note delete: one confirm says it goes to Siyagah's Trash and can be undone there; nothing sent yet"],
+  "note-why-raw": ["app/js/siyagah-map-link.js", '"changed in Siyagah since": "this note was changed', '"changed in Siyagah since (x)": "this note was changed', "edit refused: Siyagah's why in words on the row, the old title back, the row focused (I15)"],
+  "note-lose-way-back": ["app/js/siyagah-map-link.js", '(ctx && !ctx.startsWith("~") ? host.querySelector(`[data-mmj-folder="${CSS.escape(ctx)}"]`) : null)', "null", "note delete done: the row goes, the focus is on its folder (way back)"],
+  "move-none-allowed": ["app/js/siyagah-mmj-model.js", "if (uniq.length < 1 || uniq.length > MMJ_FOLDER_IDS_MAX)", "if (uniq.length > MMJ_FOLDER_IDS_MAX)", "move: none chosen is refused in words, nothing sent, the form still open"],
+  "view-no-actions": ["app/js/siyagah-map-link.js", "const acts = write ? `<div data-mmj-tools data-mmj-noteacts>`", "const acts = false ? `<div data-mmj-tools data-mmj-noteacts>`", "view: the opened note shows Edit, Move to…, 👁 and Delete beside the way back, each 40px"],
+  "add-unescaped": ["app/js/siyagah-mmj-model.js", '.map(esc).join("<br>")', '.join("<br>")', "new note: ONE create in mmjin: exactly {v,op,from,at,st,id,title,content,tags,folderIds}, id x-msa-<random>, the text as escaped <p> paragraphs, tags [], the folder"],
+  "note-retry-on-still": ["app/js/siyagah-map-link.js", "entry.still = true; render();", "entry.still = true; render(); w.send(built.req);", "notes still: nothing was sent again"],
 };
 if (MUTATE && !MUTATIONS[MUTATE]) throw new Error(`unknown mutation ${MUTATE}; known: ${Object.keys(MUTATIONS).join(", ")}`);
 const SERVED = {};
@@ -51,6 +74,9 @@ const NB = "nb-mriuc27o-f44402";
 const MMJ = `notebooks/${NB}/mmj`, MMJIN = `notebooks/${NB}/mmjin`;
 check("POSITIVE CONTROL the shipped switch names this notebook", read("app/js/siyagah-cloud-readiness.js").includes(`notebookId: "${NB}"`));
 const LONG = "Reflections on the Names of Allah and their meanings in everyday family life";
+// J112 R2b: a note with a picture, saved by Siyagah as a reference (no src)
+const IMG_TAG = '<img class="ed-img" data-pic="5d41402abc4b2a76b9719d911017c5925d41402abc4b2a76b9719d911017c592" data-mime="image/png" alt="">';
+const N3 = { id: "n3", title: "Picture note", folderIds: ["f-hadith"], updatedAt: "2026-11-03T09:00:00Z", content: `<p>Before</p>${IMG_TAG}<p>After <b>bold</b></p>` };
 const TREE = [
   { id: "f-quran", n: "Qur'an reflections", p: null, o: 1 },
   { id: "f-baqarah", n: "Sūrah Al-Baqarah", p: "f-quran", o: 0 },
@@ -64,6 +90,7 @@ DATA["${MMJ}"] = [
   { _id: "t~0", v: 1, at: TS(1000), b: "v05.68", sec: { id: "mmj-sec", n: "Mapping My Journey" }, folders: ${JSON.stringify(TREE)} },
   { _id: "n~n1", id: "n1", title: "Patience in 2:153", folderIds: ["f-baqarah"], updatedAt: "2026-11-02T09:00:00Z", at: TS(1100), content: "<p>x</p>" },
   { _id: "n~n2", id: "n2", title: "In two folders", folderIds: ["f-quran", "f-hadith"], updatedAt: "2026-11-01T09:00:00Z", at: TS(1101), content: "<p>y</p>" },
+  Object.assign({ _id: "n~n3", at: TS(1102) }, ${JSON.stringify(N3)}),
 ];
 try { if (localStorage.getItem("__mmjDeny") === "1") window.__stubDenyCols = ["notebooks/"]; } catch (e) {}
 `;
@@ -304,6 +331,197 @@ try {
   await ctx.close();
 } catch (err) { crashed(err); }
 
+// --- J112 R2b: notes ------------------------------------------------------------------------------------------------------
+const nmenu = async (page, ctx, id) => {
+  await page.click(`#siyagahCloudBar [data-mmj-nmenu-btn="${ctx}|${id}"]`);
+  await page.waitForSelector(`#siyagahCloudBar [data-mmj-nmenu="${ctx}|${id}"].open`, { timeout: 3000 });
+};
+const nact = async (page, ctx, id, kind) => { await nmenu(page, ctx, id); await page.click(`#siyagahCloudBar [data-mmj-nmenu="${ctx}|${id}"] [data-mmj-nact="${kind}"]`); };
+const reqCount = (page) => page.evaluate(() => (window.__stubWriteData || []).filter((w) => String(w.col).includes("/mmjin")).length);
+const waitReqs = (page, n) => waitFor(page, (n) => (window.__stubWriteData || []).filter((w) => String(w.col).includes("/mmjin")).length >= n, n);
+const noteState = (page, ctx, id) => page.evaluate(([ctx, id]) => {
+  const b = document.querySelector(`#siyagahCloudBar [data-mmj-note="${CSS.escape(id)}"][data-mmj-ctx="${CSS.escape(ctx)}"]`);
+  if (!b) return null;
+  const li = b.closest("li"), r = b.getBoundingClientRect();
+  return { name: b.querySelector("[data-mmj-name]")?.textContent, pending: b.closest("[data-mmj-row]")?.getAttribute("data-mmj-pending") || null,
+    wait: [...li.children].filter((e) => e.matches("[data-mmj-wait]")).map((e) => e.textContent).join(" "),
+    msg: [...li.children].filter((e) => e.matches("[data-mmj-msg]")).map((e) => e.textContent).join(" "),
+    focused: document.activeElement === b, inView: r.top >= 0 && r.bottom <= innerHeight };
+}, [ctx, id]);
+const emitNote = (page, note, atMs) => page.evaluate(([c, n, at]) => window.__stubEmit(c, { _id: "n~" + n.id, ...n, at: window.__TS(at) }), [MMJ, note, atMs]);
+const placeCaretAtEnd = (page) => page.evaluate(() => {
+  const ed = document.querySelector("#siyagahCloudBar [data-mmj-neditor]");
+  ed.focus();
+  const r = document.createRange(); r.selectNodeContents(ed); r.collapse(false);
+  const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+});
+
+console.log("\n=== notes: new, edit (title only, refused), edit (text, picture kept), move, vis, delete ===");
+try {
+  const { ctx, page, errors, ok } = await openMap({});
+  check("notes: the tree shows", ok);
+  await openFolder(page, "f-hadith");
+  const rows = await page.evaluate(() => [...document.querySelectorAll("#siyagahCloudBar [data-mmj-nmenu-btn]")].map((b) => ({ k: b.getAttribute("data-mmj-nmenu-btn"), h: b.getBoundingClientRect().height, w: b.getBoundingClientRect().width })));
+  check("notes: every note row has its own 40px ⋯ menu (one per folder it is in)", JSON.stringify(rows.map((r) => r.k).sort()) === JSON.stringify(["f-hadith|n2", "f-hadith|n3"]) && rows.every((r) => r.h >= 39.5 && r.w >= 39.5), JSON.stringify(rows));
+  await menu(page, "f-hadith");
+  check("notes: a folder's ⋯ menu offers New note", !!(await page.$('#siyagahCloudBar [data-mmj-menu="f-hadith"] [data-mmj-act="newnote"]')));
+  await page.click('#siyagahCloudBar [data-mmj-menu="f-hadith"] [data-mmj-act="newnote"]');
+  check("new note: the form opens with the title focused, nothing written", await page.evaluate(() => document.activeElement?.hasAttribute("data-mmj-ntitle")) && (await reqCount(page)) === 0);
+  await page.fill("#siyagahCloudBar [data-mmj-ntitle]", "  Fresh note ");
+  await page.fill("#siyagahCloudBar [data-mmj-ntext]", "Line one <b>&\nline two\n\nPara two");
+  await page.click('#siyagahCloudBar [data-mmj-form="noteadd"] button[type="submit"]');
+  await waitReqs(page, 1);
+  const a1 = await lastReq(page);
+  check("new note: ONE create in mmjin: exactly {v,op,from,at,st,id,title,content,tags,folderIds}, id x-msa-<random>, the text as escaped <p> paragraphs, tags [], the folder",
+    (await writes(page)).length === 1 && a1?.col === MMJIN && JSON.stringify(keys(a1.data)) === JSON.stringify(["at", "content", "folderIds", "from", "id", "op", "st", "tags", "title", "v"])
+    && a1.data.op === "note.add" && a1.data.v === 1 && a1.data.st === "new" && a1.data.from === "msa" && /^x-msa-[a-z0-9]{16}$/.test(a1.data.id) && a1.data.title === "Fresh note"
+    && a1.data.content === "<p>Line one &lt;b&gt;&amp;<br>line two</p><p>Para two</p>" && JSON.stringify(a1.data.tags) === "[]" && JSON.stringify(a1.data.folderIds) === '["f-hadith"]' && !a1.merge, JSON.stringify(a1));
+  await waitFor(page, (id) => !!document.querySelector(`#siyagahCloudBar [data-mmj-note="${CSS.escape(id)}"]`), a1.data.id);
+  let s = await noteState(page, "f-hadith", a1.data.id);
+  check("new note: it shows at once in its folder, marked Waiting for Siyagah…, its row focused (way back)", s?.name === "Fresh note" && s?.pending === "note.add" && /Waiting for Siyagah…/.test(s.wait) && s.focused, JSON.stringify(s));
+  await answer(page, a1, { st: "done", res: { id: a1.data.id }, doneAt: 1 });
+  await emitNote(page, { id: a1.data.id, title: "Fresh note", content: a1.data.content, tags: [], folderIds: ["f-hadith"], updatedAt: "2026-11-05T10:00:00Z" }, 6000);
+  await waitFor(page, () => !document.querySelector("#siyagahCloudBar [data-mmj-wait]"));
+  s = await noteState(page, "f-hadith", a1.data.id);
+  check("new note: done -> the mark goes and Siyagah's copy takes over", s?.name === "Fresh note" && !s.pending && s.wait === "", JSON.stringify(s));
+
+  // Edit, title only, on the note with a picture: the text is NOT sent.
+  await nact(page, "f-hadith", "n3", "edit");
+  await page.waitForSelector("#siyagahCloudBar [data-mmj-neditor]");
+  const ed0 = await page.evaluate(() => {
+    const ed = document.querySelector("#siyagahCloudBar [data-mmj-neditor]"), ph = ed.querySelector("[data-mmj-edpic]");
+    return { title: document.querySelector("#siyagahCloudBar [data-mmj-ntitle]")?.value, focused: document.activeElement?.hasAttribute("data-mmj-ntitle"), ce: ed.getAttribute("contenteditable"),
+      ph: !!ph, phCe: ph?.getAttribute("contenteditable"), img: !!ed.querySelector("img"), text: ed.textContent };
+  });
+  check("edit: the form opens with the title and the text; the picture is a placeholder that cannot be typed into (nothing fetched into the box)",
+    ed0.title === "Picture note" && ed0.focused && ed0.ce === "true" && ed0.ph && ed0.phCe === "false" && !ed0.img && /Before/.test(ed0.text) && /After bold/.test(ed0.text), JSON.stringify(ed0));
+  await page.fill("#siyagahCloudBar [data-mmj-ntitle]", "Picture note, renamed");
+  await page.press("#siyagahCloudBar [data-mmj-ntitle]", "Enter");
+  await waitReqs(page, 2);
+  const e1 = await lastReq(page);
+  check("edit title only: exactly {v,op,from,at,st,id,base,title} -- base the note's updatedAt as read, and NO content",
+    JSON.stringify(keys(e1?.data)) === JSON.stringify(["at", "base", "from", "id", "op", "st", "title", "v"]) && e1.data.op === "note.edit" && e1.data.id === "n3" && e1.data.base === N3.updatedAt && e1.data.title === "Picture note, renamed", JSON.stringify(e1?.data));
+  s = await noteState(page, "f-hadith", "n3");
+  check("edit: the new title shows at once, waiting, the row focused", s?.name === "Picture note, renamed" && s?.pending === "note.edit" && /Waiting/.test(s.wait) && s.focused, JSON.stringify(s));
+  await answer(page, e1, { st: "refused", why: "changed in Siyagah since", cur: "2026-11-05T09:00:00Z", doneAt: 1 });
+  await waitFor(page, () => !!document.querySelector("#siyagahCloudBar [data-mmj-noterow] ~ [data-mmj-msg]"));
+  s = await noteState(page, "f-hadith", "n3");
+  check("edit refused: Siyagah's why in words on the row, the old title back, the row focused (I15)",
+    /Siyagah did not make this change: this note was changed in Siyagah since you opened it\. Wait until the copy here shows the newer version, then try again\./.test(s?.msg || "") && s?.name === "Picture note" && !s.pending && s.focused, JSON.stringify(s));
+  check("edit refused: nothing was sent again", (await reqCount(page)) === 2);
+  await page.click('#siyagahCloudBar [data-mmj-dismiss="n:f-hadith|n3"]');
+
+  // Edit the text: the picture goes back byte for byte.
+  await nact(page, "f-hadith", "n3", "edit");
+  await page.waitForSelector("#siyagahCloudBar [data-mmj-neditor]");
+  await placeCaretAtEnd(page);
+  await page.keyboard.type(" and more");
+  await page.click('#siyagahCloudBar [data-mmj-form="noteedit"] button[type="submit"]');
+  await waitReqs(page, 3);
+  const e2 = await lastReq(page);
+  check("edit text: exactly {v,op,from,at,st,id,base,content} (the title did not change, so it is not sent)",
+    JSON.stringify(keys(e2?.data)) === JSON.stringify(["at", "base", "content", "from", "id", "op", "st", "v"]) && e2.data.op === "note.edit" && e2.data.base === N3.updatedAt, JSON.stringify(e2?.data));
+  const c2 = String(e2?.data?.content || "");
+  check("edit text: the picture goes back byte for byte (its own <img> tag, once), the rest kept, the new words in",
+    c2.split(IMG_TAG).length === 2 && c2.includes("<p>Before</p>") && c2.includes("<p>After <b>bold") && c2.includes("and more") && !/data-mmj|contenteditable|/.test(c2), c2);
+  await answer(page, e2, { st: "done", res: { id: "n3" }, doneAt: 1 });
+  await emitNote(page, { ...N3, content: c2, updatedAt: "2026-11-05T11:00:00Z" }, 7000);
+  await waitFor(page, () => !document.querySelector("#siyagahCloudBar [data-mmj-wait]"));
+  check("edit text: done -> the mark goes", (await noteState(page, "f-hadith", "n3"))?.pending === null);
+  await nact(page, "f-hadith", "n3", "edit");
+  await page.waitForSelector("#siyagahCloudBar [data-mmj-neditor]");
+  await page.press("#siyagahCloudBar [data-mmj-ntitle]", "Enter");
+  await page.waitForTimeout(200);
+  check("edit: nothing changed -> said in words, nothing sent", (await reqCount(page)) === 3 && /Nothing has changed\./.test((await noteState(page, "f-hadith", "n3"))?.msg || ""));
+  check("edit: after \"Nothing has changed.\" the form stays open and keeps the focus", await page.evaluate(() => !!document.activeElement?.closest('[data-mmj-form="noteedit"]')));
+  await page.keyboard.press("Escape");
+  s = await noteState(page, "f-hadith", "n3");
+  check("escape: Escape closes the note form, focus back on the note's row", !(await page.$("#siyagahCloudBar [data-mmj-form]")) && s?.focused, JSON.stringify(s));
+
+  // Move: keep at least one folder.
+  await nact(page, "f-hadith", "n2", "move");
+  await page.waitForSelector("#siyagahCloudBar [data-mmj-nfolder]");
+  const boxes = await page.$$eval("#siyagahCloudBar [data-mmj-nfolder]", (bs) => bs.map((b) => `${b.value}:${b.checked ? 1 : 0}`));
+  check("move: Move to… lists every folder, the note's own ticked", JSON.stringify(boxes) === JSON.stringify(["f-quran:1", "f-baqarah:0", "f-hadith:1", "f-long:0"]), JSON.stringify(boxes));
+  for (const id of ["f-quran", "f-hadith"]) await page.uncheck(`#siyagahCloudBar [data-mmj-nfolder][value="${id}"]`);
+  await page.click('#siyagahCloudBar [data-mmj-form="notemove"] button[type="submit"]');
+  await page.waitForTimeout(200);
+  check("move: none chosen is refused in words, nothing sent, the form still open", (await reqCount(page)) === 3 && /choose at least one folder \(20 at most\)/.test((await noteState(page, "f-hadith", "n2"))?.msg || "") && !!(await page.$('#siyagahCloudBar [data-mmj-form="notemove"]')));
+  await page.check('#siyagahCloudBar [data-mmj-nfolder][value="f-long"]');
+  await page.click('#siyagahCloudBar [data-mmj-form="notemove"] button[type="submit"]');
+  await waitReqs(page, 4);
+  const m1 = await lastReq(page);
+  check("move: exactly {v,op,from,at,st,id,base,folderIds}", JSON.stringify(keys(m1?.data)) === JSON.stringify(["at", "base", "folderIds", "from", "id", "op", "st", "v"]) && m1.data.op === "note.move" && m1.data.id === "n2" && m1.data.base === "2026-11-01T09:00:00Z" && JSON.stringify(m1.data.folderIds) === '["f-long"]', JSON.stringify(m1?.data));
+  s = await noteState(page, "f-long", "n2");
+  check("move: it shows at once in its new folder (opened), waiting, focused; gone from the old one", s?.pending === "note.move" && s.focused && !(await noteState(page, "f-hadith", "n2")), JSON.stringify(s));
+
+  // 👁
+  await nmenu(page, "f-hadith", "n3");
+  const vsw = await page.getAttribute('#siyagahCloudBar [data-mmj-nmenu="f-hadith|n3"] [data-mmj-nact="vis"]', "aria-checked");
+  await page.click('#siyagahCloudBar [data-mmj-nmenu="f-hadith|n3"] [data-mmj-nact="vis"]');
+  await waitReqs(page, 5);
+  const v1 = await lastReq(page);
+  check("vis: the note's 👁 switch shows off and asks note.vis {id, vis:1} exactly", vsw === "false" && JSON.stringify(keys(v1?.data)) === JSON.stringify(["at", "from", "id", "op", "st", "v", "vis"]) && v1.data.op === "note.vis" && v1.data.vis === 1 && v1.data.id === "n3", JSON.stringify({ vsw, d: v1?.data }));
+
+  // Delete, confirmed in words first.
+  await openFolder(page, "f-quran"); await openFolder(page, "f-baqarah");
+  await nact(page, "f-baqarah", "n1", "delete");
+  const nconf = await page.evaluate(() => ({ text: document.querySelector("#siyagahCloudBar [data-mmj-confirm]")?.textContent || "", focused: document.activeElement?.hasAttribute("data-mmj-confirm-ndelete") }));
+  check("note delete: one confirm says it goes to Siyagah's Trash and can be undone there; nothing sent yet",
+    /Delete the note “Patience in 2:153”\? It goes to Siyagah's Trash\. You can undo it in Siyagah \(Trash, then Restore\)\./.test(nconf.text) && nconf.focused && (await reqCount(page)) === 5, JSON.stringify(nconf));
+  await page.click("#siyagahCloudBar [data-mmj-confirm-ndelete]");
+  await waitReqs(page, 6);
+  const d1 = await lastReq(page);
+  check("note delete: exactly {v,op,from,at,st,id,base}", JSON.stringify(keys(d1?.data)) === JSON.stringify(["at", "base", "from", "id", "op", "st", "v"]) && d1.data.op === "note.delete" && d1.data.id === "n1" && d1.data.base === "2026-11-02T09:00:00Z", JSON.stringify(d1?.data));
+  s = await noteState(page, "f-baqarah", "n1");
+  check("note delete: the row stays, marked as going, waiting, focused", s?.pending === "note.delete" && /Waiting/.test(s.wait) && s.focused, JSON.stringify(s));
+  await answer(page, d1, { st: "done", res: { id: "n1" }, doneAt: 1 });
+  await page.evaluate(([c]) => window.__stubEmit(c, { _id: "n~n1", id: "n1", gone: true, at: window.__TS(8000) }), [MMJ]);
+  await waitFor(page, () => !document.querySelector('#siyagahCloudBar [data-mmj-note="n1"]'));
+  const fb = await rowState(page, "f-baqarah");
+  check("note delete done: the row goes, the focus is on its folder (way back)", !(await noteState(page, "f-baqarah", "n1")) && fb?.focused, JSON.stringify(fb));
+
+  // The opened note: the same actions beside the way back.
+  await page.click('#siyagahCloudBar [data-mmj-note="n3"][data-mmj-ctx="f-hadith"]');
+  await page.waitForSelector("#siyagahCloudBar [data-mmj-body]");
+  const va = await page.evaluate(() => [...document.querySelectorAll("#siyagahCloudBar [data-mmj-noteview] [data-mmj-nact]")].map((b) => ({ k: b.getAttribute("data-mmj-nact"), h: b.getBoundingClientRect().height })));
+  check("view: the opened note shows Edit, Move to…, 👁 and Delete beside the way back, each 40px", JSON.stringify(va.map((x) => x.k)) === JSON.stringify(["edit", "move", "vis", "delete"]) && va.every((x) => x.h >= 39.5)
+    && !(await page.evaluate(() => /Read-only/.test(document.querySelector("#siyagahCloudBar [data-mmj-noteview]").textContent))), JSON.stringify(va));
+  await page.click('#siyagahCloudBar [data-mmj-noteview] [data-mmj-nact="edit"]');
+  await page.waitForSelector("#siyagahCloudBar [data-mmj-noteview] [data-mmj-neditor]");
+  await page.keyboard.press("Escape");
+  check("view: Escape closes its edit form, the focus back on Edit", await page.evaluate(() => !document.querySelector("#siyagahCloudBar [data-mmj-form]") && document.activeElement?.getAttribute("data-mmj-nact") === "edit"));
+  await page.click('#siyagahCloudBar [data-mmj-noteview] [data-mmj-nact="delete"]');
+  await page.click("#siyagahCloudBar [data-mmj-confirm-ndelete]");
+  await waitReqs(page, 7);
+  const d2 = await lastReq(page);
+  s = await noteState(page, "f-hadith", "n3");
+  check("view delete: back in the tree, the note's own row marked as going, focused", d2?.data.op === "note.delete" && d2.data.id === "n3" && s?.pending === "note.delete" && s.focused
+    && await page.evaluate(() => getComputedStyle(document.querySelector("#siyagahCloudBar [data-mmj-noteview]")).display === "none"), JSON.stringify(s));
+  check("notes: no page error", errors.length === 0, errors.join(" | "));
+  if (SHOTS) await (await page.$("#siyagahCloudBar")).screenshot({ path: `${SHOTS}/mmj-notes-en-1024.png` });
+  await gather(page);
+  await ctx.close();
+} catch (err) { crashed(err); }
+
+console.log("\n=== notes: still waiting, never sent again ===");
+try {
+  const { ctx, page } = await openMap({ clock: true });
+  await openFolder(page, "f-hadith");
+  await nact(page, "f-hadith", "n3", "vis");
+  await waitFor(page, () => !!document.querySelector("#siyagahCloudBar [data-mmj-wait]"));
+  await waitFor(page, (c) => (window.__stubSnapLog || []).some((l) => l.col === c && l.id), MMJIN);
+  await page.clock.runFor(21000);
+  await page.waitForTimeout(200);
+  const s = await noteState(page, "f-hadith", "n3");
+  check("notes still: after 20 s the note's row says it is still waiting", /Still waiting for Siyagah\./.test(s?.wait || ""), JSON.stringify(s));
+  await page.clock.runFor(120000);
+  await page.waitForTimeout(200);
+  check("notes still: nothing was sent again", (await writes(page)).length === 1, JSON.stringify(await writes(page)));
+  await gather(page);
+  await ctx.close();
+} catch (err) { crashed(err); }
+
 console.log("\n=== only mmjin, only creates ===");
 check("POSITIVE CONTROL writes were gathered from the pages above", allWrites.length >= 10, String(allWrites.length));
 const bad = allWrites.filter((w) => !(w.col === MMJIN && (w.kind === "setDoc" || w.kind === "set") && !w.merge));
@@ -319,7 +537,7 @@ async function measure(page) {
     const bgOf = (el) => { for (let e = el; e; e = e.parentElement) { const c = rgb(getComputedStyle(e).backgroundColor); if (c.length >= 3 && (c.length < 4 || c[3] > 0.5)) return c.slice(0, 3); } return [255, 255, 255]; };
     const bar = document.getElementById("siyagahCloudBar"), br = bar.getBoundingClientRect();
     const buttons = [...bar.querySelectorAll("button, select, input")].filter((b) => b.getBoundingClientRect().width > 0).map((b) => { const r = b.getBoundingClientRect(); return { t: (b.textContent || b.value || "").trim().slice(0, 30), h: r.height, l: r.left, r: r.right }; });
-    const texts = [...bar.querySelectorAll("[data-mmj-status], [data-mmj-name], [data-mmj-count], [data-mmj-wait], [data-mmj-msg] > span, [data-mmj-confirm], [data-mmj-form] label > span, .bar-palette button, [data-mmj-tools] button, [data-siyagah-status], strong")]
+    const texts = [...bar.querySelectorAll("[data-mmj-status], [data-mmj-name], [data-mmj-count], [data-mmj-wait], [data-mmj-msg] > span, [data-mmj-confirm], [data-mmj-form] label > span, [data-mmj-field] > span, [data-mmj-hint], [data-mmj-edpic], .bar-palette button, [data-mmj-tools] button, [data-siyagah-status], strong")]
       .filter((e) => e.getBoundingClientRect().width > 0).map((e) => ({ t: e.textContent.trim().slice(0, 30), fg: rgb(getComputedStyle(e).color).slice(0, 3), bg: bgOf(e) }));
     const pop = bar.querySelector(".bar-palette.open"), pr = pop?.getBoundingClientRect();
     // what is really on top at the menu's centre: the menu, not something painted over it
@@ -353,10 +571,48 @@ for (const lang of LANGS) for (const width of WIDTHS) for (const pct of PCTS) {
   } catch (err) { crashed(err); }
   await ctx.close();
 }
+// J112 R2b: a note's ⋯ menu open, then its Edit form (title, the text box with a picture placeholder), then the opened
+// note's actions -- at a phone, a tablet and a computer, in English and Bangla.
+console.log("\n=== layout: notes ===");
+for (const lang of LANGS) for (const width of WIDTHS) {
+  const tag = `${lang}/${width}`;
+  const { ctx, page, ok } = await openMap({ lang, width });
+  try {
+    if (!ok) { check(`notes layout ${tag}: the tree shows`, false); await ctx.close(); continue; }
+    await openFolder(page, "f-hadith");
+    await nmenu(page, "f-hadith", "n3");
+    await page.evaluate(() => document.querySelector('#siyagahCloudBar [data-mmj-nmenu="f-hadith|n3"]').scrollIntoView({ block: "nearest" }));
+    let m = await measure(page);
+    check(`notes layout ${tag}: a note's ⋯ menu is inside the bar and on top, nothing scrolls sideways`, !!m.pop && m.pop.l >= m.bl - 0.5 && m.pop.r <= m.br + 0.5 && m.popOnTop && m.pageOverflow <= 0 && m.barOverflow <= 0, JSON.stringify({ pop: m.pop, po: m.pageOverflow, bo: m.barOverflow }));
+    let small = m.buttons.filter((b) => b.h < 39.5 || b.l < m.bl - 0.5 || b.r > m.br + 0.5);
+    check(`notes layout ${tag}: with the note menu open, every control is 40px or more and inside the bar`, small.length === 0, JSON.stringify(small.slice(0, 4)));
+    if (SHOTS && width === 360) await page.screenshot({ path: `${SHOTS}/mmj-note-menu-${lang}-360.png` });
+    await page.click('#siyagahCloudBar [data-mmj-nmenu="f-hadith|n3"] [data-mmj-nact="edit"]');
+    await page.waitForSelector("#siyagahCloudBar [data-mmj-neditor]");
+    await page.evaluate(() => document.querySelector('#siyagahCloudBar [data-mmj-form="noteedit"]').scrollIntoView({ block: "nearest" }));
+    m = await measure(page);
+    const ed = await page.evaluate(() => { const e = document.querySelector("#siyagahCloudBar [data-mmj-neditor]"), r = e.getBoundingClientRect(), b = document.getElementById("siyagahCloudBar").getBoundingClientRect(); return { w: r.width, h: r.height, l: r.left, r: r.right, bl: b.left, br: b.right }; });
+    check(`notes layout ${tag}: the edit form fits (no sideways scroll), its text box inside the bar and tall enough to write in`, m.pageOverflow <= 0 && m.barOverflow <= 0 && ed.l >= ed.bl - 0.5 && ed.r <= ed.br + 0.5 && ed.h >= 80 && ed.w >= 200, JSON.stringify({ ed, po: m.pageOverflow, bo: m.barOverflow }));
+    small = m.buttons.filter((b) => b.h < 39.5 || b.l < m.bl - 0.5 || b.r > m.br + 0.5);
+    check(`notes layout ${tag}: every control of the edit form is 40px or more and inside the bar`, small.length === 0, JSON.stringify(small.slice(0, 4)));
+    const low = m.texts.map((x) => ({ ...x, c: ratio(x.fg, x.bg) })).filter((x) => x.c < 4.5);
+    check(`notes layout ${tag}: text contrast is 4.5 or more against its real background (edit form open)`, m.texts.length > 8 && low.length === 0, JSON.stringify(low.slice(0, 3)));
+    if (lang === "bn") check(`notes layout ${tag}: the note controls speak Bangla`, /ছবি \(যেমন আছে তেমনই থাকবে\)/.test(m.text) && /ছবিগুলো যেমন আছে তেমনই থাকবে/.test(m.text) && !/Pictures stay|kept as it is|Visitors may see it/.test(m.text), m.text.slice(0, 300));
+    if (SHOTS && width === 360) await page.screenshot({ path: `${SHOTS}/mmj-note-edit-${lang}-360.png` });
+    await page.keyboard.press("Escape").catch(() => {});
+    await page.click("#siyagahCloudBar [data-mmj-cancel]").catch(() => {});
+    await page.click('#siyagahCloudBar [data-mmj-note="n3"][data-mmj-ctx="f-hadith"]');
+    await page.waitForSelector("#siyagahCloudBar [data-mmj-noteacts]");
+    m = await measure(page);
+    small = m.buttons.filter((b) => b.h < 39.5 || b.l < m.bl - 0.5 || b.r > m.br + 0.5);
+    check(`notes layout ${tag}: the opened note's actions fit, 40px or more, nothing scrolls sideways`, m.pageOverflow <= 0 && m.barOverflow <= 0 && small.length === 0, JSON.stringify({ small: small.slice(0, 4), po: m.pageOverflow, bo: m.barOverflow }));
+  } catch (err) { crashed(err); }
+  await ctx.close();
+}
 await browser.close();
 if (MUTATE) {
   const target = MUTATIONS[MUTATE][3];
   console.log(`\n  mutation ${MUTATE}: its check "${target}" ${failed.includes(target) ? "FAILED, as it must" : "STAYED GREEN -- the mutation is unproven"}`);
 }
-console.log(`\n==== Siyagah MMJ folder requests on the Map (J112 R2a)${MUTATE ? ` [mutated: ${MUTATE}]` : ""}: ${pass} passed, ${fail} failed ====`);
+console.log(`\n==== Siyagah MMJ folder and note requests on the Map (J112 R2a + R2b)${MUTATE ? ` [mutated: ${MUTATE}]` : ""}: ${pass} passed, ${fail} failed ====`);
 process.exit(MUTATE ? (failed.includes(MUTATIONS[MUTATE][3]) ? 3 : 4) : (fail ? 1 : 0));
