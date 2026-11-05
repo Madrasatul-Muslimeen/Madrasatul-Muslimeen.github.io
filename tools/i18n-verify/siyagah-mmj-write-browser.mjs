@@ -30,6 +30,8 @@ function check(name, ok, detail = "") {
   if (ok) { pass++; console.log(`  PASS  ${name}`); } else { fail++; failed.push(name); console.log(`  FAIL  ${name}${detail ? `\n        ${detail}` : ""}`); }
 }
 const read = (p) => fs.readFileSync(p, "utf8");
+// A section that throws (a control a broken build never drew) is a FAILED check, never a crash that hides the rest.
+function crashed(err) { check("the section ran to its end", false, String(err?.message || err).split("\n")[0].slice(0, 300)); }
 function mutated(src, a, b) { const n = src.split(a).length - 1; if (!n) throw new Error(`mutation anchor missing: ${a}`); console.log(`  (mutation: ${n} occurrence${n > 1 ? "s" : ""} replaced)`); return src.split(a).join(b); }
 const SHOTS = process.env.SHOTS_DIR || "";
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
@@ -83,6 +85,7 @@ async function openMap({ lang = "en", width = 1024, pct = 100, ctx = null, clock
   }
   await ctx.addInitScript((d) => { try { localStorage.setItem("__mmjDeny", d ? "1" : "0"); localStorage.setItem("msa-siyagah-mmj-open", "1"); } catch (e) {} }, deny);
   const page = await ctx.newPage();
+  page.setDefaultTimeout(8000);
   const errors = [];
   page.on("pageerror", (e) => errors.push(String(e)));
   if (clock) await page.clock.install();
@@ -120,7 +123,7 @@ const waitFor = (page, fn, arg, t = 5000) => page.waitForFunction(fn, arg, { tim
 // --- the main run --------------------------------------------------------------------------------------------------------
 console.log("\n=== lazy, rename, done ===");
 let keepCtx;
-{
+try {
   const { ctx, page, errors, ok } = await openMap({});
   keepCtx = ctx;
   check("the tree shows (folders open on this device)", ok);
@@ -227,10 +230,10 @@ let keepCtx;
   check("no page error", errors.length === 0, errors.join(" | "));
   await gather(page);
   await page.close();
-}
+} catch (err) { crashed(err); }
 
 console.log("\n=== a create the cloud refuses ===");
-{
+try {
   const { ctx, page, errors } = await openMap({});
   await page.evaluate(() => { window.__stubFailWrites = true; });
   await act(page, "f-long", "rename");
@@ -242,10 +245,10 @@ console.log("\n=== a create the cloud refuses ===");
   check("failed: no page error", errors.length === 0, errors.join(" | "));
   await gather(page);
   await ctx.close();
-}
+} catch (err) { crashed(err); }
 
 console.log("\n=== no answer: still waiting, never sent again ===");
-{
+try {
   const { ctx, page } = await openMap({ clock: true });
   await act(page, "f-long", "rename");
   await page.fill("#siyagahCloudBar [data-mmj-input]", "Patient");
@@ -260,10 +263,10 @@ console.log("\n=== no answer: still waiting, never sent again ===");
   check("still: nothing was sent again", (await writes(page)).length === 1, JSON.stringify(await writes(page)));
   await gather(page);
   await ctx.close();
-}
+} catch (err) { crashed(err); }
 
 console.log("\n=== denied: the controls explain themselves ===");
-{
+try {
   const d = await openMap({ ctx: keepCtx, deny: true }); // the device copy from the main run is in IndexedDB
   await d.page.waitForSelector('#siyagahCloudBar [data-mmj-status][data-kind="denied"]', { timeout: 12000 }).catch(() => {});
   check("denied: the device copy's tree is shown, with its ⋯ menus", d.ok && !!(await d.page.$('#siyagahCloudBar [data-mmj-menu-btn="f-hadith"]')));
@@ -277,10 +280,10 @@ console.log("\n=== denied: the controls explain themselves ===");
   }
   await gather(d.page);
   await keepCtx.close();
-}
+} catch (err) { crashed(err); }
 
 console.log("\n=== quranrevival.github.io ===");
-{
+try {
   const { ctx, page, ok } = await openMap({ host: "quranrevival.github.io" });
   check("qr: the Map opens on quranrevival.github.io with the tree", ok);
   if (ok) {
@@ -296,7 +299,7 @@ console.log("\n=== quranrevival.github.io ===");
   }
   await gather(page);
   await ctx.close();
-}
+} catch (err) { crashed(err); }
 
 console.log("\n=== only mmjin, only creates ===");
 check("POSITIVE CONTROL writes were gathered from the pages above", allWrites.length >= 10, String(allWrites.length));
@@ -326,6 +329,7 @@ const WIDTHS = MUTATE ? [360] : [360, 768, 1440], LANGS = MUTATE ? ["en"] : ["en
 for (const lang of LANGS) for (const width of WIDTHS) for (const pct of PCTS) {
   const tag = `${lang}/${width}/${pct}%`;
   const { ctx, page, ok } = await openMap({ lang, width, pct });
+  try {
   if (!ok) { check(`layout ${tag}: the tree shows`, false); await ctx.close(); continue; }
   await openFolder(page, "f-quran");
   await act(page, "f-long", "rename");
@@ -343,6 +347,7 @@ for (const lang of LANGS) for (const width of WIDTHS) for (const pct of PCTS) {
   check(`layout ${tag}: text contrast is 4.5 or more against its real background`, m.texts.length > 8 && low.length === 0, JSON.stringify(low.slice(0, 3)));
   if (lang === "bn" && pct === 100) check(`layout ${tag}: the controls speak Bangla`, /সিয়াগাহ-এর অপেক্ষায়…/.test(m.text) && /নাম বদলান/.test(m.text) && !/Waiting for Siyagah|Rename|Move up/.test(m.text), m.text.slice(0, 300));
   if (SHOTS && ((lang === "bn" && width === 360 && pct === 200) || (lang === "en" && width === 1440 && pct === 100))) await page.screenshot({ path: `${SHOTS}/mmj-write-${lang}-${width}-${pct}.png`, fullPage: false });
+  } catch (err) { crashed(err); }
   await ctx.close();
 }
 await browser.close();
