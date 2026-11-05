@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "13.34",
+    "version": "13.35",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -6353,8 +6353,20 @@
     {
       "version": "13.34",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "J03 K3b Study Next (tafsir per ayah, scholars by id, DB v1.6), J112 R1 Siyagah folders on the Map (read-only), J05 question card on a new Note (Approach on noteSources), QR Lead #1476; bn.js duplicates removed.",
+      "integration": {
+        "authorizedOn": "2026-11-05",
+        "integratedOn": "2026-11-05",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.35",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "J112 R2a: the Map sends folder changes (add, rename, move, delete to Trash, visitors) to Siyagah as requests under notebooks/{nb}/mmjin/ (create only), waiting/done/refused shown on the row.",
       "integration": {
         "authorizedOn": "2026-11-05",
         "integratedOn": "2026-11-05",
@@ -6363,8 +6375,9 @@
       }
     }
   ],
-  "nextUnallocated": "13.35",
+  "nextUnallocated": "13.36",
   "nextUnallocatedNote": [
+    "v13.35 was allocated to J112 R2a: change Siyagah folders from the Map, 2026-11-05.",
     "v13.34 was allocated to K3b Study Next, J112 R1, J05 question card, the student wheel's head row, 2026-11-05.",
     "v13.33 was allocated to Monitor's Show on wheel opens that student's Marks wheel, read-only, with Back (J03 fix, QR Lead #1474); the intention-card check compares with the line-height (#1472, test only), 2026-11-04.",
     "v13.32 was allocated to the three marks Difficult / Need practice / Done on the Āyah card, Word card, Marks wheel and the HadeethEnc card, and the teacher's view on Monitor (J03 K2 + K1 Part B + K4), after the Owner published the Keys Rules, 2026-11-04.",

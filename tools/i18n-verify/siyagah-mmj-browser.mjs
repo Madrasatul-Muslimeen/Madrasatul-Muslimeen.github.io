@@ -130,7 +130,9 @@ console.log("\n=== small tree ===");
   await showFolders(page);
   check("small: the tree shows inside the Siyagah bar (no new bar)", await waitTree(page) && await page.evaluate(() => document.querySelectorAll("#siyagahCloudBar").length === 1 && !!document.querySelector("#siyagahCloudBar [data-mmj-tree]")));
   const status = await page.textContent("#siyagahCloudBar [data-mmj-status]");
-  check("small: the status counts 4 folders and 4 notes, and says read-only", /4 folders, 4 notes\. Read-only/.test(status), status);
+  // UPDATED IN PLACE (J112 R2a, 5 Nov 2026): folders can now be changed by request (Siyagah's "Writing (R2)"), so the
+  // status no longer calls the folders read-only; the NOTES still are, and the sentence must say so.
+  check("small: the status counts 4 folders and 4 notes, and says notes are read-only", /4 folders, 4 notes\. Folder changes are sent to Siyagah; notes are read-only here\./.test(status), status);
   check("small: the top folders in Siyagah's order (o), the loose notes last", JSON.stringify(await names(page)) === JSON.stringify(["Qur'an reflections", "Hadith", LONG, "Not in a folder"]), JSON.stringify(await names(page)));
   await openFolder(page, "f-quran"); await openFolder(page, "f-baqarah"); await openFolder(page, "f-hadith"); await openFolder(page, "~loose");
   const all = await names(page);
@@ -188,6 +190,8 @@ console.log("\n=== small tree ===");
   check("live: a note that leaves Mapping My Journey (gone) leaves the Map", !(await page.$('#siyagahCloudBar [data-mmj-note="n-loose"]')));
   check("live: the listener was opened once, on notebooks/<nb>/mmj", JSON.stringify(await page.evaluate(() => (window.__stubSnapLog || []).map((l) => l.col))) === JSON.stringify([`notebooks/${NB}/mmj`]));
   await page.waitForTimeout(500); // the device copy is saved 300 ms after a change
+  // Still true after R2a: this suite never touches a folder's write control, so reading writes nothing at all.
+  // (Writing by request is siyagah-mmj-write-browser.mjs's.)
   check("writes: nothing was written to any notebooks/ path", (await writesTo(page)) === 0);
   check("small: no page error", errors.length === 0, errors.join(" | "));
 

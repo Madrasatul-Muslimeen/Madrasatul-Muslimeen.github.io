@@ -404,6 +404,25 @@ function __deny(col) { var e = new Error("Missing or insufficient permissions. (
 export function onSnapshot(q, next, error) {
   var closed = false;
   try { (window.__stubSnapLog = window.__stubSnapLog || []).push({ col: q.__col, t: Date.now() }); } catch (e) {}
+  // J112 R2a: onSnapshot(docRef) -- ONE document (a request in notebooks/<nb>/mmjin). Answers with that document from
+  // DATA (or "does not exist"), then again whenever a test's __stubEmit(col, row) names it. Logged with its id.
+  if (q && q.__id !== undefined && !q.__clauses) {
+    try { window.__stubSnapLog[window.__stubSnapLog.length - 1].id = q.__id; } catch (e) {}
+    var runDoc = function (onlyIds) {
+      if (closed) return;
+      if (onlyIds && onlyIds.indexOf(q.__id) < 0) return;
+      if (__denied(q.__col)) { if (error) error(__deny(q.__col)); closed = true; return; }
+      var row = (DATA[q.__col] || []).find(function (d) { return d._id === q.__id; });
+      next(row ? snapDoc(row) : { id: q.__id, exists: function () { return false; }, data: function () { return undefined; } });
+    };
+    setTimeout(function () { runDoc(null); }, 0);
+    var meDoc = { q: q, run: runDoc };
+    try {
+      window.__stubSnapListeners = window.__stubSnapListeners || [];
+      window.__stubSnapListeners.push(meDoc);
+    } catch (e) {}
+    return function () { closed = true; try { window.__stubSnapListeners = window.__stubSnapListeners.filter(function (l) { return l !== meDoc; }); } catch (e) {} };
+  }
   var run = function (onlyIds) {
     if (closed) return;
     if (__denied(q.__col)) { if (error) error(__deny(q.__col)); closed = true; return; }

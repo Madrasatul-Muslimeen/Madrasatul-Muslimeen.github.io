@@ -2978,3 +2978,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v13.32** (2026-11-04): the three marks Difficult / Need practice / Done on the Āyah card, Word card, Marks wheel and the HadeethEnc card, and the teacher's view on Monitor (J03 K2 + K1 Part B + K4), after the Owner published the Keys Rules.
 - **v13.33** (2026-11-04): Monitor's Show on wheel opens that student's Marks wheel, read-only, with Back (J03 fix, QR Lead #1474); the intention-card check compares with the line-height (#1472, test only).
 - **v13.34** (2026-11-05): K3b Study Next, J112 R1, J05 question card, the student wheel's head row.
+- **v13.35** (2026-11-05): J112 R2a: change Siyagah folders from the Map.
