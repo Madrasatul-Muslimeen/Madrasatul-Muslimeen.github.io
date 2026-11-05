@@ -13,6 +13,12 @@
 // sanitised by note-sanitize.js, with "Back to Siyagah folders" returning to the tree exactly as it was, the folders
 // still open and the note's own row in view (the way-back law). Pictures are fetched and sha256-checked; until then,
 // or when one fails, a plain "Picture" box stands in. `vis` (👁) is shown as a hint only, never used to decide access.
+//
+// R2a (5 Nov 2026, Siyagah v05.68's "Writing (R2)"): the folders can be changed from here -- BY REQUEST. Each folder's
+// ⋯ menu (the Map's own bar-palette pattern) asks Siyagah to add a subfolder, rename, move, delete (to Siyagah's Trash,
+// with its notes, undoable there) or switch 👁; "New folder" adds one at the top. The request is one new document in
+// notebooks/{nb}/mmjin/, written by siyagah-mmj-write.js (loaded by dynamic import on the first request, never before).
+// Notes stay read-only here (the next round).
 import { isSiyagahCloudReady, SIYAGAH_CLOUD_DECLARATION } from "./siyagah-cloud-readiness.js";
 import { t, num } from "./i18n.js";
 
@@ -50,6 +56,28 @@ const BAR_CSS = `
 #siyagahCloudBar [data-mmj-body] { background:#ffffff; color:#1d2b3a; border:1px solid #d7e0ea; border-radius:6px; padding:8px 10px; overflow-x:auto; overflow-wrap:anywhere; min-width:0; }
 #siyagahCloudBar [data-mmj-body] img { max-width:100%; height:auto; }
 #siyagahCloudBar [data-mmj-body] a { color:#1f4f8a; }
+#siyagahCloudBar [data-mmj-row] { display:flex; align-items:center; gap:6px; min-width:0; position:relative; }
+#siyagahCloudBar [data-mmj-row] > [data-mmj-folder] { flex:1 1 auto; width:auto; min-width:0; }
+#siyagahCloudBar [data-mmj-row][data-mmj-pending] > [data-mmj-folder] { border-style:dashed; border-color:#1f5fa8; font-style:italic; }
+#siyagahCloudBar [data-mmj-row][data-mmj-pending="folder.delete"] [data-mmj-name] { text-decoration:line-through; }
+#siyagahCloudBar .folder-menu-wrap { position:static; flex:0 0 auto; } /* the menu hangs from the ROW, so it is never wider than the row (inside the bar at any width) */
+#siyagahCloudBar .folder-menu-btn { width:40px; height:40px; min-height:40px; padding:0; font-size:1.15rem; line-height:1; }
+#siyagahCloudBar .bar-palette { display:none; position:absolute; top:calc(100% + 2px); inset-inline-end:0; inset-inline-start:auto; z-index:20; flex-direction:column; gap:4px; width:14rem; max-width:100%; box-sizing:border-box; padding:6px; background:#ffffff; color:#1d2b3a; border:1px solid #8a9bb0; border-radius:8px; box-shadow:0 10px 26px rgba(20,30,60,0.25); }
+#siyagahCloudBar .bar-palette.open { display:flex; }
+#siyagahCloudBar .bar-palette button { width:100%; }
+#siyagahCloudBar .bar-palette button { min-height:40px; padding:4px 10px; font-size:0.95em; text-align:start; display:flex; align-items:center; gap:6px; overflow-wrap:anywhere; }
+#siyagahCloudBar .bar-palette button:disabled { color:#5d6b7a; background:#eef1f5; cursor:default; }
+#siyagahCloudBar [data-mmj-danger] { color:#8a1c12; border-color:#c98a82; }
+#siyagahCloudBar [data-mmj-tools] { display:flex; flex-wrap:wrap; gap:6px; margin:4px 0 6px; }
+#siyagahCloudBar [data-mmj-tools] button, #siyagahCloudBar [data-mmj-formbtns] button, #siyagahCloudBar [data-mmj-msg] button { min-height:40px; padding:0 12px; max-width:100%; }
+#siyagahCloudBar [data-mmj-wait] { margin:2px 0 4px; padding-inline-start:8px; font-size:0.85em; color:#1f4f8a; overflow-wrap:anywhere; }
+#siyagahCloudBar [data-mmj-msg] { display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin:4px 0; padding:6px 8px; border:1px solid #c98a82; border-radius:6px; background:#fff4f2; color:#8a1c12; font-size:0.9em; overflow-wrap:anywhere; }
+#siyagahCloudBar [data-mmj-msg] > span { flex:1 1 12em; min-width:0; }
+#siyagahCloudBar [data-mmj-form] { display:flex; flex-wrap:wrap; align-items:flex-end; gap:6px; margin:4px 0 6px; padding:8px; border:1px solid #c9d3e0; border-radius:6px; background:#ffffff; min-width:0; }
+#siyagahCloudBar [data-mmj-form] label { display:flex; flex-direction:column; gap:4px; flex:1 1 14em; min-width:0; font-size:0.9em; color:#33475c; overflow-wrap:anywhere; }
+#siyagahCloudBar [data-mmj-form] input, #siyagahCloudBar [data-mmj-form] select { font:inherit; min-height:40px; min-width:0; max-width:100%; width:100%; box-sizing:border-box; color:#1d2b3a; background:#ffffff; border:1px solid #8a9bb0; border-radius:6px; padding:4px 8px; }
+#siyagahCloudBar [data-mmj-confirm] { margin:0; flex:1 1 100%; color:#1d2b3a; overflow-wrap:anywhere; }
+#siyagahCloudBar [data-mmj-formbtns] { display:flex; flex-wrap:wrap; gap:6px; }
 #siyagahCloudBar [data-mmj-pic] { display:inline-block; min-width:6em; max-width:100%; padding:10px 12px; margin:4px 0; border:1px dashed #8a9bb0; border-radius:6px; color:#33475c; background:#f5f8fc; box-sizing:border-box; }
 `;
 
@@ -127,14 +155,29 @@ function when(ms) {
   return num(`${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`);
 }
 
-/** The tree and its notes inside `host`; returns { update(copy), state(s) }. */
-function mountMmjView(host, reader, model, sanitize) {
+/**
+ * The tree and its notes inside `host`; returns { update(copy), state(s) }.
+ *
+ * J112 R2a: with `write` ({ cloud, nb, from }) each folder row carries the Map's own ⋯ menu (bar-palette.js's
+ * data-bar-palette-* markup, so it opens, closes and gives way exactly like the Map's folder menus): Add subfolder,
+ * Rename, Move up / down, Move to…, the 👁 visitors switch and Delete; "New folder" sits above the tree. Nothing is
+ * written here: a request is built by the pure model (buildFolderRequest) and sent by siyagah-mmj-write.js, loaded by
+ * dynamic import the first time one is sent. The change shows AT ONCE, marked "Waiting for Siyagah…" (the contract's
+ * own instruction for st:'new'); on 'done' the mark goes and Siyagah's copy takes over as soon as it shows the change;
+ * on 'refused' the row goes back as it was and Siyagah's reason is said in words (I15). Never sent twice by itself.
+ */
+function mountMmjView(host, reader, model, sanitize, write = null) {
   const open = new Set(); // folders the reader opened, kept across every re-render
   let copy = reader.copy, st = { kind: "loading" }, noteId = null, returnTo = null;
+  const pending = []; // requests out: { req, reqId, st: "sending"|"new"|"work"|"done", still, unsub, timer }
+  const msgs = {};    // folder id (or "~top") -> a sentence for that row: a refusal or a failed send
+  let form = null;    // the one open form: { kind: "add"|"rename"|"move"|"delete", id (null = the top), value }
+  let writerP = null;
   host.innerHTML = `<p data-mmj-status role="status"></p><div data-mmj-treewrap></div><div data-mmj-noteview style="display:none"></div>`;
   const statusEl = host.querySelector("[data-mmj-status]");
   const treeEl = host.querySelector("[data-mmj-treewrap]");
   const noteEl = host.querySelector("[data-mmj-noteview]");
+  const shownNow = () => model.withPending(copy, pending);
 
   function status() {
     const v = model.folderView(copy);
@@ -144,7 +187,9 @@ function mountMmjView(host, reader, model, sanitize) {
     else if (st.kind === "error") text = t("Siyagah's folders could not be read: {reason}", { reason: st.error?.message || String(st.error || "") }) + (held ? " " + t("Showing the copy on this device.") : "");
     else if (st.kind === "loading" && !held) text = t("Reading your Siyagah folders…");
     else if (!held) text = t("No Mapping My Journey folders in Siyagah yet.");
-    else text = t("{folders} folders, {notes} notes. Read-only: change them in Siyagah.", { folders: num(v.folderCount), notes: num(v.noteCount) })
+    else text = (write
+      ? t("{folders} folders, {notes} notes. Folder changes are sent to Siyagah; notes are read-only here.", { folders: num(v.folderCount), notes: num(v.noteCount) })
+      : t("{folders} folders, {notes} notes. Read-only: change them in Siyagah.", { folders: num(v.folderCount), notes: num(v.noteCount) }))
       + (st.kind === "live" ? "" : " " + t("Showing the copy on this device."));
     statusEl.textContent = text;
     statusEl.setAttribute("data-kind", st.kind);
@@ -156,26 +201,102 @@ function mountMmjView(host, reader, model, sanitize) {
       + (n.vis === 1 ? `<span data-mmj-vis title="${escapeHtml(t("Visitors may see this in Siyagah"))}">👁</span>` : "") + `</button></li>`;
   }
   function countAll(node) { return node.notes.length + node.children.reduce((s, c) => s + countAll(c), 0); }
-  function folderRow(node) {
-    const f = node.folder, isOpen = open.has(f.id);
+
+  // --- the write controls (R2a) ---------------------------------------------------------------------------------------
+  function menuFor(f, folders) {
+    const id = escapeHtml(f.id), menuId = `mmjMenu-${id}`, name = f.n.trim() || t("(untitled folder)");
+    const up = model.siblingStep(folders, f.id, -1), down = model.siblingStep(folders, f.id, 1);
+    return `<span class="bar-palette-wrap folder-menu-wrap" data-bar-palette-wrap="${menuId}">`
+      + `<button type="button" class="folder-menu-btn bar-palette-toggle" data-bar-palette-toggle="${menuId}" data-mmj-menu-btn="${id}" aria-haspopup="true" aria-expanded="false" title="${escapeHtml(t("More"))}" aria-label="${escapeHtml(t("More: {name}", { name }))}">⋯</button>`
+      + `<div class="bar-palette folder-row-menu" data-bar-palette="${menuId}" data-mmj-menu="${id}">`
+      + `<button type="button" data-mmj-act="add" data-for="${id}">➕ ${escapeHtml(t("Add subfolder"))}</button>`
+      + `<button type="button" data-mmj-act="rename" data-for="${id}">✏️ ${escapeHtml(t("Rename"))}</button>`
+      + `<button type="button" data-mmj-act="up" data-for="${id}"${up ? "" : " disabled"}>▲ ${escapeHtml(t("Move up"))}</button>`
+      + `<button type="button" data-mmj-act="down" data-for="${id}"${down ? "" : " disabled"}>▼ ${escapeHtml(t("Move down"))}</button>`
+      + `<button type="button" data-mmj-act="move" data-for="${id}">${escapeHtml(t("Move to…"))}</button>`
+      + `<button type="button" data-mmj-act="vis" data-for="${id}" role="switch" aria-checked="${f.vis === 1}"><span class="mm-sw${f.vis === 1 ? " on" : ""}" aria-hidden="true"></span> 👁 ${escapeHtml(t("Visitors may see it"))}</button>`
+      + `<button type="button" data-mmj-act="delete" data-for="${id}" data-mmj-danger>🗑 ${escapeHtml(t("Delete"))}</button>`
+      + `</div></span>`;
+  }
+  function waitLine(mark) {
+    if (!mark || mark.st === "done") return "";
+    const text = mark.still ? t("Still waiting for Siyagah. It makes the change when Siyagah is open on one of your devices.") : t("Waiting for Siyagah…");
+    return `<p data-mmj-wait role="status">${escapeHtml(text)}</p>`;
+  }
+  function msgLine(key) {
+    const m = msgs[key];
+    return m ? `<p data-mmj-msg role="alert"><span>${escapeHtml(m)}</span><button type="button" data-mmj-dismiss="${escapeHtml(key)}">${escapeHtml(t("OK"))}</button></p>` : "";
+  }
+  function formFor(key, folders) {
+    if (!form || (form.id || "~top") !== key) return "";
+    const f = form.id ? folders.find((x) => x.id === form.id) : null;
+    const name = f ? (f.n.trim() || t("(untitled folder)")) : "";
+    const cancel = `<button type="button" data-mmj-cancel>${escapeHtml(t("Cancel"))}</button>`;
+    if (form.kind === "add" || form.kind === "rename") {
+      const label = form.kind === "rename" ? t("New name for “{name}”", { name }) : f ? t("Name for the new subfolder in “{name}”", { name }) : t("Name for the new folder");
+      return `<form data-mmj-form="${form.kind}"><label><span>${escapeHtml(label)}</span><input type="text" data-mmj-input maxlength="200" dir="auto" value="${escapeHtml(form.value ?? "")}"></label>`
+        + `<span data-mmj-formbtns><button type="submit">${escapeHtml(form.kind === "rename" ? t("Rename") : t("Create"))}</button>${cancel}</span></form>`;
+    }
+    if (form.kind === "move") {
+      const targets = model.moveTargets(folders, form.id);
+      const depth = (x) => { let d = 0; const seen = new Set(); for (let p = x.p; p && !seen.has(p); d++) { seen.add(p); p = folders.find((y) => y.id === p)?.p; } return d; };
+      const view = model.folderView({ tree: { folders }, notes: {} });
+      const order = []; const walk = (nodes) => { for (const n of nodes) { order.push(n.folder); walk(n.children); } }; walk(view.roots);
+      const cur = f?.p || null, chosen = form.value === undefined ? cur : form.value;
+      const opts = [`<option value=""${chosen === null ? " selected" : ""}>${escapeHtml(t("Top of Mapping My Journey"))}</option>`]
+        .concat(order.filter((x) => targets.includes(x.id)).map((x) => `<option value="${escapeHtml(x.id)}"${chosen === x.id ? " selected" : ""}>${"— ".repeat(depth(x) + 1)}${escapeHtml(x.n.trim() || t("(untitled folder)"))}</option>`));
+      return `<form data-mmj-form="move"><label><span>${escapeHtml(t("Move “{name}” into", { name }))}</span><select data-mmj-parent>${opts.join("")}</select></label>`
+        + `<span data-mmj-formbtns><button type="submit">${escapeHtml(t("Move"))}</button>${cancel}</span></form>`;
+    }
+    if (form.kind === "delete") {
+      const reach = model.folderDeleteReach({ tree: { folders }, notes: copy.notes }, form.id);
+      return `<div data-mmj-form="delete" role="group" aria-label="${escapeHtml(t("Delete"))}"><p data-mmj-confirm>${escapeHtml(t("Delete “{name}”? It goes to Siyagah's Trash with everything in it (subfolders: {folders} · notes: {notes}). You can undo it in Siyagah (Trash, then Restore).", { name, folders: num(reach.folders), notes: num(reach.notes) }))}</p>`
+        + `<span data-mmj-formbtns><button type="button" data-mmj-confirm-delete data-mmj-danger>🗑 ${escapeHtml(t("Delete"))}</button>${cancel}</span></div>`;
+    }
+    return "";
+  }
+
+  function folderRow(node, marks, folders) {
+    const f = node.folder, isOpen = open.has(f.id), mark = marks[f.id];
     const name = f.n.trim() || t("(untitled folder)");
-    let out = `<li><button type="button" data-mmj-folder="${escapeHtml(f.id)}" aria-expanded="${isOpen}"><span aria-hidden="true">${isOpen ? "▾" : "▸"}</span>`
+    let out = `<li><div data-mmj-row${mark && mark.st !== "done" ? ` data-mmj-pending="${escapeHtml(mark.op)}"` : ""}>`
+      + `<button type="button" data-mmj-folder="${escapeHtml(f.id)}" aria-expanded="${isOpen}"><span aria-hidden="true">${isOpen ? "▾" : "▸"}</span>`
       + `<span data-mmj-name dir="auto">${escapeHtml(name)}</span>`
       + (f.vis === 1 ? `<span data-mmj-vis title="${escapeHtml(t("Visitors may see this in Siyagah"))}">👁</span>` : "")
-      + `<span data-mmj-count>${escapeHtml(num(countAll(node)))}</span></button>`;
+      + `<span data-mmj-count>${escapeHtml(num(countAll(node)))}</span></button>`
+      + (write ? menuFor(f, folders) : "") + `</div>`
+      + waitLine(mark) + msgLine(f.id) + formFor(f.id, folders);
     if (isOpen) {
-      const inner = node.children.map(folderRow).join("") + node.notes.map(noteRow).join("");
+      const inner = node.children.map((c) => folderRow(c, marks, folders)).join("") + node.notes.map(noteRow).join("");
       out += `<ul>${inner || `<li data-mmj-empty>${escapeHtml(t("This folder is empty."))}</li>`}</ul>`;
     }
     return out + `</li>`;
   }
 
+  /** A selector that finds the same control again after a re-render (the focus is never dropped by a copy update). */
+  function focusKey(el) {
+    if (!el || !treeEl.contains(el)) return null;
+    for (const a of ["data-mmj-folder", "data-mmj-note", "data-mmj-menu-btn", "data-mmj-dismiss"]) if (el.hasAttribute(a)) return `[${a}="${CSS.escape(el.getAttribute(a))}"]`;
+    if (el.hasAttribute("data-mmj-act")) return `[data-mmj-act="${CSS.escape(el.getAttribute("data-mmj-act"))}"]` + (el.hasAttribute("data-for") ? `[data-for="${CSS.escape(el.getAttribute("data-for"))}"]` : "");
+    for (const a of ["data-mmj-input", "data-mmj-parent", "data-mmj-confirm-delete", "data-mmj-cancel"]) if (el.hasAttribute(a)) return `[${a}]`;
+    return null;
+  }
   function renderTree() {
-    const v = model.folderView(copy);
+    // A re-render (Siyagah's copy changed under the reader) must not lose what they were doing: the open ⋯ menu, the
+    // text typed in a form and where the focus was are read off the page one line before it is replaced.
+    const openMenu = treeEl.querySelector("[data-bar-palette].open")?.getAttribute("data-bar-palette") || null;
+    const input = treeEl.querySelector("[data-mmj-input]"), sel = treeEl.querySelector("[data-mmj-parent]");
+    if (form && input) form.value = input.value;
+    if (form && sel) form.value = sel.value || null;
+    const focusSel = focusKey(document.activeElement);
+    const shown = shownNow();
+    const v = model.folderView(shown.copy);
+    const folders = shown.copy.tree?.folders || [];
     let rows = "";
     if (copy.tree) rows += `<h3 data-mmj-sec dir="auto">${escapeHtml(copy.tree.sec?.n || "Mapping My Journey")}</h3>`;
+    if (write && copy.tree) rows += `<div data-mmj-tools><button type="button" data-mmj-act="newtop">➕ ${escapeHtml(t("New folder"))}</button></div>` + msgLine("~top") + formFor("~top", folders);
     if (v.roots.length || v.loose.length) {
-      rows += `<ul data-mmj-tree data-folder-tree>${v.roots.map(folderRow).join("")}`;
+      rows += `<ul data-mmj-tree data-folder-tree>${v.roots.map((n) => folderRow(n, shown.marks, folders)).join("")}`;
       if (v.loose.length) {
         const isOpen = open.has("~loose");
         rows += `<li><button type="button" data-mmj-folder="~loose" aria-expanded="${isOpen}"><span aria-hidden="true">${isOpen ? "▾" : "▸"}</span><span data-mmj-name>${escapeHtml(t("Not in a folder"))}</span><span data-mmj-count>${escapeHtml(num(v.loose.length))}</span></button>`
@@ -184,6 +305,11 @@ function mountMmjView(host, reader, model, sanitize) {
       rows += `</ul>`;
     }
     treeEl.innerHTML = rows;
+    if (openMenu) {
+      const pop = treeEl.querySelector(`[data-bar-palette="${CSS.escape(openMenu)}"]`);
+      if (pop) { pop.classList.add("open"); pop.closest("[data-bar-palette-wrap]")?.querySelector("[data-bar-palette-toggle]")?.setAttribute("aria-expanded", "true"); }
+    }
+    if (focusSel) treeEl.querySelector(focusSel)?.focus({ preventScroll: true });
   }
 
   function renderNote() {
@@ -211,7 +337,118 @@ function mountMmjView(host, reader, model, sanitize) {
     } else { shownNote = null; noteEl.style.display = "none"; noteEl.innerHTML = ""; treeEl.style.display = "block"; renderTree(); }
   }
 
+  /** The way-back law after every folder action: the same folders open, this row (or the top's New folder) in view and focused. */
+  function focusRow(id) {
+    const el = id ? host.querySelector(`[data-mmj-folder="${CSS.escape(id)}"]`) : host.querySelector('[data-mmj-act="newtop"]');
+    if (el) { el.scrollIntoView({ block: "nearest" }); el.focus({ preventScroll: true }); }
+  }
+  function closeMenus() {
+    for (const p of host.querySelectorAll("[data-bar-palette].open")) {
+      p.classList.remove("open");
+      p.closest("[data-bar-palette-wrap]")?.querySelector("[data-bar-palette-toggle]")?.setAttribute("aria-expanded", "false");
+    }
+  }
+  const whyWords = (why) => (why === "bad name" ? t("Give the folder a name (200 characters at most).") : t(String(why || "")) || String(why || ""));
+
+  function settle(entry, outcome) {
+    const i = pending.indexOf(entry);
+    if (outcome.kind === "waiting") { if (entry.st !== "done") entry.st = outcome.st; render(); return; }
+    clearTimeout(entry.timer);
+    try { entry.unsub?.(); } catch {}
+    entry.unsub = null;
+    if (outcome.kind === "done") {
+      entry.st = "done";
+      // Siyagah's copy shows the change within ~10 s of done; until it does, the change stays shown (unmarked). If the
+      // copy never catches up (a closed Siyagah between the two writes), the copy wins after a minute.
+      if (model.requestReflected(copy, entry.req)) { if (i >= 0) pending.splice(i, 1); }
+      else entry.timer = setTimeout(() => { const j = pending.indexOf(entry); if (j >= 0) { pending.splice(j, 1); render(); } }, 60000);
+      render();
+      return;
+    }
+    if (i >= 0) pending.splice(i, 1);
+    const key = entry.req.op === "folder.add" ? (entry.req.parent || "~top") : entry.req.id;
+    msgs[key] = outcome.kind === "refused"
+      ? t("Siyagah did not make this change: {why}", { why: whyWords(outcome.why) })
+      : t("Siyagah's answer could not be read: {reason}", { reason: model.isPermissionDenied(outcome.error) ? t("Ask the owner to allow this app.") : (outcome.error?.message || String(outcome.error || "")) });
+    render();
+    focusRow(key === "~top" ? null : key);
+  }
+
+  async function ask(op, fields, focusId) {
+    closeMenus();
+    const key = op === "folder.add" ? (fields.parent || "~top") : fields.id;
+    delete msgs[key];
+    if (st.kind === "denied" || st.kind === "error") {
+      // A control that opens and explains itself beats one that is not there: say why nothing can be sent.
+      msgs[key] = t("This change cannot be sent now: {reason}", { reason: st.kind === "denied" ? t("Ask the owner to allow this app.") : t("Siyagah's folders could not be read.") });
+      render(); focusRow(key === "~top" ? null : key); return;
+    }
+    const built = model.buildFolderRequest(op, fields, { folders: shownNow().copy.tree?.folders || [], from: write.from });
+    if (!built.ok) { msgs[key] = t("This change cannot be sent now: {reason}", { reason: whyWords(built.reason) }); render(); focusRow(key === "~top" ? null : key); return; }
+    const entry = { req: built.req, reqId: null, st: "sending", still: false, unsub: null, timer: null };
+    pending.push(entry);
+    form = null;
+    if (op === "folder.add" && fields.parent) open.add(fields.parent);
+    if (op === "folder.move" && fields.parent) open.add(fields.parent);
+    render(); focusRow(focusId);
+    try {
+      writerP = writerP || import("./siyagah-mmj-write.js").then((m) => m.openMmjWriter({ cloud: write.cloud, nb: write.nb }));
+      writerP.catch(() => { writerP = null; });
+      const w = await writerP;
+      entry.reqId = await w.send(built.req);
+      if (entry.st === "sending") entry.st = "new";
+      entry.timer = setTimeout(() => { if (pending.includes(entry) && entry.st !== "done") { entry.still = true; render(); } }, model.MMJ_STILL_WAITING_MS);
+      entry.unsub = w.follow(entry.reqId, (o) => { if (pending.includes(entry)) settle(entry, o); });
+      render();
+    } catch (err) {
+      console.error(err);
+      const i = pending.indexOf(entry);
+      if (i >= 0) pending.splice(i, 1);
+      msgs[key] = t("Siyagah could not be asked: {reason}", { reason: model.isPermissionDenied(err) ? t("Ask the owner to allow this app.") : (err?.message || String(err)) });
+      render(); focusRow(key === "~top" ? null : key);
+    }
+  }
+
+  function act(kind, id) {
+    const folders = shownNow().copy.tree?.folders || [];
+    const f = id ? folders.find((x) => x.id === id) : null;
+    closeMenus();
+    if (kind === "newtop") { form = { kind: "add", id: null, value: "" }; }
+    else if (kind === "add") { form = { kind: "add", id, value: "" }; }
+    else if (kind === "rename") { form = { kind: "rename", id, value: f?.n ?? "" }; }
+    else if (kind === "move") { form = { kind: "move", id, value: undefined }; }
+    else if (kind === "delete") { form = { kind: "delete", id }; }
+    else if (kind === "up" || kind === "down") {
+      const step = model.siblingStep(folders, id, kind === "up" ? -1 : 1);
+      if (step) ask("folder.move", step.before ? { id, parent: step.parent, before: step.before } : { id, parent: step.parent }, id);
+      return;
+    } else if (kind === "vis") { ask("folder.vis", { id, vis: f?.vis === 1 ? 0 : 1 }, id); return; }
+    render();
+    const fe = treeEl.querySelector("[data-mmj-input], [data-mmj-parent], [data-mmj-confirm-delete]");
+    if (fe) { fe.scrollIntoView({ block: "nearest" }); fe.focus({ preventScroll: true }); fe.select?.(); }
+  }
+  function cancelForm() { const id = form?.id || null; form = null; render(); focusRow(id); }
+  function submitForm() {
+    if (!form) return;
+    const f = form;
+    if (f.kind === "add") {
+      const name = treeEl.querySelector("[data-mmj-input]")?.value ?? "";
+      const nid = model.mmjRandomId(crypto.getRandomValues(new Uint8Array(16)), `x-${write.from}-`); // the contract's "x-<app>-<random>"
+      ask("folder.add", { id: nid, name, parent: f.id }, nid);
+    } else if (f.kind === "rename") ask("folder.rename", { id: f.id, name: treeEl.querySelector("[data-mmj-input]")?.value ?? "" }, f.id);
+    else if (f.kind === "move") ask("folder.move", { id: f.id, parent: treeEl.querySelector("[data-mmj-parent]")?.value || null }, f.id);
+    else if (f.kind === "delete") ask("folder.delete", { id: f.id }, f.id);
+  }
+
+  host.addEventListener("submit", (e) => { if (e.target.closest("[data-mmj-form]")) { e.preventDefault(); submitForm(); } });
+  host.addEventListener("keydown", (e) => { if (e.key === "Escape" && form && e.target.closest("[data-mmj-form]")) { e.preventDefault(); cancelForm(); } });
   host.addEventListener("click", (e) => {
+    const a = e.target.closest("[data-mmj-act]");
+    if (a && write) { if (!a.disabled) act(a.getAttribute("data-mmj-act"), a.getAttribute("data-for")); return; }
+    if (e.target.closest("[data-mmj-cancel]")) { cancelForm(); return; }
+    if (e.target.closest("[data-mmj-confirm-delete]")) { submitForm(); return; }
+    const dm = e.target.closest("[data-mmj-dismiss]");
+    if (dm) { const k = dm.getAttribute("data-mmj-dismiss"); delete msgs[k]; render(); focusRow(k === "~top" ? null : k); return; }
     const f = e.target.closest("[data-mmj-folder]");
     if (f) { const id = f.getAttribute("data-mmj-folder"); open.has(id) ? open.delete(id) : open.add(id); render(); host.querySelector(`[data-mmj-folder="${CSS.escape(id)}"]`)?.focus(); return; }
     const nt = e.target.closest("[data-mmj-note]");
@@ -235,7 +472,12 @@ function mountMmjView(host, reader, model, sanitize) {
 
   render();
   return {
-    update(next) { copy = next; render(); },
+    update(next) {
+      copy = next;
+      // A done request whose change Siyagah's copy now shows is finished: the copy speaks for it from here.
+      for (let i = pending.length - 1; i >= 0; i--) if (pending[i].st === "done" && model.requestReflected(copy, pending[i].req)) { clearTimeout(pending[i].timer); pending.splice(i, 1); }
+      render();
+    },
     state(s) { st = s; status(); },
   };
 }
@@ -326,7 +568,8 @@ export async function mountSiyagahMapLink({ beforeEl, email = "", declaration = 
       });
       if (readerFor !== user.uid) { r.close(); return; }
       reader = r;
-      view = mountMmjView(viewHost, r, model, san.sanitizeNoteHtml);
+      // R2a: the folder controls need nothing more loaded now -- the writer itself comes on the first request.
+      view = mountMmjView(viewHost, r, model, san.sanitizeNoteHtml, { cloud, nb, from: model.mmjFromForHost(location.hostname) });
       if (pending.state) view.state(pending.state);
     } catch (err) {
       console.error(err);
