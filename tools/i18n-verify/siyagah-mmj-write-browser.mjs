@@ -219,7 +219,8 @@ try {
   const conf = await page.evaluate(() => ({ text: document.querySelector("#siyagahCloudBar [data-mmj-confirm]")?.textContent || "", focused: document.activeElement?.hasAttribute("data-mmj-confirm-delete") }));
   check("delete: still nothing sent while the confirm is open", (await writes(page)).length === 5);
   // f-quran holds f-baqarah (its note n1 goes) and, moved in just now, f-long; n2 is also in f-hadith, so it stays.
-  check("delete: one confirm says the folder AND its notes go to Siyagah's Trash, undoable there, with the counts", /Delete “Qur'an reflections”\? It goes to Siyagah's Trash with its 2 subfolders and 1 notes\. You can undo it in Siyagah \(Trash, then Restore\)\./.test(conf.text) && conf.focused, JSON.stringify(conf));
+  // Wording updated in place in review (5 Nov): "1 notes" -> "notes: 1", no plural to get wrong.
+  check("delete: one confirm says the folder AND its notes go to Siyagah's Trash, undoable there, with the counts", /Delete “Qur'an reflections”\? It goes to Siyagah's Trash with everything in it \(subfolders: 2 · notes: 1\)\. You can undo it in Siyagah \(Trash, then Restore\)\./.test(conf.text) && conf.focused, JSON.stringify(conf));
   await page.click("#siyagahCloudBar [data-mmj-confirm-delete]");
   await waitFor(page, () => (window.__stubWriteData || []).filter((w) => String(w.col).includes("/mmjin")).length === 6);
   const r6 = await lastReq(page);

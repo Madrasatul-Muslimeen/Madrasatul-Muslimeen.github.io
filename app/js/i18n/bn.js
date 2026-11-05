@@ -4799,6 +4799,7 @@ export const BN = {
   "Top of Mapping My Journey": "ম্যাপিং মাই জার্নি-র সবার উপরে",
   "Move “{name}” into": "“{name}” যেখানে সরাবেন",
   "Delete “{name}”? It goes to Siyagah's Trash with its {folders} subfolders and {notes} notes. You can undo it in Siyagah (Trash, then Restore).": "“{name}” মুছবেন? এটি এর {folders}টি সাবফোল্ডার ও {notes}টি নোটসহ সিয়াগাহ-এর ট্র্যাশে যাবে। সিয়াগাহ-তে এটি ফিরিয়ে আনা যায় (ট্র্যাশ, তারপর রিস্টোর)।",
+  "Delete “{name}”? It goes to Siyagah's Trash with everything in it (subfolders: {folders} · notes: {notes}). You can undo it in Siyagah (Trash, then Restore).": "“{name}” মুছবেন? ভেতরের সবকিছুসহ (সাবফোল্ডার: {folders} · নোট: {notes}) এটি সিয়াগাহ-এর ট্র্যাশে যাবে। সিয়াগাহ-তে এটি ফিরিয়ে আনা যায় (ট্র্যাশ, তারপর রিস্টোর)।",
   "Siyagah did not make this change: {why}": "সিয়াগাহ এই পরিবর্তনটি করেনি: {why}",
   "Siyagah's answer could not be read: {reason}": "সিয়াগাহ-এর উত্তর পড়া যায়নি: {reason}",
   "This change cannot be sent now: {reason}": "এই পরিবর্তনটি এখন পাঠানো যাচ্ছে না: {reason}",

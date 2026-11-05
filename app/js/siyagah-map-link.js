@@ -250,7 +250,7 @@ function mountMmjView(host, reader, model, sanitize, write = null) {
     }
     if (form.kind === "delete") {
       const reach = model.folderDeleteReach({ tree: { folders }, notes: copy.notes }, form.id);
-      return `<div data-mmj-form="delete" role="group" aria-label="${escapeHtml(t("Delete"))}"><p data-mmj-confirm>${escapeHtml(t("Delete “{name}”? It goes to Siyagah's Trash with its {folders} subfolders and {notes} notes. You can undo it in Siyagah (Trash, then Restore).", { name, folders: num(reach.folders), notes: num(reach.notes) }))}</p>`
+      return `<div data-mmj-form="delete" role="group" aria-label="${escapeHtml(t("Delete"))}"><p data-mmj-confirm>${escapeHtml(t("Delete “{name}”? It goes to Siyagah's Trash with everything in it (subfolders: {folders} · notes: {notes}). You can undo it in Siyagah (Trash, then Restore).", { name, folders: num(reach.folders), notes: num(reach.notes) }))}</p>`
         + `<span data-mmj-formbtns><button type="button" data-mmj-confirm-delete data-mmj-danger>🗑 ${escapeHtml(t("Delete"))}</button>${cancel}</span></div>`;
     }
     return "";
