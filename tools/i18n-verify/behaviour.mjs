@@ -4594,6 +4594,10 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   await page.waitForFunction(() => document.getElementById("noteOpener")?.hidden, null, { timeout: 8000 }).catch(() => {});
   const backNote42 = await page.evaluate(() => ({ opener: document.getElementById("noteOpener")?.hidden === false, read: document.getElementById("readView")?.hidden === false, ayah: document.getElementById("ayahSelect")?.value }));
   check("42h ...closing it returns to reading on 1:1", !backNote42.opener && backNote42.read && backNote42.ayah === "1", JSON.stringify(backNote42));
+  // UPDATED IN PLACE for PCF MSA J114 (the Owner, 6 Nov 2026, option B: ONE ⋮ beside the āyah): the bar's 📝 (the Notes pane), 🔖, ✍, 🔗 and 📚
+  // are retired from sight by one CSS rule (their ids and handlers are kept). From here on this suite still tests the Notes pane and the
+  // bookmark code, so it puts the retired buttons back with a test-only style rule. (The retirement itself is asserted by ayah-menu-sheet-browser.)
+  await page.addStyleTag({ content: "#readBar #readNotesBtn, #readBar #readBarBookmarkBtn, #readBar #readBookmarkBtn, #readBar #readWritingBtn, #readBar #readAttachAsmaBtn, #readBar #readAttachQcrBtn { display: inline-flex !important; }" });
   if (await page.evaluate(() => (document.getElementById("readNotesBtn")?.getBoundingClientRect().width ?? 0) === 0)) { await page.click("#readToolsBtn"); await page.waitForTimeout(200); } // 📝 sits behind ⋯ on a phone
   await page.click("#readNotesBtn");
   await page.waitForFunction(() => { const p = document.getElementById("readNotePane"); return p && !p.hidden && p.getClientRects().length > 0; }, null, { timeout: 8000 }).catch(() => {});
