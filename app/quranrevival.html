@@ -27275,17 +27275,20 @@
       if (s === currentSurahNum && a) setAyahNum(a);
       return true;
     }
-    function stepAyahClick(dir) {
+    // Registered BEFORE the single-āyah listeners below and stopping them: in a flow they must not also re-render the unit.
+    // (The original two lines stay byte-for-byte as they were: apps/qr/edits.json anchors on them.)
+    function stepAyahInFlow(dir, ev) {
       const view = readViewNow();
-      if (view === "meaning") return void stepMeaningAyah(dir);
-      if (view === "mushaf") return void stepMushafAyah(dir);
-      if (flowStripPages() >= 2) return void stepFlowAyah(dir);
-      if (dir < 0 ? (currentAyahNum > 1 || currentHalf() === "b") : (currentAyahNum < currentSurahData.ayahCount || currentHalf() === "a")) {
-        stopDrill(); stepAyahBy(dir); renderStudyScreen(); renderWheel();
-      }
+      if (view === "meaning") stepMeaningAyah(dir);
+      else if (view === "mushaf") stepMushafAyah(dir);
+      else if (flowStripPages() >= 2) stepFlowAyah(dir);
+      else return;
+      ev.stopImmediatePropagation();
     }
-    prevAyahBtn.addEventListener("click", () => stepAyahClick(-1));
-    nextAyahBtn.addEventListener("click", () => stepAyahClick(1));
+    prevAyahBtn.addEventListener("click", (ev) => stepAyahInFlow(-1, ev));
+    nextAyahBtn.addEventListener("click", (ev) => stepAyahInFlow(1, ev));
+    prevAyahBtn.addEventListener("click", () => { if (currentAyahNum > 1 || currentHalf() === "b") { stopDrill(); stepAyahBy(-1); renderStudyScreen(); renderWheel(); } });
+    nextAyahBtn.addEventListener("click", () => { if (currentAyahNum < currentSurahData.ayahCount || currentHalf() === "a") { stopDrill(); stepAyahBy(1); renderStudyScreen(); renderWheel(); } });
     // Issue #325 point 2 -- tapping the top-bar reference opens the "This
     // page" card, claiming the printed page as one unit (Owner decision 3).
     // dataset.page is stamped by updateMushafPageRef() only while a real
