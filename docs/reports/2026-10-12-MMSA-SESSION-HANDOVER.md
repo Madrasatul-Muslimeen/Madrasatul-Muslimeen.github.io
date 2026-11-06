@@ -3002,3 +3002,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v13.36** (2026-11-06): J112 R2b: change Siyagah notes from the Map.
 - **v13.37** (2026-11-06): Page picker: only the chosen sūrah's pages.
 - **v13.38** (2026-11-06): J113: āyah number and ⋮ on the title row.
+- **v13.39** (2026-11-06): J114: one Show button to 900px; prev/next āyah in every view.
