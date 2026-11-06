@@ -1080,3 +1080,4 @@ total). Allocated by the MMSA Architect.
 13.37: Page picker: only the chosen sūrah's pages. Allocated by the MMSA Architect.
 13.38: J113: āyah number and ⋮ on the title row. Allocated by the MMSA Architect.
 13.39: J114: one Show button to 900px; prev/next āyah in every view. Allocated by the MMSA Architect.
+13.40: the screensaver never comes over a Note being written. Allocated by the MMSA Architect.
