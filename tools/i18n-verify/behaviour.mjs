@@ -1827,11 +1827,13 @@ console.log("\n=== 30. Shell round 18: unit numbers, transport, reading view ===
         /Hizb 3/.test(hizb3.label), JSON.stringify(hizb3));
   check("30e ...and lands on its first ayah", /Ayah 142 of/.test(hizb3.position), hizb3.position);
 
-  // Page: 604 of them, and the same landing rule.
+  // Page: only this sūrah's pages (48 for Al-Baqarah), and the same landing rule.
   await page.selectOption("#unitTypeSelect", "page");
   await page.waitForTimeout(1200);
   const pageCount = await page.evaluate(() => document.querySelectorAll("#unitNumSelect option").length);
-  check("30f Page offers all 604", pageCount === 604, String(pageCount));
+  // Updated in place (the Owner, 6 Nov 2026: "page numbers should pull only the page of that Surah"): the Page picker lists only the
+  // pages of the chosen sūrah. Al-Baqarah (the sūrah Hizb 3 landed in) is on pages 2-49, so 48; it was all 604.
+  check("30f Page offers only this sūrah's pages (Al-Baqarah 2-49)", pageCount === 48, String(pageCount));
   await page.selectOption("#unitNumSelect", "22");
   await page.waitForTimeout(1500);
   const page22 = await page.evaluate(() => ({

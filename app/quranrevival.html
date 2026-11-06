@@ -9941,6 +9941,14 @@
         const rows = unitRows();
         if (!rows) { ensureUnitIndex(currentUnitType).then(renderUnitNumberPicker).catch(() => {}); return; }
         numbers = rows.map((r) => unitRowNumber(r));
+        // The Owner, 6 Nov 2026: "When a page n Sura is selected, the page numbers should pull only the page of that Surah."
+        // A Page picker lists only the pages this sūrah is on (Al-Kahf: 293-304), not all 604; Prev/Next page still walk on into
+        // the next sūrah, which then shows its own pages.
+        if (currentUnitType === "page") {
+          const here = new Set(currentSurahData.ayahs.map((x) => x.page));
+          const only = numbers.filter((n) => here.has(n));
+          if (only.length) numbers = only;
+        }
       }
       unitNumSelect.innerHTML = numbers.map((n) => `<option value="${n}">${num(n)}</option>`).join("");
       const current = currentUnitNumber();
