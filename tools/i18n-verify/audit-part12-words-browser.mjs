@@ -273,7 +273,16 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     await settle(page, 500);
     // Note & more opens the Notes pane on this āyah with a way back.
     await toggle();
+    // UPDATED IN PLACE for PCF MSA J114 (and the Owner's 3 Nov change before it): with no Note on the āyah the ⋮'s Note item is "Take Note"
+    // and opens the shared Note window; only with Notes ("Note & more…") does it open the Notes pane. This fixture has none on 36:38.
+    const noNoteYet = await ev(page, () => document.querySelector("#readQuickMenuSlot [data-qm-note]").hasAttribute("data-qm-note-new"));
     await ev(page, () => document.querySelector("#readQuickMenuSlot [data-qm-note]").click());
+    if (noNoteYet) {
+      const opened = await page.waitForFunction(() => { const w = document.getElementById("noteOpener"); return w && !w.hidden && w.getClientRects().length > 0; }, null, { timeout: 8000 }).then(() => true).catch(() => false);
+      check(`${t}: "Take Note" (no Note on the āyah yet) opens the Note window`, opened);
+      check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
+      return;
+    }
     await page.waitForFunction(() => { const p = document.getElementById("readNotePane"); return p && !p.hidden && p.getClientRects().length > 0; }, null, { timeout: 8000 }).catch(() => {});
     const np = await ev(page, () => { const p = document.getElementById("readNotePane"); const b = p?.querySelector(".rnp-back"); const r = b?.getBoundingClientRect(); return { open: !!p && !p.hidden, unit: decodeURIComponent((p?.querySelector("iframe")?.getAttribute("src") ?? "").match(/unit=([^&]+)/)?.[1] ?? ""), back: !!r && r.width > 0 && r.top >= 0 }; });
     check(`${t}: "Note & more…" opens the Notes pane on ayah:36:38 with a visible way back`, np.open && np.unit === "ayah:36:38" && np.back, JSON.stringify(np));
