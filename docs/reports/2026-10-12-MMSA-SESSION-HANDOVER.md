@@ -7,7 +7,35 @@ v10.28). Read `CLAUDE.md` first. The prompt that starts the next session is
 
 This session was summarised once (its context compacted), which is why it hands over here.
 
-## LATEST UPDATE — 5 Nov 2026, ~1:25 pm Sydney, session `session_01PL2xbK2CvXuQANqdnkm6vX` (v13.34 and v13.35 RELEASED; HANDOVER under use1102) — READ THIS FIRST
+## LATEST UPDATE — 7 Nov 2026, ~3:05 am Sydney, session `session_01PL2xbKwjJwndb83JEfJTdD` (v13.36–v13.41 RELEASED; HANDOVER under use1102) — READ THIS FIRST
+
+This session took over at 1:20 pm on 5 Nov. **`main` is v13.41 (`e75adf37`, merged 3:02 am 7 Nov); QR rebuilt at v13.40 (PCA, 1:03 am); the PCA was asked for 13.41 at 3:02 am.** Released:
+- **v13.36** (#1484): J112 R2b, Siyagah NOTES changed from the Map by request (note.add/edit/move/delete/vis, Siyagah's MMJ-SHARE "Writing (R2)"). A note's text is editable only when it round-trips losslessly through note-sanitize.js; otherwise title-only, said in words. A refused edit reopens with what was typed.
+- **v13.37** (#1486, QR Lead #1485): with Page as the unit, the page picker lists only the chosen sūrah's pages (J113).
+- **v13.38** (#1488, QR Lead #1487): the āyah number and the ⋮ on the title row (J113, the Owner's tick A).
+- **v13.39** (#1490, QR Lead #1489): one Show button below 900px; ◂ ▸ step along the page in the Reading View, Mushaf and whole-sūrah flows (J114).
+- **v13.40** (#1492, QR Lead #1491): the Asma screensaver no longer comes over a Note being written (shared `screensaver-idle.js`; the Owner lost a Note on 6 Nov).
+- **v13.41** (#1494, QR Lead #1493): one ⋮ sheet beside the āyah in every view; the bar's 🔖 📝 ✍ 🔗 📚 retired by one CSS rule (J114, option B). Its first run crashed behaviour.mjs at section 42 (hidden #readNotesBtn); sent back; fixed in place with a test-only revive. Its branch was cut from v13.39, so the release merged main (v13.40) in first and re-ran the checks.
+
+**Waiting on the Owner (ticks in the PMS):**
+1. **J112 (d)**: where a new Note from a Quran/Hadith page is kept, A (write here; on close send to a chosen Siyagah folder; the copy here marked "Sent to Siyagah"; recommended) / B (ask each time) / C (leave for now). Checked: Siyagah's cleaner (`_miContent`) keeps `div.mm-ref[data-mmsa-ref]`, so the āyah/hadith boxes survive.
+2. **J05 j05n6**: older Notes and the question card, A (an "Approach" choice on an older Note) / B (leave).
+3. **J114 n114b** (the QR Lead's): a "Bookmark this page" row? where an āyah's existing Notes should open?
+
+**Next:** build what the Owner ticks; review the QR Lead's next rounds. Not measured yet on the QR Lead's rounds: 150%/200% text, the Bangla look of the ⋮ sheet (asked of the QR Lead).
+
+**Sandbox lessons this session:**
+- A Lead's branch can be cut from an older main. Check `git merge-base --is-ancestor origin/main <branch>` before allocating, and merge main into the release branch, then re-run the checks.
+- `behaviour.mjs` printing no "====" total line means it crashed. Read the tail; never count it as 974/1.
+- GitHub Pages sometimes drops a successful deploy (PCA, 7 Nov). The PCA re-checks qr-version.js and re-runs.
+- The current QR Lead is `session_01PL2xbKh8UZ8U44FHHGXfJi` (p/qr.sessionUrl fixed by the PCA).
+- `add_repo` for Siyagah was refused. Siyagah's MMJ-SHARE.md and its live page are public via raw.githubusercontent.com and siyagah.github.io.
+
+**Opening message for the next session** (title "📌 (03) MSA Master Architect - 07.11.26 - h.mm AM/PM"):
+
+> Bismillah. You are the MSA Master Architect, taking over from session_01PL2xbKwjJwndb83JEfJTdD (7 Nov ~3:05 am Sydney, use1102). Read CLAUDE.md, then ARCHITECT.md, then docs/reports/2026-10-12-MMSA-SESSION-HANDOVER.md from its LATEST UPDATE block of 7 Nov 3:05 am, and the PMS General rules (use1102, ses1104, demo1104, pms1104, card1104 with its add-on). First: `git fetch origin main` then `git fetch --unshallow`; test GitHub write (git push --dry-run origin HEAD:refs/heads/claude/access-probe); link playwright in every worktree. Read the PMS (https://claude.ai/artifact/PhW1KKX28qrqj9dE7Ha8dZ): meta/global, p/mmsa, MSA J112, J114, J05; answer new Owner comments; set p/mmsa.sessionUrl (if_version). Tell the PCA (session_01PL2xbMV6V3rW8ZzhauqW7z) "PCA ▸ taken over". State: main is v13.41 (7 Nov 3:02 am); confirm QR reads 13.41 with the PCA. Waiting on the Owner: J112 (d) A/B/C, J05 A/B, J114 n114b. Then build what is ticked and review the QR Lead (session_01PL2xbKh8UZ8U44FHHGXfJi) rounds as they come. Rules: use1102 (15% handover, no broadcasts); review by measurement; behaviour.mjs alone and compared with main (974/1, 14a; no "====" line means it crashed); check a Lead branch contains main before allocating; main only through a PR merged with the full head SHA; write only to p/mmsa; real clock times; never pkill -f (kill serve.js only by the PID whose cmdline STARTS with "node serve.js"); no self wake-ups; "Rasulullah, Sallallahu A'laihi Wa Sallam"; "Siyagah" in full.
+
+## LATEST UPDATE — 5 Nov 2026, ~1:25 pm Sydney, session `session_01PL2xbK2CvXuQANqdnkm6vX` (v13.34 and v13.35 RELEASED; HANDOVER under use1102) (superseded 7 Nov 3:05 am)
 
 This session took over at 7:28 am. **`main` is v13.35 (`541f2aa7`, merged 1:16 pm), released; QR rebuilt at v13.34 by the PCA (13.35 asked).** Done today:
 - **#1477** `firestore.rules` = the published Keys Rules (byte for byte; the three "NOT published" guards updated in place; deploy job skipped by `[already-deployed-manually]` in the MERGE commit message).
