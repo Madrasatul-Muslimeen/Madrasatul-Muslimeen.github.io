@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "13.39",
+    "version": "13.40",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -6413,7 +6413,7 @@
     {
       "version": "13.39",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "QR Lead #1489: English/Bangla/WbW under one Show button below 900px, and ◂ ▸ step along the page in the Reading View, Mushaf and whole-surah flows (the Owner's screenshot, 6 Nov).",
       "integration": {
         "authorizedOn": "2026-11-06",
@@ -6421,10 +6421,23 @@
         "method": "MERGE_PR",
         "reference": "CHANGELOG.md"
       }
+    },
+    {
+      "version": "13.40",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "QR Lead #1491: screensaverHeld() holds while a frame has focus or the Note window (#noteOpener) is on screen (the Owner's report, 6 Nov: a Note lost to the Asma screensaver).",
+      "integration": {
+        "authorizedOn": "2026-11-07",
+        "integratedOn": "2026-11-07",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
     }
   ],
-  "nextUnallocated": "13.40",
+  "nextUnallocated": "13.41",
   "nextUnallocatedNote": [
+    "v13.40 was allocated to the screensaver never comes over a Note being written, 2026-11-07.",
     "v13.39 was allocated to J114: one Show button to 900px; prev/next āyah in every view, 2026-11-06.",
     "v13.38 was allocated to J113: āyah number and ⋮ on the title row, 2026-11-06.",
     "v13.37 was allocated to Page picker: only the chosen sūrah's pages, 2026-11-06.",
