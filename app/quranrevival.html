@@ -3030,6 +3030,10 @@
      and edge as the ONE Ayah View's (.page-flow-ayah.now-playing), so the reader sees which āyah is sounding. */
   .meaning-ayah.now-playing { background: #fff8e1; border-color: #c8a227; box-shadow: inset 4px 0 0 #c8a227; opacity: 1; }
   .meaning-ayah-head .ayah-quick-wrap { margin-left: auto; }
+  /* The Owner, 6 Nov 2026 (option A): the āyah number sits on the title's row, right beside the ⋮, both before the āyah starts. */
+  .meaning-ayah-head > .ayah-num-badge { margin-left: auto; flex: 0 0 auto; }
+  .meaning-ayah-head > .ayah-num-badge + .ayah-quick-wrap { margin-left: 0; }
+  .ayah-quick-header { align-items: center; gap: 0.5rem; }
   .meaning-more { min-height: 44px; border: 1px dashed #c9b98f; border-radius: 0.6rem; background: #fdf8ea; color: #5e4418; font: inherit; font-weight: 600; cursor: pointer; }
   .meaning-more[disabled] { opacity: 0.5; cursor: default; }
   /* Owner, 2 Oct 2026 -- "☰ Surah list", the way back from a Read view opened
@@ -10761,6 +10765,14 @@
     function displayParts(ayah) {
       return expandAyahsForDisplay(currentSurahNum, [ayah], fatihaOn());
     }
+    /** The Owner, 6 Nov 2026 (option A of the demo): the āyah number and the ⋮ sit on ONE row before the āyah starts, on the title's
+        row. The Arabic panel draws its number on a row of its own; this lifts the one that sits right before the Arabic out of the parts' HTML (a translation's own number stays with its text) so the caller can
+        put it in the header row beside the ⋮. Returns { badge, parts }; no badge (the unnumbered Bismillah) leaves the parts as they were. */
+    function liftAyahBadge(parts) {
+      const m = /<div class="ayah-num-row">(<(button|span)[^>]*class="ayah-num-badge"[^>]*>[^<]*<\/\2>)<\/div>(?=<div class="ayah-arabic")/.exec(parts);
+      return m ? { badge: m[1], parts: parts.replace(m[0], "") } : { badge: "", parts };
+    }
+
     function layoutAParts(ayah, panels, opts, half = null) {
       // `half` (issue #606): the single-Ayah view of displayed 6 or 7 draws only its half.
       return displayParts(ayah).filter((a) => !half || a.half === half).map((a) => renderLayoutA(a, panels, opts)).join("");
@@ -21355,11 +21367,12 @@
           if (a.ayah < g.firstAyah || a.ayah > g.lastAyah) continue;
           const key = `${g.surah}:${a.ayah}`;
           const out = meaningInUnit && !meaningInUnit.has(key);
+          const lifted = liftAyahBadge(layoutAParts(a, panels, {
+            tajweedOn: tajweedToggle.checked, langs, wbwLangs: langs.length ? langs : ["en"], wordCardInteractive: true, surahNumber: g.surah,
+          }));
           html += `<article class="meaning-ayah${out ? " out" : ""}" data-meaning-key="${key}" data-meaning-page="${pageNum}">
-            <div class="meaning-ayah-head"><span class="meaning-ayah-ref">${escapeHtml(surahName(g.surah, meta?.nameEnglish))} ${num(g.surah)}:${escapeHtml(ayahLabelFor(g.surah, a.ayah, null))}</span>${meaningQuickMenuHtml(g.surah, a.ayah)}</div>
-            ${surahFlowHeadingHtml(g.surah, a.ayah)}${bismillahHtmlFor(g.surah, a.ayah)}${layoutAParts(a, panels, {
-              tajweedOn: tajweedToggle.checked, langs, wbwLangs: langs.length ? langs : ["en"], wordCardInteractive: true, surahNumber: g.surah,
-            })}</article>`;
+            <div class="meaning-ayah-head"><span class="meaning-ayah-ref">${escapeHtml(surahName(g.surah, meta?.nameEnglish))} ${num(g.surah)}:${escapeHtml(ayahLabelFor(g.surah, a.ayah, null))}</span>${lifted.badge}${meaningQuickMenuHtml(g.surah, a.ayah)}</div>
+            ${surahFlowHeadingHtml(g.surah, a.ayah)}${bismillahHtmlFor(g.surah, a.ayah)}${lifted.parts}</article>`;
         }
       }
       return html;
@@ -21728,17 +21741,18 @@
             ? renderEndOfUnitPromptHtml({ unitLabel: unitChipText(currentUnitInfo()), approachName: endOfUnitApproachName(promptApproachId) })
             : "";
           const afterHtml = unitMarkerRowHtml(markers.after.map(unitFlowMarkerHtml).join("")) + endOfUnitHtml;
-          return `<div class="page-flow-ayah" data-ayah="${ayah.ayah}">${beforeHtml}<div class="ayah-quick-header">${renderQuickMenu(unitKey, {
-            hasNote: ayahHasAnyNote(unitKey), isBookmarked,
-            showTextTools: true,
-            isWbwOn: wbwShowToggle.checked, isRootsOn: rootsToggle.checked, isDerivativesOn: derivativesToggle.checked,
-          })}</div><div class="ayah-flow-body" data-ayah-collapsible-for="${unitKey}">${bismillahHtmlFor(currentSurahNum, ayah.ayah)}${layoutAParts(ayah, panels, {
+          const liftedFlow = liftAyahBadge(layoutAParts(ayah, panels, {
             tajweedOn: tajweedToggle.checked,
             langs: translationLangs(),
             wbwLangs: wbwLangs(),
             wordCardInteractive: true,
             surahNumber: currentSurahNum,
-          })}</div>${afterHtml}</div>`;
+          }));
+          return `<div class="page-flow-ayah" data-ayah="${ayah.ayah}">${beforeHtml}<div class="ayah-quick-header">${liftedFlow.badge}${renderQuickMenu(unitKey, {
+            hasNote: ayahHasAnyNote(unitKey), isBookmarked,
+            showTextTools: true,
+            isWbwOn: wbwShowToggle.checked, isRootsOn: rootsToggle.checked, isDerivativesOn: derivativesToggle.checked,
+          })}</div><div class="ayah-flow-body" data-ayah-collapsible-for="${unitKey}">${bismillahHtmlFor(currentSurahNum, ayah.ayah)}${liftedFlow.parts}</div>${afterHtml}</div>`;
         })
         .join("");
       attachAyahQuickMenus(pageViewContainer);
