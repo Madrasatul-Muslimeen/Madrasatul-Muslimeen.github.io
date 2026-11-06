@@ -10,6 +10,8 @@ const check = (n, ok, d = "") => { if (ok && typeof ok.then === "function") thro
 const MUT = process.argv.includes("--mutate=showbar");
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
 const setSel = (page, id, v) => page.evaluate(([i, val]) => { const s = document.getElementById(i); s.value = val; s.dispatchEvent(new Event("change", { bubbles: true })); }, [id, v]);
+// Tile rows: distinct tops of the tiles in the open sheet -> { rows, perRow }.
+const tileRows = (page, scope) => page.evaluate((sc) => { const ts = [...document.querySelectorAll(`${sc} .quick-menu.open .qm-tile`)]; const tops = [...new Set(ts.map((t) => Math.round(t.getBoundingClientRect().top)))]; return { n: ts.length, rows: tops.length, perRow: tops.map((tp) => ts.filter((t) => Math.round(t.getBoundingClientRect().top) === tp).length) }; }, scope);
 const menuInfo = (page, scope) => page.evaluate((sc) => {
   const m = document.querySelector(`${sc} .quick-menu.open`); if (!m) return null; const r = m.getBoundingClientRect();
   const tiles = [...m.querySelectorAll(".qm-tile")].map((b) => ({ k: [...b.attributes].map((x) => x.name).find((n) => n.startsWith("data-qm-") && n !== "data-qm-note-new"), h: Math.round(b.getBoundingClientRect().height), w: Math.round(b.getBoundingClientRect().width) }));
@@ -20,6 +22,7 @@ for (const width of [320, 390, 768, 1280]) {
   const ctx = await newContext(browser, { banner: false, viewport: { width, height: 900 } });
   await ctx.route("**/archive.org/**", (r) => r.abort());
   if (MUT) await ctx.route("**/app/quranrevival.html*", async (r) => { const res = await r.fetch(); const b = await res.text(); const from = "#readBar #readAttachAsmaBtn, #readBar #readAttachQcrBtn { display: none !important; }"; if (b.split(from).length !== 2) throw new Error("anchor"); r.fulfill({ response: res, body: b.replace(from, "#readBar #zzNone { display: none; }") }); });
+  if (process.argv.includes("--mutate=autofit")) await ctx.route("**/app/quranrevival.html*", async (r) => { const res = await r.fetch(); const b = await res.text(); const from = ".qm-sheet .qm-tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.4rem; }"; if (b.split(from).length !== 2) throw new Error("anchor"); r.fulfill({ response: res, body: b.replace(from, ".qm-sheet .qm-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(4.2rem, 1fr)); gap: 0.4rem; } .quick-menu.qm-sheet { container-type: normal; }") }); });
   const { page } = await openPage(ctx, "/app/quranrevival.html");
   if (!(await page.evaluate(() => (document.getElementById("tabReadBtn")?.getBoundingClientRect().width ?? 0) > 0))) { await page.click("#tabStudyBtn"); await page.waitForTimeout(150); }
   await page.click("#tabReadBtn"); await page.waitForTimeout(500);
@@ -31,6 +34,8 @@ for (const width of [320, 390, 768, 1280]) {
   const one = await menuInfo(page, "#readQuickMenuSlot");
   check(`${tag} ONE Ayah View: the bar's ⋮ is the sheet, with Play, Note, Bookmark and QCR tiles (≥ 40px) and Copy, Share, Writing sheet`, !!one && ["data-qm-play", "data-qm-note", "data-qm-bookmark", "data-qm-qcr"].every((k) => one.tiles.some((t) => t.k === k && t.h >= 40)) && ["data-qm-sub-toggle", "data-qm-writing"].every((k) => one.rows.includes(k)), JSON.stringify(one));
   check(`${tag} ONE Ayah View: the open sheet is inside the screen`, !!one && one.inside, JSON.stringify(one));
+  const oneRows = await tileRows(page, "#readQuickMenuSlot");
+  check(`${tag} ONE Ayah View at 100% text: exactly one row of four tiles (never 3+1)`, oneRows.n === 4 && oneRows.rows === 1 && oneRows.perRow[0] === 4, JSON.stringify(oneRows));
   await page.evaluate(() => document.querySelector("#readQuickMenuSlot [data-qm-toggle]")?.click());
   // Reading View
   for (let i = 0; i < 3; i++) { if (await page.evaluate(() => document.querySelectorAll("#pageViewContainer [data-meaning-key]").length > 0)) break; await page.click("#readMeaningBtn"); await page.waitForTimeout(1300); }
@@ -52,7 +57,7 @@ for (const width of [320, 390, 768, 1280]) {
 }
 // Larger text and Bangla (the Architect, 6 Nov 2026: v13.41's two open items). The root text size is set to 100/150/200% (it enlarges the whole app,
 // so this proves the SHEET, not the rest of the screen). The Reading View's first āyah ⋮ is opened; the sheet must sit inside the screen, the page must
-// not scroll sideways, no tile may clip its label, and in Bangla the tiles and rows carry Bangla words.   --mutate=wide widens the sheet, --mutate=nowrap stops labels wrapping, --mutate=nobn drops a Bangla word -> FAIL.
+// not scroll sideways, no tile may clip its label, and in Bangla the tiles and rows carry Bangla words.   --mutate=wide widens the sheet, --mutate=nowrap stops labels wrapping, --mutate=nobn drops a Bangla word, --mutate=autofit brings back the auto-fit grid (3+1 / one column) -> FAIL.
 const BN = /[ঀ-৿]/;
 for (const [lang, width, pct] of [["bn", 390, 100], ["en", 390, 150], ["en", 390, 200], ["bn", 390, 200], ["en", 360, 200]]) {
   const tag = `[${lang} ${width} ${pct}%]`;
@@ -61,6 +66,7 @@ for (const [lang, width, pct] of [["bn", 390, 100], ["en", 390, 150], ["en", 390
   if (process.argv.includes("--mutate=wide")) await ctx.route("**/app/quranrevival.html*", async (r) => { const res = await r.fetch(); const b = await res.text(); const from = "width: min(19rem, calc(100vw - 3rem)); padding: 0.6rem;"; if (b.split(from).length !== 2) throw new Error("anchor"); r.fulfill({ response: res, body: b.replace(from, "width: 30rem; padding: 0.6rem;") }); });
   if (process.argv.includes("--mutate=nowrap")) await ctx.route("**/app/quranrevival.html*", async (r) => { const res = await r.fetch(); const b = await res.text(); const from = ".qm-sheet .qm-label { overflow-wrap: anywhere; }"; if (b.split(from).length !== 2) throw new Error("anchor"); r.fulfill({ response: res, body: b.replace(from, ".qm-sheet .qm-label { white-space: nowrap; }") }); });
   if (process.argv.includes("--mutate=nobn")) await ctx.route("**/js/i18n/bn.js*", async (r) => { const res = await r.fetch(); const b = await res.text(); if (!b.includes("নোট নিন")) throw new Error("anchor"); r.fulfill({ response: res, body: b.split("নোট নিন").join("Take Note") }); });
+  if (process.argv.includes("--mutate=autofit")) await ctx.route("**/app/quranrevival.html*", async (r) => { const res = await r.fetch(); const b = await res.text(); const from = ".qm-sheet .qm-tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.4rem; }"; if (b.split(from).length !== 2) throw new Error("anchor"); r.fulfill({ response: res, body: b.replace(from, ".qm-sheet .qm-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(4.2rem, 1fr)); gap: 0.4rem; } .quick-menu.qm-sheet { container-type: normal; }") }); });
   const { page } = await openPage(ctx, "/app/quranrevival.html");
   await page.evaluate((p) => { document.documentElement.style.fontSize = p + "%"; }, pct);
   if (!(await page.evaluate(() => (document.getElementById("tabReadBtn")?.getBoundingClientRect().width ?? 0) > 0))) { await page.click("#tabStudyBtn"); await page.waitForTimeout(150); }
@@ -77,6 +83,9 @@ for (const [lang, width, pct] of [["bn", 390, 100], ["en", 390, 150], ["en", 390
   });
   check(`${tag} the open sheet is inside the screen with no sideways scroll`, r.open && r.l >= 0 && r.r <= r.vw && r.over <= 0, JSON.stringify(r));
   check(`${tag} the four tiles are there and none clips its label`, r.tiles.length === 4 && r.tiles.every((t) => !t.clipped), JSON.stringify(r.tiles));
+  const rows = await page.evaluate(() => { const ts = [...document.querySelectorAll(".quick-menu.open .qm-tile")]; const tops = [...new Set(ts.map((t) => Math.round(t.getBoundingClientRect().top)))]; return { n: ts.length, rows: tops.length, perRow: tops.map((tp) => ts.filter((t) => Math.round(t.getBoundingClientRect().top) === tp).length) }; });
+  const want = pct >= 150 ? [2, 2] : [4];
+  check(`${tag} tile layout is exactly ${want.length === 1 ? "one row of four" : "two rows of two"} (never 3+1, never one column)`, rows.n === 4 && JSON.stringify(rows.perRow) === JSON.stringify(want), JSON.stringify(rows));
   if (lang === "bn") check(`${tag} the tiles and rows carry Bangla words (QCR is the acronym alone)`, r.tiles.every((t) => BN.test(t.text) || /QCR$/.test(t.text)) && r.rows.slice(0, 2).every((t) => BN.test(t)), JSON.stringify({ tiles: r.tiles.map((t) => t.text), rows: r.rows }));
   await ctx.close();
 }
