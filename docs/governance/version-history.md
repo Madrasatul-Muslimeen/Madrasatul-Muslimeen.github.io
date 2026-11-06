@@ -1082,3 +1082,4 @@ total). Allocated by the MMSA Architect.
 13.39: J114: one Show button to 900px; prev/next āyah in every view. Allocated by the MMSA Architect.
 13.40: the screensaver never comes over a Note being written. Allocated by the MMSA Architect.
 13.41: J114 option B: one ⋮ sheet beside the āyah. Allocated by the MMSA Architect.
+13.42: J114 follow-up: the ⋮ sheet at large text and in Bangla. Allocated by the MMSA Architect.
