@@ -4748,7 +4748,8 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
         gone: document.getElementById("noteView") === null && typeof window.__dormantOpenNoteView === "undefined" && !document.querySelector(".note-view") && !document.querySelector(".note-bar1, .note-bar2"),
         // v12.16 (J63: "the bar's 🔖 shows in the plain Read view too"): from 900px ⋯'s #readBookmarkBtn steps aside for
         // the bar's own #readBarBookmarkBtn, the same bookmark -- either one on screen counts. Updated in place, reason recorded.
-        bar: ["readPlayBtn", "readBookmarkBtn", "readNotesBtn"].map((id) => { const el = document.getElementById(id); return vis(el) || (id === "readBookmarkBtn" && vis(document.getElementById("readBarBookmarkBtn"))) || (id !== "readPlayBtn" && !!el?.closest("#readToolsMenu") && vis(document.getElementById("readToolsBtn"))); }),
+        // UPDATED IN PLACE for PCF MSA J114 (option B): the bar's 🔖 and 📝 are retired; Bookmark and Notes are tiles in the ONE ⋮ (data-qm-bookmark, data-qm-note).
+        bar: ["readPlayBtn", "readBookmarkBtn", "readNotesBtn"].map((id) => { const el = document.getElementById(id); if (id === "readPlayBtn") return vis(el); return !!document.querySelector(id === "readBookmarkBtn" ? "#readQuickMenuSlot [data-qm-bookmark]" : "#readQuickMenuSlot [data-qm-note]"); }),
         menu: vis(document.querySelector("#readQuickMenuSlot [data-qm-toggle]")),
         items: ["copy", "share"].every((k) => document.querySelector(`#readQuickMenuSlot [data-qm-sub-toggle="${k}"]`)) && ["wbw", "roots", "derivatives"].every((k) => document.querySelector(`#readQuickMenuSlot [data-qm-${k}]`)),
         overflow: document.documentElement.scrollWidth - innerWidth,
@@ -4758,7 +4759,7 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
     await ctx.close();
     check(`42p the Note view's bar 2 is gone with it on a ${label} (#742)`, p42.gone, JSON.stringify(p42));
     // v10.21 (the Owner, 10 Oct 2026: the Read bar's tools "under one button") -- below 900px Bookmark and 📝 sit behind ⋯ More tools (still in #readBar); Play stays on the bar. Updated in place.
-    check(`42p Play sits on the Read bar, and Bookmark and 📝 Notes are on the bar or behind its ⋯ on a ${label}`, p42.bar.every(Boolean), JSON.stringify(p42.bar));
+    check(`42p Play sits on the Read bar, and Bookmark and 📝 Notes are tiles in its ⋮ (J114) on a ${label}`, p42.bar.every(Boolean), JSON.stringify(p42.bar));
     check(`42p ...with Copy, Share, Word by word, Root and Derivatives in its ⋮ menu on a ${label}`, p42.menu && p42.items, JSON.stringify(p42));
     check(`42p ...and nothing overflows the ${label} viewport`, p42.overflow <= 0, p42.overflow);
   }
@@ -4908,7 +4909,7 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
     const item = (k) => document.querySelector(`#readQuickMenuSlot [data-qm-${k}]`);
     const root = [...document.querySelectorAll("#readView .root-panel")].find(vis);
     return {
-      order: [...document.querySelectorAll("#readQuickMenuSlot .qm-item")].map((b) => ["wbw", "roots", "derivatives"].find((k) => b.hasAttribute(`data-qm-${k}`)) ?? "").filter(Boolean).join(),
+      order: [...document.querySelectorAll("#readQuickMenuSlot .qm-item, #readQuickMenuSlot .qm-chip")].map((b) => ["wbw", "roots", "derivatives"].find((k) => b.hasAttribute(`data-qm-${k}`)) ?? "").filter(Boolean).join(),
       rootLabel: item("roots")?.textContent.replace("✓", "").trim(), derLabel: item("derivatives")?.textContent.replace("✓", "").trim(),
       rootPressed: item("roots")?.getAttribute("aria-pressed"), derPressed: item("derivatives")?.getAttribute("aria-pressed"),
       root: !!root && root.innerText.trim().length > 0,
@@ -4999,7 +5000,8 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
       langValues: [...wrap.querySelectorAll(".qm-lang-copy")].map((cb) => cb.dataset.lang),
     };
   });
-  check("42k the quick menu's own items render in Bangla", menuBn.items.every((t) => BANGLA.test(t)), JSON.stringify(menuBn.items));
+  // UPDATED IN PLACE for PCF MSA J114 (option B): the QCR tile is labelled with the acronym alone ("QCR", as in every language), so it carries no Bangla letters.
+  check("42k the quick menu's own items render in Bangla", menuBn.items.every((t) => BANGLA.test(t) || /^[^\p{L}]*QCR$/u.test(t)), JSON.stringify(menuBn.items));
   check("42k ...while the checkbox values stay plain ids", JSON.stringify(menuBn.langValues) === JSON.stringify(["ar", "en", "bn", "notes"]));
 
   // UPDATED IN PLACE 10 Oct 2026 (Architect, finishing #742; reasons recorded). The Builder's first pass turned every
