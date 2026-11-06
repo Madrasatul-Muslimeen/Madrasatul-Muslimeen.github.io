@@ -23340,3 +23340,9 @@ The evening's third release, the follow-up to v13.26.
 - **Quran Study, the Owner's ask of 6 Nov (QR Lead #1485, reviewed by the Architect).** With Page as the Study Unit, the page picker offers only the pages the chosen sūrah is on (Al-Kahf 293–304, Al-Fātiḥah 1, Al-Baqarah 2–49), not all 604; if none match it falls back to the full list. The Read bar's copy follows. Prev/Next page still walk on into the next sūrah, which then shows its own pages. Juz and Hizb are unchanged. One guarded block in `renderUnitNumberPicker()`.
 - **Checks:** page-picker-surah-browser 15/0 (new; 9 of its 15 fail against v13.36's page), behaviour 974/1 (14a, the same as main; 30f "Page offers all 604" updated in place to Al-Baqarah's 48, with the reason), apps-build-check 48/0.
 - Nothing deployed to Firestore.
+
+## v13.38 — 6 Nov 2026 — The āyah number and the ⋮ on the title row
+
+- **PCF MSA J113 (the Owner's tick A, 6 Nov; QR Lead #1487, reviewed by the Architect).** In Quran Study's Reading View the title row reads "Al-Kahf 18:1 … number ⋮" with the Arabic below; in the ONE-flow view the header row holds the number and the ⋮ together. `liftAyahBadge()` moves only the number row that sits right before the Arabic into the header; a translation's own number stays with its text, and the unnumbered Bismillah is untouched. The number is still the Āyah-card button. `quranrevival.html` only.
+- **Checks (Architect re-run on e1015e57):** ayah-row-badge-browser 72/0 (new; 72 of 72 red against v13.37's page), fatiha-count 44/0, fatiha-count-browser 136/0, fatiha-opening-band 132/0, fatiha-six-seven-records 84/0, ayah-full-text-fatiha-count 13/0, ayah-card-panes 35/0, read-meaning 39/0, read-meaning-one-row 56/0, qr-j110-reading-view 74/0, audit-part1-fixes 210/0, behaviour 974/1 (14a, the same as main), apps-build-check 48/0.
+- Nothing deployed to Firestore.
