@@ -5491,11 +5491,16 @@
   #readBar #readBookmarkBtn, #readBar #readBarBookmarkBtn, #readBar #readNotesBtn, #readBar #readWritingBtn,
   #readBar #readAttachAsmaBtn, #readBar #readAttachQcrBtn { display: none !important; }
   .quick-menu.qm-sheet { box-sizing: border-box; width: min(19rem, calc(100vw - 3rem)); padding: 0.6rem; border-radius: 1rem; z-index: 60; }
-  .qm-sheet .qm-tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.4rem; }
+  .qm-sheet .qm-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.4rem; }
+  /* Exactly four across, or exactly two by two (never 3+1, never one column): below 15.5rem of room four 3.6rem tiles no longer fit
+     (found at 360px with 200% text; the sheet is the container, so the rule follows the text size, not the screen). */
+  .quick-menu.qm-sheet { container-type: inline-size; }
+  @container (max-width: 15.5rem) { .qm-sheet .qm-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   .qm-sheet .qm-tile { flex-direction: column; justify-content: center; gap: 0.15rem; padding: 0.5rem 0.15rem 0.4rem; min-height: 4rem; text-align: center; border: 1px solid #e3d6b0; border-radius: 0.8rem; background: #f6f1e2; color: #1F3A6E; font-size: 0.68rem; font-weight: 600; line-height: 1.15; }
   .qm-sheet .qm-tile:hover { background: #efe6cc; }
   .qm-sheet .qm-tile.is-on { background: #1F3A6E; border-color: #1F3A6E; color: #fff; }
   .qm-sheet .qm-glyph { font-size: 1.25rem; line-height: 1.2; }
+  .quick-menu.qm-sheet .qm-tile, .quick-menu.qm-sheet .qm-tile .qm-label { white-space: normal; } /* the bar's buttons are nowrap (#readBar button): a tile's label must wrap */
   .qm-sheet .qm-label { overflow-wrap: anywhere; }
   .qm-sheet .qm-rows { margin-top: 0.45rem; border-top: 1px solid #eee; padding-top: 0.25rem; display: grid; }
   .qm-sheet .qm-rows .qm-item { min-height: 44px; font-size: 0.88rem; }
