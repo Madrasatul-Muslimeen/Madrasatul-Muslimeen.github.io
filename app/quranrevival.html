@@ -5486,6 +5486,24 @@
     border-radius: 0.35rem; padding: 0.3rem; font-size: 0.75rem; cursor: pointer; font-family: inherit;
   }
   .qm-divider { height: 1px; background: #eee; margin: 0.2rem 0.3rem; }
+  /* PCF MSA J114 (the Owner, 6 Nov 2026, option B): ONE ⋮ beside the āyah. The bar's own 🔖, Notes (the Notes pane, which the Owner
+     called the wrong place), ✍, 🔗 and 📚 are retired from sight: their code stays (every id and handler), the ⋮ carries them. */
+  #readBar #readBookmarkBtn, #readBar #readBarBookmarkBtn, #readBar #readNotesBtn, #readBar #readWritingBtn,
+  #readBar #readAttachAsmaBtn, #readBar #readAttachQcrBtn { display: none !important; }
+  .quick-menu.qm-sheet { box-sizing: border-box; width: min(19rem, calc(100vw - 3rem)); padding: 0.6rem; border-radius: 1rem; z-index: 60; }
+  .qm-sheet .qm-tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.4rem; }
+  .qm-sheet .qm-tile { flex-direction: column; justify-content: center; gap: 0.15rem; padding: 0.5rem 0.15rem 0.4rem; min-height: 4rem; text-align: center; border: 1px solid #e3d6b0; border-radius: 0.8rem; background: #f6f1e2; color: #1F3A6E; font-size: 0.68rem; font-weight: 600; line-height: 1.15; }
+  .qm-sheet .qm-tile:hover { background: #efe6cc; }
+  .qm-sheet .qm-tile.is-on { background: #1F3A6E; border-color: #1F3A6E; color: #fff; }
+  .qm-sheet .qm-glyph { font-size: 1.25rem; line-height: 1.2; }
+  .qm-sheet .qm-label { overflow-wrap: anywhere; }
+  .qm-sheet .qm-rows { margin-top: 0.45rem; border-top: 1px solid #eee; padding-top: 0.25rem; display: grid; }
+  .qm-sheet .qm-rows .qm-item { min-height: 44px; font-size: 0.88rem; }
+  .qm-sheet .qm-rowglyph { width: 1.4rem; text-align: center; }
+  .qm-sheet .qm-chips { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.4rem; padding-top: 0.5rem; border-top: 1px solid #eee; }
+  .qm-sheet .qm-chip { border: 1px solid #d8d2c0; border-radius: 999px; background: #fff; color: #222; padding: 0.35rem 0.7rem; min-height: 36px; font: inherit; font-size: 0.78rem; font-weight: 600; cursor: pointer; }
+  .qm-sheet .qm-chip.is-on { background: #1F3A6E; border-color: #1F3A6E; color: #fff; }
+  .qm-sheet button:focus-visible { outline: 3px solid #B8862F; outline-offset: 2px; }
   .ayah-note-flash { color: #2e6b4f; font-weight: 700; }
 
   /* ---- Note & more: full-stage view, dock stays visible underneath ---- */
@@ -21355,7 +21373,7 @@
     function meaningQuickMenuHtml(surahNum, ayahNum) {
       const unitKey = buildUnitKey.ayah(surahNum, ayahNum);
       const isBookmarked = !!findSavedBookmark(bookmarksDoc, { moduleId: "quranrevival", subjectId: "quran", position: unitKey });
-      return renderQuickMenu(unitKey, { hasNote: ayahHasAnyNote(unitKey), isBookmarked });
+      return renderQuickMenu(unitKey, { hasNote: ayahHasAnyNote(unitKey), isBookmarked, sheet: true, showWriting: true, showAsma: canAdminCatalogueClientSide() });
     }
 
     async function meaningPageHtml(pageNum) {
@@ -21753,6 +21771,7 @@
           }));
           return `<div class="page-flow-ayah" data-ayah="${ayah.ayah}">${beforeHtml}<div class="ayah-quick-header">${liftedFlow.badge}${renderQuickMenu(unitKey, {
             hasNote: ayahHasAnyNote(unitKey), isBookmarked,
+            sheet: true, showWriting: true, showAsma: canAdminCatalogueClientSide(),
             showTextTools: true,
             isWbwOn: wbwShowToggle.checked, isRootsOn: rootsToggle.checked, isDerivativesOn: derivativesToggle.checked,
           })}</div><div class="ayah-flow-body" data-ayah-collapsible-for="${unitKey}">${bismillahHtmlFor(currentSurahNum, ayah.ayah)}${liftedFlow.parts}</div>${afterHtml}</div>`;
@@ -22504,6 +22523,9 @@
         onToggleWbw: toggleNoteWbw,
         onToggleRoots: toggleNoteRoots,
         onToggleDerivatives: toggleNoteDerivatives,
+        // PCF MSA J114 (option B): the two bar buttons that moved into the ⋮. Writing sheet is the open unit's; Asma is this āyah's.
+        onWriting: () => { openWritingSheetForCurrentUnit(); },
+        onAsma: (unitKey) => { const p = parseAyahUnitKey(unitKey); openAsmaXAttachPopover({ prefillRef: asmaRefTextFor(p.surah, p.ayah) }); },
       });
     }
 
@@ -26338,6 +26360,9 @@
         // means the whole Range/Whole Surah/etc., which a flow view is
         // exactly suited to.
         readQuickMenuSlot.innerHTML = "";
+        // PCF MSA J114: the Mushaf prints the āyāt as one page of text and has no ⋮ beside an āyah, so the bar carries it, for
+        // the āyah the ◂ ▸ last stopped at (refreshMushafBarMenu).
+        if (isMushaf) refreshMushafBarMenu();
         // Text-tools round -- #ayahPanels keeps whichever āyah key it was
         // last rendered for, and it is hidden (not emptied) while a flow
         // shows. Left set, it stays in the document with a key a flow row
@@ -26413,7 +26438,8 @@
         // view's own per-āyah ⋮ badge keeps it, since it has no bar-level
         // button of its own to mean one specific āyah.
         readQuickMenuSlot.innerHTML = renderQuickMenu(singleUnitKey, {
-          hasNote: ayahHasAnyNote(singleUnitKey), isBookmarked: singleIsBookmarked, showBookmark: false,
+          hasNote: ayahHasAnyNote(singleUnitKey), isBookmarked: singleIsBookmarked, showBookmark: true,
+          sheet: true, showWriting: true, showAsma: canAdminCatalogueClientSide(),
           // Text-tools round -- Word by Word / Root / Derivatives / Collapse,
           // the same group the Note view's own ⋮ carries. Not offered in
           // Mushaf mode, which replaces those choices rather than sharing
@@ -26637,7 +26663,11 @@
       document.querySelectorAll(`.ayah-quick-wrap[data-unit-key="${CSS.escape(unitKey)}"]`).forEach((wrap) => {
         wrap.querySelector(".ayah-quick-btn")?.classList.add("has-note");
         const item = wrap.querySelector("[data-qm-note]");
-        if (item) { item.removeAttribute("data-qm-note-new"); item.textContent = `📝 ${t("Note & more…")}`; }
+        if (item) {
+          item.removeAttribute("data-qm-note-new");
+          const lab = item.querySelector(".qm-label"); // J114 sheet menu: only the label changes, the tile's glyph stays
+          if (lab) lab.textContent = t("Note & more…"); else item.textContent = `📝 ${t("Note & more…")}`;
+        }
         wrap.querySelectorAll('.qm-sub input[data-lang="notes"]').forEach((cb) => { cb.disabled = !has; const sp = cb.parentElement?.querySelector("span"); if (sp) sp.textContent = t("My note"); });
       });
     }
@@ -27211,6 +27241,15 @@
       openAsmaXAttachPopover({ prefillRef: asmaRefTextFor(currentSurahNum, currentAyahNum) });
     });
 
+    /** PCF MSA J114: the Mushaf's ⋮ on the bar (the one the Reading View and the ONE Ayah View already have beside their
+        āyah), built for currentAyahNum. Called when the Mushaf renders and after ◂ ▸ move the stop. */
+    function refreshMushafBarMenu() {
+      if (!mushafToggle.checked || !currentSurahData) { return; }
+      const key = ayahRecordKey(currentSurahNum, currentAyahNum, currentHalf());
+      const marked = !!findSavedBookmark(bookmarksDoc, { moduleId: "quranrevival", subjectId: "quran", position: key });
+      readQuickMenuSlot.innerHTML = renderQuickMenu(key, { hasNote: ayahHasAnyNote(key), isBookmarked: marked, sheet: true, showWriting: true, showAsma: canAdminCatalogueClientSide() });
+      attachAyahQuickMenus(readQuickMenuSlot);
+    }
     // Issue #606 -- with the Al-Fātiḥah count on, internal 1:7 is two stops: 6 then 7.
     function stepAyahBy(dir) {
       const split = fatihaCountApplies(currentSurahNum, fatihaOn());
@@ -27272,7 +27311,7 @@
       setTimeout(() => m.classList.remove("mushaf-step-hit"), 1400);
       flowStepBase = m; flowStepAt = Date.now();
       const [s, a] = String(m.dataset.ayahMarker).split(":").map(Number);
-      if (s === currentSurahNum && a) setAyahNum(a);
+      if (s === currentSurahNum && a) { setAyahNum(a); refreshMushafBarMenu(); }
       return true;
     }
     // Registered BEFORE the single-āyah listeners below and stopping them: in a flow they must not also re-render the unit.

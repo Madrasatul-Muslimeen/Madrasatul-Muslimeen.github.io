@@ -151,7 +151,7 @@ for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 360], ["en", 768],
     return page.evaluate((k) => {
       const m = document.querySelector(`#pageViewContainer [data-meaning-key="${k}"] .quick-menu`), r = m?.getBoundingClientRect();
       return { open: !!m?.classList.contains("open") && (r?.height ?? 0) > 0, inView: !!r && r.left >= 0 && r.right <= innerWidth + 1,
-        items: [...(m?.querySelectorAll(":scope > .qm-item") ?? [])].map((b) => [...b.attributes].map((x) => x.name).find((n) => n.startsWith("data-qm-"))) };
+        items: [...(m?.querySelectorAll(".qm-item") ?? [])] /* J114: the ⋮ is a sheet (tiles + rows), so every .qm-item, not only direct children */.map((b) => [...b.attributes].map((x) => x.name).find((n) => n.startsWith("data-qm-"))) };
     }, key);
   };
   const m3 = await openMenu("1:3");

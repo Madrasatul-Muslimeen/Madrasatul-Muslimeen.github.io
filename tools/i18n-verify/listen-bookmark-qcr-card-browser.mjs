@@ -139,8 +139,12 @@ const quiet = (errors) => errors.filter((e) => !/ERR_CERT|net::|archive\.org|api
   await P.click("#readPlayBtn").catch(() => {});
   await P.waitForFunction(() => !!window.__media && !window.__media.paused, null, { timeout: 8000 }).catch(() => {});
   await P.evaluate(() => { window.__stubWriteData = []; });
+  // UPDATED IN PLACE for PCF MSA J114 (option B, 6 Nov 2026): the bar's 🔖 is retired from sight, so the bookmark is saved from the
+  // ONE ⋮ beside the āyah: open it, then press its Bookmark tile.
+  await P.evaluate(() => document.querySelector("#readQuickMenuSlot [data-qm-toggle]")?.click());
+  await P.waitForTimeout(300);
   const saved = await P.evaluate(async () => {
-    const btn = [...document.querySelectorAll("button")].find((b) => b.getClientRects().length && /★|Bookmark this/.test(b.textContent + (b.title || "") + (b.getAttribute("aria-label") || "")));
+    const btn = [...document.querySelectorAll("button")].find((b) => b.getClientRects().length && (b.hasAttribute("data-qm-bookmark") || /★|Bookmark this/.test(b.textContent + (b.title || "") + (b.getAttribute("aria-label") || ""))));
     btn?.click();
     return !!btn;
   });
@@ -179,7 +183,8 @@ const quiet = (errors) => errors.filter((e) => !/ERR_CERT|net::|archive\.org|api
     await P.evaluate(() => document.querySelector('#readView .ayah-quick-wrap[data-unit-key="ayah:83:4"] [data-qm-toggle]')?.click());
     await P.waitForTimeout(300);
     const item = await P.evaluate(() => { const b = document.querySelector('#readView .ayah-quick-wrap[data-unit-key="ayah:83:4"] [data-qm-qcr]'); if (!b) return null; const r = b.getBoundingClientRect(); return { text: b.textContent.trim(), shown: r.width > 0 && r.height > 0 }; });
-    check(`${tag} the Read view's ⋮ on 83:4 has "📚 ${lang === "bn" ? "QCR সংকলন(সমূহ)…" : "QCR collection(s)…"}"`, !!item && item.shown && item.text.includes(lang === "bn" ? "QCR সংকলন(সমূহ)…" : "QCR collection(s)…"), JSON.stringify(item));
+    // UPDATED IN PLACE for PCF MSA J114 (option B): the ⋮ is a sheet now and its QCR is a tile labelled "QCR" (the same data-qm-qcr button).
+    check(`${tag} the Read view's ⋮ on 83:4 has the 📚 ${lang === "bn" ? "QCR" : "QCR"} tile`, !!item && item.shown && item.text.includes("QCR"), JSON.stringify(item));
     await P.evaluate(() => document.querySelector('#readView .ayah-quick-wrap[data-unit-key="ayah:83:4"] [data-qm-qcr]')?.click());
     // Updated in place (decision 95, issue #722): the ⋮ QCR item opens the QCR pop-up (#qcrPopup), not the Note view; its
     // way back is the pop-up's own ← Back (nothing was navigated, so closing it IS being back on 83:4).
