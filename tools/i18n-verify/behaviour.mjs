@@ -1,6 +1,17 @@
 // Full app translation, phase 1 (the shell) — behaviour suite.
 import fs from "fs";
-import { chromium, newContext, openPage, BASE, clickReadTool } from "./harness.mjs";
+import { chromium, newContext, openPage, BASE, clickReadTool as clickReadToolRaw } from "./harness.mjs";
+// UPDATED IN PLACE for PCF MSA J114 (the Owner, 6 Nov 2026, option B: ONE ⋮ beside the āyah): the bar's 🔖, 📝, ✍, 🔗 and 📚 are retired from sight
+// by one CSS rule (ids and handlers kept). The sections below still test their code, so any click on one of them first puts it back with a
+// test-only style rule, once per page. The retirement itself is asserted in section 45a and by ayah-menu-sheet-browser.
+const RETIRED_BAR = ["#readNotesBtn", "#readBarBookmarkBtn", "#readBookmarkBtn", "#readWritingBtn", "#readAttachAsmaBtn", "#readAttachQcrBtn"];
+const reviveRetired = (page) => page.evaluate(() => {
+  if (document.getElementById("zzRetiredBack")) return;
+  const st = document.createElement("style"); st.id = "zzRetiredBack";
+  st.textContent = "#readBar #readNotesBtn, #readBar #readBarBookmarkBtn, #readBar #readBookmarkBtn, #readBar #readWritingBtn, #readBar #readAttachAsmaBtn, #readBar #readAttachQcrBtn { display: inline-flex !important; }";
+  document.head.append(st);
+});
+const clickReadTool = async (page, sel, ...rest) => { if (RETIRED_BAR.includes(sel)) await reviveRetired(page); return clickReadToolRaw(page, sel, ...rest); };
 
 // Chromium: use whatever this machine has. CHROMIUM_PATH overrides;
 // otherwise Playwright finds its own download, which is the normal case.
@@ -5375,8 +5386,10 @@ console.log("\n=== 45. Quran bookmarks -- naming prompt, full settings capture/r
   await page.click("#readQuickMenuSlot [data-qm-toggle]");
   await page.waitForTimeout(150);
   const readMenuItems = await page.evaluate(() => [...document.querySelectorAll("#readQuickMenuSlot .qm-item")].map((b) => b.textContent.trim()));
-  check("45a the Read screen's ⋮ menu does NOT duplicate Bookmark -- one mechanism, not two",
-        !readMenuItems.some((t) => /Bookmark/i.test(t)) && readMenuItems.length > 0, JSON.stringify(readMenuItems));
+  // UPDATED IN PLACE for PCF MSA J114 (option B): the contract flipped. The ONE ⋮ beside the āyah now carries Bookmark (a tile) and the bar's own
+  // 🔖 is retired from sight, so it is still one mechanism, not two.
+  check("45a the Read screen's ⋮ menu carries Bookmark (J114) -- one mechanism, not two",
+        readMenuItems.some((t) => /Bookmark/i.test(t)) && readMenuItems.length > 0, JSON.stringify(readMenuItems));
   // Close the menu again before touching the bar behind it -- an open popover
   // intercepting the click is this file's own most-repeated trap.
   await page.click("#readQuickMenuSlot [data-qm-toggle]");
@@ -5393,9 +5406,9 @@ console.log("\n=== 45. Quran bookmarks -- naming prompt, full settings capture/r
     const r = b?.getBoundingClientRect();
     return { present: !!b, hidden: b?.hidden, w: r?.width ?? 0, h: r?.height ?? 0, label: b?.getAttribute("aria-label"), text: b?.textContent.trim() };
   });
-  check("45a ...the Read bar carries a direct Bookmark button instead, really on screen",
-        readBmBtn.present && readBmBtn.hidden === false && readBmBtn.w > 0 && readBmBtn.h > 0
-          && /Bookmark/i.test(readBmBtn.label || ""), JSON.stringify(readBmBtn));
+  check("45a ...and the Read bar's own Bookmark button is retired from sight (the code stays; the checks below put it back)",
+        readBmBtn.present && !(readBmBtn.w > 0 && readBmBtn.h > 0) && /Bookmark/i.test(readBmBtn.label || ""), JSON.stringify(readBmBtn));
+  await reviveRetired(page);
 
   // Cancelling the naming popover (item 1/2) makes no write and no bookmark.
   //
