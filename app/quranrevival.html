@@ -2997,7 +2997,9 @@
      same slot, never a new bar; from 600px the wrapper is display: contents and they stand open on the bar as before. */
   #readMeaningLayersSlot .ml-items { display: contents; }
   #readMeaningLayersSlot .ml-menu-btn { display: none; }
-  @media (max-width: 599.98px) {
+  /* PCF MSA J114 (the Owner, 6 Nov 2026, a 600px-wide screenshot: "Place these three buttons under one"): the one button now
+     reaches up to 900px, so a small tablet gets it too; from 900px the three stand open on the bar. */
+  @media (max-width: 899.98px) {
     #readMeaningLayersSlot { position: relative; overflow: visible; }
     #readMeaningLayersSlot .ml-menu-btn {
       display: inline-flex; align-items: center; gap: 0.3rem; height: 40px; box-sizing: border-box; margin: 0; padding: 0 0.7rem;
@@ -4694,6 +4696,7 @@
      with its outer box, and so the line's own justification, unchanged. */
   /* A Mushaf page's font shrinks with the phone, so 0.6em alone left the
      marker's tap area 33px wide at 320px -- max() keeps it at least 40px. */
+  .hifz-word[data-ayah-marker].mushaf-step-hit { outline: 3px solid #B8862F; outline-offset: 2px; border-radius: 50%; }
   .hifz-word[data-ayah-marker] { cursor: pointer; --ayah-marker-pad: max(0.6em, 14px); padding: var(--ayah-marker-pad); margin: calc(-1 * var(--ayah-marker-pad)); }
   /* Issue #325 point 4 -- a thin ring on the marker for the Approach last
      chosen on either card. outline (not box-shadow) with a negative
@@ -21414,7 +21417,7 @@
         if (layersSlot) {
           // PCF MSA J75 (the Owner: "For English, write only Eng"): on a phone the English switch reads "Eng" (paintShortReadLabels).
           // PCF MSA J110 A (the Owner ticked A, 2 Nov 2026): "Under a button where no space (Mob). or in open bar in PC and
-          // tab where space is available (but not to make another bar)." Below 600px the three sit behind one "Show ▾"
+          // tab where space is available (but not to make another bar)." Below 900px (J114; it was 600px) the three sit behind one "Show ▾"
           // button in the same slot; from 600px the wrapper is display: contents and they stand open on the bar as before.
           const onCount = ["en", "bn", "wbw"].filter((k) => readMeaningLayers[k]).length;
           layersSlot.innerHTML = `<button type="button" class="ml-menu-btn" data-ml-menu aria-haspopup="true" aria-expanded="false" title="${escapeHtml(t("Show: English, Bangla, Word by Word"))}">${escapeHtml(t("Show"))}<span class="ml-count">${num(onCount)}</span><span aria-hidden="true">▾</span></button><div class="ml-items" data-ml-items>${layer("en", shortReadLabels() ? t("Eng") : t("English"))}${layer("bn", t("Bangla"))}${layer("wbw", t("WbW"))}</div>`;
@@ -26232,8 +26235,10 @@
       // directly: Single Ayah (still a duplicate of the bar's own outer
       // pair) AND a flow view (Range/Whole Surah/Mushaf render every āyah
       // at once, so there is no single "current āyah" to step between).
-      prevAyahBtn.hidden = duplicatesUnitNav || usesFlow;
-      nextAyahBtn.hidden = duplicatesUnitNav || usesFlow;
+      // PCF MSA J114: in a flow (Reading View, Mushaf, whole surah / range) they move along the page instead -- shown always.
+      prevAyahBtn.hidden = usesFlow ? false : duplicatesUnitNav;
+      nextAyahBtn.hidden = usesFlow ? false : duplicatesUnitNav;
+      if (usesFlow) { prevAyahBtn.disabled = false; nextAyahBtn.disabled = false; }
       // Mushaf fix round, the owner's own follow-on ("we won't need Ayah
       // selector in the page unit selection"): the picker is offered exactly
       // where it still does something. See unitRendersWhole().
@@ -27216,6 +27221,72 @@
       setAyahNum(target, split && target === 7 ? (dir < 0 ? "b" : "a") : null);
       return true;
     }
+    /* PCF MSA J114 (the Owner, 6 Nov 2026: "place nav buttons for next / prev Ayah in all 3 views"): ◂ ▸ also stand on the
+       bar in the Reading View, the Mushaf and a whole-surah / range flow. There every āyah is already drawn, so they MOVE
+       ALONG the page (the next / previous āyah scrolls to the top; in the Mushaf, to its end marker) and, in the Reading
+       View, set the āyah ▶ will recite. Taps made before a smooth scroll settles continue from the last stop. */
+    let flowStepBase = null, flowStepAt = 0;
+    const flowStepBaseFor = (now, pick) => (flowStepBase && now - flowStepAt < 1200 && pageViewContainer.contains(flowStepBase) ? flowStepBase : pick());
+    async function stepMeaningAyah(dir) {
+      const rowsNow = () => [...pageViewContainer.querySelectorAll(".meaning-ayah")];
+      // "The āyah you are in" = the last row that has started at or above a line just under the top edge (a stepped-to row
+      // rests ~90px down, below its scroll margin, so the row above it still overlaps the top: meaningTopKey() would say that one).
+      const topRow = () => { const edge = (meaningScroller()?.getBoundingClientRect().top ?? 0) + 120; const rs = rowsNow(); return [...rs].reverse().find((r) => r.getBoundingClientRect().top <= edge) ?? rs[0]; };
+      let rows = rowsNow();
+      let base = flowStepBaseFor(Date.now(), topRow);
+      let j = rows.indexOf(base) + dir;
+      if (j < 0 || j >= rows.length) {
+        await meaningAddPage(dir);
+        rows = rowsNow();
+        j = rows.indexOf(base) + dir;
+        if (j < 0 || j >= rows.length) return false;
+      }
+      const row = rows[j];
+      row.scrollIntoView({ block: "start", behavior: "smooth" });
+      flowStepBase = row; flowStepAt = Date.now();
+      const [s, a] = String(row.dataset.meaningKey).split(":").map(Number);
+      if (s === currentSurahNum && a) { setAyahNum(a); noteLastPlace("read", a); }
+      return true;
+    }
+    async function stepMushafAyah(dir) {
+      const markers = () => [...pageViewContainer.querySelectorAll("[data-ayah-marker]")];
+      // The marker nearest the middle of what is on screen: a stepped-to marker is centred, so it is always its own base next time.
+      const firstSeen = () => {
+        const root = flowScrollRoot(); const v = (root ?? pageViewContainer).getBoundingClientRect();
+        const cx = (v.left + v.right) / 2, cy = (v.top + v.bottom) / 2;
+        let best = null, bd = Infinity;
+        for (const m of markers()) { const r = m.getBoundingClientRect(); const d = Math.hypot((r.left + r.right) / 2 - cx, (r.top + r.bottom) / 2 - cy); if (d < bd) { bd = d; best = m; } }
+        return best;
+      };
+      const list = markers();
+      const base = flowStepBaseFor(Date.now(), firstSeen);
+      const j = list.indexOf(base) + dir;
+      if (j < 0 || j >= list.length) {
+        const pageBtn = document.getElementById(dir > 0 ? "mushafPageNextBtn" : "mushafPagePrevBtn");
+        if (pageBtn && !pageBtn.hidden && !pageBtn.disabled) { pageBtn.click(); flowStepBase = null; return true; }
+        return false;
+      }
+      const m = list[j];
+      m.scrollIntoView({ block: "center", inline: "center", behavior: "smooth" });
+      m.classList.add("mushaf-step-hit");
+      setTimeout(() => m.classList.remove("mushaf-step-hit"), 1400);
+      flowStepBase = m; flowStepAt = Date.now();
+      const [s, a] = String(m.dataset.ayahMarker).split(":").map(Number);
+      if (s === currentSurahNum && a) setAyahNum(a);
+      return true;
+    }
+    // Registered BEFORE the single-āyah listeners below and stopping them: in a flow they must not also re-render the unit.
+    // (The original two lines stay byte-for-byte as they were: apps/qr/edits.json anchors on them.)
+    function stepAyahInFlow(dir, ev) {
+      const view = readViewNow();
+      if (view === "meaning") stepMeaningAyah(dir);
+      else if (view === "mushaf") stepMushafAyah(dir);
+      else if (flowStripPages() >= 2) stepFlowAyah(dir);
+      else return;
+      ev.stopImmediatePropagation();
+    }
+    prevAyahBtn.addEventListener("click", (ev) => stepAyahInFlow(-1, ev));
+    nextAyahBtn.addEventListener("click", (ev) => stepAyahInFlow(1, ev));
     prevAyahBtn.addEventListener("click", () => { if (currentAyahNum > 1 || currentHalf() === "b") { stopDrill(); stepAyahBy(-1); renderStudyScreen(); renderWheel(); } });
     nextAyahBtn.addEventListener("click", () => { if (currentAyahNum < currentSurahData.ayahCount || currentHalf() === "a") { stopDrill(); stepAyahBy(1); renderStudyScreen(); renderWheel(); } });
     // Issue #325 point 2 -- tapping the top-bar reference opens the "This
