@@ -1077,3 +1077,4 @@ total). Allocated by the MMSA Architect.
 13.34: K3b Study Next, J112 R1, J05 question card, the student wheel's head row. Allocated by the MMSA Architect.
 13.35: J112 R2a: change Siyagah folders from the Map. Allocated by the MMSA Architect.
 13.36: J112 R2b: change Siyagah notes from the Map. Allocated by the MMSA Architect.
+13.37: Page picker: only the chosen sūrah's pages. Allocated by the MMSA Architect.

@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "13.36",
+    "version": "13.37",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -6377,8 +6377,20 @@
     {
       "version": "13.36",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "J112 R2b: the Map's Siyagah bar sends NOTE changes (add, edit, move, 👁, delete) to Siyagah as requests, per its R2 contract.",
+      "integration": {
+        "authorizedOn": "2026-11-06",
+        "integratedOn": "2026-11-06",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.37",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "QR Lead #1485: with Page as the unit, the page picker lists only the chosen sūrah's pages (the Owner's ask, 6 Nov).",
       "integration": {
         "authorizedOn": "2026-11-06",
         "integratedOn": "2026-11-06",
@@ -6387,8 +6399,9 @@
       }
     }
   ],
-  "nextUnallocated": "13.37",
+  "nextUnallocated": "13.38",
   "nextUnallocatedNote": [
+    "v13.37 was allocated to Page picker: only the chosen sūrah's pages, 2026-11-06.",
     "v13.36 was allocated to J112 R2b: change Siyagah notes from the Map, 2026-11-06.",
     "v13.35 was allocated to J112 R2a: change Siyagah folders from the Map, 2026-11-05.",
     "v13.34 was allocated to K3b Study Next, J112 R1, J05 question card, the student wheel's head row, 2026-11-05.",
