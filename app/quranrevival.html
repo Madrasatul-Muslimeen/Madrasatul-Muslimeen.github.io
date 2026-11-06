@@ -27241,7 +27241,6 @@
       openAsmaXAttachPopover({ prefillRef: asmaRefTextFor(currentSurahNum, currentAyahNum) });
     });
 
-    // Issue #606 -- with the Al-Fātiḥah count on, internal 1:7 is two stops: 6 then 7.
     /** PCF MSA J114: the Mushaf's ⋮ on the bar (the one the Reading View and the ONE Ayah View already have beside their
         āyah), built for currentAyahNum. Called when the Mushaf renders and after ◂ ▸ move the stop. */
     function refreshMushafBarMenu() {
@@ -27251,6 +27250,7 @@
       readQuickMenuSlot.innerHTML = renderQuickMenu(key, { hasNote: ayahHasAnyNote(key), isBookmarked: marked, sheet: true, showWriting: true, showAsma: canAdminCatalogueClientSide() });
       attachAyahQuickMenus(readQuickMenuSlot);
     }
+    // Issue #606 -- with the Al-Fātiḥah count on, internal 1:7 is two stops: 6 then 7.
     function stepAyahBy(dir) {
       const split = fatihaCountApplies(currentSurahNum, fatihaOn());
       if (split && dir > 0 && currentAyahNum === 7 && currentHalf() === "a") { setAyahNum(7, "b"); return true; }
