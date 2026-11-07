@@ -586,3 +586,8 @@ html[data-card-look="night"][data-hadith-colours="a2"] .hwc-chip.hwc-q { border-
 :where([data-card-look="night"]) :where(.dua-card, .hadith-card, .dua-pop, .dua-pull, [data-hadith-menu]) :where(button, a[href], summary, input, select, textarea, [tabindex]:not([tabindex="-1"])):focus-visible { outline: 2px solid #e2662b; outline-offset: 2px; }
 :where([data-card-look="night"]) :where(.dua-card, .hadith-card, .dua-pop, .dua-pull, [data-hadith-menu]) :where(.hkm-btn[aria-pressed="true"], .hwc-tab[aria-pressed="true"], .dua-wc-level[aria-pressed="true"], .dua-switch[aria-pressed="true"], .dua-status[aria-pressed="true"], .dua-word[aria-pressed="true"], .dua-tile-menu[aria-expanded="true"], .dua-tile-play):focus-visible { outline: 2px solid #1c2a46; outline-offset: -4px; }
 [data-card-look="night"] .dua-pull-item:is(:hover, :focus-visible) { background: #343230; }
+
+/* MSA J117 follow-up (the Architect, 8 Nov 2026): on the "Bright navy (A2)" card colours the orange keyboard ring measured
+   2.34:1 at the top of the card's gradient (#355084). There the ring takes the set's own cream text colour (6.8:1 or more on
+   every A2 surface). Same scope and weight as the J117 ring, so a control's own ring and the navy inner ring still win. */
+:where(html[data-card-look="night"][data-hadith-colours="a2"]) :where(.dua-card, .hadith-card, .dua-pop, .dua-pull, [data-hadith-menu]) :where(button, a[href], summary, input, select, textarea, [tabindex]:not([tabindex="-1"])):focus-visible { outline-color: #F6EEDD; }
