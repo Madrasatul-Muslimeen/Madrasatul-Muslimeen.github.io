@@ -542,6 +542,18 @@ body.hadith-pane-dragging { user-select: none; }
 .hwc-sheet .hkm-btn[aria-pressed="true"] { background: #e3c27a; color: #1c2a46; border-color: #e3c27a; }
 .hwc-sheet .hkm-note { color: #a9b3c8; }
 
+/* Card colours (the Owner's choice, 8 Nov 2026): three sets on the Night card look; "original" has no rule and stays as it is.
+   They set the card look's own variables (card-look.css), so every Hadith card, row and button follows. The two attributes
+   outrank the Night block's one. */
+html[data-card-look="night"][data-hadith-colours="a"] { --card-bg: radial-gradient(ellipse at top, #2a3a57 0%, #1B2A41 55%, #121b2c 100%); --card-bg-inset: #13192a; --card-text: #F2E8D5; --card-text-muted: #B9C2D4; --card-line: rgba(201, 162, 75, 0.45); --card-heading: #C9A24B; --card-link: #C9A24B; --card-button-bg: #C9A24B; --card-button-text: #221904; --card-button-border: #C9A24B; --card-button-pressed-bg: #C9A24B; --card-button-pressed-text: #221904; }
+html[data-card-look="night"][data-hadith-colours="a2"] { --card-bg: radial-gradient(ellipse at top, #355084 0%, #27406a 55%, #1b2d4d 100%); --card-bg-inset: #1f3558; --card-text: #F6EEDD; --card-text-muted: #C7D0E2; --card-line: rgba(224, 188, 98, 0.5); --card-heading: #E0BC62; --card-link: #E0BC62; --card-button-bg: #E0BC62; --card-button-text: #241a05; --card-button-border: #E0BC62; --card-button-pressed-bg: #E0BC62; --card-button-pressed-text: #241a05; }
+html[data-card-look="night"][data-hadith-colours="a6"] { --card-bg: radial-gradient(ellipse at top, #2a3a57 0%, #1B2A41 55%, #121b2c 100%); --card-bg-inset: #13192a; --card-text: #F2E8D5; --card-text-muted: #B9C2D4; --card-line: rgba(217, 154, 91, 0.6); --card-heading: #D99A5B; --card-link: #D99A5B; --card-button-bg: #D99A5B; --card-button-text: #241505; --card-button-border: #D99A5B; --card-button-pressed-bg: #D99A5B; --card-button-pressed-text: #241505; }
+html[data-card-look="night"][data-hadith-colours="a6"] .hadith-card { border-width: 2px; }
+html[data-card-look="night"][data-hadith-colours="a2"] .hwc-chip.hwc-q { border-color: #8EE0C4; color: #8EE0C4; }
+.hadith-colours-select { max-width: 100%; min-width: 0; }
+
+/* The translation-terms fold's "As sourced" switch (the Owner's rule of 8 Nov 2026). */
+.hadith-terms-switch { min-height: 40px; display: inline-flex; align-items: center; gap: 0.5rem; padding: 0 0.8rem; margin: 0.4rem 0; border: 1px solid var(--card-line, var(--hadith-rule)); border-radius: 0.4rem; background: transparent; color: var(--card-text, var(--hadith-ink)); font: inherit; font-weight: 600; cursor: pointer; max-width: 100%; }
 /* D24: the Dua Word Card's levels, word steps and body (PCF MSA J104). */
 .dua-wc { display: grid; gap: 0.45rem; margin-top: 0.3rem; }
 .dua-wc-nav, .dua-wc-levels, .dua-wc-kin { display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center; }
@@ -574,3 +586,8 @@ body.hadith-pane-dragging { user-select: none; }
 :where([data-card-look="night"]) :where(.dua-card, .hadith-card, .dua-pop, .dua-pull, [data-hadith-menu]) :where(button, a[href], summary, input, select, textarea, [tabindex]:not([tabindex="-1"])):focus-visible { outline: 2px solid #e2662b; outline-offset: 2px; }
 :where([data-card-look="night"]) :where(.dua-card, .hadith-card, .dua-pop, .dua-pull, [data-hadith-menu]) :where(.hkm-btn[aria-pressed="true"], .hwc-tab[aria-pressed="true"], .dua-wc-level[aria-pressed="true"], .dua-switch[aria-pressed="true"], .dua-status[aria-pressed="true"], .dua-word[aria-pressed="true"], .dua-tile-menu[aria-expanded="true"], .dua-tile-play):focus-visible { outline: 2px solid #1c2a46; outline-offset: -4px; }
 [data-card-look="night"] .dua-pull-item:is(:hover, :focus-visible) { background: #343230; }
+
+/* MSA J117 follow-up (the Architect, 8 Nov 2026): on the "Bright navy (A2)" card colours the orange keyboard ring measured
+   2.34:1 at the top of the card's gradient (#355084). There the ring takes the set's own cream text colour (6.8:1 or more on
+   every A2 surface). Same scope and weight as the J117 ring, so a control's own ring and the navy inner ring still win. */
+:where(html[data-card-look="night"][data-hadith-colours="a2"]) :where(.dua-card, .hadith-card, .dua-pop, .dua-pull, [data-hadith-menu]) :where(button, a[href], summary, input, select, textarea, [tabindex]:not([tabindex="-1"])):focus-visible { outline-color: #F6EEDD; }

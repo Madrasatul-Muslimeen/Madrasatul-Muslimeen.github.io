@@ -59,7 +59,11 @@ const HELP = () => {
   window.__items = (panel, toggle) => [...panel.querySelectorAll("button, a[href], input, select, textarea, summary, [tabindex]")].filter((e) => !e.disabled && e !== toggle && (e.tabIndex >= 0 || e.matches("button, a[href], input, select, textarea, summary")) && vis(e)).slice(0, 10);
   const lum = (c) => { const m = (c.match(/[\d.]+/g) || [0, 0, 0]).slice(0, 3).map((v) => { v = v / 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }); return 0.2126 * m[0] + 0.7152 * m[1] + 0.0722 * m[2]; };
   const ratio = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
-  window.__back = (e) => { for (let el = e; el; el = el.parentElement) { const c = getComputedStyle(el).backgroundColor; if (!/rgba\(0, 0, 0, 0\)|transparent/.test(c)) return c; } return "rgb(255, 255, 255)"; };
+  // Updated in place, Architect v13.51 (MSA J117 follow-up): a card whose plate is a gradient (background-image, with a transparent
+  // background-color) was read as the page-default WHITE, so a light ring on a dark plate failed and a dark one passed by luck. A
+  // gradient is now measured at its LIGHTEST stop (the worst case for a light ring), as night-hadith-dua and the colour suites do.
+  const gradLight = (g) => { const cols = (g.match(/rgba?\([^)]*\)/g) || []).map((c) => (c.match(/[\d.]+/g) || []).map(Number)).filter((c) => c.length < 4 || c[3] > 0.5); if (!cols.length) return null; cols.sort((a, b) => lum(`rgb(${b.slice(0, 3)})`) - lum(`rgb(${a.slice(0, 3)})`)); return `rgb(${cols[0].slice(0, 3).join(", ")})`; };
+  window.__back = (e) => { for (let el = e; el; el = el.parentElement) { const cs = getComputedStyle(el); const c = cs.backgroundColor; if (!/rgba\(0, 0, 0, 0\)|transparent/.test(c)) return c; if (cs.backgroundImage && cs.backgroundImage !== "none") { const g = gradLight(cs.backgroundImage); if (g) return g; } } return "rgb(255, 255, 255)"; };
   window.__ring = (e) => {
     const cs = getComputedStyle(e), bg = window.__back(e);
     let col = null;

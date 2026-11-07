@@ -7,7 +7,39 @@ v10.28). Read `CLAUDE.md` first. The prompt that starts the next session is
 
 This session was summarised once (its context compacted), which is why it hands over here.
 
-## LATEST UPDATE — 8 Nov 2026, ~2:30 am Sydney, session `session_01PL2xbLvZtYLXyTNc2UAmjv` (v13.43–v13.46 RELEASED; HANDOVER under use1102, the session was summarised) — READ THIS FIRST
+## LATEST UPDATE — 8 Nov 2026, ~10:20 am Sydney, session `session_01PL2xbMRWvwANgScNoqZD4Q` (v13.47–v13.51 RELEASED; HANDOVER under use1102 at ~81% context) — READ THIS FIRST
+
+This session took over at 2:27 am on 8 Nov. **`main` is v13.51 (`596528e3`, merged 9:48 am 8 Nov); QR reads 13.51 (PCA, 9:51 am).** The PCA is now `session_01PL2xbJ6VcWmriMfUDFWBPQ`; the QR Lead is now `session_01PL2xbLRCog3DDtt8TWUcCe`; the Hadith Lead is `session_01PL2xbKxFpDksN5nWdoR3TF`; the Dua Lead (03C) `session_01PL2xbLR47r6za77W9ZmqTx`.
+
+**Released this session:**
+- **v13.47** (#1511): Dua 📝 opens the shared new-Note window (Dua Lead #1505); MSA J112 D2 Siyagah refusal cases; MSA J118 GRAMMAR-NOTICE.txt.
+- **v13.48** (#1512): MSA · Dua J104 D24 Dua Word Card levels (#1503) + the Owner's 7 Nov word pop-up, Menu order, night plate (#1509), combined by the Architect.
+- **v13.49** (#1513): MSA J117 night-look keyboard ring on the Hadith/Dua cards, pop-ups and menus (orange `#e2662b`, navy inside light-filled pressed controls; scoped, in `:where()`); Dua Share text box a named Tab stop. hadith-dua-keyboard 1086/0 (main was 988/98).
+- **v13.50** (#1517): MSA · QR J116 four ruling questions on Approach 24 "Fiqh to Ruling" (QR Lead #1515).
+- **v13.51** (#1518): Hadith card colours (Original/A/A2/A6) + translation-terms fold with "As sourced" (Hadith Lead #1508; Owner's rule now p/mmsa rule **terms1108**; approval "Go as your proposal" as recorded in the Hadith Lead handover) + rule doc; J117 follow-up: A2 ring cream; **hadith-dua-keyboard's background probe now measures a gradient plate at its lightest stop** (it read gradient cards as white).
+
+**In flight (both sent back, waiting on the Lead):**
+- **#1516 (MSA J114, one ⋮ menu, QR Lead):** harness now defaults to the real page (`legacyTools: true` opt-in) — accepted. Still to fix: audit-part20-notes main 130/2 vs branch 126/6 (4 stale "⋯ IS on the bar" checks); mushaf-tools-card (main 5 checks then crash, branch 0) and read-bar-tools (main 6, branch 0) crash earlier; a main-vs-branch table by failure name for all 22 "fail both ways" suites. Then behaviour alone, release.
+- **#1519 (Hadith Text-pane fold, Hadith Lead; Owner's YES 8 Nov per the PCA):** standardTranslationFolds is shared with dua-browser.js:359 (no Arabic) → Dua English would turn God→Allah silently, no switch. Fold only when `arabic` is given + a Dua byte-identical check with a mutation; nit `\u0FFF` in PEACE.
+
+**Recorded debt (pre-existing on main, not caused by any open PR):** bookmark-assign-unit and popup-home-size crash (TimeoutError) at the same point on main; audit-part1-fixes 206/4 on main; mushaf-tools-card and read-bar-tools also crash on main (after 5 and 6 checks). Worth a round once #1516 lands.
+
+**Waiting on the Owner:** MSA J115 n115e (the Tābiʿūn Approach's id/name he added; nobody can read the tenant catalogue); MSA J121 n121d (YouTube reciter demo https://claude.ai/artifact/J8RhE8ZwRe7rQXdfUqKcYk; no audio downloaded from YouTube); MSA J119 n119e (Bangla words demo v03 https://claude.ai/artifact/XHkLAV9ZUXkr85X5F4u86m); MSA J120 (offline plan); MSA J05 j05n6; with the Hadith Lead: the vocative ("O Rasulullah" or the full formula).
+
+**Owner messages this session (carry1):** ~7:30 am 8 Nov (MSA chat, with a marked-up J119 picture): J121 YouTube link + "No issue with the using right. I can't do anything, you tell me what is possible"; J119 "Write brief word on the chip … Why do you need to show also in Bangla line? It should be in Bangla by default. Enable on/off switch for Bangla Word List."; J115 "We include narrator also within the bracket of Era. Alright, keep 100, 180 and 220 then. Build the rest as you presented."; J116 "The questions should be in 'Fiqh to Ruling' for now." All recorded in the jobs (v4) and passed to the QR Lead.
+
+**Sandbox lessons this session:**
+- Compare a Lead's "fails both ways" suites against MAIN, by failure name: a suite red on both sides can still gain failures or crash earlier (#1516).
+- A shared helper (standardTranslationFolds) can carry a module's change into another module: grep every caller before release (#1519).
+- A probe that reads only background-color treats gradient cards as white; measure a gradient at its lightest stop (now done in hadith-dua-keyboard).
+- A Lead branch cut before the latest release does not contain main: `git merge-base --is-ancestor origin/main HEAD` must print, and the release script refuses otherwise.
+- Test servers die on container restart: `curl localhost:808x` before trusting a run.
+
+**Opening message for the next session** (title "📌 (03) MSA Master Architect - 08.11.26 - h.mm AM"):
+
+> Bismillah. You are the MSA Master Architect, taking over from session_01PL2xbMRWvwANgScNoqZD4Q (8 Nov ~10:20 am Sydney, use1102). Read CLAUDE.md, then ARCHITECT.md, then docs/reports/2026-10-12-MMSA-SESSION-HANDOVER.md from its LATEST UPDATE block of 8 Nov 10:20 am, and the PMS General rules (use1102, ses1104, demo1104, pms1104, card1104) and MSA rules ref1107 and terms1108. Owner, 28 Oct: "Allowed QuranRevival, rebuild QR now. Don't wait for permission anymore. Always allowed." First: `git fetch origin main` then `git fetch --unshallow`; test GitHub write; link playwright in every worktree. Read the PMS (https://claude.ai/artifact/PhW1KKX28qrqj9dE7Ha8dZ): meta/global, p/mmsa, MSA J114, J115, J119, J121, J120; answer new Owner comments; set p/mmsa.sessionUrl (if_version). Tell the PCA (now session_01PL2xbJ6VcWmriMfUDFWBPQ) "PCA ▸ taken over". State: main v13.51 (596528e3); QR 13.51. Jobs in order: (1) QR Lead #1516 (MSA J114 one ⋮ menu; QR Lead now session_01PL2xbLRCog3DDtt8TWUcCe): sent back — 4 stale audit-part20 checks ("⋯ IS on the bar") to update in place; mushaf-tools-card and read-bar-tools crash EARLIER than on main (5→0, 6→0); and a main-vs-branch table by failure NAME for all 22 "fail both ways" suites; then behaviour alone, release. (2) Hadith Lead #1519 (claude/hadith-terms-textpane; Hadith Lead session_01PL2xbKxFpDksN5nWdoR3TF): sent back — standardTranslationFolds is also called by dua-browser.js:359 without Arabic, so Dua English would turn God→Allah with no switch; fold only when arabic is given + a Dua byte-identical check with a mutation; nit: a literal \u0FFF in PEACE. Then release. (3) Owner ticks: MSA J115 n115e (Tābiʿūn Approach id/name), J121 n121d, J119 n119e, J120, J05 j05n6. Rules: use1102 (hand over at about 15% context, no broadcasts); review by measurement, comparing every suite against MAIN by failure name; behaviour.mjs alone vs main (974/1, 14a); check a Lead branch contains main before allocating; main only through a PR merged with the full head SHA; write only to p/mmsa; real clock times; never pkill -f; no self wake-ups; "Rasulullah, Sallallahu A'laihi Wa Sallam"; "Siyagah" in full.
+
+## LATEST UPDATE — 8 Nov 2026, ~2:30 am Sydney, session `session_01PL2xbLvZtYLXyTNc2UAmjv` (v13.43–v13.46 RELEASED; HANDOVER under use1102, the session was summarised) (superseded 8 Nov 10:20 am)
 
 This session took over at 4:17 pm on 7 Nov. **`main` is v13.46 (`8d56a284`, merged 7:07 pm 7 Nov; later #1507 docs merged, main `38e57573`); QR reads 13.46 (PCA, 7:08 pm).**
 
@@ -3100,3 +3132,5 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v13.47** (2026-11-08): the dua 📝 new-Note entry, Siyagah refusal cases and the dua grammar credit.
 - **v13.48** (2026-11-08): the Dua Word Card levels, the dua word pop-up and the Menu order.
 - **v13.49** (2026-11-08): the keyboard ring in the night look (MSA J117).
+- **v13.50** (2026-11-08): the four ruling questions on Approach 24 (QR J116).
+- **v13.51** (2026-11-08): Hadith Study card colours and the translation-terms fold.

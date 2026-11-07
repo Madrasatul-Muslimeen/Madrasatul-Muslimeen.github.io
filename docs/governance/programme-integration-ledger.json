@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "13.49",
+    "version": "13.51",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -6533,8 +6533,32 @@
     {
       "version": "13.49",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "MSA J117: a night-look keyboard ring on the Hadith and Dua cards, pop-ups and menus; the Dua Share text box a named Tab stop.",
+      "integration": {
+        "authorizedOn": "2026-11-08",
+        "integratedOn": "2026-11-08",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.50",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "QR J116 #1515: the four ruling questions as the Note question card on Approach 24 Fiqh to Ruling.",
+      "integration": {
+        "authorizedOn": "2026-11-08",
+        "integratedOn": "2026-11-08",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.51",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Hadith Lead #1508 (card colours, translation-terms fold with As sourced switch) + the rule doc + MSA J117 A2 ring follow-up.",
       "integration": {
         "authorizedOn": "2026-11-08",
         "integratedOn": "2026-11-08",
@@ -6543,8 +6567,10 @@
       }
     }
   ],
-  "nextUnallocated": "13.50",
+  "nextUnallocated": "13.52",
   "nextUnallocatedNote": [
+    "v13.51 was allocated to Hadith Study card colours and the translation-terms fold, 2026-11-08.",
+    "v13.50 was allocated to the four ruling questions on Approach 24 (QR J116), 2026-11-08.",
     "v13.49 was allocated to the keyboard ring in the night look (MSA J117), 2026-11-08.",
     "v13.48 was allocated to the Dua Word Card levels, the dua word pop-up and the Menu order, 2026-11-08.",
     "v13.47 was allocated to the dua 📝 new-Note entry, Siyagah refusal cases and the dua grammar credit, 2026-11-08.",
