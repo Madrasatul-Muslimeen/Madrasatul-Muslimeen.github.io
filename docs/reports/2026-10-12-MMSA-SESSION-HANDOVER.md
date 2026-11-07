@@ -3100,3 +3100,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v13.47** (2026-11-08): the dua 📝 new-Note entry, Siyagah refusal cases and the dua grammar credit.
 - **v13.48** (2026-11-08): the Dua Word Card levels, the dua word pop-up and the Menu order.
 - **v13.49** (2026-11-08): the keyboard ring in the night look (MSA J117).
+- **v13.50** (2026-11-08): the four ruling questions on Approach 24 (QR J116).

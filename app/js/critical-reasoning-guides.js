@@ -35,6 +35,14 @@ export const GUIDE_TEXT = Object.freeze({
 
 /** The question card's questions per Approach number. The Owner edits these Approach by Approach. */
 export const QUESTIONS = Object.freeze({
+  // PCF MSA J116 (the Owner, 8 Nov 2026, answer A and "for now" on Approach 24): the four ruling questions on an āyah. The reader decides each one;
+  // scholars differ, so nothing here answers it. Approach 24 "Fiqh to Ruling" only: 25 and 26 stay without a card until the Owner says.
+  24: [
+    { id: "q24-who", en: `Who is this for: Rasulullah ${SAW} only, one particular situation, or him and everyone, so it applies to me too?`, bn: "এটি কার জন্য: শুধু রাসূলুল্লাহ সাল্লাল্লাহু আলাইহি ওয়া সাল্লামের জন্য, নির্দিষ্ট একটি পরিস্থিতির জন্য, নাকি তাঁর ও সবার জন্য, ফলে আমার জন্যও প্রযোজ্য?" },
+    { id: "q24-time", en: "Does the command belong to that time, or does it still apply?", bn: "নির্দেশটি কি সেই সময়ের জন্য, নাকি এখনও প্রযোজ্য?" },
+    { id: "q24-abrogated", en: "Has it been abrogated?", bn: "এটি কি রহিত (মানসূখ) হয়েছে?" },
+    { id: "q24-replaced", en: "If it was abrogated, what replaced it, or was there no replacement?", bn: "রহিত হয়ে থাকলে তার জায়গায় কী এসেছে, নাকি কোনো বিকল্প আসেনি?" },
+  ],
   14: [
     { id: "q14-type", en: "Type of āyah?", bn: "আয়াতের ধরন কী?" },
     { id: "q14-subject", en: "Subject?", bn: "বিষয় কী?" },
