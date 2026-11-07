@@ -13,6 +13,8 @@ const check = (name, ok, detail = "") => {
   if (typeof ok?.then === "function") throw new Error(`check "${name}" was given a promise`);
   if (ok) { pass++; console.log(`  PASS  ${name}`); } else { fail++; console.log(`  FAIL  ${name} ${detail}`); }
 };
+const GOD = " O God, forgive us.";
+const SRC_6311 = JSON.parse(fs.readFileSync("tools/hadith-data-pull/output/translations/bukhari/en/12.json", "utf8"))["6311"];
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
 const MUT = {
   nofold: ["js/hadith-browser.js", "if (std) card.appendChild(standardTranslationFolds(conc.versionUri, async () => std));", ""],
@@ -20,6 +22,8 @@ const MUT = {
   // The Owner's translation-terms rule (8 Nov 2026), extended to the Text pane's English fold.
   nofoldterms: ["js/hadith-shared-ui.js", "tf.set(text, body);", "text.textContent = body;"],
   noswitchterms: ["js/hadith-shared-ui.js", "{ const sw = arabic ? tf.switchEl() : null; if (sw) details.appendChild(sw); }", ""],
+  // Review of #1519: the Dua cards pass no Arabic, so the Dua Lead's English must stay as sourced.
+  noguard: ["js/hadith-shared-ui.js", "const tf = arabic ? termsFolder({ hadeeth_ar: arabic }, lang) : null;", "const tf = termsFolder({ hadeeth_ar: arabic }, lang);"],
   noarabic: ["js/hadith-browser.js", "async () => std, h.text));", "async () => std));"],
   bypos: ["js/hadith-browser.js", "const std = conc?.stdByN?.get(h.n);", "const std = conc?.stdByN?.get(h.n) && h.n;"],
 };
@@ -38,6 +42,8 @@ for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 1280]]) {
     const [file, a, b] = MUT[MUTATE];
     await ctx.route(`**/app/${file}*`, async (r) => { const src = fs.readFileSync(`app/${file}`, "utf8"); if (!src.includes(a)) throw new Error(`mutation anchor missing: ${MUTATE}`); await r.fulfill({ status: 200, contentType: "text/javascript; charset=utf-8", body: src.split(a).join(b) }); });
   }
+  // Review of #1519: one "God" sentence is added to Dua 1's source English, so a fold that ran without the Arabic would show on the page.
+  await ctx.route("**/output/translations/bukhari/en/12.json*", async (r) => { const j = JSON.parse(fs.readFileSync("tools/hadith-data-pull/output/translations/bukhari/en/12.json", "utf8")); j["6311"] = j["6311"] + GOD; await r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(j) }); });
   const { page: P, errors } = await openPage(ctx, "/app/hadith-collections.html");
   const fetched = [];
   P.on("request", (r) => { if (r.url().includes("/output/translations/")) fetched.push(r.url().replace(/^.*\/translations\//, "")); });
@@ -50,6 +56,12 @@ for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 1280]]) {
   await openFold(P, '[data-dua-card="1"] [data-standard-translation="en"]');
   const en = await foldText(P, '[data-dua-card="1"] [data-standard-translation="en"]');
   check(`${tag} English: Bukhari 6311, «Narrated Al-Bara bin \`Azib … When you want to go to bed»`, en.text?.startsWith("Narrated Al-Bara bin `Azib") && en.text.includes("When you want to go to bed") && en.lang === "en", String(en.text).slice(0, 80));
+  {
+    const raw = SRC_6311 + GOD;
+    const sw = await P.$('[data-dua-card="1"] [data-standard-translation="en"] [data-hadith-terms-switch]');
+    check(`${tag} terms: the Dua card's English is byte-for-byte the source (not folded: no Arabic is given); a «God» sentence stays «God»`, !!raw && en.text?.trim() === raw.trim() && /O God, forgive us\./.test(en.text) && !/O Allah, forgive us\./.test(en.text), String(en.text).slice(0, 100));
+    check(`${tag} terms: ...and no "As sourced" switch sits in the Dua card's fold`, sw === null);
+  }
   check(`${tag} ...credited to Muhsin Khan and hadith-api, linked`, en.credit.includes("Muhsin Khan") && en.credit.includes("hadith-api") && en.href.includes("github.com/fawazahmed0/hadith-api"), en.credit);
   check(`${tag} ...and only one chunk was fetched for it (summary + bukhari/en/12)`, fetched.filter((f) => f !== "summary.json").join() === "bukhari/en/12.json", fetched.join(","));
   await openFold(P, '[data-dua-card="1"] [data-standard-translation="bn"]');

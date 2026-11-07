@@ -119,12 +119,13 @@ export function standardTranslationFolds(versionUri, resolveStd, arabic = null) 
         }
         const text = el("p", "hadith-translation-text standard-translation-text");
         // The Owner's rule (8 Nov 2026): Rabb, Allah, Rasulullah Sallallahu A'laihi Wa Sallam, in English, where the narration's own Arabic permits; "As sourced" shows the words as the source wrote them.
-        const tf = termsFolder({ hadeeth_ar: arabic }, lang);
-        tf.set(text, body);
+        // Folded ONLY when the narration's Arabic is given: a caller with none (the Dua cards, a Dua Lead file) keeps the source's words, no switch.
+        const tf = arabic ? termsFolder({ hadeeth_ar: arabic }, lang) : null;
+        if (tf) tf.set(text, body); else text.textContent = body;
         text.lang = lang;
         text.dataset.standardTranslationText = lang;
         details.appendChild(text);
-        { const sw = arabic ? tf.switchEl() : null; if (sw) details.appendChild(sw); }
+        { const sw = tf ? tf.switchEl() : null; if (sw) details.appendChild(sw); }
         const credit = document.createElement("a");
         credit.className = "hadith-view-source standard-translation-credit";
         credit.href = tr.sourceUrl;

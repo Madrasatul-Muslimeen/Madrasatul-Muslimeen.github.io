@@ -16,6 +16,7 @@ const MUT = {
   anyprophet: ["js/hadith-terms.js", "(?<![Aa] )(?<!\\\\bO )", ""],
   namedprophet: ["js/hadith-terms.js", "(?!\\\\s+(?:[A-Z][a-z]+))", ""],
   keeppeace: ["js/hadith-terms.js", "(?=[^)]{0,100}peace)", "(?=[^)]{0,100}NEVERPEACE)"],
+  nosign: ["js/hadith-terms.js", "\\\\s*\\\\(\\\\s*[\\u200e\\u200f\\ufe0f]*\\ufdfa\\\\s*\\\\)|\\\\s*\\ufdfa|", ""],
   noswitch: ["js/hadith-terms-ui.js", "      if (!changed) return null;\n", "      return null;\n"],
   switchnoop: ["js/hadith-terms-ui.js", "for (const [node, sourced, folded] of items) node.textContent = asSourced ? sourced : folded;", ""],
   alwaysfold: ["js/hadith-terms.js", "return { rabb: /رب/.test(a), prophet: /النبي|نبي|رسول الله|رسول/.test(a) };", "return { rabb: true, prophet: true };"],
@@ -51,6 +52,9 @@ check("Lord becomes Rabb where the Arabic has رب", f("my Lord, the Lord of the
 check("Lord is LEFT where the Arabic has no رب (and counted)", f("his Lord", "قال الله").text === "his Lord" && f("his Lord", "قال الله").left.lord === 1);
 check("God becomes Allah", f("O God, forgive").text === "O Allah, forgive");
 check('"no God" and "any other God" stay (an ilah may be God)', f("there is no God but You").text === "there is no God but You" && f("do not call on any other God").text === "do not call on any other God");
+check("the sign in brackets folds: «the Prophet (ﷺ)»", f("the Prophet (\ufdfa) said").text === `${RASULULLAH} said`, f("the Prophet (\ufdfa) said").text);
+check("the sign alone folds: «the Prophet ﷺ»", f("the Prophet \ufdfa said").text === `${RASULULLAH} said`, f("the Prophet \ufdfa said").text);
+check("the sign with a hidden mark (variation selector, direction mark) folds", f("the Prophet (\u200f\ufe0f\ufdfa) said").text === `${RASULULLAH} said`, f("the Prophet (\u200f\ufe0f\ufdfa) said").text);
 check("the Prophet with the peace formula becomes exactly Rasulullah Sallallahu A'laihi Wa Sallam", f("the Prophet (may Allah's peace and blessings be upon him) said").text === `${RASULULLAH} said`, f("the Prophet (may Allah's peace and blessings be upon him) said").text);
 check("the curly-apostrophe and comma forms of the formula too", f("the Prophet (may Allah’s peace and blessings be upon him) said").text === `${RASULULLAH} said` && f("the Prophet, may Allah's peace and blessings be upon him, said").text.startsWith(RASULULLAH));
 check("the Messenger of Allah and Allah's Messenger become Rasulullah Sallallahu A'laihi Wa Sallam", f("the Messenger of Allah said").text === `${RASULULLAH} said` && f("Allah's Messenger said").text === `${RASULULLAH} said`);

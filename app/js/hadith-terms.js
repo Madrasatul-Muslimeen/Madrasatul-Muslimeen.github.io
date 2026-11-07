@@ -16,7 +16,7 @@ import { normaliseArabic } from "./hadith-words.js";
 
 export const RASULULLAH = "Rasulullah Sallallahu A'laihi Wa Sallam";
 
-const PEACE = "(?:\\s*\\((?=[^)]{0,100}peace)[^)]{0,100}\\)|\\s*\\(\\s*\u0FFF?\ufdfa\\s*\\)|\\s*\ufdfa|,\\s*may Allah['’]s peace and blessings? be upon him)?"; // a short parenthetical about peace, or the ﷺ sign (alone or in brackets): the sources spell it many ways (typos, hidden marks)
+const PEACE = "(?:\\s*\\((?=[^)]{0,100}peace)[^)]{0,100}\\)|\\s*\\(\\s*[\u200e\u200f\ufe0f]*\ufdfa\\s*\\)|\\s*\ufdfa|,\\s*may Allah['’]s peace and blessings? be upon him)?"; // a short parenthetical about peace, or the ﷺ sign (alone or in brackets): the sources spell it many ways (typos, hidden marks)
 // "the Prophet", "Prophet", "the Messenger of Allah", "Messenger of Allah", "Allah's Messenger": never "a Prophet", "Prophets",
 // "O Prophet" (a Qur'an address inside a quoted āyah, left as the translation has it), "Prophet Musa" (another prophet by name). Prophet Muhammad is left as written (a name, not the bare title).
 const PROPHET_RE = new RegExp(`(?<![Aa] )(?<!\\bO )\\b(?:[Tt]he )?(?:Prophet|Messenger of Allah|Apostle of Allah|Allah['’]s (?:Messenger|Apostle))(?![a-z])(?!\\s+(?:[A-Z][a-z]+))${PEACE}`, "g");
