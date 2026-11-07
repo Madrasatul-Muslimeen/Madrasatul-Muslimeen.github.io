@@ -28,6 +28,7 @@ import { el, readFailedNote, langNameInProse, loadHadithStudyActions, openitiDis
 import { renderDua } from "./dua-browser.js";
 import { hadithWordsSection } from "./hadith-word-card.js";
 import { hadithMarksRow } from "./hadith-key-marks.js";
+import { HADITH_COLOURS, getHadithColours, setHadithColours } from "./hadith-colours.js";
 import { hadithReader, removeReaderWindows } from "./hadith-reader.js";
 import { subjectAddRow, renderSubjectList } from "./hadith-subjects.js";
 
@@ -289,6 +290,16 @@ function controls(state, render) {
   sel.addEventListener("change", () => { state.contentLang = sel.value; render(); });
   langWrap.appendChild(sel);
   bar.appendChild(langWrap);
+  // Card colours (the Owner's choice, 8 Nov 2026): one of four sets, remembered on this device; changes the cards at once.
+  const colWrap = el("label", "hadith-lang-wrap hadith-colours-wrap");
+  colWrap.appendChild(el("span", "hadith-lang-label", t("Card colours")));
+  const colSel = el("select", "hadith-lang-select hadith-colours-select");
+  colSel.id = "hadithColours";
+  const nowColours = getHadithColours();
+  for (const c of HADITH_COLOURS) { const o = el("option", null, t(c.name)); o.value = c.id; if (c.id === nowColours) o.selected = true; colSel.appendChild(o); }
+  colSel.addEventListener("change", () => { setHadithColours(colSel.value); });
+  colWrap.appendChild(colSel);
+  bar.appendChild(colWrap);
   return bar;
 }
 

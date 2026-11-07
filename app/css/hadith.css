@@ -541,3 +541,13 @@ body.hadith-pane-dragging { user-select: none; }
 .hwc-sheet .hkm-btn { border-color: #3a4767; background: #111a2e; color: #eef1f7; }
 .hwc-sheet .hkm-btn[aria-pressed="true"] { background: #e3c27a; color: #1c2a46; border-color: #e3c27a; }
 .hwc-sheet .hkm-note { color: #a9b3c8; }
+
+/* Card colours (the Owner's choice, 8 Nov 2026): three sets on the Night card look; "original" has no rule and stays as it is.
+   They set the card look's own variables (card-look.css), so every Hadith card, row and button follows. The two attributes
+   outrank the Night block's one. */
+html[data-card-look="night"][data-hadith-colours="a"] { --card-bg: radial-gradient(ellipse at top, #2a3a57 0%, #1B2A41 55%, #121b2c 100%); --card-bg-inset: #13192a; --card-text: #F2E8D5; --card-text-muted: #B9C2D4; --card-line: rgba(201, 162, 75, 0.45); --card-heading: #C9A24B; --card-link: #C9A24B; --card-button-bg: #C9A24B; --card-button-text: #221904; --card-button-border: #C9A24B; --card-button-pressed-bg: #C9A24B; --card-button-pressed-text: #221904; }
+html[data-card-look="night"][data-hadith-colours="a2"] { --card-bg: radial-gradient(ellipse at top, #355084 0%, #27406a 55%, #1b2d4d 100%); --card-bg-inset: #1f3558; --card-text: #F6EEDD; --card-text-muted: #C7D0E2; --card-line: rgba(224, 188, 98, 0.5); --card-heading: #E0BC62; --card-link: #E0BC62; --card-button-bg: #E0BC62; --card-button-text: #241a05; --card-button-border: #E0BC62; --card-button-pressed-bg: #E0BC62; --card-button-pressed-text: #241a05; }
+html[data-card-look="night"][data-hadith-colours="a6"] { --card-bg: radial-gradient(ellipse at top, #2a3a57 0%, #1B2A41 55%, #121b2c 100%); --card-bg-inset: #13192a; --card-text: #F2E8D5; --card-text-muted: #B9C2D4; --card-line: rgba(217, 154, 91, 0.6); --card-heading: #D99A5B; --card-link: #D99A5B; --card-button-bg: #D99A5B; --card-button-text: #241505; --card-button-border: #D99A5B; --card-button-pressed-bg: #D99A5B; --card-button-pressed-text: #241505; }
+html[data-card-look="night"][data-hadith-colours="a6"] .hadith-card { border-width: 2px; }
+html[data-card-look="night"][data-hadith-colours="a2"] .hwc-chip.hwc-q { border-color: #8EE0C4; color: #8EE0C4; }
+.hadith-colours-select { max-width: 100%; min-width: 0; }

@@ -4870,4 +4870,9 @@ export const BN = {
   "Waiting: open Mapping My Journey, then Connect": "অপেক্ষায়: ম্যাপিং মাই জার্নি খুলুন, তারপর সংযুক্ত করুন",
   "This Note is in Siyagah's Trash too. Restoring it here brings it back there.": "এই নোটটি সিয়াগাহ-এর ট্র্যাশেও আছে। এখানে ফিরিয়ে আনলে সেখানেও ফিরে আসবে।",
   "This Note's latest change waits on this device. To send it, open Mapping My Journey and press Connect in Siyagah's bar, once on this device.": "এই নোটের সর্বশেষ পরিবর্তন এই ডিভাইসে অপেক্ষা করছে। পাঠাতে, ম্যাপিং মাই জার্নি খুলে সিয়াগাহ-এর বারে একবার সংযুক্ত করুন চাপুন।",
+  "Card colours": "কার্ডের রং",
+  "Original": "আসল",
+  "Night (A)": "রাত (A)",
+  "Bright navy (A2)": "উজ্জ্বল নেভি (A2)",
+  "Copper border (A6)": "তামার কিনারা (A6)",
 };
