@@ -5500,7 +5500,8 @@
   .qm-sheet .qm-tile:hover { background: #efe6cc; }
   .qm-sheet .qm-tile.is-on { background: #1F3A6E; border-color: #1F3A6E; color: #fff; }
   .qm-sheet .qm-glyph { font-size: 1.25rem; line-height: 1.2; }
-  .quick-menu.qm-sheet .qm-tile, .quick-menu.qm-sheet .qm-tile .qm-label { white-space: normal; } /* the bar's buttons are nowrap (#readBar button): a tile's label must wrap */
+  .quick-menu.qm-sheet .qm-tile, .quick-menu.qm-sheet .qm-tile .qm-label, .quick-menu.qm-sheet .qm-rows .qm-item, .quick-menu.qm-sheet .qm-chip { white-space: normal; }
+  .quick-menu.qm-sheet .qm-rows, .quick-menu.qm-sheet .qm-rows .qm-item { min-width: 0; max-width: 100%; box-sizing: border-box; } /* rows wrap inside the sheet; they were 382px wide in a 294px sheet at 200% text (found by the J114 follow-up check) */ /* the bar's buttons are nowrap (#readBar button): a tile's label must wrap */
   .qm-sheet .qm-label { overflow-wrap: anywhere; }
   .qm-sheet .qm-rows { margin-top: 0.45rem; border-top: 1px solid #eee; padding-top: 0.25rem; display: grid; }
   .qm-sheet .qm-rows .qm-item { min-height: 44px; font-size: 0.88rem; }
