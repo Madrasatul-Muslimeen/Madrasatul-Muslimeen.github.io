@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "13.46",
+    "version": "13.49",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -6497,7 +6497,7 @@
     {
       "version": "13.46",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Dua Card: Full text, and a movable window on a computer (Dua J104 D23, Dua Lead r10b+r10c).",
       "integration": {
         "authorizedOn": "2026-11-07",
@@ -6505,10 +6505,49 @@
         "method": "MERGE_PR",
         "reference": "CHANGELOG.md"
       }
+    },
+    {
+      "version": "13.47",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Dua J104 #1505 (dua 📝 opens the shared new-Note window), MSA J112 D2 Siyagah refusal cases, MSA J118 grammar credit notice.",
+      "integration": {
+        "authorizedOn": "2026-11-08",
+        "integratedOn": "2026-11-08",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.48",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Dua J104 D24 first slice (#1503) and the Owner's 7 Nov pop-up / Menu / night plate words (#1509), combined by the Architect.",
+      "integration": {
+        "authorizedOn": "2026-11-08",
+        "integratedOn": "2026-11-08",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.49",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "MSA J117: a night-look keyboard ring on the Hadith and Dua cards, pop-ups and menus; the Dua Share text box a named Tab stop.",
+      "integration": {
+        "authorizedOn": "2026-11-08",
+        "integratedOn": "2026-11-08",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
     }
   ],
-  "nextUnallocated": "13.47",
+  "nextUnallocated": "13.50",
   "nextUnallocatedNote": [
+    "v13.49 was allocated to the keyboard ring in the night look (MSA J117), 2026-11-08.",
+    "v13.48 was allocated to the Dua Word Card levels, the dua word pop-up and the Menu order, 2026-11-08.",
+    "v13.47 was allocated to the dua 📝 new-Note entry, Siyagah refusal cases and the dua grammar credit, 2026-11-08.",
     "v13.46 was allocated to Dua J104 D23 (Full text, movable Dua Card window), 2026-11-07.",
     "v13.45 was allocated to MSA J112 D2 (Primary, MSA-Siyagah sync) + Dua block in Notes, 2026-11-07.",
     "v13.44 was allocated to QR J114 n114b (whole-unit bookmark, latest Note, New Note), 2026-11-07.",

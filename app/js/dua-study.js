@@ -625,7 +625,10 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
     keep.dataset.duaMenuGroup = "keep";
     keep.hidden = true;
     keep.appendChild(el("p", "dua-menu-label", t("Keep")));
-    panel.appendChild(keep);
+    // The Owner, 7 Nov (annotated screenshot): Share and Keep move up, straight under the selections: Share, Keep, Listen, Study.
+    const shareGroup = panel.querySelector("[data-dua-menu-group=share]");
+    if (shareGroup) panel.insertBefore(shareGroup, listen);
+    panel.insertBefore(keep, listen);
     return keep;
   }
 

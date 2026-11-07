@@ -4134,6 +4134,19 @@ export const BN = {
   "Start from the text shown, change it, then save. Everyone in the madrasah will see it.": "দেখানো লেখা থেকে শুরু করুন, বদলান, তারপর সংরক্ষণ করুন। মাদরাসার সবাই এটি দেখবে।", // ?
   "Save for the madrasah": "মাদরাসার জন্য সংরক্ষণ করুন", // ?
   "Not saved. Check the connection and try again.": "সংরক্ষিত হয়নি। সংযোগ দেখে আবার চেষ্টা করুন।", // ?
+  "English: Wiktionary (CC BY-SA 4.0)": "ইংরেজি: উইকশনারি (CC BY-SA 4.0)", // ?
+  "Bangla: Quraniyo Obhidhan": "বাংলা: কুরআনীয় অভিধান", // ?
+  "No dictionary entry yet for this word.": "এই শব্দের জন্য অভিধানে এখনো কোনো এন্ট্রি নেই।", // ?
+  "No root is suggested for this word yet.": "এই শব্দের জন্য এখনো কোনো মূল (রুট) প্রস্তাব করা হয়নি।", // ?
+  "Root meanings and other words of the root are in the dictionaries linked under WbW.": "মূলের অর্থ ও একই মূলের অন্য শব্দ WbW-এর নিচের অভিধান-লিংকে আছে।", // ?
+  "Other words of this dua from the same root": "এই দুআর একই মূলের অন্য শব্দ", // ?
+  "No other word of this dua has this root.": "এই দুআর আর কোনো শব্দের এই মূল নেই।", // ?
+  "Words of the same root in other duas will come later.": "অন্য দুআর একই মূলের শব্দ পরে আসবে।", // ?
+  "The verb table for dua words is not built yet.": "দুআর শব্দের ক্রিয়া-ছক এখনো তৈরি হয়নি।", // ?
+  "Not applicable: this word is not a verb, so it has no verb table.": "প্রযোজ্য নয়: এই শব্দটি ক্রিয়া নয়, তাই এর ক্রিয়া-ছক নেই।", // ?
+  "Dictionary entries and how the word is used in the hadith will come later.": "অভিধানের এন্ট্রি ও হাদীসে শব্দটির ব্যবহার পরে আসবে।", // ?
+  "Back to the dua": "দুআয় ফিরুন", // ?
+  "The text to share": "যে লেখা শেয়ার করা হবে", // ?
   "Grammar suggestion (computer, to be checked)": "ব্যাকরণের প্রস্তাব (কম্পিউটারের, যাচাই করা হবে)", // ?
   "Adverb": "ক্রিয়াবিশেষণ", // ?
   "Particle": "অব্যয়", // ?

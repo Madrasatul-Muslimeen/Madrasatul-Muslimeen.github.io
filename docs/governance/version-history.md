@@ -1087,3 +1087,6 @@ total). Allocated by the MMSA Architect.
 13.44: QR J114 n114b (whole-unit bookmark, latest Note, New Note). Allocated by the MMSA Architect.
 13.45: MSA J112 D2 (Primary, MSA-Siyagah sync) + Dua block in Notes. Allocated by the MMSA Architect.
 13.46: Dua J104 D23 (Full text, movable Dua Card window). Allocated by the MMSA Architect.
+13.47: the dua 📝 new-Note entry, Siyagah refusal cases and the dua grammar credit. Allocated by the MMSA Architect.
+13.48: the Dua Word Card levels, the dua word pop-up and the Menu order. Allocated by the MMSA Architect.
+13.49: the keyboard ring in the night look (MSA J117). Allocated by the MMSA Architect.
