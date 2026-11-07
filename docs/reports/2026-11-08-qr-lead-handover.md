@@ -29,3 +29,6 @@ Gotchas: stale `origin/<branch>` tracking ref makes the stop hook say "unpushed 
 - Write "Sallallahu A'laihi Wa Sallam" after "Rasulullah".
 - Shared parts (catalogue-data.js, scholars labels, tafsir links, Hadith files, Notes shared scripts, Rules) go through the Architect first.
 - Test harness: check() runners reject promises; mutation-prove every check; update stale checks in place with the reason; `QR_BASE=http://localhost:808x` for a second server; worktrees need a `node_modules` symlink.
+
+## Added after the handover was sent (8 Nov 2026, 8.52 AM Sydney) — from the MSA Architect, for the Hadith Lead
+Low priority, AFTER #1516's harness change, on its OWN branch cut from current `origin/main`: when Quran Study's Word Card is opened with `from=hadith-<id>&back=1`, the floating way-back pill must read "Back to the hadith" (the way-back law; today it shows the generic label). Needs the `app/quranrevival.html` edit (and `apps/qr/edits.json` re-anchor if an anchored text moves; `node tools/apps/apps-build-check.mjs` must stay 48/0), a check that proves the label for that `from`, and a mutation that turns it red. Bangla string in `app/js/i18n/bn.js` if the label is new.
