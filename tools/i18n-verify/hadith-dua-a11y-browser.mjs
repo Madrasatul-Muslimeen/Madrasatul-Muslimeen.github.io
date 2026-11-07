@@ -264,7 +264,8 @@ const HADITH_SURFACES = [
 
 // ---- Dua views ----
 const dListReady = (P) => wait(P, ".dua-row, [data-dua-empty], .dua-tile", 25000);
-const dCardReady = async (P) => { await wait(P, "[data-dua-open] .dua-card-menu, [data-dua-tie-open] .dua-card-menu", 30000); await P.waitForTimeout(600); };
+const openMenuIfClosed = async (P) => { const t = await P.$("[data-dua-menu-toggle]"); if (t && (await t.getAttribute("aria-expanded")) === "false") await t.click(); await P.waitForTimeout(200); }; // build 2: the card's menu sits under its Menu button
+const dCardReady = async (P) => { await wait(P, "[data-dua-open] [data-dua-menu-toggle], [data-dua-tie-open] [data-dua-menu-toggle]", 30000); await openMenuIfClosed(P); await P.waitForTimeout(600); };
 const dPop = (key) => async (P) => { await dCardReady(P); await P.click(`[data-dua-menu="${key}"]`); await wait(P, `[data-dua-pop="${key}"]`, 15000); await P.waitForTimeout(500); };
 const RASUL = "?g=rasul&open=1";
 const DUA_VIEWS = [
@@ -285,7 +286,7 @@ const DUA_VIEWS = [
   { id: "pop-poster", label: "The 🖼 Poster", url: RASUL, go: dPop("poster") },
   { id: "pop-share", label: "Copy / share", url: RASUL, go: dPop("share") },
   { id: "hisn-card", label: "A Hisn al-Muslim card", url: "?g=occasions&part=wake&open=1", go: async (P) => { await wait(P, "[data-dua-hisn]", 25000); await P.waitForTimeout(500); } },
-  { id: "hisn-source", label: "Hisn card: Source pop-up", url: "?g=occasions&part=wake&open=1", go: async (P) => { await wait(P, "[data-dua-hisn]", 25000); await P.click('[data-dua-menu="source"]'); await wait(P, '[data-dua-pop="source"]', 10000); await P.waitForTimeout(400); } },
+  { id: "hisn-source", label: "Hisn card: Source pop-up", url: "?g=occasions&part=wake&open=1", go: async (P) => { await wait(P, "[data-dua-hisn]", 25000); await openMenuIfClosed(P); await P.click('[data-dua-menu="source"]'); await wait(P, '[data-dua-pop="source"]', 10000); await P.waitForTimeout(400); } },
   { id: "prophet-card", label: "A Prophets' card", url: "?g=prophets&open=1", go: async (P) => { await wait(P, "[data-dua-quran]", 25000); await P.waitForTimeout(500); } },
 ];
 const DUA_SURFACES = [

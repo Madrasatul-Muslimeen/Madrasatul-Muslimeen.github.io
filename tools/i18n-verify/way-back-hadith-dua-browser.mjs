@@ -101,7 +101,8 @@ const clickLink = async (P, sel, destRe) => {
   return clicked;
 };
 /** A card's Source (or other) menu opens a pop-over holding the link. */
-const openMenu = async (P, key) => { await P.click(`[data-dua-menu="${key}"]`, { timeout: 8000 }).catch(() => {}); await P.waitForTimeout(500); };
+const openMenuIfClosed = async (P) => { const t = await P.$("[data-dua-menu-toggle]"); if (t && (await t.getAttribute("aria-expanded")) === "false") await t.click(); await P.waitForTimeout(200); }; // build 2: the card's menu sits under its Menu button
+const openMenu = async (P, key) => { await openMenuIfClosed(P).catch(() => {}); await P.click(`[data-dua-menu="${key}"]`, { timeout: 8000 }).catch(() => {}); await P.waitForTimeout(500); };
 
 const duaStudy = (g, openFirst = true) => async (ctx) => {
   const { page: P, errors } = await openPage(ctx, `/app/dua-study.html?g=${g}&back=1`);

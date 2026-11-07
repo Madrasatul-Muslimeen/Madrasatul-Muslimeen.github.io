@@ -1083,3 +1083,4 @@ total). Allocated by the MMSA Architect.
 13.40: the screensaver never comes over a Note being written. Allocated by the MMSA Architect.
 13.41: J114 option B: one ⋮ sheet beside the āyah. Allocated by the MMSA Architect.
 13.42: J114 follow-up: the ⋮ sheet at large text and in Bangla. Allocated by the MMSA Architect.
+13.43: Dua J104 D23 (Dua Study Home/Menu, Dua Card top bar). Allocated by the MMSA Architect.

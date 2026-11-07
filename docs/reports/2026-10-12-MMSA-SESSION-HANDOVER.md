@@ -3065,3 +3065,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v13.40** (2026-11-07): the screensaver never comes over a Note being written.
 - **v13.41** (2026-11-07): J114 option B: one ⋮ sheet beside the āyah.
 - **v13.42** (2026-11-07): J114 follow-up: the ⋮ sheet at large text and in Bangla.
+- **v13.43** (2026-11-07): Dua J104 D23 (Dua Study Home/Menu, Dua Card top bar).
