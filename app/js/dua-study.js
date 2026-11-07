@@ -22,7 +22,7 @@ import { duaCard, duaLoadFailed, fillDuaProgress, loadDuaCheckEnv } from "./dua-
 import { el } from "./hadith-shared-ui.js";
 import { duaWords, duaWordsFingerprint } from "./dua-words.js";
 import { placeDialogAtHome } from "./home-window.js";
-import { posterNodes, shareNodes, selectionBar } from "./dua-poster.js";
+import { posterNodes, shareNodes, selectionBar, fullTextNodes } from "./dua-poster.js";
 import { trapModal } from "./modal-focus.js";
 
 const GROUPS_URL = "../tools/hadith-data-pull/output/dua/groups.json";
@@ -518,6 +518,7 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
   const kids = (article, sel) => [...article.children].filter((c) => c.matches(sel));
   /** D07 / D14: the poster and copy / share entries of a card's menu, for the sheet `sheetOf()` gives when opened. */
   const sheetSections = (sheetOf) => [
+    { key: "fulltext", label: `📖 ${t("Full text")}`, build: () => [fullTextNodes(sheetOf())] },
     { key: "poster", label: `🖼 ${t("Poster")}`, sheet: sheetOf, build: () => posterNodes(sheetOf(), closePop) },
     { key: "share", label: `${t("Copy / share")}`, build: () => shareNodes(sheetOf(), closePop) },
   ];

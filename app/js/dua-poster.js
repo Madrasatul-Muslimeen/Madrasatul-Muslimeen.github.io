@@ -202,6 +202,51 @@ function showingNodes(sheet, close) {
   return box;
 }
 
+/**
+ * D23 (the Dua Card like the Āyah card's 📖 Full text): the whole of what the card knows about this dua in one place --
+ * the Arabic (with or without vowels, as the one Vowels switch says), the English and Bangla where the dua has them, and
+ * the words one by one with their meanings, folded open or shut by their own heading. Reads the same sheet the poster does.
+ */
+export function fullTextNodes(sheet) {
+  const wrap = el("div", "dua-fulltext");
+  wrap.dataset.duaFulltext = "";
+  const ar = el("p", "dua-ft-ar", arText(sheet.ar ?? "", duaSel));
+  ar.lang = "ar"; ar.dir = "rtl"; ar.dataset.i18nSkip = "";
+  ar.style.fontFamily = quranFontStack();
+  wrap.appendChild(ar);
+  const tr = [["en", t("English"), sheet.en], ["bn", t("Bangla"), sheet.bn]].filter((x) => x[2]);
+  if (tr.length) {
+    const d = el("details", "dua-ft-sec"); d.open = true; d.dataset.duaFtSec = "tr";
+    d.appendChild(el("summary", null, t("Translations")));
+    for (const [l, label, text] of tr) {
+      const row = el("div", "dua-ft-tr");
+      row.appendChild(el("span", "dua-ft-label", label));
+      const p = el("p", null, text); p.lang = l;
+      row.appendChild(p);
+      d.appendChild(row);
+    }
+    wrap.appendChild(d);
+  }
+  const words = (sheet.words ?? []).filter((w) => w && w[0]);
+  if (words.length && hasWordMeanings(sheet)) {
+    const d = el("details", "dua-ft-sec"); d.dataset.duaFtSec = "wbw";
+    d.appendChild(el("summary", null, `${t("Word by word")} ${words.length}`));
+    const grid = el("div", "dua-ft-wbw"); grid.dir = "rtl";
+    for (const w of words) {
+      const cell = el("span", "dua-ft-w");
+      const a = el("b", null, arText(w[0], duaSel)); a.lang = "ar"; a.dir = "rtl"; a.dataset.i18nSkip = "";
+      cell.appendChild(a);
+      const m = wordMeaning(w, lang());
+      if (m) { const sm = el("small", null, m); sm.dir = "ltr"; sm.lang = lang(); cell.appendChild(sm); }
+      grid.appendChild(cell);
+    }
+    d.appendChild(grid);
+    wrap.appendChild(d);
+  }
+  if (sheet.ref) wrap.appendChild(el("p", "hadith-note dua-ft-ref", sheet.ref));
+  return wrap;
+}
+
 /** D07: the poster pop-up's contents: switches, the page, Print. */
 export function posterNodes(sheet, close) {
   const wrap = el("div", "dua-poster-wrap");
