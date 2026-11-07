@@ -15,6 +15,28 @@ other hadith have no data); Library cards still not sent (send_card.py refused b
 the PMS J03 line was not written (large read; the Architect can note the hand-in). Sandbox: `node serve.js` in the background,
 `SHOTS=<dir>` for screenshots (else they land in the repo root).
 
+## UPDATE, about 2:10 am 8 Nov (Hadith Lead): COLOURS BUILT; TRANSLATION-TERMS FOLD APPROVED, NOT YET BUILT
+
+**State on main:** K1 Part A + B released in v13.32. **Branches pushed, not merged (the Architect reviews and releases):**
+- `claude/hadith-colours` `77f718b`: "Card colours" picker in the Hadith Study menu bar (Original, A, A2, A6; the Owner's choice of
+  8 Nov, demo https://claude.ai/artifact/78dt3wSw4SByYJ2uFaGYty v1.03). `app/js/hadith-colours.js`, CSS in `hadith.css`
+  (`html[data-card-look="night"][data-hadith-colours=...]`), head script on `hadith-study.html` + `hadith-collections.html`,
+  localStorage `mm_hadith_colours`. Suite `hadith-colours-browser.mjs` 118/0, `--prove` 7/7. Neighbours green (word card 158, marks 52,
+  reader 116, hadeethenc 82, gates 13). Not covered: the Dua card (Dua Lead's files) and the Light card look (untouched on purpose).
+- `claude/hadith-terms-rule` `05c1ec2`: `docs/governance/hadith-translation-terms-rule.md` (the Owner's rule, 8 Nov: Rabb stays Rabb,
+  Allah stays Allah, only Ilah may be "God", our Prophet = Rasulullah Sallallahu A'laihi Wa Sallam). **The PMS p/mmsa rules line was NOT
+  written** (the Architect and PCA sessions I knew were inactive): a live Architect must add it.
+
+**The Owner's answer "Go as your proposal" (8 Nov) = BUILD the display-time fold** described in that rule file: never edit the data;
+fold only where the Arabic of the same hadith has رب / الله (keep "God" where it has إله); write Rasulullah Sallallahu A'laihi Wa Sallam
+only when the speaker/narrated one is our Prophet (Arabic النبي / رسول الله), leave other prophets alone; an "as sourced" toggle on the
+card; a check counting every "Lord" / "God" left against the Arabic, each with a mutation. Counts in HadeethEnc English (2,328 hadith):
+Lord 776, God 22, Prophet 6,078, Messenger of Allah 3,391. Put the fold in a new pure `app/js/hadith-terms.js`; wire it where
+`hadeethEncCard` writes `record.hadeeth` (`hadith-translation-text`) and the explanation; model the toggle on `standardTranslationFolds`.
+
+**Open, unchanged:** Library cards (J106, J108 demos) NOT sent: the permission check blocks `send_card.py`; `cards.json` is in the
+old session's scratchpad (rebuild from the two links; card fields pid mmsa, wf mmsa-hadith). QR "Back to the hadith" pill label (QR Lead).
+
 ## HANDOVER, 4 Nov 2026 (about 12:30 pm Sydney; session `01PL2xbKWeTSDEBJV5UWZTcQ`'s successor → a fresh Hadith Lead)
 
 Handed over at the context limit (use1102), BEFORE any K1 code was written. State: **nothing in flight except K1.**
