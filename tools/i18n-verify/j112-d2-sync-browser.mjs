@@ -41,7 +41,9 @@ const MUTATIONS = {
   "mark-english": [[["app/js/i18n/bn.js", '"In Siyagah ✓": "সিয়াগাহ-এ আছে ✓",', ""]], "bn: the mark is in Bangla"],
   "label-old": [[[J, '"journey-map": () => t("Primary"),', '"journey-map": () => t("Personal Journey Map"),']], "primary: the Map's folder for Notes not yet filed is called Primary"],
   "no-pull": [[[M, 'if (siyChanged) steps.push({ kind: "pull", noteId, title: cn.title ?? "", bodyHtml: cn.content ?? "", base: cn.updatedAt });\n      continue;', "continue;"]], "pull: Siyagah's newer copy comes back as a new revision of the Note (siyagah-sync), with its title and text"],
-  "pull-loops": [[[J, "return { seen: syncSnapshotOf(note).hash };", "return {};"]], "pull: after a reload, still nothing is sent back"],
+  // The no-echo rule has two guards: the agreed text (`sent`) and the snapshot last seen (`seen`). Breaking `seen` alone was
+  // measured to send nothing (the `sent` guard stops it), so the mutation that must go red breaks `sent`.
+  "pull-loops": [[[M, 'case "pull": return l ? put({ ...l, base: step.base, sent: textHash(step.title, step.bodyHtml),', 'case "pull": return l ? put({ ...l, base: step.base, sent: l.sent,'], [J, "return { seen: syncSnapshotOf(note).hash };", "return {};"]], "pull: after a reload, still nothing is sent back"],
   "msa-always-loses": [[[M, "if (msOf(cn.updatedAt) > (Number(w.changedAt) || 0))", "if (true)"]], "conflict, MSA later: this app's text goes to Siyagah, against Siyagah's newer base"],
   "no-keep-older": [[[J, 'await syncWriteRevision(note, title || "", sanitizeNoteHtml(bodyHtml || ""), SYNC_REVISION_OLDER);', ""]], "conflict, MSA later: Siyagah's text is kept as an older version (siyagah-older), then this app's again (siyagah-kept)"],
   "no-online": [[[S, "const onOnline = () => kick();", "const onOnline = () => {};"]], "offline: back online, the waiting change goes by itself"],
