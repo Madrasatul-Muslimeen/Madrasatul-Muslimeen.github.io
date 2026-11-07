@@ -17,7 +17,7 @@ const blocksIn = (body) => [...body.querySelectorAll("div.mm-ref[data-mmsa-ref]"
 
 function paintBlock(el, state) {
   const s = state;
-  const kind = s.kind === "ayah" ? t("Āyah") : t("Hadith");
+  const kind = s.kind === "ayah" ? t("Āyah") : s.kind === "dua" ? t("Dua") : t("Hadith");
   const langBtn = (k) => s.text[k]
     ? `<button type="button" class="mm-ref-lang" data-ref-lang="${k}" aria-pressed="${s.flags[k]}" lang="${k}" title="${esc(t(s.flags[k] ? "Hide the {lang}" : "Show the {lang}", { lang: t(LANG_NAME[k]) }))}" aria-label="${esc(t(s.flags[k] ? "Hide the {lang}" : "Show the {lang}", { lang: t(LANG_NAME[k]) }))}">${REF_LANG_TAGS[k]}</button>`
     : "";
