@@ -62,10 +62,12 @@ const normName = (s) => String(s ?? "").replace(/\s+/g, " ").trim().toLowerCase(
  * One MSA Note as the sync sees it. `folders` is [{ role, path }] -- path the folder's names from the top (a system
  * folder's path is [] and its role says which). Returns { title, bodyHtml, folders, hash }.
  */
-export function noteSnapshot({ title = "", bodyHtml = "", folders = [] } = {}) {
+export function noteSnapshot({ title = "", bodyHtml = "", folders = [], trashed = false } = {}) {
   const fl = (folders || []).map((f) => ({ role: f.role || "user", path: (f.path || []).map((x) => String(x ?? "")) }))
     .sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
-  const snap = { title: String(title ?? ""), bodyHtml: String(bodyHtml ?? ""), folders: fl };
+  // J112 D2 review: `trashed` -- the Note is in MSA's Trash. Only written when true, so a Note's snapshot (and its hash)
+  // is exactly as before for every Note that is not in the Trash.
+  const snap = { title: String(title ?? ""), bodyHtml: String(bodyHtml ?? ""), folders: fl, ...(trashed ? { trashed: true } : {}) };
   return { ...snap, hash: hashText(JSON.stringify(snap)) };
 }
 
@@ -152,7 +154,7 @@ export function settleWithCopy(state, copy) {
     if (l.awaitBase !== undefined && cn && cn.updatedAt !== l.awaitBase) {
       n = { ...l, base: cn.updatedAt, sent: l.awaitHash ?? l.sent };
       delete n.awaitBase; delete n.awaitHash;
-    } else if (!cn && l.base != null && !l.inflight && l.awaitBase === undefined && !l.gone) {
+    } else if (!cn && l.base != null && !l.inflight && l.awaitBase === undefined && !l.gone && !l.trashedHere) {
       n = { ...l, gone: true, want: null };
     }
     if (n) { links = links || { ...state.links }; links[id] = n; }
@@ -189,12 +191,22 @@ export function planSync(state, copy) {
       if (siyChanged) steps.push({ kind: "pull", noteId, title: cn.title ?? "", bodyHtml: cn.content ?? "", base: cn.updatedAt });
       continue;
     }
+    // J112 D2 review: MSA's Trash -> Siyagah's Trash (note.delete; Undo there). Never sent: nothing to take away.
+    if (w.trashed) {
+      if (cn && l.base != null) steps.push({ kind: "send", noteId, op: "note.delete", fields: { id: l.mmjId, base: cn.updatedAt }, sentHash: l.sent, prevBase: cn.updatedAt, fallback: !!l.fallback });
+      else steps.push({ kind: "clear", noteId, fallback: !!l.fallback });
+      continue;
+    }
+    // Restored here before Siyagah's copy has dropped it: wait for the copy (it is going to Siyagah's Trash).
+    if (l.trashedHere && cn && cn.updatedAt === l.base) continue;
     const target = targetFolderIds(w.folders, folders);
     if (target.ids.includes(PRIMARY_ID) && !hasPrimary) { primaryNeeded = true; continue; }
     const wHash = textHash(w.title, w.bodyHtml);
     if (!cn) {
-      if (l.base != null) continue; // was in Siyagah and is gone: settleWithCopy marks it, never re-added by itself
-      steps.push({ kind: "send", noteId, op: "note.add", fields: { id: l.mmjId, title: w.title, content: w.bodyHtml, tags: [], folderIds: target.ids }, sentHash: wHash, prevBase: null, fallback: target.fallback });
+      // Restored from MSA's Trash: the contract has no "restore", so it is added again (the same id; a fresh one when
+      // Siyagah still holds that id in its own Trash -- afterAnswer). Deleted in Siyagah itself: never re-added by itself.
+      if (l.base != null && !l.trashedHere) continue;
+      steps.push({ kind: "send", noteId, op: "note.add", fields: { id: l.mmjId, title: w.title, content: w.bodyHtml, tags: [], folderIds: target.ids }, sentHash: wHash, prevBase: null, fallback: target.fallback, restore: !!l.trashedHere });
       continue;
     }
     if (l.base == null) { // an add was done but its copy was never settled (another device made it): agree on it now
@@ -231,7 +243,7 @@ export function afterStep(state, step, outcome = {}) {
   const put = (n) => ({ ...state, links: { ...state.links, [step.noteId]: n } });
   switch (step.kind) {
     case "primary": return { ...state, primary: { reqId: outcome.reqId || null, at: outcome.at || 0 } };
-    case "send": return l ? put({ ...l, fallback: !!step.fallback, inflight: { reqId: outcome.reqId || null, op: step.op, prevBase: step.prevBase, seq: l.want?.seq || 0, sentHash: step.sentHash } }) : state;
+    case "send": return l ? put({ ...l, fallback: !!step.fallback, inflight: { reqId: outcome.reqId || null, op: step.op, prevBase: step.prevBase, seq: l.want?.seq || 0, sentHash: step.sentHash, ...(step.restore ? { restore: true } : {}) } }) : state;
     case "pull": return l ? put({ ...l, base: step.base, sent: textHash(step.title, step.bodyHtml), want: null, seen: outcome.seen ?? l.seen, refused: null }) : state;
     case "keep-older": return l ? put({ ...l, base: step.base }) : state;
     case "adopt": return l ? put({ ...l, base: step.base, sent: textHash(step.title, step.bodyHtml) }) : state;
@@ -246,8 +258,17 @@ export function afterAnswer(state, noteId, outcome) {
   if (!l?.inflight || !outcome || outcome.kind === "waiting") return state;
   const inf = l.inflight;
   const n = { ...l, inflight: null };
-  if (outcome.kind === "done") {
+  if (outcome.kind === "done" && inf.op === "note.delete") {
+    // In Siyagah's Trash now. Nothing more to send for this change; a restore here adds it back.
+    n.trashedHere = true;
+    if (n.want && n.want.seq === inf.seq) n.want = null;
+  } else if (outcome.kind === "done") {
     n.awaitBase = inf.prevBase; n.awaitHash = inf.sentHash;
+    if (inf.op === "note.add") n.trashedHere = false;
+  } else if (outcome.kind === "refused" && inf.restore && /id already used/.test(outcome.why || "")) {
+    // Siyagah keeps the old id in its own Trash: add it back under a fresh id (x-msa-n-<note>.r1, .r2 ...).
+    const m = /\.r(\d+)$/.exec(n.mmjId || "");
+    n.mmjId = `${String(n.mmjId).replace(/\.r\d+$/, "")}.r${m ? Number(m[1]) + 1 : 1}`;
   } else if (outcome.kind === "refused") {
     // "changed in Siyagah since": the copy is newer -- the next plan meets it (rule 4). Anything else: not sent again
     // until the Note changes again, and the reason is said on the Note.
@@ -262,10 +283,13 @@ export function afterAnswer(state, noteId, outcome) {
  *   "synced"   -- In Siyagah ✓ (fallback: one of its folders is not in Siyagah, so it is in Primary there)
  *   "refused"  -- Siyagah did not take it (why)
  *   "gone"     -- removed in Siyagah; MSA keeps its copy
+ *   "trashed"  -- this app's Trash sent it to Siyagah's Trash (J112 D2 review)
  */
 export function syncMark(link) {
   if (!link) return null;
   if (link.gone) return { kind: "gone" };
+  if (link.trashedHere && !link.want && !link.inflight) return { kind: "trashed" };
+  if (!link.want && !link.inflight && link.awaitBase === undefined && link.base == null) return null; // never sent (e.g. trashed first)
   if (link.refused && (!link.want || link.refused.seq === link.want.seq)) return { kind: "refused", why: link.refused.why || "" };
   if (link.want || link.inflight || link.awaitBase !== undefined || link.base == null) return { kind: "waiting" };
   return { kind: "synced", fallback: !!link.fallback };

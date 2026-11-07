@@ -4865,4 +4865,8 @@ export const BN = {
   "Siyagah did not take this Note's latest change: {why}. It is kept here, and goes again the next time you change the Note.": "সিয়াগাহ এই নোটের সর্বশেষ পরিবর্তন নেয়নি: {why}। এটি এখানে রাখা আছে, এবং পরের বার নোটটি বদলালে আবার পাঠানো হবে।",
   "This Note was deleted in Siyagah. It is kept here and is no longer sent there.": "এই নোটটি সিয়াগাহ-এ মোছা হয়েছে। এটি এখানে রাখা আছে এবং আর সেখানে পাঠানো হয় না।",
   "A Note could not be brought up to date from Siyagah: {why}": "সিয়াগাহ থেকে একটি নোট হালনাগাদ করা যায়নি: {why}",
+  "In Siyagah's Trash": "সিয়াগাহ-এর ট্র্যাশে",
+  "Waiting: open Mapping My Journey, then Connect": "অপেক্ষায়: ম্যাপিং মাই জার্নি খুলুন, তারপর সংযুক্ত করুন",
+  "This Note is in Siyagah's Trash too. Restoring it here brings it back there.": "এই নোটটি সিয়াগাহ-এর ট্র্যাশেও আছে। এখানে ফিরিয়ে আনলে সেখানেও ফিরে আসবে।",
+  "This Note's latest change waits on this device. To send it, open Mapping My Journey and press Connect in Siyagah's bar, once on this device.": "এই নোটের সর্বশেষ পরিবর্তন এই ডিভাইসে অপেক্ষা করছে। পাঠাতে, ম্যাপিং মাই জার্নি খুলে সিয়াগাহ-এর বারে একবার সংযুক্ত করুন চাপুন।",
 };

@@ -80,10 +80,18 @@ export function openSync({ key, now = () => Date.now() }) {
     state: () => cached,
     get stored() { return !broken; },
     update,
-    scan(notes) {
+    /** Queue every changed Note. Resolves to { state, queued } -- queued: how many Notes now have a change waiting. */
+    async scan(notes) {
       const list = (notes || []).filter((n) => n && n.snapshot);
-      if (!list.length) return Promise.resolve(cached);
-      return update((s) => { let x = s; for (const n of list) x = queueNote(x, n, now()); return x; });
+      if (!list.length) return { state: cached, queued: 0 };
+      let queued = 0;
+      const state = await update((s) => {
+        let x = s;
+        queued = 0;
+        for (const n of list) { const before = x.links[n.noteId]; x = queueNote(x, n, now()); const after = x.links[n.noteId]; if (after && after !== before && after.want) queued++; }
+        return x;
+      });
+      return { state, queued };
     },
     mark: (noteId) => syncMark(cached.links[noteId]),
     onChange(cb) { listeners.add(cb); return () => listeners.delete(cb); },
@@ -97,6 +105,9 @@ export function openSync({ key, now = () => Date.now() }) {
  *   keepOlder({ noteId, title, bodyHtml })  -> Promise             rule 4: Siyagah's text kept as an older version first
  * Returns { onCopy(copy), close() }.
  */
+/** The Web Lock every page sending for this person takes, so two tabs never send the same request twice. */
+export const syncLockName = (key) => `msa-siyagah-sync|${key}`;
+
 export function startSyncDrain({ sync, model, writer, from = "msa", host, setTimer = setTimeout }) {
   let copy = null, running = false, again = false, closed = false, retry = null;
   const followers = new Map();
@@ -167,9 +178,30 @@ export function startSyncDrain({ sync, model, writer, from = "msa", host, setTim
     return sync.update((x) => afterStep(x, st));
   }
 
+  // ONE sender at a time across tabs and pages (the full Map, every embedded Notes pane): the work below runs only while
+  // this page holds the Web Lock; a page that cannot get it leaves the queue to the page that has it and looks again soon.
+  // (A browser without Web Locks has one page sending anyway: the request ids, kept in the same IndexedDB record, are what
+  // a second page would see.)
   async function run() {
     if (running) { again = true; return; }
     running = true;
+    const locks = globalThis.navigator?.locks;
+    if (locks?.request) {
+      let got = false;
+      try {
+        await locks.request(syncLockName(sync.key), { ifAvailable: true }, async (lock) => { if (!lock) return; got = true; await work(); });
+      } catch (err) { say(err); }
+      running = false;
+      if (!got && !closed) setTimer(() => kick(), 3000);
+      else if (again && !closed) Promise.resolve().then(run);
+      return;
+    }
+    try { await work(); } finally {
+      running = false;
+      if (again && !closed) Promise.resolve().then(run);
+    }
+  }
+  async function work() {
     try {
       for (let pass = 0; pass < 4 && copy && !closed; pass++) {
         again = false;
@@ -179,6 +211,7 @@ export function startSyncDrain({ sync, model, writer, from = "msa", host, setTim
         if (Object.values(s.links).some((l) => l.inflight && !l.inflight.reqId) && !pass) {
           s = await sync.update((x) => { const links = { ...x.links }; for (const [id, l] of Object.entries(links)) if (l.inflight && !l.inflight.reqId) links[id] = { ...l, inflight: null }; return { ...x, links }; });
         }
+        if (s.primary && !s.primary.reqId && !pass) s = await sync.update((x) => (x.primary && !x.primary.reqId ? { ...x, primary: null } : x));
         if (s.primary?.reqId && !s.primary.refused) follow(PRIMARY_ID, s.primary.reqId);
         const steps = planSync(s, copy).filter((st) => !(st.kind === "primary" && s.primary));
         if (!steps.length) break;
@@ -189,10 +222,7 @@ export function startSyncDrain({ sync, model, writer, from = "msa", host, setTim
         }
         if (!moved && !again) break;
       }
-    } finally {
-      running = false;
-      if (again && !closed) Promise.resolve().then(run);
-    }
+    } catch (err) { say(err); }
   }
   function kick() { if (!closed) run(); }
   function scheduleRetry() {

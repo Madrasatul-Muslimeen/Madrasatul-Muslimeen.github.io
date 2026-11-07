@@ -612,6 +612,7 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
     // goes to Siyagah, and Siyagah's newer copy comes back, only where Siyagah's bar is live (the full Map).
     import { openSync, startSyncDrain } from "./js/siyagah-sync.js";
     import { noteSnapshot, PRIMARY_ROLE, SYNC_REVISION_PULL, SYNC_REVISION_OLDER, SYNC_REVISION_KEPT } from "./js/siyagah-sync-model.js";
+    import { SIYAGAH_CLOUD_DECLARATION } from "./js/siyagah-cloud-readiness.js";
 
     translateStatic();
     registerServiceWorker();
@@ -1868,6 +1869,7 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
         { collection: TENANT.NOTES, action: "retirePermanentNote" }
       );
       if (!outcome.ok) return;
+      queueSyncTrash(note, true); // J112 D2 review: to Siyagah's Trash too
       closeView(v);
       showPageStatus(t('"{title}" moved to Trash. Open 🗑 Trash from the ⋯ menu to restore it.', { title: noteTitleOf(note) }));
       await refreshAll();
@@ -1921,9 +1923,49 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
       if (isSystemFolderRole(node.semanticRole)) return { role: node.semanticRole, path: [] };
       return { role: "user", path: folderAncestorPath(folderId).map((f) => f.name || "") };
     }
-    function syncSnapshotOf(note) {
+    function syncSnapshotOf(note, trashed = note?.status === NOTE_STATUS.RETIRED) {
       const folders = [...activeFilingFolderIds(note)].map(syncFolderRef).filter(Boolean);
-      return noteSnapshot({ title: note.title ?? "", bodyHtml: note.bodyHtml ?? "", folders: folders.length ? folders : [{ role: PRIMARY_ROLE, path: [] }] });
+      return noteSnapshot({ title: note.title ?? "", bodyHtml: note.bodyHtml ?? "", folders: folders.length ? folders : [{ role: PRIMARY_ROLE, path: [] }], trashed });
+    }
+    /** Review: MSA's Trash goes to Siyagah's Trash, and a restore here brings it back there (the Map reads only active
+     * Notes, so a Note leaving for the Trash is queued here, at the moment it goes). */
+    function queueSyncTrash(note, trashed) {
+      const sync = syncFor();
+      if (!sync || !note) return;
+      const snapshot = syncSnapshotOf(note, trashed);
+      syncMemo.delete(note.noteId);
+      sync.scan([{ noteId: note.noteId, updatedAtMs: Date.now(), createdAtMs: tsMs(note.createdAt), snapshot }])
+        .then(afterSyncScan).catch((err) => console.error(err));
+    }
+    // Review (the Owner: "without a second action"): an embedded Notes pane (Quran Study, Hadith, Dua) SENDS too. After a
+    // save -- never at startup (I9) -- and only on a device that has connected to Siyagah before (the flag below, written
+    // by the Map's Connect), Siyagah's code is loaded here and, with a Siyagah user signed in, the queue goes. Otherwise it
+    // waits, and the Note says how to connect.
+    const SIYAGAH_CONNECTED_KEY = "msa-siyagah-connected"; // written by siyagah-map-link.js when Connect succeeds
+    const siyagahBarHere = () => !unitMode && !document.documentElement.classList.contains("embed");
+    let syncNeedsConnect = false, hereSenderP = null;
+    function afterSyncScan(res) {
+      noteSyncDrain?.kick();
+      if (res?.queued && !siyagahBarHere()) sendFromHere();
+    }
+    function sendFromHere() {
+      let connected = false;
+      try { connected = localStorage.getItem(SIYAGAH_CONNECTED_KEY) === "1"; } catch { connected = false; }
+      if (!connected) { syncNeedsConnect = true; refreshSyncMarks(true); return; }
+      if (hereSenderP) { noteSyncDrain?.kick(); return; }
+      hereSenderP = (async () => {
+        const mod = await import("./js/siyagah-cloud.js");
+        const cloud = await mod.openSiyagahCloud();
+        if (!cloud) return false;
+        const user = await new Promise((resolve) => { let un = null; un = mod.onSiyagahUser(cloud, (u) => { resolve(u); try { un?.(); } catch {} }); });
+        if (!user) { syncNeedsConnect = true; refreshSyncMarks(true); hereSenderP = null; return false; }
+        syncNeedsConnect = false;
+        const nb = SIYAGAH_CLOUD_DECLARATION.notebookId;
+        const [data, model] = await Promise.all([import("./js/siyagah-mmj-data.js"), import("./js/siyagah-mmj-model.js")]);
+        const from = model.mmjFromForHost(location.hostname);
+        await data.openMmjReader({ cloud, nb, uid: user.uid, onCopy: (c) => onSiyagahLive({ copy: c, cloud, nb, model, from }), onState: () => {} });
+        return true;
+      })().catch((err) => { console.error(err); hereSenderP = null; return false; });
     }
     const syncMemoOf = (n) => `${n.currentRevisionId ?? ""}|${n.title ?? ""}|${(n.bodyHtml ?? "").length}|${[...activeFilingFolderIds(n)].sort().join(",")}`;
     function scheduleSyncScan() { clearTimeout(syncScanTimer); syncScanTimer = setTimeout(runSyncScan, 400); }
@@ -1939,7 +1981,7 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
         syncMemo.set(n.noteId, memo);
         list.push({ noteId: n.noteId, updatedAtMs: tsMs(n.updatedAt), createdAtMs: tsMs(n.createdAt), snapshot: syncSnapshotOf(n) });
       }
-      sync.scan(list).then(() => noteSyncDrain?.kick()).catch((err) => console.error(err));
+      sync.scan(list).then(afterSyncScan).catch((err) => console.error(err));
     }
     function syncMarkOf(note) {
       if (!note || !noteSync || noteSyncKey !== `${activeTenantId}|${selectedPersonId}`) return null;
@@ -1951,6 +1993,8 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
       if (m.kind === "synced") return [{ id: SYNC_CHIP_ID, icon: "☁", label: m.fallback ? t("In Siyagah ✓ (in Primary there)") : t("In Siyagah ✓") }];
       if (m.kind === "refused") return [{ id: SYNC_CHIP_ID, icon: "⚠", label: t("Not in Siyagah: {why}", { why: m.why }) }];
       if (m.kind === "gone") return [{ id: SYNC_CHIP_ID, icon: "☁", label: t("Deleted in Siyagah; kept here") }];
+      if (m.kind === "trashed") return [{ id: SYNC_CHIP_ID, icon: "☁", label: t("In Siyagah's Trash") }];
+      if (syncNeedsConnect) return [{ id: SYNC_CHIP_ID, icon: "⏳", label: t("Waiting: open Mapping My Journey, then Connect") }];
       return [{ id: SYNC_CHIP_ID, icon: "⏳", label: t("Waiting to go to Siyagah") }];
     }
     const getNoteById = (id) => allNotes.find((n) => n.noteId === id) ?? null;
@@ -1961,12 +2005,14 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
       if (m.kind === "synced") showPageStatus(t("This Note is in Siyagah's Mapping My Journey too. Its changes go there by themselves, and a change made to it in Siyagah comes back here.") + (m.fallback ? " " + t("One of its folders is not in Siyagah, so there it is in Primary.") : ""));
       else if (m.kind === "refused") showPageStatus(t("Siyagah did not take this Note's latest change: {why}. It is kept here, and goes again the next time you change the Note.", { why: m.why }));
       else if (m.kind === "gone") showPageStatus(t("This Note was deleted in Siyagah. It is kept here and is no longer sent there."));
+      else if (m.kind === "trashed") showPageStatus(t("This Note is in Siyagah's Trash too. Restoring it here brings it back there."));
+      else if (syncNeedsConnect) showPageStatus(t("This Note's latest change waits on this device. To send it, open Mapping My Journey and press Connect in Siyagah's bar, once on this device."));
       else showPageStatus(t("This Note's latest change goes to Siyagah by itself when Mapping My Journey is open with Siyagah connected. Nothing is lost meanwhile."));
     }
     /** When a mark changes, redraw only the views showing that Note (an open edit is never touched: renderView keeps it). */
     function refreshSyncMarks() {
       for (const v of noteViews.allViews()) {
-        const m = JSON.stringify(syncMarkOf(getNoteById(v.noteId)));
+        const m = JSON.stringify([syncMarkOf(getNoteById(v.noteId)), syncNeedsConnect]);
         if (syncShownMarks.get(v) === m) continue;
         syncShownMarks.set(v, m);
         try { noteViews.renderView(v, { keepScroll: true }); } catch (err) { console.error(err); }
@@ -3901,6 +3947,7 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
             { collection: TENANT.NOTES, action: "restoreNote" }
           );
           if (!outcome.ok) return;
+          queueSyncTrash({ ...note, status: NOTE_STATUS.ACTIVE }, false); // J112 D2 review: back in Siyagah too
           showPageStatus(t('"{title}" restored.', { title: noteTitleOf(note) }));
           await refreshAll();
         });
@@ -4887,7 +4934,7 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
         // and never in an embedded Map (a Notes pane inside another page).
         let mapLoaded = () => {};
         const mapLoadedP = new Promise((r) => { mapLoaded = r; });
-        if (!unitMode && !document.documentElement.classList.contains("embed")) mountSiyagahMapLink({ beforeEl: document.getElementById("noteLayout"), email: user.email || "", after: mapLoadedP, onLive: onSiyagahLive }).catch((err) => console.error(err));
+        if (!unitMode && !document.documentElement.classList.contains("embed")) mountSiyagahMapLink({ beforeEl: document.getElementById("noteLayout"), email: user.email || "", after: mapLoadedP, onLive: (live) => onSiyagahLive(live) }).catch((err) => console.error(err));
         await Promise.all([loadContextData(), hydrationDone]).finally(() => mapLoaded());
         clearReadStatus();
       } catch (err) {

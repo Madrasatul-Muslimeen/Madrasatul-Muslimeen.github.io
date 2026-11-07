@@ -11,7 +11,11 @@
 //   conflict  both changed: the later wins; MSA later -> Siyagah's text kept as an older version, then MSA's sent;
 //             Siyagah later -> Siyagah's text comes back
 //   offline   a request that cannot be sent waits (nothing lost) and goes when back online
-//   closed    a change queued while Siyagah is not live (an embedded Notes pane) survives the page and goes from the full Map
+//   closed    on a device never connected, an embedded pane sends and loads nothing; the Note says "open Mapping My
+//             Journey, then Connect"; the queue survives the page and goes from the full Map
+//   embedded  on a connected device, an embedded pane sends after a save by itself -- and loads nothing of Siyagah's before
+//   lock      one sender at a time across tabs (a Web Lock): held elsewhere -> nothing sent; free -> sent ONCE
+//   trash     MSA's Trash -> note.delete; restore -> note.add again (a fresh id if Siyagah still holds the old one)
 //   only      every write on a notebooks/ path is a setDoc (no merge) into notebooks/<nb>/mmjin
 //   layout    the mark at 390 / 768 / 1280, en and bn: inside the pane, no sideways scroll, the same height as the folder
 //             chips beside it (32px, the chips' own size), contrast >= 4.5
@@ -48,7 +52,15 @@ const MUTATIONS = {
   "no-keep-older": [[[J, 'await syncWriteRevision(note, title || "", sanitizeNoteHtml(bodyHtml || ""), SYNC_REVISION_OLDER);', ""]], "conflict, MSA later: Siyagah's text is kept as an older version (siyagah-older), then this app's again (siyagah-kept)"],
   "no-online": [[[S, "const onOnline = () => kick();", "const onOnline = () => {};"]], "offline: back online, the waiting change goes by itself"],
   "queue-in-memory": [[[S, "try { rq = indexedDB.open(IDB_NAME, 1); }", "try { throw new Error(\"no storage\"); }"]], "closed: the change made in the embedded pane goes from the full Map later (the queue survived the page)"],
-  "embed-sends": [[[J, 'if (!unitMode && !document.documentElement.classList.contains("embed")) mountSiyagahMapLink', "if (!unitMode) mountSiyagahMapLink"]], "closed: an embedded Notes pane sends nothing to Siyagah (it only queues)"],
+  // J112 D2 review: an embedded Notes pane SENDS (after a save, on a device that has connected), never at startup.
+  "embed-never-sends": [[[J, "if (res?.queued && !siyagahBarHere()) sendFromHere();", ""]], "embedded: after a save the pane sends the Note to Siyagah itself (no second action), as ONE note.add"],
+  "startup-loads-cloud": [[[J, "if (res?.queued && !siyagahBarHere()) sendFromHere();", "if (!siyagahBarHere()) sendFromHere();"]], "startup: an embedded pane loads nothing of Siyagah's before the first save (I9)"],
+  "no-flag-check": [[[J, "if (!connected) { syncNeedsConnect = true; refreshSyncMarks(true); return; }", ""]], "closed: on a device never connected, the embedded pane sends nothing and loads nothing of Siyagah's"],
+  "flag-never-written": [[["app/js/siyagah-map-link.js", 'try { localStorage.setItem(SIYAGAH_CONNECTED_KEY, "1"); } catch { /* private mode: the panes just wait */ }', ""]], "send: connecting in the Map marks this device as connected (for the embedded panes)"],
+  "no-lock": [[[S, "const locks = globalThis.navigator?.locks;", "const locks = null;"]], "lock: while another tab holds the sender's lock, this tab sends nothing"],
+  "trash-not-sent": [[[J, "queueSyncTrash(note, true); // J112 D2 review: to Siyagah's Trash too", ""]], "trash: moving the Note to Trash here sends ONE note.delete {id, base} (to Siyagah's Trash, Undo there)"],
+  "restore-not-sent": [[[M, "if (l.base != null && !l.trashedHere) continue;", "if (l.base != null) continue;"]], "trash: restoring it here sends it back to Siyagah (note.add, the same id)"],
+  "restore-id-stuck": [[[M, "} else if (outcome.kind === \"refused\" && inf.restore && /id already used/.test(outcome.why || \"\")) {", "} else if (false) {"]], "trash: Siyagah still holding that id in its Trash -> added back under a fresh id (x-msa-n-<note>.r1)"],
 };
 if (MUTATE && !MUTATIONS[MUTATE]) throw new Error(`unknown mutation ${MUTATE}; known: ${Object.keys(MUTATIONS).join(", ")}`);
 const SERVED = {};
@@ -118,8 +130,9 @@ async function newCtx({ lang = "en", width = 1280 } = {}) {
   for (const [p, body] of Object.entries(SERVED)) await ctx.route((u) => u.pathname.endsWith(p), (r) => r.fulfill({ status: 200, contentType: p.endsWith(".html") ? "text/html; charset=utf-8" : "text/javascript; charset=utf-8", body }));
   return ctx;
 }
-async function openMap(ctx, { embed = false } = {}) {
+async function openMap(ctx, { embed = false, watch = false } = {}) {
   const page = await ctx.newPage();
+  if (watch) page.__siyagahLoads = siyagahLoads(page);
   page.setDefaultTimeout(8000);
   const errors = [];
   page.on("pageerror", (e) => errors.push(String(e)));
@@ -182,6 +195,8 @@ async function editNote(page, words) {
 }
 const markText = (page) => page.evaluate(() => document.querySelector('#notePane [data-pane-chip="~siyagah"]')?.textContent.trim() || "");
 
+function siyagahLoads(page) { const seen = []; page.on("request", (rq) => { if (/siyagah-cloud\.js|siyagah-mmj-data\.js|siyagah-mmj-write\.js/.test(rq.url())) seen.push(rq.url().replace(/^.*\//, "")); }); return seen; }
+
 // --- the main run: en, computer ------------------------------------------------------------------------------------------
 console.log("\n=== primary, old, send, unfiled, pull, conflict (en, 1280) ===");
 try {
@@ -189,6 +204,7 @@ try {
   let { page, errors } = await openMap(ctx);
   const sysName = await page.evaluate(() => document.querySelector('.folder-row[data-folder-id="fSys"] [data-folder-name]')?.textContent.trim() || "");
   check("primary: the Map's folder for Notes not yet filed is called Primary", /^Primary\b/.test(sysName), sysName);
+  check("send: connecting in the Map marks this device as connected (for the embedded panes)", (await page.evaluate(() => localStorage.getItem("msa-siyagah-connected"))) === "1");
   await page.waitForTimeout(1500);
   check("old: an older Note nobody changed is never sent to Siyagah", (await reqs(page)).length === 0, JSON.stringify(await reqs(page)));
 
@@ -315,18 +331,99 @@ try {
 } catch (err) { crashed(err); }
 
 // --- closed: queued in an embedded pane, sent from the full Map later -----------------------------------------------------
-console.log("\n=== closed (en, 390) ===");
+console.log("\n=== closed: never connected (en, 390) ===");
 try {
   const ctx = await newCtx({ width: 390 });
-  let { page } = await openMap(ctx, { embed: true });
+  let { page } = await openMap(ctx, { embed: true, watch: true });
   await openNote(page, "n2", "fSys");
   await editNote(page, " From the pane.");
   await page.waitForTimeout(1500);
-  check("closed: an embedded Notes pane sends nothing to Siyagah (it only queues)", (await nbWrites(page)).length === 0, JSON.stringify(await nbWrites(page)));
+  check("closed: on a device never connected, the embedded pane sends nothing and loads nothing of Siyagah's", (await nbWrites(page)).length === 0 && page.__siyagahLoads.length === 0, JSON.stringify([await nbWrites(page), page.__siyagahLoads]));
+  check("closed: ...and the Note says how: open Mapping My Journey, then Connect", /open Mapping My Journey, then Connect/.test(await markText(page)), await markText(page));
   ({ page } = await reopen(ctx, page));
   const went = await waitFor(page, (c) => (window.__stubWriteData || []).some((w) => w.col === c), MMJIN, 8000);
   const r = await reqs(page);
   check("closed: the change made in the embedded pane goes from the full Map later (the queue survived the page)", went && r.some((x) => x.data.op === "folder.add" && x.data.id === "x-msa-primary"), JSON.stringify(r.map((x) => x.data)));
+  await gather(page);
+  await ctx.close();
+} catch (err) { crashed(err); }
+
+// --- embedded and connected: the pane sends by itself, after the save only --------------------------------------------------
+console.log("\n=== embedded, connected (en, 390) ===");
+try {
+  const ctx = await newCtx({ width: 390 });
+  await ctx.addInitScript(() => { try { localStorage.setItem("msa-siyagah-connected", "1"); } catch (e) {} });
+  const { page } = await openMap(ctx, { embed: true, watch: true });
+  await page.waitForTimeout(1500);
+  check("startup: an embedded pane loads nothing of Siyagah's before the first save (I9)", page.__siyagahLoads.length === 0, JSON.stringify(page.__siyagahLoads));
+  await openNote(page, "n1", "fA");
+  await editNote(page, " Sent from the pane.");
+  const went = await waitFor(page, (c) => (window.__stubWriteData || []).some((w) => w.col === c), MMJIN, 10000);
+  const r = await reqs(page);
+  check("embedded: after a save the pane sends the Note to Siyagah itself (no second action), as ONE note.add",
+    went && r.length === 1 && r[0].data.op === "note.add" && r[0].data.id === "x-msa-n-n1" && /Sent from the pane\./.test(r[0].data.content || ""), JSON.stringify(r.map((x) => x.data)));
+  check("embedded: POSITIVE CONTROL Siyagah's code was loaded only after the save", page.__siyagahLoads.includes("siyagah-cloud.js"), JSON.stringify(page.__siyagahLoads));
+  await gather(page);
+  await ctx.close();
+} catch (err) { crashed(err); }
+
+// --- one sender at a time across tabs ---------------------------------------------------------------------------------------
+console.log("\n=== lock (en, 1280) ===");
+try {
+  const ctx = await newCtx();
+  const other = await ctx.newPage();
+  await other.goto(`${BASE}/app/index.html`, { waitUntil: "load" }).catch(() => {});
+  await other.evaluate(() => { navigator.locks.request("msa-siyagah-sync|t1|p1", () => new Promise((r) => { window.__releaseLock = r; })); });
+  const { page } = await openMap(ctx);
+  await openNote(page, "n1", "fA");
+  await editNote(page, " Two tabs.");
+  await page.waitForTimeout(3500);
+  check("lock: while another tab holds the sender's lock, this tab sends nothing", (await reqs(page)).length === 0, JSON.stringify((await reqs(page)).map((x) => x.data)));
+  await other.evaluate(() => window.__releaseLock());
+  await waitFor(page, (c) => (window.__stubWriteData || []).some((w) => w.col === c), MMJIN, 8000);
+  await page.waitForTimeout(1200);
+  const r = await reqs(page);
+  check("lock: once it is free, the change goes ONCE", r.length === 1 && r[0].data.op === "note.add", JSON.stringify(r.map((x) => x.data)));
+  await gather(page);
+  await ctx.close();
+} catch (err) { crashed(err); }
+
+// --- Trash and restore ---------------------------------------------------------------------------------------------------
+console.log("\n=== trash (en, 1280) ===");
+try {
+  const ctx = await newCtx();
+  let { page } = await openMap(ctx);
+  await openNote(page, "n1", "fA");
+  await editNote(page, " Before Trash.");
+  await waitFor(page, (c) => (window.__stubWriteData || []).some((w) => w.col === c), MMJIN);
+  let r = await reqs(page);
+  await answer(page, r[0], { st: "done", res: { id: "x-msa-n-n1" }, doneAt: 1 });
+  await emitNote(page, { id: "x-msa-n-n1", title: r[0].data.title, content: r[0].data.content, folderIds: ["f-alpha"], updatedAt: "2026-11-07T01:00:00Z" }, 2000);
+  await waitFor(page, () => /In Siyagah ✓/.test(document.querySelector('#notePane [data-pane-chip="~siyagah"]')?.textContent || ""));
+  await page.click("#notePane [data-pane-menu-btn]");
+  await page.click("#notePane [data-pane-menu] [data-pane-delete]");
+  await page.waitForSelector("[data-note-delete-yes]", { state: "visible", timeout: 3000 });
+  await page.click("[data-note-delete-yes]");
+  await waitFor(page, (c) => (window.__stubWriteData || []).filter((w) => w.col === c).length >= 2, MMJIN);
+  r = await reqs(page);
+  const del = r[1];
+  check("trash: moving the Note to Trash here sends ONE note.delete {id, base} (to Siyagah's Trash, Undo there)",
+    r.length === 2 && del.data.op === "note.delete" && keys(del.data) === "at,base,from,id,op,st,v" && del.data.id === "x-msa-n-n1" && del.data.base === "2026-11-07T01:00:00Z", JSON.stringify(r.map((x) => x.data)));
+  await answer(page, del, { st: "done", res: { id: "x-msa-n-n1" }, doneAt: 1 });
+  await page.evaluate(([c]) => window.__stubEmit(c, { _id: "n~x-msa-n-n1", id: "x-msa-n-n1", gone: true, at: window.__TS(3000) }), [MMJ]);
+  await page.waitForTimeout(900);
+  check("trash: nothing more is sent while it is in both Trashes", (await reqs(page)).length === 2, JSON.stringify((await reqs(page)).map((x) => x.data.op)));
+  // Restore from this app's Trash.
+  await page.click("#openTrashBtn").catch(async () => { await page.evaluate(() => document.getElementById("openTrashBtn")?.click()); });
+  await page.waitForSelector('[data-trash-note-id="n1"] [data-trash-restore]', { state: "attached", timeout: 6000 });
+  await page.evaluate(() => document.querySelector('[data-trash-note-id="n1"] [data-trash-restore]').click());
+  await waitFor(page, (c) => (window.__stubWriteData || []).filter((w) => w.col === c).length >= 3, MMJIN, 8000);
+  r = await reqs(page);
+  check("trash: restoring it here sends it back to Siyagah (note.add, the same id)", r.length === 3 && r[2].data.op === "note.add" && r[2].data.id === "x-msa-n-n1" && /Before Trash\./.test(r[2].data.content || ""), JSON.stringify(r.map((x) => x.data)));
+  if (r[2]) await answer(page, r[2], { st: "refused", why: "id already used" });
+  await waitFor(page, (c) => (window.__stubWriteData || []).filter((w) => w.col === c).length >= 4, MMJIN, 8000);
+  r = await reqs(page);
+  check("trash: Siyagah still holding that id in its Trash -> added back under a fresh id (x-msa-n-<note>.r1)", r.length === 4 && r[3].data.op === "note.add" && r[3].data.id === "x-msa-n-n1.r1", JSON.stringify(r.map((x) => [x.data.op, x.data.id])));
   await gather(page);
   await ctx.close();
 } catch (err) { crashed(err); }

@@ -24,6 +24,8 @@ import { isSiyagahCloudReady, SIYAGAH_CLOUD_DECLARATION } from "./siyagah-cloud-
 import { t, num } from "./i18n.js";
 
 export const SIYAGAH_BAR_ID = "siyagahCloudBar";
+/** J112 D2 review: "this device has connected to Siyagah" (journey-map.html's embedded panes send only then). */
+export const SIYAGAH_CONNECTED_KEY = "msa-siyagah-connected";
 const STYLE_ID = "siyagahCloudBarStyle";
 
 function escapeHtml(s) {
@@ -909,8 +911,11 @@ export async function mountSiyagahMapLink({ beforeEl, email = "", declaration = 
 
   mod.onSiyagahUser(cloud, (user) => {
     if (user) {
+      // J112 D2 review: this device has connected -- an embedded Notes pane may now send its Notes to Siyagah after a save
+      // (journey-map.html reads the same key; nothing else is kept).
+      try { localStorage.setItem(SIYAGAH_CONNECTED_KEY, "1"); } catch { /* private mode: the panes just wait */ }
       say("", { action: "out", label: t("Disconnect") }, true);
-      head.querySelector("[data-siyagah-action]").addEventListener("click", () => mod.siyagahSignOut(cloud).catch((err) => {
+      head.querySelector("[data-siyagah-action]").addEventListener("click", () => mod.siyagahSignOut(cloud).then(() => { try { localStorage.removeItem(SIYAGAH_CONNECTED_KEY); } catch {} }).catch((err) => {
         console.error(err);
         say(escapeHtml(t("Could not disconnect: {reason}", { reason: err?.message || String(err) })), null);
       }));
