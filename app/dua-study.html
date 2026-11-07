@@ -26,6 +26,7 @@
   .dua-topnav { display: flex; gap: 0.5rem; align-items: stretch; margin: 0.6rem 0; }
   .dua-topnav > a, .dua-topnav > details { flex: 1 1 0; min-width: 0; }
   .dua-home-link { box-sizing: border-box; min-height: 44px; display: flex; align-items: center; justify-content: center; gap: 0.4rem; border-radius: 0.6rem; background: #1F3A6E; color: #fff; font-weight: 700; text-decoration: none; }
+  .dua-topnav > a.dua-bookmarks-link { box-sizing: border-box; min-height: 44px; display: flex; align-items: center; justify-content: center; gap: 0.3rem; border: 1px solid #c9a24b; border-radius: 0.6rem; background: #fff8e6; color: #1F3A6E; font-weight: 700; text-decoration: none; }
   .dua-topnav details { margin: 0 !important; }
   .dua-topnav summary { box-sizing: border-box; min-height: 44px; display: flex; align-items: center; justify-content: center; border: 1px solid #1F3A6E; border-radius: 0.6rem; background: #fff; color: #1F3A6E; font-size: 1rem; font-weight: 700; cursor: pointer; list-style: none; }
   .dua-topnav summary::-webkit-details-marker { display: none; }
@@ -200,7 +201,13 @@
       const row = document.createElement("div");
       row.className = "dua-topnav";
       menu.parentNode.insertBefore(row, menu);
-      row.append(home, menu);
+      // The Owner (7 Nov): the bookmark link sits on the Home bar too (the Bookmarks page serves every subject). ← Back returns here.
+      const bm = document.createElement("a");
+      bm.className = "dua-bookmarks-link";
+      bm.id = "duaBookmarksLink";
+      bm.href = "./bookmarks.html?back=1";
+      bm.textContent = `🔖 ${t("Bookmarks")}`;
+      row.append(home, bm, menu);
     }
   </script>
   <script>

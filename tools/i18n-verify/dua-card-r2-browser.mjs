@@ -131,8 +131,12 @@ async function run(mutation) {
         if ((await shown(".dua-menu-panel")) !== 0 || (await shown("[data-dua-card] [data-dua-progress]")) < 1) throw new Error("menu open or progress hidden");
       });
       await check("build 1 Home is one tap to the MSA home, and a Menu button beside it holds My account", async () => {
-        const got = await page.evaluate(() => ({ href: document.querySelector("#duaHomeLink")?.getAttribute("href"), beside: document.querySelector(".dua-topnav #duaHomeLink + #accountHomeMenu summary")?.textContent, acct: !!document.querySelector("#accountHomeMenu [data-open-account-card]") }));
+        const got = await page.evaluate(() => ({ href: document.querySelector("#duaHomeLink")?.getAttribute("href"), beside: document.querySelector(".dua-topnav #duaHomeLink ~ #accountHomeMenu summary")?.textContent, acct: !!document.querySelector("#accountHomeMenu [data-open-account-card]") }));
         if (got.href !== "./index.html" || !/Menu|মেনু/.test(got.beside || "") || !got.acct) throw new Error(JSON.stringify(got));
+      });
+      await check("Home bar: a Bookmarks link (shared by every subject) sits between Home and Menu, and returns here with back=1", async () => {
+        const got = await page.evaluate(() => ({ href: document.querySelector(".dua-topnav #duaHomeLink + #duaBookmarksLink + #accountHomeMenu") ? document.querySelector("#duaBookmarksLink").getAttribute("href") : null }));
+        if (got.href !== "./bookmarks.html?back=1") throw new Error(JSON.stringify(got));
       });
       await check("build 2 the Person box and 'Signed in as' are off the page (under My account); a 'For <person>' chip says who", async () => {
         const got = await page.evaluate(() => ({ who: document.querySelector("#who")?.hidden, chip: document.querySelector("#forPersonChip")?.textContent, personInPage: !!document.querySelector("#contextBar #personSelect") }));
