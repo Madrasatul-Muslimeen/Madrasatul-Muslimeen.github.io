@@ -145,8 +145,12 @@ async function runAtWidth(width) {
   check('the Arabic paragraph carries lang="ar" dir="rtl"', arDir.lang === "ar" && arDir.dir === "rtl");
 
   if (LANG === "en") {
-    const cardTranslation = await page.evaluate(() => document.querySelector('[data-hadeethenc-card="4563"] .hadith-translation-text')?.textContent);
-    check("hadith 4563's English translation equals the packaged en record's own `hadeeth` field, verbatim", cardTranslation === REC_4563_EN.hadeeth);
+    // UPDATED 8 Nov 2026 (the Owner's translation-terms rule, hadith-terms-browser.mjs): the card now shows the FOLDED English
+    // (Rabb / Allah / Rasulullah Sallallahu A'laihi Wa Sallam); the packaged text, verbatim, is what "As sourced" shows. Same intent:
+    // nothing is ever fabricated, and the source's own words are one tap away.
+    const asSourced = async (sel) => { const sw = await page.$(`${sel} ~ [data-hadith-terms-switch], [data-hadith-terms-switch]`); if (sw) await sw.click(); return page.evaluate((q) => document.querySelector(q)?.textContent, sel); };
+    const cardTranslation = await asSourced('[data-hadeethenc-card="4563"] .hadith-translation-text');
+    check("hadith 4563's English translation, shown 'As sourced', equals the packaged en record's own `hadeeth` field, verbatim", cardTranslation === REC_4563_EN.hadeeth);
     const noFallbackOnCard = await page.evaluate(() => !document.querySelector('[data-hadeethenc-card="4563"] [data-hadeethenc-fallback]'));
     check("no fallback notice on hadith 4563's card in English (it genuinely has an English translation)", noFallbackOnCard);
   }
@@ -258,8 +262,14 @@ async function runAtWidth(width) {
     check("hadith 2933's card in Bangla is labelled as a fallback (requestedLang bn)", card2933.fallbackLang === "bn");
     check("hadith 2933's shown Arabic still equals the packaged ar record's own `hadeeth`, verbatim (Arabic is never subject to the translation fallback)",
       card2933.ar === REC_2933_AR.hadeeth);
-    check("hadith 2933's shown translation, having fallen back, equals the packaged EN record's own `hadeeth`, verbatim -- never fabricated",
-      card2933.translation === REC_2933_EN.hadeeth);
+    {
+      // UPDATED 8 Nov 2026: shown folded by default; 'As sourced' gives the packaged EN record's own `hadeeth`, verbatim.
+      const sw = await page.$('[data-hadeethenc-card="2933"] ~ * [data-hadith-terms-switch], [data-hadeethenc-card="2933"] [data-hadith-terms-switch]');
+      if (sw) await sw.click();
+      const sourced2933 = await page.evaluate(() => document.querySelector('[data-hadeethenc-card="2933"] .hadith-translation-text')?.textContent);
+      check("hadith 2933's shown translation, having fallen back and shown 'As sourced', equals the packaged EN record's own `hadeeth`, verbatim -- never fabricated",
+        sourced2933 === REC_2933_EN.hadeeth);
+    }
   }
 
   // --- Architect review: the Source link is the attribution the grant

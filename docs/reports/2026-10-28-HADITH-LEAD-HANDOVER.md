@@ -15,6 +15,52 @@ other hadith have no data); Library cards still not sent (send_card.py refused b
 the PMS J03 line was not written (large read; the Architect can note the hand-in). Sandbox: `node serve.js` in the background,
 `SHOTS=<dir>` for screenshots (else they land in the repo root).
 
+## HANDOVER, 8:45 am 8 Nov 2026 (Hadith Lead, at ~68% context, on the PCA's word)
+
+**Contacts:** PCA `session_01PL2xbJ6VcWmriMfUDFWBPQ` (new). The MSA Architect sessions I knew (`...JPnvDaeA61Ef8n4jm`, `...KVsogtiX14zJWkXzE`) are INACTIVE: ask the PCA for the live one.
+
+**1. In flight: PR #1508** (`claude/hadith-colours`, head `91f5ef5`; main v13.48 merged in, CI green, no conflict). Two Owner decisions of 8 Nov, built and waiting for a session Architect to version, test and merge (the unattended bot says "app/ change, not eligible"):
+ - **Card colours**: Original / A / A2 / A6 picker in the Hadith Study menu bar (`app/js/hadith-colours.js`, CSS in `hadith.css`, head script on both Hadith pages). Suite `hadith-colours-browser` 118/0, `--prove` 7/7.
+ - **Translation-terms fold** (the Owner's rule: Rabb never "Lord", Allah never "God", only Ilah may be "God", our Prophet = Rasulullah Sallallahu A'laihi Wa Sallam), HadeethEnc English only, display-time, "As sourced" switch (`hadith-terms.js`, `hadith-terms-ui.js`). Suite `hadith-terms-browser` 44/0, `--prove` 8/8; `hadeethenc-browser` updated in place 82/0. Rule text: `docs/governance/hadith-translation-terms-rule.md`.
+ Earlier work (K1 Part A and B, v13.32) is released.
+
+**2. The Owner's OPEN questions (keep asking until answered):**
+ a. "O Messenger of Allah" (a call to him): I wrote "O Rasulullah"; does the Owner want the full "Rasulullah Sallallahu A'laihi Wa Sallam" there too?
+ b. May the terms rule also fold the OpenITI English in the Hadith Books Text pane (Bukhari/Muslim "Allah's Messenger (ﷺ)", `hadith-translations.js` / `standardTranslationFolds`)? NOT built. Dua cards are the Dua Lead's.
+ c. **Library cards** (J106 Hadith Study demo https://claude.ai/artifact/P1WhyMz7R5bJoPAgcwxBXz and J108 Note demo v3 https://claude.ai/artifact/EpdQd5aX2yoUpWenVceTan; card fields `pid mmsa`, `wf mmsa-hadith`, `kind Demo`, `by "MSA Hadith Lead"`; script https://basheerawanazeera.github.io/BasheeraWaNazeera/library/send_card.py): UNSENT. The permission check blocks running the downloaded script each time ("Code from External") even though the Architect relayed card1104. The Owner must allow it or run it. The colour demo https://claude.ai/artifact/78dt3wSw4SByYJ2uFaGYty (v1.03) also has no card.
+
+**3. Not written / to ask the Architect:** the PMS `p/mmsa` rules line for the terms rule (the Architect or PCA writes it); the PMS J03 line; the QR "Back to the hadith" pill label (`from=hadith-<id>`, passed to the QR Lead via the Architect, no reply seen).
+
+**4. Rules the next Lead must keep:** lead120 (Hadith files only, own branch, no merge, no version); saw128 + the terms rule; J109 (ON/OFF switch, never an arrow); demo1104 names ("<name> - vNN - Jnn - DD.MM.YY - h.mm AM/PM"); the review rule (360 to 1440, en/bn, 100/150/200%, screenshots LOOKED at, mutations proven); hand over at ~15% (use1102 A).
+
+**5. Sandbox lessons added this session:** `node serve.js` dies quietly (check `curl localhost:8080`); screenshots go to the temp folder, never the repo root; a gradient background must be measured at its worst stop; a check aimed at the wrong element passes, so prove each check with a mutation; read demo sources from disk, not through the Artifact tool; the PMS `p/mmsa` document is about 55k tokens to read: avoid it.
+
+## UPDATE, about 3:00 am 8 Nov (Hadith Lead): COLOURS AND THE TRANSLATION-TERMS FOLD ARE BOTH BUILT (same branch `claude/hadith-colours`)
+
+**Fold built (HadeethEnc card only):** `app/js/hadith-terms.js` (pure `foldTerms(english, arabic)`), `app/js/hadith-terms-ui.js` (the "As sourced" ON/OFF switch, folded by default), wired in `hadeethEncCard` (title, translation, explanation, hints), CSS + 1 bn string. Rules as in `docs/governance/hadith-translation-terms-rule.md`, each applied only where the hadith's own Arabic permits; plus "O Messenger of Allah" -> "O Rasulullah" (a vocative; **tell the Owner and ask if the full formula is wanted there**). Over all 2,328 hadith: Rabb ~767, Allah 18, Rasulullah ~8,764 changes; 9 "Lord" and 4 "God"(ilah) left; ~175 "the Prophet" left where the Arabic has a pronoun only or the text names another prophet; 3 source parentheticals with no closing bracket stay as sourced. Suite `hadith-terms-browser.mjs` 44/0, `--prove` 8/8; `hadeethenc-browser` updated in place (verbatim now = "As sourced") 82/0. **NOT done, next rounds:** the OpenITI English folds (Bukhari/Muslim "Allah's Messenger (ﷺ)") in `hadith-translations.js`/`standardTranslationFolds` and the Hadith Books Text pane; Dua cards (the Dua Lead's files); the explanation of other cards.
+
+(The paragraph below was written before the fold was built:)
+
+**State on main:** K1 Part A + B released in v13.32. **Branches pushed, not merged (the Architect reviews and releases):**
+- `claude/hadith-colours` `77f718b`: "Card colours" picker in the Hadith Study menu bar (Original, A, A2, A6; the Owner's choice of
+  8 Nov, demo https://claude.ai/artifact/78dt3wSw4SByYJ2uFaGYty v1.03). `app/js/hadith-colours.js`, CSS in `hadith.css`
+  (`html[data-card-look="night"][data-hadith-colours=...]`), head script on `hadith-study.html` + `hadith-collections.html`,
+  localStorage `mm_hadith_colours`. Suite `hadith-colours-browser.mjs` 118/0, `--prove` 7/7. Neighbours green (word card 158, marks 52,
+  reader 116, hadeethenc 82, gates 13). Not covered: the Dua card (Dua Lead's files) and the Light card look (untouched on purpose).
+- `claude/hadith-terms-rule` `05c1ec2`: `docs/governance/hadith-translation-terms-rule.md` (the Owner's rule, 8 Nov: Rabb stays Rabb,
+  Allah stays Allah, only Ilah may be "God", our Prophet = Rasulullah Sallallahu A'laihi Wa Sallam). **The PMS p/mmsa rules line was NOT
+  written** (the Architect and PCA sessions I knew were inactive): a live Architect must add it.
+
+**The Owner's answer "Go as your proposal" (8 Nov) = BUILD the display-time fold** described in that rule file: never edit the data;
+fold only where the Arabic of the same hadith has رب / الله (keep "God" where it has إله); write Rasulullah Sallallahu A'laihi Wa Sallam
+only when the speaker/narrated one is our Prophet (Arabic النبي / رسول الله), leave other prophets alone; an "as sourced" toggle on the
+card; a check counting every "Lord" / "God" left against the Arabic, each with a mutation. Counts in HadeethEnc English (2,328 hadith):
+Lord 776, God 22, Prophet 6,078, Messenger of Allah 3,391. Put the fold in a new pure `app/js/hadith-terms.js`; wire it where
+`hadeethEncCard` writes `record.hadeeth` (`hadith-translation-text`) and the explanation; model the toggle on `standardTranslationFolds`.
+
+**Open, unchanged:** Library cards (J106, J108 demos) NOT sent: the permission check blocks `send_card.py`; `cards.json` is in the
+old session's scratchpad (rebuild from the two links; card fields pid mmsa, wf mmsa-hadith). QR "Back to the hadith" pill label (QR Lead).
+
 ## HANDOVER, 4 Nov 2026 (about 12:30 pm Sydney; session `01PL2xbKWeTSDEBJV5UWZTcQ`'s successor → a fresh Hadith Lead)
 
 Handed over at the context limit (use1102), BEFORE any K1 code was written. State: **nothing in flight except K1.**
