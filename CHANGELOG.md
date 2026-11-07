@@ -23428,3 +23428,10 @@ The evening's third release, the follow-up to v13.26.
 - **The Dua Share window at 200% text:** the text box scrolls, and Chromium made it a nameless Tab stop before Copy; it is now a named one at every size (`tabindex 0`, `role region`, "The text to share", Bangla added).
 - **Checks:** hadith-dua-keyboard 1086/0 (main 988/98; its no-ring mutation 882/204 red), night-hadith-dua 6038/0, hadith-dua-a11y --page=dua 1423/0, dua-poster-r3 130/0, apps-build-check 48/0, behaviour 974/1 (14a, the same as main). Screenshots looked at (390 and 1024, night look): the ring is plainly visible.
 - Nothing deployed to Firestore.
+
+## v13.50 — 8 Nov 2026 — The four ruling questions on Approach 24 "Fiqh to Ruling" (QR J116)
+
+- **PCF MSA · QR J116 (the QR Lead, `claude/qr-lead-ruling-q24`, #1515, reviewed by the Architect).** The Owner, 8 Nov: "The questions should be in 'Fiqh to Ruling' for now." The Note's question card on Approach 24 (`approach_24`, Mastery Level — Where Fiqh turns to Ruling) now offers four questions: who the āyah is for (Rasulullah Sallallahu A'laihi Wa Sallam only, one particular situation, or him and everyone, so it applies to me too); does the command belong to that time or still apply; has it been abrogated; if so, what replaced it. The reader decides each; nothing answers it for them. English and Bangla (the Bangla is the Lead's draft, to be checked). Approaches 25 and 26 carry no card; the Hadith side waits (shared).
+- `QUESTIONS` is keyed by the permanent Approach id, so the Tābiʿūn Approach coming in QR J115 (a new id) moves nothing here.
+- **Checks:** critical-reasoning-guides 12/0 (7 mutations red, incl. ruling-gone and ruling-on-26), note-question-card 10/0, note-question-card-wiring 106/0, question-card-toggle 6/0, apps-build-check 48/0, behaviour 974/1 (14a, the same as main).
+- Nothing deployed to Firestore.
