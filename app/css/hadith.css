@@ -541,3 +541,11 @@ body.hadith-pane-dragging { user-select: none; }
 .hwc-sheet .hkm-btn { border-color: #3a4767; background: #111a2e; color: #eef1f7; }
 .hwc-sheet .hkm-btn[aria-pressed="true"] { background: #e3c27a; color: #1c2a46; border-color: #e3c27a; }
 .hwc-sheet .hkm-note { color: #a9b3c8; }
+
+/* D24: the Dua Word Card's levels, word steps and body (PCF MSA J104). */
+.dua-wc { display: grid; gap: 0.45rem; margin-top: 0.3rem; }
+.dua-wc-nav, .dua-wc-levels, .dua-wc-kin { display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center; }
+.dua-wc-count { font-variant-numeric: tabular-nums; color: var(--hadith-muted); }
+.dua-wc-step, .dua-wc-level, .dua-wc-back, .dua-wc-kin-word { min-height: 40px; min-width: 40px; }
+.dua-wc-level[aria-pressed="true"] { background: #e3c27a; color: #1c2a46; border-color: #e3c27a; font-weight: 600; }
+.dua-wc-body { display: grid; gap: 0.4rem; min-width: 0; }
