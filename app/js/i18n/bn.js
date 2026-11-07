@@ -4146,6 +4146,7 @@ export const BN = {
   "Not applicable: this word is not a verb, so it has no verb table.": "প্রযোজ্য নয়: এই শব্দটি ক্রিয়া নয়, তাই এর ক্রিয়া-ছক নেই।", // ?
   "Dictionary entries and how the word is used in the hadith will come later.": "অভিধানের এন্ট্রি ও হাদীসে শব্দটির ব্যবহার পরে আসবে।", // ?
   "Back to the dua": "দুআয় ফিরুন", // ?
+  "The text to share": "যে লেখা শেয়ার করা হবে", // ?
   "Grammar suggestion (computer, to be checked)": "ব্যাকরণের প্রস্তাব (কম্পিউটারের, যাচাই করা হবে)", // ?
   "Adverb": "ক্রিয়াবিশেষণ", // ?
   "Particle": "অব্যয়", // ?
