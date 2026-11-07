@@ -78,6 +78,31 @@ for (const [lang, width] of [["en", 320], ["en", 390], ["bn", 390], ["en", 768],
   check(`${tag} an āyah unit has no whole-unit row (its Bookmark tile is the bookmark)`, one.open && !one.unitRow && one.tile, JSON.stringify(one));
   await ctx.close();
 }
+// Larger text (the Architect's hand-over list): at 150% / 200% the sheet's new rows ("+ New Note", "Bookmark · <unit>") stay inside the sheet and the screen,
+// and their words wrap instead of running out of it.
+for (const [lang, width, pct] of [["en", 390, 150], ["en", 390, 200], ["bn", 390, 200], ["en", 360, 200]]) {
+  const tag = `[${lang} ${width} ${pct}%]`;
+  const ctx = await newContext(browser, { appLang: lang === "bn" ? "bn" : null, banner: false, viewport: { width, height: 900 }, extraSeedJs: SEED });
+  await ctx.route("**/archive.org/**", (r) => r.abort());
+  const { page } = await openPage(ctx, "/app/quranrevival.html");
+  await page.evaluate((p) => { document.documentElement.style.fontSize = p + "%"; }, pct);
+  if (!(await page.evaluate(() => (document.getElementById("tabReadBtn")?.getBoundingClientRect().width ?? 0) > 0))) { await page.click("#tabStudyBtn"); await page.waitForTimeout(150); }
+  await page.click("#tabReadBtn"); await page.waitForTimeout(500);
+  // The ONE-Ayah-View bar ⋮ with Page as the unit: a unit wider than one āyah (so the whole-unit row is there) and the āyah 2:255 (so the Note rows are).
+  await setSel(page, "unitTypeSelect", "page"); await page.waitForTimeout(700);
+  await setSel(page, "surahSelect", "2"); await page.waitForTimeout(1500);
+  await page.evaluate(() => { const el = document.getElementById("ayahSelect"); el.value = "255"; el.dispatchEvent(new Event("change", { bubbles: true })); });
+  await page.waitForTimeout(1200);
+  await page.evaluate(() => document.querySelector("#readQuickMenuSlot [data-qm-toggle]")?.click());
+  await page.waitForTimeout(900);
+  const g = await page.evaluate(() => {
+    const m = document.querySelector("#readQuickMenuSlot .quick-menu.open"); if (!m) return null; const mb = m.getBoundingClientRect();
+    const rows = ["[data-qm-note-add]", "[data-qm-unit-bookmark]"].map((s) => { const e = m.querySelector(s); if (!e) return { s, missing: true }; const r = e.getBoundingClientRect(); return { s, inside: r.left >= mb.left - 0.5 && r.right <= mb.right + 0.5 && r.right <= innerWidth, noOverflow: e.scrollWidth <= e.clientWidth + 1, h: Math.round(r.height) }; });
+    return { menu: [Math.round(mb.left), Math.round(mb.right)], vw: innerWidth, rows };
+  });
+  check(`${tag} the "+ New Note" and "Bookmark · unit" rows stay inside the sheet and the screen, their words wrapping`, !!g && g.menu[0] >= 0 && g.menu[1] <= g.vw && g.rows.every((r) => !r.missing && r.inside && r.noOverflow), JSON.stringify(g));
+  await ctx.close();
+}
 await browser.close();
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
