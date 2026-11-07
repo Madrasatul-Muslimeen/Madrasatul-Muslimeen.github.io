@@ -561,3 +561,16 @@ body.hadith-pane-dragging { user-select: none; }
 [data-card-look="night"] .hadith-card.dua-card { background: var(--card-bg); color: var(--card-text); }
 [data-card-look="night"] .dua-menu-panel { background: var(--card-bg); }
 [data-card-look="night"] .dua-word-pop .hadith-note, [data-card-look="night"] .dua-word-pop .hadeethenc-study-reason { color: var(--card-text-muted); }
+
+/* MSA J117: the keyboard ring in the night look, inside the Dua and Hadith CARDS and their pop-ups and menus (the Dua card,
+   its windows, its groups list, a Hadith card, the Books and Subjects menus). There the browser's default dark ring sat
+   on the dark plate at 1.09:1. Night look only (the day look's default ring already passes 3:1). The ring is the Dua
+   frame's own orange (#e2662b): at least 3:1 on the night plate and navy and on the light boxes inside a card (white,
+   cream). A pressed or open control with a light fill (gold, cream, pale green) gets a navy ring inside it instead.
+   Scoped on purpose: shared bars outside the cards (the Zab bar, the account sheet, the intention card, the Dua mode row)
+   keep the browser's ring exactly as before; the night check showed orange measured below 3:1 on several of them.
+   :where() keeps both rules as light as a rule can be, so a control that draws its own ring keeps it. The groups list's
+   focus tint is painted solid at what it already looked like (18% gold on the list's navy), so what is measured is seen. */
+:where([data-card-look="night"]) :where(.dua-card, .hadith-card, .dua-pop, .dua-pull, [data-hadith-menu]) :where(button, a[href], summary, input, select, textarea, [tabindex]:not([tabindex="-1"])):focus-visible { outline: 2px solid #e2662b; outline-offset: 2px; }
+:where([data-card-look="night"]) :where(.dua-card, .hadith-card, .dua-pop, .dua-pull, [data-hadith-menu]) :where(.hkm-btn[aria-pressed="true"], .hwc-tab[aria-pressed="true"], .dua-wc-level[aria-pressed="true"], .dua-switch[aria-pressed="true"], .dua-status[aria-pressed="true"], .dua-word[aria-pressed="true"], .dua-tile-menu[aria-expanded="true"], .dua-tile-play):focus-visible { outline: 2px solid #1c2a46; outline-offset: -4px; }
+[data-card-look="night"] .dua-pull-item:is(:hover, :focus-visible) { background: #343230; }

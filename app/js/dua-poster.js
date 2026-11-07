@@ -402,6 +402,9 @@ export function shareNodes(sheet, close) {
       const text = shareText(sheet, shareOpt);
       const pv = el("div", "dua-share-preview", text);
       pv.dir = "auto"; pv.dataset.duaSharePreview = "";
+      // MSA J117: a box that scrolls (at 200% text it does) is a Tab stop in Chromium on its own, nameless; make it a named one
+      // on purpose, at every size, so a keyboard reader can scroll the text and hears what it is.
+      pv.tabIndex = 0; pv.setAttribute("role", "region"); pv.setAttribute("aria-label", t("The text to share"));
       wrap.appendChild(pv);
       const cp = el("button", "dua-ref", t("Copy"));
       cp.type = "button"; cp.dataset.duaCopy = "";
