@@ -716,6 +716,23 @@ export async function fillDuaProgress(rows) {
   }
 }
 
+/** The new Note on a dua of the Hadith books (permanent key dua:<n>, decision 88), through the shared opener (loaded on first press: I9). */
+async function openDuaNewNote(dua, name, link) {
+  let opener;
+  try { opener = await import("./note-opener.js"); }
+  catch { window.location.href = link.href; return; } // the module did not load: the old route (notes.html) still works
+  const card = document.querySelector(`[data-dua-card="${dua}"]`);
+  const ar = card?.querySelector("[data-dua-words]")?.textContent?.trim() ?? "";
+  const ref = opener.duaRef({ n: dua, label: name, ar });
+  try {
+    await opener.openNewNote({
+      ref, unitKey: `dua:${dua}`, unitLabel: name, title: `${name}:`, backLabel: t("Back to the dua"),
+      onOpenExisting: () => { window.location.href = link.href; },
+      onClosed: () => link.focus?.({ preventScroll: true }),
+    });
+  } catch { window.location.href = link.href; } // never a dead tap (I15): the opener failed, so take the old Notes route
+}
+
 /**
  * 9 Oct 2026: 📝 My Notes and 🔖 Bookmark on a dua card, the same pair (and look) a HadeethEnc hadith card has. Notes
  * open notes.html for dua:<n> with ← Back (this page's address is first set to reopen this card); the bookmark reopens
@@ -732,7 +749,13 @@ export function duaNoteBookmarkRow(actions, session, dua, page, isBookmarked) {
   note.dataset.duaNoteLink = String(dua);
   note.textContent = `📝 ${t("My Notes")}`;
   note.setAttribute("aria-disabled", session.isSelf ? "false" : "true");
-  note.addEventListener("click", (e) => { if (!session.isSelf) { e.preventDefault(); return; } rememberDuaPlace(page, dua); });
+  note.addEventListener("click", (e) => {
+    if (!session.isSelf) { e.preventDefault(); return; }
+    rememberDuaPlace(page, dua);
+    // Dua J104 (7 Nov): the shared Note opener, over the unmoved page; the old Notes route stays as the way if it cannot open.
+    e.preventDefault();
+    openDuaNewNote(dua, name, note);
+  });
   noteItem.appendChild(note);
   if (!session.isSelf) noteItem.appendChild(el("p", "hadeethenc-study-reason", t("Only your own record can create or file a Note.")));
   const markItem = el("div", "hadeethenc-study-item");
