@@ -9,7 +9,7 @@
 :root {
   --paper: #f3efe4; --card: #fffdf7; --line: #e2d6b6; --ink: #1d1d18; --muted: #5a594f;
   --navy: #1F3A6E; --navy-ink: #ffffff; --gold: #c9a24b; --gold-ink: #6b4e10; --chip: #eef2fa;
-  --diff: #b3362d; --diff-bg: #fbe6e3; --prac: #b9770e; --prac-bg: #fdf0d6; --empty: #e7e2d3; --qword: #1F6E5A;
+  --diff: #b3362d; --diff-bg: #fbe6e3; --prac: #b9770e; --prac-bg: #fdf0d6; --done: #2e7d4f; --done-bg: #e2f3e8; --empty: #e7e2d3; --qword: #1F6E5A;
   --wc-bg: #1c2a46; --wc-well: #111a2e; --wc-edge: #3a4767; --wc-ink: #eef1f7; --wc-muted: #a9b3c8; --wc-gold: #e3c27a;
   --font-ui: "Noto Sans", "Noto Sans Bengali", system-ui, sans-serif;
   --font-quran: "Amiri Quran", "Amiri", "Noto Naskh Arabic", serif;
@@ -18,12 +18,12 @@
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --paper: #121620; --card: #1b2130; --line: #343c50; --ink: #ecebe4; --muted: #b0b2ba;
   --navy: #9db8ea; --navy-ink: #121620; --gold: #d9b45f; --gold-ink: #e6c77a; --chip: #252f48;
-  --diff: #f08a80; --diff-bg: #3d1e1b; --prac: #f0b860; --prac-bg: #3a2c12; --empty: #2d3446; --qword: #7fd3b8;
+  --diff: #f08a80; --diff-bg: #3d1e1b; --prac: #f0b860; --prac-bg: #3a2c12; --done: #7fd39b; --done-bg: #173323; --empty: #2d3446; --qword: #7fd3b8;
   --wc-bg: #1c2a46; --wc-well: #0e1525; --wc-edge: #3a4767; --wc-ink: #eef1f7; --wc-muted: #a9b3c8; --wc-gold: #e3c27a; color-scheme: dark } }
 :root[data-theme="dark"] {
   --paper: #121620; --card: #1b2130; --line: #343c50; --ink: #ecebe4; --muted: #b0b2ba;
   --navy: #9db8ea; --navy-ink: #121620; --gold: #d9b45f; --gold-ink: #e6c77a; --chip: #252f48;
-  --diff: #f08a80; --diff-bg: #3d1e1b; --prac: #f0b860; --prac-bg: #3a2c12; --empty: #2d3446; --qword: #7fd3b8;
+  --diff: #f08a80; --diff-bg: #3d1e1b; --prac: #f0b860; --prac-bg: #3a2c12; --done: #7fd39b; --done-bg: #173323; --empty: #2d3446; --qword: #7fd3b8;
   --wc-bg: #1c2a46; --wc-well: #0e1525; --wc-edge: #3a4767; --wc-ink: #eef1f7; --wc-muted: #a9b3c8; --wc-gold: #e3c27a; color-scheme: dark }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
@@ -69,6 +69,7 @@ select { min-height: 40px; border-radius: 10px; border: 1px solid var(--line); b
 .w.m-d { box-shadow: inset 0 -3px 0 var(--diff); }
 .w.m-p { box-shadow: inset 0 -3px 0 var(--prac); }
 .w.m-d.m-p { box-shadow: inset 0 -3px 0 var(--diff), inset 0 -6px 0 var(--prac); }
+.w.m-o { background: var(--done-bg); }
 .hw-q { color: var(--qword); text-decoration: underline dotted 1.5px; text-underline-offset: 7px; }
 .hw-h { color: var(--diff); text-decoration: underline solid 1.5px; text-underline-offset: 7px; }
 .quote { background: var(--chip); border-radius: 6px; cursor: pointer; }
@@ -78,7 +79,7 @@ select { min-height: 40px; border-radius: 10px; border: 1px solid var(--line); b
 .mk { min-height: 40px; padding: 0 14px; border-radius: 20px; border: 1.5px solid var(--mk); background: var(--card); color: var(--mk); font: 600 14px var(--font-ui); cursor: pointer; }
 .mk[aria-pressed="true"] { background: var(--mk); color: var(--card); }
 .mk:disabled { cursor: default; opacity: .9; }
-.mk.d { --mk: var(--diff); } .mk.p { --mk: var(--prac); }
+.mk.d { --mk: var(--diff); } .mk.p { --mk: var(--prac); } .mk.o { --mk: var(--done); }
 .seen { font-size: 13px; color: var(--muted); }
 .rel { display: grid; gap: 10px; border-top: 1px dashed var(--line); padding-top: 10px; }
 .reltabs { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -119,7 +120,7 @@ details summary { cursor: pointer; color: var(--navy); font-weight: 600; min-hei
 .well .lnk { min-height: 36px; padding: 0 12px; border-radius: 18px; border: 1px solid var(--wc-gold); background: transparent; color: var(--wc-gold); font: 600 13px var(--font-ui); cursor: pointer; justify-self: start; }
 .sheet .marks { border-top-color: var(--wc-edge); }
 .sheet .mk { background: transparent; }
-.sheet .mk.d { --mk: #f08a80; } .sheet .mk.p { --mk: #f0b860; }
+.sheet .mk.d { --mk: #f08a80; } .sheet .mk.p { --mk: #f0b860; } .sheet .mk.o { --mk: #7fd39b; }
 .sheet .mk[aria-pressed="true"] { background: var(--mk); color: var(--wc-bg); }
 .sheet .seen { color: var(--wc-muted); }
 .sheet .rel { border-top-color: var(--wc-edge); }
@@ -137,8 +138,8 @@ details summary { cursor: pointer; color: var(--navy); font-weight: 600; min-hei
 table { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
 th, td { text-align: start; padding: 8px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
 th { color: var(--muted); font-weight: 600; }
-td .chipd, td .chipp { display: inline-block; border-radius: 10px; padding: 0 8px; font-size: 12.5px; font-weight: 600; margin: 2px; }
-.chipd { background: var(--diff-bg); color: var(--diff); } .chipp { background: var(--prac-bg); color: var(--prac); }
+td .chipd, td .chipp, td .chipo { display: inline-block; border-radius: 10px; padding: 0 8px; font-size: 12.5px; font-weight: 600; margin: 2px; }
+.chipd { background: var(--diff-bg); color: var(--diff); } .chipp { background: var(--prac-bg); color: var(--prac); } .chipo { background: var(--done-bg); color: var(--done); }
 .qs ol { margin: 0; padding-inline-start: 20px; display: grid; gap: 12px; }
 .qs label { display: flex; gap: 8px; align-items: flex-start; min-height: 32px; cursor: pointer; }
 .qs input { width: 20px; height: 20px; margin-top: 2px; flex-shrink: 0; }
@@ -194,15 +195,15 @@ const DATA = /*DATA*/;
 const T = {
  en: {
   title: "Keys to Understanding", student: "Student", teacher: "Teacher",
-  demoTag: "Demo · J03 · nothing is saved · real Yā-Sīn and hadith data",
-  lede: "Mark an āyah, a hadith or a word as Difficult or Need practice on its own card. Your marks show on the Status wheel, and your teacher sees them too. Every card also suggests what to read next: Qur'an, Hadith, Dictionary, Scholars and Tafsīr. Switch to Teacher at the top to see each student's marks.",
+  demoTag: "Demo v2 · J03 · your ticks of 4 Nov applied · nothing is saved · real Yā-Sīn and hadith data",
+  lede: "Mark an āyah, a hadith or a word as Difficult, Need practice or Done on its own card. Your marks show on the Status wheel, and your teacher sees them too. Every card also suggests what to read next: Qur'an, Hadith, Dictionary, Scholars and Tafsīr. Switch to Teacher at the top to see each student's marks.",
   wheelH: "Status wheel: your marks", viewLabel: "What the wheel shows",
   v1: "1 · The āyāt of Sūrah Yā-Sīn (83)", v2: "2 · The words of one āyah (36:38)", v3: "3 · The words of every āyah (725)", v4: "Hadith · the hadith on Yā-Sīn (9)", v5: "Hadith · the words of one hadith (Bukhārī 3199)",
-  legDiff: "Difficult", legPrac: "Need practice", legNone: "not marked", legQ: "a Qur'an word", legH: "a hadith-only word",
-  wheelNote: "Each piece has two bands: the outer band is Difficult, the inner band is Need practice. Tap a piece to open its card.",
+  legDiff: "Difficult", legPrac: "Need practice", legDone: "Done (known / studied)", legNone: "not marked", legQ: "root in the Qur'an", legH: "root not in the Qur'an",
+  wheelNote: "Each piece has three bands: outer Difficult, middle Need practice, inner Done. Tap a piece to open its card.",
   whoYou: "Showing: your own marks", whoStudent: "Showing: {name}'s marks (read only)",
-  tabAyah: "Āyah card", tabHadith: "Hadith card", tabTeacher: "Teacher's view", tabQs: "Your ticks",
-  mDiff: "Difficult", mPrac: "Need practice",
+  tabAyah: "Āyah card", tabHadith: "Hadith card", tabTeacher: "Teacher's view", tabQs: "Your answers",
+  mDiff: "Difficult", mPrac: "Need practice", mDone: "Done",
   marksFor: "Mark this {what}:", marksSeen: "Marked by: {names}", marksNone: "No student has marked this yet.",
   ayah: "āyah", hadith: "hadith", word: "word",
   rel: "Read next", rQuran: "Qur'an", rHadith: "Hadith", rDict: "Dictionary", rSch: "Scholars", rTaf: "Tafsīr",
@@ -216,7 +217,7 @@ const T = {
   tafHNote: "This hadith explains 36:38. Read the āyah's tafsīr in:",
   explain: "Explanation of the hadith (HadeethEnc, Arabic)", benefits: "What the hadith teaches (HadeethEnc, Arabic)",
   approach: "Approach",
-  hadithIntro: "Tap a word. A green dotted word is also in the Qur'an, so it opens QR's Word card. A red underlined word is not in the Qur'an, so it opens the Hadith Word Card. The shaded words are the āyah it quotes.",
+  hadithIntro: "Tap a word. A green dotted word has its root in the Qur'an, so it opens QR's Word card. A red underlined word's root is not in the Qur'an, so it opens the Hadith Word Card. The shaded words are the āyah it quotes.",
   quoted: "The āyah it quotes: 36:38",
   grade: "Ṣaḥīḥ · agreed upon (Bukhārī and Muslim)",
   hadithEnFrom: "English: Muhsin Khan. Bangla: the app's Bukhārī translation. Arabic as HadeethEnc gives it.",
@@ -234,7 +235,7 @@ const T = {
   sameDict: "The same dictionary word in the Qur'an", openQwc: "Open QR's Word card",
   draftTag: "draft · to be checked by a teacher",
   hwcFind: "The app's two dictionaries hold Qur'an words only. For a word that is not in the Qur'an, the HWC shows the meaning HadeethEnc gives with the hadith, and says when there is none.",
-  fromHadith: "In this hadith", qwcFrom: "Opened from the hadith: this is the same word at its place in the Qur'an.",
+  fromHadith: "In this hadith", qwcFrom: "Opened from the hadith: its root is in the Qur'an, so this is QR's Word card for the same dictionary word.",
   teacherH: "Teacher's view: each student's marks", teacherLede: "Your students mark for themselves; you see every mark. Tap a name to show that student's marks on the wheel. (The students here are examples.)",
   thStudent: "Student", thAyat: "Āyāt", thWords: "Words", thHadith: "Hadith", thShow: "",
   show: "Show on wheel", mostMarked: "Marked by most students", rulesNote: "In the app, a teacher reading a student's own marks needs one Firebase Rules step that you publish. The steps come with the build; J03 Round 2 already holds a Rules candidate for the keys.",
@@ -247,20 +248,27 @@ const T = {
   q4: "The teacher seeing a student's marks.", q4a: "A · Yes. I set out the one Firebase Rules step with click-by-click steps after you approve. Recommended.", q4b: "B · Not now: marks stay with each student.",
   q5: "The build.", q5a: "A · Approved as shown: the QR Lead builds the Āyah card and QR's Word card parts, the Hadith Lead the Hadith card and the HWC; MSA reviews and releases. Recommended.", q5b: "B · Change first (write what in J03).",
   difficultCount: "Difficult", pracCount: "Need practice",
+  ansH: "Your answers (4 Nov, 12:04 pm) and what this demo now does",
+  ansLede: "The build is approved (Q5 A). Each round is reviewed on phone, tablet and computer, in English and Bangla, before release.",
+  ans1: "Q1 · A, and Done: three marks, Difficult, Need practice and Done (known / studied). Try Done on any card; it is the inner band of the wheel.",
+  ans2: "Q2 · By root: a hadith word whose root is in the Qur'an opens QR's Word card (for example فتستأذن now opens it at 9:44). Only a word whose root is not in the Qur'an, like ويوشك, opens the Hadith Word Card.",
+  ans3: "Q3 · The same as Q2: hadith words are matched to the Qur'an by their root.",
+  ans4: "Q4 · A: the teacher sees each student's marks. That needs one Firebase Rules step you publish; I give you the steps when that round is ready.",
+  ans5: "Q5 · A: the Hadith Lead builds the Hadith card and the Hadith Word Card, the QR Lead the Āyah card and QR's Word card, and MSA adds Read next and the teacher's view, then reviews and releases.",
   centreSurah: "Yā-Sīn", centreHadith: "Hadith", centreWords: "words",
   posNames: {}
  },
  bn: {
   title: "বোঝার চাবি", student: "শিক্ষার্থী", teacher: "শিক্ষক",
-  demoTag: "ডেমো · J03 · কিছুই সংরক্ষিত হয় না · ইয়াসীন ও হাদীসের আসল তথ্য",
-  lede: "কোনো আয়াত, হাদীস বা শব্দকে তার নিজের কার্ডে \"কঠিন\" বা \"অনুশীলন দরকার\" চিহ্ন দিন। আপনার চিহ্ন স্ট্যাটাস চাকায় দেখা যায়, আর আপনার শিক্ষকও তা দেখেন। প্রতিটি কার্ড পরে কী পড়বেন তাও বলে: কুরআন, হাদীস, অভিধান, আলেমগণ ও তাফসীর। প্রত্যেক শিক্ষার্থীর চিহ্ন দেখতে ওপরে \"শিক্ষক\" বাছুন।",
+  demoTag: "ডেমো v2 · J03 · ৪ নভেম্বরের টিক অনুযায়ী · কিছুই সংরক্ষিত হয় না · ইয়াসীন ও হাদীসের আসল তথ্য",
+  lede: "কোনো আয়াত, হাদীস বা শব্দকে তার নিজের কার্ডে \"কঠিন\", \"অনুশীলন দরকার\" বা \"সম্পন্ন\" চিহ্ন দিন। আপনার চিহ্ন স্ট্যাটাস চাকায় দেখা যায়, আর আপনার শিক্ষকও তা দেখেন। প্রতিটি কার্ড পরে কী পড়বেন তাও বলে: কুরআন, হাদীস, অভিধান, আলেমগণ ও তাফসীর। প্রত্যেক শিক্ষার্থীর চিহ্ন দেখতে ওপরে \"শিক্ষক\" বাছুন।",
   wheelH: "স্ট্যাটাস চাকা: আপনার চিহ্ন", viewLabel: "চাকা কী দেখায়",
   v1: "১ · সূরা ইয়াসীনের আয়াতসমূহ (৮৩)", v2: "২ · একটি আয়াতের শব্দ (৩৬:৩৮)", v3: "৩ · প্রতিটি আয়াতের শব্দ (৭২৫)", v4: "হাদীস · ইয়াসীন বিষয়ক হাদীস (৯)", v5: "হাদীস · একটি হাদীসের শব্দ (বুখারী ৩১৯৯)",
-  legDiff: "কঠিন", legPrac: "অনুশীলন দরকার", legNone: "চিহ্ন নেই", legQ: "কুরআনের শব্দ", legH: "শুধু হাদীসের শব্দ",
-  wheelNote: "প্রতিটি অংশে দুটি পট্টি: বাইরের পট্টি \"কঠিন\", ভেতরের পট্টি \"অনুশীলন দরকার\"। কার্ড খুলতে কোনো অংশে চাপুন।",
+  legDiff: "কঠিন", legPrac: "অনুশীলন দরকার", legDone: "সম্পন্ন (জানা / পড়া হয়েছে)", legNone: "চিহ্ন নেই", legQ: "মূল কুরআনে আছে", legH: "মূল কুরআনে নেই",
+  wheelNote: "প্রতিটি অংশে তিনটি পট্টি: বাইরে \"কঠিন\", মাঝে \"অনুশীলন দরকার\", ভেতরে \"সম্পন্ন\"। কার্ড খুলতে কোনো অংশে চাপুন।",
   whoYou: "দেখানো হচ্ছে: আপনার নিজের চিহ্ন", whoStudent: "দেখানো হচ্ছে: {name}-এর চিহ্ন (শুধু দেখার জন্য)",
-  tabAyah: "আয়াত কার্ড", tabHadith: "হাদীস কার্ড", tabTeacher: "শিক্ষকের দৃশ্য", tabQs: "আপনার টিক",
-  mDiff: "কঠিন", mPrac: "অনুশীলন দরকার",
+  tabAyah: "আয়াত কার্ড", tabHadith: "হাদীস কার্ড", tabTeacher: "শিক্ষকের দৃশ্য", tabQs: "আপনার উত্তর",
+  mDiff: "কঠিন", mPrac: "অনুশীলন দরকার", mDone: "সম্পন্ন",
   marksFor: "এই {what}টি চিহ্নিত করুন:", marksSeen: "চিহ্ন দিয়েছে: {names}", marksNone: "এখনো কোনো শিক্ষার্থী এটি চিহ্নিত করেনি।",
   ayah: "আয়াত", hadith: "হাদীস", word: "শব্দ",
   rel: "পরে পড়ুন", rQuran: "কুরআন", rHadith: "হাদীস", rDict: "অভিধান", rSch: "আলেমগণ", rTaf: "তাফসীর",
@@ -274,7 +282,7 @@ const T = {
   tafHNote: "এই হাদীস ৩৬:৩৮ ব্যাখ্যা করে। আয়াতটির তাফসীর পড়ুন:",
   explain: "হাদীসের ব্যাখ্যা (হাদীসএনসি, আরবি)", benefits: "হাদীসটি যা শেখায় (হাদীসএনসি, আরবি)",
   approach: "পদ্ধতি",
-  hadithIntro: "একটি শব্দে চাপুন। সবুজ ডট-দাগের শব্দ কুরআনেও আছে, তাই সেটি QR-এর শব্দ কার্ড খোলে। লাল দাগের শব্দ কুরআনে নেই, তাই সেটি হাদীস শব্দ কার্ড খোলে। ছায়া দেওয়া শব্দগুলো উদ্ধৃত আয়াত।",
+  hadithIntro: "একটি শব্দে চাপুন। সবুজ ডট-দাগের শব্দের মূল কুরআনে আছে, তাই সেটি QR-এর শব্দ কার্ড খোলে। লাল দাগের শব্দের মূল কুরআনে নেই, তাই সেটি হাদীস শব্দ কার্ড খোলে। ছায়া দেওয়া শব্দগুলো উদ্ধৃত আয়াত।",
   quoted: "উদ্ধৃত আয়াত: ৩৬:৩৮",
   grade: "সহীহ · মুত্তাফাকুন আলাইহি (বুখারী ও মুসলিম)",
   hadithEnFrom: "ইংরেজি: মুহসিন খান। বাংলা: অ্যাপের বুখারী অনুবাদ। আরবি হাদীসএনসি অনুযায়ী।",
@@ -292,7 +300,7 @@ const T = {
   sameDict: "কুরআনে একই অভিধানের শব্দ", openQwc: "QR-এর শব্দ কার্ড খুলুন",
   draftTag: "খসড়া · শিক্ষক যাচাই করবেন",
   hwcFind: "অ্যাপের দুটি অভিধানে শুধু কুরআনের শব্দ আছে। কুরআনে নেই এমন শব্দের জন্য HWC হাদীসের সাথে হাদীসএনসি যে অর্থ দেয় তা দেখায়, আর না থাকলে তা বলে।",
-  fromHadith: "এই হাদীসে", qwcFrom: "হাদীস থেকে খোলা: এটি কুরআনে নিজের স্থানে একই শব্দ।",
+  fromHadith: "এই হাদীসে", qwcFrom: "হাদীস থেকে খোলা: এর মূল কুরআনে আছে, তাই এটি একই অভিধানের শব্দের QR-এর শব্দ কার্ড।",
   teacherH: "শিক্ষকের দৃশ্য: প্রত্যেক শিক্ষার্থীর চিহ্ন", teacherLede: "শিক্ষার্থীরা নিজেরাই চিহ্ন দেয়; আপনি প্রতিটি চিহ্ন দেখেন। চাকায় কোনো শিক্ষার্থীর চিহ্ন দেখাতে তার নামে চাপুন। (এখানের শিক্ষার্থীরা উদাহরণ।)",
   thStudent: "শিক্ষার্থী", thAyat: "আয়াত", thWords: "শব্দ", thHadith: "হাদীস", thShow: "",
   show: "চাকায় দেখান", mostMarked: "সবচেয়ে বেশি শিক্ষার্থী যা চিহ্নিত করেছে", rulesNote: "অ্যাপে শিক্ষক শিক্ষার্থীর নিজের চিহ্ন পড়তে হলে Firebase Rules-এর একটি ধাপ লাগবে, যা আপনি প্রকাশ করবেন। ধাপগুলো তৈরির সাথে দেওয়া হবে; J03 রাউন্ড ২-এ চাবির জন্য একটি Rules প্রস্তাব আগেই আছে।",
@@ -305,6 +313,13 @@ const T = {
   q4: "শিক্ষক শিক্ষার্থীর চিহ্ন দেখবেন।", q4a: "A · হ্যাঁ। আপনি অনুমোদন দিলে Firebase Rules-এর একটি ধাপ ক্লিক-ধরে-ধরে লিখে দেব। প্রস্তাবিত।", q4b: "B · এখন নয়: চিহ্ন প্রত্যেক শিক্ষার্থীর কাছেই থাকবে।",
   q5: "তৈরি।", q5a: "A · যেমন দেখানো হয়েছে তেমনই অনুমোদিত: QR লিড আয়াত কার্ড ও QR-এর শব্দ কার্ডের অংশ বানাবেন, হাদীস লিড হাদীস কার্ড ও HWC; MSA যাচাই করে প্রকাশ করবে। প্রস্তাবিত।", q5b: "B · আগে বদলান (J03-এ কী তা লিখুন)।",
   difficultCount: "কঠিন", pracCount: "অনুশীলন দরকার",
+  ansH: "আপনার উত্তর (৪ নভেম্বর, দুপুর ১২:০৪) এবং এই ডেমো এখন যা করে",
+  ansLede: "তৈরি অনুমোদিত (প্রশ্ন ৫ A)। প্রতিটি রাউন্ড প্রকাশের আগে ফোন, ট্যাবলেট ও কম্পিউটারে, ইংরেজি ও বাংলায় যাচাই করা হবে।",
+  ans1: "প্রশ্ন ১ · A, এবং \"সম্পন্ন\": তিনটি চিহ্ন, \"কঠিন\", \"অনুশীলন দরকার\" ও \"সম্পন্ন\" (জানা / পড়া হয়েছে)। যেকোনো কার্ডে \"সম্পন্ন\" চেষ্টা করুন; এটি চাকার ভেতরের পট্টি।",
+  ans2: "প্রশ্ন ২ · মূল অনুযায়ী: যে হাদীসের শব্দের মূল কুরআনে আছে, তা QR-এর শব্দ কার্ড খোলে (যেমন فتستأذن এখন ৯:৪৪-এ খোলে)। শুধু যে শব্দের মূল কুরআনে নেই, যেমন ويوشك, তা হাদীস শব্দ কার্ড খোলে।",
+  ans3: "প্রশ্ন ৩ · প্রশ্ন ২-এর মতোই: হাদীসের শব্দ কুরআনের সাথে মূল দিয়ে মেলানো হয়।",
+  ans4: "প্রশ্ন ৪ · A: শিক্ষক প্রত্যেক শিক্ষার্থীর চিহ্ন দেখবেন। এর জন্য Firebase Rules-এর একটি ধাপ আপনি প্রকাশ করবেন; সেই রাউন্ড তৈরি হলে ধাপগুলো দেব।",
+  ans5: "প্রশ্ন ৫ · A: হাদীস লিড হাদীস কার্ড ও হাদীস শব্দ কার্ড বানাবেন, QR লিড আয়াত কার্ড ও QR-এর শব্দ কার্ড, আর MSA \"পরে পড়ুন\" ও শিক্ষকের দৃশ্য যোগ করে যাচাই ও প্রকাশ করবে।",
   centreSurah: "ইয়াসীন", centreHadith: "হাদীস", centreWords: "শব্দ",
  }
 };
@@ -334,6 +349,8 @@ const QW = {
   "حيث": ["حَيْثُ", "ḥaythu", "(from) wherever", "যেখান থেকে", "حيث", "حَيْث", "Location Adverb", "2:35:10"],
   "جئت": ["جِئْتَ", "ji'ta", "you have come", "তুমি এনেছ", "جيا", "جَا^ءَ", "Verb + Pronoun", "2:71:19"],
   "فتطلع": ["طَلَعَت", "ṭalaʿat", "it rose", "উদিত হয়", "طلع", "طَلَعَت", "Verb", "18:17:2", "فَ"],
+  "فتستأذن": ["يَسْتَـْٔذِنُكَ", "yastadhinuka", "ask your permission", "তোমার কাছে অব্যহতি চায়", "اذن", "ٱسْتَـ#ْذَنَ", "Verb + Pronoun", "9:44:2"],
+  "وتستأذن": ["يَسْتَـْٔذِنُكَ", "yastadhinuka", "ask your permission", "তোমার কাছে অব্যহতি চায়", "اذن", "ٱسْتَـ#ْذَنَ", "Verb + Pronoun", "9:44:2"],
   "مغربها": ["ٱلْمَغْرِبِ", "l-maghribi", "the west", "পশ্চিম", "غرب", "مَغْرِب", "Determiner + Noun", "2:258:31", "ـهَا"],
 };
 const HW = {
@@ -379,16 +396,18 @@ const HADITH_SCHOLARS = [
 // ---------- marks ----------
 // You (the reader) and three EXAMPLE students. Keys: a:<āyah>, w:<āyah>:<word>, h:<hadith>, hw:<token index>.
 const people = {
-  you: { name: () => t("you"), marks: new Map([["a:8", "d"], ["a:38", "p"], ["a:12", "d"], ["a:60", "dp"], ["w:38:3", "d"], ["w:8:10", "d"], ["w:38:6", "p"], ["h:bukhari:3199", "p"], ["hw:16", "d"]]) },
+  you: { name: () => t("you"), marks: new Map([["a:8", "d"], ["a:38", "p"], ["a:12", "d"], ["a:60", "dp"], ["w:38:3", "d"], ["w:8:10", "d"], ["w:38:6", "p"], ["h:bukhari:3199", "p"], ["hw:16", "d"], ["a:1", "o"], ["a:2", "o"], ["a:3", "o"], ["a:36", "o"], ["a:37", "o"], ["w:38:1", "o"], ["w:38:2", "o"]]) },
 };
 const EX = [
-  ["aminah", "Aminah", "আমিনা", [["a:8", "d"], ["a:9", "d"], ["a:38", "d"], ["a:40", "p"], ["a:69", "p"], ["w:38:3", "d"], ["w:40:11", "d"], ["h:bukhari:3199", "d"], ["hw:16", "d"], ["hw:12", "p"]]],
+  ["aminah", "Aminah", "আমিনা", [["a:1", "o"], ["a:2", "o"], ["a:5", "o"], ["a:8", "d"], ["a:9", "d"], ["a:38", "d"], ["a:40", "p"], ["a:69", "p"], ["w:38:3", "d"], ["w:40:11", "d"], ["h:bukhari:3199", "d"], ["hw:16", "d"], ["hw:12", "p"]]],
   ["yusuf", "Yusuf", "ইউসুফ", [["a:38", "p"], ["a:39", "d"], ["a:58", "p"], ["a:77", "d"], ["w:38:6", "d"], ["w:39:4", "p"], ["hw:16", "p"]]],
-  ["zaid", "Zaid", "যায়েদ", [["a:1", "p"], ["a:8", "d"], ["a:38", "d"], ["a:40", "d"], ["a:82", "p"], ["w:38:3", "p"], ["w:8:10", "d"], ["h:bukhari:3199", "p"]]],
+  ["zaid", "Zaid", "যায়েদ", [["a:2", "o"], ["a:3", "o"], ["a:4", "o"], ["w:38:1", "o"], ["a:1", "p"], ["a:8", "d"], ["a:38", "d"], ["a:40", "d"], ["a:82", "p"], ["w:38:3", "p"], ["w:8:10", "d"], ["h:bukhari:3199", "p"]]],
 ];
 for (const [id, en, bn, m] of EX) people[id] = { name: () => (lang === "bn" ? bn : en), marks: new Map(m), example: true };
 let role = "student", viewing = "you", view = "v1", card = "ayah", curAyah = 38;
 const markOf = (who, k) => people[who].marks.get(k) || "";
+const MKL = { d: "mDiff", p: "mPrac", o: "mDone" };
+const mkNames = (mk) => mk.split("").map((c) => t(MKL[c])).join(", ");
 function toggle(k, m) {
   const cur = markOf("you", k); const has = cur.includes(m);
   const next = has ? cur.replace(m, "") : (cur + m).split("").sort().join("");
@@ -400,14 +419,14 @@ function marksRow(k, what) {
   const ro = role === "teacher";
   const who = ro ? viewing : "you";
   if (!ro) row.appendChild(el("span", "seen", t("marksFor", { what: t(what) })));
-  for (const [m, cls, lbl] of [["d", "mk d", "mDiff"], ["p", "mk p", "mPrac"]]) {
+  for (const [m, cls, lbl] of [["d", "mk d", "mDiff"], ["p", "mk p", "mPrac"], ["o", "mk o", "mDone"]]) {
     const b = btn(cls, t(lbl), ro ? null : () => toggle(k, m));
     b.setAttribute("aria-pressed", String(markOf(who, k).includes(m)));
     if (ro) b.disabled = true;
     row.appendChild(b);
   }
   if (ro) {
-    const names = Object.keys(people).filter((p) => p !== "you" && markOf(p, k)).map((p) => people[p].name() + " (" + markOf(p, k).split("").map((c) => t(c === "d" ? "mDiff" : "mPrac")).join(", ") + ")");
+    const names = Object.keys(people).filter((p) => p !== "you" && markOf(p, k)).map((p) => people[p].name() + " (" + mkNames(markOf(p, k)) + ")");
     row.appendChild(el("span", "seen", names.length ? t("marksSeen", { names: names.join(" · ") }) : t("marksNone")));
   }
   return row;
@@ -421,7 +440,7 @@ function hadithTokens() {
     const m = part.match(/^([؀-ۿ]+)(.*)$/su);
     if (out.length === 0) { out.push({ plain: part }); continue; }
     if (!m) { out.push({ plain: part }); continue; }
-    const w = m[1]; const kind = QW[w] ? "q" : (HW[w] ? "h" : null);
+    const w = m[1]; const kind = QW[w] ? "q" : (HW[w] ? "h" : null); // the Owner, 4 Nov (J03 Q2/Q3): a word whose ROOT is in the Qur'an opens QR's Word card
     out.push({ w, kind, idx: i++ }); if (m[2]) out.push({ plain: m[2] });
   }
   return out;
@@ -450,19 +469,20 @@ function renderWheel() {
   const svg = document.createElementNS(NS, "svg"); svg.setAttribute("viewBox", `0 0 ${S} ${S}`); svg.setAttribute("role", "img");
   const gap = n > 200 ? 0 : Math.min(0.012, 0.6 / n);
   const who = role === "teacher" ? viewing : "you";
-  let dc = 0, pc = 0;
+  let dc = 0, pc = 0, oc = 0;
   const groupStart = new Set();
   if (view === "v3") { let last = null; items.forEach((it, i) => { if (it.group !== last) { groupStart.add(i); last = it.group; } }); }
   items.forEach((it, i) => {
     const a0 = (i / n) * 2 * Math.PI + gap, a1 = ((i + 1) / n) * 2 * Math.PI - gap;
-    const mk = markOf(who, it.key); if (mk.includes("d")) dc++; if (mk.includes("p")) pc++;
+    const mk = markOf(who, it.key); if (mk.includes("d")) dc++; if (mk.includes("p")) pc++; if (mk.includes("o")) oc++;
     const g = document.createElementNS(NS, "g"); g.setAttribute("class", "seg-a");
-    const title = document.createElementNS(NS, "title"); title.textContent = (it.label ?? it.key) + (mk ? " · " + mk.split("").map((x) => t(x === "d" ? "mDiff" : "mPrac")).join(", ") : ""); g.appendChild(title);
-    const outer = document.createElementNS(NS, "path"); outer.setAttribute("d", arc(c, c, 140, 172, a0, a1)); outer.setAttribute("fill", mk.includes("d") ? css("--diff") : css("--empty"));
-    const inner = document.createElementNS(NS, "path"); inner.setAttribute("d", arc(c, c, 112, 138, a0, a1)); inner.setAttribute("fill", mk.includes("p") ? css("--prac") : css("--empty"));
-    g.append(outer, inner);
-    if (view === "v5" || view === "v2") { const k = document.createElementNS(NS, "path"); k.setAttribute("d", arc(c, c, 104, 109, a0, a1)); k.setAttribute("fill", it.kind === "h" ? css("--diff") : (view === "v5" ? css("--qword") : css("--line"))); g.appendChild(k); }
-    if (view === "v3" && groupStart.has(i)) { const tick = document.createElementNS(NS, "path"); tick.setAttribute("d", arc(c, c, 104, 174, a0 - 0.003, a0 + 0.003)); tick.setAttribute("fill", css("--card")); g.appendChild(tick); }
+    const title = document.createElementNS(NS, "title"); title.textContent = (it.label ?? it.key) + (mk ? " · " + mkNames(mk) : ""); g.appendChild(title);
+    const outer = document.createElementNS(NS, "path"); outer.setAttribute("d", arc(c, c, 150, 174, a0, a1)); outer.setAttribute("fill", mk.includes("d") ? css("--diff") : css("--empty"));
+    const inner = document.createElementNS(NS, "path"); inner.setAttribute("d", arc(c, c, 126, 148, a0, a1)); inner.setAttribute("fill", mk.includes("p") ? css("--prac") : css("--empty"));
+    const done = document.createElementNS(NS, "path"); done.setAttribute("d", arc(c, c, 104, 124, a0, a1)); done.setAttribute("fill", mk.includes("o") ? css("--done") : css("--empty"));
+    g.append(outer, inner, done);
+    if (view === "v5" || view === "v2") { const k = document.createElementNS(NS, "path"); k.setAttribute("d", arc(c, c, 96, 101, a0, a1)); k.setAttribute("fill", it.kind === "h" ? css("--diff") : (view === "v5" ? css("--qword") : css("--line"))); g.appendChild(k); }
+    if (view === "v3" && groupStart.has(i)) { const tick = document.createElementNS(NS, "path"); tick.setAttribute("d", arc(c, c, 104, 176, a0 - 0.003, a0 + 0.003)); tick.setAttribute("fill", css("--card")); g.appendChild(tick); }
     g.addEventListener("click", it.go);
     g.setAttribute("tabindex", "0"); g.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); it.go(); } });
     svg.appendChild(g);
@@ -472,11 +492,12 @@ function renderWheel() {
   });
   const txt = (y, s, size, fill, fam) => { const e = document.createElementNS(NS, "text"); e.setAttribute("x", c); e.setAttribute("y", y); e.setAttribute("text-anchor", "middle"); e.setAttribute("font-size", size); e.setAttribute("fill", fill); e.setAttribute("font-family", fam || "Noto Sans, Noto Sans Bengali, sans-serif"); e.textContent = s; svg.appendChild(e); };
   const head = view === "v1" ? t("centreSurah") : view === "v2" ? "36:38" : view === "v3" ? t("centreSurah") + " · " + t("centreWords") : view === "v4" ? t("centreHadith") : (lang === "bn" ? "বুখারী ৩১৯৯" : "Bukhārī 3199");
-  txt(c - 34, view === "v1" || view === "v3" ? "يسٓ" : view === "v2" ? "وَٱلشَّمْسُ تَجْرِى" : "حديث", view === "v2" ? 22 : 30, css("--navy"), "Amiri Quran, Amiri, serif");
-  txt(c - 2, head, 15, css("--ink"));
-  txt(c + 24, t("difficultCount") + " " + num(dc), 14, css("--diff"));
-  txt(c + 44, t("pracCount") + " " + num(pc), 14, css("--prac"));
-  txt(c + 64, "/ " + num(n), 12, css("--muted"));
+  txt(c - 40, view === "v1" || view === "v3" ? "يسٓ" : view === "v2" ? "وَٱلشَّمْسُ تَجْرِى" : "حديث", view === "v2" ? 22 : 30, css("--navy"), "Amiri Quran, Amiri, serif");
+  txt(c - 10, head, 14, css("--ink"));
+  txt(c + 12, t("difficultCount") + " " + num(dc), 13, css("--diff"));
+  txt(c + 30, t("pracCount") + " " + num(pc), 13, css("--prac"));
+  txt(c + 48, t("mDone") + " " + num(oc), 13, css("--done"));
+  txt(c + 66, "/ " + num(n), 11, css("--muted"));
   host.appendChild(svg);
   if (view === "v2") {
     const list = el("div", "note"); list.style.direction = "rtl"; list.style.fontFamily = "var(--font-quran)"; list.style.fontSize = "1.15rem"; list.style.textAlign = "center";
@@ -484,8 +505,8 @@ function renderWheel() {
   }
   const lg = document.getElementById("legend"); lg.replaceChildren();
   const sw = (color, label) => { const s = el("span"); const i = el("i"); i.style.background = color; s.append(i, label); lg.appendChild(s); };
-  sw(css("--diff"), t("legDiff")); sw(css("--prac"), t("legPrac")); sw(css("--empty"), t("legNone"));
-  if (view === "v5") { sw(css("--qword"), t("legQ")); }
+  sw(css("--diff"), t("legDiff")); sw(css("--prac"), t("legPrac")); sw(css("--done"), t("legDone")); sw(css("--empty"), t("legNone"));
+  if (view === "v5") { sw(css("--qword"), t("legQ")); sw(css("--diff"), t("legH")); }
   document.getElementById("whoLine").textContent = role === "teacher" && viewing !== "you" ? t("whoStudent", { name: people[viewing].name() }) : t("whoYou");
 }
 
@@ -551,7 +572,7 @@ function renderAyahCard(host) {
   for (const x of DATA.ayahs) { const o = el("option", null, "36:" + num(x.n)); o.value = x.n; if (x.n === a.n) o.selected = true; sel.appendChild(o); }
   sel.addEventListener("change", () => openAyah(+sel.value)); nav.appendChild(sel); host.appendChild(nav);
   const q = el("div", "quran");
-  a.w.forEach((w, i) => { const s = el("span", "w", w[0]); const mk = markOf(role === "teacher" ? viewing : "you", `w:${a.n}:${i + 1}`); if (mk.includes("d")) s.classList.add("m-d"); if (mk.includes("p")) s.classList.add("m-p"); s.tabIndex = 0; s.setAttribute("role", "button"); s.addEventListener("click", () => openQuranWord(a.n, i + 1, "ayah")); s.addEventListener("keydown", (e) => { if (e.key === "Enter") openQuranWord(a.n, i + 1, "ayah"); }); q.append(s, " "); });
+  a.w.forEach((w, i) => { const s = el("span", "w", w[0]); const mk = markOf(role === "teacher" ? viewing : "you", `w:${a.n}:${i + 1}`); if (mk.includes("d")) s.classList.add("m-d"); if (mk.includes("p")) s.classList.add("m-p"); if (mk.includes("o")) s.classList.add("m-o"); s.tabIndex = 0; s.setAttribute("role", "button"); s.addEventListener("click", () => openQuranWord(a.n, i + 1, "ayah")); s.addEventListener("keydown", (e) => { if (e.key === "Enter") openQuranWord(a.n, i + 1, "ayah"); }); q.append(s, " "); });
   q.append(" ﴿" + a.n.toLocaleString("ar-EG") + "﴾");
   host.appendChild(q);
   host.appendChild(el("p", "trans", lang === "bn" ? a.bn : a.en));
@@ -583,7 +604,7 @@ function renderHadithCard(host) {
       continue;
     }
     const s = el("span", "w " + (x.kind === "q" ? "hw-q" : x.kind === "h" ? "hw-h" : ""), x.w);
-    const mk = markOf(who, "hw:" + x.idx); if (mk.includes("d")) s.classList.add("m-d"); if (mk.includes("p")) s.classList.add("m-p");
+    const mk = markOf(who, "hw:" + x.idx); if (mk.includes("d")) s.classList.add("m-d"); if (mk.includes("p")) s.classList.add("m-p"); if (mk.includes("o")) s.classList.add("m-o");
     if (x.kind) { s.tabIndex = 0; s.setAttribute("role", "button"); s.addEventListener("click", () => openHadithWord(x)); s.addEventListener("keydown", (e) => { if (e.key === "Enter") openHadithWord(x); }); }
     ar.append(s, " ");
   }
@@ -710,7 +731,7 @@ function renderTeacher(host) {
   thead.appendChild(hr); tb.appendChild(thead); const body = el("tbody");
   for (const id of Object.keys(people).filter((p) => p !== "you")) {
     const tr = el("tr"); tr.appendChild(el("td", null, people[id].name()));
-    const cell = (pred) => { const td = el("td"); let d = 0, p = 0; for (const [k, v] of people[id].marks) if (pred(k)) { if (v.includes("d")) d++; if (v.includes("p")) p++; } td.append(Object.assign(el("span", "chipd", t("mDiff") + " " + num(d))), Object.assign(el("span", "chipp", t("mPrac") + " " + num(p)))); return td; };
+    const cell = (pred) => { const td = el("td"); let d = 0, p = 0, o = 0; for (const [k, v] of people[id].marks) if (pred(k)) { if (v.includes("d")) d++; if (v.includes("p")) p++; if (v.includes("o")) o++; } td.append(el("span", "chipd", t("mDiff") + " " + num(d)), el("span", "chipp", t("mPrac") + " " + num(p)), el("span", "chipo", t("mDone") + " " + num(o))); return td; };
     tr.append(cell((k) => k.startsWith("a:")), cell((k) => k.startsWith("w:") || k.startsWith("hw:")), cell((k) => k.startsWith("h:")));
     const td = el("td"); const b = btn("go", t("show"), () => { viewing = id; renderAll(); }); if (viewing === id) b.setAttribute("aria-pressed", "true"); td.appendChild(b); tr.appendChild(td); body.appendChild(tr);
   }
@@ -731,7 +752,9 @@ function renderTeacher(host) {
   host.appendChild(el("p", "note", t("rulesNote")));
 }
 function renderQs(host) {
-  host.appendChild(el("h2", null, t("qsH"))); host.appendChild(el("p", "note", t("qsLede")));
+  host.appendChild(el("h2", null, t("ansH"))); host.appendChild(el("p", "note", t("ansLede")));
+  for (const a of ["ans1", "ans2", "ans3", "ans4", "ans5"]) { const it = el("div", "item"); it.appendChild(el("span", null, "✓ " + t(a))); host.appendChild(it); }
+  return;
   const ol = el("ol"); const box = el("div", "qs"); box.appendChild(ol);
   for (const q of ["q1", "q2", "q3", "q4", "q5"]) {
     const li = el("li"); li.appendChild(el("b", null, t(q)));

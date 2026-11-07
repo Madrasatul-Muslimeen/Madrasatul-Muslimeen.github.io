@@ -144,7 +144,7 @@ for (const lang of ["en", "bn"]) for (const [width, height] of [[1440, 900], [39
     await page.click('#wheelDrawerRow [data-wheel-drawer="wheel"]');
     await page.waitForTimeout(250);
     const shown = await page.evaluate(() => [...document.querySelectorAll("#wheelKindRow [data-wheel-kind]")].map((b) => Math.round(b.getBoundingClientRect().height)));
-    check(`${tag} (8) on a phone the switch is in the Wheel drawer and shows when it opens, buttons at least 40px`, before.inDrawer && shown.length === 2 && shown.every((h) => h >= 40), JSON.stringify({ before, shown }));
+    check(`${tag} (8) on a phone the switch is in the Wheel drawer and shows when it opens, buttons at least 40px`, before.inDrawer && shown.length === 3 && shown.every((h) => h >= 40), JSON.stringify({ before, shown }));
   }
 
   // (2) + (3)

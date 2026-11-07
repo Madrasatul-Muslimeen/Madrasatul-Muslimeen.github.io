@@ -8,6 +8,7 @@ import fs from "node:fs";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
+import { execSync } from "node:child_process";
 import { initializeTestEnvironment, assertFails, assertSucceeds } from "@firebase/rules-unit-testing";
 import { doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, deleteField, collection, query, where } from "firebase/firestore";
 
@@ -21,20 +22,45 @@ const root = path.resolve(here, "../..");
 const candidate = fs.readFileSync(path.join(root, process.env.RULES_FILE || "docs/governance/2026-10-14-zab-candidate.rules"), "utf8");
 const live = fs.readFileSync(path.join(root, "firestore.rules"), "utf8");
 
-// The candidate is the live file plus the two Zab blocks: every live line is still there, in order.
-test("the candidate is firestore.rules plus the Zab blocks and nothing else", () => {
+// UPDATED IN PLACE 5 Nov 2026. This test read "every line of the live firestore.rules is in the candidate, in
+// order", and after the Owner published Zab (15 Oct, PCF J25) "or firestore.rules IS the candidate, byte for byte".
+// Both became false for a correct reason: the Owner has since published more Rules into the same file (the Tasrif
+// level, Vocabulary review, hadithSubjects, and on 5 Nov the Keys blocks), so the live file has lines this candidate
+// never had and is no longer this file. That compared history with the present. What is still true, and worth
+// checking, is checked now:
+//   1. the candidate was the live file OF ITS DAY plus the Zab blocks: every line of firestore.rules at e0d161a3
+//      (the candidate's last commit) is in it, in order;
+//   2. the Zab blocks the Owner published are still in today's firestore.rules BYTE FOR BYTE, so they cannot drift
+//      silently. (This suite's matrix and mutations run on the candidate; this binds that to production.)
+const CANDIDATE_BASE_REF = "e0d161a3";
+const baseLive = execSync(`git show ${CANDIDATE_BASE_REF}:firestore.rules`, { cwd: root, encoding: "utf8" });
+function matchBlock(text, name) {
+  const m = new RegExp(`^[ \\t]*match /${name}/`, "m").exec(text);
+  assert.ok(m, `no ${name} block found`);
+  const start = m.index + m[0].indexOf("match");
+  const open = text.lastIndexOf("{", text.indexOf("\n", start));
+  let depth = 0;
+  for (let i = open; i < text.length; i++) {
+    if (text[i] === "{") depth++;
+    else if (text[i] === "}" && --depth === 0) return text.slice(start, i + 1);
+  }
+  throw new Error(`unterminated ${name} block`);
+}
+test("the candidate is firestore.rules of its day plus the Zab blocks, and the published Zab blocks are live byte for byte", () => {
   const cand = candidate.split("\n");
   let j = 0; const missing = [];
-  for (const line of live.split("\n")) {
+  for (const line of baseLive.split("\n")) {
     let k = j; while (k < cand.length && cand[k] !== line) k++;
     if (k < cand.length) j = k + 1; else missing.push(line);
   }
-  assert.deepEqual(missing, [], "live Rules lines missing from the candidate");
+  assert.deepEqual(missing, [], `firestore.rules at ${CANDIDATE_BASE_REF} has lines missing from the candidate`);
   assert.ok(/match \/zabPockets\//.test(candidate) && /match \/zabItems\//.test(candidate));
-  // Updated in place 15 Oct 2026: the Owner PUBLISHED this candidate (PCF J25) and firestore.rules was synced to it.
-  // So the live file either carries no Zab (before publication) or IS this candidate, byte for byte -- never a
-  // third, drifted version.
-  if (/match \/zab/.test(live)) assert.equal(live, fs.readFileSync(path.join(root, "docs/governance/2026-10-14-zab-candidate.rules"), "utf8"), "firestore.rules carries Zab but is not the published candidate");
+  assert.ok(!/match \/zab/.test(baseLive), `firestore.rules at ${CANDIDATE_BASE_REF} already carries Zab: the base is wrong`);
+  for (const name of ["zabPockets", "zabItems"]) {
+    const block = matchBlock(candidate, name);
+    assert.ok(block.length > 400, `the candidate's ${name} block parsed implausibly short`);
+    assert.equal(matchBlock(live, name), block, `today's firestore.rules ${name} block is not the published candidate's`);
+  }
 });
 
 const T = "t1";

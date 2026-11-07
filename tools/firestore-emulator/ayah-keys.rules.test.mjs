@@ -21,17 +21,14 @@ const root = path.resolve(here, "../..");
 const candidate = fs.readFileSync(path.join(root, process.env.RULES_FILE || "docs/governance/2026-10-15-ayah-keys-candidate.rules"), "utf8");
 const live = fs.readFileSync(path.join(root, "firestore.rules"), "utf8");
 
-// The candidate is the live file plus the ayahKeyMarks block: every live line is still there, in order.
-test("the candidate is firestore.rules plus the ayahKeyMarks block and nothing else", () => {
-  const cand = candidate.split("\n");
-  let j = 0; const missing = [];
-  for (const line of live.split("\n")) {
-    let k = j; while (k < cand.length && cand[k] !== line) k++;
-    if (k < cand.length) j = k + 1; else missing.push(line);
-  }
-  assert.deepEqual(missing, [], "live Rules lines missing from the candidate");
+// UPDATED IN PLACE 5 Nov 2026: the Owner PUBLISHED this candidate in study-monitoring (PCF MSA J03 k4rules1104), and the
+// repository's firestore.rules was made the same file. This test used to assert "firestore.rules plus the block, and the
+// live Rules do NOT carry it yet"; it now asserts that firestore.rules IS the published candidate, byte for byte.
+test("firestore.rules is the published candidate, byte for byte, and carries the ayahKeyMarks block", () => {
   assert.ok(/match \/ayahKeyMarks\//.test(candidate));
-  assert.ok(!/match \/ayahKeyMarks/.test(live), "the live Rules already carry ayahKeyMarks: this candidate is superseded");
+  assert.ok(/match \/ayahKeyMarks\//.test(live), "firestore.rules does not carry ayahKeyMarks: the repository no longer matches production");
+  assert.equal(live, fs.readFileSync(path.join(root, "docs/governance/2026-10-15-ayah-keys-candidate.rules"), "utf8"),
+    "firestore.rules differs from the published candidate");
 });
 
 const T = "t1";
@@ -182,6 +179,16 @@ async function matrix(rules) {
   return bad;
 }
 
+// K0 (4 Nov 2026): the candidate now carries the hadithKeyMarks block AFTER this one; a mutation here touches the
+// ayahKeyMarks block only (hadith-keys.rules.test.mjs mutates the other), so each suite proves its own block.
+function splitAyahBlock() {
+  const start = candidate.indexOf("KEYS TO UNDERSTANDING (PCF J03");
+  const end = candidate.indexOf("KEYS TO UNDERSTANDING ON HADITH");
+  assert.ok(start > 0 && end > start, "the ayahKeyMarks block was not found before the hadithKeyMarks block");
+  const cut = candidate.lastIndexOf("    // ====", end);
+  return [candidate.slice(0, start), candidate.slice(start, cut), candidate.slice(cut)];
+}
+
 // Each mutation removes or inverts ONE check of the candidate. EVERY occurrence is replaced (a partial mutation proves nothing).
 const MUTATIONS = [
   ["madrasah writes open to any member", /\? \(canAdminIdentity\(tenantId\) \|\| isTeacherIn\(tenantId\)\)/g, "? (signedIn() && myRolesIn(tenantId).size() > 0)"],
@@ -220,10 +227,9 @@ const REDUNDANT = [
 ];
 for (const [name, re, replacement] of REDUNDANT) {
   test(`REDUNDANT BY DESIGN (stays green): ${name}`, async () => {
-    const start = candidate.indexOf("KEYS TO UNDERSTANDING (PCF J03");
-    const head = candidate.slice(0, start), block = candidate.slice(start);
+    const [head, block, tail] = splitAyahBlock();
     assert.ok((block.match(re) || []).length >= 1, "the anchor matched nothing");
-    const bad = await matrix(head + block.replace(re, replacement));
+    const bad = await matrix(head + block.replace(re, replacement) + tail);
     assert.deepEqual(bad, [], "expected redundant, but the matrix went red: re-read the comment above");
   });
 }
@@ -235,13 +241,11 @@ test("the candidate behaves exactly as the matrix says", async () => {
 
 for (const [name, re, replacement] of MUTATIONS) {
   test(`MUTATION: ${name} -> the matrix goes red`, async () => {
-    const start = candidate.indexOf("KEYS TO UNDERSTANDING (PCF J03");
-    assert.ok(start > 0);
-    const head = candidate.slice(0, start), block = candidate.slice(start);
+    const [head, block, tail] = splitAyahBlock();
     const count = (block.match(re) || []).length;
     console.log(`    [${name}] occurrences replaced: ${count}`);
     assert.ok(count >= 1, "the mutation matched nothing -- it proves nothing");
-    const bad = await matrix(head + block.replace(re, replacement));
+    const bad = await matrix(head + block.replace(re, replacement) + tail);
     assert.ok(bad.length >= 1, "the matrix stayed green under this mutation: that check is untested");
   });
 }

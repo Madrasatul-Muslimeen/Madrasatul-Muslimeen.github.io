@@ -1,0 +1,1358 @@
+{
+ "schemaVersion": 1,
+ "source": "docs/reference/scholars-database/scholars-database-v1.5.json",
+ "sourceVersion": "v1.5",
+ "sourceDate": "2026-10-14",
+ "madeBy": "tools/scholars/build-tafsir-scholars.mjs",
+ "checked": false,
+ "note": "Every value is as the Scholars Database v1.5 records it; nothing here has been checked by a scholar. Bangla names: the database has none; seven come from the approved keys demo v2 (bnFrom), the rest are null.",
+ "bnSource": "docs/reference/2026-11-04-keys-demo/template.html (keys demo v2, approved 4 Nov 2026)",
+ "bookMatch": "An OpenITI book id begins with its author's death year AH and name (0256Bukhari...). A scholar is the book's compiler when the database's death year AH is that year and one part of that name (4+ letters) is in the scholar's English name.",
+ "books": {
+  "0179MalikIbnAnas.Muwatta.Shamela0028107-ara1": "s002",
+  "0241IbnHanbal.Musnad.Shamela0025794-ara1": "s007",
+  "0256Bukhari.AdabMufrad.JK000011-ara1": "s008",
+  "0256Bukhari.Sahih.JK000110-ara1": "s008",
+  "0261Muslim.Sahih.Shamela0001727-ara1": "s009",
+  "0273IbnMaja.Sunan.JK000141-ara1": "s010",
+  "0275AbuDawudSijistani.Sunan.JK000142-ara1": "s011",
+  "0279Tirmidhi.Sunan.JK000140-ara1": "s012",
+  "0303Nasai.CamalYawmWaLayla.JK000735-ara1": "s013",
+  "0303Nasai.SunanSughra.JK000130-ara1": "s013"
+ },
+ "scholars": [
+  {
+   "id": "s002",
+   "roles": [
+    "compiler"
+   ],
+   "type": "madhab",
+   "en": "Imām Mālik ibn Anas",
+   "ar": "الإِمَامُ مَالِكُ بْنُ أَنَسٍ الْأَصْبَحِيُّ",
+   "bn": null,
+   "century": "2nd Century AH",
+   "lifeAH": "93 AH – 179 AH",
+   "lifeCE": "711 CE – 795 CE",
+   "approaches": [
+    "32 Maliki",
+    "29 Tābiʿ al-Tābiʿīn"
+   ],
+   "approachesText": "32 Maliki · 29 Tābiʿ al-Tābiʿīn",
+   "quranWork": "No tafsir; tafsir narrations inside al-Muwaṭṭaʾ",
+   "tafsir": [],
+   "hadithBooks": [
+    "0179MalikIbnAnas.Muwatta.Shamela0028107-ara1"
+   ],
+   "draft": true
+  },
+  {
+   "id": "s007",
+   "roles": [
+    "compiler"
+   ],
+   "type": "madhab",
+   "en": "Imām Aḥmad ibn Ḥanbal",
+   "ar": "الإِمَامُ أَحْمَدُ بْنُ حَنْبَلٍ الشَّيْبَانِيُّ",
+   "bn": null,
+   "century": "3rd Century AH",
+   "lifeAH": "164 AH – 241 AH",
+   "lifeCE": "780 CE – 855 CE",
+   "approaches": [
+    "33 Hanbali",
+    "30 Gen1"
+   ],
+   "approachesText": "33 Hanbali · 30 Gen1",
+   "quranWork": "His Tafsīr is lost; his narrations on āyāt are in the Musnad",
+   "tafsir": [],
+   "hadithBooks": [
+    "0241IbnHanbal.Musnad.Shamela0025794-ara1"
+   ],
+   "draft": true
+  },
+  {
+   "id": "s008",
+   "roles": [
+    "compiler"
+   ],
+   "type": "collector",
+   "en": "Imām Muḥammad al-Bukhārī",
+   "ar": "الإِمَامُ مُحَمَّدُ بْنُ إِسْمَاعِيلَ الْبُخَارِيُّ",
+   "bn": "ইমাম মুহাম্মাদ আল-বুখারী",
+   "bnFrom": "keys demo v2",
+   "century": "3rd Century AH",
+   "lifeAH": "194 AH – 256 AH",
+   "lifeCE": "810 CE – 870 CE",
+   "approaches": [
+    "30 Gen1",
+    "28 Sahaba"
+   ],
+   "approachesText": "30 Gen1 · 28 Sahaba",
+   "quranWork": "Kitāb al-Tafsīr, inside Ṣaḥīḥ al-Bukhārī",
+   "tafsir": [],
+   "hadithBooks": [
+    "0256Bukhari.AdabMufrad.JK000011-ara1",
+    "0256Bukhari.Sahih.JK000110-ara1"
+   ],
+   "draft": true
+  },
+  {
+   "id": "s009",
+   "roles": [
+    "compiler"
+   ],
+   "type": "collector",
+   "en": "Imām Muslim ibn al-Ḥajjāj",
+   "ar": "الإِمَامُ مُسْلِمُ بْنُ الْحَجَّاجِ الْقُشَيْرِيُّ",
+   "bn": "ইমাম মুসলিম ইবনুল হাজ্জাজ",
+   "bnFrom": "keys demo v2",
+   "century": "3rd Century AH",
+   "lifeAH": "204 AH – 261 AH",
+   "lifeCE": "821 CE – 875 CE",
+   "approaches": [
+    "30 Gen1",
+    "28 Sahaba"
+   ],
+   "approachesText": "30 Gen1 · 28 Sahaba",
+   "quranWork": "Kitāb al-Tafsīr, inside Ṣaḥīḥ Muslim",
+   "tafsir": [],
+   "hadithBooks": [
+    "0261Muslim.Sahih.Shamela0001727-ara1"
+   ],
+   "draft": true
+  },
+  {
+   "id": "s010",
+   "roles": [
+    "compiler"
+   ],
+   "type": "collector",
+   "en": "Imām Ibn Mājah al-Qazwīnī",
+   "ar": "الإِمَامُ ابْنُ مَاجَهْ مُحَمَّدُ بْنُ يَزِيدَ الْقَزْوِينِيُّ",
+   "bn": null,
+   "century": "3rd Century AH",
+   "lifeAH": "209 AH – 273 AH",
+   "lifeCE": "824 CE – 887 CE",
+   "approaches": [
+    "30 Gen1"
+   ],
+   "approachesText": "30 Gen1",
+   "quranWork": "His Tafsīr is lost",
+   "tafsir": [],
+   "hadithBooks": [
+    "0273IbnMaja.Sunan.JK000141-ara1"
+   ],
+   "draft": true
+  },
+  {
+   "id": "s011",
+   "roles": [
+    "compiler"
+   ],
+   "type": "collector",
+   "en": "Imām Abū Dāwūd al-Sijistānī",
+   "ar": "الإِمَامُ أَبُو دَاوُدَ سُلَيْمَانُ بْنُ الْأَشْعَثِ السِّجِسْتَانِيُّ",
+   "bn": null,
+   "century": "3rd Century AH",
+   "lifeAH": "202 AH – 275 AH",
+   "lifeCE": "817 CE – 889 CE",
+   "approaches": [
+    "30 Gen1"
+   ],
+   "approachesText": "30 Gen1",
+   "quranWork": "Kitāb al-Ḥurūf wa al-Qirāʾāt, inside the Sunan",
+   "tafsir": [],
+   "hadithBooks": [
+    "0275AbuDawudSijistani.Sunan.JK000142-ara1"
+   ],
+   "draft": true
+  },
+  {
+   "id": "s012",
+   "roles": [
+    "compiler"
+   ],
+   "type": "collector",
+   "en": "Imām Abū ʿĪsā al-Tirmidhī",
+   "ar": "الإِمَامُ أَبُو عِيسَى مُحَمَّدُ بْنُ عِيسَى التِّرْمِذِيُّ",
+   "bn": null,
+   "century": "3rd Century AH",
+   "lifeAH": "209 AH – 279 AH",
+   "lifeCE": "824 CE – 892 CE",
+   "approaches": [
+    "30 Gen1",
+    "28 Sahaba"
+   ],
+   "approachesText": "30 Gen1 · 28 Sahaba",
+   "quranWork": "Abwāb Tafsīr al-Qurʾān, inside al-Jāmiʿ",
+   "tafsir": [],
+   "hadithBooks": [
+    "0279Tirmidhi.Sunan.JK000140-ara1"
+   ],
+   "draft": true
+  },
+  {
+   "id": "s013",
+   "roles": [
+    "compiler"
+   ],
+   "type": "collector",
+   "en": "Imām Abū ʿAbd al-Raḥmān al-Nasāʾī",
+   "ar": "الإِمَامُ أَبُو عَبْدِ الرَّحْمَنِ أَحْمَدُ بْنُ شُعَيْبٍ النَّسَائِيُّ",
+   "bn": null,
+   "century": "4th Century AH",
+   "lifeAH": "215 AH – 303 AH",
+   "lifeCE": "829 CE – 915 CE",
+   "approaches": [
+    "30 Gen1",
+    "28 Sahaba"
+   ],
+   "approachesText": "30 Gen1 · 28 Sahaba",
+   "quranWork": "Kitāb al-Tafsīr, inside al-Sunan al-Kubrā",
+   "tafsir": [],
+   "hadithBooks": [
+    "0303Nasai.CamalYawmWaLayla.JK000735-ara1",
+    "0303Nasai.SunanSughra.JK000130-ara1"
+   ],
+   "draft": true
+  },
+  {
+   "id": "s021",
+   "roles": [
+    "tafsir"
+   ],
+   "type": "mufassir",
+   "en": "Imām Abū Jaʿfar Ibn Jarīr al-Ṭabarī",
+   "ar": "الإِمَامُ أَبُو جَعْفَرٍ مُحَمَّدُ بْنُ جَرِيرٍ الطَّبَرِيُّ",
+   "bn": "ইমাম ইবনে জারীর আত-তাবারী",
+   "bnFrom": "keys demo v2",
+   "century": "4th Century AH",
+   "lifeAH": "224 AH – 310 AH",
+   "lifeCE": "839 CE – 923 CE",
+   "approaches": [
+    "30 Gen1",
+    "28 Sahaba",
+    "29 Tābiʿīn"
+   ],
+   "approachesText": "30 Gen1 · 28 Sahaba · 29 Tābiʿīn",
+   "quranWork": "Jāmiʿ al-Bayān (complete)",
+   "tafsir": [
+    "Jāmiʿ al-Bayān (complete)"
+   ],
+   "hadithBooks": [],
+   "draft": true
+  },
+  {
+   "id": "s022",
+   "roles": [
+    "tafsir"
+   ],
+   "type": "mufassir",
+   "en": "Imām Ibn Abī Ḥātim al-Rāzī",
+   "ar": "الإِمَامُ عَبْدُ الرَّحْمَنِ بْنُ أَبِي حَاتِمٍ الرَّازِيُّ",
+   "bn": null,
+   "century": "4th Century AH",
+   "lifeAH": "240 AH – 327 AH",
+   "lifeCE": "854 CE – 938 CE",
+   "approaches": [
+    "28 Sahaba",
+    "29 Tābiʿīn",
+    "30 Gen1"
+   ],
+   "approachesText": "28 Sahaba · 29 Tābiʿīn · 30 Gen1",
+   "quranWork": "Tafsīr Ibn Abī Ḥātim (part survives)",
+   "tafsir": [
+    "Tafsīr Ibn Abī Ḥātim (part survives)"
+   ],
+   "hadithBooks": [],
+   "draft": true
+  },
+  {
+   "id": "s023",
+   "roles": [
+    "tafsir"
+   ],
+   "type": "mufassir",
+   "en": "Imām Abū Manṣūr al-Māturīdī",
+   "ar": "الإِمَامُ أَبُو مَنْصُورٍ مُحَمَّدُ بْنُ مُحَمَّدٍ الْمَاتُرِيدِيُّ",
+   "bn": null,
+   "century": "4th Century AH",
+   "lifeAH": "c. 238 AH – 333 AH",
+   "lifeCE": "c. 853 CE – 944 CE",
+   "approaches": [
+    "34 Hanafi",
+    "30 Gen1"
+   ],
+   "approachesText": "34 Hanafi · 30 Gen1",
+   "quranWork": "Taʾwīlāt Ahl al-Sunnah",
+   "tafsir": [
+    "Taʾwīlāt Ahl al-Sunnah"
+   ],
+   "hadithBooks": [],
+   "draft": true
+  },
+  {
+   "id": "s024",
+   "roles": [
+    "tafsir"
+   ],
+   "type": "mufassir",
+   "en": "Imām Abū al-Layth al-Samarqandī",
+   "ar": "الإِمَامُ أَبُو اللَّيْثِ نَصْرُ بْنُ مُحَمَّدٍ السَّمَرْقَنْدِيُّ",
+   "bn": null,
+   "century": "4th Century AH",
+   "lifeAH": "? – 373 AH",
+   "lifeCE": "? – 983 CE",
+   "approaches": [
+    "34 Hanafi",
+    "30 Gen1"
+   ],
+   "approachesText": "34 Hanafi · 30 Gen1",
+   "quranWork": "Baḥr al-ʿUlūm",
+   "tafsir": [
+    "Baḥr al-ʿUlūm"
+   ],
+   "hadithBooks": [],
+   "draft": true
+  },
+  {
+   "id": "s025",
+   "roles": [
+    "tafsir"
+   ],
+   "type": "mufassir",
+   "en": "Imām Abū Isḥāq al-Thaʿlabī",
+   "ar": "الإِمَامُ أَبُو إِسْحَاقَ أَحْمَدُ بْنُ مُحَمَّدٍ الثَّعْلَبِيُّ",
+   "bn": null,
+   "century": "5th Century AH",
+   "lifeAH": "? – 427 AH",
+   "lifeCE": "? – 1035 CE",
+   "approaches": [
+    "35 Shafiʿi",
+    "30 Gen1"
+   ],
+   "approachesText": "35 Shafiʿi · 30 Gen1",
+   "quranWork": "al-Kashf wa al-Bayān",
+   "tafsir": [
+    "al-Kashf wa al-Bayān"
+   ],
+   "hadithBooks": [],
+   "draft": true
+  },
+  {
+   "id": "s026",
+   "roles": [
+    "tafsir"
+   ],
+   "type": "mufassir",
+   "en": "Imām Makkī ibn Abī Ṭālib al-Qaysī",
+   "ar": "الإِمَامُ مَكِّيُّ بْنُ أَبِي طَالِبٍ الْقَيْسِيُّ",
+   "bn": null,
+   "century": "5th Century AH",
+   "lifeAH": "355 AH – 437 AH",
+   "lifeCE": "966 CE – 1045 CE",
+   "approaches": [
+    "32 Maliki",
+    "30 Gen1"
+   ],
+   "approachesText": "32 Maliki · 30 Gen1",
+   "quranWork": "al-Hidāyah ilā Bulūgh al-Nihāyah",
+   "tafsir": [
+    "al-Hidāyah ilā Bulūgh al-Nihāyah"
+   ],
+   "hadithBooks": [],
+   "draft": true
+  },
+  {
+   "id": "s027",
+   "roles": [
+    "tafsir"
+   ],
+   "type": "mufassir",
+   "en": "Imām Abū al-Ḥasan al-Māwardī",
+   "ar": "الإِمَامُ أَبُو الْحَسَنِ عَلِيُّ بْنُ مُحَمَّدٍ الْمَاوَرْدِيُّ",
+   "bn": null,
+   "century": "5th Century AH",
+   "lifeAH": "364 AH – 450 AH",
+   "lifeCE": "974 CE – 1058 CE",
+   "approaches": [
+    "35 Shafiʿi",
+    "30 Gen1"
+   ],
+   "approachesText": "35 Shafiʿi · 30 Gen1",
+   "quranWork": "al-Nukat wa al-ʿUyūn",
+   "tafsir": [
+    "al-Nukat wa al-ʿUyūn"
+   ],
+   "hadithBooks": [],
+   "draft": true
+  },
+  {
+   "id": "s029",
+   "roles": [
+    "tafsir"
+   ],
+   "type": "mufassir",
+   "en": "Imām Abū al-Qāsim al-Qushayrī",
+   "ar": "الإِمَامُ أَبُو الْقَاسِمِ عَبْدُ الْكَرِيمِ بْنُ هَوَازِنَ الْقُشَيْرِيُّ",
+   "bn": null,
+   "century": "5th Century AH",
+   "lifeAH": "376 AH – 465 AH",
+   "lifeCE": "986 CE – 1072 CE",
+   "approaches": [
+    "36 Groups (Sufi)",
+    "35 Shafiʿi",
+    "30 Gen1"
+   ],
+   "approachesText": "36 Groups (Sufi) · 35 Shafiʿi · 30 Gen1",
+   "quranWork": "Laṭāʾif al-Ishārāt",
+   "tafsir": [
+    "Laṭāʾif al-Ishārāt"
+   ],
+   "hadithBooks": [],
+   "draft": true
+  },
+  {
+   "id": "s030",
+   "roles": [
+    "tafsir"
+   ],
+   "type": "mufassir",
+   "en": "Imām Abū al-Ḥasan al-Wāḥidī",
+   "ar": "الإِمَامُ أَبُو الْحَسَنِ عَلِيُّ بْنُ أَحْمَدَ الْوَاحِدِيُّ",
+   "bn": null,
+   "century": "5th Century AH",
+   "lifeAH": "? – 468 AH",
+   "lifeCE": "? – 1076 CE",
+   "approaches": [
+    "35 Shafiʿi",
+    "30 Gen1"
+   ],
+   "approachesText": "35 Shafiʿi · 30 Gen1",
+   "quranWork": "al-Wasīṭ; al-Wajīz; Asbāb al-Nuzūl",
+   "tafsir": [
+    "al-Wasīṭ",
+    "al-Wajīz",
+    "Asbāb al-Nuzūl"
+   ],
+   "hadithBooks": [],
+   "draft": true
+  },
+  {
+   "id": "s031",
+   "roles": [
+    "tafsir"
+   ],
+   "type": "mufassir",
+   "en": "Imām Abū al-Muẓaffar al-Samʿānī",
+   "ar": "الإِمَامُ أَبُو الْمُظَفَّرِ مَنْصُورُ بْنُ مُحَمَّدٍ السَّمْعَانِيُّ",
+   "bn": null,
+   "century": "5th Century AH",
+   "lifeAH": "426 AH – 489 AH",
+   "lifeCE": "1035 CE – 1096 CE",
+   "approaches": [
+    "35 Shafiʿi",
+    "30 Gen1"
+   ],
+   "approachesText": "35 Shafiʿi · 30 Gen1",
+   "quranWork": "Tafsīr al-Samʿānī",
+   "tafsir": [
+    "Tafsīr al-Samʿānī"
+   ],
+   "hadithBooks": [],
+   "draft": true
+  },
+  {
+   "id": "s032",
+   "roles": [
+    "tafsir"
+   ],
+   "type": "mufassir",
+   "en": "Imām al-Ḥusayn ibn Masʿūd al-Baghawī",
+   "ar": "الإِمَامُ أَبُو مُحَمَّدٍ الْحُسَيْنُ بْنُ مَسْعُودٍ الْبَغَوِيُّ",
+   "bn": null,
+   "century": "6th Century AH",
+   "lifeAH": "c. 436 AH – 516 AH",
+   "lifeCE": "c. 1044 CE – 1122 CE",
+   "approaches": [
+    "35 Shafiʿi",
+    "30 Gen1"
+   ],
+   "approachesText": "35 Shafiʿi · 30 Gen1",
+   "quranWork": "Maʿālim al-Tanzīl",
+   "tafsir": [
+    "Maʿālim al-Tanzīl"
+   ],
+   "hadithBooks": [],
+   "draft": true
+  },
+  {
+   "id": "s033",
+   "roles": [
+    "tafsir"
+   ],
+   "type": "mufassir",
+   "en": "Imām Maḥmūd al-Zamakhsharī",
+   "ar": "الإِمَامُ أَبُو الْقَاسِمِ مَحْمُودُ بْنُ عُمَرَ الزَّمَخْشَرِيُّ",
+   "bn": null,
+   "century": "6th Century AH",
+   "lifeAH": "467 AH – 538 AH",
+   "lifeCE": "1075 CE – 1144 CE",
+   "approaches": [
+    "36 Groups (Muʿtazili)",
+    "30 Gen1"
+   ],
+   "approachesText": "36 Groups (Muʿtazili) · 30 Gen1",
+   "quranWork": "al-Kashshāf",
+   "tafsir": [
+    "al-Kashshāf"
+   ],
+   "hadithBooks": [],
+   "draft": true
+  },
+  {
+   "id": "s034",
+   "roles": [
+    "tafsir"
+   ],
+   "type": "mufassir",
+   "en": "Imām Ibn ʿAṭiyyah al-Andalusī",
+   "ar": "الإِمَامُ أَبُو مُحَمَّدٍ عَبْدُ الْحَقِّ بْنُ غَالِبِ بْنِ عَطِيَّةَ",
+   "bn": "ইমাম ইবনে আতিয়্যাহ আল-আন্দালুসী",
+   "bnFrom": "keys demo v2",
+   "century": "6th Century AH",
+   "lifeAH": "481 AH – 541 AH",
+   "lifeCE": "1088 CE – 1147 CE",
+   "approaches": [
+    "32 Maliki",
+    "30 Gen1"
+   ],
+   "approachesText": "32 Maliki · 30 Gen1",
+   "quranWork": "al-Muḥarrar al-Wajīz",
+   "tafsir": [
+    "al-Muḥarrar al-Wajīz"
+   ],
+   "hadithBooks": [],
+   "draft": true
+  },
+  {
+   "id": "s035",
+   "roles": [
+    "tafsir"
+   ],
+   "type": "mufassir",
+   "en": "Qāḍī Abū Bakr Ibn al-ʿArabī al-Maʿāfirī",
+   "ar": "الْقَاضِي أَبُو بَكْرٍ مُحَمَّدُ بْنُ عَبْدِ اللهِ ابْنُ الْعَرَبِيِّ",
+   "bn": null,
+   "century": "6th Century AH",
+   "lifeAH": "468 AH – 543 AH",
+   "lifeCE": "1076 CE – 1148 CE",
+   "approaches": [
+    "32 Maliki",
+    "30 Gen1"
+   ],
+   "approachesText": "32 Maliki · 30 Gen1",
+   "quranWork": "Aḥkām al-Qurʾān",
+   "tafsir": [
+    "Aḥkām al-Qurʾān"
+   ],
+   "hadithBooks": [],
+   "draft": true
+  },
+  {
+   "id": "s036",
+   "roles": [
+    "tafsir"
+   ],
+   "type": "mufassir",
+   "en": "al-Faḍl ibn al-Ḥasan al-Ṭabrisī",
+   "ar": "الْفَضْلُ بْنُ الْحَسَنِ الطَّبْرِسِيُّ",
+   "bn": null,
+   "century": "6th Century AH",
+   "lifeAH": "c. 468 AH – 548 AH",
+   "lifeCE": "c. 1076 CE – 1154 CE",
+   "approaches": [
+    "36 Groups (Shiʿi)"
+   ],
+   "approachesText": "36 Groups (Shiʿi)",
+   "quranWork": "Majmaʿ al-Bayān",
+   "tafsir": [
+    "Majmaʿ al-Bayān"
+   ],
+   "hadithBooks": [],
+   "draft": true
+  },
+  {
+   "id": "s037",
+   "roles": [
+    "tafsir"
+   ],
+   "type": "mufassir",
+   "en": "Imām Abū al-Faraj Ibn al-Jawzī",
+   "ar": "الإِمَامُ أَبُو الْفَرَجِ عَبْدُ الرَّحْمَنِ بْنُ عَلِيٍّ ابْنُ الْجَوْزِيِّ",
+   "bn": null,
+   "century": "6th Century AH",
+   "lifeAH": "c. 510 AH – 597 AH",
+   "lifeCE": "c. 1116 CE – 1201 CE",
+   "approaches": [
+    "33 Hanbali",
+    "30 Gen1"
+   ],
+   "approachesText": "33 Hanbali · 30 Gen1",
+   "quranWork": "Zād al-Masīr",
+   "tafsir": [
+    "Zād al-Masīr"
+   ],
+   "hadithBooks": [],
+   "draft": true
+  },
+  {
+   "id": "s038",
+   "roles": [
+    "tafsir"
+   ],
+   "type": "mufassir",
+   "en": "Imām Fakhr al-Dīn al-Rāzī",
+   "ar": "الإِمَامُ فَخْرُ الدِّينِ مُحَمَّدُ بْنُ عُمَرَ الرَّازِيُّ",
+   "bn": null,
+   "century": "7th Century AH",
+   "lifeAH": "544 AH – 606 AH",
+   "lifeCE": "1150 CE – 1210 CE",
+   "approaches": [
+    "35 Shafiʿi",
+    "30 Gen1"
+   ],
+   "approachesText": "35 Shafiʿi · 30 Gen1",
+   "quranWork": "Mafātīḥ al-Ghayb",
+   "tafsir": [
+    "Mafātīḥ al-Ghayb"
+   ],
+   "hadithBooks": [],
+   "draft": true
+  },
+  {
+   "id": "s039",
+   "roles": [
+    "tafsir"
+   ],
+   "type": "mufassir",
+   "en": "Imām al-ʿIzz ibn ʿAbd al-Salām",
+   "ar": "الإِمَامُ عِزُّ الدِّينِ عَبْدُ الْعَزِيزِ بْنُ عَبْدِ السَّلَامِ",
+   "bn": null,
+   "century": "7th Century AH",
+   "lifeAH": "577 AH – 660 AH",
+   "lifeCE": "1181 CE – 1262 CE",
+   "approaches": [
+    "35 Shafiʿi",
+    "31 Gen2"
+   ],
+   "approachesText": "35 Shafiʿi · 31 Gen2",
+   "quranWork": "Tafsīr al-ʿIzz",
+   "tafsir": [
+    "Tafsīr al-ʿIzz"
+   ],
+   "hadithBooks": [],
+   "draft": true
+  },
+  {
+   "id": "s040",
+   "roles": [
+    "tafsir"
+   ],
+   "type": "mufassir",
+   "en": "Imām Abū ʿAbd Allāh al-Qurṭubī",
+   "ar": "الإِمَامُ أَبُو عَبْدِ اللهِ مُحَمَّدُ بْنُ أَحْمَدَ الْقُرْطُبِيُّ",
+   "bn": "ইমাম আল-কুরতুবী",
+   "bnFrom": "keys demo v2",
+   "century": "7th Century AH",
+   "lifeAH": "? – 671 AH",
+   "lifeCE": "? – 1273 CE",
+   "approaches": [
+    "32 Maliki",
+    "31 Gen2"
+   ],
+   "approachesText": "32 Maliki · 31 Gen2",
+   "quranWork": "al-Jāmiʿ li-Aḥkām al-Qurʾān",
+   "tafsir": [
+    "al-Jāmiʿ li-Aḥkām al-Qurʾān"
+   ],
+   "hadithBooks": [],
+   "draft": true
+  },
+  {
+   "id": "s041",
+   "roles": [
+    "tafsir"
+   ],
+   "type": "mufassir",
+   "en": "Qāḍī Nāṣir al-Dīn al-Bayḍāwī",
+   "ar": "الْقَاضِي نَاصِرُ الدِّينِ عَبْدُ اللهِ بْنُ عُمَرَ الْبَيْضَاوِيُّ",
+   "bn": null,
+   "century": "7th Century AH",
+   "lifeAH": "? – 685 AH",
+   "lifeCE": "? – 1286 CE",
+   "approaches": [
+    "35 Shafiʿi",
+    "31 Gen2"
+   ],
+   "approachesText": "35 Shafiʿi · 31 Gen2",
+   "quranWork": "Anwār al-Tanzīl",
+   "tafsir": [
+    "Anwār al-Tanzīl"
+   ],
+   "hadithBooks": [],
+   "draft": true
+  },
+  {
+   "id": "s042",
+   "roles": [
+    "tafsir"
+   ],
+   "type": "mufassir",
+   "en": "Imām Abū al-Barakāt al-Nasafī",
+   "ar": "الإِمَامُ أَبُو الْبَرَكَاتِ عَبْدُ اللهِ بْنُ أَحْمَدَ النَّسَفِيُّ",
+   "bn": null,
+   "century": "8th Century AH",
+   "lifeAH": "? – 710 AH",
+   "lifeCE": "? – 1310 CE",
+   "approaches": [
+    "34 Hanafi",
+    "31 Gen2"
+   ],
+   "approachesText": "34 Hanafi · 31 Gen2",
+   "quranWork": "Madārik al-Tanzīl",
+   "tafsir": [
+    "Madārik al-Tanzīl"
+   ],
+   "hadithBooks": [],
+   "draft": true
+  },
+  {
+   "id": "s043",
+   "roles": [
+    "tafsir"
+   ],
+   "type": "mufassir",
+   "en": "Shaykh al-Islām Ibn Taymiyyah",
+   "ar": "شَيْخُ الْإِسْلَامِ تَقِيُّ الدِّينِ أَحْمَدُ بْنُ عَبْدِ الْحَلِيمِ ابْنُ تَيْمِيَّةَ",
+   "bn": null,
+   "century": "8th Century AH",
+   "lifeAH": "661 AH – 728 AH",
+   "lifeCE": "1263 CE – 1328 CE",
+   "approaches": [
+    "33 Hanbali",
+    "31 Gen2"
+   ],
+   "approachesText": "33 Hanbali · 31 Gen2",
+   "quranWork": "Muqaddimah fī Uṣūl al-Tafsīr; Daqāʾiq al-Tafsīr (gathered)",
+   "tafsir": [
+    "Muqaddimah fī Uṣūl al-Tafsīr",
+    "Daqāʾiq al-Tafsīr (gathered)"
+   ],
+   "hadithBooks": [],
+   "draft": true
+  },
+  {
+   "id": "s044",
+   "roles": [
+    "tafsir"
+   ],
+   "type": "mufassir",
+   "en": "Imām ʿAlāʾ al-Dīn al-Khāzin",
+   "ar": "الإِمَامُ عَلَاءُ الدِّينِ عَلِيُّ بْنُ مُحَمَّدٍ الْخَازِنُ",
+   "bn": null,
+   "century": "8th Century AH",
+   "lifeAH": "678 AH – 741 AH",
+   "lifeCE": "1280 CE – 1341 CE",
+   "approaches": [
+    "35 Shafiʿi",
+    "31 Gen2"
+   ],
+   "approachesText": "35 Shafiʿi · 31 Gen2",
+   "quranWork": "Lubāb al-Taʾwīl",
+   "tafsir": [
+    "Lubāb al-Taʾwīl"
+   ],
+   "hadithBooks": [],
+   "draft": true
+  },
+  {
+   "id": "s045",
+   "roles": [
+    "tafsir"
+   ],
+   "type": "mufassir",
+   "en": "Imām Ibn Juzayy al-Kalbī",
+   "ar": "الإِمَامُ أَبُو الْقَاسِمِ مُحَمَّدُ بْنُ أَحْمَدَ ابْنُ جُزَيٍّ الْكَلْبِيُّ",
+   "bn": null,
+   "century": "8th Century AH",
+   "lifeAH": "693 AH – 741 AH",
+   "lifeCE": "1294 CE – 1340 CE",
+   "approaches": [
+    "32 Maliki",
+    "31 Gen2"
+   ],
+   "approachesText": "32 Maliki · 31 Gen2",
+   "quranWork": "al-Tashīl",
+   "tafsir": [
+    "al-Tashīl"
+   ],
+   "hadithBooks": [],
+   "draft": true
+  },
+  {
+   "id": "s046",
+   "roles": [
+    "tafsir"
+   ],
+   "type": "mufassir",
+   "en": "Imām Abū Ḥayyān al-Andalusī",
+   "ar": "الإِمَامُ أَبُو حَيَّانَ مُحَمَّدُ بْنُ يُوسُفَ الْأَنْدَلُسِيُّ",
+   "bn": null,
+   "century": "8th Century AH",
+   "lifeAH": "654 AH – 745 AH",
+   "lifeCE": "1256 CE – 1344 CE",
+   "approaches": [
+    "31 Gen2",
+    "35 Shafiʿi"
+   ],
+   "approachesText": "31 Gen2 · 35 Shafiʿi",
+   "quranWork": "al-Baḥr al-Muḥīṭ",
+   "tafsir": [
+    "al-Baḥr al-Muḥīṭ"
+   ],
+   "hadithBooks": [],
+   "draft": true
+  },
+  {
+   "id": "s047",
+   "roles": [
+    "tafsir"
+   ],
+   "type": "mufassir",
+   "en": "Imām Ibn Qayyim al-Jawziyyah",
+   "ar": "الإِمَامُ شَمْسُ الدِّينِ مُحَمَّدُ بْنُ أَبِي بَكْرٍ ابْنُ قَيِّمِ الْجَوْزِيَّةِ",
+   "bn": null,
+   "century": "8th Century AH",
+   "lifeAH": "691 AH – 751 AH",
+   "lifeCE": "1292 CE – 1350 CE",
+   "approaches": [
+    "33 Hanbali",
+    "31 Gen2"
+   ],
+   "approachesText": "33 Hanbali · 31 Gen2",
+   "quranWork": "Badāʾiʿ al-Tafsīr (gathered)",
+   "tafsir": [
+    "Badāʾiʿ al-Tafsīr (gathered)"
+   ],
+   "hadithBooks": [],
+   "draft": true
+  },
+  {
+   "id": "s048",
+   "roles": [
+    "tafsir"
+   ],
+   "type": "mufassir",
+   "en": "Imām Ibn Kathīr al-Dimashqī",
+   "ar": "الإِمَامُ عِمَادُ الدِّينِ إِسْمَاعِيلُ بْنُ عُمَرَ ابْنُ كَثِيرٍ",
+   "bn": "ইমাম ইবনে কাসীর আদ-দিমাশকী",
+   "bnFrom": "keys demo v2",
+   "century": "8th Century AH",
+   "lifeAH": "c. 700 AH – 774 AH",
+   "lifeCE": "c. 1300 CE – 1373 CE",
+   "approaches": [
+    "35 Shafiʿi",
+    "31 Gen2"
+   ],
+   "approachesText": "35 Shafiʿi · 31 Gen2",
+   "quranWork": "Tafsīr al-Qurʾān al-ʿAẓīm",
+   "tafsir": [
+    "Tafsīr al-Qurʾān al-ʿAẓīm"
+   ],
+   "hadithBooks": [],
+   "draft": true
+  },
+  {
+   "id": "s049",
+   "roles": [
+    "tafsir"
+   ],
+   "type": "mufassir",
+   "en": "Imām Jalāl al-Dīn al-Maḥallī",
+   "ar": "الإِمَامُ جَلَالُ الدِّينِ مُحَمَّدُ بْنُ أَحْمَدَ الْمَحَلِّيُّ",
+   "bn": null,
+   "century": "9th Century AH",
+   "lifeAH": "791 AH – 864 AH",
+   "lifeCE": "1389 CE – 1459 CE",
+   "approaches": [
+    "35 Shafiʿi",
+    "31 Gen2"
+   ],
+   "approachesText": "35 Shafiʿi · 31 Gen2",
+   "quranWork": "Tafsīr al-Jalālayn",
+   "tafsir": [
+    "Tafsīr al-Jalālayn"
+   ],
+   "hadithBooks": [],
+   "draft": true
+  },
+  {
+   "id": "s050",
+   "roles": [
+    "tafsir"
+   ],
+   "type": "mufassir",
+   "en": "Imām ʿAbd al-Raḥmān al-Thaʿālibī",
+   "ar": "الإِمَامُ عَبْدُ الرَّحْمَنِ بْنُ مُحَمَّدٍ الثَّعَالِبِيُّ",
+   "bn": null,
+   "century": "9th Century AH",
+   "lifeAH": "c. 786 AH – 875 AH",
+   "lifeCE": "c. 1384 CE – 1471 CE",
+   "approaches": [
+    "32 Maliki",
+    "31 Gen2"
+   ],
+   "approachesText": "32 Maliki · 31 Gen2",
+   "quranWork": "al-Jawāhir al-Ḥisān",
+   "tafsir": [
+    "al-Jawāhir al-Ḥisān"
+   ],
+   "hadithBooks": [],
+   "draft": true
+  },
+  {
+   "id": "s051",
+   "roles": [
+    "tafsir"
+   ],
+   "type": "mufassir",
+   "en": "Imām Ibn ʿĀdil al-Ḥanbalī",
+   "ar": "الإِمَامُ أَبُو حَفْصٍ عُمَرُ بْنُ عَلِيٍّ ابْنُ عَادِلٍ",
+   "bn": null,
+   "century": "9th Century AH",
+   "lifeAH": "? – after 880 AH",
+   "lifeCE": "? – after 1475 CE",
+   "approaches": [
+    "33 Hanbali",
+    "31 Gen2"
+   ],
+   "approachesText": "33 Hanbali · 31 Gen2",
+   "quranWork": "al-Lubāb fī ʿUlūm al-Kitāb",
+   "tafsir": [
+    "al-Lubāb fī ʿUlūm al-Kitāb"
+   ],
+   "hadithBooks": [],
+   "draft": true
+  },
+  {
+   "id": "s052",
+   "roles": [
+    "tafsir"
+   ],
+   "type": "mufassir",
+   "en": "Imām Burhān al-Dīn al-Biqāʿī",
+   "ar": "الإِمَامُ بُرْهَانُ الدِّينِ إِبْرَاهِيمُ بْنُ عُمَرَ الْبِقَاعِيُّ",
+   "bn": null,
+   "century": "9th Century AH",
+   "lifeAH": "809 AH – 885 AH",
+   "lifeCE": "1406 CE – 1480 CE",
+   "approaches": [
+    "35 Shafiʿi",
+    "31 Gen2"
+   ],
+   "approachesText": "35 Shafiʿi · 31 Gen2",
+   "quranWork": "Naẓm al-Durar",
+   "tafsir": [
+    "Naẓm al-Durar"
+   ],
+   "hadithBooks": [],
+   "draft": true
+  },
+  {
+   "id": "s053",
+   "roles": [
+    "tafsir"
+   ],
+   "type": "mufassir",
+   "en": "Imām Jalāl al-Dīn al-Suyūṭī",
+   "ar": "الإِمَامُ جَلَالُ الدِّينِ عَبْدُ الرَّحْمَنِ بْنُ أَبِي بَكْرٍ السُّيُوطِيُّ",
+   "bn": null,
+   "century": "10th Century AH",
+   "lifeAH": "849 AH – 911 AH",
+   "lifeCE": "1445 CE – 1505 CE",
+   "approaches": [
+    "35 Shafiʿi",
+    "31 Gen2",
+    "28 Sahaba"
+   ],
+   "approachesText": "35 Shafiʿi · 31 Gen2 · 28 Sahaba",
+   "quranWork": "al-Durr al-Manthūr; al-Jalālayn; Lubāb al-Nuqūl",
+   "tafsir": [
+    "al-Durr al-Manthūr",
+    "al-Jalālayn",
+    "Lubāb al-Nuqūl"
+   ],
+   "hadithBooks": [],
+   "draft": true
+  },
+  {
+   "id": "s054",
+   "roles": [
+    "tafsir"
+   ],
+   "type": "mufassir",
+   "en": "Shaykh al-Islām Abū al-Suʿūd al-ʿImādī",
+   "ar": "شَيْخُ الْإِسْلَامِ أَبُو السُّعُودِ مُحَمَّدُ بْنُ مُحَمَّدٍ الْعِمَادِيُّ",
+   "bn": null,
+   "century": "10th Century AH",
+   "lifeAH": "898 AH – 982 AH",
+   "lifeCE": "1490 CE – 1574 CE",
+   "approaches": [
+    "34 Hanafi",
+    "31 Gen2"
+   ],
+   "approachesText": "34 Hanafi · 31 Gen2",
+   "quranWork": "Irshād al-ʿAql al-Salīm",
+   "tafsir": [
+    "Irshād al-ʿAql al-Salīm"
+   ],
+   "hadithBooks": [],
+   "draft": true
+  },
+  {
+   "id": "s055",
+   "roles": [
+    "tafsir"
+   ],
+   "type": "mufassir",
+   "en": "Shihāb al-Dīn al-Khafājī",
+   "ar": "شِهَابُ الدِّينِ أَحْمَدُ بْنُ مُحَمَّدٍ الْخَفَاجِيُّ",
+   "bn": null,
+   "century": "11th Century AH",
+   "lifeAH": "977 AH – 1069 AH",
+   "lifeCE": "1569 CE – 1659 CE",
+   "approaches": [
+    "34 Hanafi",
+    "31 Gen2"
+   ],
+   "approachesText": "34 Hanafi · 31 Gen2",
+   "quranWork": "ʿInāyat al-Qāḍī",
+   "tafsir": [
+    "ʿInāyat al-Qāḍī"
+   ],
+   "hadithBooks": [],
+   "draft": true
+  },
+  {
+   "id": "s056",
+   "roles": [
+    "tafsir"
+   ],
+   "type": "mufassir",
+   "en": "Ismāʿīl Ḥaqqī al-Bursawī",
+   "ar": "إِسْمَاعِيلُ حَقِّي الْبُرُوسَوِيُّ",
+   "bn": null,
+   "century": "12th Century AH",
+   "lifeAH": "1063 AH – 1137 AH",
+   "lifeCE": "1653 CE – 1725 CE",
+   "approaches": [
+    "36 Groups (Sufi)",
+    "34 Hanafi",
+    "Gen3"
+   ],
+   "approachesText": "36 Groups (Sufi) · 34 Hanafi · Gen3",
+   "quranWork": "Rūḥ al-Bayān",
+   "tafsir": [
+    "Rūḥ al-Bayān"
+   ],
+   "hadithBooks": [],
+   "draft": true
+  },
+  {
+   "id": "s057",
+   "roles": [
+    "tafsir"
+   ],
+   "type": "mufassir",
+   "en": "Shāh Walī Allāh al-Dihlawī",
+   "ar": "الشَّاهُ وَلِيُّ اللهِ أَحْمَدُ بْنُ عَبْدِ الرَّحِيمِ الدِّهْلَوِيُّ",
+   "bn": null,
+   "century": "12th Century AH",
+   "lifeAH": "1114 AH – 1176 AH",
+   "lifeCE": "1703 CE – 1762 CE",
+   "approaches": [
+    "34 Hanafi",
+    "Gen3"
+   ],
+   "approachesText": "34 Hanafi · Gen3",
+   "quranWork": "al-Fawz al-Kabīr; Fatḥ al-Raḥmān",
+   "tafsir": [
+    "al-Fawz al-Kabīr",
+    "Fatḥ al-Raḥmān"
+   ],
+   "hadithBooks": [],
+   "draft": true
+  },
+  {
+   "id": "s058",
+   "roles": [
+    "tafsir"
+   ],
+   "type": "mufassir",
+   "en": "Shaykh Sulaymān al-Jamal",
+   "ar": "الشَّيْخُ سُلَيْمَانُ بْنُ عُمَرَ الْجَمَلُ",
+   "bn": null,
+   "century": "13th Century AH",
+   "lifeAH": "? – 1204 AH",
+   "lifeCE": "? – 1790 CE",
+   "approaches": [
+    "35 Shafiʿi",
+    "Gen3"
+   ],
+   "approachesText": "35 Shafiʿi · Gen3",
+   "quranWork": "al-Futūḥāt al-Ilāhiyyah",
+   "tafsir": [
+    "al-Futūḥāt al-Ilāhiyyah"
+   ],
+   "hadithBooks": [],
+   "draft": true
+  },
+  {
+   "id": "s059",
+   "roles": [
+    "tafsir"
+   ],
+   "type": "mufassir",
+   "en": "Shāh ʿAbd al-ʿAzīz al-Dihlawī",
+   "ar": "الشَّاهُ عَبْدُ الْعَزِيزِ الدِّهْلَوِيُّ",
+   "bn": null,
+   "century": "13th Century AH",
+   "lifeAH": "1159 AH – 1239 AH",
+   "lifeCE": "1746 CE – 1824 CE",
+   "approaches": [
+    "34 Hanafi",
+    "Gen3"
+   ],
+   "approachesText": "34 Hanafi · Gen3",
+   "quranWork": "Fatḥ al-ʿAzīz",
+   "tafsir": [
+    "Fatḥ al-ʿAzīz"
+   ],
+   "hadithBooks": [],
+   "draft": true
+  },
+  {
+   "id": "s060",
+   "roles": [
+    "tafsir"
+   ],
+   "type": "mufassir",
+   "en": "Shaykh Aḥmad al-Ṣāwī",
+   "ar": "الشَّيْخُ أَحْمَدُ بْنُ مُحَمَّدٍ الصَّاوِيُّ",
+   "bn": null,
+   "century": "13th Century AH",
+   "lifeAH": "1175 AH – 1241 AH",
+   "lifeCE": "1761 CE – 1825 CE",
+   "approaches": [
+    "32 Maliki",
+    "Gen3"
+   ],
+   "approachesText": "32 Maliki · Gen3",
+   "quranWork": "Ḥāshiyat al-Ṣāwī",
+   "tafsir": [
+    "Ḥāshiyat al-Ṣāwī"
+   ],
+   "hadithBooks": [],
+   "draft": true
+  },
+  {
+   "id": "s061",
+   "roles": [
+    "tafsir"
+   ],
+   "type": "mufassir",
+   "en": "Imām Muḥammad ibn ʿAlī al-Shawkānī",
+   "ar": "الإِمَامُ مُحَمَّدُ بْنُ عَلِيٍّ الشَّوْكَانِيُّ",
+   "bn": null,
+   "century": "13th Century AH",
+   "lifeAH": "1173 AH – 1250 AH",
+   "lifeCE": "1759 CE – 1834 CE",
+   "approaches": [
+    "Gen3"
+   ],
+   "approachesText": "Gen3",
+   "quranWork": "Fatḥ al-Qadīr",
+   "tafsir": [
+    "Fatḥ al-Qadīr"
+   ],
+   "hadithBooks": [],
+   "draft": true
+  },
+  {
+   "id": "s062",
+   "roles": [
+    "tafsir"
+   ],
+   "type": "mufassir",
+   "en": "Imām Maḥmūd al-Ālūsī",
+   "ar": "الإِمَامُ شِهَابُ الدِّينِ مَحْمُودُ بْنُ عَبْدِ اللهِ الْآلُوسِيُّ",
+   "bn": null,
+   "century": "13th Century AH",
+   "lifeAH": "1217 AH – 1270 AH",
+   "lifeCE": "1802 CE – 1854 CE",
+   "approaches": [
+    "34 Hanafi",
+    "Gen3"
+   ],
+   "approachesText": "34 Hanafi · Gen3",
+   "quranWork": "Rūḥ al-Maʿānī",
+   "tafsir": [
+    "Rūḥ al-Maʿānī"
+   ],
+   "hadithBooks": [],
+   "draft": true
+  },
+  {
+   "id": "s063",
+   "roles": [
+    "tafsir"
+   ],
+   "type": "mufassir",
+   "en": "Shaykh Jamāl al-Dīn al-Qāsimī",
+   "ar": "الشَّيْخُ جَمَالُ الدِّينِ مُحَمَّدُ بْنُ مُحَمَّدٍ الْقَاسِمِيُّ",
+   "bn": null,
+   "century": "14th Century AH",
+   "lifeAH": "1283 AH – 1332 AH",
+   "lifeCE": "1866 CE – 1914 CE",
+   "approaches": [
+    "Gen3"
+   ],
+   "approachesText": "Gen3",
+   "quranWork": "Maḥāsin al-Taʾwīl",
+   "tafsir": [
+    "Maḥāsin al-Taʾwīl"
+   ],
+   "hadithBooks": [],
+   "draft": true
+  },
+  {
+   "id": "s064",
+   "roles": [
+    "tafsir"
+   ],
+   "type": "mufassir",
+   "en": "Shaykh Muḥammad Rashīd Riḍā",
+   "ar": "الشَّيْخُ مُحَمَّدُ رَشِيدُ رِضَا",
+   "bn": null,
+   "century": "14th Century AH",
+   "lifeAH": "1282 AH – 1354 AH",
+   "lifeCE": "1865 CE – 1935 CE",
+   "approaches": [
+    "Gen4"
+   ],
+   "approachesText": "Gen4",
+   "quranWork": "Tafsīr al-Manār",
+   "tafsir": [
+    "Tafsīr al-Manār"
+   ],
+   "hadithBooks": [],
+   "draft": true
+  },
+  {
+   "id": "s065",
+   "roles": [
+    "tafsir"
+   ],
+   "type": "mufassir",
+   "en": "Shaykh Aḥmad Muṣṭafā al-Marāghī",
+   "ar": "الشَّيْخُ أَحْمَدُ مُصْطَفَى الْمَرَاغِيُّ",
+   "bn": null,
+   "century": "14th Century AH",
+   "lifeAH": "1300 AH – 1371 AH",
+   "lifeCE": "1883 CE – 1952 CE",
+   "approaches": [
+    "Gen4"
+   ],
+   "approachesText": "Gen4",
+   "quranWork": "Tafsīr al-Marāghī",
+   "tafsir": [
+    "Tafsīr al-Marāghī"
+   ],
+   "hadithBooks": [],
+   "draft": true
+  },
+  {
+   "id": "s066",
+   "roles": [
+    "tafsir"
+   ],
+   "type": "mufassir",
+   "en": "Shaykh ʿAbd al-Raḥmān al-Saʿdī",
+   "ar": "الشَّيْخُ عَبْدُ الرَّحْمَنِ بْنُ نَاصِرٍ السَّعْدِيُّ",
+   "bn": "শায়খ আব্দুর রহমান আস-সা‘দী",
+   "bnFrom": "keys demo v2",
+   "century": "14th Century AH",
+   "lifeAH": "1307 AH – 1376 AH",
+   "lifeCE": "1889 CE – 1956 CE",
+   "approaches": [
+    "33 Hanbali",
+    "Gen5"
+   ],
+   "approachesText": "33 Hanbali · Gen5",
+   "quranWork": "Taysīr al-Karīm al-Raḥmān",
+   "tafsir": [
+    "Taysīr al-Karīm al-Raḥmān"
+   ],
+   "hadithBooks": [],
+   "draft": true
+  },
+  {
+   "id": "s067",
+   "roles": [
+    "tafsir"
+   ],
+   "type": "mufassir",
+   "en": "Shaykh Muḥammad al-Amīn al-Shinqīṭī",
+   "ar": "الشَّيْخُ مُحَمَّدٌ الْأَمِينُ الشِّنْقِيطِيُّ",
+   "bn": null,
+   "century": "14th Century AH",
+   "lifeAH": "1325 AH – 1393 AH",
+   "lifeCE": "1907 CE – 1974 CE",
+   "approaches": [
+    "32 Maliki",
+    "Gen5"
+   ],
+   "approachesText": "32 Maliki · Gen5",
+   "quranWork": "Aḍwāʾ al-Bayān",
+   "tafsir": [
+    "Aḍwāʾ al-Bayān"
+   ],
+   "hadithBooks": [],
+   "draft": true
+  },
+  {
+   "id": "s068",
+   "roles": [
+    "tafsir"
+   ],
+   "type": "mufassir",
+   "en": "Shaykh Muḥammad al-Ṭāhir Ibn ʿĀshūr",
+   "ar": "الشَّيْخُ مُحَمَّدٌ الطَّاهِرُ ابْنُ عَاشُورٍ",
+   "bn": null,
+   "century": "14th Century AH",
+   "lifeAH": "1296 AH – 1393 AH",
+   "lifeCE": "1879 CE – 1973 CE",
+   "approaches": [
+    "32 Maliki",
+    "Gen5"
+   ],
+   "approachesText": "32 Maliki · Gen5",
+   "quranWork": "al-Taḥrīr wa al-Tanwīr",
+   "tafsir": [
+    "al-Taḥrīr wa al-Tanwīr"
+   ],
+   "hadithBooks": [],
+   "draft": true
+  }
+ ]
+}

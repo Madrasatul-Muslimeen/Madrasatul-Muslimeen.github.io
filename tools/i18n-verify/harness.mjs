@@ -20,6 +20,13 @@ export async function newContext(browser, { banner = true, appLang = null, accou
   await ctx.route("https://www.gstatic.com/firebasejs/**", (route) =>
     route.fulfill({ status: 200, contentType: "text/javascript; charset=utf-8", body: stub })
   );
+  // PCF MSA J112 R1: under this harness firebase-app.js is imported by ONE module only, siyagah-cloud.js, and only once
+  // the Map has opened. Served as its own copy of the stub, that late copy would run AFTER the page's own and reset
+  // window.__fsLog and re-point a suite's window.__DATA at a DATA no write ever reaches (measured: journey-s9's placements,
+  // journey-editor's saves). So it re-exports the copy already running (firebase-auth.js's): nothing new is evaluated.
+  await ctx.route("https://www.gstatic.com/firebasejs/*/firebase-app.js", (route) =>
+    route.fulfill({ status: 200, contentType: "text/javascript; charset=utf-8", body: `export * from ${JSON.stringify(route.request().url().replace(/firebase-app\.js$/, "firebase-auth.js"))};` })
+  );
   // DOMPurify comes from a CDN in the real app. This sandbox's proxy breaks
   // the browser's certificate check for outside hosts, so a page that renders
   // Note bodies would refuse to (sanitize fails closed) and every such test

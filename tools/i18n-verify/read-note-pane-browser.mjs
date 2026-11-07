@@ -73,6 +73,12 @@ for (const lang of ["en", "bn"]) for (const [width, height, mode] of [[390, 844,
   await P.waitForTimeout(900);
   await ev(() => document.querySelectorAll('[id*="splash"], .app-splash-overlay').forEach((e) => e.remove()));
 
+  // UPDATED IN PLACE for PCF MSA J114 (the Owner, 6 Nov 2026, option B: ONE ⋮ beside the āyah): the bar's 📝 and 🔖 are retired from
+  // sight (display: none !important), because the Notes pane behind the bar's 📝 was "the wrong place". The pane's own code is
+  // kept, so this suite still tests it: it asserts the retirement first, then puts the two buttons back with a style rule.
+  check(`${tag} J114: the bar's 📝 and 🔖 are retired from sight (the ⋮ carries Notes and Bookmark)`, await ev(() => ["readNotesBtn", "readBarBookmarkBtn"].every((id) => getComputedStyle(document.getElementById(id)).display === "none")));
+  await P.addStyleTag({ content: "#readBar #readNotesBtn, #readBar #readBarBookmarkBtn { display: inline-flex !important; }" });
+
   // 1. The button: on the Read bar, the same size as its neighbours, nothing read for it before it is pressed (I9).
   const btn = await ev(() => {
     // UPDATED IN PLACE for PCF MSA J63 (v12.16, the Owner: no Bookmark tile in the tools card): #readBookmarkBtn is hidden

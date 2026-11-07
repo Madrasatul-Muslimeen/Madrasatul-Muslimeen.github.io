@@ -9,6 +9,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { execSync } from "node:child_process";
 import { initializeTestEnvironment, assertFails, assertSucceeds } from "@firebase/rules-unit-testing";
 import { collection, doc, getDoc, getDocs, query, setDoc, where } from "firebase/firestore";
 
@@ -93,8 +94,40 @@ function withoutGuardianRule(text) {
   return out;
 }
 
-test("the live Rules are exactly the guardian candidate the Owner published", () => {
-  assert.equal(rules, candidate);
+// UPDATED IN PLACE 5 Nov 2026. This read "the live Rules are exactly the guardian candidate", true from J15
+// (12 Oct, 97c8bb5b) until the Owner published further Rules into the same file (Zab, Tasrif, Vocabulary review,
+// hadithSubjects, the Keys blocks), after which firestore.rules can never again BE this candidate. What is still
+// true, and worth checking: the candidate was firestore.rules of its day (846810a5, the commit that wrote it) plus
+// the guardian rule and nothing else, and the tenantPeople block it published is in today's firestore.rules BYTE
+// FOR BYTE, so the guardian rule cannot drift silently. The cases below still run against today's live file.
+const CANDIDATE_BASE_REF = "846810a5";
+const baseLive = execSync(`git show ${CANDIDATE_BASE_REF}:firestore.rules`, { cwd: path.resolve(here, "../.."), encoding: "utf8" });
+function matchBlock(text, name) {
+  const m = new RegExp(`^[ \\t]*match /${name}/`, "m").exec(text);
+  assert.ok(m, `no ${name} block found`);
+  const start = m.index + m[0].indexOf("match");
+  const open = text.lastIndexOf("{", text.indexOf("\n", start));
+  let depth = 0;
+  for (let i = open; i < text.length; i++) {
+    if (text[i] === "{") depth++;
+    else if (text[i] === "}" && --depth === 0) return text.slice(start, i + 1);
+  }
+  throw new Error(`unterminated ${name} block`);
+}
+test("the guardian candidate is firestore.rules of its day plus the guardian rule, and its tenantPeople block is live byte for byte", () => {
+  const cand = candidate.split("\n"), base = baseLive.split("\n");
+  let j = 0; const missing = [];
+  for (const line of base) {
+    let k = j; while (k < cand.length && cand[k] !== line) k++;
+    if (k < cand.length) j = k + 1; else missing.push(line);
+  }
+  assert.deepEqual(missing, [], `firestore.rules at ${CANDIDATE_BASE_REF} has lines missing from the candidate`);
+  assert.equal(cand.length - base.length, 7, "the candidate adds exactly the seven-line guardian rule");
+  const GUARDIAN = "resource.data.get('managedByPersonId', null) == myPersonIdIn(resource.data.tenantId)";
+  assert.ok(candidate.includes(GUARDIAN) && !baseLive.includes(GUARDIAN), "the guardian rule is what the candidate adds");
+  const block = matchBlock(candidate, "tenantPeople");
+  assert.ok(block.includes(GUARDIAN) && block.length > 400, "the candidate's tenantPeople block parsed wrongly");
+  assert.equal(matchBlock(rules, "tenantPeople"), block, "today's firestore.rules tenantPeople block is not the published guardian candidate's");
 });
 test("roster reads for every role, against the live Rules (a guardian lists their own children)", () => run(rules, true));
 test("MUTATION: the live Rules without the guardian rule refuse the guardian's children query", () => run(withoutGuardianRule(rules), false));

@@ -1,6 +1,17 @@
 // Full app translation, phase 1 (the shell) — behaviour suite.
 import fs from "fs";
-import { chromium, newContext, openPage, BASE, clickReadTool } from "./harness.mjs";
+import { chromium, newContext, openPage, BASE, clickReadTool as clickReadToolRaw } from "./harness.mjs";
+// UPDATED IN PLACE for PCF MSA J114 (the Owner, 6 Nov 2026, option B: ONE ⋮ beside the āyah): the bar's 🔖, 📝, ✍, 🔗 and 📚 are retired from sight
+// by one CSS rule (ids and handlers kept). The sections below still test their code, so any click on one of them first puts it back with a
+// test-only style rule, once per page. The retirement itself is asserted in section 45a and by ayah-menu-sheet-browser.
+const RETIRED_BAR = ["#readNotesBtn", "#readBarBookmarkBtn", "#readBookmarkBtn", "#readWritingBtn", "#readAttachAsmaBtn", "#readAttachQcrBtn"];
+const reviveRetired = (page) => page.evaluate(() => {
+  if (document.getElementById("zzRetiredBack")) return;
+  const st = document.createElement("style"); st.id = "zzRetiredBack";
+  st.textContent = "#readBar #readNotesBtn, #readBar #readBarBookmarkBtn, #readBar #readBookmarkBtn, #readBar #readWritingBtn, #readBar #readAttachAsmaBtn, #readBar #readAttachQcrBtn { display: inline-flex !important; }";
+  document.head.append(st);
+});
+const clickReadTool = async (page, sel, ...rest) => { if (RETIRED_BAR.includes(sel)) await reviveRetired(page); return clickReadToolRaw(page, sel, ...rest); };
 
 // Chromium: use whatever this machine has. CHROMIUM_PATH overrides;
 // otherwise Playwright finds its own download, which is the normal case.
@@ -1827,11 +1838,13 @@ console.log("\n=== 30. Shell round 18: unit numbers, transport, reading view ===
         /Hizb 3/.test(hizb3.label), JSON.stringify(hizb3));
   check("30e ...and lands on its first ayah", /Ayah 142 of/.test(hizb3.position), hizb3.position);
 
-  // Page: 604 of them, and the same landing rule.
+  // Page: only this sūrah's pages (48 for Al-Baqarah), and the same landing rule.
   await page.selectOption("#unitTypeSelect", "page");
   await page.waitForTimeout(1200);
   const pageCount = await page.evaluate(() => document.querySelectorAll("#unitNumSelect option").length);
-  check("30f Page offers all 604", pageCount === 604, String(pageCount));
+  // Updated in place (the Owner, 6 Nov 2026: "page numbers should pull only the page of that Surah"): the Page picker lists only the
+  // pages of the chosen sūrah. Al-Baqarah (the sūrah Hizb 3 landed in) is on pages 2-49, so 48; it was all 604.
+  check("30f Page offers only this sūrah's pages (Al-Baqarah 2-49)", pageCount === 48, String(pageCount));
   await page.selectOption("#unitNumSelect", "22");
   await page.waitForTimeout(1500);
   const page22 = await page.evaluate(() => ({
@@ -4301,6 +4314,11 @@ console.log("\n=== 40. Shell round 28: the Mushaf page ===");
     const { page } = await openPage(ctx, "/app/quranrevival.html");
     page.on("dialog", (d) => d.dismiss().catch(() => {}));
     await openMushaf(page);
+    // v13.30 (PCF MSA J05): the intention reminder now shows one card above the āyāt when Read opens. At 360px it wraps to
+    // several lines and pushed 3:2:1 below an 844px screen, so the glyph-centre tap landed off-screen. This check is about
+    // tap accuracy on a word, not the card: close it with Bismillah first, as a reader does (updated in place, not removed).
+    const closeIntention = (p) => p.evaluate(() => document.querySelector("#intentionHost [data-intention-bismillah]")?.click());
+    await closeIntention(page); await page.waitForTimeout(300);
 
     const target = page.locator('#pageViewContainer [data-word-occurrence$=":3:2:1"]');
     const wantedId = await target.getAttribute("data-word-occurrence");
@@ -4371,17 +4389,18 @@ console.log("\n=== 40. Shell round 28: the Mushaf page ===");
     const { page: page2 } = await openPage(ctx2, "/app/quranrevival.html");
     page2.on("dialog", (d) => d.dismiss().catch(() => {}));
     await openMushaf(page2);
+    await closeIntention(page2); await page2.waitForTimeout(300);
     const gc = await page2.evaluate(() => {
       const t = document.querySelector('#pageViewContainer [data-word-occurrence$=":3:2:1"]');
       const r = t.getBoundingClientRect(), cs = getComputedStyle(t);
       return { x: (r.left + parseFloat(cs.paddingLeft) + r.right - parseFloat(cs.paddingRight)) / 2,
-               y: (r.top + parseFloat(cs.paddingTop) + r.bottom - parseFloat(cs.paddingBottom)) / 2 };
+               y: (r.top + parseFloat(cs.paddingTop) + r.bottom - parseFloat(cs.paddingBottom)) / 2, vh: innerHeight };
     });
     await page2.mouse.click(gc.x, gc.y);
     await page2.waitForTimeout(500);
     const centreId = await page2.evaluate(() => document.querySelector(".quran-word-card")?.getAttribute("data-occurrence-id"));
     check(`40g @${width}px a tap on the visible glyph's centre opens 3:2:1`,
-          centreId === wantedId, `${centreId} vs ${wantedId}`);
+          centreId === wantedId, `${centreId} vs ${wantedId} (tap at ${Math.round(gc.x)},${Math.round(gc.y)} of a ${gc.vh}px-high screen)`);
     await page2.close();
     await ctx2.close();
   }
@@ -4586,6 +4605,10 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   await page.waitForFunction(() => document.getElementById("noteOpener")?.hidden, null, { timeout: 8000 }).catch(() => {});
   const backNote42 = await page.evaluate(() => ({ opener: document.getElementById("noteOpener")?.hidden === false, read: document.getElementById("readView")?.hidden === false, ayah: document.getElementById("ayahSelect")?.value }));
   check("42h ...closing it returns to reading on 1:1", !backNote42.opener && backNote42.read && backNote42.ayah === "1", JSON.stringify(backNote42));
+  // UPDATED IN PLACE for PCF MSA J114 (the Owner, 6 Nov 2026, option B: ONE ⋮ beside the āyah): the bar's 📝 (the Notes pane), 🔖, ✍, 🔗 and 📚
+  // are retired from sight by one CSS rule (their ids and handlers are kept). From here on this suite still tests the Notes pane and the
+  // bookmark code, so it puts the retired buttons back with a test-only style rule. (The retirement itself is asserted by ayah-menu-sheet-browser.)
+  await page.addStyleTag({ content: "#readBar #readNotesBtn, #readBar #readBarBookmarkBtn, #readBar #readBookmarkBtn, #readBar #readWritingBtn, #readBar #readAttachAsmaBtn, #readBar #readAttachQcrBtn { display: inline-flex !important; }" });
   if (await page.evaluate(() => (document.getElementById("readNotesBtn")?.getBoundingClientRect().width ?? 0) === 0)) { await page.click("#readToolsBtn"); await page.waitForTimeout(200); } // 📝 sits behind ⋯ on a phone
   await page.click("#readNotesBtn");
   await page.waitForFunction(() => { const p = document.getElementById("readNotePane"); return p && !p.hidden && p.getClientRects().length > 0; }, null, { timeout: 8000 }).catch(() => {});
@@ -4725,7 +4748,8 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
         gone: document.getElementById("noteView") === null && typeof window.__dormantOpenNoteView === "undefined" && !document.querySelector(".note-view") && !document.querySelector(".note-bar1, .note-bar2"),
         // v12.16 (J63: "the bar's 🔖 shows in the plain Read view too"): from 900px ⋯'s #readBookmarkBtn steps aside for
         // the bar's own #readBarBookmarkBtn, the same bookmark -- either one on screen counts. Updated in place, reason recorded.
-        bar: ["readPlayBtn", "readBookmarkBtn", "readNotesBtn"].map((id) => { const el = document.getElementById(id); return vis(el) || (id === "readBookmarkBtn" && vis(document.getElementById("readBarBookmarkBtn"))) || (id !== "readPlayBtn" && !!el?.closest("#readToolsMenu") && vis(document.getElementById("readToolsBtn"))); }),
+        // UPDATED IN PLACE for PCF MSA J114 (option B): the bar's 🔖 and 📝 are retired; Bookmark and Notes are tiles in the ONE ⋮ (data-qm-bookmark, data-qm-note).
+        bar: ["readPlayBtn", "readBookmarkBtn", "readNotesBtn"].map((id) => { const el = document.getElementById(id); if (id === "readPlayBtn") return vis(el); return !!document.querySelector(id === "readBookmarkBtn" ? "#readQuickMenuSlot [data-qm-bookmark]" : "#readQuickMenuSlot [data-qm-note]"); }),
         menu: vis(document.querySelector("#readQuickMenuSlot [data-qm-toggle]")),
         items: ["copy", "share"].every((k) => document.querySelector(`#readQuickMenuSlot [data-qm-sub-toggle="${k}"]`)) && ["wbw", "roots", "derivatives"].every((k) => document.querySelector(`#readQuickMenuSlot [data-qm-${k}]`)),
         overflow: document.documentElement.scrollWidth - innerWidth,
@@ -4735,7 +4759,7 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
     await ctx.close();
     check(`42p the Note view's bar 2 is gone with it on a ${label} (#742)`, p42.gone, JSON.stringify(p42));
     // v10.21 (the Owner, 10 Oct 2026: the Read bar's tools "under one button") -- below 900px Bookmark and 📝 sit behind ⋯ More tools (still in #readBar); Play stays on the bar. Updated in place.
-    check(`42p Play sits on the Read bar, and Bookmark and 📝 Notes are on the bar or behind its ⋯ on a ${label}`, p42.bar.every(Boolean), JSON.stringify(p42.bar));
+    check(`42p Play sits on the Read bar, and Bookmark and 📝 Notes are tiles in its ⋮ (J114) on a ${label}`, p42.bar.every(Boolean), JSON.stringify(p42.bar));
     check(`42p ...with Copy, Share, Word by word, Root and Derivatives in its ⋮ menu on a ${label}`, p42.menu && p42.items, JSON.stringify(p42));
     check(`42p ...and nothing overflows the ${label} viewport`, p42.overflow <= 0, p42.overflow);
   }
@@ -4885,7 +4909,7 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
     const item = (k) => document.querySelector(`#readQuickMenuSlot [data-qm-${k}]`);
     const root = [...document.querySelectorAll("#readView .root-panel")].find(vis);
     return {
-      order: [...document.querySelectorAll("#readQuickMenuSlot .qm-item")].map((b) => ["wbw", "roots", "derivatives"].find((k) => b.hasAttribute(`data-qm-${k}`)) ?? "").filter(Boolean).join(),
+      order: [...document.querySelectorAll("#readQuickMenuSlot .qm-item, #readQuickMenuSlot .qm-chip")].map((b) => ["wbw", "roots", "derivatives"].find((k) => b.hasAttribute(`data-qm-${k}`)) ?? "").filter(Boolean).join(),
       rootLabel: item("roots")?.textContent.replace("✓", "").trim(), derLabel: item("derivatives")?.textContent.replace("✓", "").trim(),
       rootPressed: item("roots")?.getAttribute("aria-pressed"), derPressed: item("derivatives")?.getAttribute("aria-pressed"),
       root: !!root && root.innerText.trim().length > 0,
@@ -4976,7 +5000,8 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
       langValues: [...wrap.querySelectorAll(".qm-lang-copy")].map((cb) => cb.dataset.lang),
     };
   });
-  check("42k the quick menu's own items render in Bangla", menuBn.items.every((t) => BANGLA.test(t)), JSON.stringify(menuBn.items));
+  // UPDATED IN PLACE for PCF MSA J114 (option B): the QCR tile is labelled with the acronym alone ("QCR", as in every language), so it carries no Bangla letters.
+  check("42k the quick menu's own items render in Bangla", menuBn.items.every((t) => BANGLA.test(t) || /^[^\p{L}]*QCR$/u.test(t)), JSON.stringify(menuBn.items));
   check("42k ...while the checkbox values stay plain ids", JSON.stringify(menuBn.langValues) === JSON.stringify(["ar", "en", "bn", "notes"]));
 
   // UPDATED IN PLACE 10 Oct 2026 (Architect, finishing #742; reasons recorded). The Builder's first pass turned every
@@ -5363,8 +5388,10 @@ console.log("\n=== 45. Quran bookmarks -- naming prompt, full settings capture/r
   await page.click("#readQuickMenuSlot [data-qm-toggle]");
   await page.waitForTimeout(150);
   const readMenuItems = await page.evaluate(() => [...document.querySelectorAll("#readQuickMenuSlot .qm-item")].map((b) => b.textContent.trim()));
-  check("45a the Read screen's ⋮ menu does NOT duplicate Bookmark -- one mechanism, not two",
-        !readMenuItems.some((t) => /Bookmark/i.test(t)) && readMenuItems.length > 0, JSON.stringify(readMenuItems));
+  // UPDATED IN PLACE for PCF MSA J114 (option B): the contract flipped. The ONE ⋮ beside the āyah now carries Bookmark (a tile) and the bar's own
+  // 🔖 is retired from sight, so it is still one mechanism, not two.
+  check("45a the Read screen's ⋮ menu carries Bookmark (J114) -- one mechanism, not two",
+        readMenuItems.some((t) => /Bookmark/i.test(t)) && readMenuItems.length > 0, JSON.stringify(readMenuItems));
   // Close the menu again before touching the bar behind it -- an open popover
   // intercepting the click is this file's own most-repeated trap.
   await page.click("#readQuickMenuSlot [data-qm-toggle]");
@@ -5381,9 +5408,9 @@ console.log("\n=== 45. Quran bookmarks -- naming prompt, full settings capture/r
     const r = b?.getBoundingClientRect();
     return { present: !!b, hidden: b?.hidden, w: r?.width ?? 0, h: r?.height ?? 0, label: b?.getAttribute("aria-label"), text: b?.textContent.trim() };
   });
-  check("45a ...the Read bar carries a direct Bookmark button instead, really on screen",
-        readBmBtn.present && readBmBtn.hidden === false && readBmBtn.w > 0 && readBmBtn.h > 0
-          && /Bookmark/i.test(readBmBtn.label || ""), JSON.stringify(readBmBtn));
+  check("45a ...and the Read bar's own Bookmark button is retired from sight (the code stays; the checks below put it back)",
+        readBmBtn.present && !(readBmBtn.w > 0 && readBmBtn.h > 0) && /Bookmark/i.test(readBmBtn.label || ""), JSON.stringify(readBmBtn));
+  await reviveRetired(page);
 
   // Cancelling the naming popover (item 1/2) makes no write and no bookmark.
   //

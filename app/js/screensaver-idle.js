@@ -50,6 +50,12 @@ export function screensaverHeld(doc = document) {
   if ([...doc.querySelectorAll("audio,video")].some((m) => !m.paused && !m.ended)) return true;
   const a = doc.activeElement;
   if (a && (a.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))) return true;
+  // The Owner, 6 Nov 2026: the screensaver came over a Note being written. The Note window is an <iframe> (note-opener.js,
+  // read-note-pane.js, journey-tray.js): typing inside it fires no key event here and leaves activeElement on the frame,
+  // so the page looked idle after 3 minutes. A focused frame is the reader working inside it: hold.
+  if (a && a.tagName === "IFRAME") return true;
+  const noteWin = doc.getElementById("noteOpener");
+  if (noteWin && !noteWin.hidden && noteWin.getClientRects().length) return true;
   const ws = doc.getElementById("writingSheet");
   if (ws && !ws.hidden && ws.getClientRects().length) return true;
   if (doc.querySelector("[data-screensaver-hold]")) return true;

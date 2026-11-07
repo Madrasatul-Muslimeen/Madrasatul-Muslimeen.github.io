@@ -49,7 +49,15 @@ fs.writeFileSync(path.join(tmp, "r.mjs"), READY_FOR_PURE);
 const R = await import(path.join(tmp, "r.mjs"));
 const CONFIG = { apiKey: "AIzaSyFAKE-for-the-test-only", projectId: "siyagah-test", appId: "1:1:web:test" };
 const GOOD = { ready: true, decision: { by: "master-architect", on: "2026-11-10", reference: "docs/reports/x.md" }, config: CONFIG };
-check("the shipped declaration is OFF", R.SIYAGAH_CLOUD_DECLARATION.ready === false && R.isSiyagahCloudReady() === false);
+// UPDATED IN PLACE for J112 R1 (4 Nov 2026): the switch was OFF until Siyagah's R1 went live; the Master Architect's
+// round R1 turned it ON with Siyagah's real config. The check now pins exactly what was switched on.
+const SHIPPED = R.SIYAGAH_CLOUD_DECLARATION;
+check("the shipped declaration is ON for R1: the master architect's decision, Siyagah's project aaas-notebook, the owner's notebook",
+  R.isSiyagahCloudReady() === true && SHIPPED.decision.by === "master-architect" && SHIPPED.config.projectId === "aaas-notebook"
+  && !("authDomain" in SHIPPED.config) && SHIPPED.notebookId === "nb-mriuc27o-f44402" && !("appId" in SHIPPED.config));
+check("a config without an appId (Siyagah's own has none) is ON; an EMPTY appId is refused",
+  R.isSiyagahCloudReady({ ...GOOD, config: { apiKey: "k", projectId: "siyagah-test" } }) === true
+  && R.isSiyagahCloudReady({ ...GOOD, config: { ...CONFIG, appId: "" } }) === false);
 check("POSITIVE CONTROL a governed decision with a real config is ON", R.isSiyagahCloudReady(GOOD) === true);
 check("ready alone is not enough (no decision)", R.isSiyagahCloudReady({ ...GOOD, decision: null }) === false);
 check("an outside authority is refused", R.isSiyagahCloudReady({ ...GOOD, decision: { ...GOOD.decision, by: "builder" } }) === false);
@@ -105,9 +113,17 @@ check("the app's start page does not reach the hook", !graph("app/index.html").h
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
 async function openMap({ lang = "en", width = 1024, on = false }) {
   const ctx = await newContext(browser, { appLang: lang, banner: false, viewport: { width, height: 900 } });
+  if (!on) {
+    // UPDATED IN PLACE for J112 R1: the shipped switch is ON now, so "off" is served off, to keep proving that an off
+    // switch adds nothing and loads nothing.
+    const body = READY_SRC.replace(/export const SIYAGAH_CLOUD_DECLARATION = Object\.freeze\(\{[\s\S]*?\n\}\);/,
+      `export const SIYAGAH_CLOUD_DECLARATION = Object.freeze({ ready: false, decision: null, config: null });`);
+    if (body === READY_SRC) throw new Error("could not serve the switch OFF");
+    await ctx.route("**/js/siyagah-cloud-readiness.js", (r) => r.fulfill({ status: 200, contentType: "text/javascript; charset=utf-8", body }));
+  }
   if (on) {
     const body = READY_SRC.replace(/export const SIYAGAH_CLOUD_DECLARATION = Object\.freeze\(\{[\s\S]*?\n\}\);/,
-      `export const SIYAGAH_CLOUD_DECLARATION = Object.freeze(${JSON.stringify(GOOD)});`);
+      `export const SIYAGAH_CLOUD_DECLARATION = Object.freeze(${JSON.stringify({ ...GOOD, notebookId: "nb-test" })});`);
     if (body === READY_SRC) throw new Error("could not serve the switch ON");
     await ctx.route("**/js/siyagah-cloud-readiness.js", (r) => r.fulfill({ status: 200, contentType: "text/javascript; charset=utf-8", body }));
   }
@@ -119,7 +135,7 @@ async function openMap({ lang = "en", width = 1024, on = false }) {
   return { ctx, page, asked };
 }
 
-console.log("\n=== off (the switch as shipped) ===");
+console.log("\n=== off (the switch served OFF) ===");
 {
   const { ctx, page, asked } = await openMap({});
   await page.waitForTimeout(1200);
@@ -160,5 +176,5 @@ for (const lang of ["en", "bn"]) for (const width of [360, 390, 768, 1024, 1440]
   await ctx.close();
 }
 await browser.close();
-console.log(`\n==== Siyagah cloud (J112, before R1)${MUTATE ? ` [mutated: ${MUTATE}]` : ""}: ${pass} passed, ${fail} failed ====`);
+console.log(`\n==== Siyagah cloud (J112)${MUTATE ? ` [mutated: ${MUTATE}]` : ""}: ${pass} passed, ${fail} failed ====`);
 process.exit(fail ? 1 : 0);

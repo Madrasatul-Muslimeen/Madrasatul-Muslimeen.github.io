@@ -2931,5 +2931,142 @@ service cloud.firestore {
 
       allow delete: if false; // I4/D6 -- trash, never destroy.
     }
+
+    // =====================================================================
+    // KEYS TO UNDERSTANDING (PCF J03, Builder round K2, 14 Oct 2026) -- CANDIDATE, NOT PUBLISHED.
+    //
+    // One document per surah per scope (Owner answers Q2 "Everyone", Q6 "Ok"):
+    //   ayahKeyMarks/{tenantId}__madrasah__{surah}    the madrasah's keys
+    //   ayahKeyMarks/{tenantId}__{personId}__{surah}  one person's own keys
+    //
+    // MADRASAH document: every member reads; owner, prime and teacher write.
+    // PERSON document: written and read by exactly canRecordFor() (the person,
+    // their guardian, their co-enrolled teacher, the administrators), and the
+    // person must really belong to the tenant. `entries` maps an ayah's
+    // permanent unit key to a list of key ids; Rules cannot inspect one key of
+    // an arbitrarily keyed map, so the client validates the ids.
+    // NO delete, ever (I4, D6): removing a key writes a shorter list.
+    // Reads are by document id only (at most two per surah): no index needed.
+    // =====================================================================
+
+    match /ayahKeyMarks/{markKey} {
+
+      function ayahKeysShapeOk() {
+        return d().keys().hasOnly([
+                 'tenantId', 'scope', 'surah', 'entries',
+                 'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
+               ])
+            && d().keys().hasAll([
+                 'tenantId', 'scope', 'surah', 'entries',
+                 'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
+               ])
+            && d().tenantId is string && d().tenantId.size() > 0
+            && d().scope is string && d().scope.size() > 0
+            && d().surah is int && d().surah >= 1 && d().surah <= 114
+            && markKey == d().tenantId + '__' + d().scope + '__' + string(d().surah)
+            && d().entries is map
+            && d().schemaVersion is number
+            && d().createdAt is timestamp && d().updatedAt is timestamp
+            && d().createdBy is string && d().createdBy.size() > 0;
+      }
+
+      // Who may write the document of `scope` in `tenantId`.
+      function ayahKeysMayWrite(tenantId, scope) {
+        return scope == 'madrasah'
+            ? (canAdminIdentity(tenantId) || isTeacherIn(tenantId))
+            : (personInTenant(tenantId, scope) && canRecordFor(tenantId, scope));
+      }
+      // Who may read it: every member for the madrasah's, canRecordFor for a person's.
+      function ayahKeysMayRead(tenantId, scope) {
+        return scope == 'madrasah'
+            ? (signedIn() && myRolesIn(tenantId).size() > 0)
+            : (personInTenant(tenantId, scope) && canRecordFor(tenantId, scope));
+      }
+
+      // The read-before-create probe: a nonexistent document has no data to expose.
+      allow get: if signedIn() && !exists(/databases/$(database)/documents/ayahKeyMarks/$(markKey));
+      allow get: if ayahKeysMayRead(resource.data.tenantId, resource.data.scope);
+      allow list: if ayahKeysMayRead(resource.data.tenantId, resource.data.scope);
+
+      allow create: if ayahKeysShapeOk()
+                    && ayahKeysMayWrite(d().tenantId, d().scope)
+                    && d().createdBy == myUid();
+
+      allow update: if resource != null
+                    && ayahKeysShapeOk()
+                    && ayahKeysMayWrite(resource.data.tenantId, resource.data.scope)
+                    && d().tenantId == resource.data.tenantId
+                    && d().scope == resource.data.scope
+                    && d().surah == resource.data.surah
+                    && d().createdBy == resource.data.createdBy;
+
+      allow delete: if false; // I4/D6 -- a shorter list, never a deleted document.
+    }
+
+    // =====================================================================
+    // KEYS TO UNDERSTANDING ON HADITH (PCF J03, round K0, 4 Nov 2026) -- CANDIDATE, NOT PUBLISHED.
+    //
+    // The ayahKeyMarks shape, one document per hadith COLLECTION per scope:
+    //   hadithKeyMarks/{tenantId}__madrasah__{collection}
+    //   hadithKeyMarks/{tenantId}__{personId}__{collection}
+    // `entries` maps a hadith's or a hadith word's permanent unit key
+    // (hadith:<collection>:<n>, hadithword:<collection>:<n>:<position>) to a
+    // list of key ids. The same readers and writers as ayahKeyMarks: the
+    // madrasah's document for every member to read; a person's document for
+    // exactly canRecordFor() (so the co-enrolled teacher sees a student's own
+    // marks, the Owner's J03 Q4 A). NO delete, ever (I4, D6).
+    // =====================================================================
+
+    match /hadithKeyMarks/{markKey} {
+
+      function hadithKeysShapeOk() {
+        return d().keys().hasOnly([
+                 'tenantId', 'scope', 'collection', 'entries',
+                 'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
+               ])
+            && d().keys().hasAll([
+                 'tenantId', 'scope', 'collection', 'entries',
+                 'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
+               ])
+            && d().tenantId is string && d().tenantId.size() > 0
+            && d().scope is string && d().scope.size() > 0
+            && d().collection is string && d().collection.matches('^[a-z0-9-]{1,40}$')
+            && markKey == d().tenantId + '__' + d().scope + '__' + d().collection
+            && d().entries is map
+            && d().schemaVersion is number
+            && d().createdAt is timestamp && d().updatedAt is timestamp
+            && d().createdBy is string && d().createdBy.size() > 0;
+      }
+
+      function hadithKeysMayWrite(tenantId, scope) {
+        return scope == 'madrasah'
+            ? (canAdminIdentity(tenantId) || isTeacherIn(tenantId))
+            : (personInTenant(tenantId, scope) && canRecordFor(tenantId, scope));
+      }
+      function hadithKeysMayRead(tenantId, scope) {
+        return scope == 'madrasah'
+            ? (signedIn() && myRolesIn(tenantId).size() > 0)
+            : (personInTenant(tenantId, scope) && canRecordFor(tenantId, scope));
+      }
+
+      // The read-before-create probe: a nonexistent document has no data to expose.
+      allow get: if signedIn() && !exists(/databases/$(database)/documents/hadithKeyMarks/$(markKey));
+      allow get: if hadithKeysMayRead(resource.data.tenantId, resource.data.scope);
+      allow list: if hadithKeysMayRead(resource.data.tenantId, resource.data.scope);
+
+      allow create: if hadithKeysShapeOk()
+                    && hadithKeysMayWrite(d().tenantId, d().scope)
+                    && d().createdBy == myUid();
+
+      allow update: if resource != null
+                    && hadithKeysShapeOk()
+                    && hadithKeysMayWrite(resource.data.tenantId, resource.data.scope)
+                    && d().tenantId == resource.data.tenantId
+                    && d().scope == resource.data.scope
+                    && d().collection == resource.data.collection
+                    && d().createdBy == resource.data.createdBy;
+
+      allow delete: if false; // I4/D6 -- a shorter list, never a deleted document.
+    }
   }
 }

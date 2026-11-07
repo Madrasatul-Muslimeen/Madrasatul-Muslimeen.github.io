@@ -2997,7 +2997,9 @@
      same slot, never a new bar; from 600px the wrapper is display: contents and they stand open on the bar as before. */
   #readMeaningLayersSlot .ml-items { display: contents; }
   #readMeaningLayersSlot .ml-menu-btn { display: none; }
-  @media (max-width: 599.98px) {
+  /* PCF MSA J114 (the Owner, 6 Nov 2026, a 600px-wide screenshot: "Place these three buttons under one"): the one button now
+     reaches up to 900px, so a small tablet gets it too; from 900px the three stand open on the bar. */
+  @media (max-width: 899.98px) {
     #readMeaningLayersSlot { position: relative; overflow: visible; }
     #readMeaningLayersSlot .ml-menu-btn {
       display: inline-flex; align-items: center; gap: 0.3rem; height: 40px; box-sizing: border-box; margin: 0; padding: 0 0.7rem;
@@ -3030,6 +3032,10 @@
      and edge as the ONE Ayah View's (.page-flow-ayah.now-playing), so the reader sees which āyah is sounding. */
   .meaning-ayah.now-playing { background: #fff8e1; border-color: #c8a227; box-shadow: inset 4px 0 0 #c8a227; opacity: 1; }
   .meaning-ayah-head .ayah-quick-wrap { margin-left: auto; }
+  /* The Owner, 6 Nov 2026 (option A): the āyah number sits on the title's row, right beside the ⋮, both before the āyah starts. */
+  .meaning-ayah-head > .ayah-num-badge { margin-left: auto; flex: 0 0 auto; }
+  .meaning-ayah-head > .ayah-num-badge + .ayah-quick-wrap { margin-left: 0; }
+  .ayah-quick-header { align-items: center; gap: 0.5rem; }
   .meaning-more { min-height: 44px; border: 1px dashed #c9b98f; border-radius: 0.6rem; background: #fdf8ea; color: #5e4418; font: inherit; font-weight: 600; cursor: pointer; }
   .meaning-more[disabled] { opacity: 0.5; cursor: default; }
   /* Owner, 2 Oct 2026 -- "☰ Surah list", the way back from a Read view opened
@@ -4690,6 +4696,7 @@
      with its outer box, and so the line's own justification, unchanged. */
   /* A Mushaf page's font shrinks with the phone, so 0.6em alone left the
      marker's tap area 33px wide at 320px -- max() keeps it at least 40px. */
+  .hifz-word[data-ayah-marker].mushaf-step-hit { outline: 3px solid #B8862F; outline-offset: 2px; border-radius: 50%; }
   .hifz-word[data-ayah-marker] { cursor: pointer; --ayah-marker-pad: max(0.6em, 14px); padding: var(--ayah-marker-pad); margin: calc(-1 * var(--ayah-marker-pad)); }
   /* Issue #325 point 4 -- a thin ring on the marker for the Approach last
      chosen on either card. outline (not box-shadow) with a negative
@@ -5479,6 +5486,29 @@
     border-radius: 0.35rem; padding: 0.3rem; font-size: 0.75rem; cursor: pointer; font-family: inherit;
   }
   .qm-divider { height: 1px; background: #eee; margin: 0.2rem 0.3rem; }
+  /* PCF MSA J114 (the Owner, 6 Nov 2026, option B): ONE ⋮ beside the āyah. The bar's own 🔖, Notes (the Notes pane, which the Owner
+     called the wrong place), ✍, 🔗 and 📚 are retired from sight: their code stays (every id and handler), the ⋮ carries them. */
+  #readBar #readBookmarkBtn, #readBar #readBarBookmarkBtn, #readBar #readNotesBtn, #readBar #readWritingBtn,
+  #readBar #readAttachAsmaBtn, #readBar #readAttachQcrBtn { display: none !important; }
+  .quick-menu.qm-sheet { box-sizing: border-box; width: min(19rem, calc(100vw - 3rem)); padding: 0.6rem; border-radius: 1rem; z-index: 60; }
+  .qm-sheet .qm-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.4rem; }
+  /* Exactly four across, or exactly two by two (never 3+1, never one column): below 15.5rem of room four 3.6rem tiles no longer fit
+     (found at 360px with 200% text; the sheet is the container, so the rule follows the text size, not the screen). */
+  .quick-menu.qm-sheet { container-type: inline-size; }
+  @container (max-width: 15.5rem) { .qm-sheet .qm-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .qm-sheet .qm-tile { flex-direction: column; justify-content: center; gap: 0.15rem; padding: 0.5rem 0.15rem 0.4rem; min-height: 4rem; text-align: center; border: 1px solid #e3d6b0; border-radius: 0.8rem; background: #f6f1e2; color: #1F3A6E; font-size: 0.68rem; font-weight: 600; line-height: 1.15; }
+  .qm-sheet .qm-tile:hover { background: #efe6cc; }
+  .qm-sheet .qm-tile.is-on { background: #1F3A6E; border-color: #1F3A6E; color: #fff; }
+  .qm-sheet .qm-glyph { font-size: 1.25rem; line-height: 1.2; }
+  .quick-menu.qm-sheet .qm-tile, .quick-menu.qm-sheet .qm-tile .qm-label { white-space: normal; } /* the bar's buttons are nowrap (#readBar button): a tile's label must wrap */
+  .qm-sheet .qm-label { overflow-wrap: anywhere; }
+  .qm-sheet .qm-rows { margin-top: 0.45rem; border-top: 1px solid #eee; padding-top: 0.25rem; display: grid; }
+  .qm-sheet .qm-rows .qm-item { min-height: 44px; font-size: 0.88rem; }
+  .qm-sheet .qm-rowglyph { width: 1.4rem; text-align: center; }
+  .qm-sheet .qm-chips { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.4rem; padding-top: 0.5rem; border-top: 1px solid #eee; }
+  .qm-sheet .qm-chip { border: 1px solid #d8d2c0; border-radius: 999px; background: #fff; color: #222; padding: 0.35rem 0.7rem; min-height: 36px; font: inherit; font-size: 0.78rem; font-weight: 600; cursor: pointer; }
+  .qm-sheet .qm-chip.is-on { background: #1F3A6E; border-color: #1F3A6E; color: #fff; }
+  .qm-sheet button:focus-visible { outline: 3px solid #B8862F; outline-offset: 2px; }
   .ayah-note-flash { color: #2e6b4f; font-weight: 700; }
 
   /* ---- Note & more: full-stage view, dock stays visible underneath ---- */
@@ -5951,7 +5981,7 @@
     // Issue #468 -- classic (non-module) script: runs before first paint.
     (function () {
       var q = new URLSearchParams(location.search);
-      if (!(q.get("bookmark") || q.get("goto") || q.get("word") || q.get("resume") || q.get("last"))) return;
+      if (!(q.get("bookmark") || q.get("goto") || q.get("word") || q.get("resume") || q.get("last") || q.get("keysFor"))) return;
       var root = document.documentElement;
       root.classList.add("bm-opening");
       var cover = document.getElementById("bmCover");
@@ -6091,6 +6121,7 @@
             <div id="wheelKindSwitch" class="wheel-look-switch" role="group" aria-label="Which Wheel">
               <button type="button" class="wheel-look-btn" data-wheel-kind="approaches" aria-pressed="true">Approaches</button>
               <button type="button" class="wheel-look-btn" data-wheel-kind="vocab" aria-pressed="false">Vocabulary</button>
+              <button type="button" class="wheel-look-btn" data-wheel-kind="marks" aria-pressed="false">Marks</button><!-- PCF MSA J03 K2 -->
             </div>
             <div class="wheel-look-switch" data-vocab-fill-switch role="group" aria-label="How a segment fills" hidden>
               <button type="button" class="wheel-look-btn" data-vocab-fill="new" aria-pressed="true" title="Fill by the step's new words">New words</button>
@@ -6630,6 +6661,7 @@
              this recording, one small line under the player says so (setTimingNoteHandler() below). Hidden otherwise. -->
         <p id="bnTimingNote" class="bn-timing-note" role="status" aria-live="polite" hidden></p>
         <div id="readScroll">
+          <div id="intentionHost"></div><!-- the intention reminder: one line above the āyāt -->
           <div id="studyScreen">
             <!-- v08.22 -- the way back from an occurrence. It lives HERE, in
                  the study screen above the āyah, and NOT inside the Word Card:
@@ -7093,6 +7125,7 @@
       <div id="panelStudyOptions" class="qr-panel" hidden>
         <div class="qr-panel-head">Study options <span class="qr-panel-head-actions"><button type="button" class="opt-btn preset-save-btn" id="presetSaveBtn"></button><button type="button" class="qr-panel-x" data-close-panel aria-label="Close">&times;</button></span></div>
         <div class="study-options-body">
+        <div id="intentionOpt"></div><div id="questionCardOpt"></div><!-- the Note question card: on / off --><!-- the intention reminder setting: every time / once a day / off -->
         <!-- Shell round 11 (13 Aug 2026) -- the owner's own three-bar layout,
              from their mockup. The controls are grouped by WHAT KIND of choice
              they are, which is the thing the old flat wrap-as-it-fits row
@@ -7791,7 +7824,15 @@
     // Card "This āyah ⋯") and its one new action, filing this reader's own
     // Note on the āyah into Mapping My Journey folder(s).
     import { renderAyahActionSheetHtml, attachAyahActionSheetHandlers, approachStageIdsFor, stageColourStyle } from "./js/ayah-action-sheet.js";
+    // The intention reminder (the Owner, 4 Nov 2026, PCF MSA J05): one line above the āyāt, a different one of four each day.
+    import { INTENTION_CSS, getIntentionMode, setIntentionMode, getClosedDay, markClosedToday, shouldShowIntention, intentionCardHtml, intentionSettingHtml, wireIntention, localDay } from "./js/intention-reminder.js";
+    // The Note's question card toggle (PCF MSA J05, T15 A): the card itself is placed on the Note by the shared Note window.
+    import { QUESTION_CARD_CSS, getQuestionCardMode, setQuestionCardMode, questionCardSettingHtml } from "./js/critical-reasoning-guides.js";
+    // PCF MSA J03 K2 -- the three marks (Difficult / Need practice / Done) on the Āyah card, the Word card and the Marks wheel.
+    import { loadSurahKeys, loadPersonSurahKeys, setAyahKey, setWordKey } from "./js/ayah-keys-data.js";
+    import { marksRowHtml, wireMarksRow, wheelPieces, marksWheelHtml, wireMarksWheel, marksLegendHtml, MARKS_CSS, MARKS_WHEEL_VIEWS } from "./js/marks-ui.js";
     import { loadAyahHadithHits, describeHit, pickHits, hadithHitHref } from "./js/ayah-hadith.js";
+    import { renderReadNext } from "./js/read-next-ui.js"; // J03 K3 "Study Next" (was "Read next") on the Āyah card and the Word card
     import { renderPageApproachCardHtml, attachPageApproachCardHandlers } from "./js/page-approach-card.js";
     // Issue #348 -- the Unit Card (Ruku'/Page/Hizb/Juz/Surah/Range) and the
     // ladder shared with the Ayah Card, both pure renderers reusing the same
@@ -8920,6 +8961,8 @@
     let currentChunkLoadedFor = null;
     let quranWordCardState = createWordCardState();
     let quranWordCardContext = {};
+    let wordReadNext = null; // J03 K3: { id: occurrenceId, box } -- the Word card's "Read next" box, kept across redraws
+    let ayahReadNext = null; // J03 K3: { key, box } -- the Āyah card's
     let quranWordCardRequest = 0;
     let quranWordCardTrigger = null;
     /** Issue #303 -- the whole-Qur'an total, this word's lemma progress and
@@ -9928,6 +9971,14 @@
         const rows = unitRows();
         if (!rows) { ensureUnitIndex(currentUnitType).then(renderUnitNumberPicker).catch(() => {}); return; }
         numbers = rows.map((r) => unitRowNumber(r));
+        // The Owner, 6 Nov 2026: "When a page n Sura is selected, the page numbers should pull only the page of that Surah."
+        // A Page picker lists only the pages this sūrah is on (Al-Kahf: 293-304), not all 604; Prev/Next page still walk on into
+        // the next sūrah, which then shows its own pages.
+        if (currentUnitType === "page") {
+          const here = new Set(currentSurahData.ayahs.map((x) => x.page));
+          const only = numbers.filter((n) => here.has(n));
+          if (only.length) numbers = only;
+        }
       }
       unitNumSelect.innerHTML = numbers.map((n) => `<option value="${n}">${num(n)}</option>`).join("");
       const current = currentUnitNumber();
@@ -10595,7 +10646,7 @@
       currentSurahNum = surahIndex[0]?.surahNumber ?? 1;
       if (!lastSessionReady) {
         const params = new URLSearchParams(location.search);
-        const deepLinked = params.get("bookmark") || params.get("goto") || params.get("word") || params.get("resume") || params.get("last");
+        const deepLinked = params.get("bookmark") || params.get("goto") || params.get("word") || params.get("resume") || params.get("last") || params.get("keysFor");
         const rememberedSurah = deepLinked ? null : getQuranLastSession()?.settings?.surahNum;
         if (typeof rememberedSurah === "number" && surahIndex.some((sx) => sx.surahNumber === rememberedSurah)) {
           currentSurahNum = rememberedSurah;
@@ -10740,6 +10791,14 @@
     function displayParts(ayah) {
       return expandAyahsForDisplay(currentSurahNum, [ayah], fatihaOn());
     }
+    /** The Owner, 6 Nov 2026 (option A of the demo): the āyah number and the ⋮ sit on ONE row before the āyah starts, on the title's
+        row. The Arabic panel draws its number on a row of its own; this lifts the one that sits right before the Arabic out of the parts' HTML (a translation's own number stays with its text) so the caller can
+        put it in the header row beside the ⋮. Returns { badge, parts }; no badge (the unnumbered Bismillah) leaves the parts as they were. */
+    function liftAyahBadge(parts) {
+      const m = /<div class="ayah-num-row">(<(button|span)[^>]*class="ayah-num-badge"[^>]*>[^<]*<\/\2>)<\/div>(?=<div class="ayah-arabic")/.exec(parts);
+      return m ? { badge: m[1], parts: parts.replace(m[0], "") } : { badge: "", parts };
+    }
+
     function layoutAParts(ayah, panels, opts, half = null) {
       // `half` (issue #606): the single-Ayah view of displayed 6 or 7 draws only its half.
       return displayParts(ayah).filter((a) => !half || a.half === half).map((a) => renderLayoutA(a, panels, opts)).join("");
@@ -10974,7 +11033,9 @@
     function renderWheel() {
       dropWheelPaintCopy();
       syncWheelKindSwitch();
+      wheelStageWrapEl?.classList.toggle("wheel-marks", wheelKind === "marks"); // J03 K2: the Marks wheel is never veiled (no Approach to pick)
       if (wheelKind === "vocab") { renderVocabWheel(); return; }
+      if (wheelKind === "marks") { renderMarksWheel(); return; }
       if (!quranTrackables.length || !currentSurahData) {
         wheelContainer.innerHTML = `<p style="color:#8fa0c2;">${t("No Approaches yet.")}</p>`;
         wheelSidebarContainer.innerHTML = "";
@@ -11221,6 +11282,69 @@
     function vocabCtxIsCurrent() {
       const { tenantId, subjectPersonId } = wordProgressActor();
       return !!learnNextCtx && learnNextCtx.tenantId === tenantId && learnNextCtx.personId === subjectPersonId;
+    }
+    /** PCF MSA J03 K2 -- the Marks wheel: three bands per piece (outer Difficult, middle Need practice, inner Done), three views. */
+    function renderMarksWheel() {
+      if (wheelRingPanelEl) wheelRingPanelEl.hidden = true;
+      wheelHubPickers.hidden = true;
+      wheelCtaBtn.hidden = true;
+      wheelSidebarContainer.innerHTML = "";
+      const lang = marksLang();
+      wheelLegendContainer.innerHTML = marksLegendHtml(lang);
+      const surah = currentSurahData?.surahNumber;
+      if (marksViewFor) { renderStudentMarksWheel(surah, lang); return; }
+      if (!marksCtx() || !surah) {
+        wheelContainer.innerHTML = `<p class="mk-wheel-msg" data-mk-wheel-msg>${escapeHtml(t("Sign in as yourself to see your marks."))}</p>`;
+        return;
+      }
+      ensureSurahMarks(surah);
+      if (!marksReadyFor(surah)) {
+        wheelContainer.innerHTML = `<p class="mk-wheel-msg" data-mk-wheel-msg>${escapeHtml(marksStore.state === "failed" ? t("Your marks could not be loaded right now.") : t("Loading your marks…"))}</p>`;
+        return;
+      }
+      const names = { "ayat": t("Āyāt of this sūrah"), "ayah-words": t("Words of this āyah"), "all-words": t("Words of every āyah") };
+      const pieces = wheelPieces(marksWheelView, currentSurahData, currentAyahNum);
+      const switchHtml = `<div class="mk-view-switch wheel-look-switch" data-mk-view-switch role="group" aria-label="${escapeHtml(t("Which view"))}">${MARKS_WHEEL_VIEWS.map((v) => `<button type="button" class="wheel-look-btn" data-mk-view="${v}" aria-pressed="${v === marksWheelView}">${escapeHtml(names[v])}</button>`).join("")}</div>`;
+      const top = marksWheelView === "ayah-words" ? `${surah}:${currentAyahNum}` : `${t("Sūrah")} ${num(surah)}`;
+      wheelContainer.innerHTML = `<div class="mk-wheel-wrap">${switchHtml}${marksWheelHtml(pieces, marksStore.mine, { lang, centreTop: top, centreSub: names[marksWheelView] })}</div>`;
+      wireMarksWheel(wheelContainer, pieces, (p) => {
+        if (p.go.kind === "ayah") openAyahActionSheet(`${surah}:${p.go.ayah}`);
+        else openWordCardForOccurrenceId(`quran-word-occurrence:v1:${surah}:${p.go.ayah}:${p.go.position}`);
+      });
+      wheelContainer.querySelectorAll("[data-mk-view]").forEach((b) => b.addEventListener("click", () => { marksWheelView = b.dataset.mkView; renderWheel(); }));
+    }
+    /** A student's marks on the wheel, read-only: a plain line names whose they are; a tap on a piece does nothing (no marks of anyone's
+        are written or opened from here); "Show my own marks" returns to the reader's own wheel. */
+    function renderStudentMarksWheel(surah, lang) {
+      const head = `<p class="mk-wheel-for" data-mk-wheel-for><strong>${escapeHtml(t("Marks of {name}", { name: viewMarksName() }))}</strong> <span class="mk-wheel-for-ro">${escapeHtml(t("(view only)"))}</span> <button type="button" class="wheel-look-btn" data-mk-own>${escapeHtml(t("Show my own marks"))}</button></p>`;
+      const done = () => wheelContainer.querySelector("[data-mk-own]")?.addEventListener("click", () => { marksViewFor = null; renderWheel(); });
+      if (!surah || !auth.currentUser || !selectedPersonId) { wheelContainer.innerHTML = `<div class="mk-wheel-wrap">${head}<p class="mk-wheel-msg" data-mk-wheel-msg>${escapeHtml(t("Sign in as yourself to see your marks."))}</p></div>`; done(); return; }
+      ensureViewMarks(surah);
+      if (viewMarks.state !== "ready") {
+        wheelContainer.innerHTML = `<div class="mk-wheel-wrap">${head}<p class="mk-wheel-msg" data-mk-wheel-msg>${escapeHtml(viewMarks.state === "failed" ? t("These marks could not be loaded right now.") : t("Loading the marks…"))}</p></div>`;
+        done(); return;
+      }
+      const names = { "ayat": t("Āyāt of this sūrah"), "ayah-words": t("Words of this āyah"), "all-words": t("Words of every āyah") };
+      const pieces = wheelPieces(marksWheelView, currentSurahData, currentAyahNum);
+      const switchHtml = `<div class="mk-view-switch wheel-look-switch" data-mk-view-switch role="group" aria-label="${escapeHtml(t("Which view"))}">${MARKS_WHEEL_VIEWS.map((v) => `<button type="button" class="wheel-look-btn" data-mk-view="${v}" aria-pressed="${v === marksWheelView}">${escapeHtml(names[v])}</button>`).join("")}</div>`;
+      const top = marksWheelView === "ayah-words" ? `${surah}:${currentAyahNum}` : `${t("Sūrah")} ${num(surah)}`;
+      wheelContainer.innerHTML = `<div class="mk-wheel-wrap">${head}${switchHtml}${marksWheelHtml(pieces, viewMarks.marks, { lang, centreTop: top, centreSub: names[marksWheelView] })}</div>`;
+      wheelContainer.querySelectorAll("[data-mk-view]").forEach((b) => b.addEventListener("click", () => { marksWheelView = b.dataset.mkView; renderWheel(); }));
+      done();
+    }
+    async function openKeysForFromQueryString() {
+      const params = new URLSearchParams(location.search);
+      const who = params.get("keysFor");
+      if (!who) return;
+      const surah = Number(params.get("surah") || 1);
+      if (!surahIndex.some((x) => x.surahNumber === surah)) { bookmarkNotFound(); return; }
+      marksViewFor = who;
+      await goToReference(surah, 1, null);
+      wheelKind = "marks";
+      setStageView("wheel");
+      renderWheel();
+      // The way-back law (decision 86): Monitor's link carries back=1.
+      if (params.get("back") === "1" && history.length > 1) setAppReturn(t("Back"), "", () => history.back());
     }
     function renderVocabWheel() {
       if (wheelRingPanelEl) wheelRingPanelEl.hidden = true;
@@ -12160,7 +12284,7 @@
         exactly where it opened before this existed. */
     async function restoreLastSession() {
       const params = new URLSearchParams(location.search);
-      if (params.get("bookmark") || params.get("goto") || params.get("word") || params.get("resume") || params.get("last") || params.get("qpSurah") || params.get("ayahCard")) return;
+      if (params.get("bookmark") || params.get("goto") || params.get("word") || params.get("resume") || params.get("last") || params.get("keysFor") || params.get("qpSurah") || params.get("ayahCard")) return;
       const saved = getQuranLastSession();
       if (!saved) return;
       // The app ALWAYS opens on the wheel -- the owner's own call, once the
@@ -19827,7 +19951,27 @@
       // Round 6 -- what was typed in the Search row stays, however often the card is redrawn.
       const typed = content.querySelector("[data-word-card-search-input]");
       if (typed) wordCardSearch.value = typed.value;
-      content.innerHTML = renderQuranWordCard({ state: quranWordCardState, chapter: currentSurahData, ayah, word, context: { ...quranWordCardContext, search: wordCardSearch, lemmaForms: lemmaFormsTable, verbForms: verbFormsTable, verbFormsFailed, nounForms: nounFormsTable, nounFormsFailed, formTexts: nounFormTexts, nounBox: wordCardNounBox?.id === quranWordCardState.occurrenceId ? wordCardNounBox.key : null, depthOpen: wordCardDepthOpen, conjView: wordCardConjView, conjBasic: wordCardConjBasic === quranWordCardState.occurrenceId, formsOpen, meaningLang: getAppLang() === "bn" ? "bn" : "en", conjNarrow: window.matchMedia("(max-width: 640px)").matches, needsSource: needsSourceContext(word, currentSurahData.surahNumber), ...wordCardDictionaryContext(word), ...intermediateContext(word), ...wordProgressContext(ref), ...quranWordCardLemmaContext, hasPrevious: at > 0, hasNext: at >= 0 && at < ids.length - 1, rootOccurrenceCount: quranWordCardContext.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0, colourWordPartsEnabled: true, translitScript: getTransliterationScript(), displayRef: wordRefFor }, labels: { ...wordCardLabels(), ...wordProgressLabels() }, formatNumber: num });
+      content.innerHTML = renderQuranWordCard({ state: quranWordCardState, chapter: currentSurahData, ayah, word, context: { ...quranWordCardContext, marksHtml: marksRowFor(`qword:${currentSurahData.surahNumber}:${ayah.ayah}:${word.position}`, currentSurahData.surahNumber, t("Marks for this word")), search: wordCardSearch, lemmaForms: lemmaFormsTable, verbForms: verbFormsTable, verbFormsFailed, nounForms: nounFormsTable, nounFormsFailed, formTexts: nounFormTexts, nounBox: wordCardNounBox?.id === quranWordCardState.occurrenceId ? wordCardNounBox.key : null, depthOpen: wordCardDepthOpen, conjView: wordCardConjView, conjBasic: wordCardConjBasic === quranWordCardState.occurrenceId, formsOpen, meaningLang: getAppLang() === "bn" ? "bn" : "en", conjNarrow: window.matchMedia("(max-width: 640px)").matches, needsSource: needsSourceContext(word, currentSurahData.surahNumber), ...wordCardDictionaryContext(word), ...intermediateContext(word), ...wordProgressContext(ref), ...quranWordCardLemmaContext, hasPrevious: at > 0, hasNext: at >= 0 && at < ids.length - 1, rootOccurrenceCount: quranWordCardContext.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0, colourWordPartsEnabled: true, translitScript: getTransliterationScript(), displayRef: wordRefFor }, labels: { ...wordCardLabels(), ...wordProgressLabels() }, formatNumber: num });
+      wireMarksRow(content, onMarkToggle); // PCF MSA J03 K2
+      // J03 K3 "Study Next" (was "Read next"): Qur'an (this word's places), Dictionary, Scholars and Tafsīr under the card. The box is kept per
+      // word, so the card's many redraws (data arriving) do not close a tab the reader opened. Wired AFTER the innerHTML above.
+      {
+        const cardEl = content.querySelector(".quran-word-card");
+        if (cardEl) {
+          if (wordReadNext?.id !== quranWordCardState.occurrenceId) {
+            const host = document.createElement("div");
+            const lemma = word.morphology?.lemma;
+            renderReadNext(host, {
+              quran: () => quranWordCardContext.lemmaOccurrences ?? [],
+              lemmas: lemma ? [lemma] : [],
+              // K3b: the word's āyah, so each tafsīr book links straight to it (the Owner, 5 Nov 2026).
+              scholars: "tafsir", tafsir: { ayat: [`${currentSurahData.surahNumber}:${ayah.ayah}`] }, backTo: "word"
+            });
+            wordReadNext = { id: quranWordCardState.occurrenceId, box: host.firstElementChild };
+          }
+          if (wordReadNext.box) cardEl.appendChild(wordReadNext.box);
+        }
+      }
       if (formsOpen && wordCardFormsFocus) {
         const back = content.querySelector(".word-card-forms-back");
         if (back) { back.focus({ preventScroll: true }); if (!content.querySelector("[data-word-card-forms-loading]")) wordCardFormsFocus = false; }
@@ -21234,7 +21378,7 @@
     function meaningQuickMenuHtml(surahNum, ayahNum) {
       const unitKey = buildUnitKey.ayah(surahNum, ayahNum);
       const isBookmarked = !!findSavedBookmark(bookmarksDoc, { moduleId: "quranrevival", subjectId: "quran", position: unitKey });
-      return renderQuickMenu(unitKey, { hasNote: ayahHasAnyNote(unitKey), isBookmarked });
+      return renderQuickMenu(unitKey, { hasNote: ayahHasAnyNote(unitKey), isBookmarked, sheet: true, showWriting: true, showAsma: canAdminCatalogueClientSide() });
     }
 
     async function meaningPageHtml(pageNum) {
@@ -21249,11 +21393,12 @@
           if (a.ayah < g.firstAyah || a.ayah > g.lastAyah) continue;
           const key = `${g.surah}:${a.ayah}`;
           const out = meaningInUnit && !meaningInUnit.has(key);
+          const lifted = liftAyahBadge(layoutAParts(a, panels, {
+            tajweedOn: tajweedToggle.checked, langs, wbwLangs: langs.length ? langs : ["en"], wordCardInteractive: true, surahNumber: g.surah,
+          }));
           html += `<article class="meaning-ayah${out ? " out" : ""}" data-meaning-key="${key}" data-meaning-page="${pageNum}">
-            <div class="meaning-ayah-head"><span class="meaning-ayah-ref">${escapeHtml(surahName(g.surah, meta?.nameEnglish))} ${num(g.surah)}:${escapeHtml(ayahLabelFor(g.surah, a.ayah, null))}</span>${meaningQuickMenuHtml(g.surah, a.ayah)}</div>
-            ${surahFlowHeadingHtml(g.surah, a.ayah)}${bismillahHtmlFor(g.surah, a.ayah)}${layoutAParts(a, panels, {
-              tajweedOn: tajweedToggle.checked, langs, wbwLangs: langs.length ? langs : ["en"], wordCardInteractive: true, surahNumber: g.surah,
-            })}</article>`;
+            <div class="meaning-ayah-head"><span class="meaning-ayah-ref">${escapeHtml(surahName(g.surah, meta?.nameEnglish))} ${num(g.surah)}:${escapeHtml(ayahLabelFor(g.surah, a.ayah, null))}</span>${lifted.badge}${meaningQuickMenuHtml(g.surah, a.ayah)}</div>
+            ${surahFlowHeadingHtml(g.surah, a.ayah)}${bismillahHtmlFor(g.surah, a.ayah)}${lifted.parts}</article>`;
         }
       }
       return html;
@@ -21295,7 +21440,7 @@
         if (layersSlot) {
           // PCF MSA J75 (the Owner: "For English, write only Eng"): on a phone the English switch reads "Eng" (paintShortReadLabels).
           // PCF MSA J110 A (the Owner ticked A, 2 Nov 2026): "Under a button where no space (Mob). or in open bar in PC and
-          // tab where space is available (but not to make another bar)." Below 600px the three sit behind one "Show ▾"
+          // tab where space is available (but not to make another bar)." Below 900px (J114; it was 600px) the three sit behind one "Show ▾"
           // button in the same slot; from 600px the wrapper is display: contents and they stand open on the bar as before.
           const onCount = ["en", "bn", "wbw"].filter((k) => readMeaningLayers[k]).length;
           layersSlot.innerHTML = `<button type="button" class="ml-menu-btn" data-ml-menu aria-haspopup="true" aria-expanded="false" title="${escapeHtml(t("Show: English, Bangla, Word by Word"))}">${escapeHtml(t("Show"))}<span class="ml-count">${num(onCount)}</span><span aria-hidden="true">▾</span></button><div class="ml-items" data-ml-items>${layer("en", shortReadLabels() ? t("Eng") : t("English"))}${layer("bn", t("Bangla"))}${layer("wbw", t("WbW"))}</div>`;
@@ -21622,17 +21767,19 @@
             ? renderEndOfUnitPromptHtml({ unitLabel: unitChipText(currentUnitInfo()), approachName: endOfUnitApproachName(promptApproachId) })
             : "";
           const afterHtml = unitMarkerRowHtml(markers.after.map(unitFlowMarkerHtml).join("")) + endOfUnitHtml;
-          return `<div class="page-flow-ayah" data-ayah="${ayah.ayah}">${beforeHtml}<div class="ayah-quick-header">${renderQuickMenu(unitKey, {
-            hasNote: ayahHasAnyNote(unitKey), isBookmarked,
-            showTextTools: true,
-            isWbwOn: wbwShowToggle.checked, isRootsOn: rootsToggle.checked, isDerivativesOn: derivativesToggle.checked,
-          })}</div><div class="ayah-flow-body" data-ayah-collapsible-for="${unitKey}">${bismillahHtmlFor(currentSurahNum, ayah.ayah)}${layoutAParts(ayah, panels, {
+          const liftedFlow = liftAyahBadge(layoutAParts(ayah, panels, {
             tajweedOn: tajweedToggle.checked,
             langs: translationLangs(),
             wbwLangs: wbwLangs(),
             wordCardInteractive: true,
             surahNumber: currentSurahNum,
-          })}</div>${afterHtml}</div>`;
+          }));
+          return `<div class="page-flow-ayah" data-ayah="${ayah.ayah}">${beforeHtml}<div class="ayah-quick-header">${liftedFlow.badge}${renderQuickMenu(unitKey, {
+            hasNote: ayahHasAnyNote(unitKey), isBookmarked,
+            sheet: true, showWriting: true, showAsma: canAdminCatalogueClientSide(),
+            showTextTools: true,
+            isWbwOn: wbwShowToggle.checked, isRootsOn: rootsToggle.checked, isDerivativesOn: derivativesToggle.checked,
+          })}</div><div class="ayah-flow-body" data-ayah-collapsible-for="${unitKey}">${bismillahHtmlFor(currentSurahNum, ayah.ayah)}${liftedFlow.parts}</div>${afterHtml}</div>`;
         })
         .join("");
       attachAyahQuickMenus(pageViewContainer);
@@ -22381,6 +22528,9 @@
         onToggleWbw: toggleNoteWbw,
         onToggleRoots: toggleNoteRoots,
         onToggleDerivatives: toggleNoteDerivatives,
+        // PCF MSA J114 (option B): the two bar buttons that moved into the ⋮. Writing sheet is the open unit's; Asma is this āyah's.
+        onWriting: () => { openWritingSheetForCurrentUnit(); },
+        onAsma: (unitKey) => { const p = parseAyahUnitKey(unitKey); openAsmaXAttachPopover({ prefillRef: asmaRefTextFor(p.surah, p.ayah) }); },
       });
     }
 
@@ -22399,7 +22549,7 @@
     }
 
     function closeAyahActionSheet() {
-      ayahSheetUnitKey = null;
+      ayahSheetUnitKey = null; ayahReadNext = null;
       ayahSheetWordStatus = null;
       ayahSheetHasPosterNote = null;
       ayahSheetConnected = null;
@@ -23438,6 +23588,105 @@
       } catch { /* the link still opens the Notes page */ }
     }
 
+    // ===== The intention reminder (PCF MSA J05). Shown when the Read view opens; never at start-up (I9). Per device, per person. =====
+    const intentionStyleEl = document.createElement("style"); // "A page is a page" (shell round 17; the Architect, 4 Nov 2026): above a Mushaf page the card is ONE line (the intention clipped with …,
+    // Bismillah beside it), so it never wraps to several lines and pushes the page down at 360px.
+    intentionStyleEl.textContent = INTENTION_CSS + `
+#intentionHost.intention-one-line .intention-card { display:flex; align-items:center; gap:.5rem; margin:.25rem 0; padding:.2rem .6rem; }
+#intentionHost.intention-one-line .intention-lab { display:none; }
+#intentionHost.intention-one-line .intention-text { flex:1 1 auto; min-width:0; margin:0; font-size:.88rem; line-height:1.3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+#intentionHost.intention-one-line .intention-bismillah { flex:0 0 auto; }`; document.head.appendChild(intentionStyleEl);
+    let intentionClosedThisOpening = false;
+    const intentionPerson = () => selectedPersonId || null;
+    function paintIntentionSetting() {
+      const host = document.getElementById("intentionOpt"); if (!host) return;
+      host.innerHTML = intentionSettingHtml({ mode: getIntentionMode(intentionPerson()), lang: getAppLang() === "bn" ? "bn" : "en" });
+      host.querySelectorAll("[data-intention-mode]").forEach((b) => b.addEventListener("click", () => {
+        setIntentionMode(intentionPerson(), b.dataset.intentionMode); intentionClosedThisOpening = false; paintIntentionSetting(); paintIntention();
+      }));
+    }
+    function paintIntention() {
+      const host = document.getElementById("intentionHost"); if (!host) return;
+      const readOpen = !document.getElementById("readView").hidden;
+      const person = intentionPerson(), today = localDay();
+      const show = readOpen && shouldShowIntention({ mode: getIntentionMode(person), closedDay: getClosedDay(person), today, closedThisOpening: intentionClosedThisOpening });
+      host.classList.toggle("intention-one-line", !!mushafToggle.checked);
+      host.innerHTML = show ? intentionCardHtml({ lang: getAppLang() === "bn" ? "bn" : "en", day: today }) : "";
+      wireIntention(host, () => { intentionClosedThisOpening = true; markClosedToday(person, today); host.innerHTML = ""; });
+    }
+    new MutationObserver(() => { if (!document.getElementById("readView").hidden) { intentionClosedThisOpening = false; paintIntention(); } else paintIntention(); })
+      .observe(document.getElementById("readView"), { attributes: true, attributeFilter: ["hidden"] });
+    mushafToggle.addEventListener("change", () => document.getElementById("intentionHost")?.classList.toggle("intention-one-line", !!mushafToggle.checked));
+    document.getElementById("tabStudyOptionsBtn")?.addEventListener("click", paintIntentionSetting);
+    paintIntentionSetting();
+    const questionCardStyleEl = document.createElement("style"); questionCardStyleEl.textContent = QUESTION_CARD_CSS; document.head.appendChild(questionCardStyleEl);
+    function paintQuestionCardSetting() {
+      const host = document.getElementById("questionCardOpt"); if (!host) return;
+      host.innerHTML = questionCardSettingHtml({ mode: getQuestionCardMode(selectedPersonId || null), lang: getAppLang() === "bn" ? "bn" : "en" });
+      host.querySelectorAll("[data-question-card-mode]").forEach((b) => b.addEventListener("click", () => { setQuestionCardMode(selectedPersonId || null, b.dataset.questionCardMode); paintQuestionCardSetting(); }));
+    }
+    document.getElementById("tabStudyOptionsBtn")?.addEventListener("click", paintQuestionCardSetting);
+    paintQuestionCardSetting();
+    // ===== PCF MSA J03 K2: the three marks. One read per sūrah, when a card or the Marks wheel first shows (I9); never at start-up. =====
+    const marksStyleEl = document.createElement("style"); marksStyleEl.textContent = MARKS_CSS; document.head.appendChild(marksStyleEl);
+    let marksStore = { id: "", mine: {}, state: "idle" }, marksBusy = new Set(), marksWheelView = "ayat";
+    // J03 (the Owner, 5 Nov 2026): Monitor's "Show on wheel" opens Quran Study with ?surah=&keysFor=<personId>&back=1: the Marks wheel
+    // shows THAT student's marks, read-only (a teacher / guardian / owner reads them, the Rules' call). Nothing here ever writes.
+    let marksViewFor = null, viewMarks = { id: "", marks: {}, state: "idle" };
+    function viewMarksName() {
+      const o = [...document.querySelectorAll("#personSelect option")].find((x) => x.value === marksViewFor);
+      return (o?.textContent || "").trim() || marksViewFor;
+    }
+    function ensureViewMarks(surah) {
+      if (!marksViewFor || !surah || !activeTenantId || !auth.currentUser || !selectedPersonId) return;
+      const id = `${activeTenantId}|${marksViewFor}|${surah}`;
+      if (viewMarks.id === id && viewMarks.state !== "idle") return;
+      viewMarks = { id, marks: {}, state: "loading" };
+      loadPersonSurahKeys(db, { tenantId: activeTenantId, personId: selectedPersonId, uid: auth.currentUser.uid }, surah, marksViewFor)
+        .then((r) => { if (viewMarks.id !== id) return; viewMarks = { id, marks: r ?? {}, state: "ready" }; if (wheelKind === "marks") renderWheel(); })
+        .catch((err) => { if (viewMarks.id !== id) return; viewMarks = { id, marks: {}, state: "failed" }; console.warn("student's marks not loaded:", err?.code || err?.message || err); if (wheelKind === "marks") renderWheel(); });
+    }
+    function marksCtx() {
+      if (!isSelfSelectedForAyahActions() || !activeTenantId || !auth.currentUser) return null;
+      return { tenantId: activeTenantId, personId: selectedPersonId, uid: auth.currentUser.uid };
+    }
+    const marksStoreId = (c, surah) => `${c.tenantId}|${c.personId}|${surah}`;
+    function marksLang() { return getAppLang() === "bn" ? "bn" : "en"; }
+    function repaintMarks() {
+      if (ayahSheetUnitKey) renderAyahActionSheetNow();
+      if (quranWordCardState?.open) renderPersistentWordCard();
+      if (wheelKind === "marks") renderWheel();
+    }
+    function ensureSurahMarks(surah) {
+      const c = marksCtx();
+      if (!c || !surah) return;
+      const id = marksStoreId(c, surah);
+      if (marksStore.id === id && marksStore.state !== "idle") return;
+      marksStore = { id, mine: {}, state: "loading" };
+      loadSurahKeys(db, c, surah).then((r) => { if (marksStore.id !== id) return; marksStore = { id, mine: r.mine ?? {}, state: "ready" }; repaintMarks(); })
+        .catch((err) => { if (marksStore.id !== id) return; marksStore = { id, mine: {}, state: "failed" }; console.warn("marks not loaded:", err?.code || err?.message || err); repaintMarks(); });
+    }
+    function marksReadyFor(surah) { const c = marksCtx(); return !!c && marksStore.id === marksStoreId(c, surah) && marksStore.state === "ready"; }
+    /** The marks row for one unit, or "" while the marks are not loaded (the card says nothing rather than something false). */
+    function marksRowFor(unitKey, surah, heading) {
+      if (!marksCtx()) return "";
+      ensureSurahMarks(surah);
+      if (!marksReadyFor(surah)) return "";
+      return marksRowHtml({ unitKey, keys: marksStore.mine[unitKey] ?? [], lang: marksLang(), heading, busy: marksBusy.has(unitKey) });
+    }
+    async function onMarkToggle(unitKey, keyId, on) {
+      const c = marksCtx();
+      if (!c || marksBusy.has(unitKey)) return;
+      const [type, s, a, w] = unitKey.split(":");
+      const surah = Number(s);
+      marksBusy.add(unitKey); repaintMarks();
+      const base = { scope: c.personId, surah, ayah: Number(a), keyId, on };
+      try {
+        const res = type === "qword" ? await setWordKey(db, c, { ...base, position: Number(w) }) : await setAyahKey(db, c, base);
+        // Failed saves are already reported (I15); the mark simply stays as it was.
+        if (res?.ok && marksStore.id === marksStoreId(c, surah)) marksStore.mine = { ...marksStore.mine, [unitKey]: res.keys };
+      } finally { marksBusy.delete(unitKey); repaintMarks(); }
+    }
     function renderAyahActionSheetNow() {
       if (!ayahSheetUnitKey) return;
       const { surah, ayah: ayahNum } = parseAyahUnitKey(ayahSheetUnitKey);
@@ -23496,6 +23745,7 @@
         connected: ayahSheetConnected,
         hadith: ayahSheetHadith,
         ladderHtml,
+        marksHtml: isOpeningSheet ? "" : (() => { const r = parseAyahUnitKey(ayahSheetUnitKey).record ?? ayahNum; return marksRowFor(`ayah:${surah}:${r}`, surah, t("Marks for this āyah")); })(),
         canPrev: !!ayahCardNeighbour(ayahSheetUnitKey, -1),
         canNext: !!ayahCardNeighbour(ayahSheetUnitKey, 1),
         // PCF MSA J70 -- the left pane of the card as a window: the āyah's own text, from the sūrah already on screen.
@@ -23506,6 +23756,21 @@
             words: (a.words ?? []).map((w) => ({ arabic: w.arabic, translit: w.transliteration ?? "", en: w.translation?.en ?? "", bn: w.translation?.bn ?? "" })) } : null;
         })(),
       });
+      // J03 K3 "Study Next" (was "Read next") on the Āyah card: Dictionary words of this āyah, Scholars and Tafsīr. NO Qur'an or Hadith tab -- the
+      // card's Info block already has Related āyāt and Related hadith. Kept per āyah across the card's redraws.
+      if (!isOpeningSheet) {
+        const infoEl = ayahActionSheetMountEl.querySelector("[data-ayah-sheet-info]");
+        if (infoEl) {
+          if (ayahReadNext?.key !== ayahSheetUnitKey) {
+            const host = document.createElement("div");
+            const ayahObj = surah === currentSurahNum ? currentSurahData?.ayahs?.find((x) => x.ayah === ayahNum) : null;
+            const lemmas = [...new Set((ayahObj?.words ?? []).map((w) => w.morphology?.lemma).filter(Boolean))];
+            renderReadNext(host, { lemmas, scholars: "tafsir", tafsir: { ayat: [`${surah}:${ayahNum}`] }, backTo: "ayah" });
+            ayahReadNext = { key: ayahSheetUnitKey, box: host.firstElementChild };
+          }
+          if (ayahReadNext.box) infoEl.appendChild(ayahReadNext.box);
+        }
+      }
       // Keep the reader's place: the card re-renders as its data arrives
       // (Status, then Related), and each re-render used to jump to the top.
       if (keepScroll) { const el = ayahActionSheetMountEl.querySelector("[data-ayah-sheet]"); if (el) el.scrollTop = keepScroll; }
@@ -23514,6 +23779,7 @@
       // Owner, 7 Oct 2026: "Enable back button always to come back to the view/ location where it came
       // from" -- an action that takes the reader away from this card leaves a way back to it.
       const sheetKeyAtRender = ayahSheetUnitKey, halfAtRender = ayahSheetHalf, introAtRender = ayahSheetIntro;
+      wireMarksRow(ayahActionSheetMountEl, onMarkToggle);
       attachAyahActionSheetHandlers(ayahActionSheetMountEl, {
         onStep: (unitKey, dir) => { const n = ayahCardNeighbour(unitKey, dir); if (n) openAyahActionSheet(n.key, n.half); },
         onNoteView: (unitKey) => openAyahNoteViewPopup(unitKey),
@@ -25876,8 +26142,8 @@
     }
 
     /** Decision 90, round 1: "?word=S:A:W" opens the Word card at that Qur'an word in the Read view (a Dua card's
-        "Open in the Word card"). With back=1 the way back is a "Back to …" pill (decision 86); "from=dua-<n>" names
-        the Dua card it returns to. A malformed or unknown place does nothing but say the link was not found. */
+        "Open in the Word card"). With back=1 the way back is a "Back to …" pill (decision 86); "from=dua-<n>" / "from=hadith-<id>" name
+        the Dua card / hadith card it returns to. A malformed or unknown place does nothing but say the link was not found. */
     async function openWordFromQueryString() {
       const params = new URLSearchParams(location.search);
       const raw = params.get("word");
@@ -25900,7 +26166,9 @@
       await openWordOccurrenceAt(Number(m[1]), Number(m[2]), Number(m[3]), "read", record ? { level: "wbw" } : null);
       if (params.get("back") === "1" && history.length > 1) {
         const dua = /^dua-(\d+)$/.exec(params.get("from") ?? "");
-        setAppReturn(dua ? t("Back to Dua {n}", { n: num(Number(dua[1])) }) : t("Back"), "", () => history.back(), { inWordCard: true });
+        // J03 K1 Part A (the Hadith Word Card): "from=hadith-<id>" names the hadith card it returns to.
+        const hadith = /^hadith-[^&\s]+$/.test(params.get("from") ?? "");
+        setAppReturn(dua ? t("Back to Dua {n}", { n: num(Number(dua[1])) }) : hadith ? t("Back to the hadith") : t("Back"), "", () => history.back(), { inWordCard: true });
       }
       if (record) await runWordProgressAction({ kind: "state", state: record });
     }
@@ -25994,8 +26262,10 @@
       // directly: Single Ayah (still a duplicate of the bar's own outer
       // pair) AND a flow view (Range/Whole Surah/Mushaf render every āyah
       // at once, so there is no single "current āyah" to step between).
-      prevAyahBtn.hidden = duplicatesUnitNav || usesFlow;
-      nextAyahBtn.hidden = duplicatesUnitNav || usesFlow;
+      // PCF MSA J114: in a flow (Reading View, Mushaf, whole surah / range) they move along the page instead -- shown always.
+      prevAyahBtn.hidden = usesFlow ? false : duplicatesUnitNav;
+      nextAyahBtn.hidden = usesFlow ? false : duplicatesUnitNav;
+      if (usesFlow) { prevAyahBtn.disabled = false; nextAyahBtn.disabled = false; }
       // Mushaf fix round, the owner's own follow-on ("we won't need Ayah
       // selector in the page unit selection"): the picker is offered exactly
       // where it still does something. See unitRendersWhole().
@@ -26095,6 +26365,9 @@
         // means the whole Range/Whole Surah/etc., which a flow view is
         // exactly suited to.
         readQuickMenuSlot.innerHTML = "";
+        // PCF MSA J114: the Mushaf prints the āyāt as one page of text and has no ⋮ beside an āyah, so the bar carries it, for
+        // the āyah the ◂ ▸ last stopped at (refreshMushafBarMenu).
+        if (isMushaf) refreshMushafBarMenu();
         // Text-tools round -- #ayahPanels keeps whichever āyah key it was
         // last rendered for, and it is hidden (not emptied) while a flow
         // shows. Left set, it stays in the document with a key a flow row
@@ -26170,7 +26443,8 @@
         // view's own per-āyah ⋮ badge keeps it, since it has no bar-level
         // button of its own to mean one specific āyah.
         readQuickMenuSlot.innerHTML = renderQuickMenu(singleUnitKey, {
-          hasNote: ayahHasAnyNote(singleUnitKey), isBookmarked: singleIsBookmarked, showBookmark: false,
+          hasNote: ayahHasAnyNote(singleUnitKey), isBookmarked: singleIsBookmarked, showBookmark: true,
+          sheet: true, showWriting: true, showAsma: canAdminCatalogueClientSide(),
           // Text-tools round -- Word by Word / Root / Derivatives / Collapse,
           // the same group the Note view's own ⋮ carries. Not offered in
           // Mushaf mode, which replaces those choices rather than sharing
@@ -26374,7 +26648,8 @@
       try { noteOpenerMod ??= await import("./js/note-opener.js"); }
       catch (error) { reportWriteFailure(error, { what: "open a new Note", read: true }); return; } // I15
       if (readNotePaneMod?.isReadNotePaneOpen()) readNotePaneMod.closeReadNotePane({ quiet: true });
-      await noteOpenerMod.openNewNote({ ...opts, onClosed: onClosed ?? (() => {
+      // J05: a Note made here takes the Approach selected in Quran Study at this moment (its question card, its source).
+      await noteOpenerMod.openNewNote({ approachId: currentTrackableId, ...opts, onClosed: onClosed ?? (() => {
         paintReadNotesBtn();
         // Notes sits in the Study menu, which closed when it was chosen: the focus goes back to Study then.
         const to = focusBack?.getBoundingClientRect().width ? focusBack : document.getElementById("tabStudyBtn");
@@ -26393,7 +26668,11 @@
       document.querySelectorAll(`.ayah-quick-wrap[data-unit-key="${CSS.escape(unitKey)}"]`).forEach((wrap) => {
         wrap.querySelector(".ayah-quick-btn")?.classList.add("has-note");
         const item = wrap.querySelector("[data-qm-note]");
-        if (item) { item.removeAttribute("data-qm-note-new"); item.textContent = `📝 ${t("Note & more…")}`; }
+        if (item) {
+          item.removeAttribute("data-qm-note-new");
+          const lab = item.querySelector(".qm-label"); // J114 sheet menu: only the label changes, the tile's glyph stays
+          if (lab) lab.textContent = t("Note & more…"); else item.textContent = `📝 ${t("Note & more…")}`;
+        }
         wrap.querySelectorAll('.qm-sub input[data-lang="notes"]').forEach((cb) => { cb.disabled = !has; const sp = cb.parentElement?.querySelector("span"); if (sp) sp.textContent = t("My note"); });
       });
     }
@@ -26967,6 +27246,15 @@
       openAsmaXAttachPopover({ prefillRef: asmaRefTextFor(currentSurahNum, currentAyahNum) });
     });
 
+    /** PCF MSA J114: the Mushaf's ⋮ on the bar (the one the Reading View and the ONE Ayah View already have beside their
+        āyah), built for currentAyahNum. Called when the Mushaf renders and after ◂ ▸ move the stop. */
+    function refreshMushafBarMenu() {
+      if (!mushafToggle.checked || !currentSurahData) { return; }
+      const key = ayahRecordKey(currentSurahNum, currentAyahNum, currentHalf());
+      const marked = !!findSavedBookmark(bookmarksDoc, { moduleId: "quranrevival", subjectId: "quran", position: key });
+      readQuickMenuSlot.innerHTML = renderQuickMenu(key, { hasNote: ayahHasAnyNote(key), isBookmarked: marked, sheet: true, showWriting: true, showAsma: canAdminCatalogueClientSide() });
+      attachAyahQuickMenus(readQuickMenuSlot);
+    }
     // Issue #606 -- with the Al-Fātiḥah count on, internal 1:7 is two stops: 6 then 7.
     function stepAyahBy(dir) {
       const split = fatihaCountApplies(currentSurahNum, fatihaOn());
@@ -26977,6 +27265,72 @@
       setAyahNum(target, split && target === 7 ? (dir < 0 ? "b" : "a") : null);
       return true;
     }
+    /* PCF MSA J114 (the Owner, 6 Nov 2026: "place nav buttons for next / prev Ayah in all 3 views"): ◂ ▸ also stand on the
+       bar in the Reading View, the Mushaf and a whole-surah / range flow. There every āyah is already drawn, so they MOVE
+       ALONG the page (the next / previous āyah scrolls to the top; in the Mushaf, to its end marker) and, in the Reading
+       View, set the āyah ▶ will recite. Taps made before a smooth scroll settles continue from the last stop. */
+    let flowStepBase = null, flowStepAt = 0;
+    const flowStepBaseFor = (now, pick) => (flowStepBase && now - flowStepAt < 1200 && pageViewContainer.contains(flowStepBase) ? flowStepBase : pick());
+    async function stepMeaningAyah(dir) {
+      const rowsNow = () => [...pageViewContainer.querySelectorAll(".meaning-ayah")];
+      // "The āyah you are in" = the last row that has started at or above a line just under the top edge (a stepped-to row
+      // rests ~90px down, below its scroll margin, so the row above it still overlaps the top: meaningTopKey() would say that one).
+      const topRow = () => { const edge = (meaningScroller()?.getBoundingClientRect().top ?? 0) + 120; const rs = rowsNow(); return [...rs].reverse().find((r) => r.getBoundingClientRect().top <= edge) ?? rs[0]; };
+      let rows = rowsNow();
+      let base = flowStepBaseFor(Date.now(), topRow);
+      let j = rows.indexOf(base) + dir;
+      if (j < 0 || j >= rows.length) {
+        await meaningAddPage(dir);
+        rows = rowsNow();
+        j = rows.indexOf(base) + dir;
+        if (j < 0 || j >= rows.length) return false;
+      }
+      const row = rows[j];
+      row.scrollIntoView({ block: "start", behavior: "smooth" });
+      flowStepBase = row; flowStepAt = Date.now();
+      const [s, a] = String(row.dataset.meaningKey).split(":").map(Number);
+      if (s === currentSurahNum && a) { setAyahNum(a); noteLastPlace("read", a); }
+      return true;
+    }
+    async function stepMushafAyah(dir) {
+      const markers = () => [...pageViewContainer.querySelectorAll("[data-ayah-marker]")];
+      // The marker nearest the middle of what is on screen: a stepped-to marker is centred, so it is always its own base next time.
+      const firstSeen = () => {
+        const root = flowScrollRoot(); const v = (root ?? pageViewContainer).getBoundingClientRect();
+        const cx = (v.left + v.right) / 2, cy = (v.top + v.bottom) / 2;
+        let best = null, bd = Infinity;
+        for (const m of markers()) { const r = m.getBoundingClientRect(); const d = Math.hypot((r.left + r.right) / 2 - cx, (r.top + r.bottom) / 2 - cy); if (d < bd) { bd = d; best = m; } }
+        return best;
+      };
+      const list = markers();
+      const base = flowStepBaseFor(Date.now(), firstSeen);
+      const j = list.indexOf(base) + dir;
+      if (j < 0 || j >= list.length) {
+        const pageBtn = document.getElementById(dir > 0 ? "mushafPageNextBtn" : "mushafPagePrevBtn");
+        if (pageBtn && !pageBtn.hidden && !pageBtn.disabled) { pageBtn.click(); flowStepBase = null; return true; }
+        return false;
+      }
+      const m = list[j];
+      m.scrollIntoView({ block: "center", inline: "center", behavior: "smooth" });
+      m.classList.add("mushaf-step-hit");
+      setTimeout(() => m.classList.remove("mushaf-step-hit"), 1400);
+      flowStepBase = m; flowStepAt = Date.now();
+      const [s, a] = String(m.dataset.ayahMarker).split(":").map(Number);
+      if (s === currentSurahNum && a) { setAyahNum(a); refreshMushafBarMenu(); }
+      return true;
+    }
+    // Registered BEFORE the single-āyah listeners below and stopping them: in a flow they must not also re-render the unit.
+    // (The original two lines stay byte-for-byte as they were: apps/qr/edits.json anchors on them.)
+    function stepAyahInFlow(dir, ev) {
+      const view = readViewNow();
+      if (view === "meaning") stepMeaningAyah(dir);
+      else if (view === "mushaf") stepMushafAyah(dir);
+      else if (flowStripPages() >= 2) stepFlowAyah(dir);
+      else return;
+      ev.stopImmediatePropagation();
+    }
+    prevAyahBtn.addEventListener("click", (ev) => stepAyahInFlow(-1, ev));
+    nextAyahBtn.addEventListener("click", (ev) => stepAyahInFlow(1, ev));
     prevAyahBtn.addEventListener("click", () => { if (currentAyahNum > 1 || currentHalf() === "b") { stopDrill(); stepAyahBy(-1); renderStudyScreen(); renderWheel(); } });
     nextAyahBtn.addEventListener("click", () => { if (currentAyahNum < currentSurahData.ayahCount || currentHalf() === "a") { stopDrill(); stepAyahBy(1); renderStudyScreen(); renderWheel(); } });
     // Issue #325 point 2 -- tapping the top-bar reference opens the "This
@@ -27347,6 +27701,7 @@
         await step("open bookmark", openBookmarkFromQueryString);
         await step("open goto link", openGotoFromQueryString);
         await step("open word link", openWordFromQueryString);
+        await step("open a student's marks wheel", openKeysForFromQueryString);
         await step("open remembered place", openPlaceFromQueryString);
         await step("open remembered Asma Name", openAsmaNameFromQueryString);
         await step("open remembered Āyah card", openAyahCardFromQueryString);

@@ -11,6 +11,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import test from "node:test";
+import { execSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { initializeTestEnvironment, assertSucceeds } from "@firebase/rules-unit-testing";
 import { doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, writeBatch, collection, query, where, limit } from "firebase/firestore";
@@ -27,18 +28,53 @@ const live = fs.readFileSync(path.join(root, "firestore.rules"), "utf8");
 assert.match(PROJECT, /^demo-/);
 assert.equal(HOST, "127.0.0.1");
 
-// The candidate is the live file PLUS this round, nothing removed: every line
-// of firestore.rules is still in it, in order. Once the Owner publishes and
-// firestore.rules is synced, the two are the same file -- either state passes.
-// A MUTANT run (MUTANT=1) skips only this file-level comparison.
-if (!process.env.MUTANT) {
-  const candLines = candidate.split("\n");
-  let j = 0; const missing = [];
-  for (const line of live.split("\n")) {
-    let k = j; while (k < candLines.length && candLines[k] !== line) k++;
-    if (k < candLines.length) j = k + 1; else missing.push(line);
+// One top-level `match /<name>/{key} { ... }` block, braces balanced (the line-anchored form, so a comment that
+// names the collection is never mistaken for the block).
+function ruleBlock(text, name) {
+  const m = new RegExp(`^[ \\t]*match /${name}/`, "m").exec(text);
+  assert.ok(m, `no ${name} block found`);
+  const start = m.index + m[0].indexOf("match");
+  const open = text.lastIndexOf("{", text.indexOf("\n", start));
+  let depth = 0;
+  for (let i = open; i < text.length; i++) {
+    if (text[i] === "{") depth++;
+    else if (text[i] === "}" && --depth === 0) return text.slice(start, i + 1);
   }
-  assert.deepEqual(missing, [], `live Rules lines missing from the candidate: ${JSON.stringify(missing)}`);
+  throw new Error(`unterminated ${name} block`);
+}
+// Every line of `older`, in order, in `newer`; returns the lines that are not.
+function linesMissingInOrder(older, newer) {
+  const n = newer.split("\n");
+  let j = 0; const missing = [];
+  for (const line of older.split("\n")) {
+    let k = j; while (k < n.length && n[k] !== line) k++;
+    if (k < n.length) j = k + 1; else missing.push(line);
+  }
+  return missing;
+}
+
+// The candidate is the live file OF ITS DAY plus this round, nothing removed: every line of firestore.rules at
+// e0b2b4de (the commit that wrote the candidate) is still in it, in order.
+// A MUTANT run (MUTANT=1) skips only this file-level comparison.
+//
+// UPDATED IN PLACE 5 Nov 2026. This compared the candidate with TODAY's firestore.rules ("every live line is in
+// the candidate; once published the two are the same file"). The Owner published it (d5a9c21c) and then later
+// Rules into the same file (the guardian roster rule, Zab, Tasrif, Vocabulary review, hadithSubjects, the Keys
+// blocks), so the live file now has lines this candidate never had: history tested against the present. Now:
+// (1) the comparison is pinned to the candidate's own base, which does not move; (2) the two blocks this round
+// wrote (notes, noteLinks) must be in today's firestore.rules BYTE FOR BYTE, so the published round cannot drift
+// silently.
+const CANDIDATE_BASE_REF = "e0b2b4de";
+if (!process.env.MUTANT) {
+  const baseLive = execSync(`git show ${CANDIDATE_BASE_REF}:firestore.rules`, { cwd: root, encoding: "utf8" });
+  const missing = linesMissingInOrder(baseLive, candidate);
+  assert.deepEqual(missing, [], `base Rules lines missing from the candidate: ${JSON.stringify(missing)}`);
+  assert.ok(!/^[ \t]*match \/noteLinks\//m.test(baseLive), `firestore.rules at ${CANDIDATE_BASE_REF} already carries noteLinks: the base is wrong`);
+  for (const name of ["notes", "noteLinks"]) {
+    const block = ruleBlock(candidate, name);
+    assert.ok(block.length > 400, `the candidate's ${name} block parsed implausibly short`);
+    assert.equal(ruleBlock(live, name), block, `today's firestore.rules ${name} block is not the published round 14 candidate's`);
+  }
 }
 
 const T = "t1", T2 = "t2";

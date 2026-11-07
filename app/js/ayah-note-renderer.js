@@ -131,7 +131,44 @@ function langCheckboxRows(cls, hasNote) {
 export function renderQuickMenu(unitKey, {
   hasNote = false, isBookmarked = false, showBookmark = true,
   showTextTools = false, isWbwOn = false, isRootsOn = false, isDerivativesOn = false,
+  sheet = false, showWriting = false, showAsma = false,
 } = {}) {
+  // PCF MSA J114 (the Owner, 6 Nov 2026, option B): Quran Study's ONE ⋮ beside the āyah. Four round tiles for what is done most
+  // (Play, Notes, Bookmark, QCR), then a tidy list (Copy, Share, Writing sheet, Attach to Asma), then the reading chips. Every
+  // data-qm-* hook the plain menu has is kept, so the same handlers run. Opt-in: the Notes page's own ⋮ is unchanged.
+  if (sheet) {
+    return `
+    <div class="ayah-quick-wrap" data-unit-key="${escapeHtml(unitKey)}">
+      <button type="button" class="ayah-quick-btn${hasNote ? " has-note" : ""}" data-qm-toggle title="${t("Quick actions")}" aria-label="${t("Quick actions")}" aria-haspopup="true">⋮</button>
+      <div class="quick-menu qm-sheet">
+        <div class="qm-tiles">
+          <button type="button" class="qm-item qm-tile" data-qm-play><span class="qm-glyph" aria-hidden="true">▶</span><span class="qm-label">${t("Play")}</span></button>
+          <button type="button" class="qm-item qm-tile" data-qm-note${hasNote ? "" : " data-qm-note-new"}><span class="qm-glyph" aria-hidden="true">📝</span><span class="qm-label">${hasNote ? t("Note & more…") : t("Take Note")}</span></button>
+          ${showBookmark ? `<button type="button" class="qm-item qm-tile${isBookmarked ? " is-on" : ""}" data-qm-bookmark aria-pressed="${isBookmarked ? "true" : "false"}"><span class="qm-glyph" aria-hidden="true">${isBookmarked ? "★" : "🔖"}</span><span class="qm-label">${isBookmarked ? t("Remove bookmark") : t("Bookmark")}</span></button>` : ""}
+          <button type="button" class="qm-item qm-tile" data-qm-qcr><span class="qm-glyph" aria-hidden="true">📚</span><span class="qm-label">${t("QCR")}</span></button>
+        </div>
+        <div class="qm-rows">
+          <button type="button" class="qm-item" data-qm-sub-toggle="copy"><span class="qm-rowglyph" aria-hidden="true">📋</span>${t("Copy")} <span class="qm-caret">▸</span></button>
+          <div class="qm-sub" data-qm-sub="copy">${langCheckboxRows("qm-lang-copy", hasNote)}
+            <button type="button" class="qm-go-btn" data-qm-copy-go>${t("Copy")}</button>
+          </div>
+          <button type="button" class="qm-item" data-qm-sub-toggle="share"><span class="qm-rowglyph" aria-hidden="true">📤</span>${t("Share")} <span class="qm-caret">▸</span></button>
+          <div class="qm-sub" data-qm-sub="share">${langCheckboxRows("qm-lang-share", hasNote)}
+            <button type="button" class="qm-go-btn" data-qm-share-go>${t("Share")}</button>
+          </div>
+          ${showWriting ? `<button type="button" class="qm-item" data-qm-writing><span class="qm-rowglyph" aria-hidden="true">✍</span>${t("Writing sheet")}</button>` : ""}
+          ${showAsma ? `<button type="button" class="qm-item" data-qm-asma><span class="qm-rowglyph" aria-hidden="true">🔗</span>${t("Attach to Asma ul Husna")}</button>` : ""}
+        </div>
+        ${showTextTools ? `
+        <div class="qm-chips">
+          <button type="button" class="qm-chip${isWbwOn ? " is-on" : ""}" data-qm-wbw aria-pressed="${isWbwOn ? "true" : "false"}">${t("Word by Word")}</button>
+          <button type="button" class="qm-chip${isRootsOn ? " is-on" : ""}" data-qm-roots aria-pressed="${isRootsOn ? "true" : "false"}">${t("Root")}</button>
+          <button type="button" class="qm-chip${isDerivativesOn ? " is-on" : ""}" data-qm-derivatives aria-pressed="${isDerivativesOn ? "true" : "false"}">${t("Derivatives")}</button>
+          <button type="button" class="qm-chip" data-qm-collapse>${t("Collapse āyah text")}</button>
+        </div>` : ""}
+      </div>
+    </div>`;
+  }
   return `
     <div class="ayah-quick-wrap" data-unit-key="${escapeHtml(unitKey)}">
       <button type="button" class="ayah-quick-btn${hasNote ? " has-note" : ""}" data-qm-toggle title="${t("Quick actions")}">⋮</button>
@@ -180,7 +217,7 @@ function closeAllQuickMenus(container) {
  * listeners below are cheap to re-attach to fresh nodes; only the outside-
  * click listener is guarded against being bound twice on the same container.
  */
-export function attachQuickMenuHandlers(container, { buildText, onPlay, onOpenNote, onTakeNote, onToggleBookmark, onToggleWbw, onToggleRoots, onToggleDerivatives, onQcr, onTextMenuOpen }) {
+export function attachQuickMenuHandlers(container, { buildText, onPlay, onOpenNote, onTakeNote, onToggleBookmark, onToggleWbw, onToggleRoots, onToggleDerivatives, onQcr, onTextMenuOpen, onWriting, onAsma }) {
   container.querySelectorAll(".ayah-quick-wrap").forEach((wrap) => {
     const unitKey = wrap.dataset.unitKey;
     const btn = wrap.querySelector("[data-qm-toggle]");
@@ -237,6 +274,8 @@ export function attachQuickMenuHandlers(container, { buildText, onPlay, onOpenNo
       closeAllQuickMenus(container);
       onQcr?.(unitKey);
     });
+    wrap.querySelector("[data-qm-writing]")?.addEventListener("click", () => { closeAllQuickMenus(container); onWriting?.(unitKey); });
+    wrap.querySelector("[data-qm-asma]")?.addEventListener("click", () => { closeAllQuickMenus(container); onAsma?.(unitKey); });
     wrap.querySelector("[data-qm-bookmark]")?.addEventListener("click", () => {
       closeAllQuickMenus(container);
       onToggleBookmark?.(unitKey);

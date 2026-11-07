@@ -25,7 +25,7 @@ const MUT = {
   nofollow: [`      if (pageViewContainer.querySelector("[data-meaning-flow]")) {\n        const key = \`\${currentSurahNum}:\${ayahNum}\`;`, `      if (false) {\n        const key = \`\${currentSurahNum}:\${ayahNum}\`;`],
   nomenu: ["</span>${meaningQuickMenuHtml(g.surah, a.ayah)}</div>", "</span></div>"],
   double: ["        attachAyahQuickMenus(pageBox);", "        attachAyahQuickMenus(pageViewContainer);"],
-  open: ["  @media (max-width: 599.98px) {\n    #readMeaningLayersSlot { position: relative; overflow: visible; }", "  @media (max-width: 1px) {\n    #readMeaningLayersSlot { position: relative; overflow: visible; }"],
+  open: ["  @media (max-width: 899.98px) {\n    #readMeaningLayersSlot { position: relative; overflow: visible; }", "  @media (max-width: 1px) {\n    #readMeaningLayersSlot { position: relative; overflow: visible; }"],
   names: [`["📖", t("Reading View"),`, `["📖", t("Meaning"),`],
   lastread: [`      if (stageView !== "read" || readViewNow() !== "meaning" || isPlaying()) return;`, `      return;`],
 };
@@ -99,7 +99,7 @@ const switches = (page) => page.evaluate(() => {
 
 for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 360], ["en", 768], ["en", 1280]]) {
   const tag = `[${lang} ${width}]`;
-  const phone = width < 600;
+  const phone = width < 900; // J114 (6 Nov 2026): the one "Show ▾" button reaches 900px (was 600px); 768 is now a "phone" here by design
   const { ctx, page, errors } = await start(lang, width);
   await openFatiha(page);
 
@@ -151,7 +151,7 @@ for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 360], ["en", 768],
     return page.evaluate((k) => {
       const m = document.querySelector(`#pageViewContainer [data-meaning-key="${k}"] .quick-menu`), r = m?.getBoundingClientRect();
       return { open: !!m?.classList.contains("open") && (r?.height ?? 0) > 0, inView: !!r && r.left >= 0 && r.right <= innerWidth + 1,
-        items: [...(m?.querySelectorAll(":scope > .qm-item") ?? [])].map((b) => [...b.attributes].map((x) => x.name).find((n) => n.startsWith("data-qm-"))) };
+        items: [...(m?.querySelectorAll(".qm-item") ?? [])] /* J114: the ⋮ is a sheet (tiles + rows), so every .qm-item, not only direct children */.map((b) => [...b.attributes].map((x) => x.name).find((n) => n.startsWith("data-qm-"))) };
     }, key);
   };
   const m3 = await openMenu("1:3");

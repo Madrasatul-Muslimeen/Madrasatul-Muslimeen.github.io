@@ -1070,3 +1070,16 @@ total). Allocated by the MMSA Architect.
 13.27: Quran Study ⋮ Note & more after a new Note. Allocated by the MMSA Architect.
 13.28: J112 before R1: Siyagah sign-in and Map hook, switched off. Allocated by the MMSA Architect.
 13.29: J88 fix: Sign in with Google's return address without the slash. Allocated by the MMSA Architect.
+13.30: Dua D26+D25, J03 K3 Read next, J05 intention reminder, J03 K1A Hadith Word Card. Allocated by the MMSA Architect.
+13.31: Read next on QR's Āyah card and Word card (J03 K3), Back to the hadith on the Word card, the one-line intention card above a Mushaf page (J05). Allocated by the MMSA Architect.
+13.32: the three marks Difficult / Need practice / Done on the Āyah card, Word card, Marks wheel and the HadeethEnc card, and the teacher's view on Monitor (J03 K2 + K1 Part B + K4), after the Owner published the Keys Rules. Allocated by the MMSA Architect.
+13.33: Monitor's Show on wheel opens that student's Marks wheel, read-only, with Back (J03 fix, QR Lead #1474); the intention-card check compares with the line-height (#1472, test only). Allocated by the MMSA Architect.
+13.34: K3b Study Next, J112 R1, J05 question card, the student wheel's head row. Allocated by the MMSA Architect.
+13.35: J112 R2a: change Siyagah folders from the Map. Allocated by the MMSA Architect.
+13.36: J112 R2b: change Siyagah notes from the Map. Allocated by the MMSA Architect.
+13.37: Page picker: only the chosen sūrah's pages. Allocated by the MMSA Architect.
+13.38: J113: āyah number and ⋮ on the title row. Allocated by the MMSA Architect.
+13.39: J114: one Show button to 900px; prev/next āyah in every view. Allocated by the MMSA Architect.
+13.40: the screensaver never comes over a Note being written. Allocated by the MMSA Architect.
+13.41: J114 option B: one ⋮ sheet beside the āyah. Allocated by the MMSA Architect.
+13.42: J114 follow-up: the ⋮ sheet at large text and in Bangla. Allocated by the MMSA Architect.

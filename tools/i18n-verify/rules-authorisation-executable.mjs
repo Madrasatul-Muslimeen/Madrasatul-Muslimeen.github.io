@@ -632,8 +632,46 @@ check("Phase 4 evidence is frozen after create, in the Rules and in the writer",
     assert.match(matchBlock(akRules, "ayahKeyMarks/"), /allow delete: if false;/);
     assert.ok(!/\bdeleteDoc\b|\.delete\(|deleteField/.test(akSrc), "ayah-keys-data.js must never delete");
   });
-  check("AYAH KEYS: the live firestore.rules is untouched by this round (the candidate is NOT published)", () => {
-    assert.ok(!/ayahKeyMarks/.test(read("firestore.rules")), "firestore.rules already carries ayahKeyMarks");
+  // UPDATED IN PLACE 5 Nov 2026: the Owner PUBLISHED this candidate in study-monitoring (~6:20 am Sydney, PCF MSA J03
+  // k4rules1104), so the repository's firestore.rules was made the same file. This check used to assert the opposite
+  // ("the candidate is NOT published"); it now asserts what production carries, byte for byte.
+  check("AYAH KEYS: firestore.rules IS the published candidate, byte for byte (the Owner published it 5 Nov 2026)", () => {
+    const live = read("firestore.rules");
+    assert.ok(/match \/ayahKeyMarks\//.test(live), "firestore.rules does not carry ayahKeyMarks");
+    assert.equal(live, akRules, "firestore.rules differs from docs/governance/2026-10-15-ayah-keys-candidate.rules, which is what production carries");
+  });
+
+  // K0 (4 Nov 2026): the same marks on a hadith and its words, hadithKeyMarks, in the SAME candidate file.
+  const hm = akSrc.match(/export const HADITH_KEY_WRITES = Object\.freeze\(\[([\s\S]*?)\]\)/);
+  assert.ok(hm, "HADITH_KEY_WRITES not found in ayah-keys-data.js");
+  const hwrites = new Set(idsIn(hm[1].replace(/"/g, "'")));
+  const h = authorisedCreate(akRules, "hadithKeyMarks/");
+  check("HADITH KEYS POSITIVE CONTROL: the parsers read the hadith block and the declared writes", () => {
+    assert.ok(hwrites.size === 4 && h.permitted.has("collection") && h.required.has("entries") && !h.permitted.has("surah"),
+      `parsed writes=${[...hwrites]} permitted=${[...h.permitted]}`);
+  });
+  check("HADITH KEYS BACKWARD: every field the data layer can write is one the candidate allows", () => {
+    assert.deepEqual([...hwrites].filter((f) => !h.permitted.has(f)), [], "denied in production once published");
+  });
+  check("HADITH KEYS FORWARD: every field the candidate allows is written by the data layer", () => {
+    assert.deepEqual(own(h.permitted).filter((f) => !hwrites.has(f)), [], "an authorised field no code can perform");
+  });
+  check("HADITH KEYS REQUIRED: every required field is one the data layer writes (or the envelope stamps)", () => {
+    assert.deepEqual(own(h.required).filter((f) => !hwrites.has(f)), []);
+  });
+  check("AYAH KEYS + HADITH KEYS REQUIRED BOTH WAYS: every field the data layer creates with is one the candidate REQUIRES (a create never omits an identity field)", () => {
+    assert.deepEqual([...writes].filter((f) => !required.has(f)), [], "ayahKeyMarks");
+    assert.deepEqual([...hwrites].filter((f) => !h.required.has(f)), [], "hadithKeyMarks");
+  });
+  check("HADITH KEYS UPDATE: the identity fields are frozen on update, and there is no delete", () => {
+    const block = matchBlock(akRules, "hadithKeyMarks/");
+    for (const frozen of ["tenantId", "scope", "collection", "createdBy"]) {
+      assert.match(block, new RegExp(`d\\(\\)\\.${frozen} == resource\\.data\\.${frozen}`), `${frozen} is not frozen on update`);
+    }
+    assert.match(block, /allow delete: if false;/);
+  });
+  check("HADITH KEYS: firestore.rules carries the published hadithKeyMarks block (the Owner published it 5 Nov 2026)", () => {
+    assert.equal(matchBlock(read("firestore.rules"), "hadithKeyMarks/"), matchBlock(akRules, "hadithKeyMarks/"), "firestore.rules' hadithKeyMarks block differs from the published candidate");
   });
 }
 

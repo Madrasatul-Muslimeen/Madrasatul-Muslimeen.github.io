@@ -1,6 +1,6 @@
 {
   "firestore": {
-    "rules": "../../firestore.rules"
+    "rules": "closed.placeholder.rules"
   },
   "emulators": {
     "firestore": {

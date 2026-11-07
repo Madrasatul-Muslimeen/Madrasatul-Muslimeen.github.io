@@ -53,6 +53,7 @@
     </label>
   </div>
 
+  <div id="intentionHost"></div><!-- the intention reminder (PCF MSA J05), above the duas -->
   <main id="duaRoot"></main>
 
   <script type="module">
@@ -157,6 +158,7 @@
 
   <script type="module" async>
     import { mountDuaStudy } from "./js/dua-study.js";
+    import { mountIntentionReminder } from "./js/intention-mount.js";
     import { translateStatic, t } from "./js/i18n.js";
     import { registerServiceWorker } from "./js/sw-register.js";
     import { armScreensaver } from "./js/screensaver-idle.js";
@@ -177,6 +179,7 @@
     translateStatic();
     registerServiceWorker();
     armScreensaver();
+    mountIntentionReminder(document.getElementById("intentionHost"));
     try {
       window.__duaStudy = mountDuaStudy(document.getElementById("duaRoot"));
     } catch (err) {

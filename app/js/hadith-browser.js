@@ -14,6 +14,8 @@
 
 import { t, num } from "./i18n.js";
 import { loadHadithAyat } from "./ayah-hadith.js";
+import { renderReadNext } from "./read-next-ui.js";
+import { hadithReadNextCtx } from "./hadith-read-next.js";
 import { getAppLang } from "./prefs.js";
 import { STATUSES, statusLabel } from "./unit-keys.js";
 import { renderAssignDropdown } from "./assign-picker.js";
@@ -24,6 +26,8 @@ import { HADEETHENC_LANGS, HADEETHENC_STRUCTURE_LANG, loadHadeethEncCategories, 
 import { OPENITI_CREDIT_URL, loadOpenitiBookSummaries, loadOpenitiBookIndex, loadOpenitiChapter, chapterForHadithNumber, loadOpenitiConcordance, loadOpenitiHadeethEncLinks, loadHadeethEncReferences, loadDuaIndex } from "./openiti-corpus.js";
 import { el, readFailedNote, langNameInProse, loadHadithStudyActions, openitiDisplayTitle, openitiArabicRowName, duaRefLabel, standardTranslationFolds, openitiTranslationFold } from "./hadith-shared-ui.js";
 import { renderDua } from "./dua-browser.js";
+import { hadithWordsSection } from "./hadith-word-card.js";
+import { hadithMarksRow } from "./hadith-key-marks.js";
 import { hadithReader, removeReaderWindows } from "./hadith-reader.js";
 import { subjectAddRow, renderSubjectList } from "./hadith-subjects.js";
 
@@ -711,6 +715,11 @@ function hadeethEncCard(id, resolvedRecord, state, localRefresh) {
     if (record.words_meanings) details.appendChild(hadeethEncWordsMeanings(record.words_meanings));
     card.appendChild(details);
   }
+
+  // Keys to Understanding K1 Part A (PCF MSA J03): the hadith's words, each opening QR's Word card or the Hadith Word Card.
+  card.appendChild(hadithMarksRow({ number: id })); // Part B: Difficult / Need practice / Done on this hadith
+  const arabicText = hadithArabicText(record, lang) ?? record.hadeeth_ar ?? null;
+  if (arabicText) card.appendChild(hadithWordsSection({ id, arabic: arabicText, wordsMeanings: lang === "ar" ? record.words_meanings : (record.words_meanings_ar ?? record.words_meanings), hadithLabel: record.title ?? "" }));
 
   const src = document.createElement("a");
   src.className = "hadith-view-source";
@@ -1510,6 +1519,8 @@ function openitiPassageCard(h, conc = null, heLinks = null, duaCtx = null, versi
   if (std) card.appendChild(standardTranslationFolds(conc.versionUri, async () => std));
   const group = duaCtx?.dua.groupOf.get(`${duaCtx.versionUri}:${h.n}`);
   if (group) card.appendChild(duaAlsoNarrated(h, group, duaCtx, conc));
+  // J03 K3: "Read next" (Qur'an, Hadith, Dictionary, Scholars, Tafsīr); nothing loads until a tab is opened.
+  if (versionUri && (h.kind === "hadith" || h.kind === "passage")) renderReadNext(card, hadithReadNextCtx(versionUri, h.n, heIds ?? null));
 
   const credit = document.createElement("a");
   credit.className = "hadith-view-source openiti-credit";
