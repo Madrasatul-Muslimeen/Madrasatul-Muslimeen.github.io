@@ -214,6 +214,20 @@ export function fullTextNodes(sheet) {
   ar.lang = "ar"; ar.dir = "rtl"; ar.dataset.i18nSkip = "";
   ar.style.fontFamily = quranFontStack();
   wrap.appendChild(ar);
+  // The whole narration with its chain, the dua's own words marked (the Owner, 7 Nov: Full text and The whole narration are one).
+  if (sheet.narration?.text) {
+    const { text, start, end } = sheet.narration;
+    const d = el("details", "dua-ft-sec"); d.open = true; d.dataset.duaFtSec = "narration";
+    d.appendChild(el("summary", null, t("The whole narration")));
+    const p = el("p", "hadith-arabic dua-ft-narr"); p.lang = "ar"; p.dir = "rtl"; p.dataset.i18nSkip = "";
+    p.style.fontFamily = quranFontStack();
+    if (end > start) {
+      const mark = document.createElement("mark"); mark.className = "dua-words-mark"; mark.textContent = text.slice(start, end);
+      p.append(text.slice(0, start), mark, text.slice(end));
+    } else p.textContent = text;
+    d.appendChild(p);
+    wrap.appendChild(d);
+  }
   const tr = [["en", t("English"), sheet.en], ["bn", t("Bangla"), sheet.bn]].filter((x) => x[2]);
   if (tr.length) {
     const d = el("details", "dua-ft-sec"); d.open = true; d.dataset.duaFtSec = "tr";

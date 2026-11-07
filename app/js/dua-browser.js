@@ -333,6 +333,16 @@ export function duaCard(c, summary, state, render, progressRows, wordLinks = nul
     }
     if (linked) card.appendChild(el("p", "dua-words-note dua-words-tap", t("Tap a word to see it in the Qur'an's words.")));
     card.appendChild(panel);
+    {
+      // Back from the Word card: reopen the word whose card was open, once (the address is cleaned at once).
+      let want = null;
+      try {
+        const u = new URL(location.href);
+        const m = /^(\d+):(\d+)$/.exec(u.searchParams.get("dword") ?? "");
+        if (m && Number(m[1]) === c.dua) { want = Number(m[2]); u.searchParams.delete("dword"); history.replaceState(history.state, "", u); }
+      } catch { /* the dua opens without the word */ }
+      if (want != null) setTimeout(() => { const sp = words.querySelector(`[data-dua-word="${want}"]`); if (sp?.isConnected && sp.getAttribute("aria-pressed") === "false") sp.click(); }, 0);
+    }
     const fold = document.createElement("details");
     fold.className = "dua-narration";
     fold.dataset.duaNarration = String(c.dua);
@@ -473,10 +483,12 @@ export function placeOf(n) { return `${Math.floor(n / 1000000)}:${Math.floor(n /
  * sessionStorage, so the address alone can never record anything.
  */
 export function wordCardHref(place, dua) { return `./quranrevival.html?word=${place}&back=1&from=dua-${dua}`; }
-export function rememberDuaPlace(page, dua) {
+export function rememberDuaPlace(page, dua, pos = null) {
   try {
     const u = new URL(location.href);
     u.searchParams.set("view", "dua"); u.searchParams.set("duaPage", String(page)); u.searchParams.set("dua", String(dua));
+    // The way-back law (the Owner, 7 Nov): coming back from the Word card reopens the very word's card, not just the dua.
+    if (pos != null) u.searchParams.set("dword", `${dua}:${pos}`); else u.searchParams.delete("dword");
     history.replaceState(history.state, "", u);
   } catch { /* the link still opens the Word card */ }
 }
@@ -617,7 +629,7 @@ export function showDuaWord(panel, words, span, tok, entry, dua, page, how = "",
       const a = el("a", "dua-ref dua-word-place", num(ref));
       a.href = wordCardHref(ref, dua);
       a.dataset.duaWordPlace = ref;
-      a.addEventListener("click", () => rememberDuaPlace(page, dua));
+      a.addEventListener("click", () => rememberDuaPlace(page, dua, pos));
       row.appendChild(a);
     }
     if (count > places.length) row.appendChild(el("span", "hadith-note", t("+{n} more in the Word card", { n: num(count - places.length) })));
@@ -626,7 +638,7 @@ export function showDuaWord(panel, words, span, tok, entry, dua, page, how = "",
   const go = el("a", "dua-ref dua-word-open", `${t("Open in the Word card")} ›`);
   go.dataset.duaWordOpen = place;
   go.href = wordCardHref(place, dua);
-  go.addEventListener("click", () => rememberDuaPlace(page, dua));
+  go.addEventListener("click", () => rememberDuaPlace(page, dua, pos));
   panel.appendChild(go);
   if (pos != null) panel.appendChild(duaWordProgressBlock({ dua, pos, page, place, wbwKey }));
   panel.appendChild(el("p", "dua-words-note", t("Linked by the computer by spelling · to be checked")));
@@ -668,7 +680,7 @@ export function duaWordProgressBlock({ dua, pos, page, place = null, wbwKey = ""
       catch (err) { current = before; paint(); here.textContent = t("In this dua: {state}", { state: statusLabel(before ?? "not_started") }); msg.textContent = duaSaveFailed(err); return; }
       here.dataset.duaWordDuaStateNow = id;
       if (wbwKey) {
-        rememberDuaPlace(page, dua);
+        rememberDuaPlace(page, dua, pos);
         try { sessionStorage.setItem(DUA_WORD_PROGRESS_TOKEN, `${place}|${id}`); } catch { /* the Word card opens without recording */ }
         location.href = `${wordCardHref(place, dua)}&progress=${id}`;
       }

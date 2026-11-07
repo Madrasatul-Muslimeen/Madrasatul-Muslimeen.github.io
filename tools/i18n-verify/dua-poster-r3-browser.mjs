@@ -114,8 +114,8 @@ async function run(mutation) {
 
       await page.click("[data-dua-menu-toggle]"); // build 2: the menu lives under the card's Menu button
       const menu = await page.$$eval('[data-dua-menu="poster"], [data-dua-menu="share"]', (b) => b.map((x) => ({ t: x.textContent, h: x.getBoundingClientRect().height })));
-      await check("the card's menu offers Poster and Copy / share, in this language, finger-sized", () => {
-        if (menu.length !== 2 || !menu[0].t.includes(L("Poster")) || menu[1].t !== L("Copy / share") || menu.some((m) => m.h < 44)) throw new Error(JSON.stringify(menu));
+      await check("the card's menu offers Poster and Copy / share, in this language, small but pressable (40px; the Owner asked for smaller chips, 7 Nov)", () => {
+        if (menu.length !== 2 || !menu[0].t.includes(L("Poster")) || menu[1].t !== L("Copy / share") || menu.some((m) => m.h < 40)) throw new Error(JSON.stringify(menu));
       });
 
       // D23 📖 Full text on a Qur'anic dua: its raw Arabic follows the Vowels selection (the card has no vowel switch of its own).
