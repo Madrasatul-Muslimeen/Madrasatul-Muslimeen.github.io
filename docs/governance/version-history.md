@@ -1086,3 +1086,4 @@ total). Allocated by the MMSA Architect.
 13.43: Dua J104 D23 (Dua Study Home/Menu, Dua Card top bar). Allocated by the MMSA Architect.
 13.44: QR J114 n114b (whole-unit bookmark, latest Note, New Note). Allocated by the MMSA Architect.
 13.45: MSA J112 D2 (Primary, MSA-Siyagah sync) + Dua block in Notes. Allocated by the MMSA Architect.
+13.46: Dua J104 D23 (Full text, movable Dua Card window). Allocated by the MMSA Architect.
