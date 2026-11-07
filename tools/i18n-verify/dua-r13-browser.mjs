@@ -9,6 +9,7 @@
 //   --mutate=nocarry   the pop-up state is not carried to the next dua  -> check 1 fails
 //   --mutate=bigchip   chips back to 2 a row                            -> check 2 fails
 //   --mutate=nonarr    Full text without the narration                   -> check 3 fails
+//   --mutate=oldbp    second-row breakpoint back to 360px                 -> overlap check fails at 375
 //   --mutate=noword    the word is not reopened                          -> check 5 fails
 import fs from "node:fs";
 import { chromium, newContext, openPage } from "./harness.mjs";
@@ -23,12 +24,13 @@ const MUT = {
   nocarry: ["js/dua-study.js", "carryPop = !!document.querySelector(\"[data-dua-window], .dua-card-popped\"); where.open = i + 1;", "carryPop = false; where.open = i + 1;"],
   bigchip: ["css/dua-study.css", "grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0.3rem; padding: 0.3rem; }", "grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.3rem; padding: 0.3rem; }"],
   nonarr: ["js/dua-poster.js", "if (sheet.narration?.text) {", "if (false) {"],
+  oldbp: ["css/dua-study.css", "@media (max-width: 395px) {", "@media (max-width: 360px) {"],
   noword: ["js/dua-browser.js", "if (want != null) setTimeout(", "if (false) setTimeout("],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
-async function context(width) {
-  const ctx = await newContext(browser, { appLang: "en", banner: false, viewport: { width, height: 900 } });
+async function context(width, lang = "en") {
+  const ctx = await newContext(browser, { appLang: lang, banner: false, viewport: { width, height: 900 } });
   await ctx.route("**/archive.org/**", (r) => r.abort());
   if (MUTATE) {
     const [file, a, b] = MUT[MUTATE];
@@ -38,7 +40,7 @@ async function context(width) {
 }
 const pos = (P) => P.evaluate(() => document.querySelector("[data-dua-card-pos]")?.textContent?.trim());
 
-for (const width of [1280, 390]) {
+for (const width of [1280, 414]) {
   const tag = `[${width}]`;
   const ctx = await context(width);
   const { page: P } = await openPage(ctx, "/app/dua-study.html?g=rasul&open=8");
@@ -100,6 +102,24 @@ for (const width of [1280, 390]) {
   const back = await Q.evaluate((dua) => ({ open: !!document.querySelector(`[data-dua-word-panel="${dua}"]:not([hidden])`), pressed: document.querySelector('[data-dua-word="2"]')?.getAttribute("aria-pressed"), url: location.search }), n);
   check("back from the Word card reopens word 2's card", back.open && back.pressed === "true", JSON.stringify(back));
   check("the address is cleaned at once (dword is used once)", !/dword=/.test(back.url), back.url);
+  await ctx.close();
+}
+// The top bar never overlaps itself at any phone width, English or Bangla (the MSA Architect's probe, 8 Nov):
+// every button and the position text, pairwise rectangle intersection.
+for (const lang of ["en", "bn"]) for (const width of [320, 360, 375, 390, 414]) {
+  const ctx = await context(width, lang);
+  const { page: P } = await openPage(ctx, "/app/dua-study.html?g=rasul&open=8");
+  await P.waitForSelector("[data-dua-topbar]", { timeout: 25000 });
+  const r = await P.evaluate(() => {
+    const els = [...document.querySelector("[data-dua-topbar]").querySelectorAll("button, .dua-card-pos")];
+    const rs = els.map((e) => e.getBoundingClientRect()); let overlaps = 0;
+    for (let i = 0; i < rs.length; i++) for (let j = i + 1; j < rs.length; j++) {
+      const ix = Math.min(rs[i].right, rs[j].right) - Math.max(rs[i].left, rs[j].left), iy = Math.min(rs[i].bottom, rs[j].bottom) - Math.max(rs[i].top, rs[j].top);
+      if (ix > 0.5 && iy > 0.5) overlaps++;
+    }
+    return { n: rs.length, overlaps, wide: document.documentElement.scrollWidth - innerWidth };
+  });
+  check(`[${lang} ${width}] the top bar's buttons do not overlap and the page does not widen`, r.n >= 6 && r.overlaps === 0 && r.wide <= 0, JSON.stringify(r));
   await ctx.close();
 }
 await browser.close();
