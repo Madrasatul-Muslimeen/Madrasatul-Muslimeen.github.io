@@ -194,7 +194,11 @@ body.dua-has-popped::before { content: ""; position: fixed; inset: 0; z-index: 5
   /* The Owner, 7 Nov: with Menu a three-line icon, Play, ‹ n of N ›, Menu and the pop-up fit ONE bar on a phone. */
   .dua-topbar { flex-wrap: nowrap; gap: 0.25rem; }
   .dua-topbar .dua-card-steps .dua-ref { min-width: 40px; }
-  .dua-topbar .dua-card-pos { min-width: 0; font-size: 0.8rem; }
+  .dua-topbar .dua-card-pos { min-width: 0; font-size: 0.78rem; }
+  /* Bangla numerals and words are wider: the three side tiles give back 4px each so nothing overlaps at 390px. */
+  .dua-topbar > .dua-tile { min-width: 40px; min-height: 44px; }
+  .dua-topbar > .dua-tile-play, .dua-topbar > .dua-tile-pop { width: 40px; }
+  .dua-topbar { padding: 0.3rem; }
 }
 /* Under 361px even that is too wide (measured at 320px: the Play tile sat over ‹): ‹ n of N › takes its own second row. */
 @media (max-width: 360px) {
