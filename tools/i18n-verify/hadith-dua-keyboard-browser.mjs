@@ -38,9 +38,9 @@ const hadithDua = async (P) => { await P.click('[data-hadith-tab="dua"]'); await
 const CONTROLS = [];
 const add = (page, c) => CONTROLS.push({ page, ...c });
 add("dua", { id: "groups-pull", kind: "menu", toggle: '[data-dua-pd="groups"]', panel: ".dua-pull", expanded: true });
-for (const k of ["meaning", "source", "narration", "check", "poster", "share"]) add("dua", { id: "card-" + k, kind: "dialog", prep: openCard, toggle: `[data-dua-menu="${k}"]`, panel: ".dua-pop" });
+for (const k of ["meaning", "source", "fulltext", "check", "poster", "share"]) add("dua", { id: "card-" + k, kind: "dialog", prep: openCard, toggle: `[data-dua-menu="${k}"]`, panel: ".dua-pop" });
 add("dua", { id: "bookmark", kind: "action", prep: openCard, toggle: "[data-dua-bookmark]" });
-add("dua", { id: "expander", kind: "expander", prep: async (P) => { await openCard(P); await P.click('[data-dua-menu="narration"]'); await P.waitForTimeout(400); }, toggle: ".dua-pop summary" });
+add("dua", { id: "expander", kind: "expander", prep: async (P) => { await openCard(P); await P.click('[data-dua-menu="fulltext"]'); await P.waitForTimeout(400); }, toggle: ".dua-pop summary" });
 add("dua", { id: "zab", kind: "dialog", toggle: "#zabCorner", toggleWide: "#zabBar > [data-zab-open]", panel: "#zabPanel", slow: true });
 for (const pg of ["hcol", "hstudy"]) {
   add(pg, { id: "books-menu", kind: "menu", toggle: '[data-hadith-tab="books"]', panel: '[data-hadith-menu="books"]', expanded: true });
