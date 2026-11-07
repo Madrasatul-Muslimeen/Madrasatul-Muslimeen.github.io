@@ -57,6 +57,8 @@ check("the Messenger of Allah and Allah's Messenger become Rasulullah Sallallahu
 check('"O Messenger of Allah" (a call) becomes "O Rasulullah"', f("O Messenger of Allah, I said").text === "O Rasulullah, I said");
 check('"a Prophet", "the Prophets" and "O Prophet" are not changed', f("a Prophet came").text === "a Prophet came" && f("the Prophets said").text === "the Prophets said" && f("[O Prophet] a clear conquest").text === "[O Prophet] a clear conquest");
 check("another prophet by name is not changed", f("the Prophet Musa spoke and Prophet Dawūd (peace be upon him)").text === "the Prophet Musa spoke and Prophet Dawūd (peace be upon him)");
+check("the ﷺ sign (alone or in brackets) after the Prophet, the Messenger of Allah or Allah's Apostle is folded", f("the Prophet (ﷺ) said").text === `${RASULULLAH} said` && f("Allah's Messenger (ﷺ) said").text === `${RASULULLAH} said` && f("Allah's Apostle ﷺ said").text === `${RASULULLAH} said`);
+check('a call to him ("O Allah\'s Apostle!", "O Messenger of Allah") is "O Rasulullah"', f("He said: O Allah's Apostle! O Messenger of Allah,").text === "He said: O Rasulullah! O Rasulullah,");
 check("with no Prophet word in the Arabic nothing is guessed", f("the Prophet said", "قال زيد").text === "the Prophet said");
 check("no doubled formula, and folding twice changes nothing more", !f("the Messenger of Allah (may Allah's peace and blessings be upon him) said").text.includes("(may") && f(f("the Prophet (may Allah's peace and blessings be upon him) said").text).text === f("the Prophet (may Allah's peace and blessings be upon him) said").text);
 

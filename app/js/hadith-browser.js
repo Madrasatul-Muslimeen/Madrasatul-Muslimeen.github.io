@@ -1530,7 +1530,7 @@ function openitiPassageCard(h, conc = null, heLinks = null, duaCtx = null, versi
   const heIds = heLinks?.get(h.n);
   if (heIds?.length) card.appendChild(openitiTranslationFold(heIds));
   const std = conc?.stdByN?.get(h.n);
-  if (std) card.appendChild(standardTranslationFolds(conc.versionUri, async () => std));
+  if (std) card.appendChild(standardTranslationFolds(conc.versionUri, async () => std, h.text));
   const group = duaCtx?.dua.groupOf.get(`${duaCtx.versionUri}:${h.n}`);
   if (group) card.appendChild(duaAlsoNarrated(h, group, duaCtx, conc));
   // J03 K3: "Read next" (Qur'an, Hadith, Dictionary, Scholars, Tafsīr); nothing loads until a tab is opened.

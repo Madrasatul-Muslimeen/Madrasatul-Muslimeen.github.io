@@ -17,6 +17,10 @@ const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice
 const MUT = {
   nofold: ["js/hadith-browser.js", "if (std) card.appendChild(standardTranslationFolds(conc.versionUri, async () => std));", ""],
   nosplit: ["js/hadith-shared-ui.js", "splitChapterHeading(tr.edition, stdNo, tr.text)", "({ heading: null, text: tr.text })"],
+  // The Owner's translation-terms rule (8 Nov 2026), extended to the Text pane's English fold.
+  nofoldterms: ["js/hadith-shared-ui.js", "tf.set(text, body);", "text.textContent = body;"],
+  noswitchterms: ["js/hadith-shared-ui.js", "{ const sw = arabic ? tf.switchEl() : null; if (sw) details.appendChild(sw); }", ""],
+  noarabic: ["js/hadith-browser.js", "async () => std, h.text));", "async () => std));"],
   bypos: ["js/hadith-browser.js", "const std = conc?.stdByN?.get(h.n);", "const std = conc?.stdByN?.get(h.n) && h.n;"],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
@@ -75,6 +79,18 @@ for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 1280]]) {
     await openFold(P, '[data-openiti-passage="6578"] [data-standard-translation="en"]');
     const lib = await foldText(P, '[data-openiti-passage="6578"] [data-standard-translation="en"]');
     check(`${tag} ...Bukhari 6306 in English: Shaddad bin Aus, «the most superior way of asking for forgiveness»`, !!lib.text && /Shaddad bin Aus/.test(lib.text) && /forgiveness/i.test(lib.text), String(lib.text).slice(0, 90));
+    // The Owner's rule of 8 Nov 2026, extended to this fold: Rasulullah Sallallahu A'laihi Wa Sallam (never "the Prophet (ﷺ)"), with "As sourced" for the source's own words.
+    const enSel = '[data-openiti-passage="6578"] [data-standard-translation="en"]';
+    check(`${tag} terms: the Text pane's English says Rasulullah Sallallahu A'laihi Wa Sallam, not "the Prophet (ﷺ)"`, /Rasulullah Sallallahu A'laihi Wa Sallam/.test(lib.text) && !/Prophet \(ﷺ\)|Messenger \(ﷺ\)/.test(lib.text), String(lib.text).slice(0, 140));
+    const termsSw = await P.$(`${enSel} [data-hadith-terms-switch]`);
+    check(`${tag} terms: an "As sourced" switch sits in the fold`, !!termsSw);
+    if (termsSw) {
+      await termsSw.click();
+      const sourcedText = await P.$eval(`${enSel} [data-standard-translation-text]`, (n) => n.textContent);
+      check(`${tag} terms: ON shows the source's own words (the Prophet (ﷺ))`, /Prophet \(ﷺ\)|Messenger \(ﷺ\)/.test(sourcedText) && !/Rasulullah Sallallahu/.test(sourcedText), sourcedText.slice(0, 120));
+      await termsSw.click();
+      check(`${tag} terms: OFF folds again`, /Rasulullah Sallallahu A'laihi Wa Sallam/.test(await P.$eval(`${enSel} [data-standard-translation-text]`, (n) => n.textContent)));
+    }
     // PCF MSA J97 (the Owner, answer A): Bukhārī's Bangla 6306 begins with its chapter heading; it is its own small grey line.
     const bnSel = '[data-openiti-passage="6578"] [data-standard-translation="bn"]';
     await openFold(P, bnSel);
