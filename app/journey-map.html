@@ -576,7 +576,7 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
     import { langText } from "./js/lang.js";
     import { getAppLang, mountCardLookControl } from "./js/prefs.js";
     import { adoptAppLangFromUserIndex, mountSyncedAppLangControl } from "./js/lang-sync.js";
-    import { safeWrite, reportWriteFailure, settleWrite } from "./js/errors.js";
+    import { safeWrite, reportWriteFailure, settleWrite, plainMessageFor } from "./js/errors.js";
     import { getMyMembershipRoles, hydrateMemberships, pickContext, setActiveContext, getSelectedPersonId, setSelectedPersonId } from "./js/session-context.js";
     import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
     import { translateStatic, t } from "./js/i18n.js";
@@ -608,6 +608,11 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
     import { isSiyagahSectionsReady } from "./js/siyagah-sections-readiness.js";
     import { isSiyagahFlagsReady } from "./js/siyagah-flags-readiness.js";
     import { mountSiyagahMapLink } from "./js/siyagah-map-link.js"; // PCF MSA J112: OFF until Siyagah's R1 is live
+    // PCF MSA J112 (d) D2: every saved change of a Note is queued on this device (siyagah-sync.js loads no Firebase); it
+    // goes to Siyagah, and Siyagah's newer copy comes back, only where Siyagah's bar is live (the full Map).
+    import { openSync, startSyncDrain } from "./js/siyagah-sync.js";
+    import { noteSnapshot, PRIMARY_ROLE, SYNC_REVISION_PULL, SYNC_REVISION_OLDER, SYNC_REVISION_KEPT } from "./js/siyagah-sync-model.js";
+    import { SIYAGAH_CLOUD_DECLARATION } from "./js/siyagah-cloud-readiness.js";
 
     translateStatic();
     registerServiceWorker();
@@ -649,7 +654,10 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
     // triggers is a genuine, real, I17-stamped createNoteFolder() call.
     // -----------------------------------------------------------------------
     const SYSTEM_ROLE_LABEL = {
-      "journey-map": () => t("Personal Journey Map"),
+      // J112 D2 (the Owner, 7 Nov 2026): the system folder that holds a Note not yet allocated is "Primary" -- the same name
+      // as its folder in Siyagah's Mapping My Journey (siyagah-sync-model.js PRIMARY_NAME). Only its NAME changed: its role,
+      // its document and every Note in it are as they were.
+      "journey-map": () => t("Primary"),
       "reflection-archive": () => t("Reflection Archive"),
     };
 
@@ -755,7 +763,7 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
       "parent-missing": () => t("That folder no longer exists — please refresh and try again."),
       "parent-not-mine": () => t("That isn't your folder to move into."),
       "parent-not-active": () => t("That folder has been removed, so nothing can be moved into it."),
-      "parent-is-system": () => t("Personal Journey Map and Reflection Archive can't hold other folders inside them."),
+      "parent-is-system": () => t("Primary and Reflection Archive can't hold other folders inside them."),
       "too-deep": () => t("Moving it there would nest folders too deeply. Choose a folder closer to the top."),
       "cycle": () => t("Moving it there would put a folder inside one of its own folders. Choose a different folder."),
       "ancestor-missing": () => t("That folder's place could not be confirmed — please refresh and try again."),
@@ -780,8 +788,8 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
       if (msg === "This note is already filed in that folder.") return t("This note is already filed in that folder.");
       if (msg === "This note is not filed in that folder.") return t("This note is not filed in that folder any more — please refresh and try again.");
       if (msg === "That folder does not exist or is in Trash.") return t("That folder does not exist or is in Trash.");
-      if (msg === "System folders cannot be moved to Trash.") return t("Personal Journey Map and Reflection Archive can't be deleted.");
-      if (msg === "System folders cannot be copied.") return t("Personal Journey Map and Reflection Archive can't be copied.");
+      if (msg === "System folders cannot be moved to Trash.") return t("Primary and Reflection Archive can't be deleted.");
+      if (msg === "System folders cannot be copied.") return t("Primary and Reflection Archive can't be copied.");
       if (msg === "Folder is not in Trash.") return t("That folder is not in Trash.");
       if (msg === "Note is not in Trash.") return t("That Note is not in Trash.");
       if (msg === "Stale Note revision.") return t("That Note has changed — please refresh and try again.");
@@ -1163,6 +1171,7 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
       notesAndPlacementsLoaded = true;
       renderCurrentView();
       syncNotePane();
+      scheduleSyncScan(); // J112 D2: every Note saved since the last scan is queued for Siyagah
     }
 
     /** Every real folder document behind `folderTree` (roots + orphaned + cyclic + tooDeep), flattened for folderNoteCounts() -- never the page's OWN virtual system-folder placeholders (mergedRoots()), which folderId: null would collide against inside buildFolderTree()'s own id-keyed map. */
@@ -1653,12 +1662,12 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
       revise: ({ note, expectedRevisionId, title, bodyHtml }) => updatePermanentNoteContent(db, {
         tenantId: activeTenantId, noteId: note.noteId, expectedRevisionId, title, bodyHtml, actorUid: auth.currentUser.uid,
       }),
-      afterRevise: () => renderCurrentView(),
+      afterRevise: () => { renderCurrentView(); scheduleSyncScan(); },
       status: showPageStatus,
       refresh: () => refreshAll(),
       chips: (note) => [...activeFilingFolderIds(note)].map((id) => findNodeByIdOrRole(mergedRoots(), id, null)).filter(Boolean)
-        .map((f) => ({ id: f.folderId, label: folderDisplayName(f) })),
-      onChip: revealFolderFromChip,
+        .map((f) => ({ id: f.folderId, label: folderDisplayName(f) })).concat(syncChips(note)),
+      onChip: (v, id) => { if (id === SYNC_CHIP_ID) explainSyncMark(v); else revealFolderFromChip(v, id); },
       newNote: (v, tpl) => newNoteHere(v, tpl),
       // PCF MSA J05: the Note made in this window from Quran Study gets its Approach's questions (in the app's language), unless
       // that person's question card toggle is Off. Any other Note (or no Approach, or an Approach with no questions): none.
@@ -1860,6 +1869,7 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
         { collection: TENANT.NOTES, action: "retirePermanentNote" }
       );
       if (!outcome.ok) return;
+      queueSyncTrash(note, true); // J112 D2 review: to Siyagah's Trash too
       closeView(v);
       showPageStatus(t('"{title}" moved to Trash. Open 🗑 Trash from the ⋯ menu to restore it.', { title: noteTitleOf(note) }));
       await refreshAll();
@@ -1880,6 +1890,190 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
       requestAnimationFrame(() => {
         document.querySelector(`.folder-row[data-folder-id="${CSS.escape(folderId)}"]`)?.scrollIntoView({ block: "center" });
       });
+    }
+
+    // =====================================================================
+    // PCF MSA J112 (d) D2 (the Owner, 3:33 pm 7 Nov 2026): a Note written here (Quran Study, Hadith, Dua -- every Notes
+    // pane is this page) is kept in step with Siyagah's Mapping My Journey with no second tap. What waits is kept on
+    // THIS DEVICE (siyagah-sync.js), never as a new field on the Note, so no Firestore Rules change. Every page queues
+    // (scheduleSyncScan); only the full Map, where Siyagah's bar is live, sends and brings back (onSiyagahLive). The
+    // Approach stays here: it is on the Note's noteSources link, which is never sent.
+    // =====================================================================
+    const SYNC_CHIP_ID = "~siyagah";
+    let noteSync = null, noteSyncKey = "", noteSyncDrain = null, syncScanTimer = null;
+    const syncMemo = new Map(); // noteId -> what its last snapshot was built from (so an unchanged Note costs nothing)
+    const syncShownMarks = new Map(); // view -> the mark it last drew
+    const tsMs = (ts) => (ts?.toMillis ? ts.toMillis() : (typeof ts?.seconds === "number" ? ts.seconds * 1000 : 0));
+    function syncFor() {
+      if (!activeTenantId || !selectedPersonId || !isSelfSelected()) return null;
+      const key = `${activeTenantId}|${selectedPersonId}`;
+      if (noteSyncKey !== key) {
+        try { noteSyncDrain?.close(); } catch {}
+        noteSyncDrain = null;
+        noteSyncKey = key; syncMemo.clear();
+        noteSync = openSync({ key });
+        noteSync.onChange(() => refreshSyncMarks());
+      }
+      return noteSync;
+    }
+    /** A filed folder as the sync sees it: a system folder by its role, a folder of your own by its names from the top. */
+    function syncFolderRef(folderId) {
+      const node = findNodeByIdOrRole(mergedRoots(), folderId, null);
+      if (!node) return null;
+      if (isSystemFolderRole(node.semanticRole)) return { role: node.semanticRole, path: [] };
+      return { role: "user", path: folderAncestorPath(folderId).map((f) => f.name || "") };
+    }
+    function syncSnapshotOf(note, trashed = note?.status === NOTE_STATUS.RETIRED) {
+      const folders = [...activeFilingFolderIds(note)].map(syncFolderRef).filter(Boolean);
+      return noteSnapshot({ title: note.title ?? "", bodyHtml: note.bodyHtml ?? "", folders: folders.length ? folders : [{ role: PRIMARY_ROLE, path: [] }], trashed });
+    }
+    /** Review: MSA's Trash goes to Siyagah's Trash, and a restore here brings it back there (the Map reads only active
+     * Notes, so a Note leaving for the Trash is queued here, at the moment it goes). */
+    function queueSyncTrash(note, trashed) {
+      const sync = syncFor();
+      if (!sync || !note) return;
+      const snapshot = syncSnapshotOf(note, trashed);
+      syncMemo.delete(note.noteId);
+      sync.scan([{ noteId: note.noteId, updatedAtMs: Date.now(), createdAtMs: tsMs(note.createdAt), snapshot }])
+        .then(afterSyncScan).catch((err) => console.error(err));
+    }
+    // Review (the Owner: "without a second action"): an embedded Notes pane (Quran Study, Hadith, Dua) SENDS too. After a
+    // save -- never at startup (I9) -- and only on a device that has connected to Siyagah before (the flag below, written
+    // by the Map's Connect), Siyagah's code is loaded here and, with a Siyagah user signed in, the queue goes. Otherwise it
+    // waits, and the Note says how to connect.
+    const SIYAGAH_CONNECTED_KEY = "msa-siyagah-connected"; // written by siyagah-map-link.js when Connect succeeds
+    const siyagahBarHere = () => !unitMode && !document.documentElement.classList.contains("embed");
+    let syncNeedsConnect = false, hereSenderP = null;
+    function afterSyncScan(res) {
+      noteSyncDrain?.kick();
+      if (res?.queued && !siyagahBarHere()) sendFromHere();
+    }
+    function sendFromHere() {
+      let connected = false;
+      try { connected = localStorage.getItem(SIYAGAH_CONNECTED_KEY) === "1"; } catch { connected = false; }
+      if (!connected) { syncNeedsConnect = true; refreshSyncMarks(true); return; }
+      if (hereSenderP) { noteSyncDrain?.kick(); return; }
+      hereSenderP = (async () => {
+        const mod = await import("./js/siyagah-cloud.js");
+        const cloud = await mod.openSiyagahCloud();
+        if (!cloud) return false;
+        const user = await new Promise((resolve) => { let un = null; un = mod.onSiyagahUser(cloud, (u) => { resolve(u); try { un?.(); } catch {} }); });
+        if (!user) { syncNeedsConnect = true; refreshSyncMarks(true); hereSenderP = null; return false; }
+        syncNeedsConnect = false;
+        const nb = SIYAGAH_CLOUD_DECLARATION.notebookId;
+        const [data, model] = await Promise.all([import("./js/siyagah-mmj-data.js"), import("./js/siyagah-mmj-model.js")]);
+        const from = model.mmjFromForHost(location.hostname);
+        await data.openMmjReader({ cloud, nb, uid: user.uid, onCopy: (c) => onSiyagahLive({ copy: c, cloud, nb, model, from }), onState: () => {} });
+        return true;
+      })().catch((err) => { console.error(err); hereSenderP = null; return false; });
+    }
+    const syncMemoOf = (n) => `${n.currentRevisionId ?? ""}|${n.title ?? ""}|${(n.bodyHtml ?? "").length}|${[...activeFilingFolderIds(n)].sort().join(",")}`;
+    function scheduleSyncScan() { clearTimeout(syncScanTimer); syncScanTimer = setTimeout(runSyncScan, 400); }
+    function runSyncScan() {
+      if (!notesAndPlacementsLoaded) return;
+      const sync = syncFor();
+      if (!sync) return;
+      const list = [];
+      for (const n of allNotes) {
+        if (n.status === NOTE_STATUS.RETIRED) continue;
+        const memo = syncMemoOf(n);
+        if (syncMemo.get(n.noteId) === memo) continue;
+        syncMemo.set(n.noteId, memo);
+        list.push({ noteId: n.noteId, updatedAtMs: tsMs(n.updatedAt), createdAtMs: tsMs(n.createdAt), snapshot: syncSnapshotOf(n) });
+      }
+      sync.scan(list).then(afterSyncScan).catch((err) => console.error(err));
+    }
+    function syncMarkOf(note) {
+      if (!note || !noteSync || noteSyncKey !== `${activeTenantId}|${selectedPersonId}`) return null;
+      return noteSync.mark(note.noteId);
+    }
+    function syncChips(note) {
+      const m = syncMarkOf(note);
+      if (!m) return [];
+      if (m.kind === "synced") return [{ id: SYNC_CHIP_ID, icon: "☁", label: m.fallback ? t("In Siyagah ✓ (in Primary there)") : t("In Siyagah ✓") }];
+      if (m.kind === "refused") return [{ id: SYNC_CHIP_ID, icon: "⚠", label: t("Not in Siyagah: {why}", { why: m.why }) }];
+      if (m.kind === "gone") return [{ id: SYNC_CHIP_ID, icon: "☁", label: t("Deleted in Siyagah; kept here") }];
+      if (m.kind === "trashed") return [{ id: SYNC_CHIP_ID, icon: "☁", label: t("In Siyagah's Trash") }];
+      if (syncNeedsConnect) return [{ id: SYNC_CHIP_ID, icon: "⏳", label: t("Waiting: open Mapping My Journey, then Connect") }];
+      return [{ id: SYNC_CHIP_ID, icon: "⏳", label: t("Waiting to go to Siyagah") }];
+    }
+    const getNoteById = (id) => allNotes.find((n) => n.noteId === id) ?? null;
+    /** The mark explains itself in words when pressed (a control that explains itself beats one that is silent). */
+    function explainSyncMark(v) {
+      const m = syncMarkOf(getNoteById(v?.noteId));
+      if (!m) return;
+      if (m.kind === "synced") showPageStatus(t("This Note is in Siyagah's Mapping My Journey too. Its changes go there by themselves, and a change made to it in Siyagah comes back here.") + (m.fallback ? " " + t("One of its folders is not in Siyagah, so there it is in Primary.") : ""));
+      else if (m.kind === "refused") showPageStatus(t("Siyagah did not take this Note's latest change: {why}. It is kept here, and goes again the next time you change the Note.", { why: m.why }));
+      else if (m.kind === "gone") showPageStatus(t("This Note was deleted in Siyagah. It is kept here and is no longer sent there."));
+      else if (m.kind === "trashed") showPageStatus(t("This Note is in Siyagah's Trash too. Restoring it here brings it back there."));
+      else if (syncNeedsConnect) showPageStatus(t("This Note's latest change waits on this device. To send it, open Mapping My Journey and press Connect in Siyagah's bar, once on this device."));
+      else showPageStatus(t("This Note's latest change goes to Siyagah by itself when Mapping My Journey is open with Siyagah connected. Nothing is lost meanwhile."));
+    }
+    /** When a mark changes, redraw only the views showing that Note (an open edit is never touched: renderView keeps it). */
+    function refreshSyncMarks() {
+      for (const v of noteViews.allViews()) {
+        const m = JSON.stringify([syncMarkOf(getNoteById(v.noteId)), syncNeedsConnect]);
+        if (syncShownMarks.get(v) === m) continue;
+        syncShownMarks.set(v, m);
+        try { noteViews.renderView(v, { keepScroll: true }); } catch (err) { console.error(err); }
+      }
+    }
+    /** Written to the MSA Note as a NEW revision (the earlier text stays in its versions). */
+    async function syncWriteRevision(note, title, bodyHtml, revisionReason) {
+      const rev = await updatePermanentNoteContent(db, {
+        tenantId: activeTenantId, noteId: note.noteId, expectedRevisionId: note.currentRevisionId, title, bodyHtml, revisionReason, actorUid: auth.currentUser.uid,
+      });
+      note.currentRevisionId = rev;
+      return rev;
+    }
+    function syncWritable(noteId) {
+      const note = getNoteById(noteId);
+      if (!note || note.status === NOTE_STATUS.RETIRED || note.finalised === true || !isSelfSelected()) return null;
+      if (noteViews.allViews().some((x) => x.ed && x.noteId === noteId)) return null; // being written here now: next time
+      return note;
+    }
+    const syncFailed = (err) => { console.error(err); showPageStatus(t("A Note could not be brought up to date from Siyagah: {why}", { why: plainMessageFor(err) || err?.message || String(err) })); return null; };
+    const syncHost = {
+      // Rule 3 (and rule 4 when Siyagah's change is the later): Siyagah's newer copy becomes the Note's current text.
+      async applyPull({ noteId, title, bodyHtml }) {
+        const note = syncWritable(noteId);
+        if (!note) return null;
+        const clean = sanitizeNoteHtml(bodyHtml || "");
+        try { await syncWriteRevision(note, title || "", clean, SYNC_REVISION_PULL); } catch (err) { return syncFailed(err); }
+        note.title = title || ""; note.bodyHtml = clean;
+        syncMemo.set(note.noteId, syncMemoOf(note));
+        renderCurrentView();
+        for (const v of noteViews.allViews()) if (v.noteId === noteId) { try { noteViews.renderView(v, { keepScroll: true }); } catch (err) { console.error(err); } }
+        return { seen: syncSnapshotOf(note).hash };
+      },
+      // Rule 4, this app's change is the later: Siyagah's text is kept as an older version FIRST, then this app's text is
+      // the current one again -- both are in the Note's versions, nothing is lost -- and then it goes to Siyagah.
+      async keepOlder({ noteId, title, bodyHtml }) {
+        const note = syncWritable(noteId);
+        if (!note) return null;
+        const mine = { title: note.title ?? "", bodyHtml: note.bodyHtml ?? "" };
+        try {
+          await syncWriteRevision(note, title || "", sanitizeNoteHtml(bodyHtml || ""), SYNC_REVISION_OLDER);
+          await syncWriteRevision(note, mine.title, mine.bodyHtml, SYNC_REVISION_KEPT);
+        } catch (err) { return syncFailed(err); }
+        syncMemo.set(note.noteId, syncMemoOf(note));
+        return true;
+      },
+    };
+    /** Siyagah's bar is live (or not) on this page: keep the Notes in step with its copy. */
+    function onSiyagahLive(live) {
+      if (!live) { try { noteSyncDrain?.close(); } catch {} noteSyncDrain = null; return; }
+      const sync = syncFor();
+      if (!sync) return;
+      if (!noteSyncDrain || noteSyncDrain.sync !== sync) {
+        try { noteSyncDrain?.close(); } catch {}
+        let writerP = null;
+        const writer = () => (writerP ||= import("./js/siyagah-mmj-write.js").then((m) => m.openMmjWriter({ cloud: live.cloud, nb: live.nb }))
+          .catch((err) => { writerP = null; throw err; }));
+        noteSyncDrain = startSyncDrain({ sync, model: live.model, writer, from: live.from, host: syncHost });
+        noteSyncDrain.sync = sync;
+      }
+      noteSyncDrain.onCopy(live.copy);
     }
 
     /** After every full load: keep every open view honest, close one whose Note left (Trash, or gone), and open the Note a full-page link named. */
@@ -2841,7 +3035,7 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
 
     /** The service's own refusal vocabulary for a folder move/copy, said before any write is attempted -- the destination's own subtree included. */
     function folderDestinationRefusal(node, destination) {
-      if (destination !== null && !destination.folderId) return t("Personal Journey Map and Reflection Archive can't hold other folders inside them.");
+      if (destination !== null && !destination.folderId) return t("Primary and Reflection Archive can't hold other folders inside them.");
       const folders = new Map(rawFolderList(folderTree).map((f) => [f.folderId, f]));
       const slug = folderMoveRefusal({ folders, tenantId: activeTenantId, ownerPersonId: selectedPersonId, folderId: node.folderId, parentFolderId: destination === null ? null : destination.folderId });
       return slug ? (FOLDER_PARENT_REFUSAL_MESSAGES[slug]?.() ?? t("That move was refused.")) : null;
@@ -3104,7 +3298,7 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
         }
         overlay.querySelector("[data-fp-newfolder]")?.addEventListener("click", () => {
           const n = hlNode();
-          if (n && isSystemFolderRole(n.semanticRole)) { say(t("Personal Journey Map and Reflection Archive can't hold other folders inside them.")); return; }
+          if (n && isSystemFolderRole(n.semanticRole)) { say(t("Primary and Reflection Archive can't hold other folders inside them.")); return; }
           openForm("new");
         });
         overlay.querySelector("[data-fp-rename]")?.addEventListener("click", () => { if (hlNode() && !isSystemFolderRole(hlNode().semanticRole)) openForm("rename"); else say(t("Highlight a folder first.")); });
@@ -3753,6 +3947,7 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
             { collection: TENANT.NOTES, action: "restoreNote" }
           );
           if (!outcome.ok) return;
+          queueSyncTrash({ ...note, status: NOTE_STATUS.ACTIVE }, false); // J112 D2 review: back in Siyagah too
           showPageStatus(t('"{title}" restored.', { title: noteTitleOf(note) }));
           await refreshAll();
         });
@@ -3804,7 +3999,7 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
     }
 
     function emptyStateFor(node) {
-      if (node.semanticRole === "journey-map") return t("Your Personal Journey Map is empty so far — Notes you file here will appear as your own journey through what you've studied.");
+      if (node.semanticRole === "journey-map") return t("Primary is empty so far — a new Note waits here until you file it in a folder of your own.");
       if (node.semanticRole === "reflection-archive") return t("Your Reflection Archive is empty so far — file a Note here to keep it as a longer-term reflection, separate from your day-to-day journey.");
       return t("This folder is empty.");
     }
@@ -4739,7 +4934,7 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
         // and never in an embedded Map (a Notes pane inside another page).
         let mapLoaded = () => {};
         const mapLoadedP = new Promise((r) => { mapLoaded = r; });
-        if (!unitMode && !document.documentElement.classList.contains("embed")) mountSiyagahMapLink({ beforeEl: document.getElementById("noteLayout"), email: user.email || "", after: mapLoadedP }).catch((err) => console.error(err));
+        if (!unitMode && !document.documentElement.classList.contains("embed")) mountSiyagahMapLink({ beforeEl: document.getElementById("noteLayout"), email: user.email || "", after: mapLoadedP, onLive: (live) => onSiyagahLive(live) }).catch((err) => console.error(err));
         await Promise.all([loadContextData(), hydrationDone]).finally(() => mapLoaded());
         clearReadStatus();
       } catch (err) {

@@ -1084,3 +1084,5 @@ total). Allocated by the MMSA Architect.
 13.41: J114 option B: one ⋮ sheet beside the āyah. Allocated by the MMSA Architect.
 13.42: J114 follow-up: the ⋮ sheet at large text and in Bangla. Allocated by the MMSA Architect.
 13.43: Dua J104 D23 (Dua Study Home/Menu, Dua Card top bar). Allocated by the MMSA Architect.
+13.44: QR J114 n114b (whole-unit bookmark, latest Note, New Note). Allocated by the MMSA Architect.
+13.45: MSA J112 D2 (Primary, MSA-Siyagah sync) + Dua block in Notes. Allocated by the MMSA Architect.
