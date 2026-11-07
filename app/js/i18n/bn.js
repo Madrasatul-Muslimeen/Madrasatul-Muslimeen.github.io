@@ -3325,6 +3325,7 @@ export const BN = {
   "For {name}": "{name}-এর জন্য",
   "Open as a pop-up": "পপ-আপে খুলুন",
   "Close pop-up": "পপ-আপ বন্ধ করুন",
+  "Dua Card": "দুআ কার্ড",
   "Audio is coming soon": "অডিও শীঘ্রই আসছে",
   "Reciter": "ক্বারী",
   "Speed": "গতি",

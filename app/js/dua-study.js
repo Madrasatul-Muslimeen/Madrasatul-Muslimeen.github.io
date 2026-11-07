@@ -22,7 +22,8 @@ import { duaCard, duaLoadFailed, fillDuaProgress, loadDuaCheckEnv } from "./dua-
 import { el } from "./hadith-shared-ui.js";
 import { duaWords, duaWordsFingerprint } from "./dua-words.js";
 import { placeDialogAtHome } from "./home-window.js";
-import { posterNodes, shareNodes, selectionBar } from "./dua-poster.js";
+import { posterNodes, shareNodes, selectionBar, fullTextNodes } from "./dua-poster.js";
+import { openDuaWindow, canFloatDuaCard } from "./dua-card-window.js";
 import { trapModal } from "./modal-focus.js";
 
 const GROUPS_URL = "../tools/hadith-data-pull/output/dua/groups.json";
@@ -518,6 +519,7 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
   const kids = (article, sel) => [...article.children].filter((c) => c.matches(sel));
   /** D07 / D14: the poster and copy / share entries of a card's menu, for the sheet `sheetOf()` gives when opened. */
   const sheetSections = (sheetOf) => [
+    { key: "fulltext", label: `📖 ${t("Full text")}`, build: () => [fullTextNodes(sheetOf())] },
     { key: "poster", label: `🖼 ${t("Poster")}`, sheet: sheetOf, build: () => posterNodes(sheetOf(), closePop) },
     { key: "share", label: `${t("Copy / share")}`, build: () => shareNodes(sheetOf(), closePop) },
   ];
@@ -565,17 +567,25 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
     popBtn.type = "button"; popBtn.dataset.duaPopout = "";
     popBtn.setAttribute("aria-pressed", "false");
     popBtn.setAttribute("aria-label", t("Open as a pop-up"));
+    let win = null; // the floating window, on a computer (dua-card-window.js); on a phone the card keeps its sheet
+    const isPopped = () => !!win || article.classList.contains("dua-card-popped");
     const setPop = (on) => {
-      article.classList.toggle("dua-card-popped", on);
-      document.body.classList.toggle("dua-has-popped", on);
+      if (on && !isPopped()) {
+        if (canFloatDuaCard()) win = openDuaWindow(article, { title: article.querySelector(".hadith-card-head")?.textContent?.trim() || t("Dua Card"), onClose: () => { setPop(false); popBtn.focus(); } });
+        else { article.classList.add("dua-card-popped"); document.body.classList.add("dua-has-popped"); }
+      } else if (!on) {
+        win?.close(); win = null;
+        article.classList.remove("dua-card-popped");
+        document.body.classList.remove("dua-has-popped");
+      }
       popBtn.setAttribute("aria-pressed", String(on));
       popBtn.textContent = on ? "✕" : "⤢";
       popBtn.setAttribute("aria-label", on ? t("Close pop-up") : t("Open as a pop-up"));
     };
-    popBtn.addEventListener("click", () => setPop(!article.classList.contains("dua-card-popped")));
+    popBtn.addEventListener("click", () => setPop(!isPopped()));
     article.addEventListener("keydown", (ev) => {
       if (ev.key !== "Escape" || ev.defaultPrevented) return;
-      if (article.classList.contains("dua-card-popped")) { setPop(false); popBtn.focus(); }
+      if (isPopped()) { setPop(false); popBtn.focus(); }
       else if (!panel.hidden) { setMenu(false); menuBtn.focus(); }
     });
     top.append(menuBtn, popBtn);

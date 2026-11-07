@@ -3068,3 +3068,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v13.43** (2026-11-07): Dua J104 D23 (Dua Study Home/Menu, Dua Card top bar).
 - **v13.44** (2026-11-07): QR J114 n114b (whole-unit bookmark, latest Note, New Note).
 - **v13.45** (2026-11-07): MSA J112 D2 (Primary, MSA-Siyagah sync) + Dua block in Notes.
+- **v13.46** (2026-11-07): Dua J104 D23 (Full text, movable Dua Card window).
