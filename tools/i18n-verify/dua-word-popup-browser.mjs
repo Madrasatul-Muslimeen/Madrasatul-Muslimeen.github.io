@@ -37,11 +37,11 @@ async function context(lang, width, look) {
 const W = '[data-dua-card="1"] [data-dua-word="1"]';
 const state = (P) => P.evaluate((w) => {
   const pop = document.querySelector(".dua-word-pop"), panel = document.querySelector('[data-dua-word-panel="1"]'), word = document.querySelector(w);
-  const r = panel.getBoundingClientRect();
-  return { pop: !!pop, popInBody: pop?.parentElement === document.body, panelInPop: !!pop && pop.contains(panel), panelInCard: !!document.querySelector('[data-dua-card="1"]')?.contains(panel),
-    hidden: panel.hidden, role: panel.getAttribute("role"), modal: panel.getAttribute("aria-modal"), pressed: word.getAttribute("aria-pressed"), focusIsWord: document.activeElement === word,
+  const r = panel ? panel.getBoundingClientRect() : { left: 0, right: 0, top: 0, bottom: 0, width: 0, height: 0 }; // a lost panel must FAIL a check, not crash the suite
+  return { pop: !!pop, popInBody: pop?.parentElement === document.body, panelInPop: !!pop && !!panel && pop.contains(panel), panelInCard: !!panel && !!document.querySelector('[data-dua-card="1"]')?.contains(panel),
+    hidden: panel ? panel.hidden : null, role: panel?.getAttribute("role"), modal: panel?.getAttribute("aria-modal"), pressed: word.getAttribute("aria-pressed"), focusIsWord: document.activeElement === word,
     inView: r.left >= 0 && r.right <= innerWidth + 0.5 && r.top >= 0 && r.bottom <= innerHeight + 0.5, w: Math.round(r.width), h: Math.round(r.height),
-    grad: getComputedStyle(panel).backgroundImage, cardGrad: getComputedStyle(document.querySelector('[data-dua-card="1"]')).backgroundImage };
+    grad: panel ? getComputedStyle(panel).backgroundImage : "", cardGrad: getComputedStyle(document.querySelector('[data-dua-card="1"]')).backgroundImage };
 }, W);
 async function open(P) {
   await P.evaluate((w) => document.querySelector(w).scrollIntoView({ block: "center" }), W);

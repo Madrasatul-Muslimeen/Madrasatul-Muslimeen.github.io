@@ -552,3 +552,4 @@ body.hadith-pane-dragging { user-select: none; }
    gradient, cream text, gold headings), not the flat near-black. Night look only; the light look is unchanged. */
 [data-card-look="night"] .hadith-card.dua-card { background: var(--card-bg); color: var(--card-text); }
 [data-card-look="night"] .dua-menu-panel { background: var(--card-bg); }
+[data-card-look="night"] .dua-word-pop .hadith-note, [data-card-look="night"] .dua-word-pop .hadeethenc-study-reason { color: var(--card-text-muted); }
