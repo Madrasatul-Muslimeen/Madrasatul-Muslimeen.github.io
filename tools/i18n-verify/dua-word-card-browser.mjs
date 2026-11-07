@@ -39,6 +39,8 @@ async function context(lang, width, look) {
 }
 const panelText = (P, n) => P.evaluate((d) => document.querySelector(`[data-dua-word-panel="${d}"]`)?.innerText ?? "", n);
 async function tap(P, dua, i) {
+  // 7 Nov 2026: a tapped word's card is now a pop-up (dua-word-popup.js); close one left open before tapping the next word.
+  await P.evaluate(() => document.querySelector(".dua-word-pop .dua-word-panel-close")?.click());
   await P.evaluate(([d, w]) => document.querySelector(`[data-dua-card="${d}"] [data-dua-word="${w}"]`).scrollIntoView({ block: "center" }), [dua, i]);
   await P.click(`[data-dua-card="${dua}"] [data-dua-word="${i}"]`);
   await P.waitForSelector(`[data-dua-word-panel="${dua}"]:not([hidden])`, { timeout: 4000 }).catch(() => {});

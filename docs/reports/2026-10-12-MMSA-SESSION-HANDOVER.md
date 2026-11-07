@@ -7,7 +7,35 @@ v10.28). Read `CLAUDE.md` first. The prompt that starts the next session is
 
 This session was summarised once (its context compacted), which is why it hands over here.
 
-## LATEST UPDATE — 7 Nov 2026, ~4:15 pm Sydney, session `session_01PL2xbLfKsJdxAEsLpnChdU` (v13.42 RELEASED; HANDOVER under use1102) — READ THIS FIRST
+## LATEST UPDATE — 8 Nov 2026, ~2:30 am Sydney, session `session_01PL2xbLvZtYLXyTNc2UAmjv` (v13.43–v13.46 RELEASED; HANDOVER under use1102, the session was summarised) — READ THIS FIRST
+
+This session took over at 4:17 pm on 7 Nov. **`main` is v13.46 (`8d56a284`, merged 7:07 pm 7 Nov; later #1507 docs merged, main `38e57573`); QR reads 13.46 (PCA, 7:08 pm).**
+
+**Released:**
+- **v13.43** (#1499): MSA · Dua J104 D23 (Home/Menu, the Dua Card top bar).
+- **v13.44** (#1501): MSA · QR J114 n114b (QR Lead #1500: whole-unit bookmark row, Notes tile opens the latest Note, ＋ New Note).
+- **v13.45** (#1504): MSA J112 (d) D2 (built by this session's fork: Primary folder; MSA ↔ Siyagah Notes in step both ways via an on-device queue `siyagah-sync(-model).js`; no Rules change) + the Dua block in Notes (`note-ref-block.js` kind `dua`, `note-opener.js` `duaRef()`).
+- **v13.46** (#1506): MSA · Dua J104 D23 Full text + movable Dua Card window (Dua Lead r10b+r10c).
+
+**In flight — FIRST JOB for the next session: release v13.47** from branch **`claude/release-v13.47` at `555726f4`** (already contains main `38e57573`; NO version bump yet). It holds: (a) Dua Lead #1505 (`claude/dua-r12a`): the dua 📝 My Notes press opens the shared new-Note window (duaRef); the Architect removed the "filing it in this folder failed" error excuse from dua-note-bookmark and audit-part16 (both run clean without it); (b) `claude/j112-d2-refusals` `4573af68`: three Siyagah v05.72 refusal cases (open-in-Siyagah is transient; untitled Note gets a fallback title never pulled back; every restore takes a new `.rN` id), j112-d2-sync 78/0, 26 mutations; (c) MSA J118: `tools/hadith-data-pull/output/dua/GRAMMAR-NOTICE.txt` (CAMeL Tools 1.6.0 MIT, calima-msa-r13 GPL-2.0 credit). **Already green on (a)'s head:** dua-note-bookmark 38/0, way-back-hadith-dua 360/0, dua-card-r2 168/0, dua-study-page 137/0, audit-part16 580/0, large-text-dua-study 1779/0. **The container restarted mid-run, so STILL TO RUN on 555726f4:** night-hadith-dua, hadith-dua-a11y --page=dua, j112-d2-sync, siyagah-mmj-model, read-note-pane, apps-build-check, behaviour.mjs alone (expect 974/1, 14a). Then allocate v13.47 (TZ=Australia/Sydney), PR, merge with the full head SHA, "PCA ▸ released" with a QR change notice (siyagah-sync.js / siyagah-sync-model.js changed), close #1505 as released.
+
+**Then review, in order:** Dua Lead **#1503** (D24 Dua Word Card first slice, `claude/dua-r11a`), **#1509** (`claude/dua-r13a`: word pop-up `dua-word-popup.js`, Menu order, night colour plate; the Lead edited five older suites in place because a modal now covers the page, and reports keyboard 1000/86 vs main 988/98, 0 new; dua-check 47/2 identical on main). Run night/a11y/large-text/keyboard yourself; check `hadith.css` additions are Dua-scoped. **Then MSA J117** (the night-look keyboard focus ring, 1.09:1 on Hadith/Dua; 98 hadith-dua-keyboard failures on main; the Dua Lead asked the Architect to fix both halves: shared ring + the Share pop-up's Tab order at 200%).
+
+**Waiting on the Owner:** MSA J05 j05n6 (A/B); MSA · Dua J104 line 16 (related duas), n104q (word meanings source), n104r (further levels); MSA · QR J115 (A–F); MSA · QR J116 (A–D); **MSA J120 (new): the offline plan** — n120a (A/B/C), n120b (D/E/F), n120c (G/H). J120's plan (in the PMS): O1 install/Home Screen + persistent storage (no manifest exists today), O2 one-tap "Get ready for offline" (Qur'an ~57 MB, Hadith ~218 MB by choice), O3 Notes offline (today a Note save is a transaction and is REFUSED offline — the main gap), O4 own records warmed, O5 offline line + honest messages, O6 recitation (optional).
+
+**Owner messages this session (carry1):** ~1:20 am 8 Nov: "Give me a full detail plan of total offline use of MSA in case of internet outage." → plan written as MSA J120 with tick boxes and answered in chat.
+
+**Sandbox lessons this session:**
+- The clock moved far beyond what the session assumed (it was summarised): read `date` before writing any PMS time.
+- A background `( … ) &` inside a Bash call does not survive a container restart; use `run_in_background` and re-check `pgrep -fa "^node tools/i18n-verify"` after a gap.
+- A fork in a worktree is a good way to build a shared part (J112 D2) without filling the Architect's context; send it back with SendMessage for review fixes.
+- Siyagah's Architect (session_01PL2xbNcFP9jEDgDQgjQDC8) tests our mmjin requests on its real handler: six refusal cases (stale base, add on existing id, deleted ids stay dead, id charset, title/folderIds/unknown fields, open-in-Siyagah = retry).
+
+**Opening message for the next session** (title "📌 (03) MSA Master Architect - 08.11.26 - h.mm AM"):
+
+> Bismillah. You are the MSA Master Architect, taking over from session_01PL2xbLvZtYLXyTNc2UAmjv (8 Nov ~2:30 am Sydney, use1102). Read CLAUDE.md, then ARCHITECT.md, then docs/reports/2026-10-12-MMSA-SESSION-HANDOVER.md from its LATEST UPDATE block of 8 Nov 2:30 am, and the PMS General rules (use1102 with its 3 Nov change; ses1104, demo1104, pms1104, card1104) and MSA rule ref1107. Owner, 28 Oct: "Allowed QuranRevival, rebuild QR now. Don't wait for permission anymore. Always allowed." First: `git fetch origin main` then `git fetch --unshallow`; test GitHub write; link playwright in every worktree. Read the PMS (https://claude.ai/artifact/PhW1KKX28qrqj9dE7Ha8dZ): meta/global, p/mmsa, MSA J120, J104, J112, J117, J118; answer new Owner comments; set p/mmsa.sessionUrl (if_version). Tell the PCA (session_01PL2xbMV6V3rW8ZzhauqW7z) "PCA ▸ taken over". State: main v13.46 (38e57573); QR 13.46. Jobs in order: (1) release v13.47 from claude/release-v13.47 (555726f4) after the checks listed in the handover; (2) review Dua Lead #1503 then #1509 (Dua Lead 03C: session_01PL2xbLR47r6za77W9ZmqTx); (3) MSA J117; (4) MSA J120 when the Owner ticks. Rules: use1102 (hand over at about 15% context, no broadcasts); review by measurement; behaviour.mjs alone vs main (974/1, 14a); check a Lead branch contains main before allocating; main only through a PR merged with the full head SHA; write only to p/mmsa; real clock times (read `date`); never pkill -f; no self wake-ups; "Rasulullah, Sallallahu A'laihi Wa Sallam"; "Siyagah" in full.
+
+## LATEST UPDATE — 7 Nov 2026, ~4:15 pm Sydney, session `session_01PL2xbLfKsJdxAEsLpnChdU` (v13.42 RELEASED; HANDOVER under use1102) (superseded 8 Nov 2:30 am)
 
 This session took over at 3:11 am on 7 Nov. **`main` is v13.42 (`b720c57d`, merged 8:11 am 7 Nov); QR reads 13.42 (PCA, 8:13 am).**
 
@@ -3069,3 +3097,5 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v13.44** (2026-11-07): QR J114 n114b (whole-unit bookmark, latest Note, New Note).
 - **v13.45** (2026-11-07): MSA J112 D2 (Primary, MSA-Siyagah sync) + Dua block in Notes.
 - **v13.46** (2026-11-07): Dua J104 D23 (Full text, movable Dua Card window).
+- **v13.47** (2026-11-08): the dua 📝 new-Note entry, Siyagah refusal cases and the dua grammar credit.
+- **v13.48** (2026-11-08): the Dua Word Card levels, the dua word pop-up and the Menu order.

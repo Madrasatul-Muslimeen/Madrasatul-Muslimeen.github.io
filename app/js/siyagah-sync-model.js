@@ -119,6 +119,35 @@ export function queueNote(state, note, nowMs) {
   return { ...state, base, links: { ...state.links, [id]: next } };
 }
 
+/**
+ * J112 D2 refusals (B): Siyagah needs a NON-EMPTY title ("bad title"), and MSA Notes are often untitled. An untitled
+ * Note goes with its first words of plain text (at most ~60 characters, cut at a word), else "Note". The fallback is
+ * remembered on the link (fbTitle), so it is never brought back into the MSA Note as a title the reader did not type.
+ */
+export const FALLBACK_TITLE_MAX = 60;
+export function fallbackTitle(bodyHtml) {
+  const ent = { amp: "&", lt: "<", gt: ">", quot: '"', "#39": "'", nbsp: " " };
+  const text = String(bodyHtml ?? "").replace(/<(br|\/p|\/div|\/li|\/h[1-6])\b[^>]*>/gi, " ").replace(/<[^>]*>/g, "")
+    .replace(/&(amp|lt|gt|quot|#39|nbsp);/g, (m, k) => ent[k]).replace(/\s+/g, " ").trim();
+  if (!text) return "Note";
+  if (text.length <= FALLBACK_TITLE_MAX) return text;
+  const cut = text.slice(0, FALLBACK_TITLE_MAX + 1);
+  const sp = cut.lastIndexOf(" ");
+  return (sp > 20 ? cut.slice(0, sp) : cut.slice(0, FALLBACK_TITLE_MAX)).trim() + "…";
+}
+/** The title Siyagah is sent for a snapshot: its own when it has one, else the fallback. */
+export const sentTitleOf = (w) => (String(w?.title ?? "").trim() ? String(w.title) : fallbackTitle(w?.bodyHtml));
+/** Siyagah's title as the MSA Note should take it: the fallback this app sent comes back as "no title". */
+const titleBack = (l, cn) => (l.fbTitle != null && String(cn.title ?? "") === l.fbTitle ? "" : String(cn.title ?? ""));
+/** J112 D2 refusals (C): a deleted id stays dead in Siyagah forever, so EVERY restore takes a fresh one: .r1, .r2 ... */
+export function nextRestoreId(mmjId) {
+  const m = /\.r(\d+)$/.exec(String(mmjId || ""));
+  return `${String(mmjId).replace(/\.r\d+$/, "")}.r${m ? Number(m[1]) + 1 : 1}`;
+}
+/** J112 D2 refusals (A): refusals that only mean "not now" -- kept queued and tried again, never final. */
+export const TRANSIENT_REFUSAL = /open in Siyagah/i;
+export const TRANSIENT_RETRY_MS = 30000;
+
 /** The Siyagah folders the Note goes in: a system folder -> Primary, a user folder -> the Siyagah folder with the same
  * names from the top, else Primary (fallback: true, said on the Note). */
 export function targetFolderIds(folders, siyagahFolders) {
@@ -176,7 +205,7 @@ export function settleWithCopy(state, copy) {
  *   { kind: "clear", noteId }                            -- nothing left to send for it
  * Never two steps for one Note, and none for a Note with a request still out.
  */
-export function planSync(state, copy) {
+export function planSync(state, copy, nowMs = 0) {
   const steps = [];
   if (!copy?.tree) return steps;
   const folders = copy.tree.folders || [];
@@ -184,11 +213,12 @@ export function planSync(state, copy) {
   let primaryNeeded = false;
   for (const [noteId, l] of Object.entries(state.links)) {
     if (l.inflight || l.awaitBase !== undefined || l.gone) continue;
+    if (l.holdUntil && (Number(nowMs) || 0) < l.holdUntil) continue; // (A) "open in Siyagah": tried again after a while
     const cn = copy.notes?.[l.mmjId] || null;
     const siyChanged = !!cn && l.base != null && cn.updatedAt !== l.base;
     const w = l.want && !(l.refused && l.refused.seq === l.want.seq) ? l.want : null;
     if (!w) {
-      if (siyChanged) steps.push({ kind: "pull", noteId, title: cn.title ?? "", bodyHtml: cn.content ?? "", base: cn.updatedAt });
+      if (siyChanged) steps.push({ kind: "pull", noteId, title: titleBack(l, cn), bodyHtml: cn.content ?? "", base: cn.updatedAt });
       continue;
     }
     // J112 D2 review: MSA's Trash -> Siyagah's Trash (note.delete; Undo there). Never sent: nothing to take away.
@@ -206,7 +236,10 @@ export function planSync(state, copy) {
       // Restored from MSA's Trash: the contract has no "restore", so it is added again (the same id; a fresh one when
       // Siyagah still holds that id in its own Trash -- afterAnswer). Deleted in Siyagah itself: never re-added by itself.
       if (l.base != null && !l.trashedHere) continue;
-      steps.push({ kind: "send", noteId, op: "note.add", fields: { id: l.mmjId, title: w.title, content: w.bodyHtml, tags: [], folderIds: target.ids }, sentHash: wHash, prevBase: null, fallback: target.fallback, restore: !!l.trashedHere });
+      const restore = !!l.trashedHere;
+      const id = restore ? nextRestoreId(l.mmjId) : l.mmjId; // (C) a deleted id is never used again
+      const title = sentTitleOf(w);
+      steps.push({ kind: "send", noteId, op: "note.add", fields: { id, title, content: w.bodyHtml, tags: [], folderIds: target.ids }, sentHash: wHash, prevBase: null, fallback: target.fallback, restore, newId: restore ? id : undefined, fbTitle: title === w.title ? null : title });
       continue;
     }
     if (l.base == null) { // an add was done but its copy was never settled (another device made it): agree on it now
@@ -214,16 +247,18 @@ export function planSync(state, copy) {
       continue;
     }
     if (siyChanged) {
-      if (msOf(cn.updatedAt) > (Number(w.changedAt) || 0)) steps.push({ kind: "pull", noteId, title: cn.title ?? "", bodyHtml: cn.content ?? "", base: cn.updatedAt });
+      if (msOf(cn.updatedAt) > (Number(w.changedAt) || 0)) steps.push({ kind: "pull", noteId, title: titleBack(l, cn), bodyHtml: cn.content ?? "", base: cn.updatedAt });
       else steps.push({ kind: "keep-older", noteId, title: cn.title ?? "", bodyHtml: cn.content ?? "", base: cn.updatedAt });
       continue;
     }
     if (wHash !== l.sent) {
+      // (B) never an empty title: an untitled Note's edit carries its fallback title when that changed, else none.
+      const title = sentTitleOf(w);
       const fields = { id: l.mmjId, base: cn.updatedAt };
-      if (String(w.title) !== String(cn.title ?? "")) fields.title = w.title;
+      if (title !== String(cn.title ?? "")) fields.title = title;
       if (String(w.bodyHtml) !== String(cn.content ?? "")) fields.content = w.bodyHtml;
-      if (!("title" in fields) && !("content" in fields)) fields.title = w.title;
-      steps.push({ kind: "send", noteId, op: "note.edit", fields, sentHash: wHash, prevBase: cn.updatedAt, fallback: target.fallback });
+      if (!("title" in fields) && !("content" in fields)) fields.title = title;
+      steps.push({ kind: "send", noteId, op: "note.edit", fields, sentHash: wHash, prevBase: cn.updatedAt, fallback: target.fallback, fbTitle: title === w.title ? null : title });
       continue;
     }
     const have = (cn.folderIds || []).filter((x) => folders.some((f) => f.id === x));
@@ -243,7 +278,7 @@ export function afterStep(state, step, outcome = {}) {
   const put = (n) => ({ ...state, links: { ...state.links, [step.noteId]: n } });
   switch (step.kind) {
     case "primary": return { ...state, primary: { reqId: outcome.reqId || null, at: outcome.at || 0 } };
-    case "send": return l ? put({ ...l, fallback: !!step.fallback, inflight: { reqId: outcome.reqId || null, op: step.op, prevBase: step.prevBase, seq: l.want?.seq || 0, sentHash: step.sentHash, ...(step.restore ? { restore: true } : {}) } }) : state;
+    case "send": return l ? put({ ...l, fallback: !!step.fallback, holdUntil: 0, inflight: { reqId: outcome.reqId || null, op: step.op, prevBase: step.prevBase, seq: l.want?.seq || 0, sentHash: step.sentHash, ...(step.restore ? { restore: true, newId: step.newId } : {}), ...("fbTitle" in step ? { fbTitle: step.fbTitle } : {}) } }) : state;
     case "pull": return l ? put({ ...l, base: step.base, sent: textHash(step.title, step.bodyHtml), want: null, seen: outcome.seen ?? l.seen, refused: null }) : state;
     case "keep-older": return l ? put({ ...l, base: step.base }) : state;
     case "adopt": return l ? put({ ...l, base: step.base, sent: textHash(step.title, step.bodyHtml) }) : state;
@@ -253,7 +288,7 @@ export function afterStep(state, step, outcome = {}) {
 }
 
 /** A request's answer. `outcome` is requestOutcome()'s { kind: "done" | "refused" | "waiting", why }. */
-export function afterAnswer(state, noteId, outcome) {
+export function afterAnswer(state, noteId, outcome, nowMs = 0) {
   const l = state.links[noteId];
   if (!l?.inflight || !outcome || outcome.kind === "waiting") return state;
   const inf = l.inflight;
@@ -265,10 +300,14 @@ export function afterAnswer(state, noteId, outcome) {
   } else if (outcome.kind === "done") {
     n.awaitBase = inf.prevBase; n.awaitHash = inf.sentHash;
     if (inf.op === "note.add") n.trashedHere = false;
+    if (inf.newId) n.mmjId = inf.newId; // (C) restored under its fresh id
+    if ("fbTitle" in inf) n.fbTitle = inf.fbTitle; // (B) the title this app made up, if any
+  } else if (outcome.kind === "refused" && TRANSIENT_REFUSAL.test(outcome.why || "")) {
+    // (A) The owner has it open in Siyagah's editor: NOT final. It stays queued and goes again after a while.
+    n.holdUntil = (Number(nowMs) || 0) + TRANSIENT_RETRY_MS;
   } else if (outcome.kind === "refused" && inf.restore && /id already used/.test(outcome.why || "")) {
-    // Siyagah keeps the old id in its own Trash: add it back under a fresh id (x-msa-n-<note>.r1, .r2 ...).
-    const m = /\.r(\d+)$/.exec(n.mmjId || "");
-    n.mmjId = `${String(n.mmjId).replace(/\.r\d+$/, "")}.r${m ? Number(m[1]) + 1 : 1}`;
+    // That id is taken too: the next restore id (the plan takes the one after the link's id).
+    n.mmjId = inf.newId || n.mmjId;
   } else if (outcome.kind === "refused") {
     // "changed in Siyagah since": the copy is newer -- the next plan meets it (rule 4). Anything else: not sent again
     // until the Note changes again, and the reason is said on the Note.

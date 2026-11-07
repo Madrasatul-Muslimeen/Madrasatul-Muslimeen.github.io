@@ -1,0 +1,20 @@
+Notice for grammar-<page>.json in this folder (PCF MSA J118, 7 Nov 2026)
+
+The files grammar-1.json ... grammar-<n>.json hold, for each dua word that is not
+linked to a Qur'an word, a short machine analysis: [dictionary form (lemma), root,
+part of speech, the word with vowels]. The app shows it as a computer suggestion,
+to be checked.
+
+That analysis was DERIVED, at build time, with:
+  - CAMeL Tools 1.6.0 (New York University Abu Dhabi, CAMeL Lab), code under the
+    MIT licence: https://github.com/CAMeL-Lab/camel_tools
+  - its morphology database calima-msa-r13 (installed with
+    `camel_data -i morphology-db-msa-r13`), distributed under GPL-2.0.
+
+Built by tools/hadith-data-pull/dua-word-grammar.py. Neither the CAMeL code nor
+its database ships with the app; only the derived lists above do. Those lists are
+offered under the same terms as the database they were derived from (GPL-2.0), and
+the whole of this repository, including the script that makes them, is public.
+
+The dua words themselves come from the Hadith books (see the other files here),
+not from CAMeL.

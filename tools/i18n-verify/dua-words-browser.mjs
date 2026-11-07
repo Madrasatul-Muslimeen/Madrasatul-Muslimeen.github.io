@@ -68,7 +68,7 @@ for (const [lang, width, look, font] of [["en", 390, "light", null], ["bn", 390,
     await P.waitForTimeout(300);
     const m = await P.evaluate((n) => {
       const c = document.querySelector(`[data-dua-card="${n}"]`), w = c.querySelector("[data-dua-words]"), mk = c.querySelector("[data-dua-narration] mark"), cs = getComputedStyle(w);
-      const bg = (el) => { for (let e = el; e; e = e.parentElement) { const b = getComputedStyle(e).backgroundColor; if (b && !/rgba\(0, 0, 0, 0\)|transparent/.test(b)) return b; } return "rgb(255,255,255)"; };
+      const gradLight = (cs) => { const g = cs.backgroundImage; if (!g || g === "none") return null; const cols = (g.match(/rgba?\([^)]*\)/g) || []).map((c) => c.match(/[\d.]+/g).map(Number)).filter((c) => c.length < 4 || c[3] > 0.5); if (!cols.length) return null; cols.sort((a, b) => (b[0] + b[1] + b[2]) - (a[0] + a[1] + a[2])); return `rgb(${cols[0][0]}, ${cols[0][1]}, ${cols[0][2]})`; }; const bg = (el) => { for (let e = el; e; e = e.parentElement) { const cs = getComputedStyle(e), gl = gradLight(cs); if (gl) return gl; const b = cs.backgroundColor; if (b && !/rgba\(0, 0, 0, 0\)|transparent/.test(b)) return b; } return "rgb(255,255,255)"; };
       const body = parseFloat(getComputedStyle(c.querySelector(".hadith-card-head")).fontSize);
       return { family: cs.fontFamily, size: parseFloat(cs.fontSize), body, fontReady: document.fonts.check(`20px ${cs.fontFamily.split(",")[0]}`),
         open: c.querySelector("[data-dua-narration]").open, mark: mk?.textContent ?? null,
