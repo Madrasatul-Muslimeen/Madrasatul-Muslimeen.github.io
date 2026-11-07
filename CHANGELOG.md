@@ -23395,3 +23395,10 @@ The evening's third release, the follow-up to v13.26.
 - **Checks:** j112-d2-sync-browser 70/0 (22 mutations red), note-opener 298/0, note-ref-block 13/0, read-note-pane 228/0, journey-folder-picker 310/0, siyagah-mmj-model 118/0, siyagah-mmj-write 174/0, rules-authorisation-executable 87/0, note-window-a11y 940/0, stub-parity 4/0, apps-build-check 48/0, behaviour 974/1 (14a, the same as main).
 - **Not done:** 👁 is not sent (MSA Notes are all private); folder moves made in Siyagah do not come back (only title and text, as planned). The Note's mark is 32px tall, matching the folder chips beside it.
 - QR change notice sent (pinned note scripts changed). Nothing deployed to Firestore.
+
+## v13.46 — 7 Nov 2026 — Dua Card: Full text, and a movable window on a computer (Dua J104 D23)
+
+- **PCF MSA · Dua J104 D23 (the Dua Lead; `claude/dua-r10b` + `claude/dua-r10c`, reviewed by the Architect).** 📖 Full text on every Dua Card (Menu → Study): the Arabic, with or without vowel marks as the one Vowels switch says; English and Bangla where the dua has them; Word by word with meanings in a folding section; the source line. From 900px up, ⤢ opens the card as a movable, resizable window (new `app/js/dua-card-window.js`, importing the shared `float-window.js` read-only): its own ✕, eight handles, minimum 360×260, remembered place and size, the title bar always above the screen foot and the bottom Zab bar so it can be pressed; Escape closes. Below 900px nothing changes.
+- **Found while measuring (the Lead):** `clampRect`'s `bar` must include the bar's border and the 2.75rem Zab bar, or the title bar can sink under it; the floating card is moved onto `<body>` (a marker keeps its place) so a framed ancestor cannot re-anchor `position: fixed`.
+- **Checks:** dua-card-window 24/0 (mutations bar, zab, min, off red), dua-card-r2 168/0, dua-poster-r3 130/0, dua-study-page 137/0, way-back-hadith-dua 360/0, large-text-dua-study 1779/0, night-hadith-dua 6038/0, hadith-dua-a11y --page=dua 1423/0, apps-build-check 48/0, behaviour 974/1 (14a, the same as main). hadith-dua-keyboard 988/98, identical to main (PCF MSA J117).
+- Nothing deployed to Firestore.

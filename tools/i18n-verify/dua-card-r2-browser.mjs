@@ -158,6 +158,26 @@ async function run(mutation) {
         if (!w || !m || !p || !b || !(b.b <= m.t && m.b <= w.t && w.b <= p.t)) throw new Error(JSON.stringify({ b, m, w, p }));
       });
 
+      // D23: 📖 Full text opens the dua's whole text; the one Vowels switch decides the marks.
+      await check("D23 the menu offers 📖 Full text, and it opens the Arabic, the words with meanings, and closes with ✕", async () => {
+        await clickMenu(page, '[data-dua-menu="fulltext"]');
+        await page.waitForSelector('[data-dua-pop="fulltext"] [data-dua-fulltext]', { timeout: 8000 });
+        const got = await page.$eval('[data-dua-pop="fulltext"]', (p) => ({ ar: p.querySelector(".dua-ft-ar")?.textContent.length ?? 0, marks: (p.querySelector(".dua-ft-ar")?.textContent.match(/[\u064B-\u0652\u0670]/g) || []).length, wbw: !!p.querySelector('[data-dua-ft-sec="wbw"]'), cells: p.querySelectorAll(".dua-ft-w").length }));
+        if (got.ar < 5 || got.marks < 1 || !got.wbw || got.cells < 2) throw new Error(JSON.stringify(got));
+        await page.click("[data-dua-pop-close]");
+        await page.waitForSelector("[data-dua-pop]", { state: "detached", timeout: 5000 });
+      });
+      await check("D23 Full text follows the Vowels switch (off: no vowel marks in its Arabic)", async () => {
+        await page.click('[data-dua-switch="vow"]');
+        await clickMenu(page, '[data-dua-menu="fulltext"]');
+        await page.waitForSelector('[data-dua-pop="fulltext"] .dua-ft-ar', { timeout: 8000 });
+        const marks = await page.$eval('[data-dua-pop="fulltext"] .dua-ft-ar', (a) => (a.textContent.match(/[\u064B-\u0652\u0670]/g) || []).length);
+        await page.click("[data-dua-pop-close]");
+        await page.waitForSelector("[data-dua-pop]", { state: "detached", timeout: 5000 });
+        await page.click('[data-dua-switch="vow"]'); // back on, for what follows
+        if (marks !== 0) throw new Error(`${marks} marks`);
+      });
+
       // Source pop-up, ✕ back to the Dua.
       await clickMenu(page, '[data-dua-menu="source"]');
       const pop = await box('[data-dua-pop="source"] .dua-popcard');
