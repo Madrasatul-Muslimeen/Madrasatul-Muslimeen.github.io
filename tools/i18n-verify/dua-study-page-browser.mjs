@@ -139,7 +139,7 @@ async function run(mutation) {
     if (tied >= 0) {
       for (let k = 0; k < tied; k++) await page.click("[data-dua-card-next]");
       // Since R2 (D22) the tie sits in the card's Source pop-up.
-      await page.click('[data-dua-menu="source"]');
+      await clickMenu(page, '[data-dua-menu="source"]');
       await page.click("[data-dua-tie]");
       await page.waitForSelector("[data-dua-card]", { timeout: 20000 }).catch(() => {});
       await check("a dhikr's 'same dua in the Hadith books' opens that Dua card", async () => { const n = await page.$eval("[data-dua-card]", (e) => e.dataset.duaCard).catch(() => null); if (n !== String(wake.items[tied].card)) throw new Error(n); });
@@ -175,7 +175,8 @@ async function run(mutation) {
     await check("a Prophet's dua opens in Quran Study at its āyah, with ← Back", async () => { const h = await page.$eval(".dua-quran-open", (a) => a.getAttribute("href")).catch(() => ""); if (h !== `./quranrevival.html?goto=${group("prophets").items[0].ref}&back=1`) throw new Error(h); });
     await check("the card's controls are finger-sized (40px) and nothing sticks out", async () => {
       // Since R2 (D22) the āyah link sits in the Source pop-up; the card's own controls are its bar and its menu.
-      const b = await page.$$eval(".dua-card-bar button, .dua-menu-btn", (x) => x.map((e) => e.getBoundingClientRect().height));
+      const tg = await page.$("[data-dua-menu-toggle]"); if (tg && (await tg.getAttribute("aria-expanded")) === "false") await tg.click(); // build 2: the menu entries sit under Menu
+      const b = await page.$$eval(".dua-card-bar button, .dua-topbar button, .dua-menu-btn", (x) => x.map((e) => e.getBoundingClientRect().height));
       if (b.some((h) => h < 40) || (await overflow()) > 0) throw new Error(JSON.stringify(b));
     });
     await check("no page errors", () => { if (errors.length) throw new Error(errors.join(" | ")); });
@@ -198,3 +199,10 @@ if (arg) {
 const r = await run(null);
 console.log(`\n==== Dua page (D19, D01, D21, D02, D04): ${r.passed} passed, ${r.failed} failed ====`);
 process.exit(r.failed ? 1 : 0);
+
+/** Build 2 (7 Nov 2026): the card's menu sits under its Menu button; open it (when closed) and press the entry. */
+async function clickMenu(page, selector) {
+  const toggle = await page.$("[data-dua-menu-toggle]");
+  if (toggle && (await toggle.getAttribute("aria-expanded")) === "false") await toggle.click();
+  await page.click(selector);
+}

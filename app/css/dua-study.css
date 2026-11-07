@@ -161,3 +161,38 @@
 }
 /* Audit part 141 D1: a note in the Poster and Copy/share pop-ups read 1.92:1 in the night look. */
 [data-card-look="night"] .dua-popcard .hadith-note { color: var(--card-text); }
+
+/* Build 2 (7 Nov 2026, demo v1.06): the card's top bar and its one Menu. 44px tiles, gold for the Menu, calm rows. */
+.dua-topbar { display: flex; align-items: center; gap: 0.4rem; margin: 0 0 0.6rem; padding: 0.35rem; border: 1px solid #3a4468; border-radius: 0.9rem; background: #0c1329; }
+.dua-topbar-mid { flex: 1 1 auto; min-width: 0; display: flex; justify-content: center; }
+.dua-topbar .dua-card-steps { margin: 0; gap: 0.25rem; }
+.dua-topbar .dua-card-steps .dua-ref { min-width: 44px; min-height: 44px; }
+.dua-topbar .dua-card-pos { color: #c7cbe0; min-width: 4.5rem; text-align: center; white-space: nowrap; }
+.dua-tile { box-sizing: border-box; flex: none; min-width: 44px; min-height: 44px; padding: 0 0.7rem; border: 1px solid #3a4468; border-radius: 0.65rem; background: #18224a; color: #f2e6c4; font: inherit; font-weight: 600; cursor: pointer; }
+.dua-tile:disabled { opacity: 0.55; cursor: default; }
+.dua-tile-play { border-color: #c9a24b; background: #e0b95c; color: #121a33; }
+.dua-tile-menu { border-color: #c9a24b; color: #e0b95c; }
+.dua-tile-menu[aria-expanded="true"] { background: #e0b95c; color: #121a33; }
+.dua-menu-panel { margin: 0 0 0.7rem; padding: 0.8rem; border: 1px solid #c9a24b; border-radius: 0.9rem; background: #0c1329; display: grid; gap: 0.8rem; }
+.dua-menu-panel[hidden] { display: none; }
+.dua-menu-group[hidden] { display: none; }
+.dua-menu-group { padding-top: 0.7rem; border-top: 1px solid #2a3358; }
+.dua-menu-panel > .dua-sel + .dua-menu-group { margin-top: 0; }
+.dua-menu-label { margin: 0 0 0.45rem; color: #e0b95c; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+.dua-menu-panel .dua-card-menu { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem; }
+.dua-menu-panel .dua-card-menu .dua-menu-btn, .dua-menu-panel .dua-note-bookmark .hadeethenc-study-btn { min-height: 48px; }
+.dua-menu-panel .dua-note-bookmark { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem; }
+/* The pop-up: the same card, raised over the page; ✕ (or Escape) puts it back where it was. */
+.dua-card-popped { position: fixed; inset: 3vh 3vw; z-index: 60; overflow: auto; margin: 0; box-shadow: 0 12px 48px rgba(0, 0, 0, 0.55); }
+body.dua-has-popped::before { content: ""; position: fixed; inset: 0; z-index: 59; background: rgba(8, 12, 28, 0.6); }
+/* On a phone the card is narrow: Play, Menu and the pop-up share the first row; ‹ n of N › takes the second. */
+@media (max-width: 560px) {
+  .dua-topbar { flex-wrap: wrap; }
+  .dua-tile-play { margin-inline-end: auto; }
+  .dua-topbar-mid { order: 3; flex: 1 1 100%; }
+}
+.dua-tile-play, .dua-tile-pop { width: 44px; padding: 0; }
+
+/* The Architect's findings, 7 Nov: the glyph tiles centre their glyph, and the page's Menu dropdown opens under the Menu
+   button (which sits at the right of the Home bar), right-aligned, so it never runs past the screen. */
+.dua-tile { display: inline-flex; align-items: center; justify-content: center; line-height: 1; }

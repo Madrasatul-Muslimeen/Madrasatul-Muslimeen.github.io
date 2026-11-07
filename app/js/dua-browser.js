@@ -6,6 +6,7 @@ import { getAppLang, quranFontStack } from "./prefs.js";
 import { duaWords, duaNarration, duaWordTokens, duaWordsFingerprint, duaGrammarPosLabel } from "./dua-words.js";
 import { TRANSLATED_BOOKS } from "./hadith-translations.js";
 import { STATUSES, statusLabel } from "./unit-keys.js";
+import { duaSel, DUA_VOW_EVENT } from "./dua-poster.js";
 import { loadOpenitiBookIndex, loadOpenitiConcordance, loadDuaIndex, loadDuaCardsSummary, loadDuaCardsPage, loadDuaWordLinks, loadDuaVowels, loadDuaWordGrammar, loadDuaFit } from "./openiti-corpus.js";
 import { buildCheckPanel, loadMemberTexts, applyMembers, checkChipText, checkState, duaSaveFailed } from "./dua-check.js";
 import { plainMessageFor } from "./errors.js";
@@ -308,12 +309,16 @@ export function duaCard(c, summary, state, render, progressRows, wordLinks = nul
       sw.type = "button";
       sw.dataset.duaVowelsToggle = "";
       sw.setAttribute("aria-pressed", "false");
-      sw.addEventListener("click", () => {
-        const plain = sw.getAttribute("aria-pressed") !== "true";
+      // D23: ONE vowel control. The card's switch and the "Vowels" selection chip both read and write duaSel.vow.
+      const apply = () => {
+        const plain = !duaSel.vow;
         sw.setAttribute("aria-pressed", String(plain));
         sw.textContent = plain ? t("With vowels") : t("Without vowels");
         words.querySelectorAll("[data-dua-word]").forEach((w) => { w.textContent = plain ? w.dataset.plain : w.dataset.vowelled; });
-      });
+      };
+      sw.addEventListener("click", () => { duaSel.vow = !duaSel.vow; document.dispatchEvent(new CustomEvent(DUA_VOW_EVENT)); });
+      document.addEventListener(DUA_VOW_EVENT, () => { if (sw.isConnected) apply(); });
+      apply();
       row.appendChild(sw);
       card.appendChild(row);
     }

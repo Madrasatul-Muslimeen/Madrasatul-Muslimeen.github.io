@@ -387,13 +387,14 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
     const g = data.groups.get(where.g);
     const cur = g.parts?.find((p) => p.id === where.part);
     const name = cur ? partName(cur) : groupName(where.g);
-    body.appendChild(cardBar(list, i, t("← Back to {name}", { name }), backToList));
+    const bar = cardBar(list, i, t("← Back to {name}", { name }), backToList);
+    body.appendChild(bar);
     const e = list[i - 1];
     const slot = framedHost(body, titleOf(data, e));
     slot.parentElement.dataset.duaOpen = String(i);
-    if (e.kind === "dua") return mountHadithDuaCard(slot, e.n);
-    if (e.kind === "hisn") return slot.appendChild(hisnCard(e));
-    slot.appendChild(quranCard(e));
+    if (e.kind === "dua") return mountHadithDuaCard(slot, e.n, bar);
+    if (e.kind === "hisn") return slot.appendChild(hisnCard(e, bar));
+    slot.appendChild(quranCard(e, bar));
   }
   function renderDetour(body) {
     const detour = detourOf();
@@ -480,7 +481,7 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
    * Moves each section's blocks out of `article` into a hidden stash and puts the card's menu where `before` is (or at
    * the end). sections: [{ key, label, nodes, openFirst?, empty? }]; a section with no blocks and no `empty` is left out.
    */
-  function cardMenu(article, sections, before = null) {
+  function cardMenu(article, sections, before = null, panel = null) {
     const stash = el("div", "dua-pop-stash");
     stash.hidden = true;
     const menu = el("nav", "dua-card-menu");
@@ -508,7 +509,8 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
     // D26: the card's own "Your selections" chips sit above its menu; the poster and sharing read them.
     const withSheet = sections.find((s) => s.sheet);
     const sel = withSheet ? selectionBar(withSheet.sheet) : null;
-    if (before?.parentElement === article) { if (sel) article.insertBefore(sel, before); article.insertBefore(menu, before); }
+    if (panel) { if (sel) panel.appendChild(sel); panel.appendChild(menu); }
+    else if (before?.parentElement === article) { if (sel) article.insertBefore(sel, before); article.insertBefore(menu, before); }
     else { if (sel) article.appendChild(sel); article.appendChild(menu); }
     article.appendChild(stash);
     return menu;
@@ -521,18 +523,104 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
   ];
   const titled = (tt) => ({ title: tt && !tt.ar ? tt.text : null, titleAr: tt?.ar ? tt.text : null });
   /** D22 for the Hadith books' Dua card: words and progress stay; meaning, source, narration and ✓ Check pop up. */
-  function layoutHadithCard(article, sheetOf) {
-    cardMenu(article, [
+  function layoutHadithCard(article, sheetOf, bar = null) {
+    return dressCard(article, [
       { key: "meaning", label: t("Meaning"), nodes: kids(article, ".hadeethenc-explanation"), openFirst: true, empty: t("No meaning for this dua in the app yet.") },
       { key: "source", label: t("Source"), nodes: kids(article, ".openiti-standard-number, .dua-also") },
       { key: "narration", label: t("The whole narration"), nodes: kids(article, "details.dua-narration") },
       { key: "check", label: t("✓ Check"), nodes: kids(article, ".dua-check-row") },
       ...sheetSections(sheetOf),
-    ], article.querySelector(":scope > .dua-progress"));
+    ], bar);
+  }
+  /** The top bar and the one Menu, for every kind of Dua card. Returns the Keep group (a card with nothing to keep removes it). */
+  function dressCard(article, sections, bar = null) {
+    // Build 2 (the Owner, 7 Nov, demo v1.06): a top bar (Play, ‹ n of N ›, Menu, pop-up) and ONE Menu that holds the
+    // selections, Study, Share and Keep (My Notes, Bookmark). Progress stays on the card.
+    const top = el("div", "dua-topbar");
+    top.dataset.duaTopbar = "";
+    const play = el("button", "dua-tile dua-tile-play", "▶");
+    play.type = "button"; play.disabled = true; play.dataset.duaPlay = "";
+    play.setAttribute("aria-label", t("Play"));
+    play.title = t("Audio is coming soon");
+    top.appendChild(play);
+    const steps = bar?.querySelector(".dua-card-steps");
+    const mid = el("div", "dua-topbar-mid");
+    if (steps) mid.appendChild(steps); // the very ‹ › and "n of N" the card always had, moved up here
+    top.appendChild(mid);
+    const panel = el("div", "dua-menu-panel");
+    panel.id = `duaMenuPanel${Math.random().toString(36).slice(2, 7)}`;
+    panel.hidden = true;
+    const menuBtn = el("button", "dua-tile dua-tile-menu", `☰ ${t("Menu")}`);
+    menuBtn.type = "button"; menuBtn.dataset.duaMenuToggle = "";
+    menuBtn.setAttribute("aria-expanded", "false");
+    menuBtn.setAttribute("aria-controls", panel.id);
+    menuBtn.setAttribute("aria-label", t("Dua menu"));
+    const setMenu = (open) => {
+      panel.hidden = !open;
+      menuBtn.setAttribute("aria-expanded", String(open));
+      menuBtn.textContent = open ? `✕ ${t("Menu")}` : `☰ ${t("Menu")}`;
+    };
+    menuBtn.addEventListener("click", () => setMenu(panel.hidden));
+    const popBtn = el("button", "dua-tile dua-tile-pop", "⤢");
+    popBtn.type = "button"; popBtn.dataset.duaPopout = "";
+    popBtn.setAttribute("aria-pressed", "false");
+    popBtn.setAttribute("aria-label", t("Open as a pop-up"));
+    const setPop = (on) => {
+      article.classList.toggle("dua-card-popped", on);
+      document.body.classList.toggle("dua-has-popped", on);
+      popBtn.setAttribute("aria-pressed", String(on));
+      popBtn.textContent = on ? "✕" : "⤢";
+      popBtn.setAttribute("aria-label", on ? t("Close pop-up") : t("Open as a pop-up"));
+    };
+    popBtn.addEventListener("click", () => setPop(!article.classList.contains("dua-card-popped")));
+    article.addEventListener("keydown", (ev) => {
+      if (ev.key !== "Escape" || ev.defaultPrevented) return;
+      if (article.classList.contains("dua-card-popped")) { setPop(false); popBtn.focus(); }
+      else if (!panel.hidden) { setMenu(false); menuBtn.focus(); }
+    });
+    top.append(menuBtn, popBtn);
+    article.insertBefore(top, article.firstChild);
+    article.insertBefore(panel, top.nextSibling);
+
+    const menu = cardMenu(article, sections, null, panel);
+    // Study and Share are two labelled groups; Keep (My Notes, Bookmark) arrives with the progress rows.
+    const group = (key, label, keys) => {
+      const g = el("div", "dua-menu-group");
+      g.dataset.duaMenuGroup = key;
+      g.appendChild(el("p", "dua-menu-label", label));
+      const nav = el("nav", "dua-card-menu");
+      nav.setAttribute("aria-label", label);
+      for (const k of keys) { const b = menu.querySelector(`[data-dua-menu="${k}"]`); if (b) nav.appendChild(b); }
+      g.appendChild(nav);
+      return g;
+    };
+    const keys = sections.map((x) => x.key);
+    menu.replaceWith(group("study", t("Study"), keys.filter((k) => k !== "poster" && k !== "share")), group("share", t("Share"), ["poster", "share"]));
+    // Audio (the Owner chose B, 7 Nov): everything about listening lives in the Menu; the bar keeps Play only. Not working
+    // until D16/D17, so the tiles are shown dimmed and say so.
+    const listen = el("div", "dua-menu-group");
+    listen.dataset.duaMenuGroup = "listen";
+    listen.appendChild(el("p", "dua-menu-label", t("Listen")));
+    const lnav = el("nav", "dua-card-menu");
+    lnav.setAttribute("aria-label", t("Listen"));
+    for (const [k, label] of [["reciter", t("Reciter")], ["speed", `${t("Speed")} 1×`], ["repeat", t("Repeat")], ["autoplay", t("Autoplay next")]]) {
+      const b = el("button", "dua-ref dua-menu-btn", label);
+      b.type = "button"; b.disabled = true; b.dataset.duaListen = k;
+      lnav.appendChild(b);
+    }
+    listen.appendChild(lnav);
+    listen.appendChild(el("p", "hadith-note", t("Audio is coming soon")));
+    panel.insertBefore(listen, panel.querySelector("[data-dua-menu-group=study]"));
+    const keep = el("div", "dua-menu-group dua-keep-slot");
+    keep.dataset.duaMenuGroup = "keep";
+    keep.hidden = true;
+    keep.appendChild(el("p", "dua-menu-label", t("Keep")));
+    panel.appendChild(keep);
+    return keep;
   }
 
   /** A Dua from the Hadith books: the same card as Hadith Study's Dua tab (progress, notes, bookmark, checks). */
-  function mountHadithDuaCard(host, n) {
+  function mountHadithDuaCard(host, n, bar = null) {
     host.appendChild(el("p", "hadith-note", t("Loading…")));
     const page = data.duaRow.get(n)?.[1];
     if (!page) { host.textContent = ""; host.appendChild(el("p", "hadith-note", t("Dua {n} was not found.", { n: num(n) }))); return; }
@@ -552,9 +640,13 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
       if (!c) { host.appendChild(el("p", "hadith-note", t("Dua {n} was not found.", { n: num(n) }))); return; }
       const rows = [];
       const article = duaCard(c, summary, state, cardRender, rows, links, page, vowels, grammar, checkEnv);
-      layoutHadithCard(article, () => hadithSheet(article, c, links, n));
+      const keep = layoutHadithCard(article, () => hadithSheet(article, c, links, n), bar);
       host.appendChild(article);
-      fillDuaProgress(rows);
+      // My Notes and Bookmark are written into the progress block as it fills: they move into the Menu's Keep group.
+      Promise.resolve(fillDuaProgress(rows)).then(() => {
+        const row = article.querySelector(".dua-progress .dua-note-bookmark");
+        if (row) { keep.appendChild(row); keep.hidden = false; }
+      });
     }).catch((err) => duaLoadFailed(host, render, err));
   }
 
@@ -587,7 +679,7 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
     return p;
   }
   /** A Hisn al-Muslim dhikr: its chapter, its words, how many times, al-Qaḥṭānī's reference, and its Dua card if tied. */
-  function hisnCard(e) {
+  function hisnCard(e, bar = null) {
     const card = el("article", "hadith-card dua-card dua-hisn-card");
     card.dataset.duaHisn = e.h;
     card.appendChild(el("p", "hadith-card-head", t("Hisn al-Muslim {ref}", { ref: num(e.h) })));
@@ -615,15 +707,15 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
       card.appendChild(box);
     }
     card.appendChild(el("p", "dua-words-note", t("Source: Hisn al-Muslim, typed by Abdellah Sellam (MIT licence).")));
-    cardMenu(card, [
+    dressCard(card, [
       { key: "source", label: t("Source"), nodes: kids(card, ".dua-hisn-ref, .dua-also, .dua-words-note") },
       ...sheetSections(() => ({ ...titled(titleOf(data, e)), ar: e.ar, words: null, en: null, bn: null, line: t("Hisn al-Muslim {ref}", { ref: num(e.h) }),
         ref: `${t("Hisn al-Muslim {ref}", { ref: num(e.h) })}${e.ref ? ` · ${e.ref}` : ""}` })),
-    ]);
+    ], bar).remove();
     return card;
   }
   /** A Qur'anic dua of a Prophet: who, the āyah, its meaning, and the āyah in Quran Study with ← Back. */
-  function quranCard(e) {
+  function quranCard(e, bar = null) {
     const L = getAppLang() === "bn" ? "bn" : "en";
     const card = el("article", "hadith-card dua-card dua-quran-card");
     card.dataset.duaQuran = e.ref;
@@ -633,12 +725,12 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
     const a = el("a", "dua-ref dua-quran-open", t("Open in Quran Study ↗"));
     a.href = `./quranrevival.html?goto=${e.ref}&back=1`;
     card.appendChild(a);
-    cardMenu(card, [
+    dressCard(card, [
       { key: "meaning", label: t("Meaning"), nodes: kids(card, ".dua-quran-meaning") },
       { key: "source", label: t("Source"), nodes: kids(card, ".dua-quran-open") },
       ...sheetSections(() => ({ ...titled(titleOf(data, e)), ar: e.ar, words: e.words ?? null, en: e.en, bn: e.bn, line: e.who[L], quran: e.ref,
         ref: `${t("Qur'an {ref}", { ref: num(e.ref) })} · ${e.surah?.en ?? ""}` })),
-    ]);
+    ], bar).remove();
     return card;
   }
 

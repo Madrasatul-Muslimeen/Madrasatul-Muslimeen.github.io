@@ -23373,3 +23373,10 @@ The evening's third release, the follow-up to v13.26.
 - **Checks (Architect, on e69f03f4):** ONE Ayah View bar ⋮: one row of four equal columns at 100% at 320/390/768/1280; two by two inside sheet and screen at 360/390 × 150/200%; behaviour 974/1 run to the end (14a, the same as main). QR Lead: ayah-menu-sheet-browser 65/0 (mutations plain1fr, autofit, wide, nowrap, nobn all red), audit-part12-words 500/0, ayah-step 32/0, row-badge 72/0, qr-j110 78/0, listen-bookmark 48/0, read-note-pane 228/0, apps-build-check 48/0.
 - **Seen, not fixed (old, same on main):** at 360px with 200% text the ⋮ sits low and its sheet opens under the bottom nav, so the reader must scroll.
 - Nothing deployed to Firestore.
+
+## v13.43 — 7 Nov 2026 — Dua Study: Home and Menu, the Dua Card top bar (Dua J104 D23)
+
+- **PCF MSA · Dua J104 D23 (the Dua Lead, `claude/dua-r10a` at `bad4b5ff`, reviewed by the Architect).** Demo v1.06/v1.07 approved by the Owner, audio placement B. Home goes straight to the MSA home with a Menu button beside it, and a Bookmarks link between them (back=1). The Dua Card gets a top bar (▶ Play, ‹ n of N ›, Menu, pop-up ⤢) and one Menu (selections, Study, Share, Keep), with a Listen group (Reciter, Speed, Repeat, Autoplay next) dimmed until D16/D17; the bar keeps only Play. The vowel switch and the Vowels chip are one control (`duaSel.vow`). Person moves under My account.
+- **Review:** sent back once by measurement: the account Menu dropdown ran 30px off a phone's right edge, and ▶ ⤢ were not centred in the top bar. Both fixed; dua-home-bar-browser 48/0 with its mutations red.
+- **Checks (on `bad4b5ff`):** dua-home-bar 48/0, dua-card-r2 158/0, dua-study-page 137/0, dua-poster-r3 126/0, way-back-hadith-dua 360/0, large-text-dua-study 1779/0, night-hadith-dua 6038/0, hadith-dua-a11y --page=dua 1423/0, apps-build-check 48/0; behaviour 974/1 (14a, the same as main). hadith-dua-keyboard 988 passed / 98 failed, identical on `main`: the night-look focus ring (rgb(16,16,16) on the night panel, 1.09:1) and Tab order to Copy in Share at 200%; old, recorded as PCF MSA J117.
+- Nothing deployed to Firestore.
