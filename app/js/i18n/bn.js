@@ -4875,4 +4875,5 @@ export const BN = {
   "Night (A)": "রাত (A)",
   "Bright navy (A2)": "উজ্জ্বল নেভি (A2)",
   "Copper border (A6)": "তামার কিনারা (A6)",
+  "As sourced": "উৎসে যেমন আছে",
 };

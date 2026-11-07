@@ -15,7 +15,11 @@ other hadith have no data); Library cards still not sent (send_card.py refused b
 the PMS J03 line was not written (large read; the Architect can note the hand-in). Sandbox: `node serve.js` in the background,
 `SHOTS=<dir>` for screenshots (else they land in the repo root).
 
-## UPDATE, about 2:10 am 8 Nov (Hadith Lead): COLOURS BUILT; TRANSLATION-TERMS FOLD APPROVED, NOT YET BUILT
+## UPDATE, about 3:00 am 8 Nov (Hadith Lead): COLOURS AND THE TRANSLATION-TERMS FOLD ARE BOTH BUILT (same branch `claude/hadith-colours`)
+
+**Fold built (HadeethEnc card only):** `app/js/hadith-terms.js` (pure `foldTerms(english, arabic)`), `app/js/hadith-terms-ui.js` (the "As sourced" ON/OFF switch, folded by default), wired in `hadeethEncCard` (title, translation, explanation, hints), CSS + 1 bn string. Rules as in `docs/governance/hadith-translation-terms-rule.md`, each applied only where the hadith's own Arabic permits; plus "O Messenger of Allah" -> "O Rasulullah" (a vocative; **tell the Owner and ask if the full formula is wanted there**). Over all 2,328 hadith: Rabb ~767, Allah 18, Rasulullah ~8,764 changes; 9 "Lord" and 4 "God"(ilah) left; ~175 "the Prophet" left where the Arabic has a pronoun only or the text names another prophet; 3 source parentheticals with no closing bracket stay as sourced. Suite `hadith-terms-browser.mjs` 44/0, `--prove` 8/8; `hadeethenc-browser` updated in place (verbatim now = "As sourced") 82/0. **NOT done, next rounds:** the OpenITI English folds (Bukhari/Muslim "Allah's Messenger (ﷺ)") in `hadith-translations.js`/`standardTranslationFolds` and the Hadith Books Text pane; Dua cards (the Dua Lead's files); the explanation of other cards.
+
+(The paragraph below was written before the fold was built:)
 
 **State on main:** K1 Part A + B released in v13.32. **Branches pushed, not merged (the Architect reviews and releases):**
 - `claude/hadith-colours` `77f718b`: "Card colours" picker in the Hadith Study menu bar (Original, A, A2, A6; the Owner's choice of

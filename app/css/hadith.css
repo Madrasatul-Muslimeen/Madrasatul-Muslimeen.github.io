@@ -551,3 +551,6 @@ html[data-card-look="night"][data-hadith-colours="a6"] { --card-bg: radial-gradi
 html[data-card-look="night"][data-hadith-colours="a6"] .hadith-card { border-width: 2px; }
 html[data-card-look="night"][data-hadith-colours="a2"] .hwc-chip.hwc-q { border-color: #8EE0C4; color: #8EE0C4; }
 .hadith-colours-select { max-width: 100%; min-width: 0; }
+
+/* The translation-terms fold's "As sourced" switch (the Owner's rule of 8 Nov 2026). */
+.hadith-terms-switch { min-height: 40px; display: inline-flex; align-items: center; gap: 0.5rem; padding: 0 0.8rem; margin: 0.4rem 0; border: 1px solid var(--card-line, var(--hadith-rule)); border-radius: 0.4rem; background: transparent; color: var(--card-text, var(--hadith-ink)); font: inherit; font-weight: 600; cursor: pointer; max-width: 100%; }
