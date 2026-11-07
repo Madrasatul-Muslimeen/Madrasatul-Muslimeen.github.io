@@ -561,3 +561,9 @@ body.hadith-pane-dragging { user-select: none; }
 [data-card-look="night"] .hadith-card.dua-card { background: var(--card-bg); color: var(--card-text); }
 [data-card-look="night"] .dua-menu-panel { background: var(--card-bg); }
 [data-card-look="night"] .dua-word-pop .hadith-note, [data-card-look="night"] .dua-word-pop .hadeethenc-study-reason { color: var(--card-text-muted); }
+
+/* MSA J117: the keyboard ring in the night look. These pages set no ring of their own, so the browser's default dark ring
+   sat on the dark card plate at 1.09:1. Night look only (the day look's default ring already passes 3:1): a gold ring
+   outside the control, and a navy ring inside a pressed control whose own fill is light (gold, cream, pale green), where a gold ring would vanish. */
+[data-card-look="night"] :is(button, a[href], summary, input, select, textarea, [tabindex]:not([tabindex="-1"])):focus-visible { outline: 2px solid #e3c27a; outline-offset: 2px; }
+[data-card-look="night"] :is(.hkm-btn, .hwc-tab, .dua-wc-level, .dua-switch, .dua-status, .dua-word)[aria-pressed="true"]:focus-visible { outline-color: #1c2a46; outline-offset: -4px; }
