@@ -37,6 +37,8 @@ async function context(lang, width, look) {
   return ctx;
 }
 async function tap(P, dua, i) {
+  // 7 Nov 2026: a tapped word's card is now a pop-up (dua-word-popup.js); close one left open before tapping the next word.
+  await P.evaluate(() => document.querySelector(".dua-word-pop .dua-word-panel-close")?.click());
   await P.evaluate(([d, w]) => document.querySelector(`[data-dua-card="${d}"] [data-dua-word="${w}"]`).scrollIntoView({ block: "center" }), [dua, i]);
   await P.click(`[data-dua-card="${dua}"] [data-dua-word="${i}"]`);
   await P.waitForSelector(`[data-dua-word-panel="${dua}"]:not([hidden])`, { timeout: 4000 }).catch(() => {});
@@ -56,8 +58,10 @@ for (const [lang, width, look] of [["en", 390, "light"], ["bn", 390, "night"], [
     const p = document.querySelector('[data-dua-word-panel="1"]'), b = p.querySelector("[data-dua-word-grammar]");
     const box = (e) => { const x = e.getBoundingClientRect(); return [Math.round(x.width), Math.round(x.height)]; };
     const rgb = (s) => (s.match(/[\d.]+/g) || []).slice(0, 3).map(Number);
-    let bg = b, bgc = [0, 0, 0, 0];
-    while (bg && !(bgc = (getComputedStyle(bg).backgroundColor.match(/[\d.]+/g) || []).map(Number), bgc.length < 4 || bgc[3] > 0.5)) bg = bg.parentElement;
+    // 7 Nov 2026: the word card is a pop-up on the card plate (a gradient); a gradient is measured at its LIGHTEST stop, the worst case for the cream text.
+    const gradLight = (cs) => { const g = cs.backgroundImage; if (!g || g === "none") return null; const cols = (g.match(/rgba?\([^)]*\)/g) || []).map((c) => c.match(/[\d.]+/g).map(Number)).filter((c) => c.length < 4 || c[3] > 0.5); if (!cols.length) return null; cols.sort((a, b) => (b[0] + b[1] + b[2]) - (a[0] + a[1] + a[2])); return cols[0].slice(0, 3); };
+    let bg = b, bgc = [255, 255, 255];
+    for (let e = b; e; e = e.parentElement) { const cs = getComputedStyle(e), gl = gradLight(cs); if (gl) { bgc = gl; break; } const c = (cs.backgroundColor.match(/[\d.]+/g) || []).map(Number); if (c.length < 4 || c[3] > 0.5) { bgc = c.slice(0, 3); break; } }
     const lab = b?.querySelector(".dua-word-label");
     const lemma = b?.querySelector(".dua-word-lemma .dua-word-value");
     return { has: !!b, head: b?.querySelector(".dua-also-head")?.textContent, text: b?.innerText ?? "", lemmaFont: lemma ? getComputedStyle(lemma).fontFamily : "", lemmaLang: lemma?.lang,
