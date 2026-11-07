@@ -2,7 +2,7 @@
 // THIS RUN REACHED (see the PR for the rest, which is unreached):
 //   favs     4 Mapping My Journey ⋯ -> Favourites, Archived, Trash each list the right Notes; Restore writes; no delete call anywhere
 //   import   6 ⋯ -> Import Notes…: a small Evernote .enex shows 2. Preview, then 3. Import writes the Notes
-//   readbar    the Read bar's ⋯ is NOT on the bar from 900px (the fix of this round) and IS below it
+//   readbar    ONE menu (J114): the Read bar shows neither ⋯ nor 📝 at any width (both are tiles in the ⋮ sheet)
 // The RESULT is asserted (the stored write, the switched view), not the element. Each flow has a positive control and a
 // timeout that fails by name. Mutations: --mutate=<name> restores a defect.
 // Run from the repository root with serve.js on :8080:
@@ -166,8 +166,11 @@ for (const lang of LANGS) for (const width of [390, 820, 1440].filter((w) => !WO
     const notes = await ev(page, () => { const e = document.getElementById("readNotesBtn"); return e ? e.getBoundingClientRect().width : -1; });
     if (!bar) { check(`${t}: POSITIVE CONTROL the Read bar is on screen`, false, "Read bar not visible; open the Read view"); return; }
     check(`${t}: POSITIVE CONTROL the Read bar is on screen`, bar);
-    if (width >= 900) check(`${t}: ⋯ is NOT on the bar and 📝 is (${dots} / ${notes})`, dots === 0 && notes > 0, `dots ${dots} notes ${notes}`);
-    else check(`${t}: ⋯ IS on the bar and 📝 is behind it (${dots} / ${notes})`, dots > 0 && notes === 0, `dots ${dots} notes ${notes}`);
+    // UPDATED IN PLACE (PCF MSA J114, ONE menu): the retired design had ⋯ below 900px with 📝 behind it. Now ⋯ is on NO bar at any
+    // width and 📝 is a tile in the ⋮ sheet (ayah-menu-sheet-browser asserts the tile), so the bar shows neither. The button must still exist
+    // in the DOM (notes !== -1, its handler is kept) or "hidden" would pass on a page that lost the control altogether.
+    check(`${t}: the one-menu bar: ⋯ is on no bar and 📝 sits in the ⋮ sheet, not on the bar (${dots} / ${notes})`, dots === 0 && notes === 0, `dots ${dots} notes ${notes}`);
+    check(`${t}: POSITIVE CONTROL the 📝 control still exists (its handler is kept)`, await ev(page, () => !!document.getElementById("readNotesBtn")));
   });
 }
 console.log(`\n==== audit part 20: ${pass} passed, ${fail} failed ====`);

@@ -45,7 +45,8 @@ const CONTRAST = `(a, b) => {
 for (const [lang, W] of [["en", 320], ["bn", 320], ["en", 390], ["bn", 390], ["en", 768], ["bn", 768], ["en", 1280], ["bn", 1280]]) {
   for (const mushaf of [true, false]) {
     const tag = `[${lang} ${W} ${mushaf ? "mushaf" : "read"}]`;
-    const ctx = await newContext(browser, { appLang: lang === "bn" ? "bn" : null, banner: false, viewport: { width: W, height: 900 } });
+    // legacyTools: drives the retired ⋯ path (PCF MSA J114 ONE menu; measured against main: loses checks without it)
+  const ctx = await newContext(browser, { legacyTools: true, appLang: lang === "bn" ? "bn" : null, banner: false, viewport: { width: W, height: 900 } });
     await ctx.route("**/archive.org/**", (r) => r.abort());
     if (MUTATE) {
       const [a, b] = MUT[MUTATE];
