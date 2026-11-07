@@ -21,7 +21,7 @@ const mutateCss = (ctx) => {
   if (has("nowrap")) return swap([[NOWRAP_OLD, ".quick-menu.qm-sheet .qm-tile .qm-label, .quick-menu.qm-sheet .qm-tile .qm-glyph { white-space: nowrap; }"]]);
   if (has("plain1fr")) return swap([[C4, "grid-template-columns: repeat(4, 1fr); gap: 0.4rem; }"], [C2, ".qm-sheet .qm-tiles { grid-template-columns: repeat(2, 1fr); } }"], [NOWRAP_OLD, ""]]);
   if (has("autofit")) return swap([[".qm-sheet .qm-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.4rem; }", ".qm-sheet .qm-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(4.2rem, 1fr)); gap: 0.4rem; } .quick-menu.qm-sheet { container-type: normal; }"]]);
-  if (has("cut")) return swap([[".qm-sheet .qm-label { overflow-wrap: break-word; hyphens: none;", ".qm-sheet .qm-label { overflow-wrap: anywhere; font-size: 1.1em; hyphens: none;"]]);
+  if (has("cut")) return swap([["font-size: 0.66rem; font-weight: 600; line-height: 1.15; } /* on the span", "font-size: 1.1rem; font-weight: 600; line-height: 1.15; overflow-wrap: anywhere; } /* on the span"]]);
   if (has("nobn")) return ctx.route("**/js/i18n/bn.js*", async (r) => { const res = await r.fetch(); const b = await res.text(); if (!b.includes("নোট নিন")) throw new Error("anchor"); r.fulfill({ response: res, body: b.split("নোট নিন").join("Take Note") }); });
 };
 // What the open sheet holds: each tile's key and size, the buttons that are NOT tiles, rows of tiles, whether every word is on one line, containment.
