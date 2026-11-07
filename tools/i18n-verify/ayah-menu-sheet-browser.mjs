@@ -44,7 +44,7 @@ const sheetInfo = (page, scope) => page.evaluate((sc) => {
 const BAR_KEYS = ["data-qm-play", "data-qm-note", "data-qm-bookmark", "data-qm-qcr", "data-qm-sub-toggle", "data-qm-writing", "data-qm-wbw", "data-qm-roots", "data-qm-derivatives", "data-qm-collapse", "text-size", "data-qm-act"];
 for (const width of [320, 390, 768, 1280]) {
   const tag = `[${width}]`;
-  const ctx = await newContext(browser, { banner: false, oneMenu: true, viewport: { width, height: 900 } });
+  const ctx = await newContext(browser, { banner: false, viewport: { width, height: 900 } });
   await ctx.route("**/archive.org/**", (r) => r.abort());
   await mutateCss(ctx);
   const { page } = await openPage(ctx, "/app/quranrevival.html");
@@ -83,7 +83,7 @@ for (const width of [320, 390, 768, 1280]) {
 // the sheet inside the screen (it scrolls inside itself when the screen is short); the three tiles that stand for bar buttons press those buttons.
 for (const [lang, width, pct] of [["en", 390, 100], ["en", 360, 100], ["en", 320, 100], ["en", 390, 150], ["en", 390, 200], ["bn", 390, 200], ["en", 360, 200], ["bn", 360, 200], ["en", 360, 150], ["bn", 390, 100]]) {
   const tag = `[bar ⋮ ${lang} ${width} ${pct}%]`;
-  const ctx = await newContext(browser, { appLang: lang === "bn" ? "bn" : null, banner: false, oneMenu: true, viewport: { width, height: 844 } });
+  const ctx = await newContext(browser, { appLang: lang === "bn" ? "bn" : null, banner: false, viewport: { width, height: 844 } });
   await ctx.route("**/archive.org/**", (r) => r.abort());
   await mutateCss(ctx);
   const { page } = await openPage(ctx, "/app/quranrevival.html");
@@ -123,7 +123,7 @@ for (const [lang, width, pct] of [["en", 390, 100], ["en", 360, 100], ["en", 320
 // its label, and in Bangla every tile carries Bangla words.   --mutate=wide, nowrap, nobn, autofit, plain1fr -> FAIL.
 for (const [lang, width, pct] of [["bn", 390, 100], ["en", 390, 150], ["en", 390, 200], ["bn", 390, 200], ["en", 360, 200]]) {
   const tag = `[${lang} ${width} ${pct}%]`;
-  const ctx = await newContext(browser, { appLang: lang === "bn" ? "bn" : null, banner: false, oneMenu: true, viewport: { width, height: 844 } });
+  const ctx = await newContext(browser, { appLang: lang === "bn" ? "bn" : null, banner: false, viewport: { width, height: 844 } });
   await ctx.route("**/archive.org/**", (r) => r.abort());
   await mutateCss(ctx);
   const { page } = await openPage(ctx, "/app/quranrevival.html");
