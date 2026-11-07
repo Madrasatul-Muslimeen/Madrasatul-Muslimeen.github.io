@@ -437,8 +437,14 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     const bw = (await writesFrom(page, k)).filter((w) => w.col === "bookmarks").flatMap((w) => (w.data?.saved ?? []).map((b) => ({ id: w.id, moduleId: b.moduleId, subjectId: b.subjectId, position: b.position })));
     const txt = await ev(page, (s) => document.querySelector(`${s} [data-dua-bookmark]`).textContent, row);
     check(`${t}: 🔖 saves dua:1 in t1__p1's own bookmarks and the button then reads ★ ${bn ? "বুকমার্ক সরান" : "Remove bookmark"}`, bw.some((b) => b.id === "t1__p1" && b.moduleId === "hadith" && b.subjectId === "dua" && b.position === "dua:1") && txt.includes(bn ? "বুকমার্ক সরান" : "Remove bookmark"), JSON.stringify([bw, txt]));
+    // 7 Nov 2026 (Dua Lead, duaRef): the press now opens the shared new-Note window for dua:1 (the press also remembers this card's
+    // place); the link's own address stays as the old route, walked below.
+    await page.click(`${row} [data-dua-note-link]`);
+    const fsrc = await page.waitForFunction(() => document.querySelector('iframe[src*="journey-map.html"]')?.getAttribute("src") || null, null, { timeout: 15000 }).then((h) => h.jsonValue()).catch(() => null);
+    const fq = new URLSearchParams((fsrc ?? "").split("?")[1] ?? "");
+    check(`${t}: 📝 opens the new-Note window for dua:1`, !!fsrc && fq.get("new") === "1" && fq.get("unit") === "dua:1", String(fsrc));
     let went = true;
-    await Promise.all([page.waitForURL(/notes\.html\?/, { timeout: 15000 }), page.click(`${row} [data-dua-note-link]`)]).catch(() => { went = false; });
+    await Promise.all([page.waitForURL(/notes\.html\?/, { timeout: 15000 }), ev(page, (s) => { location.href = document.querySelector(`${s} [data-dua-note-link]`).href; }, row)]).catch(() => { went = false; });
     check(`${t}: 📝 opens the Notes page`, went);
     if (went) {
       await page.waitForSelector("#notesBackBtn:not([hidden])", { timeout: 15000 }).catch(() => {});
@@ -448,7 +454,9 @@ for (const lang of LANGS) for (const width of WIDTHS) {
       const there = await ev(page, () => { const r = document.querySelector('[data-dua-card="1"]')?.getBoundingClientRect(); return { card: !!r, on: !!r && r.bottom > 0 && r.top < innerHeight }; });
       check(`${t}: ← Back from Notes lands on Dua 1's card, on screen`, there.card && there.on, JSON.stringify(there));
     }
-    check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
+    // The stub has no folders, so the new-Note window's own filing step reports this one known message; nothing else is excused.
+    const own = noErr(errors).filter((e) => !/filing it in this folder failed/i.test(e));
+    check(`${t}: no page errors`, own.length === 0, own.slice(0, 2).join(" | "));
   });
 
   // 6: ✓ Check this dua.
