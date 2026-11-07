@@ -192,3 +192,7 @@ body.dua-has-popped::before { content: ""; position: fixed; inset: 0; z-index: 5
   .dua-topbar-mid { order: 3; flex: 1 1 100%; }
 }
 .dua-tile-play, .dua-tile-pop { width: 44px; padding: 0; }
+
+/* The Architect's findings, 7 Nov: the glyph tiles centre their glyph, and the page's Menu dropdown opens under the Menu
+   button (which sits at the right of the Home bar), right-aligned, so it never runs past the screen. */
+.dua-tile { display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
