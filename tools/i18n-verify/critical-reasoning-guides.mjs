@@ -1,5 +1,5 @@
 // The Critical Reasoning guides' text and the question card (PCF MSA J05, T15 A), data + toggle. Run from the repository root.
-// --mutate=gapA|gapB|toggle-default|off-ignored|bn-missing must make this FAIL.
+// --mutate=gapA|gapB|toggle-default|off-ignored|bn-missing|ruling-gone|ruling-on-26 must make this FAIL.
 import assert from "node:assert/strict";
 import fs from "node:fs";
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
@@ -10,6 +10,8 @@ const M = {
   "toggle-default": ['export const QUESTION_CARD_DEFAULT = "on";', 'export const QUESTION_CARD_DEFAULT = "off";'],
   "off-ignored": ['const qs = mode === "off" ? [] : questionsFor(approach);', "const qs = questionsFor(approach);"],
   "bn-missing": ['bn: "আমি কোথায় ভুল হতে পারি?"', 'bn: ""'],
+  "ruling-gone": ['{ id: "q24-time",', '{ id: "q99-time",'],
+  "ruling-on-26": ['  14: [\n    { id: "q14-type"', '  26: [{ id: "q26-x", en: "x x x", bn: "ক খ গ" }],\n  14: [\n    { id: "q14-type"'],
 };
 if (MUTATE) { if (!M[MUTATE] || !src.includes(M[MUTATE][0])) throw new Error("bad mutation " + MUTATE); src = src.replace(M[MUTATE][0], M[MUTATE][1]); }
 const store = new Map();
@@ -34,6 +36,12 @@ check("the toggle is ON by default, remembered per person, and an unknown value 
 check("the card shows an Approach's questions when on, nothing when off or for an Approach with none", () => {
   const on = m.questionCardHtml({ approach: "approach_27", mode: "on" }); assert.equal((on.match(/data-question-id/g) || []).length, 3);
   assert.equal(m.questionCardHtml({ approach: "approach_27", mode: "off" }), ""); assert.equal(m.questionCardHtml({ approach: "approach_16", mode: "on" }), ""); });
+check("PCF MSA J116: Approach 24 carries the four ruling questions (who it is for, its time, abrogated, replaced), in English and Bangla, with the blessing written in full; 25 and 26 carry none", () => {
+  assert.deepEqual(m.QUESTIONS[24].map((q) => q.id), ["q24-who", "q24-time", "q24-abrogated", "q24-replaced"]);
+  assert.match(m.QUESTIONS[24][0].en, /Rasulullah Sallallahu A'laihi Wa Sallam/); assert.ok(m.QUESTIONS[24].every((q) => /[ঀ-৿]/.test(q.bn)));
+  assert.equal((m.questionCardHtml({ approach: "approach_24", mode: "on" }).match(/data-question-id/g) || []).length, 4);
+  assert.equal(m.questionCardHtml({ approach: "approach_25", mode: "on" }), ""); assert.equal(m.questionCardHtml({ approach: "approach_26", mode: "on" }), "");
+  assert.equal(m.questionCardHtml({ approach: "approach_24", mode: "off" }), ""); });
 check("a tap hands the Note that question's text, in the reader's language", () => {
   let got = null; const fake = { querySelectorAll: () => [{ dataset: { questionId: "q27-wrong" }, addEventListener: (_, f) => f() }] };
   m.wireQuestionCard(fake, { approach: 27, lang: "bn", onPick: (t) => { got = t; } }); assert.equal(got, "আমি কোথায় ভুল হতে পারি?"); });
