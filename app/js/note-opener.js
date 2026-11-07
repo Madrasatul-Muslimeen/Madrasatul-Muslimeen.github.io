@@ -393,6 +393,17 @@ export function ayahRef(s, a, data, ay) {
   });
 }
 
+/**
+ * MSA · Dua J104 D23 (7 Nov 2026): a dua's block. The Dua page already holds the dua's text, so the caller passes it:
+ * `n` the dua's permanent number (decision 88), `label` its shown name ("Dua 12 · Before sleeping"), `ar`/`en`/`bn`
+ * its text. Returns null when that is not a dua block (cleanRefState decides, exactly as for an āyah or a hadith).
+ */
+export function duaRef({ n, label = "", ar = "", en = "", bn = "" } = {}) {
+  const num_ = Number(n);
+  if (!Number.isInteger(num_) || num_ < 1) return null;
+  return cleanRefState({ kind: "dua", id: `dua:${num_}`, label: label || t("Dua {n}", { n: num(num_) }), text: { ar, en, bn } });
+}
+
 /** A HadeethEnc hadith's block: its Arabic, and its English and Bangla where the collection has them. */
 /** `unitKey` is the caller's own HadeethEnc key (hadith-study-actions.js hadeethEncUnitKey(), the one place that builds it). */
 export async function hadithRefById(id, { title = "", label = "", unitKey } = {}) {

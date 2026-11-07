@@ -26,6 +26,8 @@ function check(name, fn) {
 }
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
 const MUT = {
+  duashape: ["  dua: /^dua:\\d{1,6}$/,", "  dua: /^dua:.*$/,"],
+  duaicon: ['s.kind === "dua" ? "🤲" : "📜"', '"📜"'],
   idshape: ["  if (!REF_ID_SHAPES[kind].test(id)) return null;\n", ""],
   kind: ["  if (!REF_KINDS.includes(kind)) return null;\n  const id", "  const id"],
   plain: ['.replace(/[<>\\u0000-\\u001f\\u007f]/g, " ")', ""],
@@ -59,8 +61,16 @@ check("an id outside the two shapes is refused", () => {
   for (const id of ["topic-salah", "ayah:1", "ayah:1:1:1", "ayah:1:1 ", "surah:2", "hadith:x:y", "hadith::3", "javascript:alert(1)", "ayah:1:1<b>", ""]) assert.equal(cleanRefState({ ...good, id }), null, id);
   assert.equal(cleanRefState({ ...good, kind: "hadith", id: "ayah:15:32" }), null, "an āyah id under the hadith kind");
 });
-check("a kind other than ayah / hadith is refused", () => {
-  for (const kind of ["sheet", "dua", "", null, "Ayah"]) assert.equal(cleanRefState({ ...good, kind }), null, String(kind));
+check("a kind other than ayah / hadith / dua is refused", () => {
+  // MSA · Dua J104 D23 (7 Nov 2026): "dua" became a kind on purpose, so it moved from this list to the check below.
+  for (const kind of ["sheet", "Dua", "duas", "", null, "Ayah"]) assert.equal(cleanRefState({ ...good, kind }), null, String(kind));
+});
+check("a dua block is kept by its permanent number only (dua:<n>), and shows 🤲", () => {
+  const d = cleanRefState({ kind: "dua", id: "dua:12", label: "Dua 12 · Before sleeping", text: { ar: "بِاسْمِكَ اللَّهُمَّ أَمُوتُ وَأَحْيَا", en: "In Your name, O Allah, I die and I live" } });
+  assert.ok(d && d.id === "dua:12" && d.flags.on === true, JSON.stringify(d));
+  for (const id of ["dua:", "dua:x", "dua:12:3", "duaword:12:3", "dua:1234567", "hadith:hadeethenc:3062", "ayah:1:1"]) assert.equal(cleanRefState({ ...d, id }), null, id);
+  assert.equal(cleanRefState({ ...good, kind: "dua" }), null, "an āyah id under the dua kind");
+  assert.ok(refStaticHtml(d).includes("🤲") && !refStaticHtml(d).includes("📜"), refStaticHtml(d));
 });
 check("no label, no text at all, or junk is refused", () => {
   assert.equal(cleanRefState({ ...good, label: "  " }), null);

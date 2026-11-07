@@ -24,6 +24,8 @@ import { isSiyagahCloudReady, SIYAGAH_CLOUD_DECLARATION } from "./siyagah-cloud-
 import { t, num } from "./i18n.js";
 
 export const SIYAGAH_BAR_ID = "siyagahCloudBar";
+/** J112 D2 review: "this device has connected to Siyagah" (journey-map.html's embedded panes send only then). */
+export const SIYAGAH_CONNECTED_KEY = "msa-siyagah-connected";
 const STYLE_ID = "siyagahCloudBarStyle";
 
 function escapeHtml(s) {
@@ -809,11 +811,12 @@ function mountMmjView(host, reader, model, sanitize, write = null) {
 }
 
 /**
- * Mount the bar before `beforeEl` (the Map's #noteLayout). Returns the bar, or null when the switch is off.
+ * Mount the bar before `beforeEl` (the Map's #noteLayout). `onLive(live)` (J112 D2): called with { copy, cloud, nb, model,
+ * from } on every copy while signed in, and with null when Siyagah stops being read here. Returns the bar, or null when the switch is off.
  * `email` is the reader's MSA sign-in, offered to Google as the account to use. `after` (a promise): load nothing of
  * Siyagah's until it settles -- the Map passes its own folders' load, so the Map is usable first.
  */
-export async function mountSiyagahMapLink({ beforeEl, email = "", declaration = SIYAGAH_CLOUD_DECLARATION, after = null } = {}) {
+export async function mountSiyagahMapLink({ beforeEl, email = "", declaration = SIYAGAH_CLOUD_DECLARATION, after = null, onLive = null } = {}) {
   if (!isSiyagahCloudReady(declaration)) return null;
   if (!beforeEl || !beforeEl.parentNode) return null;
   ensureStyle();
@@ -867,6 +870,7 @@ export async function mountSiyagahMapLink({ beforeEl, email = "", declaration = 
 
   let reader = null, readerFor = null;
   function stopReading() {
+    if (onLive && readerFor) { try { onLive(null); } catch (err) { console.error(err); } } // J112 D2: Siyagah is no longer live here
     try { reader?.close(); } catch {}
     reader = null; readerFor = null;
     body.innerHTML = ""; body.hidden = true;
@@ -886,7 +890,8 @@ export async function mountSiyagahMapLink({ beforeEl, email = "", declaration = 
       const pending = { state: null };
       const r = await data.openMmjReader({
         cloud, nb, uid: user.uid,
-        onCopy: (c) => { if (view) view.update(c); },
+        // J112 D2: the same live copy is handed to the page, which keeps its own Notes in step with it (siyagah-sync.js).
+        onCopy: (c) => { if (view) view.update(c); if (onLive) { try { onLive({ copy: c, cloud, nb, model, from: model.mmjFromForHost(location.hostname) }); } catch (err) { console.error(err); } } },
         onState: (s) => {
           if (s.kind === "denied" || s.kind === "error") setOpen(true, false); // never a hidden refusal (I15)
           if (view) view.state(s); else pending.state = s;
@@ -906,8 +911,11 @@ export async function mountSiyagahMapLink({ beforeEl, email = "", declaration = 
 
   mod.onSiyagahUser(cloud, (user) => {
     if (user) {
+      // J112 D2 review: this device has connected -- an embedded Notes pane may now send its Notes to Siyagah after a save
+      // (journey-map.html reads the same key; nothing else is kept).
+      try { localStorage.setItem(SIYAGAH_CONNECTED_KEY, "1"); } catch { /* private mode: the panes just wait */ }
       say("", { action: "out", label: t("Disconnect") }, true);
-      head.querySelector("[data-siyagah-action]").addEventListener("click", () => mod.siyagahSignOut(cloud).catch((err) => {
+      head.querySelector("[data-siyagah-action]").addEventListener("click", () => mod.siyagahSignOut(cloud).then(() => { try { localStorage.removeItem(SIYAGAH_CONNECTED_KEY); } catch {} }).catch((err) => {
         console.error(err);
         say(escapeHtml(t("Could not disconnect: {reason}", { reason: err?.message || String(err) })), null);
       }));

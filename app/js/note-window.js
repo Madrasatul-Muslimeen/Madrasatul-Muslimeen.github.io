@@ -127,7 +127,7 @@ const noteTitleOf = (note) => note.title?.trim() || t("(untitled)");
  *   afterRevise(note)  the page re-renders its own list
  *   status(msg)        a page-level sentence
  *   refresh()          reload the page's data (after a conflict)
- *   chips(note)        [{ id, label }] folder chips ([] when the page has none)
+ *   chips(note)        [{ id, label, icon? }] folder chips ([] when the page has none); icon (J112 D2) replaces 📁
  *   onChip(v, id)
  *   tagging?           Siyagah round 7b (Tags; never Note Types). Absent = no Tags control.
  *                      { ready()  true once the round 7 Rules are published (until then the picker
@@ -2297,7 +2297,7 @@ export function createNoteViews(host) {
     v.el.querySelector("[data-pane-title]").textContent = noteTitleOf(note);
     v.el.querySelector("[data-pane-meta]").textContent = paneMetaText(note);
     v.el.querySelector("[data-pane-chips]").innerHTML = (host.chips?.(note) ?? []).map((f) =>
-      `<button type="button" class="folder-chip" data-pane-chip="${escapeHtml(f.id)}">📁 ${escapeHtml(f.label)}</button>`).join("") + tagChipsHtml(note);
+      `<button type="button" class="folder-chip" data-pane-chip="${escapeHtml(f.id)}">${escapeHtml(f.icon || "📁")} ${escapeHtml(f.label)}</button>`).join("") + tagChipsHtml(note);
     // While an edit is open the editor IS the body: a re-render must never wipe the reader's typing.
     if (!(v.ed && v.ed.noteId === note.noteId)) { showReadChrome(v, note); buildBody(v, note); hydrateImages(v); paintAnnotations(v); paintLinks(v, note); paintPreviews(v); if (!findBarOf(v).hidden) runFind(v, { keep: true }); }
     if (v.kind === "window") { paintPinned(v, note); paintToc(v); v.win.querySelector(".nw-title").textContent = noteTitleOf(note); v.win.dataset.noteId = note.noteId; updateWindowSwitcher(); }
