@@ -37,6 +37,8 @@ const MUT = {
   back: ["js/note-opener.js", "  else if (runOnClosed) fn?.();", "  else if (false) fn?.();"],
   toggle: ["js/note-ref-ui.js", '  el.setAttribute("data-mmsa-ref", serializeRefState(s));\n}', "}"],
   allsw: ["js/note-ref-ui.js", "        if (s && s.flags.on !== on) paintBlock(b, toggleRefFlag(s, \"on\"));", "        void s;"],
+  duakind: ["js/note-ref-ui.js", 's.kind === "dua" ? t("Dua") : t("Hadith")', 't("Hadith")'],
+  duaref: ["js/note-opener.js", "id: `dua:${num_}`", "id: `dua:x${num_}`"],
   sanitize: ["js/note-sanitize.js", "    el.innerHTML = refStaticHtml(state);\n", ""],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
@@ -217,6 +219,25 @@ for (const lang of ["en", "bn"]) for (const width of WIDTHS) {
       const off = g ? await g.evaluate(() => [...document.querySelectorAll("[data-edit-body] .mm-ref")].map((b) => JSON.parse(b.getAttribute("data-mmsa-ref")).flags.on)) : [];
       check(`${tag} C the one switch hides both`, off.length === 2 && off.every((x) => x === false), JSON.stringify(off));
       await g?.click('[data-nn-tool="back"]').catch(() => {});
+      await P.waitForTimeout(800);
+    }
+    // ------------------------------------------------------------ D. MSA · Dua J104 D23: a Note started on a dua (two widths)
+    if (width === 390 || width === 1180) {
+      const made = await ev(async () => {
+        const m = await import("./js/note-opener.js");
+        const bad = [m.duaRef({ n: 0, ar: "x" }), m.duaRef({ n: "x", ar: "x" }), m.duaRef({ n: 12 })];
+        const ref = m.duaRef({ n: 12, label: "Dua 12 · Before sleeping", ar: "بِاسْمِكَ اللَّهُمَّ أَمُوتُ وَأَحْيَا", en: "In Your name, O Allah, I die and I live" });
+        if (ref) m.openNewNote({ ref, unitKey: "dua:12", unitLabel: "Dua 12", backLabel: "Back to the dua" });
+        return { id: ref?.id ?? null, kind: ref?.kind ?? null, bad: bad.map((b) => b === null) };
+      });
+      check(`${tag} D duaRef makes a dua block by its permanent number (dua:12), and refuses no number or no text`, made.id === "dua:12" && made.kind === "dua" && made.bad.every(Boolean), JSON.stringify(made));
+      const h = await frameOf(P).catch(() => null);
+      await h?.waitForSelector("[data-edit-body] .mm-ref", { timeout: 20000 }).catch(() => {});
+      const blk = h ? await h.evaluate(() => { const b = document.querySelector("[data-edit-body] .mm-ref"); return b ? { id: JSON.parse(b.getAttribute("data-mmsa-ref")).id, kind: b.querySelector(".mm-ref-kind")?.textContent ?? "", text: b.textContent } : null; }) : null;
+      const kindWord = lang === "bn" ? "দুআ" : "Dua";
+      check(`${tag} D the new Note opens holding the dua, named "${kindWord}" (not "Hadith")`, blk && blk.id === "dua:12" && blk.kind.trim() === kindWord && /أَمُوتُ/.test(blk.text), JSON.stringify(blk));
+      if (SHOTS) await P.screenshot({ path: `${SHOTS}/opener-dua-${width}-${lang}.png` });
+      await h?.click('[data-nn-tool="back"]').catch(() => {});
       await P.waitForTimeout(800);
     }
     await ctx.close();
