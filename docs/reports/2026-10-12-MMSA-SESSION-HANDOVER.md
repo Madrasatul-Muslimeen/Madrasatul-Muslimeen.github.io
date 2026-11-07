@@ -7,7 +7,38 @@ v10.28). Read `CLAUDE.md` first. The prompt that starts the next session is
 
 This session was summarised once (its context compacted), which is why it hands over here.
 
-## LATEST UPDATE — 7 Nov 2026, ~3:05 am Sydney, session `session_01PL2xbKwjJwndb83JEfJTdD` (v13.36–v13.41 RELEASED; HANDOVER under use1102) — READ THIS FIRST
+## LATEST UPDATE — 7 Nov 2026, ~4:15 pm Sydney, session `session_01PL2xbLfKsJdxAEsLpnChdU` (v13.42 RELEASED; HANDOVER under use1102) — READ THIS FIRST
+
+This session took over at 3:11 am on 7 Nov. **`main` is v13.42 (`b720c57d`, merged 8:11 am 7 Nov); QR reads 13.42 (PCA, 8:13 am).**
+
+**Released:**
+- **v13.42** (#1497, QR Lead #1496): MSA · QR J114 follow-up, the ⋮ sheet at large text and in Bangla: four equal tile columns (`repeat(4, minmax(0,1fr))`), exactly 2×2 below 15.5rem of sheet (container query), labels wrap. Sent back twice by measurement first (3+1 at 100%; one column / tiles off screen at 200% in the ONE Ayah View). Seen, not fixed (old, same on main): at 360px/200% the ⋮ sheet opens under the bottom nav.
+
+**In flight:**
+1. **MSA · Dua J104 D23** (Owner approved demo v1.06/v1.07, audio placement B): Dua Lead head `bad4b5ff` on `claude/dua-r10a`, contains main. My first review sent back two measured defects (account Menu dropdown 30px off a phone's right edge; ▶ ⤢ not centred); both fixed, with `dua-home-bar-browser` 48/0 (mutations left, glyph red). On `bad4b5ff`: dua-card-r2 158/0, dua-study-page 137/0, dua-poster-r3 126/0, way-back-hadith-dua 360/0, large-text-dua-study 1779/0; behaviour 974/1 (14a) on the pre-fix merge (the fix touches only Dua files). **Still to run:** night-hadith-dua, hadith-dua-a11y --page=dua, apps-build-check. Then release v13.43.
+2. **MSA · QR J114 n114b** (Owner 3:14 pm: "1(C).2.F"): the QR Lead builds on `claude/qr-lead-notes-and-pagebm`: (C) a "Bookmark · <unit>" row when the unit is wider than one āyah; (F) with Notes, the Notes tile opens the latest Note in the Journey tray plus a "+ New Note" row; also the ⋮'s Notes lookup on open. No shared Note-opener change.
+3. **MSA J112 (d) D2** (Owner 3:33 pm, both ways): plan `j112p-d2` in MSA J112. Not started. Build it yourself (shared tool). Check first that no Firestore Rules change is needed.
+
+**Waiting on the Owner:** MSA J05 j05n6 (A/B: an "Approach" choice on older Notes).
+
+**Owner messages this session (carry1):**
+- 3:14 pm (via the PCA): MSA · QR J114 n114b "1(C).2.F …" → recorded with a reply in J114, passed to the QR Lead.
+- ~3:28 pm: "J112: Write a note in MSA … stays here in a 'Primary' Folder … should automatically update the Siyagah Master Folder without a second action. Is it possible?" → answered yes (D) with limits and a D1/D2 tick in J112.
+- ~3:33 pm: "J112:D2. J05: of Which project? Always refer the job by the project name, such as 'Dua J05' etc." → D2 recorded with the plan; rule `ref1107` added to p/mmsa.rules; MSA J05's question restated.
+- ~4:14 pm: "I am waiting for new session, when you ready." → this handover.
+
+**Sandbox lessons this session:**
+- **Rule G (one release a day) was lifted on 3 Nov** (use1102's CHANGED note). I wrongly held #1496 for ~4 hours on it; read the whole rule text, not the first 1,500 characters.
+- `send_card.py` is refused by the auto-mode check ("Code from External"); the PCA sends cards: give it the card JSON.
+- `hadith-dua-a11y` prints only FAIL lines; a long silence is normal (15-40 min), not a hang.
+- A Lead branch may sit 100+ commits behind main; merging main in was clean both times today.
+- The release CI fails exactly brief-integrity / programme-ledger / ledger-mutations (they read origin/main); after the merge all three pass on main.
+
+**Opening message for the next session** (title "📌 (03) MSA Master Architect - 07.11.26 - 4.15 PM"):
+
+> Bismillah. You are the MSA Master Architect, taking over from session_01PL2xbLfKsJdxAEsLpnChdU (7 Nov ~4:15 pm Sydney, use1102). Read CLAUDE.md, then ARCHITECT.md, then docs/reports/2026-10-12-MMSA-SESSION-HANDOVER.md from its LATEST UPDATE block of 7 Nov 4:15 pm, and the PMS General rules (use1102 with its 3 Nov change: G lifted, release when a reviewed part is ready; ses1104, demo1104, pms1104, card1104) and MSA rule ref1107 (always name a job with its project: "MSA J112", "MSA · Dua J104"). Owner, 28 Oct ~9:15 am, on QuranRevival: "Allowed QuranRevival, rebuild QR now. Don't wait for permission anymore. Always allowed." First: `git fetch origin main` then `git fetch --unshallow`; test GitHub write (git push --dry-run origin HEAD:refs/heads/claude/access-probe); link playwright in every worktree (`mkdir -p node_modules && ln -sfn /opt/node-tools/node_modules/playwright node_modules/playwright`). Read the PMS (https://claude.ai/artifact/PhW1KKX28qrqj9dE7Ha8dZ): meta/global, p/mmsa, MSA J112, MSA J104, MSA J114, MSA J05; answer new Owner comments; set p/mmsa.sessionUrl (if_version). Tell the PCA (session_01PL2xbMV6V3rW8ZzhauqW7z) "PCA ▸ taken over". State: main is v13.42 (7 Nov 8:11 am); QR reads 13.42. Jobs, in order: (1) MSA · Dua J104 D23: the Dua Lead's head bad4b5ff on claude/dua-r10a contains main; checks green so far on it (dua-home-bar 48/0, dua-card-r2 158/0, dua-study-page 137/0, dua-poster-r3 126/0, way-back-hadith-dua 360/0, large-text-dua-study 1779/0; behaviour 974/1 (14a) on the pre-fix merge); STILL TO RUN: night-hadith-dua and hadith-dua-a11y --page=dua (it prints only FAILs; 15-40 min), apps-build-check; then release v13.43 (allocate-version.py with TZ=Australia/Sydney, PR, merge with the full head SHA), "PCA ▸ released", Dua Lead (session_01PL2xbMZFGyPBWZs71Fsmib) notice. (2) MSA · QR J114 n114b (Owner: 1 C, 2 F): QR Lead (session_01PL2xbKh8UZ8U44FHHGXfJi) builds on claude/qr-lead-notes-and-pagebm; review and release when handed in. (3) MSA J112 (d) D2, the Owner's answer 3:33 pm 7 Nov: build it yourself per the plan j112p-d2 in MSA J112 (Primary folder; MSA to Siyagah automatically; Siyagah back to MSA; later change wins, earlier kept). Waiting on the Owner: MSA J05 j05n6 A/B. Library cards: send_card.py is refused here; send the card JSON to the PCA. Rules: use1102 (hand over at about 15% context, no broadcasts); review by measurement; behaviour.mjs alone and compared with main (974/1, 14a; no "====" line means it crashed); check a Lead branch contains main before allocating; main only through a PR merged with the full head SHA; write only to p/mmsa; real clock times; never pkill -f (kill serve.js only by the PID whose cmdline STARTS with "node serve.js"); no self wake-ups; "Rasulullah, Sallallahu A'laihi Wa Sallam"; "Siyagah" in full.
+
+## LATEST UPDATE — 7 Nov 2026, ~3:05 am Sydney, session `session_01PL2xbKwjJwndb83JEfJTdD` (v13.36–v13.41 RELEASED; HANDOVER under use1102) (superseded 7 Nov 4:15 pm)
 
 This session took over at 1:20 pm on 5 Nov. **`main` is v13.41 (`e75adf37`, merged 3:02 am 7 Nov); QR rebuilt at v13.40 (PCA, 1:03 am); the PCA was asked for 13.41 at 3:02 am.** Released:
 - **v13.36** (#1484): J112 R2b, Siyagah NOTES changed from the Map by request (note.add/edit/move/delete/vis, Siyagah's MMJ-SHARE "Writing (R2)"). A note's text is editable only when it round-trips losslessly through note-sanitize.js; otherwise title-only, said in words. A refused edit reopens with what was typed.
